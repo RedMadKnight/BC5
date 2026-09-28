@@ -8,7 +8,7 @@ Goal: one canonical input for everything downstream. A read-only FUSE mount that
 
 Tasks
 1. Derive the container layout from public implementations (PS5PKGTool managed PFS/PFSC/exFAT; FFPFS CLI). Write `docs/formats/ffpfsc.md` (PFS v2 superblock, block size, inode/dirent layout, PFSC compression framing, exFAT wrapper). Every field cites the file it was read from.
-2. Build a **synthetic fixture generator** (`tools/bc5-mount/tests/fixtures`): create a directory of generated files → exFAT image → PFSC → PFS v2, using `fpkg-cli` where available and our own writer otherwise. Fixtures are generated in tests, never committed.
+2. Build a **synthetic fixture generator** (`bc5-fixture`, a module and binary in the `bc5-mount` crate; ADR 0003): generated directory tree → exFAT image → PFSC → PFS v2, written by us from `docs/formats/ffpfsc.md` (the public implementations are GPL-3.0 and cannot be ported). MkPFS is used only as an external cross-check in the gate experiment. Fixtures are generated in tests, never committed.
 3. Implement readers bottom-up with unit tests at each layer: `pfs` → `pfsc` → `exfat`. Property tests for headers; round-trip tests against the generator.
 4. FUSE layer with `fuser`: `bc5-mount <container> <mountpoint> [--verify]`. Read-only. `--verify` walks the tree and prints SHA-256 per file.
 5. `bc5-mount inspect <container>`: prints superblock, compression ratio, file count, title metadata from `sce_sys/param.json` if present.
@@ -20,7 +20,7 @@ Needs: any Linux with FUSE. No BC-250, no game.
 ## Phase 0b — Foundation: RPCSX baseline on the BC-250
 
 Tasks
-1. Experiment `0001-dev-box-inventory`: kernel, Mesa, RADV, libdrm versions; presence of BC-250 PSP/CCP patches; BIOS memory split; disk type and free space.
+1. Experiment `NNNN-dev-box-inventory` (next free number): kernel, Mesa, RADV, libdrm versions; presence of BC-250 PSP/CCP patches; BIOS memory split; disk type and free space.
 2. Build RPCSX inside the `fedora` distrobox per `.github/BUILDING.md`. Record exact commands and the commit hash.
 3. Boot PS5 VSH / safe mode through the stock Vulkan backend. Record FPS, `RADV_DEBUG` logs, any hangs.
 4. Report results on the RPCSX Discord (human does this) — establish contact before any PR.
