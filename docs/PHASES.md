@@ -10,7 +10,7 @@ Tasks
 1. Derive the container layout from public implementations (PS5PKGTool managed PFS/PFSC/exFAT; FFPFS CLI). Write `docs/formats/ffpfsc.md` (PFS v2 superblock, block size, inode/dirent layout, PFSC compression framing, exFAT wrapper). Every field cites the file it was read from.
 2. Build a **synthetic fixture generator** (`bc5-fixture`, a module and binary in the `bc5-mount` crate; ADR 0003): generated directory tree → exFAT image → PFSC → PFS v2, written by us from `docs/formats/ffpfsc.md` (the public implementations are GPL-3.0 and cannot be ported). MkPFS is used only as an external cross-check in the gate experiment. Fixtures are generated in tests, never committed.
 3. Implement readers bottom-up with unit tests at each layer: `pfs` → `pfsc` → `exfat`. Property tests for headers; round-trip tests against the generator.
-4. FUSE layer with `fuser`: `bc5-mount <container> <mountpoint> [--verify]`. Read-only. `--verify` walks the tree and prints SHA-256 per file.
+4. FUSE layer with `fuser`: `bc5-mount mount <container> <mountpoint>`. Read-only. `bc5-mount verify <container>` walks the tree and prints SHA-256 per file without FUSE; `ls` and `cat` work everywhere.
 5. `bc5-mount inspect <container>`: prints superblock, compression ratio, file count, title metadata from `sce_sys/param.json` if present.
 
 Gate G0a: mounting a synthetic container yields a file tree and per-file SHA-256 identical to the source directory; `cargo test` passes; throughput ≥ 300 MB/s sequential read on the dev box (record the number).

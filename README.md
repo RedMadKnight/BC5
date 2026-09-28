@@ -3,7 +3,7 @@
 **BC-250 + PS5. A native PS5 GPU path for the AMD BC-250 (Cyan Skillfish, gfx1013).**
 User-space backend that feeds PS5 AGC command streams and native RDNA ISA shaders to `amdgpu` on Linux, without GNM→Vulkan translation or shader recompilation.
 
-> Status: research / pre-alpha. Nothing runs yet. This repository is a plan, a set of experiments and their results. No game, firmware or SDK material is or will ever be hosted here.
+> Status: research / pre-alpha. Phase 0a tooling (`bc5-mount`, read-only access to `.ffpfsc` containers) works; nothing GPU-related runs yet. This repository is a plan, a set of experiments and their results. No game, firmware or SDK material is or will ever be hosted here.
 
 ---
 
@@ -87,6 +87,21 @@ Phase 0a comes first on purpose: one canonical input format keeps every later ex
 - [ ] Whether PS5 titles write CU masks themselves (check phase-1 logs).
 - [ ] Which draw/CB/DB register usage is Sony-specific beyond public PM4 (OpenProspero's notes are the reference).
 - [ ] Storage: how much of the SSD/Kraken dependency a software prefetch/cache layer can hide.
+
+## Tooling: `bc5-mount`
+
+`tools/bc5-mount` reads `.ffpfsc` containers (PFS v2 → PFSC → exFAT; layout in [`docs/formats/ffpfsc.md`](docs/formats/ffpfsc.md)) and exposes the game's `app0` tree. Rust, no unsafe code, every parser rejects malformed input instead of panicking.
+
+```bash
+cd tools && cargo build --release
+bc5-mount inspect  GAME.ffpfsc                 # superblock, PFSC stats, file count, title from param.json
+bc5-mount ls -r    GAME.ffpfsc [dir]           # list the tree
+bc5-mount cat      GAME.ffpfsc sce_sys/param.json
+bc5-mount verify   GAME.ffpfsc > hashes.txt    # sha256  size  path, one line per file
+bc5-mount mount    GAME.ffpfsc /mnt/app0       # read-only FUSE mount (Linux, feature `fuse`, default on)
+```
+
+Tests never touch a real dump: `bc5-fixture` builds deterministic synthetic containers (`bc5-fixture list|build|tree|hashes`), and the test suite round-trips every preset through the full stack. `cargo test` runs everywhere; `cargo test -- --ignored` adds a 1 GiB sparse case.
 
 ## Requirements
 
