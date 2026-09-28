@@ -277,23 +277,33 @@ impl<R: ReadAt> PfscReader<R> {
         }
     }
 
-    /// Copies `buf.len()` bytes from logical block `idx` at `within`.
+    /// Copies `buf.len()` bytes from logical block `idx` at `within`. The
+    /// cache lock is held only for lookup and insertion, so several threads can
+    /// inflate different blocks at the same time.
     fn copy_from_block(&self, idx: u64, within: usize, buf: &mut [u8]) -> Result<()> {
+        {
+            let mut cache = self
+                .cache
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            if let Some(pos) = cache.blocks.iter().position(|(i, _)| *i == idx) {
+                let entry = cache.blocks.remove(pos).expect("position came from iter");
+                buf.copy_from_slice(&entry.1[within..within + buf.len()]);
+                cache.blocks.push_back(entry);
+                return Ok(());
+            }
+        }
+        let block = self.decode_block(idx)?;
+        buf.copy_from_slice(&block[within..within + buf.len()]);
         let mut cache = self
             .cache
             .lock()
             .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if let Some(pos) = cache.blocks.iter().position(|(i, _)| *i == idx) {
-            let entry = cache.blocks.remove(pos).expect("position came from iter");
-            buf.copy_from_slice(&entry.1[within..within + buf.len()]);
-            cache.blocks.push_back(entry);
-            return Ok(());
-        }
-        let block = self.decode_block(idx)?;
-        buf.copy_from_slice(&block[within..within + buf.len()]);
-        cache.blocks.push_back((idx, block));
-        if cache.blocks.len() > CACHE_BLOCKS {
-            cache.blocks.pop_front();
+        if !cache.blocks.iter().any(|(i, _)| *i == idx) {
+            cache.blocks.push_back((idx, block));
+            if cache.blocks.len() > CACHE_BLOCKS {
+                cache.blocks.pop_front();
+            }
         }
         Ok(())
     }
