@@ -3,9 +3,11 @@
 
 pub mod error;
 pub mod exfat;
+pub mod fixture;
 pub mod io;
 pub mod pfs;
 pub mod pfsc;
+pub mod verify;
 
 pub use error::{Error, Result};
 
