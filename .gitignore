@@ -1,0 +1,22 @@
+# Rust / C++
+target/
+build/
+cmake-build-*/
+compile_commands.json
+# containers and images — never committed
+*.ffpfsc
+*.ffpkg
+*.exfat
+*.img
+*.pkg
+*.self
+*.prx
+*.sprx
+*.bin
+# mountpoints and raw experiment data
+mnt/
+experiments/**/raw/
+# editors
+.vscode/
+.idea/
+.DS_Store
