@@ -1,0 +1,19 @@
+[workspace]
+resolver = "2"
+members = ["bc5-mount"]
+
+[workspace.package]
+edition = "2021"
+license = "GPL-2.0-only"
+rust-version = "1.75"
+
+[workspace.lints.rust]
+unsafe_code = "deny"
+missing_debug_implementations = "warn"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+pedantic = { level = "warn", priority = -1 }
+# Parsers index into byte buffers with checked offsets; these are noise there.
+cast_possible_truncation = "allow"
+module_name_repetitions = "allow"

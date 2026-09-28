@@ -1,0 +1,20 @@
+[package]
+name = "bc5-mount"
+version = "0.0.0"
+description = "Read-only FUSE mount for .ffpfsc containers (PFS v2 -> PFSC -> exFAT)"
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "bc5-mount"
+path = "src/main.rs"
+
+[dependencies]
+
+[lints]
+workspace = true
