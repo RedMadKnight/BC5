@@ -1,0 +1,7 @@
+# Part A, Windows 11, Rust 1.98.1 gnu, release build, maintainer's own container (47 523 430 400 bytes)
+inspect: 2.6 s  (166 723 files, 2 145 dirs, 159 828 684 433 bytes of file data)
+verify, single-threaded (commit 58cd27c): exit 0, 1822 s, 166 723 lines, 159 828 684 433 bytes hashed  -> 87.7 MB/s
+   (per-file overhead dominates: 166k files, most of them small)
+cat of the largest file (582 510 877 bytes), commit 1152e3d:
+   cold: 1495 ms = 389 MB/s
+   warm: 1183 ms = 492 MB/s
