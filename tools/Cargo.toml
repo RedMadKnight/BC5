@@ -10,6 +10,7 @@ rust-version = "1.75"
 [workspace.lints.rust]
 unsafe_code = "deny"
 missing_debug_implementations = "warn"
+missing_docs = "warn"
 
 [workspace.lints.clippy]
 all = { level = "warn", priority = -1 }
@@ -17,3 +18,10 @@ pedantic = { level = "warn", priority = -1 }
 # Parsers index into byte buffers with checked offsets; these are noise there.
 cast_possible_truncation = "allow"
 module_name_repetitions = "allow"
+# Errors are documented once per module (every fallible call returns crate::Error).
+missing_errors_doc = "allow"
+missing_panics_doc = "allow"
+must_use_candidate = "allow"
+similar_names = "allow"
+too_many_lines = "allow"
+struct_excessive_bools = "allow"
