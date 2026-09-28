@@ -13,9 +13,10 @@ compile_commands.json
 *.prx
 *.sprx
 *.bin
-# mountpoints and raw experiment data
+# mountpoints
 mnt/
-experiments/**/raw/
+# experiment logs are committed when small; anything over 1 MB is regenerated,
+# not committed (experiments/README.md) — enforce in review, git cannot filter by size
 # editors
 .vscode/
 .idea/
