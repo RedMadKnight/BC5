@@ -1,0 +1,24 @@
+work dir: /tmp/bc5-gate-noise-256m-2; preset: noise-256m
+/tmp/bc5-gate-noise-256m-2/fixture.ffpfsc: 268959744 bytes container, 268763136 bytes exfat, 4101 pfsc blocks (5 compressed), 1 files, 0 dirs
+container:        /tmp/bc5-gate-noise-256m-2/fixture.ffpfsc
+pfs version:      2  mode 0x8 (case-insensitive)
+pfs block size:   0x10000  blocks 4104  inodes 4
+inner file:       BREW00001.exfat
+payload offset:   0x60000
+pfsc stored:      268507645 bytes in 4101 blocks (5 compressed)
+exfat image:      268763136 bytes, cluster 0x10000
+ratio:            0.999 stored/logical
+files:            1  in 0 directories, 268435456 bytes
+title:            (no sce_sys/param.json)
+verify: OK
+throughput file: ./noise.bin
+page cache: not dropped (no passwordless sudo); container file may be cached
+skopiowane 268435456 bajtów (268 MB, 256 MiB), 0,189499 s, 1,4 GB/s
+tree: OK
+sha256: OK
+Final image size:      256.50 MB (268,959,744 bytes)
+flat_path_table keys:  1
+Warnings:              0
+Errors:                0
+======================================================================
+done

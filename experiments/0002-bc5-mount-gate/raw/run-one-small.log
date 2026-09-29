@@ -1,0 +1,24 @@
+work dir: /home/kjaniszewski/bc5-work/one-small; preset: one-small
+/home/kjaniszewski/bc5-work/one-small/fixture.ffpfsc: 524288 bytes container, 229376 bytes exfat, 4 pfsc blocks (4 compressed), 1 files, 0 dirs
+container:        /home/kjaniszewski/bc5-work/one-small/fixture.ffpfsc
+pfs version:      2  mode 0x8 (case-insensitive)
+pfs block size:   0x10000  blocks 8  inodes 4
+inner file:       BREW00001.exfat
+payload offset:   0x60000
+pfsc stored:      66254 bytes in 4 blocks (4 compressed)
+exfat image:      229376 bytes, cluster 0x8000
+ratio:            0.289 stored/logical
+files:            1  in 0 directories, 12 bytes
+title:            (no sce_sys/param.json)
+verify: OK
+throughput file: ./a.txt
+page cache: not dropped (no passwordless sudo); container file may be cached
+skopiowane 12 bajtów, 0,000143119 s, 83,8 kB/s
+tree: OK
+sha256: OK
+Final image size:      512.00 KB (524,288 bytes)
+flat_path_table keys:  1
+Warnings:              0
+Errors:                0
+======================================================================
+done

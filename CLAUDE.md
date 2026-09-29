@@ -58,7 +58,8 @@ experiments/
 ## Machine context (the maintainer's dev box)
 
 - AMD BC-250 on Bazzite (immutable host); builds happen inside a `distrobox` Fedora container named `fedora`. Assume no root on the host; `sudo` inside the container is fine.
-- CPU unlocked to 8C/16T, GPU unlocked to 40 CU. Kernel and Mesa versions are unknown at handoff — the first task in any GPU phase is to record them in an experiment README.
+- CPU unlocked to 8C/16T. GPU: the handoff assumed 40 CU, but experiment 0003 (2026-09-29) found **24 of 40 CUs active** (HANDOFF Q8). Recorded versions: kernel 7.2.4-ogc3.1, Mesa 26.2.3, libdrm 2.4.134 (HANDOFF F13); re-record them in any GPU experiment whose results depend on them.
+- Remote access: the maintainer's laptop reaches the box over SSH (`bc250` alias, key-based, no root). Work directories go under `~/bc5-work` on the NVMe, not `/tmp` (tmpfs, fills up).
 - Known BC-250 hazards: RADV disables the gfx1013 compute queue (use the GFX ring); a GPU reset can take the whole machine down — save work before running anything with `--submit`.
 - Phase 0a (`bc5-mount`) needs no BC-250 at all and can be developed on any Linux machine with FUSE.
 

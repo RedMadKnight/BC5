@@ -1,0 +1,24 @@
+work dir: /home/kjaniszewski/bc5-work/mixed-compress; preset: mixed-compress
+/home/kjaniszewski/bc5-work/mixed-compress/fixture.ffpfsc: 786432 bytes container, 819200 bytes exfat, 13 pfsc blocks (9 compressed), 3 files, 0 dirs
+container:        /home/kjaniszewski/bc5-work/mixed-compress/fixture.ffpfsc
+pfs version:      2  mode 0x8 (case-insensitive)
+pfs block size:   0x10000  blocks 12  inodes 4
+inner file:       BREW00001.exfat
+payload offset:   0x60000
+pfsc stored:      328938 bytes in 13 blocks (9 compressed)
+exfat image:      819200 bytes, cluster 0x8000
+ratio:            0.402 stored/logical
+files:            3  in 0 directories, 594288 bytes
+title:            (no sce_sys/param.json)
+verify: OK
+throughput file: ./zeros.bin
+page cache: not dropped (no passwordless sudo); container file may be cached
+skopiowane 262144 bajtów (262 kB, 256 KiB), 0,000595551 s, 440 MB/s
+tree: OK
+sha256: OK
+Final image size:      768.00 KB (786,432 bytes)
+flat_path_table keys:  1
+Warnings:              0
+Errors:                0
+======================================================================
+done

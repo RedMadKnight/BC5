@@ -1,0 +1,24 @@
+work dir: /home/kjaniszewski/bc5-work/sparse-1g; preset: sparse-1g
+/home/kjaniszewski/bc5-work/sparse-1g/fixture.ffpfsc: 2031616 bytes container, 1074135040 bytes exfat, 16390 pfsc blocks (16390 compressed), 1 files, 0 dirs
+container:        /home/kjaniszewski/bc5-work/sparse-1g/fixture.ffpfsc
+pfs version:      2  mode 0x8 (case-insensitive)
+pfs block size:   0x10000  blocks 31  inodes 4
+inner file:       BREW00001.exfat
+payload offset:   0x60000
+pfsc stored:      1614774 bytes in 16390 blocks (16390 compressed)
+exfat image:      1074135040 bytes, cluster 0x10000
+ratio:            0.002 stored/logical
+files:            1  in 0 directories, 1073741824 bytes
+title:            (no sce_sys/param.json)
+verify: OK
+throughput file: ./sparse.bin
+page cache: not dropped (no passwordless sudo); container file may be cached
+skopiowane 1073741824 bajtów (1,1 GB, 1,0 GiB), 0,520676 s, 2,1 GB/s
+tree: OK
+sha256: OK
+Final image size:      1.94 MB (2,031,616 bytes)
+flat_path_table keys:  1
+Warnings:              0
+Errors:                0
+======================================================================
+done
