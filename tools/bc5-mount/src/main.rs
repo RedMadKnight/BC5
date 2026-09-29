@@ -2,7 +2,7 @@
 //! `bc5-mount` command line: inspect, verify, ls, cat and (on Linux) mount.
 
 use std::io::{self, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use anyhow::{bail, Context};
 use clap::{Parser, Subcommand};
@@ -203,13 +203,13 @@ fn cat(path: &PathBuf, file: &str) -> anyhow::Result<()> {
 }
 
 #[cfg(all(feature = "fuse", target_os = "linux"))]
-fn mount(path: &PathBuf, mountpoint: &PathBuf, allow_other: bool) -> anyhow::Result<()> {
+fn mount(path: &PathBuf, mountpoint: &Path, allow_other: bool) -> anyhow::Result<()> {
     let c = open(path)?;
     bc5_mount::fuse::mount(c, mountpoint, allow_other)
         .with_context(|| format!("mounting on {}", mountpoint.display()))
 }
 
 #[cfg(not(all(feature = "fuse", target_os = "linux")))]
-fn mount(_path: &PathBuf, _mountpoint: &PathBuf, _allow_other: bool) -> anyhow::Result<()> {
+fn mount(_path: &PathBuf, _mountpoint: &Path, _allow_other: bool) -> anyhow::Result<()> {
     bail!("mount is only available on Linux builds with the `fuse` feature; use ls/cat/verify here")
 }
