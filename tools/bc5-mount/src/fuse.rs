@@ -190,7 +190,9 @@ impl Filesystem for Bc5Fs {
         }
         let start = usize::try_from(offset).unwrap_or(usize::MAX);
         for (i, (ino, kind, name)) in items.into_iter().enumerate().skip(start) {
-            if reply.add(ino, i as i64 + 1, kind, name) {
+            // FUSE readdir offsets are the index of the *next* entry.
+            let next = i64::try_from(i + 1).unwrap_or(i64::MAX);
+            if reply.add(ino, next, kind, name) {
                 break;
             }
         }
