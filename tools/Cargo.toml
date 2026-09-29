@@ -1,11 +1,22 @@
 [workspace]
 resolver = "2"
-members = ["bc5-mount"]
+members = ["bc5-mount", "bc5-agc"]
 
 [workspace.package]
 edition = "2021"
 license = "GPL-2.0-only"
 rust-version = "1.75"
+
+[workspace.dependencies]
+anyhow = "1"
+# clap without `color`/`suggestions`: they pull windows-sys (raw-dylib), which
+# needs dlltool on the windows-gnu toolchain.
+clap = { version = "4", default-features = false, features = ["std", "derive", "help", "usage", "error-context"] }
+thiserror = "2"
+# proptest without `fork`/`timeout` for the same reason; its `alloc` build
+# forgets to ask num-traits for `std`, so that is unified explicitly.
+proptest = { version = "1", default-features = false, features = ["alloc"] }
+num-traits = { version = "0.2", features = ["std"] }
 
 [workspace.lints.rust]
 unsafe_code = "deny"
