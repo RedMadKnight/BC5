@@ -1,0 +1,9 @@
+streams: 1589  packets: 604038
+known opcodes (4):
+  0x10 NOP                          452850
+  0x2f NUM_INSTANCES                8883
+  0x46 EVENT_WRITE                  53265
+  0x76 SET_SH_REG                   82886
+unknown opcodes (0):
+register writes: 84 named, 0 unresolved offsets
+cu-mask register writes (Q3): 0
