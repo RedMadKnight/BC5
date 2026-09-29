@@ -1,0 +1,75 @@
+diff --git a/rpcsx/gpu/DeviceCtl.cpp b/rpcsx/gpu/DeviceCtl.cpp
+index a9232e4..be178e6 100644
+--- a/rpcsx/gpu/DeviceCtl.cpp
++++ b/rpcsx/gpu/DeviceCtl.cpp
+@@ -1,4 +1,5 @@
+ #include "DeviceCtl.hpp"
++#include "bc5_capture.hpp"
+ #include "Device.hpp"
+ #include "gnm/pm4.hpp"
+ #include "orbis/error/ErrorCode.hpp"
+@@ -50,6 +51,8 @@ void DeviceCtl::submitGfxCommand(int gfxPipe, int vmId,
+     patchedCommand[3] |= vmId << 24;
+   }
+ 
++  bc5::dumpCommandBuffer("submit", -1, vmId, 0, patchedCommand.data(),
++                         patchedCommand.size());
+   mDevice->submitGfxCommand(gfxPipe, patchedCommand);
+ }
+ 
+diff --git a/rpcsx/gpu/Pipe.cpp b/rpcsx/gpu/Pipe.cpp
+index 741cb63..e6993e3 100644
+--- a/rpcsx/gpu/Pipe.cpp
++++ b/rpcsx/gpu/Pipe.cpp
+@@ -1,4 +1,5 @@
+ #include "Pipe.hpp"
++#include "bc5_capture.hpp"
+ #include "Device.hpp"
+ #include "Registers.hpp"
+ #include "Renderer.hpp"
+@@ -1256,6 +1257,7 @@ bool GraphicsPipe::indirectBuffer(Ring &ring) {
+     vmId = ring.vmId;
+   }
+   auto rptr = RemoteMemory{vmId}.getPointer<std::uint32_t>(address);
++  bc5::dumpCommandBuffer("ib", ring.indirectLevel, vmId, address, rptr, ibSize);
+   setDeQueue(Ring::createFromRange(vmId, rptr, ibSize), ring.indirectLevel + 1);
+   return true;
+ }
+diff --git a/rpcsx/gpu/bc5_capture.hpp b/rpcsx/gpu/bc5_capture.hpp
+new file mode 100644
+index 0000000..b203732
+--- /dev/null
++++ b/rpcsx/gpu/bc5_capture.hpp
+@@ -0,0 +1,32 @@
++// SPDX-License-Identifier: GPL-2.0-only
++// BC5 capture tap: when BC5_AGC_DUMP_DIR is set, every command buffer the
++// command processor is pointed at is written to that directory as raw
++// little-endian dwords (readable by `bc5-agc dump`). Off by default; no effect
++// on rendering. See https://github.com/RedMadKnight/bc5 docs/formats/agc.md.
++#pragma once
++
++#include <atomic>
++#include <cstdint>
++#include <cstdlib>
++#include <cstdio>
++#include <string>
++
++namespace bc5 {
++inline void dumpCommandBuffer(const char *kind, int level, int vmId,
++                              std::uint64_t address,
++                              const std::uint32_t *data, std::size_t dwords) {
++  static const char *dir = std::getenv("BC5_AGC_DUMP_DIR");
++  if (dir == nullptr || data == nullptr || dwords == 0) {
++    return;
++  }
++  static std::atomic<std::uint64_t> seq{0};
++  char name[256];
++  std::snprintf(name, sizeof(name), "%s/%06llu-%s-lvl%d-vm%d-%llx.pm4", dir,
++                static_cast<unsigned long long>(seq.fetch_add(1)), kind, level,
++                vmId, static_cast<unsigned long long>(address));
++  if (std::FILE *f = std::fopen(name, "wb")) {
++    std::fwrite(data, sizeof(std::uint32_t), dwords, f);
++    std::fclose(f);
++  }
++}
++} // namespace bc5
