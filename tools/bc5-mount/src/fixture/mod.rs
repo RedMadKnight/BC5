@@ -230,6 +230,7 @@ impl Spec {
             "wide",
             "case",
             "contiguous",
+            "noise-256m",
             "sparse-1g",
         ]
     }
@@ -330,6 +331,21 @@ impl Spec {
                         .dir(DirSpec::new("d").file("empty.bin", Content::Zeros(0))),
                 );
                 s.no_fat_chain = true;
+                s.cluster_size = 0x10000;
+                s
+            }
+            // Worst case for throughput: every PFSC block is stored raw.
+            "noise-256m" => {
+                let mut s = Spec::new(
+                    name,
+                    DirSpec::new("").file(
+                        "noise.bin",
+                        Content::Pattern {
+                            seed: 256,
+                            len: 256 << 20,
+                        },
+                    ),
+                );
                 s.cluster_size = 0x10000;
                 s
             }
