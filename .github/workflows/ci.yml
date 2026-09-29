@@ -122,7 +122,7 @@ jobs:
         run: experiments/0002-bc5-mount-gate/run.sh one-small "$RUNNER_TEMP/gate"
       - name: experiments/0002 run.sh on the multi-block preset
         run: experiments/0002-bc5-mount-gate/run.sh mixed-compress "$RUNNER_TEMP/gate2"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: gate-smoke-log
