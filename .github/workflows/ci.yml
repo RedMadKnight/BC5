@@ -111,7 +111,7 @@ jobs:
         with:
           workspaces: tools
       # Ubuntu 24.04's system Python refuses pip installs (PEP 668); use a managed one.
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
       - name: FUSE userspace tools and the MkPFS oracle (GPL-3.0, run as a separate process)
