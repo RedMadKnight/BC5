@@ -38,18 +38,27 @@ trap 'fusermount3 -u "$WORK/mnt" 2>/dev/null || fusermount -u "$WORK/mnt" 2>/dev
 for _ in $(seq 1 50); do mountpoint -q "$WORK/mnt" && break; sleep 0.1; done
 mountpoint -q "$WORK/mnt"
 
+# 3a. Sequential read throughput of the largest file, measured first, on a
+# fresh mount, so no FUSE page-cache entry exists for it yet. The container
+# file itself may still be in the host page cache (it was just written) unless
+# drop_caches succeeds; the log says which.
+BIG="$(cd "$WORK/source" && find . -type f -printf '%s %p\n' | sort -n | tail -1 | cut -d' ' -f2-)"
+echo "throughput file: $BIG" | tee -a "$LOG/run.log"
+sync
+if echo 3 | sudo -n tee /proc/sys/vm/drop_caches >/dev/null 2>&1; then
+    echo "page cache: dropped (cold read)" | tee -a "$LOG/run.log"
+else
+    echo "page cache: not dropped (no passwordless sudo); container file may be cached" | tee -a "$LOG/run.log"
+fi
+dd if="$WORK/mnt/$BIG" of=/dev/null bs=1M 2>&1 | tail -1 | tee -a "$LOG/run.log"
+
+# 3b. Tree and per-file SHA-256 must equal the source directory.
 (cd "$WORK/source" && find . -type f | sort) > "$WORK/tree.source"
 (cd "$WORK/mnt" && find . -type f | sort) > "$WORK/tree.mnt"
 diff -u "$WORK/tree.source" "$WORK/tree.mnt" && echo "tree: OK" | tee -a "$LOG/run.log"
 (cd "$WORK/source" && find . -type f -print0 | sort -z | xargs -0 sha256sum) > "$WORK/sha.source"
 (cd "$WORK/mnt" && find . -type f -print0 | sort -z | xargs -0 sha256sum) > "$WORK/sha.mnt"
 diff -u "$WORK/sha.source" "$WORK/sha.mnt" && echo "sha256: OK" | tee -a "$LOG/run.log"
-
-# 4. Sequential read throughput of the largest file through the mount.
-BIG="$(cd "$WORK/mnt" && find . -type f -printf '%s %p\n' | sort -n | tail -1 | cut -d' ' -f2-)"
-echo "throughput file: $BIG" | tee -a "$LOG/run.log"
-sync; echo 3 | sudo tee /proc/sys/vm/drop_caches >/dev/null 2>&1 || true
-dd if="$WORK/mnt/$BIG" of=/dev/null bs=1M 2>&1 | tail -1 | tee -a "$LOG/run.log"
 
 # 5. Optional oracle.
 if python3 -c 'import mkpfs' 2>/dev/null; then
