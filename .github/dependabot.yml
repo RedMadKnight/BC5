@@ -1,13 +1,17 @@
 version: 2
+# One grouped PR per ecosystem per month (maintainer's choice, 2026-09-29).
 updates:
   - package-ecosystem: cargo
     directory: /tools
     schedule:
-      interval: weekly
+      interval: monthly
     groups:
       rust-deps:
         patterns: ["*"]
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
+      interval: monthly
+    groups:
+      github-actions:
+        patterns: ["*"]

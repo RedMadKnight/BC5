@@ -1,0 +1,32 @@
+===== rpcsx-build.log (3073 lines)
+rpcsx commit: e8ae1481ab7ba04d5c6bef89dd852aabba2c88ff
+FAILED: [code=1] bin/rpcsx 
+debug.cpp:(.text+0x215): relocation truncated to fit: R_X86_64_32S against `.rodata'
+debug.cpp:(.text+0x2ce): relocation truncated to fit: R_X86_64_32S against `.rodata'
+debug.cpp:(.text+0x3de): relocation truncated to fit: R_X86_64_32S against `.rodata'
+build exit 1 after 347 s
+===== rpcsx-build2.log (763 lines)
+rpcsx commit: e8ae1481ab7ba04d5c6bef89dd852aabba2c88ff
+FAILED: [code=1] bin/rpcsx 
+/home/kjaniszewski/src/rpcsx/3rdparty/FFmpeg/libavcodec/alsdec.c:1307:(.text+0x17b): relocation truncated to fit: R_X86_64_32 against `.rodata.str1.1'
+/home/kjaniszewski/src/rpcsx/3rdparty/FFmpeg/libavcodec/alsdec.c:1352:(.text+0x1bb): relocation truncated to fit: R_X86_64_32 against `.rodata.str1.8'
+/home/kjaniszewski/src/rpcsx/3rdparty/FFmpeg/libavcodec/alsdec.c:1374:(.text+0x557): relocation truncated to fit: R_X86_64_32 against `.rodata.str1.8'
+build exit 1 after 287 s
+===== rpcsx-build3.log (2479 lines)
+rpcsx commit: e8ae1481ab7ba04d5c6bef89dd852aabba2c88ff
+FAILED: [code=1] bin/rpcsx 
+/home/kjaniszewski/src/rpcsx/3rdparty/FFmpeg/libavcodec/h261dec.c:67:(.text.unlikely+0x9e): failed to convert GOTPCREL relocation against 'ff_h261_mba_code'; relink with --no-relax
+/home/kjaniszewski/src/rpcsx/3rdparty/FFmpeg/libavcodec/h261dec.c:70:(.text.unlikely+0xde): failed to convert GOTPCREL relocation against 'ff_h261_mtype_code'; relink with --no-relax
+build exit 1 after 116 s
+build exit 1 after 116 s
+===== rpcsx-build4.log (131 lines)
+rpcsx commit: e8ae1481ab7ba04d5c6bef89dd852aabba2c88ff
+FAILED: [code=1] bin/rpcsx 
+(.text+0x1): relocation truncated to fit: R_X86_64_32 against symbol `__TMC_END__' defined in .data section in bin/rpcsx
+(.text+0x7): relocation truncated to fit: R_X86_64_32S against `.tm_clone_table'
+(.text+0x18): relocation truncated to fit: R_X86_64_32 against `.tm_clone_table'
+build exit 1 after 4 s
+===== rpcsx-build-ubuntu.log (3049 lines)
+rpcsx commit: e8ae1481ab7ba04d5c6bef89dd852aabba2c88ff
+build exit 0 after 339 s
+build exit 0 after 339 s
