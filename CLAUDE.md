@@ -59,7 +59,8 @@ experiments/
 
 - AMD BC-250 on Bazzite (immutable host); builds happen inside a `distrobox` Fedora container named `fedora`. Assume no root on the host; `sudo` inside the container is fine.
 - CPU unlocked to 8C/16T. GPU unlocked to 40 CU by the maintainer's `bc250-cu-live-manager.service`, which rewrites `SPI_PG_ENABLE_STATIC_WGP_MASK` via umr after boot; the kernel and RADV therefore still report 24 CUs (experiments 0003/0004, HANDOFF Q8) — never infer the CU count from them. Do not run that tool or `stock-dispatch` without the maintainer. Recorded versions: kernel 7.2.4-ogc3.1, Mesa 26.2.3, libdrm 2.4.134 (HANDOFF F13); re-record them in any GPU experiment whose results depend on them.
-- Remote access: the maintainer's laptop reaches the box over SSH (`bc250` alias, key-based, no root). Work directories go under `~/bc5-work` on the NVMe, not `/tmp` (tmpfs, fills up).
+- Memory split (D8): 512 MiB VRAM carve-out, ~14 GiB for Linux, GTT ~7.6 GB. Experiment 0003 was recorded with an 8 GiB carve-out; always re-read `mem_info_vram_total` in memory-sensitive experiments.
+- Remote access: the maintainer's laptop reaches the box over SSH (`bc250` alias, key-based). Root is limited to the read-only commands in `/etc/sudoers.d/bc5-claude` (dmesg, drop_caches, `bc250-cu-live-manager status`, `amdgpu_firmware_info`); the power profile is set to never suspend or lock. Work directories go under `~/bc5-work` on the NVMe, not `/tmp` (tmpfs, fills up).
 - Known BC-250 hazards: RADV disables the gfx1013 compute queue (use the GFX ring); a GPU reset can take the whole machine down — save work before running anything with `--submit`.
 - Phase 0a (`bc5-mount`) needs no BC-250 at all and can be developed on any Linux machine with FUSE.
 
