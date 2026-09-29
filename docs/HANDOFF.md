@@ -37,7 +37,7 @@ What we deliberately do not do: boot PS5 firmware (PSP/Sony keys/ABL/SMU/hypervi
 | Q5 | Storage: how much of the SSD/Kraken dependency can a software prefetch/cache hide? | Deferred to after phase 4. |
 | Q6 | *Answered 2026-09-28 → F10.* Remaining sub-question: do other producers (console-side compressors) deviate from the PS5PKGTool/MkPFS layout? | Collect `bc5-mount inspect` output from containers made by other tools as they become available; each new producer is a one-line addition to `experiments/0001-ffpfsc-header-survey` successors. |
 | Q7 | *Answered 2026-09-29 → F13.* | — |
-| Q8 | The dev box runs with **24 of 40 CUs active** (F13), not the 40 assumed at handoff. Is the CU unlock missing, reverted by a firmware/kernel update, or not applicable to this board? The 36/4 split (D5) and console-matched timing depend on it. | Maintainer checks the unlock procedure (elektricm/amd-bc250-docs, bc-250.com wiki) against the current VBIOS `113-AMDRBN-003` and kernel `7.2.4-ogc3.1`; re-run `experiments/0003`'s CU line afterwards as a new experiment. Phases 0b–2 do not depend on it. |
+| Q8 | *Partly answered by `experiments/0004`:* the 40-CU unlock is applied on every boot as a live write of `SPI_PG_ENABLE_STATIC_WGP_MASK` (umr, maintainer's `bc250-cu-live-manager` service) **after** amdgpu enumerates 24 CUs, so the kernel and RADV always report 24. Open: confirm that waves reach all 40 CUs. | `sudo bc250-cu-live-manager status`, or a compute-throughput test with `stock-dispatch` vs the saved profile (a later experiment). |
 
 ## 4. Architecture (summary)
 
