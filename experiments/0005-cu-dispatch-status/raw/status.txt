@@ -1,0 +1,66 @@
++------------------------------------------------------------------------------+
+| BC-250 CU Dashboard / Live Dispatch                                          |
++------------------------------------------------------------------------------+
+  UMR        : /usr/bin/umr
+  UMR inst   : 1 (auto)
+  ASIC       : cyan_skillfish.gfx1013
+  amdgpu     : bc250_cc_write_mode=not exposed, active_cu_number=24
+  CPU        : 16 threads present, 16 online; unlocked 8c/16t
+  Service    : enabled
+  Boot sync  : current table saved
+  Source     : SPI dispatch masks + amdgpu boot CU map
+  Legend     : D+ driver+routed, S+ SPI+routed, D! driver+off, -- off
+
+  +---------+------+------+------+------+------+------+------------+--------+
+  | Row     | WGP0 | WGP1 | WGP2 | WGP3 | WGP4 | SPI  | CC         | CUs    |
+  |         | 0-1  | 2-3  | 4-5  | 6-7  | 8-9  |      |            |        |
+  +---------+------+------+------+------+------+------+------------+--------+
+  | SE0.SH0 |  D+  |  D+  |  D+  |  S+  |  S+  | 0x1f | 0xffe00000 |  10/10 |
+  | SE0.SH1 |  D+  |  D+  |  D+  |  S+  |  S+  | 0x1f | 0xffe00000 |  10/10 |
+  | SE1.SH0 |  D+  |  D+  |  D+  |  S+  |  S+  | 0x1f | 0xffe00000 |  10/10 |
+  | SE1.SH1 |  D+  |  D+  |  D+  |  S+  |  S+  | 0x1f | 0xffe00000 |  10/10 |
+  +---------+------+------+------+------+------+------+------------+--------+
+
+  CUs active & routed  : 40/40
+
+## amdgpu_firmware_info
+VCE feature version: 0, firmware version: 0x00000000
+UVD feature version: 0, firmware version: 0x00000000
+MC feature version: 0, firmware version: 0x00000000
+ME feature version: 32, firmware version: 0x00000063
+PFP feature version: 32, firmware version: 0x00000094
+CE feature version: 32, firmware version: 0x00000025
+RLC feature version: 0, firmware version: 0x0000000d
+RLC SRLC feature version: 0, firmware version: 0x00000000
+RLC SRLG feature version: 0, firmware version: 0x00000000
+RLC SRLS feature version: 0, firmware version: 0x00000000
+RLCP feature version: 0, firmware version: 0x00000000
+RLCV feature version: 0, firmware version: 0x00000000
+MEC feature version: 32, firmware version: 0x00000090
+MEC2 feature version: 32, firmware version: 0x00000090
+IMU feature version: 0, firmware version: 0x00000000
+SOS feature version: 0, firmware version: 0x00000000
+ASD feature version: 0, firmware version: 0x00000000
+TA XGMI feature version: 0x00000000, firmware version: 0x00000000
+TA RAS feature version: 0x00000000, firmware version: 0x00000000
+TA HDCP feature version: 0x00000000, firmware version: 0x00000000
+TA DTM feature version: 0x00000000, firmware version: 0x00000000
+TA RAP feature version: 0x00000000, firmware version: 0x00000000
+TA SECUREDISPLAY feature version: 0x00000000, firmware version: 0x00000000
+SMC feature version: 0, program: 0, firmware version: 0x00580600 (88.6.0)
+SDMA0 feature version: 50, firmware version: 0x00000034
+SDMA1 feature version: 50, firmware version: 0x00000034
+VCN feature version: 0, firmware version: 0x00000000
+DMCU feature version: 0, firmware version: 0x00000000
+DMCUB feature version: 0, firmware version: 0x00000000
+TOC feature version: 0, firmware version: 0x00000000
+MES_KIQ feature version: 0, firmware version: 0x00000000
+MES feature version: 0, firmware version: 0x00000000
+VPE feature version: 0, firmware version: 0x00000000
+VBIOS version: 113-AMDRBN-003
+
+## dmesg (amdgpu psp/cu, ccp)
+[    7.158603] amdgpu 0000:01:00.0: detected ip block number 3 <psp_v11_0_8> (psp)
+[    7.217729] amdgpu 0000:01:00.0: reserve 0x400000 from 0xf41f800000 for PSP TMR
+[    8.489745] amdgpu 0000:01:00.0: SE 2, SH per SE 2, CU per SH 10, active_cu_number 24
+[   13.366622] pci 0000:00:00.0: cyan-skillfish-: Unexpected write to kernel-exclusive config offset b8
