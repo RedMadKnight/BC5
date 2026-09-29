@@ -1,12 +1,16 @@
-# Registers that PM4 streams on gfx10 use but that Mesa's gfx10.json does not map.
-# Same format as gfx10-registers.tsv: <MMIO dword offset>\t<name>. Lines starting
-# with # are comments. Every entry names its source.
+# Register names to add or to prefer over Mesa's gfx10.json. Format:
+# <MMIO dword offset>\t<name>. Lines starting with # are comments. When the
+# offset already exists in gfx10.json, this name becomes the primary name and
+# Mesa's becomes an alias (src/regdb.rs). Every entry names its source.
 #
-# COMPUTE_STATIC_THREAD_MGMT_SE0..3: written for every GFX level by Mesa
-# src/amd/common/ac_cmdbuf.c @ fe55488 lines 111-114 through the defines
-# R_00B858_/R_00B85C_/R_00B864_/R_00B868_ (byte addresses; note SE2 is 0xB864,
-# not 0xB860). The same byte offsets appear in gfx6.json..gfx9.json
-# (map.at 47192 = 0xB858); gfx10.json simply lacks the mapping.
+# COMPUTE_STATIC_THREAD_MGMT_SE0..3 — the CU-mask registers (HANDOFF F7).
+# Linux drivers/gpu/drm/amd/include/asic_reg/gc/gc_10_1_0_offset.h lines
+# 4579-4595 define mmCOMPUTE_DESTINATION_EN_SEn and
+# mmCOMPUTE_STATIC_THREAD_MGMT_SEn at the same offsets (0x1bb6, 0x1bb7,
+# 0x1bb9, 0x1bba; SE2 skips one dword). Mesa's gfx10.json keeps only the
+# DESTINATION_EN name (map.at 47192 = byte 0xB858 = dword 0x2E16) while
+# Mesa src/amd/common/ac_cmdbuf.c @ fe55488 lines 111-114 writes them as
+# R_00B858_COMPUTE_STATIC_THREAD_MGMT_SE0 .. R_00B868_..._SE3.
 0x02e16	COMPUTE_STATIC_THREAD_MGMT_SE0
 0x02e17	COMPUTE_STATIC_THREAD_MGMT_SE1
 0x02e19	COMPUTE_STATIC_THREAD_MGMT_SE2

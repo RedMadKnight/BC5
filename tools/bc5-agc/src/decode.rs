@@ -206,11 +206,17 @@ pub fn format_event(event: &Event) -> String {
             mm,
             name,
             value,
-        } => format!(
-            "{:<8} {:<36} = {value:#010x}",
-            block.map_or("type0", Block::label),
-            name.map_or_else(|| format!("mm {mm:#07x}"), str::to_string),
-        ),
+        } => {
+            let fields = RegDb::get()
+                .describe(*mm, *value)
+                .filter(|d| !d.is_empty())
+                .map_or(String::new(), |d| format!("  {{{d}}}"));
+            format!(
+                "{:<8} {:<36} = {value:#010x}{fields}",
+                block.map_or("type0", Block::label),
+                name.map_or_else(|| format!("mm {mm:#07x}"), str::to_string),
+            )
+        }
         Event::Packet {
             opcode,
             name,
