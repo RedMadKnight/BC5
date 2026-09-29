@@ -18,18 +18,26 @@ else()
         -Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -Werror)
 endif()
 
+# PM4 builder and the phase-2 memset IB (ADR 0004): no GPU access, builds everywhere.
 add_library(bc5_backend
     src/version.cpp
+    src/pm4.cpp
+    src/dispatch_min.cpp
 )
 target_include_directories(bc5_backend PUBLIC include)
 target_link_libraries(bc5_backend PRIVATE bc5_warnings)
 
+# dispatch-min: --dump-ib everywhere; --info and --submit only with BC5_WITH_AMDGPU.
+# --submit is never run by tests or CI (CLAUDE.md hard rule 5).
+add_executable(dispatch-min experiments/dispatch-min/main.cpp)
+target_link_libraries(dispatch-min PRIVATE bc5_backend bc5_warnings)
+
 if(BC5_WITH_AMDGPU)
-    # Submission code lands in phase 2; this only proves the dependency resolves.
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(LIBDRM_AMDGPU REQUIRED IMPORTED_TARGET libdrm_amdgpu)
     target_link_libraries(bc5_backend PRIVATE PkgConfig::LIBDRM_AMDGPU)
     target_compile_definitions(bc5_backend PUBLIC BC5_WITH_AMDGPU=1)
+    target_link_libraries(dispatch-min PRIVATE PkgConfig::LIBDRM_AMDGPU)
 endif()
 
 if(BC5_BUILD_TESTS)
@@ -47,7 +55,7 @@ if(BC5_BUILD_TESTS)
     endif()
     include(Catch)
 
-    add_executable(bc5_backend_tests tests/placeholder_test.cpp)
+    add_executable(bc5_backend_tests tests/placeholder_test.cpp tests/pm4_test.cpp)
     target_link_libraries(bc5_backend_tests PRIVATE bc5_backend bc5_warnings Catch2::Catch2WithMain)
     catch_discover_tests(bc5_backend_tests)
 endif()

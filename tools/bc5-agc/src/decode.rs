@@ -56,7 +56,8 @@ pub fn events(parsed: &Parsed) -> Vec<Event> {
                 opcode, payload, ..
             } => {
                 // Plain SET_*_REG: dword1 = offset (16 bits) | index << 26, then values.
-                let is_plain_set = matches!(opcode, 0x68 | 0x69 | 0x76 | 0x79);
+                // SET_SH_REG_INDEX (0x9B) carries an index in the upper dword-1 bits; the offset is still bits 15:0.
+                let is_plain_set = matches!(opcode, 0x68 | 0x69 | 0x76 | 0x79 | 0x9b);
                 match (Block::for_opcode(*opcode), payload.first()) {
                     (Some(block), Some(first)) if is_plain_set => {
                         let offset = first & 0xffff;

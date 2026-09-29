@@ -37,7 +37,7 @@ impl Block {
         match opcode {
             0x68 | 0x60 => Some(Block::Config),
             0x69 | 0x61 | 0x73 | 0x9f => Some(Block::Context),
-            0x76 | 0x77 | 0x5f | 0x63 => Some(Block::Sh),
+            0x76 | 0x77 | 0x5f | 0x63 | 0x9b => Some(Block::Sh),
             0x79 | 0x7a | 0x5e | 0x64 => Some(Block::UConfig),
             _ => None,
         }
@@ -386,6 +386,7 @@ mod tests {
     fn opcode_blocks() {
         assert_eq!(Block::for_opcode(0x69), Some(Block::Context));
         assert_eq!(Block::for_opcode(0x76), Some(Block::Sh));
+        assert_eq!(Block::for_opcode(0x9b), Some(Block::Sh)); // SET_SH_REG_INDEX (IGT cu mask)
         assert_eq!(Block::for_opcode(0x10), None);
         assert_eq!(Block::Context.base(), 0xa000);
     }
