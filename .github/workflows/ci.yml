@@ -73,6 +73,26 @@ jobs:
       - run: cmake --build build -j
       - run: ctest --test-dir build --output-on-failure
 
+  ib-cross-check:
+    name: dispatch-min IB decodes cleanly with bc5-agc
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: tools
+      - name: Build dispatch-min (no libdrm, --dump-ib only; nothing is submitted)
+        run: |
+          cmake -S backend -B build -DBC5_BUILD_TESTS=OFF
+          cmake --build build --target dispatch-min -j
+          build/dispatch-min --dump-ib memset.pm4
+      - name: Decode it with the Rust decoder
+        run: |
+          cargo run --release --locked --manifest-path tools/Cargo.toml -p bc5-agc -- report memset.pm4 | tee report.txt
+          grep -q "unknown opcodes (0)" report.txt
+          grep -q "COMPUTE_STATIC_THREAD_MGMT_SE3" report.txt
+
   rpcsx-patch:
     name: RPCSX tap patch applies and compiles
     runs-on: ubuntu-24.04
