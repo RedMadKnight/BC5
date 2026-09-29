@@ -35,7 +35,9 @@ sha2 = "0.10"
 thiserror = "2"
 
 [target.'cfg(target_os = "linux")'.dependencies]
-fuser = { version = "0.15", optional = true }
+# Without the `libfuse` feature fuser mounts through the fusermount3 binary and
+# needs no libfuse development headers at build time (only `fuse3` at run time).
+fuser = { version = "0.15", optional = true, default-features = false }
 
 [dev-dependencies]
 proptest = { version = "1", default-features = false, features = ["alloc"] }

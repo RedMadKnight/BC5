@@ -231,7 +231,8 @@ pub fn mount(
         MountOption::FSName("bc5-mount".into()),
         MountOption::Subtype("ffpfsc".into()),
         MountOption::DefaultPermissions,
-        MountOption::AutoUnmount,
+        // No AutoUnmount: it needs `user_allow_other` in /etc/fuse.conf for
+        // non-root users; callers unmount with `fusermount3 -u`.
     ];
     if allow_other {
         options.push(MountOption::AllowOther);

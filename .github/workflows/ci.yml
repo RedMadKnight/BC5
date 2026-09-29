@@ -1,0 +1,129 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
+# Hard rule 5 (CLAUDE.md): nothing in CI submits to amdgpu. No job has a GPU,
+# and no job runs anything with --submit. Test data is synthetic only.
+
+jobs:
+  rust-linux:
+    name: Rust (Linux, with FUSE)
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        working-directory: tools
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: tools
+      - run: cargo fmt --check
+      - run: cargo clippy --all-targets --locked -- -D warnings
+      - run: cargo test --locked
+      - name: 1 GiB sparse fixture (ignored by default)
+        run: cargo test --release --locked -- --ignored
+
+  rust-windows:
+    name: Rust (Windows, MSVC)
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: tools
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: tools
+      - run: cargo clippy --all-targets --locked -- -D warnings
+      - run: cargo test --locked
+
+  backend:
+    name: Backend (C++20, amdgpu=${{ matrix.amdgpu }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        amdgpu: [OFF, ON]
+    steps:
+      - uses: actions/checkout@v4
+      - name: libdrm headers (build only; nothing is submitted)
+        if: matrix.amdgpu == 'ON'
+        run: sudo apt-get update && sudo apt-get install -y libdrm-dev pkg-config
+      - run: cmake -S backend -B build -DCMAKE_BUILD_TYPE=Debug -DBC5_WITH_AMDGPU=${{ matrix.amdgpu }}
+      - run: cmake --build build -j
+      - run: ctest --test-dir build --output-on-failure
+
+  rpcsx-patch:
+    name: RPCSX tap patch applies and compiles
+    runs-on: ubuntu-24.04
+    env:
+      RPCSX_COMMIT: e8ae1481ab7ba04d5c6bef89dd852aabba2c88ff
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: bc5
+      - name: Fetch the pinned RPCSX commit
+        run: |
+          git init -q rpcsx
+          git -C rpcsx remote add origin https://github.com/RPCSX/rpcsx.git
+          git -C rpcsx fetch -q --depth 1 origin "$RPCSX_COMMIT"
+          git -C rpcsx checkout -q FETCH_HEAD
+      - name: Apply every patch
+        run: |
+          for p in bc5/backend/rpcsx-patches/*.patch; do
+            git -C rpcsx apply --check "$PWD/$p"
+            git -C rpcsx apply "$PWD/$p"
+          done
+      - name: Compile the tap header on its own
+        run: |
+          printf '#include "bc5_capture.hpp"\nint main(){ unsigned d[4]{}; bc5::dumpCommandBuffer("ib", 0, 1, 0x1000, d, 4); }\n' > tap.cpp
+          g++ -std=c++20 -Wall -Wextra -Werror -I rpcsx/rpcsx/gpu -o tap tap.cpp
+          ./tap
+
+  gate-smoke:
+    name: bc5-mount gate smoke (FUSE mount + MkPFS oracle)
+    needs: rust-linux
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: tools
+      # Ubuntu 24.04's system Python refuses pip installs (PEP 668); use a managed one.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: FUSE userspace tools and the MkPFS oracle (GPL-3.0, run as a separate process)
+        run: |
+          sudo apt-get update && sudo apt-get install -y fuse3
+          python3 -m pip install mkpfs
+      - name: experiments/0002 run.sh on a small preset
+        run: experiments/0002-bc5-mount-gate/run.sh one-small "$RUNNER_TEMP/gate"
+      - name: experiments/0002 run.sh on the multi-block preset
+        run: experiments/0002-bc5-mount-gate/run.sh mixed-compress "$RUNNER_TEMP/gate2"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: gate-smoke-log
+          path: experiments/0002-bc5-mount-gate/raw/run.log
