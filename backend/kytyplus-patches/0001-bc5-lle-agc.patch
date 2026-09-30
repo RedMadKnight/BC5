@@ -366,10 +366,10 @@ index 5f87e6b..e5c534e 100644
  	CondRemoveWaiter(cond_value, thread);
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..c132c0f
+index 0000000..2043522
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,2417 @@
+@@ -0,0 +1,2423 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -1219,6 +1219,8 @@ index 0000000..c132c0f
 +	const char* node = std::getenv("BC5_DIRECT_NODE");
 +	bc5::direct::OpenOptions oo;
 +	if (const char* g = std::getenv("BC5_DIRECT_GDS_KIB"); g != nullptr) oo.gds_kib = static_cast<uint32_t>(std::strtoul(g, nullptr, 10));
++	if (const char* g = std::getenv("BC5_DIRECT_OA"); g != nullptr) oo.oa_count = static_cast<uint32_t>(std::strtoul(g, nullptr, 10));
++	if (const char* g = std::getenv("BC5_DIRECT_GWS"); g != nullptr) oo.gws_count = static_cast<uint32_t>(std::strtoul(g, nullptr, 10));
 +	g_dev = bc5::direct::Device::open(node != nullptr ? node : "/dev/dri/renderD128", oo);
 +	if (!g_dev) {
 +		LOGF_COLOR(Log::Color::Red, "[bc5-direct] device open failed; staying on the soft CP\n");
@@ -2074,7 +2076,11 @@ index 0000000..c132c0f
 +			std::this_thread::sleep_for(std::chrono::seconds(12)); // the kernel's timeout + reset
 +			g_dev.reset();
 +			const char* node = std::getenv("BC5_DIRECT_NODE");
-+			g_dev = bc5::direct::Device::open(node != nullptr ? node : "/dev/dri/renderD128");
++			bc5::direct::OpenOptions ro;
++			if (const char* g = std::getenv("BC5_DIRECT_GDS_KIB"); g != nullptr) ro.gds_kib = static_cast<uint32_t>(std::strtoul(g, nullptr, 10));
++			if (const char* g = std::getenv("BC5_DIRECT_OA"); g != nullptr) ro.oa_count = static_cast<uint32_t>(std::strtoul(g, nullptr, 10));
++			if (const char* g = std::getenv("BC5_DIRECT_GWS"); g != nullptr) ro.gws_count = static_cast<uint32_t>(std::strtoul(g, nullptr, 10));
++			g_dev = bc5::direct::Device::open(node != nullptr ? node : "/dev/dri/renderD128", ro);
 +			if (g_dev && std::getenv("BC5_DIRECT_NO_BOLIST") != nullptr) g_dev->set_include_mappings(false);
 +			g_hinted.clear();
 +			g_bytes_mapped = 0;
