@@ -239,6 +239,21 @@ on flip is the open item from F21), and the sampled-texture faults show that a c
 what a frame reads needs the game's descriptors (T#/V#), not only the CB/DB registers. Journals
 of runs 32 and 33: `raw/d-run32-direct.log`, `raw/d-run33-direct.log` (table contents stripped).
 
+**Runs 34–37** (18:35–18:43): with the two learned regions the title screen runs **fault-free**
+(124 of 124 and 95 of 95 submits, 79 / 59 frame DCBs, no reopen). The presenter now drops its
+cached image of the flip surface before each flip (`InvalidateMemory`, direct mode only) and the
+host checksums the display buffer at `sceVideoOutSubmitEopFlip`: **all zero** (0 of 8,160 sampled
+dwords non-zero, both buffers, every flip), although draws did target both display buffers
+(`hint CB0 0x507410000`, `0x5093f0000`). So the window is black because nothing lands in the
+flip surfaces, not because of presentation. The 52 "unmapped" drops per frame DCB were
+`RELEASE_MEM` packets with `DATA_SEL` 0 (event and cache flush only, address 0): now recognised
+as having no memory operand, they execute — `unmapped 0` in run 37, output unchanged. Next
+suspect: the game's compute rings (264 `DISPATCH_DIRECT` per 90 s in the doorbell-ring IBs,
+all still emulated by the soft CP, which runs no shaders) — composition, clears and copies of a
+modern engine live there. For step (e) the filter now copies every `INDIRECT_BUFFER` target
+into the scratch, filters it and rewrites the packet's address, so the ring IBs are inspected
+like the DCBs; the soft CP skips their GPU-executed packets too.
+
 **Verdict (interim, end of 2026-09-30).** Steps (a)–(c) passed and (d) reached "frames with draws
 run on the GPU, faults recoverable and learned"; not yet "image on screen" (G3). Open: present
 the GPU's flip buffer; size the hint windows from the surface registers; decode the descriptor

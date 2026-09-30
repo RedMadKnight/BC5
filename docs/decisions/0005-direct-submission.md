@@ -95,6 +95,11 @@ from the start of later runs, and the host reopens its device after the ring res
 staying wedged (`BC5_DIRECT_REOPEN`); the 50 ms sync throttle is gone on the submit path, and the
 context state used for the render-target hints is evaluated after every register-changing packet
 and kept across submissions.
+*Amended 2026-09-30 (step e preparation):* (xv) `INDIRECT_BUFFER` targets are not passed by
+reference: each target (transitively, three levels) is copied into the scratch behind the IB,
+filtered with the same policy and reached through a rewritten address, so no packet the CP
+executes escapes the filter; an unmapped or over-deep target is NOP-ed. `RELEASE_MEM` and
+`EVENT_WRITE_EOP` with `DATA_SEL` 0 carry no memory operand.
 
 **Consequences.** The "packet rewriter" of the roadmap shrinks to a filter with two rewrites; the
 backend's core is the policy table plus the BO/VA mapper, both testable offline. Unknown firmware
