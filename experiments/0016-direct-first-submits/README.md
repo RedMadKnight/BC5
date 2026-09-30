@@ -143,6 +143,19 @@ shadow (174), a UCONFIG shadow (57), and per-object tables in the game's heap an
 One table (0x908e5ffc0, 10 pairs) straddled two adjacent 64 KiB mappings and was wrongly treated
 as unmapped: the coverage check now merges adjacent mappings.
 
-**Next.** `BC5_DIRECT_PIECEWISE=14`: submit #14 goes to the GPU one packet at a time (a
-`COND_EXEC` with the region it may skip), each with its own fence and journal line — one run
-names the packet, or shows that every piece passes and the cause is state left by #12/#13.
+**Piecewise, run 18** (16:32, `BC5_DIRECT_PIECEWISE=14`, otherwise as c1a): **reset 12**, but with
+the answer narrowed to one submission. Submit #14 went to the GPU as 26 pieces
+(`raw/piecewise-direct.log`): pieces 0–24 all signalled their fences in 4.5 ms each — among them
+`EVENT_WRITE` 7/16/46/44/56, `COND_EXEC` + `CLEAR_STATE cmd 2`, `NUM_INSTANCES`,
+`SET_UCONFIG_REG_INDEX` (VGT_INDEX_TYPE = 0x480, index 2), `INDEX_BASE` 0, `INDEX_BUFFER_SIZE`
+0xffffffff, two `SET_BASE` (index 1, address 0; one with the compute shader-type header bit), the
+full-range `ACQUIRE_MEM` (`gcr_cntl` 0xc3e1) and two `RELEASE_MEM` (BOTTOM_OF_PIPE_TS with the GPU
+clock, CACHE_FLUSH_TS with data 1) — and **piece 25, a policy-dropped `SET_UCONFIG_REG`, i.e. an
+IB of nothing but NOPs, timed out**. So no packet of #14 hangs the CP by itself: one of the
+pieces leaves the CP in a state in which the *next* submission (the kernel's CONTEXT_CONTROL +
+INDIRECT_BUFFER + fence framing around eight NOPs) never completes. The arming piece is one of
+the 15 real ones above.
+
+**Next.** Piecewise with a probe: after every piece, an all-NOP IB with its own fence (`probe
+after piece k`), plus the `COND_EXEC` flag values in the journal. The first probe that times
+out names the arming packet in one run.
