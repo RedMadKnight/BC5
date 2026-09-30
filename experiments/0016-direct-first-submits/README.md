@@ -57,8 +57,36 @@ nine times passes — `8 nops OK seq 1`, `152 nops OK seq 2`, four `cc at 8 and 
 `A-exact` (150 dwords) OK; 30–50 µs each. Runs 11–12 (ubuntu container; ubuntu with a 256 MiB
 1:1 userptr mapping in the BO list): see `raw/selftest.log`.
 
-**Next.** `BC5_DIRECT_SELFTEST=1` in the host, then step (b) proper (needs the desktop session).
+**Step (b1)** (run 13, 14:53, ubuntu, in the host: `BC5_DIRECT_STAGE=preamble`,
+`BC5_DIRECT_DROP_OPS=5e,5f,61,63,64,9f,22,37`, full BO list, 45 s + kill lag = 90 s of game time,
+22 flips): **no reset**. 72 submits of the console's submit-header IBs (3-dword `CONTEXT_CONTROL`,
+the 150-dword preamble with 14 packets NOP-ed, the 2-dword trailer) through the GFX ring:
 
-**Verdict.** The mechanism is confirmed (F25). Step (b) is not yet passed; nine resets bought a
-precise negative result (the console's preamble, filtered, is not what hangs the GPU), a crash
-journal that survives, and the rule that any CPU-rewritten IB must be mapped uncached for the GPU.
+| submits | outcome | per submit |
+| --- | --- | --- |
+| #0–#29 | OK, fence signalled | 2.3 ms at 198 mappings → 11.4 ms at 902 mappings (userptr validation of every BO in the list) |
+| #30–#71 | `FAILED rc -14` (`EFAULT` from `amdgpu_cs_submit`), no fence, GPU untouched | 0.1 ms |
+
+The break is exactly after a 4-mapping batch (902 → 906) that followed a guest thread start
+(`ProductNextLoad_ATQT`, stack at 0x335338000) and a 16 KiB flexible-memory map. `EFAULT` from
+the CS ioctl is `amdgpu_ttm_tt_get_user_pages` (`vma_lookup` / `hmm_range_fault`) failing for one
+userptr BO on the list: its pages are no longer inside an rw anonymous VMA. The host's mapping
+sync was purely additive — it walked `/proc/self/maps` for new resident rw-anonymous runs and
+never removed a mapping — while KytyPlus's `KernelMunmap` → `UnmapBacking`/`ReleaseFree`
+(`src/kernel/memory.cpp`) replaces or drops the VMA under it. One stale BO fails the whole
+submission, every time, until it is removed. `dmesg`: nothing (the kernel rejects the CS before
+the ring).
+
+Fix (host, `bc5LleAgc.cpp` `sync_mappings`): pass 1 revalidates every mapping against the current
+rw-anonymous VMA list and unmaps the ones that fell out (`unmap … (no longer rw anonymous)` in
+`direct.log`); pass 2 adds the new runs as before; `EFAULT` at submit forces an immediate resync and
+one retry (`(retried)` in the journal) instead of counting as a failure. Not a GPU hang in any
+form: the mode is not wedged by `EFAULT`.
+
+**Next.** Step (b1) again with the revalidating sync, then (b2) the full preamble.
+
+**Verdict (interim).** The mechanism is confirmed (F25) and the first 30 console-built IBs ran on the
+BC-250's GFX ring from inside the track-B host without a reset. Step (b) is not yet passed: the
+submission stopped at the first stale userptr mapping (F26). Nine resets bought a precise negative
+result (the console's preamble, filtered, is not what hangs the GPU), a crash journal that
+survives, and the rule that any CPU-rewritten IB must be mapped uncached for the GPU.

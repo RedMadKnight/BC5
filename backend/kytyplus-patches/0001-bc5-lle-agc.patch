@@ -195,10 +195,10 @@ index 5f87e6b..e5c534e 100644
  	CondRemoveWaiter(cond_value, thread);
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..c352c4d
+index 0000000..07b80c9
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,1698 @@
+@@ -0,0 +1,1751 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -1022,44 +1022,87 @@ index 0000000..c352c4d
 +	}
 +}
 +
-+// Maps every resident run of the guest's anonymous rw memory that is not mapped yet. Guest
-+// windows: KytyPlus keeps guest memory in [0x40000, 0xfbffffffff]; the emulator's own heap and
-+// libraries live above. mincore() keeps untouched reservations out (userptr would otherwise
-+// materialise them).
-+static void sync_mappings() {
++// Keeps the 1:1 userptr mappings in step with the guest's anonymous rw memory. Guest windows:
++// KytyPlus keeps guest memory in [0x40000, 0xfbffffffff]; the emulator's own heap and libraries
++// live above. Two passes over /proc/self/maps:
++//   1. revalidation: a mapping whose pages are no longer inside one rw anonymous VMA (the guest
++//      unmapped or re-protected the range — KernelMunmap, a released stack, a placeholder) is
++//      unmapped, otherwise the next amdgpu_cs_submit fails for every BO with -EFAULT
++//      (amdgpu_ttm_tt_get_user_pages → hmm_range_fault; experiment 0016, run b1: 30 OK then 42
++//      EFAULT after a 4-mapping batch);
++//   2. addition: every resident run (mincore(), 64 KiB grain) not mapped yet becomes a userptr
++//      BO. mincore() keeps untouched reservations out (userptr would otherwise materialise them).
++// `force` skips the 50 ms throttle (used after an EFAULT).
++static void sync_mappings(bool force = false) {
 +	const uint64_t now = SoftCp::now_ns();
-+	if (now - g_last_sync_ns < 50'000'000ull) { // at most every 50 ms
++	if (!force && now - g_last_sync_ns < 50'000'000ull) { // at most every 50 ms
 +		return;
 +	}
 +	g_last_sync_ns = now;
 +	constexpr uint64_t kGuestMin = 0x40000ull, kGuestMax = 0xfbffffffffull;
 +	constexpr uint64_t kPage = 4096, kGrain = 65536;
++
++	// Pass 0: the rw anonymous guest VMAs.
++	struct Vma {
++		uint64_t start, end;
++	};
++	std::vector<Vma> vmas;
++	{
++		std::ifstream maps("/proc/self/maps");
++		std::string   line;
++		while (std::getline(maps, line)) {
++			uint64_t start = 0, end = 0;
++			char     perms[8] = {};
++			uint64_t offset = 0;
++			char     dev[16] = {};
++			uint64_t inode = 0;
++			if (std::sscanf(line.c_str(), "%" SCNx64 "-%" SCNx64 " %7s %" SCNx64 " %15s %" SCNu64, &start, &end, perms, &offset, dev, &inode) < 6) {
++				continue;
++			}
++			if (perms[0] != 'r' || perms[1] != 'w' || inode != 0 || start < kGuestMin || end > kGuestMax + 1) {
++				continue;
++			}
++			if (line.find('/') != std::string::npos || line.find('[') != std::string::npos) {
++				continue; // file-backed or [stack]/[heap]
++			}
++			vmas.push_back({start, end});
++		}
++	}
++	auto inside_vma = [&](uint64_t a, uint64_t b) {
++		for (const auto& v: vmas) {
++			if (a >= v.start && b <= v.end) return true;
++		}
++		return false;
++	};
++
++	// Pass 1: revalidation.
 +	std::vector<bc5::direct::Mapping> have = g_dev->mappings();
++	int removed = 0;
++	for (const auto& m: have) {
++		if (inside_vma(m.va, m.va + m.size)) continue;
++		journal("unmap 0x%" PRIx64 " +0x%" PRIx64 " (no longer rw anonymous) ... ", m.va, m.size);
++		const bool ok = g_dev->unmap_userptr(m.va);
++		journal("%s\n", ok ? "ok" : "FAILED");
++		if (ok) {
++			g_bytes_mapped -= m.size;
++			removed++;
++		}
++	}
++	if (removed != 0) {
++		have = g_dev->mappings();
++	}
++
++	// Pass 2: addition.
 +	auto already = [&](uint64_t a, uint64_t b) {
 +		for (const auto& m: have) {
 +			if (a >= m.va && b <= m.va + m.size) return true;
 +		}
 +		return false;
 +	};
-+	std::ifstream maps("/proc/self/maps");
-+	std::string   line;
 +	std::vector<unsigned char> vec;
 +	int added = 0;
-+	while (std::getline(maps, line)) {
-+		uint64_t start = 0, end = 0;
-+		char     perms[8] = {};
-+		uint64_t offset = 0;
-+		char     dev[16] = {};
-+		uint64_t inode = 0;
-+		if (std::sscanf(line.c_str(), "%" SCNx64 "-%" SCNx64 " %7s %" SCNx64 " %15s %" SCNu64, &start, &end, perms, &offset, dev, &inode) < 6) {
-+			continue;
-+		}
-+		if (perms[0] != 'r' || perms[1] != 'w' || inode != 0 || start < kGuestMin || end > kGuestMax + 1) {
-+			continue;
-+		}
-+		if (line.find('/') != std::string::npos || line.find('[') != std::string::npos) {
-+			continue; // file-backed or [stack]/[heap]
-+		}
++	for (const auto& v: vmas) {
++		const uint64_t start = v.start, end = v.end;
 +		const size_t pages = static_cast<size_t>((end - start) / kPage);
 +		vec.assign(pages, 0);
 +		if (mincore(reinterpret_cast<void*>(start), end - start, vec.data()) != 0) {
@@ -1077,8 +1120,8 @@ index 0000000..c352c4d
 +			if (b > end) b = end;
 +			if (!already(a, b)) {
 +				// Map the pieces of [a, b) not covered by an existing mapping (interval
-+				// subtraction against the sorted mapping list); failures are remembered so the
-+				// same piece is not retried every 50 ms.
++				// subtraction against the mapping list); failures are remembered so the same
++				// piece is not retried every 50 ms.
 +				static std::vector<std::pair<uint64_t, uint64_t>> failed;
 +				std::vector<std::pair<uint64_t, uint64_t>> pieces = {{a, b}};
 +				for (const auto& m: have) {
@@ -1112,8 +1155,8 @@ index 0000000..c352c4d
 +			i = j;
 +		}
 +	}
-+	if (added != 0) {
-+		LOGF("[bc5-direct] mappings: +%d, %zu total, %.1f MiB\n", added, have.size(), static_cast<double>(g_bytes_mapped.load()) / (1024.0 * 1024.0));
++	if (added != 0 || removed != 0) {
++		LOGF("[bc5-direct] mappings: +%d -%d, %zu total, %.1f MiB\n", added, removed, have.size(), static_cast<double>(g_bytes_mapped.load()) / (1024.0 * 1024.0));
 +	}
 +}
 +
@@ -1140,7 +1183,7 @@ index 0000000..c352c4d
 +	}
 +	// Every memory operand must lie inside a userptr mapping, or the packet is NOP-ed: a GPU
 +	// page fault on the BC-250 ends in a reset that takes the machine down (F6, experiment 0016).
-+	const std::vector<bc5::direct::Mapping> maps = g_dev->mappings();
++	std::vector<bc5::direct::Mapping> maps = g_dev->mappings();
 +	bc5::policy::FilterOptions opt;
 +	opt.cu_mask       = g_cu_mask;
 +	opt.clear_int_sel = true;
@@ -1188,12 +1231,22 @@ index 0000000..c352c4d
 +			std::fclose(f);
 +		}
 +	}
-+	const auto r = g_dev->submit(std::span<const uint32_t>(ib, num_dwords), opt, 2'000'000'000ull);
++	auto r = g_dev->submit(std::span<const uint32_t>(ib, num_dwords), opt, 2'000'000'000ull);
++	// -EFAULT is not a GPU hang: a userptr BO in the list lost its pages (the guest unmapped
++	// or re-protected the range since the last sync). Revalidate the mappings now and retry once.
++	bool retried = false;
++	if (!r.ok && !r.timed_out && r.rc == -EFAULT) {
++		journal("EFAULT, resync ... ");
++		sync_mappings(true);
++		maps    = g_dev->mappings();
++		retried = true;
++		r       = g_dev->submit(std::span<const uint32_t>(ib, num_dwords), opt, 2'000'000'000ull);
++	}
 +	if (!g_dump_dir.empty()) {
 +		char name[512];
 +		std::snprintf(name, sizeof(name), "%s/direct.log", g_dump_dir.c_str());
 +		if (FILE* f = std::fopen(name, "a")) {
-+			std::fprintf(f, "%s rc %d%s %.2f ms\n", r.ok ? "OK" : "FAILED", r.rc, r.timed_out ? " TIMEOUT" : "", r.submit_ms);
++			std::fprintf(f, "%s rc %d%s%s %.2f ms\n", r.ok ? "OK" : "FAILED", r.rc, r.timed_out ? " TIMEOUT" : "", retried ? " (retried)" : "", r.submit_ms);
 +			std::fflush(f);
 +			fsync(fileno(f));
 +			std::fclose(f);

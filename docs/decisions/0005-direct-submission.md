@@ -71,7 +71,11 @@ scratch IB is mapped **uncached for the GPU** (`MTYPE_UC`): a scratch buffer fet
 CP and rewritten by the CPU is otherwise served from stale GL2 lines on the next fetch — the
 first small IB left "NOPs then zeros" in the L2, the next IB executed the zeros as type-0 packets
 and hung. (iv) is revised: the fixed VA is 16 TiB, inside the CP's 48-bit range; the kernel-half
-"high" range is not addressable by the CP.
+"high" range is not addressable by the CP. *Amended 2026-09-30 (step b1, F26):* (viii) the mapping
+set is not additive: every sync revalidates the existing userptr BOs against the host's rw
+anonymous VMAs and unmaps the stale ones (a guest `munmap` under a mapped range otherwise fails
+every later `amdgpu_cs_submit` with `EFAULT`); `EFAULT` at submit is not a hang — it forces a resync
+and one retry and does not wedge the mode.
 
 **Consequences.** The "packet rewriter" of the roadmap shrinks to a filter with two rewrites; the
 backend's core is the policy table plus the BO/VA mapper, both testable offline. Unknown firmware
