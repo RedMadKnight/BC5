@@ -62,3 +62,10 @@ No Sony code or data is in the patch.
 
 Status: see `experiments/0011-first-sony-dcb-capture`. The patch is meant to be offered upstream
 once the `/dev/gc` side is stable; until then it is applied locally.
+
+Direct-mode knobs added during phase 3 (experiment 0016): `BC5_DIRECT_STAGE` (`maponly`,
+`preamble`, `nodraw`, `all`), `BC5_DIRECT_DROP_OPS=<hex opcodes>` (extra drops), `BC5_DIRECT_RINGS=1`
+(compute doorbell rings to the GPU, step e), `BC5_DIRECT_PIECEWISE=<n>` (submit #n one packet at a
+time with a NOP probe after each, for hang isolation), `BC5_DIRECT_SELFTEST=1`. The host revalidates
+its 1:1 mappings against `/proc/self/maps` on every sync, journals every `LOAD_*_REG[_INDEX]` table
+before a submit, and its soft CP skips the memory side effects of packets the GPU executed.

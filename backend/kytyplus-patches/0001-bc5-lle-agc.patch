@@ -195,10 +195,10 @@ index 5f87e6b..e5c534e 100644
  	CondRemoveWaiter(cond_value, thread);
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..07b80c9
+index 0000000..a645697
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,1751 @@
+@@ -0,0 +1,1882 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -458,6 +458,24 @@ index 0000000..07b80c9
 +	}
 +}
 +
++// Packets of the buffer the real GPU has just executed (direct mode, same thread: Direct::submit
++// then SoftCp::submit). For those the soft CP skips the memory side effects (writes, atomics,
++// copies, waits) the GPU already produced and only keeps what the GPU cannot do here: the
++// EVFILT_GRAPHICS events (INT_SEL is cleared by the filter).
++static thread_local const uint32_t*  t_gpu_buf = nullptr;
++static thread_local std::vector<uint8_t> t_gpu_done;
++static void set_gpu_executed(const uint32_t* buf, uint32_t num_dwords, const std::vector<uint32_t>& offsets) {
++	t_gpu_buf = buf;
++	t_gpu_done.assign(num_dwords, 0);
++	for (const uint32_t o: offsets) {
++		if (o < num_dwords) t_gpu_done[o] = 1;
++	}
++}
++static void clear_gpu_executed() {
++	t_gpu_buf = nullptr;
++	t_gpu_done.clear();
++}
++
 +static void atomic_mem(const uint32_t* p) {
 +	const uint32_t op    = p[1] & 0x7fu;
 +	const uint64_t addr  = addr64(p[2], p[3]);
@@ -604,7 +622,7 @@ index 0000000..07b80c9
 +	}
 +}
 +
-+static void release_mem(const uint32_t* p, uint32_t payload) {
++static void release_mem(const uint32_t* p, uint32_t payload, bool write) {
 +	// gfx10 form (8 dwords): event_cntl, data_cntl, addr lo, addr hi, data lo, data hi, int_ctxid
 +	const uint32_t data_cntl = p[2];
 +	const uint32_t data_sel  = data_cntl >> 29u;
@@ -612,19 +630,19 @@ index 0000000..07b80c9
 +	const uint64_t a         = addr64(p[3], p[4]);
 +	const uint32_t lo = p[5], hi = p[6];
 +	(void)payload;
-+	write_timestamp_or_data(data_sel, a, lo, hi);
++	if (write) write_timestamp_or_data(data_sel, a, lo, hi);
 +	if (int_sel != 0) {
 +		fire_eop(lo | (static_cast<uint64_t>(hi) << 32u));
 +	}
 +}
 +
-+static void event_write_eop(const uint32_t* p) {
++static void event_write_eop(const uint32_t* p, bool write) {
 +	// PS4 form: event_cntl, addr lo, data_cntl (addr hi 15:0, int_sel 25:24, data_sel 31:29), data lo, hi
 +	const uint32_t data_cntl = p[3];
 +	const uint32_t data_sel  = data_cntl >> 29u;
 +	const uint32_t int_sel   = (data_cntl >> 24u) & 3u;
 +	const uint64_t a         = addr64(p[2], data_cntl);
-+	write_timestamp_or_data(data_sel, a, p[4], p[5]);
++	if (write) write_timestamp_or_data(data_sel, a, p[4], p[5]);
 +	if (int_sel != 0) {
 +		fire_eop(p[4] | (static_cast<uint64_t>(p[5]) << 32u));
 +	}
@@ -745,8 +763,10 @@ index 0000000..07b80c9
 +}
 +
 +static void execute(const uint32_t* buf, uint32_t num_dwords, int depth) {
-+	uint32_t i = 0;
++	uint32_t   i   = 0;
++	const bool gpu = depth == 0 && buf == t_gpu_buf && t_gpu_done.size() == num_dwords;
 +	while (i < num_dwords) {
++		const bool done = gpu && t_gpu_done[i] != 0; // this packet ran on the real GPU
 +		const uint32_t header = buf[i];
 +		const uint32_t type   = header >> 30u;
 +		uint32_t       len    = 1;
@@ -774,13 +794,13 @@ index 0000000..07b80c9
 +				}
 +				case IT_INDIRECT_BUFFER:
 +				case IT_INDIRECT_BUFFER_CNST: indirect_buffer(p, depth); break;
-+				case IT_WRITE_DATA: write_data(p, len - 1); break;
-+				case IT_WAIT_REG_MEM: wait_reg_mem(p, false); break;
-+				case IT_WAIT_REG_MEM64: wait_reg_mem(p, true); break;
-+				case IT_COPY_DATA: copy_data(p); break;
-+				case IT_ATOMIC_MEM: atomic_mem(p); break;
-+				case IT_EVENT_WRITE_EOP: event_write_eop(p); break;
-+				case IT_RELEASE_MEM: release_mem(p, len - 1); break;
++				case IT_WRITE_DATA: if (!done) write_data(p, len - 1); break;
++				case IT_WAIT_REG_MEM: if (!done) wait_reg_mem(p, false); break;
++				case IT_WAIT_REG_MEM64: if (!done) wait_reg_mem(p, true); break;
++				case IT_COPY_DATA: if (!done) copy_data(p); break;
++				case IT_ATOMIC_MEM: if (!done) atomic_mem(p); break;
++				case IT_EVENT_WRITE_EOP: event_write_eop(p, !done); break;
++				case IT_RELEASE_MEM: release_mem(p, len - 1, !done); break;
 +				case IT_SET_SH_REG: set_sh_regs(p, len - 1, false); g_skipped[op]++; break;
 +				case IT_SET_SH_REG_INDEX: set_sh_regs(p, len - 1, true); g_skipped[op]++; break;
 +				case IT_DISPATCH_DIRECT: record_dispatch(p, false); g_skipped[op]++; break;
@@ -1160,12 +1180,80 @@ index 0000000..07b80c9
 +	}
 +}
 +
++// Journals the register tables the LOAD_*_REG[_INDEX] packets of an IB would load: the filter
++// cannot see them (they live in guest memory, not in the IB), so they bypass the register policy
++// — the prime suspect of the step-(c1) hang (experiment 0016, submit #14). Layout (PAL
++// pm4_pfp_load_context_reg_index): dword1 addr lo (bits 31:2) | index (bit 0), dword2 addr hi,
++// dword3 reg_offset (15:0) | data_format (bit 31: 1 = offset/data pairs), dword4 num_dwords.
++// LOAD_*_REG: dword1/2 base, then (reg_offset, num_dwords) pairs in the packet itself.
++// [a, a+bytes) lies inside the mapped ranges; adjacent mappings count as one (the GPU VM has
++// them all, a range straddling a 64 KiB piece boundary is still fully mapped).
++static bool covered(const std::vector<bc5::direct::Mapping>& maps, uint64_t a, uint64_t bytes) {
++	const uint64_t end = a + bytes;
++	uint64_t       pos = a;
++	for (int guard = 0; pos < end && guard < 64; guard++) {
++		bool hit = false;
++		for (const auto& m: maps) {
++			if (pos >= m.va && pos < m.va + m.size) { pos = m.va + m.size; hit = true; break; }
++		}
++		if (!hit) return false;
++	}
++	return pos >= end;
++}
++
++static void journal_load_tables(const uint32_t* ib, uint32_t num_dwords,
++                                const std::vector<bc5::direct::Mapping>& maps) {
++	auto mapped = [&maps](uint64_t a, uint64_t bytes) { return covered(maps, a, bytes); };
++	uint32_t i = 0;
++	while (i < num_dwords) {
++		const uint32_t h = ib[i];
++		const uint32_t type = h >> 30u;
++		uint32_t len = 1;
++		if (type == 3 || type == 0) {
++			const uint32_t count = (h >> 16u) & 0x3fffu;
++			len = count == 0x3fffu ? 1 : count + 2;
++		}
++		if (i + len > num_dwords) break;
++		const uint32_t op = (h >> 8u) & 0xffu;
++		const uint32_t* p = ib + i;
++		if (type == 3 && (op == 0x63 || op == 0x64 || op == 0x9f) && len >= 5) {
++			const uint64_t a = (p[1] & ~3u) | (static_cast<uint64_t>(p[2] & 0xffffu) << 32u);
++			const uint32_t n = p[4] & 0x3fffu;
++			const uint32_t want = (p[3] >> 31u) ? 2 * n : n;
++			const uint32_t show = want < 16 ? want : 16;
++			journal("  load op %02x at %u: addr 0x%" PRIx64 " idx %u fmt %u regoff 0x%x n %u:", op, i, a,
++			        p[1] & 1u, p[3] >> 31u, p[3] & 0xffffu, n);
++			if (mapped(a, static_cast<uint64_t>(want) * 4)) {
++				const auto* t = reinterpret_cast<const volatile uint32_t*>(a);
++				for (uint32_t k = 0; k < show; k++) journal(" %08x", t[k]);
++				if (show < want) journal(" ...");
++			} else {
++				journal(" (unmapped)");
++			}
++			journal("\n");
++		} else if (type == 3 && (op == 0x5e || op == 0x5f || op == 0x61) && len >= 3) {
++			const uint64_t a = (p[1] & ~3u) | (static_cast<uint64_t>(p[2] & 0xffffu) << 32u);
++			journal("  load op %02x at %u: base 0x%" PRIx64 " pairs", op, i, a);
++			for (uint32_t k = 3; k + 1 < len; k += 2) journal(" (0x%x,%u)", p[k] & 0xffffu, p[k + 1] & 0x3fffu);
++			journal("\n");
++		}
++		i += len;
++	}
++}
++
 +// Submits one IB; `from_header` marks the submit-header IBs (stage "preamble" takes only those).
 +static void submit(const uint32_t* ib, uint32_t num_dwords, const char* kind, bool from_header) {
++	SoftCp::clear_gpu_executed(); // the soft CP runs this buffer next, on this thread
 +	if (g_stage == Stage::Off || !g_dev || ib == nullptr || num_dwords == 0) {
 +		return;
 +	}
 +	if (g_stage == Stage::Preamble && !from_header) {
++		return;
++	}
++	// The doorbell (compute) rings are phase-3 step (e): they stay on the soft CP until
++	// BC5_DIRECT_RINGS=1, whatever the stage.
++	static const bool rings = std::getenv("BC5_DIRECT_RINGS") != nullptr;
++	if (!rings && std::strcmp(kind, "ring") == 0) {
 +		return;
 +	}
 +	std::lock_guard lock(g_dev_mutex);
@@ -1189,12 +1277,7 @@ index 0000000..07b80c9
 +	opt.clear_int_sel = true;
 +	opt.drop_draws    = g_stage == Stage::NoDraw;
 +	opt.safe_context_control = std::getenv("BC5_DIRECT_RAW_CONTEXT_CONTROL") == nullptr;
-+	opt.mapped = [&maps](uint64_t a, uint64_t bytes) {
-+		for (const auto& m: maps) {
-+			if (a >= m.va && a + bytes <= m.va + m.size) return true;
-+		}
-+		return false;
-+	};
++	opt.mapped = [&maps](uint64_t a, uint64_t bytes) { return covered(maps, a, bytes); };
 +	static const std::vector<uint8_t> extra = [] {
 +		std::vector<uint8_t> v;
 +		if (const char* e = std::getenv("BC5_DIRECT_DROP_OPS"); e != nullptr) {
@@ -1214,6 +1297,7 @@ index 0000000..07b80c9
 +	// the raw and the filtered IB and a one-line "about to submit" note are written unbuffered
 +	// first (BC5_GC_DUMP_DIR/direct-NNNNNN-<kind>.{raw,ib}.bin, direct.log).
 +	if (!g_dump_dir.empty()) {
++		journal_load_tables(ib, num_dwords, maps);
 +		std::vector<uint32_t>     filtered(num_dwords);
 +		bc5::policy::FilterStats  pre;
 +		bc5::policy::filter(bc5::policy::Policy::builtin(), std::span<const uint32_t>(ib, num_dwords), filtered, opt, pre);
@@ -1230,6 +1314,50 @@ index 0000000..07b80c9
 +			fsync(fileno(f));
 +			std::fclose(f);
 +		}
++	}
++	// BC5_DIRECT_PIECEWISE=<n>: submit #n goes to the GPU one packet at a time (a COND_EXEC
++	// together with the dwords it may skip), each piece with its own fence and journal line, so
++	// a hang names the packet (experiment 0016: submit #14 hangs deterministically as a whole).
++	static const long piecewise = std::getenv("BC5_DIRECT_PIECEWISE") ? std::atol(std::getenv("BC5_DIRECT_PIECEWISE")) : -1;
++	if (piecewise >= 0 && static_cast<uint64_t>(piecewise) == n) {
++		journal("piecewise\n");
++		uint32_t i = 0, piece = 0;
++		while (i < num_dwords) {
++			const uint32_t h = ib[i];
++			const uint32_t type = h >> 30u;
++			uint32_t len = 1;
++			if (type == 3 || type == 0) {
++				const uint32_t count = (h >> 16u) & 0x3fffu;
++				len = count == 0x3fffu ? 1 : count + 2;
++			}
++			if (i + len > num_dwords) break;
++			const uint32_t op = (h >> 8u) & 0xffu;
++			if (type == 3 && op == 0x22 && len >= 5) {
++				len += ib[i + 4] & 0x3fffu; // COND_EXEC: keep the region it may skip in the same piece
++				if (i + len > num_dwords) len = num_dwords - i;
++				const uint64_t fa = (ib[i + 1] & ~3u) | (static_cast<uint64_t>(ib[i + 2] & 0xffffu) << 32u);
++				if (covered(maps, fa, 4)) journal("cond_exec flag at 0x%" PRIx64 " = 0x%08x ", fa, *reinterpret_cast<const volatile uint32_t*>(fa));
++			}
++			if (type == 3 && op == 0x10) { i += len; continue; } // NOPs: nothing to test
++			journal("piece %u at %u len %u op %02x:", piece, i, len, op);
++			for (uint32_t k = 0; k < len && k < 8; k++) journal(" %08x", ib[i + k]);
++			journal(" ... ");
++			const auto pr = g_dev->submit(std::span<const uint32_t>(ib + i, len), opt, 2'000'000'000ull);
++			journal("%s rc %d%s %.2f ms (pass %" PRIu64 " drop %" PRIu64 ")\n", pr.ok ? "OK" : "FAILED", pr.rc, pr.timed_out ? " TIMEOUT" : "", pr.submit_ms, pr.filter.passed, pr.filter.dropped);
++			if (pr.timed_out) break;
++			// Probe: an all-NOP IB with its own fence. A piece that leaves the CP unable to run
++			// the next submission (run 18: the NOP-only piece 25 hung after 25 good pieces) is
++			// caught right here instead of a few pieces later.
++			static const uint32_t probe[8] = {bc5::policy::kNop, bc5::policy::kNop, bc5::policy::kNop, bc5::policy::kNop,
++			                                  bc5::policy::kNop, bc5::policy::kNop, bc5::policy::kNop, bc5::policy::kNop};
++			journal("  probe after piece %u ... ", piece);
++			const auto pp = g_dev->submit(std::span<const uint32_t>(probe, 8), opt, 2'000'000'000ull);
++			journal("%s%s %.2f ms\n", pp.ok ? "OK" : "FAILED", pp.timed_out ? " TIMEOUT" : "", pp.submit_ms);
++			if (pp.timed_out) break;
++			piece++;
++			i += len;
++		}
++		journal("piecewise done\n");
 +	}
 +	auto r = g_dev->submit(std::span<const uint32_t>(ib, num_dwords), opt, 2'000'000'000ull);
 +	// -EFAULT is not a GPU hang: a userptr BO in the list lost its pages (the guest unmapped
@@ -1252,7 +1380,10 @@ index 0000000..07b80c9
 +			std::fclose(f);
 +		}
 +	}
-+	if (r.ok) g_ok++;
++	if (r.ok) {
++		g_ok++;
++		SoftCp::set_gpu_executed(ib, num_dwords, r.executed_offsets);
++	}
 +	if (!r.ok || n < 40 || (n & 0x3fu) == 0) {
 +		LOGF_COLOR(r.ok ? Log::Color::Green : Log::Color::Red,
 +		           "[bc5-direct] submit #%" PRIu64 " %s %u dwords: %s rc %d %s %.2f ms; filter: %" PRIu64 " pass %" PRIu64 " rewrite %" PRIu64 " split %" PRIu64 " drop (%" PRIu64 " dwords) cu %" PRIu64 " int %" PRIu64 " cc %" PRIu64 " unmapped %" PRIu64 " extra %" PRIu64 " trunc %" PRIu64 "; ok so far %" PRIu64 "\n",
