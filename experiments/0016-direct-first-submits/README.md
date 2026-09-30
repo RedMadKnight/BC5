@@ -98,7 +98,42 @@ policy's own drops: per submit 12 packets pass — `COND_EXEC`, 3 × `LOAD_CONTE
 loads (`LOAD_*_REG` from the game's own tables in guest memory, mapped 1:1) without complaint.
 2.5 ms per submit at 198 BOs, 12 ms at 965. `dmesg`: nothing. Journal: `raw/b2-direct.log`.
 
-**Next.** (c) `BC5_DIRECT_STAGE=nodraw`: the frame DCBs with every draw/dispatch NOP-ed.
+**Step (c1), run 16** (15:28, `BC5_DIRECT_STAGE=nodraw`, `BC5_DIRECT_DROP_OPS=3c,93,1e`: waits
+and atomics left to the soft CP, draws NOP-ed by the filter, compute rings off): **machine reset
+10 (the 10th of the day)** after 15 submits. The first three frame DCBs of the game ran on the
+GFX ring and signalled their fences — #11 (96 dwords), #12 (3,257 dwords: 324 packets passed,
+76 rewritten, 200 dropped, 52 for unmapped operands), #13 (851 dwords) — and #14 (798 dwords:
+100 passed, 18 rewritten, 42 dropped) **timed out** after 2.03 s; the kernel's own GPU timeout
+then took the machine down. Journal: `raw/c1-direct.log`.
+
+What ran on the GPU in #14 (decoded locally from the journal's `.raw`/`.ib` pair): 17 ×
+`LOAD_CONTEXT_REG_INDEX`, 8 × `LOAD_SH_REG_INDEX`, 7 × `LOAD_UCONFIG_REG_INDEX`, 17 × `EVENT_WRITE`
+(events 7, 16, 44, 46, 56), 12 × `RELEASE_MEM` (events 4, 20, 40, 45), 9 × `ACQUIRE_MEM`,
+8 × `WRITE_DATA`, 7 × `COND_EXEC`, 7 × `CLEAR_STATE`, 6 × `CONTEXT_CONTROL` (rewritten), 2 ×
+`SET_BASE`, `SET_UCONFIG_REG_INDEX`, `INDEX_BASE`, `INDEX_BUFFER_SIZE`, 10 × `NUM_INSTANCES`.
+Every memory operand was inside a mapping. With addresses masked, every packet signature of #14
+also occurs in #12 or #13 except one `ACQUIRE_MEM` (`gcr_cntl` 0x380 instead of 0xc320/0xc3e1).
+Two things the filter does not see:
+
+1. **`LOAD_*_REG_INDEX` tables.** The registers a LOAD writes live in guest memory, not in the IB,
+   so the register policy (which covers `SET_*` only) never sees them. #12/#13 loaded tables at
+   0x908e5f… (eboot data, static) and 0xfe0040068 (driver area); #14 additionally loaded eight
+   tables from fresh per-frame heap addresses (0x506e01500…0x506dfe608) whose contents are
+   unknown. A privileged or non-existent register written through the CP's LOAD path is the kind
+   of thing that halts the ME without a fault — which matches a fence timeout with no page
+   fault.
+2. **`WRITE_DATA` with `DST_SEL` 0 (register)** to mm 0xc343 (`SQ_THREAD_TRACE_USERDATA_3`, the
+   marker register the policy already drops for `SET_UCONFIG_REG`) passed the filter, which only
+   checked memory destinations. Now dropped (`FilterStats::reg_write_drops`, mirrored in
+   `bc5-agc`).
+
+Changes before the next attempt: the host journals every LOAD table (address, format, count,
+first 16 dwords) before the submit; the soft CP skips the memory side effects of packets the GPU
+executed (`SubmitResult::executed_offsets`); compute rings gated behind `BC5_DIRECT_RINGS`.
+
+**Next.** (c1a) `nodraw` with `BC5_DIRECT_DROP_OPS=3c,93,1e,63,64,9f` — the three `LOAD_*_INDEX`
+opcodes off, tables journaled — to split "LOAD tables" from "everything else". If it holds, the
+tables' contents decide the register policy for the LOAD path.
 
 **Verdict (interim).** The mechanism is confirmed (F25). **Step (b1) passed**: the console's
 submit-header IBs (with `LOAD_*`/`COND_EXEC`/`WRITE_DATA` NOP-ed) run on the BC-250's GFX ring
