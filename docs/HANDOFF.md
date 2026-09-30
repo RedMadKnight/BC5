@@ -4,7 +4,7 @@ This is the working memory of the project: what has been established, from where
 
 ## 1. Thesis
 
-The BC-250 is the same silicon target as the PS5 (Zen 2 + `gfx1013` + 16 GB unified GDDR6). Every existing PS5 runtime targets generic PCs and therefore translates the GPU side (AGC/PM4 → Vulkan, RDNA ISA → SPIR-V). On the BC-250 that translation can be removed: hand the game's command stream and shader binaries to `amdgpu` as-is. Everything else (loader, HLE, audio, input) comes from RPCSX.
+The BC-250 is the same silicon target as the PS5 (Zen 2 + `gfx1013` + 16 GB unified GDDR6). Every existing PS5 runtime targets generic PCs and therefore translates the GPU side (AGC/PM4 → Vulkan, RDNA ISA → SPIR-V). On the BC-250 that translation can be removed: hand the game's command stream and shader binaries to `amdgpu` as-is. Everything else (loader, HLE, audio, input) comes from a host runtime: RPCSX with the maintainer's own firmware dump (track A), or an HLE host that LLE-loads the game's own copies of Sony's `libSceAgc`/`libSceAgcDriver` from `fakelib/` (track B, D11). In both, the command stream is built by Sony's code and BC5 sits at the `/dev/gc` boundary.
 
 What we deliberately do not do: boot PS5 firmware (PSP/Sony keys/ABL/SMU/hypervisor cannot run on the BC-250; no Sony southbridge, SSD/Kraken, Tempest), write a new emulator, or touch Sony material.
 
@@ -47,10 +47,12 @@ What we deliberately do not do: boot PS5 firmware (PSP/Sony keys/ABL/SMU/hypervi
 ## 4. Architecture (summary)
 
 ```
-PS5 game (eboot.bin, PRX)  →  RPCSX loader + HLE  →  BC5 backend  →  amdgpu/libdrm  →  BC-250
-                                     ├→ I/O layer (bc5-mount, later: prefetch/cache)
-                                     └→ audio + input (HLE, unchanged)
+PS5 game (eboot.bin, PRX)  →  host runtime  →  Sony libSceAgc/AgcDriver  →  /dev/gc boundary  →  BC5 backend  →  amdgpu/libdrm  →  BC-250
+                               ├ track A: RPCSX + own firmware dump (LLE)          ├→ I/O layer (bc5-mount, later: prefetch/cache)
+                               └ track B: KytyPlus HLE kernel + fakelib/ (D11)     └→ audio + input (host, unchanged)
 ```
+
+The backend's host interface is the `/dev/gc` boundary (F12, F18): submit ioctls, GPU memory mapping (`mmap`, flexible/tool memory), `kevent` completion, EOP flip and buffer labels. Whatever host provides those calls gets the same backend.
 
 Backend modes: (1) validation — decode + log, submit nothing; (2) hybrid — native shaders, commands via Vulkan; (3) direct — own libdrm client, 1:1 VA mapping, rewritten packets, `--submit`.
 
@@ -58,7 +60,7 @@ CU policy: runtime masked to 36 CU, 4 CU left for the desktop. Masks ANDed with 
 
 ## 5. Phases and gates
 
-See `docs/PHASES.md`. Order: 0a `bc5-mount` → 0b RPCSX baseline on BC-250 → 1 AGC validation → 2 native shaders → 3 IB submit (36/40 switch) → 4 integration.
+See `docs/PHASES.md`. Order: 0a `bc5-mount` → 0b RPCSX baseline on BC-250 (track A, waits for the firmware dump) ‖ 1b KytyPlus + LLE `libSceAgc` (track B, D11) → 1 AGC validation → 2 native shaders → 3 IB submit (36/40 switch) → 4 integration.
 
 ## 6. Related projects (what to read, and for what)
 
@@ -87,5 +89,6 @@ See `docs/PHASES.md`. Order: 0a `bc5-mount` → 0b RPCSX baseline on BC-250 → 
 - D6 Tools in Rust, backend in C++20 (RPCSX is C++).
 - D7 (2026-09-29) Phase-1 preparation that needs no hardware and no game (Q2 research in the RPCSX sources, `docs/formats/agc.md`, the `bc5-agc` PM4 decoder with hand-built streams) may proceed before gate G0a is recorded, because it does not depend on `bc5-mount`. Phase 0b, anything under `backend/` and anything that submits to the GPU still wait for their gates. Maintainer's decision; overrides the "one phase at a time" rule of `CLAUDE.md` for this case only.
 - D10 (2026-09-29) Prosper (github.com/mattias800/prosper, commit `1c93ab8`) is used **locally on the dev box as an external capture tool** while no firmware dump exists: it runs ASTRO BOT to its title screen without PS5 system modules. Prosper has **no licence**, so none of its code, text or data enters this repository, and nothing derived from it is distributed. It is built from source in the `ubuntu` distrobox (`~/src/prosper`, build in `~/bc5-work/prosper-build`) with one **local-only** patch (`~/bc5-work/prosper-bc5-dcb-dump.local.patch`, 24 lines in `hle_agc.cpp`) that writes each submitted DCB as raw dwords to `$BC5_AGC_DUMP_DIR`; its own `PROSPER_SHADER_DUMP` provides shader binaries. Captures live in `~/bc5-data/captures` and are never committed; experiments record only statistics produced by our tools. Caveat for every result: part of each DCB is written by Prosper's HLE of `sceAgcDcb*` rather than Sony's library, so captures describe "game + Prosper", not a console byte stream. Maintainer's decision.
+- D11 (2026-09-30) **The host runtime becomes pluggable; track B is opened.** Following F16–F18: (1) the BC5 backend gets its host interface at the `/dev/gc` boundary (submit ioctls, `mmap` of GPU memory, flexible/tool memory, `kevent`, EOP flip, buffer labels), so any host that provides those calls can drive it. (2) Track A — RPCSX with the maintainer's own firmware dump — stays the reference path and keeps gate G0b. (3) Track B — KytyPlus (GPL-2.0-only, licence-compatible) with the game's own `fakelib/libSceAgc.sprx` and `libSceAgcDriver.sprx` LLE-loaded from the maintainer's dump. First task: implement in KytyPlus the 29 imports of experiment 0010 so that Sony's driver initialises, and route the `/dev/gc` ioctls to a capture buffer; that yields the first DCB built by Sony's code. KytyPlus changes are kept as patches under `backend/kytyplus-patches/` and may be offered upstream as PRs. (4) Phase 1 no longer depends on firmware: its captures come from track B. Prosper (D10) is retired as a capture source. Maintainer's decision, approved in chat ("ok - działaj, zatwierdzam").
 - D9 (2026-09-29) Phase-2 preparation (ADR 0004: PM4 builder, memset IB, `dispatch-min` with `--dump-ib`/`--info`) may proceed before gates G0b and G1, because phase 0b is blocked on the maintainer's firmware dump and the preparation submits nothing. Running `dispatch-min --submit` still needs the maintainer's explicit go-ahead with the box idle, each time. *2026-09-30: first go-ahead used; experiment 0008 passed (phase 2 task 2 done), one encoder bug found and fixed on the way.*
 - D8 (2026-09-29) BIOS memory split: **512 MiB VRAM carve-out** (amdgpu: VRAM 512M, GTT 7596M; Linux sees 14 GiB) instead of the 8 GiB carve-out recorded in experiment 0003. Rationale: the PS5 memory model is unified and phases 2–3 map guest memory as system RAM (userptr/GTT, Q1); RPCSX needs host RAM for the 16 GB guest address space. Risk: Vulkan paths that insist on a large device-local heap; if VSH boot (phase 0b) fails on memory, compare splits in a dedicated experiment.

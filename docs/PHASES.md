@@ -27,6 +27,18 @@ Tasks
 
 Gate G0b: VSH boots on the BC-250 through stock RPCSX; baseline numbers recorded.
 
+## Phase 1b — Track B: Sony's `libSceAgc` in an HLE host (D11)
+
+Runs in parallel with 0b, which waits for the maintainer's firmware dump. Host: KytyPlus (GPL-2.0-only), with the game's own `fakelib/libSceAgc.sprx` and `libSceAgcDriver.sprx` LLE-loaded from the maintainer's dump (experiments 0009, 0010).
+
+Tasks
+1. Implement in KytyPlus the 29 imports listed in `experiments/0010-lle-libsceagc-in-kytyplus/raw/unresolved-imports.txt` so that Sony's driver initialises (its context pointer at `libSceAgcDriver+0x22c10` becomes non-NULL). Patches under `backend/kytyplus-patches/`; upstream PRs when stable.
+2. Route the `/dev/gc` ioctls (`0xc0488131` submit header, `0xc0188132`; RPCSX is the reference, F12) to a capture that writes every DCB/CCB as raw dwords (env-gated), and to a stub that completes them immediately.
+3. `bc5-agc report` over the captures: first DCBs built by Sony's code.
+4. Fix, one at a time, whatever KytyPlus still blocks on before the game reaches its first load milestone (experiment 0009: a `PthreadCondWait` deadlock after `fiber init`).
+
+Gate G1b: a DCB built by Sony's `libSceAgc` is captured from ASTRO BOT on the BC-250 and decodes with `bc5-agc`; the list of `/dev/gc` ioctls seen, with counts, is recorded.
+
 ## Phase 1 — Validation: AGC decoder and tap
 
 Tasks
@@ -35,7 +47,7 @@ Tasks
 3. Tap in RPCSX (C++): dump every submitted DCB/CCB to files, gated by an env var. Kept as a small patch under `backend/rpcsx-patches/` until upstreamed.
 4. Count mask-register writes (Q3) and unknown register offsets (Q4).
 
-Gate G1: a full VSH frame decodes with zero unknown opcodes; unknown register offsets are listed with counts.
+Gate G1: a full VSH frame (track A) or a full ASTRO BOT frame from track B decodes with zero unknown opcodes; unknown register offsets are listed with counts.
 
 ## Phase 2 — Native shaders
 
