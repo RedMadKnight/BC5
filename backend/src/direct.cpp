@@ -176,7 +176,9 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     std::vector<amdgpu_bo_handle> bos;
     bos.reserve(impl_->userptrs.size() + 1);
     bos.push_back(impl_->scratch.bo);
-    for (const auto &u : impl_->userptrs) bos.push_back(u.bo);
+    if (include_mappings_) {
+        for (const auto &u : impl_->userptrs) bos.push_back(u.bo);
+    }
     amdgpu_bo_list_handle list = nullptr;
     r.rc = amdgpu_bo_list_create(impl_->dev, static_cast<std::uint32_t>(bos.size()), bos.data(),
                                  nullptr, &list);

@@ -51,11 +51,16 @@ public:
     bool wedged() const { return wedged_; }
     std::uint64_t submits() const { return submits_; }
 
+    // Staging knob: when false, submits carry only the scratch IB in their BO list (the userptr
+    // mappings stay mapped but are not validated per submit). Default true.
+    void set_include_mappings(bool v) { include_mappings_ = v; }
+
 private:
     Device() = default;
     struct Impl;
     std::unique_ptr<Impl> impl_;
     bool wedged_ = false;
+    bool include_mappings_ = true;
     std::uint64_t submits_ = 0;
 };
 
