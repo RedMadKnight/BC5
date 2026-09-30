@@ -1,0 +1,64 @@
+# 0005 — Direct submission: the game's memory 1:1, its command buffers filtered, not rewritten
+
+**Status.** Accepted, 2026-09-30. Implements docs/PHASES.md phase 3 on track B (D11). GPU
+submission stays behind `--submit`/`BC5_GC_MODE=direct` and needs the maintainer's go-ahead per
+session (hard rule 5); validation mode is the default.
+
+**Context.** Phases 1b–2 established (F19–F23): Sony's `libSceAgc` builds console-format DCBs inside
+the track-B host; the packets decode with zero unknown opcodes; a captured compute program runs
+natively with the console's register values; and anonymous CPU memory can be mapped into the GPU
+at its own address (`userptr`, 1:1, zero copies). The phase-3 plan in `docs/PHASES.md` spoke of a
+"packet rewriter (addresses, context registers)". With 1:1 mapping there is nothing to rewrite in
+the addresses: every pointer the game and Sony's library put into a DCB, a V#/T#, a shadow
+register table or an indirect buffer is already a valid GPU VA once the containing range is a
+userptr mapping. What remains is what the AMD CP firmware and `amdgpu` on the BC-250 will not
+accept from Sony's stream.
+
+**Decision.**
+
+1. **Memory model: 1:1 userptr.** Every guest range the game maps with GPU access (direct memory,
+   flexible memory, the driver's system areas at 0xf00000000/0xfe0200000, tool memory) becomes a
+   userptr BO mapped at the same VA, created by the host at map time (KytyPlus: hooks in
+   `KernelMapDirectMemory*`, `KernelMapNamedFlexibleMemory`, the `/dev/gc` `mmap`; unmapped at
+   `munmap`). Nothing is copied. Budget: mapped ranges are not pinned permanently (MMU-notifier
+   userptr), but the working set of a frame is; the D8 split (512 MiB VRAM, ~14 GiB for Linux) is
+   kept and the host box is trimmed (Steam and the file indexer stopped) while phase 3 runs.
+2. **Command buffers are submitted as the game built them, through a filter, not a rewriter.**
+   Each submit (gfx `0xc0488131`/`0xc0188132`, the 56 doorbell queues) is walked packet by packet;
+   the packet is copied into a scratch IB (GTT) either verbatim or replaced by NOPs of the same
+   length, per a policy table with three verdicts:
+   - **pass**: standard PM4 type-3 packets the AMD gfx10 CP understands and `amdgpu` allows in a
+     user IB (draws, dispatches, `SET_*_REG` to user-writable ranges, `LOAD_*_REG[_INDEX]`,
+     `ACQUIRE_MEM`, `RELEASE_MEM`, `EVENT_WRITE*`, `WRITE_DATA` to memory, `COND_EXEC`, `ATOMIC_MEM`,
+     `WAIT_REG_MEM[64]`, `DMA_DATA`, `INDIRECT_BUFFER*`, `CONTEXT_CONTROL`, `CLEAR_STATE`, NOP…);
+   - **drop** (NOP-ed, semantics emulated by the soft CP where needed): packets the AMD firmware
+     does not know or that touch privileged state (`GET_LOD_STATS` 0x8e, `PREAMBLE_CNTL` until
+     proven harmless, `SET_UCONFIG_REG` to privileged offsets, `SQ_THREAD_TRACE_USERDATA_*`
+     markers, `SET_SH_REG` to unresolved offsets such as mm 0x2e80, `WRITE_DATA` to registers);
+   - **rewrite** (the only rewrites): `COMPUTE_STATIC_THREAD_MGMT_*` and `SPI_SHADER_PGM_RSRC3_*`
+     CU-mask fields ANDed with BC5's mask (36/40 policy, Q3), and the `RELEASE_MEM`/`EVENT_WRITE_EOP`
+     interrupt selects (the host, not the CP, fires the `EVFILT_GRAPHICS` events after the fence).
+   The table lives in `backend/src/policy.cpp`, is data-driven (opcode → verdict, register range →
+   verdict) and is checked offline by `bc5-agc check` over every capture: the count of dropped
+   packets per opcode/register is part of every phase-3 experiment.
+3. **Submission and completion.** One `amdgpu` context, GFX ring only (F6); each guest submit
+   becomes one `amdgpu_cs_submit` with the scratch IB and the BO list of every mapped range; the
+   soft CP runs *after* the fence to write labels/EOP values it emulated and to fire events, so
+   the game observes the same order as on the console. Fence timeout 2 s → the submit is reported
+   as hung, the mode drops to soft-CP-only for the rest of the run (no second try on a wedged
+   ring), and the experiment records the last IB. Compute queues go to the same GFX ring in
+   doorbell order (the gfx1013 compute rings are not used, F6).
+4. **Presentation.** The frame buffers are guest memory; with 1:1 mapping the real GPU renders
+   into the very pages KytyPlus's presenter already uploads to its Vulkan swapchain, so the first
+   image appears through the existing `sceVideoOutSubmitEopFlip` path with no extra code. A
+   direct scanout path is phase 4.
+5. **Staging, each step its own experiment with `dmesg` before/after:** (a) validation mode:
+   filter every capture offline and live, submit nothing; (b) the 150-dword state preamble alone;
+   (c) preamble + the first frame DCB with all draws dropped; (d) draws enabled; (e) compute
+   queues; (f) 36/40 switch and FPS. Steps (b)–(f) each need the maintainer's go-ahead.
+
+**Consequences.** The "packet rewriter" of the roadmap shrinks to a filter with two rewrites; the
+backend's core is the policy table plus the BO/VA mapper, both testable offline. Unknown firmware
+behaviour (Sony CP vs AMD CP for the same opcode) is discovered one dropped packet at a time and
+recorded in `docs/formats/agc.md`. The risk of a GPU reset stays and is contained by staging,
+timeouts and the trimmed host.
