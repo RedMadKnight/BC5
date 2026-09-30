@@ -469,14 +469,18 @@ gfx IB (`BC5_DIRECT_PROLOGUE_PRIM=4`); the flip pass's full-screen triangle is a
 targets 0/1024 after every frame. The primitive-type prologue is not what the flip pass lacks.
 Next: tell clears from rasterised content in the sampled targets (distinct values, min/max).
 
-**Verdict (2026-09-30, end of day).** Steps (a)–(c) passed; (d) and (e) reached "the game's
-frames — draws, dispatches and both queue types — execute on the BC-250 from the track-B host
-without a hang", with 22 machine resets spent on the CP-stall class (stale L2, `CLEAR_STATE`,
-CS_DONE without data, GDS DMAs with CP_SYNC, the compute rings, GDS partitions at draw time,
-indirect draws with garbage counts) and the recoverable fault class handled by learning,
-reopening and deferral. Not reached: G3's image on screen. The blocker is the semantics of the
-console's GDS ordered-append counters that feed the scene's indirect draws. Open, in order:
-(1) what the compute shaders do with GDS (disassemble the captured programs: `ds_ordered_count`,
-`ds_add_gs_reg`, GWS?) and whether the counters can be initialised or emulated; (2) the 10 s kernel
-lockup timeout (boot parameter, maintainer's call) to make any remaining stall cheap; (3) the
-36/40 CU switch (f); (4) presentation once a frame lands in the flip buffer.
+**Run 63** (00:17, distinct values per target): **no draw rasterises.** Every colour target holds
+exactly one value (0x38003800, an FP16 clear colour, or 0), every depth buffer one (1.0f or
+0xffffffff), and only the metadata (HTILE, CMASK, DCC) shows 2–8 values — clear patterns. The GPU
+runs the game's clears and compute, the NGG pass-through geometry pipeline leaves no pixel, so
+the flip pass's full-screen triangle is one of many draws that produce nothing (F33).
+
+**Verdict (2026-10-01, 00:20).** Steps (a)–(c) passed; (d) and (e) run the game's frames, draws,
+dispatches and both queue types on the BC-250 stall-free (runs 54–63: 230+ of 234 submits, no
+reset), with GDS counters reset and read back correctly since the DMA-selector fix. G3's image is
+not reached because rasterisation produces nothing at all. Twenty-two resets, 63 runs. Next,
+in order: (1) phase-3 task 2 as originally planned — a minimal triangle through `Device::submit`
+(libdrm `amdgpu_test` gfx10 shaders, RADV-style state) to prove draws work in this model, then
+bisect the game's state against it (NGG pass-through, `GE_CNTL`, ring sizes, CU masks, index
+type bits 0x480); (2) `ORDERED_APPEND_ENBL` re-test with the fixed filter (counts of 1 are
+suspicious); (3) the kernel lockup timeout (boot parameter); (4) presentation and 36/40.
