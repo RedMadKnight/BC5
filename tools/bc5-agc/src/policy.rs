@@ -220,8 +220,7 @@ impl Check {
                             addr(payload[1], payload[2])
                         }
                         0x49 if payload.len() >= 5 => addr(payload[3], payload[4]),
-                        0x47 if payload.len() >= 3 => addr(payload[1], payload[2]),
-                        0x1e if payload.len() >= 3 => addr(payload[1], payload[2]),
+                        0x47 | 0x1e if payload.len() >= 3 => addr(payload[1], payload[2]),
                         _ => 0,
                     };
                     if label != 0 {
