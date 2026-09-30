@@ -156,6 +156,17 @@ pieces leaves the CP in a state in which the *next* submission (the kernel's CON
 INDIRECT_BUFFER + fence framing around eight NOPs) never completes. The arming piece is one of
 the 15 real ones above.
 
-**Next.** Piecewise with a probe: after every piece, an all-NOP IB with its own fence (`probe
-after piece k`), plus the `COND_EXEC` flag values in the journal. The first probe that times
-out names the arming packet in one run.
+**Piecewise with probes, run 19** (16:44): **reset 13**, and the pattern moved: pieces 0–5 and
+their NOP probes OK, then piece 6 (a dropped LOAD, NOP-only) timed out — in run 18 the same
+stream ran to piece 25. The one real packet executed before both hangs is piece 5: `COND_EXEC`
+on 0xfe0040060 whose flag read **0x3 (non-zero, so not skipped)** followed by **`CLEAR_STATE cmd 2`**.
+After it the CP stops between 5 ms and ~100 ms later, on a submission of pure NOPs. That also
+explains #12/#13: their `CLEAR_STATE` packets sit under the same `COND_EXEC`, and the flag is
+raised by `ATOMIC_MEM` packets the soft CP executes only after the fence — zero for the first
+DCBs, non-zero by #14 — so #12/#13 skipped their `CLEAR_STATE`s. AMD's drivers emit `CLEAR_STATE`
+with cmd 0 (RADV, radeonsi, PAL `PM4_PFP_CLEAR_STATE.cmd`); the console driver uses 1 and 2, whose
+meaning on AMD's PFP firmware is unknown (`TODO(verify)`). Journal: `raw/probe-direct.log`.
+
+**Next.** `nodraw` with `CLEAR_STATE` (0x12) dropped as well (`BC5_DIRECT_DROP_OPS=3c,93,1e,63,64,9f,12`),
+no piecewise: 45 s without a hang confirms it; then the policy gets a `CLEAR_STATE` rule
+(rewrite cmd → 0, or drop).
