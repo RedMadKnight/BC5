@@ -83,10 +83,17 @@ rw-anonymous VMA list and unmaps the ones that fell out (`unmap … (no longer r
 one retry (`(retried)` in the journal) instead of counting as a failure. Not a GPU hang in any
 form: the mode is not wedged by `EFAULT`.
 
-**Next.** Step (b1) again with the revalidating sync, then (b2) the full preamble.
+**Step (b1), run 14** (15:13, same configuration, revalidating sync): **72 of 72 submits OK, no
+`EFAULT`, no retry, no reset**, 22 flips, 952 mappings (2.3 GB) at the end. Pass 1 unmapped exactly
+one range during the run (`unmap 0x334f30000 +0x420000 (no longer rw anonymous)`, the guest
+thread-stack region) before it could reach a BO list. 12 ms per submit at 950 BOs. `dmesg`: nothing.
+Journal: `raw/b1-run14-direct.log`.
 
-**Verdict (interim).** The mechanism is confirmed (F25) and the first 30 console-built IBs ran on the
-BC-250's GFX ring from inside the track-B host without a reset. Step (b) is not yet passed: the
-submission stopped at the first stale userptr mapping (F26). Nine resets bought a precise negative
+**Next.** (b2) the full preamble (no `BC5_DIRECT_DROP_OPS`), then (c) `nodraw`.
+
+**Verdict (interim).** The mechanism is confirmed (F25). **Step (b1) passed**: the console's
+submit-header IBs (with `LOAD_*`/`COND_EXEC`/`WRITE_DATA` NOP-ed) run on the BC-250's GFX ring
+from inside the track-B host, 72 of 72, no reset, with the mapping set following the guest's
+VMAs (F26). (b2), the unfiltered preamble, is next. Nine resets bought a precise negative
 result (the console's preamble, filtered, is not what hangs the GPU), a crash journal that
 survives, and the rule that any CPU-rewritten IB must be mapped uncached for the GPU.
