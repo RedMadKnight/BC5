@@ -269,3 +269,23 @@ TEST_CASE("packets named by offset are dropped", "[policy]") {
     REQUIRE(out[2] == policy::kNop);
     REQUIRE(out[5] == 0xC0002F00u);
 }
+
+TEST_CASE("ORDERED_APPEND_ENBL can be forced on dispatches", "[policy]") {
+    const auto &p = policy::Policy::builtin();
+    const std::vector<std::uint32_t> src = {0xC0031500u, 192u, 1u, 1u, 0x41u, 0xC0011600u, 0x20u, 0x41u};
+    std::vector<std::uint32_t> out(src.size());
+    policy::FilterOptions opt;
+    opt.ordered_append_enable = true;
+    opt.mapped = [](std::uint64_t, std::uint64_t) { return true; };
+    policy::FilterStats st;
+    policy::filter(p, src, out, opt, st);
+    REQUIRE(st.dispatch_rewrites == 2);
+    REQUIRE(out[4] == 0x49u);
+    REQUIRE(out[7] == 0x49u);
+    policy::FilterOptions plain;
+    plain.mapped = opt.mapped;
+    policy::FilterStats st2;
+    policy::filter(p, src, out, plain, st2);
+    REQUIRE(st2.dispatch_rewrites == 0);
+    REQUIRE(out[4] == 0x41u);
+}

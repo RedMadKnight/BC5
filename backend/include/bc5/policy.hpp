@@ -56,6 +56,7 @@ struct FilterStats {
     std::uint64_t gds_drops = 0; // DMA_DATA / WRITE_DATA to or from GDS (FilterOptions::drop_gds)
     std::uint64_t gds_rewrites = 0; // GDS accesses redirected to the shadow buffer (gds_shadow_va)
     std::uint64_t offset_drops = 0; // packets dropped through FilterOptions::drop_offsets
+    std::uint64_t dispatch_rewrites = 0; // DISPATCH_* initiators given ORDERED_APPEND_ENBL
     std::uint64_t cs_done_rewrites = 0; // RELEASE_MEM CS_DONE/index 6 without data -> BOTTOM_OF_PIPE_TS/5
 };
 
@@ -89,6 +90,10 @@ struct FilterOptions {
     // WRITE_DATA to GDS writes the shadow. A real GDS partition makes this game's gfx shaders hang
     // (experiment 0016, runs 49–51); the shadow keeps the counters the game reads back consistent.
     std::uint64_t gds_shadow_va = 0;
+    // Set ORDERED_APPEND_ENBL (COMPUTE_DISPATCH_INITIATOR bit 3, Mesa gfx10) on every dispatch:
+    // the console's dispatches carry 0x41 (COMPUTE_SHADER_EN | ORDER_MODE) and their shaders use
+    // ds_ordered_count; on the BC-250 the counters came back as garbage (experiment 0016, run 55).
+    bool ordered_append_enable = false;
     // RELEASE_MEM with EVENT_INDEX 6 and DATA_SEL 0 becomes BOTTOM_OF_PIPE_TS / EVENT_INDEX 5
     // (the GFX ring's ME never completes the former; experiment 0016, run 40).
     bool cs_done_to_bottom_of_pipe = true;

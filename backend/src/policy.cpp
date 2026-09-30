@@ -420,6 +420,14 @@ std::size_t filter(const Policy &policy, std::span<const std::uint32_t> src,
                 }
                 stats.gds_rewrites++;
             }
+            if (opt.ordered_append_enable && ((opcode == 0x15 && len >= 5) || (opcode == 0x16 && len >= 3))) {
+                // DISPATCH_DIRECT: dim x, y, z, initiator; DISPATCH_INDIRECT: data offset, initiator.
+                std::uint32_t &init = out[i + (opcode == 0x15 ? 4 : 2)];
+                if ((init & 0x8u) == 0) {
+                    init |= 0x8u;
+                    stats.dispatch_rewrites++;
+                }
+            }
             if (opcode == kOpReleaseMem && opt.cs_done_to_bottom_of_pipe && len >= 3 &&
                 ((out[i + 1] >> 8) & 0xf) == 6 && ((out[i + 2] >> 29) & 7) == 0) {
                 // RELEASE_MEM with EVENT_INDEX 6 (CS_DONE / PS_DONE) and no data: the console's
