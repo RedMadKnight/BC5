@@ -57,6 +57,17 @@ accept from Sony's stream.
    (c) preamble + the first frame DCB with all draws dropped; (d) draws enabled; (e) compute
    queues; (f) 36/40 switch and FPS. Steps (b)–(f) each need the maintainer's go-ahead.
 
+*Amended 2026-09-30 (experiment 0016, four machine resets):* (i) the scratch IB is padded to
+8 dwords with NOPs (the CP fetches 32-byte chunks); (ii) `CONTEXT_CONTROL` is rewritten to
+RADV's `0x80000000/0x80000000`; (iii) every memory operand is checked against the mapped ranges,
+packets outside are NOP-ed; (iv) the scratch IB lives at a fixed **high** GPU VA
+(`high_va_offset + 1 GiB`), never where a CPU pointer can be; (v) the backend opens its **own
+amdgpu device without libdrm's deduplication** (`amdgpu_device_initialize2(fd, false, …)`): a
+host that already has RADV open on the same node would otherwise hand us RADV's VM, VA allocator
+and fd, and our 1:1 mappings would collide with the presenter's buffers; (vi) a crash journal
+(`direct.log`, raw and filtered IB files) is written with `fsync` before every submit, because a
+GPU reset on the BC-250 takes the machine down before buffered logs reach the disk.
+
 **Consequences.** The "packet rewriter" of the roadmap shrinks to a filter with two rewrites; the
 backend's core is the policy table plus the BO/VA mapper, both testable offline. Unknown firmware
 behaviour (Sony CP vs AMD CP for the same opcode) is discovered one dropped packet at a time and
