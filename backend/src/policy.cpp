@@ -323,6 +323,11 @@ std::size_t filter(const Policy &policy, std::span<const std::uint32_t> src,
         if (type == 3 && v != Verdict::Drop) {
             if (opt.drop_draws && is_draw_or_dispatch(opcode3)) {
                 v = Verdict::Drop;
+            } else if (!opt.drop_offsets.empty() &&
+                       std::find(opt.drop_offsets.begin(), opt.drop_offsets.end(),
+                                 static_cast<std::uint32_t>(i)) != opt.drop_offsets.end()) {
+                v = Verdict::Drop;
+                stats.offset_drops++;
             } else if (opt.self_waits_only && (opcode3 == 0x3c || opcode3 == 0x93) && len >= 4) {
                 // WAIT_REG_MEM[64]: mem_space is bit 4 of the control dword; register polls and
                 // waits on labels nobody in this IB writes are dropped.

@@ -393,6 +393,14 @@ gigantic index count and keep the CP busy past the kernel's 10 s, which ends in 
 Test: run 53's configuration with the indirect draws and dispatches dropped
 (`BC5_DIRECT_DROP_OPS=24,25,16`).
 
+**Run 54** (22:41, run 53's configuration + `BC5_DIRECT_DROP_OPS=24,25,16`): **confirmed** — 232 of
+234 submits OK, 55 frame DCBs (the 9,891-dword ones included), 146 compute IBs on real GDS,
+**no stall, no reset**, 9 flips in 90 s (three times the earlier runs). The indirect draws and
+dispatches, fed by the compute queues' counters, are what kept the CP busy. Flip buffers still
+zero: those draws are the scene. Next: journal every indirect argument block before the submit
+(`SET_BASE` index-1 base + offset) and NOP the ones with absurd counts
+(`BC5_DIRECT_INDIRECT_MAX`), then let the sane ones draw.
+
 **Verdict (interim, end of 2026-09-30).** Steps (a)–(c) passed and (d) reached "frames with draws
 run on the GPU, faults recoverable and learned"; not yet "image on screen" (G3). Open: present
 the GPU's flip buffer; size the hint windows from the surface registers; decode the descriptor

@@ -255,3 +255,17 @@ TEST_CASE("GDS accesses are redirected to the shadow buffer when one is set", "[
     REQUIRE(out[11] == 0x04000c70u);
     REQUIRE(out[12] == 0x1000u);
 }
+
+TEST_CASE("packets named by offset are dropped", "[policy]") {
+    const auto &p = policy::Policy::builtin();
+    const std::vector<std::uint32_t> src = {0xC0002F00u, 1u, 0xC0012D00u, 3u, 2u, 0xC0002F00u, 1u};
+    std::vector<std::uint32_t> out(src.size());
+    policy::FilterOptions opt;
+    opt.drop_offsets = {2};
+    policy::FilterStats st;
+    policy::filter(p, src, out, opt, st);
+    REQUIRE(st.offset_drops == 1);
+    REQUIRE(out[0] == 0xC0002F00u);
+    REQUIRE(out[2] == policy::kNop);
+    REQUIRE(out[5] == 0xC0002F00u);
+}

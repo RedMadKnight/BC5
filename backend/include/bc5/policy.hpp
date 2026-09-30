@@ -55,6 +55,7 @@ struct FilterStats {
     std::uint64_t unsatisfiable_wait_drops = 0; // WAIT_REG_MEM[64] on a label this IB never writes
     std::uint64_t gds_drops = 0; // DMA_DATA / WRITE_DATA to or from GDS (FilterOptions::drop_gds)
     std::uint64_t gds_rewrites = 0; // GDS accesses redirected to the shadow buffer (gds_shadow_va)
+    std::uint64_t offset_drops = 0; // packets dropped through FilterOptions::drop_offsets
     std::uint64_t cs_done_rewrites = 0; // RELEASE_MEM CS_DONE/index 6 without data -> BOTTOM_OF_PIPE_TS/5
 };
 
@@ -72,6 +73,9 @@ struct FilterOptions {
     std::function<bool(std::uint64_t, std::uint64_t)> mapped;
     // Opcodes to drop in addition to the table (experiments).
     std::vector<std::uint8_t> extra_drop;
+    // Dword offsets of packets to drop, decided by the caller from data the filter cannot see
+    // (e.g. an indirect draw whose argument buffer holds an absurd count). Sorted or not.
+    std::vector<std::uint32_t> drop_offsets;
     // WAIT_REG_MEM[64] passes only when its label was written earlier in the same IB (by a
     // passing WRITE_DATA/RELEASE_MEM/EVENT_WRITE_EOP/ATOMIC_MEM); other waits are dropped and
     // left to the host. A wait the GPU can never satisfy ends in the kernel's GPU timeout.
