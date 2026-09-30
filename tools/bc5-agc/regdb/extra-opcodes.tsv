@@ -3,5 +3,9 @@
 # - AMD PAL (github.com/GPUOpen-Drivers/pal, MIT), src/core/hw/gfxip/gfx9/chip/gfx9_plus_merged_pm4_it_opcodes.h:
 #   IT_PREAMBLE_CNTL = 0x4a, IT_LOAD_UCONFIG_REG_INDEX = 0x64. Both occur in ASTRO BOT's DCBs built
 #   by Sony's libSceAgc (experiment 0011).
+#   Same header: IT_GET_LOD_STATS__APU103 = 0x8e (PAL tags it APU103-only; seen 92x in ASTRO BOT's
+#   compute buffers), IT_WAIT_REG_MEM64 = 0x93 (experiment 0012).
 0x4a	PREAMBLE_CNTL
 0x64	LOAD_UCONFIG_REG_INDEX
+0x8e	GET_LOD_STATS
+0x93	WAIT_REG_MEM64

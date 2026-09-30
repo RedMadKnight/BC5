@@ -100,3 +100,19 @@ config 0x2000, SH 0x2c00, context 0xa000, uconfig 0xc000. `TODO(verify)`: confir
 - **Q4** (Sony-specific register usage): offsets that `gfx10.json` cannot name are reported as
   `unresolved:<block>+0x…` with counts; opcodes absent from `pkt3.json`/RPCSX's table likewise.
 - Which submit-header slot is the DCB and which the CCB (§1, ioctl `0xc0488131`).
+
+## Observed in console-format captures (track B, experiments 0011–0012)
+
+Source: 718 buffers built by Sony's `libSceAgc` (ASTRO BOT, `experiments/0012-sony-frames-through-soft-cp/raw/`).
+
+- Opcodes not in Mesa's `sid.h`, named from AMD PAL: `PREAMBLE_CNTL` 0x4a, `LOAD_UCONFIG_REG_INDEX` 0x64,
+  `GET_LOD_STATS` 0x8e (`IT_GET_LOD_STATS__APU103`, PS5-class APU only), `WAIT_REG_MEM64` 0x93
+  (`tools/bc5-agc/regdb/extra-opcodes.tsv`).
+- Unresolved register offsets: SH `+0x280` (mm `0x2e80`), always written as 0 in the same `SET_SH_REG`
+  group as `COMPUTE_STATIC_THREAD_MGMT_SE0..3 = 0xffffffff` (compute dispatch preambles). TODO(verify):
+  identity; resolve against the driver binary.
+- CU masks (Q3): written by the compute preambles only, all ones, all four SEs.
+- Markers: `SQ_THREAD_TRACE_USERDATA_2/3` carry Sony's per-packet markers (the most frequent writes).
+- Submit path (Q2): `0xc0488131` = context control + state preamble IB + a 2-dword IB; `0xc0188132` = the
+  frame DCBs; compute goes through 56 hardware-style queues registered with `0xc0408121` (write pointers
+  in the mmap'd submit page, rings of `INDIRECT_BUFFER` packets).

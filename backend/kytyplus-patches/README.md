@@ -7,7 +7,7 @@ as this repository) that let the game's own copies of Sony's `libSceAgc.sprx` an
 
 | Patch | What |
 | --- | --- |
-| `0001-bc5-lle-agc.patch` | `src/libs/bc5LleAgc.cpp` (new, 29 libkernel/VideoOut/Sysmodule/RegMgr imports + `/dev/gc` and `/dev/dipsw` ioctl/mmap, optional raw capture); `/dev/gc` + `/dev/dipsw` as pseudo-devices in `KernelOpen`; registration in `libs.cpp`; `KYTY_GUEST_MEMORY_MB` override (experiment 0009); filler-NOP length fix in `pm4.h` (a type-3 header with COUNT = 0x3fff is one dword); a diagnostic in the interpreter's length check. |
+| `0001-bc5-lle-agc.patch` | `src/libs/bc5LleAgc.cpp` (new): the 29 libkernel/VideoOut/Sysmodule/RegMgr imports, `/dev/gc` + `/dev/dipsw` (ioctl, mmap), raw capture, the **soft CP** (executes `WRITE_DATA`, `RELEASE_MEM`, `EVENT_WRITE_EOP`, `COND_EXEC`, `ATOMIC_MEM`, `WAIT_REG_MEM[64]`, `COPY_DATA`, `INDIRECT_BUFFER`; fires the `EVFILT_GRAPHICS` events; skips the rest) and the **queue consumer** (the 56 hardware-style queues registered via ioctl `0xc0408121`: write pointers in the mmap'd submit page, rings of `INDIRECT_BUFFER` packets, read pointer published at `rptr_addr`). KytyPlus fixes it depends on: `/dev/gc`, `/dev/dipsw` as pseudo-devices in `KernelOpen`; registration in `libs.cpp`; `KYTY_GUEST_MEMORY_MB` (experiment 0009); filler-NOP length in `pm4.h` (COUNT 0x3fff = one dword); **fiber context save/restore as naked functions** (the `push %rbp` prologue made the saved `rip` a frame pointer, experiment 0012); instruction-fetch faults no longer routed through the GPU page tracker (deadlock); diagnostics: stalled-thread name + caller in `PthreadCondWait`, packet name in the interpreter's length check. |
 
 Apply and build (inside the `ubuntu` distrobox on the dev box, see `CLAUDE.md`):
 

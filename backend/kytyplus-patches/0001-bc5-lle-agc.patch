@@ -102,12 +102,29 @@ index 02fc0fc..6953fcf 100644
  			target = target & ~(0x4000ull - 1ull);
  			LOGF("guest memory total = %llu MiB\n", static_cast<unsigned long long>(target / megabyte));
  			return target;
+diff --git a/src/kernel/pthread.cpp b/src/kernel/pthread.cpp
+index 5f87e6b..e5c534e 100644
+--- a/src/kernel/pthread.cpp
++++ b/src/kernel/pthread.cpp
+@@ -3238,9 +3238,10 @@ int KYTY_SYSV_ABI PthreadCondWait(PthreadCond* cond, PthreadMutex* mutex) {
+ 		if (cond_elapsed >= 10 &&
+ 		    std::chrono::steady_clock::now() - cond_wait_logged > std::chrono::seconds(1)) {
+ 			cond_wait_logged = std::chrono::steady_clock::now();
+-			LOGF("PthreadCondWait: stalled %llds cond=%p mutex=%p thread=%p\n",
++			LOGF("PthreadCondWait: stalled %llds cond=%p mutex=%p thread=%p name=%s caller=%p\n",
+ 			     static_cast<long long>(cond_elapsed), static_cast<void*>(cond_value),
+-			     static_cast<void*>(mutex_value), static_cast<void*>(thread));
++			     static_cast<void*>(mutex_value), static_cast<void*>(thread), thread->name.c_str(),
++			     __builtin_return_address(0)); // BC5 diagnostic
+ 		}
+ 	}
+ 	CondRemoveWaiter(cond_value, thread);
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..04be136
+index 0000000..d22648b
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,736 @@
+@@ -0,0 +1,1248 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -138,12 +155,15 @@ index 0000000..04be136
 +#include "loader/symbolDatabase.h"
 +
 +#include <atomic>
++#include <chrono>
 +#include <cinttypes>
 +#include <cstdio>
 +#include <cstdlib>
 +#include <cstring>
 +#include <mutex>
 +#include <string>
++#include <thread>
++#include <vector>
 +
 +namespace Libs {
 +
@@ -173,6 +193,19 @@ index 0000000..04be136
 +static std::atomic<int>  g_dump_count {0};
 +static int               g_dump_limit = -1;
 +static std::string       g_dump_dir;
++
++// Compute/graphics queues registered through ioctl 0xc0408121. Until the doorbell protocol is
++// understood, a probe thread logs the submit page and the ring heads for the first minute.
++struct QueueReg {
++	uint32_t a, b, c, d;
++	uint64_t ring_base, ring_end, doorbell_page, doorbell_slot, rptr_addr;
++};
++static std::vector<QueueReg> g_queues;
++static bool                  g_queue_probe_started = false;
++// Observed protocol (experiment 0012): the mmap'd submit page is an array of u64 write pointers
++// in dwords, indexed by (d - 1); the game appends IT_INDIRECT_BUFFER packets to the 16 KiB ring
++// and bumps the pointer (8 -> 0x18 -> 0x20 seen for queues 0x21 and 0x29). The read pointer the
++// driver looks at lives at rptr_addr. Queues with a == 1 are one engine, a == 2 the other.
 +
 +static void dump_init() {
 +	static std::once_flag once;
@@ -206,6 +239,465 @@ index 0000000..04be136
 +	}
 +}
 +
++// ---------------------------------------------------------------------------------------------
++// Soft CP: executes only the packets a console DCB uses to synchronise with the CPU and the
++// display (memory writes, atomics, conditionals, waits, indirect buffers) and skips everything
++// else by packet length. Every submit therefore "completes" immediately: labels get written,
++// EOP events fire, the game keeps producing frames. Nothing is rendered. KytyPlus's own gfx9
++// interpreter cannot consume PS5 buffers (experiment 0011), and this is the seed of BC5's phase-3 CP.
++// Packet layouts follow RPCSX rpcsx/gpu/Pipe.cpp @ e8ae148 (GPL-2.0) and AMD's PM4 documentation.
++// BC5_GC_MODE=kyty forwards the buffers to KytyPlus's interpreter instead.
++// ---------------------------------------------------------------------------------------------
++namespace SoftCp {
++
++constexpr uint32_t IT_NOP                  = 0x10;
++constexpr uint32_t IT_ATOMIC_MEM           = 0x1e;
++constexpr uint32_t IT_COND_EXEC            = 0x22;
++constexpr uint32_t IT_INDIRECT_BUFFER_CNST = 0x33;
++constexpr uint32_t IT_WRITE_DATA           = 0x37;
++constexpr uint32_t IT_WAIT_REG_MEM         = 0x3c;
++constexpr uint32_t IT_INDIRECT_BUFFER      = 0x3f;
++constexpr uint32_t IT_COPY_DATA            = 0x40;
++constexpr uint32_t IT_EVENT_WRITE_EOP      = 0x47;
++constexpr uint32_t IT_RELEASE_MEM          = 0x49;
++constexpr uint32_t IT_DMA_DATA             = 0x50;
++constexpr uint32_t IT_WAIT_REG_MEM64       = 0x93;
++
++constexpr int GFX_EOP_EVENT = 0x40; // EVFILT_GRAPHICS ident the driver registers for EOP (RPCSX kGcEventGfxEop)
++// The driver also registers 0x48 and 0x46; which one is the compute EOP is not known yet, so a
++// compute-ring RELEASE_MEM fires both (TODO(bc5): pin down from the driver's kevent handling).
++constexpr int COMPUTE_EOP_EVENT_A = 0x48;
++constexpr int COMPUTE_EOP_EVENT_B = 0x46;
++static thread_local bool t_compute_ring = false;
++
++struct EqRegistration {
++	Libs::LibKernel::EventQueue::KernelEqueue eq;
++	int                                        ident;
++};
++static std::mutex                   g_eq_mutex;
++static std::vector<EqRegistration>  g_eqs;
++static std::atomic<uint64_t>        g_submits {0};
++static std::atomic<uint64_t>        g_packets {0};
++static uint64_t                     g_skipped[256];
++static std::atomic<uint64_t>        g_waits_timed_out {0};
++
++static void register_eq(Libs::LibKernel::EventQueue::KernelEqueue eq, int ident, bool add) {
++	std::lock_guard lock(g_eq_mutex);
++	if (add) {
++		g_eqs.push_back({eq, ident});
++	} else {
++		for (size_t i = 0; i < g_eqs.size(); i++) {
++			if (g_eqs[i].eq == eq && g_eqs[i].ident == ident) {
++				g_eqs.erase(g_eqs.begin() + static_cast<long>(i));
++				break;
++			}
++		}
++	}
++}
++
++static void fire(int ident, uint64_t data) {
++	std::vector<EqRegistration> eqs;
++	{
++		std::lock_guard lock(g_eq_mutex);
++		eqs = g_eqs;
++	}
++	int n = 0;
++	for (const auto& r: eqs) {
++		if (r.ident == ident) {
++			Libs::LibKernel::EventQueue::KernelTriggerEvent(
++			    r.eq, static_cast<uintptr_t>(ident), Libs::LibKernel::EventQueue::KERNEL_EVFILT_GRAPHICS,
++			    reinterpret_cast<void*>(data));
++			n++;
++		}
++	}
++	if (n == 0) {
++		LOGF_COLOR(Log::Color::Yellow, "[bc5-cp] event 0x%x fired but nobody is listening\n", ident);
++	}
++}
++
++static void fire_eop(uint64_t data) {
++	if (t_compute_ring) {
++		fire(COMPUTE_EOP_EVENT_A, data);
++		fire(COMPUTE_EOP_EVENT_B, data);
++	} else {
++		fire(GFX_EOP_EVENT, data);
++	}
++}
++
++static inline uint64_t now_ns() {
++	return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(
++	                                 std::chrono::steady_clock::now().time_since_epoch())
++	                                 .count());
++}
++
++static inline uint64_t addr64(uint32_t lo, uint32_t hi, uint32_t hi_mask = 0xffffu) {
++	return (lo & ~3u) | (static_cast<uint64_t>(hi & hi_mask) << 32u);
++}
++
++static bool compare(uint32_t function, uint32_t value, uint32_t mask, uint32_t reference) {
++	value &= mask;
++	reference &= mask;
++	switch (function & 7u) {
++		case 0: return true;
++		case 1: return value < reference;
++		case 2: return value <= reference;
++		case 3: return value == reference;
++		case 4: return value != reference;
++		case 5: return value >= reference;
++		case 6: return value > reference;
++		default: return true;
++	}
++}
++
++// Writes `value` per DATA_SEL (bits 31:29 of the data-control dword) to `address`.
++static void write_timestamp_or_data(uint32_t data_sel, uint64_t address, uint32_t lo, uint32_t hi) {
++	if (address == 0) {
++		return;
++	}
++	switch (data_sel) {
++		case 0: break;
++		case 1: *reinterpret_cast<volatile uint32_t*>(address) = lo; break;
++		case 2:
++			*reinterpret_cast<volatile uint64_t*>(address) = lo | (static_cast<uint64_t>(hi) << 32u);
++			break;
++		case 3:
++		case 4: *reinterpret_cast<volatile uint64_t*>(address) = now_ns(); break;
++		default:
++			LOGF_COLOR(Log::Color::Yellow, "[bc5-cp] data_sel %u not handled\n", data_sel);
++			break;
++	}
++}
++
++static void atomic_mem(const uint32_t* p) {
++	const uint32_t op    = p[1] & 0x7fu;
++	const uint64_t addr  = addr64(p[2], p[3]);
++	const uint64_t src   = p[4] | (static_cast<uint64_t>(p[5]) << 32u);
++	const uint64_t cmp   = p[6] | (static_cast<uint64_t>(p[7]) << 32u);
++	const bool     is64  = (op & 0x40u) != 0;
++	const uint32_t base  = op & 0x1fu; // TC_OP without the RTN/64 modifiers
++	if (addr == 0) {
++		return;
++	}
++	auto apply = [&](uint64_t old) -> uint64_t {
++		switch (base) {
++			case 0x00: return src;                                     // swap
++			case 0x01: return old == cmp ? src : old;                  // cmpswap
++			case 0x07: return old + src;                               // add
++			case 0x08: return old - src;                               // sub
++			case 0x09: return static_cast<int64_t>(old) < static_cast<int64_t>(src) ? old : src; // smin
++			case 0x0a: return old < src ? old : src;                   // umin
++			case 0x0b: return static_cast<int64_t>(old) > static_cast<int64_t>(src) ? old : src; // smax
++			case 0x0c: return old > src ? old : src;                   // umax
++			case 0x0d: return old & src;                               // and
++			case 0x0e: return old | src;                               // or
++			case 0x0f: return old ^ src;                               // xor
++			case 0x10: return old >= src ? 0 : old + 1;                // inc (wrap at src)
++			case 0x11: return (old == 0 || old > src) ? src : old - 1; // dec
++			default:
++				LOGF_COLOR(Log::Color::Yellow, "[bc5-cp] atomic op 0x%02x not handled\n", op);
++				return old;
++		}
++	};
++	if (is64) {
++		auto* m = reinterpret_cast<volatile uint64_t*>(addr);
++		*m      = apply(*m);
++	} else {
++		auto* m = reinterpret_cast<volatile uint32_t*>(addr);
++		*m      = static_cast<uint32_t>(apply(*m));
++	}
++}
++
++static void copy_data(const uint32_t* p) {
++	const uint32_t control  = p[1];
++	const uint32_t src_sel  = control & 0xfu;
++	const uint32_t dst_sel  = (control >> 8u) & 0xfu;
++	const bool     is64     = ((control >> 16u) & 1u) != 0;
++	uint64_t       value    = 0;
++	switch (src_sel) {
++		case 1:
++		case 2: { // memory (sync / TC L2)
++			const uint64_t a = addr64(p[2], p[3]);
++			if (a == 0) return;
++			value = is64 ? *reinterpret_cast<volatile uint64_t*>(a) : *reinterpret_cast<volatile uint32_t*>(a);
++			break;
++		}
++		case 5: value = p[2] | (static_cast<uint64_t>(p[3]) << 32u); break; // immediate
++		case 9:                                                              // perf counter
++		case 0xa: value = now_ns(); break;                                   // timestamp
++		default:
++			LOGF_COLOR(Log::Color::Yellow, "[bc5-cp] COPY_DATA src_sel %u not handled\n", src_sel);
++			return;
++	}
++	switch (dst_sel) {
++		case 1:
++		case 2:
++		case 5: { // memory
++			const uint64_t a = addr64(p[4], p[5]);
++			if (a == 0) return;
++			if (is64) {
++				*reinterpret_cast<volatile uint64_t*>(a) = value;
++			} else {
++				*reinterpret_cast<volatile uint32_t*>(a) = static_cast<uint32_t>(value);
++			}
++			break;
++		}
++		default:
++			LOGF_COLOR(Log::Color::Yellow, "[bc5-cp] COPY_DATA dst_sel %u not handled\n", dst_sel);
++			break;
++	}
++}
++
++static void write_data(const uint32_t* p, uint32_t payload) {
++	const uint32_t control = p[1];
++	const uint32_t dst_sel = (control >> 8u) & 0xfu;
++	const bool     one_addr = ((control >> 16u) & 1u) != 0;
++	if (dst_sel != 1 && dst_sel != 2 && dst_sel != 5) {
++		return; // registers, GDS: nothing to do
++	}
++	const uint64_t a = addr64(p[2], p[3]);
++	if (a == 0 || payload < 3) {
++		return;
++	}
++	const uint32_t n = payload - 3;
++	auto*          d = reinterpret_cast<volatile uint32_t*>(a);
++	for (uint32_t i = 0; i < n; i++) {
++		if (one_addr) {
++			*d = p[4 + i];
++		} else {
++			d[i] = p[4 + i];
++		}
++	}
++}
++
++static void wait_reg_mem(const uint32_t* p, bool is64) {
++	const uint32_t function  = p[1] & 7u;
++	const bool     mem_space = ((p[1] >> 4u) & 1u) != 0;
++	if (!mem_space) {
++		return; // register polls are meaningless here
++	}
++	const uint64_t a = addr64(p[2], p[3]);
++	if (a == 0) {
++		return;
++	}
++	const uint64_t deadline = now_ns() + 2'000'000'000ull;
++	for (;;) {
++		bool ok;
++		if (is64) {
++			// WAIT_REG_MEM64: ref lo/hi at p[4],p[5], mask lo/hi at p[6],p[7]
++			const uint64_t v    = *reinterpret_cast<volatile uint64_t*>(a);
++			const uint64_t ref  = p[4] | (static_cast<uint64_t>(p[5]) << 32u);
++			const uint64_t mask = p[6] | (static_cast<uint64_t>(p[7]) << 32u);
++			const uint64_t vm = v & mask, rm = ref & mask;
++			switch (function) {
++				case 0: ok = true; break;
++				case 1: ok = vm < rm; break;
++				case 2: ok = vm <= rm; break;
++				case 3: ok = vm == rm; break;
++				case 4: ok = vm != rm; break;
++				case 5: ok = vm >= rm; break;
++				case 6: ok = vm > rm; break;
++				default: ok = true; break;
++			}
++		} else {
++			ok = compare(function, *reinterpret_cast<volatile uint32_t*>(a), p[5], p[4]);
++		}
++		if (ok) {
++			return;
++		}
++		if (now_ns() > deadline) {
++			g_waits_timed_out++;
++			LOGF_COLOR(Log::Color::Yellow, "[bc5-cp] WAIT_REG_MEM%s on 0x%" PRIx64 " timed out (fn %u ref 0x%x), continuing\n",
++			           is64 ? "64" : "", a, function, p[4]);
++			return;
++		}
++		std::this_thread::yield();
++	}
++}
++
++static void release_mem(const uint32_t* p, uint32_t payload) {
++	// gfx10 form (8 dwords): event_cntl, data_cntl, addr lo, addr hi, data lo, data hi, int_ctxid
++	const uint32_t data_cntl = p[2];
++	const uint32_t data_sel  = data_cntl >> 29u;
++	const uint32_t int_sel   = (data_cntl >> 24u) & 3u;
++	const uint64_t a         = addr64(p[3], p[4]);
++	const uint32_t lo = p[5], hi = p[6];
++	(void)payload;
++	write_timestamp_or_data(data_sel, a, lo, hi);
++	if (int_sel != 0) {
++		fire_eop(lo | (static_cast<uint64_t>(hi) << 32u));
++	}
++}
++
++static void event_write_eop(const uint32_t* p) {
++	// PS4 form: event_cntl, addr lo, data_cntl (addr hi 15:0, int_sel 25:24, data_sel 31:29), data lo, hi
++	const uint32_t data_cntl = p[3];
++	const uint32_t data_sel  = data_cntl >> 29u;
++	const uint32_t int_sel   = (data_cntl >> 24u) & 3u;
++	const uint64_t a         = addr64(p[2], data_cntl);
++	write_timestamp_or_data(data_sel, a, p[4], p[5]);
++	if (int_sel != 0) {
++		fire_eop(p[4] | (static_cast<uint64_t>(p[5]) << 32u));
++	}
++}
++
++static void execute(const uint32_t* buf, uint32_t num_dwords, int depth);
++
++static void indirect_buffer(const uint32_t* p, int depth) {
++	const uint64_t a    = addr64(p[1], p[2], 0xffu);
++	const uint32_t size = p[3] & 0xfffffu;
++	if (a == 0 || size == 0 || depth >= 4) {
++		return;
++	}
++	dump_cb(depth == 0 ? "ib1" : "ib2", reinterpret_cast<const uint32_t*>(a), size);
++	execute(reinterpret_cast<const uint32_t*>(a), size, depth + 1);
++}
++
++static void execute(const uint32_t* buf, uint32_t num_dwords, int depth) {
++	uint32_t i = 0;
++	while (i < num_dwords) {
++		const uint32_t header = buf[i];
++		const uint32_t type   = header >> 30u;
++		uint32_t       len    = 1;
++		if (type == 3) {
++			const uint32_t count = (header >> 16u) & 0x3fffu;
++			len                  = count == 0x3fffu ? 1 : count + 2;
++			const uint32_t op    = (header >> 8u) & 0xffu;
++			const uint32_t* p    = buf + i;
++			if (i + len > num_dwords) {
++				LOGF_COLOR(Log::Color::Red, "[bc5-cp] packet 0x%08x at %u overruns the buffer (%u dwords)\n",
++				           header, i, num_dwords);
++				break;
++			}
++			g_packets++;
++			switch (op) {
++				case IT_NOP: break;
++				case IT_COND_EXEC: {
++					// skip the next exec_count dwords when the 32-bit value at the address is zero
++					const uint64_t a = addr64(p[1], p[2]);
++					const uint32_t exec_count = p[4] & 0x3fffu;
++					if (a != 0 && *reinterpret_cast<volatile uint32_t*>(a) == 0) {
++						len += exec_count;
++					}
++					break;
++				}
++				case IT_INDIRECT_BUFFER:
++				case IT_INDIRECT_BUFFER_CNST: indirect_buffer(p, depth); break;
++				case IT_WRITE_DATA: write_data(p, len - 1); break;
++				case IT_WAIT_REG_MEM: wait_reg_mem(p, false); break;
++				case IT_WAIT_REG_MEM64: wait_reg_mem(p, true); break;
++				case IT_COPY_DATA: copy_data(p); break;
++				case IT_ATOMIC_MEM: atomic_mem(p); break;
++				case IT_EVENT_WRITE_EOP: event_write_eop(p); break;
++				case IT_RELEASE_MEM: release_mem(p, len - 1); break;
++				default: g_skipped[op & 0xffu]++; break;
++			}
++		} else if (type == 0) {
++			len = ((header >> 16u) & 0x3fffu) + 2; // type-0 register write: N+1 registers
++		} else if (type == 2) {
++			len = 1;
++		} else {
++			LOGF_COLOR(Log::Color::Red, "[bc5-cp] type-1 packet 0x%08x at %u: stopping this buffer\n", header, i);
++			break;
++		}
++		i += len;
++	}
++}
++
++static void submit(const uint32_t* buf, uint32_t num_dwords, const char* kind) {
++	const uint64_t n = g_submits.fetch_add(1);
++	execute(buf, num_dwords, 0);
++	if (n < 16 || (n & 0xffu) == 0) {
++		std::string skipped;
++		for (int op = 0; op < 256; op++) {
++			if (g_skipped[op] != 0) {
++				char b[32];
++				std::snprintf(b, sizeof(b), " %02x:%" PRIu64, op, g_skipped[op]);
++				skipped += b;
++			}
++		}
++		LOGF("[bc5-cp] submit #%" PRIu64 " (%s, %u dwords) done; packets so far %" PRIu64 "; skipped by opcode:%s; wait timeouts %" PRIu64 "\n",
++		     n, kind, num_dwords, g_packets.load(), skipped.c_str(), g_waits_timed_out.load());
++	}
++}
++
++// Consumes the hardware-style queues the driver registered (ioctl 0xc0408121): for each queue,
++// packets between our read pointer and the game's write pointer (submit page, u64 per queue, in
++// dwords) are executed, the read pointer is published at rptr_addr. Compute-ring EOPs fire the
++// compute event idents. Polled at 1 kHz; the driver never tells us about a doorbell write.
++static void queue_consumer_thread() {
++	struct State {
++		QueueReg reg;
++		uint64_t rptr  = 0;
++		uint64_t count = 0;
++	};
++	std::vector<State> states;
++	uint64_t           idle_ticks = 0;
++	for (;;) {
++		{
++			std::lock_guard lock(g_mutex);
++			while (states.size() < g_queues.size()) {
++				states.push_back({g_queues[states.size()], 0, 0});
++			}
++		}
++		bool progressed = false;
++		for (auto& s: states) {
++			const auto& q     = s.reg;
++			const auto* page  = reinterpret_cast<const volatile uint64_t*>(q.doorbell_page);
++			const uint64_t wptr = page[q.d == 0 ? 0 : q.d - 1];
++			const uint32_t n    = static_cast<uint32_t>((q.ring_end - q.ring_base) / 4);
++			if (n == 0 || wptr == s.rptr) {
++				continue;
++			}
++			const auto* ring = reinterpret_cast<const uint32_t*>(q.ring_base);
++			uint32_t guard = 0;
++			while (s.rptr != wptr && guard++ < 4096) {
++				const uint32_t  off    = static_cast<uint32_t>(s.rptr % n);
++				const uint32_t  header = ring[off];
++				uint32_t        len    = 1;
++				if ((header >> 30u) == 3) {
++					const uint32_t count = (header >> 16u) & 0x3fffu;
++					len                  = count == 0x3fffu ? 1 : count + 2;
++					if (off + len <= n) {
++						t_compute_ring = (q.a == 2); // TODO(bc5): which engine is compute is a guess
++						const uint32_t op = (header >> 8u) & 0xffu;
++						if (s.count < 8) {
++							LOGF("[bc5-q] queue %u/%u/%u/0x%x: packet #%" PRIu64 " op 0x%02x len %u (rptr %" PRIu64 " wptr %" PRIu64 ")\n",
++							     q.a, q.b, q.c, q.d, s.count, op, len, s.rptr, wptr);
++						}
++						if (op == IT_INDIRECT_BUFFER || op == IT_INDIRECT_BUFFER_CNST) {
++							indirect_buffer(ring + off, 0);
++						} else {
++							execute(ring + off, len, 1);
++						}
++						t_compute_ring = false;
++					}
++				}
++				s.rptr += len;
++				s.count++;
++				g_packets++;
++			}
++			*reinterpret_cast<volatile uint32_t*>(q.rptr_addr) = static_cast<uint32_t>(s.rptr);
++			progressed = true;
++		}
++		if (progressed) {
++			idle_ticks = 0;
++		} else {
++			idle_ticks++;
++		}
++		std::this_thread::sleep_for(std::chrono::microseconds(idle_ticks > 1000 ? 1000 : 200));
++	}
++}
++
++} // namespace SoftCp
++
++static bool use_soft_cp() {
++	static const bool soft = [] {
++		const char* m = std::getenv("BC5_GC_MODE");
++		return m == nullptr || std::strcmp(m, "kyty") != 0;
++	}();
++	return soft;
++}
++
 +// One entry of a submit list is an IT_INDIRECT_BUFFER packet: header 0xc0023f00, address lo, hi,
 +// IB_SIZE in dwords (bits 0..19). RPCSX hands these to its PM4 interpreter as-is; KytyPlus wants the
 +// DCB pointer and size, so the packet is unwrapped here.
@@ -219,7 +711,11 @@ index 0000000..04be136
 +	     pkt[0], addr, size);
 +	auto* dcb = reinterpret_cast<uint32_t*>(addr);
 +	dump_cb(kind, dcb, size);
-+	Graphics::Gen5Driver::GraphicsDriverSubmitCommandBuffer(0, dcb, size);
++	if (use_soft_cp()) {
++		SoftCp::submit(dcb, size, kind);
++	} else {
++		Graphics::Gen5Driver::GraphicsDriverSubmitCommandBuffer(0, dcb, size);
++	}
 +}
 +
 +static void submit_raw(const uint32_t* dwords, uint32_t num, const char* kind) {
@@ -227,8 +723,12 @@ index 0000000..04be136
 +		return;
 +	}
 +	dump_cb(kind, dwords, num);
-+	Graphics::Gen5Driver::GraphicsDriverSubmitCommandBuffer(0, const_cast<uint32_t*>(dwords),
-+	                                                        num);
++	if (use_soft_cp()) {
++		SoftCp::submit(dwords, num, kind);
++	} else {
++		Graphics::Gen5Driver::GraphicsDriverSubmitCommandBuffer(0, const_cast<uint32_t*>(dwords),
++		                                                        num);
++	}
 +}
 +
 +// Returns 0 on success or a positive errno (the libkernel wrapper turns it into -1/errno).
@@ -346,6 +846,33 @@ index 0000000..04be136
 +			auto* m = static_cast<uint32_t*>(argp);
 +			m[0] = m[1] = m[2] = m[3] = ~0u;
 +			return 0;
++		}
++		case 0xc0408121: { // ps5: queue registration (56 per run); layout is a working hypothesis
++			struct Args {
++				uint32_t a, b, c, d;       // {1|2, 2}, {slot 0x2b.., index 0..7}
++				uint64_t ring_base;        // 16 KiB ring in SceGnmACQRB
++				uint64_t ring_end;
++				uint64_t doorbell_page;    // the mmap'd submit page (0xfe0200000)
++				uint64_t doorbell_slot;    // 0xc
++				uint64_t rptr_addr;        // a page in SceGnmEopFifo
++				uint64_t rptr_size;        // 0x1000
++			};
++			static_assert(sizeof(Args) == 64);
++			auto* a = static_cast<Args*>(argp);
++			LOGF("[bc5-gc] queue reg: %u %u %u 0x%x ring 0x%" PRIx64 "-0x%" PRIx64 " doorbell 0x%" PRIx64
++			     "+0x%" PRIx64 " rptr 0x%" PRIx64 " (0x%" PRIx64 ")\n",
++			     a->a, a->b, a->c, a->d, a->ring_base, a->ring_end, a->doorbell_page, a->doorbell_slot,
++			     a->rptr_addr, a->rptr_size);
++			{
++				std::lock_guard lock(g_mutex);
++				g_queues.push_back({a->a, a->b, a->c, a->d, a->ring_base, a->ring_end, a->doorbell_page,
++				                    a->doorbell_slot, a->rptr_addr});
++				if (!g_queue_probe_started) {
++					g_queue_probe_started = true;
++					std::thread(SoftCp::queue_consumer_thread).detach();
++				}
++			}
++			return 0; // out: zeros (whatever the kernel returns here is not known yet)
 +		}
 +		case 0xc0048113: // num clients
 +			*static_cast<uint32_t*>(argp) = 1;
@@ -503,6 +1030,7 @@ index 0000000..04be136
 +		if (c.filter == EQ::KERNEL_EVFILT_GRAPHICS) {
 +			if ((c.flags & Bc5Gc::EV_DELETE) != 0) {
 +				Graphics::Gen5Driver::GraphicsDriverDeleteEqEvent(eq, static_cast<int>(c.ident));
++				Bc5Gc::SoftCp::register_eq(eq, static_cast<int>(c.ident), false);
 +			} else if ((c.flags & Bc5Gc::EV_ADD) != 0) {
 +				int r = Graphics::Gen5Driver::GraphicsDriverAddEqEvent(eq, static_cast<int>(c.ident),
 +				                                                       c.udata);
@@ -510,6 +1038,7 @@ index 0000000..04be136
 +					LOGF_COLOR(Log::Color::Red, "[bc5-gc] AddEqEvent failed: 0x%08x\n", r);
 +					return -1;
 +				}
++				Bc5Gc::SoftCp::register_eq(eq, static_cast<int>(c.ident), true);
 +			}
 +		} else {
 +			LOGF_COLOR(Log::Color::Yellow, "[bc5-gc] kevent: filter %d not handled\n", c.filter);
@@ -844,6 +1373,93 @@ index 0000000..04be136
 +}
 +
 +} // namespace Libs
+diff --git a/src/libs/libKernel.cpp b/src/libs/libKernel.cpp
+index 51c3a0e..01ed1c1 100644
+--- a/src/libs/libKernel.cpp
++++ b/src/libs/libKernel.cpp
+@@ -2458,47 +2458,41 @@ static void FiberSetContextValid(FiberObject* fiber, bool valid) {
+ }
+ 
+ #if defined(__x86_64__) || defined(_M_X64)
+-__attribute__((noinline, returns_twice)) static int FiberSaveContext(FiberCpuContext* ctx) {
+-	int ret = 0;
+-	asm volatile("movq %[ctx], %%r10\n\t"
+-	             "movq %%rbx, 0(%%r10)\n\t"
+-	             "movq %%rbp, 8(%%r10)\n\t"
+-	             "movq %%rdi, 16(%%r10)\n\t"
+-	             "movq %%rsi, 24(%%r10)\n\t"
+-	             "movq %%r12, 32(%%r10)\n\t"
+-	             "movq %%r13, 40(%%r10)\n\t"
+-	             "movq %%r14, 48(%%r10)\n\t"
+-	             "movq %%r15, 56(%%r10)\n\t"
+-	             "leaq 8(%%rsp), %%r11\n\t"
+-	             "movq %%r11, 64(%%r10)\n\t"
+-	             "movq (%%rsp), %%r11\n\t"
+-	             "movq %%r11, 72(%%r10)\n\t"
+-	             "xorl %%eax, %%eax\n\t"
+-	             : "=a"(ret)
+-	             : [ctx] "r"(ctx)
+-	             : "memory", "r10", "r11");
+-	return ret;
+-}
+-
+-__attribute__((noreturn, noinline)) static void FiberRestoreContext(FiberCpuContext* ctx,
+-                                                                    uint64_t         ret) {
+-	asm volatile("movq %[ctx], %%r10\n\t"
+-	             "movq 72(%%r10), %%r11\n\t"
+-	             "movq 0(%%r10), %%rbx\n\t"
+-	             "movq 8(%%r10), %%rbp\n\t"
+-	             "movq 16(%%r10), %%rdi\n\t"
+-	             "movq 24(%%r10), %%rsi\n\t"
+-	             "movq 32(%%r10), %%r12\n\t"
+-	             "movq 40(%%r10), %%r13\n\t"
+-	             "movq 48(%%r10), %%r14\n\t"
+-	             "movq 56(%%r10), %%r15\n\t"
+-	             "movq 64(%%r10), %%rsp\n\t"
+-	             "movq %[ret], %%rax\n\t"
+-	             "jmp *%%r11\n\t"
+-	             :
+-	             : [ctx] "r"(ctx), [ret] "r"(ret)
+-	             : "memory", "rax", "r10", "r11");
+-	__builtin_unreachable();
++// Both helpers are naked: any prologue (clang emits "push %rbp" for a returns_twice function)
++// would make (%rsp) the saved frame pointer instead of the return address, and the restored
++// context would then jump into the stack. (BC5 fix; the argument is in %rdi, ret in %rsi.)
++__attribute__((naked, noinline, returns_twice)) static int FiberSaveContext(FiberCpuContext* ctx) {
++	asm volatile("movq %rbx, 0(%rdi)\n\t"
++	             "movq %rbp, 8(%rdi)\n\t"
++	             "movq %rdi, 16(%rdi)\n\t"
++	             "movq %rsi, 24(%rdi)\n\t"
++	             "movq %r12, 32(%rdi)\n\t"
++	             "movq %r13, 40(%rdi)\n\t"
++	             "movq %r14, 48(%rdi)\n\t"
++	             "movq %r15, 56(%rdi)\n\t"
++	             "leaq 8(%rsp), %r11\n\t"
++	             "movq %r11, 64(%rdi)\n\t"
++	             "movq (%rsp), %r11\n\t"
++	             "movq %r11, 72(%rdi)\n\t"
++	             "xorl %eax, %eax\n\t"
++	             "ret\n\t");
++}
++
++__attribute__((naked, noreturn, noinline)) static void FiberRestoreContext(FiberCpuContext* ctx,
++                                                                           uint64_t         ret) {
++	asm volatile("movq %rdi, %r10\n\t"
++	             "movq %rsi, %rax\n\t"
++	             "movq 72(%r10), %r11\n\t"
++	             "movq 0(%r10), %rbx\n\t"
++	             "movq 8(%r10), %rbp\n\t"
++	             "movq 16(%r10), %rdi\n\t"
++	             "movq 24(%r10), %rsi\n\t"
++	             "movq 32(%r10), %r12\n\t"
++	             "movq 40(%r10), %r13\n\t"
++	             "movq 48(%r10), %r14\n\t"
++	             "movq 56(%r10), %r15\n\t"
++	             "movq 64(%r10), %rsp\n\t"
++	             "jmp *%r11\n\t");
+ }
+ #else
+ static int FiberSaveContext(FiberCpuContext* ctx) {
 diff --git a/src/libs/libs.cpp b/src/libs/libs.cpp
 index 36e4dc8..eaa58d7 100644
 --- a/src/libs/libs.cpp
@@ -864,3 +1480,19 @@ index 36e4dc8..eaa58d7 100644
  }
  
  namespace LibContentExport {
+diff --git a/src/loader/runtimeLinker.cpp b/src/loader/runtimeLinker.cpp
+index 343045e..a089454 100644
+--- a/src/loader/runtimeLinker.cpp
++++ b/src/loader/runtimeLinker.cpp
+@@ -820,7 +820,10 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
+ 			EXIT("invalid access type for page fault at 0x%016" PRIx64 "\n",
+ 			     info->access_violation_vaddr);
+ 		}();
+-		if (Libs::LibKernel::Memory::HandleGpuFault(access, info->access_violation_vaddr)) {
++		// BC5: an instruction fetch cannot be a GPU-tracking fault (see HandleGpuFault's
++		// synchronous round trip to the GPU thread, which deadlocks when that thread is idle).
++		if (access != GpuAccess::Execute &&
++		    Libs::LibKernel::Memory::HandleGpuFault(access, info->access_violation_vaddr)) {
+ 			return true;
+ 		}
+ 

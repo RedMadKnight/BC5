@@ -1,0 +1,21 @@
+streams: 296  packets: 16951
+known opcodes (11):
+  0x10 NOP                          148
+  0x15 DISPATCH_DIRECT              692
+  0x16 DISPATCH_INDIRECT            18
+  0x37 WRITE_DATA                   1213
+  0x46 EVENT_WRITE                  836
+  0x49 RELEASE_MEM                  2473
+  0x50 DMA_DATA                     934
+  0x58 ACQUIRE_MEM                  836
+  0x76 SET_SH_REG                   6204
+  0x79 SET_UCONFIG_REG              3268
+  0x93 WAIT_REG_MEM64               329
+unknown opcodes (0):
+register writes: 41 named, 1 unresolved offsets
+  unresolved:sh+0x0280 (mm 0x02e80) 148
+cu-mask register writes (Q3): 592
+  COMPUTE_STATIC_THREAD_MGMT_SE0       148
+  COMPUTE_STATIC_THREAD_MGMT_SE1       148
+  COMPUTE_STATIC_THREAD_MGMT_SE2       148
+  COMPUTE_STATIC_THREAD_MGMT_SE3       148
