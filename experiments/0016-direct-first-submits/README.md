@@ -446,6 +446,16 @@ frame), **no indirect packet dropped** — the counts are 1 (28 `DISPATCH_INDIRE
 still zero, so the next question is whether any render target receives pixels: at flip the
 host now also samples every CB/DB base the hint mapper saw.
 
+**Run 61** (2026-10-01 00:01, render targets sampled at flip): the GPU **draws** — the scene's colour
+target 0x519df0000 and its depth buffer 0x527430000 are fully non-zero after a frame, HTILE and
+CMASK/DCC metadata partially, several targets untouched — and the flip buffers stay zero. The
+pass into the flip buffer (found in the frame DCB with the surveyed tables) is a plain
+`DRAW_INDEX_AUTO` of 3 vertices (a full-screen triangle) with sane state: CB0 base 0x5093f0000,
+3840×2160, `CB_TARGET_MASK` 0xf, full-screen scissors, depth test off, no blend, no DCC. Why it
+leaves nothing behind is the open question (the PS5's `SubmitEopFlip` semantics — a flip at the
+EOP of the *next* submission, presented immediately by the host — is one candidate for the
+sampling and the presentation, not for the memory being zero).
+
 **Verdict (2026-09-30, end of day).** Steps (a)–(c) passed; (d) and (e) reached "the game's
 frames — draws, dispatches and both queue types — execute on the BC-250 from the track-B host
 without a hang", with 22 machine resets spent on the CP-stall class (stale L2, `CLEAR_STATE`,
