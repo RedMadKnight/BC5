@@ -1,0 +1,40 @@
+# experiments/0008 — transcript of the ssh sessions, 2026-09-30 (BC-250, ~/bc5-work/backend-amdgpu)
+
+$ uptime; busctl ... HasInhibit; sudo bc250-cu-live-manager status | tail -1; cat mem_info_vram_total
+ 08:28:51 up  9:55,  2 users,  load average: 0,03, 0,05, 0,02
+b true
+  CUs active & routed  : 40/40
+536870912
+
+$ ./dispatch-min --info
+family 143, chip external rev 0x84, asic id 0x13fe
+CUs reported by the kernel: 24 active (SE 2, SH/SE 2)
+GFX rings available: mask 0x1; compute rings: mask 0xf
+note: the kernel count excludes CUs routed after boot (experiment 0004)
+
+# repo 9571c08 (builder with DISPATCH_DIRECT {0x10, groups, 1, 1})
+$ timeout 60 ./dispatch-min --submit
+dispatch-min: --submit runs a shader on the GPU (GFX ring). A bad submission can hang or reset the machine.
+dispatch done: 0 of 16384 bytes differ from 0x22
+exit 0 after 8 ms
+$ (5 repeats) dispatch done: 0 of 16384 bytes differ from 0x22   x5
+$ --bytes 65536      dispatch done: 49152 of 65536 bytes differ from 0x22        exit=1 15 ms
+$ --bytes 1048576    dispatch done: 1032192 of 1048576 bytes differ from 0x22    exit=1 163 ms
+$ --bytes 16777216   dispatch done: 16760832 of 16777216 bytes differ from 0x22  exit=1 2537 ms
+$ --bytes 268435456  dispatch done: 268419072 of 268435456 bytes differ from 0x22 exit=1 40494 ms
+$ uname -r; pkg-config --modversion libdrm_amdgpu; cat mem_info_vram_total mem_info_gtt_total
+7.2.4-ogc3.1.fc44.x86_64
+2.4.134
+536870912
+7966146560
+$ sudo dmesg | grep -i "amdgpu\|gpu reset\|ring" | tail -5   -> only the boot-time "Unsupported screen format RA24" lines (t=23 s)
+
+# repo 472779f (fix: DISPATCH_DIRECT {groups, 1, 1, 1}); cmake --build . -j8; ctest -> 7/7 passed
+$ --bytes 16384      dispatch done: 0 of 16384 bytes differ from 0x22      exit=0 8 ms
+$ --bytes 65536      dispatch done: 0 of 65536 bytes differ from 0x22      exit=0 15 ms
+$ --bytes 1048576    dispatch done: 0 of 1048576 bytes differ from 0x22    exit=0 163 ms
+$ --bytes 16777216   dispatch done: 0 of 16777216 bytes differ from 0x22   exit=0 2536 ms
+$ --bytes 268435456  dispatch done: 0 of 268435456 bytes differ from 0x22  exit=0 40492 ms
+$ sudo dmesg | tail -2  -> IPv6 MLD lines only
+$ cat mem_info_vram_used
+217427968

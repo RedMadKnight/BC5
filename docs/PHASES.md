@@ -41,7 +41,7 @@ Gate G1: a full VSH frame decodes with zero unknown opcodes; unknown register of
 
 Tasks
 1. Experiment `dev-box-inventory` refresh if anything changed.
-2. Port libdrm `tests/amdgpu` dispatch test into `backend/experiments/dispatch-min`: allocate BOs, load a compute shader binary, `SET_SH_REG` PGM/RSRC, `DISPATCH_DIRECT`, fence, read back. GFX ring only.
+2. Port libdrm `tests/amdgpu` dispatch test into `backend/experiments/dispatch-min`: allocate BOs, load a compute shader binary, `SET_SH_REG` PGM/RSRC, `DISPATCH_DIRECT`, fence, read back. GFX ring only. *Done 2026-09-30, experiment 0008 (IGT sequence, 16 KiB–256 MiB filled on the GFX ring).*
 3. Replace the test shader with a compute shader extracted from a phase-1 capture. Run the same shader through Kyty's recompiler on a PC for comparison.
 4. Experiment for Q1: `AMDGPU_GEM_USERPTR` + chosen VA; measure.
 
