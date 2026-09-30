@@ -269,6 +269,20 @@ compute counters live in the global data share, which our VMID does not have. Jo
 IBs dumped before the submit, and the piecewise mode descending into `INDIRECT_BUFFER` targets;
 then a GDS BO on the BO list (`BC5_DIRECT_GDS_KIB`) so the accesses may pass.
 
+**Step (e2), run 39** (19:51, GDS packets dropped): **reset 15**, same place — 48 submits OK,
+then the ring slice whose fourth `INDIRECT_BUFFER` is the game's first compute IB (1,336
+dwords, now dumped before the submit: `direct-000049-ring-ib3.raw.bin`, not committed). So GDS
+is not (alone) what stalls the CP. Decoded, that IB is 225 packets: a "reset compute state"
+block (`SET_SH_REG` zeros for COMPUTE_START_X … COMPUTE_USER_DATA_15, `COMPUTE_DISPATCH_TUNNEL`
+0x2e7d = 0x4ff, 0x2e80 = 0), `ACQUIRE_MEM` with size 0 and `gcr_cntl` 0xc3a1 / 0x8380, `EVENT_WRITE`
+CS_PARTIAL_FLUSH, `RELEASE_MEM` CS_DONE (event index 6) without data, `RELEASE_MEM` BOTTOM_OF_PIPE_TS
+with the GPU clock, `WAIT_REG_MEM64` on a label the gfx queue writes (dropped by the self-wait
+rule), per-dispatch `COMPUTE_PGM_LO`/`RSRC1`/`RSRC2`/`NUM_THREAD_*`/`USER_DATA_*` then
+`DISPATCH_DIRECT` 192×1×1 with initiator 0x41, and `DMA_DATA` fills. Candidates for a CP stall,
+none seen on the GPU before: 0x2e7d, CS_DONE/index-6 `RELEASE_MEM`, size-0 `ACQUIRE_MEM`, the
+`DMA_DATA` fills. Next: the piecewise mode descending into that IB
+(`BC5_DIRECT_PIECEWISE_KIND=ring BC5_DIRECT_PIECEWISE_MIN=1000`), one run names the packet.
+
 **Verdict (interim, end of 2026-09-30).** Steps (a)–(c) passed and (d) reached "frames with draws
 run on the GPU, faults recoverable and learned"; not yet "image on screen" (G3). Open: present
 the GPU's flip buffer; size the hint windows from the surface registers; decode the descriptor
