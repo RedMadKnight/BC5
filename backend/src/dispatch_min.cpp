@@ -64,9 +64,12 @@ std::vector<std::uint32_t> build_memset_ib(const MemsetParams &p) {
     b.set_sh_reg(0x244, {p.value, p.value, p.value, p.value});
     b.set_sh_reg(0x215, {0}); // COMPUTE_RESOURCE_LIMITS
 
-    // DISPATCH_DIRECT (dispatch.c:174-179), one group per 1 KiB (ADR 0004 deviation).
+    // DISPATCH_DIRECT payload is DIM_X, DIM_Y, DIM_Z, DISPATCH_INITIATOR (Mesa
+    // src/amd/vulkan/radv_cmd_buffer.c:15305-15309 @ 0866ae7; IGT amd_dispatch.c:175-179
+    // emits 0x10, 1, 1, 1 = 16 groups). One group per 1 KiB (ADR 0004 deviation); the
+    // initiator bit 0 is COMPUTE_SHADER_EN. Experiment 0008 caught the earlier field order.
     const std::uint32_t groups = p.dst_bytes / kBytesPerGroup;
-    b.packet(Op::DispatchDirect, {0x10u, groups, 1u, 1u}, true);
+    b.packet(Op::DispatchDirect, {groups, 1u, 1u, 1u}, true);
 
     b.pad_to_multiple(8); // emit_aligned(7, GFX_COMPUTE_NOP)
     return b.dwords();

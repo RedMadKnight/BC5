@@ -57,11 +57,14 @@ TEST_CASE("memset IB reproduces the IGT gfx10 sequence", "[dispatch-min]") {
     REQUIRE(ib[ud + 3] == (0x2u | 0x100000u));
     REQUIRE(ib[ud + 4] == 16384u / 16u);
     REQUIRE(ib[ud + 5] == 0x1104bfacu);
-    // DISPATCH_DIRECT with 16 groups for 16 KiB.
+    // DISPATCH_DIRECT: DIM_X = 16 groups for 16 KiB, DIM_Y = DIM_Z = 1, initiator = 1
+    // (IGT amd_dispatch.c:175-179 emits exactly 0x10, 1, 1, 1; see experiment 0008).
     const auto disp = find(0xC0031502u, 0x10);
     REQUIRE(disp < ib.size());
-    REQUIRE(ib[disp + 2] == 16u);
+    REQUIRE(ib[disp + 1] == 16u);
+    REQUIRE(ib[disp + 2] == 1u);
     REQUIRE(ib[disp + 3] == 1u);
+    REQUIRE(ib[disp + 4] == 1u);
     // CU masks: every SE fully enabled.
     REQUIRE(find(0xC0029B02u, 0x30000216u) < ib.size());
     REQUIRE(find(0xC0029B02u, 0x219u) < ib.size());

@@ -18,7 +18,7 @@ Sources (`IGT` = gitlab.freedesktop.org/drm/igt-gpu-tools @ `9d4b6ef` (2026-09-2
 | default compute state for `version == 10` | IGT `lib/amdgpu/compute_utils/amd_dispatch_helpers.c:16-72` (`amdgpu_dispatch_init`) |
 | CU masks via `SET_SH_REG_INDEX` (0x9B) | same file `:75-100` (`amdgpu_dispatch_write_cumask`) |
 | `COMPUTE_PGM_LO/HI`, `RSRC1 = 0x000C0041`, `RSRC2 = 0x00000090`, `NUM_THREAD_X/Y/Z = 64/1/1`, `RSRC3 = 0` | same file `:103-185` (`amdgpu_dispatch_write2hw`) |
-| user data: V# of the destination in `USER_DATA_0..3` (word3 `0x1104bfac` for gfx10), clear value in `USER_DATA_4..7`, `COMPUTE_RESOURCE_LIMITS = 0`, `DISPATCH_DIRECT` initiator `0x10`, NOP padding to 8 dwords with `0xffff1000` | IGT `lib/amdgpu/compute_utils/amd_dispatch.c:142-181` (`amdgpu_memset_dispatch_test`) |
+| user data: V# of the destination in `USER_DATA_0..3` (word3 `0x1104bfac` for gfx10), clear value in `USER_DATA_4..7`, `COMPUTE_RESOURCE_LIMITS = 0`, `DISPATCH_DIRECT` = `DIM_X 0x10, DIM_Y 1, DIM_Z 1, DISPATCH_INITIATOR 1` (field order per Mesa `src/amd/vulkan/radv_cmd_buffer.c:15305-15309` @ `0866ae7`), NOP padding to 8 dwords with `0xffff1000` | IGT `lib/amdgpu/compute_utils/amd_dispatch.c:142-181` (`amdgpu_memset_dispatch_test`) |
 | PM4 header encoding, `PACKET3_COMPUTE` = header \| bit 1 | IGT `lib/amdgpu/amd_PM4.h:48-52`; `docs/formats/agc.md` §2 |
 | SH register offsets (relative to 0x2c00) | Mesa `gfx10.json` via `tools/bc5-agc` (HANDOFF F7), e.g. `COMPUTE_PGM_LO` = mm 0x2e0c → 0x20c |
 
@@ -39,9 +39,12 @@ Sources (`IGT` = gitlab.freedesktop.org/drm/igt-gpu-tools @ `9d4b6ef` (2026-09-2
      destination and the command BO, uploads the shader, builds the IB with the real addresses,
      submits it on the **GFX ring** (the gfx1013 compute queue is disabled by RADV, HANDOFF F6),
      waits on the fence with a finite timeout, and checks every byte of the destination.
-3. Deviations from IGT, each recorded here: the destination is 16 KiB and the dispatch is 16×1×1
-   thread groups, so 16 groups × 64 threads × 16 bytes cover the whole buffer (IGT's test dispatches
-   1×1×1 and checks 16 KiB; its V# `num_records` is 0x400). The fence wait uses a 2 s timeout instead
+3. Deviations from IGT, each recorded here: the destination size is a parameter (default 16 KiB)
+   and the dispatch is (size / 1 KiB)×1×1 thread groups, so groups × 64 threads × 16 bytes cover the
+   whole buffer (IGT's test dispatches 16×1×1 and checks 16 KiB; its V# `num_records` is 0x400).
+   *Amended 2026-09-30:* the first version read IGT's `0x10` as the initiator and wrote the group
+   count into `DIM_Y`; experiment 0008 showed every run writing exactly 16 KiB. Fixed with the
+   field order sourced above. The fence wait uses a 2 s timeout instead
    of infinite, so a hang is reported instead of waited on (the kernel's own GPU reset may still take
    the machine down, HANDOFF F6).
 4. No test, CI job or script runs `--submit`. CI builds the `ON` variant and runs `--dump-ib` only.
