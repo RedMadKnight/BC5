@@ -34,10 +34,28 @@ distrobox's libdrm, the submitting thread being a guest thread, concurrent RADV 
 process, the 1 MiB scratch BO vs `dispatch-min`'s 4 KiB command BO, coherence of the scratch
 mapping written from the host process).
 
-**Next.** `backend/experiments/direct-selftest` (the `bc5::direct::Device` path with synthetic
-IBs and the recorded `A-exact`, outside any host) in both containers, then
-`BC5_DIRECT_SELFTEST=1` inside the host at `/dev/gc` open time, before the game submits. Each
-run needs the maintainer's go-ahead; each hang costs a manual power cycle.
+**Standalone bisection** (`backend/experiments/direct-selftest`, the `bc5::direct::Device` path
+without any host, fedora container, `--journal` with `fsync`), three more resets:
 
-**Verdict.** Open. Step (b) is not passed; five resets bought a precise negative result (the
-console's preamble, filtered, is not what hangs the GPU) and a crash journal that survives.
+| # | Device configuration | journal |
+| --- | --- | --- |
+| 6 | private device, scratch at the kernel-half "high" VA | (output lost) reset |
+| 7 | private device, scratch at 16 TiB | `8 nops OK 0.04 ms`, `152 nops TIMEOUT` |
+| 8 | `--dedup --legacy-va` (= `dispatch-min`'s device and VA), 1 MiB scratch | `8 nops OK 0.05 ms`, `152 nops TIMEOUT` |
+| 9 | same, page-sized (4 KiB) scratch | reset (same pattern) |
+
+`dispatch-min --ib-file` replays of 152 NOPs and of `A-exact` pass every time, as **single**
+submissions. `userptr-min` runs three submissions per process, but each fills 64 MiB between them.
+The pattern that fits every observation: the first small IB makes the CP fetch one or two 32-byte
+chunks of the scratch — the NOPs plus the zero dwords behind them — into the GPU L2; the CPU then
+rewrites the same buffer (CPU-side coherence does not invalidate GL2); the next submit fetches the
+stale lines, reaches the zeros, executes them as type-0 packets and hangs. Fix: the scratch IB is
+mapped `MTYPE_UC` for the GPU (every fetch goes to memory).
+
+**Next.** `direct-selftest` with the uncached scratch (fedora, then ubuntu, then with a userptr
+mapping), then `BC5_DIRECT_SELFTEST=1` in the host, then step (b) proper. Each run needs the
+maintainer's go-ahead; each hang costs a manual power cycle.
+
+**Verdict.** Open. Step (b) is not passed; nine resets bought a precise negative result (the
+console's preamble, filtered, is not what hangs the GPU), a crash journal that survives, and a
+mechanism that explains all nine.

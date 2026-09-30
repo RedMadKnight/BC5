@@ -66,7 +66,12 @@ amdgpu device without libdrm's deduplication** (`amdgpu_device_initialize2(fd, f
 host that already has RADV open on the same node would otherwise hand us RADV's VM, VA allocator
 and fd, and our 1:1 mappings would collide with the presenter's buffers; (vi) a crash journal
 (`direct.log`, raw and filtered IB files) is written with `fsync` before every submit, because a
-GPU reset on the BC-250 takes the machine down before buffered logs reach the disk.
+GPU reset on the BC-250 takes the machine down before buffered logs reach the disk; (vii) the
+scratch IB is mapped **uncached for the GPU** (`MTYPE_UC`): a scratch buffer fetched once by the
+CP and rewritten by the CPU is otherwise served from stale GL2 lines on the next fetch — the
+first small IB left "NOPs then zeros" in the L2, the next IB executed the zeros as type-0 packets
+and hung. (iv) is revised: the fixed VA is 16 TiB, inside the CP's 48-bit range; the kernel-half
+"high" range is not addressable by the CP.
 
 **Consequences.** The "packet rewriter" of the roadmap shrinks to a filter with two rewrites; the
 backend's core is the policy table plus the BO/VA mapper, both testable offline. Unknown firmware
