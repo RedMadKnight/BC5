@@ -71,6 +71,80 @@ index 78fd86f..462e774 100644
  
  namespace Libs::Graphics::Pm4 {
  
+diff --git a/src/graphics/presentation/videoOut.cpp b/src/graphics/presentation/videoOut.cpp
+index f980320..36ea766 100644
+--- a/src/graphics/presentation/videoOut.cpp
++++ b/src/graphics/presentation/videoOut.cpp
+@@ -1,3 +1,5 @@
++#include <cstdlib>
++#include <cstring>
+ #include "graphics/presentation/videoOut.h"
+ 
+ #include "common/abi.h"
+@@ -16,6 +18,7 @@
+ #include "graphics/host_gpu/renderer/render.h"
+ #include "graphics/host_gpu/renderer/renderContext.h"
+ #include "graphics/presentation/presenter.h"
++#include "kernel/memory.h"
+ #include "kernel/pthread.h"
+ #include "libs/errno.h"
+ #include "libs/libs.h"
+@@ -1012,6 +1015,13 @@ void FlipQueue::Prepare(uint64_t request_id, Graphics::CommandBuffer& buffer) {
+ 		frame = &m_presenter.PrepareBlankFrame(width, height, index == VIDEO_OUT_BUFFER_INDEX_BLACK,
+ 		                                       &buffer);
+ 	} else {
++		// BC5 direct mode: the real GPU wrote the surface, which the CPU page tracking cannot
++		// see; drop the cached image so the presenter re-reads guest memory.
++		static const bool bc5_direct = std::getenv("BC5_GC_MODE") != nullptr &&
++		                               std::strcmp(std::getenv("BC5_GC_MODE"), "direct") == 0;
++		if (bc5_direct && source_info.data.Valid()) {
++			LibKernel::Memory::InvalidateMemory(source_info.data.address, source_info.data.size);
++		}
+ 		frame = &m_presenter.PrepareFrame(buffer, source_info);
+ 	}
+ 
+@@ -1505,8 +1515,26 @@ void VideoOutDriver::WaitFlipDone(int handle, int index) {
+ 	m_impl->GetFlipQueue().Wait(*ctx, index);
+ }
+ 
+-KYTY_SYSV_ABI int VideoOutGetFlipStatus(int handle, VideoOutFlipStatus* status) {
+-	PRINT_NAME();
++// BC5: guest range of a registered display buffer (the direct-mode host checksums it at flip).
++bool Bc5VideoOutBufferRange(int handle, int index, uint64_t* addr, uint64_t* size) {
++	auto* video_out = DriverState().Get(handle);
++	if (video_out == nullptr || addr == nullptr || size == nullptr || !IsValidBufferIndex(index) ||
++	    IsSpecialBufferIndex(index)) {
++		return false;
++	}
++	Common::LockGuard lock(video_out->mutex);
++	const auto&       surface = video_out->buffers[index];
++	if (!surface.Occupied() || surface.group_index >= VIDEO_OUT_BUFFER_ATTRIBUTE_NUM_MAX ||
++	    !video_out->groups[surface.group_index].occupied) {
++		return false;
++	}
++	const auto info = video_out->groups[surface.group_index].ImageInfo(surface);
++	*addr           = info.data.address;
++	*size           = info.data.size;
++	return true;
++}
++
++KYTY_SYSV_ABI int VideoOutGetFlipStatus(int handle, VideoOutFlipStatus* status) {	PRINT_NAME();
+ 
+ 	if (status == nullptr) {
+ 		return VIDEO_OUT_ERROR_INVALID_ADDRESS;
+diff --git a/src/graphics/presentation/videoOut.h b/src/graphics/presentation/videoOut.h
+index 58f16c6..4ab38e9 100644
+--- a/src/graphics/presentation/videoOut.h
++++ b/src/graphics/presentation/videoOut.h
+@@ -80,6 +80,8 @@ KYTY_SYSV_ABI int VideoOutSubmitChangeBufferAttribute2(int handle, int set_index
+ KYTY_SYSV_ABI int VideoOutUnregisterBuffers(int handle, int set_index);
+ KYTY_SYSV_ABI int VideoOutSubmitFlip(int handle, int index, int flip_mode, int64_t flip_arg);
+ KYTY_SYSV_ABI int VideoOutGetFlipStatus(int handle, VideoOutFlipStatus* status);
++// BC5: guest range of a registered display buffer.
++bool Bc5VideoOutBufferRange(int handle, int index, uint64_t* addr, uint64_t* size);
+ KYTY_SYSV_ABI int VideoOutIsFlipPending(int handle);
+ KYTY_SYSV_ABI int VideoOutGetVblankStatus(int handle, VideoOutVblankStatus* status);
+ KYTY_SYSV_ABI int VideoOutGetEventId(const LibKernel::EventQueue::KernelEvent* ev);
 diff --git a/src/kernel/fileSystem.cpp b/src/kernel/fileSystem.cpp
 index 4034f52..0719e4e 100644
 --- a/src/kernel/fileSystem.cpp
@@ -292,10 +366,10 @@ index 5f87e6b..e5c534e 100644
  	CondRemoveWaiter(cond_value, thread);
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..e35de48
+index 0000000..3cd52e6
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,2149 @@
+@@ -0,0 +1,2176 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -560,18 +634,26 @@ index 0000000..e35de48
 +// then SoftCp::submit). For those the soft CP skips the memory side effects (writes, atomics,
 +// copies, waits) the GPU already produced and only keeps what the GPU cannot do here: the
 +// EVFILT_GRAPHICS events (INT_SEL is cleared by the filter).
-+static thread_local const uint32_t*  t_gpu_buf = nullptr;
-+static thread_local std::vector<uint8_t> t_gpu_done;
++struct GpuDone {
++	const uint32_t*      buf;
++	std::vector<uint8_t> done;
++};
++static thread_local std::vector<GpuDone> t_gpu_done; // the IB and its INDIRECT_BUFFER targets
 +static void set_gpu_executed(const uint32_t* buf, uint32_t num_dwords, const std::vector<uint32_t>& offsets) {
-+	t_gpu_buf = buf;
-+	t_gpu_done.assign(num_dwords, 0);
++	GpuDone g {buf, std::vector<uint8_t>(num_dwords, 0)};
 +	for (const uint32_t o: offsets) {
-+		if (o < num_dwords) t_gpu_done[o] = 1;
++		if (o < num_dwords) g.done[o] = 1;
 +	}
++	t_gpu_done.push_back(std::move(g));
 +}
 +static void clear_gpu_executed() {
-+	t_gpu_buf = nullptr;
 +	t_gpu_done.clear();
++}
++static const std::vector<uint8_t>* gpu_done_for(const uint32_t* buf, uint32_t num_dwords) {
++	for (const auto& g: t_gpu_done) {
++		if (g.buf == buf && g.done.size() == num_dwords) return &g.done;
++	}
++	return nullptr;
 +}
 +
 +static void atomic_mem(const uint32_t* p) {
@@ -861,10 +943,10 @@ index 0000000..e35de48
 +}
 +
 +static void execute(const uint32_t* buf, uint32_t num_dwords, int depth) {
-+	uint32_t   i   = 0;
-+	const bool gpu = depth == 0 && buf == t_gpu_buf && t_gpu_done.size() == num_dwords;
++	uint32_t                    i        = 0;
++	const std::vector<uint8_t>* gpu_done = gpu_done_for(buf, num_dwords); // any depth: nested IBs too
 +	while (i < num_dwords) {
-+		const bool done = gpu && t_gpu_done[i] != 0; // this packet ran on the real GPU
++		const bool done = gpu_done != nullptr && (*gpu_done)[i] != 0; // this packet ran on the real GPU
 +		const uint32_t header = buf[i];
 +		const uint32_t type   = header >> 30u;
 +		uint32_t       len    = 1;
@@ -1728,6 +1810,9 @@ index 0000000..e35de48
 +	if (r.ok) {
 +		g_ok++;
 +		SoftCp::set_gpu_executed(ib, num_dwords, r.executed_offsets);
++		for (const auto& nb: r.nested) {
++			SoftCp::set_gpu_executed(reinterpret_cast<const uint32_t*>(nb.cpu_addr), nb.num_dwords, nb.executed_offsets);
++		}
 +	}
 +	if (!r.ok || n < 40 || (n & 0x3fu) == 0) {
 +		LOGF_COLOR(r.ok ? Log::Color::Green : Log::Color::Red,
@@ -2363,6 +2448,22 @@ index 0000000..e35de48
 +static KYTY_SYSV_ABI int SubmitEopFlip(int handle, int index, int flip_mode, int64_t flip_arg,
 +                                       void* unk) {
 +	PRINT_NAME();
++	// Direct mode: does the GPU write the display buffer? A sparse sum over the surface, journaled
++	// per flip (zero = nobody rendered into it; the game's last pass targets these very buffers).
++	if (std::getenv("BC5_GC_MODE") != nullptr && std::strcmp(std::getenv("BC5_GC_MODE"), "direct") == 0) {
++		uint64_t a = 0, n = 0;
++		if (VideoOut::Bc5VideoOutBufferRange(handle, index, &a, &n) && a != 0 && n != 0) {
++			const auto* w = reinterpret_cast<const volatile uint32_t*>(a);
++			uint64_t sum = 0, nonzero = 0, samples = 0;
++			for (uint64_t k = 0; k < n / 4; k += 1024, samples++) {
++				const uint32_t v = w[k];
++				sum += v;
++				nonzero += v != 0;
++			}
++			Bc5Gc::Direct::journal("flip %d/%d buffer 0x%" PRIx64 " +0x%" PRIx64 ": sum 0x%" PRIx64 " nonzero %" PRIu64 "/%" PRIu64 "\n", handle, index, a, n, sum, nonzero, samples);
++			LOGF("[bc5-direct] flip buffer 0x%" PRIx64 ": nonzero samples %" PRIu64 "/%" PRIu64 "\n", a, nonzero, samples);
++		}
++	}
 +	LOGF("[bc5-gc] VideoOutSubmitEopFlip(%d, %d, %d, 0x%" PRIx64 ", %p)\n", handle, index,
 +	     flip_mode, flip_arg, unk);
 +	return VideoOut::VideoOutSubmitFlip(handle, index, flip_mode, flip_arg);
