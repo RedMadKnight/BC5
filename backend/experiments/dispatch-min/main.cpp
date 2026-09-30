@@ -37,6 +37,11 @@ struct Options {
     std::uint32_t vsharp3 = bc5::dispatch_min::kIgtVsharpWord3;
     std::string shader_file; // raw little-endian dwords; empty = the built-in IGT program
     std::string ib_file;     // --ib-file: submit these raw dwords as the IB instead (replay)
+    // --ip compute [--ring N]: submit on the kernel's compute rings (AMDGPU_HW_IP_COMPUTE, four on
+    // the BC-250: comp_1.0.0 .. comp_1.3.0) instead of the GFX ring. RADV leaves them unused on
+    // gfx1013 (HANDOFF F6); whether they work for us is experiment 0016 step (e).
+    unsigned ip = 0;         // AMDGPU_HW_IP_GFX
+    unsigned ring = 0;
 };
 
 int usage() {
@@ -247,8 +252,8 @@ int submit(const Options &o) {
     ib_info.ib_mc_address = cmd.va;
     ib_info.size = static_cast<std::uint32_t>(ib.size());
     amdgpu_cs_request req{};
-    req.ip_type = AMDGPU_HW_IP_GFX; // HANDOFF F6: the gfx1013 compute queue is not used
-    req.ring = 0;
+    req.ip_type = opt.ip; // GFX by default (HANDOFF F6); --ip compute tries the MEC rings
+    req.ring = opt.ring;
     req.resources = list;
     req.number_of_ibs = 1;
     req.ibs = &ib_info;
@@ -258,8 +263,8 @@ int submit(const Options &o) {
     if (rc == 0) {
         amdgpu_cs_fence fence{};
         fence.context = ctx;
-        fence.ip_type = AMDGPU_HW_IP_GFX;
-        fence.ring = 0;
+        fence.ip_type = opt.ip;
+        fence.ring = opt.ring;
         fence.fence = req.seq_no;
         rc = amdgpu_cs_query_fence_status(&fence, 2'000'000'000ull /* 2 s */, 0, &expired);
     }
@@ -318,6 +323,11 @@ int main(int argc, char **argv) {
             o.shader_file = argv[++i];
         } else if (a == "--ib-file" && i + 1 < argc) {
             o.ib_file = argv[++i];
+        } else if (a == "--ip" && i + 1 < argc) {
+            const std::string v = argv[++i];
+            opt.ip = v == "compute" ? AMDGPU_HW_IP_COMPUTE : AMDGPU_HW_IP_GFX;
+        } else if (a == "--ring" && i + 1 < argc) {
+            opt.ring = static_cast<unsigned>(std::stoul(argv[++i]));
         } else if (a == "--console") {
             o.rsrc1 = bc5::dispatch_min::kConsoleRsrc1;
             o.rsrc2 = bc5::dispatch_min::kConsoleRsrc2;

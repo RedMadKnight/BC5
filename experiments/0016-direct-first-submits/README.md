@@ -294,6 +294,23 @@ console's compute IBs is data-less (survey: 120 of 120). Policy: such packets ar
 BOTTOM_OF_PIPE_TS / index 5 (`cs_done_rewrites`), flush bits kept. `TODO(verify)`: why the GFX
 ring's ME never completes an index-6 RELEASE_MEM without data (PAL emits CS_DONE with data only).
 
+**Step (e4), run 41** (20:22, CS_DONE rewrite on): the machine **stayed up** through the game's
+compute queues — 59 ring slices, 81 of 87 submits OK, the game's 1,336-dword compute IBs with
+their dispatches executed by the CP. Three timeouts were TCP faults of compute shaders (0x53ac48000,
+0x55e08a000, 0x553ba3000, learned), a fourth had no fault address (an instance of the same IB;
+most likely a compute shader spinning on a label another queue writes — the kernel's ring reset
+recovered it, so the host now reopens after any timeout). Flip buffers still zero; only 4 flips
+in 90 s because every reopen costs 12 s.
+
+**Run 42** (20:25, reopen after any timeout, five learned regions): 91 of 97 OK, **no page fault
+at all**, three timeouts without a fault address in instances of the same compute IB that pass
+at other times, each recovered by the kernel's ring reset and the host's reopen (12 s apiece;
+3 flips in 90 s). A compute shader spinning on a label that the gfx queue writes later cannot
+finish when both queues are serialised on one ring in doorbell order. The kernel does expose
+**four compute rings** on the BC-250 (`amdgpu_query_hw_ip_info`: COMPUTE 10.0, rings 0xf,
+`comp_1.0.0`…`comp_1.3.0` in `dmesg`); F6 only says RADV leaves them unused. `dispatch-min --ip
+compute` is the test.
+
 **Verdict (interim, end of 2026-09-30).** Steps (a)–(c) passed and (d) reached "frames with draws
 run on the GPU, faults recoverable and learned"; not yet "image on screen" (G3). Open: present
 the GPU's flip buffer; size the hint windows from the surface registers; decode the descriptor
