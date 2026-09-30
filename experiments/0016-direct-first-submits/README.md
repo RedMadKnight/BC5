@@ -401,7 +401,22 @@ zero: those draws are the scene. Next: journal every indirect argument block bef
 (`SET_BASE` index-1 base + offset) and NOP the ones with absurd counts
 (`BC5_DIRECT_INDIRECT_MAX`), then let the sane ones draw.
 
-**Verdict (interim, end of 2026-09-30).** Steps (a)–(c) passed and (d) reached "frames with draws
-run on the GPU, faults recoverable and learned"; not yet "image on screen" (G3). Open: present
-the GPU's flip buffer; size the hint windows from the surface registers; decode the descriptor
-tables the shaders read; compute rings (e); 36/40 (f).
+**Run 55** (23:20, indirect draws and dispatches back, argument survey and clamp): **232 of 234 OK,
+no stall, no reset**, 9 flips. Of 40 indirect packets, 28 were NOP-ed for absurd arguments —
+`DISPATCH_INDIRECT` with x = 1,938,748,700, 447,274,665, 3,483,086,075 … (`raw/e15-run55-direct.log`)
+— and the 12 sane ones were 1×512 dispatches and draws with count 0. The counters the compute
+queues read back from GDS are garbage: the shaders count with ordered-append, whose state the
+console's system initialises; an OA allocation alone does not reproduce it. Nothing is drawn,
+so the flip buffers stay zero. This is the open problem at the end of the day.
+
+**Verdict (2026-09-30, end of day).** Steps (a)–(c) passed; (d) and (e) reached "the game's
+frames — draws, dispatches and both queue types — execute on the BC-250 from the track-B host
+without a hang", with 22 machine resets spent on the CP-stall class (stale L2, `CLEAR_STATE`,
+CS_DONE without data, GDS DMAs with CP_SYNC, the compute rings, GDS partitions at draw time,
+indirect draws with garbage counts) and the recoverable fault class handled by learning,
+reopening and deferral. Not reached: G3's image on screen. The blocker is the semantics of the
+console's GDS ordered-append counters that feed the scene's indirect draws. Open, in order:
+(1) what the compute shaders do with GDS (disassemble the captured programs: `ds_ordered_count`,
+`ds_add_gs_reg`, GWS?) and whether the counters can be initialised or emulated; (2) the 10 s kernel
+lockup timeout (boot parameter, maintainer's call) to make any remaining stall cheap; (3) the
+36/40 CU switch (f); (4) presentation once a frame lands in the flip buffer.
