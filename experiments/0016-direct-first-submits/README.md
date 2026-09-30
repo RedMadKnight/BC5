@@ -188,4 +188,9 @@ name) and 10 / 22 on the host heap (KytyPlus's flip labels, unmapped, NOP-ed by 
 wait nobody satisfies is a 10 s kernel reset, so 0x93 stays on the soft CP until the filter can
 pass "self" waits only.
 
-**Next.** (c3) `nodraw` with `BC5_DIRECT_DROP_OPS=93` (`WAIT_REG_MEM` on the GPU); then (d) draws.
+**Step (c3), run 22** (17:26, `nodraw`, `BC5_DIRECT_DROP_OPS=93`): **97 of 97 OK, no reset**, 61
+frame DCBs with their `WAIT_REG_MEM` packets executed by the CP (satisfied by the same DCB's
+`WRITE_DATA`/`RELEASE_MEM` labels), 8–12 ms per submit at 933 mappings. Journal: `raw/c3-direct.log`.
+
+**Next.** Filter rule "a wait passes only when its label was written earlier in the same IB"
+(then `WAIT_REG_MEM64` needs no blanket drop), and (d) draws.
