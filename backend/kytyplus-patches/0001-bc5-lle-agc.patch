@@ -366,10 +366,10 @@ index 5f87e6b..e5c534e 100644
  	CondRemoveWaiter(cond_value, thread);
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..2043522
+index 0000000..d81120b
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,2423 @@
+@@ -0,0 +1,2426 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -1221,6 +1221,7 @@ index 0000000..2043522
 +	if (const char* g = std::getenv("BC5_DIRECT_GDS_KIB"); g != nullptr) oo.gds_kib = static_cast<uint32_t>(std::strtoul(g, nullptr, 10));
 +	if (const char* g = std::getenv("BC5_DIRECT_OA"); g != nullptr) oo.oa_count = static_cast<uint32_t>(std::strtoul(g, nullptr, 10));
 +	if (const char* g = std::getenv("BC5_DIRECT_GWS"); g != nullptr) oo.gws_count = static_cast<uint32_t>(std::strtoul(g, nullptr, 10));
++	oo.gds_shadow = std::getenv("BC5_DIRECT_GDS_SHADOW") != nullptr;
 +	g_dev = bc5::direct::Device::open(node != nullptr ? node : "/dev/dri/renderD128", oo);
 +	if (!g_dev) {
 +		LOGF_COLOR(Log::Color::Red, "[bc5-direct] device open failed; staying on the soft CP\n");
@@ -1871,6 +1872,7 @@ index 0000000..2043522
 +	opt.drop_draws    = g_stage == Stage::NoDraw;
 +	opt.safe_context_control = std::getenv("BC5_DIRECT_RAW_CONTEXT_CONTROL") == nullptr;
 +	opt.drop_gds             = std::getenv("BC5_DIRECT_GDS_KIB") == nullptr; // with a GDS BO the accesses may pass
++	opt.gds_shadow_va        = g_dev->gds_shadow_va(); // BC5_DIRECT_GDS_SHADOW: redirected instead
 +	opt.mapped = [&maps](uint64_t a, uint64_t bytes) { return covered(maps, a, bytes); };
 +	static const std::vector<uint8_t> extra = [] {
 +		std::vector<uint8_t> v;
@@ -2080,6 +2082,7 @@ index 0000000..2043522
 +			if (const char* g = std::getenv("BC5_DIRECT_GDS_KIB"); g != nullptr) ro.gds_kib = static_cast<uint32_t>(std::strtoul(g, nullptr, 10));
 +			if (const char* g = std::getenv("BC5_DIRECT_OA"); g != nullptr) ro.oa_count = static_cast<uint32_t>(std::strtoul(g, nullptr, 10));
 +			if (const char* g = std::getenv("BC5_DIRECT_GWS"); g != nullptr) ro.gws_count = static_cast<uint32_t>(std::strtoul(g, nullptr, 10));
++			ro.gds_shadow = std::getenv("BC5_DIRECT_GDS_SHADOW") != nullptr;
 +			g_dev = bc5::direct::Device::open(node != nullptr ? node : "/dev/dri/renderD128", ro);
 +			if (g_dev && std::getenv("BC5_DIRECT_NO_BOLIST") != nullptr) g_dev->set_include_mappings(false);
 +			g_hinted.clear();
