@@ -58,6 +58,9 @@ if(BC5_WITH_AMDGPU)
     # direct-selftest: the bc5::direct submission path with synthetic and recorded IBs, no host.
     add_executable(direct-selftest experiments/direct-selftest/main.cpp)
     target_link_libraries(direct-selftest PRIVATE bc5_backend bc5_warnings)
+    # draw-min: libdrm's gfx10 memset-draw (one DRAW_INDEX_AUTO) through bc5::direct (phase-3 task 2).
+    add_executable(draw-min experiments/draw-min/main.cpp)
+    target_link_libraries(draw-min PRIVATE bc5_backend bc5_warnings)
 endif()
 
 if(BC5_BUILD_TESTS)
