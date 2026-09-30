@@ -1,0 +1,512 @@
+direct: enabled, stage nodraw, cu mask 0xffffffff, bo list with mappings
+map 0x200000000 +0x10000 ... ok
+map 0x200010000 +0x8000 ... ok
+map 0x200018000 +0x10000 ... ok
+map 0x200028000 +0x10000 ... ok
+map 0x200038000 +0x10000 ... ok
+map 0x200048000 +0x10000 ... ok
+map 0x200058000 +0x10000 ... ok
+map 0x200068000 +0x8000 ... ok
+map 0x300000000 +0x934000 ... ok
+map 0x300938000 +0x10000 ... ok
+map 0x300948000 +0x20000 ... ok
+map 0x300a58000 +0x14000 ... ok
+map 0x300a70000 +0x14000 ... ok
+map 0x300c78000 +0x14000 ... ok
+map 0x300e80000 +0x14000 ... ok
+map 0x301088000 +0x14000 ... ok
+map 0x301290000 +0x14000 ... ok
+map 0x301498000 +0x14000 ... ok
+map 0x3016a0000 +0x14000 ... ok
+map 0x3018a8000 +0x14000 ... ok
+map 0x301ab0000 +0x20000 ... ok
+map 0x301de0000 +0x10000 ... ok
+map 0x301df0000 +0x440000 ... ok
+map 0x3022b0000 +0x810000 ... ok
+map 0x303530000 +0x10000 ... ok
+map 0x303930000 +0x50000 ... ok
+map 0x303b70000 +0x30000 ... ok
+map 0x303ba0000 +0x10000 ... ok
+map 0x303bc0000 +0x10000 ... ok
+map 0x303dc0000 +0x40000 ... ok
+map 0x3041f0000 +0x10000 ... ok
+map 0x3045f0000 +0x20000 ... ok
+map 0x304a00000 +0x10000 ... ok
+map 0x304e00000 +0x20000 ... ok
+map 0x305210000 +0x10000 ... ok
+map 0x305610000 +0x20000 ... ok
+map 0x305a20000 +0x10000 ... ok
+map 0x305e20000 +0x20000 ... ok
+map 0x306230000 +0x20000 ... ok
+map 0x306640000 +0x10000 ... ok
+map 0x306a40000 +0x20000 ... ok
+map 0x306e50000 +0x10000 ... ok
+map 0x307250000 +0x20000 ... ok
+map 0x307660000 +0x10000 ... ok
+map 0x307a60000 +0x9f0000 ... ok
+map 0x308840000 +0x20000 ... ok
+map 0x308870000 +0x10000 ... ok
+map 0x308880000 +0x10000 ... ok
+map 0x308890000 +0x10000 ... ok
+map 0x3088a0000 +0x10000 ... ok
+map 0x308b20000 +0x450000 ... ok
+map 0x30cb60000 +0x1b30000 ... ok
+map 0x30e6a0000 +0x290000 ... ok
+map 0x30e940000 +0x10000 ... ok
+map 0x30ed40000 +0x20000 ... ok
+map 0x30ed70000 +0x1250000 ... ok
+map 0x30ffd0000 +0x290000 ... ok
+map 0x310270000 +0x10000 ... ok
+map 0x310670000 +0x10000 ... ok
+map 0x310690000 +0x10000 ... ok
+map 0x3106a0000 +0xf0000 ... ok
+map 0x310790000 +0xe0000 ... ok
+map 0x310870000 +0xf0000 ... ok
+map 0x310960000 +0xe0000 ... ok
+map 0x310a40000 +0xf0000 ... ok
+map 0x310b30000 +0xe0000 ... ok
+map 0x310c10000 +0x350000 ... ok
+map 0x310f60000 +0x830000 ... ok
+map 0x311960000 +0x10000 ... ok
+map 0x313010000 +0x30000 ... ok
+map 0x313130000 +0x10000 ... ok
+map 0x313220000 +0x10000 ... ok
+map 0x3132a0000 +0x10000 ... ok
+map 0x313320000 +0x10000 ... ok
+map 0x3133a0000 +0x10000 ... ok
+map 0x313420000 +0x10000 ... ok
+map 0x3134a0000 +0x10000 ... ok
+map 0x313520000 +0xcc000 ... ok
+map 0x3135f0000 +0x14000 ... ok
+map 0x313638000 +0x20000 ... ok
+map 0x313668000 +0x4000 ... ok
+map 0x313670000 +0x14000 ... ok
+map 0x313688000 +0x14000 ... ok
+map 0x3136a0000 +0x14000 ... ok
+map 0x3136b8000 +0x14000 ... ok
+map 0x3136d0000 +0x14000 ... ok
+map 0x3136e8000 +0x14000 ... ok
+map 0x313700000 +0x14000 ... ok
+map 0x313b08000 +0x20000 ... ok
+map 0x37dff8000 +0x8000 ... ok
+map 0x400000000 +0x10000 ... ok
+map 0x400200000 +0x10000 ... ok
+map 0x400280000 +0x10000 ... ok
+map 0x4002a0000 +0x10000 ... ok
+map 0x400320000 +0x10000 ... ok
+map 0x400340000 +0x10000 ... ok
+map 0x4003c0000 +0x10000 ... ok
+map 0x4003e0000 +0x10000 ... ok
+map 0x400460000 +0x10000 ... ok
+map 0x400480000 +0x10000 ... ok
+map 0x400500000 +0x10000 ... ok
+map 0x400520000 +0x10000 ... ok
+map 0x4005a0000 +0x10000 ... ok
+map 0x4005c0000 +0x10000 ... ok
+map 0x400640000 +0x10000 ... ok
+map 0x400660000 +0x10000 ... ok
+map 0x4006e0000 +0x10000 ... ok
+map 0x400700000 +0x10000 ... ok
+map 0x400780000 +0x10000 ... ok
+map 0x4007a0000 +0x13b0000 ... ok
+map 0x401b50000 +0x10000 ... ok
+map 0x40b7f0000 +0x10000 ... ok
+map 0x500000000 +0x530000 ... ok
+map 0x502000000 +0x10000 ... ok
+map 0x507400000 +0x10000 ... ok
+map 0x551a50000 +0x10000 ... ok
+map 0x553b80000 +0x10000 ... ok
+map 0x553be0000 +0x10000 ... ok
+map 0x553c00000 +0x10000 ... ok
+map 0x553c20000 +0x10000 ... ok
+map 0x553c40000 +0x2b20000 ... ok
+map 0x556760000 +0x10000 ... ok
+map 0x7efbf4000 +0x200000 ... ok
+map 0x900000000 +0x74c0000 ... ok
+map 0x9074c0000 +0x1420000 ... ok
+map 0x9088e0000 +0x580000 ... ok
+map 0x908e60000 +0x24000 ... ok
+map 0x908ff0000 +0x5e40000 ... ok
+map 0x90eea0000 +0x20000 ... ok
+map 0x90eec0000 +0x10000 ... ok
+map 0x90f270000 +0x10000 ... ok
+map 0x90f280000 +0x20000 ... ok
+map 0x90f2a0000 +0xe0000 ... ok
+map 0x90f380000 +0x168000 ... ok
+map 0x90f4e8000 +0xd30000 ... ok
+map 0x920000000 +0xcc000 ... ok
+map 0x9200cc000 +0x40000 ... ok
+map 0x92010c000 +0xc000 ... ok
+map 0x920118000 +0x2c000 ... ok
+map 0x930000000 +0x3f4000 ... ok
+map 0x9303f4000 +0x190000 ... ok
+map 0x930584000 +0x4000 ... ok
+map 0x930588000 +0x200000 ... ok
+map 0x940000000 +0x18000 ... ok
+map 0x940018000 +0x10000 ... ok
+map 0x940028000 +0x8000 ... ok
+map 0x940034000 +0x14000 ... ok
+map 0x940048000 +0x10000 ... ok
+map 0x950000000 +0xc000 ... ok
+map 0x95000c000 +0x10000 ... ok
+map 0x95001c000 +0x8000 ... ok
+map 0x950024000 +0x4000 ... ok
+map 0x960000000 +0x28000 ... ok
+map 0x960028000 +0x10000 ... ok
+map 0x960038000 +0x10000 ... ok
+map 0x971608000 +0x8000 ... ok
+map 0x980000000 +0x4000 ... ok
+map 0x980004000 +0x10000 ... ok
+map 0x980084000 +0x8000 ... ok
+map 0x990000000 +0x5c000 ... ok
+map 0x99005c000 +0xa0000 ... ok
+map 0x9900fc000 +0x74000 ... ok
+map 0x990170000 +0x8000 ... ok
+map 0xf00000000 +0x10000 ... ok
+map 0xf00010000 +0x130000 ... ok
+map 0xf00140000 +0x10000 ... ok
+map 0xf01140000 +0x10000 ... ok
+map 0xf01150000 +0x10000 ... ok
+map 0xf01160000 +0x10000 ... ok
+map 0xf01170000 +0x10000 ... ok
+map 0xf01180000 +0x10000 ... ok
+map 0xf01190000 +0x10000 ... ok
+map 0xf011a0000 +0x10000 ... ok
+map 0xf011b0000 +0x10000 ... ok
+map 0xf011c0000 +0x10000 ... ok
+map 0xf011d0000 +0x10000 ... ok
+map 0xf011e0000 +0x10000 ... ok
+map 0xf011f0000 +0x10000 ... ok
+map 0xf01200000 +0x10000 ... ok
+map 0xf01210000 +0x10000 ... ok
+map 0xf01220000 +0x10000 ... ok
+map 0xf01230000 +0x10000 ... ok
+map 0xf01240000 +0x10000 ... ok
+map 0xf01250000 +0x10000 ... ok
+map 0xf01260000 +0x10000 ... ok
+map 0xf01270000 +0x10000 ... ok
+map 0xf01280000 +0x10000 ... ok
+map 0xf01290000 +0x10000 ... ok
+map 0xf012a0000 +0x10000 ... ok
+map 0xf012b0000 +0x10000 ... ok
+map 0xf012c0000 +0x10000 ... ok
+map 0xf012d0000 +0x10000 ... ok
+map 0xf012e0000 +0x10000 ... ok
+map 0xf012f0000 +0x10000 ... ok
+map 0xf01300000 +0x10000 ... ok
+map 0xfe0000000 +0x204000 ... ok
+map 0xfe0300000 +0x10000 ... ok
+map 0xfe03b0000 +0x20000 ... ok
+submit #0 cc 3 dwords at 0x7efdf28e4: pass 0 rewrite 1 drop 0 unmapped 0 cc 1 mappings 198 ... OK rc 0 2.40 ms
+  load op 61 at 10: base 0xfe0008000 pairs (0x0,215) (0xd8,272) (0x1f5,4) (0x1ff,158) (0x2a0,2) (0x2a3,1) (0x2a5,66) (0x2f5,203)
+  load op 5f at 29: base 0xfe0010000 pairs (0x1,1) (0x6,38) (0x32,4) (0x80,4) (0x87,37) (0xb2,4) (0xc8,2) (0x100,4) (0x107,37) (0x132,4) (0x148,2) (0x204,3) (0x20c,2) (0x212,2) (0x215,6) (0x224,5) (0x22a,1) (0x240,16) (0x27d,1) (0x280,1) (0x207,3)
+  load op 5e at 74: base 0xfe0011000 pairs (0x35,8) (0xa2,1) (0x242,1) (0x248,1) (0x24a,2) (0x25b,6) (0x262,1) (0x2bb,5) (0x2c4,16) (0x2e4,8) (0x380,2) (0x383,2) (0x41d,3) (0x24d,1)
+  load op 61 at 105: base 0xfe0008000 pairs (0x0,0)
+  load op 5f at 110: base 0xfe0010000 pairs (0x0,0)
+  load op 5e at 115: base 0xfe0011000 pairs (0x0,0)
+  load op 61 at 125: base 0xfe0008000 pairs (0x0,0)
+  load op 5f at 130: base 0xfe0010000 pairs (0x0,0)
+  load op 5e at 135: base 0xfe0011000 pairs (0x0,0)
+submit #1 hib 150 dwords at 0xfe0000000: pass 12 rewrite 2 drop 2 unmapped 0 cc 2 mappings 198 ... OK rc 0 2.47 ms
+submit #2 hib 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 198 ... OK rc 0 2.32 ms
+  load op 9f at 38: addr 0xfe0040068 idx 0 fmt 1 regoff 0x0 n 921 (table contents not committed)
+  load op 63 at 43: addr 0xfe0042068 idx 0 fmt 1 regoff 0x0 n 174 (table contents not committed)
+  load op 64 at 48: addr 0xfe00425d8 idx 0 fmt 1 regoff 0x0 n 49 (table contents not committed)
+submit #3 dcb 96 dwords at 0xfe0042920: pass 17 rewrite 0 drop 7 unmapped 1 cc 0 mappings 198 ... OK rc 0 2.36 ms
+map 0x200070000 +0x10000 ... ok
+map 0x2001e0000 +0x10000 ... ok
+map 0x2001f0000 +0x4000 ... ok
+map 0x2001f4000 +0x4000 ... ok
+map 0x2001f8000 +0x10000 ... ok
+map 0x200208000 +0x10000 ... ok
+map 0x200218000 +0x10000 ... ok
+map 0x200228000 +0x10000 ... ok
+map 0x200238000 +0x10000 ... ok
+map 0x200248000 +0x8000 ... ok
+map 0x300a48000 +0x10000 ... ok
+map 0x301690000 +0x10000 ... ok
+map 0x302ac0000 +0xd0000 ... ok
+map 0x303540000 +0x10000 ... ok
+map 0x303980000 +0x10000 ... ok
+map 0x303bd0000 +0x20000 ... ok
+map 0x308450000 +0x10000 ... ok
+map 0x311970000 +0x20000 ... ok
+map 0x311990000 +0x30000 ... ok
+map 0x313b68000 +0x10000 ... ok
+map 0x314368000 +0x4000 ... ok
+map 0x314370000 +0x14000 ... ok
+map 0x314388000 +0x150000 ... ok
+map 0x3144d8000 +0x20000 ... ok
+map 0x3144f8000 +0x10000 ... ok
+map 0x314508000 +0x10000 ... ok
+map 0x314518000 +0x540000 ... ok
+map 0x314a58000 +0x40000 ... ok
+map 0x314a98000 +0x30000 ... ok
+map 0x314ac8000 +0x20000 ... ok
+map 0x314ae8000 +0x20000 ... ok
+map 0x314b08000 +0x10000 ... ok
+map 0x314b18000 +0x10000 ... ok
+map 0x314b28000 +0x10000 ... ok
+map 0x314b38000 +0x140000 ... ok
+map 0x314c78000 +0x40000 ... ok
+map 0x314cb8000 +0x40000 ... ok
+map 0x314cf8000 +0x40000 ... ok
+map 0x314d38000 +0x20000 ... ok
+map 0x314d58000 +0x10000 ... ok
+map 0x314d68000 +0x10000 ... ok
+map 0x314d78000 +0x10000 ... ok
+map 0x314d88000 +0x10000 ... ok
+map 0x314d98000 +0x150000 ... ok
+map 0x314ee8000 +0x40000 ... ok
+map 0x314f28000 +0x40000 ... ok
+map 0x314f68000 +0x30000 ... ok
+map 0x314f98000 +0x20000 ... ok
+map 0x314fb8000 +0x20000 ... ok
+map 0x314fd8000 +0x10000 ... ok
+map 0x314fe8000 +0x10000 ... ok
+map 0x314ff8000 +0x10000 ... ok
+map 0x315008000 +0x140000 ... ok
+map 0x315148000 +0x40000 ... ok
+map 0x315188000 +0x40000 ... ok
+map 0x3151c8000 +0x40000 ... ok
+map 0x315208000 +0x20000 ... ok
+map 0x315228000 +0x10000 ... ok
+map 0x315238000 +0x10000 ... ok
+map 0x315248000 +0x10000 ... ok
+map 0x315258000 +0x10000 ... ok
+map 0x315268000 +0x150000 ... ok
+map 0x3153b8000 +0x70000 ... ok
+map 0x315428000 +0x10000 ... ok
+map 0x315438000 +0x20000 ... ok
+map 0x315458000 +0x20000 ... ok
+map 0x315478000 +0x30000 ... ok
+map 0x3154a8000 +0x10000 ... ok
+map 0x3154d8000 +0x10000 ... ok
+map 0x315518000 +0x10000 ... ok
+map 0x315558000 +0x10000 ... ok
+map 0x315598000 +0x10000 ... ok
+map 0x3155d8000 +0x10000 ... ok
+map 0x315618000 +0x10000 ... ok
+map 0x315628000 +0x10000 ... ok
+map 0x315668000 +0x10000 ... ok
+map 0x315678000 +0x10000 ... ok
+map 0x315688000 +0x20000 ... ok
+map 0x3156a8000 +0x20000 ... ok
+map 0x3156c8000 +0x40000 ... ok
+map 0x315708000 +0x10000 ... ok
+map 0x315718000 +0x50000 ... ok
+map 0x315768000 +0x10000 ... ok
+map 0x315778000 +0x10000 ... ok
+map 0x315788000 +0xc000 ... ok
+map 0x315b88000 +0x14000 ... ok
+map 0x315f90000 +0x20000 ... ok
+map 0x315fe0000 +0x4000 ... ok
+map 0x315fe8000 +0xa9f8000 ... ok
+map 0x320a14000 +0x30000 ... ok
+map 0x321234000 +0x18000 ... ok
+map 0x321280000 +0x60000 ... ok
+map 0x3212e0000 +0xc4c000 ... ok
+map 0x321f30000 +0x20d0000 ... ok
+map 0x3240f0000 +0x3a0000 ... ok
+map 0x324580000 +0x7c000 ... ok
+map 0x324670000 +0x370000 ... ok
+map 0x37dff0000 +0x8000 ... ok
+map 0x401b70000 +0x10000 ... ok
+map 0x403670000 +0x10000 ... ok
+map 0x403680000 +0x60000 ... ok
+map 0x500530000 +0x320000 ... ok
+map 0x502700000 +0x10000 ... ok
+map 0x502df0000 +0x20000 ... ok
+map 0x503c00000 +0x10000 ... ok
+map 0x5042f0000 +0x20000 ... ok
+map 0x504e00000 +0x10000 ... ok
+map 0x5051f0000 +0x20000 ... ok
+map 0x505a00000 +0x10000 ... ok
+map 0x505df0000 +0x20000 ... ok
+map 0x506800000 +0x10000 ... ok
+map 0x506df0000 +0x20000 ... ok
+map 0x50cc30000 +0x10000 ... ok
+map 0x55b400000 +0x10000 ... ok
+map 0x55c000000 +0x10000 ... ok
+map 0x56d860000 +0x10000 ... ok
+map 0x56d870000 +0x10000 ... ok
+map 0x56d8c0000 +0x10000 ... ok
+map 0x56d930000 +0x10000 ... ok
+map 0x56d990000 +0x10000 ... ok
+map 0x56d9a0000 +0x10000 ... ok
+map 0x56d9b0000 +0x10000 ... ok
+map 0x56d9c0000 +0x10000 ... ok
+map 0x56dda0000 +0x10000 ... ok
+map 0x56e240000 +0x10000 ... ok
+map 0x56e250000 +0x10000 ... ok
+map 0x56e260000 +0x10000 ... ok
+map 0x56e270000 +0x10000 ... ok
+map 0x56e650000 +0x10000 ... ok
+map 0x56ed50000 +0x20000 ... ok
+map 0x56f790000 +0x60000 ... ok
+map 0x56f9e0000 +0x10000 ... ok
+map 0x5705e0000 +0x10000 ... ok
+map 0x5707e0000 +0x10000 ... ok
+map 0x5707f0000 +0x10000 ... ok
+map 0x570a90000 +0x10000 ... ok
+map 0x570b50000 +0x20000 ... ok
+map 0x570b70000 +0x10000 ... ok
+map 0x570f40000 +0x30000 ... ok
+map 0x571450000 +0x30000 ... ok
+map 0x571480000 +0x10000 ... ok
+map 0x571940000 +0x10000 ... ok
+map 0x571a60000 +0x20000 ... ok
+map 0x571a80000 +0x10000 ... ok
+map 0x579800000 +0x10000 ... ok
+map 0x600000000 +0x10000 ... ok
+map 0x607ff0000 +0x10000 ... ok
+map 0x7ea6a0000 +0x500000 ... ok
+map 0x7eaba4000 +0x500000 ... ok
+map 0x7eb0a8000 +0x500000 ... ok
+map 0x7eb5ac000 +0x500000 ... ok
+map 0x7ebab0000 +0x500000 ... ok
+map 0x7ebfb4000 +0x500000 ... ok
+map 0x7ec4b8000 +0x500000 ... ok
+map 0x7ec9bc000 +0x500000 ... ok
+map 0x7ecec0000 +0x500000 ... ok
+map 0x7ed3c4000 +0x500000 ... ok
+map 0x7ed8c8000 +0x500000 ... ok
+map 0x7eddcc000 +0x200000 ... ok
+map 0x7edfd0000 +0x200000 ... ok
+map 0x7ee1d4000 +0x200000 ... ok
+map 0x7ee3d8000 +0x120000 ... ok
+map 0x7ee4fc000 +0x120000 ... ok
+map 0x7ee620000 +0x120000 ... ok
+map 0x7ee744000 +0x120000 ... ok
+map 0x7ee868000 +0x120000 ... ok
+map 0x7ee98c000 +0x120000 ... ok
+map 0x7eeab0000 +0x120000 ... ok
+map 0x7eebd4000 +0x200000 ... ok
+map 0x7eedd8000 +0x200000 ... ok
+map 0x7eefdc000 +0x200000 ... ok
+map 0x7ef1e0000 +0x200000 ... ok
+map 0x7ef3e4000 +0x200000 ... ok
+map 0x7ef5e8000 +0x200000 ... ok
+map 0x7ef7ec000 +0x200000 ... ok
+map 0x7ef9f0000 +0x200000 ... ok
+map 0x90f220000 +0x30000 ... ok
+map 0x1000000000 +0x440000 ... ok
+map 0x1054e00000 +0x1ae0000 ... ok
+map 0x10ea000000 +0x60000 ... ok
+map 0x10ea060000 +0x60000 ... ok
+map 0x10ea0c0000 +0x20000 ... ok
+map 0x10ea0e0000 +0x160000 ... ok
+map 0x10ea240000 +0xb0000 ... ok
+map 0x10ea2f0000 +0xac0000 ... ok
+map 0x10eadb0000 +0x60000 ... ok
+map 0x10eae10000 +0x20000 ... ok
+map 0x10eae30000 +0x11f0000 ... ok
+submit #4 cc 3 dwords at 0x313b17cd4: pass 0 rewrite 1 drop 0 unmapped 0 cc 1 mappings 386 ... OK rc 0 4.53 ms
+  load op 61 at 10: base 0xfe0008000 pairs (0x0,215) (0xd8,272) (0x1f5,4) (0x1ff,158) (0x2a0,2) (0x2a3,1) (0x2a5,66) (0x2f5,203)
+  load op 5f at 29: base 0xfe0010000 pairs (0x1,1) (0x6,38) (0x32,4) (0x80,4) (0x87,37) (0xb2,4) (0xc8,2) (0x100,4) (0x107,37) (0x132,4) (0x148,2) (0x204,3) (0x20c,2) (0x212,2) (0x215,6) (0x224,5) (0x22a,1) (0x240,16) (0x27d,1) (0x280,1) (0x207,3)
+  load op 5e at 74: base 0xfe0011000 pairs (0x35,8) (0xa2,1) (0x242,1) (0x248,1) (0x24a,2) (0x25b,6) (0x262,1) (0x2bb,5) (0x2c4,16) (0x2e4,8) (0x380,2) (0x383,2) (0x41d,3) (0x24d,1)
+  load op 61 at 105: base 0xfe0008000 pairs (0x0,0)
+  load op 5f at 110: base 0xfe0010000 pairs (0x0,0)
+  load op 5e at 115: base 0xfe0011000 pairs (0x0,0)
+  load op 61 at 125: base 0xfe0008000 pairs (0x0,0)
+  load op 5f at 130: base 0xfe0010000 pairs (0x0,0)
+  load op 5e at 135: base 0xfe0011000 pairs (0x0,0)
+submit #5 hib 150 dwords at 0xfe0000000: pass 12 rewrite 2 drop 2 unmapped 0 cc 2 mappings 386 ... OK rc 0 4.56 ms
+submit #6 hib 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 386 ... OK rc 0 4.52 ms
+  load op 9f at 38: addr 0xfe0040068 idx 0 fmt 1 regoff 0x0 n 921 (table contents not committed)
+  load op 63 at 43: addr 0xfe0042068 idx 0 fmt 1 regoff 0x0 n 174 (table contents not committed)
+  load op 64 at 48: addr 0xfe00425d8 idx 0 fmt 1 regoff 0x0 n 49 (table contents not committed)
+submit #7 dcb 96 dwords at 0xfe0042920: pass 17 rewrite 0 drop 7 unmapped 1 cc 0 mappings 386 ... OK rc 0 4.52 ms
+submit #8 cc 3 dwords at 0x313b17cf4: pass 0 rewrite 1 drop 0 unmapped 0 cc 1 mappings 386 ... OK rc 0 4.50 ms
+  load op 61 at 10: base 0xfe0008000 pairs (0x0,215) (0xd8,272) (0x1f5,4) (0x1ff,158) (0x2a0,2) (0x2a3,1) (0x2a5,66) (0x2f5,203)
+  load op 5f at 29: base 0xfe0010000 pairs (0x1,1) (0x6,38) (0x32,4) (0x80,4) (0x87,37) (0xb2,4) (0xc8,2) (0x100,4) (0x107,37) (0x132,4) (0x148,2) (0x204,3) (0x20c,2) (0x212,2) (0x215,6) (0x224,5) (0x22a,1) (0x240,16) (0x27d,1) (0x280,1) (0x207,3)
+  load op 5e at 74: base 0xfe0011000 pairs (0x35,8) (0xa2,1) (0x242,1) (0x248,1) (0x24a,2) (0x25b,6) (0x262,1) (0x2bb,5) (0x2c4,16) (0x2e4,8) (0x380,2) (0x383,2) (0x41d,3) (0x24d,1)
+  load op 61 at 105: base 0xfe0008000 pairs (0x0,0)
+  load op 5f at 110: base 0xfe0010000 pairs (0x0,0)
+  load op 5e at 115: base 0xfe0011000 pairs (0x0,0)
+  load op 61 at 125: base 0xfe0008000 pairs (0x0,0)
+  load op 5f at 130: base 0xfe0010000 pairs (0x0,0)
+  load op 5e at 135: base 0xfe0011000 pairs (0x0,0)
+submit #9 hib 150 dwords at 0xfe0000000: pass 12 rewrite 2 drop 2 unmapped 0 cc 2 mappings 386 ... OK rc 0 4.63 ms
+submit #10 hib 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 386 ... OK rc 0 4.58 ms
+  load op 9f at 38: addr 0xfe0040068 idx 0 fmt 1 regoff 0x0 n 921 (table contents not committed)
+  load op 63 at 43: addr 0xfe0042068 idx 0 fmt 1 regoff 0x0 n 174 (table contents not committed)
+  load op 64 at 48: addr 0xfe00425d8 idx 0 fmt 1 regoff 0x0 n 49 (table contents not committed)
+submit #11 dcb 96 dwords at 0xfe0042920: pass 17 rewrite 0 drop 7 unmapped 1 cc 0 mappings 386 ... OK rc 0 4.58 ms
+  load op 9f at 36: addr 0xfe0040068 idx 0 fmt 1 regoff 0x0 n 921 (table contents not committed)
+  load op 63 at 41: addr 0xfe0042068 idx 0 fmt 1 regoff 0x0 n 174 (table contents not committed)
+  load op 64 at 46: addr 0xfe00425d8 idx 0 fmt 1 regoff 0x0 n 57 (table contents not committed)
+  load op 9f at 88: addr 0x504301500 idx 0 fmt 1 regoff 0x0 n 136 (table contents not committed)
+  load op 64 at 93: addr 0x504300500 idx 0 fmt 1 regoff 0x0 n 3 (table contents not committed)
+  load op 63 at 98: addr 0x5042ff500 idx 0 fmt 1 regoff 0x0 n 3 (table contents not committed)
+  load op 9f at 1460: addr 0xfe0040068 idx 0 fmt 1 regoff 0x0 n 921 (table contents not committed)
+  load op 9f at 1467: addr 0x504301940 idx 0 fmt 1 regoff 0x0 n 70 (table contents not committed)
+  load op 63 at 1472: addr 0x908e5ff90 idx 0 fmt 1 regoff 0x0 n 6 (table contents not committed)
+  load op 9f at 1477: addr 0x908e5ffc0 idx 0 fmt 1 regoff 0x0 n 10 (table contents not committed)
+  load op 63 at 1482: addr 0x908e5f7d0 idx 0 fmt 1 regoff 0x0 n 6 (table contents not committed)
+  load op 9f at 1487: addr 0x908e5f800 idx 0 fmt 1 regoff 0x0 n 9 (table contents not committed)
+  load op 64 at 1492: addr 0x504300518 idx 0 fmt 1 regoff 0x0 n 5 (table contents not committed)
+  load op 9f at 2112: addr 0x504301b70 idx 0 fmt 1 regoff 0x0 n 131 (table contents not committed)
+  load op 64 at 2119: addr 0x504300540 idx 0 fmt 1 regoff 0x0 n 1 (table contents not committed)
+  load op 9f at 2151: addr 0xfe0040068 idx 0 fmt 1 regoff 0x0 n 921 (table contents not committed)
+  load op 9f at 2158: addr 0x504301f88 idx 0 fmt 1 regoff 0x0 n 70 (table contents not committed)
+  load op 63 at 2163: addr 0x908e5ff90 idx 0 fmt 1 regoff 0x0 n 6 (table contents not committed)
+  load op 9f at 2168: addr 0x908e5ffc0 idx 0 fmt 1 regoff 0x0 n 10 (table contents not committed)
+  load op 63 at 2173: addr 0x908e5f7d0 idx 0 fmt 1 regoff 0x0 n 6 (table contents not committed)
+  load op 9f at 2178: addr 0x908e5f800 idx 0 fmt 1 regoff 0x0 n 9 (table contents not committed)
+  load op 64 at 2183: addr 0x504300548 idx 0 fmt 1 regoff 0x0 n 5 (table contents not committed)
+  load op 9f at 2301: addr 0x5043021b8 idx 0 fmt 1 regoff 0x0 n 98 (table contents not committed)
+  load op 64 at 2308: addr 0x504300570 idx 0 fmt 1 regoff 0x0 n 1 (table contents not committed)
+  load op 9f at 2313: addr 0x5042fe500 idx 0 fmt 1 regoff 0x0 n 33 (table contents not committed)
+  load op 9f at 2345: addr 0xfe0040068 idx 0 fmt 1 regoff 0x0 n 921 (table contents not committed)
+  load op 9f at 2352: addr 0x5042fe608 idx 0 fmt 1 regoff 0x0 n 70 (table contents not committed)
+  load op 63 at 2357: addr 0x908e5ff90 idx 0 fmt 1 regoff 0x0 n 6 (table contents not committed)
+  load op 9f at 2362: addr 0x908e5ffc0 idx 0 fmt 1 regoff 0x0 n 10 (table contents not committed)
+  load op 63 at 2367: addr 0x908e5f7d0 idx 0 fmt 1 regoff 0x0 n 6 (table contents not committed)
+  load op 9f at 2372: addr 0x908e5f800 idx 0 fmt 1 regoff 0x0 n 9 (table contents not committed)
+  load op 64 at 2377: addr 0x504300578 idx 0 fmt 1 regoff 0x0 n 5 (table contents not committed)
+  load op 63 at 2473: addr 0x5042ff518 idx 0 fmt 1 regoff 0x0 n 10 (table contents not committed)
+  load op 63 at 2664: addr 0x5042ff568 idx 0 fmt 1 regoff 0x0 n 28 (table contents not committed)
+  load op 64 at 2738: addr 0x5043005a0 idx 0 fmt 1 regoff 0x0 n 5 (table contents not committed)
+  load op 9f at 2745: addr 0x5042fe838 idx 0 fmt 1 regoff 0x0 n 290 (table contents not committed)
+submit #12 dcb 3257 dwords at 0x503c02500: pass 258 rewrite 76 drop 266 unmapped 52 cc 6 mappings 386 ... OK rc 0 4.58 ms
+  load op 9f at 38: addr 0xfe0040068 idx 0 fmt 1 regoff 0x0 n 921 (table contents not committed)
+  load op 63 at 43: addr 0xfe0042068 idx 0 fmt 1 regoff 0x0 n 174 (table contents not committed)
+  load op 64 at 48: addr 0xfe00425d8 idx 0 fmt 1 regoff 0x0 n 57 (table contents not committed)
+  load op 9f at 90: addr 0x505e01500 idx 0 fmt 1 regoff 0x0 n 5 (table contents not committed)
+  load op 64 at 95: addr 0x505e00500 idx 0 fmt 1 regoff 0x0 n 2 (table contents not committed)
+  load op 63 at 100: addr 0x505dff500 idx 0 fmt 1 regoff 0x0 n 3 (table contents not committed)
+submit #13 dcb 851 dwords at 0x505a02500: pass 38 rewrite 29 drop 80 unmapped 25 cc 0 mappings 386 ... OK rc 0 4.57 ms
+  load op 9f at 35: addr 0xfe0040068 idx 0 fmt 1 regoff 0x0 n 921 (table contents not committed)
+  load op 63 at 40: addr 0xfe0042068 idx 0 fmt 1 regoff 0x0 n 174 (table contents not committed)
+  load op 64 at 45: addr 0xfe00425d8 idx 0 fmt 1 regoff 0x0 n 57 (table contents not committed)
+  load op 9f at 87: addr 0x506e01500 idx 0 fmt 1 regoff 0x0 n 136 (table contents not committed)
+  load op 64 at 92: addr 0x506e00500 idx 0 fmt 1 regoff 0x0 n 3 (table contents not committed)
+  load op 63 at 97: addr 0x506dff500 idx 0 fmt 1 regoff 0x0 n 3 (table contents not committed)
+  load op 9f at 212: addr 0xfe0040068 idx 0 fmt 1 regoff 0x0 n 921 (table contents not committed)
+  load op 9f at 219: addr 0x506e01940 idx 0 fmt 1 regoff 0x0 n 70 (table contents not committed)
+  load op 63 at 224: addr 0x908e5ff90 idx 0 fmt 1 regoff 0x0 n 6 (table contents not committed)
+  load op 9f at 229: addr 0x908e5ffc0 idx 0 fmt 1 regoff 0x0 n 10 (table contents not committed)
+  load op 63 at 234: addr 0x908e5f7d0 idx 0 fmt 1 regoff 0x0 n 6 (table contents not committed)
+  load op 9f at 239: addr 0x908e5f800 idx 0 fmt 1 regoff 0x0 n 9 (table contents not committed)
+  load op 64 at 244: addr 0x506e00518 idx 0 fmt 1 regoff 0x0 n 5 (table contents not committed)
+  load op 9f at 340: addr 0x506e01b70 idx 0 fmt 1 regoff 0x0 n 131 (table contents not committed)
+  load op 64 at 347: addr 0x506e00540 idx 0 fmt 1 regoff 0x0 n 1 (table contents not committed)
+  load op 9f at 379: addr 0xfe0040068 idx 0 fmt 1 regoff 0x0 n 921 (table contents not committed)
+  load op 9f at 386: addr 0x506e01f88 idx 0 fmt 1 regoff 0x0 n 70 (table contents not committed)
+  load op 63 at 391: addr 0x908e5ff90 idx 0 fmt 1 regoff 0x0 n 6 (table contents not committed)
+  load op 9f at 396: addr 0x908e5ffc0 idx 0 fmt 1 regoff 0x0 n 10 (table contents not committed)
+  load op 63 at 401: addr 0x908e5f7d0 idx 0 fmt 1 regoff 0x0 n 6 (table contents not committed)
+  load op 9f at 406: addr 0x908e5f800 idx 0 fmt 1 regoff 0x0 n 9 (table contents not committed)
+  load op 64 at 411: addr 0x506e00548 idx 0 fmt 1 regoff 0x0 n 5 (table contents not committed)
+  load op 9f at 548: addr 0x506e021b8 idx 0 fmt 1 regoff 0x0 n 98 (table contents not committed)
+  load op 64 at 555: addr 0x506e00570 idx 0 fmt 1 regoff 0x0 n 1 (table contents not committed)
+  load op 9f at 560: addr 0x506dfe500 idx 0 fmt 1 regoff 0x0 n 33 (table contents not committed)
+  load op 9f at 592: addr 0xfe0040068 idx 0 fmt 1 regoff 0x0 n 921 (table contents not committed)
+  load op 9f at 599: addr 0x506dfe608 idx 0 fmt 1 regoff 0x0 n 70 (table contents not committed)
+  load op 63 at 604: addr 0x908e5ff90 idx 0 fmt 1 regoff 0x0 n 6 (table contents not committed)
+  load op 9f at 609: addr 0x908e5ffc0 idx 0 fmt 1 regoff 0x0 n 10 (table contents not committed)
+  load op 63 at 614: addr 0x908e5f7d0 idx 0 fmt 1 regoff 0x0 n 6 (table contents not committed)
+  load op 9f at 619: addr 0x908e5f800 idx 0 fmt 1 regoff 0x0 n 9 (table contents not committed)
+  load op 64 at 624: addr 0x506e00578 idx 0 fmt 1 regoff 0x0 n 5 (table contents not committed)
+submit #14 dcb 798 dwords at 0x506802500: pass 64 rewrite 18 drop 78 unmapped 10 cc 6 mappings 386 ... FAILED rc 0 TIMEOUT 2030.29 ms

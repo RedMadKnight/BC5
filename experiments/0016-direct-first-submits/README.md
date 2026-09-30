@@ -131,14 +131,18 @@ Changes before the next attempt: the host journals every LOAD table (address, fo
 first 16 dwords) before the submit; the soft CP skips the memory side effects of packets the GPU
 executed (`SubmitResult::executed_offsets`); compute rings gated behind `BC5_DIRECT_RINGS`.
 
-**Next.** (c1a) `nodraw` with `BC5_DIRECT_DROP_OPS=3c,93,1e,63,64,9f` — the three `LOAD_*_INDEX`
-opcodes off, tables journaled — to split "LOAD tables" from "everything else". If it holds, the
-tables' contents decide the register policy for the LOAD path.
+**Step (c1a), run 17** (15:44, `nodraw`, `BC5_DIRECT_DROP_OPS=3c,93,1e,63,64,9f`): **reset 11**,
+same place — #11, #12, #13 OK, **#14 timeout** (798 dwords at 0x506802500, byte-identical
+structure, only addresses differ between runs). So the LOAD tables are not (alone) what hangs the
+CP; the remaining GPU-executed set of #14 is `EVENT_WRITE`, `RELEASE_MEM`, `ACQUIRE_MEM`,
+memory `WRITE_DATA`, `COND_EXEC`, `CLEAR_STATE`, `CONTEXT_CONTROL`, `SET_BASE`, `SET_UCONFIG_REG_INDEX`,
+`INDEX_BASE`, `INDEX_BUFFER_SIZE`, `NUM_INSTANCES` — all of which #12/#13 also executed. The
+journaled tables (`raw/c1a-direct.log`, contents not committed) show what the LOAD path carries:
+the driver's context-register shadow (921 dwords of offset/value pairs at 0xfe0040068), an SH
+shadow (174), a UCONFIG shadow (57), and per-object tables in the game's heap and data segment.
+One table (0x908e5ffc0, 10 pairs) straddled two adjacent 64 KiB mappings and was wrongly treated
+as unmapped: the coverage check now merges adjacent mappings.
 
-**Verdict (interim).** The mechanism is confirmed (F25). **Step (b1) passed**: the console's
-submit-header IBs (with `LOAD_*`/`COND_EXEC`/`WRITE_DATA` NOP-ed) run on the BC-250's GFX ring
-from inside the track-B host, 72 of 72, no reset, with the mapping set following the guest's
-VMAs (F26). **Step (b2) passed** as well: the unfiltered
-preamble, `LOAD_*_REG` shadow loads included, 72 of 72. Step (c), the frame DCBs without draws, is next. Nine resets bought a precise negative
-result (the console's preamble, filtered, is not what hangs the GPU), a crash journal that
-survives, and the rule that any CPU-rewritten IB must be mapped uncached for the GPU.
+**Next.** `BC5_DIRECT_PIECEWISE=14`: submit #14 goes to the GPU one packet at a time (a
+`COND_EXEC` with the region it may skip), each with its own fence and journal line — one run
+names the packet, or shows that every piece passes and the cause is state left by #12/#13.
