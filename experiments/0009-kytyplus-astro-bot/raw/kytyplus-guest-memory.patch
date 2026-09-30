@@ -1,0 +1,17 @@
+diff --git a/src/kernel/memory.cpp b/src/kernel/memory.cpp
+index 02fc0fc..6953fcf 100644
+--- a/src/kernel/memory.cpp
++++ b/src/kernel/memory.cpp
+@@ -712,6 +712,12 @@ public:
+ 				                            : minimum;
+ 				target = std::max(minimum, std::min(ps5_game_total, capped));
+ 			}
++			// BC5 local patch: explicit override for hosts where the RAM cap is too low for a
++			// PS5 title (direct memory is memfd-backed and committed lazily, so overcommit works
++			// as long as the title does not touch it all).
++			if (const char* env = std::getenv("KYTY_GUEST_MEMORY_MB"); env != nullptr && *env != 0) {
++				target = std::strtoull(env, nullptr, 10) * megabyte;
++			}
+ 			target = target & ~(0x4000ull - 1ull);
+ 			LOGF("guest memory total = %llu MiB\n", static_cast<unsigned long long>(target / megabyte));
+ 			return target;
