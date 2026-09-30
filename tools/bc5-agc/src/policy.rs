@@ -138,7 +138,7 @@ impl Policy {
                 let op_verdict = self.ops.get(opcode).copied().unwrap_or(self.default_op);
                 // WRITE_DATA with DST_SEL 0 (bits 11:8 of the control dword) writes a register;
                 // the register policy covers SET_* only, so it is dropped (mirrors policy.cpp).
-                if *opcode == 0x37 && payload.first().is_some_and(|c| (c >> 8) & 0xf == 0) {
+                if *opcode == 0x37 && payload.first().is_some_and(|c| c & 0xf00 == 0) {
                     return Verdict::Drop;
                 }
                 let is_plain_set = matches!(opcode, 0x68 | 0x69 | 0x76 | 0x79 | 0x9b);
