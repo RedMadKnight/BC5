@@ -1,0 +1,28 @@
+streams: 4  packets: 42
+known opcodes (23):
+  0x10 NOP                          2
+  0x11 SET_BASE                     2
+  0x12 CLEAR_STATE                  1
+  0x13 INDEX_BUFFER_SIZE            1
+  0x1e ATOMIC_MEM                   1
+  0x22 COND_EXEC                    3
+  0x26 INDEX_BASE                   1
+  0x28 CONTEXT_CONTROL              3
+  0x2f NUM_INSTANCES                1
+  0x37 WRITE_DATA                   2
+  0x40 COPY_DATA                    1
+  0x46 EVENT_WRITE                  5
+  0x49 RELEASE_MEM                  1
+  0x4a PREAMBLE_CNTL                2
+  0x58 ACQUIRE_MEM                  1
+  0x5e LOAD_UCONFIG_REG             3
+  0x5f LOAD_SH_REG                  3
+  0x61 LOAD_CONTEXT_REG             3
+  0x63 LOAD_SH_REG_INDEX            1
+  0x64 LOAD_UCONFIG_REG_INDEX       1
+  0x79 SET_UCONFIG_REG              2
+  0x7a SET_UCONFIG_REG_INDEX        1
+  0x9f LOAD_CONTEXT_REG_INDEX       1
+unknown opcodes (0):
+register writes: 2 named, 0 unresolved offsets
+cu-mask register writes (Q3): 0

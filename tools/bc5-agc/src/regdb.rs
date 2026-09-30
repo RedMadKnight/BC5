@@ -11,6 +11,7 @@ use serde::Deserialize;
 const GFX10_JSON: &str = include_str!("../regdb/gfx10.json");
 const OPCODES_TSV: &str = include_str!("../regdb/pm4-opcodes.tsv");
 const EXTRA_REGISTERS_TSV: &str = include_str!("../regdb/extra-registers.tsv");
+const EXTRA_OPCODES_TSV: &str = include_str!("../regdb/extra-opcodes.tsv");
 
 /// Register block a `SET_*_REG` packet addresses; the value is the block's
 /// MMIO dword base (`docs/formats/agc.md` §2).
@@ -228,8 +229,11 @@ impl RegDb {
                 }
             }
         }
+        // Mesa's table first, then the hand-written additions (which win on conflict).
         let opcodes = OPCODES_TSV
             .lines()
+            .chain(EXTRA_OPCODES_TSV.lines())
+            .filter(|l| !l.starts_with('#'))
             .filter_map(|l| {
                 let (op, name) = split_tsv(l)?;
                 Some((

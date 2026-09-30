@@ -37,7 +37,9 @@ Tasks
 3. `bc5-agc report` over the captures: first DCBs built by Sony's code.
 4. Fix, one at a time, whatever KytyPlus still blocks on before the game reaches its first load milestone (experiment 0009: a `PthreadCondWait` deadlock after `fiber init`).
 
-Gate G1b: a DCB built by Sony's `libSceAgc` is captured from ASTRO BOT on the BC-250 and decodes with `bc5-agc`; the list of `/dev/gc` ioctls seen, with counts, is recorded.
+5. A minimal BC5 command processor for the synchronisation packets (`WRITE_DATA`, `RELEASE_MEM`, `COND_EXEC`, `ATOMIC_MEM`, `WAIT_REG_MEM`, `COPY_DATA`, `INDIRECT_BUFFER`) behind `/dev/gc`, completing each submit immediately and firing the `EVFILT_GRAPHICS` events, so the game keeps producing frames; everything else is skipped by packet length. KytyPlus's own interpreter is not used for these buffers (it models gfx9/PS4).
+
+Gate G1b: a DCB built by Sony's `libSceAgc` is captured from ASTRO BOT on the BC-250 and decodes with `bc5-agc`; the list of `/dev/gc` ioctls seen, with counts, is recorded. *Passed 2026-09-30, experiment 0011 (tasks 1–3 done; 4 and 5 open).*
 
 ## Phase 1 — Validation: AGC decoder and tap
 

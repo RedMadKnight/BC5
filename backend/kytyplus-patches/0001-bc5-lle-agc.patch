@@ -1,0 +1,866 @@
+diff --git a/src/graphics/guest_gpu/graphicsRun.cpp b/src/graphics/guest_gpu/graphicsRun.cpp
+index 2918b0d..e634a45 100644
+--- a/src/graphics/guest_gpu/graphicsRun.cpp
++++ b/src/graphics/guest_gpu/graphicsRun.cpp
+@@ -980,6 +980,10 @@ void CommandProcessor::ProcessPm4(Pm4Execution& execution, size_t stop_depth) {
+ 
+ 		const auto packet_dw =
+ 		    handler(*this, packet_header & ~1u, packet + 1, remaining_dw, total_dw) + 1;
++		if (packet_dw > remaining_dw) {
++			// BC5 diagnostic: name the packet before dying.
++			LOGF_COLOR(Log::Color::Red, "[bc5] packet 0x%08x consumed %u dwords but only %u remain (buffer %u dwords, offset %u)\n", packet_header, packet_dw, remaining_dw, total_dw, total_dw - remaining_dw);
++		}
+ 		EXIT_IF(packet_dw > remaining_dw);
+ 		if (execution.m_suspended) {
+ 			if (execution.m_buffer_stack.size() > buffer_index + 1) {
+diff --git a/src/graphics/guest_gpu/pm4.h b/src/graphics/guest_gpu/pm4.h
+index 78fd86f..462e774 100644
+--- a/src/graphics/guest_gpu/pm4.h
++++ b/src/graphics/guest_gpu/pm4.h
+@@ -15,7 +15,9 @@ class File;
+ 	 (((op) & 0xffu) << 8u) | (((r) & (Pm4::R_NUM - 1u)) << 2u))
+ 
+ #define KYTY_PM4_R(cmd_id)   (((cmd_id) >> 2u) & (Pm4::R_NUM - 1u))
+-#define KYTY_PM4_LEN(cmd_id) ((((cmd_id) >> 16u) & 0x3fffu) + 2u)
++// COUNT == 0x3fff (-1) is the header-only form (e.g. the 0xffff1000 filler NOP): one dword.
++#define KYTY_PM4_LEN(cmd_id) \
++	(((((cmd_id) >> 16u) & 0x3fffu) == 0x3fffu) ? 1u : (((((cmd_id) >> 16u) & 0x3fffu)) + 2u))
+ 
+ namespace Libs::Graphics::Pm4 {
+ 
+diff --git a/src/kernel/fileSystem.cpp b/src/kernel/fileSystem.cpp
+index 4034f52..0719e4e 100644
+--- a/src/kernel/fileSystem.cpp
++++ b/src/kernel/fileSystem.cpp
+@@ -33,6 +33,7 @@ constexpr int DESCRIPTOR_MIN = 3;
+ enum class SpecialFile {
+ 	None,
+ 	Random,
++	Device, // /dev/gc, /dev/dipsw (BC5 LLE libSceAgc support, libs/bc5LleAgc.cpp)
+ };
+ 
+ class MountPoints {
+@@ -433,6 +434,16 @@ int KYTY_SYSV_ABI KernelOpen(const char* path, int flags, uint16_t mode) {
+ 		return descriptor;
+ 	}
+ 
++	if (!directory && (file->name == "/dev/gc" || file->name == "/dev/dipsw")) {
++		file->real_name = file->name;
++		file->special   = SpecialFile::Device;
++		file->opened    = true;
++
++		LOGF_COLOR(Log::Color::Green, "\tOpen device: %s, [ok]\n", file->name.c_str());
++
++		return descriptor;
++	}
++
+ 	file->real_name = (directory ? g_mount_points->GetRealDirectory(file->name)
+ 	                             : g_mount_points->GetRealFilename(file->name));
+ 
+@@ -1311,4 +1322,13 @@ int KYTY_SYSV_ABI KernelCheckReachability(const char* path) {
+ 	return KERNEL_ERROR_ENOENT;
+ }
+ 
++bool KernelGetSpecialDeviceName(int d, std::string* name) {
++	auto* file = g_files->GetFile(d);
++	if (file == nullptr || !file->opened || file->special != SpecialFile::Device) {
++		return false;
++	}
++	*name = file->name;
++	return true;
++}
++
+ } // namespace Libs::LibKernel::FileSystem
+diff --git a/src/kernel/fileSystem.h b/src/kernel/fileSystem.h
+index bc73d18..252c692 100644
+--- a/src/kernel/fileSystem.h
++++ b/src/kernel/fileSystem.h
+@@ -57,6 +57,9 @@ int KYTY_SYSV_ABI     KernelMkdir(const char* path, uint16_t mode);
+ int KYTY_SYSV_ABI     KernelRmdir(const char* path);
+ int KYTY_SYSV_ABI     KernelCheckReachability(const char* path);
+ 
++// BC5: name of the pseudo-device (/dev/gc, /dev/dipsw) behind a descriptor, if any.
++bool KernelGetSpecialDeviceName(int d, std::string* name);
++
+ } // namespace Libs::LibKernel::FileSystem
+ 
+ #endif /* EMULATOR_INCLUDE_EMULATOR_KERNEL_FILESYSTEM_H_ */
+diff --git a/src/kernel/memory.cpp b/src/kernel/memory.cpp
+index 02fc0fc..6953fcf 100644
+--- a/src/kernel/memory.cpp
++++ b/src/kernel/memory.cpp
+@@ -712,6 +712,12 @@ public:
+ 				                            : minimum;
+ 				target = std::max(minimum, std::min(ps5_game_total, capped));
+ 			}
++			// BC5 local patch: explicit override for hosts where the RAM cap is too low for a
++			// PS5 title (direct memory is memfd-backed and committed lazily, so overcommit works
++			// as long as the title does not touch it all).
++			if (const char* env = std::getenv("KYTY_GUEST_MEMORY_MB"); env != nullptr && *env != 0) {
++				target = std::strtoull(env, nullptr, 10) * megabyte;
++			}
+ 			target = target & ~(0x4000ull - 1ull);
+ 			LOGF("guest memory total = %llu MiB\n", static_cast<unsigned long long>(target / megabyte));
+ 			return target;
+diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
+new file mode 100644
+index 0000000..04be136
+--- /dev/null
++++ b/src/libs/bc5LleAgc.cpp
+@@ -0,0 +1,736 @@
++// SPDX-License-Identifier: GPL-2.0-only
++//
++// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
++//
++// When a game's own copies of Sony's libSceAgc.sprx and libSceAgcDriver.sprx (shipped in the
++// dump's fakelib/) are LLE-loaded through SHADPS4_SYSMODULES_PACK_DIR instead of KytyPlus's HLE,
++// they need 29 imports the HLE does not provide. This file provides them, plus a /dev/gc device
++// whose submit ioctls hand the DCBs that Sony's code built to KytyPlus's own GPU path, and an
++// optional raw capture of every submitted command buffer (BC5_GC_DUMP_DIR, BC5_GC_DUMP_LIMIT).
++//
++// Signatures were recovered from the call sites in the two modules (BC5 experiment 0010:
++// objdump of the SELF text, arguments per SysV register order). ioctl request codes and their
++// argument layouts follow RPCSX rpcsx/iodev/gc.cpp (GPL-2.0, commit e8ae148); codes RPCSX does not
++// handle are logged and answered with zeros. Everything here is a first cut whose purpose is to get
++// Sony's driver through its initialisation; expect TODOs.
++
++#include "common/abi.h"
++#include "common/assert.h"
++#include "common/common.h"
++#include "common/logging/log.h"
++#include "graphics/presentation/videoOut.h"
++#include "kernel/eventQueue.h"
++#include "kernel/fileSystem.h"
++#include "kernel/memory.h"
++#include "libs/agc.h"
++#include "libs/errno.h"
++#include "libs/libs.h"
++#include "loader/symbolDatabase.h"
++
++#include <atomic>
++#include <cinttypes>
++#include <cstdio>
++#include <cstdlib>
++#include <cstring>
++#include <mutex>
++#include <string>
++
++namespace Libs {
++
++namespace Bc5Gc {
++
++constexpr int OK = 0;
++
++// FreeBSD struct kevent, 64-bit layout (32 bytes); identical to EventQueue::KernelEvent.
++struct KEvent {
++	uint64_t ident;
++	int16_t  filter;
++	uint16_t flags;
++	uint32_t fflags;
++	int64_t  data;
++	void*    udata;
++};
++static_assert(sizeof(KEvent) == 32);
++
++constexpr uint16_t EV_ADD    = 0x0001;
++constexpr uint16_t EV_DELETE = 0x0002;
++
++constexpr uint32_t GUEST_MAP_FIXED = 0x10;
++
++static std::mutex        g_mutex;
++static void*             g_submit_area = nullptr; // 0xc008811b "submit done flag" page
++static uint64_t          g_labels[64];             // sceVideoOutGetBufferLabelAddress target
++static std::atomic<int>  g_dump_count {0};
++static int               g_dump_limit = -1;
++static std::string       g_dump_dir;
++
++static void dump_init() {
++	static std::once_flag once;
++	std::call_once(once, [] {
++		if (const char* d = std::getenv("BC5_GC_DUMP_DIR"); d != nullptr && *d != 0) {
++			g_dump_dir = d;
++			g_dump_limit = 4000;
++			if (const char* l = std::getenv("BC5_GC_DUMP_LIMIT"); l != nullptr && *l != 0) {
++				g_dump_limit = std::atoi(l);
++			}
++			LOGF_COLOR(Log::Color::Green, "[bc5-gc] capturing command buffers to %s (limit %d)\n",
++			           g_dump_dir.c_str(), g_dump_limit);
++		}
++	});
++}
++
++static void dump_cb(const char* kind, const uint32_t* dwords, uint32_t num_dwords) {
++	dump_init();
++	if (g_dump_dir.empty() || dwords == nullptr || num_dwords == 0) {
++		return;
++	}
++	int n = g_dump_count.fetch_add(1);
++	if (g_dump_limit >= 0 && n >= g_dump_limit) {
++		return;
++	}
++	char name[512];
++	std::snprintf(name, sizeof(name), "%s/%06d-%s.bin", g_dump_dir.c_str(), n, kind);
++	if (FILE* f = std::fopen(name, "wb"); f != nullptr) {
++		std::fwrite(dwords, sizeof(uint32_t), num_dwords, f);
++		std::fclose(f);
++	}
++}
++
++// One entry of a submit list is an IT_INDIRECT_BUFFER packet: header 0xc0023f00, address lo, hi,
++// IB_SIZE in dwords (bits 0..19). RPCSX hands these to its PM4 interpreter as-is; KytyPlus wants the
++// DCB pointer and size, so the packet is unwrapped here.
++static void submit_ib_packet(const uint32_t* pkt, const char* kind) {
++	if (pkt[0] == 0) {
++		return;
++	}
++	const uint64_t addr = (static_cast<uint64_t>(pkt[2]) << 32u) | pkt[1];
++	const uint32_t size = pkt[3] & 0xfffffu;
++	LOGF("[bc5-gc] %s: ib header 0x%08" PRIx32 " addr 0x%016" PRIx64 " size %u dwords\n", kind,
++	     pkt[0], addr, size);
++	auto* dcb = reinterpret_cast<uint32_t*>(addr);
++	dump_cb(kind, dcb, size);
++	Graphics::Gen5Driver::GraphicsDriverSubmitCommandBuffer(0, dcb, size);
++}
++
++static void submit_raw(const uint32_t* dwords, uint32_t num, const char* kind) {
++	if (dwords == nullptr || num == 0 || dwords[0] == 0) {
++		return;
++	}
++	dump_cb(kind, dwords, num);
++	Graphics::Gen5Driver::GraphicsDriverSubmitCommandBuffer(0, const_cast<uint32_t*>(dwords),
++	                                                        num);
++}
++
++// Returns 0 on success or a positive errno (the libkernel wrapper turns it into -1/errno).
++static int gc_ioctl(uint64_t request, void* argp) {
++	switch (request) {
++		case 0xc004812e: { // ps5: capability/flag query; RPCSX answers unk=0, flag=0
++			auto* a = static_cast<uint16_t*>(argp);
++			a[0]    = 0;
++			a[1]    = 0;
++			return 0;
++		}
++		case 0xc008811b: { // get submit-done flag pointer (one GPU-visible page)
++			std::lock_guard lock(g_mutex);
++			if (g_submit_area == nullptr) {
++				void* addr = nullptr;
++				int   r    = LibKernel::Memory::KernelMapNamedFlexibleMemory(
++				       &addr, 0x4000, 0x33 /* cpu rw, gpu rw */, 0, "bc5-gc-submit");
++				if (r != 0 || addr == nullptr) {
++					LOGF_COLOR(Log::Color::Red, "[bc5-gc] submit area alloc failed: %d\n", r);
++					return 12; // ENOMEM
++				}
++				std::memset(addr, 0, 0x4000);
++				g_submit_area = addr;
++			}
++			*static_cast<void**>(argp) = g_submit_area;
++			LOGF("[bc5-gc] submit area = %p\n", g_submit_area);
++			return 0;
++		}
++		case 0xc0488131: { // ps5 submit header: contextControl[3] + 3 x IB packet + status
++			struct Args {
++				uint32_t unk0;
++				uint32_t context_control[3];
++				uint32_t cmds[3 * 4];
++				uint64_t status;
++			};
++			static_assert(sizeof(Args) == 72);
++			auto* a = static_cast<Args*>(argp);
++			LOGF("[bc5-gc] submit header: unk0 0x%08" PRIx32 " cc %08" PRIx32 " %08" PRIx32
++			     " %08" PRIx32 "\n",
++			     a->unk0, a->context_control[0], a->context_control[1], a->context_control[2]);
++			submit_raw(a->context_control, 3, "cc");
++			for (int i = 0; i < 3; i++) {
++				submit_ib_packet(a->cmds + i * 4, "dcb");
++			}
++			a->status = 0;
++			return 0;
++		}
++		case 0xc0188132: { // ps5 submit list: count/2 entries of {unk0, unk1, address, size}
++			struct Submit {
++				uint64_t unk0;
++				uint64_t unk1;
++				uint64_t address;
++				uint64_t size;
++			};
++			struct Args {
++				uint32_t unk0;
++				uint32_t count;
++				Submit*  submits;
++				uint32_t status;
++				uint32_t padding;
++			};
++			static_assert(sizeof(Args) == 24);
++			auto* a = static_cast<Args*>(argp);
++			LOGF("[bc5-gc] submit list: unk0 %u count %u\n", a->unk0, a->count);
++			for (uint32_t i = 0; i < a->count / 2; i++) {
++				const auto& s = a->submits[i];
++				LOGF("[bc5-gc]   [%u] unk0 0x%016" PRIx64 " unk1 0x%016" PRIx64 " addr 0x%016" PRIx64
++				     " size %" PRIu64 "\n",
++				     i, s.unk0, s.unk1, s.address, s.size);
++				submit_raw(reinterpret_cast<const uint32_t*>(s.address),
++				           static_cast<uint32_t>(s.size), "dcb");
++			}
++			a->status = 0;
++			return 0;
++		}
++		case 0xc0108102: { // submit: count x IB packet
++			struct Args {
++				uint32_t  arg0;
++				uint32_t  count;
++				uint32_t* cmds;
++			};
++			auto* a = static_cast<Args*>(argp);
++			LOGF("[bc5-gc] submit: arg0 %u count %u\n", a->arg0, a->count);
++			for (uint32_t i = 0; i < a->count; i++) {
++				submit_ib_packet(a->cmds + i * 4, "dcb");
++			}
++			return 0;
++		}
++		case 0xc020810c: { // submit and write eop
++			struct Args {
++				uint32_t  arg0;
++				uint32_t  count;
++				uint32_t* cmds;
++				uint64_t  eop_value;
++				uint32_t  wait_flag;
++			};
++			auto* a = static_cast<Args*>(argp);
++			LOGF("[bc5-gc] submit+eop: arg0 %u count %u eop 0x%016" PRIx64 " wait %u\n", a->arg0,
++			     a->count, a->eop_value, a->wait_flag);
++			for (uint32_t i = 0; i < a->count; i++) {
++				submit_ib_packet(a->cmds + i * 4, "dcb");
++			}
++			// TODO(bc5): where the EOP value is written on the console is not known yet (RPCSX
++			// has its own submitWriteEop); the submit-done page gets it for now.
++			if (g_submit_area != nullptr) {
++				static_cast<uint64_t*>(g_submit_area)[0] = a->eop_value;
++			}
++			return 0;
++		}
++		case 0xc0088101: // switch buffer
++		case 0xc0048116: // submit done
++		case 0xc0048117: // wait idle
++			return 0;
++		case 0xc010810b: { // cu masks: every CU of SE0/SE1, SH0/SH1
++			auto* m = static_cast<uint32_t*>(argp);
++			m[0] = m[1] = m[2] = m[3] = ~0u;
++			return 0;
++		}
++		case 0xc0048113: // num clients
++			*static_cast<uint32_t*>(argp) = 1;
++			return 0;
++		case 0xc0048115: // is game closed
++			*static_cast<uint32_t*>(argp) = 0;
++			return 0;
++		case 0xc00c8110: { // set gs ring sizes
++			auto* a = static_cast<uint32_t*>(argp);
++			LOGF("[bc5-gc] gs ring sizes: %u %u %u\n", a[0], a[1], a[2]);
++			return 0;
++		}
++		case 0xc0848119: { // stats report control
++			auto* a = static_cast<uint32_t*>(argp);
++			LOGF("[bc5-gc] stats report control: 0x%08" PRIx32 " %u %u %u\n", a[0], a[1], a[2],
++			     a[3]);
++			return 0;
++		}
++		case 0xc030810d: { // map compute queue
++			struct Args {
++				uint32_t me_id;
++				uint32_t pipe_id;
++				uint32_t queue_id;
++				uint32_t vqueue_id;
++				uint64_t ring_base;
++				uint64_t read_ptr;
++				uint64_t doorbell;
++				uint32_t ring_size_log2;
++			};
++			auto* a = static_cast<Args*>(argp);
++			LOGF_COLOR(Log::Color::Yellow,
++			           "[bc5-gc] map compute queue me %u pipe %u queue %u vqueue %u ring 0x%016" PRIx64
++			           " rptr 0x%016" PRIx64 " doorbell 0x%016" PRIx64 " size 2^%u (TODO: not wired)\n",
++			           a->me_id, a->pipe_id, a->queue_id, a->vqueue_id, a->ring_base, a->read_ptr,
++			           a->doorbell, a->ring_size_log2);
++			return 0;
++		}
++		case 0xc010811c: { // ding dong for workload (compute queue kick)
++			auto* a = static_cast<uint32_t*>(argp);
++			LOGF_COLOR(Log::Color::Yellow, "[bc5-gc] ding dong me %u pipe %u queue %u offset %u (TODO)\n",
++			           a[0], a[1], a[2], a[3]);
++			return 0;
++		}
++		default: {
++			// _IOC direction bits: 0x40000000 = read (kernel writes argp), 0x80000000 = write.
++			const uint32_t size = (static_cast<uint32_t>(request) >> 16u) & 0x1fffu;
++			const bool     out  = (request & 0x40000000u) != 0;
++			const bool in = (request & 0x80000000u) != 0;
++			LOGF_COLOR(Log::Color::Yellow,
++			           "[bc5-gc] unhandled ioctl 0x%08" PRIx64 " (size %u, %s%s): answered with zeros\n",
++			           request, size, in ? "in" : "", out ? "out" : "");
++			if (in && argp != nullptr && size != 0) {
++				const auto* q = static_cast<const uint64_t*>(argp);
++				for (uint32_t i = 0; i < size / 8; i += 4) {
++					LOGF("[bc5-gc]   +%03x: %016" PRIx64 " %016" PRIx64 " %016" PRIx64 " %016" PRIx64 "\n",
++					     i * 8, q[i], i + 1 < size / 8 ? q[i + 1] : 0, i + 2 < size / 8 ? q[i + 2] : 0,
++					     i + 3 < size / 8 ? q[i + 3] : 0);
++				}
++			}
++			if (out && argp != nullptr && size != 0) {
++				std::memset(argp, 0, size);
++			}
++			return 0;
++		}
++	}
++}
++
++// /dev/dipsw: dip-switch (debug setting) queries from libSceAgc. All switches off.
++static int dipsw_ioctl(uint64_t request, void* argp) {
++	const uint32_t size = (static_cast<uint32_t>(request) >> 16u) & 0x1fffu;
++	LOGF("[bc5-gc] dipsw ioctl 0x%08" PRIx64 " -> 0\n", request);
++	if ((request & 0x40000000u) != 0 && argp != nullptr && size != 0) {
++		std::memset(argp, 0, size);
++	}
++	return 0;
++}
++
++} // namespace Bc5Gc
++
++// ---------------------------------------------------------------------------------------------
++// libkernel
++// ---------------------------------------------------------------------------------------------
++namespace Bc5LleKernel {
++
++LIB_VERSION("libkernel", 1, "libkernel", 1, 1);
++
++namespace FS  = LibKernel::FileSystem;
++namespace Mem = LibKernel::Memory;
++namespace EQ  = LibKernel::EventQueue;
++
++// ioctl(fd, request, argp): raw BSD semantics, 0 or -1.
++static KYTY_SYSV_ABI int Ioctl(int fd, uint64_t request, void* argp) {
++	PRINT_NAME();
++	std::string dev;
++	if (!FS::KernelGetSpecialDeviceName(fd, &dev)) {
++		LOGF_COLOR(Log::Color::Red, "[bc5-gc] ioctl on non-device fd %d request 0x%08" PRIx64 "\n",
++		           fd, request);
++		return -1;
++	}
++	int err = 0;
++	if (dev == "/dev/gc") {
++		err = Bc5Gc::gc_ioctl(request, argp);
++	} else if (dev == "/dev/dipsw") {
++		err = Bc5Gc::dipsw_ioctl(request, argp);
++	} else {
++		LOGF_COLOR(Log::Color::Red, "[bc5-gc] ioctl on unknown device %s\n", dev.c_str());
++		err = 25; // ENOTTY
++	}
++	return err == 0 ? 0 : -1;
++}
++
++// mmap(addr, len, prot, flags, fd, offset). The driver maps the gc device at a fixed guest address
++// (0xfe0200000, 16 KiB, prot 0x22 = cpu write | gpu write, MAP_SHARED) and keeps the returned
++// pointer; anonymous mappings go to flexible memory. Returns nullptr on failure (the driver tests
++// the result against 0, not MAP_FAILED).
++static KYTY_SYSV_ABI void* Mmap(void* addr, size_t len, int prot, int flags, int fd,
++                                int64_t offset) {
++	PRINT_NAME();
++	LOGF("[bc5-gc] mmap addr %p len 0x%zx prot 0x%x flags 0x%x fd %d off 0x%" PRIx64 "\n", addr,
++	     len, prot, flags, fd, offset);
++	if (prot == 0) {
++		prot = 0x33;
++	}
++	void* out = addr;
++	int   r   = Mem::KernelMapNamedFlexibleMemory(&out, len, prot,
++	                                              addr != nullptr ? Bc5Gc::GUEST_MAP_FIXED : 0,
++	                                              fd >= 0 ? "bc5-gc-mmap" : "bc5-anon-mmap");
++	if (r != 0 && addr != nullptr) {
++		LOGF_COLOR(Log::Color::Yellow, "[bc5-gc] fixed mmap at %p failed (%d), retrying anywhere\n",
++		           addr, r);
++		out = nullptr;
++		r   = Mem::KernelMapNamedFlexibleMemory(&out, len, prot, 0,
++		                                        fd >= 0 ? "bc5-gc-mmap" : "bc5-anon-mmap");
++	}
++	if (r != 0) {
++		LOGF_COLOR(Log::Color::Red, "[bc5-gc] mmap failed: %d\n", r);
++		return nullptr;
++	}
++	std::memset(out, 0, len);
++	return out;
++}
++
++// kevent(kq, changelist, nchanges, eventlist, nevents, timeout). libSceAgcDriver only uses it to
++// add/delete EVFILT_GRAPHICS (-14) events on an event queue created with sceKernelCreateEqueue,
++// which in KytyPlus is a small integer handle, so the truncation to int on the way in is harmless.
++static KYTY_SYSV_ABI int Kevent(int kq, const Bc5Gc::KEvent* changes, int nchanges,
++                                Bc5Gc::KEvent* events, int nevents, const void* timeout) {
++	PRINT_NAME();
++	const auto eq = static_cast<EQ::KernelEqueue>(kq);
++	for (int i = 0; i < nchanges; i++) {
++		const auto& c = changes[i];
++		LOGF("[bc5-gc] kevent change: ident 0x%" PRIx64 " filter %d flags 0x%x fflags 0x%x data 0x%"
++		     PRIx64 " udata %p\n",
++		     c.ident, c.filter, c.flags, c.fflags, c.data, c.udata);
++		if (c.filter == EQ::KERNEL_EVFILT_GRAPHICS) {
++			if ((c.flags & Bc5Gc::EV_DELETE) != 0) {
++				Graphics::Gen5Driver::GraphicsDriverDeleteEqEvent(eq, static_cast<int>(c.ident));
++			} else if ((c.flags & Bc5Gc::EV_ADD) != 0) {
++				int r = Graphics::Gen5Driver::GraphicsDriverAddEqEvent(eq, static_cast<int>(c.ident),
++				                                                       c.udata);
++				if (r != 0) {
++					LOGF_COLOR(Log::Color::Red, "[bc5-gc] AddEqEvent failed: 0x%08x\n", r);
++					return -1;
++				}
++			}
++		} else {
++			LOGF_COLOR(Log::Color::Yellow, "[bc5-gc] kevent: filter %d not handled\n", c.filter);
++		}
++	}
++	if (nevents > 0 && events != nullptr) {
++		int out = 0;
++		int r   = EQ::KernelWaitEqueue(eq, reinterpret_cast<EQ::KernelEvent*>(events), nevents,
++		                               &out, nullptr);
++		(void)timeout; // TODO(bc5): honour the timespec
++		return r == 0 ? out : -1;
++	}
++	return 0;
++}
++
++static KYTY_SYSV_ABI int MapNamedSystemFlexibleMemory(void** addr_in_out, size_t len, int prot,
++                                                       int flags, const char* name) {
++	PRINT_NAME();
++	void* want = addr_in_out != nullptr ? *addr_in_out : nullptr;
++	int   r    = Mem::KernelMapNamedFlexibleMemory(addr_in_out, len, prot, flags, name);
++	if (r != 0 && (static_cast<uint32_t>(flags) & Bc5Gc::GUEST_MAP_FIXED) != 0) {
++		LOGF_COLOR(Log::Color::Yellow,
++		           "[bc5-gc] fixed system flexible mapping at %p failed (%d), retrying anywhere\n",
++		           want, r);
++		*addr_in_out = nullptr;
++		r = Mem::KernelMapNamedFlexibleMemory(
++		    addr_in_out, len, prot, flags & ~static_cast<int>(Bc5Gc::GUEST_MAP_FIXED), name);
++	}
++	LOGF("[bc5-gc] system flexible %s: want %p got %p len 0x%zx -> %d\n", name, want,
++	     addr_in_out != nullptr ? *addr_in_out : nullptr, len, r);
++	return r;
++}
++
++static KYTY_SYSV_ABI int ReleaseFlexibleMemory(void* addr, size_t len) {
++	PRINT_NAME();
++	return Mem::KernelMunmap(reinterpret_cast<uint64_t>(addr), len);
++}
++
++// Tool memory: on the console a separate pool for tooling (capture, debug). The call sites in
++// libSceAgc use AllocateDirectMemory's argument list with a leading kind, and MapDirectMemory's
++// list for the mapping, so the pool is simply direct memory here.
++static KYTY_SYSV_ABI int AllocateToolMemory(int kind, int64_t search_start, int64_t search_end,
++                                            size_t len, size_t alignment, int memory_type,
++                                            int64_t* phys_out) {
++	PRINT_NAME();
++	LOGF("[bc5-gc] tool alloc kind %d start 0x%" PRIx64 " end 0x%" PRIx64 " len 0x%zx align 0x%zx type %d\n",
++	     kind, search_start, search_end, len, alignment, memory_type);
++	if (search_end == 0) {
++		return Mem::KernelAllocateMainDirectMemory(len, alignment, memory_type, phys_out);
++	}
++	return Mem::KernelAllocateDirectMemory(search_start, search_end, len, alignment, memory_type,
++	                                       phys_out);
++}
++
++static KYTY_SYSV_ABI int MapToolMemory(void** addr, size_t len, int prot, int flags, int64_t phys,
++                                       size_t alignment) {
++	PRINT_NAME();
++	void* want = addr != nullptr ? *addr : nullptr;
++	int   r    = Mem::KernelMapDirectMemory(addr, len, prot, flags, phys, alignment);
++	if (r != 0 && (static_cast<uint32_t>(flags) & Bc5Gc::GUEST_MAP_FIXED) != 0) {
++		LOGF_COLOR(Log::Color::Yellow, "[bc5-gc] fixed tool mapping at %p failed (%d), retrying anywhere\n",
++		           want, r);
++		*addr = nullptr;
++		r = Mem::KernelMapDirectMemory(addr, len, prot,
++		                               flags & ~static_cast<int>(Bc5Gc::GUEST_MAP_FIXED), phys,
++		                               alignment);
++	}
++	LOGF("[bc5-gc] tool map: want %p got %p len 0x%zx -> %d\n", want,
++	     addr != nullptr ? *addr : nullptr, len, r);
++	return r;
++}
++
++static KYTY_SYSV_ABI int ReleaseToolMemory(int64_t phys, size_t len) {
++	PRINT_NAME();
++	return Mem::KernelReleaseDirectMemory(phys, len);
++}
++
++static KYTY_SYSV_ABI int AvailableToolMemorySize(int kind, int64_t search_start,
++                                                 int64_t search_end, size_t alignment,
++                                                 int64_t* phys_out, size_t* size_out) {
++	PRINT_NAME();
++	(void)kind;
++	return Mem::KernelAvailableDirectMemorySize(search_start, search_end, alignment, phys_out,
++	                                            size_out);
++}
++
++static KYTY_SYSV_ABI int GetMainSocId() {
++	PRINT_NAME();
++	return 0; // TODO(bc5): value unknown; the driver stores it and compares later
++}
++
++static KYTY_SYSV_ABI int GetAppInfo(int pid, void* info) {
++	PRINT_NAME();
++	LOGF("[bc5-gc] GetAppInfo pid %d\n", pid);
++	if (info != nullptr) {
++		// The libSceAgcDriver caller keeps the struct at rbp-0xc8 and its stack canary at
++		// rbp-0x30, so the struct is at most 0x98 bytes; it reads a byte at offset 0x48.
++		std::memset(info, 0, 0x98);
++	}
++	return 0;
++}
++
++static KYTY_SYSV_ABI int GetCompiledSdkVersion(int* version) {
++	PRINT_NAME();
++	if (version == nullptr) {
++		return LibKernel::KERNEL_ERROR_EINVAL;
++	}
++	*version = 0x0A000000; // TODO(bc5): read from the eboot's process param
++	return 0;
++}
++
++static KYTY_SYSV_ABI int IsNeoMode() {
++	PRINT_NAME();
++	return 0;
++}
++
++static KYTY_SYSV_ABI int SetProcessProperty(const char* name, uint64_t a1, uint64_t a2,
++                                            uint64_t a3, uint64_t a4) {
++	PRINT_NAME();
++	LOGF("[bc5-gc] SetProcessProperty %s 0x%" PRIx64 " 0x%" PRIx64 " 0x%" PRIx64 " 0x%" PRIx64 "\n",
++	     name != nullptr ? name : "(null)", a1, a2, a3, a4);
++	return 0;
++}
++
++static KYTY_SYSV_ABI int Getuid() {
++	PRINT_NAME();
++	return 0;
++}
++
++static KYTY_SYSV_ABI int KernelError(int e) {
++	PRINT_NAME();
++	if (e <= 0) {
++		return e;
++	}
++	return static_cast<int>(0x80020000u + static_cast<uint32_t>(e));
++}
++
++static KYTY_SYSV_ABI int TitleWorkaroundIsEnabled(int id) {
++	PRINT_NAME();
++	LOGF("[bc5-gc] TitleWorkaroundIsEnabled %d -> 0\n", id);
++	return 0;
++}
++
++static KYTY_SYSV_ABI int GetAppCategoryType() {
++	PRINT_NAME();
++	return 0;
++}
++
++static KYTY_SYSV_ABI const char* GetFsSandboxRandomWord() {
++	PRINT_NAME();
++	return "bc5bc5bc5b";
++}
++
++static KYTY_SYSV_ABI int AddTimerEvent(EQ::KernelEqueue eq, int id, const void* ts, void* udata) {
++	PRINT_NAME();
++	return EQ::KernelAddHRTimerEvent(eq, id, static_cast<const LibKernel::KernelTimespec*>(ts),
++	                                 udata);
++}
++
++struct SystemSwVersion {
++	uint64_t size;
++	char     version_string[28];
++	uint32_t version;
++};
++
++static KYTY_SYSV_ABI int GetProsperoSystemSwVersion(SystemSwVersion* v) {
++	PRINT_NAME();
++	if (v == nullptr) {
++		return LibKernel::KERNEL_ERROR_EINVAL;
++	}
++	std::memset(v->version_string, 0, sizeof(v->version_string));
++	std::strncpy(v->version_string, "10.60.000", sizeof(v->version_string) - 1);
++	v->version = 0x0A600000;
++	return 0;
++}
++
++// PS5-only NIDs without a public name. Logged, answered with 0.
++static KYTY_SYSV_ABI int Unknown_LzoM(int a) {
++	PRINT_NAME();
++	LOGF("[bc5-gc] libkernel LzoM-wVLJDE(%d) -> 0 (first call of libSceAgcDriver init)\n", a);
++	return 0;
++}
++static KYTY_SYSV_ABI int Unknown_dkBx(uint64_t a, uint64_t b) {
++	PRINT_NAME();
++	LOGF("[bc5-gc] libkernel dkBx0YqFQ+Y(0x%" PRIx64 ", 0x%" PRIx64 ") -> 0\n", a, b);
++	return 0;
++}
++static KYTY_SYSV_ABI int Unknown_GGeR(uint64_t a, uint64_t b) {
++	PRINT_NAME();
++	LOGF("[bc5-gc] libkernel GGeRJk1XdWc(0x%" PRIx64 ", 0x%" PRIx64 ") -> 0\n", a, b);
++	return 0;
++}
++
++LIB_DEFINE(InitBc5LleKernel_1) {
++	LIB_FUNC("PfccT7qURYE", Ioctl);
++	LIB_FUNC("wW+k21cmbwQ", Ioctl); // _ioctl
++	LIB_FUNC("BPE9s9vQQXo", Mmap);
++	LIB_FUNC("RW-GEfpnsqg", Kevent);
++	LIB_FUNC("kc+LEEIYakc", MapNamedSystemFlexibleMemory);
++	LIB_FUNC("teiItL2boFw", ReleaseFlexibleMemory);
++	LIB_FUNC("45Yurf7lZmU", AllocateToolMemory);
++	LIB_FUNC("d0vezuPZxtg", MapToolMemory);
++	LIB_FUNC("gO98NioN5FM", ReleaseToolMemory);
++	LIB_FUNC("YkwlupG-S4E", AvailableToolMemorySize);
++	LIB_FUNC("0vTn5IDMU9A", GetMainSocId);
++	LIB_FUNC("G-MYv5erXaU", GetAppInfo);
++	LIB_FUNC("WB66evu8bsU", GetCompiledSdkVersion);
++	LIB_FUNC("WslcK1FQcGI", IsNeoMode);
++	LIB_FUNC("-W4xI5aVI8w", SetProcessProperty);
++	LIB_FUNC("kg4x8Prhfxw", Getuid);
++	LIB_FUNC("D4yla3vx4tY", KernelError);
++	LIB_FUNC("1yca4VvfcNA", TitleWorkaroundIsEnabled);
++	LIB_FUNC("+xy9ORMbd8U", GetAppCategoryType);
++	LIB_FUNC("JGfTMBOdUJo", GetFsSandboxRandomWord);
++	LIB_FUNC("57ZK+ODEXWY", AddTimerEvent);
++	LIB_FUNC("aML18Z0J0t0", GetProsperoSystemSwVersion);
++	LIB_FUNC("LzoM-wVLJDE", Unknown_LzoM);
++	LIB_FUNC("dkBx0YqFQ+Y", Unknown_dkBx);
++	LIB_FUNC("GGeRJk1XdWc", Unknown_GGeR);
++}
++
++} // namespace Bc5LleKernel
++
++// ---------------------------------------------------------------------------------------------
++// VideoOut
++// ---------------------------------------------------------------------------------------------
++namespace Bc5LleVideoOut {
++
++LIB_VERSION("VideoOut", 1, "VideoOut", 1, 1);
++
++static KYTY_SYSV_ABI int SysGetBus(int handle) {
++	PRINT_NAME();
++	LOGF("[bc5-gc] VideoOutSysGetBus(%d) -> 0\n", handle);
++	return 0;
++}
++
++// The GPU writes flip labels here (EOP flips); the driver reads them back to know a flip landed.
++static KYTY_SYSV_ABI int GetBufferLabelAddress(int handle, uint64_t** out) {
++	PRINT_NAME();
++	if (out == nullptr) {
++		return LibKernel::KERNEL_ERROR_EINVAL;
++	}
++	*out = Bc5Gc::g_labels;
++	LOGF("[bc5-gc] VideoOutGetBufferLabelAddress(%d) -> %p\n", handle, static_cast<void*>(*out));
++	return 0;
++}
++
++// (handle, index, flip_mode, flip_arg, ...): treated as a CPU flip for now.
++// TODO(bc5): the EOP part (flip when the GPU reaches the end of the submitted DCB).
++static KYTY_SYSV_ABI int SubmitEopFlip(int handle, int index, int flip_mode, int64_t flip_arg,
++                                       void* unk) {
++	PRINT_NAME();
++	LOGF("[bc5-gc] VideoOutSubmitEopFlip(%d, %d, %d, 0x%" PRIx64 ", %p)\n", handle, index,
++	     flip_mode, flip_arg, unk);
++	return VideoOut::VideoOutSubmitFlip(handle, index, flip_mode, flip_arg);
++}
++
++static KYTY_SYSV_ABI int SysAddSetModeEvent2(uint64_t a, uint64_t b, uint64_t c) {
++	PRINT_NAME();
++	LOGF("[bc5-gc] VideoOutSysAddSetModeEvent2(0x%" PRIx64 ", 0x%" PRIx64 ", 0x%" PRIx64 ") -> 0\n", a,
++	     b, c);
++	return 0;
++}
++
++static KYTY_SYSV_ABI int Unknown_Ygv0(uint64_t a, uint64_t b, uint64_t c) {
++	PRINT_NAME();
++	LOGF("[bc5-gc] VideoOut Ygv0S+Hi+hA(0x%" PRIx64 ", 0x%" PRIx64 ", 0x%" PRIx64 ") -> 0\n", a, b, c);
++	return 0;
++}
++
++LIB_DEFINE(InitBc5LleVideoOut_1) {
++	LIB_FUNC("7VSZJxxcTL8", SysGetBus);
++	LIB_FUNC("OcQybQejHEY", GetBufferLabelAddress);
++	LIB_FUNC("j8xl+92A0q4", SubmitEopFlip);
++	LIB_FUNC("fYWVVDKZOCk", SysAddSetModeEvent2);
++	LIB_FUNC("Ygv0S+Hi+hA", Unknown_Ygv0);
++}
++
++} // namespace Bc5LleVideoOut
++
++// ---------------------------------------------------------------------------------------------
++// Sysmodule, RegMgr
++// ---------------------------------------------------------------------------------------------
++namespace Bc5LleSysmodule {
++
++LIB_VERSION("Sysmodule", 1, "Sysmodule", 1, 1);
++
++static KYTY_SYSV_ABI int LoadModuleInternal(uint16_t id) {
++	PRINT_NAME();
++	LOGF("[bc5-gc] SysmoduleLoadModuleInternal(0x%x) -> 0\n", id);
++	return 0;
++}
++
++static KYTY_SYSV_ABI int LoadModuleByNameInternal(const char* name, uint64_t a, uint64_t b) {
++	PRINT_NAME();
++	LOGF("[bc5-gc] SysmoduleLoadModuleByNameInternal(%s, 0x%" PRIx64 ", 0x%" PRIx64 ") -> 0\n",
++	     name != nullptr ? name : "(null)", a, b);
++	return 0;
++}
++
++LIB_DEFINE(InitBc5LleSysmodule_1) {
++	LIB_FUNC("39iV5E1HoCk", LoadModuleInternal);
++	LIB_FUNC("CU8m+Qs+HN4", LoadModuleByNameInternal);
++}
++
++} // namespace Bc5LleSysmodule
++
++namespace Bc5LleRegMgr {
++
++LIB_VERSION("RegMgr", 1, "RegMgr", 1, 1);
++
++static KYTY_SYSV_ABI int NonSysGetInt(uint32_t key, int* value) {
++	PRINT_NAME();
++	LOGF("[bc5-gc] RegMgrNonSysGetInt(0x%08x) -> 0\n", key);
++	if (value != nullptr) {
++		*value = 0;
++	}
++	return 0;
++}
++
++LIB_DEFINE(InitBc5LleRegMgr_1) {
++	LIB_FUNC("dKeshzt29G4", NonSysGetInt);
++}
++
++} // namespace Bc5LleRegMgr
++
++LIB_DEFINE(InitBc5LleAgc_1) {
++	Bc5LleKernel::InitBc5LleKernel_1(s);
++	Bc5LleVideoOut::InitBc5LleVideoOut_1(s);
++	Bc5LleSysmodule::InitBc5LleSysmodule_1(s);
++	Bc5LleRegMgr::InitBc5LleRegMgr_1(s);
++}
++
++} // namespace Libs
+diff --git a/src/libs/libs.cpp b/src/libs/libs.cpp
+index 36e4dc8..eaa58d7 100644
+--- a/src/libs/libs.cpp
++++ b/src/libs/libs.cpp
+@@ -73,6 +73,7 @@ LIB_DEFINE(InitSystemService_1);
+ LIB_DEFINE(InitTextToSpeech2_1);
+ LIB_DEFINE(InitUserService_1);
+ LIB_DEFINE(InitVideoOut_1);
++LIB_DEFINE(InitBc5LleAgc_1);
+ 
+ void InitAll(Loader::SymbolDatabase* s) {
+ 	LIB_LOAD(InitAudio_1);
+@@ -111,6 +112,7 @@ void InitAll(Loader::SymbolDatabase* s) {
+ 	LIB_LOAD(InitUserService_1);
+ 	LIB_LOAD(VideoDec2::InitVideoDec2_1);
+ 	LIB_LOAD(InitVideoOut_1);
++	LIB_LOAD(InitBc5LleAgc_1);
+ }
+ 
+ namespace LibContentExport {
