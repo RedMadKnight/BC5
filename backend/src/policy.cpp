@@ -103,11 +103,12 @@ std::vector<std::pair<std::uint64_t, std::uint64_t>> memory_operands(const std::
             out.emplace_back(addr(2, 3), (len - 4) * 4ull);
         break;
     }
-    case 0x49: // RELEASE_MEM (gfx10): addr lo/hi at 3/4
-        if (len >= 6) out.emplace_back(addr(3, 4), 8);
+    case 0x49: // RELEASE_MEM (gfx10): addr lo/hi at 3/4; DATA_SEL 0 (bits 31:29 of dword 2)
+               // writes nothing — an event/cache-flush only packet, address 0 is normal
+        if (len >= 6 && ((p[2] >> 29) & 7) != 0) out.emplace_back(addr(3, 4), 8);
         break;
-    case 0x47: // EVENT_WRITE_EOP: addr lo at 2, hi in dword 3 bits 15:0
-        if (len >= 4) out.emplace_back(addr(2, 3), 8);
+    case 0x47: // EVENT_WRITE_EOP: addr lo at 2, hi in dword 3 bits 15:0; DATA_SEL 0 = no write
+        if (len >= 4 && ((p[3] >> 29) & 7) != 0) out.emplace_back(addr(2, 3), 8);
         break;
     case 0x3c: // WAIT_REG_MEM: mem_space bit 4
     case 0x93: // WAIT_REG_MEM64

@@ -229,30 +229,13 @@ std::vector<Mapping> Device::mappings() const {
     return out;
 }
 
-SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::FilterOptions &opt,
-                            std::uint64_t timeout_ns) {
-    SubmitResult r;
-    std::lock_guard lock(impl_->mutex);
-    if (wedged_) {
-        r.rc = -1;
-        return r;
-    }
-    // The CP fetches IBs in 32-byte chunks: pad to 8 dwords with one-dword NOPs so it never
-    // executes what lies past the game's buffer (a 150-dword console preamble followed by zero
-    // dwords, i.e. type-0 packets, hung the BC-250 in experiment 0016).
-    const std::size_t padded = (ib.size() + 7) & ~std::size_t{7};
-    const std::uint64_t bytes = padded * sizeof(std::uint32_t);
-    if (ib.empty() || !impl_->scratch_reserve(bytes)) {
-        r.rc = -2;
-        return r;
-    }
-    auto *dst = static_cast<std::uint32_t *>(impl_->scratch.cpu);
-    policy::filter(policy::Policy::builtin(), ib, std::span<std::uint32_t>(dst, ib.size()), opt,
-                   r.filter);
-    for (std::size_t i = ib.size(); i < padded; ++i) dst[i] = policy::kNop;
-    // Which packets survived the filter (the filter NOPs in place, so offsets line up).
-    for (std::size_t i = 0; i < ib.size();) {
-        const std::uint32_t h = ib[i];
+namespace {
+
+// Which type-3 packets of `src` survived the filter into `dst` (the filter NOPs in place).
+void executed_offsets_of(std::span<const std::uint32_t> src, const std::uint32_t *dst,
+                         std::vector<std::uint32_t> &out) {
+    for (std::size_t i = 0; i < src.size();) {
+        const std::uint32_t h = src[i];
         const std::uint32_t type = h >> 30;
         std::size_t len = 1;
         if (type == 3) {
@@ -261,7 +244,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
             const std::uint32_t op_in = (h >> 8) & 0xff;
             const std::uint32_t op_out = (dst[i] >> 8) & 0xff;
             if (op_in != 0x10 && (dst[i] >> 30) == 3 && op_out != 0x10)
-                r.executed_offsets.push_back(static_cast<std::uint32_t>(i));
+                out.push_back(static_cast<std::uint32_t>(i));
         } else if (type == 0) {
             len = ((h >> 16) & 0x3fff) + 2;
         } else if (type == 2) {
@@ -271,6 +254,129 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
         }
         i += len;
     }
+}
+
+struct Piece {
+    const std::uint32_t *src = nullptr;
+    std::size_t n = 0;      // dwords
+    std::size_t off = 0;    // dword offset in the scratch
+    std::size_t padded = 0; // n rounded up to 8
+    int depth = 0;
+};
+
+// INDIRECT_BUFFER / INDIRECT_BUFFER_CNST targets of an IB that lie inside the mapped ranges.
+void nested_targets(std::span<const std::uint32_t> ib, const policy::FilterOptions &opt,
+                    std::vector<std::pair<const std::uint32_t *, std::size_t>> &out) {
+    for (std::size_t i = 0; i < ib.size();) {
+        const std::uint32_t h = ib[i];
+        const std::uint32_t type = h >> 30;
+        std::size_t len = 1;
+        if (type == 3 || type == 0) {
+            const std::uint32_t count = (h >> 16) & 0x3fff;
+            len = count == 0x3fff ? 1 : count + 2;
+        }
+        if (i + len > ib.size()) break;
+        const std::uint32_t op = (h >> 8) & 0xff;
+        if (type == 3 && (op == 0x3f || op == 0x33) && len >= 4) {
+            const std::uint64_t a = (static_cast<std::uint64_t>(ib[i + 1]) & ~3ull) |
+                                    (static_cast<std::uint64_t>(ib[i + 2] & 0xffu) << 32);
+            const std::size_t n = ib[i + 3] & 0xfffffu;
+            if (a != 0 && n != 0 && (!opt.mapped || opt.mapped(a, n * 4)))
+                out.emplace_back(reinterpret_cast<const std::uint32_t *>(a), n);
+        }
+        i += len;
+    }
+}
+
+} // namespace
+
+SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::FilterOptions &opt,
+                            std::uint64_t timeout_ns) {
+    SubmitResult r;
+    std::lock_guard lock(impl_->mutex);
+    if (wedged_) {
+        r.rc = -1;
+        return r;
+    }
+    if (ib.empty()) {
+        r.rc = -2;
+        return r;
+    }
+    // Layout: the IB first, then every INDIRECT_BUFFER target it (transitively) reaches, each
+    // padded to 8 dwords with NOPs — the CP fetches IBs in 32-byte chunks and must never run
+    // into what lies past a buffer (experiment 0016). The nested copies let the filter see the
+    // console's compute rings, which are rings of INDIRECT_BUFFER packets (step e).
+    std::vector<Piece> pieces;
+    pieces.push_back({ib.data(), ib.size(), 0, (ib.size() + 7) & ~std::size_t{7}, 0});
+    for (std::size_t k = 0; k < pieces.size() && pieces.size() < 64; ++k) {
+        if (pieces[k].depth >= 3) continue;
+        std::vector<std::pair<const std::uint32_t *, std::size_t>> targets;
+        nested_targets(std::span<const std::uint32_t>(pieces[k].src, pieces[k].n), opt, targets);
+        for (const auto &[src, n] : targets) {
+            bool seen = false;
+            for (const auto &q : pieces) seen = seen || (q.src == src && q.n == n);
+            if (seen) continue;
+            const Piece &last = pieces.back();
+            pieces.push_back({src, n, last.off + last.padded, (n + 7) & ~std::size_t{7}, pieces[k].depth + 1});
+        }
+    }
+    const Piece &last = pieces.back();
+    const std::uint64_t bytes = (last.off + last.padded) * sizeof(std::uint32_t);
+    if (!impl_->scratch_reserve(bytes)) {
+        r.rc = -2;
+        return r;
+    }
+    auto *dst = static_cast<std::uint32_t *>(impl_->scratch.cpu);
+    for (std::size_t k = 0; k < pieces.size(); ++k) {
+        const Piece &pc = pieces[k];
+        policy::FilterStats st;
+        policy::filter(policy::Policy::builtin(), std::span<const std::uint32_t>(pc.src, pc.n),
+                       std::span<std::uint32_t>(dst + pc.off, pc.n), opt, k == 0 ? r.filter : st);
+        for (std::size_t i = pc.n; i < pc.padded; ++i) dst[pc.off + i] = policy::kNop;
+        std::vector<std::uint32_t> ex;
+        executed_offsets_of(std::span<const std::uint32_t>(pc.src, pc.n), dst + pc.off, ex);
+        if (k == 0) {
+            r.executed_offsets = std::move(ex);
+        } else {
+            r.nested.push_back({reinterpret_cast<std::uint64_t>(pc.src),
+                                static_cast<std::uint32_t>(pc.n), std::move(ex)});
+        }
+    }
+    // Point the surviving INDIRECT_BUFFER packets at the scratch copies.
+    for (const Piece &pc : pieces) {
+        std::uint32_t *d = dst + pc.off;
+        for (std::size_t i = 0; i < pc.n;) {
+            const std::uint32_t h = d[i];
+            const std::uint32_t type = h >> 30;
+            std::size_t len = 1;
+            if (type == 3 || type == 0) {
+                const std::uint32_t count = (h >> 16) & 0x3fff;
+                len = count == 0x3fff ? 1 : count + 2;
+            }
+            if (i + len > pc.n) break;
+            const std::uint32_t op = (h >> 8) & 0xff;
+            if (type == 3 && (op == 0x3f || op == 0x33) && len >= 4) {
+                const std::uint64_t a = (static_cast<std::uint64_t>(d[i + 1]) & ~3ull) |
+                                        (static_cast<std::uint64_t>(d[i + 2] & 0xffu) << 32);
+                const std::size_t n = d[i + 3] & 0xfffffu;
+                bool found = false;
+                for (const Piece &q : pieces) {
+                    if (reinterpret_cast<std::uint64_t>(q.src) == a && q.n == n) {
+                        const std::uint64_t va = impl_->scratch.va + q.off * 4;
+                        d[i + 1] = static_cast<std::uint32_t>(va & 0xffffffffu);
+                        d[i + 2] = static_cast<std::uint32_t>((va >> 32) & 0xffffu);
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found) { // an unmapped or over-deep target: never let the CP follow it
+                    for (std::size_t q = 0; q < len; ++q) d[i + q] = policy::kNop;
+                }
+            }
+            i += len;
+        }
+    }
+    const std::size_t padded = pieces[0].padded;
 
     std::vector<amdgpu_bo_handle> bos;
     bos.reserve(impl_->userptrs.size() + 1);

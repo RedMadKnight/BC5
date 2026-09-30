@@ -174,3 +174,14 @@ TEST_CASE("waits pass only on labels written earlier in the same IB", "[policy]"
     REQUIRE(st2.unsatisfiable_wait_drops == 0);
     REQUIRE(out[13] == 0xC0053C00u);
 }
+
+TEST_CASE("RELEASE_MEM without data has no memory operand", "[policy]") {
+    // event 40, EVENT_INDEX 5, GCR bits; DATA_SEL 0, INT_SEL 1; address 0 (the console's
+    // interrupt-only EOP, 52 per frame DCB in experiment 0016)
+    const std::vector<std::uint32_t> only_event = {0xC0064900u, 0x06000528u, 0x04010000u, 0u, 0u, 0u, 0u, 0u};
+    REQUIRE(policy::memory_operands(only_event.data(), 8).empty());
+    const std::vector<std::uint32_t> with_data = {0xC0064900u, 0x00000528u, 0x60010000u, 0x13600970u, 0x3u, 0u, 0u, 0u};
+    const auto ops = policy::memory_operands(with_data.data(), 8);
+    REQUIRE(ops.size() == 1);
+    REQUIRE(ops[0].first == 0x313600970ull);
+}

@@ -30,6 +30,16 @@ struct SubmitResult {
     // themselves, i.e. passed or rewritten, not NOP-ed by the filter. A host that also emulates
     // the stream (a soft CP) uses this to skip the memory side effects the GPU already produced.
     std::vector<std::uint32_t> executed_offsets;
+    // INDIRECT_BUFFER targets reached from the IB (the console's compute rings are rings of
+    // INDIRECT_BUFFER packets): each was copied into the scratch behind the IB, filtered like
+    // it, and the packet's address rewritten to the copy — so the filter sees every packet the
+    // CP will execute. Per target: the guest address, its length and its executed offsets.
+    struct Nested {
+        std::uint64_t cpu_addr = 0;
+        std::uint32_t num_dwords = 0;
+        std::vector<std::uint32_t> executed_offsets;
+    };
+    std::vector<Nested> nested;
 };
 
 struct Mapping {
