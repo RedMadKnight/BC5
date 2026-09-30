@@ -195,10 +195,10 @@ index 5f87e6b..e5c534e 100644
  	CondRemoveWaiter(cond_value, thread);
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..1c27ec7
+index 0000000..c352c4d
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,1561 @@
+@@ -0,0 +1,1698 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -231,11 +231,13 @@ index 0000000..1c27ec7
 +#if defined(KYTY_BC5_DIRECT)
 +#include "bc5/direct.hpp"
 +#include <sys/mman.h>
++#include <unistd.h>
 +#endif
 +
 +#include <algorithm>
 +#include <atomic>
 +#include <chrono>
++#include <cstdarg>
 +#include <fstream>
 +#include <memory>
 +#include <cinttypes>
@@ -916,7 +918,28 @@ index 0000000..1c27ec7
 +// ---------------------------------------------------------------------------------------------
 +namespace Direct {
 +
-+enum class Stage { Off, Preamble, NoDraw, All };
++enum class Stage { Off, MapOnly, Preamble, NoDraw, All };
++
++// Unbuffered, fsync'd line in BC5_GC_DUMP_DIR/direct.log: the only record that survives a hang.
++static void journal(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
++static void journal(const char* fmt, ...) {
++	if (g_dump_dir.empty()) {
++		return;
++	}
++	char name[512];
++	std::snprintf(name, sizeof(name), "%s/direct.log", g_dump_dir.c_str());
++	FILE* f = std::fopen(name, "a");
++	if (f == nullptr) {
++		return;
++	}
++	va_list ap;
++	va_start(ap, fmt);
++	std::vfprintf(f, fmt, ap);
++	va_end(ap);
++	std::fflush(f);
++	fsync(fileno(f));
++	std::fclose(f);
++}
 +
 +#if defined(KYTY_BC5_DIRECT)
 +static std::unique_ptr<bc5::direct::Device> g_dev;
@@ -946,6 +969,8 @@ index 0000000..1c27ec7
 +	const char* stage = std::getenv("BC5_DIRECT_STAGE");
 +	if (stage == nullptr || std::strcmp(stage, "preamble") == 0) {
 +		g_stage = Stage::Preamble;
++	} else if (std::strcmp(stage, "maponly") == 0) {
++		g_stage = Stage::MapOnly;
 +	} else if (std::strcmp(stage, "nodraw") == 0) {
 +		g_stage = Stage::NoDraw;
 +	} else if (std::strcmp(stage, "all") == 0) {
@@ -964,7 +989,37 @@ index 0000000..1c27ec7
 +		g_stage = Stage::Off;
 +		return;
 +	}
++	if (std::getenv("BC5_DIRECT_NO_BOLIST") != nullptr) {
++		g_dev->set_include_mappings(false);
++	}
++	dump_init();
++	journal("direct: enabled, stage %s, cu mask 0x%08x, bo list %s\n", stage != nullptr ? stage : "preamble", g_cu_mask,
++	        std::getenv("BC5_DIRECT_NO_BOLIST") != nullptr ? "scratch only" : "with mappings");
 +	LOGF_COLOR(Log::Color::Green, "[bc5-direct] enabled: stage %s, cu mask 0x%08x\n", stage != nullptr ? stage : "preamble", g_cu_mask);
++	// BC5_DIRECT_SELFTEST=1: before the game submits anything, run synthetic IBs through the very
++	// same path (no userptr BOs yet): 8 NOPs, 152 NOPs, 8 x (CONTEXT_CONTROL + NOPs) — the shapes
++	// that hung the box from inside this process but not standalone (experiment 0016).
++	if (std::getenv("BC5_DIRECT_SELFTEST") != nullptr) {
++		std::vector<uint32_t> ib;
++		bc5::policy::FilterOptions opt;
++		auto run = [&](const char* name) {
++			journal("selftest %s (%zu dwords) ... ", name, ib.size());
++			const auto r = g_dev->submit(ib, opt, 2'000'000'000ull);
++			journal("%s rc %d%s %.2f ms\n", r.ok ? "OK" : "FAILED", r.rc, r.timed_out ? " TIMEOUT" : "", r.submit_ms);
++			return r.ok;
++		};
++		ib.assign(8, 0xffff1000u);
++		if (!run("8 nops")) return;
++		ib.assign(152, 0xffff1000u);
++		if (!run("152 nops")) return;
++		ib.assign(152, 0xffff1000u);
++		ib[7] = 0xc0012800u; ib[8] = 0x80000000u; ib[9] = 0x80000000u;
++		ib[138] = 0xc0012800u; ib[139] = 0x80000000u; ib[140] = 0x80000000u;
++		for (int i = 0; i < 8; i++) {
++			if (!run("cc-at-8-and-139")) return;
++		}
++		journal("selftest: all passed\n");
++	}
 +}
 +
 +// Maps every resident run of the guest's anonymous rw memory that is not mapped yet. Guest
@@ -1021,19 +1076,37 @@ index 0000000..1c27ec7
 +			uint64_t b = start + ((j * kPage + kGrain - 1) / kGrain) * kGrain;
 +			if (b > end) b = end;
 +			if (!already(a, b)) {
-+				// Trim to the part not yet mapped from the front/back (overlaps are rejected).
-+				bool ok = true;
++				// Map the pieces of [a, b) not covered by an existing mapping (interval
++				// subtraction against the sorted mapping list); failures are remembered so the
++				// same piece is not retried every 50 ms.
++				static std::vector<std::pair<uint64_t, uint64_t>> failed;
++				std::vector<std::pair<uint64_t, uint64_t>> pieces = {{a, b}};
 +				for (const auto& m: have) {
-+					if (a < m.va + m.size && m.va < b) { // partial overlap: keep the outside pieces
-+						if (m.va > a && g_dev->map_userptr(a, m.va - a)) { g_bytes_mapped += m.va - a; added++; }
-+						if (m.va + m.size < b) { a = m.va + m.size; } else { ok = false; }
-+						break;
++					std::vector<std::pair<uint64_t, uint64_t>> next;
++					for (const auto& [pa, pb]: pieces) {
++						if (m.va + m.size <= pa || m.va >= pb) { next.emplace_back(pa, pb); continue; }
++						if (m.va > pa) next.emplace_back(pa, m.va);
++						if (m.va + m.size < pb) next.emplace_back(m.va + m.size, pb);
 +					}
++					pieces.swap(next);
 +				}
-+				if (ok && b > a && g_dev->map_userptr(a, b - a)) {
-+					g_bytes_mapped += b - a;
-+					added++;
-+					have.push_back({a, b - a});
++				for (const auto& [pa, pb]: pieces) {
++					if (pb <= pa) continue;
++					bool known_bad = false;
++					for (const auto& [fa, fb]: failed) {
++						if (fa == pa && fb == pb) { known_bad = true; break; }
++					}
++					if (known_bad) continue;
++					journal("map 0x%" PRIx64 " +0x%" PRIx64 " ... ", pa, pb - pa);
++					const bool mapped_ok = g_dev->map_userptr(pa, pb - pa);
++					journal("%s\n", mapped_ok ? "ok" : "FAILED");
++					if (mapped_ok) {
++						g_bytes_mapped += pb - pa;
++						added++;
++						have.push_back({pa, pb - pa});
++					} else {
++						failed.emplace_back(pa, pb);
++					}
 +				}
 +			}
 +			i = j;
@@ -1057,19 +1130,83 @@ index 0000000..1c27ec7
 +		return;
 +	}
 +	sync_mappings();
++	if (g_stage == Stage::MapOnly) {
++		static uint64_t seen = 0;
++		if ((seen++ & 0x3f) == 0) {
++			journal("maponly: %zu mappings, %.1f MiB; no submit\n", g_dev->mappings().size(),
++			        static_cast<double>(g_bytes_mapped.load()) / (1024.0 * 1024.0));
++		}
++		return;
++	}
++	// Every memory operand must lie inside a userptr mapping, or the packet is NOP-ed: a GPU
++	// page fault on the BC-250 ends in a reset that takes the machine down (F6, experiment 0016).
++	const std::vector<bc5::direct::Mapping> maps = g_dev->mappings();
 +	bc5::policy::FilterOptions opt;
 +	opt.cu_mask       = g_cu_mask;
 +	opt.clear_int_sel = true;
 +	opt.drop_draws    = g_stage == Stage::NoDraw;
-+	const auto r = g_dev->submit(std::span<const uint32_t>(ib, num_dwords), opt, 2'000'000'000ull);
++	opt.safe_context_control = std::getenv("BC5_DIRECT_RAW_CONTEXT_CONTROL") == nullptr;
++	opt.mapped = [&maps](uint64_t a, uint64_t bytes) {
++		for (const auto& m: maps) {
++			if (a >= m.va && a + bytes <= m.va + m.size) return true;
++		}
++		return false;
++	};
++	static const std::vector<uint8_t> extra = [] {
++		std::vector<uint8_t> v;
++		if (const char* e = std::getenv("BC5_DIRECT_DROP_OPS"); e != nullptr) {
++			for (const char* s = e; *s != 0;) {
++				char* end = nullptr;
++				const unsigned long op = std::strtoul(s, &end, 16);
++				if (end == s) break;
++				v.push_back(static_cast<uint8_t>(op & 0xffu));
++				s = (*end == ',') ? end + 1 : end;
++			}
++		}
++		return v;
++	}();
++	opt.extra_drop = extra;
 +	const uint64_t n = g_submits.fetch_add(1);
++	// Crash journal: a hang takes the machine down before any buffered log reaches the disk, so
++	// the raw and the filtered IB and a one-line "about to submit" note are written unbuffered
++	// first (BC5_GC_DUMP_DIR/direct-NNNNNN-<kind>.{raw,ib}.bin, direct.log).
++	if (!g_dump_dir.empty()) {
++		std::vector<uint32_t>     filtered(num_dwords);
++		bc5::policy::FilterStats  pre;
++		bc5::policy::filter(bc5::policy::Policy::builtin(), std::span<const uint32_t>(ib, num_dwords), filtered, opt, pre);
++		char name[512];
++		std::snprintf(name, sizeof(name), "%s/direct-%06" PRIu64 "-%s.raw.bin", g_dump_dir.c_str(), n, kind);
++		if (FILE* f = std::fopen(name, "wb")) { std::fwrite(ib, 4, num_dwords, f); std::fflush(f); fsync(fileno(f)); std::fclose(f); }
++		std::snprintf(name, sizeof(name), "%s/direct-%06" PRIu64 "-%s.ib.bin", g_dump_dir.c_str(), n, kind);
++		if (FILE* f = std::fopen(name, "wb")) { std::fwrite(filtered.data(), 4, num_dwords, f); std::fflush(f); fsync(fileno(f)); std::fclose(f); }
++		std::snprintf(name, sizeof(name), "%s/direct.log", g_dump_dir.c_str());
++		if (FILE* f = std::fopen(name, "a")) {
++			std::fprintf(f, "submit #%" PRIu64 " %s %u dwords at %p: pass %" PRIu64 " rewrite %" PRIu64 " drop %" PRIu64 " unmapped %" PRIu64 " cc %" PRIu64 " mappings %zu ... ",
++			             n, kind, num_dwords, static_cast<const void*>(ib), pre.passed, pre.rewritten, pre.dropped, pre.unmapped_drops, pre.context_control_rewrites, maps.size());
++			std::fflush(f);
++			fsync(fileno(f));
++			std::fclose(f);
++		}
++	}
++	const auto r = g_dev->submit(std::span<const uint32_t>(ib, num_dwords), opt, 2'000'000'000ull);
++	if (!g_dump_dir.empty()) {
++		char name[512];
++		std::snprintf(name, sizeof(name), "%s/direct.log", g_dump_dir.c_str());
++		if (FILE* f = std::fopen(name, "a")) {
++			std::fprintf(f, "%s rc %d%s %.2f ms\n", r.ok ? "OK" : "FAILED", r.rc, r.timed_out ? " TIMEOUT" : "", r.submit_ms);
++			std::fflush(f);
++			fsync(fileno(f));
++			std::fclose(f);
++		}
++	}
 +	if (r.ok) g_ok++;
 +	if (!r.ok || n < 40 || (n & 0x3fu) == 0) {
 +		LOGF_COLOR(r.ok ? Log::Color::Green : Log::Color::Red,
-+		           "[bc5-direct] submit #%" PRIu64 " %s %u dwords: %s rc %d %s %.2f ms; filter: %" PRIu64 " pass %" PRIu64 " rewrite %" PRIu64 " split %" PRIu64 " drop (%" PRIu64 " dwords) cu %" PRIu64 " int %" PRIu64 " trunc %" PRIu64 "; ok so far %" PRIu64 "\n",
++		           "[bc5-direct] submit #%" PRIu64 " %s %u dwords: %s rc %d %s %.2f ms; filter: %" PRIu64 " pass %" PRIu64 " rewrite %" PRIu64 " split %" PRIu64 " drop (%" PRIu64 " dwords) cu %" PRIu64 " int %" PRIu64 " cc %" PRIu64 " unmapped %" PRIu64 " extra %" PRIu64 " trunc %" PRIu64 "; ok so far %" PRIu64 "\n",
 +		           n, kind, num_dwords, r.ok ? "OK" : "FAILED", r.rc, r.timed_out ? "TIMEOUT" : "", r.submit_ms,
 +		           r.filter.passed, r.filter.rewritten, r.filter.split, r.filter.dropped, r.filter.dwords_dropped,
-+		           r.filter.cu_mask_rewrites, r.filter.int_sel_rewrites, r.filter.truncated, g_ok.load());
++		           r.filter.cu_mask_rewrites, r.filter.int_sel_rewrites, r.filter.context_control_rewrites,
++		           r.filter.unmapped_drops, r.filter.extra_drops, r.filter.truncated, g_ok.load());
 +	}
 +	if (r.timed_out) {
 +		LOGF_COLOR(Log::Color::Red, "[bc5-direct] fence timeout: device wedged, no further submits (soft CP continues)\n");
