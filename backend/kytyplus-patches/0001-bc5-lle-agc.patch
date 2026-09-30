@@ -366,10 +366,10 @@ index 5f87e6b..e5c534e 100644
  	CondRemoveWaiter(cond_value, thread);
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..3cd52e6
+index 0000000..88fb7aa
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,2176 @@
+@@ -0,0 +1,2235 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -1183,7 +1183,9 @@ index 0000000..3cd52e6
 +		g_cu_mask = static_cast<uint32_t>(std::strtoul(m, nullptr, 16));
 +	}
 +	const char* node = std::getenv("BC5_DIRECT_NODE");
-+	g_dev = bc5::direct::Device::open(node != nullptr ? node : "/dev/dri/renderD128");
++	bc5::direct::OpenOptions oo;
++	if (const char* g = std::getenv("BC5_DIRECT_GDS_KIB"); g != nullptr) oo.gds_kib = static_cast<uint32_t>(std::strtoul(g, nullptr, 10));
++	g_dev = bc5::direct::Device::open(node != nullptr ? node : "/dev/dri/renderD128", oo);
 +	if (!g_dev) {
 +		LOGF_COLOR(Log::Color::Red, "[bc5-direct] device open failed; staying on the soft CP\n");
 +		g_stage = Stage::Off;
@@ -1704,6 +1706,7 @@ index 0000000..3cd52e6
 +	opt.clear_int_sel = true;
 +	opt.drop_draws    = g_stage == Stage::NoDraw;
 +	opt.safe_context_control = std::getenv("BC5_DIRECT_RAW_CONTEXT_CONTROL") == nullptr;
++	opt.drop_gds             = std::getenv("BC5_DIRECT_GDS_KIB") == nullptr; // with a GDS BO the accesses may pass
 +	opt.mapped = [&maps](uint64_t a, uint64_t bytes) { return covered(maps, a, bytes); };
 +	static const std::vector<uint8_t> extra = [] {
 +		std::vector<uint8_t> v;
@@ -1731,6 +1734,24 @@ index 0000000..3cd52e6
 +		char name[512];
 +		std::snprintf(name, sizeof(name), "%s/direct-%06" PRIu64 "-%s.raw.bin", g_dump_dir.c_str(), n, kind);
 +		if (FILE* f = std::fopen(name, "wb")) { std::fwrite(ib, 4, num_dwords, f); std::fflush(f); fsync(fileno(f)); std::fclose(f); }
++		// INDIRECT_BUFFER targets (compute rings): their raw contents, for a post-mortem.
++		for (uint32_t q = 0, t = 0; q < num_dwords && t < 16;) {
++			const uint32_t h = ib[q];
++			const uint32_t type = h >> 30u;
++			uint32_t len = 1;
++			if (type == 3 || type == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
++			if (q + len > num_dwords) break;
++			if (type == 3 && (((h >> 8u) & 0xffu) == 0x3f || ((h >> 8u) & 0xffu) == 0x33) && len >= 4) {
++				const uint64_t ta = (ib[q + 1] & ~3u) | (static_cast<uint64_t>(ib[q + 2] & 0xffu) << 32u);
++				const uint32_t tn = ib[q + 3] & 0xfffffu;
++				if (ta != 0 && tn != 0 && covered(maps, ta, static_cast<uint64_t>(tn) * 4)) {
++					std::snprintf(name, sizeof(name), "%s/direct-%06" PRIu64 "-%s-ib%u.raw.bin", g_dump_dir.c_str(), n, kind, t);
++					if (FILE* f = std::fopen(name, "wb")) { std::fwrite(reinterpret_cast<const void*>(ta), 4, tn, f); std::fflush(f); fsync(fileno(f)); std::fclose(f); }
++				}
++				t++;
++			}
++			q += len;
++		}
 +		std::snprintf(name, sizeof(name), "%s/direct-%06" PRIu64 "-%s.ib.bin", g_dump_dir.c_str(), n, kind);
 +		if (FILE* f = std::fopen(name, "wb")) { std::fwrite(filtered.data(), 4, num_dwords, f); std::fflush(f); fsync(fileno(f)); std::fclose(f); }
 +		std::snprintf(name, sizeof(name), "%s/direct.log", g_dump_dir.c_str());
@@ -1766,6 +1787,44 @@ index 0000000..3cd52e6
 +				if (covered(maps, fa, 4)) journal("cond_exec flag at 0x%" PRIx64 " = 0x%08x ", fa, *reinterpret_cast<const volatile uint32_t*>(fa));
 +			}
 +			if (type == 3 && op == 0x10) { i += len; continue; } // NOPs: nothing to test
++			if (type == 3 && (op == 0x3f || op == 0x33) && len >= 4) {
++				// An INDIRECT_BUFFER: run its target piecewise (with probes) as a top-level IB.
++				const uint64_t ta = (ib[i + 1] & ~3u) | (static_cast<uint64_t>(ib[i + 2] & 0xffu) << 32u);
++				const uint32_t tn = ib[i + 3] & 0xfffffu;
++				journal("piece %u at %u: INDIRECT_BUFFER 0x%" PRIx64 " (%u dwords), descending\n", piece, i, ta, tn);
++				if (ta != 0 && tn != 0 && covered(maps, ta, static_cast<uint64_t>(tn) * 4)) {
++					const auto* tb = reinterpret_cast<const uint32_t*>(ta);
++					bool hung = false;
++					for (uint32_t ti = 0, tp = 0; ti < tn && !hung;) {
++						const uint32_t th = tb[ti];
++						const uint32_t tt = th >> 30u;
++						uint32_t tl = 1;
++						if (tt == 3 || tt == 0) { const uint32_t c = (th >> 16u) & 0x3fffu; tl = c == 0x3fffu ? 1 : c + 2; }
++						if (ti + tl > tn) break;
++						const uint32_t top = (th >> 8u) & 0xffu;
++						if (tt == 3 && top == 0x22 && tl >= 5) { tl += tb[ti + 4] & 0x3fffu; if (ti + tl > tn) tl = tn - ti; }
++						if (tt == 3 && top == 0x10) { ti += tl; continue; }
++						journal("  nested piece %u at %u len %u op %02x:", tp, ti, tl, top);
++						for (uint32_t k = 0; k < tl && k < 8; k++) journal(" %08x", tb[ti + k]);
++						journal(" ... ");
++						const auto pr = g_dev->submit(std::span<const uint32_t>(tb + ti, tl), opt, 2'000'000'000ull);
++						journal("%s rc %d%s %.2f ms\n", pr.ok ? "OK" : "FAILED", pr.rc, pr.timed_out ? " TIMEOUT" : "", pr.submit_ms);
++						if (pr.timed_out) { hung = true; break; }
++						static const uint32_t probe2[8] = {bc5::policy::kNop, bc5::policy::kNop, bc5::policy::kNop, bc5::policy::kNop,
++						                                   bc5::policy::kNop, bc5::policy::kNop, bc5::policy::kNop, bc5::policy::kNop};
++						journal("    probe after nested piece %u ... ", tp);
++						const auto pp2 = g_dev->submit(std::span<const uint32_t>(probe2, 8), opt, 2'000'000'000ull);
++						journal("%s%s %.2f ms\n", pp2.ok ? "OK" : "FAILED", pp2.timed_out ? " TIMEOUT" : "", pp2.submit_ms);
++						if (pp2.timed_out) { hung = true; break; }
++						tp++;
++						ti += tl;
++					}
++					if (hung) break;
++				}
++				piece++;
++				i += len;
++				continue;
++			}
 +			journal("piece %u at %u len %u op %02x:", piece, i, len, op);
 +			for (uint32_t k = 0; k < len && k < 8; k++) journal(" %08x", ib[i + k]);
 +			journal(" ... ");
