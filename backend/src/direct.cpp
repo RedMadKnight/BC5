@@ -44,12 +44,11 @@ struct Device::Impl {
     ScratchBo scratch;
     std::mutex mutex;
 
-    // The scratch IB lives in the GPU's high VA range (0xffff8000'0000'0000+, canonical kernel
-    // half on the CPU): no 1:1 userptr mapping of process memory can ever collide with it.
-    // libdrm's general-range allocator hands out low addresses (0x100000000+) that the guest
-    // memory windows of a track-B host also use; that collision hung the BC-250 twice
-    // (experiment 0016).
-    std::uint64_t high_va_base = 0;
+    // The scratch IB lives at a fixed GPU VA of 16 TiB: inside the 48-bit range the CP can
+    // address (an IB address above 2^48 is truncated by the CP — the kernel-half "high VA" range
+    // hung the BC-250, experiment 0016), above every guest window a track-B host maps 1:1
+    // (< 1 TiB) and away from libdrm's low-range allocator (0x100000000+).
+    static constexpr std::uint64_t kScratchVa = 0x1000'0000'0000ull;
 
     bool scratch_reserve(std::uint64_t bytes) {
         if (scratch.bo != nullptr && scratch.size >= bytes) return true;
@@ -61,16 +60,14 @@ struct Device::Impl {
         req.phys_alignment = 4096;
         req.preferred_heap = AMDGPU_GEM_DOMAIN_GTT;
         if (amdgpu_bo_alloc(dev, &req, &scratch.bo) != 0) return false;
-        if (high_va_base == 0) {
-            drm_amdgpu_info_device dev_info{};
-            if (amdgpu_query_info(dev, AMDGPU_INFO_DEV_INFO, sizeof(dev_info), &dev_info) != 0 ||
-                dev_info.high_va_offset == 0) {
-                std::fprintf(stderr, "bc5-direct: no high VA range reported; refusing to use the low range\n");
-                return false;
-            }
-            high_va_base = dev_info.high_va_offset + (1ull << 30); // 1 GiB into the high range
+        drm_amdgpu_info_device dev_info{};
+        if (amdgpu_query_info(dev, AMDGPU_INFO_DEV_INFO, sizeof(dev_info), &dev_info) != 0 ||
+            kScratchVa + size > dev_info.virtual_address_max) {
+            std::fprintf(stderr, "bc5-direct: scratch VA 0x%llx outside the device's range\n",
+                         static_cast<unsigned long long>(kScratchVa));
+            return false;
         }
-        scratch.va = high_va_base;
+        scratch.va = kScratchVa;
         if (amdgpu_bo_va_op(scratch.bo, 0, size, scratch.va, 0, AMDGPU_VA_OP_MAP) != 0) {
             std::fprintf(stderr, "bc5-direct: scratch map at 0x%llx failed\n",
                          static_cast<unsigned long long>(scratch.va));
