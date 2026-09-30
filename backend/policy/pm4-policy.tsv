@@ -35,7 +35,7 @@ op	0x40	pass	COPY_DATA
 op	0x42	pass	PFP_SYNC_ME
 op	0x46	pass	EVENT_WRITE
 op	0x47	rewrite	EVENT_WRITE_EOP: INT_SEL cleared, events fired by the host after the fence
-op	0x49	rewrite	RELEASE_MEM: INT_SEL cleared, events fired by the host after the fence
+op	0x49	rewrite	RELEASE_MEM: INT_SEL cleared, events fired by the host after the fence; CS_DONE/EVENT_INDEX 6 without data rewritten to BOTTOM_OF_PIPE_TS/index 5 (the GFX ring never completes the former, experiment 0016 run 40)
 op	0x4a	drop	PREAMBLE_CNTL: CP preamble bookkeeping; not emitted by Mesa, dropped until proven harmless
 op	0x50	pass	DMA_DATA
 op	0x58	pass	ACQUIRE_MEM

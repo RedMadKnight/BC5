@@ -283,6 +283,17 @@ none seen on the GPU before: 0x2e7d, CS_DONE/index-6 `RELEASE_MEM`, size-0 `ACQU
 `DMA_DATA` fills. Next: the piecewise mode descending into that IB
 (`BC5_DIRECT_PIECEWISE_KIND=ring BC5_DIRECT_PIECEWISE_MIN=1000`), one run names the packet.
 
+**Step (e3), run 40** (20:14, piecewise into the compute IB): **reset 16**, and the packet is named.
+The four `INDIRECT_BUFFER`s were descended; in the game's IB, nested pieces 0–17 (the compute
+state reset, `ACQUIRE_MEM` size 0, `EVENT_WRITE` CS_PARTIAL_FLUSH, the dropped `WAIT_REG_MEM64`
+and markers) and their probes all passed, and **nested piece 18 timed out by itself**:
+`RELEASE_MEM` `c0064900 0030e62f 00010000 0 0 0 0 0` — event CS_DONE (47), **EVENT_INDEX 6**, `gcr`
+0x30e, DATA_SEL 0, DST_SEL 1, address 0. The same shape with EVENT_INDEX 5 (BOTTOM_OF_PIPE_TS,
+CACHE_FLUSH_TS with the same `gcr`) passes throughout steps (c)–(d), and every CS_DONE in the
+console's compute IBs is data-less (survey: 120 of 120). Policy: such packets are rewritten to
+BOTTOM_OF_PIPE_TS / index 5 (`cs_done_rewrites`), flush bits kept. `TODO(verify)`: why the GFX
+ring's ME never completes an index-6 RELEASE_MEM without data (PAL emits CS_DONE with data only).
+
 **Verdict (interim, end of 2026-09-30).** Steps (a)–(c) passed and (d) reached "frames with draws
 run on the GPU, faults recoverable and learned"; not yet "image on screen" (G3). Open: present
 the GPU's flip buffer; size the hint windows from the surface registers; decode the descriptor

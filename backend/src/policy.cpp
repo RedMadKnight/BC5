@@ -384,6 +384,16 @@ std::size_t filter(const Policy &policy, std::span<const std::uint32_t> src,
                 out[i + 2] = 0x80000000u;
                 stats.context_control_rewrites++;
             }
+            if (opcode == kOpReleaseMem && opt.cs_done_to_bottom_of_pipe && len >= 3 &&
+                ((out[i + 1] >> 8) & 0xf) == 6 && ((out[i + 2] >> 29) & 7) == 0) {
+                // RELEASE_MEM with EVENT_INDEX 6 (CS_DONE / PS_DONE) and no data: the console's
+                // compute IBs end every dispatch batch with one (address 0, cache flush only);
+                // on the BC-250's GFX ring it never completes (experiment 0016, run 40, found
+                // by the piecewise mode). Same packet with BOTTOM_OF_PIPE_TS / index 5 — the
+                // shape that passes everywhere else — keeps the flush and the ordering.
+                out[i + 1] = (out[i + 1] & ~0xf3fu) | 0x28u | (5u << 8);
+                stats.cs_done_rewrites++;
+            }
             if ((opcode == kOpReleaseMem || opcode == kOpEventWriteEop) && opt.clear_int_sel &&
                 len >= 4) {
                 // RELEASE_MEM: data_cntl is dword 2; EVENT_WRITE_EOP: dword 3. INT_SEL = bits 25:24.

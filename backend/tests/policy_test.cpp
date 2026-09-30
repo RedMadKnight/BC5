@@ -208,3 +208,21 @@ TEST_CASE("GDS accesses through the CP are dropped unless allowed", "[policy]") 
     policy::filter(p, src, out, opt, st2);
     REQUIRE(st2.gds_drops == 0);
 }
+
+TEST_CASE("RELEASE_MEM CS_DONE without data becomes BOTTOM_OF_PIPE_TS", "[policy]") {
+    const auto &p = policy::Policy::builtin();
+    const std::vector<std::uint32_t> src = {
+        0xC0064900u, 0x0030e62fu, 0x00010000u, 0u, 0u, 0u, 0u, 0u, // CS_DONE, index 6, no data (the hang)
+        0xC0064900u, 0x0030e62fu, 0x60010000u, 0x970u, 0x3u, 0u, 0u, 0u, // CS_DONE with the GPU clock: kept
+    };
+    std::vector<std::uint32_t> out(src.size());
+    policy::FilterOptions opt;
+    opt.mapped = [](std::uint64_t, std::uint64_t) { return true; };
+    policy::FilterStats st;
+    policy::filter(p, src, out, opt, st);
+    REQUIRE(st.cs_done_rewrites == 1);
+    REQUIRE((out[1] & 0x3f) == 0x28);        // BOTTOM_OF_PIPE_TS
+    REQUIRE(((out[1] >> 8) & 0xf) == 5);     // EVENT_INDEX 5
+    REQUIRE((out[1] & 0xfffff000u) == (src[1] & 0xfffff000u)); // GCR bits kept
+    REQUIRE(out[9] == src[9]);               // the data-carrying one untouched
+}
