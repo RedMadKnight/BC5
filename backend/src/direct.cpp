@@ -78,7 +78,14 @@ struct Device::Impl {
             }
             scratch.va = kScratchVa;
         }
-        if (amdgpu_bo_va_op(scratch.bo, 0, size, scratch.va, 0, AMDGPU_VA_OP_MAP) != 0) {
+        // MTYPE_UC: the CP must never read the scratch through a stale GL2 line. A buffer read
+        // once by the GPU and then rewritten by the CPU is served from the GPU L2 on the next
+        // fetch (CPU-side coherence does not reach it): the first submit cached "8 NOPs + zeros",
+        // the next one executed the zeros as type-0 packets and hung (experiment 0016, eight
+        // resets to find). Uncached PTEs make every IB fetch go to memory.
+        const std::uint64_t flags = AMDGPU_VM_PAGE_READABLE | AMDGPU_VM_PAGE_WRITEABLE |
+                                    AMDGPU_VM_PAGE_EXECUTABLE | AMDGPU_VM_MTYPE_UC;
+        if (amdgpu_bo_va_op_raw(dev, scratch.bo, 0, size, scratch.va, flags, AMDGPU_VA_OP_MAP) != 0) {
             std::fprintf(stderr, "bc5-direct: scratch map at 0x%llx failed\n",
                          static_cast<unsigned long long>(scratch.va));
             return false;
@@ -90,7 +97,7 @@ struct Device::Impl {
 
     void scratch_free() {
         if (scratch.cpu) amdgpu_bo_cpu_unmap(scratch.bo);
-        if (scratch.va && scratch.bo) amdgpu_bo_va_op(scratch.bo, 0, scratch.size, scratch.va, 0, AMDGPU_VA_OP_UNMAP);
+        if (scratch.va && scratch.bo) amdgpu_bo_va_op_raw(dev, scratch.bo, 0, scratch.size, scratch.va, 0, AMDGPU_VA_OP_UNMAP);
         if (scratch.va_handle) amdgpu_va_range_free(scratch.va_handle);
         if (scratch.bo) amdgpu_bo_free(scratch.bo);
         scratch = ScratchBo{};
