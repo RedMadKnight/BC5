@@ -89,8 +89,11 @@ public:
     // Filters `ib` into a scratch IB and submits it on the GFX ring with every mapping in the BO
     // list; waits for the fence up to `timeout_ns`. After a timeout the device refuses further
     // submits (a wedged ring is not retried; ADR 0005 §3).
+    // with_gds: put the GDS/OA/GWS allocations (OpenOptions) on this submission's BO list — the
+    // kernel programs the VMID's partitions per job, so a compute IB can have them while a gfx
+    // DCB, whose shaders hang with any partition present, does not (experiment 0016, runs 49–52).
     SubmitResult submit(std::span<const std::uint32_t> ib, const policy::FilterOptions &opt,
-                        std::uint64_t timeout_ns);
+                        std::uint64_t timeout_ns, bool with_gds = true);
 
     bool wedged() const { return wedged_; }
     std::uint64_t submits() const { return submits_; }

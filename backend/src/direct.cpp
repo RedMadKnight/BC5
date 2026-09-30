@@ -348,7 +348,7 @@ void nested_targets(std::span<const std::uint32_t> ib, const policy::FilterOptio
 } // namespace
 
 SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::FilterOptions &opt,
-                            std::uint64_t timeout_ns) {
+                            std::uint64_t timeout_ns, bool with_gds) {
     SubmitResult r;
     std::lock_guard lock(impl_->mutex);
     if (wedged_) {
@@ -438,10 +438,10 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     std::vector<amdgpu_bo_handle> bos;
     bos.reserve(impl_->userptrs.size() + 1);
     bos.push_back(impl_->scratch.bo);
-    if (impl_->gds) bos.push_back(impl_->gds);
-    if (impl_->oa) bos.push_back(impl_->oa);
+    if (with_gds && impl_->gds) bos.push_back(impl_->gds);
+    if (with_gds && impl_->oa) bos.push_back(impl_->oa);
+    if (with_gds && impl_->gws) bos.push_back(impl_->gws);
     if (impl_->shadow) bos.push_back(impl_->shadow);
-    if (impl_->gws) bos.push_back(impl_->gws);
     if (include_mappings_) {
         for (const auto &u : impl_->userptrs) bos.push_back(u.bo);
     }
