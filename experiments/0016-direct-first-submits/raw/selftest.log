@@ -1,0 +1,39 @@
+== 1 fedora 13:42:57 ==
+direct-selftest start
+8 nops                      8 dwords ... OK rc 0 0.04 ms (pass 8 rewrite 0 drop 0)
+152 nops                  152 dwords ... FAILED rc 0 TIMEOUT 2043.68 ms (pass 152 rewrite 0 drop 0)
+== fedora [--dedup --legacy-va] 13:50:10 ==
+direct-selftest start (dedup 1, legacy-va 1, synthetic 1)
+8 nops                      8 dwords ... OK rc 0 0.05 ms (pass 8 rewrite 0 drop 0)
+152 nops                  152 dwords ... FAILED rc 0 TIMEOUT 2017.26 ms (pass 152 rewrite 0 drop 0)
+== fedora [4k scratch] 14:29:13 ==
+direct-selftest start (dedup 0, legacy-va 0, synthetic 1)
+8 nops                      8 dwords ... OK rc 0 seq 1 0.05 ms (pass 8 rewrite 0 drop 0)
+152 nops                  152 dwords ... FAILED rc 0 TIMEOUT seq 2 2007.91 ms (pass 152 rewrite 0 drop 0)
+== fedora [UC scratch] 14:48:29 ==
+direct-selftest start (dedup 0, legacy-va 0, synthetic 1)
+8 nops                      8 dwords ... OK rc 0 seq 1 0.05 ms (pass 8 rewrite 0 drop 0)
+152 nops                  152 dwords ... OK rc 0 seq 2 0.03 ms (pass 152 rewrite 0 drop 0)
+cc at 8 and 139           152 dwords ... OK rc 0 seq 3 0.03 ms (pass 146 rewrite 2 drop 0)
+cc at 8 and 139           152 dwords ... OK rc 0 seq 4 0.03 ms (pass 146 rewrite 2 drop 0)
+cc at 8 and 139           152 dwords ... OK rc 0 seq 5 0.03 ms (pass 146 rewrite 2 drop 0)
+cc at 8 and 139           152 dwords ... OK rc 0 seq 6 0.03 ms (pass 146 rewrite 2 drop 0)
+/home/kjaniszewski/bc5-work/replay/A-exact.bin  150 dwords ... OK rc 0 seq 7 0.03 ms (pass 144 rewrite 2 drop 0)
+== 2 ubuntu [UC] 14:48:45 ==
+direct-selftest start (dedup 0, legacy-va 0, synthetic 1)
+8 nops                      8 dwords ... OK rc 0 seq 1 0.04 ms (pass 8 rewrite 0 drop 0)
+152 nops                  152 dwords ... OK rc 0 seq 2 0.03 ms (pass 152 rewrite 0 drop 0)
+cc at 8 and 139           152 dwords ... OK rc 0 seq 3 0.02 ms (pass 146 rewrite 2 drop 0)
+cc at 8 and 139           152 dwords ... OK rc 0 seq 4 0.02 ms (pass 146 rewrite 2 drop 0)
+cc at 8 and 139           152 dwords ... OK rc 0 seq 5 0.03 ms (pass 146 rewrite 2 drop 0)
+cc at 8 and 139           152 dwords ... OK rc 0 seq 6 0.03 ms (pass 146 rewrite 2 drop 0)
+/home/kjaniszewski/bc5-work/replay/A-exact.bin  150 dwords ... OK rc 0 seq 7 0.02 ms (pass 144 rewrite 2 drop 0)
+== 3 ubuntu + 256 MiB userptr 14:48:46 ==
+direct-selftest start (dedup 0, legacy-va 0, synthetic 1)
+8 nops                      8 dwords ... OK rc 0 seq 1 13.61 ms (pass 8 rewrite 0 drop 0)
+152 nops                  152 dwords ... OK rc 0 seq 2 1.18 ms (pass 152 rewrite 0 drop 0)
+cc at 8 and 139           152 dwords ... OK rc 0 seq 3 1.12 ms (pass 146 rewrite 2 drop 0)
+cc at 8 and 139           152 dwords ... OK rc 0 seq 4 1.10 ms (pass 146 rewrite 2 drop 0)
+cc at 8 and 139           152 dwords ... OK rc 0 seq 5 1.12 ms (pass 146 rewrite 2 drop 0)
+cc at 8 and 139           152 dwords ... OK rc 0 seq 6 1.15 ms (pass 146 rewrite 2 drop 0)
+/home/kjaniszewski/bc5-work/replay/A-exact.bin  150 dwords ... OK rc 0 seq 7 1.14 ms (pass 144 rewrite 2 drop 0)

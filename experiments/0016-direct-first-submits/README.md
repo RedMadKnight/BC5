@@ -52,10 +52,13 @@ rewrites the same buffer (CPU-side coherence does not invalidate GL2); the next 
 stale lines, reaches the zeros, executes them as type-0 packets and hangs. Fix: the scratch IB is
 mapped `MTYPE_UC` for the GPU (every fetch goes to memory).
 
-**Next.** `direct-selftest` with the uncached scratch (fedora, then ubuntu, then with a userptr
-mapping), then `BC5_DIRECT_SELFTEST=1` in the host, then step (b) proper. Each run needs the
-maintainer's go-ahead; each hang costs a manual power cycle.
+**Confirmation** (run 10, 14:40, fedora, scratch mapped `MTYPE_UC`): the very sequence that hung
+nine times passes — `8 nops OK seq 1`, `152 nops OK seq 2`, four `cc at 8 and 139` OK, the recorded
+`A-exact` (150 dwords) OK; 30–50 µs each. Runs 11–12 (ubuntu container; ubuntu with a 256 MiB
+1:1 userptr mapping in the BO list): see `raw/selftest.log`.
 
-**Verdict.** Open. Step (b) is not passed; nine resets bought a precise negative result (the
-console's preamble, filtered, is not what hangs the GPU), a crash journal that survives, and a
-mechanism that explains all nine.
+**Next.** `BC5_DIRECT_SELFTEST=1` in the host, then step (b) proper (needs the desktop session).
+
+**Verdict.** The mechanism is confirmed (F25). Step (b) is not yet passed; nine resets bought a
+precise negative result (the console's preamble, filtered, is not what hangs the GPU), a crash
+journal that survives, and the rule that any CPU-rewritten IB must be mapped uncached for the GPU.
