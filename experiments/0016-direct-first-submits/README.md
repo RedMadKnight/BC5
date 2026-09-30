@@ -326,6 +326,25 @@ and three timeouts without a fault address, all in instances of the game's 1,336
 IB — a compute shader that never finishes (its inputs not ready after a timed-out wait, or a
 label it spins on). 3 flips in 90 s.
 
+**Run 46** (20:51, compute IBs allowed 10 s of CPU wait): unchanged — 6 waits still time out.
+The journal plus the raw dumps say why: the label a compute IB waits for at its offset 115
+(e.g. 0x400202d40 in #83) is written by the **next compute IB** (#84, `RELEASE_MEM` at its end) —
+a different compute queue of the game. On the console queue A blocks on its wait while queue B
+runs and writes the label; the host's doorbell consumer served the queues one at a time on one
+thread and blocked on A, so B never ran. The consumer must not block: a queue whose next IB has
+an unsatisfied cross-queue wait keeps its read pointer, the other queues are served, and it is
+retried on the next poll (deadline 10 s, then it goes anyway).
+
+**Runs 47–48** (20:55–20:57, non-blocking doorbell consumer): a queue whose next IB has an
+unsatisfied cross-queue wait keeps its read pointer and is retried on the next poll — three
+deferrals of queue 2/0/0/0x21, resolved after 3–7 s (the writer queue is slow because the whole
+game is). 156 of 160 submits OK, 124 compute IBs, but still three stalls without a fault address
+in compute IBs and four CPU-wait timeouts; flip buffers zero, 3 flips. Remaining suspect for a
+shader that never finishes: **GDS** — the compute shaders' ordered-append counters live there,
+the VMID has no GDS partition and the `DMA_DATA` fills/reads of GDS are dropped by policy.
+Next: a 64 KiB GDS BO on every BO list (`BC5_DIRECT_GDS_KIB=64`, kernel programs the VMID's GDS
+base/size) with the GDS packets passing.
+
 **Verdict (interim, end of 2026-09-30).** Steps (a)–(c) passed and (d) reached "frames with draws
 run on the GPU, faults recoverable and learned"; not yet "image on screen" (G3). Open: present
 the GPU's flip buffer; size the hint windows from the surface registers; decode the descriptor

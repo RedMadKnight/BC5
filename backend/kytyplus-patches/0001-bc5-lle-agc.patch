@@ -366,10 +366,10 @@ index 5f87e6b..e5c534e 100644
  	CondRemoveWaiter(cond_value, thread);
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..88fb7aa
+index 0000000..c132c0f
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,2235 @@
+@@ -0,0 +1,2417 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -507,6 +507,8 @@ index 0000000..88fb7aa
 +namespace Direct {
 +// Defined below; the queue consumer hands ring slices to the direct path as well.
 +static void submit(const uint32_t* ib, uint32_t num_dwords, const char* kind, bool from_header);
++// Are every cross-queue wait of a compute IB (labels no earlier packet of it writes) satisfied?
++static bool acb_ready(const uint32_t* ib, uint32_t num_dwords);
 +static void init_once();
 +} // namespace Direct
 +
@@ -649,11 +651,13 @@ index 0000000..88fb7aa
 +static void clear_gpu_executed() {
 +	t_gpu_done.clear();
 +}
-+static const std::vector<uint8_t>* gpu_done_for(const uint32_t* buf, uint32_t num_dwords) {
++// Was the packet at `pkt` executed by the real GPU? The entries are the IB, its INDIRECT_BUFFER
++// targets and, for an IB split at a cross-queue wait, its pieces — so the lookup is by range.
++static bool gpu_packet_done(const uint32_t* pkt) {
 +	for (const auto& g: t_gpu_done) {
-+		if (g.buf == buf && g.done.size() == num_dwords) return &g.done;
++		if (pkt >= g.buf && pkt < g.buf + g.done.size()) return g.done[static_cast<size_t>(pkt - g.buf)] != 0;
 +	}
-+	return nullptr;
++	return false;
 +}
 +
 +static void atomic_mem(const uint32_t* p) {
@@ -943,10 +947,9 @@ index 0000000..88fb7aa
 +}
 +
 +static void execute(const uint32_t* buf, uint32_t num_dwords, int depth) {
-+	uint32_t                    i        = 0;
-+	const std::vector<uint8_t>* gpu_done = gpu_done_for(buf, num_dwords); // any depth: nested IBs too
++	uint32_t i = 0;
 +	while (i < num_dwords) {
-+		const bool done = gpu_done != nullptr && (*gpu_done)[i] != 0; // this packet ran on the real GPU
++		const bool done = !t_gpu_done.empty() && gpu_packet_done(buf + i); // this packet ran on the real GPU
 +		const uint32_t header = buf[i];
 +		const uint32_t type   = header >> 30u;
 +		uint32_t       len    = 1;
@@ -1020,11 +1023,14 @@ index 0000000..88fb7aa
 +// packets between our read pointer and the game's write pointer (submit page, u64 per queue, in
 +// dwords) are executed, the read pointer is published at rptr_addr. Compute-ring EOPs fire the
 +// compute event idents. Polled at 1 kHz; the driver never tells us about a doorbell write.
++static const bool g_direct_rings = std::getenv("BC5_GC_MODE") != nullptr && std::strcmp(std::getenv("BC5_GC_MODE"), "direct") == 0 && std::getenv("BC5_DIRECT_RINGS") != nullptr;
++
 +static void queue_consumer_thread() {
 +	struct State {
 +		QueueReg reg;
-+		uint64_t rptr  = 0;
-+		uint64_t count = 0;
++		uint64_t rptr           = 0;
++		uint64_t count          = 0;
++		uint64_t deferred_since = 0; // direct mode: this queue's next IB waits on another queue
 +	};
 +	std::vector<State> states;
 +	uint64_t           idle_ticks = 0;
@@ -1045,6 +1051,34 @@ index 0000000..88fb7aa
 +				continue;
 +			}
 +			const auto* ring = reinterpret_cast<const uint32_t*>(q.ring_base);
++			// Direct mode, queue ordering (run 46): a compute IB whose cross-queue wait is not yet
++			// satisfied is left in its queue — the read pointer stays, the other queues are served
++			// (the writer is one of them or the gfx queue) — and retried on the next poll, for up
++			// to 10 s. That is the console's blocking compute queue, on one ring.
++			if (g_direct_rings && wptr > s.rptr && wptr - s.rptr <= n) {
++				bool ready = true;
++				for (uint64_t r = s.rptr; r < wptr && ready;) {
++					const uint32_t off = static_cast<uint32_t>(r % n);
++					const uint32_t hh  = ring[off];
++					uint32_t       ll  = 1;
++					if ((hh >> 30u) == 3) { const uint32_t c = (hh >> 16u) & 0x3fffu; ll = c == 0x3fffu ? 1 : c + 2; }
++					if ((hh >> 30u) == 3 && (((hh >> 8u) & 0xffu) == IT_INDIRECT_BUFFER || ((hh >> 8u) & 0xffu) == IT_INDIRECT_BUFFER_CNST) && ll >= 4 && off + ll <= n) {
++						const uint64_t ta = (ring[off + 1] & ~3u) | (static_cast<uint64_t>(ring[off + 2] & 0xffu) << 32u);
++						const uint32_t tn = ring[off + 3] & 0xfffffu;
++						if (ta != 0 && tn != 0 && !Direct::acb_ready(reinterpret_cast<const uint32_t*>(ta), tn)) ready = false;
++					}
++					r += ll;
++				}
++				const uint64_t now = now_ns();
++				if (!ready) {
++					if (s.deferred_since == 0) s.deferred_since = now;
++					if (now - s.deferred_since < 10'000'000'000ull) continue; // served later
++					LOGF_COLOR(Log::Color::Yellow, "[bc5-q] queue %u/%u/%u/0x%x: cross-queue wait unsatisfied for 10 s, proceeding\n", q.a, q.b, q.c, q.d);
++				} else if (s.deferred_since != 0) {
++					LOGF("[bc5-q] queue %u/%u/%u/0x%x: deferred %.1f ms for another queue\n", q.a, q.b, q.c, q.d, static_cast<double>(now - s.deferred_since) / 1e6);
++				}
++				s.deferred_since = 0;
++			}
 +			// Direct mode: the ring slice [rptr, wptr) is itself a valid IB of INDIRECT_BUFFER
 +			// packets (no wrap handling yet: a slice that wraps is submitted in two parts).
 +			if (wptr > s.rptr && wptr - s.rptr <= n) {
@@ -1665,8 +1699,136 @@ index 0000000..88fb7aa
 +}
 +
 +// Submits one IB; `from_header` marks the submit-header IBs (stage "preamble" takes only those).
++static void submit_one(const uint32_t* ib, uint32_t num_dwords, const char* kind, bool from_header);
++
++// Cross-queue waits on one ring (ADR 0005 xvi, F31). A WAIT_REG_MEM[64] whose label no earlier
++// packet of the same IB writes cannot be honoured by the CP without a deadlock (the writer is
++// another queue's IB, serialised behind this one). So the IB is submitted in pieces: the packets
++// before the wait, then the host waits for the label on the CPU (it is guest memory the GPU
++// writes; 2 s, then it goes on like the soft CP does), then the packets after it. A doorbell
++// ring slice is only INDIRECT_BUFFER packets: its targets are submitted this way directly.
++static bool wait_satisfied(const uint32_t* p, bool is64) {
++	const uint32_t function = p[1] & 7u;
++	const uint64_t a        = (p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u);
++	if (a == 0) return true;
++	if (is64) {
++		const uint64_t v = *reinterpret_cast<const volatile uint64_t*>(a);
++		const uint64_t ref = p[4] | (static_cast<uint64_t>(p[5]) << 32u), mask = p[6] | (static_cast<uint64_t>(p[7]) << 32u);
++		const uint64_t vm = v & mask, rm = ref & mask;
++		switch (function) {
++			case 0: return true;
++			case 1: return vm < rm;
++			case 2: return vm <= rm;
++			case 3: return vm == rm;
++			case 4: return vm != rm;
++			case 5: return vm >= rm;
++			case 6: return vm > rm;
++			default: return true;
++		}
++	}
++	return SoftCp::compare(function, *reinterpret_cast<const volatile uint32_t*>(a), p[5], p[4]);
++}
++
++static bool acb_ready(const uint32_t* ib, uint32_t num_dwords) {
++	std::vector<uint64_t> written;
++	for (uint32_t i = 0; i < num_dwords;) {
++		const uint32_t h = ib[i];
++		const uint32_t type = h >> 30u;
++		uint32_t len = 1;
++		if (type == 3 || type == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
++		if (i + len > num_dwords) break;
++		const uint32_t  op = (h >> 8u) & 0xffu;
++		const uint32_t* p  = ib + i;
++		if (type == 3) {
++			const uint32_t dst_sel = len >= 2 ? (p[1] >> 8u) & 0xfu : 0;
++			if (op == 0x37 && len >= 4 && (dst_sel == 1 || dst_sel == 2 || dst_sel == 5)) written.push_back((p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u));
++			else if (op == 0x49 && len >= 6) written.push_back((p[3] & ~3u) | (static_cast<uint64_t>(p[4] & 0xffffu) << 32u));
++			else if (op == 0x47 && len >= 4) written.push_back((p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u));
++			else if (op == 0x1e && len >= 4) written.push_back((p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u));
++			else if ((op == 0x3c || op == 0x93) && len >= 4 && ((p[1] >> 4u) & 1u) != 0) {
++				const uint64_t label = (p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u);
++				if (std::find(written.begin(), written.end(), label) == written.end() && !wait_satisfied(p, op == 0x93)) return false;
++			}
++		}
++		i += len;
++	}
++	return true;
++}
++
++static void submit_split(const uint32_t* ib, uint32_t num_dwords, const char* kind, bool from_header) {
++	std::vector<uint64_t> written;
++	uint32_t start = 0, i = 0;
++	while (i < num_dwords) {
++		const uint32_t h = ib[i];
++		const uint32_t type = h >> 30u;
++		uint32_t len = 1;
++		if (type == 3 || type == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
++		if (i + len > num_dwords) break;
++		const uint32_t  op = (h >> 8u) & 0xffu;
++		const uint32_t* p  = ib + i;
++		if (type == 3) {
++			const uint32_t dst_sel = len >= 2 ? (p[1] >> 8u) & 0xfu : 0;
++			if (op == 0x37 && len >= 4 && (dst_sel == 1 || dst_sel == 2 || dst_sel == 5)) written.push_back((p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u));
++			else if (op == 0x49 && len >= 6) written.push_back((p[3] & ~3u) | (static_cast<uint64_t>(p[4] & 0xffffu) << 32u));
++			else if (op == 0x47 && len >= 4) written.push_back((p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u));
++			else if (op == 0x1e && len >= 4) written.push_back((p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u));
++			else if ((op == 0x3c || op == 0x93) && len >= 4 && ((p[1] >> 4u) & 1u) != 0) {
++				const uint64_t label = (p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u);
++				if (std::find(written.begin(), written.end(), label) == written.end()) {
++					// No split (run 44: pieces of one IB interleave with other processes' submissions,
++					// which leave their own SH state behind — a dispatch after a split ran with a
++					// foreign COMPUTE_PGM_LO, SQC fault at 0x800000400000). The wait is satisfied
++					// on the CPU before the whole IB goes, and NOP-ed by the filter inside it.
++					// A compute IB (doorbell consumer thread) may wait long: on the console the
++					// compute queue blocks on the gfx queue's frame label while the game's thread
++					// keeps submitting DCBs (run 45: the stalled compute IBs were those whose wait
++					// on the current frame's gfx label had timed out and ran on unfinished data).
++					// The gfx path (the game's thread) waits briefly, like the soft CP.
++					static const uint64_t acb_ns = (std::getenv("BC5_DIRECT_ACB_WAIT_MS") ? std::strtoull(std::getenv("BC5_DIRECT_ACB_WAIT_MS"), nullptr, 10) : 2000ull) * 1'000'000ull;
++					const uint64_t limit = std::strcmp(kind, "acb") == 0 ? acb_ns : 2'000'000'000ull;
++					const uint64_t t0 = SoftCp::now_ns();
++					bool ok = false;
++					if (!g_dev || !g_dev->wedged()) {
++						while (!(ok = wait_satisfied(p, op == 0x93)) && SoftCp::now_ns() - t0 < limit) std::this_thread::sleep_for(std::chrono::microseconds(50));
++					}
++					journal("cpu-wait %s at %u on 0x%" PRIx64 ": %s after %.1f ms\n", op == 0x93 ? "WAIT_REG_MEM64" : "WAIT_REG_MEM", i, label, ok ? "satisfied" : "TIMEOUT", static_cast<double>(SoftCp::now_ns() - t0) / 1e6);
++					SoftCp::set_gpu_executed(p, len, {0}); // the soft CP must not wait again
++				}
++			}
++		}
++		i += len;
++	}
++	(void)start;
++	submit_one(ib, num_dwords, kind, from_header);
++}
++
 +static void submit(const uint32_t* ib, uint32_t num_dwords, const char* kind, bool from_header) {
 +	SoftCp::clear_gpu_executed(); // the soft CP runs this buffer next, on this thread
++	if (g_stage == Stage::Off || !g_dev || ib == nullptr || num_dwords == 0) return;
++	static const bool rings = std::getenv("BC5_DIRECT_RINGS") != nullptr;
++	static const bool split = std::getenv("BC5_DIRECT_NO_SPLIT") == nullptr;
++	if (!split) { submit_one(ib, num_dwords, kind, from_header); return; }
++	if (std::strcmp(kind, "ring") == 0) {
++		if (!rings) return;
++		for (uint32_t q = 0; q < num_dwords;) {
++			const uint32_t h = ib[q];
++			const uint32_t type = h >> 30u;
++			uint32_t len = 1;
++			if (type == 3 || type == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
++			if (q + len > num_dwords) break;
++			if (type == 3 && (((h >> 8u) & 0xffu) == 0x3f || ((h >> 8u) & 0xffu) == 0x33) && len >= 4) {
++				const uint64_t ta = (ib[q + 1] & ~3u) | (static_cast<uint64_t>(ib[q + 2] & 0xffu) << 32u);
++				const uint32_t tn = ib[q + 3] & 0xfffffu;
++				if (ta != 0 && tn != 0) submit_split(reinterpret_cast<const uint32_t*>(ta), tn, "acb", false);
++			}
++			q += len;
++		}
++		return;
++	}
++	submit_split(ib, num_dwords, kind, from_header);
++}
++
++static void submit_one(const uint32_t* ib, uint32_t num_dwords, const char* kind, bool from_header) {
 +	if (g_stage == Stage::Off || !g_dev || ib == nullptr || num_dwords == 0) {
 +		return;
 +	}
@@ -1674,7 +1836,7 @@ index 0000000..88fb7aa
 +		return;
 +	}
 +	// The doorbell (compute) rings are phase-3 step (e): they stay on the soft CP until
-+	// BC5_DIRECT_RINGS=1, whatever the stage.
++	// BC5_DIRECT_RINGS=1, whatever the stage (BC5_DIRECT_NO_SPLIT=1 path).
 +	static const bool rings = std::getenv("BC5_DIRECT_RINGS") != nullptr;
 +	if (!rings && std::strcmp(kind, "ring") == 0) {
 +		return;
@@ -1767,7 +1929,27 @@ index 0000000..88fb7aa
 +	// together with the dwords it may skip), each piece with its own fence and journal line, so
 +	// a hang names the packet (experiment 0016: submit #14 hangs deterministically as a whole).
 +	static const long piecewise = std::getenv("BC5_DIRECT_PIECEWISE") ? std::atol(std::getenv("BC5_DIRECT_PIECEWISE")) : -1;
-+	if (piecewise >= 0 && static_cast<uint64_t>(piecewise) == n) {
++	// BC5_DIRECT_PIECEWISE_KIND=<kind> + BC5_DIRECT_PIECEWISE_MIN=<dwords>: instead of a submit
++	// number (which shifts between runs), the first submit of that kind whose IB, or one of its
++	// INDIRECT_BUFFER targets, has at least that many dwords (step e: the first game compute IB).
++	static const char*    pw_kind = std::getenv("BC5_DIRECT_PIECEWISE_KIND");
++	static const uint32_t pw_min  = std::getenv("BC5_DIRECT_PIECEWISE_MIN") ? static_cast<uint32_t>(std::strtoul(std::getenv("BC5_DIRECT_PIECEWISE_MIN"), nullptr, 10)) : 0;
++	static bool           pw_done = false;
++	bool                  pw_hit  = false;
++	if (pw_kind != nullptr && !pw_done && std::strcmp(kind, pw_kind) == 0) {
++		if (num_dwords >= pw_min) pw_hit = true;
++		for (uint32_t q = 0; q < num_dwords && !pw_hit;) {
++			const uint32_t h = ib[q];
++			const uint32_t type = h >> 30u;
++			uint32_t len = 1;
++			if (type == 3 || type == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
++			if (q + len > num_dwords) break;
++			if (type == 3 && (((h >> 8u) & 0xffu) == 0x3f || ((h >> 8u) & 0xffu) == 0x33) && len >= 4 && (ib[q + 3] & 0xfffffu) >= pw_min) pw_hit = true;
++			q += len;
++		}
++		if (pw_hit) pw_done = true;
++	}
++	if ((piecewise >= 0 && static_cast<uint64_t>(piecewise) == n) || pw_hit) {
 +		journal("piecewise\n");
 +		uint32_t i = 0, piece = 0;
 +		while (i < num_dwords) {
@@ -1888,7 +2070,7 @@ index 0000000..88fb7aa
 +		// BC5_DIRECT_REOPEN=1: after the kernel's ring reset (F28) the process may open a fresh
 +		// device and go on; the mappings are rebuilt by the next sync, the learned region is in.
 +		static const bool reopen = std::getenv("BC5_DIRECT_REOPEN") != nullptr;
-+		if (reopen && r.fault_addr != 0) {
++		if (reopen) { // after any timeout: the kernel's ring reset recovers shader stalls too (run 41)
 +			std::this_thread::sleep_for(std::chrono::seconds(12)); // the kernel's timeout + reset
 +			g_dev.reset();
 +			const char* node = std::getenv("BC5_DIRECT_NODE");
