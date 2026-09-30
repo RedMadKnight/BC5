@@ -100,6 +100,12 @@ reference: each target (transitively, three levels) is copied into the scratch b
 filtered with the same policy and reached through a rewritten address, so no packet the CP
 executes escapes the filter; an unmapped or over-deep target is NOP-ed. `RELEASE_MEM` and
 `EVENT_WRITE_EOP` with `DATA_SEL` 0 carry no memory operand.
+*Amended 2026-09-30 (step e, F31):* (xvi) the compute rings are off limits (a dispatch on
+`comp_1.0.0` resets the machine); the doorbell rings go to the GFX ring in doorbell order, their
+`INDIRECT_BUFFER` targets filtered like every IB. A `WAIT_REG_MEM[64]` whose label no earlier
+packet of the same IB writes is not dropped but becomes a split point: the packets before it are
+submitted, the host waits for the label on the CPU (2 s, then continues), the packets after it
+follow. `RELEASE_MEM` CS_DONE/index 6 without data is rewritten to BOTTOM_OF_PIPE_TS/index 5.
 
 **Consequences.** The "packet rewriter" of the roadmap shrinks to a filter with two rewrites; the
 backend's core is the policy table plus the BO/VA mapper, both testable offline. Unknown firmware

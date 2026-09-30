@@ -311,6 +311,11 @@ finish when both queues are serialised on one ring in doorbell order. The kernel
 `comp_1.0.0`…`comp_1.3.0` in `dmesg`); F6 only says RADV leaves them unused. `dispatch-min --ip
 compute` is the test.
 
+**Run 43** (20:40, `dispatch-min --submit --ip compute --ring 0`): **reset 17** — the kernel's
+compute ring `comp_1.0.0` took the machine down on the buffer-fill dispatch that passes on the
+GFX ring (F31). The console's queues stay serialised on the GFX ring; cross-queue waits move
+to the host (IB split at the wait, CPU wait on the label, submit the rest).
+
 **Verdict (interim, end of 2026-09-30).** Steps (a)–(c) passed and (d) reached "frames with draws
 run on the GPU, faults recoverable and learned"; not yet "image on screen" (G3). Open: present
 the GPU's flip buffer; size the hint windows from the surface registers; decode the descriptor
