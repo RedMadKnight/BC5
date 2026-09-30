@@ -432,6 +432,14 @@ DMA to/from GDS does not do what the packet says on this ring, or the partition 
 3.5 KiB. A GDS self-test at init (fills at 0x100 and 0xf000, WRITE_DATA at 0x200, snapshots
 before and after, dumped to files) decides.
 
+**Run 59** (23:54, GDS self-test): the CP does write GDS — the host's `DMA_DATA` fill at 0x100 and
+`WRITE_DATA` at 0x200 both landed (`gds-snapshot-000/001.bin`), a GDS read reaches ~3.7 KiB —
+and the game's fills never did because of a **filter bug**: `memory_operands` treated DMA_DATA's
+GDS selector (1) as a memory selector (the memory ones are 0 and 3), so every GDS fill and
+read-back of the game was NOP-ed as "unmapped" before any GDS rule ran; the counters were never
+reset and never read through the CP. Fixed with a test. `TODO(verify)`: why a GDS read stops at
+~3.5–3.7 KiB of the 64 KiB partition.
+
 **Verdict (2026-09-30, end of day).** Steps (a)–(c) passed; (d) and (e) reached "the game's
 frames — draws, dispatches and both queue types — execute on the BC-250 from the track-B host
 without a hang", with 22 machine resets spent on the CP-stall class (stale L2, `CLEAR_STATE`,

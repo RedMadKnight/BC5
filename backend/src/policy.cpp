@@ -126,11 +126,15 @@ std::vector<std::pair<std::uint64_t, std::uint64_t>> memory_operands(const std::
         break;
     }
     case 0x50: { // DMA_DATA: src lo/hi 2/3, dst lo/hi 4/5, count in dword 6 (bits 25:0)
+        // SRC_SEL (bits 30:29): 0 SRC_ADDR, 1 GDS, 2 DATA, 3 SRC_ADDR_TC_L2; DST_SEL (bits 21:20):
+        // 0 DST_ADDR, 1 GDS, 2 NOWHERE, 3 DST_ADDR_TC_L2 (Mesa sid.h V_411_*). Only 0 and 3 are
+        // memory: a GDS selector's address field is a GDS byte offset, not an address (treating
+        // it as one dropped every GDS fill and read-back of the game, experiment 0016 run 59).
         if (len >= 7) {
             const std::uint64_t bytes = p[6] & 0x3ffffffu;
             const std::uint32_t src_sel = (p[1] >> 29) & 3, dst_sel = (p[1] >> 20) & 3;
-            if (src_sel == 0 || src_sel == 1) out.emplace_back(addr(2, 3, 0xffffffffu), bytes);
-            if (dst_sel == 0 || dst_sel == 1) out.emplace_back(addr(4, 5, 0xffffffffu), bytes);
+            if (src_sel == 0 || src_sel == 3) out.emplace_back(addr(2, 3, 0xffffffffu), bytes);
+            if (dst_sel == 0 || dst_sel == 3) out.emplace_back(addr(4, 5, 0xffffffffu), bytes);
         }
         break;
     }

@@ -290,3 +290,14 @@ TEST_CASE("ORDERED_APPEND_ENBL can be forced on dispatches", "[policy]") {
     REQUIRE(st2.dispatch_rewrites == 0);
     REQUIRE(out[4] == 0x41u);
 }
+
+TEST_CASE("DMA_DATA memory operands follow the selectors, GDS offsets are not addresses", "[policy]") {
+    const std::vector<std::uint32_t> gds_fill = {0xC0055000u, 0x46106000u, 0u, 0u, 0xc68u, 0u, 0x40000004u};
+    REQUIRE(policy::memory_operands(gds_fill.data(), 7).empty());
+    const std::vector<std::uint32_t> gds_read = {0xC0055000u, 0x24306000u, 0xc68u, 0u, 0x53b84000u, 0x5u, 0x40000004u};
+    const auto ops = policy::memory_operands(gds_read.data(), 7);
+    REQUIRE(ops.size() == 1);
+    REQUIRE(ops[0].first == 0x553b84000ull); // the TC_L2 memory destination only
+    const std::vector<std::uint32_t> mem_fill = {0xC0055000u, 0x46306000u, 0u, 0u, 0x53b84000u, 0x5u, 0x40000004u};
+    REQUIRE(policy::memory_operands(mem_fill.data(), 7).size() == 1);
+}
