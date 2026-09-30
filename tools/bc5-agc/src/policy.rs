@@ -281,7 +281,11 @@ impl Check {
         for (v, n) in &self.by_verdict {
             let _ = writeln!(s, "  {:<8} {n}", v.label());
         }
-        let _ = writeln!(s, "  waits dropped (label never written in the stream): {}", self.unsatisfiable_waits);
+        let _ = writeln!(
+            s,
+            "  waits dropped (label never written in the stream): {}",
+            self.unsatisfiable_waits
+        );
         let name = |op: &u8| db.opcode_name(*op).unwrap_or("-");
         let _ = writeln!(s, "dropped packets by opcode ({}):", self.dropped_ops.len());
         for (op, n) in &self.dropped_ops {
