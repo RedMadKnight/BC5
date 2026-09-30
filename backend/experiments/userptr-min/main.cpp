@@ -25,7 +25,9 @@
 #include <amdgpu_drm.h>
 #include <fcntl.h>
 #include <sys/mman.h>
+#include <sys/syscall.h>
 #include <unistd.h>
+#include <xf86drm.h>
 #endif
 
 namespace {
@@ -85,7 +87,8 @@ double now_ms() {
         .count();
 }
 
-int submit(const std::string &node, std::uint64_t mib, bool any_va, int repeat) {
+int submit(const std::string &node, std::uint64_t mib, bool any_va, int repeat, bool memfd,
+           std::uint32_t raw_flags) {
     std::fprintf(stderr, "userptr-min: --submit runs a shader on the GPU (GFX ring). A bad "
                          "submission can hang or reset the machine.\n");
     const std::uint64_t bytes = mib << 20;
@@ -108,26 +111,56 @@ int submit(const std::string &node, std::uint64_t mib, bool any_va, int repeat) 
                 static_cast<unsigned long long>(dev_info.high_va_offset),
                 static_cast<unsigned long long>(dev_info.high_va_max));
 
-    // 1. Anonymous CPU memory, page-aligned and populated (a game heap stands in for this).
-    void *mem = mmap(nullptr, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_POPULATE,
-                     -1, 0);
+    // 1. CPU memory, page-aligned and populated: anonymous (a game heap), or a MAP_SHARED memfd
+    //    mapping with --memfd (how KytyPlus backs guest direct memory; userptr rules differ for
+    //    file-backed pages).
+    void *mem = MAP_FAILED;
+    if (memfd) {
+        const int fd = static_cast<int>(syscall(SYS_memfd_create, "userptr-min", 0));
+        if (fd < 0 || ftruncate(fd, static_cast<off_t>(bytes)) != 0) {
+            std::perror("memfd_create/ftruncate");
+            return 1;
+        }
+        mem = mmap(nullptr, bytes, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_POPULATE, fd, 0);
+    } else {
+        mem = mmap(nullptr, bytes, PROT_READ | PROT_WRITE,
+                   MAP_PRIVATE | MAP_ANONYMOUS | MAP_POPULATE, -1, 0);
+    }
     if (mem == MAP_FAILED) {
         std::perror("mmap");
         return 1;
     }
+    std::printf("backing: %s\n", memfd ? "memfd (MAP_SHARED)" : "anonymous (MAP_PRIVATE)");
     std::memset(mem, 0, bytes);
     const auto cpu_va = reinterpret_cast<std::uint64_t>(mem);
     std::printf("cpu memory: %llu MiB at 0x%llx\n", static_cast<unsigned long long>(mib),
                 static_cast<unsigned long long>(cpu_va));
 
-    // 2. userptr BO over it.
+    // 2. userptr BO over it: libdrm's helper (which adds AMDGPU_GEM_USERPTR_ANONONLY), or the
+    //    raw ioctl with the flags given by --raw-flags (REGISTER | VALIDATE = 0xc allows file-backed
+    //    pages if the kernel does).
     Bo user;
     user.size = bytes;
     double t0 = now_ms();
-    int rc = amdgpu_create_bo_from_user_mem(d.dev, mem, bytes, &user.bo);
+    int rc = 0;
+    if (raw_flags != 0) {
+        drm_amdgpu_gem_userptr args{};
+        args.addr = cpu_va;
+        args.size = bytes;
+        args.flags = raw_flags;
+        rc = drmCommandWriteRead(d.fd, DRM_AMDGPU_GEM_USERPTR, &args, sizeof(args));
+        if (rc == 0) {
+            amdgpu_bo_import_result res{};
+            rc = amdgpu_bo_import(d.dev, amdgpu_bo_handle_type_kms, args.handle, &res);
+            user.bo = res.buf_handle;
+        }
+        std::printf("raw DRM_AMDGPU_GEM_USERPTR flags 0x%x: rc %d\n", raw_flags, rc);
+    } else {
+        rc = amdgpu_create_bo_from_user_mem(d.dev, mem, bytes, &user.bo);
+    }
     double t1 = now_ms();
     if (rc != 0) {
-        std::fprintf(stderr, "amdgpu_create_bo_from_user_mem failed: %d\n", rc);
+        std::fprintf(stderr, "userptr BO creation failed: %d (%s)\n", rc, std::strerror(-rc));
         return 1;
     }
     std::printf("userptr BO created in %.2f ms\n", t1 - t0);
@@ -237,6 +270,8 @@ int main(int argc, char **argv) {
     std::string node = "/dev/dri/renderD128";
     std::uint64_t mib = 64;
     bool any_va = false;
+    bool memfd = false;
+    std::uint32_t raw_flags = 0;
     int repeat = 3;
     for (int i = 1; i < argc; ++i) {
         const std::string_view a = argv[i];
@@ -252,6 +287,10 @@ int main(int argc, char **argv) {
             repeat = std::stoi(argv[++i]);
         } else if (a == "--any-va") {
             any_va = true;
+        } else if (a == "--memfd") {
+            memfd = true;
+        } else if (a == "--raw-flags" && i + 1 < argc) {
+            raw_flags = static_cast<std::uint32_t>(std::stoul(argv[++i], nullptr, 16));
         } else {
             return usage();
         }
@@ -263,11 +302,13 @@ int main(int argc, char **argv) {
         return 0;
     }
 #ifdef BC5_WITH_AMDGPU
-    if (mode == "submit") return submit(node, mib, any_va, repeat);
+    if (mode == "submit") return submit(node, mib, any_va, repeat, memfd, raw_flags);
 #else
     (void)node;
     (void)any_va;
     (void)repeat;
+    (void)memfd;
+    (void)raw_flags;
     if (mode == "submit") {
         std::fputs("built without BC5_WITH_AMDGPU; only --info is available\n", stderr);
         return 2;
