@@ -187,7 +187,7 @@ pub struct Check {
     pub rewritten_regs: BTreeMap<u32, u64>,
     /// Opcode → packets rewritten (non-register rewrites).
     pub rewritten_ops: BTreeMap<u8, u64>,
-    /// WAIT_REG_MEM[64] packets dropped because nothing earlier in the stream writes their label.
+    /// `WAIT_REG_MEM[64]` packets dropped because nothing earlier in the stream writes their label.
     pub unsatisfiable_waits: u64,
 }
 
