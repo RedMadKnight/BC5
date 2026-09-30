@@ -167,6 +167,13 @@ DCBs, non-zero by #14 — so #12/#13 skipped their `CLEAR_STATE`s. AMD's drivers
 with cmd 0 (RADV, radeonsi, PAL `PM4_PFP_CLEAR_STATE.cmd`); the console driver uses 1 and 2, whose
 meaning on AMD's PFP firmware is unknown (`TODO(verify)`). Journal: `raw/probe-direct.log`.
 
-**Next.** `nodraw` with `CLEAR_STATE` (0x12) dropped as well (`BC5_DIRECT_DROP_OPS=3c,93,1e,63,64,9f,12`),
-no piecewise: 45 s without a hang confirms it; then the policy gets a `CLEAR_STATE` rule
-(rewrite cmd → 0, or drop).
+**Step (c1b), run 20** (17:05, `nodraw`, `BC5_DIRECT_DROP_OPS=3c,93,1e,63,64,9f,12`): **95 of 95
+submits OK, no reset**, 59 frame DCBs (up to 3,257 dwords, 176 packets passed each) on the GFX
+ring for 90 s of game time, 923 mappings, 12–18 ms per submit. `CLEAR_STATE` confirmed (F27).
+Journal: `raw/c1b-direct.log`. Flips 9 (21 in b2): the soft CP's `WAIT_REG_MEM64` 2 s timeouts
+(9 here, 19 in b2) pace the game in both modes — a pre-existing soft-CP item, not a direct-mode
+regression.
+
+**Next.** The temporary drops come back one group at a time, each on its own go-ahead:
+(c2) `LOAD_*_INDEX` + `ATOMIC_MEM` on the GPU; (c3) `WAIT_REG_MEM[64]` on the GPU (the soft CP
+skips what the GPU executed); then (d) draws.

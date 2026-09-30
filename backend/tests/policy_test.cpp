@@ -138,3 +138,16 @@ TEST_CASE("WRITE_DATA to a register is dropped, to memory it passes", "[policy]"
     REQUIRE(out[6] == 0xC0043700u);
     REQUIRE(st.passed == 1);
 }
+
+TEST_CASE("CLEAR_STATE is dropped whatever its cmd", "[policy]") {
+    const auto &p = policy::Policy::builtin();
+    const std::vector<std::uint32_t> src = {0xC0001200u, 2u, 0xC0001200u, 0u, 0xC0002F00u, 1u};
+    std::vector<std::uint32_t> out(src.size());
+    policy::FilterOptions opt;
+    policy::FilterStats st;
+    policy::filter(p, src, out, opt, st);
+    REQUIRE(st.dropped == 2);
+    REQUIRE(out[0] == policy::kNop);
+    REQUIRE(out[2] == policy::kNop);
+    REQUIRE(out[4] == 0xC0002F00u); // NUM_INSTANCES still passes
+}

@@ -76,6 +76,12 @@ set is not additive: every sync revalidates the existing userptr BOs against the
 anonymous VMAs and unmaps the stale ones (a guest `munmap` under a mapped range otherwise fails
 every later `amdgpu_cs_submit` with `EFAULT`); `EFAULT` at submit is not a hang — it forces a resync
 and one retry and does not wedge the mode.
+*Amended 2026-09-30 (step c, F27):* (ix) `CLEAR_STATE` is dropped: the console's cmd 1/2 stop the
+BC-250's CP a few milliseconds after the submission that carried it; (x) the register policy does
+not reach the tables loaded by `LOAD_*_REG[_INDEX]`, so the host journals every table before the
+submit and the filter's coverage check treats adjacent mappings as one; (xi) a host that also
+emulates the stream skips the memory side effects of the packets the GPU executed
+(`SubmitResult::executed_offsets`), and only fires the events.
 
 **Consequences.** The "packet rewriter" of the roadmap shrinks to a filter with two rewrites; the
 backend's core is the policy table plus the BO/VA mapper, both testable offline. Unknown firmware
