@@ -354,6 +354,20 @@ both carry **CP_SYNC** (bit 31), unlike the compute queues' (0x46106000 / 0x2430
 GDS DMAs with CP_SYNC are dropped even with a GDS allocation. The logs of the run (other than
 the journal) were lost with the reset. Journal: `raw/e9-run49-direct.log`.
 
+**Run 50** (21:11, GDS allocation, sync GDS DMAs dropped): **reset 19**, the very same gfx DCB
+(#143, 9,891 dwords, 141 of 144 submits OK before it, no shader stall). With the GDS partition
+present something else in that DCB — or in its shaders — reaches GDS. Journal:
+`raw/e10-run50-direct.log`.
+
+Decoded, #143 has no CP-level GDS access left (its two GDS `DMA_DATA` are NOPs, no `COPY_DATA`,
+no `WRITE_DATA` to GDS, no GDS UCONFIG registers), so with a GDS partition it is the DCB's
+**shaders** that hang: ordered-append (`ds_ordered_count`) needs an OA allocation the console's
+system provides; without any GDS partition those instructions were no-ops. The kernel offers
+per compute partition 65,536 bytes of GDS, **16 OA counters and 64 GWS resources**
+(`amdgpu_query_gds_info`), and `AMDGPU_GEM_DOMAIN_OA`/`_GWS` allocations succeed; on the BO list
+they set the VMID's OA/GWS base and size (as RADV does for NGG streamout). Next: GDS 64 KiB +
+OA 16 + GWS 64 (`BC5_DIRECT_OA=16 BC5_DIRECT_GWS=64`).
+
 **Verdict (interim, end of 2026-09-30).** Steps (a)–(c) passed and (d) reached "frames with draws
 run on the GPU, faults recoverable and learned"; not yet "image on screen" (G3). Open: present
 the GPU's flip buffer; size the hint windows from the surface registers; decode the descriptor

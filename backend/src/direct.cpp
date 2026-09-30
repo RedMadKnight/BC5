@@ -46,6 +46,8 @@ struct Device::Impl {
     std::vector<UserptrBo> userptrs;
     ScratchBo scratch;
     amdgpu_bo_handle gds = nullptr; // OpenOptions::gds_kib
+    amdgpu_bo_handle oa = nullptr;  // OpenOptions::oa_count
+    amdgpu_bo_handle gws = nullptr; // OpenOptions::gws_count
     std::mutex mutex;
 
     // The scratch IB lives at a fixed GPU VA of 16 TiB: inside the 48-bit range the CP can
@@ -141,6 +143,22 @@ std::unique_ptr<Device> Device::open(const std::string &node, const OpenOptions 
         std::fprintf(stderr, "bc5-direct: GDS BO %u KiB: %s (%d)\n", opts.gds_kib, grc == 0 ? "ok" : "FAILED", grc);
         if (grc != 0) d->impl_->gds = nullptr;
     }
+    if (opts.oa_count != 0) {
+        amdgpu_bo_alloc_request req{};
+        req.alloc_size = opts.oa_count;
+        req.preferred_heap = AMDGPU_GEM_DOMAIN_OA;
+        const int orc = amdgpu_bo_alloc(d->impl_->dev, &req, &d->impl_->oa);
+        std::fprintf(stderr, "bc5-direct: OA BO %u: %s (%d)\n", opts.oa_count, orc == 0 ? "ok" : "FAILED", orc);
+        if (orc != 0) d->impl_->oa = nullptr;
+    }
+    if (opts.gws_count != 0) {
+        amdgpu_bo_alloc_request req{};
+        req.alloc_size = opts.gws_count;
+        req.preferred_heap = AMDGPU_GEM_DOMAIN_GWS;
+        const int wrc = amdgpu_bo_alloc(d->impl_->dev, &req, &d->impl_->gws);
+        std::fprintf(stderr, "bc5-direct: GWS BO %u: %s (%d)\n", opts.gws_count, wrc == 0 ? "ok" : "FAILED", wrc);
+        if (wrc != 0) d->impl_->gws = nullptr;
+    }
     return d;
 }
 
@@ -152,6 +170,8 @@ Device::~Device() {
     }
     impl_->scratch_free();
     if (impl_->gds) amdgpu_bo_free(impl_->gds);
+    if (impl_->oa) amdgpu_bo_free(impl_->oa);
+    if (impl_->gws) amdgpu_bo_free(impl_->gws);
     if (impl_->ctx) amdgpu_cs_ctx_free(impl_->ctx);
     if (impl_->dev) amdgpu_device_deinitialize(impl_->dev);
     if (impl_->fd >= 0) close(impl_->fd);
@@ -392,6 +412,8 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     bos.reserve(impl_->userptrs.size() + 1);
     bos.push_back(impl_->scratch.bo);
     if (impl_->gds) bos.push_back(impl_->gds);
+    if (impl_->oa) bos.push_back(impl_->oa);
+    if (impl_->gws) bos.push_back(impl_->gws);
     if (include_mappings_) {
         for (const auto &u : impl_->userptrs) bos.push_back(u.bo);
     }

@@ -55,7 +55,13 @@ struct OpenOptions {
     // GDS bytes to allocate (AMDGPU_GEM_DOMAIN_GDS) and put on every BO list: the kernel then
     // programs the VMID's GDS base/size for the submission, so the console's GDS counters
     // (DMA_DATA/WRITE_DATA and shader ds_* instructions) have somewhere to live. 0 = none.
-    std::uint32_t gds_kib = 0;  // true: scratch VA from libdrm's allocator instead of the fixed 16 TiB
+    std::uint32_t gds_kib = 0;
+    // Ordered-append counters (AMDGPU_GEM_DOMAIN_OA, 16 per compute partition on the BC-250) and
+    // global wave sync resources (AMDGPU_GEM_DOMAIN_GWS, 64): the shaders' ds_ordered_count and
+    // GWS instructions need a partition too; with GDS alone the gfx queue's shaders hung
+    // (experiment 0016, runs 49–50). 0 = none.
+    std::uint32_t oa_count = 0;
+    std::uint32_t gws_count = 0;  // true: scratch VA from libdrm's allocator instead of the fixed 16 TiB
 };
 
 class Device {
