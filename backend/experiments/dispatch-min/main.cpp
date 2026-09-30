@@ -252,8 +252,8 @@ int submit(const Options &o) {
     ib_info.ib_mc_address = cmd.va;
     ib_info.size = static_cast<std::uint32_t>(ib.size());
     amdgpu_cs_request req{};
-    req.ip_type = opt.ip; // GFX by default (HANDOFF F6); --ip compute tries the MEC rings
-    req.ring = opt.ring;
+    req.ip_type = o.ip; // GFX by default (HANDOFF F6); --ip compute tries the MEC rings
+    req.ring = o.ring;
     req.resources = list;
     req.number_of_ibs = 1;
     req.ibs = &ib_info;
@@ -263,8 +263,8 @@ int submit(const Options &o) {
     if (rc == 0) {
         amdgpu_cs_fence fence{};
         fence.context = ctx;
-        fence.ip_type = opt.ip;
-        fence.ring = opt.ring;
+        fence.ip_type = o.ip;
+        fence.ring = o.ring;
         fence.fence = req.seq_no;
         rc = amdgpu_cs_query_fence_status(&fence, 2'000'000'000ull /* 2 s */, 0, &expired);
     }
@@ -325,9 +325,9 @@ int main(int argc, char **argv) {
             o.ib_file = argv[++i];
         } else if (a == "--ip" && i + 1 < argc) {
             const std::string v = argv[++i];
-            opt.ip = v == "compute" ? AMDGPU_HW_IP_COMPUTE : AMDGPU_HW_IP_GFX;
+            o.ip = v == "compute" ? AMDGPU_HW_IP_COMPUTE : AMDGPU_HW_IP_GFX;
         } else if (a == "--ring" && i + 1 < argc) {
-            opt.ring = static_cast<unsigned>(std::stoul(argv[++i]));
+            o.ring = static_cast<unsigned>(std::stoul(argv[++i]));
         } else if (a == "--console") {
             o.rsrc1 = bc5::dispatch_min::kConsoleRsrc1;
             o.rsrc2 = bc5::dispatch_min::kConsoleRsrc2;
