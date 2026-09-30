@@ -28,7 +28,7 @@ op	0x2d	pass	DRAW_INDEX_AUTO
 op	0x2f	pass	NUM_INSTANCES
 op	0x33	pass	INDIRECT_BUFFER_CNST
 op	0x35	pass	DRAW_INDEX_OFFSET_2
-op	0x37	pass	WRITE_DATA
+op	0x37	pass	WRITE_DATA (memory destinations; DST_SEL 0 = register is dropped in code, FilterStats::reg_write_drops)
 op	0x3c	pass	WAIT_REG_MEM
 op	0x3f	pass	INDIRECT_BUFFER
 op	0x40	pass	COPY_DATA

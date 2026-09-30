@@ -51,6 +51,7 @@ struct FilterStats {
     std::uint64_t truncated = 0;      // packets running past the end (the rest is NOP-ed)
     std::uint64_t unmapped_drops = 0; // packets referencing memory outside the mapped ranges
     std::uint64_t extra_drops = 0;    // packets dropped by FilterOptions::extra_drop
+    std::uint64_t reg_write_drops = 0; // WRITE_DATA with a register destination (DST_SEL 0)
 };
 
 // Options for the rewrites.
@@ -85,6 +86,7 @@ std::size_t filter(const Policy &policy, std::span<const std::uint32_t> src,
 // PM4 constants shared with the filter and the tests.
 inline constexpr std::uint32_t kNop = 0xffff1000u;
 inline constexpr std::uint8_t kOpContextControl = 0x28;
+inline constexpr std::uint8_t kOpWriteData = 0x37;
 inline constexpr std::uint8_t kOpEventWriteEop = 0x47;
 inline constexpr std::uint8_t kOpReleaseMem = 0x49;
 

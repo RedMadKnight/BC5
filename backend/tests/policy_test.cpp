@@ -120,3 +120,21 @@ TEST_CASE("filter NOPs a packet that runs past the end", "[policy]") {
     REQUIRE(st.truncated == 1);
     for (auto w : out) REQUIRE(w == policy::kNop);
 }
+
+TEST_CASE("WRITE_DATA to a register is dropped, to memory it passes", "[policy]") {
+    const auto &p = policy::Policy::builtin();
+    // Header 0xC004xx00: count 4 -> 6 dwords (control, addr lo, addr hi, 2 data dwords).
+    const std::vector<std::uint32_t> src = {
+        0xC0043700u, 0x06010000u, 0x0000c343u, 0u, 0x11111111u, 0x22222222u, // DST_SEL 0: register
+        0xC0043700u, 0x00100200u, 0x06802980u, 0x5u, 1u, 0u,                 // DST_SEL 2: memory
+    };
+    std::vector<std::uint32_t> out(src.size());
+    policy::FilterOptions opt;
+    policy::FilterStats st;
+    policy::filter(p, src, out, opt, st);
+    REQUIRE(st.reg_write_drops == 1);
+    REQUIRE(st.dropped == 1);
+    for (std::size_t i = 0; i < 6; ++i) REQUIRE(out[i] == policy::kNop);
+    REQUIRE(out[6] == 0xC0043700u);
+    REQUIRE(st.passed == 1);
+}

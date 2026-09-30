@@ -22,6 +22,10 @@ struct SubmitResult {
     double submit_ms = 0;   // submit + fence wall clock
     std::uint64_t seq_no = 0; // sequence number the kernel assigned (0 = none)
     policy::FilterStats filter;
+    // Dword offsets (in the caller's IB) of the type-3 packets that reached the GPU as
+    // themselves, i.e. passed or rewritten, not NOP-ed by the filter. A host that also emulates
+    // the stream (a soft CP) uses this to skip the memory side effects the GPU already produced.
+    std::vector<std::uint32_t> executed_offsets;
 };
 
 struct Mapping {

@@ -217,6 +217,27 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     policy::filter(policy::Policy::builtin(), ib, std::span<std::uint32_t>(dst, ib.size()), opt,
                    r.filter);
     for (std::size_t i = ib.size(); i < padded; ++i) dst[i] = policy::kNop;
+    // Which packets survived the filter (the filter NOPs in place, so offsets line up).
+    for (std::size_t i = 0; i < ib.size();) {
+        const std::uint32_t h = ib[i];
+        const std::uint32_t type = h >> 30;
+        std::size_t len = 1;
+        if (type == 3) {
+            const std::uint32_t count = (h >> 16) & 0x3fff;
+            len = count == 0x3fff ? 1 : count + 2;
+            const std::uint32_t op_in = (h >> 8) & 0xff;
+            const std::uint32_t op_out = (dst[i] >> 8) & 0xff;
+            if (op_in != 0x10 && (dst[i] >> 30) == 3 && op_out != 0x10)
+                r.executed_offsets.push_back(static_cast<std::uint32_t>(i));
+        } else if (type == 0) {
+            len = ((h >> 16) & 0x3fff) + 2;
+        } else if (type == 2) {
+            len = 1;
+        } else {
+            break;
+        }
+        i += len;
+    }
 
     std::vector<amdgpu_bo_handle> bos;
     bos.reserve(impl_->userptrs.size() + 1);

@@ -291,6 +291,12 @@ std::size_t filter(const Policy &policy, std::span<const std::uint32_t> src,
         if (type == 3 && v != Verdict::Drop) {
             if (opt.drop_draws && is_draw_or_dispatch(opcode3)) {
                 v = Verdict::Drop;
+            } else if (opcode3 == kOpWriteData && len >= 2 && ((src[i + 1] >> 8) & 0xf) == 0) {
+                // WRITE_DATA with DST_SEL 0 writes a register (the console's driver uses it for
+                // SQ_THREAD_TRACE_USERDATA_3 markers, mm 0xc343): the register policy applies to
+                // SET_* only, so register destinations are dropped outright (ADR 0005).
+                v = Verdict::Drop;
+                stats.reg_write_drops++;
             } else if (!opt.extra_drop.empty() &&
                        std::find(opt.extra_drop.begin(), opt.extra_drop.end(), opcode3) !=
                            opt.extra_drop.end()) {
