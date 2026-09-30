@@ -333,7 +333,11 @@ std::size_t filter(const Policy &policy, std::span<const std::uint32_t> src,
                     v = Verdict::Drop;
                     stats.unsatisfiable_wait_drops++;
                 }
-            } else if (opt.drop_gds && is_gds_access(&src[i], len)) {
+            } else if ((opt.drop_gds || (opcode3 == 0x50 && (src[i + 1] & 0x80000000u) != 0)) &&
+                       is_gds_access(&src[i], len)) {
+                // With a GDS allocation the compute queues' GDS DMAs run (run 49: 118 IBs), but a
+                // DMA_DATA to or from GDS with CP_SYNC (bit 31) on the GFX ring stalls the CP and
+                // takes the machine down (run 49, submit #143): always dropped.
                 // GDS (global data share) through the CP: DMA_DATA with SRC_SEL/DST_SEL 1 and
                 // WRITE_DATA with DST_SEL 3 (Mesa sid.h V_411_GDS, V_370_GDS). The console's
                 // compute IBs fill and read GDS counters this way; our VMID has no GDS

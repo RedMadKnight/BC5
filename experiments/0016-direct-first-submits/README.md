@@ -345,6 +345,15 @@ the VMID has no GDS partition and the `DMA_DATA` fills/reads of GDS are dropped 
 Next: a 64 KiB GDS BO on every BO list (`BC5_DIRECT_GDS_KIB=64`, kernel programs the VMID's GDS
 base/size) with the GDS packets passing.
 
+**Run 49** (21:03, `BC5_DIRECT_GDS_KIB=64`, GDS packets passing): **reset 18**, but with news. The
+64 KiB GDS BO on the BO lists works: 118 compute IBs with their `DMA_DATA` fills and reads of GDS
+ran (141 of 144 submits OK, no CPU-wait timeout before the end). The reset came in a **gfx** DCB
+(#143, 9,891 dwords) that is packet-for-packet identical to instances that passed in runs 45–48,
+except that its two GDS `DMA_DATA` (0xc6106000 fill → GDS, 0xa4306000 GDS → memory) now passed:
+both carry **CP_SYNC** (bit 31), unlike the compute queues' (0x46106000 / 0x24306000). Policy:
+GDS DMAs with CP_SYNC are dropped even with a GDS allocation. The logs of the run (other than
+the journal) were lost with the reset. Journal: `raw/e9-run49-direct.log`.
+
 **Verdict (interim, end of 2026-09-30).** Steps (a)–(c) passed and (d) reached "frames with draws
 run on the GPU, faults recoverable and learned"; not yet "image on screen" (G3). Open: present
 the GPU's flip buffer; size the hint windows from the surface registers; decode the descriptor
