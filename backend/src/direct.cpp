@@ -98,8 +98,12 @@ std::unique_ptr<Device> Device::open(const std::string &node) {
         return nullptr;
     }
     std::uint32_t major = 0, minor = 0;
-    if (amdgpu_device_initialize(d->impl_->fd, &major, &minor, &d->impl_->dev) != 0) {
-        std::fprintf(stderr, "bc5-direct: amdgpu_device_initialize failed on %s\n", node.c_str());
+    // deduplicate_device = false: libdrm otherwise returns the amdgpu_device (and therefore the
+    // VM, VA allocator and fd) already opened by another client of the same node in this process
+    // — RADV, in a track-B host — and every 1:1 mapping and scratch IB of ours lands in that VM
+    // (experiment 0016: four hangs). A private device means a private VM.
+    if (amdgpu_device_initialize2(d->impl_->fd, false, &major, &minor, &d->impl_->dev) != 0) {
+        std::fprintf(stderr, "bc5-direct: amdgpu_device_initialize2 failed on %s\n", node.c_str());
         return nullptr;
     }
     if (amdgpu_cs_ctx_create(d->impl_->dev, &d->impl_->ctx) != 0) {
