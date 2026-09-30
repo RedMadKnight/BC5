@@ -207,13 +207,14 @@ TEST_CASE("GDS accesses through the CP are dropped unless allowed", "[policy]") 
     policy::FilterStats st2;
     policy::filter(p, src, out, opt, st2);
     REQUIRE(st2.gds_drops == 0);
-    // CP_SYNC (bit 31) GDS DMAs are dropped even with a GDS allocation (run 49)
+    // CP_SYNC (bit 31) GDS DMAs lose the sync bit with a GDS allocation (runs 49, 56)
     const std::vector<std::uint32_t> sync = {0xC0055000u, 0xc6106000u, 0u, 0u, 4u, 0u, 0x40000004u};
     std::vector<std::uint32_t> out2(sync.size());
     policy::FilterStats st3;
     policy::filter(p, sync, out2, opt, st3);
-    REQUIRE(st3.gds_drops == 1);
-    REQUIRE(out2[0] == policy::kNop);
+    REQUIRE(st3.gds_drops == 0);
+    REQUIRE(st3.gds_rewrites == 1);
+    REQUIRE(out2[1] == 0x46106000u);
 }
 
 TEST_CASE("RELEASE_MEM CS_DONE without data becomes BOTTOM_OF_PIPE_TS", "[policy]") {

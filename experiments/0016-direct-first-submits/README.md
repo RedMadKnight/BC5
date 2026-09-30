@@ -409,6 +409,15 @@ queues read back from GDS are garbage: the shaders count with ordered-append, wh
 console's system initialises; an OA allocation alone does not reproduce it. Nothing is drawn,
 so the flip buffers stay zero. This is the open problem at the end of the day.
 
+**Run 56** (23:36, `BC5_DIRECT_OA_ENBL=1`): stall-free again (231 of 234), same 28 of 40 indirect
+packets dropped — and the numbers tell the story: the dropped `DISPATCH_INDIRECT` counts are
+847,009,686, 687, 688 … (+1 per frame) and continue run 55's 847,009,678: GDS memory is not
+cleared between processes and **the counter is never reset**. The reset is the gfx queue's
+`DMA_DATA` fill → GDS with CP_SYNC — dropped since run 49 because with CP_SYNC it stalled the CP.
+That also re-reads runs 49–51: the gfx-time partition was not the problem, the giant indirect
+draws from the un-reset counters were (no clamp yet). Next: the partition on every submission,
+the gfx queue's GDS DMAs with CP_SYNC stripped instead of dropped, the clamp kept.
+
 **Verdict (2026-09-30, end of day).** Steps (a)–(c) passed; (d) and (e) reached "the game's
 frames — draws, dispatches and both queue types — execute on the BC-250 from the track-B host
 without a hang", with 22 machine resets spent on the CP-stall class (stale L2, `CLEAR_STATE`,

@@ -340,11 +340,7 @@ std::size_t filter(const Policy &policy, std::span<const std::uint32_t> src,
                 }
             } else if (opt.gds_shadow_va != 0 && is_gds_access(&src[i], len)) {
                 v = Verdict::Rewrite; // redirected below, once the packet is in the output
-            } else if ((opt.drop_gds || (opcode3 == 0x50 && (src[i + 1] & 0x80000000u) != 0)) &&
-                       is_gds_access(&src[i], len)) {
-                // With a GDS allocation the compute queues' GDS DMAs run (run 49: 118 IBs), but a
-                // DMA_DATA to or from GDS with CP_SYNC (bit 31) on the GFX ring stalls the CP and
-                // takes the machine down (run 49, submit #143): always dropped.
+            } else if (opt.drop_gds && is_gds_access(&src[i], len)) {
                 // GDS (global data share) through the CP: DMA_DATA with SRC_SEL/DST_SEL 1 and
                 // WRITE_DATA with DST_SEL 3 (Mesa sid.h V_411_GDS, V_370_GDS). The console's
                 // compute IBs fill and read GDS counters this way; our VMID has no GDS
@@ -394,6 +390,15 @@ std::size_t filter(const Policy &policy, std::span<const std::uint32_t> src,
                 out[i + 1] = 0x80000000u;
                 out[i + 2] = 0x80000000u;
                 stats.context_control_rewrites++;
+            }
+            if (!opt.drop_gds && opt.gds_shadow_va == 0 && opcode == 0x50 && is_gds_access(&src[i], len) &&
+                (out[i + 1] & 0x80000000u) != 0) {
+                // A GDS DMA with CP_SYNC (bit 31) on the GFX ring stalled the CP (run 49, #143);
+                // the same DMA without it is the shape the compute queues use all the time. The
+                // gfx queue's GDS fills are the counter resets (run 56: never reset, the counters
+                // grew by one per frame across processes), so they must reach GDS: strip CP_SYNC.
+                out[i + 1] &= ~0x80000000u;
+                stats.gds_rewrites++;
             }
             if (opt.gds_shadow_va != 0 && is_gds_access(&src[i], len)) {
                 // DMA_DATA: SRC_SEL bits 30:29 (0 SRC_ADDR, 1 GDS, 2 DATA, 3 SRC_ADDR_TC_L2),
