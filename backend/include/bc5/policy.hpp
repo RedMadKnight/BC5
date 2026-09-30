@@ -1,0 +1,70 @@
+// SPDX-License-Identifier: GPL-2.0-only
+// The submission policy of ADR 0005: which packets of a console-format command buffer go to the
+// AMD CP verbatim, which are NOP-ed, which are rewritten. The table is backend/policy/pm4-policy.tsv,
+// embedded at build time; tools/bc5-agc reads the same file (`bc5-agc check`).
+#pragma once
+
+#include <cstddef>
+#include <cstdint>
+#include <span>
+#include <string_view>
+#include <vector>
+
+namespace bc5::policy {
+
+enum class Verdict : std::uint8_t { Pass, Rewrite, Split, Drop };
+
+const char *verdict_name(Verdict v);
+
+class Policy {
+public:
+    // Parses a table; throws std::invalid_argument naming the first bad line.
+    static Policy parse(std::string_view tsv);
+    // The table shipped with the repository.
+    static const Policy &builtin();
+
+    Verdict op(std::uint8_t opcode) const;
+    Verdict reg(std::uint32_t mm) const;
+    Verdict type0() const { return type0_; }
+
+    // Verdict for one packet at `p` (header first), `len` dwords including the header.
+    Verdict packet(const std::uint32_t *p, std::uint32_t len) const;
+
+private:
+    struct Range {
+        std::uint32_t first, last;
+        Verdict verdict;
+    };
+    Verdict ops_[256];
+    bool op_set_[256] = {};
+    std::vector<Range> regs_;
+    Verdict default_op_ = Verdict::Drop;
+    Verdict default_reg_ = Verdict::Pass;
+    Verdict type0_ = Verdict::Drop;
+};
+
+struct FilterStats {
+    std::uint64_t packets = 0, passed = 0, rewritten = 0, split = 0, dropped = 0;
+    std::uint64_t dwords = 0, dwords_dropped = 0;
+    std::uint64_t cu_mask_rewrites = 0, int_sel_rewrites = 0;
+    std::uint64_t truncated = 0; // packets running past the end (the rest is NOP-ed)
+};
+
+// Options for the rewrites.
+struct FilterOptions {
+    std::uint32_t cu_mask = 0xffffffffu; // ANDed into COMPUTE_STATIC_THREAD_MGMT_SE* and RSRC3.CU_EN
+    bool clear_int_sel = true;           // RELEASE_MEM / EVENT_WRITE_EOP: the host fires the events
+};
+
+// Copies `src` to `out` (same length, `out.size() >= src.size()`) applying the policy: dropped
+// packets become one-dword NOPs (0xffff1000) so every offset, and therefore every COND_EXEC skip
+// count, stays valid; rewrites are applied in place. Returns the number of dwords written.
+std::size_t filter(const Policy &policy, std::span<const std::uint32_t> src,
+                   std::span<std::uint32_t> out, const FilterOptions &opt, FilterStats &stats);
+
+// PM4 constants shared with the filter and the tests.
+inline constexpr std::uint32_t kNop = 0xffff1000u;
+inline constexpr std::uint8_t kOpEventWriteEop = 0x47;
+inline constexpr std::uint8_t kOpReleaseMem = 0x49;
+
+} // namespace bc5::policy

@@ -18,13 +18,21 @@ else()
         -Wall -Wextra -Wpedantic -Wshadow -Wconversion -Wsign-conversion -Werror)
 endif()
 
-# PM4 builder and the phase-2 memset IB (ADR 0004): no GPU access, builds everywhere.
+# The submission policy table (ADR 0005) is embedded from backend/policy/pm4-policy.tsv; the same
+# file is read by tools/bc5-agc.
+file(READ ${CMAKE_CURRENT_SOURCE_DIR}/policy/pm4-policy.tsv BC5_POLICY_TSV)
+configure_file(src/policy_tsv.hpp.in ${CMAKE_CURRENT_BINARY_DIR}/generated/policy_tsv.hpp @ONLY)
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS policy/pm4-policy.tsv)
+
+# PM4 builder, the phase-2 memset IB (ADR 0004) and the policy filter (ADR 0005): no GPU access,
+# builds everywhere.
 add_library(bc5_backend
     src/version.cpp
     src/pm4.cpp
     src/dispatch_min.cpp
+    src/policy.cpp
 )
-target_include_directories(bc5_backend PUBLIC include)
+target_include_directories(bc5_backend PUBLIC include PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/generated)
 target_link_libraries(bc5_backend PRIVATE bc5_warnings)
 
 # dispatch-min: --dump-ib everywhere; --info and --submit only with BC5_WITH_AMDGPU.
@@ -40,7 +48,9 @@ target_link_libraries(userptr-min PRIVATE bc5_backend bc5_warnings)
 if(BC5_WITH_AMDGPU)
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(LIBDRM_AMDGPU REQUIRED IMPORTED_TARGET libdrm_amdgpu)
-    target_link_libraries(bc5_backend PRIVATE PkgConfig::LIBDRM_AMDGPU)
+    # Direct submission (ADR 0005): userptr mappings + filtered scratch IB + fence.
+    target_sources(bc5_backend PRIVATE src/direct.cpp)
+    target_link_libraries(bc5_backend PUBLIC PkgConfig::LIBDRM_AMDGPU)
     target_compile_definitions(bc5_backend PUBLIC BC5_WITH_AMDGPU=1)
     target_link_libraries(dispatch-min PRIVATE PkgConfig::LIBDRM_AMDGPU)
     target_link_libraries(userptr-min PRIVATE PkgConfig::LIBDRM_AMDGPU)
@@ -61,7 +71,7 @@ if(BC5_BUILD_TESTS)
     endif()
     include(Catch)
 
-    add_executable(bc5_backend_tests tests/placeholder_test.cpp tests/pm4_test.cpp)
+    add_executable(bc5_backend_tests tests/placeholder_test.cpp tests/pm4_test.cpp tests/policy_test.cpp)
     target_link_libraries(bc5_backend_tests PRIVATE bc5_backend bc5_warnings Catch2::Catch2WithMain)
     catch_discover_tests(bc5_backend_tests)
 endif()
