@@ -4,6 +4,7 @@
 #include <amdgpu.h>
 #include <amdgpu_drm.h>
 #include <fcntl.h>
+#include <xf86drm.h>
 #include <unistd.h>
 
 #include <chrono>
@@ -25,6 +26,7 @@ struct UserptrBo {
     std::uint64_t va = 0;
     std::uint64_t size = 0;
     amdgpu_bo_handle bo = nullptr;
+    bool readonly = false;
 };
 
 struct ScratchBo {
@@ -146,6 +148,10 @@ Device::~Device() {
 }
 
 bool Device::map_userptr(std::uint64_t cpu_va, std::uint64_t size) {
+    return map_userptr(cpu_va, size, false);
+}
+
+bool Device::map_userptr(std::uint64_t cpu_va, std::uint64_t size, bool readonly) {
     std::lock_guard lock(impl_->mutex);
     if (size == 0 || (cpu_va & 0xfff) != 0 || (size & 0xfff) != 0) return false;
     for (const auto &u : impl_->userptrs) {
@@ -159,13 +165,36 @@ bool Device::map_userptr(std::uint64_t cpu_va, std::uint64_t size) {
     UserptrBo u;
     u.va = cpu_va;
     u.size = size;
-    int rc = amdgpu_create_bo_from_user_mem(impl_->dev, reinterpret_cast<void *>(cpu_va), size, &u.bo);
+    u.readonly = readonly;
+    int rc = 0;
+    if (readonly) {
+        // Same flags as libdrm's helper plus READONLY (amdgpu_drm.h): the kernel then accepts
+        // pages the process cannot write, e.g. the r-x segments of the game's executable.
+        drm_amdgpu_gem_userptr args{};
+        args.addr = cpu_va;
+        args.size = size;
+        args.flags = AMDGPU_GEM_USERPTR_READONLY | AMDGPU_GEM_USERPTR_ANONONLY |
+                     AMDGPU_GEM_USERPTR_REGISTER | AMDGPU_GEM_USERPTR_VALIDATE;
+        rc = drmCommandWriteRead(impl_->fd, DRM_AMDGPU_GEM_USERPTR, &args, sizeof(args));
+        if (rc == 0) {
+            amdgpu_bo_import_result res{};
+            rc = amdgpu_bo_import(impl_->dev, amdgpu_bo_handle_type_kms, args.handle, &res);
+            u.bo = res.buf_handle;
+        }
+    } else {
+        rc = amdgpu_create_bo_from_user_mem(impl_->dev, reinterpret_cast<void *>(cpu_va), size, &u.bo);
+    }
     if (rc != 0) {
-        std::fprintf(stderr, "bc5-direct: userptr 0x%llx+0x%llx failed: %d\n",
+        std::fprintf(stderr, "bc5-direct: userptr%s 0x%llx+0x%llx failed: %d\n", readonly ? " (ro)" : "",
                      static_cast<unsigned long long>(cpu_va), static_cast<unsigned long long>(size), rc);
         return false;
     }
-    rc = amdgpu_bo_va_op(u.bo, 0, size, cpu_va, 0, AMDGPU_VA_OP_MAP);
+    if (readonly) {
+        rc = amdgpu_bo_va_op_raw(impl_->dev, u.bo, 0, size, cpu_va,
+                                 AMDGPU_VM_PAGE_READABLE | AMDGPU_VM_PAGE_EXECUTABLE, AMDGPU_VA_OP_MAP);
+    } else {
+        rc = amdgpu_bo_va_op(u.bo, 0, size, cpu_va, 0, AMDGPU_VA_OP_MAP);
+    }
     if (rc != 0) {
         std::fprintf(stderr, "bc5-direct: va map 0x%llx+0x%llx failed: %d\n",
                      static_cast<unsigned long long>(cpu_va), static_cast<unsigned long long>(size), rc);
@@ -192,7 +221,7 @@ bool Device::unmap_userptr(std::uint64_t cpu_va) {
 std::vector<Mapping> Device::mappings() const {
     std::lock_guard lock(impl_->mutex);
     std::vector<Mapping> out;
-    for (const auto &u : impl_->userptrs) out.push_back({u.va, u.size});
+    for (const auto &u : impl_->userptrs) out.push_back({u.va, u.size, u.readonly});
     return out;
 }
 

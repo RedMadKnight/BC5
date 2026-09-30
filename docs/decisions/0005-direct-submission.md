@@ -82,6 +82,13 @@ not reach the tables loaded by `LOAD_*_REG[_INDEX]`, so the host journals every 
 submit and the filter's coverage check treats adjacent mappings as one; (xi) a host that also
 emulates the stream skips the memory side effects of the packets the GPU executed
 (`SubmitResult::executed_offsets`), and only fires the events.
+*Amended 2026-09-30 (step d, F28/F29):* (xii) §1 "every guest range … becomes a userptr BO" is
+not feasible as written: the game maps 12.4 GB of direct memory and a userptr BO is populated
+completely at submit time. The mapping set is: the resident runs of the guest's anonymous memory
+(rw as read/write, r-x and r-- as read-only userptrs — shader code and rodata live there) plus
+hint windows around the render-target and depth bases found in each submit's context-register
+state; (xiii) hangs are of two classes: a CP-firmware stall (`CLEAR_STATE`, stale L2) takes the
+machine down, a shader-side fault is recovered by the kernel's ring reset and only wedges the host.
 
 **Consequences.** The "packet rewriter" of the roadmap shrinks to a filter with two rewrites; the
 backend's core is the policy table plus the BO/VA mapper, both testable offline. Unknown firmware

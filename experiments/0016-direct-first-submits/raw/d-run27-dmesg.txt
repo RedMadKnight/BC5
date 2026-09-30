@@ -1,0 +1,12 @@
+[    7.822649] amdgpu 0000:01:00.0: ring gfx_0.0.0 uses VM inv eng 0 on hub 0
+[ 4130.152997] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:7 pasid:134)
+[ 4130.153011] amdgpu 0000:01:00.0:   in page starting at address 0x0000000908e86000 from client 0x1b (UTCL2)
+[ 4130.153018] amdgpu 0000:01:00.0: 	 Faulty UTCL2 client ID: SQC (inst) (0x9)
+[ 4130.153025] amdgpu 0000:01:00.0: 	 PERMISSION_FAULTS: 0x3
+[ 4130.153034] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:7 pasid:134)
+[ 4130.153040] amdgpu 0000:01:00.0:   in page starting at address 0x0000000908e86000 from client 0x1b (UTCL2)
+[ 4130.153045] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:7 pasid:134)
+[ 4130.153050] amdgpu 0000:01:00.0:   in page starting at address 0x0000000908e86000 from client 0x1b (UTCL2)
+[ 4130.153055] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:7 pasid:134)
+[ 4130.153060] amdgpu 0000:01:00.0:   in page starting at address 0x0000000908e86000 from client 0x1b (UTCL2)
+[ 4132.585517] amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=9963, emitted seq=9966

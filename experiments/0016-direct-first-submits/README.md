@@ -192,5 +192,32 @@ pass "self" waits only.
 frame DCBs with their `WAIT_REG_MEM` packets executed by the CP (satisfied by the same DCB's
 `WRITE_DATA`/`RELEASE_MEM` labels), 8–12 ms per submit at 933 mappings. Journal: `raw/c3-direct.log`.
 
-**Next.** Filter rule "a wait passes only when its label was written earlier in the same IB"
-(then `WAIT_REG_MEM64` needs no blanket drop), and (d) draws.
+**Memory survey before (d), runs 23–26** (17:43–17:56, `maponly`, no submits):
+
+- The guest's rw anonymous VMAs total 13,010 MiB (KytyPlus's direct-memory reservation is one
+  merged rw anonymous VMA), 2,171 MiB resident. Mapping whole VMAs is out.
+- The game maps **12,406 MiB of direct memory** up front (plus 22 MiB flexible, 100 MiB stacks,
+  548 MiB code). Mapping the guest's ranges in full (`BC5_DIRECT_MAP_GUEST_RANGES=1`,
+  `Bc5ForEachMappedRange` added to KytyPlus) materialised 11.2 GiB, one 7.8 GiB userptr failed and
+  the box crawled: out as well (`hmm_range_fault` populates a userptr BO completely at CS time).
+- Render targets: of 55 distinct CB/DB base addresses in the game's context-register tables
+  (`rt.py` over the full `LOAD_CONTEXT_REG_INDEX` tables, `BC5_DIRECT_TABLES_FULL=1`), **52 were not
+  resident** — the GPU writes them, the CPU never does — so the resident-run mapping would fault
+  on the first draw. Fix: the **hint mapper** — before each submit the host scans the IB's
+  `SET_CONTEXT_REG` packets and `LOAD_CONTEXT_REG_INDEX` tables for `CB_COLOR*_BASE/CMASK/FMASK/DCC`
+  and `DB_Z/STENCIL/HTILE` bases (Mesa gfx10 offsets via the regdb) and maps a 32 MiB window from
+  each (`BC5_DIRECT_HINT_MIB`), clipped to the containing rw VMA: 16 hints, +313 MiB in 30 s.
+
+**Step (d), run 27** (17:58, `BC5_DIRECT_STAGE=all`, hint mapper on): the first DCB with draws
+(#12, 3,257 dwords, 333 packets passed) **timed out** — and the machine **stayed up**: `dmesg`
+shows a GPU page fault from the **SQC** (shader instruction fetch) at 0x908e86000, 8 KiB past the
+last rw resident run of the executable's data, then `ring gfx_0.0.0 timeout`, `Ring gfx_0.0.0
+reset succeeded`, `device wedged, but no recovery needed`; the emulator went on with the soft CP
+(22 flips). A hang inside shader execution is recovered by the kernel's per-ring reset; the
+`CLEAR_STATE` hangs froze the CP itself and needed the full reset that takes the box down (F28).
+The faulting page is the game's shader code in an `r-x`/`r--` segment (the loader's `mprotect`
+after `LoadSegment`), which the sync ignored because it took rw VMAs only. Fix: `r--`/`r-x`
+anonymous guest pages are mapped read-only (`AMDGPU_GEM_USERPTR_READONLY` through the raw ioctl,
+VA mapping READABLE|EXECUTABLE).
+
+**Next.** (d) again with the read-only mappings.

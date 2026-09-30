@@ -31,6 +31,7 @@ struct SubmitResult {
 struct Mapping {
     std::uint64_t va = 0;
     std::uint64_t size = 0;
+    bool readonly = false; // GPU read/execute only (r-- / r-x guest pages: shader code, rodata)
 };
 
 // Diagnostic knobs (experiment 0016 bisection); the defaults are the intended configuration.
@@ -51,6 +52,9 @@ public:
     // the same address. Overlapping or duplicate ranges are rejected.
     bool map_userptr(std::uint64_t cpu_va, std::uint64_t size);
     bool unmap_userptr(std::uint64_t cpu_va);
+    // readonly: AMDGPU_GEM_USERPTR_READONLY (raw ioctl; libdrm's helper has no flag) and a VA
+    // mapping without WRITEABLE — the only way to give the GPU the game's r-x/r-- pages.
+    bool map_userptr(std::uint64_t cpu_va, std::uint64_t size, bool readonly);
     std::vector<Mapping> mappings() const;
 
     // Filters `ib` into a scratch IB and submits it on the GFX ring with every mapping in the BO
