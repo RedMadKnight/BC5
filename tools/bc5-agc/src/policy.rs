@@ -187,15 +187,48 @@ pub struct Check {
     pub rewritten_regs: BTreeMap<u32, u64>,
     /// Opcode → packets rewritten (non-register rewrites).
     pub rewritten_ops: BTreeMap<u8, u64>,
+    /// WAIT_REG_MEM[64] packets dropped because nothing earlier in the stream writes their label.
+    pub unsatisfiable_waits: u64,
 }
 
 impl Check {
     /// Applies the policy to one parsed stream.
     pub fn add(&mut self, policy: &Policy, parsed: &Parsed) {
         self.streams += 1;
+        // Labels written earlier in this stream (mirrors policy.cpp: WRITE_DATA to memory,
+        // RELEASE_MEM, EVENT_WRITE_EOP, ATOMIC_MEM); a wait on anything else is dropped.
+        let mut written: std::collections::HashSet<u64> = std::collections::HashSet::new();
+        let addr = |lo: u32, hi: u32| (u64::from(lo) & !3) | (u64::from(hi & 0xffff) << 32);
         for (_, packet) in &parsed.packets {
             self.packets += 1;
-            let v = policy.packet(packet);
+            let mut v = policy.packet(packet);
+            if let Packet::Type3 {
+                opcode, payload, ..
+            } = packet
+            {
+                if matches!(opcode, 0x3c | 0x93) && payload.len() >= 3 && v != Verdict::Drop {
+                    let mem_space = (payload[0] >> 4) & 1 != 0;
+                    if !mem_space || !written.contains(&addr(payload[1], payload[2])) {
+                        v = Verdict::Drop;
+                        self.unsatisfiable_waits += 1;
+                    }
+                }
+                if v != Verdict::Drop {
+                    let dst_sel = (payload.first().copied().unwrap_or(0) >> 8) & 0xf;
+                    let label = match opcode {
+                        0x37 if payload.len() >= 3 && matches!(dst_sel, 1 | 2 | 5) => {
+                            addr(payload[1], payload[2])
+                        }
+                        0x49 if payload.len() >= 5 => addr(payload[3], payload[4]),
+                        0x47 if payload.len() >= 3 => addr(payload[1], payload[2]),
+                        0x1e if payload.len() >= 3 => addr(payload[1], payload[2]),
+                        _ => 0,
+                    };
+                    if label != 0 {
+                        written.insert(label);
+                    }
+                }
+            }
             *self.by_verdict.entry(v).or_default() += 1;
             let len = packet.len() as u64;
             match v {
@@ -249,6 +282,7 @@ impl Check {
         for (v, n) in &self.by_verdict {
             let _ = writeln!(s, "  {:<8} {n}", v.label());
         }
+        let _ = writeln!(s, "  waits dropped (label never written in the stream): {}", self.unsatisfiable_waits);
         let name = |op: &u8| db.opcode_name(*op).unwrap_or("-");
         let _ = writeln!(s, "dropped packets by opcode ({}):", self.dropped_ops.len());
         for (op, n) in &self.dropped_ops {

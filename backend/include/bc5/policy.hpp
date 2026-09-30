@@ -52,6 +52,7 @@ struct FilterStats {
     std::uint64_t unmapped_drops = 0; // packets referencing memory outside the mapped ranges
     std::uint64_t extra_drops = 0;    // packets dropped by FilterOptions::extra_drop
     std::uint64_t reg_write_drops = 0; // WRITE_DATA with a register destination (DST_SEL 0)
+    std::uint64_t unsatisfiable_wait_drops = 0; // WAIT_REG_MEM[64] on a label this IB never writes
 };
 
 // Options for the rewrites.
@@ -68,6 +69,10 @@ struct FilterOptions {
     std::function<bool(std::uint64_t, std::uint64_t)> mapped;
     // Opcodes to drop in addition to the table (experiments).
     std::vector<std::uint8_t> extra_drop;
+    // WAIT_REG_MEM[64] passes only when its label was written earlier in the same IB (by a
+    // passing WRITE_DATA/RELEASE_MEM/EVENT_WRITE_EOP/ATOMIC_MEM); other waits are dropped and
+    // left to the host. A wait the GPU can never satisfy ends in the kernel's GPU timeout.
+    bool self_waits_only = true;
 };
 
 // Draw and dispatch opcodes (the "work" packets), for staging.

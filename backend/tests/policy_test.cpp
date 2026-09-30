@@ -151,3 +151,26 @@ TEST_CASE("CLEAR_STATE is dropped whatever its cmd", "[policy]") {
     REQUIRE(out[2] == policy::kNop);
     REQUIRE(out[4] == 0xC0002F00u); // NUM_INSTANCES still passes
 }
+
+TEST_CASE("waits pass only on labels written earlier in the same IB", "[policy]") {
+    const auto &p = policy::Policy::builtin();
+    const std::vector<std::uint32_t> src = {
+        0xC0043700u, 0x00100200u, 0x06802980u, 0x5u, 1u, 0u,                // WRITE_DATA mem 0x506802980
+        0xC0053C00u, 0x00000013u, 0x06802980u, 0x5u, 1u, 0xffffffffu, 0x4u, // WAIT_REG_MEM on it: pass
+        0xC0053C00u, 0x00000013u, 0x00202d40u, 0x4u, 1u, 0xffffffffu, 0x4u, // WAIT on 0x400202d40: drop
+        0xC0053C00u, 0x00000003u, 0x00000100u, 0x0u, 1u, 0xffffffffu, 0x4u, // register poll: drop
+    };
+    std::vector<std::uint32_t> out(src.size());
+    policy::FilterOptions opt;
+    policy::FilterStats st;
+    policy::filter(p, src, out, opt, st);
+    REQUIRE(st.unsatisfiable_wait_drops == 2);
+    REQUIRE(out[6] == 0xC0053C00u);
+    REQUIRE(out[13] == policy::kNop);
+    REQUIRE(out[20] == policy::kNop);
+    opt.self_waits_only = false;
+    policy::FilterStats st2;
+    policy::filter(p, src, out, opt, st2);
+    REQUIRE(st2.unsatisfiable_wait_drops == 0);
+    REQUIRE(out[13] == 0xC0053C00u);
+}

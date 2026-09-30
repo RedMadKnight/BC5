@@ -266,6 +266,26 @@ std::size_t filter(const Policy &policy, std::span<const std::uint32_t> src,
                    std::span<std::uint32_t> out, const FilterOptions &opt, FilterStats &stats) {
     const std::size_t n = src.size();
     std::size_t i = 0;
+    // Labels written earlier in this IB by packets that pass (WRITE_DATA to memory, RELEASE_MEM,
+    // EVENT_WRITE_EOP, ATOMIC_MEM): a wait on anything else cannot be satisfied by this
+    // submission and would stall the ring until the kernel's GPU timeout (a machine reset on
+    // the BC-250), so it is dropped and left to the host (ADR 0005, experiment 0016 step c3).
+    std::vector<std::uint64_t> written;
+    auto label_of = [](const std::uint32_t *p, std::uint32_t len, std::uint8_t op) -> std::uint64_t {
+        auto a = [&](std::uint32_t lo, std::uint32_t hi) {
+            return (static_cast<std::uint64_t>(p[lo]) & ~3ull) |
+                   (static_cast<std::uint64_t>(p[hi] & 0xffffu) << 32);
+        };
+        const std::uint32_t dst_sel = len >= 2 ? (p[1] >> 8) & 0xf : 0;
+        switch (op) {
+        case kOpWriteData:
+            return (len >= 4 && (dst_sel == 1 || dst_sel == 2 || dst_sel == 5)) ? a(2, 3) : 0;
+        case kOpReleaseMem: return len >= 6 ? a(3, 4) : 0;
+        case kOpEventWriteEop: return len >= 4 ? a(2, 3) : 0;
+        case 0x1e: return len >= 4 ? a(2, 3) : 0; // ATOMIC_MEM
+        default: return 0;
+        }
+    };
     while (i < n) {
         const std::uint32_t header = src[i];
         const std::uint32_t type = header >> 30;
@@ -291,6 +311,16 @@ std::size_t filter(const Policy &policy, std::span<const std::uint32_t> src,
         if (type == 3 && v != Verdict::Drop) {
             if (opt.drop_draws && is_draw_or_dispatch(opcode3)) {
                 v = Verdict::Drop;
+            } else if (opt.self_waits_only && (opcode3 == 0x3c || opcode3 == 0x93) && len >= 4) {
+                // WAIT_REG_MEM[64]: mem_space is bit 4 of the control dword; register polls and
+                // waits on labels nobody in this IB writes are dropped.
+                const bool mem_space = ((src[i + 1] >> 4) & 1) != 0;
+                const std::uint64_t target = (static_cast<std::uint64_t>(src[i + 2]) & ~3ull) |
+                                             (static_cast<std::uint64_t>(src[i + 3] & 0xffffu) << 32);
+                if (!mem_space || std::find(written.begin(), written.end(), target) == written.end()) {
+                    v = Verdict::Drop;
+                    stats.unsatisfiable_wait_drops++;
+                }
             } else if (opcode3 == kOpWriteData && len >= 2 && ((src[i + 1] >> 8) & 0xf) == 0) {
                 // WRITE_DATA with DST_SEL 0 writes a register (the console's driver uses it for
                 // SQ_THREAD_TRACE_USERDATA_3 markers, mm 0xc343): the register policy applies to
@@ -326,6 +356,8 @@ std::size_t filter(const Policy &policy, std::span<const std::uint32_t> src,
             else if (v == Verdict::Rewrite) stats.rewritten++;
             else stats.split++;
             if (type != 3) break;
+            if (const std::uint64_t label = label_of(&src[i], len, opcode3); label != 0)
+                written.push_back(label);
             const auto opcode = static_cast<std::uint8_t>((header >> 8) & 0xff);
             if (opcode == kOpContextControl && opt.safe_context_control && len >= 3 &&
                 (out[i + 1] != 0x80000000u || out[i + 2] != 0x80000000u)) {
