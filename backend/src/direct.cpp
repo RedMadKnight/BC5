@@ -307,6 +307,15 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
         if (r.rc == 0 && !expired) {
             r.timed_out = true;
             wedged_ = true;
+#ifdef AMDGPU_INFO_GPUVM_FAULT
+            // A shader-side fault is what usually sits behind a timeout (experiment 0016, step
+            // d): the kernel keeps the last VM fault per process; it names the page to map.
+            drm_amdgpu_info_gpuvm_fault fault{};
+            if (amdgpu_query_info(impl_->dev, AMDGPU_INFO_GPUVM_FAULT, sizeof(fault), &fault) == 0) {
+                r.fault_addr = fault.addr;
+                r.fault_status = fault.status;
+            }
+#endif
         }
     }
     r.submit_ms = now_ms() - t0;

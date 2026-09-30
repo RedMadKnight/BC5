@@ -21,6 +21,10 @@ struct SubmitResult {
     bool timed_out = false; // fence did not signal within the timeout
     double submit_ms = 0;   // submit + fence wall clock
     std::uint64_t seq_no = 0; // sequence number the kernel assigned (0 = none)
+    // After a timeout: the last GPU VM fault of this process (AMDGPU_INFO_GPUVM_FAULT; page
+    // address, GCVM_L2_PROTECTION_FAULT_STATUS), 0 when the kernel has none to report.
+    std::uint64_t fault_addr = 0;
+    std::uint32_t fault_status = 0;
     policy::FilterStats filter;
     // Dword offsets (in the caller's IB) of the type-3 packets that reached the GPU as
     // themselves, i.e. passed or rewritten, not NOP-ed by the filter. A host that also emulates
