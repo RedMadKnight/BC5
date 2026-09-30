@@ -424,6 +424,14 @@ per frame (…694 → …700). Either `ds_ordered_count` works on a GDS address 
 not cover, or the CP's fills do not land. Next: a GDS snapshot (host DMA of the 64 KiB into the
 shadow, non-zero dwords journaled) after compute IBs.
 
+**Run 58** (23:49, GDS snapshot after a compute IB): the host's DMA of GDS into the shadow copied
+only **3,584 bytes** (896 dwords; the rest of the 64 KiB kept the probe pattern), the content is
+non-zero everywhere in that range (0x1196f59f, 0xd93fc4db, …), and GDS[0x4], which the game's
+gfx queue fills with 0 every frame, holds 0xd93fc4db — the fill never landed. Either the CP's
+DMA to/from GDS does not do what the packet says on this ring, or the partition the CP sees is
+3.5 KiB. A GDS self-test at init (fills at 0x100 and 0xf000, WRITE_DATA at 0x200, snapshots
+before and after, dumped to files) decides.
+
 **Verdict (2026-09-30, end of day).** Steps (a)–(c) passed; (d) and (e) reached "the game's
 frames — draws, dispatches and both queue types — execute on the BC-250 from the track-B host
 without a hang", with 22 machine resets spent on the CP-stall class (stale L2, `CLEAR_STATE`,
