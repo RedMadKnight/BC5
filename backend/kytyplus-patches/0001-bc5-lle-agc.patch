@@ -292,10 +292,10 @@ index 5f87e6b..e5c534e 100644
  	CondRemoveWaiter(cond_value, thread);
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..3a4063e
+index 0000000..e35de48
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,2027 @@
+@@ -0,0 +1,2149 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -1333,12 +1333,143 @@ index 0000000..3a4063e
 +// DB_Z_WRITE_BASE 0xa014 / HI 0xa01c, DB_STENCIL_WRITE_BASE 0xa015 / HI 0xa01d.
 +static bool covered(const std::vector<bc5::direct::Mapping>& maps, uint64_t a, uint64_t bytes);
 +
++// Regions learned from GPU VM faults (BC5_DIRECT_LEARNED, default ~/bc5-work/direct-learned.txt,
++// one "0x<addr> 0x<bytes>" per line): mapped like hint windows before every submit. A fault
++// under a draw (a texture the CPU never touched) wedges the run; the next run maps the region
++// from the start. Written from Direct::submit on a timeout that reports a fault address.
++static std::vector<std::pair<uint64_t, uint64_t>> g_learned;
++static const char* learned_path() {
++	static std::string p = std::getenv("BC5_DIRECT_LEARNED") ? std::getenv("BC5_DIRECT_LEARNED")
++	                     : std::string(std::getenv("HOME") ? std::getenv("HOME") : ".") + "/bc5-work/direct-learned.txt";
++	return p.c_str();
++}
++static void learned_load() {
++	static bool done = false;
++	if (done) return;
++	done = true;
++	if (FILE* f = std::fopen(learned_path(), "r")) {
++		unsigned long long a = 0, n = 0;
++		while (std::fscanf(f, "%llx %llx", &a, &n) == 2) g_learned.emplace_back(a, n);
++		std::fclose(f);
++	}
++	LOGF("[bc5-direct] learned regions: %zu from %s\n", g_learned.size(), learned_path());
++}
++static void learned_add(uint64_t fault_addr) {
++	const uint64_t lo = (fault_addr & ~0x3ffffffull) > 0x2000000ull ? (fault_addr & ~0x3ffffffull) - 0x2000000ull : 0; // 64 MiB aligned, 32 MiB before
++	const uint64_t n  = 0x6000000ull; // 96 MiB
++	for (const auto& [a, b]: g_learned) {
++		if (a == lo && b == n) return;
++	}
++	g_learned.emplace_back(lo, n);
++	if (FILE* f = std::fopen(learned_path(), "a")) {
++		std::fprintf(f, "0x%llx 0x%llx\n", static_cast<unsigned long long>(lo), static_cast<unsigned long long>(n));
++		std::fclose(f);
++	}
++	journal("learned: fault 0x%" PRIx64 " -> region 0x%" PRIx64 "+0x%" PRIx64 " (saved)\n", fault_addr, lo, n);
++}
++static void map_window(uint64_t lo, uint64_t hi, std::vector<bc5::direct::Mapping>& have, const char* what, uint64_t addr) {
++	std::vector<std::pair<uint64_t, uint64_t>> pieces;
++	for (const auto& v: g_vmas) { // clip to rw VMAs (the window may span several)
++		if (v.readonly || v.end <= lo || v.start >= hi) continue;
++		pieces.emplace_back(v.start > lo ? v.start : lo, v.end < hi ? v.end : hi);
++	}
++	for (const auto& m: have) {
++		std::vector<std::pair<uint64_t, uint64_t>> next;
++		for (const auto& [pa, pb]: pieces) {
++			if (m.va + m.size <= pa || m.va >= pb) { next.emplace_back(pa, pb); continue; }
++			if (m.va > pa) next.emplace_back(pa, m.va);
++			if (m.va + m.size < pb) next.emplace_back(m.va + m.size, pb);
++		}
++		pieces.swap(next);
++	}
++	uint64_t added = 0;
++	for (const auto& [pa, pb]: pieces) {
++		if (pb <= pa) continue;
++		if (g_dev->map_userptr(pa, pb - pa)) {
++			added += pb - pa;
++			g_bytes_mapped += pb - pa;
++			have.push_back({pa, pb - pa});
++		}
++	}
++	if (added != 0) journal("%s 0x%" PRIx64 ": window 0x%" PRIx64 "+0x%" PRIx64 ", mapped +%.1f MiB\n", what, addr, lo, hi - lo, static_cast<double>(added) / 1048576.0);
++}
++static void learned_apply() {
++	learned_load();
++	if (g_learned.empty() || !g_dev) return;
++	std::vector<bc5::direct::Mapping> have = g_dev->mappings();
++	for (const auto& [a, n]: g_learned) map_window(a, a + n, have, "learned", a);
++}
++
++static std::vector<uint64_t> g_hinted; // hint windows already mapped (cleared on a device reopen)
++
 +static void hint_targets(const uint32_t* ib, uint32_t num_dwords) {
++	std::vector<uint64_t>& hinted = g_hinted;
 +	static const bool     off    = std::getenv("BC5_DIRECT_NO_HINTS") != nullptr;
 +	static const uint64_t window = (std::getenv("BC5_DIRECT_HINT_MIB") ? std::strtoull(std::getenv("BC5_DIRECT_HINT_MIB"), nullptr, 10) : 32ull) << 20u;
++	// Below the base as well: GPU-generated textures cluster next to the render targets (run 31:
++	// a TCP fault 1.2 MiB below CB0's base, nothing resident within 32 MiB).
++	static const uint64_t below = (std::getenv("BC5_DIRECT_HINT_BELOW_MIB") ? std::strtoull(std::getenv("BC5_DIRECT_HINT_BELOW_MIB"), nullptr, 10) : 32ull) << 20u;
 +	if (off || !g_dev) return;
 +	std::vector<bc5::direct::Mapping> have = g_dev->mappings();
-+	std::map<uint32_t, uint32_t> ctx; // context register offset (relative to 0xa000) -> value
++	// Context state accumulates across submissions (a DCB's targets may have been loaded by the
++	// preamble or an earlier DCB), and the bases are evaluated after EVERY packet that changes
++	// them: a frame DCB sets its targets several times (one per pass) and the last table of the
++	// IB may well zero them (run 30: CB0_BASE set four times in #12, the final value 0).
++	static std::map<uint32_t, uint32_t> ctx; // context register offset (relative to 0xa000) -> value
++	struct Base { uint32_t lo, hi; const char* name; };
++	static const std::vector<Base> bases = [] {
++		std::vector<Base> b = {{0x005, 0x01e, "DB_HTILE"}, {0x012, 0x01a, "DB_Z_READ"}, {0x013, 0x01b, "DB_STENCIL_READ"},
++		                       {0x014, 0x01c, "DB_Z_WRITE"}, {0x015, 0x01d, "DB_STENCIL_WRITE"}};
++		static const char* cb[8] = {"CB0", "CB1", "CB2", "CB3", "CB4", "CB5", "CB6", "CB7"};
++		for (uint32_t c = 0; c < 8; c++) {
++			b.push_back({0x318 + c * 0xf, 0x390 + c, cb[c]});
++			b.push_back({0x31f + c * 0xf, 0x398 + c, cb[c]});
++			b.push_back({0x321 + c * 0xf, 0x3a0 + c, cb[c]});
++			b.push_back({0x325 + c * 0xf, 0x3a8 + c, cb[c]});
++		}
++		return b;
++	}();
++	auto evaluate = [&]() {
++		for (const auto& b: bases) {
++			auto it = ctx.find(b.lo);
++			if (it == ctx.end() || it->second == 0) continue;
++			const uint32_t ext  = ctx.count(b.hi) ? (ctx[b.hi] & 0xffu) : 0u;
++			const uint64_t addr = (static_cast<uint64_t>(it->second) << 8u) | (static_cast<uint64_t>(ext) << 40u);
++			const uint64_t lo   = addr & ~0xffffull;
++			if (std::find(hinted.begin(), hinted.end(), lo) != hinted.end()) continue;
++			hinted.push_back(lo);
++			const Vma* vma = nullptr;
++			for (const auto& v: g_vmas) {
++				if (lo >= v.start && lo < v.end && !v.readonly) { vma = &v; break; }
++			}
++			if (vma == nullptr) {
++				journal("hint %s 0x%" PRIx64 ": not in an rw anonymous VMA\n", b.name, addr);
++				continue;
++			}
++			const uint64_t hi  = (lo + window < vma->end) ? lo + window : vma->end;
++			const uint64_t lo2 = (lo > vma->start + below) ? lo - below : vma->start;
++			std::vector<std::pair<uint64_t, uint64_t>> pieces = {{lo2, hi}};
++			for (const auto& m: have) {
++				std::vector<std::pair<uint64_t, uint64_t>> next;
++				for (const auto& [pa, pb]: pieces) {
++					if (m.va + m.size <= pa || m.va >= pb) { next.emplace_back(pa, pb); continue; }
++					if (m.va > pa) next.emplace_back(pa, m.va);
++					if (m.va + m.size < pb) next.emplace_back(m.va + m.size, pb);
++				}
++				pieces.swap(next);
++			}
++			uint64_t added = 0;
++			for (const auto& [pa, pb]: pieces) {
++				if (pb <= pa) continue;
++				if (g_dev->map_userptr(pa, pb - pa)) {
++					added += pb - pa;
++					g_bytes_mapped += pb - pa;
++					have.push_back({pa, pb - pa});
++				}
++			}
++			journal("hint %s 0x%" PRIx64 ": window 0x%" PRIx64 "+0x%" PRIx64 ", mapped +%.1f MiB\n", b.name, addr, lo2, hi - lo2, static_cast<double>(added) / 1048576.0);
++		}
++	};
 +	uint32_t i = 0;
 +	while (i < num_dwords) {
 +		const uint32_t h = ib[i];
@@ -1351,67 +1482,35 @@ index 0000000..3a4063e
 +		if (i + len > num_dwords) break;
 +		const uint32_t  op = (h >> 8u) & 0xffu;
 +		const uint32_t* p  = ib + i;
++		bool changed = false;
 +		if (type == 3 && op == 0x69 && len >= 3) { // SET_CONTEXT_REG
 +			for (uint32_t k = 2; k < len; k++) ctx[(p[1] & 0xffffu) + k - 2] = p[k];
++			changed = true;
 +		} else if (type == 3 && op == 0x9f && len >= 5 && (p[3] >> 31u) != 0) { // LOAD_CONTEXT_REG_INDEX, pairs
 +			const uint64_t a = (p[1] & ~3u) | (static_cast<uint64_t>(p[2] & 0xffffu) << 32u);
 +			const uint32_t n = p[4] & 0x3fffu;
 +			if (covered(have, a, static_cast<uint64_t>(n) * 8)) {
 +				const auto* t = reinterpret_cast<const volatile uint32_t*>(a);
 +				for (uint32_t k = 0; k + 1 < 2 * n; k += 2) ctx[t[k] & 0xffffu] = t[k + 1];
++				changed = true;
++			} else {
++				journal("hint: context table 0x%" PRIx64 " (%u pairs) not mapped, skipped\n", a, n);
++			}
++		} else if (type == 3 && op == 0x61 && len >= 5) {
++			// LOAD_CONTEXT_REG: base of a flat register image, then (reg_offset, count) pairs; the
++			// value of register X is at base + X*4 (the console preamble loads (0x0,215) (0xd8,272)
++			// ... (0x2f5,203) from 0xfe0008000; TODO(verify) against PAL's PM4_PFP_LOAD_CONTEXT_REG).
++			const uint64_t base = (p[1] & ~3u) | (static_cast<uint64_t>(p[2] & 0xffffu) << 32u);
++			for (uint32_t k = 3; k + 1 < len; k += 2) {
++				const uint32_t off = p[k] & 0xffffu, n = p[k + 1] & 0x3fffu;
++				if (n == 0 || !covered(have, base + static_cast<uint64_t>(off) * 4, static_cast<uint64_t>(n) * 4)) continue;
++				const auto* t = reinterpret_cast<const volatile uint32_t*>(base + static_cast<uint64_t>(off) * 4);
++				for (uint32_t q = 0; q < n; q++) ctx[off + q] = t[q];
++				changed = true;
 +			}
 +		}
++		if (changed) evaluate();
 +		i += len;
-+	}
-+	if (ctx.empty()) return;
-+	struct Base { uint32_t lo, hi; const char* name; };
-+	std::vector<Base> bases = {{0x005, 0x01e, "DB_HTILE"}, {0x012, 0x01a, "DB_Z_READ"}, {0x013, 0x01b, "DB_STENCIL_READ"},
-+	                           {0x014, 0x01c, "DB_Z_WRITE"}, {0x015, 0x01d, "DB_STENCIL_WRITE"}};
-+	static const char* cb_names[8] = {"CB0", "CB1", "CB2", "CB3", "CB4", "CB5", "CB6", "CB7"};
-+	for (uint32_t c = 0; c < 8; c++) {
-+		bases.push_back({0x318 + c * 0xf, 0x390 + c, cb_names[c]});
-+		bases.push_back({0x31f + c * 0xf, 0x398 + c, cb_names[c]});
-+		bases.push_back({0x321 + c * 0xf, 0x3a0 + c, cb_names[c]});
-+		bases.push_back({0x325 + c * 0xf, 0x3a8 + c, cb_names[c]});
-+	}
-+	static std::vector<uint64_t> hinted;
-+	for (const auto& b: bases) {
-+		auto it = ctx.find(b.lo);
-+		if (it == ctx.end() || it->second == 0) continue;
-+		const uint32_t ext  = ctx.count(b.hi) ? (ctx[b.hi] & 0xffu) : 0u;
-+		const uint64_t addr = (static_cast<uint64_t>(it->second) << 8u) | (static_cast<uint64_t>(ext) << 40u);
-+		const uint64_t lo   = addr & ~0xffffull;
-+		if (std::find(hinted.begin(), hinted.end(), lo) != hinted.end()) continue;
-+		hinted.push_back(lo);
-+		const Vma* vma = nullptr;
-+		for (const auto& v: g_vmas) {
-+			if (lo >= v.start && lo < v.end && !v.readonly) { vma = &v; break; }
-+		}
-+		if (vma == nullptr) {
-+			journal("hint %s 0x%" PRIx64 ": not in an rw anonymous VMA\n", b.name, addr);
-+			continue;
-+		}
-+		const uint64_t hi = (lo + window < vma->end) ? lo + window : vma->end;
-+		std::vector<std::pair<uint64_t, uint64_t>> pieces = {{lo, hi}};
-+		for (const auto& m: have) {
-+			std::vector<std::pair<uint64_t, uint64_t>> next;
-+			for (const auto& [pa, pb]: pieces) {
-+				if (m.va + m.size <= pa || m.va >= pb) { next.emplace_back(pa, pb); continue; }
-+				if (m.va > pa) next.emplace_back(pa, m.va);
-+				if (m.va + m.size < pb) next.emplace_back(m.va + m.size, pb);
-+			}
-+			pieces.swap(next);
-+		}
-+		uint64_t added = 0;
-+		for (const auto& [pa, pb]: pieces) {
-+			if (pb <= pa) continue;
-+			if (g_dev->map_userptr(pa, pb - pa)) {
-+				added += pb - pa;
-+				g_bytes_mapped += pb - pa;
-+				have.push_back({pa, pb - pa});
-+			}
-+		}
-+		journal("hint %s 0x%" PRIx64 ": window 0x%" PRIx64 "+0x%" PRIx64 ", mapped +%.1f MiB\n", b.name, addr, lo, hi - lo, static_cast<double>(added) / 1048576.0);
 +	}
 +}
 +
@@ -1500,7 +1599,11 @@ index 0000000..3a4063e
 +	if (g_dev->wedged()) {
 +		return;
 +	}
-+	sync_mappings();
++	// Unthrottled: the game writes a DCB's register tables right before submitting it, and a
++	// table the sync has not seen yet is a NOP-ed LOAD on the GPU and an invisible render
++	// target for the hint mapper (run 29: 52 unmapped operands in the first frame DCB).
++	sync_mappings(true);
++	learned_apply();
 +	hint_targets(ib, num_dwords);
 +	if (g_stage == Stage::MapOnly) {
 +		if (!g_dump_dir.empty()) journal_load_tables(ib, num_dwords, g_dev->mappings());
@@ -1635,7 +1738,26 @@ index 0000000..3a4063e
 +		           r.filter.unmapped_drops, r.filter.extra_drops, r.filter.truncated, g_ok.load());
 +	}
 +	if (r.timed_out) {
-+		LOGF_COLOR(Log::Color::Red, "[bc5-direct] fence timeout: device wedged, no further submits (soft CP continues)\n");
++		LOGF_COLOR(Log::Color::Red, "[bc5-direct] fence timeout: fault 0x%" PRIx64 " status 0x%08x\n", r.fault_addr, r.fault_status);
++		journal("timeout: fault 0x%" PRIx64 " status 0x%08x\n", r.fault_addr, r.fault_status);
++		if (r.fault_addr != 0) learned_add(r.fault_addr);
++		// BC5_DIRECT_REOPEN=1: after the kernel's ring reset (F28) the process may open a fresh
++		// device and go on; the mappings are rebuilt by the next sync, the learned region is in.
++		static const bool reopen = std::getenv("BC5_DIRECT_REOPEN") != nullptr;
++		if (reopen && r.fault_addr != 0) {
++			std::this_thread::sleep_for(std::chrono::seconds(12)); // the kernel's timeout + reset
++			g_dev.reset();
++			const char* node = std::getenv("BC5_DIRECT_NODE");
++			g_dev = bc5::direct::Device::open(node != nullptr ? node : "/dev/dri/renderD128");
++			if (g_dev && std::getenv("BC5_DIRECT_NO_BOLIST") != nullptr) g_dev->set_include_mappings(false);
++			g_hinted.clear();
++			g_bytes_mapped = 0;
++			g_last_sync_ns = 0;
++			LOGF_COLOR(Log::Color::Yellow, "[bc5-direct] device reopened after the fault: %s\n", g_dev ? "ok" : "FAILED");
++			journal("reopen: %s\n", g_dev ? "ok" : "FAILED");
++		} else {
++			LOGF_COLOR(Log::Color::Red, "[bc5-direct] device wedged, no further submits (soft CP continues)\n");
++		}
 +	}
 +}
 +#else

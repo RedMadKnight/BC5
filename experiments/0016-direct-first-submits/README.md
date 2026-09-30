@@ -220,4 +220,26 @@ after `LoadSegment`), which the sync ignored because it took rw VMAs only. Fix: 
 anonymous guest pages are mapped read-only (`AMDGPU_GEM_USERPTR_READONLY` through the raw ioctl,
 VA mapping READABLE|EXECUTABLE).
 
-**Next.** (d) again with the read-only mappings.
+**Step (d), runs 28–33** (18:10–18:28, `BC5_DIRECT_STAGE=all`), one fault class at a time, the
+machine up throughout (ring resets only, F28):
+
+| run | change | outcome |
+| --- | --- | --- |
+| 28 | `KYTY_BC5_ALL_RW=1` (r-x/r-- guest pages kept CPU-writable: read-only userptrs cannot enter a libdrm BO list, see `direct.cpp`) | SQC fault gone; fault at 0x56d8bf000, CB DCC metadata of a target whose base was loaded by an earlier IB |
+| 29 | context state accumulated across IBs, `LOAD_CONTEXT_REG` (flat image) parsed too | same fault: the tables of #12 were not mapped yet at scan time (sync throttled to 50 ms; the game writes them right before submitting) — also the reason for the 52 "unmapped" drops per DCB |
+| 30 | sync forced on every submit | same fault: #12 sets CB0's base four times (one per pass) and the last table zeroes it; the mapper only looked at the final state |
+| 31 | bases evaluated after every register-changing packet | 10 hints, CB0 windows mapped; **TCP fault** (texture fetch) at 0x538a8a000, 1.2 MiB below CB0's base, nothing resident within 32 MiB: a GPU-generated texture |
+| 32 | windows 32 MiB below the bases as well; `AMDGPU_INFO_GPUVM_FAULT` read after a timeout; the faulting region (96 MiB) saved to `~/bc5-work/direct-learned.txt` and mapped from the start of every later run; `BC5_DIRECT_REOPEN=1` opens a fresh device after the kernel's ring reset and goes on | fault at 0x532832000 → learned → reopened → **91 more frame DCBs with their draws and dispatches ran on the GPU** (103 of 104 submits OK, 114 hints) |
+| 33 | learned region applied from the start | 106 of 107 OK, 68 frame DCBs, one new fault (0x54218c000, TCP) learned; 3.2 GB mapped |
+
+So the game's frames, draws included, execute on the BC-250 from inside the track-B host, with
+the mapping set converging by one learned region per run. The emulator window stays black:
+KytyPlus's presenter uploads the flip buffer through its own resource tracking (`InvalidateMemory`
+on flip is the open item from F21), and the sampled-texture faults show that a complete map of
+what a frame reads needs the game's descriptors (T#/V#), not only the CB/DB registers. Journals
+of runs 32 and 33: `raw/d-run32-direct.log`, `raw/d-run33-direct.log` (table contents stripped).
+
+**Verdict (interim, end of 2026-09-30).** Steps (a)–(c) passed and (d) reached "frames with draws
+run on the GPU, faults recoverable and learned"; not yet "image on screen" (G3). Open: present
+the GPU's flip buffer; size the hint windows from the surface registers; decode the descriptor
+tables the shaders read; compute rings (e); 36/40 (f).

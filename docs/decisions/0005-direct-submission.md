@@ -89,6 +89,12 @@ completely at submit time. The mapping set is: the resident runs of the guest's 
 hint windows around the render-target and depth bases found in each submit's context-register
 state; (xiii) hangs are of two classes: a CP-firmware stall (`CLEAR_STATE`, stale L2) takes the
 machine down, a shader-side fault is recovered by the kernel's ring reset and only wedges the host.
+*Amended 2026-09-30 (step d, F30):* (xiv) the mapping set also learns: a GPU VM fault under a
+submission is read back (`AMDGPU_INFO_GPUVM_FAULT`), its 96 MiB region is persisted and mapped
+from the start of later runs, and the host reopens its device after the ring reset instead of
+staying wedged (`BC5_DIRECT_REOPEN`); the 50 ms sync throttle is gone on the submit path, and the
+context state used for the render-target hints is evaluated after every register-changing packet
+and kept across submissions.
 
 **Consequences.** The "packet rewriter" of the roadmap shrinks to a filter with two rewrites; the
 backend's core is the policy table plus the BO/VA mapper, both testable offline. Unknown firmware

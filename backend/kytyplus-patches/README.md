@@ -72,3 +72,7 @@ before a submit, and its soft CP skips the memory side effects of packets the GP
 `KYTY_BC5_ALL_RW=1` keeps every readable guest page CPU-writable (the executable's r-x/r-- segments
 hold shader code and rodata; a writable userptr is the only kind libdrm can put in a BO list, see
 `backend/src/direct.cpp`). `Bc5ForEachMappedRange` (memory.cpp) enumerates the guest's mapped ranges.
+Step (d) knobs: `BC5_DIRECT_HINT_MIB`/`BC5_DIRECT_HINT_BELOW_MIB` (render-target windows, 32 MiB
+each side), `BC5_DIRECT_NO_HINTS`, `BC5_DIRECT_LEARNED` (fault-learned regions file, default
+`~/bc5-work/direct-learned.txt`), `BC5_DIRECT_REOPEN=1` (reopen the device after a ring reset),
+`BC5_DIRECT_TABLES_FULL=1` (journal whole LOAD tables), `BC5_DIRECT_MAP_GUEST_RANGES=1` (survey only).
