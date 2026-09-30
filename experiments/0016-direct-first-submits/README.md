@@ -254,6 +254,21 @@ modern engine live there. For step (e) the filter now copies every `INDIRECT_BUF
 into the scratch, filters it and rewrites the packet's address, so the ring IBs are inspected
 like the DCBs; the soft CP skips their GPU-executed packets too.
 
+**Step (e), run 38** (18:47, `BC5_DIRECT_RINGS=1`): **reset 14**, a CP stall. 32 ring slices went
+through — rings of `INDIRECT_BUFFER` packets whose targets the filter copied into the scratch —
+including the driver's own small compute IBs (0xfe003a200: 2 dwords, 0xfe00427a0: 55 dwords),
+i.e. the first compute work on the GFX ring from the console's queues. Submit #48 (four
+`INDIRECT_BUFFER`s, the last to a 1,336-dword **game** compute IB at 0x4002a55c0) timed out and
+the machine went down. A survey of 152 such IBs from an earlier capture (`acbhist.py`, run 21):
+`SET_SH_REG` to COMPUTE_START_X … COMPUTE_USER_DATA_15, `COMPUTE_DISPATCH_TUNNEL` (0x2e7d) and
+the unresolved 0x2e80; `RELEASE_MEM` CS_DONE / BOTTOM_OF_PIPE_TS / CACHE_FLUSH_AND_INV_TS;
+`EVENT_WRITE` CS_PARTIAL_FLUSH; `WAIT_REG_MEM64`; `DISPATCH_DIRECT`; and **`DMA_DATA` to and from
+GDS** (control 0x46100000 = fill GDS, 0x24300000 = GDS → memory, Mesa `V_411_GDS`): the console's
+compute counters live in the global data share, which our VMID does not have. Journal:
+`raw/e-run38-direct.log`. Next: (e2) with GDS packets dropped by policy (`gds_drops`), nested
+IBs dumped before the submit, and the piecewise mode descending into `INDIRECT_BUFFER` targets;
+then a GDS BO on the BO list (`BC5_DIRECT_GDS_KIB`) so the accesses may pass.
+
 **Verdict (interim, end of 2026-09-30).** Steps (a)–(c) passed and (d) reached "frames with draws
 run on the GPU, faults recoverable and learned"; not yet "image on screen" (G3). Open: present
 the GPU's flip buffer; size the hint windows from the surface registers; decode the descriptor

@@ -51,7 +51,11 @@ struct Mapping {
 // Diagnostic knobs (experiment 0016 bisection); the defaults are the intended configuration.
 struct OpenOptions {
     bool deduplicate_device = false; // true: plain amdgpu_device_initialize (shares a device already open in the process)
-    bool legacy_scratch_va = false;  // true: scratch VA from libdrm's allocator instead of the fixed 16 TiB
+    bool legacy_scratch_va = false;
+    // GDS bytes to allocate (AMDGPU_GEM_DOMAIN_GDS) and put on every BO list: the kernel then
+    // programs the VMID's GDS base/size for the submission, so the console's GDS counters
+    // (DMA_DATA/WRITE_DATA and shader ds_* instructions) have somewhere to live. 0 = none.
+    std::uint32_t gds_kib = 0;  // true: scratch VA from libdrm's allocator instead of the fixed 16 TiB
 };
 
 class Device {

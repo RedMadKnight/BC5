@@ -185,3 +185,26 @@ TEST_CASE("RELEASE_MEM without data has no memory operand", "[policy]") {
     REQUIRE(ops.size() == 1);
     REQUIRE(ops[0].first == 0x313600970ull);
 }
+
+TEST_CASE("GDS accesses through the CP are dropped unless allowed", "[policy]") {
+    const auto &p = policy::Policy::builtin();
+    const std::vector<std::uint32_t> src = {
+        0xC0055000u, 0x24300000u, 0u, 0u, 0x00100000u, 0x5u, 0x10u,  // DMA_DATA GDS -> memory
+        0xC0055000u, 0x46100000u, 0u, 0u, 0u, 0u, 0x10u,             // DMA_DATA fill -> GDS
+        0xC0055000u, 0x46300000u, 0u, 0u, 0x00100000u, 0x5u, 0x10u,  // DMA_DATA fill -> memory
+        0xC0033700u, 0x00000200u, 0x40u, 0u, 1u,                    // WRITE_DATA to GDS
+    };
+    std::vector<std::uint32_t> out(src.size());
+    policy::FilterOptions opt;
+    policy::FilterStats st;
+    policy::filter(p, src, out, opt, st);
+    REQUIRE(st.gds_drops == 3);
+    REQUIRE(out[0] == policy::kNop);
+    REQUIRE(out[7] == policy::kNop);
+    REQUIRE(out[14] == 0xC0055000u);
+    REQUIRE(out[21] == policy::kNop);
+    opt.drop_gds = false;
+    policy::FilterStats st2;
+    policy::filter(p, src, out, opt, st2);
+    REQUIRE(st2.gds_drops == 0);
+}

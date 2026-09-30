@@ -45,6 +45,7 @@ struct Device::Impl {
     amdgpu_context_handle ctx = nullptr;
     std::vector<UserptrBo> userptrs;
     ScratchBo scratch;
+    amdgpu_bo_handle gds = nullptr; // OpenOptions::gds_kib
     std::mutex mutex;
 
     // The scratch IB lives at a fixed GPU VA of 16 TiB: inside the 48-bit range the CP can
@@ -132,6 +133,14 @@ std::unique_ptr<Device> Device::open(const std::string &node, const OpenOptions 
         std::fprintf(stderr, "bc5-direct: amdgpu_cs_ctx_create failed\n");
         return nullptr;
     }
+    if (opts.gds_kib != 0) {
+        amdgpu_bo_alloc_request req{};
+        req.alloc_size = static_cast<std::uint64_t>(opts.gds_kib) * 1024;
+        req.preferred_heap = AMDGPU_GEM_DOMAIN_GDS;
+        const int grc = amdgpu_bo_alloc(d->impl_->dev, &req, &d->impl_->gds);
+        std::fprintf(stderr, "bc5-direct: GDS BO %u KiB: %s (%d)\n", opts.gds_kib, grc == 0 ? "ok" : "FAILED", grc);
+        if (grc != 0) d->impl_->gds = nullptr;
+    }
     return d;
 }
 
@@ -142,6 +151,7 @@ Device::~Device() {
         amdgpu_bo_free(u.bo);
     }
     impl_->scratch_free();
+    if (impl_->gds) amdgpu_bo_free(impl_->gds);
     if (impl_->ctx) amdgpu_cs_ctx_free(impl_->ctx);
     if (impl_->dev) amdgpu_device_deinitialize(impl_->dev);
     if (impl_->fd >= 0) close(impl_->fd);
@@ -381,6 +391,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     std::vector<amdgpu_bo_handle> bos;
     bos.reserve(impl_->userptrs.size() + 1);
     bos.push_back(impl_->scratch.bo);
+    if (impl_->gds) bos.push_back(impl_->gds);
     if (include_mappings_) {
         for (const auto &u : impl_->userptrs) bos.push_back(u.bo);
     }

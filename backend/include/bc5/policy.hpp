@@ -53,6 +53,7 @@ struct FilterStats {
     std::uint64_t extra_drops = 0;    // packets dropped by FilterOptions::extra_drop
     std::uint64_t reg_write_drops = 0; // WRITE_DATA with a register destination (DST_SEL 0)
     std::uint64_t unsatisfiable_wait_drops = 0; // WAIT_REG_MEM[64] on a label this IB never writes
+    std::uint64_t gds_drops = 0; // DMA_DATA / WRITE_DATA to or from GDS (FilterOptions::drop_gds)
 };
 
 // Options for the rewrites.
@@ -73,10 +74,15 @@ struct FilterOptions {
     // passing WRITE_DATA/RELEASE_MEM/EVENT_WRITE_EOP/ATOMIC_MEM); other waits are dropped and
     // left to the host. A wait the GPU can never satisfy ends in the kernel's GPU timeout.
     bool self_waits_only = true;
+    // Drop CP packets that read or write GDS (DMA_DATA SRC/DST_SEL 1, WRITE_DATA DST_SEL 2): the
+    // context has no GDS unless a GDS BO is in its BO lists.
+    bool drop_gds = true;
 };
 
 // Draw and dispatch opcodes (the "work" packets), for staging.
 bool is_draw_or_dispatch(std::uint8_t opcode);
+// DMA_DATA with a GDS source or destination, WRITE_DATA to GDS.
+bool is_gds_access(const std::uint32_t *p, std::uint32_t len);
 
 // Memory operands (address, bytes) of one packet, for the mapped-range check.
 std::vector<std::pair<std::uint64_t, std::uint64_t>> memory_operands(const std::uint32_t *p,
