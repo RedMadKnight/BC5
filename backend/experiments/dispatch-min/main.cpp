@@ -8,6 +8,7 @@
 // Hard rule 5 (CLAUDE.md): --submit can hang or reset the machine. It is never run by tests,
 // CI or scripts, and only after the maintainer confirms the box is idle.
 #include "bc5/dispatch_min.hpp"
+#include "bc5/pm4.hpp"
 
 #include <algorithm>
 #include <cstdint>
@@ -35,6 +36,7 @@ struct Options {
     std::uint32_t rsrc2 = bc5::dispatch_min::kIgtRsrc2;
     std::uint32_t vsharp3 = bc5::dispatch_min::kIgtVsharpWord3;
     std::string shader_file; // raw little-endian dwords; empty = the built-in IGT program
+    std::string ib_file;     // --ib-file: submit these raw dwords as the IB instead (replay)
 };
 
 int usage() {
@@ -85,6 +87,18 @@ int dump_ib(const std::string &path) {
     }
     std::printf("wrote %zu dwords to %s\n", ib.size(), path.c_str());
     return 0;
+}
+
+std::vector<std::uint32_t> load_dwords(const std::string &path) {
+    std::vector<std::uint32_t> words;
+    std::ifstream in(path, std::ios::binary);
+    unsigned char b[4];
+    while (in && in.read(reinterpret_cast<char *>(b), 4)) {
+        words.push_back(static_cast<std::uint32_t>(b[0]) | (static_cast<std::uint32_t>(b[1]) << 8) |
+                        (static_cast<std::uint32_t>(b[2]) << 16) |
+                        (static_cast<std::uint32_t>(b[3]) << 24));
+    }
+    return words;
 }
 
 #ifdef BC5_WITH_AMDGPU
@@ -209,7 +223,18 @@ int submit(const Options &o) {
                 "0x%08x\n",
                 bytes, bytes / bc5::dispatch_min::kBytesPerGroup, o.value, o.rsrc1, o.rsrc2,
                 o.vsharp3);
-    const auto ib = bc5::dispatch_min::build_memset_ib(p);
+    std::vector<std::uint32_t> ib = bc5::dispatch_min::build_memset_ib(p);
+    if (!o.ib_file.empty()) {
+        // Replay: the recorded IB as-is (already filtered/padded by the recorder), only the
+        // command BO in the list. The destination check below is meaningless then.
+        ib = load_dwords(o.ib_file);
+        if (ib.empty() || ib.size() * 4 > 4096) {
+            std::fprintf(stderr, "cannot load an IB of 1..1024 dwords from %s\n", o.ib_file.c_str());
+            return 1;
+        }
+        while (ib.size() % 8 != 0) ib.push_back(bc5::pm4::kNopFiller);
+        std::printf("replay: %zu dwords from %s (padded to 8)\n", ib.size(), o.ib_file.c_str());
+    }
     std::memcpy(cmd.cpu, ib.data(), ib.size() * sizeof(std::uint32_t));
 
     amdgpu_context_handle ctx = nullptr;
@@ -243,6 +268,10 @@ int submit(const Options &o) {
     if (rc != 0 || !expired) {
         std::fprintf(stderr, "submit or fence failed (rc %d, expired %u)\n", rc, expired);
         return 1;
+    }
+    if (!o.ib_file.empty()) {
+        std::printf("replay done: fence signalled\n");
+        return 0;
     }
     // CPU reference of the program: every 16-byte record holds the value in all four dwords.
     const auto *out = static_cast<const std::uint32_t *>(dst.cpu);
@@ -287,6 +316,8 @@ int main(int argc, char **argv) {
             o.vsharp3 = hex(argv[++i]);
         } else if (a == "--shader-file" && i + 1 < argc) {
             o.shader_file = argv[++i];
+        } else if (a == "--ib-file" && i + 1 < argc) {
+            o.ib_file = argv[++i];
         } else if (a == "--console") {
             o.rsrc1 = bc5::dispatch_min::kConsoleRsrc1;
             o.rsrc2 = bc5::dispatch_min::kConsoleRsrc2;

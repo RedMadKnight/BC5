@@ -29,7 +29,6 @@ struct UserptrBo {
 
 struct ScratchBo {
     amdgpu_bo_handle bo = nullptr;
-    amdgpu_va_handle va_handle = nullptr;
     std::uint64_t va = 0;
     std::uint64_t size = 0;
     void *cpu = nullptr;
@@ -45,6 +44,13 @@ struct Device::Impl {
     ScratchBo scratch;
     std::mutex mutex;
 
+    // The scratch IB lives in the GPU's high VA range (0xffff8000'0000'0000+, canonical kernel
+    // half on the CPU): no 1:1 userptr mapping of process memory can ever collide with it.
+    // libdrm's general-range allocator hands out low addresses (0x100000000+) that the guest
+    // memory windows of a track-B host also use; that collision hung the BC-250 twice
+    // (experiment 0016).
+    std::uint64_t high_va_base = 0;
+
     bool scratch_reserve(std::uint64_t bytes) {
         if (scratch.bo != nullptr && scratch.size >= bytes) return true;
         scratch_free();
@@ -55,10 +61,21 @@ struct Device::Impl {
         req.phys_alignment = 4096;
         req.preferred_heap = AMDGPU_GEM_DOMAIN_GTT;
         if (amdgpu_bo_alloc(dev, &req, &scratch.bo) != 0) return false;
-        if (amdgpu_va_range_alloc(dev, amdgpu_gpu_va_range_general, size, 4096, 0, &scratch.va,
-                                  &scratch.va_handle, 0) != 0)
+        if (high_va_base == 0) {
+            drm_amdgpu_info_device dev_info{};
+            if (amdgpu_query_info(dev, AMDGPU_INFO_DEV_INFO, sizeof(dev_info), &dev_info) != 0 ||
+                dev_info.high_va_offset == 0) {
+                std::fprintf(stderr, "bc5-direct: no high VA range reported; refusing to use the low range\n");
+                return false;
+            }
+            high_va_base = dev_info.high_va_offset + (1ull << 30); // 1 GiB into the high range
+        }
+        scratch.va = high_va_base;
+        if (amdgpu_bo_va_op(scratch.bo, 0, size, scratch.va, 0, AMDGPU_VA_OP_MAP) != 0) {
+            std::fprintf(stderr, "bc5-direct: scratch map at 0x%llx failed\n",
+                         static_cast<unsigned long long>(scratch.va));
             return false;
-        if (amdgpu_bo_va_op(scratch.bo, 0, size, scratch.va, 0, AMDGPU_VA_OP_MAP) != 0) return false;
+        }
         if (amdgpu_bo_cpu_map(scratch.bo, &scratch.cpu) != 0) return false;
         scratch.size = size;
         return true;
@@ -66,8 +83,7 @@ struct Device::Impl {
 
     void scratch_free() {
         if (scratch.cpu) amdgpu_bo_cpu_unmap(scratch.bo);
-        if (scratch.va) amdgpu_bo_va_op(scratch.bo, 0, scratch.size, scratch.va, 0, AMDGPU_VA_OP_UNMAP);
-        if (scratch.va_handle) amdgpu_va_range_free(scratch.va_handle);
+        if (scratch.va && scratch.bo) amdgpu_bo_va_op(scratch.bo, 0, scratch.size, scratch.va, 0, AMDGPU_VA_OP_UNMAP);
         if (scratch.bo) amdgpu_bo_free(scratch.bo);
         scratch = ScratchBo{};
     }
