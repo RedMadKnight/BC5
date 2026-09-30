@@ -55,6 +55,9 @@ if(BC5_WITH_AMDGPU)
     target_compile_definitions(bc5_backend PUBLIC BC5_WITH_AMDGPU=1)
     target_link_libraries(dispatch-min PRIVATE PkgConfig::LIBDRM_AMDGPU)
     target_link_libraries(userptr-min PRIVATE PkgConfig::LIBDRM_AMDGPU PkgConfig::LIBDRM)
+    # direct-selftest: the bc5::direct submission path with synthetic and recorded IBs, no host.
+    add_executable(direct-selftest experiments/direct-selftest/main.cpp)
+    target_link_libraries(direct-selftest PRIVATE bc5_backend bc5_warnings)
 endif()
 
 if(BC5_BUILD_TESTS)
