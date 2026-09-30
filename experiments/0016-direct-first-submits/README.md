@@ -316,6 +316,16 @@ compute ring `comp_1.0.0` took the machine down on the buffer-fill dispatch that
 GFX ring (F31). The console's queues stay serialised on the GFX ring; cross-queue waits move
 to the host (IB split at the wait, CPU wait on the label, submit the rest).
 
+**Runs 44–45** (20:46–20:48, doorbell-ring targets submitted directly as `acb` IBs, cross-queue
+waits satisfied on the CPU before the submit): run 44 split each IB at such a wait and paid for
+it — two **SQC faults at 0x800000400000**: between the pieces of one IB the ring runs other
+processes' submissions, which leave their own compute SH state behind, and the dispatch after the
+split ran with a foreign `COMPUTE_PGM_LO`. Run 45 waits up front and submits whole IBs: 150 of
+156 OK, 122 compute IBs, no page fault, 19 of 25 CPU waits satisfied at once, 6 timed out (2 s),
+and three timeouts without a fault address, all in instances of the game's 1,336-dword compute
+IB — a compute shader that never finishes (its inputs not ready after a timed-out wait, or a
+label it spins on). 3 flips in 90 s.
+
 **Verdict (interim, end of 2026-09-30).** Steps (a)–(c) passed and (d) reached "frames with draws
 run on the GPU, faults recoverable and learned"; not yet "image on screen" (G3). Open: present
 the GPU's flip buffer; size the hint windows from the surface registers; decode the descriptor
