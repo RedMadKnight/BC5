@@ -55,8 +55,10 @@ struct Device::Impl {
     bool scratch_reserve(std::uint64_t bytes) {
         if (scratch.bo != nullptr && scratch.size >= bytes) return true;
         scratch_free();
-        std::uint64_t size = 1u << 20;
-        while (size < bytes) size <<= 1;
+        // Exactly the pages needed (dispatch-min's 4 KiB command BO is the configuration known
+        // to work; a 1 MiB scratch hung the CP on the second fetch, experiment 0016).
+        std::uint64_t size = (bytes + 4095) & ~std::uint64_t{4095};
+        if (size == 0) size = 4096;
         amdgpu_bo_alloc_request req{};
         req.alloc_size = size;
         req.phys_alignment = 4096;
@@ -233,6 +235,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     const double t0 = now_ms();
     r.rc = amdgpu_cs_submit(impl_->ctx, 0, &req, 1);
     std::uint32_t expired = 0;
+    r.seq_no = req.seq_no;
     if (r.rc == 0) {
         amdgpu_cs_fence fence{};
         fence.context = impl_->ctx;

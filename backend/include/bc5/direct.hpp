@@ -20,6 +20,7 @@ struct SubmitResult {
     int rc = 0;            // libdrm / ioctl return code when not ok
     bool timed_out = false; // fence did not signal within the timeout
     double submit_ms = 0;   // submit + fence wall clock
+    std::uint64_t seq_no = 0; // sequence number the kernel assigned (0 = none)
     policy::FilterStats filter;
 };
 

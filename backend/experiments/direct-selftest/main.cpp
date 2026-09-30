@@ -56,8 +56,9 @@ bool run(bc5::direct::Device &dev, const char *name, const std::vector<std::uint
     std::fflush(stdout);
     journal(line);
     const auto r = dev.submit(ib, opt, 2'000'000'000ull);
-    std::snprintf(line, sizeof(line), "%s rc %d%s %.2f ms (pass %llu rewrite %llu drop %llu)\n",
-                  r.ok ? "OK" : "FAILED", r.rc, r.timed_out ? " TIMEOUT" : "", r.submit_ms,
+    std::snprintf(line, sizeof(line), "%s rc %d%s seq %llu %.2f ms (pass %llu rewrite %llu drop %llu)\n",
+                  r.ok ? "OK" : "FAILED", r.rc, r.timed_out ? " TIMEOUT" : "",
+                  static_cast<unsigned long long>(r.seq_no), r.submit_ms,
                   static_cast<unsigned long long>(r.filter.passed),
                   static_cast<unsigned long long>(r.filter.rewritten),
                   static_cast<unsigned long long>(r.filter.dropped));
