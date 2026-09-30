@@ -6,6 +6,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <span>
 #include <string_view>
 #include <vector>
@@ -46,8 +47,10 @@ private:
 struct FilterStats {
     std::uint64_t packets = 0, passed = 0, rewritten = 0, split = 0, dropped = 0;
     std::uint64_t dwords = 0, dwords_dropped = 0;
-    std::uint64_t cu_mask_rewrites = 0, int_sel_rewrites = 0;
-    std::uint64_t truncated = 0; // packets running past the end (the rest is NOP-ed)
+    std::uint64_t cu_mask_rewrites = 0, int_sel_rewrites = 0, context_control_rewrites = 0;
+    std::uint64_t truncated = 0;      // packets running past the end (the rest is NOP-ed)
+    std::uint64_t unmapped_drops = 0; // packets referencing memory outside the mapped ranges
+    std::uint64_t extra_drops = 0;    // packets dropped by FilterOptions::extra_drop
 };
 
 // Options for the rewrites.
@@ -55,10 +58,23 @@ struct FilterOptions {
     std::uint32_t cu_mask = 0xffffffffu; // ANDed into COMPUTE_STATIC_THREAD_MGMT_SE* and RSRC3.CU_EN
     bool clear_int_sel = true;           // RELEASE_MEM / EVENT_WRITE_EOP: the host fires the events
     bool drop_draws = false;             // staging (ADR 0005 §5c): NOP every draw and dispatch
+    // CONTEXT_CONTROL as RADV/radeonsi emit it (0x80000000 0x80000000: update the enables, load
+    // and shadow nothing). The console's 0x91018003/0x80018003 asks the CP to load and shadow
+    // register state through areas amdgpu never set up on gfx10 (experiment 0016).
+    bool safe_context_control = true;
+    // When set, every packet whose memory operand lies outside the mapped ranges is dropped
+    // instead of faulting the GPU. Called with (address, bytes).
+    std::function<bool(std::uint64_t, std::uint64_t)> mapped;
+    // Opcodes to drop in addition to the table (experiments).
+    std::vector<std::uint8_t> extra_drop;
 };
 
 // Draw and dispatch opcodes (the "work" packets), for staging.
 bool is_draw_or_dispatch(std::uint8_t opcode);
+
+// Memory operands (address, bytes) of one packet, for the mapped-range check.
+std::vector<std::pair<std::uint64_t, std::uint64_t>> memory_operands(const std::uint32_t *p,
+                                                                     std::uint32_t len);
 
 // Copies `src` to `out` (same length, `out.size() >= src.size()`) applying the policy: dropped
 // packets become one-dword NOPs (0xffff1000) so every offset, and therefore every COND_EXEC skip
@@ -68,6 +84,7 @@ std::size_t filter(const Policy &policy, std::span<const std::uint32_t> src,
 
 // PM4 constants shared with the filter and the tests.
 inline constexpr std::uint32_t kNop = 0xffff1000u;
+inline constexpr std::uint8_t kOpContextControl = 0x28;
 inline constexpr std::uint8_t kOpEventWriteEop = 0x47;
 inline constexpr std::uint8_t kOpReleaseMem = 0x49;
 

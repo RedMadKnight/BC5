@@ -22,7 +22,7 @@ op	0x22	pass	COND_EXEC
 op	0x25	pass	DRAW_INDEX_INDIRECT
 op	0x26	pass	INDEX_BASE
 op	0x27	pass	DRAW_INDEX_2
-op	0x28	pass	CONTEXT_CONTROL
+op	0x28	rewrite	CONTEXT_CONTROL: load/shadow enables forced to 0x80000000/0x80000000 (RADV's); the console's 0x91018003/0x80018003 hung the BC-250 (experiment 0016)
 op	0x2a	pass	INDEX_TYPE
 op	0x2d	pass	DRAW_INDEX_AUTO
 op	0x2f	pass	NUM_INSTANCES

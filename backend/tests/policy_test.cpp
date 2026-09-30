@@ -82,6 +82,34 @@ TEST_CASE("drop_draws NOPs draws and dispatches only", "[policy]") {
     REQUIRE(out[8] == 0xC0017600u);
 }
 
+TEST_CASE("CONTEXT_CONTROL is made safe, unmapped operands and extra opcodes are dropped",
+          "[policy]") {
+    const auto &p = policy::Policy::builtin();
+    const std::vector<std::uint32_t> src = {
+        0xC0012800u, 0x91018003u, 0x80018003u,               // CONTEXT_CONTROL (console values)
+        0xC0025F00u, 0xe0008000u, 0x0000000fu, 0x00000000u,  // LOAD_SH_REG from 0xfe0008000
+        0xC0032200u, 0xe00003e0u, 0x0000000fu, 0u, 0x76u,    // COND_EXEC on 0xfe00003e0
+        0xC0012D00u, 3u, 2u,                                 // DRAW_INDEX_AUTO
+    };
+    std::vector<std::uint32_t> out(src.size());
+    policy::FilterOptions opt;
+    opt.mapped = [](std::uint64_t a, std::uint64_t) { return a >= 0xfe0008000ull; };
+    opt.extra_drop = {0x2d};
+    policy::FilterStats st;
+    policy::filter(p, src, out, opt, st);
+    REQUIRE(st.context_control_rewrites == 1);
+    REQUIRE(out[1] == 0x80000000u);
+    REQUIRE(out[2] == 0x80000000u);
+    REQUIRE(out[3] == 0xC0025F00u); // LOAD_SH_REG kept: its table is mapped
+    REQUIRE(st.unmapped_drops == 1); // COND_EXEC target below the mapped range
+    for (std::size_t i = 7; i < 12; ++i) REQUIRE(out[i] == policy::kNop);
+    REQUIRE(st.extra_drops == 1);
+    REQUIRE(out[12] == policy::kNop);
+    const auto ops = policy::memory_operands(&src[3], 4);
+    REQUIRE(ops.size() == 1);
+    REQUIRE(ops[0].first == 0xfe0008000ull);
+}
+
 TEST_CASE("filter NOPs a packet that runs past the end", "[policy]") {
     const auto &p = policy::Policy::builtin();
     const std::vector<std::uint32_t> src = {0xC0027600u, 0x240u, 1u}; // claims 4 dwords, has 3
