@@ -381,6 +381,18 @@ need *no* partition and the compute shaders need one: since the kernel programs 
 GDS/OA/GWS per job from that job's BO list, the next attempt attaches the partition only to
 the compute IBs' submissions.
 
+**Run 53** (22:05, partition on the compute submissions only, shadow for gfx): **reset 22**, DCB #143
+again (142 of 144 before it). The pattern across runs 45–53: #143 passes whenever the compute
+shaders ran *without* a real GDS (45–48, 52) and hangs whenever they ran *with* one (49–51, 53),
+whatever the gfx DCB's own partition. So it is not the partition at draw time but what the
+compute queues produce with real GDS counters: non-zero object/draw counts that the DCB's
+`DRAW_INDEX_INDIRECT` / `DISPATCH_INDIRECT` (22 and 88 per capture) take from memory. With zero
+counters nothing was drawn (the empty flip buffers) and nothing hung; with counters that are
+non-zero but not the console's (no ordered-append state) an indirect draw can ask for a
+gigantic index count and keep the CP busy past the kernel's 10 s, which ends in the full reset.
+Test: run 53's configuration with the indirect draws and dispatches dropped
+(`BC5_DIRECT_DROP_OPS=24,25,16`).
+
 **Verdict (interim, end of 2026-09-30).** Steps (a)–(c) passed and (d) reached "frames with draws
 run on the GPU, faults recoverable and learned"; not yet "image on screen" (G3). Open: present
 the GPU's flip buffer; size the hint windows from the surface registers; decode the descriptor
