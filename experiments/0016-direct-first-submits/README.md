@@ -174,6 +174,18 @@ Journal: `raw/c1b-direct.log`. Flips 9 (21 in b2): the soft CP's `WAIT_REG_MEM64
 (9 here, 19 in b2) pace the game in both modes — a pre-existing soft-CP item, not a direct-mode
 regression.
 
-**Next.** The temporary drops come back one group at a time, each on its own go-ahead:
-(c2) `LOAD_*_INDEX` + `ATOMIC_MEM` on the GPU; (c3) `WAIT_REG_MEM[64]` on the GPU (the soft CP
-skips what the GPU executed); then (d) draws.
+**Step (c2), run 21** (17:12, `nodraw`, `BC5_DIRECT_DROP_OPS=3c,93`: `LOAD_*_INDEX` and `ATOMIC_MEM`
+back on the GPU, `CLEAR_STATE` dropped by policy): **98 of 98 OK, no reset**, 62 frame DCBs (one
+of 9,774 dwords: 560 packets passed, 259 rewritten, 757 dropped of which 228 for unmapped
+operands), 976 mappings. The console's register-shadow loads (context 921 dwords, SH, UCONFIG
+and the per-object tables) and its atomics run on the BC-250's CP. Journal: `raw/c2-direct.log`.
+
+Waits, classified per DCB (`waits.py`, c2 and b2 captures): every `WAIT_REG_MEM` (0x3c; 732 /
+1,599) targets a label written earlier **in the same DCB** by `WRITE_DATA`/`RELEASE_MEM`, so the
+GPU satisfies it itself; `WAIT_REG_MEM64` (0x93) splits into 70 / 154 such "self" waits, 20 / 44
+on guest memory written elsewhere (0x400202d40…, the very addresses the soft CP's 2 s timeouts
+name) and 10 / 22 on the host heap (KytyPlus's flip labels, unmapped, NOP-ed by the filter). A
+wait nobody satisfies is a 10 s kernel reset, so 0x93 stays on the soft CP until the filter can
+pass "self" waits only.
+
+**Next.** (c3) `nodraw` with `BC5_DIRECT_DROP_OPS=93` (`WAIT_REG_MEM` on the GPU); then (d) draws.
