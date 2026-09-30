@@ -465,6 +465,10 @@ forwards the type to the GE. If the GE never learns a primitive type, no draw ra
 everything seen. Test: a prologue with `SET_UCONFIG_REG_INDEX` index 1 = TRILIST before every
 gfx IB (`BC5_DIRECT_PROLOGUE_PRIM=4`); the flip pass's full-screen triangle is a triangle list.
 
+**Run 62** (00:09, `BC5_DIRECT_PROLOGUE_PRIM=4`): no change — flip buffers zero, the flip-buffer CB
+targets 0/1024 after every frame. The primitive-type prologue is not what the flip pass lacks.
+Next: tell clears from rasterised content in the sampled targets (distinct values, min/max).
+
 **Verdict (2026-09-30, end of day).** Steps (a)–(c) passed; (d) and (e) reached "the game's
 frames — draws, dispatches and both queue types — execute on the BC-250 from the track-B host
 without a hang", with 22 machine resets spent on the CP-stall class (stale L2, `CLEAR_STATE`,
