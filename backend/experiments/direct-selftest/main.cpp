@@ -18,6 +18,7 @@
 
 #ifdef BC5_WITH_AMDGPU
 #include <sys/mman.h>
+#include <unistd.h>
 #endif
 
 namespace {
@@ -35,17 +36,34 @@ std::vector<std::uint32_t> load_dwords(const std::string &path) {
 }
 
 #ifdef BC5_WITH_AMDGPU
+std::string g_journal; // --journal FILE: fsync'd line before and after every submit
+
+void journal(const char *text) {
+    if (g_journal.empty()) return;
+    if (FILE *f = std::fopen(g_journal.c_str(), "a")) {
+        std::fputs(text, f);
+        std::fflush(f);
+        fsync(fileno(f));
+        std::fclose(f);
+    }
+}
+
 bool run(bc5::direct::Device &dev, const char *name, const std::vector<std::uint32_t> &ib) {
     bc5::policy::FilterOptions opt;
-    std::printf("%-24s %4zu dwords ... ", name, ib.size());
+    char line[256];
+    std::snprintf(line, sizeof(line), "%-24s %4zu dwords ... ", name, ib.size());
+    std::fputs(line, stdout);
     std::fflush(stdout);
+    journal(line);
     const auto r = dev.submit(ib, opt, 2'000'000'000ull);
-    std::printf("%s rc %d%s %.2f ms (pass %llu rewrite %llu drop %llu)\n", r.ok ? "OK" : "FAILED", r.rc,
-                r.timed_out ? " TIMEOUT" : "", r.submit_ms,
-                static_cast<unsigned long long>(r.filter.passed),
-                static_cast<unsigned long long>(r.filter.rewritten),
-                static_cast<unsigned long long>(r.filter.dropped));
+    std::snprintf(line, sizeof(line), "%s rc %d%s %.2f ms (pass %llu rewrite %llu drop %llu)\n",
+                  r.ok ? "OK" : "FAILED", r.rc, r.timed_out ? " TIMEOUT" : "", r.submit_ms,
+                  static_cast<unsigned long long>(r.filter.passed),
+                  static_cast<unsigned long long>(r.filter.rewritten),
+                  static_cast<unsigned long long>(r.filter.dropped));
+    std::fputs(line, stdout);
     std::fflush(stdout);
+    journal(line);
     return r.ok;
 }
 #endif
@@ -57,14 +75,16 @@ int main(int argc, char **argv) {
     std::vector<std::string> ib_files;
     std::uint64_t map_mib = 0;
     bool submit = false;
+    std::string journal_path;
     for (int i = 1; i < argc; ++i) {
         const std::string_view a = argv[i];
         if (a == "--submit") submit = true;
         else if (a == "--render-node" && i + 1 < argc) node = argv[++i];
         else if (a == "--ib-file" && i + 1 < argc) ib_files.emplace_back(argv[++i]);
         else if (a == "--map-mib" && i + 1 < argc) map_mib = std::stoull(argv[++i]);
+        else if (a == "--journal" && i + 1 < argc) journal_path = argv[++i];
         else {
-            std::fputs("usage: direct-selftest --submit [--render-node PATH] [--ib-file FILE]... [--map-mib N]\n", stderr);
+            std::fputs("usage: direct-selftest --submit [--render-node PATH] [--ib-file FILE]... [--map-mib N] [--journal FILE]\n", stderr);
             return 2;
         }
     }
@@ -74,6 +94,8 @@ int main(int argc, char **argv) {
     }
 #ifdef BC5_WITH_AMDGPU
     std::fputs("direct-selftest: --submit runs on the GPU (GFX ring); a bad submission can hang or reset the machine.\n", stderr);
+    g_journal = journal_path;
+    journal("direct-selftest start\n");
     auto dev = bc5::direct::Device::open(node);
     if (!dev) return 1;
     if (map_mib != 0) {
