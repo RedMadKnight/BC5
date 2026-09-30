@@ -366,10 +366,10 @@ index 5f87e6b..e5c534e 100644
  	CondRemoveWaiter(cond_value, thread);
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..d81120b
+index 0000000..8f2a22a
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,2426 @@
+@@ -0,0 +1,2468 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -1871,8 +1871,12 @@ index 0000000..d81120b
 +	opt.clear_int_sel = true;
 +	opt.drop_draws    = g_stage == Stage::NoDraw;
 +	opt.safe_context_control = std::getenv("BC5_DIRECT_RAW_CONTEXT_CONTROL") == nullptr;
-+	opt.drop_gds             = std::getenv("BC5_DIRECT_GDS_KIB") == nullptr; // with a GDS BO the accesses may pass
-+	opt.gds_shadow_va        = g_dev->gds_shadow_va(); // BC5_DIRECT_GDS_SHADOW: redirected instead
++	// GDS per queue (runs 49–52): the compute IBs get the real partition on their BO list and
++	// their GDS accesses pass; the gfx DCBs get no partition (their shaders hang with one) and
++	// their GDS accesses go to the shadow, or are dropped without one.
++	const bool with_gds      = std::getenv("BC5_DIRECT_GDS_KIB") != nullptr && std::strcmp(kind, "acb") == 0;
++	opt.drop_gds             = !with_gds;
++	opt.gds_shadow_va        = with_gds ? 0 : g_dev->gds_shadow_va();
 +	opt.mapped = [&maps](uint64_t a, uint64_t bytes) { return covered(maps, a, bytes); };
 +	static const std::vector<uint8_t> extra = [] {
 +		std::vector<uint8_t> v;
@@ -1888,6 +1892,44 @@ index 0000000..d81120b
 +		return v;
 +	}();
 +	opt.extra_drop = extra;
++	// Indirect draws and dispatches (runs 53–54): their arguments live in memory the filter does
++	// not read — the counters the compute queues produce. With real GDS they are non-zero and one
++	// of them kept the CP busy past the kernel's timeout. Survey them (journal) and NOP the ones
++	// whose counts exceed BC5_DIRECT_INDIRECT_MAX (default 4M indices/vertices, 65536 groups).
++	// Layouts (PAL): DRAW_INDIRECT/DRAW_INDEX_INDIRECT dword1 = offset from the SET_BASE index-1
++	// base; args {count, instance_count, first, base_vertex, first_instance}; DISPATCH_INDIRECT
++	// dword1 = offset, args {x, y, z}. TODO(verify) SET_BASE index 1 vs the console's usage.
++	{
++		static const uint64_t max_count = std::getenv("BC5_DIRECT_INDIRECT_MAX") ? std::strtoull(std::getenv("BC5_DIRECT_INDIRECT_MAX"), nullptr, 10) : 4u << 20u;
++		static const bool     survey    = std::getenv("BC5_DIRECT_NO_INDIRECT_SURVEY") == nullptr;
++		uint64_t base1 = 0;
++		for (uint32_t q = 0; q < num_dwords;) {
++			const uint32_t h = ib[q];
++			const uint32_t type = h >> 30u;
++			uint32_t len = 1;
++			if (type == 3 || type == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
++			if (q + len > num_dwords) break;
++			const uint32_t op = (h >> 8u) & 0xffu;
++			if (type == 3 && op == 0x11 && len >= 4 && (ib[q + 1] & 0xfu) == 1) {
++				base1 = (ib[q + 2] & ~3u) | (static_cast<uint64_t>(ib[q + 3] & 0xffffu) << 32u);
++			} else if (type == 3 && (op == 0x24 || op == 0x25 || op == 0x16) && len >= 2) {
++				const uint64_t a    = base1 + ib[q + 1];
++				const uint32_t want = op == 0x16 ? 3 : 5;
++				if (covered(maps, a, want * 4)) {
++					const auto* t = reinterpret_cast<const volatile uint32_t*>(a);
++					uint32_t v[5] = {t[0], t[1], t[2], want > 3 ? t[3] : 0u, want > 4 ? t[4] : 0u};
++					const bool insane = op == 0x16 ? (static_cast<uint64_t>(v[0]) * v[1] * v[2] > 65536ull * 64ull)
++					                               : (v[0] > max_count || v[1] > 1024u || static_cast<uint64_t>(v[0]) * v[1] > max_count);
++					if (survey) journal("  indirect op %02x at %u: base 0x%" PRIx64 " +0x%x -> %u %u %u %u %u%s\n", op, q, base1, ib[q + 1], v[0], v[1], v[2], v[3], v[4], insane ? " DROPPED" : "");
++					if (insane) opt.drop_offsets.push_back(q);
++				} else {
++					if (survey) journal("  indirect op %02x at %u: args 0x%" PRIx64 " not mapped, DROPPED\n", op, q, a);
++					opt.drop_offsets.push_back(q);
++				}
++			}
++			q += len;
++		}
++	}
 +	const uint64_t n = g_submits.fetch_add(1);
 +	// Crash journal: a hang takes the machine down before any buffered log reaches the disk, so
 +	// the raw and the filtered IB and a one-line "about to submit" note are written unbuffered
@@ -2031,7 +2073,7 @@ index 0000000..d81120b
 +		}
 +		journal("piecewise done\n");
 +	}
-+	auto r = g_dev->submit(std::span<const uint32_t>(ib, num_dwords), opt, 2'000'000'000ull);
++	auto r = g_dev->submit(std::span<const uint32_t>(ib, num_dwords), opt, 2'000'000'000ull, with_gds);
 +	// -EFAULT is not a GPU hang: a userptr BO in the list lost its pages (the guest unmapped
 +	// or re-protected the range since the last sync). Revalidate the mappings now and retry once.
 +	bool retried = false;
@@ -2040,7 +2082,7 @@ index 0000000..d81120b
 +		sync_mappings(true);
 +		maps    = g_dev->mappings();
 +		retried = true;
-+		r       = g_dev->submit(std::span<const uint32_t>(ib, num_dwords), opt, 2'000'000'000ull);
++		r       = g_dev->submit(std::span<const uint32_t>(ib, num_dwords), opt, 2'000'000'000ull, with_gds);
 +	}
 +	if (!g_dump_dir.empty()) {
 +		char name[512];
