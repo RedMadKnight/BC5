@@ -440,6 +440,12 @@ read-back of the game was NOP-ed as "unmapped" before any GDS rule ran; the coun
 reset and never read through the CP. Fixed with a test. `TODO(verify)`: why a GDS read stops at
 ~3.5–3.7 KiB of the 64 KiB partition.
 
+**Run 60** (23:57, the fixed filter): the game's GDS fills land (`[0x4] = 0`, `[0xc68] = 0` after a
+frame), **no indirect packet dropped** — the counts are 1 (28 `DISPATCH_INDIRECT` 1×1×1, 8
+`DRAW_INDEX_INDIRECT` count 1 / 512 instances) — 232 of 234 submits, no stall. The flip buffers are
+still zero, so the next question is whether any render target receives pixels: at flip the
+host now also samples every CB/DB base the hint mapper saw.
+
 **Verdict (2026-09-30, end of day).** Steps (a)–(c) passed; (d) and (e) reached "the game's
 frames — draws, dispatches and both queue types — execute on the BC-250 from the track-B host
 without a hang", with 22 machine resets spent on the CP-stall class (stale L2, `CLEAR_STATE`,
