@@ -57,9 +57,9 @@ Tasks
 1. Experiment `dev-box-inventory` refresh if anything changed.
 2. Port libdrm `tests/amdgpu` dispatch test into `backend/experiments/dispatch-min`: allocate BOs, load a compute shader binary, `SET_SH_REG` PGM/RSRC, `DISPATCH_DIRECT`, fence, read back. GFX ring only. *Done 2026-09-30, experiment 0008 (IGT sequence, 16 KiB–256 MiB filled on the GFX ring).*
 3. Replace the test shader with a compute shader extracted from a phase-1 capture. Run the same shader through Kyty's recompiler on a PC for comparison. *Done 2026-09-30 for the first captured program (experiment 0013: Sony's fill program = IGT's buffer clear, run with console RSRC1/V# values, bit-exact vs a CPU reference instead of Kyty's recompiler). Replaying the other 19 captured programs needs their input buffers captured.*
-4. Experiment for Q1: `AMDGPU_GEM_USERPTR` + chosen VA; measure.
+4. Experiment for Q1: `AMDGPU_GEM_USERPTR` + chosen VA; measure. *Done 2026-09-30, experiment 0014 (`backend/experiments/userptr-min`): GPU VA == CPU VA works, 64 and 512 MiB, zero copies.*
 
-Gate G2: a captured compute shader runs natively and produces bit-identical output to the recompiled path; userptr mapping verdict recorded.
+Gate G2: a captured compute shader runs natively and produces bit-identical output to the recompiled path; userptr mapping verdict recorded. *Passed 2026-09-30 (experiments 0013 + 0014), with the recorded deviation that the reference for the captured program is a CPU model of its semantics, not Kyty's recompiler.*
 
 ## Phase 3 — Direct submission
 

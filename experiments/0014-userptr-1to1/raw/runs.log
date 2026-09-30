@@ -1,0 +1,25 @@
+# experiments/0014 — userptr-min --submit on the BC-250, 2026-09-30 ~11:30, ~/bc5-work/backend-amdgpu
+
+$ ./userptr-min --submit --mib 64
+userptr-min: --submit runs a shader on the GPU (GFX ring). A bad submission can hang or reset the machine.
+virtual address range: 0x10000..0x800000000000 (high 0xffff800000000000..0xffffffffffbf0000)
+cpu memory: 64 MiB at 0x7ff1e7800000
+userptr BO created in 1.73 ms
+mapped at gpu va 0x7ff1e7800000 (== cpu va) in 0.28 ms
+run 0: gpu fill 0.65 ms (103.51 GB/s), cpu verify 33.41 ms, 0 of 16777216 dwords differ from 0x5a000000
+run 1: gpu fill 0.56 ms (119.42 GB/s), cpu verify 33.17 ms, 0 of 16777216 dwords differ from 0x5a000001
+run 2: gpu fill 0.58 ms (116.45 GB/s), cpu verify 29.16 ms, 0 of 16777216 dwords differ from 0x5a000002
+
+$ ./userptr-min --submit --mib 64 --any-va --repeat 2
+userptr BO created in 2.03 ms
+mapped at gpu va 0x100000000 (!= cpu va) in 0.28 ms
+run 0: gpu fill 0.62 ms (108.05 GB/s), cpu verify 31.92 ms, 0 of 16777216 dwords differ from 0x5a000000
+run 1: gpu fill 0.57 ms (117.74 GB/s), cpu verify 30.59 ms, 0 of 16777216 dwords differ from 0x5a000001
+
+$ ./userptr-min --submit --mib 512 --repeat 2
+userptr BO created in 15.74 ms
+mapped at gpu va 0x7fea93000000 (== cpu va) in 114.09 ms
+run 0: gpu fill 57.57 ms (9.33 GB/s), cpu verify 269.39 ms, 0 of 134217728 dwords differ from 0x5a000000
+run 1: gpu fill 3.58 ms (150.05 GB/s), cpu verify 278.17 ms, 0 of 134217728 dwords differ from 0x5a000001
+
+$ sudo dmesg | tail -3   -> IPv6 MLD lines only

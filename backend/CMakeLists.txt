@@ -32,12 +32,18 @@ target_link_libraries(bc5_backend PRIVATE bc5_warnings)
 add_executable(dispatch-min experiments/dispatch-min/main.cpp)
 target_link_libraries(dispatch-min PRIVATE bc5_backend bc5_warnings)
 
+# userptr-min: phase-2 task 4 (Q1), CPU memory mapped 1:1 into the GPU VA space and written by
+# the memset dispatch. Only --info (no GPU) without BC5_WITH_AMDGPU; --submit as above.
+add_executable(userptr-min experiments/userptr-min/main.cpp)
+target_link_libraries(userptr-min PRIVATE bc5_backend bc5_warnings)
+
 if(BC5_WITH_AMDGPU)
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(LIBDRM_AMDGPU REQUIRED IMPORTED_TARGET libdrm_amdgpu)
     target_link_libraries(bc5_backend PRIVATE PkgConfig::LIBDRM_AMDGPU)
     target_compile_definitions(bc5_backend PUBLIC BC5_WITH_AMDGPU=1)
     target_link_libraries(dispatch-min PRIVATE PkgConfig::LIBDRM_AMDGPU)
+    target_link_libraries(userptr-min PRIVATE PkgConfig::LIBDRM_AMDGPU)
 endif()
 
 if(BC5_BUILD_TESTS)
