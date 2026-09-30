@@ -94,6 +94,10 @@ struct FilterOptions {
     // the console's dispatches carry 0x41 (COMPUTE_SHADER_EN | ORDER_MODE) and their shaders use
     // ds_ordered_count; on the BC-250 the counters came back as garbage (experiment 0016, run 55).
     bool ordered_append_enable = false;
+    // Packets the submission executes before the IB (copied verbatim into the scratch ahead of
+    // it, not filtered): state the console's CP derives itself and the AMD CP needs told, e.g.
+    // VGT_PRIMITIVE_TYPE through SET_UCONFIG_REG_INDEX index 1 (experiment 0016, run 62).
+    std::vector<std::uint32_t> prologue;
     // RELEASE_MEM with EVENT_INDEX 6 and DATA_SEL 0 becomes BOTTOM_OF_PIPE_TS / EVENT_INDEX 5
     // (the GFX ring's ME never completes the former; experiment 0016, run 40).
     bool cs_done_to_bottom_of_pipe = true;

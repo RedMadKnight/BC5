@@ -369,7 +369,9 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     // into what lies past a buffer (experiment 0016). The nested copies let the filter see the
     // console's compute rings, which are rings of INDIRECT_BUFFER packets (step e).
     std::vector<Piece> pieces;
-    pieces.push_back({ib.data(), ib.size(), 0, (ib.size() + 7) & ~std::size_t{7}, 0});
+    const std::size_t pro = opt.prologue.size();
+    const std::size_t pro_padded = (pro + 7) & ~std::size_t{7};
+    pieces.push_back({ib.data(), ib.size(), pro_padded, (ib.size() + 7) & ~std::size_t{7}, 0});
     for (std::size_t k = 0; k < pieces.size() && pieces.size() < 64; ++k) {
         if (pieces[k].depth >= 3) continue;
         std::vector<std::pair<const std::uint32_t *, std::size_t>> targets;
@@ -389,6 +391,8 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
         return r;
     }
     auto *dst = static_cast<std::uint32_t *>(impl_->scratch.cpu);
+    for (std::size_t i = 0; i < pro; ++i) dst[i] = opt.prologue[i];
+    for (std::size_t i = pro; i < pro_padded; ++i) dst[i] = policy::kNop;
     for (std::size_t k = 0; k < pieces.size(); ++k) {
         const Piece &pc = pieces[k];
         policy::FilterStats st;
@@ -438,7 +442,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
             i += len;
         }
     }
-    const std::size_t padded = pieces[0].padded;
+    const std::size_t padded = pro_padded + pieces[0].padded; // the CP runs prologue then IB
 
     std::vector<amdgpu_bo_handle> bos;
     bos.reserve(impl_->userptrs.size() + 1);

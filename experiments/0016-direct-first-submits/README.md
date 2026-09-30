@@ -456,6 +456,15 @@ leaves nothing behind is the open question (the PS5's `SubmitEopFlip` semantics 
 EOP of the *next* submission, presented immediately by the host — is one candidate for the
 sampling and the presentation, not for the memory being zero).
 
+Decoded further: the stages are NGG pass-through (`VGT_SHADER_STAGES_EN`: PRIMGEN_EN,
+PRIMGEN_PASSTHRU_EN), and **`VGT_PRIMITIVE_TYPE` reaches the GPU only through
+`LOAD_UCONFIG_REG_INDEX` tables** (values 7, 6, 4, 1 in the survey) — never through
+`SET_UCONFIG_REG_INDEX` index 1, which is how RADV and radeonsi set it on gfx10 so that the PFP
+forwards the type to the GE. If the GE never learns a primitive type, no draw rasterises, the
+"fully written" scene targets are clears, and the flip pass leaves nothing — consistent with
+everything seen. Test: a prologue with `SET_UCONFIG_REG_INDEX` index 1 = TRILIST before every
+gfx IB (`BC5_DIRECT_PROLOGUE_PRIM=4`); the flip pass's full-screen triangle is a triangle list.
+
 **Verdict (2026-09-30, end of day).** Steps (a)–(c) passed; (d) and (e) reached "the game's
 frames — draws, dispatches and both queue types — execute on the BC-250 from the track-B host
 without a hang", with 22 machine resets spent on the CP-stall class (stale L2, `CLEAR_STATE`,
