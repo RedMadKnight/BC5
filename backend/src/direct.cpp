@@ -164,7 +164,11 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
         r.rc = -1;
         return r;
     }
-    const std::uint64_t bytes = ib.size() * sizeof(std::uint32_t);
+    // The CP fetches IBs in 32-byte chunks: pad to 8 dwords with one-dword NOPs so it never
+    // executes what lies past the game's buffer (a 150-dword console preamble followed by zero
+    // dwords, i.e. type-0 packets, hung the BC-250 in experiment 0016).
+    const std::size_t padded = (ib.size() + 7) & ~std::size_t{7};
+    const std::uint64_t bytes = padded * sizeof(std::uint32_t);
     if (ib.empty() || !impl_->scratch_reserve(bytes)) {
         r.rc = -2;
         return r;
@@ -172,6 +176,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     auto *dst = static_cast<std::uint32_t *>(impl_->scratch.cpu);
     policy::filter(policy::Policy::builtin(), ib, std::span<std::uint32_t>(dst, ib.size()), opt,
                    r.filter);
+    for (std::size_t i = ib.size(); i < padded; ++i) dst[i] = policy::kNop;
 
     std::vector<amdgpu_bo_handle> bos;
     bos.reserve(impl_->userptrs.size() + 1);
@@ -186,7 +191,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
 
     amdgpu_cs_ib_info ib_info{};
     ib_info.ib_mc_address = impl_->scratch.va;
-    ib_info.size = static_cast<std::uint32_t>(ib.size());
+    ib_info.size = static_cast<std::uint32_t>(padded);
     amdgpu_cs_request req{};
     req.ip_type = AMDGPU_HW_IP_GFX;
     req.ring = 0;
