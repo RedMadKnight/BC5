@@ -84,6 +84,9 @@ public:
     bool map_userptr(std::uint64_t cpu_va, std::uint64_t size, bool readonly);
     // GPU VA of the GDS shadow buffer, 0 when none was requested or allocated.
     std::uint64_t gds_shadow_va() const;
+    // CPU view of the GDS shadow (64 KiB), nullptr when none. Also the landing buffer for a GDS
+    // snapshot (a host-built DMA_DATA GDS -> shadow, experiment 0016).
+    volatile std::uint32_t *gds_shadow_cpu() const;
     std::vector<Mapping> mappings() const;
 
     // Filters `ib` into a scratch IB and submits it on the GFX ring with every mapping in the BO

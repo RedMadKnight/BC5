@@ -49,6 +49,7 @@ struct Device::Impl {
     amdgpu_bo_handle oa = nullptr;  // OpenOptions::oa_count
     amdgpu_bo_handle gws = nullptr; // OpenOptions::gws_count
     amdgpu_bo_handle shadow = nullptr; // OpenOptions::gds_shadow, 64 KiB at kShadowVa
+    void *shadow_cpu = nullptr;
     static constexpr std::uint64_t kShadowVa = 0x1000'0400'0000ull; // 64 MiB above the scratch
     std::mutex mutex;
 
@@ -163,7 +164,7 @@ std::unique_ptr<Device> Device::open(const std::string &node, const OpenOptions 
             void *cpu = nullptr;
             if (amdgpu_bo_cpu_map(d->impl_->shadow, &cpu) == 0) {
                 std::memset(cpu, 0, 65536);
-                amdgpu_bo_cpu_unmap(d->impl_->shadow);
+                d->impl_->shadow_cpu = cpu; // kept mapped: snapshots are read through it
             }
             src = amdgpu_bo_va_op_raw(d->impl_->dev, d->impl_->shadow, 0, 65536, Impl::kShadowVa,
                                       AMDGPU_VM_PAGE_READABLE | AMDGPU_VM_PAGE_WRITEABLE, AMDGPU_VA_OP_MAP);
@@ -193,6 +194,7 @@ Device::~Device() {
     if (impl_->gds) amdgpu_bo_free(impl_->gds);
     if (impl_->oa) amdgpu_bo_free(impl_->oa);
     if (impl_->shadow) {
+        if (impl_->shadow_cpu) amdgpu_bo_cpu_unmap(impl_->shadow);
         amdgpu_bo_va_op_raw(impl_->dev, impl_->shadow, 0, 65536, Impl::kShadowVa, 0, AMDGPU_VA_OP_UNMAP);
         amdgpu_bo_free(impl_->shadow);
     }
@@ -278,6 +280,9 @@ bool Device::unmap_userptr(std::uint64_t cpu_va) {
 }
 
 std::uint64_t Device::gds_shadow_va() const { return impl_->shadow ? Impl::kShadowVa : 0; }
+volatile std::uint32_t *Device::gds_shadow_cpu() const {
+    return static_cast<volatile std::uint32_t *>(impl_->shadow_cpu);
+}
 
 std::vector<Mapping> Device::mappings() const {
     std::lock_guard lock(impl_->mutex);

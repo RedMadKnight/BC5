@@ -418,6 +418,12 @@ That also re-reads runs 49–51: the gfx-time partition was not the problem, the
 draws from the un-reset counters were (no clamp yet). Next: the partition on every submission,
 the gfx queue's GDS DMAs with CP_SYNC stripped instead of dropped, the clamp kept.
 
+**Run 57** (23:43, partition on every submission, gfx GDS DMAs without CP_SYNC): stall-free
+(232 of 234) — so a partition at draw time is fine after all — but the counts still grow by one
+per frame (…694 → …700). Either `ds_ordered_count` works on a GDS address the game's fills do
+not cover, or the CP's fills do not land. Next: a GDS snapshot (host DMA of the 64 KiB into the
+shadow, non-zero dwords journaled) after compute IBs.
+
 **Verdict (2026-09-30, end of day).** Steps (a)–(c) passed; (d) and (e) reached "the game's
 frames — draws, dispatches and both queue types — execute on the BC-250 from the track-B host
 without a hang", with 22 machine resets spent on the CP-stall class (stale L2, `CLEAR_STATE`,
