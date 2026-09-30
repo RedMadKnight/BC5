@@ -168,8 +168,12 @@ bool Device::map_userptr(std::uint64_t cpu_va, std::uint64_t size, bool readonly
     u.readonly = readonly;
     int rc = 0;
     if (readonly) {
-        // Same flags as libdrm's helper plus READONLY (amdgpu_drm.h): the kernel then accepts
-        // pages the process cannot write, e.g. the r-x segments of the game's executable.
+        // Same flags as libdrm's helper plus READONLY (amdgpu_drm.h): the kernel accepts them
+        // over r-- anonymous pages (probed on the BC-250, experiment 0016). NOT USABLE YET: the
+        // raw ioctl hands back a GEM handle and libdrm's amdgpu_bo_import refuses KMS handles
+        // (-EPERM), so the BO cannot enter an amdgpu_bo_list; a raw-handle BO list
+        // (amdgpu_bo_list_create_raw) and a raw VA map are needed. Until then the host keeps
+        // the guest's pages writable instead (KYTY_BC5_ALL_RW).
         drm_amdgpu_gem_userptr args{};
         args.addr = cpu_va;
         args.size = size;

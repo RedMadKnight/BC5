@@ -69,3 +69,6 @@ Direct-mode knobs added during phase 3 (experiment 0016): `BC5_DIRECT_STAGE` (`m
 time with a NOP probe after each, for hang isolation), `BC5_DIRECT_SELFTEST=1`. The host revalidates
 its 1:1 mappings against `/proc/self/maps` on every sync, journals every `LOAD_*_REG[_INDEX]` table
 before a submit, and its soft CP skips the memory side effects of packets the GPU executed.
+`KYTY_BC5_ALL_RW=1` keeps every readable guest page CPU-writable (the executable's r-x/r-- segments
+hold shader code and rodata; a writable userptr is the only kind libdrm can put in a BO list, see
+`backend/src/direct.cpp`). `Bc5ForEachMappedRange` (memory.cpp) enumerates the guest's mapped ranges.
