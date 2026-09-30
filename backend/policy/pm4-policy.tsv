@@ -1,0 +1,63 @@
+# BC5 submission policy (ADR 0005): what of a console-format command buffer goes to the AMD CP on
+# the BC-250 as-is, what is NOP-ed (and emulated by the soft CP where it matters), and what is
+# rewritten. Read by tools/bc5-agc (`check`) and backend/src/policy.cpp. Tab-separated:
+#   kind	key	verdict	note
+# kinds: op (type-3 opcode), reg (MMIO dword offset or range, hex), type0, default-op, default-reg
+# verdicts: pass | drop | rewrite
+# Sources: opcode names Mesa sid.h / AMD PAL (tools/bc5-agc/regdb); register offsets Mesa gfx10.json;
+# what the CP accepts from a user IB: RADV and radeonsi emit every "pass" opcode below from user
+# space (Mesa src/amd/vulkan, src/gallium/drivers/radeonsi); the "drop" set is what they never emit
+# or what only Sony's firmware knows (experiments 0011-0013).
+default-op	drop	unknown or unreviewed opcode
+default-reg	pass	context/SH/uconfig writes are user-writable on gfx10 unless listed
+type0	drop	type-0 register writes are not accepted in user IBs
+op	0x10	pass	NOP
+op	0x11	pass	SET_BASE
+op	0x12	pass	CLEAR_STATE
+op	0x13	pass	INDEX_BUFFER_SIZE
+op	0x15	pass	DISPATCH_DIRECT
+op	0x16	pass	DISPATCH_INDIRECT
+op	0x1e	pass	ATOMIC_MEM
+op	0x22	pass	COND_EXEC
+op	0x25	pass	DRAW_INDEX_INDIRECT
+op	0x26	pass	INDEX_BASE
+op	0x27	pass	DRAW_INDEX_2
+op	0x28	pass	CONTEXT_CONTROL
+op	0x2a	pass	INDEX_TYPE
+op	0x2d	pass	DRAW_INDEX_AUTO
+op	0x2f	pass	NUM_INSTANCES
+op	0x33	pass	INDIRECT_BUFFER_CNST
+op	0x35	pass	DRAW_INDEX_OFFSET_2
+op	0x37	pass	WRITE_DATA
+op	0x3c	pass	WAIT_REG_MEM
+op	0x3f	pass	INDIRECT_BUFFER
+op	0x40	pass	COPY_DATA
+op	0x42	pass	PFP_SYNC_ME
+op	0x46	pass	EVENT_WRITE
+op	0x47	rewrite	EVENT_WRITE_EOP: INT_SEL cleared, events fired by the host after the fence
+op	0x49	rewrite	RELEASE_MEM: INT_SEL cleared, events fired by the host after the fence
+op	0x4a	drop	PREAMBLE_CNTL: CP preamble bookkeeping; not emitted by Mesa, dropped until proven harmless
+op	0x50	pass	DMA_DATA
+op	0x58	pass	ACQUIRE_MEM
+op	0x5e	pass	LOAD_UCONFIG_REG
+op	0x5f	pass	LOAD_SH_REG
+op	0x61	pass	LOAD_CONTEXT_REG
+op	0x63	pass	LOAD_SH_REG_INDEX
+op	0x64	pass	LOAD_UCONFIG_REG_INDEX
+op	0x68	pass	SET_CONFIG_REG (per-register policy applies)
+op	0x69	pass	SET_CONTEXT_REG (per-register policy applies)
+op	0x76	pass	SET_SH_REG (per-register policy applies)
+op	0x79	pass	SET_UCONFIG_REG (per-register policy applies)
+op	0x7a	pass	SET_UCONFIG_REG_INDEX
+op	0x8e	drop	GET_LOD_STATS: APU103-only opcode (PAL), unknown to the BC-250's CP firmware
+op	0x93	pass	WAIT_REG_MEM64
+op	0x9b	pass	SET_SH_REG_INDEX (per-register policy applies)
+op	0x9f	pass	LOAD_CONTEXT_REG_INDEX
+reg	0x2c07	rewrite	SPI_SHADER_PGM_RSRC3_PS CU_EN: AND with the BC5 CU mask (Q3, 36/40 policy)
+reg	0x2c47	rewrite	SPI_SHADER_PGM_RSRC3_VS CU_EN
+reg	0x2c87	rewrite	SPI_SHADER_PGM_RSRC3_GS CU_EN
+reg	0x2d07	rewrite	SPI_SHADER_PGM_RSRC3_HS CU_EN
+reg	0x2e16-0x2e17	rewrite	COMPUTE_STATIC_THREAD_MGMT_SE0/SE1: AND with the BC5 CU mask
+reg	0x2e19-0x2e1a	rewrite	COMPUTE_STATIC_THREAD_MGMT_SE2/SE3: AND with the BC5 CU mask
+reg	0x2e80	drop	unresolved SH register mm 0x2e80 (written as 0 with the compute CU masks, experiment 0012)
+reg	0xc342-0xc343	drop	SQ_THREAD_TRACE_USERDATA_2/3: Sony per-packet markers; harmless but pointless, and thread-trace state is privileged

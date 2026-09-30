@@ -1,0 +1,15 @@
+streams: 374  packets: 120182  dwords kept: 627080  dwords dropped: 80390
+  pass     64995
+  rewrite  32197
+  drop     22990
+dropped packets by opcode (3):
+  0x4a PREAMBLE_CNTL                96
+  0x79 SET_UCONFIG_REG              22802
+  0x8e GET_LOD_STATS                92
+rewritten packets by opcode (1):
+  0x49 RELEASE_MEM                  32197
+split SET_*_REG packets by opcode (0):
+dropped register writes (2):
+  mm 0x0c342 SQ_THREAD_TRACE_USERDATA_2           22802
+  mm 0x0c343 SQ_THREAD_TRACE_USERDATA_3           11332
+rewritten register writes (0):

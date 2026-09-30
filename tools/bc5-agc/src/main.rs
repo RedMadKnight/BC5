@@ -10,6 +10,7 @@ use clap::{Parser, Subcommand};
 
 use bc5_agc::decode::{events, format_event, Report};
 use bc5_agc::pm4::{dwords_from_hex_text, dwords_from_le_bytes, parse};
+use bc5_agc::policy::{Check, Policy};
 use bc5_agc::regdb::RegDb;
 
 #[derive(Parser, Debug)]
@@ -44,6 +45,14 @@ enum Cmd {
     Tables {
         /// Register name, `mm:<hex offset>` or `op:<hex opcode>`.
         query: Option<String>,
+    },
+    /// Apply the submission policy (ADR 0005) offline: what would pass, be dropped or rewritten.
+    Check {
+        /// Capture files.
+        files: Vec<PathBuf>,
+        /// Parse the files as hex text.
+        #[arg(long)]
+        hex: bool,
     },
 }
 
@@ -87,6 +96,18 @@ fn main() -> anyhow::Result<()> {
                 report.add(&f.display().to_string(), &parse(&words));
             }
             print!("{}", report.render());
+        }
+        Cmd::Check { files, hex } => {
+            if files.is_empty() {
+                bail!("no capture files given");
+            }
+            let policy = Policy::get();
+            let mut check = Check::default();
+            for f in &files {
+                let words = load(f, hex)?;
+                check.add(policy, &parse(&words));
+            }
+            print!("{}", check.render());
         }
         Cmd::Tables { query } => {
             let db = RegDb::get();

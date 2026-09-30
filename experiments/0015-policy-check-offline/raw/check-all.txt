@@ -1,0 +1,23 @@
+streams: 718  packets: 137181  dwords kept: 714756  dwords dropped: 92272
+  pass     75957
+  rewrite  34670
+  split    148
+  drop     26406
+dropped packets by opcode (4):
+  0x4a PREAMBLE_CNTL                96
+  0x76 SET_SH_REG                   148
+  0x79 SET_UCONFIG_REG              26070
+  0x8e GET_LOD_STATS                92
+rewritten packets by opcode (1):
+  0x49 RELEASE_MEM                  34670
+split SET_*_REG packets by opcode (1):
+  0x76 SET_SH_REG                   148
+dropped register writes (3):
+  mm 0x02e80 (unresolved)                         148
+  mm 0x0c342 SQ_THREAD_TRACE_USERDATA_2           26070
+  mm 0x0c343 SQ_THREAD_TRACE_USERDATA_3           12966
+rewritten register writes (4):
+  mm 0x02e16 COMPUTE_STATIC_THREAD_MGMT_SE0       148
+  mm 0x02e17 COMPUTE_STATIC_THREAD_MGMT_SE1       148
+  mm 0x02e19 COMPUTE_STATIC_THREAD_MGMT_SE2       148
+  mm 0x02e1a COMPUTE_STATIC_THREAD_MGMT_SE3       148
