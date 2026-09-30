@@ -89,11 +89,21 @@ one range during the run (`unmap 0x334f30000 +0x420000 (no longer rw anonymous)`
 thread-stack region) before it could reach a BO list. 12 ms per submit at 950 BOs. `dmesg`: nothing.
 Journal: `raw/b1-run14-direct.log`.
 
-**Next.** (b2) the full preamble (no `BC5_DIRECT_DROP_OPS`), then (c) `nodraw`.
+**Step (b2), run 15** (15:21, `BC5_DIRECT_STAGE=preamble`, no `BC5_DIRECT_DROP_OPS`): **72 of 72
+OK, no reset**, 21 flips, 965 mappings. The console's 150-dword preamble now runs with only the
+policy's own drops: per submit 12 packets pass — `COND_EXEC`, 3 × `LOAD_CONTEXT_REG` (0x61, one of
+19 dwords), 3 × `LOAD_SH_REG` (0x5f, one of 45), 3 × `LOAD_UCONFIG_REG` (0x5e, one of 31),
+2 × `WRITE_DATA` — 2 are rewritten (`CONTEXT_CONTROL` → RADV's) and 2 dropped (`PREAMBLE_CNTL`
+0x4a, first and last packet). So the AMD gfx10 CP on the BC-250 executes Sony's register-shadow
+loads (`LOAD_*_REG` from the game's own tables in guest memory, mapped 1:1) without complaint.
+2.5 ms per submit at 198 BOs, 12 ms at 965. `dmesg`: nothing. Journal: `raw/b2-direct.log`.
+
+**Next.** (c) `BC5_DIRECT_STAGE=nodraw`: the frame DCBs with every draw/dispatch NOP-ed.
 
 **Verdict (interim).** The mechanism is confirmed (F25). **Step (b1) passed**: the console's
 submit-header IBs (with `LOAD_*`/`COND_EXEC`/`WRITE_DATA` NOP-ed) run on the BC-250's GFX ring
 from inside the track-B host, 72 of 72, no reset, with the mapping set following the guest's
-VMAs (F26). (b2), the unfiltered preamble, is next. Nine resets bought a precise negative
+VMAs (F26). **Step (b2) passed** as well: the unfiltered
+preamble, `LOAD_*_REG` shadow loads included, 72 of 72. Step (c), the frame DCBs without draws, is next. Nine resets bought a precise negative
 result (the console's preamble, filtered, is not what hangs the GPU), a crash journal that
 survives, and the rule that any CPU-rewritten IB must be mapped uncached for the GPU.
