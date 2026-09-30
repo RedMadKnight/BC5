@@ -54,6 +54,7 @@ struct FilterStats {
     std::uint64_t reg_write_drops = 0; // WRITE_DATA with a register destination (DST_SEL 0)
     std::uint64_t unsatisfiable_wait_drops = 0; // WAIT_REG_MEM[64] on a label this IB never writes
     std::uint64_t gds_drops = 0; // DMA_DATA / WRITE_DATA to or from GDS (FilterOptions::drop_gds)
+    std::uint64_t gds_rewrites = 0; // GDS accesses redirected to the shadow buffer (gds_shadow_va)
     std::uint64_t cs_done_rewrites = 0; // RELEASE_MEM CS_DONE/index 6 without data -> BOTTOM_OF_PIPE_TS/5
 };
 
@@ -78,6 +79,12 @@ struct FilterOptions {
     // Drop CP packets that read or write GDS (DMA_DATA SRC/DST_SEL 1, WRITE_DATA DST_SEL 3): the
     // context has no GDS unless a GDS BO is in its BO lists.
     bool drop_gds = true;
+    // When non-zero: the CP's GDS accesses are redirected to this 64 KiB memory buffer instead
+    // of being dropped — DMA_DATA GDS→memory / memory→GDS / fill→GDS become memory DMAs against
+    // shadow + GDS offset (the offset is what the packet carries in the GDS-side address field),
+    // WRITE_DATA to GDS writes the shadow. A real GDS partition makes this game's gfx shaders hang
+    // (experiment 0016, runs 49–51); the shadow keeps the counters the game reads back consistent.
+    std::uint64_t gds_shadow_va = 0;
     // RELEASE_MEM with EVENT_INDEX 6 and DATA_SEL 0 becomes BOTTOM_OF_PIPE_TS / EVENT_INDEX 5
     // (the GFX ring's ME never completes the former; experiment 0016, run 40).
     bool cs_done_to_bottom_of_pipe = true;

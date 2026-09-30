@@ -233,3 +233,25 @@ TEST_CASE("RELEASE_MEM CS_DONE without data becomes BOTTOM_OF_PIPE_TS", "[policy
     REQUIRE((out[1] & 0xfffff000u) == (src[1] & 0xfffff000u)); // GCR bits kept
     REQUIRE(out[9] == src[9]);               // the data-carrying one untouched
 }
+
+TEST_CASE("GDS accesses are redirected to the shadow buffer when one is set", "[policy]") {
+    const auto &p = policy::Policy::builtin();
+    const std::vector<std::uint32_t> src = {
+        0xC0055000u, 0x24306000u, 0xc68u, 0u, 0x53b84000u, 0x5u, 0x40000004u, // GDS 0xc68 -> memory
+        0xC0055000u, 0x46106000u, 0u, 0u, 0xc70u, 0u, 0x40000004u,            // fill -> GDS 0xc70
+    };
+    std::vector<std::uint32_t> out(src.size());
+    policy::FilterOptions opt;
+    opt.gds_shadow_va = 0x100004000000ull;
+    opt.mapped = [](std::uint64_t, std::uint64_t) { return true; };
+    policy::FilterStats st;
+    policy::filter(p, src, out, opt, st);
+    REQUIRE(st.gds_rewrites == 2);
+    REQUIRE(st.gds_drops == 0);
+    REQUIRE(((out[1] >> 29) & 3) == 3);            // SRC_SEL TC_L2 memory
+    REQUIRE(out[2] == 0x04000c68u);                // shadow + 0xc68 (low)
+    REQUIRE(out[3] == 0x1000u);                    // shadow (high)
+    REQUIRE(((out[8] >> 20) & 3) == 3);            // DST_SEL TC_L2 memory
+    REQUIRE(out[11] == 0x04000c70u);
+    REQUIRE(out[12] == 0x1000u);
+}

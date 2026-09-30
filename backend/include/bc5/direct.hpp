@@ -61,7 +61,10 @@ struct OpenOptions {
     // GWS instructions need a partition too; with GDS alone the gfx queue's shaders hung
     // (experiment 0016, runs 49–50). 0 = none.
     std::uint32_t oa_count = 0;
-    std::uint32_t gws_count = 0;  // true: scratch VA from libdrm's allocator instead of the fixed 16 TiB
+    std::uint32_t gws_count = 0;
+    // 64 KiB GDS shadow in GTT at a fixed GPU VA (on every BO list); see
+    // policy::FilterOptions::gds_shadow_va. false = none.
+    bool gds_shadow = false;  // true: scratch VA from libdrm's allocator instead of the fixed 16 TiB
 };
 
 class Device {
@@ -79,6 +82,8 @@ public:
     // readonly: AMDGPU_GEM_USERPTR_READONLY (raw ioctl; libdrm's helper has no flag) and a VA
     // mapping without WRITEABLE — the only way to give the GPU the game's r-x/r-- pages.
     bool map_userptr(std::uint64_t cpu_va, std::uint64_t size, bool readonly);
+    // GPU VA of the GDS shadow buffer, 0 when none was requested or allocated.
+    std::uint64_t gds_shadow_va() const;
     std::vector<Mapping> mappings() const;
 
     // Filters `ib` into a scratch IB and submits it on the GFX ring with every mapping in the BO

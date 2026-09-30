@@ -368,6 +368,13 @@ per compute partition 65,536 bytes of GDS, **16 OA counters and 64 GWS resources
 they set the VMID's OA/GWS base and size (as RADV does for NGG streamout). Next: GDS 64 KiB +
 OA 16 + GWS 64 (`BC5_DIRECT_OA=16 BC5_DIRECT_GWS=64`).
 
+**Run 51** (21:50, GDS 64 KiB + OA 16 + GWS 64): **reset 20**, the same DCB #143 (142 of 144 OK
+before it, no stall). A GDS partition of any shape makes this game's gfx shaders hang; the
+partition is off for good (ADR 0005 xvii). The compute queues' GDS counters get a **64 KiB shadow
+in memory** instead: the filter redirects their `DMA_DATA` (GDS→memory, fill→GDS) and
+`WRITE_DATA` to shadow + GDS offset (`gds_rewrites`), so the values the game reads back are
+consistent; the shaders' own GDS instructions stay no-ops as in runs 45–48.
+
 **Verdict (interim, end of 2026-09-30).** Steps (a)–(c) passed and (d) reached "frames with draws
 run on the GPU, faults recoverable and learned"; not yet "image on screen" (G3). Open: present
 the GPU's flip buffer; size the hint windows from the surface registers; decode the descriptor

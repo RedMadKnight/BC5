@@ -333,6 +333,8 @@ std::size_t filter(const Policy &policy, std::span<const std::uint32_t> src,
                     v = Verdict::Drop;
                     stats.unsatisfiable_wait_drops++;
                 }
+            } else if (opt.gds_shadow_va != 0 && is_gds_access(&src[i], len)) {
+                v = Verdict::Rewrite; // redirected below, once the packet is in the output
             } else if ((opt.drop_gds || (opcode3 == 0x50 && (src[i + 1] & 0x80000000u) != 0)) &&
                        is_gds_access(&src[i], len)) {
                 // With a GDS allocation the compute queues' GDS DMAs run (run 49: 118 IBs), but a
@@ -387,6 +389,31 @@ std::size_t filter(const Policy &policy, std::span<const std::uint32_t> src,
                 out[i + 1] = 0x80000000u;
                 out[i + 2] = 0x80000000u;
                 stats.context_control_rewrites++;
+            }
+            if (opt.gds_shadow_va != 0 && is_gds_access(&src[i], len)) {
+                // DMA_DATA: SRC_SEL bits 30:29 (0 SRC_ADDR, 1 GDS, 2 DATA, 3 SRC_ADDR_TC_L2),
+                // DST_SEL bits 21:20 (0 DST_ADDR, 1 GDS, 2 NOWHERE, 3 DST_ADDR_TC_L2); the GDS side's
+                // address field holds the byte offset into GDS (Mesa sid.h, PAL DMA_DATA).
+                if (opcode == 0x50) {
+                    if (((out[i + 1] >> 29) & 3) == 1) {
+                        const std::uint64_t a = opt.gds_shadow_va + (out[i + 2] & 0xffffu);
+                        out[i + 1] = (out[i + 1] & ~(3u << 29)) | (3u << 29);
+                        out[i + 2] = static_cast<std::uint32_t>(a);
+                        out[i + 3] = static_cast<std::uint32_t>(a >> 32);
+                    }
+                    if (((out[i + 1] >> 20) & 3) == 1) {
+                        const std::uint64_t a = opt.gds_shadow_va + (out[i + 4] & 0xffffu);
+                        out[i + 1] = (out[i + 1] & ~(3u << 20)) | (3u << 20);
+                        out[i + 4] = static_cast<std::uint32_t>(a);
+                        out[i + 5] = static_cast<std::uint32_t>(a >> 32);
+                    }
+                } else if (opcode == kOpWriteData && len >= 4) { // DST_SEL 3 (GDS) -> 5 (memory)
+                    const std::uint64_t a = opt.gds_shadow_va + (out[i + 2] & 0xffffu);
+                    out[i + 1] = (out[i + 1] & ~(0xfu << 8)) | (5u << 8);
+                    out[i + 2] = static_cast<std::uint32_t>(a);
+                    out[i + 3] = static_cast<std::uint32_t>(a >> 32);
+                }
+                stats.gds_rewrites++;
             }
             if (opcode == kOpReleaseMem && opt.cs_done_to_bottom_of_pipe && len >= 3 &&
                 ((out[i + 1] >> 8) & 0xf) == 6 && ((out[i + 2] >> 29) & 7) == 0) {

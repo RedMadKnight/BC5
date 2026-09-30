@@ -106,6 +106,11 @@ executes escapes the filter; an unmapped or over-deep target is NOP-ed. `RELEASE
 packet of the same IB writes is not dropped but becomes a split point: the packets before it are
 submitted, the host waits for the label on the CPU (2 s, then continues), the packets after it
 follow. `RELEASE_MEM` CS_DONE/index 6 without data is rewritten to BOTTOM_OF_PIPE_TS/index 5.
+*Amended 2026-09-30 (step e, runs 49–51):* (xvii) no GDS/OA/GWS partition is ever given to the
+context: with one, the game's gfx shaders hang the CP (the ordered-append state the console's
+system sets up is not reproducible from user space). GDS accesses by the CP are redirected to a
+64 KiB shadow buffer in memory (`FilterOptions::gds_shadow_va`), the shaders' GDS instructions
+are no-ops without a partition. The kernel's compute rings are not used either (F31).
 
 **Consequences.** The "packet rewriter" of the roadmap shrinks to a filter with two rewrites; the
 backend's core is the policy table plus the BO/VA mapper, both testable offline. Unknown firmware
