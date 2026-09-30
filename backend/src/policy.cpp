@@ -150,8 +150,8 @@ bool is_gds_access(const std::uint32_t *p, std::uint32_t len) {
     if (op == 0x50 && len >= 7) { // DMA_DATA: SRC_SEL bits 30:29, DST_SEL bits 21:20; 1 = GDS
         return ((p[1] >> 29) & 3) == 1 || ((p[1] >> 20) & 3) == 1;
     }
-    if (op == kOpWriteData && len >= 2) { // WRITE_DATA: DST_SEL bits 11:8; 2 = GDS
-        return ((p[1] >> 8) & 0xf) == 2;
+    if (op == kOpWriteData && len >= 2) { // WRITE_DATA: DST_SEL bits 11:8; 3 = GDS (2 is TC_L2 memory)
+        return ((p[1] >> 8) & 0xf) == 3;
     }
     return false;
 }
@@ -335,7 +335,7 @@ std::size_t filter(const Policy &policy, std::span<const std::uint32_t> src,
                 }
             } else if (opt.drop_gds && is_gds_access(&src[i], len)) {
                 // GDS (global data share) through the CP: DMA_DATA with SRC_SEL/DST_SEL 1 and
-                // WRITE_DATA with DST_SEL 2 (Mesa sid.h V_411_GDS, V_370_GDS). The console's
+                // WRITE_DATA with DST_SEL 3 (Mesa sid.h V_411_GDS, V_370_GDS). The console's
                 // compute IBs fill and read GDS counters this way; our VMID has no GDS
                 // allocation unless a GDS BO is on the BO list (Device::OpenOptions::gds_kib).
                 v = Verdict::Drop;

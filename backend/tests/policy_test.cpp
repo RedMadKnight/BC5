@@ -192,7 +192,7 @@ TEST_CASE("GDS accesses through the CP are dropped unless allowed", "[policy]") 
         0xC0055000u, 0x24300000u, 0u, 0u, 0x00100000u, 0x5u, 0x10u,  // DMA_DATA GDS -> memory
         0xC0055000u, 0x46100000u, 0u, 0u, 0u, 0u, 0x10u,             // DMA_DATA fill -> GDS
         0xC0055000u, 0x46300000u, 0u, 0u, 0x00100000u, 0x5u, 0x10u,  // DMA_DATA fill -> memory
-        0xC0033700u, 0x00000200u, 0x40u, 0u, 1u,                    // WRITE_DATA to GDS
+        0xC0033700u, 0x00000300u, 0x40u, 0u, 1u,                    // WRITE_DATA to GDS (DST_SEL 3)
     };
     std::vector<std::uint32_t> out(src.size());
     policy::FilterOptions opt;

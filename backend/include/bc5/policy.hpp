@@ -74,7 +74,7 @@ struct FilterOptions {
     // passing WRITE_DATA/RELEASE_MEM/EVENT_WRITE_EOP/ATOMIC_MEM); other waits are dropped and
     // left to the host. A wait the GPU can never satisfy ends in the kernel's GPU timeout.
     bool self_waits_only = true;
-    // Drop CP packets that read or write GDS (DMA_DATA SRC/DST_SEL 1, WRITE_DATA DST_SEL 2): the
+    // Drop CP packets that read or write GDS (DMA_DATA SRC/DST_SEL 1, WRITE_DATA DST_SEL 3): the
     // context has no GDS unless a GDS BO is in its BO lists.
     bool drop_gds = true;
 };
