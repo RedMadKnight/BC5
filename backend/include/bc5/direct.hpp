@@ -28,10 +28,16 @@ struct Mapping {
     std::uint64_t size = 0;
 };
 
+// Diagnostic knobs (experiment 0016 bisection); the defaults are the intended configuration.
+struct OpenOptions {
+    bool deduplicate_device = false; // true: plain amdgpu_device_initialize (shares a device already open in the process)
+    bool legacy_scratch_va = false;  // true: scratch VA from libdrm's allocator instead of the fixed 16 TiB
+};
+
 class Device {
 public:
     // Opens a render node; nullptr on failure (message on stderr).
-    static std::unique_ptr<Device> open(const std::string &node);
+    static std::unique_ptr<Device> open(const std::string &node, const OpenOptions &opts = {});
     ~Device();
     Device(const Device &) = delete;
     Device &operator=(const Device &) = delete;

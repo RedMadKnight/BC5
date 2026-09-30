@@ -29,6 +29,7 @@ struct UserptrBo {
 
 struct ScratchBo {
     amdgpu_bo_handle bo = nullptr;
+    amdgpu_va_handle va_handle = nullptr; // only with legacy_scratch_va
     std::uint64_t va = 0;
     std::uint64_t size = 0;
     void *cpu = nullptr;
@@ -49,6 +50,7 @@ struct Device::Impl {
     // hung the BC-250, experiment 0016), above every guest window a track-B host maps 1:1
     // (< 1 TiB) and away from libdrm's low-range allocator (0x100000000+).
     static constexpr std::uint64_t kScratchVa = 0x1000'0000'0000ull;
+    OpenOptions opts;
 
     bool scratch_reserve(std::uint64_t bytes) {
         if (scratch.bo != nullptr && scratch.size >= bytes) return true;
@@ -60,14 +62,20 @@ struct Device::Impl {
         req.phys_alignment = 4096;
         req.preferred_heap = AMDGPU_GEM_DOMAIN_GTT;
         if (amdgpu_bo_alloc(dev, &req, &scratch.bo) != 0) return false;
-        drm_amdgpu_info_device dev_info{};
-        if (amdgpu_query_info(dev, AMDGPU_INFO_DEV_INFO, sizeof(dev_info), &dev_info) != 0 ||
-            kScratchVa + size > dev_info.virtual_address_max) {
-            std::fprintf(stderr, "bc5-direct: scratch VA 0x%llx outside the device's range\n",
-                         static_cast<unsigned long long>(kScratchVa));
-            return false;
+        if (opts.legacy_scratch_va) {
+            if (amdgpu_va_range_alloc(dev, amdgpu_gpu_va_range_general, size, 4096, 0, &scratch.va,
+                                      &scratch.va_handle, 0) != 0)
+                return false;
+        } else {
+            drm_amdgpu_info_device dev_info{};
+            if (amdgpu_query_info(dev, AMDGPU_INFO_DEV_INFO, sizeof(dev_info), &dev_info) != 0 ||
+                kScratchVa + size > dev_info.virtual_address_max) {
+                std::fprintf(stderr, "bc5-direct: scratch VA 0x%llx outside the device's range\n",
+                             static_cast<unsigned long long>(kScratchVa));
+                return false;
+            }
+            scratch.va = kScratchVa;
         }
-        scratch.va = kScratchVa;
         if (amdgpu_bo_va_op(scratch.bo, 0, size, scratch.va, 0, AMDGPU_VA_OP_MAP) != 0) {
             std::fprintf(stderr, "bc5-direct: scratch map at 0x%llx failed\n",
                          static_cast<unsigned long long>(scratch.va));
@@ -81,14 +89,16 @@ struct Device::Impl {
     void scratch_free() {
         if (scratch.cpu) amdgpu_bo_cpu_unmap(scratch.bo);
         if (scratch.va && scratch.bo) amdgpu_bo_va_op(scratch.bo, 0, scratch.size, scratch.va, 0, AMDGPU_VA_OP_UNMAP);
+        if (scratch.va_handle) amdgpu_va_range_free(scratch.va_handle);
         if (scratch.bo) amdgpu_bo_free(scratch.bo);
         scratch = ScratchBo{};
     }
 };
 
-std::unique_ptr<Device> Device::open(const std::string &node) {
+std::unique_ptr<Device> Device::open(const std::string &node, const OpenOptions &opts) {
     std::unique_ptr<Device> d(new Device());
     d->impl_ = std::make_unique<Impl>();
+    d->impl_->opts = opts;
     d->impl_->fd = ::open(node.c_str(), O_RDWR | O_CLOEXEC);
     if (d->impl_->fd < 0) {
         std::perror(node.c_str());
@@ -97,10 +107,14 @@ std::unique_ptr<Device> Device::open(const std::string &node) {
     std::uint32_t major = 0, minor = 0;
     // deduplicate_device = false: libdrm otherwise returns the amdgpu_device (and therefore the
     // VM, VA allocator and fd) already opened by another client of the same node in this process
-    // — RADV, in a track-B host — and every 1:1 mapping and scratch IB of ours lands in that VM
-    // (experiment 0016: four hangs). A private device means a private VM.
-    if (amdgpu_device_initialize2(d->impl_->fd, false, &major, &minor, &d->impl_->dev) != 0) {
-        std::fprintf(stderr, "bc5-direct: amdgpu_device_initialize2 failed on %s\n", node.c_str());
+    // — RADV, in a track-B host — and every 1:1 mapping and scratch IB of ours lands in that VM.
+    // A private device means a private VM. (Diagnostic: OpenOptions::deduplicate_device.)
+    const int rc = opts.deduplicate_device
+                       ? amdgpu_device_initialize(d->impl_->fd, &major, &minor, &d->impl_->dev)
+                       : amdgpu_device_initialize2(d->impl_->fd, false, &major, &minor, &d->impl_->dev);
+    if (rc != 0) {
+        std::fprintf(stderr, "bc5-direct: amdgpu_device_initialize%s failed on %s\n",
+                     opts.deduplicate_device ? "" : "2", node.c_str());
         return nullptr;
     }
     if (amdgpu_cs_ctx_create(d->impl_->dev, &d->impl_->ctx) != 0) {
