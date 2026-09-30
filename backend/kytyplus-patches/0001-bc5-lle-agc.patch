@@ -366,10 +366,10 @@ index 5f87e6b..e5c534e 100644
  	CondRemoveWaiter(cond_value, thread);
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..8f2a22a
+index 0000000..e41722d
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,2468 @@
+@@ -0,0 +1,2575 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -509,6 +509,8 @@ index 0000000..8f2a22a
 +static void submit(const uint32_t* ib, uint32_t num_dwords, const char* kind, bool from_header);
 +// Are every cross-queue wait of a compute IB (labels no earlier packet of it writes) satisfied?
 +static bool acb_ready(const uint32_t* ib, uint32_t num_dwords);
++static void gds_selftest();
++static void gds_snapshot(const char* why);
 +static void init_once();
 +} // namespace Direct
 +
@@ -1235,6 +1237,7 @@ index 0000000..8f2a22a
 +	journal("direct: enabled, stage %s, cu mask 0x%08x, bo list %s\n", stage != nullptr ? stage : "preamble", g_cu_mask,
 +	        std::getenv("BC5_DIRECT_NO_BOLIST") != nullptr ? "scratch only" : "with mappings");
 +	LOGF_COLOR(Log::Color::Green, "[bc5-direct] enabled: stage %s, cu mask 0x%08x\n", stage != nullptr ? stage : "preamble", g_cu_mask);
++	if (std::getenv("BC5_DIRECT_GDS_SELFTEST") != nullptr) gds_selftest();
 +	// BC5_DIRECT_SELFTEST=1: before the game submits anything, run synthetic IBs through the very
 +	// same path (no userptr BOs yet): 8 NOPs, 152 NOPs, 8 x (CONTEXT_CONTROL + NOPs) — the shapes
 +	// that hung the box from inside this process but not standalone (experiment 0016).
@@ -1522,6 +1525,7 @@ index 0000000..8f2a22a
 +}
 +
 +static std::vector<uint64_t> g_hinted; // hint windows already mapped (cleared on a device reopen)
++static std::vector<std::pair<const char*, uint64_t>> g_recent_targets; // the CB/DB bases seen lately (sampled at flip)
 +
 +static void hint_targets(const uint32_t* ib, uint32_t num_dwords) {
 +	std::vector<uint64_t>& hinted = g_hinted;
@@ -1557,6 +1561,14 @@ index 0000000..8f2a22a
 +			const uint32_t ext  = ctx.count(b.hi) ? (ctx[b.hi] & 0xffu) : 0u;
 +			const uint64_t addr = (static_cast<uint64_t>(it->second) << 8u) | (static_cast<uint64_t>(ext) << 40u);
 +			const uint64_t lo   = addr & ~0xffffull;
++			{
++				bool known = false;
++				for (const auto& t: g_recent_targets) known = known || t.second == addr;
++				if (!known) {
++					if (g_recent_targets.size() >= 16) g_recent_targets.erase(g_recent_targets.begin());
++					g_recent_targets.emplace_back(b.name, addr);
++				}
++			}
 +			if (std::find(hinted.begin(), hinted.end(), lo) != hinted.end()) continue;
 +			hinted.push_back(lo);
 +			const Vma* vma = nullptr;
@@ -1699,6 +1711,69 @@ index 0000000..8f2a22a
 +		}
 +		i += len;
 +	}
++}
++
++// GDS snapshot (BC5_DIRECT_GDS_SNAPSHOT=<every n-th compute IB>): a host-built DMA_DATA copies the
++// whole 64 KiB of GDS into the shadow buffer, whose CPU view is then scanned for non-zero dwords
++// — where the ordered-append counters really live and what they hold (experiment 0016, run 57:
++// the counts the game read back grew by one per frame although its GDS fills ran).
++static void gds_snapshot(const char* why) {
++	if (!g_dev || g_dev->gds_shadow_va() == 0 || g_dev->gds_shadow_cpu() == nullptr) return;
++	volatile uint32_t* cpu = g_dev->gds_shadow_cpu();
++	for (uint32_t k = 0; k < 16384; k++) cpu[k] = 0xdeadbeefu; // a value GDS cannot produce by accident
++	// DMA_DATA: header count 5 (7 dwords); control: SRC_SEL GDS (1 << 29), DST_SEL DST_ADDR_TC_L2
++	// (3 << 20), no CP_SYNC; src = GDS byte offset 0; dst = shadow; count 65536 bytes.
++	const uint64_t dst = g_dev->gds_shadow_va();
++	const uint32_t ib[8] = {0xC0055000u, (1u << 29) | (3u << 20), 0u, 0u,
++	                        static_cast<uint32_t>(dst), static_cast<uint32_t>(dst >> 32), 65536u, bc5::policy::kNop};
++	bc5::policy::FilterOptions opt;
++	opt.drop_gds = false;
++	const auto r = g_dev->submit(std::span<const uint32_t>(ib, 8), opt, 2'000'000'000ull, true);
++	journal("gds-snapshot (%s): %s %.2f ms;", why, r.ok ? "OK" : "FAILED", r.submit_ms);
++	if (r.ok) {
++		uint32_t nonzero = 0, untouched = 0, last_written = 0;
++		for (uint32_t k = 0; k < 16384; k++) {
++			const uint32_t v = cpu[k];
++			if (v == 0xdeadbeefu) { untouched++; continue; }
++			last_written = k;
++			if (v != 0) nonzero++;
++		}
++		journal(" copied up to byte 0x%x, nonzero %u untouched %u; [0x4]=0x%x [0x100]=0x%x [0x200]=0x%x [0xc68]=0x%x [0xf000]=0x%x\n",
++		        (last_written + 1) * 4, nonzero, untouched, cpu[1], cpu[0x40], cpu[0x80], cpu[0xc68 / 4], cpu[0xf000 / 4]);
++		static uint32_t seq = 0;
++		if (!g_dump_dir.empty()) {
++			char name[512];
++			std::snprintf(name, sizeof(name), "%s/gds-snapshot-%03u.bin", g_dump_dir.c_str(), seq++);
++			if (FILE* f = std::fopen(name, "wb")) {
++				std::vector<uint32_t> copy(16384);
++				for (uint32_t k = 0; k < 16384; k++) copy[k] = cpu[k];
++				std::fwrite(copy.data(), 4, 16384, f);
++				std::fclose(f);
++			}
++		}
++	} else {
++		journal("\n");
++	}
++}
++
++// BC5_DIRECT_GDS_SELFTEST=1: does the CP write GDS at all? Snapshot, then a DMA_DATA fill to
++// GDS 0x100 (0x11223344) and to 0xf000 (0x55667788), a WRITE_DATA to GDS 0x200 (0x99aabbcc),
++// then a snapshot again — the journal shows which of them landed and how far a GDS read reaches.
++static void gds_selftest() {
++	if (!g_dev || g_dev->gds_shadow_va() == 0) return;
++	gds_snapshot("selftest before");
++	bc5::policy::FilterOptions opt;
++	opt.drop_gds = false;
++	// DMA_DATA fill: SRC_SEL DATA (2 << 29), DST_SEL GDS (1 << 20); src lo = the data; dst lo = GDS byte offset
++	const uint32_t fill1[8] = {0xC0055000u, (2u << 29) | (1u << 20), 0x11223344u, 0u, 0x100u, 0u, 4u, bc5::policy::kNop};
++	const uint32_t fill2[8] = {0xC0055000u, (2u << 29) | (1u << 20), 0x55667788u, 0u, 0xf000u, 0u, 4u, bc5::policy::kNop};
++	// WRITE_DATA: control DST_SEL GDS (3 << 8) | WR_CONFIRM (1 << 20); dst lo = GDS byte offset; one dword
++	const uint32_t wd[8] = {0xC0033700u, (3u << 8) | (1u << 20), 0x200u, 0u, 0x99aabbccu, bc5::policy::kNop, bc5::policy::kNop, bc5::policy::kNop};
++	const auto r1 = g_dev->submit(std::span<const uint32_t>(fill1, 8), opt, 2'000'000'000ull, true);
++	const auto r2 = g_dev->submit(std::span<const uint32_t>(fill2, 8), opt, 2'000'000'000ull, true);
++	const auto r3 = g_dev->submit(std::span<const uint32_t>(wd, 8), opt, 2'000'000'000ull, true);
++	journal("gds-selftest writes: fill@0x100 %s, fill@0xf000 %s, write_data@0x200 %s\n", r1.ok ? "OK" : "FAILED", r2.ok ? "OK" : "FAILED", r3.ok ? "OK" : "FAILED");
++	gds_snapshot("selftest after");
 +}
 +
 +// Submits one IB; `from_header` marks the submit-header IBs (stage "preamble" takes only those).
@@ -1874,9 +1949,23 @@ index 0000000..8f2a22a
 +	// GDS per queue (runs 49–52): the compute IBs get the real partition on their BO list and
 +	// their GDS accesses pass; the gfx DCBs get no partition (their shaders hang with one) and
 +	// their GDS accesses go to the shadow, or are dropped without one.
-+	const bool with_gds      = std::getenv("BC5_DIRECT_GDS_KIB") != nullptr && std::strcmp(kind, "acb") == 0;
++	// BC5_DIRECT_GDS_ALL=1 (run 57): the partition on every submission — the gfx queue resets the
++	// counters (GDS fills) and its shaders read them; runs 49–51 hung not on the partition but on
++	// the giant indirect draws the un-reset counters produced (clamped since run 55).
++	static const bool gds_all = std::getenv("BC5_DIRECT_GDS_ALL") != nullptr;
++	const bool with_gds      = std::getenv("BC5_DIRECT_GDS_KIB") != nullptr && (gds_all || std::strcmp(kind, "acb") == 0);
 +	opt.drop_gds             = !with_gds;
 +	opt.gds_shadow_va        = with_gds ? 0 : g_dev->gds_shadow_va();
++	opt.ordered_append_enable = with_gds && std::getenv("BC5_DIRECT_OA_ENBL") != nullptr;
++	// BC5_DIRECT_PROLOGUE_PRIM=<DI_PT>: every gfx IB starts with SET_UCONFIG_REG_INDEX index 1
++	// VGT_PRIMITIVE_TYPE = <DI_PT>. The console sets the primitive type only through
++	// LOAD_UCONFIG_REG_INDEX tables (values 7, 6, 4, 1 in the captures); the AMD CP wants it
++	// through the indexed packet so the GE learns it (RADV, radeonsi on gfx10). Run 62 tests
++	// whether the draws rasterise at all once the GE has a type (TRILIST = 4).
++	static const long pro_prim = std::getenv("BC5_DIRECT_PROLOGUE_PRIM") ? std::atol(std::getenv("BC5_DIRECT_PROLOGUE_PRIM")) : -1;
++	if (pro_prim >= 0 && std::strcmp(kind, "acb") != 0) {
++		opt.prologue = {0xC0017A00u, (1u << 28) | 0x242u, static_cast<uint32_t>(pro_prim)};
++	}
 +	opt.mapped = [&maps](uint64_t a, uint64_t bytes) { return covered(maps, a, bytes); };
 +	static const std::vector<uint8_t> extra = [] {
 +		std::vector<uint8_t> v;
@@ -2096,6 +2185,11 @@ index 0000000..8f2a22a
 +	}
 +	if (r.ok) {
 +		g_ok++;
++		static const long snap_every = std::getenv("BC5_DIRECT_GDS_SNAPSHOT") ? std::atol(std::getenv("BC5_DIRECT_GDS_SNAPSHOT")) : 0;
++		static long acb_count = 0;
++		if (snap_every > 0 && std::strcmp(kind, "acb") == 0 && num_dwords > 1000 && (++acb_count % snap_every) == 0) {
++			gds_snapshot("after compute IB");
++		}
 +		SoftCp::set_gpu_executed(ib, num_dwords, r.executed_offsets);
 +		for (const auto& nb: r.nested) {
 +			SoftCp::set_gpu_executed(reinterpret_cast<const uint32_t*>(nb.cpu_addr), nb.num_dwords, nb.executed_offsets);
@@ -2753,6 +2847,19 @@ index 0000000..8f2a22a
 +				nonzero += v != 0;
 +			}
 +			Bc5Gc::Direct::journal("flip %d/%d buffer 0x%" PRIx64 " +0x%" PRIx64 ": sum 0x%" PRIx64 " nonzero %" PRIu64 "/%" PRIu64 "\n", handle, index, a, n, sum, nonzero, samples);
++			// Do any render targets or depth buffers receive pixels at all? Sample 4 MiB from each
++			// base the hint mapper saw (run 60: the flip buffer stays zero with sane counters).
++			for (const auto& t: Bc5Gc::Direct::g_recent_targets) {
++				const auto* tw = reinterpret_cast<const volatile uint32_t*>(t.second);
++				uint64_t nz = 0, smp = 0;
++				std::vector<uint32_t> vals;
++				for (uint64_t k = 0; k < (4u << 20u) / 4; k += 1024, smp++) { const uint32_t v = tw[k]; nz += v != 0; vals.push_back(v); }
++				std::sort(vals.begin(), vals.end());
++				const size_t distinct = static_cast<size_t>(std::unique(vals.begin(), vals.end()) - vals.begin());
++				// a clear leaves one value, rasterised content many (run 62: are the draws real?)
++				Bc5Gc::Direct::journal("  target %s 0x%" PRIx64 ": distinct %zu min 0x%08x max 0x%08x, ", t.first, t.second, distinct, vals.front(), vals[distinct - 1]);
++				Bc5Gc::Direct::journal("  target %s 0x%" PRIx64 ": nonzero %" PRIu64 "/%" PRIu64 "\n", t.first, t.second, nz, smp);
++			}
 +			LOGF("[bc5-direct] flip buffer 0x%" PRIx64 ": nonzero samples %" PRIu64 "/%" PRIu64 "\n", a, nonzero, samples);
 +		}
 +	}
