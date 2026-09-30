@@ -66,6 +66,22 @@ constexpr std::uint32_t kMmSpiShaderPgmRsrc3Hs = 0x2d07;
 
 } // namespace
 
+bool is_draw_or_dispatch(std::uint8_t opcode) {
+    switch (opcode) {
+    case 0x15: // DISPATCH_DIRECT
+    case 0x16: // DISPATCH_INDIRECT
+    case 0x25: // DRAW_INDEX_INDIRECT
+    case 0x27: // DRAW_INDEX_2
+    case 0x2d: // DRAW_INDEX_AUTO
+    case 0x35: // DRAW_INDEX_OFFSET_2
+    case 0x38: // DRAW_INDEX_MULTI_AUTO
+    case 0x24: // DRAW_INDIRECT
+        return true;
+    default:
+        return false;
+    }
+}
+
 const char *verdict_name(Verdict v) {
     switch (v) {
     case Verdict::Pass: return "pass";
@@ -192,7 +208,11 @@ std::size_t filter(const Policy &policy, std::span<const std::uint32_t> src,
             i = n;
             break;
         }
-        const Verdict v = policy.packet(&src[i], len);
+        Verdict v = policy.packet(&src[i], len);
+        if (opt.drop_draws && type == 3 &&
+            is_draw_or_dispatch(static_cast<std::uint8_t>((header >> 8) & 0xff))) {
+            v = Verdict::Drop;
+        }
         switch (v) {
         case Verdict::Drop:
             for (std::uint32_t k = 0; k < len; ++k) out[i + k] = kNop;

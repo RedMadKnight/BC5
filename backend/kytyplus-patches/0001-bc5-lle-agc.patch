@@ -1,3 +1,26 @@
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index db25107..1ab017f 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -595,6 +595,18 @@ endif()
+ 
+ 
+ add_executable(kyty_emulator main.cpp platformDispatch.cpp shadps4Embedder.cpp ${kyty_emulator_src})
++
++# BC5 (github.com/RedMadKnight/BC5): direct GPU submission behind /dev/gc, optional.
++set(KYTY_BC5_BACKEND_SRC "" CACHE PATH "BC5 backend source dir (has include/bc5)")
++set(KYTY_BC5_BACKEND_BUILD "" CACHE PATH "BC5 backend build dir (has libbc5_backend.a, built with BC5_WITH_AMDGPU)")
++if(KYTY_BC5_BACKEND_SRC AND KYTY_BC5_BACKEND_BUILD)
++	find_package(PkgConfig REQUIRED)
++	pkg_check_modules(BC5_LIBDRM REQUIRED IMPORTED_TARGET libdrm_amdgpu libdrm)
++	target_include_directories(kyty_emulator PRIVATE ${KYTY_BC5_BACKEND_SRC}/include)
++	target_link_libraries(kyty_emulator ${KYTY_BC5_BACKEND_BUILD}/libbc5_backend.a PkgConfig::BC5_LIBDRM)
++	target_compile_definitions(kyty_emulator PRIVATE KYTY_BC5_DIRECT=1)
++	message(STATUS "BC5 direct submission: enabled (${KYTY_BC5_BACKEND_BUILD})")
++endif()
+ # Build the generated FSR shader headers before any kyty_emulator source compiles
+ # (fsrUpscaler.cpp #includes them and is GLOB-collected, so it needs an explicit edge).
+ add_dependencies(kyty_emulator fsr_shaders)
 diff --git a/src/graphics/guest_gpu/graphicsRun.cpp b/src/graphics/guest_gpu/graphicsRun.cpp
 index 2918b0d..e634a45 100644
 --- a/src/graphics/guest_gpu/graphicsRun.cpp
@@ -102,6 +125,57 @@ index 02fc0fc..6953fcf 100644
  			target = target & ~(0x4000ull - 1ull);
  			LOGF("guest memory total = %llu MiB\n", static_cast<unsigned long long>(target / megabyte));
  			return target;
+diff --git a/src/kernel/memoryAddressSpace.inc b/src/kernel/memoryAddressSpace.inc
+index 9ea25b0..dd7f565 100644
+--- a/src/kernel/memoryAddressSpace.inc
++++ b/src/kernel/memoryAddressSpace.inc
+@@ -31,6 +31,12 @@ static bool CoalescePlaceholders(uint64_t vaddr, uint64_t size) {
+ 
+ class GuestBackingStore {
+ public:
++	// BC5: anonymous guest views (see patch notes); the memfd stays as the size bookkeeping.
++	static bool Bc5AnonBacking() {
++		static const bool v = std::getenv("KYTY_BC5_ANON_BACKING") != nullptr;
++		return v;
++	}
++
+ 	enum class FailureReason {
+ 		None,
+ 		BackingUnavailable,
+@@ -162,6 +168,9 @@ public:
+ 		if (!IsAvailable() || !RangeOk(backing_offset, size)) {
+ 			return false;
+ 		}
++		if (Bc5AnonBacking()) {
++			return true; // a fresh anonymous view is zero already
++		}
+ 		std::memset(m_backing_base + backing_offset, 0, size);
+ 		return true;
+ 	}
+@@ -469,7 +478,8 @@ private:
+ 			EXIT_IF(!FindContainingUnlocked(current, 1, &entry));
+ 			const auto bytes  = std::min(end, entry.vaddr + entry.size) - current;
+ 			const auto offset = entry.backing_offset + current - entry.vaddr;
+-			transfer(m_backing_base + offset, current - vaddr, static_cast<size_t>(bytes));
++			transfer(Bc5AnonBacking() ? reinterpret_cast<uint8_t*>(current) : m_backing_base + offset,
++			         current - vaddr, static_cast<size_t>(bytes));
+ 			current += bytes;
+ 		}
+ 		return true;
+@@ -587,8 +597,11 @@ private:
+ 
+ 	void* MapView(uint64_t vaddr, uint64_t size, uint64_t backing_offset, VirtualMemory::Mode mode,
+ 	              FailureReason* failure_reason) {
+-		void* ptr = mmap(reinterpret_cast<void*>(vaddr), size, GetProtect(mode),
+-		                 MAP_SHARED | MAP_FIXED, m_fd, static_cast<off_t>(backing_offset));
++		void* ptr = Bc5AnonBacking()
++		                ? mmap(reinterpret_cast<void*>(vaddr), size, GetProtect(mode),
++		                       MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0)
++		                : mmap(reinterpret_cast<void*>(vaddr), size, GetProtect(mode),
++		                       MAP_SHARED | MAP_FIXED, m_fd, static_cast<off_t>(backing_offset));
+ 		if (ptr == MAP_FAILED) {
+ 			SetFailure(failure_reason, FailureReason::FixedMapViewFailed);
+ 			return nullptr;
 diff --git a/src/kernel/pthread.cpp b/src/kernel/pthread.cpp
 index 5f87e6b..e5c534e 100644
 --- a/src/kernel/pthread.cpp
@@ -121,10 +195,10 @@ index 5f87e6b..e5c534e 100644
  	CondRemoveWaiter(cond_value, thread);
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..07ed74a
+index 0000000..1c27ec7
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,1355 @@
+@@ -0,0 +1,1561 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -154,9 +228,16 @@ index 0000000..07ed74a
 +#include "libs/libs.h"
 +#include "loader/symbolDatabase.h"
 +
++#if defined(KYTY_BC5_DIRECT)
++#include "bc5/direct.hpp"
++#include <sys/mman.h>
++#endif
++
 +#include <algorithm>
 +#include <atomic>
 +#include <chrono>
++#include <fstream>
++#include <memory>
 +#include <cinttypes>
 +#include <cstdio>
 +#include <cstdlib>
@@ -249,6 +330,12 @@ index 0000000..07ed74a
 +// Packet layouts follow RPCSX rpcsx/gpu/Pipe.cpp @ e8ae148 (GPL-2.0) and AMD's PM4 documentation.
 +// BC5_GC_MODE=kyty forwards the buffers to KytyPlus's interpreter instead.
 +// ---------------------------------------------------------------------------------------------
++namespace Direct {
++// Defined below; the queue consumer hands ring slices to the direct path as well.
++static void submit(const uint32_t* ib, uint32_t num_dwords, const char* kind, bool from_header);
++static void init_once();
++} // namespace Direct
++
 +namespace SoftCp {
 +
 +constexpr uint32_t IT_NOP                  = 0x10;
@@ -756,6 +843,18 @@ index 0000000..07ed74a
 +				continue;
 +			}
 +			const auto* ring = reinterpret_cast<const uint32_t*>(q.ring_base);
++			// Direct mode: the ring slice [rptr, wptr) is itself a valid IB of INDIRECT_BUFFER
++			// packets (no wrap handling yet: a slice that wraps is submitted in two parts).
++			if (wptr > s.rptr && wptr - s.rptr <= n) {
++				const uint32_t a = static_cast<uint32_t>(s.rptr % n);
++				const uint32_t b = static_cast<uint32_t>(wptr % n);
++				if (b > a) {
++					Direct::submit(ring + a, b - a, "ring", false);
++				} else {
++					Direct::submit(ring + a, n - a, "ring", false);
++					if (b != 0) Direct::submit(ring, b, "ring", false);
++				}
++			}
 +			uint32_t guard = 0;
 +			while (s.rptr != wptr && guard++ < 4096) {
 +				const uint32_t  off    = static_cast<uint32_t>(s.rptr % n);
@@ -805,6 +904,184 @@ index 0000000..07ed74a
 +	return soft;
 +}
 +
++// ---------------------------------------------------------------------------------------------
++// Direct submission (ADR 0005), BC5_GC_MODE=direct. The guest's resident anonymous memory is
++// mapped 1:1 into the GPU as userptr BOs (KYTY_BC5_ANON_BACKING=1 required: amdgpu refuses
++// file-backed pages), every IB the game submits goes through the policy filter to the GFX ring,
++// and the soft CP still runs afterwards for the events and labels. Staging via BC5_DIRECT_STAGE:
++//   preamble  only the IBs of the submit header (context control + state preamble)
++//   nodraw    every IB, draws and dispatches NOP-ed
++//   all       every IB
++// A fence timeout (2 s) wedges the device: nothing more is submitted, the soft CP carries on.
++// ---------------------------------------------------------------------------------------------
++namespace Direct {
++
++enum class Stage { Off, Preamble, NoDraw, All };
++
++#if defined(KYTY_BC5_DIRECT)
++static std::unique_ptr<bc5::direct::Device> g_dev;
++static std::mutex                           g_dev_mutex;
++static Stage                                g_stage = Stage::Off;
++static uint32_t                             g_cu_mask = 0xffffffffu;
++static std::atomic<uint64_t>                g_submits {0};
++static std::atomic<uint64_t>                g_ok {0};
++static std::atomic<uint64_t>                g_bytes_mapped {0};
++static uint64_t                             g_last_sync_ns = 0;
++
++static void init_once() {
++	std::lock_guard lock(g_dev_mutex);
++	static bool done = false;
++	if (done) {
++		return;
++	}
++	done = true;
++	const char* mode = std::getenv("BC5_GC_MODE");
++	if (mode == nullptr || std::strcmp(mode, "direct") != 0) {
++		return;
++	}
++	if (std::getenv("KYTY_BC5_ANON_BACKING") == nullptr) {
++		LOGF_COLOR(Log::Color::Red, "[bc5-direct] BC5_GC_MODE=direct needs KYTY_BC5_ANON_BACKING=1 (userptr rejects file-backed pages); staying on the soft CP\n");
++		return;
++	}
++	const char* stage = std::getenv("BC5_DIRECT_STAGE");
++	if (stage == nullptr || std::strcmp(stage, "preamble") == 0) {
++		g_stage = Stage::Preamble;
++	} else if (std::strcmp(stage, "nodraw") == 0) {
++		g_stage = Stage::NoDraw;
++	} else if (std::strcmp(stage, "all") == 0) {
++		g_stage = Stage::All;
++	} else {
++		LOGF_COLOR(Log::Color::Red, "[bc5-direct] unknown BC5_DIRECT_STAGE=%s; staying on the soft CP\n", stage);
++		return;
++	}
++	if (const char* m = std::getenv("BC5_DIRECT_CU_MASK"); m != nullptr && *m != 0) {
++		g_cu_mask = static_cast<uint32_t>(std::strtoul(m, nullptr, 16));
++	}
++	const char* node = std::getenv("BC5_DIRECT_NODE");
++	g_dev = bc5::direct::Device::open(node != nullptr ? node : "/dev/dri/renderD128");
++	if (!g_dev) {
++		LOGF_COLOR(Log::Color::Red, "[bc5-direct] device open failed; staying on the soft CP\n");
++		g_stage = Stage::Off;
++		return;
++	}
++	LOGF_COLOR(Log::Color::Green, "[bc5-direct] enabled: stage %s, cu mask 0x%08x\n", stage != nullptr ? stage : "preamble", g_cu_mask);
++}
++
++// Maps every resident run of the guest's anonymous rw memory that is not mapped yet. Guest
++// windows: KytyPlus keeps guest memory in [0x40000, 0xfbffffffff]; the emulator's own heap and
++// libraries live above. mincore() keeps untouched reservations out (userptr would otherwise
++// materialise them).
++static void sync_mappings() {
++	const uint64_t now = SoftCp::now_ns();
++	if (now - g_last_sync_ns < 50'000'000ull) { // at most every 50 ms
++		return;
++	}
++	g_last_sync_ns = now;
++	constexpr uint64_t kGuestMin = 0x40000ull, kGuestMax = 0xfbffffffffull;
++	constexpr uint64_t kPage = 4096, kGrain = 65536;
++	std::vector<bc5::direct::Mapping> have = g_dev->mappings();
++	auto already = [&](uint64_t a, uint64_t b) {
++		for (const auto& m: have) {
++			if (a >= m.va && b <= m.va + m.size) return true;
++		}
++		return false;
++	};
++	std::ifstream maps("/proc/self/maps");
++	std::string   line;
++	std::vector<unsigned char> vec;
++	int added = 0;
++	while (std::getline(maps, line)) {
++		uint64_t start = 0, end = 0;
++		char     perms[8] = {};
++		uint64_t offset = 0;
++		char     dev[16] = {};
++		uint64_t inode = 0;
++		if (std::sscanf(line.c_str(), "%" SCNx64 "-%" SCNx64 " %7s %" SCNx64 " %15s %" SCNu64, &start, &end, perms, &offset, dev, &inode) < 6) {
++			continue;
++		}
++		if (perms[0] != 'r' || perms[1] != 'w' || inode != 0 || start < kGuestMin || end > kGuestMax + 1) {
++			continue;
++		}
++		if (line.find('/') != std::string::npos || line.find('[') != std::string::npos) {
++			continue; // file-backed or [stack]/[heap]
++		}
++		const size_t pages = static_cast<size_t>((end - start) / kPage);
++		vec.assign(pages, 0);
++		if (mincore(reinterpret_cast<void*>(start), end - start, vec.data()) != 0) {
++			continue;
++		}
++		// Resident runs at 64 KiB granularity.
++		size_t i = 0;
++		while (i < pages) {
++			while (i < pages && (vec[i] & 1) == 0) i++;
++			if (i >= pages) break;
++			size_t j = i;
++			while (j < pages && (vec[j] & 1) != 0) j++;
++			uint64_t a = start + (i * kPage / kGrain) * kGrain;
++			uint64_t b = start + ((j * kPage + kGrain - 1) / kGrain) * kGrain;
++			if (b > end) b = end;
++			if (!already(a, b)) {
++				// Trim to the part not yet mapped from the front/back (overlaps are rejected).
++				bool ok = true;
++				for (const auto& m: have) {
++					if (a < m.va + m.size && m.va < b) { // partial overlap: keep the outside pieces
++						if (m.va > a && g_dev->map_userptr(a, m.va - a)) { g_bytes_mapped += m.va - a; added++; }
++						if (m.va + m.size < b) { a = m.va + m.size; } else { ok = false; }
++						break;
++					}
++				}
++				if (ok && b > a && g_dev->map_userptr(a, b - a)) {
++					g_bytes_mapped += b - a;
++					added++;
++					have.push_back({a, b - a});
++				}
++			}
++			i = j;
++		}
++	}
++	if (added != 0) {
++		LOGF("[bc5-direct] mappings: +%d, %zu total, %.1f MiB\n", added, have.size(), static_cast<double>(g_bytes_mapped.load()) / (1024.0 * 1024.0));
++	}
++}
++
++// Submits one IB; `from_header` marks the submit-header IBs (stage "preamble" takes only those).
++static void submit(const uint32_t* ib, uint32_t num_dwords, const char* kind, bool from_header) {
++	if (g_stage == Stage::Off || !g_dev || ib == nullptr || num_dwords == 0) {
++		return;
++	}
++	if (g_stage == Stage::Preamble && !from_header) {
++		return;
++	}
++	std::lock_guard lock(g_dev_mutex);
++	if (g_dev->wedged()) {
++		return;
++	}
++	sync_mappings();
++	bc5::policy::FilterOptions opt;
++	opt.cu_mask       = g_cu_mask;
++	opt.clear_int_sel = true;
++	opt.drop_draws    = g_stage == Stage::NoDraw;
++	const auto r = g_dev->submit(std::span<const uint32_t>(ib, num_dwords), opt, 2'000'000'000ull);
++	const uint64_t n = g_submits.fetch_add(1);
++	if (r.ok) g_ok++;
++	if (!r.ok || n < 40 || (n & 0x3fu) == 0) {
++		LOGF_COLOR(r.ok ? Log::Color::Green : Log::Color::Red,
++		           "[bc5-direct] submit #%" PRIu64 " %s %u dwords: %s rc %d %s %.2f ms; filter: %" PRIu64 " pass %" PRIu64 " rewrite %" PRIu64 " split %" PRIu64 " drop (%" PRIu64 " dwords) cu %" PRIu64 " int %" PRIu64 " trunc %" PRIu64 "; ok so far %" PRIu64 "\n",
++		           n, kind, num_dwords, r.ok ? "OK" : "FAILED", r.rc, r.timed_out ? "TIMEOUT" : "", r.submit_ms,
++		           r.filter.passed, r.filter.rewritten, r.filter.split, r.filter.dropped, r.filter.dwords_dropped,
++		           r.filter.cu_mask_rewrites, r.filter.int_sel_rewrites, r.filter.truncated, g_ok.load());
++	}
++	if (r.timed_out) {
++		LOGF_COLOR(Log::Color::Red, "[bc5-direct] fence timeout: device wedged, no further submits (soft CP continues)\n");
++	}
++}
++#else
++static void init_once() {}
++static void submit(const uint32_t*, uint32_t, const char*, bool) {}
++#endif
++
++} // namespace Direct
++
 +// One entry of a submit list is an IT_INDIRECT_BUFFER packet: header 0xc0023f00, address lo, hi,
 +// IB_SIZE in dwords (bits 0..19). RPCSX hands these to its PM4 interpreter as-is; KytyPlus wants the
 +// DCB pointer and size, so the packet is unwrapped here.
@@ -818,6 +1095,7 @@ index 0000000..07ed74a
 +	     pkt[0], addr, size);
 +	auto* dcb = reinterpret_cast<uint32_t*>(addr);
 +	dump_cb(kind, dcb, size);
++	Direct::submit(dcb, size, kind, std::strcmp(kind, "hib") == 0);
 +	if (use_soft_cp()) {
 +		SoftCp::submit(dcb, size, kind);
 +	} else {
@@ -830,6 +1108,7 @@ index 0000000..07ed74a
 +		return;
 +	}
 +	dump_cb(kind, dwords, num);
++	Direct::submit(dwords, num, kind, std::strcmp(kind, "cc") == 0);
 +	if (use_soft_cp()) {
 +		SoftCp::submit(dwords, num, kind);
 +	} else {
@@ -878,7 +1157,7 @@ index 0000000..07ed74a
 +			     a->unk0, a->context_control[0], a->context_control[1], a->context_control[2]);
 +			submit_raw(a->context_control, 3, "cc");
 +			for (int i = 0; i < 3; i++) {
-+				submit_ib_packet(a->cmds + i * 4, "dcb");
++				submit_ib_packet(a->cmds + i * 4, "hib"); // header IBs: state preamble + the 2-dword IB
 +			}
 +			a->status = 0;
 +			return 0;
@@ -1081,6 +1360,7 @@ index 0000000..07ed74a
 +	}
 +	int err = 0;
 +	if (dev == "/dev/gc") {
++		Bc5Gc::Direct::init_once();
 +		err = Bc5Gc::gc_ioctl(request, argp);
 +	} else if (dev == "/dev/dipsw") {
 +		err = Bc5Gc::dipsw_ioctl(request, argp);

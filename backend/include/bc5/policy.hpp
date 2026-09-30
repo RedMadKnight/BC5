@@ -54,7 +54,11 @@ struct FilterStats {
 struct FilterOptions {
     std::uint32_t cu_mask = 0xffffffffu; // ANDed into COMPUTE_STATIC_THREAD_MGMT_SE* and RSRC3.CU_EN
     bool clear_int_sel = true;           // RELEASE_MEM / EVENT_WRITE_EOP: the host fires the events
+    bool drop_draws = false;             // staging (ADR 0005 §5c): NOP every draw and dispatch
 };
+
+// Draw and dispatch opcodes (the "work" packets), for staging.
+bool is_draw_or_dispatch(std::uint8_t opcode);
 
 // Copies `src` to `out` (same length, `out.size() >= src.size()`) applying the policy: dropped
 // packets become one-dword NOPs (0xffff1000) so every offset, and therefore every COND_EXEC skip

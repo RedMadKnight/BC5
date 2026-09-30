@@ -27,8 +27,29 @@ BC5_GC_DUMP_DIR=$HOME/bc5-data/captures/<run>/gc \
 kyty_emulator --game $HOME/bc5-data/mnt/PPSA21567
 ```
 
+Direct submission (ADR 0005) additionally needs the BC5 backend built with clang in the same
+container and linked in:
+
+```bash
+cmake -S ~/src/bc5/backend -B ~/bc5-work/backend-ubuntu -G Ninja -DCMAKE_C_COMPILER=clang \
+  -DCMAKE_CXX_COMPILER=clang++ -DCMAKE_BUILD_TYPE=Release -DBC5_WITH_AMDGPU=ON -DBC5_BUILD_TESTS=OFF
+cmake --build ~/bc5-work/backend-ubuntu -j8
+cmake ~/bc5-work/kytyplus-build -DKYTY_BC5_BACKEND_SRC=~/src/bc5/backend \
+  -DKYTY_BC5_BACKEND_BUILD=~/bc5-work/backend-ubuntu   # defines KYTY_BC5_DIRECT
+```
+
 Environment:
 
+- `KYTY_BC5_ANON_BACKING=1` (patch): guest views are anonymous memory instead of views of the
+  shared memfd. Required by the direct mode (amdgpu refuses writable userptr BOs over file-backed
+  pages, experiment 0016); costs: no writable alias, direct memory does not persist across
+  unmap/remap, no physical aliasing.
+- `BC5_GC_MODE` (patch): `soft` (default: the soft CP, nothing reaches the GPU), `direct` (ADR
+  0005: userptr 1:1 + policy filter + GFX ring; needs the build above and `KYTY_BC5_ANON_BACKING=1`;
+  **submits to the GPU** — hard rule 5, maintainer's go-ahead), `kyty` (KytyPlus's own interpreter).
+- `BC5_DIRECT_STAGE` (patch): `preamble` (default; only the submit-header IBs), `nodraw` (every IB,
+  draws and dispatches NOP-ed), `all`. `BC5_DIRECT_CU_MASK` (hex, default `ffffffff`),
+  `BC5_DIRECT_NODE` (render node).
 - `SHADPS4_SYSMODULES_PACK_DIR` (KytyPlus): directory whose `.sprx` take precedence over the HLE.
 - `KYTY_GUEST_MEMORY_MB` (patch): guest memory size; ASTRO BOT needs ≈ 12.2 GB of direct memory.
 - `BC5_GC_DUMP_DIR`, `BC5_GC_DUMP_LIMIT` (patch): write every command buffer submitted through

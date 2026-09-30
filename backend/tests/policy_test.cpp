@@ -64,6 +64,24 @@ TEST_CASE("filter NOPs dropped packets in place and rewrites masks and INT_SEL",
     REQUIRE(out[24] == 64u);
 }
 
+TEST_CASE("drop_draws NOPs draws and dispatches only", "[policy]") {
+    const auto &p = policy::Policy::builtin();
+    const std::vector<std::uint32_t> src = {
+        0xC0031500u, 16u, 1u, 1u, 1u, // DISPATCH_DIRECT
+        0xC0012D00u, 3u, 2u,          // DRAW_INDEX_AUTO
+        0xC0017600u, 0x207u, 64u,     // SET_SH_REG: kept
+    };
+    std::vector<std::uint32_t> out(src.size());
+    policy::FilterOptions opt;
+    opt.drop_draws = true;
+    policy::FilterStats st;
+    policy::filter(p, src, out, opt, st);
+    REQUIRE(st.dropped == 2);
+    REQUIRE(st.passed == 1);
+    for (std::size_t i = 0; i < 8; ++i) REQUIRE(out[i] == policy::kNop);
+    REQUIRE(out[8] == 0xC0017600u);
+}
+
 TEST_CASE("filter NOPs a packet that runs past the end", "[policy]") {
     const auto &p = policy::Policy::builtin();
     const std::vector<std::uint32_t> src = {0xC0027600u, 0x240u, 1u}; // claims 4 dwords, has 3
