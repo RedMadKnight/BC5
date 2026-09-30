@@ -9,6 +9,7 @@
 // CI or scripts, and only after the maintainer confirms the box is idle.
 #include "bc5/dispatch_min.hpp"
 
+#include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -26,11 +27,43 @@
 
 namespace {
 
+struct Options {
+    std::string node = "/dev/dri/renderD128";
+    std::uint32_t bytes = 16384;
+    std::uint32_t value = 0x22222222u;
+    std::uint32_t rsrc1 = bc5::dispatch_min::kIgtRsrc1;
+    std::uint32_t rsrc2 = bc5::dispatch_min::kIgtRsrc2;
+    std::uint32_t vsharp3 = bc5::dispatch_min::kIgtVsharpWord3;
+    std::string shader_file; // raw little-endian dwords; empty = the built-in IGT program
+};
+
 int usage() {
     std::fputs("usage: dispatch-min --dump-ib <file> | --info [--render-node PATH] | --submit "
-               "[--render-node PATH] [--bytes N]\n",
+               "[--render-node PATH] [--bytes N | --groups N] [--value HEX] [--console]\n"
+               "       [--rsrc1 HEX] [--rsrc2 HEX] [--vsharp3 HEX] [--shader-file FILE]\n"
+               "  --console  RSRC1/RSRC2/V# word 3 as Sony's libSceAgc dispatches the same program\n",
                stderr);
     return 2;
+}
+
+std::vector<std::uint32_t> load_shader(const std::string &path) {
+    std::vector<std::uint32_t> code;
+    std::ifstream in(path, std::ios::binary);
+    if (!in) return code;
+    unsigned char b[4];
+    while (in.read(reinterpret_cast<char *>(b), 4)) {
+        code.push_back(static_cast<std::uint32_t>(b[0]) | (static_cast<std::uint32_t>(b[1]) << 8) |
+                       (static_cast<std::uint32_t>(b[2]) << 16) |
+                       (static_cast<std::uint32_t>(b[3]) << 24));
+    }
+    // Keep the program up to its first s_endpgm (captures may carry padding after it).
+    for (std::size_t i = 0; i < code.size(); ++i) {
+        if (code[i] == 0xBF810000u) {
+            code.resize(i + 1);
+            break;
+        }
+    }
+    return code;
 }
 
 int dump_ib(const std::string &path) {
@@ -131,11 +164,27 @@ bool alloc(amdgpu_device_handle dev, std::uint64_t size, std::uint32_t domain, B
     return amdgpu_bo_cpu_map(b.bo, &b.cpu) == 0;
 }
 
-int submit(const std::string &node, std::uint32_t bytes) {
+int submit(const Options &o) {
     std::fprintf(stderr, "dispatch-min: --submit runs a shader on the GPU (GFX ring). A bad "
                          "submission can hang or reset the machine.\n");
+    const std::uint32_t bytes = o.bytes;
+    std::vector<std::uint32_t> code(bc5::dispatch_min::kBufferClearCsGfx10.begin(),
+                                    bc5::dispatch_min::kBufferClearCsGfx10.end());
+    if (!o.shader_file.empty()) {
+        code = load_shader(o.shader_file);
+        if (code.empty() || code.size() > 1024) {
+            std::fprintf(stderr, "cannot load a shader of 1..1024 dwords from %s\n",
+                         o.shader_file.c_str());
+            return 1;
+        }
+        const bool same = code.size() == bc5::dispatch_min::kBufferClearCsGfx10.size() &&
+                          std::equal(code.begin(), code.end(),
+                                     bc5::dispatch_min::kBufferClearCsGfx10.begin());
+        std::printf("shader: %zu dwords from %s (%s the built-in IGT buffer-clear program)\n",
+                    code.size(), o.shader_file.c_str(), same ? "identical to" : "differs from");
+    }
     Device d;
-    if (!open_device(node, d)) return 1;
+    if (!open_device(o.node, d)) return 1;
 
     Bo shader, dst, cmd;
     if (!alloc(d.dev, 4096, AMDGPU_GEM_DOMAIN_VRAM, shader) ||
@@ -145,14 +194,21 @@ int submit(const std::string &node, std::uint32_t bytes) {
         return 1;
     }
     std::memset(shader.cpu, 0, 4096);
-    std::memcpy(shader.cpu, bc5::dispatch_min::kBufferClearCsGfx10.data(),
-                sizeof(bc5::dispatch_min::kBufferClearCsGfx10));
+    std::memcpy(shader.cpu, code.data(), code.size() * sizeof(std::uint32_t));
     std::memset(dst.cpu, 0, bytes);
 
     bc5::dispatch_min::MemsetParams p;
     p.shader_va = shader.va;
     p.dst_va = dst.va;
     p.dst_bytes = bytes;
+    p.value = o.value;
+    p.rsrc1 = o.rsrc1;
+    p.rsrc2 = o.rsrc2;
+    p.vsharp_word3 = o.vsharp3;
+    std::printf("dispatch: %u bytes (%u groups), value 0x%08x, rsrc1 0x%08x rsrc2 0x%08x v# word3 "
+                "0x%08x\n",
+                bytes, bytes / bc5::dispatch_min::kBytesPerGroup, o.value, o.rsrc1, o.rsrc2,
+                o.vsharp3);
     const auto ib = bc5::dispatch_min::build_memset_ib(p);
     std::memcpy(cmd.cpu, ib.data(), ib.size() * sizeof(std::uint32_t));
 
@@ -188,10 +244,11 @@ int submit(const std::string &node, std::uint32_t bytes) {
         std::fprintf(stderr, "submit or fence failed (rc %d, expired %u)\n", rc, expired);
         return 1;
     }
-    const auto *out = static_cast<const std::uint8_t *>(dst.cpu);
+    // CPU reference of the program: every 16-byte record holds the value in all four dwords.
+    const auto *out = static_cast<const std::uint32_t *>(dst.cpu);
     std::uint32_t bad = 0;
-    for (std::uint32_t i = 0; i < bytes; ++i) bad += out[i] != 0x22 ? 1u : 0u;
-    std::printf("dispatch done: %u of %u bytes differ from 0x22\n", bad, bytes);
+    for (std::uint32_t i = 0; i < bytes / 4; ++i) bad += out[i] != o.value ? 1u : 0u;
+    std::printf("dispatch done: %u of %u dwords differ from 0x%08x\n", bad, bytes / 4, o.value);
     return bad == 0 ? 0 : 1;
 }
 
@@ -202,8 +259,8 @@ int submit(const std::string &node, std::uint32_t bytes) {
 int main(int argc, char **argv) {
     std::string mode;
     std::string arg;
-    std::string node = "/dev/dri/renderD128";
-    std::uint32_t bytes = 16384;
+    Options o;
+    auto hex = [](const char *s) { return static_cast<std::uint32_t>(std::stoul(s, nullptr, 16)); };
     for (int i = 1; i < argc; ++i) {
         const std::string_view a = argv[i];
         if (a == "--dump-ib" && i + 1 < argc) {
@@ -214,20 +271,36 @@ int main(int argc, char **argv) {
         } else if (a == "--submit") {
             mode = "submit";
         } else if (a == "--render-node" && i + 1 < argc) {
-            node = argv[++i];
+            o.node = argv[++i];
         } else if (a == "--bytes" && i + 1 < argc) {
-            bytes = static_cast<std::uint32_t>(std::stoul(argv[++i]));
+            o.bytes = static_cast<std::uint32_t>(std::stoul(argv[++i]));
+        } else if (a == "--groups" && i + 1 < argc) {
+            o.bytes = static_cast<std::uint32_t>(std::stoul(argv[++i])) *
+                      bc5::dispatch_min::kBytesPerGroup;
+        } else if (a == "--value" && i + 1 < argc) {
+            o.value = hex(argv[++i]);
+        } else if (a == "--rsrc1" && i + 1 < argc) {
+            o.rsrc1 = hex(argv[++i]);
+        } else if (a == "--rsrc2" && i + 1 < argc) {
+            o.rsrc2 = hex(argv[++i]);
+        } else if (a == "--vsharp3" && i + 1 < argc) {
+            o.vsharp3 = hex(argv[++i]);
+        } else if (a == "--shader-file" && i + 1 < argc) {
+            o.shader_file = argv[++i];
+        } else if (a == "--console") {
+            o.rsrc1 = bc5::dispatch_min::kConsoleRsrc1;
+            o.rsrc2 = bc5::dispatch_min::kConsoleRsrc2;
+            o.vsharp3 = bc5::dispatch_min::kConsoleVsharpWord3;
         } else {
             return usage();
         }
     }
     if (mode == "dump") return dump_ib(arg);
 #ifdef BC5_WITH_AMDGPU
-    if (mode == "info") return info(node);
-    if (mode == "submit") return submit(node, bytes);
+    if (mode == "info") return info(o.node);
+    if (mode == "submit") return submit(o);
 #else
-    (void)node;
-    (void)bytes;
+    (void)o;
     if (mode == "info" || mode == "submit") {
         std::fputs("built without BC5_WITH_AMDGPU; only --dump-ib is available\n", stderr);
         return 2;

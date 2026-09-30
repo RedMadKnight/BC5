@@ -73,6 +73,31 @@ TEST_CASE("memset IB reproduces the IGT gfx10 sequence", "[dispatch-min]") {
                         [](std::uint32_t d) { return d == pm4::kNopFiller; }));
 }
 
+TEST_CASE("console dispatch parameters land in RSRC1/RSRC2 and V# word 3", "[dispatch-min]") {
+    dispatch_min::MemsetParams p;
+    p.shader_va = 0x100000;
+    p.dst_va = 0x200000;
+    p.rsrc1 = dispatch_min::kConsoleRsrc1;
+    p.rsrc2 = dispatch_min::kConsoleRsrc2;
+    p.vsharp_word3 = dispatch_min::kConsoleVsharpWord3;
+    const auto ib = dispatch_min::build_memset_ib(p);
+    auto find = [&](std::uint32_t header, std::uint32_t first) {
+        for (std::size_t i = 0; i + 1 < ib.size(); ++i) {
+            if (ib[i] == header && ib[i + 1] == first) return i;
+        }
+        return ib.size();
+    };
+    const auto rsrc1 = find(0xC0017602u, 0x212);
+    REQUIRE(rsrc1 < ib.size());
+    REQUIRE(ib[rsrc1 + 2] == 0x402C0041u);
+    const auto rsrc2 = find(0xC0017602u, 0x213);
+    REQUIRE(rsrc2 < ib.size());
+    REQUIRE(ib[rsrc2 + 2] == 0x00000090u);
+    const auto ud = find(0xC0047602u, 0x240);
+    REQUIRE(ud < ib.size());
+    REQUIRE(ib[ud + 5] == 0x0004bfacu);
+}
+
 TEST_CASE("memset IB rejects bad parameters", "[dispatch-min]") {
     dispatch_min::MemsetParams p;
     p.shader_va = 0x100;

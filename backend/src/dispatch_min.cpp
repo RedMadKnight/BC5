@@ -50,8 +50,8 @@ std::vector<std::uint32_t> build_memset_ib(const MemsetParams &p) {
 
     // amdgpu_dispatch_write2hw (helpers.c:103-185)
     b.set_sh_reg(0x20c, {lo32(p.shader_va >> 8), lo32(p.shader_va >> 40)}); // COMPUTE_PGM_LO/HI
-    b.set_sh_reg(0x2e12 - pm4::kShRegBase, {0x000C0041u}); // COMPUTE_PGM_RSRC1
-    b.set_sh_reg(0x2e13 - pm4::kShRegBase, {0x00000090u}); // COMPUTE_PGM_RSRC2: 8 user SGPRs, TGID_X
+    b.set_sh_reg(0x2e12 - pm4::kShRegBase, {p.rsrc1}); // COMPUTE_PGM_RSRC1
+    b.set_sh_reg(0x2e13 - pm4::kShRegBase, {p.rsrc2}); // COMPUTE_PGM_RSRC2: 8 user SGPRs, TGID_X
     b.set_sh_reg(0x2e07 - pm4::kShRegBase, {kThreadsPerGroup}); // COMPUTE_NUM_THREAD_X
     b.set_sh_reg(0x2e08 - pm4::kShRegBase, {1});                // COMPUTE_NUM_THREAD_Y
     b.set_sh_reg(0x2e09 - pm4::kShRegBase, {1});                // COMPUTE_NUM_THREAD_Z
@@ -60,7 +60,7 @@ std::vector<std::uint32_t> build_memset_ib(const MemsetParams &p) {
     // User data (dispatch.c:142-167): V# of the destination, then the value.
     const std::uint32_t records = p.dst_bytes / kBytesPerThread;
     b.set_sh_reg(0x240, {lo32(p.dst_va), hi32(p.dst_va) | 0x100000u /* stride 16 */, records,
-                         0x1104bfacu /* gfx10 word 3 */});
+                         p.vsharp_word3});
     b.set_sh_reg(0x244, {p.value, p.value, p.value, p.value});
     b.set_sh_reg(0x215, {0}); // COMPUTE_RESOURCE_LIMITS
 

@@ -56,7 +56,7 @@ Gate G1: a full VSH frame (track A) or a full ASTRO BOT frame from track B decod
 Tasks
 1. Experiment `dev-box-inventory` refresh if anything changed.
 2. Port libdrm `tests/amdgpu` dispatch test into `backend/experiments/dispatch-min`: allocate BOs, load a compute shader binary, `SET_SH_REG` PGM/RSRC, `DISPATCH_DIRECT`, fence, read back. GFX ring only. *Done 2026-09-30, experiment 0008 (IGT sequence, 16 KiB–256 MiB filled on the GFX ring).*
-3. Replace the test shader with a compute shader extracted from a phase-1 capture. Run the same shader through Kyty's recompiler on a PC for comparison.
+3. Replace the test shader with a compute shader extracted from a phase-1 capture. Run the same shader through Kyty's recompiler on a PC for comparison. *Done 2026-09-30 for the first captured program (experiment 0013: Sony's fill program = IGT's buffer clear, run with console RSRC1/V# values, bit-exact vs a CPU reference instead of Kyty's recompiler). Replaying the other 19 captured programs needs their input buffers captured.*
 4. Experiment for Q1: `AMDGPU_GEM_USERPTR` + chosen VA; measure.
 
 Gate G2: a captured compute shader runs natively and produces bit-identical output to the recompiled path; userptr mapping verdict recorded.

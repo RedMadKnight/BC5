@@ -44,7 +44,11 @@ Sources (`IGT` = gitlab.freedesktop.org/drm/igt-gpu-tools @ `9d4b6ef` (2026-09-2
    whole buffer (IGT's test dispatches 16×1×1 and checks 16 KiB; its V# `num_records` is 0x400).
    *Amended 2026-09-30:* the first version read IGT's `0x10` as the initiator and wrote the group
    count into `DIM_Y`; experiment 0008 showed every run writing exactly 16 KiB. Fixed with the
-   field order sourced above. The fence wait uses a 2 s timeout instead
+   field order sourced above.
+   *Amended 2026-09-30 (experiment 0013):* `MemsetParams` gained `rsrc1`, `rsrc2` and `vsharp_word3`
+   with IGT defaults; `--console` selects the values Sony's library uses for the same program
+   (`RSRC1 0x402c0041`, V# word 3 `0x0004bfac`), `--shader-file` loads captured program bytes,
+   `--value`/`--groups` the fill pattern and size. The fence wait uses a 2 s timeout instead
    of infinite, so a hang is reported instead of waited on (the kernel's own GPU reset may still take
    the machine down, HANDOFF F6).
 4. No test, CI job or script runs `--submit`. CI builds the `ON` variant and runs `--dump-ib` only.

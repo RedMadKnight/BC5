@@ -1,0 +1,27 @@
+# experiments/0013 — dispatch-min --submit on the BC-250, 2026-09-30 ~11:20, ~/bc5-work/backend-amdgpu
+# (repo backend at the state committed with this experiment; ctest 8/8 after the test-header fix)
+# S = <capture>/gc/cs-000908e86a00.bin (the captured program; 456-byte dump, 9 dwords up to s_endpgm)
+
+$ ./dispatch-min --submit
+dispatch: 16384 bytes (16 groups), value 0x22222222, rsrc1 0x000c0041 rsrc2 0x00000090 v# word3 0x1104bfac
+dispatch done: 0 of 4096 dwords differ from 0x22222222
+
+$ ./dispatch-min --submit --console
+dispatch: 16384 bytes (16 groups), value 0x22222222, rsrc1 0x402c0041 rsrc2 0x00000090 v# word3 0x0004bfac
+dispatch done: 0 of 4096 dwords differ from 0x22222222
+
+$ ./dispatch-min --submit --shader-file $S
+shader: 9 dwords from .../cs-000908e86a00.bin (identical to the built-in IGT buffer-clear program)
+dispatch: 16384 bytes (16 groups), value 0x22222222, rsrc1 0x000c0041 rsrc2 0x00000090 v# word3 0x1104bfac
+dispatch done: 0 of 4096 dwords differ from 0x22222222
+
+$ ./dispatch-min --submit --console --shader-file $S --groups 12288 --value fffffff0
+shader: 9 dwords from .../cs-000908e86a00.bin (identical to the built-in IGT buffer-clear program)
+dispatch: 12582912 bytes (12288 groups), value 0xfffffff0, rsrc1 0x402c0041 rsrc2 0x00000090 v# word3 0x0004bfac
+dispatch done: 0 of 3145728 dwords differ from 0xfffffff0
+
+$ ./dispatch-min --submit --console --shader-file $S --groups 4096 --value 3c000000
+dispatch: 4194304 bytes (4096 groups), value 0x3c000000, rsrc1 0x402c0041 rsrc2 0x00000090 v# word3 0x0004bfac
+dispatch done: 0 of 1048576 dwords differ from 0x3c000000
+
+$ sudo dmesg | tail -2   -> IPv6 MLD lines only (no amdgpu message, no reset)

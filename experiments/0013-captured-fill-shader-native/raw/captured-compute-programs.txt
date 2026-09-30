@@ -1,0 +1,102 @@
+# compute programs captured from ASTRO BOT (run kytyplus-20260930-1106, 150 s): shader VA, size of the dump, dispatch count, first dispatch dims, NUM_THREAD, RSRC, ring
+000908e86a00 456B uses=1503 dim 5120 1 1 initiator 0x00000061 | 64 1 1 | rsrc1 0x402c0041 rsrc2 0x00000090 rsrc3 0x00000000 | ring=gfx
+000500793000 236B uses=92 dim 120 68 1 initiator 0x00000041 | 16 16 1 | rsrc1 0x402c0081 rsrc2 0x0001099c rsrc3 0x00000000 | ring=compute
+000500793a00 608B uses=56 dim 60 34 1 initiator 0x00000041 | 8 8 1 | rsrc1 0x402c00c3 rsrc2 0x0000099c rsrc3 0x00000000 | ring=compute
+000555f4f500 23196B uses=46 dim 192 1 1 initiator 0x00000041 | 64 1 1 | rsrc1 0x402c01b1 rsrc2 0x0000009c rsrc3 0x00000000 | ring=compute
+00050740a700 2640B uses=46 dim 192 1 1 initiator 0x00000041 | 64 1 1 | rsrc1 0x402c00cd rsrc2 0x0000009c rsrc3 0x00000000 | ring=compute
+0005007cd200 11408B uses=46 dim 120 68 1 initiator 0x00000041 | 8 8 1 | rsrc1 0x402c0186 rsrc2 0x0000099c rsrc3 0x00000000 | ring=compute
+0005007c3f00 264B uses=46 dim 120 68 1 initiator 0x00000041 | 8 8 1 | rsrc1 0x402c0141 rsrc2 0x0000099c rsrc3 0x00000000 | ring=compute
+0005007b7300 52488B uses=46 dim 1 1 1 initiator 0x00000041 | 1 1 1 | rsrc1 0x402c0105 rsrc2 0x0000001e rsrc3 0x00000000 | ring=compute
+0005007b4c00 62472B uses=46 dim 120 68 1 initiator 0x00000041 | 8 8 1 | rsrc1 0x402c0148 rsrc2 0x0001899e rsrc3 0x00000000 | ring=compute
+000500732a00 16864B uses=46 dim 30 68 1 initiator 0x00000041 | 16 4 1 | rsrc1 0x402c018d rsrc2 0x0000099c rsrc3 0x00000000 | ring=compute
+00050054ba00 2448B uses=46 dim 30 17 8 initiator 0x00000041 | 8 8 8 | rsrc1 0x402c0081 rsrc2 0x0000139c rsrc3 0x00000000 | ring=compute
+000500549800 11152B uses=46 dim 30 17 1 initiator 0x00000041 | 8 8 1 | rsrc1 0x402c030f rsrc2 0x00000b9c rsrc3 0x00000000 | ring=compute
+000500548900 1056B uses=46 dim 30 17 8 initiator 0x00000041 | 8 8 8 | rsrc1 0x402c01c4 rsrc2 0x0000139c rsrc3 0x00000000 | ring=compute
+0005007c7500 700B uses=36 dim 60 34 1 initiator 0x00000041 | 8 8 1 | rsrc1 0x402c00c7 rsrc2 0x0002099c rsrc3 0x00000000 | ring=compute
+0005007c6900 700B uses=36 dim 60 34 1 initiator 0x00000041 | 8 8 1 | rsrc1 0x402c00c7 rsrc2 0x0002099c rsrc3 0x00000000 | ring=compute
+0005007c3400 3080B uses=6 indirect_offset 0x074063c0 | 8 8 1 | rsrc1 0x402c0102 rsrc2 0x0000089c rsrc3 0x00000000 | ring=compute
+0005007c2300 7432B uses=6 indirect_offset 0x074063e0 | 8 8 1 | rsrc1 0x402c00c7 rsrc2 0x0000089c rsrc3 0x00000000 | ring=compute
+0005007b9600 43528B uses=6 indirect_offset 0x074063e0 | 8 8 1 | rsrc1 0x402c01ca rsrc2 0x0000089c rsrc3 0x00000000 | ring=compute
+0005007b8e00 45576B uses=6 dim 1 1 1 initiator 0x00008041 | 1 1 1 | rsrc1 0x402c0081 rsrc2 0x0000001e rsrc3 0x00000000 | ring=compute
+0005007b7c00 50184B uses=6 dim 120 68 1 initiator 0x00000041 | 8 8 1 | rsrc1 0x402c0143 rsrc2 0x0000099e rsrc3 0x00000000 | ring=compute
+
+# fill program: dispatch dims (count, dim x y z initiator)
+    157 dim 12288 1 1 initiator 0x00000061
+     92 dim 6 4 8 initiator 0x00000041
+     92 dim 512 1 1 initiator 0x00000061
+     85 dim 4096 1 1 initiator 0x00000061
+     80 dim 5120 1 1 initiator 0x00000061
+     80 dim 163840 1 1 initiator 0x00000061
+     80 dim 1536 1 1 initiator 0x00000061
+     54 dim 60 34 1 initiator 0x00000041
+     54 dim 120 68 1 initiator 0x00000041
+     53 dim 1 1 1 initiator 0x00000041
+     52 dim 152 86 1 initiator 0x00000041
+     46 dim 64 64 1 initiator 0x00000041
+     46 dim 2048 1 1 initiator 0x00000061
+     42 dim 81920 1 1 initiator 0x00000061
+     40 dim 552960 1 1 initiator 0x00000061
+     40 dim 3072 1 1 initiator 0x00000061
+     40 dim 294912 1 1 initiator 0x00000061
+     21 dim 16384 1 1 initiator 0x00000061
+     14 dim 8 5 1 initiator 0x00000041
+     14 dim 30 17 1 initiator 0x00000041
+     14 dim 240 135 1 initiator 0x00000041
+     14 dim 15 9 1 initiator 0x00000041
+     13 dim 18432 1 1 initiator 0x00000061
+     12 dim 7680 1 1 initiator 0x00000061
+     12 dim 245760 1 1 initiator 0x00000061
+     12 dim 2304 1 1 initiator 0x00000061
+      7 dim 4 2 1 initiator 0x00000041
+      7 dim 304 171 1 initiator 0x00000041
+      7 dim 2048 1 1 initiator 0x00000041
+      7 dim 122880 1 1 initiator 0x00000061
+      6 dim 856064 1 1 initiator 0x00000061
+      6 dim 76 43 1 initiator 0x00000041
+      6 dim 450560 1 1 initiator 0x00000061
+      6 dim 3840 1 1 initiator 0x00000061
+      3 dim 256 1 1 initiator 0x00000061
+      3 dim 2088960 1 1 initiator 0x00000061
+      2 dim 524288 1 1 initiator 0x00000061
+
+# fill program: V# word1/word3 variants (count word1 word3)
+    885 00100005 0004bfac
+    184 00000005 c8200000
+     99 c4700000 91b00fac
+     92 c1600000 91800924
+     84 c2400000 91b003ac
+     46 c0700000 d1800924
+     46 c0100000 a0000204
+     46 04d00000 81b00fac
+     14 00010005 30005004
+      7 42400000 91b003ac
+
+# fill program: fill values (user data 4..7)
+    611 00000000 00000000 00000000 00000000
+    184 fffffff0 fffffff0 fffffff0 fffffff0
+    160 010dc1df 91b00fac 00000000 00000000
+    138 ffffffff ffffffff ffffffff ffffffff
+     46 3f800000 bf800000 3f000000 3e3851ec
+     46 20202020 20202020 20202020 20202020
+     46 0000003f 00000000 00000000 00000000
+     46 00000002 00000000 00000000 00000000
+     39 00000000 3c000000 00000000 3c000000
+     33 00000000 00000000 c07b0000 00057082
+     24 0155c25f 91b00fac 00000000 00000000
+     14 00000000 00000000 f07b0000 0005708e
+
+# dispatch record 0
+dispatch 0 direct ring=gfx
+dim 5120 1 1 initiator 0x00000061
+pgm_va 0x000908e86a00 code_dwords 114
+rsrc1 0x402c0041 rsrc2 0x00000090 rsrc3 0x00000000
+num_thread 64 1 1 resource_limits 0x00000000 tmpring 0x00000000
+static_thread_mgmt 0x00000000 0x00000000 0x00000000 0x00000000
+user_data 6d8b8000 00100005 00001400 0004bfac 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+
+# program bytes (first 64)
+0000000 d7460004 04010c08 7e000204 7e020205
+0000016 7e040206 7e060207 e01c2000 80000004
+0000032 bf810000 00000000 00000000 00000000
+0000048 30306c73 0000006f 00000089 00000000
+0000064
