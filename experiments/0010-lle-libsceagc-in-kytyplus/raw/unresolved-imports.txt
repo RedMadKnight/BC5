@@ -1,0 +1,46 @@
+# experiments/0010: imports of the LLE-loaded fakelib modules that KytyPlus f266548 could not resolve.
+# Names from shadPS4 src/core/aerolib/aerolib.inl (GPL-2.0); "?" = NID absent from that table (PS5-only).
+# module  library  NID  name
+libSceAgcDriver.sprx  libkernel  0vTn5IDMU9A  sceKernelGetMainSocId
+libSceAgcDriver.sprx  VideoOut   7VSZJxxcTL8  sceVideoOutSysGetBus
+libSceAgcDriver.sprx  libkernel  BPE9s9vQQXo  mmap
+libSceAgcDriver.sprx  libkernel  D4yla3vx4tY  sceKernelError
+libSceAgcDriver.sprx  libkernel  G-MYv5erXaU  sceKernelGetAppInfo
+libSceAgcDriver.sprx  VideoOut   j8xl+92A0q4  sceVideoOutSubmitEopFlip
+libSceAgcDriver.sprx  libkernel  kc+LEEIYakc  sceKernelMapNamedSystemFlexibleMemory
+libSceAgcDriver.sprx  libkernel  kg4x8Prhfxw  getuid
+libSceAgcDriver.sprx  libkernel  LzoM-wVLJDE  ?
+libSceAgcDriver.sprx  VideoOut   OcQybQejHEY  sceVideoOutGetBufferLabelAddress
+libSceAgcDriver.sprx  libkernel  PfccT7qURYE  ioctl
+libSceAgcDriver.sprx  libkernel  RW-GEfpnsqg  kevent
+libSceAgcDriver.sprx  libkernel  -W4xI5aVI8w  sceKernelSetProcessProperty
+libSceAgcDriver.sprx  libkernel  WB66evu8bsU  sceKernelGetCompiledSdkVersion
+libSceAgcDriver.sprx  libkernel  WslcK1FQcGI  sceKernelIsNeoMode
+libSceAgc.sprx        libkernel  0vTn5IDMU9A  sceKernelGetMainSocId
+libSceAgc.sprx        libkernel  1yca4VvfcNA  sceKernelTitleWorkaroundIsEnabled
+libSceAgc.sprx        Sysmodule  39iV5E1HoCk  sceSysmoduleLoadModuleInternal
+libSceAgc.sprx        libkernel  45Yurf7lZmU  sceKernelAllocateToolMemory
+libSceAgc.sprx        Sysmodule  CU8m+Qs+HN4  sceSysmoduleLoadModuleByNameInternal
+libSceAgc.sprx        libkernel  d0vezuPZxtg  sceKernelMapToolMemory
+libSceAgc.sprx        libkernel  D4yla3vx4tY  sceKernelError
+libSceAgc.sprx        libkernel  dkBx0YqFQ+Y  ?
+libSceAgc.sprx        RegMgr     dKeshzt29G4  sceRegMgrNonSysGetInt
+libSceAgc.sprx        libkernel  GGeRJk1XdWc  ?
+libSceAgc.sprx        libkernel  G-MYv5erXaU  sceKernelGetAppInfo
+libSceAgc.sprx        libkernel  gO98NioN5FM  sceKernelReleaseToolMemory
+libSceAgc.sprx        libkernel  wW+k21cmbwQ  _ioctl
+libSceAgc.sprx        libkernel  +xy9ORMbd8U  sceKernelGetAppCategoryType
+
+# stubs recorded as called before the fault (KytyPlus g_stubbed_imports, last 12):
+teiItL2boFw  sceKernelReleaseFlexibleMemory
+dkBx0YqFQ+Y  
+45Yurf7lZmU  sceKernelAllocateToolMemory
+gO98NioN5FM  sceKernelReleaseToolMemory
+JGfTMBOdUJo  sceKernelGetFsSandboxRandomWord
+57ZK+ODEXWY  sceKernelAddTimerEvent
+d0vezuPZxtg  sceKernelMapToolMemory
+YkwlupG-S4E  sceKernelAvailableToolMemorySize
+GGeRJk1XdWc  
+aML18Z0J0t0  sceKernelGetProsperoSystemSwVersion
+fYWVVDKZOCk  sceVideoOutSysAddSetModeEvent2
+Ygv0S+Hi+hA  
