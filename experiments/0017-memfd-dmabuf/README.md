@@ -99,4 +99,27 @@ zero-byte `DMA_DATA` with `CP_SYNC` to every IB. Unverified until the next GPU r
 Also lost with the machine: the dumps of the last submissions (since run 78 only the journal is
 synced per submission), which is why the upload IB above was read from an earlier instance.
 
-**Verdict.** Open: import, GPU access and the cost of a CS are settled (a CS forty times cheaper, the game four times faster); a clean live run with the DMA wait is still owed.
+*The game live again, with the DMA wait* (14:36, run 90; capture `kytyplus-20261001-1436`,
+`raw/run90-summary.txt`; the kernel log mirrored to disk line by line during the run): **7,454
+submissions, none failed, the machine up**, no amdgpu message in the kernel log. 510 flips at one
+every 0.083 s (the title bar: 11 fps); frame DCB fence wait 5.6 ms. The game plays its first
+video through its own pipeline — 194 upload IBs, each a 12.4 MB `DMA_DATA`, each followed by the
+idle wait — and the screenshot at 90 s shows a frame of it composited by the game (published as
+`docs/images/intro-video-frame.png`). Run 89 died at this very point of the game; with the wait
+appended, nothing happened.
+
+After the 194th upload the game submits nothing more: every game thread sits in a condition
+wait until the run's end (the journal's last line is that upload IB, OK, at 43.9 s). No
+submission is pending, no wait timed out, no queue is deferred. That is the game or the host's
+HLE side (its video player service) not moving on, and the next thing to look at; it is not a
+GPU hang.
+
+**Verdict (2026-10-01, 14:45).** Passed. A memfd range becomes GPU memory through udmabuf and a
+dma-buf import, at the guest view's address, with the GPU and the guest seeing each other's
+writes; a CS that lists such BOs costs 0.25 µs per BO instead of 5 ms per GiB; under the game the
+drawing CS drops from 27 ms to 2.6 ms and the frame from 0.35 s to 0.083 s. One machine reset on
+the way (run 89), from CP DMA outliving its IB — a hole in the submission path the faster frames
+uncovered, closed by the idle wait and confirmed by run 90. ADR 0006 stands; `KYTY_BC5_DMABUF=1`
+replaces `KYTY_BC5_ANON_BACKING=1` in the run command. Open after this: the pinned memory against
+the GTT limit as the game loads more, the 370 MiB that stay on userptr, and why the game stops
+after its first video.
