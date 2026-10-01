@@ -357,6 +357,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
                             std::uint64_t timeout_ns, bool with_gds) {
     SubmitResult r;
     std::lock_guard lock(impl_->mutex);
+    const double t_enter = now_ms();
     if (wedged_) {
         r.rc = -1;
         return r;
@@ -474,8 +475,11 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
         for (const auto &u : impl_->userptrs) bos.push_back(u.bo);
     }
     amdgpu_bo_list_handle list = nullptr;
+    const double t_list = now_ms();
+    r.prepare_ms = t_list - t_enter;
     r.rc = amdgpu_bo_list_create(impl_->dev, static_cast<std::uint32_t>(bos.size()), bos.data(),
                                  nullptr, &list);
+    r.list_ms = now_ms() - t_list;
     if (r.rc != 0) return r;
 
     amdgpu_cs_ib_info ib_info{};
@@ -490,6 +494,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
 
     const double t0 = now_ms();
     r.rc = amdgpu_cs_submit(impl_->ctx, 0, &req, 1);
+    r.cs_ms = now_ms() - t0;
     std::uint32_t expired = 0;
     r.seq_no = req.seq_no;
     if (r.rc == 0) {
@@ -514,6 +519,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
         }
     }
     r.submit_ms = now_ms() - t0;
+    r.fence_ms = r.submit_ms - r.cs_ms;
     amdgpu_bo_list_destroy(list);
     submits_++;
     r.ok = r.rc == 0 && expired != 0;

@@ -764,3 +764,35 @@ three seconds. Open items: the frame time (0.5 s; submit plus fence is a constan
 submission whatever its size), SH/UCONFIG state across pop_state, the zero-instance point draw
 that became 512 points, `ORDERED_APPEND_ENBL`, the kernel lockup timeout, presentation without
 the readback through KytyPlus's presenter, and step (f).
+
+**Run 80** (09:23, GPU, 225 s, submission phases timed; `raw/e35-run80-direct.log`, reduced):
+4,578 submissions, 316 flips, the machine up. **302 consecutive flips without a failed
+submission** from the start (both regions learned in run 79 were mapped up front), then one
+shader fault at 0x40506c000 in a DCB of a new shape (2,960 dwords) ten seconds before the end —
+learned. The picture: the loading-time black, the fade-in, then the same opening card until that
+new DCB; the game advances per frame, and at 1.4 frames a second its few seconds of card take
+minutes.
+
+Where the frame time goes now (`SubmitResult::prepare_ms/list_ms/cs_ms/fence_ms`):
+
+| per submission | average |
+|---|---|
+| filter and scratch layout | < 0.1 ms |
+| BO list creation | 0.5 ms |
+| **the CS ioctl** | **27.8 ms** (14.9 ms over the first 500 submissions, 29.2 ms over the last 500) |
+| fence wait | 1.2 ms (median 0.01 ms) |
+
+127 s of the run's 223 s are spent inside `DRM_IOCTL_AMDGPU_CS`, 5 s waiting for the GPU. The GPU
+finishes a frame's work in milliseconds; the kernel revalidates every userptr BO on the list for
+every submission (`amdgpu_cs_parser_bos` walks the user pages of each), and the list carries the
+whole mapped guest — 3 GB at the start, 5.8 GB at the end (the hint and learned windows
+materialise untouched guest memory). 14–15 submissions a frame make 0.4–0.5 s.
+
+**Verdict (2026-10-01, 09:35).** G3's image stands and repeats (runs 79, 80; 114 and 302
+consecutive frames without a GPU hang). The frame rate is now bounded by userptr validation in
+the CS ioctl, not by the GPU and not by the host. Options, cheapest first: (1) a short BO list
+for IBs without draws or dispatches (only the BOs their packets name) — about half of a frame's
+submissions; (2) smaller windows / unmapping what a frame no longer uses; (3) the guest's direct
+memory backed by GEM BOs mapped at the guest's addresses instead of anonymous memory mapped as
+userptr — no per-submission page walk at all, a change to ADR 0005 §1 and to KytyPlus's memory
+backing, bounded by the 7.6 GB GTT. Then step (f).
