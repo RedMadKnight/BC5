@@ -205,3 +205,14 @@ too), 596 s in — a userptr BO whose pages the guest had unmapped; eight such r
 against two to four before the anonymous walk was rate-limited. One retry is not always enough.
 `SDL_JOYSTICK_DISABLE_UDEV=1` was set so that SDL would notice a controller coming back inside
 the container; the controller never left, so that is untested.
+
+**What the submission ioctl's 17 ms are** (read from run 106's journal, 300–560 s): half of a
+frame's submissions carry draws and list every mapping — 50,716 of them, 265 BOs each, 2.17 ms
+in the ioctl on average; the other half use the short list of 5 BOs and take 0.03 ms. Of the
+265 BOs about 150 are dma-buf imports, which cost next to nothing in a submission (experiment
+0017: 0.26 ms for 1,024 of them); the rest are userptr BOs over the 370 MiB of anonymous guest
+memory that is still mapped that way (module images, stacks, runtime areas), and the kernel
+walks the pages of every userptr BO in the list on every submission — about 5 ms per GiB
+(F38), 1.8 ms for 370 MiB. So step 4 starts with a narrower question than "the submission
+path": get the last userptr BOs out of the draws' lists, either by backing that memory with a
+file like the direct memory, or by listing only what a draw can reach.
