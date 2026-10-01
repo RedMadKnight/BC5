@@ -431,10 +431,10 @@ index 5f87e6b..e5c534e 100644
  	CondRemoveWaiter(cond_value, thread);
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..1757272
+index 0000000..eac19c4
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,3338 @@
+@@ -0,0 +1,3455 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -1411,7 +1411,11 @@ index 0000000..1757272
 +static const bool g_dmabuf = std::getenv("KYTY_BC5_DMABUF") != nullptr;
 +constexpr uint64_t kDChunk = 2ull << 20u;
 +constexpr uint64_t kDMaxBo = 32ull << 20u;
-+struct DView { uint64_t va, size, off; };
++struct DView {
++	uint64_t    va, size, off;
++	std::string name;
++	bool        lazy;
++};
 +struct DBo { uint64_t off, size; uint32_t id; };
 +struct DMap {
 +	uint64_t va, size, bo_off;
@@ -1424,11 +1428,52 @@ index 0000000..1757272
 +static std::set<uint64_t> g_dfailed; // chunks whose import failed (not retried)
 +static uint64_t g_dviews_sig = 0, g_dbos_mapped = 0, g_dbytes = 0, g_dsync_ns = 0, g_dfile_size = 0;
 +
++// BC5_DIRECT_LAZY_NAMES=name[,name...]: views of direct memory with these names (the game names
++// its mappings; "orbis_user_malloc" is its CPU heap) are not imported for holding data, only where
++// a hint or a learned fault region asks. Everything a draw's BO list names has to sit in the
++// driver's GTT domain at once, and that domain is half of the machine's RAM by default (run 96:
++// -ENOMEM at 6.8 GiB imported, experiment 0020); memory the GPU never reads should not count.
++static bool direct_lazy_name(const char* name) {
++	static const std::vector<std::string> names = [] {
++		std::vector<std::string> v;
++		if (const char* e = std::getenv("BC5_DIRECT_LAZY_NAMES"); e != nullptr) {
++			std::string cur;
++			for (const char* c = e;; c++) {
++				if (*c == ',' || *c == 0) {
++					if (!cur.empty()) v.push_back(cur);
++					cur.clear();
++					if (*c == 0) break;
++				} else {
++					cur.push_back(*c);
++				}
++			}
++		}
++		return v;
++	}();
++	if (name == nullptr || names.empty()) return false;
++	return std::find(names.begin(), names.end(), name) != names.end();
++}
++
 +static std::vector<DView> direct_views() {
 +	std::vector<DView> v;
-+	Libs::LibKernel::Memory::Bc5ForEachMappedRange(nullptr, &v, [](uint64_t start, uint64_t size, uint64_t offset, int type, int, const char*, void* p) {
-+		if (type == 0 && size != 0) static_cast<std::vector<DView>*>(p)->push_back({start, size, offset});
++	Libs::LibKernel::Memory::Bc5ForEachMappedRange(nullptr, &v, [](uint64_t start, uint64_t size, uint64_t offset, int type, int, const char* name, void* p) {
++		if (type == 0 && size != 0) static_cast<std::vector<DView>*>(p)->push_back({start, size, offset, name != nullptr ? name : "", direct_lazy_name(name)});
 +	});
++	return v;
++}
++
++// The driver's GTT accounting, from sysfs (mem_info_gtt_total / mem_info_gtt_used of the render
++// node's device), 0 when unreadable.
++static uint64_t direct_gtt(const char* leaf) {
++	const char*       node = std::getenv("BC5_DIRECT_NODE");
++	const std::string n    = node != nullptr ? node : "/dev/dri/renderD128";
++	const size_t      cut  = n.rfind('/');
++	const std::string path = "/sys/class/drm/" + (cut == std::string::npos ? n : n.substr(cut + 1)) + "/device/" + leaf;
++	unsigned long long v = 0;
++	if (FILE* f = std::fopen(path.c_str(), "r")) {
++		if (std::fscanf(f, "%llu", &v) != 1) v = 0;
++		std::fclose(f);
++	}
 +	return v;
 +}
 +
@@ -1438,6 +1483,62 @@ index 0000000..1757272
 +	if (it == g_dbos.begin()) return 0;
 +	--it;
 +	return off < it->off + it->size ? it->off + it->size : 0;
++}
++
++// Where the imported memory is, by the name the game gave each mapping: reserved, holding data
++// (SEEK_DATA/SEEK_HOLE over the memfd), imported. Journalled each time the imported total has
++// grown by 512 MiB, and when a submission fails with -ENOMEM.
++static uint64_t g_dreported = 0;
++static void direct_breakdown(const char* why, uint32_t list_bos) {
++	if (!g_dmabuf) return;
++	const int fd = Libs::LibKernel::Memory::Bc5DirectMemoryFd();
++	if (fd < 0) return;
++	struct Row {
++		uint64_t reserved = 0, data = 0, imported = 0;
++		uint32_t views = 0;
++		bool     lazy = false;
++	};
++	std::map<std::string, Row> rows;
++	Row                        total;
++	for (const auto& v: direct_views()) {
++		Row&           r   = rows[v.size >= (1ull << 20u) ? v.name : std::string("(views under 1 MiB)")];
++		const uint64_t end = v.off + v.size;
++		uint64_t       data = 0, imported = 0;
++		for (uint64_t pos = v.off; pos < end;) {
++			const off_t d = lseek(fd, static_cast<off_t>(pos), SEEK_DATA);
++			if (d < 0 || static_cast<uint64_t>(d) >= end) break;
++			const off_t    h  = lseek(fd, d, SEEK_HOLE);
++			const uint64_t he = h < 0 || static_cast<uint64_t>(h) > end ? end : static_cast<uint64_t>(h);
++			if (he <= static_cast<uint64_t>(d)) break;
++			data += he - static_cast<uint64_t>(d);
++			pos = he;
++		}
++		auto it = std::upper_bound(g_dbos.begin(), g_dbos.end(), v.off, [](uint64_t o, const DBo& b) { return o < b.off; });
++		if (it != g_dbos.begin()) --it;
++		for (; it != g_dbos.end() && it->off < end; ++it) {
++			const uint64_t lo = it->off > v.off ? it->off : v.off;
++			const uint64_t hi = it->off + it->size < end ? it->off + it->size : end;
++			if (lo < hi) imported += hi - lo;
++		}
++		r.views++;
++		r.reserved += v.size;
++		r.data += data;
++		r.imported += imported;
++		r.lazy = r.lazy || v.lazy;
++		total.views++;
++		total.reserved += v.size;
++		total.data += data;
++		total.imported += imported;
++	}
++	const double mib = 1048576.0;
++	journal("direct by name (%s): %zu BOs, %.1f MiB imported; BO list of the submit %u; GTT %.1f of %.1f MiB in use\n", why, g_dbos.size(),
++	        static_cast<double>(g_dbytes) / mib, list_bos, static_cast<double>(direct_gtt("mem_info_gtt_used")) / mib, static_cast<double>(direct_gtt("mem_info_gtt_total")) / mib);
++	for (const auto& [name, r]: rows) {
++		journal("  %-28s %3u views: %8.1f MiB reserved, %8.1f with data, %8.1f imported%s\n", name.c_str(), r.views, static_cast<double>(r.reserved) / mib,
++		        static_cast<double>(r.data) / mib, static_cast<double>(r.imported) / mib, r.lazy ? " (lazy)" : "");
++	}
++	journal("  %-28s %3u views: %8.1f MiB reserved, %8.1f with data, %8.1f imported\n", "total (views may alias)", total.views, static_cast<double>(total.reserved) / mib,
++	        static_cast<double>(total.data) / mib, static_cast<double>(total.imported) / mib);
 +}
 +
 +static void direct_sync(bool force) {
@@ -1450,13 +1551,17 @@ index 0000000..1757272
 +	if (g_dfile_size == 0) {
 +		const off_t e = lseek(fd, 0, SEEK_END);
 +		g_dfile_size = e > 0 ? static_cast<uint64_t>(e) : 0;
-+		journal("direct memory: memfd %d, %.1f MiB; chunks of %" PRIu64 " MiB, BOs up to %" PRIu64 " MiB\n", fd, static_cast<double>(g_dfile_size) / 1048576.0, kDChunk >> 20u, kDMaxBo >> 20u);
++		journal("direct memory: memfd %d, %.1f MiB; chunks of %" PRIu64 " MiB, BOs up to %" PRIu64 " MiB; GTT %.1f of %.1f MiB in use%s%s\n", fd,
++		        static_cast<double>(g_dfile_size) / 1048576.0, kDChunk >> 20u, kDMaxBo >> 20u, static_cast<double>(direct_gtt("mem_info_gtt_used")) / 1048576.0,
++		        static_cast<double>(direct_gtt("mem_info_gtt_total")) / 1048576.0, std::getenv("BC5_DIRECT_LAZY_NAMES") != nullptr ? "; lazy names: " : "",
++		        std::getenv("BC5_DIRECT_LAZY_NAMES") != nullptr ? std::getenv("BC5_DIRECT_LAZY_NAMES") : "");
 +	}
 +	const std::vector<DView> views = direct_views();
 +
 +	// 1. chunks to import: data inside a view, and the forced ones
 +	std::vector<uint64_t> need;
 +	for (const auto& v: views) {
++		if (v.lazy) continue; // BC5_DIRECT_LAZY_NAMES: only what is forced
 +		const uint64_t end = v.off + v.size;
 +		uint64_t pos = v.off & ~(kDChunk - 1);
 +		while (pos < end) {
@@ -1538,6 +1643,10 @@ index 0000000..1757272
 +	if (imported != 0 || mapped != 0 || unmapped != 0 || map_failed != 0) {
 +		journal("direct: %zu views; +%u BOs (%zu, %.1f MiB pinned); maps +%u -%u (%zu)%s\n", views.size(), imported, g_dbos.size(), static_cast<double>(g_dbytes) / 1048576.0,
 +		        mapped, unmapped, g_dmaps.size(), map_failed != 0 ? "; SOME MAPS FAILED" : "");
++	}
++	if (g_dbytes >= g_dreported + (512ull << 20u)) {
++		g_dreported = g_dbytes;
++		direct_breakdown("growth", 0);
 +	}
 +}
 +
@@ -2958,6 +3067,13 @@ index 0000000..1757272
 +		           r.filter.cu_mask_rewrites, r.filter.int_sel_rewrites, r.filter.context_control_rewrites,
 +		           r.filter.unmapped_drops, r.filter.extra_drops, r.filter.truncated, g_ok.load());
 +	}
++	if (!r.ok && r.rc == -12) { // -ENOMEM: the BO list does not fit the driver's GTT domain (run 96)
++		static uint64_t last_ns = 0;
++		if (const uint64_t now = SoftCp::now_ns(); last_ns == 0 || now - last_ns > 5000000000ull) {
++			last_ns = now;
++			direct_breakdown("ENOMEM", r.bo_count);
++		}
++	}
 +	if (r.timed_out) {
 +		LOGF_COLOR(Log::Color::Red, "[bc5-direct] fence timeout: fault 0x%" PRIx64 " status 0x%08x\n", r.fault_addr, r.fault_status);
 +		journal("timeout: fault 0x%" PRIx64 " status 0x%08x\n", r.fault_addr, r.fault_status);
@@ -2987,6 +3103,7 @@ index 0000000..1757272
 +			g_dviews_sig = 0;
 +			g_dbos_mapped = 0;
 +			g_dbytes = 0;
++			g_dreported = 0;
 +			g_dsync_ns = 0;
 +			LOGF_COLOR(Log::Color::Yellow, "[bc5-direct] device reopened after the fault: %s\n", g_dev ? "ok" : "FAILED");
 +			journal("reopen: %s\n", g_dev ? "ok" : "FAILED");

@@ -120,3 +120,8 @@ functions ASTRO BOT imports and KytyPlus lacked (`Value::referValue`, `Value::to
 `Array`/`Object` iterators, copy constructors and setters), names from the public NID tables;
 layout assumptions are marked `TODO(verify)` in the source. No system module is loaded for it:
 there is no firmware dump to load one from.
+Experiment 0020: the HLE `Json2` library gained the 28 `sce::Json` functions the game imports
+(`KYTY_BC5_JSON_TRACE=1` logs keys, types and text). For the GTT ceiling of run 96 (F44) the
+journal breaks imported memory down by the game's mapping names every 512 MiB and on `-ENOMEM`;
+`BC5_DIRECT_LAZY_NAMES=orbis_user_malloc` imports views of that name only where a hint or a
+learned fault asks.

@@ -1,0 +1,63 @@
+run 96, 2026-10-01 16:44, capture kytyplus-20261001-1644 (journal excerpts; register-table contents not included)
+
+== totals
+submits 15101, ok 14484, failed 50, of them rc -12: 49, flips 997
+
+== scene command buffers (dcb over 20000 dwords): first five and the count
+submit #14267 dcb 25382 dwords at 0x502e02500: pass 2044 rewrite 567 drop 522 unmapped 1 cc 16 mappings 1016 ... FAILED rc 0 TIMEOUT 2031.48 ms
+submit #14281 dcb 24932 dwords at 0x502002500: pass 1998 rewrite 560 drop 508 unmapped 1 cc 16 mappings 377 ... OK rc 0 15.39 ms
+submit #14295 dcb 25140 dwords at 0x502702500: pass 2020 rewrite 564 drop 518 unmapped 1 cc 16 mappings 385 ... OK rc 0 16.87 ms
+submit #14309 dcb 24668 dwords at 0x502e02500: pass 1968 rewrite 557 drop 504 unmapped 1 cc 16 mappings 392 ... OK rc 0 13.22 ms
+submit #14323 dcb 24740 dwords at 0x502002500: pass 1973 rewrite 557 drop 504 unmapped 1 cc 16 mappings 398 ... OK rc 0 14.12 ms
+60
+
+== the timeout and the reopen
+timing: #14267 done at t 87.599 s, 2075.4 ms after the sync and hints; device: prepare 1.57 list 0.45 cs 3.19 fence 2028.29 ms, 941 BOs
+timeout: fault 0x559f05000 status 0x00641051
+learned: fault 0x559f05000 -> region 0x556000000+0x6000000 (saved)
+reopen: ok
+timing: #14268 done at t 101.676 s, 1.3 ms after the sync and hints; device: prepare 0.11 list 0.01 cs 0.03 fence 0.04 ms, 5 BOs (short list)
+
+== first failures with -ENOMEM
+submit #14589 dcb 24218 dwords at 0x502702500: pass 1934 rewrite 557 drop 504 unmapped 1 cc 16 mappings 529 ... FAILED rc -12 2.28 ms
+submit #14596 dcb 3132 dwords at 0x504302500: pass 309 rewrite 129 drop 128 unmapped 0 cc 4 mappings 529 ... FAILED rc -12 18.90 ms
+submit #14597 dcb 851 dwords at 0x505e02500: pass 47 rewrite 55 drop 45 unmapped 0 cc 0 mappings 529 ... FAILED rc -12 17.46 ms
+submit #14599 acb 463 dwords at 0x400526840: pass 43 rewrite 11 drop 27 unmapped 0 cc 0 mappings 529 ... FAILED rc -12 16.34 ms
+timing: #14589 done at t 106.740 s, 33.4 ms after the sync and hints; device: prepare 0.61 list 0.18 cs 2.28 fence 0.00 ms, 453 BOs
+
+== imported direct memory over the run (every 40th line, and the last)
+direct: enabled, stage all, cu mask 0xffffffff, bo list with mappings
+direct: 68 views; +2 BOs (163, 2196.0 MiB pinned); maps +2 -0 (225)
+direct: 68 views; +1 BOs (210, 2432.0 MiB pinned); maps +1 -0 (272)
+direct: 68 views; +1 BOs (255, 2624.0 MiB pinned); maps +1 -0 (317)
+direct: 68 views; +1 BOs (295, 2752.0 MiB pinned); maps +1 -0 (357)
+direct: 68 views; +1 BOs (336, 2906.0 MiB pinned); maps +1 -0 (398)
+direct: 68 views; +1 BOs (378, 3048.0 MiB pinned); maps +1 -0 (440)
+direct: 70 views; +2 BOs (420, 3174.0 MiB pinned); maps +2 -0 (484)
+direct: 70 views; +1 BOs (471, 3358.0 MiB pinned); maps +1 -0 (535)
+direct: 70 views; +1 BOs (517, 3516.0 MiB pinned); maps +1 -0 (581)
+direct: 74 views; +1 BOs (565, 3680.0 MiB pinned); maps +5 -0 (633)
+direct: 80 views; +1 BOs (617, 3964.0 MiB pinned); maps +1 -0 (691)
+direct: 80 views; +1 BOs (657, 4192.0 MiB pinned); maps +1 -0 (731)
+direct: 80 views; +1 BOs (698, 4370.0 MiB pinned); maps +1 -0 (772)
+direct: 80 views; +1 BOs (751, 4598.0 MiB pinned); maps +1 -0 (825)
+direct: 80 views; +1 BOs (801, 4810.0 MiB pinned); maps +1 -0 (875)
+direct: 86 views; +1 BOs (228, 5772.0 MiB pinned); maps +1 -0 (309)
+direct: 86 views; +1 BOs (268, 5970.0 MiB pinned); maps +1 -0 (349)
+direct: 86 views; +1 BOs (308, 6206.0 MiB pinned); maps +1 -0 (389)
+direct: 86 views; +1 BOs (348, 6512.0 MiB pinned); maps +1 -0 (429)
+direct: 86 views; +1 BOs (371, 6780.0 MiB pinned); maps +1 -0 (452)
+
+== kernel (dmesg, first lines of each kind)
+[19696.211423] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:6 pasid:229)
+[19696.211437] amdgpu 0000:01:00.0:   in page starting at address 0x0000000559ece000 from client 0x1b (UTCL2)
+[19696.211441] amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00641051
+[19696.211444] amdgpu 0000:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+[19717.381389] amdgpu 0000:01:00.0: [drm] *ERROR* Not enough memory for command submission!
+[19717.456426] amdgpu 0000:01:00.0: [drm] *ERROR* Not enough memory for command submission!
+[19717.489755] amdgpu 0000:01:00.0: [drm] *ERROR* Not enough memory for command submission!
+[19759.007786] amdgpu 0000:01:00.0: VM memory stats for proc kyty_emulator(123013) task kyty_emulator(122952) is non-zero when fini
+count of "Not enough memory for command submission": 576
+
+== after the run
+mem_info_gtt_total 7966150656, ttm pages_limit 1944861 (x4096 = 7966150656), mem_info_gtt_used 57143296 with the emulator gone
