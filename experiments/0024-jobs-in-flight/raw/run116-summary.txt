@@ -1,0 +1,11 @@
+run 116, 2026-10-02 00:03, one run with the maintainer at the controller, jobs in flight, the build with getInteger() serving both integer types and the save data memory in a file; ran to its limit of 1800 s (journal excerpts)
+
+== async: kytyplus-20261002-0003
+submits 1332438, ok 1332438, failed 0, flips 91097, timeouts 0, soft-CP wait timeouts 0, cross-queue waits given up 0, page faults 0, assertions 0
+title screen, nobody at the controller, 0-927 s: 54-55 fps throughout
+flips per 30 s from 900 s:
+t900:1632 t930:1797 t960:1758 t990:1794 t1020:1801 t1050:1768 t1080:956 t1110:1484 t1140:1594 t1170:1529 t1200:1440 t1230:1496 t1260:1499 t1290:1613 t1320:1676 t1350:1006 t1380:1327 t1410:1557 t1440:1796 t1470:1190 t1500:915 t1530:1268 t1560:1053 t1590:1161 t1620:1068 t1650:1056 t1680:1279 t1710:1164 t1740:1198 t1770:1151
+phases: first press at 927 s, level load to about 1079 s, end of the load 1080-1095 s, cutscene and first level to about 1343 s, load end 1356-1365 s, galaxy map and flight to about 1450 s, load of the second level, second level under the player's control from about 1500 s to the limit
+seconds with fewer than 20 flips after the first press: 1080-1095, 1344, 1356-1365, 1386-1387
+second level: 35-43 fps
+save data memory: read at start (2 MiB), written 66 times

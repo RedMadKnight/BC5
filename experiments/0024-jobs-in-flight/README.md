@@ -201,3 +201,17 @@ the game writes its initial save four times at start-up; 28 flips as before.
 minutes, half a million submissions, nothing failed. A page fault with jobs in flight has
 still not happened in a run. The launcher's settings on the dev box now have
 `BC5_DIRECT_ASYNC=1`.
+
+*Run 116* (2026-10-02 00:03, GPU, jobs in flight, the maintainer at the controller, the build
+with both corrections; capture `kytyplus-20261002-0003`, `raw/run116-summary.txt`): **the
+second level loads and plays. 1,332,438 submissions in 30 minutes, none failed, no wait timed
+out, no assertion.** The run sat at the title screen for its first fifteen minutes (54–55 fps
+throughout), then went through the first level (48–56 fps), the galaxy map and the flight, and
+into the second level, which ran under the player's control at 35–43 fps until the run's time
+limit ended it. The save data memory was read at start and written 66 times.
+
+Whether the second level's lower rate is the GPU's own time or the host's has not been
+measured; that is the next thing to look at.
+
+**Verdict (2026-10-02, 00:40).** Passed. Jobs in flight is how the game is run from here on;
+the synchronous path stays as the reference (`BC5_DIRECT_ASYNC` unset).
