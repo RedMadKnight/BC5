@@ -140,3 +140,5 @@ Host completeness found by run 103: `kernel/fileSystem.cpp` keeps each directory
 to lower case, valid while the directory's modification time is unchanged) instead of listing the
 directory for every missing file; `libs/controller.*` and the window's event loop pass the pad's
 accelerometer and gyroscope (SDL sensors) into the pad state.
+`BC5_DIRECT_EAGER_NAMES=name[,name]` imports views with these names in full as soon as they exist
+(the game's GPU heaps: render targets and GPU-written textures that no CPU write would reveal).

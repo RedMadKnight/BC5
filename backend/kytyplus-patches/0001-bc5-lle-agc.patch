@@ -784,10 +784,10 @@ index 5f87e6b..e5c534e 100644
  	CondRemoveWaiter(cond_value, thread);
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..a07ab95
+index 0000000..7c8458c
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,3656 @@
+@@ -0,0 +1,3690 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -1818,6 +1818,7 @@ index 0000000..a07ab95
 +	uint64_t    va, size, off;
 +	std::string name;
 +	bool        lazy;
++	bool        eager;
 +};
 +struct DBo { uint64_t off, size; uint32_t id; uint64_t t_ns; };
 +struct DMap {
@@ -1866,10 +1867,36 @@ index 0000000..a07ab95
 +	return std::find(names.begin(), names.end(), name) != names.end();
 +}
 +
++// BC5_DIRECT_EAGER_NAMES=name[,name...]: views with these names are imported in full as soon as
++// they exist, data or not. The game's GPU heaps hold render targets and GPU-written textures no
++// CPU ever touches; the first draw into one faulted, and a fault is a 14 s freeze (2 s fence
++// timeout, 12 s for the kernel's reset; run 103: opening the pause menu). All 18 regions learned
++// from faults so far lie in those two heaps.
++static bool direct_eager_name(const char* name) {
++	static const std::vector<std::string> names = [] {
++		std::vector<std::string> v;
++		if (const char* e = std::getenv("BC5_DIRECT_EAGER_NAMES"); e != nullptr) {
++			std::string cur;
++			for (const char* c = e;; c++) {
++				if (*c == ',' || *c == 0) {
++					if (!cur.empty()) v.push_back(cur);
++					cur.clear();
++					if (*c == 0) break;
++				} else {
++					cur.push_back(*c);
++				}
++			}
++		}
++		return v;
++	}();
++	if (name == nullptr || names.empty()) return false;
++	return std::find(names.begin(), names.end(), name) != names.end();
++}
++
 +static std::vector<DView> direct_views() {
 +	std::vector<DView> v;
 +	Libs::LibKernel::Memory::Bc5ForEachMappedRange(nullptr, &v, [](uint64_t start, uint64_t size, uint64_t offset, int type, int, const char* name, void* p) {
-+		if (type == 0 && size != 0) static_cast<std::vector<DView>*>(p)->push_back({start, size, offset, name != nullptr ? name : "", direct_lazy_name(name)});
++		if (type == 0 && size != 0) static_cast<std::vector<DView>*>(p)->push_back({start, size, offset, name != nullptr ? name : "", direct_lazy_name(name), direct_eager_name(name)});
 +	});
 +	return v;
 +}
@@ -1967,6 +1994,7 @@ index 0000000..a07ab95
 +		        static_cast<double>(g_dfile_size) / 1048576.0, kDChunk >> 20u, kDMaxBo >> 20u, static_cast<double>(direct_gtt("mem_info_gtt_used")) / 1048576.0,
 +		        static_cast<double>(direct_gtt("mem_info_gtt_total")) / 1048576.0, std::getenv("BC5_DIRECT_LAZY_NAMES") != nullptr ? "; lazy names: " : "",
 +		        std::getenv("BC5_DIRECT_LAZY_NAMES") != nullptr ? std::getenv("BC5_DIRECT_LAZY_NAMES") : "");
++		if (const char* e = std::getenv("BC5_DIRECT_EAGER_NAMES"); e != nullptr) journal("direct memory: eager names: %s\n", e);
 +	}
 +	const std::vector<DView> views = direct_views();
 +	g_dprof_views_ns += SoftCp::now_ns() - now;
@@ -1992,6 +2020,12 @@ index 0000000..a07ab95
 +	// 1. chunks to import: data inside a view, and the forced ones
 +	std::vector<uint64_t> need;
 +	for (const auto& v: views) {
++		if (v.eager) { // BC5_DIRECT_EAGER_NAMES: every chunk of the view
++			for (uint64_t c = v.off & ~(kDChunk - 1); c < v.off + v.size; c += kDChunk) {
++				if (direct_covered_end(c) == 0) need.push_back(c);
++			}
++			continue;
++		}
 +		if (v.lazy) continue; // BC5_DIRECT_LAZY_NAMES: only what is forced
 +		const uint64_t end = v.off + v.size;
 +		uint64_t pos = v.off & ~(kDChunk - 1);
