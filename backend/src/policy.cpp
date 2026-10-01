@@ -429,6 +429,10 @@ std::size_t filter(const Policy &policy, std::span<const std::uint32_t> src,
                 }
                 stats.gds_rewrites++;
             }
+            if (opcode == 0x12 && len >= 2 && out[i + 1] != 0) { // CLEAR_STATE: only cmd 0 is AMD's
+                out[i + 1] = 0;
+                stats.clear_state_rewrites++;
+            }
             if (opt.ordered_append_enable && ((opcode == 0x15 && len >= 5) || (opcode == 0x16 && len >= 3))) {
                 // DISPATCH_DIRECT: dim x, y, z, initiator; DISPATCH_INDIRECT: data offset, initiator.
                 std::uint32_t &init = out[i + (opcode == 0x15 ? 4 : 2)];

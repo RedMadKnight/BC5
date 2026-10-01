@@ -475,6 +475,18 @@ exactly one value (0x38003800, an FP16 clear colour, or 0), every depth buffer o
 runs the game's clears and compute, the NGG pass-through geometry pipeline leaves no pixel, so
 the flip pass's full-screen triangle is one of many draws that produce nothing (F33).
 
+**Run 64, `draw-min --submit`** (00:33): phase-3 task 2 — libdrm's gfx10 memset draw (RectPosTexFast
+VS, constant PS, one `DRAW_INDEX_AUTO`) through the very direct path (anonymous memory as 1:1
+userptrs, policy filter, scratch, GFX ring): **16,384 of 16,384 bytes = 0x33**, the 32×32 target
+fully drawn, 0.05 ms. Draws work in this model; the game's state or shaders are what differs.
+The console's context-register image (`LOAD_CONTEXT_REG` from 0xfe0008000) covers
+0x0–0xd6, 0xd8–0x1e7, 0x1f5–0x1f8, 0x1ff–0x29c, 0x2a0–0x2a1, 0x2a3, 0x2a5–0x2ea, 0x2f5–0x3c7:
+it skips `PA_SC_TILE_STEERING_OVERRIDE` (0xd7) and a few other ranges the console's system owns;
+on the BC-250 those stay whatever the context bank held, because the game's `CLEAR_STATE` is
+dropped (cmd 1/2 hang). The libdrm test writes 0xd7 itself. Next: `CLEAR_STATE` rewritten to
+cmd 0 (the kernel's clear state, as RADV does per IB) and the chip's tile-steering value in a
+prologue.
+
 **Verdict (2026-10-01, 00:20).** Steps (a)–(c) passed; (d) and (e) run the game's frames, draws,
 dispatches and both queue types on the BC-250 stall-free (runs 54–63: 230+ of 234 submits, no
 reset), with GDS counters reset and read back correctly since the DMA-selector fix. G3's image is

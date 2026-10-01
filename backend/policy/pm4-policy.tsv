@@ -13,7 +13,7 @@ default-reg	pass	context/SH/uconfig writes are user-writable on gfx10 unless lis
 type0	drop	type-0 register writes are not accepted in user IBs
 op	0x10	pass	NOP
 op	0x11	pass	SET_BASE
-op	0x12	drop	CLEAR_STATE: the console driver emits cmd 1 and 2 (AMD drivers and PAL emit cmd 0); executed on the BC-250 the CP stops 5-100 ms later on any following submission (experiment 0016, runs 16-20). TODO(verify) what cmd 1/2 mean; rewrite to cmd 0 is the alternative
+op	0x12	rewrite	CLEAR_STATE: the console driver emits cmd 1 and 2 (AMD drivers and PAL emit cmd 0); executed as-is the CP stops 5-100 ms later (experiment 0016, runs 16-20); rewritten to cmd 0, which loads the kernel's clear state like RADV's per-IB CLEAR_STATE does (run 65). TODO(verify) what cmd 1/2 mean
 op	0x13	pass	INDEX_BUFFER_SIZE
 op	0x15	pass	DISPATCH_DIRECT
 op	0x16	pass	DISPATCH_INDIRECT
