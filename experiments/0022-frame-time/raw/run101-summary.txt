@@ -1,0 +1,47 @@
+run 101, 2026-10-01 18:30, capture kytyplus-20261001-1830, BC5_DIRECT_JOURNAL=min, merged imports, kept BO list; ended by the maintainer at 356 s (journal excerpts)
+
+submits 99794, ok 99793, failed 0, flips 7047, timeouts 0
+
+== per 30 s: submissions, command buffers over 20000 dwords
+t0: 9412 submits, 0 large dcbs
+t30: 9622 submits, 201 large dcbs
+t60: 7813 submits, 558 large dcbs
+t90: 7917 submits, 566 large dcbs
+t120: 7952 submits, 568 large dcbs
+t150: 8148 submits, 582 large dcbs
+t180: 8380 submits, 598 large dcbs
+t210: 8350 submits, 597 large dcbs
+t240: 8368 submits, 597 large dcbs
+t270: 8341 submits, 596 large dcbs
+t300: 8323 submits, 595 large dcbs
+t330: 7168 submits, 512 large dcbs
+
+== imports
+direct memory: memfd 4, 13824.0 MiB; chunks of 2 MiB, BOs up to 64 MiB; GTT 543.0 of 13312.0 MiB in use; lazy names: orbis_user_malloc
+direct: 86 views; +0 BOs (128, 6124.0 MiB pinned); maps +2 -22 (207)
+merge passes: 61
+direct merge: 52 BOs became 3 (148 BOs now)
+direct merge: 22 BOs became 2 (128 BOs now)
+
+== a late submission with draws
+submit #99793 dcb 27211 dwords at 0x502002500: pass 2215 
+timing: #99792 done at t 356.020 s, 2.5 ms after the sync and hints; device: prepare 0.06 list 0.00 cs 2.21 fence 0.16 ms, 246 BOs
+
+== controller (emulator log, kernel log)
+Controller added: 0, time = 0.0003
+Controller removed: 0, time = 73.7717
+[   12.913696] playstation 0003:054C:0CE6.0004: Registered DualSense controller hw_version=0x00000514 fw_versi
+[ 1886.076053] usb 3-1: USB disconnect, device number 4
+[ 1899.337162] playstation 0003:054C:0CE6.0005: Registered DualSense controller hw_version=0x00000514 fw_versi
+[ 1913.799728] usb 3-1: USB disconnect, device number 5
+[ 1914.569911] playstation 0003:054C:0CE6.0006: Registered DualSense controller hw_version=0x00000514 fw_versi
+[ 1916.279214] usb 3-1: USB disconnect, device number 6
+[ 1920.896756] playstation 0003:054C:0CE6.0007: Registered DualSense controller hw_version=0x00000514 fw_versi
+[ 1942.228054] usb 3-1: USB disconnect, device number 7
+[ 1945.162310] playstation 0003:054C:0CE6.0008: Registered DualSense controller hw_version=0x00000514 fw_versi
+[ 1948.432105] usb 3-1: USB disconnect, device number 8
+[ 1952.500226] playstation 0003:054C:0CE6.0009: Registered DualSense controller hw_version=0x00000514 fw_versi
+[ 1952.556067] usb 3-1: USB disconnect, device number 9
+[ 1954.528396] playstation 0003:054C:0CE6.000A: Registered DualSense controller hw_version=0x00000514 fw_versi
+[ 2147.150744] usb 3-1: USB disconnect, device number 10
+[ 2150.917953] playstation 0003:054C:0CE6.000B: Registered DualSense controller hw_version=0x00000514 fw_versi

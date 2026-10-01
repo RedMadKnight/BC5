@@ -64,4 +64,34 @@ The plan, in order of size:
 - kept BO list (backend): the list of a submission with draws is reused while the set of mapped
   BOs and the scratch BO stay the same.
 
-**Verdict.** Open: baseline recorded; steps 1 and 2 await a GPU run.
+*Run 101* (18:30, GPU, `BC5_DIRECT_JOURNAL=min`, merged imports, kept BO list; capture
+`kytyplus-20261001-1830`, `raw/run101-summary.txt`): **99,794 submissions in 356 s, none
+failed, no fault; the title-screen scene runs at 19.8 fps instead of 7.4–8.2** (runs 97 and
+99), the picture unchanged. The intro before it now takes its own 45 s instead of 85. 128
+imports for 6,124 MiB (61 merge passes); a draw's list has 246 BOs. The dump directory is 56 MB.
+
+A title-screen frame, averaged over 180 s (3,565 frames, 14 submissions per frame):
+
+| Part | run 97, ms | run 101, ms |
+|---|---|---|
+| mapping sync | 15 | 12.5 |
+| render-target hints | 3.5 | 4.6 |
+| device: `prepare` | 4 | 1.1 |
+| device: BO list | 3 | 0.1 |
+| device: submission ioctl | 21 | 14.5 |
+| device: waiting for the fence | 15 | 14.3 |
+| around the device call, the game, the rest | 60 | 3.4 |
+| **frame** | **122** | **50.5** |
+
+The cutscene was not reached: the controller dropped off the USB bus 75 s into the run (kernel
+log: eight disconnect–reconnect cycles of the DualSense within 70 s, one more later), and the
+emulator, inside its container, does not see a controller that comes back. That is the dev
+box's cabling or port and the container's missing hot-plug, not the GPU path; the maintainer
+ended the run.
+
+What is left of the frame is now mostly three things of similar size: the mapping sync and
+hints (17 ms), the submission ioctl (14.5 ms over 14 submissions), and the GPU's own time
+(14.3 ms, waited for synchronously).
+
+**Verdict.** Open: steps 1 and 2 confirmed on the GPU (2.4 times the frame rate at the title
+screen); the cutscene comparison and steps 3 and 4 are still to do.
