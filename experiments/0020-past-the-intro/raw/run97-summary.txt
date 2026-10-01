@@ -1,0 +1,140 @@
+run 97, 2026-10-01 17:09, capture kytyplus-20261001-1709, BC5_DIRECT_LAZY_NAMES=orbis_user_malloc, 200 s (journal excerpts; register-table contents not included)
+
+submits 27273, ok 26343, failed 0, flips 1866, timeouts 0
+
+== scene command buffers (dcb over 20000 dwords): first, last, count
+submit #14211 dcb 25409 dwords at 0x502702500: pass 2037 rewrite 565 drop 524 unmapped 3 cc 16 mappings 913 ... OK rc 0 15.65 ms
+submit #27259 dcb 25479 dwords at 0x502002500: pass 2077 rewrite 578 drop 538 unmapped 3 cc 18 mappings 1246 ... OK rc 0 15.65 ms
+933
+timing: #14211 done at t 84.708 s, 50.8 ms after the sync and hints; device: prepare 1.08 list 0.30 cs 2.91 fence 12.74 ms, 840 BOs
+timing: #27271 done at t 198.242 s, 5.8 ms after the sync and hints; device: prepare 0.43 list 0.44 cs 2.99 fence 0.81 ms, 1173 BOs
+
+== imported memory by name, every 512 MiB
+direct by name (growth): 29 BOs, 584.0 MiB imported; BO list of the submit 0; GTT 1226.7 of 7597.1 MiB in use
+  (views under 1 MiB)           32 views:      1.6 MiB reserved,      1.6 with data,      1.6 imported (lazy)
+  GpuGarlicMemory                1 views:   2172.0 MiB reserved,    530.0 with data,    530.0 imported
+  GpuOnionMemory                 1 views:    184.0 MiB reserved,     30.0 with data,     30.0 imported
+  ResourceMemoryAllocator        1 views:   3232.0 MiB reserved,      0.0 with data,      0.0 imported
+  SceAgcDriver                   1 views:      1.8 MiB reserved,      1.8 with data,      1.8 imported
+  TextureMemory                  1 views:   4608.0 MiB reserved,      0.0 with data,      0.0 imported
+  orbis_user_malloc             11 views:   2014.6 MiB reserved,    123.7 with data,     20.6 imported (lazy)
+  total (views may alias)       48 views:  12214.0 MiB reserved,    687.1 with data,    584.0 imported
+learned 0x54e000000: window 0x54e000000+0x6000000, direct memory +96.0 MiB
+direct: 48 views; +3 BOs (32, 680.0 MiB pinned); maps +3 -0 (75)
+direct by name (growth): 45 BOs, 1096.0 MiB imported; BO list of the submit 0; GTT 1226.7 of 7597.1 MiB in use
+  (views under 1 MiB)           32 views:      1.6 MiB reserved,      1.6 with data,      1.6 imported (lazy)
+  GpuGarlicMemory                1 views:   2172.0 MiB reserved,    946.0 with data,    946.0 imported
+  GpuOnionMemory                 1 views:    184.0 MiB reserved,    126.0 with data,    126.0 imported
+  ResourceMemoryAllocator        1 views:   3232.0 MiB reserved,      0.0 with data,      0.0 imported
+  SceAgcDriver                   1 views:      1.8 MiB reserved,      1.8 with data,      1.8 imported
+  TextureMemory                  1 views:   4608.0 MiB reserved,      0.0 with data,      0.0 imported
+  orbis_user_malloc             11 views:   2014.6 MiB reserved,    123.7 with data,     20.6 imported (lazy)
+  total (views may alias)       48 views:  12214.0 MiB reserved,   1199.1 with data,   1096.0 imported
+learned 0x402000000: window 0x402000000+0x6000000, direct memory +96.0 MiB
+direct: 48 views; +2 BOs (47, 1152.0 MiB pinned); maps +2 -0 (90)
+direct by name (growth): 114 BOs, 1612.0 MiB imported; BO list of the submit 0; GTT 2840.6 of 7597.1 MiB in use
+  (views under 1 MiB)           42 views:      1.9 MiB reserved,      1.9 with data,      1.9 imported (lazy)
+  GpuGarlicMemory                1 views:   2172.0 MiB reserved,   1374.0 with data,   1374.0 imported
+  GpuOnionMemory                 1 views:    184.0 MiB reserved,    126.0 with data,    126.0 imported
+  ResourceMemoryAllocator        1 views:   3232.0 MiB reserved,     34.0 with data,     34.0 imported
+  SceAgcDriver                   1 views:      1.8 MiB reserved,      1.8 with data,      1.8 imported
+  TextureMemory                  1 views:   4608.0 MiB reserved,     34.0 with data,     34.0 imported
+  VideoPlayerHeap                1 views:    128.0 MiB reserved,      4.0 with data,      4.0 imported
+  VideoPlayerTexture             1 views:     64.0 MiB reserved,      0.0 with data,      0.0 imported
+  orbis_user_malloc             19 views:   2014.4 MiB reserved,    373.5 with data,     36.4 imported (lazy)
+  total (views may alias)       68 views:  12406.0 MiB reserved,   1949.1 with data,   1612.0 imported
+direct by name (growth): 233 BOs, 2124.0 MiB imported; BO list of the submit 0; GTT 3699.3 of 7597.1 MiB in use
+  (views under 1 MiB)           42 views:      1.9 MiB reserved,      1.9 with data,      1.9 imported (lazy)
+  GpuGarlicMemory                1 views:   2172.0 MiB reserved,   1580.0 with data,   1580.0 imported
+  GpuOnionMemory                 1 views:    184.0 MiB reserved,    126.0 with data,    126.0 imported
+  ResourceMemoryAllocator        1 views:   3232.0 MiB reserved,    216.0 with data,    216.0 imported
+  SceAgcDriver                   1 views:      1.8 MiB reserved,      1.8 with data,      1.8 imported
+  TextureMemory                  1 views:   4608.0 MiB reserved,    170.1 with data,    158.0 imported
+  VideoPlayerHeap                1 views:    128.0 MiB reserved,      4.0 with data,      4.0 imported
+  VideoPlayerTexture             1 views:     64.0 MiB reserved,      0.0 with data,      0.0 imported
+  orbis_user_malloc             19 views:   2014.4 MiB reserved,    585.5 with data,     36.4 imported (lazy)
+  total (views may alias)       68 views:  12406.0 MiB reserved,   2685.3 with data,   2124.0 imported
+direct by name (growth): 380 BOs, 2638.0 MiB imported; BO list of the submit 0; GTT 4213.3 of 7597.1 MiB in use
+  (views under 1 MiB)           43 views:      1.9 MiB reserved,      1.9 with data,      1.9 imported (lazy)
+  GpuGarlicMemory                1 views:   2172.0 MiB reserved,   1580.0 with data,   1580.0 imported
+  GpuOnionMemory                 1 views:    184.0 MiB reserved,    126.0 with data,    126.0 imported
+  ResourceMemoryAllocator        1 views:   3232.0 MiB reserved,    284.0 with data,    284.0 imported
+  SceAgcDriver                   1 views:      1.8 MiB reserved,      1.8 with data,      1.8 imported
+  TextureMemory                  1 views:   4608.0 MiB reserved,    615.5 with data,    602.0 imported
+  VideoPlayerHeap                1 views:    128.0 MiB reserved,      4.0 with data,      4.0 imported
+  VideoPlayerTexture             1 views:     64.0 MiB reserved,      0.0 with data,      0.0 imported
+  orbis_user_malloc             20 views:   2014.4 MiB reserved,    603.6 with data,     38.4 imported (lazy)
+  total (views may alias)       70 views:  12406.0 MiB reserved,   3216.7 with data,   2638.0 imported
+direct by name (growth): 516 BOs, 3152.0 MiB imported; BO list of the submit 0; GTT 4727.4 of 7597.1 MiB in use
+  (views under 1 MiB)           48 views:      2.2 MiB reserved,      2.2 with data,      2.2 imported (lazy)
+  GpuGarlicMemory                1 views:   2172.0 MiB reserved,   1580.0 with data,   1580.0 imported
+  GpuOnionMemory                 1 views:    184.0 MiB reserved,    126.0 with data,    126.0 imported
+  ResourceMemoryAllocator        1 views:   3232.0 MiB reserved,    370.0 with data,    370.0 imported
+  SceAgcDriver                   1 views:      1.8 MiB reserved,      1.8 with data,      1.8 imported
+  TextureMemory                  1 views:   4608.0 MiB reserved,   1065.2 with data,   1026.0 imported
+  VideoPlayerHeap                1 views:    128.0 MiB reserved,      4.0 with data,      4.0 imported
+  VideoPlayerTexture             1 views:     64.0 MiB reserved,      0.0 with data,      0.0 imported
+  orbis_user_malloc             23 views:   2014.0 MiB reserved,    631.8 with data,     42.0 imported (lazy)
+  total (views may alias)       78 views:  12406.0 MiB reserved,   3780.9 with data,   3152.0 imported
+direct by name (growth): 604 BOs, 3666.0 MiB imported; BO list of the submit 0; GTT 5245.4 of 7597.1 MiB in use
+  (views under 1 MiB)           50 views:      3.2 MiB reserved,      3.2 with data,      3.2 imported (lazy)
+  GpuGarlicMemory                1 views:   2172.0 MiB reserved,   1580.0 with data,   1580.0 imported
+  GpuOnionMemory                 1 views:    184.0 MiB reserved,    126.0 with data,    126.0 imported
+  ResourceMemoryAllocator        1 views:   3232.0 MiB reserved,    372.0 with data,    372.0 imported
+  SceAgcDriver                   1 views:      1.8 MiB reserved,      1.8 with data,      1.8 imported
+  TextureMemory                  1 views:   4608.0 MiB reserved,   1544.0 with data,   1536.0 imported
+  VideoPlayerHeap                1 views:    128.0 MiB reserved,      4.0 with data,      4.0 imported
+  VideoPlayerTexture             1 views:     64.0 MiB reserved,      0.0 with data,      0.0 imported
+  orbis_user_malloc             23 views:   2013.0 MiB reserved,    633.4 with data,     43.0 imported (lazy)
+  total (views may alias)       80 views:  12406.0 MiB reserved,   4264.3 with data,   3666.0 imported
+direct by name (growth): 702 BOs, 4180.0 MiB imported; BO list of the submit 0; GTT 5757.4 of 7597.1 MiB in use
+  (views under 1 MiB)           50 views:      3.2 MiB reserved,      3.2 with data,      3.2 imported (lazy)
+  GpuGarlicMemory                1 views:   2172.0 MiB reserved,   1580.0 with data,   1580.0 imported
+  GpuOnionMemory                 1 views:    184.0 MiB reserved,    126.0 with data,    126.0 imported
+  ResourceMemoryAllocator        1 views:   3232.0 MiB reserved,    424.0 with data,    424.0 imported
+  SceAgcDriver                   1 views:      1.8 MiB reserved,      1.8 with data,      1.8 imported
+  TextureMemory                  1 views:   4608.0 MiB reserved,   2015.2 with data,   1998.0 imported
+  VideoPlayerHeap                1 views:    128.0 MiB reserved,      4.0 with data,      4.0 imported
+  VideoPlayerTexture             1 views:     64.0 MiB reserved,      0.0 with data,      0.0 imported
+  orbis_user_malloc             23 views:   2013.0 MiB reserved,    645.0 with data,     43.0 imported (lazy)
+  total (views may alias)       80 views:  12406.0 MiB reserved,   4799.2 with data,   4180.0 imported
+direct by name (growth): 805 BOs, 4704.0 MiB imported; BO list of the submit 0; GTT 6273.5 of 7597.1 MiB in use
+  (views under 1 MiB)           56 views:      4.7 MiB reserved,      4.7 with data,      4.7 imported (lazy)
+  GpuGarlicMemory                1 views:   2172.0 MiB reserved,   1670.0 with data,   1670.0 imported
+  GpuOnionMemory                 1 views:    184.0 MiB reserved,    126.0 with data,    126.0 imported
+  ResourceMemoryAllocator        1 views:   3232.0 MiB reserved,    524.0 with data,    516.0 imported
+  SceAgcDriver                   1 views:      1.8 MiB reserved,      1.8 with data,      1.8 imported
+  TextureMemory                  1 views:   4608.0 MiB reserved,   2339.0 with data,   2336.0 imported
+  VideoPlayerHeap                1 views:    128.0 MiB reserved,      4.0 with data,      4.0 imported
+  VideoPlayerTexture             1 views:     64.0 MiB reserved,      0.0 with data,      0.0 imported
+  orbis_user_malloc             23 views:   2011.5 MiB reserved,    660.4 with data,     45.5 imported (lazy)
+  total (views may alias)       86 views:  12406.0 MiB reserved,   5329.8 with data,   4704.0 imported
+direct by name (growth): 919 BOs, 5228.0 MiB imported; BO list of the submit 0; GTT 6793.5 of 7597.1 MiB in use
+  (views under 1 MiB)           56 views:      4.7 MiB reserved,      4.7 with data,      4.7 imported (lazy)
+  GpuGarlicMemory                1 views:   2172.0 MiB reserved,   1670.0 with data,   1670.0 imported
+  GpuOnionMemory                 1 views:    184.0 MiB reserved,    126.0 with data,    126.0 imported
+  ResourceMemoryAllocator        1 views:   3232.0 MiB reserved,    636.4 with data,    630.0 imported
+  SceAgcDriver                   1 views:      1.8 MiB reserved,      1.8 with data,      1.8 imported
+  TextureMemory                  1 views:   4608.0 MiB reserved,   2756.4 with data,   2746.0 imported
+  VideoPlayerHeap                1 views:    128.0 MiB reserved,      4.0 with data,      4.0 imported
+  VideoPlayerTexture             1 views:     64.0 MiB reserved,      0.0 with data,      0.0 imported
+  orbis_user_malloc             23 views:   2011.5 MiB reserved,    676.0 with data,     45.5 imported (lazy)
+  total (views may alias)       86 views:  12406.0 MiB reserved,   5875.3 with data,   5228.0 imported
+direct by name (growth): 994 BOs, 5740.0 MiB imported; BO list of the submit 0; GTT 7327.4 of 7597.1 MiB in use
+  (views under 1 MiB)           56 views:      4.7 MiB reserved,      4.7 with data,      4.7 imported (lazy)
+  GpuGarlicMemory                1 views:   2172.0 MiB reserved,   1670.0 with data,   1670.0 imported
+  GpuOnionMemory                 1 views:    184.0 MiB reserved,    126.0 with data,    126.0 imported
+  ResourceMemoryAllocator        1 views:   3232.0 MiB reserved,    652.0 with data,    652.0 imported
+  SceAgcDriver                   1 views:      1.8 MiB reserved,      1.8 with data,      1.8 imported
+  TextureMemory                  1 views:   4608.0 MiB reserved,   3270.1 with data,   3236.0 imported
+  VideoPlayerHeap                1 views:    128.0 MiB reserved,      4.0 with data,      4.0 imported
+  VideoPlayerTexture             1 views:     64.0 MiB reserved,      0.0 with data,      0.0 imported
+  orbis_user_malloc             23 views:   2011.5 MiB reserved,    677.3 with data,     45.5 imported (lazy)
+  total (views may alias)       86 views:  12406.0 MiB reserved,   6405.8 with data,   5740.0 imported
+
+direct memory: memfd 4, 13824.0 MiB; chunks of 2 MiB, BOs up to 32 MiB; GTT 1226.7 of 7597.1 MiB in use; lazy names: orbis_user_malloc
+direct: 86 views; +1 BOs (1054, 6094.0 MiB pinned); maps +1 -0 (1132)
+
+== kernel
+[21242.068493] amdgpu 0000:01:00.0: [drm] *ERROR* Not enough memory for command submission!
+[21337.618457] amdgpu 0000:01:00.0: VM memory stats for proc kyty_emulator(135332) task kyty_emulator(135269) is non-zero when fini
