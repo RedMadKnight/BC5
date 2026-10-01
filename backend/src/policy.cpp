@@ -160,6 +160,26 @@ bool is_gds_access(const std::uint32_t *p, std::uint32_t len) {
     return false;
 }
 
+bool mask_cu_register(std::uint32_t mm, std::uint32_t &value, std::uint32_t cu_mask) {
+    switch (mm) {
+    case kMmComputeStaticThreadMgmtSe0:
+    case kMmComputeStaticThreadMgmtSe1:
+    case kMmComputeStaticThreadMgmtSe2:
+    case kMmComputeStaticThreadMgmtSe3:
+        value &= cu_mask;
+        return true;
+    case kMmSpiShaderPgmRsrc3Ps:
+    case kMmSpiShaderPgmRsrc3Vs:
+    case kMmSpiShaderPgmRsrc3Gs:
+        value = (value & ~0xffffu) | (value & cu_mask & 0xffffu); // CU_EN bits 15:0
+        return true;
+    case kMmSpiShaderPgmRsrc3Hs:
+        value = (value & 0xffffu) | (value & ((cu_mask & 0xffffu) << 16)); // CU_EN bits 31:16
+        return true;
+    default: return false;
+    }
+}
+
 bool is_draw_or_dispatch(std::uint8_t opcode) {
     switch (opcode) {
     case 0x15: // DISPATCH_DIRECT
@@ -481,23 +501,8 @@ std::size_t filter(const Policy &policy, std::span<const std::uint32_t> src,
                     const std::uint32_t mm = base + offset + k;
                     if (policy.reg(mm) != Verdict::Rewrite) continue;
                     std::uint32_t &val = out[i + 2 + k];
-                    switch (mm) {
-                    case kMmComputeStaticThreadMgmtSe0:
-                    case kMmComputeStaticThreadMgmtSe1:
-                    case kMmComputeStaticThreadMgmtSe2:
-                    case kMmComputeStaticThreadMgmtSe3:
-                        val &= opt.cu_mask;
-                        stats.cu_mask_rewrites++;
-                        break;
-                    case kMmSpiShaderPgmRsrc3Ps:
-                    case kMmSpiShaderPgmRsrc3Vs:
-                    case kMmSpiShaderPgmRsrc3Gs:
-                    case kMmSpiShaderPgmRsrc3Hs:
-                        val = (val & ~0xffffu) | (val & opt.cu_mask & 0xffffu); // CU_EN bits 15:0
-                        stats.cu_mask_rewrites++;
-                        break;
-                    default: break; // a rewrite the table names but the filter does not know
-                    }
+                    // a rewrite the table names but the filter does not know is left as it is
+                    if (mask_cu_register(mm, val, opt.cu_mask)) stats.cu_mask_rewrites++;
                 }
             }
             break;

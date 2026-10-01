@@ -5,6 +5,7 @@
 // keep that behind an explicit switch (hard rule 5).
 #pragma once
 
+#include "bc5/cu_tables.hpp"
 #include "bc5/policy.hpp"
 #include "bc5/state_stack.hpp"
 
@@ -36,6 +37,8 @@ struct SubmitResult {
     // Context-state stack emulation (Device::set_state_stack): pushes, pops and the registers
     // the pops restored in this IB.
     state_stack::Stats state_stack;
+    // CU-mask overrides appended after register loads (FilterOptions::cu_mask != 0xffffffff).
+    cu_tables::Stats cu_tables;
     // Dword offsets (in the caller's IB) of the type-3 packets that reached the GPU as
     // themselves, i.e. passed or rewritten, not NOP-ed by the filter. A host that also emulates
     // the stream (a soft CP) uses this to skip the memory side effects the GPU already produced.

@@ -411,6 +411,10 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     if (state_stack_ && opt.mapped) {
         main_out = impl_->tracker.apply(ib, main_out, opt.mapped, r.state_stack);
     }
+    // The CU mask for registers loaded from memory (phase 3 step f): a SET_SH_REG after the load.
+    if (opt.cu_mask != 0xffffffffu && opt.mapped) {
+        main_out = cu_tables::apply(main_out, opt.cu_mask, opt.mapped, r.cu_tables);
+    }
     const std::size_t main_n = main_out.size();
     pieces.push_back({ib.data(), ib.size(), pro_padded, (main_n + epi + 7) & ~std::size_t{7}, 0});
     for (std::size_t k = 0; k < pieces.size() && pieces.size() < 64; ++k) {

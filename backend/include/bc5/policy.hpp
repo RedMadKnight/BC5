@@ -120,6 +120,13 @@ struct FilterOptions {
 
 // Draw and dispatch opcodes (the "work" packets), for staging.
 bool is_draw_or_dispatch(std::uint8_t opcode);
+
+// The CU-mask registers (HANDOFF F7): COMPUTE_STATIC_THREAD_MGMT_SE0-3 take the mask whole;
+// SPI_SHADER_PGM_RSRC3_PS/VS/GS carry CU_EN in bits 15:0, RSRC3_HS in bits 31:16 on gfx10 (Mesa
+// sid.h S_00B41C_CU_EN_GFX10; the console's tables load 0xffff0000 there and 0x0000ffff into
+// PS/GS, experiment 0016). ANDs cu_mask into `value` when `mm` (register index, mm address / 4)
+// is one of them; returns whether it is.
+bool mask_cu_register(std::uint32_t mm, std::uint32_t &value, std::uint32_t cu_mask);
 // DMA_DATA with a GDS source or destination, WRITE_DATA to GDS.
 bool is_gds_access(const std::uint32_t *p, std::uint32_t len);
 
