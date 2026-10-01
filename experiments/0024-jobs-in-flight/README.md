@@ -96,6 +96,35 @@ buttons and a shake at given seconds after start.
 
 Map-only, both modes: 28 flips each. No GPU run of the reworked design yet.
 
-**Verdict.** Open. At the title screen the frame shrinks to about the GPU's own time (44 to 54
-fps at 1850 MHz, 45 to 56 at 2000 MHz); the first design broke the compute queue's blocking
-wait in the cutscene and is replaced; the replacement has not run on the GPU.
+*Run 111* (22:49, GPU, the reworked design, unattended with `KYTY_BC5_AUTOPRESS`; capture
+`kytyplus-20261001-2249`): **the stall is still there, and regular.** Title screen and loading
+as in run 110 (58–60 and 48 fps, no failed submission in 182,964); from the cutscene on, three
+frames in 70 ms and then nothing for 12 s, over and over (203 seconds with fewer than ten
+flips). The maintainer stopped it. No controller was connected during this run (the kernel log
+shows its last disconnect forty minutes earlier), so the automatic presses were the only input.
+
+What the journal and the captured buffers of run 100 show about the cutscene's frame:
+
+- the game cycles through three frame slots, each with its own labels;
+- the main command buffer waits, at its start, for a label the compute buffer writes
+  (`…d40`), sets a slot label early on (`RELEASE_MEM`, `…f80` := 1), and further in waits for
+  another compute label (`…dc0`);
+- the compute buffer ends in a wait for that slot label (`…f80` == 1) and, past it, writes the
+  labels the main buffer waits for;
+- nothing in any buffer writes a label back to 0: the game's CPU code does.
+
+On the console two queues run side by side and this is a handshake inside one frame. Here both
+run on one ring and the host satisfies cross-queue waits on the CPU before a buffer is
+submitted. Synchronously that works because the game's thread is held for the whole of the
+main buffer's execution. With the game's thread released at once, one of the three slot labels
+is 0 when the compute queue looks (`wait detail: function 3, value 0x0, reference 0x1`), its
+tail is not submitted, the other two slots' tails queue up behind it, and the game stops until
+the consumer's 10 s limit and the 2 s wait timeout pass. Which write is lost or overtaken — the
+GPU's early `RELEASE_MEM`, or the game's CPU reset arriving after it — is not established.
+
+**Verdict (2026-10-01, 23:05).** Failed for the game as a whole, kept off. Jobs in flight give
+54–60 fps where a frame has no handshake between the queues (title screen, loading), and break
+the cutscene, where it has one: the host's CPU-side emulation of cross-queue waits depends on
+the game's thread being held during a buffer's execution. `BC5_DIRECT_ASYNC` stays off by
+default; the synchronous path of the same build is what runs (41–47 fps). To take this up
+again the labels' history around one main buffer has to be traced first.

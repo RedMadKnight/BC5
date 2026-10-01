@@ -26,7 +26,7 @@ All on the BC-250 dev box, with the track-B host (KytyPlus running the game's ow
 | Title screen, controller input | real-time scene; a button press starts the game | experiment 0020, F45–F46 |
 | First level and opening cutscene | load and play; the game keeps 7.9 GiB visible to the GPU | experiments 0021–0022, F47–F48 |
 | First level, gameplay | the character walks, the pause screen opens; DualSense buttons, sticks and motion work (the maintainer at the controller); 24 fps | experiment 0022 runs 104 and 106, F52–F53 |
-| Frame rate | title screen 47 fps, cutscene 41 fps — from 8 and 6 fps the same day, all of it host overhead removed; 54 fps at the title screen with submissions no longer waited for one by one (so far only tried there) | experiments 0022–0024, F49–F57 |
+| Frame rate | title screen 47 fps, cutscene 41 fps — from 8 and 6 fps the same day, all of it host overhead removed; 54–60 fps at the title screen with submissions no longer waited for one by one, a mode that breaks the cutscene and stays off (experiment 0024) | experiments 0022–0024, F49–F57 |
 | Longest runs | 12 minutes, 258,551 submissions, three recovered page faults; 10 minutes, 227,311 submissions, none failed | runs 103, 104 |
 | GPU time in a frame | 15–17 ms of 21–24 ms; the game sends 14–16 buffers a frame and each is submitted and waited for on its own | experiment 0023 |
 | Compute CU mask | 20 live bits per shader engine, one CU per bit; throughput linear in the bit count | experiment 0019, F39 |
