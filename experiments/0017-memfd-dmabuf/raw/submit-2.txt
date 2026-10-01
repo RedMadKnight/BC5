@@ -1,0 +1,33 @@
+=== --mib 256 --chunk-mib 2 (one command BO per IB)
+memfd: 256 MiB, view at 0x6000000000, 128 chunks of 2 MiB
+imported BO: alloc_size 2097152, preferred_heap 0x2, alloc_flags 0x200
+per chunk: UDMABUF_CREATE 0.44 ms, amdgpu import 0.01 ms, VA map 0.007 ms
+view contents after the imports: 128 of 128 chunk markers intact
+gpu fill of chunk 0 through its guest address: cs 0.08 ms, fence 0.07 ms; 0 of 524288 dwords differ from 0x5a17da7a in the memfd view
+second fill (half the chunk) next to CPU-written data: 0 wrong dwords (first dword 0x11223344, first of the CPU half 0x0badf00d)
+CS with 0 no extra BOs (256 MiB): first-sorted min 0.005 ms, median 0.007 ms, max 0.030 ms; fence avg 0.017 ms
+CS with 128 imported dma-buf BOs (256 MiB): first-sorted min 0.048 ms, median 0.049 ms, max 4.576 ms; fence avg 0.490 ms
+CS with 128 userptr BOs (256 MiB): first-sorted min 1.119 ms, median 1.125 ms, max 1.803 ms; fence avg 0.226 ms
+tool-rc 0
+=== --mib 2048 --chunk-mib 2 (one command BO per IB)
+memfd: 2048 MiB, view at 0x6000000000, 1024 chunks of 2 MiB
+imported BO: alloc_size 2097152, preferred_heap 0x2, alloc_flags 0x200
+per chunk: UDMABUF_CREATE 0.42 ms, amdgpu import 0.01 ms, VA map 0.007 ms
+view contents after the imports: 1024 of 1024 chunk markers intact
+gpu fill of chunk 0 through its guest address: cs 0.13 ms, fence 0.80 ms; 0 of 524288 dwords differ from 0x5a17da7a in the memfd view
+second fill (half the chunk) next to CPU-written data: 0 wrong dwords (first dword 0x11223344, first of the CPU half 0x0badf00d)
+CS with 0 no extra BOs (2048 MiB): first-sorted min 0.006 ms, median 0.007 ms, max 0.014 ms; fence avg 0.017 ms
+CS with 1024 imported dma-buf BOs (2048 MiB): first-sorted min 0.249 ms, median 0.257 ms, max 48.135 ms; fence avg 0.322 ms
+CS with 1024 userptr BOs (2048 MiB): first-sorted min 10.469 ms, median 10.532 ms, max 11.223 ms; fence avg 0.175 ms
+tool-rc 0
+=== --mib 256 --chunk-mib 32 (one command BO per IB)
+memfd: 256 MiB, view at 0x6000000000, 8 chunks of 32 MiB
+imported BO: alloc_size 33554432, preferred_heap 0x2, alloc_flags 0x200
+per chunk: UDMABUF_CREATE 7.10 ms, amdgpu import 0.04 ms, VA map 0.028 ms
+view contents after the imports: 8 of 8 chunk markers intact
+gpu fill of chunk 0 through its guest address: cs 0.95 ms, fence 4.94 ms; 0 of 8388608 dwords differ from 0x5a17da7a in the memfd view
+second fill (half the chunk) next to CPU-written data: 0 wrong dwords (first dword 0x11223344, first of the CPU half 0x0badf00d)
+CS with 0 no extra BOs (256 MiB): first-sorted min 0.003 ms, median 0.004 ms, max 0.028 ms; fence avg 0.012 ms
+CS with 8 imported dma-buf BOs (256 MiB): first-sorted min 0.006 ms, median 0.006 ms, max 3.198 ms; fence avg 0.381 ms
+CS with 8 userptr BOs (256 MiB): first-sorted min 1.042 ms, median 1.045 ms, max 1.153 ms; fence avg 0.085 ms
+tool-rc 0

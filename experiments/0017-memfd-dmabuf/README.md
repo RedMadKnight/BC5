@@ -42,6 +42,27 @@ over 80 views, no failed import or map. The userptr path is left with 73 anonymo
 370 MiB resident. The forced mapping sync takes 2.2 ms on average (11 ms on the anonymous
 backing). 48 flips, as on the anonymous backing in `maponly`.
 
-*GPU runs:* pending the maintainer's go-ahead (`dmabuf-min --submit`; the game live).
+*`dmabuf-min --submit`* (11:10–11:14, `raw/submit.txt`, `raw/submit-2.txt`): the GPU writes the
+imported memory and the guest-side view sees it — the ADR 0004 memset dispatch through the view's
+address fills chunk 0 with 0 of 8,388,608 (32 MiB) or 524,288 (2 MiB) dwords wrong; a second fill
+of half the chunk next to data the CPU wrote through the view leaves both halves right. (The
+first version of the tool reused one command BO for both fills and, with 2 MiB chunks, the GPU
+ran the first IB again from a stale copy — F25 once more; `raw/submit.txt` shows that failure,
+`raw/submit-2.txt` the fixed tool with one command BO per IB.) What a 16-NOP CS costs, median of
+50, by what is on its BO list:
 
-**Verdict.** Open until the GPU runs are in.
+| listed | 256 MiB in 8 BOs | 256 MiB in 128 BOs | 2,048 MiB in 1,024 BOs |
+|---|---|---|---|
+| nothing else | 0.004 ms | 0.007 ms | 0.007 ms |
+| imported dma-bufs | 0.006 ms | 0.049 ms | **0.257 ms** |
+| userptr BOs | 1.05 ms | 1.13 ms | **10.5 ms** |
+
+Userptr costs about 5 ms per GiB whatever the BO count (the page walk); an imported dma-buf
+costs about 0.25 µs per BO and nothing per byte. The first CS that lists the imports is slow once
+(3–48 ms: the binding).
+
+*The game live on the new backing* (11:15, run 89 in experiment 0016's numbering): **the machine
+went down** — the SSH session was reset during the run and the box stopped answering. Post-mortem
+pending its power cycle.
+
+**Verdict.** Open: the mechanism works in isolation (import, GPU access both ways, a CS forty times cheaper); the game on it took the machine down, cause not yet known.

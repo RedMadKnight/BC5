@@ -1,0 +1,36 @@
+=== --mib 256 --chunk-mib 32
+dmabuf-min: --submit runs a shader on the GPU (GFX ring). A bad submission can hang or reset the machine.
+memfd: 256 MiB, view at 0x6000000000, 8 chunks of 32 MiB
+imported BO: alloc_size 33554432, preferred_heap 0x2, alloc_flags 0x200
+per chunk: UDMABUF_CREATE 6.88 ms, amdgpu import 0.04 ms, VA map 0.025 ms
+view contents after the imports: 8 of 8 chunk markers intact
+gpu fill of chunk 0 through its guest address: cs 1.14 ms, fence 3.22 ms; 0 of 8388608 dwords differ from 0x5a17da7a in the memfd view
+second fill (half the chunk) next to CPU-written data: 0 wrong dwords
+CS with 0 no extra BOs (256 MiB): first-sorted min 0.003 ms, median 0.003 ms, max 0.024 ms; fence avg 0.013 ms
+CS with 8 imported dma-buf BOs (256 MiB): first-sorted min 0.005 ms, median 0.005 ms, max 2.836 ms; fence avg 0.342 ms
+CS with 8 userptr BOs (256 MiB): first-sorted min 1.041 ms, median 1.044 ms, max 1.299 ms; fence avg 0.014 ms
+rc 0
+=== --mib 256 --chunk-mib 2
+dmabuf-min: --submit runs a shader on the GPU (GFX ring). A bad submission can hang or reset the machine.
+memfd: 256 MiB, view at 0x6000000000, 128 chunks of 2 MiB
+imported BO: alloc_size 2097152, preferred_heap 0x2, alloc_flags 0x200
+per chunk: UDMABUF_CREATE 0.43 ms, amdgpu import 0.01 ms, VA map 0.007 ms
+view contents after the imports: 128 of 128 chunk markers intact
+gpu fill of chunk 0 through its guest address: cs 0.08 ms, fence 0.06 ms; 0 of 524288 dwords differ from 0x5a17da7a in the memfd view
+second fill (half the chunk) next to CPU-written data: 524288 wrong dwords
+CS with 0 no extra BOs (256 MiB): first-sorted min 0.003 ms, median 0.004 ms, max 0.008 ms; fence avg 0.012 ms
+CS with 128 imported dma-buf BOs (256 MiB): first-sorted min 0.038 ms, median 0.039 ms, max 4.163 ms; fence avg 0.433 ms
+CS with 128 userptr BOs (256 MiB): first-sorted min 1.128 ms, median 1.134 ms, max 2.993 ms; fence avg 0.585 ms
+rc 1
+=== --mib 2048 --chunk-mib 2
+dmabuf-min: --submit runs a shader on the GPU (GFX ring). A bad submission can hang or reset the machine.
+memfd: 2048 MiB, view at 0x6000000000, 1024 chunks of 2 MiB
+imported BO: alloc_size 2097152, preferred_heap 0x2, alloc_flags 0x200
+per chunk: UDMABUF_CREATE 0.41 ms, amdgpu import 0.01 ms, VA map 0.005 ms
+view contents after the imports: 1024 of 1024 chunk markers intact
+gpu fill of chunk 0 through its guest address: cs 0.07 ms, fence 0.07 ms; 0 of 524288 dwords differ from 0x5a17da7a in the memfd view
+second fill (half the chunk) next to CPU-written data: 524288 wrong dwords
+CS with 0 no extra BOs (2048 MiB): first-sorted min 0.003 ms, median 0.003 ms, max 0.008 ms; fence avg 0.013 ms
+CS with 1024 imported dma-buf BOs (2048 MiB): first-sorted min 0.249 ms, median 0.255 ms, max 45.733 ms; fence avg 0.311 ms
+CS with 1024 userptr BOs (2048 MiB): first-sorted min 10.486 ms, median 10.524 ms, max 11.438 ms; fence avg 0.101 ms
+rc 1
