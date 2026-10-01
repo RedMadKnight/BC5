@@ -371,7 +371,8 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     std::vector<Piece> pieces;
     const std::size_t pro = opt.prologue.size();
     const std::size_t pro_padded = (pro + 7) & ~std::size_t{7};
-    pieces.push_back({ib.data(), ib.size(), pro_padded, (ib.size() + 7) & ~std::size_t{7}, 0});
+    const std::size_t epi = opt.epilogue.size();
+    pieces.push_back({ib.data(), ib.size(), pro_padded, (ib.size() + epi + 7) & ~std::size_t{7}, 0});
     for (std::size_t k = 0; k < pieces.size() && pieces.size() < 64; ++k) {
         if (pieces[k].depth >= 3) continue;
         std::vector<std::pair<const std::uint32_t *, std::size_t>> targets;
@@ -399,6 +400,9 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
         policy::filter(policy::Policy::builtin(), std::span<const std::uint32_t>(pc.src, pc.n),
                        std::span<std::uint32_t>(dst + pc.off, pc.n), opt, k == 0 ? r.filter : st);
         for (std::size_t i = pc.n; i < pc.padded; ++i) dst[pc.off + i] = policy::kNop;
+        if (k == 0) { // the epilogue sits between the IB and its padding
+            for (std::size_t i = 0; i < epi; ++i) dst[pc.off + pc.n + i] = opt.epilogue[i];
+        }
         std::vector<std::uint32_t> ex;
         executed_offsets_of(std::span<const std::uint32_t>(pc.src, pc.n), dst + pc.off, ex);
         if (k == 0) {

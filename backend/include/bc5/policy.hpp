@@ -99,6 +99,9 @@ struct FilterOptions {
     // it, not filtered): state the console's CP derives itself and the AMD CP needs told, e.g.
     // VGT_PRIMITIVE_TYPE through SET_UCONFIG_REG_INDEX index 1 (experiment 0016, run 62).
     std::vector<std::uint32_t> prologue;
+    // Packets executed right after the IB (verbatim, unfiltered), e.g. a pipeline-statistics
+    // sample to compare with one taken in the prologue.
+    std::vector<std::uint32_t> epilogue;
     // RELEASE_MEM with EVENT_INDEX 6 and DATA_SEL 0 becomes BOTTOM_OF_PIPE_TS / EVENT_INDEX 5
     // (the GFX ring's ME never completes the former; experiment 0016, run 40).
     bool cs_done_to_bottom_of_pipe = true;

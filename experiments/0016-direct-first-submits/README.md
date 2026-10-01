@@ -515,6 +515,17 @@ buffers the standalone replay did not have. So the game's context image is harml
 stage executes; the replay now needs those buffers (the host dumps what the user-data registers
 point at, `draw-min` loads them at their addresses) to see whether the pass draws when isolated.
 
+**Runs 68–69** (06:45–06:55): the replay with the captured buffers still faults at 0x507405000 — that
+page was never dumped because it is **not resident in the game**: nothing the CPU does ever
+writes it, no CP packet in any captured IB targets it, and 36 draws name it in different
+user-data slots, so it is most likely the driver's zero page for unused resource slots. Aliases
+were ruled out by measurement (`BC5_DIRECT_RANGES_DUMP`: 68 direct ranges, 12.4 GB, no two share
+a physical offset; the block is "GpuGarlicMemory" at 0x500000000), and KytyPlus's backing-store
+transfers already follow the anonymous views. Next: measure instead of guess —
+`SAMPLE_PIPELINESTAT` before and after every frame DCB (`BC5_DIRECT_PIPESTATS`), the deltas of IA
+vertices, VS/GS invocations, clipper primitives and PS invocations show where the game's
+geometry disappears.
+
 **Verdict (2026-10-01, 00:20).** Steps (a)–(c) passed; (d) and (e) run the game's frames, draws,
 dispatches and both queue types on the BC-250 stall-free (runs 54–63: 230+ of 234 submits, no
 reset), with GDS counters reset and read back correctly since the DMA-selector fix. G3's image is
