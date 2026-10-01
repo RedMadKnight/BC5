@@ -110,3 +110,18 @@ the device path — the submission ioctl 21 ms (1,173 BOs in a draw's list), wai
 was a host library's contract and then the driver's GTT accounting, both handled without system
 modules; the game is at its title screen. Open after it: input (the screen wants a button), the
 GTT ceiling once a level loads (F44), frame time (8 fps here against 12 in the intro).
+
+**Addendum, run 98** (17:21, GPU, 400 s, the maintainer at the controller; capture
+`kytyplus-20261001-1721`, `raw/run98-summary.txt`). Input works: a button press on the
+DualSense takes the game off its title screen, a second one picks a save slot, and the game
+starts loading its first level behind an animated tunnel (7–8 fps, from about 160 s; the audio plays at its proper
+speed, the picture does not). 31,807 submissions without a failure up to there. At 246.6 s, with
+6,444 MiB imported and the driver's GTT counter at 7,595 of 7,597 MiB, submissions start to fail
+with `-ENOMEM` (277 by the end of the run); the loading screen keeps animating at under one
+frame per second and the load does not finish. By name at that moment: texture memory 3,566
+MiB, GPU heap 1,678, resource memory 1,018, shared GPU heap 126, CPU heap 46 (lazy; 728 with
+data). Imports stop growing at 6,940 MiB. No save-data import is missing: one unresolved import
+is called in the whole run, once, the keyboard-code conversion of run 96.
+
+So the ceiling of F44 is what stands between the title screen and the first level; the lazy CPU
+heap moved it by the 0.7 GiB it could.

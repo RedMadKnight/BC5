@@ -1,0 +1,47 @@
+run 98, 2026-10-01 17:21, capture kytyplus-20261001-1721, 400 s, controller pressed by the maintainer (journal excerpts; register-table contents not included)
+
+submits 34191, ok 32739, failed 273, of them rc -12: 277, flips 2361, timeouts 0
+
+== controller (emulator log)
+Controller button: 0, down, pressed, button = 0, time = 155.0407
+Controller button: 0, down, pressed, button = 0, time = 155.0408
+Controller button: 0, up, released, button = 0, time = 155.2168
+Controller button: 0, down, pressed, button = 0, time = 159.0245
+Controller button: 0, up, released, button = 0, time = 159.1916
+Controller button: 0, down, pressed, button = 3, time = 200.7183
+
+== first failures
+submit #31808 acb 3347 dwords at 0x4002a55c0: pass 331 rewrite 68 drop 156 unmapped 0 cc 0 mappings 1240 ... FAILED rc -12 2.70 ms
+submit #31823 dcb 32700 dwords at 0x502e02500: pass 2505 rewrite 564 drop 530 unmapped 3 cc 16 mappings 1250 ... FAILED rc -12 3.52 ms
+submit #31837 dcb 32630 dwords at 0x502002500: pass 2501 rewrite 564 drop 530 unmapped 3 cc 16 mappings 1250 ... FAILED rc -12 29.24 ms
+submit #31844 dcb 3132 dwords at 0x503c02500: pass 309 rewrite 127 drop 130 unmapped 2 cc 4 mappings 1250 ... FAILED rc -12 20.82 ms
+timing: #31808 done at t 246.569 s, 5.5 ms after the sync and hints; device: prepare 0.46 list 0.49 cs 2.70 fence 0.00 ms, 1167 BOs
+
+== imported memory by name at the first -ENOMEM and at the end
+direct by name (ENOMEM): 1049 BOs, 6444.0 MiB imported; BO list of the submit 1167; GTT 7595.0 of 7597.1 MiB in use
+  (views under 1 MiB)           56 views:      4.2 MiB reserved,      4.2 with data,      4.2 imported (lazy)
+  GpuGarlicMemory                1 views:   2172.0 MiB reserved,   1678.0 with data,   1678.0 imported
+  GpuOnionMemory                 1 views:    184.0 MiB reserved,    126.0 with data,    126.0 imported
+  ResourceMemoryAllocator        1 views:   3232.0 MiB reserved,   1036.2 with data,   1018.0 imported
+  SceAgcDriver                   1 views:      1.8 MiB reserved,      1.8 with data,      1.8 imported
+  TextureMemory                  1 views:   4608.0 MiB reserved,   3566.0 with data,   3566.0 imported
+  VideoPlayerHeap                1 views:    128.0 MiB reserved,      4.0 with data,      4.0 imported
+  VideoPlayerTexture             1 views:     64.0 MiB reserved,      0.0 with data,      0.0 imported
+  orbis_user_malloc             23 views:   2012.0 MiB reserved,    728.2 with data,     46.0 imported (lazy)
+  total (views may alias)       86 views:  12406.0 MiB reserved,   7144.5 with data,   6444.0 imported
+direct by name (ENOMEM): 1084 BOs, 6940.0 MiB imported; BO list of the submit 1204; GTT 7597.1 of 7597.1 MiB in use
+  (views under 1 MiB)           60 views:      4.4 MiB reserved,      4.4 with data,      4.4 imported (lazy)
+  GpuGarlicMemory                1 views:   2172.0 MiB reserved,   1678.0 with data,   1678.0 imported
+  GpuOnionMemory                 1 views:    184.0 MiB reserved,    126.0 with data,    126.0 imported
+  ResourceMemoryAllocator        1 views:   3232.0 MiB reserved,   1198.0 with data,   1198.0 imported
+  SceAgcDriver                   1 views:      1.8 MiB reserved,      1.8 with data,      1.8 imported
+  TextureMemory                  1 views:   4608.0 MiB reserved,   3880.0 with data,   3880.0 imported
+  VideoPlayerHeap                1 views:    128.0 MiB reserved,      4.0 with data,      4.0 imported
+  VideoPlayerTexture             1 views:     64.0 MiB reserved,      0.0 with data,      0.0 imported
+  orbis_user_malloc             25 views:   2011.9 MiB reserved,    775.7 with data,     47.9 imported (lazy)
+  total (views may alias)       92 views:  12406.0 MiB reserved,   7667.8 with data,   6940.0 imported
+
+direct: 92 views; +1 BOs (1084, 6940.0 MiB pinned); maps +1 -0 (1168)
+
+== unresolved imports called
+      1 symbol=mUuUOWI-C+0[ConvertKeycode_v1][ConvertKeycode_v1.0][Func]
