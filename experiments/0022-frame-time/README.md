@@ -171,6 +171,23 @@ orientation is derived yet — `TODO(verify)` the console's axis convention). SD
 sensors enabled for the DualSense on the dev box; whether the game accepts the data is for the
 next run.
 
-**Verdict.** Open: 3.3 times the frame rate at the title screen and four times in the cutscene
-with steps 1–3; the game is at its first interactive scene. Still to do: the submission path
-itself (step 4), and GPU runs for the two host fixes above.
+*Run 104* (19:44, GPU, the directory cache and the motion sensors, 598 s, the maintainer at
+the controller; capture `kytyplus-20261001-1944`, `raw/run104-summary.txt`): **227,311
+submissions, none failed, no fault, 14,758 flips — and the game reaches gameplay.** The whole opening
+cutscene renders; in the desert the maintainer shakes the controller, the game's controller
+wakes up, the character climbs out, and from about 570 s it stands in the level, the game waiting
+for the player (stick events are not logged, so whether it was moved is not recorded), at 23.9 fps (16 submissions and 41.8 ms a frame: ioctl 17.6, GPU 17.5).
+
+- *Motion input works*: SDL's accelerometer and gyroscope samples in the pad state are what the
+  game wanted. Axes and the missing orientation remain `TODO(verify)`.
+- *The level load takes 135 s instead of 240* (slot picked at 60 s, imports at their loaded size
+  at about 195 s). The directory cache removed the scan, not the questions: the game still
+  makes 28,246 path lookups, 21,061 of them for files that do not exist. What paces the
+  remaining 135 s has not been probed.
+
+**Verdict (2026-10-01, 20:00).** Passed for its question, with one step left open. Where the
+167 ms went is answered and most of it is gone: 6 to 24 fps in the cutscene, 8 to 27 at the
+title screen, the first level's gameplay at 24. Steps 1–3 were all host overhead;
+step 4 — the submission path, 35 of the remaining 42 ms split evenly between the kernel's job
+handling and the GPU's own work that is waited for — is the next experiment, and the load time
+with it.

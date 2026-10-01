@@ -1,0 +1,42 @@
+run 104, 2026-10-01 19:44, capture kytyplus-20261001-1944, directory cache and motion sensors, 598 s, controller used by the maintainer (journal excerpts)
+
+submits 227311, ok 227311, failed 0, flips 14758, timeouts 0, EFAULT resyncs 4
+
+== per 30 s: submissions, command buffers over 20000 dwords, flips, imported MiB at the last sync
+t0: 14178 submits, 0 large dcbs, 948 flips, imported 4510.0
+t30: 10551 submits, 578 large dcbs, 737 flips, imported 6274.0
+t60: 11515 submits, 822 large dcbs, 822 flips, imported 
+t90: 10684 submits, 763 large dcbs, 763 flips, imported 6892.0
+t120: 10839 submits, 774 large dcbs, 774 flips, imported 7094.0
+t150: 11385 submits, 814 large dcbs, 814 flips, imported 
+t180: 10139 submits, 430 large dcbs, 687 flips, imported 7770.0
+t210: 9485 submits, 0 large dcbs, 593 flips, imported 
+t240: 11871 submits, 249 large dcbs, 742 flips, imported 7872.0
+t270: 11282 submits, 701 large dcbs, 705 flips, imported 7874.0
+t300: 11805 submits, 723 large dcbs, 737 flips, imported 
+t330: 11587 submits, 272 large dcbs, 725 flips, imported 
+t360: 11579 submits, 803 large dcbs, 723 flips, imported 
+t390: 11828 submits, 15 large dcbs, 740 flips, imported 
+t420: 11706 submits, 0 large dcbs, 731 flips, imported 
+t450: 11862 submits, 58 large dcbs, 742 flips, imported 
+t480: 11698 submits, 501 large dcbs, 693 flips, imported 7888.0
+t510: 11110 submits, 809 large dcbs, 695 flips, imported 
+t540: 11370 submits, 505 large dcbs, 710 flips, imported 
+t570: 10837 submits, 9 large dcbs, 677 flips, imported 
+
+== controller (emulator log)
+Controller added: 0, time = 0.0003
+Controller sensor accelerometer: enabled
+Controller sensor gyroscope: enabled
+Controller button: 0, down, pressed, button = 0, time = 59.0046
+Controller button: 0, down, pressed, button = 0, time = 59.9959
+Controller button: 0, down, pressed, button = 0, time = 486.8929
+Controller button: 0, down, pressed, button = 2, time = 487.8648
+Controller button: 0, down, pressed, button = 3, time = 488.4084
+Controller button: 0, down, pressed, button = 0, time = 585.9483
+Controller button: 0, down, pressed, button = 0, time = 594.0649
+
+== path lookups
+KernelStat calls 28246, answered file not found 21061
+
+direct: 92 views; +0 BOs (159, 7888.0 MiB pinned); maps +3 -6 (245)
