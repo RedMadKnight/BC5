@@ -46,9 +46,9 @@ and its ioctl takes 0.06 ms.
 | the rest | 3.0 | 3.6 | 2.9 | 3.7 |
 | **frame** | **36.8** | **21.3** | **41.6** | **24.3** |
 
-The run ends at 382 s, in the desert scene: the controller dropped off the USB bus twice in
-its last 20 s and the maintainer stopped it. With `SDL_JOYSTICK_DISABLE_UDEV=1` the emulator
-did see the controller come back both times (it had not, in its container, in run 101).
+The run ends at 382 s, in the desert scene, stopped by the maintainer, who had unplugged and
+re-plugged the controller twice on purpose in its last 20 s: with `SDL_JOYSTICK_DISABLE_UDEV=1`
+the emulator saw it come back both times (it had not, in its container, in run 101).
 
 **Verdict (2026-10-01, 20:40).** Passed. With private guest memory in a file and imported like
 the direct memory, nothing in a submission is walked page by page any more: 14–16 ms a frame
