@@ -393,10 +393,10 @@ index 5f87e6b..e5c534e 100644
  	CondRemoveWaiter(cond_value, thread);
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..2230384
+index 0000000..5204780
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,3051 @@
+@@ -0,0 +1,3088 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -2206,13 +2206,43 @@ index 0000000..2230384
 +	static const bool timing = std::getenv("BC5_DIRECT_TIMING") != nullptr;
 +	const double   t_start = timing_now();
 +	const uint64_t t0 = SoftCp::now_ns();
-+	sync_mappings(true);
++	// The forced sync (a walk over the guest's 13 GB of VMAs, ~11 ms) is for what the filter
++	// cannot see: memory the shaders of this IB will read. An IB without draws, dispatches and
++	// nested IBs touches only its packets' operands; when the mappings already cover them all,
++	// the throttled sync is enough (run 82). BC5_DIRECT_NO_LAZY_SYNC=1 forces it always.
++	static const bool lazy_sync = std::getenv("BC5_DIRECT_NO_LAZY_SYNC") == nullptr;
++	bool force_sync = true;
++	if (lazy_sync) {
++		bool heavy = false;
++		for (uint32_t i = 0; i < num_dwords && !heavy;) {
++			const uint32_t h = ib[i];
++			const uint32_t type = h >> 30u;
++			const uint32_t c = (h >> 16u) & 0x3fffu;
++			uint32_t len = 1;
++			if (type == 3 || type == 0) len = c == 0x3fffu ? 1 : c + 2;
++			if (type == 3 && c != 0x3fffu) {
++				const auto op = static_cast<uint8_t>((h >> 8u) & 0xffu);
++				heavy = bc5::policy::is_draw_or_dispatch(op) || op == 0x3f || op == 0x33;
++			}
++			i += len;
++		}
++		if (!heavy) {
++			const std::vector<bc5::direct::Mapping> have = g_dev->mappings();
++			bc5::policy::FilterOptions probe;
++			probe.mapped = [&have](uint64_t a, uint64_t bytes) { return covered(have, a, bytes); };
++			std::vector<uint32_t> scratch(num_dwords);
++			bc5::policy::FilterStats st;
++			bc5::policy::filter(bc5::policy::Policy::builtin(), std::span<const uint32_t>(ib, num_dwords), scratch, probe, st);
++			force_sync = st.unmapped_drops != 0;
++		}
++	}
++	sync_mappings(force_sync);
 +	const uint64_t t1 = SoftCp::now_ns();
 +	learned_apply();
 +	hint_targets(ib, num_dwords);
 +	const uint64_t t2 = SoftCp::now_ns();
 +	if (timing) {
-+		journal("timing: t %.3f s %s %u dwords: sync %.1f ms, hints %.1f ms\n", t_start, kind, num_dwords,
++		journal("timing: t %.3f s %s %u dwords: sync%s %.1f ms, hints %.1f ms\n", t_start, kind, num_dwords, force_sync ? "" : " (lazy)",
 +		        static_cast<double>(t1 - t0) / 1e6, static_cast<double>(t2 - t1) / 1e6);
 +	}
 +	// BC5_DIRECT_PROBE_VA=hexva[:bytes]: the pagemap state (present / swapped / none) of that guest
@@ -2593,6 +2623,13 @@ index 0000000..2230384
 +	if (timing) {
 +		journal("timing: #%" PRIu64 " done at t %.3f s, %.1f ms after the sync and hints; device: prepare %.2f list %.2f cs %.2f fence %.2f ms, %u BOs%s\n", n, timing_now(),
 +		        static_cast<double>(SoftCp::now_ns() - t2) / 1e6, r.prepare_ms, r.list_ms, r.cs_ms, r.fence_ms, r.bo_count, r.short_list ? " (short list)" : "");
++	}
++	if (r.cu_tables.overrides != 0 || r.cu_tables.conditional != 0 || r.cu_tables.unreadable != 0 || r.filter.cu_mask_rewrites != 0) {
++		static uint64_t cu_lines = 0;
++		if (cu_lines++ < 400) {
++			journal("cu mask #%" PRIu64 ": %" PRIu64 " SET_SH_REG rewritten; loads %u, overrides %u (+%u dwords), conditional %u, unreadable %u\n", n,
++			        r.filter.cu_mask_rewrites, r.cu_tables.loads, r.cu_tables.overrides, r.cu_tables.inserted_dwords, r.cu_tables.conditional, r.cu_tables.unreadable);
++		}
 +	}
 +	if (r.state_stack.pushes != 0 || r.state_stack.pops != 0 || r.state_stack.unmatched_pops != 0) {
 +		journal("state stack #%" PRIu64 ": push %u pop %u conditional %u unmatched %u; restored %u regs (+%u dwords); tables %u, unreadable %u\n", n,

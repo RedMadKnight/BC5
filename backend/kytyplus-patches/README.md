@@ -100,3 +100,6 @@ The crash journal is synced once per submission (before the GPU submit) since ru
 `BC5_DIRECT_JOURNAL_SYNC=1` syncs every line and every IB dump again.
 Short BO lists (`Device::set_short_lists`, ADR 0005 xx) are on by default since run 81;
 `BC5_DIRECT_NO_SHORT_LISTS=1` lists every mapping on every submission again.
+`BC5_DIRECT_CU_MASK` now also covers CU masks the stream loads from memory (`bc5::cu_tables`).
+The forced mapping sync is skipped for IBs without draws whose operands are already mapped;
+`BC5_DIRECT_NO_LAZY_SYNC=1` forces it always.

@@ -68,7 +68,7 @@ Tasks
 2. Clear screen → one triangle with a PS5 vertex/pixel shader pair from a capture.
 3. CU mask switch (36/40): `COMPUTE_STATIC_THREAD_MGMT_*`, `RSRC3.CU_EN`; ANDed with game masks. Measure FPS and desktop responsiveness in both settings.
 
-Gate G3: image on screen, no GPU hang across 100 consecutive frames; 36/40 numbers recorded.
+Gate G3: image on screen, no GPU hang across 100 consecutive frames; 36/40 numbers recorded. *Passed 2026-10-01 (experiment 0016, runs 79–88), with two recorded deviations: the game image is ASTRO BOT's loading screen and opening card at ~3 fps from the track-B host (frame time is kernel/host work, F38), so FPS does not differ between CU masks — the GPU time per frame does and is recorded; and the bit layout of a 36-CU mask on this board is open (F39, Q8).*
 
 ## Phase 4 — Integration
 

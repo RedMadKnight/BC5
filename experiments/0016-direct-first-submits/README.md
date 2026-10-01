@@ -815,3 +815,48 @@ against 0.70 s in run 80 with as much. What a frame costs now: seven full-list s
 ~33 ms, fourteen mapping syncs at ~11 ms, the rest in the game. Short lists are on by default from
 here (`BC5_DIRECT_NO_SHORT_LISTS=1` turns them off). Next for the frame time: the full-list
 submissions (options 2 and 3 of run 80) and a sync that is forced only for submissions that draw.
+
+**Runs 82–88, step (f): the CU mask** (09:45–10:03, GPU, 150 s each; summaries in
+`raw/e37-runs82-88-cu-mask.txt`; kernel 7.2.4-ogc3.1, Mesa 26.2.2, VRAM carve-out 512 MiB,
+`bc250-cu-live-manager status`: 10/10 CUs routed in each of the four shader arrays).
+
+Two host changes first. *Lazy sync:* an IB without draws, dispatches and nested IBs whose
+operands the mappings already cover gets the throttled mapping sync instead of the forced one
+(0.6 ms instead of 11 ms; about half of the submissions). *The mask itself:* the game's CU masks
+do not come through `SET_SH_REG` only — its register image (`LOAD_SH_REG`) and its
+`LOAD_SH_REG_INDEX` tables carry `SPI_SHADER_PGM_RSRC3_PS/GS` = 0x0000ffff, `RSRC3_HS` =
+0xffff0000 and `COMPUTE_STATIC_THREAD_MGMT_SE0-3` = 0xffffffff — so with a mask other than
+0xffffffff the device now appends, after each such load, a `SET_SH_REG` with the loaded value
+ANDed with the mask (`bc5::cu_tables`, unit-tested; `RSRC3_HS` carries `CU_EN` in bits 31:16).
+
+All seven runs: 4,090–4,262 submissions, 283–296 flips, **no failed submission**, a flip every
+0.35 s whatever the mask (the frame time is the CPU side, F38). The GPU's share is the fence wait
+of the submissions that draw; medians, per mask (the same 16-bit value for every shader array):
+
+| `BC5_DIRECT_CU_MASK` | bits per array | frame DCB (≥ 9,000 dwords) | compute IB (≥ 1,000 dwords) | fence wait per flip |
+|---|---|---|---|---|
+| 0x00010001 | 1 | 18.78 ms | 3.02 ms | 25.0 ms |
+| 0x00ff00ff | 8 | 8.90 ms | 2.13 ms | 12.4 ms |
+| 0x01ff01ff ("36") | 9 | 8.30 ms | 2.00 ms | 11.8 ms |
+| 0x03ff03ff ("40") | 10 | 7.83 ms | 1.91 ms | 11.9 ms |
+| 0x0fff0fff | 12 | 7.09 ms | 1.69 ms | 10.3 ms |
+| 0x3fff3fff | 14 | 6.59 ms | 1.56 ms | 9.7 ms |
+| 0xffffffff (the game's values) | 16 | 6.14 ms | 1.45 ms | 9.7 ms |
+
+Readings: (1) the mask acts, on graphics and on compute, through `SET_SH_REG` and through the
+loads; (2) **"36" against "40" by the bit layout assumed so far (bits 0–8 against 0–9) is 6 % on
+the frame DCB and 5 % on the compute IB**; (3) **bits 10–15 are not dead**: every further pair of
+bits shortens the frame DCB, and from 8 to 16 bits the medians follow 3.4 ms + 44 ms / bits within
+0.1 ms — the work scales as if all sixteen bits per array were execution units. The kernel counts
+10 CUs per array here and the maintainer's tool shows five WGPs of two; how sixteen mask bits map
+onto them is not known (a `TODO(verify)`, Q8 in HANDOFF) — until it is, "36 for the runtime, 4
+for the desktop" cannot be written as a bit mask with confidence. (4) Desktop responsiveness
+cannot be told apart at this load: the GPU works ~10 ms out of every 350 ms frame in every
+setting.
+
+**Verdict (2026-10-01, 10:10).** Gate G3: image on screen — runs 79–88; no GPU hang across 100
+consecutive frames — runs 81–88, seven of them with 283–296 consecutive frames and not one
+failed submission; 36/40 numbers recorded — the table above, with two recorded deviations: FPS
+does not move with the mask because the frame time is kernel and host work (F38), and the
+36-CU mask's bit layout is an open question the numbers themselves raised. Recorded as passed
+with those deviations in `docs/PHASES.md`; the maintainer's call stands above this entry.
