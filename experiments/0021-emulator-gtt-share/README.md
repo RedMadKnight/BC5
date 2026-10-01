@@ -36,7 +36,21 @@ What it was (live allocations at the end of a run, 927 MiB):
 With both, everything the emulator asks as VRAM fits the carve-out and its GTT share drops from
 1,155 to 115 MiB. Presentation is unchanged in the map-only runs (the same 28–29 flips in 60 s).
 
-**Verdict (2026-10-01).** Passed without the GPU: about 1.0 GiB of GTT is given back to the
-game by two settings of the host. Whether that is enough for the first level to load is for
-the next GPU run (`KYTY_BC5_CACHE_MIB=96,16,16,16 KYTY_BC5_VMA_BLOCK_MIB=16` added to the run
-command).
+*Run 99* (17:46, GPU, both settings, 400 s, the maintainer at the controller; capture
+`kytyplus-20261001-1746`): **47,325 submissions, none failed, no `-ENOMEM`, 3,299 flips.** On
+the GPU the emulator's client holds the same 115 MiB of GTT and 253 MiB of VRAM (`fdinfo`,
+200 s in). The level load that ran out of GTT at 6,444 MiB imported in run 98 goes on: imports
+reach 6,950 MiB about 90 s into the load and stay there, with the GTT counter at 7,286 of
+7,597 MiB at the last report (6,760 MiB imported). Frame rate is steady at 7.4 fps to the end.
+
+The loading screen itself does not end within the run (226 s of it). The game is not idle
+behind it: from the moment the imports stop growing it looks assets up at a steady 52 file
+`stat` calls a second — 834 names, each tried once in eight directories and two extensions,
+none found — which is about three assets a second. A missing file costs 3 ms on the mount, so
+the pace is the game's, not the file system's; whether it is tied to the frame rate and whether
+the list ends is for a longer run.
+
+**Verdict (2026-10-01, 18:00).** Passed: about 1.0 GiB of GTT given back to the game by two
+settings of the host, and with it the first level's load no longer hits the ceiling (about
+0.3 GiB to spare at the point reached). Open after it, outside this experiment: the load does
+not finish in four minutes.
