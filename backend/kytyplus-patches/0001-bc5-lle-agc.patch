@@ -431,10 +431,10 @@ index 5f87e6b..e5c534e 100644
  	CondRemoveWaiter(cond_value, thread);
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..1a8f1dc
+index 0000000..1757272
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,3329 @@
+@@ -0,0 +1,3338 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -1122,29 +1122,44 @@ index 0000000..1a8f1dc
 +		for (auto& s: states) {
 +			const auto& q     = s.reg;
 +			const auto* page  = reinterpret_cast<const volatile uint64_t*>(q.doorbell_page);
-+			const uint64_t wptr = page[q.d == 0 ? 0 : q.d - 1];
++			const uint64_t wraw = page[q.d == 0 ? 0 : q.d - 1];
 +			const uint32_t n    = static_cast<uint32_t>((q.ring_end - q.ring_base) / 4);
-+			if (n == 0 || wptr == s.rptr) {
++			if (n == 0) {
 +				continue;
 +			}
++			// The pointers are dword offsets inside the ring: the driver writes its doorbell
++			// modulo the ring size (experiment 0018, run 92: after the first wrap the old absolute
++			// comparison walked the whole ring again and again), and reads the read pointer the
++			// same way. s.rptr is kept below n.
++			const uint32_t w = static_cast<uint32_t>(wraw % n);
++			const uint32_t r = static_cast<uint32_t>(s.rptr % n);
++			if (w == r) {
++				continue;
++			}
++			const uint32_t pending = (w + n - r) % n;
 +			const auto* ring = reinterpret_cast<const uint32_t*>(q.ring_base);
++			auto packet_len = [&](uint32_t off) -> uint32_t {
++				const uint32_t hh = ring[off];
++				if ((hh >> 30u) != 3) return 1;
++				const uint32_t c = (hh >> 16u) & 0x3fffu;
++				return c == 0x3fffu ? 1 : c + 2;
++			};
 +			// Direct mode, queue ordering (run 46): a compute IB whose cross-queue wait is not yet
 +			// satisfied is left in its queue — the read pointer stays, the other queues are served
 +			// (the writer is one of them or the gfx queue) — and retried on the next poll, for up
 +			// to 10 s. That is the console's blocking compute queue, on one ring.
-+			if (g_direct_rings && wptr > s.rptr && wptr - s.rptr <= n) {
++			if (g_direct_rings) {
 +				bool ready = true;
-+				for (uint64_t r = s.rptr; r < wptr && ready;) {
-+					const uint32_t off = static_cast<uint32_t>(r % n);
++				for (uint32_t k = 0; k < pending && ready;) {
++					const uint32_t off = (r + k) % n;
 +					const uint32_t hh  = ring[off];
-+					uint32_t       ll  = 1;
-+					if ((hh >> 30u) == 3) { const uint32_t c = (hh >> 16u) & 0x3fffu; ll = c == 0x3fffu ? 1 : c + 2; }
++					const uint32_t ll  = packet_len(off);
 +					if ((hh >> 30u) == 3 && (((hh >> 8u) & 0xffu) == IT_INDIRECT_BUFFER || ((hh >> 8u) & 0xffu) == IT_INDIRECT_BUFFER_CNST) && ll >= 4 && off + ll <= n) {
 +						const uint64_t ta = (ring[off + 1] & ~3u) | (static_cast<uint64_t>(ring[off + 2] & 0xffu) << 32u);
 +						const uint32_t tn = ring[off + 3] & 0xfffffu;
 +						if (ta != 0 && tn != 0 && !Direct::acb_ready(reinterpret_cast<const uint32_t*>(ta), tn)) ready = false;
 +					}
-+					r += ll;
++					k += ll;
 +				}
 +				const uint64_t now = now_ns();
 +				if (!ready) {
@@ -1156,52 +1171,46 @@ index 0000000..1a8f1dc
 +				}
 +				s.deferred_since = 0;
 +			}
-+			// Direct mode: the ring slice [rptr, wptr) is itself a valid IB of INDIRECT_BUFFER
-+			// packets (no wrap handling yet: a slice that wraps is submitted in two parts).
-+			if (wptr > s.rptr && wptr - s.rptr <= n) {
-+				const uint32_t a = static_cast<uint32_t>(s.rptr % n);
-+				const uint32_t b = static_cast<uint32_t>(wptr % n);
-+				if (b > a) {
-+					Direct::submit(ring + a, b - a, "ring", false);
-+				} else {
-+					Direct::submit(ring + a, n - a, "ring", false);
-+					if (b != 0) Direct::submit(ring, b, "ring", false);
-+				}
++			// Direct mode: the ring slice [r, w) is itself a valid IB of INDIRECT_BUFFER packets;
++			// a slice that wraps is submitted in two parts.
++			if (w > r) {
++				Direct::submit(ring + r, w - r, "ring", false);
++			} else {
++				Direct::submit(ring + r, n - r, "ring", false);
++				if (w != 0) Direct::submit(ring, w, "ring", false);
 +			}
-+			uint32_t guard = 0;
-+			while (s.rptr != wptr && guard++ < 4096) {
-+				const uint32_t  off    = static_cast<uint32_t>(s.rptr % n);
-+				const uint32_t  header = ring[off];
-+				uint32_t        len    = 1;
-+				if ((header >> 30u) == 3) {
-+					const uint32_t count = (header >> 16u) & 0x3fffu;
-+					len                  = count == 0x3fffu ? 1 : count + 2;
-+					if (off + len <= n) {
-+						t_compute_ring = (q.a == 2); // TODO(bc5): which engine is compute is a guess
-+						const uint32_t op = (header >> 8u) & 0xffu;
-+						if (s.count < 8) {
-+							LOGF("[bc5-q] queue %u/%u/%u/0x%x: packet #%" PRIu64 " op 0x%02x len %u (rptr %" PRIu64 " wptr %" PRIu64 ")\n",
-+							     q.a, q.b, q.c, q.d, s.count, op, len, s.rptr, wptr);
-+						}
-+						if (op == IT_INDIRECT_BUFFER || op == IT_INDIRECT_BUFFER_CNST) {
-+							indirect_buffer(ring + off, 0);
-+						} else {
-+							execute(ring + off, len, 1);
-+						}
-+						t_compute_ring = false;
++			uint32_t done = 0, guard = 0;
++			while (done < pending && guard++ < 4096) {
++				const uint32_t off    = (r + done) % n;
++				const uint32_t header = ring[off];
++				const uint32_t len    = packet_len(off);
++				if ((header >> 30u) == 3 && off + len <= n) {
++					t_compute_ring = (q.a == 2); // TODO(bc5): which engine is compute is a guess
++					const uint32_t op = (header >> 8u) & 0xffu;
++					if (s.count < 8) {
++						LOGF("[bc5-q] queue %u/%u/%u/0x%x: packet #%" PRIu64 " op 0x%02x len %u (rptr %u wptr %u)\n",
++						     q.a, q.b, q.c, q.d, s.count, op, len, off, w);
 +					}
++					if (op == IT_INDIRECT_BUFFER || op == IT_INDIRECT_BUFFER_CNST) {
++						indirect_buffer(ring + off, 0);
++					} else {
++						execute(ring + off, len, 1);
++					}
++					t_compute_ring = false;
 +				}
-+				s.rptr += len;
++				done += len;
 +				s.count++;
 +				g_packets++;
 +			}
-+			*reinterpret_cast<volatile uint32_t*>(q.rptr_addr) = static_cast<uint32_t>(s.rptr);
-+			// The driver library's free-space check reads the queue's read pointer, as a dword
-+			// offset inside the ring, from the dword right behind the ring (its queue table,
-+			// +0x70; experiment 0018). Nothing wrote it, so each ring looked never drained and
-+			// was "full" after 4,088 dwords: the game stopped at its 511th frame.
++			s.rptr = w; // everything up to the doorbell value has been served
++			// The read pointer goes where the queue registration named it and — what the driver
++			// library's free-space check actually reads (its queue table, +0x70; experiment
++			// 0018) — into the dword right behind the ring. Nothing wrote the latter before, so
++			// each ring looked never drained and was "full" after 4,088 dwords: the game stopped
++			// at its 511th frame. BC5_GC_NO_RING_END_RPTR=1 leaves it out.
++			*reinterpret_cast<volatile uint32_t*>(q.rptr_addr) = w;
 +			static const bool rptr_behind_ring = std::getenv("BC5_GC_NO_RING_END_RPTR") == nullptr;
-+			if (rptr_behind_ring && n != 0) *reinterpret_cast<volatile uint32_t*>(q.ring_end) = static_cast<uint32_t>(s.rptr % n);
++			if (rptr_behind_ring) *reinterpret_cast<volatile uint32_t*>(q.ring_end) = w;
 +			progressed = true;
 +		}
 +		if (progressed) {

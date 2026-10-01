@@ -1,0 +1,57 @@
+bit0+bit0: cu mask 0x00010001: 8 runs, min 26.813 ms, median 26.820 ms
+bit0+bit1: cu mask 0x00030003: 8 runs, min 13.447 ms, median 13.451 ms
+bit0+bit2: cu mask 0x00050005: 8 runs, min 13.445 ms, median 13.449 ms
+bit0+bit3: cu mask 0x00090009: 8 runs, min 13.436 ms, median 13.437 ms
+bit0+bit4: cu mask 0x00110011: 8 runs, min 17.927 ms, median 17.932 ms
+bit0+bit5: cu mask 0x00210021: 8 runs, min 17.929 ms, median 17.932 ms
+bit0+bit6: cu mask 0x00410041: 8 runs, min 17.935 ms, median 17.936 ms
+bit0+bit7: cu mask 0x00810081: 8 runs, min 17.928 ms, median 17.935 ms
+bit0+bit8: cu mask 0x01010101: 8 runs, min 17.934 ms, median 17.940 ms
+bit0+bit9: cu mask 0x02010201: 8 runs, min 17.932 ms, median 17.935 ms
+bit0+bit10: cu mask 0x04010401: 8 runs, min 17.931 ms, median 17.934 ms
+bit0+bit11: cu mask 0x08010801: 8 runs, min 17.923 ms, median 18.473 ms
+bit0+bit12: cu mask 0x10011001: 8 runs, min 17.929 ms, median 17.934 ms
+bit0+bit13: cu mask 0x20012001: 8 runs, min 17.924 ms, median 17.933 ms
+bit0+bit14: cu mask 0x40014001: 8 runs, min 17.930 ms, median 17.935 ms
+bit0+bit15: cu mask 0x80018001: 8 runs, min 17.922 ms, median 17.927 ms
+shader: 20 dwords from /home/kjaniszewski/bc5-work/alu/alu.bin (differs from the built-in IGT buffer-clear program) cu mask 0x00030003: 8 runs, min 13.437 ms, median 13.443 ms dispatch done: 0 of 1048576 dwords differ from 0x22222222 
+shader: 20 dwords from /home/kjaniszewski/bc5-work/alu/alu.bin (differs from the built-in IGT buffer-clear program) cu mask 0x000f000f: 8 runs, min 6.755 ms, median 6.763 ms dispatch done: 0 of 1048576 dwords differ from 0x22222222 
+shader: 20 dwords from /home/kjaniszewski/bc5-work/alu/alu.bin (differs from the built-in IGT buffer-clear program) cu mask 0x003f003f: 8 runs, min 5.445 ms, median 5.454 ms dispatch done: 0 of 1048576 dwords differ from 0x22222222 
+shader: 20 dwords from /home/kjaniszewski/bc5-work/alu/alu.bin (differs from the built-in IGT buffer-clear program) cu mask 0x00ff00ff: 8 runs, min 4.560 ms, median 4.561 ms dispatch done: 0 of 1048576 dwords differ from 0x22222222 
+shader: 20 dwords from /home/kjaniszewski/bc5-work/alu/alu.bin (differs from the built-in IGT buffer-clear program) cu mask 0x01ff01ff: 8 runs, min 4.193 ms, median 4.198 ms dispatch done: 0 of 1048576 dwords differ from 0x22222222 
+shader: 20 dwords from /home/kjaniszewski/bc5-work/alu/alu.bin (differs from the built-in IGT buffer-clear program) cu mask 0x03ff03ff: 8 runs, min 3.935 ms, median 3.938 ms dispatch done: 0 of 1048576 dwords differ from 0x22222222 
+shader: 20 dwords from /home/kjaniszewski/bc5-work/alu/alu.bin (differs from the built-in IGT buffer-clear program) cu mask 0x07ff07ff: 8 runs, min 3.675 ms, median 3.678 ms dispatch done: 0 of 1048576 dwords differ from 0x22222222 
+shader: 20 dwords from /home/kjaniszewski/bc5-work/alu/alu.bin (differs from the built-in IGT buffer-clear program) cu mask 0x0fff0fff: 8 runs, min 3.604 ms, median 3.609 ms dispatch done: 0 of 1048576 dwords differ from 0x22222222 
+shader: 20 dwords from /home/kjaniszewski/bc5-work/alu/alu.bin (differs from the built-in IGT buffer-clear program) cu mask 0x3fff3fff: 8 runs, min 3.274 ms, median 3.276 ms dispatch done: 0 of 1048576 dwords differ from 0x22222222 
+shader: 20 dwords from /home/kjaniszewski/bc5-work/alu/alu.bin (differs from the built-in IGT buffer-clear program) cu mask 0xffffffff: 8 runs, min 2.941 ms, median 2.943 ms dispatch done: 0 of 1048576 dwords differ from 0x22222222 
+shader: 20 dwords from /home/kjaniszewski/bc5-work/alu/alu.bin (differs from the built-in IGT buffer-clear program) cu mask 0x0000ffff: 8 runs, min 3.819 ms, median 3.825 ms dispatch done: 0 of 1048576 dwords differ from 0x22222222 
+shader: 20 dwords from /home/kjaniszewski/bc5-work/alu/alu.bin (differs from the built-in IGT buffer-clear program) cu mask 0xffff0000: 8 runs, min 13.445 ms, median 15.060 ms dispatch done: 0 of 1048576 dwords differ from 0x22222222 
+shader: 20 dwords from /home/kjaniszewski/bc5-work/alu/alu.bin (differs from the built-in IGT buffer-clear program) cu mask 0x00000001: 8 runs, min 53.536 ms, median 53.542 ms dispatch done: 0 of 1048576 dwords differ from 0x22222222 
+shader: 20 dwords from /home/kjaniszewski/bc5-work/alu/alu.bin (differs from the built-in IGT buffer-clear program) cu mask 0x00010000: 8 runs, min 53.519 ms, median 53.526 ms dispatch done: 0 of 1048576 dwords differ from 0x22222222 
+shader: 20 dwords from /home/kjaniszewski/bc5-work/alu/alu.bin (differs from the built-in IGT buffer-clear program) cu mask 0x000000ff: 8 runs, min 6.765 ms, median 6.765 ms dispatch done: 0 of 1048576 dwords differ from 0x22222222 
+shader: 20 dwords from /home/kjaniszewski/bc5-work/alu/alu.bin (differs from the built-in IGT buffer-clear program) cu mask 0x0000ff00: 8 runs, min 6.755 ms, median 6.758 ms dispatch done: 0 of 1048576 dwords differ from 0x22222222 
+shader: 20 dwords from /home/kjaniszewski/bc5-work/alu/alu.bin (differs from the built-in IGT buffer-clear program) cu mask 0x000fffff: 8 runs, min 5.138 ms, median 5.139 ms 0 of 1048576 dwords differ from 0x22222222 
+shader: 20 dwords from /home/kjaniszewski/bc5-work/alu/alu.bin (differs from the built-in IGT buffer-clear program) cu mask 0x0003ffff: 8 runs, min 5.620 ms, median 5.718 ms 0 of 1048576 dwords differ from 0x22222222 
+shader: 20 dwords from /home/kjaniszewski/bc5-work/alu/alu.bin (differs from the built-in IGT buffer-clear program) cu mask 0x00100001: 8 runs, min 53.537 ms, median 53.554 ms 0 of 1048576 dwords differ from 0x22222222 
+shader: 20 dwords from /home/kjaniszewski/bc5-work/alu/alu.bin (differs from the built-in IGT buffer-clear program) cu mask 0x00080001: 8 runs, min 26.808 ms, median 26.814 ms 0 of 1048576 dwords differ from 0x22222222 
+shader: 20 dwords from /home/kjaniszewski/bc5-work/alu/alu.bin (differs from the built-in IGT buffer-clear program) cu mask 0x80000001: 8 runs, min 53.533 ms, median 53.543 ms 0 of 1048576 dwords differ from 0x22222222 
+shader: 20 dwords from /home/kjaniszewski/bc5-work/alu/alu.bin (differs from the built-in IGT buffer-clear program) cu mask 0x00000401: 8 runs, min 26.801 ms, median 26.807 ms 0 of 1048576 dwords differ from 0x22222222 
+shader: 20 dwords from /home/kjaniszewski/bc5-work/alu/alu.bin (differs from the built-in IGT buffer-clear program) cu mask 0x000003ff: 8 runs, min 5.452 ms, median 5.454 ms 0 of 1048576 dwords differ from 0x22222222 
+shader: 20 dwords from /home/kjaniszewski/bc5-work/alu/alu.bin (differs from the built-in IGT buffer-clear program) cu mask 0x000ffc00: 8 runs, min 5.761 ms, median 5.765 ms 0 of 1048576 dwords differ from 0x22222222 
+shader: 20 dwords from /home/kjaniszewski/bc5-work/alu/alu.bin (differs from the built-in IGT buffer-clear program) cu mask 0x0000fc00: 8 runs, min 9.145 ms, median 9.517 ms 0 of 1048576 dwords differ from 0x22222222 
+shader: 20 dwords from /home/kjaniszewski/bc5-work/alu/alu.bin (differs from the built-in IGT buffer-clear program) cu mask 0x000f0000: 8 runs, min 13.439 ms, median 13.444 ms 0 of 1048576 dwords differ from 0x22222222 
+shader: 20 dwords from /home/kjaniszewski/bc5-work/alu/alu.bin (differs from the built-in IGT buffer-clear program) cu mask 0xfff00001: 8 runs, min 53.522 ms, median 53.531 ms 0 of 1048576 dwords differ from 0x22222222 
+cu mask 0xffffffff: 16 runs, min 2.791 ms, median 2.798 ms
+cu mask 0x000fffff: 16 runs, min 2.791 ms, median 2.794 ms
+cu mask 0x0000ffff: 16 runs, min 3.416 ms, median 3.418 ms
+cu mask 0x0003ffff: 16 runs, min 3.102 ms, median 3.105 ms
+cu mask 0x000fffff: 16 runs, min 2.939 ms, median 2.940 ms
+cu mask 0xffffffff: 16 runs, min 2.948 ms, median 2.949 ms
+cu mask 0x0000ffff: 16 runs, min 3.604 ms, median 3.818 ms
+cu mask 0x0001ffff: 16 runs, min 3.443 ms, median 3.448 ms
+cu mask 0x0010ffff: 16 runs, min 3.601 ms, median 3.604 ms
+cu mask 0x8000ffff: 16 runs, min 3.609 ms, median 3.613 ms
+cu mask 0xfff0ffff: 16 runs, min 3.816 ms, median 3.819 ms
+cu mask 0x000f000f: 16 runs, min 6.763 ms, median 6.769 ms
+cu mask 0x000f00ff: 16 runs, min 4.563 ms, median 4.567 ms
+cu mask 0x000f0fff: 16 runs, min 3.411 ms, median 3.415 ms

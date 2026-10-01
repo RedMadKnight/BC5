@@ -38,6 +38,18 @@ driver library's queue table journaled by the host (`BC5_GC_QUEUE_TABLE=<address
 
 The video had nothing to do with it; it merely started 190 frames before the 511th.
 
-**Verdict.** Cause found and fixed in the host; the fix is verified on the driver's own table
-without submissions. Whether the game moves on past frame 511 needs a GPU run (pending the
-maintainer's go-ahead); that run closes this experiment.
+*Run 92* (15:17, GPU, with the read pointer behind the ring; capture `kytyplus-20261001-1517`):
+7,497 submissions, none failed; the game passes the 511th frame — and stops two frames later,
+at 513 flips, with the journal quiet and the log flooded by one thread polling its compute event
+queue. The thread dump shows the host's queue consumer inside the soft CP, executing a
+`WAIT_REG_MEM` out of an indirect buffer it had already served: frame 512 is where the rings wrap,
+the driver writes its doorbell as an offset inside the ring, and the consumer compared it with an
+absolute count — after the wrap it walked the ring's old contents over and over. Fix: the
+consumer keeps its read pointer inside the ring and serves the slice between it and the doorbell
+value, wrapped or not. Built, tried without submissions (before the first wrap only).
+
+**Verdict.** Two host bugs behind one symptom, both from the queue protocol being guessed in
+experiment 0012 and never run for more than 300 frames: the read pointer was published where the
+driver library does not look (fixed, run 92 confirms: frame 511 passes), and the ring pointers
+were compared as absolute counts (fixed, not yet run past the wrap). A GPU run past frame 513
+closes this experiment.

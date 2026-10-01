@@ -1,0 +1,22 @@
+31 Libs::LibKernel::PthreadCondWait | LWP 87488,87498,87499,87501
+28 Common::CondVar::WaitFor <- Libs::LibKernel::Semaphore::KernelSemaPrivate::Wait <- Libs::LibKernel::Semaphore::KernelWaitSema | LWP 87489,87490,87491,87492
+11 Common::CondVar::WaitFor <- Libs::Posix:: <- Libs::Posix:: | LWP 87544,87545,87546,87547
+6 pa_threaded_mainloop_wait <- PULSEAUDIO_PlayDevice <- SDL_RunAudio | LWP 87533,87537,87561,87563
+3 start_thread | LWP 87452,87453,87458
+2 Libs::Graphics::CommandScheduler::PriorityOperationsThread <- Libs::Graphics::CommandScheduler::CommandScheduler <- start_thread | LWP 87454,87455
+2 Common::CondVar::Wait <- Libs::LibKernel::EventFlag::KernelEventFlagPrivate::Wait <- Libs::LibKernel::EventFlag::KernelWaitEventFlag | LWP 87527,87528
+1 Common::Thread::Sleep <- Libs::LibKernel::FreeDetachedThreads <- start_thread | LWP 87451
+1 SleepHighResolutionNanos <- Libs::VideoOut::VideoOutDriver::Impl::PresentThread <- Libs::VideoOut::VideoOutDriver::Impl::Impl | LWP 87456
+1 Common::CondVar::Wait <- Libs::Graphics::GpuState::ThreadRun <- start_thread | LWP 87457
+1 Libs::LibKernel::NativeMutexLock <- Libs::LibKernel::PthreadMutexLock | LWP 87486
+1 Libs::Bc5Gc::SoftCp::wait_reg_mem <- Libs::Bc5Gc::SoftCp::execute <- Libs::Bc5Gc::SoftCp::indirect_buffer | LWP 87487
+1 Common::CondVar::WaitFor <- Libs::LibKernel::EventQueue::KernelEqueuePrivate::WaitForEvents <- Libs::LibKernel::EventQueue::KernelWaitEqueue | LWP 87500
+1 SleepHighResolutionNanos <- Libs::Audio::Audio::QueueSdlAudio <- Libs::Audio::Audio::AudioOutOutputs | LWP 87529
+1 pa_mainloop_poll <- pa_mainloop_iterate <- pa_mainloop_run | LWP 87530
+1 pa_threaded_mainloop_wait <- HotplugThread <- SDL_RunThread | LWP 87531
+1 Libs::Audio::AvPlayer::WorkQueue<std::unique_ptr<Libs::Audio::AvPlayer::GuestBuffer, <- Libs::Audio::AvPlayer::Source::ReceiveFrames <- Libs::Audio::AvPlayer::Source::DecodePacket | LWP 87685
+1 Libs::Audio::AvPlayer::PacketQueue::Push <- Libs::Audio::AvPlayer::Source::Demux <- Libs::Audio::AvPlayer::Source::DemuxEntry | LWP 87686
+1 SDL_IOReady <- Wayland_WaitEventTimeout <- SDL_WaitEventTimeout_Device | LWP 87449
+kytyplus-20261001-1517 submits 7497 ok 7116 failed 0 flips 513 | sync lazy 3912 forced 3585 | cu rewrites (first 400 lines) 1600 overrides 0
+flip gap: median 0.083 s, last-50 avg 0.171 s
+frame DCB (>= 9000 dwords)         n= 513 fence ms: median 6.05  mean 5.40  p90 6.70  max 36.8
