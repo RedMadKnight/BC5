@@ -431,10 +431,10 @@ index 5f87e6b..e5c534e 100644
  	CondRemoveWaiter(cond_value, thread);
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..0fe654a
+index 0000000..56dd1cd
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,3292 @@
+@@ -0,0 +1,3296 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -1331,6 +1331,9 @@ index 0000000..0fe654a
 +	// (Device::set_short_lists; run 81: 0.05 ms instead of 27 ms in the CS ioctl for half of a
 +	// frame's submissions). BC5_DIRECT_NO_SHORT_LISTS=1 turns it off.
 +	g_dev->set_short_lists(std::getenv("BC5_DIRECT_NO_SHORT_LISTS") == nullptr);
++	// Every IB ends by waiting for CP DMA to be idle (Device::set_dma_idle; experiment 0017).
++	// BC5_DIRECT_NO_DMA_IDLE=1 turns it off.
++	g_dev->set_dma_idle(std::getenv("BC5_DIRECT_NO_DMA_IDLE") == nullptr);
 +	dump_init();
 +	journal("direct: enabled, stage %s, cu mask 0x%08x, bo list %s\n", stage != nullptr ? stage : "preamble", g_cu_mask,
 +	        std::getenv("BC5_DIRECT_NO_BOLIST") != nullptr ? "scratch only" : "with mappings");
@@ -2960,6 +2963,7 @@ index 0000000..0fe654a
 +			if (g_dev && std::getenv("BC5_DIRECT_NO_BOLIST") != nullptr) g_dev->set_include_mappings(false);
 +			if (g_dev) g_dev->set_state_stack(std::getenv("BC5_DIRECT_NO_STATE_STACK") == nullptr);
 +			if (g_dev) g_dev->set_short_lists(std::getenv("BC5_DIRECT_NO_SHORT_LISTS") == nullptr);
++			if (g_dev) g_dev->set_dma_idle(std::getenv("BC5_DIRECT_NO_DMA_IDLE") == nullptr);
 +			g_hinted.clear();
 +			g_bytes_mapped = 0;
 +			g_last_sync_ns = 0;

@@ -513,6 +513,11 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     if (opt.cu_mask != 0xffffffffu && opt.mapped) {
         main_out = cu_tables::apply(main_out, opt.cu_mask, opt.mapped, r.cu_tables);
     }
+    if (dma_idle_) {
+        // PKT3(DMA_DATA, 5, 0); CP_SYNC | SRC_SEL and DST_SEL "address using L2"; no addresses;
+        // zero bytes — as si_emit_cp_dma(sctx, cs, 0, 0, 0, CP_DMA_SYNC) emits it (Mesa 0866ae7).
+        main_out.insert(main_out.end(), {0xC0055000u, 0xE0300000u, 0u, 0u, 0u, 0u, 0u});
+    }
     const std::size_t main_n = main_out.size();
     pieces.push_back({ib.data(), ib.size(), pro_padded, (main_n + epi + 7) & ~std::size_t{7}, 0});
     for (std::size_t k = 0; k < pieces.size() && pieces.size() < 64; ++k) {

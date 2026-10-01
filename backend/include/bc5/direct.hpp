@@ -140,6 +140,13 @@ public:
     // 80: 28 ms with 5.8 GB listed). The other mappings stay in the VM; they are revalidated by
     // the next submission that draws. Needs FilterOptions::mapped. Off by default.
     void set_short_lists(bool v) { short_lists_ = v; }
+    // Every IB ends with a zero-byte DMA_DATA carrying CP_SYNC: the CP then waits for all CP DMA
+    // operations to finish before the IB ends. amdgpu does not wait for them, a fence signals
+    // with a copy still running (Mesa ends its IBs the same way: radeonsi
+    // si_cp_dma_wait_for_idle / si_gfx_cs.c, RADV radv_cp_dma_wait_for_idle, "because the kernel
+    // doesn't wait for it"). The console stream leaves 12 MB copies without CP_SYNC behind
+    // (experiment 0017: video frames; the machine went down with the next IB). On by default.
+    void set_dma_idle(bool v) { dma_idle_ = v; }
 
 private:
     Device() = default;
@@ -149,6 +156,7 @@ private:
     bool include_mappings_ = true;
     bool state_stack_ = false;
     bool short_lists_ = false;
+    bool dma_idle_ = true;
     std::uint64_t submits_ = 0;
 };
 

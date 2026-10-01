@@ -61,8 +61,42 @@ Userptr costs about 5 ms per GiB whatever the BO count (the page walk); an impor
 costs about 0.25 µs per BO and nothing per byte. The first CS that lists the imports is slow once
 (3–48 ms: the binding).
 
-*The game live on the new backing* (11:15, run 89 in experiment 0016's numbering): **the machine
-went down** — the SSH session was reset during the run and the box stopped answering. Post-mortem
-pending its power cycle.
+*The game live on the new backing* (11:13, run 89 in experiment 0016's numbering; capture
+`kytyplus-20261001-1113`, the journal survived, `raw/run89-direct-tail.log`): 7,206 submissions
+and 493 flips in 42 s, then one submission timed out and **the machine went down** (reset; the
+kernel log of that boot did not reach the disk).
 
-**Verdict.** Open: the mechanism works in isolation (import, GPU access both ways, a CS forty times cheaper); the game on it took the machine down, cause not yet known.
+What the 42 seconds show. The backing works under the game: 820 imported BOs, 5,012 MiB pinned,
+893 GPU mappings, no failed import or map, no failed submission before the last, the picture as
+before (119 distinct display-buffer contents: the fade-in and what follows). And it does what it
+was built for:
+
+| | anonymous backing (run 82) | dma-buf backing (run 89) |
+|---|---|---|
+| CS ioctl, submission that draws | 26.9 ms (1,953 BOs, 5.4 GB userptr) | **2.6 ms** (937 BOs: imports plus 370 MiB userptr) |
+| forced mapping sync | 11 ms | 1.8 ms |
+| a flip every | 0.35 s | **0.083 s** |
+| GPU time per flip (fence waits) | 9.7 ms | 9.1 ms |
+
+Twelve frames a second instead of three, and the game got further than in any run before: at
+34 s it opened its first video (the log names an `.mp4` under its own data and starts
+`AvPlayerVideoDecoder`), and from then on every frame carries a new 79-dword compute IB that
+uploads the decoded frame: one `DMA_DATA` of 12,441,600 bytes (3840×2160 NV12) from a host buffer
+to a texture in direct memory, header 0x66304000 — memory to memory, **no `CP_SYNC`**. 182 frames
+of that ran; after the 182nd upload IB (fence after 0.02 ms, far less than a 12 MB copy takes)
+the next submission, the per-frame state header that had run 490 times, never finished.
+
+The reading: CP DMA is asynchronous, the IB ends and its fence signals with the copy still
+running, and `amdgpu` does not wait for it — Mesa says so in as many words and ends every IB with
+a zero-byte `DMA_DATA` carrying `CP_SYNC` for that reason (radeonsi `si_cp_dma_wait_for_idle`,
+`si_gfx_cs.c`: "Make sure CP DMA is idle at the end of IBs ... because the kernel doesn't wait for
+it"; RADV `radv_cp_dma_wait_for_idle`; Mesa 0866ae7). The console's stream relies on its own
+kernel. Here the next IB (with its `CLEAR_STATE` and register loads) ran into a copy in flight,
+with nothing holding the copy's buffers either. Not the backing's doing: the anonymous backing
+never got as far as the video. Fix: `Device::set_dma_idle` (on by default) appends that
+zero-byte `DMA_DATA` with `CP_SYNC` to every IB. Unverified until the next GPU run.
+
+Also lost with the machine: the dumps of the last submissions (since run 78 only the journal is
+synced per submission), which is why the upload IB above was read from an earlier instance.
+
+**Verdict.** Open: import, GPU access and the cost of a CS are settled (a CS forty times cheaper, the game four times faster); a clean live run with the DMA wait is still owed.

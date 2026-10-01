@@ -1,0 +1,400 @@
+submit #7080 dcb 2960 dwords at 0x503502500: pass 275 rewrite 127 drop 129 unmapped 0 cc 4 mappings 1005 ... OK rc 0 3.45 ms
+timing: #7080 done at t 41.286 s, 7.9 ms after the sync and hints; device: prepare 0.24 list 0.33 cs 2.68 fence 0.76 ms, 937 BOs
+timing: t 41.286 s dcb 851 dwords: sync 1.7 ms, hints 0.1 ms
+submit #7081 dcb 851 dwords at 0x505602500: pass 47 rewrite 55 drop 45 unmapped 0 cc 0 mappings 1005 ... OK rc 0 2.63 ms
+timing: #7081 done at t 41.293 s, 4.8 ms after the sync and hints; device: prepare 0.15 list 0.32 cs 2.58 fence 0.05 ms, 937 BOs
+timing: t 41.293 s acb 2 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7082 acb 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.05 ms
+timing: #7082 done at t 41.294 s, 1.5 ms after the sync and hints; device: prepare 0.01 list 0.02 cs 0.04 fence 0.02 ms, 5 BOs (short list)
+timing: t 41.294 s dcb 798 dwords: sync 1.7 ms, hints 0.2 ms
+submit #7083 dcb 798 dwords at 0x506202500: pass 103 rewrite 35 drop 22 unmapped 0 cc 6 mappings 1005 ... OK rc 0 3.42 ms
+timing: #7083 done at t 41.304 s, 7.7 ms after the sync and hints; device: prepare 0.16 list 0.32 cs 2.60 fence 0.81 ms, 937 BOs
+timing: t 41.304 s acb 463 dwords: sync 2.0 ms, hints 0.1 ms
+submit #7084 acb 463 dwords at 0x4003e6740: pass 43 rewrite 11 drop 27 unmapped 0 cc 0 mappings 1005 ... OK rc 0 3.14 ms
+timing: #7084 done at t 41.311 s, 5.0 ms after the sync and hints; device: prepare 0.22 list 0.34 cs 2.77 fence 0.37 ms, 937 BOs
+acb head: 3413 of 3462 dwords go ahead of the wait at 3413 on 0x400202380
+timing: t 41.311 s dcb 1248 dwords: sync 1.7 ms, hints 0.2 ms
+submit #7085 dcb 1248 dwords at 0x504a02500: pass 151 rewrite 46 drop 45 unmapped 0 cc 6 mappings 1005 ... OK rc 0 2.80 ms
+timing: #7085 done at t 41.319 s, 6.3 ms after the sync and hints; device: prepare 0.18 list 0.33 cs 2.61 fence 0.19 ms, 937 BOs
+flip 1/1 buffer 0x5093f0000 +0x1fe0000: sum 0x18379480a864 nonzero 8100/8160 pattern 0
+timing: t 41.320 s flip 1/1, VideoOutSubmitFlip took 0.0 ms
+timing: t 41.319 s acb 3413 dwords: sync 2.0 ms, hints 0.1 ms
+submit #7086 acb 3413 dwords at 0x400205540: pass 331 rewrite 70 drop 165 unmapped 0 cc 0 mappings 1005 ... OK rc 0 4.16 ms
+timing: #7086 done at t 41.330 s, 8.6 ms after the sync and hints; device: prepare 0.20 list 0.34 cs 2.67 fence 1.48 ms, 937 BOs
+timing: t 41.330 s dcb 10440 dwords: sync 1.9 ms, hints 0.3 ms
+submit #7087 dcb 10440 dwords at 0x502002500: pass 691 rewrite 518 drop 462 unmapped 1 cc 12 mappings 1005 ... OK rc 0 9.25 ms
+timing: #7087 done at t 41.352 s, 19.2 ms after the sync and hints; device: prepare 0.51 list 0.34 cs 2.59 fence 6.66 ms, 937 BOs
+timing: t 41.352 s acb 2 dwords: sync (lazy) 0.0 ms, hints 0.2 ms
+submit #7088 acb 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.06 ms
+timing: #7088 done at t 41.354 s, 1.6 ms after the sync and hints; device: prepare 0.01 list 0.02 cs 0.03 fence 0.02 ms, 5 BOs (short list)
+timing: t 41.354 s acb 49 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7089 acb 49 dwords at 0x400208a94: pass 2 rewrite 3 drop 3 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.08 ms
+timing: #7089 done at t 41.355 s, 1.5 ms after the sync and hints; device: prepare 0.02 list 0.02 cs 0.04 fence 0.04 ms, 7 BOs (short list)
+timing: t 41.355 s cc 3 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7090 cc 3 dwords at 0x313b17cf4: pass 0 rewrite 1 drop 0 unmapped 0 cc 1 mappings 1005 ... OK rc 0 0.06 ms
+timing: #7090 done at t 41.357 s, 1.3 ms after the sync and hints; device: prepare 0.00 list 0.02 cs 0.04 fence 0.02 ms, 5 BOs (short list)
+timing: t 41.357 s hib 150 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7091 hib 150 dwords at 0xfe0000000: pass 12 rewrite 2 drop 2 unmapped 0 cc 2 mappings 1005 ... OK rc 0 0.06 ms
+timing: #7091 done at t 41.358 s, 1.5 ms after the sync and hints; device: prepare 0.02 list 0.02 cs 0.04 fence 0.02 ms, 6 BOs (short list)
+timing: t 41.358 s acb 2 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7092 acb 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.05 ms
+timing: #7092 done at t 41.360 s, 1.3 ms after the sync and hints; device: prepare 0.01 list 0.02 cs 0.03 fence 0.02 ms, 5 BOs (short list)
+timing: t 41.360 s acb 79 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7093 acb 79 dwords at 0x600000540: pass 10 rewrite 0 drop 3 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.06 ms
+timing: #7093 done at t 41.361 s, 1.2 ms after the sync and hints; device: prepare 0.02 list 0.02 cs 0.04 fence 0.02 ms, 13 BOs (short list)
+timing: t 41.361 s hib 2 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7094 hib 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.06 ms
+timing: #7094 done at t 41.363 s, 1.3 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.03 fence 0.02 ms, 5 BOs (short list)
+timing: t 41.363 s dcb 96 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7095 dcb 96 dwords at 0xfe0042920: pass 20 rewrite 2 drop 2 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.06 ms
+timing: #7095 done at t 41.364 s, 1.4 ms after the sync and hints; device: prepare 0.02 list 0.01 cs 0.03 fence 0.03 ms, 6 BOs (short list)
+timing: t 41.364 s dcb 2960 dwords: sync 1.7 ms, hints 0.2 ms
+submit #7096 dcb 2960 dwords at 0x503c02500: pass 275 rewrite 127 drop 129 unmapped 0 cc 4 mappings 1005 ... OK rc 0 3.38 ms
+timing: #7096 done at t 41.374 s, 7.8 ms after the sync and hints; device: prepare 0.20 list 0.32 cs 2.62 fence 0.76 ms, 937 BOs
+timing: t 41.374 s dcb 851 dwords: sync 1.7 ms, hints 0.1 ms
+submit #7097 dcb 851 dwords at 0x505a02500: pass 47 rewrite 55 drop 45 unmapped 0 cc 0 mappings 1005 ... OK rc 0 2.71 ms
+timing: #7097 done at t 41.381 s, 4.8 ms after the sync and hints; device: prepare 0.14 list 0.32 cs 2.65 fence 0.06 ms, 937 BOs
+timing: t 41.381 s acb 2 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7098 acb 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.06 ms
+timing: #7098 done at t 41.382 s, 1.4 ms after the sync and hints; device: prepare 0.01 list 0.02 cs 0.04 fence 0.02 ms, 5 BOs (short list)
+timing: t 41.382 s dcb 798 dwords: sync 2.3 ms, hints 0.2 ms
+submit #7099 dcb 798 dwords at 0x506802500: pass 103 rewrite 35 drop 22 unmapped 0 cc 6 mappings 1005 ... OK rc 0 3.53 ms
+timing: #7099 done at t 41.393 s, 7.8 ms after the sync and hints; device: prepare 0.17 list 0.32 cs 2.71 fence 0.82 ms, 937 BOs
+timing: t 41.393 s acb 463 dwords: sync 2.1 ms, hints 0.1 ms
+submit #7100 acb 463 dwords at 0x4004867c0: pass 43 rewrite 11 drop 27 unmapped 0 cc 0 mappings 1005 ... OK rc 0 3.11 ms
+timing: #7100 done at t 41.400 s, 4.8 ms after the sync and hints; device: prepare 0.14 list 0.33 cs 2.73 fence 0.38 ms, 937 BOs
+acb head: 3413 of 3462 dwords go ahead of the wait at 3413 on 0x400202f80
+timing: t 41.400 s dcb 1248 dwords: sync 2.1 ms, hints 0.2 ms
+submit #7101 dcb 1248 dwords at 0x504e02500: pass 151 rewrite 46 drop 45 unmapped 0 cc 6 mappings 1005 ... OK rc 0 2.94 ms
+timing: #7101 done at t 41.409 s, 6.6 ms after the sync and hints; device: prepare 0.38 list 0.35 cs 2.75 fence 0.19 ms, 937 BOs
+flip 1/0 buffer 0x507410000 +0x1fe0000: sum 0x1839cd304af9 nonzero 8100/8160 pattern 0
+timing: t 41.410 s flip 1/0, VideoOutSubmitFlip took 0.0 ms
+timing: t 41.409 s acb 3413 dwords: sync 2.4 ms, hints 0.1 ms
+submit #7102 acb 3413 dwords at 0x4002a55c0: pass 331 rewrite 70 drop 165 unmapped 0 cc 0 mappings 1005 ... OK rc 0 4.29 ms
+timing: #7102 done at t 41.418 s, 6.4 ms after the sync and hints; device: prepare 0.20 list 0.40 cs 2.82 fence 1.47 ms, 937 BOs
+timing: t 41.418 s dcb 10440 dwords: sync 1.7 ms, hints 0.3 ms
+submit #7103 dcb 10440 dwords at 0x502702500: pass 691 rewrite 518 drop 462 unmapped 1 cc 12 mappings 1005 ... OK rc 0 9.23 ms
+timing: #7103 done at t 41.439 s, 19.1 ms after the sync and hints; device: prepare 0.39 list 0.33 cs 2.59 fence 6.64 ms, 937 BOs
+timing: t 41.439 s acb 2 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7104 acb 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.06 ms
+timing: #7104 done at t 41.440 s, 1.3 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.04 fence 0.03 ms, 5 BOs (short list)
+timing: t 41.440 s acb 49 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7105 acb 49 dwords at 0x4002a8b14: pass 2 rewrite 3 drop 3 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.09 ms
+timing: #7105 done at t 41.442 s, 1.5 ms after the sync and hints; device: prepare 0.02 list 0.02 cs 0.05 fence 0.04 ms, 7 BOs (short list)
+timing: t 41.442 s cc 3 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7106 cc 3 dwords at 0x313b17cf4: pass 0 rewrite 1 drop 0 unmapped 0 cc 1 mappings 1005 ... OK rc 0 0.06 ms
+timing: #7106 done at t 41.444 s, 1.4 ms after the sync and hints; device: prepare 0.01 list 0.02 cs 0.04 fence 0.03 ms, 5 BOs (short list)
+timing: t 41.444 s hib 150 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7107 hib 150 dwords at 0xfe0000000: pass 12 rewrite 2 drop 2 unmapped 0 cc 2 mappings 1005 ... OK rc 0 0.05 ms
+timing: #7107 done at t 41.445 s, 1.5 ms after the sync and hints; device: prepare 0.02 list 0.01 cs 0.03 fence 0.02 ms, 6 BOs (short list)
+timing: t 41.445 s acb 2 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7108 acb 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.07 ms
+timing: #7108 done at t 41.448 s, 2.8 ms after the sync and hints; device: prepare 0.01 list 0.03 cs 0.05 fence 0.03 ms, 5 BOs (short list)
+timing: t 41.448 s acb 79 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7109 acb 79 dwords at 0x600000540: pass 10 rewrite 0 drop 3 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.08 ms
+timing: #7109 done at t 41.450 s, 1.3 ms after the sync and hints; device: prepare 0.02 list 0.02 cs 0.05 fence 0.02 ms, 10 BOs (short list)
+timing: t 41.450 s hib 2 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7110 hib 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.05 ms
+timing: #7110 done at t 41.451 s, 1.2 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.03 fence 0.01 ms, 5 BOs (short list)
+timing: t 41.451 s dcb 96 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7111 dcb 96 dwords at 0xfe0042920: pass 20 rewrite 2 drop 2 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.05 ms
+timing: #7111 done at t 41.453 s, 1.4 ms after the sync and hints; device: prepare 0.02 list 0.01 cs 0.02 fence 0.03 ms, 6 BOs (short list)
+timing: t 41.453 s dcb 2960 dwords: sync 1.7 ms, hints 0.2 ms
+submit #7112 dcb 2960 dwords at 0x504302500: pass 275 rewrite 127 drop 129 unmapped 0 cc 4 mappings 1005 ... OK rc 0 3.42 ms
+timing: #7112 done at t 41.462 s, 7.7 ms after the sync and hints; device: prepare 0.19 list 0.33 cs 2.67 fence 0.75 ms, 937 BOs
+timing: t 41.463 s dcb 851 dwords: sync 1.7 ms, hints 0.1 ms
+submit #7113 dcb 851 dwords at 0x505e02500: pass 47 rewrite 55 drop 45 unmapped 0 cc 0 mappings 1005 ... OK rc 0 2.63 ms
+timing: #7113 done at t 41.470 s, 4.8 ms after the sync and hints; device: prepare 0.14 list 0.33 cs 2.58 fence 0.05 ms, 937 BOs
+timing: t 41.470 s acb 2 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7114 acb 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.06 ms
+timing: #7114 done at t 41.471 s, 1.4 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.03 fence 0.03 ms, 5 BOs (short list)
+timing: t 41.471 s acb 463 dwords: sync 1.7 ms, hints 0.1 ms
+submit #7115 acb 463 dwords at 0x400526840: pass 43 rewrite 11 drop 27 unmapped 0 cc 0 mappings 1005 ... OK rc 0 3.01 ms
+timing: #7115 done at t 41.478 s, 4.7 ms after the sync and hints; device: prepare 0.13 list 0.34 cs 2.66 fence 0.35 ms, 937 BOs
+timing: t 41.478 s dcb 798 dwords: sync 2.3 ms, hints 0.2 ms
+submit #7116 dcb 798 dwords at 0x506e02500: pass 103 rewrite 35 drop 22 unmapped 0 cc 6 mappings 1005 ... acb head: 3413 of 3462 dwords go ahead of the wait at 3413 on 0x400203b80
+OK rc 0 3.51 ms
+timing: #7116 done at t 41.488 s, 8.5 ms after the sync and hints; device: prepare 0.35 list 0.36 cs 2.73 fence 0.78 ms, 937 BOs
+timing: t 41.488 s acb 3413 dwords: sync 2.2 ms, hints 0.1 ms
+submit #7117 acb 3413 dwords at 0x400345640: pass 331 rewrite 70 drop 165 unmapped 0 cc 0 mappings 1005 ... OK rc 0 4.09 ms
+timing: #7117 done at t 41.497 s, 6.0 ms after the sync and hints; device: prepare 0.19 list 0.33 cs 2.59 fence 1.50 ms, 937 BOs
+timing: t 41.497 s dcb 1248 dwords: sync 2.2 ms, hints 0.2 ms
+submit #7118 dcb 1248 dwords at 0x505202500: pass 151 rewrite 46 drop 45 unmapped 0 cc 6 mappings 1005 ... OK rc 0 3.04 ms
+timing: #7118 done at t 41.506 s, 6.5 ms after the sync and hints; device: prepare 0.20 list 0.33 cs 2.84 fence 0.20 ms, 937 BOs
+flip 1/1 buffer 0x5093f0000 +0x1fe0000: sum 0x183c684941cf nonzero 8100/8160 pattern 0
+timing: t 41.506 s flip 1/1, VideoOutSubmitFlip took 0.0 ms
+timing: t 41.507 s dcb 10440 dwords: sync 1.8 ms, hints 0.4 ms
+submit #7119 dcb 10440 dwords at 0x502e02500: pass 691 rewrite 518 drop 462 unmapped 1 cc 12 mappings 1005 ... OK rc 0 9.26 ms
+timing: #7119 done at t 41.528 s, 19.8 ms after the sync and hints; device: prepare 0.41 list 0.33 cs 2.62 fence 6.64 ms, 937 BOs
+timing: t 41.529 s acb 2 dwords: sync (lazy) 0.0 ms, hints 0.2 ms
+submit #7120 acb 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.06 ms
+timing: #7120 done at t 41.530 s, 1.6 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.03 fence 0.02 ms, 5 BOs (short list)
+timing: t 41.530 s acb 49 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7121 acb 49 dwords at 0x400348b94: pass 2 rewrite 3 drop 3 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.22 ms
+timing: #7121 done at t 41.532 s, 1.5 ms after the sync and hints; device: prepare 0.02 list 0.02 cs 0.05 fence 0.16 ms, 7 BOs (short list)
+timing: t 41.532 s cc 3 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7122 cc 3 dwords at 0x313b17cf4: pass 0 rewrite 1 drop 0 unmapped 0 cc 1 mappings 1005 ... OK rc 0 0.08 ms
+timing: #7122 done at t 41.534 s, 1.4 ms after the sync and hints; device: prepare 0.01 list 0.02 cs 0.06 fence 0.02 ms, 5 BOs (short list)
+timing: t 41.534 s hib 150 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7123 hib 150 dwords at 0xfe0000000: pass 12 rewrite 2 drop 2 unmapped 0 cc 2 mappings 1005 ... OK rc 0 0.07 ms
+timing: #7123 done at t 41.536 s, 1.7 ms after the sync and hints; device: prepare 0.02 list 0.02 cs 0.04 fence 0.03 ms, 6 BOs (short list)
+timing: t 41.536 s acb 2 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7124 acb 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.07 ms
+timing: #7124 done at t 41.538 s, 2.5 ms after the sync and hints; device: prepare 0.01 list 0.02 cs 0.05 fence 0.02 ms, 5 BOs (short list)
+timing: t 41.538 s acb 79 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7125 acb 79 dwords at 0x600000540: pass 10 rewrite 0 drop 3 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.06 ms
+timing: #7125 done at t 41.540 s, 1.3 ms after the sync and hints; device: prepare 0.02 list 0.02 cs 0.04 fence 0.02 ms, 11 BOs (short list)
+timing: t 41.540 s hib 2 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7126 hib 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.05 ms
+timing: #7126 done at t 41.541 s, 1.1 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.03 fence 0.02 ms, 5 BOs (short list)
+timing: t 41.541 s dcb 96 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7127 dcb 96 dwords at 0xfe0042920: pass 20 rewrite 2 drop 2 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.07 ms
+timing: #7127 done at t 41.543 s, 1.6 ms after the sync and hints; device: prepare 0.02 list 0.02 cs 0.03 fence 0.03 ms, 6 BOs (short list)
+timing: t 41.543 s dcb 2960 dwords: sync 1.8 ms, hints 0.2 ms
+submit #7128 dcb 2960 dwords at 0x503502500: pass 275 rewrite 127 drop 129 unmapped 0 cc 4 mappings 1005 ... OK rc 0 3.56 ms
+timing: #7128 done at t 41.553 s, 8.0 ms after the sync and hints; device: prepare 0.21 list 0.34 cs 2.81 fence 0.75 ms, 937 BOs
+timing: t 41.553 s dcb 851 dwords: sync 1.7 ms, hints 0.2 ms
+submit #7129 dcb 851 dwords at 0x505602500: pass 47 rewrite 55 drop 45 unmapped 0 cc 0 mappings 1005 ... OK rc 0 2.69 ms
+timing: #7129 done at t 41.560 s, 4.9 ms after the sync and hints; device: prepare 0.14 list 0.34 cs 2.66 fence 0.04 ms, 937 BOs
+timing: t 41.560 s acb 2 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7130 acb 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.05 ms
+timing: #7130 done at t 41.562 s, 1.4 ms after the sync and hints; device: prepare 0.01 list 0.02 cs 0.04 fence 0.02 ms, 5 BOs (short list)
+timing: t 41.562 s dcb 798 dwords: sync 1.7 ms, hints 0.2 ms
+submit #7131 dcb 798 dwords at 0x506202500: pass 103 rewrite 35 drop 22 unmapped 0 cc 6 mappings 1005 ... OK rc 0 3.40 ms
+timing: #7131 done at t 41.572 s, 7.9 ms after the sync and hints; device: prepare 0.16 list 0.35 cs 2.59 fence 0.81 ms, 937 BOs
+timing: t 41.572 s acb 463 dwords: sync 1.7 ms, hints 0.1 ms
+submit #7132 acb 463 dwords at 0x4003e6740: pass 43 rewrite 11 drop 27 unmapped 0 cc 0 mappings 1005 ... OK rc 0 3.03 ms
+timing: #7132 done at t 41.578 s, 4.8 ms after the sync and hints; device: prepare 0.20 list 0.33 cs 2.65 fence 0.38 ms, 937 BOs
+acb head: 3413 of 3462 dwords go ahead of the wait at 3413 on 0x400202380
+timing: t 41.578 s dcb 1248 dwords: sync 1.7 ms, hints 0.2 ms
+submit #7133 dcb 1248 dwords at 0x504a02500: pass 151 rewrite 46 drop 45 unmapped 0 cc 6 mappings 1005 ... OK rc 0 2.79 ms
+timing: #7133 done at t 41.586 s, 6.3 ms after the sync and hints; device: prepare 0.16 list 0.33 cs 2.60 fence 0.19 ms, 937 BOs
+flip 1/0 buffer 0x507410000 +0x1fe0000: sum 0x183e3769a5dd nonzero 8100/8160 pattern 0
+timing: t 41.587 s flip 1/0, VideoOutSubmitFlip took 0.0 ms
+timing: t 41.586 s acb 3413 dwords: sync 1.8 ms, hints 0.1 ms
+submit #7134 acb 3413 dwords at 0x400205540: pass 331 rewrite 70 drop 165 unmapped 0 cc 0 mappings 1005 ... OK rc 0 4.24 ms
+timing: #7134 done at t 41.594 s, 6.1 ms after the sync and hints; device: prepare 0.19 list 0.40 cs 2.80 fence 1.44 ms, 937 BOs
+timing: t 41.594 s dcb 10440 dwords: sync 1.7 ms, hints 0.3 ms
+submit #7135 dcb 10440 dwords at 0x502002500: pass 691 rewrite 518 drop 462 unmapped 1 cc 12 mappings 1005 ... OK rc 0 9.43 ms
+timing: #7135 done at t 41.616 s, 19.6 ms after the sync and hints; device: prepare 0.41 list 0.34 cs 2.80 fence 6.63 ms, 937 BOs
+timing: t 41.616 s acb 2 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7136 acb 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.06 ms
+timing: #7136 done at t 41.617 s, 1.3 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.04 fence 0.03 ms, 5 BOs (short list)
+timing: t 41.617 s acb 49 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7137 acb 49 dwords at 0x400208a94: pass 2 rewrite 3 drop 3 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.08 ms
+timing: #7137 done at t 41.620 s, 2.1 ms after the sync and hints; device: prepare 0.02 list 0.02 cs 0.05 fence 0.03 ms, 7 BOs (short list)
+timing: t 41.620 s cc 3 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7138 cc 3 dwords at 0x313b17cf4: pass 0 rewrite 1 drop 0 unmapped 0 cc 1 mappings 1005 ... OK rc 0 0.07 ms
+timing: #7138 done at t 41.621 s, 1.5 ms after the sync and hints; device: prepare 0.01 list 0.02 cs 0.05 fence 0.02 ms, 5 BOs (short list)
+timing: t 41.621 s hib 150 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7139 hib 150 dwords at 0xfe0000000: pass 12 rewrite 2 drop 2 unmapped 0 cc 2 mappings 1005 ... OK rc 0 0.06 ms
+timing: #7139 done at t 41.623 s, 1.6 ms after the sync and hints; device: prepare 0.02 list 0.01 cs 0.04 fence 0.02 ms, 6 BOs (short list)
+timing: t 41.623 s acb 2 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7140 acb 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.05 ms
+timing: #7140 done at t 41.624 s, 1.1 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.03 fence 0.01 ms, 5 BOs (short list)
+timing: t 41.624 s acb 79 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7141 acb 79 dwords at 0x600000540: pass 10 rewrite 0 drop 3 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.06 ms
+timing: #7141 done at t 41.626 s, 1.2 ms after the sync and hints; device: prepare 0.02 list 0.01 cs 0.04 fence 0.02 ms, 10 BOs (short list)
+timing: t 41.626 s hib 2 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7142 hib 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.06 ms
+timing: #7142 done at t 41.627 s, 1.2 ms after the sync and hints; device: prepare 0.01 list 0.02 cs 0.04 fence 0.02 ms, 5 BOs (short list)
+timing: t 41.627 s dcb 96 dwords: sync (lazy) 0.0 ms, hints 0.2 ms
+submit #7143 dcb 96 dwords at 0xfe0042920: pass 20 rewrite 2 drop 2 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.07 ms
+timing: #7143 done at t 41.630 s, 2.5 ms after the sync and hints; device: prepare 0.02 list 0.01 cs 0.04 fence 0.03 ms, 6 BOs (short list)
+timing: t 41.630 s dcb 2960 dwords: sync 1.8 ms, hints 0.2 ms
+submit #7144 dcb 2960 dwords at 0x503c02500: pass 275 rewrite 127 drop 129 unmapped 0 cc 4 mappings 1005 ... OK rc 0 4.54 ms
+timing: #7144 done at t 41.641 s, 9.2 ms after the sync and hints; device: prepare 0.33 list 0.40 cs 3.81 fence 0.73 ms, 937 BOs
+timing: t 41.642 s dcb 851 dwords: sync 2.4 ms, hints 0.2 ms
+submit #7145 dcb 851 dwords at 0x505a02500: pass 47 rewrite 55 drop 45 unmapped 0 cc 0 mappings 1005 ... OK rc 0 2.80 ms
+timing: #7145 done at t 41.652 s, 8.2 ms after the sync and hints; device: prepare 0.15 list 0.34 cs 2.76 fence 0.04 ms, 937 BOs
+timing: t 41.652 s acb 2 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7146 acb 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.06 ms
+timing: #7146 done at t 41.654 s, 1.6 ms after the sync and hints; device: prepare 0.01 list 0.02 cs 0.04 fence 0.02 ms, 5 BOs (short list)
+timing: t 41.654 s dcb 798 dwords: sync 1.7 ms, hints 0.2 ms
+submit #7147 dcb 798 dwords at 0x506802500: pass 103 rewrite 35 drop 22 unmapped 0 cc 6 mappings 1005 ... OK rc 0 3.47 ms
+timing: #7147 done at t 41.664 s, 7.9 ms after the sync and hints; device: prepare 0.16 list 0.33 cs 2.68 fence 0.79 ms, 937 BOs
+timing: t 41.664 s acb 463 dwords: sync 1.7 ms, hints 0.1 ms
+submit #7148 acb 463 dwords at 0x4004867c0: pass 43 rewrite 11 drop 27 unmapped 0 cc 0 mappings 1005 ... OK rc 0 3.02 ms
+timing: #7148 done at t 41.670 s, 4.8 ms after the sync and hints; device: prepare 0.13 list 0.32 cs 2.65 fence 0.37 ms, 937 BOs
+acb head: 3413 of 3462 dwords go ahead of the wait at 3413 on 0x400202f80
+timing: t 41.670 s dcb 1248 dwords: sync 1.7 ms, hints 0.2 ms
+submit #7149 dcb 1248 dwords at 0x504e02500: pass 151 rewrite 46 drop 45 unmapped 0 cc 6 mappings 1005 ... OK rc 0 2.84 ms
+timing: #7149 done at t 41.679 s, 6.6 ms after the sync and hints; device: prepare 0.36 list 0.36 cs 2.66 fence 0.19 ms, 937 BOs
+flip 1/1 buffer 0x5093f0000 +0x1fe0000: sum 0x184032b46f43 nonzero 8100/8160 pattern 0
+timing: t 41.680 s flip 1/1, VideoOutSubmitFlip took 0.0 ms
+timing: t 41.679 s acb 3413 dwords: sync 1.9 ms, hints 0.1 ms
+submit #7150 acb 3413 dwords at 0x4002a55c0: pass 331 rewrite 70 drop 165 unmapped 0 cc 0 mappings 1005 ... OK rc 0 4.07 ms
+timing: #7150 done at t 41.689 s, 8.7 ms after the sync and hints; device: prepare 0.19 list 0.33 cs 2.59 fence 1.47 ms, 937 BOs
+timing: t 41.690 s dcb 10440 dwords: sync 1.7 ms, hints 0.3 ms
+submit #7151 dcb 10440 dwords at 0x502702500: pass 691 rewrite 518 drop 462 unmapped 1 cc 12 mappings 1005 ... OK rc 0 9.30 ms
+timing: #7151 done at t 41.711 s, 19.1 ms after the sync and hints; device: prepare 0.41 list 0.33 cs 2.66 fence 6.64 ms, 937 BOs
+timing: t 41.711 s acb 2 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7152 acb 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.08 ms
+timing: #7152 done at t 41.712 s, 1.5 ms after the sync and hints; device: prepare 0.00 list 0.02 cs 0.04 fence 0.04 ms, 5 BOs (short list)
+timing: t 41.712 s acb 49 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7153 acb 49 dwords at 0x4002a8b14: pass 2 rewrite 3 drop 3 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.08 ms
+timing: #7153 done at t 41.715 s, 2.2 ms after the sync and hints; device: prepare 0.02 list 0.03 cs 0.05 fence 0.03 ms, 7 BOs (short list)
+timing: t 41.715 s cc 3 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7154 cc 3 dwords at 0x313b17cf4: pass 0 rewrite 1 drop 0 unmapped 0 cc 1 mappings 1005 ... OK rc 0 0.07 ms
+timing: #7154 done at t 41.716 s, 1.6 ms after the sync and hints; device: prepare 0.01 list 0.02 cs 0.04 fence 0.03 ms, 5 BOs (short list)
+timing: t 41.716 s hib 150 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7155 hib 150 dwords at 0xfe0000000: pass 12 rewrite 2 drop 2 unmapped 0 cc 2 mappings 1005 ... OK rc 0 0.05 ms
+timing: #7155 done at t 41.718 s, 1.6 ms after the sync and hints; device: prepare 0.02 list 0.02 cs 0.03 fence 0.02 ms, 6 BOs (short list)
+timing: t 41.718 s acb 2 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7156 acb 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.04 ms
+timing: #7156 done at t 41.720 s, 1.2 ms after the sync and hints; device: prepare 0.01 list 0.01 cs 0.02 fence 0.02 ms, 5 BOs (short list)
+timing: t 41.720 s acb 79 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7157 acb 79 dwords at 0x600000540: pass 10 rewrite 0 drop 3 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.05 ms
+timing: #7157 done at t 41.721 s, 1.2 ms after the sync and hints; device: prepare 0.01 list 0.01 cs 0.03 fence 0.02 ms, 10 BOs (short list)
+timing: t 41.721 s hib 2 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7158 hib 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.04 ms
+timing: #7158 done at t 41.722 s, 1.2 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.02 fence 0.02 ms, 5 BOs (short list)
+timing: t 41.722 s dcb 96 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7159 dcb 96 dwords at 0xfe0042920: pass 20 rewrite 2 drop 2 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.06 ms
+timing: #7159 done at t 41.724 s, 1.5 ms after the sync and hints; device: prepare 0.02 list 0.01 cs 0.03 fence 0.03 ms, 6 BOs (short list)
+timing: t 41.724 s dcb 2960 dwords: sync 1.7 ms, hints 0.2 ms
+submit #7160 dcb 2960 dwords at 0x504302500: pass 275 rewrite 127 drop 129 unmapped 0 cc 4 mappings 1005 ... OK rc 0 3.39 ms
+timing: #7160 done at t 41.734 s, 7.9 ms after the sync and hints; device: prepare 0.20 list 0.33 cs 2.63 fence 0.75 ms, 937 BOs
+timing: t 41.734 s dcb 851 dwords: sync 1.7 ms, hints 0.1 ms
+submit #7161 dcb 851 dwords at 0x505e02500: pass 47 rewrite 55 drop 45 unmapped 0 cc 0 mappings 1005 ... OK rc 0 2.66 ms
+timing: #7161 done at t 41.741 s, 4.9 ms after the sync and hints; device: prepare 0.15 list 0.33 cs 2.60 fence 0.06 ms, 937 BOs
+timing: t 41.741 s acb 2 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7162 acb 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.06 ms
+timing: #7162 done at t 41.742 s, 1.4 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.04 fence 0.02 ms, 5 BOs (short list)
+timing: t 41.743 s dcb 798 dwords: sync 1.7 ms, hints 0.2 ms
+submit #7163 dcb 798 dwords at 0x506e02500: pass 103 rewrite 35 drop 22 unmapped 0 cc 6 mappings 1005 ... OK rc 0 3.45 ms
+timing: #7163 done at t 41.752 s, 7.8 ms after the sync and hints; device: prepare 0.16 list 0.34 cs 2.63 fence 0.82 ms, 937 BOs
+timing: t 41.752 s acb 463 dwords: sync 2.3 ms, hints 0.1 ms
+submit #7164 acb 463 dwords at 0x400526840: pass 43 rewrite 11 drop 27 unmapped 0 cc 0 mappings 1005 ... OK rc 0 2.97 ms
+timing: #7164 done at t 41.760 s, 5.1 ms after the sync and hints; device: prepare 0.13 list 0.34 cs 2.61 fence 0.36 ms, 937 BOs
+acb head: 3413 of 3462 dwords go ahead of the wait at 3413 on 0x400203b80
+timing: t 41.760 s dcb 1248 dwords: sync 1.7 ms, hints 0.2 ms
+submit #7165 dcb 1248 dwords at 0x505202500: pass 151 rewrite 46 drop 45 unmapped 0 cc 6 mappings 1005 ... OK rc 0 2.75 ms
+timing: #7165 done at t 41.768 s, 6.3 ms after the sync and hints; device: prepare 0.17 list 0.33 cs 2.56 fence 0.19 ms, 937 BOs
+flip 1/0 buffer 0x507410000 +0x1fe0000: sum 0x1841a43dd50c nonzero 8100/8160 pattern 0
+timing: t 41.769 s flip 1/0, VideoOutSubmitFlip took 0.0 ms
+timing: t 41.768 s acb 3413 dwords: sync 2.0 ms, hints 0.1 ms
+submit #7166 acb 3413 dwords at 0x400345640: pass 331 rewrite 70 drop 165 unmapped 0 cc 0 mappings 1005 ... OK rc 0 4.16 ms
+timing: #7166 done at t 41.776 s, 6.3 ms after the sync and hints; device: prepare 0.19 list 0.40 cs 2.70 fence 1.46 ms, 937 BOs
+timing: t 41.776 s dcb 10440 dwords: sync 1.7 ms, hints 0.3 ms
+submit #7167 dcb 10440 dwords at 0x502e02500: pass 691 rewrite 518 drop 462 unmapped 1 cc 12 mappings 1005 ... OK rc 0 9.27 ms
+timing: #7167 done at t 41.798 s, 19.0 ms after the sync and hints; device: prepare 0.44 list 0.33 cs 2.63 fence 6.64 ms, 937 BOs
+timing: t 41.798 s acb 2 dwords: sync (lazy) 0.0 ms, hints 0.2 ms
+submit #7168 acb 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.06 ms
+timing: #7168 done at t 41.800 s, 1.7 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.03 fence 0.02 ms, 5 BOs (short list)
+timing: t 41.800 s acb 49 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7169 acb 49 dwords at 0x400348b94: pass 2 rewrite 3 drop 3 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.08 ms
+timing: #7169 done at t 41.802 s, 1.9 ms after the sync and hints; device: prepare 0.02 list 0.02 cs 0.05 fence 0.04 ms, 7 BOs (short list)
+timing: t 41.802 s cc 3 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7170 cc 3 dwords at 0x313b17cf4: pass 0 rewrite 1 drop 0 unmapped 0 cc 1 mappings 1005 ... OK rc 0 0.07 ms
+timing: #7170 done at t 41.803 s, 1.5 ms after the sync and hints; device: prepare 0.01 list 0.02 cs 0.05 fence 0.02 ms, 5 BOs (short list)
+timing: t 41.803 s hib 150 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7171 hib 150 dwords at 0xfe0000000: pass 12 rewrite 2 drop 2 unmapped 0 cc 2 mappings 1005 ... OK rc 0 0.06 ms
+timing: #7171 done at t 41.807 s, 4.2 ms after the sync and hints; device: prepare 0.02 list 0.02 cs 0.04 fence 0.03 ms, 6 BOs (short list)
+timing: t 41.807 s acb 2 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7172 acb 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.05 ms
+timing: #7172 done at t 41.809 s, 1.3 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.03 fence 0.02 ms, 5 BOs (short list)
+timing: t 41.809 s acb 79 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7173 acb 79 dwords at 0x600000540: pass 10 rewrite 0 drop 3 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.06 ms
+timing: #7173 done at t 41.810 s, 1.3 ms after the sync and hints; device: prepare 0.01 list 0.02 cs 0.04 fence 0.02 ms, 10 BOs (short list)
+timing: t 41.810 s hib 2 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7174 hib 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.05 ms
+timing: #7174 done at t 41.812 s, 1.4 ms after the sync and hints; device: prepare 0.00 list 0.02 cs 0.03 fence 0.02 ms, 5 BOs (short list)
+timing: t 41.812 s dcb 96 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7175 dcb 96 dwords at 0xfe0042920: pass 20 rewrite 2 drop 2 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.07 ms
+timing: #7175 done at t 41.814 s, 2.1 ms after the sync and hints; device: prepare 0.03 list 0.02 cs 0.04 fence 0.03 ms, 6 BOs (short list)
+timing: t 41.814 s dcb 2960 dwords: sync 2.4 ms, hints 0.3 ms
+submit #7176 dcb 2960 dwords at 0x503502500: pass 275 rewrite 127 drop 129 unmapped 0 cc 4 mappings 1005 ... OK rc 0 3.41 ms
+timing: #7176 done at t 41.826 s, 9.5 ms after the sync and hints; device: prepare 0.20 list 0.36 cs 2.66 fence 0.76 ms, 937 BOs
+timing: t 41.827 s dcb 851 dwords: sync 1.7 ms, hints 0.1 ms
+submit #7177 dcb 851 dwords at 0x505602500: pass 47 rewrite 55 drop 45 unmapped 0 cc 0 mappings 1005 ... OK rc 0 2.65 ms
+timing: #7177 done at t 41.834 s, 4.9 ms after the sync and hints; device: prepare 0.14 list 0.35 cs 2.59 fence 0.06 ms, 937 BOs
+timing: t 41.834 s acb 2 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7178 acb 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.05 ms
+timing: #7178 done at t 41.835 s, 1.2 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.03 fence 0.02 ms, 5 BOs (short list)
+timing: t 41.835 s acb 463 dwords: sync 1.7 ms, hints 0.1 ms
+submit #7179 acb 463 dwords at 0x4003e6740: pass 43 rewrite 11 drop 27 unmapped 0 cc 0 mappings 1005 ... OK rc 0 2.94 ms
+timing: #7179 done at t 41.841 s, 4.6 ms after the sync and hints; device: prepare 0.13 list 0.33 cs 2.57 fence 0.37 ms, 937 BOs
+timing: t 41.841 s dcb 798 dwords: sync 1.8 ms, hints 0.2 ms
+submit #7180 dcb 798 dwords at 0x506202500: pass 103 rewrite 35 drop 22 unmapped 0 cc 6 mappings 1005 ... acb head: 3413 of 3462 dwords go ahead of the wait at 3413 on 0x400202380
+OK rc 0 3.37 ms
+timing: #7180 done at t 41.851 s, 7.6 ms after the sync and hints; device: prepare 0.16 list 0.31 cs 2.58 fence 0.80 ms, 937 BOs
+timing: t 41.851 s acb 3413 dwords: sync 1.7 ms, hints 0.1 ms
+submit #7181 acb 3413 dwords at 0x400205540: pass 331 rewrite 70 drop 165 unmapped 0 cc 0 mappings 1005 ... OK rc 0 4.02 ms
+timing: #7181 done at t 41.859 s, 5.9 ms after the sync and hints; device: prepare 0.18 list 0.31 cs 2.54 fence 1.48 ms, 937 BOs
+timing: t 41.859 s dcb 1248 dwords: sync 2.2 ms, hints 0.2 ms
+submit #7182 dcb 1248 dwords at 0x504a02500: pass 151 rewrite 46 drop 45 unmapped 0 cc 6 mappings 1005 ... OK rc 0 2.73 ms
+timing: #7182 done at t 41.867 s, 6.2 ms after the sync and hints; device: prepare 0.16 list 0.31 cs 2.54 fence 0.19 ms, 937 BOs
+flip 1/1 buffer 0x5093f0000 +0x1fe0000: sum 0x18435b3fe2ed nonzero 8100/8160 pattern 0
+timing: t 41.868 s flip 1/1, VideoOutSubmitFlip took 0.0 ms
+timing: t 41.868 s dcb 10440 dwords: sync 1.8 ms, hints 0.3 ms
+submit #7183 dcb 10440 dwords at 0x502002500: pass 691 rewrite 518 drop 462 unmapped 1 cc 12 mappings 1005 ... OK rc 0 9.34 ms
+timing: #7183 done at t 41.889 s, 19.1 ms after the sync and hints; device: prepare 0.38 list 0.34 cs 2.68 fence 6.66 ms, 937 BOs
+timing: t 41.889 s acb 2 dwords: sync (lazy) 0.0 ms, hints 0.2 ms
+submit #7184 acb 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.07 ms
+timing: #7184 done at t 41.891 s, 1.6 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.04 fence 0.03 ms, 5 BOs (short list)
+timing: t 41.891 s acb 49 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7185 acb 49 dwords at 0x400208a94: pass 2 rewrite 3 drop 3 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.09 ms
+timing: #7185 done at t 41.893 s, 1.4 ms after the sync and hints; device: prepare 0.02 list 0.03 cs 0.06 fence 0.03 ms, 7 BOs (short list)
+timing: t 41.893 s cc 3 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7186 cc 3 dwords at 0x313b17cf4: pass 0 rewrite 1 drop 0 unmapped 0 cc 1 mappings 1005 ... OK rc 0 0.09 ms
+timing: #7186 done at t 41.895 s, 1.7 ms after the sync and hints; device: prepare 0.01 list 0.02 cs 0.05 fence 0.04 ms, 5 BOs (short list)
+timing: t 41.895 s acb 2 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7187 acb 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.07 ms
+timing: #7187 done at t 41.896 s, 1.3 ms after the sync and hints; device: prepare 0.01 list 0.02 cs 0.04 fence 0.03 ms, 5 BOs (short list)
+timing: t 41.896 s acb 79 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7188 acb 79 dwords at 0x600000540: pass 10 rewrite 0 drop 3 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.08 ms
+timing: #7188 done at t 41.898 s, 1.7 ms after the sync and hints; device: prepare 0.02 list 0.02 cs 0.05 fence 0.03 ms, 13 BOs (short list)
+timing: t 41.898 s hib 150 dwords: sync (lazy) 0.0 ms, hints 0.2 ms
+submit #7189 hib 150 dwords at 0xfe0000000: pass 12 rewrite 2 drop 2 unmapped 0 cc 2 mappings 1005 ... OK rc 0 0.08 ms
+timing: #7189 done at t 41.903 s, 4.3 ms after the sync and hints; device: prepare 0.04 list 0.02 cs 0.05 fence 0.04 ms, 6 BOs (short list)
+timing: t 41.903 s hib 2 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7190 hib 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.07 ms
+timing: #7190 done at t 41.905 s, 2.0 ms after the sync and hints; device: prepare 0.01 list 0.02 cs 0.04 fence 0.02 ms, 5 BOs (short list)
+timing: t 41.905 s dcb 96 dwords: sync (lazy) 0.0 ms, hints 0.2 ms
+submit #7191 dcb 96 dwords at 0xfe0042920: pass 20 rewrite 2 drop 2 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.10 ms
+timing: #7191 done at t 41.908 s, 3.0 ms after the sync and hints; device: prepare 0.03 list 0.02 cs 0.05 fence 0.04 ms, 6 BOs (short list)
+timing: t 41.908 s dcb 2960 dwords: sync 2.4 ms, hints 0.3 ms
+submit #7192 dcb 2960 dwords at 0x503c02500: pass 275 rewrite 127 drop 129 unmapped 0 cc 4 mappings 1005 ... OK rc 0 3.46 ms
+timing: #7192 done at t 41.920 s, 9.6 ms after the sync and hints; device: prepare 0.20 list 0.34 cs 2.70 fence 0.76 ms, 937 BOs
+timing: t 41.921 s acb 2 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7193 acb 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.06 ms
+timing: #7193 done at t 41.923 s, 1.8 ms after the sync and hints; device: prepare 0.00 list 0.02 cs 0.03 fence 0.03 ms, 5 BOs (short list)
+timing: t 41.923 s dcb 851 dwords: sync 1.7 ms, hints 0.1 ms
+submit #7194 dcb 851 dwords at 0x505a02500: pass 47 rewrite 55 drop 45 unmapped 0 cc 0 mappings 1005 ... OK rc 0 2.78 ms
+timing: #7194 done at t 41.930 s, 5.0 ms after the sync and hints; device: prepare 0.14 list 0.33 cs 2.74 fence 0.04 ms, 937 BOs
+timing: t 41.930 s acb 463 dwords: sync 1.8 ms, hints 0.1 ms
+submit #7195 acb 463 dwords at 0x4004867c0: pass 43 rewrite 11 drop 27 unmapped 0 cc 0 mappings 1005 ... OK rc 0 3.07 ms
+timing: #7195 done at t 41.937 s, 5.3 ms after the sync and hints; device: prepare 0.13 list 0.34 cs 2.70 fence 0.36 ms, 937 BOs
+timing: t 41.937 s dcb 798 dwords: sync 2.1 ms, hints 0.2 ms
+submit #7196 dcb 798 dwords at 0x506802500: pass 103 rewrite 35 drop 22 unmapped 0 cc 6 mappings 1005 ... acb head: 3413 of 3462 dwords go ahead of the wait at 3413 on 0x400202f80
+OK rc 0 3.51 ms
+timing: #7196 done at t 41.947 s, 8.2 ms after the sync and hints; device: prepare 0.16 list 0.34 cs 2.70 fence 0.81 ms, 937 BOs
+timing: t 41.947 s acb 3413 dwords: sync 1.7 ms, hints 0.1 ms
+submit #7197 acb 3413 dwords at 0x4002a55c0: pass 331 rewrite 70 drop 165 unmapped 0 cc 0 mappings 1005 ... OK rc 0 4.16 ms
+timing: #7197 done at t 41.955 s, 6.4 ms after the sync and hints; device: prepare 0.26 list 0.33 cs 2.69 fence 1.46 ms, 937 BOs
+timing: t 41.955 s dcb 1248 dwords: sync 1.8 ms, hints 0.2 ms
+submit #7198 dcb 1248 dwords at 0x504e02500: pass 151 rewrite 46 drop 45 unmapped 0 cc 6 mappings 1005 ... OK rc 0 2.89 ms
+timing: #7198 done at t 41.964 s, 6.4 ms after the sync and hints; device: prepare 0.17 list 0.36 cs 2.71 fence 0.18 ms, 937 BOs
+flip 1/0 buffer 0x507410000 +0x1fe0000: sum 0x1844ec410ef8 nonzero 8100/8160 pattern 0
+timing: t 41.965 s flip 1/0, VideoOutSubmitFlip took 0.0 ms
+timing: t 41.965 s dcb 10440 dwords: sync 1.8 ms, hints 0.3 ms
+submit #7199 dcb 10440 dwords at 0x502702500: pass 691 rewrite 518 drop 462 unmapped 1 cc 12 mappings 1005 ... OK rc 0 9.28 ms
+timing: #7199 done at t 41.986 s, 19.3 ms after the sync and hints; device: prepare 0.39 list 0.35 cs 2.61 fence 6.67 ms, 937 BOs
+timing: t 41.986 s acb 2 dwords: sync (lazy) 0.0 ms, hints 0.2 ms
+submit #7200 acb 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.07 ms
+timing: #7200 done at t 41.988 s, 1.4 ms after the sync and hints; device: prepare 0.01 list 0.02 cs 0.04 fence 0.03 ms, 5 BOs (short list)
+timing: t 41.988 s acb 49 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7201 acb 49 dwords at 0x4002a8b14: pass 2 rewrite 3 drop 3 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.07 ms
+timing: #7201 done at t 41.990 s, 1.6 ms after the sync and hints; device: prepare 0.01 list 0.02 cs 0.04 fence 0.03 ms, 7 BOs (short list)
+timing: t 41.990 s cc 3 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7202 cc 3 dwords at 0x313b17cf4: pass 0 rewrite 1 drop 0 unmapped 0 cc 1 mappings 1005 ... OK rc 0 0.06 ms
+timing: #7202 done at t 41.992 s, 1.7 ms after the sync and hints; device: prepare 0.01 list 0.02 cs 0.04 fence 0.02 ms, 5 BOs (short list)
+timing: t 41.992 s acb 2 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7203 acb 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.06 ms
+timing: #7203 done at t 41.993 s, 1.3 ms after the sync and hints; device: prepare 0.01 list 0.02 cs 0.04 fence 0.02 ms, 5 BOs (short list)
+timing: t 41.993 s acb 79 dwords: sync (lazy) 0.0 ms, hints 0.1 ms
+submit #7204 acb 79 dwords at 0x600000540: pass 10 rewrite 0 drop 3 unmapped 0 cc 0 mappings 1005 ... OK rc 0 0.07 ms
+timing: #7204 done at t 41.995 s, 1.5 ms after the sync and hints; device: prepare 0.02 list 0.02 cs 0.05 fence 0.02 ms, 10 BOs (short list)
+timing: t 41.995 s hib 150 dwords: sync (lazy) 0.0 ms, hints 0.2 ms
+submit #7205 hib 150 dwords at 0xfe0000000: pass 12 rewrite 2 drop 2 unmapped 0 cc 2 mappings 1005 ... FAILED rc 0 TIMEOUT 2033.77 ms
