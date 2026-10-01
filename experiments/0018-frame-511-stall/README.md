@@ -48,8 +48,19 @@ absolute count — after the wrap it walked the ring's old contents over and ove
 consumer keeps its read pointer inside the ring and serves the slice between it and the doorbell
 value, wrapped or not. Built, tried without submissions (before the first wrap only).
 
-**Verdict.** Two host bugs behind one symptom, both from the queue protocol being guessed in
-experiment 0012 and never run for more than 300 frames: the read pointer was published where the
-driver library does not look (fixed, run 92 confirms: frame 511 passes), and the ring pointers
-were compared as absolute counts (fixed, not yet run past the wrap). A GPU run past frame 513
-closes this experiment.
+*Run 93* (15:28, GPU, pointers modulo the ring size; capture `kytyplus-20261001-1528`,
+`raw/run93-summary.txt`): **14,238 submissions, none failed, 935 flips** at one every 0.084 s —
+past frames 511 and 513, through the ring wraps, to the end of the game's intro video (the
+player's own messages: demuxer at end of file, decoder done, video stopped; about 45 s of
+video). No stall: the helper that waits for one reports the emulator exiting first.
+
+What ends the run is the emulator, 90 s in: an access violation, a write through a null pointer
+in the game's code right after the video, preceded by 124 calls into unresolved imports of a
+system JSON library the host does not provide (two functions, called alternately). That is host
+completeness, outside the GPU path and outside this experiment.
+
+**Verdict (2026-10-01, 15:35).** Closed. Two host bugs behind one symptom, both from the queue
+protocol being guessed in experiment 0012 and never run for more than 300 frames: the read
+pointer was published where the driver library does not look, and ring pointers were compared
+as absolute counts. Both fixed; the game now renders until it needs a system library the host
+lacks.
