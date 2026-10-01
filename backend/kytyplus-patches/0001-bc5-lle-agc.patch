@@ -393,10 +393,10 @@ index 5f87e6b..e5c534e 100644
  	CondRemoveWaiter(cond_value, thread);
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..53fa048
+index 0000000..4111134
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,2986 @@
+@@ -0,0 +1,2996 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -560,6 +560,7 @@ index 0000000..53fa048
 +constexpr int GFX_EOP_EVENT = 0x40; // EVFILT_GRAPHICS ident the driver registers for EOP (RPCSX kGcEventGfxEop)
 +// The driver also registers 0x48 and 0x46; which one is the compute EOP is not known yet, so a
 +// compute-ring RELEASE_MEM fires both (TODO(bc5): pin down from the driver's kevent handling).
++constexpr int GFX_EOP_EVENT_0     = 0x00; // registered by the game's per-thread EOP queues (run 76)
 +constexpr int COMPUTE_EOP_EVENT_A = 0x48;
 +constexpr int COMPUTE_EOP_EVENT_B = 0x46;
 +static thread_local bool t_compute_ring = false;
@@ -589,7 +590,7 @@ index 0000000..53fa048
 +	}
 +}
 +
-+static void fire(int ident, uint64_t data) {
++static void fire(int ident, uint64_t data, bool quiet = false) {
 +	std::vector<EqRegistration> eqs;
 +	{
 +		std::lock_guard lock(g_eq_mutex);
@@ -604,7 +605,7 @@ index 0000000..53fa048
 +			n++;
 +		}
 +	}
-+	if (n == 0) {
++	if (n == 0 && !quiet) {
 +		LOGF_COLOR(Log::Color::Yellow, "[bc5-cp] event 0x%x fired but nobody is listening\n", ident);
 +	}
 +}
@@ -615,6 +616,13 @@ index 0000000..53fa048
 +		fire(COMPUTE_EOP_EVENT_B, data);
 +	} else {
 +		fire(GFX_EOP_EVENT, data);
++		// The game's five "GpuDevice::EopEq" queues register EVFILT_GRAPHICS ident 0 and every
++		// wait on them timed out (experiment 0016, run 76: five timeouts and ~3 s per frame).
++		// TODO(verify): which interrupt the console maps to ident 0 — here every gfx-queue EOP
++		// interrupt wakes them (the waiters re-check their labels, as they do after a timeout).
++		// BC5_GC_NO_IDENT0=1 turns it off.
++		static const bool ident0 = std::getenv("BC5_GC_NO_IDENT0") == nullptr;
++		if (ident0) fire(GFX_EOP_EVENT_0, data, true);
 +	}
 +}
 +
@@ -3260,12 +3268,14 @@ index 0000000..53fa048
 +				pattern += v == kPattern;
 +			}
 +			// BC5_DIRECT_FLIP_DUMP=<every n>: the display buffer as the GPU left it, raw, as
-+			// flip-<count>.raw in the capture directory (at most 6 files; never committed) — the
++			// flip-<count>.raw in the capture directory (when the sampled content changed, at most 10 files; never committed) — the
 +			// image itself, whatever the presenter makes of it (run 76).
 +			static const long dump_every = std::getenv("BC5_DIRECT_FLIP_DUMP") ? std::atol(std::getenv("BC5_DIRECT_FLIP_DUMP")) : 0;
 +			static long flips = 0, dumped = 0;
 +			flips++;
-+			if (dump_every > 0 && nonzero != 0 && (flips % dump_every) == 0 && dumped < 6 && !Bc5Gc::g_dump_dir.empty()) {
++			static uint64_t last_sum = 0; // a dump only when the sampled content changed
++			if (dump_every > 0 && nonzero != 0 && sum != last_sum && (flips % dump_every) == 0 && dumped < 10 && !Bc5Gc::g_dump_dir.empty()) {
++				last_sum = sum;
 +				char name[512];
 +				std::snprintf(name, sizeof(name), "%s/flip-%03ld.raw", Bc5Gc::g_dump_dir.c_str(), flips);
 +				if (FILE* f = std::fopen(name, "wb")) {

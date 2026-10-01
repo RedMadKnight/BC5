@@ -682,3 +682,25 @@ dumps of the display buffer (`BC5_DIRECT_FLIP_DUMP`), no prefill.
 emulated the game's strips, its full-screen passes and its flip pass rasterise, and the display
 buffer is written every frame. The state stack is now on by default
 (`BC5_DIRECT_NO_STATE_STACK=1` turns it off). G3 needs the picture itself on screen: next run.
+
+**Run 76** (08:48, GPU, 75 s, state stack on by default, `BC5_DIRECT_FLIP_DUMP=3`, no prefill;
+`raw/e31-run76-direct.log`): 350 submits, 345 OK, 20 flips, no stall. The display buffer holds the
+same picture at every drawn flip (the raw dumps of flips 3 and 15 are identical): 54 distinct
+values, all grey (R = G = B, 10 bits each, alpha 3), 0…52 of 1023, 20 % exactly zero and the rest
+spread evenly, every 64 KiB block with the full set — **black with grain**. The emulator window
+shows it as a near-black textured surface. The game's own log says why there is no more to see
+yet: it is still loading (level documents arriving one by one, its room-load thread waiting) and
+its frames take ~3.3 s.
+
+The 3.3 s: five game threads wait on event queues the game names `GpuDevice::EopEq`, registered
+for `EVFILT_GRAPHICS` ident 0, and **every such wait times out** (77 in this run, five per
+frame); the host fired only idents 0x40 (gfx EOP) and 0x46/0x48 (compute). Change: every gfx-queue
+EOP interrupt also fires ident 0 (`TODO(verify)`: which interrupt the console maps to it; the
+waiters re-check their labels as they do after the timeout). Without a GPU (`maponly`, 60 s): 38
+ident-0 events delivered, 4 timeouts left instead of ~50. `BC5_GC_NO_IDENT0=1` turns it off.
+
+**Verdict update (2026-10-01, 08:55).** The picture the game presents arrives on the BC-250's
+display buffer through the direct path: the game's command buffers and shaders, untranslated, the
+frame's passes and the flip pass all rasterising. What it presents during these first 20 frames
+is its loading-time black with grain. G3 as "a recognisable image" needs the game to get past
+loading: next, run 77 with the ident-0 events (faster frames) and a longer run.
