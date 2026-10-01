@@ -3,7 +3,7 @@
 **BC-250 + PS5. A native PS5 GPU path for the AMD BC-250 (Cyan Skillfish, gfx1013).**
 User-space backend that feeds PS5 AGC command streams and native RDNA ISA shaders to `amdgpu` on Linux, without GNM→Vulkan translation or shader recompilation.
 
-> Status: research / pre-alpha. On 2026-10-01 the direct GPU path took a commercial PS5 game — the maintainer's own copy of ASTRO BOT — from its first frame into its first level on the BC-250: intro video, title screen, level load, the opening cutscene and the desert level with the character ready to be played, all from the game's own command buffers and shader binaries, filtered but not translated, at 24–27 frames per second (HANDOFF F43–F52). It is a first level at less than half speed, not a playable game: the title is built for 60 fps, the level takes over two minutes to load, the GPU does about 17 ms of work in a frame that takes 42, and nothing beyond the first minutes has been tried. This repository is a plan, a set of experiments and their results. No game files, firmware or SDK material are or will ever be hosted here.
+> Status: research / pre-alpha. On 2026-10-01 the direct GPU path took a commercial PS5 game — the maintainer's own copy of ASTRO BOT — from its first frame into its first level on the BC-250: intro video, title screen, level load, the opening cutscene and the desert level with the character walking under the player's control, all from the game's own command buffers and shader binaries, filtered but not translated, at 24–27 frames per second (HANDOFF F43–F52). It is a first level at less than half speed, not a playable game: the title is built for 60 fps, the level takes over two minutes to load, the GPU does about 17 ms of work in a frame that takes 42, and nothing beyond the first minutes has been tried. This repository is a plan, a set of experiments and their results. No game files, firmware or SDK material are or will ever be hosted here.
 
 ![The emulator window on the BC-250: ASTRO BOT's opening card, rendered through the direct path](docs/images/g3-first-screen.png)
 
@@ -25,7 +25,7 @@ All on the BC-250 dev box, with the track-B host (KytyPlus running the game's ow
 | Whole intro video | 935 frames without a failed submission | experiment 0018, F43 |
 | Title screen, controller input | real-time scene; a button press starts the game | experiment 0020, F45–F46 |
 | First level and opening cutscene | load and play; the game keeps 7.9 GiB visible to the GPU | experiments 0021–0022, F47–F48 |
-| First level, gameplay | reached with a DualSense (buttons and motion confirmed in the game); 24 fps | experiment 0022 run 104, F52 |
+| First level, gameplay | the character walks, the pause screen opens; DualSense buttons, sticks and motion work (the maintainer at the controller); 24 fps | experiment 0022 runs 104 and 106, F52–F53 |
 | Frame rate | title screen 27 fps, cutscene 24 fps — from 8 and 6 fps the same day, all of it host overhead removed | experiment 0022, F49–F50 |
 | Longest runs | 12 minutes, 258,551 submissions, three recovered page faults; 10 minutes, 227,311 submissions, none failed | runs 103, 104 |
 | GPU time in a frame | about 17 ms of 37–43 ms; the game sends 16 buffers a frame and each is submitted and waited for on its own | experiment 0022 |
@@ -54,7 +54,7 @@ On the BC-250 that translation is unnecessary. CPU code already runs natively (x
 | Memory | 16 GB GDDR6, 256-bit, unified | 16 GB GDDR6, 256-bit, unified | Identical; no bandwidth throttling needed |
 | Storage | Custom SSD ~5.5 GB/s + hardware Kraken | NVMe in an M.2 slot that links at PCIe 2.0 ×2: 0.7–0.8 GB/s measured; no decompressor | A smaller gap than expected so far: the first level asks for a few MiB/s, and what made loading slow was the host (experiment 0022). Kraken-heavy titles are untested |
 | Boot / security | Sony PSP keys, Sony ABL/SMU, hypervisor | Generic AMD PSP (1022:143e), different ABL/SMU | Sony firmware cannot boot; we stay in user space |
-| Audio / input | Tempest 3D, DualSense | Realtek/USB audio, a DualSense over USB | HLE in the host runtime; buttons and motion sensors confirmed in the game |
+| Audio / input | Tempest 3D, DualSense | Realtek/USB audio, a DualSense over USB | HLE in the host runtime; buttons, sticks and motion sensors work in the game, haptics do not (they are an audio stream the host lacks) |
 
 Key facts established so far (September–October 2026):
 
