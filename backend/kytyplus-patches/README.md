@@ -150,3 +150,5 @@ thread stacks as well.
 Experiment 0024: `BC5_DIRECT_ASYNC=1` (with `BC5_DIRECT_JOURNAL=min`) queues jobs without waiting
 for them; the soft CP's pass over each buffer then runs on a completion thread per submitting
 thread, and a flip waits until nothing is in flight.
+`KYTY_BC5_AUTOPRESS="55:cross,62:cross,330:shake"` presses pad buttons (cross, circle, square,
+triangle, options) or shakes the pad at the given seconds after start, for unattended runs.

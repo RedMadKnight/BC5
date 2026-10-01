@@ -63,7 +63,39 @@ Eight per cent more clock gives four per cent less GPU time and 25 W more. With 
 the temperature climbs to 75 °C in the first minute and then levels off at 76–78 °C; the
 governor throttles at 85 °C, so a longer run at this setting should still be watched.
 
-**Verdict.** Open, with the first half answered: at the title screen the frame does shrink to
-about the GPU's own time (44 to 54 fps at 1850 MHz, 45 to 56 at 2000 MHz) and nothing of the
-protocol breaks. Not yet run: a level load, the cutscene, gameplay with input, and a fault with
-jobs in flight.
+*Run 110* (22:05, GPU, jobs in flight, 2000 MHz, the maintainer at the controller; capture
+`kytyplus-20261001-2205`): **the design above fails past the title screen.** Title screen at
+60 fps (the display's rate), loading at 46–50 fps, no failed submission in 225,928 — and from
+the cutscene on the game runs in bursts: a few seconds at 58–60 fps, then nothing for ten
+seconds, 79 seconds of the run with fewer than ten flips. The maintainer stopped it at 350 s.
+
+The journal shows the mechanism. The frame's compute buffers end in a wait for the *next*
+frame's label (a `RELEASE_MEM` early in the next main command buffer; F34). Synchronously that
+wait blocks the doorbell consumer's thread, and only it, while the game's thread flips and
+submits the next frame. With a completion thread of its own for the consumer's buffers the
+wait blocked that thread instead — and the flip, which waited for *everything* in flight, with
+it: the game could not submit the buffer that would have satisfied the wait. The consumer gave
+up after its 10 s limit ("cross-queue wait unsatisfied"), five waits ran into their 2 s
+timeouts.
+
+A second fault of the design, found by reading rather than by a symptom: the direct mapper
+replaced mappings (merged imports, views gone) while jobs that might use them were still
+running; the kernel clears the page-table entries of an unmapped range at once.
+
+Reworked:
+
+- the doorbell consumer waits for its own jobs and runs its soft-CP pass itself, as before;
+  only the game's threads queue their jobs and go on, with one completion thread;
+- a flip waits for that queue only;
+- before a mapping goes away or is replaced the host waits until everything queued has run
+  (`Device::wait_idle`);
+- replacing the device after a timeout excludes a thread still waiting on it.
+
+For runs without anybody at the controller the emulator got `KYTY_BC5_AUTOPRESS` (patch 0001):
+buttons and a shake at given seconds after start.
+
+Map-only, both modes: 28 flips each. No GPU run of the reworked design yet.
+
+**Verdict.** Open. At the title screen the frame shrinks to about the GPU's own time (44 to 54
+fps at 1850 MHz, 45 to 56 at 2000 MHz); the first design broke the compute queue's blocking
+wait in the cutscene and is replaced; the replacement has not run on the GPU.
