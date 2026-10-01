@@ -3,7 +3,11 @@
 **BC-250 + PS5. A native PS5 GPU path for the AMD BC-250 (Cyan Skillfish, gfx1013).**
 User-space backend that feeds PS5 AGC command streams and native RDNA ISA shaders to `amdgpu` on Linux, without GNM→Vulkan translation or shader recompilation.
 
-> Status: research / pre-alpha. Phase 0a tooling (`bc5-mount`, read-only access to `.ffpfsc` containers) works; nothing GPU-related runs yet. This repository is a plan, a set of experiments and their results. No game, firmware or SDK material is or will ever be hosted here.
+> Status: research / pre-alpha. Phase 0a tooling (`bc5-mount`, read-only access to `.ffpfsc` containers) works. Since 2026-10-01 the direct GPU path renders a game's first screens on the BC-250 — its own command buffers and shader binaries, filtered but not translated — at about two frames per second; nothing is playable. This repository is a plan, a set of experiments and their results. No game files, firmware or SDK material are or will ever be hosted here.
+
+![The emulator window on the BC-250: ASTRO BOT's opening card, rendered through the direct path](docs/images/g3-first-screen.png)
+
+*2026-10-01, experiment 0016, run 79: the first recognisable frame. The maintainer's own copy of ASTRO BOT in the track-B host (KytyPlus with the game's own `libSceAgc`), its PM4 command buffers submitted to `amdgpu` on the BC-250's GFX ring and its RDNA shader binaries executed as they are. The window title names the GPU; the screenshot is the only game output in this repository.*
 
 ---
 

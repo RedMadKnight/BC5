@@ -742,8 +742,9 @@ first screen is on the BC-250's display.** 2,318 submissions, 167 flips, a frame
 black; then the sampled display buffer changes from flip to flip (42 distinct contents: a
 fade-in), the game's log shows its logo and title levels loaded, and the screenshot taken at 90 s
 shows the publisher's "presents" card, white text on the grain, correctly de-tiled by KytyPlus's
-presenter from the 64KB_R_X surface the GPU wrote. (Screenshots and raw display-buffer dumps stay
-in `~/bc5-data/captures/kytyplus-20261001-0915/`; they are game output and are not committed.)
+presenter from the 64KB_R_X surface the GPU wrote. (Raw display-buffer dumps and the full-desktop screenshots stay in
+`~/bc5-data/captures/kytyplus-20261001-0915/`. One crop of the emulator window at 90 s is
+published at the maintainer's request as `docs/images/g3-first-screen.png`, shown in the README.)
 
 Two submissions timed out on shader faults in regions seen for the first time (0x56801c000 at
 30 s in the first DCB of the new, 10,440-dword frame shape; 0x56002a000 at 48 s in a compute IB);
