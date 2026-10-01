@@ -152,3 +152,6 @@ for them; the soft CP's pass over each buffer then runs on a completion thread p
 thread, and a flip waits until nothing is in flight.
 `KYTY_BC5_AUTOPRESS="55:cross,62:cross,330:shake"` presses pad buttons (cross, circle, square,
 triangle, options) or shakes the pad at the given seconds after start, for unattended runs.
+`KYTY_BC5_SAVEDATA_DIR=<dir>` puts the save data memory file (`<title>/sce_sdmemory/memory.dat`)
+under that directory instead of `_SaveData` in the working directory, so that runs started in
+different directories share one save.

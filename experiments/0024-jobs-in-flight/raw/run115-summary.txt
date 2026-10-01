@@ -1,0 +1,15 @@
+run 115, 2026-10-01 23:38, one run with the maintainer at the controller, jobs in flight, governor range 1850..=2000 MHz; set for 900 s, ended at 632 s in the game's own code (journal excerpts)
+
+== async: kytyplus-20261001-2338
+submits 492815, ok 492815, failed 0, flips 32745, timeouts 0, soft-CP wait timeouts 0, cross-queue waits given up 0, page faults 0
+flips per 10 s:
+t0:516 t10:596 t20:599 t30:504 t40:514 t50:545 t60:547 t70:546 t80:549 t90:546 t100:547 t110:564 t120:599 t130:599 t140:600 t150:596 t160:578 t170:601 t180:600 t190:593 t200:600 t210:600 t220:598 t230:600 t240:600 t250:594 t260:364 t270:97 t280:492 t290:538 t300:514 t310:521 t320:482 t330:524 t340:535 t350:544 t360:517 t370:511 t380:507 t390:486 t400:475 t410:486 t420:484 t430:526 t440:480 t450:489 t460:511 t470:575 t480:542 t490:541 t500:583 t510:553 t520:482 t530:107 t540:460 t550:492 t560:471 t570:537 t580:360 t590:459 t600:465 t610:463 t620:539 t630:102
+phases: title screen to 116 s, level load to about 265 s, end of the load 266-281 s, cutscene and first level to about 528 s, a second load end 529-538 s, galaxy map and the flight to the next level to 632 s
+seconds with fewer than 20 flips: 266-281 (6-18 flips), 517, 529-538 (6-12), 565, 581-582
+controller: removed at 123 s, back at 129 s, removed at 133 s, back at 397 s; first button after that at 405 s
+save calls: one setup (2 MiB, slot 0), 37 sets
+
+end of the run (guest output):
+ASSERT: <the game's level path source file>:111
+Assertion failed: m_points.size() == n
+exception: type=AccessViolation, av_type=Write, av_addr=0, at the assertion's int 0x41
