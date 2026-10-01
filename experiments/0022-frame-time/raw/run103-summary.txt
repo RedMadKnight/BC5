@@ -70,8 +70,8 @@ mem: MemFree:          269508 kB MemAvailable:    4782836 kB Cached:         126
 
 == the thread in the file system (backtrace, frames 0-5)
 Thread 8 (Thread 0x7f0da97fa6c0 (LWP 33361) "kyty_emulator"):
-#0  __GI___fstatat64 (fd=-100, file=0x7f0d8c1e8850 "~/bc5-data/mnt/PPSA21567/data/prein/bg/odx/bot.odxb", buf=0x3343e6c20, flag=0) at ../sysdeps/unix/sysv/linux/fstatat64.c:159
+#0  __GI___fstatat64 (fd=-100, file=0x7f0d8c1e8850 "<a path inside the game image>", buf=0x3343e6c20, flag=0) at ../sysdeps/unix/sysv/linux/fstatat64.c:159
 #1  0x00007f12968f4831 in std::filesystem::status(std::filesystem::__cxx11::path const&, std::error_code&) () from /usr/lib/x86_64-linux-gnu/libstdc++.so.6
-filesystem::path "~/bc5-data/mnt/PPSA21567/data/prein/bg/odx/bot.odxb", __ec=std::error_code = {std::_V2::error_category: 0}) at /usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/fs_ops
-filesystem::path "~/bc5-data/mnt/PPSA21567/data/prein/bg/odx/bot.odxb") at ~/src/KytyPlus/src/kernel/fileSystem.cpp:239
-#4  0x0000560ed22a559d in Libs::LibKernel::FileSystem::MountPoints::GetRealFilename (this=<optimized out>, mounted_file_name="/app0/data/prein/bg/odx/bot.odxb") at ~/src/KytyPlus/src/kernel/fileSystem
+filesystem::path "<a path inside the game image>", __ec=std::error_code = {std::_V2::error_category: 0}) at /usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/fs_ops
+filesystem::path "<a path inside the game image>") at ~/src/KytyPlus/src/kernel/fileSystem.cpp:239
+#4  0x0000560ed22a559d in Libs::LibKernel::FileSystem::MountPoints::GetRealFilename (this=<optimized out>, mounted_file_name="<a path inside the game image>") at ~/src/KytyPlus/src/kernel/fileSystem
