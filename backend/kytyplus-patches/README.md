@@ -114,3 +114,9 @@ Doorbell queues (experiment 0018): the consumer keeps ring pointers modulo the r
 publishes the read pointer also in the dword behind the ring, where the driver library reads it
 (`BC5_GC_NO_RING_END_RPTR=1` leaves that out). `BC5_GC_QUEUE_TABLE=<hex address>[:entries]` journals
 the library's own queue table every eighth flip.
+
+Host completeness beyond the GPU path (from F43 on): `libJson2.cpp` gains the 28 `sce::Json`
+functions ASTRO BOT imports and KytyPlus lacked (`Value::referValue`, `Value::toString`, the
+`Array`/`Object` iterators, copy constructors and setters), names from the public NID tables;
+layout assumptions are marked `TODO(verify)` in the source. No system module is loaded for it:
+there is no firmware dump to load one from.
