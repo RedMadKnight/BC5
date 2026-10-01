@@ -136,3 +136,7 @@ Step 3 of experiment 0022: `BC5_DIRECT_NO_FAST_SYNC=1` makes the direct-memory s
 time again; `BC5_DIRECT_ANON_SYNC_MS` (default 100, 0 = every forced call) is the minimum age of
 the last walk over the anonymous VMAs before a forced call repeats it. With `BC5_DIRECT_TIMING=1`
 the journal carries a split of the sync and hint time every 128 submissions.
+Host completeness found by run 103: `kernel/fileSystem.cpp` keeps each directory's names (folded
+to lower case, valid while the directory's modification time is unchanged) instead of listing the
+directory for every missing file; `libs/controller.*` and the window's event loop pass the pad's
+accelerometer and gyroscope (SDL sensors) into the pad state.
