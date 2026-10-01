@@ -155,3 +155,7 @@ triangle, options) or shakes the pad at the given seconds after start, for unatt
 `KYTY_BC5_SAVEDATA_DIR=<dir>` puts the save data memory file (`<title>/sce_sdmemory/memory.dat`)
 under that directory instead of `_SaveData` in the working directory, so that runs started in
 different directories share one save.
+Pad: the orientation in the pad data is derived from the gyroscope and the accelerometer
+(`KYTY_BC5_MOTION_TRACE=1` logs acceleration, angular velocity and orientation once a second);
+`KYTY_BC5_TRIGGER_DEADZONE=<0..254>` reads trigger values up to that as released, for a pad
+whose trigger does not rest at 0.
