@@ -30,4 +30,27 @@ handed out by one function of KytyPlus (`GuestAddressSpace::Commit`), as anonymo
 *Map-only* (60 s, no submission): the game starts as before (the same 28 flips); the journal
 shows 127 private regions, 15 imports, 286 MiB pinned, and not one userptr mapping.
 
-**Verdict.** Open: the GPU run is to come.
+*Run 107* (20:31, GPU, 382 s, the maintainer at the controller; capture
+`kytyplus-20261001-2031`, `raw/run107-summary.txt`): **246,794 submissions, none failed, no
+fault, no `-EFAULT`, 16,423 flips; the title screen at 46.9 fps and the opening cutscene at
+41.2 fps** (27 and 24 in runs 102–106). The picture is the same — intro, title, loading,
+cutscene, the desert scene. No userptr mapping exists during the run; a draw's list has 189 BOs
+and its ioctl takes 0.06 ms.
+
+| A frame, ms | title, run 102 | title, run 107 | cutscene, run 104 | cutscene, run 107 |
+|---|---|---|---|---|
+| mapping sync, hints | 1.3 | 1.1 | 1.8 | 1.2 |
+| device: prepare, list | 1.2 | 1.1 | 1.9 | 1.4 |
+| device: submission ioctl | 15.0 | 1.0 | 17.7 | 1.5 |
+| device: waiting for the fence (GPU) | 16.3 | 14.5 | 17.3 | 16.5 |
+| the rest | 3.0 | 3.6 | 2.9 | 3.7 |
+| **frame** | **36.8** | **21.3** | **41.6** | **24.3** |
+
+The run ends at 382 s, in the desert scene: the controller dropped off the USB bus twice in
+its last 20 s and the maintainer stopped it. With `SDL_JOYSTICK_DISABLE_UDEV=1` the emulator
+did see the controller come back both times (it had not, in its container, in run 101).
+
+**Verdict (2026-10-01, 20:40).** Passed. With private guest memory in a file and imported like
+the direct memory, nothing in a submission is walked page by page any more: 14–16 ms a frame
+gone, 47 fps at the title screen and 41 in the cutscene. Two thirds of a frame is now the GPU's
+own work, waited for; the host's share is about 7 ms.

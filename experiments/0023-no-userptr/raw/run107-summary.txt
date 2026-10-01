@@ -1,0 +1,41 @@
+run 107, 2026-10-01 20:31, capture kytyplus-20261001-2031, private guest memory file-backed and imported, ended by the maintainer at 382 s (journal excerpts)
+
+submits 246794, ok 246794, failed 0, flips 16423, timeouts 0, EFAULT resyncs 0, userptr mappings 0
+
+== per 30 s: submissions, flips, imported MiB (direct file) at the last sync
+t0: 24406 submits, 1662 flips, imported 4940.0
+t30: 18169 submits, 1298 flips, imported 6678.0
+t60: 20356 submits, 1454 flips, imported 
+t90: 19086 submits, 1363 flips, imported 7380.0
+t120: 19652 submits, 1403 flips, imported 7484.0
+t150: 19696 submits, 1407 flips, imported 
+t180: 11910 submits, 766 flips, imported 8180.0
+t210: 21397 submits, 1338 flips, imported 8266.0
+t240: 19565 submits, 1223 flips, imported 
+t270: 19712 submits, 1232 flips, imported 
+t300: 20000 submits, 1250 flips, imported 8268.0
+t330: 19285 submits, 1205 flips, imported 
+t360: 13560 submits, 822 flips, imported 8276.0
+
+== the two files
+direct memory: memfd 4, 13824.0 MiB; chunks of 2 MiB, BOs up to 64 MiB; GTT 275.6 of 13312.0 MiB in use; lazy names: orbis_user_malloc
+direct memory: eager names: GpuGarlicMemory,GpuOnionMemory
+private memory: memfd 5, 1048576.0 MiB; chunks of 2 MiB, BOs up to 64 MiB; GTT 275.6 of 13312.0 MiB in use; lazy names: orbis_user_malloc
+direct: 92 views; +0 BOs (148, 8276.0 MiB pinned); maps +2 -4 (235)
+private: 133 views; +0 BOs (15, 286.0 MiB pinned); maps +0 -1 (94)
+
+== late submissions with draws
+timing: #246795 done at t 382.343 s, 0.6 ms after the sync and hints; device: prepare 0.01 list 0.00 cs 0.11 fence 0.44 ms, 168 BOs
+timing: #246796 done at t 382.344 s, 0.9 ms after the sync and hints; device: prepare 0.07 list 0.00 cs 0.09 fence 0.76 ms, 168 BOs
+
+== controller (emulator log)
+Controller added: 0, time = 0.0002
+Controller removed: 0, time = 362.4823
+Controller added: 0, time = 365.9513
+Controller removed: 1, time = 375.4559
+Controller added: 0, time = 376.4248
+Controller button: 0, down, pressed, button = 0, time = 47.4228
+Controller button: 0, down, pressed, button = 0, time = 49.2671
+Controller button: 0, down, pressed, button = 0, time = 49.2672
+Controller button: 1, down, pressed, button = 5, time = 366.3435
+Controller button: 1, down, pressed, button = 7, time = 366.9114
