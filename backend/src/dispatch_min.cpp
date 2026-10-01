@@ -45,8 +45,8 @@ std::vector<std::uint32_t> build_memset_ib(const MemsetParams &p) {
     b.packet(Op::SetUconfigReg, {0x7b, 0x20}); // CP_COHER_START_DELAY = 0x20
 
     // amdgpu_dispatch_write_cumask (helpers.c:75-100): all CUs of every SE.
-    b.packet(Op::SetShRegIndex, {0x30000216u, 0xffffffffu, 0xffffffffu}, true); // SE0, SE1
-    b.packet(Op::SetShRegIndex, {0x219u, 0xffffffffu, 0xffffffffu}, true);      // SE2, SE3
+    b.packet(Op::SetShRegIndex, {0x30000216u, p.cu_mask, p.cu_mask}, true); // SE0, SE1
+    b.packet(Op::SetShRegIndex, {0x219u, p.cu_mask, p.cu_mask}, true);      // SE2, SE3
 
     // amdgpu_dispatch_write2hw (helpers.c:103-185)
     b.set_sh_reg(0x20c, {lo32(p.shader_va >> 8), lo32(p.shader_va >> 40)}); // COMPUTE_PGM_LO/HI

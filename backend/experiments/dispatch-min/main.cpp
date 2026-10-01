@@ -11,6 +11,7 @@
 #include "bc5/pm4.hpp"
 
 #include <algorithm>
+#include <chrono>
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
@@ -35,6 +36,8 @@ struct Options {
     std::uint32_t rsrc1 = bc5::dispatch_min::kIgtRsrc1;
     std::uint32_t rsrc2 = bc5::dispatch_min::kIgtRsrc2;
     std::uint32_t vsharp3 = bc5::dispatch_min::kIgtVsharpWord3;
+    std::uint32_t cu_mask = 0xffffffffu; // --cu-mask HEX: COMPUTE_STATIC_THREAD_MGMT_SE0..3
+    int repeat = 1;                      // --repeat N: submit the same IB N times, time each
     std::string shader_file; // raw little-endian dwords; empty = the built-in IGT program
     std::string ib_file;     // --ib-file: submit these raw dwords as the IB instead (replay)
     // --ip compute [--ring N]: submit on the kernel's compute rings (AMDGPU_HW_IP_COMPUTE, four on
@@ -220,6 +223,7 @@ int submit(const Options &o) {
     p.shader_va = shader.va;
     p.dst_va = dst.va;
     p.dst_bytes = bytes;
+    p.cu_mask = o.cu_mask;
     p.value = o.value;
     p.rsrc1 = o.rsrc1;
     p.rsrc2 = o.rsrc2;
@@ -258,15 +262,32 @@ int submit(const Options &o) {
     req.number_of_ibs = 1;
     req.ibs = &ib_info;
 
-    int rc = amdgpu_cs_submit(ctx, 0, &req, 1);
+    // --repeat N: the same IB N times, each timed from the submit to its fence (experiment 0018:
+    // throughput against the CU mask). The first run also pays for the first touch of the BOs.
+    int rc = 0;
     std::uint32_t expired = 0;
-    if (rc == 0) {
-        amdgpu_cs_fence fence{};
-        fence.context = ctx;
-        fence.ip_type = o.ip;
-        fence.ring = o.ring;
-        fence.fence = req.seq_no;
-        rc = amdgpu_cs_query_fence_status(&fence, 2'000'000'000ull /* 2 s */, 0, &expired);
+    std::vector<double> times;
+    for (int r = 0; r < (o.repeat < 1 ? 1 : o.repeat); ++r) {
+        const auto t0 = std::chrono::steady_clock::now();
+        rc = amdgpu_cs_submit(ctx, 0, &req, 1);
+        expired = 0;
+        if (rc == 0) {
+            amdgpu_cs_fence fence{};
+            fence.context = ctx;
+            fence.ip_type = o.ip;
+            fence.ring = o.ring;
+            fence.fence = req.seq_no;
+            rc = amdgpu_cs_query_fence_status(&fence, 2'000'000'000ull /* 2 s */, 0, &expired);
+        }
+        if (rc != 0 || !expired) break;
+        times.push_back(std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
+    }
+    if (o.repeat > 1 && !times.empty()) {
+        std::vector<double> sorted(times.begin() + (times.size() > 2 ? 1 : 0), times.end());
+        std::sort(sorted.begin(), sorted.end());
+        std::printf("cu mask 0x%08x: %zu runs, submit to fence: min %.3f ms, median %.3f ms, max %.3f ms "
+                    "(first run %.3f ms, left out)\n",
+                    o.cu_mask, times.size(), sorted.front(), sorted[sorted.size() / 2], sorted.back(), times.front());
     }
     amdgpu_bo_list_destroy(list);
     amdgpu_cs_ctx_free(ctx);
@@ -311,6 +332,10 @@ int main(int argc, char **argv) {
         } else if (a == "--groups" && i + 1 < argc) {
             o.bytes = static_cast<std::uint32_t>(std::stoul(argv[++i])) *
                       bc5::dispatch_min::kBytesPerGroup;
+        } else if (a == "--cu-mask" && i + 1 < argc) {
+            o.cu_mask = static_cast<std::uint32_t>(std::stoul(argv[++i], nullptr, 16));
+        } else if (a == "--repeat" && i + 1 < argc) {
+            o.repeat = std::stoi(argv[++i]);
         } else if (a == "--value" && i + 1 < argc) {
             o.value = hex(argv[++i]);
         } else if (a == "--rsrc1" && i + 1 < argc) {
