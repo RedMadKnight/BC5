@@ -653,3 +653,32 @@ the driver's internal draws) is not available on the BC-250 and our rewrite to t
 state wiped the game's context registers four times per frame; its triangle strips — the flip
 pass among them — then lose a vertex to a primitive-restart index of 0. The emulation is written
 and dry-run; next: run 74 (per-section counters, baseline) and run 75 (`BC5_DIRECT_STATE_STACK=1`).
+
+**Run 74** (07:53, GPU, `BC5_DIRECT_DRAWSTATS=9000`, no state stack; `raw/e29-run74-direct.log`):
+the per-section counters confirm run 73's arithmetic by measurement. In the frame DCB the strip at
++779, before the first push, draws (3 IA vertices, 1 primitive, 2,073,600 PS invocations); the
+rect-list draws inside the brackets draw; **every draw after the first pop counts 2 IA vertices
+and no primitive** — the triangle list at +1938, the strips at +3478, +5950 … +8142 (ten of them
+in one section: 20 vertices, 0 primitives) and the flip pass. 322 submits, 319 OK, no stall.
+
+**Run 75** (07:55, GPU, the same plus `BC5_DIRECT_STATE_STACK=1`; `raw/e30-run75-direct.log`):
+**the game's passes draw.** 57 IBs had pushes and pops (the frame DCB: 4 pops, 921 registers
+each). Per section every draw now has all its vertices and one primitive each; the ten-draw
+section makes 8,332,656 PS invocations, and **the flip pass 8,294,400 = 3840×2160**. A
+zero-instance point draw at +4575 becomes 512 points, 5 past the clipper (its instance count comes
+from somewhere not yet understood; harmless here). The frame DCB totals 533 primitives and
+36.6–41.6 M PS invocations instead of 5 and 3.3 M. The display buffers are written from the third
+flip on (8100–8160 of 8160 samples non-zero, the prefill pattern gone from the visible area; the
+60 samples that keep it are the 16 padding rows). 320 submits, 316 OK, no CPU-wait timeout, no
+ring timeout, no reset. The sampled sum is the same at every later flip: a static picture.
+
+What the picture is could not be read from this run: the only screenshot (30 s) predates the
+first drawn flip, and the flip target is not linear — `CB_COLOR0_INFO` 0x8824 (2:10:10:10 UNORM,
+COMP_SWAP 1), `CB_COLOR0_ATTRIB3` 0x4dc6c000 (swizzle mode 27, 64KB_R_X), 3840×2160 — so a raw
+dump needs de-tiling. Next: a longer run with screenshots after the first drawn flip and raw
+dumps of the display buffer (`BC5_DIRECT_FLIP_DUMP`), no prefill.
+
+**Verdict update (2026-10-01, 08:10).** F35 confirmed on the GPU: with the context-state stack
+emulated the game's strips, its full-screen passes and its flip pass rasterise, and the display
+buffer is written every frame. The state stack is now on by default
+(`BC5_DIRECT_NO_STATE_STACK=1` turns it off). G3 needs the picture itself on screen: next run.

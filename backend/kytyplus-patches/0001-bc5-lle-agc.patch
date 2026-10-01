@@ -393,10 +393,10 @@ index 5f87e6b..e5c534e 100644
  	CondRemoveWaiter(cond_value, thread);
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..1734ea4
+index 0000000..53fa048
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,2969 @@
+@@ -0,0 +1,2986 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -1262,11 +1262,12 @@ index 0000000..1734ea4
 +	if (std::getenv("BC5_DIRECT_NO_BOLIST") != nullptr) {
 +		g_dev->set_include_mappings(false);
 +	}
-+	// BC5_DIRECT_STATE_STACK=1: emulate the console CP's context-state stack (CLEAR_STATE cmd 1 /
-+	// cmd 2 around the driver's internal draws; bc5/state_stack.hpp). Without it the game loses
-+	// its context registers after every internal clear (run 73: its triangle strips then lose
-+	// their first vertex to a primitive-restart index of 0).
-+	g_dev->set_state_stack(std::getenv("BC5_DIRECT_STATE_STACK") != nullptr);
++	// The console CP's context-state stack (CLEAR_STATE cmd 1 / cmd 2 around the driver's
++	// internal draws; bc5/state_stack.hpp) is emulated. Without it the game loses its context
++	// registers after every internal clear (run 73: its triangle strips then lose their first
++	// vertex to a primitive-restart index of 0; run 75: with it they draw).
++	// BC5_DIRECT_NO_STATE_STACK=1 turns it off.
++	g_dev->set_state_stack(std::getenv("BC5_DIRECT_NO_STATE_STACK") == nullptr);
 +	dump_init();
 +	journal("direct: enabled, stage %s, cu mask 0x%08x, bo list %s\n", stage != nullptr ? stage : "preamble", g_cu_mask,
 +	        std::getenv("BC5_DIRECT_NO_BOLIST") != nullptr ? "scratch only" : "with mappings");
@@ -2626,7 +2627,7 @@ index 0000000..1734ea4
 +			ro.gds_shadow = std::getenv("BC5_DIRECT_GDS_SHADOW") != nullptr;
 +			g_dev = bc5::direct::Device::open(node != nullptr ? node : "/dev/dri/renderD128", ro);
 +			if (g_dev && std::getenv("BC5_DIRECT_NO_BOLIST") != nullptr) g_dev->set_include_mappings(false);
-+			if (g_dev) g_dev->set_state_stack(std::getenv("BC5_DIRECT_STATE_STACK") != nullptr);
++			if (g_dev) g_dev->set_state_stack(std::getenv("BC5_DIRECT_NO_STATE_STACK") == nullptr);
 +			g_hinted.clear();
 +			g_bytes_mapped = 0;
 +			g_last_sync_ns = 0;
@@ -3257,6 +3258,22 @@ index 0000000..1734ea4
 +				sum += v;
 +				nonzero += v != 0;
 +				pattern += v == kPattern;
++			}
++			// BC5_DIRECT_FLIP_DUMP=<every n>: the display buffer as the GPU left it, raw, as
++			// flip-<count>.raw in the capture directory (at most 6 files; never committed) — the
++			// image itself, whatever the presenter makes of it (run 76).
++			static const long dump_every = std::getenv("BC5_DIRECT_FLIP_DUMP") ? std::atol(std::getenv("BC5_DIRECT_FLIP_DUMP")) : 0;
++			static long flips = 0, dumped = 0;
++			flips++;
++			if (dump_every > 0 && nonzero != 0 && (flips % dump_every) == 0 && dumped < 6 && !Bc5Gc::g_dump_dir.empty()) {
++				char name[512];
++				std::snprintf(name, sizeof(name), "%s/flip-%03ld.raw", Bc5Gc::g_dump_dir.c_str(), flips);
++				if (FILE* f = std::fopen(name, "wb")) {
++					std::fwrite(reinterpret_cast<const void*>(a), 1, n, f);
++					std::fclose(f);
++					dumped++;
++					Bc5Gc::Direct::journal("flip %ld dumped: %s\n", flips, name);
++				}
 +			}
 +			if (prefill) {
 +				auto* ww = reinterpret_cast<volatile uint32_t*>(a);

@@ -88,7 +88,9 @@ a compute IB at a wait followed only by signalling packets), `BC5_DIRECT_FLIP_PR
 0x5a5a5a5a pattern at the display buffer's sample points after each flip). The flip label of a
 buffer is cleared at `SubmitEopFlip`. With `KYTY_BC5_ANON_BACKING=1` a view whose protection
 changes is re-protected with `mprotect` instead of being mapped again (which zeroed it).
-`BC5_DIRECT_STATE_STACK=1` turns on the context-state stack emulation (`Device::set_state_stack`,
-F35); in `maponly` it is a dry run that journals what the emulation would do.
+The context-state stack emulation (`Device::set_state_stack`, F35) is on by default since run 75;
+`BC5_DIRECT_NO_STATE_STACK=1` turns it off. `BC5_DIRECT_STATE_STACK=1` in `maponly` is a dry run
+that journals what the emulation would do. `BC5_DIRECT_FLIP_DUMP=<every n>` writes the raw
+display buffer of every n-th flip into the capture directory (at most six files).
 `BC5_DIRECT_DRAWSTATS=<min dwords>` (with `BC5_DIRECT_PIPESTATS=1`): pipeline counters per
 marker-delimited section of the first six DCBs of at least that many dwords.
