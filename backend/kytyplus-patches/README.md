@@ -98,3 +98,5 @@ marker-delimited section of the first six DCBs of at least that many dwords.
 waits, flips). `BC5_GC_NO_IDENT0=1` stops the EVFILT_GRAPHICS ident-0 events (F36).
 The crash journal is synced once per submission (before the GPU submit) since run 78;
 `BC5_DIRECT_JOURNAL_SYNC=1` syncs every line and every IB dump again.
+Short BO lists (`Device::set_short_lists`, ADR 0005 xx) are on by default since run 81;
+`BC5_DIRECT_NO_SHORT_LISTS=1` lists every mapping on every submission again.

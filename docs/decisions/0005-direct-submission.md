@@ -125,6 +125,11 @@ the context registers of the IBs it is given (`bc5/state_stack.hpp`), and an unc
 becomes the `SET_CONTEXT_REG` packets of the state saved at the matching push; the IB grows and
 is laid out accordingly in the scratch. SH and UCONFIG registers are not restored (the stream
 keeps shadowing them across the bracket; TODO(verify) on hardware behaviour of pop_state for them).
+*Amended 2026-10-01 (runs 80–81, F38):* (xx) the BO list is per submission, not "every mapping
+every time": the kernel revalidates each listed userptr BO's pages on every CS (27 ms with 5.4 GB
+listed, against a GPU that needs a millisecond). A submission without draws and dispatches lists
+only the BOs its packets' operands lie in; one that draws lists them all. Mappings left off a list
+stay in the VM untouched until the next full list revalidates them.
 
 **Consequences.** The "packet rewriter" of the roadmap shrinks to a filter with two rewrites; the
 backend's core is the policy table plus the BO/VA mapper, both testable offline. Unknown firmware

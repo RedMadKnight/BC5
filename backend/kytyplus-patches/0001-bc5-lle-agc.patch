@@ -393,10 +393,10 @@ index 5f87e6b..e5c534e 100644
  	CondRemoveWaiter(cond_value, thread);
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..7e912e3
+index 0000000..2230384
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,3046 @@
+@@ -0,0 +1,3051 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -1287,6 +1287,10 @@ index 0000000..7e912e3
 +	// vertex to a primitive-restart index of 0; run 75: with it they draw).
 +	// BC5_DIRECT_NO_STATE_STACK=1 turns it off.
 +	g_dev->set_state_stack(std::getenv("BC5_DIRECT_NO_STATE_STACK") == nullptr);
++	// Submissions without draws and dispatches list only the BOs their packets name
++	// (Device::set_short_lists; run 81: 0.05 ms instead of 27 ms in the CS ioctl for half of a
++	// frame's submissions). BC5_DIRECT_NO_SHORT_LISTS=1 turns it off.
++	g_dev->set_short_lists(std::getenv("BC5_DIRECT_NO_SHORT_LISTS") == nullptr);
 +	dump_init();
 +	journal("direct: enabled, stage %s, cu mask 0x%08x, bo list %s\n", stage != nullptr ? stage : "preamble", g_cu_mask,
 +	        std::getenv("BC5_DIRECT_NO_BOLIST") != nullptr ? "scratch only" : "with mappings");
@@ -2587,8 +2591,8 @@ index 0000000..7e912e3
 +		}
 +	}
 +	if (timing) {
-+		journal("timing: #%" PRIu64 " done at t %.3f s, %.1f ms after the sync and hints; device: prepare %.2f list %.2f cs %.2f fence %.2f ms\n", n, timing_now(),
-+		        static_cast<double>(SoftCp::now_ns() - t2) / 1e6, r.prepare_ms, r.list_ms, r.cs_ms, r.fence_ms);
++		journal("timing: #%" PRIu64 " done at t %.3f s, %.1f ms after the sync and hints; device: prepare %.2f list %.2f cs %.2f fence %.2f ms, %u BOs%s\n", n, timing_now(),
++		        static_cast<double>(SoftCp::now_ns() - t2) / 1e6, r.prepare_ms, r.list_ms, r.cs_ms, r.fence_ms, r.bo_count, r.short_list ? " (short list)" : "");
 +	}
 +	if (r.state_stack.pushes != 0 || r.state_stack.pops != 0 || r.state_stack.unmatched_pops != 0) {
 +		journal("state stack #%" PRIu64 ": push %u pop %u conditional %u unmatched %u; restored %u regs (+%u dwords); tables %u, unreadable %u\n", n,
@@ -2682,6 +2686,7 @@ index 0000000..7e912e3
 +			g_dev = bc5::direct::Device::open(node != nullptr ? node : "/dev/dri/renderD128", ro);
 +			if (g_dev && std::getenv("BC5_DIRECT_NO_BOLIST") != nullptr) g_dev->set_include_mappings(false);
 +			if (g_dev) g_dev->set_state_stack(std::getenv("BC5_DIRECT_NO_STATE_STACK") == nullptr);
++			if (g_dev) g_dev->set_short_lists(std::getenv("BC5_DIRECT_NO_SHORT_LISTS") == nullptr);
 +			g_hinted.clear();
 +			g_bytes_mapped = 0;
 +			g_last_sync_ns = 0;

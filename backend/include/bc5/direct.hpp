@@ -24,6 +24,9 @@ struct SubmitResult {
     // The parts of a submission (experiment 0016, run 80: a constant ~17 ms whatever the IB):
     // filtering and scratch layout, BO list creation, the CS ioctl, the fence wait.
     double prepare_ms = 0, list_ms = 0, cs_ms = 0, fence_ms = 0;
+    // BOs on this submission's list, and whether it was the short list (Device::set_short_lists).
+    std::uint32_t bo_count = 0;
+    bool short_list = false;
     std::uint64_t seq_no = 0; // sequence number the kernel assigned (0 = none)
     // After a timeout: the last GPU VM fault of this process (AMDGPU_INFO_GPUVM_FAULT; page
     // address, GCVM_L2_PROTECTION_FAULT_STATUS), 0 when the kernel has none to report.
@@ -117,6 +120,13 @@ public:
     // FilterOptions::mapped (the register tables are read from this process's memory). Off by
     // default.
     void set_state_stack(bool v) { state_stack_ = v; }
+    // An IB (with its nested IBs) that holds no draw and no dispatch reaches guest memory only
+    // through the operands of its packets. With short lists on, such a submission lists only the
+    // userptr BOs those operands lie in, not every mapping: the kernel revalidates each listed
+    // userptr BO's pages on every CS, which is what a submission costs (experiment 0016, run
+    // 80: 28 ms with 5.8 GB listed). The other mappings stay in the VM; they are revalidated by
+    // the next submission that draws. Needs FilterOptions::mapped. Off by default.
+    void set_short_lists(bool v) { short_lists_ = v; }
 
 private:
     Device() = default;
@@ -125,6 +135,7 @@ private:
     bool wedged_ = false;
     bool include_mappings_ = true;
     bool state_stack_ = false;
+    bool short_lists_ = false;
     std::uint64_t submits_ = 0;
 };
 
