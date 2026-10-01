@@ -1,0 +1,19 @@
+run 109, 2026-10-01, two unattended runs of 120 s to the title screen; GPU clock pinned at 2000 MHz / 1000 mV by the governor (journal excerpts, hwmon samples)
+
+== sync: kytyplus-20261001-2153
+submits 79435, ok 79435, failed 0, flips 5592, timeouts 0, soft-CP wait timeouts 0
+flips per 10 s:
+t0:518 t10:596 t20:571 t30:398 t40:442 t50:449 t60:450 t70:448 t80:446 t90:449 t100:446 t110:379 
+hwmon amdgpu at the title screen (60-115 s): 977 mV, 125 W, max 73 C
+temperature every 20 s: 20s:60C 40s:67C 60s:70C 80s:68C 100s:69C 120s:71C 
+
+== async: kytyplus-20261001-2155
+submits 94087, ok 94087, failed 0, flips 6643, timeouts 0, soft-CP wait timeouts 0
+flips per 10 s:
+t0:518 t10:596 t20:598 t30:518 t40:553 t50:563 t60:559 t70:564 t80:562 t90:563 t100:564 t110:485 
+hwmon amdgpu at the title screen (60-115 s): 974 mV, 143 W, max 78 C
+temperature every 20 s: 20s:62C 40s:70C 60s:75C 80s:76C 100s:76C 120s:77C 
+
+== governor
+[2026-10-01T19:51:13.300Z INFO  cyan_skillfish_governor_smu::config] allowed frequency range 500..=2000
+[2026-10-01T19:51:13.300Z INFO  cyan_skillfish_governor_smu::config] initial frequency range: 2000..=2000
