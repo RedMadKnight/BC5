@@ -228,8 +228,11 @@ int run(const std::string &node, std::uint64_t mib, std::uint64_t chunk_mib, int
     }
 
     // 3. The memset dispatch writes the first chunk through its guest address.
-    Vram shader, cmd;
-    if (!alloc_bo(dev, 4096, AMDGPU_GEM_DOMAIN_VRAM, shader) || !alloc_bo(dev, 4096, AMDGPU_GEM_DOMAIN_GTT, cmd)) {
+    // One command BO per IB: an IB rewritten in place can be executed from the GPU's stale copy
+    // (F25; the first version of this tool reran the first fill that way).
+    Vram shader, cmd, cmd2, cmd3;
+    if (!alloc_bo(dev, 4096, AMDGPU_GEM_DOMAIN_VRAM, shader) || !alloc_bo(dev, 4096, AMDGPU_GEM_DOMAIN_GTT, cmd) ||
+        !alloc_bo(dev, 4096, AMDGPU_GEM_DOMAIN_GTT, cmd2) || !alloc_bo(dev, 4096, AMDGPU_GEM_DOMAIN_GTT, cmd3)) {
         std::fprintf(stderr, "buffer allocation failed\n");
         return 1;
     }
@@ -241,7 +244,7 @@ int run(const std::string &node, std::uint64_t mib, std::uint64_t chunk_mib, int
 
     int failures = 0;
     {
-        std::vector<amdgpu_bo_handle> bos = {shader.bo, cmd.bo, imported[0]};
+        std::vector<amdgpu_bo_handle> bos = {shader.bo, cmd.bo, cmd2.bo, imported[0]};
         amdgpu_bo_list_handle list = nullptr;
         if (amdgpu_bo_list_create(dev, static_cast<std::uint32_t>(bos.size()), bos.data(), nullptr, &list) != 0) return 1;
         const std::uint32_t value = 0x5a17da7au;
@@ -267,22 +270,23 @@ int run(const std::string &node, std::uint64_t mib, std::uint64_t chunk_mib, int
         p.dst_bytes = static_cast<std::uint32_t>(chunk / 2);
         p.value = 0x11223344u;
         const auto ib2 = bc5::dispatch_min::build_memset_ib(p);
-        std::memcpy(cmd.cpu, ib2.data(), ib2.size() * sizeof(std::uint32_t));
-        if (!submit_ib(ctx, list, cmd.va, static_cast<std::uint32_t>(ib2.size()), cs, fence)) return 1;
+        std::memcpy(cmd2.cpu, ib2.data(), ib2.size() * sizeof(std::uint32_t));
+        if (!submit_ib(ctx, list, cmd2.va, static_cast<std::uint32_t>(ib2.size()), cs, fence)) return 1;
         std::uint64_t bad2 = 0;
         for (std::uint64_t i = 0; i < chunk / 8; ++i) bad2 += words[i] != 0x11223344u ? 1u : 0u;
         for (std::uint64_t i = chunk / 8; i < chunk / 4; ++i) bad2 += words[i] != 0x0badf00du ? 1u : 0u;
-        std::printf("second fill (half the chunk) next to CPU-written data: %llu wrong dwords\n",
-                    static_cast<unsigned long long>(bad2));
+        std::printf("second fill (half the chunk) next to CPU-written data: %llu wrong dwords (first dword 0x%08x, "
+                    "first of the CPU half 0x%08x)\n",
+                    static_cast<unsigned long long>(bad2), words[0], words[chunk / 8]);
         if (bad != 0 || bad2 != 0) failures++;
         amdgpu_bo_list_destroy(list);
     }
 
     // 4. What a CS costs with every chunk on the list: imported dma-bufs against userptr BOs
     //    over as much anonymous memory. The IB is a few NOPs.
-    for (std::uint32_t i = 0; i < 16; ++i) static_cast<std::uint32_t *>(cmd.cpu)[i] = 0xffff1000u;
+    for (std::uint32_t i = 0; i < 16; ++i) static_cast<std::uint32_t *>(cmd3.cpu)[i] = 0xffff1000u;
     auto time_list = [&](const std::vector<amdgpu_bo_handle> &extra, const char *name) {
-        std::vector<amdgpu_bo_handle> bos = {cmd.bo};
+        std::vector<amdgpu_bo_handle> bos = {cmd3.bo};
         bos.insert(bos.end(), extra.begin(), extra.end());
         amdgpu_bo_list_handle list = nullptr;
         if (amdgpu_bo_list_create(dev, static_cast<std::uint32_t>(bos.size()), bos.data(), nullptr, &list) != 0) {
@@ -294,7 +298,7 @@ int run(const std::string &node, std::uint64_t mib, std::uint64_t chunk_mib, int
         double fence_sum = 0;
         for (int r = 0; r < repeat; ++r) {
             double cs = 0, fence = 0;
-            if (!submit_ib(ctx, list, cmd.va, 16, cs, fence)) {
+            if (!submit_ib(ctx, list, cmd3.va, 16, cs, fence)) {
                 failures++;
                 break;
             }
