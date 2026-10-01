@@ -132,6 +132,4 @@ again the labels' history around one main buffer has to be traced first.
 **Addendum, run 112** (23:04, GPU, unattended, the synchronous path of the same build, automatic
 presses; capture `kytyplus-20261001-2304`): 238,396 submissions in 358 s, none failed, no wait
 timed out; loading at 48 fps, the cutscene at 40–41 fps, GPU at most 74 °C with the governor's
-range at 1850–2000 MHz. The build's default path is what run 107 measured. A few seconds after
-the run had ended and been read out, the dev box stopped answering on the network; why is not
-known at the time of writing.
+range at 1850–2000 MHz. The build's default path is what run 107 measured. (The dev box was restarted in an orderly way a few minutes after the run; not a crash.)
