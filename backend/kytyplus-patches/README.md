@@ -147,3 +147,6 @@ hands out) is mapped from a second sealed memfd at offset = guest address
 (`LibKernel::Memory::Bc5PrivateMemoryFd`, `Bc5ForEachPrivateRegion`) and imported by the host like
 the direct memory; `KYTY_BC5_NO_PRIVATE_FILE=1` turns that off, `BC5_DIRECT_STACKS=1` imports
 thread stacks as well.
+Experiment 0024: `BC5_DIRECT_ASYNC=1` (with `BC5_DIRECT_JOURNAL=min`) queues jobs without waiting
+for them; the soft CP's pass over each buffer then runs on a completion thread per submitting
+thread, and a flip waits until nothing is in flight.

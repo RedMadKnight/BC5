@@ -915,10 +915,10 @@ index 5f87e6b..e5c534e 100644
  	CondRemoveWaiter(cond_value, thread);
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..3218414
+index 0000000..bd5c18d
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,3732 @@
+@@ -0,0 +1,3934 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -966,6 +966,9 @@ index 0000000..3218414
 +#include <cstdio>
 +#include <cstdlib>
 +#include <cstring>
++#include <condition_variable>
++#include <deque>
++#include <functional>
 +#include <map>
 +#include <set>
 +#include <mutex>
@@ -1070,6 +1073,17 @@ index 0000000..3218414
 +static void submit(const uint32_t* ib, uint32_t num_dwords, const char* kind, bool from_header);
 +// Are every cross-queue wait of a compute IB (labels no earlier packet of it writes) satisfied?
 +static bool acb_ready(const uint32_t* ib, uint32_t num_dwords);
++// Experiment 0024 (BC5_DIRECT_ASYNC=1): what has to follow a buffer's execution on the GPU — the
++// soft CP's pass over it, a ring's read-pointer publication — runs through post(): at once when
++// submissions are waited for, otherwise on the completion thread, in submission order, after the
++// buffer's jobs have finished. `failed`: one of those jobs did not complete, so none of the
++// buffer's packets counts as executed by the GPU. drain() returns when nothing is in flight.
++static void post(std::function<void(bool failed)> fn);
++static void drain();
++// Each submitting thread has its own completion queue (0: the game's threads through the ioctls,
++// 1: the doorbell-queue consumer): a buffer's soft-CP pass may wait for what another queue's
++// pass writes, as the two did when each ran on its submitting thread.
++static void set_source(int index);
 +static void gds_selftest();
 +static void gds_snapshot(const char* why);
 +static void init_once();
@@ -1599,6 +1613,7 @@ index 0000000..3218414
 +static const bool g_direct_rings = std::getenv("BC5_GC_MODE") != nullptr && std::strcmp(std::getenv("BC5_GC_MODE"), "direct") == 0 && std::getenv("BC5_DIRECT_RINGS") != nullptr;
 +
 +static void queue_consumer_thread() {
++	Direct::set_source(1);
 +	struct State {
 +		QueueReg reg;
 +		uint64_t rptr           = 0;
@@ -1675,38 +1690,59 @@ index 0000000..3218414
 +				Direct::submit(ring + r, n - r, "ring", false);
 +				if (w != 0) Direct::submit(ring, w, "ring", false);
 +			}
-+			uint32_t done = 0, guard = 0;
-+			while (done < pending && guard++ < 4096) {
-+				const uint32_t off    = (r + done) % n;
-+				const uint32_t header = ring[off];
-+				const uint32_t len    = packet_len(off);
-+				if ((header >> 30u) == 3 && off + len <= n) {
-+					t_compute_ring = (q.a == 2); // TODO(bc5): which engine is compute is a guess
-+					const uint32_t op = (header >> 8u) & 0xffu;
-+					if (s.count < 8) {
-+						LOGF("[bc5-q] queue %u/%u/%u/0x%x: packet #%" PRIu64 " op 0x%02x len %u (rptr %u wptr %u)\n",
-+						     q.a, q.b, q.c, q.d, s.count, op, len, off, w);
++			{
++				auto marks = std::move(t_gpu_done);
++				t_gpu_done.clear();
++				const QueueReg qq     = q;
++				const uint64_t count0 = s.count;
++				s.count += pending;
++				Direct::post([ring, r, n, w, pending, qq, count0, marks = std::move(marks)](bool failed) mutable {
++					t_gpu_done = failed ? std::vector<GpuDone>() : std::move(marks);
++					auto plen = [&](uint32_t off) -> uint32_t {
++						const uint32_t hh = ring[off];
++						if ((hh >> 30u) != 3) return 1;
++						const uint32_t c = (hh >> 16u) & 0x3fffu;
++						return c == 0x3fffu ? 1 : c + 2;
++					};
++					uint32_t done = 0, guard = 0;
++					uint64_t count = count0;
++					while (done < pending && guard++ < 4096) {
++						const uint32_t off    = (r + done) % n;
++						const uint32_t header = ring[off];
++						const uint32_t len    = plen(off);
++						if ((header >> 30u) == 3 && off + len <= n) {
++							t_compute_ring = (qq.a == 2); // TODO(bc5): which engine is compute is a guess
++							const uint32_t op = (header >> 8u) & 0xffu;
++							if (count < 8) {
++								LOGF("[bc5-q] queue %u/%u/%u/0x%x: packet #%" PRIu64 " op 0x%02x len %u (rptr %u wptr %u)\n",
++								     qq.a, qq.b, qq.c, qq.d, count, op, len, off, w);
++							}
++							if (op == IT_INDIRECT_BUFFER || op == IT_INDIRECT_BUFFER_CNST) {
++								indirect_buffer(ring + off, 0);
++							} else {
++								execute(ring + off, len, 1);
++							}
++							t_compute_ring = false;
++						}
++						done += len;
++						count++;
++						g_packets++;
 +					}
-+					if (op == IT_INDIRECT_BUFFER || op == IT_INDIRECT_BUFFER_CNST) {
-+						indirect_buffer(ring + off, 0);
-+					} else {
-+						execute(ring + off, len, 1);
-+					}
-+					t_compute_ring = false;
-+				}
-+				done += len;
-+				s.count++;
-+				g_packets++;
++					t_gpu_done.clear();
++					// The read pointer goes where the queue registration named it and — what the
++					// driver library's free-space check actually reads (its queue table, +0x70;
++					// experiment 0018) — into the dword right behind the ring.
++					*reinterpret_cast<volatile uint32_t*>(qq.rptr_addr) = w;
++					static const bool behind = std::getenv("BC5_GC_NO_RING_END_RPTR") == nullptr;
++					if (behind) *reinterpret_cast<volatile uint32_t*>(qq.ring_end) = w;
++				});
 +			}
-+			s.rptr = w; // everything up to the doorbell value has been served
++			s.rptr = w; // everything up to the doorbell value has been handed on
 +			// The read pointer goes where the queue registration named it and — what the driver
 +			// library's free-space check actually reads (its queue table, +0x70; experiment
 +			// 0018) — into the dword right behind the ring. Nothing wrote the latter before, so
 +			// each ring looked never drained and was "full" after 4,088 dwords: the game stopped
 +			// at its 511th frame. BC5_GC_NO_RING_END_RPTR=1 leaves it out.
-+			*reinterpret_cast<volatile uint32_t*>(q.rptr_addr) = w;
-+			static const bool rptr_behind_ring = std::getenv("BC5_GC_NO_RING_END_RPTR") == nullptr;
-+			if (rptr_behind_ring) *reinterpret_cast<volatile uint32_t*>(q.ring_end) = w;
 +			progressed = true;
 +		}
 +		if (progressed) {
@@ -1804,6 +1840,9 @@ index 0000000..3218414
 +#if defined(KYTY_BC5_DIRECT)
 +static std::unique_ptr<bc5::direct::Device> g_dev;
 +static std::mutex                           g_dev_mutex;
++// BC5_DIRECT_ASYNC=1 (experiment 0024): jobs are queued and completed by a thread of their own
++// (needs BC5_DIRECT_JOURNAL=min: the crash journal writes one line in two halves around a job).
++static const bool g_async = std::getenv("BC5_DIRECT_ASYNC") != nullptr && g_journal_min;
 +static Stage                                g_stage = Stage::Off;
 +static uint32_t                             g_cu_mask = 0xffffffffu;
 +static std::atomic<uint64_t>                g_submits {0};
@@ -1872,6 +1911,8 @@ index 0000000..3218414
 +	// Every IB ends by waiting for CP DMA to be idle (Device::set_dma_idle; experiment 0017).
 +	// BC5_DIRECT_NO_DMA_IDLE=1 turns it off.
 +	g_dev->set_dma_idle(std::getenv("BC5_DIRECT_NO_DMA_IDLE") == nullptr);
++	g_dev->set_async(g_async);
++	if (g_async) journal("direct: jobs are not waited for at submission (BC5_DIRECT_ASYNC)\n");
 +	dump_init();
 +	journal("direct: enabled, stage %s, cu mask 0x%08x, bo list %s\n", stage != nullptr ? stage : "preamble", g_cu_mask,
 +	        std::getenv("BC5_DIRECT_NO_BOLIST") != nullptr ? "scratch only" : "with mappings");
@@ -3268,6 +3309,167 @@ index 0000000..3218414
 +	submit_split(ib, num_dwords, kind, from_header);
 +}
 +
++// After a fence timeout: learn the fault, and with BC5_DIRECT_REOPEN=1 wait out the kernel's reset and
++// open a fresh device. The caller holds g_dev_mutex.
++static void recover_after_timeout(const bc5::direct::SubmitResult& r) {
++		LOGF_COLOR(Log::Color::Red, "[bc5-direct] fence timeout: fault 0x%" PRIx64 " status 0x%08x\n", r.fault_addr, r.fault_status);
++		journal("timeout: fault 0x%" PRIx64 " status 0x%08x\n", r.fault_addr, r.fault_status);
++		if (r.fault_addr != 0) learned_add(r.fault_addr);
++		// BC5_DIRECT_REOPEN=1: after the kernel's ring reset (F28) the process may open a fresh
++		// device and go on; the mappings are rebuilt by the next sync, the learned region is in.
++		static const bool reopen = std::getenv("BC5_DIRECT_REOPEN") != nullptr;
++		if (reopen) { // after any timeout: the kernel's ring reset recovers shader stalls too (run 41)
++			std::this_thread::sleep_for(std::chrono::seconds(12)); // the kernel's timeout + reset
++			g_dev.reset();
++			const char* node = std::getenv("BC5_DIRECT_NODE");
++			bc5::direct::OpenOptions ro;
++			if (const char* g = std::getenv("BC5_DIRECT_GDS_KIB"); g != nullptr) ro.gds_kib = static_cast<uint32_t>(std::strtoul(g, nullptr, 10));
++			if (const char* g = std::getenv("BC5_DIRECT_OA"); g != nullptr) ro.oa_count = static_cast<uint32_t>(std::strtoul(g, nullptr, 10));
++			if (const char* g = std::getenv("BC5_DIRECT_GWS"); g != nullptr) ro.gws_count = static_cast<uint32_t>(std::strtoul(g, nullptr, 10));
++			ro.gds_shadow = std::getenv("BC5_DIRECT_GDS_SHADOW") != nullptr;
++			g_dev = bc5::direct::Device::open(node != nullptr ? node : "/dev/dri/renderD128", ro);
++			if (g_dev && std::getenv("BC5_DIRECT_NO_BOLIST") != nullptr) g_dev->set_include_mappings(false);
++			if (g_dev) g_dev->set_state_stack(std::getenv("BC5_DIRECT_NO_STATE_STACK") == nullptr);
++			if (g_dev) g_dev->set_short_lists(std::getenv("BC5_DIRECT_NO_SHORT_LISTS") == nullptr);
++			if (g_dev) g_dev->set_dma_idle(std::getenv("BC5_DIRECT_NO_DMA_IDLE") == nullptr);
++			if (g_dev) g_dev->set_async(g_async);
++			g_hinted.clear();
++			g_bytes_mapped = 0;
++			g_last_sync_ns = 0;
++			for (auto& S: g_d) {
++				S.bos.clear();
++				S.maps.clear();
++				S.views_sig  = 0;
++				S.bos_mapped = 0;
++				S.bytes      = 0;
++				S.blocks     = ~0ull;
++				S.merge_failed.clear();
++				S.reported = 0;
++				S.sync_ns  = 0;
++			}
++			g_layout_gen++;
++			LOGF_COLOR(Log::Color::Yellow, "[bc5-direct] device reopened after the fault: %s\n", g_dev ? "ok" : "FAILED");
++			journal("reopen: %s\n", g_dev ? "ok" : "FAILED");
++		} else {
++			LOGF_COLOR(Log::Color::Red, "[bc5-direct] device wedged, no further submits (soft CP continues)\n");
++		}
++	}
++
++// ---- experiment 0024: jobs in flight ---------------------------------------------------------
++struct PendingJob {
++	uint64_t                 n          = 0;
++	const char*              kind       = "";
++	uint32_t                 num_dwords = 0;
++	const void*              ib         = nullptr;
++	bc5::policy::FilterStats filter;
++	size_t                   maps       = 0;
++	double                   prepare_ms = 0, list_ms = 0, cs_ms = 0;
++	uint32_t                 bo_count   = 0;
++	bool                     short_list = false, retried = false;
++	uint64_t                 seq = 0, t2_ns = 0, queued_ns = 0, dev_gen = 0;
++	uint32_t                 slot = 0;
++};
++struct CqItem {
++	bool                      fence = false;
++	PendingJob                job;
++	std::function<void(bool)> post;
++};
++struct Cq {
++	std::mutex              mutex;
++	std::condition_variable cv;
++	std::deque<CqItem>      items;
++	std::once_flag          started;
++};
++static Cq                    g_cqs[2];
++static thread_local int      t_cq = 0;
++static std::atomic<uint32_t> g_cq_fences {0}, g_cq_items {0};
++static std::atomic<bool>     g_recovering {false};
++static std::atomic<uint64_t> g_dev_gen {0}; // counts device reopens: a job queued on an earlier device is dead
++
++static void set_source(int index) {
++	t_cq = index == 1 ? 1 : 0;
++}
++
++static void completion_thread(int index) {
++	static const bool timing = std::getenv("BC5_DIRECT_TIMING") != nullptr;
++	Cq&  cq     = g_cqs[index];
++	bool failed = false; // a job since the last post did not complete
++	for (;;) {
++		CqItem it;
++		{
++			std::unique_lock lk(cq.mutex);
++			cq.cv.wait(lk, [&cq] { return !cq.items.empty(); });
++			it = std::move(cq.items.front());
++			cq.items.pop_front();
++		}
++		if (it.fence) {
++			const PendingJob&          j = it.job;
++			bc5::direct::SubmitResult r;
++			while (g_recovering.load()) std::this_thread::sleep_for(std::chrono::milliseconds(1));
++			if (g_dev && j.dev_gen == g_dev_gen.load()) {
++				r = g_dev->finish(j.seq, j.slot, 2'000'000'000ull);
++			} else {
++				r.rc = -125; // -ECANCELED: the device it was queued on is gone
++			}
++			const double total_ms = static_cast<double>(SoftCp::now_ns() - j.queued_ns) / 1e6 + j.cs_ms;
++			journal("submit #%" PRIu64 " %s %u dwords at %p: pass %" PRIu64 " rewrite %" PRIu64 " drop %" PRIu64 " unmapped %" PRIu64 " cc %" PRIu64 " mappings %zu ... %s rc %d%s%s %.2f ms\n",
++			        j.n, j.kind, j.num_dwords, j.ib, j.filter.passed, j.filter.rewritten, j.filter.dropped, j.filter.unmapped_drops, j.filter.context_control_rewrites,
++			        j.maps, r.ok ? "OK" : "FAILED", r.rc, r.timed_out ? " TIMEOUT" : "", j.retried ? " (retried)" : "", total_ms);
++			if (timing) {
++				journal("timing: #%" PRIu64 " done at t %.3f s, %.1f ms after the sync and hints; device: prepare %.2f list %.2f cs %.2f fence %.2f ms, %u BOs%s\n", j.n,
++				        timing_now(), static_cast<double>(SoftCp::now_ns() - j.t2_ns) / 1e6, j.prepare_ms, j.list_ms, j.cs_ms, total_ms - j.cs_ms, j.bo_count,
++				        j.short_list ? " (short list)" : "");
++			}
++			if (!r.ok) {
++				failed = true;
++				if (FILE* f = journal_min_file(true); f != nullptr) fsync(fileno(f));
++			}
++			if (r.timed_out) {
++				std::lock_guard lock(g_dev_mutex);
++				if (j.dev_gen == g_dev_gen.load()) { // the other queue's thread may have been first
++					g_recovering = true;
++					g_dev_gen++; // what is still queued was queued on the old device
++					recover_after_timeout(r);
++					g_recovering = false;
++				}
++			}
++			g_cq_fences--;
++		} else {
++			it.post(failed);
++			failed = false;
++		}
++		g_cq_items--;
++	}
++}
++
++static void cq_push(CqItem&& it) {
++	const int index = t_cq;
++	Cq&       cq    = g_cqs[index];
++	std::call_once(cq.started, [index] { std::thread(completion_thread, index).detach(); });
++	{
++		std::lock_guard lk(cq.mutex);
++		g_cq_items++;
++		if (it.fence) g_cq_fences++;
++		cq.items.push_back(std::move(it));
++	}
++	cq.cv.notify_one();
++}
++
++static void post(std::function<void(bool failed)> fn) {
++	if (!g_async) {
++		fn(false);
++		return;
++	}
++	CqItem it;
++	it.post = std::move(fn);
++	cq_push(std::move(it));
++}
++
++static void drain() {
++	if (!g_async) return;
++	while (g_cq_items.load() != 0) std::this_thread::sleep_for(std::chrono::microseconds(50));
++}
++
 +static void submit_one(const uint32_t* ib, uint32_t num_dwords, const char* kind, bool from_header) {
 +	if (g_stage == Stage::Off || !g_dev || ib == nullptr || num_dwords == 0) {
 +		return;
@@ -3280,6 +3482,9 @@ index 0000000..3218414
 +	static const bool rings = std::getenv("BC5_DIRECT_RINGS") != nullptr;
 +	if (!rings && std::strcmp(kind, "ring") == 0) {
 +		return;
++	}
++	if (g_async) {
++		while (g_cq_fences.load() >= 12 || g_recovering.load()) std::this_thread::sleep_for(std::chrono::microseconds(50));
 +	}
 +	std::lock_guard lock(g_dev_mutex);
 +	if (g_dev->wedged()) {
@@ -3720,6 +3925,34 @@ index 0000000..3218414
 +		retried = true;
 +		r       = g_dev->submit(std::span<const uint32_t>(ib, num_dwords), opt, 2'000'000'000ull, with_gds);
 +	}
++	if (r.pending) { // BC5_DIRECT_ASYNC: the completion thread waits for it and journals the result
++		g_ok++;
++		SoftCp::set_gpu_executed(ib, num_dwords, r.executed_offsets);
++		for (const auto& nb: r.nested) {
++			SoftCp::set_gpu_executed(reinterpret_cast<const uint32_t*>(nb.cpu_addr), nb.num_dwords, nb.executed_offsets);
++		}
++		CqItem it;
++		it.fence          = true;
++		it.job.n          = n;
++		it.job.kind       = kind;
++		it.job.num_dwords = num_dwords;
++		it.job.ib         = ib;
++		it.job.filter     = r.filter;
++		it.job.maps       = maps.size();
++		it.job.prepare_ms = r.prepare_ms;
++		it.job.list_ms    = r.list_ms;
++		it.job.cs_ms      = r.cs_ms;
++		it.job.bo_count   = r.bo_count;
++		it.job.short_list = r.short_list;
++		it.job.retried    = retried;
++		it.job.seq        = r.seq_no;
++		it.job.slot       = r.slot;
++		it.job.t2_ns      = t2;
++		it.job.queued_ns  = SoftCp::now_ns();
++		it.job.dev_gen    = g_dev_gen.load();
++		cq_push(std::move(it));
++		return;
++	}
 +	if (!g_dump_dir.empty() && g_journal_min) {
 +		journal("submit #%" PRIu64 " %s %u dwords at %p: pass %" PRIu64 " rewrite %" PRIu64 " drop %" PRIu64 " unmapped %" PRIu64 " cc %" PRIu64 " mappings %zu ... %s rc %d%s%s %.2f ms\n",
 +		        n, kind, num_dwords, static_cast<const void*>(ib), r.filter.passed, r.filter.rewritten, r.filter.dropped, r.filter.unmapped_drops,
@@ -3828,52 +4061,14 @@ index 0000000..3218414
 +			direct_breakdown("ENOMEM", r.bo_count);
 +		}
 +	}
-+	if (r.timed_out) {
-+		LOGF_COLOR(Log::Color::Red, "[bc5-direct] fence timeout: fault 0x%" PRIx64 " status 0x%08x\n", r.fault_addr, r.fault_status);
-+		journal("timeout: fault 0x%" PRIx64 " status 0x%08x\n", r.fault_addr, r.fault_status);
-+		if (r.fault_addr != 0) learned_add(r.fault_addr);
-+		// BC5_DIRECT_REOPEN=1: after the kernel's ring reset (F28) the process may open a fresh
-+		// device and go on; the mappings are rebuilt by the next sync, the learned region is in.
-+		static const bool reopen = std::getenv("BC5_DIRECT_REOPEN") != nullptr;
-+		if (reopen) { // after any timeout: the kernel's ring reset recovers shader stalls too (run 41)
-+			std::this_thread::sleep_for(std::chrono::seconds(12)); // the kernel's timeout + reset
-+			g_dev.reset();
-+			const char* node = std::getenv("BC5_DIRECT_NODE");
-+			bc5::direct::OpenOptions ro;
-+			if (const char* g = std::getenv("BC5_DIRECT_GDS_KIB"); g != nullptr) ro.gds_kib = static_cast<uint32_t>(std::strtoul(g, nullptr, 10));
-+			if (const char* g = std::getenv("BC5_DIRECT_OA"); g != nullptr) ro.oa_count = static_cast<uint32_t>(std::strtoul(g, nullptr, 10));
-+			if (const char* g = std::getenv("BC5_DIRECT_GWS"); g != nullptr) ro.gws_count = static_cast<uint32_t>(std::strtoul(g, nullptr, 10));
-+			ro.gds_shadow = std::getenv("BC5_DIRECT_GDS_SHADOW") != nullptr;
-+			g_dev = bc5::direct::Device::open(node != nullptr ? node : "/dev/dri/renderD128", ro);
-+			if (g_dev && std::getenv("BC5_DIRECT_NO_BOLIST") != nullptr) g_dev->set_include_mappings(false);
-+			if (g_dev) g_dev->set_state_stack(std::getenv("BC5_DIRECT_NO_STATE_STACK") == nullptr);
-+			if (g_dev) g_dev->set_short_lists(std::getenv("BC5_DIRECT_NO_SHORT_LISTS") == nullptr);
-+			if (g_dev) g_dev->set_dma_idle(std::getenv("BC5_DIRECT_NO_DMA_IDLE") == nullptr);
-+			g_hinted.clear();
-+			g_bytes_mapped = 0;
-+			g_last_sync_ns = 0;
-+			for (auto& S: g_d) {
-+				S.bos.clear();
-+				S.maps.clear();
-+				S.views_sig  = 0;
-+				S.bos_mapped = 0;
-+				S.bytes      = 0;
-+				S.blocks     = ~0ull;
-+				S.merge_failed.clear();
-+				S.reported = 0;
-+				S.sync_ns  = 0;
-+			}
-+			g_layout_gen++;
-+			LOGF_COLOR(Log::Color::Yellow, "[bc5-direct] device reopened after the fault: %s\n", g_dev ? "ok" : "FAILED");
-+			journal("reopen: %s\n", g_dev ? "ok" : "FAILED");
-+		} else {
-+			LOGF_COLOR(Log::Color::Red, "[bc5-direct] device wedged, no further submits (soft CP continues)\n");
-+		}
-+	}
++	if (r.timed_out) recover_after_timeout(r);
 +}
 +#else
 +static void init_once() {}
 +static void submit(const uint32_t*, uint32_t, const char*, bool) {}
++static void post(std::function<void(bool failed)> fn) { fn(false); }
++static void drain() {}
++static void set_source(int) {}
 +#endif
 +
 +} // namespace Direct
@@ -3906,7 +4101,13 @@ index 0000000..3218414
 +	dump_cb(kind, dwords, num);
 +	Direct::submit(dwords, num, kind, std::strcmp(kind, "cc") == 0);
 +	if (use_soft_cp()) {
-+		SoftCp::submit(dwords, num, kind);
++		auto marks = std::move(SoftCp::t_gpu_done);
++		SoftCp::t_gpu_done.clear();
++		Direct::post([dwords, num, kind, marks = std::move(marks)](bool failed) mutable {
++			SoftCp::t_gpu_done = failed ? std::vector<SoftCp::GpuDone>() : std::move(marks);
++			SoftCp::submit(dwords, num, kind);
++			SoftCp::t_gpu_done.clear();
++		});
 +	} else {
 +		Graphics::Gen5Driver::GraphicsDriverSubmitCommandBuffer(0, const_cast<uint32_t*>(dwords),
 +		                                                        num);
@@ -4562,6 +4763,7 @@ index 0000000..3218414
 +			}
 +		}
 +	}
++	Bc5Gc::Direct::drain(); // BC5_DIRECT_ASYNC: nothing of the frame may still be in flight
 +	const double flip_t0 = Bc5Gc::Direct::timing_now();
 +	const int rc = VideoOut::VideoOutSubmitFlip(handle, index, flip_mode, flip_arg);
 +	if (std::getenv("BC5_DIRECT_TIMING") != nullptr) {

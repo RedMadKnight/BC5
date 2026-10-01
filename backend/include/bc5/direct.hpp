@@ -29,6 +29,10 @@ struct SubmitResult {
     std::uint32_t bo_count = 0;
     bool short_list = false;
     std::uint64_t seq_no = 0; // sequence number the kernel assigned (0 = none)
+    // Device::set_async: the job was queued and not waited for; `ok` then only says the kernel
+    // took it. Device::finish(seq_no, slot) waits and completes the result.
+    bool pending = false;
+    std::uint32_t slot = 0;
     // After a timeout: the last GPU VM fault of this process (AMDGPU_INFO_GPUVM_FAULT; page
     // address, GCVM_L2_PROTECTION_FAULT_STATUS), 0 when the kernel has none to report.
     std::uint64_t fault_addr = 0;
@@ -125,6 +129,13 @@ public:
                         std::uint64_t timeout_ns, bool with_gds = true);
 
     bool wedged() const { return wedged_; }
+    // Experiment 0024: submit() returns once the kernel has queued the job, so that the host
+    // can prepare the next IB while the GPU runs this one. Each job in flight keeps its own
+    // scratch buffer (16 of them, used in turn); the host calls finish() for every pending
+    // result, in order, and keeps fewer than 16 in flight.
+    void set_async(bool v) { async_ = v; }
+    bool async() const { return async_; }
+    SubmitResult finish(std::uint64_t seq_no, std::uint32_t slot, std::uint64_t timeout_ns);
     std::uint64_t submits() const { return submits_; }
 
     // Staging knob: when false, submits carry only the scratch IB in their BO list (the userptr
@@ -156,6 +167,7 @@ private:
     struct Impl;
     std::unique_ptr<Impl> impl_;
     bool wedged_ = false;
+    bool async_ = false;
     bool include_mappings_ = true;
     bool state_stack_ = false;
     bool short_lists_ = false;

@@ -10,6 +10,7 @@
 #include <unistd.h>
 
 #include <algorithm>
+#include <atomic>
 #include <cerrno>
 #include <chrono>
 #include <cstdio>
@@ -73,7 +74,6 @@ struct Device::Impl {
     std::uint64_t full_list_gen = 0;
     bool full_list_gds = false;
     std::uint32_t full_list_count = 0;
-    ScratchBo scratch;
     amdgpu_bo_handle gds = nullptr; // OpenOptions::gds_kib
     amdgpu_bo_handle oa = nullptr;  // OpenOptions::oa_count
     amdgpu_bo_handle gws = nullptr; // OpenOptions::gws_count
@@ -90,7 +90,15 @@ struct Device::Impl {
     static constexpr std::uint64_t kScratchVa = 0x1000'0000'0000ull;
     OpenOptions opts;
 
+    // One scratch buffer per job in flight (Device::set_async); synchronous submission uses
+    // slot 0 only. Each slot has its own VA, 4 GiB apart.
+    static constexpr int kSlots = 16;
+    ScratchBo slots[kSlots];
+    int cur = 0;
+    std::atomic<std::uint64_t> slot_seq[kSlots] = {}; // sequence number of the job using the slot, 0 = free
+
     bool scratch_reserve(std::uint64_t bytes) {
+        ScratchBo &scratch = slots[cur];
         if (scratch.bo != nullptr && scratch.size >= bytes) return true;
         scratch_free();
         // Exactly the pages needed (dispatch-min's 4 KiB command BO is the configuration known
@@ -108,13 +116,14 @@ struct Device::Impl {
                 return false;
         } else {
             drm_amdgpu_info_device dev_info{};
+            const std::uint64_t slot_va = kScratchVa + (static_cast<std::uint64_t>(cur) << 32);
             if (amdgpu_query_info(dev, AMDGPU_INFO_DEV_INFO, sizeof(dev_info), &dev_info) != 0 ||
-                kScratchVa + size > dev_info.virtual_address_max) {
+                slot_va + size > dev_info.virtual_address_max) {
                 std::fprintf(stderr, "bc5-direct: scratch VA 0x%llx outside the device's range\n",
                              static_cast<unsigned long long>(kScratchVa));
                 return false;
             }
-            scratch.va = kScratchVa;
+            scratch.va = slot_va;
         }
         // MTYPE_UC: the CP must never read the scratch through a stale GL2 line. A buffer read
         // once by the GPU and then rewritten by the CPU is served from the GPU L2 on the next
@@ -134,6 +143,7 @@ struct Device::Impl {
     }
 
     void scratch_free() {
+        ScratchBo &scratch = slots[cur];
         if (scratch.cpu) amdgpu_bo_cpu_unmap(scratch.bo);
         if (scratch.va && scratch.bo) amdgpu_bo_va_op_raw(dev, scratch.bo, 0, scratch.size, scratch.va, 0, AMDGPU_VA_OP_UNMAP);
         if (scratch.va_handle) amdgpu_va_range_free(scratch.va_handle);
@@ -226,7 +236,10 @@ Device::~Device() {
         amdgpu_bo_va_op_raw(impl_->dev, m.bo, m.bo_offset, m.size, m.va, 0, AMDGPU_VA_OP_UNMAP);
     for (auto &b : impl_->shared) amdgpu_bo_free(b.bo);
     if (impl_->udmabuf_fd >= 0) close(impl_->udmabuf_fd);
-    impl_->scratch_free();
+    for (int k = 0; k < Impl::kSlots; ++k) {
+        impl_->cur = k;
+        impl_->scratch_free();
+    }
     if (impl_->gds) amdgpu_bo_free(impl_->gds);
     if (impl_->oa) amdgpu_bo_free(impl_->oa);
     if (impl_->shadow) {
@@ -509,6 +522,15 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
                             std::uint64_t timeout_ns, bool with_gds) {
     SubmitResult r;
     std::lock_guard lock(impl_->mutex);
+    if (async_) {
+        impl_->cur = (impl_->cur + 1) % Impl::kSlots;
+        if (impl_->slot_seq[impl_->cur].load() != 0) { // the host lets fewer jobs fly than there are slots
+            r.rc = -EBUSY;
+            return r;
+        }
+    } else {
+        impl_->cur = 0;
+    }
     const double t_enter = now_ms();
     if (wedged_) {
         r.rc = -1;
@@ -576,7 +598,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
         r.rc = -2;
         return r;
     }
-    auto *dst = static_cast<std::uint32_t *>(impl_->scratch.cpu);
+    auto *dst = static_cast<std::uint32_t *>(impl_->slots[impl_->cur].cpu);
     for (std::size_t i = 0; i < pro; ++i) dst[i] = opt.prologue[i];
     for (std::size_t i = pro; i < pro_padded; ++i) dst[i] = policy::kNop;
     for (std::size_t k = 0; k < pieces.size(); ++k) {
@@ -621,7 +643,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
                 bool found = false;
                 for (const Piece &q : pieces) {
                     if (reinterpret_cast<std::uint64_t>(q.src) == a && q.n == n) {
-                        const std::uint64_t va = impl_->scratch.va + q.off * 4;
+                        const std::uint64_t va = impl_->slots[impl_->cur].va + q.off * 4;
                         d[i + 1] = static_cast<std::uint32_t>(va & 0xffffffffu);
                         d[i + 2] = static_cast<std::uint32_t>((va >> 32) & 0xffffu);
                         found = true;
@@ -639,7 +661,9 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
 
     std::vector<amdgpu_bo_handle> bos;
     bos.reserve(impl_->userptrs.size() + 1);
-    bos.push_back(impl_->scratch.bo);
+    for (const auto &sl : impl_->slots) {
+        if (sl.bo != nullptr) bos.push_back(sl.bo);
+    }
     if (with_gds && impl_->gds) bos.push_back(impl_->gds);
     if (with_gds && impl_->oa) bos.push_back(impl_->oa);
     if (with_gds && impl_->gws) bos.push_back(impl_->gws);
@@ -717,7 +741,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     if (r.rc != 0) return r;
 
     amdgpu_cs_ib_info ib_info{};
-    ib_info.ib_mc_address = impl_->scratch.va;
+    ib_info.ib_mc_address = impl_->slots[impl_->cur].va;
     ib_info.size = static_cast<std::uint32_t>(padded);
     amdgpu_cs_request req{};
     req.ip_type = AMDGPU_HW_IP_GFX;
@@ -731,6 +755,16 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     r.cs_ms = now_ms() - t0;
     std::uint32_t expired = 0;
     r.seq_no = req.seq_no;
+    if (async_) {
+        r.slot = static_cast<std::uint32_t>(impl_->cur);
+        r.pending = r.rc == 0;
+        if (r.pending) impl_->slot_seq[impl_->cur] = req.seq_no;
+        r.submit_ms = now_ms() - t0;
+        if (list != impl_->full_list) amdgpu_bo_list_destroy(list);
+        submits_++;
+        r.ok = r.rc == 0;
+        return r;
+    }
     if (r.rc == 0) {
         amdgpu_cs_fence fence{};
         fence.context = impl_->ctx;
@@ -757,6 +791,36 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     if (list != impl_->full_list) amdgpu_bo_list_destroy(list);
     submits_++;
     r.ok = r.rc == 0 && expired != 0;
+    return r;
+}
+
+SubmitResult Device::finish(std::uint64_t seq_no, std::uint32_t slot, std::uint64_t timeout_ns) {
+    // No device lock: the submitting thread may be preparing the next IB.
+    SubmitResult r;
+    r.seq_no = seq_no;
+    r.slot = slot;
+    const double t0 = now_ms();
+    amdgpu_cs_fence fence{};
+    fence.context = impl_->ctx;
+    fence.ip_type = AMDGPU_HW_IP_GFX;
+    fence.ring = 0;
+    fence.fence = seq_no;
+    std::uint32_t expired = 0;
+    r.rc = amdgpu_cs_query_fence_status(&fence, timeout_ns, 0, &expired);
+    if (r.rc == 0 && !expired) {
+        r.timed_out = true;
+        wedged_ = true;
+#ifdef AMDGPU_INFO_GPUVM_FAULT
+        drm_amdgpu_info_gpuvm_fault fault{};
+        if (amdgpu_query_info(impl_->dev, AMDGPU_INFO_GPUVM_FAULT, sizeof(fault), &fault) == 0) {
+            r.fault_addr = fault.addr;
+            r.fault_status = fault.status;
+        }
+#endif
+    }
+    r.fence_ms = now_ms() - t0;
+    r.ok = r.rc == 0 && expired != 0;
+    if (r.ok && slot < static_cast<std::uint32_t>(Impl::kSlots)) impl_->slot_seq[slot] = 0;
     return r;
 }
 
