@@ -1,10 +1,10 @@
 # 0006 — The guest's direct memory reaches the GPU as dma-bufs of KytyPlus's memfd, not as userptr
 
-**Status.** Accepted in principle by the maintainer, 2026-10-01 ("option 3" of experiment 0016's
-frame-time verdict: get rid of the per-submission userptr walk). This ADR picks the variant and
-amends ADR 0005 §1 (the BO/VA mapper) for direct memory. The GPU-side proof is experiment 0017;
-until its verdict is written, the userptr path of ADR 0005 stays the default
-(`KYTY_BC5_ANON_BACKING=1`) and this one is opt-in (`KYTY_BC5_DMABUF=1`).
+**Status.** Accepted, 2026-10-01: the maintainer chose "option 3" of experiment 0016's
+frame-time verdict (get rid of the per-submission userptr walk); this ADR picks the variant and
+amends ADR 0005 §1 (the BO/VA mapper) for direct memory. Experiment 0017 passed the same day:
+`KYTY_BC5_DMABUF=1` is the backing to run with; the userptr path of ADR 0005
+(`KYTY_BC5_ANON_BACKING=1`) remains for comparison.
 
 **Context.** With the game's first screens on the BC-250 (F37), a frame costs 0.35 s and the GPU
 is busy for 10 ms of it (F38, F39). A submission that draws lists every mapping, and
