@@ -378,7 +378,7 @@ index 58f16c6..4ab38e9 100644
  KYTY_SYSV_ABI int VideoOutGetVblankStatus(int handle, VideoOutVblankStatus* status);
  KYTY_SYSV_ABI int VideoOutGetEventId(const LibKernel::EventQueue::KernelEvent* ev);
 diff --git a/src/graphics/presentation/window/window.cpp b/src/graphics/presentation/window/window.cpp
-index c729a98..49f9ecf 100644
+index c729a98..8601b8e 100644
 --- a/src/graphics/presentation/window/window.cpp
 +++ b/src/graphics/presentation/window/window.cpp
 @@ -334,6 +334,18 @@ static void GameEventController([[maybe_unused]] const EventController& f) {
@@ -418,6 +418,28 @@ index c729a98..49f9ecf 100644
  		case SDL_CONTROLLERAXISMOTION: {
  			EventController c {};
  
+@@ -717,6 +740,11 @@ void WindowContext::ProcessEvent(double time_s) {
+ 			    SDL_CONTROLLER_AXIS_TRIGGERLEFT,
+ 			    SDL_CONTROLLER_AXIS_TRIGGERRIGHT,
+ 			};
++			// BC5: a pad SDL knows sends the same motion as a controller event; taking both
++			// made a trigger alternate between its value and the raw one (below zero: released).
++			if (SDL_GameControllerFromInstanceID(event->jaxis.which) != nullptr) {
++				break;
++			}
+ 			EventController c {};
+ 			c.id         = event->jaxis.which;
+ 			c.axis_id    = (event->jaxis.axis < 6) ? axis_map[event->jaxis.axis]
+@@ -730,6 +758,9 @@ void WindowContext::ProcessEvent(double time_s) {
+ 
+ 		case SDL_JOYBUTTONDOWN:
+ 		case SDL_JOYBUTTONUP: {
++			if (SDL_GameControllerFromInstanceID(event->jbutton.which) != nullptr) {
++				break; // BC5: as above
++			}
+ 			EventController c {};
+ 			c.id    = event->jbutton.which;
+ 			c.button = event->jbutton.button;
 diff --git a/src/kernel/fileSystem.cpp b/src/kernel/fileSystem.cpp
 index 4034f52..701d31e 100644
 --- a/src/kernel/fileSystem.cpp
@@ -4955,13 +4977,14 @@ index 0000000..5312cd6
 +
 +} // namespace Libs
 diff --git a/src/libs/controller.cpp b/src/libs/controller.cpp
-index 55718eb..9cbf3c2 100644
+index 55718eb..3e665f7 100644
 --- a/src/libs/controller.cpp
 +++ b/src/libs/controller.cpp
-@@ -12,6 +12,10 @@
+@@ -12,6 +12,11 @@
  #include "libs/libs.h"
  #include "libs/padData.h"
  
++#include <cmath>
 +#include <thread>
 +#include <chrono>
 +#include <string>
@@ -4969,24 +4992,26 @@ index 55718eb..9cbf3c2 100644
  #include <algorithm>
  #include <cstring>
  #include <vector>
-@@ -45,6 +49,8 @@ struct ControllerState {
+@@ -45,6 +50,9 @@ struct ControllerState {
  	uint64_t time                                  = 0;
  	uint32_t buttons                               = 0;
  	int      axes[static_cast<int>(Axis::AxisMax)] = {128, 128, 128, 128, 0, 0};
 +	float    accel[3]                              = {0.0f, 0.0f, 0.0f}; // BC5: G
 +	float    gyro[3]                               = {0.0f, 0.0f, 0.0f}; // BC5: rad/s
++	float    orient[4]                             = {0.0f, 0.0f, 0.0f, 1.0f}; // BC5: x, y, z, w
  };
  
  // Local-multiplayer: one GameController owns up to PAD_MAX_CONTROLLERS player
-@@ -61,6 +67,7 @@ public:
+@@ -61,6 +69,8 @@ public:
  	void Disconnect(int id);
  	void Button(int id, uint32_t button, bool down);
  	void Axis(int id, Axis axis, int value);
 +	void Motion(int id, bool gyro, const float* xyz);
++	void ResetOrientation(int index);
  	void ResetInputState();
  	void GetConnectionInfo(bool* flag, int* count);
  	void ReadState(ControllerState* state, bool* flag, int* count);
-@@ -78,7 +85,18 @@ private:
+@@ -78,7 +88,25 @@ private:
  		bool            obtained[STATES_MAX] = {};
  		uint32_t        states_num          = 0;
  		uint32_t        first_state         = 0;
@@ -4994,6 +5019,10 @@ index 55718eb..9cbf3c2 100644
 +		// hundreds of times a second) but is put into every state the guest reads.
 +		float accel[3] = {0.0f, 0.0f, 0.0f};
 +		float gyro[3]  = {0.0f, 0.0f, 0.0f};
++		// BC5: the orientation derived from the two (x, y, z, w), see Motion().
++		float                                 orient[4] = {0.0f, 0.0f, 0.0f, 1.0f};
++		std::chrono::steady_clock::time_point gyro_time;
++		bool                                  gyro_seen = false;
  	};
 +	void ApplyMotion(int index, ControllerState* state) const {
 +		const auto& s = m_slots[static_cast<size_t>(index)];
@@ -5001,16 +5030,22 @@ index 55718eb..9cbf3c2 100644
 +			state->accel[k] = s.accel[k];
 +			state->gyro[k]  = s.gyro[k];
 +		}
++		for (int k = 0; k < 4; k++) {
++			state->orient[k] = s.orient[k];
++		}
 +	}
  
  	void EnsureSlot(int index);
  	int  OwnerSlot(int id) const;
-@@ -180,7 +198,13 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
+@@ -180,7 +208,16 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
  	data->right_stick_y          = state.axes[static_cast<int>(Axis::RightY)];
  	data->analog_buttons_l2      = state.axes[static_cast<int>(Axis::TriggerLeft)];
  	data->analog_buttons_r2      = state.axes[static_cast<int>(Axis::TriggerRight)];
 -	data->orientation_w          = 1.0f;
-+	data->orientation_w          = 1.0f; // TODO(verify): no orientation is derived from the sensors yet
++	data->orientation_x          = state.orient[0];
++	data->orientation_y          = state.orient[1];
++	data->orientation_z          = state.orient[2];
++	data->orientation_w          = state.orient[3];
 +	data->acceleration_x         = state.accel[0];
 +	data->acceleration_y         = state.accel[1];
 +	data->acceleration_z         = state.accel[2];
@@ -5020,7 +5055,7 @@ index 55718eb..9cbf3c2 100644
  	data->touch_data_touch0_id   = 1;
  	data->touch_data_touch1_id   = 2;
  	data->connected              = connected;
-@@ -189,11 +213,59 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
+@@ -189,11 +226,59 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
  	data->device_unique_data_len = 0;
  }
  
@@ -5080,7 +5115,7 @@ index 55718eb..9cbf3c2 100644
  
  	// The native DualSense HID driver is opt-in and off by default. SDL already
  	// handles every standard pad (including a DualSense); this unvalidated driver is
-@@ -268,6 +340,12 @@ void ControllerAxis(int id, Axis axis, int value) {
+@@ -268,6 +353,12 @@ void ControllerAxis(int id, Axis axis, int value) {
  	g_controller->Axis(id, axis, value);
  }
  
@@ -5093,7 +5128,28 @@ index 55718eb..9cbf3c2 100644
  void ControllerResetInputState() {
  	EXIT_IF(g_controller == nullptr);
  	g_controller->ResetInputState();
-@@ -443,6 +521,20 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
+@@ -422,6 +513,20 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
+ 	const int axis_id = static_cast<int>(axis);
+ 	EXIT_IF(axis_id < 0 || axis_id >= static_cast<int>(Controller::Axis::AxisMax));
+ 
++	// BC5: KYTY_BC5_TRIGGER_DEADZONE=<0..254> for a pad whose trigger does not rest at 0 (the
++	// L2 button bit is set by any value above 0): values up to it read as 0, the rest of the
++	// travel is stretched over the whole range.
++	if (axis == Controller::Axis::TriggerLeft || axis == Controller::Axis::TriggerRight) {
++		static const int dead = [] {
++			const char* e = std::getenv("KYTY_BC5_TRIGGER_DEADZONE");
++			const int   v = (e != nullptr ? std::atoi(e) : 0);
++			return v < 0 ? 0 : (v > 254 ? 254 : v);
++		}();
++		if (dead > 0) {
++			value = (value <= dead ? 0 : (value - dead) * 255 / (255 - dead));
++		}
++	}
++
+ 	state.axes[axis_id] = value;
+ 
+ 	if (axis == Controller::Axis::TriggerLeft) {
+@@ -443,6 +548,86 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
  	AddState(slot, state);
  }
  
@@ -5109,12 +5165,78 @@ index 55718eb..9cbf3c2 100644
 +	for (int k = 0; k < 3; k++) {
 +		(gyro ? s.gyro : s.accel)[k] = xyz[k];
 +	}
++	if (!gyro) {
++		return;
++	}
++	// BC5: the orientation the pad library reports next to the raw sensors (the game steers its
++	// ship by tilting the pad and reads this, run 116). The angular velocity is integrated in
++	// the pad frame; while the pad is not being accelerated (|a| near 1 G) the estimate is pulled
++	// towards the measured direction of gravity, so pitch and roll do not drift; yaw is relative
++	// to the start or to the last scePadResetOrientation. Identity is the pad lying flat.
++	// TODO(verify) against a console: the reference orientation and what the reset clears.
++	const auto now = std::chrono::steady_clock::now();
++	float      dt  = 0.0f;
++	if (s.gyro_seen) {
++		dt = std::chrono::duration<float>(now - s.gyro_time).count();
++		if (dt > 0.05f) {
++			dt = 0.05f;
++		}
++	}
++	s.gyro_time = now;
++	s.gyro_seen = true;
++	float       w[3] = {s.gyro[0], s.gyro[1], s.gyro[2]};
++	// A pad at rest reports a small bias (0.01 rad/s here); integrated it turns the estimate by
++	// half a degree a second about the vertical, where gravity cannot correct it.
++	if (w[0] * w[0] + w[1] * w[1] + w[2] * w[2] < 0.03f * 0.03f) {
++		w[0] = w[1] = w[2] = 0.0f;
++	}
++	const float x = s.orient[0], y = s.orient[1], z = s.orient[2], qw = s.orient[3];
++	const float an = std::sqrt(s.accel[0] * s.accel[0] + s.accel[1] * s.accel[1] + s.accel[2] * s.accel[2]);
++	if (an > 0.8f && an < 1.2f) {
++		const float a[3] = {s.accel[0] / an, s.accel[1] / an, s.accel[2] / an};
++		// the world's up in the pad frame, as the estimate has it
++		const float v[3] = {2.0f * (x * y + qw * z), 1.0f - 2.0f * (x * x + z * z), 2.0f * (y * z - qw * x)};
++		const float kp   = 2.0f;
++		w[0] += kp * (a[1] * v[2] - a[2] * v[1]);
++		w[1] += kp * (a[2] * v[0] - a[0] * v[2]);
++		w[2] += kp * (a[0] * v[1] - a[1] * v[0]);
++	}
++	float q[4] = {x + 0.5f * dt * (qw * w[0] + y * w[2] - z * w[1]), y + 0.5f * dt * (qw * w[1] + z * w[0] - x * w[2]),
++	              z + 0.5f * dt * (qw * w[2] + x * w[1] - y * w[0]), qw + 0.5f * dt * (-x * w[0] - y * w[1] - z * w[2])};
++	const float qn = std::sqrt(q[0] * q[0] + q[1] * q[1] + q[2] * q[2] + q[3] * q[3]);
++	if (qn > 1e-6f) {
++		for (int k = 0; k < 4; k++) {
++			s.orient[k] = q[k] / qn;
++		}
++	}
++	// KYTY_BC5_MOTION_TRACE=1: one line a second with what the guest is given.
++	static const bool trace = std::getenv("KYTY_BC5_MOTION_TRACE") != nullptr;
++	if (trace) {
++		static std::chrono::steady_clock::time_point last;
++		if (now - last >= std::chrono::seconds(1)) {
++			last = now;
++			LOGF("[bc5-pad] accel %.2f %.2f %.2f G, gyro %.2f %.2f %.2f rad/s, orientation %.3f %.3f %.3f %.3f, dt %.1f ms\n", s.accel[0], s.accel[1], s.accel[2],
++			     s.gyro[0], s.gyro[1], s.gyro[2], s.orient[0], s.orient[1], s.orient[2], s.orient[3], dt * 1000.0f);
++		}
++	}
++}
++
++void GameController::ResetOrientation(int index) {
++	Common::LockGuard lock(m_mutex);
++
++	if (index < 0) {
++		return;
++	}
++	EnsureSlot(index);
++	auto& s     = m_slots[static_cast<size_t>(index)];
++	s.orient[0] = s.orient[1] = s.orient[2] = 0.0f;
++	s.orient[3]                             = 1.0f;
 +}
 +
  void GameController::ResetInputState() {
  	Common::LockGuard lock(m_mutex);
  
-@@ -488,6 +580,7 @@ int GameController::ReadStateForSlot(int index, ControllerState* state, bool* fl
+@@ -488,6 +673,7 @@ int GameController::ReadStateForSlot(int index, ControllerState* state, bool* fl
  	*flag  = SlotConnected(index);
  	*count = PresentCount();
  	*state = GetLastState(index);
@@ -5122,7 +5244,7 @@ index 55718eb..9cbf3c2 100644
  
  	return 0;
  }
-@@ -523,7 +616,9 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
+@@ -523,7 +709,9 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
  			auto state_index = (s.first_state + i) % STATES_MAX;
  			if (!s.obtained[state_index]) {
  				s.obtained[state_index] = true;
@@ -5133,6 +5255,16 @@ index 55718eb..9cbf3c2 100644
  			}
  		}
  	}
+@@ -625,6 +813,9 @@ int KYTY_SYSV_ABI PadResetOrientation(int handle) {
+ 	if (ControllerIndexFromHandle(handle) < 0) {
+ 		return PAD_ERROR_INVALID_HANDLE;
+ 	}
++	if (g_controller != nullptr) {
++		g_controller->ResetOrientation(ControllerIndexFromHandle(handle));
++	}
+ 
+ 	return OK;
+ }
 diff --git a/src/libs/controller.h b/src/libs/controller.h
 index 3c0684f..589e4cc 100644
 --- a/src/libs/controller.h
