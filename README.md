@@ -3,7 +3,7 @@
 **BC-250 + PS5. A native PS5 GPU path for the AMD BC-250 (Cyan Skillfish, gfx1013).**
 User-space backend that feeds PS5 AGC command streams and native RDNA ISA shaders to `amdgpu` on Linux, without GNM→Vulkan translation or shader recompilation.
 
-> Status: research / pre-alpha. On 2026-10-01 the direct GPU path took a commercial PS5 game — the maintainer's own copy of ASTRO BOT — from its first frame into its first level on the BC-250: intro video, title screen, level load, the opening cutscene and the desert level with the character walking under the player's control, all from the game's own command buffers and shader binaries, filtered but not translated, at 47–55 frames per second (HANDOFF F43–F59). The same evening it went on through the level to the galaxy map and the flight to the second level, where a fault in the host stopped it. It is a first level at four fifths of full speed, not a playable game: the title is built for 60 fps, the level takes over two minutes to load, haptics are missing, and the second level has not been entered. The GPU now does 15–17 ms of work in a frame that takes 21–24. This repository is a plan, a set of experiments and their results. No game files, firmware or SDK material are or will ever be hosted here.
+> Status: research / pre-alpha. On 2026-10-01 the direct GPU path took a commercial PS5 game — the maintainer's own copy of ASTRO BOT — from its first frame into its first level on the BC-250: intro video, title screen, level load, the opening cutscene and the desert level with the character walking under the player's control, all from the game's own command buffers and shader binaries, filtered but not translated, at 47–55 frames per second (HANDOFF F43–F59). The same night it went on through that level, the galaxy map and into the second level, which plays at 35–43 frames per second; the longest run is 30 minutes and 1.3 million submissions without a failure. It is two levels below full speed, not a playable game: the title is built for 60 fps, a level takes over two minutes to load, haptics are missing, and nothing past the start of the second level has been tried. The GPU now does 15–17 ms of work in a frame that takes 21–24. This repository is a plan, a set of experiments and their results. No game files, firmware or SDK material are or will ever be hosted here.
 
 ![The emulator window on the BC-250: ASTRO BOT's opening card, rendered through the direct path](docs/images/g3-first-screen.png)
 
@@ -26,12 +26,13 @@ All on the BC-250 dev box, with the track-B host (KytyPlus running the game's ow
 | Title screen, controller input | real-time scene; a button press starts the game | experiment 0020, F45–F46 |
 | First level and opening cutscene | load and play; the game keeps 7.9 GiB visible to the GPU | experiments 0021–0022, F47–F48 |
 | First level, gameplay | the character walks, the pause screen opens; DualSense buttons, sticks and motion work (the maintainer at the controller); 47–55 fps with jobs in flight, through the level to the galaxy map and the flight to the next level | experiment 0022 runs 104 and 106, experiment 0024 run 115, F52–F53, F59 |
+| Second level | loads and plays under the player's control at 35–43 fps; the game's save is written to a file | experiment 0024 run 116, F59 |
 | Frame rate | synchronously: title screen 47 fps, cutscene 41 fps — from 8 and 6 fps the same day, all of it host overhead removed. With submissions no longer waited for one by one: title and loading 54–60 fps, cutscene 50–53 fps, gameplay 47–55 fps | experiments 0022–0024, F49–F59 |
-| Longest runs | 12 minutes, 258,551 submissions, three recovered page faults; 10.5 minutes with jobs in flight, 492,815 submissions, none failed | runs 103, 115 |
+| Longest runs | 30 minutes with jobs in flight, 1,332,438 submissions, none failed; 12 minutes synchronously, 258,551 submissions, three recovered page faults | runs 116, 103 |
 | GPU time in a frame | 15–17 ms of 21–24 ms; the game sends 14–16 buffers a frame and each is submitted and waited for on its own | experiment 0023 |
 | Compute CU mask | 20 live bits per shader engine, one CU per bit; throughput linear in the bit count | experiment 0019, F39 |
 
-What does not work yet: full speed (the game is built for 60 fps), haptics, a level load in reasonable time (135 s), and the second level: the run that reached it stopped on its way in, on a fault in the host's stand-in for a system library (corrected, not re-run). What has not been tried: any other title, RPCSX as the host (needs system software the maintainer cannot dump at present).
+What does not work yet: full speed (the game is built for 60 fps), haptics, a level load in reasonable time (135 s), and anything past the start of the second level, which nobody has tried. What has not been tried: any other title, RPCSX as the host (needs system software the maintainer cannot dump at present).
 
 ## What this is
 
