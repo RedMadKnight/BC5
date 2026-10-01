@@ -160,5 +160,15 @@ The consumer now serves the ready entries at the front of a queue and leaves the
 (`BC5_GC_QUEUE_ALL_OR_NOTHING=1` brings the old behaviour back). Map-only, both modes: 28
 flips each. The cutscene has not been run with it.
 
-**Verdict, revised.** Open again: the cause of the cutscene's stalls is found and corrected in
-the consumer; a GPU run with jobs in flight through the cutscene is the test.
+*Run 114* (23:27, GPU, unattended, jobs in flight with the consumer serving queues in order;
+capture `kytyplus-20261001-2327`, `raw/run114-summary.txt`): **237,558 submissions in 298 s,
+none failed, no wait timed out, no queue held back; loading at 59–60 fps, the cutscene at
+50–53 fps** (48 and 40–41 synchronously, run 112). The slowest second of the cutscene has 43
+flips; the picture is the cutscene's. GPU at most 78 °C, with the governor's range at
+1850–2000 MHz.
+
+**Verdict (2026-10-01, 23:35).** Passed for what has been run: title screen, level load and
+cutscene with jobs in flight, 25–30 % more frames than synchronously. The stalls of runs 110
+and 111 were the host's all-or-nothing serving of a queue, exposed by the game's thread running
+ahead, not the scheme itself. Still to run before it becomes the default: gameplay with a
+controller, a longer session, and a page fault with jobs in flight.
