@@ -34,5 +34,56 @@ asserted on its type. So `referValue` is the game's existence test: it must answ
 missing member** (a pointer return; the mangled name does not carry the return type —
 `TODO(verify)`). Changed accordingly; no GPU run yet.
 
-**Verdict.** Open: one wrong guess about a library function's contract found by tracing and
-corrected; the next run shows whether the game gets past this file.
+*Run 96* (16:44, GPU, the corrected `referValue`; capture `kytyplus-20261001-1644`,
+`raw/run96-summary.txt`): **the game gets past that file and starts drawing its own scene.**
+37 documents parsed, no assertion, no access violation, one unresolved import called once (a
+keyboard-code conversion). 15,101 submissions, 997 flips. From submission 14,267 (87.6 s in) the
+frame's main command buffer is a different one: 24,000–25,400 dwords, about 2,000 packets
+passed, 16 context pushes per buffer, 15–17 ms on the GPU. What it draws is a star field with a
+nebula, the backdrop of the game's first interactive screen (screenshots kept out of the
+repository).
+
+Two things happened to it:
+
+1. *The first of these buffers timed out* on a write fault of the texture pipe at 0x559f05000,
+   memory the CPU had never touched and no render-target register named. The fault region was
+   learned and the device reopened; the reopen costs 14 s (12 s of waiting for the kernel's own
+   timeout and ring reset, 2 s to import 5.4 GiB again), during which the game's loader threads
+   kept filling memory.
+2. *Five seconds and 43 good scene frames later every draw buffer failed with `-ENOMEM`* (49
+   submissions; the kernel: `Not enough memory for command submission!`, `amdgpu_vm_validate()
+   failed.`), and the game stalled waiting for its labels. At that point 6,780 MiB of direct
+   memory were imported in 371 BOs, and a draw's BO list names all of them.
+
+The mechanism, measured afterwards without the GPU (`mem_info_gtt_total`, `ttm` module
+parameter, a map-only run with the breakdown below): everything a submission's BO list names
+must sit in amdgpu's GTT domain at the same time. On the dev box that domain is 7,597 MiB —
+exactly `ttm.pages_limit` (1,944,861 pages), which defaults to half of the RAM (`TODO(verify)`
+against `amdgpu_ttm.c` of this kernel that the one is derived from the other). The emulator's
+own Vulkan side already holds 1.2–1.6 GiB of it (57 MiB when the emulator is not running), so
+the ceiling for the game's memory is about 6 GiB, and the game reserves 12.4 GiB of direct
+memory. Short lists (ADR 0005 xx) do not help a buffer with draws: its shaders read through
+descriptors the filter does not follow, so it lists everything.
+
+What the host got for it (no GPU run yet):
+
+- a journal line per 512 MiB of growth and on every `-ENOMEM`: imported memory by the name the
+  game gave each mapping (reserved / holding data / imported), with the driver's GTT numbers;
+- `BC5_DIRECT_LAZY_NAMES=name[,name]`: views with these names are imported only where a hint or
+  a learned fault asks, not for holding data. The game's CPU heap (`orbis_user_malloc`, 2.0 GiB
+  reserved) is the candidate: no command-buffer operand of run 96 points into it (113,034 into
+  the GPU heap, 42,628 into the address range of the game's loaded modules, 31,636 into the driver library's memory). Whether
+  shaders read it shows as learned faults.
+
+Map-only run with the heap lazy, 45 s (intro stage): GPU heap 1,484 MiB with data of 2,172
+reserved, texture memory 796 of 4,608, resource memory 366 of 3,232, CPU heap 617 of 2,014 (38
+imported, by chunks it shares with small neighbours).
+
+The lazy heap is a stopgap worth about a gigabyte. The remedy that matches the size of the
+problem is outside the repository: raising `ttm.pages_limit` on the kernel command line, which
+is the maintainer's decision on their machine. A third lever, the emulator's own 1.2–1.6 GiB,
+is not looked at yet.
+
+**Verdict.** Open. The JSON contract is fixed and the game renders its first own scene; the
+next limit is the graphics driver's memory accounting, not the GPU path and not a missing
+library.
