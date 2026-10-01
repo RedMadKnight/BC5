@@ -6,7 +6,8 @@
 // Phase-3 task 2 ("clear, then one triangle") and the control for experiment 0016 run 63,
 // where the game's draws leave no pixel while its clears and compute run.
 //
-//   draw-min --submit [--render-node PATH] [--raw-filter-off]
+//   draw-min --submit [--render-node PATH]
+//   draw-min --submit --pass FILE --shaders DIR      replay a captured pass in variants (below)
 //
 // Hard rule 5 (CLAUDE.md): --submit runs on the GPU; never in tests or CI.
 //
@@ -19,11 +20,16 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <fstream>
+#include <iterator>
+#include <map>
 #include <string>
 #include <string_view>
 #include <vector>
 #ifdef BC5_WITH_AMDGPU
+#include <chrono>
 #include <sys/mman.h>
+#include <thread>
 #endif
 
 namespace {
@@ -187,15 +193,95 @@ std::vector<std::uint32_t> build_ib(std::uint64_t dst, std::uint64_t vs, std::ui
     return ib.w;
 }
 
+// A captured pass (experiment 0016, run 67): the context / SH / UCONFIG register values a game
+// pass had at its draw, as "ctx|sh|uc <offset> <value>" lines (hex), plus "draw <count> <init>".
+// Generated on the dev box from the journal's register tables; never committed.
+struct Pass {
+    std::map<std::uint32_t, std::uint32_t> ctx, sh, uc;
+    std::uint32_t draw_count = 3, draw_init = 2;
+};
+
+bool load_pass(const std::string &path, Pass &pass) {
+    std::ifstream in(path);
+    if (!in) return false;
+    std::string kind;
+    std::uint32_t a = 0, b = 0;
+    while (in >> kind >> std::hex >> a >> b) {
+        if (kind == "ctx") pass.ctx[a] = b;
+        else if (kind == "sh") pass.sh[a] = b;
+        else if (kind == "uc") pass.uc[a] = b;
+        else if (kind == "draw") {
+            pass.draw_count = a;
+            pass.draw_init = b;
+        }
+    }
+    return !pass.ctx.empty();
+}
+
+struct Variant {
+    const char *name;
+    bool game_context = false; // the game context image first
+    bool game_ngg = false;     // the game SH (ES/GS stage) and UCONFIG state and its draw
+    bool own_legacy = false;   // the libdrm VS/PS/state/draw (the control)
+    bool pc_alloc = false, tile_steering = false, prim_index = false;
+};
+
+// IB for one variant. dst: our colour target; vs/ps: the libdrm shaders.
+std::vector<std::uint32_t> build_variant(const Variant &v, const Pass &pass, std::uint64_t dst,
+                                         std::uint64_t vs, std::uint64_t ps) {
+    if (v.own_legacy && !v.game_context) return build_ib(dst, vs, ps);
+    Ib ib;
+    ib.put({pkt3(kContextControl, 1), 0x80000000u, 0x80000000u});
+    if (v.game_ngg) {
+        for (const auto &[off, val] : pass.uc) ib.put({pkt3(kSetUconfig, 1), off, val});
+    }
+    for (const auto &[off, val] : pass.ctx) ib.set_context(off, {val});
+    if (v.own_legacy) { // B: the control state on top of the game context image
+        const auto own = build_ib(dst, vs, ps);
+        ib.w.insert(ib.w.end(), own.begin() + 3, own.end()); // without its CONTEXT_CONTROL
+        return ib.w;
+    }
+    // C..G: the game geometry stage with our target and the libdrm constant PS
+    for (const auto &[off, val] : pass.sh) {
+        if (off >= 0x0c && off < 0x40) continue; // the game PS user data (textures): not ours
+        ib.set_sh(off, {val});
+    }
+    ib.set_context(0x318, {static_cast<std::uint32_t>(dst >> 8)});
+    ib.set_context(0x390, {static_cast<std::uint32_t>(dst >> 40)});
+    const std::uint32_t col_format = pass.ctx.count(0x1c5) ? (pass.ctx.at(0x1c5) & 0xf) : 4;
+    const std::uint64_t ps_addr = ps + 256ull * col_format;
+    ib.set_sh(0x8, {static_cast<std::uint32_t>(ps_addr >> 8), static_cast<std::uint32_t>(ps_addr >> 40)});
+    ib.set_sh(0x0a, {0x000C0000});
+    ib.set_sh(0x0b, {0x00000008});
+    ib.set_context(0x1b4, {2});
+    ib.set_context(0x1b3, {2});
+    ib.set_context(0x1b6, {0});
+    ib.set_context(0x08f, {0xf});
+    ib.set_context(0x203, {0x10});
+    ib.set_context(0x1c4, {0});
+    ib.set_context(0x1b8, {0});
+    ib.put({pkt3(kSetSh, 4), 0xc, 0x3f800000u, 0x3f800000u, 0x3f800000u, 0x3f800000u}); // 1.0: visible in any format
+    if (v.pc_alloc) ib.put({pkt3(kSetUconfig, 1), 0x260, 0x100ff});
+    if (v.tile_steering) ib.set_context(0xd7, {0x122000});
+    if (v.prim_index) ib.put({pkt3(0x7a, 1), (1u << 28) | 0x242u, pass.uc.count(0x242) ? pass.uc.at(0x242) : 4u});
+    ib.put({pkt3(0x2f, 0), 1}); // NUM_INSTANCES
+    ib.put({pkt3(kDrawIndexAuto, 1), pass.draw_count, pass.draw_init});
+    while (ib.w.size() & 7) ib.put(0xffff1000u);
+    return ib.w;
+}
+
 } // namespace
 
 int main(int argc, char **argv) {
     bool submit = false;
     std::string node = "/dev/dri/renderD128";
+    std::string pass_path, shader_dir;
     for (int i = 1; i < argc; ++i) {
         const std::string_view a = argv[i];
         if (a == "--submit") submit = true;
         else if (a == "--render-node" && i + 1 < argc) node = argv[++i];
+        else if (a == "--pass" && i + 1 < argc) pass_path = argv[++i];
+        else if (a == "--shaders" && i + 1 < argc) shader_dir = argv[++i];
         else {
             std::fprintf(stderr, "usage: draw-min --submit [--render-node PATH]\n");
             return 2;
@@ -224,6 +310,89 @@ int main(int argc, char **argv) {
     for (int v = 0; v < 10; ++v) {
         std::memcpy(ps + 256 * v, kPsConst, sizeof(kPsConst));
         std::memcpy(ps + 256 * v + 4 * 4, kPsConstPatch[v], sizeof(kPsConstPatch[v]));
+    }
+    if (!pass_path.empty()) {
+        Pass pass;
+        if (!load_pass(pass_path, pass)) {
+            std::fprintf(stderr, "cannot read %s\n", pass_path.c_str());
+            return 1;
+        }
+        // The game shader programs at their own addresses (the dumps are 32 KiB each).
+        std::vector<std::pair<std::uint64_t, std::uint64_t>> extra_maps;
+        for (const std::uint32_t lo_off : {0xc8u, 0x08u, 0x88u}) {
+            if (!pass.sh.count(lo_off) || pass.sh[lo_off] == 0) continue;
+            const std::uint64_t hi = pass.sh.count(lo_off + 1) ? (pass.sh[lo_off + 1] & 0xffu) : 0u;
+            const std::uint64_t va = (static_cast<std::uint64_t>(pass.sh[lo_off]) << 8) | (hi << 40);
+            char name[512];
+            std::snprintf(name, sizeof(name), "%s/shader-%012llx.bin", shader_dir.c_str(),
+                          static_cast<unsigned long long>(va));
+            std::ifstream f(name, std::ios::binary);
+            if (!f) {
+                std::printf("shader 0x%llx: no dump (%s)\n", static_cast<unsigned long long>(va), name);
+                continue;
+            }
+            const std::vector<char> code((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+            const std::uint64_t base = va & ~0xffffull, end = (va + code.size() + 0xffff) & ~0xffffull;
+            for (std::uint64_t page = base; page < end; page += 0x10000) {
+                bool have = false;
+                for (const auto &[a, b] : extra_maps) have = have || (page >= a && page < b);
+                if (have) continue;
+                void *m = mmap(reinterpret_cast<void *>(page), 0x10000, PROT_READ | PROT_WRITE,
+                               MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE, -1, 0);
+                if (m == MAP_FAILED) {
+                    std::perror("mmap shader");
+                    return 1;
+                }
+                std::memset(m, 0, 0x10000);
+                extra_maps.emplace_back(page, page + 0x10000);
+            }
+            std::memcpy(reinterpret_cast<void *>(va), code.data(), code.size());
+            std::printf("shader 0x%llx (SH 0x%x): %zu bytes loaded\n", static_cast<unsigned long long>(va),
+                        0x2c00 + lo_off, code.size());
+        }
+        const std::size_t big = 0x2000000; // a 3840x2160x4 target and slack
+        std::uint8_t *big_dst = alloc(big);
+        if (!big_dst) return 1;
+        const Variant variants[] = {
+            {"A libdrm control", false, false, true},
+            {"B control + game context image", true, false, true},
+            {"C game NGG stage + const PS", true, true, false},
+            {"D C + GE_PC_ALLOC", true, true, false, true},
+            {"E C + tile steering", true, true, false, false, true},
+            {"F C + prim type by index", true, true, false, false, false, true},
+            {"G C + all three", true, true, false, true, true, true},
+        };
+        for (const Variant &v : variants) {
+            auto d = bc5::direct::Device::open(node); // a fresh device per variant: a timeout wedges it
+            if (!d) return 1;
+            bool ok_map = true;
+            for (auto *p : {dst, vs, ps}) ok_map = ok_map && d->map_userptr(reinterpret_cast<std::uint64_t>(p), 0x10000);
+            ok_map = ok_map && d->map_userptr(reinterpret_cast<std::uint64_t>(big_dst), big);
+            for (const auto &[a, b] : extra_maps) ok_map = ok_map && d->map_userptr(a, b - a);
+            if (!ok_map) {
+                std::fprintf(stderr, "map_userptr failed\n");
+                return 1;
+            }
+            std::uint8_t *target = v.own_legacy ? dst : big_dst;
+            const std::size_t target_bytes = v.own_legacy ? 0x4000 : big;
+            std::memset(target, 0, target_bytes);
+            const auto vib = build_variant(v, pass, reinterpret_cast<std::uint64_t>(target),
+                                           reinterpret_cast<std::uint64_t>(vs), reinterpret_cast<std::uint64_t>(ps));
+            bc5::policy::FilterOptions vopt;
+            const auto vr = d->submit(vib, vopt, 2'000'000'000ull);
+            std::size_t nz = 0;
+            for (std::size_t i = 0; i < target_bytes; i += 64) nz += target[i] != 0;
+            std::printf("%-34s %5zu dwords: %s%s %.2f ms; pass %llu rewrite %llu drop %llu; target non-zero "
+                        "samples %zu/%zu, fault 0x%llx\n",
+                        v.name, vib.size(), vr.ok ? "OK" : "FAILED", vr.timed_out ? " TIMEOUT" : "", vr.submit_ms,
+                        static_cast<unsigned long long>(vr.filter.passed),
+                        static_cast<unsigned long long>(vr.filter.rewritten),
+                        static_cast<unsigned long long>(vr.filter.dropped), nz, target_bytes / 64,
+                        static_cast<unsigned long long>(vr.fault_addr));
+            std::fflush(stdout);
+            if (vr.timed_out) std::this_thread::sleep_for(std::chrono::seconds(12)); // the kernel ring reset
+        }
+        return 0;
     }
     auto dev = bc5::direct::Device::open(node);
     if (!dev) return 1;
