@@ -915,10 +915,10 @@ index 5f87e6b..e5c534e 100644
  	CondRemoveWaiter(cond_value, thread);
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..0fb14a8
+index 0000000..5312cd6
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,3976 @@
+@@ -0,0 +1,4035 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -1661,8 +1661,14 @@ index 0000000..0fb14a8
 +			// satisfied is left in its queue — the read pointer stays, the other queues are served
 +			// (the writer is one of them or the gfx queue) — and retried on the next poll, for up
 +			// to 10 s. That is the console's blocking compute queue, on one ring.
++			// A queue runs its entries in order: the ones in front whose waits are satisfied are
++			// served now, whatever stands behind them (experiment 0024: with all-or-nothing, a
++			// buffer whose label had been set was held back by the next one in the queue until
++			// the game reset the label — a slot label is only set for two frames).
++			uint32_t take = pending;
 +			if (g_direct_rings) {
-+				bool ready = true;
++				bool     ready     = true;
++				uint32_t ready_len = 0;
 +				for (uint32_t k = 0; k < pending && ready;) {
 +					const uint32_t off = (r + k) % n;
 +					const uint32_t hh  = ring[off];
@@ -1673,32 +1679,43 @@ index 0000000..0fb14a8
 +						if (ta != 0 && tn != 0 && !Direct::acb_ready(reinterpret_cast<const uint32_t*>(ta), tn)) ready = false;
 +					}
 +					k += ll;
++					if (ready) ready_len = k < pending ? k : pending;
 +				}
 +				const uint64_t now = now_ns();
-+				if (!ready) {
++				static const bool all_or_nothing = std::getenv("BC5_GC_QUEUE_ALL_OR_NOTHING") != nullptr;
++				if (!ready && ready_len != 0 && !all_or_nothing) {
++					take             = ready_len;
++					s.deferred_since = 0;
++				} else if (!ready) {
 +					if (s.deferred_since == 0) s.deferred_since = now;
 +					if (now - s.deferred_since < 10'000'000'000ull) continue; // served later
 +					LOGF_COLOR(Log::Color::Yellow, "[bc5-q] queue %u/%u/%u/0x%x: cross-queue wait unsatisfied for 10 s, proceeding\n", q.a, q.b, q.c, q.d);
-+				} else if (s.deferred_since != 0) {
-+					LOGF("[bc5-q] queue %u/%u/%u/0x%x: deferred %.1f ms for another queue\n", q.a, q.b, q.c, q.d, static_cast<double>(now - s.deferred_since) / 1e6);
++					s.deferred_since = 0;
++				} else {
++					if (s.deferred_since != 0) {
++						LOGF("[bc5-q] queue %u/%u/%u/0x%x: deferred %.1f ms for another queue\n", q.a, q.b, q.c, q.d, static_cast<double>(now - s.deferred_since) / 1e6);
++					}
++					s.deferred_since = 0;
 +				}
-+				s.deferred_since = 0;
 +			}
-+			// Direct mode: the ring slice [r, w) is itself a valid IB of INDIRECT_BUFFER packets;
++			const uint32_t w_all = w;
++			(void)w_all;
++			const uint32_t w_take = (r + take) % n;
++			// Direct mode: the ring slice [r, w_take) is itself a valid IB of INDIRECT_BUFFER packets;
 +			// a slice that wraps is submitted in two parts.
-+			if (w > r) {
-+				Direct::submit(ring + r, w - r, "ring", false);
++			if (w_take > r) {
++				Direct::submit(ring + r, w_take - r, "ring", false);
 +			} else {
 +				Direct::submit(ring + r, n - r, "ring", false);
-+				if (w != 0) Direct::submit(ring, w, "ring", false);
++				if (w_take != 0) Direct::submit(ring, w_take, "ring", false);
 +			}
 +			{
 +				auto marks = std::move(t_gpu_done);
 +				t_gpu_done.clear();
 +				const QueueReg qq     = q;
 +				const uint64_t count0 = s.count;
-+				s.count += pending;
-+				Direct::post([ring, r, n, w, pending, qq, count0, marks = std::move(marks)](bool failed) mutable {
++				s.count += take;
++				Direct::post([ring, r, n, w = w_take, pending = take, qq, count0, marks = std::move(marks)](bool failed) mutable {
 +					t_gpu_done = failed ? std::vector<GpuDone>() : std::move(marks);
 +					auto plen = [&](uint32_t off) -> uint32_t {
 +						const uint32_t hh = ring[off];
@@ -1739,7 +1756,7 @@ index 0000000..0fb14a8
 +					if (behind) *reinterpret_cast<volatile uint32_t*>(qq.ring_end) = w;
 +				});
 +			}
-+			s.rptr = w; // everything up to the doorbell value has been handed on
++			s.rptr = w_take; // what was served; the rest of the slice stays for the next poll
 +			// The read pointer goes where the queue registration named it and — what the driver
 +			// library's free-space check actually reads (its queue table, +0x70; experiment
 +			// 0018) — into the dword right behind the ring. Nothing wrote the latter before, so
@@ -3103,10 +3120,48 @@ index 0000000..0fb14a8
 +// before the wait, then the host waits for the label on the CPU (it is guest memory the GPU
 +// writes; 2 s, then it goes on like the soft CP does), then the packets after it. A doorbell
 +// ring slice is only INDIRECT_BUFFER packets: its targets are submitted this way directly.
++// BC5_DIRECT_LABEL_TRACE=1 (experiment 0024): every address a cross-queue wait looks at is
++// watched by a thread that journals each change of its value with a microsecond time stamp —
++// who set a label, when, and when it went back.
++static std::mutex                                 g_lw_mutex;
++static std::vector<std::pair<uint64_t, uint64_t>> g_lw; // address, last value seen
++static void label_watch(uint64_t a) {
++	static const bool on = std::getenv("BC5_DIRECT_LABEL_TRACE") != nullptr;
++	if (!on || a == 0) return;
++	a &= ~7ull;
++	std::lock_guard lock(g_lw_mutex);
++	for (const auto& w: g_lw) {
++		if (w.first == a) return;
++	}
++	if (g_lw.size() >= 64) return;
++	const uint64_t v = *reinterpret_cast<const volatile uint64_t*>(a);
++	g_lw.emplace_back(a, v);
++	journal("label 0x%" PRIx64 ": watched, 0x%" PRIx64 " at t %.6f s\n", a, v, timing_now());
++	static std::once_flag once;
++	std::call_once(once, [] {
++		std::thread([] {
++			for (;;) {
++				{
++					std::lock_guard lk(g_lw_mutex);
++					for (auto& w: g_lw) {
++						const uint64_t now = *reinterpret_cast<const volatile uint64_t*>(w.first);
++						if (now != w.second) {
++							journal("label 0x%" PRIx64 ": 0x%" PRIx64 " -> 0x%" PRIx64 " at t %.6f s\n", w.first, w.second, now, timing_now());
++							w.second = now;
++						}
++					}
++				}
++				std::this_thread::sleep_for(std::chrono::microseconds(10));
++			}
++		}).detach();
++	});
++}
++
 +static bool wait_satisfied(const uint32_t* p, bool is64) {
 +	const uint32_t function = p[1] & 7u;
 +	const uint64_t a        = (p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u);
 +	if (a == 0) return true;
++	label_watch(a);
 +	if (is64) {
 +		const uint64_t v = *reinterpret_cast<const volatile uint64_t*>(a);
 +		const uint64_t ref = p[4] | (static_cast<uint64_t>(p[5]) << 32u), mask = p[6] | (static_cast<uint64_t>(p[7]) << 32u);
@@ -3985,6 +4040,10 @@ index 0000000..0fb14a8
 +		it.job.t2_ns      = t2;
 +		it.job.queued_ns  = SoftCp::now_ns();
 +		it.job.dev_gen    = g_dev_gen.load();
++		{
++			static const bool trace = std::getenv("BC5_DIRECT_LABEL_TRACE") != nullptr;
++			if (trace) journal("queued #%" PRIu64 " %s %u dwords at t %.6f s\n", n, kind, num_dwords, timing_now());
++		}
 +		cq_push(std::move(it));
 +		return;
 +	}

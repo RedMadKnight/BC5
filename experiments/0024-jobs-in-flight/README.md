@@ -133,3 +133,32 @@ again the labels' history around one main buffer has to be traced first.
 presses; capture `kytyplus-20261001-2304`): 238,396 submissions in 358 s, none failed, no wait
 timed out; loading at 48 fps, the cutscene at 40–41 fps, GPU at most 74 °C with the governor's
 range at 1850–2000 MHz. The build's default path is what run 107 measured. (The dev box was restarted in an orderly way a few minutes after the run; not a crash.)
+
+**Addendum, run 113: the label trace** (23:14, GPU, unattended, jobs in flight with
+`BC5_DIRECT_LABEL_TRACE=1`: a thread journals every change of every address a cross-queue wait
+looks at, with a microsecond time stamp; capture `kytyplus-20261001-2314`). The stall is
+reproduced at 236 s, and the trace shows what the verdict above could not establish.
+
+- Each of the three frame slots has five labels. A main command buffer, on the GPU, first
+  clears the five labels of the *next* slot in the rotation and then sets its own slot label —
+  all within 1.2 ms of its start. Nothing is lost and nothing arrives late: a slot label is
+  simply 1 for two frames (38 ms here) and then 0 again.
+- A frame's compute buffer ends in a wait for the slot label the *next* frame's main buffer
+  sets. So at any time the compute queue holds up to three buffers whose tails wait for three
+  different labels, each satisfied for a two-frame window.
+- The host's doorbell consumer served a queue's pending entries all or nothing: if any entry's
+  wait was unsatisfied, none was submitted. Synchronously the game never gets a second buffer
+  into the queue before the first one's tail has gone. With the game's thread released, the
+  second arrives while the first is ready, the pair is held back for the second's sake, and by
+  the time the second's label is set a third has arrived; the first one's label is cleared
+  again before the three are ever ready together. The consumer scans that queue only every
+  20 ms or so, because it waits behind the game's long main buffer for its own small jobs.
+
+That is a fault in the host's model of a queue, not a property of jobs in flight: a queue runs
+its entries in order, and an entry whose wait is satisfied goes, whatever stands behind it.
+The consumer now serves the ready entries at the front of a queue and leaves the rest
+(`BC5_GC_QUEUE_ALL_OR_NOTHING=1` brings the old behaviour back). Map-only, both modes: 28
+flips each. The cutscene has not been run with it.
+
+**Verdict, revised.** Open again: the cause of the cutscene's stalls is found and corrected in
+the consumer; a GPU run with jobs in flight through the cutscene is the test.
