@@ -110,3 +110,7 @@ and exposes its fd (`LibKernel::Memory::Bc5DirectMemoryFd`), the host imports 2 
 through `/dev/udmabuf` and maps them at the views' addresses. `BC5_DIRECT_CHUNK_STATS=1` journals
 what chunk sizes would pin (anonymous backing).
 `BC5_DIRECT_NO_DMA_IDLE=1` turns off the CP-DMA idle wait the device appends to every IB (F41).
+Doorbell queues (experiment 0018): the consumer keeps ring pointers modulo the ring size and
+publishes the read pointer also in the dword behind the ring, where the driver library reads it
+(`BC5_GC_NO_RING_END_RPTR=1` leaves that out). `BC5_GC_QUEUE_TABLE=<hex address>[:entries]` journals
+the library's own queue table every eighth flip.

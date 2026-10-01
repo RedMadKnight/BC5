@@ -33,9 +33,43 @@ runs), then cumulative masks. Raw output: `raw/cu-bit-probe.txt`.
   of the register are not equivalent either.
 - All values verified: 0 of 67,108,864 dwords wrong in every run.
 
-**Verdict.** Partly answered: all sixteen bits per half are live on this board, so a "36 of 40"
-mask cannot be read off the bit positions (F39 stands). How much each bit is worth needs a
-CU-bound program; one is assembled (`alu-probe.s` next to this file: the same program with a
-4,096-iteration integer loop per thread, built with `llvm-mc -arch=amdgcn -mcpu=gfx1013`, whose
-encodings of the shared instructions match the IGT program's dwords) and waits for the
-maintainer's go-ahead, being new code on the GPU.
+*The CU-bound program* (`alu-probe.s`, 15:23–15:27, with the maintainer's go-ahead;
+`raw/alu-probe.txt`): 4 MiB, 4,096 thread groups of 64 threads, 4,096 loop iterations each, all
+1,048,576 dwords right in every run. Times are stable to the microsecond within a run of 8–16
+(a drift of 5–10 % between batches, one transient outlier re-measured). With "unit" = the rate of
+one bit set in every register (53.54 ms):
+
+| mask (all four registers) | time | units |
+|---|---|---|
+| 0x00000001 / 0x00010000 | 53.54 / 53.53 ms | 1 / 1 |
+| 0x00010001 | 26.82 ms | 2 |
+| bit 0 + bit k of the low half, k = 1…15 (0x00000401: 26.81 ms) | | 2 |
+| 0x00080001 (bit 19) | 26.81 ms | 2 |
+| 0x00100001, 0x80000001, 0xfff00001 (bits 20–31) | 53.55, 53.54, 53.53 ms | **1 — nothing added** |
+| 0x000f0000 (bits 16–19) | 13.44 ms | 4 |
+| 0xffff0000 (bits 16–31) | 13.45 ms | 4 |
+| 0x000003ff (bits 0–9) | 5.45 ms | 9.8 |
+| 0x0000ffff (bits 0–15) | 3.42 ms | 15.7 |
+| 0x0003ffff (bits 0–17) | 3.10 ms | 17.3 |
+| 0x000fffff (bits 0–19) | 2.79 ms | 19.2 |
+| 0xffffffff | 2.80 ms | 19.2 |
+
+- **Bits 0–19 of each `COMPUTE_STATIC_THREAD_MGMT_SEn` are live, one execution unit per bit;
+  bits 20–31 do nothing**, alone or on top of the others (0x000fffff = 0xffffffff).
+- A unit is one bit in both shader engines' registers, i.e. two CUs: 20 bits × 2 engines = the
+  40 CUs the board routes (F14). The register is not two 16-bit fields of ten CUs each, as the
+  generic layout (and experiment 0016's "36 = 0x01ff01ff") assumed; whether the two arrays of
+  an engine sit at bits 0–9 and 10–19 or elsewhere cannot be told from throughput and does not
+  matter for a mask.
+- Throughput is linear in the bit count within the measurement's drift (10 bits 9.8 units, 16
+  bits 15.7, 18 bits 17.3, 20 bits 19.2).
+- The memory-bound program's "bits 4–15 add less than bits 1–3" was its own artefact: with both
+  16-bit halves given the same bit, bits 4–15 of the upper half are bits 20–31 — dead.
+
+**Verdict (2026-10-01, 15:30).** Answered for compute: 40 CUs = bits 0–19 of the two
+shader-engine registers; **a 36-CU compute mask is 0x0003ffff** (or any 18 of the 20 bits), and
+it costs what it should (3.10 ms against 2.79 ms, 11 %). For the graphics stages the mask is
+`SPI_SHADER_PGM_RSRC3_*.CU_EN`, a 16-bit field: experiment 0016's frame series showed its bits
+10–15 live as well, so it reaches at most 16 of an engine's 20 CUs if it maps onto the same
+bits — which CUs a 16-bit `CU_EN` selects is the remaining question, and it needs a CU-bound
+draw. The 0x01ff01ff / 0x03ff03ff rows of experiment 0016 were not 36 and 40 CUs but 26 and 28.
