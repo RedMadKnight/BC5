@@ -50,6 +50,9 @@ struct MemsetParams {
     std::uint32_t rsrc1 = kIgtRsrc1;
     std::uint32_t rsrc2 = kIgtRsrc2;
     std::uint32_t vsharp_word3 = kIgtVsharpWord3;
+    // COMPUTE_STATIC_THREAD_MGMT_SE0..3 (IGT writes all ones). Experiment 0018 probes which
+    // bits carry execution units on the BC-250.
+    std::uint32_t cu_mask = 0xffffffffu;
 };
 
 // Builds the complete IB (padded to 8 dwords). Throws std::invalid_argument on
