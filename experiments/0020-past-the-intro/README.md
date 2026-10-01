@@ -25,5 +25,14 @@ module's JSON helper a value it expects to be a boolean has another type, and th
 writes through a null pointer. Which document and which member is not visible in the log, so the
 library got a trace (`KYTY_BC5_JSON_TRACE=1`: keys, types, parsed and produced text).
 
-**Verdict.** Open: the next run, with the trace on, names the member; then either the library's
-answer for it is wrong or the document comes from a service the host answers with nothing.
+*Run 95* (16:39, GPU, `KYTY_BC5_JSON_TRACE=1`): the same end, now readable. The document is
+one of the game's own data files, an array of objects; for each object the game reads its
+mandatory members through `operator[]` and tests an optional one, absent from this file, with
+`Value::referValue(key)` first. The added `referValue` created a missing member as null and
+returned it, the game took that for "present", fetched the member through `operator[]` and
+asserted on its type. So `referValue` is the game's existence test: it must answer **null for a
+missing member** (a pointer return; the mangled name does not carry the return type —
+`TODO(verify)`). Changed accordingly; no GPU run yet.
+
+**Verdict.** Open: one wrong guess about a library function's contract found by tracing and
+corrected; the next run shows whether the game gets past this file.
