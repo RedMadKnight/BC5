@@ -142,3 +142,8 @@ directory for every missing file; `libs/controller.*` and the window's event loo
 accelerometer and gyroscope (SDL sensors) into the pad state.
 `BC5_DIRECT_EAGER_NAMES=name[,name]` imports views with these names in full as soon as they exist
 (the game's GPU heaps: render targets and GPU-written textures that no CPU write would reveal).
+Experiment 0023: with `KYTY_BC5_DMABUF=1` private guest memory (everything `GuestAddressSpace::Commit`
+hands out) is mapped from a second sealed memfd at offset = guest address
+(`LibKernel::Memory::Bc5PrivateMemoryFd`, `Bc5ForEachPrivateRegion`) and imported by the host like
+the direct memory; `KYTY_BC5_NO_PRIVATE_FILE=1` turns that off, `BC5_DIRECT_STACKS=1` imports
+thread stacks as well.
