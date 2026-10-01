@@ -31,13 +31,13 @@ fuse = ["dep:fuser"]
 anyhow = "1"
 clap = { version = "4", default-features = false, features = ["std", "derive", "help", "usage", "error-context"] }
 flate2 = "1"
-sha2 = "0.10"
+sha2 = "0.11"
 thiserror = "2"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 # Without the `libfuse` feature fuser mounts through the fusermount3 binary and
 # needs no libfuse development headers at build time (only `fuse3` at run time).
-fuser = { version = "0.15", optional = true, default-features = false }
+fuser = { version = "0.18", optional = true, default-features = false }
 
 [dev-dependencies]
 proptest = { version = "1", default-features = false, features = ["alloc"] }
