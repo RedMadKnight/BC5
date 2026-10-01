@@ -63,6 +63,10 @@ if(BC5_WITH_AMDGPU)
     # draw-min: libdrm's gfx10 memset-draw (one DRAW_INDEX_AUTO) through bc5::direct (phase-3 task 2).
     add_executable(draw-min experiments/draw-min/main.cpp)
     target_link_libraries(draw-min PRIVATE bc5_backend bc5_warnings)
+    # dmabuf-min: a memfd range as GPU memory through udmabuf + dma-buf import (ADR 0006,
+    # experiment 0017). --import touches no ring; --submit as above.
+    add_executable(dmabuf-min experiments/dmabuf-min/main.cpp)
+    target_link_libraries(dmabuf-min PRIVATE bc5_backend bc5_warnings)
 endif()
 
 if(BC5_BUILD_TESTS)

@@ -4,9 +4,13 @@
 #include <amdgpu.h>
 #include <amdgpu_drm.h>
 #include <fcntl.h>
+#include <linux/udmabuf.h>
+#include <sys/ioctl.h>
 #include <xf86drm.h>
 #include <unistd.h>
 
+#include <algorithm>
+#include <cerrno>
 #include <chrono>
 #include <cstdio>
 #include <cstring>
@@ -29,6 +33,20 @@ struct UserptrBo {
     bool readonly = false;
 };
 
+// ADR 0006: an imported memfd range and its mappings.
+struct SharedBo {
+    std::uint32_t id = 0;
+    amdgpu_bo_handle bo = nullptr;
+    std::uint64_t size = 0;
+};
+struct SharedMap {
+    std::uint64_t va = 0;
+    std::uint64_t size = 0;
+    std::uint64_t bo_offset = 0;
+    std::uint32_t id = 0;
+    amdgpu_bo_handle bo = nullptr;
+};
+
 struct ScratchBo {
     amdgpu_bo_handle bo = nullptr;
     amdgpu_va_handle va_handle = nullptr; // only with legacy_scratch_va
@@ -44,6 +62,10 @@ struct Device::Impl {
     amdgpu_device_handle dev = nullptr;
     amdgpu_context_handle ctx = nullptr;
     std::vector<UserptrBo> userptrs;
+    std::vector<SharedBo> shared;
+    std::vector<SharedMap> shared_maps;
+    std::uint32_t next_shared_id = 1;
+    int udmabuf_fd = -1;
     ScratchBo scratch;
     amdgpu_bo_handle gds = nullptr; // OpenOptions::gds_kib
     amdgpu_bo_handle oa = nullptr;  // OpenOptions::oa_count
@@ -191,6 +213,10 @@ Device::~Device() {
         amdgpu_bo_va_op(u.bo, 0, u.size, u.va, 0, AMDGPU_VA_OP_UNMAP);
         amdgpu_bo_free(u.bo);
     }
+    for (auto &m : impl_->shared_maps)
+        amdgpu_bo_va_op_raw(impl_->dev, m.bo, m.bo_offset, m.size, m.va, 0, AMDGPU_VA_OP_UNMAP);
+    for (auto &b : impl_->shared) amdgpu_bo_free(b.bo);
+    if (impl_->udmabuf_fd >= 0) close(impl_->udmabuf_fd);
     impl_->scratch_free();
     if (impl_->gds) amdgpu_bo_free(impl_->gds);
     if (impl_->oa) amdgpu_bo_free(impl_->oa);
@@ -288,8 +314,80 @@ volatile std::uint32_t *Device::gds_shadow_cpu() const {
 std::vector<Mapping> Device::mappings() const {
     std::lock_guard lock(impl_->mutex);
     std::vector<Mapping> out;
-    for (const auto &u : impl_->userptrs) out.push_back({u.va, u.size, u.readonly});
+    for (const auto &u : impl_->userptrs) out.push_back({u.va, u.size, u.readonly, false});
+    for (const auto &m : impl_->shared_maps) out.push_back({m.va, m.size, false, true});
     return out;
+}
+
+std::uint32_t Device::import_memfd(int memfd, std::uint64_t offset, std::uint64_t size) {
+    std::lock_guard lock(impl_->mutex);
+    if (size == 0 || (offset & 0xfff) != 0 || (size & 0xfff) != 0) return 0;
+    if (impl_->udmabuf_fd < 0) {
+        impl_->udmabuf_fd = ::open("/dev/udmabuf", O_RDWR | O_CLOEXEC);
+        if (impl_->udmabuf_fd < 0) {
+            std::fprintf(stderr, "bc5-direct: /dev/udmabuf: %s\n", std::strerror(errno));
+            return 0;
+        }
+    }
+    udmabuf_create c{};
+    c.memfd = static_cast<std::uint32_t>(memfd);
+    c.flags = UDMABUF_FLAGS_CLOEXEC;
+    c.offset = offset;
+    c.size = size;
+    const int buf = ioctl(impl_->udmabuf_fd, UDMABUF_CREATE, &c);
+    if (buf < 0) {
+        std::fprintf(stderr, "bc5-direct: UDMABUF_CREATE 0x%llx+0x%llx: %s\n",
+                     static_cast<unsigned long long>(offset), static_cast<unsigned long long>(size),
+                     std::strerror(errno));
+        return 0;
+    }
+    amdgpu_bo_import_result res{};
+    const int rc = amdgpu_bo_import(impl_->dev, amdgpu_bo_handle_type_dma_buf_fd,
+                                    static_cast<std::uint32_t>(buf), &res);
+    close(buf); // the BO keeps the dma-buf
+    if (rc != 0) {
+        std::fprintf(stderr, "bc5-direct: dma-buf import 0x%llx+0x%llx: %d\n",
+                     static_cast<unsigned long long>(offset), static_cast<unsigned long long>(size), rc);
+        return 0;
+    }
+    SharedBo b;
+    b.id = impl_->next_shared_id++;
+    b.bo = res.buf_handle;
+    b.size = size;
+    impl_->shared.push_back(b);
+    return b.id;
+}
+
+bool Device::map_shared(std::uint32_t id, std::uint64_t bo_offset, std::uint64_t size, std::uint64_t gpu_va) {
+    std::lock_guard lock(impl_->mutex);
+    if (size == 0 || ((bo_offset | size | gpu_va) & 0xfff) != 0) return false;
+    const SharedBo *b = nullptr;
+    for (const auto &x : impl_->shared) {
+        if (x.id == id) b = &x;
+    }
+    if (b == nullptr || bo_offset + size > b->size) return false;
+    const int rc = amdgpu_bo_va_op_raw(impl_->dev, b->bo, bo_offset, size, gpu_va,
+                                       AMDGPU_VM_PAGE_READABLE | AMDGPU_VM_PAGE_WRITEABLE |
+                                           AMDGPU_VM_PAGE_EXECUTABLE,
+                                       AMDGPU_VA_OP_MAP);
+    if (rc != 0) {
+        std::fprintf(stderr, "bc5-direct: shared map at 0x%llx+0x%llx: %d\n",
+                     static_cast<unsigned long long>(gpu_va), static_cast<unsigned long long>(size), rc);
+        return false;
+    }
+    impl_->shared_maps.push_back({gpu_va, size, bo_offset, id, b->bo});
+    return true;
+}
+
+bool Device::unmap_shared(std::uint64_t gpu_va) {
+    std::lock_guard lock(impl_->mutex);
+    for (auto it = impl_->shared_maps.begin(); it != impl_->shared_maps.end(); ++it) {
+        if (it->va != gpu_va) continue;
+        amdgpu_bo_va_op_raw(impl_->dev, it->bo, it->bo_offset, it->size, it->va, 0, AMDGPU_VA_OP_UNMAP);
+        impl_->shared_maps.erase(it);
+        return true;
+    }
+    return false;
 }
 
 namespace {
@@ -509,8 +607,22 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
         for (std::size_t k = 1; k < pieces.size() && !draws; ++k)
             draws = has_draw_or_dispatch(dst + pieces[k].off, pieces[k].n);
     }
+    // Imported memfd ranges (ADR 0006): each BO once, however many addresses it is mapped at.
+    auto add_shared = [&](amdgpu_bo_handle bo) {
+        if (std::find(bos.begin(), bos.end(), bo) == bos.end()) bos.push_back(bo);
+    };
     if (include_mappings_ && draws) {
         for (const auto &u : impl_->userptrs) bos.push_back(u.bo);
+        const std::size_t first_shared = bos.size();
+        bos.reserve(bos.size() + impl_->shared.size());
+        // every imported BO that is mapped somewhere; the maps are grouped by BO in practice,
+        // so comparing with the last one added keeps this linear
+        for (const auto &m : impl_->shared_maps) {
+            if (bos.size() > first_shared && bos.back() == m.bo) continue;
+            bool seen = false;
+            for (std::size_t k = first_shared; k < bos.size() && !seen; ++k) seen = bos[k] == m.bo;
+            if (!seen) bos.push_back(m.bo);
+        }
     } else if (include_mappings_) {
         // Table operands are declared with a nominal size; the margins cover their real extent.
         constexpr std::uint64_t kBefore = 0x10000, kAfter = 0x20000;
@@ -520,6 +632,16 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
                 const std::uint64_t hi = a + 2 * span_bytes + kAfter;
                 if (u.va < hi && u.va + u.size > lo) {
                     bos.push_back(u.bo);
+                    break;
+                }
+            }
+        }
+        for (const auto &m : impl_->shared_maps) {
+            for (const auto &[a, span_bytes] : touched) {
+                const std::uint64_t lo = a > kBefore ? a - kBefore : 0;
+                const std::uint64_t hi = a + 2 * span_bytes + kAfter;
+                if (m.va < hi && m.va + m.size > lo) {
+                    add_shared(m.bo);
                     break;
                 }
             }

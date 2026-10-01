@@ -59,6 +59,7 @@ struct Mapping {
     std::uint64_t va = 0;
     std::uint64_t size = 0;
     bool readonly = false; // GPU read/execute only (r-- / r-x guest pages: shader code, rodata)
+    bool shared = false;   // a mapping of an imported memfd range (map_shared), not a userptr BO
 };
 
 // Diagnostic knobs (experiment 0016 bisection); the defaults are the intended configuration.
@@ -95,6 +96,15 @@ public:
     // readonly: AMDGPU_GEM_USERPTR_READONLY (raw ioctl; libdrm's helper has no flag) and a VA
     // mapping without WRITEABLE — the only way to give the GPU the game's r-x/r-- pages.
     bool map_userptr(std::uint64_t cpu_va, std::uint64_t size, bool readonly);
+    // ADR 0006: a range of a sealed memfd (F_SEAL_SHRINK) as GPU memory without userptr —
+    // udmabuf turns [offset, offset + size) into a dma-buf, amdgpu imports it. The pages are
+    // pinned from here on, and a CS that lists the BO walks nothing. Returns an id (> 0), 0 on
+    // failure. size is limited by the udmabuf module (size_limit_mb, 64 by default).
+    std::uint32_t import_memfd(int memfd, std::uint64_t offset, std::uint64_t size);
+    // Maps [bo_offset, bo_offset + size) of an imported range at gpu_va (all page aligned). One
+    // range may be mapped at several addresses (the guest's aliases of one physical range).
+    bool map_shared(std::uint32_t id, std::uint64_t bo_offset, std::uint64_t size, std::uint64_t gpu_va);
+    bool unmap_shared(std::uint64_t gpu_va);
     // GPU VA of the GDS shadow buffer, 0 when none was requested or allocated.
     std::uint64_t gds_shadow_va() const;
     // CPU view of the GDS shadow (64 KiB), nullptr when none. Also the landing buffer for a GDS
