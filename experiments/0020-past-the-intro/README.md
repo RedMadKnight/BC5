@@ -86,6 +86,27 @@ asks for 658 MiB of GTT and 700 MiB of VRAM; the 512 MiB carve-out holds 176 MiB
 latter and the rest spills over, 1,183 MiB resident in GTT. What it keeps there in a mode
 where it renders nothing but the presented frame is not looked at yet.
 
-**Verdict.** Open. The JSON contract is fixed and the game renders its first own scene; the
-next limit is the graphics driver's memory accounting, not the GPU path and not a missing
-library.
+*Run 97* (17:09, GPU, `BC5_DIRECT_LAZY_NAMES=orbis_user_malloc`, 200 s; capture
+`kytyplus-20261001-1709`, `raw/run97-summary.txt`): **27,273 submissions, none failed, no
+fault, 1,866 flips — the game reaches its title screen and waits for a button.** After the
+intro it renders, in real time, the studio's logo forming out of particles and then the title
+with its prompt, over the star field: 933 scene frames in 113.5 s, 8.2 frames per second, the
+main command buffer 14.1–22.8 ms on the GPU (median 15.8). The run ends on its 200 s limit.
+
+No shader read the CPU heap: 677 MiB of it held data at the end and none of that was asked for
+by a fault. Without it the imports end at 6,094 MiB; the driver's GTT counter stood at 7,327 of
+7,597 MiB when 5,740 MiB were imported, so the title screen fits with a few hundred MiB to
+spare. (One `Not enough memory for command submission!` in the kernel log during the run is not
+ours — no submission of the host failed; the emulator's own Vulkan client retries on it.)
+By name at 5,740 MiB: texture memory 3,236, GPU heap 1,670, resource memory 652, shared GPU
+heap 126, CPU heap 46.
+
+Where a scene frame's 122 ms go (70 s window, 8,039 submissions, about 14 per frame): 62 ms in
+the device path — the submission ioctl 21 ms (1,173 BOs in a draw's list), waiting for fences
+15 ms, the mapping sync 15 ms, the rest lists, hints and copying — and as much again outside it
+(filter, journal and IB dumps, the soft CP, the game).
+
+**Verdict (2026-10-01, 17:20).** Passed for its question: what stopped the game after the intro
+was a host library's contract and then the driver's GTT accounting, both handled without system
+modules; the game is at its title screen. Open after it: input (the screen wants a button), the
+GTT ceiling once a level loads (F44), frame time (8 fps here against 12 in the intro).
