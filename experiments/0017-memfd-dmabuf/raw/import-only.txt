@@ -1,0 +1,13 @@
+7.2.4-ogc3.1.fc44.x86_64
+libdrm-2.4.134-1.fc44.x86_64
+libdrm-2.4.134-1.fc44.i686
+libdrm-2.4.134-1.fc44.x86_64
+libdrm-devel-2.4.134-1.fc44.x86_64
+memfd: 256 MiB, view at 0x6000000000, 8 chunks of 32 MiB
+imported BO: alloc_size 33554432, preferred_heap 0x2, alloc_flags 0x200
+per chunk: UDMABUF_CREATE 7.01 ms, amdgpu import 0.03 ms, VA map 0.026 ms
+view contents after the imports: 8 of 8 chunk markers intact
+import and VA map: OK (no submission)
+per chunk: UDMABUF_CREATE 0.45 ms, amdgpu import 0.01 ms, VA map 0.006 ms
+view contents after the imports: 128 of 128 chunk markers intact
+import and VA map: OK (no submission)

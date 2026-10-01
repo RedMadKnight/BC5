@@ -103,3 +103,9 @@ Short BO lists (`Device::set_short_lists`, ADR 0005 xx) are on by default since 
 `BC5_DIRECT_CU_MASK` now also covers CU masks the stream loads from memory (`bc5::cu_tables`).
 The forced mapping sync is skipped for IBs without draws whose operands are already mapped;
 `BC5_DIRECT_NO_LAZY_SYNC=1` forces it always.
+
+ADR 0006 (experiment 0017): `KYTY_BC5_DMABUF=1` instead of `KYTY_BC5_ANON_BACKING=1` keeps
+KytyPlus's upstream memfd views for direct memory; the patch seals the memfd against shrinking
+and exposes its fd (`LibKernel::Memory::Bc5DirectMemoryFd`), the host imports 2 MiB chunks of it
+through `/dev/udmabuf` and maps them at the views' addresses. `BC5_DIRECT_CHUNK_STATS=1` journals
+what chunk sizes would pin (anonymous backing).

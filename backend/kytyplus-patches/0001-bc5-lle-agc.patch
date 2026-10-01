@@ -203,7 +203,7 @@ index bc73d18..252c692 100644
  
  #endif /* EMULATOR_INCLUDE_EMULATOR_KERNEL_FILESYSTEM_H_ */
 diff --git a/src/kernel/memory.cpp b/src/kernel/memory.cpp
-index 02fc0fc..6f8ac33 100644
+index 02fc0fc..7c56274 100644
 --- a/src/kernel/memory.cpp
 +++ b/src/kernel/memory.cpp
 @@ -382,6 +382,13 @@ public:
@@ -233,7 +233,7 @@ index 02fc0fc..6f8ac33 100644
  			target = target & ~(0x4000ull - 1ull);
  			LOGF("guest memory total = %llu MiB\n", static_cast<unsigned long long>(target / megabyte));
  			return target;
-@@ -850,6 +863,33 @@ static std::unique_ptr<PhysicalMemory>    g_physical_memory;
+@@ -850,6 +863,37 @@ static std::unique_ptr<PhysicalMemory>    g_physical_memory;
  static std::unique_ptr<FlexibleMemory>    g_flexible_memory;
  static std::unique_ptr<PooledMemory>      g_pooled_memory;
  static std::unique_ptr<VirtualRanges>     g_virtual_ranges;
@@ -264,28 +264,33 @@ index 02fc0fc..6f8ac33 100644
 +		}
 +	}
 +}
++// BC5 (ADR 0006): the direct-memory memfd (sealed with KYTY_BC5_DMABUF=1), -1 when there is none.
++int Bc5DirectMemoryFd() {
++	return GuestBackingStore::Bc5Fd();
++}
  static std::unique_ptr<GuestAddressSpace> g_guest_address_space;
  static callback_func_t                    g_alloc_callback        = nullptr;
  static callback_func_t                    g_free_callback         = nullptr;
 diff --git a/src/kernel/memory.h b/src/kernel/memory.h
-index d1fc7f8..41147b7 100644
+index d1fc7f8..7300fea 100644
 --- a/src/kernel/memory.h
 +++ b/src/kernel/memory.h
-@@ -111,6 +111,9 @@ void                   RegisterCallbacks(callback_func_t alloc_func, callback_fu
+@@ -111,6 +111,10 @@ void                   RegisterCallbacks(callback_func_t alloc_func, callback_fu
  void                   SetFlexibleMemorySize(uint64_t size);
  bool                   TryWriteBacking(uint64_t vaddr, const void* data, uint64_t size);
  bool                   TryReadBacking(uint64_t vaddr, void* data, uint64_t size);
 +// BC5 (direct mode): the guest's mapped ranges, see memory.cpp.
++int  Bc5DirectMemoryFd(); // BC5 (ADR 0006): the direct-memory memfd, -1 when none
 +void Bc5ForEachMappedRange(void (*cb)(uint64_t start, uint64_t size, int type, int protection, const char* name, void* ctx), void* ctx,
 +                           void (*cb2)(uint64_t start, uint64_t size, uint64_t offset, int type, int protection, const char* name, void* ctx) = nullptr);
  [[nodiscard]] uint64_t ClampRangeSize(uint64_t vaddr, uint64_t size);
  void                   WriteBacking(uint64_t vaddr, const void* data, uint64_t size) noexcept;
  void                   InvalidateMemory(uint64_t vaddr, uint64_t size);
 diff --git a/src/kernel/memoryAddressSpace.inc b/src/kernel/memoryAddressSpace.inc
-index 9ea25b0..045fa2e 100644
+index 9ea25b0..f9d7afd 100644
 --- a/src/kernel/memoryAddressSpace.inc
 +++ b/src/kernel/memoryAddressSpace.inc
-@@ -31,6 +31,12 @@ static bool CoalescePlaceholders(uint64_t vaddr, uint64_t size) {
+@@ -31,6 +31,24 @@ static bool CoalescePlaceholders(uint64_t vaddr, uint64_t size) {
  
  class GuestBackingStore {
  public:
@@ -294,11 +299,44 @@ index 9ea25b0..045fa2e 100644
 +		static const bool v = std::getenv("KYTY_BC5_ANON_BACKING") != nullptr;
 +		return v;
 +	}
++	// BC5 (ADR 0006), KYTY_BC5_DMABUF=1: the direct-memory memfd is created sealable and sealed
++	// against shrinking, so that ranges of it can become dma-bufs (udmabuf) which the direct
++	// mode imports into the GPU; the views stay the upstream MAP_SHARED ones. The fd is handed
++	// out through LibKernel::Memory::Bc5DirectMemoryFd().
++	static bool Bc5Dmabuf() {
++		static const bool v = std::getenv("KYTY_BC5_DMABUF") != nullptr;
++		return v;
++	}
++	static int& Bc5Fd() {
++		static int fd = -1;
++		return fd;
++	}
 +
  	enum class FailureReason {
  		None,
  		BackingUnavailable,
-@@ -162,6 +168,9 @@ public:
+@@ -74,7 +92,7 @@ public:
+ 			}
+ 		}
+ #else
+-		m_fd = static_cast<int>(syscall(SYS_memfd_create, "KytyDirectMemory", 0));
++		m_fd = static_cast<int>(syscall(SYS_memfd_create, "KytyDirectMemory", Bc5Dmabuf() ? 0x0002u /* MFD_ALLOW_SEALING */ : 0u));
+ #endif
+ 		if (m_fd < 0) {
+ 			LOGF_COLOR(Log::Color::Red, "\t direct-memory backing: shared fd creation failed: %d\n",
+@@ -87,6 +105,11 @@ public:
+ 			m_fd = -1;
+ 			return;
+ 		}
++		if (Bc5Dmabuf()) {
++			const int seal_rc = fcntl(m_fd, 1033 /* F_ADD_SEALS */, 0x0002 /* F_SEAL_SHRINK */);
++			LOGF("\t direct-memory backing: memfd %d sealed against shrinking for dma-buf export: %s\n", m_fd, seal_rc == 0 ? "ok" : "FAILED");
++			Bc5Fd() = m_fd;
++		}
+ 		auto* backing = mmap(nullptr, m_size, PROT_READ | PROT_WRITE, MAP_SHARED, m_fd, 0);
+ 		if (backing == MAP_FAILED) {
+ 			LOGF_COLOR(Log::Color::Red, "\t direct-memory backing: writable alias failed: %d\n",
+@@ -162,6 +185,9 @@ public:
  		if (!IsAvailable() || !RangeOk(backing_offset, size)) {
  			return false;
  		}
@@ -308,7 +346,7 @@ index 9ea25b0..045fa2e 100644
  		std::memset(m_backing_base + backing_offset, 0, size);
  		return true;
  	}
-@@ -469,7 +478,8 @@ private:
+@@ -469,7 +495,8 @@ private:
  			EXIT_IF(!FindContainingUnlocked(current, 1, &entry));
  			const auto bytes  = std::min(end, entry.vaddr + entry.size) - current;
  			const auto offset = entry.backing_offset + current - entry.vaddr;
@@ -318,7 +356,7 @@ index 9ea25b0..045fa2e 100644
  			current += bytes;
  		}
  		return true;
-@@ -572,12 +582,15 @@ private:
+@@ -572,12 +599,15 @@ private:
  	[[nodiscard]] static uint64_t GetMappableTestSize() { return 0x4000; }
  
  	static int GetProtect(VirtualMemory::Mode mode) {
@@ -336,7 +374,7 @@ index 9ea25b0..045fa2e 100644
  			case VirtualMemory::Mode::ExecuteWrite:
  			case VirtualMemory::Mode::ExecuteReadWrite: return PROT_EXEC | PROT_READ | PROT_WRITE;
  			case VirtualMemory::Mode::NoAccess:
-@@ -587,8 +600,24 @@ private:
+@@ -587,8 +617,24 @@ private:
  
  	void* MapView(uint64_t vaddr, uint64_t size, uint64_t backing_offset, VirtualMemory::Mode mode,
  	              FailureReason* failure_reason) {
@@ -363,7 +401,7 @@ index 9ea25b0..045fa2e 100644
  		if (ptr == MAP_FAILED) {
  			SetFailure(failure_reason, FailureReason::FixedMapViewFailed);
  			return nullptr;
-@@ -599,6 +628,10 @@ private:
+@@ -599,6 +645,10 @@ private:
  	// Replace the file view atomically instead of exposing an unmapped hole in the
  	// process-lifetime guest reservation.
  	static bool UnmapViewPreservePlaceholder(void* vaddr, uint64_t size) {
@@ -393,10 +431,10 @@ index 5f87e6b..e5c534e 100644
  	CondRemoveWaiter(cond_value, thread);
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..5204780
+index 0000000..0fe654a
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,3088 @@
+@@ -0,0 +1,3292 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -444,6 +482,7 @@ index 0000000..5204780
 +#include <cstdlib>
 +#include <cstring>
 +#include <map>
++#include <set>
 +#include <mutex>
 +#include <string>
 +#include <thread>
@@ -1233,6 +1272,7 @@ index 0000000..5204780
 +static std::atomic<uint64_t>                g_ok {0};
 +static std::atomic<uint64_t>                g_bytes_mapped {0};
 +static std::atomic<uint64_t>                g_swapped_pages {0};
++static uint64_t                             g_chunk_count[5] = {};
 +static uint64_t                             g_last_sync_ns = 0;
 +
 +static void init_once() {
@@ -1246,8 +1286,8 @@ index 0000000..5204780
 +	if (mode == nullptr || std::strcmp(mode, "direct") != 0) {
 +		return;
 +	}
-+	if (std::getenv("KYTY_BC5_ANON_BACKING") == nullptr) {
-+		LOGF_COLOR(Log::Color::Red, "[bc5-direct] BC5_GC_MODE=direct needs KYTY_BC5_ANON_BACKING=1 (userptr rejects file-backed pages); staying on the soft CP\n");
++	if (std::getenv("KYTY_BC5_ANON_BACKING") == nullptr && std::getenv("KYTY_BC5_DMABUF") == nullptr) {
++		LOGF_COLOR(Log::Color::Red, "[bc5-direct] BC5_GC_MODE=direct needs KYTY_BC5_DMABUF=1 (direct memory as dma-bufs, ADR 0006) or KYTY_BC5_ANON_BACKING=1 (userptr rejects file-backed pages); staying on the soft CP\n");
 +		return;
 +	}
 +	const char* stage = std::getenv("BC5_DIRECT_STAGE");
@@ -1339,6 +1379,168 @@ index 0000000..5204780
 +};
 +static std::vector<Vma> g_vmas; // rw anonymous guest VMAs of the last sync
 +
++// ---- ADR 0006: the guest's direct memory as imported dma-bufs ---------------------------------
++// KYTY_BC5_DMABUF=1 (and no KYTY_BC5_ANON_BACKING): KytyPlus keeps its upstream direct-memory
++// backing, one memfd with MAP_SHARED views at the guest's addresses, sealed against shrinking.
++// The host hands ranges of that memfd to the GPU as udmabufs imported into amdgpu
++// (Device::import_memfd) and maps them at the views' addresses: the same pages on both sides,
++// aliases included, and no userptr BO whose pages the kernel walks on every submission (F38).
++// What gets imported: every 2 MiB chunk of the file that holds data inside a view (SEEK_DATA),
++// plus what the render-target hints and the learned fault regions ask for; adjacent chunks go
++// into one BO of at most 32 MiB. An imported chunk is pinned in full, so guest writes into it
++// later need no further work. The anonymous rest of the guest (stacks, module data, the host's
++// own areas) stays on the userptr path above, which no longer sees the direct views.
++static const bool g_dmabuf = std::getenv("KYTY_BC5_DMABUF") != nullptr;
++constexpr uint64_t kDChunk = 2ull << 20u;
++constexpr uint64_t kDMaxBo = 32ull << 20u;
++struct DView { uint64_t va, size, off; };
++struct DBo { uint64_t off, size; uint32_t id; };
++struct DMap {
++	uint64_t va, size, bo_off;
++	uint32_t id;
++	bool operator==(const DMap& o) const { return va == o.va && size == o.size && bo_off == o.bo_off && id == o.id; }
++};
++static std::vector<DBo>   g_dbos;  // disjoint chunk-aligned file ranges, sorted by offset
++static std::vector<DMap>  g_dmaps; // sorted by va
++static std::set<uint64_t> g_dforced; // chunk offsets the hints and learned regions asked for
++static std::set<uint64_t> g_dfailed; // chunks whose import failed (not retried)
++static uint64_t g_dviews_sig = 0, g_dbos_mapped = 0, g_dbytes = 0, g_dsync_ns = 0, g_dfile_size = 0;
++
++static std::vector<DView> direct_views() {
++	std::vector<DView> v;
++	Libs::LibKernel::Memory::Bc5ForEachMappedRange(nullptr, &v, [](uint64_t start, uint64_t size, uint64_t offset, int type, int, const char*, void* p) {
++		if (type == 0 && size != 0) static_cast<std::vector<DView>*>(p)->push_back({start, size, offset});
++	});
++	return v;
++}
++
++// End of the imported range that holds `off`, 0 when none does.
++static uint64_t direct_covered_end(uint64_t off) {
++	auto it = std::upper_bound(g_dbos.begin(), g_dbos.end(), off, [](uint64_t o, const DBo& b) { return o < b.off; });
++	if (it == g_dbos.begin()) return 0;
++	--it;
++	return off < it->off + it->size ? it->off + it->size : 0;
++}
++
++static void direct_sync(bool force) {
++	if (!g_dmabuf || !g_dev) return;
++	const uint64_t now = SoftCp::now_ns();
++	if (!force && now - g_dsync_ns < 50'000'000ull) return;
++	g_dsync_ns = now;
++	const int fd = Libs::LibKernel::Memory::Bc5DirectMemoryFd();
++	if (fd < 0) return;
++	if (g_dfile_size == 0) {
++		const off_t e = lseek(fd, 0, SEEK_END);
++		g_dfile_size = e > 0 ? static_cast<uint64_t>(e) : 0;
++		journal("direct memory: memfd %d, %.1f MiB; chunks of %" PRIu64 " MiB, BOs up to %" PRIu64 " MiB\n", fd, static_cast<double>(g_dfile_size) / 1048576.0, kDChunk >> 20u, kDMaxBo >> 20u);
++	}
++	const std::vector<DView> views = direct_views();
++
++	// 1. chunks to import: data inside a view, and the forced ones
++	std::vector<uint64_t> need;
++	for (const auto& v: views) {
++		const uint64_t end = v.off + v.size;
++		uint64_t pos = v.off & ~(kDChunk - 1);
++		while (pos < end) {
++			if (const uint64_t ce = direct_covered_end(pos); ce != 0) { pos = ce; continue; }
++			const off_t d = lseek(fd, static_cast<off_t>(pos), SEEK_DATA);
++			if (d < 0 || static_cast<uint64_t>(d) >= end) break;
++			const uint64_t c = static_cast<uint64_t>(d) & ~(kDChunk - 1);
++			if (direct_covered_end(c) == 0) need.push_back(c);
++			pos = c + kDChunk;
++		}
++	}
++	for (const uint64_t c: g_dforced) {
++		if (direct_covered_end(c) == 0) need.push_back(c);
++	}
++	std::sort(need.begin(), need.end());
++	need.erase(std::unique(need.begin(), need.end()), need.end());
++	uint32_t imported = 0;
++	for (size_t i = 0; i < need.size();) {
++		if (g_dfailed.count(need[i]) != 0 || need[i] + kDChunk > g_dfile_size) { i++; continue; }
++		size_t j = i + 1;
++		while (j < need.size() && need[j] == need[j - 1] + kDChunk && need[j] + kDChunk - need[i] <= kDMaxBo && g_dfailed.count(need[j]) == 0 && need[j] + kDChunk <= g_dfile_size) j++;
++		const uint64_t off = need[i], size = need[j - 1] + kDChunk - need[i];
++		const uint32_t id = g_dev->import_memfd(fd, off, size);
++		if (id == 0) {
++			journal("direct import 0x%" PRIx64 " +0x%" PRIx64 " FAILED\n", off, size);
++			for (size_t k = i; k < j; k++) g_dfailed.insert(need[k]);
++		} else {
++			g_dbos.insert(std::upper_bound(g_dbos.begin(), g_dbos.end(), off, [](uint64_t o, const DBo& b) { return o < b.off; }), DBo {off, size, id});
++			g_dbytes += size;
++			imported++;
++		}
++		i = j;
++	}
++
++	// 2. the views' addresses: every (view, imported range) intersection is one GPU mapping
++	uint64_t sig = 1469598103934665603ull;
++	for (const auto& v: views) {
++		for (const uint64_t x: {v.va, v.size, v.off}) sig = (sig ^ x) * 1099511628211ull;
++	}
++	uint32_t mapped = 0, unmapped = 0, map_failed = 0;
++	if (sig != g_dviews_sig || g_dbos.size() != g_dbos_mapped) {
++		std::vector<DMap> want;
++		for (const auto& v: views) {
++			const uint64_t vend = v.off + v.size;
++			auto it = std::upper_bound(g_dbos.begin(), g_dbos.end(), v.off, [](uint64_t o, const DBo& b) { return o < b.off; });
++			if (it != g_dbos.begin()) --it;
++			for (; it != g_dbos.end() && it->off < vend; ++it) {
++				const uint64_t lo = it->off > v.off ? it->off : v.off;
++				const uint64_t hi = it->off + it->size < vend ? it->off + it->size : vend;
++				if (lo >= hi) continue;
++				want.push_back({v.va + (lo - v.off), hi - lo, lo - it->off, it->id});
++			}
++		}
++		std::sort(want.begin(), want.end(), [](const DMap& a, const DMap& b) { return a.va < b.va; });
++		std::vector<DMap> next;
++		for (const auto& m: g_dmaps) { // drop what no view asks for any more, before adding (addresses get reused)
++			const auto w = std::lower_bound(want.begin(), want.end(), m.va, [](const DMap& a, uint64_t va) { return a.va < va; });
++			if (w != want.end() && *w == m) {
++				next.push_back(m);
++			} else {
++				g_dev->unmap_shared(m.va);
++				unmapped++;
++			}
++		}
++		for (const auto& w: want) {
++			const auto e = std::lower_bound(next.begin(), next.end(), w.va, [](const DMap& a, uint64_t va) { return a.va < va; });
++			if (e != next.end() && *e == w) continue;
++			if (g_dev->map_shared(w.id, w.bo_off, w.size, w.va)) {
++				next.insert(e, w);
++				mapped++;
++			} else {
++				map_failed++;
++			}
++		}
++		g_dmaps.swap(next);
++		g_dviews_sig  = sig;
++		g_dbos_mapped = map_failed == 0 ? g_dbos.size() : 0; // a failure is retried at the next sync
++	}
++	if (imported != 0 || mapped != 0 || unmapped != 0 || map_failed != 0) {
++		journal("direct: %zu views; +%u BOs (%zu, %.1f MiB pinned); maps +%u -%u (%zu)%s\n", views.size(), imported, g_dbos.size(), static_cast<double>(g_dbytes) / 1048576.0,
++		        mapped, unmapped, g_dmaps.size(), map_failed != 0 ? "; SOME MAPS FAILED" : "");
++	}
++}
++
++// A guest address window the GPU will touch whether or not the CPU ever wrote it (render
++// targets, learned fault regions): its direct-memory part is imported now. Returns the bytes
++// newly asked for.
++static uint64_t direct_force(uint64_t lo, uint64_t hi) {
++	if (!g_dmabuf || !g_dev) return 0;
++	uint64_t asked = 0;
++	for (const auto& v: direct_views()) {
++		const uint64_t a = lo > v.va ? lo : v.va;
++		const uint64_t b = hi < v.va + v.size ? hi : v.va + v.size;
++		if (a >= b) continue;
++		for (uint64_t c = (v.off + (a - v.va)) & ~(kDChunk - 1); c < v.off + (b - v.va); c += kDChunk) {
++			if (g_dforced.insert(c).second) asked += kDChunk;
++		}
++	}
++	if (asked != 0) direct_sync(true);
++	return asked;
++}
++
 +static void sync_mappings(bool force = false) {
 +	const uint64_t now = SoftCp::now_ns();
 +	if (!force && now - g_last_sync_ns < 50'000'000ull) { // at most every 50 ms
@@ -1386,6 +1588,7 @@ index 0000000..5204780
 +	std::vector<bc5::direct::Mapping> have = g_dev->mappings();
 +	int removed = 0;
 +	for (const auto& m: have) {
++		if (m.shared) continue; // an imported direct-memory range: direct_sync's business
 +		if (inside_vma(m.va, m.va + m.size, m.readonly)) continue;
 +		journal("unmap 0x%" PRIx64 " +0x%" PRIx64 " (no longer %s anonymous) ... ", m.va, m.size, m.readonly ? "r--/r-x" : "rw");
 +		const bool ok = g_dev->unmap_userptr(m.va);
@@ -1413,6 +1616,7 @@ index 0000000..5204780
 +	// reset). Costs the pages' materialisation; the totals are journaled to judge it.
 +	static const bool whole_vma = std::getenv("BC5_DIRECT_MAP_WHOLE_VMA") != nullptr;
 +	uint64_t vma_total = 0, vma_resident = 0;
++	for (auto& c: g_chunk_count) c = 0;
 +	for (const auto& v: vmas) {
 +		const uint64_t start = v.start, end = v.end;
 +		const size_t pages = static_cast<size_t>((end - start) / kPage);
@@ -1464,6 +1668,21 @@ index 0000000..5204780
 +			}
 +		}
 +		for (size_t k = 0; k < pages; k++) vma_resident += (vec[k] & 1) ? kPage : 0;
++		// BC5_DIRECT_CHUNK_STATS=1: how much memory chunks of a given size would pin if every
++		// chunk with a resident page were backed in full (ADR 0006: the chunk size of the
++		// dma-buf backing). Journaled with the "vmas" line.
++		static const bool chunk_stats = std::getenv("BC5_DIRECT_CHUNK_STATS") != nullptr;
++		if (chunk_stats) {
++			static const uint64_t kSizes[] = {65536, 1u << 20, 2u << 20, 8u << 20, 32u << 20};
++			for (size_t g = 0; g < 5; g++) {
++				uint64_t last = ~0ull;
++				for (size_t k = 0; k < pages; k++) {
++					if ((vec[k] & 1) == 0) continue;
++					const uint64_t c = (start + k * kPage) / kSizes[g];
++					if (c != last) { g_chunk_count[g]++; last = c; }
++				}
++			}
++		}
 +		if (whole_vma) std::fill(vec.begin(), vec.end(), 1);
 +		// BC5_DIRECT_MAP_GUEST_RANGES=1 (ADR 0005 §1 as written): every range the game mapped
 +		// (direct, flexible, pooled, stack, code, runtime) is mapped in full, resident or not —
@@ -1542,6 +1761,11 @@ index 0000000..5204780
 +		const double mib = 1024.0 * 1024.0;
 +		LOGF("[bc5-direct] mappings: +%d -%d, %zu total, %.1f MiB (rw anon VMAs: %zu, %.1f MiB, %.1f MiB resident)\n", added, removed, have.size(), static_cast<double>(g_bytes_mapped.load()) / mib, vmas.size(), static_cast<double>(vma_total) / mib, static_cast<double>(vma_resident) / mib);
 +		journal("swapped pages taken as resident so far: %" PRIu64 "\n", g_swapped_pages.load());
++		if (std::getenv("BC5_DIRECT_CHUNK_STATS") != nullptr) {
++			journal("chunk stats: resident %.1f MiB; chunks with a resident page: 64K %" PRIu64 " (%.1f MiB), 1M %" PRIu64 " (%.1f MiB), 2M %" PRIu64 " (%.1f MiB), 8M %" PRIu64 " (%.1f MiB), 32M %" PRIu64 " (%.1f MiB)\n",
++			        static_cast<double>(vma_resident) / mib, g_chunk_count[0], g_chunk_count[0] / 16.0, g_chunk_count[1], static_cast<double>(g_chunk_count[1]),
++			        g_chunk_count[2], g_chunk_count[2] * 2.0, g_chunk_count[3], g_chunk_count[3] * 8.0, g_chunk_count[4], g_chunk_count[4] * 32.0);
++		}
 +		journal("vmas %zu total %.1f MiB resident %.1f MiB mapped %.1f MiB\n", vmas.size(), static_cast<double>(vma_total) / mib, static_cast<double>(vma_resident) / mib, static_cast<double>(g_bytes_mapped.load()) / mib);
 +	}
 +}
@@ -1593,6 +1817,10 @@ index 0000000..5204780
 +	journal("learned: fault 0x%" PRIx64 " -> region 0x%" PRIx64 "+0x%" PRIx64 " (saved)\n", fault_addr, lo, n);
 +}
 +static void map_window(uint64_t lo, uint64_t hi, std::vector<bc5::direct::Mapping>& have, const char* what, uint64_t addr) {
++	if (const uint64_t asked = direct_force(lo, hi); asked != 0) {
++		journal("%s 0x%" PRIx64 ": window 0x%" PRIx64 "+0x%" PRIx64 ", direct memory +%.1f MiB\n", what, addr, lo, hi - lo, static_cast<double>(asked) / 1048576.0);
++		have = g_dev->mappings();
++	}
 +	std::vector<std::pair<uint64_t, uint64_t>> pieces;
 +	for (const auto& v: g_vmas) { // clip to rw VMAs (the window may span several)
 +		if (v.readonly || v.end <= lo || v.start >= hi) continue;
@@ -1675,6 +1903,13 @@ index 0000000..5204780
 +			const Vma* vma = nullptr;
 +			for (const auto& v: g_vmas) {
 +				if (lo >= v.start && lo < v.end && !v.readonly) { vma = &v; break; }
++			}
++			if (vma == nullptr && g_dmabuf) { // a target in direct memory (ADR 0006)
++				const uint64_t dlo = lo > below ? lo - below : 0;
++				const uint64_t asked = direct_force(dlo, lo + window);
++				journal("hint %s 0x%" PRIx64 ": window 0x%" PRIx64 "+0x%" PRIx64 ", direct memory +%.1f MiB\n", b.name, addr, dlo, lo + window - dlo, static_cast<double>(asked) / 1048576.0);
++				have = g_dev->mappings();
++				continue;
 +			}
 +			if (vma == nullptr) {
 +				journal("hint %s 0x%" PRIx64 ": not in an rw anonymous VMA\n", b.name, addr);
@@ -2237,6 +2472,7 @@ index 0000000..5204780
 +		}
 +	}
 +	sync_mappings(force_sync);
++	direct_sync(force_sync);
 +	const uint64_t t1 = SoftCp::now_ns();
 +	learned_apply();
 +	hint_targets(ib, num_dwords);
@@ -2727,6 +2963,12 @@ index 0000000..5204780
 +			g_hinted.clear();
 +			g_bytes_mapped = 0;
 +			g_last_sync_ns = 0;
++			g_dbos.clear();
++			g_dmaps.clear();
++			g_dviews_sig = 0;
++			g_dbos_mapped = 0;
++			g_dbytes = 0;
++			g_dsync_ns = 0;
 +			LOGF_COLOR(Log::Color::Yellow, "[bc5-direct] device reopened after the fault: %s\n", g_dev ? "ok" : "FAILED");
 +			journal("reopen: %s\n", g_dev ? "ok" : "FAILED");
 +		} else {
