@@ -499,6 +499,12 @@ i.e. 0x100ff; **the game's init table loads `GE_PC_ALLOC` = 0** — another regi
 system owns. With no position-cache lines the NGG stage cannot export primitives: clears and
 compute run, draws leave nothing. Test: `BC5_DIRECT_PROLOGUE_UCONFIG=260:100ff`.
 
+**Run 66** (06:21, `GE_PC_ALLOC` = 0x100ff in a prologue): no change. Single-register guesses are
+exhausted (primitive type, `CLEAR_STATE`, tile steering, `GE_PC_ALLOC`). Next: the pass itself,
+standalone — `draw-min` extended to replay the game's flip pass from the surveyed tables and the
+dumped shaders, in variants (our draw + the game's context image; the game's NGG GS with our
+PS; the game's pass with our target) in one run, so a bisection costs one go-ahead.
+
 **Verdict (2026-10-01, 00:20).** Steps (a)–(c) passed; (d) and (e) run the game's frames, draws,
 dispatches and both queue types on the BC-250 stall-free (runs 54–63: 230+ of 234 submits, no
 reset), with GDS counters reset and read back correctly since the DMA-selector fix. G3's image is
