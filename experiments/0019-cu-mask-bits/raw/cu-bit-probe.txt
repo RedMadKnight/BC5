@@ -1,0 +1,25 @@
+bit 0: cu mask 0x00010001: 12 runs, submit to fence: min 1.307 ms, median 1.313 ms
+bit 1: cu mask 0x00030003: 12 runs, submit to fence: min 0.730 ms, median 0.733 ms
+bit 2: cu mask 0x00050005: 12 runs, submit to fence: min 0.718 ms, median 0.720 ms
+bit 3: cu mask 0x00090009: 12 runs, submit to fence: min 0.691 ms, median 0.699 ms
+bit 4: cu mask 0x00110011: 12 runs, submit to fence: min 0.800 ms, median 0.804 ms
+bit 5: cu mask 0x00210021: 12 runs, submit to fence: min 0.808 ms, median 0.813 ms
+bit 6: cu mask 0x00410041: 12 runs, submit to fence: min 0.798 ms, median 0.804 ms
+bit 7: cu mask 0x00810081: 12 runs, submit to fence: min 0.807 ms, median 0.811 ms
+bit 8: cu mask 0x01010101: 12 runs, submit to fence: min 0.798 ms, median 0.807 ms
+bit 9: cu mask 0x02010201: 12 runs, submit to fence: min 0.808 ms, median 0.810 ms
+bit 10: cu mask 0x04010401: 12 runs, submit to fence: min 0.799 ms, median 0.802 ms
+bit 11: cu mask 0x08010801: 12 runs, submit to fence: min 0.806 ms, median 0.811 ms
+bit 12: cu mask 0x10011001: 12 runs, submit to fence: min 0.803 ms, median 0.804 ms
+bit 13: cu mask 0x20012001: 12 runs, submit to fence: min 0.807 ms, median 0.811 ms
+bit 14: cu mask 0x40014001: 12 runs, submit to fence: min 0.799 ms, median 0.804 ms
+bit 15: cu mask 0x80018001: 12 runs, submit to fence: min 0.811 ms, median 0.813 ms
+cu mask 0x00030003: 12 runs, submit to fence: min 0.698 ms, median 0.702 ms
+cu mask 0x000f000f: 12 runs, submit to fence: min 0.647 ms, median 0.652 ms
+cu mask 0x003f003f: 12 runs, submit to fence: min 0.631 ms, median 0.642 ms
+cu mask 0x00ff00ff: 12 runs, submit to fence: min 0.639 ms, median 0.643 ms
+cu mask 0x03ff03ff: 12 runs, submit to fence: min 0.637 ms, median 0.643 ms
+cu mask 0x0fff0fff: 12 runs, submit to fence: min 0.639 ms, median 0.643 ms
+cu mask 0xffffffff: 12 runs, submit to fence: min 0.640 ms, median 0.644 ms
+cu mask 0x0000ffff: 12 runs, submit to fence: min 0.640 ms, median 0.642 ms
+cu mask 0xffff0000: 12 runs, submit to fence: min 0.704 ms, median 0.713 ms

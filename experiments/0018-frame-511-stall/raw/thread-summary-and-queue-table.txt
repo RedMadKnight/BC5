@@ -1,0 +1,40 @@
+31 Libs::LibKernel::PthreadCondWait | LWP 76167,76178,76179,76180
+28 Common::CondVar::WaitFor <- Libs::LibKernel::Semaphore::KernelSemaPrivate::Wait <- Libs::LibKernel::Semaphore::KernelWaitSema | LWP 76168,76169,76170,76171
+11 Common::CondVar::WaitFor <- Libs::Posix:: <- Libs::Posix:: | LWP 76222,76223,76224,76225
+6 pa_threaded_mainloop_wait <- PULSEAUDIO_PlayDevice <- SDL_RunAudio | LWP 76212,76215,76250,76252
+3 start_thread | LWP 76129,76130,76135
+2 Libs::Graphics::CommandScheduler::PriorityOperationsThread <- Libs::Graphics::CommandScheduler::CommandScheduler <- start_thread | LWP 76131,76132
+2 Common::CondVar::Wait <- Libs::LibKernel::EventFlag::KernelEventFlagPrivate::Wait <- Libs::LibKernel::EventFlag::KernelWaitEventFlag | LWP 76207,76208
+1 Common::Thread::Sleep <- Libs::LibKernel::FreeDetachedThreads <- start_thread | LWP 76128
+1 SleepHighResolutionNanos <- Libs::VideoOut::VideoOutDriver::Impl::PresentThread <- Libs::VideoOut::VideoOutDriver::Impl::Impl | LWP 76133
+1 Common::CondVar::Wait <- Libs::Graphics::GpuState::ThreadRun <- start_thread | LWP 76134
+1 Libs::LibKernel::NativeMutexLock <- Libs::LibKernel::PthreadMutexLock | LWP 76165
+1 Libs::Bc5Gc::SoftCp::queue_consumer_thread <- start_thread | LWP 76166
+1 ?? / ?? / ?? | LWP 76187
+1 SleepHighResolutionNanos <- Libs::Audio::Audio::QueueSdlAudio <- Libs::Audio::Audio::AudioOutOutputs | LWP 76209
+1 pa_mainloop_poll <- pa_mainloop_iterate <- pa_mainloop_run | LWP 76210
+1 pa_threaded_mainloop_wait <- HotplugThread <- SDL_RunThread | LWP 76211
+1 Libs::Audio::AvPlayer::WorkQueue<std::unique_ptr<Libs::Audio::AvPlayer::GuestBuffer, <- Libs::Audio::AvPlayer::Source::ReceiveFrames <- Libs::Audio::AvPlayer::Source::DecodePacket | LWP 76366
+1 Libs::Audio::AvPlayer::PacketQueue::Push <- Libs::Audio::AvPlayer::Source::Demux <- Libs::Audio::AvPlayer::Source::DemuxEntry | LWP 76367
+1 SDL_IOReady <- Wayland_WaitEventTimeout <- SDL_WaitEventTimeout_Device | LWP 76126
+queue table flip 0 entry 32: wptr 16 rptr 8 (at 0xf0124c000) ring 4096 dwords, pending 8
+queue table flip 0 entry 40: wptr 16 rptr 16 (at 0xf0128c000) ring 4096 dwords, pending 0
+queue table flip 8 entry 32: wptr 80 rptr 72 (at 0xf0124c000) ring 4096 dwords, pending 8
+queue table flip 8 entry 40: wptr 80 rptr 80 (at 0xf0128c000) ring 4096 dwords, pending 0
+queue table flip 16 entry 32: wptr 144 rptr 136 (at 0xf0124c000) ring 4096 dwords, pending 8
+queue table flip 16 entry 40: wptr 144 rptr 144 (at 0xf0128c000) ring 4096 dwords, pending 0
+queue table flip 24 entry 32: wptr 208 rptr 200 (at 0xf0124c000) ring 4096 dwords, pending 8
+queue table flip 24 entry 40: wptr 208 rptr 208 (at 0xf0128c000) ring 4096 dwords, pending 0
+queue table flip 32 entry 32: wptr 272 rptr 264 (at 0xf0124c000) ring 4096 dwords, pending 8
+queue table flip 32 entry 40: wptr 272 rptr 272 (at 0xf0128c000) ring 4096 dwords, pending 0
+--- before the fix (capture 1502)
+queue table flip 0 entry 32: wptr 16 rptr 0 (at 0xf0124c000) ring 4096 dwords, pending 16
+queue table flip 0 entry 40: wptr 16 rptr 0 (at 0xf0128c000) ring 4096 dwords, pending 16
+queue table flip 8 entry 32: wptr 80 rptr 0 (at 0xf0124c000) ring 4096 dwords, pending 80
+queue table flip 8 entry 40: wptr 80 rptr 0 (at 0xf0128c000) ring 4096 dwords, pending 80
+queue table flip 16 entry 32: wptr 144 rptr 0 (at 0xf0124c000) ring 4096 dwords, pending 144
+queue table flip 16 entry 40: wptr 144 rptr 0 (at 0xf0128c000) ring 4096 dwords, pending 144
+queue table flip 24 entry 32: wptr 208 rptr 0 (at 0xf0124c000) ring 4096 dwords, pending 208
+queue table flip 24 entry 40: wptr 208 rptr 0 (at 0xf0128c000) ring 4096 dwords, pending 208
+queue table flip 32 entry 32: wptr 272 rptr 0 (at 0xf0124c000) ring 4096 dwords, pending 272
+queue table flip 32 entry 40: wptr 272 rptr 0 (at 0xf0128c000) ring 4096 dwords, pending 272
