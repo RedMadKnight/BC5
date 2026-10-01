@@ -96,6 +96,7 @@ struct Device::Impl {
     ScratchBo slots[kSlots];
     int cur = 0;
     std::atomic<std::uint64_t> slot_seq[kSlots] = {}; // sequence number of the job using the slot, 0 = free
+    std::atomic<std::uint64_t> last_seq{0};            // the job queued last (Device::wait_idle)
 
     bool scratch_reserve(std::uint64_t bytes) {
         ScratchBo &scratch = slots[cur];
@@ -758,7 +759,10 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     if (async_) {
         r.slot = static_cast<std::uint32_t>(impl_->cur);
         r.pending = r.rc == 0;
-        if (r.pending) impl_->slot_seq[impl_->cur] = req.seq_no;
+        if (r.pending) {
+            impl_->slot_seq[impl_->cur] = req.seq_no;
+            impl_->last_seq = req.seq_no;
+        }
         r.submit_ms = now_ms() - t0;
         if (list != impl_->full_list) amdgpu_bo_list_destroy(list);
         submits_++;
@@ -792,6 +796,18 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     submits_++;
     r.ok = r.rc == 0 && expired != 0;
     return r;
+}
+
+bool Device::wait_idle(std::uint64_t timeout_ns) {
+    const std::uint64_t seq = impl_->last_seq.load();
+    if (seq == 0) return true;
+    amdgpu_cs_fence fence{};
+    fence.context = impl_->ctx;
+    fence.ip_type = AMDGPU_HW_IP_GFX;
+    fence.ring = 0;
+    fence.fence = seq;
+    std::uint32_t expired = 0;
+    return amdgpu_cs_query_fence_status(&fence, timeout_ns, 0, &expired) == 0 && expired != 0;
 }
 
 SubmitResult Device::finish(std::uint64_t seq_no, std::uint32_t slot, std::uint64_t timeout_ns) {

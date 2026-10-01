@@ -915,10 +915,10 @@ index 5f87e6b..e5c534e 100644
  	CondRemoveWaiter(cond_value, thread);
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..bd5c18d
+index 0000000..0fb14a8
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,3934 @@
+@@ -0,0 +1,3976 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -972,6 +972,7 @@ index 0000000..bd5c18d
 +#include <map>
 +#include <set>
 +#include <mutex>
++#include <shared_mutex>
 +#include <string>
 +#include <thread>
 +#include <vector>
@@ -1080,9 +1081,10 @@ index 0000000..bd5c18d
 +// buffer's packets counts as executed by the GPU. drain() returns when nothing is in flight.
 +static void post(std::function<void(bool failed)> fn);
 +static void drain();
-+// Each submitting thread has its own completion queue (0: the game's threads through the ioctls,
-+// 1: the doorbell-queue consumer): a buffer's soft-CP pass may wait for what another queue's
-+// pass writes, as the two did when each ran on its submitting thread.
++// The doorbell-queue consumer (source 1) keeps waiting for its own jobs and runs its soft-CP
++// pass itself: a compute buffer may end in a wait for the next frame's label, and that wait has
++// to block the compute queue and nothing else (run 110: on a shared completion thread it held
++// up the game's flip until its timeout). Only the game's threads (source 0) queue and go on.
 +static void set_source(int index);
 +static void gds_selftest();
 +static void gds_snapshot(const char* why);
@@ -1843,6 +1845,11 @@ index 0000000..bd5c18d
 +// BC5_DIRECT_ASYNC=1 (experiment 0024): jobs are queued and completed by a thread of their own
 +// (needs BC5_DIRECT_JOURNAL=min: the crash journal writes one line in two halves around a job).
 +static const bool g_async = std::getenv("BC5_DIRECT_ASYNC") != nullptr && g_journal_min;
++static std::shared_mutex g_finish_mutex; // shared: waiting for a job on g_dev; exclusive: replacing g_dev
++// With jobs in flight a mapping must not go away or change under a job that may be using it
++// (the kernel clears the page-table entries at once, whatever is still running): waits until
++// everything queued so far has run. Defined with the completion queue.
++static void wait_jobs();
 +static Stage                                g_stage = Stage::Off;
 +static uint32_t                             g_cu_mask = 0xffffffffu;
 +static std::atomic<uint64_t>                g_submits {0};
@@ -2302,6 +2309,7 @@ index 0000000..bd5c18d
 +	}
 +
 +	// 2. the views' addresses: every (view, imported range) intersection is one GPU mapping
++	if (!retired.empty() || sig != S.views_sig) wait_jobs(); // mappings are about to go or be replaced
 +	uint32_t mapped = 0, unmapped = 0, map_failed = 0;
 +	if (sig != S.views_sig || S.bos.size() != S.bos_mapped || !retired.empty()) {
 +		std::vector<DMap> want;
@@ -2450,6 +2458,7 @@ index 0000000..bd5c18d
 +	for (const auto& m: have) {
 +		if (m.shared) continue; // an imported direct-memory range: direct_sync's business
 +		if (inside_vma(m.va, m.va + m.size, m.readonly)) continue;
++		wait_jobs();
 +		journal("unmap 0x%" PRIx64 " +0x%" PRIx64 " (no longer %s anonymous) ... ", m.va, m.size, m.readonly ? "r--/r-x" : "rw");
 +		const bool ok = g_dev->unmap_userptr(m.va);
 +		journal("%s\n", ok ? "ok" : "FAILED");
@@ -3259,6 +3268,10 @@ index 0000000..bd5c18d
 +					if (!g_dev || !g_dev->wedged()) {
 +						while (!(ok = wait_satisfied(p, op == 0x93)) && SoftCp::now_ns() - t0 < limit) std::this_thread::sleep_for(std::chrono::microseconds(50));
 +					}
++					if (!ok && op == 0x93 && len >= 8) {
++						journal("  wait detail: function %u, value 0x%" PRIx64 ", reference 0x%" PRIx64 ", mask 0x%" PRIx64 "\n", p[1] & 7u,
++						        *reinterpret_cast<const volatile uint64_t*>(label & ~7ull), p[4] | (static_cast<uint64_t>(p[5]) << 32u), p[6] | (static_cast<uint64_t>(p[7]) << 32u));
++					}
 +					journal("cpu-wait %s at %u on 0x%" PRIx64 ": %s after %.1f ms\n", op == 0x93 ? "WAIT_REG_MEM64" : "WAIT_REG_MEM", i, label, ok ? "satisfied" : "TIMEOUT", static_cast<double>(SoftCp::now_ns() - t0) / 1e6);
 +					if (std::getenv("BC5_DIRECT_TIMING") != nullptr) journal("timing: t %.3f s after that wait (%s %u dwords)\n", timing_now(), kind, num_dwords);
 +					SoftCp::set_gpu_executed(p, len, {0}); // the soft CP must not wait again
@@ -3320,6 +3333,7 @@ index 0000000..bd5c18d
 +		static const bool reopen = std::getenv("BC5_DIRECT_REOPEN") != nullptr;
 +		if (reopen) { // after any timeout: the kernel's ring reset recovers shader stalls too (run 41)
 +			std::this_thread::sleep_for(std::chrono::seconds(12)); // the kernel's timeout + reset
++			std::unique_lock finish_lock(g_finish_mutex);
 +			g_dev.reset();
 +			const char* node = std::getenv("BC5_DIRECT_NODE");
 +			bc5::direct::OpenOptions ro;
@@ -3407,7 +3421,8 @@ index 0000000..bd5c18d
 +			bc5::direct::SubmitResult r;
 +			while (g_recovering.load()) std::this_thread::sleep_for(std::chrono::milliseconds(1));
 +			if (g_dev && j.dev_gen == g_dev_gen.load()) {
-+				r = g_dev->finish(j.seq, j.slot, 2'000'000'000ull);
++				std::shared_lock finish_lock(g_finish_mutex);
++				if (g_dev) r = g_dev->finish(j.seq, j.slot, 2'000'000'000ull);
 +			} else {
 +				r.rc = -125; // -ECANCELED: the device it was queued on is gone
 +			}
@@ -3456,7 +3471,7 @@ index 0000000..bd5c18d
 +}
 +
 +static void post(std::function<void(bool failed)> fn) {
-+	if (!g_async) {
++	if (!g_async || t_cq == 1) { // the consumer has waited for its jobs itself
 +		fn(false);
 +		return;
 +	}
@@ -3468,6 +3483,11 @@ index 0000000..bd5c18d
 +static void drain() {
 +	if (!g_async) return;
 +	while (g_cq_items.load() != 0) std::this_thread::sleep_for(std::chrono::microseconds(50));
++}
++
++static void wait_jobs() {
++	if (!g_async || !g_dev) return;
++	g_dev->wait_idle(2'000'000'000ull);
 +}
 +
 +static void submit_one(const uint32_t* ib, uint32_t num_dwords, const char* kind, bool from_header) {
@@ -3925,6 +3945,21 @@ index 0000000..bd5c18d
 +		retried = true;
 +		r       = g_dev->submit(std::span<const uint32_t>(ib, num_dwords), opt, 2'000'000'000ull, with_gds);
 +	}
++	if (r.pending && t_cq == 1) { // BC5_DIRECT_ASYNC: the doorbell consumer waits for its own jobs
++		bc5::direct::SubmitResult fr;
++		{
++			std::shared_lock finish_lock(g_finish_mutex);
++			fr = g_dev->finish(r.seq_no, r.slot, 2'000'000'000ull);
++		}
++		r.pending      = false;
++		r.ok           = fr.ok;
++		r.rc           = fr.rc;
++		r.timed_out    = fr.timed_out;
++		r.fault_addr   = fr.fault_addr;
++		r.fault_status = fr.fault_status;
++		r.fence_ms     = fr.fence_ms;
++		r.submit_ms    = r.cs_ms + fr.fence_ms;
++	}
 +	if (r.pending) { // BC5_DIRECT_ASYNC: the completion thread waits for it and journals the result
 +		g_ok++;
 +		SoftCp::set_gpu_executed(ib, num_dwords, r.executed_offsets);
@@ -4061,7 +4096,14 @@ index 0000000..bd5c18d
 +			direct_breakdown("ENOMEM", r.bo_count);
 +		}
 +	}
-+	if (r.timed_out) recover_after_timeout(r);
++	if (r.timed_out) {
++		if (g_async) { // what the game's threads still have in flight was queued on this device
++			g_recovering = true;
++			g_dev_gen++;
++		}
++		recover_after_timeout(r);
++		g_recovering = false;
++	}
 +}
 +#else
 +static void init_once() {}
@@ -4854,10 +4896,21 @@ index 0000000..bd5c18d
 +
 +} // namespace Libs
 diff --git a/src/libs/controller.cpp b/src/libs/controller.cpp
-index 55718eb..5ed8d69 100644
+index 55718eb..9cbf3c2 100644
 --- a/src/libs/controller.cpp
 +++ b/src/libs/controller.cpp
-@@ -45,6 +45,8 @@ struct ControllerState {
+@@ -12,6 +12,10 @@
+ #include "libs/libs.h"
+ #include "libs/padData.h"
+ 
++#include <thread>
++#include <chrono>
++#include <string>
++#include <cstdlib>
+ #include <algorithm>
+ #include <cstring>
+ #include <vector>
+@@ -45,6 +49,8 @@ struct ControllerState {
  	uint64_t time                                  = 0;
  	uint32_t buttons                               = 0;
  	int      axes[static_cast<int>(Axis::AxisMax)] = {128, 128, 128, 128, 0, 0};
@@ -4866,7 +4919,7 @@ index 55718eb..5ed8d69 100644
  };
  
  // Local-multiplayer: one GameController owns up to PAD_MAX_CONTROLLERS player
-@@ -61,6 +63,7 @@ public:
+@@ -61,6 +67,7 @@ public:
  	void Disconnect(int id);
  	void Button(int id, uint32_t button, bool down);
  	void Axis(int id, Axis axis, int value);
@@ -4874,7 +4927,7 @@ index 55718eb..5ed8d69 100644
  	void ResetInputState();
  	void GetConnectionInfo(bool* flag, int* count);
  	void ReadState(ControllerState* state, bool* flag, int* count);
-@@ -78,7 +81,18 @@ private:
+@@ -78,7 +85,18 @@ private:
  		bool            obtained[STATES_MAX] = {};
  		uint32_t        states_num          = 0;
  		uint32_t        first_state         = 0;
@@ -4893,7 +4946,7 @@ index 55718eb..5ed8d69 100644
  
  	void EnsureSlot(int index);
  	int  OwnerSlot(int id) const;
-@@ -180,7 +194,13 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
+@@ -180,7 +198,13 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
  	data->right_stick_y          = state.axes[static_cast<int>(Axis::RightY)];
  	data->analog_buttons_l2      = state.axes[static_cast<int>(Axis::TriggerLeft)];
  	data->analog_buttons_r2      = state.axes[static_cast<int>(Axis::TriggerRight)];
@@ -4908,7 +4961,67 @@ index 55718eb..5ed8d69 100644
  	data->touch_data_touch0_id   = 1;
  	data->touch_data_touch1_id   = 2;
  	data->connected              = connected;
-@@ -268,6 +288,12 @@ void ControllerAxis(int id, Axis axis, int value) {
+@@ -189,11 +213,59 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
+ 	data->device_unique_data_len = 0;
+ }
+ 
++// BC5: KYTY_BC5_AUTOPRESS="47:cross,52:cross,480:shake,500:options" presses pad buttons (cross,
++// circle, square, triangle, options) or shakes the pad (two seconds of alternating acceleration)
++// at the given seconds after start — for unattended runs past the title screen. Nothing is
++// pressed without the variable.
++static void Bc5AutoPress(std::string plan) {
++	const auto start = std::chrono::steady_clock::now();
++	size_t     pos   = 0;
++	while (pos < plan.size()) {
++		size_t end = plan.find(',', pos);
++		if (end == std::string::npos) end = plan.size();
++		const std::string item  = plan.substr(pos, end - pos);
++		pos                     = end + 1;
++		const size_t      colon = item.find(':');
++		if (colon == std::string::npos) continue;
++		const double      at   = std::atof(item.substr(0, colon).c_str());
++		const std::string what = item.substr(colon + 1);
++		std::this_thread::sleep_until(start + std::chrono::milliseconds(static_cast<int64_t>(at * 1000.0)));
++		if (what == "shake") {
++			for (int k = 0; k < 40; k++) {
++				const float a[3] = {(k & 1) != 0 ? 3.0f : -3.0f, 1.0f, (k & 1) != 0 ? -2.0f : 2.0f};
++				const float w[3] = {(k & 1) != 0 ? 8.0f : -8.0f, 0.0f, 0.0f};
++				ControllerMotion(-1000, false, a);
++				ControllerMotion(-1000, true, w);
++				std::this_thread::sleep_for(std::chrono::milliseconds(50));
++			}
++			const float rest[3] = {0.0f, 1.0f, 0.0f}, still[3] = {0.0f, 0.0f, 0.0f};
++			ControllerMotion(-1000, false, rest);
++			ControllerMotion(-1000, true, still);
++			LOGF("[bc5] autopress: shake at %.1f s\n", at);
++			continue;
++		}
++		uint32_t button = 0;
++		if (what == "cross") button = PAD_BUTTON_CROSS;
++		if (what == "circle") button = PAD_BUTTON_CIRCLE;
++		if (what == "square") button = PAD_BUTTON_SQUARE;
++		if (what == "triangle") button = PAD_BUTTON_TRIANGLE;
++		if (what == "options") button = PAD_BUTTON_OPTIONS;
++		if (button == 0) continue;
++		ControllerButton(-1000, button, true);
++		std::this_thread::sleep_for(std::chrono::milliseconds(150));
++		ControllerButton(-1000, button, false);
++		LOGF("[bc5] autopress: %s at %.1f s\n", what.c_str(), at);
++	}
++}
++
+ KYTY_SUBSYSTEM_INIT(Controller) {
+ 	EXIT_IF(g_controller != nullptr);
+ 
+ 	g_controller = new GameController;
+ 	g_controller->ResetInputState();
++	if (const char* plan = std::getenv("KYTY_BC5_AUTOPRESS"); plan != nullptr && *plan != 0) {
++		std::thread(Bc5AutoPress, std::string(plan)).detach();
++	}
+ 
+ 	// The native DualSense HID driver is opt-in and off by default. SDL already
+ 	// handles every standard pad (including a DualSense); this unvalidated driver is
+@@ -268,6 +340,12 @@ void ControllerAxis(int id, Axis axis, int value) {
  	g_controller->Axis(id, axis, value);
  }
  
@@ -4921,7 +5034,7 @@ index 55718eb..5ed8d69 100644
  void ControllerResetInputState() {
  	EXIT_IF(g_controller == nullptr);
  	g_controller->ResetInputState();
-@@ -443,6 +469,20 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
+@@ -443,6 +521,20 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
  	AddState(slot, state);
  }
  
@@ -4942,7 +5055,7 @@ index 55718eb..5ed8d69 100644
  void GameController::ResetInputState() {
  	Common::LockGuard lock(m_mutex);
  
-@@ -488,6 +528,7 @@ int GameController::ReadStateForSlot(int index, ControllerState* state, bool* fl
+@@ -488,6 +580,7 @@ int GameController::ReadStateForSlot(int index, ControllerState* state, bool* fl
  	*flag  = SlotConnected(index);
  	*count = PresentCount();
  	*state = GetLastState(index);
@@ -4950,7 +5063,7 @@ index 55718eb..5ed8d69 100644
  
  	return 0;
  }
-@@ -523,7 +564,9 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
+@@ -523,7 +616,9 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
  			auto state_index = (s.first_state + i) % STATES_MAX;
  			if (!s.obtained[state_index]) {
  				s.obtained[state_index] = true;

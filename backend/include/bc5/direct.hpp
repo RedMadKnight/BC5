@@ -136,6 +136,10 @@ public:
     void set_async(bool v) { async_ = v; }
     bool async() const { return async_; }
     SubmitResult finish(std::uint64_t seq_no, std::uint32_t slot, std::uint64_t timeout_ns);
+    // Waits for the job queued last (the ring runs them in order, so for all of them). False
+    // when it did not finish within the timeout. For a host that is about to change mappings a
+    // running job may be using.
+    bool wait_idle(std::uint64_t timeout_ns);
     std::uint64_t submits() const { return submits_; }
 
     // Staging knob: when false, submits carry only the scratch IB in their BO list (the userptr
