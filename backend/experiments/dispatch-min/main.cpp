@@ -262,7 +262,7 @@ int submit(const Options &o) {
     req.number_of_ibs = 1;
     req.ibs = &ib_info;
 
-    // --repeat N: the same IB N times, each timed from the submit to its fence (experiment 0018:
+    // --repeat N: the same IB N times, each timed from the submit to its fence (experiment 0019:
     // throughput against the CU mask). The first run also pays for the first touch of the BOs.
     int rc = 0;
     std::uint32_t expired = 0;
