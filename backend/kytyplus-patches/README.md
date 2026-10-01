@@ -125,3 +125,7 @@ Experiment 0020: the HLE `Json2` library gained the 28 `sce::Json` functions the
 journal breaks imported memory down by the game's mapping names every 512 MiB and on `-ENOMEM`;
 `BC5_DIRECT_LAZY_NAMES=orbis_user_malloc` imports views of that name only where a hint or a
 learned fault asks.
+Experiment 0021 (the emulator's own GTT share): `KYTY_BC5_CACHE_MIB=staging,stream,download,device`
+sets the sizes of the buffer cache's four fixed buffers (defaults 512, 64, 64, 128 MiB; the direct
+path runs with 96,16,16,16), `KYTY_BC5_VMA_BLOCK_MIB=16` the allocator's block size, and
+`KYTY_BC5_VMA_TRACE=1` logs every allocation and release with its callers.

@@ -71,6 +71,238 @@ index 78fd86f..462e774 100644
  
  namespace Libs::Graphics::Pm4 {
  
+diff --git a/src/graphics/host_gpu/renderer/cache/bufferCache.cpp b/src/graphics/host_gpu/renderer/cache/bufferCache.cpp
+index d429de1..ed4a0fc 100644
+--- a/src/graphics/host_gpu/renderer/cache/bufferCache.cpp
++++ b/src/graphics/host_gpu/renderer/cache/bufferCache.cpp
+@@ -15,6 +15,7 @@
+ #include <array>
+ #include <atomic>
+ #include <cinttypes>
++#include <cstdlib>
+ #include <cstring>
+ #include <utility>
+ #include <vector>
+@@ -24,6 +25,23 @@ namespace Libs::Graphics {
+ namespace {
+ 
+ constexpr uint64_t MiB           = 1024 * 1024;
++// BC5 (F46): on the direct GPU path the emulator renders nothing but the presented frame, and
++// these four fixed buffers (768 MiB) sit in the same GTT domain as the game's memory.
++// KYTY_BC5_CACHE_MIB=staging,stream,download,device overrides their sizes in MiB.
++uint64_t Bc5CacheSize(int index, uint64_t default_mib) {
++	uint64_t mib = default_mib;
++	if (const char* e = std::getenv("KYTY_BC5_CACHE_MIB"); e != nullptr) {
++		for (int i = 0; e != nullptr && *e != 0; i++) {
++			char*               end = nullptr;
++			const unsigned long v   = std::strtoul(e, &end, 10);
++			if (i == index && end != e && v != 0) {
++				mib = v;
++			}
++			e = (end != nullptr && *end == ',') ? end + 1 : nullptr;
++		}
++	}
++	return mib * MiB;
++}
+ constexpr uint64_t GdsBufferSize = 64 * 1024;
+ 
+ } // namespace
+@@ -247,14 +265,14 @@ BufferCache::BufferCache(GraphicContext& graphics, CommandScheduler& scheduler,
+     : m_graphics(graphics), m_scheduler(scheduler),
+       m_gds_buffer(graphics, scheduler, MemoryUsage::Stream, 0, AllFlags, GdsBufferSize),
+       m_memory_tracker(page_manager),
+-      m_staging_buffer(graphics, scheduler, MemoryUsage::Upload, 512 * MiB),
+-      m_stream_buffer(graphics, scheduler, MemoryUsage::Stream, 64 * MiB),
++      m_staging_buffer(graphics, scheduler, MemoryUsage::Upload, Bc5CacheSize(0, 512)),
++      m_stream_buffer(graphics, scheduler, MemoryUsage::Stream, Bc5CacheSize(1, 64)),
+       // KytyPlus: 32 MiB was too small for a single large guest readback (for example a
+       // 2848x1600 RGBA16F image is ~36 MiB), which aborted the emulator from RecordDownloads.
+       // 64 MiB holds the largest single readback seen (~36 MiB for 2848x1600 RGBA16F);
+       // RecordDownloads also packs into capacity-sized batches and degrades gracefully.
+-      m_download_buffer(graphics, scheduler, MemoryUsage::Download, 64 * MiB),
+-      m_device_buffer(graphics, scheduler, MemoryUsage::DeviceLocal, 128 * MiB),
++      m_download_buffer(graphics, scheduler, MemoryUsage::Download, Bc5CacheSize(2, 64)),
++      m_device_buffer(graphics, scheduler, MemoryUsage::DeviceLocal, Bc5CacheSize(3, 128)),
+       m_texture_cache(texture_cache) {
+ 	std::memset(m_gds_buffer.Mapped().data(), 0, static_cast<size_t>(m_gds_buffer.Size()));
+ 	m_gds_buffer.Flush(0, m_gds_buffer.Size());
+diff --git a/src/graphics/host_gpu/renderer/cache/streamBuffer.cpp b/src/graphics/host_gpu/renderer/cache/streamBuffer.cpp
+index f6a0e22..7832ea8 100644
+--- a/src/graphics/host_gpu/renderer/cache/streamBuffer.cpp
++++ b/src/graphics/host_gpu/renderer/cache/streamBuffer.cpp
+@@ -6,6 +6,7 @@
+ #include "graphics/host_gpu/renderer/commandScheduler.h"
+ #include "graphics/host_gpu/vma.h"
+ 
++#include <cstdio>
+ #include <cstring>
+ #include <limits>
+ #include <numeric>
+@@ -98,6 +99,12 @@ Buffer::Buffer(GraphicContext& graphics, CommandScheduler& scheduler, MemoryUsag
+ 	m_buffer->memory.offset          = allocation_result.offset;
+ 	m_buffer->memory.type            = allocation_result.memoryType;
+ 	m_buffer->memory.unique_id       = VulkanNextMemoryUniqueId();
++	{
++		char detail[80];
++		std::snprintf(detail, sizeof(detail), "cache usage 0x%x type %u guest 0x%llx", static_cast<uint32_t>(static_cast<vk::BufferUsageFlags::MaskType>(flags)),
++		              allocation_result.memoryType, static_cast<unsigned long long>(cpu_address));
++		VulkanTraceMemory("buffer", m_buffer->memory.allocation, allocation_result.size, detail);
++	}
+ 	graphics.device.getBufferMemoryRequirements(m_buffer->buffer, &m_buffer->memory.requirements);
+ 
+ 	VkMemoryPropertyFlags properties = 0;
+@@ -114,6 +121,7 @@ Buffer::Buffer(GraphicContext& graphics, CommandScheduler& scheduler, MemoryUsag
+ Buffer::~Buffer() {
+ 	if (m_buffer->buffer != nullptr) {
+ 		VulkanUntrackAllocation(m_buffer->memory);
++		VulkanTraceMemory("free", m_buffer->memory.allocation, 0, "cache buffer");
+ 		vmaDestroyBuffer(m_graphics->allocator, m_buffer->buffer, m_buffer->memory.allocation);
+ 	}
+ }
+diff --git a/src/graphics/host_gpu/renderer/image/tiler.cpp b/src/graphics/host_gpu/renderer/image/tiler.cpp
+index ec40f23..89484e3 100644
+--- a/src/graphics/host_gpu/renderer/image/tiler.cpp
++++ b/src/graphics/host_gpu/renderer/image/tiler.cpp
+@@ -1,4 +1,5 @@
+ #include "graphics/host_gpu/renderer/image/tiler.h"
++#include "graphics/host_gpu/vma.h"
+ 
+ #include "common/assert.h"
+ #include "gpu_tiler_shaders/gpu_tiler_demote_d16_spv.h"
+@@ -106,13 +107,17 @@ TileManager::Scratch TileManager::AllocateScratch(uint64_t size) {
+ 	RequireVulkanSuccess(static_cast<vk::Result>(vmaCreateBuffer(
+ 	                         m_graphics.allocator, &raw, &allocate, &buffer, &memory, nullptr)),
+ 	                     "allocate TileManager scratch buffer");
++	VulkanTraceMemory("buffer", memory, size, "tiler scratch");
+ 	return {buffer, memory, size};
+ }
+ 
+ void TileManager::DeferDestroy(Scratch scratch) {
+ 	auto allocator = m_graphics.allocator;
+ 	m_scheduler.DeferOperation(
+-	    [allocator, scratch] { vmaDestroyBuffer(allocator, scratch.buffer, scratch.allocation); });
++	    [allocator, scratch] {
++		    VulkanTraceMemory("free", scratch.allocation, 0, "tiler scratch");
++		    vmaDestroyBuffer(allocator, scratch.buffer, scratch.allocation);
++	    });
+ }
+ 
+ void TileManager::Prepare(bool tile, uint64_t tiled_capacity, uint64_t linear_capacity,
+diff --git a/src/graphics/host_gpu/vma.cpp b/src/graphics/host_gpu/vma.cpp
+index 14608a6..814f364 100644
+--- a/src/graphics/host_gpu/vma.cpp
++++ b/src/graphics/host_gpu/vma.cpp
+@@ -25,6 +25,12 @@
+ #include <algorithm>
+ #include <atomic>
+ #include <cinttypes>
++#include <cstdio>
++#include <cstdlib>
++#if defined(__linux__)
++#include <dlfcn.h>
++#include <execinfo.h>
++#endif
+ 
+ namespace Libs::Graphics {
+ 
+@@ -75,6 +81,11 @@ bool GraphicContext::CreateAllocator() {
+ 	info.pVulkanFunctions = &functions;
+ 	info.vulkanApiVersion = VULKAN_TARGET_API_VERSION;
+ 	info.flags = memory_budget_ext_enabled ? VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT : 0;
++	// BC5 (F46): VMA carves small allocations out of 256 MiB blocks by default; on the direct GPU
++	// path that slack sits in the GTT domain the game needs. KYTY_BC5_VMA_BLOCK_MIB sets the block size.
++	if (const char* e = std::getenv("KYTY_BC5_VMA_BLOCK_MIB"); e != nullptr && std::atoi(e) > 0) {
++		info.preferredLargeHeapBlockSize = static_cast<VkDeviceSize>(std::atoi(e)) * 1024 * 1024;
++	}
+ 
+ 	const auto result = static_cast<vk::Result>(vmaCreateAllocator(&info, &allocator));
+ 	if (result != vk::Result::eSuccess) {
+@@ -131,6 +142,30 @@ void GraphicContext::DestroyAllocator() {
+ 	allocator = nullptr;
+ }
+ 
++// BC5 (F46): what the emulator's own Vulkan side keeps in the driver's GTT domain, next to the
++// game's memory. KYTY_BC5_VMA_TRACE=1: one line per allocation and release — kind, handle, bytes,
++// a description, and the callers as offsets into the executable (for addr2line).
++void VulkanTraceMemory(const char* what, const void* handle, uint64_t size, const char* detail) {
++	static const bool on = std::getenv("KYTY_BC5_VMA_TRACE") != nullptr;
++	if (!on) {
++		return;
++	}
++	char callers[160] = "";
++#if defined(__linux__)
++	void*     frames[7] {};
++	const int n   = backtrace(frames, 7);
++	int       pos = 0;
++	for (int i = 2; i < n && pos < 140; i++) {
++		Dl_info info {};
++		if (dladdr(frames[i], &info) != 0 && info.dli_fbase != nullptr) {
++			pos += std::snprintf(callers + pos, sizeof(callers) - static_cast<size_t>(pos), " +0x%" PRIx64,
++			                     static_cast<uint64_t>(reinterpret_cast<uintptr_t>(frames[i]) - reinterpret_cast<uintptr_t>(info.dli_fbase)));
++		}
++	}
++#endif
++	LOGF("[vma] %s %p %" PRIu64 " %s |%s\n", what, handle, size, detail != nullptr ? detail : "", callers);
++}
++
+ uint64_t VulkanNextMemoryUniqueId() {
+ 	static std::atomic_uint64_t sequence = 0;
+ 	return ++sequence;
+@@ -238,6 +273,11 @@ void GraphicContext::CreateBuffer(uint64_t size, VulkanBuffer& buffer) {
+ 	buffer.memory.unique_id = VulkanNextMemoryUniqueId();
+ 	buffer.buffer_size      = size;
+ 	VulkanTrackAllocation(buffer.memory);
++	{
++		char detail[64];
++		std::snprintf(detail, sizeof(detail), "usage 0x%x type %u", static_cast<uint32_t>(static_cast<vk::BufferUsageFlags::MaskType>(buffer.usage)), buffer.memory.type);
++		VulkanTraceMemory("buffer", buffer.memory.allocation, buffer.memory.allocation_info.size, detail);
++	}
+ }
+ 
+ void GraphicContext::DeleteBuffer(VulkanBuffer& buffer) {
+@@ -246,6 +286,7 @@ void GraphicContext::DeleteBuffer(VulkanBuffer& buffer) {
+ 	        buffer.memory.allocation == nullptr);
+ 
+ 	VulkanUntrackAllocation(buffer.memory);
++	VulkanTraceMemory("free", buffer.memory.allocation, 0, "buffer");
+ 	vmaDestroyBuffer(allocator, buffer.buffer, buffer.memory.allocation);
+ 	buffer.buffer                 = nullptr;
+ 	buffer.memory.memory          = nullptr;
+@@ -280,6 +321,13 @@ bool GraphicContext::CreateImage(const vk::ImageCreateInfo& image_info, VulkanIm
+ 	memory.offset    = memory.allocation_info.offset;
+ 	memory.unique_id = VulkanNextMemoryUniqueId();
+ 	VulkanTrackAllocation(memory);
++	{
++		char detail[112];
++		std::snprintf(detail, sizeof(detail), "%ux%ux%u fmt %d mips %u layers %u samples %u usage 0x%x type %u", image_info.extent.width, image_info.extent.height,
++		              image_info.extent.depth, static_cast<int>(image_info.format), image_info.mipLevels, image_info.arrayLayers,
++		              static_cast<uint32_t>(image_info.samples), static_cast<uint32_t>(static_cast<vk::ImageUsageFlags::MaskType>(image_info.usage)), memory.type);
++		VulkanTraceMemory("image", memory.allocation, memory.allocation_info.size, detail);
++	}
+ 	return true;
+ }
+ 
+@@ -289,6 +337,7 @@ void GraphicContext::DeleteImage(VulkanImage& image) {
+ 
+ 	auto& memory = image.memory;
+ 	VulkanUntrackAllocation(memory);
++	VulkanTraceMemory("free", memory.allocation, 0, "image");
+ 	vmaDestroyImage(allocator, image.image, memory.allocation);
+ 	image.image            = nullptr;
+ 	memory.memory          = nullptr;
+diff --git a/src/graphics/host_gpu/vma.h b/src/graphics/host_gpu/vma.h
+index a656b67..94a249c 100644
+--- a/src/graphics/host_gpu/vma.h
++++ b/src/graphics/host_gpu/vma.h
+@@ -9,6 +9,8 @@ namespace Libs::Graphics {
+ uint64_t VulkanNextMemoryUniqueId();
+ void     VulkanTrackAllocation(const VulkanMemory& memory);
+ void     VulkanUntrackAllocation(const VulkanMemory& memory);
++// BC5: KYTY_BC5_VMA_TRACE=1 logs every allocation and release of the emulator's own Vulkan memory.
++void     VulkanTraceMemory(const char* what, const void* handle, uint64_t size, const char* detail);
+ 
+ } // namespace Libs::Graphics
+ 
 diff --git a/src/graphics/presentation/videoOut.cpp b/src/graphics/presentation/videoOut.cpp
 index f980320..36ea766 100644
 --- a/src/graphics/presentation/videoOut.cpp
