@@ -172,3 +172,32 @@ cutscene with jobs in flight, 25–30 % more frames than synchronously. The stal
 and 111 were the host's all-or-nothing serving of a queue, exposed by the game's thread running
 ahead, not the scheme itself. Still to run before it becomes the default: gameplay with a
 controller, a longer session, and a page fault with jobs in flight.
+
+*Run 115* (23:38, GPU, jobs in flight, the maintainer at the controller; capture
+`kytyplus-20261001-2338`, `raw/run115-summary.txt`): **492,815 submissions in 632 s, none
+failed, no wait timed out, no queue held back, no page fault. The first level under the
+player's control at 47–55 fps (24 in run 104, 41–47 synchronously), and then further than any
+run before: the level's end, the galaxy map and the flight to the next level.** Title screen
+55 fps, loading 60, cutscene 48–54. The seconds with 6–9 flips are the ends of the two loads
+(266–281 s and 529–538 s), as they are synchronously.
+
+The run ended at 632 s, on the way into the second level, in the game's own code:
+`Assertion failed: m_points.size() == n`, then the assertion's `int 0x41`, which the host
+reports as an access violation. It is not the submission path. The game reads a level path
+from a JSON document — a count `n` and a flat array of coordinates — through the host's
+stand-in for libSceJson2. It accepts a count of the integer or of the unsigned type and reads
+it with `getInteger()` either way; the stand-in's parser types every non-negative number as
+unsigned and its `getInteger()` answered 0 for that type. `getInteger()` now serves both types
+(`TODO(verify)` what the console's parser makes of a non-negative number). Not re-run: it
+takes playing through the first level again.
+
+Found on the way: the game saves through `sceSaveDataSetSaveDataMemory2` only (37 times in
+this run), and the host kept that memory in a vector — the progress went with the process. It
+is a file now (`_SaveData/<title>/sce_sdmemory/memory.dat` under the working directory, or
+under `KYTY_BC5_SAVEDATA_DIR`), read before first use and rewritten after every set. Map-only:
+the game writes its initial save four times at start-up; 28 flips as before.
+
+**Verdict, revised (2026-10-02).** Passed, gameplay with a controller included: ten and a half
+minutes, half a million submissions, nothing failed. A page fault with jobs in flight has
+still not happened in a run. The launcher's settings on the dev box now have
+`BC5_DIRECT_ASYNC=1`.

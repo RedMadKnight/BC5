@@ -5148,7 +5148,7 @@ index 3c0684f..589e4cc 100644
  
  int KYTY_SYSV_ABI PadInit();
 diff --git a/src/libs/libJson2.cpp b/src/libs/libJson2.cpp
-index 183cd85..24a760a 100644
+index 183cd85..40d7f58 100644
 --- a/src/libs/libJson2.cpp
 +++ b/src/libs/libJson2.cpp
 @@ -4,9 +4,12 @@
@@ -5194,7 +5194,7 @@ index 183cd85..24a760a 100644
  	return (self != nullptr ? self->type : JsonValueTypeNull);
  }
  
-@@ -703,6 +722,7 @@ static const bool* KYTY_SYSV_ABI JsonValueGetBoolean(const JsonValue* self) {
+@@ -703,14 +722,19 @@ static const bool* KYTY_SYSV_ABI JsonValueGetBoolean(const JsonValue* self) {
  	PRINT_NAME();
  
  	static const bool false_value = false;
@@ -5202,7 +5202,20 @@ index 183cd85..24a760a 100644
  	return (self != nullptr && self->type == JsonValueTypeBoolean ? &self->boolean : &false_value);
  }
  
-@@ -724,9 +744,12 @@ static const JsonValue* KYTY_SYSV_ABI JsonValueIndexString(const JsonValue* self
+ static const int64_t* KYTY_SYSV_ABI JsonValueGetInteger(const JsonValue* self) {
+ 	PRINT_NAME();
+ 
++	// BC5 (run 115): the game accepts a count that is of the integer or of the unsigned type and
++	// reads it with getInteger() either way ("n" of a level path); the parser here types every
++	// non-negative number as unsigned. Both share the storage. TODO(verify) against the console's
++	// library what its parser makes of a non-negative number.
+ 	static const int64_t zero = 0;
+-	return (self != nullptr && self->type == JsonValueTypeInteger ? &self->integer : &zero);
++	return (self != nullptr && (self->type == JsonValueTypeInteger || self->type == JsonValueTypeUInteger) ? &self->integer : &zero);
+ }
+ 
+ static const double* KYTY_SYSV_ABI JsonValueGetReal(const JsonValue* self) {
+@@ -724,9 +748,12 @@ static const JsonValue* KYTY_SYSV_ABI JsonValueIndexString(const JsonValue* self
  	PRINT_NAME();
  
  	if (self == nullptr || self->type != JsonValueTypeObject) {
@@ -5216,7 +5229,7 @@ index 183cd85..24a760a 100644
  }
  
  static const JsonValue* KYTY_SYSV_ABI JsonValueIndexUInt(const JsonValue* self, uint64_t index) {
-@@ -739,6 +762,48 @@ static const JsonValue* KYTY_SYSV_ABI JsonValueIndexUInt(const JsonValue* self,
+@@ -739,6 +766,48 @@ static const JsonValue* KYTY_SYSV_ABI JsonValueIndexUInt(const JsonValue* self,
  	return (index < impl->size() ? (*impl)[static_cast<size_t>(index)] : JsonStaticNullValue());
  }
  
@@ -5265,7 +5278,7 @@ index 183cd85..24a760a 100644
  static int32_t KYTY_SYSV_ABI JsonValueSerialize(JsonValue* self, JsonString* dst) {
  	PRINT_NAME();
  
-@@ -873,6 +938,7 @@ static JsonObject* KYTY_SYSV_ABI JsonObjectAssign(JsonObject* self, const JsonOb
+@@ -873,6 +942,7 @@ static JsonObject* KYTY_SYSV_ABI JsonObjectAssign(JsonObject* self, const JsonOb
  static JsonValue* KYTY_SYSV_ABI JsonObjectIndex(JsonObject* self, const JsonString* key) {
  	PRINT_NAME();
  
@@ -5273,7 +5286,7 @@ index 183cd85..24a760a 100644
  	return JsonObjectLookup(self, *JsonStringImpl(key), true);
  }
  
-@@ -898,6 +964,8 @@ static int32_t KYTY_SYSV_ABI JsonParserParse(JsonValue* dst, const char* src, si
+@@ -898,6 +968,8 @@ static int32_t KYTY_SYSV_ABI JsonParserParse(JsonValue* dst, const char* src, si
  	JsonValue parsed {};
  	JsonValueInit(&parsed);
  	auto json = nlohmann::json::parse(src, src + size, nullptr, false);
@@ -5282,7 +5295,7 @@ index 183cd85..24a760a 100644
  	if (json.is_discarded() || !JsonValueFromNlohmann(&parsed, json)) {
  		JsonValueClear(&parsed);
  		return JSON_ERROR_PARSE_INVALID_CHAR;
-@@ -935,6 +1003,326 @@ static int32_t KYTY_SYSV_ABI JsonValueCount(const JsonValue* self) {
+@@ -935,6 +1007,326 @@ static int32_t KYTY_SYSV_ABI JsonValueCount(const JsonValue* self) {
  	}
  }
  
@@ -5609,7 +5622,7 @@ index 183cd85..24a760a 100644
  LIB_DEFINE(InitNet_1_Json2) {
  	LIB_FUNC("-hJRce8wn1U", LibJson2::JsonMemAllocatorCtor);
  	LIB_FUNC("WSOuge5IsCg", LibJson2::JsonInitParameter2Ctor);
-@@ -971,6 +1359,34 @@ LIB_DEFINE(InitNet_1_Json2) {
+@@ -971,6 +1363,34 @@ LIB_DEFINE(InitNet_1_Json2) {
  	LIB_FUNC("urOpESTBZmo", LibJson2::JsonObjectAssign);
  	LIB_FUNC("zTwZdI8AZ5Y", LibJson2::JsonValueGetBoolean);
  	LIB_FUNC("R7FDWtcN6f8", LibJson2::JsonValueSerialize);
@@ -5731,6 +5744,126 @@ index 51c3a0e..01ed1c1 100644
  }
  #else
  static int FiberSaveContext(FiberCpuContext* ctx) {
+diff --git a/src/libs/libSaveData.cpp b/src/libs/libSaveData.cpp
+index 08aa121..a521d61 100644
+--- a/src/libs/libSaveData.cpp
++++ b/src/libs/libSaveData.cpp
+@@ -14,7 +14,12 @@
+ 
+ #include <algorithm>
+ #include <cstring>
++#include <cstdio>
++#include <cstdlib>
+ #include <deque>
++#include <filesystem>
++#include <mutex>
++#include <string>
+ #include <vector>
+ 
+ namespace Libs {
+@@ -484,6 +489,67 @@ int KYTY_SYSV_ABI SaveDataMount3(const SaveDataMount3* mount, SaveDataMountResul
+ 	return mount_save_data(slot, dir_name, mount_dir, created ? 1u : 0u, mount_result);
+ }
+ 
++// BC5 (run 115): the save data memory lives in a file, so that a save outlasts the process — the
++// game saves through sceSaveDataSetSaveDataMemory2 only, and this library kept the memory in a
++// vector. The file is _SaveData/<title>/sce_sdmemory/memory.dat under the working directory, or
++// under KYTY_BC5_SAVEDATA_DIR when that is set; it is read once, before the first use, and
++// rewritten (temporary file, then rename) after every set.
++static std::mutex g_save_data_memory_mutex;
++static bool       g_save_data_memory_loaded = false;
++
++static std::string save_data_memory_dir() {
++	const char* root = std::getenv("KYTY_BC5_SAVEDATA_DIR");
++	return std::string(root != nullptr && root[0] != 0 ? root : SAVE_DATA_DIR) + "/" + get_title_id() + "/sce_sdmemory";
++}
++
++static void save_data_memory_load() {
++	if (g_save_data_memory_loaded) {
++		return;
++	}
++	g_save_data_memory_loaded = true;
++	const std::string path    = save_data_memory_dir() + "/memory.dat";
++	std::FILE*        f       = std::fopen(path.c_str(), "rb");
++	if (f == nullptr) {
++		LOGF("\t save data memory: no file at %s\n", path.c_str());
++		return;
++	}
++	std::vector<uint8_t> data;
++	uint8_t              buf[65536];
++	size_t               n = 0;
++	while ((n = std::fread(buf, 1, sizeof(buf), f)) > 0) {
++		data.insert(data.end(), buf, buf + n);
++	}
++	std::fclose(f);
++	if (data.size() > g_save_data_memory.size()) {
++		g_save_data_memory.resize(data.size());
++	}
++	if (!data.empty()) {
++		std::memcpy(g_save_data_memory.data(), data.data(), data.size());
++	}
++	LOGF("\t save data memory: %zu bytes read from %s\n", data.size(), path.c_str());
++}
++
++static void save_data_memory_store() {
++	const std::string dir = save_data_memory_dir();
++	std::error_code   ec;
++	std::filesystem::create_directories(dir, ec);
++	const std::string path = dir + "/memory.dat";
++	const std::string tmp  = path + ".tmp";
++	std::FILE*        f    = std::fopen(tmp.c_str(), "wb");
++	if (f == nullptr) {
++		LOGF("\t save data memory: cannot write %s\n", tmp.c_str());
++		return;
++	}
++	const size_t written = std::fwrite(g_save_data_memory.data(), 1, g_save_data_memory.size(), f);
++	const bool   ok      = (std::fclose(f) == 0 && written == g_save_data_memory.size());
++	if (!ok || std::rename(tmp.c_str(), path.c_str()) != 0) {
++		LOGF("\t save data memory: writing %s failed\n", path.c_str());
++		std::remove(tmp.c_str());
++		return;
++	}
++	LOGF("\t save data memory: %zu bytes written to %s\n", written, path.c_str());
++}
++
+ int KYTY_SYSV_ABI SaveDataSetupSaveDataMemory2(const SaveDataMemorySetup2* setup_param,
+                                                SaveDataMemorySetupResult*  result) {
+ 	PRINT_NAME();
+@@ -500,6 +566,8 @@ int KYTY_SYSV_ABI SaveDataSetupSaveDataMemory2(const SaveDataMemorySetup2* setup
+ 	     setup_param->option, setup_param->user_id, static_cast<uint64_t>(setup_param->memory_size),
+ 	     static_cast<uint64_t>(setup_param->icon_memory_size), setup_param->slot_id);
+ 
++	std::lock_guard lock(g_save_data_memory_mutex);
++	save_data_memory_load();
+ 	if (setup_param->memory_size > g_save_data_memory.size()) {
+ 		g_save_data_memory.resize(setup_param->memory_size);
+ 	}
+@@ -528,6 +596,8 @@ int KYTY_SYSV_ABI SaveDataGetSaveDataMemory2(SaveDataMemoryGet2* get_param) {
+ 	     reinterpret_cast<uint64_t>(get_param->param), reinterpret_cast<uint64_t>(get_param->icon),
+ 	     get_param->slot_id);
+ 
++	std::lock_guard lock(g_save_data_memory_mutex);
++	save_data_memory_load();
+ 	if (get_param->data != nullptr) {
+ 		auto* data = get_param->data;
+ 		if (data->buf == nullptr || data->offset < 0) {
+@@ -567,6 +637,8 @@ int KYTY_SYSV_ABI SaveDataSetSaveDataMemory2(const SaveDataMemorySet2* set_param
+ 	     reinterpret_cast<uint64_t>(set_param->param), reinterpret_cast<uint64_t>(set_param->icon),
+ 	     set_param->data_num, set_param->slot_id);
+ 
++	std::lock_guard lock(g_save_data_memory_mutex);
++	save_data_memory_load();
+ 	const uint32_t data_num = (set_param->data_num == 0 ? 1 : set_param->data_num);
+ 	if (set_param->data != nullptr) {
+ 		for (uint32_t i = 0; i < data_num; i++) {
+@@ -581,6 +653,7 @@ int KYTY_SYSV_ABI SaveDataSetSaveDataMemory2(const SaveDataMemorySet2* set_param
+ 			}
+ 			std::memcpy(g_save_data_memory.data() + offset, data.buf, data.buf_size);
+ 		}
++		save_data_memory_store();
+ 	}
+ 
+ 	return OK;
 diff --git a/src/libs/libs.cpp b/src/libs/libs.cpp
 index 36e4dc8..eaa58d7 100644
 --- a/src/libs/libs.cpp
