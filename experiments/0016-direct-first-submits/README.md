@@ -796,3 +796,22 @@ submissions; (2) smaller windows / unmapping what a frame no longer uses; (3) th
 memory backed by GEM BOs mapped at the guest's addresses instead of anonymous memory mapped as
 userptr — no per-submission page walk at all, a change to ADR 0005 §1 and to KytyPlus's memory
 backing, bounded by the 7.6 GB GTT. Then step (f).
+
+**Run 81** (09:32, GPU, 135 s, option 1: `Device::set_short_lists`; `raw/e36-run81-direct.log`:
+the per-submission timing lines, flips and failures only): an IB that, with its nested IBs, holds no draw and no dispatch after filtering reaches
+guest memory only through its packets' operands, so its BO list carries the scratch, the shadow
+and just the userptr BOs those operands lie in (the filter's `mapped` callback records them; 64
+KiB before and 128 KiB plus twice the declared size after each, for tables declared with a nominal
+size). The other mappings stay in the VM and are revalidated by the next submission that draws.
+
+| | submissions | BOs on the list | CS ioctl | whole submit path |
+|---|---|---|---|---|
+| short list | 2,028 | 5.8 | **0.05 ms** | 1.8 ms |
+| full list | 1,905 | 1,953 | 26.9 ms | 32.6 ms |
+
+3,933 submissions, 272 flips, **none failed**, no CPU-wait timeout, the same picture (the
+opening card at 90 s). A frame every 0.43 s (2.25 fps in the title bar) with 5.4 GB mapped,
+against 0.70 s in run 80 with as much. What a frame costs now: seven full-list submissions at
+~33 ms, fourteen mapping syncs at ~11 ms, the rest in the game. Short lists are on by default from
+here (`BC5_DIRECT_NO_SHORT_LISTS=1` turns them off). Next for the frame time: the full-list
+submissions (options 2 and 3 of run 80) and a sync that is forced only for submissions that draw.

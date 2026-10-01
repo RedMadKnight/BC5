@@ -319,6 +319,22 @@ void executed_offsets_of(std::span<const std::uint32_t> src, const std::uint32_t
     }
 }
 
+// Does a filtered IB still hold a draw or a dispatch?
+bool has_draw_or_dispatch(const std::uint32_t *d, std::size_t n) {
+    for (std::size_t i = 0; i < n;) {
+        const std::uint32_t h = d[i];
+        const std::uint32_t type = h >> 30;
+        const std::uint32_t count = (h >> 16) & 0x3fff;
+        std::size_t len = 1;
+        if (type == 3 || type == 0) len = count == 0x3fff ? 1 : count + 2;
+        if (type == 3 && count != 0x3fff &&
+            policy::is_draw_or_dispatch(static_cast<std::uint8_t>((h >> 8) & 0xff)))
+            return true;
+        i += len;
+    }
+    return false;
+}
+
 struct Piece {
     const std::uint32_t *src = nullptr;
     std::size_t n = 0;      // dwords
@@ -377,8 +393,20 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     // The IB itself is filtered into a vector first: the state-stack emulation may grow it
     // (a CLEAR_STATE pop becomes the SET_CONTEXT_REG packets of the saved context), and the
     // nested copies are laid out behind what will actually be executed.
+    // Short lists: the operands the filter accepts are recorded, for the BO list of an IB
+    // without draws and dispatches.
+    const bool short_possible = short_lists_ && include_mappings_ && static_cast<bool>(opt.mapped);
+    std::vector<std::pair<std::uint64_t, std::uint64_t>> touched;
+    policy::FilterOptions fopt = opt;
+    if (short_possible) {
+        fopt.mapped = [&opt, &touched](std::uint64_t a, std::uint64_t bytes) {
+            const bool ok = opt.mapped(a, bytes);
+            if (ok) touched.emplace_back(a, bytes);
+            return ok;
+        };
+    }
     std::vector<std::uint32_t> main_out(ib.size());
-    policy::filter(policy::Policy::builtin(), ib, main_out, opt, r.filter);
+    policy::filter(policy::Policy::builtin(), ib, main_out, fopt, r.filter);
     executed_offsets_of(ib, main_out.data(), r.executed_offsets);
     if (state_stack_ && opt.mapped) {
         main_out = impl_->tracker.apply(ib, main_out, opt.mapped, r.state_stack);
@@ -416,7 +444,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
         }
         // nested IBs: no statistics samples (their slots belong to the main IB)
         policy::FilterStats st;
-        policy::FilterOptions nested_opt = opt;
+        policy::FilterOptions nested_opt = fopt;
         nested_opt.stat_sample_va = 0;
         policy::filter(policy::Policy::builtin(), std::span<const std::uint32_t>(pc.src, pc.n),
                        std::span<std::uint32_t>(dst + pc.off, pc.n), nested_opt, st);
@@ -471,9 +499,30 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     if (with_gds && impl_->oa) bos.push_back(impl_->oa);
     if (with_gds && impl_->gws) bos.push_back(impl_->gws);
     if (impl_->shadow) bos.push_back(impl_->shadow);
-    if (include_mappings_) {
-        for (const auto &u : impl_->userptrs) bos.push_back(u.bo);
+    bool draws = !short_possible;
+    if (short_possible) {
+        draws = has_draw_or_dispatch(dst + pieces[0].off, main_n);
+        for (std::size_t k = 1; k < pieces.size() && !draws; ++k)
+            draws = has_draw_or_dispatch(dst + pieces[k].off, pieces[k].n);
     }
+    if (include_mappings_ && draws) {
+        for (const auto &u : impl_->userptrs) bos.push_back(u.bo);
+    } else if (include_mappings_) {
+        // Table operands are declared with a nominal size; the margins cover their real extent.
+        constexpr std::uint64_t kBefore = 0x10000, kAfter = 0x20000;
+        for (const auto &u : impl_->userptrs) {
+            for (const auto &[a, span_bytes] : touched) {
+                const std::uint64_t lo = a > kBefore ? a - kBefore : 0;
+                const std::uint64_t hi = a + 2 * span_bytes + kAfter;
+                if (u.va < hi && u.va + u.size > lo) {
+                    bos.push_back(u.bo);
+                    break;
+                }
+            }
+        }
+        r.short_list = true;
+    }
+    r.bo_count = static_cast<std::uint32_t>(bos.size());
     amdgpu_bo_list_handle list = nullptr;
     const double t_list = now_ms();
     r.prepare_ms = t_list - t_enter;
