@@ -1,0 +1,10 @@
+run 114, 2026-10-01, one unattended run of 300 s (automatic presses at 50 s and 58 s), jobs in flight, the doorbell consumer serving the ready entries in front of a queue; governor range 1850..=2000 MHz (journal excerpts, hwmon samples)
+
+== async: kytyplus-20261001-2327
+submits 237558, ok 237558, failed 0, flips 16098, timeouts 0, soft-CP wait timeouts 0, cross-queue waits given up 0
+flips per 10 s:
+t0:526 t10:598 t20:597 t30:498 t40:562 t50:599 t60:601 t70:597 t80:576 t90:595 t100:600 t110:595 t120:602 t130:600 t140:598 t150:600 t160:600 t170:598 t180:482 t190:82 t200:355 t210:583 t220:491 t230:520 t240:491 t250:517 t260:523 t270:568 t280:511 t290:433 
+phases: title screen to 58 s, level load to about 188 s, end of the load 188-202 s (slow synchronously too), cutscene from about 205 s
+slowest second of the cutscene (205-297 s): 43 flips, at t 219
+hwmon amdgpu over the run: max 78 C, max 182 W
+synchronous reference (run 112, same build): loading 48 fps, cutscene 40-41 fps
