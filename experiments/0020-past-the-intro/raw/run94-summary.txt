@@ -1,0 +1,5 @@
+kytyplus-20261001-1544 submits 14199 ok 13623 failed 0 flips 933 | sync lazy 7668 forced 6530 | cu rewrites (first 400 lines) 1600 overrides 0
+flip gap: median 0.086 s, last-50 avg 0.089 s
+frame DCB (>= 9000 dwords)         n= 933 fence ms: median 6.73  mean 6.05  p90 6.78  max 52.8
+DCB 2000..9000 dwords              n= 933 fence ms: median 0.75  mean 0.79  p90 0.78  max 35.4
+1

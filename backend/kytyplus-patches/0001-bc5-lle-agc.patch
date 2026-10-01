@@ -3774,11 +3774,14 @@ index 0000000..1757272
 +
 +} // namespace Libs
 diff --git a/src/libs/libJson2.cpp b/src/libs/libJson2.cpp
-index 183cd85..eee5cca 100644
+index 183cd85..9292835 100644
 --- a/src/libs/libJson2.cpp
 +++ b/src/libs/libJson2.cpp
-@@ -6,7 +6,9 @@
+@@ -4,9 +4,12 @@
+ #include "libs/libs.h"
+ #include "loader/symbolDatabase.h"
  
++#include <cstdlib>
  #include <cstring>
  #include <map>
 +#include <mutex>
@@ -3787,7 +3790,59 @@ index 183cd85..eee5cca 100644
  #include <string>
  #include <vector>
  
-@@ -739,6 +741,39 @@ static const JsonValue* KYTY_SYSV_ABI JsonValueIndexUInt(const JsonValue* self,
+@@ -68,6 +71,20 @@ struct JsonInitParameter2 {
+ 	uint32_t reserved[3];
+ };
+ 
++// BC5: KYTY_BC5_JSON_TRACE=1 logs what the guest asks of this library (keys, types, parsed and
++// produced text, cut to 240 characters) — to see which document and member an assertion in the
++// game is about (experiment 0020).
++static bool JsonTraceOn() {
++	static const bool v = std::getenv("KYTY_BC5_JSON_TRACE") != nullptr;
++	return v;
++}
++#define JSON_TRACE(...)                                                                             \
++	do {                                                                                            \
++		if (JsonTraceOn()) {                                                                        \
++			LOGF(__VA_ARGS__);                                                                      \
++		}                                                                                           \
++	} while (0)
++
+ static std::string* JsonStringImpl(JsonString* self) {
+ 	if (self == nullptr) {
+ 		return nullptr;
+@@ -664,6 +681,8 @@ static void KYTY_SYSV_ABI JsonValueSetType(JsonValue* self, uint32_t type) {
+ static uint32_t KYTY_SYSV_ABI JsonValueGetType(const JsonValue* self) {
+ 	PRINT_NAME();
+ 
++	JSON_TRACE("[json] getType of %p: %u\n", static_cast<const void*>(self), self != nullptr ? self->type : 99u);
++
+ 	return (self != nullptr ? self->type : JsonValueTypeNull);
+ }
+ 
+@@ -703,6 +722,7 @@ static const bool* KYTY_SYSV_ABI JsonValueGetBoolean(const JsonValue* self) {
+ 	PRINT_NAME();
+ 
+ 	static const bool false_value = false;
++	JSON_TRACE("[json] getBoolean of %p: type %u\n", static_cast<const void*>(self), self != nullptr ? self->type : 99u);
+ 	return (self != nullptr && self->type == JsonValueTypeBoolean ? &self->boolean : &false_value);
+ }
+ 
+@@ -724,9 +744,12 @@ static const JsonValue* KYTY_SYSV_ABI JsonValueIndexString(const JsonValue* self
+ 	PRINT_NAME();
+ 
+ 	if (self == nullptr || self->type != JsonValueTypeObject) {
++		JSON_TRACE("[json] operator[](\"%.80s\") on %p: not an object\n", key != nullptr ? key : "", static_cast<const void*>(self));
+ 		return JsonStaticNullValue();
+ 	}
+-	return JsonObjectLookup(self->object, key != nullptr ? key : "", false);
++	const auto* found = JsonObjectLookup(self->object, key != nullptr ? key : "", false);
++	JSON_TRACE("[json] operator[](\"%.80s\") on %p: type %u\n", key != nullptr ? key : "", static_cast<const void*>(self), found->type);
++	return found;
+ }
+ 
+ static const JsonValue* KYTY_SYSV_ABI JsonValueIndexUInt(const JsonValue* self, uint64_t index) {
+@@ -739,6 +762,46 @@ static const JsonValue* KYTY_SYSV_ABI JsonValueIndexUInt(const JsonValue* self,
  	return (index < impl->size() ? (*impl)[static_cast<size_t>(index)] : JsonStaticNullValue());
  }
  
@@ -3802,9 +3857,15 @@ index 183cd85..eee5cca 100644
 +	PRINT_NAME();
 +
 +	if (self == nullptr || self->type != JsonValueTypeObject) {
++		JSON_TRACE("[json] referValue(\"%.80s\") on %p: not an object (type %u)\n", JsonStringImpl(key)->c_str(), static_cast<void*>(self),
++		           self != nullptr ? self->type : 99u);
 +		return JsonStaticNullValue();
 +	}
-+	return JsonObjectLookup(self->object, *JsonStringImpl(key), true);
++	const bool had = JsonObjectImpl(self->object)->count(*JsonStringImpl(key)) != 0;
++	auto*      v   = JsonObjectLookup(self->object, *JsonStringImpl(key), true);
++	JSON_TRACE("[json] referValue(\"%.80s\") on %p: %s, type %u\n", JsonStringImpl(key)->c_str(), static_cast<void*>(self), had ? "found" : "MISSING (created null)",
++	           v->type);
++	return v;
 +}
 +
 +// sce::Json::Value::toString(String& out) const: the value as text — a string value's own
@@ -3822,12 +3883,30 @@ index 183cd85..eee5cca 100644
 +	} else {
 +		JsonSerializeValue(self, impl);
 +	}
++	JSON_TRACE("[json] toString of %p (type %u): %.240s\n", static_cast<const void*>(self), self != nullptr ? self->type : 99u, impl->c_str());
 +}
 +
  static int32_t KYTY_SYSV_ABI JsonValueSerialize(JsonValue* self, JsonString* dst) {
  	PRINT_NAME();
  
-@@ -935,6 +970,323 @@ static int32_t KYTY_SYSV_ABI JsonValueCount(const JsonValue* self) {
+@@ -873,6 +936,7 @@ static JsonObject* KYTY_SYSV_ABI JsonObjectAssign(JsonObject* self, const JsonOb
+ static JsonValue* KYTY_SYSV_ABI JsonObjectIndex(JsonObject* self, const JsonString* key) {
+ 	PRINT_NAME();
+ 
++	JSON_TRACE("[json] Object[\"%.80s\"] on %p\n", JsonStringImpl(key)->c_str(), static_cast<void*>(self));
+ 	return JsonObjectLookup(self, *JsonStringImpl(key), true);
+ }
+ 
+@@ -898,6 +962,8 @@ static int32_t KYTY_SYSV_ABI JsonParserParse(JsonValue* dst, const char* src, si
+ 	JsonValue parsed {};
+ 	JsonValueInit(&parsed);
+ 	auto json = nlohmann::json::parse(src, src + size, nullptr, false);
++	JSON_TRACE("[json] parse into %p, %zu bytes, %s: %.240s\n", static_cast<void*>(dst), size, json.is_discarded() ? "REJECTED" : "ok",
++	           std::string(src, size < 240 ? size : 240).c_str());
+ 	if (json.is_discarded() || !JsonValueFromNlohmann(&parsed, json)) {
+ 		JsonValueClear(&parsed);
+ 		return JSON_ERROR_PARSE_INVALID_CHAR;
+@@ -935,6 +1001,326 @@ static int32_t KYTY_SYSV_ABI JsonValueCount(const JsonValue* self) {
  	}
  }
  
@@ -4086,6 +4165,9 @@ index 183cd85..eee5cca 100644
 +
 +static JsonIterHandle* JsonObjectIterNew(JsonIterHandle* out, const JsonObject* object, bool end) {
 +	const auto* map = JsonObjectImpl(object);
++	if (!end) {
++		JSON_TRACE("[json] Object::begin on %p: %zu members\n", static_cast<const void*>(object), map->size());
++	}
 +	auto*       it  = new JsonObjectIter {map, end ? map->end() : map->begin(), {}, {}};
 +	JsonObjectIterRefresh(it);
 +	JsonIterRegister(it);
@@ -4151,7 +4233,7 @@ index 183cd85..eee5cca 100644
  LIB_DEFINE(InitNet_1_Json2) {
  	LIB_FUNC("-hJRce8wn1U", LibJson2::JsonMemAllocatorCtor);
  	LIB_FUNC("WSOuge5IsCg", LibJson2::JsonInitParameter2Ctor);
-@@ -971,6 +1323,34 @@ LIB_DEFINE(InitNet_1_Json2) {
+@@ -971,6 +1357,34 @@ LIB_DEFINE(InitNet_1_Json2) {
  	LIB_FUNC("urOpESTBZmo", LibJson2::JsonObjectAssign);
  	LIB_FUNC("zTwZdI8AZ5Y", LibJson2::JsonValueGetBoolean);
  	LIB_FUNC("R7FDWtcN6f8", LibJson2::JsonValueSerialize);
