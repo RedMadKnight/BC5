@@ -556,7 +556,7 @@ index bc73d18..252c692 100644
  
  #endif /* EMULATOR_INCLUDE_EMULATOR_KERNEL_FILESYSTEM_H_ */
 diff --git a/src/kernel/memory.cpp b/src/kernel/memory.cpp
-index 02fc0fc..7c56274 100644
+index 02fc0fc..8dfae44 100644
 --- a/src/kernel/memory.cpp
 +++ b/src/kernel/memory.cpp
 @@ -382,6 +382,13 @@ public:
@@ -586,7 +586,7 @@ index 02fc0fc..7c56274 100644
  			target = target & ~(0x4000ull - 1ull);
  			LOGF("guest memory total = %llu MiB\n", static_cast<unsigned long long>(target / megabyte));
  			return target;
-@@ -850,6 +863,37 @@ static std::unique_ptr<PhysicalMemory>    g_physical_memory;
+@@ -850,7 +863,80 @@ static std::unique_ptr<PhysicalMemory>    g_physical_memory;
  static std::unique_ptr<FlexibleMemory>    g_flexible_memory;
  static std::unique_ptr<PooledMemory>      g_pooled_memory;
  static std::unique_ptr<VirtualRanges>     g_virtual_ranges;
@@ -621,26 +621,71 @@ index 02fc0fc..7c56274 100644
 +int Bc5DirectMemoryFd() {
 +	return GuestBackingStore::Bc5Fd();
 +}
++static std::unique_ptr<GuestAddressSpace>& Bc5GuestAddressSpace();
++// BC5 (experiment 0023): the memfd behind private guest memory (file offset = guest address), -1
++// when private memory is anonymous; and the private regions with the type and name of the range
++// each one starts in (type as in Bc5ForEachMappedRange, -1 when unknown).
++int Bc5PrivateMemoryFd() {
++	return GuestAddressSpace::Bc5PrivateFd();
++}
++void Bc5ForEachPrivateRegion(void* ctx, void (*cb)(uint64_t start, uint64_t size, int type, const char* name, void* ctx)) {
++	auto& space = Bc5GuestAddressSpace();
++	if (space == nullptr || cb == nullptr) {
++		return;
++	}
++	std::vector<std::pair<uint64_t, uint64_t>> regions;
++	space->Bc5SnapshotPrivate(&regions);
++	std::vector<VirtualRanges::Range> ranges;
++	if (g_virtual_ranges != nullptr) {
++		g_virtual_ranges->Snapshot(&ranges);
++	}
++	for (const auto& [start, size]: regions) {
++		int         type = -1;
++		const char* name = "";
++		for (const auto& r: ranges) {
++			if (start >= r.start && start < r.start + r.size) {
++				switch (r.type) {
++					case VirtualRangeType::Direct: type = 0; break;
++					case VirtualRangeType::Flexible: type = 1; break;
++					case VirtualRangeType::Pooled: type = 2; break;
++					case VirtualRangeType::Stack: type = 3; break;
++					case VirtualRangeType::Code: type = 4; break;
++					case VirtualRangeType::Runtime: type = 5; break;
++					default: break;
++				}
++				name = r.name;
++				break;
++			}
++		}
++		cb(start, size, type, name != nullptr ? name : "", ctx);
++	}
++}
  static std::unique_ptr<GuestAddressSpace> g_guest_address_space;
++static std::unique_ptr<GuestAddressSpace>& Bc5GuestAddressSpace() {
++	return g_guest_address_space;
++}
  static callback_func_t                    g_alloc_callback        = nullptr;
  static callback_func_t                    g_free_callback         = nullptr;
+ static std::atomic<uint64_t>              g_memory_pool_committed = 0;
 diff --git a/src/kernel/memory.h b/src/kernel/memory.h
-index d1fc7f8..7300fea 100644
+index d1fc7f8..724b0bf 100644
 --- a/src/kernel/memory.h
 +++ b/src/kernel/memory.h
-@@ -111,6 +111,10 @@ void                   RegisterCallbacks(callback_func_t alloc_func, callback_fu
+@@ -111,6 +111,12 @@ void                   RegisterCallbacks(callback_func_t alloc_func, callback_fu
  void                   SetFlexibleMemorySize(uint64_t size);
  bool                   TryWriteBacking(uint64_t vaddr, const void* data, uint64_t size);
  bool                   TryReadBacking(uint64_t vaddr, void* data, uint64_t size);
 +// BC5 (direct mode): the guest's mapped ranges, see memory.cpp.
 +int  Bc5DirectMemoryFd(); // BC5 (ADR 0006): the direct-memory memfd, -1 when none
++int  Bc5PrivateMemoryFd(); // BC5 (experiment 0023): the memfd behind private guest memory, -1 when anonymous
++void Bc5ForEachPrivateRegion(void* ctx, void (*cb)(uint64_t start, uint64_t size, int type, const char* name, void* ctx));
 +void Bc5ForEachMappedRange(void (*cb)(uint64_t start, uint64_t size, int type, int protection, const char* name, void* ctx), void* ctx,
 +                           void (*cb2)(uint64_t start, uint64_t size, uint64_t offset, int type, int protection, const char* name, void* ctx) = nullptr);
  [[nodiscard]] uint64_t ClampRangeSize(uint64_t vaddr, uint64_t size);
  void                   WriteBacking(uint64_t vaddr, const void* data, uint64_t size) noexcept;
  void                   InvalidateMemory(uint64_t vaddr, uint64_t size);
 diff --git a/src/kernel/memoryAddressSpace.inc b/src/kernel/memoryAddressSpace.inc
-index 9ea25b0..f9d7afd 100644
+index 9ea25b0..94749b5 100644
 --- a/src/kernel/memoryAddressSpace.inc
 +++ b/src/kernel/memoryAddressSpace.inc
 @@ -31,6 +31,24 @@ static bool CoalescePlaceholders(uint64_t vaddr, uint64_t size) {
@@ -765,6 +810,92 @@ index 9ea25b0..f9d7afd 100644
  		void* ptr = mmap(vaddr, size, PROT_NONE, MAP_PRIVATE | MAP_ANON | MAP_FIXED, -1, 0);
  		return ptr != MAP_FAILED && ptr == vaddr;
  	}
+@@ -798,6 +848,51 @@ public:
+ 		return FindContaining(vaddr, size) != m_free.end();
+ 	}
+ 
++	// BC5 (experiment 0023): with KYTY_BC5_DMABUF=1 private guest memory — module images, stacks,
++	// runtime areas, everything Commit() hands out — comes from a second sealed memfd, at the file
++	// offset equal to its guest address, instead of anonymous pages. The BC5 host can then give
++	// it to the GPU as dma-bufs like the direct memory, and no userptr BO is left whose pages the
++	// kernel walks on every submission (HANDOFF F54). KYTY_BC5_NO_PRIVATE_FILE=1 keeps the
++	// anonymous pages.
++	static constexpr uint64_t Bc5PrivateFileSize() { return 1ull << 40u; }
++	static int Bc5PrivateFd() {
++#if KYTY_PLATFORM == KYTY_PLATFORM_LINUX
++		static const int fd = [] {
++			if (!GuestBackingStore::Bc5Dmabuf() || std::getenv("KYTY_BC5_NO_PRIVATE_FILE") != nullptr) {
++				return -1;
++			}
++			// MFD_ALLOW_SEALING | MFD_EXEC (program segments are mapped executable); without
++			// MFD_EXEC on kernels that do not know it
++			int f = static_cast<int>(syscall(SYS_memfd_create, "KytyPrivateMemory", 0x0002u | 0x0010u));
++			if (f < 0) {
++				f = static_cast<int>(syscall(SYS_memfd_create, "KytyPrivateMemory", 0x0002u));
++			}
++			if (f < 0) {
++				return -1;
++			}
++			if (ftruncate(f, static_cast<off_t>(Bc5PrivateFileSize())) != 0) {
++				close(f);
++				return -1;
++			}
++			const int seal_rc = fcntl(f, 1033 /* F_ADD_SEALS */, 0x0002 /* F_SEAL_SHRINK */);
++			LOGF("\t private guest memory: memfd %d, offsets are guest addresses, sealed against shrinking: %s\n", f, seal_rc == 0 ? "ok" : "FAILED");
++			return f;
++		}();
++		return fd;
++#else
++		return -1;
++#endif
++	}
++	// The private regions (for the BC5 host's mapper).
++	void Bc5SnapshotPrivate(std::vector<std::pair<uint64_t, uint64_t>>* out) {
++		std::lock_guard lock(m_mutex);
++		for (const auto& [addr, region]: m_mapped) {
++			if (region.type == MappingType::Private) {
++				out->emplace_back(region.vaddr, region.size);
++			}
++		}
++	}
++
+ 	bool Commit(uint64_t vaddr, uint64_t size, VirtualMemory::Mode mode) {
+ 		std::lock_guard lock(m_mutex);
+ 		if (!ConsumeUnlocked(vaddr, size)) {
+@@ -821,6 +916,33 @@ public:
+ 		EXIT_IF(!AddMappedUnlocked(vaddr, size, MappingType::Private));
+ 		return true;
+ #else
++#if KYTY_PLATFORM == KYTY_PLATFORM_LINUX
++		if (const int pfd = Bc5PrivateFd(); pfd >= 0 && vaddr <= Bc5PrivateFileSize() && size <= Bc5PrivateFileSize() - vaddr) {
++			const int prot = PROT_READ | PROT_WRITE | (host_mode == VirtualMemory::Mode::ExecuteReadWrite ? PROT_EXEC : 0);
++			void*     ptr  = mmap(reinterpret_cast<void*>(vaddr), size, prot, MAP_SHARED | MAP_FIXED, pfd, static_cast<off_t>(vaddr));
++			if (ptr != MAP_FAILED) {
++				// A range that was committed before still has its old contents in the file
++				// (nothing is punched out on release, so an imported BO never goes stale):
++				// what holds data is zeroed before the range is handed out again.
++				const uint64_t end = vaddr + size;
++				for (uint64_t pos = vaddr; pos < end;) {
++					const off_t data = lseek(pfd, static_cast<off_t>(pos), SEEK_DATA);
++					if (data < 0 || static_cast<uint64_t>(data) >= end) {
++						break;
++					}
++					const off_t    hole = lseek(pfd, data, SEEK_HOLE);
++					const uint64_t stop = (hole < 0 || static_cast<uint64_t>(hole) > end) ? end : static_cast<uint64_t>(hole);
++					if (stop <= static_cast<uint64_t>(data)) {
++						break;
++					}
++					std::memset(reinterpret_cast<void*>(static_cast<uint64_t>(data)), 0, stop - static_cast<uint64_t>(data));
++					pos = stop;
++				}
++				EXIT_IF(!AddMappedUnlocked(vaddr, size, MappingType::Private));
++				return true;
++			}
++		}
++#endif
+ 		if (VirtualMemory::Protect(vaddr, size, host_mode)) {
+ 			EXIT_IF(!AddMappedUnlocked(vaddr, size, MappingType::Private));
+ 			return true;
 diff --git a/src/kernel/pthread.cpp b/src/kernel/pthread.cpp
 index 5f87e6b..e5c534e 100644
 --- a/src/kernel/pthread.cpp
@@ -784,10 +915,10 @@ index 5f87e6b..e5c534e 100644
  	CondRemoveWaiter(cond_value, thread);
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..8eebf0a
+index 0000000..3218414
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,3690 @@
+@@ -0,0 +1,3732 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -1826,20 +1957,30 @@ index 0000000..8eebf0a
 +	uint32_t id;
 +	bool operator==(const DMap& o) const { return va == o.va && size == o.size && bo_off == o.bo_off && id == o.id; }
 +};
-+static std::vector<DBo>   g_dbos;  // disjoint chunk-aligned file ranges, sorted by offset
-+static std::vector<DMap>  g_dmaps; // sorted by va
-+static std::set<uint64_t> g_dforced; // chunk offsets the hints and learned regions asked for
-+static std::set<uint64_t> g_dfailed; // chunks whose import failed (not retried)
-+static uint64_t g_dviews_sig = 0, g_dbos_mapped = 0, g_dbytes = 0, g_dsync_ns = 0, g_dfile_size = 0;
-+static uint64_t g_dmerge_ns = 0;
++// Two files are handed to the GPU this way (experiment 0023): the direct-memory pool, whose
++// views carry a file offset, and the file behind KytyPlus's private guest memory (module images,
++// stacks, runtime areas), where the offset is the guest address itself.
++struct DState {
++	int                kind;  // 0: direct memory, 1: private memory
++	const char*        label; // journal prefix
++	std::vector<DBo>   bos;   // disjoint chunk-aligned file ranges, sorted by offset
++	std::vector<DMap>  maps;  // sorted by va
++	std::set<uint64_t> forced; // chunk offsets the hints and learned regions asked for
++	std::set<uint64_t> failed; // chunks whose import failed (not retried)
++	std::set<uint64_t> merge_failed; // run starts whose merged import failed (not retried)
++	uint64_t           views_sig = 0, bos_mapped = 0, bytes = 0, sync_ns = 0, file_size = 0, merge_ns = 0;
++	uint64_t           blocks = ~0ull, forced_seen = ~0ull, reported = 0;
++};
++static DState g_d[2] = {{0, "direct", {}, {}, {}, {}, {}}, {1, "private", {}, {}, {}, {}, {}}};
++static int dstate_fd(const DState& S) {
++	return S.kind == 0 ? Libs::LibKernel::Memory::Bc5DirectMemoryFd() : Libs::LibKernel::Memory::Bc5PrivateMemoryFd();
++}
 +// Experiment 0022, step 3: what the learned regions and the direct mapper work on changes rarely.
 +// g_layout_gen counts the changes (views of direct memory, anonymous VMAs, learned list, device
-+// reopen); g_dblocks is the memfd's allocated size at the last full scan (st_blocks grows with
++// reopen); S.blocks is the memfd's allocated size at the last full scan (st_blocks grows with
 +// every page the game first writes), so an unchanged file needs no SEEK_DATA walk.
 +static uint64_t g_layout_gen = 1;
-+static uint64_t g_dblocks = ~0ull, g_dforced_seen = ~0ull;
 +static uint64_t g_dprof_views_ns = 0, g_dprof_full = 0, g_dprof_fast = 0; // direct_sync profile (timing split line)
-+static std::set<uint64_t> g_dmerge_failed; // run starts whose merged import failed (not retried)
 +
 +// BC5_DIRECT_LAZY_NAMES=name[,name...]: views of direct memory with these names (the game names
 +// its mappings; "orbis_user_malloc" is its CPU heap) are not imported for holding data, only where
@@ -1893,11 +2034,24 @@ index 0000000..8eebf0a
 +	return std::find(names.begin(), names.end(), name) != names.end();
 +}
 +
-+static std::vector<DView> direct_views() {
++static std::vector<DView> direct_views(const DState& S) {
 +	std::vector<DView> v;
-+	Libs::LibKernel::Memory::Bc5ForEachMappedRange(nullptr, &v, [](uint64_t start, uint64_t size, uint64_t offset, int type, int, const char* name, void* p) {
-+		if (type == 0 && size != 0) static_cast<std::vector<DView>*>(p)->push_back({start, size, offset, name != nullptr ? name : "", direct_lazy_name(name), direct_eager_name(name)});
-+	});
++	if (S.kind == 0) {
++		Libs::LibKernel::Memory::Bc5ForEachMappedRange(nullptr, &v, [](uint64_t start, uint64_t size, uint64_t offset, int type, int, const char* name, void* p) {
++			if (type == 0 && size != 0) static_cast<std::vector<DView>*>(p)->push_back({start, size, offset, name != nullptr ? name : "", direct_lazy_name(name), direct_eager_name(name)});
++		});
++	} else {
++		// Private regions: the file offset is the address. Thread stacks (type 3) are lazy unless
++		// BC5_DIRECT_STACKS=1 — a hundred MiB nothing on the GPU has asked for so far; a fault
++		// in one would be learned like any other.
++		Libs::LibKernel::Memory::Bc5ForEachPrivateRegion(&v, [](uint64_t start, uint64_t size, int type, const char* name, void* p) {
++			static const bool stacks = std::getenv("BC5_DIRECT_STACKS") != nullptr;
++			if (size == 0) return;
++			std::string n = name != nullptr && *name != 0 ? name : "(unnamed)";
++			if (type == 3) n = "(thread stacks)";
++			static_cast<std::vector<DView>*>(p)->push_back({start, size, start, n, direct_lazy_name(name) || (type == 3 && !stacks), direct_eager_name(name)});
++		});
++	}
 +	return v;
 +}
 +
@@ -1917,9 +2071,9 @@ index 0000000..8eebf0a
 +}
 +
 +// End of the imported range that holds `off`, 0 when none does.
-+static uint64_t direct_covered_end(uint64_t off) {
-+	auto it = std::upper_bound(g_dbos.begin(), g_dbos.end(), off, [](uint64_t o, const DBo& b) { return o < b.off; });
-+	if (it == g_dbos.begin()) return 0;
++static uint64_t direct_covered_end(const DState& S, uint64_t off) {
++	auto it = std::upper_bound(S.bos.begin(), S.bos.end(), off, [](uint64_t o, const DBo& b) { return o < b.off; });
++	if (it == S.bos.begin()) return 0;
 +	--it;
 +	return off < it->off + it->size ? it->off + it->size : 0;
 +}
@@ -1927,10 +2081,9 @@ index 0000000..8eebf0a
 +// Where the imported memory is, by the name the game gave each mapping: reserved, holding data
 +// (SEEK_DATA/SEEK_HOLE over the memfd), imported. Journalled each time the imported total has
 +// grown by 512 MiB, and when a submission fails with -ENOMEM.
-+static uint64_t g_dreported = 0;
-+static void direct_breakdown(const char* why, uint32_t list_bos) {
++static void direct_breakdown_one(DState& S, const char* why, uint32_t list_bos) {
 +	if (!g_dmabuf) return;
-+	const int fd = Libs::LibKernel::Memory::Bc5DirectMemoryFd();
++	const int fd = dstate_fd(S);
 +	if (fd < 0) return;
 +	struct Row {
 +		uint64_t reserved = 0, data = 0, imported = 0;
@@ -1939,7 +2092,7 @@ index 0000000..8eebf0a
 +	};
 +	std::map<std::string, Row> rows;
 +	Row                        total;
-+	for (const auto& v: direct_views()) {
++	for (const auto& v: direct_views(S)) {
 +		Row&           r   = rows[v.size >= (1ull << 20u) ? v.name : std::string("(views under 1 MiB)")];
 +		const uint64_t end = v.off + v.size;
 +		uint64_t       data = 0, imported = 0;
@@ -1952,9 +2105,9 @@ index 0000000..8eebf0a
 +			data += he - static_cast<uint64_t>(d);
 +			pos = he;
 +		}
-+		auto it = std::upper_bound(g_dbos.begin(), g_dbos.end(), v.off, [](uint64_t o, const DBo& b) { return o < b.off; });
-+		if (it != g_dbos.begin()) --it;
-+		for (; it != g_dbos.end() && it->off < end; ++it) {
++		auto it = std::upper_bound(S.bos.begin(), S.bos.end(), v.off, [](uint64_t o, const DBo& b) { return o < b.off; });
++		if (it != S.bos.begin()) --it;
++		for (; it != S.bos.end() && it->off < end; ++it) {
 +			const uint64_t lo = it->off > v.off ? it->off : v.off;
 +			const uint64_t hi = it->off + it->size < end ? it->off + it->size : end;
 +			if (lo < hi) imported += hi - lo;
@@ -1970,8 +2123,8 @@ index 0000000..8eebf0a
 +		total.imported += imported;
 +	}
 +	const double mib = 1048576.0;
-+	journal("direct by name (%s): %zu BOs, %.1f MiB imported; BO list of the submit %u; GTT %.1f of %.1f MiB in use\n", why, g_dbos.size(),
-+	        static_cast<double>(g_dbytes) / mib, list_bos, static_cast<double>(direct_gtt("mem_info_gtt_used")) / mib, static_cast<double>(direct_gtt("mem_info_gtt_total")) / mib);
++	journal("%s by name (%s): %zu BOs, %.1f MiB imported; BO list of the submit %u; GTT %.1f of %.1f MiB in use\n", S.label, why, S.bos.size(),
++	        static_cast<double>(S.bytes) / mib, list_bos, static_cast<double>(direct_gtt("mem_info_gtt_used")) / mib, static_cast<double>(direct_gtt("mem_info_gtt_total")) / mib);
 +	for (const auto& [name, r]: rows) {
 +		journal("  %-28s %3u views: %8.1f MiB reserved, %8.1f with data, %8.1f imported%s\n", name.c_str(), r.views, static_cast<double>(r.reserved) / mib,
 +		        static_cast<double>(r.data) / mib, static_cast<double>(r.imported) / mib, r.lazy ? " (lazy)" : "");
@@ -1980,41 +2133,45 @@ index 0000000..8eebf0a
 +	        static_cast<double>(total.data) / mib, static_cast<double>(total.imported) / mib);
 +}
 +
-+static void direct_sync(bool force) {
++static void direct_breakdown(const char* why, uint32_t list_bos) {
++	for (auto& S: g_d) direct_breakdown_one(S, why, list_bos);
++}
++
++static void direct_sync_one(DState& S, bool force) {
 +	if (!g_dmabuf || !g_dev) return;
 +	const uint64_t now = SoftCp::now_ns();
-+	if (!force && now - g_dsync_ns < 50'000'000ull) return;
-+	g_dsync_ns = now;
-+	const int fd = Libs::LibKernel::Memory::Bc5DirectMemoryFd();
++	if (!force && now - S.sync_ns < 50'000'000ull) return;
++	S.sync_ns = now;
++	const int fd = dstate_fd(S);
 +	if (fd < 0) return;
-+	if (g_dfile_size == 0) {
++	if (S.file_size == 0) {
 +		const off_t e = lseek(fd, 0, SEEK_END);
-+		g_dfile_size = e > 0 ? static_cast<uint64_t>(e) : 0;
-+		journal("direct memory: memfd %d, %.1f MiB; chunks of %" PRIu64 " MiB, BOs up to %" PRIu64 " MiB; GTT %.1f of %.1f MiB in use%s%s\n", fd,
-+		        static_cast<double>(g_dfile_size) / 1048576.0, kDChunk >> 20u, kDMaxBo >> 20u, static_cast<double>(direct_gtt("mem_info_gtt_used")) / 1048576.0,
++		S.file_size = e > 0 ? static_cast<uint64_t>(e) : 0;
++		journal("%s memory: memfd %d, %.1f MiB; chunks of %" PRIu64 " MiB, BOs up to %" PRIu64 " MiB; GTT %.1f of %.1f MiB in use%s%s\n", S.label, fd,
++		        static_cast<double>(S.file_size) / 1048576.0, kDChunk >> 20u, kDMaxBo >> 20u, static_cast<double>(direct_gtt("mem_info_gtt_used")) / 1048576.0,
 +		        static_cast<double>(direct_gtt("mem_info_gtt_total")) / 1048576.0, std::getenv("BC5_DIRECT_LAZY_NAMES") != nullptr ? "; lazy names: " : "",
 +		        std::getenv("BC5_DIRECT_LAZY_NAMES") != nullptr ? std::getenv("BC5_DIRECT_LAZY_NAMES") : "");
-+		if (const char* e = std::getenv("BC5_DIRECT_EAGER_NAMES"); e != nullptr) journal("direct memory: eager names: %s\n", e);
++		if (const char* e = std::getenv("BC5_DIRECT_EAGER_NAMES"); e != nullptr && S.kind == 0) journal("direct memory: eager names: %s\n", e);
 +	}
-+	const std::vector<DView> views = direct_views();
++	const std::vector<DView> views = direct_views(S);
 +	g_dprof_views_ns += SoftCp::now_ns() - now;
 +	uint64_t sig = 1469598103934665603ull;
 +	for (const auto& v: views) {
 +		for (const uint64_t x: {v.va, v.size, v.off}) sig = (sig ^ x) * 1099511628211ull;
 +	}
-+	if (sig != g_dviews_sig) g_layout_gen++;
++	if (sig != S.views_sig) g_layout_gen++;
 +	{
 +		struct stat st {};
 +		const uint64_t blocks = fstat(fd, &st) == 0 ? static_cast<uint64_t>(st.st_blocks) : ~0ull;
 +		static const bool no_fast = std::getenv("BC5_DIRECT_NO_FAST_SYNC") != nullptr;
-+		const bool merge_due = now - g_dmerge_ns > 250'000'000ull;
-+		if (!no_fast && blocks != ~0ull && blocks == g_dblocks && sig == g_dviews_sig && g_dforced.size() == g_dforced_seen && g_dbos.size() == g_dbos_mapped && !merge_due) {
++		const bool merge_due = now - S.merge_ns > 250'000'000ull;
++		if (!no_fast && blocks != ~0ull && blocks == S.blocks && sig == S.views_sig && S.forced.size() == S.forced_seen && S.bos.size() == S.bos_mapped && !merge_due) {
 +			g_dprof_fast++;
 +			return; // nothing new in the file, no new view, nothing forced, nothing to merge yet
 +		}
 +		g_dprof_full++;
-+		g_dblocks      = blocks;
-+		g_dforced_seen = g_dforced.size();
++		S.blocks      = blocks;
++		S.forced_seen = S.forced.size();
 +	}
 +
 +	// 1. chunks to import: data inside a view, and the forced ones
@@ -2022,7 +2179,7 @@ index 0000000..8eebf0a
 +	for (const auto& v: views) {
 +		if (v.eager) { // BC5_DIRECT_EAGER_NAMES: every chunk of the view
 +			for (uint64_t c = v.off & ~(kDChunk - 1); c < v.off + v.size; c += kDChunk) {
-+				if (direct_covered_end(c) == 0) need.push_back(c);
++				if (direct_covered_end(S, c) == 0) need.push_back(c);
 +			}
 +			continue;
 +		}
@@ -2030,32 +2187,32 @@ index 0000000..8eebf0a
 +		const uint64_t end = v.off + v.size;
 +		uint64_t pos = v.off & ~(kDChunk - 1);
 +		while (pos < end) {
-+			if (const uint64_t ce = direct_covered_end(pos); ce != 0) { pos = ce; continue; }
++			if (const uint64_t ce = direct_covered_end(S, pos); ce != 0) { pos = ce; continue; }
 +			const off_t d = lseek(fd, static_cast<off_t>(pos), SEEK_DATA);
 +			if (d < 0 || static_cast<uint64_t>(d) >= end) break;
 +			const uint64_t c = static_cast<uint64_t>(d) & ~(kDChunk - 1);
-+			if (direct_covered_end(c) == 0) need.push_back(c);
++			if (direct_covered_end(S, c) == 0) need.push_back(c);
 +			pos = c + kDChunk;
 +		}
 +	}
-+	for (const uint64_t c: g_dforced) {
-+		if (direct_covered_end(c) == 0) need.push_back(c);
++	for (const uint64_t c: S.forced) {
++		if (direct_covered_end(S, c) == 0) need.push_back(c);
 +	}
 +	std::sort(need.begin(), need.end());
 +	need.erase(std::unique(need.begin(), need.end()), need.end());
 +	uint32_t imported = 0;
 +	for (size_t i = 0; i < need.size();) {
-+		if (g_dfailed.count(need[i]) != 0 || need[i] + kDChunk > g_dfile_size) { i++; continue; }
++		if (S.failed.count(need[i]) != 0 || need[i] + kDChunk > S.file_size) { i++; continue; }
 +		size_t j = i + 1;
-+		while (j < need.size() && need[j] == need[j - 1] + kDChunk && need[j] + kDChunk - need[i] <= kDMaxBo && g_dfailed.count(need[j]) == 0 && need[j] + kDChunk <= g_dfile_size) j++;
++		while (j < need.size() && need[j] == need[j - 1] + kDChunk && need[j] + kDChunk - need[i] <= kDMaxBo && S.failed.count(need[j]) == 0 && need[j] + kDChunk <= S.file_size) j++;
 +		const uint64_t off = need[i], size = need[j - 1] + kDChunk - need[i];
 +		const uint32_t id = g_dev->import_memfd(fd, off, size);
 +		if (id == 0) {
-+			journal("direct import 0x%" PRIx64 " +0x%" PRIx64 " FAILED\n", off, size);
-+			for (size_t k = i; k < j; k++) g_dfailed.insert(need[k]);
++			journal("%s import 0x%" PRIx64 " +0x%" PRIx64 " FAILED\n", S.label, off, size);
++			for (size_t k = i; k < j; k++) S.failed.insert(need[k]);
 +		} else {
-+			g_dbos.insert(std::upper_bound(g_dbos.begin(), g_dbos.end(), off, [](uint64_t o, const DBo& b) { return o < b.off; }), DBo {off, size, id, now});
-+			g_dbytes += size;
++			S.bos.insert(std::upper_bound(S.bos.begin(), S.bos.end(), off, [](uint64_t o, const DBo& b) { return o < b.off; }), DBo {off, size, id, now});
++			S.bytes += size;
 +			imported++;
 +		}
 +		i = j;
@@ -2069,34 +2226,34 @@ index 0000000..8eebf0a
 +	std::vector<uint32_t> retired;
 +	uint32_t              merged = 0;
 +	static const bool     no_merge = std::getenv("BC5_DIRECT_NO_MERGE") != nullptr;
-+	if (!no_merge && now - g_dmerge_ns > 250'000'000ull) {
-+		g_dmerge_ns = now;
++	if (!no_merge && now - S.merge_ns > 250'000'000ull) {
++		S.merge_ns = now;
 +		constexpr uint64_t settle = 3'000'000'000ull;
 +		uint64_t           budget = 256ull << 20u;
-+		for (size_t i = 0; i < g_dbos.size();) {
++		for (size_t i = 0; i < S.bos.size();) {
 +			size_t   j       = i;
-+			uint64_t total   = g_dbos[i].size;
-+			bool     settled = now - g_dbos[i].t_ns > settle;
-+			while (j + 1 < g_dbos.size() && g_dbos[j].off + g_dbos[j].size == g_dbos[j + 1].off && total + g_dbos[j + 1].size <= kDMaxBo) {
++			uint64_t total   = S.bos[i].size;
++			bool     settled = now - S.bos[i].t_ns > settle;
++			while (j + 1 < S.bos.size() && S.bos[j].off + S.bos[j].size == S.bos[j + 1].off && total + S.bos[j + 1].size <= kDMaxBo) {
 +				j++;
-+				total += g_dbos[j].size;
-+				settled = settled && now - g_dbos[j].t_ns > settle;
++				total += S.bos[j].size;
++				settled = settled && now - S.bos[j].t_ns > settle;
 +			}
-+			if (j == i || !settled || total > budget || g_dmerge_failed.count(g_dbos[i].off) != 0) {
++			if (j == i || !settled || total > budget || S.merge_failed.count(S.bos[i].off) != 0) {
 +				i = j + 1;
 +				continue;
 +			}
-+			const uint64_t off = g_dbos[i].off;
++			const uint64_t off = S.bos[i].off;
 +			const uint32_t id  = g_dev->import_memfd(fd, off, total);
 +			if (id == 0) {
-+				journal("direct merge 0x%" PRIx64 " +0x%" PRIx64 " FAILED\n", off, total);
-+				g_dmerge_failed.insert(off);
++				journal("%s merge 0x%" PRIx64 " +0x%" PRIx64 " FAILED\n", S.label, off, total);
++				S.merge_failed.insert(off);
 +				i = j + 1;
 +				continue;
 +			}
-+			for (size_t k = i; k <= j; k++) retired.push_back(g_dbos[k].id);
-+			g_dbos.erase(g_dbos.begin() + static_cast<std::ptrdiff_t>(i), g_dbos.begin() + static_cast<std::ptrdiff_t>(j) + 1);
-+			g_dbos.insert(g_dbos.begin() + static_cast<std::ptrdiff_t>(i), DBo {off, total, id, now});
++			for (size_t k = i; k <= j; k++) retired.push_back(S.bos[k].id);
++			S.bos.erase(S.bos.begin() + static_cast<std::ptrdiff_t>(i), S.bos.begin() + static_cast<std::ptrdiff_t>(j) + 1);
++			S.bos.insert(S.bos.begin() + static_cast<std::ptrdiff_t>(i), DBo {off, total, id, now});
 +			budget -= total;
 +			merged++;
 +			i++;
@@ -2105,13 +2262,13 @@ index 0000000..8eebf0a
 +
 +	// 2. the views' addresses: every (view, imported range) intersection is one GPU mapping
 +	uint32_t mapped = 0, unmapped = 0, map_failed = 0;
-+	if (sig != g_dviews_sig || g_dbos.size() != g_dbos_mapped || !retired.empty()) {
++	if (sig != S.views_sig || S.bos.size() != S.bos_mapped || !retired.empty()) {
 +		std::vector<DMap> want;
 +		for (const auto& v: views) {
 +			const uint64_t vend = v.off + v.size;
-+			auto it = std::upper_bound(g_dbos.begin(), g_dbos.end(), v.off, [](uint64_t o, const DBo& b) { return o < b.off; });
-+			if (it != g_dbos.begin()) --it;
-+			for (; it != g_dbos.end() && it->off < vend; ++it) {
++			auto it = std::upper_bound(S.bos.begin(), S.bos.end(), v.off, [](uint64_t o, const DBo& b) { return o < b.off; });
++			if (it != S.bos.begin()) --it;
++			for (; it != S.bos.end() && it->off < vend; ++it) {
 +				const uint64_t lo = it->off > v.off ? it->off : v.off;
 +				const uint64_t hi = it->off + it->size < vend ? it->off + it->size : vend;
 +				if (lo >= hi) continue;
@@ -2120,7 +2277,7 @@ index 0000000..8eebf0a
 +		}
 +		std::sort(want.begin(), want.end(), [](const DMap& a, const DMap& b) { return a.va < b.va; });
 +		std::vector<DMap> next;
-+		for (const auto& m: g_dmaps) { // drop what no view asks for any more, before adding (addresses get reused)
++		for (const auto& m: S.maps) { // drop what no view asks for any more, before adding (addresses get reused)
 +			const auto w = std::lower_bound(want.begin(), want.end(), m.va, [](const DMap& a, uint64_t va) { return a.va < va; });
 +			if (w != want.end() && *w == m) {
 +				next.push_back(m);
@@ -2139,23 +2296,27 @@ index 0000000..8eebf0a
 +				map_failed++;
 +			}
 +		}
-+		g_dmaps.swap(next);
-+		g_dviews_sig  = sig;
-+		g_dbos_mapped = map_failed == 0 ? g_dbos.size() : 0; // a failure is retried at the next sync
++		S.maps.swap(next);
++		S.views_sig  = sig;
++		S.bos_mapped = map_failed == 0 ? S.bos.size() : 0; // a failure is retried at the next sync
 +	}
-+	if (imported != 0) g_dblocks = ~0ull; // pinning may have allocated pages: look once more
++	if (imported != 0) S.blocks = ~0ull; // pinning may have allocated pages: look once more
 +	for (const uint32_t id: retired) g_dev->free_shared(id);
 +	if (merged != 0) {
-+		journal("direct merge: %zu BOs became %u (%zu BOs now)\n", retired.size(), merged, g_dbos.size());
++		journal("%s merge: %zu BOs became %u (%zu BOs now)\n", S.label, retired.size(), merged, S.bos.size());
 +	}
 +	if (imported != 0 || mapped != 0 || unmapped != 0 || map_failed != 0) {
-+		journal("direct: %zu views; +%u BOs (%zu, %.1f MiB pinned); maps +%u -%u (%zu)%s\n", views.size(), imported, g_dbos.size(), static_cast<double>(g_dbytes) / 1048576.0,
-+		        mapped, unmapped, g_dmaps.size(), map_failed != 0 ? "; SOME MAPS FAILED" : "");
++		journal("%s: %zu views; +%u BOs (%zu, %.1f MiB pinned); maps +%u -%u (%zu)%s\n", S.label, views.size(), imported, S.bos.size(), static_cast<double>(S.bytes) / 1048576.0,
++		        mapped, unmapped, S.maps.size(), map_failed != 0 ? "; SOME MAPS FAILED" : "");
 +	}
-+	if (g_dbytes >= g_dreported + (512ull << 20u)) {
-+		g_dreported = g_dbytes;
-+		direct_breakdown("growth", 0);
++	if (S.bytes >= S.reported + (512ull << 20u)) {
++		S.reported = S.bytes;
++		direct_breakdown_one(S, "growth", 0);
 +	}
++}
++
++static void direct_sync(bool force) {
++	for (auto& S: g_d) direct_sync_one(S, force);
 +}
 +
 +// A guest address window the GPU will touch whether or not the CPU ever wrote it (render
@@ -2164,15 +2325,20 @@ index 0000000..8eebf0a
 +static uint64_t direct_force(uint64_t lo, uint64_t hi) {
 +	if (!g_dmabuf || !g_dev) return 0;
 +	uint64_t asked = 0;
-+	for (const auto& v: direct_views()) {
-+		const uint64_t a = lo > v.va ? lo : v.va;
-+		const uint64_t b = hi < v.va + v.size ? hi : v.va + v.size;
-+		if (a >= b) continue;
-+		for (uint64_t c = (v.off + (a - v.va)) & ~(kDChunk - 1); c < v.off + (b - v.va); c += kDChunk) {
-+			if (g_dforced.insert(c).second) asked += kDChunk;
++	for (auto& S: g_d) {
++		if (dstate_fd(S) < 0) continue;
++		uint64_t here = 0;
++		for (const auto& v: direct_views(S)) {
++			const uint64_t a = lo > v.va ? lo : v.va;
++			const uint64_t b = hi < v.va + v.size ? hi : v.va + v.size;
++			if (a >= b) continue;
++			for (uint64_t c = (v.off + (a - v.va)) & ~(kDChunk - 1); c < v.off + (b - v.va); c += kDChunk) {
++				if (S.forced.insert(c).second) here += kDChunk;
++			}
 +		}
++		if (here != 0) direct_sync_one(S, true);
++		asked += here;
 +	}
-+	if (asked != 0) direct_sync(true);
 +	return asked;
 +}
 +
@@ -2189,6 +2355,11 @@ index 0000000..8eebf0a
 +	}
 +	static const uint64_t anon_min_ns = (std::getenv("BC5_DIRECT_ANON_SYNC_MS") != nullptr ? std::strtoull(std::getenv("BC5_DIRECT_ANON_SYNC_MS"), nullptr, 10) : 100ull) * 1'000'000ull;
 +	if (force && !urgent && g_dmabuf && g_last_sync_ns != 0 && now - g_last_sync_ns < anon_min_ns) {
++		return;
++	}
++	// With private guest memory in a file as well (experiment 0023) the walk should find nothing
++	// anonymous in the guest's range; it stays as a check, once a second.
++	if (g_dmabuf && !urgent && g_last_sync_ns != 0 && Libs::LibKernel::Memory::Bc5PrivateMemoryFd() >= 0 && now - g_last_sync_ns < 1'000'000'000ull) {
 +		return;
 +	}
 +	g_last_sync_ns = now;
@@ -3681,16 +3852,18 @@ index 0000000..8eebf0a
 +			g_hinted.clear();
 +			g_bytes_mapped = 0;
 +			g_last_sync_ns = 0;
-+			g_dbos.clear();
-+			g_dmaps.clear();
-+			g_dviews_sig = 0;
-+			g_dbos_mapped = 0;
-+			g_dbytes = 0;
-+			g_dblocks = ~0ull;
++			for (auto& S: g_d) {
++				S.bos.clear();
++				S.maps.clear();
++				S.views_sig  = 0;
++				S.bos_mapped = 0;
++				S.bytes      = 0;
++				S.blocks     = ~0ull;
++				S.merge_failed.clear();
++				S.reported = 0;
++				S.sync_ns  = 0;
++			}
 +			g_layout_gen++;
-+			g_dmerge_failed.clear();
-+			g_dreported = 0;
-+			g_dsync_ns = 0;
 +			LOGF_COLOR(Log::Color::Yellow, "[bc5-direct] device reopened after the fault: %s\n", g_dev ? "ok" : "FAILED");
 +			journal("reopen: %s\n", g_dev ? "ok" : "FAILED");
 +		} else {
