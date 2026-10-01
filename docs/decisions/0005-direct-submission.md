@@ -118,6 +118,13 @@ IB with an unsatisfied wait whose tail only signals (NOP, markers, `RELEASE_MEM`
 `EVENT_WRITE[_EOP]`, `WRITE_DATA`, waits, `ACQUIRE_MEM`) is split there — head at once, tail when
 the label arrives — because the frame DCB waits on a label that head writes while the tail waits
 on one the DCB writes. Flip labels are host state: cleared by the host at the flip.
+*Amended 2026-10-01 (run 73, F35):* (xix) the filter is no longer strictly in place. `CLEAR_STATE`
+cmd 1/2 are the CP's push_state/pop_state; the cmd 0 rewrite of (viii) keeps the CP alive but
+drops the game's context registers at every pop. With `Device::set_state_stack` the device tracks
+the context registers of the IBs it is given (`bc5/state_stack.hpp`), and an unconditional pop
+becomes the `SET_CONTEXT_REG` packets of the state saved at the matching push; the IB grows and
+is laid out accordingly in the scratch. SH and UCONFIG registers are not restored (the stream
+keeps shadowing them across the bracket; TODO(verify) on hardware behaviour of pop_state for them).
 
 **Consequences.** The "packet rewriter" of the roadmap shrinks to a filter with two rewrites; the
 backend's core is the policy table plus the BO/VA mapper, both testable offline. Unknown firmware

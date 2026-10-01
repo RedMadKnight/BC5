@@ -31,6 +31,7 @@ add_library(bc5_backend
     src/pm4.cpp
     src/dispatch_min.cpp
     src/policy.cpp
+    src/state_stack.cpp
 )
 target_include_directories(bc5_backend PUBLIC include PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/generated)
 target_link_libraries(bc5_backend PRIVATE bc5_warnings)
@@ -78,7 +79,8 @@ if(BC5_BUILD_TESTS)
     endif()
     include(Catch)
 
-    add_executable(bc5_backend_tests tests/placeholder_test.cpp tests/pm4_test.cpp tests/policy_test.cpp)
+    add_executable(bc5_backend_tests tests/placeholder_test.cpp tests/pm4_test.cpp tests/policy_test.cpp
+                   tests/state_stack_test.cpp)
     target_link_libraries(bc5_backend_tests PRIVATE bc5_backend bc5_warnings Catch2::Catch2WithMain)
     catch_discover_tests(bc5_backend_tests)
 endif()

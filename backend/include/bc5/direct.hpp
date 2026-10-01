@@ -6,6 +6,7 @@
 #pragma once
 
 #include "bc5/policy.hpp"
+#include "bc5/state_stack.hpp"
 
 #include <cstdint>
 #include <memory>
@@ -26,6 +27,9 @@ struct SubmitResult {
     std::uint64_t fault_addr = 0;
     std::uint32_t fault_status = 0;
     policy::FilterStats filter;
+    // Context-state stack emulation (Device::set_state_stack): pushes, pops and the registers
+    // the pops restored in this IB.
+    state_stack::Stats state_stack;
     // Dword offsets (in the caller's IB) of the type-3 packets that reached the GPU as
     // themselves, i.e. passed or rewritten, not NOP-ed by the filter. A host that also emulates
     // the stream (a soft CP) uses this to skip the memory side effects the GPU already produced.
@@ -104,6 +108,12 @@ public:
     // Staging knob: when false, submits carry only the scratch IB in their BO list (the userptr
     // mappings stay mapped but are not validated per submit). Default true.
     void set_include_mappings(bool v) { include_mappings_ = v; }
+    // Emulate the console CP's context-state stack (CLEAR_STATE cmd 1 / cmd 2 around the
+    // driver's internal draws; bc5/state_stack.hpp) for the IBs given to submit(): a pop becomes
+    // SET_CONTEXT_REG packets restoring what the IBs set before the push. Needs
+    // FilterOptions::mapped (the register tables are read from this process's memory). Off by
+    // default.
+    void set_state_stack(bool v) { state_stack_ = v; }
 
 private:
     Device() = default;
@@ -111,6 +121,7 @@ private:
     std::unique_ptr<Impl> impl_;
     bool wedged_ = false;
     bool include_mappings_ = true;
+    bool state_stack_ = false;
     std::uint64_t submits_ = 0;
 };
 

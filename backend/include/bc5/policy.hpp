@@ -59,7 +59,12 @@ struct FilterStats {
     std::uint64_t dispatch_rewrites = 0; // DISPATCH_* initiators given ORDERED_APPEND_ENBL
     std::uint64_t clear_state_rewrites = 0; // CLEAR_STATE cmd 1/2 -> cmd 0
     std::uint64_t cs_done_rewrites = 0; // RELEASE_MEM CS_DONE/index 6 without data -> BOTTOM_OF_PIPE_TS/5
+    // IB offsets (dwords) where a SAMPLE_PIPELINESTAT took a dropped marker's place
+    // (FilterOptions::stat_sample_va); sample k went to stat_sample_va + k * kStatSampleStride.
+    std::vector<std::uint32_t> stat_sample_offsets;
 };
+
+inline constexpr std::uint64_t kStatSampleStride = 0x80; // 11 qwords of counters, padded
 
 // Options for the rewrites.
 struct FilterOptions {
@@ -102,6 +107,12 @@ struct FilterOptions {
     // Packets executed right after the IB (verbatim, unfiltered), e.g. a pipeline-statistics
     // sample to compare with one taken in the prologue.
     std::vector<std::uint32_t> epilogue;
+    // Diagnostics (experiment 0016, run 74): when non-zero, up to stat_sample_max dropped
+    // register-destination WRITE_DATA packets (the console driver's pass markers, at least four
+    // dwords each) are replaced by EVENT_WRITE SAMPLE_PIPELINESTAT into this address + k * stride,
+    // so the pipeline counters can be read per marker-delimited section of one IB.
+    std::uint64_t stat_sample_va = 0;
+    std::uint32_t stat_sample_max = 0;
     // RELEASE_MEM with EVENT_INDEX 6 and DATA_SEL 0 becomes BOTTOM_OF_PIPE_TS / EVENT_INDEX 5
     // (the GFX ring's ME never completes the former; experiment 0016, run 40).
     bool cs_done_to_bottom_of_pipe = true;

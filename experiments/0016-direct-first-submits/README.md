@@ -594,7 +594,62 @@ bisect the game's state against it (NGG pass-through, `GE_CNTL`, ring sizes, CU 
 type bits 0x480); (2) `ORDERED_APPEND_ENBL` re-test with the fixed filter (counts of 1 are
 suspicious); (3) the kernel lockup timeout (boot parameter); (4) presentation and 36/40.
 
+**Run 73** (07:31, GPU, the wait fixes plus `BC5_DIRECT_PIPESTATS=1 BC5_DIRECT_FLIP_PREFILL=1`,
+journal `raw/e28-run73-direct.log`): 325 submits, 321 OK, no machine reset (one recoverable SQC
+fault at 0x507405000 with a ring reset). **No CPU wait timed out** (71 satisfied, 15 compute IBs
+split at their trailing wait), 14 flips instead of 9. The prefill answers run 72's question: at
+every later flip of a buffer the pattern is intact, 8160/8160 — **the flip pass writes nothing**,
+not black. And the frame DCB's totals do not add up: it holds 22 draws (64 vertices), the
+counters say 47 IA vertices, 5 primitives, 15 VS invocations.
+
+The arithmetic, from the DCB's own tables (`BC5_DIRECT_TABLES_FULL` capture): the primitive type
+(UCONFIG 0x242, loaded per draw through opcode 0x64 tables) is 7 (rect list) for four draws, 4
+(triangle list) for one, 6 (triangle strip) for sixteen, 1 for a zero-instance point draw.
+5 primitives and 15 VS invocations are five three-vertex draws; the other sixteen contribute
+exactly two IA vertices each (15 + 32 = 47) and no primitive — **a three-vertex strip that
+loses one vertex**. The frame enables primitive restart (`VGT_MULTI_PRIM_IB_RESET_EN` = 1 at +85,
+UCONFIG 0x24b) and sets the restart index (context 0x103) to 0xffffffff at +80; a restart index
+of 0 cuts vertex 0 of every auto-index strip. And the index is 0 again after the first of the
+driver's internal draws:
+
+```
++1719 CONTEXT_CONTROL 0x00000000 0x80018001   shadowing of context registers off
++1722 CLEAR_STATE 1                           push_state
++1724 LOAD_CONTEXT_REG_INDEX 0xfe0040068, 921 the driver's default state (0x103 = 0)
+      ... the internal draw's own tables, DRAW_INDEX_AUTO (rect list) ...
++1758 CONTEXT_CONTROL 0x00000000 0x80018003   shadowing back on
++1783 CLEAR_STATE 2                           pop_state: the game's context registers return
+```
+
+(`PFP_CLEAR_STATE_cmd_enum`: 0 clear_state, 1 push_state, 2 pop_state, 3 push_clear_state — PAL,
+`src/core/hw/gfxip/gfx9/chip/gfx9_plus_merged_f32_pfp_pm4_packets.h`.) The console's CP keeps
+the context registers in shadow memory and pop_state brings them back. amdgpu sets up no CP
+shadowing on gfx10; cmd 1/2 stall the CP here (F27), so the policy rewrites both to cmd 0, the
+kernel's clear state. After each internal draw (four per frame DCB, two or three in the smaller
+ones) the game is left with default context state plus whatever its next pass reloads: no
+restart index, and every other context register a later pass relies on without reloading.
+
+**Fix (no GPU yet):** `bc5::state_stack::Tracker` (backend, unit-tested) follows the context
+registers an IB sets — `SET_CONTEXT_REG`, `LOAD_CONTEXT_REG`, `LOAD_CONTEXT_REG_INDEX` tables read
+from the 1:1-mapped guest memory —, snapshots them at an unconditional push and replaces an
+unconditional pop by `SET_CONTEXT_REG` packets restoring the snapshot; the main IB may grow, the
+device lays out the nested copies behind the grown IB. Conditional `CLEAR_STATE`s (inside a
+`COND_EXEC` range: the DCB's opening "pop if a clear was interrupted") stay with the filter.
+`Device::set_state_stack`, host knob `BC5_DIRECT_STATE_STACK=1`. Dry run on real frames
+(`maponly`, capture 07:47): the 9,774-dword frame DCB has 4 pushes and 4 pops, each pop restores
+921 registers (the IB grows to 13,522 dwords), all 40 tables readable, the restart index tracked
+as 0xffffffff. Also new: `BC5_DIRECT_DRAWSTATS=<min dwords>` — the dropped pass markers of a DCB
+become `SAMPLE_PIPELINESTAT` packets (`FilterOptions::stat_sample_va`), so the counters are read
+per marker-delimited section.
+
 **Verdict update (2026-10-01, 07:30).** Correction to the verdict above and to F33: rasterisation
 works (run 70: 2.07–3.33 M PS invocations per frame DCB). The frames ran at ~9 a minute and on
 stale compute results because of two unresolved waits (run 72), both fixed in the host; the fixes
 need a GPU run (next: run 73, with pipeline statistics and the display-buffer prefill).
+
+**Verdict update (2026-10-01, 08:00).** Run 73: the wait fixes work (no timeouts, more frames).
+The image is missing because the console CP's context-state stack (`CLEAR_STATE` push/pop around
+the driver's internal draws) is not available on the BC-250 and our rewrite to the kernel's clear
+state wiped the game's context registers four times per frame; its triangle strips — the flip
+pass among them — then lose a vertex to a primitive-restart index of 0. The emulation is written
+and dry-run; next: run 74 (per-section counters, baseline) and run 75 (`BC5_DIRECT_STATE_STACK=1`).

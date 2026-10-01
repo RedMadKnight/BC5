@@ -50,6 +50,7 @@ struct Device::Impl {
     amdgpu_bo_handle gws = nullptr; // OpenOptions::gws_count
     amdgpu_bo_handle shadow = nullptr; // OpenOptions::gds_shadow, 64 KiB at kShadowVa
     void *shadow_cpu = nullptr;
+    state_stack::Tracker tracker; // Device::set_state_stack
     static constexpr std::uint64_t kShadowVa = 0x1000'0400'0000ull; // 64 MiB above the scratch
     std::mutex mutex;
 
@@ -372,7 +373,17 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     const std::size_t pro = opt.prologue.size();
     const std::size_t pro_padded = (pro + 7) & ~std::size_t{7};
     const std::size_t epi = opt.epilogue.size();
-    pieces.push_back({ib.data(), ib.size(), pro_padded, (ib.size() + epi + 7) & ~std::size_t{7}, 0});
+    // The IB itself is filtered into a vector first: the state-stack emulation may grow it
+    // (a CLEAR_STATE pop becomes the SET_CONTEXT_REG packets of the saved context), and the
+    // nested copies are laid out behind what will actually be executed.
+    std::vector<std::uint32_t> main_out(ib.size());
+    policy::filter(policy::Policy::builtin(), ib, main_out, opt, r.filter);
+    executed_offsets_of(ib, main_out.data(), r.executed_offsets);
+    if (state_stack_ && opt.mapped) {
+        main_out = impl_->tracker.apply(ib, main_out, opt.mapped, r.state_stack);
+    }
+    const std::size_t main_n = main_out.size();
+    pieces.push_back({ib.data(), ib.size(), pro_padded, (main_n + epi + 7) & ~std::size_t{7}, 0});
     for (std::size_t k = 0; k < pieces.size() && pieces.size() < 64; ++k) {
         if (pieces[k].depth >= 3) continue;
         std::vector<std::pair<const std::uint32_t *, std::size_t>> targets;
@@ -396,26 +407,30 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     for (std::size_t i = pro; i < pro_padded; ++i) dst[i] = policy::kNop;
     for (std::size_t k = 0; k < pieces.size(); ++k) {
         const Piece &pc = pieces[k];
-        policy::FilterStats st;
-        policy::filter(policy::Policy::builtin(), std::span<const std::uint32_t>(pc.src, pc.n),
-                       std::span<std::uint32_t>(dst + pc.off, pc.n), opt, k == 0 ? r.filter : st);
-        for (std::size_t i = pc.n; i < pc.padded; ++i) dst[pc.off + i] = policy::kNop;
-        if (k == 0) { // the epilogue sits between the IB and its padding
-            for (std::size_t i = 0; i < epi; ++i) dst[pc.off + pc.n + i] = opt.epilogue[i];
+        if (k == 0) { // filtered above; the epilogue sits between the IB and its padding
+            for (std::size_t i = 0; i < main_n; ++i) dst[pc.off + i] = main_out[i];
+            for (std::size_t i = main_n; i < pc.padded; ++i) dst[pc.off + i] = policy::kNop;
+            for (std::size_t i = 0; i < epi; ++i) dst[pc.off + main_n + i] = opt.epilogue[i];
+            continue;
         }
+        // nested IBs: no statistics samples (their slots belong to the main IB)
+        policy::FilterStats st;
+        policy::FilterOptions nested_opt = opt;
+        nested_opt.stat_sample_va = 0;
+        policy::filter(policy::Policy::builtin(), std::span<const std::uint32_t>(pc.src, pc.n),
+                       std::span<std::uint32_t>(dst + pc.off, pc.n), nested_opt, st);
+        for (std::size_t i = pc.n; i < pc.padded; ++i) dst[pc.off + i] = policy::kNop;
         std::vector<std::uint32_t> ex;
         executed_offsets_of(std::span<const std::uint32_t>(pc.src, pc.n), dst + pc.off, ex);
-        if (k == 0) {
-            r.executed_offsets = std::move(ex);
-        } else {
-            r.nested.push_back({reinterpret_cast<std::uint64_t>(pc.src),
-                                static_cast<std::uint32_t>(pc.n), std::move(ex)});
-        }
+        r.nested.push_back({reinterpret_cast<std::uint64_t>(pc.src),
+                            static_cast<std::uint32_t>(pc.n), std::move(ex)});
     }
     // Point the surviving INDIRECT_BUFFER packets at the scratch copies.
-    for (const Piece &pc : pieces) {
+    for (std::size_t k = 0; k < pieces.size(); ++k) {
+        const Piece &pc = pieces[k];
         std::uint32_t *d = dst + pc.off;
-        for (std::size_t i = 0; i < pc.n;) {
+        const std::size_t pc_n = k == 0 ? main_n : pc.n;
+        for (std::size_t i = 0; i < pc_n;) {
             const std::uint32_t h = d[i];
             const std::uint32_t type = h >> 30;
             std::size_t len = 1;
@@ -423,7 +438,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
                 const std::uint32_t count = (h >> 16) & 0x3fff;
                 len = count == 0x3fff ? 1 : count + 2;
             }
-            if (i + len > pc.n) break;
+            if (i + len > pc_n) break;
             const std::uint32_t op = (h >> 8) & 0xff;
             if (type == 3 && (op == 0x3f || op == 0x33) && len >= 4) {
                 const std::uint64_t a = (static_cast<std::uint64_t>(d[i + 1]) & ~3ull) |

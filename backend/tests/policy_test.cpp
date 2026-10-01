@@ -302,3 +302,31 @@ TEST_CASE("DMA_DATA memory operands follow the selectors, GDS offsets are not ad
     const std::vector<std::uint32_t> mem_fill = {0xC0055000u, 0x46306000u, 0u, 0u, 0x53b84000u, 0x5u, 0x40000004u};
     REQUIRE(policy::memory_operands(mem_fill.data(), 7).size() == 1);
 }
+
+TEST_CASE("filter: dropped markers become pipeline-statistics samples on request", "[policy]") {
+    using namespace bc5::policy;
+    // WRITE_DATA, DST_SEL 0 (register), 5 dwords: control, reg lo, reg hi, two data dwords
+    const std::vector<std::uint32_t> ib = {0xC0043700u, 0x00010000u, 0x0000c343u, 0u, 0x11111111u, 0x22222222u,
+                                           0xC0043700u, 0x00010000u, 0x0000c343u, 0u, 0x11111111u, 0x22222222u,
+                                           0xC0043700u, 0x00010000u, 0x0000c343u, 0u, 0x11111111u, 0x22222222u};
+    std::vector<std::uint32_t> out(ib.size());
+    FilterOptions opt;
+    opt.stat_sample_va = 0x100000009000ull;
+    opt.stat_sample_max = 2;
+    FilterStats st;
+    filter(Policy::builtin(), ib, out, opt, st);
+    REQUIRE(st.reg_write_drops == 3);
+    REQUIRE(st.stat_sample_offsets == std::vector<std::uint32_t>{0, 6});
+    CHECK(out[0] == 0xC0024600u);
+    CHECK(out[1] == (30u | (2u << 8)));
+    CHECK(out[2] == 0x00009000u);
+    CHECK(out[3] == 0x1000u);
+    CHECK(out[4] == kNop);
+    CHECK(out[5] == kNop);
+    CHECK(out[8] == 0x00009080u);
+    for (std::size_t k = 12; k < 18; ++k) CHECK(out[k] == kNop); // past the limit: plain drop
+    FilterStats plain;
+    filter(Policy::builtin(), ib, out, FilterOptions{}, plain);
+    CHECK(plain.stat_sample_offsets.empty());
+    CHECK(out[0] == kNop);
+}

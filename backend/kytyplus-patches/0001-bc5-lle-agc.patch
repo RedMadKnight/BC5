@@ -393,10 +393,10 @@ index 5f87e6b..e5c534e 100644
  	CondRemoveWaiter(cond_value, thread);
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..32ab4db
+index 0000000..1734ea4
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,2882 @@
+@@ -0,0 +1,2969 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -1262,6 +1262,11 @@ index 0000000..32ab4db
 +	if (std::getenv("BC5_DIRECT_NO_BOLIST") != nullptr) {
 +		g_dev->set_include_mappings(false);
 +	}
++	// BC5_DIRECT_STATE_STACK=1: emulate the console CP's context-state stack (CLEAR_STATE cmd 1 /
++	// cmd 2 around the driver's internal draws; bc5/state_stack.hpp). Without it the game loses
++	// its context registers after every internal clear (run 73: its triangle strips then lose
++	// their first vertex to a primitive-restart index of 0).
++	g_dev->set_state_stack(std::getenv("BC5_DIRECT_STATE_STACK") != nullptr);
 +	dump_init();
 +	journal("direct: enabled, stage %s, cu mask 0x%08x, bo list %s\n", stage != nullptr ? stage : "preamble", g_cu_mask,
 +	        std::getenv("BC5_DIRECT_NO_BOLIST") != nullptr ? "scratch only" : "with mappings");
@@ -2205,6 +2210,26 @@ index 0000000..32ab4db
 +		}
 +	}
 +	if (g_stage == Stage::MapOnly) {
++		// BC5_DIRECT_STATE_STACK=1 without a GPU: the filter and the state-stack emulation run
++		// on the IB as they would in a submission, and the journal gets what the emulation
++		// would do (pushes, pops, registers restored, tables read) — a dry run of run 74.
++		if (std::getenv("BC5_DIRECT_STATE_STACK") != nullptr) {
++			static bc5::state_stack::Tracker dry;
++			const std::vector<bc5::direct::Mapping> dmaps = g_dev->mappings();
++			bc5::policy::FilterOptions dopt;
++			dopt.mapped = [&dmaps](uint64_t a, uint64_t bytes) { return covered(dmaps, a, bytes); };
++			std::vector<uint32_t> filtered(num_dwords);
++			bc5::policy::FilterStats fst;
++			bc5::policy::filter(bc5::policy::Policy::builtin(), std::span<const uint32_t>(ib, num_dwords), filtered, dopt, fst);
++			bc5::state_stack::Stats sst;
++			const auto out = dry.apply(std::span<const uint32_t>(ib, num_dwords), filtered, dopt.mapped, sst);
++			if (sst.pushes != 0 || sst.pops != 0 || sst.unmatched_pops != 0 || sst.conditional != 0) {
++				const auto& c = dry.context();
++				journal("state stack dry (%s %u dwords -> %zu): push %u pop %u conditional %u unmatched %u; restored %u regs; tables %u, unreadable %u; depth %zu; tracked %zu regs, 0x103 %s 0x%08x\n",
++				        kind, num_dwords, out.size(), sst.pushes, sst.pops, sst.conditional, sst.unmatched_pops, sst.restored_regs, sst.tables, sst.unreadable_tables,
++				        dry.depth(), c.valid.count(), c.valid.test(0x103) ? "=" : "unset", c.value[0x103]);
++			}
++		}
 +		if (!g_dump_dir.empty()) journal_load_tables(ib, num_dwords, g_dev->mappings());
 +		static uint64_t seen = 0;
 +		if ((seen++ & 0x3f) == 0) {
@@ -2330,6 +2355,21 @@ index 0000000..32ab4db
 +		opt.prologue.insert(opt.prologue.end(), {0xC0004600u, 25u, // PIPELINESTAT_START
 +		                                         0xC0024600u, 30u | (2u << 8), static_cast<uint32_t>(a0), static_cast<uint32_t>(a0 >> 32)});
 +		opt.epilogue.insert(opt.epilogue.end(), {0xC0024600u, 30u | (2u << 8), static_cast<uint32_t>(a1), static_cast<uint32_t>(a1 >> 32)});
++	}
++	// BC5_DIRECT_DRAWSTATS=<min dwords>: with the pipeline statistics on, the same counters per
++	// marker-delimited section of a frame DCB of at least that many dwords — the filter turns the
++	// dropped pass markers into SAMPLE_PIPELINESTAT (FilterOptions::stat_sample_va), the journal
++	// gets the deltas and the draws / dispatches of each section (run 74: 24 draws in the frame
++	// DCB, 5 primitives in its totals — which draws vanish?). The first 6 such DCBs only.
++	static const uint32_t drawstats_min = std::getenv("BC5_DIRECT_DRAWSTATS") ? static_cast<uint32_t>(std::strtoul(std::getenv("BC5_DIRECT_DRAWSTATS"), nullptr, 10)) : 0;
++	static int drawstats_left = 6;
++	const bool do_drawstats = do_stats && drawstats_min != 0 && num_dwords >= drawstats_min && drawstats_left > 0;
++	if (do_drawstats) {
++		drawstats_left--;
++		volatile uint32_t* cpu = g_dev->gds_shadow_cpu();
++		for (uint32_t k = 0x9000 / 4; k < 0x10000 / 4; k++) cpu[k] = 0;
++		opt.stat_sample_va  = g_dev->gds_shadow_va() + 0x9000;
++		opt.stat_sample_max = 216;
 +	}
 +	const uint64_t n = g_submits.fetch_add(1);
 +	// Crash journal: a hang takes the machine down before any buffered log reaches the disk, so
@@ -2495,12 +2535,58 @@ index 0000000..32ab4db
 +			std::fclose(f);
 +		}
 +	}
++	if (r.state_stack.pushes != 0 || r.state_stack.pops != 0 || r.state_stack.unmatched_pops != 0) {
++		journal("state stack #%" PRIu64 ": push %u pop %u conditional %u unmatched %u; restored %u regs (+%u dwords); tables %u, unreadable %u\n", n,
++		        r.state_stack.pushes, r.state_stack.pops, r.state_stack.conditional, r.state_stack.unmatched_pops, r.state_stack.restored_regs,
++		        r.state_stack.inserted_dwords, r.state_stack.tables, r.state_stack.unreadable_tables);
++	}
 +	if (r.ok && do_stats) {
 +		const auto* q = reinterpret_cast<const volatile uint64_t*>(g_dev->gds_shadow_cpu());
 +		const uint64_t* b0 = const_cast<const uint64_t*>(q) + 0x8000 / 8;
 +		const uint64_t* b1 = const_cast<const uint64_t*>(q) + 0x8100 / 8;
 +		journal("pipestat #%" PRIu64 " (%u dwords): ia_verts %" PRIu64 " ia_prims %" PRIu64 " vs %" PRIu64 " gs_inv %" PRIu64 " gs_prims %" PRIu64 " c_inv %" PRIu64 " c_prims %" PRIu64 " ps %" PRIu64 " cs %" PRIu64 "\n",
 +		        n, num_dwords, b1[7] - b0[7], b1[6] - b0[6], b1[3] - b0[3], b1[4] - b0[4], b1[5] - b0[5], b1[2] - b0[2], b1[1] - b0[1], b1[0] - b0[0], b1[10] - b0[10]);
++	}
++	if (r.ok && do_drawstats) {
++		const auto* q8 = reinterpret_cast<const volatile uint8_t*>(g_dev->gds_shadow_cpu());
++		auto block = [&](uint64_t off, uint64_t* out) {
++			for (int k = 0; k < 11; k++) out[k] = *reinterpret_cast<const volatile uint64_t*>(q8 + off + 8 * static_cast<uint64_t>(k));
++		};
++		uint64_t prev[11], cur[11];
++		block(0x8000, prev);
++		const auto& offs = r.filter.stat_sample_offsets;
++		journal("drawstat #%" PRIu64 ": %zu samples\n", n, offs.size());
++		uint32_t from = 0;
++		for (size_t k = 0; k <= offs.size(); k++) {
++			const uint32_t to = k < offs.size() ? offs[k] : num_dwords;
++			block(k < offs.size() ? 0x9000 + 0x80 * k : 0x8100, cur);
++			// the draws and dispatches of [from, to)
++			uint32_t draws = 0, dispatches = 0, first = 0;
++			for (uint32_t i = from; i < to;) {
++				const uint32_t h = ib[i];
++				const uint32_t type = h >> 30u;
++				const uint32_t c = (h >> 16u) & 0x3fffu;
++				uint32_t len = 1;
++				if (type == 3 || type == 0) len = c == 0x3fffu ? 1 : c + 2;
++				if (type == 3 && c != 0x3fffu) {
++					const uint32_t op = (h >> 8u) & 0xffu;
++					const bool draw = op == 0x2d || op == 0x27 || op == 0x35 || op == 0x24 || op == 0x25 || op == 0x38 || op == 0x2c;
++					const bool disp = op == 0x15 || op == 0x16;
++					if ((draw || disp) && first == 0) first = i;
++					draws += draw ? 1 : 0;
++					dispatches += disp ? 1 : 0;
++				}
++				i += len;
++			}
++			bool any = draws != 0 || dispatches != 0;
++			for (int j = 0; j < 11; j++) any = any || cur[j] != prev[j];
++			if (any) {
++				journal("  [%u,%u) draws %u dispatches %u first %u: ia_verts %" PRIu64 " ia_prims %" PRIu64 " vs %" PRIu64 " gs_inv %" PRIu64 " c_inv %" PRIu64 " c_prims %" PRIu64 " ps %" PRIu64 " cs %" PRIu64 "\n",
++				        from, to, draws, dispatches, first, cur[7] - prev[7], cur[6] - prev[6], cur[3] - prev[3], cur[4] - prev[4], cur[2] - prev[2], cur[1] - prev[1], cur[0] - prev[0], cur[10] - prev[10]);
++			}
++			for (int j = 0; j < 11; j++) prev[j] = cur[j];
++			from = to;
++		}
 +	}
 +	if (r.ok) {
 +		g_ok++;
@@ -2540,6 +2626,7 @@ index 0000000..32ab4db
 +			ro.gds_shadow = std::getenv("BC5_DIRECT_GDS_SHADOW") != nullptr;
 +			g_dev = bc5::direct::Device::open(node != nullptr ? node : "/dev/dri/renderD128", ro);
 +			if (g_dev && std::getenv("BC5_DIRECT_NO_BOLIST") != nullptr) g_dev->set_include_mappings(false);
++			if (g_dev) g_dev->set_state_stack(std::getenv("BC5_DIRECT_STATE_STACK") != nullptr);
 +			g_hinted.clear();
 +			g_bytes_mapped = 0;
 +			g_last_sync_ns = 0;

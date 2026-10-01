@@ -324,6 +324,7 @@ std::size_t filter(const Policy &policy, std::span<const std::uint32_t> src,
         }
         Verdict v = policy.packet(&src[i], len);
         const auto opcode3 = static_cast<std::uint8_t>((header >> 8) & 0xff);
+        bool sample_here = false;
         if (type == 3 && v != Verdict::Drop) {
             if (opt.drop_draws && is_draw_or_dispatch(opcode3)) {
                 v = Verdict::Drop;
@@ -357,6 +358,8 @@ std::size_t filter(const Policy &policy, std::span<const std::uint32_t> src,
                 // SET_* only, so register destinations are dropped outright (ADR 0005).
                 v = Verdict::Drop;
                 stats.reg_write_drops++;
+                sample_here = opt.stat_sample_va != 0 && len >= 4 &&
+                              stats.stat_sample_offsets.size() < opt.stat_sample_max;
             } else if (!opt.extra_drop.empty() &&
                        std::find(opt.extra_drop.begin(), opt.extra_drop.end(), opcode3) !=
                            opt.extra_drop.end()) {
@@ -375,6 +378,17 @@ std::size_t filter(const Policy &policy, std::span<const std::uint32_t> src,
         switch (v) {
         case Verdict::Drop:
             for (std::uint32_t k = 0; k < len; ++k) out[i + k] = kNop;
+            if (sample_here) {
+                // EVENT_WRITE, SAMPLE_PIPELINESTAT (event 30, EVENT_INDEX 2) + address, as RADV
+                // emits it for pipeline-statistics queries (Mesa radv_query.c).
+                const std::uint64_t a =
+                    opt.stat_sample_va + stats.stat_sample_offsets.size() * kStatSampleStride;
+                out[i] = 0xC0024600u;
+                out[i + 1] = 30u | (2u << 8);
+                out[i + 2] = static_cast<std::uint32_t>(a);
+                out[i + 3] = static_cast<std::uint32_t>(a >> 32);
+                stats.stat_sample_offsets.push_back(static_cast<std::uint32_t>(i));
+            }
             stats.dropped++;
             stats.dwords_dropped += len;
             break;
