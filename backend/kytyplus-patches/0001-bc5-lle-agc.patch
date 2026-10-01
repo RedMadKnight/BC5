@@ -784,7 +784,7 @@ index 5f87e6b..e5c534e 100644
  	CondRemoveWaiter(cond_value, thread);
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..7c8458c
+index 0000000..8eebf0a
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
 @@ -0,0 +1,3690 @@
@@ -1870,7 +1870,7 @@ index 0000000..7c8458c
 +// BC5_DIRECT_EAGER_NAMES=name[,name...]: views with these names are imported in full as soon as
 +// they exist, data or not. The game's GPU heaps hold render targets and GPU-written textures no
 +// CPU ever touches; the first draw into one faulted, and a fault is a 14 s freeze (2 s fence
-+// timeout, 12 s for the kernel's reset; run 103: opening the pause menu). All 18 regions learned
++// timeout, 12 s for the kernel's reset; run 103: opening the pause menu). 17 of the 18 regions learned
 +// from faults so far lie in those two heaps.
 +static bool direct_eager_name(const char* name) {
 +	static const std::vector<std::string> names = [] {
