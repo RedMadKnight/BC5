@@ -129,3 +129,6 @@ Experiment 0021 (the emulator's own GTT share): `KYTY_BC5_CACHE_MIB=staging,stre
 sets the sizes of the buffer cache's four fixed buffers (defaults 512, 64, 64, 128 MiB; the direct
 path runs with 96,16,16,16), `KYTY_BC5_VMA_BLOCK_MIB=16` the allocator's block size, and
 `KYTY_BC5_VMA_TRACE=1` logs every allocation and release with its callers.
+Experiment 0022 (frame time): `BC5_DIRECT_JOURNAL=min` replaces the crash journal by one buffered
+line per submission (no IB dumps, no sync); imports that neighbour each other are merged into BOs
+of up to the udmabuf size limit (`BC5_DIRECT_NO_MERGE=1`, `BC5_DIRECT_MAX_BO_MIB`).

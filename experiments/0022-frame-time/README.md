@@ -51,4 +51,17 @@ The plan, in order of size:
 4. the state-stack emulation restoring 7,368 registers per pop where few differ, and waiting
    for every fence synchronously (part of 24 ms).
 
-**Verdict.** Open: baseline recorded, no optimisation run yet.
+*Steps 1 and 2, written and checked without the GPU* (map-only run, 75 s):
+
+- `BC5_DIRECT_JOURNAL=min` (host): no per-submission dumps, no second filter pass, no sync; one
+  buffered journal line per submission, flushed twice a second and at once on a failure. The
+  dump directory of the check run holds one file and a 1,623-line journal. For chasing a hang
+  the variable stays unset.
+- merged imports (host, `Device::free_shared`): neighbouring imports that have existed for 3 s
+  are replaced by one import of up to the udmabuf module's limit (64 MiB), at most 256 MiB per
+  pass and a pass every 250 ms, the old BOs freed after the remap. 97 BOs for 3,966 MiB in the
+  check run. `BC5_DIRECT_NO_MERGE=1` turns it off, `BC5_DIRECT_MAX_BO_MIB` sets the size.
+- kept BO list (backend): the list of a submission with draws is reused while the set of mapped
+  BOs and the scratch BO stay the same.
+
+**Verdict.** Open: baseline recorded; steps 1 and 2 await a GPU run.
