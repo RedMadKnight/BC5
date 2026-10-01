@@ -1,0 +1,21 @@
+run 108, 2026-10-01, two unattended runs of 120 s to the title screen; GPU clock pinned at 1850 MHz by the governor (journal excerpts, hwmon samples)
+
+== sync: kytyplus-20261001-2137
+submits 78366, ok 78366, failed 0, flips 5516, timeouts 0, soft-CP wait timeouts 0
+flips per 10 s:
+t0:522 t10:596 t20:565 t30:392 t40:428 t50:440 t60:441 t70:438 t80:441 t90:436 t100:440 t110:377 
+hwmon amdgpu at the title screen (60-115 s): 912 mV, 110 W, max 66 C
+timing: #78365 done at t 118.573 s, 0.0 ms after the sync and hints; device: prepare 0.01 list 0.00 cs 0.01 fence 0.02 ms, 6 BOs (short list)
+timing: #78366 done at t 118.574 s, 0.6 ms after the sync and hints; device: prepare 0.09 list 0
+
+== async: kytyplus-20261001-2139
+submits 91046, ok 91046, failed 0, flips 6426, timeouts 0, soft-CP wait timeouts 0
+flips per 10 s:
+t0:514 t10:597 t20:597 t30:496 t40:529 t50:534 t60:539 t70:541 t80:541 t90:539 t100:540 t110:459 
+hwmon amdgpu at the title screen (60-115 s): 910 mV, 118 W, max 69 C
+timing: #91100 done at t 118.489 s, 12.7 ms after the sync and hints; device: prepare 0.01 list 0.04 cs 0.10 fence 12.46 ms, 20 BOs (short list)
+timing: #91101 done at t 118.489 s, 12.5 ms after the sync and hints; device: prepare 0.01 list 0.01 cs 0.03 fence 12.46 ms
+
+== governor
+[2026-10-01T19:27:07.050Z INFO  cyan_skillfish_governor_smu::config] allowed frequency range 500..=2000
+[2026-10-01T19:27:07.050Z INFO  cyan_skillfish_governor_smu::config] initial frequency range: 1850..=1850
