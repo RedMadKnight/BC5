@@ -93,11 +93,12 @@ Phase 0a comes first on purpose: one canonical input format keeps every later ex
 
 ## Open questions
 
-- [ ] 1:1 memory mapping: `AMDGPU_GEM_USERPTR` plus user-chosen GPU VA (`amdgpu_bo_va_op`) should allow GPU VA = game CPU pointer with zero copies on an APU. Needs a test (userptr on 64 MB, read back through a shader).
-- [ ] How RPCSX handles AGC today (own parser vs. shared with PS4 GNM). Read the GPU directory in the RPCSX tree before writing the tap.
-- [ ] Whether PS5 titles write CU masks themselves (check phase-1 logs).
-- [ ] Which draw/CB/DB register usage is Sony-specific beyond public PM4 (OpenProspero's notes are the reference).
-- [ ] Storage: how much of the SSD/Kraken dependency a software prefetch/cache layer can hide.
+- [x] 1:1 memory mapping. **Yes** (experiment 0014, HANDOFF F23): a userptr BO mapped at GPU VA = CPU pointer works with zero copies. Since experiment 0017 the game's direct memory goes one better: ranges of the host's memfd are imported as dma-bufs and mapped at the guest's addresses, without the per-submission page walk userptr costs (ADR 0006, F40).
+- [x] How RPCSX handles AGC today. **Answered** (HANDOFF F12, F19): the submit call carries a `CONTEXT_CONTROL` packet, a state-preamble IB and the frame DCB; track B runs the game's own `libSceAgc` on top of an emulated `/dev/gc` instead of tapping RPCSX.
+- [x] Whether PS5 titles write CU masks themselves. **Yes** (F21, F39): every compute dispatch writes `COMPUTE_STATIC_THREAD_MGMT_SE0..3` = 0xffffffff and the graphics stages load `RSRC3.CU_EN` = 0xffff from register tables; BC5's mask is ANDed into both. What the bits mean on the BC-250 is measured for compute (experiment 0019: bits 0–19 per shader engine, one per CU).
+- [ ] Which draw/CB/DB register usage is Sony-specific beyond public PM4. **Partly**: so far one unresolved SH register and one APU-only opcode (F21), the 64-bit `WAIT_REG_MEM` and index-load opcodes (experiment 0016), and — more important than any register — command-processor behaviour the console's system provides and `amdgpu` does not: `CLEAR_STATE` push/pop (F35), waiting for CP DMA (F41), register shadowing. The list keeps growing with every new part of the game.
+- [ ] Which CUs the graphics stages' 16-bit `CU_EN` selects on a 20-CU shader engine (experiment 0019's open half).
+- [ ] Storage: how much of the SSD/Kraken dependency a software prefetch/cache layer can hide. Deferred to after phase 4.
 
 ## Tooling: `bc5-mount`
 
