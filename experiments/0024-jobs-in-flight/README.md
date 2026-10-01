@@ -47,6 +47,23 @@ What the pinned clock did cannot be read from this: the title screen's GPU time 
 in runs 101–107 under the old governor setting and is 16.8 ms now, so the old setting was
 probably at its upper end already under this load.
 
+*Run 109* (21:53 and 21:55, GPU, unattended, the same two runs with the GPU clock pinned at
+2000 MHz and 1000 mV by the maintainer; captures `kytyplus-20261001-2153` and `-2155`,
+`raw/run109-summary.txt`):
+
+| Title screen, 60–115 s | synchronous, 1850 MHz | jobs in flight, 1850 MHz | synchronous, 2000 MHz | jobs in flight, 2000 MHz |
+|---|---|---|---|---|
+| submissions, failed | 78,366, 0 | 91,046, 0 | 79,435, 0 | 94,087, 0 |
+| frames per second | 43.9 | 54.0 | 44.8 | 56.3 |
+| frame, ms | 22.8 | 18.5 | 22.3 | 17.8 |
+| GPU time waited for, ms | 16.8 | — | 16.2 | — |
+| GPU: voltage, power, highest temperature | 912 mV, 110 W, 66 °C | 910 mV, 118 W, 69 °C | 977 mV, 125 W, 73 °C | 974 mV, 143 W, 78 °C |
+
+Eight per cent more clock gives four per cent less GPU time and 25 W more. With jobs in flight
+the temperature climbs to 75 °C in the first minute and then levels off at 76–78 °C; the
+governor throttles at 85 °C, so a longer run at this setting should still be watched.
+
 **Verdict.** Open, with the first half answered: at the title screen the frame does shrink to
-about the GPU's own time (44 to 54 fps) and nothing of the protocol breaks. Not yet run: a
-level load, the cutscene, gameplay with input, and a fault with jobs in flight.
+about the GPU's own time (44 to 54 fps at 1850 MHz, 45 to 56 at 2000 MHz) and nothing of the
+protocol breaks. Not yet run: a level load, the cutscene, gameplay with input, and a fault with
+jobs in flight.
