@@ -377,11 +377,62 @@ index 58f16c6..4ab38e9 100644
  KYTY_SYSV_ABI int VideoOutIsFlipPending(int handle);
  KYTY_SYSV_ABI int VideoOutGetVblankStatus(int handle, VideoOutVblankStatus* status);
  KYTY_SYSV_ABI int VideoOutGetEventId(const LibKernel::EventQueue::KernelEvent* ev);
+diff --git a/src/graphics/presentation/window/window.cpp b/src/graphics/presentation/window/window.cpp
+index c729a98..49f9ecf 100644
+--- a/src/graphics/presentation/window/window.cpp
++++ b/src/graphics/presentation/window/window.cpp
+@@ -334,6 +334,18 @@ static void GameEventController([[maybe_unused]] const EventController& f) {
+ 		}
+ 		int id = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(pad));
+ 		Controller::ControllerConnect(id);
++		// BC5: the pad's accelerometer and gyroscope, where SDL has them (ASTRO BOT's first
++		// scene wants the controller shaken).
++		for (const SDL_SensorType sensor: {SDL_SENSOR_ACCEL, SDL_SENSOR_GYRO}) {
++			const char* name = sensor == SDL_SENSOR_ACCEL ? "accelerometer" : "gyroscope";
++			if (SDL_GameControllerHasSensor(pad, sensor) != SDL_TRUE) {
++				LOGF("Controller sensor %s: not available\n", name);
++			} else if (SDL_GameControllerSetSensorEnabled(pad, sensor, SDL_TRUE) != 0) {
++				LOGF("Controller sensor %s: %s\n", name, SDL_GetError());
++			} else {
++				LOGF("Controller sensor %s: enabled\n", name);
++			}
++		}
+ 	}
+ 
+ 	if (f.removed) {
+@@ -635,6 +647,17 @@ void WindowContext::ProcessEvent(double time_s) {
+ 			break;
+ 		}
+ 
++		case SDL_CONTROLLERSENSORUPDATE: { // BC5: SDL gives m/s^2 and rad/s
++			if (event->csensor.sensor == SDL_SENSOR_ACCEL) {
++				const float g[3] = {event->csensor.data[0] / 9.80665f, event->csensor.data[1] / 9.80665f,
++				                    event->csensor.data[2] / 9.80665f};
++				Controller::ControllerMotion(event->csensor.which, false, g);
++			} else if (event->csensor.sensor == SDL_SENSOR_GYRO) {
++				Controller::ControllerMotion(event->csensor.which, true, event->csensor.data);
++			}
++			break;
++		}
++
+ 		case SDL_CONTROLLERAXISMOTION: {
+ 			EventController c {};
+ 
 diff --git a/src/kernel/fileSystem.cpp b/src/kernel/fileSystem.cpp
-index 4034f52..0719e4e 100644
+index 4034f52..701d31e 100644
 --- a/src/kernel/fileSystem.cpp
 +++ b/src/kernel/fileSystem.cpp
-@@ -33,6 +33,7 @@ constexpr int DESCRIPTOR_MIN = 3;
+@@ -20,6 +20,9 @@
+ #include <cstdio>
+ #include <cstring>
+ #include <filesystem>
++#include <cctype>
++#include <unordered_map>
++#include <mutex>
+ #include <random>
+ #include <system_error>
+ #include <vector>
+@@ -33,6 +36,7 @@ constexpr int DESCRIPTOR_MIN = 3;
  enum class SpecialFile {
  	None,
  	Random,
@@ -389,7 +440,77 @@ index 4034f52..0719e4e 100644
  };
  
  class MountPoints {
-@@ -433,6 +434,16 @@ int KYTY_SYSV_ABI KernelOpen(const char* path, int flags, uint16_t mode) {
+@@ -232,6 +236,49 @@ void MountPoints::Umount(const std::string& folder_or_point) {
+ }
+ 
+ #if KYTY_PLATFORM != KYTY_PLATFORM_WINDOWS
++// BC5 (experiment 0022): for a file that does not exist the resolver below listed the whole
++// directory to look for a name differing only in case. ASTRO BOT asks for some 17,000 missing
++// files while its first level loads, in directories of up to 12,000 entries behind the game
++// image's FUSE mount, under the mount table's lock: the load took four minutes for it. The
++// names of a directory are kept, folded to lower case, while its modification time is unchanged.
++// Returns the real name for `name`, empty when the directory has none that matches.
++static std::string Bc5FoldedLookup(const std::filesystem::path& dir, const std::string& name) {
++	struct Entry {
++		bool                                         filled = false;
++		std::filesystem::file_time_type              mtime {};
++		std::unordered_map<std::string, std::string> names;
++	};
++	static std::mutex                             mutex;
++	static std::unordered_map<std::string, Entry> cache;
++	auto fold = [](std::string text) {
++		for (auto& c: text) {
++			c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
++		}
++		return text;
++	};
++	std::error_code ec;
++	const auto      mtime = std::filesystem::last_write_time(dir, ec);
++	if (ec) {
++		return {};
++	}
++	std::lock_guard lock(mutex);
++	auto&           e = cache[dir.string()];
++	if (!e.filled || e.mtime != mtime) {
++		e.names.clear();
++		e.mtime  = mtime;
++		e.filled = true;
++		for (std::filesystem::directory_iterator entry(dir, ec), end; entry != end; entry.increment(ec)) {
++			if (ec) {
++				break;
++			}
++			const std::string real = entry->path().filename().string();
++			e.names.emplace(fold(real), real); // the first of several that differ only in case, as before
++		}
++	}
++	const auto found = e.names.find(fold(name));
++	return found != e.names.end() ? found->second : std::string();
++}
++
+ // Resolve guest paths case-insensitively on case-sensitive hosts.
+ static std::filesystem::path ResolvePathIgnoringCase(const std::filesystem::path& path) {
+ 	std::error_code ec;
+@@ -256,16 +303,9 @@ static std::filesystem::path ResolvePathIgnoringCase(const std::filesystem::path
+ 		}
+ 
+ 		bool found = false;
+-		for (std::filesystem::directory_iterator entry(resolved, ec), end; entry != end;
+-		     entry.increment(ec)) {
+-			if (ec) {
+-				break;
+-			}
+-			if (Common::EqualNoCase(entry->path().filename().string(), component.string())) {
+-				resolved = entry->path();
+-				found    = true;
+-				break;
+-			}
++		if (const std::string real = Bc5FoldedLookup(resolved, component.string()); !real.empty()) {
++			resolved /= real;
++			found = true;
+ 		}
+ 
+ 		if (!found) {
+@@ -433,6 +473,16 @@ int KYTY_SYSV_ABI KernelOpen(const char* path, int flags, uint16_t mode) {
  		return descriptor;
  	}
  
@@ -406,7 +527,7 @@ index 4034f52..0719e4e 100644
  	file->real_name = (directory ? g_mount_points->GetRealDirectory(file->name)
  	                             : g_mount_points->GetRealFilename(file->name));
  
-@@ -1311,4 +1322,13 @@ int KYTY_SYSV_ABI KernelCheckReachability(const char* path) {
+@@ -1311,4 +1361,13 @@ int KYTY_SYSV_ABI KernelCheckReachability(const char* path) {
  	return KERNEL_ERROR_ENOENT;
  }
  
@@ -4323,6 +4444,128 @@ index 0000000..a07ab95
 +}
 +
 +} // namespace Libs
+diff --git a/src/libs/controller.cpp b/src/libs/controller.cpp
+index 55718eb..5ed8d69 100644
+--- a/src/libs/controller.cpp
++++ b/src/libs/controller.cpp
+@@ -45,6 +45,8 @@ struct ControllerState {
+ 	uint64_t time                                  = 0;
+ 	uint32_t buttons                               = 0;
+ 	int      axes[static_cast<int>(Axis::AxisMax)] = {128, 128, 128, 128, 0, 0};
++	float    accel[3]                              = {0.0f, 0.0f, 0.0f}; // BC5: G
++	float    gyro[3]                               = {0.0f, 0.0f, 0.0f}; // BC5: rad/s
+ };
+ 
+ // Local-multiplayer: one GameController owns up to PAD_MAX_CONTROLLERS player
+@@ -61,6 +63,7 @@ public:
+ 	void Disconnect(int id);
+ 	void Button(int id, uint32_t button, bool down);
+ 	void Axis(int id, Axis axis, int value);
++	void Motion(int id, bool gyro, const float* xyz);
+ 	void ResetInputState();
+ 	void GetConnectionInfo(bool* flag, int* count);
+ 	void ReadState(ControllerState* state, bool* flag, int* count);
+@@ -78,7 +81,18 @@ private:
+ 		bool            obtained[STATES_MAX] = {};
+ 		uint32_t        states_num          = 0;
+ 		uint32_t        first_state         = 0;
++		// BC5: the latest motion sample; it is not an input event of its own (the sensors report
++		// hundreds of times a second) but is put into every state the guest reads.
++		float accel[3] = {0.0f, 0.0f, 0.0f};
++		float gyro[3]  = {0.0f, 0.0f, 0.0f};
+ 	};
++	void ApplyMotion(int index, ControllerState* state) const {
++		const auto& s = m_slots[static_cast<size_t>(index)];
++		for (int k = 0; k < 3; k++) {
++			state->accel[k] = s.accel[k];
++			state->gyro[k]  = s.gyro[k];
++		}
++	}
+ 
+ 	void EnsureSlot(int index);
+ 	int  OwnerSlot(int id) const;
+@@ -180,7 +194,13 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
+ 	data->right_stick_y          = state.axes[static_cast<int>(Axis::RightY)];
+ 	data->analog_buttons_l2      = state.axes[static_cast<int>(Axis::TriggerLeft)];
+ 	data->analog_buttons_r2      = state.axes[static_cast<int>(Axis::TriggerRight)];
+-	data->orientation_w          = 1.0f;
++	data->orientation_w          = 1.0f; // TODO(verify): no orientation is derived from the sensors yet
++	data->acceleration_x         = state.accel[0];
++	data->acceleration_y         = state.accel[1];
++	data->acceleration_z         = state.accel[2];
++	data->angular_velocity_x     = state.gyro[0];
++	data->angular_velocity_y     = state.gyro[1];
++	data->angular_velocity_z     = state.gyro[2];
+ 	data->touch_data_touch0_id   = 1;
+ 	data->touch_data_touch1_id   = 2;
+ 	data->connected              = connected;
+@@ -268,6 +288,12 @@ void ControllerAxis(int id, Axis axis, int value) {
+ 	g_controller->Axis(id, axis, value);
+ }
+ 
++void ControllerMotion(int id, bool gyro, const float* xyz) {
++	if (g_controller != nullptr && xyz != nullptr) {
++		g_controller->Motion(id, gyro, xyz);
++	}
++}
++
+ void ControllerResetInputState() {
+ 	EXIT_IF(g_controller == nullptr);
+ 	g_controller->ResetInputState();
+@@ -443,6 +469,20 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
+ 	AddState(slot, state);
+ }
+ 
++void GameController::Motion(int id, bool gyro, const float* xyz) {
++	Common::LockGuard lock(m_mutex);
++
++	int slot = OwnerSlot(id);
++	if (slot == -1) {
++		slot = FallbackSlot();
++	}
++	EnsureSlot(slot);
++	auto& s = m_slots[static_cast<size_t>(slot)];
++	for (int k = 0; k < 3; k++) {
++		(gyro ? s.gyro : s.accel)[k] = xyz[k];
++	}
++}
++
+ void GameController::ResetInputState() {
+ 	Common::LockGuard lock(m_mutex);
+ 
+@@ -488,6 +528,7 @@ int GameController::ReadStateForSlot(int index, ControllerState* state, bool* fl
+ 	*flag  = SlotConnected(index);
+ 	*count = PresentCount();
+ 	*state = GetLastState(index);
++	ApplyMotion(index, state);
+ 
+ 	return 0;
+ }
+@@ -523,7 +564,9 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
+ 			auto state_index = (s.first_state + i) % STATES_MAX;
+ 			if (!s.obtained[state_index]) {
+ 				s.obtained[state_index] = true;
+-				states[ret_num++]       = s.states[state_index];
++				states[ret_num]         = s.states[state_index];
++				ApplyMotion(index, &states[ret_num]);
++				ret_num++;
+ 			}
+ 		}
+ 	}
+diff --git a/src/libs/controller.h b/src/libs/controller.h
+index 3c0684f..589e4cc 100644
+--- a/src/libs/controller.h
++++ b/src/libs/controller.h
+@@ -78,6 +78,9 @@ void ControllerConnect(int id);
+ void ControllerDisconnect(int id);
+ void ControllerButton(int id, uint32_t button, bool down);
+ void ControllerAxis(int id, Axis axis, int value);
++// BC5: the pad's motion sensors. Acceleration in G (gravity included), angular velocity in
++// rad/s, in the pad's own axes as SDL reports them (x to the right, y up, z towards the player).
++void ControllerMotion(int id, bool gyro, const float* xyz);
+ void ControllerResetInputState();
+ 
+ int KYTY_SYSV_ABI PadInit();
 diff --git a/src/libs/libJson2.cpp b/src/libs/libJson2.cpp
 index 183cd85..24a760a 100644
 --- a/src/libs/libJson2.cpp

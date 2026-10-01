@@ -129,6 +129,48 @@ The level load does not get shorter with the frame rate: the maintainer picked t
 100 the load took about 240 s at 7 fps). The game made about as many file lookups in that time
 as in run 99. What paces the load is not known yet.
 
-**Verdict.** Open: 3.3 times the frame rate at the title screen with steps 1–3 (8.2 to 27.1
-fps). Still to do: the submission path itself (step 4), the cutscene comparison, and the load
-time, which is a separate question.
+*Run 103* (19:17, GPU, the code of run 102, 718 s, the maintainer at the controller, with a
+probe of the load; capture `kytyplus-20261001-1917`, `raw/run103-summary.txt`): **258,551
+submissions, 17,191 flips; the game loads its level, plays the cutscene at 24.3 fps (6 in run
+100) and reaches its first interactive scene** — the crash site in the desert, with the
+controller prompt on screen — at 23.5 fps. Three submissions timed out on page faults in
+memory no register had named; each was learned and the device reopened, as designed.
+
+| Window | fps | submissions per frame | sync + hints | ioctl | fence (GPU) | frame, ms |
+|---|---|---|---|---|---|---|
+| cutscene, 390–480 s | 24.3 | 16.0 | 1.9 | 17.6 | 17.0 | 41.1 |
+| desert, 560–620 s | 25.5 | 16.0 | 1.7 | 16.7 | 16.9 | 39.2 |
+| first interactive scene, 640–690 s | 23.5 | 17.2 | 2.0 | 16.8 | 17.7 | 42.6 |
+
+*The level load.* Slot picked 61 s in, imports at their loaded size about 240 s later, as in
+run 100. The probe (two minutes of the load: per-thread CPU time, I/O counters of the emulator
+and of `bc5-mount`, a backtrace of every thread):
+
+- storage is idle: `bc5-mount` reads 16 MiB/s from the disk (the disk does 700–780 MB/s, the
+  mount 400–770 MB/s on a large file) but uses 76 % of a core;
+- no thread of the emulator is busy for more than 43 % of a core;
+- the thread caught in the file system is in `KernelStat` → `ResolvePathIgnoringCase`. That
+  function of KytyPlus, for a file that does not exist, lists the whole directory to look for a
+  name differing only in case — under the mount table's lock, through FUSE, in directories of
+  up to 12,133 entries — and the game asks for about 17,000 files that do not exist while this
+  level loads (it searches eight directories for every asset). That is the 52 lookups a second
+  of experiment 0021, and the pace of the load.
+
+Patch 0001 now keeps each directory's names, folded to lower case, while the directory's
+modification time is unchanged. The same lookups and results in a map-only run; the effect on
+the load is for the next GPU run.
+
+The probe also shows the host's own remaining cost during a load: the anonymous-VMA walk reads
+`/proc/self/maps` at 32 MiB/s (ten walks a second over a 3 MiB file), 17 % of a core.
+
+*Motion input.* The first interactive scene asks for the controller to be shaken, and nothing
+happened: KytyPlus reports zero acceleration and angular velocity to the game. Patch 0001 now
+enables the pad's accelerometer and gyroscope through SDL and puts the latest sample into every
+pad state the game reads (acceleration in G, angular velocity in rad/s, SDL's axes; no
+orientation is derived yet — `TODO(verify)` the console's axis convention). SDL reports both
+sensors enabled for the DualSense on the dev box; whether the game accepts the data is for the
+next run.
+
+**Verdict.** Open: 3.3 times the frame rate at the title screen and four times in the cutscene
+with steps 1–3; the game is at its first interactive scene. Still to do: the submission path
+itself (step 4), and GPU runs for the two host fixes above.

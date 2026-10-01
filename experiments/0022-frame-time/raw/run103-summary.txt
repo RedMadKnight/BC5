@@ -1,0 +1,77 @@
+run 103, 2026-10-01 19:17, capture kytyplus-20261001-1917, code of run 102, 718 s, controller used by the maintainer (journal and probe excerpts)
+
+submits 258551, ok 258548, failed 3, flips 17191, timeouts 3, EFAULT resyncs 4
+
+== per 30 s: submissions, command buffers over 20000 dwords, imported MiB at the last sync
+t0: 14238 submits, 0 large dcbs, imported 4370.0
+t30: 12143 submits, 545 large dcbs, imported 6122.0
+t60: 11960 submits, 854 large dcbs, imported 6122.0
+t90: 11074 submits, 791 large dcbs, imported 
+t120: 11812 submits, 844 large dcbs, imported 6354.0
+t150: 11677 submits, 834 large dcbs, imported 6954.0
+t180: 11774 submits, 841 large dcbs, imported 
+t210: 11705 submits, 836 large dcbs, imported 
+t240: 11773 submits, 841 large dcbs, imported 
+t270: 11830 submits, 845 large dcbs, imported 
+t300: 11809 submits, 603 large dcbs, imported 7600.0
+t330: 2188 submits, 0 large dcbs, imported 7600.0
+t360: 11645 submits, 0 large dcbs, imported 
+t390: 11775 submits, 592 large dcbs, imported 7686.0
+t420: 11781 submits, 608 large dcbs, imported 7686.0
+t450: 11488 submits, 589 large dcbs, imported 
+t480: 11641 submits, 398 large dcbs, imported 
+t510: 6168 submits, 463 large dcbs, imported 7702.0
+t540: 5455 submits, 8 large dcbs, imported 7766.0
+t570: 11984 submits, 1 large dcbs, imported 
+t600: 12505 submits, 0 large dcbs, imported 
+t630: 11763 submits, 120 large dcbs, imported 7780.0
+t660: 12290 submits, 161 large dcbs, imported 7786.0
+t690: 6073 submits, 0 large dcbs, imported 7842.0
+
+== faults
+timeout: fault 0x547a4a000 status 0x00641051
+learned: fault 0x547a4a000 -> region 0x542000000+0x6000000 (saved)
+reopen: ok
+timeout: fault 0x548005000 status 0x00641050
+learned: fault 0x548005000 -> region 0x546000000+0x6000000 (saved)
+reopen: ok
+timeout: fault 0x57588a000 status 0x00601030
+learned: fault 0x57588a000 -> region 0x572000000+0x6000000 (saved)
+reopen: ok
+
+== controller: first presses and the count of button events (emulator log)
+Controller button: 0, down, pressed, button = 0, time = 60.2042
+Controller button: 0, down, pressed, button = 0, time = 61.2562
+Controller button: 0, down, pressed, button = 0, time = 61.2563
+167
+
+== load probe (124 s of the level load)
+interval 124 s
+emulator io {'rchar': '31.8 MiB/s', 'syscr': '3970 calls/s', 'read_bytes': '0.0 MiB/s'}
+bc5-mount io {'rchar': '7.4 MiB/s', 'syscr': '2557 calls/s', 'read_bytes': '15.9 MiB/s'}
+threads 95, total cpu 189% of one core (user+sys), top:
+  tid 33181 (kyty_emulator): 43% (user 13%, sys 31%)
+  tid 33161 (kyty_emulator): 17% (user 2%, sys 15%)
+  tid 33121 (kyty_emulator): 13% (user 12%, sys 1%)
+  tid 33361 (kyty_emulator): 13% (user 10%, sys 3%)
+  tid 33216 (kyty_emulator): 9% (user 7%, sys 2%)
+  tid 33203 (kyty_emulator): 8% (user 8%, sys 0%)
+  tid 33157 (kyty_emulator): 7% (user 6%, sys 1%)
+  tid 33204 (PulseMainloop): 5% (user 1%, sys 4%)
+  tid 33223 (kyty_emulator): 4% (user 3%, sys 1%)
+  tid 33224 (kyty_emulator): 4% (user 3%, sys 1%)
+  tid 33221 (kyty_emulator): 4% (user 3%, sys 1%)
+  tid 33227 (kyty_emulator): 4% (user 3%, sys 1%)
+  tid 33225 (kyty_emulator): 4% (user 3%, sys 1%)
+  tid 33222 (kyty_emulator): 4% (user 3%, sys 1%)
+bc5-mount cpu 76%
+temps: nvme temp1_input 34 C; nct6686 temp1_input 65 C; nct6686 temp2_input 35 C; nct6686 temp3_input 35 C; nct6686 temp4_input 0 C; nct6686 temp5_input 0 C; nct6686 temp6_input 0 C; nct6686 temp7_input 0 C; amdgpu temp1_input 62 C; k10temp temp1_input 65 C; 
+mem: MemFree:          269508 kB MemAvailable:    4782836 kB Cached:         12618008 kB SwapFree:        7383412 kB 
+
+== the thread in the file system (backtrace, frames 0-5)
+Thread 8 (Thread 0x7f0da97fa6c0 (LWP 33361) "kyty_emulator"):
+#0  __GI___fstatat64 (fd=-100, file=0x7f0d8c1e8850 "~/bc5-data/mnt/PPSA21567/data/prein/bg/odx/bot.odxb", buf=0x3343e6c20, flag=0) at ../sysdeps/unix/sysv/linux/fstatat64.c:159
+#1  0x00007f12968f4831 in std::filesystem::status(std::filesystem::__cxx11::path const&, std::error_code&) () from /usr/lib/x86_64-linux-gnu/libstdc++.so.6
+filesystem::path "~/bc5-data/mnt/PPSA21567/data/prein/bg/odx/bot.odxb", __ec=std::error_code = {std::_V2::error_category: 0}) at /usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/fs_ops
+filesystem::path "~/bc5-data/mnt/PPSA21567/data/prein/bg/odx/bot.odxb") at ~/src/KytyPlus/src/kernel/fileSystem.cpp:239
+#4  0x0000560ed22a559d in Libs::LibKernel::FileSystem::MountPoints::GetRealFilename (this=<optimized out>, mounted_file_name="/app0/data/prein/bg/odx/bot.odxb") at ~/src/KytyPlus/src/kernel/fileSystem
