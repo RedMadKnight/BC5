@@ -1,0 +1,58 @@
+run 100, 2026-10-01 18:02, capture kytyplus-20261001-1802, 900 s, ttm.pages_limit 13 GiB, controller pressed by the maintainer (journal excerpts; register-table contents not included)
+
+submits 96484, ok 94053, failed 1, flips 6399, timeouts 1
+
+== controller (emulator log)
+Controller button: 0, down, pressed, button = 3, time = 93.4974
+Controller button: 0, down, pressed, button = 1, time = 122.1017
+Controller button: 0, down, pressed, button = 3, time = 124.3775
+Controller button: 0, down, pressed, button = 3, time = 150.3857
+Controller button: 0, down, pressed, button = 0, time = 159.1564
+
+== per 40 s: submissions, command buffers over 20000 dwords, imported MiB at the last sync
+t0: 6967 submits, 0 large dcbs, imported 4330.0
+t40: 7199 submits, 0 large dcbs, imported 4332.0
+t80: 4745 submits, 305 large dcbs, imported 6082.0
+t120: 4471 submits, 320 large dcbs, imported 6090.0
+t160: 4572 submits, 326 large dcbs, imported 
+t200: 4443 submits, 317 large dcbs, imported 6240.0
+t240: 4232 submits, 302 large dcbs, imported 6934.0
+t280: 4397 submits, 315 large dcbs, imported 
+t320: 4494 submits, 321 large dcbs, imported 
+t360: 4438 submits, 317 large dcbs, imported 
+t400: 2906 submits, 35 large dcbs, imported 7618.0
+t440: 4249 submits, 0 large dcbs, imported 
+t480: 4634 submits, 0 large dcbs, imported 
+t520: 4619 submits, 0 large dcbs, imported 
+t560: 4276 submits, 0 large dcbs, imported 
+t600: 4146 submits, 145 large dcbs, imported 
+t640: 3033 submits, 295 large dcbs, imported 7672.0
+t680: 2965 submits, 298 large dcbs, imported 
+t720: 3507 submits, 35 large dcbs, imported 
+t760: 3839 submits, 240 large dcbs, imported 
+t800: 3856 submits, 241 large dcbs, imported 
+t840: 3776 submits, 236 large dcbs, imported 
+t880: 720 submits, 46 large dcbs, imported 
+
+== the one failure
+submit #96483 dcb 16694 dwords at 0x502002500: pass 1236 rewrite 568 drop 553 unmapped 3 cc 16 mappings 1669 ... FAILED rc 0 TIMEOUT 2041.36 ms
+timing: #96483 done at t 889.430 s, 2080.9 ms after the sync and hints; device: prepare 1.39 list 0.53 cs 3.24 fence 2038.12 ms, 1592 BOs
+timeout: fault 0x52afd9000 status 0x00601031
+learned: fault 0x52afd9000 -> region 0x526000000+0x6000000 (saved)
+
+== imported memory by name, last report
+direct by name (growth): 1386 BOs, 7296.0 MiB imported; BO list of the submit 0; GTT 7940.4 of 13312.0 MiB in use
+  (views under 1 MiB)           57 views:      3.4 MiB reserved,      3.4 with data,      3.4 imported (lazy)
+  GpuGarlicMemory                1 views:   2172.0 MiB reserved,   1678.0 with data,   1678.0 imported
+  GpuOnionMemory                 1 views:    184.0 MiB reserved,    126.0 with data,    126.0 imported
+  ResourceMemoryAllocator        1 views:   3232.0 MiB reserved,   1530.8 with data,   1516.0 imported
+  SceAgcDriver                   1 views:      1.8 MiB reserved,      1.8 with data,      1.8 imported
+  TextureMemory                  1 views:   4608.0 MiB reserved,   3918.0 with data,   3918.0 imported
+  VideoPlayerHeap                1 views:    128.0 MiB reserved,      4.0 with data,      4.0 imported
+  VideoPlayerTexture             1 views:     64.0 MiB reserved,      0.0 with data,      0.0 imported
+  orbis_user_malloc             26 views:   2012.9 MiB reserved,    862.6 with data,     48.9 imported (lazy)
+  total (views may alias)       90 views:  12406.0 MiB reserved,   8124.6 with data,   7296.0 imported
+direct: 90 views; +1 BOs (1475, 7672.0 MiB pinned); maps +1 -0 (1557)
+
+== diagnostics volume
+files in the dump directory: 842600, 5,6G; journal 592M
