@@ -663,10 +663,10 @@ index 5f87e6b..e5c534e 100644
  	CondRemoveWaiter(cond_value, thread);
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..3382526
+index 0000000..a07ab95
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,3562 @@
+@@ -0,0 +1,3656 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -700,6 +700,7 @@ index 0000000..3382526
 +#include "bc5/direct.hpp"
 +#include <fcntl.h>
 +#include <sys/mman.h>
++#include <sys/stat.h>
 +#include <unistd.h>
 +#endif
 +
@@ -1709,6 +1710,13 @@ index 0000000..3382526
 +static std::set<uint64_t> g_dfailed; // chunks whose import failed (not retried)
 +static uint64_t g_dviews_sig = 0, g_dbos_mapped = 0, g_dbytes = 0, g_dsync_ns = 0, g_dfile_size = 0;
 +static uint64_t g_dmerge_ns = 0;
++// Experiment 0022, step 3: what the learned regions and the direct mapper work on changes rarely.
++// g_layout_gen counts the changes (views of direct memory, anonymous VMAs, learned list, device
++// reopen); g_dblocks is the memfd's allocated size at the last full scan (st_blocks grows with
++// every page the game first writes), so an unchanged file needs no SEEK_DATA walk.
++static uint64_t g_layout_gen = 1;
++static uint64_t g_dblocks = ~0ull, g_dforced_seen = ~0ull;
++static uint64_t g_dprof_views_ns = 0, g_dprof_full = 0, g_dprof_fast = 0; // direct_sync profile (timing split line)
 +static std::set<uint64_t> g_dmerge_failed; // run starts whose merged import failed (not retried)
 +
 +// BC5_DIRECT_LAZY_NAMES=name[,name...]: views of direct memory with these names (the game names
@@ -1840,6 +1848,25 @@ index 0000000..3382526
 +		        std::getenv("BC5_DIRECT_LAZY_NAMES") != nullptr ? std::getenv("BC5_DIRECT_LAZY_NAMES") : "");
 +	}
 +	const std::vector<DView> views = direct_views();
++	g_dprof_views_ns += SoftCp::now_ns() - now;
++	uint64_t sig = 1469598103934665603ull;
++	for (const auto& v: views) {
++		for (const uint64_t x: {v.va, v.size, v.off}) sig = (sig ^ x) * 1099511628211ull;
++	}
++	if (sig != g_dviews_sig) g_layout_gen++;
++	{
++		struct stat st {};
++		const uint64_t blocks = fstat(fd, &st) == 0 ? static_cast<uint64_t>(st.st_blocks) : ~0ull;
++		static const bool no_fast = std::getenv("BC5_DIRECT_NO_FAST_SYNC") != nullptr;
++		const bool merge_due = now - g_dmerge_ns > 250'000'000ull;
++		if (!no_fast && blocks != ~0ull && blocks == g_dblocks && sig == g_dviews_sig && g_dforced.size() == g_dforced_seen && g_dbos.size() == g_dbos_mapped && !merge_due) {
++			g_dprof_fast++;
++			return; // nothing new in the file, no new view, nothing forced, nothing to merge yet
++		}
++		g_dprof_full++;
++		g_dblocks      = blocks;
++		g_dforced_seen = g_dforced.size();
++	}
 +
 +	// 1. chunks to import: data inside a view, and the forced ones
 +	std::vector<uint64_t> need;
@@ -1922,10 +1949,6 @@ index 0000000..3382526
 +	}
 +
 +	// 2. the views' addresses: every (view, imported range) intersection is one GPU mapping
-+	uint64_t sig = 1469598103934665603ull;
-+	for (const auto& v: views) {
-+		for (const uint64_t x: {v.va, v.size, v.off}) sig = (sig ^ x) * 1099511628211ull;
-+	}
 +	uint32_t mapped = 0, unmapped = 0, map_failed = 0;
 +	if (sig != g_dviews_sig || g_dbos.size() != g_dbos_mapped || !retired.empty()) {
 +		std::vector<DMap> want;
@@ -1965,6 +1988,7 @@ index 0000000..3382526
 +		g_dviews_sig  = sig;
 +		g_dbos_mapped = map_failed == 0 ? g_dbos.size() : 0; // a failure is retried at the next sync
 +	}
++	if (imported != 0) g_dblocks = ~0ull; // pinning may have allocated pages: look once more
 +	for (const uint32_t id: retired) g_dev->free_shared(id);
 +	if (merged != 0) {
 +		journal("direct merge: %zu BOs became %u (%zu BOs now)\n", retired.size(), merged, g_dbos.size());
@@ -1997,9 +2021,19 @@ index 0000000..3382526
 +	return asked;
 +}
 +
-+static void sync_mappings(bool force = false) {
++// force: before a submission whose shaders may read memory the filter does not see. With the
++// direct memory on the dma-buf path (ADR 0006) what is left here are the anonymous VMAs (module
++// data, stacks, flexible memory), walked through /proc/self/maps and mincore — 0.9 ms a call,
++// seven calls a frame (experiment 0022). A forced call is therefore skipped when the last walk
++// is younger than BC5_DIRECT_ANON_SYNC_MS (100 by default, 0 = never skip); urgent calls (an
++// operand of the IB is unmapped, -EFAULT from a submission) always walk.
++static void sync_mappings(bool force = false, bool urgent = false) {
 +	const uint64_t now = SoftCp::now_ns();
 +	if (!force && now - g_last_sync_ns < 50'000'000ull) { // at most every 50 ms
++		return;
++	}
++	static const uint64_t anon_min_ns = (std::getenv("BC5_DIRECT_ANON_SYNC_MS") != nullptr ? std::strtoull(std::getenv("BC5_DIRECT_ANON_SYNC_MS"), nullptr, 10) : 100ull) * 1'000'000ull;
++	if (force && !urgent && g_dmabuf && g_last_sync_ns != 0 && now - g_last_sync_ns < anon_min_ns) {
 +		return;
 +	}
 +	g_last_sync_ns = now;
@@ -2031,6 +2065,9 @@ index 0000000..3382526
 +			// SQC on 0x908e86000, 8 KiB past the last rw run (experiment 0016, run 27).
 +			vmas.push_back({start, end, perms[1] != 'w'});
 +		}
++	}
++	if (vmas.size() != g_vmas.size() || !std::equal(vmas.begin(), vmas.end(), g_vmas.begin(), [](const Vma& a, const Vma& b) { return a.start == b.start && a.end == b.end && a.readonly == b.readonly; })) {
++		g_layout_gen++;
 +	}
 +	g_vmas = vmas;
 +	auto inside_vma = [&](uint64_t a, uint64_t b, bool readonly) {
@@ -2266,6 +2303,7 @@ index 0000000..3382526
 +		if (a == lo && b == n) return;
 +	}
 +	g_learned.emplace_back(lo, n);
++	g_layout_gen++;
 +	if (FILE* f = std::fopen(learned_path(), "a")) {
 +		std::fprintf(f, "0x%llx 0x%llx\n", static_cast<unsigned long long>(lo), static_cast<unsigned long long>(n));
 +		std::fclose(f);
@@ -2305,6 +2343,9 @@ index 0000000..3382526
 +static void learned_apply() {
 +	learned_load();
 +	if (g_learned.empty() || !g_dev) return;
++	static uint64_t applied_gen = 0;
++	if (applied_gen == g_layout_gen) return; // same views, VMAs and learned list as last time
++	applied_gen = g_layout_gen;
 +	std::vector<bc5::direct::Mapping> have = g_dev->mappings();
 +	for (const auto& [a, n]: g_learned) map_window(a, a + n, have, "learned", a);
 +}
@@ -2339,12 +2380,27 @@ index 0000000..3382526
 +		}
 +		return b;
 +	}();
-+	auto evaluate = [&]() {
++	static const std::vector<bool> is_base = [] {
++		std::vector<bool> v(0x10000, false);
 +		for (const auto& b: bases) {
++			v[b.lo] = true;
++			v[b.hi] = true;
++		}
++		return v;
++	}();
++	// The address each base had at its last evaluation: an unchanged one needs no second look
++	// (cleared with the hinted windows on a device reopen).
++	static std::vector<uint64_t> last_addr(bases.size(), 0);
++	if (hinted.empty()) std::fill(last_addr.begin(), last_addr.end(), 0);
++	auto evaluate = [&]() {
++		for (size_t bi = 0; bi < bases.size(); bi++) {
++			const auto& b = bases[bi];
 +			auto it = ctx.find(b.lo);
 +			if (it == ctx.end() || it->second == 0) continue;
 +			const uint32_t ext  = ctx.count(b.hi) ? (ctx[b.hi] & 0xffu) : 0u;
 +			const uint64_t addr = (static_cast<uint64_t>(it->second) << 8u) | (static_cast<uint64_t>(ext) << 40u);
++			if (addr == last_addr[bi]) continue;
++			last_addr[bi]       = addr;
 +			const uint64_t lo   = addr & ~0xffffull;
 +			{
 +				bool known = false;
@@ -2409,15 +2465,25 @@ index 0000000..3382526
 +		const uint32_t* p  = ib + i;
 +		bool changed = false;
 +		if (type == 3 && op == 0x69 && len >= 3) { // SET_CONTEXT_REG
-+			for (uint32_t k = 2; k < len; k++) ctx[(p[1] & 0xffffu) + k - 2] = p[k];
-+			changed = true;
++			for (uint32_t k = 2; k < len; k++) {
++				const uint32_t off = ((p[1] & 0xffffu) + k - 2) & 0xffffu;
++				if (is_base[off]) {
++					ctx[off] = p[k];
++					changed = true;
++				}
++			}
 +		} else if (type == 3 && op == 0x9f && len >= 5 && (p[3] >> 31u) != 0) { // LOAD_CONTEXT_REG_INDEX, pairs
 +			const uint64_t a = (p[1] & ~3u) | (static_cast<uint64_t>(p[2] & 0xffffu) << 32u);
 +			const uint32_t n = p[4] & 0x3fffu;
 +			if (covered(have, a, static_cast<uint64_t>(n) * 8)) {
 +				const auto* t = reinterpret_cast<const volatile uint32_t*>(a);
-+				for (uint32_t k = 0; k + 1 < 2 * n; k += 2) ctx[t[k] & 0xffffu] = t[k + 1];
-+				changed = true;
++				for (uint32_t k = 0; k + 1 < 2 * n; k += 2) {
++					const uint32_t off = t[k] & 0xffffu;
++					if (is_base[off]) {
++						ctx[off] = t[k + 1];
++						changed = true;
++					}
++				}
 +			} else {
 +				journal("hint: context table 0x%" PRIx64 " (%u pairs) not mapped, skipped\n", a, n);
 +			}
@@ -2430,8 +2496,12 @@ index 0000000..3382526
 +				const uint32_t off = p[k] & 0xffffu, n = p[k + 1] & 0x3fffu;
 +				if (n == 0 || !covered(have, base + static_cast<uint64_t>(off) * 4, static_cast<uint64_t>(n) * 4)) continue;
 +				const auto* t = reinterpret_cast<const volatile uint32_t*>(base + static_cast<uint64_t>(off) * 4);
-+				for (uint32_t q = 0; q < n; q++) ctx[off + q] = t[q];
-+				changed = true;
++				for (uint32_t q = 0; q < n; q++) {
++					if (is_base[(off + q) & 0xffffu]) {
++						ctx[off + q] = t[q];
++						changed = true;
++					}
++				}
 +			}
 +		}
 +		if (changed) evaluate();
@@ -2903,6 +2973,7 @@ index 0000000..3382526
 +	// the throttled sync is enough (run 82). BC5_DIRECT_NO_LAZY_SYNC=1 forces it always.
 +	static const bool lazy_sync = std::getenv("BC5_DIRECT_NO_LAZY_SYNC") == nullptr;
 +	bool force_sync = true;
++	bool urgent_sync = !lazy_sync;
 +	if (lazy_sync) {
 +		bool heavy = false;
 +		for (uint32_t i = 0; i < num_dwords && !heavy;) {
@@ -2925,14 +2996,35 @@ index 0000000..3382526
 +			bc5::policy::FilterStats st;
 +			bc5::policy::filter(bc5::policy::Policy::builtin(), std::span<const uint32_t>(ib, num_dwords), scratch, probe, st);
 +			force_sync = st.unmapped_drops != 0;
++			urgent_sync = force_sync;
 +		}
 +	}
-+	sync_mappings(force_sync);
++	const uint64_t ta = SoftCp::now_ns();
++	sync_mappings(force_sync, urgent_sync);
++	const uint64_t tb = SoftCp::now_ns();
 +	direct_sync(force_sync);
 +	const uint64_t t1 = SoftCp::now_ns();
 +	learned_apply();
++	const uint64_t tc = SoftCp::now_ns();
 +	hint_targets(ib, num_dwords);
 +	const uint64_t t2 = SoftCp::now_ns();
++	if (timing) { // the split of "sync" and "hints", every 128 submissions (experiment 0022, step 3)
++		static uint64_t acc[5] = {}, count = 0;
++		acc[0] += ta - t0;
++		acc[1] += tb - ta;
++		acc[2] += t1 - tb;
++		acc[3] += tc - t1;
++		acc[4] += t2 - tc;
++		if ((++count & 127u) == 0) {
++			journal("timing split over 128 submissions: probe %.1f ms, anon sync %.1f, direct sync %.1f (views %.1f; %" PRIu64 " full, %" PRIu64 " fast), learned %.1f, hints %.1f\n",
++			        static_cast<double>(acc[0]) / 1e6, static_cast<double>(acc[1]) / 1e6, static_cast<double>(acc[2]) / 1e6, static_cast<double>(g_dprof_views_ns) / 1e6, g_dprof_full,
++			        g_dprof_fast, static_cast<double>(acc[3]) / 1e6, static_cast<double>(acc[4]) / 1e6);
++			g_dprof_views_ns = 0;
++			g_dprof_full     = 0;
++			g_dprof_fast     = 0;
++			for (auto& a: acc) a = 0;
++		}
++	}
 +	if (timing) {
 +		journal("timing: t %.3f s %s %u dwords: sync%s %.1f ms, hints %.1f ms\n", t_start, kind, num_dwords, force_sync ? "" : " (lazy)",
 +		        static_cast<double>(t1 - t0) / 1e6, static_cast<double>(t2 - t1) / 1e6);
@@ -3297,7 +3389,7 @@ index 0000000..3382526
 +	bool retried = false;
 +	if (!r.ok && !r.timed_out && r.rc == -EFAULT) {
 +		journal("EFAULT, resync ... ");
-+		sync_mappings(true);
++		sync_mappings(true, true);
 +		maps    = g_dev->mappings();
 +		retried = true;
 +		r       = g_dev->submit(std::span<const uint32_t>(ib, num_dwords), opt, 2'000'000'000ull, with_gds);
@@ -3439,6 +3531,8 @@ index 0000000..3382526
 +			g_dviews_sig = 0;
 +			g_dbos_mapped = 0;
 +			g_dbytes = 0;
++			g_dblocks = ~0ull;
++			g_layout_gen++;
 +			g_dmerge_failed.clear();
 +			g_dreported = 0;
 +			g_dsync_ns = 0;
