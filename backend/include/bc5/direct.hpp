@@ -105,6 +105,9 @@ public:
     // range may be mapped at several addresses (the guest's aliases of one physical range).
     bool map_shared(std::uint32_t id, std::uint64_t bo_offset, std::uint64_t size, std::uint64_t gpu_va);
     bool unmap_shared(std::uint64_t gpu_va);
+    // Unmaps an imported range everywhere and frees its BO (experiment 0022: small imports are
+    // replaced by one merged import).
+    bool free_shared(std::uint32_t id);
     // GPU VA of the GDS shadow buffer, 0 when none was requested or allocated.
     std::uint64_t gds_shadow_va() const;
     // CPU view of the GDS shadow (64 KiB), nullptr when none. Also the landing buffer for a GDS

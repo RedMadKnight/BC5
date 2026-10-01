@@ -663,10 +663,10 @@ index 5f87e6b..e5c534e 100644
  	CondRemoveWaiter(cond_value, thread);
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..eac19c4
+index 0000000..3382526
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,3455 @@
+@@ -0,0 +1,3562 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -748,6 +748,15 @@ index 0000000..eac19c4
 +static std::atomic<int>  g_dump_count {0};
 +static int               g_dump_limit = -1;
 +static std::string       g_dump_dir;
++// BC5_DIRECT_JOURNAL=min (experiment 0022): the crash journal — raw and filtered IB of every
++// submission in files, a second filter pass for its "about to submit" line, a sync per
++// submission — took half of a frame (81 of 167 ms, run 100). "min" keeps one buffered line per
++// submission and the summary lines, flushed twice a second and at once on a failure; nothing is
++// dumped. For chasing a hang leave it unset.
++static const bool g_journal_min = [] {
++	const char* e = std::getenv("BC5_DIRECT_JOURNAL");
++	return e != nullptr && std::strcmp(e, "min") == 0;
++}();
 +
 +// Compute/graphics queues registered through ioctl 0xc0408121. Until the doorbell protocol is
 +// understood, a probe thread logs the submit page and the ring heads for the first minute.
@@ -779,7 +788,7 @@ index 0000000..eac19c4
 +
 +static void dump_cb(const char* kind, const uint32_t* dwords, uint32_t num_dwords) {
 +	dump_init();
-+	if (g_dump_dir.empty() || dwords == nullptr || num_dwords == 0) {
++	if (g_dump_dir.empty() || g_journal_min || dwords == nullptr || num_dwords == 0) {
 +		return;
 +	}
 +	int n = g_dump_count.fetch_add(1);
@@ -1193,7 +1202,7 @@ index 0000000..eac19c4
 +
 +static void record_dispatch(const uint32_t* p, bool indirect) {
 +	const uint64_t n = g_dispatches.fetch_add(1);
-+	if (g_dump_dir.empty()) {
++	if (g_dump_dir.empty() || g_journal_min) {
 +		return;
 +	}
 +	const uint64_t pgm = (static_cast<uint64_t>(t_sh[0x20c]) | (static_cast<uint64_t>(t_sh[0x20d]) << 32u)) << 8u;
@@ -1323,8 +1332,10 @@ index 0000000..eac19c4
 +				skipped += b;
 +			}
 +		}
-+		LOGF("[bc5-cp] submit #%" PRIu64 " (%s, %u dwords) done; packets so far %" PRIu64 "; skipped by opcode:%s; wait timeouts %" PRIu64 "\n",
-+		     n, kind, num_dwords, g_packets.load(), skipped.c_str(), g_waits_timed_out.load());
++		if (!g_journal_min) {
++			LOGF("[bc5-cp] submit #%" PRIu64 " (%s, %u dwords) done; packets so far %" PRIu64 "; skipped by opcode:%s; wait timeouts %" PRIu64 "\n",
++			     n, kind, num_dwords, g_packets.load(), skipped.c_str(), g_waits_timed_out.load());
++		}
 +	}
 +}
 +
@@ -1485,8 +1496,35 @@ index 0000000..eac19c4
 +// brings that back for chasing a hang.
 +static const bool g_journal_sync = std::getenv("BC5_DIRECT_JOURNAL_SYNC") != nullptr;
 +static void journal(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
++static FILE* journal_min_file(bool flush_now) {
++	static FILE* const f = [] {
++		char name[512];
++		std::snprintf(name, sizeof(name), "%s/direct.log", g_dump_dir.c_str());
++		FILE* o = std::fopen(name, "a");
++		if (o != nullptr) std::setvbuf(o, nullptr, _IOFBF, 1u << 20u);
++		return o;
++	}();
++	static std::atomic<uint64_t> last_flush {0};
++	if (f != nullptr) {
++		const uint64_t now = SoftCp::now_ns();
++		if (flush_now || now - last_flush > 500'000'000ull) {
++			std::fflush(f);
++			last_flush = now;
++		}
++	}
++	return f;
++}
 +static void journal(const char* fmt, ...) {
 +	if (g_dump_dir.empty()) {
++		return;
++	}
++	if (g_journal_min) {
++		if (FILE* f = journal_min_file(false); f != nullptr) {
++			va_list ap;
++			va_start(ap, fmt);
++			std::vfprintf(f, fmt, ap);
++			va_end(ap);
++		}
 +		return;
 +	}
 +	char name[512];
@@ -1642,13 +1680,24 @@ index 0000000..eac19c4
 +// own areas) stays on the userptr path above, which no longer sees the direct views.
 +static const bool g_dmabuf = std::getenv("KYTY_BC5_DMABUF") != nullptr;
 +constexpr uint64_t kDChunk = 2ull << 20u;
-+constexpr uint64_t kDMaxBo = 32ull << 20u;
++// The largest import: what one udmabuf may hold (the module's size_limit_mb, 64 by default).
++static const uint64_t kDMaxBo = [] {
++	unsigned long mb = 32;
++	if (FILE* f = std::fopen("/sys/module/udmabuf/parameters/size_limit_mb", "r")) {
++		if (std::fscanf(f, "%lu", &mb) != 1) mb = 32;
++		std::fclose(f);
++	}
++	if (const char* e = std::getenv("BC5_DIRECT_MAX_BO_MIB"); e != nullptr && std::atol(e) > 0) mb = static_cast<unsigned long>(std::atol(e));
++	if (mb < 2) mb = 2;
++	if (mb > 1024) mb = 1024;
++	return (static_cast<uint64_t>(mb) << 20u) & ~((2ull << 20u) - 1);
++}();
 +struct DView {
 +	uint64_t    va, size, off;
 +	std::string name;
 +	bool        lazy;
 +};
-+struct DBo { uint64_t off, size; uint32_t id; };
++struct DBo { uint64_t off, size; uint32_t id; uint64_t t_ns; };
 +struct DMap {
 +	uint64_t va, size, bo_off;
 +	uint32_t id;
@@ -1659,6 +1708,8 @@ index 0000000..eac19c4
 +static std::set<uint64_t> g_dforced; // chunk offsets the hints and learned regions asked for
 +static std::set<uint64_t> g_dfailed; // chunks whose import failed (not retried)
 +static uint64_t g_dviews_sig = 0, g_dbos_mapped = 0, g_dbytes = 0, g_dsync_ns = 0, g_dfile_size = 0;
++static uint64_t g_dmerge_ns = 0;
++static std::set<uint64_t> g_dmerge_failed; // run starts whose merged import failed (not retried)
 +
 +// BC5_DIRECT_LAZY_NAMES=name[,name...]: views of direct memory with these names (the game names
 +// its mappings; "orbis_user_malloc" is its CPU heap) are not imported for holding data, only where
@@ -1821,11 +1872,53 @@ index 0000000..eac19c4
 +			journal("direct import 0x%" PRIx64 " +0x%" PRIx64 " FAILED\n", off, size);
 +			for (size_t k = i; k < j; k++) g_dfailed.insert(need[k]);
 +		} else {
-+			g_dbos.insert(std::upper_bound(g_dbos.begin(), g_dbos.end(), off, [](uint64_t o, const DBo& b) { return o < b.off; }), DBo {off, size, id});
++			g_dbos.insert(std::upper_bound(g_dbos.begin(), g_dbos.end(), off, [](uint64_t o, const DBo& b) { return o < b.off; }), DBo {off, size, id, now});
 +			g_dbytes += size;
 +			imported++;
 +		}
 +		i = j;
++	}
++
++	// 1b. Memory is imported as it fills, 2 MiB at a time, so the imports end up many and small
++	// (run 100: 1,475 BOs averaging 5 MiB), and every BO costs time in each submission that
++	// lists it (experiment 0022). Neighbours that have been there for a while are replaced by
++	// one merged import — a bounded amount per call, the old BOs freed after the remap below.
++	// BC5_DIRECT_NO_MERGE=1 turns it off.
++	std::vector<uint32_t> retired;
++	uint32_t              merged = 0;
++	static const bool     no_merge = std::getenv("BC5_DIRECT_NO_MERGE") != nullptr;
++	if (!no_merge && now - g_dmerge_ns > 250'000'000ull) {
++		g_dmerge_ns = now;
++		constexpr uint64_t settle = 3'000'000'000ull;
++		uint64_t           budget = 256ull << 20u;
++		for (size_t i = 0; i < g_dbos.size();) {
++			size_t   j       = i;
++			uint64_t total   = g_dbos[i].size;
++			bool     settled = now - g_dbos[i].t_ns > settle;
++			while (j + 1 < g_dbos.size() && g_dbos[j].off + g_dbos[j].size == g_dbos[j + 1].off && total + g_dbos[j + 1].size <= kDMaxBo) {
++				j++;
++				total += g_dbos[j].size;
++				settled = settled && now - g_dbos[j].t_ns > settle;
++			}
++			if (j == i || !settled || total > budget || g_dmerge_failed.count(g_dbos[i].off) != 0) {
++				i = j + 1;
++				continue;
++			}
++			const uint64_t off = g_dbos[i].off;
++			const uint32_t id  = g_dev->import_memfd(fd, off, total);
++			if (id == 0) {
++				journal("direct merge 0x%" PRIx64 " +0x%" PRIx64 " FAILED\n", off, total);
++				g_dmerge_failed.insert(off);
++				i = j + 1;
++				continue;
++			}
++			for (size_t k = i; k <= j; k++) retired.push_back(g_dbos[k].id);
++			g_dbos.erase(g_dbos.begin() + static_cast<std::ptrdiff_t>(i), g_dbos.begin() + static_cast<std::ptrdiff_t>(j) + 1);
++			g_dbos.insert(g_dbos.begin() + static_cast<std::ptrdiff_t>(i), DBo {off, total, id, now});
++			budget -= total;
++			merged++;
++			i++;
++		}
 +	}
 +
 +	// 2. the views' addresses: every (view, imported range) intersection is one GPU mapping
@@ -1834,7 +1927,7 @@ index 0000000..eac19c4
 +		for (const uint64_t x: {v.va, v.size, v.off}) sig = (sig ^ x) * 1099511628211ull;
 +	}
 +	uint32_t mapped = 0, unmapped = 0, map_failed = 0;
-+	if (sig != g_dviews_sig || g_dbos.size() != g_dbos_mapped) {
++	if (sig != g_dviews_sig || g_dbos.size() != g_dbos_mapped || !retired.empty()) {
 +		std::vector<DMap> want;
 +		for (const auto& v: views) {
 +			const uint64_t vend = v.off + v.size;
@@ -1871,6 +1964,10 @@ index 0000000..eac19c4
 +		g_dmaps.swap(next);
 +		g_dviews_sig  = sig;
 +		g_dbos_mapped = map_failed == 0 ? g_dbos.size() : 0; // a failure is retried at the next sync
++	}
++	for (const uint32_t id: retired) g_dev->free_shared(id);
++	if (merged != 0) {
++		journal("direct merge: %zu BOs became %u (%zu BOs now)\n", retired.size(), merged, g_dbos.size());
 +	}
 +	if (imported != 0 || mapped != 0 || unmapped != 0 || map_failed != 0) {
 +		journal("direct: %zu views; +%u BOs (%zu, %.1f MiB pinned); maps +%u -%u (%zu)%s\n", views.size(), imported, g_dbos.size(), static_cast<double>(g_dbytes) / 1048576.0,
@@ -2910,7 +3007,7 @@ index 0000000..eac19c4
 +				        dry.depth(), c.valid.count(), c.valid.test(0x103) ? "=" : "unset", c.value[0x103]);
 +			}
 +		}
-+		if (!g_dump_dir.empty()) journal_load_tables(ib, num_dwords, g_dev->mappings());
++		if (!g_dump_dir.empty() && !g_journal_min) journal_load_tables(ib, num_dwords, g_dev->mappings());
 +		static uint64_t seen = 0;
 +		if ((seen++ & 0x3f) == 0) {
 +			journal("maponly: %zu mappings, %.1f MiB; no submit\n", g_dev->mappings().size(),
@@ -3055,7 +3152,7 @@ index 0000000..eac19c4
 +	// Crash journal: a hang takes the machine down before any buffered log reaches the disk, so
 +	// the raw and the filtered IB and a one-line "about to submit" note are written unbuffered
 +	// first (BC5_GC_DUMP_DIR/direct-NNNNNN-<kind>.{raw,ib}.bin, direct.log).
-+	if (!g_dump_dir.empty()) {
++	if (!g_dump_dir.empty() && !g_journal_min) {
 +		journal_load_tables(ib, num_dwords, maps);
 +		std::vector<uint32_t>     filtered(num_dwords);
 +		bc5::policy::FilterStats  pre;
@@ -3205,7 +3302,14 @@ index 0000000..eac19c4
 +		retried = true;
 +		r       = g_dev->submit(std::span<const uint32_t>(ib, num_dwords), opt, 2'000'000'000ull, with_gds);
 +	}
-+	if (!g_dump_dir.empty()) {
++	if (!g_dump_dir.empty() && g_journal_min) {
++		journal("submit #%" PRIu64 " %s %u dwords at %p: pass %" PRIu64 " rewrite %" PRIu64 " drop %" PRIu64 " unmapped %" PRIu64 " cc %" PRIu64 " mappings %zu ... %s rc %d%s%s %.2f ms\n",
++		        n, kind, num_dwords, static_cast<const void*>(ib), r.filter.passed, r.filter.rewritten, r.filter.dropped, r.filter.unmapped_drops,
++		        r.filter.context_control_rewrites, maps.size(), r.ok ? "OK" : "FAILED", r.rc, r.timed_out ? " TIMEOUT" : "", retried ? " (retried)" : "", r.submit_ms);
++		if (!r.ok) {
++			if (FILE* f = journal_min_file(true); f != nullptr) fsync(fileno(f));
++		}
++	} else if (!g_dump_dir.empty()) {
 +		char name[512];
 +		std::snprintf(name, sizeof(name), "%s/direct.log", g_dump_dir.c_str());
 +		if (FILE* f = std::fopen(name, "a")) {
@@ -3335,6 +3439,7 @@ index 0000000..eac19c4
 +			g_dviews_sig = 0;
 +			g_dbos_mapped = 0;
 +			g_dbytes = 0;
++			g_dmerge_failed.clear();
 +			g_dreported = 0;
 +			g_dsync_ns = 0;
 +			LOGF_COLOR(Log::Color::Yellow, "[bc5-direct] device reopened after the fault: %s\n", g_dev ? "ok" : "FAILED");
@@ -3447,12 +3552,14 @@ index 0000000..eac19c4
 +			};
 +			static_assert(sizeof(Args) == 24);
 +			auto* a = static_cast<Args*>(argp);
-+			LOGF("[bc5-gc] submit list: unk0 %u count %u\n", a->unk0, a->count);
++			if (!g_journal_min) LOGF("[bc5-gc] submit list: unk0 %u count %u\n", a->unk0, a->count);
 +			for (uint32_t i = 0; i < a->count / 2; i++) {
 +				const auto& s = a->submits[i];
-+				LOGF("[bc5-gc]   [%u] unk0 0x%016" PRIx64 " unk1 0x%016" PRIx64 " addr 0x%016" PRIx64
-+				     " size %" PRIu64 "\n",
-+				     i, s.unk0, s.unk1, s.address, s.size);
++				if (!g_journal_min) {
++					LOGF("[bc5-gc]   [%u] unk0 0x%016" PRIx64 " unk1 0x%016" PRIx64 " addr 0x%016" PRIx64
++					     " size %" PRIu64 "\n",
++					     i, s.unk0, s.unk1, s.address, s.size);
++				}
 +				submit_raw(reinterpret_cast<const uint32_t*>(s.address),
 +				           static_cast<uint32_t>(s.size), "dcb");
 +			}

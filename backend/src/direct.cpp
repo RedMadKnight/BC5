@@ -66,6 +66,13 @@ struct Device::Impl {
     std::vector<SharedMap> shared_maps;
     std::uint32_t next_shared_id = 1;
     int udmabuf_fd = -1;
+    // The BO list of a submission with draws names every mapping; it is kept between
+    // submissions while the set of mapped BOs stays the same (experiment 0022).
+    std::uint64_t list_gen = 0;
+    amdgpu_bo_list_handle full_list = nullptr;
+    std::uint64_t full_list_gen = 0;
+    bool full_list_gds = false;
+    std::uint32_t full_list_count = 0;
     ScratchBo scratch;
     amdgpu_bo_handle gds = nullptr; // OpenOptions::gds_kib
     amdgpu_bo_handle oa = nullptr;  // OpenOptions::oa_count
@@ -132,6 +139,7 @@ struct Device::Impl {
         if (scratch.va_handle) amdgpu_va_range_free(scratch.va_handle);
         if (scratch.bo) amdgpu_bo_free(scratch.bo);
         scratch = ScratchBo{};
+        list_gen++; // a kept BO list names the old scratch BO
     }
 };
 
@@ -209,6 +217,7 @@ std::unique_ptr<Device> Device::open(const std::string &node, const OpenOptions 
 
 Device::~Device() {
     if (!impl_) return;
+    if (impl_->full_list) amdgpu_bo_list_destroy(impl_->full_list);
     for (auto &u : impl_->userptrs) {
         amdgpu_bo_va_op(u.bo, 0, u.size, u.va, 0, AMDGPU_VA_OP_UNMAP);
         amdgpu_bo_free(u.bo);
@@ -290,6 +299,7 @@ bool Device::map_userptr(std::uint64_t cpu_va, std::uint64_t size, bool readonly
         return false;
     }
     impl_->userptrs.push_back(u);
+    impl_->list_gen++;
     return true;
 }
 
@@ -300,6 +310,7 @@ bool Device::unmap_userptr(std::uint64_t cpu_va) {
             amdgpu_bo_va_op(it->bo, 0, it->size, it->va, 0, AMDGPU_VA_OP_UNMAP);
             amdgpu_bo_free(it->bo);
             impl_->userptrs.erase(it);
+            impl_->list_gen++;
             return true;
         }
     }
@@ -376,6 +387,7 @@ bool Device::map_shared(std::uint32_t id, std::uint64_t bo_offset, std::uint64_t
         return false;
     }
     impl_->shared_maps.push_back({gpu_va, size, bo_offset, id, b->bo});
+    impl_->list_gen++;
     return true;
 }
 
@@ -385,6 +397,32 @@ bool Device::unmap_shared(std::uint64_t gpu_va) {
         if (it->va != gpu_va) continue;
         amdgpu_bo_va_op_raw(impl_->dev, it->bo, it->bo_offset, it->size, it->va, 0, AMDGPU_VA_OP_UNMAP);
         impl_->shared_maps.erase(it);
+        impl_->list_gen++;
+        return true;
+    }
+    return false;
+}
+
+bool Device::free_shared(std::uint32_t id) {
+    std::lock_guard lock(impl_->mutex);
+    for (auto b = impl_->shared.begin(); b != impl_->shared.end(); ++b) {
+        if (b->id != id) continue;
+        for (auto it = impl_->shared_maps.begin(); it != impl_->shared_maps.end();) {
+            if (it->id == id) {
+                amdgpu_bo_va_op_raw(impl_->dev, it->bo, it->bo_offset, it->size, it->va, 0, AMDGPU_VA_OP_UNMAP);
+                it = impl_->shared_maps.erase(it);
+            } else {
+                ++it;
+            }
+        }
+        // a kept list would hold the BO (and its pages) alive
+        if (impl_->full_list) {
+            amdgpu_bo_list_destroy(impl_->full_list);
+            impl_->full_list = nullptr;
+        }
+        amdgpu_bo_free(b->bo);
+        impl_->shared.erase(b);
+        impl_->list_gen++;
         return true;
     }
     return false;
@@ -616,7 +654,12 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     auto add_shared = [&](amdgpu_bo_handle bo) {
         if (std::find(bos.begin(), bos.end(), bo) == bos.end()) bos.push_back(bo);
     };
-    if (include_mappings_ && draws) {
+    const bool full = include_mappings_ && draws;
+    const bool kept = full && impl_->full_list != nullptr && impl_->full_list_gen == impl_->list_gen &&
+                      impl_->full_list_gds == with_gds;
+    if (kept) {
+        // the list of the last submission with draws still names every mapping
+    } else if (full) {
         for (const auto &u : impl_->userptrs) bos.push_back(u.bo);
         const std::size_t first_shared = bos.size();
         bos.reserve(bos.size() + impl_->shared.size());
@@ -653,12 +696,23 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
         }
         r.short_list = true;
     }
-    r.bo_count = static_cast<std::uint32_t>(bos.size());
+    r.bo_count = kept ? impl_->full_list_count : static_cast<std::uint32_t>(bos.size());
     amdgpu_bo_list_handle list = nullptr;
     const double t_list = now_ms();
     r.prepare_ms = t_list - t_enter;
-    r.rc = amdgpu_bo_list_create(impl_->dev, static_cast<std::uint32_t>(bos.size()), bos.data(),
-                                 nullptr, &list);
+    if (kept) {
+        list = impl_->full_list;
+    } else {
+        r.rc = amdgpu_bo_list_create(impl_->dev, static_cast<std::uint32_t>(bos.size()), bos.data(),
+                                     nullptr, &list);
+        if (r.rc == 0 && full) {
+            if (impl_->full_list) amdgpu_bo_list_destroy(impl_->full_list);
+            impl_->full_list = list;
+            impl_->full_list_gen = impl_->list_gen;
+            impl_->full_list_gds = with_gds;
+            impl_->full_list_count = r.bo_count;
+        }
+    }
     r.list_ms = now_ms() - t_list;
     if (r.rc != 0) return r;
 
@@ -700,7 +754,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     }
     r.submit_ms = now_ms() - t0;
     r.fence_ms = r.submit_ms - r.cs_ms;
-    amdgpu_bo_list_destroy(list);
+    if (list != impl_->full_list) amdgpu_bo_list_destroy(list);
     submits_++;
     r.ok = r.rc == 0 && expired != 0;
     return r;
