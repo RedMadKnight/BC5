@@ -191,3 +191,17 @@ title screen, the first level's gameplay at 24. Steps 1–3 were all host overhe
 step 4 — the submission path, 35 of the remaining 42 ms split evenly between the kernel's job
 handling and the GPU's own work that is waited for — is the next experiment, and the load time
 with it.
+
+**Addendum, runs 105 and 106** (20:03 and 20:06, GPU, `BC5_DIRECT_EAGER_NAMES=GpuGarlicMemory,GpuOnionMemory`;
+captures `kytyplus-20261001-2003`, `-2006`). Run 105 was ended by the maintainer after 141 s:
+the controller had dropped off the USB bus again (six disconnects in 80 s, on the other port
+too — the cable or the pad, not the port). Run 106, the full 598 s with the controller staying
+connected: **226,913 submissions, no page fault, no fence timeout, 14,834 flips**; the level is
+reached, and the Options button, which froze run 103 for 14 s, opens the pause screen at once
+(31–32 fps there); the maintainer reports that walking the character works. With both GPU heaps imported in full the imports end at 8,314 MiB.
+
+One submission was lost: a compute buffer answered `-EFAULT` twice (the retry after the resync
+too), 596 s in — a userptr BO whose pages the guest had unmapped; eight such resyncs in the run
+against two to four before the anonymous walk was rate-limited. One retry is not always enough.
+`SDL_JOYSTICK_DISABLE_UDEV=1` was set so that SDL would notice a controller coming back inside
+the container; the controller never left, so that is untested.
