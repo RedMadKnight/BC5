@@ -81,8 +81,10 @@ imported, by chunks it shares with small neighbours).
 
 The lazy heap is a stopgap worth about a gigabyte. The remedy that matches the size of the
 problem is outside the repository: raising `ttm.pages_limit` on the kernel command line, which
-is the maintainer's decision on their machine. A third lever, the emulator's own 1.2–1.6 GiB,
-is not looked at yet.
+is the maintainer's decision on their machine. A third lever is the emulator's own share. Its Vulkan client (`fdinfo`, map-only run, 32 s in)
+asks for 658 MiB of GTT and 700 MiB of VRAM; the 512 MiB carve-out holds 176 MiB of the
+latter and the rest spills over, 1,183 MiB resident in GTT. What it keeps there in a mode
+where it renders nothing but the presented frame is not looked at yet.
 
 **Verdict.** Open. The JSON contract is fixed and the game renders its first own scene; the
 next limit is the graphics driver's memory accounting, not the GPU path and not a missing
