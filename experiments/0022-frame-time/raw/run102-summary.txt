@@ -1,0 +1,42 @@
+run 102, 2026-10-01 19:00, capture kytyplus-20261001-1900, steps 1-3 of experiment 0022, 598 s (journal excerpts)
+
+submits 228876, ok 228876, failed 0, flips 16266, timeouts 0, EFAULT resyncs 2
+
+== per 30 s: submissions, command buffers over 20000 dwords
+t0: 14161 submits, 0 large dcbs
+t30: 11249 submits, 528 large dcbs
+t60: 9987 submits, 714 large dcbs
+t90: 11211 submits, 801 large dcbs
+t120: 11078 submits, 791 large dcbs
+t150: 11338 submits, 810 large dcbs
+t180: 11391 submits, 813 large dcbs
+t210: 11456 submits, 819 large dcbs
+t240: 11374 submits, 812 large dcbs
+t270: 11389 submits, 814 large dcbs
+t300: 11453 submits, 818 large dcbs
+t330: 11451 submits, 818 large dcbs
+t360: 11438 submits, 817 large dcbs
+t390: 11647 submits, 831 large dcbs
+t420: 12108 submits, 865 large dcbs
+t450: 12155 submits, 869 large dcbs
+t480: 11456 submits, 818 large dcbs
+t510: 9863 submits, 704 large dcbs
+t540: 11602 submits, 829 large dcbs
+t570: 11069 submits, 790 large dcbs
+
+== sync and hint split, last three reports
+timing split over 128 submissions: probe 0.6 ms, anon sync 8.1, direct sync 2.9 (views 2.0; 1 full, 63 fast), learned 0.0, hints 2.4
+timing split over 128 submissions: probe 0.6 ms, anon sync 9.7, direct sync 3.1 (views 2.0; 2 full, 63 fast), learned 0.0, hints 2.7
+timing split over 128 submissions: probe 0.7 ms, anon sync 8.3, direct sync 3.2 (views 2.1; 2 full, 63 fast), learned 0.0, hints 2.8
+
+== imports
+direct: 92 views; +0 BOs (146, 6928.0 MiB pinned); maps +1 -3 (231)
+
+== controller (emulator log)
+Controller added: 0, time = 0.0002
+Controller button: 0, down, pressed, button = 0, time = 405.9200
+Controller button: 0, down, pressed, button = 0, time = 407.1878
+
+== EFAULT
+EFAULT, resync ... unmap 0x200288000 +0xc000 (no longer rw anonymous) ... ok
+EFAULT, resync ... unmap 0x200288000 +0x4000 (no longer rw anonymous) ... ok

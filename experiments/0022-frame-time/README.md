@@ -93,5 +93,42 @@ What is left of the frame is now mostly three things of similar size: the mappin
 hints (17 ms), the submission ioctl (14.5 ms over 14 submissions), and the GPU's own time
 (14.3 ms, waited for synchronously).
 
-**Verdict.** Open: steps 1 and 2 confirmed on the GPU (2.4 times the frame rate at the title
-screen); the cutscene comparison and steps 3 and 4 are still to do.
+*Step 3* (host, patch 0001), from a split of the sync and hint time measured map-only:
+
+- the direct-memory sync returns at once while nothing can have changed: the memfd's allocated
+  size (`st_blocks`, which grows with every page the game first writes), the views and the
+  forced set are the same as at the last full scan (`BC5_DIRECT_NO_FAST_SYNC=1` turns it off);
+- the walk over the anonymous VMAs (`/proc/self/maps` and `mincore`, 0.9 ms a call) runs at most
+  every 100 ms for the forced call before a draw (`BC5_DIRECT_ANON_SYNC_MS`); an unmapped
+  operand or an `-EFAULT` from a submission still walks at once;
+- learned regions are re-applied only when views, VMAs or the list changed;
+- the hint mapper tracks only the render-target base registers and skips unchanged addresses.
+
+*Run 102* (19:00, GPU, steps 1–3, 598 s; capture `kytyplus-20261001-1900`,
+`raw/run102-summary.txt`): **228,876 submissions, none failed, 16,266 flips; the title-screen
+scene at 27.1 fps** (36.8 ms a frame), the loading tunnel behind it at 27–29 fps. Two `-EFAULT`
+resyncs early in the run, both recovered by the retry that exists for them.
+
+| Part of a title-screen frame | run 97 | run 101 | run 102 |
+|---|---|---|---|
+| mapping sync | 15 | 12.5 | 1.2 |
+| render-target hints, learned regions | 3.5 | 4.6 | 0.1 |
+| device: `prepare` | 4 | 1.1 | 1.1 |
+| device: BO list | 3 | 0.1 | 0.1 |
+| device: submission ioctl | 21 | 14.5 | 15.0 |
+| device: waiting for the fence | 15 | 14.3 | 16.3 |
+| the rest | 60 | 3.4 | 3.0 |
+| **frame, ms** | **122** | **50.5** | **36.8** |
+
+What is left is the submission ioctl (14 submissions a frame at about 1 ms) and the GPU's own
+time, waited for after every submission: 31 of 37 ms. Both are properties of submitting each of
+the game's buffers as its own job and waiting for it.
+
+The level load does not get shorter with the frame rate: the maintainer picked the save slot
+407 s in, and 191 s later the run ended with the load still going (imports at 6,928 MiB; in run
+100 the load took about 240 s at 7 fps). The game made about as many file lookups in that time
+as in run 99. What paces the load is not known yet.
+
+**Verdict.** Open: 3.3 times the frame rate at the title screen with steps 1–3 (8.2 to 27.1
+fps). Still to do: the submission path itself (step 4), the cutscene comparison, and the load
+time, which is a separate question.

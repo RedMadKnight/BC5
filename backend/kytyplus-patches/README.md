@@ -132,3 +132,7 @@ path runs with 96,16,16,16), `KYTY_BC5_VMA_BLOCK_MIB=16` the allocator's block s
 Experiment 0022 (frame time): `BC5_DIRECT_JOURNAL=min` replaces the crash journal by one buffered
 line per submission (no IB dumps, no sync); imports that neighbour each other are merged into BOs
 of up to the udmabuf size limit (`BC5_DIRECT_NO_MERGE=1`, `BC5_DIRECT_MAX_BO_MIB`).
+Step 3 of experiment 0022: `BC5_DIRECT_NO_FAST_SYNC=1` makes the direct-memory sync scan every
+time again; `BC5_DIRECT_ANON_SYNC_MS` (default 100, 0 = every forced call) is the minimum age of
+the last walk over the anonymous VMAs before a forced call repeats it. With `BC5_DIRECT_TIMING=1`
+the journal carries a split of the sync and hint time every 128 submissions.
