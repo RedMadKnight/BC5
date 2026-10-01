@@ -393,10 +393,10 @@ index 5f87e6b..e5c534e 100644
  	CondRemoveWaiter(cond_value, thread);
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..4111134
+index 0000000..a212d95
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,2996 @@
+@@ -0,0 +1,3046 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -1192,7 +1192,12 @@ index 0000000..4111134
 +
 +enum class Stage { Off, MapOnly, Preamble, NoDraw, All };
 +
-+// Unbuffered, fsync'd line in BC5_GC_DUMP_DIR/direct.log: the only record that survives a hang.
++// A line in BC5_GC_DUMP_DIR/direct.log, the record that survives a hang. The file is synced to
++// disk once per submission, right before the IB goes to the GPU (the "submit #n" line), which
++// makes every earlier line durable too. Syncing each line and each IB dump cost most of a frame
++// (run 78: 1.3 s for the frame DCB with its hundred table lines); BC5_DIRECT_JOURNAL_SYNC=1
++// brings that back for chasing a hang.
++static const bool g_journal_sync = std::getenv("BC5_DIRECT_JOURNAL_SYNC") != nullptr;
 +static void journal(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
 +static void journal(const char* fmt, ...) {
 +	if (g_dump_dir.empty()) {
@@ -1209,8 +1214,14 @@ index 0000000..4111134
 +	std::vfprintf(f, fmt, ap);
 +	va_end(ap);
 +	std::fflush(f);
-+	fsync(fileno(f));
++	if (g_journal_sync) fsync(fileno(f));
 +	std::fclose(f);
++}
++
++// Seconds since the first call: the time base of the BC5_DIRECT_TIMING journal lines.
++static double timing_now() {
++	static const uint64_t t_first = SoftCp::now_ns();
++	return static_cast<double>(SoftCp::now_ns() - t_first) / 1e9;
 +}
 +
 +#if defined(KYTY_BC5_DIRECT)
@@ -1412,7 +1423,26 @@ index 0000000..4111134
 +		// turns it off.
 +		static const bool no_pagemap = std::getenv("BC5_DIRECT_NO_PAGEMAP") != nullptr;
 +		static const int pagemap_fd = no_pagemap ? -1 : open("/proc/self/pagemap", O_RDONLY | O_CLOEXEC);
-+		if (pagemap_fd >= 0) {
++		// The pagemap read costs ~40 ms per sync over the guest's 13 GB (run 77: one sync per
++		// submission, most of a second per frame), so it runs only while this process has
++		// anything in swap (VmSwap in /proc/self/status, re-read at most once a second).
++		static uint64_t vmswap_checked_ns = 0;
++		static bool     vmswap_nonzero    = false;
++		if (pagemap_fd >= 0 && (vmswap_checked_ns == 0 || SoftCp::now_ns() - vmswap_checked_ns > 1'000'000'000ull)) {
++			vmswap_checked_ns = SoftCp::now_ns();
++			vmswap_nonzero    = false;
++			if (FILE* st = std::fopen("/proc/self/status", "r")) {
++				char line[256];
++				while (std::fgets(line, sizeof(line), st) != nullptr) {
++					if (std::strncmp(line, "VmSwap:", 7) == 0) {
++						vmswap_nonzero = std::strtoull(line + 7, nullptr, 10) != 0;
++						break;
++					}
++				}
++				std::fclose(st);
++			}
++		}
++		if (pagemap_fd >= 0 && vmswap_nonzero) {
 +			static std::vector<uint64_t> pm;
 +			const size_t chunk = 1u << 16; // pages per read
 +			pm.resize(chunk);
@@ -2098,6 +2128,7 @@ index 0000000..4111134
 +						while (!(ok = wait_satisfied(p, op == 0x93)) && SoftCp::now_ns() - t0 < limit) std::this_thread::sleep_for(std::chrono::microseconds(50));
 +					}
 +					journal("cpu-wait %s at %u on 0x%" PRIx64 ": %s after %.1f ms\n", op == 0x93 ? "WAIT_REG_MEM64" : "WAIT_REG_MEM", i, label, ok ? "satisfied" : "TIMEOUT", static_cast<double>(SoftCp::now_ns() - t0) / 1e6);
++					if (std::getenv("BC5_DIRECT_TIMING") != nullptr) journal("timing: t %.3f s after that wait (%s %u dwords)\n", timing_now(), kind, num_dwords);
 +					SoftCp::set_gpu_executed(p, len, {0}); // the soft CP must not wait again
 +				}
 +			}
@@ -2166,9 +2197,20 @@ index 0000000..4111134
 +	// Unthrottled: the game writes a DCB's register tables right before submitting it, and a
 +	// table the sync has not seen yet is a NOP-ed LOAD on the GPU and an invisible render
 +	// target for the hint mapper (run 29: 52 unmapped operands in the first frame DCB).
++	// BC5_DIRECT_TIMING=1: where a submission's wall-clock time goes (run 77: ~1 s between the
++	// game's submissions) — seconds since the first submission, then the host's own steps.
++	static const bool timing = std::getenv("BC5_DIRECT_TIMING") != nullptr;
++	const double   t_start = timing_now();
++	const uint64_t t0 = SoftCp::now_ns();
 +	sync_mappings(true);
++	const uint64_t t1 = SoftCp::now_ns();
 +	learned_apply();
 +	hint_targets(ib, num_dwords);
++	const uint64_t t2 = SoftCp::now_ns();
++	if (timing) {
++		journal("timing: t %.3f s %s %u dwords: sync %.1f ms, hints %.1f ms\n", t_start, kind, num_dwords,
++		        static_cast<double>(t1 - t0) / 1e6, static_cast<double>(t2 - t1) / 1e6);
++	}
 +	// BC5_DIRECT_PROBE_VA=hexva[:bytes]: the pagemap state (present / swapped / none) of that guest
 +	// address and its bytes, journaled at every submission where either changed (run 73: who
 +	// writes the flip pass's vertex buffer, and when).
@@ -2391,7 +2433,7 @@ index 0000000..4111134
 +		bc5::policy::filter(bc5::policy::Policy::builtin(), std::span<const uint32_t>(ib, num_dwords), filtered, opt, pre);
 +		char name[512];
 +		std::snprintf(name, sizeof(name), "%s/direct-%06" PRIu64 "-%s.raw.bin", g_dump_dir.c_str(), n, kind);
-+		if (FILE* f = std::fopen(name, "wb")) { std::fwrite(ib, 4, num_dwords, f); std::fflush(f); fsync(fileno(f)); std::fclose(f); }
++		if (FILE* f = std::fopen(name, "wb")) { std::fwrite(ib, 4, num_dwords, f); std::fflush(f); if (g_journal_sync) fsync(fileno(f)); std::fclose(f); }
 +		// INDIRECT_BUFFER targets (compute rings): their raw contents, for a post-mortem.
 +		for (uint32_t q = 0, t = 0; q < num_dwords && t < 16;) {
 +			const uint32_t h = ib[q];
@@ -2404,14 +2446,14 @@ index 0000000..4111134
 +				const uint32_t tn = ib[q + 3] & 0xfffffu;
 +				if (ta != 0 && tn != 0 && covered(maps, ta, static_cast<uint64_t>(tn) * 4)) {
 +					std::snprintf(name, sizeof(name), "%s/direct-%06" PRIu64 "-%s-ib%u.raw.bin", g_dump_dir.c_str(), n, kind, t);
-+					if (FILE* f = std::fopen(name, "wb")) { std::fwrite(reinterpret_cast<const void*>(ta), 4, tn, f); std::fflush(f); fsync(fileno(f)); std::fclose(f); }
++					if (FILE* f = std::fopen(name, "wb")) { std::fwrite(reinterpret_cast<const void*>(ta), 4, tn, f); std::fflush(f); if (g_journal_sync) fsync(fileno(f)); std::fclose(f); }
 +				}
 +				t++;
 +			}
 +			q += len;
 +		}
 +		std::snprintf(name, sizeof(name), "%s/direct-%06" PRIu64 "-%s.ib.bin", g_dump_dir.c_str(), n, kind);
-+		if (FILE* f = std::fopen(name, "wb")) { std::fwrite(filtered.data(), 4, num_dwords, f); std::fflush(f); fsync(fileno(f)); std::fclose(f); }
++		if (FILE* f = std::fopen(name, "wb")) { std::fwrite(filtered.data(), 4, num_dwords, f); std::fflush(f); if (g_journal_sync) fsync(fileno(f)); std::fclose(f); }
 +		std::snprintf(name, sizeof(name), "%s/direct.log", g_dump_dir.c_str());
 +		if (FILE* f = std::fopen(name, "a")) {
 +			std::fprintf(f, "submit #%" PRIu64 " %s %u dwords at %p: pass %" PRIu64 " rewrite %" PRIu64 " drop %" PRIu64 " unmapped %" PRIu64 " cc %" PRIu64 " mappings %zu ... ",
@@ -2540,9 +2582,13 @@ index 0000000..4111134
 +		if (FILE* f = std::fopen(name, "a")) {
 +			std::fprintf(f, "%s rc %d%s%s %.2f ms\n", r.ok ? "OK" : "FAILED", r.rc, r.timed_out ? " TIMEOUT" : "", retried ? " (retried)" : "", r.submit_ms);
 +			std::fflush(f);
-+			fsync(fileno(f));
++			if (g_journal_sync || !r.ok) fsync(fileno(f));
 +			std::fclose(f);
 +		}
++	}
++	if (timing) {
++		journal("timing: #%" PRIu64 " done at t %.3f s, %.1f ms after the sync and hints\n", n, timing_now(),
++		        static_cast<double>(SoftCp::now_ns() - t2) / 1e6);
 +	}
 +	if (r.state_stack.pushes != 0 || r.state_stack.pops != 0 || r.state_stack.unmatched_pops != 0) {
 +		journal("state stack #%" PRIu64 ": push %u pop %u conditional %u unmatched %u; restored %u regs (+%u dwords); tables %u, unreadable %u\n", n,
@@ -3308,7 +3354,11 @@ index 0000000..4111134
 +	}
 +	LOGF("[bc5-gc] VideoOutSubmitEopFlip(%d, %d, %d, 0x%" PRIx64 ", %p)\n", handle, index,
 +	     flip_mode, flip_arg, unk);
++	const double flip_t0 = Bc5Gc::Direct::timing_now();
 +	const int rc = VideoOut::VideoOutSubmitFlip(handle, index, flip_mode, flip_arg);
++	if (std::getenv("BC5_DIRECT_TIMING") != nullptr) {
++		Bc5Gc::Direct::journal("timing: t %.3f s flip %d/%d, VideoOutSubmitFlip took %.1f ms\n", flip_t0, handle, index, (Bc5Gc::Direct::timing_now() - flip_t0) * 1e3);
++	}
 +	// The flip is immediate here: the buffer's flip label goes back to 0, as the console's VideoOut
 +	// does once the flip has happened (the game waits for that before it renders into the buffer
 +	// again; run 73).

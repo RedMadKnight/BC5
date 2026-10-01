@@ -704,3 +704,33 @@ display buffer through the direct path: the game's command buffers and shaders, 
 frame's passes and the flip pass all rasterising. What it presents during these first 20 frames
 is its loading-time black with grain. G3 as "a recognisable image" needs the game to get past
 loading: next, run 77 with the ident-0 events (faster frames) and a longer run.
+
+**Run 77** (08:55, GPU, 165 s, ident-0 events; `raw/e32-run77-direct.log`): 622 submits, 616 OK,
+37 flips, no machine reset; two recoverable shader faults (0x524556000 learned; 0x567ff0000 in the
+run's last submission). The `GpuDevice::EopEq` waits now receive their events (4 timeouts left
+instead of five per frame) — **and the frames are no faster** (KytyPlus's title bar: 0.28 fps).
+The picture is the same black with grain throughout. The run's last submission is a frame DCB of
+a new shape (10,440 dwords): the game is moving on, slowly.
+
+Where a frame's 3.5 s go, as far as this run's journal tells: the forced mapping sync was 51 ms
+per submission (measured afterwards without a GPU, `BC5_DIRECT_TIMING=1`), 40 ms of it the
+pagemap read added in run 72 — 17 submissions a frame, most of a second. Fixed: the pagemap is
+read only while the process has pages in swap (`VmSwap`), the sync is back to 11–16 ms. Submits
+and fences: 12 s in the whole run; CPU waits: 3.8 s. That leaves about two thirds of the time
+outside the host's submission path — the next run journals a timeline (`BC5_DIRECT_TIMING=1`:
+every submission, CPU wait and flip with its time).
+
+**Run 78** (09:08, GPU, 135 s, `BC5_DIRECT_TIMING=1`; `raw/e33-run78-direct.log`): 594 submits,
+574 OK, 36 flips, the same picture, no machine reset. The timeline of a 3.0 s frame: the sync is
+11 ms now, the submit and its fence ~17 ms, no CPU wait takes time — and **the host's own
+submission path takes the rest**: 1,289 ms for the frame DCB, 300–440 ms for each of the
+2,647/798/1,248-dword DCBs, ~23 ms for the small ones. It is the crash journal: every line was
+written with open/append/`fsync`/close, the frame DCB alone journals a hundred table lines, and
+each IB was dumped in three `fsync`ed files. That design dates from the runs that ended in
+machine resets; it has been the frame rate's ceiling since run 54.
+
+Change: `direct.log` is synced once per submission, right before the IB goes to the GPU (which
+makes every earlier line durable); lines and IB dumps in between are written without `fsync`.
+`BC5_DIRECT_JOURNAL_SYNC=1` restores the old behaviour for chasing a hang. Without a GPU
+(`maponly`, 60 s): 27 flips instead of 11, a frame every 2.17 s of which 2.0 s are the
+`maponly`-only label timeout.

@@ -94,3 +94,7 @@ that journals what the emulation would do. `BC5_DIRECT_FLIP_DUMP=<every n>` writ
 display buffer of every n-th flip into the capture directory (at most six files).
 `BC5_DIRECT_DRAWSTATS=<min dwords>` (with `BC5_DIRECT_PIPESTATS=1`): pipeline counters per
 marker-delimited section of the first six DCBs of at least that many dwords.
+`BC5_DIRECT_TIMING=1` journals a timeline (each submission with its sync and hint times, CPU
+waits, flips). `BC5_GC_NO_IDENT0=1` stops the EVFILT_GRAPHICS ident-0 events (F36).
+The crash journal is synced once per submission (before the GPU submit) since run 78;
+`BC5_DIRECT_JOURNAL_SYNC=1` syncs every line and every IB dump again.
