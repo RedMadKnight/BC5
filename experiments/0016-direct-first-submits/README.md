@@ -734,3 +734,32 @@ makes every earlier line durable); lines and IB dumps in between are written wit
 `BC5_DIRECT_JOURNAL_SYNC=1` restores the old behaviour for chasing a hang. Without a GPU
 (`maponly`, 60 s): 27 flips instead of 11, a frame every 2.17 s of which 2.0 s are the
 `maponly`-only label timeout.
+
+**Run 79** (09:15, GPU, 135 s, journal synced once per submission; `raw/e34-run79-direct.log`,
+reduced — table, map and per-submission sync lines left out to stay under 1 MB): **the game's
+first screen is on the BC-250's display.** 2,318 submissions, 167 flips, a frame every 0.5 s
+(KytyPlus's title bar: 1.9 fps) instead of every 3 s. The first 60 drawn flips are the loading-time
+black; then the sampled display buffer changes from flip to flip (42 distinct contents: a
+fade-in), the game's log shows its logo and title levels loaded, and the screenshot taken at 90 s
+shows the publisher's "presents" card, white text on the grain, correctly de-tiled by KytyPlus's
+presenter from the 64KB_R_X surface the GPU wrote. (Screenshots and raw display-buffer dumps stay
+in `~/bc5-data/captures/kytyplus-20261001-0915/`; they are game output and are not committed.)
+
+Two submissions timed out on shader faults in regions seen for the first time (0x56801c000 at
+30 s in the first DCB of the new, 10,440-dword frame shape; 0x56002a000 at 48 s in a compute IB);
+the kernel reset the ring, the host learned both regions and reopened the device, the machine
+stayed up. **After the second one: 114 consecutive flips and 1,354 submissions without a failure**,
+to the end of the run. No CPU wait timed out after start-up (2 in the run), 5 `EopEq` timeouts.
+
+**Verdict (2026-10-01, 09:25).** Gate G3, first two clauses: *image on screen* — yes, the game's
+own frames, from its own command buffers and its own shader binaries, untranslated, on the
+BC-250 through the direct path; *no GPU hang across 100 consecutive frames* — yes in run 79's last
+70 seconds (114 frames), after two recoverable faults in memory the host had not seen before
+(they are learned and mapped up front from the next run on). Still open for G3: the 36/40 CU
+numbers (step f). What made the difference since the 00:20 verdict, in order: the context-state
+stack (F35: without it every strip lost a vertex), the two wait hand-overs (F34), the ident-0
+events (F36), and the host's own crash journal, which had capped the frame rate at one frame per
+three seconds. Open items: the frame time (0.5 s; submit plus fence is a constant ~17 ms per
+submission whatever its size), SH/UCONFIG state across pop_state, the zero-instance point draw
+that became 512 points, `ORDERED_APPEND_ENBL`, the kernel lockup timeout, presentation without
+the readback through KytyPlus's presenter, and step (f).
