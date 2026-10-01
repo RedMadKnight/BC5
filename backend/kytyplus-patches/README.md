@@ -109,3 +109,4 @@ KytyPlus's upstream memfd views for direct memory; the patch seals the memfd aga
 and exposes its fd (`LibKernel::Memory::Bc5DirectMemoryFd`), the host imports 2 MiB chunks of it
 through `/dev/udmabuf` and maps them at the views' addresses. `BC5_DIRECT_CHUNK_STATS=1` journals
 what chunk sizes would pin (anonymous backing).
+`BC5_DIRECT_NO_DMA_IDLE=1` turns off the CP-DMA idle wait the device appends to every IB (F41).

@@ -130,6 +130,9 @@ every time": the kernel revalidates each listed userptr BO's pages on every CS (
 listed, against a GPU that needs a millisecond). A submission without draws and dispatches lists
 only the BOs its packets' operands lie in; one that draws lists them all. Mappings left off a list
 stay in the VM untouched until the next full list revalidates them.
+*Amended 2026-10-01 (run 89, F41):* (xxi) every IB the device submits ends with a zero-byte
+`DMA_DATA` carrying `CP_SYNC`, so that no CP DMA operation of the stream outlives its IB (amdgpu
+does not wait for CP DMA; Mesa does the same at the end of its IBs).
 
 **Consequences.** The "packet rewriter" of the roadmap shrinks to a filter with two rewrites; the
 backend's core is the policy table plus the BO/VA mapper, both testable offline. Unknown firmware
