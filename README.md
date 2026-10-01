@@ -3,7 +3,7 @@
 **BC-250 + PS5. A native PS5 GPU path for the AMD BC-250 (Cyan Skillfish, gfx1013).**
 User-space backend that feeds PS5 AGC command streams and native RDNA ISA shaders to `amdgpu` on Linux, without GNM→Vulkan translation or shader recompilation.
 
-> Status: research / pre-alpha. On 2026-10-01 the direct GPU path took a commercial PS5 game — the maintainer's own copy of ASTRO BOT — from its first frame into its first level on the BC-250: intro video, title screen, level load, the opening cutscene and the desert level with the character walking under the player's control, all from the game's own command buffers and shader binaries, filtered but not translated, at 24–27 frames per second (HANDOFF F43–F52). It is a first level at less than half speed, not a playable game: the title is built for 60 fps, the level takes over two minutes to load, the GPU does about 17 ms of work in a frame that takes 42, and nothing beyond the first minutes has been tried. This repository is a plan, a set of experiments and their results. No game files, firmware or SDK material are or will ever be hosted here.
+> Status: research / pre-alpha. On 2026-10-01 the direct GPU path took a commercial PS5 game — the maintainer's own copy of ASTRO BOT — from its first frame into its first level on the BC-250: intro video, title screen, level load, the opening cutscene and the desert level with the character walking under the player's control, all from the game's own command buffers and shader binaries, filtered but not translated, at 41–47 frames per second (HANDOFF F43–F55). It is a first level at two thirds of full speed, not a playable game: the title is built for 60 fps, the level takes over two minutes to load, haptics are missing, and nothing beyond the first minutes has been tried. The GPU now does 15–17 ms of work in a frame that takes 21–24. This repository is a plan, a set of experiments and their results. No game files, firmware or SDK material are or will ever be hosted here.
 
 ![The emulator window on the BC-250: ASTRO BOT's opening card, rendered through the direct path](docs/images/g3-first-screen.png)
 
@@ -26,12 +26,12 @@ All on the BC-250 dev box, with the track-B host (KytyPlus running the game's ow
 | Title screen, controller input | real-time scene; a button press starts the game | experiment 0020, F45–F46 |
 | First level and opening cutscene | load and play; the game keeps 7.9 GiB visible to the GPU | experiments 0021–0022, F47–F48 |
 | First level, gameplay | the character walks, the pause screen opens; DualSense buttons, sticks and motion work (the maintainer at the controller); 24 fps | experiment 0022 runs 104 and 106, F52–F53 |
-| Frame rate | title screen 27 fps, cutscene 24 fps — from 8 and 6 fps the same day, all of it host overhead removed | experiment 0022, F49–F50 |
+| Frame rate | title screen 47 fps, cutscene 41 fps — from 8 and 6 fps the same day, all of it host overhead removed | experiments 0022 and 0023, F49–F55 |
 | Longest runs | 12 minutes, 258,551 submissions, three recovered page faults; 10 minutes, 227,311 submissions, none failed | runs 103, 104 |
-| GPU time in a frame | about 17 ms of 37–43 ms; the game sends 16 buffers a frame and each is submitted and waited for on its own | experiment 0022 |
+| GPU time in a frame | 15–17 ms of 21–24 ms; the game sends 14–16 buffers a frame and each is submitted and waited for on its own | experiment 0023 |
 | Compute CU mask | 20 live bits per shader engine, one CU per bit; throughput linear in the bit count | experiment 0019, F39 |
 
-What does not work yet: full speed (the game is built for 60 fps), a level load in reasonable time (135 s), and anything past the first minutes of the first level, which nobody has tried. What has not been tried: any other title, RPCSX as the host (needs system software the maintainer cannot dump at present).
+What does not work yet: full speed (the game is built for 60 fps), haptics, a level load in reasonable time (135 s), and anything past the first minutes of the first level, which nobody has tried. What has not been tried: any other title, RPCSX as the host (needs system software the maintainer cannot dump at present).
 
 ## What this is
 
@@ -115,13 +115,13 @@ Phase 0a comes first on purpose: one canonical input format keeps every later ex
 
 ## Open questions
 
-- [x] 1:1 memory mapping. **Yes** (experiment 0014, HANDOFF F23): a userptr BO mapped at GPU VA = CPU pointer works with zero copies. Since experiment 0017 the game's direct memory goes one better: ranges of the host's memfd are imported as dma-bufs and mapped at the guest's addresses, without the per-submission page walk userptr costs (ADR 0006, F40).
+- [x] 1:1 memory mapping. **Yes** (experiment 0014, HANDOFF F23): a userptr BO mapped at GPU VA = CPU pointer works with zero copies. Since experiments 0017 and 0023 all guest memory goes one better: ranges of the host's memfds are imported as dma-bufs and mapped at the guest's addresses, without the per-submission page walk userptr costs (ADR 0006, F40, F55).
 - [x] How RPCSX handles AGC today. **Answered** (HANDOFF F12, F19): RPCSX has no AGC parser; PS5 submits enter through `/dev/gc` ioctls carrying a `CONTEXT_CONTROL` packet, a state-preamble IB and the frame DCB. Track B therefore runs the game's own `libSceAgc` on top of an emulated `/dev/gc` instead of tapping RPCSX.
 - [x] Whether PS5 titles write CU masks themselves. **Yes** (F21, F39): every compute dispatch writes `COMPUTE_STATIC_THREAD_MGMT_SE0..3` = 0xffffffff and the graphics stages load `RSRC3.CU_EN` = 0xffff from register tables; BC5's mask is ANDed into both. What the bits mean on the BC-250 is measured for compute (experiment 0019: bits 0–19 per shader engine, one per CU).
 - [ ] Which draw/CB/DB register usage is Sony-specific beyond public PM4. **Partly**: so far one unresolved SH register and one APU-only opcode (F21), the 64-bit `WAIT_REG_MEM` and index-load opcodes (experiment 0016), and — more important than any register — command-processor behaviour the console's system provides and `amdgpu` does not: `CLEAR_STATE` push/pop (F35), waiting for CP DMA (F41), register shadowing. The list keeps growing with every new part of the game.
 - [ ] Which CUs the graphics stages' 16-bit `CU_EN` selects on a 20-CU shader engine (experiment 0019's open half).
 - [ ] Storage: how much of the SSD/Kraken dependency a software prefetch/cache layer can hide. First data (experiment 0022): the board's M.2 slot delivers 0.7–0.8 GB/s and ASTRO BOT's first level asks for far less; its four-minute load came from the host listing a directory for every file the game looks for and does not find. Titles that lean on the hardware decompressor are untested.
-- [ ] The submission path: 16 submissions a frame, each a kernel job that is waited for, are 31 of a 37 ms frame. Can several of the game's buffers go into one job, or be waited for asynchronously, without breaking the label and event protocol the game's driver library expects? (experiment 0022, step 4)
+- [ ] The submission path: with the kernel's share gone (experiment 0023) a frame is 21–24 ms, 15–17 of them the GPU's work waited for after each of 14–16 submissions. Can the host prepare and submit the next buffer while the GPU runs the previous one, without breaking the label and event protocol the game's driver library expects — and is the GPU's own time then short enough for 60 fps?
 - [ ] The memory budget of a 16 GB board: the game's 12.4 GiB plus the host plus a desktop do not fit once levels fill their pools. A desktop-less session, or a dedicated system image, is being considered.
 - [ ] Presentation without a copy: the game's flip buffer is already a GPU buffer; today it is read back and drawn by the host's Vulkan side.
 
