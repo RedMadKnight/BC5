@@ -505,6 +505,16 @@ standalone — `draw-min` extended to replay the game's flip pass from the surve
 dumped shaders, in variants (our draw + the game's context image; the game's NGG GS with our
 PS; the game's pass with our target) in one run, so a bisection costs one go-ahead.
 
+**Run 67, `draw-min --pass`** (06:40, the flip pass replayed standalone from the surveyed tables
+and dumped shaders): A (libdrm control) and B (control after the game's 921 context registers)
+both **draw**; C–G (the game's NGG ES program and SH/UCONFIG state, our 3840×2160 target, libdrm's
+constant PS; plus `GE_PC_ALLOC`, tile steering, indexed primitive type) all end in an **SQC (data)
+fault at 0x507405000 / 0x5034f5000** — the ES program runs and loads its inputs through the GS
+user-data pointers (SH 0x2c8c…: 0x5034f55c0, 0x5034f5660, 0x5034ff118, 0x5074050f0), game
+buffers the standalone replay did not have. So the game's context image is harmless and its NGG
+stage executes; the replay now needs those buffers (the host dumps what the user-data registers
+point at, `draw-min` loads them at their addresses) to see whether the pass draws when isolated.
+
 **Verdict (2026-10-01, 00:20).** Steps (a)–(c) passed; (d) and (e) run the game's frames, draws,
 dispatches and both queue types on the BC-250 stall-free (runs 54–63: 230+ of 234 submits, no
 reset), with GDS counters reset and read back correctly since the DMA-selector fix. G3's image is

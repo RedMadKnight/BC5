@@ -20,6 +20,7 @@
 #include <cstdint>
 #include <cstdio>
 #include <cstring>
+#include <filesystem>
 #include <fstream>
 #include <iterator>
 #include <map>
@@ -350,6 +351,34 @@ int main(int argc, char **argv) {
             std::printf("shader 0x%llx (SH 0x%x): %zu bytes loaded\n", static_cast<unsigned long long>(va),
                         0x2c00 + lo_off, code.size());
         }
+        // Memory the pass reads through its user-data pointers (mem-<va>.bin dumps of the capture).
+        std::size_t mem_files = 0;
+        for (const auto &entry : std::filesystem::directory_iterator(shader_dir)) {
+            const std::string fname = entry.path().filename().string();
+            if (fname.rfind("mem-", 0) != 0 || fname.size() < 20) continue;
+            const std::uint64_t va = std::stoull(fname.substr(4, 12), nullptr, 16);
+            std::ifstream f(entry.path(), std::ios::binary);
+            const std::vector<char> data((std::istreambuf_iterator<char>(f)), std::istreambuf_iterator<char>());
+            const std::uint64_t base = va & ~0xffffull, end = (va + data.size() + 0xffff) & ~0xffffull;
+            bool ok_all = true;
+            for (std::uint64_t page = base; page < end; page += 0x10000) {
+                bool have = false;
+                for (const auto &[a, b] : extra_maps) have = have || (page >= a && page < b);
+                if (have) continue;
+                void *m = mmap(reinterpret_cast<void *>(page), 0x10000, PROT_READ | PROT_WRITE,
+                               MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED_NOREPLACE, -1, 0);
+                if (m == MAP_FAILED) {
+                    ok_all = false;
+                    break;
+                }
+                std::memset(m, 0, 0x10000);
+                extra_maps.emplace_back(page, page + 0x10000);
+            }
+            if (!ok_all) continue;
+            std::memcpy(reinterpret_cast<void *>(va), data.data(), data.size());
+            mem_files++;
+        }
+        std::printf("memory dumps loaded: %zu, extra mappings: %zu\n", mem_files, extra_maps.size());
         const std::size_t big = 0x2000000; // a 3840x2160x4 target and slack
         std::uint8_t *big_dst = alloc(big);
         if (!big_dst) return 1;
