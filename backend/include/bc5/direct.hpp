@@ -21,6 +21,9 @@ struct SubmitResult {
     int rc = 0;            // libdrm / ioctl return code when not ok
     bool timed_out = false; // fence did not signal within the timeout
     double submit_ms = 0;   // submit + fence wall clock
+    // The parts of a submission (experiment 0016, run 80: a constant ~17 ms whatever the IB):
+    // filtering and scratch layout, BO list creation, the CS ioctl, the fence wait.
+    double prepare_ms = 0, list_ms = 0, cs_ms = 0, fence_ms = 0;
     std::uint64_t seq_no = 0; // sequence number the kernel assigned (0 = none)
     // After a timeout: the last GPU VM fault of this process (AMDGPU_INFO_GPUVM_FAULT; page
     // address, GCVM_L2_PROTECTION_FAULT_STATUS), 0 when the kernel has none to report.

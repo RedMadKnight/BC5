@@ -393,7 +393,7 @@ index 5f87e6b..e5c534e 100644
  	CondRemoveWaiter(cond_value, thread);
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..a212d95
+index 0000000..7e912e3
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
 @@ -0,0 +1,3046 @@
@@ -2587,8 +2587,8 @@ index 0000000..a212d95
 +		}
 +	}
 +	if (timing) {
-+		journal("timing: #%" PRIu64 " done at t %.3f s, %.1f ms after the sync and hints\n", n, timing_now(),
-+		        static_cast<double>(SoftCp::now_ns() - t2) / 1e6);
++		journal("timing: #%" PRIu64 " done at t %.3f s, %.1f ms after the sync and hints; device: prepare %.2f list %.2f cs %.2f fence %.2f ms\n", n, timing_now(),
++		        static_cast<double>(SoftCp::now_ns() - t2) / 1e6, r.prepare_ms, r.list_ms, r.cs_ms, r.fence_ms);
 +	}
 +	if (r.state_stack.pushes != 0 || r.state_stack.pops != 0 || r.state_stack.unmatched_pops != 0) {
 +		journal("state stack #%" PRIu64 ": push %u pop %u conditional %u unmatched %u; restored %u regs (+%u dwords); tables %u, unreadable %u\n", n,
