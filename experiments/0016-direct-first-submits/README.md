@@ -487,6 +487,18 @@ dropped (cmd 1/2 hang). The libdrm test writes 0xd7 itself. Next: `CLEAR_STATE` 
 cmd 0 (the kernel's clear state, as RADV does per IB) and the chip's tile-steering value in a
 prologue.
 
+**Run 65** (06:04, `CLEAR_STATE` → cmd 0, tile steering 0x122000 in a prologue): no change, no
+hang. The targets stay single-valued. Next suspect from the SH tables: `SPI_SHADER_PGM_RSRC4_PS` =
+0x3 and `RSRC4_GS` = 0x1 (narrow CU enables, loaded by table, outside the policy's CU-mask rewrite
+which covers `SET_SH_REG` only); the BC-250's active CUs differ from the console's.
+
+The CU enables are not it (RSRC3 = 0xffff everywhere; the kernel's active CUs 0–5 per SH cover
+the narrow RSRC4 values). Mesa does use NGG on gfx1013 and, for NGG, programs `GE_PC_ALLOC` =
+OVERSUB_EN | NUM_PC_LINES(pc_lines/4 − 1) with pc_lines = 1024 for GFX1013 (`ac_gpu_info.c`),
+i.e. 0x100ff; **the game's init table loads `GE_PC_ALLOC` = 0** — another register the console's
+system owns. With no position-cache lines the NGG stage cannot export primitives: clears and
+compute run, draws leave nothing. Test: `BC5_DIRECT_PROLOGUE_UCONFIG=260:100ff`.
+
 **Verdict (2026-10-01, 00:20).** Steps (a)–(c) passed; (d) and (e) run the game's frames, draws,
 dispatches and both queue types on the BC-250 stall-free (runs 54–63: 230+ of 234 submits, no
 reset), with GDS counters reset and read back correctly since the DMA-selector fix. G3's image is
