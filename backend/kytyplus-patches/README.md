@@ -76,3 +76,15 @@ Step (d) knobs: `BC5_DIRECT_HINT_MIB`/`BC5_DIRECT_HINT_BELOW_MIB` (render-target
 each side), `BC5_DIRECT_NO_HINTS`, `BC5_DIRECT_LEARNED` (fault-learned regions file, default
 `~/bc5-work/direct-learned.txt`), `BC5_DIRECT_REOPEN=1` (reopen the device after a ring reset),
 `BC5_DIRECT_TABLES_FULL=1` (journal whole LOAD tables), `BC5_DIRECT_MAP_GUEST_RANGES=1` (survey only).
+
+Added on 2026-10-01 (experiment 0016, runs 67–72): `BC5_DIRECT_SHADER_DUMP=1` (shader programs and
+the memory their user-data registers point at, as `shader-<va>.bin` / `mem-<va>.bin` in the capture
+directory; never committed), `BC5_DIRECT_RANGES_DUMP=1` (the guest's mapped ranges with physical
+offsets), `BC5_DIRECT_PIPESTATS=1` (`SAMPLE_PIPELINESTAT` before and after every frame DCB, needs
+`BC5_DIRECT_GDS_SHADOW=1`), `BC5_DIRECT_PROBE_VA=<hex>[:bytes]` (pagemap state and bytes of one
+guest address, journaled when they change), `BC5_DIRECT_NO_PAGEMAP=1` (residency from `mincore()`
+alone; by default swapped-out pages count as resident), `BC5_DIRECT_NO_TAIL_SPLIT=1` (do not split
+a compute IB at a wait followed only by signalling packets), `BC5_DIRECT_FLIP_PREFILL=1` (a
+0x5a5a5a5a pattern at the display buffer's sample points after each flip). The flip label of a
+buffer is cleared at `SubmitEopFlip`. With `KYTY_BC5_ANON_BACKING=1` a view whose protection
+changes is re-protected with `mprotect` instead of being mapped again (which zeroed it).

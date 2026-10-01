@@ -203,7 +203,7 @@ index bc73d18..252c692 100644
  
  #endif /* EMULATOR_INCLUDE_EMULATOR_KERNEL_FILESYSTEM_H_ */
 diff --git a/src/kernel/memory.cpp b/src/kernel/memory.cpp
-index 02fc0fc..517694e 100644
+index 02fc0fc..6f8ac33 100644
 --- a/src/kernel/memory.cpp
 +++ b/src/kernel/memory.cpp
 @@ -382,6 +382,13 @@ public:
@@ -233,15 +233,16 @@ index 02fc0fc..517694e 100644
  			target = target & ~(0x4000ull - 1ull);
  			LOGF("guest memory total = %llu MiB\n", static_cast<unsigned long long>(target / megabyte));
  			return target;
-@@ -850,6 +863,31 @@ static std::unique_ptr<PhysicalMemory>    g_physical_memory;
+@@ -850,6 +863,33 @@ static std::unique_ptr<PhysicalMemory>    g_physical_memory;
  static std::unique_ptr<FlexibleMemory>    g_flexible_memory;
  static std::unique_ptr<PooledMemory>      g_pooled_memory;
  static std::unique_ptr<VirtualRanges>     g_virtual_ranges;
 +
 +// BC5: enumerates the guest's mapped (non-reserved) ranges: start, size, type (0 direct,
 +// 1 flexible, 2 pooled, 3 stack, 4 code, 5 runtime), protection, name.
-+void Bc5ForEachMappedRange(void (*cb)(uint64_t, uint64_t, int, int, const char*, void*), void* ctx) {
-+	if (g_virtual_ranges == nullptr || cb == nullptr) {
++void Bc5ForEachMappedRange(void (*cb)(uint64_t, uint64_t, int, int, const char*, void*), void* ctx,
++                           void (*cb2)(uint64_t, uint64_t, uint64_t, int, int, const char*, void*)) {
++	if (g_virtual_ranges == nullptr || (cb == nullptr && cb2 == nullptr)) {
 +		return;
 +	}
 +	std::vector<VirtualRanges::Range> ranges;
@@ -258,7 +259,8 @@ index 02fc0fc..517694e 100644
 +			default: break;
 +		}
 +		if (type >= 0) {
-+			cb(r.start, r.size, type, r.protection, r.name, ctx);
++			if (cb != nullptr) cb(r.start, r.size, type, r.protection, r.name, ctx);
++			if (cb2 != nullptr) cb2(r.start, r.size, r.offset, type, r.protection, r.name, ctx); // with the physical offset
 +		}
 +	}
 +}
@@ -266,20 +268,21 @@ index 02fc0fc..517694e 100644
  static callback_func_t                    g_alloc_callback        = nullptr;
  static callback_func_t                    g_free_callback         = nullptr;
 diff --git a/src/kernel/memory.h b/src/kernel/memory.h
-index d1fc7f8..38ddde0 100644
+index d1fc7f8..41147b7 100644
 --- a/src/kernel/memory.h
 +++ b/src/kernel/memory.h
-@@ -111,6 +111,8 @@ void                   RegisterCallbacks(callback_func_t alloc_func, callback_fu
+@@ -111,6 +111,9 @@ void                   RegisterCallbacks(callback_func_t alloc_func, callback_fu
  void                   SetFlexibleMemorySize(uint64_t size);
  bool                   TryWriteBacking(uint64_t vaddr, const void* data, uint64_t size);
  bool                   TryReadBacking(uint64_t vaddr, void* data, uint64_t size);
 +// BC5 (direct mode): the guest's mapped ranges, see memory.cpp.
-+void Bc5ForEachMappedRange(void (*cb)(uint64_t start, uint64_t size, int type, int protection, const char* name, void* ctx), void* ctx);
++void Bc5ForEachMappedRange(void (*cb)(uint64_t start, uint64_t size, int type, int protection, const char* name, void* ctx), void* ctx,
++                           void (*cb2)(uint64_t start, uint64_t size, uint64_t offset, int type, int protection, const char* name, void* ctx) = nullptr);
  [[nodiscard]] uint64_t ClampRangeSize(uint64_t vaddr, uint64_t size);
  void                   WriteBacking(uint64_t vaddr, const void* data, uint64_t size) noexcept;
  void                   InvalidateMemory(uint64_t vaddr, uint64_t size);
 diff --git a/src/kernel/memoryAddressSpace.inc b/src/kernel/memoryAddressSpace.inc
-index 9ea25b0..408a23f 100644
+index 9ea25b0..045fa2e 100644
 --- a/src/kernel/memoryAddressSpace.inc
 +++ b/src/kernel/memoryAddressSpace.inc
 @@ -31,6 +31,12 @@ static bool CoalescePlaceholders(uint64_t vaddr, uint64_t size) {
@@ -333,20 +336,44 @@ index 9ea25b0..408a23f 100644
  			case VirtualMemory::Mode::ExecuteWrite:
  			case VirtualMemory::Mode::ExecuteReadWrite: return PROT_EXEC | PROT_READ | PROT_WRITE;
  			case VirtualMemory::Mode::NoAccess:
-@@ -587,8 +600,11 @@ private:
+@@ -587,8 +600,24 @@ private:
  
  	void* MapView(uint64_t vaddr, uint64_t size, uint64_t backing_offset, VirtualMemory::Mode mode,
  	              FailureReason* failure_reason) {
 -		void* ptr = mmap(reinterpret_cast<void*>(vaddr), size, GetProtect(mode),
 -		                 MAP_SHARED | MAP_FIXED, m_fd, static_cast<off_t>(backing_offset));
-+		void* ptr = Bc5AnonBacking()
-+		                ? mmap(reinterpret_cast<void*>(vaddr), size, GetProtect(mode),
-+		                       MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0)
-+		                : mmap(reinterpret_cast<void*>(vaddr), size, GetProtect(mode),
-+		                       MAP_SHARED | MAP_FIXED, m_fd, static_cast<off_t>(backing_offset));
++		// BC5 anonymous views: the guest reservation is itself anonymous private memory, so a view
++		// is made by changing its protection, never by a fresh mmap — KytyPlus re-creates views
++		// whenever a range is split or re-protected (unmap to a placeholder, map again), and with
++		// the shared memfd the data lives in the file, while a fresh anonymous mapping would hand
++		// back zero pages and silently wipe what the game wrote (experiment 0016, run 70: the
++		// flip pass read a zeroed table next to the display buffer).
++		void* ptr = MAP_FAILED;
++		if (Bc5AnonBacking()) {
++			if (mprotect(reinterpret_cast<void*>(vaddr), size, GetProtect(mode)) == 0) {
++				ptr = reinterpret_cast<void*>(vaddr);
++			} else {
++				ptr = mmap(reinterpret_cast<void*>(vaddr), size, GetProtect(mode),
++				           MAP_PRIVATE | MAP_ANONYMOUS | MAP_FIXED, -1, 0);
++			}
++		} else {
++			ptr = mmap(reinterpret_cast<void*>(vaddr), size, GetProtect(mode),
++			           MAP_SHARED | MAP_FIXED, m_fd, static_cast<off_t>(backing_offset));
++		}
  		if (ptr == MAP_FAILED) {
  			SetFailure(failure_reason, FailureReason::FixedMapViewFailed);
  			return nullptr;
+@@ -599,6 +628,10 @@ private:
+ 	// Replace the file view atomically instead of exposing an unmapped hole in the
+ 	// process-lifetime guest reservation.
+ 	static bool UnmapViewPreservePlaceholder(void* vaddr, uint64_t size) {
++		// BC5 anonymous views: keep the pages (see MapView), only take the access away.
++		if (Bc5AnonBacking() && mprotect(vaddr, size, PROT_NONE) == 0) {
++			return true;
++		}
+ 		void* ptr = mmap(vaddr, size, PROT_NONE, MAP_PRIVATE | MAP_ANON | MAP_FIXED, -1, 0);
+ 		return ptr != MAP_FAILED && ptr == vaddr;
+ 	}
 diff --git a/src/kernel/pthread.cpp b/src/kernel/pthread.cpp
 index 5f87e6b..e5c534e 100644
 --- a/src/kernel/pthread.cpp
@@ -366,10 +393,10 @@ index 5f87e6b..e5c534e 100644
  	CondRemoveWaiter(cond_value, thread);
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..e41722d
+index 0000000..32ab4db
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,2575 @@
+@@ -0,0 +1,2882 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -401,6 +428,7 @@ index 0000000..e41722d
 +
 +#if defined(KYTY_BC5_DIRECT)
 +#include "bc5/direct.hpp"
++#include <fcntl.h>
 +#include <sys/mman.h>
 +#include <unistd.h>
 +#endif
@@ -1185,6 +1213,7 @@ index 0000000..e41722d
 +static std::atomic<uint64_t>                g_submits {0};
 +static std::atomic<uint64_t>                g_ok {0};
 +static std::atomic<uint64_t>                g_bytes_mapped {0};
++static std::atomic<uint64_t>                g_swapped_pages {0};
 +static uint64_t                             g_last_sync_ns = 0;
 +
 +static void init_once() {
@@ -1363,6 +1392,29 @@ index 0000000..e41722d
 +			continue;
 +		}
 +		vma_total += end - start;
++		// mincore() reports a page that went to swap (zram on the dev box) as not resident, yet
++		// it holds data the CPU wrote: /proc/self/pagemap bit 62 (swapped; Linux
++		// Documentation/admin-guide/mm/pagemap.rst) brings those back. BC5_DIRECT_NO_PAGEMAP=1
++		// turns it off.
++		static const bool no_pagemap = std::getenv("BC5_DIRECT_NO_PAGEMAP") != nullptr;
++		static const int pagemap_fd = no_pagemap ? -1 : open("/proc/self/pagemap", O_RDONLY | O_CLOEXEC);
++		if (pagemap_fd >= 0) {
++			static std::vector<uint64_t> pm;
++			const size_t chunk = 1u << 16; // pages per read
++			pm.resize(chunk);
++			for (size_t k = 0; k < pages; k += chunk) {
++				const size_t n = (pages - k) < chunk ? (pages - k) : chunk;
++				const ssize_t got = pread(pagemap_fd, pm.data(), n * 8, static_cast<off_t>(((start / kPage) + k) * 8));
++				if (got <= 0) break;
++				const size_t have_n = static_cast<size_t>(got) / 8;
++				for (size_t q = 0; q < have_n; q++) {
++					if ((pm[q] >> 62u) & 1u) {
++						if ((vec[k + q] & 1) == 0) g_swapped_pages++;
++						vec[k + q] |= 1;
++					}
++				}
++			}
++		}
 +		for (size_t k = 0; k < pages; k++) vma_resident += (vec[k] & 1) ? kPage : 0;
 +		if (whole_vma) std::fill(vec.begin(), vec.end(), 1);
 +		// BC5_DIRECT_MAP_GUEST_RANGES=1 (ADR 0005 §1 as written): every range the game mapped
@@ -1441,6 +1493,7 @@ index 0000000..e41722d
 +	if (added != 0 || removed != 0) {
 +		const double mib = 1024.0 * 1024.0;
 +		LOGF("[bc5-direct] mappings: +%d -%d, %zu total, %.1f MiB (rw anon VMAs: %zu, %.1f MiB, %.1f MiB resident)\n", added, removed, have.size(), static_cast<double>(g_bytes_mapped.load()) / mib, vmas.size(), static_cast<double>(vma_total) / mib, static_cast<double>(vma_resident) / mib);
++		journal("swapped pages taken as resident so far: %" PRIu64 "\n", g_swapped_pages.load());
 +		journal("vmas %zu total %.1f MiB resident %.1f MiB mapped %.1f MiB\n", vmas.size(), static_cast<double>(vma_total) / mib, static_cast<double>(vma_resident) / mib, static_cast<double>(g_bytes_mapped.load()) / mib);
 +	}
 +}
@@ -1647,6 +1700,86 @@ index 0000000..e41722d
 +	}
 +}
 +
++// BC5_DIRECT_SHADER_DUMP=1: the shader programs the SH tables of an IB point at
++// (SPI_SHADER_PGM_LO/HI_{PS,VS,GS,ES,HS,LS}: SH offsets 0x08, 0x48, 0x88, 0xc8, 0x108, 0x148, Mesa
++// gfx10), 32 KiB from each distinct address, once per run, as shader-<va>.bin — for the
++// standalone replay of a pass in draw-min (experiment 0016, run 67).
++static void dump_shaders(const uint32_t* ib, uint32_t num_dwords, const std::vector<bc5::direct::Mapping>& maps) {
++	static const bool on = std::getenv("BC5_DIRECT_SHADER_DUMP") != nullptr;
++	if (!on || g_dump_dir.empty()) return;
++	static std::vector<uint64_t> seen;
++	static const uint32_t lo_offsets[] = {0x08, 0x48, 0x88, 0xc8, 0x108, 0x148};
++	// User-data registers (SPI_SHADER_USER_DATA_{PS,VS,GS,ES}_n: SH 0x0c.., 0x4c.., 0x8c.., 0xcc..)
++	// that hold a guest pointer (low dword, then a dword whose low 16 bits are the high part):
++	// 64 KiB from the page of each target, once, as mem-<va>.bin — the buffers and tables a
++	// captured pass reads, for its standalone replay.
++	static std::vector<uint64_t> mem_seen;
++	auto consider_data = [&](uint32_t off, uint32_t lo, uint32_t hi) {
++		const bool user = (off >= 0x0c && off < 0x2c) || (off >= 0x4c && off < 0x6c) || (off >= 0x8c && off < 0xac) || (off >= 0xcc && off < 0xec);
++		if (!user || lo == 0 || mem_seen.size() >= 512) return;
++		const uint64_t va = (static_cast<uint64_t>(hi & 0xffffu) << 32u) | lo;
++		const uint64_t page = va & ~0xfffull;
++		if (va < 0x100000000ull || !covered(maps, page, 4096)) return;
++		if (std::find(mem_seen.begin(), mem_seen.end(), page) != mem_seen.end()) return;
++		mem_seen.push_back(page);
++		uint64_t bytes = 65536;
++		while (bytes > 4096 && !covered(maps, page, bytes)) bytes -= 4096;
++		char name[512];
++		std::snprintf(name, sizeof(name), "%s/mem-%012" PRIx64 ".bin", g_dump_dir.c_str(), page);
++		if (FILE* f = std::fopen(name, "wb")) {
++			std::fwrite(reinterpret_cast<const void*>(page), 1, bytes, f);
++			std::fclose(f);
++		}
++	};
++	auto consider = [&](uint32_t off, uint32_t lo, uint32_t hi) {
++		consider_data(off, lo, hi);
++		bool is_lo = false;
++		for (const uint32_t o: lo_offsets) is_lo = is_lo || o == off;
++		if (!is_lo || lo == 0) return;
++		const uint64_t va = (static_cast<uint64_t>(lo) << 8u) | (static_cast<uint64_t>(hi & 0xffu) << 40u);
++		if (std::find(seen.begin(), seen.end(), va) != seen.end()) return;
++		seen.push_back(va);
++		if (!covered(maps, va, 32768)) { journal("shader 0x%" PRIx64 " (SH 0x%x): not mapped\n", va, 0x2c00 + off); return; }
++		char name[512];
++		std::snprintf(name, sizeof(name), "%s/shader-%012" PRIx64 ".bin", g_dump_dir.c_str(), va);
++		if (FILE* f = std::fopen(name, "wb")) {
++			std::fwrite(reinterpret_cast<const void*>(va), 1, 32768, f);
++			std::fclose(f);
++		}
++		journal("shader 0x%" PRIx64 " (SH 0x%x): dumped\n", va, 0x2c00 + off);
++	};
++	for (uint32_t i = 0; i < num_dwords;) {
++		const uint32_t h = ib[i];
++		const uint32_t type = h >> 30u;
++		uint32_t len = 1;
++		if (type == 3 || type == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
++		if (i + len > num_dwords) break;
++		const uint32_t  op = (h >> 8u) & 0xffu;
++		const uint32_t* p  = ib + i;
++		if (type == 3 && op == 0x63 && len >= 5 && (p[3] >> 31u) != 0) { // LOAD_SH_REG_INDEX pairs
++			const uint64_t a = (p[1] & ~3u) | (static_cast<uint64_t>(p[2] & 0xffffu) << 32u);
++			const uint32_t n = p[4] & 0x3fffu;
++			if (covered(maps, a, static_cast<uint64_t>(n) * 8)) {
++				const auto* t = reinterpret_cast<const volatile uint32_t*>(a);
++				std::map<uint32_t, uint32_t> vals;
++				for (uint32_t k = 0; k + 1 < 2 * n; k += 2) vals[t[k] & 0xffffu] = t[k + 1];
++				for (const auto& [off, lo]: vals) consider(off, lo, vals.count(off + 1) ? vals[off + 1] : 0);
++			}
++		} else if (type == 3 && op == 0x5f && len >= 5) { // LOAD_SH_REG: flat image at base
++			const uint64_t base = (p[1] & ~3u) | (static_cast<uint64_t>(p[2] & 0xffffu) << 32u);
++			for (uint32_t k = 3; k + 1 < len; k += 2) {
++				const uint32_t off = p[k] & 0xffffu, n = p[k + 1] & 0x3fffu;
++				if (n == 0 || !covered(maps, base + static_cast<uint64_t>(off) * 4, static_cast<uint64_t>(n) * 4)) continue;
++				const auto* t = reinterpret_cast<const volatile uint32_t*>(base + static_cast<uint64_t>(off) * 4);
++				for (uint32_t q = 0; q + 1 < n; q++) consider(off + q, t[q], t[q + 1]);
++			}
++		} else if (type == 3 && op == 0x76 && len >= 4) { // SET_SH_REG
++			consider(p[1] & 0xffffu, p[2], p[3]);
++		}
++		i += len;
++	}
++}
++
 +// Journals the register tables the LOAD_*_REG[_INDEX] packets of an IB would load: the filter
 +// cannot see them (they live in guest memory, not in the IB), so they bypass the register policy
 +// — the prime suspect of the step-(c1) hang (experiment 0016, submit #14). Layout (PAL
@@ -1807,7 +1940,57 @@ index 0000000..e41722d
 +	return SoftCp::compare(function, *reinterpret_cast<const volatile uint32_t*>(a), p[5], p[4]);
 +}
 +
++// A compute IB split at a trailing cross-queue wait (run 73). The frame's compute IB does its
++// dispatches, writes a label the frame DCB waits on at its start, then waits on a label that DCB
++// writes midway, then only signals (RELEASE_MEM, markers). Taken whole it cannot go before the
++// DCB and the DCB cannot go before it: both sat out their timeouts, 4 s per frame, and the DCB
++// ran without that frame's compute results. When everything after the unsatisfied wait is
++// "light" (no dispatch, no SH state, no nested IB), the packets before it are submitted at once
++// and the rest when the wait is satisfied. Run 44's objection to splitting (foreign SH state
++// between the pieces) does not apply to a piece that neither sets nor uses SH state.
++// BC5_DIRECT_NO_TAIL_SPLIT=1 turns it off.
++struct AcbHead {
++	const uint32_t*              ib;
++	uint32_t                     num_dwords;
++	uint32_t                     done;  // dwords already submitted
++	std::vector<SoftCp::GpuDone> marks; // what the GPU executed of them, for the soft CP
++};
++static std::vector<AcbHead> g_acb_heads; // the queue consumer thread only
++
++static bool tail_is_light(const uint32_t* p, uint32_t n) {
++	for (uint32_t i = 0; i < n;) {
++		const uint32_t h = p[i];
++		const uint32_t type = h >> 30u;
++		const uint32_t c = (h >> 16u) & 0x3fffu;
++		uint32_t len = 1;
++		if (type == 3 || type == 0) len = c == 0x3fffu ? 1 : c + 2;
++		if (i + len > n || type == 0) return false;
++		if (type == 3 && c != 0x3fffu) {
++			switch ((h >> 8u) & 0xffu) {
++				case 0x10: // NOP
++				case 0x79: // SET_UCONFIG_REG (markers)
++				case 0x49: // RELEASE_MEM
++				case 0x47: // EVENT_WRITE_EOP
++				case 0x37: // WRITE_DATA
++				case 0x3c: // WAIT_REG_MEM
++				case 0x93: // WAIT_REG_MEM64
++				case 0x46: // EVENT_WRITE
++				case 0x58: // ACQUIRE_MEM
++					break;
++				default: return false;
++			}
++		}
++		i += len;
++	}
++	return true;
++}
++
 +static bool acb_ready(const uint32_t* ib, uint32_t num_dwords) {
++	static const bool tail_split = std::getenv("BC5_DIRECT_NO_TAIL_SPLIT") == nullptr;
++	uint32_t done = 0;
++	for (const auto& e: g_acb_heads) {
++		if (e.ib == ib && e.num_dwords == num_dwords) done = e.done;
++	}
 +	std::vector<uint64_t> written;
 +	for (uint32_t i = 0; i < num_dwords;) {
 +		const uint32_t h = ib[i];
@@ -1825,7 +2008,26 @@ index 0000000..e41722d
 +			else if (op == 0x1e && len >= 4) written.push_back((p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u));
 +			else if ((op == 0x3c || op == 0x93) && len >= 4 && ((p[1] >> 4u) & 1u) != 0) {
 +				const uint64_t label = (p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u);
-+				if (std::find(written.begin(), written.end(), label) == written.end() && !wait_satisfied(p, op == 0x93)) return false;
++				if (i >= done && std::find(written.begin(), written.end(), label) == written.end() && !wait_satisfied(p, op == 0x93)) {
++					if (tail_split && i > done && g_stage != Stage::MapOnly && tail_is_light(ib + i, num_dwords - i)) {
++						SoftCp::clear_gpu_executed();
++						journal("acb head: %u of %u dwords go ahead of the wait at %u on 0x%" PRIx64 "\n", i - done, num_dwords, i, label);
++						submit_one(ib + done, i - done, "acb", false);
++						AcbHead* e = nullptr;
++						for (auto& x: g_acb_heads) {
++							if (x.ib == ib && x.num_dwords == num_dwords) e = &x;
++						}
++						if (e == nullptr) {
++							if (g_acb_heads.size() >= 64) g_acb_heads.erase(g_acb_heads.begin());
++							g_acb_heads.push_back({ib, num_dwords, 0, {}});
++							e = &g_acb_heads.back();
++						}
++						e->done = i;
++						for (auto& g: SoftCp::t_gpu_done) e->marks.push_back(std::move(g));
++						SoftCp::clear_gpu_executed();
++					}
++					return false;
++				}
 +			}
 +		}
 +		i += len;
@@ -1862,6 +2064,18 @@ index 0000000..e41722d
 +					// keeps submitting DCBs (run 45: the stalled compute IBs were those whose wait
 +					// on the current frame's gfx label had timed out and ran on unfinished data).
 +					// The gfx path (the game's thread) waits briefly, like the soft CP.
++					// A flip label (sceVideoOutGetBufferLabelAddress: host memory, set by the frame's
++					// last RELEASE_MEM, awaited == 0 by the next frame that renders into the same
++					// buffer) is cleared by the console's VideoOut when the flip has happened. The
++					// flip is immediate here, so a label still set at the wait is cleared (run 73:
++					// nobody did, 2 s per frame).
++					{
++						const auto l0 = reinterpret_cast<uint64_t>(&g_labels[0]);
++						if (label >= l0 && label < l0 + sizeof(g_labels) && !wait_satisfied(p, op == 0x93)) {
++							*reinterpret_cast<volatile uint64_t*>(label & ~7ull) = 0;
++							journal("flip label 0x%" PRIx64 " still set at the wait: cleared\n", label);
++						}
++					}
 +					static const uint64_t acb_ns = (std::getenv("BC5_DIRECT_ACB_WAIT_MS") ? std::strtoull(std::getenv("BC5_DIRECT_ACB_WAIT_MS"), nullptr, 10) : 2000ull) * 1'000'000ull;
 +					const uint64_t limit = std::strcmp(kind, "acb") == 0 ? acb_ns : 2'000'000'000ull;
 +					const uint64_t t0 = SoftCp::now_ns();
@@ -1897,7 +2111,19 @@ index 0000000..e41722d
 +			if (type == 3 && (((h >> 8u) & 0xffu) == 0x3f || ((h >> 8u) & 0xffu) == 0x33) && len >= 4) {
 +				const uint64_t ta = (ib[q + 1] & ~3u) | (static_cast<uint64_t>(ib[q + 2] & 0xffu) << 32u);
 +				const uint32_t tn = ib[q + 3] & 0xfffffu;
-+				if (ta != 0 && tn != 0) submit_split(reinterpret_cast<const uint32_t*>(ta), tn, "acb", false);
++				if (ta != 0 && tn != 0) {
++					const auto* t = reinterpret_cast<const uint32_t*>(ta);
++					uint32_t skip = 0;
++					for (size_t k = 0; k < g_acb_heads.size(); k++) {
++						if (g_acb_heads[k].ib == t && g_acb_heads[k].num_dwords == tn) {
++							skip = g_acb_heads[k].done;
++							for (auto& g: g_acb_heads[k].marks) SoftCp::t_gpu_done.push_back(std::move(g));
++							g_acb_heads.erase(g_acb_heads.begin() + static_cast<long>(k));
++							break;
++						}
++					}
++					if (skip < tn) submit_split(t + skip, tn - skip, "acb", false);
++				}
 +			}
 +			q += len;
 +		}
@@ -1929,6 +2155,55 @@ index 0000000..e41722d
 +	sync_mappings(true);
 +	learned_apply();
 +	hint_targets(ib, num_dwords);
++	// BC5_DIRECT_PROBE_VA=hexva[:bytes]: the pagemap state (present / swapped / none) of that guest
++	// address and its bytes, journaled at every submission where either changed (run 73: who
++	// writes the flip pass's vertex buffer, and when).
++	{
++		static const char* probe_env = std::getenv("BC5_DIRECT_PROBE_VA");
++		static const uint64_t probe_va = probe_env != nullptr ? std::strtoull(probe_env, nullptr, 16) : 0;
++		static const size_t probe_n = []() -> size_t {
++			const char* c = probe_env != nullptr ? std::strchr(probe_env, ':') : nullptr;
++			const size_t v = c != nullptr ? static_cast<size_t>(std::strtoull(c + 1, nullptr, 0)) : 72;
++			return v > 256 ? 256 : v;
++		}();
++		static const int fd = probe_va != 0 ? open("/proc/self/pagemap", O_RDONLY | O_CLOEXEC) : -1;
++		static uint64_t last_sig = ~0ull;
++		if (fd >= 0) {
++			uint64_t e = 0;
++			const bool got = pread(fd, &e, 8, static_cast<off_t>((probe_va / 4096) * 8)) == 8;
++			const int state = !got ? -1 : ((e >> 63u) & 1u) ? 2 : ((e >> 62u) & 1u) ? 1 : 0;
++			uint64_t sig = static_cast<uint64_t>(state + 1);
++			char hex[256 * 2 + 1] = "";
++			if (state > 0) {
++				const auto* p = reinterpret_cast<const volatile uint8_t*>(probe_va);
++				for (size_t k = 0; k < probe_n; k++) {
++					const uint8_t b = p[k];
++					sig = sig * 1099511628211ull + b;
++					std::snprintf(hex + 2 * k, 3, "%02x", b);
++				}
++			}
++			if (sig != last_sig) {
++				last_sig = sig;
++				journal("probe 0x%" PRIx64 " before #%" PRIu64 " (%s %u dwords): %s %s\n", probe_va, g_submits.load(), kind, num_dwords,
++				        state == 2 ? "present" : state == 1 ? "swapped" : state == 0 ? "none" : "unreadable", hex);
++			}
++		}
++	}
++	dump_shaders(ib, num_dwords, g_dev->mappings());
++	// BC5_DIRECT_RANGES_DUMP=1: the guest's mapped ranges with their physical (direct-memory)
++	// offsets, journaled at the 40th and the 200th submission — are there two virtual mappings
++	// of one physical range (aliases)? Anonymous views (KYTY_BC5_ANON_BACKING) do not share
++	// their pages, so data the CPU writes through one alias never reaches the other (run 69).
++	{
++		static const bool ranges_dump = std::getenv("BC5_DIRECT_RANGES_DUMP") != nullptr;
++		static uint64_t calls = 0;
++		calls++;
++		if (ranges_dump && (calls == 40 || calls == 200)) {
++			Libs::LibKernel::Memory::Bc5ForEachMappedRange(nullptr, nullptr, [](uint64_t start, uint64_t size, uint64_t offset, int type, int prot, const char* name, void*) {
++				journal("range type %d start 0x%" PRIx64 " size 0x%" PRIx64 " offset 0x%" PRIx64 " prot 0x%x name %.31s\n", type, start, size, offset, prot, name != nullptr ? name : "");
++			});
++		}
++	}
 +	if (g_stage == Stage::MapOnly) {
 +		if (!g_dump_dir.empty()) journal_load_tables(ib, num_dwords, g_dev->mappings());
 +		static uint64_t seen = 0;
@@ -1965,6 +2240,27 @@ index 0000000..e41722d
 +	static const long pro_prim = std::getenv("BC5_DIRECT_PROLOGUE_PRIM") ? std::atol(std::getenv("BC5_DIRECT_PROLOGUE_PRIM")) : -1;
 +	if (pro_prim >= 0 && std::strcmp(kind, "acb") != 0) {
 +		opt.prologue = {0xC0017A00u, (1u << 28) | 0x242u, static_cast<uint32_t>(pro_prim)};
++	}
++	// BC5_DIRECT_TILE_STEERING=<hex>: PA_SC_TILE_STEERING_OVERRIDE (context 0xd7) before every gfx
++	// IB. The console driver's register image skips that offset (the console's system owns it),
++	// so on the BC-250 it holds whatever the context bank had; the kernel reports this chip's
++	// value (AMDGPU_INFO_DEV_INFO) and RADV writes it per IB (run 65).
++	// BC5_DIRECT_PROLOGUE_UCONFIG=<off>:<val>[,<off>:<val>...] (hex): SET_UCONFIG_REG packets before
++	// every gfx IB for registers the console's system owns and the game's tables zero — e.g.
++	// GE_PC_ALLOC (0x260): NGG needs OVERSUB_EN | NUM_PC_LINES(pc_lines/4 - 1) = 0x100ff on gfx1013
++	// (Mesa ac_gpu_info.c pc_lines = 1024, RADV radv_emit_graphics); the game loads 0 (run 66).
++	if (const char* pu = std::getenv("BC5_DIRECT_PROLOGUE_UCONFIG"); pu != nullptr && std::strcmp(kind, "acb") != 0) {
++		for (const char* q = pu; *q != 0;) {
++			char* end = nullptr;
++			const unsigned long off = std::strtoul(q, &end, 16);
++			if (end == q || *end != ':') break;
++			const unsigned long val = std::strtoul(end + 1, &end, 16);
++			opt.prologue.insert(opt.prologue.end(), {0xC0017900u, static_cast<uint32_t>(off), static_cast<uint32_t>(val)});
++			q = (*end == ',') ? end + 1 : end;
++		}
++	}
++	if (const char* ts = std::getenv("BC5_DIRECT_TILE_STEERING"); ts != nullptr && std::strcmp(kind, "acb") != 0) {
++		opt.prologue.insert(opt.prologue.end(), {0xC0016900u, 0xd7u, static_cast<uint32_t>(std::strtoul(ts, nullptr, 16))});
 +	}
 +	opt.mapped = [&maps](uint64_t a, uint64_t bytes) { return covered(maps, a, bytes); };
 +	static const std::vector<uint8_t> extra = [] {
@@ -2018,6 +2314,22 @@ index 0000000..e41722d
 +			}
 +			q += len;
 +		}
++	}
++	// BC5_DIRECT_PIPESTATS=1: pipeline statistics around every frame DCB — SAMPLE_PIPELINESTAT
++	// (EVENT_WRITE, event 30, EVENT_INDEX 2, address) into the GDS shadow buffer before and after
++	// the IB, PIPELINESTAT_START (event 25) first. The 11 counters (qwords; RADV's
++	// pipelinestat block): PS invocations, clipper primitives, clipper invocations, VS, GS
++	// invocations, GS primitives, IA primitives, IA vertices, HS, DS, CS invocations. The deltas
++	// say how far the game's geometry gets (run 70: no draw leaves a pixel).
++	static const bool pipestats = std::getenv("BC5_DIRECT_PIPESTATS") != nullptr;
++	const bool do_stats = pipestats && std::strcmp(kind, "dcb") == 0 && g_dev->gds_shadow_va() != 0 && g_dev->gds_shadow_cpu() != nullptr && num_dwords > 200;
++	if (do_stats) {
++		const uint64_t a0 = g_dev->gds_shadow_va() + 0x8000, a1 = g_dev->gds_shadow_va() + 0x8100;
++		volatile uint32_t* cpu = g_dev->gds_shadow_cpu();
++		for (uint32_t k = 0; k < 128; k++) cpu[0x8000 / 4 + k] = 0;
++		opt.prologue.insert(opt.prologue.end(), {0xC0004600u, 25u, // PIPELINESTAT_START
++		                                         0xC0024600u, 30u | (2u << 8), static_cast<uint32_t>(a0), static_cast<uint32_t>(a0 >> 32)});
++		opt.epilogue.insert(opt.epilogue.end(), {0xC0024600u, 30u | (2u << 8), static_cast<uint32_t>(a1), static_cast<uint32_t>(a1 >> 32)});
 +	}
 +	const uint64_t n = g_submits.fetch_add(1);
 +	// Crash journal: a hang takes the machine down before any buffered log reaches the disk, so
@@ -2182,6 +2494,13 @@ index 0000000..e41722d
 +			fsync(fileno(f));
 +			std::fclose(f);
 +		}
++	}
++	if (r.ok && do_stats) {
++		const auto* q = reinterpret_cast<const volatile uint64_t*>(g_dev->gds_shadow_cpu());
++		const uint64_t* b0 = const_cast<const uint64_t*>(q) + 0x8000 / 8;
++		const uint64_t* b1 = const_cast<const uint64_t*>(q) + 0x8100 / 8;
++		journal("pipestat #%" PRIu64 " (%u dwords): ia_verts %" PRIu64 " ia_prims %" PRIu64 " vs %" PRIu64 " gs_inv %" PRIu64 " gs_prims %" PRIu64 " c_inv %" PRIu64 " c_prims %" PRIu64 " ps %" PRIu64 " cs %" PRIu64 "\n",
++		        n, num_dwords, b1[7] - b0[7], b1[6] - b0[6], b1[3] - b0[3], b1[4] - b0[4], b1[5] - b0[5], b1[2] - b0[2], b1[1] - b0[1], b1[0] - b0[0], b1[10] - b0[10]);
 +	}
 +	if (r.ok) {
 +		g_ok++;
@@ -2840,13 +3159,23 @@ index 0000000..e41722d
 +		uint64_t a = 0, n = 0;
 +		if (VideoOut::Bc5VideoOutBufferRange(handle, index, &a, &n) && a != 0 && n != 0) {
 +			const auto* w = reinterpret_cast<const volatile uint32_t*>(a);
-+			uint64_t sum = 0, nonzero = 0, samples = 0;
++			// BC5_DIRECT_FLIP_PREFILL=1: after sampling, the sample points get a pattern; the next
++			// flip of this buffer tells "nobody wrote it" (pattern stays) from "the pass wrote
++			// black" (zero) — run 73.
++			static const bool prefill = std::getenv("BC5_DIRECT_FLIP_PREFILL") != nullptr;
++			const uint32_t kPattern = 0x5a5a5a5au;
++			uint64_t sum = 0, nonzero = 0, samples = 0, pattern = 0;
 +			for (uint64_t k = 0; k < n / 4; k += 1024, samples++) {
 +				const uint32_t v = w[k];
 +				sum += v;
 +				nonzero += v != 0;
++				pattern += v == kPattern;
 +			}
-+			Bc5Gc::Direct::journal("flip %d/%d buffer 0x%" PRIx64 " +0x%" PRIx64 ": sum 0x%" PRIx64 " nonzero %" PRIu64 "/%" PRIu64 "\n", handle, index, a, n, sum, nonzero, samples);
++			if (prefill) {
++				auto* ww = reinterpret_cast<volatile uint32_t*>(a);
++				for (uint64_t k = 0; k < n / 4; k += 1024) ww[k] = kPattern;
++			}
++			Bc5Gc::Direct::journal("flip %d/%d buffer 0x%" PRIx64 " +0x%" PRIx64 ": sum 0x%" PRIx64 " nonzero %" PRIu64 "/%" PRIu64 " pattern %" PRIu64 "\n", handle, index, a, n, sum, nonzero, samples, pattern);
 +			// Do any render targets or depth buffers receive pixels at all? Sample 4 MiB from each
 +			// base the hint mapper saw (run 60: the flip buffer stays zero with sane counters).
 +			for (const auto& t: Bc5Gc::Direct::g_recent_targets) {
@@ -2865,7 +3194,12 @@ index 0000000..e41722d
 +	}
 +	LOGF("[bc5-gc] VideoOutSubmitEopFlip(%d, %d, %d, 0x%" PRIx64 ", %p)\n", handle, index,
 +	     flip_mode, flip_arg, unk);
-+	return VideoOut::VideoOutSubmitFlip(handle, index, flip_mode, flip_arg);
++	const int rc = VideoOut::VideoOutSubmitFlip(handle, index, flip_mode, flip_arg);
++	// The flip is immediate here: the buffer's flip label goes back to 0, as the console's VideoOut
++	// does once the flip has happened (the game waits for that before it renders into the buffer
++	// again; run 73).
++	if (index >= 0 && index < 64) Bc5Gc::g_labels[index] = 0;
++	return rc;
 +}
 +
 +static KYTY_SYSV_ABI int SysAddSetModeEvent2(uint64_t a, uint64_t b, uint64_t c) {

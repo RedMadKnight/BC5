@@ -111,6 +111,13 @@ context: with one, the game's gfx shaders hang the CP (the ordered-append state 
 system sets up is not reproducible from user space). GDS accesses by the CP are redirected to a
 64 KiB shadow buffer in memory (`FilterOptions::gds_shadow_va`), the shaders' GDS instructions
 are no-ops without a partition. The kernel's compute rings are not used either (F31).
+*Amended 2026-10-01 (runs 44, 72; F34):* (xviii) cross-queue waits, as they stand: an IB is not
+split at a wait in general (run 44: other processes' SH state between the pieces) — the host
+waits on the CPU before the whole IB goes and the filter NOPs the wait. One exception: a compute
+IB with an unsatisfied wait whose tail only signals (NOP, markers, `RELEASE_MEM`,
+`EVENT_WRITE[_EOP]`, `WRITE_DATA`, waits, `ACQUIRE_MEM`) is split there — head at once, tail when
+the label arrives — because the frame DCB waits on a label that head writes while the tail waits
+on one the DCB writes. Flip labels are host state: cleared by the host at the flip.
 
 **Consequences.** The "packet rewriter" of the roadmap shrinks to a filter with two rewrites; the
 backend's core is the policy table plus the BO/VA mapper, both testable offline. Unknown firmware

@@ -526,6 +526,64 @@ transfers already follow the anonymous views. Next: measure instead of guess —
 vertices, VS/GS invocations, clipper primitives and PS invocations show where the game's
 geometry disappears.
 
+**Run 70** (06:55, `BC5_DIRECT_PIPESTATS=1`, journal `raw/e26-run70-direct.log`): **the game's
+draws do rasterise** — run 63's reading was wrong. `SAMPLE_PIPELINESTAT` before and after every
+frame DCB (233 submits, no stall):
+
+| DCB (dwords) | IA verts | IA prims | VS | clipper prims | PS invocations | CS invocations |
+|---|---|---|---|---|---|---|
+| 9,774 / 9,891 (the frame) | 47 | 5 | 15 | 5 | 2,073,600 or 3,326,976 | ~6.7 M |
+| 2,647 | 9 | 3 | 9 | 3 | 2,073,600 or 3,326,976 | ~1.3 M |
+| 798 / 1,248 | 9 | 3 | 9 | 3 | 0 | 0 / 36,864 |
+| 851 | 0 | 0 | 0 | 0 | 0 | 81,920 / 122,880 |
+
+2,073,600 is one 1920×1080 pass (or a quarter of 3840×2160), 3,326,976 adds a 1152×1088 one. A
+frame is five primitives: at this point the game draws a handful of full-screen passes, and
+single-valued colour targets are what such passes leave. The display buffers still sample 0/8160.
+
+**Run 71** (07:10, `raw/e27-run71-direct.log`): KytyPlus's anonymous views (`KYTY_BC5_ANON_BACKING`)
+were re-created with `mmap(MAP_FIXED)` on every protection change, which silently replaced
+written pages by zero pages; they are now re-protected with `mprotect` (and unmapped to
+`PROT_NONE` the same way). Same counters as run 70, same zero display buffers: not the cause.
+
+**Run 72** (07:12–07:25, three `maponly` captures, nothing submitted): what the flip pass reads, and
+why a frame takes four seconds.
+
+- The flip pass's vertex streams: the table at 0x5034f5660 (GS user data) holds two buffer
+  descriptors, 0x507406360 and 0x507406370, stride 24, three records. A probe
+  (`BC5_DIRECT_PROBE_VA`, `/proc/self/pagemap`) finds the page present before submission #0 with a
+  full-screen triangle, (−1,−1) (3,−1) (−1,3), w = 1, plus texture coordinates. The geometry is
+  sound; the non-resident page 0x507405000 of runs 67–69 is a different slot.
+- Swap: the box has a 7.4 GiB zram device, and `mincore()` reports a swapped-out page as not
+  resident, so the resident-run mapper would skip data the CPU wrote. The mapper now also takes
+  pagemap bit 62 (swapped; Linux `Documentation/admin-guide/mm/pagemap.rst`); the journal counts
+  such pages. In these runs: 0. Not the cause, a hole closed.
+- Every frame sat out **two 2 s timeouts** (runs 54–71: nine flips a minute):
+  1. *The flip label.* The frame DCB ends with a `RELEASE_MEM` that writes 1 to the buffer's flip
+     label (host memory handed out by `sceVideoOutGetBufferLabelAddress`; unmapped on the GPU, so
+     the soft CP writes it) and, before its flip pass, waits (opcode 0x93, the 64-bit
+     `WAIT_REG_MEM` this stream uses: flags, address, 64-bit reference, 64-bit mask, poll
+     interval) for that label to be 0. On the console VideoOut clears it when the flip has
+     happened; the host never did. Fixed: cleared at `SubmitEopFlip`, and at the wait if still set.
+  2. *A two-label handshake between the compute queue and the frame DCB.* The frame's compute IB
+     (1,336 dwords) runs its dispatches, writes label L1 at +1275, waits on label L2 at +1287,
+     then only signals (two `RELEASE_MEM`, markers). The frame DCB waits on L1 at +115 and writes
+     L2 at +1431. The host served a compute IB only when all its waits were satisfied and waited
+     on the CPU before a DCB went as a whole: the compute IB could not go before the DCB (L2) and
+     the DCB waited 2 s for L1, then ran **without that frame's compute results**; the compute IB
+     followed afterwards. Fixed: a compute IB is split at an unsatisfied wait when everything
+     after it is "light" (NOP, markers, `RELEASE_MEM`, `EVENT_WRITE[_EOP]`, `WRITE_DATA`, waits,
+     `ACQUIRE_MEM`): the head goes at once, the tail when the wait is satisfied. Run 44's
+     objection to splitting (foreign SH state between pieces) does not apply to a tail that
+     neither sets nor uses SH state.
+- With the label fix alone (no GPU, 60 s): 11 flips instead of 7; the L1 waits still time out in
+  `maponly`, where no head is submitted.
+
+So after ~9 frames a minute, each computed on stale inputs, a black display buffer is not
+evidence against the pipeline: the game has barely started. Whether the flip pass writes black
+or nothing is the next measurement (`BC5_DIRECT_FLIP_PREFILL`: a pattern at the sample points
+after each flip — it stays if nobody writes the buffer, it turns 0 if the pass writes black).
+
 **Verdict (2026-10-01, 00:20).** Steps (a)–(c) passed; (d) and (e) run the game's frames, draws,
 dispatches and both queue types on the BC-250 stall-free (runs 54–63: 230+ of 234 submits, no
 reset), with GDS counters reset and read back correctly since the DMA-selector fix. G3's image is
@@ -535,3 +593,8 @@ in order: (1) phase-3 task 2 as originally planned — a minimal triangle throug
 bisect the game's state against it (NGG pass-through, `GE_CNTL`, ring sizes, CU masks, index
 type bits 0x480); (2) `ORDERED_APPEND_ENBL` re-test with the fixed filter (counts of 1 are
 suspicious); (3) the kernel lockup timeout (boot parameter); (4) presentation and 36/40.
+
+**Verdict update (2026-10-01, 07:30).** Correction to the verdict above and to F33: rasterisation
+works (run 70: 2.07–3.33 M PS invocations per frame DCB). The frames ran at ~9 a minute and on
+stale compute results because of two unresolved waits (run 72), both fixed in the host; the fixes
+need a GPU run (next: run 73, with pipeline statistics and the display-buffer prefill).
