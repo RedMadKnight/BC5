@@ -162,6 +162,138 @@ Tests never touch a real dump: `bc5-fixture` builds deterministic synthetic cont
 - A DualSense on a USB cable and port that hold the link: every drop of the link reads to the game as all buttons released.
 - Your own PS5 and your own game dumps, decrypted on your own hardware, as an unpacked `app0` folder or an `.ffpfsc` container. See [Legal](#legal).
 
+## How to start
+
+This is how the dev box is set up, written so that it can be repeated on another BC-250. It has been done on one machine and with one title (the maintainer's own copy of ASTRO BOT), so expect to adjust paths and to meet things nobody has met yet. **Direct mode sends raw command buffers to the GPU: a bad one can hang the display or reset the machine. Save your work before every run.**
+
+### 1. The board and the system
+
+- BIOS with the dynamic VRAM split and a 512 MiB carve-out; core unlock and CU unlock applied (the BC-250 documentation linked under [Related projects](#related-projects) describes both).
+- Bazzite or Fedora with a KDE Wayland session; the emulator window is opened on it.
+- A larger GTT domain. Everything a draw can reach has to fit `amdgpu`'s GTT at once, and the default is half of the RAM (HANDOFF D12). On an image-based system:
+
+  ```bash
+  rpm-ostree kargs --append=ttm.pages_limit=3407872
+  ```
+
+  On other distributions add `ttm.pages_limit=3407872` to the kernel command line. That is 13 GiB in 4 KiB pages, for a board with 16 GB. Reboot and check:
+
+  ```bash
+  sudo dmesg | grep "GTT memory ready"
+  ```
+
+  It should say 13312M.
+- The `udmabuf` device, readable and writable by your user (`ls -l /dev/udmabuf`). Its default limits are enough.
+- A GPU clock that is actually raised under load. The dev box runs the `cyan-skillfish-governor-smu` service with a range of 1850–2000 MHz, and every frame rate in this README was recorded that way (experiment 0024, runs 108–109). The dev box also boots with `mitigations=off`; what that is worth has not been measured.
+- Memory: the game and the host need nearly all of the 16 GB. Close Steam, browsers and anything else that holds GPU memory.
+- A DualSense on USB.
+
+### 2. A build container
+
+The builds are done in an Ubuntu 26.04 distrobox (the host system stays untouched):
+
+```bash
+distrobox create --name ubuntu --image ubuntu:26.04
+```
+
+```bash
+distrobox enter ubuntu
+```
+
+Inside it:
+
+```bash
+sudo apt-get install --no-install-recommends --yes git cmake pkg-config cargo fuse3 libfuse3-dev libdrm-dev clang lld ninja-build glslang-tools libasound2-dev libdbus-1-dev libgl1-mesa-dev libpulse-dev libudev-dev libwayland-dev libx11-dev libxcursor-dev libxext-dev libxfixes-dev libxi-dev libxkbcommon-dev libxrandr-dev libxss-dev wayland-protocols libedit-dev libevdev-dev libjack-dev libopenal-dev libpng-dev libsdl2-dev libsndio-dev libssl-dev libvulkan-dev zlib1g-dev
+```
+
+### 3. Sources
+
+BC5, and KytyPlus at the commit the patch is made against:
+
+```bash
+git clone https://github.com/RedMadKnight/BC5 ~/src/bc5
+git clone https://github.com/Coder787-source/KytyPlus ~/src/KytyPlus
+git -C ~/src/KytyPlus checkout f266548
+git -C ~/src/KytyPlus submodule update --init --recursive --depth 1
+git -C ~/src/KytyPlus apply ~/src/bc5/backend/kytyplus-patches/0001-bc5-lle-agc.patch
+```
+
+### 4. Build
+
+The mount tool, the backend, then the host with the backend linked in:
+
+```bash
+cd ~/src/bc5/tools && CARGO_TARGET_DIR=~/bc5-work/bc5-tools cargo build --release --locked -p bc5-mount
+
+cmake -S ~/src/bc5/backend -B ~/bc5-work/backend -G Ninja -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DBC5_WITH_AMDGPU=ON -DBC5_BUILD_TESTS=OFF
+cmake --build ~/bc5-work/backend -j8
+
+cmake -S ~/src/KytyPlus -B ~/bc5-work/kytyplus-build -G Ninja -DCMAKE_BUILD_TYPE=Release \
+  -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DKYTY_BUILD_LAUNCHER=OFF \
+  -DKYTY_BC5_BACKEND_SRC=$HOME/src/bc5/backend -DKYTY_BC5_BACKEND_BUILD=$HOME/bc5-work/backend
+cmake --build ~/bc5-work/kytyplus-build --target kyty_emulator -j8
+```
+
+The emulator is `~/bc5-work/kytyplus-build/src/kyty_emulator`.
+
+### 5. The game
+
+You need your own copy, dumped and decrypted on your own console, as an unpacked `app0` folder or as an `.ffpfsc` container. A container is mounted read-only:
+
+```bash
+mkdir -p ~/bc5-data/mnt/game
+~/bc5-work/bc5-tools/release/bc5-mount mount ~/bc5-data/games/GAME.ffpfsc ~/bc5-data/mnt/game &
+```
+
+The host runs the game's own `libSceAgc.sprx` and `libSceAgcDriver.sprx` and stands in for every other system library. It looks for the two modules in the directory `SHADPS4_SYSMODULES_PACK_DIR` names; in the maintainer's dump that is the game's `fakelib/` directory. No system software is needed. Keep dumps outside every git checkout.
+
+### 6. Run
+
+Still inside the container, from the directory that is to hold the save (`_SaveData/` is created there):
+
+```bash
+cd ~/bc5-work
+export GAME=~/bc5-data/mnt/game
+export XDG_RUNTIME_DIR=/run/user/$(id -u) WAYLAND_DISPLAY=wayland-0 SDL_VIDEODRIVER=wayland
+export SHADPS4_SYSMODULES_PACK_DIR=$GAME/fakelib KYTY_GUEST_MEMORY_MB=13824
+export KYTY_BC5_ALL_RW=1 KYTY_BC5_DMABUF=1 KYTY_BC5_CACHE_MIB=96,16,16,16 KYTY_BC5_VMA_BLOCK_MIB=16
+export BC5_GC_MODE=direct BC5_DIRECT_STAGE=maponly BC5_DIRECT_RINGS=1 BC5_DIRECT_REOPEN=1
+export BC5_DIRECT_GDS_KIB=64 BC5_DIRECT_OA=16 BC5_DIRECT_GWS=64 BC5_DIRECT_GDS_ALL=1 BC5_DIRECT_GDS_SHADOW=1
+export BC5_DIRECT_JOURNAL=min BC5_DIRECT_ASYNC=1
+export BC5_DIRECT_LAZY_NAMES=orbis_user_malloc BC5_DIRECT_EAGER_NAMES=GpuGarlicMemory,GpuOnionMemory
+export SDL_JOYSTICK_DISABLE_UDEV=1
+~/bc5-work/kytyplus-build/src/kyty_emulator --game "$GAME" \
+  --printf-direction Silent --shader-log-direction Silent --command-buffer-dump false
+```
+
+`BC5_DIRECT_STAGE=maponly` maps the game's memory and submits nothing: the window opens and stays without the game's picture. Use it once to see that the build, the mount and the mapping work, then set `BC5_DIRECT_STAGE=all` for the real thing. What the main settings do:
+
+| Setting | What it does |
+| --- | --- |
+| `BC5_GC_MODE=direct` | the game's command buffers go to `amdgpu`; without it nothing reaches the GPU |
+| `BC5_DIRECT_STAGE` | `maponly` submits nothing, `all` submits everything |
+| `KYTY_GUEST_MEMORY_MB=13824` | guest memory; ASTRO BOT reserves 12.4 GiB of it for the GPU |
+| `KYTY_BC5_DMABUF=1` | guest memory reaches the GPU as dma-bufs of the host's backing files (ADR 0006) |
+| `BC5_DIRECT_ASYNC=1` | submissions overlap instead of being waited for one by one (experiment 0024); leave it out for the synchronous reference path |
+| `BC5_DIRECT_JOURNAL=min` | a minimal journal; the full one costs half the frame |
+| `KYTY_BC5_CACHE_MIB`, `KYTY_BC5_VMA_BLOCK_MIB` | keep the host's own Vulkan side small, the memory is needed for the game (experiment 0021) |
+| `SDL_JOYSTICK_DISABLE_UDEV=1` | lets the controller be plugged in again while the game runs inside a container |
+| `KYTY_BC5_TRIGGER_DEADZONE=<0..254>` | optional, for a controller whose trigger does not rest at 0 |
+
+All switches are listed in [`backend/kytyplus-patches/README.md`](backend/kytyplus-patches/README.md). To keep a record of a run, set `BC5_GC_DUMP_DIR=<directory>` and `BC5_DIRECT_TIMING=1`: the journal `direct.log` appears there, with every submission and its timing.
+
+### 7. What to expect
+
+With ASTRO BOT: the intro videos, the title screen at 54–60 fps, a level load of over two minutes, the first level at about 50 fps and the second at about 40, no haptics. With any other title: unknown; nobody has tried, and a game that links against a system library the host has no stand-in for stops there.
+
+If it does not work:
+
+- *Submissions fail with out-of-memory errors in the journal, or the picture stops while a level loads*: the GTT limit is not raised, or another program holds GPU memory.
+- *No controller*: plug it in before starting, or set `SDL_JOYSTICK_DISABLE_UDEV=1`; input that drops out for seconds is the USB link (`sudo dmesg | grep "USB disconnect"`).
+- *The picture freezes for a few seconds and comes back*: a submission timed out and the host reopened the device; the journal says which one.
+- *The machine resets*: that is the risk named at the top. Note the last lines of the journal and open an issue.
+
 ## Related projects
 
 | Project | What it is | Why it matters here |
