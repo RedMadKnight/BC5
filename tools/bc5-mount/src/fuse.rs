@@ -3,6 +3,7 @@
 //! read-only file system. Inode numbers are exFAT entry indices plus one, so
 //! the root is 1 as FUSE expects. Written against `fuser` 0.15.
 
+use std::collections::HashMap;
 use std::ffi::OsStr;
 use std::path::Path;
 use std::time::{Duration, SystemTime};
@@ -30,6 +31,11 @@ struct Bc5Fs {
     uid: u32,
     gid: u32,
     mounted_at: SystemTime,
+    /// Per directory, folded child name -> entry index, built on the directory's first
+    /// lookup. A linear scan folding every name cost ~8 ms per miss in a 12,000-entry
+    /// directory, and a game stats missing files by the thousand while it loads
+    /// (experiment 0029).
+    names: HashMap<usize, HashMap<String, usize>>,
 }
 
 impl Bc5Fs {
@@ -64,6 +70,38 @@ impl Bc5Fs {
     }
 }
 
+impl Bc5Fs {
+    fn names_of(&mut self, parent: usize) -> &HashMap<String, usize> {
+        let vol = self.container.exfat();
+        self.names.entry(parent).or_insert_with(|| {
+            vol.children(parent)
+                .iter()
+                .map(|&c| (fold_name(&vol.entries()[c].name), c))
+                .collect()
+        })
+    }
+
+    fn negative(&self) -> FileAttr {
+        FileAttr {
+            ino: 0,
+            size: 0,
+            blocks: 0,
+            atime: self.mounted_at,
+            mtime: self.mounted_at,
+            ctime: self.mounted_at,
+            crtime: self.mounted_at,
+            kind: FileType::RegularFile,
+            perm: 0,
+            nlink: 0,
+            uid: self.uid,
+            gid: self.gid,
+            rdev: 0,
+            blksize: 0,
+            flags: 0,
+        }
+    }
+}
+
 impl Filesystem for Bc5Fs {
     fn init(&mut self, req: &Request<'_>, _config: &mut KernelConfig) -> Result<(), i32> {
         self.uid = req.uid();
@@ -78,26 +116,13 @@ impl Filesystem for Bc5Fs {
         let Some(name) = name.to_str() else {
             return reply.error(ENOENT);
         };
-        let vol = self.container.exfat();
         let want = fold_name(name);
-        let found = vol
-            .children(parent)
-            .iter()
-            .copied()
-            .find(|&c| {
-                vol.entries()[c].name.len() == name.len()
-                    && fold_name(&vol.entries()[c].name) == want
-            })
-            .or_else(|| {
-                // Names may differ in length after folding; fall back to a full comparison.
-                vol.children(parent)
-                    .iter()
-                    .copied()
-                    .find(|&c| fold_name(&vol.entries()[c].name) == want)
-            });
+        let found = self.names_of(parent).get(&want).copied();
         match found.and_then(|i| self.attr(i)) {
             Some(attr) => reply.entry(&TTL, &attr, 0),
-            None => reply.error(ENOENT),
+            // A negative entry with a lifetime (nodeid 0): the container never changes, so
+            // the kernel may answer the next stat of the same missing name itself.
+            None => reply.entry(&TTL, &self.negative(), 0),
         }
     }
 
@@ -227,6 +252,7 @@ pub fn mount(
         uid: 0,
         gid: 0,
         mounted_at: SystemTime::now(),
+        names: HashMap::new(),
     };
     let mut options = vec![
         MountOption::RO,

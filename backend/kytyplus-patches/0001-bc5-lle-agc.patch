@@ -936,7 +936,7 @@ index 5f87e6b..e5c534e 100644
  	}
  	CondRemoveWaiter(cond_value, thread);
 diff --git a/src/libs/audio.cpp b/src/libs/audio.cpp
-index fe4b332..0392a5d 100644
+index fe4b332..b4a6ed1 100644
 --- a/src/libs/audio.cpp
 +++ b/src/libs/audio.cpp
 @@ -107,6 +107,10 @@ private:
@@ -1040,7 +1040,27 @@ index fe4b332..0392a5d 100644
  	                      static_cast<int>(port->freq), port->audio_spec.format,
  	                      port->audio_spec.channels, port->audio_spec.freq);
  
-@@ -428,7 +479,7 @@ Audio::Id Audio::AudioOutOpen(int type, uint32_t samples_num, uint32_t freq, For
+@@ -368,6 +419,19 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+ 		queue_size = static_cast<uint32_t>(cvt.len_cvt);
+ 	}
+ 
++	// BC5 (haptics): the controller's device can vanish mid-run (its USB link drops) and its
++	// queue then never drains, so the game's audio thread is never held for a pad port: a
++	// removed or paused device drops the frames, a full queue is cleared, not waited for.
++	if (port->pad_route != 0) {
++		if (SDL_GetAudioDeviceStatus(port->audio_device) != SDL_AUDIO_PLAYING) {
++			return false;
++		}
++		if (SDL_GetQueuedAudioSize(port->audio_device) > queue_size * 8) {
++			SDL_ClearQueuedAudio(port->audio_device);
++		}
++		blocking = false;
++	}
++
+ 	if (blocking) {
+ 		// More aggressive buffer management to prevent audio issues
+ 		// during heavy GPU load (common in gameplay vs cutscene)
+@@ -428,7 +492,7 @@ Audio::Id Audio::AudioOutOpen(int type, uint32_t samples_num, uint32_t freq, For
  				port.volume[i] = 32768;
  			}
  

@@ -1,0 +1,9 @@
+run 130, 2026-10-06 21:19, unattended as run 128 (an empty save directory, KYTY_BC5_AUTOPRESS=50:cross,58:cross), 600 s limit, started detached (setsid, stdin from /dev/null, inside the ubuntu distrobox); the maintainer watching the TV and listening on a USB headset (journal excerpts from gc/direct.log)
+
+flips per 10 s:
+t0:507 t10:596 t20:599 t30:575 t40:600 t50:600 t60:600 t70:600 t80:585 t90:601 t100:555 t110:580 t120:593 t130:600 t140:599 t150:600 t160:600 t170:595 t180:575 t190:87 t200:258 t210:577 t220:535 t230:557 t240:515 t250:527 t260:551 t270:578 t280:544 t290:557 t300:533 t310:542 t320:515 t330:484 t340:511 t350:504 t360:521 t370:535 t380:591 t390:264
+failed 0, 2 s timeouts 0, waits given up 2, the save written 11 times, the controller's USB link dropped 12 times during the run
+per minute (frames, ms frame, inside host, prepare, cs, at flip, outside, GPU busy): t0 3477 16.8 3.2 0.6 0.8 0.9 12.7 10.3; t60 3521 17.0 5.5 0.9 1.1 0.4 11.1 13.8; t120 3587 16.7 3.3 0.9 0.8 0.4 13.0 13.8; t180 2589 23.2 4.8 1.0 1.2 2.1 16.3 13.6; t240 3272 18.3 6.4 1.1 1.2 3.6 8.3 16.3; t300 3089 19.4 6.0 1.2 1.2 5.5 7.9 17.4; t360 1911 18.0 5.7 1.1 1.2 4.6 7.7 16.1
+
+the maintainer's observations: the opening cutscene (the ship's flight) slows down at about flip 11,250 and runs again from about 11,600 (that is 190-220 s: the window of 87 and 258 flips per 10 s) with the audio late afterwards; at about 390 s the audio breaks up again; closed by the maintainer at 398 s (exit code 0)
+the slow window, from run 129's profile second by second (201-218 s): 160-170 ms a frame of which "outside" (the game's own thread, outside the host's GPU path) 160 ms, the host 2 ms, GPU busy 11 ms; the guest log shows in every such frame eight KernelStat calls on missing files under /app0/data/prein/*/odx/ (experiment 0029)
