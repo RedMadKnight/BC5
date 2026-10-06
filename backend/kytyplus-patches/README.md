@@ -172,3 +172,7 @@ are split at every cross-queue wait with their register state replayed before ea
 second journals what its first unready buffer waits for.
 Experiment 0027: the per-submission mapping list is sorted and `mapped()` is a binary search; the
 backend assembles each submission's image in cached memory and copies it into the scratch once.
+Haptics (F69): pad-speaker and vibration ports open on the controller's own four-channel audio
+device (the first SDL output device named `DualSense`; `KYTY_BC5_PAD_AUDIO_DEVICE=<substring>`
+picks another, `KYTY_BC5_NO_PAD_AUDIO=1` keeps the old behaviour); a port's frames go to channels
+1–2 (speaker) or 3–4 (actuators).
