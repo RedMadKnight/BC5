@@ -47,6 +47,10 @@ target_link_libraries(dispatch-min PRIVATE bc5_backend bc5_warnings)
 add_executable(userptr-min experiments/userptr-min/main.cpp)
 target_link_libraries(userptr-min PRIVATE bc5_backend bc5_warnings)
 
+# prepare-bench: experiment 0027, the host's prepare pass over dumped command buffers, offline. No GPU.
+add_executable(prepare-bench experiments/prepare-bench/main.cpp)
+target_link_libraries(prepare-bench PRIVATE bc5_backend bc5_warnings)
+
 if(BC5_WITH_AMDGPU)
     find_package(PkgConfig REQUIRED)
     pkg_check_modules(LIBDRM_AMDGPU REQUIRED IMPORTED_TARGET libdrm_amdgpu)

@@ -170,3 +170,5 @@ waiting at it; `BC5_DIRECT_RING_ASYNC=1` lets the doorbell consumer's jobs go un
 are split at every cross-queue wait with their register state replayed before each later segment
 (`BC5_DIRECT_NO_TAIL_SPLIT=1` turns the split off). A doorbell queue deferred for more than a
 second journals what its first unready buffer waits for.
+Experiment 0027: the per-submission mapping list is sorted and `mapped()` is a binary search; the
+backend assembles each submission's image in cached memory and copies it into the scratch once.
