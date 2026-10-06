@@ -65,6 +65,9 @@ struct Device::Impl {
     std::vector<UserptrBo> userptrs;
     std::vector<SharedBo> shared;
     std::vector<SharedMap> shared_maps;
+    // Experiment 0027: the IB is assembled and scanned in this cached buffer and copied into the
+    // scratch once; every read of the uncached scratch cost more than the walk itself.
+    std::vector<std::uint32_t> image;
     std::uint32_t next_shared_id = 1;
     int udmabuf_fd = -1;
     // The BO list of a submission with draws names every mapping; it is kept between
@@ -599,7 +602,8 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
         r.rc = -2;
         return r;
     }
-    auto *dst = static_cast<std::uint32_t *>(impl_->slots[impl_->cur].cpu);
+    if (impl_->image.size() < bytes / sizeof(std::uint32_t)) impl_->image.resize(bytes / sizeof(std::uint32_t));
+    auto *dst = impl_->image.data();
     for (std::size_t i = 0; i < pro; ++i) dst[i] = opt.prologue[i];
     for (std::size_t i = pro; i < pro_padded; ++i) dst[i] = policy::kNop;
     for (std::size_t k = 0; k < pieces.size(); ++k) {
@@ -659,6 +663,8 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
         }
     }
     const std::size_t padded = pro_padded + pieces[0].padded; // the CP runs prologue then IB
+    // One sequential copy into the uncached scratch (MTYPE_UC, F25); nothing reads it back.
+    std::memcpy(impl_->slots[impl_->cur].cpu, impl_->image.data(), bytes);
 
     std::vector<amdgpu_bo_handle> bos;
     bos.reserve(impl_->userptrs.size() + 1);

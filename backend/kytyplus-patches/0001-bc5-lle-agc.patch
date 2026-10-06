@@ -937,10 +937,10 @@ index 5f87e6b..e5c534e 100644
  	CondRemoveWaiter(cond_value, thread);
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..14b79c0
+index 0000000..7ddb179
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,4376 @@
+@@ -0,0 +1,4394 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -2730,6 +2730,10 @@ index 0000000..14b79c0
 +// 0xa005 / HI 0xa01e, DB_Z_READ_BASE 0xa012 / HI 0xa01a, DB_STENCIL_READ_BASE 0xa013 / HI 0xa01b,
 +// DB_Z_WRITE_BASE 0xa014 / HI 0xa01c, DB_STENCIL_WRITE_BASE 0xa015 / HI 0xa01d.
 +static bool covered(const std::vector<bc5::direct::Mapping>& maps, uint64_t a, uint64_t bytes);
++// Experiment 0027: the same over a list sorted by address, by binary search — the filter asks
++// for every operand of a 25,000-dword buffer, and the linear walk over ~340 mappings was a
++// measurable part of prepare.
++static bool covered_sorted(const std::vector<bc5::direct::Mapping>& maps, uint64_t a, uint64_t bytes);
 +
 +// Regions learned from GPU VM faults (BC5_DIRECT_LEARNED, default ~/bc5-work/direct-learned.txt,
 +// one "0x<addr> 0x<bytes>" per line): mapped like hint windows before every submit. A fault
@@ -3062,6 +3066,19 @@ index 0000000..14b79c0
 +			if (pos >= m.va && pos < m.va + m.size) { pos = m.va + m.size; hit = true; break; }
 +		}
 +		if (!hit) return false;
++	}
++	return pos >= end;
++}
++
++static bool covered_sorted(const std::vector<bc5::direct::Mapping>& maps, uint64_t a, uint64_t bytes) {
++	const uint64_t end = a + bytes;
++	uint64_t       pos = a;
++	for (int guard = 0; pos < end && guard < 64; guard++) {
++		auto it = std::upper_bound(maps.begin(), maps.end(), pos, [](uint64_t v, const bc5::direct::Mapping& m) { return v < m.va; });
++		if (it == maps.begin()) return false;
++		--it;
++		if (pos >= it->va + it->size) return false;
++		pos = it->va + it->size;
 +	}
 +	return pos >= end;
 +}
@@ -4049,6 +4066,7 @@ index 0000000..14b79c0
 +	// Every memory operand must lie inside a userptr mapping, or the packet is NOP-ed: a GPU
 +	// page fault on the BC-250 ends in a reset that takes the machine down (F6, experiment 0016).
 +	std::vector<bc5::direct::Mapping> maps = g_dev->mappings();
++	std::sort(maps.begin(), maps.end(), [](const bc5::direct::Mapping& x, const bc5::direct::Mapping& y) { return x.va < y.va; });
 +	bc5::policy::FilterOptions opt;
 +	opt.cu_mask       = g_cu_mask;
 +	opt.clear_int_sel = true;
@@ -4095,7 +4113,7 @@ index 0000000..14b79c0
 +	if (const char* ts = std::getenv("BC5_DIRECT_TILE_STEERING"); ts != nullptr && std::strcmp(kind, "acb") != 0) {
 +		opt.prologue.insert(opt.prologue.end(), {0xC0016900u, 0xd7u, static_cast<uint32_t>(std::strtoul(ts, nullptr, 16))});
 +	}
-+	opt.mapped = [&maps](uint64_t a, uint64_t bytes) { return covered(maps, a, bytes); };
++	opt.mapped = [&maps](uint64_t a, uint64_t bytes) { return covered_sorted(maps, a, bytes); };
 +	static const std::vector<uint8_t> extra = [] {
 +		std::vector<uint8_t> v;
 +		if (const char* e = std::getenv("BC5_DIRECT_DROP_OPS"); e != nullptr) {
