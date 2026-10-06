@@ -25,6 +25,9 @@ struct SubmitResult {
     // The parts of a submission (experiment 0016, run 80: a constant ~17 ms whatever the IB):
     // filtering and scratch layout, BO list creation, the CS ioctl, the fence wait.
     double prepare_ms = 0, list_ms = 0, cs_ms = 0, fence_ms = 0;
+    // Experiment 0027: the parts of prepare_ms — the filter over the IB, the state-stack tracker,
+    // the CU-mask tables, the nested targets (survey and filters), the copy and the re-point pass.
+    double prep_filter_ms = 0, prep_tracker_ms = 0, prep_cu_ms = 0, prep_nested_ms = 0, prep_copy_ms = 0;
     // BOs on this submission's list, and whether it was the short list (Device::set_short_lists).
     std::uint32_t bo_count = 0;
     bool short_list = false;

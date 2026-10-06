@@ -568,15 +568,22 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
         };
     }
     std::vector<std::uint32_t> main_out(ib.size());
+    double t_phase = now_ms();
     policy::filter(policy::Policy::builtin(), ib, main_out, fopt, r.filter);
     executed_offsets_of(ib, main_out.data(), r.executed_offsets);
+    r.prep_filter_ms = now_ms() - t_phase;
+    t_phase = now_ms();
     if (state_stack_ && opt.mapped) {
         main_out = impl_->tracker.apply(ib, main_out, opt.mapped, r.state_stack);
     }
+    r.prep_tracker_ms = now_ms() - t_phase;
+    t_phase = now_ms();
     // The CU mask for registers loaded from memory (phase 3 step f): a SET_SH_REG after the load.
     if (opt.cu_mask != 0xffffffffu && opt.mapped) {
         main_out = cu_tables::apply(main_out, opt.cu_mask, opt.mapped, r.cu_tables);
     }
+    r.prep_cu_ms = now_ms() - t_phase;
+    t_phase = now_ms();
     if (dma_idle_) {
         // PKT3(DMA_DATA, 5, 0); CP_SYNC | SRC_SEL and DST_SEL "address using L2"; no addresses;
         // zero bytes — as si_emit_cp_dma(sctx, cs, 0, 0, 0, CP_DMA_SYNC) emits it (Mesa 0866ae7).
@@ -598,6 +605,8 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     }
     const Piece &last = pieces.back();
     const std::uint64_t bytes = (last.off + last.padded) * sizeof(std::uint32_t);
+    r.prep_nested_ms = now_ms() - t_phase; // the survey; the nested filters are added below
+    t_phase = now_ms();
     if (!impl_->scratch_reserve(bytes)) {
         r.rc = -2;
         return r;
@@ -608,6 +617,10 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     for (std::size_t i = pro; i < pro_padded; ++i) dst[i] = policy::kNop;
     for (std::size_t k = 0; k < pieces.size(); ++k) {
         const Piece &pc = pieces[k];
+        if (k == 1) { // the main copy is done; what follows are the nested filters
+            r.prep_copy_ms += now_ms() - t_phase;
+            t_phase = now_ms();
+        }
         if (k == 0) { // filtered above; the epilogue sits between the IB and its padding
             for (std::size_t i = 0; i < main_n; ++i) dst[pc.off + i] = main_out[i];
             for (std::size_t i = main_n; i < pc.padded; ++i) dst[pc.off + i] = policy::kNop;
@@ -626,6 +639,12 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
         r.nested.push_back({reinterpret_cast<std::uint64_t>(pc.src),
                             static_cast<std::uint32_t>(pc.n), std::move(ex)});
     }
+    if (pieces.size() > 1) {
+        r.prep_nested_ms += now_ms() - t_phase;
+    } else {
+        r.prep_copy_ms += now_ms() - t_phase;
+    }
+    t_phase = now_ms();
     // Point the surviving INDIRECT_BUFFER packets at the scratch copies.
     for (std::size_t k = 0; k < pieces.size(); ++k) {
         const Piece &pc = pieces[k];
@@ -665,6 +684,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     const std::size_t padded = pro_padded + pieces[0].padded; // the CP runs prologue then IB
     // One sequential copy into the uncached scratch (MTYPE_UC, F25); nothing reads it back.
     std::memcpy(impl_->slots[impl_->cur].cpu, impl_->image.data(), bytes);
+    r.prep_copy_ms += now_ms() - t_phase;
 
     std::vector<amdgpu_bo_handle> bos;
     bos.reserve(impl_->userptrs.size() + 1);

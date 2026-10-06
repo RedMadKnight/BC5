@@ -36,8 +36,25 @@ device and copies it into the scratch once, sequentially; nothing reads the scra
 host's per-submission mapping list is sorted by address and `mapped()` is a binary search. Neither
 changes the bytes the GPU executes: (a) moves the same stores, (b) answers the same question.
 
-**Result.** Pending: a GPU run of run 125's scene with `BC5_DIRECT_FRAME_PROFILE=1`, `prepare`
-against run 125's 4.0–4.6 ms. Map-only, the build runs as before (28 flips in 60 s).
+**Result, run 126** (the same scene as run 125, the maintainer at the controller, 424 s until the
+controller's USB link failed): `prepare` 2.9–4.1 ms a frame in the second level against 4.0–4.6
+in run 125, the frame 20.7–23.7 ms against 21.4–24.1 — a gain of about a millisecond, not the four.
+The walk is cheap offline and the scratch reads are gone, so the rest is in what the benchmark
+cannot run: the tracker following `LOAD_CONTEXT_REG` tables and expanding pops, and the nested
+buffers' survey and filters. The device now times those parts separately (`SubmitResult::prep_*`,
+in the frame profile line); the next run says which.
 
-**Verdict.** Open until the GPU run. Not touched, as ADR 0005 (vii) and F25 require: the scratch's
-memory type and its VA allocation.
+**Result, run 127** (the parts timed inside the device, per frame, the second level): filter
+2.4–3.1 ms, tracker 0.5–0.6, copy 0.3, nested 0.1, CU tables 0. Offline the same filter takes
+0.07 ms per 10,000 dwords with `mapped()` answering yes (`--filter-only`), 0.06 answering no. A
+frame's nine game-thread submissions are about 130,000 dwords (a 25,000–34,000-dword main buffer,
+an 85,000–90,000-dword second one, a few small ones), so 0.9 ms is what the bench predicts and
+2.4–3.1 is what the game pays: three times, not forty — the buffers the game has just written are
+not in the host's cache the way a benchmark's are, and every operand goes through a `std::function`.
+
+**Verdict (2026-10-06).** The pass is where it should be, give or take a factor of three, and that
+factor is the remaining lever here: a cheaper `mapped()` (a bitmap over the guest address space
+instead of a callback and a bisection), and a filter that does not re-walk the 90,000-dword buffer
+when it is the same one as last frame. Both are small against a frame that is 17–18 ms of GPU
+time. Not touched, as ADR 0005 (vii) and F25 require: the scratch's memory type and its VA
+allocation.

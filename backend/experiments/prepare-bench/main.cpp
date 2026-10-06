@@ -64,7 +64,7 @@ struct Phases {
     bc5::cu_tables::Stats cs;
 };
 
-Phases run_once(const std::vector<std::uint32_t> &ib, bool mapped_all, std::vector<std::uint32_t> &dst,
+Phases run_once(const std::vector<std::uint32_t> &ib, bool mapped_all, bool filter_only, std::vector<std::uint32_t> &dst,
                 bc5::state_stack::Tracker &tracker) {
     Phases p;
     bc5::policy::FilterOptions opt;
@@ -83,13 +83,17 @@ Phases run_once(const std::vector<std::uint32_t> &ib, bool mapped_all, std::vect
     executed_offsets_of(ib, main_out.data(), offsets);
     p.offsets = now_ms() - t;
 
-    t = now_ms();
-    main_out = tracker.apply(ib, main_out, opt.mapped, p.ss);
-    p.tracker = now_ms() - t;
+    // --filter-only: the tracker and the CU tables read memory the IB names; offline, with
+    // mapped() answering yes, that memory is not there, so they are skipped.
+    if (!filter_only) {
+        t = now_ms();
+        main_out = tracker.apply(ib, main_out, opt.mapped, p.ss);
+        p.tracker = now_ms() - t;
 
-    t = now_ms();
-    main_out = bc5::cu_tables::apply(main_out, opt.cu_mask, opt.mapped, p.cs);
-    p.cu = now_ms() - t;
+        t = now_ms();
+        main_out = bc5::cu_tables::apply(main_out, opt.cu_mask, opt.mapped, p.cs);
+        p.cu = now_ms() - t;
+    }
 
     // the copy into the scratch (here: a plain buffer; the device's is MTYPE_UC)
     const std::size_t padded = (main_out.size() + 7) & ~std::size_t{7};
@@ -132,6 +136,7 @@ double median(std::vector<double> v) {
 int main(int argc, char **argv) {
     int repeat = 7;
     bool mapped_all = true;
+    bool filter_only = false;
     std::vector<std::string> files;
     for (int i = 1; i < argc; ++i) {
         const std::string a = argv[i];
@@ -139,12 +144,14 @@ int main(int argc, char **argv) {
             repeat = std::atoi(argv[++i]);
         } else if (a == "--no-mapped") {
             mapped_all = false;
+        } else if (a == "--filter-only") {
+            filter_only = true;
         } else {
             files.push_back(a);
         }
     }
     if (files.empty()) {
-        std::fprintf(stderr, "usage: prepare-bench [--repeat N] [--no-mapped] <buffer.bin>...\n");
+        std::fprintf(stderr, "usage: prepare-bench [--repeat N] [--no-mapped] [--filter-only] <buffer.bin>...\n");
         return 2;
     }
     std::printf("%-28s %7s %7s | %7s %7s %7s %7s %7s %7s | %7s | pops/restored/inserted\n", "buffer", "dwords", "out", "filter",
@@ -161,7 +168,7 @@ int main(int argc, char **argv) {
         Phases last;
         for (int r = 0; r < repeat; ++r) {
             bc5::state_stack::Tracker tracker; // fresh per run, as the device's is per context
-            last = run_once(ib, mapped_all, dst, tracker);
+            last = run_once(ib, mapped_all, filter_only, dst, tracker);
             t_filter.push_back(last.filter);
             t_offsets.push_back(last.offsets);
             t_tracker.push_back(last.tracker);
