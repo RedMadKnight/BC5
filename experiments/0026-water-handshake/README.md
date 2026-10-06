@@ -71,6 +71,12 @@ run) can hide the 2–4 ms at the flip; the host's `prepare` pass is the next 4 
 12 ms are the game's. The synchronous reference (experiment 0025) stands: 18.6 ms of GPU time in
 the sync measurement, 36 ms a frame.
 
+**Addendum, run 128** (`raw/run128-summary.txt`, 2026-10-06): the same build run unattended from an
+empty save directory with the host pressing cross at 50 and 58 s — the title screen's first
+animation is GPU-bound (45–55 fps, GPU busy 16–18 ms of a 17.5–22.8 ms frame), the slot selection
+stalls 2 s, the level load runs at 60 fps to about 200 s and the opening cutscene at 54–58 fps;
+0 failed submissions in 330 s (HANDOFF F70).
+
 **Verdict (2026-10-06).** The water is playable with a stopgap that is not the console's
 semantics: a wait the single ring cannot serve is abandoned after 8 ms, and the fluid simulation
 runs a frame behind. The host's model — every cross-queue wait served on the CPU before a buffer
