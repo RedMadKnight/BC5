@@ -159,3 +159,14 @@ Pad: the orientation in the pad data is derived from the gyroscope and the accel
 (`KYTY_BC5_MOTION_TRACE=1` logs acceleration, angular velocity and orientation once a second);
 `KYTY_BC5_TRIGGER_DEADZONE=<0..254>` reads trigger values up to that as released, for a pad
 whose trigger does not rest at 0.
+Experiment 0026: `BC5_DIRECT_FRAME_PROFILE=1` journals one line per flip with the game thread's
+time inside the host (sync, hints, prepare, list, CS, fence, the in-flight cap, CPU-side label
+waits, event waits), the wait at the flip, the rest, the GPU's busy time and the soft CP's passes;
+`BC5_DIRECT_FLIP_DEFER=1` (with jobs in flight) hands the flip to the completion thread instead of
+waiting at it; `BC5_DIRECT_RING_ASYNC=1` lets the doorbell consumer's jobs go unwaited too;
+`BC5_DIRECT_DCB_WAIT_MS=<ms>` (default 8) limits a game-thread cross-queue wait,
+`BC5_DIRECT_NO_CYCLE_BREAK=1` keeps waiting on a queue that waits for this buffer, and
+`BC5_DIRECT_PIECES=1` splits a gfx buffer at an unsatisfied wait (faults, run 123). Compute buffers
+are split at every cross-queue wait with their register state replayed before each later segment
+(`BC5_DIRECT_NO_TAIL_SPLIT=1` turns the split off). A doorbell queue deferred for more than a
+second journals what its first unready buffer waits for.
