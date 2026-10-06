@@ -1,0 +1,41 @@
+run 117, 2026-10-06 16:17, synchronous path, BC5_DIRECT_SHADER_DUMP=1, the maintainer at the controller from the saved game; stopped by the maintainer at about 740 s; the box on 6 cores / 12 threads (cold boot, 8-core mask not applied); governor range 1850..=2000 MHz (journal excerpts)
+
+== sync: kytyplus-20261006-1617
+submits 375063, ok 375063, failed 0, flips 24628, timeouts 0, soft-CP wait timeouts 0, assertions 0, controller USB disconnects 0
+flips per 30 s (fps):
+t0:57 t30:40 t60:41 t90:42 t120:41 t150:43 t180:31 t210:48 t240:48 t270:27 t300:23 t330:27 t360:29 t390:28 t420:26 t450:27 t480:28 t510:29 t540:31 t570:29 t600:28 t630:28 t660:26 t690:26 t720:17
+phases: galaxy map from the save to about 170 s, first level 180-265 s, load 270-300 s, second level from about 300 s
+
+== per-frame split, first level window 210-265 s
+flips 2655 (48.3 fps, 20.7 ms/frame); sync 1.2 ms, hints 0.1 ms, submit path 16.2 ms of which fence 12.9 ms; outside 3.2 ms
+
+== per-frame split, second level window 300-570 s
+flips 7409 (27.4 fps, 36.4 ms/frame); 118550 submissions, 16.0 per flip
+sync 1.4 ms, hints 0.3 ms, submit path 25.9 ms (prepare 3.5, list 0.1, cs 1.9, fence 18.6); outside the host path 8.8 ms
+timing split over 128 submissions (8 frames) in the level: probe 0.6 ms, anon sync 17.5, direct sync 11.9 (views 8.4; 17 full, 115 fast), hints 4.9
+main command buffer of a frame: 25416 dwords
+
+== shader census (485 dumps of 32 KiB, llvm-objdump --triple=amdgcn-amd-amdpal --mcpu=gfx1013, LLVM 21.1.8)
+files 485, instructions 1390757, stop reasons: s_code_end 281, end of window 204
+v_mad_f32                    78318  in 449 shaders
+v_mac_f32                   117547  in 448
+v_madak_f32                  12715  in 365
+v_madmk_f32                  16639  in 375
+v_mad_legacy_f32                 5  in 5
+v_mac_legacy_f32              8154  in 333
+v_mul_lo_i32                     0
+s_get_waveid_in_workgroup        0
+s_store_*                       31  in 30
+s_scratch_*                    333  in 185
+s_atomic_*                     488  in 246
+ds_*_src2                        0
+image_bvh*                       0
+image_msaa_load                 85  in 69
+v_fma_f32                     2317  in 272
+v_fmac_f32                    5213  in 336
+s_endpgm                      1353  in 479
+
+== CPU of this boot
+smpboot: Total of 12 processors activated; cpu cores 6, siblings 12; 3467-3495 MHz
+bc250-8core-unlock.service: "mask set to 0xFF -- all 8 cores will appear on your next reboot"
+earlier boots: 2026-10-01 18:00 and 23:10 had 16 processors; 2026-10-02 08:43 and 2026-10-06 16:11 had 12
