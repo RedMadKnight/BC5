@@ -1,0 +1,8 @@
+run 128, 2026-10-06 20:46, unattended (KYTY_BC5_AUTOPRESS=50:cross,58:cross), an empty save directory (KYTY_BC5_SAVEDATA_DIR=.../_SaveData-test), jobs in flight, the asynchronous queue consumer, the frame profile, the build of experiments 0027-0028 plus the haptics routing (F69); 330 s limit; nobody at the controller (journal excerpts)
+
+flips per 10 s:
+t0:515 t10:596 t20:598 t30:547 t40:529 t50:583 t60:600 t70:600 t80:599 t90:601 t100:595 t110:600 t120:600 t130:600 t140:597 t150:600 t160:599 t170:598 t180:600 t190:595 t200:459 t210:88 t220:397 t230:579 t240:561 t250:546 t260:542 t270:560 t280:577 t290:557 t300:564 t310:557 t320:437
+phases: title screen to 58 s (its first animation 32-50 s at 45-55 fps), slot chosen at 58 s with a 2 s stall, level load at 60 fps to about 200 s, load end 200-225 s, the opening cutscene from about 225 s at 54-58 fps until the limit
+failed 0, 2 s timeouts 0, waits given up 1, assertions 0; the save written 10 times; the controller's USB link dropped 30 times with nobody touching it
+
+the title screen's first animation, from run 125's profile second by second (32-50 s): GPU busy 16-18 ms of a 17.5-22.8 ms frame (4.5-14 ms before and after), the game's thread waiting 5-8.6 ms a frame at the in-flight cap, the host's prepare 1.0-1.2 ms, sync up to 4.4 ms in single seconds (one 128-submission window with a 57.8 ms "direct sync": a full pass over the views); then 62-63 s at 6-7 flips: the slot selection (the save read, the level's first allocations)
