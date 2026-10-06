@@ -378,7 +378,7 @@ index 58f16c6..4ab38e9 100644
  KYTY_SYSV_ABI int VideoOutGetVblankStatus(int handle, VideoOutVblankStatus* status);
  KYTY_SYSV_ABI int VideoOutGetEventId(const LibKernel::EventQueue::KernelEvent* ev);
 diff --git a/src/graphics/presentation/window/hostInput.cpp b/src/graphics/presentation/window/hostInput.cpp
-index edcfdaf..e4ad4fe 100644
+index edcfdaf..8051ed2 100644
 --- a/src/graphics/presentation/window/hostInput.cpp
 +++ b/src/graphics/presentation/window/hostInput.cpp
 @@ -6,14 +6,41 @@
@@ -489,7 +489,19 @@ index edcfdaf..e4ad4fe 100644
  };
  
  std::size_t ControlFromName(std::string_view name) {
-@@ -83,107 +161,282 @@ SDL_Keycode NormalizeKey(SDL_Keycode key) {
+@@ -74,6 +152,11 @@ const ControlInfo& Info(std::size_t control) {
+ }
+ 
+ SDL_Keycode NormalizeKey(SDL_Keycode key) {
++	// SDL names a letter key in upper case and SDL_GetKeyFromName("O") answers 'O', while the
++	// key events carry SDLK_o; the configuration takes either spelling.
++	if (key >= 'A' && key <= 'Z') {
++		return key + ('a' - 'A');
++	}
+ 	switch (key) {
+ 		case SDLK_RSHIFT: return SDLK_LSHIFT;
+ 		case SDLK_RCTRL: return SDLK_LCTRL;
+@@ -83,107 +166,287 @@ SDL_Keycode NormalizeKey(SDL_Keycode key) {
  	}
  }
  
@@ -571,8 +583,13 @@ index edcfdaf..e4ad4fe 100644
 +	out->pad_axis  = axis;
 +	out->axis_sign = sign;
 +	return true;
-+}
-+
+ }
+ 
+-bool Conflicts(const Binding& first, const Binding& second) {
+-	return first.control == second.control ||
+-	       (first.key != SDLK_UNKNOWN && first.key == second.key) ||
+-	       (first.mouse_button != 0 && first.mouse_button == second.mouse_button) ||
+-	       (first.gamepad_button >= 0 && first.gamepad_button == second.gamepad_button);
 +bool SourceFromName(std::string_view name, Source* out) {
 +	*out = Source {};
 +	if (name.starts_with("Mouse:")) {
@@ -589,13 +606,8 @@ index edcfdaf..e4ad4fe 100644
 +	}
 +	out->kind = SourceKind::Key;
 +	return true;
- }
- 
--bool Conflicts(const Binding& first, const Binding& second) {
--	return first.control == second.control ||
--	       (first.key != SDLK_UNKNOWN && first.key == second.key) ||
--	       (first.mouse_button != 0 && first.mouse_button == second.mouse_button) ||
--	       (first.gamepad_button >= 0 && first.gamepad_button == second.gamepad_button);
++}
++
 +bool SameSource(const Source& a, const Source& b) {
 +	if (a.kind != b.kind) {
 +		return false;
@@ -805,9 +817,7 @@ index edcfdaf..e4ad4fe 100644
 +		     binding.source.key == SDLK_F1)) {
 +			EXIT("Input config (%s): Escape, Space and F1 belong to the host: %s\n", where.c_str(),
 +			     std::string(line).c_str());
- 		}
--		EXIT_IF(m_size >= m_bindings.size());
--		m_bindings[m_size++] = binding;
++		}
 +		// A later line replaces an earlier one with the same source or the same control.
 +		m_bindings.erase(std::remove_if(m_bindings.begin(), m_bindings.end(),
 +		                                [&](const auto& b) {
@@ -817,7 +827,14 @@ index edcfdaf..e4ad4fe 100644
 +		                                }),
 +		                 m_bindings.end());
 +		m_bindings.push_back(binding);
-+		LOGF("Host input: %s = %s\n", std::string(left).c_str(), std::string(right).c_str());
++		if (binding.source.kind == SourceKind::Key) {
++			LOGF("Host input: %s = %s (key code %d)\n", std::string(left).c_str(),
++			     std::string(right).c_str(), static_cast<int>(binding.source.key));
++		} else {
++			LOGF("Host input: %s = %s\n", std::string(left).c_str(), std::string(right).c_str());
+ 		}
+-		EXIT_IF(m_size >= m_bindings.size());
+-		m_bindings[m_size++] = binding;
  	}
  
 -	std::array<Binding, CONTROL_INFO.size()> m_bindings {};
@@ -837,7 +854,7 @@ index edcfdaf..e4ad4fe 100644
  	return map;
  }
  
-@@ -199,35 +452,6 @@ void SetButton(uint32_t button, bool down) {
+@@ -199,35 +462,6 @@ void SetButton(uint32_t button, bool down) {
  	}
  }
  
@@ -873,7 +890,7 @@ index edcfdaf..e4ad4fe 100644
  void SetStickAxis(Controller::Axis axis, bool negative, bool positive) {
  	const int value = negative == positive ? 128 : negative ? 0 : 255;
  	Controller::ControllerAxis(Controller::HOST_INPUT_CONTROLLER_ID, axis, value);
-@@ -260,46 +484,16 @@ void SetControl(std::size_t control, bool down) {
+@@ -260,46 +494,16 @@ void SetControl(std::size_t control, bool down) {
  	SetStickAxis(info.axis, axes[axis].negative, axes[axis].positive);
  }
  
@@ -928,7 +945,7 @@ index edcfdaf..e4ad4fe 100644
  } // namespace
  
  void HostInputInit() {
-@@ -307,12 +501,16 @@ void HostInputInit() {
+@@ -307,12 +511,16 @@ void HostInputInit() {
  }
  
  void HostInputKey(int key_code, bool down) {
@@ -950,23 +967,23 @@ index edcfdaf..e4ad4fe 100644
  }
  
  void HostInputMouseButton(uint8_t mouse_button, bool down) {
-@@ -325,8 +523,24 @@ void HostInputMouseButton(uint8_t mouse_button, bool down) {
+@@ -325,8 +533,24 @@ void HostInputMouseButton(uint8_t mouse_button, bool down) {
  void HostInputGamepadButton(int gamepad_button, bool down) {
  	const auto& map = GetInputMap();
  	if (map.Custom() && gamepad_button >= 0) {
 -		SetControl(map.FindGamepadButton(gamepad_button), down);
 +		SetControl(map.FindPadButton(gamepad_button), down);
- 	}
- }
- 
++	}
++}
++
 +void HostInputGamepadAxis(int gamepad_axis, int value) {
 +	auto& map = GetInputMap();
 +	if (map.Custom() && gamepad_axis >= 0) {
 +		map.UpdatePadAxis(gamepad_axis, value,
 +		                  [](std::size_t control, bool down) { SetControl(control, down); });
-+	}
-+}
-+
+ 	}
+ }
+ 
 +bool HostInputPadButtonDisabled(int gamepad_button) {
 +	return GetInputMap().PadButtonDisabled(gamepad_button);
 +}
