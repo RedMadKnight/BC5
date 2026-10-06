@@ -159,6 +159,15 @@ Pad: the orientation in the pad data is derived from the gyroscope and the accel
 (`KYTY_BC5_MOTION_TRACE=1` logs acceleration, angular velocity and orientation once a second);
 `KYTY_BC5_TRIGGER_DEADZONE=<0..254>` reads trigger values up to that as released, for a pad
 whose trigger does not rest at 0.
+Input configuration (`hostInput.cpp`, `window.cpp`, `main.cpp`): `--input-config <file>` or
+`KYTY_BC5_INPUT_CONFIG=<file>` reads one statement per line, `#` comments: `<Control>=<Input>`
+binds a DualSense control (Cross … TouchPad, LeftStickUp …) to a key (SDL's key names), a
+mouse button (`Mouse:Left` …), a pad button (`Pad:a`, `Pad:leftshoulder`, SDL's names) or a pad
+axis (`Pad:righttrigger`, `Pad:leftx-`); `Pad:<name>=none` drops the physical button or axis
+before it reaches the game; `DefaultKeys=on|off` keeps or drops the built-in keyboard layout
+(KytyPlus's, plus U = L2 and O = R2), from which a bound key or control is removed; every line is
+also accepted as `--keymap`. A bad line stops the emulator with file:line and the reason. The
+names and examples are in `input.example.cfg` next to this file.
 Experiment 0026: `BC5_DIRECT_FRAME_PROFILE=1` journals one line per flip with the game thread's
 time inside the host (sync, hints, prepare, list, CS, fence, the in-flight cap, CPU-side label
 waits, event waits), the wait at the flip, the rest, the GPU's busy time and the soft CP's passes;
