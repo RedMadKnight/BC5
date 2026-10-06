@@ -935,12 +935,126 @@ index 5f87e6b..e5c534e 100644
  		}
  	}
  	CondRemoveWaiter(cond_value, thread);
+diff --git a/src/libs/audio.cpp b/src/libs/audio.cpp
+index fe4b332..0392a5d 100644
+--- a/src/libs/audio.cpp
++++ b/src/libs/audio.cpp
+@@ -107,6 +107,10 @@ private:
+ 
+ 		SDL_AudioDeviceID audio_device = 0;
+ 		SDL_AudioSpec     audio_spec   = {};
++		// BC5: 0 = the host's default output; 1 = the controller's speaker (its channels 1-2);
++		// 2 = the controller's haptic actuators (its channels 3-4). The DualSense is a 4-channel
++		// USB audio device, and the game's vibration is an audio stream to those actuators.
++		int pad_route = 0;
+ 	};
+ 
+ 	struct PortIn {
+@@ -236,20 +240,45 @@ bool Audio::OpenSdlDevice(PortOut* port) {
+ 	desired.samples  = static_cast<Uint16>(port->samples_num);
+ 	desired.callback = nullptr;
+ 
++	// BC5 (haptics): a pad-speaker or vibration port goes to the controller's own audio device
++	// when one is present — the first output device whose name has KYTY_BC5_PAD_AUDIO_DEVICE
++	// (default "DualSense") in it — opened with its four channels; the port's samples are placed
++	// on channels 1-2 (speaker) or 3-4 (actuators) when queued. KYTY_BC5_NO_PAD_AUDIO=1 leaves the
++	// old behaviour: the speaker port on the default device, the vibration port unopened.
++	const char* pad_name = nullptr;
++	port->pad_route      = 0;
++	if (std::getenv("KYTY_BC5_NO_PAD_AUDIO") == nullptr &&
++	    (port->type == AUDIO_OUT_PORT_TYPE_PADSPK || port->type == AUDIO_OUT_PORT_TYPE_VIBRATION)) {
++		const char* want = std::getenv("KYTY_BC5_PAD_AUDIO_DEVICE") != nullptr ? std::getenv("KYTY_BC5_PAD_AUDIO_DEVICE") : "DualSense";
++		const int   n    = SDL_GetNumAudioDevices(0);
++		for (int i = 0; i < n && pad_name == nullptr; i++) {
++			const char* name = SDL_GetAudioDeviceName(i, 0);
++			if (name != nullptr && std::strstr(name, want) != nullptr) pad_name = name;
++		}
++		if (pad_name != nullptr) {
++			desired.channels = 4;
++			port->pad_route  = port->type == AUDIO_OUT_PORT_TYPE_VIBRATION ? 2 : 1;
++		} else if (port->type == AUDIO_OUT_PORT_TYPE_VIBRATION) {
++			LOGF("AudioOut: no controller audio device for the vibration port; it stays silent\n");
++			return false;
++		}
++	}
++
+ 	SDL_AudioSpec obtained {};
+ 
+-	port->audio_device =
+-	    SDL_OpenAudioDevice(nullptr, 0, &desired, &obtained, SDL_AUDIO_ALLOW_ANY_CHANGE);
++	port->audio_device = SDL_OpenAudioDevice(pad_name, 0, &desired, &obtained,
++	                                         pad_name != nullptr ? (SDL_AUDIO_ALLOW_FREQUENCY_CHANGE | SDL_AUDIO_ALLOW_FORMAT_CHANGE) : SDL_AUDIO_ALLOW_ANY_CHANGE);
+ 	if (port->audio_device == 0) {
+ 		LOGF("AudioOut: SDL_OpenAudioDevice failed: %s\n", SDL_GetError());
++		port->pad_route = 0;
+ 		return false;
+ 	}
+ 
+ 	port->audio_spec = obtained;
+ 	SDL_PauseAudioDevice(port->audio_device, 0);
+ 
+-	LOGF("AudioOut: opened SDL device (%d Hz, %u ch, format 0x%04x)\n", obtained.freq,
+-	     obtained.channels, obtained.format);
++	LOGF("AudioOut: opened SDL device (%d Hz, %u ch, format 0x%04x) for port type %d, %d ch%s%s\n", obtained.freq,
++	     obtained.channels, obtained.format, port->type, port->channels_num, pad_name != nullptr ? " on " : "", pad_name != nullptr ? pad_name : "");
+ 	return true;
+ }
+ 
+@@ -335,7 +364,29 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+ 
+ 	std::vector<uint8_t> prepared_buffer;
+ 	const void*          prepared_data = PrepareOutputBuffer(*port, data, &prepared_buffer);
+-	const auto           prepared_size = FrameSize(*port) * port->samples_num;
++	auto                 prepared_size = FrameSize(*port) * port->samples_num;
++	auto                 src_channels  = static_cast<Uint8>(port->channels_num);
++
++	// BC5 (haptics): onto the controller's four channels — speaker 1-2, actuators 3-4; a mono
++	// port on both of its pair, the other pair silent.
++	std::vector<uint8_t> pad_buffer;
++	if (port->pad_route != 0 && (port->channels_num == 1 || port->channels_num == 2)) {
++		const uint32_t bps    = BytesPerSample(port->format);
++		const uint32_t frames = port->samples_num;
++		pad_buffer.assign(static_cast<size_t>(frames) * 4 * bps, 0);
++		const auto* src = static_cast<const uint8_t*>(prepared_data);
++		const uint32_t base = port->pad_route == 2 ? 2 : 0;
++		for (uint32_t f = 0; f < frames; f++) {
++			const uint8_t* l = src + (static_cast<size_t>(f) * port->channels_num) * bps;
++			const uint8_t* r = port->channels_num == 2 ? l + bps : l;
++			uint8_t*       d = pad_buffer.data() + (static_cast<size_t>(f) * 4 + base) * bps;
++			std::memcpy(d, l, bps);
++			std::memcpy(d + bps, r, bps);
++		}
++		prepared_data = pad_buffer.data();
++		prepared_size = static_cast<uint32_t>(pad_buffer.size());
++		src_channels  = 4;
++	}
+ 
+ 	std::vector<uint8_t> convert_buffer;
+ 	const void*          queue_data = prepared_data;
+@@ -343,7 +394,7 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+ 
+ 	SDL_AudioCVT cvt {};
+ 	const int    cvt_result =
+-	    SDL_BuildAudioCVT(&cvt, SdlFormat(port->format), static_cast<Uint8>(port->channels_num),
++	    SDL_BuildAudioCVT(&cvt, SdlFormat(port->format), src_channels,
+ 	                      static_cast<int>(port->freq), port->audio_spec.format,
+ 	                      port->audio_spec.channels, port->audio_spec.freq);
+ 
+@@ -428,7 +479,7 @@ Audio::Id Audio::AudioOutOpen(int type, uint32_t samples_num, uint32_t freq, For
+ 				port.volume[i] = 32768;
+ 			}
+ 
+-			if (type != AUDIO_OUT_PORT_TYPE_VIBRATION) {
++			if (type != AUDIO_OUT_PORT_TYPE_VIBRATION || std::getenv("KYTY_BC5_NO_PAD_AUDIO") == nullptr) {
+ 				// KytyPlus diagnostic: OpenSdlDevice() may fail (no host audio device,
+ 				// unsupported sample rate/format, or SDL init failure). The return is
+ 				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..7ddb179
+index 0000000..48e5f2e
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,4394 @@
+@@ -0,0 +1,4410 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -1129,6 +1243,7 @@ index 0000000..7ddb179
 +// work), and the GPU's busy time from the jobs' queue and completion times.
 +static void frame_profile_submit(bool game_thread, double sync_ms, double hints_ms);
 +static void frame_profile_job(bool game_thread, double prepare_ms, double list_ms, double cs_ms);
++static void frame_profile_prep(bool game_thread, double filter_ms, double tracker_ms, double cu_ms, double nested_ms, double copy_ms);
 +static void frame_profile_done(bool game_thread, uint64_t queued_ns, uint64_t done_ns, double fence_ms);
 +static void frame_profile_flip(double drain_ms);
 +static bool async_on();
@@ -3814,6 +3929,7 @@ index 0000000..7ddb179
 +static std::mutex g_fp_mutex;
 +static struct {
 +	double   sync_ms = 0, hints_ms = 0, prepare_ms = 0, list_ms = 0, cs_ms = 0, fence_ms = 0, cap_ms = 0, cpuwait_ms = 0, eqwait_ms = 0, post_ms = 0;
++	double   pf_ms = 0, pt_ms = 0, pc_ms = 0, pn_ms = 0, pcopy_ms = 0; // the parts of prepare (experiment 0027)
 +	uint64_t jobs = 0, ring_jobs = 0, gpu_busy_ns = 0, last_done_ns = 0, posts = 0;
 +	std::thread::id render_thread;
 +	double   t_last_flip = 0;
@@ -3824,6 +3940,16 @@ index 0000000..7ddb179
 +	if (!g_frame_profile || !game_thread) return;
 +	std::lock_guard lock(g_fp_mutex);
 +	(cap ? g_fp.cap_ms : g_fp.cpuwait_ms) += ms;
++}
++
++static void frame_profile_prep(bool game_thread, double filter_ms, double tracker_ms, double cu_ms, double nested_ms, double copy_ms) {
++	if (!g_frame_profile || !game_thread) return;
++	std::lock_guard lock(g_fp_mutex);
++	g_fp.pf_ms += filter_ms;
++	g_fp.pt_ms += tracker_ms;
++	g_fp.pc_ms += cu_ms;
++	g_fp.pn_ms += nested_ms;
++	g_fp.pcopy_ms += copy_ms;
 +}
 +
 +static void frame_profile_eqwait(double ms) {
@@ -3883,12 +4009,13 @@ index 0000000..7ddb179
 +	if (g_fp.t_last_flip != 0) {
 +		const double interval = (now - g_fp.t_last_flip) * 1e3;
 +		const double inside   = g_fp.sync_ms + g_fp.hints_ms + g_fp.prepare_ms + g_fp.list_ms + g_fp.cs_ms + g_fp.fence_ms + g_fp.cap_ms + g_fp.cpuwait_ms + g_fp.eqwait_ms;
-+		journal("frame profile: t %.3f s, %.1f ms since the last flip; game thread inside the host %.1f ms (sync %.1f, hints %.1f, prepare %.1f, list %.1f, cs %.1f, fence %.1f, cap %.1f, label waits %.1f, event waits %.1f), at the flip %.1f, outside %.1f; GPU busy %.1f ms in %" PRIu64 " jobs (+%" PRIu64 " from the ring thread); soft-CP passes %.1f ms in %" PRIu64 "\n",
++		journal("frame profile: t %.3f s, %.1f ms since the last flip; game thread inside the host %.1f ms (sync %.1f, hints %.1f, prepare %.1f, list %.1f, cs %.1f, fence %.1f, cap %.1f, label waits %.1f, event waits %.1f), at the flip %.1f, outside %.1f; GPU busy %.1f ms in %" PRIu64 " jobs (+%" PRIu64 " from the ring thread); soft-CP passes %.1f ms in %" PRIu64 "; prepare = filter %.1f + tracker %.1f + cu %.1f + nested %.1f + copy %.1f\n",
 +		        now, interval, inside, g_fp.sync_ms, g_fp.hints_ms, g_fp.prepare_ms, g_fp.list_ms, g_fp.cs_ms, g_fp.fence_ms, g_fp.cap_ms, g_fp.cpuwait_ms, g_fp.eqwait_ms, drain_ms, interval - inside - drain_ms,
-+		        static_cast<double>(g_fp.gpu_busy_ns) / 1e6, g_fp.jobs, g_fp.ring_jobs, g_fp.post_ms, g_fp.posts);
++		        static_cast<double>(g_fp.gpu_busy_ns) / 1e6, g_fp.jobs, g_fp.ring_jobs, g_fp.post_ms, g_fp.posts, g_fp.pf_ms, g_fp.pt_ms, g_fp.pc_ms, g_fp.pn_ms, g_fp.pcopy_ms);
 +	}
 +	g_fp.sync_ms = g_fp.hints_ms = g_fp.prepare_ms = g_fp.list_ms = g_fp.cs_ms = g_fp.fence_ms = g_fp.cap_ms = g_fp.cpuwait_ms = g_fp.eqwait_ms = g_fp.post_ms = 0;
 +	g_fp.jobs = g_fp.ring_jobs = g_fp.gpu_busy_ns = g_fp.posts = 0;
++	g_fp.pf_ms = g_fp.pt_ms = g_fp.pc_ms = g_fp.pn_ms = g_fp.pcopy_ms = 0;
 +	g_fp.t_last_flip = now;
 +}
 +
@@ -4392,6 +4519,7 @@ index 0000000..7ddb179
 +		it.job.queued_ns  = SoftCp::now_ns();
 +		it.job.dev_gen    = g_dev_gen.load();
 +		frame_profile_job(t_cq == 0, r.prepare_ms, r.list_ms, r.cs_ms);
++		frame_profile_prep(t_cq == 0, r.prep_filter_ms, r.prep_tracker_ms, r.prep_cu_ms, r.prep_nested_ms, r.prep_copy_ms);
 +		{
 +			static const bool trace = std::getenv("BC5_DIRECT_LABEL_TRACE") != nullptr;
 +			if (trace) journal("queued #%" PRIu64 " %s %u dwords at t %.6f s\n", n, kind, num_dwords, timing_now());
@@ -4417,6 +4545,7 @@ index 0000000..7ddb179
 +		}
 +	}
 +	frame_profile_job(t_cq == 0, r.prepare_ms, r.list_ms, r.cs_ms);
++	frame_profile_prep(t_cq == 0, r.prep_filter_ms, r.prep_tracker_ms, r.prep_cu_ms, r.prep_nested_ms, r.prep_copy_ms);
 +	// A job the ring thread finished inline (jobs in flight) overlaps the game thread's jobs: it counts by its interval, not by its wait.
 +	frame_profile_done(t_cq == 0, g_async ? t2 : 0, g_async ? SoftCp::now_ns() : 0, r.fence_ms);
 +	if (timing) {
@@ -4529,6 +4658,7 @@ index 0000000..7ddb179
 +static bool on_game_thread() { return true; }
 +static void frame_profile_wait(bool, bool, double) {}
 +static void frame_profile_eqwait(double) {}
++static void frame_profile_prep(bool, double, double, double, double, double) {}
 +static void frame_profile_post(double) {}
 +static void frame_profile_submit(bool, double, double) {}
 +static void frame_profile_job(bool, double, double, double) {}
