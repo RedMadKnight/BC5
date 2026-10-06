@@ -133,6 +133,19 @@ stay in the VM untouched until the next full list revalidates them.
 *Amended 2026-10-01 (run 89, F41):* (xxi) every IB the device submits ends with a zero-byte
 `DMA_DATA` carrying `CP_SYNC`, so that no CP DMA operation of the stream outlives its IB (amdgpu
 does not wait for CP DMA; Mesa does the same at the end of its IBs).
+*Amended 2026-10-06 (runs 118–125, F64):* (xxii) (xviii) is not enough once a compute IB's tail
+dispatches (the second level's water: the fluid simulation after the cross-queue wait, with a
+second wait inside). A compute IB is now split at every cross-queue wait, and before each later
+segment the IB's register-setting packets so far (`SET_*_REG`, `LOAD_*_REG`, `SET_BASE`,
+`INDEX_*`, `NUM_INSTANCES`, `CONTEXT_CONTROL`) go as a job of their own (`acb-state`): run 122,
+none of 44,028 such jobs failed. The same for a gfx IB (`BC5_DIRECT_PIECES=1`) faults from the
+first frames (run 123, as run 44): a gfx piece needs more than the packets replayed — the state
+the backend already tracks for pops (context registers) and, to be added, SH and UCONFIG
+registers, emitted from the tracker. Until then a game-thread wait that is not served within
+`BC5_DIRECT_DCB_WAIT_MS` (8) is given up, and a wait on a queue whose blocked buffer waits for a
+label this IB writes, and writes the awaited label past that wait, is not waited for (the two
+cycles of the water); the fluid runs a frame behind. The console's semantics are two pipes; the
+kernel's compute rings stay off limits (xvi, F31).
 
 **Consequences.** The "packet rewriter" of the roadmap shrinks to a filter with two rewrites; the
 backend's core is the policy table plus the BO/VA mapper, both testable offline. Unknown firmware

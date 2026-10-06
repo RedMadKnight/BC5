@@ -1,0 +1,33 @@
+run 125, 2026-10-06 18:39, jobs in flight, BC5_DIRECT_RING_ASYNC=1, BC5_DIRECT_FRAME_PROFILE=1, DCB wait limit 8 ms (default) and the cycle break; the maintainer at the controller from the save through the second level, its water and geysers; 859 s to the limit (journal excerpts)
+
+submits 847332, ok 847332, failed 0, flips 41193, 2 s timeouts 0, page faults 0, controller USB disconnects 0
+waits given up (8 ms) 3342, cycles broken 5844 — all in the water (240-360 s, 600-720 s); positions in the main buffer: 8217 x194, 7899 x192, 6779 x176, 8091 x170, 9230 x142, 6290 x126
+GPU temperature at the end: 54 C
+
+frame profile averaged per 60 s (ms per frame; "outside" = interval - inside - at flip)
+window frames interval inside prepare cs labelw atflip outside gpubusy ring softcp
+t0     3329    17.6    5.6    0.7   1.0    0.2    1.4    10.6    10.4 10.2    0.4
+t60    3340    18.0    5.5    0.9   0.9    0.2    0.9    11.5    13.6 10.3    0.4
+t120   2701    22.2    5.7    3.5   0.9    0.1    1.6    14.9    15.0 10.6    0.7
+t180   2628    22.8    7.0    4.2   1.4    0.0    3.6    12.2    17.5 11.9    0.8
+t240   2676    22.4    7.6    4.2   1.5    0.4    2.4    12.4    17.4 12.0    0.8
+t300   3014    19.9    7.2    1.5   1.1    1.6    3.7     9.1    15.9 11.8    0.5
+t360   2705    22.2    7.8    2.7   1.3    1.7    3.7    10.7    17.9 12.1    0.7
+t420   2769    21.7    6.8    4.0   1.5    0.0    2.7    12.1    17.1 11.8    0.8
+t480   2751    21.8    6.9    4.0   1.5    0.0    2.8    12.1    17.6 12.0    0.8
+t540   2804    21.4    7.1    4.2   1.5    0.0    2.5    11.8    17.2 11.8    0.8
+t600   2524    23.8    8.3    4.6   1.4    0.8    2.2    13.3    17.6 12.0    0.9
+t660   2485    24.1   10.9    2.4   1.2    5.6    3.4     9.8    16.9 12.6    0.8
+t720   3224    18.6    5.3    2.0   1.5    0.4    2.9    10.5    15.8 13.6    0.7
+t780   3285    18.3    5.8    1.2   1.0    0.1    1.4    11.1    12.9 10.6    0.5
+t840    957    16.8    3.4    1.0   0.8    0.2    0.4    13.0    12.9 10.1    0.5
+(inside also contains cap, hints, list, fence, event waits, all near 0 here; "ring" = jobs from the doorbell consumer; "softcp" = the soft CP's passes on the completion thread)
+
+earlier runs of the experiment (second level, all with the maintainer at the controller):
+run 118 (1652): profile without cap/label/event waits; water at 333 s: 4027 ms a frame, 2 x 2 s timeouts (main buffer positions 115 and 11019), queue 0x21 "deferred 4015 ms"
+run 119 (1716): label trace + consumer diagnostic; water at 291 s; the compute buffer 3825 dwords waits at 3575 on the slot label 0x400202380 (value 0, reference 1); the 3624-dword buffer outside the water splits at 3575 (49-dword tail)
+run 120 (1737): BC5_DIRECT_RING_ASYNC=1; same stall
+run 121 (1748): tails split unless they draw or dispatch; the water's tail: 1249 dwords, ops 93 79 49 79 37 49 49 76x7 15 46 58 ... (SET_SH_REG x7 + DISPATCH_DIRECT, repeated; a second WAIT_REG_MEM64 inside); same stall
+run 122 (1801): every compute wait a split point, register state of the buffer replayed before later segments (acb-state jobs of 70 / 1563-1681 dwords; 44,139 segments, 44,028 state jobs, none failed); the stall moves to the main buffer's wait at 11097-18508 on the fluid tail's label
+run 123 (1818): main buffers split at unsatisfied waits with the same replay: 35 failed submissions in the first minute, fault 0x800000005000, the box went down (cold boot, then a warm reboot for 16 threads)
+run 124 (1823): cycle test v1 (fires in the ordinary handshake too); 906 "timeouts" of which most are the 0 ms cycle breaks; the geyser still 2 s a frame

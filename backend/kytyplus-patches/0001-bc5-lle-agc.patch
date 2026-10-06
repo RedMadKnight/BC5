@@ -937,10 +937,10 @@ index 5f87e6b..e5c534e 100644
  	CondRemoveWaiter(cond_value, thread);
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..5312cd6
+index 0000000..14b79c0
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,4035 @@
+@@ -0,0 +1,4376 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -1095,7 +1095,22 @@ index 0000000..5312cd6
 +// Defined below; the queue consumer hands ring slices to the direct path as well.
 +static void submit(const uint32_t* ib, uint32_t num_dwords, const char* kind, bool from_header);
 +// Are every cross-queue wait of a compute IB (labels no earlier packet of it writes) satisfied?
++// Run 118: what the last acb_ready() that answered "not ready" stopped at — the wait's
++// position, label, function, reference and the label's value — for the consumer's diagnostic.
++struct UnreadyWait {
++	const uint32_t* ib = nullptr;
++	uint32_t        num_dwords = 0, pos = 0, function = 0;
++	uint64_t        label = 0, value = 0, reference = 0;
++};
++static thread_local UnreadyWait t_unready;
++// Run 123: the label the doorbell consumer's first unready buffer waits on, for the game thread
++// to see a cycle — a buffer of its own that waits for that queue while writing the very label
++// the queue waits for. 0 when the consumer is not blocked.
++static std::atomic<uint64_t> g_unready_label {0};
++static std::mutex            g_unready_mutex;
++static std::vector<uint64_t> g_unready_writes; // the labels that buffer writes past its wait
 +static bool acb_ready(const uint32_t* ib, uint32_t num_dwords);
++static void journal(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
 +// Experiment 0024 (BC5_DIRECT_ASYNC=1): what has to follow a buffer's execution on the GPU — the
 +// soft CP's pass over it, a ring's read-pointer publication — runs through post(): at once when
 +// submissions are waited for, otherwise on the completion thread, in submission order, after the
@@ -1108,6 +1123,19 @@ index 0000000..5312cd6
 +// to block the compute queue and nothing else (run 110: on a shared completion thread it held
 +// up the game's flip until its timeout). Only the game's threads (source 0) queue and go on.
 +static void set_source(int index);
++// Experiment 0025 (BC5_DIRECT_FRAME_PROFILE=1): where a frame's wall-clock time goes — one journal
++// line per flip with the game thread's time inside the host (sync, hints, prepare, list, CS
++// ioctl, and the fence when it is waited for), the wait at the flip, the rest (the game's own
++// work), and the GPU's busy time from the jobs' queue and completion times.
++static void frame_profile_submit(bool game_thread, double sync_ms, double hints_ms);
++static void frame_profile_job(bool game_thread, double prepare_ms, double list_ms, double cs_ms);
++static void frame_profile_done(bool game_thread, uint64_t queued_ns, uint64_t done_ns, double fence_ms);
++static void frame_profile_flip(double drain_ms);
++static bool async_on();
++static bool on_game_thread(); // the submitting thread is the game's, not the doorbell consumer's
++static void frame_profile_wait(bool game_thread, bool cap, double ms);
++static void frame_profile_eqwait(double ms); // the render thread's wait for its event queues
++static void frame_profile_post(double ms);   // a soft-CP pass on the completion thread
 +static void gds_selftest();
 +static void gds_snapshot(const char* why);
 +static void init_once();
@@ -1643,6 +1671,7 @@ index 0000000..5312cd6
 +		uint64_t rptr           = 0;
 +		uint64_t count          = 0;
 +		uint64_t deferred_since = 0; // direct mode: this queue's next IB waits on another queue
++		uint64_t deferred_report = 0; // when the deferral was last journaled (run 118)
 +	};
 +	std::vector<State> states;
 +	uint64_t           idle_ticks = 0;
@@ -1710,6 +1739,13 @@ index 0000000..5312cd6
 +					s.deferred_since = 0;
 +				} else if (!ready) {
 +					if (s.deferred_since == 0) s.deferred_since = now;
++					if (now - s.deferred_since >= 1'000'000'000ull && now - s.deferred_report >= 1'000'000'000ull) {
++						s.deferred_report = now;
++						const auto& u = Direct::t_unready;
++						const char* msg = "[bc5-q] queue %u/%u/%u/0x%x: deferred %.1f s, %u dwords pending, %u ready in front; the first unready buffer (%u dwords at %p) waits at %u on 0x%" PRIx64 ": function %u, value 0x%" PRIx64 ", reference 0x%" PRIx64 "\n";
++						LOGF_COLOR(Log::Color::Yellow, msg, q.a, q.b, q.c, q.d, static_cast<double>(now - s.deferred_since) / 1e9, pending, ready_len, u.num_dwords, static_cast<const void*>(u.ib), u.pos, u.label, u.function, u.value, u.reference);
++						Direct::journal(msg, q.a, q.b, q.c, q.d, static_cast<double>(now - s.deferred_since) / 1e9, pending, ready_len, u.num_dwords, static_cast<const void*>(u.ib), u.pos, u.label, u.function, u.value, u.reference);
++					}
 +					if (now - s.deferred_since < 10'000'000'000ull) continue; // served later
 +					LOGF_COLOR(Log::Color::Yellow, "[bc5-q] queue %u/%u/%u/0x%x: cross-queue wait unsatisfied for 10 s, proceeding\n", q.a, q.b, q.c, q.d);
 +					s.deferred_since = 0;
@@ -1884,6 +1920,11 @@ index 0000000..5312cd6
 +// BC5_DIRECT_ASYNC=1 (experiment 0024): jobs are queued and completed by a thread of their own
 +// (needs BC5_DIRECT_JOURNAL=min: the crash journal writes one line in two halves around a job).
 +static const bool g_async = std::getenv("BC5_DIRECT_ASYNC") != nullptr && g_journal_min;
++// Run 119: BC5_DIRECT_RING_ASYNC=1 — the doorbell consumer's jobs are not waited for inline either.
++// Waiting made its pass over the queues as slow as the GPU (a compute head queued behind a
++// frame's buffers), and a compute tail served late met its slot label cleared by the main buffer
++// two frames on (the water in the second level: 4 s a frame).
++static const bool g_ring_async = g_async && std::getenv("BC5_DIRECT_RING_ASYNC") != nullptr;
 +static std::shared_mutex g_finish_mutex; // shared: waiting for a job on g_dev; exclusive: replacing g_dev
 +// With jobs in flight a mapping must not go away or change under a job that may be using it
 +// (the kernel clears the page-table entries at once, whatever is still running): waits until
@@ -3219,32 +3260,114 @@ index 0000000..5312cd6
 +};
 +static std::vector<AcbHead> g_acb_heads; // the queue consumer thread only
 +
++// Run 120: a compute buffer's tail (what follows its cross-queue wait) goes to the GPU as a job
++// of its own once the wait is satisfied. Until run 120 only a tail of label writes and events
++// qualified; the water in the second level has a 250-dword tail and a buffer that never split
++// deadlocked with the main buffer (the main buffer waits at its start for a label the compute
++// head writes; the compute tail waits for a label the main buffer sets later). Anything that does
++// not depend on register state set before the wait may follow it: only draws, dispatches and
++// nested buffers are refused, and such a tail is journaled once so that the next step (replaying
++// the head's state before the tail) can be judged.
 +static bool tail_is_light(const uint32_t* p, uint32_t n) {
++	std::string ops;
++	bool        light = true;
 +	for (uint32_t i = 0; i < n;) {
 +		const uint32_t h = p[i];
 +		const uint32_t type = h >> 30u;
 +		const uint32_t c = (h >> 16u) & 0x3fffu;
 +		uint32_t len = 1;
 +		if (type == 3 || type == 0) len = c == 0x3fffu ? 1 : c + 2;
-+		if (i + len > n || type == 0) return false;
++		if (i + len > n || type == 0) {
++			light = false;
++			break;
++		}
 +		if (type == 3 && c != 0x3fffu) {
-+			switch ((h >> 8u) & 0xffu) {
-+				case 0x10: // NOP
-+				case 0x79: // SET_UCONFIG_REG (markers)
-+				case 0x49: // RELEASE_MEM
-+				case 0x47: // EVENT_WRITE_EOP
-+				case 0x37: // WRITE_DATA
-+				case 0x3c: // WAIT_REG_MEM
-+				case 0x93: // WAIT_REG_MEM64
-+				case 0x46: // EVENT_WRITE
-+				case 0x58: // ACQUIRE_MEM
++			const uint32_t op = (h >> 8u) & 0xffu;
++			char buf[16];
++			std::snprintf(buf, sizeof(buf), " %02x", op);
++			ops += buf;
++			switch (op) {
++				case 0x15: // DISPATCH_DIRECT
++				case 0x16: // DISPATCH_INDIRECT
++				case 0x2a: // DRAW_INDEX_INDIRECT
++				case 0x2b: // DRAW_INDIRECT
++				case 0x2c: // DRAW_INDEX_INDIRECT_MULTI
++				case 0x2d: // DRAW_INDEX_2
++				case 0x2f: // DRAW_INDEX_AUTO
++				case 0x35: // DRAW_INDEX_OFFSET_2
++				case 0x36: // DRAW_INDEX_MULTI_AUTO? (treated as a draw)
++				case 0x3f: // INDIRECT_BUFFER
++				case 0x33: // INDIRECT_BUFFER_CNST
++					light = false;
 +					break;
-+				default: return false;
++				default: break;
 +			}
 +		}
 +		i += len;
 +	}
-+	return true;
++	if (!light) {
++		static std::atomic<uint32_t> reported {0};
++		if (reported++ < 20) journal("acb tail not split: %u dwords, ops%s\n", n, ops.c_str());
++	}
++	return light;
++}
++
++// Run 121: a segment of a compute buffer that follows a cross-queue wait goes to the GPU as a job
++// of its own, after other jobs have run in between, so the register state its dispatches rely on
++// — set before the wait — is replayed first: every register-setting packet of the buffer up to the
++// segment, in order, nothing else (no dispatch, no write, no event), as a small job of its own.
++// The buffers live in a ring so that the soft CP's pass can still read them after the job.
++static const uint32_t* state_prefix(const uint32_t* ib, uint32_t upto, uint32_t* out_dwords) {
++	static std::deque<std::vector<uint32_t>> kept;
++	std::vector<uint32_t> pre;
++	for (uint32_t i = 0; i < upto;) {
++		const uint32_t h    = ib[i];
++		const uint32_t type = h >> 30u;
++		const uint32_t c    = (h >> 16u) & 0x3fffu;
++		uint32_t       len  = 1;
++		if (type == 3 || type == 0) len = c == 0x3fffu ? 1 : c + 2;
++		if (i + len > upto) break;
++		if (type == 3 && c != 0x3fffu) {
++			switch ((h >> 8u) & 0xffu) {
++				case 0x11: // SET_BASE
++				case 0x13: // INDEX_BUFFER_SIZE
++				case 0x26: // INDEX_BASE
++				case 0x28: // CONTEXT_CONTROL
++				case 0x2a: // INDEX_TYPE
++				case 0x2f: // NUM_INSTANCES
++				case 0x5e: // LOAD_UCONFIG_REG
++				case 0x60: // LOAD_CONFIG_REG
++				case 0x5f: // LOAD_SH_REG
++				case 0x61: // LOAD_CONTEXT_REG
++				case 0x63: // LOAD_SH_REG_INDEX
++				case 0x68: // SET_CONFIG_REG
++				case 0x69: // SET_CONTEXT_REG
++				case 0x76: // SET_SH_REG
++				case 0x79: // SET_UCONFIG_REG
++				case 0x9b: // SET_SH_REG_INDEX
++				case 0x9f: // LOAD_CONTEXT_REG_INDEX
++					pre.insert(pre.end(), ib + i, ib + i + len);
++					break;
++				default: break;
++			}
++		}
++		i += len;
++	}
++	*out_dwords = static_cast<uint32_t>(pre.size());
++	if (pre.empty()) return nullptr;
++	if (kept.size() >= 256) kept.pop_front();
++	kept.push_back(std::move(pre));
++	return kept.back().data();
++}
++
++static void submit_segment(const uint32_t* ib, uint32_t num_dwords, uint32_t from, uint32_t to) {
++	if (from > 0) {
++		uint32_t        n   = 0;
++		const uint32_t* pre = state_prefix(ib, from, &n);
++		journal("acb segment %u..%u of %u dwords: state prefix of %u dwords replayed first\n", from, to, num_dwords, n);
++		if (pre != nullptr) submit_one(pre, n, "acb-state", false);
++	}
++	submit_one(ib + from, to - from, "acb", false);
 +}
 +
 +static bool acb_ready(const uint32_t* ib, uint32_t num_dwords) {
@@ -3271,10 +3394,39 @@ index 0000000..5312cd6
 +			else if ((op == 0x3c || op == 0x93) && len >= 4 && ((p[1] >> 4u) & 1u) != 0) {
 +				const uint64_t label = (p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u);
 +				if (i >= done && std::find(written.begin(), written.end(), label) == written.end() && !wait_satisfied(p, op == 0x93)) {
-+					if (tail_split && i > done && g_stage != Stage::MapOnly && tail_is_light(ib + i, num_dwords - i)) {
++					t_unready.ib         = ib;
++					t_unready.num_dwords = num_dwords;
++					t_unready.pos        = i;
++					t_unready.function   = p[1] & 7u;
++					t_unready.label      = label;
++					t_unready.value      = op == 0x93 ? *reinterpret_cast<const volatile uint64_t*>(label) : *reinterpret_cast<const volatile uint32_t*>(label);
++					t_unready.reference  = op == 0x93 ? (p[4] | (static_cast<uint64_t>(p[5]) << 32u)) : p[4];
++					{
++						std::vector<uint64_t> after;
++						for (uint32_t k = i + len; k < num_dwords;) {
++							const uint32_t hk = ib[k];
++							const uint32_t tk = hk >> 30u;
++							uint32_t lk = 1;
++							if (tk == 3 || tk == 0) { const uint32_t ck = (hk >> 16u) & 0x3fffu; lk = ck == 0x3fffu ? 1 : ck + 2; }
++							if (k + lk > num_dwords) break;
++							if (tk == 3) {
++								const uint32_t ok = (hk >> 8u) & 0xffu;
++								const uint32_t* q = ib + k;
++								if (ok == 0x37 && lk >= 4) after.push_back((q[2] & ~3u) | (static_cast<uint64_t>(q[3] & 0xffffu) << 32u));
++								else if (ok == 0x49 && lk >= 6) after.push_back((q[3] & ~3u) | (static_cast<uint64_t>(q[4] & 0xffffu) << 32u));
++								else if ((ok == 0x47 || ok == 0x1e) && lk >= 4) after.push_back((q[2] & ~3u) | (static_cast<uint64_t>(q[3] & 0xffffu) << 32u));
++							}
++							k += lk;
++						}
++						std::lock_guard lk2(g_unready_mutex);
++						g_unready_writes = std::move(after);
++					}
++					g_unready_label      = label;
++					if (tail_split && i > done && g_stage != Stage::MapOnly) {
++						(void)tail_is_light;
 +						SoftCp::clear_gpu_executed();
 +						journal("acb head: %u of %u dwords go ahead of the wait at %u on 0x%" PRIx64 "\n", i - done, num_dwords, i, label);
-+						submit_one(ib + done, i - done, "acb", false);
++						submit_segment(ib, num_dwords, done, i);
 +						AcbHead* e = nullptr;
 +						for (auto& x: g_acb_heads) {
 +							if (x.ib == ib && x.num_dwords == num_dwords) e = &x;
@@ -3294,12 +3446,22 @@ index 0000000..5312cd6
 +		}
 +		i += len;
 +	}
++	g_unready_label = 0;
 +	return true;
 +}
 +
 +static void submit_split(const uint32_t* ib, uint32_t num_dwords, const char* kind, bool from_header) {
 +	std::vector<uint64_t> written;
 +	uint32_t start = 0, i = 0;
++	// Run 122 (BC5_DIRECT_NO_PIECES=1 brings the old way back): a wait that is not satisfied at once
++	// splits the buffer — what precedes the wait goes to the GPU first, so that its own label writes
++	// execute (the water in the second level: the main buffer's wait at 11097 is on a compute tail
++	// that waits for the label this very buffer sets at 1588), then the wait is served on the CPU,
++	// and the rest follows with the buffer's register state replayed in front of it (run 44's
++	// objection to pieces: foreign SH state between them).
++	// Run 123: pieces fault from the first frames (0x800000005000, a shader fetch with foreign
++	// state), so they are opt-in (BC5_DIRECT_PIECES=1) until the replayed state is complete.
++	static const bool pieces = std::getenv("BC5_DIRECT_PIECES") != nullptr;
 +	while (i < num_dwords) {
 +		const uint32_t h = ib[i];
 +		const uint32_t type = h >> 30u;
@@ -3339,17 +3501,56 @@ index 0000000..5312cd6
 +						}
 +					}
 +					static const uint64_t acb_ns = (std::getenv("BC5_DIRECT_ACB_WAIT_MS") ? std::strtoull(std::getenv("BC5_DIRECT_ACB_WAIT_MS"), nullptr, 10) : 2000ull) * 1'000'000ull;
-+					const uint64_t limit = std::strcmp(kind, "acb") == 0 ? acb_ns : 2'000'000'000ull;
++					// Run 124 (BC5_DIRECT_DCB_WAIT_MS, default 8): a wait of the game's thread that is not served
++					// within a frame is a cycle the single ring cannot resolve (the water in the second level,
++					// where each frame cost two 2 s limits); the buffer goes on without it.
++					static const uint64_t dcb_ns = (std::getenv("BC5_DIRECT_DCB_WAIT_MS") ? std::strtoull(std::getenv("BC5_DIRECT_DCB_WAIT_MS"), nullptr, 10) : 8u) * 1'000'000ull;
++					const uint64_t limit = std::strcmp(kind, "acb") == 0 ? acb_ns : (on_game_thread() ? dcb_ns : 2'000'000'000ull);
 +					const uint64_t t0 = SoftCp::now_ns();
 +					bool ok = false;
-+					if (!g_dev || !g_dev->wedged()) {
++					if (pieces && i > start && g_stage != Stage::MapOnly && !wait_satisfied(p, op == 0x93)) {
++						journal("%s piece %u..%u of %u dwords goes ahead of the wait at %u on 0x%" PRIx64 "\n", kind, start, i, num_dwords, i, label);
++						if (start > 0) {
++							uint32_t        n   = 0;
++							const uint32_t* pre = state_prefix(ib, start, &n);
++							if (pre != nullptr) submit_one(pre, n, "dcb-state", false);
++						}
++						submit_one(ib + start, i - start, kind, from_header && start == 0);
++						start = i;
++					}
++					// Run 123 (BC5_DIRECT_NO_CYCLE_BREAK=1 to disable): the compute queue's blocked buffer waits for a
++					// label this buffer writes — on the console the two run side by side and this one would
++					// block at its wait while the other goes on; here this buffer cannot reach the GPU before
++					// its wait is served, so it goes without waiting (the water in the second level: the
++					// fluid tail's results are a frame late).
++					static const bool cycle_break = std::getenv("BC5_DIRECT_NO_CYCLE_BREAK") == nullptr;
++					bool broken = false;
++					if (cycle_break && on_game_thread() && !wait_satisfied(p, op == 0x93)) {
++						for (int k = 0; k < 40 && !wait_satisfied(p, op == 0x93); k++) { // 2 ms for the ordinary case
++							const uint64_t blocked = g_unready_label.load();
++							if (blocked != 0 && std::find(written.begin(), written.end(), blocked) != written.end()) {
++								std::lock_guard lk2(g_unready_mutex);
++								if (std::find(g_unready_writes.begin(), g_unready_writes.end(), label) != g_unready_writes.end()) {
++									broken = true;
++									break;
++								}
++							}
++							std::this_thread::sleep_for(std::chrono::microseconds(50));
++						}
++						if (broken) {
++							static std::atomic<uint32_t> n_broken {0};
++							if (n_broken++ < 50) journal("cycle broken: %s %u dwords waits at %u on 0x%" PRIx64 " for a queue that waits on 0x%" PRIx64 ", which this buffer writes; not waited for\n", kind, num_dwords, i, label, g_unready_label.load());
++						}
++					}
++					if (!broken && (!g_dev || !g_dev->wedged())) {
 +						while (!(ok = wait_satisfied(p, op == 0x93)) && SoftCp::now_ns() - t0 < limit) std::this_thread::sleep_for(std::chrono::microseconds(50));
 +					}
 +					if (!ok && op == 0x93 && len >= 8) {
 +						journal("  wait detail: function %u, value 0x%" PRIx64 ", reference 0x%" PRIx64 ", mask 0x%" PRIx64 "\n", p[1] & 7u,
 +						        *reinterpret_cast<const volatile uint64_t*>(label & ~7ull), p[4] | (static_cast<uint64_t>(p[5]) << 32u), p[6] | (static_cast<uint64_t>(p[7]) << 32u));
 +					}
-+					journal("cpu-wait %s at %u on 0x%" PRIx64 ": %s after %.1f ms\n", op == 0x93 ? "WAIT_REG_MEM64" : "WAIT_REG_MEM", i, label, ok ? "satisfied" : "TIMEOUT", static_cast<double>(SoftCp::now_ns() - t0) / 1e6);
++					journal("cpu-wait %s at %u on 0x%" PRIx64 ": %s after %.1f ms\n", op == 0x93 ? "WAIT_REG_MEM64" : "WAIT_REG_MEM", i, label, ok ? "satisfied" : (broken ? "CYCLE" : (limit < 1'000'000'000ull ? "GIVEN UP" : "TIMEOUT")), static_cast<double>(SoftCp::now_ns() - t0) / 1e6);
++					frame_profile_wait(on_game_thread(), false, static_cast<double>(SoftCp::now_ns() - t0) / 1e6);
 +					if (std::getenv("BC5_DIRECT_TIMING") != nullptr) journal("timing: t %.3f s after that wait (%s %u dwords)\n", timing_now(), kind, num_dwords);
 +					SoftCp::set_gpu_executed(p, len, {0}); // the soft CP must not wait again
 +				}
@@ -3357,7 +3558,14 @@ index 0000000..5312cd6
 +		}
 +		i += len;
 +	}
-+	(void)start;
++	if (start > 0) {
++		uint32_t        n   = 0;
++		const uint32_t* pre = state_prefix(ib, start, &n);
++		journal("%s rest %u..%u of %u dwords: state prefix of %u dwords replayed first\n", kind, start, num_dwords, num_dwords, n);
++		if (pre != nullptr) submit_one(pre, n, "dcb-state", false);
++		submit_one(ib + start, num_dwords - start, kind, false);
++		return;
++	}
 +	submit_one(ib, num_dwords, kind, from_header);
 +}
 +
@@ -3389,7 +3597,15 @@ index 0000000..5312cd6
 +							break;
 +						}
 +					}
-+					if (skip < tn) submit_split(t + skip, tn - skip, "acb", false);
++					if (skip < tn) {
++						if (skip > 0) {
++							uint32_t        n   = 0;
++							const uint32_t* pre = state_prefix(t, skip, &n);
++							journal("acb rest %u..%u of %u dwords: state prefix of %u dwords replayed first\n", skip, tn, tn, n);
++							if (pre != nullptr) submit_one(pre, n, "acb-state", false);
++						}
++						submit_split(t + skip, tn - skip, "acb", false);
++					}
 +				}
 +			}
 +			q += len;
@@ -3504,6 +3720,7 @@ index 0000000..5312cd6
 +				r.rc = -125; // -ECANCELED: the device it was queued on is gone
 +			}
 +			const double total_ms = static_cast<double>(SoftCp::now_ns() - j.queued_ns) / 1e6 + j.cs_ms;
++			frame_profile_done(index == 0, j.queued_ns, SoftCp::now_ns(), 0.0);
 +			journal("submit #%" PRIu64 " %s %u dwords at %p: pass %" PRIu64 " rewrite %" PRIu64 " drop %" PRIu64 " unmapped %" PRIu64 " cc %" PRIu64 " mappings %zu ... %s rc %d%s%s %.2f ms\n",
 +			        j.n, j.kind, j.num_dwords, j.ib, j.filter.passed, j.filter.rewritten, j.filter.dropped, j.filter.unmapped_drops, j.filter.context_control_rewrites,
 +			        j.maps, r.ok ? "OK" : "FAILED", r.rc, r.timed_out ? " TIMEOUT" : "", j.retried ? " (retried)" : "", total_ms);
@@ -3527,7 +3744,9 @@ index 0000000..5312cd6
 +			}
 +			g_cq_fences--;
 +		} else {
++			const uint64_t t_post = SoftCp::now_ns();
 +			it.post(failed);
++			if (index == 0) frame_profile_post(static_cast<double>(SoftCp::now_ns() - t_post) / 1e6);
 +			failed = false;
 +		}
 +		g_cq_items--;
@@ -3548,7 +3767,7 @@ index 0000000..5312cd6
 +}
 +
 +static void post(std::function<void(bool failed)> fn) {
-+	if (!g_async || t_cq == 1) { // the consumer has waited for its jobs itself
++	if (!g_async || (t_cq == 1 && !g_ring_async)) { // the consumer has waited for its jobs itself
 +		fn(false);
 +		return;
 +	}
@@ -3567,6 +3786,95 @@ index 0000000..5312cd6
 +	g_dev->wait_idle(2'000'000'000ull);
 +}
 +
++static bool async_on() {
++	return g_async;
++}
++
++static bool on_game_thread() {
++	return t_cq == 0;
++}
++
++static std::mutex g_fp_mutex;
++static struct {
++	double   sync_ms = 0, hints_ms = 0, prepare_ms = 0, list_ms = 0, cs_ms = 0, fence_ms = 0, cap_ms = 0, cpuwait_ms = 0, eqwait_ms = 0, post_ms = 0;
++	uint64_t jobs = 0, ring_jobs = 0, gpu_busy_ns = 0, last_done_ns = 0, posts = 0;
++	std::thread::id render_thread;
++	double   t_last_flip = 0;
++} g_fp;
++static const bool g_frame_profile = std::getenv("BC5_DIRECT_FRAME_PROFILE") != nullptr;
++
++static void frame_profile_wait(bool game_thread, bool cap, double ms) {
++	if (!g_frame_profile || !game_thread) return;
++	std::lock_guard lock(g_fp_mutex);
++	(cap ? g_fp.cap_ms : g_fp.cpuwait_ms) += ms;
++}
++
++static void frame_profile_eqwait(double ms) {
++	if (!g_frame_profile) return;
++	std::lock_guard lock(g_fp_mutex);
++	if (std::this_thread::get_id() == g_fp.render_thread) g_fp.eqwait_ms += ms;
++}
++
++static void frame_profile_post(double ms) {
++	if (!g_frame_profile) return;
++	std::lock_guard lock(g_fp_mutex);
++	g_fp.post_ms += ms;
++	g_fp.posts++;
++}
++
++static void frame_profile_submit(bool game_thread, double sync_ms, double hints_ms) {
++	if (!g_frame_profile || !game_thread) return;
++	std::lock_guard lock(g_fp_mutex);
++	g_fp.render_thread = std::this_thread::get_id();
++	g_fp.sync_ms += sync_ms;
++	g_fp.hints_ms += hints_ms;
++}
++
++static void frame_profile_job(bool game_thread, double prepare_ms, double list_ms, double cs_ms) {
++	if (!g_frame_profile) return;
++	std::lock_guard lock(g_fp_mutex);
++	if (game_thread) {
++		g_fp.prepare_ms += prepare_ms;
++		g_fp.list_ms += list_ms;
++		g_fp.cs_ms += cs_ms;
++		g_fp.jobs++;
++	} else {
++		g_fp.ring_jobs++;
++	}
++}
++
++// GPU busy: the union of the jobs' [queued, done) intervals — a job queued while the previous one
++// still ran only adds what is past that one's completion. Synchronously (done_ns == 0) the wait
++// for the fence is the GPU's time, and it is the game thread's too.
++static void frame_profile_done(bool game_thread, uint64_t queued_ns, uint64_t done_ns, double fence_ms) {
++	if (!g_frame_profile) return;
++	std::lock_guard lock(g_fp_mutex);
++	if (done_ns == 0) {
++		g_fp.gpu_busy_ns += static_cast<uint64_t>(fence_ms * 1e6);
++		if (game_thread) g_fp.fence_ms += fence_ms;
++		return;
++	}
++	const uint64_t start = std::max(queued_ns, g_fp.last_done_ns);
++	if (done_ns > start) g_fp.gpu_busy_ns += done_ns - start;
++	if (done_ns > g_fp.last_done_ns) g_fp.last_done_ns = done_ns;
++}
++
++static void frame_profile_flip(double drain_ms) {
++	if (!g_frame_profile) return;
++	std::lock_guard lock(g_fp_mutex);
++	const double now = timing_now();
++	if (g_fp.t_last_flip != 0) {
++		const double interval = (now - g_fp.t_last_flip) * 1e3;
++		const double inside   = g_fp.sync_ms + g_fp.hints_ms + g_fp.prepare_ms + g_fp.list_ms + g_fp.cs_ms + g_fp.fence_ms + g_fp.cap_ms + g_fp.cpuwait_ms + g_fp.eqwait_ms;
++		journal("frame profile: t %.3f s, %.1f ms since the last flip; game thread inside the host %.1f ms (sync %.1f, hints %.1f, prepare %.1f, list %.1f, cs %.1f, fence %.1f, cap %.1f, label waits %.1f, event waits %.1f), at the flip %.1f, outside %.1f; GPU busy %.1f ms in %" PRIu64 " jobs (+%" PRIu64 " from the ring thread); soft-CP passes %.1f ms in %" PRIu64 "\n",
++		        now, interval, inside, g_fp.sync_ms, g_fp.hints_ms, g_fp.prepare_ms, g_fp.list_ms, g_fp.cs_ms, g_fp.fence_ms, g_fp.cap_ms, g_fp.cpuwait_ms, g_fp.eqwait_ms, drain_ms, interval - inside - drain_ms,
++		        static_cast<double>(g_fp.gpu_busy_ns) / 1e6, g_fp.jobs, g_fp.ring_jobs, g_fp.post_ms, g_fp.posts);
++	}
++	g_fp.sync_ms = g_fp.hints_ms = g_fp.prepare_ms = g_fp.list_ms = g_fp.cs_ms = g_fp.fence_ms = g_fp.cap_ms = g_fp.cpuwait_ms = g_fp.eqwait_ms = g_fp.post_ms = 0;
++	g_fp.jobs = g_fp.ring_jobs = g_fp.gpu_busy_ns = g_fp.posts = 0;
++	g_fp.t_last_flip = now;
++}
++
 +static void submit_one(const uint32_t* ib, uint32_t num_dwords, const char* kind, bool from_header) {
 +	if (g_stage == Stage::Off || !g_dev || ib == nullptr || num_dwords == 0) {
 +		return;
@@ -3581,7 +3889,9 @@ index 0000000..5312cd6
 +		return;
 +	}
 +	if (g_async) {
++		const uint64_t t_cap = SoftCp::now_ns();
 +		while (g_cq_fences.load() >= 12 || g_recovering.load()) std::this_thread::sleep_for(std::chrono::microseconds(50));
++		frame_profile_wait(t_cq == 0, true, static_cast<double>(SoftCp::now_ns() - t_cap) / 1e6);
 +	}
 +	std::lock_guard lock(g_dev_mutex);
 +	if (g_dev->wedged()) {
@@ -3653,6 +3963,7 @@ index 0000000..5312cd6
 +			for (auto& a: acc) a = 0;
 +		}
 +	}
++	frame_profile_submit(t_cq == 0, static_cast<double>(t1 - t0) / 1e6, static_cast<double>(t2 - t1) / 1e6);
 +	if (timing) {
 +		journal("timing: t %.3f s %s %u dwords: sync%s %.1f ms, hints %.1f ms\n", t_start, kind, num_dwords, force_sync ? "" : " (lazy)",
 +		        static_cast<double>(t1 - t0) / 1e6, static_cast<double>(t2 - t1) / 1e6);
@@ -4022,7 +4333,7 @@ index 0000000..5312cd6
 +		retried = true;
 +		r       = g_dev->submit(std::span<const uint32_t>(ib, num_dwords), opt, 2'000'000'000ull, with_gds);
 +	}
-+	if (r.pending && t_cq == 1) { // BC5_DIRECT_ASYNC: the doorbell consumer waits for its own jobs
++	if (r.pending && t_cq == 1 && !g_ring_async) { // BC5_DIRECT_ASYNC: the doorbell consumer waits for its own jobs
 +		bc5::direct::SubmitResult fr;
 +		{
 +			std::shared_lock finish_lock(g_finish_mutex);
@@ -4062,6 +4373,7 @@ index 0000000..5312cd6
 +		it.job.t2_ns      = t2;
 +		it.job.queued_ns  = SoftCp::now_ns();
 +		it.job.dev_gen    = g_dev_gen.load();
++		frame_profile_job(t_cq == 0, r.prepare_ms, r.list_ms, r.cs_ms);
 +		{
 +			static const bool trace = std::getenv("BC5_DIRECT_LABEL_TRACE") != nullptr;
 +			if (trace) journal("queued #%" PRIu64 " %s %u dwords at t %.6f s\n", n, kind, num_dwords, timing_now());
@@ -4086,6 +4398,9 @@ index 0000000..5312cd6
 +			std::fclose(f);
 +		}
 +	}
++	frame_profile_job(t_cq == 0, r.prepare_ms, r.list_ms, r.cs_ms);
++	// A job the ring thread finished inline (jobs in flight) overlaps the game thread's jobs: it counts by its interval, not by its wait.
++	frame_profile_done(t_cq == 0, g_async ? t2 : 0, g_async ? SoftCp::now_ns() : 0, r.fence_ms);
 +	if (timing) {
 +		journal("timing: #%" PRIu64 " done at t %.3f s, %.1f ms after the sync and hints; device: prepare %.2f list %.2f cs %.2f fence %.2f ms, %u BOs%s\n", n, timing_now(),
 +		        static_cast<double>(SoftCp::now_ns() - t2) / 1e6, r.prepare_ms, r.list_ms, r.cs_ms, r.fence_ms, r.bo_count, r.short_list ? " (short list)" : "");
@@ -4192,6 +4507,15 @@ index 0000000..5312cd6
 +static void post(std::function<void(bool failed)> fn) { fn(false); }
 +static void drain() {}
 +static void set_source(int) {}
++static bool async_on() { return false; }
++static bool on_game_thread() { return true; }
++static void frame_profile_wait(bool, bool, double) {}
++static void frame_profile_eqwait(double) {}
++static void frame_profile_post(double) {}
++static void frame_profile_submit(bool, double, double) {}
++static void frame_profile_job(bool, double, double, double) {}
++static void frame_profile_done(bool, uint64_t, uint64_t, double) {}
++static void frame_profile_flip(double) {}
 +#endif
 +
 +} // namespace Direct
@@ -4555,8 +4879,10 @@ index 0000000..5312cd6
 +	}
 +	if (nevents > 0 && events != nullptr) {
 +		int out = 0;
++		const uint64_t t_eq = Bc5Gc::SoftCp::now_ns();
 +		int r   = EQ::KernelWaitEqueue(eq, reinterpret_cast<EQ::KernelEvent*>(events), nevents,
 +		                               &out, nullptr);
++		Bc5Gc::Direct::frame_profile_eqwait(static_cast<double>(Bc5Gc::SoftCp::now_ns() - t_eq) / 1e6);
 +		(void)timeout; // TODO(bc5): honour the timespec
 +		return r == 0 ? out : -1;
 +	}
@@ -4886,7 +5212,22 @@ index 0000000..5312cd6
 +			}
 +		}
 +	}
-+	Bc5Gc::Direct::drain(); // BC5_DIRECT_ASYNC: nothing of the frame may still be in flight
++	// Experiment 0025: BC5_DIRECT_FLIP_DEFER=1 — with jobs in flight the flip is not waited for
++	// here. It is queued behind the frame's jobs and submitted by the completion thread once the
++	// GPU has finished them, the buffer's label reset with it; the game's thread goes on with the
++	// next frame instead of idling at the flip, and the GPU does not idle while it does (run 117:
++	// the wait at the flip is where the two wait for each other).
++	static const bool defer = std::getenv("BC5_DIRECT_FLIP_DEFER") != nullptr && Bc5Gc::Direct::async_on();
++	const double t_drain = Bc5Gc::Direct::timing_now();
++	if (!defer) Bc5Gc::Direct::drain(); // BC5_DIRECT_ASYNC: nothing of the frame may still be in flight
++	Bc5Gc::Direct::frame_profile_flip((Bc5Gc::Direct::timing_now() - t_drain) * 1e3);
++	if (defer) {
++		Bc5Gc::Direct::post([handle, index, flip_mode, flip_arg](bool) {
++			VideoOut::VideoOutSubmitFlip(handle, index, flip_mode, flip_arg);
++			if (index >= 0 && index < 64) Bc5Gc::g_labels[index] = 0;
++		});
++		return 0;
++	}
 +	const double flip_t0 = Bc5Gc::Direct::timing_now();
 +	const int rc = VideoOut::VideoOutSubmitFlip(handle, index, flip_mode, flip_arg);
 +	if (std::getenv("BC5_DIRECT_TIMING") != nullptr) {
