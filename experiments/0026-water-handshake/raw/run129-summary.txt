@@ -1,0 +1,9 @@
+run 129, 2026-10-06 21:10, unattended as run 128 (an empty save directory, KYTY_BC5_AUTOPRESS=50:cross,58:cross, 450 s limit), the same build; nobody at the controller (journal excerpts from gc/direct.log)
+
+flips per 10 s:
+t0:515 t10:597 t20:600 t30:551 t40:600 t50:599 t60:597 t70:531 t80:592 t90:598 t100:596 t110:595 t120:600 t130:594 t140:592 t150:595 t160:589 t170:592 t180:597 t190:586 t200:91 t210:187 t220:590 t230:529 t240:541 t250:493 t260:534 t270:531 t280:527 t290:532 t300:514 t310:530 t320:519 t330:501 t340:488 t350:493 t360:531 t370:542 t380:34
+phases as run 128: title screen, slot chosen at 58 s, level load at 60 fps to 200 s, load end 200-220 s, the opening cutscene from 225 s at 49-54 fps
+failed 0, 2 s timeouts 0, waits given up 3, the save written 3 times
+per minute (frames, ms frame, inside host, prepare, cs, at flip, outside, GPU busy): t240 3158 19.0 6.5 1.2 1.2 3.2 9.3 16.5; t300 3045 19.7 6.1 1.0 1.1 5.1 8.5 17.4; t360 1107 18.7 5.6 1.1 1.1 4.6 8.5 16.6
+
+ended at 384 s with exit code 0, the journal cut mid-line: the ssh session the run had been started from (nohup, stdin left attached) was closed at that second; not the game's doing. The maintainer heard the audio break up in the cutscene's last seconds, i.e. at the teardown. Lesson: start unattended runs with setsid, stdin from /dev/null, inside the ubuntu distrobox (run 130).
