@@ -377,8 +377,623 @@ index 58f16c6..4ab38e9 100644
  KYTY_SYSV_ABI int VideoOutIsFlipPending(int handle);
  KYTY_SYSV_ABI int VideoOutGetVblankStatus(int handle, VideoOutVblankStatus* status);
  KYTY_SYSV_ABI int VideoOutGetEventId(const LibKernel::EventQueue::KernelEvent* ev);
+diff --git a/src/graphics/presentation/window/hostInput.cpp b/src/graphics/presentation/window/hostInput.cpp
+index edcfdaf..e4ad4fe 100644
+--- a/src/graphics/presentation/window/hostInput.cpp
++++ b/src/graphics/presentation/window/hostInput.cpp
+@@ -6,14 +6,41 @@
+ #include "SDL_mouse.h"
+ #include "common/assert.h"
+ #include "common/emulatorConfig.h"
++#include "common/logging/log.h"
+ #include "libs/controller.h"
+ 
+ #include <algorithm>
+ #include <array>
++#include <cctype>
+ #include <cstddef>
++#include <cstdlib>
++#include <fstream>
+ #include <string>
+ #include <string_view>
+ #include <utility>
++#include <vector>
++
++// BC5: host input mapping, driven by a configuration file.
++//
++// Each line binds one DualSense control to one host input, disables one physical pad input, or
++// sets an option; `#` starts a comment. The same lines are accepted one by one as `--keymap`.
++//
++//   <Control>=<Input>        the control is driven by the input (in addition to the pad's own)
++//   Pad:<name>=none          the physical pad's button or axis never reaches the game
++//   DefaultKeys=on|off       the built-in keyboard layout (default on; a key or a control that a
++//                            line above binds leaves the layout)
++//
++// Controls: L3 R3 Options Up Right Down Left L2 R2 L1 R1 Triangle Circle Cross Square TouchPad
++//           LeftStickLeft LeftStickRight LeftStickUp LeftStickDown
++//           RightStickLeft RightStickRight RightStickUp RightStickDown
++// Inputs:   a key name as SDL spells it ("M", "Right Shift", "Keypad 0"; Escape, Space and F1
++//           are the host's), Mouse:Left|Middle|Right|X1|X2, Pad:<button> with SDL's button names
++//           (a b x y back guide start leftstick rightstick leftshoulder rightshoulder dpup dpdown
++//           dpleft dpright misc1 paddle1..4 touchpad), Pad:<axis> with SDL's axis names
++//           (lefttrigger righttrigger, and leftx lefty rightx righty with a trailing + or -).
++//
++// The file is named by --input-config <file> or by KYTY_BC5_INPUT_CONFIG; see
++// backend/kytyplus-patches/input.example.cfg in the BC5 repository.
+ 
+ namespace Libs::Graphics {
+ 
+@@ -55,11 +82,62 @@ static constexpr std::array CONTROL_INFO = {
+ 
+ constexpr std::size_t INVALID_CONTROL = CONTROL_INFO.size();
+ 
+-struct Binding {
++// The built-in keyboard layout: KytyPlus's, plus U and O for the triggers it had no key for.
++struct DefaultKey {
++	SDL_Keycode      key;
++	std::string_view control;
++};
++
++static constexpr std::array DEFAULT_KEYS = {
++    DefaultKey {SDLK_UP, "Up"},
++    DefaultKey {SDLK_LEFT, "Left"},
++    DefaultKey {SDLK_DOWN, "Down"},
++    DefaultKey {SDLK_RIGHT, "Right"},
++    DefaultKey {SDLK_j, "Cross"},
++    DefaultKey {SDLK_i, "Triangle"},
++    DefaultKey {SDLK_k, "Square"},
++    DefaultKey {SDLK_l, "Circle"},
++    DefaultKey {SDLK_q, "L1"},
++    DefaultKey {SDLK_e, "R1"},
++    DefaultKey {SDLK_u, "L2"},
++    DefaultKey {SDLK_o, "R2"},
++    DefaultKey {SDLK_LSHIFT, "L3"},
++    DefaultKey {SDLK_LCTRL, "R3"},
++    DefaultKey {SDLK_RETURN, "Options"},
++    DefaultKey {SDLK_RETURN2, "Options"},
++    DefaultKey {SDLK_BACKSPACE, "TouchPad"},
++    DefaultKey {SDLK_TAB, "TouchPad"},
++    DefaultKey {SDLK_a, "LeftStickLeft"},
++    DefaultKey {SDLK_d, "LeftStickRight"},
++    DefaultKey {SDLK_w, "LeftStickUp"},
++    DefaultKey {SDLK_s, "LeftStickDown"},
++    DefaultKey {SDLK_f, "RightStickLeft"},
++    DefaultKey {SDLK_h, "RightStickRight"},
++    DefaultKey {SDLK_t, "RightStickUp"},
++    DefaultKey {SDLK_g, "RightStickDown"},
++};
++
++enum class SourceKind {
++	None,
++	Key,
++	Mouse,
++	PadButton,
++	PadAxis,
++};
++
++struct Source {
++	SourceKind  kind           = SourceKind::None;
+ 	SDL_Keycode key            = SDLK_UNKNOWN;
+ 	uint8_t     mouse_button   = 0;
+-	int         gamepad_button = -1;  // SDL_GameControllerButton or -1
+-	std::size_t control        = INVALID_CONTROL;
++	int         pad_button     = -1; // SDL_GameControllerButton
++	int         pad_axis       = -1; // SDL_GameControllerAxis
++	int         axis_sign      = 0;  // +1 / -1 for a stick direction, 0 for a trigger
++};
++
++struct Binding {
++	Source      source;
++	std::size_t control = INVALID_CONTROL;
++	bool        active  = false; // for axis sources: the last state sent
+ };
+ 
+ std::size_t ControlFromName(std::string_view name) {
+@@ -83,107 +161,282 @@ SDL_Keycode NormalizeKey(SDL_Keycode key) {
+ 	}
+ }
+ 
++std::string_view Trim(std::string_view s) {
++	while (!s.empty() && (s.front() == ' ' || s.front() == '\t' || s.front() == '\r')) {
++		s.remove_prefix(1);
++	}
++	while (!s.empty() && (s.back() == ' ' || s.back() == '\t' || s.back() == '\r')) {
++		s.remove_suffix(1);
++	}
++	return s;
++}
++
++bool EqualNoCase(std::string_view a, std::string_view b) {
++	return a.size() == b.size() &&
++	       std::equal(a.begin(), a.end(), b.begin(), [](char x, char y) {
++		       return std::tolower(static_cast<unsigned char>(x)) ==
++		              std::tolower(static_cast<unsigned char>(y));
++	       });
++}
++
+ uint8_t MouseButtonFromName(std::string_view name) {
+ 	static constexpr std::array buttons = {
+-	    std::pair {std::string_view("Mouse:Left"), uint8_t {SDL_BUTTON_LEFT}},
+-	    std::pair {std::string_view("Mouse:Middle"), uint8_t {SDL_BUTTON_MIDDLE}},
+-	    std::pair {std::string_view("Mouse:Right"), uint8_t {SDL_BUTTON_RIGHT}},
+-	    std::pair {std::string_view("Mouse:X1"), uint8_t {SDL_BUTTON_X1}},
+-	    std::pair {std::string_view("Mouse:X2"), uint8_t {SDL_BUTTON_X2}},
++	    std::pair {std::string_view("Left"), uint8_t {SDL_BUTTON_LEFT}},
++	    std::pair {std::string_view("Middle"), uint8_t {SDL_BUTTON_MIDDLE}},
++	    std::pair {std::string_view("Right"), uint8_t {SDL_BUTTON_RIGHT}},
++	    std::pair {std::string_view("X1"), uint8_t {SDL_BUTTON_X1}},
++	    std::pair {std::string_view("X2"), uint8_t {SDL_BUTTON_X2}},
+ 	};
+-
+-	const auto button = std::find_if(buttons.begin(), buttons.end(),
+-	                                 [name](const auto& item) { return item.first == name; });
++	const auto button = std::find_if(buttons.begin(), buttons.end(), [name](const auto& item) {
++		return EqualNoCase(item.first, name);
++	});
+ 	return button != buttons.end() ? button->second : 0;
+ }
+ 
+-int GamepadButtonFromName(std::string_view name) {
+-	if (!name.starts_with("Pad:")) return -1;
+-	return static_cast<int>(
+-	    SDL_GameControllerGetButtonFromString(std::string(name.substr(4)).c_str()));
++// "Pad:<name>": a button, a trigger axis, or a stick axis with a direction.
++bool PadSourceFromName(std::string_view name, Source* out) {
++	if (!name.starts_with("Pad:")) {
++		return false;
++	}
++	std::string spec(name.substr(4));
++	std::transform(spec.begin(), spec.end(), spec.begin(),
++	               [](unsigned char c) { return static_cast<char>(std::tolower(c)); });
++
++	const auto button = SDL_GameControllerGetButtonFromString(spec.c_str());
++	if (button != SDL_CONTROLLER_BUTTON_INVALID) {
++		out->kind       = SourceKind::PadButton;
++		out->pad_button = button;
++		return true;
++	}
++
++	int sign = 0;
++	if (!spec.empty() && (spec.back() == '+' || spec.back() == '-')) {
++		sign = spec.back() == '+' ? 1 : -1;
++		spec.pop_back();
++	}
++	const auto axis = SDL_GameControllerGetAxisFromString(spec.c_str());
++	if (axis == SDL_CONTROLLER_AXIS_INVALID) {
++		return false;
++	}
++	const bool trigger =
++	    axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT || axis == SDL_CONTROLLER_AXIS_TRIGGERRIGHT;
++	if (trigger == (sign != 0)) {
++		return false; // a trigger takes no direction; a stick axis needs one
++	}
++	out->kind      = SourceKind::PadAxis;
++	out->pad_axis  = axis;
++	out->axis_sign = sign;
++	return true;
++}
++
++bool SourceFromName(std::string_view name, Source* out) {
++	*out = Source {};
++	if (name.starts_with("Mouse:")) {
++		out->mouse_button = MouseButtonFromName(name.substr(6));
++		out->kind         = SourceKind::Mouse;
++		return out->mouse_button != 0;
++	}
++	if (name.starts_with("Pad:")) {
++		return PadSourceFromName(name, out);
++	}
++	out->key = NormalizeKey(SDL_GetKeyFromName(std::string(name).c_str()));
++	if (out->key == SDLK_UNKNOWN) {
++		return false;
++	}
++	out->kind = SourceKind::Key;
++	return true;
+ }
+ 
+-bool Conflicts(const Binding& first, const Binding& second) {
+-	return first.control == second.control ||
+-	       (first.key != SDLK_UNKNOWN && first.key == second.key) ||
+-	       (first.mouse_button != 0 && first.mouse_button == second.mouse_button) ||
+-	       (first.gamepad_button >= 0 && first.gamepad_button == second.gamepad_button);
++bool SameSource(const Source& a, const Source& b) {
++	if (a.kind != b.kind) {
++		return false;
++	}
++	switch (a.kind) {
++		case SourceKind::Key: return a.key == b.key;
++		case SourceKind::Mouse: return a.mouse_button == b.mouse_button;
++		case SourceKind::PadButton: return a.pad_button == b.pad_button;
++		case SourceKind::PadAxis: return a.pad_axis == b.pad_axis && a.axis_sign == b.axis_sign;
++		default: return false;
++	}
+ }
+ 
+ class InputMap {
+ public:
+-	InputMap(): m_custom(!Config::GetKeymap().empty()) {
++	InputMap() {
+ 		for (const auto& value: Config::GetKeymap()) {
+-			const std::string_view entry = value;
+-			const auto             split = entry.find('=');
+-
+-		Binding binding;
+-		if (split != std::string_view::npos) {
+-			binding.control       = ControlFromName(entry.substr(0, split));
+-			const auto host_input = entry.substr(split + 1);
+-			binding.mouse_button  = MouseButtonFromName(host_input);
+-			if (binding.mouse_button == 0) {
+-				binding.gamepad_button = GamepadButtonFromName(host_input);
++			Parse(value, "--keymap");
++		}
++		if (const char* path = std::getenv("KYTY_BC5_INPUT_CONFIG"); path != nullptr && *path != 0) {
++			std::ifstream file(path);
++			if (!file) {
++				EXIT("Input config: cannot open %s\n", path);
+ 			}
+-			if (binding.mouse_button == 0 && binding.gamepad_button < 0) {
+-				binding.key = NormalizeKey(SDL_GetKeyFromName(std::string(host_input).c_str()));
++			std::string line;
++			int         number = 0;
++			while (std::getline(file, line)) {
++				number++;
++				Parse(line, std::string(path) + ":" + std::to_string(number));
+ 			}
+ 		}
+ 
+-		const bool reserved =
+-		    binding.key == SDLK_ESCAPE || binding.key == SDLK_SPACE || binding.key == SDLK_F1;
+-		const bool has_binding = binding.key != SDLK_UNKNOWN || binding.mouse_button != 0 ||
+-		                         binding.gamepad_button >= 0;
+-		if (binding.control == INVALID_CONTROL || reserved || !has_binding) {
+-			EXIT("Invalid input mapping: %s\n", value.c_str());
+-		}
+-		Add(binding);
+-		}
++		m_custom = !m_bindings.empty() || m_disabled_buttons != 0 || m_disabled_axes != 0 ||
++		           !m_default_keys;
++		LOGF("Host input: %zu binding(s), %d pad button(s) and %d pad axis/axes disabled, default "
++		     "keys %s\n",
++		     m_bindings.size(), __builtin_popcount(m_disabled_buttons),
++		     __builtin_popcount(m_disabled_axes), m_default_keys ? "on" : "off");
+ 	}
++
+ 	[[nodiscard]] bool Custom() const { return m_custom; }
++	[[nodiscard]] bool DefaultKeys() const { return m_default_keys; }
++
++	[[nodiscard]] bool PadButtonDisabled(int button) const {
++		return button >= 0 && button < 32 && ((m_disabled_buttons >> button) & 1u) != 0;
++	}
++
++	[[nodiscard]] bool PadAxisDisabled(int axis) const {
++		return axis >= 0 && axis < 32 && ((m_disabled_axes >> axis) & 1u) != 0;
++	}
++
++	[[nodiscard]] bool ControlBound(std::size_t control) const {
++		return std::any_of(m_bindings.begin(), m_bindings.end(),
++		                   [control](const auto& b) { return b.control == control; });
++	}
+ 
+ 	[[nodiscard]] std::size_t FindKey(int key_code) const {
+-		key_code = NormalizeKey(static_cast<SDL_Keycode>(key_code));
+-		const auto binding =
+-		    std::find_if(m_bindings.begin(), m_bindings.begin() + m_size,
+-		                 [key_code](const auto& item) { return item.key == key_code; });
+-		return binding != m_bindings.begin() + m_size ? binding->control : INVALID_CONTROL;
++		const auto key = NormalizeKey(static_cast<SDL_Keycode>(key_code));
++		for (const auto& b: m_bindings) {
++			if (b.source.kind == SourceKind::Key && b.source.key == key) {
++				return b.control;
++			}
++		}
++		return INVALID_CONTROL;
+ 	}
+ 
+ 	[[nodiscard]] std::size_t FindMouseButton(uint8_t mouse_button) const {
+-		const auto binding = std::find_if(
+-		    m_bindings.begin(), m_bindings.begin() + m_size,
+-		    [mouse_button](const auto& item) { return item.mouse_button == mouse_button; });
+-		return binding != m_bindings.begin() + m_size ? binding->control : INVALID_CONTROL;
++		for (const auto& b: m_bindings) {
++			if (b.source.kind == SourceKind::Mouse && b.source.mouse_button == mouse_button) {
++				return b.control;
++			}
++		}
++		return INVALID_CONTROL;
+ 	}
+ 
+-	[[nodiscard]] std::size_t FindGamepadButton(int button) const {
+-		const auto binding = std::find_if(
+-		    m_bindings.begin(), m_bindings.begin() + m_size,
+-		    [button](const auto& item) { return item.gamepad_button == button; });
+-		return binding != m_bindings.begin() + m_size ? binding->control : INVALID_CONTROL;
++	[[nodiscard]] std::size_t FindPadButton(int button) const {
++		for (const auto& b: m_bindings) {
++			if (b.source.kind == SourceKind::PadButton && b.source.pad_button == button) {
++				return b.control;
++			}
++		}
++		return INVALID_CONTROL;
++	}
++
++	// Axis sources: every binding on this axis whose state changed, with its new state.
++	template <typename F>
++	void UpdatePadAxis(int axis, int value, F&& on_change) {
++		for (auto& b: m_bindings) {
++			if (b.source.kind != SourceKind::PadAxis || b.source.pad_axis != axis) {
++				continue;
++			}
++			constexpr int threshold = 16384; // half of SDL's axis range
++			const bool    down      = b.source.axis_sign < 0 ? value < -threshold : value > threshold;
++			if (down != b.active) {
++				b.active = down;
++				on_change(b.control, down);
++			}
++		}
+ 	}
+ 
+ private:
+-	void Add(const Binding& binding) {
+-		for (std::size_t index = 0; index < m_size;) {
+-			if (Conflicts(m_bindings[index], binding)) {
+-				m_bindings[index] = m_bindings[--m_size];
++	void Parse(std::string_view raw, const std::string& where) {
++		std::string_view line = raw;
++		if (const auto hash = line.find('#'); hash != std::string_view::npos) {
++			line = line.substr(0, hash);
++		}
++		line = Trim(line);
++		if (line.empty()) {
++			return;
++		}
++		const auto split = line.find('=');
++		if (split == std::string_view::npos) {
++			EXIT("Input config (%s): expected <Control>=<Input>, got: %s\n", where.c_str(),
++			     std::string(line).c_str());
++		}
++		const auto left  = Trim(line.substr(0, split));
++		const auto right = Trim(line.substr(split + 1));
++
++		if (EqualNoCase(left, "DefaultKeys")) {
++			if (EqualNoCase(right, "on") || EqualNoCase(right, "true") || right == "1") {
++				m_default_keys = true;
++			} else if (EqualNoCase(right, "off") || EqualNoCase(right, "false") || right == "0") {
++				m_default_keys = false;
++			} else {
++				EXIT("Input config (%s): DefaultKeys takes on or off, got: %s\n", where.c_str(),
++				     std::string(right).c_str());
++			}
++			return;
++		}
++
++		if (left.starts_with("Pad:") && EqualNoCase(right, "none")) {
++			Source source;
++			if (!PadSourceFromName(left, &source)) {
++				EXIT("Input config (%s): unknown pad input: %s\n", where.c_str(),
++				     std::string(left).c_str());
++			}
++			if (source.kind == SourceKind::PadButton) {
++				m_disabled_buttons |= 1u << source.pad_button;
++				LOGF("Host input: pad button %s disabled\n",
++				     SDL_GameControllerGetStringForButton(
++				         static_cast<SDL_GameControllerButton>(source.pad_button)));
+ 			} else {
+-				index++;
++				m_disabled_axes |= 1u << source.pad_axis;
++				LOGF("Host input: pad axis %s disabled\n",
++				     SDL_GameControllerGetStringForAxis(
++				         static_cast<SDL_GameControllerAxis>(source.pad_axis)));
+ 			}
++			return;
++		}
++
++		Binding binding;
++		binding.control = ControlFromName(left);
++		if (binding.control == INVALID_CONTROL) {
++			EXIT("Input config (%s): unknown control: %s\n", where.c_str(),
++			     std::string(left).c_str());
++		}
++		if (EqualNoCase(right, "none")) {
++			// "<Control>=none": nothing of the host's drives it (its default key is dropped).
++			binding.source.kind = SourceKind::None;
++		} else if (!SourceFromName(right, &binding.source)) {
++			EXIT("Input config (%s): unknown input: %s\n", where.c_str(),
++			     std::string(right).c_str());
++		}
++		if (binding.source.kind == SourceKind::Key &&
++		    (binding.source.key == SDLK_ESCAPE || binding.source.key == SDLK_SPACE ||
++		     binding.source.key == SDLK_F1)) {
++			EXIT("Input config (%s): Escape, Space and F1 belong to the host: %s\n", where.c_str(),
++			     std::string(line).c_str());
+ 		}
+-		EXIT_IF(m_size >= m_bindings.size());
+-		m_bindings[m_size++] = binding;
++		// A later line replaces an earlier one with the same source or the same control.
++		m_bindings.erase(std::remove_if(m_bindings.begin(), m_bindings.end(),
++		                                [&](const auto& b) {
++			                                return b.control == binding.control ||
++			                                       (binding.source.kind != SourceKind::None &&
++			                                        SameSource(b.source, binding.source));
++		                                }),
++		                 m_bindings.end());
++		m_bindings.push_back(binding);
++		LOGF("Host input: %s = %s\n", std::string(left).c_str(), std::string(right).c_str());
+ 	}
+ 
+-	std::array<Binding, CONTROL_INFO.size()> m_bindings {};
+-	std::size_t                              m_size = 0;
+-	bool                                     m_custom;
++	std::vector<Binding> m_bindings;
++	uint32_t             m_disabled_buttons = 0;
++	uint32_t             m_disabled_axes    = 0;
++	bool                 m_default_keys     = true;
++	bool                 m_custom           = false;
+ };
+ 
+-const InputMap& GetInputMap() {
+-	static const InputMap map;
++InputMap& GetInputMap() {
++	static InputMap map;
+ 	return map;
+ }
+ 
+@@ -199,35 +452,6 @@ void SetButton(uint32_t button, bool down) {
+ 	}
+ }
+ 
+-uint32_t DefaultKeyboardButton(int key_code) {
+-	switch (NormalizeKey(static_cast<SDL_Keycode>(key_code))) {
+-		case SDLK_UP: return Controller::PAD_BUTTON_UP;
+-		case SDLK_LEFT: return Controller::PAD_BUTTON_LEFT;
+-		case SDLK_DOWN: return Controller::PAD_BUTTON_DOWN;
+-		case SDLK_RIGHT: return Controller::PAD_BUTTON_RIGHT;
+-		case SDLK_j: return Controller::PAD_BUTTON_CROSS;
+-		case SDLK_i: return Controller::PAD_BUTTON_TRIANGLE;
+-		case SDLK_k: return Controller::PAD_BUTTON_SQUARE;
+-		case SDLK_l: return Controller::PAD_BUTTON_CIRCLE;
+-		case SDLK_q: return Controller::PAD_BUTTON_L1;
+-		case SDLK_e: return Controller::PAD_BUTTON_R1;
+-		case SDLK_LSHIFT: return Controller::PAD_BUTTON_L3;
+-		case SDLK_LCTRL: return Controller::PAD_BUTTON_R3;
+-		case SDLK_RETURN:
+-		case SDLK_RETURN2: return Controller::PAD_BUTTON_OPTIONS;
+-		case SDLK_BACKSPACE:
+-		case SDLK_TAB: return Controller::PAD_BUTTON_TOUCH_PAD;
+-		default: return 0;
+-	}
+-}
+-
+-struct StickKeys {
+-	bool left  = false;
+-	bool right = false;
+-	bool up    = false;
+-	bool down  = false;
+-};
+-
+ void SetStickAxis(Controller::Axis axis, bool negative, bool positive) {
+ 	const int value = negative == positive ? 128 : negative ? 0 : 255;
+ 	Controller::ControllerAxis(Controller::HOST_INPUT_CONTROLLER_ID, axis, value);
+@@ -260,46 +484,16 @@ void SetControl(std::size_t control, bool down) {
+ 	SetStickAxis(info.axis, axes[axis].negative, axes[axis].positive);
+ }
+ 
+-void DefaultKeyboardInput(int key_code, bool down) {
+-	static StickKeys left;
+-	static StickKeys right;
+-
+-	switch (NormalizeKey(static_cast<SDL_Keycode>(key_code))) {
+-		case SDLK_a:
+-			left.left = down;
+-			SetStickAxis(Controller::Axis::LeftX, left.left, left.right);
+-			return;
+-		case SDLK_d:
+-			left.right = down;
+-			SetStickAxis(Controller::Axis::LeftX, left.left, left.right);
+-			return;
+-		case SDLK_w:
+-			left.up = down;
+-			SetStickAxis(Controller::Axis::LeftY, left.up, left.down);
+-			return;
+-		case SDLK_s:
+-			left.down = down;
+-			SetStickAxis(Controller::Axis::LeftY, left.up, left.down);
+-			return;
+-		case SDLK_f:
+-			right.left = down;
+-			SetStickAxis(Controller::Axis::RightX, right.left, right.right);
+-			return;
+-		case SDLK_h:
+-			right.right = down;
+-			SetStickAxis(Controller::Axis::RightX, right.left, right.right);
+-			return;
+-		case SDLK_t:
+-			right.up = down;
+-			SetStickAxis(Controller::Axis::RightY, right.up, right.down);
+-			return;
+-		case SDLK_g:
+-			right.down = down;
+-			SetStickAxis(Controller::Axis::RightY, right.up, right.down);
+-			return;
+-		default: SetButton(DefaultKeyboardButton(key_code), down); return;
++std::size_t DefaultControlForKey(int key_code) {
++	const auto key = NormalizeKey(static_cast<SDL_Keycode>(key_code));
++	for (const auto& d: DEFAULT_KEYS) {
++		if (d.key == key) {
++			return ControlFromName(d.control);
++		}
+ 	}
++	return INVALID_CONTROL;
+ }
++
+ } // namespace
+ 
+ void HostInputInit() {
+@@ -307,12 +501,16 @@ void HostInputInit() {
+ }
+ 
+ void HostInputKey(int key_code, bool down) {
+-	const auto& map = GetInputMap();
+-	if (map.Custom()) {
+-		SetControl(map.FindKey(key_code), down);
+-	} else {
+-		DefaultKeyboardInput(key_code, down);
++	const auto& map     = GetInputMap();
++	auto        control = map.FindKey(key_code);
++	if (control == INVALID_CONTROL && map.DefaultKeys()) {
++		// The built-in layout, minus the controls the configuration binds elsewhere.
++		control = DefaultControlForKey(key_code);
++		if (control != INVALID_CONTROL && map.ControlBound(control)) {
++			control = INVALID_CONTROL;
++		}
+ 	}
++	SetControl(control, down);
+ }
+ 
+ void HostInputMouseButton(uint8_t mouse_button, bool down) {
+@@ -325,8 +523,24 @@ void HostInputMouseButton(uint8_t mouse_button, bool down) {
+ void HostInputGamepadButton(int gamepad_button, bool down) {
+ 	const auto& map = GetInputMap();
+ 	if (map.Custom() && gamepad_button >= 0) {
+-		SetControl(map.FindGamepadButton(gamepad_button), down);
++		SetControl(map.FindPadButton(gamepad_button), down);
+ 	}
+ }
+ 
++void HostInputGamepadAxis(int gamepad_axis, int value) {
++	auto& map = GetInputMap();
++	if (map.Custom() && gamepad_axis >= 0) {
++		map.UpdatePadAxis(gamepad_axis, value,
++		                  [](std::size_t control, bool down) { SetControl(control, down); });
++	}
++}
++
++bool HostInputPadButtonDisabled(int gamepad_button) {
++	return GetInputMap().PadButtonDisabled(gamepad_button);
++}
++
++bool HostInputPadAxisDisabled(int gamepad_axis) {
++	return GetInputMap().PadAxisDisabled(gamepad_axis);
++}
++
+ } // namespace Libs::Graphics
+diff --git a/src/graphics/presentation/window/hostInput.h b/src/graphics/presentation/window/hostInput.h
+index c0ac585..267a90f 100644
+--- a/src/graphics/presentation/window/hostInput.h
++++ b/src/graphics/presentation/window/hostInput.h
+@@ -9,6 +9,11 @@ void HostInputInit();
+ void HostInputKey(int key_code, bool down);
+ void HostInputMouseButton(uint8_t mouse_button, bool down);
+ void HostInputGamepadButton(int gamepad_button, bool down);
++// BC5: a pad axis as a source ("<Control>=Pad:righttrigger", "…=Pad:leftx-"); SDL's raw value.
++void HostInputGamepadAxis(int gamepad_axis, int value);
++// BC5: "Pad:<name>=none" in the input configuration: the physical input never reaches the game.
++bool HostInputPadButtonDisabled(int gamepad_button);
++bool HostInputPadAxisDisabled(int gamepad_axis);
+ 
+ } // namespace Libs::Graphics
+ 
 diff --git a/src/graphics/presentation/window/window.cpp b/src/graphics/presentation/window/window.cpp
-index c729a98..8601b8e 100644
+index c729a98..6865e4b 100644
 --- a/src/graphics/presentation/window/window.cpp
 +++ b/src/graphics/presentation/window/window.cpp
 @@ -334,6 +334,18 @@ static void GameEventController([[maybe_unused]] const EventController& f) {
@@ -400,7 +1015,48 @@ index c729a98..8601b8e 100644
  	}
  
  	if (f.removed) {
-@@ -635,6 +647,17 @@ void WindowContext::ProcessEvent(double time_s) {
+@@ -343,19 +355,38 @@ static void GameEventController([[maybe_unused]] const EventController& f) {
+ 
+ 	if (f.down || f.up) {
+ 		const auto button = ControllerButtonToPadButton(f.button);
+-		if (button != 0) {
++		// BC5: "Pad:<button>=none" in the input configuration drops the physical button here.
++		if (button != 0 && !HostInputPadButtonDisabled(f.button)) {
+ 			Controller::ControllerButton(f.id, button, f.down);
++		} else if (button != 0) {
++			static bool once = false;
++			if (!once) {
++				once = true;
++				LOGF("Host input: pad button %s is disabled, its presses are dropped\n",
++				     SDL_GameControllerGetStringForButton(static_cast<SDL_GameControllerButton>(f.button)));
++			}
+ 		}
+ 		// Also route through custom gamepad mapping if user has one set.
+ 		HostInputGamepadButton(static_cast<uint8_t>(f.button), f.down);
+ 	}
+ 
+ 	if (f.axis) {
++		// BC5: an axis can drive a control ("R2=Pad:lefttrigger"), and "Pad:<axis>=none" drops
++		// the physical axis here (a trigger stuck at full travel, say).
++		HostInputGamepadAxis(f.axis_id, f.axis_value);
+ 		const auto axis = ControllerAxisFromSdl(f.axis_id);
+-		if (axis != Controller::Axis::AxisMax) {
++		if (axis != Controller::Axis::AxisMax && !HostInputPadAxisDisabled(f.axis_id)) {
+ 			Controller::ControllerAxis(f.id, axis,
+ 			                           ControllerAxisValueFromSdl(f.axis_id, f.axis_value));
+ 		}
++		else if (axis != Controller::Axis::AxisMax) {
++			static bool once = false;
++			if (!once) {
++				once = true;
++				LOGF("Host input: pad axis %s is disabled, its motion is dropped\n",
++				     SDL_GameControllerGetStringForAxis(static_cast<SDL_GameControllerAxis>(f.axis_id)));
++			}
++		}
+ 	}
+ }
+ 
+@@ -635,6 +666,17 @@ void WindowContext::ProcessEvent(double time_s) {
  			break;
  		}
  
@@ -418,7 +1074,7 @@ index c729a98..8601b8e 100644
  		case SDL_CONTROLLERAXISMOTION: {
  			EventController c {};
  
-@@ -717,6 +740,11 @@ void WindowContext::ProcessEvent(double time_s) {
+@@ -717,6 +759,11 @@ void WindowContext::ProcessEvent(double time_s) {
  			    SDL_CONTROLLER_AXIS_TRIGGERLEFT,
  			    SDL_CONTROLLER_AXIS_TRIGGERRIGHT,
  			};
@@ -430,7 +1086,7 @@ index c729a98..8601b8e 100644
  			EventController c {};
  			c.id         = event->jaxis.which;
  			c.axis_id    = (event->jaxis.axis < 6) ? axis_map[event->jaxis.axis]
-@@ -730,6 +758,9 @@ void WindowContext::ProcessEvent(double time_s) {
+@@ -730,6 +777,9 @@ void WindowContext::ProcessEvent(double time_s) {
  
  		case SDL_JOYBUTTONDOWN:
  		case SDL_JOYBUTTONUP: {
@@ -6541,3 +7197,42 @@ index 343045e..a089454 100644
  			return true;
  		}
  
+diff --git a/src/main.cpp b/src/main.cpp
+index c44d32f..d016ad7 100644
+--- a/src/main.cpp
++++ b/src/main.cpp
+@@ -16,6 +16,7 @@
+ 
+ #include <charconv>
+ #include <cstdio>
++#include <fstream>
+ #include <new>
+ #include <system_error>
+ #include <fmt/format.h>
+@@ -78,6 +79,8 @@ static void PrintUsage() {
+            "                                       (default: log and skip, keep rendering).\n");
+ #endif
+ 	::printf("  --keymap <Control=Input>             DualSense mapping; may be repeated.\n");
++	::printf("  --input-config <file>                Input configuration: one --keymap line per line,\n"
++	         "                                       Pad:<name>=none, DefaultKeys=on|off; # comments.\n");
+ 	::printf("  --rd                                 Enable RenderDoc capture.\n");
+ }
+ 
+@@ -336,6 +339,17 @@ static bool ParseArgs(int argc, char* argv[], RunOptions& options, bool& show_he
+ 				::printf("invalid boolean for %s: %s\n", arg.c_str(), value.c_str());
+ 				return false;
+ 			}
++		} else if (arg == "--input-config") {
++			// BC5: every line of the file goes through the same parser as --keymap.
++			std::ifstream file(value);
++			if (!file) {
++				::printf("--input-config: cannot open %s\n", value.c_str());
++				return false;
++			}
++			std::string line;
++			while (std::getline(file, line)) {
++				options.config.keymap.push_back(line);
++			}
+ 		} else if (arg == "--keymap") {
+ 			const auto split = value.find('=');
+ 			if (split == std::string::npos || split == 0 || split + 1 == value.size()) {
