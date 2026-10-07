@@ -1939,10 +1939,10 @@ index fe4b332..b4a6ed1 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..f44089b
+index 0000000..57aec4b
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,4442 @@
+@@ -0,0 +1,4445 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -5578,8 +5578,11 @@ index 0000000..f44089b
 +	}
 +	const uint64_t addr = (static_cast<uint64_t>(pkt[2]) << 32u) | pkt[1];
 +	const uint32_t size = pkt[3] & 0xfffffu;
-+	LOGF("[bc5-gc] %s: ib header 0x%08" PRIx32 " addr 0x%016" PRIx64 " size %u dwords\n", kind,
-+	     pkt[0], addr, size);
++	static int ib_logged = 0;
++	if (Bc5Gc::gc_log_few(&ib_logged, 16)) {
++		LOGF("[bc5-gc] %s: ib header 0x%08" PRIx32 " addr 0x%016" PRIx64 " size %u dwords\n", kind,
++		     pkt[0], addr, size);
++	}
 +	auto* dcb = reinterpret_cast<uint32_t*>(addr);
 +	dump_cb(kind, dcb, size);
 +	Direct::submit(dcb, size, kind, std::strcmp(kind, "hib") == 0);
