@@ -190,3 +190,8 @@ device (the first SDL output device named `DualSense`; `KYTY_BC5_PAD_AUDIO_DEVIC
 picks another, `KYTY_BC5_NO_PAD_AUDIO=1` keeps the old behaviour); a port's frames go to channels
 1–2 (speaker) or 3–4 (actuators). A pad port never blocks the game's audio thread: a removed
 device drops the frames, a full queue is cleared (F72).
+Logging (F75): `KYTY_BC5_LOG_WAITS=1` restores the `KernelWaitSema`/`Equeue wait` lines,
+`BC5_GC_LOG=verbose` the gc layer's per-flip and per-ioctl lines (otherwise the first few of each
+kind), `BC5_DIRECT_FLIP_SAMPLE=1` the per-flip sampling of the display buffer and recent targets
+(the diagnostic of runs 60–76, off by default: it ran on the game's thread). The per-event input
+debug lines of `window.cpp` are compiled out; use `KYTY_BC5_INPUT_TRACE=1`.
