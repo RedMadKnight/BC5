@@ -1129,9 +1129,18 @@ index c0ac585..267a90f 100644
  } // namespace Libs::Graphics
  
 diff --git a/src/graphics/presentation/window/window.cpp b/src/graphics/presentation/window/window.cpp
-index c729a98..781af42 100644
+index c729a98..a276e10 100644
 --- a/src/graphics/presentation/window/window.cpp
 +++ b/src/graphics/presentation/window/window.cpp
+@@ -57,7 +57,7 @@
+ // IWYU pragma: no_include <intrin.h>
+ 
+ #define KYTY_ENABLE_DEBUG_PRINTF
+-#define KYTY_DBG_INPUT
++// #define KYTY_DBG_INPUT // BC5: off since 2026-10-07 (250 lines a second from the pad); KYTY_BC5_INPUT_TRACE=1 instead
+ 
+ namespace Libs::Graphics {
+ 
 @@ -245,6 +245,11 @@ static void GameEventKeyboard(WindowLoopState& game, const EventKeyboard& key) {
  
  	if ((key.down || key.up) && !key.repeat) {
@@ -1244,6 +1253,37 @@ index c729a98..781af42 100644
  			EventController c {};
  			c.id    = event->jbutton.which;
  			c.button = event->jbutton.button;
+diff --git a/src/kernel/eventQueue.cpp b/src/kernel/eventQueue.cpp
+index 14561b0..86876ea 100644
+--- a/src/kernel/eventQueue.cpp
++++ b/src/kernel/eventQueue.cpp
+@@ -3,6 +3,8 @@
+ #include "common/assert.h"
+ #include "common/common.h"
+ #include "common/logging/log.h"
++
++#include <cstdlib>
+ #include "common/stringUtils.h"
+ #include "common/threads.h"
+ #include "common/timer.h"
+@@ -402,6 +404,9 @@ int KYTY_SYSV_ABI KernelWaitEqueue(KernelEqueue eq, KernelEvent* ev, int num, in
+ 
+ 	EXIT_NOT_IMPLEMENTED(out == nullptr);
+ 
++	// BC5: KYTY_BC5_LOG_WAITS=1 for the two wait lines below (a tenth of a capture otherwise).
++	static const bool log_waits = std::getenv("KYTY_BC5_LOG_WAITS") != nullptr;
++	if (log_waits)
+ 	LOGF("\tEqueue wait: %s, caller = 0x%016" PRIx64 ", eq = 0x%016" PRIx64 ", ev = 0x%016" PRIx64
+ 	     ", num = %d, timo = %s, thread_id = %d\n",
+ 	     owner->GetName().c_str(), reinterpret_cast<uint64_t>(__builtin_return_address(0)),
+@@ -429,6 +434,7 @@ int KYTY_SYSV_ABI KernelWaitEqueue(KernelEqueue eq, KernelEvent* ev, int num, in
+ 		return KERNEL_ERROR_ETIMEDOUT;
+ 	}
+ 
++	if (log_waits)
+ 	LOGF("\tEqueue wait received %u events: ident = 0x%016" PRIx64
+ 	     ", filter = %d, flags = 0x%04" PRIx16 ", fflags = 0x%08" PRIx32 ", data = 0x%016" PRIx64
+ 	     ", udata = 0x%016" PRIx64 "\n",
 diff --git a/src/kernel/fileSystem.cpp b/src/kernel/fileSystem.cpp
 index 4034f52..701d31e 100644
 --- a/src/kernel/fileSystem.cpp
@@ -1739,6 +1779,30 @@ index 5f87e6b..e5c534e 100644
  		}
  	}
  	CondRemoveWaiter(cond_value, thread);
+diff --git a/src/kernel/semaphore.cpp b/src/kernel/semaphore.cpp
+index ed7c35b..9f6635d 100644
+--- a/src/kernel/semaphore.cpp
++++ b/src/kernel/semaphore.cpp
+@@ -2,6 +2,8 @@
+ 
+ #include "common/assert.h"
+ #include "common/logging/log.h"
++
++#include <cstdlib>
+ #include "common/stringUtils.h"
+ #include "common/threads.h"
+ #include "common/timer.h"
+@@ -294,7 +296,9 @@ int KYTY_SYSV_ABI KernelWaitSema(KernelSema sem, int need, KernelUseconds* time)
+ 		return KERNEL_ERROR_ESRCH;
+ 	}
+ 
+-	if (time == nullptr) {
++	// BC5: KYTY_BC5_LOG_WAITS=1 for this line; it was 63 % of a 780 MB capture (2026-10-07).
++	static const bool log_waits = std::getenv("KYTY_BC5_LOG_WAITS") != nullptr;
++	if (time == nullptr && log_waits) {
+ 		LOGF("KernelWaitSema: infinite wait sem=%p need=%d\n", static_cast<void*>(sem), need);
+ 	}
+ 
 diff --git a/src/libs/audio.cpp b/src/libs/audio.cpp
 index fe4b332..b4a6ed1 100644
 --- a/src/libs/audio.cpp
@@ -1875,10 +1939,10 @@ index fe4b332..b4a6ed1 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..48e5f2e
+index 0000000..f44089b
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,4410 @@
+@@ -0,0 +1,4442 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -1970,6 +2034,18 @@ index 0000000..48e5f2e
 +// submission — took half of a frame (81 of 167 ms, run 100). "min" keeps one buffered line per
 +// submission and the summary lines, flushed twice a second and at once on a failure; nothing is
 +// dumped. For chasing a hang leave it unset.
++// BC5_GC_LOG=verbose: the per-flip and per-ioctl lines of the gc layer (submit headers, the two
++// VideoOut ioctls answered with zeros, VideoOut* calls, queue deferrals) in the guest log. Off by
++// default since 2026-10-07: they were a fifth of a 780 MB capture and say the same thing every
++// frame. The first few of each kind are still logged.
++static const bool g_gc_verbose = [] {
++	const char* e = std::getenv("BC5_GC_LOG");
++	return e != nullptr && std::strcmp(e, "verbose") == 0;
++}();
++static bool gc_log_few(int* counter, int limit = 8) {
++	return g_gc_verbose || (*counter)++ < limit;
++}
++
 +static const bool g_journal_min = [] {
 +	const char* e = std::getenv("BC5_DIRECT_JOURNAL");
 +	return e != nullptr && std::strcmp(e, "min") == 0;
@@ -2689,7 +2765,8 @@ index 0000000..48e5f2e
 +					LOGF_COLOR(Log::Color::Yellow, "[bc5-q] queue %u/%u/%u/0x%x: cross-queue wait unsatisfied for 10 s, proceeding\n", q.a, q.b, q.c, q.d);
 +					s.deferred_since = 0;
 +				} else {
-+					if (s.deferred_since != 0) {
++					static int deferred_logged = 0;
++					if (s.deferred_since != 0 && gc_log_few(&deferred_logged, 32)) {
 +						LOGF("[bc5-q] queue %u/%u/%u/0x%x: deferred %.1f ms for another queue\n", q.a, q.b, q.c, q.d, static_cast<double>(now - s.deferred_since) / 1e6);
 +					}
 +					s.deferred_since = 0;
@@ -5568,9 +5645,12 @@ index 0000000..48e5f2e
 +			};
 +			static_assert(sizeof(Args) == 72);
 +			auto* a = static_cast<Args*>(argp);
-+			LOGF("[bc5-gc] submit header: unk0 0x%08" PRIx32 " cc %08" PRIx32 " %08" PRIx32
-+			     " %08" PRIx32 "\n",
-+			     a->unk0, a->context_control[0], a->context_control[1], a->context_control[2]);
++			static int submit_logged = 0;
++			if (Bc5Gc::gc_log_few(&submit_logged)) {
++				LOGF("[bc5-gc] submit header: unk0 0x%08" PRIx32 " cc %08" PRIx32 " %08" PRIx32
++				     " %08" PRIx32 "\n",
++				     a->unk0, a->context_control[0], a->context_control[1], a->context_control[2]);
++			}
 +			submit_raw(a->context_control, 3, "cc");
 +			for (int i = 0; i < 3; i++) {
 +				submit_ib_packet(a->cmds + i * 4, "hib"); // header IBs: state preamble + the 2-dword IB
@@ -5725,10 +5805,14 @@ index 0000000..48e5f2e
 +			const uint32_t size = (static_cast<uint32_t>(request) >> 16u) & 0x1fffu;
 +			const bool     out  = (request & 0x40000000u) != 0;
 +			const bool in = (request & 0x80000000u) != 0;
-+			LOGF_COLOR(Log::Color::Yellow,
-+			           "[bc5-gc] unhandled ioctl 0x%08" PRIx64 " (size %u, %s%s): answered with zeros\n",
-+			           request, size, in ? "in" : "", out ? "out" : "");
-+			if (in && argp != nullptr && size != 0) {
++			static int unhandled_logged = 0;
++			const bool log_this = gc_log_few(&unhandled_logged, 16);
++			if (log_this) {
++				LOGF_COLOR(Log::Color::Yellow,
++				           "[bc5-gc] unhandled ioctl 0x%08" PRIx64 " (size %u, %s%s): answered with zeros\n",
++				           request, size, in ? "in" : "", out ? "out" : "");
++			}
++			if (log_this && in && argp != nullptr && size != 0) {
 +				const auto* q = static_cast<const uint64_t*>(argp);
 +				for (uint32_t i = 0; i < size / 8; i += 4) {
 +					LOGF("[bc5-gc]   +%03x: %016" PRIx64 " %016" PRIx64 " %016" PRIx64 " %016" PRIx64 "\n",
@@ -6078,7 +6162,10 @@ index 0000000..48e5f2e
 +
 +static KYTY_SYSV_ABI int SysGetBus(int handle) {
 +	PRINT_NAME();
-+	LOGF("[bc5-gc] VideoOutSysGetBus(%d) -> 0\n", handle);
++	static int logged = 0;
++	if (Bc5Gc::gc_log_few(&logged)) {
++		LOGF("[bc5-gc] VideoOutSysGetBus(%d) -> 0\n", handle);
++	}
 +	return 0;
 +}
 +
@@ -6089,7 +6176,10 @@ index 0000000..48e5f2e
 +		return LibKernel::KERNEL_ERROR_EINVAL;
 +	}
 +	*out = Bc5Gc::g_labels;
-+	LOGF("[bc5-gc] VideoOutGetBufferLabelAddress(%d) -> %p\n", handle, static_cast<void*>(*out));
++	static int logged = 0;
++	if (Bc5Gc::gc_log_few(&logged)) {
++		LOGF("[bc5-gc] VideoOutGetBufferLabelAddress(%d) -> %p\n", handle, static_cast<void*>(*out));
++	}
 +	return 0;
 +}
 +
@@ -6100,7 +6190,10 @@ index 0000000..48e5f2e
 +	PRINT_NAME();
 +	// Direct mode: does the GPU write the display buffer? A sparse sum over the surface, journaled
 +	// per flip (zero = nobody rendered into it; the game's last pass targets these very buffers).
-+	if (std::getenv("BC5_GC_MODE") != nullptr && std::strcmp(std::getenv("BC5_GC_MODE"), "direct") == 0) {
++	// BC5_DIRECT_FLIP_SAMPLE=1 since 2026-10-07: the diagnostic of runs 60-76 read a word per page
++	// of the 33 MB display buffer and of every recent target on the game's thread at every flip.
++	static const bool flip_sample = std::getenv("BC5_DIRECT_FLIP_SAMPLE") != nullptr;
++	if (flip_sample && std::getenv("BC5_GC_MODE") != nullptr && std::strcmp(std::getenv("BC5_GC_MODE"), "direct") == 0) {
 +		uint64_t a = 0, n = 0;
 +		if (VideoOut::Bc5VideoOutBufferRange(handle, index, &a, &n) && a != 0 && n != 0) {
 +			const auto* w = reinterpret_cast<const volatile uint32_t*>(a);
@@ -6155,8 +6248,11 @@ index 0000000..48e5f2e
 +			LOGF("[bc5-direct] flip buffer 0x%" PRIx64 ": nonzero samples %" PRIu64 "/%" PRIu64 "\n", a, nonzero, samples);
 +		}
 +	}
-+	LOGF("[bc5-gc] VideoOutSubmitEopFlip(%d, %d, %d, 0x%" PRIx64 ", %p)\n", handle, index,
-+	     flip_mode, flip_arg, unk);
++	static int flip_logged = 0;
++	if (Bc5Gc::gc_log_few(&flip_logged)) {
++		LOGF("[bc5-gc] VideoOutSubmitEopFlip(%d, %d, %d, 0x%" PRIx64 ", %p)\n", handle, index,
++		     flip_mode, flip_arg, unk);
++	}
 +	// BC5_GC_QUEUE_TABLE=<hex address>[:entries]: the driver library's own queue table (entries
 +	// of 0x90 bytes; +0x70 pointer to the read pointer the kernel publishes, +0x7c ring bytes,
 +	// +0x88 the driver's write pointer in dwords — read off its free-space loop, experiment 0018),
