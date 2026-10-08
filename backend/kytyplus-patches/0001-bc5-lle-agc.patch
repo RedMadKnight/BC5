@@ -21,6 +21,19 @@ index db25107..1ab017f 100644
  # Build the generated FSR shader headers before any kyty_emulator source compiles
  # (fsrUpscaler.cpp #includes them and is GLOB-collected, so it needs an explicit edge).
  add_dependencies(kyty_emulator fsr_shaders)
+diff --git a/src/common/platform/sysLinuxFileIO.cpp b/src/common/platform/sysLinuxFileIO.cpp
+index 0a6ef8b..97b2614 100644
+--- a/src/common/platform/sysLinuxFileIO.cpp
++++ b/src/common/platform/sysLinuxFileIO.cpp
+@@ -53,7 +53,7 @@ struct sys_file_t {
+ #endif
+ 
+ static std::filesystem::path get_internal_name(const std::filesystem::path& name) {
+-	return name.is_absolute() ? name : (std::filesystem::path(".") / name);
++	return name.empty() || name.is_absolute() ? name : (std::filesystem::path(".") / name);
+ }
+ 
+ // Pass access-pattern hints to the host.
 diff --git a/src/common/platform/sysLinuxVirtual.cpp b/src/common/platform/sysLinuxVirtual.cpp
 index 7225e2e..1ca144d 100644
 --- a/src/common/platform/sysLinuxVirtual.cpp
@@ -41,6 +54,45 @@ index 7225e2e..1ca144d 100644
  	return protect;
  }
  
+diff --git a/src/common/threads.cpp b/src/common/threads.cpp
+index c0b4bbe..aeeda0e 100644
+--- a/src/common/threads.cpp
++++ b/src/common/threads.cpp
+@@ -133,14 +133,14 @@ static SleepConditionVariableCS_func_t ResolveSleepConditionVariableCS() {
+ #endif
+ 
+ #ifdef KYTY_POSIX_HIGH_RES_SLEEP
+-// Spin for very short waits; use an absolute deadline for longer waits.
++// An absolute deadline preserves the requested sleep across signal interruptions.
++// BC5 (KytyPS5 6f24b03): no spinning for short waits, they block like the rest.
+ static void SleepHighResolutionNanos(uint64_t nanos) {
+ 	if (nanos == 0) {
+ 		return;
+ 	}
+ 
+ 	constexpr uint64_t NANOS_PER_SEC = 1000000000;
+-	constexpr uint64_t SPIN_LIMIT_NS = 50000; // below this a context switch dominates
+ 
+ 	timespec deadline {};
+ 	if (clock_gettime(CLOCK_MONOTONIC, &deadline) != 0) {
+@@ -152,17 +152,6 @@ static void SleepHighResolutionNanos(uint64_t nanos) {
+ 	deadline.tv_sec += static_cast<time_t>(target_nsec / NANOS_PER_SEC);
+ 	deadline.tv_nsec = static_cast<long>(target_nsec % NANOS_PER_SEC);
+ 
+-	if (nanos <= SPIN_LIMIT_NS) {
+-		timespec now {};
+-		do {
+-			if (clock_gettime(CLOCK_MONOTONIC, &now) != 0) {
+-				return;
+-			}
+-		} while (now.tv_sec < deadline.tv_sec ||
+-		         (now.tv_sec == deadline.tv_sec && now.tv_nsec < deadline.tv_nsec));
+-		return;
+-	}
+-
+ 	while (clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &deadline, nullptr) == EINTR) {
+ 	}
+ }
 diff --git a/src/graphics/guest_gpu/graphicsRun.cpp b/src/graphics/guest_gpu/graphicsRun.cpp
 index 2918b0d..e634a45 100644
 --- a/src/graphics/guest_gpu/graphicsRun.cpp
@@ -2497,7 +2549,7 @@ index 14561b0..86876ea 100644
  	     ", filter = %d, flags = 0x%04" PRIx16 ", fflags = 0x%08" PRIx32 ", data = 0x%016" PRIx64
  	     ", udata = 0x%016" PRIx64 "\n",
 diff --git a/src/kernel/fileSystem.cpp b/src/kernel/fileSystem.cpp
-index 4034f52..701d31e 100644
+index 4034f52..3bb71ec 100644
 --- a/src/kernel/fileSystem.cpp
 +++ b/src/kernel/fileSystem.cpp
 @@ -20,6 +20,9 @@
@@ -2588,7 +2640,27 @@ index 4034f52..701d31e 100644
  		}
  
  		if (!found) {
-@@ -433,6 +473,16 @@ int KYTY_SYSV_ABI KernelOpen(const char* path, int flags, uint16_t mode) {
+@@ -309,7 +349,9 @@ std::filesystem::path MountPoints::GetRealFilename(const std::string& mounted_fi
+ #endif
+ 	}
+ 
+-	return mounted_file_name;
++	// BC5 (KytyPS5 a107d1e): a guest path under no mount point must not reach the host's
++	// file system; an empty path says so, and every caller answers ENOENT.
++	return {};
+ }
+ 
+ std::filesystem::path MountPoints::GetRealDirectory(const std::string& mounted_directory) {
+@@ -334,7 +376,7 @@ std::filesystem::path MountPoints::GetRealDirectory(const std::string& mounted_d
+ #endif
+ 	}
+ 
+-	return mounted_directory;
++	return {}; // BC5 (KytyPS5 a107d1e): see GetRealFilename
+ }
+ 
+ KYTY_SUBSYSTEM_INIT(FileSystem) {
+@@ -433,8 +475,22 @@ int KYTY_SYSV_ABI KernelOpen(const char* path, int flags, uint16_t mode) {
  		return descriptor;
  	}
  
@@ -2604,8 +2676,33 @@ index 4034f52..701d31e 100644
 +
  	file->real_name = (directory ? g_mount_points->GetRealDirectory(file->name)
  	                             : g_mount_points->GetRealFilename(file->name));
++	if (file->real_name.empty()) {
++		g_files->DeleteDescriptor(descriptor);
++		return KERNEL_ERROR_ENOENT;
++	}
  
-@@ -1311,4 +1361,13 @@ int KYTY_SYSV_ABI KernelCheckReachability(const char* path) {
+ 	if (trunc && rw_mode == Common::File::Mode::Read) {
+ 		return KERNEL_ERROR_EACCES;
+@@ -1080,7 +1136,7 @@ int KYTY_SYSV_ABI KernelRename(const char* from, const char* to) {
+ 	EXIT_NOT_IMPLEMENTED(g_files->GetFile(real_from) != nullptr);
+ 	EXIT_NOT_IMPLEMENTED(g_files->GetFile(real_to) != nullptr);
+ 
+-	if (!Common::File::IsFileExisting(real_from)) {
++	if (real_to.empty() || !Common::File::IsFileExisting(real_from)) {
+ 		return KERNEL_ERROR_ENOENT;
+ 	}
+ 
+@@ -1245,6 +1301,9 @@ int KYTY_SYSV_ABI KernelMkdir(const char* path, uint16_t mode) {
+ 	     path, mode);
+ 
+ 	auto real_name = g_mount_points->GetRealDirectory(std::string(path));
++	if (real_name.empty()) {
++		return KERNEL_ERROR_ENOENT;
++	}
+ 
+ 	if (Common::File::IsDirectoryExisting(real_name)) {
+ 		return KERNEL_ERROR_EEXIST;
+@@ -1311,4 +1370,13 @@ int KYTY_SYSV_ABI KernelCheckReachability(const char* path) {
  	return KERNEL_ERROR_ENOENT;
  }
  
@@ -2975,10 +3072,38 @@ index 9ea25b0..94749b5 100644
  			EXIT_IF(!AddMappedUnlocked(vaddr, size, MappingType::Private));
  			return true;
 diff --git a/src/kernel/pthread.cpp b/src/kernel/pthread.cpp
-index 5f87e6b..e5c534e 100644
+index 5f87e6b..6ceb8d9 100644
 --- a/src/kernel/pthread.cpp
 +++ b/src/kernel/pthread.cpp
-@@ -3238,9 +3238,10 @@ int KYTY_SYSV_ABI PthreadCondWait(PthreadCond* cond, PthreadMutex* mutex) {
+@@ -548,15 +548,6 @@ static void SchedulerBackoffOnce() {
+ #endif
+ }
+ 
+-static bool SleepMicroSchedulerBackoff(uint64_t microseconds) {
+-	if (microseconds > 1) {
+-		return false;
+-	}
+-
+-	SchedulerBackoffOnce();
+-	return true;
+-}
+-
+ static void SleepMicroWithSignalPoll(uint64_t microseconds) {
+ 	if (microseconds == 0) {
+ 		KernelDispatchPendingSignalForCurrentThread();
+@@ -565,9 +556,8 @@ static void SleepMicroWithSignalPoll(uint64_t microseconds) {
+ 
+ 	while (microseconds > 0) {
+ 		const auto step = std::min<uint64_t>(microseconds, SIGNAL_APC_POLL_MICROS);
+-		if (!SleepMicroSchedulerBackoff(step)) {
+-			Common::Thread::SleepMicro(step);
+-		}
++		// BC5 (KytyPS5 6f24b03): a one-microsecond sleep used to be a yield, i.e. a busy loop.
++		Common::Thread::SleepMicro(step);
+ 		microseconds -= step;
+ 		KernelDispatchPendingSignalForCurrentThread();
+ 	}
+@@ -3238,9 +3228,10 @@ int KYTY_SYSV_ABI PthreadCondWait(PthreadCond* cond, PthreadMutex* mutex) {
  		if (cond_elapsed >= 10 &&
  		    std::chrono::steady_clock::now() - cond_wait_logged > std::chrono::seconds(1)) {
  			cond_wait_logged = std::chrono::steady_clock::now();
