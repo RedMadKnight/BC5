@@ -202,3 +202,5 @@ Ports from KytyPS5 (F76): a guest path under no mount point never reaches the ho
 (`fileSystem.cpp`, `sysLinuxFileIO.cpp`, upstream a107d1e); guest thread names reach the host
 threads (`pthread.cpp`, upstream 199d0a9). Not taken: blocking short sleeps (upstream 6f24b03), the
 game's command-buffer writer asserts with it.
+Users (F77): one local user is logged in by default (`KYTY_BC5_LOGIN_USERS=<1..4>` for local
+multiplayer); with four, a single-player game opens and reads four pad handles every frame.

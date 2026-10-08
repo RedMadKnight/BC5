@@ -7683,17 +7683,18 @@ index 0000000..57aec4b
 +
 +} // namespace Libs
 diff --git a/src/libs/controller.cpp b/src/libs/controller.cpp
-index 55718eb..1bf06f1 100644
+index 55718eb..70ba935 100644
 --- a/src/libs/controller.cpp
 +++ b/src/libs/controller.cpp
-@@ -1,4 +1,6 @@
+@@ -1,4 +1,7 @@
  #include "libs/controller.h"
++#include <cinttypes>
 +#include <cstdio>
 +#include <cstdlib>
  
  #include "common/assert.h"
  #include "common/common.h"
-@@ -12,6 +14,11 @@
+@@ -12,6 +15,11 @@
  #include "libs/libs.h"
  #include "libs/padData.h"
  
@@ -7705,7 +7706,7 @@ index 55718eb..1bf06f1 100644
  #include <algorithm>
  #include <cstring>
  #include <vector>
-@@ -45,6 +52,9 @@ struct ControllerState {
+@@ -45,6 +53,9 @@ struct ControllerState {
  	uint64_t time                                  = 0;
  	uint32_t buttons                               = 0;
  	int      axes[static_cast<int>(Axis::AxisMax)] = {128, 128, 128, 128, 0, 0};
@@ -7715,7 +7716,7 @@ index 55718eb..1bf06f1 100644
  };
  
  // Local-multiplayer: one GameController owns up to PAD_MAX_CONTROLLERS player
-@@ -61,6 +71,8 @@ public:
+@@ -61,6 +72,8 @@ public:
  	void Disconnect(int id);
  	void Button(int id, uint32_t button, bool down);
  	void Axis(int id, Axis axis, int value);
@@ -7724,7 +7725,7 @@ index 55718eb..1bf06f1 100644
  	void ResetInputState();
  	void GetConnectionInfo(bool* flag, int* count);
  	void ReadState(ControllerState* state, bool* flag, int* count);
-@@ -78,7 +90,25 @@ private:
+@@ -78,7 +91,25 @@ private:
  		bool            obtained[STATES_MAX] = {};
  		uint32_t        states_num          = 0;
  		uint32_t        first_state         = 0;
@@ -7750,7 +7751,7 @@ index 55718eb..1bf06f1 100644
  
  	void EnsureSlot(int index);
  	int  OwnerSlot(int id) const;
-@@ -94,6 +124,30 @@ private:
+@@ -94,6 +125,34 @@ private:
  	std::vector<SlotState> m_slots;
  };
  static GameController* g_controller = nullptr;
@@ -7766,6 +7767,10 @@ index 55718eb..1bf06f1 100644
 +	double   last = 0.0;
 +};
 +static PadReadStats g_pad_read_stats;
++static thread_local const char* g_pad_read_via    = "?";
++static thread_local int         g_pad_read_handle = -1;
++static thread_local int         g_pad_read_i      = 0;
++static thread_local int         g_pad_read_n      = 0;
 +static void TracePadReads(double now) {
 +	auto& st = g_pad_read_stats;
 +	if (now - st.last < 1.0) {
@@ -7781,20 +7786,25 @@ index 55718eb..1bf06f1 100644
  // Native DualSense driver instance (spec-accurate, hardware-unvalidated).
  // Owned by the Controller subsystem; opened on subsystem init if a device is
  // present, polled on an internal thread, and closed on subsystem destroy.
-@@ -180,7 +234,25 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
+@@ -180,7 +239,30 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
  	data->right_stick_y          = state.axes[static_cast<int>(Axis::RightY)];
  	data->analog_buttons_l2      = state.axes[static_cast<int>(Axis::TriggerLeft)];
  	data->analog_buttons_r2      = state.axes[static_cast<int>(Axis::TriggerRight)];
 -	data->orientation_w          = 1.0f;
 +	// BC5: KYTY_BC5_INPUT_TRACE=1 shows R2 as the game reads it, at every change of state.
 +	static const bool trace   = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
-+	static int        last_r2 = -1;
-+	if (trace && (data->analog_buttons_r2 != 0) != (last_r2 != 0)) {
-+		std::fprintf(stderr, "input trace: t=%.3f game reads r2 = %d, buttons 0x%x, connected %d\n",
-+		             InputTraceSeconds(), data->analog_buttons_r2, data->buttons, connected ? 1 : 0);
++	static int        last_r2      = -1;
++	static int        last_l2      = -1;
++	static uint32_t   last_buttons = 0xffffffffu;
++	if (trace && (data->analog_buttons_r2 != last_r2 || data->analog_buttons_l2 != last_l2 || data->buttons != last_buttons)) {
++		std::fprintf(stderr, "input trace: t=%.3f game reads l2 = %d r2 = %d, buttons 0x%x, connected %d, via %s handle %d state %d/%d, state time %" PRIu64 "\n",
++		             InputTraceSeconds(), data->analog_buttons_l2, data->analog_buttons_r2, data->buttons, connected ? 1 : 0,
++		             g_pad_read_via, g_pad_read_handle, g_pad_read_i, g_pad_read_n, static_cast<uint64_t>(state.time));
 +		std::fflush(stderr);
 +	}
 +	last_r2 = data->analog_buttons_r2;
++	last_l2 = data->analog_buttons_l2;
++	last_buttons = data->buttons;
 +	data->orientation_x          = state.orient[0];
 +	data->orientation_y          = state.orient[1];
 +	data->orientation_z          = state.orient[2];
@@ -7808,7 +7818,7 @@ index 55718eb..1bf06f1 100644
  	data->touch_data_touch0_id   = 1;
  	data->touch_data_touch1_id   = 2;
  	data->connected              = connected;
-@@ -189,11 +261,59 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
+@@ -189,11 +271,59 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
  	data->device_unique_data_len = 0;
  }
  
@@ -7868,7 +7878,7 @@ index 55718eb..1bf06f1 100644
  
  	// The native DualSense HID driver is opt-in and off by default. SDL already
  	// handles every standard pad (including a DualSense); this unvalidated driver is
-@@ -268,6 +388,12 @@ void ControllerAxis(int id, Axis axis, int value) {
+@@ -268,6 +398,12 @@ void ControllerAxis(int id, Axis axis, int value) {
  	g_controller->Axis(id, axis, value);
  }
  
@@ -7881,7 +7891,7 @@ index 55718eb..1bf06f1 100644
  void ControllerResetInputState() {
  	EXIT_IF(g_controller == nullptr);
  	g_controller->ResetInputState();
-@@ -395,6 +521,11 @@ void GameController::Button(int id, uint32_t button, bool down) {
+@@ -395,6 +531,11 @@ void GameController::Button(int id, uint32_t button, bool down) {
  	if (slot == -1) {
  		slot = FallbackSlot();
  	}
@@ -7893,7 +7903,7 @@ index 55718eb..1bf06f1 100644
  
  	auto state = GetLastState(slot);
  	state.time = LibKernel::KernelGetProcessTime();
-@@ -415,6 +546,13 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
+@@ -415,6 +556,13 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
  	if (slot == -1) {
  		slot = FallbackSlot();
  	}
@@ -7907,7 +7917,7 @@ index 55718eb..1bf06f1 100644
  
  	auto state = GetLastState(slot);
  	state.time = LibKernel::KernelGetProcessTime();
-@@ -422,6 +560,20 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
+@@ -422,8 +570,28 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
  	const int axis_id = static_cast<int>(axis);
  	EXIT_IF(axis_id < 0 || axis_id >= static_cast<int>(Controller::Axis::AxisMax));
  
@@ -7927,8 +7937,16 @@ index 55718eb..1bf06f1 100644
 +
  	state.axes[axis_id] = value;
  
++	if (trace && (axis == Controller::Axis::TriggerLeft || axis == Controller::Axis::TriggerRight)) {
++		std::fprintf(stderr, "input trace: t=%.3f %s = %d from id %d -> slot %d\n", InputTraceSeconds(),
++		             axis == Controller::Axis::TriggerLeft ? "L2" : "R2", value, id, slot);
++		std::fflush(stderr);
++	}
++
  	if (axis == Controller::Axis::TriggerLeft) {
-@@ -443,6 +595,86 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
+ 		if (value > 0) {
+ 			state.buttons |= PAD_BUTTON_L2;
+@@ -443,6 +611,86 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
  	AddState(slot, state);
  }
  
@@ -8015,7 +8033,7 @@ index 55718eb..1bf06f1 100644
  void GameController::ResetInputState() {
  	Common::LockGuard lock(m_mutex);
  
-@@ -488,6 +720,13 @@ int GameController::ReadStateForSlot(int index, ControllerState* state, bool* fl
+@@ -488,6 +736,13 @@ int GameController::ReadStateForSlot(int index, ControllerState* state, bool* fl
  	*flag  = SlotConnected(index);
  	*count = PresentCount();
  	*state = GetLastState(index);
@@ -8029,7 +8047,7 @@ index 55718eb..1bf06f1 100644
  
  	return 0;
  }
-@@ -515,7 +754,27 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
+@@ -515,7 +770,27 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
  	int ret_num = 0;
  
  	auto& s = m_slots[index];
@@ -8057,7 +8075,7 @@ index 55718eb..1bf06f1 100644
  		for (uint32_t i = 0; i < s.states_num; i++) {
  			if (ret_num >= states_num) {
  				break;
-@@ -523,11 +782,21 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
+@@ -523,11 +798,21 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
  			auto state_index = (s.first_state + i) % STATES_MAX;
  			if (!s.obtained[state_index]) {
  				s.obtained[state_index] = true;
@@ -8080,7 +8098,7 @@ index 55718eb..1bf06f1 100644
  	return ret_num;
  }
  int KYTY_SYSV_ABI PadInit() {
-@@ -625,6 +894,9 @@ int KYTY_SYSV_ABI PadResetOrientation(int handle) {
+@@ -625,6 +910,9 @@ int KYTY_SYSV_ABI PadResetOrientation(int handle) {
  	if (ControllerIndexFromHandle(handle) < 0) {
  		return PAD_ERROR_INVALID_HANDLE;
  	}
@@ -8090,6 +8108,28 @@ index 55718eb..1bf06f1 100644
  
  	return OK;
  }
+@@ -682,6 +970,10 @@ int KYTY_SYSV_ABI PadReadState(int handle, PadData* data) {
+ 	g_controller->ReadStateForSlot(ControllerIndexFromHandle(handle), &state, &connected,
+ 	                               &connected_count);
+ 
++	g_pad_read_via    = "ReadState";
++	g_pad_read_handle = handle;
++	g_pad_read_i      = 0;
++	g_pad_read_n      = 1;
+ 	pad_fill_data(data, state, connected, connected_count);
+ 
+ 	return OK;
+@@ -718,6 +1010,10 @@ int KYTY_SYSV_ABI PadRead(int handle, PadData* data, int num) {
+ 	}
+ 
+ 	for (int i = 0; i < ret_num; i++) {
++		g_pad_read_via    = "Read";
++		g_pad_read_handle = handle;
++		g_pad_read_i      = i;
++		g_pad_read_n      = ret_num;
+ 		pad_fill_data(&data[i], states[i], connected, connected_count);
+ 	}
+ 
 diff --git a/src/libs/controller.h b/src/libs/controller.h
 index 3c0684f..7d735ec 100644
 --- a/src/libs/controller.h
@@ -8867,6 +8907,42 @@ index 08aa121..a521d61 100644
  			std::memcpy(g_save_data_memory.data() + offset, data.buf, data.buf_size);
  		}
 +		save_data_memory_store();
+ 	}
+ 
+ 	return OK;
+diff --git a/src/libs/libUserService.cpp b/src/libs/libUserService.cpp
+index 4fd67e0..871bfd1 100644
+--- a/src/libs/libUserService.cpp
++++ b/src/libs/libUserService.cpp
+@@ -10,6 +10,8 @@
+ #include <cstdio>
+ #include <cstring>
+ 
++#include <cstdlib>
++
+ namespace Libs {
+ 
+ LIB_VERSION("UserService", 1, "UserService", 1, 1);
+@@ -94,11 +96,18 @@ static KYTY_SYSV_ABI int UserServiceGetLoginUserIdList(UserServiceLoginUserIdLis
+ 
+ 	EXIT_NOT_IMPLEMENTED(user_id_list == nullptr);
+ 
+-	// Report every local player as logged in so a local-multiplayer title can
+-	// discover (and bind) players 2-4. Previously only 1000 was returned, which
+-	// made the guest believe a single account existed.
++	// KytyPlus reported every local player (1000..1003) as logged in so a local-multiplayer
++	// title can bind players 2-4. BC5: a console with one account logs one user in, and a game
++	// given four opens and reads four pad handles every frame (ASTRO BOT read handle 2 beside
++	// its own; whatever landed in pad slot 1 then came back as a second, idle controller).
++	// KYTY_BC5_LOGIN_USERS=<1..4> (default 1); the others are reported as not logged in (-1).
++	static const int logged_in = [] {
++		const char* e = std::getenv("KYTY_BC5_LOGIN_USERS");
++		const int   n = e != nullptr ? std::atoi(e) : 1;
++		return n < 1 ? 1 : (n > Libs::Controller::PAD_MAX_CONTROLLERS ? Libs::Controller::PAD_MAX_CONTROLLERS : n);
++	}();
+ 	for (int i = 0; i < Libs::Controller::PAD_MAX_CONTROLLERS; i++) {
+-		user_id_list->user_id[i] = LOCAL_USERS[i];
++		user_id_list->user_id[i] = i < logged_in ? LOCAL_USERS[i] : -1;
  	}
  
  	return OK;
