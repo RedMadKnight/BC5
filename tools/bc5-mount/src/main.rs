@@ -100,15 +100,15 @@ fn run() -> anyhow::Result<()> {
 
 /// Whichever of the two formats the file is.
 enum Opened {
-    Ffpfsc(Container<FileSource>),
-    Pkg(PkgImage<FileSource>),
+    Ffpfsc(Box<Container<FileSource>>),
+    Pkg(Box<PkgImage<FileSource>>),
 }
 
 impl Opened {
     fn tree(&self) -> &dyn FileTree {
         match self {
-            Opened::Ffpfsc(c) => c,
-            Opened::Pkg(p) => p,
+            Opened::Ffpfsc(c) => c.as_ref(),
+            Opened::Pkg(p) => p.as_ref(),
         }
     }
 }
@@ -120,11 +120,11 @@ fn open(path: &PathBuf) -> anyhow::Result<Opened> {
         .with_context(|| format!("opening {}", path.display()))?;
     if pkg::is_package(&head[..n]) {
         PkgImage::open_path(path)
-            .map(Opened::Pkg)
+            .map(|p| Opened::Pkg(Box::new(p)))
             .with_context(|| format!("opening the package {}", path.display()))
     } else {
         Container::open_path(path)
-            .map(Opened::Ffpfsc)
+            .map(|c| Opened::Ffpfsc(Box::new(c)))
             .with_context(|| format!("opening {}", path.display()))
     }
 }
@@ -313,8 +313,8 @@ fn cat(path: &PathBuf, file: &str) -> anyhow::Result<()> {
 #[cfg(all(feature = "fuse", target_os = "linux"))]
 fn mount(path: &PathBuf, mountpoint: &Path, allow_other: bool) -> anyhow::Result<()> {
     let r = match open(path)? {
-        Opened::Ffpfsc(c) => bc5_mount::fuse::mount(c, "ffpfsc", mountpoint, allow_other),
-        Opened::Pkg(p) => bc5_mount::fuse::mount(p, "pkg", mountpoint, allow_other),
+        Opened::Ffpfsc(c) => bc5_mount::fuse::mount(*c, "ffpfsc", mountpoint, allow_other),
+        Opened::Pkg(p) => bc5_mount::fuse::mount(*p, "pkg", mountpoint, allow_other),
     };
     r.with_context(|| format!("mounting on {}", mountpoint.display()))
 }

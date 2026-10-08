@@ -3,10 +3,21 @@
 //! `.ffpfsc` container or the inner image of a PS5 package) as a read-only
 //! file system. Inode numbers are entry indices plus one, so the root is 1 as
 //! FUSE expects. Written against `fuser` 0.15.
+//!
+//! The session loop is single-threaded, but reads are answered from a pool of
+//! worker threads: a game's loaders each wait on their own read, and serving
+//! them one after another made the level load the file server's pace
+//! (experiment 0032). Lookups and directory listings stay on the session
+//! thread; they are cheap. A file read in order is also decoded ahead: the
+//! pool fills the block cache with the next bytes while the game is still
+//! busy with the last ones (experiment 0033).
 
 use std::collections::HashMap;
 use std::ffi::OsStr;
+use std::num::NonZeroUsize;
 use std::path::Path;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{mpsc, Arc, Mutex};
 use std::time::{Duration, SystemTime};
 
 use fuser::{
@@ -24,9 +35,111 @@ const EINVAL: i32 = 22;
 
 /// Attribute/entry cache lifetime; the source never changes.
 const TTL: Duration = Duration::from_secs(3600);
+/// Worker threads answering reads, unless `BC5_MOUNT_THREADS` says otherwise:
+/// the machine's parallelism, at most this many.
+const MAX_WORKERS: usize = 8;
+/// Bytes decoded ahead of a file read in order, unless `BC5_MOUNT_PREFETCH_KIB`
+/// says otherwise (0 turns it off).
+const PREFETCH: u64 = 2 << 20;
+/// Decode-ahead reads in this size.
+const PREFETCH_CHUNK: u64 = 256 << 10;
+/// A read starting this close to where the last one of the same file ended
+/// counts as reading in order (the kernel's own readahead skips a little).
+const SEQUENTIAL_SLACK: u64 = 1 << 20;
+
+type Job = Box<dyn FnOnce() + Send>;
+
+/// A fixed pool of threads running jobs in arrival order.
+struct Pool {
+    tx: mpsc::Sender<Job>,
+    threads: usize,
+    /// Jobs queued or running.
+    pending: Arc<AtomicUsize>,
+}
+
+impl Pool {
+    fn new(threads: usize) -> Self {
+        let (tx, rx) = mpsc::channel::<Job>();
+        let rx = Arc::new(Mutex::new(rx));
+        let pending = Arc::new(AtomicUsize::new(0));
+        for i in 0..threads {
+            let rx = Arc::clone(&rx);
+            let pending = Arc::clone(&pending);
+            std::thread::Builder::new()
+                .name(format!("bc5-mount-io{i}"))
+                .spawn(move || loop {
+                    let job = rx
+                        .lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner)
+                        .recv();
+                    match job {
+                        Ok(job) => {
+                            job();
+                            pending.fetch_sub(1, Ordering::Relaxed);
+                        }
+                        Err(_) => break,
+                    }
+                })
+                .expect("spawning a worker thread");
+        }
+        Self {
+            tx,
+            threads,
+            pending,
+        }
+    }
+
+    fn run(&self, job: Job) {
+        self.pending.fetch_add(1, Ordering::Relaxed);
+        // A send fails only when every worker is gone, which the pool's owner
+        // outlives; run the job here then.
+        if let Err(e) = self.tx.send(job) {
+            (e.0)();
+            self.pending.fetch_sub(1, Ordering::Relaxed);
+        }
+    }
+
+    /// True when every worker could take a job now.
+    fn idle_enough(&self) -> bool {
+        self.pending.load(Ordering::Relaxed) < self.threads
+    }
+}
+
+/// Worker count from `BC5_MOUNT_THREADS` (1 answers reads one at a time, as
+/// before), or the machine's parallelism capped at [`MAX_WORKERS`].
+fn worker_count() -> usize {
+    if let Some(n) = std::env::var("BC5_MOUNT_THREADS")
+        .ok()
+        .and_then(|v| v.parse::<usize>().ok())
+        .filter(|&n| n >= 1)
+    {
+        return n.min(64);
+    }
+    std::thread::available_parallelism()
+        .map_or(1, NonZeroUsize::get)
+        .clamp(1, MAX_WORKERS)
+}
+
+/// Decode-ahead length from `BC5_MOUNT_PREFETCH_KIB`, or [`PREFETCH`].
+fn prefetch_len() -> u64 {
+    std::env::var("BC5_MOUNT_PREFETCH_KIB")
+        .ok()
+        .and_then(|v| v.parse::<u64>().ok())
+        .map_or(PREFETCH, |k| k.min(256 << 10) << 10)
+}
+
+/// Per file: where the last read ended and how far decode-ahead has gone.
+#[derive(Debug, Default, Clone, Copy)]
+struct Stream {
+    last_end: u64,
+    ahead_to: u64,
+}
 
 struct Bc5Fs<T> {
-    tree: T,
+    tree: Arc<T>,
+    pool: Pool,
+    prefetch: u64,
+    streams: HashMap<usize, Stream>,
     uid: u32,
     gid: u32,
     mounted_at: SystemTime,
@@ -37,7 +150,7 @@ struct Bc5Fs<T> {
     names: HashMap<usize, HashMap<String, usize>>,
 }
 
-impl<T: FileTree> Bc5Fs<T> {
+impl<T: FileTree + 'static> Bc5Fs<T> {
     fn idx(ino: u64) -> Option<usize> {
         usize::try_from(ino.checked_sub(1)?).ok()
     }
@@ -78,6 +191,44 @@ impl<T: FileTree> Bc5Fs<T> {
         })
     }
 
+    /// Called for every read of file `idx` covering `[offset, end)`: when
+    /// the file is being read in order, queue the decoding of the next
+    /// `prefetch` bytes that are not queued yet. Skipped while the pool is
+    /// busy, so decode-ahead never delays a read a game waits for.
+    fn decode_ahead(&mut self, idx: usize, offset: u64, end: u64, file_size: u64) {
+        if self.prefetch == 0 {
+            return;
+        }
+        let s = self.streams.entry(idx).or_default();
+        let in_order = offset >= s.last_end.saturating_sub(SEQUENTIAL_SLACK)
+            && offset <= s.last_end + SEQUENTIAL_SLACK
+            && s.last_end > 0;
+        s.last_end = end;
+        if !in_order {
+            s.ahead_to = end;
+            return;
+        }
+        let from = s.ahead_to.max(end);
+        let to = (end + self.prefetch).min(file_size);
+        if to <= from || !self.pool.idle_enough() {
+            return;
+        }
+        s.ahead_to = to;
+        let tree = Arc::clone(&self.tree);
+        self.pool.run(Box::new(move || {
+            let mut buf = vec![0u8; PREFETCH_CHUNK as usize];
+            let mut pos = from;
+            while pos < to {
+                let n = (to - pos).min(PREFETCH_CHUNK) as usize;
+                // Errors surface on the real read; here they only end the run.
+                if tree.read_file_at(idx, pos, &mut buf[..n]).is_err() {
+                    break;
+                }
+                pos += n as u64;
+            }
+        }));
+    }
+
     fn negative(&self) -> FileAttr {
         FileAttr {
             ino: 0,
@@ -103,6 +254,14 @@ impl<T: FileTree + 'static> Filesystem for Bc5Fs<T> {
     fn init(&mut self, req: &Request<'_>, _config: &mut KernelConfig) -> Result<(), i32> {
         self.uid = req.uid();
         self.gid = req.gid();
+        // Reads from different threads are separate requests the kernel sends
+        // without waiting for each other; the pool answers them in parallel.
+        eprintln!(
+            "bc5-mount: {} read worker{}, decode-ahead {} KiB",
+            self.pool.threads,
+            if self.pool.threads == 1 { "" } else { "s" },
+            self.prefetch >> 10
+        );
         Ok(())
     }
 
@@ -159,15 +318,20 @@ impl<T: FileTree + 'static> Filesystem for Bc5Fs<T> {
             return reply.error(EISDIR);
         }
         let path = e.path.to_owned();
+        let file_size = e.size;
         let want = usize::try_from(e.size.saturating_sub(offset).min(u64::from(size))).unwrap_or(0);
-        let mut buf = vec![0u8; want];
-        match self.tree.read_file_at(idx, offset, &mut buf) {
-            Ok(n) => reply.data(&buf[..n]),
-            Err(err) => {
-                eprintln!("bc5-mount: read {path}: {err}");
-                reply.error(EIO);
+        self.decode_ahead(idx, offset, offset + want as u64, file_size);
+        let tree = Arc::clone(&self.tree);
+        self.pool.run(Box::new(move || {
+            let mut buf = vec![0u8; want];
+            match tree.read_file_at(idx, offset, &mut buf) {
+                Ok(n) => reply.data(&buf[..n]),
+                Err(err) => {
+                    eprintln!("bc5-mount: read {path}: {err}");
+                    reply.error(EIO);
+                }
             }
-        }
+        }));
     }
 
     fn opendir(&mut self, _req: &Request<'_>, ino: u64, _flags: i32, reply: ReplyOpen) {
@@ -246,7 +410,10 @@ pub fn mount<T: FileTree + 'static>(
     allow_other: bool,
 ) -> std::io::Result<()> {
     let fs = Bc5Fs {
-        tree,
+        tree: Arc::new(tree),
+        pool: Pool::new(worker_count()),
+        prefetch: prefetch_len(),
+        streams: HashMap::new(),
         uid: 0,
         gid: 0,
         mounted_at: SystemTime::now(),

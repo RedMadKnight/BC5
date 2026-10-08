@@ -1,0 +1,8 @@
+(drop_caches unavailable)
+workers 1 (bc5-mount: 1 read worker), 2 threads: 4 readers x 400 MiB in 2.459489322 s = 650 MiB/s
+(drop_caches unavailable)
+workers 8 (bc5-mount: 8 read workers), 9 threads: 4 readers x 400 MiB in .760417400 s = 2104 MiB/s
+(drop_caches unavailable)
+workers 1 (bc5-mount: 1 read worker), 2 threads: 4 readers x 400 MiB in 2.408960833 s = 664 MiB/s
+(drop_caches unavailable)
+workers 8 (bc5-mount: 8 read workers), 9 threads: 4 readers x 400 MiB in .737573999 s = 2169 MiB/s

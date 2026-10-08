@@ -1,0 +1,10 @@
+(drop_caches unavailable)
+workers 8 (bc5-mount: 8 read workers, decode-ahead 0 KiB), 9 threads: 4 readers x 400 MiB in .762382513 s = 2098 MiB/s
+(drop_caches unavailable)
+workers 8 (bc5-mount: 8 read workers, decode-ahead 0 KiB), 9 threads: 4 readers x 400 MiB in .734100838 s = 2179 MiB/s
+(drop_caches unavailable)
+workers 8 (bc5-mount: 8 read workers, decode-ahead 2048 KiB), 9 threads: 4 readers x 400 MiB in .670889514 s = 2384 MiB/s
+(drop_caches unavailable)
+workers 8 (bc5-mount: 8 read workers, decode-ahead 2048 KiB), 9 threads: 4 readers x 400 MiB in .542239332 s = 2950 MiB/s
+(drop_caches unavailable)
+workers 1 (bc5-mount: 1 read worker, decode-ahead 2048 KiB), 2 threads: 4 readers x 400 MiB in 2.439010010 s = 656 MiB/s

@@ -16,6 +16,7 @@
 //!
 //! Every parser rejects malformed input with [`Error`] and never panics.
 
+pub mod cache;
 pub mod container;
 pub mod error;
 pub mod exfat;

@@ -7,8 +7,9 @@
 
 use std::collections::HashMap;
 use std::io;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
+use crate::cache::BlockCache;
 use crate::error::{bail_format, Error, Result};
 use crate::io::{Le, ReadAt};
 use crate::pfs::{parse_dirents, DIRENT_DIR, DIRENT_FILE, MAGIC};
@@ -17,8 +18,9 @@ use crate::pkg::naps::{Block, Layout};
 use crate::tree::{fold_name, EntryRef, FileTree};
 
 const LAYER: &str = "inner";
-/// Decoded blocks kept: 64 × 256 KiB = 16 MiB.
-const CACHE_BLOCKS: usize = 64;
+/// Decoded blocks kept: 128 × 256 KiB = 32 MiB, room for the reads in flight
+/// and the decode-ahead of several loader threads (experiment 0033).
+const CACHE_BLOCKS: usize = 128;
 /// Inner inode size (the compact layout: data address at 0x60).
 const INODE_SIZE: usize = 0xa8;
 /// The compact inode layout's mode bits (0x10), with case-insensitive names (0x08).
@@ -38,12 +40,6 @@ pub struct BlockStats {
     pub sparse: usize,
 }
 
-#[derive(Debug)]
-struct Cache {
-    blocks: HashMap<usize, Arc<Vec<u8>>>,
-    order: Vec<usize>,
-}
-
 /// The logical bytes of the inner image over the stored image.
 #[derive(Debug)]
 pub struct InnerImage<R> {
@@ -51,7 +47,7 @@ pub struct InnerImage<R> {
     blocks: Vec<Block>,
     mount: u64,
     stats: BlockStats,
-    cache: Mutex<Cache>,
+    cache: BlockCache,
 }
 
 impl<R: ReadAt> InnerImage<R> {
@@ -87,10 +83,7 @@ impl<R: ReadAt> InnerImage<R> {
             blocks,
             mount,
             stats,
-            cache: Mutex::new(Cache {
-                blocks: HashMap::new(),
-                order: Vec::new(),
-            }),
+            cache: BlockCache::new(CACHE_BLOCKS),
         })
     }
 
@@ -125,10 +118,8 @@ impl<R: ReadAt> InnerImage<R> {
     }
 
     fn block(&self, index: usize) -> Result<Arc<Vec<u8>>> {
-        if let Ok(c) = self.cache.lock() {
-            if let Some(b) = c.blocks.get(&index) {
-                return Ok(Arc::clone(b));
-            }
+        if let Some(b) = self.cache.get(index as u64) {
+            return Ok(b);
         }
         let b = self.blocks[index];
         let mut out = vec![0u8; b.uncomp as usize];
@@ -151,14 +142,7 @@ impl<R: ReadAt> InnerImage<R> {
             }
         }
         let out = Arc::new(out);
-        if let Ok(mut c) = self.cache.lock() {
-            if c.blocks.len() >= CACHE_BLOCKS {
-                let evict = c.order.remove(0);
-                c.blocks.remove(&evict);
-            }
-            c.blocks.insert(index, Arc::clone(&out));
-            c.order.push(index);
-        }
+        self.cache.insert(index as u64, Arc::clone(&out));
         Ok(out)
     }
 }
