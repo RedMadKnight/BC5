@@ -1,0 +1,38 @@
+== inspect
+Error: opening the package ~/bc5-data/pkg-excerpt.sparse
+
+Caused by:
+    unsupported: the outer image is encrypted (a retail or passcode-protected package); only plaintext images are read
+
+real	0m0,002s
+user	0m0,000s
+sys	0m0,002s
+== ls -r (count, first 12)
+Error: opening the package ~/bc5-data/pkg-excerpt.sparse
+
+Caused by:
+    unsupported: the outer image is encrypted (a retail or passcode-protected package); only plaintext images are read
+0
+Error: opening the package ~/bc5-data/pkg-excerpt.sparse
+
+Caused by:
+    unsupported: the outer image is encrypted (a retail or passcode-protected package); only plaintext images are read
+== cat
+Error: opening the package ~/bc5-data/pkg-excerpt.sparse
+
+Caused by:
+    unsupported: the outer image is encrypted (a retail or passcode-protected package); only plaintext images are read
+
+Error: opening the package ~/bc5-data/pkg-excerpt.sparse
+
+Caused by:
+    unsupported: the outer image is encrypted (a retail or passcode-protected package); only plaintext images are read
+Error: opening the package ~/bc5-data/pkg-excerpt.sparse
+
+Caused by:
+    unsupported: the outer image is encrypted (a retail or passcode-protected package); only plaintext images are read
+== mount
+Error: opening the package ~/bc5-data/pkg-excerpt.sparse
+
+Caused by:
+    unsupported: the outer image is encrypted (a retail or passcode-protected package); only plaintext images are read

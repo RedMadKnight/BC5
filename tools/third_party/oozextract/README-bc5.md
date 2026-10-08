@@ -1,7 +1,8 @@
 # oozextract 0.5.5 (vendored)
 
 Upstream: <https://github.com/lvlvllvlvllvlvl/oozextract>, crates.io `oozextract` 0.5.5,
-MIT (see `LICENSE`). A Rust port of the open-source Oodle decompressors (Kraken, Mermaid,
+MIT: the published crate declares `license = "MIT"` in its manifest and ships no license
+file, so `LICENSE` here is the standard MIT text in the upstream authors' name. A Rust port of the open-source Oodle decompressors (Kraken, Mermaid,
 Selkie, Leviathan, LZNA, Bitknit). `bc5-mount` uses its Kraken decoder for the inner image
 of a PS5 package (`docs/formats/ps5pkg.md`).
 
