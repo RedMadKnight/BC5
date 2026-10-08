@@ -1,38 +1,35 @@
 == inspect
-Error: opening the package ~/bc5-data/pkg-excerpt.sparse
+package:          ~/bc5-data/pkg-excerpt.sparse
+image:            debug
+content id:       -
+outer pfs:        at 0x10000, 101511331840 bytes, superblock at 0x179f330000, mode 0xd, 5 inodes
+inner image:      101434392576 bytes stored, 196633821184 bytes logical, layout 20663568 bytes
+blocks:           750239 (616999 kraken, 133240 stored, 0 sparse)
+ratio:            0.516 stored/logical
+inner pfs:        superblock at logical 0x2dc8380000, block size 0x10000, 303 inodes, mode 0x18
+files:            288  in 10 directories, 196628482707 bytes
 
-Caused by:
-    unsupported: the outer image is encrypted (a retail or passcode-protected package); only plaintext images are read
-
-real	0m0,002s
-user	0m0,000s
-sys	0m0,002s
-== ls -r (count, first 12)
-Error: opening the package ~/bc5-data/pkg-excerpt.sparse
-
-Caused by:
-    unsupported: the outer image is encrypted (a retail or passcode-protected package); only plaintext images are read
-0
-Error: opening the package ~/bc5-data/pkg-excerpt.sparse
-
-Caused by:
-    unsupported: the outer image is encrypted (a retail or passcode-protected package); only plaintext images are read
+real	0m0,075s
+user	0m0,048s
+sys	0m0,027s
+== ls -r (entry count; the listing itself is not kept: game file names stay out of the repository)
+298
 == cat
-Error: opening the package ~/bc5-data/pkg-excerpt.sparse
-
-Caused by:
-    unsupported: the outer image is encrypted (a retail or passcode-protected package); only plaintext images are read
-
-Error: opening the package ~/bc5-data/pkg-excerpt.sparse
-
-Caused by:
-    unsupported: the outer image is encrypted (a retail or passcode-protected package); only plaintext images are read
-Error: opening the package ~/bc5-data/pkg-excerpt.sparse
-
-Caused by:
-    unsupported: the outer image is encrypted (a retail or passcode-protected package); only plaintext images are read
+01.001.006
+00000000: 5414 f5ee 1001 0142 0102 0010 0005 3006  T......B......0.
+00000000: 6b65 7973 746f 6e65 0300 0100 0000 0000  keystone........
+00000010: 0000 0000 0000 0000                      ........
 == mount
-Error: opening the package ~/bc5-data/pkg-excerpt.sparse
-
-Caused by:
-    unsupported: the outer image is encrypted (a retail or passcode-protected package); only plaintext images are read
+bc5-mount on /var~/bc5-data/mnt/pkgtest type fuse.pkg (ro,nosuid,nodev,relatime,user_id=1000,group_id=1
+razem 6
+dr-xr-xr-x. 1 root root    0 10-08 20:10 .
+dr-xr-xr-x. 1 root root    0 10-08 20:10 ..
+dr-xr-xr-x. 1 root root    0 10-08 20:10 about
+-r--r--r--. 1 root root   96 10-08 20:10 keystone
+-r--r--r--. 1 root root 4100 10-08 20:10 lem_notification.dat
+-r--r--r--. 1 root root   10 10-08 20:10 pfs-version.dat
+dr-xr-xr-x. 1 root root    0 10-08 20:10 trophy2
+2e075121bf0913ef4400e955fd9096d8  ~/bc5-data/mnt/pkgtest/sce_sys/pfs-version.dat
+f7318972fd6339385d2beb21161e1045  ~/bc5-data/mnt/pkgtest/sce_sys/keystone
+00000000: 5414 f5ee 1001 0142 0102 0010 0005 3006  T......B......0.
+unmounted

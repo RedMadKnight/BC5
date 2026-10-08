@@ -67,6 +67,19 @@ enum Cmd {
 }
 
 fn main() -> anyhow::Result<()> {
+    match run() {
+        // `ls | head`: the reader closed the pipe; nothing went wrong.
+        Err(e)
+            if e.downcast_ref::<io::Error>()
+                .is_some_and(|e| e.kind() == io::ErrorKind::BrokenPipe) =>
+        {
+            Ok(())
+        }
+        r => r,
+    }
+}
+
+fn run() -> anyhow::Result<()> {
     let cli = Cli::parse();
     match cli.cmd {
         Cmd::Inspect { container } => inspect(&container),
@@ -246,6 +259,8 @@ fn ls(path: &PathBuf, dir: &str, recursive: bool) -> anyhow::Result<()> {
     if !entry.is_dir {
         bail!("{dir} is a file");
     }
+    let out = io::stdout();
+    let mut out = out.lock();
     let mut stack = vec![idx];
     while let Some(d) = stack.pop() {
         let mut kids: Vec<usize> = tree.children(d).to_vec();
@@ -258,12 +273,13 @@ fn ls(path: &PathBuf, dir: &str, recursive: bool) -> anyhow::Result<()> {
             let Some(e) = tree.entry(k) else {
                 continue;
             };
-            println!(
+            writeln!(
+                out,
                 "{} {:>12}  {}",
                 if e.is_dir { "d" } else { "-" },
                 e.size,
                 e.path
-            );
+            )?;
             if recursive && e.is_dir {
                 stack.push(k);
             }
