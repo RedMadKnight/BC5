@@ -303,6 +303,769 @@ index a656b67..94a249c 100644
  
  } // namespace Libs::Graphics
  
+diff --git a/src/graphics/presentation/settingsOverlay.cpp b/src/graphics/presentation/settingsOverlay.cpp
+new file mode 100644
+index 0000000..22bd933
+--- /dev/null
++++ b/src/graphics/presentation/settingsOverlay.cpp
+@@ -0,0 +1,702 @@
++#include "graphics/presentation/settingsOverlay.h"
++
++#include "SDL.h"
++#include "common/assert.h"
++#include "graphics/host_gpu/graphicContext.h"
++#include "graphics/presentation/window/hostInput.h"
++#include "imgui.h"
++#include "imgui_impl_vulkan.h"
++
++#include <algorithm>
++#include <atomic>
++#include <chrono>
++#include <cmath>
++#include <cstdint>
++#include <cstdio>
++#include <cstdlib>
++#include <deque>
++#include <mutex>
++#include <string>
++#include <string_view>
++#include <vector>
++
++namespace Libs::Graphics {
++
++namespace {
++
++// --- state shared between the window thread and the presenter thread --------------------------
++
++enum class InputKind {
++	Key,
++	MousePosition,
++	MouseButton,
++	MouseWheel,
++	PadButton,
++	PadAxis,
++};
++
++struct InputEvent {
++	InputKind kind;
++	int       id;
++	float     x;
++	float     y;
++};
++
++// KYTY_BC5_SETTINGS_OPEN=1 opens the overlay at start (screenshots, a box without a keyboard).
++std::atomic<bool>     g_active {std::getenv("KYTY_BC5_SETTINGS_OPEN") != nullptr};
++std::atomic<uint64_t> g_revision {0};
++std::mutex            g_mutex;
++std::deque<InputEvent> g_events;
++bool                   g_reset_input = false;
++
++// Binding capture: the overlay asks for an input for a control (g_capture_control >= 0); the next
++// key, mouse button or pad input the window thread sees becomes g_captured.
++std::atomic<int> g_capture_control {-1};
++int              g_captured_control = -1;
++std::string      g_captured_input;
++
++void QueueInput(const InputEvent& event) {
++	std::scoped_lock lock(g_mutex);
++	g_events.push_back(event);
++}
++
++void Bump() {
++	g_revision.fetch_add(1, std::memory_order_acq_rel);
++}
++
++ImGuiKey KeyToImGui(SDL_Keycode key) {
++	switch (key) {
++		case SDLK_UP: return ImGuiKey_UpArrow;
++		case SDLK_DOWN: return ImGuiKey_DownArrow;
++		case SDLK_LEFT: return ImGuiKey_LeftArrow;
++		case SDLK_RIGHT: return ImGuiKey_RightArrow;
++		case SDLK_RETURN:
++		case SDLK_RETURN2:
++		case SDLK_KP_ENTER: return ImGuiKey_Enter;
++		case SDLK_SPACE: return ImGuiKey_Space;
++		case SDLK_TAB: return ImGuiKey_Tab;
++		case SDLK_BACKSPACE: return ImGuiKey_Backspace;
++		case SDLK_DELETE: return ImGuiKey_Delete;
++		case SDLK_HOME: return ImGuiKey_Home;
++		case SDLK_END: return ImGuiKey_End;
++		case SDLK_PAGEUP: return ImGuiKey_PageUp;
++		case SDLK_PAGEDOWN: return ImGuiKey_PageDown;
++		default: return ImGuiKey_None;
++	}
++}
++
++ImGuiKey PadButtonToImGui(int button) {
++	switch (button) {
++		case SDL_CONTROLLER_BUTTON_A: return ImGuiKey_GamepadFaceDown;
++		case SDL_CONTROLLER_BUTTON_B: return ImGuiKey_GamepadFaceRight;
++		case SDL_CONTROLLER_BUTTON_X: return ImGuiKey_GamepadFaceLeft;
++		case SDL_CONTROLLER_BUTTON_Y: return ImGuiKey_GamepadFaceUp;
++		case SDL_CONTROLLER_BUTTON_DPAD_LEFT: return ImGuiKey_GamepadDpadLeft;
++		case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: return ImGuiKey_GamepadDpadRight;
++		case SDL_CONTROLLER_BUTTON_DPAD_UP: return ImGuiKey_GamepadDpadUp;
++		case SDL_CONTROLLER_BUTTON_DPAD_DOWN: return ImGuiKey_GamepadDpadDown;
++		case SDL_CONTROLLER_BUTTON_LEFTSHOULDER: return ImGuiKey_GamepadL1;
++		case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: return ImGuiKey_GamepadR1;
++		case SDL_CONTROLLER_BUTTON_START: return ImGuiKey_GamepadStart;
++		case SDL_CONTROLLER_BUTTON_BACK: return ImGuiKey_GamepadBack;
++		default: return ImGuiKey_None;
++	}
++}
++
++bool ReservedKey(SDL_Keycode key) {
++	return key == SDLK_ESCAPE || key == SDLK_SPACE || key == SDLK_F1 || key == SDLK_F2;
++}
++
++std::string PadAxisSourceName(int axis, int value) {
++	const bool trigger = axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT || axis == SDL_CONTROLLER_AXIS_TRIGGERRIGHT;
++	std::string name = std::string("Pad:") +
++	                   SDL_GameControllerGetStringForAxis(static_cast<SDL_GameControllerAxis>(axis));
++	if (!trigger) {
++		name += value < 0 ? "-" : "+";
++	}
++	return name;
++}
++
++void Captured(const std::string& input) {
++	const int control = g_capture_control.exchange(-1);
++	if (control < 0) {
++		return;
++	}
++	std::scoped_lock lock(g_mutex);
++	g_captured_control = control;
++	g_captured_input   = input;
++	Bump();
++}
++
++PFN_vkVoidFunction LoadVulkanFunction(const char* name, void* user_data) {
++	auto& graphics = *static_cast<GraphicContext*>(user_data);
++	return graphics.instance.getProcAddr(name);
++}
++
++void CheckVulkanResult(VkResult result) {
++	EXIT_IF(result != VK_SUCCESS);
++}
++
++// --- the configuration as the overlay edits it: a list of statements -------------------------
++
++std::string_view StatementLeft(const std::string& line) {
++	const auto eq = line.find('=');
++	return eq == std::string::npos ? std::string_view(line) : std::string_view(line).substr(0, eq);
++}
++
++std::string_view StatementRight(const std::string& line) {
++	const auto eq = line.find('=');
++	return eq == std::string::npos ? std::string_view() : std::string_view(line).substr(eq + 1);
++}
++
++bool EqualNoCase(std::string_view a, std::string_view b) {
++	return a.size() == b.size() && std::equal(a.begin(), a.end(), b.begin(), [](char x, char y) {
++		       return std::tolower(static_cast<unsigned char>(x)) == std::tolower(static_cast<unsigned char>(y));
++	       });
++}
++
++struct Draft {
++	std::vector<std::string> lines;
++
++	[[nodiscard]] std::string InputOf(const std::string& control) const {
++		std::string found;
++		for (const auto& l: lines) {
++			if (StatementLeft(l) == control) {
++				found = std::string(StatementRight(l));
++			}
++		}
++		return found;
++	}
++
++	void SetControl(const std::string& control, const std::string& input) {
++		lines.erase(std::remove_if(lines.begin(), lines.end(),
++		                           [&](const std::string& l) { return StatementLeft(l) == control; }),
++		            lines.end());
++		if (!input.empty()) {
++			lines.push_back(control + "=" + input);
++		}
++	}
++
++	[[nodiscard]] bool PadDisabled(const std::string& pad_name) const {
++		return std::any_of(lines.begin(), lines.end(), [&](const std::string& l) {
++			return StatementLeft(l) == pad_name && EqualNoCase(StatementRight(l), "none");
++		});
++	}
++
++	void SetPadDisabled(const std::string& pad_name, bool disabled) {
++		lines.erase(std::remove_if(lines.begin(), lines.end(),
++		                           [&](const std::string& l) {
++			                           return StatementLeft(l) == pad_name && EqualNoCase(StatementRight(l), "none");
++		                           }),
++		            lines.end());
++		if (disabled) {
++			lines.insert(lines.begin(), pad_name + "=none");
++		}
++	}
++
++	[[nodiscard]] bool DefaultKeys() const {
++		bool on = true;
++		for (const auto& l: lines) {
++			if (EqualNoCase(StatementLeft(l), "DefaultKeys")) {
++				on = EqualNoCase(StatementRight(l), "on") || EqualNoCase(StatementRight(l), "true") ||
++				     StatementRight(l) == "1";
++			}
++		}
++		return on;
++	}
++
++	void SetDefaultKeys(bool on) {
++		lines.erase(std::remove_if(lines.begin(), lines.end(),
++		                           [&](const std::string& l) { return EqualNoCase(StatementLeft(l), "DefaultKeys"); }),
++		            lines.end());
++		if (!on) {
++			lines.insert(lines.begin(), "DefaultKeys=off");
++		}
++	}
++};
++
++} // namespace
++
++// --- window-thread side -----------------------------------------------------------------------
++
++void SettingsOverlayToggle() {
++	const bool now_active = !g_active.load(std::memory_order_acquire);
++	g_active.store(now_active, std::memory_order_release);
++	g_capture_control.store(-1);
++	{
++		std::scoped_lock lock(g_mutex);
++		g_events.clear();
++		g_reset_input = true;
++	}
++	if (now_active) {
++		HostInputReleaseAll();
++	}
++	Bump();
++}
++
++bool SettingsOverlayActive() noexcept {
++	return g_active.load(std::memory_order_acquire);
++}
++
++uint64_t SettingsOverlayRevision() noexcept {
++	return g_revision.load(std::memory_order_acquire);
++}
++
++bool ProcessSettingsInput(const SDL_Event& event) {
++	if (!g_active.load(std::memory_order_acquire)) {
++		return false;
++	}
++	const bool capturing = g_capture_control.load() >= 0;
++	switch (event.type) {
++		case SDL_KEYDOWN:
++		case SDL_KEYUP: {
++			const bool down = event.type == SDL_KEYDOWN;
++			const auto key  = event.key.keysym.sym;
++			if (down && !event.key.repeat && key == SDLK_F2) {
++				SettingsOverlayToggle();
++				return true;
++			}
++			if (capturing) {
++				if (down && key == SDLK_ESCAPE) {
++					g_capture_control.store(-1);
++					Bump();
++				} else if (down && !ReservedKey(key)) {
++					Captured(SDL_GetKeyName(key));
++				}
++				return true;
++			}
++			if (down && !event.key.repeat && key == SDLK_ESCAPE) {
++				SettingsOverlayToggle();
++				return true;
++			}
++			const ImGuiKey imgui_key = KeyToImGui(key);
++			if (imgui_key != ImGuiKey_None) {
++				QueueInput({InputKind::Key, static_cast<int>(imgui_key), down ? 1.0f : 0.0f, 0.0f});
++				Bump();
++			}
++			return true;
++		}
++		case SDL_TEXTINPUT:
++		case SDL_TEXTEDITING: return true;
++		case SDL_MOUSEMOTION:
++			QueueInput({InputKind::MousePosition, 0, static_cast<float>(event.motion.x),
++			            static_cast<float>(event.motion.y)});
++			Bump();
++			return true;
++		case SDL_MOUSEBUTTONDOWN:
++		case SDL_MOUSEBUTTONUP: {
++			const bool down = event.type == SDL_MOUSEBUTTONDOWN;
++			if (capturing) {
++				if (down) {
++					const char* name = event.button.button == SDL_BUTTON_LEFT     ? "Mouse:Left"
++					                   : event.button.button == SDL_BUTTON_MIDDLE ? "Mouse:Middle"
++					                   : event.button.button == SDL_BUTTON_RIGHT  ? "Mouse:Right"
++					                   : event.button.button == SDL_BUTTON_X1     ? "Mouse:X1"
++					                   : event.button.button == SDL_BUTTON_X2     ? "Mouse:X2"
++					                                                              : nullptr;
++					if (name != nullptr) {
++						Captured(name);
++					}
++				}
++				return true;
++			}
++			QueueInput({InputKind::MouseButton, event.button.button, down ? 1.0f : 0.0f, 0.0f});
++			Bump();
++			return true;
++		}
++		case SDL_MOUSEWHEEL:
++			QueueInput({InputKind::MouseWheel, 0, static_cast<float>(event.wheel.x),
++			            static_cast<float>(event.wheel.y)});
++			Bump();
++			return true;
++		case SDL_CONTROLLERBUTTONDOWN:
++		case SDL_CONTROLLERBUTTONUP: {
++			const bool down = event.type == SDL_CONTROLLERBUTTONDOWN;
++			if (capturing) {
++				if (down) {
++					Captured(std::string("Pad:") + SDL_GameControllerGetStringForButton(
++					                                   static_cast<SDL_GameControllerButton>(event.cbutton.button)));
++				}
++				return true;
++			}
++			QueueInput({InputKind::PadButton, event.cbutton.button, down ? 1.0f : 0.0f, 0.0f});
++			Bump();
++			return true;
++		}
++		case SDL_CONTROLLERAXISMOTION: {
++			const int value = event.caxis.value;
++			if (capturing) {
++				if (value > 16384 || value < -16384) {
++					Captured(PadAxisSourceName(event.caxis.axis, value));
++				}
++				return true;
++			}
++			QueueInput({InputKind::PadAxis, event.caxis.axis, static_cast<float>(value), 0.0f});
++			return true;
++		}
++		default:
++			// Window, display and device events go on to the game as usual.
++			return false;
++	}
++}
++
++// --- presenter-thread side --------------------------------------------------------------------
++
++struct SettingsOverlay::Impl {
++	explicit Impl(GraphicContext& context): graphics(context), controls(HostInputControlNames()) {}
++
++	~Impl() {
++		ReleaseVulkan();
++		if (imgui_context != nullptr) {
++			ImGui::DestroyContext(imgui_context);
++		}
++	}
++
++	void EnsureContext() {
++		if (imgui_context != nullptr) {
++			ImGui::SetCurrentContext(imgui_context);
++			return;
++		}
++		IMGUI_CHECKVERSION();
++		imgui_context = ImGui::CreateContext();
++		ImGui::SetCurrentContext(imgui_context);
++		auto& io       = ImGui::GetIO();
++		io.IniFilename = nullptr;
++		io.LogFilename = nullptr;
++		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard | ImGuiConfigFlags_NavEnableGamepad;
++		io.BackendFlags |= ImGuiBackendFlags_HasGamepad;
++		io.BackendPlatformName = "BC5 settings overlay";
++		ImGui::StyleColorsDark();
++		auto& style          = ImGui::GetStyle();
++		style.WindowRounding = 8.0f;
++		style.FrameRounding  = 4.0f;
++		style.ItemSpacing    = {8.0f, 6.0f};
++	}
++
++	void EnsureVulkan(vk::Format format, uint32_t image_count) {
++		EnsureContext();
++		if (vulkan_initialized) {
++			return;
++		}
++		EXIT_IF(image_count < 2);
++		EXIT_IF(!ImGui_ImplVulkan_LoadFunctions(VK_API_VERSION_1_3, LoadVulkanFunction, &graphics));
++
++		const VkFormat            color_format = static_cast<VkFormat>(format);
++		ImGui_ImplVulkan_InitInfo info {};
++		info.ApiVersion                   = VK_API_VERSION_1_3;
++		info.Instance                     = static_cast<VkInstance>(graphics.instance);
++		info.PhysicalDevice               = static_cast<VkPhysicalDevice>(graphics.physical_device);
++		info.Device                       = static_cast<VkDevice>(graphics.device);
++		info.QueueFamily                  = graphics.queue_family;
++		info.Queue                        = static_cast<VkQueue>(graphics.queue);
++		info.DescriptorPoolSize           = IMGUI_IMPL_VULKAN_MINIMUM_SAMPLED_IMAGE_POOL_SIZE;
++		info.MinImageCount                = image_count;
++		info.ImageCount                   = image_count;
++		info.UseDynamicRendering          = true;
++		info.PipelineInfoMain.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
++		info.PipelineInfoMain.PipelineRenderingCreateInfo.sType =
++		    VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO;
++		info.PipelineInfoMain.PipelineRenderingCreateInfo.colorAttachmentCount    = 1;
++		info.PipelineInfoMain.PipelineRenderingCreateInfo.pColorAttachmentFormats = &color_format;
++		info.CheckVkResultFn = CheckVulkanResult;
++		EXIT_IF(!ImGui_ImplVulkan_Init(&info));
++		vulkan_initialized = true;
++	}
++
++	void DrainInput() {
++		std::deque<InputEvent> events;
++		bool                   reset = false;
++		{
++			std::scoped_lock lock(g_mutex);
++			events.swap(g_events);
++			reset         = g_reset_input;
++			g_reset_input = false;
++		}
++		auto& io = ImGui::GetIO();
++		if (reset) {
++			io.ClearEventsQueue();
++			io.ClearInputKeys();
++			io.ClearInputMouse();
++		}
++		for (const auto& event: events) {
++			switch (event.kind) {
++				case InputKind::Key: io.AddKeyEvent(static_cast<ImGuiKey>(event.id), event.x != 0.0f); break;
++				case InputKind::MousePosition: io.AddMousePosEvent(event.x, event.y); break;
++				case InputKind::MouseButton: {
++					const int button = event.id == SDL_BUTTON_LEFT     ? 0
++					                   : event.id == SDL_BUTTON_RIGHT  ? 1
++					                   : event.id == SDL_BUTTON_MIDDLE ? 2
++					                                                   : -1;
++					if (button >= 0) {
++						io.AddMouseButtonEvent(button, event.x != 0.0f);
++					}
++					break;
++				}
++				case InputKind::MouseWheel: io.AddMouseWheelEvent(event.x, event.y); break;
++				case InputKind::PadButton: {
++					const ImGuiKey key = PadButtonToImGui(event.id);
++					if (key != ImGuiKey_None) {
++						io.AddKeyEvent(key, event.x != 0.0f);
++					}
++					break;
++				}
++				case InputKind::PadAxis: {
++					const float value = event.x / (event.x < 0.0f ? 32768.0f : 32767.0f);
++					if (event.id == SDL_CONTROLLER_AXIS_LEFTX) {
++						io.AddKeyAnalogEvent(ImGuiKey_GamepadLStickLeft, value < -0.25f, std::max(-value, 0.0f));
++						io.AddKeyAnalogEvent(ImGuiKey_GamepadLStickRight, value > 0.25f, std::max(value, 0.0f));
++					} else if (event.id == SDL_CONTROLLER_AXIS_LEFTY) {
++						io.AddKeyAnalogEvent(ImGuiKey_GamepadLStickUp, value < -0.25f, std::max(-value, 0.0f));
++						io.AddKeyAnalogEvent(ImGuiKey_GamepadLStickDown, value > 0.25f, std::max(value, 0.0f));
++					}
++					break;
++				}
++			}
++		}
++	}
++
++	void TakeCapture() {
++		std::scoped_lock lock(g_mutex);
++		if (g_captured_control >= 0 && g_captured_control < static_cast<int>(controls.size())) {
++			draft.SetControl(controls[g_captured_control], g_captured_input);
++			dirty  = true;
++			status = controls[g_captured_control] + " = " + g_captured_input;
++		}
++		g_captured_control = -1;
++	}
++
++	void LoadDraft() {
++		draft.lines = HostInputStatements();
++		path        = HostInputConfigPath();
++		dirty       = false;
++		status.clear();
++	}
++
++	void Draw(vk::Extent2D extent) {
++		const float scale = std::clamp(static_cast<float>(extent.height) / 720.0f, 1.0f, 3.0f);
++		ImGui::GetIO().FontGlobalScale = scale;
++		const ImVec2 size {std::min(static_cast<float>(extent.width) * 0.9f, 760.0f * scale),
++		                   std::min(static_cast<float>(extent.height) * 0.92f, 640.0f * scale)};
++		ImGui::SetNextWindowPos({(static_cast<float>(extent.width) - size.x) * 0.5f,
++		                         (static_cast<float>(extent.height) - size.y) * 0.5f});
++		ImGui::SetNextWindowSize(size);
++		ImGui::SetNextWindowBgAlpha(0.94f);
++		ImGui::Begin("BC5 settings", nullptr,
++		             ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
++		                 ImGuiWindowFlags_NoSavedSettings);
++
++		ImGui::TextWrapped("F2 or Escape closes. Bind: press the key, mouse button or pad input you want "
++		                   "(Escape cancels). Apply makes it live; Save writes the file and applies.");
++		if (path.empty()) {
++			ImGui::TextWrapped("No configuration file: start the emulator with --input-config <file> or "
++			                   "KYTY_BC5_INPUT_CONFIG=<file> to be able to save.");
++		} else {
++			ImGui::TextWrapped("File: %s", path.c_str());
++		}
++		ImGui::Separator();
++
++		if (ImGui::BeginTabBar("tabs")) {
++			if (ImGui::BeginTabItem("Pad")) {
++				bool default_keys = draft.DefaultKeys();
++				if (ImGui::Checkbox("Built-in keyboard layout (arrows, J I K L, Q E U O, Enter, W A S D, T F G H)",
++				                    &default_keys)) {
++					draft.SetDefaultKeys(default_keys);
++					dirty = true;
++				}
++				const int capturing = g_capture_control.load();
++				ImGui::BeginChild("controls", {0.0f, -ImGui::GetFrameHeightWithSpacing() * 3.0f}, true);
++				if (ImGui::BeginTable("bindings", 3,
++				                      ImGuiTableFlags_RowBg | ImGuiTableFlags_SizingStretchProp)) {
++					ImGui::TableSetupColumn("Control", ImGuiTableColumnFlags_WidthStretch, 1.4f);
++					ImGui::TableSetupColumn("Host input", ImGuiTableColumnFlags_WidthStretch, 2.0f);
++					ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthStretch, 1.6f);
++					ImGui::TableHeadersRow();
++					for (int i = 0; i < static_cast<int>(controls.size()); i++) {
++						ImGui::TableNextRow();
++						ImGui::TableSetColumnIndex(0);
++						ImGui::TextUnformatted(controls[i].c_str());
++						ImGui::TableSetColumnIndex(1);
++						const std::string input = draft.InputOf(controls[i]);
++						if (capturing == i) {
++							ImGui::TextColored({1.0f, 0.8f, 0.2f, 1.0f}, "press an input...");
++						} else if (input.empty()) {
++							ImGui::TextDisabled("(pad, built-in key)");
++						} else {
++							ImGui::TextUnformatted(input.c_str());
++						}
++						ImGui::TableSetColumnIndex(2);
++						ImGui::PushID(i);
++						if (ImGui::SmallButton("Bind")) {
++							g_capture_control.store(i);
++						}
++						ImGui::SameLine();
++						if (ImGui::SmallButton("Clear")) {
++							draft.SetControl(controls[i], "");
++							dirty = true;
++						}
++						ImGui::SameLine();
++						if (ImGui::SmallButton("None")) {
++							draft.SetControl(controls[i], "none");
++							dirty = true;
++						}
++						ImGui::PopID();
++					}
++					ImGui::EndTable();
++				}
++				if (ImGui::CollapsingHeader("Pad inputs to ignore (a stuck trigger, say)")) {
++					ImGui::Columns(3, nullptr, false);
++					for (int b = 0; b < SDL_CONTROLLER_BUTTON_MAX; b++) {
++						const std::string name =
++						    std::string("Pad:") + SDL_GameControllerGetStringForButton(static_cast<SDL_GameControllerButton>(b));
++						bool off = draft.PadDisabled(name);
++						if (ImGui::Checkbox(name.c_str(), &off)) {
++							draft.SetPadDisabled(name, off);
++							dirty = true;
++						}
++						ImGui::NextColumn();
++					}
++					for (int a = 0; a < SDL_CONTROLLER_AXIS_MAX; a++) {
++						const std::string name =
++						    std::string("Pad:") + SDL_GameControllerGetStringForAxis(static_cast<SDL_GameControllerAxis>(a));
++						bool off = draft.PadDisabled(name);
++						if (ImGui::Checkbox(name.c_str(), &off)) {
++							draft.SetPadDisabled(name, off);
++							dirty = true;
++						}
++						ImGui::NextColumn();
++					}
++					ImGui::Columns(1);
++				}
++				ImGui::EndChild();
++
++				if (ImGui::Button("Apply")) {
++					std::string error;
++					status = HostInputApply(draft.lines, &error) ? "applied" : "not applied: " + error;
++				}
++				ImGui::SameLine();
++				ImGui::BeginDisabled(path.empty());
++				if (ImGui::Button("Save")) {
++					std::string error;
++					if (!HostInputSave(path, draft.lines, &error)) {
++						status = "not saved: " + error;
++					} else if (!HostInputApply(draft.lines, &error)) {
++						status = "saved, not applied: " + error;
++					} else {
++						status = "saved and applied";
++						dirty  = false;
++					}
++				}
++				ImGui::EndDisabled();
++				ImGui::SameLine();
++				if (ImGui::Button("Revert")) {
++					LoadDraft();
++					status = "reverted to the live configuration";
++				}
++				ImGui::SameLine();
++				if (ImGui::Button("Close")) {
++					SettingsOverlayToggle();
++				}
++				if (dirty) {
++					ImGui::SameLine();
++					ImGui::TextDisabled("(unapplied changes)");
++				}
++				ImGui::TextUnformatted(status.c_str());
++				ImGui::EndTabItem();
++			}
++			ImGui::EndTabBar();
++		}
++		ImGui::End();
++	}
++
++	bool PrepareFrame(vk::Extent2D frame_extent, vk::Format format, uint32_t image_count) {
++		if (!g_active.load(std::memory_order_acquire)) {
++			was_active = false;
++			return false;
++		}
++		EnsureVulkan(format, image_count);
++		if (!was_active) {
++			was_active = true;
++			LoadDraft();
++			auto& io = ImGui::GetIO();
++			io.ClearEventsQueue();
++			io.ClearInputKeys();
++			io.ClearInputMouse();
++		}
++		DrainInput();
++		TakeCapture();
++
++		auto& io       = ImGui::GetIO();
++		io.DisplaySize = {static_cast<float>(frame_extent.width), static_cast<float>(frame_extent.height)};
++		const auto now = std::chrono::steady_clock::now();
++		io.DeltaTime   = last_frame == std::chrono::steady_clock::time_point {}
++		                     ? 1.0f / 60.0f
++		                     : std::clamp(std::chrono::duration<float>(now - last_frame).count(), 1.0f / 1000.0f, 0.1f);
++		last_frame     = now;
++		ImGui_ImplVulkan_NewFrame();
++		ImGui::NewFrame();
++		Draw(frame_extent);
++		ImGui::Render();
++		extent = frame_extent;
++		return true;
++	}
++
++	void Record(vk::CommandBuffer command, vk::ImageView target) {
++		vk::RenderingAttachmentInfo color {};
++		color.sType       = vk::StructureType::eRenderingAttachmentInfo;
++		color.imageView   = target;
++		color.imageLayout = vk::ImageLayout::eColorAttachmentOptimal;
++		color.loadOp      = vk::AttachmentLoadOp::eLoad;
++		color.storeOp     = vk::AttachmentStoreOp::eStore;
++		vk::RenderingInfo rendering {};
++		rendering.sType                = vk::StructureType::eRenderingInfo;
++		rendering.renderArea.extent    = extent;
++		rendering.layerCount           = 1;
++		rendering.colorAttachmentCount = 1;
++		rendering.pColorAttachments    = &color;
++		command.beginRendering(rendering);
++		{
++			Common::LockGuard queue_lock(graphics.queue_mutex);
++			ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), static_cast<VkCommandBuffer>(command));
++		}
++		command.endRendering();
++	}
++
++	void ReleaseVulkan() {
++		if (!vulkan_initialized) {
++			return;
++		}
++		ImGui::SetCurrentContext(imgui_context);
++		ImGui_ImplVulkan_Shutdown();
++		vulkan_initialized = false;
++	}
++
++	GraphicContext&                       graphics;
++	std::vector<std::string>              controls;
++	Draft                                 draft;
++	std::string                           path;
++	std::string                           status;
++	bool                                  dirty              = false;
++	bool                                  was_active         = false;
++	ImGuiContext*                         imgui_context      = nullptr;
++	bool                                  vulkan_initialized = false;
++	vk::Extent2D                          extent {};
++	std::chrono::steady_clock::time_point last_frame;
++};
++
++SettingsOverlay::SettingsOverlay(GraphicContext& graphics): m_impl(std::make_unique<Impl>(graphics)) {}
++
++SettingsOverlay::~SettingsOverlay() = default;
++
++bool SettingsOverlay::PrepareFrame(vk::Extent2D extent, vk::Format format, uint32_t image_count) {
++	return m_impl->PrepareFrame(extent, format, image_count);
++}
++
++void SettingsOverlay::Record(vk::CommandBuffer command, vk::ImageView target) {
++	m_impl->Record(command, target);
++}
++
++void SettingsOverlay::ReleaseVulkan() {
++	m_impl->ReleaseVulkan();
++}
++
++} // namespace Libs::Graphics
+diff --git a/src/graphics/presentation/settingsOverlay.h b/src/graphics/presentation/settingsOverlay.h
+new file mode 100644
+index 0000000..deb84e4
+--- /dev/null
++++ b/src/graphics/presentation/settingsOverlay.h
+@@ -0,0 +1,49 @@
++#ifndef KYTY_GRAPHICS_PRESENTATION_SETTINGS_OVERLAY_H_
++#define KYTY_GRAPHICS_PRESENTATION_SETTINGS_OVERLAY_H_
++
++// BC5: the settings overlay — F2 in the game window opens a menu over the game's picture in
++// which the controller mapping (the input configuration file) is edited: a control is bound by
++// pressing the key, mouse button or pad input wanted, a physical pad input is switched off, the
++// built-in keyboard layout is kept or dropped, and the result is applied live and saved to the
++// file. Drawn with ImGui in the presentation pass like the IME's on-screen keyboard; while it is
++// open the keyboard, the mouse and the pad drive the menu, not the game.
++
++#include "common/common.h"
++#include "graphics/host_gpu/vulkanCommon.h"
++
++#include <cstdint>
++#include <memory>
++
++union SDL_Event;
++
++namespace Libs::Graphics {
++
++struct GraphicContext;
++
++// Window-thread side.
++void SettingsOverlayToggle();
++bool SettingsOverlayActive() noexcept;
++// A counter that changes whenever the overlay opens, closes or wants a redraw.
++uint64_t SettingsOverlayRevision() noexcept;
++// Takes an SDL event for the overlay; true when the event was consumed (it must not reach the game).
++bool ProcessSettingsInput(const SDL_Event& event);
++
++// Presenter-thread side: drawn into the swapchain image after the game's picture.
++class SettingsOverlay final {
++public:
++	explicit SettingsOverlay(GraphicContext& graphics);
++	~SettingsOverlay();
++	KYTY_CLASS_NO_COPY(SettingsOverlay);
++
++	[[nodiscard]] bool PrepareFrame(vk::Extent2D extent, vk::Format format, uint32_t image_count);
++	void               Record(vk::CommandBuffer command, vk::ImageView target);
++	void               ReleaseVulkan();
++
++private:
++	struct Impl;
++	std::unique_ptr<Impl> m_impl;
++};
++
++} // namespace Libs::Graphics
++
++#endif // KYTY_GRAPHICS_PRESENTATION_SETTINGS_OVERLAY_H_
 diff --git a/src/graphics/presentation/videoOut.cpp b/src/graphics/presentation/videoOut.cpp
 index f980320..36ea766 100644
 --- a/src/graphics/presentation/videoOut.cpp
@@ -378,10 +1141,10 @@ index 58f16c6..4ab38e9 100644
  KYTY_SYSV_ABI int VideoOutGetVblankStatus(int handle, VideoOutVblankStatus* status);
  KYTY_SYSV_ABI int VideoOutGetEventId(const LibKernel::EventQueue::KernelEvent* ev);
 diff --git a/src/graphics/presentation/window/hostInput.cpp b/src/graphics/presentation/window/hostInput.cpp
-index edcfdaf..5060af2 100644
+index edcfdaf..8be64c4 100644
 --- a/src/graphics/presentation/window/hostInput.cpp
 +++ b/src/graphics/presentation/window/hostInput.cpp
-@@ -6,14 +6,48 @@
+@@ -6,14 +6,51 @@
  #include "SDL_mouse.h"
  #include "common/assert.h"
  #include "common/emulatorConfig.h"
@@ -390,19 +1153,20 @@ index edcfdaf..5060af2 100644
  
  #include <algorithm>
  #include <array>
++#include <cctype>
 +#include <chrono>
 +#include <condition_variable>
-+#include <map>
-+#include <mutex>
-+#include <thread>
-+#include <unordered_map>
-+#include <cctype>
  #include <cstddef>
 +#include <cstdio>
 +#include <cstdlib>
 +#include <fstream>
++#include <map>
++#include <memory>
++#include <mutex>
  #include <string>
  #include <string_view>
++#include <thread>
++#include <unordered_map>
  #include <utility>
 +#include <vector>
 +
@@ -412,6 +1176,7 @@ index edcfdaf..5060af2 100644
 +// sets an option; `#` starts a comment. The same lines are accepted one by one as `--keymap`.
 +//
 +//   <Control>=<Input>        the control is driven by the input (in addition to the pad's own)
++//   <Control>=none           nothing of the host's drives it (its built-in key is dropped)
 +//   Pad:<name>=none          the physical pad's button or axis never reaches the game
 +//   DefaultKeys=on|off       the built-in keyboard layout (default on; a key or a control that a
 +//                            line above binds leaves the layout)
@@ -419,22 +1184,22 @@ index edcfdaf..5060af2 100644
 +// Controls: L3 R3 Options Up Right Down Left L2 R2 L1 R1 Triangle Circle Cross Square TouchPad
 +//           LeftStickLeft LeftStickRight LeftStickUp LeftStickDown
 +//           RightStickLeft RightStickRight RightStickUp RightStickDown
-+// Inputs:   a key name as SDL spells it ("M", "Right Shift", "Keypad 0"; Escape, Space and F1
-+//           are the host's), Mouse:Left|Middle|Right|X1|X2, Pad:<button> with SDL's button names
-+//           (a b x y back guide start leftstick rightstick leftshoulder rightshoulder dpup dpdown
-+//           dpleft dpright misc1 paddle1..4 touchpad), Pad:<axis> with SDL's axis names
++// Inputs:   a key name as SDL spells it ("M", "Right Shift", "Keypad 0"; Escape, Space, F1 and
++//           F2 are the host's), Mouse:Left|Middle|Right|X1|X2, Pad:<button> with SDL's button
++//           names (a b x y back guide start leftstick rightstick leftshoulder rightshoulder dpup
++//           dpdown dpleft dpright misc1 paddle1..4 touchpad), Pad:<axis> with SDL's axis names
 +//           (lefttrigger righttrigger, and leftx lefty rightx righty with a trailing + or -).
 +//
 +// The file is named by --input-config <file> or by KYTY_BC5_INPUT_CONFIG; see
-+// backend/kytyplus-patches/input.example.cfg in the BC5 repository.
++// backend/kytyplus-patches/input.example.cfg in the BC5 repository. The settings overlay (F2 in
++// the game window) edits and saves the same file.
  
  namespace Libs::Graphics {
  
-@@ -55,11 +89,62 @@ static constexpr std::array CONTROL_INFO = {
+@@ -55,13 +92,68 @@ static constexpr std::array CONTROL_INFO = {
  
  constexpr std::size_t INVALID_CONTROL = CONTROL_INFO.size();
  
--struct Binding {
 +// The built-in keyboard layout: KytyPlus's, plus U and O for the triggers it had no key for.
 +struct DefaultKey {
 +	SDL_Keycode      key;
@@ -479,24 +1244,32 @@ index edcfdaf..5060af2 100644
 +};
 +
 +struct Source {
-+	SourceKind  kind           = SourceKind::None;
- 	SDL_Keycode key            = SDLK_UNKNOWN;
- 	uint8_t     mouse_button   = 0;
--	int         gamepad_button = -1;  // SDL_GameControllerButton or -1
--	std::size_t control        = INVALID_CONTROL;
-+	int         pad_button     = -1; // SDL_GameControllerButton
-+	int         pad_axis       = -1; // SDL_GameControllerAxis
-+	int         axis_sign      = 0;  // +1 / -1 for a stick direction, 0 for a trigger
++	SourceKind  kind         = SourceKind::None;
++	SDL_Keycode key          = SDLK_UNKNOWN;
++	uint8_t     mouse_button = 0;
++	int         pad_button   = -1; // SDL_GameControllerButton
++	int         pad_axis     = -1; // SDL_GameControllerAxis
++	int         axis_sign    = 0;  // +1 / -1 for a stick direction, 0 for a trigger
 +};
 +
-+struct Binding {
+ struct Binding {
+-	SDL_Keycode key            = SDLK_UNKNOWN;
+-	uint8_t     mouse_button   = 0;
+-	int         gamepad_button = -1;  // SDL_GameControllerButton or -1
+-	std::size_t control        = INVALID_CONTROL;
 +	Source      source;
 +	std::size_t control = INVALID_CONTROL;
 +	bool        active  = false; // for axis sources: the last state sent
  };
  
++// Everything below the map is shared between the window thread (events), the presenter thread
++// (the settings overlay) and the release thread; one lock for all of it.
++std::mutex g_input_mutex;
++
  std::size_t ControlFromName(std::string_view name) {
-@@ -74,6 +159,11 @@ const ControlInfo& Info(std::size_t control) {
+ 	const auto info = std::find_if(CONTROL_INFO.begin(), CONTROL_INFO.end(),
+ 	                               [name](const auto& item) { return item.name == name; });
+@@ -74,6 +166,11 @@ const ControlInfo& Info(std::size_t control) {
  }
  
  SDL_Keycode NormalizeKey(SDL_Keycode key) {
@@ -508,7 +1281,7 @@ index edcfdaf..5060af2 100644
  	switch (key) {
  		case SDLK_RSHIFT: return SDLK_LSHIFT;
  		case SDLK_RCTRL: return SDLK_LCTRL;
-@@ -83,107 +173,287 @@ SDL_Keycode NormalizeKey(SDL_Keycode key) {
+@@ -83,110 +180,391 @@ SDL_Keycode NormalizeKey(SDL_Keycode key) {
  	}
  }
  
@@ -530,32 +1303,37 @@ index edcfdaf..5060af2 100644
 +	       });
 +}
 +
++static constexpr std::array MOUSE_NAMES = {
++    std::pair {std::string_view("Left"), uint8_t {SDL_BUTTON_LEFT}},
++    std::pair {std::string_view("Middle"), uint8_t {SDL_BUTTON_MIDDLE}},
++    std::pair {std::string_view("Right"), uint8_t {SDL_BUTTON_RIGHT}},
++    std::pair {std::string_view("X1"), uint8_t {SDL_BUTTON_X1}},
++    std::pair {std::string_view("X2"), uint8_t {SDL_BUTTON_X2}},
++};
++
  uint8_t MouseButtonFromName(std::string_view name) {
- 	static constexpr std::array buttons = {
+-	static constexpr std::array buttons = {
 -	    std::pair {std::string_view("Mouse:Left"), uint8_t {SDL_BUTTON_LEFT}},
 -	    std::pair {std::string_view("Mouse:Middle"), uint8_t {SDL_BUTTON_MIDDLE}},
 -	    std::pair {std::string_view("Mouse:Right"), uint8_t {SDL_BUTTON_RIGHT}},
 -	    std::pair {std::string_view("Mouse:X1"), uint8_t {SDL_BUTTON_X1}},
 -	    std::pair {std::string_view("Mouse:X2"), uint8_t {SDL_BUTTON_X2}},
-+	    std::pair {std::string_view("Left"), uint8_t {SDL_BUTTON_LEFT}},
-+	    std::pair {std::string_view("Middle"), uint8_t {SDL_BUTTON_MIDDLE}},
-+	    std::pair {std::string_view("Right"), uint8_t {SDL_BUTTON_RIGHT}},
-+	    std::pair {std::string_view("X1"), uint8_t {SDL_BUTTON_X1}},
-+	    std::pair {std::string_view("X2"), uint8_t {SDL_BUTTON_X2}},
- 	};
--
--	const auto button = std::find_if(buttons.begin(), buttons.end(),
--	                                 [name](const auto& item) { return item.first == name; });
-+	const auto button = std::find_if(buttons.begin(), buttons.end(), [name](const auto& item) {
+-	};
++	const auto button = std::find_if(MOUSE_NAMES.begin(), MOUSE_NAMES.end(), [name](const auto& item) {
 +		return EqualNoCase(item.first, name);
 +	});
- 	return button != buttons.end() ? button->second : 0;
- }
- 
--int GamepadButtonFromName(std::string_view name) {
--	if (!name.starts_with("Pad:")) return -1;
--	return static_cast<int>(
--	    SDL_GameControllerGetButtonFromString(std::string(name.substr(4)).c_str()));
++	return button != MOUSE_NAMES.end() ? button->second : 0;
++}
++
++std::string MouseButtonName(uint8_t button) {
++	for (const auto& [name, id]: MOUSE_NAMES) {
++		if (id == button) {
++			return "Mouse:" + std::string(name);
++		}
++	}
++	return "Mouse:?";
++}
++
 +// "Pad:<name>": a button, a trigger axis, or a stick axis with a direction.
 +bool PadSourceFromName(std::string_view name, Source* out) {
 +	if (!name.starts_with("Pad:")) {
@@ -571,7 +1349,10 @@ index edcfdaf..5060af2 100644
 +		out->pad_button = button;
 +		return true;
 +	}
-+
+ 
+-	const auto button = std::find_if(buttons.begin(), buttons.end(),
+-	                                 [name](const auto& item) { return item.first == name; });
+-	return button != buttons.end() ? button->second : 0;
 +	int sign = 0;
 +	if (!spec.empty() && (spec.back() == '+' || spec.back() == '-')) {
 +		sign = spec.back() == '+' ? 1 : -1;
@@ -610,6 +1391,25 @@ index edcfdaf..5060af2 100644
 +	return true;
  }
  
+-int GamepadButtonFromName(std::string_view name) {
+-	if (!name.starts_with("Pad:")) return -1;
+-	return static_cast<int>(
+-	    SDL_GameControllerGetButtonFromString(std::string(name.substr(4)).c_str()));
++std::string SourceToName(const Source& s) {
++	switch (s.kind) {
++		case SourceKind::Key: return SDL_GetKeyName(s.key);
++		case SourceKind::Mouse: return MouseButtonName(s.mouse_button);
++		case SourceKind::PadButton:
++			return std::string("Pad:") + SDL_GameControllerGetStringForButton(
++			                                 static_cast<SDL_GameControllerButton>(s.pad_button));
++		case SourceKind::PadAxis:
++			return std::string("Pad:") +
++			       SDL_GameControllerGetStringForAxis(static_cast<SDL_GameControllerAxis>(s.pad_axis)) +
++			       (s.axis_sign > 0 ? "+" : s.axis_sign < 0 ? "-" : "");
++		default: return "none";
++	}
+ }
+ 
 -bool Conflicts(const Binding& first, const Binding& second) {
 -	return first.control == second.control ||
 -	       (first.key != SDLK_UNKNOWN && first.key == second.key) ||
@@ -631,11 +1431,21 @@ index edcfdaf..5060af2 100644
  class InputMap {
  public:
 -	InputMap(): m_custom(!Config::GetKeymap().empty()) {
-+	InputMap() {
- 		for (const auto& value: Config::GetKeymap()) {
+-		for (const auto& value: Config::GetKeymap()) {
 -			const std::string_view entry = value;
 -			const auto             split = entry.find('=');
--
++	// Parses lines; the first bad one stops and is reported (nothing is applied by the caller).
++	bool Load(const std::vector<std::pair<std::string, std::string>>& lines, std::string* error) {
++		for (const auto& [text, where]: lines) {
++			if (!Parse(text, where, error)) {
++				return false;
++			}
++		}
++		m_custom = !m_bindings.empty() || m_disabled_buttons != 0 || m_disabled_axes != 0 ||
++		           !m_default_keys;
++		return true;
++	}
+ 
 -		Binding binding;
 -		if (split != std::string_view::npos) {
 -			binding.control       = ControlFromName(entry.substr(0, split));
@@ -643,22 +1453,33 @@ index edcfdaf..5060af2 100644
 -			binding.mouse_button  = MouseButtonFromName(host_input);
 -			if (binding.mouse_button == 0) {
 -				binding.gamepad_button = GamepadButtonFromName(host_input);
-+			Parse(value, "--keymap");
-+		}
-+		if (const char* path = std::getenv("KYTY_BC5_INPUT_CONFIG"); path != nullptr && *path != 0) {
-+			std::ifstream file(path);
-+			if (!file) {
-+				EXIT("Input config: cannot open %s\n", path);
++	void Log() const {
++		for (const auto& b: m_bindings) {
++			if (b.source.kind == SourceKind::Key) {
++				LOGF("Host input: %s = %s (key code %d)\n", std::string(Info(b.control).name).c_str(),
++				     SourceToName(b.source).c_str(), static_cast<int>(b.source.key));
++			} else {
++				LOGF("Host input: %s = %s\n", std::string(Info(b.control).name).c_str(),
++				     SourceToName(b.source).c_str());
  			}
 -			if (binding.mouse_button == 0 && binding.gamepad_button < 0) {
 -				binding.key = NormalizeKey(SDL_GetKeyFromName(std::string(host_input).c_str()));
-+			std::string line;
-+			int         number = 0;
-+			while (std::getline(file, line)) {
-+				number++;
-+				Parse(line, std::string(path) + ":" + std::to_string(number));
++		}
++		for (int i = 0; i < 32; i++) {
++			if (((m_disabled_buttons >> i) & 1u) != 0) {
++				LOGF("Host input: pad button %s disabled\n",
++				     SDL_GameControllerGetStringForButton(static_cast<SDL_GameControllerButton>(i)));
++			}
++			if (((m_disabled_axes >> i) & 1u) != 0) {
++				LOGF("Host input: pad axis %s disabled\n",
++				     SDL_GameControllerGetStringForAxis(static_cast<SDL_GameControllerAxis>(i)));
  			}
  		}
++		LOGF("Host input: %zu binding(s), %d pad button(s) and %d pad axis/axes disabled, default "
++		     "keys %s\n",
++		     m_bindings.size(), __builtin_popcount(m_disabled_buttons),
++		     __builtin_popcount(m_disabled_axes), m_default_keys ? "on" : "off");
++	}
  
 -		const bool reserved =
 -		    binding.key == SDLK_ESCAPE || binding.key == SDLK_SPACE || binding.key == SDLK_F1;
@@ -666,15 +1487,31 @@ index edcfdaf..5060af2 100644
 -		                         binding.gamepad_button >= 0;
 -		if (binding.control == INVALID_CONTROL || reserved || !has_binding) {
 -			EXIT("Invalid input mapping: %s\n", value.c_str());
--		}
++	// The configuration back as statements (the file's grammar), one per line.
++	[[nodiscard]] std::vector<std::string> Statements() const {
++		std::vector<std::string> out;
++		if (!m_default_keys) {
++			out.emplace_back("DefaultKeys=off");
++		}
++		for (int i = 0; i < 32; i++) {
++			if (((m_disabled_buttons >> i) & 1u) != 0) {
++				out.emplace_back(std::string("Pad:") +
++				                 SDL_GameControllerGetStringForButton(static_cast<SDL_GameControllerButton>(i)) +
++				                 "=none");
++			}
++		}
++		for (int i = 0; i < 32; i++) {
++			if (((m_disabled_axes >> i) & 1u) != 0) {
++				out.emplace_back(std::string("Pad:") +
++				                 SDL_GameControllerGetStringForAxis(static_cast<SDL_GameControllerAxis>(i)) +
++				                 "=none");
++			}
+ 		}
 -		Add(binding);
--		}
-+		m_custom = !m_bindings.empty() || m_disabled_buttons != 0 || m_disabled_axes != 0 ||
-+		           !m_default_keys;
-+		LOGF("Host input: %zu binding(s), %d pad button(s) and %d pad axis/axes disabled, default "
-+		     "keys %s\n",
-+		     m_bindings.size(), __builtin_popcount(m_disabled_buttons),
-+		     __builtin_popcount(m_disabled_axes), m_default_keys ? "on" : "off");
++		for (const auto& b: m_bindings) {
++			out.emplace_back(std::string(Info(b.control).name) + "=" + SourceToName(b.source));
+ 		}
++		return out;
  	}
 +
  	[[nodiscard]] bool Custom() const { return m_custom; }
@@ -719,15 +1556,6 @@ index edcfdaf..5060af2 100644
 +			}
 +		}
 +		return INVALID_CONTROL;
-+	}
-+
-+	[[nodiscard]] std::size_t FindPadButton(int button) const {
-+		for (const auto& b: m_bindings) {
-+			if (b.source.kind == SourceKind::PadButton && b.source.pad_button == button) {
-+				return b.control;
-+			}
-+		}
-+		return INVALID_CONTROL;
  	}
  
 -	[[nodiscard]] std::size_t FindGamepadButton(int button) const {
@@ -735,6 +1563,15 @@ index edcfdaf..5060af2 100644
 -		    m_bindings.begin(), m_bindings.begin() + m_size,
 -		    [button](const auto& item) { return item.gamepad_button == button; });
 -		return binding != m_bindings.begin() + m_size ? binding->control : INVALID_CONTROL;
++	[[nodiscard]] std::size_t FindPadButton(int button) const {
++		for (const auto& b: m_bindings) {
++			if (b.source.kind == SourceKind::PadButton && b.source.pad_button == button) {
++				return b.control;
++			}
++		}
++		return INVALID_CONTROL;
++	}
++
 +	// Axis sources: every binding on this axis whose state changed, with its new state.
 +	template <typename F>
 +	void UpdatePadAxis(int axis, int value, F&& on_change) {
@@ -756,19 +1593,25 @@ index edcfdaf..5060af2 100644
 -		for (std::size_t index = 0; index < m_size;) {
 -			if (Conflicts(m_bindings[index], binding)) {
 -				m_bindings[index] = m_bindings[--m_size];
-+	void Parse(std::string_view raw, const std::string& where) {
++	static bool Fail(std::string* error, const std::string& text) {
++		if (error != nullptr) {
++			*error = text;
++		}
++		return false;
++	}
++
++	bool Parse(std::string_view raw, const std::string& where, std::string* error) {
 +		std::string_view line = raw;
 +		if (const auto hash = line.find('#'); hash != std::string_view::npos) {
 +			line = line.substr(0, hash);
 +		}
 +		line = Trim(line);
 +		if (line.empty()) {
-+			return;
++			return true;
 +		}
 +		const auto split = line.find('=');
 +		if (split == std::string_view::npos) {
-+			EXIT("Input config (%s): expected <Control>=<Input>, got: %s\n", where.c_str(),
-+			     std::string(line).c_str());
++			return Fail(error, where + ": expected <Control>=<Input>, got: " + std::string(line));
 +		}
 +		const auto left  = Trim(line.substr(0, split));
 +		const auto right = Trim(line.substr(split + 1));
@@ -778,52 +1621,42 @@ index edcfdaf..5060af2 100644
 +				m_default_keys = true;
 +			} else if (EqualNoCase(right, "off") || EqualNoCase(right, "false") || right == "0") {
 +				m_default_keys = false;
-+			} else {
-+				EXIT("Input config (%s): DefaultKeys takes on or off, got: %s\n", where.c_str(),
-+				     std::string(right).c_str());
-+			}
-+			return;
-+		}
+ 			} else {
+-				index++;
++				return Fail(error, where + ": DefaultKeys takes on or off, got: " + std::string(right));
+ 			}
++			return true;
+ 		}
+-		EXIT_IF(m_size >= m_bindings.size());
+-		m_bindings[m_size++] = binding;
 +
 +		if (left.starts_with("Pad:") && EqualNoCase(right, "none")) {
 +			Source source;
 +			if (!PadSourceFromName(left, &source)) {
-+				EXIT("Input config (%s): unknown pad input: %s\n", where.c_str(),
-+				     std::string(left).c_str());
++				return Fail(error, where + ": unknown pad input: " + std::string(left));
 +			}
 +			if (source.kind == SourceKind::PadButton) {
 +				m_disabled_buttons |= 1u << source.pad_button;
-+				LOGF("Host input: pad button %s disabled\n",
-+				     SDL_GameControllerGetStringForButton(
-+				         static_cast<SDL_GameControllerButton>(source.pad_button)));
- 			} else {
--				index++;
++			} else {
 +				m_disabled_axes |= 1u << source.pad_axis;
-+				LOGF("Host input: pad axis %s disabled\n",
-+				     SDL_GameControllerGetStringForAxis(
-+				         static_cast<SDL_GameControllerAxis>(source.pad_axis)));
- 			}
-+			return;
++			}
++			return true;
 +		}
 +
 +		Binding binding;
 +		binding.control = ControlFromName(left);
 +		if (binding.control == INVALID_CONTROL) {
-+			EXIT("Input config (%s): unknown control: %s\n", where.c_str(),
-+			     std::string(left).c_str());
++			return Fail(error, where + ": unknown control: " + std::string(left));
 +		}
 +		if (EqualNoCase(right, "none")) {
-+			// "<Control>=none": nothing of the host's drives it (its default key is dropped).
 +			binding.source.kind = SourceKind::None;
 +		} else if (!SourceFromName(right, &binding.source)) {
-+			EXIT("Input config (%s): unknown input: %s\n", where.c_str(),
-+			     std::string(right).c_str());
++			return Fail(error, where + ": unknown input: " + std::string(right));
 +		}
 +		if (binding.source.kind == SourceKind::Key &&
 +		    (binding.source.key == SDLK_ESCAPE || binding.source.key == SDLK_SPACE ||
-+		     binding.source.key == SDLK_F1)) {
-+			EXIT("Input config (%s): Escape, Space and F1 belong to the host: %s\n", where.c_str(),
-+			     std::string(line).c_str());
++		     binding.source.key == SDLK_F1 || binding.source.key == SDLK_F2)) {
++			return Fail(error, where + ": Escape, Space, F1 and F2 belong to the host: " + std::string(line));
 +		}
 +		// A later line replaces an earlier one with the same source or the same control.
 +		m_bindings.erase(std::remove_if(m_bindings.begin(), m_bindings.end(),
@@ -834,14 +1667,7 @@ index edcfdaf..5060af2 100644
 +		                                }),
 +		                 m_bindings.end());
 +		m_bindings.push_back(binding);
-+		if (binding.source.kind == SourceKind::Key) {
-+			LOGF("Host input: %s = %s (key code %d)\n", std::string(left).c_str(),
-+			     std::string(right).c_str(), static_cast<int>(binding.source.key));
-+		} else {
-+			LOGF("Host input: %s = %s\n", std::string(left).c_str(), std::string(right).c_str());
- 		}
--		EXIT_IF(m_size >= m_bindings.size());
--		m_bindings[m_size++] = binding;
++		return true;
  	}
  
 -	std::array<Binding, CONTROL_INFO.size()> m_bindings {};
@@ -856,12 +1682,64 @@ index edcfdaf..5060af2 100644
  
 -const InputMap& GetInputMap() {
 -	static const InputMap map;
-+InputMap& GetInputMap() {
-+	static InputMap map;
- 	return map;
+-	return map;
++std::unique_ptr<InputMap> g_map;
++std::string               g_config_path;
++
++std::vector<std::pair<std::string, std::string>> ReadConfigLines(const std::string& path, std::string* error) {
++	std::vector<std::pair<std::string, std::string>> lines;
++	std::ifstream                                    file(path);
++	if (!file) {
++		if (error != nullptr) {
++			*error = "cannot open " + path;
++		}
++		return lines;
++	}
++	std::string line;
++	int         number = 0;
++	while (std::getline(file, line)) {
++		number++;
++		lines.emplace_back(line, path + ":" + std::to_string(number));
++	}
++	return lines;
++}
++
++// The map, built on first use from --keymap and the configuration file (a bad line is fatal
++// there: a wrong binding at start-up is better found than played with). Caller holds g_input_mutex.
++InputMap& Map() {
++	if (g_map == nullptr) {
++		std::vector<std::pair<std::string, std::string>> lines;
++		for (const auto& value: Config::GetKeymap()) {
++			lines.emplace_back(value, "--keymap");
++		}
++		if (const char* path = std::getenv("KYTY_BC5_INPUT_CONFIG"); path != nullptr && *path != 0) {
++			g_config_path = path;
++			std::string error;
++			auto        from_file = ReadConfigLines(g_config_path, &error);
++			if (!error.empty()) {
++				EXIT("Input config: %s\n", error.c_str());
++			}
++			lines.insert(lines.end(), from_file.begin(), from_file.end());
++		}
++		auto        map = std::make_unique<InputMap>();
++		std::string error;
++		if (!map->Load(lines, &error)) {
++			EXIT("Input config (%s)\n", error.c_str());
++		}
++		map->Log();
++		g_map = std::move(map);
++	}
++	return *g_map;
  }
  
-@@ -199,35 +469,6 @@ void SetButton(uint32_t button, bool down) {
++// --- driving the pad slot ----------------------------------------------------------------------
++
++std::array<bool, CONTROL_INFO.size()> g_pressed {}; // button controls the host stream holds
++
+ void SetButton(uint32_t button, bool down) {
+ 	if (button == Controller::PAD_BUTTON_L2) {
+ 		Controller::ControllerAxis(Controller::HOST_INPUT_CONTROLLER_ID,
+@@ -199,40 +577,17 @@ void SetButton(uint32_t button, bool down) {
  	}
  }
  
@@ -897,23 +1775,48 @@ index edcfdaf..5060af2 100644
  void SetStickAxis(Controller::Axis axis, bool negative, bool positive) {
  	const int value = negative == positive ? 128 : negative ? 0 : 255;
  	Controller::ControllerAxis(Controller::HOST_INPUT_CONTROLLER_ID, axis, value);
-@@ -260,46 +501,85 @@ void SetControl(std::size_t control, bool down) {
- 	SetStickAxis(info.axis, axes[axis].negative, axes[axis].positive);
  }
  
++struct AxisKeys {
++	bool negative = false;
++	bool positive = false;
++};
++std::array<AxisKeys, 4> g_axes;
++
+ void SetControl(std::size_t control, bool down) {
+ 	if (control == INVALID_CONTROL) {
+ 		return;
+@@ -240,93 +595,272 @@ void SetControl(std::size_t control, bool down) {
+ 
+ 	const auto& info = Info(control);
+ 	if (info.button != 0) {
++		g_pressed[control] = down;
+ 		SetButton(info.button, down);
+ 		return;
+ 	}
+ 
+-	struct AxisKeys {
+-		bool negative = false;
+-		bool positive = false;
+-	};
+-	static std::array<AxisKeys, 4> axes;
+-
+ 	const auto axis = static_cast<std::size_t>(info.axis);
+-	EXIT_IF(axis >= axes.size());
++	EXIT_IF(axis >= g_axes.size());
+ 	if (info.positive) {
+-		axes[axis].positive = down;
++		g_axes[axis].positive = down;
+ 	} else {
+-		axes[axis].negative = down;
+-	}
+-	SetStickAxis(info.axis, axes[axis].negative, axes[axis].positive);
+-}
+-
 -void DefaultKeyboardInput(int key_code, bool down) {
 -	static StickKeys left;
 -	static StickKeys right;
-+std::size_t DefaultControlForKey(int key_code) {
-+	const auto key = NormalizeKey(static_cast<SDL_Keycode>(key_code));
-+	for (const auto& d: DEFAULT_KEYS) {
-+		if (d.key == key) {
-+			return ControlFromName(d.control);
-+		}
-+	}
-+	return INVALID_CONTROL;
-+}
- 
+-
 -	switch (NormalizeKey(static_cast<SDL_Keycode>(key_code))) {
 -		case SDLK_a:
 -			left.left = down;
@@ -948,16 +1851,42 @@ index edcfdaf..5060af2 100644
 -			SetStickAxis(Controller::Axis::RightY, right.up, right.down);
 -			return;
 -		default: SetButton(DefaultKeyboardButton(key_code), down); return;
-+} // namespace
++		g_axes[axis].negative = down;
++	}
++	SetStickAxis(info.axis, g_axes[axis].negative, g_axes[axis].positive);
++}
 +
-+namespace {
++void ReleaseAll() {
++	for (std::size_t c = 0; c < CONTROL_INFO.size(); c++) {
++		if (g_pressed[c]) {
++			SetControl(c, false);
++		}
++	}
++	for (std::size_t a = 0; a < g_axes.size(); a++) {
++		if (g_axes[a].negative || g_axes[a].positive) {
++			g_axes[a] = {};
++			SetStickAxis(static_cast<Controller::Axis>(a), false, false);
++		}
+ 	}
+ }
 +
-+// BC5: a key press shorter than one game frame is invisible to the game (it reads the pad once
-+// a frame and would see the press and the release in the same read). Some keyboards and
-+// macro keys deliver a press and its release in the same millisecond, so a release that
-+// follows its press by less than KYTY_BC5_KEY_MIN_HOLD_MS (default 60) is held back until the
-+// press has lasted that long; a new press of the same key meanwhile cancels the release.
-+std::mutex g_input_mutex; // SetControl's shared state and the deferred releases
++std::size_t DefaultControlForKey(int key_code) {
++	const auto key = NormalizeKey(static_cast<SDL_Keycode>(key_code));
++	for (const auto& d: DEFAULT_KEYS) {
++		if (d.key == key) {
++			return ControlFromName(d.control);
++		}
++	}
++	return INVALID_CONTROL;
++}
++
++// --- a key press shorter than a frame --------------------------------------------------------
++//
++// A press shorter than one game frame is invisible to the game (it reads the pad once a frame and
++// would see the press and the release in the same read). Some keyboards and macro keys deliver a
++// press and its release in the same millisecond, so a release that follows its press by less than
++// KYTY_BC5_KEY_MIN_HOLD_MS (default 60) is held back until the press has lasted that long; a new
++// press of the same key meanwhile cancels the release.
 +
 +struct PendingRelease {
 +	std::size_t control;
@@ -1014,13 +1943,20 @@ index edcfdaf..5060af2 100644
 +	if (!g_release_thread_started) {
 +		g_release_thread_started = true;
 +		std::thread(ReleaseThread).detach();
- 	}
- }
++	}
++}
++
++bool Trace() {
++	static const bool trace = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
++	return trace;
++}
 +
  } // namespace
  
  void HostInputInit() {
-@@ -307,15 +587,56 @@ void HostInputInit() {
+-	GetInputMap();
++	std::lock_guard<std::mutex> lock(g_input_mutex);
++	Map();
  }
  
  void HostInputKey(int key_code, bool down) {
@@ -1030,7 +1966,7 @@ index edcfdaf..5060af2 100644
 -	} else {
 -		DefaultKeyboardInput(key_code, down);
 +	std::lock_guard<std::mutex> lock(g_input_mutex);
-+	const auto&                 map     = GetInputMap();
++	const auto&                 map     = Map();
 +	auto                        control = map.FindKey(key_code);
 +	const char*                 origin  = "configuration";
 +	if (control == INVALID_CONTROL && map.DefaultKeys()) {
@@ -1041,10 +1977,9 @@ index edcfdaf..5060af2 100644
 +			control = INVALID_CONTROL;
 +			origin  = "built-in layout, control bound elsewhere";
 +		}
- 	}
++	}
 +	// BC5: KYTY_BC5_INPUT_TRACE=1 writes every key to stderr with what it does.
-+	static const bool trace = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
-+	if (trace) {
++	if (Trace()) {
 +		std::fprintf(stderr, "input trace: t=%.3f key %d (%s) %s -> %s (%s)\n",
 +		             Controller::InputTraceSeconds(), key_code,
 +		             SDL_GetKeyName(static_cast<SDL_Keycode>(key_code)), down ? "down" : "up",
@@ -1067,56 +2002,137 @@ index edcfdaf..5060af2 100644
 +		g_pending[key_code] = PendingRelease {control, it->second + MinHoldMs() / 1000.0};
 +		StartReleaseThread();
 +		g_pending_cv.notify_all();
-+		if (trace) {
++		if (Trace()) {
 +			std::fprintf(stderr, "input trace: t=%.3f release of %s held back, the press lasted %.1f ms\n",
 +			             Controller::InputTraceSeconds(), std::string(Info(control).name).c_str(), held);
 +			std::fflush(stderr);
 +		}
 +		return;
-+	}
+ 	}
 +	SetControl(control, false);
  }
  
  void HostInputMouseButton(uint8_t mouse_button, bool down) {
+-	const auto& map = GetInputMap();
 +	std::lock_guard<std::mutex> lock(g_input_mutex);
- 	const auto& map = GetInputMap();
++	const auto&                 map = Map();
  	if (map.Custom() && mouse_button != 0) {
  		SetControl(map.FindMouseButton(mouse_button), down);
-@@ -323,10 +644,28 @@ void HostInputMouseButton(uint8_t mouse_button, bool down) {
- }
- 
- void HostInputGamepadButton(int gamepad_button, bool down) {
-+	std::lock_guard<std::mutex> lock(g_input_mutex);
- 	const auto& map = GetInputMap();
- 	if (map.Custom() && gamepad_button >= 0) {
--		SetControl(map.FindGamepadButton(gamepad_button), down);
-+		SetControl(map.FindPadButton(gamepad_button), down);
-+	}
-+}
-+
-+void HostInputGamepadAxis(int gamepad_axis, int value) {
-+	std::lock_guard<std::mutex> lock(g_input_mutex);
-+	auto& map = GetInputMap();
-+	if (map.Custom() && gamepad_axis >= 0) {
-+		map.UpdatePadAxis(gamepad_axis, value,
-+		                  [](std::size_t control, bool down) { SetControl(control, down); });
  	}
  }
  
+ void HostInputGamepadButton(int gamepad_button, bool down) {
+-	const auto& map = GetInputMap();
++	std::lock_guard<std::mutex> lock(g_input_mutex);
++	const auto&                 map = Map();
+ 	if (map.Custom() && gamepad_button >= 0) {
+-		SetControl(map.FindGamepadButton(gamepad_button), down);
++		SetControl(map.FindPadButton(gamepad_button), down);
+ 	}
+ }
+ 
++void HostInputGamepadAxis(int gamepad_axis, int value) {
++	std::lock_guard<std::mutex> lock(g_input_mutex);
++	auto&                       map = Map();
++	if (map.Custom() && gamepad_axis >= 0) {
++		map.UpdatePadAxis(gamepad_axis, value,
++		                  [](std::size_t control, bool down) { SetControl(control, down); });
++	}
++}
++
 +bool HostInputPadButtonDisabled(int gamepad_button) {
-+	return GetInputMap().PadButtonDisabled(gamepad_button);
++	std::lock_guard<std::mutex> lock(g_input_mutex);
++	return Map().PadButtonDisabled(gamepad_button);
 +}
 +
 +bool HostInputPadAxisDisabled(int gamepad_axis) {
-+	return GetInputMap().PadAxisDisabled(gamepad_axis);
++	std::lock_guard<std::mutex> lock(g_input_mutex);
++	return Map().PadAxisDisabled(gamepad_axis);
++}
++
++std::vector<std::string> HostInputControlNames() {
++	std::vector<std::string> names;
++	for (const auto& c: CONTROL_INFO) {
++		names.emplace_back(c.name);
++	}
++	return names;
++}
++
++std::vector<std::string> HostInputStatements() {
++	std::lock_guard<std::mutex> lock(g_input_mutex);
++	return Map().Statements();
++}
++
++std::string HostInputConfigPath() {
++	std::lock_guard<std::mutex> lock(g_input_mutex);
++	Map();
++	return g_config_path;
++}
++
++bool HostInputApply(const std::vector<std::string>& lines, std::string* error) {
++	std::vector<std::pair<std::string, std::string>> numbered;
++	for (std::size_t i = 0; i < lines.size(); i++) {
++		numbered.emplace_back(lines[i], "line " + std::to_string(i + 1));
++	}
++	auto map = std::make_unique<InputMap>();
++	if (!map->Load(numbered, error)) {
++		return false;
++	}
++	std::lock_guard<std::mutex> lock(g_input_mutex);
++	ReleaseAll();
++	g_pending.clear();
++	map->Log();
++	g_map = std::move(map);
++	return true;
++}
++
++bool HostInputSave(const std::string& path, const std::vector<std::string>& lines, std::string* error) {
++	const std::string tmp = path + ".tmp";
++	{
++		std::ofstream file(tmp, std::ios::trunc);
++		if (!file) {
++			if (error != nullptr) {
++				*error = "cannot write " + tmp;
++			}
++			return false;
++		}
++		file << "# BC5 input configuration, written by the settings overlay (F2). Hand edits are fine;\n"
++		        "# the grammar and the names are in backend/kytyplus-patches/input.example.cfg.\n";
++		for (const auto& line: lines) {
++			file << line << '\n';
++		}
++	}
++	if (std::rename(tmp.c_str(), path.c_str()) != 0) {
++		if (error != nullptr) {
++			*error = "cannot replace " + path;
++		}
++		return false;
++	}
++	return true;
++}
++
++void HostInputReleaseAll() {
++	std::lock_guard<std::mutex> lock(g_input_mutex);
++	Map();
++	ReleaseAll();
++	g_pending.clear();
 +}
 +
  } // namespace Libs::Graphics
 diff --git a/src/graphics/presentation/window/hostInput.h b/src/graphics/presentation/window/hostInput.h
-index c0ac585..267a90f 100644
+index c0ac585..83b3232 100644
 --- a/src/graphics/presentation/window/hostInput.h
 +++ b/src/graphics/presentation/window/hostInput.h
-@@ -9,6 +9,11 @@ void HostInputInit();
+@@ -2,6 +2,8 @@
+ #define KYTY_GRAPHICS_PRESENTATION_WINDOW_HOST_INPUT_H_
+ 
+ #include <cstdint>
++#include <string>
++#include <vector>
+ 
+ namespace Libs::Graphics {
+ 
+@@ -9,6 +11,24 @@ void HostInputInit();
  void HostInputKey(int key_code, bool down);
  void HostInputMouseButton(uint8_t mouse_button, bool down);
  void HostInputGamepadButton(int gamepad_button, bool down);
@@ -1125,14 +2141,187 @@ index c0ac585..267a90f 100644
 +// BC5: "Pad:<name>=none" in the input configuration: the physical input never reaches the game.
 +bool HostInputPadButtonDisabled(int gamepad_button);
 +bool HostInputPadAxisDisabled(int gamepad_axis);
++
++// BC5: the settings overlay (F2) edits the live configuration through these.
++std::vector<std::string> HostInputControlNames();
++// The live configuration as statements, one per line, in the file's grammar.
++std::vector<std::string> HostInputStatements();
++// The file the configuration was read from (--input-config / KYTY_BC5_INPUT_CONFIG), or "".
++std::string HostInputConfigPath();
++// Replaces the live configuration; on a bad line nothing changes and *error says which.
++bool HostInputApply(const std::vector<std::string>& lines, std::string* error);
++// Writes the lines to the file (with a header comment); does not apply them.
++bool HostInputSave(const std::string& path, const std::vector<std::string>& lines, std::string* error);
++// Every control the keyboard/mouse/pad-source stream holds goes up (the overlay opening).
++void HostInputReleaseAll();
  
  } // namespace Libs::Graphics
  
+diff --git a/src/graphics/presentation/window/swapchain.cpp b/src/graphics/presentation/window/swapchain.cpp
+index 845bfe3..43b93bd 100644
+--- a/src/graphics/presentation/window/swapchain.cpp
++++ b/src/graphics/presentation/window/swapchain.cpp
+@@ -34,6 +34,7 @@
+ #include "graphics/host_gpu/vma.h"
+ #include "graphics/host_gpu/vulkanCommon.h"
+ #include "graphics/presentation/imeOverlay.h"
++#include "graphics/presentation/settingsOverlay.h"
+ #include "graphics/presentation/presenter.h"
+ #include "graphics/presentation/renderDoc.h"
+ #include "graphics/presentation/videoOut.h"
+@@ -340,7 +341,9 @@ public:
+ 	void                 Recreate(bool surface_lost = false);
+ 	[[nodiscard]] Status AcquireNextImage();
+ 	[[nodiscard]] bool   PrepareImeOverlay();
+-	void RecordPresentCommands(CommandBuffer& command, VulkanImage& source, bool draw_ime_overlay);
++	[[nodiscard]] bool   PrepareSettingsOverlay(); // BC5: the F2 menu
++	void RecordPresentCommands(CommandBuffer& command, VulkanImage& source, bool draw_ime_overlay,
++	                           bool draw_settings_overlay);
+ 	void Submit(CommandBuffer& command);
+ 	[[nodiscard]] Status Present();
+ 
+@@ -362,6 +365,7 @@ private:
+ 	std::vector<vk::Semaphore>  m_image_acquired;
+ 	std::vector<vk::Semaphore>  m_render_complete;
+ 	std::unique_ptr<ImeOverlay> m_ime_overlay;
++	std::unique_ptr<SettingsOverlay> m_settings_overlay;
+ 	std::unique_ptr<FsrUpscaler> m_fsr;
+ 	uint32_t                    m_image_index = static_cast<uint32_t>(-1);
+ 	uint32_t                    m_frame_index = 0;
+@@ -410,6 +414,7 @@ struct Presenter::Impl {
+ 	CommandScheduler      present_scheduler;
+ 	FramePool             frames;
+ 	std::atomic<uint64_t> presented_ime_revision {0};
++	std::atomic<uint64_t> presented_settings_revision {0}; // BC5
+ };
+ 
+ void Swapchain::Create() {
+@@ -618,6 +623,9 @@ void Swapchain::Destroy() {
+ 	if (m_ime_overlay != nullptr) {
+ 		m_ime_overlay->ReleaseVulkan();
+ 	}
++	if (m_settings_overlay != nullptr) {
++		m_settings_overlay->ReleaseVulkan();
++	}
+ 
+ 	for (const auto semaphore: m_image_acquired) {
+ 		if (semaphore != nullptr) {
+@@ -709,8 +717,16 @@ bool Swapchain::PrepareImeOverlay() {
+ 	return m_ime_overlay->PrepareFrame(m_extent, m_format, ImageCount());
+ }
+ 
++bool Swapchain::PrepareSettingsOverlay() {
++	if (m_settings_overlay == nullptr) {
++		m_settings_overlay = std::make_unique<SettingsOverlay>(m_window.graphic_ctx);
++	}
++	return m_settings_overlay->PrepareFrame(m_extent, m_format, ImageCount());
++}
++
+ void Swapchain::RecordPresentCommands(CommandBuffer& command, VulkanImage& source,
+-                                      bool draw_ime_overlay) {
++                                      bool draw_ime_overlay, bool draw_settings_overlay) {
++	const bool draw_overlay = draw_ime_overlay || draw_settings_overlay;
+ 	if (source.state.layout != vk::ImageLayout::eTransferSrcOptimal) {
+ 		EXIT("invalid prepared presentation image, vk_image=%p layout=%d\n",
+ 		     static_cast<void*>(source.image), static_cast<int>(source.state.layout));
+@@ -737,7 +753,7 @@ void Swapchain::RecordPresentCommands(CommandBuffer& command, VulkanImage& sourc
+ 	                           nullptr, 0, nullptr, 1, &to_transfer);
+ 
+ 	const bool fsr_available = (m_fsr != nullptr && m_fsr->IsReady());
+-	const bool fsr_active    = fsr_available && !draw_ime_overlay;
++	const bool fsr_active    = fsr_available && !draw_overlay;
+ 	bool       fsr_used      = false;
+ 	if (fsr_active) {
+ 		// FSR two-pass upscaler: EASU (edge-adaptive upscale) + RCAS (sharpen).
+@@ -837,11 +853,11 @@ void Swapchain::RecordPresentCommands(CommandBuffer& command, VulkanImage& sourc
+ 		vk::ImageMemoryBarrier to_present {};
+ 		to_present.sType         = vk::StructureType::eImageMemoryBarrier;
+ 		to_present.srcAccessMask = vk::AccessFlagBits::eTransferWrite;
+-		to_present.dstAccessMask = draw_ime_overlay ? vk::AccessFlagBits::eColorAttachmentRead |
++		to_present.dstAccessMask = draw_overlay ? vk::AccessFlagBits::eColorAttachmentRead |
+ 		                                                  vk::AccessFlagBits::eColorAttachmentWrite
+ 		                                            : vk::AccessFlagBits::eMemoryRead;
+ 		to_present.oldLayout     = vk::ImageLayout::eTransferDstOptimal;
+-		to_present.newLayout     = draw_ime_overlay ? vk::ImageLayout::eColorAttachmentOptimal
++		to_present.newLayout     = draw_overlay ? vk::ImageLayout::eColorAttachmentOptimal
+ 		                                            : vk::ImageLayout::ePresentSrcKHR;
+ 		to_present.srcQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
+ 		to_present.dstQueueFamilyIndex             = VK_QUEUE_FAMILY_IGNORED;
+@@ -852,12 +868,17 @@ void Swapchain::RecordPresentCommands(CommandBuffer& command, VulkanImage& sourc
+ 		to_present.subresourceRange.baseArrayLayer = 0;
+ 		to_present.subresourceRange.layerCount     = 1;
+ 		vk_command.pipelineBarrier(vk::PipelineStageFlagBits::eTransfer,
+-		                           draw_ime_overlay ? vk::PipelineStageFlagBits::eColorAttachmentOutput
++		                           draw_overlay ? vk::PipelineStageFlagBits::eColorAttachmentOutput
+ 		                                            : vk::PipelineStageFlagBits::eAllCommands,
+ 		                           vk::DependencyFlagBits::eByRegion, 0, nullptr, 0, nullptr, 1,
+ 		                           &to_present);
+-		if (draw_ime_overlay) {
+-			m_ime_overlay->Record(vk_command, m_image_views[m_image_index]);
++		if (draw_overlay) {
++			if (draw_ime_overlay) {
++				m_ime_overlay->Record(vk_command, m_image_views[m_image_index]);
++			}
++			if (draw_settings_overlay) {
++				m_settings_overlay->Record(vk_command, m_image_views[m_image_index]);
++			}
+ 			to_present.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
+ 			to_present.dstAccessMask = vk::AccessFlagBits::eMemoryRead;
+ 			to_present.oldLayout     = vk::ImageLayout::eColorAttachmentOptimal;
+@@ -977,7 +998,9 @@ bool Presenter::IsGuestPaused() const noexcept {
+ bool Presenter::NeedsImeRefresh() const noexcept {
+ 	const auto visual = GetImeVisualState();
+ 	return visual.active ||
+-	       visual.revision != m_impl->presented_ime_revision.load(std::memory_order_acquire);
++	       visual.revision != m_impl->presented_ime_revision.load(std::memory_order_acquire) ||
++	       SettingsOverlayActive() ||
++	       SettingsOverlayRevision() != m_impl->presented_settings_revision.load(std::memory_order_acquire);
+ }
+ 
+ RenderContext& Presenter::Renderer() const noexcept {
+@@ -1017,8 +1040,9 @@ void Presenter::Present(Frame& frame, bool reuse) {
+ 		m_impl->RecoverSwapchain(Swapchain::Status::Recreate);
+ 	}
+ 
+-	const auto ime_visual = GetImeVisualState();
+-	auto&      swapchain  = m_impl->swapchain;
++	const auto ime_visual        = GetImeVisualState();
++	const auto settings_revision = SettingsOverlayRevision();
++	auto&      swapchain         = m_impl->swapchain;
+ 	for (uint32_t attempt = 0; attempt < 2; attempt++) {
+ 		auto status = swapchain.AcquireNextImage();
+ 		if (status != Swapchain::Status::Success) {
+@@ -1033,7 +1057,8 @@ void Presenter::Present(Frame& frame, bool reuse) {
+ 			frame.present_commands->WaitForFenceAndReset();
+ 			auto&      command          = *frame.present_commands;
+ 			const bool draw_ime_overlay = ime_visual.active && swapchain.PrepareImeOverlay();
+-			swapchain.RecordPresentCommands(command, frame.image, draw_ime_overlay);
++			const bool draw_settings_overlay = SettingsOverlayActive() && swapchain.PrepareSettingsOverlay();
++			swapchain.RecordPresentCommands(command, frame.image, draw_ime_overlay, draw_settings_overlay);
+ 			swapchain.Submit(command);
+ 		}
+ 		status = swapchain.Present();
+@@ -1044,6 +1069,7 @@ void Presenter::Present(Frame& frame, bool reuse) {
+ 
+ 		RenderDocOnPresent();
+ 		m_impl->presented_ime_revision.store(ime_visual.revision, std::memory_order_release);
++		m_impl->presented_settings_revision.store(settings_revision, std::memory_order_release);
+ 		window.UpdateTitle();
+ 		{
+ 			const auto present_end = std::chrono::steady_clock::now();
 diff --git a/src/graphics/presentation/window/window.cpp b/src/graphics/presentation/window/window.cpp
-index c729a98..a276e10 100644
+index c729a98..ea2b431 100644
 --- a/src/graphics/presentation/window/window.cpp
 +++ b/src/graphics/presentation/window/window.cpp
-@@ -57,7 +57,7 @@
+@@ -32,6 +32,7 @@
+ #include "graphics/host_gpu/vma.h"
+ #include "graphics/host_gpu/vulkanCommon.h"
+ #include "graphics/presentation/imeOverlay.h"
++#include "graphics/presentation/settingsOverlay.h"
+ #include "graphics/presentation/renderDoc.h"
+ #include "graphics/presentation/window/hostInput.h"
+ #include "graphics/presentation/window/windowInternal.h"
+@@ -57,7 +58,7 @@
  // IWYU pragma: no_include <intrin.h>
  
  #define KYTY_ENABLE_DEBUG_PRINTF
@@ -1141,7 +2330,19 @@ index c729a98..a276e10 100644
  
  namespace Libs::Graphics {
  
-@@ -245,6 +245,11 @@ static void GameEventKeyboard(WindowLoopState& game, const EventKeyboard& key) {
+@@ -232,6 +233,11 @@ static void GameEventKeyboard(WindowLoopState& game, const EventKeyboard& key) {
+ 		switch (key.key_code) {
+ 			case SDLK_ESCAPE: game.need_exit = true; break;
+ 			case SDLK_SPACE: SetPause(game, !game.paused.load(std::memory_order_acquire)); break;
++			case SDLK_F2: // BC5: the settings overlay
++				if (!key.repeat) {
++					SettingsOverlayToggle();
++				}
++				break;
+ 			case SDLK_F1:
+ 				if (!key.repeat) {
+ 					RenderDocRequestCapture();
+@@ -245,6 +251,11 @@ static void GameEventKeyboard(WindowLoopState& game, const EventKeyboard& key) {
  
  	if ((key.down || key.up) && !key.repeat) {
  		HostInputKey(key.key_code, key.down);
@@ -1153,7 +2354,7 @@ index c729a98..a276e10 100644
  	}
  }
  
-@@ -334,6 +339,18 @@ static void GameEventController([[maybe_unused]] const EventController& f) {
+@@ -334,6 +345,18 @@ static void GameEventController([[maybe_unused]] const EventController& f) {
  		}
  		int id = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(pad));
  		Controller::ControllerConnect(id);
@@ -1172,7 +2373,7 @@ index c729a98..a276e10 100644
  	}
  
  	if (f.removed) {
-@@ -343,19 +360,38 @@ static void GameEventController([[maybe_unused]] const EventController& f) {
+@@ -343,19 +366,38 @@ static void GameEventController([[maybe_unused]] const EventController& f) {
  
  	if (f.down || f.up) {
  		const auto button = ControllerButtonToPadButton(f.button);
@@ -1213,7 +2414,18 @@ index c729a98..a276e10 100644
  	}
  }
  
-@@ -635,6 +671,17 @@ void WindowContext::ProcessEvent(double time_s) {
+@@ -489,6 +531,10 @@ void WindowContext::ProcessEvent(double time_s) {
+ 	auto& game  = loop;
+ 	auto* event = &game.event;
+ 	EXIT_IF(SDL_GetEventState(SDL_DISPLAYEVENT) != SDL_ENABLE);
++	// BC5: while the settings overlay is open it takes the keyboard, the mouse and the pad.
++	if (ProcessSettingsInput(*event)) {
++		return;
++	}
+ 	if (ProcessImeInput(*event)) {
+ 		return;
+ 	}
+@@ -635,6 +681,17 @@ void WindowContext::ProcessEvent(double time_s) {
  			break;
  		}
  
@@ -1231,7 +2443,7 @@ index c729a98..a276e10 100644
  		case SDL_CONTROLLERAXISMOTION: {
  			EventController c {};
  
-@@ -717,6 +764,11 @@ void WindowContext::ProcessEvent(double time_s) {
+@@ -717,6 +774,11 @@ void WindowContext::ProcessEvent(double time_s) {
  			    SDL_CONTROLLER_AXIS_TRIGGERLEFT,
  			    SDL_CONTROLLER_AXIS_TRIGGERRIGHT,
  			};
@@ -1243,7 +2455,7 @@ index c729a98..a276e10 100644
  			EventController c {};
  			c.id         = event->jaxis.which;
  			c.axis_id    = (event->jaxis.axis < 6) ? axis_map[event->jaxis.axis]
-@@ -730,6 +782,9 @@ void WindowContext::ProcessEvent(double time_s) {
+@@ -730,6 +792,9 @@ void WindowContext::ProcessEvent(double time_s) {
  
  		case SDL_JOYBUTTONDOWN:
  		case SDL_JOYBUTTONUP: {
