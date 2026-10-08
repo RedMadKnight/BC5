@@ -1,0 +1,9 @@
+runs 133 and 134, 2026-10-08, unattended as run 132 (an empty save directory, KYTY_BC5_AUTOPRESS=50:cross,58:cross, 600 s, detached, nobody at the controller); the build with the KytyPS5 ports of F76
+
+run 133 (12:48, both ports: blocking short sleeps + unmapped guest paths): ended at 90 s with exit 65. The game asserted at 82 s, early in the level load, in its own command-buffer writer:
+  ASSERT: ...\framework\js\gpu\command\_IMPL\_PPR\command_buffer_writer.ppr.cpp:31  "There are too many objects/batches in this scene."
+then "Access violation: Execute [0000000000000000]". 0 failed submissions, 0 timeouts, 0 given up. No capture of 2026-10-05..08 (six checked) has an ASSERT line. Flips per 10 s: t0:503 t10:595 t20:578 t30:522 t40:594 t50:587 t60:600 t70:580 t80:114. CPU at 42-72 s: 4.1 cores.
+
+run 134 (12:52, the sleep port reverted, the file-system port kept): 600 s clean, 0 failed, 0 timeouts, 3 given up, 0 asserts, 0 GPU faults. Flips per 10 s ~540 from 180 s to the end (54 fps, 18.5 ms a frame, GPU busy 17.1, at the flip 7.0, outside 4.9) with every minute identical: the game sat in one scene (nobody pressed anything after the slot). CPU at 391 s: 4.4 cores; the 17 busiest threads 13-39 % of a core each, all named kyty_emulator (hence the thread-name port).
+
+conclusion: the blocking-sleep port is out; a 1 us guest sleep that becomes a 50-100 us block changes the pacing of the game's producer/consumer pair enough to overflow its command buffer. The file-system port stays.
