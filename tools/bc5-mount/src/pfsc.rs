@@ -3,10 +3,10 @@
 //! Layout: `docs/formats/ffpfsc.md` §6. [`PfscReader`] exposes the decoded
 //! bytes as a [`ReadAt`] with a small block cache.
 
-use std::collections::VecDeque;
 use std::io::{self, Read};
-use std::sync::Mutex;
+use std::sync::Arc;
 
+use crate::cache::BlockCache;
 use crate::error::{bail_format, Error, Result};
 use crate::io::{Le, ReadAt};
 
@@ -26,8 +26,9 @@ pub const TABLE_OFFSET: u64 = 0x400;
 pub const INITIAL_DATA_OFFSET: u64 = 0x10000;
 /// Sanity limit on block count (16 Mi blocks = 1 TiB logical).
 pub const MAX_BLOCKS: u64 = 1 << 24;
-/// Decoded blocks kept in memory.
-const CACHE_BLOCKS: usize = 16;
+/// Decoded blocks kept in memory: 256 × 64 KiB = 16 MiB, room for the reads in
+/// flight and the decode-ahead of several loader threads (experiment 0033).
+const CACHE_BLOCKS: usize = 256;
 
 /// The fixed PFSC header.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -138,12 +139,6 @@ pub fn header_size(block_count: u64) -> u64 {
     INITIAL_DATA_OFFSET + extra.div_ceil(u64::from(BLOCK_SIZE)) * u64::from(BLOCK_SIZE)
 }
 
-#[derive(Debug, Default)]
-struct Cache {
-    // Most recently used at the back. Linear search is fine for 16 entries.
-    blocks: VecDeque<(u64, Vec<u8>)>,
-}
-
 /// Decoded view of a PFSC stream.
 #[derive(Debug)]
 pub struct PfscReader<R> {
@@ -151,7 +146,7 @@ pub struct PfscReader<R> {
     header: Header,
     offsets: Vec<u64>,
     logical_len: u64,
-    cache: Mutex<Cache>,
+    cache: BlockCache,
 }
 
 impl<R: ReadAt> PfscReader<R> {
@@ -219,7 +214,7 @@ impl<R: ReadAt> PfscReader<R> {
             header,
             offsets,
             logical_len,
-            cache: Mutex::new(Cache::default()),
+            cache: BlockCache::new(CACHE_BLOCKS),
         })
     }
 
@@ -277,34 +272,18 @@ impl<R: ReadAt> PfscReader<R> {
         }
     }
 
-    /// Copies `buf.len()` bytes from logical block `idx` at `within`. The
-    /// cache lock is held only for lookup and insertion, so several threads can
-    /// inflate different blocks at the same time.
+    /// Copies `buf.len()` bytes from logical block `idx` at `within`. No lock
+    /// is held while a block inflates, so several threads inflate different
+    /// blocks at the same time.
     fn copy_from_block(&self, idx: u64, within: usize, buf: &mut [u8]) -> Result<()> {
-        {
-            let mut cache = self
-                .cache
-                .lock()
-                .unwrap_or_else(std::sync::PoisonError::into_inner);
-            if let Some(pos) = cache.blocks.iter().position(|(i, _)| *i == idx) {
-                let entry = cache.blocks.remove(pos).expect("position came from iter");
-                buf.copy_from_slice(&entry.1[within..within + buf.len()]);
-                cache.blocks.push_back(entry);
-                return Ok(());
-            }
-        }
-        let block = self.decode_block(idx)?;
+        let block = if let Some(b) = self.cache.get(idx) {
+            b
+        } else {
+            let b = Arc::new(self.decode_block(idx)?);
+            self.cache.insert(idx, Arc::clone(&b));
+            b
+        };
         buf.copy_from_slice(&block[within..within + buf.len()]);
-        let mut cache = self
-            .cache
-            .lock()
-            .unwrap_or_else(std::sync::PoisonError::into_inner);
-        if !cache.blocks.iter().any(|(i, _)| *i == idx) {
-            cache.blocks.push_back((idx, block));
-            if cache.blocks.len() > CACHE_BLOCKS {
-                cache.blocks.pop_front();
-            }
-        }
         Ok(())
     }
 }
