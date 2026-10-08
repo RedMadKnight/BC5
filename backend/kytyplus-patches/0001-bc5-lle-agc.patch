@@ -54,45 +54,6 @@ index 7225e2e..1ca144d 100644
  	return protect;
  }
  
-diff --git a/src/common/threads.cpp b/src/common/threads.cpp
-index c0b4bbe..aeeda0e 100644
---- a/src/common/threads.cpp
-+++ b/src/common/threads.cpp
-@@ -133,14 +133,14 @@ static SleepConditionVariableCS_func_t ResolveSleepConditionVariableCS() {
- #endif
- 
- #ifdef KYTY_POSIX_HIGH_RES_SLEEP
--// Spin for very short waits; use an absolute deadline for longer waits.
-+// An absolute deadline preserves the requested sleep across signal interruptions.
-+// BC5 (KytyPS5 6f24b03): no spinning for short waits, they block like the rest.
- static void SleepHighResolutionNanos(uint64_t nanos) {
- 	if (nanos == 0) {
- 		return;
- 	}
- 
- 	constexpr uint64_t NANOS_PER_SEC = 1000000000;
--	constexpr uint64_t SPIN_LIMIT_NS = 50000; // below this a context switch dominates
- 
- 	timespec deadline {};
- 	if (clock_gettime(CLOCK_MONOTONIC, &deadline) != 0) {
-@@ -152,17 +152,6 @@ static void SleepHighResolutionNanos(uint64_t nanos) {
- 	deadline.tv_sec += static_cast<time_t>(target_nsec / NANOS_PER_SEC);
- 	deadline.tv_nsec = static_cast<long>(target_nsec % NANOS_PER_SEC);
- 
--	if (nanos <= SPIN_LIMIT_NS) {
--		timespec now {};
--		do {
--			if (clock_gettime(CLOCK_MONOTONIC, &now) != 0) {
--				return;
--			}
--		} while (now.tv_sec < deadline.tv_sec ||
--		         (now.tv_sec == deadline.tv_sec && now.tv_nsec < deadline.tv_nsec));
--		return;
--	}
--
- 	while (clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &deadline, nullptr) == EINTR) {
- 	}
- }
 diff --git a/src/graphics/guest_gpu/graphicsRun.cpp b/src/graphics/guest_gpu/graphicsRun.cpp
 index 2918b0d..e634a45 100644
 --- a/src/graphics/guest_gpu/graphicsRun.cpp
@@ -3072,38 +3033,10 @@ index 9ea25b0..94749b5 100644
  			EXIT_IF(!AddMappedUnlocked(vaddr, size, MappingType::Private));
  			return true;
 diff --git a/src/kernel/pthread.cpp b/src/kernel/pthread.cpp
-index 5f87e6b..6ceb8d9 100644
+index 5f87e6b..34ced7a 100644
 --- a/src/kernel/pthread.cpp
 +++ b/src/kernel/pthread.cpp
-@@ -548,15 +548,6 @@ static void SchedulerBackoffOnce() {
- #endif
- }
- 
--static bool SleepMicroSchedulerBackoff(uint64_t microseconds) {
--	if (microseconds > 1) {
--		return false;
--	}
--
--	SchedulerBackoffOnce();
--	return true;
--}
--
- static void SleepMicroWithSignalPoll(uint64_t microseconds) {
- 	if (microseconds == 0) {
- 		KernelDispatchPendingSignalForCurrentThread();
-@@ -565,9 +556,8 @@ static void SleepMicroWithSignalPoll(uint64_t microseconds) {
- 
- 	while (microseconds > 0) {
- 		const auto step = std::min<uint64_t>(microseconds, SIGNAL_APC_POLL_MICROS);
--		if (!SleepMicroSchedulerBackoff(step)) {
--			Common::Thread::SleepMicro(step);
--		}
-+		// BC5 (KytyPS5 6f24b03): a one-microsecond sleep used to be a yield, i.e. a busy loop.
-+		Common::Thread::SleepMicro(step);
- 		microseconds -= step;
- 		KernelDispatchPendingSignalForCurrentThread();
- 	}
-@@ -3238,9 +3228,10 @@ int KYTY_SYSV_ABI PthreadCondWait(PthreadCond* cond, PthreadMutex* mutex) {
+@@ -3238,9 +3238,10 @@ int KYTY_SYSV_ABI PthreadCondWait(PthreadCond* cond, PthreadMutex* mutex) {
  		if (cond_elapsed >= 10 &&
  		    std::chrono::steady_clock::now() - cond_wait_logged > std::chrono::seconds(1)) {
  			cond_wait_logged = std::chrono::steady_clock::now();
@@ -3116,6 +3049,30 @@ index 5f87e6b..6ceb8d9 100644
  		}
  	}
  	CondRemoveWaiter(cond_value, thread);
+@@ -3396,6 +3397,12 @@ static void* RunThread(void* arg) {
+ 	os_thread_id = GetHostThreadId();
+ #endif
+ 	thread->host_thread_id = os_thread_id;
++#if KYTY_PLATFORM == KYTY_PLATFORM_LINUX
++	// BC5 (KytyPS5 199d0a9): the guest's thread name on the host thread (15 characters).
++	if (!thread->name.empty()) {
++		pthread_setname_np(pthread_self(), thread->name.substr(0, 15).c_str());
++	}
++#endif
+ 
+ 	LOGF("\tPthread run begin: %s, id = %d, os_thread_id = %" PRIu64 ", entry = 0x%016" PRIx64
+ 	     ", arg = 0x%016" PRIx64 ", stack_addr = 0x%016" PRIx64 ", stack_size = %" PRIu64 "\n",
+@@ -3791,6 +3798,10 @@ int KYTY_SYSV_ABI PthreadRename(Pthread thread, const char* name) {
+ 	}
+ 
+ 	thread->name = std::string(name);
++#if KYTY_PLATFORM == KYTY_PLATFORM_LINUX
++	// BC5: a rename after the start reaches the host too (the game names threads both ways).
++	pthread_setname_np(thread->p, thread->name.substr(0, 15).c_str());
++#endif
+ 
+ 	return OK;
+ }
 diff --git a/src/kernel/semaphore.cpp b/src/kernel/semaphore.cpp
 index ed7c35b..9f6635d 100644
 --- a/src/kernel/semaphore.cpp
