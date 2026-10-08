@@ -198,3 +198,6 @@ Logging (F75): `KYTY_BC5_LOG_WAITS=1` restores the `KernelWaitSema`/`Equeue wait
 kind), `BC5_DIRECT_FLIP_SAMPLE=1` the per-flip sampling of the display buffer and recent targets
 (the diagnostic of runs 60–76, off by default: it ran on the game's thread). The per-event input
 debug lines of `window.cpp` are compiled out; use `KYTY_BC5_INPUT_TRACE=1`.
+Ports from KytyPS5 (F76): short guest sleeps block instead of spinning (`threads.cpp`,
+`pthread.cpp`, upstream 6f24b03); a guest path under no mount point never reaches the host
+(`fileSystem.cpp`, `sysLinuxFileIO.cpp`, upstream a107d1e).
