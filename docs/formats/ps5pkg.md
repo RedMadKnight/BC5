@@ -61,7 +61,7 @@ from the non-zero pointers at superblock+0x50+0x248+k·40+32, k = 0..4), then th
 blocks.
 
 The superblock's mode is 0xd in the package seen (signed, encrypted, case-insensitive),
-yet the image is plaintext: the 16-byte seed at superblock+0x370 reads `PPSPLAIN-NOAUTH!`.
+yet the image is plaintext: the 16-byte seed at superblock+0x370 reads `PPRPLAIN-NOAUTH!`.
 A real seed means an encrypted image, which `bc5-mount` refuses (the key is derived from
 the package passcode or console material; not implemented, not planned).
 

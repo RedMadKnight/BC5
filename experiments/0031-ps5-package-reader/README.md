@@ -19,7 +19,7 @@ documentation: LibProsperoPKG, pkg-to-anyps5 (both GPL-3.0).
 
 | Step | Outcome |
 |---|---|
-| Header, outer PFS | plaintext (seed `PPSPLAIN-NOAUTH!`), superblock at 0x179f330000, 5 inodes, `uroot/pfs_image.dat` 101,434,392,576 bytes stored / 196,633,821,184 logical, `uroot/naps_pkg_layout.dat` 20,663,568 bytes |
+| Header, outer PFS | plaintext (seed `PPRPLAIN-NOAUTH!`), superblock at 0x179f330000, 5 inodes, `uroot/pfs_image.dat` 101,434,392,576 bytes stored / 196,633,821,184 logical, `uroot/naps_pkg_layout.dat` 20,663,568 bytes |
 | Layout, LibProsperoPKG's record layout | garbage: 778,947 of 815,782 records read as run bases, the stored cursor ran to 7.7 TB |
 | Layout, pkg-to-anyps5's record layout (table at 13,321,520, 8-byte aligned after `u2c`) | 750,239 blocks (616,999 Kraken, 133,240 stored) covering the mount exactly; stored cursor ends 54,599 bytes before the image's end (padding) |
 | Kraken, oozextract 0.5.5 as published | every block rejected: "excess bytes not supported" |

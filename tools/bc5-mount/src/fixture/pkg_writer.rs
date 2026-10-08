@@ -26,7 +26,7 @@ const OUTER_INODE_SIZE: usize = 0x2c8;
 /// Inner superblock mode: compact inodes, case-insensitive names.
 const INNER_MODE: u16 = 0x18;
 /// The seed of a plaintext outer image.
-const PLAINTEXT_SEED: &[u8; 16] = b"PPSPLAIN-NOAUTH!";
+const PLAINTEXT_SEED: &[u8; 16] = b"PPRPLAIN-NOAUTH!";
 /// Blocks of a file this long or shorter are written in the memcpy Kraken
 /// form; longer blocks are stored as they are (a full 256 KiB block cannot
 /// grow by the chunk headers, see the naps record's length field).

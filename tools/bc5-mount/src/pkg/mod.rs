@@ -28,7 +28,7 @@ const LAYER: &str = "pkg";
 pub const FIH_MAGIC: &[u8; 4] = b"\x7fFIH";
 const CNT_MAGIC: &[u8; 4] = b"\x7fCNT";
 /// The seed a plaintext outer image carries where an encrypted one has its key seed.
-const PLAINTEXT_SEED: &[u8; 16] = b"PPSPLAIN-NOAUTH!";
+const PLAINTEXT_SEED: &[u8; 16] = b"PPRPLAIN-NOAUTH!";
 /// Outer PFS inode size: the signed layout with a 32-byte digest per block pointer.
 const OUTER_INODE_SIZE: usize = 0x2c8;
 const OUTER_DB_OFFSET: usize = 0x64;
