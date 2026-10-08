@@ -6,6 +6,7 @@ use std::path::PathBuf;
 use anyhow::Context;
 use clap::{Parser, Subcommand};
 
+use bc5_mount::fixture::pkg_writer::write_pkg;
 use bc5_mount::fixture::{build_to_path, Spec};
 
 #[derive(Parser, Debug)]
@@ -28,6 +29,13 @@ enum Cmd {
         /// Preset name (see `list`).
         preset: String,
         /// Output .ffpfsc path (overwritten).
+        out: PathBuf,
+    },
+    /// Build a preset into a synthetic PS5 package.
+    Pkg {
+        /// Preset name (see `list`).
+        preset: String,
+        /// Output .pkg path (overwritten).
         out: PathBuf,
     },
     /// Write a preset's source tree as plain files.
@@ -73,6 +81,20 @@ fn main() -> anyhow::Result<()> {
                 info.compressed_blocks,
                 info.file_count,
                 info.dir_count
+            );
+        }
+        Cmd::Pkg { preset, out } => {
+            let s = spec(&preset)?;
+            let mut f = std::fs::File::create(&out)
+                .with_context(|| format!("creating {}", out.display()))?;
+            let info = write_pkg(&s, &mut f)?;
+            println!(
+                "{}: {} bytes, inner image {} stored / {} logical, blocks {:?} (stored, kraken, sparse)",
+                out.display(),
+                info.len,
+                info.image_stored_len,
+                info.mount,
+                info.blocks
             );
         }
         Cmd::Tree { preset, dir } => {

@@ -34,6 +34,11 @@ flate2 = "1"
 sha2 = "0.10"
 thiserror = "2"
 
+# PS5 package (FPKG) support: the inner image is Oodle Kraken compressed; oozextract (MIT,
+# pure Rust, vendored in ../third_party with the "excess" length-stream framing added, which
+# the PS5 blocks use and upstream 0.5.5 rejects; see third_party/oozextract/README-bc5.md).
+oozextract = { path = "../third_party/oozextract", default-features = false }
+
 [target.'cfg(target_os = "linux")'.dependencies]
 # Without the `libfuse` feature fuser mounts through the fusermount3 binary and
 # needs no libfuse development headers at build time (only `fuse3` at run time).

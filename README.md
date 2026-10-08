@@ -140,7 +140,7 @@ Where the gates are (`docs/PHASES.md`): 1b, 2 and 3 are passed, all on track B. 
 
 ## Tooling: `bc5-mount`
 
-`tools/bc5-mount` reads `.ffpfsc` containers (PFS v2 → PFSC → exFAT; layout in [`docs/formats/ffpfsc.md`](docs/formats/ffpfsc.md)) and exposes the game's `app0` tree. Rust, no unsafe code, every parser rejects malformed input instead of panicking.
+`tools/bc5-mount` reads `.ffpfsc` containers (PFS v2 → PFSC → exFAT; layout in [`docs/formats/ffpfsc.md`](docs/formats/ffpfsc.md)) and exposes the game's `app0` tree. Rust, no unsafe code, every parser rejects malformed input instead of panicking. It also reads PS5 packages (`.pkg`, `FIH`: outer PFS → `naps_pkg_layout.dat` → Kraken blocks → the inner PFS; layout in [`docs/formats/ps5pkg.md`](docs/formats/ps5pkg.md), ADR 0007), plaintext debug packages only, through the same commands; the file's magic picks the reader.
 
 ```bash
 cd tools && cargo build --release
@@ -149,6 +149,7 @@ bc5-mount ls -r    GAME.ffpfsc [dir]           # list the tree
 bc5-mount cat      GAME.ffpfsc sce_sys/param.json
 bc5-mount verify   GAME.ffpfsc > hashes.txt    # sha256  size  path, one line per file
 bc5-mount mount    GAME.ffpfsc /mnt/app0       # read-only FUSE mount (Linux, feature `fuse`, default on)
+bc5-mount inspect  GAME.pkg                    # the same commands take a PS5 package (debug, plaintext)
 ```
 
 Tests never touch a real dump: `bc5-fixture` builds deterministic synthetic containers (`bc5-fixture list|build|tree|hashes`), and the test suite round-trips every preset through the full stack. `cargo test` runs everywhere; `cargo test -- --ignored` adds a 1 GiB sparse case.

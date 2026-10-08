@@ -612,6 +612,42 @@ impl<R: ReadAt> ReadAt for ExfatFile<'_, R> {
     }
 }
 
+impl<R: ReadAt> crate::tree::FileTree for ExfatVolume<R> {
+    fn entry_count(&self) -> usize {
+        self.entries.len()
+    }
+
+    fn entry(&self, idx: usize) -> Option<crate::tree::EntryRef<'_>> {
+        self.entries.get(idx).map(|e| crate::tree::EntryRef {
+            parent: e.parent,
+            name: &e.name,
+            path: &e.path,
+            is_dir: e.is_dir,
+            size: e.size,
+        })
+    }
+
+    fn children(&self, idx: usize) -> &[usize] {
+        ExfatVolume::children(self, idx)
+    }
+
+    fn find(&self, path: &str) -> Option<usize> {
+        ExfatVolume::find(self, path)
+    }
+
+    fn read_file_at(&self, idx: usize, offset: u64, buf: &mut [u8]) -> Result<usize> {
+        ExfatVolume::read_file_at(self, idx, offset, buf)
+    }
+
+    fn block_size(&self) -> u32 {
+        self.boot.cluster_size()
+    }
+
+    fn block_count(&self) -> u64 {
+        u64::from(self.boot.cluster_count)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

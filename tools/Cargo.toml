@@ -1,6 +1,9 @@
 [workspace]
 resolver = "2"
 members = ["bc5-mount", "bc5-agc"]
+# The vendored decoder is a path dependency, not a member: it keeps its own lint
+# settings and is not held to the workspace lints (third_party/oozextract/README-bc5.md).
+exclude = ["third_party/oozextract"]
 
 [workspace.package]
 edition = "2021"

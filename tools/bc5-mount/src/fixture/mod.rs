@@ -7,6 +7,7 @@
 pub mod exfat_writer;
 pub mod pfs_writer;
 pub mod pfsc_writer;
+pub mod pkg_writer;
 
 use std::fs;
 use std::io::{self, Cursor, Seek, Write};
