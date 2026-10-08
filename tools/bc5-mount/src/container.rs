@@ -255,6 +255,36 @@ fn json_string_after(text: &str, key: &str) -> Option<String> {
     None
 }
 
+impl<R: ReadAt> crate::tree::FileTree for Container<R> {
+    fn entry_count(&self) -> usize {
+        self.exfat().entry_count()
+    }
+
+    fn entry(&self, idx: usize) -> Option<crate::tree::EntryRef<'_>> {
+        crate::tree::FileTree::entry(self.exfat(), idx)
+    }
+
+    fn children(&self, idx: usize) -> &[usize] {
+        crate::tree::FileTree::children(self.exfat(), idx)
+    }
+
+    fn find(&self, path: &str) -> Option<usize> {
+        crate::tree::FileTree::find(self.exfat(), path)
+    }
+
+    fn read_file_at(&self, idx: usize, offset: u64, buf: &mut [u8]) -> Result<usize> {
+        crate::tree::FileTree::read_file_at(self.exfat(), idx, offset, buf)
+    }
+
+    fn block_size(&self) -> u32 {
+        crate::tree::FileTree::block_size(self.exfat())
+    }
+
+    fn block_count(&self) -> u64 {
+        crate::tree::FileTree::block_count(self.exfat())
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only
-//! FUSE glue (Linux only): exposes the exFAT tree of a [`Container`] as a
-//! read-only file system. Inode numbers are exFAT entry indices plus one, so
-//! the root is 1 as FUSE expects. Written against `fuser` 0.15.
+//! FUSE glue (Linux only): exposes a [`FileTree`] (the exFAT tree of a
+//! `.ffpfsc` container or the inner image of a PS5 package) as a read-only
+//! file system. Inode numbers are entry indices plus one, so the root is 1 as
+//! FUSE expects. Written against `fuser` 0.15.
 
 use std::collections::HashMap;
 use std::ffi::OsStr;
@@ -13,9 +14,7 @@ use fuser::{
     ReplyDirectory, ReplyEntry, ReplyOpen, ReplyStatfs, Request,
 };
 
-use crate::container::Container;
-use crate::exfat::fold_name;
-use crate::io::FileSource;
+use crate::tree::{fold_name, FileTree};
 
 const ENOENT: i32 = 2;
 const EIO: i32 = 5;
@@ -23,11 +22,11 @@ const ENOTDIR: i32 = 20;
 const EISDIR: i32 = 21;
 const EINVAL: i32 = 22;
 
-/// Attribute/entry cache lifetime; the container never changes.
+/// Attribute/entry cache lifetime; the source never changes.
 const TTL: Duration = Duration::from_secs(3600);
 
-struct Bc5Fs {
-    container: Container<FileSource>,
+struct Bc5Fs<T> {
+    tree: T,
     uid: u32,
     gid: u32,
     mounted_at: SystemTime,
@@ -38,14 +37,14 @@ struct Bc5Fs {
     names: HashMap<usize, HashMap<String, usize>>,
 }
 
-impl Bc5Fs {
+impl<T: FileTree> Bc5Fs<T> {
     fn idx(ino: u64) -> Option<usize> {
         usize::try_from(ino.checked_sub(1)?).ok()
     }
 
     fn attr(&self, idx: usize) -> Option<FileAttr> {
-        let e = self.container.exfat().entry(idx)?;
-        let blksize = self.container.exfat().boot().cluster_size();
+        let e = self.tree.entry(idx)?;
+        let blksize = self.tree.block_size();
         Some(FileAttr {
             ino: idx as u64 + 1,
             size: e.size,
@@ -68,15 +67,13 @@ impl Bc5Fs {
             flags: 0,
         })
     }
-}
 
-impl Bc5Fs {
     fn names_of(&mut self, parent: usize) -> &HashMap<String, usize> {
-        let vol = self.container.exfat();
+        let tree = &self.tree;
         self.names.entry(parent).or_insert_with(|| {
-            vol.children(parent)
+            tree.children(parent)
                 .iter()
-                .map(|&c| (fold_name(&vol.entries()[c].name), c))
+                .filter_map(|&c| tree.entry(c).map(|e| (fold_name(e.name), c)))
                 .collect()
         })
     }
@@ -102,7 +99,7 @@ impl Bc5Fs {
     }
 }
 
-impl Filesystem for Bc5Fs {
+impl<T: FileTree + 'static> Filesystem for Bc5Fs<T> {
     fn init(&mut self, req: &Request<'_>, _config: &mut KernelConfig) -> Result<(), i32> {
         self.uid = req.uid();
         self.gid = req.gid();
@@ -120,7 +117,7 @@ impl Filesystem for Bc5Fs {
         let found = self.names_of(parent).get(&want).copied();
         match found.and_then(|i| self.attr(i)) {
             Some(attr) => reply.entry(&TTL, &attr, 0),
-            // A negative entry with a lifetime (nodeid 0): the container never changes, so
+            // A negative entry with a lifetime (nodeid 0): the source never changes, so
             // the kernel may answer the next stat of the same missing name itself.
             None => reply.entry(&TTL, &self.negative(), 0),
         }
@@ -134,7 +131,7 @@ impl Filesystem for Bc5Fs {
     }
 
     fn open(&mut self, _req: &Request<'_>, ino: u64, _flags: i32, reply: ReplyOpen) {
-        match Self::idx(ino).and_then(|i| self.container.exfat().entry(i)) {
+        match Self::idx(ino).and_then(|i| self.tree.entry(i)) {
             Some(e) if e.is_dir => reply.error(EISDIR),
             Some(_) => reply.opened(0, fuser::consts::FOPEN_KEEP_CACHE),
             None => reply.error(ENOENT),
@@ -155,26 +152,26 @@ impl Filesystem for Bc5Fs {
         let (Some(idx), Ok(offset)) = (Self::idx(ino), u64::try_from(offset)) else {
             return reply.error(EINVAL);
         };
-        let vol = self.container.exfat();
-        let Some(e) = vol.entry(idx) else {
+        let Some(e) = self.tree.entry(idx) else {
             return reply.error(ENOENT);
         };
         if e.is_dir {
             return reply.error(EISDIR);
         }
+        let path = e.path.to_owned();
         let want = usize::try_from(e.size.saturating_sub(offset).min(u64::from(size))).unwrap_or(0);
         let mut buf = vec![0u8; want];
-        match vol.read_file_at(idx, offset, &mut buf) {
+        match self.tree.read_file_at(idx, offset, &mut buf) {
             Ok(n) => reply.data(&buf[..n]),
             Err(err) => {
-                eprintln!("bc5-mount: read {}: {err}", e.path);
+                eprintln!("bc5-mount: read {path}: {err}");
                 reply.error(EIO);
             }
         }
     }
 
     fn opendir(&mut self, _req: &Request<'_>, ino: u64, _flags: i32, reply: ReplyOpen) {
-        match Self::idx(ino).and_then(|i| self.container.exfat().entry(i)) {
+        match Self::idx(ino).and_then(|i| self.tree.entry(i)) {
             Some(e) if e.is_dir => reply.opened(0, 0),
             Some(_) => reply.error(ENOTDIR),
             None => reply.error(ENOENT),
@@ -192,8 +189,7 @@ impl Filesystem for Bc5Fs {
         let Some(idx) = Self::idx(ino) else {
             return reply.error(ENOENT);
         };
-        let vol = self.container.exfat();
-        let Some(dir) = vol.entry(idx) else {
+        let Some(dir) = self.tree.entry(idx) else {
             return reply.error(ENOENT);
         };
         if !dir.is_dir {
@@ -204,14 +200,16 @@ impl Filesystem for Bc5Fs {
             (ino, FileType::Directory, ".".into()),
             (parent_ino, FileType::Directory, "..".into()),
         ];
-        for &c in vol.children(idx) {
-            let e = &vol.entries()[c];
+        for &c in self.tree.children(idx) {
+            let Some(e) = self.tree.entry(c) else {
+                continue;
+            };
             let kind = if e.is_dir {
                 FileType::Directory
             } else {
                 FileType::RegularFile
             };
-            items.push((c as u64 + 1, kind, e.name.clone()));
+            items.push((c as u64 + 1, kind, e.name.to_owned()));
         }
         let start = usize::try_from(offset).unwrap_or(usize::MAX);
         for (i, (ino, kind, name)) in items.into_iter().enumerate().skip(start) {
@@ -225,14 +223,12 @@ impl Filesystem for Bc5Fs {
     }
 
     fn statfs(&mut self, _req: &Request<'_>, _ino: u64, reply: ReplyStatfs) {
-        let vol = self.container.exfat();
-        let bsize = vol.boot().cluster_size();
-        let blocks = u64::from(vol.boot().cluster_count);
+        let bsize = self.tree.block_size();
         reply.statfs(
-            blocks,
+            self.tree.block_count(),
             0,
             0,
-            vol.entries().len() as u64,
+            self.tree.entry_count() as u64,
             0,
             bsize,
             255,
@@ -241,14 +237,16 @@ impl Filesystem for Bc5Fs {
     }
 }
 
-/// Mounts `container` read-only on `mountpoint` and blocks until unmounted.
-pub fn mount(
-    container: Container<FileSource>,
+/// Mounts `tree` read-only on `mountpoint` and blocks until unmounted.
+/// `subtype` names the source format (`ffpfsc`, `pkg`) in `/proc/mounts`.
+pub fn mount<T: FileTree + 'static>(
+    tree: T,
+    subtype: &str,
     mountpoint: &Path,
     allow_other: bool,
 ) -> std::io::Result<()> {
     let fs = Bc5Fs {
-        container,
+        tree,
         uid: 0,
         gid: 0,
         mounted_at: SystemTime::now(),
@@ -257,7 +255,7 @@ pub fn mount(
     let mut options = vec![
         MountOption::RO,
         MountOption::FSName("bc5-mount".into()),
-        MountOption::Subtype("ffpfsc".into()),
+        MountOption::Subtype(subtype.into()),
         MountOption::DefaultPermissions,
         // No AutoUnmount: it needs `user_allow_other` in /etc/fuse.conf for
         // non-root users; callers unmount with `fusermount3 -u`.

@@ -8,6 +8,9 @@
 //!   blocks, each raw or zlib-compressed, exposed as one [`io::ReadAt`].
 //! * [`exfat`] — the exFAT volume inside the PFSC stream: the game's `app0`.
 //! * [`container`] — ties the three together and answers "inspect".
+//! * [`pkg`] — a PS5 package: outer PFS, naps layout, Kraken blocks, inner image
+//!   (`docs/formats/ps5pkg.md`).
+//! * [`tree`] — the read-only file tree both formats expose to the CLI and FUSE.
 //! * [`fixture`] — writes synthetic containers for tests (never real dumps).
 //! * `fuse` — the FUSE glue (Linux, feature `fuse`).
 //!
@@ -20,6 +23,8 @@ pub mod fixture;
 pub mod io;
 pub mod pfs;
 pub mod pfsc;
+pub mod pkg;
+pub mod tree;
 pub mod verify;
 
 #[cfg(all(feature = "fuse", target_os = "linux"))]
