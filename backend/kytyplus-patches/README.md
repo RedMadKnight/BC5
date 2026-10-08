@@ -211,6 +211,9 @@ Pad audio knobs (F79): `KYTY_BC5_PAD_SPEAKER=main` keeps the pad-speaker ports o
 output (the game sends some effects to the controller's speaker, as on the console), the haptics
 still go to the pad; `KYTY_BC5_HAPTIC_GAIN=<float>` scales the actuators' stream (clipped);
 `KYTY_BC5_INPUT_TRACE=1` also logs, once a second per pad port, the peak level reaching the pad.
+Thread names (F83): the host's own threads carry names in `/proc` and `top -H` (`kyty-gpu`,
+`kyty-present`, `kyty-cmdsched`, `kyty-pipeline`, `bc5-ring`, `bc5-cq<n>`, `bc5-labelwatch`,
+`bc5-autopress`, `bc5-keyhold`); the guest's threads carry theirs since F76.
 Pad stream layout (F80): the stream to the controller is six channels, speaker on 1–2 and
 actuators on 5–6; SDL's pulseaudio backend (the only one in the build container) declares four
 channels as FL FR FC LFE and PipeWire then mixes the actuator pair into the speaker, while six

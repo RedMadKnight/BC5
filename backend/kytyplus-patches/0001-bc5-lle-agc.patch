@@ -55,10 +55,23 @@ index 7225e2e..1ca144d 100644
  }
  
 diff --git a/src/graphics/guest_gpu/graphicsRun.cpp b/src/graphics/guest_gpu/graphicsRun.cpp
-index 2918b0d..e634a45 100644
+index 2918b0d..59ae0b6 100644
 --- a/src/graphics/guest_gpu/graphicsRun.cpp
 +++ b/src/graphics/guest_gpu/graphicsRun.cpp
-@@ -980,6 +980,10 @@ void CommandProcessor::ProcessPm4(Pm4Execution& execution, size_t stop_depth) {
+@@ -1,3 +1,4 @@
++#include <pthread.h>
+ #include "graphics/guest_gpu/graphicsRun.h"
+ 
+ #include "common/assert.h"
+@@ -607,6 +608,7 @@ void GpuState::WaitForIdle() {
+ }
+ 
+ void GpuState::ThreadRun(void* data) {
++	pthread_setname_np(pthread_self(), "kyty-gpu"); // BC5: host threads named for per-thread CPU views (F81)
+ 	auto* gpu = static_cast<GpuState*>(data);
+ 	EXIT_IF(gpu == nullptr);
+ 	KYTY_PROFILER_THREAD("Thread_Gpu");
+@@ -980,6 +982,10 @@ void CommandProcessor::ProcessPm4(Pm4Execution& execution, size_t stop_depth) {
  
  		const auto packet_dw =
  		    handler(*this, packet_header & ~1u, packet + 1, remaining_dw, total_dw) + 1;
@@ -172,6 +185,23 @@ index f6a0e22..7832ea8 100644
  		vmaDestroyBuffer(m_graphics->allocator, m_buffer->buffer, m_buffer->memory.allocation);
  	}
  }
+diff --git a/src/graphics/host_gpu/renderer/commandScheduler.cpp b/src/graphics/host_gpu/renderer/commandScheduler.cpp
+index a30475f..1496f23 100644
+--- a/src/graphics/host_gpu/renderer/commandScheduler.cpp
++++ b/src/graphics/host_gpu/renderer/commandScheduler.cpp
+@@ -1,3 +1,4 @@
++#include <pthread.h>
+ #include "graphics/host_gpu/renderer/commandScheduler.h"
+ 
+ #include "common/assert.h"
+@@ -313,6 +314,7 @@ void CommandScheduler::DeferPriorityOperation(Common::UniqueFunction<void>&& ope
+ }
+ 
+ void CommandScheduler::PriorityOperationsThread(std::stop_token stop) {
++	pthread_setname_np(pthread_self(), "kyty-cmdsched"); // BC5 (F81)
+ 	while (!stop.stop_requested()) {
+ 		PendingOperation operation;
+ 		{
 diff --git a/src/graphics/host_gpu/renderer/image/tiler.cpp b/src/graphics/host_gpu/renderer/image/tiler.cpp
 index ec40f23..89484e3 100644
 --- a/src/graphics/host_gpu/renderer/image/tiler.cpp
@@ -201,6 +231,29 @@ index ec40f23..89484e3 100644
  }
  
  void TileManager::Prepare(bool tile, uint64_t tiled_capacity, uint64_t linear_capacity,
+diff --git a/src/graphics/host_gpu/renderer/pipeline/asyncPipelineCompiler.cpp b/src/graphics/host_gpu/renderer/pipeline/asyncPipelineCompiler.cpp
+index 8c19ba5..85d0bcb 100644
+--- a/src/graphics/host_gpu/renderer/pipeline/asyncPipelineCompiler.cpp
++++ b/src/graphics/host_gpu/renderer/pipeline/asyncPipelineCompiler.cpp
+@@ -1,4 +1,5 @@
+-﻿#include "graphics/host_gpu/renderer/pipeline/asyncPipelineCompiler.h"
++﻿#include <pthread.h>
++#include "graphics/host_gpu/renderer/pipeline/asyncPipelineCompiler.h"
+ 
+ #include "common/assert.h"
+ #include "common/logging/log.h"
+@@ -24,7 +25,10 @@ AsyncPipelineCompiler::AsyncPipelineCompiler(GraphicContext& graphics,
+ 	// any in-flight createGraphicsPipelines calls before PipelineCache's members
+ 	// (and the device) are destroyed.
+ 	for (std::size_t i = 0; i < kWorkerCount; i++) {
+-		m_workers.emplace_back([this] { WorkerLoop(); });
++		m_workers.emplace_back([this] {
++			pthread_setname_np(pthread_self(), "kyty-pipeline"); // BC5 (F81)
++			WorkerLoop();
++		});
+ 	}
+ 	LOGF("AsyncPipelineCompiler: started %zu worker threads\n", kWorkerCount);
+ }
 diff --git a/src/graphics/host_gpu/vma.cpp b/src/graphics/host_gpu/vma.cpp
 index 14608a6..814f364 100644
 --- a/src/graphics/host_gpu/vma.cpp
@@ -1080,16 +1133,17 @@ index 0000000..deb84e4
 +
 +#endif // KYTY_GRAPHICS_PRESENTATION_SETTINGS_OVERLAY_H_
 diff --git a/src/graphics/presentation/videoOut.cpp b/src/graphics/presentation/videoOut.cpp
-index f980320..36ea766 100644
+index f980320..81eb95c 100644
 --- a/src/graphics/presentation/videoOut.cpp
 +++ b/src/graphics/presentation/videoOut.cpp
-@@ -1,3 +1,5 @@
+@@ -1,3 +1,6 @@
++#include <pthread.h>
 +#include <cstdlib>
 +#include <cstring>
  #include "graphics/presentation/videoOut.h"
  
  #include "common/abi.h"
-@@ -16,6 +18,7 @@
+@@ -16,6 +19,7 @@
  #include "graphics/host_gpu/renderer/render.h"
  #include "graphics/host_gpu/renderer/renderContext.h"
  #include "graphics/presentation/presenter.h"
@@ -1097,7 +1151,15 @@ index f980320..36ea766 100644
  #include "kernel/pthread.h"
  #include "libs/errno.h"
  #include "libs/libs.h"
-@@ -1012,6 +1015,13 @@ void FlipQueue::Prepare(uint64_t request_id, Graphics::CommandBuffer& buffer) {
+@@ -781,6 +785,7 @@ void VideoOutDriver::Impl::VblankEnd() {
+ }
+ 
+ void VideoOutDriver::Impl::PresentThread(std::stop_token token) {
++	pthread_setname_np(pthread_self(), "kyty-present"); // BC5 (F81)
+ 	const auto frequency = Common::Timer::QueryPerformanceFrequency();
+ 	EXIT_IF(frequency == 0);
+ 
+@@ -1012,6 +1017,13 @@ void FlipQueue::Prepare(uint64_t request_id, Graphics::CommandBuffer& buffer) {
  		frame = &m_presenter.PrepareBlankFrame(width, height, index == VIDEO_OUT_BUFFER_INDEX_BLACK,
  		                                       &buffer);
  	} else {
@@ -1111,7 +1173,7 @@ index f980320..36ea766 100644
  		frame = &m_presenter.PrepareFrame(buffer, source_info);
  	}
  
-@@ -1505,8 +1515,26 @@ void VideoOutDriver::WaitFlipDone(int handle, int index) {
+@@ -1505,8 +1517,26 @@ void VideoOutDriver::WaitFlipDone(int handle, int index) {
  	m_impl->GetFlipQueue().Wait(*ctx, index);
  }
  
@@ -1154,10 +1216,15 @@ index 58f16c6..4ab38e9 100644
  KYTY_SYSV_ABI int VideoOutGetVblankStatus(int handle, VideoOutVblankStatus* status);
  KYTY_SYSV_ABI int VideoOutGetEventId(const LibKernel::EventQueue::KernelEvent* ev);
 diff --git a/src/graphics/presentation/window/hostInput.cpp b/src/graphics/presentation/window/hostInput.cpp
-index edcfdaf..8be64c4 100644
+index edcfdaf..47d2882 100644
 --- a/src/graphics/presentation/window/hostInput.cpp
 +++ b/src/graphics/presentation/window/hostInput.cpp
-@@ -6,14 +6,51 @@
+@@ -1,3 +1,4 @@
++#include <pthread.h>
+ #include "graphics/presentation/window/hostInput.h"
+ 
+ #include "SDL_gamecontroller.h"
+@@ -6,14 +7,51 @@
  #include "SDL_mouse.h"
  #include "common/assert.h"
  #include "common/emulatorConfig.h"
@@ -1209,7 +1276,7 @@ index edcfdaf..8be64c4 100644
  
  namespace Libs::Graphics {
  
-@@ -55,13 +92,68 @@ static constexpr std::array CONTROL_INFO = {
+@@ -55,13 +93,68 @@ static constexpr std::array CONTROL_INFO = {
  
  constexpr std::size_t INVALID_CONTROL = CONTROL_INFO.size();
  
@@ -1282,7 +1349,7 @@ index edcfdaf..8be64c4 100644
  std::size_t ControlFromName(std::string_view name) {
  	const auto info = std::find_if(CONTROL_INFO.begin(), CONTROL_INFO.end(),
  	                               [name](const auto& item) { return item.name == name; });
-@@ -74,6 +166,11 @@ const ControlInfo& Info(std::size_t control) {
+@@ -74,6 +167,11 @@ const ControlInfo& Info(std::size_t control) {
  }
  
  SDL_Keycode NormalizeKey(SDL_Keycode key) {
@@ -1294,7 +1361,7 @@ index edcfdaf..8be64c4 100644
  	switch (key) {
  		case SDLK_RSHIFT: return SDLK_LSHIFT;
  		case SDLK_RCTRL: return SDLK_LCTRL;
-@@ -83,110 +180,391 @@ SDL_Keycode NormalizeKey(SDL_Keycode key) {
+@@ -83,110 +181,391 @@ SDL_Keycode NormalizeKey(SDL_Keycode key) {
  	}
  }
  
@@ -1752,7 +1819,7 @@ index edcfdaf..8be64c4 100644
  void SetButton(uint32_t button, bool down) {
  	if (button == Controller::PAD_BUTTON_L2) {
  		Controller::ControllerAxis(Controller::HOST_INPUT_CONTROLLER_ID,
-@@ -199,40 +577,17 @@ void SetButton(uint32_t button, bool down) {
+@@ -199,40 +578,17 @@ void SetButton(uint32_t button, bool down) {
  	}
  }
  
@@ -1799,7 +1866,7 @@ index edcfdaf..8be64c4 100644
  void SetControl(std::size_t control, bool down) {
  	if (control == INVALID_CONTROL) {
  		return;
-@@ -240,93 +595,272 @@ void SetControl(std::size_t control, bool down) {
+@@ -240,93 +596,273 @@ void SetControl(std::size_t control, bool down) {
  
  	const auto& info = Info(control);
  	if (info.button != 0) {
@@ -1926,6 +1993,7 @@ index edcfdaf..8be64c4 100644
 +}
 +
 +void ReleaseThread() {
++	pthread_setname_np(pthread_self(), "bc5-keyhold");
 +	std::unique_lock<std::mutex> lock(g_input_mutex);
 +	for (;;) {
 +		if (g_pending.empty()) {
@@ -3322,10 +3390,10 @@ index fe4b332..c27c243 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..57aec4b
+index 0000000..22ef3ae
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,4445 @@
+@@ -0,0 +1,4460 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -3342,6 +3410,7 @@ index 0000000..57aec4b
 +// handle are logged and answered with zeros. Everything here is a first cut whose purpose is to get
 +// Sony's driver through its initialisation; expect TODOs.
 +
++#include <pthread.h>
 +#include "common/abi.h"
 +#include "common/assert.h"
 +#include "common/common.h"
@@ -4063,6 +4132,8 @@ index 0000000..57aec4b
 +static const bool g_direct_rings = std::getenv("BC5_GC_MODE") != nullptr && std::strcmp(std::getenv("BC5_GC_MODE"), "direct") == 0 && std::getenv("BC5_DIRECT_RINGS") != nullptr;
 +
 +static void queue_consumer_thread() {
++	pthread_setname_np(pthread_self(), "bc5-ring"); // BC5: host threads named for per-thread CPU views (F81)
++	pthread_setname_np(pthread_self(), "bc5-ring"); // BC5: host threads named for per-thread CPU views (F81)
 +	Direct::set_source(1);
 +	struct State {
 +		QueueReg reg;
@@ -5619,6 +5690,8 @@ index 0000000..57aec4b
 +	static std::once_flag once;
 +	std::call_once(once, [] {
 +		std::thread([] {
++			pthread_setname_np(pthread_self(), "bc5-labelwatch");
++			pthread_setname_np(pthread_self(), "bc5-labelwatch");
 +			for (;;) {
 +				{
 +					std::lock_guard lk(g_lw_mutex);
@@ -6114,6 +6187,16 @@ index 0000000..57aec4b
 +}
 +
 +static void completion_thread(int index) {
++	{
++		char name[16];
++		std::snprintf(name, sizeof(name), "bc5-cq%d", index);
++		pthread_setname_np(pthread_self(), name);
++	}
++	{
++		char name[16];
++		std::snprintf(name, sizeof(name), "bc5-cq%d", index);
++		pthread_setname_np(pthread_self(), name);
++	}
 +	static const bool timing = std::getenv("BC5_DIRECT_TIMING") != nullptr;
 +	Cq&  cq     = g_cqs[index];
 +	bool failed = false; // a job since the last post did not complete
@@ -7772,10 +7855,11 @@ index 0000000..57aec4b
 +
 +} // namespace Libs
 diff --git a/src/libs/controller.cpp b/src/libs/controller.cpp
-index 55718eb..e0d56f9 100644
+index 55718eb..3e1e8f9 100644
 --- a/src/libs/controller.cpp
 +++ b/src/libs/controller.cpp
-@@ -1,4 +1,7 @@
+@@ -1,4 +1,8 @@
++#include <pthread.h>
  #include "libs/controller.h"
 +#include <cinttypes>
 +#include <cstdio>
@@ -7783,7 +7867,7 @@ index 55718eb..e0d56f9 100644
  
  #include "common/assert.h"
  #include "common/common.h"
-@@ -12,6 +15,11 @@
+@@ -12,6 +16,11 @@
  #include "libs/libs.h"
  #include "libs/padData.h"
  
@@ -7795,7 +7879,7 @@ index 55718eb..e0d56f9 100644
  #include <algorithm>
  #include <cstring>
  #include <vector>
-@@ -45,6 +53,9 @@ struct ControllerState {
+@@ -45,6 +54,9 @@ struct ControllerState {
  	uint64_t time                                  = 0;
  	uint32_t buttons                               = 0;
  	int      axes[static_cast<int>(Axis::AxisMax)] = {128, 128, 128, 128, 0, 0};
@@ -7805,7 +7889,7 @@ index 55718eb..e0d56f9 100644
  };
  
  // Local-multiplayer: one GameController owns up to PAD_MAX_CONTROLLERS player
-@@ -61,6 +72,8 @@ public:
+@@ -61,6 +73,8 @@ public:
  	void Disconnect(int id);
  	void Button(int id, uint32_t button, bool down);
  	void Axis(int id, Axis axis, int value);
@@ -7814,7 +7898,7 @@ index 55718eb..e0d56f9 100644
  	void ResetInputState();
  	void GetConnectionInfo(bool* flag, int* count);
  	void ReadState(ControllerState* state, bool* flag, int* count);
-@@ -78,7 +91,25 @@ private:
+@@ -78,7 +92,25 @@ private:
  		bool            obtained[STATES_MAX] = {};
  		uint32_t        states_num          = 0;
  		uint32_t        first_state         = 0;
@@ -7840,7 +7924,7 @@ index 55718eb..e0d56f9 100644
  
  	void EnsureSlot(int index);
  	int  OwnerSlot(int id) const;
-@@ -94,6 +125,34 @@ private:
+@@ -94,6 +126,34 @@ private:
  	std::vector<SlotState> m_slots;
  };
  static GameController* g_controller = nullptr;
@@ -7875,7 +7959,7 @@ index 55718eb..e0d56f9 100644
  // Native DualSense driver instance (spec-accurate, hardware-unvalidated).
  // Owned by the Controller subsystem; opened on subsystem init if a device is
  // present, polled on an internal thread, and closed on subsystem destroy.
-@@ -180,7 +239,30 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
+@@ -180,7 +240,30 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
  	data->right_stick_y          = state.axes[static_cast<int>(Axis::RightY)];
  	data->analog_buttons_l2      = state.axes[static_cast<int>(Axis::TriggerLeft)];
  	data->analog_buttons_r2      = state.axes[static_cast<int>(Axis::TriggerRight)];
@@ -7907,7 +7991,7 @@ index 55718eb..e0d56f9 100644
  	data->touch_data_touch0_id   = 1;
  	data->touch_data_touch1_id   = 2;
  	data->connected              = connected;
-@@ -189,11 +271,59 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
+@@ -189,11 +272,60 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
  	data->device_unique_data_len = 0;
  }
  
@@ -7916,6 +8000,7 @@ index 55718eb..e0d56f9 100644
 +// at the given seconds after start — for unattended runs past the title screen. Nothing is
 +// pressed without the variable.
 +static void Bc5AutoPress(std::string plan) {
++	pthread_setname_np(pthread_self(), "bc5-autopress");
 +	const auto start = std::chrono::steady_clock::now();
 +	size_t     pos   = 0;
 +	while (pos < plan.size()) {
@@ -7967,7 +8052,7 @@ index 55718eb..e0d56f9 100644
  
  	// The native DualSense HID driver is opt-in and off by default. SDL already
  	// handles every standard pad (including a DualSense); this unvalidated driver is
-@@ -268,6 +398,26 @@ void ControllerAxis(int id, Axis axis, int value) {
+@@ -268,6 +400,26 @@ void ControllerAxis(int id, Axis axis, int value) {
  	g_controller->Axis(id, axis, value);
  }
  
@@ -7994,7 +8079,7 @@ index 55718eb..e0d56f9 100644
  void ControllerResetInputState() {
  	EXIT_IF(g_controller == nullptr);
  	g_controller->ResetInputState();
-@@ -395,6 +545,11 @@ void GameController::Button(int id, uint32_t button, bool down) {
+@@ -395,6 +547,11 @@ void GameController::Button(int id, uint32_t button, bool down) {
  	if (slot == -1) {
  		slot = FallbackSlot();
  	}
@@ -8006,7 +8091,7 @@ index 55718eb..e0d56f9 100644
  
  	auto state = GetLastState(slot);
  	state.time = LibKernel::KernelGetProcessTime();
-@@ -415,6 +570,13 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
+@@ -415,6 +572,13 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
  	if (slot == -1) {
  		slot = FallbackSlot();
  	}
@@ -8020,7 +8105,7 @@ index 55718eb..e0d56f9 100644
  
  	auto state = GetLastState(slot);
  	state.time = LibKernel::KernelGetProcessTime();
-@@ -422,8 +584,28 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
+@@ -422,8 +586,28 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
  	const int axis_id = static_cast<int>(axis);
  	EXIT_IF(axis_id < 0 || axis_id >= static_cast<int>(Controller::Axis::AxisMax));
  
@@ -8049,7 +8134,7 @@ index 55718eb..e0d56f9 100644
  	if (axis == Controller::Axis::TriggerLeft) {
  		if (value > 0) {
  			state.buttons |= PAD_BUTTON_L2;
-@@ -443,6 +625,86 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
+@@ -443,6 +627,86 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
  	AddState(slot, state);
  }
  
@@ -8136,7 +8221,7 @@ index 55718eb..e0d56f9 100644
  void GameController::ResetInputState() {
  	Common::LockGuard lock(m_mutex);
  
-@@ -488,6 +750,13 @@ int GameController::ReadStateForSlot(int index, ControllerState* state, bool* fl
+@@ -488,6 +752,13 @@ int GameController::ReadStateForSlot(int index, ControllerState* state, bool* fl
  	*flag  = SlotConnected(index);
  	*count = PresentCount();
  	*state = GetLastState(index);
@@ -8150,7 +8235,7 @@ index 55718eb..e0d56f9 100644
  
  	return 0;
  }
-@@ -515,7 +784,27 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
+@@ -515,7 +786,27 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
  	int ret_num = 0;
  
  	auto& s = m_slots[index];
@@ -8178,7 +8263,7 @@ index 55718eb..e0d56f9 100644
  		for (uint32_t i = 0; i < s.states_num; i++) {
  			if (ret_num >= states_num) {
  				break;
-@@ -523,11 +812,21 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
+@@ -523,11 +814,21 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
  			auto state_index = (s.first_state + i) % STATES_MAX;
  			if (!s.obtained[state_index]) {
  				s.obtained[state_index] = true;
@@ -8201,7 +8286,7 @@ index 55718eb..e0d56f9 100644
  	return ret_num;
  }
  int KYTY_SYSV_ABI PadInit() {
-@@ -625,6 +924,9 @@ int KYTY_SYSV_ABI PadResetOrientation(int handle) {
+@@ -625,6 +926,9 @@ int KYTY_SYSV_ABI PadResetOrientation(int handle) {
  	if (ControllerIndexFromHandle(handle) < 0) {
  		return PAD_ERROR_INVALID_HANDLE;
  	}
@@ -8211,7 +8296,7 @@ index 55718eb..e0d56f9 100644
  
  	return OK;
  }
-@@ -682,6 +984,10 @@ int KYTY_SYSV_ABI PadReadState(int handle, PadData* data) {
+@@ -682,6 +986,10 @@ int KYTY_SYSV_ABI PadReadState(int handle, PadData* data) {
  	g_controller->ReadStateForSlot(ControllerIndexFromHandle(handle), &state, &connected,
  	                               &connected_count);
  
@@ -8222,7 +8307,7 @@ index 55718eb..e0d56f9 100644
  	pad_fill_data(data, state, connected, connected_count);
  
  	return OK;
-@@ -718,6 +1024,10 @@ int KYTY_SYSV_ABI PadRead(int handle, PadData* data, int num) {
+@@ -718,6 +1026,10 @@ int KYTY_SYSV_ABI PadRead(int handle, PadData* data, int num) {
  	}
  
  	for (int i = 0; i < ret_num; i++) {
