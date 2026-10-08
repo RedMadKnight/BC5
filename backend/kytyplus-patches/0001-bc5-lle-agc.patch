@@ -7683,7 +7683,7 @@ index 0000000..57aec4b
 +
 +} // namespace Libs
 diff --git a/src/libs/controller.cpp b/src/libs/controller.cpp
-index 55718eb..70ba935 100644
+index 55718eb..e0d56f9 100644
 --- a/src/libs/controller.cpp
 +++ b/src/libs/controller.cpp
 @@ -1,4 +1,7 @@
@@ -7878,7 +7878,7 @@ index 55718eb..70ba935 100644
  
  	// The native DualSense HID driver is opt-in and off by default. SDL already
  	// handles every standard pad (including a DualSense); this unvalidated driver is
-@@ -268,6 +398,12 @@ void ControllerAxis(int id, Axis axis, int value) {
+@@ -268,6 +398,26 @@ void ControllerAxis(int id, Axis axis, int value) {
  	g_controller->Axis(id, axis, value);
  }
  
@@ -7888,10 +7888,24 @@ index 55718eb..70ba935 100644
 +	}
 +}
 +
++void ControllerGetTriggers(int* l2, int* r2) {
++	if (g_controller == nullptr) {
++		*l2 = 0;
++		*r2 = 0;
++		return;
++	}
++	int             count = 0;
++	bool            connected = false;
++	ControllerState state;
++	g_controller->ReadStateForSlot(0, &state, &connected, &count);
++	*l2 = state.axes[static_cast<int>(Axis::TriggerLeft)];
++	*r2 = state.axes[static_cast<int>(Axis::TriggerRight)];
++}
++
  void ControllerResetInputState() {
  	EXIT_IF(g_controller == nullptr);
  	g_controller->ResetInputState();
-@@ -395,6 +531,11 @@ void GameController::Button(int id, uint32_t button, bool down) {
+@@ -395,6 +545,11 @@ void GameController::Button(int id, uint32_t button, bool down) {
  	if (slot == -1) {
  		slot = FallbackSlot();
  	}
@@ -7903,7 +7917,7 @@ index 55718eb..70ba935 100644
  
  	auto state = GetLastState(slot);
  	state.time = LibKernel::KernelGetProcessTime();
-@@ -415,6 +556,13 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
+@@ -415,6 +570,13 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
  	if (slot == -1) {
  		slot = FallbackSlot();
  	}
@@ -7917,7 +7931,7 @@ index 55718eb..70ba935 100644
  
  	auto state = GetLastState(slot);
  	state.time = LibKernel::KernelGetProcessTime();
-@@ -422,8 +570,28 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
+@@ -422,8 +584,28 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
  	const int axis_id = static_cast<int>(axis);
  	EXIT_IF(axis_id < 0 || axis_id >= static_cast<int>(Controller::Axis::AxisMax));
  
@@ -7946,7 +7960,7 @@ index 55718eb..70ba935 100644
  	if (axis == Controller::Axis::TriggerLeft) {
  		if (value > 0) {
  			state.buttons |= PAD_BUTTON_L2;
-@@ -443,6 +611,86 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
+@@ -443,6 +625,86 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
  	AddState(slot, state);
  }
  
@@ -8033,7 +8047,7 @@ index 55718eb..70ba935 100644
  void GameController::ResetInputState() {
  	Common::LockGuard lock(m_mutex);
  
-@@ -488,6 +736,13 @@ int GameController::ReadStateForSlot(int index, ControllerState* state, bool* fl
+@@ -488,6 +750,13 @@ int GameController::ReadStateForSlot(int index, ControllerState* state, bool* fl
  	*flag  = SlotConnected(index);
  	*count = PresentCount();
  	*state = GetLastState(index);
@@ -8047,7 +8061,7 @@ index 55718eb..70ba935 100644
  
  	return 0;
  }
-@@ -515,7 +770,27 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
+@@ -515,7 +784,27 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
  	int ret_num = 0;
  
  	auto& s = m_slots[index];
@@ -8075,7 +8089,7 @@ index 55718eb..70ba935 100644
  		for (uint32_t i = 0; i < s.states_num; i++) {
  			if (ret_num >= states_num) {
  				break;
-@@ -523,11 +798,21 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
+@@ -523,11 +812,21 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
  			auto state_index = (s.first_state + i) % STATES_MAX;
  			if (!s.obtained[state_index]) {
  				s.obtained[state_index] = true;
@@ -8098,7 +8112,7 @@ index 55718eb..70ba935 100644
  	return ret_num;
  }
  int KYTY_SYSV_ABI PadInit() {
-@@ -625,6 +910,9 @@ int KYTY_SYSV_ABI PadResetOrientation(int handle) {
+@@ -625,6 +924,9 @@ int KYTY_SYSV_ABI PadResetOrientation(int handle) {
  	if (ControllerIndexFromHandle(handle) < 0) {
  		return PAD_ERROR_INVALID_HANDLE;
  	}
@@ -8108,7 +8122,7 @@ index 55718eb..70ba935 100644
  
  	return OK;
  }
-@@ -682,6 +970,10 @@ int KYTY_SYSV_ABI PadReadState(int handle, PadData* data) {
+@@ -682,6 +984,10 @@ int KYTY_SYSV_ABI PadReadState(int handle, PadData* data) {
  	g_controller->ReadStateForSlot(ControllerIndexFromHandle(handle), &state, &connected,
  	                               &connected_count);
  
@@ -8119,7 +8133,7 @@ index 55718eb..70ba935 100644
  	pad_fill_data(data, state, connected, connected_count);
  
  	return OK;
-@@ -718,6 +1010,10 @@ int KYTY_SYSV_ABI PadRead(int handle, PadData* data, int num) {
+@@ -718,6 +1024,10 @@ int KYTY_SYSV_ABI PadRead(int handle, PadData* data, int num) {
  	}
  
  	for (int i = 0; i < ret_num; i++) {
@@ -8131,7 +8145,7 @@ index 55718eb..70ba935 100644
  	}
  
 diff --git a/src/libs/controller.h b/src/libs/controller.h
-index 3c0684f..7d735ec 100644
+index 3c0684f..ba1c36b 100644
 --- a/src/libs/controller.h
 +++ b/src/libs/controller.h
 @@ -9,14 +9,14 @@ namespace Libs::Controller {
@@ -8157,7 +8171,7 @@ index 3c0684f..7d735ec 100644
  constexpr int PAD_HANDLE_BASE     = 1;
  
  constexpr uint32_t PAD_BUTTON_L3        = 0x00000002;
-@@ -64,20 +64,25 @@ inline int controller_get_axis(int min, int max, int value) {
+@@ -64,21 +64,28 @@ inline int controller_get_axis(int min, int max, int value) {
  	return (v < 0 ? 0 : (v > 255 ? 255 : v));
  }
  
@@ -8191,8 +8205,11 @@ index 3c0684f..7d735ec 100644
 +// rad/s, in the pad's own axes as SDL reports them (x to the right, y up, z towards the player).
 +void ControllerMotion(int id, bool gyro, const float* xyz);
  void ControllerResetInputState();
++// BC5: the analog triggers (0..255) of pad slot 0 as the game reads them, for the trigger-effect state.
++void ControllerGetTriggers(int* l2, int* r2);
  
  int KYTY_SYSV_ABI PadInit();
+ int KYTY_SYSV_ABI PadOpen(int user_id, int type, int index, const void* param);
 diff --git a/src/libs/libJson2.cpp b/src/libs/libJson2.cpp
 index 183cd85..40d7f58 100644
 --- a/src/libs/libJson2.cpp
@@ -8790,6 +8807,107 @@ index 51c3a0e..01ed1c1 100644
  }
  #else
  static int FiberSaveContext(FiberCpuContext* ctx) {
+diff --git a/src/libs/libPad.cpp b/src/libs/libPad.cpp
+index 676ecb9..12cea7d 100644
+--- a/src/libs/libPad.cpp
++++ b/src/libs/libPad.cpp
+@@ -7,6 +7,8 @@
+ #include "libs/padData.h"
+ #include "loader/symbolDatabase.h"
+ 
++#include <cstdio>
++#include <cstdlib>
+ #include <cstring>
+ 
+ namespace Libs {
+@@ -27,6 +29,30 @@ struct PadTriggerEffectStateInformation {
+ 	int32_t state[2];
+ };
+ 
++// BC5: the last effect the game set per trigger (ScePadTriggerEffectParam as KytyPS5 reads it:
++// trigger mask, then two 56-byte commands of a 32-bit mode and 48 data bytes). ASTRO BOT sets
++// mode 1 {0, 2} (feedback: position, strength), mode 2 {3, 5, 3} (weapon: start, end, strength)
++// for the frog gloves, mode 3 {7, 4, 10|30|60} (vibration: position, amplitude, frequency), and
++// polls scePadGetTriggerEffectState continuously. The state answered: 0 before the effect's
++// position, 1 inside the resistance (feedback at/after the position; weapon between start and
++// end), 2 past the weapon's end — a trigger pulled through the click. The positions are on
++// the DualSense's 0..9 scale of the trigger's travel. TODO(verify) the values against a console.
++struct Bc5TriggerEffect {
++	uint32_t mode = 0;
++	uint8_t  data[4] = {};
++};
++static Bc5TriggerEffect g_bc5_effect[2];
++
++static int32_t Bc5TriggerEffectState(const Bc5TriggerEffect& e, int analog) {
++	const int pos = analog * 9 / 255; // 0..9
++	switch (e.mode) {
++		case 1: return pos >= e.data[0] ? 1 : 0;                                   // feedback
++		case 2: return pos > e.data[1] ? 2 : (pos >= e.data[0] ? 1 : 0);          // weapon
++		case 3: return pos >= e.data[0] ? 1 : 0;                                   // vibration
++		default: return 0;
++	}
++}
++
+ static int KYTY_SYSV_ABI PadGetTriggerEffectState(int                               handle,
+                                                   PadTriggerEffectStateInformation* info) {
+ 	PRINT_NAME();
+@@ -37,8 +63,22 @@ static int KYTY_SYSV_ABI PadGetTriggerEffectState(int
+ 		return -2137653243; /* 0x80960005 */
+ 	}
+ 
+-	info->state[0] = 0;
+-	info->state[1] = 0;
++	int l2 = 0;
++	int r2 = 0;
++	Controller::ControllerGetTriggers(&l2, &r2);
++	info->state[0] = Bc5TriggerEffectState(g_bc5_effect[0], l2);
++	info->state[1] = Bc5TriggerEffectState(g_bc5_effect[1], r2);
++
++	// BC5: KYTY_BC5_INPUT_TRACE=1 — every change of the answer.
++	static const bool trace = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
++	static int32_t    last[2] = {-1, -1};
++	if (trace && (info->state[0] != last[0] || info->state[1] != last[1])) {
++		std::fprintf(stderr, "input trace: trigger effect state -> L2 %d (mode %u, analog %d), R2 %d (mode %u, analog %d)\n",
++		             info->state[0], g_bc5_effect[0].mode, l2, info->state[1], g_bc5_effect[1].mode, r2);
++		std::fflush(stderr);
++	}
++	last[0] = info->state[0];
++	last[1] = info->state[1];
+ 
+ 	return 0;
+ }
+@@ -57,6 +97,31 @@ static int KYTY_SYSV_ABI PadSetTriggerEffect(int handle, const void* param) {
+ 		return -2137915391; /* 0x80920001 */
+ 	}
+ 
++	// BC5: KYTY_BC5_INPUT_TRACE=1 — the request as the game wrote it (ScePadTriggerEffectParam:
++	// trigger mask, then two 56-byte commands of mode + data; layout as KytyPS5 reads it).
++	static const bool trace = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
++	if (trace) {
++		const auto* b = static_cast<const uint8_t*>(param);
++		std::fprintf(stderr, "input trace: trigger effect set: handle %d mask 0x%02x; L2 mode %u data", handle, b[0],
++		             static_cast<unsigned>(b[8] | (b[9] << 8) | (b[10] << 16) | (b[11] << 24)));
++		for (int i = 0; i < 12; i++) std::fprintf(stderr, " %02x", b[16 + i]);
++		std::fprintf(stderr, "; R2 mode %u data", static_cast<unsigned>(b[64] | (b[65] << 8) | (b[66] << 16) | (b[67] << 24)));
++		for (int i = 0; i < 12; i++) std::fprintf(stderr, " %02x", b[72 + i]);
++		std::fprintf(stderr, "\n");
++		std::fflush(stderr);
++	}
++
++	{
++		const auto* b = static_cast<const uint8_t*>(param);
++		for (int t = 0; t < 2; t++) {
++			if ((b[0] & (1u << t)) != 0) {
++				const int base          = 8 + t * 56;
++				g_bc5_effect[t].mode    = static_cast<uint32_t>(b[base] | (b[base + 1] << 8) | (b[base + 2] << 16) | (b[base + 3] << 24));
++				std::memcpy(g_bc5_effect[t].data, b + base + 8, 4);
++			}
++		}
++	}
++
+ 	// KytyPlus: forward adaptive-trigger effect to the DualSense HID driver.
+ 	// HONEST: spec-accurate interpretation of the PS5 ScePadTriggerEffect param
+ 	// forwarded to the driver. UNVALIDATED on hardware — the exact param layout
 diff --git a/src/libs/libSaveData.cpp b/src/libs/libSaveData.cpp
 index 08aa121..a521d61 100644
 --- a/src/libs/libSaveData.cpp
