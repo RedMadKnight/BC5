@@ -215,5 +215,4 @@ Pad stream layout (F80): the stream to the controller is six channels, speaker o
 actuators on 5–6; SDL's pulseaudio backend (the only one in the build container) declares four
 channels as FL FR FC LFE and PipeWire then mixes the actuator pair into the speaker, while six
 channels are FL FR FC LFE RL RR under both backends and the last pair reaches the device's 3–4.
-`KYTY_BC5_PAD_AUDIO_CHANNELS=4` restores the four-channel stream. `KYTY_BC5_HAPTIC_DUMP=<prefix>`
-writes what is queued to the pad, per port, with the stream's channel count.
+Confirmed in the game by the maintainer (2026-10-08).
