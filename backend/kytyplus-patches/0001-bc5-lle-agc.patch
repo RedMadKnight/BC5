@@ -54,6 +54,46 @@ index 7225e2e..1ca144d 100644
  	return protect;
  }
  
+diff --git a/src/common/threads.cpp b/src/common/threads.cpp
+index c0b4bbe..1870594 100644
+--- a/src/common/threads.cpp
++++ b/src/common/threads.cpp
+@@ -1,3 +1,4 @@
++#include <pthread.h>
+ #include "common/threads.h"
+ 
+ #include "common/assert.h"
+@@ -234,6 +235,10 @@ struct ThreadPrivate {
+ 	ThreadPrivate(thread_func_t f, void* a): func(f), arg(a), m_thread(&Run, this) {}
+ 
+ 	static void Run(ThreadPrivate* t) {
++#if KYTY_PLATFORM == KYTY_PLATFORM_LINUX
++		// BC5: host threads of this class carry a name in per-thread views (F85).
++		pthread_setname_np(pthread_self(), "kyty-thread"); // renamed by threads that know their role
++#endif
+ 		t->unique_id = Thread::GetThreadIdUnique();
+ 		t->started   = true;
+ 		t->func(t->arg);
+diff --git a/src/emulator.cpp b/src/emulator.cpp
+index 1d2b7e1..f3ce6ab 100644
+--- a/src/emulator.cpp
++++ b/src/emulator.cpp
+@@ -1,3 +1,4 @@
++#include <pthread.h>
+ #include "emulator.h"
+ 
+ #include "common/abi.h"
+@@ -174,6 +175,10 @@ static void Execute(const std::filesystem::path& game_patch) {
+ 	auto           patch_path = game_patch;
+ 	Common::Thread guest_thread(
+ 	    [](void* param) {
++#if KYTY_PLATFORM == KYTY_PLATFORM_LINUX
++		    // BC5: the game's main thread (its main() runs here), named for per-thread views (F85).
++		    pthread_setname_np(pthread_self(), "game-main");
++#endif
+ 		    auto* rt = Common::Singleton<Loader::RuntimeLinker>::Instance();
+ 		    rt->Execute(*static_cast<const std::filesystem::path*>(param));
+ 	    },
 diff --git a/src/graphics/guest_gpu/graphicsRun.cpp b/src/graphics/guest_gpu/graphicsRun.cpp
 index 2918b0d..59ae0b6 100644
 --- a/src/graphics/guest_gpu/graphicsRun.cpp
@@ -3101,10 +3141,15 @@ index 9ea25b0..94749b5 100644
  			EXIT_IF(!AddMappedUnlocked(vaddr, size, MappingType::Private));
  			return true;
 diff --git a/src/kernel/pthread.cpp b/src/kernel/pthread.cpp
-index 5f87e6b..34ced7a 100644
+index 5f87e6b..0c28cdf 100644
 --- a/src/kernel/pthread.cpp
 +++ b/src/kernel/pthread.cpp
-@@ -3238,9 +3238,10 @@ int KYTY_SYSV_ABI PthreadCondWait(PthreadCond* cond, PthreadMutex* mutex) {
+@@ -1,3 +1,4 @@
++#include <cstdio>
+ #include "kernel/pthread.h"
+ 
+ #include "common/assert.h"
+@@ -3238,9 +3239,10 @@ int KYTY_SYSV_ABI PthreadCondWait(PthreadCond* cond, PthreadMutex* mutex) {
  		if (cond_elapsed >= 10 &&
  		    std::chrono::steady_clock::now() - cond_wait_logged > std::chrono::seconds(1)) {
  			cond_wait_logged = std::chrono::steady_clock::now();
@@ -3117,20 +3162,27 @@ index 5f87e6b..34ced7a 100644
  		}
  	}
  	CondRemoveWaiter(cond_value, thread);
-@@ -3396,6 +3397,12 @@ static void* RunThread(void* arg) {
+@@ -3396,6 +3398,19 @@ static void* RunThread(void* arg) {
  	os_thread_id = GetHostThreadId();
  #endif
  	thread->host_thread_id = os_thread_id;
 +#if KYTY_PLATFORM == KYTY_PLATFORM_LINUX
 +	// BC5 (KytyPS5 199d0a9): the guest's thread name on the host thread (15 characters).
++	// Threads the game creates through POSIX pthread_create carry no name; they get
++	// guest-<n> so per-thread views tell them from the host's own threads (F85).
 +	if (!thread->name.empty()) {
 +		pthread_setname_np(pthread_self(), thread->name.substr(0, 15).c_str());
++	} else {
++		static std::atomic<int> g_unnamed {0};
++		char name[16];
++		std::snprintf(name, sizeof(name), "guest-%d", g_unnamed.fetch_add(1) + 1);
++		pthread_setname_np(pthread_self(), name);
 +	}
 +#endif
  
  	LOGF("\tPthread run begin: %s, id = %d, os_thread_id = %" PRIu64 ", entry = 0x%016" PRIx64
  	     ", arg = 0x%016" PRIx64 ", stack_addr = 0x%016" PRIx64 ", stack_size = %" PRIu64 "\n",
-@@ -3791,6 +3798,10 @@ int KYTY_SYSV_ABI PthreadRename(Pthread thread, const char* name) {
+@@ -3791,6 +3806,10 @@ int KYTY_SYSV_ABI PthreadRename(Pthread thread, const char* name) {
  	}
  
  	thread->name = std::string(name);
