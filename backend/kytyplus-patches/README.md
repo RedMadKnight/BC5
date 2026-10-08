@@ -207,3 +207,7 @@ multiplayer); with four, a single-player game opens and reads four pad handles e
 Adaptive triggers (F78): `scePadGetTriggerEffectState` answers libScePad's state values (duaLib's
 header: feedback 1/2, weapon 3/4/5, vibration 6/7) from the last `scePadSetTriggerEffect` and the
 trigger's analog value, as KytyPS5 PR #1132 does; the trace logs the requests.
+Pad audio knobs (F79): `KYTY_BC5_PAD_SPEAKER=main` keeps the pad-speaker ports on the default
+output (the game sends some effects to the controller's speaker, as on the console), the haptics
+still go to the pad; `KYTY_BC5_HAPTIC_GAIN=<float>` scales the actuators' stream (clipped);
+`KYTY_BC5_INPUT_TRACE=1` also logs, once a second per pad port, the peak level reaching the pad.

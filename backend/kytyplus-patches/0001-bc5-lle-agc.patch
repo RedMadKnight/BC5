@@ -3098,10 +3098,21 @@ index ed7c35b..9f6635d 100644
  	}
  
 diff --git a/src/libs/audio.cpp b/src/libs/audio.cpp
-index fe4b332..b4a6ed1 100644
+index fe4b332..e99627d 100644
 --- a/src/libs/audio.cpp
 +++ b/src/libs/audio.cpp
-@@ -107,6 +107,10 @@ private:
+@@ -20,6 +20,10 @@
+ #include <cstring>
+ #include <limits>
+ #include <vector>
++#include <cstdio>
++#include <mutex>
++#include <map>
++#include <cmath>
+ 
+ namespace Libs::Audio {
+ 
+@@ -107,6 +111,10 @@ private:
  
  		SDL_AudioDeviceID audio_device = 0;
  		SDL_AudioSpec     audio_spec   = {};
@@ -3112,7 +3123,7 @@ index fe4b332..b4a6ed1 100644
  	};
  
  	struct PortIn {
-@@ -236,20 +240,45 @@ bool Audio::OpenSdlDevice(PortOut* port) {
+@@ -236,20 +244,51 @@ bool Audio::OpenSdlDevice(PortOut* port) {
  	desired.samples  = static_cast<Uint16>(port->samples_num);
  	desired.callback = nullptr;
  
@@ -3123,8 +3134,14 @@ index fe4b332..b4a6ed1 100644
 +	// old behaviour: the speaker port on the default device, the vibration port unopened.
 +	const char* pad_name = nullptr;
 +	port->pad_route      = 0;
++	// KYTY_BC5_PAD_SPEAKER=main: the pad-speaker ports stay on the default output (the game sends
++	// some effects to the controller's speaker, as on the console); the haptics still go to the pad.
++	static const bool speaker_on_main = [] {
++		const char* e = std::getenv("KYTY_BC5_PAD_SPEAKER");
++		return e != nullptr && std::strcmp(e, "main") == 0;
++	}();
 +	if (std::getenv("KYTY_BC5_NO_PAD_AUDIO") == nullptr &&
-+	    (port->type == AUDIO_OUT_PORT_TYPE_PADSPK || port->type == AUDIO_OUT_PORT_TYPE_VIBRATION)) {
++	    ((port->type == AUDIO_OUT_PORT_TYPE_PADSPK && !speaker_on_main) || port->type == AUDIO_OUT_PORT_TYPE_VIBRATION)) {
 +		const char* want = std::getenv("KYTY_BC5_PAD_AUDIO_DEVICE") != nullptr ? std::getenv("KYTY_BC5_PAD_AUDIO_DEVICE") : "DualSense";
 +		const int   n    = SDL_GetNumAudioDevices(0);
 +		for (int i = 0; i < n && pad_name == nullptr; i++) {
@@ -3162,7 +3179,7 @@ index fe4b332..b4a6ed1 100644
  	return true;
  }
  
-@@ -335,7 +364,29 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -335,7 +374,83 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  
  	std::vector<uint8_t> prepared_buffer;
  	const void*          prepared_data = PrepareOutputBuffer(*port, data, &prepared_buffer);
@@ -3179,12 +3196,66 @@ index fe4b332..b4a6ed1 100644
 +		pad_buffer.assign(static_cast<size_t>(frames) * 4 * bps, 0);
 +		const auto* src = static_cast<const uint8_t*>(prepared_data);
 +		const uint32_t base = port->pad_route == 2 ? 2 : 0;
++		// KYTY_BC5_HAPTIC_GAIN=<float> (default 1): the actuators' stream scaled, clipped at full scale.
++		static const float haptic_gain = [] {
++			const char* e = std::getenv("KYTY_BC5_HAPTIC_GAIN");
++			const float g = e != nullptr ? static_cast<float>(std::atof(e)) : 1.0f;
++			return g > 0.0f && g < 64.0f ? g : 1.0f;
++		}();
++		const bool  is_float = FormatIsFloat(port->format);
++		float       peak     = 0.0f;
 +		for (uint32_t f = 0; f < frames; f++) {
 +			const uint8_t* l = src + (static_cast<size_t>(f) * port->channels_num) * bps;
 +			const uint8_t* r = port->channels_num == 2 ? l + bps : l;
 +			uint8_t*       d = pad_buffer.data() + (static_cast<size_t>(f) * 4 + base) * bps;
-+			std::memcpy(d, l, bps);
-+			std::memcpy(d + bps, r, bps);
++			if (port->pad_route == 2 && haptic_gain != 1.0f) {
++				for (int k = 0; k < 2; k++) {
++					const uint8_t* in = k == 0 ? l : r;
++					if (is_float) {
++						float v;
++						std::memcpy(&v, in, 4);
++						v = std::clamp(v * haptic_gain, -1.0f, 1.0f);
++						std::memcpy(d + k * bps, &v, 4);
++					} else {
++						int16_t v;
++						std::memcpy(&v, in, 2);
++						v = static_cast<int16_t>(std::clamp(static_cast<float>(v) * haptic_gain, -32768.0f, 32767.0f));
++						std::memcpy(d + k * bps, &v, 2);
++					}
++				}
++			} else {
++				std::memcpy(d, l, bps);
++				std::memcpy(d + bps, r, bps);
++			}
++			if (is_float) {
++				float v;
++				std::memcpy(&v, d, 4);
++				peak = std::max(peak, std::fabs(v));
++			} else {
++				int16_t v;
++				std::memcpy(&v, d, 2);
++				peak = std::max(peak, std::fabs(static_cast<float>(v)) / 32768.0f);
++			}
++		}
++		// KYTY_BC5_INPUT_TRACE=1: once a second per port, what reaches the pad.
++		static const bool trace = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
++		if (trace) {
++			static std::map<const PortOut*, std::pair<uint64_t, float>> seen; // port -> (last ms, max peak)
++			static std::mutex                                            seen_mutex;
++			std::lock_guard<std::mutex>                                  lock(seen_mutex);
++			auto&          e   = seen[port];
++			const uint64_t now = LibKernel::KernelGetProcessTime() / 1000;
++			e.second           = std::max(e.second, peak);
++			if (now - e.first >= 1000) {
++				if (e.second > 0.0f) {
++					std::fprintf(stderr, "input trace: pad audio port type %d (%s) %d ch %u Hz %s: peak %.3f in the last second, volume %d, gain %.1f\n",
++					             port->type, port->pad_route == 2 ? "haptics ch 3-4" : "speaker ch 1-2", port->channels_num, port->freq,
++					             is_float ? "f32" : "s16", e.second, port->volume[0], haptic_gain);
++					std::fflush(stderr);
++				}
++				e.first  = now;
++				e.second = 0.0f;
++			}
 +		}
 +		prepared_data = pad_buffer.data();
 +		prepared_size = static_cast<uint32_t>(pad_buffer.size());
@@ -3193,7 +3264,7 @@ index fe4b332..b4a6ed1 100644
  
  	std::vector<uint8_t> convert_buffer;
  	const void*          queue_data = prepared_data;
-@@ -343,7 +394,7 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -343,7 +458,7 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  
  	SDL_AudioCVT cvt {};
  	const int    cvt_result =
@@ -3202,7 +3273,7 @@ index fe4b332..b4a6ed1 100644
  	                      static_cast<int>(port->freq), port->audio_spec.format,
  	                      port->audio_spec.channels, port->audio_spec.freq);
  
-@@ -368,6 +419,19 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -368,6 +483,19 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  		queue_size = static_cast<uint32_t>(cvt.len_cvt);
  	}
  
@@ -3222,7 +3293,7 @@ index fe4b332..b4a6ed1 100644
  	if (blocking) {
  		// More aggressive buffer management to prevent audio issues
  		// during heavy GPU load (common in gameplay vs cutscene)
-@@ -428,7 +492,7 @@ Audio::Id Audio::AudioOutOpen(int type, uint32_t samples_num, uint32_t freq, For
+@@ -428,7 +556,7 @@ Audio::Id Audio::AudioOutOpen(int type, uint32_t samples_num, uint32_t freq, For
  				port.volume[i] = 32768;
  			}
  
