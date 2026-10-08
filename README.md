@@ -36,7 +36,7 @@ All on the BC-250 dev box, with the track-B host (KytyPlus running the game's ow
 
 **Haptics and adaptive triggers work.** The DualSense's actuators get the game's vibration streams, the triggers report their state to the game (the frog gloves fire), and the maintainer confirmed the feel in the game on 2026-10-08: shakes, hits and effects as on the console (F78–F80). Needed on the host: the controller's PipeWire sink at full volume (`pad-volume.sh`).
 
-What does not work yet: full speed (the game is built for 60 fps; in the second level the GPU is busy 75–80 % of a 21–24 ms frame and the game's own thread needs 12 ms of it), and anything past the start of the second level, which nobody has tried. What has not been tried: any other title, RPCSX as the host (needs system software the maintainer cannot dump at present).
+What does not work yet: full speed (the game is built for 60 fps; in the second level the GPU is busy 75–80 % of a 21–24 ms frame and the game's own thread needs 12 ms of it), and anything past the start of the second level, which nobody has tried. The CPU is not the limit: during the maintainer's play the busiest threads sit at half a core and the level load, now about 15 s, keeps no thread busy (F81). What has not been tried: any other title, RPCSX as the host (needs system software the maintainer cannot dump at present).
 
 ## What this is
 
