@@ -26,7 +26,7 @@ documentation: LibProsperoPKG, pkg-to-anyps5 (both GPL-3.0).
 | Kraken, with the excess framing added | the 5 metadata blocks decode (flags 0x23, 0x32, 0x22, 0x02); the inner superblock is at the expected place (mode 0x18, 303 inodes, `ndblock × 64 KiB` = mount); 288 files in 11 directories |
 | First 40 data blocks | all decode: 3 stored, 4 × flags 0x02, 2 × 0x23, 3 × 0x32, 28 × 0x33 |
 | File contents | `sce_sys/about/right.sprx` at logical 0 begins with the PS5 SELF magic `54 14 F5 EE`; `sce_sys/pfs-version.dat` reads `01.001.006`; `sce_sys/keystone` begins with `keystone`; the Kraken block of `sce_sys/lem_notification.dat` starts with its 8-byte seed and the excess flag byte |
-| `bc5-mount` on the box | see `bc5-mount.txt` (inspect, ls, cat, mount) |
+| `bc5-mount` on the box (release build in the `fedora` container, the sparse excerpt) | `inspect` in 75 ms wall (the 20 MB layout parsed and 750,239 blocks walked); `ls -r` lists 298 entries; `cat` returns the right bytes for the three `sce_sys` files; a FUSE mount (`type fuse.pkg`) lists `sce_sys`, `md5sum` reads through it, `fusermount3 -u` unmounts; `bc5-mount.txt` |
 
 Flag histogram over all Kraken blocks: 0x22 343,941; 0x33 199,170; 0x32 34,193; 0x23 27,299;
 0x04 7,599; 0x06 1,423; 0x30 1,220; 0x20 1,090; 0x07 925; 0x02 79; 0x03 54; 0x00 6.
