@@ -8808,7 +8808,7 @@ index 51c3a0e..01ed1c1 100644
  #else
  static int FiberSaveContext(FiberCpuContext* ctx) {
 diff --git a/src/libs/libPad.cpp b/src/libs/libPad.cpp
-index 676ecb9..12cea7d 100644
+index 676ecb9..4b22f02 100644
 --- a/src/libs/libPad.cpp
 +++ b/src/libs/libPad.cpp
 @@ -7,6 +7,8 @@
@@ -8820,30 +8820,51 @@ index 676ecb9..12cea7d 100644
  #include <cstring>
  
  namespace Libs {
-@@ -27,6 +29,30 @@ struct PadTriggerEffectStateInformation {
+@@ -27,6 +29,51 @@ struct PadTriggerEffectStateInformation {
  	int32_t state[2];
  };
  
-+// BC5: the last effect the game set per trigger (ScePadTriggerEffectParam as KytyPS5 reads it:
-+// trigger mask, then two 56-byte commands of a 32-bit mode and 48 data bytes). ASTRO BOT sets
-+// mode 1 {0, 2} (feedback: position, strength), mode 2 {3, 5, 3} (weapon: start, end, strength)
-+// for the frog gloves, mode 3 {7, 4, 10|30|60} (vibration: position, amplitude, frequency), and
-+// polls scePadGetTriggerEffectState continuously. The state answered: 0 before the effect's
-+// position, 1 inside the resistance (feedback at/after the position; weapon between start and
-+// end), 2 past the weapon's end — a trigger pulled through the click. The positions are on
-+// the DualSense's 0..9 scale of the trigger's travel. TODO(verify) the values against a console.
++// BC5: the adaptive trigger's state as libScePad reports it, from the last effect the game set
++// per trigger and the trigger's analog value. Layout and values from duaLib's public header
++// (github.com/WujekFoliarz/duaLib, MIT: `scePadGetTriggerEffectState(int handle, int state[2])`,
++// SCE_PAD_TRIGGER_STATE_* 1..7) and the state machine of KytyPS5 pull request #1132 (GPL-2.0),
++// which fixed ASTRO BOT's frog gloves upstream: the game sets a weapon effect {start 3, end 5,
++// strength 3} and waits for WEAPON_FULLY_PRESSED before it punches.
++//   0 off; feedback 1 no force / 2 pushing; weapon 3 not pressed / 4 almost / 5 fully pressed
++//   (latched until the trigger drops below the start); vibration 6 not firing / 7 firing.
++// The trigger's position is 0 for 0, 9 for 255, else 1 + value / 32 (nonuniform travel).
 +struct Bc5TriggerEffect {
-+	uint32_t mode = 0;
-+	uint8_t  data[4] = {};
++	uint32_t mode     = 0;
++	uint8_t  data[48] = {};
++	bool     fired    = false; // weapon: FULLY_PRESSED latched
 +};
 +static Bc5TriggerEffect g_bc5_effect[2];
 +
-+static int32_t Bc5TriggerEffectState(const Bc5TriggerEffect& e, int analog) {
-+	const int pos = analog * 9 / 255; // 0..9
++static int32_t Bc5TriggerEffectState(Bc5TriggerEffect& e, int value) {
++	const int pos = value <= 0 ? 0 : (value >= 255 ? 9 : 1 + value / 32);
 +	switch (e.mode) {
-+		case 1: return pos >= e.data[0] ? 1 : 0;                                   // feedback
-+		case 2: return pos > e.data[1] ? 2 : (pos >= e.data[0] ? 1 : 0);          // weapon
-+		case 3: return pos >= e.data[0] ? 1 : 0;                                   // vibration
++		case 1: // feedback: position, strength
++			return (e.data[1] != 0 && pos >= e.data[0]) ? 2 : 1;
++		case 2: { // weapon: start, end, strength
++			if (value < e.data[0] * 32) {
++				e.fired = false;
++				return 3;
++			}
++			const int end = e.data[1] * 32 < 254 ? e.data[1] * 32 : 254;
++			if (e.fired || value >= end) {
++				e.fired = true;
++				return 5;
++			}
++			return 4;
++		}
++		case 3: // vibration: position, amplitude, frequency
++			return (e.data[1] != 0 && e.data[2] != 0 && pos >= e.data[0]) ? 7 : 6;
++		case 4: // multiple-position feedback: strength per position
++			return e.data[pos] != 0 ? 2 : 1;
++		case 5: // slope feedback: start, end, start strength, end strength
++			return (pos >= e.data[0] && pos < e.data[1]) ? 2 : 1;
++		case 6: // multiple-position vibration: frequency, amplitude per position
++			return (e.data[0] != 0 && e.data[1 + pos] != 0) ? 7 : 6;
 +		default: return 0;
 +	}
 +}
@@ -8851,7 +8872,7 @@ index 676ecb9..12cea7d 100644
  static int KYTY_SYSV_ABI PadGetTriggerEffectState(int                               handle,
                                                    PadTriggerEffectStateInformation* info) {
  	PRINT_NAME();
-@@ -37,8 +63,22 @@ static int KYTY_SYSV_ABI PadGetTriggerEffectState(int
+@@ -37,8 +84,22 @@ static int KYTY_SYSV_ABI PadGetTriggerEffectState(int
  		return -2137653243; /* 0x80960005 */
  	}
  
@@ -8876,7 +8897,7 @@ index 676ecb9..12cea7d 100644
  
  	return 0;
  }
-@@ -57,6 +97,31 @@ static int KYTY_SYSV_ABI PadSetTriggerEffect(int handle, const void* param) {
+@@ -57,6 +118,32 @@ static int KYTY_SYSV_ABI PadSetTriggerEffect(int handle, const void* param) {
  		return -2137915391; /* 0x80920001 */
  	}
  
@@ -8900,7 +8921,8 @@ index 676ecb9..12cea7d 100644
 +			if ((b[0] & (1u << t)) != 0) {
 +				const int base          = 8 + t * 56;
 +				g_bc5_effect[t].mode    = static_cast<uint32_t>(b[base] | (b[base + 1] << 8) | (b[base + 2] << 16) | (b[base + 3] << 24));
-+				std::memcpy(g_bc5_effect[t].data, b + base + 8, 4);
++				std::memcpy(g_bc5_effect[t].data, b + base + 8, 48);
++				g_bc5_effect[t].fired = false;
 +			}
 +		}
 +	}

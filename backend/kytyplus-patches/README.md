@@ -204,6 +204,6 @@ threads (`pthread.cpp`, upstream 199d0a9). Not taken: blocking short sleeps (ups
 game's command-buffer writer asserts with it.
 Users (F77): one local user is logged in by default (`KYTY_BC5_LOGIN_USERS=<1..4>` for local
 multiplayer); with four, a single-player game opens and reads four pad handles every frame.
-Adaptive triggers (F78): `scePadGetTriggerEffectState` answers from the last `scePadSetTriggerEffect`
-and the trigger's analog value (0 before the effect, 1 in the resistance, 2 past a weapon's end);
-the trace logs the requests.
+Adaptive triggers (F78): `scePadGetTriggerEffectState` answers libScePad's state values (duaLib's
+header: feedback 1/2, weapon 3/4/5, vibration 6/7) from the last `scePadSetTriggerEffect` and the
+trigger's analog value, as KytyPS5 PR #1132 does; the trace logs the requests.
