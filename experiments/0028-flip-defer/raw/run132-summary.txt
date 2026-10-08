@@ -1,4 +1,4 @@
-run 132, 2026-10-08 11:23, unattended as run 131 (an empty save directory, KYTY_BC5_AUTOPRESS=50:cross,58:cross, 600 s, detached, no trigger deadzone), the build of 2026-10-07 23:05: the per-flip sampling of the display buffer and the recent render targets off (BC5_DIRECT_FLIP_SAMPLE unset, HANDOFF F75), the quiet logs; ended by the 600 s limit (exit 124); nobody at the controller (journal excerpts from gc/direct.log)
+run 132, 2026-10-08 11:23, unattended as run 131 (an empty save directory, KYTY_BC5_AUTOPRESS=50:cross,58:cross, 600 s, detached, no trigger deadzone), the maintainer at the controller from the start of gameplay (about 340 s), the build of 2026-10-07 23:05: the per-flip sampling of the display buffer and the recent render targets off (BC5_DIRECT_FLIP_SAMPLE unset, HANDOFF F75), the quiet logs; ended by the 600 s limit (exit 124); journal excerpts from gc/direct.log
 
 question: was the per-flip sampling (8,000 reads of the display buffer plus 1,024 of every recent target, on the game's thread at every flip) part of the 3.5-4.0 ms "at the flip" of runs 126-131?
 
