@@ -57,6 +57,8 @@ struct FilterStats {
     std::uint64_t gds_rewrites = 0; // GDS accesses redirected to the shadow buffer (gds_shadow_va)
     std::uint64_t offset_drops = 0; // packets dropped through FilterOptions::drop_offsets
     std::uint64_t dispatch_rewrites = 0; // DISPATCH_* initiators given ORDERED_APPEND_ENBL
+    std::uint64_t mec_indirect_rewrites = 0; // DISPATCH_INDIRECT, compute-queue form -> GFX form
+    std::uint64_t mec_indirect_drops = 0;    // the same, address outside FilterOptions::mec_indirect_base's 4 GiB
     std::uint64_t clear_state_rewrites = 0; // CLEAR_STATE cmd 1/2 -> cmd 0
     std::uint64_t cs_done_rewrites = 0; // RELEASE_MEM CS_DONE/index 6 without data -> BOTTOM_OF_PIPE_TS/5
     // IB offsets (dwords) where a SAMPLE_PIPELINESTAT took a dropped marker's place
@@ -116,6 +118,15 @@ struct FilterOptions {
     // RELEASE_MEM with EVENT_INDEX 6 and DATA_SEL 0 becomes BOTTOM_OF_PIPE_TS / EVENT_INDEX 5
     // (the GFX ring's ME never completes the former; experiment 0016, run 40).
     bool cs_done_to_bottom_of_pipe = true;
+    // Experiment 0038: DISPATCH_INDIRECT comes in two forms. On a compute queue (MEC) it carries
+    // the argument address itself (address lo, address hi, initiator; 4 dwords); on the GFX ring
+    // it carries an offset from the base set by SET_BASE index 1 (offset, initiator; 3 dwords)
+    // (Mesa radv_cmd_buffer.c, radv_emit_dispatch_packets, TODO(verify) the line). The console's
+    // compute IBs run on the BC-250's GFX ring, which reads the first form as the second. When
+    // non-zero, this is the base the caller has set with SET_BASE index 1 in the prologue (a
+    // multiple of 4 GiB): compute-form packets whose address lies in [base, base + 4 GiB) become
+    // GFX form (offset = the low address dword, initiator, NOP), the others are dropped.
+    std::uint64_t mec_indirect_base = 0;
 };
 
 // Draw and dispatch opcodes (the "work" packets), for staging.
