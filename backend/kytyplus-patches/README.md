@@ -270,7 +270,7 @@ Experiment 0040: `BC5_DIRECT_HEAVY_PROBE=1` scans the memory operands of heavy I
 the memory sync urgent for an operand page not yet known to stay unmapped; pages still unmapped
 are journaled once (`heavy probe:`, with the packet's dwords and the IB's `SET_BASE`s). Off by
 default: it cost ASTRO BOT 6 ms a frame (run 152); the second title's `run-pkg.sh` turns it on.
-`BC5_DIRECT_TRUST_DISPATCH=1` skips the sanity check of dispatch arguments read at submit time
+`BC5_DIRECT_TRUST_DISPATCH=1` (or `=dcb`, graphics buffers only, experiment 0041) skips the sanity check of dispatch arguments read at submit time
 (worse for the second title, off). `BC5_DIRECT_OPS_DUMP=<n>` journals the opcode sequence of the
 first n large compute IBs with such dispatches. The backend's `FilterOptions::mec_indirect_base`
 (one base per IB, with PFP_SYNC_ME inserted by `Device::submit`) is the earlier variant and is no
