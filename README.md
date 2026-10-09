@@ -36,7 +36,7 @@ All on the BC-250 dev box, with the track-B host (KytyPlus running the game's ow
 
 **Haptics and adaptive triggers work.** The DualSense's actuators get the game's vibration streams, the triggers report their state to the game (the frog gloves fire), and the maintainer confirmed the feel in the game on 2026-10-08: shakes, hits and effects as on the console (F78–F80). Needed on the host: the controller's PipeWire sink at full volume (`pad-volume.sh`).
 
-What is not there yet: full speed (the game is built for 60 fps; in the second level the GPU is busy 75–80 % of a 21–24 ms frame and the game's own thread needs 12 ms of it). The CPU is not the limit: during the maintainer's play the busiest threads sit at half a core (F81), and the level load waits on the game's own loaders, not on the files (F83–F84). A second title, from a PS5 package, now loads and renders 3D, slowly: about 7 fps, five minutes to its first 3D scene (F86–F88). What has not been tried: RPCSX as the host (needs system software the maintainer cannot dump at present).
+What is not there yet: full speed (the game is built for 60 fps; in the second level the GPU is busy 75–80 % of a 21–24 ms frame and the game's own thread needs 12 ms of it). The CPU is not the limit: during the maintainer's play the busiest threads sit at half a core (F81), and the level load waits on the game's own loaders, not on the files (F83–F84). A second title, from a PS5 package, now loads and renders 3D at about 24 fps, but stops after some minutes in most runs (F86–F89). What has not been tried: RPCSX as the host (needs system software the maintainer cannot dump at present).
 
 ## What this is
 
@@ -140,7 +140,7 @@ Where the gates are (`docs/PHASES.md`): 1b, 2 and 3 are passed, all on track B. 
 
 ## Tooling: `bc5-mount`
 
-`tools/bc5-mount` reads `.ffpfsc` containers (PFS v2 → PFSC → exFAT; layout in [`docs/formats/ffpfsc.md`](docs/formats/ffpfsc.md)) and exposes the game's `app0` tree. Rust, no unsafe code, every parser rejects malformed input instead of panicking. Reads are answered from a pool of worker threads with a shared block cache and decode-ahead for files read in order (`BC5_MOUNT_THREADS`, `BC5_MOUNT_PREFETCH_KIB`; experiment 0033: the level load 24 → 18 s). It also reads PS5 packages (`.pkg`, `FIH`: outer PFS → `naps_pkg_layout.dat` → Kraken blocks → the inner PFS; layout in [`docs/formats/ps5pkg.md`](docs/formats/ps5pkg.md), ADR 0007), plaintext debug packages only, through the same commands; the file's magic picks the reader. A second title starts from its package, loads and renders 3D (experiments 0034–0036, F86–F88).
+`tools/bc5-mount` reads `.ffpfsc` containers (PFS v2 → PFSC → exFAT; layout in [`docs/formats/ffpfsc.md`](docs/formats/ffpfsc.md)) and exposes the game's `app0` tree. Rust, no unsafe code, every parser rejects malformed input instead of panicking. Reads are answered from a pool of worker threads with a shared block cache and decode-ahead for files read in order (`BC5_MOUNT_THREADS`, `BC5_MOUNT_PREFETCH_KIB`; experiment 0033: the level load 24 → 18 s). It also reads PS5 packages (`.pkg`, `FIH`: outer PFS → `naps_pkg_layout.dat` → Kraken blocks → the inner PFS; layout in [`docs/formats/ps5pkg.md`](docs/formats/ps5pkg.md), ADR 0007), plaintext debug packages only, through the same commands; the file's magic picks the reader. A second title starts from its package, loads and renders 3D at about 24 fps (experiments 0034–0037, F86–F89).
 
 ```bash
 cd tools && cargo build --release

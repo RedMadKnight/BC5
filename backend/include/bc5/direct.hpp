@@ -121,6 +121,9 @@ public:
     // snapshot (a host-built DMA_DATA GDS -> shadow, experiment 0016).
     volatile std::uint32_t *gds_shadow_cpu() const;
     std::vector<Mapping> mappings() const;
+    // Experiment 0037: the same list sorted by address, shared and rebuilt only when a mapping
+    // changes. A title with 12,000 mappings spent a sort of the copy in every submission.
+    std::shared_ptr<const std::vector<Mapping>> sorted_mappings() const;
 
     // Filters `ib` into a scratch IB and submits it on the GFX ring with every mapping in the BO
     // list; waits for the fence up to `timeout_ns`. After a timeout the device refuses further

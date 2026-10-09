@@ -85,6 +85,9 @@ struct Device::Impl {
     state_stack::Tracker tracker; // Device::set_state_stack
     static constexpr std::uint64_t kShadowVa = 0x1000'0400'0000ull; // 64 MiB above the scratch
     std::mutex mutex;
+    // Device::sorted_mappings: the sorted list and the list_gen it was built at.
+    std::shared_ptr<const std::vector<Mapping>> sorted;
+    std::uint64_t sorted_gen = ~0ull;
 
     // The scratch IB lives at a fixed GPU VA of 16 TiB: inside the 48-bit range the CP can
     // address (an IB address above 2^48 is truncated by the CP — the kernel-half "high VA" range
@@ -345,6 +348,20 @@ std::vector<Mapping> Device::mappings() const {
     for (const auto &u : impl_->userptrs) out.push_back({u.va, u.size, u.readonly, false});
     for (const auto &m : impl_->shared_maps) out.push_back({m.va, m.size, false, true});
     return out;
+}
+
+std::shared_ptr<const std::vector<Mapping>> Device::sorted_mappings() const {
+    std::lock_guard lock(impl_->mutex);
+    if (impl_->sorted == nullptr || impl_->sorted_gen != impl_->list_gen) {
+        auto out = std::make_shared<std::vector<Mapping>>();
+        out->reserve(impl_->userptrs.size() + impl_->shared_maps.size());
+        for (const auto &u : impl_->userptrs) out->push_back({u.va, u.size, u.readonly, false});
+        for (const auto &m : impl_->shared_maps) out->push_back({m.va, m.size, false, true});
+        std::sort(out->begin(), out->end(), [](const Mapping &x, const Mapping &y) { return x.va < y.va; });
+        impl_->sorted = std::move(out);
+        impl_->sorted_gen = impl_->list_gen;
+    }
+    return impl_->sorted;
 }
 
 std::uint32_t Device::import_memfd(int memfd, std::uint64_t offset, std::uint64_t size) {
