@@ -3,7 +3,7 @@
 **BC-250 + PS5. A native PS5 GPU path for the AMD BC-250 (Cyan Skillfish, gfx1013).**
 User-space backend that feeds PS5 AGC command streams and native RDNA ISA shaders to `amdgpu` on Linux, without GNM→Vulkan translation or shader recompilation.
 
-> Status: research / alpha. **ASTRO BOT, the maintainer's own copy, is fully playable on the BC-250** in the maintainer's judgement (2026-10-08), at 40–55 fps, with the game's own command buffers and shader binaries submitted to the GPU filtered but not translated. **A second title, installed from a PS5 package, loads and renders 3D at 16–24 fps** and runs for several minutes; one run in three still stops on a GPU fault. This repository is a plan, a set of experiments and their results. No game files, firmware or SDK material are or will ever be hosted here.
+> Status: research / alpha. **ASTRO BOT, the maintainer's own copy, is fully playable on the BC-250** in the maintainer's judgement (2026-10-08), at 40–55 fps, with the game's own command buffers and shader binaries submitted to the GPU filtered but not translated. **A second title, installed from a PS5 package, loads and renders 3D at 16–24 fps** and runs for several minutes; one run in four still stops on a GPU fault. This repository is a plan, a set of experiments and their results. No game files, firmware or SDK material are or will ever be hosted here.
 
 ![The emulator window on the BC-250: ASTRO BOT's opening card, rendered through the direct path](docs/images/g3-first-screen.png)
 
@@ -22,7 +22,7 @@ Every number has its experiment under `experiments/` and its finding in [`docs/H
 | Title | From | State | Frame rate | Record |
 | --- | --- | --- | --- | --- |
 | ASTRO BOT (the maintainer's own dump) | `.ffpfsc` container through `bc5-mount` | **fully playable**: intro, menus, every level the maintainer has played; controller with haptics and adaptive triggers; saves | 47–55 fps in the first level, 40–51 in the second (built for 60) | F43–F85 |
-| A second title (the maintainer's own copy; not named here) | PS5 debug package (`.pkg`, 101.8 GB) through `bc5-mount` | **loads and renders 3D**: about five minutes of loading, then its first 3D scene; 300–600 s runs end clean in two of three, the third stops on a GPU fault; menu input not yet effective | 16–24 fps | F86–F92 |
+| A second title (the maintainer's own copy; not named here) | PS5 debug package (`.pkg`, 101.8 GB) through `bc5-mount` | **loads and renders 3D**: about five minutes of loading, then its first 3D scene; 300–600 s runs end clean in nine of twelve, the others stop on a GPU fault; menu input not yet effective | 16–24 fps | F86–F92 |
 
 Which game formats are read:
 
@@ -65,7 +65,7 @@ Whatever the format, the host loads two Sony modules from your own dump, `libSce
 ### Not there yet
 
 - Full speed for ASTRO BOT: the second level's GPU time and the game's own thread both have to go under 16.7 ms. The CPU is not the limit (the busiest threads sit at half a core, F81).
-- The second title's stops (one run in three), its skipped compute program, and its menu.
+- The second title's stops (one run in four), its skipped compute program, and its menu.
 - RPCSX as the host: it needs system software the maintainer cannot dump at present.
 
 ## What this is
@@ -162,7 +162,7 @@ Open:
 
 - [ ] **60 fps in ASTRO BOT.** In the second level the GPU is busy 17–18 ms of a 21–24 ms frame, the game's own thread takes 12 ms and the host's `prepare` pass 3.4–4.1 ms, of which the filter over ~130,000 dwords a frame is 2.4–3.1 (experiments 0025–0027). Deferring the flip gives nothing (experiment 0028); a lower output mode is not a lever, the title registers 4K buffers and asks the system nothing (F67). The GPU's lever is the clock.
 - [ ] **Cross-queue waits as the console serves them.** The host serves every wait of a buffer on the CPU before the buffer goes, which cannot express two queues waiting for each other mid-buffer (ASTRO BOT's water, F64). The way out is splitting buffers at waits with the register state between pieces replayed from the backend's tracker; the compute side is done, the graphics side faults until SH and UCONFIG registers are tracked (ADR 0005 xxii). The second title's skipped compute program (F91) may be the same problem.
-- [ ] **The second title's stops** (F90–F92). Its compute work runs and two runs of three end clean; the third stops on a GPU fault. Open: what the guest maps and unmaps in the faulting range around the stop, whether the PS5 GPU ignores virtual-address bits from 40 up (seven of 73 fault addresses are heap addresses with a junk top byte), and why one compute program (0x909939900, a bottom-up tree refit with atomic counters) does not finish on the single ring. The `LOAD_SH_REG_INDEX` before the stops turned out to be a no-op (F95).
+- [ ] **The second title's stops** (F90–F95). Its compute work runs and nine of twelve runs end clean; the others stop on a GPU fault. Open: what the guest maps and unmaps in the faulting range around the stop, whether the PS5 GPU ignores virtual-address bits from 40 up (seven of 73 fault addresses are heap addresses with a junk top byte), and why one compute program (0x909939900, a bottom-up tree refit with atomic counters) does not finish on the single ring. The `LOAD_SH_REG_INDEX` before the stops turned out to be a no-op (F95).
 - [ ] **Console-specific packets and registers** (HANDOFF Q4). Parked while only ASTRO BOT ran; reopened by the second title: the compute-queue form of `DISPATCH_INDIRECT` (F90) and a zero-length `LOAD_SH_REG_INDEX` (F95). More important than any register so far was command-processor behaviour the console's system provides and `amdgpu` does not: `CLEAR_STATE` push/pop (F35), waiting for CP DMA (F41), register shadowing.
 - [ ] **The second title's menu**: whether it should show over the 3D backdrop; the scene renders and button presses after the first dialog change nothing.
 - [ ] **The second title's load**: about five minutes from start to the 3D scene, with the package's Kraken blocks decoded in software by `bc5-mount`; what paces it has not been measured. ASTRO BOT's answer (the host, not the storage, F84) may or may not carry over.
@@ -343,7 +343,7 @@ All switches are listed in [`backend/kytyplus-patches/README.md`](backend/kytypl
 
 ### 7. What to expect
 
-With ASTRO BOT: the whole game as far as the maintainer has played it: intro videos, the title screen at 54–60 fps, a level load of about 18 s, the first level at about 50 fps and the second at about 40, haptics and adaptive triggers on the controller. With the second title (from its package, through `play-pkg.sh` or the settings in it): about five minutes of loading, then its first 3D scene at 16–24 fps; one run in three still stops on a GPU fault (F91, F92). With any other title: unknown; a game that links against a system library the host has no stand-in for stops there.
+With ASTRO BOT: the whole game as far as the maintainer has played it: intro videos, the title screen at 54–60 fps, a level load of about 18 s, the first level at about 50 fps and the second at about 40, haptics and adaptive triggers on the controller. With the second title (from its package, through `play-pkg.sh` or the settings in it): about five minutes of loading, then its first 3D scene at 16–24 fps; one run in four still stops on a GPU fault (F91, F95). With any other title: unknown; a game that links against a system library the host has no stand-in for stops there.
 
 If it does not work:
 
