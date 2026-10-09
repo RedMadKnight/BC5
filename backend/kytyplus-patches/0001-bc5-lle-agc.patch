@@ -3602,7 +3602,7 @@ index cb7587c..27c8098 100644
  			result->result          = AJM_RESULT_CODEC_ERROR | AJM_RESULT_INVALID_DATA;
  			result->internal_result = init_ret;
 diff --git a/src/libs/audio.cpp b/src/libs/audio.cpp
-index fe4b332..888a233 100644
+index fe4b332..7278618 100644
 --- a/src/libs/audio.cpp
 +++ b/src/libs/audio.cpp
 @@ -20,6 +20,10 @@
@@ -3640,7 +3640,7 @@ index fe4b332..888a233 100644
  	struct PortIn {
  		bool     used            = false;
  		uint32_t type            = 0;
-@@ -236,20 +255,51 @@ bool Audio::OpenSdlDevice(PortOut* port) {
+@@ -236,20 +255,58 @@ bool Audio::OpenSdlDevice(PortOut* port) {
  	desired.samples  = static_cast<Uint16>(port->samples_num);
  	desired.callback = nullptr;
  
@@ -3670,6 +3670,7 @@ index fe4b332..888a233 100644
 +			port->pad_route  = port->type == AUDIO_OUT_PORT_TYPE_VIBRATION ? 2 : 1;
 +		} else if (port->type == AUDIO_OUT_PORT_TYPE_VIBRATION) {
 +			LOGF("AudioOut: no controller audio device for the vibration port; it stays silent\n");
++			std::fprintf(stderr, "bc5 audio: no controller audio device for the vibration port (looked for \"%s\" among %d devices); it stays silent\n", want, n);
 +			return false;
 +		}
 +	}
@@ -3682,12 +3683,18 @@ index fe4b332..888a233 100644
 +	                                         pad_name != nullptr ? (SDL_AUDIO_ALLOW_FREQUENCY_CHANGE | SDL_AUDIO_ALLOW_FORMAT_CHANGE) : SDL_AUDIO_ALLOW_ANY_CHANGE);
  	if (port->audio_device == 0) {
  		LOGF("AudioOut: SDL_OpenAudioDevice failed: %s\n", SDL_GetError());
++		if (pad_name != nullptr) std::fprintf(stderr, "bc5 audio: port type %d on %s failed to open: %s\n", port->type, pad_name, SDL_GetError());
 +		port->pad_route = 0;
  		return false;
  	}
  
  	port->audio_spec = obtained;
  	SDL_PauseAudioDevice(port->audio_device, 0);
++	// BC5: the controller's ports on stderr (the play log), once each: whether the haptics have a device at all.
++	if (pad_name != nullptr) {
++		std::fprintf(stderr, "bc5 audio: port type %d (%s) opened on %s, %d Hz, %u ch\n", port->type, port->pad_route == 2 ? "haptics" : "pad speaker", pad_name,
++		             obtained.freq, static_cast<unsigned>(obtained.channels));
++	}
  
 -	LOGF("AudioOut: opened SDL device (%d Hz, %u ch, format 0x%04x)\n", obtained.freq,
 -	     obtained.channels, obtained.format);
@@ -3696,7 +3703,7 @@ index fe4b332..888a233 100644
  	return true;
  }
  
-@@ -335,7 +385,90 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -335,7 +392,90 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  
  	std::vector<uint8_t> prepared_buffer;
  	const void*          prepared_data = PrepareOutputBuffer(*port, data, &prepared_buffer);
@@ -3788,7 +3795,7 @@ index fe4b332..888a233 100644
  
  	std::vector<uint8_t> convert_buffer;
  	const void*          queue_data = prepared_data;
-@@ -343,7 +476,7 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -343,7 +483,7 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  
  	SDL_AudioCVT cvt {};
  	const int    cvt_result =
@@ -3797,7 +3804,7 @@ index fe4b332..888a233 100644
  	                      static_cast<int>(port->freq), port->audio_spec.format,
  	                      port->audio_spec.channels, port->audio_spec.freq);
  
-@@ -368,6 +501,47 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -368,6 +508,47 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  		queue_size = static_cast<uint32_t>(cvt.len_cvt);
  	}
  
@@ -3845,7 +3852,7 @@ index fe4b332..888a233 100644
  	if (blocking) {
  		// More aggressive buffer management to prevent audio issues
  		// during heavy GPU load (common in gameplay vs cutscene)
-@@ -428,7 +602,7 @@ Audio::Id Audio::AudioOutOpen(int type, uint32_t samples_num, uint32_t freq, For
+@@ -428,7 +609,7 @@ Audio::Id Audio::AudioOutOpen(int type, uint32_t samples_num, uint32_t freq, For
  				port.volume[i] = 32768;
  			}
  
