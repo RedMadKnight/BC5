@@ -2870,7 +2870,7 @@ index bc73d18..252c692 100644
  
  #endif /* EMULATOR_INCLUDE_EMULATOR_KERNEL_FILESYSTEM_H_ */
 diff --git a/src/kernel/memory.cpp b/src/kernel/memory.cpp
-index 02fc0fc..2abf889 100644
+index 02fc0fc..e0f3757 100644
 --- a/src/kernel/memory.cpp
 +++ b/src/kernel/memory.cpp
 @@ -1,3 +1,6 @@
@@ -2880,7 +2880,90 @@ index 02fc0fc..2abf889 100644
  #include "kernel/memory.h"
  
  #include "common/assert.h"
-@@ -382,6 +385,13 @@ public:
+@@ -201,6 +204,19 @@ static bool IsPrivateCommittedRangeType(VirtualRangeType type) {
+ 
+ class VirtualRanges {
+ public:
++	// BC5 (experiment 0037): changes with every edit of the ranges, so readers can cache a snapshot.
++	[[nodiscard]] uint64_t Generation() const { return m_gen.load(std::memory_order_acquire); }
++	// BC5 (experiment 0037): [start, end) of every range, reserved or mapped, that overlaps [lo, hi).
++	void Overlapping(uint64_t lo, uint64_t hi, std::vector<std::pair<uint64_t, uint64_t>>* out) {
++		Common::LockGuard lock(m_mutex);
++		out->clear();
++		auto it = std::upper_bound(m_ranges.begin(), m_ranges.end(), lo, [](uint64_t v, const Range& r) { return v < r.start; });
++		if (it != m_ranges.begin()) --it;
++		for (; it != m_ranges.end() && it->start < hi; ++it) {
++			if (it->start + it->size > lo) out->emplace_back(it->start, it->start + it->size);
++		}
++	}
++
+ 	struct Range {
+ 		uint64_t         start          = 0;
+ 		uint64_t         size           = 0;
+@@ -215,6 +231,7 @@ public:
+ 	bool Add(uint64_t start, uint64_t size, uint64_t offset, int protection, int memory_type,
+ 	         VirtualRangeType type, const char* name, bool disallow_merge = false) {
+ 		Common::LockGuard lock(m_mutex);
++		m_gen.fetch_add(1, std::memory_order_acq_rel); // BC5 (experiment 0037)
+ 
+ 		if (start == 0 || size == 0) {
+ 			return false;
+@@ -245,6 +262,7 @@ public:
+ 
+ 	bool Remove(uint64_t start, uint64_t size) {
+ 		Common::LockGuard lock(m_mutex);
++		m_gen.fetch_add(1, std::memory_order_acq_rel); // BC5 (experiment 0037)
+ 
+ 		auto position = LowerBound(start);
+ 		if (position != m_ranges.end() && position->start == start && position->size == size) {
+@@ -276,6 +294,7 @@ public:
+ 
+ 	bool ReleaseReserved(uint64_t start, uint64_t size) {
+ 		Common::LockGuard lock(m_mutex);
++		m_gen.fetch_add(1, std::memory_order_acq_rel); // BC5 (experiment 0037)
+ 
+ 		for (size_t index = 0; index < m_ranges.size(); index++) {
+ 			auto& r = m_ranges[index];
+@@ -290,6 +309,7 @@ public:
+ 	bool ConsumeReserved(uint64_t start, uint64_t size,
+ 	                     VirtualRangeType type = VirtualRangeType::Reserved) {
+ 		Common::LockGuard lock(m_mutex);
++		m_gen.fetch_add(1, std::memory_order_acq_rel); // BC5 (experiment 0037)
+ 
+ 		auto end = End(start, size);
+ 		for (const auto& r: m_ranges) {
+@@ -306,6 +326,7 @@ public:
+ 	bool ConsumeReservedSpan(uint64_t start, uint64_t size, Range* first_range = nullptr,
+ 	                         VirtualRangeType type = VirtualRangeType::Reserved) {
+ 		Common::LockGuard lock(m_mutex);
++		m_gen.fetch_add(1, std::memory_order_acq_rel); // BC5 (experiment 0037)
+ 
+ 		if (size == 0) {
+ 			return false;
+@@ -337,6 +358,7 @@ public:
+ 
+ 	void Rename(uint64_t start, uint64_t size, const char* name) {
+ 		Common::LockGuard lock(m_mutex);
++		m_gen.fetch_add(1, std::memory_order_acq_rel); // BC5 (experiment 0037)
+ 
+ 		auto position = LowerBound(start);
+ 		if (position != m_ranges.end() && position->start == start && position->size == size) {
+@@ -349,12 +371,14 @@ public:
+ 
+ 	void Protect(uint64_t start, uint64_t size, int protection) {
+ 		Common::LockGuard lock(m_mutex);
++		m_gen.fetch_add(1, std::memory_order_acq_rel); // BC5 (experiment 0037)
+ 
+ 		EditUnlocked(start, size, [protection](Range* r) { r->protection = protection; });
+ 	}
+ 
+ 	void SetMemoryType(uint64_t start, uint64_t size, int memory_type) {
+ 		Common::LockGuard lock(m_mutex);
++		m_gen.fetch_add(1, std::memory_order_acq_rel); // BC5 (experiment 0037)
+ 
+ 		EditUnlocked(start, size, [memory_type](Range* r) { r->memory_type = memory_type; });
+ 	}
+@@ -382,6 +406,13 @@ public:
  		return true;
  	}
  
@@ -2894,7 +2977,15 @@ index 02fc0fc..2abf889 100644
  	bool QuerySpan(uint64_t start, uint64_t size, std::vector<Range>* out) {
  		EXIT_IF(out == nullptr);
  
-@@ -712,6 +722,12 @@ public:
+@@ -644,6 +675,7 @@ private:
+ 	}
+ 
+ 	std::vector<Range> m_ranges;
++	std::atomic<uint64_t> m_gen {1};
+ 	Common::Mutex      m_mutex;
+ };
+ 
+@@ -712,6 +744,12 @@ public:
  				                            : minimum;
  				target = std::max(minimum, std::min(ps5_game_total, capped));
  			}
@@ -2907,7 +2998,7 @@ index 02fc0fc..2abf889 100644
  			target = target & ~(0x4000ull - 1ull);
  			LOGF("guest memory total = %llu MiB\n", static_cast<unsigned long long>(target / megabyte));
  			return target;
-@@ -850,7 +866,80 @@ static std::unique_ptr<PhysicalMemory>    g_physical_memory;
+@@ -850,7 +888,99 @@ static std::unique_ptr<PhysicalMemory>    g_physical_memory;
  static std::unique_ptr<FlexibleMemory>    g_flexible_memory;
  static std::unique_ptr<PooledMemory>      g_pooled_memory;
  static std::unique_ptr<VirtualRanges>     g_virtual_ranges;
@@ -2938,6 +3029,17 @@ index 02fc0fc..2abf889 100644
 +		}
 +	}
 +}
++// BC5 (experiment 0037): the generation of the guest's ranges (see VirtualRanges::Generation).
++void Bc5GuestRangesIn(uint64_t lo, uint64_t hi, std::vector<std::pair<uint64_t, uint64_t>>* out) {
++	if (g_virtual_ranges == nullptr || out == nullptr) {
++		if (out != nullptr) out->clear();
++		return;
++	}
++	g_virtual_ranges->Overlapping(lo, hi, out);
++}
++uint64_t Bc5MappedRangesGeneration() {
++	return g_virtual_ranges != nullptr ? g_virtual_ranges->Generation() : 0;
++}
 +// BC5 (ADR 0006): the direct-memory memfd (sealed with KYTY_BC5_DMABUF=1), -1 when there is none.
 +int Bc5DirectMemoryFd() {
 +	return GuestBackingStore::Bc5Fd();
@@ -2963,7 +3065,15 @@ index 02fc0fc..2abf889 100644
 +	for (const auto& [start, size]: regions) {
 +		int         type = -1;
 +		const char* name = "";
-+		for (const auto& r: ranges) {
++		// BC5 (experiment 0037): the ranges are sorted by start; one binary search per region
++		// instead of a walk over all of them (11,600 ranges, 140 regions, every sync).
++		auto it = std::upper_bound(ranges.begin(), ranges.end(), start,
++		                           [](uint64_t v, const VirtualRanges::Range& r) { return v < r.start; });
++		if (it != ranges.begin()) {
++			--it;
++		}
++		for (; it != ranges.end() && it->start <= start; ++it) {
++			const auto& r = *it;
 +			if (start >= r.start && start < r.start + r.size) {
 +				switch (r.type) {
 +					case VirtualRangeType::Direct: type = 0; break;
@@ -2988,7 +3098,7 @@ index 02fc0fc..2abf889 100644
  static callback_func_t                    g_alloc_callback        = nullptr;
  static callback_func_t                    g_free_callback         = nullptr;
  static std::atomic<uint64_t>              g_memory_pool_committed = 0;
-@@ -3193,6 +3282,16 @@ static bool ReplaceFixedRangeWithReserved(uint64_t start, uint64_t size) {
+@@ -3193,6 +3323,16 @@ static bool ReplaceFixedRangeWithReserved(uint64_t start, uint64_t size) {
  			replaced.range.offset += current - range.start;
  		}
  		DecodeMemoryProtection(replaced.range.protection, &replaced.mode, &replaced.gpu_mode);
@@ -3005,7 +3115,7 @@ index 02fc0fc..2abf889 100644
  		if (range.type == VirtualRangeType::Direct &&
  		    !g_guest_address_space->BackingContains(current, chunk)) {
  			return false;
-@@ -3465,7 +3564,70 @@ bool KernelHandleReservedRangeAccessViolation(uint64_t vaddr) {
+@@ -3465,7 +3605,70 @@ bool KernelHandleReservedRangeAccessViolation(uint64_t vaddr) {
  	    std::strncmp(range.name, "AMM", KERNEL_MAXIMUM_NAME_LENGTH) != 0) {
  		return false;
  	}
@@ -3078,15 +3188,26 @@ index 02fc0fc..2abf889 100644
  
  int KYTY_SYSV_ABI KernelVirtualQuery(const void* addr, int flags, VirtualQueryInfo* info,
 diff --git a/src/kernel/memory.h b/src/kernel/memory.h
-index d1fc7f8..724b0bf 100644
+index d1fc7f8..0eeb1cd 100644
 --- a/src/kernel/memory.h
 +++ b/src/kernel/memory.h
-@@ -111,6 +111,12 @@ void                   RegisterCallbacks(callback_func_t alloc_func, callback_fu
+@@ -1,6 +1,8 @@
+ #ifndef EMULATOR_INCLUDE_EMULATOR_KERNEL_MEMORY_H_
+ #define EMULATOR_INCLUDE_EMULATOR_KERNEL_MEMORY_H_
+ 
++#include <utility>
++#include <vector>
+ #include "common/abi.h"
+ #include "common/common.h"
+ #include "common/subsystems.h"
+@@ -111,6 +113,14 @@ void                   RegisterCallbacks(callback_func_t alloc_func, callback_fu
  void                   SetFlexibleMemorySize(uint64_t size);
  bool                   TryWriteBacking(uint64_t vaddr, const void* data, uint64_t size);
  bool                   TryReadBacking(uint64_t vaddr, void* data, uint64_t size);
 +// BC5 (direct mode): the guest's mapped ranges, see memory.cpp.
 +int  Bc5DirectMemoryFd(); // BC5 (ADR 0006): the direct-memory memfd, -1 when none
++uint64_t Bc5MappedRangesGeneration(); // BC5 (experiment 0037): changes with every edit of the guest's ranges
++void     Bc5GuestRangesIn(uint64_t lo, uint64_t hi, std::vector<std::pair<uint64_t, uint64_t>>* out); // reserved or mapped, overlapping [lo, hi)
 +int  Bc5PrivateMemoryFd(); // BC5 (experiment 0023): the memfd behind private guest memory, -1 when anonymous
 +void Bc5ForEachPrivateRegion(void* ctx, void (*cb)(uint64_t start, uint64_t size, int type, const char* name, void* ctx));
 +void Bc5ForEachMappedRange(void (*cb)(uint64_t start, uint64_t size, int type, int protection, const char* name, void* ctx), void* ctx,
@@ -3383,8 +3504,22 @@ index ed7c35b..9f6635d 100644
  		LOGF("KernelWaitSema: infinite wait sem=%p need=%d\n", static_cast<void*>(sem), need);
  	}
  
+diff --git a/src/libs/ajm.cpp b/src/libs/ajm.cpp
+index 89473ad..95855ae 100644
+--- a/src/libs/ajm.cpp
++++ b/src/libs/ajm.cpp
+@@ -332,6 +332,9 @@ int KYTY_SYSV_ABI AjmDecAt9ParseConfigData(const void*              config_data,
+ 
+ 	uint8_t config[ATRAC9_CONFIG_DATA_SIZE] {};
+ 	std::memcpy(config, config_data, sizeof(config));
++	if (((config[1] >> 1u) & 7u) >= 6u) { // BC5 (experiment 0037): vibration layouts as mono/dual mono (KytyPS5 b10bd53)
++		config[1] = static_cast<uint8_t>(config[1] - (6u << 1u));
++	}
+ 	Atrac9CodecInfo codec_info {};
+ 	const int       init_result = Atrac9InitDecoder(handle, config);
+ 	const int       info_result =
 diff --git a/src/libs/ajm/atrac9_decoder.h b/src/libs/ajm/atrac9_decoder.h
-index cb7587c..9c2ddc7 100644
+index cb7587c..fa37a0f 100644
 --- a/src/libs/ajm/atrac9_decoder.h
 +++ b/src/libs/ajm/atrac9_decoder.h
 @@ -1,5 +1,6 @@
@@ -3394,17 +3529,22 @@ index cb7587c..9c2ddc7 100644
  #include "common/assert.h"
  #include "common/logging/log.h"
  
-@@ -277,8 +278,15 @@ private:
+@@ -277,8 +278,20 @@ private:
  		std::memcpy(m_config_data, config_data, ATRAC9_CONFIG_DATA_SIZE);
  		m_has_config = true;
  
 -		const int init_ret = Atrac9InitDecoder(m_handle, m_config_data);
-+		// BC5 (experiment 0036): LibAtrac9's ChannelConfigs table has 6 entries (C/src/tables.c);
-+		// a channel configuration index of 6 or 7 (bits 1-3 of byte 1) reads past it and InitFrame
-+		// then writes past Frame.Channels. One title sends index 7. TODO(verify): what 6 and 7 are.
-+		const int channel_config_index = (m_config_data[1] >> 1) & 7;
-+		const int init_ret             = (channel_config_index < 6 ? Atrac9InitDecoder(m_handle, m_config_data)
-+		                                                           : static_cast<int>(0x81000000u)); // ERR_BAD_CONFIG_DATA (LibAtrac9 error_codes.h)
++		// BC5 (experiments 0036, 0037): channel configuration indices 6 and 7 are ATRAC9's
++		// vibration layouts, which LibAtrac9's 6-entry ChannelConfigs table lacks (it read past it
++		// and InitFrame wrote past Frame.Channels). Their blocks are those of mono and dual mono, so
++		// only the channel field is translated, as KytyPS5 b10bd53 does ("audio: prevent ATRAC9
++		// vibration configuration heap corruption", GPL-2.0). The guest's own bytes stay unchanged.
++		uint8_t init_config[ATRAC9_CONFIG_DATA_SIZE];
++		std::memcpy(init_config, m_config_data, ATRAC9_CONFIG_DATA_SIZE);
++		if (((init_config[1] >> 1u) & 7u) >= 6u) {
++			init_config[1] = static_cast<uint8_t>(init_config[1] - (6u << 1u));
++		}
++		const int init_ret = Atrac9InitDecoder(m_handle, init_config);
  		if (init_ret != 0) {
 +			std::fprintf(stderr, "bc5 ajm: ATRAC9 config %02x %02x %02x %02x rejected (%d)\n",
 +			             m_config_data[0], m_config_data[1], m_config_data[2], m_config_data[3], init_ret);
@@ -3636,10 +3776,10 @@ index fe4b332..c27c243 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..22ef3ae
+index 0000000..3350830
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,4460 @@
+@@ -0,0 +1,4609 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -4878,7 +5018,7 @@ index 0000000..22ef3ae
 +	return std::find(names.begin(), names.end(), name) != names.end();
 +}
 +
-+static std::vector<DView> direct_views(const DState& S) {
++static std::vector<DView> direct_views_build(const DState& S) {
 +	std::vector<DView> v;
 +	if (S.kind == 0) {
 +		Libs::LibKernel::Memory::Bc5ForEachMappedRange(nullptr, &v, [](uint64_t start, uint64_t size, uint64_t offset, int type, int, const char* name, void* p) {
@@ -4897,6 +5037,43 @@ index 0000000..22ef3ae
 +		});
 +	}
 +	return v;
++}
++
++// Experiment 0037: the views of direct memory are built once per change of the guest's ranges
++// (Bc5MappedRangesGeneration) instead of on every sync: a title with 11,500 views spent 34 ms of
++// every frame building them. Shared, so a caller keeps its snapshot while another rebuilds; sorted
++// by address, with their signature.
++struct DViews {
++	std::vector<DView> v;
++	uint64_t           sig = 0;
++	bool               sorted = true;
++};
++static std::shared_ptr<const DViews> direct_views(const DState& S) {
++	static std::mutex                    m;
++	static std::shared_ptr<const DViews> cache[2];
++	static uint64_t                      gen[2] = {0, 0};
++	const int                            k = S.kind == 0 ? 0 : 1;
++	// Private regions follow the same ranges (every private mapping is a range of the guest's),
++	// but their list comes from the address space's own map: to be safe it is also rebuilt once a
++	// second. Listing them walked all 11,600 ranges for each of the 140 regions.
++	static uint64_t built_ns[2] = {0, 0};
++	const uint64_t  g           = Libs::LibKernel::Memory::Bc5MappedRangesGeneration();
++	const uint64_t  now         = SoftCp::now_ns();
++	std::lock_guard l(m);
++	if (g != 0 && g == gen[k] && cache[k] != nullptr && (k == 0 || now - built_ns[k] < 1'000'000'000ull)) return cache[k];
++	built_ns[k] = now;
++	auto d = std::make_shared<DViews>();
++	d->v   = direct_views_build(S);
++	uint64_t sig = 1469598103934665603ull;
++	for (size_t i = 0; i < d->v.size(); i++) {
++		const auto& v = d->v[i];
++		for (const uint64_t x: {v.va, v.size, v.off}) sig = (sig ^ x) * 1099511628211ull;
++		if (i > 0 && d->v[i - 1].va + d->v[i - 1].size > v.va) d->sorted = false;
++	}
++	d->sig   = sig;
++	cache[k] = d;
++	gen[k]   = g;
++	return d;
 +}
 +
 +// The driver's GTT accounting, from sysfs (mem_info_gtt_total / mem_info_gtt_used of the render
@@ -4936,7 +5113,8 @@ index 0000000..22ef3ae
 +	};
 +	std::map<std::string, Row> rows;
 +	Row                        total;
-+	for (const auto& v: direct_views(S)) {
++	const auto views_p = direct_views(S);
++	for (const auto& v: views_p->v) {
 +		Row&           r   = rows[v.size >= (1ull << 20u) ? v.name : std::string("(views under 1 MiB)")];
 +		const uint64_t end = v.off + v.size;
 +		uint64_t       data = 0, imported = 0;
@@ -4981,6 +5159,9 @@ index 0000000..22ef3ae
 +	for (auto& S: g_d) direct_breakdown_one(S, why, list_bos);
 +}
 +
++static std::vector<std::pair<uint64_t, uint64_t>> g_scratch; // experiment 0037: zero-buffer pieces, va and size
++static void scratch_release(uint64_t lo, uint64_t hi);
++
 +static void direct_sync_one(DState& S, bool force) {
 +	if (!g_dmabuf || !g_dev) return;
 +	const uint64_t now = SoftCp::now_ns();
@@ -4997,12 +5178,10 @@ index 0000000..22ef3ae
 +		        std::getenv("BC5_DIRECT_LAZY_NAMES") != nullptr ? std::getenv("BC5_DIRECT_LAZY_NAMES") : "");
 +		if (const char* e = std::getenv("BC5_DIRECT_EAGER_NAMES"); e != nullptr && S.kind == 0) journal("direct memory: eager names: %s\n", e);
 +	}
-+	const std::vector<DView> views = direct_views(S);
++	const auto               views_p = direct_views(S);
++	const std::vector<DView>& views  = views_p->v;
 +	g_dprof_views_ns += SoftCp::now_ns() - now;
-+	uint64_t sig = 1469598103934665603ull;
-+	for (const auto& v: views) {
-+		for (const uint64_t x: {v.va, v.size, v.off}) sig = (sig ^ x) * 1099511628211ull;
-+	}
++	const uint64_t sig = views_p->sig;
 +	if (sig != S.views_sig) g_layout_gen++;
 +	{
 +		struct stat st {};
@@ -5131,6 +5310,9 @@ index 0000000..22ef3ae
 +				unmapped++;
 +			}
 +		}
++		if (!g_scratch.empty()) {
++			for (const auto& w: want) scratch_release(w.va, w.va + w.size);
++		}
 +		for (const auto& w: want) {
 +			const auto e = std::lower_bound(next.begin(), next.end(), w.va, [](const DMap& a, uint64_t va) { return a.va < va; });
 +			if (e != next.end() && *e == w) continue;
@@ -5172,8 +5354,17 @@ index 0000000..22ef3ae
 +	uint64_t asked = 0;
 +	for (auto& S: g_d) {
 +		if (dstate_fd(S) < 0) continue;
-+		uint64_t here = 0;
-+		for (const auto& v: direct_views(S)) {
++		uint64_t   here    = 0;
++		const auto views_p = direct_views(S);
++		const auto& views  = views_p->v;
++		// Sorted views: start at the first one that ends after lo (experiment 0037).
++		size_t first = 0;
++		if (views_p->sorted) {
++			first = static_cast<size_t>(std::partition_point(views.begin(), views.end(), [lo](const DView& v) { return v.va + v.size <= lo; }) - views.begin());
++		}
++		for (size_t vi = first; vi < views.size(); vi++) {
++			const auto& v = views[vi];
++			if (views_p->sorted && v.va >= hi) break;
 +			const uint64_t a = lo > v.va ? lo : v.va;
 +			const uint64_t b = hi < v.va + v.size ? hi : v.va + v.size;
 +			if (a >= b) continue;
@@ -5516,14 +5707,109 @@ index 0000000..22ef3ae
 +	}
 +	if (added != 0) journal("%s 0x%" PRIx64 ": window 0x%" PRIx64 "+0x%" PRIx64 ", mapped +%.1f MiB\n", what, addr, lo, hi - lo, static_cast<double>(added) / 1048576.0);
 +}
++// Experiment 0037: a learned fault window may cover addresses the guest has no range at all in:
++// one title's GPU reads up to 24 KiB past the end of a 2.7 GiB heap, and a fault is a 14 s freeze
++// and sometimes a stuck game. Such holes get a 2 MiB zero buffer of our own mapped over them (the
++// GPU reads zeros, its writes go nowhere); a hole is given back as soon as the guest puts a range
++// there (learned_apply checks on every layout change; the direct mapper unmaps before it maps).
++// BC5_DIRECT_NO_SCRATCH=1 turns it off.
++static uint32_t                                    g_scratch_id = 0;
++static int                                         g_scratch_fd = -1;
++static uint32_t scratch_bo() {
++	if (g_scratch_id != 0 || !g_dev) return g_scratch_id;
++	if (g_scratch_fd < 0) {
++		g_scratch_fd = memfd_create("bc5-scratch", MFD_CLOEXEC | MFD_ALLOW_SEALING);
++		if (g_scratch_fd < 0) return 0;
++		if (ftruncate(g_scratch_fd, static_cast<off_t>(kDChunk)) != 0 || fcntl(g_scratch_fd, F_ADD_SEALS, F_SEAL_SHRINK) != 0) {
++			close(g_scratch_fd);
++			g_scratch_fd = -1;
++			return 0;
++		}
++	}
++	g_scratch_id = g_dev->import_memfd(g_scratch_fd, 0, kDChunk);
++	return g_scratch_id;
++}
++// Unmaps the scratch pieces that overlap [lo, hi).
++static void scratch_release(uint64_t lo, uint64_t hi) {
++	for (size_t i = 0; i < g_scratch.size();) {
++		const auto [va, n] = g_scratch[i];
++		if (va < hi && va + n > lo) {
++			g_dev->unmap_shared(va);
++			g_scratch.erase(g_scratch.begin() + static_cast<std::ptrdiff_t>(i));
++		} else {
++			i++;
++		}
++	}
++}
++static void scratch_fill(uint64_t lo, uint64_t hi, std::vector<bc5::direct::Mapping>& have) {
++	static const bool off = std::getenv("BC5_DIRECT_NO_SCRATCH") != nullptr;
++	if (off || !g_dev) return;
++	std::vector<std::pair<uint64_t, uint64_t>> pieces = {{lo, hi}};
++	auto cut = [&pieces](uint64_t a, uint64_t b) {
++		std::vector<std::pair<uint64_t, uint64_t>> next;
++		for (const auto& [pa, pb]: pieces) {
++			if (b <= pa || a >= pb) { next.emplace_back(pa, pb); continue; }
++			if (a > pa) next.emplace_back(pa, a);
++			if (b < pb) next.emplace_back(b, pb);
++		}
++		pieces.swap(next);
++	};
++	for (const auto& m: have) cut(m.va, m.va + m.size);
++	std::vector<std::pair<uint64_t, uint64_t>> guest;
++	Libs::LibKernel::Memory::Bc5GuestRangesIn(lo, hi, &guest);
++	for (const auto& [a, b]: guest) cut(a, b);
++	uint64_t added = 0;
++	for (auto [pa, pb]: pieces) {
++		pa = (pa + 0xfffull) & ~0xfffull;
++		pb &= ~0xfffull;
++		while (pa < pb) {
++			const uint64_t n  = pb - pa < kDChunk ? pb - pa : kDChunk;
++			const uint32_t id = scratch_bo();
++			if (id == 0 || !g_dev->map_shared(id, 0, n, pa)) break;
++			g_scratch.emplace_back(pa, n);
++			have.push_back({pa, n});
++			added += n;
++			pa += n;
++		}
++	}
++	if (added != 0) journal("scratch: window 0x%" PRIx64 "+0x%" PRIx64 ", %.1f MiB of holes get a zero buffer\n", lo, hi - lo, static_cast<double>(added) / 1048576.0);
++}
++
 +static void learned_apply() {
 +	learned_load();
-+	if (g_learned.empty() || !g_dev) return;
++	if (!g_dev) return;
 +	static uint64_t applied_gen = 0;
 +	if (applied_gen == g_layout_gen) return; // same views, VMAs and learned list as last time
 +	applied_gen = g_layout_gen;
++	// Holes the guest has put a range in since: give them back first.
++	for (size_t i = 0; i < g_scratch.size();) {
++		std::vector<std::pair<uint64_t, uint64_t>> guest;
++		Libs::LibKernel::Memory::Bc5GuestRangesIn(g_scratch[i].first, g_scratch[i].first + g_scratch[i].second, &guest);
++		if (!guest.empty()) {
++			scratch_release(g_scratch[i].first, g_scratch[i].first + g_scratch[i].second);
++		} else {
++			i++;
++		}
++	}
 +	std::vector<bc5::direct::Mapping> have = g_dev->mappings();
 +	for (const auto& [a, n]: g_learned) map_window(a, a + n, have, "learned", a);
++	for (const auto& [a, n]: g_learned) scratch_fill(a, a + n, have);
++	// Experiment 0037: the GPU reads up to 64 KiB past the end of the title's GPU heaps (four
++	// faults so far, each just past one heap's end), so the hole after every view of an eagerly
++	// imported heap of 32 MiB or more gets the zero buffer from the start (BC5_DIRECT_GUARD_KIB, 2048 by default;
++	// only where the guest has no range).
++	static const uint64_t guard = (std::getenv("BC5_DIRECT_GUARD_KIB") ? std::strtoull(std::getenv("BC5_DIRECT_GUARD_KIB"), nullptr, 10) : 2048ull) << 10u;
++	if (guard != 0) {
++		const auto views_p = direct_views(g_d[0]);
++		for (const auto& v: views_p->v) {
++			if (!v.eager || v.size < (32ull << 20u)) continue; // the heaps, not the many small AMM pages
++			const uint64_t end = (v.va + v.size + 0xfffull) & ~0xfffull;
++			std::vector<std::pair<uint64_t, uint64_t>> guest;
++			Libs::LibKernel::Memory::Bc5GuestRangesIn(end, end + 1, &guest);
++			if (!guest.empty()) continue; // the next range of the guest starts right there
++			scratch_fill(end, end + guard, have);
++		}
++	}
 +}
 +
 +static std::vector<uint64_t> g_hinted; // hint windows already mapped (cleared on a device reopen)
@@ -6376,6 +6662,8 @@ index 0000000..22ef3ae
 +			if (g_dev) g_dev->set_dma_idle(std::getenv("BC5_DIRECT_NO_DMA_IDLE") == nullptr);
 +			if (g_dev) g_dev->set_async(g_async);
 +			g_hinted.clear();
++			g_scratch.clear();
++			g_scratch_id = 0;
 +			g_bytes_mapped = 0;
 +			g_last_sync_ns = 0;
 +			for (auto& S: g_d) {
@@ -6684,9 +6972,9 @@ index 0000000..22ef3ae
 +			i += len;
 +		}
 +		if (!heavy) {
-+			const std::vector<bc5::direct::Mapping> have = g_dev->mappings();
++			const auto                 have_p = g_dev->sorted_mappings(); // experiment 0037
 +			bc5::policy::FilterOptions probe;
-+			probe.mapped = [&have](uint64_t a, uint64_t bytes) { return covered(have, a, bytes); };
++			probe.mapped = [&have_p](uint64_t a, uint64_t bytes) { return covered_sorted(*have_p, a, bytes); };
 +			std::vector<uint32_t> scratch(num_dwords);
 +			bc5::policy::FilterStats st;
 +			bc5::policy::filter(bc5::policy::Policy::builtin(), std::span<const uint32_t>(ib, num_dwords), scratch, probe, st);
@@ -6805,8 +7093,9 @@ index 0000000..22ef3ae
 +	}
 +	// Every memory operand must lie inside a userptr mapping, or the packet is NOP-ed: a GPU
 +	// page fault on the BC-250 ends in a reset that takes the machine down (F6, experiment 0016).
-+	std::vector<bc5::direct::Mapping> maps = g_dev->mappings();
-+	std::sort(maps.begin(), maps.end(), [](const bc5::direct::Mapping& x, const bc5::direct::Mapping& y) { return x.va < y.va; });
++	// Experiment 0037: the device keeps this list sorted and rebuilds it only when a mapping
++	// changes (a copy and a sort of 12,000 mappings per submission before).
++	std::shared_ptr<const std::vector<bc5::direct::Mapping>> maps_p = g_dev->sorted_mappings();
 +	bc5::policy::FilterOptions opt;
 +	opt.cu_mask       = g_cu_mask;
 +	opt.clear_int_sel = true;
@@ -6853,7 +7142,7 @@ index 0000000..22ef3ae
 +	if (const char* ts = std::getenv("BC5_DIRECT_TILE_STEERING"); ts != nullptr && std::strcmp(kind, "acb") != 0) {
 +		opt.prologue.insert(opt.prologue.end(), {0xC0016900u, 0xd7u, static_cast<uint32_t>(std::strtoul(ts, nullptr, 16))});
 +	}
-+	opt.mapped = [&maps](uint64_t a, uint64_t bytes) { return covered_sorted(maps, a, bytes); };
++	opt.mapped = [&maps_p](uint64_t a, uint64_t bytes) { return covered_sorted(*maps_p, a, bytes); };
 +	static const std::vector<uint8_t> extra = [] {
 +		std::vector<uint8_t> v;
 +		if (const char* e = std::getenv("BC5_DIRECT_DROP_OPS"); e != nullptr) {
@@ -6891,7 +7180,7 @@ index 0000000..22ef3ae
 +			} else if (type == 3 && (op == 0x24 || op == 0x25 || op == 0x16) && len >= 2) {
 +				const uint64_t a    = base1 + ib[q + 1];
 +				const uint32_t want = op == 0x16 ? 3 : 5;
-+				if (covered(maps, a, want * 4)) {
++				if (covered_sorted(*maps_p, a, want * 4)) {
 +					const auto* t = reinterpret_cast<const volatile uint32_t*>(a);
 +					uint32_t v[5] = {t[0], t[1], t[2], want > 3 ? t[3] : 0u, want > 4 ? t[4] : 0u};
 +					const bool insane = op == 0x16 ? (static_cast<uint64_t>(v[0]) * v[1] * v[2] > 65536ull * 64ull)
@@ -6942,7 +7231,7 @@ index 0000000..22ef3ae
 +	// the raw and the filtered IB and a one-line "about to submit" note are written unbuffered
 +	// first (BC5_GC_DUMP_DIR/direct-NNNNNN-<kind>.{raw,ib}.bin, direct.log).
 +	if (!g_dump_dir.empty() && !g_journal_min) {
-+		journal_load_tables(ib, num_dwords, maps);
++		journal_load_tables(ib, num_dwords, *maps_p);
 +		std::vector<uint32_t>     filtered(num_dwords);
 +		bc5::policy::FilterStats  pre;
 +		bc5::policy::filter(bc5::policy::Policy::builtin(), std::span<const uint32_t>(ib, num_dwords), filtered, opt, pre);
@@ -6959,7 +7248,7 @@ index 0000000..22ef3ae
 +			if (type == 3 && (((h >> 8u) & 0xffu) == 0x3f || ((h >> 8u) & 0xffu) == 0x33) && len >= 4) {
 +				const uint64_t ta = (ib[q + 1] & ~3u) | (static_cast<uint64_t>(ib[q + 2] & 0xffu) << 32u);
 +				const uint32_t tn = ib[q + 3] & 0xfffffu;
-+				if (ta != 0 && tn != 0 && covered(maps, ta, static_cast<uint64_t>(tn) * 4)) {
++				if (ta != 0 && tn != 0 && covered_sorted(*maps_p, ta, static_cast<uint64_t>(tn) * 4)) {
 +					std::snprintf(name, sizeof(name), "%s/direct-%06" PRIu64 "-%s-ib%u.raw.bin", g_dump_dir.c_str(), n, kind, t);
 +					if (FILE* f = std::fopen(name, "wb")) { std::fwrite(reinterpret_cast<const void*>(ta), 4, tn, f); std::fflush(f); if (g_journal_sync) fsync(fileno(f)); std::fclose(f); }
 +				}
@@ -6972,7 +7261,7 @@ index 0000000..22ef3ae
 +		std::snprintf(name, sizeof(name), "%s/direct.log", g_dump_dir.c_str());
 +		if (FILE* f = std::fopen(name, "a")) {
 +			std::fprintf(f, "submit #%" PRIu64 " %s %u dwords at %p: pass %" PRIu64 " rewrite %" PRIu64 " drop %" PRIu64 " unmapped %" PRIu64 " cc %" PRIu64 " mappings %zu ... ",
-+			             n, kind, num_dwords, static_cast<const void*>(ib), pre.passed, pre.rewritten, pre.dropped, pre.unmapped_drops, pre.context_control_rewrites, maps.size());
++			             n, kind, num_dwords, static_cast<const void*>(ib), pre.passed, pre.rewritten, pre.dropped, pre.unmapped_drops, pre.context_control_rewrites, maps_p->size());
 +			std::fflush(f);
 +			fsync(fileno(f));
 +			std::fclose(f);
@@ -7019,7 +7308,7 @@ index 0000000..22ef3ae
 +				len += ib[i + 4] & 0x3fffu; // COND_EXEC: keep the region it may skip in the same piece
 +				if (i + len > num_dwords) len = num_dwords - i;
 +				const uint64_t fa = (ib[i + 1] & ~3u) | (static_cast<uint64_t>(ib[i + 2] & 0xffffu) << 32u);
-+				if (covered(maps, fa, 4)) journal("cond_exec flag at 0x%" PRIx64 " = 0x%08x ", fa, *reinterpret_cast<const volatile uint32_t*>(fa));
++				if (covered_sorted(*maps_p, fa, 4)) journal("cond_exec flag at 0x%" PRIx64 " = 0x%08x ", fa, *reinterpret_cast<const volatile uint32_t*>(fa));
 +			}
 +			if (type == 3 && op == 0x10) { i += len; continue; } // NOPs: nothing to test
 +			if (type == 3 && (op == 0x3f || op == 0x33) && len >= 4) {
@@ -7027,7 +7316,7 @@ index 0000000..22ef3ae
 +				const uint64_t ta = (ib[i + 1] & ~3u) | (static_cast<uint64_t>(ib[i + 2] & 0xffu) << 32u);
 +				const uint32_t tn = ib[i + 3] & 0xfffffu;
 +				journal("piece %u at %u: INDIRECT_BUFFER 0x%" PRIx64 " (%u dwords), descending\n", piece, i, ta, tn);
-+				if (ta != 0 && tn != 0 && covered(maps, ta, static_cast<uint64_t>(tn) * 4)) {
++				if (ta != 0 && tn != 0 && covered_sorted(*maps_p, ta, static_cast<uint64_t>(tn) * 4)) {
 +					const auto* tb = reinterpret_cast<const uint32_t*>(ta);
 +					bool hung = false;
 +					for (uint32_t ti = 0, tp = 0; ti < tn && !hung;) {
@@ -7087,7 +7376,7 @@ index 0000000..22ef3ae
 +	if (!r.ok && !r.timed_out && r.rc == -EFAULT) {
 +		journal("EFAULT, resync ... ");
 +		sync_mappings(true, true);
-+		maps    = g_dev->mappings();
++		maps_p  = g_dev->sorted_mappings();
 +		retried = true;
 +		r       = g_dev->submit(std::span<const uint32_t>(ib, num_dwords), opt, 2'000'000'000ull, with_gds);
 +	}
@@ -7119,7 +7408,7 @@ index 0000000..22ef3ae
 +		it.job.num_dwords = num_dwords;
 +		it.job.ib         = ib;
 +		it.job.filter     = r.filter;
-+		it.job.maps       = maps.size();
++		it.job.maps       = maps_p->size();
 +		it.job.prepare_ms = r.prepare_ms;
 +		it.job.list_ms    = r.list_ms;
 +		it.job.cs_ms      = r.cs_ms;
@@ -7143,7 +7432,7 @@ index 0000000..22ef3ae
 +	if (!g_dump_dir.empty() && g_journal_min) {
 +		journal("submit #%" PRIu64 " %s %u dwords at %p: pass %" PRIu64 " rewrite %" PRIu64 " drop %" PRIu64 " unmapped %" PRIu64 " cc %" PRIu64 " mappings %zu ... %s rc %d%s%s %.2f ms\n",
 +		        n, kind, num_dwords, static_cast<const void*>(ib), r.filter.passed, r.filter.rewritten, r.filter.dropped, r.filter.unmapped_drops,
-+		        r.filter.context_control_rewrites, maps.size(), r.ok ? "OK" : "FAILED", r.rc, r.timed_out ? " TIMEOUT" : "", retried ? " (retried)" : "", r.submit_ms);
++		        r.filter.context_control_rewrites, maps_p->size(), r.ok ? "OK" : "FAILED", r.rc, r.timed_out ? " TIMEOUT" : "", retried ? " (retried)" : "", r.submit_ms);
 +		if (!r.ok) {
 +			if (FILE* f = journal_min_file(true); f != nullptr) fsync(fileno(f));
 +		}
@@ -8631,7 +8920,7 @@ index 3c0684f..ba1c36b 100644
  int KYTY_SYSV_ABI PadInit();
  int KYTY_SYSV_ABI PadOpen(int user_id, int type, int index, const void* param);
 diff --git a/src/libs/libAmpr.cpp b/src/libs/libAmpr.cpp
-index 073361d..5dab675 100644
+index 073361d..ec1062b 100644
 --- a/src/libs/libAmpr.cpp
 +++ b/src/libs/libAmpr.cpp
 @@ -11,6 +11,13 @@
@@ -8668,7 +8957,68 @@ index 073361d..5dab675 100644
  namespace Libs {
  
  namespace AprShared {
-@@ -816,7 +836,11 @@ constexpr int      PROT_AMPR_READ                = 0x40;
+@@ -501,7 +521,7 @@ static int WriteResult(void* result, int32_t execution_result = 0, uint32_t erro
+ 
+ namespace LibAmpr::Ampr {
+ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_result,
+-                                   uint32_t* error_offset);
++                                   uint32_t* error_offset, uint32_t priority = 0);
+ }
+ 
+ namespace LibKernelApr {
+@@ -667,7 +687,7 @@ static int KYTY_SYSV_ABI ResolveFilepathsWithPrefixToIdsAndFileSizesForEach(
+ 	    AprShared::ResolvePathsCommon(path_list, count, ids, sizes, nullptr, prefix_buf, results));
+ }
+ 
+-static int KYTY_SYSV_ABI SubmitCommandBufferAndGetResult(void*     command_buffer, uint64_t,
++static int KYTY_SYSV_ABI SubmitCommandBufferAndGetResult(void*     command_buffer, uint64_t priority,
+                                                          void*     result,
+                                                          uint32_t* out_submission_id) {
+ 	PRINT_NAME();
+@@ -683,7 +703,8 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetResult(void*     command_buffe
+ 	int32_t  execution_result = OK;
+ 	uint32_t error_offset     = 0;
+ 	auto submit_result = LibAmpr::Ampr::ExecuteAprCommandBuffer(command_buffer_addr,
+-	                                                            &execution_result, &error_offset);
++	                                                            &execution_result, &error_offset,
++	                                                            static_cast<uint32_t>(priority));
+ 	if (submit_result != OK) {
+ 		return KernelSyscallResult(submit_result);
+ 	}
+@@ -698,7 +719,7 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetResult(void*     command_buffe
+ 	return KernelSyscallResult(AprShared::WriteResult(result, execution_result, error_offset));
+ }
+ 
+-static int KYTY_SYSV_ABI SubmitCommandBuffer(void* command_buffer, uint64_t) {
++static int KYTY_SYSV_ABI SubmitCommandBuffer(void* command_buffer, uint64_t priority) {
+ 	PRINT_NAME();
+ 
+ 	if (command_buffer == nullptr) {
+@@ -708,10 +729,11 @@ static int KYTY_SYSV_ABI SubmitCommandBuffer(void* command_buffer, uint64_t) {
+ 	int32_t  execution_result = OK;
+ 	uint32_t error_offset     = 0;
+ 	return KernelSyscallResult(LibAmpr::Ampr::ExecuteAprCommandBuffer(
+-	    reinterpret_cast<uint64_t>(command_buffer), &execution_result, &error_offset));
++	    reinterpret_cast<uint64_t>(command_buffer), &execution_result, &error_offset,
++	    static_cast<uint32_t>(priority)));
+ }
+ 
+-static int KYTY_SYSV_ABI SubmitCommandBufferAndGetId(void*     command_buffer, uint64_t,
++static int KYTY_SYSV_ABI SubmitCommandBufferAndGetId(void*     command_buffer, uint64_t priority,
+                                                      uint32_t* out_submission_id) {
+ 	PRINT_NAME();
+ 
+@@ -725,7 +747,8 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetId(void*     command_buffer, u
+ 	int32_t  execution_result = OK;
+ 	uint32_t error_offset     = 0;
+ 	auto submit_result = LibAmpr::Ampr::ExecuteAprCommandBuffer(command_buffer_addr,
+-	                                                            &execution_result, &error_offset);
++	                                                            &execution_result, &error_offset,
++	                                                            static_cast<uint32_t>(priority));
+ 	if (submit_result != OK) {
+ 		return KernelSyscallResult(submit_result);
+ 	}
+@@ -816,7 +839,11 @@ constexpr int      PROT_AMPR_READ                = 0x40;
  constexpr int      PROT_AMPR_WRITE               = 0x80;
  constexpr int      PROT_ACP_READ                 = 0x100;
  constexpr int      PROT_ACP_WRITE                = 0x200;
@@ -8681,7 +9031,7 @@ index 073361d..5dab675 100644
  constexpr uint64_t AMM_VA_SIZE                   = 0x0000001000000000ull;
  constexpr uint64_t APR_MAX_READ_LENGTH           = 0x0000000100000000ull;
  constexpr uint64_t APR_MAX_FILE_OFFSET           = 0x0000010000000000ull;
-@@ -855,6 +879,13 @@ struct CommandBufferState {
+@@ -855,6 +882,13 @@ struct CommandBufferState {
  		uint64_t address       = 0;
  		uint64_t value         = 0;
  	};
@@ -8695,7 +9045,7 @@ index 073361d..5dab675 100644
  	struct AmmMapCommand {
  		uint64_t       record_offset = 0;
  		AmmCommandKind kind          = AmmCommandKind::MapAuto;
-@@ -869,6 +900,7 @@ struct CommandBufferState {
+@@ -869,6 +903,7 @@ struct CommandBufferState {
  	std::vector<KernelEventCommand>  kernel_event_commands;
  	std::vector<WriteAddressCommand> write_address_commands;
  	std::vector<AmmMapCommand>       amm_map_commands;
@@ -8703,7 +9053,7 @@ index 073361d..5dab675 100644
  	bool                             gather_scatter_valid       = false;
  	uint32_t                         gather_scatter_file_id     = 0;
  	uint64_t                         gather_scatter_destination = 0;
-@@ -1151,6 +1183,7 @@ static bool WriteCommandBufferPointers(uint64_t command_buffer, uint64_t buffer,
+@@ -1151,6 +1186,7 @@ static bool WriteCommandBufferPointers(uint64_t command_buffer, uint64_t buffer,
  	state.kernel_event_commands.clear();
  	state.write_address_commands.clear();
  	state.amm_map_commands.clear();
@@ -8711,7 +9061,7 @@ index 073361d..5dab675 100644
  	state.gather_scatter_valid       = false;
  	state.gather_scatter_file_id     = 0;
  	state.gather_scatter_destination = 0;
-@@ -1317,6 +1350,26 @@ static bool AppendWriteAddressRecord(uint64_t command_buffer, uint64_t address,
+@@ -1317,6 +1353,26 @@ static bool AppendWriteAddressRecord(uint64_t command_buffer, uint64_t address,
  	return CommitCommandBufferRecord(command_buffer, &state, record_size);
  }
  
@@ -8738,7 +9088,7 @@ index 073361d..5dab675 100644
  static bool ValidateAmmMapArgs(uint64_t va, uint64_t size) {
  	return va != 0 && size != 0 && (va & (AMM_PAGE_SIZE - 1u)) == 0 &&
  	       (size & (AMM_PAGE_SIZE - 1u)) == 0 && va + size >= va;
-@@ -1358,6 +1411,12 @@ static int NormalizeAmmProtection(int prot) {
+@@ -1358,6 +1414,12 @@ static int NormalizeAmmProtection(int prot) {
  	return normalized;
  }
  
@@ -8751,7 +9101,7 @@ index 073361d..5dab675 100644
  static bool AllocateAmmAutoDirectMemory(uint64_t size, int memory_type, uint64_t* dmem_offset) {
  	if (dmem_offset == nullptr || size == 0) {
  		return false;
-@@ -1397,9 +1456,23 @@ static int ExecuteAmmMapCommand(const CommandBufferState::AmmMapCommand& command
+@@ -1397,9 +1459,27 @@ static int ExecuteAmmMapCommand(const CommandBufferState::AmmMapCommand& command
  	}
  
  	void* addr = reinterpret_cast<void*>(command.va);
@@ -8768,6 +9118,10 @@ index 073361d..5dab675 100644
 +	const int result = LibKernel::Memory::KernelMapDirectMemory2(
 +	    &addr, command.size, command.type, prot, AMM_MAP_FIXED,
  	    static_cast<int64_t>(dmem_offset), AMM_PAGE_SIZE);
++	// BC5 (experiment 0037): named, so BC5_DIRECT_EAGER_NAMES can import the title's AMM pages.
++	if (result == OK) {
++		(void)LibKernel::Memory::KernelSetVirtualRangeName(reinterpret_cast<void*>(command.va), command.size, "AMM");
++	}
 +	if (AmmTrace()) {
 +		std::fprintf(stderr, "amm trace: map %s va 0x%016" PRIx64 " size 0x%" PRIx64 " dmem 0x%" PRIx64 " type %d prot 0x%x -> 0x%08x\n",
 +		             command.kind == AmmCommandKind::MapAuto ? "auto" : "direct", command.va, command.size, dmem_offset,
@@ -8777,7 +9131,7 @@ index 073361d..5dab675 100644
  }
  
  static bool AppendAmmMapRecord(uint64_t                                 command_buffer,
-@@ -1425,67 +1498,70 @@ static bool AppendAmmMapRecord(uint64_t                                 command_
+@@ -1425,67 +1505,79 @@ static bool AppendAmmMapRecord(uint64_t                                 command_
  
  static int ReadHostFileToGuest(const std::string& host_path, uint64_t file_offset,
                                 uint64_t destination, uint64_t size, uint64_t* bytes_read);
@@ -8805,34 +9159,29 @@ index 073361d..5dab675 100644
 -	if (!TryGetCommandBufferState(command_buffer, &state)) {
 -		return LibKernel::KERNEL_ERROR_EFAULT;
 -	}
-+struct OrderedCommand {
-+	uint64_t    record_offset = 0;
-+	CommandKind kind          = CommandKind::ReadFile;
-+	size_t      index         = 0;
-+};
- 
+-
 -	enum class CommandKind {
 -		ReadFile,
 -		KernelEvent,
 -		WriteAddress,
 -		AmmMap,
 -	};
-+struct ParkedAprBuffer {
-+	uint64_t                    command_buffer = 0;
-+	CommandBufferState          state;
-+	std::vector<OrderedCommand> ordered;
-+	size_t                      next = 0;
-+};
- 
+-
 -	struct OrderedCommand {
 -		uint64_t    record_offset = 0;
 -		CommandKind kind          = CommandKind::ReadFile;
 -		size_t      index         = 0;
 -	};
-+static std::recursive_mutex        g_apr_queue_mutex;
-+static std::deque<ParkedAprBuffer> g_apr_parked;
++struct OrderedCommand {
++	uint64_t    record_offset = 0;
++	CommandKind kind          = CommandKind::ReadFile;
++	size_t      index         = 0;
++};
  
--	std::vector<OrderedCommand> ordered;
++struct ParkedAprBuffer {
++	uint64_t                    command_buffer = 0;
++	CommandBufferState          state;
+ 	std::vector<OrderedCommand> ordered;
 -	ordered.reserve(state.read_file_commands.size() + state.kernel_event_commands.size() +
 -	                state.write_address_commands.size() + state.amm_map_commands.size());
 -	for (size_t i = 0; i < state.read_file_commands.size(); i++) {
@@ -8852,6 +9201,21 @@ index 073361d..5dab675 100644
 -			ordered.push_back(
 -			    {state.write_address_commands[i].record_offset, CommandKind::WriteAddress, i});
 -		}
++	size_t                      next = 0;
++};
++
++static std::recursive_mutex        g_apr_queue_mutex;
++// BC5 (experiment 0037): one queue per priority, as the APR engine keeps them (KytyPS5 c045f08,
++// "ampr: schedule address waits without blocking other priorities", GPL-2.0): a submission waiting
++// on an address holds only those behind it at its own priority. With one queue for all, a waiting
++// low-priority stream held the title's high-priority reads, and the GPU waits on their completion
++// writes timed out.
++constexpr size_t                                   APR_PRIORITIES = 8;
++static std::array<std::deque<ParkedAprBuffer>, APR_PRIORITIES> g_apr_parked;
++static size_t AprQueueIndex(uint32_t priority) {
++	return priority < APR_PRIORITIES ? priority : APR_PRIORITIES - 1;
++}
++
 +// Compare codes as AnyPS5 implements them (github.com/boykopovar/AnyPS5 f145139,
 +// core/libs/prx/libkernel/Apr/src/Apr.cpp, _waitSatisfied, GPL-2.0): 0 ==, 1 >, 2 <, 3 !=,
 +// 4 "reached" with wrap-around (now - value < 2^63), 5 signed >, 6 signed <. The titles seen use
@@ -8901,7 +9265,7 @@ index 073361d..5dab675 100644
  			case CommandKind::ReadFile: {
  				const auto& command = state.read_file_commands[entry.index];
  				std::string host_path;
-@@ -1494,25 +1570,42 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+@@ -1494,25 +1586,42 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
  					     command.file_id);
  					*execution_result = LibKernel::KERNEL_ERROR_ENOENT;
  					*error_offset     = static_cast<uint32_t>(command.record_offset);
@@ -8947,7 +9311,7 @@ index 073361d..5dab675 100644
  				    eq, command.id, reinterpret_cast<void*>(command.data));
  				if (result != OK) {
  					LOGF("\tAPR submit event failed: eq=0x%016" PRIx64 ", id=%" PRId32
-@@ -1520,7 +1613,8 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+@@ -1520,7 +1629,8 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
  					     command.eq, command.id, static_cast<uint32_t>(result));
  					*execution_result = result;
  					*error_offset     = static_cast<uint32_t>(command.record_offset);
@@ -8957,7 +9321,7 @@ index 073361d..5dab675 100644
  				}
  			} break;
  			case CommandKind::WriteAddress: {
-@@ -1531,7 +1625,8 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+@@ -1531,7 +1641,8 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
  					     command.address, command.value);
  					*execution_result = LibKernel::KERNEL_ERROR_EFAULT;
  					*error_offset     = static_cast<uint32_t>(command.record_offset);
@@ -8967,7 +9331,7 @@ index 073361d..5dab675 100644
  				}
  			} break;
  			case CommandKind::AmmMap: {
-@@ -1539,6 +1634,10 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+@@ -1539,6 +1650,10 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
  				int         result  = OK;
  				if (command.kind == AmmCommandKind::Unmap) {
  					result = LibKernel::Memory::KernelMunmap(command.va, command.size);
@@ -8978,7 +9342,7 @@ index 073361d..5dab675 100644
  				} else {
  					result = ExecuteAmmMapCommand(command);
  				}
-@@ -1552,12 +1651,127 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+@@ -1552,12 +1667,130 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
  					     static_cast<uint32_t>(result));
  					*execution_result = result;
  					*error_offset     = static_cast<uint32_t>(command.record_offset);
@@ -8992,22 +9356,24 @@ index 073361d..5dab675 100644
 +	*next = ordered.size();
 +	return true;
 +}
-+
+ 
 +// The APR engine runs submissions in order; one stopped at a wait holds those behind it. AMM
 +// submissions (maps only) run at once: they are what the waits wait for.
 +static void PumpParkedAprBuffersLocked() {
-+	while (!g_apr_parked.empty()) {
-+		auto&    front  = g_apr_parked.front();
-+		int32_t  result = OK;
-+		uint32_t offset = 0;
-+		if (!RunOrderedAprCommands(front.command_buffer, front.state, front.ordered, &front.next, &result,
-+		                           &offset)) {
-+			return;
++	for (auto& queue: g_apr_parked) {
++		while (!queue.empty()) {
++			auto&    front  = queue.front();
++			int32_t  result = OK;
++			uint32_t offset = 0;
++			if (!RunOrderedAprCommands(front.command_buffer, front.state, front.ordered, &front.next, &result,
++			                           &offset)) {
++				break;
++			}
++			if (AmmTrace()) {
++				std::fprintf(stderr, "amm trace: resumed submission 0x%016" PRIx64 " finished\n", front.command_buffer);
++			}
++			queue.pop_front();
 +		}
-+		if (AmmTrace()) {
-+			std::fprintf(stderr, "amm trace: resumed submission 0x%016" PRIx64 " finished\n", front.command_buffer);
-+		}
-+		g_apr_parked.pop_front();
 +	}
 +}
 +
@@ -9026,7 +9392,7 @@ index 073361d..5dab675 100644
 +}
 +
 +static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_result,
-+                                   uint32_t* error_offset) {
++                                   uint32_t* error_offset, uint32_t priority) {
 +	if (execution_result == nullptr || error_offset == nullptr) {
 +		return LibKernel::KERNEL_ERROR_EINVAL;
 +	}
@@ -9077,15 +9443,16 @@ index 073361d..5dab675 100644
 +			ordered.push_back({state.wait_address_commands[i].record_offset, CommandKind::WaitAddress, i});
 +		}
 +	}
- 
++
 +	std::sort(ordered.begin(), ordered.end(), [](const OrderedCommand& a, const OrderedCommand& b) {
 +		return a.record_offset < b.record_offset;
 +	});
 +
 +	const bool amm_only = !state.amm_map_commands.empty() && state.read_file_commands.empty();
 +	std::scoped_lock queue_lock(g_apr_queue_mutex);
-+	if (!amm_only && !g_apr_parked.empty()) {
-+		g_apr_parked.push_back({command_buffer, state, ordered, 0});
++	auto& queue = g_apr_parked[AprQueueIndex(priority)];
++	if (!amm_only && !queue.empty()) {
++		queue.push_back({command_buffer, state, ordered, 0});
 +		if (AmmTrace()) {
 +			std::fprintf(stderr, "amm trace: submission 0x%016" PRIx64 " queued behind a waiting one\n", command_buffer);
 +		}
@@ -9094,7 +9461,7 @@ index 073361d..5dab675 100644
 +	}
 +	size_t next = 0;
 +	if (!RunOrderedAprCommands(command_buffer, state, ordered, &next, execution_result, error_offset)) {
-+		g_apr_parked.push_back({command_buffer, state, ordered, next});
++		queue.push_back({command_buffer, state, ordered, next});
 +		StartAprWaitThread();
 +		if (AmmTrace()) {
 +			std::fprintf(stderr, "amm trace: submission 0x%016" PRIx64 " waits at command %zu of %zu\n", command_buffer, next,
@@ -9107,7 +9474,7 @@ index 073361d..5dab675 100644
  	return OK;
  }
  
-@@ -1678,13 +1892,50 @@ static int KYTY_SYSV_ABI CommandBufferDestructor(void* command_buffer) {
+@@ -1678,13 +1911,50 @@ static int KYTY_SYSV_ABI CommandBufferDestructor(void* command_buffer) {
  	return OK;
  }
  
@@ -9159,7 +9526,7 @@ index 073361d..5dab675 100644
  	const auto command_buffer_addr = reinterpret_cast<uint64_t>(command_buffer);
  	if (!ValidateCommandBufferHeader(command_buffer_addr)) {
  		return LibKernel::KERNEL_ERROR_EFAULT;
-@@ -2111,16 +2362,31 @@ static int KYTY_SYSV_ABI CommandBufferPopMarker(void* command_buffer) {
+@@ -2111,16 +2381,31 @@ static int KYTY_SYSV_ABI CommandBufferPopMarker(void* command_buffer) {
  	return AppendNoOpCommand(command_buffer, sizeof(uint32_t));
  }
  
@@ -9196,7 +9563,7 @@ index 073361d..5dab675 100644
  
  	return AppendNoOpCommand(command_buffer, 0x20);
  }
-@@ -2139,6 +2405,10 @@ static int AppendWriteAddressCommand(void* command_buffer, volatile uint64_t* ad
+@@ -2139,6 +2424,10 @@ static int AppendWriteAddressCommand(void* command_buffer, volatile uint64_t* ad
  static int KYTY_SYSV_ABI CommandBufferWriteAddress(void* command_buffer, volatile uint64_t* address,
                                                     uint64_t value, uint32_t) {
  	PRINT_NAME();
@@ -9207,7 +9574,7 @@ index 073361d..5dab675 100644
  
  	return AppendWriteAddressCommand(command_buffer, address, value);
  }
-@@ -2314,15 +2584,27 @@ static int KYTY_SYSV_ABI AprCommandBufferResetGatherScatterState(void* command_b
+@@ -2314,15 +2603,27 @@ static int KYTY_SYSV_ABI AprCommandBufferResetGatherScatterState(void* command_b
  	return OK;
  }
  
@@ -9237,7 +9604,7 @@ index 073361d..5dab675 100644
  		return LibKernel::KERNEL_ERROR_EFAULT;
  	}
  
-@@ -2333,7 +2615,7 @@ static int KYTY_SYSV_ABI AprCommandBufferMapBegin(void* command_buffer, uint64_t
+@@ -2333,7 +2634,7 @@ static int KYTY_SYSV_ABI AprCommandBufferMapBegin(void* command_buffer, uint64_t
  
  static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, uint64_t va,
                                                          uint64_t dmem_offset, uint64_t size,
@@ -9246,7 +9613,7 @@ index 073361d..5dab675 100644
  	PRINT_NAME();
  
  	if (command_buffer == nullptr || !ValidateAmmMapArgs(va, size) ||
-@@ -2341,7 +2623,15 @@ static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, ui
+@@ -2341,7 +2642,15 @@ static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, ui
  		return LibKernel::KERNEL_ERROR_EINVAL;
  	}
  
@@ -9263,7 +9630,7 @@ index 073361d..5dab675 100644
  		return LibKernel::KERNEL_ERROR_EFAULT;
  	}
  
-@@ -2504,6 +2794,10 @@ static int KYTY_SYSV_ABI AmmGiveDirectMemory(int64_t search_start, int64_t searc
+@@ -2504,6 +2813,10 @@ static int KYTY_SYSV_ABI AmmGiveDirectMemory(int64_t search_start, int64_t searc
  	}
  
  	*dmem_offset = allocated;
@@ -9274,7 +9641,7 @@ index 073361d..5dab675 100644
  	if (usage == AMM_USAGE_AUTO) {
  		std::scoped_lock lock(g_amm_auto_pool_mutex);
  		g_amm_auto_pool.push_back(AmmAutoPoolRange {static_cast<uint64_t>(allocated), size, 0});
-@@ -2512,30 +2806,48 @@ static int KYTY_SYSV_ABI AmmGiveDirectMemory(int64_t search_start, int64_t searc
+@@ -2512,30 +2825,48 @@ static int KYTY_SYSV_ABI AmmGiveDirectMemory(int64_t search_start, int64_t searc
  	return OK;
  }
  
@@ -9332,6 +9699,26 @@ index 073361d..5dab675 100644
 -		                      AMM_VA_START + AMM_VA_SIZE);
 +		AprShared::WriteGuest(reinterpret_cast<uint64_t>(multimap_va_end), start + AMM_VA_SIZE);
  	}
+ }
+ 
+diff --git a/src/libs/libAppContent.cpp b/src/libs/libAppContent.cpp
+index 6c36a4e..4c8ad53 100644
+--- a/src/libs/libAppContent.cpp
++++ b/src/libs/libAppContent.cpp
+@@ -6,6 +6,7 @@
+ #include "common/stringUtils.h"
+ #include "libs/errno.h"
+ #include "libs/libs.h"
++#include "libs/systemService.h"
+ #include "loader/symbolDatabase.h"
+ #include "loader/systemContent.h"
+ 
+@@ -96,6 +97,7 @@ int KYTY_SYSV_ABI AppContentInitialize(const AppContentInitParam* init_param,
+ 		LOGF("\t TITLE_ID missing\n");
+ 	}
+ 
++	SystemService::NotifyEntitlementUpdate(); // BC5 (experiment 0037), KytyPS5 62643c3
+ 	return OK;
  }
  
 diff --git a/src/libs/libJson2.cpp b/src/libs/libJson2.cpp
@@ -10174,6 +10561,67 @@ index 08aa121..a521d61 100644
  	}
  
  	return OK;
+diff --git a/src/libs/libSystemService.cpp b/src/libs/libSystemService.cpp
+index cd205f6..044905b 100644
+--- a/src/libs/libSystemService.cpp
++++ b/src/libs/libSystemService.cpp
+@@ -6,9 +6,12 @@
+ #include "common/stringUtils.h"
+ #include "libs/errno.h"
+ #include "libs/libs.h"
++#include "libs/systemService.h"
+ #include "loader/symbolDatabase.h"
+ 
+ #include <cstring>
++#include <deque>
++#include <mutex>
+ 
+ namespace Libs {
+ 
+@@ -63,6 +66,16 @@ struct SystemServiceStatus {
+ 	uint8_t reserved[127]              = {};
+ };
+ 
++// BC5 (experiment 0037): events for SystemServiceReceiveEvent. A title that asks for its
++// entitlements waits for the entitlement-update event the system sends after AppContent starts.
++static std::mutex          g_event_mutex;
++static std::deque<int32_t> g_events;
++
++void NotifyEntitlementUpdate() {
++	std::scoped_lock lock(g_event_mutex);
++	g_events.push_back(0x10000003); // SCE_SYSTEM_SERVICE_EVENT_ENTITLEMENT_UPDATE (KytyPS5 62643c3)
++}
++
+ struct SystemServiceEvent {
+ 	int32_t event_type;
+ 	uint8_t data[8192];
+@@ -150,7 +163,14 @@ static int KYTY_SYSV_ABI SystemServiceReceiveEvent(SystemServiceEvent* event) {
+ 	event->event_type = -1;
+ 	std::memset(event->data, 0, sizeof(event->data));
+ 
+-	return SYSTEM_SERVICE_ERROR_NO_EVENT;
++	std::scoped_lock lock(g_event_mutex);
++	if (g_events.empty()) {
++		return SYSTEM_SERVICE_ERROR_NO_EVENT;
++	}
++	event->event_type = g_events.front();
++	g_events.pop_front();
++	LOGF("\t SystemService event = 0x%08x\n", static_cast<uint32_t>(event->event_type));
++	return OK;
+ }
+ 
+ static int KYTY_SYSV_ABI SystemServiceGetStatus(SystemServiceStatus* status) {
+@@ -161,6 +181,10 @@ static int KYTY_SYSV_ABI SystemServiceGetStatus(SystemServiceStatus* status) {
+ 	}
+ 
+ 	*status = SystemServiceStatus();
++	{
++		std::scoped_lock lock(g_event_mutex);
++		status->event_num = static_cast<int32_t>(g_events.size());
++	}
+ 
+ 	return OK;
+ }
 diff --git a/src/libs/libUserService.cpp b/src/libs/libUserService.cpp
 index 4fd67e0..871bfd1 100644
 --- a/src/libs/libUserService.cpp
@@ -10230,6 +10678,24 @@ index 36e4dc8..eaa58d7 100644
  }
  
  namespace LibContentExport {
+diff --git a/src/libs/systemService.h b/src/libs/systemService.h
+new file mode 100644
+index 0000000..5d9456f
+--- /dev/null
++++ b/src/libs/systemService.h
+@@ -0,0 +1,12 @@
++#ifndef EMULATOR_LIBS_SYSTEMSERVICE_H_
++#define EMULATOR_LIBS_SYSTEMSERVICE_H_
++
++// BC5 (experiment 0037): system service events queued by other libraries, after KytyPS5 62643c3
++// ("system service: deliver initial AppContent entitlement updates through shared queue", GPL-2.0).
++namespace Libs::SystemService {
++
++void NotifyEntitlementUpdate();
++
++} // namespace Libs::SystemService
++
++#endif
 diff --git a/src/loader/runtimeLinker.cpp b/src/loader/runtimeLinker.cpp
 index 343045e..b86095c 100644
 --- a/src/loader/runtimeLinker.cpp
