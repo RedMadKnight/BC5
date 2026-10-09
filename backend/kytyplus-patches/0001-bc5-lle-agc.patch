@@ -2431,7 +2431,7 @@ index 845bfe3..43b93bd 100644
  		{
  			const auto present_end = std::chrono::steady_clock::now();
 diff --git a/src/graphics/presentation/window/window.cpp b/src/graphics/presentation/window/window.cpp
-index c729a98..ea2b431 100644
+index c729a98..934fffe 100644
 --- a/src/graphics/presentation/window/window.cpp
 +++ b/src/graphics/presentation/window/window.cpp
 @@ -32,6 +32,7 @@
@@ -2475,7 +2475,14 @@ index c729a98..ea2b431 100644
  	}
  }
  
-@@ -334,6 +345,18 @@ static void GameEventController([[maybe_unused]] const EventController& f) {
+@@ -328,12 +339,24 @@ static void GameEventController([[maybe_unused]] const EventController& f) {
+ 			if (joy != nullptr) {
+ 				LOGF("Controller opened as raw joystick: %s\n",
+ 				     SDL_JoystickName(joy));
+-				Controller::ControllerConnect(f.id);
++				Controller::ControllerConnect(SDL_JoystickInstanceID(joy));
+ 			}
+ 			return;
  		}
  		int id = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(pad));
  		Controller::ControllerConnect(id);
@@ -2586,6 +2593,39 @@ index c729a98..ea2b431 100644
  			EventController c {};
  			c.id    = event->jbutton.which;
  			c.button = event->jbutton.button;
+@@ -743,17 +808,30 @@ void WindowContext::ProcessEvent(double time_s) {
+ 		}
+ 
+ 		case SDL_JOYDEVICEADDED: {
+-			// Open as raw joystick when we don't get a controller event.
++			// BC5: a device SDL knows as a game controller also sends SDL_CONTROLLERDEVICEADDED,
++			// which opens and connects it; connecting it here too registered one pad twice, under
++			// its device index and under its instance id. The two are equal for the first pad
++			// plugged in, but after an unplug the instance id grows while the index stays 0: the
++			// index took player 1's slot as a ghost and the real pad landed on player 2, whom a
++			// one-user game never reads (the maintainer, 2026-10-09). Other joysticks are
++			// connected by instance id, the id their button and axis events carry.
++			if (SDL_IsGameController(event->jdevice.which) == SDL_TRUE) {
++				break;
++			}
+ 			auto* joy = SDL_JoystickOpen(event->jdevice.which);
+ 			if (joy != nullptr) {
+ 				LOGF("Joystick added: %s\n", SDL_JoystickName(joy));
+-				Controller::ControllerConnect(event->jdevice.which);
++				Controller::ControllerConnect(SDL_JoystickInstanceID(joy));
+ 			}
+ 			break;
+ 		}
+ 
+ 		case SDL_JOYDEVICEREMOVED: {
+ 			Controller::ControllerDisconnect(event->jdevice.which);
++			// A game controller is closed by SDL_CONTROLLERDEVICEREMOVED; only raw joysticks here.
++			if (SDL_GameControllerFromInstanceID(event->jdevice.which) != nullptr) {
++				break;
++			}
+ 			auto* joy = SDL_JoystickFromInstanceID(event->jdevice.which);
+ 			if (joy != nullptr) {
+ 				SDL_JoystickClose(joy);
 diff --git a/src/kernel/eventQueue.cpp b/src/kernel/eventQueue.cpp
 index 14561b0..d1a0fe6 100644
 --- a/src/kernel/eventQueue.cpp
@@ -3505,31 +3545,32 @@ index ed7c35b..9f6635d 100644
  	}
  
 diff --git a/src/libs/ajm.cpp b/src/libs/ajm.cpp
-index 89473ad..95855ae 100644
+index 89473ad..b20431b 100644
 --- a/src/libs/ajm.cpp
 +++ b/src/libs/ajm.cpp
 @@ -332,6 +332,9 @@ int KYTY_SYSV_ABI AjmDecAt9ParseConfigData(const void*              config_data,
  
  	uint8_t config[ATRAC9_CONFIG_DATA_SIZE] {};
  	std::memcpy(config, config_data, sizeof(config));
-+	if (((config[1] >> 1u) & 7u) >= 6u) { // BC5 (experiment 0037): vibration layouts as mono/dual mono (KytyPS5 b10bd53)
++	if (std::getenv("KYTY_BC5_AT9_VIB_RAW") == nullptr && ((config[1] >> 1u) & 7u) >= 6u) { // BC5 (experiment 0037): vibration layouts as mono/dual mono (KytyPS5 b10bd53)
 +		config[1] = static_cast<uint8_t>(config[1] - (6u << 1u));
 +	}
  	Atrac9CodecInfo codec_info {};
  	const int       init_result = Atrac9InitDecoder(handle, config);
  	const int       info_result =
 diff --git a/src/libs/ajm/atrac9_decoder.h b/src/libs/ajm/atrac9_decoder.h
-index cb7587c..fa37a0f 100644
+index cb7587c..27c8098 100644
 --- a/src/libs/ajm/atrac9_decoder.h
 +++ b/src/libs/ajm/atrac9_decoder.h
-@@ -1,5 +1,6 @@
+@@ -1,5 +1,7 @@
  #pragma once
  
 +#include <cstdio>
++#include <cstdlib>
  #include "common/assert.h"
  #include "common/logging/log.h"
  
-@@ -277,8 +278,20 @@ private:
+@@ -277,8 +279,29 @@ private:
  		std::memcpy(m_config_data, config_data, ATRAC9_CONFIG_DATA_SIZE);
  		m_has_config = true;
  
@@ -3541,8 +3582,17 @@ index cb7587c..fa37a0f 100644
 +		// vibration configuration heap corruption", GPL-2.0). The guest's own bytes stay unchanged.
 +		uint8_t init_config[ATRAC9_CONFIG_DATA_SIZE];
 +		std::memcpy(init_config, m_config_data, ATRAC9_CONFIG_DATA_SIZE);
++		// KYTY_BC5_AT9_VIB_RAW=1 hands the layout to LibAtrac9 as it is, as before experiment 0036
++		// (diagnostic: the maintainer felt no haptics in ASTRO BOT after the change).
++		static const bool vib_raw = std::getenv("KYTY_BC5_AT9_VIB_RAW") != nullptr;
 +		if (((init_config[1] >> 1u) & 7u) >= 6u) {
-+			init_config[1] = static_cast<uint8_t>(init_config[1] - (6u << 1u));
++			static bool told = false;
++			if (!told) {
++				told = true;
++				std::fprintf(stderr, "bc5 ajm: ATRAC9 vibration layout %u (config %02x %02x %02x %02x) %s\n", (init_config[1] >> 1u) & 7u,
++				             m_config_data[0], m_config_data[1], m_config_data[2], m_config_data[3], vib_raw ? "passed as it is" : "decoded as mono/dual mono");
++			}
++			if (!vib_raw) init_config[1] = static_cast<uint8_t>(init_config[1] - (6u << 1u));
 +		}
 +		const int init_ret = Atrac9InitDecoder(m_handle, init_config);
  		if (init_ret != 0) {
@@ -3552,7 +3602,7 @@ index cb7587c..fa37a0f 100644
  			result->result          = AJM_RESULT_CODEC_ERROR | AJM_RESULT_INVALID_DATA;
  			result->internal_result = init_ret;
 diff --git a/src/libs/audio.cpp b/src/libs/audio.cpp
-index fe4b332..c27c243 100644
+index fe4b332..888a233 100644
 --- a/src/libs/audio.cpp
 +++ b/src/libs/audio.cpp
 @@ -20,6 +20,10 @@
@@ -3566,7 +3616,7 @@ index fe4b332..c27c243 100644
  
  namespace Libs::Audio {
  
-@@ -107,8 +111,21 @@ private:
+@@ -107,8 +111,23 @@ private:
  
  		SDL_AudioDeviceID audio_device = 0;
  		SDL_AudioSpec     audio_spec   = {};
@@ -3574,6 +3624,8 @@ index fe4b332..c27c243 100644
 +		// 2 = the controller's haptic actuators (its channels 3-4). The DualSense is a 4-channel
 +		// USB audio device, and the game's vibration is an audio stream to those actuators.
 +		int pad_route = 0;
++		// BC5: when the controller's device last had to be reopened (ms), see QueueSdlAudio.
++		uint64_t pad_retry_ms = 0;
  	};
  
 +	// BC5: the channel count of the stream opened on the controller's audio device. The device
@@ -3588,7 +3640,7 @@ index fe4b332..c27c243 100644
  	struct PortIn {
  		bool     used            = false;
  		uint32_t type            = 0;
-@@ -236,20 +253,51 @@ bool Audio::OpenSdlDevice(PortOut* port) {
+@@ -236,20 +255,51 @@ bool Audio::OpenSdlDevice(PortOut* port) {
  	desired.samples  = static_cast<Uint16>(port->samples_num);
  	desired.callback = nullptr;
  
@@ -3644,7 +3696,7 @@ index fe4b332..c27c243 100644
  	return true;
  }
  
-@@ -335,7 +383,90 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -335,7 +385,90 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  
  	std::vector<uint8_t> prepared_buffer;
  	const void*          prepared_data = PrepareOutputBuffer(*port, data, &prepared_buffer);
@@ -3736,7 +3788,7 @@ index fe4b332..c27c243 100644
  
  	std::vector<uint8_t> convert_buffer;
  	const void*          queue_data = prepared_data;
-@@ -343,7 +474,7 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -343,7 +476,7 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  
  	SDL_AudioCVT cvt {};
  	const int    cvt_result =
@@ -3745,7 +3797,7 @@ index fe4b332..c27c243 100644
  	                      static_cast<int>(port->freq), port->audio_spec.format,
  	                      port->audio_spec.channels, port->audio_spec.freq);
  
-@@ -368,6 +499,19 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -368,6 +501,47 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  		queue_size = static_cast<uint32_t>(cvt.len_cvt);
  	}
  
@@ -3754,7 +3806,35 @@ index fe4b332..c27c243 100644
 +	// removed or paused device drops the frames, a full queue is cleared, not waited for.
 +	if (port->pad_route != 0) {
 +		if (SDL_GetAudioDeviceStatus(port->audio_device) != SDL_AUDIO_PLAYING) {
-+			return false;
++			// The controller was unplugged: SDL stops the device and never restarts it, so the
++			// haptics and the pad speaker stayed silent for the rest of the run after one
++			// unplug (the maintainer, 2026-10-09). Once a second, look for the controller's
++			// device again and reopen it with the spec the port was opened with.
++			const uint64_t now_ms = LibKernel::KernelGetProcessTime() / 1000;
++			if (SDL_GetAudioDeviceStatus(port->audio_device) != SDL_AUDIO_STOPPED || now_ms - port->pad_retry_ms < 1000) {
++				return false;
++			}
++			port->pad_retry_ms = now_ms;
++			const char* want   = std::getenv("KYTY_BC5_PAD_AUDIO_DEVICE") != nullptr ? std::getenv("KYTY_BC5_PAD_AUDIO_DEVICE") : "DualSense";
++			const char* name   = nullptr;
++			const int   n      = SDL_GetNumAudioDevices(0);
++			for (int i = 0; i < n && name == nullptr; i++) {
++				const char* d = SDL_GetAudioDeviceName(i, 0);
++				if (d != nullptr && std::strstr(d, want) != nullptr) name = d;
++			}
++			if (name == nullptr) {
++				return false;
++			}
++			SDL_AudioSpec           spec = port->audio_spec;
++			const SDL_AudioDeviceID dev  = SDL_OpenAudioDevice(name, 0, &spec, nullptr, 0);
++			if (dev == 0) {
++				return false;
++			}
++			SDL_CloseAudioDevice(port->audio_device);
++			port->audio_device = dev;
++			SDL_PauseAudioDevice(dev, 0);
++			std::fprintf(stderr, "bc5 audio: controller audio device reopened for port type %d (%s)\n", port->type, name);
++			LOGF("AudioOut: controller audio device reopened for port type %d on %s\n", port->type, name);
 +		}
 +		if (SDL_GetQueuedAudioSize(port->audio_device) > queue_size * 8) {
 +			SDL_ClearQueuedAudio(port->audio_device);
@@ -3765,7 +3845,7 @@ index fe4b332..c27c243 100644
  	if (blocking) {
  		// More aggressive buffer management to prevent audio issues
  		// during heavy GPU load (common in gameplay vs cutscene)
-@@ -428,7 +572,7 @@ Audio::Id Audio::AudioOutOpen(int type, uint32_t samples_num, uint32_t freq, For
+@@ -428,7 +602,7 @@ Audio::Id Audio::AudioOutOpen(int type, uint32_t samples_num, uint32_t freq, For
  				port.volume[i] = 32768;
  			}
  
@@ -3776,10 +3856,10 @@ index fe4b332..c27c243 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..6c43758
+index 0000000..9e19484
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,4857 @@
+@@ -0,0 +1,4913 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -7004,6 +7084,62 @@ index 0000000..6c43758
 +			bc5::policy::filter(bc5::policy::Policy::builtin(), std::span<const uint32_t>(ib, num_dwords), scratch, probe, st);
 +			force_sync = st.unmapped_drops != 0;
 +			urgent_sync = force_sync;
++		} else {
++			// Experiment 0040: a heavy IB forces the direct-memory sync but the private-memory sync
++			// only every 100 ms to 1 s, so an operand in memory the guest has just mapped was
++			// unmapped, the packet dropped, and the GPU ran on stale state (run 84: one packet of a
++			// 22,126-dword DCB, then a shader fetched from 0x800000000000). A lean scan of the
++			// packets' operands; one in a page not known to stay unmapped makes the sync urgent.
++			// Pages still unmapped after an urgent sync are remembered, so the routine ones (an
++			// 84-dword DCB drops one every frame) cost the walk once. Off by default (6 ms a frame in ASTRO BOT, run 152): BC5_DIRECT_HEAVY_PROBE=1.
++			static const bool no_heavy_probe = std::getenv("BC5_DIRECT_HEAVY_PROBE") == nullptr;
++			static std::set<uint64_t> known_unmapped;
++			if (!no_heavy_probe) {
++				const auto have_p = g_dev->sorted_mappings();
++				struct Missing { uint64_t page; uint32_t op, q, len; };
++				std::vector<Missing> missing;
++				for (uint32_t q = 0; q < num_dwords;) {
++					const uint32_t h    = ib[q];
++					const uint32_t type = h >> 30u;
++					uint32_t       len  = 1;
++					if (type == 3 || type == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
++					if (q + len > num_dwords) break;
++					if (type == 3) {
++						for (const auto& [a, bytes]: bc5::policy::memory_operands(ib + q, len)) {
++							if (!covered_sorted(*have_p, a, bytes == 0 ? 4 : bytes) && known_unmapped.count(a & ~0xfffull) == 0) {
++								missing.push_back({a & ~0xfffull, (h >> 8u) & 0xffu, q, len});
++							}
++						}
++					}
++					q += len;
++				}
++				if (!missing.empty()) {
++					urgent_sync = true;
++					sync_mappings(true, true);
++					direct_sync(true);
++					const auto after = g_dev->sorted_mappings();
++					for (const auto& m: missing) {
++						const bool still = !covered_sorted(*after, m.page, 4);
++						if (still) known_unmapped.insert(m.page);
++						char hex[120] = {};
++						int  o        = 0;
++						for (uint32_t k = 0; k < m.len && k < 8 && o < 100; k++) o += std::snprintf(hex + o, sizeof(hex) - static_cast<size_t>(o), "%08x ", ib[m.q + k]);
++						journal("heavy probe: %s %u dwords, op %02x at %u operand page 0x%" PRIx64 " %s: %s\n", kind, num_dwords, m.op, m.q, m.page,
++						        still ? "still unmapped (remembered)" : "mapped by the urgent sync", hex);
++					}
++					// the SET_BASE packets of the same IB (index-mode loads are relative to a base)
++					for (uint32_t q = 0; q < num_dwords;) {
++						const uint32_t h = ib[q];
++						uint32_t       len = 1;
++						if ((h >> 30u) == 3 || (h >> 30u) == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
++						if (q + len > num_dwords) break;
++						if ((h >> 30u) == 3 && ((h >> 8u) & 0xffu) == 0x11 && len >= 4) {
++							journal("heavy probe:   SET_BASE at %u: %08x %08x %08x %08x\n", q, h, ib[q + 1], ib[q + 2], ib[q + 3]);
++						}
++						q += len;
++					}
++				}
++			}
 +		}
 +	}
 +	const uint64_t ta = SoftCp::now_ns();

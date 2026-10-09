@@ -3,7 +3,7 @@
 **BC-250 + PS5. A native PS5 GPU path for the AMD BC-250 (Cyan Skillfish, gfx1013).**
 User-space backend that feeds PS5 AGC command streams and native RDNA ISA shaders to `amdgpu` on Linux, without GNM→Vulkan translation or shader recompilation.
 
-> Status: research / alpha. **ASTRO BOT — the maintainer's own copy — is fully playable on the BC-250** in the maintainer's judgement (2026-10-08): every level they have played, from the intro through the first and second levels and beyond, with the game's own command buffers and shader binaries submitted through the direct GPU path, filtered but not translated (HANDOFF F43–F85). The first level runs at 47–55 frames per second and the second at 40–51 (the title is built for 60); a level loads in about 18 s, much of it under the opening cutscene; the DualSense's buttons, sticks, motion, adaptive triggers and haptics reach the game; the save survives a restart; any control can be rebound from a menu in the game window. The longest unattended run is 30 minutes and 1.3 million submissions without a failure. **A second title, the maintainer's own copy installed from a PS5 package (`.pkg`), loads and renders 3D at 16–24 fps** through the same path, read straight from the package by `bc5-mount`; since its compute queues' indirect dispatches run (F91) it gets through 300–600 s runs in two of three (F86–F91). This repository is a plan, a set of experiments and their results. No game files, firmware or SDK material are or will ever be hosted here.
+> Status: research / alpha. **ASTRO BOT, the maintainer's own copy, is fully playable on the BC-250** in the maintainer's judgement (2026-10-08), at 40–55 fps, with the game's own command buffers and shader binaries submitted to the GPU filtered but not translated. **A second title, installed from a PS5 package, loads and renders 3D at 16–24 fps** and runs for several minutes; one run in three still stops on a GPU fault. This repository is a plan, a set of experiments and their results. No game files, firmware or SDK material are or will ever be hosted here.
 
 ![The emulator window on the BC-250: ASTRO BOT's opening card, rendered through the direct path](docs/images/g3-first-screen.png)
 
@@ -15,33 +15,58 @@ User-space backend that feeds PS5 AGC command streams and native RDNA ISA shader
 
 ---
 
+## Games and formats
+
+Every number has its experiment under `experiments/` and its finding in [`docs/HANDOFF.md`](docs/HANDOFF.md). All of it on one BC-250, with the track-B host (KytyPlus running the game's own `libSceAgc`) and this repository's backend.
+
+| Title | From | State | Frame rate | Record |
+| --- | --- | --- | --- | --- |
+| ASTRO BOT (the maintainer's own dump) | `.ffpfsc` container through `bc5-mount` | **fully playable**: intro, menus, every level the maintainer has played; controller with haptics and adaptive triggers; saves | 47–55 fps in the first level, 40–51 in the second (built for 60) | F43–F85 |
+| A second title (the maintainer's own copy; not named here) | PS5 debug package (`.pkg`, 101.8 GB) through `bc5-mount` | **loads and renders 3D**: about five minutes of loading, then its first 3D scene; 300–600 s runs end clean in two of three, the third stops on a GPU fault; menu input not yet effective | 16–24 fps | F86–F92 |
+
+Which game formats are read:
+
+| Format | Read by | State |
+| --- | --- | --- |
+| Unpacked `app0` directory | the host directly | works |
+| `.ffpfsc` container (PFS v2 → PFSC → exFAT), as dumped on the console | `bc5-mount` (FUSE, read-only) | works; ASTRO BOT plays from it ([`docs/formats/ffpfsc.md`](docs/formats/ffpfsc.md)) |
+| PS5 package (`.pkg`, `FIH` magic), plaintext debug packages | `bc5-mount`, the same commands | works; every file of a 101.8 GB package (196.6 GB logical) reads without an error, the second title runs from it ([`docs/formats/ps5pkg.md`](docs/formats/ps5pkg.md), ADR 0007) |
+| Encrypted (retail) PS5 packages | — | not read, and will not be: decrypting them needs console keys, which this project does not touch |
+
+Whatever the format, the host loads two Sony modules from your own dump, `libSceAgc.sprx` and `libSceAgcDriver.sprx` (a container dump has them in `fakelib/`; a package has none, so they come from another of your dumps). It stands in for every other system library, so no system software is needed; a title that links against a library the host has no stand-in for stops there.
+
 ## Where it stands
 
-All on the BC-250 dev box, with the track-B host (KytyPlus running the game's own `libSceAgc`) and this repository's backend; every number has its experiment under `experiments/` and its finding in [`docs/HANDOFF.md`](docs/HANDOFF.md).
+### ASTRO BOT
 
 | What | Result | Record |
 | --- | --- | --- |
 | First image through the direct path (gate G3) | 2026-10-01, the game's opening card | experiment 0016, F37 |
-| Whole intro video | 935 frames without a failed submission | experiment 0018, F43 |
-| Title screen, controller input | real-time scene; a button press starts the game | experiment 0020, F45–F46 |
-| First level and opening cutscene | load and play; the game keeps 7.9 GiB visible to the GPU | experiments 0021–0022, F47–F48 |
-| First level, gameplay | the character walks, the pause screen opens; DualSense buttons, sticks and motion work (the maintainer at the controller); 47–55 fps with jobs in flight, through the level to the galaxy map and the flight to the next level | experiment 0022 runs 104 and 106, experiment 0024 run 115, F52–F53, F59 |
-| Second level and beyond | loads and plays under the player's control at 40–51 fps, water and geysers included; the fluid simulation runs a frame behind (a stopgap for a handshake the single ring cannot serve, F64); the maintainer has played further levels, the frog-glove level included, and calls the game fully playable | experiments 0024–0026, F59, F64, F78, F85 |
-| Controller and save | buttons, sticks, triggers, shaking and tilting (the orientation is derived from the gyroscope and accelerometer), hot-plug; any control can be bound to a key, a mouse button or another pad input, and a pad input disabled, from a configuration file (`input.example.cfg`) or from the F2 settings menu in the game window (confirmed by the maintainer); the game's save is kept in a file and picked up at the next start — both confirmed by the maintainer. Haptics: the game's vibration audio streams go to the DualSense's own four-channel audio device (F69); **haptics work** — the game's vibration streams reach the DualSense's actuators through its own USB audio device (F69, F79, F80) and the adaptive triggers answer the game (F78); the maintainer, 2026-10-08: "works perfectly", the shakes, hits and effects felt as they should | F52–F53, F59–F61, F78–F80 |
-| Frame rate | synchronously: title screen 47 fps, cutscene 41 fps — from 8 and 6 fps the same day, all of it host overhead removed. With submissions no longer waited for one by one: title and loading 54–60 fps, cutscene 50–53 fps, gameplay 47–55 fps | experiments 0022–0024, F49–F59 |
-| Longest runs | 30 minutes with jobs in flight, 1,332,438 submissions, none failed; 12 minutes synchronously, 258,551 submissions, three recovered page faults | runs 116, 103 |
-| GPU time in a frame | first level 12.9 ms, second level 18.6 ms (synchronous); with jobs in flight the second level is a 21–24 ms frame of which the GPU is busy 17–18, the game's own thread 12, the host's pass over the main buffer 4 | experiments 0023–0026, F65 |
-| Level load | about 18 s for the first level, from 240 s: the host listed a directory for every file the game looks for and does not find (experiment 0022), the mount took 8 ms to say a file does not exist (experiment 0029), and one mount thread served every read in turn (experiments 0032–0033); "loading runs very smoothly" (the maintainer) | experiments 0022, 0029, 0032–0033, F84 |
-| Compute CU mask | 20 live bits per shader engine, one CU per bit; throughput linear in the bit count | experiment 0019, F39 |
-| Second title: from its PS5 package | the whole 101.8 GB package reads and mounts (`bc5-mount`, 288 files, every one decoded in 196 s); the title starts from the mount with the system modules of another of the maintainer's own dumps | experiments 0031, 0034, 0036, F82, F86, F88 |
-| Second title: AMM/AMPR | the title maps memory through AMM and streams files through APR command buffers; the host's AMM window, page protections, waits, per-priority queues and completion events were made to work | experiments 0035–0037, F87–F89 |
-| Second title: to 3D | four stops on the way, none in the GPU path proper: the AMM window over the title's heaps, two Kraken chunk forms in the package reader, a bound in the ATRAC9 decoder, heaps the direct path did not import; then 6.7 fps | experiment 0036, F88 |
-| Second title: speed | 24 fps in its first 3D scene (frame 147 → 39 ms): the host's per-submission bookkeeping over 11,500 memory views and 12,000 GPU mappings, not the title or the GPU (11 ms) | experiment 0037, F89 |
-| Second title: compute work | its compute IBs' indirect dispatches (compute-queue form) now run on the GFX ring, rebuilt with SET_BASE and `PFP_SYNC_ME`; one program that hangs the single ring is skipped; 600 s clean at 16 fps (the GPU does the work it used to skip), two runs of three past the point that used to fault | experiments 0038–0039, F90–F91 |
+| Intro, title screen | the whole intro video, 935 frames without a failed submission; the title screen in real time, a button press starts the game | experiments 0018, 0020, F43–F46 |
+| Levels | the first level and its cutscene load and play, through the galaxy map to the next level; the second level with its water and geysers (the fluid simulation runs a frame behind, a stopgap for a handshake the single ring cannot serve, F64); the maintainer has played further, the frog-glove level included, and calls the game fully playable | experiments 0021–0026, F47–F48, F52–F53, F59, F64, F78, F85 |
+| Controller | buttons, sticks, triggers, shaking and tilting (orientation derived from the gyroscope and accelerometer), hot-plug; haptics through the DualSense's own USB audio device and adaptive triggers that answer the game ("works perfectly", the maintainer, 2026-10-08); any control can be rebound from a configuration file or the F2 settings menu in the game window | F52–F53, F60, F69, F73, F77–F80 |
+| Save | kept in a file and picked up at the next start | F59 |
+| Frame rate | title and loading 54–60 fps, cutscene 50–53, first level 47–55, second level 40–51: from 6–8 fps, all of it host overhead removed and submissions overlapped | experiments 0022–0024, F49–F59 |
+| GPU time in a frame | first level 12.9 ms, second level 18.6 ms; in the second level the GPU is busy 17–18 ms of a 21–24 ms frame, the game's own thread 12, the host's pass over the main buffer 4 | experiments 0023–0027, F65 |
+| Level load | about 18 s, from 240 s: the host's directory scans, the mount's negative lookups and its single read thread were the cost, not the storage | experiments 0022, 0029, 0032–0033, F71, F83–F84 |
+| Longest runs | 30 minutes with jobs in flight, 1,332,438 submissions, none failed; hours of play by the maintainer | run 116, F85 |
 
-**Haptics and adaptive triggers work.** The DualSense's actuators get the game's vibration streams, the triggers report their state to the game (the frog gloves fire), and the maintainer confirmed the feel in the game on 2026-10-08: shakes, hits and effects as on the console (F78–F80). Needed on the host: the controller's PipeWire sink at full volume (`pad-volume.sh`).
+### The second title
 
-What is not there yet: full speed (the game is built for 60 fps; in the second level the GPU is busy 75–80 % of a 21–24 ms frame and the game's own thread needs 12 ms of it). The CPU is not the limit: during the maintainer's play the busiest threads sit at half a core (F81), and the level load waits on the game's own loaders, not on the files (F83–F84). A second title, from a PS5 package, now loads and renders 3D at 16–24 fps and runs its compute queues' indirect dispatches; one run in three still stops on a GPU fault, and one of its compute programs is skipped because it hangs the single ring (F86–F91). What has not been tried: RPCSX as the host (needs system software the maintainer cannot dump at present).
+| What | Result | Record |
+| --- | --- | --- |
+| From its package | the whole package reads and mounts (288 files, every one decoded in 196 s); the title starts from the mount with the system modules of another of the maintainer's dumps | experiments 0031, 0034, 0036, F82, F86 |
+| AMM and APR | the title maps memory through AMM, the console's address map manager, and streams files through APR command buffers; both emulated by the host | experiments 0035–0037, F87–F89 |
+| To 3D | four stops on the way, none in the GPU path proper: the AMM window over the title's heaps, two Kraken chunk forms in the package reader, a bound in the ATRAC9 decoder, heaps the direct path did not import | experiment 0036, F88 |
+| Speed | 24 fps in its first 3D scene, from 6.7: the frame was the host's per-submission bookkeeping over 11,500 memory views and 12,000 GPU mappings, not the title or the GPU (11 ms) | experiment 0037, F89 |
+| Compute work | its compute IBs' indirect dispatches (compute-queue form) run on the GFX ring, rebuilt with `SET_BASE` and `PFP_SYNC_ME`; one program that does not finish on the single ring is skipped; 600 s clean at 16 fps | experiments 0038–0039, F90–F91 |
+| Remaining faults | shader loads from the title's own heap addresses, some with junk in bits 40–47; a dropped `LOAD_SH_REG_INDEX` precedes two of the stops | experiment 0040, F92 |
+
+### Not there yet
+
+- Full speed for ASTRO BOT: the second level's GPU time and the game's own thread both have to go under 16.7 ms. The CPU is not the limit (the busiest threads sit at half a core, F81).
+- The second title's stops (one run in three), its skipped compute program, and its menu.
+- RPCSX as the host: it needs system software the maintainer cannot dump at present.
 
 ## What this is
 
@@ -131,24 +156,32 @@ Where the gates are (`docs/PHASES.md`): 1b, 2 and 3 are passed, all on track B. 
 
 ## Open questions
 
-- [x] 1:1 memory mapping. **Yes** (experiment 0014, HANDOFF F23): a userptr BO mapped at GPU VA = CPU pointer works with zero copies. Since experiments 0017 and 0023 all guest memory goes one better: ranges of the host's memfds are imported as dma-bufs and mapped at the guest's addresses, without the per-submission page walk userptr costs (ADR 0006, F40, F55).
-- [x] How RPCSX handles AGC today. **Answered** (HANDOFF F12, F19): RPCSX has no AGC parser; PS5 submits enter through `/dev/gc` ioctls carrying a `CONTEXT_CONTROL` packet, a state-preamble IB and the frame DCB. Track B therefore runs the game's own `libSceAgc` on top of an emulated `/dev/gc` instead of tapping RPCSX.
-- [x] Whether PS5 titles write CU masks themselves. **Yes** (F21, F39): every compute dispatch writes `COMPUTE_STATIC_THREAD_MGMT_SE0..3` = 0xffffffff and the graphics stages load `RSRC3.CU_EN` = 0xffff from register tables; BC5's mask is ANDed into both. What the bits mean on the BC-250 is measured for compute (experiment 0019: bits 0–19 per shader engine, one per CU).
-- [ ] *(parked: nothing open blocks ASTRO BOT; reopens with the next title)* Which draw/CB/DB register usage is Sony-specific beyond public PM4. **Partly**: so far one unresolved SH register and one APU-only opcode (F21), the 64-bit `WAIT_REG_MEM` and index-load opcodes (experiment 0016), and — more important than any register — command-processor behaviour the console's system provides and `amdgpu` does not: `CLEAR_STATE` push/pop (F35), waiting for CP DMA (F41), register shadowing. The list keeps growing with every new part of the game.
-- [x] *(parked)* Which CUs the graphics stages' 16-bit `CU_EN` selects on a 20-CU shader engine (experiment 0019's open half). Not needed to play: the game runs on all 40 CUs; it matters only for CU partitioning.
-- [x] Storage: how much of the SSD/Kraken dependency a software prefetch/cache layer can hide. **For this title, all of it** (F51, F71, F83–F84): the board's M.2 delivers 0.7–0.8 GB/s and is never the limit; the load went from 240 s to about 18 s by fixing the host's directory scans, the mount's negative lookups and its single read thread, and the maintainer finds it very smooth. A title that leans on the hardware decompressor is a new question when one is tried.
-- [x] The submission path: can the host prepare and submit the next buffer while the GPU runs the previous one, without breaking the label and event protocol the game's driver library expects? **Yes** (experiment 0024, F57–F59): 54–60 fps at the title screen and while loading, 47–55 in the first level, 30 minutes and 1.3 million submissions without a failure. A frame went from 22–23 ms to 18. A page fault with jobs in flight has not happened in a run yet.
-- [ ] 60 fps: in the second level the GPU is busy 17–18 ms of a 21–24 ms frame, the game's own thread takes 12 ms of it and the host's `prepare` pass 4 (experiments 0025–0026). Both sides have to go under 16.7 ms; deferring the flip gives nothing (experiment 0028), the host's `prepare` is down to 3.4–4.1 ms of which the filter over ~130,000 dwords a frame is 2.4–3.1 (experiment 0027), and the game's own thread takes 12 ms; the GPU's lever is the clock. A lower output mode is not a lever: the title registers 4K buffers and asks the system nothing (F67).
-- [ ] Cross-queue waits as the console serves them: the host serves every wait of a buffer on the CPU before the buffer goes, which cannot express two queues waiting for each other mid-buffer (the water, F64). The way out is splitting buffers at waits with the register state between pieces replayed from the backend's tracker; the compute side is done, the graphics side faults until SH and UCONFIG registers are tracked (ADR 0005 xxii).
-- [x] Haptics: the game drives the DualSense's actuators with an audio stream (vibration ports of `sceAudioOut2`), which the host sends to the controller's four-channel USB audio device (F69). Felt once the desktop's volume for the controller's sink is at 100 % (F79, `pad-volume.sh`) and once the stream is six channels with the actuators on 5–6, because the container's SDL declares four channels as FL FR FC LFE and PipeWire mixed the actuator pair into the speaker (F80). Confirmed in the game by the maintainer on 2026-10-08. The controller no longer drops off USB: no disconnect in the kernel log since the replacement controller's cable and port settled (F77, F85).
-- [x] The memory budget of a 16 GB board: the game's 12.4 GiB plus the host plus a desktop. In practice it fits: the maintainer plays from the desktop with the settings of `bc5-run.env` and no level has failed to load (F85). A desktop-less session or a dedicated system image stays an idea for headroom.
-- [ ] Presentation without a copy: the game's flip buffer is already a GPU buffer; today it is read back and drawn by the host's Vulkan side.
-- [ ] The second title's stops (F90–F91): its compute IBs' indirect dispatches now run on the GFX ring (rebuilt with SET_BASE and `PFP_SYNC_ME`; run 64's machine-down hang was a missing shader-type bit), and two runs of three go clean; open: one compute program (0x909939900) that does not finish on the single ring and is skipped, and a graphics-side fault (run 84).
-- [ ] Whether the second title's menu should show over its 3D backdrop: the scene renders at 24 fps and button presses do not change it.
+The full list, with plans, is in [`docs/HANDOFF.md`](docs/HANDOFF.md), section 3.
+
+Open:
+
+- [ ] **60 fps in ASTRO BOT.** In the second level the GPU is busy 17–18 ms of a 21–24 ms frame, the game's own thread takes 12 ms and the host's `prepare` pass 3.4–4.1 ms, of which the filter over ~130,000 dwords a frame is 2.4–3.1 (experiments 0025–0027). Deferring the flip gives nothing (experiment 0028); a lower output mode is not a lever, the title registers 4K buffers and asks the system nothing (F67). The GPU's lever is the clock.
+- [ ] **Cross-queue waits as the console serves them.** The host serves every wait of a buffer on the CPU before the buffer goes, which cannot express two queues waiting for each other mid-buffer (ASTRO BOT's water, F64). The way out is splitting buffers at waits with the register state between pieces replayed from the backend's tracker; the compute side is done, the graphics side faults until SH and UCONFIG registers are tracked (ADR 0005 xxii). The second title's skipped compute program (F91) may be the same problem.
+- [ ] **The second title's stops** (F90–F92). Its compute work runs and two runs of three end clean; the third stops on a GPU fault. Open: whether the PS5 GPU ignores virtual-address bits from 40 up (seven of 73 fault addresses are heap addresses with a junk top byte), what a dropped `LOAD_SH_REG_INDEX` in index mode should read, and why one compute program (0x909939900) does not finish on the single ring.
+- [ ] **Console-specific packets and registers** (HANDOFF Q4). Parked while only ASTRO BOT ran; reopened by the second title: the compute-queue form of `DISPATCH_INDIRECT` (F90) and `LOAD_SH_REG_INDEX` relative to a `SET_BASE` (F92). More important than any register so far was command-processor behaviour the console's system provides and `amdgpu` does not: `CLEAR_STATE` push/pop (F35), waiting for CP DMA (F41), register shadowing.
+- [ ] **The second title's menu**: whether it should show over the 3D backdrop; the scene renders and button presses after the first dialog change nothing.
+- [ ] **The second title's load**: about five minutes from start to the 3D scene, with the package's Kraken blocks decoded in software by `bc5-mount`; what paces it has not been measured. ASTRO BOT's answer (the host, not the storage, F84) may or may not carry over.
+- [ ] **Presentation without a copy**: the game's flip buffer is already a GPU buffer; today it is read back and drawn by the host's Vulkan side.
+
+Answered:
+
+- [x] **1:1 memory mapping.** Yes (experiment 0014, F23): a userptr BO mapped at GPU VA = CPU pointer works with zero copies. Since experiments 0017 and 0023 all guest memory is imported as dma-bufs of the host's memfds and mapped at the guest's addresses, without userptr's per-submission page walk (ADR 0006, F40, F55).
+- [x] **How RPCSX handles AGC.** It has no AGC parser; PS5 submits enter through `/dev/gc` ioctls carrying a `CONTEXT_CONTROL` packet, a state-preamble IB and the frame DCB (F12, F19). Track B therefore runs the game's own `libSceAgc` on an emulated `/dev/gc`.
+- [x] **Whether PS5 titles write CU masks themselves.** Yes (F21, F39): every compute dispatch writes `COMPUTE_STATIC_THREAD_MGMT_SE0..3` = 0xffffffff and the graphics stages load `RSRC3.CU_EN` = 0xffff; BC5's mask is ANDed into both. On the BC-250 bits 0–19 per shader engine are one CU each (experiment 0019). *Parked:* which CUs the graphics stages' 16-bit `CU_EN` selects; not needed to play.
+- [x] **Overlapped submission.** The host prepares and submits the next buffer while the GPU runs the previous one without breaking the label and event protocol the game's driver library expects (experiment 0024, F57–F59): 30 minutes and 1.3 million submissions without a failure. Page faults with jobs in flight do occur (F74, F90) and the host recovers from them in ASTRO BOT.
+- [x] **Storage for ASTRO BOT.** The board's M.2 delivers 0.7–0.8 GB/s and is never the limit; the load went from 240 s to about 18 s by fixing the host (F51, F71, F83–F84).
+- [x] **Haptics.** The game drives the DualSense's actuators with an audio stream, which the host sends to the controller's USB audio device as six channels with the actuators on 5–6 (F69, F79, F80); the sink must be at 100 % volume. Confirmed in the game on 2026-10-08.
+- [x] **The memory budget of a 16 GB board.** ASTRO BOT's 12.4 GiB of GPU memory, the host and a desktop fit with the settings of `bc5-run.env`; no level has failed to load (F85).
+- [x] **Reading PS5 packages.** Plaintext debug packages read and mount, Kraken blocks included, through a vendored, extended `oozextract` (F82, F88).
 
 ## Tooling: `bc5-mount`
 
-`tools/bc5-mount` reads `.ffpfsc` containers (PFS v2 → PFSC → exFAT; layout in [`docs/formats/ffpfsc.md`](docs/formats/ffpfsc.md)) and exposes the game's `app0` tree. Rust, no unsafe code, every parser rejects malformed input instead of panicking. Reads are answered from a pool of worker threads with a shared block cache and decode-ahead for files read in order (`BC5_MOUNT_THREADS`, `BC5_MOUNT_PREFETCH_KIB`; experiment 0033: the level load 24 → 18 s). It also reads PS5 packages (`.pkg`, `FIH`: outer PFS → `naps_pkg_layout.dat` → Kraken blocks → the inner PFS; layout in [`docs/formats/ps5pkg.md`](docs/formats/ps5pkg.md), ADR 0007), plaintext debug packages only, through the same commands; the file's magic picks the reader. The Kraken blocks carry no Oodle headers: the reader synthesises them for the vendored `oozextract` (MIT), which it extends with the "excess" length framing every block uses, the single-symbol Huffman chunk an all-equal 128 KiB block is stored as, and chunks stored uncompressed inside a compressed block (`tools/third_party/oozextract/README-bc5.md`). Every file of the maintainer's 101.8 GB package (288 files, 196.6 GB logical) reads through the mount without an error, in 196 s. A second title starts from its package, loads and renders 3D at 16–24 fps (experiments 0031, 0034–0039, F82, F86–F91).
+`tools/bc5-mount` reads `.ffpfsc` containers (PFS v2 → PFSC → exFAT; layout in [`docs/formats/ffpfsc.md`](docs/formats/ffpfsc.md)) and exposes the game's `app0` tree. Rust, no unsafe code, every parser rejects malformed input instead of panicking. Reads are answered from a pool of worker threads with a shared block cache and decode-ahead for files read in order (`BC5_MOUNT_THREADS`, `BC5_MOUNT_PREFETCH_KIB`; experiment 0033: the level load 24 → 18 s). It also reads PS5 packages (`.pkg`, `FIH`: outer PFS → `naps_pkg_layout.dat` → Kraken blocks → the inner PFS; layout in [`docs/formats/ps5pkg.md`](docs/formats/ps5pkg.md), ADR 0007), plaintext debug packages only, through the same commands; the file's magic picks the reader. The Kraken blocks carry no Oodle headers: the reader synthesises them for the vendored `oozextract` (MIT), which it extends with the "excess" length framing every block uses, the single-symbol Huffman chunk an all-equal 128 KiB block is stored as, and chunks stored uncompressed inside a compressed block (`tools/third_party/oozextract/README-bc5.md`). Every file of the maintainer's 101.8 GB package (288 files, 196.6 GB logical) reads through the mount without an error, in 196 s (experiments 0031, 0036, F82, F88).
 
 ```bash
 cd tools && cargo build --release
@@ -177,7 +210,7 @@ Tests never touch a real dump: `bc5-fixture` builds deterministic synthetic cont
 
 ## How to start
 
-This is how the dev box is set up, written so that it can be repeated on another BC-250. It has been done on one machine and with one title (the maintainer's own copy of ASTRO BOT), so expect to adjust paths and to meet things nobody has met yet. **Direct mode sends raw command buffers to the GPU: a bad one can hang the display or reset the machine. Save your work before every run.**
+This is how the dev box is set up, written so that it can be repeated on another BC-250. It has been done on one machine and with two titles (ASTRO BOT from a container, a second title from a PS5 package; the steps below follow ASTRO BOT), so expect to adjust paths and to meet things nobody has met yet. **Direct mode sends raw command buffers to the GPU: a bad one can hang the display or reset the machine. Save your work before every run.**
 
 ### 1. The board and the system
 
@@ -252,16 +285,22 @@ The emulator is `~/bc5-work/kytyplus-build/src/kyty_emulator`.
 
 ### 5. The game
 
-You need your own copy, dumped and decrypted on your own console, as an unpacked `app0` folder or as an `.ffpfsc` container. A container is mounted read-only:
+You need your own copy, dumped and decrypted on your own console, in one of the formats under [Games and formats](#games-and-formats). A container is mounted read-only:
 
 ```bash
 mkdir -p ~/bc5-data/mnt/game
 ~/bc5-work/bc5-tools/release/bc5-mount mount ~/bc5-data/games/GAME.ffpfsc ~/bc5-data/mnt/game &
 ```
 
-A PS5 package mounts the same way (`bc5-mount mount GAME.pkg <dir>`). A package carries no `fakelib/`: the two Sony modules the host loads come from another of your own dumps, and for a title that streams with AMPR the pack must not contain that dump's `libSceAmpr.sprx` (the host's stand-in serves it either way, experiment 0035). Such a title also needs its GPU heaps imported from the start: `BC5_DIRECT_EAGER_NAMES` takes the names the title gives its heaps (they appear in the journal's `direct by name` breakdown), plus `AMM` for its AMM pages, and `BC5_DIRECT_LEARNED` gives it a fault file of its own. The launchers for the second title are in [`experiments/0037-pkg-title-speed`](experiments/0037-pkg-title-speed) (`run-pkg.sh` unattended, `play-pkg.sh` to play).
+The host runs the game's own `libSceAgc.sprx` and `libSceAgcDriver.sprx` and stands in for every other system library. It looks for the two modules in the directory `SHADPS4_SYSMODULES_PACK_DIR` names; in a container dump that is the game's `fakelib/` directory. No system software is needed. Keep dumps outside every git checkout.
 
-The host runs the game's own `libSceAgc.sprx` and `libSceAgcDriver.sprx` and stands in for every other system library. It looks for the two modules in the directory `SHADPS4_SYSMODULES_PACK_DIR` names; in the maintainer's dump that is the game's `fakelib/` directory. No system software is needed. Keep dumps outside every git checkout.
+**From a PS5 package.** It mounts the same way (`bc5-mount mount GAME.pkg <dir>`), with three differences:
+
+- A package carries no `fakelib/`: the two modules come from another of your own dumps. For a title that streams with AMPR the pack must not contain that dump's `libSceAmpr.sprx` (the host's stand-in serves it either way, experiment 0035).
+- The title's GPU heaps must be imported from the start: `BC5_DIRECT_EAGER_NAMES` takes the names the title gives its heaps (they appear in the journal's `direct by name` breakdown), plus `AMM` for its AMM pages; `BC5_DIRECT_LEARNED` gives it a fault file of its own.
+- Its compute queues' indirect dispatches run only with `BC5_DIRECT_MEC_INDIRECT=1` (off by default, HANDOFF D16), and the one program that does not finish is skipped with `BC5_DIRECT_MEC_SKIP_PGM=909939900` (F91).
+
+The launchers for the second title, which set all of this, are in [`experiments/0039-compute-indirect-dispatch`](experiments/0039-compute-indirect-dispatch) (`run-pkg.sh` unattended, `play-pkg.sh` to play).
 
 ### 6. Run
 
@@ -304,7 +343,7 @@ All switches are listed in [`backend/kytyplus-patches/README.md`](backend/kytypl
 
 ### 7. What to expect
 
-With ASTRO BOT: the whole game as far as the maintainer has played it: intro videos, the title screen at 54–60 fps, a level load of about 18 s, the first level at about 50 fps and the second at about 40, haptics and adaptive triggers on the controller. With the second title (from its package, through `play-pkg.sh` or the settings in it): about five minutes of loading, then its first 3D scene at 16–24 fps; one run in three still stops on a GPU fault (F91). With any other title: unknown; a game that links against a system library the host has no stand-in for stops there.
+With ASTRO BOT: the whole game as far as the maintainer has played it: intro videos, the title screen at 54–60 fps, a level load of about 18 s, the first level at about 50 fps and the second at about 40, haptics and adaptive triggers on the controller. With the second title (from its package, through `play-pkg.sh` or the settings in it): about five minutes of loading, then its first 3D scene at 16–24 fps; one run in three still stops on a GPU fault (F91, F92). With any other title: unknown; a game that links against a system library the host has no stand-in for stops there.
 
 If it does not work:
 
