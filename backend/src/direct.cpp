@@ -58,6 +58,9 @@ struct ScratchBo {
 
 } // namespace
 
+// PKT3(PFP_SYNC_ME, 0, 0) (Mesa sid.h PKT3_PFP_SYNC_ME 0x42).
+constexpr std::uint32_t kPfpSyncMe = 0xC0004200u;
+
 struct Device::Impl {
     int fd = -1;
     amdgpu_device_handle dev = nullptr;
@@ -601,6 +604,53 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     }
     r.prep_cu_ms = now_ms() - t_phase;
     t_phase = now_ms();
+    // Experiment 0038: a compute IB's DISPATCH_INDIRECT, rewritten for the GFX ring
+    // (FilterOptions::mec_indirect_base), gets a PFP_SYNC_ME in front: on the GFX ring the
+    // prefetch parser reads the arguments ahead of the ME, so the CS_PARTIAL_FLUSH and
+    // ACQUIRE_MEM the console puts between the dispatch that writes them and this one did not
+    // hold it back, and it read stale values (+inf as a group count). RADV and radeonsi do the
+    // same before an indirect draw or dispatch whose arguments the GPU wrote (Mesa
+    // PKT3_PFP_SYNC_ME, TODO(verify) the lines). Inserting dwords moves every offset after it, so
+    // an IB with COND_EXEC (whose skip counts are offsets) is left as it is.
+    if (opt.mec_indirect_base != 0) {
+        bool has_cond_exec = false;
+        std::size_t dispatches = 0;
+        for (std::size_t i = 0; i < main_out.size();) {
+            const std::uint32_t h = main_out[i];
+            const std::uint32_t type = h >> 30;
+            std::size_t len = 1;
+            if (type == 3 || type == 0) {
+                const std::uint32_t count = (h >> 16) & 0x3fff;
+                len = count == 0x3fff ? 1 : count + 2;
+            }
+            if (type == 3 && ((h >> 8) & 0xff) == 0x22) has_cond_exec = true;
+            if (type == 3 && ((h >> 8) & 0xff) == 0x16 && len == 3) dispatches++;
+            i += len;
+        }
+        if (!has_cond_exec && dispatches != 0) {
+            std::vector<std::uint32_t> grown;
+            grown.reserve(main_out.size() + 2 * dispatches);
+            for (std::size_t i = 0; i < main_out.size();) {
+                const std::uint32_t h = main_out[i];
+                const std::uint32_t type = h >> 30;
+                std::size_t len = 1;
+                if (type == 3 || type == 0) {
+                    const std::uint32_t count = (h >> 16) & 0x3fff;
+                    len = count == 0x3fff ? 1 : count + 2;
+                }
+                if (i + len > main_out.size()) len = main_out.size() - i;
+                if (type == 3 && ((h >> 8) & 0xff) == 0x16 && len == 3) {
+                    grown.push_back(kPfpSyncMe);
+                    grown.push_back(0);
+                }
+                grown.insert(grown.end(), main_out.begin() + static_cast<std::ptrdiff_t>(i),
+                             main_out.begin() + static_cast<std::ptrdiff_t>(i + len));
+                i += len;
+            }
+            main_out.swap(grown);
+            r.filter.pfp_syncs += dispatches;
+        }
+    }
     if (dma_idle_) {
         // PKT3(DMA_DATA, 5, 0); CP_SYNC | SRC_SEL and DST_SEL "address using L2"; no addresses;
         // zero bytes — as si_emit_cp_dma(sctx, cs, 0, 0, 0, CP_DMA_SYNC) emits it (Mesa 0866ae7).
