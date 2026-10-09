@@ -5,7 +5,7 @@ minutes in most runs, after GPU faults at addresses no mapping explains. Where d
 addresses come from?
 
 **Setup.** As in 0037 (`run-pkg.sh` there; `pkg-series.sh` here runs several in a row and
-summarises each). Runs 61–71, 2026-10-09 13:44–17:25; ASTRO BOT regression run 150.
+summarises each). Runs 61–74, 2026-10-09 13:44–18:12; ASTRO BOT regression run 150.
 
 **Result.**
 
@@ -64,8 +64,34 @@ ran at 21 fps, the scene moving by 540 s, but submissions stopped at 552 s witho
 nothing in the journal says why. Fault windows learned above 2^47 are no longer given a zero
 buffer (the GPU VA cannot hold them).
 
-**Verdict.** Inconclusive. The faults are not stale mappings. The compute-form indirect
-dispatches are a real gap: the console's compute IBs ask for them and the host has never run
-one, but running them as converted hangs the GPU beyond recovery, so they stay dropped. Open: what
-those dispatches need to run (they are the first compute work of the title's that reaches the
-GPU through a conversion), and why the compute queue does not recover after a reset (the semaphore it waits on is released by the soft CP, F90).
+Runs 72–74 (2026-10-09 17:40–18:12) go one step further:
+
+- *Why recovery takes a minute.* A stall dump (`stall-dump.sh` pointed at these captures) in run
+  72 shows the host's ring thread inside the "direct by name (growth)" breakdown, walking 11,500
+  views with `SEEK_DATA` while holding the device lock, and the title's render thread waiting on
+  that lock: the reopen had reset the growth counter, so the re-import of 9 GiB looked like
+  growth. The counter is now kept across a reopen.
+- *Why the title does not come back.* A second dump after the recovery: the render thread spins
+  (`pause`) in the title's code at +0x3f017c0 over a ring of GPU completions; an entry whose work
+  died in the reset never completes. So after a fault the title cannot recover however fast the
+  host does; the faults themselves have to go.
+- *Why run 64 hung.* The prologue's SET_BASE lacked the compute shader-type bit (header
+  0xC0021100); RADV sets the dispatch-indirect base on the GFX ring with
+  `PKT3_SHADER_TYPE_S(1)`, TODO(verify) the line. With 0xC0021102: run 73 (90 s,
+  `BC5_DIRECT_MEC_INDIRECT=1`) dropped none of 21,304 indirect dispatches and failed nothing.
+- *What the converted dispatches do.* Run 74 (600 s, conversion on): from 211 s — when the 3D
+  scene's compute work starts, the moment the faults came in the other runs — compute IBs time
+  out without a page fault, 25 times, 302 failed submissions, 0.13 fps. The work those
+  dispatches carry hangs on the single GFX ring; the likely reason is the class of F64 (the
+  console runs these compute queues beside the graphics queue, and a shader-level hand-over
+  between them cannot be served when both are serialised on one ring). The kernel's compute
+  rings are off limits on this board (ADR 0005 xvi). The second run was stopped.
+
+**Verdict.** The stops are explained, not solved. The trigger is a GPU fault at a garbage
+address from shader loads (client TCP in the fault status), most likely data that the dropped
+compute-form indirect dispatches would have produced; after it the title cannot recover, because
+it waits for GPU work that died in the reset. Running those dispatches is now possible (run 73)
+but their work hangs the single ring (run 74). The conversion stays off by default. Next:
+what those compute dispatches wait for, and whether splitting the compute IBs at them (as the
+compute side of F64's split already does at CP waits) lets the graphics work they wait for run
+first.
