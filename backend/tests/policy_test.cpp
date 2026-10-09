@@ -292,6 +292,37 @@ TEST_CASE("ORDERED_APPEND_ENBL can be forced on dispatches", "[policy]") {
     REQUIRE(out[4] == 0x41u);
 }
 
+TEST_CASE("compute-queue DISPATCH_INDIRECT becomes the GFX form against the given base", "[policy]") {
+    const auto &p = policy::Policy::builtin();
+    // DISPATCH_INDIRECT, compute form: address 0x11_d0571b00, initiator 0x41; then one whose
+    // address lies in another 4 GiB; then a GFX-form one (offset, initiator), left alone.
+    const std::vector<std::uint32_t> src = {0xC0021602u, 0xd0571b00u, 0x11u, 0x41u,
+                                            0xC0021602u, 0x00001000u, 0x12u, 0x41u,
+                                            0xC0011602u, 0x40u, 0x41u};
+    std::vector<std::uint32_t> out(src.size());
+    policy::FilterOptions opt;
+    opt.mapped = [](std::uint64_t, std::uint64_t) { return true; };
+    opt.mec_indirect_base = 0x1100000000ull;
+    policy::FilterStats st;
+    policy::filter(p, src, out, opt, st);
+    REQUIRE(st.mec_indirect_rewrites == 1);
+    REQUIRE(st.mec_indirect_drops == 1);
+    REQUIRE(out[0] == 0xC0011602u); // count 1, shader-type bit kept
+    REQUIRE(out[1] == 0xd0571b00u);
+    REQUIRE(out[2] == 0x41u);
+    REQUIRE(out[3] == policy::kNop);
+    for (std::size_t k = 4; k < 8; ++k) REQUIRE(out[k] == policy::kNop);
+    REQUIRE(out[8] == 0xC0011602u);
+    REQUIRE(out[9] == 0x40u);
+    // Without a base the compute form passes as it is (the old behaviour).
+    policy::FilterOptions plain;
+    plain.mapped = opt.mapped;
+    policy::FilterStats st2;
+    policy::filter(p, src, out, plain, st2);
+    REQUIRE(st2.mec_indirect_rewrites == 0);
+    REQUIRE(out[0] == 0xC0021602u);
+}
+
 TEST_CASE("DMA_DATA memory operands follow the selectors, GDS offsets are not addresses", "[policy]") {
     const std::vector<std::uint32_t> gds_fill = {0xC0055000u, 0x46106000u, 0u, 0u, 0xc68u, 0u, 0x40000004u};
     REQUIRE(policy::memory_operands(gds_fill.data(), 7).empty());

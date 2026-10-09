@@ -229,3 +229,24 @@ and those behind it until met, AMM-only submissions run at once, a `bc5-apr-wait
 re-checks; APR `MapBegin`/`MapDirectBegin` map their ranges; `SetBuffer`'s map flavour is
 handled. `KYTY_BC5_AMM_TRACE=1` traces it all (and names the instruction behind a fault in a
 reserved range); `KYTY_BC5_AMM_LAZY_COMMIT=1` commits untouched AMM pages on first access (off).
+
+Experiments 0036–0038 (the second title, F88–F90). AMM: the window is searched from 512 GiB
+(titles place their heaps at fixed addresses above 0x1000000000), AMM pages carry the range
+name `AMM` (so `BC5_DIRECT_EAGER_NAMES` can include them), APR submissions queue per priority
+(after KytyPS5 c045f08), `WaitOnAddress` compare codes as AnyPS5 implements them;
+`KYTY_BC5_AMPR_FILTER=<n>` sets the filter of AMPR completion events (default `EVFILT_USER`).
+Audio and system: ATRAC9 vibration layouts (channel configurations 6–7) are decoded as mono and
+dual mono instead of reaching past LibAtrac9's table (after KytyPS5 b10bd53); the entitlement
+update event is queued after `AppContentInitialize` (after KytyPS5 62643c3). Direct path: the
+views of direct and private memory are cached per change of the guest's ranges (a generation
+counter in `VirtualRanges`), the device's mapping list is kept sorted
+(`Device::sorted_mappings`), the GPU mappings are synced as soon as the guest's ranges change
+(`BC5_DIRECT_NO_GEN_SYNC=1`: at most every 50 ms, as before); holes the guest has no range in
+get a 2 MiB zero buffer under learned fault windows and after each eagerly imported heap of
+32 MiB or more (`BC5_DIRECT_GUARD_KIB`, default 2048; `BC5_DIRECT_NO_SCRATCH=1` turns both
+off). Compute IBs' `DISPATCH_INDIRECT` in the compute-queue form (address lo/hi, initiator) is
+dropped; `BC5_DIRECT_MEC_INDIRECT=1` converts it for the GFX ring instead, which hung the GPU
+and took the machine down in its first run (experiment 0038) — do not use it outside an
+experiment. `BC5_DIRECT_WATCH_VA=lo:hi` (hex) journals every packet with a memory operand in
+that range. Traces: `KYTY_BC5_AMM_TRACE=1` also reports short APR reads, AMPR event
+registrations and triggers, and fixed mappings that replace live memory.

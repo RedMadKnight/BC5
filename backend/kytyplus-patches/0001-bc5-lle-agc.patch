@@ -3776,10 +3776,10 @@ index fe4b332..c27c243 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..3350830
+index 0000000..bdcd8ef
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,4609 @@
+@@ -0,0 +1,4680 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -4953,6 +4953,7 @@ index 0000000..3350830
 +	std::set<uint64_t> failed; // chunks whose import failed (not retried)
 +	std::set<uint64_t> merge_failed; // run starts whose merged import failed (not retried)
 +	uint64_t           views_sig = 0, bos_mapped = 0, bytes = 0, sync_ns = 0, file_size = 0, merge_ns = 0;
++	uint64_t           ranges_gen = 0; // experiment 0037: Bc5MappedRangesGeneration at the last sync
 +	uint64_t           blocks = ~0ull, forced_seen = ~0ull, reported = 0;
 +};
 +static DState g_d[2] = {{0, "direct", {}, {}, {}, {}, {}}, {1, "private", {}, {}, {}, {}, {}}};
@@ -5165,7 +5166,13 @@ index 0000000..3350830
 +static void direct_sync_one(DState& S, bool force) {
 +	if (!g_dmabuf || !g_dev) return;
 +	const uint64_t now = SoftCp::now_ns();
-+	if (!force && now - S.sync_ns < 50'000'000ull) return;
++	// Experiment 0037: at most every 50 ms, unless the guest's ranges changed since the last sync
++	// (an AMM map or unmap, a new heap): then the GPU must not run on the old mappings for up to
++	// 50 ms, reading whatever the old pages hold. BC5_DIRECT_NO_GEN_SYNC=1: the plain 50 ms.
++	static const bool no_gen_sync = std::getenv("BC5_DIRECT_NO_GEN_SYNC") != nullptr;
++	const uint64_t    ranges_gen  = S.kind == 0 && !no_gen_sync ? Libs::LibKernel::Memory::Bc5MappedRangesGeneration() : S.ranges_gen;
++	if (!force && now - S.sync_ns < 50'000'000ull && ranges_gen == S.ranges_gen) return;
++	S.ranges_gen = ranges_gen;
 +	S.sync_ns = now;
 +	const int fd = dstate_fd(S);
 +	if (fd < 0) return;
@@ -7168,6 +7175,17 @@ index 0000000..3350830
 +		static const uint64_t max_count = std::getenv("BC5_DIRECT_INDIRECT_MAX") ? std::strtoull(std::getenv("BC5_DIRECT_INDIRECT_MAX"), nullptr, 10) : 4u << 20u;
 +		static const bool     survey    = std::getenv("BC5_DIRECT_NO_INDIRECT_SURVEY") == nullptr;
 +		uint64_t base1 = 0;
++		// Experiment 0038: a compute IB's DISPATCH_INDIRECT carries its argument address (lo, hi,
++		// initiator); the GFX ring reads an offset from the SET_BASE index-1 base. The 4 GiB the
++		// IB's dispatches use become that base (set in the prologue) and the filter rewrites them
++		// (FilterOptions::mec_indirect_base). Before, the address was taken as an offset from 0,
++		// "not mapped", and the dispatch dropped: 10 million drops in a 600 s run of one title.
++		// Off by default (BC5_DIRECT_MEC_INDIRECT=1 turns it on): with it, the first converted
++		// dispatch hung the GPU 4 s into the run and the reset took the machine down (run 64).
++		// Off, these dispatches are dropped, as they always were: they have never run here.
++		static const bool            mec_on     = std::getenv("BC5_DIRECT_MEC_INDIRECT") != nullptr;
++		const bool                   compute_ib = std::strncmp(kind, "acb", 3) == 0;
++		std::map<uint32_t, uint32_t> mec_hi; // high address dword -> dispatches
 +		for (uint32_t q = 0; q < num_dwords;) {
 +			const uint32_t h = ib[q];
 +			const uint32_t type = h >> 30u;
@@ -7178,7 +7196,14 @@ index 0000000..3350830
 +			if (type == 3 && op == 0x11 && len >= 4 && (ib[q + 1] & 0xfu) == 1) {
 +				base1 = (ib[q + 2] & ~3u) | (static_cast<uint64_t>(ib[q + 3] & 0xffffu) << 32u);
 +			} else if (type == 3 && (op == 0x24 || op == 0x25 || op == 0x16) && len >= 2) {
-+				const uint64_t a    = base1 + ib[q + 1];
++				const bool     mec  = compute_ib && op == 0x16 && len == 4;
++				const uint64_t a    = mec ? ((ib[q + 1] & ~3ull) | (static_cast<uint64_t>(ib[q + 2] & 0xffffu) << 32u)) : base1 + ib[q + 1];
++				if (mec && !mec_on) {
++					opt.drop_offsets.push_back(q);
++					q += len;
++					continue;
++				}
++				if (mec) mec_hi[ib[q + 2] & 0xffffu]++;
 +				const uint32_t want = op == 0x16 ? 3 : 5;
 +				if (covered_sorted(*maps_p, a, want * 4)) {
 +					const auto* t = reinterpret_cast<const volatile uint32_t*>(a);
@@ -7193,6 +7218,52 @@ index 0000000..3350830
 +				}
 +			}
 +			q += len;
++		}
++		if (!mec_hi.empty() && mec_on) {
++			uint32_t hi = 0, most = 0;
++			for (const auto& [h, c]: mec_hi) {
++				if (c > most) { most = c; hi = h; }
++			}
++			opt.mec_indirect_base = static_cast<uint64_t>(hi) << 32u;
++			// SET_BASE, base index 1 (the draw/dispatch indirect base), address hi:0
++			opt.prologue.insert(opt.prologue.end(), {0xC0021100u, 1u, 0u, hi});
++			if (survey && mec_hi.size() > 1) journal("  compute-form DISPATCH_INDIRECT in %zu different 4 GiB ranges; base 0x%x00000000, the others dropped\n", mec_hi.size(), hi);
++		}
++	}
++	// Experiment 0038, BC5_DIRECT_WATCH_VA=lo:hi (hex): every packet of the IB with a memory
++	// operand in [lo, hi) is journaled with its dwords, and whether the host's own checks drop it
++	// (the filter's later verdict is in the submit line's counts). To find who writes a semaphore
++	// a queue waits on.
++	{
++		static const std::pair<uint64_t, uint64_t> watch = [] {
++			const char* e = std::getenv("BC5_DIRECT_WATCH_VA");
++			if (e == nullptr) return std::pair<uint64_t, uint64_t> {0, 0};
++			char*          end = nullptr;
++			const uint64_t lo  = std::strtoull(e, &end, 16);
++			const uint64_t hi  = (end != nullptr && *end == ':') ? std::strtoull(end + 1, nullptr, 16) : lo + 0x1000;
++			return std::pair<uint64_t, uint64_t> {lo, hi};
++		}();
++		if (watch.second > watch.first) {
++			for (uint32_t q = 0; q < num_dwords;) {
++				const uint32_t h    = ib[q];
++				const uint32_t type = h >> 30u;
++				uint32_t       len  = 1;
++				if (type == 3 || type == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
++				if (q + len > num_dwords) break;
++				if (type == 3) {
++					for (const auto& [a, bytes]: bc5::policy::memory_operands(ib + q, len)) {
++						if (a < watch.second && a + (bytes == 0 ? 4 : bytes) > watch.first) {
++							const bool dropped = std::find(opt.drop_offsets.begin(), opt.drop_offsets.end(), q) != opt.drop_offsets.end();
++							char       hex[200] = {};
++							int        o        = 0;
++							for (uint32_t k = 0; k < len && k < 12 && o < 180; k++) o += std::snprintf(hex + o, sizeof(hex) - static_cast<size_t>(o), "%08x ", ib[q + k]);
++							journal("watch: %s #%" PRIu64 " at %u op %02x addr 0x%" PRIx64 "%s: %s\n", kind, g_submits.load(), q, (h >> 8u) & 0xffu, a, dropped ? " (host drop)" : "", hex);
++							break;
++						}
++					}
++				}
++				q += len;
++			}
 +		}
 +	}
 +	// BC5_DIRECT_PIPESTATS=1: pipeline statistics around every frame DCB — SAMPLE_PIPELINESTAT

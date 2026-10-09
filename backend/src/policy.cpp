@@ -385,6 +385,15 @@ std::size_t filter(const Policy &policy, std::span<const std::uint32_t> src,
                            opt.extra_drop.end()) {
                 v = Verdict::Drop;
                 stats.extra_drops++;
+            } else if (opt.mec_indirect_base != 0 && opcode3 == 0x16 && len == 4) {
+                // DISPATCH_INDIRECT in the compute-queue form (FilterOptions::mec_indirect_base).
+                const std::uint64_t hi = static_cast<std::uint64_t>(src[i + 2] & 0xffffu) << 32;
+                if (hi != opt.mec_indirect_base) {
+                    v = Verdict::Drop;
+                    stats.mec_indirect_drops++;
+                } else {
+                    v = Verdict::Rewrite; // rewritten below
+                }
             } else if (opt.mapped) {
                 for (const auto &[a, bytes] : memory_operands(&src[i], len)) {
                     if (!opt.mapped(a, bytes == 0 ? 4 : bytes)) {
@@ -462,6 +471,15 @@ std::size_t filter(const Policy &policy, std::span<const std::uint32_t> src,
                     out[i + 3] = static_cast<std::uint32_t>(a >> 32);
                 }
                 stats.gds_rewrites++;
+            }
+            if (opt.mec_indirect_base != 0 && opcode == 0x16 && len == 4) {
+                // offset (the low address dword) and initiator for the GFX ring, one NOP after;
+                // the header keeps its predicate and shader-type bits, count 1.
+                out[i] = (header & ~(0x3fffu << 16)) | (1u << 16);
+                out[i + 1] = src[i + 1] & ~3u;
+                out[i + 2] = src[i + 3];
+                out[i + 3] = kNop;
+                stats.mec_indirect_rewrites++;
             }
             if (opcode == 0x12 && len >= 2 && out[i + 1] != 0) { // CLEAR_STATE: only cmd 0 is AMD's
                 out[i + 1] = 0;
