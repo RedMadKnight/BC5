@@ -3776,10 +3776,10 @@ index fe4b332..c27c243 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..bdcd8ef
+index 0000000..9576239
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,4680 @@
+@@ -0,0 +1,4696 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -4107,6 +4107,18 @@ index 0000000..bdcd8ef
 +static void write_timestamp_or_data(uint32_t data_sel, uint64_t address, uint32_t lo, uint32_t hi) {
 +	if (address == 0) {
 +		return;
++	}
++	// Experiment 0038: BC5_DIRECT_WATCH_VA also journals the soft CP's writes in that range.
++	static const std::pair<uint64_t, uint64_t> watch = [] {
++		const char* e = std::getenv("BC5_DIRECT_WATCH_VA");
++		if (e == nullptr) return std::pair<uint64_t, uint64_t> {0, 0};
++		char*          end = nullptr;
++		const uint64_t a   = std::strtoull(e, &end, 16);
++		const uint64_t b   = (end != nullptr && *end == ':') ? std::strtoull(end + 1, nullptr, 16) : a + 0x1000;
++		return std::pair<uint64_t, uint64_t> {a, b};
++	}();
++	if (address >= watch.first && address < watch.second) {
++		Direct::journal("soft-cp: write data_sel %u to 0x%" PRIx64 ": 0x%08x%08x\n", data_sel, address, hi, lo);
 +	}
 +	switch (data_sel) {
 +		case 0: break;
@@ -5751,6 +5763,9 @@ index 0000000..bdcd8ef
 +static void scratch_fill(uint64_t lo, uint64_t hi, std::vector<bc5::direct::Mapping>& have) {
 +	static const bool off = std::getenv("BC5_DIRECT_NO_SCRATCH") != nullptr;
 +	if (off || !g_dev) return;
++	constexpr uint64_t kGpuVaEnd = 1ull << 47u; // windows learned from faults at garbage addresses lie beyond it
++	if (lo >= kGpuVaEnd) return;
++	if (hi > kGpuVaEnd) hi = kGpuVaEnd;
 +	std::vector<std::pair<uint64_t, uint64_t>> pieces = {{lo, hi}};
 +	auto cut = [&pieces](uint64_t a, uint64_t b) {
 +		std::vector<std::pair<uint64_t, uint64_t>> next;
@@ -7675,6 +7690,7 @@ index 0000000..bdcd8ef
 +		auto marks = std::move(SoftCp::t_gpu_done);
 +		SoftCp::t_gpu_done.clear();
 +		Direct::post([dwords, num, kind, marks = std::move(marks)](bool failed) mutable {
++			if (failed) Direct::journal("soft-cp: %s %u dwords at %p replayed in full after a failed submission\n", kind, num, static_cast<const void*>(dwords));
 +			SoftCp::t_gpu_done = failed ? std::vector<SoftCp::GpuDone>() : std::move(marks);
 +			SoftCp::submit(dwords, num, kind);
 +			SoftCp::t_gpu_done.clear();

@@ -5,7 +5,7 @@ minutes in most runs, after GPU faults at addresses no mapping explains. Where d
 addresses come from?
 
 **Setup.** As in 0037 (`run-pkg.sh` there; `pkg-series.sh` here runs several in a row and
-summarises each). Runs 61–68, 2026-10-09 13:44–16:50; ASTRO BOT regression run 150.
+summarises each). Runs 61–71, 2026-10-09 13:44–17:25; ASTRO BOT regression run 150.
 
 **Result.**
 
@@ -52,8 +52,20 @@ of the compute rings waits on 0x12004b53c8 for 0 while it holds what looks like 
 the title's data (0x9076d6d8c). Who writes that 0 is not known yet; `BC5_DIRECT_WATCH_VA=lo:hi`
 (host) journals every packet with a memory operand in a range, for the next runs.
 
+Runs 69–71 with `BC5_DIRECT_WATCH_VA=12004b5000:12004b6000` (the host journals every packet with
+a memory operand there, and every soft-CP write there) settle the semaphore: a graphics DCB
+releases it with `RELEASE_MEM` (64-bit data 0, at its end) and a compute IB waits for it with
+`WAIT_REG_MEM64` (equal to 0), 2,233 times each in run 69: an ordinary cross-queue handshake.
+When a fault times a DCB out, the soft CP replays the failed buffers in full and does write the 0
+(run 71), but the compute queue's jobs then complete only after 81 s (rc −125) and the title
+submits nothing more. So the stop is the recovery after a reset, on the compute side; the trigger
+is still the fault at a garbage address (run 71: 0x201250e68000). Run 70 had no fault at all and
+ran at 21 fps, the scene moving by 540 s, but submissions stopped at 552 s without an error;
+nothing in the journal says why. Fault windows learned above 2^47 are no longer given a zero
+buffer (the GPU VA cannot hold them).
+
 **Verdict.** Inconclusive. The faults are not stale mappings. The compute-form indirect
 dispatches are a real gap: the console's compute IBs ask for them and the host has never run
 one, but running them as converted hangs the GPU beyond recovery, so they stay dropped. Open: what
 those dispatches need to run (they are the first compute work of the title's that reaches the
-GPU through a conversion), and who releases the semaphore the compute queue waits on.
+GPU through a conversion), and why the compute queue does not recover after a reset (the semaphore it waits on is released by the soft CP, F90).
