@@ -19,6 +19,11 @@ Local changes, kept minimal so the crate can be updated and the change offered u
   LibProsperoPKG (`KrakenDecoder.cs`) and pkg-to-anyps5 (`src/kraken.rs`), both GPL-3.0,
   used as documentation only; `unpack_offsets` takes `Option<(start, end)>` of the substream
   instead of the unused `excess_flag` bool.
+- `src/decoder/mod.rs`, `decode_bytes_type12`: a Huffman array whose table declares a single
+  symbol is a memset of that symbol; the function returned `src - src_end` (0) as the number
+  of bytes consumed, so its caller's `src_used == src_size` check failed and every such chunk
+  was an error. It now returns `src_size`, as ooz's `Kraken_DecodeBytes_Type12` does. PS5
+  packages store all-equal 128 KiB chunks this way (experiment 0036).
 - `Cargo.toml`: `test-log` moved to the dev-dependencies it is used by (it pulled
   `env_logger` and `windows-sys` into every build, which the windows-gnu toolchain cannot
   link); the `cli` binary, the benchmark and the build script are dropped, as are the

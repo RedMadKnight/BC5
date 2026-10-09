@@ -380,9 +380,11 @@ impl Core<'_> {
         src = bits.p - ((24 - bits.bitpos) / 8);
 
         if num_syms == 1 {
-            // no test coverage
+            // BC5: one symbol fills the output; the whole source is consumed, as in ooz
+            // (Kraken_DecodeBytes_Type12 returns src_size). Upstream returned `src - src_end`,
+            // which is 0 and failed the caller's src_used == src_size check.
             self.memset(output, syms[0], output_size).at(self)?;
-            return Ok(src - src_end);
+            return Ok(src_size);
         }
 
         let rev_lut = self.make_lut(&code_prefix, &syms).at(self)?;

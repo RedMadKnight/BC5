@@ -150,6 +150,21 @@ Flags seen (first chunk | second chunk << 4): 0x22 and 0x33 for most two-chunk b
 0x32, 0x23, 0x02, 0x03 and a few 0x04/0x06/0x07 (bit 2 of a chunk's flags, meaning unknown,
 *TODO(verify)*; such blocks decode when the LZ bit decides).
 
+Two chunk forms besides LZ and entropy-coded arrays (experiment 0036):
+
+- A chunk that is not LZ and stores exactly as many bytes as it outputs (131,072 for a first
+  chunk) is stored as is, inside an otherwise compressed block. Its bytes have no array
+  header; the reader gives it a type-0 (copy) header when a following LZ chunk may refer to
+  it, and copies it directly otherwise.
+- An all-equal chunk is an entropy array of type 2 whose Huffman table declares one symbol:
+  8 stored bytes for 128 KiB (`27 ff fc 00 03`: type 2, long form, 3 payload bytes, 0x20000
+  output; then the table: old format, symbol list, count 1, the symbol). oozextract 0.5.5
+  filled the output but reported 0 bytes consumed, which its caller rejects; ooz returns the
+  payload size there. Fixed in the vendored copy.
+
+In one 101.8 GB package these occurred in 30 blocks of 10 files; before the fixes those
+blocks failed with an I/O error and the game's reads of them came back short.
+
 ## 6. Inner PFS
 
 The metadata at the top of the logical image is a PFS v2 superblock (mode 0x18: the compact
