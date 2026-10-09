@@ -3776,10 +3776,10 @@ index fe4b332..c27c243 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..57b4555
+index 0000000..6c43758
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,4702 @@
+@@ -0,0 +1,4857 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -7188,6 +7188,8 @@ index 0000000..57b4555
 +	// Layouts (PAL): DRAW_INDIRECT/DRAW_INDEX_INDIRECT dword1 = offset from the SET_BASE index-1
 +	// base; args {count, instance_count, first, base_vertex, first_instance}; DISPATCH_INDIRECT
 +	// dword1 = offset, args {x, y, z}. TODO(verify) SET_BASE index 1 vs the console's usage.
++	bool                  mec_expand_ib = false; // experiment 0038: rebuild the IB with GFX-form dispatches
++	std::vector<uint32_t> mec_positions;         // offsets of its compute-form DISPATCH_INDIRECT
 +	{
 +		static const uint64_t max_count = std::getenv("BC5_DIRECT_INDIRECT_MAX") ? std::strtoull(std::getenv("BC5_DIRECT_INDIRECT_MAX"), nullptr, 10) : 4u << 20u;
 +		static const bool     survey    = std::getenv("BC5_DIRECT_NO_INDIRECT_SURVEY") == nullptr;
@@ -7203,6 +7205,26 @@ index 0000000..57b4555
 +		static const bool            mec_on     = std::getenv("BC5_DIRECT_MEC_INDIRECT") != nullptr;
 +		const bool                   compute_ib = std::strncmp(kind, "acb", 3) == 0;
 +		std::map<uint32_t, uint32_t> mec_hi; // high address dword -> dispatches
++		// Experiment 0038: the compute program each compute-form dispatch runs (COMPUTE_PGM_LO/HI,
++		// SH registers 0x20c/0x20d after 0x2c00, address >> 8), journaled once per program, and
++		// BC5_DIRECT_MEC_ONLY_PGM / BC5_DIRECT_MEC_SKIP_PGM (hex lists) to run only some of them.
++		uint64_t pgm = 0;
++		static const auto pgm_list = [](const char* name) {
++			std::set<uint64_t> v;
++			if (const char* e = std::getenv(name); e != nullptr) {
++				for (const char* c = e; *c != 0;) {
++					char*          end = nullptr;
++					const uint64_t x   = std::strtoull(c, &end, 16);
++					if (end == c) break;
++					v.insert(x);
++					c = (*end == ',') ? end + 1 : end;
++				}
++			}
++			return v;
++		};
++		static const std::set<uint64_t> only_pgm = pgm_list("BC5_DIRECT_MEC_ONLY_PGM");
++		static const std::set<uint64_t> skip_pgm = pgm_list("BC5_DIRECT_MEC_SKIP_PGM");
++		static std::set<uint64_t>       seen_pgm;
 +		for (uint32_t q = 0; q < num_dwords;) {
 +			const uint32_t h = ib[q];
 +			const uint32_t type = h >> 30u;
@@ -7210,22 +7232,49 @@ index 0000000..57b4555
 +			if (type == 3 || type == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
 +			if (q + len > num_dwords) break;
 +			const uint32_t op = (h >> 8u) & 0xffu;
++			if (type == 3 && op == 0x76 && len >= 3) { // SET_SH_REG: watch COMPUTE_PGM_LO/HI
++				const uint32_t first = ib[q + 1] & 0xffffu;
++				for (uint32_t k = 0; k + 2 < len; k++) {
++					if (first + k == 0x20cu) pgm = (pgm & ~0xffffffff00ull) | (static_cast<uint64_t>(ib[q + 2 + k]) << 8u);
++					if (first + k == 0x20du) pgm = (pgm & 0xffffffff00ull) | (static_cast<uint64_t>(ib[q + 2 + k] & 0xffu) << 40u);
++				}
++			}
 +			if (type == 3 && op == 0x11 && len >= 4 && (ib[q + 1] & 0xfu) == 1) {
 +				base1 = (ib[q + 2] & ~3u) | (static_cast<uint64_t>(ib[q + 3] & 0xffffu) << 32u);
 +			} else if (type == 3 && (op == 0x24 || op == 0x25 || op == 0x16) && len >= 2) {
 +				const bool     mec  = compute_ib && op == 0x16 && len == 4;
 +				const uint64_t a    = mec ? ((ib[q + 1] & ~3ull) | (static_cast<uint64_t>(ib[q + 2] & 0xffffu) << 32u)) : base1 + ib[q + 1];
++				if (mec && mec_on && survey && seen_pgm.insert(pgm).second) {
++					journal("  mec pgm 0x%" PRIx64 " first at #%" PRIu64 " offset %u\n", pgm, g_submits.load(), q);
++				}
++				if (mec && mec_on && ((!only_pgm.empty() && only_pgm.count(pgm) == 0) || skip_pgm.count(pgm) != 0)) {
++					opt.drop_offsets.push_back(q);
++					q += len;
++					continue;
++				}
 +				if (mec && !mec_on) {
 +					opt.drop_offsets.push_back(q);
 +					q += len;
 +					continue;
 +				}
-+				if (mec) mec_hi[ib[q + 2] & 0xffffu]++;
++				if (mec) {
++					mec_hi[ib[q + 2] & 0xffffu]++;
++					mec_positions.push_back(q);
++				}
 +				const uint32_t want = op == 0x16 ? 3 : 5;
 +				if (covered_sorted(*maps_p, a, want * 4)) {
 +					const auto* t = reinterpret_cast<const volatile uint32_t*>(a);
 +					uint32_t v[5] = {t[0], t[1], t[2], want > 3 ? t[3] : 0u, want > 4 ? t[4] : 0u};
-+					const bool insane = op == 0x16 ? (static_cast<uint64_t>(v[0]) * v[1] * v[2] > 65536ull * 64ull)
++					// Experiment 0038: the product without overflow (+inf as a count, 0x7f800000, wrapped
++					// it to a small number). BC5_DIRECT_TRUST_DISPATCH=1 skips the check for
++					// dispatches: their arguments are usually written by earlier GPU work in the same
++					// IB, so what the CPU reads here is stale, and dropping a producer on stale values
++					// leaves its consumers with garbage counts.
++					static const bool trust_dispatch = std::getenv("BC5_DIRECT_TRUST_DISPATCH") != nullptr;
++					const bool        too_many_groups = v[0] > 65536u * 64u || v[1] > 65536u * 64u || v[2] > 65536u * 64u ||
++					                             static_cast<uint64_t>(v[0]) * v[1] > 65536ull * 64ull ||
++					                             static_cast<uint64_t>(v[0]) * v[1] * v[2] > 65536ull * 64ull;
++					const bool insane = op == 0x16 ? (!trust_dispatch && too_many_groups)
 +					                               : (v[0] > max_count || v[1] > 1024u || static_cast<uint64_t>(v[0]) * v[1] > max_count);
 +					if (survey) journal("  indirect op %02x at %u: base 0x%" PRIx64 " +0x%x -> %u %u %u %u %u%s\n", op, q, base1, ib[q + 1], v[0], v[1], v[2], v[3], v[4], insane ? " DROPPED" : "");
 +					if (insane) opt.drop_offsets.push_back(q);
@@ -7236,19 +7285,56 @@ index 0000000..57b4555
 +			}
 +			q += len;
 +		}
-+		if (!mec_hi.empty() && mec_on) {
-+			uint32_t hi = 0, most = 0;
-+			for (const auto& [h, c]: mec_hi) {
-+				if (c > most) { most = c; hi = h; }
++		if (!mec_hi.empty() && mec_on) mec_expand_ib = true;
++	}
++	// Experiment 0038, BC5_DIRECT_OPS_DUMP=<n>: the opcode sequence (offset:op[/event or
++	// control]) of the first n compute IBs of at least 1,000 dwords that hold a compute-form
++	// DISPATCH_INDIRECT, to see what separates the dispatch that writes the arguments from the one
++	// that reads them.
++	{
++		static const long ops_dump = std::getenv("BC5_DIRECT_OPS_DUMP") ? std::atol(std::getenv("BC5_DIRECT_OPS_DUMP")) : 0;
++		static long       ops_done = 0;
++		if (ops_done < ops_dump && std::strncmp(kind, "acb", 3) == 0 && num_dwords >= 1000) {
++			bool has_mec = false;
++			for (uint32_t q = 0; q < num_dwords;) {
++				const uint32_t h = ib[q];
++				uint32_t       len = 1;
++				if ((h >> 30u) == 3 || (h >> 30u) == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
++				if ((h >> 30u) == 3 && ((h >> 8u) & 0xffu) == 0x16 && len == 4) has_mec = true;
++				q += len;
 +			}
-+			opt.mec_indirect_base = static_cast<uint64_t>(hi) << 32u;
-+			// SET_BASE, base index 1 (the draw/dispatch indirect base), address hi:0, with the
-+			// compute shader-type bit (header bit 1): RADV sets the dispatch-indirect base on the
-+			// GFX ring with PKT3_SHADER_TYPE_S(1) (Mesa radv_emit_dispatch_packets, TODO(verify)
-+			// the line). Run 64 had it without the bit, so the compute base stayed 0 and the
-+			// dispatch read its arguments at the bare offset.
-+			opt.prologue.insert(opt.prologue.end(), {0xC0021102u, 1u, 0u, hi});
-+			if (survey && mec_hi.size() > 1) journal("  compute-form DISPATCH_INDIRECT in %zu different 4 GiB ranges; base 0x%x00000000, the others dropped\n", mec_hi.size(), hi);
++			if (has_mec) {
++				ops_done++;
++				std::string line;
++				for (uint32_t q = 0; q < num_dwords;) {
++					const uint32_t h    = ib[q];
++					const uint32_t type = h >> 30u;
++					uint32_t       len  = 1;
++					if (type == 3 || type == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
++					if (q + len > num_dwords) break;
++					if (type == 3) {
++						const uint32_t op = (h >> 8u) & 0xffu;
++						char           buf[64];
++						if (op == 0x46 || op == 0x49 || op == 0x47) { // EVENT_WRITE / RELEASE_MEM / EOP: event type and index
++							std::snprintf(buf, sizeof(buf), "%u:%02x/e%02x.%u ", q, op, ib[q + 1] & 0x3fu, (ib[q + 1] >> 8u) & 0xfu);
++						} else if (op == 0x58) { // ACQUIRE_MEM: coher_cntl
++							std::snprintf(buf, sizeof(buf), "%u:58/%08x ", q, len > 1 ? ib[q + 1] : 0u);
++						} else if (op == 0x3c || op == 0x93) { // WAIT_REG_MEM: function, address lo
++							std::snprintf(buf, sizeof(buf), "%u:%02x/f%u@%08x ", q, op, len > 1 ? ib[q + 1] & 7u : 0u, len > 2 ? ib[q + 2] : 0u);
++						} else if (op == 0x16) {
++							std::snprintf(buf, sizeof(buf), "%u:16/%u@%x%08x ", q, len, len == 4 ? ib[q + 2] & 0xffffu : 0u, len > 1 ? ib[q + 1] : 0u);
++						} else if (op == 0x76 || op == 0x69 || op == 0x68 || op == 0x79) {
++							buf[0] = 0; // SET_*_REG: too many to list
++						} else {
++							std::snprintf(buf, sizeof(buf), "%u:%02x ", q, op);
++						}
++						line += buf;
++						if (line.size() > 900) { journal("ops %s #%" PRIu64 ": %s\n", kind, g_submits.load(), line.c_str()); line.clear(); }
++					}
++					q += len;
++				}
++				if (!line.empty()) journal("ops %s #%" PRIu64 ": %s\n", kind, g_submits.load(), line.c_str());
++			}
 +		}
 +	}
 +	// Experiment 0038, BC5_DIRECT_WATCH_VA=lo:hi (hex): every packet of the IB with a memory
@@ -7461,7 +7547,75 @@ index 0000000..57b4555
 +		}
 +		journal("piecewise done\n");
 +	}
-+	auto r = g_dev->submit(std::span<const uint32_t>(ib, num_dwords), opt, 2'000'000'000ull, with_gds);
++	// Experiment 0038 (BC5_DIRECT_MEC_INDIRECT=1): every compute-form DISPATCH_INDIRECT (address
++	// lo, hi, initiator) becomes SET_BASE index 1 with the compute shader type (base: the page of
++	// its arguments), PFP_SYNC_ME (the GFX ring's prefetch parser reads the arguments ahead of the
++	// ME, so without it the CS_PARTIAL_FLUSH between the dispatch that writes them and this one did
++	// not hold it back), and the GFX-form DISPATCH_INDIRECT (offset in that page, initiator), as
++	// RADV emits an indirect dispatch on the GFX ring (Mesa radv_emit_dispatch_packets,
++	// TODO(verify) the lines). The IB grows, so the host submits a copy and maps offsets both
++	// ways (the drop list in, the executed offsets out); an IB with COND_EXEC, whose skip counts
++	// are offsets, has these dispatches dropped instead.
++	std::vector<uint32_t> mec_ib;
++	std::vector<uint32_t> mec_new_to_old;
++	const uint32_t*       sub_ib = ib;
++	uint32_t              sub_n  = num_dwords;
++	if (mec_expand_ib) {
++		bool cond_exec = false;
++		for (uint32_t q = 0; q < num_dwords;) {
++			const uint32_t h = ib[q];
++			uint32_t       len = 1;
++			if ((h >> 30u) == 3 || (h >> 30u) == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
++			if ((h >> 30u) == 3 && ((h >> 8u) & 0xffu) == 0x22) cond_exec = true;
++			q += len;
++		}
++		if (cond_exec) {
++			opt.drop_offsets.insert(opt.drop_offsets.end(), mec_positions.begin(), mec_positions.end());
++		} else {
++			std::vector<uint32_t> old_to_new(num_dwords + 1, ~0u);
++			mec_ib.reserve(num_dwords + 5 * mec_positions.size());
++			for (uint32_t q = 0; q < num_dwords;) {
++				const uint32_t h = ib[q];
++				uint32_t       len = 1;
++				if ((h >> 30u) == 3 || (h >> 30u) == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
++				if (q + len > num_dwords) len = num_dwords - q;
++				const bool dropped = std::find(opt.drop_offsets.begin(), opt.drop_offsets.end(), q) != opt.drop_offsets.end();
++				const bool is_mec  = (h >> 30u) == 3 && ((h >> 8u) & 0xffu) == 0x16 && len == 4 && !dropped;
++				if (is_mec) {
++					const uint64_t a    = (ib[q + 1] & ~3ull) | (static_cast<uint64_t>(ib[q + 2] & 0xffffu) << 32u);
++					const uint64_t base = a & ~0xfffull;
++					mec_ib.insert(mec_ib.end(), {0xC0021102u, 1u, static_cast<uint32_t>(base), static_cast<uint32_t>(base >> 32u)});
++					mec_ib.insert(mec_ib.end(), {0xC0004200u, 0u});
++					old_to_new[q] = static_cast<uint32_t>(mec_ib.size());
++					mec_ib.insert(mec_ib.end(), {(h & ~(0x3fffu << 16u)) | (1u << 16u), static_cast<uint32_t>(a - base), ib[q + 3]});
++				} else {
++					old_to_new[q] = static_cast<uint32_t>(mec_ib.size());
++					mec_ib.insert(mec_ib.end(), ib + q, ib + q + len);
++				}
++				q += len;
++			}
++			mec_new_to_old.assign(mec_ib.size(), ~0u);
++			for (uint32_t q = 0; q < num_dwords; q++) {
++				if (old_to_new[q] != ~0u && old_to_new[q] < mec_new_to_old.size()) mec_new_to_old[old_to_new[q]] = q;
++			}
++			for (auto& d: opt.drop_offsets) {
++				if (d < num_dwords && old_to_new[d] != ~0u) d = old_to_new[d];
++			}
++			sub_ib = mec_ib.data();
++			sub_n  = static_cast<uint32_t>(mec_ib.size());
++		}
++	}
++	auto mec_back = [&mec_new_to_old](std::vector<uint32_t>& offsets) {
++		if (mec_new_to_old.empty()) return;
++		std::vector<uint32_t> back;
++		back.reserve(offsets.size());
++		for (const uint32_t o: offsets) {
++			if (o < mec_new_to_old.size() && mec_new_to_old[o] != ~0u) back.push_back(mec_new_to_old[o]);
++		}
++		offsets.swap(back);
++	};
++	auto r = g_dev->submit(std::span<const uint32_t>(sub_ib, sub_n), opt, 2'000'000'000ull, with_gds);
++	mec_back(r.executed_offsets);
 +	// -EFAULT is not a GPU hang: a userptr BO in the list lost its pages (the guest unmapped
 +	// or re-protected the range since the last sync). Revalidate the mappings now and retry once.
 +	bool retried = false;
@@ -7470,7 +7624,8 @@ index 0000000..57b4555
 +		sync_mappings(true, true);
 +		maps_p  = g_dev->sorted_mappings();
 +		retried = true;
-+		r       = g_dev->submit(std::span<const uint32_t>(ib, num_dwords), opt, 2'000'000'000ull, with_gds);
++		r       = g_dev->submit(std::span<const uint32_t>(sub_ib, sub_n), opt, 2'000'000'000ull, with_gds);
++		mec_back(r.executed_offsets);
 +	}
 +	if (r.pending && t_cq == 1 && !g_ring_async) { // BC5_DIRECT_ASYNC: the doorbell consumer waits for its own jobs
 +		bc5::direct::SubmitResult fr;

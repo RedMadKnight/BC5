@@ -250,3 +250,15 @@ and took the machine down in its first run (experiment 0038) — do not use it o
 experiment. `BC5_DIRECT_WATCH_VA=lo:hi` (hex) journals every packet with a memory operand in
 that range. Traces: `KYTY_BC5_AMM_TRACE=1` also reports short APR reads, AMPR event
 registrations and triggers, and fixed mappings that replace live memory.
+
+Experiment 0039: with `BC5_DIRECT_MEC_INDIRECT=1` the host rebuilds a compute IB that holds
+compute-form `DISPATCH_INDIRECT`: each becomes SET_BASE index 1 with the compute shader type (the
+page of its arguments), `PFP_SYNC_ME` and the GFX-form dispatch; the drop list and the executed
+offsets are mapped between the two layouts; an IB with COND_EXEC has these dispatches dropped.
+`BC5_DIRECT_MEC_ONLY_PGM` / `BC5_DIRECT_MEC_SKIP_PGM` (hex lists of compute program addresses,
+COMPUTE_PGM_LO/HI) choose which run; the journal names each program once ("mec pgm").
+`BC5_DIRECT_TRUST_DISPATCH=1` skips the sanity check of dispatch arguments read at submit time
+(worse for the second title, off). `BC5_DIRECT_OPS_DUMP=<n>` journals the opcode sequence of the
+first n large compute IBs with such dispatches. The backend's `FilterOptions::mec_indirect_base`
+(one base per IB, with PFP_SYNC_ME inserted by `Device::submit`) is the earlier variant and is no
+longer set by the host.

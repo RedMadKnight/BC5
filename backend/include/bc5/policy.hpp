@@ -59,6 +59,7 @@ struct FilterStats {
     std::uint64_t dispatch_rewrites = 0; // DISPATCH_* initiators given ORDERED_APPEND_ENBL
     std::uint64_t mec_indirect_rewrites = 0; // DISPATCH_INDIRECT, compute-queue form -> GFX form
     std::uint64_t mec_indirect_drops = 0;    // the same, address outside FilterOptions::mec_indirect_base's 4 GiB
+    std::uint64_t pfp_syncs = 0; // PFP_SYNC_ME inserted before rewritten DISPATCH_INDIRECT (Device::submit)
     std::uint64_t clear_state_rewrites = 0; // CLEAR_STATE cmd 1/2 -> cmd 0
     std::uint64_t cs_done_rewrites = 0; // RELEASE_MEM CS_DONE/index 6 without data -> BOTTOM_OF_PIPE_TS/5
     // IB offsets (dwords) where a SAMPLE_PIPELINESTAT took a dropped marker's place
