@@ -1,0 +1,5 @@
+run 91: kyty exit 124 after 301 s; faults: none; failed 0; last submit at 298.591 s; access violations 0; 250 s on: frames 1119 fps 22.38 (pkg-20261009-2223)
+run 92: kyty exit 124 after 301 s; faults: none; failed 0; last submit at 298.640 s; access violations 0; 250 s on: frames 1040 fps 20.80 (pkg-20261009-2228)
+run 93: kyty exit 124 after 301 s; faults: none; failed 0; last submit at 298.691 s; access violations 0; 250 s on: frames 1121 fps 22.42 (pkg-20261009-2233)
+run 94: kyty exit 65 after 240 s; faults: 0x12cc002000 ; failed 12; last submit at 222.420 s; access violations 1; 250 s on: frames 0 fps 0.00 (pkg-20261009-2239)
+series done

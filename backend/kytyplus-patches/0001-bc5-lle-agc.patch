@@ -3845,10 +3845,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..9e19484
+index 0000000..9954536
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,4913 @@
+@@ -0,0 +1,4922 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -7395,7 +7395,16 @@ index 0000000..9e19484
 +					// dispatches: their arguments are usually written by earlier GPU work in the same
 +					// IB, so what the CPU reads here is stale, and dropping a producer on stale values
 +					// leaves its consumers with garbage counts.
-+					static const bool trust_dispatch = std::getenv("BC5_DIRECT_TRUST_DISPATCH") != nullptr;
++					// Experiment 0041: BC5_DIRECT_TRUST_DISPATCH=dcb trusts only the dispatches of
++					// graphics buffers (DCBs), where the second title's GPU-driven dispatches read
++					// their arguments from a per-frame scratch that holds older data at submit time
++					// (1.5-2.2 million dropped a run).
++					static const int trust_mode = [] {
++						const char* e = std::getenv("BC5_DIRECT_TRUST_DISPATCH");
++						if (e == nullptr) return 0;
++						return std::strcmp(e, "dcb") == 0 ? 1 : 2;
++					}();
++					const bool trust_dispatch = trust_mode == 2 || (trust_mode == 1 && !compute_ib);
 +					const bool        too_many_groups = v[0] > 65536u * 64u || v[1] > 65536u * 64u || v[2] > 65536u * 64u ||
 +					                             static_cast<uint64_t>(v[0]) * v[1] > 65536ull * 64ull ||
 +					                             static_cast<uint64_t>(v[0]) * v[1] * v[2] > 65536ull * 64ull;
