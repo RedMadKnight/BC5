@@ -197,8 +197,7 @@ controller's device again and reopens it, closing the stopped one first, so the 
 after the pad is unplugged and plugged in (F93). A pad is connected once, by its SDL instance id:
 a game controller only through `SDL_CONTROLLERDEVICEADDED`, other joysticks through
 `SDL_JOYDEVICEADDED`; before, a replugged pad left a ghost on player 1 and landed on player 2.
-With two DualSense pads both pad ports use the first controller audio device SDL lists. Each
-pad port's device is reported once on stderr (`bc5 audio: port type …`). The controller's sink and
+With two DualSense pads both pad ports use the first controller audio device SDL lists. The controller's sink and
 its ALSA `PCM` control must be at 100 %: `pad-volume.sh` here sets both, re-running itself on the
 host through `distrobox-host-exec` when called in the container, and with `--watch <pid>` keeps
 them there every 3 s while that process lives (the ALSA control comes back at 76 % on every
@@ -246,9 +245,7 @@ name `AMM` (so `BC5_DIRECT_EAGER_NAMES` can include them), APR submissions queue
 (after KytyPS5 c045f08), `WaitOnAddress` compare codes as AnyPS5 implements them;
 `KYTY_BC5_AMPR_FILTER=<n>` sets the filter of AMPR completion events (default `EVFILT_USER`).
 Audio and system: ATRAC9 vibration layouts (channel configurations 6–7) are decoded as mono and
-dual mono instead of reaching past LibAtrac9's table (after KytyPS5 b10bd53;
-`KYTY_BC5_AT9_VIB_RAW=1` passes them as they are, a diagnostic; the first one is reported on
-stderr as `bc5 ajm: ATRAC9 vibration layout`); the entitlement
+dual mono instead of reaching past LibAtrac9's table (after KytyPS5 b10bd53); the entitlement
 update event is queued after `AppContentInitialize` (after KytyPS5 62643c3). Direct path: the
 views of direct and private memory are cached per change of the guest's ranges (a generation
 counter in `VirtualRanges`), the device's mapping list is kept sorted
