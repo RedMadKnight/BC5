@@ -266,6 +266,10 @@ page of its arguments), `PFP_SYNC_ME` and the GFX-form dispatch; the drop list a
 offsets are mapped between the two layouts; an IB with COND_EXEC has these dispatches dropped.
 `BC5_DIRECT_MEC_ONLY_PGM` / `BC5_DIRECT_MEC_SKIP_PGM` (hex lists of compute program addresses,
 COMPUTE_PGM_LO/HI) choose which run; the journal names each program once ("mec pgm").
+Experiment 0042: `KYTY_BC5_RANGE_WATCH=lo:hi` (hex) writes every edit of the guest's ranges
+overlapping that window to stderr with the monotonic clock; the journal's zero on that clock is
+printed once (`bc5 clock`). A direct-memory heap the GPU touches before the CPU must be named in
+`BC5_DIRECT_EAGER_NAMES` (pages are otherwise imported once the CPU has written them).
 Experiment 0040: `BC5_DIRECT_HEAVY_PROBE=1` scans the memory operands of heavy IBs and makes
 the memory sync urgent for an operand page not yet known to stay unmapped; pages still unmapped
 are journaled once (`heavy probe:`, with the packet's dwords and the IB's `SET_BASE`s). Off by

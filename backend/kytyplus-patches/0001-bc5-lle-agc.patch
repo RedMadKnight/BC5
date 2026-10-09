@@ -2910,7 +2910,7 @@ index bc73d18..252c692 100644
  
  #endif /* EMULATOR_INCLUDE_EMULATOR_KERNEL_FILESYSTEM_H_ */
 diff --git a/src/kernel/memory.cpp b/src/kernel/memory.cpp
-index 02fc0fc..e0f3757 100644
+index 02fc0fc..35b471b 100644
 --- a/src/kernel/memory.cpp
 +++ b/src/kernel/memory.cpp
 @@ -1,3 +1,6 @@
@@ -2920,8 +2920,30 @@ index 02fc0fc..e0f3757 100644
  #include "kernel/memory.h"
  
  #include "common/assert.h"
-@@ -201,6 +204,19 @@ static bool IsPrivateCommittedRangeType(VirtualRangeType type) {
+@@ -199,8 +202,41 @@ static bool IsPrivateCommittedRangeType(VirtualRangeType type) {
+ 	       type == VirtualRangeType::Runtime;
+ }
  
++// BC5 (experiment 0042): KYTY_BC5_RANGE_WATCH=lo:hi (hex) writes every edit of the guest's ranges
++// that overlaps [lo, hi) to stderr, with the monotonic clock (the direct path's journal prints its
++// own zero on that clock once, "bc5 clock").
++static void Bc5RangeWatch(const char* what, uint64_t start, uint64_t size, int protection, int type, const char* name, bool ok) {
++	static const std::pair<uint64_t, uint64_t> w = [] {
++		const char* e = std::getenv("KYTY_BC5_RANGE_WATCH");
++		if (e == nullptr) return std::pair<uint64_t, uint64_t> {0, 0};
++		char*          end = nullptr;
++		const uint64_t lo  = std::strtoull(e, &end, 16);
++		const uint64_t hi  = (end != nullptr && *end == ':') ? std::strtoull(end + 1, nullptr, 16) : 0;
++		return std::pair<uint64_t, uint64_t> {lo, hi};
++	}();
++	if (w.second == 0 || start + size <= w.first || start >= w.second) return;
++	timespec ts {};
++	clock_gettime(CLOCK_MONOTONIC, &ts);
++	std::fprintf(stderr, "range watch: mono %.3f %s 0x%" PRIx64 "+0x%" PRIx64 " prot %d type %d %s%s\n",
++	             static_cast<double>(ts.tv_sec) + static_cast<double>(ts.tv_nsec) / 1e9, what, start, size, protection, type,
++	             name != nullptr ? name : "", ok ? "" : " (refused)");
++}
++
  class VirtualRanges {
  public:
 +	// BC5 (experiment 0037): changes with every edit of the ranges, so readers can cache a snapshot.
@@ -2940,7 +2962,7 @@ index 02fc0fc..e0f3757 100644
  	struct Range {
  		uint64_t         start          = 0;
  		uint64_t         size           = 0;
-@@ -215,6 +231,7 @@ public:
+@@ -215,6 +251,7 @@ public:
  	bool Add(uint64_t start, uint64_t size, uint64_t offset, int protection, int memory_type,
  	         VirtualRangeType type, const char* name, bool disallow_merge = false) {
  		Common::LockGuard lock(m_mutex);
@@ -2948,39 +2970,49 @@ index 02fc0fc..e0f3757 100644
  
  		if (start == 0 || size == 0) {
  			return false;
-@@ -245,6 +262,7 @@ public:
+@@ -240,11 +277,14 @@ public:
+ 		const auto index = static_cast<size_t>(position - m_ranges.begin());
+ 		m_ranges.insert(position, r);
+ 		MergeAroundUnlocked(index);
++		Bc5RangeWatch("add", start, size, protection, static_cast<int>(type), name, true);
+ 		return true;
+ 	}
  
  	bool Remove(uint64_t start, uint64_t size) {
  		Common::LockGuard lock(m_mutex);
 +		m_gen.fetch_add(1, std::memory_order_acq_rel); // BC5 (experiment 0037)
++		Bc5RangeWatch("remove", start, size, 0, 0, nullptr, true);
  
  		auto position = LowerBound(start);
  		if (position != m_ranges.end() && position->start == start && position->size == size) {
-@@ -276,6 +294,7 @@ public:
+@@ -276,6 +316,8 @@ public:
  
  	bool ReleaseReserved(uint64_t start, uint64_t size) {
  		Common::LockGuard lock(m_mutex);
 +		m_gen.fetch_add(1, std::memory_order_acq_rel); // BC5 (experiment 0037)
++		Bc5RangeWatch("release-reserved", start, size, 0, 0, nullptr, true);
  
  		for (size_t index = 0; index < m_ranges.size(); index++) {
  			auto& r = m_ranges[index];
-@@ -290,6 +309,7 @@ public:
+@@ -290,6 +332,8 @@ public:
  	bool ConsumeReserved(uint64_t start, uint64_t size,
  	                     VirtualRangeType type = VirtualRangeType::Reserved) {
  		Common::LockGuard lock(m_mutex);
 +		m_gen.fetch_add(1, std::memory_order_acq_rel); // BC5 (experiment 0037)
++		Bc5RangeWatch("consume", start, size, 0, static_cast<int>(type), nullptr, true);
  
  		auto end = End(start, size);
  		for (const auto& r: m_ranges) {
-@@ -306,6 +326,7 @@ public:
+@@ -306,6 +350,8 @@ public:
  	bool ConsumeReservedSpan(uint64_t start, uint64_t size, Range* first_range = nullptr,
  	                         VirtualRangeType type = VirtualRangeType::Reserved) {
  		Common::LockGuard lock(m_mutex);
 +		m_gen.fetch_add(1, std::memory_order_acq_rel); // BC5 (experiment 0037)
++		Bc5RangeWatch("consume-span", start, size, 0, static_cast<int>(type), nullptr, true);
  
  		if (size == 0) {
  			return false;
-@@ -337,6 +358,7 @@ public:
+@@ -337,6 +383,7 @@ public:
  
  	void Rename(uint64_t start, uint64_t size, const char* name) {
  		Common::LockGuard lock(m_mutex);
@@ -2988,11 +3020,12 @@ index 02fc0fc..e0f3757 100644
  
  		auto position = LowerBound(start);
  		if (position != m_ranges.end() && position->start == start && position->size == size) {
-@@ -349,12 +371,14 @@ public:
+@@ -349,12 +396,15 @@ public:
  
  	void Protect(uint64_t start, uint64_t size, int protection) {
  		Common::LockGuard lock(m_mutex);
 +		m_gen.fetch_add(1, std::memory_order_acq_rel); // BC5 (experiment 0037)
++		Bc5RangeWatch("protect", start, size, protection, 0, nullptr, true);
  
  		EditUnlocked(start, size, [protection](Range* r) { r->protection = protection; });
  	}
@@ -3003,7 +3036,7 @@ index 02fc0fc..e0f3757 100644
  
  		EditUnlocked(start, size, [memory_type](Range* r) { r->memory_type = memory_type; });
  	}
-@@ -382,6 +406,13 @@ public:
+@@ -382,6 +432,13 @@ public:
  		return true;
  	}
  
@@ -3017,7 +3050,7 @@ index 02fc0fc..e0f3757 100644
  	bool QuerySpan(uint64_t start, uint64_t size, std::vector<Range>* out) {
  		EXIT_IF(out == nullptr);
  
-@@ -644,6 +675,7 @@ private:
+@@ -644,6 +701,7 @@ private:
  	}
  
  	std::vector<Range> m_ranges;
@@ -3025,7 +3058,7 @@ index 02fc0fc..e0f3757 100644
  	Common::Mutex      m_mutex;
  };
  
-@@ -712,6 +744,12 @@ public:
+@@ -712,6 +770,12 @@ public:
  				                            : minimum;
  				target = std::max(minimum, std::min(ps5_game_total, capped));
  			}
@@ -3038,7 +3071,7 @@ index 02fc0fc..e0f3757 100644
  			target = target & ~(0x4000ull - 1ull);
  			LOGF("guest memory total = %llu MiB\n", static_cast<unsigned long long>(target / megabyte));
  			return target;
-@@ -850,7 +888,99 @@ static std::unique_ptr<PhysicalMemory>    g_physical_memory;
+@@ -850,7 +914,99 @@ static std::unique_ptr<PhysicalMemory>    g_physical_memory;
  static std::unique_ptr<FlexibleMemory>    g_flexible_memory;
  static std::unique_ptr<PooledMemory>      g_pooled_memory;
  static std::unique_ptr<VirtualRanges>     g_virtual_ranges;
@@ -3138,7 +3171,7 @@ index 02fc0fc..e0f3757 100644
  static callback_func_t                    g_alloc_callback        = nullptr;
  static callback_func_t                    g_free_callback         = nullptr;
  static std::atomic<uint64_t>              g_memory_pool_committed = 0;
-@@ -3193,6 +3323,16 @@ static bool ReplaceFixedRangeWithReserved(uint64_t start, uint64_t size) {
+@@ -3193,6 +3349,16 @@ static bool ReplaceFixedRangeWithReserved(uint64_t start, uint64_t size) {
  			replaced.range.offset += current - range.start;
  		}
  		DecodeMemoryProtection(replaced.range.protection, &replaced.mode, &replaced.gpu_mode);
@@ -3155,7 +3188,7 @@ index 02fc0fc..e0f3757 100644
  		if (range.type == VirtualRangeType::Direct &&
  		    !g_guest_address_space->BackingContains(current, chunk)) {
  			return false;
-@@ -3465,7 +3605,70 @@ bool KernelHandleReservedRangeAccessViolation(uint64_t vaddr) {
+@@ -3465,7 +3631,70 @@ bool KernelHandleReservedRangeAccessViolation(uint64_t vaddr) {
  	    std::strncmp(range.name, "AMM", KERNEL_MAXIMUM_NAME_LENGTH) != 0) {
  		return false;
  	}
@@ -3845,10 +3878,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..9954536
+index 0000000..0f7c742
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,4922 @@
+@@ -0,0 +1,4926 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -4847,7 +4880,11 @@ index 0000000..9954536
 +
 +// Seconds since the first call: the time base of the BC5_DIRECT_TIMING journal lines.
 +static double timing_now() {
-+	static const uint64_t t_first = SoftCp::now_ns();
++	static const uint64_t t_first = [] {
++		const uint64_t t = SoftCp::now_ns();
++		std::fprintf(stderr, "bc5 clock: journal t 0 = monotonic %.3f s\n", static_cast<double>(t) / 1e9);
++		return t;
++	}();
 +	return static_cast<double>(SoftCp::now_ns() - t_first) / 1e9;
 +}
 +
