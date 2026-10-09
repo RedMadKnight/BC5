@@ -192,7 +192,12 @@ Haptics (F69): pad-speaker and vibration ports open on the controller's own four
 device (the first SDL output device named `DualSense`; `KYTY_BC5_PAD_AUDIO_DEVICE=<substring>`
 picks another, `KYTY_BC5_NO_PAD_AUDIO=1` keeps the old behaviour); a port's frames go to channels
 1–2 (speaker) or 3–4 (actuators). A pad port never blocks the game's audio thread: a removed
-device drops the frames, a full queue is cleared (F72).
+device drops the frames, a full queue is cleared (F72), and once a second the port looks for the
+controller's device again and reopens it, closing the stopped one first, so the haptics come back
+after the pad is unplugged and plugged in (F93). A pad is connected once, by its SDL instance id:
+a game controller only through `SDL_CONTROLLERDEVICEADDED`, other joysticks through
+`SDL_JOYDEVICEADDED`; before, a replugged pad left a ghost on player 1 and landed on player 2.
+With two DualSense pads both pad ports use the first controller audio device SDL lists.
 Logging (F75): `KYTY_BC5_LOG_WAITS=1` restores the `KernelWaitSema`/`Equeue wait` lines,
 `BC5_GC_LOG=verbose` the gc layer's per-flip and per-ioctl lines (otherwise the first few of each
 kind), `BC5_DIRECT_FLIP_SAMPLE=1` the per-flip sampling of the display buffer and recent targets
@@ -236,7 +241,9 @@ name `AMM` (so `BC5_DIRECT_EAGER_NAMES` can include them), APR submissions queue
 (after KytyPS5 c045f08), `WaitOnAddress` compare codes as AnyPS5 implements them;
 `KYTY_BC5_AMPR_FILTER=<n>` sets the filter of AMPR completion events (default `EVFILT_USER`).
 Audio and system: ATRAC9 vibration layouts (channel configurations 6–7) are decoded as mono and
-dual mono instead of reaching past LibAtrac9's table (after KytyPS5 b10bd53); the entitlement
+dual mono instead of reaching past LibAtrac9's table (after KytyPS5 b10bd53;
+`KYTY_BC5_AT9_VIB_RAW=1` passes them as they are, a diagnostic; the first one is reported on
+stderr as `bc5 ajm: ATRAC9 vibration layout`); the entitlement
 update event is queued after `AppContentInitialize` (after KytyPS5 62643c3). Direct path: the
 views of direct and private memory are cached per change of the guest's ranges (a generation
 counter in `VirtualRanges`), the device's mapping list is kept sorted
@@ -257,6 +264,10 @@ page of its arguments), `PFP_SYNC_ME` and the GFX-form dispatch; the drop list a
 offsets are mapped between the two layouts; an IB with COND_EXEC has these dispatches dropped.
 `BC5_DIRECT_MEC_ONLY_PGM` / `BC5_DIRECT_MEC_SKIP_PGM` (hex lists of compute program addresses,
 COMPUTE_PGM_LO/HI) choose which run; the journal names each program once ("mec pgm").
+Experiment 0040: `BC5_DIRECT_HEAVY_PROBE=1` scans the memory operands of heavy IBs and makes
+the memory sync urgent for an operand page not yet known to stay unmapped; pages still unmapped
+are journaled once (`heavy probe:`, with the packet's dwords and the IB's `SET_BASE`s). Off by
+default: it cost ASTRO BOT 6 ms a frame (run 152); the second title's `run-pkg.sh` turns it on.
 `BC5_DIRECT_TRUST_DISPATCH=1` skips the sanity check of dispatch arguments read at submit time
 (worse for the second title, off). `BC5_DIRECT_OPS_DUMP=<n>` journals the opcode sequence of the
 first n large compute IBs with such dispatches. The backend's `FilterOptions::mec_indirect_base`
