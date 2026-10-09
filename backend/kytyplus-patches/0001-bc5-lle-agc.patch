@@ -2800,10 +2800,17 @@ index bc73d18..252c692 100644
  
  #endif /* EMULATOR_INCLUDE_EMULATOR_KERNEL_FILESYSTEM_H_ */
 diff --git a/src/kernel/memory.cpp b/src/kernel/memory.cpp
-index 02fc0fc..8dfae44 100644
+index 02fc0fc..865a058 100644
 --- a/src/kernel/memory.cpp
 +++ b/src/kernel/memory.cpp
-@@ -382,6 +382,13 @@ public:
+@@ -1,3 +1,6 @@
++#include <set>
++#include <cinttypes>
++#include <cstdio>
+ #include "kernel/memory.h"
+ 
+ #include "common/assert.h"
+@@ -382,6 +385,13 @@ public:
  		return true;
  	}
  
@@ -2817,7 +2824,7 @@ index 02fc0fc..8dfae44 100644
  	bool QuerySpan(uint64_t start, uint64_t size, std::vector<Range>* out) {
  		EXIT_IF(out == nullptr);
  
-@@ -712,6 +719,12 @@ public:
+@@ -712,6 +722,12 @@ public:
  				                            : minimum;
  				target = std::max(minimum, std::min(ps5_game_total, capped));
  			}
@@ -2830,7 +2837,7 @@ index 02fc0fc..8dfae44 100644
  			target = target & ~(0x4000ull - 1ull);
  			LOGF("guest memory total = %llu MiB\n", static_cast<unsigned long long>(target / megabyte));
  			return target;
-@@ -850,7 +863,80 @@ static std::unique_ptr<PhysicalMemory>    g_physical_memory;
+@@ -850,7 +866,80 @@ static std::unique_ptr<PhysicalMemory>    g_physical_memory;
  static std::unique_ptr<FlexibleMemory>    g_flexible_memory;
  static std::unique_ptr<PooledMemory>      g_pooled_memory;
  static std::unique_ptr<VirtualRanges>     g_virtual_ranges;
@@ -2911,6 +2918,78 @@ index 02fc0fc..8dfae44 100644
  static callback_func_t                    g_alloc_callback        = nullptr;
  static callback_func_t                    g_free_callback         = nullptr;
  static std::atomic<uint64_t>              g_memory_pool_committed = 0;
+@@ -3465,7 +3554,70 @@ bool KernelHandleReservedRangeAccessViolation(uint64_t vaddr) {
+ 	    std::strncmp(range.name, "AMM", KERNEL_MAXIMUM_NAME_LENGTH) != 0) {
+ 		return false;
+ 	}
+-	EXIT("AMM virtual-memory unmap is unsupported: addr=0x%016" PRIx64 "\n", vaddr);
++	// BC5 (experiment 0035): a page of the AMM window touched before anything mapped it is
++	// committed on first touch with fresh direct memory, 64 KiB at a time, and the access is
++	// retried. Engine allocators reserve a pool in this window and write and read its pages
++	// without an explicit map for each (prosper's docs/PORTING.md and UE4_APR_IOSTORE_BRINGUP.md
++	// describe the same lazy commit for reserved ranges above 0x1000000000; no code taken).
++	// Off by default (KYTY_BC5_AMM_LAZY_COMMIT=1): the AMM failures seen so far were the fixed
++	// window reservation wiping the game's mappings, not pages it expected to appear.
++	static const bool lazy = [] {
++		const char* e = std::getenv("KYTY_BC5_AMM_LAZY_COMMIT");
++		return e != nullptr && std::strcmp(e, "1") == 0;
++	}();
++	if (!lazy) {
++		EXIT("AMM virtual-memory unmap is unsupported: addr=0x%016" PRIx64 "\n", vaddr);
++	}
++	constexpr uint64_t page    = 0x10000;
++	const uint64_t     base    = vaddr & ~(page - 1);
++	// A page committed once is never committed again: a second fault on it is someone else's
++	// (write tracking, protection) and replacing the page would wipe what the game wrote.
++	static std::set<uint64_t> g_lazy_pages;
++	if (g_lazy_pages.count(base) != 0) {
++		std::fprintf(stderr, "amm lazy commit: refault on committed page 0x%016" PRIx64 " (addr 0x%016" PRIx64 ")\n", base, vaddr);
++		return false;
++	}
++	// A page the host already maps is not lazily committed: the fault is a protection fault on
++	// a mapping the game made inside the AMM window (e.g. "FileSystem" at 0x1110000000), and
++	// replacing the page would wipe its contents. Report the host mapping instead.
++	{
++		unsigned char vec = 0;
++		if (mincore(reinterpret_cast<void*>(vaddr & ~0xfffull), 0x1000, &vec) == 0) {
++			char line[512];
++			FILE* maps = std::fopen("/proc/self/maps", "r");
++			while (maps != nullptr && std::fgets(line, sizeof(line), maps) != nullptr) {
++				unsigned long lo = 0, hi = 0;
++				if (std::sscanf(line, "%lx-%lx", &lo, &hi) == 2 && vaddr >= lo && vaddr < hi) {
++					std::fprintf(stderr, "amm fault on a mapped page 0x%016" PRIx64 ": %s", vaddr, line);
++				}
++			}
++			if (maps != nullptr) {
++				std::fclose(maps);
++			}
++			std::fprintf(stderr, "amm fault on a mapped page: guest range name %s\n", range.name);
++			std::fflush(stderr);
++			EXIT("AMM fault on a mapped page: addr=0x%016" PRIx64 "\n", vaddr);
++		}
++	}
++	g_lazy_pages.insert(base);
++	int64_t            phys    = 0;
++	const int          alloc_r = KernelAllocateDirectMemory(0, static_cast<int64_t>(KernelGetDirectMemorySize()), page, page, 0, &phys);
++	int                map_r   = -1;
++	if (alloc_r == OK) {
++		void* addr = reinterpret_cast<void*>(base);
++		// CPU and GPU read/write, fixed address.
++		map_r = KernelMapDirectMemory2(&addr, page, 0, 0x33, 0x10, phys, page);
++	}
++	static std::atomic<uint64_t> g_lazy_commits {0};
++	const uint64_t               n = g_lazy_commits.fetch_add(1) + 1;
++	if (std::getenv("KYTY_BC5_AMM_TRACE") != nullptr || alloc_r != OK || map_r != OK || (n & (n - 1)) == 0) {
++		std::fprintf(stderr, "amm lazy commit #%" PRIu64 ": page 0x%016" PRIx64 " phys 0x%" PRIx64 " alloc 0x%08x map 0x%08x\n", n, base,
++		             static_cast<uint64_t>(phys), static_cast<unsigned>(alloc_r), static_cast<unsigned>(map_r));
++	}
++	if (alloc_r != OK || map_r != OK) {
++		EXIT("AMM lazy commit failed: addr=0x%016" PRIx64 "\n", vaddr);
++	}
++	return true;
+ }
+ 
+ int KYTY_SYSV_ABI KernelVirtualQuery(const void* addr, int flags, VirtualQueryInfo* info,
 diff --git a/src/kernel/memory.h b/src/kernel/memory.h
 index d1fc7f8..724b0bf 100644
 --- a/src/kernel/memory.h
@@ -8436,6 +8515,676 @@ index 3c0684f..ba1c36b 100644
  
  int KYTY_SYSV_ABI PadInit();
  int KYTY_SYSV_ABI PadOpen(int user_id, int type, int index, const void* param);
+diff --git a/src/libs/libAmpr.cpp b/src/libs/libAmpr.cpp
+index 073361d..a59d804 100644
+--- a/src/libs/libAmpr.cpp
++++ b/src/libs/libAmpr.cpp
+@@ -11,6 +11,13 @@
+ #include "loader/symbolDatabase.h"
+ 
+ #include <algorithm>
++#include <pthread.h>
++#include <chrono>
++#include <thread>
++#include <deque>
++#include <cinttypes>
++#include <cstdio>
++#include <cstdlib>
+ #include <array>
+ #include <cstdint>
+ #include <cstring>
+@@ -27,6 +34,19 @@
+ #undef max
+ #endif
+ 
++// BC5: with KYTY_BC5_AMM_TRACE=1 every entry into this library's functions is written to stderr
++// (experiment 0035); the library-wide name printing stays off otherwise.
++static bool AmmTraceCalls() {
++	static const bool on = std::getenv("KYTY_BC5_AMM_TRACE") != nullptr;
++	return on;
++}
++#undef PRINT_NAME
++// NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
++#define PRINT_NAME()                                                                               \
++	if (AmmTraceCalls()) {                                                                         \
++		std::fprintf(stderr, "amm trace: call %s\n", __func__);                                    \
++	}
++
+ namespace Libs {
+ 
+ namespace AprShared {
+@@ -855,6 +875,13 @@ struct CommandBufferState {
+ 		uint64_t address       = 0;
+ 		uint64_t value         = 0;
+ 	};
++	// BC5 (experiment 0035): WaitOnAddress, the buffer stops here until *address meets value.
++	struct WaitAddressCommand {
++		uint64_t record_offset = 0;
++		uint64_t address       = 0;
++		uint64_t value         = 0;
++		uint8_t  op            = 0;
++	};
+ 	struct AmmMapCommand {
+ 		uint64_t       record_offset = 0;
+ 		AmmCommandKind kind          = AmmCommandKind::MapAuto;
+@@ -869,6 +896,7 @@ struct CommandBufferState {
+ 	std::vector<KernelEventCommand>  kernel_event_commands;
+ 	std::vector<WriteAddressCommand> write_address_commands;
+ 	std::vector<AmmMapCommand>       amm_map_commands;
++	std::vector<WaitAddressCommand>  wait_address_commands;
+ 	bool                             gather_scatter_valid       = false;
+ 	uint32_t                         gather_scatter_file_id     = 0;
+ 	uint64_t                         gather_scatter_destination = 0;
+@@ -1151,6 +1179,7 @@ static bool WriteCommandBufferPointers(uint64_t command_buffer, uint64_t buffer,
+ 	state.kernel_event_commands.clear();
+ 	state.write_address_commands.clear();
+ 	state.amm_map_commands.clear();
++	state.wait_address_commands.clear();
+ 	state.gather_scatter_valid       = false;
+ 	state.gather_scatter_file_id     = 0;
+ 	state.gather_scatter_destination = 0;
+@@ -1317,6 +1346,26 @@ static bool AppendWriteAddressRecord(uint64_t command_buffer, uint64_t address,
+ 	return CommitCommandBufferRecord(command_buffer, &state, record_size);
+ }
+ 
++static bool AppendWaitAddressRecord(uint64_t command_buffer, uint64_t address, uint64_t value,
++                                    uint8_t op, uint64_t record_size = 0x20) {
++	std::scoped_lock      lock(g_command_buffer_mutex);
++	CommandBufferIterator it;
++	if (!GetOrCreateCommandBufferStateLocked(command_buffer, &it)) {
++		return false;
++	}
++
++	auto& state = it->second;
++	if (!EnsureCommandBufferRecordSpace(command_buffer, &state, record_size)) {
++		return false;
++	}
++
++	const auto record_offset = state.write_offset;
++	std::memset(reinterpret_cast<void*>(state.buffer + record_offset), 0,
++	            static_cast<size_t>(record_size));
++	state.wait_address_commands.push_back({record_offset, address, value, op});
++	return CommitCommandBufferRecord(command_buffer, &state, record_size);
++}
++
+ static bool ValidateAmmMapArgs(uint64_t va, uint64_t size) {
+ 	return va != 0 && size != 0 && (va & (AMM_PAGE_SIZE - 1u)) == 0 &&
+ 	       (size & (AMM_PAGE_SIZE - 1u)) == 0 && va + size >= va;
+@@ -1358,6 +1407,12 @@ static int NormalizeAmmProtection(int prot) {
+ 	return normalized;
+ }
+ 
++// BC5: KYTY_BC5_AMM_TRACE=1 writes every AMM map, unmap and pool operation to stderr.
++static bool AmmTrace() {
++	static const bool on = std::getenv("KYTY_BC5_AMM_TRACE") != nullptr;
++	return on;
++}
++
+ static bool AllocateAmmAutoDirectMemory(uint64_t size, int memory_type, uint64_t* dmem_offset) {
+ 	if (dmem_offset == nullptr || size == 0) {
+ 		return false;
+@@ -1397,9 +1452,23 @@ static int ExecuteAmmMapCommand(const CommandBufferState::AmmMapCommand& command
+ 	}
+ 
+ 	void* addr = reinterpret_cast<void*>(command.va);
+-	return LibKernel::Memory::KernelMapDirectMemory2(
+-	    &addr, command.size, command.type, NormalizeAmmProtection(command.prot), AMM_MAP_FIXED,
++	// BC5 (experiment 0035): pages the game maps for the GPU and the AMPR engine only (prot 0x30,
++	// no CPU bits) are still written by the host: its APR file reads copy into them, and the
++	// GPU sees guest memory through the same mapping. On the console the DMA engine writes
++	// regardless of CPU protection; here such pages get CPU read/write on the host.
++	int prot = NormalizeAmmProtection(command.prot);
++	if ((prot & (PROT_CPU_READ | PROT_CPU_WRITE)) == 0) {
++		prot |= PROT_CPU_READ | PROT_CPU_WRITE;
++	}
++	const int result = LibKernel::Memory::KernelMapDirectMemory2(
++	    &addr, command.size, command.type, prot, AMM_MAP_FIXED,
+ 	    static_cast<int64_t>(dmem_offset), AMM_PAGE_SIZE);
++	if (AmmTrace()) {
++		std::fprintf(stderr, "amm trace: map %s va 0x%016" PRIx64 " size 0x%" PRIx64 " dmem 0x%" PRIx64 " type %d prot 0x%x -> 0x%08x\n",
++		             command.kind == AmmCommandKind::MapAuto ? "auto" : "direct", command.va, command.size, dmem_offset,
++		             static_cast<int>(command.type), static_cast<unsigned>(command.prot), static_cast<unsigned>(result));
++	}
++	return result;
+ }
+ 
+ static bool AppendAmmMapRecord(uint64_t                                 command_buffer,
+@@ -1425,67 +1494,62 @@ static bool AppendAmmMapRecord(uint64_t                                 command_
+ 
+ static int ReadHostFileToGuest(const std::string& host_path, uint64_t file_offset,
+                                uint64_t destination, uint64_t size, uint64_t* bytes_read);
++static uint64_t g_amm_window_start = 0;
++static uint64_t AmmWindowStartIfReserved() { return g_amm_window_start; }
++
++enum class CommandKind {
++	ReadFile,
++	KernelEvent,
++	WriteAddress,
++	AmmMap,
++	WaitAddress,
++};
+ 
+-static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_result,
+-                                   uint32_t* error_offset) {
+-	if (execution_result == nullptr || error_offset == nullptr) {
+-		return LibKernel::KERNEL_ERROR_EINVAL;
+-	}
+-
+-	*execution_result = OK;
+-	*error_offset     = 0;
+-
+-	CommandBufferState state {};
+-	if (!TryGetCommandBufferState(command_buffer, &state)) {
+-		return LibKernel::KERNEL_ERROR_EFAULT;
+-	}
++struct OrderedCommand {
++	uint64_t    record_offset = 0;
++	CommandKind kind          = CommandKind::ReadFile;
++	size_t      index         = 0;
++};
+ 
+-	enum class CommandKind {
+-		ReadFile,
+-		KernelEvent,
+-		WriteAddress,
+-		AmmMap,
+-	};
++struct ParkedAprBuffer {
++	uint64_t                    command_buffer = 0;
++	CommandBufferState          state;
++	std::vector<OrderedCommand> ordered;
++	size_t                      next = 0;
++};
+ 
+-	struct OrderedCommand {
+-		uint64_t    record_offset = 0;
+-		CommandKind kind          = CommandKind::ReadFile;
+-		size_t      index         = 0;
+-	};
++static std::recursive_mutex        g_apr_queue_mutex;
++static std::deque<ParkedAprBuffer> g_apr_parked;
+ 
+-	std::vector<OrderedCommand> ordered;
+-	ordered.reserve(state.read_file_commands.size() + state.kernel_event_commands.size() +
+-	                state.write_address_commands.size() + state.amm_map_commands.size());
+-	for (size_t i = 0; i < state.read_file_commands.size(); i++) {
+-		if (state.read_file_commands[i].record_offset < state.write_offset) {
+-			ordered.push_back(
+-			    {state.read_file_commands[i].record_offset, CommandKind::ReadFile, i});
+-		}
+-	}
+-	for (size_t i = 0; i < state.kernel_event_commands.size(); i++) {
+-		if (state.kernel_event_commands[i].record_offset < state.write_offset) {
+-			ordered.push_back(
+-			    {state.kernel_event_commands[i].record_offset, CommandKind::KernelEvent, i});
+-		}
+-	}
+-	for (size_t i = 0; i < state.write_address_commands.size(); i++) {
+-		if (state.write_address_commands[i].record_offset < state.write_offset) {
+-			ordered.push_back(
+-			    {state.write_address_commands[i].record_offset, CommandKind::WriteAddress, i});
+-		}
++// op 4 is "greater or equal" as the titles seen use it (a sequence counter against the value
++// it must reach); op 3 "equal". TODO(verify): the other operation codes.
++static bool AprWaitSatisfied(const CommandBufferState::WaitAddressCommand& w) {
++	uint64_t now = 0;
++	if (!AprShared::ReadGuest(w.address, &now)) {
++		return true;
+ 	}
+-	for (size_t i = 0; i < state.amm_map_commands.size(); i++) {
+-		if (state.amm_map_commands[i].record_offset < state.write_offset) {
+-			ordered.push_back({state.amm_map_commands[i].record_offset, CommandKind::AmmMap, i});
+-		}
++	switch (w.op) {
++		case 3: return now == w.value;
++		default: return now >= w.value;
+ 	}
++}
+ 
+-	std::sort(ordered.begin(), ordered.end(), [](const OrderedCommand& a, const OrderedCommand& b) {
+-		return a.record_offset < b.record_offset;
+-	});
+-
+-	for (const auto& entry: ordered) {
++// BC5 (experiment 0035): runs a submission's commands in record order from *next. Returns false
++// when a WaitOnAddress is not met yet (*next then names it), true when the buffer is done.
++static bool RunOrderedAprCommands(uint64_t command_buffer, const CommandBufferState& state,
++                                  const std::vector<OrderedCommand>& ordered, size_t* next,
++                                  int32_t* execution_result, uint32_t* error_offset) {
++	(void)command_buffer;
++	for (size_t pos = *next; pos < ordered.size(); pos++) {
++		const auto& entry = ordered[pos];
+ 		switch (entry.kind) {
++			case CommandKind::WaitAddress: {
++				const auto& command = state.wait_address_commands[entry.index];
++				if (!AprWaitSatisfied(command)) {
++					*next = pos;
++					return false;
++				}
++			} break;
+ 			case CommandKind::ReadFile: {
+ 				const auto& command = state.read_file_commands[entry.index];
+ 				std::string host_path;
+@@ -1494,19 +1558,30 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+ 					     command.file_id);
+ 					*execution_result = LibKernel::KERNEL_ERROR_ENOENT;
+ 					*error_offset     = static_cast<uint32_t>(command.record_offset);
+-					return OK;
++					*next = ordered.size();
++					return true;
+ 				}
+ 
+ 				uint64_t bytes_read = 0;
++				if (AmmTrace() && command.destination >= AmmWindowStartIfReserved() && AmmWindowStartIfReserved() != 0) {
++					std::fprintf(stderr, "amm trace: read into the AMM window: file 0x%08" PRIx32 " size 0x%" PRIx64 " -> 0x%016" PRIx64 "\n",
++					             command.file_id, command.size, command.destination);
++				}
+ 				auto result = ReadHostFileToGuest(host_path, command.file_offset,
+ 				                                  command.destination, command.size, &bytes_read);
++				if (AmmTrace()) {
++					std::fprintf(stderr, "amm trace: read file 0x%08" PRIx32 " +0x%" PRIx64 " size 0x%" PRIx64 " -> 0x%016" PRIx64 " = 0x%08x\n",
++					             command.file_id, command.file_offset, command.size, command.destination,
++					             static_cast<unsigned>(result));
++				}
+ 				if (result != OK) {
+ 					LOGF("\tAPR submit read failed: id=0x%08" PRIx32 ", result=0x%08" PRIx32
+ 					     ", path=%s\n",
+ 					     command.file_id, static_cast<uint32_t>(result), host_path.c_str());
+ 					*execution_result = result;
+ 					*error_offset     = static_cast<uint32_t>(command.record_offset);
+-					return OK;
++					*next = ordered.size();
++					return true;
+ 				}
+ 			} break;
+ 			case CommandKind::KernelEvent: {
+@@ -1520,7 +1595,8 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+ 					     command.eq, command.id, static_cast<uint32_t>(result));
+ 					*execution_result = result;
+ 					*error_offset     = static_cast<uint32_t>(command.record_offset);
+-					return OK;
++					*next = ordered.size();
++					return true;
+ 				}
+ 			} break;
+ 			case CommandKind::WriteAddress: {
+@@ -1531,7 +1607,8 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+ 					     command.address, command.value);
+ 					*execution_result = LibKernel::KERNEL_ERROR_EFAULT;
+ 					*error_offset     = static_cast<uint32_t>(command.record_offset);
+-					return OK;
++					*next = ordered.size();
++					return true;
+ 				}
+ 			} break;
+ 			case CommandKind::AmmMap: {
+@@ -1539,6 +1616,10 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+ 				int         result  = OK;
+ 				if (command.kind == AmmCommandKind::Unmap) {
+ 					result = LibKernel::Memory::KernelMunmap(command.va, command.size);
++					if (AmmTrace()) {
++						std::fprintf(stderr, "amm trace: unmap va 0x%016" PRIx64 " size 0x%" PRIx64 " -> 0x%08x\n", command.va,
++						             command.size, static_cast<unsigned>(result));
++					}
+ 				} else {
+ 					result = ExecuteAmmMapCommand(command);
+ 				}
+@@ -1552,12 +1633,127 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+ 					     static_cast<uint32_t>(result));
+ 					*execution_result = result;
+ 					*error_offset     = static_cast<uint32_t>(command.record_offset);
+-					return OK;
++					*next = ordered.size();
++					return true;
+ 				}
+ 			} break;
+ 		}
+ 	}
++	*next = ordered.size();
++	return true;
++}
++
++// The APR engine runs submissions in order; one stopped at a wait holds those behind it. AMM
++// submissions (maps only) run at once: they are what the waits wait for.
++static void PumpParkedAprBuffersLocked() {
++	while (!g_apr_parked.empty()) {
++		auto&    front  = g_apr_parked.front();
++		int32_t  result = OK;
++		uint32_t offset = 0;
++		if (!RunOrderedAprCommands(front.command_buffer, front.state, front.ordered, &front.next, &result,
++		                           &offset)) {
++			return;
++		}
++		if (AmmTrace()) {
++			std::fprintf(stderr, "amm trace: resumed submission 0x%016" PRIx64 " finished\n", front.command_buffer);
++		}
++		g_apr_parked.pop_front();
++	}
++}
++
++static void StartAprWaitThread() {
++	static std::once_flag once;
++	std::call_once(once, [] {
++		std::thread([] {
++			pthread_setname_np(pthread_self(), "bc5-apr-wait");
++			for (;;) {
++				std::this_thread::sleep_for(std::chrono::microseconds(500));
++				std::scoped_lock lock(g_apr_queue_mutex);
++				PumpParkedAprBuffersLocked();
++			}
++		}).detach();
++	});
++}
+ 
++static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_result,
++                                   uint32_t* error_offset) {
++	if (execution_result == nullptr || error_offset == nullptr) {
++		return LibKernel::KERNEL_ERROR_EINVAL;
++	}
++
++	*execution_result = OK;
++	*error_offset     = 0;
++
++	CommandBufferState state {};
++	if (!TryGetCommandBufferState(command_buffer, &state)) {
++		if (AmmTrace()) {
++			std::fprintf(stderr, "amm trace: submit 0x%016" PRIx64 " with no recorded state\n", command_buffer);
++		}
++		return LibKernel::KERNEL_ERROR_EFAULT;
++	}
++	if (AmmTrace()) {
++		std::fprintf(stderr, "amm trace: submit 0x%016" PRIx64 ": %zu reads, %zu maps\n", command_buffer,
++		             state.read_file_commands.size(), state.amm_map_commands.size());
++	}
++
++	std::vector<OrderedCommand> ordered;
++	ordered.reserve(state.read_file_commands.size() + state.kernel_event_commands.size() +
++	                state.write_address_commands.size() + state.amm_map_commands.size());
++	for (size_t i = 0; i < state.read_file_commands.size(); i++) {
++		if (state.read_file_commands[i].record_offset < state.write_offset) {
++			ordered.push_back(
++			    {state.read_file_commands[i].record_offset, CommandKind::ReadFile, i});
++		}
++	}
++	for (size_t i = 0; i < state.kernel_event_commands.size(); i++) {
++		if (state.kernel_event_commands[i].record_offset < state.write_offset) {
++			ordered.push_back(
++			    {state.kernel_event_commands[i].record_offset, CommandKind::KernelEvent, i});
++		}
++	}
++	for (size_t i = 0; i < state.write_address_commands.size(); i++) {
++		if (state.write_address_commands[i].record_offset < state.write_offset) {
++			ordered.push_back(
++			    {state.write_address_commands[i].record_offset, CommandKind::WriteAddress, i});
++		}
++	}
++	for (size_t i = 0; i < state.amm_map_commands.size(); i++) {
++		if (state.amm_map_commands[i].record_offset < state.write_offset) {
++			ordered.push_back({state.amm_map_commands[i].record_offset, CommandKind::AmmMap, i});
++		}
++	}
++	for (size_t i = 0; i < state.wait_address_commands.size(); i++) {
++		if (state.wait_address_commands[i].record_offset < state.write_offset) {
++			ordered.push_back({state.wait_address_commands[i].record_offset, CommandKind::WaitAddress, i});
++		}
++	}
++
++	std::sort(ordered.begin(), ordered.end(), [](const OrderedCommand& a, const OrderedCommand& b) {
++		return a.record_offset < b.record_offset;
++	});
++
++	const bool amm_only = !state.amm_map_commands.empty() && state.read_file_commands.empty();
++	std::scoped_lock queue_lock(g_apr_queue_mutex);
++	if (!amm_only && !g_apr_parked.empty()) {
++		g_apr_parked.push_back({command_buffer, state, ordered, 0});
++		if (AmmTrace()) {
++			std::fprintf(stderr, "amm trace: submission 0x%016" PRIx64 " queued behind a waiting one\n", command_buffer);
++		}
++		PumpParkedAprBuffersLocked();
++		return OK;
++	}
++	size_t next = 0;
++	if (!RunOrderedAprCommands(command_buffer, state, ordered, &next, execution_result, error_offset)) {
++		g_apr_parked.push_back({command_buffer, state, ordered, next});
++		StartAprWaitThread();
++		if (AmmTrace()) {
++			std::fprintf(stderr, "amm trace: submission 0x%016" PRIx64 " waits at command %zu of %zu\n", command_buffer, next,
++			             ordered.size());
++		}
++	}
++	if (amm_only) {
++		PumpParkedAprBuffersLocked();
++	}
+ 	return OK;
+ }
+ 
+@@ -1678,13 +1874,50 @@ static int KYTY_SYSV_ABI CommandBufferDestructor(void* command_buffer) {
+ 	return OK;
+ }
+ 
+-static int KYTY_SYSV_ABI CommandBufferSetBuffer(void* command_buffer, void* buffer, uint32_t size) {
++static int ExecuteAmmMapCommand(const CommandBufferState::AmmMapCommand& command);
++
++// BC5: this NID has a second calling convention besides "attach this buffer" (experiment 0035).
++// Arguments observed on real titles (prosper's docs/KHAZAN_STATUS.md and the comments of its
++// hle_kernel_mem.cpp, read as documentation; no code taken):
++//   buffer flavour: (cb, va, len, a3 == va, a4 = allocator context, a5 small) — attach existing
++//                   storage, memory untouched;
++//   map flavour:    (cb, va, len, a3 != va, a4 = -1, a5 = 0 or 0x720) — map fresh, zeroed
++//                   direct memory at va, synchronously (an allocator committing pool pages in
++//                   the AMM range, typically 64 KiB at a time).
++// The map flavour takes its pages from the pool the game gave AMM (AmmGiveDirectMemory, usage
++// auto) and maps them CPU and GPU read/write. TODO(verify): the meaning of a3 and a5.
++static bool SetBufferIsMapFlavour(uint64_t va, uint64_t a3, uint64_t a4) {
++	return a3 != va && (a4 == 0xffffffffull || a4 == ~0ull);
++}
++
++static int KYTY_SYSV_ABI CommandBufferSetBuffer(void* command_buffer, void* buffer, uint32_t size,
++                                                uint64_t a3, uint64_t a4, uint64_t a5) {
+ 	PRINT_NAME();
+ 
+ 	if (command_buffer == nullptr) {
+ 		return LibKernel::KERNEL_ERROR_EINVAL;
+ 	}
+ 
++	const auto va = reinterpret_cast<uint64_t>(buffer);
++	if (AmmTrace()) {
++		std::fprintf(stderr, "amm trace: set-buffer cb 0x%016" PRIx64 " va 0x%016" PRIx64 " len 0x%x a3 0x%" PRIx64 " a4 0x%" PRIx64 " a5 0x%" PRIx64 "\n",
++		             reinterpret_cast<uint64_t>(command_buffer), va, size, a3, a4, a5);
++	}
++	if (SetBufferIsMapFlavour(va, a3, a4)) {
++		CommandBufferState::AmmMapCommand command {};
++		command.kind = AmmCommandKind::MapAuto;
++		command.va   = va & ~(AMM_PAGE_SIZE - 1u);
++		command.size = ((va + size + AMM_PAGE_SIZE - 1u) & ~(AMM_PAGE_SIZE - 1u)) - command.va;
++		command.type = 0;
++		command.prot = PROT_CPU_READ | PROT_CPU_WRITE | PROT_GPU_READ | PROT_GPU_WRITE;
++		const int result = ExecuteAmmMapCommand(command);
++		if (AmmTrace()) {
++			std::fprintf(stderr, "amm trace: set-buffer map va 0x%016" PRIx64 " len 0x%x a3 0x%" PRIx64 " a5 0x%" PRIx64 " -> 0x%08x\n", va,
++			             size, a3, a5, static_cast<unsigned>(result));
++		}
++		return result;
++	}
++
+ 	const auto command_buffer_addr = reinterpret_cast<uint64_t>(command_buffer);
+ 	if (!ValidateCommandBufferHeader(command_buffer_addr)) {
+ 		return LibKernel::KERNEL_ERROR_EFAULT;
+@@ -2111,16 +2344,31 @@ static int KYTY_SYSV_ABI CommandBufferPopMarker(void* command_buffer) {
+ 	return AppendNoOpCommand(command_buffer, sizeof(uint32_t));
+ }
+ 
+-static int KYTY_SYSV_ABI CommandBufferWaitOnAddress(void* command_buffer, volatile uint64_t*,
+-                                                    uint64_t, uint8_t, uint8_t) {
++static int KYTY_SYSV_ABI CommandBufferWaitOnAddress(void* command_buffer, volatile uint64_t* address,
++                                                    uint64_t value, uint8_t a3, uint8_t a4) {
+ 	PRINT_NAME();
++	if (AmmTrace()) {
++		std::fprintf(stderr, "amm trace: wait-on-address cb 0x%016" PRIx64 " addr 0x%016" PRIx64 " value 0x%" PRIx64 " a3 %u a4 %u (now 0x%" PRIx64 ")\n",
++		             reinterpret_cast<uint64_t>(command_buffer), reinterpret_cast<uint64_t>(address), value, a3, a4,
++		             address != nullptr ? static_cast<uint64_t>(*address) : 0);
++	}
+ 
+-	return AppendNoOpCommand(command_buffer, 0x20);
++	if (command_buffer == nullptr || address == nullptr) {
++		return LibKernel::KERNEL_ERROR_EINVAL;
++	}
++	return AppendWaitAddressRecord(reinterpret_cast<uint64_t>(command_buffer),
++	                               reinterpret_cast<uint64_t>(address), value, a3)
++	           ? OK
++	           : LibKernel::KERNEL_ERROR_EBUSY;
+ }
+ 
+-static int KYTY_SYSV_ABI CommandBufferWaitOnCounter(void* command_buffer, uint8_t, uint8_t,
+-                                                    uint64_t, uint8_t, uint8_t, uint64_t, uint8_t) {
++static int KYTY_SYSV_ABI CommandBufferWaitOnCounter(void* command_buffer, uint8_t c0, uint8_t c1,
++                                                    uint64_t v, uint8_t c3, uint8_t c4, uint64_t v2, uint8_t c6) {
+ 	PRINT_NAME();
++	if (AmmTrace()) {
++		std::fprintf(stderr, "amm trace: wait-on-counter cb 0x%016" PRIx64 " %u %u 0x%" PRIx64 " %u %u 0x%" PRIx64 " %u\n",
++		             reinterpret_cast<uint64_t>(command_buffer), c0, c1, v, c3, c4, v2, c6);
++	}
+ 
+ 	return AppendNoOpCommand(command_buffer, 0x20);
+ }
+@@ -2139,6 +2387,10 @@ static int AppendWriteAddressCommand(void* command_buffer, volatile uint64_t* ad
+ static int KYTY_SYSV_ABI CommandBufferWriteAddress(void* command_buffer, volatile uint64_t* address,
+                                                    uint64_t value, uint32_t) {
+ 	PRINT_NAME();
++	if (AmmTrace()) {
++		std::fprintf(stderr, "amm trace: write-address cb 0x%016" PRIx64 " addr 0x%016" PRIx64 " value 0x%" PRIx64 "\n",
++		             reinterpret_cast<uint64_t>(command_buffer), reinterpret_cast<uint64_t>(address), value);
++	}
+ 
+ 	return AppendWriteAddressCommand(command_buffer, address, value);
+ }
+@@ -2314,15 +2566,27 @@ static int KYTY_SYSV_ABI AprCommandBufferResetGatherScatterState(void* command_b
+ 	return OK;
+ }
+ 
++// BC5: an APR map group (MapBegin/MapDirectBegin ... MapEnd) maps its range when the buffer
++// runs, before the reads that follow fill it; these were recorded as no-ops, so a game that
++// streams data into AMM memory this way read from an unmapped range (experiment 0035). The two
++// int32 arguments are taken as type and protection, as in AmmCommandBufferMap/MapDirect
++// (TODO(verify): their order against the SDK's prototypes is not checked here).
+ static int KYTY_SYSV_ABI AprCommandBufferMapBegin(void* command_buffer, uint64_t va, uint64_t size,
+-                                                  int32_t, int32_t) {
++                                                  int32_t type, int32_t prot) {
+ 	PRINT_NAME();
+ 
+ 	if (command_buffer == nullptr || !ValidateAmmMapArgs(va, size)) {
+ 		return LibKernel::KERNEL_ERROR_EINVAL;
+ 	}
+ 
+-	if (AppendNoOpCommand(command_buffer, APR_MAP_BEGIN_RECORD_SIZE) != OK) {
++	CommandBufferState::AmmMapCommand command {};
++	command.kind = AmmCommandKind::MapAuto;
++	command.va   = va;
++	command.size = size;
++	command.type = type;
++	command.prot = prot;
++	if (!AppendAmmMapRecord(reinterpret_cast<uint64_t>(command_buffer), command,
++	                        APR_MAP_BEGIN_RECORD_SIZE)) {
+ 		return LibKernel::KERNEL_ERROR_EFAULT;
+ 	}
+ 
+@@ -2333,7 +2597,7 @@ static int KYTY_SYSV_ABI AprCommandBufferMapBegin(void* command_buffer, uint64_t
+ 
+ static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, uint64_t va,
+                                                         uint64_t dmem_offset, uint64_t size,
+-                                                        int32_t, int32_t) {
++                                                        int32_t type, int32_t prot) {
+ 	PRINT_NAME();
+ 
+ 	if (command_buffer == nullptr || !ValidateAmmMapArgs(va, size) ||
+@@ -2341,7 +2605,15 @@ static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, ui
+ 		return LibKernel::KERNEL_ERROR_EINVAL;
+ 	}
+ 
+-	if (AppendNoOpCommand(command_buffer, APR_MAP_DIRECT_BEGIN_SIZE) != OK) {
++	CommandBufferState::AmmMapCommand command {};
++	command.kind        = AmmCommandKind::MapDirect;
++	command.va          = va;
++	command.dmem_offset = dmem_offset;
++	command.size        = size;
++	command.type        = type;
++	command.prot        = prot;
++	if (!AppendAmmMapRecord(reinterpret_cast<uint64_t>(command_buffer), command,
++	                        APR_MAP_DIRECT_BEGIN_SIZE)) {
+ 		return LibKernel::KERNEL_ERROR_EFAULT;
+ 	}
+ 
+@@ -2504,6 +2776,10 @@ static int KYTY_SYSV_ABI AmmGiveDirectMemory(int64_t search_start, int64_t searc
+ 	}
+ 
+ 	*dmem_offset = allocated;
++	if (AmmTrace()) {
++		std::fprintf(stderr, "amm trace: give direct memory 0x%" PRIx64 " bytes at 0x%" PRIx64 " usage %d\n", size,
++		             static_cast<uint64_t>(allocated), usage);
++	}
+ 	if (usage == AMM_USAGE_AUTO) {
+ 		std::scoped_lock lock(g_amm_auto_pool_mutex);
+ 		g_amm_auto_pool.push_back(AmmAutoPoolRange {static_cast<uint64_t>(allocated), size, 0});
+@@ -2512,30 +2788,48 @@ static int KYTY_SYSV_ABI AmmGiveDirectMemory(int64_t search_start, int64_t searc
+ 	return OK;
+ }
+ 
++// BC5 (experiment 0035): the AMM window is reserved once, where the host has room, and never with
++// MAP_FIXED. A fixed reservation at 0x1000000000 replaced every mapping the game had already made
++// there (its heaps: "FileSystem", "DynamicHeap" and twenty more, placed in that area by the host's
++// own address allocator), which left them as inaccessible placeholders and ended the run at the
++// game's first read of one. On the console the system picks the window; here the old address is
++// only a hint.
++static uint64_t AmmWindowStart() {
++	static std::mutex mutex;
++	static uint64_t   start = 0;
++	std::scoped_lock  lock(mutex);
++	if (start == 0) {
++		void* reserve_addr = reinterpret_cast<void*>(AMM_VA_START);
++		if (LibKernel::Memory::KernelReserveVirtualRange(&reserve_addr, AMM_VA_SIZE, 0, 0x10000) == OK) {
++			(void)LibKernel::Memory::KernelSetVirtualRangeName(reserve_addr, AMM_VA_SIZE, "AMM");
++			start = reinterpret_cast<uint64_t>(reserve_addr);
++			g_amm_window_start = start;
++		}
++		if (AmmTrace()) {
++			std::fprintf(stderr, "amm trace: window reserved at 0x%016" PRIx64 " size 0x%" PRIx64 "\n", start, AMM_VA_SIZE);
++		}
++	}
++	return start;
++}
++
+ static void KYTY_SYSV_ABI AmmGetVirtualAddressRanges(uint64_t* va_start, uint64_t* va_end,
+                                                      uint64_t* multimap_va_start,
+                                                      uint64_t* multimap_va_end) {
+ 	PRINT_NAME();
+ 
+-	void* reserve_addr = reinterpret_cast<void*>(AMM_VA_START);
+-	if (LibKernel::Memory::KernelReserveVirtualRange(&reserve_addr, AMM_VA_SIZE, AMM_MAP_FIXED,
+-	                                                 0x10000) == OK) {
+-		(void)LibKernel::Memory::KernelSetVirtualRangeName(reserve_addr, AMM_VA_SIZE, "AMM");
+-	}
++	const uint64_t start = AmmWindowStart();
+ 
+ 	if (va_start != nullptr) {
+-		AprShared::WriteGuest(reinterpret_cast<uint64_t>(va_start), AMM_VA_START);
++		AprShared::WriteGuest(reinterpret_cast<uint64_t>(va_start), start);
+ 	}
+ 	if (va_end != nullptr) {
+-		AprShared::WriteGuest(reinterpret_cast<uint64_t>(va_end), AMM_VA_START + AMM_VA_SIZE);
++		AprShared::WriteGuest(reinterpret_cast<uint64_t>(va_end), start + AMM_VA_SIZE);
+ 	}
+ 	if (multimap_va_start != nullptr) {
+-		AprShared::WriteGuest(reinterpret_cast<uint64_t>(multimap_va_start),
+-		                      AMM_VA_START + AMM_VA_SIZE / 2u);
++		AprShared::WriteGuest(reinterpret_cast<uint64_t>(multimap_va_start), start + AMM_VA_SIZE / 2u);
+ 	}
+ 	if (multimap_va_end != nullptr) {
+-		AprShared::WriteGuest(reinterpret_cast<uint64_t>(multimap_va_end),
+-		                      AMM_VA_START + AMM_VA_SIZE);
++		AprShared::WriteGuest(reinterpret_cast<uint64_t>(multimap_va_end), start + AMM_VA_SIZE);
+ 	}
+ }
+ 
 diff --git a/src/libs/libJson2.cpp b/src/libs/libJson2.cpp
 index 183cd85..40d7f58 100644
 --- a/src/libs/libJson2.cpp
@@ -9333,10 +10082,16 @@ index 36e4dc8..eaa58d7 100644
  
  namespace LibContentExport {
 diff --git a/src/loader/runtimeLinker.cpp b/src/loader/runtimeLinker.cpp
-index 343045e..a089454 100644
+index 343045e..b86095c 100644
 --- a/src/loader/runtimeLinker.cpp
 +++ b/src/loader/runtimeLinker.cpp
-@@ -820,7 +820,10 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
+@@ -1,3 +1,5 @@
++#include <execinfo.h>
++#include <cinttypes>
+ #include "loader/runtimeLinker.h"
+ 
+ #include "common/assert.h"
+@@ -820,10 +822,36 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
  			EXIT("invalid access type for page fault at 0x%016" PRIx64 "\n",
  			     info->access_violation_vaddr);
  		}();
@@ -9348,6 +10103,32 @@ index 343045e..a089454 100644
  			return true;
  		}
  
++		// BC5: which instruction touched a reserved range (KYTY_BC5_AMM_TRACE=1): the module and
++		// offset of the faulting instruction, for faults the handler below cannot serve.
++		if (std::getenv("KYTY_BC5_AMM_TRACE") != nullptr) {
++			auto* rt   = Common::Singleton<Loader::RuntimeLinker>::Instance();
++			auto* prog = rt->FindProgramByAddr(info->exception_address);
++			std::fprintf(stderr, "amm trace: fault at 0x%016" PRIx64 " from rip 0x%016" PRIx64 " (%s +0x%" PRIx64 ")\n",
++			             info->access_violation_vaddr, info->exception_address,
++			             prog != nullptr ? prog->file_name.filename().string().c_str() : "?",
++			             prog != nullptr ? info->exception_address - prog->base_vaddr : 0);
++			if (prog == nullptr) {
++				// A host instruction: name its module and symbol, and walk a few host frames.
++				Dl_info dl {};
++				if (dladdr(reinterpret_cast<void*>(info->exception_address), &dl) != 0) {
++					std::fprintf(stderr, "amm trace: host rip in %s (%s +0x%lx)\n", dl.dli_fname != nullptr ? dl.dli_fname : "?",
++					             dl.dli_sname != nullptr ? dl.dli_sname : "?",
++					             static_cast<unsigned long>(info->exception_address - reinterpret_cast<uint64_t>(dl.dli_saddr != nullptr ? dl.dli_saddr : dl.dli_fbase)));
++				}
++				void* frames[24];
++				const int n = backtrace(frames, 24);
++				backtrace_symbols_fd(frames, n, 2);
++			}
++			std::fflush(stderr);
++		}
+ 		if (Libs::LibKernel::Memory::KernelHandleReservedRangeAccessViolation(
+ 		        info->access_violation_vaddr)) {
+ 			return true;
 diff --git a/src/main.cpp b/src/main.cpp
 index c44d32f..d016ad7 100644
 --- a/src/main.cpp

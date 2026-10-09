@@ -221,3 +221,11 @@ actuators on 5–6; SDL's pulseaudio backend (the only one in the build containe
 channels as FL FR FC LFE and PipeWire then mixes the actuator pair into the speaker, while six
 channels are FL FR FC LFE RL RR under both backends and the last pair reaches the device's 3–4.
 Confirmed in the game by the maintainer (2026-10-08).
+
+AMM and AMPR (F87, experiment 0035): the AMM window is reserved where the host has room instead
+of at a fixed 0x1000000000 over the title's own mappings; AMM pages without CPU bits get host
+read/write (the host emulates the DMA that fills them); APR `WaitOnAddress` holds a submission
+and those behind it until met, AMM-only submissions run at once, a `bc5-apr-wait` thread
+re-checks; APR `MapBegin`/`MapDirectBegin` map their ranges; `SetBuffer`'s map flavour is
+handled. `KYTY_BC5_AMM_TRACE=1` traces it all (and names the instruction behind a fault in a
+reserved range); `KYTY_BC5_AMM_LAZY_COMMIT=1` commits untouched AMM pages on first access (off).
