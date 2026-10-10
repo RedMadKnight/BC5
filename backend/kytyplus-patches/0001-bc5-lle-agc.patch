@@ -411,10 +411,10 @@ index a656b67..94a249c 100644
  
 diff --git a/src/graphics/presentation/settingsOverlay.cpp b/src/graphics/presentation/settingsOverlay.cpp
 new file mode 100644
-index 0000000..22bd933
+index 0000000..536f93d
 --- /dev/null
 +++ b/src/graphics/presentation/settingsOverlay.cpp
-@@ -0,0 +1,702 @@
+@@ -0,0 +1,810 @@
 +#include "graphics/presentation/settingsOverlay.h"
 +
 +#include "SDL.h"
@@ -425,6 +425,7 @@ index 0000000..22bd933
 +#include "imgui_impl_vulkan.h"
 +
 +#include <algorithm>
++#include <unistd.h>
 +#include <atomic>
 +#include <chrono>
 +#include <cmath>
@@ -436,6 +437,12 @@ index 0000000..22bd933
 +#include <string>
 +#include <string_view>
 +#include <vector>
++
++namespace Libs::Bc5Gc::Direct {
++void   SetTimestampScale(double k); // bc5LleAgc.cpp, experiment 0047
++double GetTimestampScale();
++bool   GetMainPass(uint32_t* w, uint32_t* h);
++} // namespace Libs::Bc5Gc::Direct
 +
 +namespace Libs::Graphics {
 +
@@ -629,6 +636,24 @@ index 0000000..22bd933
 +		if (!on) {
 +			lines.insert(lines.begin(), "DefaultKeys=off");
 +		}
++	}
++
++	// Experiment 0047: RenderScale=<k>, the GPU timestamp scale the title's resolution follows.
++	[[nodiscard]] double RenderScale() const {
++		double k = 0.0;
++		for (const auto& l: lines) {
++			if (EqualNoCase(StatementLeft(l), "RenderScale")) k = std::strtod(std::string(StatementRight(l)).c_str(), nullptr);
++		}
++		return k;
++	}
++
++	void SetRenderScale(double k) {
++		lines.erase(std::remove_if(lines.begin(), lines.end(),
++		                           [&](const std::string& l) { return EqualNoCase(StatementLeft(l), "RenderScale"); }),
++		            lines.end());
++		char b[48];
++		std::snprintf(b, sizeof(b), "RenderScale=%.2f", k);
++		lines.insert(lines.begin(), b);
 +	}
 +};
 +
@@ -1020,9 +1045,90 @@ index 0000000..22bd933
 +				ImGui::TextUnformatted(status.c_str());
 +				ImGui::EndTabItem();
 +			}
++			if (ImGui::BeginTabItem("Video")) {
++				DrawVideo();
++				ImGui::EndTabItem();
++			}
 +			ImGui::EndTabBar();
 +		}
 +		ImGui::End();
++	}
++
++	// Experiment 0047: the title picks its 3D resolution itself, from the GPU time its timestamps
++	// show (it registers 3840x2160 output buffers and asks the system for no video mode, HANDOFF
++	// F67, F100). The host scales those timestamps; a larger scale makes the title render less.
++	// The presets are what the first level settled at (experiments 0046-0047, runs 166-172): the title
++	// has a few steps and went no lower than 1920x1080, even with the GPU slowed to a fifth.
++	void DrawVideo() {
++		struct Preset {
++			const char* label;
++			double      k;
++		};
++		static const Preset presets[] = {
++		    {"4K (3840x2160), the title's own choice: about 57 fps", 1.0},
++		    {"About 1872p (3328x1872): 59-60 fps", 1.2},
++		    {"About 1368p (2432x1368): 60 fps, GPU 2/3 busy", 1.5},
++		    {"1080p, Full HD (1920x1080), the title's lowest: 60 fps, GPU half busy", 3.0},
++		};
++		uint32_t w = 0, h = 0;
++		const bool   known = Libs::Bc5Gc::Direct::GetMainPass(&w, &h);
++		const double live  = Libs::Bc5Gc::Direct::GetTimestampScale();
++		ImGui::TextWrapped("The game chooses the resolution of its 3D view itself, from the GPU time it measures, "
++		                   "and scales it to its 3840x2160 output; HD (720p) is below what it goes to. A lower "
++		                   "setting makes it render fewer pixels, so the GPU has room for heavier scenes; above "
++		                   "60 fps there is nothing to gain. The change is live; Save keeps it for the next start.");
++		ImGui::Separator();
++		if (known) {
++			ImGui::Text("3D view now: %ux%u    timestamp scale now: %.2f", w, h, live);
++		} else {
++			ImGui::Text("3D view now: not seen yet    timestamp scale now: %.2f", live);
++		}
++		ImGui::Separator();
++		double k = draft.RenderScale() > 0.0 ? draft.RenderScale() : live;
++		for (const auto& p: presets) {
++			if (ImGui::RadioButton(p.label, std::abs(k - p.k) < 0.005)) {
++				draft.SetRenderScale(p.k);
++				dirty = true;
++				Libs::Bc5Gc::Direct::SetTimestampScale(p.k);
++				video_status = "applied (live); Save to keep it";
++			}
++		}
++		float kf = static_cast<float>(k);
++		if (ImGui::SliderFloat("timestamp scale", &kf, 0.5f, 4.0f, "%.2f")) {
++			draft.SetRenderScale(kf);
++			dirty = true;
++			Libs::Bc5Gc::Direct::SetTimestampScale(kf);
++			video_status = "applied (live); Save to keep it";
++		}
++		ImGui::BeginDisabled(path.empty());
++		if (ImGui::Button("Save")) {
++			std::string error;
++			if (!HostInputSave(path, draft.lines, &error)) {
++				video_status = "not saved: " + error;
++			} else if (!HostInputApply(draft.lines, &error)) {
++				video_status = "saved, not applied: " + error;
++			} else {
++				video_status = "saved";
++				dirty        = false;
++			}
++		}
++		ImGui::EndDisabled();
++		ImGui::SameLine();
++		if (ImGui::Button("Close")) {
++			SettingsOverlayToggle();
++		}
++		ImGui::TextUnformatted(video_status.c_str());
++		ImGui::Separator();
++		ImGui::TextWrapped("Restart the game: the emulator stops and the launcher starts it again from the "
++		                   "beginning (the desktop shortcut does; progress since the last save is lost).");
++		ImGui::Checkbox("I have saved", &restart_armed);
++		ImGui::BeginDisabled(!restart_armed);
++		if (ImGui::Button("Restart game")) {
++			std::fflush(nullptr);
++			::sync();
++			std::_Exit(75); // play-astro.sh starts the emulator again on this exit code
++		}
++		ImGui::EndDisabled();
 +	}
 +
 +	bool PrepareFrame(vk::Extent2D frame_extent, vk::Format format, uint32_t image_count) {
@@ -1093,6 +1199,8 @@ index 0000000..22bd933
 +	std::string                           path;
 +	std::string                           status;
 +	bool                                  dirty              = false;
++	std::string                           video_status;
++	bool                                  restart_armed      = false;
 +	bool                                  was_active         = false;
 +	ImGuiContext*                         imgui_context      = nullptr;
 +	bool                                  vulkan_initialized = false;
@@ -1256,7 +1364,7 @@ index 58f16c6..4ab38e9 100644
  KYTY_SYSV_ABI int VideoOutGetVblankStatus(int handle, VideoOutVblankStatus* status);
  KYTY_SYSV_ABI int VideoOutGetEventId(const LibKernel::EventQueue::KernelEvent* ev);
 diff --git a/src/graphics/presentation/window/hostInput.cpp b/src/graphics/presentation/window/hostInput.cpp
-index edcfdaf..47d2882 100644
+index edcfdaf..d658c8a 100644
 --- a/src/graphics/presentation/window/hostInput.cpp
 +++ b/src/graphics/presentation/window/hostInput.cpp
 @@ -1,3 +1,4 @@
@@ -1264,7 +1372,7 @@ index edcfdaf..47d2882 100644
  #include "graphics/presentation/window/hostInput.h"
  
  #include "SDL_gamecontroller.h"
-@@ -6,14 +7,51 @@
+@@ -6,14 +7,57 @@
  #include "SDL_mouse.h"
  #include "common/assert.h"
  #include "common/emulatorConfig.h"
@@ -1313,10 +1421,16 @@ index edcfdaf..47d2882 100644
 +// The file is named by --input-config <file> or by KYTY_BC5_INPUT_CONFIG; see
 +// backend/kytyplus-patches/input.example.cfg in the BC5 repository. The settings overlay (F2 in
 +// the game window) edits and saves the same file.
++
++namespace Libs::Bc5Gc::Direct {
++void   SetTimestampScale(double k); // bc5LleAgc.cpp, experiment 0047
++double GetTimestampScale();
++bool   GetMainPass(uint32_t* w, uint32_t* h);
++} // namespace Libs::Bc5Gc::Direct
  
  namespace Libs::Graphics {
  
-@@ -55,13 +93,68 @@ static constexpr std::array CONTROL_INFO = {
+@@ -55,13 +99,68 @@ static constexpr std::array CONTROL_INFO = {
  
  constexpr std::size_t INVALID_CONTROL = CONTROL_INFO.size();
  
@@ -1389,7 +1503,7 @@ index edcfdaf..47d2882 100644
  std::size_t ControlFromName(std::string_view name) {
  	const auto info = std::find_if(CONTROL_INFO.begin(), CONTROL_INFO.end(),
  	                               [name](const auto& item) { return item.name == name; });
-@@ -74,6 +167,11 @@ const ControlInfo& Info(std::size_t control) {
+@@ -74,6 +173,11 @@ const ControlInfo& Info(std::size_t control) {
  }
  
  SDL_Keycode NormalizeKey(SDL_Keycode key) {
@@ -1401,7 +1515,7 @@ index edcfdaf..47d2882 100644
  	switch (key) {
  		case SDLK_RSHIFT: return SDLK_LSHIFT;
  		case SDLK_RCTRL: return SDLK_LCTRL;
-@@ -83,110 +181,391 @@ SDL_Keycode NormalizeKey(SDL_Keycode key) {
+@@ -83,110 +187,410 @@ SDL_Keycode NormalizeKey(SDL_Keycode key) {
  	}
  }
  
@@ -1444,7 +1558,10 @@ index edcfdaf..47d2882 100644
 +	});
 +	return button != MOUSE_NAMES.end() ? button->second : 0;
 +}
-+
+ 
+-	const auto button = std::find_if(buttons.begin(), buttons.end(),
+-	                                 [name](const auto& item) { return item.first == name; });
+-	return button != buttons.end() ? button->second : 0;
 +std::string MouseButtonName(uint8_t button) {
 +	for (const auto& [name, id]: MOUSE_NAMES) {
 +		if (id == button) {
@@ -1452,8 +1569,12 @@ index edcfdaf..47d2882 100644
 +		}
 +	}
 +	return "Mouse:?";
-+}
-+
+ }
+ 
+-int GamepadButtonFromName(std::string_view name) {
+-	if (!name.starts_with("Pad:")) return -1;
+-	return static_cast<int>(
+-	    SDL_GameControllerGetButtonFromString(std::string(name.substr(4)).c_str()));
 +// "Pad:<name>": a button, a trigger axis, or a stick axis with a direction.
 +bool PadSourceFromName(std::string_view name, Source* out) {
 +	if (!name.starts_with("Pad:")) {
@@ -1469,10 +1590,7 @@ index edcfdaf..47d2882 100644
 +		out->pad_button = button;
 +		return true;
 +	}
- 
--	const auto button = std::find_if(buttons.begin(), buttons.end(),
--	                                 [name](const auto& item) { return item.first == name; });
--	return button != buttons.end() ? button->second : 0;
++
 +	int sign = 0;
 +	if (!spec.empty() && (spec.back() == '+' || spec.back() == '-')) {
 +		sign = spec.back() == '+' ? 1 : -1;
@@ -1509,12 +1627,8 @@ index edcfdaf..47d2882 100644
 +	}
 +	out->kind = SourceKind::Key;
 +	return true;
- }
- 
--int GamepadButtonFromName(std::string_view name) {
--	if (!name.starts_with("Pad:")) return -1;
--	return static_cast<int>(
--	    SDL_GameControllerGetButtonFromString(std::string(name.substr(4)).c_str()));
++}
++
 +std::string SourceToName(const Source& s) {
 +	switch (s.kind) {
 +		case SourceKind::Key: return SDL_GetKeyName(s.key);
@@ -1581,15 +1695,15 @@ index edcfdaf..47d2882 100644
 +			} else {
 +				LOGF("Host input: %s = %s\n", std::string(Info(b.control).name).c_str(),
 +				     SourceToName(b.source).c_str());
- 			}
--			if (binding.mouse_button == 0 && binding.gamepad_button < 0) {
--				binding.key = NormalizeKey(SDL_GetKeyFromName(std::string(host_input).c_str()));
++			}
 +		}
 +		for (int i = 0; i < 32; i++) {
 +			if (((m_disabled_buttons >> i) & 1u) != 0) {
 +				LOGF("Host input: pad button %s disabled\n",
 +				     SDL_GameControllerGetStringForButton(static_cast<SDL_GameControllerButton>(i)));
-+			}
+ 			}
+-			if (binding.mouse_button == 0 && binding.gamepad_button < 0) {
+-				binding.key = NormalizeKey(SDL_GetKeyFromName(std::string(host_input).c_str()));
 +			if (((m_disabled_axes >> i) & 1u) != 0) {
 +				LOGF("Host input: pad axis %s disabled\n",
 +				     SDL_GameControllerGetStringForAxis(static_cast<SDL_GameControllerAxis>(i)));
@@ -1610,6 +1724,11 @@ index edcfdaf..47d2882 100644
 +	// The configuration back as statements (the file's grammar), one per line.
 +	[[nodiscard]] std::vector<std::string> Statements() const {
 +		std::vector<std::string> out;
++		if (m_render_scale > 0.0) {
++			char b[48];
++			std::snprintf(b, sizeof(b), "RenderScale=%.2f", m_render_scale);
++			out.emplace_back(b);
++		}
 +		if (!m_default_keys) {
 +			out.emplace_back("DefaultKeys=off");
 +		}
@@ -1636,6 +1755,7 @@ index edcfdaf..47d2882 100644
 +
  	[[nodiscard]] bool Custom() const { return m_custom; }
 +	[[nodiscard]] bool DefaultKeys() const { return m_default_keys; }
++	[[nodiscard]] double RenderScale() const { return m_render_scale; }
 +
 +	[[nodiscard]] bool PadButtonDisabled(int button) const {
 +		return button >= 0 && button < 32 && ((m_disabled_buttons >> button) & 1u) != 0;
@@ -1736,6 +1856,17 @@ index edcfdaf..47d2882 100644
 +		const auto left  = Trim(line.substr(0, split));
 +		const auto right = Trim(line.substr(split + 1));
 +
++		if (EqualNoCase(left, "RenderScale")) { // experiment 0047: the GPU timestamp scale (F2, Video)
++			char*             end = nullptr;
++			const std::string v(right);
++			const double      k = std::strtod(v.c_str(), &end);
++			if (end == v.c_str() || *end != 0 || k < 0.5 || k > 4.0) {
++				return Fail(error, where + ": RenderScale takes a number from 0.5 to 4, got: " + v);
++			}
++			m_render_scale = k;
++			return true;
++		}
++
 +		if (EqualNoCase(left, "DefaultKeys")) {
 +			if (EqualNoCase(right, "on") || EqualNoCase(right, "true") || right == "1") {
 +				m_default_keys = true;
@@ -1797,6 +1928,7 @@ index edcfdaf..47d2882 100644
 +	uint32_t             m_disabled_buttons = 0;
 +	uint32_t             m_disabled_axes    = 0;
 +	bool                 m_default_keys     = true;
++	double               m_render_scale     = 0.0; // 0: not set (BC5_DIRECT_TS_SCALE or 1)
 +	bool                 m_custom           = false;
  };
  
@@ -1847,6 +1979,7 @@ index edcfdaf..47d2882 100644
 +			EXIT("Input config (%s)\n", error.c_str());
 +		}
 +		map->Log();
++		if (map->RenderScale() > 0.0) Libs::Bc5Gc::Direct::SetTimestampScale(map->RenderScale());
 +		g_map = std::move(map);
 +	}
 +	return *g_map;
@@ -1859,7 +1992,7 @@ index edcfdaf..47d2882 100644
  void SetButton(uint32_t button, bool down) {
  	if (button == Controller::PAD_BUTTON_L2) {
  		Controller::ControllerAxis(Controller::HOST_INPUT_CONTROLLER_ID,
-@@ -199,40 +578,17 @@ void SetButton(uint32_t button, bool down) {
+@@ -199,40 +603,17 @@ void SetButton(uint32_t button, bool down) {
  	}
  }
  
@@ -1906,7 +2039,7 @@ index edcfdaf..47d2882 100644
  void SetControl(std::size_t control, bool down) {
  	if (control == INVALID_CONTROL) {
  		return;
-@@ -240,93 +596,273 @@ void SetControl(std::size_t control, bool down) {
+@@ -240,93 +621,274 @@ void SetControl(std::size_t control, bool down) {
  
  	const auto& info = Info(control);
  	if (info.button != 0) {
@@ -1972,9 +2105,9 @@ index edcfdaf..47d2882 100644
 -			return;
 -		default: SetButton(DefaultKeyboardButton(key_code), down); return;
 +		g_axes[axis].negative = down;
-+	}
+ 	}
 +	SetStickAxis(info.axis, g_axes[axis].negative, g_axes[axis].positive);
-+}
+ }
 +
 +void ReleaseAll() {
 +	for (std::size_t c = 0; c < CONTROL_INFO.size(); c++) {
@@ -1987,8 +2120,8 @@ index edcfdaf..47d2882 100644
 +			g_axes[a] = {};
 +			SetStickAxis(static_cast<Controller::Axis>(a), false, false);
 +		}
- 	}
- }
++	}
++}
 +
 +std::size_t DefaultControlForKey(int key_code) {
 +	const auto key = NormalizeKey(static_cast<SDL_Keycode>(key_code));
@@ -2109,7 +2242,7 @@ index edcfdaf..47d2882 100644
 +	}
 +	if (control == INVALID_CONTROL) {
 +		return;
-+	}
+ 	}
 +	const double now = NowSeconds();
 +	if (down) {
 +		g_pending.erase(key_code); // a repeat pair: the key stays held
@@ -2129,7 +2262,7 @@ index edcfdaf..47d2882 100644
 +			std::fflush(stderr);
 +		}
 +		return;
- 	}
++	}
 +	SetControl(control, false);
  }
  
@@ -2149,9 +2282,9 @@ index edcfdaf..47d2882 100644
  	if (map.Custom() && gamepad_button >= 0) {
 -		SetControl(map.FindGamepadButton(gamepad_button), down);
 +		SetControl(map.FindPadButton(gamepad_button), down);
- 	}
- }
- 
++	}
++}
++
 +void HostInputGamepadAxis(int gamepad_axis, int value) {
 +	std::lock_guard<std::mutex> lock(g_input_mutex);
 +	auto&                       map = Map();
@@ -2194,7 +2327,7 @@ index edcfdaf..47d2882 100644
 +	std::vector<std::pair<std::string, std::string>> numbered;
 +	for (std::size_t i = 0; i < lines.size(); i++) {
 +		numbered.emplace_back(lines[i], "line " + std::to_string(i + 1));
-+	}
+ 	}
 +	auto map = std::make_unique<InputMap>();
 +	if (!map->Load(numbered, error)) {
 +		return false;
@@ -2203,6 +2336,7 @@ index edcfdaf..47d2882 100644
 +	ReleaseAll();
 +	g_pending.clear();
 +	map->Log();
++	if (map->RenderScale() > 0.0) Libs::Bc5Gc::Direct::SetTimestampScale(map->RenderScale());
 +	g_map = std::move(map);
 +	return true;
 +}
@@ -2237,8 +2371,8 @@ index edcfdaf..47d2882 100644
 +	Map();
 +	ReleaseAll();
 +	g_pending.clear();
-+}
-+
+ }
+ 
  } // namespace Libs::Graphics
 diff --git a/src/graphics/presentation/window/hostInput.h b/src/graphics/presentation/window/hostInput.h
 index c0ac585..83b3232 100644
@@ -3878,10 +4012,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..57b804e
+index 0000000..965c2f1
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,5095 @@
+@@ -0,0 +1,5143 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -5964,6 +6098,22 @@ index 0000000..57b804e
 +	g_size_counts[k]++;
 +}
 +
++// Experiment 0047: the size of the game's main 3D view, for the F2 menu: the last colour target
++// and depth buffer of the same size, at least 640 wide, bound together (CB_COLOR0_ATTRIB2 and
++// DB_DEPTH_SIZE_XY, as size_tally reads them).
++static std::atomic<uint32_t> g_main_w {0}, g_main_h {0};
++static void main_pass_track(const std::map<uint32_t, uint32_t>& ctx) {
++	auto it_c = ctx.find(0x3b0);
++	auto it_d = ctx.find(0x07);
++	if (it_c == ctx.end() || it_d == ctx.end()) return;
++	const uint32_t cw = ((it_c->second >> 14u) & 0x3fffu) + 1, ch = (it_c->second & 0x3fffu) + 1;
++	const uint32_t dw = (it_d->second & 0x3fffu) + 1, dh = ((it_d->second >> 16u) & 0x3fffu) + 1;
++	if (cw == dw && ch == dh && cw >= 640) {
++		g_main_w.store(cw, std::memory_order_relaxed);
++		g_main_h.store(ch, std::memory_order_relaxed);
++	}
++}
++
 +static void hint_targets(const uint32_t* ib, uint32_t num_dwords) {
 +	std::vector<uint64_t>& hinted = g_hinted;
 +	static const bool     off    = std::getenv("BC5_DIRECT_NO_HINTS") != nullptr;
@@ -6123,6 +6273,7 @@ index 0000000..57b804e
 +		if (changed) {
 +			evaluate();
 +			size_tally(ctx);
++			main_pass_track(ctx);
 +		}
 +		i += len;
 +	}
@@ -6864,12 +7015,15 @@ index 0000000..57b804e
 +// EVENT_WRITE_EOP with DATA_SEL 3) the game's buffers write, once each job is done, so that the
 +// game measures k times the GPU time it really took. Diagnostic: does the title's dynamic
 +// resolution follow its timestamps?
++// Experiment 0047: settable while the game runs (the F2 menu's Video tab, RenderScale= in the
++// input configuration); BC5_DIRECT_TS_SCALE gives the value at start. 1 = timestamps untouched.
++static std::atomic<double> g_ts_scale {[] {
++	const char* e = std::getenv("BC5_DIRECT_TS_SCALE");
++	const double k = e != nullptr ? std::strtod(e, nullptr) : 1.0;
++	return k > 0.0 ? k : 1.0;
++}()};
 +static double ts_scale() {
-+	static const double k = [] {
-+		const char* e = std::getenv("BC5_DIRECT_TS_SCALE");
-+		return e != nullptr ? std::strtod(e, nullptr) : 0.0;
-+	}();
-+	return k;
++	return g_ts_scale.load(std::memory_order_relaxed);
 +}
 +static void ts_collect(const uint32_t* ib, uint32_t num_dwords, std::vector<uint64_t>* out) {
 +	for (uint32_t q = 0; q < num_dwords;) {
@@ -8006,7 +8160,7 @@ index 0000000..57b804e
 +		it.job.t2_ns      = t2;
 +		it.job.queued_ns  = SoftCp::now_ns();
 +		it.job.dev_gen    = g_dev_gen.load();
-+		if (ts_scale() > 0.0) ts_collect(ib, num_dwords, &it.job.ts_addrs);
++		if (ts_scale() != 1.0) ts_collect(ib, num_dwords, &it.job.ts_addrs);
 +		frame_profile_job(t_cq == 0, r.prepare_ms, r.list_ms, r.cs_ms);
 +		frame_profile_prep(t_cq == 0, r.prep_filter_ms, r.prep_tracker_ms, r.prep_cu_ms, r.prep_nested_ms, r.prep_copy_ms);
 +		{
@@ -8968,6 +9122,34 @@ index 0000000..57b804e
 +}
 +
 +} // namespace Bc5LleRegMgr
++
++namespace Bc5Gc::Direct {
++// Experiment 0047: what the F2 menu's Video tab sets and shows.
++void SetTimestampScale(double k) {
++#if defined(KYTY_BC5_DIRECT)
++	g_ts_scale.store(k > 0.0 ? k : 1.0, std::memory_order_relaxed);
++#else
++	(void)k;
++#endif
++}
++double GetTimestampScale() {
++#if defined(KYTY_BC5_DIRECT)
++	return ts_scale();
++#else
++	return 1.0;
++#endif
++}
++bool GetMainPass(uint32_t* w, uint32_t* h) {
++#if defined(KYTY_BC5_DIRECT)
++	*w = g_main_w.load(std::memory_order_relaxed);
++	*h = g_main_h.load(std::memory_order_relaxed);
++	return *w != 0;
++#else
++	*w = *h = 0;
++	return false;
++#endif
++}
++} // namespace Bc5Gc::Direct
 +
 +LIB_DEFINE(InitBc5LleAgc_1) {
 +	Bc5LleKernel::InitBc5LleKernel_1(s);

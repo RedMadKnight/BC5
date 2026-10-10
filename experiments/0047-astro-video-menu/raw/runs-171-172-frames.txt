@@ -1,0 +1,11 @@
+== run 171 kytyplus-20261010-2134/gc/direct.log failed 0
+2275 frames in 380.0-418.0 s, 53827 jobs
+  frame             median  17.00 ms   p10  16.00   p90  17.00
+  gpu busy          median  10.79 ms   p10   9.41   p90  11.94
+== run 172 kytyplus-20261010-2141/gc/direct.log failed 0
+2278 frames in 380.0-418.0 s, 53689 jobs
+  frame             median  17.00 ms   p10  16.00   p90  17.00
+  gpu busy          median   8.92 ms   p10   6.88   p90  10.07
+done
+
+[exited with code 0]

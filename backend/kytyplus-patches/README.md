@@ -267,6 +267,10 @@ page of its arguments), `PFP_SYNC_ME` and the GFX-form dispatch; the drop list a
 offsets are mapped between the two layouts; an IB with COND_EXEC has these dispatches dropped.
 `BC5_DIRECT_MEC_ONLY_PGM` / `BC5_DIRECT_MEC_SKIP_PGM` (hex lists of compute program addresses,
 COMPUTE_PGM_LO/HI) choose which run; the journal names each program once ("mec pgm").
+Experiment 0047: the timestamp scale is live: `RenderScale=<k>` (0.5–4) in the input file, and
+the F2 menu's *Video* tab (presets 1.0 / 1.2 / 1.5 / 3.0, a slider, the main 3D view's size now,
+Save). *Restart game* exits with code 75; the dev box's `play-astro.sh` and `play-pkg.sh` start
+the emulator again on that code.
 Experiment 0046: `BC5_DIRECT_TS_SCALE=<k>` multiplies the 64-bit GPU timestamps a job's buffers
 wrote (`RELEASE_MEM`/`EVENT_WRITE_EOP` with `DATA_SEL` 3) once the job is done; ASTRO BOT's
 dynamic resolution follows them (×1.2: 3328×1872 at 59–60 fps instead of native 4K at 57).
