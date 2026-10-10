@@ -100,8 +100,10 @@ struct Device::Impl {
     OpenOptions opts;
 
     // One scratch buffer per job in flight (Device::set_async); synchronous submission uses
-    // slot 0 only. Each slot has its own VA, 4 GiB apart.
-    static constexpr int kSlots = 16;
+    // slot 0 only. Each slot has its own VA, 4 GiB apart. Experiment 0045: 64, so that the host
+    // can let more than a dozen jobs fly (BC5_DIRECT_MAX_IN_FLIGHT); a slot grows to the largest
+    // IB it carried, a few hundred KiB.
+    static constexpr int kSlots = 64;
     ScratchBo slots[kSlots];
     int cur = 0;
     std::atomic<std::uint64_t> slot_seq[kSlots] = {}; // sequence number of the job using the slot, 0 = free

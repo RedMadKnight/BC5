@@ -267,6 +267,9 @@ page of its arguments), `PFP_SYNC_ME` and the GFX-form dispatch; the drop list a
 offsets are mapped between the two layouts; an IB with COND_EXEC has these dispatches dropped.
 `BC5_DIRECT_MEC_ONLY_PGM` / `BC5_DIRECT_MEC_SKIP_PGM` (hex lists of compute program addresses,
 COMPUTE_PGM_LO/HI) choose which run; the journal names each program once ("mec pgm").
+Experiment 0045: `BC5_DIRECT_MAX_IN_FLIGHT=<n>` (default 12, at most the backend's 64 scratch
+slots minus the ring thread's jobs) is how many jobs fly before the game's thread waits; with
+`BC5_DIRECT_FLIP_DEFER=1` and 24 ASTRO BOT's first level runs at 57 fps instead of 54.
 Experiment 0044: `BC5_DIRECT_PKT_STATS=1` journals, every 10 s, the counts per kind of buffer of
 dispatches, draws, `EVENT_WRITE` by event, `ACQUIRE_MEM` by `GCR_CNTL`, `RELEASE_MEM` and waits, as
 the game wrote them (`pkt stats`). `BC5_DIRECT_GCR_CLEAR=<hex>[:acb|:dcb]` clears those `GCR_CNTL`

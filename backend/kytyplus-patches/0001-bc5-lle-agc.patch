@@ -3878,10 +3878,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..4bcacef
+index 0000000..7613f84
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,4995 @@
+@@ -0,0 +1,5003 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -7115,8 +7115,16 @@ index 0000000..4bcacef
 +		return;
 +	}
 +	if (g_async) {
++		// Experiment 0045: BC5_DIRECT_MAX_IN_FLIGHT (default 12) jobs in flight before the game's
++		// thread waits; with the flip deferred (BC5_DIRECT_FLIP_DEFER=1) the thread can then run
++		// ahead of a GPU-bound frame instead of letting the queue drain (experiment 0028).
++		static const uint32_t max_in_flight = [] {
++			const char* e = std::getenv("BC5_DIRECT_MAX_IN_FLIGHT");
++			const long  v = e != nullptr ? std::strtol(e, nullptr, 10) : 12;
++			return static_cast<uint32_t>(v < 1 ? 1 : (v > 256 ? 256 : v));
++		}();
 +		const uint64_t t_cap = SoftCp::now_ns();
-+		while (g_cq_fences.load() >= 12 || g_recovering.load()) std::this_thread::sleep_for(std::chrono::microseconds(50));
++		while (g_cq_fences.load() >= max_in_flight || g_recovering.load()) std::this_thread::sleep_for(std::chrono::microseconds(50));
 +		frame_profile_wait(t_cq == 0, true, static_cast<double>(SoftCp::now_ns() - t_cap) / 1e6);
 +	}
 +	std::lock_guard lock(g_dev_mutex);

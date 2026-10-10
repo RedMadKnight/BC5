@@ -1,0 +1,13 @@
+== run 159 (baseline)
+2060 frames in 380.0-418.0 s, 48785 jobs
+  frame             median  18.00 ms   p10  18.00   p90  19.00
+  gpu busy          median  17.06 ms   p10  15.05   p90  18.11
+  gpu idle          median   1.11 ms   p10   0.48   p90   3.18
+  longest idle gap  median   1.08 ms   p10   0.47   p90   3.13
+  GPU busy per frame by job kind:
+    dcb           11.85 ms
+    acb            4.57 ms
+    cc             0.28 ms
+    acb-state      0.24 ms
+    hib            0.04 ms
+inside the host 10.5 ms (sync 0.2, hints 0.3, prepare 0.7, list 0.1, cs 0.8, fence 0.0, cap 8.4, label waits 0.0, event waits 0.0), at the flip 2.9, outside 4.0
