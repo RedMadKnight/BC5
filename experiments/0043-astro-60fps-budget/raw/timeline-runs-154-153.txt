@@ -1,0 +1,35 @@
+2042 frames in 380.0-418.0 s, 48885 jobs
+  frame             median  18.00 ms   p10  18.00   p90  19.00
+  gpu busy          median  17.16 ms   p10  15.10   p90  18.12
+  gpu idle          median   1.08 ms   p10   0.54   p90   3.21
+  longest idle gap  median   1.03 ms   p10   0.52   p90   3.16
+  GPU busy per frame by job kind:
+    dcb           12.11 ms
+    acb            4.34 ms
+    cc             0.30 ms
+    acb-state      0.25 ms
+    hib            0.04 ms
+  idle gaps of 1 ms or more, by the job that ends them:
+    acb             281 gaps,  0.55 ms per frame, median  3.35 ms
+    dcb             771 gaps,  0.50 ms per frame, median  1.14 ms
+    acb-state        16 gaps,  0.04 ms per frame, median  5.41 ms
+    (frame end)      72 gaps,  0.04 ms per frame, median  1.00 ms
+    hib               1 gaps,  0.03 ms per frame, median 59.67 ms
+
+2039 frames in 380.0-418.0 s, 48714 jobs
+  frame             median  18.00 ms   p10  18.00   p90  19.00
+  gpu busy          median  17.11 ms   p10  15.02   p90  18.06
+  gpu idle          median   1.10 ms   p10   0.50   p90   3.34
+  longest idle gap  median   1.05 ms   p10   0.50   p90   3.27
+  GPU busy per frame by job kind:
+    dcb           11.91 ms
+    acb            4.42 ms
+    cc             0.34 ms
+    acb-state      0.26 ms
+    hib            0.04 ms
+  idle gaps of 1 ms or more, by the job that ends them:
+    dcb             794 gaps,  0.53 ms per frame, median  1.16 ms
+    acb             296 gaps,  0.52 ms per frame, median  3.38 ms
+    cc                3 gaps,  0.17 ms per frame, median 43.08 ms
+    acb-state        25 gaps,  0.06 ms per frame, median  5.29 ms
+    (frame end)      48 gaps,  0.02 ms per frame, median  1.00 ms

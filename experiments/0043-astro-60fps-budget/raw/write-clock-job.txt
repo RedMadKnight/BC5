@@ -1,0 +1,14 @@
+cu mask 0xffffffff, --dst vram: 24 runs, submit to fence: min 0.629 ms, median 0.641 ms, max 0.669 ms (first run 0.683 ms, left out); 418.6 GB/s at the median
+dispatch done: 0 of 67108864 dwords differ from 0x22222222
+cu mask 0xffffffff, --dst gtt: 24 runs, submit to fence: min 0.639 ms, median 0.650 ms, max 0.714 ms (first run 0.695 ms, left out); 413.0 GB/s at the median
+dispatch done: 0 of 67108864 dwords differ from 0x22222222
+cu mask 0xffffffff, --dst gtt-uswc: 24 runs, submit to fence: min 0.638 ms, median 0.644 ms, max 0.650 ms (first run 0.692 ms, left out); 416.8 GB/s at the median
+dispatch done: 0 of 67108864 dwords differ from 0x22222222
+cu mask 0xffffffff, --dst udmabuf: 24 runs, submit to fence: min 0.645 ms, median 0.658 ms, max 0.668 ms (first run 16.633 ms, left out); 407.8 GB/s at the median
+dispatch done: 0 of 67108864 dwords differ from 0x22222222
+gpu_counter_freq 100000 kHz (the s_memrealtime rate)
+record 0: 000e0182 0000c150 00000000 00000000  (dword0 / dword1 x counter rate = 1854.8 MHz)
+cu mask 0xffffffff, --dst vram: 3000 runs, submit to fence: min 0.478 ms, median 0.490 ms, max 0.964 ms (first run 0.539 ms, left out); 0.0 GB/s at the median
+gpu_counter_freq 100000 kHz (the s_memrealtime rate)
+record 0: 000e019e 0000b2d8 00000000 00000000  (dword0 / dword1 x counter rate = 2004.9 MHz)
+cu mask 0xffffffff, --dst vram: 200 runs, submit to fence: min 0.024 ms, median 0.028 ms, max 0.045 ms (first run 0.062 ms, left out); 0.0 GB/s at the median

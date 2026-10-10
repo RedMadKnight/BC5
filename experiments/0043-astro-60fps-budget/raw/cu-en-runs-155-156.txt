@@ -1,0 +1,26 @@
+== run 155 /home/kjaniszewski/bc5-data/captures/kytyplus-20261010-0041
+direct: enabled, stage all, cu mask 0x000f03ff, bo list with mappings
+2038 frames in 380.0-418.0 s, 48194 jobs
+  frame             median  19.00 ms   p10  18.00   p90  19.00
+  gpu busy          median  17.25 ms   p10  15.43   p90  18.23
+  gpu idle          median   1.06 ms   p10   0.52   p90   3.09
+  longest idle gap  median   1.03 ms   p10   0.51   p90   3.06
+  GPU busy per frame by job kind:
+    dcb           11.96 ms
+    acb            4.64 ms
+    cc             0.30 ms
+    acb-state      0.24 ms
+== run 156 /home/kjaniszewski/bc5-data/captures/kytyplus-20261010-0048
+direct: enabled, stage all, cu mask 0x000f00ff, bo list with mappings
+1861 frames in 380.0-418.0 s, 44266 jobs
+  frame             median  20.00 ms   p10  20.00   p90  21.00
+  gpu busy          median  19.18 ms   p10  17.22   p90  19.79
+  gpu idle          median   1.03 ms   p10   0.51   p90   2.98
+  longest idle gap  median   1.00 ms   p10   0.51   p90   2.95
+  GPU busy per frame by job kind:
+    dcb           13.94 ms
+    acb            4.53 ms
+    cc             0.36 ms
+    acb-state      0.11 ms
+
+[exited with code 0]

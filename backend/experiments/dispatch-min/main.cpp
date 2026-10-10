@@ -24,6 +24,10 @@
 #include <amdgpu.h>
 #include <amdgpu_drm.h>
 #include <fcntl.h>
+#include <linux/udmabuf.h>
+#include <sys/ioctl.h>
+#include <sys/mman.h>
+#include <sys/syscall.h>
 #include <unistd.h>
 #endif
 
@@ -45,13 +49,19 @@ struct Options {
     // gfx1013 (HANDOFF F6); whether they work for us is experiment 0016 step (e).
     unsigned ip = 0;         // AMDGPU_HW_IP_GFX
     unsigned ring = 0;
+    // --dst vram|gtt|gtt-uswc|udmabuf: where the program writes (experiment 0043: the bandwidth
+    // of the memory kinds the game's memory could live in; udmabuf = a memfd handed to amdgpu as
+    // dma-bufs in chunks, as the direct path imports the game's memory, ADR 0006).
+    std::string dst = "vram";
+    int print = 0; // --print N: the first N 16-byte records after the last run (experiment 0043)
 };
 
 int usage() {
     std::fputs("usage: dispatch-min --dump-ib <file> | --info [--render-node PATH] | --submit "
                "[--render-node PATH] [--bytes N | --groups N] [--value HEX] [--console]\n"
                "       [--rsrc1 HEX] [--rsrc2 HEX] [--vsharp3 HEX] [--shader-file FILE]\n"
-               "  --console  RSRC1/RSRC2/V# word 3 as Sony's libSceAgc dispatches the same program\n",
+               "  --console  RSRC1/RSRC2/V# word 3 as Sony's libSceAgc dispatches the same program\n"
+               "  --dst vram|gtt|gtt-uswc|udmabuf  the memory the program writes (default vram)\n",
                stderr);
     return 2;
 }
@@ -171,19 +181,92 @@ struct Bo {
     }
 };
 
-bool alloc(amdgpu_device_handle dev, std::uint64_t size, std::uint32_t domain, Bo &b) {
+bool alloc(amdgpu_device_handle dev, std::uint64_t size, std::uint32_t domain, Bo &b,
+           std::uint64_t flags = 0) {
     b.dev = dev;
     b.size = size;
     amdgpu_bo_alloc_request req{};
     req.alloc_size = size;
     req.phys_alignment = 4096;
     req.preferred_heap = domain;
+    req.flags = flags;
     if (amdgpu_bo_alloc(dev, &req, &b.bo) != 0) return false;
     if (amdgpu_va_range_alloc(dev, amdgpu_gpu_va_range_general, size, 4096, 0, &b.va,
                               &b.va_handle, 0) != 0)
         return false;
     if (amdgpu_bo_va_op(b.bo, 0, size, b.va, 0, AMDGPU_VA_OP_MAP) != 0) return false;
     return amdgpu_bo_cpu_map(b.bo, &b.cpu) == 0;
+}
+
+// A memfd handed to amdgpu as udmabufs of 32 MiB (the module's default limit), imported and
+// mapped back to back at one GPU VA range; the CPU sees the memfd through its own mapping.
+struct Imported {
+    int memfd = -1;
+    void *cpu = nullptr;
+    std::uint64_t size = 0, chunk = 0, va = 0;
+    amdgpu_va_handle va_handle = nullptr;
+    std::vector<amdgpu_bo_handle> bos;
+    ~Imported() {
+        for (std::size_t k = 0; k < bos.size(); ++k) {
+            amdgpu_bo_va_op(bos[k], 0, chunk, va + k * chunk, 0, AMDGPU_VA_OP_UNMAP);
+            amdgpu_bo_free(bos[k]);
+        }
+        if (va_handle) amdgpu_va_range_free(va_handle);
+        if (cpu) munmap(cpu, size);
+        if (memfd >= 0) close(memfd);
+    }
+};
+
+bool import_udmabuf(amdgpu_device_handle dev, std::uint64_t size, Imported &m) {
+    m.chunk = 32ull << 20;
+    if (size % m.chunk != 0) m.chunk = size; // small buffers: one chunk
+    m.size = size;
+    m.memfd = static_cast<int>(syscall(SYS_memfd_create, "dispatch-min", MFD_ALLOW_SEALING));
+    if (m.memfd < 0 || ftruncate(m.memfd, static_cast<off_t>(size)) != 0 ||
+        fcntl(m.memfd, F_ADD_SEALS, F_SEAL_SHRINK) != 0) {
+        std::perror("memfd");
+        return false;
+    }
+    m.cpu = mmap(nullptr, size, PROT_READ | PROT_WRITE, MAP_SHARED, m.memfd, 0);
+    if (m.cpu == MAP_FAILED) {
+        m.cpu = nullptr;
+        return false;
+    }
+    if (amdgpu_va_range_alloc(dev, amdgpu_gpu_va_range_general, size, 2ull << 20, 0, &m.va,
+                              &m.va_handle, 0) != 0)
+        return false;
+    const int ud = open("/dev/udmabuf", O_RDWR | O_CLOEXEC);
+    if (ud < 0) {
+        std::perror("/dev/udmabuf");
+        return false;
+    }
+    for (std::uint64_t off = 0; off < size; off += m.chunk) {
+        udmabuf_create c{};
+        c.memfd = static_cast<std::uint32_t>(m.memfd);
+        c.flags = UDMABUF_FLAGS_CLOEXEC;
+        c.offset = off;
+        c.size = m.chunk;
+        const int buf = ioctl(ud, UDMABUF_CREATE, &c);
+        if (buf < 0) {
+            std::perror("UDMABUF_CREATE");
+            close(ud);
+            return false;
+        }
+        amdgpu_bo_import_result res{};
+        const int rc = amdgpu_bo_import(dev, amdgpu_bo_handle_type_dma_buf_fd,
+                                        static_cast<std::uint32_t>(buf), &res);
+        close(buf);
+        if (rc != 0 ||
+            amdgpu_bo_va_op(res.buf_handle, 0, m.chunk, m.va + off, 0, AMDGPU_VA_OP_MAP) != 0) {
+            std::fprintf(stderr, "udmabuf import or map failed at +0x%llx\n",
+                         static_cast<unsigned long long>(off));
+            close(ud);
+            return false;
+        }
+        m.bos.push_back(res.buf_handle);
+    }
+    close(ud);
+    return true;
 }
 
 int submit(const Options &o) {
@@ -209,19 +292,38 @@ int submit(const Options &o) {
     if (!open_device(o.node, d)) return 1;
 
     Bo shader, dst, cmd;
-    if (!alloc(d.dev, 4096, AMDGPU_GEM_DOMAIN_VRAM, shader) ||
-        !alloc(d.dev, bytes, AMDGPU_GEM_DOMAIN_VRAM, dst) ||
-        !alloc(d.dev, 4096, AMDGPU_GEM_DOMAIN_GTT, cmd)) {
-        std::fprintf(stderr, "buffer allocation failed\n");
+    Imported imp;
+    std::vector<amdgpu_bo_handle> dst_bos;
+    std::uint64_t dst_va = 0;
+    void *dst_cpu = nullptr;
+    bool ok = alloc(d.dev, 4096, AMDGPU_GEM_DOMAIN_VRAM, shader) &&
+              alloc(d.dev, 4096, AMDGPU_GEM_DOMAIN_GTT, cmd);
+    if (ok && o.dst == "udmabuf") {
+        ok = import_udmabuf(d.dev, bytes, imp);
+        dst_va = imp.va;
+        dst_cpu = imp.cpu;
+        dst_bos = imp.bos;
+    } else if (ok) {
+        const bool vram = o.dst == "vram";
+        ok = alloc(d.dev, bytes, vram ? AMDGPU_GEM_DOMAIN_VRAM : AMDGPU_GEM_DOMAIN_GTT, dst,
+                   o.dst == "gtt-uswc" ? AMDGPU_GEM_CREATE_CPU_GTT_USWC : 0);
+        dst_bos = {dst.bo};
+        dst_va = dst.va;
+        dst_cpu = dst.cpu;
+    }
+    if (!ok) {
+        std::fprintf(stderr, "buffer allocation failed (--dst %s)\n", o.dst.c_str());
         return 1;
     }
     std::memset(shader.cpu, 0, 4096);
     std::memcpy(shader.cpu, code.data(), code.size() * sizeof(std::uint32_t));
-    std::memset(dst.cpu, 0, bytes);
+    std::memset(dst_cpu, 0, bytes);
+    std::printf("destination: %s, %u bytes at GPU VA 0x%llx in %zu BO(s)\n", o.dst.c_str(), bytes,
+                static_cast<unsigned long long>(dst_va), dst_bos.size());
 
     bc5::dispatch_min::MemsetParams p;
     p.shader_va = shader.va;
-    p.dst_va = dst.va;
+    p.dst_va = dst_va;
     p.dst_bytes = bytes;
     p.cu_mask = o.cu_mask;
     p.value = o.value;
@@ -248,9 +350,12 @@ int submit(const Options &o) {
 
     amdgpu_context_handle ctx = nullptr;
     if (amdgpu_cs_ctx_create(d.dev, &ctx) != 0) return 1;
-    amdgpu_bo_handle list_bos[3] = {shader.bo, dst.bo, cmd.bo};
+    std::vector<amdgpu_bo_handle> list_bos = {shader.bo, cmd.bo};
+    list_bos.insert(list_bos.end(), dst_bos.begin(), dst_bos.end());
     amdgpu_bo_list_handle list = nullptr;
-    if (amdgpu_bo_list_create(d.dev, 3, list_bos, nullptr, &list) != 0) return 1;
+    if (amdgpu_bo_list_create(d.dev, static_cast<std::uint32_t>(list_bos.size()), list_bos.data(),
+                              nullptr, &list) != 0)
+        return 1;
 
     amdgpu_cs_ib_info ib_info{};
     ib_info.ib_mc_address = cmd.va;
@@ -285,9 +390,10 @@ int submit(const Options &o) {
     if (o.repeat > 1 && !times.empty()) {
         std::vector<double> sorted(times.begin() + (times.size() > 2 ? 1 : 0), times.end());
         std::sort(sorted.begin(), sorted.end());
-        std::printf("cu mask 0x%08x: %zu runs, submit to fence: min %.3f ms, median %.3f ms, max %.3f ms "
-                    "(first run %.3f ms, left out)\n",
-                    o.cu_mask, times.size(), sorted.front(), sorted[sorted.size() / 2], sorted.back(), times.front());
+        std::printf("cu mask 0x%08x, --dst %s: %zu runs, submit to fence: min %.3f ms, median %.3f ms, "
+                    "max %.3f ms (first run %.3f ms, left out); %.1f GB/s at the median\n",
+                    o.cu_mask, o.dst.c_str(), times.size(), sorted.front(), sorted[sorted.size() / 2],
+                    sorted.back(), times.front(), bytes / (sorted[sorted.size() / 2] * 1e6));
     }
     amdgpu_bo_list_destroy(list);
     amdgpu_cs_ctx_free(ctx);
@@ -300,7 +406,20 @@ int submit(const Options &o) {
         return 0;
     }
     // CPU reference of the program: every 16-byte record holds the value in all four dwords.
-    const auto *out = static_cast<const std::uint32_t *>(dst.cpu);
+    const auto *out = static_cast<const std::uint32_t *>(dst_cpu);
+    if (o.print > 0) {
+        drm_amdgpu_info_device di{};
+        amdgpu_query_info(d.dev, AMDGPU_INFO_DEV_INFO, sizeof(di), &di);
+        std::printf("gpu_counter_freq %u kHz (the s_memrealtime rate)\n", di.gpu_counter_freq);
+        for (int r = 0; r < o.print && static_cast<std::uint32_t>(r) * 16 < bytes; ++r) {
+            std::printf("record %d: %08x %08x %08x %08x", r, out[r * 4], out[r * 4 + 1], out[r * 4 + 2],
+                        out[r * 4 + 3]);
+            if (out[r * 4 + 1] != 0)
+                std::printf("  (dword0 / dword1 x counter rate = %.1f MHz)",
+                            static_cast<double>(out[r * 4]) / out[r * 4 + 1] * di.gpu_counter_freq / 1000.0);
+            std::printf("\n");
+        }
+    }
     std::uint32_t bad = 0;
     for (std::uint32_t i = 0; i < bytes / 4; ++i) bad += out[i] != o.value ? 1u : 0u;
     std::printf("dispatch done: %u of %u dwords differ from 0x%08x\n", bad, bytes / 4, o.value);
@@ -353,6 +472,12 @@ int main(int argc, char **argv) {
             o.ip = v == "compute" ? AMDGPU_HW_IP_COMPUTE : AMDGPU_HW_IP_GFX;
         } else if (a == "--ring" && i + 1 < argc) {
             o.ring = static_cast<unsigned>(std::stoul(argv[++i]));
+        } else if (a == "--print" && i + 1 < argc) {
+            o.print = std::stoi(argv[++i]);
+        } else if (a == "--dst" && i + 1 < argc) {
+            o.dst = argv[++i];
+            if (o.dst != "vram" && o.dst != "gtt" && o.dst != "gtt-uswc" && o.dst != "udmabuf")
+                return usage();
         } else if (a == "--console") {
             o.rsrc1 = bc5::dispatch_min::kConsoleRsrc1;
             o.rsrc2 = bc5::dispatch_min::kConsoleRsrc2;
