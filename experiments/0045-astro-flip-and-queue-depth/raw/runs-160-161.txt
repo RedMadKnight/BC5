@@ -1,0 +1,28 @@
+== run 160 kytyplus-20261010-1524 failed 30609
+1985 frames in 380.0-418.0 s, 47634 jobs
+  frame             median  18.00 ms   p10  15.00   p90  25.00
+  gpu busy          median  10.00 ms   p10   7.47   p90  18.00
+  gpu idle          median   8.00 ms   p10   1.44   p90  11.00
+  longest idle gap  median   5.00 ms   p10   1.00   p90   9.00
+  GPU busy per frame by job kind:
+    dcb            7.80 ms
+    acb            3.72 ms
+    cc             0.20 ms
+    acb-state      0.12 ms
+    hib            0.03 ms
+inside the host 9.8 ms (sync 0.1, hints 0.2, prepare 0.7, list 0.0, cs 0.7, fence 0.0, cap 0.0, label waits 8.1, event waits 0.0), at the flip 0.0, outside 6.9
+== run 161 kytyplus-20261010-1531 failed 1
+2116 frames in 380.0-418.0 s, 49869 jobs
+  frame             median  18.00 ms   p10  17.00   p90  19.00
+  gpu busy          median  16.98 ms   p10  15.70   p90  18.25
+  gpu idle          median   0.94 ms   p10   0.20   p90   1.39
+  longest idle gap  median   0.94 ms   p10   0.20   p90   1.39
+  GPU busy per frame by job kind:
+    dcb           12.59 ms
+    acb            4.22 ms
+    acb-state      0.13 ms
+    cc             0.07 ms
+    hib            0.03 ms
+inside the host 13.1 ms (sync 0.2, hints 0.2, prepare 0.7, list 0.1, cs 0.7, fence 0.0, cap 8.5, label waits 2.8, event waits 0.0), at the flip 0.0, outside 3.6
+
+[exited with code 0]
