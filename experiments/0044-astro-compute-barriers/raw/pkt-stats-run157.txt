@@ -1,0 +1,56 @@
+run 157, 400-410 s, 533 frames
+acb ACQUIRE_MEM gcr 0x08000                                       26297
+acb ACQUIRE_MEM gcr 0x08380                                        1611
+acb ACQUIRE_MEM gcr 0x0c3a1                                        2145
+acb DISPATCH_DIRECT                                               26299
+acb DISPATCH_INDIRECT                                              1611
+acb EVENT_WRITE event 7                                           30053
+acb RELEASE_MEM event 20 dw1 0x0630e514                           12350
+acb RELEASE_MEM event 40 dw1 0x00000528                            2685
+acb RELEASE_MEM event 40 dw1 0x0630e528                           31129
+acb RELEASE_MEM event 47 dw1 0x0030e62f                            4295
+acb RELEASE_MEM event 47 dw1 0x0630e62f                            3222
+acb WAIT_REG_MEM64                                                 4295
+acb buffers                                                        5840
+acb-state buffers                                                  1550
+cc buffers                                                          536
+dcb ACQUIRE_MEM gcr 0x00000                                         537
+dcb ACQUIRE_MEM gcr 0x00220                                        7513
+dcb ACQUIRE_MEM gcr 0x00300                                        3753
+dcb ACQUIRE_MEM gcr 0x00320                                       16640
+dcb ACQUIRE_MEM gcr 0x00380                                       26831
+dcb ACQUIRE_MEM gcr 0x09000                                       54201
+dcb ACQUIRE_MEM gcr 0x0c020                                        8589
+dcb ACQUIRE_MEM gcr 0x0c320                                        2680
+dcb ACQUIRE_MEM gcr 0x0c3a1                                         537
+dcb ACQUIRE_MEM gcr 0x0c3e1                                        3217
+dcb DISPATCH_DIRECT                                               23071
+dcb DISPATCH_INDIRECT                                              3222
+dcb EVENT_WRITE event 16                                          38102
+dcb EVENT_WRITE event 42                                           5366
+dcb EVENT_WRITE event 44                                          45610
+dcb EVENT_WRITE event 46                                          53124
+dcb EVENT_WRITE event 49                                           1611
+dcb EVENT_WRITE event 56                                           3217
+dcb EVENT_WRITE event 57                                           6440
+dcb EVENT_WRITE event 7                                           26823
+dcb RELEASE_MEM event 20 dw1 0x00000514                           35419
+dcb RELEASE_MEM event 20 dw1 0x0030e514                             537
+dcb RELEASE_MEM event 20 dw1 0x06000514                          154570
+dcb RELEASE_MEM event 20 dw1 0x0630e514                            3758
+dcb RELEASE_MEM event 4 dw1 0x00200504                             6438
+dcb RELEASE_MEM event 4 dw1 0x0030e504                             5899
+dcb RELEASE_MEM event 4 dw1 0x06200504                              537
+dcb RELEASE_MEM event 40 dw1 0x00000528                          174964
+dcb RELEASE_MEM event 40 dw1 0x00200528                            2683
+dcb RELEASE_MEM event 40 dw1 0x06000528                           27365
+dcb RELEASE_MEM event 43 dw1 0x0000052b                            6974
+dcb RELEASE_MEM event 45 dw1 0x0000052d                           11808
+dcb RELEASE_MEM event 45 dw1 0x0600052d                            7517
+dcb WAIT_REG_MEM                                                  60102
+dcb WAIT_REG_MEM64                                                17181
+dcb buffers                                                        3217
+dcb draw op 25                                                     1074
+dcb draw op 2d                                                    41849
+dcb draw op 35                                                   360693
+hib buffers                                                        1072

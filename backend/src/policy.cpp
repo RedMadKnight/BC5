@@ -438,6 +438,10 @@ std::size_t filter(const Policy &policy, std::span<const std::uint32_t> src,
                 out[i + 2] = 0x80000000u;
                 stats.context_control_rewrites++;
             }
+            if (opt.gcr_clear != 0 && opcode == 0x58 && len >= 8 && (out[i + 7] & opt.gcr_clear) != 0) {
+                out[i + 7] &= ~opt.gcr_clear; // ACQUIRE_MEM GCR_CNTL (experiment 0044)
+                stats.gcr_rewrites++;
+            }
             if (!opt.drop_gds && opt.gds_shadow_va == 0 && opcode == 0x50 && is_gds_access(&src[i], len) &&
                 (out[i + 1] & 0x80000000u) != 0) {
                 // A GDS DMA with CP_SYNC (bit 31) on the GFX ring stalled the CP (run 49, #143);

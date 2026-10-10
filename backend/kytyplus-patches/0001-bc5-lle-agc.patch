@@ -3878,10 +3878,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..0f7c742
+index 0000000..4bcacef
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,4926 @@
+@@ -0,0 +1,4995 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -7050,10 +7050,61 @@ index 0000000..0f7c742
 +	g_fp.t_last_flip = now;
 +}
 +
++// Experiment 0044: BC5_DIRECT_PKT_STATS=1 counts, per kind of buffer, the packets that order or
++// flush work as the game wrote them (before the filter): dispatches, draws, EVENT_WRITE by event
++// type, ACQUIRE_MEM by GCR_CNTL (dword 7 on gfx10; field layout in tools/bc5-agc/regdb/pkt3.json,
++// from Mesa, MIT), RELEASE_MEM by event type and dword 1, WAIT_REG_MEM and WAIT_REG_MEM64. Every
++// 10 s the counts since the last report go to the journal ("pkt stats"), with the number of
++// buffers of each kind.
++static void pkt_stats(const uint32_t* ib, uint32_t num_dwords, const char* kind) {
++	static const bool on = std::getenv("BC5_DIRECT_PKT_STATS") != nullptr;
++	if (!on) return;
++	static std::mutex                      m;
++	static std::map<std::string, uint64_t> counts;
++	static double                          t_last = 0;
++	std::lock_guard<std::mutex>            lock(m);
++	char key[96];
++	std::snprintf(key, sizeof(key), "%s buffers", kind);
++	counts[key]++;
++	for (uint32_t q = 0; q < num_dwords;) {
++		const uint32_t h    = ib[q];
++		const uint32_t type = h >> 30u;
++		uint32_t       len  = 1;
++		if (type == 3 || type == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
++		if (q + len > num_dwords) break;
++		if (type == 3) {
++			const uint32_t op = (h >> 8u) & 0xffu;
++			key[0]            = 0;
++			switch (op) {
++				case 0x15: std::snprintf(key, sizeof(key), "%s DISPATCH_DIRECT", kind); break;
++				case 0x16: std::snprintf(key, sizeof(key), "%s DISPATCH_INDIRECT", kind); break;
++				case 0x2d: case 0x27: case 0x35: case 0x38: case 0x24: case 0x25: case 0x2c:
++					std::snprintf(key, sizeof(key), "%s draw op %02x", kind, op); break;
++				case 0x46: std::snprintf(key, sizeof(key), "%s EVENT_WRITE event %u", kind, len > 1 ? ib[q + 1] & 0x3fu : 0u); break;
++				case 0x58: std::snprintf(key, sizeof(key), "%s ACQUIRE_MEM gcr 0x%05x", kind, len >= 8 ? ib[q + 7] & 0x7ffffu : 0xfffffu); break;
++				case 0x49: std::snprintf(key, sizeof(key), "%s RELEASE_MEM event %u dw1 0x%08x", kind, len > 1 ? ib[q + 1] & 0x3fu : 0u, len > 1 ? ib[q + 1] : 0u); break;
++				case 0x3c: std::snprintf(key, sizeof(key), "%s WAIT_REG_MEM", kind); break;
++				case 0x93: std::snprintf(key, sizeof(key), "%s WAIT_REG_MEM64", kind); break;
++				default: break;
++			}
++			if (key[0] != 0) counts[key]++;
++		}
++		q += len;
++	}
++	const double t = timing_now();
++	if (t - t_last >= 10.0) {
++		journal("pkt stats: %.1f s since the last report\n", t - t_last);
++		for (const auto& [k, n]: counts) journal("pkt stats:   %-60s %10" PRIu64 "\n", k.c_str(), n);
++		counts.clear();
++		t_last = t;
++	}
++}
++
 +static void submit_one(const uint32_t* ib, uint32_t num_dwords, const char* kind, bool from_header) {
 +	if (g_stage == Stage::Off || !g_dev || ib == nullptr || num_dwords == 0) {
 +		return;
 +	}
++	pkt_stats(ib, num_dwords, kind);
 +	if (g_stage == Stage::Preamble && !from_header) {
 +		return;
 +	}
@@ -7285,6 +7336,24 @@ index 0000000..0f7c742
 +	bc5::policy::FilterOptions opt;
 +	opt.cu_mask       = g_cu_mask;
 +	opt.clear_int_sel = true;
++	// Experiment 0044: BC5_DIRECT_GCR_CLEAR=<hex>[:acb|:dcb] clears those GCR_CNTL bits in every
++	// ACQUIRE_MEM (of compute buffers, of graphics buffers, or of all); 8000 = GL2_WB.
++	{
++		static const std::pair<uint32_t, int> gcr = [] {
++			const char* e = std::getenv("BC5_DIRECT_GCR_CLEAR");
++			if (e == nullptr) return std::pair<uint32_t, int> {0, 0};
++			char*          end  = nullptr;
++			const uint32_t bits = static_cast<uint32_t>(std::strtoul(e, &end, 16));
++			int            only = 0; // 0 all, 1 acb, 2 dcb
++			if (end != nullptr && std::strcmp(end, ":acb") == 0) only = 1;
++			if (end != nullptr && std::strcmp(end, ":dcb") == 0) only = 2;
++			return std::pair<uint32_t, int> {bits, only};
++		}();
++		const bool is_acb = std::strncmp(kind, "acb", 3) == 0;
++		if (gcr.second == 0 || (gcr.second == 1 && is_acb) || (gcr.second == 2 && std::strcmp(kind, "dcb") == 0)) {
++			opt.gcr_clear = gcr.first;
++		}
++	}
 +	opt.drop_draws    = g_stage == Stage::NoDraw;
 +	opt.safe_context_control = std::getenv("BC5_DIRECT_RAW_CONTEXT_CONTROL") == nullptr;
 +	// GDS per queue (runs 49–52): the compute IBs get the real partition on their BO list and

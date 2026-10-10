@@ -1,0 +1,36 @@
+== kytyplus-20261010-0601
+1578 frames in 380.0-418.0 s, 34494 jobs
+  frame             median  24.00 ms   p10  20.00   p90  29.00
+  gpu busy          median  18.02 ms   p10  14.94   p90  19.88
+  gpu idle          median   6.15 ms   p10   1.11   p90  11.06
+  longest idle gap  median   3.53 ms   p10   1.00   p90   5.45
+  GPU busy per frame by job kind:
+    dcb           11.65 ms
+    acb            3.05 ms
+    acb-state      2.75 ms
+    cc             0.16 ms
+    hib            0.05 ms
+  idle gaps of 1 ms or more, by the job that ends them:
+    dcb            1721 gaps,  1.97 ms per frame, median  1.69 ms
+    cc              812 gaps,  1.83 ms per frame, median  2.97 ms
+    acb-state       570 gaps,  1.62 ms per frame, median  4.46 ms
+    acb             147 gaps,  0.31 ms per frame, median  2.16 ms
+    (frame end)      51 gaps,  0.04 ms per frame, median  1.00 ms
+    hib               1 gaps,  0.00 ms per frame, median  1.58 ms
+== kytyplus-20261010-0608
+2060 frames in 380.0-418.0 s, 48785 jobs
+  frame             median  18.00 ms   p10  18.00   p90  19.00
+  gpu busy          median  17.06 ms   p10  15.05   p90  18.11
+  gpu idle          median   1.11 ms   p10   0.48   p90   3.18
+  longest idle gap  median   1.08 ms   p10   0.47   p90   3.13
+  GPU busy per frame by job kind:
+    dcb           11.85 ms
+    acb            4.57 ms
+    cc             0.28 ms
+    acb-state      0.24 ms
+    hib            0.04 ms
+  idle gaps of 1 ms or more, by the job that ends them:
+    dcb             861 gaps,  0.56 ms per frame, median  1.15 ms
+    acb             332 gaps,  0.56 ms per frame, median  3.24 ms
+    (frame end)      54 gaps,  0.03 ms per frame, median  1.00 ms
+    acb-state         5 gaps,  0.01 ms per frame, median  5.27 ms

@@ -64,6 +64,24 @@ TEST_CASE("filter NOPs dropped packets in place and rewrites masks and INT_SEL",
     REQUIRE(out[24] == 64u);
 }
 
+TEST_CASE("gcr_clear clears GCR_CNTL bits of ACQUIRE_MEM only", "[policy]") {
+    const auto &p = policy::Policy::builtin();
+    const std::vector<std::uint32_t> src = {
+        0xC0065800u, 0u, 0xffffffffu, 0xffu, 0u, 0u, 0xau, 0x0000c3a1u, // ACQUIRE_MEM, GL2_WB|GL2_INV|...
+        0xC0065800u, 0u, 0xffffffffu, 0xffu, 0u, 0u, 0xau, 0x00000380u, // ACQUIRE_MEM without GL2_WB
+        0xC0004600u, 7u,                                                  // EVENT_WRITE CS_PARTIAL_FLUSH
+    };
+    std::vector<std::uint32_t> out(src.size());
+    policy::FilterOptions opt;
+    opt.gcr_clear = 0x8000u;
+    policy::FilterStats st;
+    policy::filter(p, src, out, opt, st);
+    REQUIRE(st.gcr_rewrites == 1);
+    REQUIRE(out[7] == 0x000043a1u);
+    REQUIRE(out[15] == 0x00000380u);
+    REQUIRE(out[17] == 7u);
+}
+
 TEST_CASE("drop_draws NOPs draws and dispatches only", "[policy]") {
     const auto &p = policy::Policy::builtin();
     const std::vector<std::uint32_t> src = {
