@@ -3878,10 +3878,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..7613f84
+index 0000000..57b804e
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,5003 @@
+@@ -0,0 +1,5095 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -5943,6 +5943,27 @@ index 0000000..7613f84
 +static std::vector<uint64_t> g_hinted; // hint windows already mapped (cleared on a device reopen)
 +static std::vector<std::pair<const char*, uint64_t>> g_recent_targets; // the CB/DB bases seen lately (sampled at flip)
 +
++// Experiment 0046: the sizes the game renders at, from the context registers hint_targets follows
++// (SET_CONTEXT_REG and the tables of LOAD_CONTEXT_REG[_INDEX]): DB_DEPTH_SIZE_XY (0x07),
++// PA_SC_VPORT_SCISSOR_0_BR (0x95), CB_COLOR0_ATTRIB2 (0x3b0), offsets from 0x28000 in dwords
++// (tools/bc5-agc/regdb/gfx10.json). Counted per value with BC5_DIRECT_PKT_STATS=1 and reported
++// with the packet counts.
++static std::mutex                      g_size_mutex;
++static std::map<std::string, uint64_t> g_size_counts;
++static void size_tally(const std::map<uint32_t, uint32_t>& ctx) {
++	static const bool on = std::getenv("BC5_DIRECT_PKT_STATS") != nullptr;
++	if (!on) return;
++	char k[160];
++	auto get = [&](uint32_t r) { auto it = ctx.find(r); return it == ctx.end() ? 0xffffffffu : it->second; };
++	const uint32_t d = get(0x07), v = get(0x95), c = get(0x3b0);
++	std::snprintf(k, sizeof(k), "sizes: CB0 %ux%u, depth %ux%u, viewport scissor 0 to %ux%u",
++	              c == 0xffffffffu ? 0u : ((c >> 14u) & 0x3fffu) + 1, c == 0xffffffffu ? 0u : (c & 0x3fffu) + 1,
++	              d == 0xffffffffu ? 0u : (d & 0x3fffu) + 1, d == 0xffffffffu ? 0u : ((d >> 16u) & 0x3fffu) + 1,
++	              v == 0xffffffffu ? 0u : v & 0x7fffu, v == 0xffffffffu ? 0u : (v >> 16u) & 0x7fffu);
++	std::lock_guard<std::mutex> lock(g_size_mutex);
++	g_size_counts[k]++;
++}
++
 +static void hint_targets(const uint32_t* ib, uint32_t num_dwords) {
 +	std::vector<uint64_t>& hinted = g_hinted;
 +	static const bool     off    = std::getenv("BC5_DIRECT_NO_HINTS") != nullptr;
@@ -5969,6 +5990,11 @@ index 0000000..7613f84
 +			b.push_back({0x325 + c * 0xf, 0x3a8 + c, cb[c]});
 +		}
 +		return b;
++	}();
++	static const std::vector<bool> is_size = [] {
++		std::vector<bool> v(0x10000, false);
++		v[0x07] = v[0x95] = v[0x3b0] = true;
++		return v;
 +	}();
 +	static const std::vector<bool> is_base = [] {
 +		std::vector<bool> v(0x10000, false);
@@ -6057,7 +6083,7 @@ index 0000000..7613f84
 +		if (type == 3 && op == 0x69 && len >= 3) { // SET_CONTEXT_REG
 +			for (uint32_t k = 2; k < len; k++) {
 +				const uint32_t off = ((p[1] & 0xffffu) + k - 2) & 0xffffu;
-+				if (is_base[off]) {
++				if (is_base[off] || is_size[off]) {
 +					ctx[off] = p[k];
 +					changed = true;
 +				}
@@ -6069,7 +6095,7 @@ index 0000000..7613f84
 +				const auto* t = reinterpret_cast<const volatile uint32_t*>(a);
 +				for (uint32_t k = 0; k + 1 < 2 * n; k += 2) {
 +					const uint32_t off = t[k] & 0xffffu;
-+					if (is_base[off]) {
++					if (is_base[off] || is_size[off]) {
 +						ctx[off] = t[k + 1];
 +						changed = true;
 +					}
@@ -6087,14 +6113,17 @@ index 0000000..7613f84
 +				if (n == 0 || !covered(have, base + static_cast<uint64_t>(off) * 4, static_cast<uint64_t>(n) * 4)) continue;
 +				const auto* t = reinterpret_cast<const volatile uint32_t*>(base + static_cast<uint64_t>(off) * 4);
 +				for (uint32_t q = 0; q < n; q++) {
-+					if (is_base[(off + q) & 0xffffu]) {
++					if (is_base[(off + q) & 0xffffu] || is_size[(off + q) & 0xffffu]) {
 +						ctx[off + q] = t[q];
 +						changed = true;
 +					}
 +				}
 +			}
 +		}
-+		if (changed) evaluate();
++		if (changed) {
++			evaluate();
++			size_tally(ctx);
++		}
 +		i += len;
 +	}
 +}
@@ -6828,7 +6857,35 @@ index 0000000..7613f84
 +	bool                     short_list = false, retried = false;
 +	uint64_t                 seq = 0, t2_ns = 0, queued_ns = 0, dev_gen = 0;
 +	uint32_t                 slot = 0;
++	std::vector<uint64_t>    ts_addrs; // experiment 0046: GPU timestamps to rescale once the job is done
 +};
++
++// Experiment 0046: BC5_DIRECT_TS_SCALE=<k> multiplies the 64-bit GPU timestamps (RELEASE_MEM and
++// EVENT_WRITE_EOP with DATA_SEL 3) the game's buffers write, once each job is done, so that the
++// game measures k times the GPU time it really took. Diagnostic: does the title's dynamic
++// resolution follow its timestamps?
++static double ts_scale() {
++	static const double k = [] {
++		const char* e = std::getenv("BC5_DIRECT_TS_SCALE");
++		return e != nullptr ? std::strtod(e, nullptr) : 0.0;
++	}();
++	return k;
++}
++static void ts_collect(const uint32_t* ib, uint32_t num_dwords, std::vector<uint64_t>* out) {
++	for (uint32_t q = 0; q < num_dwords;) {
++		const uint32_t h    = ib[q];
++		const uint32_t type = h >> 30u;
++		uint32_t       len  = 1;
++		if (type == 3 || type == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
++		if (q + len > num_dwords) break;
++		if (type == 3) {
++			const uint32_t op = (h >> 8u) & 0xffu;
++			if (op == 0x49 && len >= 7 && (ib[q + 2] >> 29u) == 3) out->push_back((ib[q + 3] & ~7ull) | (static_cast<uint64_t>(ib[q + 4] & 0xffffu) << 32u));
++			if (op == 0x47 && len >= 6 && (ib[q + 3] >> 29u) == 3) out->push_back((ib[q + 2] & ~7ull) | (static_cast<uint64_t>(ib[q + 3] & 0xffffu) << 32u));
++		}
++		q += len;
++	}
++}
 +struct CqItem {
 +	bool                      fence = false;
 +	PendingJob                job;
@@ -6891,6 +6948,13 @@ index 0000000..7613f84
 +				journal("timing: #%" PRIu64 " done at t %.3f s, %.1f ms after the sync and hints; device: prepare %.2f list %.2f cs %.2f fence %.2f ms, %u BOs%s\n", j.n,
 +				        timing_now(), static_cast<double>(SoftCp::now_ns() - j.t2_ns) / 1e6, j.prepare_ms, j.list_ms, j.cs_ms, total_ms - j.cs_ms, j.bo_count,
 +				        j.short_list ? " (short list)" : "");
++			}
++			if (r.ok && !j.ts_addrs.empty()) {
++				const double k = ts_scale();
++				for (const uint64_t a: j.ts_addrs) {
++					auto* v = reinterpret_cast<volatile uint64_t*>(a);
++					*v      = static_cast<uint64_t>(static_cast<double>(*v) * k);
++				}
 +			}
 +			if (!r.ok) {
 +				failed = true;
@@ -7082,7 +7146,31 @@ index 0000000..7613f84
 +					std::snprintf(key, sizeof(key), "%s draw op %02x", kind, op); break;
 +				case 0x46: std::snprintf(key, sizeof(key), "%s EVENT_WRITE event %u", kind, len > 1 ? ib[q + 1] & 0x3fu : 0u); break;
 +				case 0x58: std::snprintf(key, sizeof(key), "%s ACQUIRE_MEM gcr 0x%05x", kind, len >= 8 ? ib[q + 7] & 0x7ffffu : 0xfffffu); break;
-+				case 0x49: std::snprintf(key, sizeof(key), "%s RELEASE_MEM event %u dw1 0x%08x", kind, len > 1 ? ib[q + 1] & 0x3fu : 0u, len > 1 ? ib[q + 1] : 0u); break;
++				case 0x49: // + DATA_SEL (dword 2 bits 31:29; 3 = the GPU's 64-bit clock counter, Mesa sid.h)
++					std::snprintf(key, sizeof(key), "%s RELEASE_MEM event %u dw1 0x%08x data_sel %u", kind, len > 1 ? ib[q + 1] & 0x3fu : 0u,
++					              len > 1 ? ib[q + 1] : 0u, len > 2 ? ib[q + 2] >> 29u : 0u);
++					break;
++				case 0x47: // EVENT_WRITE_EOP: DATA_SEL in dword 3 bits 31:29
++					std::snprintf(key, sizeof(key), "%s EVENT_WRITE_EOP event %u data_sel %u", kind, len > 1 ? ib[q + 1] & 0x3fu : 0u, len > 3 ? ib[q + 3] >> 29u : 0u);
++					break;
++				case 0x69: { // SET_CONTEXT_REG: the sizes the game renders at (experiment 0046; offsets
++					// from 0x28000 in dwords, tools/bc5-agc/regdb/gfx10.json: DB_DEPTH_SIZE_XY 0x07,
++					// PA_SC_VPORT_SCISSOR_0_BR 0x95, CB_COLOR0_ATTRIB2 0x3b0)
++					const uint32_t first = len > 1 ? ib[q + 1] & 0xffffu : 0u;
++					for (uint32_t k = 0; k + 2 < len; k++) {
++						const uint32_t r = first + k, v = ib[q + 2 + k];
++						char           sz[96];
++						sz[0] = 0;
++						if (r == 0x07) std::snprintf(sz, sizeof(sz), "%s depth size %ux%u", kind, (v & 0x3fffu) + 1, ((v >> 16u) & 0x3fffu) + 1);
++						if (r == 0x95) std::snprintf(sz, sizeof(sz), "%s viewport scissor 0 to %ux%u", kind, v & 0x7fffu, (v >> 16u) & 0x7fffu);
++						if (r == 0x3b0) std::snprintf(sz, sizeof(sz), "%s CB0 size %ux%u", kind, ((v >> 14u) & 0x3fffu) + 1, (v & 0x3fffu) + 1);
++						if (sz[0] != 0) counts[sz]++;
++					}
++					break;
++				}
++				case 0x37: // WRITE_DATA by DST_SEL
++					std::snprintf(key, sizeof(key), "%s WRITE_DATA dst_sel %u", kind, len > 1 ? (ib[q + 1] >> 8u) & 0xfu : 0u);
++					break;
 +				case 0x3c: std::snprintf(key, sizeof(key), "%s WAIT_REG_MEM", kind); break;
 +				case 0x93: std::snprintf(key, sizeof(key), "%s WAIT_REG_MEM64", kind); break;
 +				default: break;
@@ -7096,6 +7184,9 @@ index 0000000..7613f84
 +		journal("pkt stats: %.1f s since the last report\n", t - t_last);
 +		for (const auto& [k, n]: counts) journal("pkt stats:   %-60s %10" PRIu64 "\n", k.c_str(), n);
 +		counts.clear();
++		std::lock_guard<std::mutex> lock2(g_size_mutex);
++		for (const auto& [k, n]: g_size_counts) journal("pkt stats:   %-80s %10" PRIu64 "\n", k.c_str(), n);
++		g_size_counts.clear();
 +		t_last = t;
 +	}
 +}
@@ -7915,6 +8006,7 @@ index 0000000..7613f84
 +		it.job.t2_ns      = t2;
 +		it.job.queued_ns  = SoftCp::now_ns();
 +		it.job.dev_gen    = g_dev_gen.load();
++		if (ts_scale() > 0.0) ts_collect(ib, num_dwords, &it.job.ts_addrs);
 +		frame_profile_job(t_cq == 0, r.prepare_ms, r.list_ms, r.cs_ms);
 +		frame_profile_prep(t_cq == 0, r.prep_filter_ms, r.prep_tracker_ms, r.prep_cu_ms, r.prep_nested_ms, r.prep_copy_ms);
 +		{
@@ -11074,10 +11166,16 @@ index 08aa121..a521d61 100644
  
  	return OK;
 diff --git a/src/libs/libSystemService.cpp b/src/libs/libSystemService.cpp
-index cd205f6..044905b 100644
+index cd205f6..cc5a8b4 100644
 --- a/src/libs/libSystemService.cpp
 +++ b/src/libs/libSystemService.cpp
-@@ -6,9 +6,12 @@
+@@ -1,3 +1,5 @@
++#include <cstdio>
++#include <set>
+ #include "common/abi.h"
+ #include "common/assert.h"
+ #include "common/common.h"
+@@ -6,9 +8,12 @@
  #include "common/stringUtils.h"
  #include "libs/errno.h"
  #include "libs/libs.h"
@@ -11090,7 +11188,7 @@ index cd205f6..044905b 100644
  
  namespace Libs {
  
-@@ -63,6 +66,16 @@ struct SystemServiceStatus {
+@@ -63,6 +68,16 @@ struct SystemServiceStatus {
  	uint8_t reserved[127]              = {};
  };
  
@@ -11107,7 +11205,21 @@ index cd205f6..044905b 100644
  struct SystemServiceEvent {
  	int32_t event_type;
  	uint8_t data[8192];
-@@ -150,7 +163,14 @@ static int KYTY_SYSV_ABI SystemServiceReceiveEvent(SystemServiceEvent* event) {
+@@ -110,6 +125,13 @@ static int KYTY_SYSV_ABI SystemServiceParamGetInt(int param_id, int* value) {
+ 	}
+ 
+ 	LOGF(" %d = %d\n", param_id, v);
++	{
++		// BC5 (experiment 0046): which system parameters the title asks for, once each, on stderr.
++		static std::mutex    m;
++		static std::set<int> seen;
++		std::scoped_lock     lock(m);
++		if (seen.insert(param_id).second) std::fprintf(stderr, "bc5 system param %d -> %d\n", param_id, v);
++	}
+ 
+ 	*value = v;
+ 
+@@ -150,7 +172,14 @@ static int KYTY_SYSV_ABI SystemServiceReceiveEvent(SystemServiceEvent* event) {
  	event->event_type = -1;
  	std::memset(event->data, 0, sizeof(event->data));
  
@@ -11123,7 +11235,7 @@ index cd205f6..044905b 100644
  }
  
  static int KYTY_SYSV_ABI SystemServiceGetStatus(SystemServiceStatus* status) {
-@@ -161,6 +181,10 @@ static int KYTY_SYSV_ABI SystemServiceGetStatus(SystemServiceStatus* status) {
+@@ -161,6 +190,10 @@ static int KYTY_SYSV_ABI SystemServiceGetStatus(SystemServiceStatus* status) {
  	}
  
  	*status = SystemServiceStatus();
