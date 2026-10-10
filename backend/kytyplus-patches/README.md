@@ -267,6 +267,11 @@ page of its arguments), `PFP_SYNC_ME` and the GFX-form dispatch; the drop list a
 offsets are mapped between the two layouts; an IB with COND_EXEC has these dispatches dropped.
 `BC5_DIRECT_MEC_ONLY_PGM` / `BC5_DIRECT_MEC_SKIP_PGM` (hex lists of compute program addresses,
 COMPUTE_PGM_LO/HI) choose which run; the journal names each program once ("mec pgm").
+Experiment 0046: `BC5_DIRECT_TS_SCALE=<k>` multiplies the 64-bit GPU timestamps a job's buffers
+wrote (`RELEASE_MEM`/`EVENT_WRITE_EOP` with `DATA_SEL` 3) once the job is done; ASTRO BOT's
+dynamic resolution follows them (×1.2: 3328×1872 at 59–60 fps instead of native 4K at 57).
+`BC5_DIRECT_PKT_STATS=1` also reports the render sizes the game sets (`sizes:` lines), and the
+title's system parameter queries are reported once each on stderr (`bc5 system param`).
 Experiment 0045: `BC5_DIRECT_MAX_IN_FLIGHT=<n>` (default 12, at most the backend's 64 scratch
 slots minus the ring thread's jobs) is how many jobs fly before the game's thread waits; with
 `BC5_DIRECT_FLIP_DEFER=1` and 24 ASTRO BOT's first level runs at 57 fps instead of 54.
