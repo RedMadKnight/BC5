@@ -257,7 +257,8 @@ off). Compute IBs' `DISPATCH_INDIRECT` in the compute-queue form (address lo/hi,
 dropped; `BC5_DIRECT_MEC_INDIRECT=1` converts it for the GFX ring instead, which hung the GPU
 and took the machine down in its first run (experiment 0038) — do not use it outside an
 experiment. `BC5_DIRECT_WATCH_VA=lo:hi` (hex) journals every packet with a memory operand in
-that range. Traces: `KYTY_BC5_AMM_TRACE=1` also reports short APR reads, AMPR event
+that range. Traces (experiment 0043: every `amm trace:` line starts with the monotonic clock, and
+the per-call lines need `KYTY_BC5_AMM_TRACE=2`): `KYTY_BC5_AMM_TRACE=1` also reports short APR reads, AMPR event
 registrations and triggers, and fixed mappings that replace live memory.
 
 Experiment 0039: with `BC5_DIRECT_MEC_INDIRECT=1` the host rebuilds a compute IB that holds
