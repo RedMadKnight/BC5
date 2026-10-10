@@ -411,16 +411,17 @@ index a656b67..94a249c 100644
  
 diff --git a/src/graphics/presentation/settingsOverlay.cpp b/src/graphics/presentation/settingsOverlay.cpp
 new file mode 100644
-index 0000000..536f93d
+index 0000000..70cf67b
 --- /dev/null
 +++ b/src/graphics/presentation/settingsOverlay.cpp
-@@ -0,0 +1,810 @@
+@@ -0,0 +1,827 @@
 +#include "graphics/presentation/settingsOverlay.h"
 +
 +#include "SDL.h"
 +#include "common/assert.h"
 +#include "graphics/host_gpu/graphicContext.h"
 +#include "graphics/presentation/window/hostInput.h"
++#include "graphics/presentation/window.h"
 +#include "imgui.h"
 +#include "imgui_impl_vulkan.h"
 +
@@ -645,6 +646,13 @@ index 0000000..536f93d
 +			if (EqualNoCase(StatementLeft(l), "RenderScale")) k = std::strtod(std::string(StatementRight(l)).c_str(), nullptr);
 +		}
 +		return k;
++	}
++
++	void SetFullscreen(bool on) {
++		lines.erase(std::remove_if(lines.begin(), lines.end(),
++		                           [&](const std::string& l) { return EqualNoCase(StatementLeft(l), "Fullscreen"); }),
++		            lines.end());
++		lines.insert(lines.begin(), on ? "Fullscreen=on" : "Fullscreen=off");
 +	}
 +
 +	void SetRenderScale(double k) {
@@ -1057,18 +1065,19 @@ index 0000000..536f93d
 +	// Experiment 0047: the title picks its 3D resolution itself, from the GPU time its timestamps
 +	// show (it registers 3840x2160 output buffers and asks the system for no video mode, HANDOFF
 +	// F67, F100). The host scales those timestamps; a larger scale makes the title render less.
-+	// The presets are what the first level settled at (experiments 0046-0047, runs 166-172): the title
-+	// has a few steps and went no lower than 1920x1080, even with the GPU slowed to a fifth.
++	// The title has four steps and no others (experiments 0046-0048, runs 166-176: scales 1.0, 1.2-1.3,
++	// 1.4-2.0 and 2.5-3.0); it went no lower than 1920x1080, even with the GPU slowed to a fifth. The
++	// presets name the usual resolution each step is nearest to and say what the title draws.
 +	void DrawVideo() {
 +		struct Preset {
 +			const char* label;
 +			double      k;
 +		};
 +		static const Preset presets[] = {
-+		    {"4K (3840x2160), the title's own choice: about 57 fps", 1.0},
-+		    {"About 1872p (3328x1872): 59-60 fps", 1.2},
-+		    {"About 1368p (2432x1368): 60 fps, GPU 2/3 busy", 1.5},
-+		    {"1080p, Full HD (1920x1080), the title's lowest: 60 fps, GPU half busy", 3.0},
++		    {"4K UHD - 2160p (3840x2160): about 57 fps in the first level", 1.0},
++		    {"1800p class (the title draws 3328x1872): 59-60 fps", 1.25},
++		    {"1440p class (the title draws 2432x1368): 60 fps", 1.7},
++		    {"Full HD - 1080p (1920x1080): 60 fps, the GPU half free", 3.0},
 +		};
 +		uint32_t w = 0, h = 0;
 +		const bool   known = Libs::Bc5Gc::Direct::GetMainPass(&w, &h);
@@ -1084,6 +1093,14 @@ index 0000000..536f93d
 +			ImGui::Text("3D view now: not seen yet    timestamp scale now: %.2f", live);
 +		}
 +		ImGui::Separator();
++		bool fs = WindowIsFullscreen();
++		if (ImGui::Checkbox("Fullscreen, at the display's resolution (F11)", &fs)) {
++			WindowSetFullscreen(fs);
++			draft.SetFullscreen(fs);
++			dirty        = true;
++			video_status = std::string("fullscreen ") + (fs ? "on" : "off") + " (live); Save to keep it";
++		}
++		ImGui::TextDisabled("Resolution of the game's 3D view:");
 +		double k = draft.RenderScale() > 0.0 ? draft.RenderScale() : live;
 +		for (const auto& p: presets) {
 +			if (ImGui::RadioButton(p.label, std::abs(k - p.k) < 0.005)) {
@@ -1363,16 +1380,33 @@ index 58f16c6..4ab38e9 100644
  KYTY_SYSV_ABI int VideoOutIsFlipPending(int handle);
  KYTY_SYSV_ABI int VideoOutGetVblankStatus(int handle, VideoOutVblankStatus* status);
  KYTY_SYSV_ABI int VideoOutGetEventId(const LibKernel::EventQueue::KernelEvent* ev);
+diff --git a/src/graphics/presentation/window.h b/src/graphics/presentation/window.h
+index f70995a..1ba5363 100644
+--- a/src/graphics/presentation/window.h
++++ b/src/graphics/presentation/window.h
+@@ -11,6 +11,10 @@ class Presenter;
+ [[nodiscard]] Presenter& WindowInit(uint32_t width, uint32_t height);
+ void                     WindowRun();
+ void                     WindowShutdown();
++// BC5 (experiment 0048): borderless fullscreen at the display's current resolution, while the
++// game runs (the F2 menu, F11, Fullscreen= in the input configuration).
++void WindowSetFullscreen(bool on);
++bool WindowIsFullscreen();
+ 
+ } // namespace Libs::Graphics
+ 
 diff --git a/src/graphics/presentation/window/hostInput.cpp b/src/graphics/presentation/window/hostInput.cpp
-index edcfdaf..d658c8a 100644
+index edcfdaf..4be3306 100644
 --- a/src/graphics/presentation/window/hostInput.cpp
 +++ b/src/graphics/presentation/window/hostInput.cpp
-@@ -1,3 +1,4 @@
+@@ -1,4 +1,6 @@
 +#include <pthread.h>
  #include "graphics/presentation/window/hostInput.h"
++#include "graphics/presentation/window.h"
  
  #include "SDL_gamecontroller.h"
-@@ -6,14 +7,57 @@
+ #include "SDL_keyboard.h"
+@@ -6,14 +8,57 @@
  #include "SDL_mouse.h"
  #include "common/assert.h"
  #include "common/emulatorConfig.h"
@@ -1430,7 +1464,7 @@ index edcfdaf..d658c8a 100644
  
  namespace Libs::Graphics {
  
-@@ -55,13 +99,68 @@ static constexpr std::array CONTROL_INFO = {
+@@ -55,13 +100,68 @@ static constexpr std::array CONTROL_INFO = {
  
  constexpr std::size_t INVALID_CONTROL = CONTROL_INFO.size();
  
@@ -1503,7 +1537,7 @@ index edcfdaf..d658c8a 100644
  std::size_t ControlFromName(std::string_view name) {
  	const auto info = std::find_if(CONTROL_INFO.begin(), CONTROL_INFO.end(),
  	                               [name](const auto& item) { return item.name == name; });
-@@ -74,6 +173,11 @@ const ControlInfo& Info(std::size_t control) {
+@@ -74,6 +174,11 @@ const ControlInfo& Info(std::size_t control) {
  }
  
  SDL_Keycode NormalizeKey(SDL_Keycode key) {
@@ -1515,7 +1549,7 @@ index edcfdaf..d658c8a 100644
  	switch (key) {
  		case SDLK_RSHIFT: return SDLK_LSHIFT;
  		case SDLK_RCTRL: return SDLK_LCTRL;
-@@ -83,110 +187,410 @@ SDL_Keycode NormalizeKey(SDL_Keycode key) {
+@@ -83,110 +188,427 @@ SDL_Keycode NormalizeKey(SDL_Keycode key) {
  	}
  }
  
@@ -1558,10 +1592,7 @@ index edcfdaf..d658c8a 100644
 +	});
 +	return button != MOUSE_NAMES.end() ? button->second : 0;
 +}
- 
--	const auto button = std::find_if(buttons.begin(), buttons.end(),
--	                                 [name](const auto& item) { return item.first == name; });
--	return button != buttons.end() ? button->second : 0;
++
 +std::string MouseButtonName(uint8_t button) {
 +	for (const auto& [name, id]: MOUSE_NAMES) {
 +		if (id == button) {
@@ -1569,12 +1600,11 @@ index edcfdaf..d658c8a 100644
 +		}
 +	}
 +	return "Mouse:?";
- }
++}
  
--int GamepadButtonFromName(std::string_view name) {
--	if (!name.starts_with("Pad:")) return -1;
--	return static_cast<int>(
--	    SDL_GameControllerGetButtonFromString(std::string(name.substr(4)).c_str()));
+-	const auto button = std::find_if(buttons.begin(), buttons.end(),
+-	                                 [name](const auto& item) { return item.first == name; });
+-	return button != buttons.end() ? button->second : 0;
 +// "Pad:<name>": a button, a trigger axis, or a stick axis with a direction.
 +bool PadSourceFromName(std::string_view name, Source* out) {
 +	if (!name.starts_with("Pad:")) {
@@ -1609,8 +1639,12 @@ index edcfdaf..d658c8a 100644
 +	out->pad_axis  = axis;
 +	out->axis_sign = sign;
 +	return true;
-+}
-+
+ }
+ 
+-int GamepadButtonFromName(std::string_view name) {
+-	if (!name.starts_with("Pad:")) return -1;
+-	return static_cast<int>(
+-	    SDL_GameControllerGetButtonFromString(std::string(name.substr(4)).c_str()));
 +bool SourceFromName(std::string_view name, Source* out) {
 +	*out = Source {};
 +	if (name.starts_with("Mouse:")) {
@@ -1627,8 +1661,13 @@ index edcfdaf..d658c8a 100644
 +	}
 +	out->kind = SourceKind::Key;
 +	return true;
-+}
-+
+ }
+ 
+-bool Conflicts(const Binding& first, const Binding& second) {
+-	return first.control == second.control ||
+-	       (first.key != SDLK_UNKNOWN && first.key == second.key) ||
+-	       (first.mouse_button != 0 && first.mouse_button == second.mouse_button) ||
+-	       (first.gamepad_button >= 0 && first.gamepad_button == second.gamepad_button);
 +std::string SourceToName(const Source& s) {
 +	switch (s.kind) {
 +		case SourceKind::Key: return SDL_GetKeyName(s.key);
@@ -1642,13 +1681,8 @@ index edcfdaf..d658c8a 100644
 +			       (s.axis_sign > 0 ? "+" : s.axis_sign < 0 ? "-" : "");
 +		default: return "none";
 +	}
- }
- 
--bool Conflicts(const Binding& first, const Binding& second) {
--	return first.control == second.control ||
--	       (first.key != SDLK_UNKNOWN && first.key == second.key) ||
--	       (first.mouse_button != 0 && first.mouse_button == second.mouse_button) ||
--	       (first.gamepad_button >= 0 && first.gamepad_button == second.gamepad_button);
++}
++
 +bool SameSource(const Source& a, const Source& b) {
 +	if (a.kind != b.kind) {
 +		return false;
@@ -1695,15 +1729,15 @@ index edcfdaf..d658c8a 100644
 +			} else {
 +				LOGF("Host input: %s = %s\n", std::string(Info(b.control).name).c_str(),
 +				     SourceToName(b.source).c_str());
-+			}
+ 			}
+-			if (binding.mouse_button == 0 && binding.gamepad_button < 0) {
+-				binding.key = NormalizeKey(SDL_GetKeyFromName(std::string(host_input).c_str()));
 +		}
 +		for (int i = 0; i < 32; i++) {
 +			if (((m_disabled_buttons >> i) & 1u) != 0) {
 +				LOGF("Host input: pad button %s disabled\n",
 +				     SDL_GameControllerGetStringForButton(static_cast<SDL_GameControllerButton>(i)));
- 			}
--			if (binding.mouse_button == 0 && binding.gamepad_button < 0) {
--				binding.key = NormalizeKey(SDL_GetKeyFromName(std::string(host_input).c_str()));
++			}
 +			if (((m_disabled_axes >> i) & 1u) != 0) {
 +				LOGF("Host input: pad axis %s disabled\n",
 +				     SDL_GameControllerGetStringForAxis(static_cast<SDL_GameControllerAxis>(i)));
@@ -1724,11 +1758,15 @@ index edcfdaf..d658c8a 100644
 +	// The configuration back as statements (the file's grammar), one per line.
 +	[[nodiscard]] std::vector<std::string> Statements() const {
 +		std::vector<std::string> out;
++		if (m_fullscreen >= 0) {
++			out.emplace_back(m_fullscreen == 1 ? "Fullscreen=on" : "Fullscreen=off");
+ 		}
+-		Add(binding);
 +		if (m_render_scale > 0.0) {
 +			char b[48];
 +			std::snprintf(b, sizeof(b), "RenderScale=%.2f", m_render_scale);
 +			out.emplace_back(b);
-+		}
+ 		}
 +		if (!m_default_keys) {
 +			out.emplace_back("DefaultKeys=off");
 +		}
@@ -1745,17 +1783,17 @@ index edcfdaf..d658c8a 100644
 +				                 SDL_GameControllerGetStringForAxis(static_cast<SDL_GameControllerAxis>(i)) +
 +				                 "=none");
 +			}
- 		}
--		Add(binding);
++		}
 +		for (const auto& b: m_bindings) {
 +			out.emplace_back(std::string(Info(b.control).name) + "=" + SourceToName(b.source));
- 		}
++		}
 +		return out;
  	}
 +
  	[[nodiscard]] bool Custom() const { return m_custom; }
 +	[[nodiscard]] bool DefaultKeys() const { return m_default_keys; }
 +	[[nodiscard]] double RenderScale() const { return m_render_scale; }
++	[[nodiscard]] int    Fullscreen() const { return m_fullscreen; }
 +
 +	[[nodiscard]] bool PadButtonDisabled(int button) const {
 +		return button >= 0 && button < 32 && ((m_disabled_buttons >> button) & 1u) != 0;
@@ -1856,13 +1894,25 @@ index edcfdaf..d658c8a 100644
 +		const auto left  = Trim(line.substr(0, split));
 +		const auto right = Trim(line.substr(split + 1));
 +
++		if (EqualNoCase(left, "Fullscreen")) { // experiment 0048
++			if (EqualNoCase(right, "on") || EqualNoCase(right, "true") || right == "1") {
++				m_fullscreen = 1;
++			} else if (EqualNoCase(right, "off") || EqualNoCase(right, "false") || right == "0") {
++				m_fullscreen = 0;
+ 			} else {
+-				index++;
++				return Fail(error, where + ": Fullscreen takes on or off, got: " + std::string(right));
++			}
++			return true;
++		}
++
 +		if (EqualNoCase(left, "RenderScale")) { // experiment 0047: the GPU timestamp scale (F2, Video)
 +			char*             end = nullptr;
 +			const std::string v(right);
 +			const double      k = std::strtod(v.c_str(), &end);
 +			if (end == v.c_str() || *end != 0 || k < 0.5 || k > 4.0) {
 +				return Fail(error, where + ": RenderScale takes a number from 0.5 to 4, got: " + v);
-+			}
+ 			}
 +			m_render_scale = k;
 +			return true;
 +		}
@@ -1872,14 +1922,11 @@ index edcfdaf..d658c8a 100644
 +				m_default_keys = true;
 +			} else if (EqualNoCase(right, "off") || EqualNoCase(right, "false") || right == "0") {
 +				m_default_keys = false;
- 			} else {
--				index++;
++			} else {
 +				return Fail(error, where + ": DefaultKeys takes on or off, got: " + std::string(right));
- 			}
++			}
 +			return true;
- 		}
--		EXIT_IF(m_size >= m_bindings.size());
--		m_bindings[m_size++] = binding;
++		}
 +
 +		if (left.starts_with("Pad:") && EqualNoCase(right, "none")) {
 +			Source source;
@@ -1903,7 +1950,9 @@ index edcfdaf..d658c8a 100644
 +			binding.source.kind = SourceKind::None;
 +		} else if (!SourceFromName(right, &binding.source)) {
 +			return Fail(error, where + ": unknown input: " + std::string(right));
-+		}
+ 		}
+-		EXIT_IF(m_size >= m_bindings.size());
+-		m_bindings[m_size++] = binding;
 +		if (binding.source.kind == SourceKind::Key &&
 +		    (binding.source.key == SDLK_ESCAPE || binding.source.key == SDLK_SPACE ||
 +		     binding.source.key == SDLK_F1 || binding.source.key == SDLK_F2)) {
@@ -1929,6 +1978,7 @@ index edcfdaf..d658c8a 100644
 +	uint32_t             m_disabled_axes    = 0;
 +	bool                 m_default_keys     = true;
 +	double               m_render_scale     = 0.0; // 0: not set (BC5_DIRECT_TS_SCALE or 1)
++	int                  m_fullscreen       = -1;  // -1: not set (--fullscreen or windowed)
 +	bool                 m_custom           = false;
  };
  
@@ -1954,8 +2004,8 @@ index edcfdaf..d658c8a 100644
 +		lines.emplace_back(line, path + ":" + std::to_string(number));
 +	}
 +	return lines;
-+}
-+
+ }
+ 
 +// The map, built on first use from --keymap and the configuration file (a bad line is fatal
 +// there: a wrong binding at start-up is better found than played with). Caller holds g_input_mutex.
 +InputMap& Map() {
@@ -1980,11 +2030,12 @@ index edcfdaf..d658c8a 100644
 +		}
 +		map->Log();
 +		if (map->RenderScale() > 0.0) Libs::Bc5Gc::Direct::SetTimestampScale(map->RenderScale());
++		if (map->Fullscreen() >= 0) WindowSetFullscreen(map->Fullscreen() == 1);
 +		g_map = std::move(map);
 +	}
 +	return *g_map;
- }
- 
++}
++
 +// --- driving the pad slot ----------------------------------------------------------------------
 +
 +std::array<bool, CONTROL_INFO.size()> g_pressed {}; // button controls the host stream holds
@@ -1992,7 +2043,7 @@ index edcfdaf..d658c8a 100644
  void SetButton(uint32_t button, bool down) {
  	if (button == Controller::PAD_BUTTON_L2) {
  		Controller::ControllerAxis(Controller::HOST_INPUT_CONTROLLER_ID,
-@@ -199,40 +603,17 @@ void SetButton(uint32_t button, bool down) {
+@@ -199,40 +621,17 @@ void SetButton(uint32_t button, bool down) {
  	}
  }
  
@@ -2039,7 +2090,7 @@ index edcfdaf..d658c8a 100644
  void SetControl(std::size_t control, bool down) {
  	if (control == INVALID_CONTROL) {
  		return;
-@@ -240,93 +621,274 @@ void SetControl(std::size_t control, bool down) {
+@@ -240,93 +639,275 @@ void SetControl(std::size_t control, bool down) {
  
  	const auto& info = Info(control);
  	if (info.button != 0) {
@@ -2105,9 +2156,9 @@ index edcfdaf..d658c8a 100644
 -			return;
 -		default: SetButton(DefaultKeyboardButton(key_code), down); return;
 +		g_axes[axis].negative = down;
- 	}
++	}
 +	SetStickAxis(info.axis, g_axes[axis].negative, g_axes[axis].positive);
- }
++}
 +
 +void ReleaseAll() {
 +	for (std::size_t c = 0; c < CONTROL_INFO.size(); c++) {
@@ -2190,8 +2241,8 @@ index edcfdaf..d658c8a 100644
 +				++it;
 +			}
 +		}
-+	}
-+}
+ 	}
+ }
 +
 +void StartReleaseThread() {
 +	if (!g_release_thread_started) {
@@ -2282,9 +2333,9 @@ index edcfdaf..d658c8a 100644
  	if (map.Custom() && gamepad_button >= 0) {
 -		SetControl(map.FindGamepadButton(gamepad_button), down);
 +		SetControl(map.FindPadButton(gamepad_button), down);
-+	}
-+}
-+
+ 	}
+ }
+ 
 +void HostInputGamepadAxis(int gamepad_axis, int value) {
 +	std::lock_guard<std::mutex> lock(g_input_mutex);
 +	auto&                       map = Map();
@@ -2327,7 +2378,7 @@ index edcfdaf..d658c8a 100644
 +	std::vector<std::pair<std::string, std::string>> numbered;
 +	for (std::size_t i = 0; i < lines.size(); i++) {
 +		numbered.emplace_back(lines[i], "line " + std::to_string(i + 1));
- 	}
++	}
 +	auto map = std::make_unique<InputMap>();
 +	if (!map->Load(numbered, error)) {
 +		return false;
@@ -2337,6 +2388,7 @@ index edcfdaf..d658c8a 100644
 +	g_pending.clear();
 +	map->Log();
 +	if (map->RenderScale() > 0.0) Libs::Bc5Gc::Direct::SetTimestampScale(map->RenderScale());
++	if (map->Fullscreen() >= 0) WindowSetFullscreen(map->Fullscreen() == 1);
 +	g_map = std::move(map);
 +	return true;
 +}
@@ -2371,8 +2423,8 @@ index edcfdaf..d658c8a 100644
 +	Map();
 +	ReleaseAll();
 +	g_pending.clear();
- }
- 
++}
++
  } // namespace Libs::Graphics
 diff --git a/src/graphics/presentation/window/hostInput.h b/src/graphics/presentation/window/hostInput.h
 index c0ac585..83b3232 100644
@@ -2565,7 +2617,7 @@ index 845bfe3..43b93bd 100644
  		{
  			const auto present_end = std::chrono::steady_clock::now();
 diff --git a/src/graphics/presentation/window/window.cpp b/src/graphics/presentation/window/window.cpp
-index c729a98..934fffe 100644
+index c729a98..1c877f7 100644
 --- a/src/graphics/presentation/window/window.cpp
 +++ b/src/graphics/presentation/window/window.cpp
 @@ -32,6 +32,7 @@
@@ -2576,7 +2628,15 @@ index c729a98..934fffe 100644
  #include "graphics/presentation/renderDoc.h"
  #include "graphics/presentation/window/hostInput.h"
  #include "graphics/presentation/window/windowInternal.h"
-@@ -57,7 +58,7 @@
+@@ -39,6 +40,7 @@
+ #include "libs/controller.h"
+ #include "loader/systemContent.h"
+ 
++#include <atomic>
+ #include <algorithm>
+ #include <cstdio>
+ #include <cstdlib>
+@@ -57,7 +59,7 @@
  // IWYU pragma: no_include <intrin.h>
  
  #define KYTY_ENABLE_DEBUG_PRINTF
@@ -2585,7 +2645,15 @@ index c729a98..934fffe 100644
  
  namespace Libs::Graphics {
  
-@@ -232,6 +233,11 @@ static void GameEventKeyboard(WindowLoopState& game, const EventKeyboard& key) {
+@@ -193,6 +195,7 @@ constexpr uint32_t KYTY_SDL_BUTTON_X2MASK = SDL_BUTTON_X2MASK; // NOLINT(hicpp-s
+ namespace {
+ 
+ std::unique_ptr<WindowContext> g_window;
++std::atomic<int>               g_fullscreen_pending {-1}; // BC5: asked for before the window existed
+ 
+ } // namespace
+ 
+@@ -232,6 +235,16 @@ static void GameEventKeyboard(WindowLoopState& game, const EventKeyboard& key) {
  		switch (key.key_code) {
  			case SDLK_ESCAPE: game.need_exit = true; break;
  			case SDLK_SPACE: SetPause(game, !game.paused.load(std::memory_order_acquire)); break;
@@ -2594,10 +2662,15 @@ index c729a98..934fffe 100644
 +					SettingsOverlayToggle();
 +				}
 +				break;
++			case SDLK_F11: // BC5 (experiment 0048): fullscreen on and off
++				if (!key.repeat) {
++					WindowSetFullscreen(!WindowIsFullscreen());
++				}
++				break;
  			case SDLK_F1:
  				if (!key.repeat) {
  					RenderDocRequestCapture();
-@@ -245,6 +251,11 @@ static void GameEventKeyboard(WindowLoopState& game, const EventKeyboard& key) {
+@@ -245,6 +258,11 @@ static void GameEventKeyboard(WindowLoopState& game, const EventKeyboard& key) {
  
  	if ((key.down || key.up) && !key.repeat) {
  		HostInputKey(key.key_code, key.down);
@@ -2609,7 +2682,7 @@ index c729a98..934fffe 100644
  	}
  }
  
-@@ -328,12 +339,24 @@ static void GameEventController([[maybe_unused]] const EventController& f) {
+@@ -328,12 +346,24 @@ static void GameEventController([[maybe_unused]] const EventController& f) {
  			if (joy != nullptr) {
  				LOGF("Controller opened as raw joystick: %s\n",
  				     SDL_JoystickName(joy));
@@ -2635,7 +2708,7 @@ index c729a98..934fffe 100644
  	}
  
  	if (f.removed) {
-@@ -343,19 +366,38 @@ static void GameEventController([[maybe_unused]] const EventController& f) {
+@@ -343,19 +373,38 @@ static void GameEventController([[maybe_unused]] const EventController& f) {
  
  	if (f.down || f.up) {
  		const auto button = ControllerButtonToPadButton(f.button);
@@ -2676,7 +2749,17 @@ index c729a98..934fffe 100644
  	}
  }
  
-@@ -489,6 +531,10 @@ void WindowContext::ProcessEvent(double time_s) {
+@@ -486,9 +535,20 @@ void WindowContext::ProcessDisplayEvent(const SDL_DisplayEvent& display) {
+ }
+ 
+ void WindowContext::ProcessEvent(double time_s) {
++	// BC5 (experiment 0048): a fullscreen request from another thread (WindowSetFullscreen).
++	if (const int want = g_fullscreen_pending.exchange(-1); want >= 0 && window != nullptr) {
++		if (SDL_SetWindowFullscreen(window, want == 1 ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0) != 0) {
++			LOGF("Fullscreen %s: %s\n", want == 1 ? "on" : "off", SDL_GetError());
++		}
++		SDL_SetWindowResizable(window, want == 1 ? SDL_FALSE : SDL_TRUE);
++	}
  	auto& game  = loop;
  	auto* event = &game.event;
  	EXIT_IF(SDL_GetEventState(SDL_DISPLAYEVENT) != SDL_ENABLE);
@@ -2687,7 +2770,7 @@ index c729a98..934fffe 100644
  	if (ProcessImeInput(*event)) {
  		return;
  	}
-@@ -635,6 +681,17 @@ void WindowContext::ProcessEvent(double time_s) {
+@@ -635,6 +695,17 @@ void WindowContext::ProcessEvent(double time_s) {
  			break;
  		}
  
@@ -2705,7 +2788,7 @@ index c729a98..934fffe 100644
  		case SDL_CONTROLLERAXISMOTION: {
  			EventController c {};
  
-@@ -717,6 +774,11 @@ void WindowContext::ProcessEvent(double time_s) {
+@@ -717,6 +788,11 @@ void WindowContext::ProcessEvent(double time_s) {
  			    SDL_CONTROLLER_AXIS_TRIGGERLEFT,
  			    SDL_CONTROLLER_AXIS_TRIGGERRIGHT,
  			};
@@ -2717,7 +2800,7 @@ index c729a98..934fffe 100644
  			EventController c {};
  			c.id         = event->jaxis.which;
  			c.axis_id    = (event->jaxis.axis < 6) ? axis_map[event->jaxis.axis]
-@@ -730,6 +792,9 @@ void WindowContext::ProcessEvent(double time_s) {
+@@ -730,6 +806,9 @@ void WindowContext::ProcessEvent(double time_s) {
  
  		case SDL_JOYBUTTONDOWN:
  		case SDL_JOYBUTTONUP: {
@@ -2727,7 +2810,7 @@ index c729a98..934fffe 100644
  			EventController c {};
  			c.id    = event->jbutton.which;
  			c.button = event->jbutton.button;
-@@ -743,17 +808,30 @@ void WindowContext::ProcessEvent(double time_s) {
+@@ -743,17 +822,30 @@ void WindowContext::ProcessEvent(double time_s) {
  		}
  
  		case SDL_JOYDEVICEADDED: {
@@ -2760,6 +2843,68 @@ index c729a98..934fffe 100644
  			auto* joy = SDL_JoystickFromInstanceID(event->jdevice.which);
  			if (joy != nullptr) {
  				SDL_JoystickClose(joy);
+@@ -856,11 +948,13 @@ static void WindowCreate(WindowContext& context) {
+ 
+ 	LOGF("WindowCreate(): width = %d, height = %d\n", width, height);
+ 
++	const bool fullscreen = Config::FullscreenEnabled() || g_fullscreen_pending.load() == 1; // BC5: or Fullscreen=on
++
+ 	// KytyPlus: keep the game in an ordinary window. A window that all but matches the
+ 	// panel (1280x720 on a 1280x800 display) reads as borderless fullscreen, because the
+ 	// frame ends up flush with the screen edges. Fit the requested size inside the
+ 	// display's usable area first so the decorations stay visible and usable.
+-	if (!Config::FullscreenEnabled()) {
++	if (!fullscreen) {
+ 		SDL_Rect usable{};
+ 		if (SDL_GetDisplayUsableBounds(0, &usable) == 0 && usable.w > 0 && usable.h > 0) {
+ 			constexpr int margin_x = 48;
+@@ -886,7 +980,7 @@ static void WindowCreate(WindowContext& context) {
+ 	}
+ 
+ 	uint32_t window_flags = KYTY_SDL_WINDOW_FLAGS;
+-	if (Config::FullscreenEnabled()) {
++	if (fullscreen) {
+ 		window_flags |= static_cast<uint32_t>(SDL_WINDOW_FULLSCREEN_DESKTOP);
+ 	} else {
+ 		// Windowed: allow the user to resize; keep the normal frame decorations.
+@@ -909,7 +1003,8 @@ static void WindowCreate(WindowContext& context) {
+ 		EXIT("%s\n", SDL_GetError());
+ 	}
+ 
+-	SDL_SetWindowResizable(context.window, Config::FullscreenEnabled() ? SDL_FALSE : SDL_TRUE);
++	SDL_SetWindowResizable(context.window, fullscreen ? SDL_FALSE : SDL_TRUE);
++	g_fullscreen_pending.store(-1); // applied by the flags above
+ }
+ 
+ Presenter& WindowInit(uint32_t width, uint32_t height) {
+@@ -941,6 +1036,27 @@ void WindowShutdown() {
+ 	}
+ }
+ 
++void WindowSetFullscreen(bool on) {
++	if (g_window == nullptr || g_window->window == nullptr) {
++		g_fullscreen_pending.store(on ? 1 : 0);
++		return;
++	}
++	// SDL's window calls belong on the main thread: leave the request and wake its event loop,
++	// which applies it (ProcessEvent).
++	g_fullscreen_pending.store(on ? 1 : 0);
++	SDL_Event event {};
++	event.type = SDL_USEREVENT;
++	SDL_PushEvent(&event);
++}
++
++bool WindowIsFullscreen() {
++	if (g_window == nullptr || g_window->window == nullptr) {
++		return Config::FullscreenEnabled() || g_fullscreen_pending.load() == 1;
++	}
++	if (const int want = g_fullscreen_pending.load(); want >= 0) return want == 1; // not applied yet
++	return (SDL_GetWindowFlags(g_window->window) & SDL_WINDOW_FULLSCREEN_DESKTOP) == SDL_WINDOW_FULLSCREEN_DESKTOP;
++}
++
+ static int WindowIconRead(void* user, char* data, int size) {
+ 	auto*    src        = static_cast<Common::File*>(user);
+ 	uint32_t bytes_read = 0;
 diff --git a/src/kernel/eventQueue.cpp b/src/kernel/eventQueue.cpp
 index 14561b0..d1a0fe6 100644
 --- a/src/kernel/eventQueue.cpp

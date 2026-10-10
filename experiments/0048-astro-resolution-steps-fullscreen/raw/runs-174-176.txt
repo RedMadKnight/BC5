@@ -1,0 +1,24 @@
+== run 174 scale 1.3 failed 0
+3328x1872 303850
+2048x2048 67102
+1664x936 21552
+2274 frames in 380.0-418.0 s, 53375 jobs
+  frame             median  17.00 ms   p10  16.00   p90  17.00
+  gpu busy          median  14.46 ms   p10  13.40   p90  15.45
+== run 175 scale 1.4 failed 0
+2432x1368 206191
+3328x1872 105101
+2048x2048 70087
+1216x684 14116
+1664x936 7448
+2277 frames in 380.0-418.0 s, 54001 jobs
+  frame             median  17.00 ms   p10  16.00   p90  17.00
+  gpu busy          median  14.47 ms   p10  13.42   p90  15.45
+== run 176 scale 2.5 failed 0
+1920x1080 315758
+2048x2048 64710
+960x540 21570
+2277 frames in 380.0-418.0 s, 54000 jobs
+  frame             median  17.00 ms   p10  16.00   p90  17.00
+  gpu busy          median   8.85 ms   p10   7.04   p90  10.04
+done

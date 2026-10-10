@@ -267,6 +267,9 @@ page of its arguments), `PFP_SYNC_ME` and the GFX-form dispatch; the drop list a
 offsets are mapped between the two layouts; an IB with COND_EXEC has these dispatches dropped.
 `BC5_DIRECT_MEC_ONLY_PGM` / `BC5_DIRECT_MEC_SKIP_PGM` (hex lists of compute program addresses,
 COMPUTE_PGM_LO/HI) choose which run; the journal names each program once ("mec pgm").
+Experiment 0048: borderless fullscreen at the display's resolution, live: F11, the *Video*
+tab's box, or `Fullscreen=on|off` in the input file (also at start); presets 1.0 / 1.25 / 1.7 / 3.0
+named 4K UHD, 1800p class, 1440p class, Full HD.
 Experiment 0047: the timestamp scale is live: `RenderScale=<k>` (0.5–4) in the input file, and
 the F2 menu's *Video* tab (presets 1.0 / 1.2 / 1.5 / 3.0, a slider, the main 3D view's size now,
 Save). *Restart game* exits with code 75; the dev box's `play-astro.sh` and `play-pkg.sh` start
