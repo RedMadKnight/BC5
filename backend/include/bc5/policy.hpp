@@ -62,6 +62,7 @@ struct FilterStats {
     std::uint64_t pfp_syncs = 0; // PFP_SYNC_ME inserted before rewritten DISPATCH_INDIRECT (Device::submit)
     std::uint64_t clear_state_rewrites = 0; // CLEAR_STATE cmd 1/2 -> cmd 0
     std::uint64_t cs_done_rewrites = 0; // RELEASE_MEM CS_DONE/index 6 without data -> BOTTOM_OF_PIPE_TS/5
+    std::uint64_t gcr_rewrites = 0;     // ACQUIRE_MEM with FilterOptions::gcr_clear bits cleared
     // IB offsets (dwords) where a SAMPLE_PIPELINESTAT took a dropped marker's place
     // (FilterOptions::stat_sample_va); sample k went to stat_sample_va + k * kStatSampleStride.
     std::vector<std::uint32_t> stat_sample_offsets;
@@ -73,6 +74,9 @@ inline constexpr std::uint64_t kStatSampleStride = 0x80; // 11 qwords of counter
 struct FilterOptions {
     std::uint32_t cu_mask = 0xffffffffu; // ANDed into COMPUTE_STATIC_THREAD_MGMT_SE* and RSRC3.CU_EN
     bool clear_int_sel = true;           // RELEASE_MEM / EVENT_WRITE_EOP: the host fires the events
+    // Experiment 0044: GCR_CNTL bits (ACQUIRE_MEM dword 7 on gfx10; GL2_WB is bit 15, layout in
+    // tools/bc5-agc/regdb/pkt3.json from Mesa) cleared in every ACQUIRE_MEM. 0 = unchanged.
+    std::uint32_t gcr_clear = 0;
     bool drop_draws = false;             // staging (ADR 0005 §5c): NOP every draw and dispatch
     // CONTEXT_CONTROL as RADV/radeonsi emit it (0x80000000 0x80000000: update the enables, load
     // and shadow nothing). The console's 0x91018003/0x80018003 asks the CP to load and shadow
