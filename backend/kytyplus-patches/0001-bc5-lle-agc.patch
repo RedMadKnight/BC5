@@ -4157,10 +4157,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..138547d
+index 0000000..da1e0b1
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,5198 @@
+@@ -0,0 +1,5458 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -4213,6 +4213,7 @@ index 0000000..138547d
 +#include <deque>
 +#include <functional>
 +#include <map>
++#include <unordered_map>
 +#include <set>
 +#include <mutex>
 +#include <shared_mutex>
@@ -6924,7 +6925,13 @@ index 0000000..138547d
 +	return true;
 +}
 +
++// Experiment 0050: a wait of this buffer was given up or broken as a cycle, so what it waited for
++// (often the arguments of its indirect dispatches) may not have been written yet: trusted
++// arguments are checked again in it.
++static thread_local bool t_wait_given_up = false;
++
 +static void submit_split(const uint32_t* ib, uint32_t num_dwords, const char* kind, bool from_header) {
++	t_wait_given_up = false;
 +	std::vector<uint64_t> written;
 +	uint32_t start = 0, i = 0;
 +	// Run 122 (BC5_DIRECT_NO_PIECES=1 brings the old way back): a wait that is not satisfied at once
@@ -6936,6 +6943,14 @@ index 0000000..138547d
 +	// Run 123: pieces fault from the first frames (0x800000005000, a shader fetch with foreign
 +	// state), so they are opt-in (BC5_DIRECT_PIECES=1) until the replayed state is complete.
 +	static const bool pieces = std::getenv("BC5_DIRECT_PIECES") != nullptr;
++	// Experiment 0050: BC5_DIRECT_SPLIT_AT_PGM=<hex> sends each compute-form dispatch of that
++	// compute program as a job of its own (the buffer's register state up to it replayed in the
++	// same job), and what comes before and after it as further jobs: which of them hangs?
++	static const uint64_t split_pgm = [] {
++		const char* e = std::getenv("BC5_DIRECT_SPLIT_AT_PGM");
++		return e != nullptr ? std::strtoull(e, nullptr, 16) : 0ull;
++	}();
++	uint64_t split_cur_pgm = 0;
 +	while (i < num_dwords) {
 +		const uint32_t h = ib[i];
 +		const uint32_t type = h >> 30u;
@@ -7024,11 +7039,38 @@ index 0000000..138547d
 +						        *reinterpret_cast<const volatile uint64_t*>(label & ~7ull), p[4] | (static_cast<uint64_t>(p[5]) << 32u), p[6] | (static_cast<uint64_t>(p[7]) << 32u));
 +					}
 +					journal("cpu-wait %s at %u on 0x%" PRIx64 ": %s after %.1f ms\n", op == 0x93 ? "WAIT_REG_MEM64" : "WAIT_REG_MEM", i, label, ok ? "satisfied" : (broken ? "CYCLE" : (limit < 1'000'000'000ull ? "GIVEN UP" : "TIMEOUT")), static_cast<double>(SoftCp::now_ns() - t0) / 1e6);
++					if (!ok) t_wait_given_up = true;
 +					frame_profile_wait(on_game_thread(), false, static_cast<double>(SoftCp::now_ns() - t0) / 1e6);
 +					if (std::getenv("BC5_DIRECT_TIMING") != nullptr) journal("timing: t %.3f s after that wait (%s %u dwords)\n", timing_now(), kind, num_dwords);
 +					SoftCp::set_gpu_executed(p, len, {0}); // the soft CP must not wait again
 +				}
 +			}
++		}
++		if (split_pgm != 0 && type == 3 && op == 0x76 && len >= 3) {
++			const uint32_t first = p[1] & 0xffffu;
++			for (uint32_t k = 0; k + 2 < len; k++) {
++				if (first + k == 0x20cu) split_cur_pgm = (split_cur_pgm & ~0xffffffff00ull) | (static_cast<uint64_t>(p[2 + k]) << 8u);
++				if (first + k == 0x20du) split_cur_pgm = (split_cur_pgm & 0xffffffff00ull) | (static_cast<uint64_t>(p[2 + k] & 0xffu) << 40u);
++			}
++		}
++		if (split_pgm != 0 && type == 3 && op == 0x16 && len == 4 && split_cur_pgm == split_pgm && std::strncmp(kind, "acb", 3) == 0) {
++			if (i > start) {
++				if (start > 0) {
++					uint32_t        n   = 0;
++					const uint32_t* pre = state_prefix(ib, start, &n);
++					if (pre != nullptr) submit_one(pre, n, "acb-state", false);
++				}
++				journal("split at pgm: %s %u..%u of %u dwords before the dispatch\n", kind, start, i, num_dwords);
++				submit_one(ib + start, i - start, kind, from_header && start == 0);
++			}
++			uint32_t        n   = 0;
++			const uint32_t* pre = state_prefix(ib, i, &n);
++			static thread_local std::vector<uint32_t> one;
++			one.assign(pre != nullptr ? pre : p, pre != nullptr ? pre + n : p);
++			one.insert(one.end(), p, p + len);
++			journal("split at pgm: the dispatch at %u alone (state %u dwords + 4)\n", i, n);
++			submit_one(one.data(), static_cast<uint32_t>(one.size()), kind, false);
++			start = i + len;
 +		}
 +		i += len;
 +	}
@@ -7154,7 +7196,129 @@ index 0000000..138547d
 +	uint64_t                 seq = 0, t2_ns = 0, queued_ns = 0, dev_gen = 0;
 +	uint32_t                 slot = 0;
 +	std::vector<uint64_t>    ts_addrs; // experiment 0046: GPU timestamps to rescale once the job is done
++	std::vector<uint64_t>    watch_args; // experiment 0050: indirect arguments of the watched program
++	uint64_t                 watch_ud = 0;
 +};
++// Experiment 0050: BC5_DIRECT_WATCH_PGM=<hex> journals the indirect arguments of that compute
++// program's dispatches when the buffer is submitted and again when its job is done or timed out,
++// with the program's user data pointer (COMPUTE_USER_DATA_0/1).
++static thread_local std::vector<uint64_t> t_watch_args;
++// The 36 dwords at the program's user data pointer (its descriptor header), once per job, the first
++// eight times: at submit and when the job ends.
++static std::atomic<int> g_watch_dumps {0};
++static void watch_dump(const char* when, uint64_t ud01) {
++	const uint64_t base = (ud01 & 0xffffffffull) | (((ud01 >> 32u) & 0xffffull) << 32u);
++	if (base == 0) return;
++	char line[600];
++	int  o = std::snprintf(line, sizeof(line), "watch pgm: header at 0x%" PRIx64 " %s:", base, when);
++	const auto* t = reinterpret_cast<const volatile uint32_t*>(base);
++	for (int k = 0; k < 36 && o < 560; k++) o += std::snprintf(line + o, sizeof(line) - static_cast<size_t>(o), " %08x", t[k]);
++	journal("%s\n", line);
++}
++static thread_local uint64_t t_watch_ud = 0;
++// Experiment 0050: destination -> source of the compute buffers' DMA_DATA copies (with
++// BC5_DIRECT_WATCH_PGM), to look at a copy's source when its destination is checked.
++static std::mutex                   g_dma_src_mutex;
++static std::map<uint64_t, uint64_t> g_dma_src;
++// Experiment 0050: the tree refit's leaf walk, done on the CPU over the inputs it read. Layout read
++// from the program (0x909939900): s[4:5] = the header; header+0x48 the offset of a dword index
++// buffer of header[0x80]/4 entries (one entry per four threads); header+0x58 the number of 64-byte
++// nodes, which start at the header; each thread takes dword (thread & 3) of its node as a child; a
++// child c with c != -1 and (c & 7) != 7 starts a list at entry c >> 3 of an 8-byte-stride list
++// based at the header with header[0x60] records, walked until an entry's second dword is negative.
++// Out of range the buffer reads zeros, so a list without that end never ends.
++// Experiment 0050: true when every leaf list of the tree at `base` ends within its records (the
++// refit walks a list until an entry's second dword is negative; out of range it reads zeros and
++// never ends). False for a tree whose header is not "PSR_BVHL" yet.
++static bool refit_tree_complete(uint64_t base) {
++	const auto* h = reinterpret_cast<const volatile uint32_t*>(base);
++	if (h[0] != 0x5f525350u || h[1] != 0x4c485642u) return false; // "PSR_BVHL"
++	const uint64_t idx_off = h[0x48 / 4] | (static_cast<uint64_t>(h[0x48 / 4 + 1]) << 32u);
++	const uint32_t idx_n = h[0x80 / 4] / 4, nodes_n = h[0x58 / 4], list_n = h[0x60 / 4];
++	if (idx_off > (64ull << 20u) || idx_n > 65536 || nodes_n > (1u << 20u) || list_n > (1u << 22u)) return false;
++	const auto* idx = reinterpret_cast<const volatile uint32_t*>(base + idx_off);
++	for (uint32_t t = 0; t < idx_n * 4; t++) {
++		const uint32_t node = idx[t >> 2];
++		if (node >= nodes_n) return false;
++		const uint32_t c = reinterpret_cast<const volatile uint32_t*>(base + static_cast<uint64_t>(node) * 64)[t & 3];
++		if (c == 0xffffffffu || (c & 7u) != 0u || c == 30u) continue;
++		bool ended = false;
++		for (uint32_t e = c >> 3; e < list_n; e++) {
++			if (static_cast<int32_t>(reinterpret_cast<const volatile uint32_t*>(base + static_cast<uint64_t>(e) * 8)[1]) < 0) {
++				ended = true;
++				break;
++			}
++		}
++		if (!ended) return false;
++	}
++	return true;
++}
++
++static void refit_check(uint64_t ud01) {
++	const uint64_t base = (ud01 & 0xffffffffull) | (((ud01 >> 32u) & 0xffffull) << 32u);
++	if (base == 0) return;
++	const auto* h      = reinterpret_cast<const volatile uint32_t*>(base);
++	const uint64_t idx_off  = h[0x48 / 4] | (static_cast<uint64_t>(h[0x48 / 4 + 1]) << 32u);
++	const uint32_t idx_n    = h[0x80 / 4] / 4;
++	const uint32_t nodes_n  = h[0x58 / 4];
++	const uint32_t list_n   = h[0x60 / 4];
++	const auto*    idx      = reinterpret_cast<const volatile uint32_t*>(base + idx_off);
++	uint32_t       leaves = 0, unended = 0, longest = 0, bad_node = 0;
++	for (uint32_t t = 0; t < idx_n * 4 && t < 65536; t++) {
++		const uint32_t node = idx[t >> 2];
++		if (node >= nodes_n) { bad_node++; continue; }
++		const uint32_t c = reinterpret_cast<const volatile uint32_t*>(base + static_cast<uint64_t>(node) * 64)[t & 3];
++		if (c == 0xffffffffu || (c & 7u) != 0u || c == 30u) continue; // the list walk is for children with the low bits 0
++		leaves++;
++		uint32_t e = c >> 3, steps = 0;
++		bool     ended = false;
++		while (steps < 100000) {
++			const uint32_t hi = e < list_n ? reinterpret_cast<const volatile uint32_t*>(base + static_cast<uint64_t>(e) * 8)[1] : 0u;
++			steps++;
++			if (static_cast<int32_t>(hi) < 0) { ended = true; break; }
++			if (e >= list_n) break; // zeros from here on
++			e++;
++		}
++		if (!ended && unended == 0) {
++			char line[700];
++			int  o = std::snprintf(line, sizeof(line), "refit check: thread %u node %u child 0x%08x, list from %u:", t, node, c, c >> 3);
++			for (uint32_t k = 0; k < 16 && o < 660; k++) {
++				const auto* q = reinterpret_cast<const volatile uint32_t*>(base + static_cast<uint64_t>((c >> 3) + k) * 8);
++				o += std::snprintf(line + o, sizeof(line) - static_cast<size_t>(o), " %08x:%08x", q[0], q[1]);
++			}
++			journal("%s\n", line);
++			char line2[700];
++			int  o2 = std::snprintf(line2, sizeof(line2), "refit check: node %u:", node);
++			const auto* nd = reinterpret_cast<const volatile uint32_t*>(base + static_cast<uint64_t>(node) * 64);
++			for (int k = 0; k < 16; k++) o2 += std::snprintf(line2 + o2, sizeof(line2) - static_cast<size_t>(o2), " %08x", nd[k]);
++			journal("%s\n", line2);
++		}
++		if (!ended) unended++;
++		longest = std::max(longest, steps);
++	}
++	{
++		std::lock_guard<std::mutex> lk(g_dma_src_mutex);
++		if (auto it = g_dma_src.find(base); it != g_dma_src.end()) {
++			const auto* src = reinterpret_cast<const volatile uint32_t*>(it->second);
++			uint32_t    nonzero_src = 0, nonzero_dst = 0;
++			for (uint32_t k = 0xf80 / 4; k < 0x1268 / 4; k++) {
++				nonzero_src += src[k] != 0 ? 1u : 0u;
++				nonzero_dst += h[k] != 0 ? 1u : 0u;
++			}
++			journal("refit check: copied from 0x%" PRIx64 "; dwords 0xf80..0x1268 not zero: source %u, copy %u; source header %08x %08x\n", it->second, nonzero_src,
++			        nonzero_dst, src[0], src[1]);
++		}
++	}
++	journal("refit check at 0x%" PRIx64 ": index 0x%" PRIx64 " (%u), nodes %u, list %u; %u leaf walks, %u without an end in range, longest %u, %u bad node indices\n", base, idx_off,
++	        idx_n, nodes_n, list_n, leaves, unended, longest, bad_node);
++}
++static uint64_t watch_pgm() {
++	static const uint64_t v = [] {
++		const char* e = std::getenv("BC5_DIRECT_WATCH_PGM");
++		return e != nullptr ? std::strtoull(e, nullptr, 16) : 0ull;
++	}();
++	return v;
++}
 +
 +// Experiment 0046: BC5_DIRECT_TS_SCALE=<k> multiplies the 64-bit GPU timestamps (RELEASE_MEM and
 +// EVENT_WRITE_EOP with DATA_SEL 3) the game's buffers write, once each job is done, so that the
@@ -7247,6 +7411,13 @@ index 0000000..138547d
 +				journal("timing: #%" PRIu64 " done at t %.3f s, %.1f ms after the sync and hints; device: prepare %.2f list %.2f cs %.2f fence %.2f ms, %u BOs%s\n", j.n,
 +				        timing_now(), static_cast<double>(SoftCp::now_ns() - j.t2_ns) / 1e6, j.prepare_ms, j.list_ms, j.cs_ms, total_ms - j.cs_ms, j.bo_count,
 +				        j.short_list ? " (short list)" : "");
++			}
++			if (j.watch_ud != 0) watch_dump(r.ok ? "at the end" : (r.timed_out ? "after the timeout" : "after a failure"), j.watch_ud);
++			if (j.watch_ud != 0) refit_check(j.watch_ud);
++			for (const uint64_t a: j.watch_args) {
++				const auto* t = reinterpret_cast<const volatile uint32_t*>(a);
++				journal("watch pgm: #%" PRIu64 " %s, args at 0x%" PRIx64 " at the end: %u %u %u%s\n", j.n, r.ok ? "done" : "FAILED", a, t[0], t[1], t[2],
++				        r.timed_out ? " (timed out)" : "");
 +			}
 +			if (r.ok && !j.ts_addrs.empty()) {
 +				const double k = ts_scale();
@@ -7807,6 +7978,12 @@ index 0000000..138547d
 +			opt.gcr_clear = gcr.first;
 +		}
 +	}
++	// Experiment 0050: BC5_DIRECT_DMA_SYNC=1, a CP DMA wait before the first dispatch after an
++	// unsynced DMA_DATA (backend FilterOptions::dma_sync_before_dispatch).
++	static const bool dma_sync = std::getenv("BC5_DIRECT_DMA_SYNC") != nullptr;
++	opt.dma_sync_before_dispatch = dma_sync;
++	static const bool pfp_sync = std::getenv("BC5_DIRECT_PFP_SYNC") != nullptr; // experiment 0050
++	opt.pfp_sync_indirect = pfp_sync;
 +	opt.drop_draws    = g_stage == Stage::NoDraw;
 +	opt.safe_context_control = std::getenv("BC5_DIRECT_RAW_CONTEXT_CONTROL") == nullptr;
 +	// GDS per queue (runs 49–52): the compute IBs get the real partition on their BO list and
@@ -7893,6 +8070,7 @@ index 0000000..138547d
 +		// SH registers 0x20c/0x20d after 0x2c00, address >> 8), journaled once per program, and
 +		// BC5_DIRECT_MEC_ONLY_PGM / BC5_DIRECT_MEC_SKIP_PGM (hex lists) to run only some of them.
 +		uint64_t pgm = 0;
++		uint64_t ud01 = 0; // experiment 0050: COMPUTE_USER_DATA_0/1
 +		static const auto pgm_list = [](const char* name) {
 +			std::set<uint64_t> v;
 +			if (const char* e = std::getenv(name); e != nullptr) {
@@ -7916,11 +8094,31 @@ index 0000000..138547d
 +			if (type == 3 || type == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
 +			if (q + len > num_dwords) break;
 +			const uint32_t op = (h >> 8u) & 0xffu;
++			if (type == 3 && op == 0x50 && len >= 7 && (watch_pgm() != 0 || std::getenv("BC5_DIRECT_REFIT_GUARD") != nullptr)) { // experiment 0050: DMA_DATA dst -> src
++				const uint64_t src = (ib[q + 2] & ~3ull) | (static_cast<uint64_t>(ib[q + 3]) << 32u);
++				const uint64_t dst = (ib[q + 4] & ~3ull) | (static_cast<uint64_t>(ib[q + 5]) << 32u);
++				std::lock_guard<std::mutex> lk(g_dma_src_mutex);
++				if (g_dma_src.size() < 100000) g_dma_src[dst] = src;
++			}
++			if (type == 3 && op == 0x63 && len >= 5 && (ib[q + 3] >> 31u) != 0) { // experiment 0050: LOAD_SH_REG_INDEX pairs
++				const uint64_t ta = (ib[q + 1] & ~3u) | (static_cast<uint64_t>(ib[q + 2] & 0xffffu) << 32u);
++				const uint32_t tn = ib[q + 4] & 0x3fffu;
++				if (ta != 0 && tn != 0 && covered_sorted(*maps_p, ta, static_cast<uint64_t>(tn) * 8)) {
++					const auto* t = reinterpret_cast<const volatile uint32_t*>(ta);
++					for (uint32_t k = 0; k < tn; k++) {
++						const uint32_t r = t[2 * k] & 0xffffu, v = t[2 * k + 1];
++						if (r == 0x20cu) pgm = (pgm & ~0xffffffff00ull) | (static_cast<uint64_t>(v) << 8u);
++						if (r == 0x20du) pgm = (pgm & 0xffffffff00ull) | (static_cast<uint64_t>(v & 0xffu) << 40u);
++					}
++				}
++			}
 +			if (type == 3 && op == 0x76 && len >= 3) { // SET_SH_REG: watch COMPUTE_PGM_LO/HI
 +				const uint32_t first = ib[q + 1] & 0xffffu;
 +				for (uint32_t k = 0; k + 2 < len; k++) {
 +					if (first + k == 0x20cu) pgm = (pgm & ~0xffffffff00ull) | (static_cast<uint64_t>(ib[q + 2 + k]) << 8u);
 +					if (first + k == 0x20du) pgm = (pgm & 0xffffffff00ull) | (static_cast<uint64_t>(ib[q + 2 + k] & 0xffu) << 40u);
++					if (first + k == 0x244u) ud01 = (ud01 & ~0xffffffffull) | ib[q + 2 + k]; // USER_DATA_4/5 = s[4:5], the header pointer
++					if (first + k == 0x245u) ud01 = (ud01 & 0xffffffffull) | (static_cast<uint64_t>(ib[q + 2 + k]) << 32u);
 +				}
 +			}
 +			if (type == 3 && op == 0x11 && len >= 4 && (ib[q + 1] & 0xfu) == 1) {
@@ -7930,6 +8128,61 @@ index 0000000..138547d
 +				const uint64_t a    = mec ? ((ib[q + 1] & ~3ull) | (static_cast<uint64_t>(ib[q + 2] & 0xffffu) << 32u)) : base1 + ib[q + 1];
 +				if (mec && mec_on && survey && seen_pgm.insert(pgm).second) {
 +					journal("  mec pgm 0x%" PRIx64 " first at #%" PRIu64 " offset %u\n", pgm, g_submits.load(), q);
++				}
++				if (mec && watch_pgm() != 0 && pgm == watch_pgm()) {
++					const auto* t = reinterpret_cast<const volatile uint32_t*>(a);
++					const bool  ok = covered_sorted(*maps_p, a, 12);
++					journal("watch pgm 0x%" PRIx64 ": %s %u dwords, dispatch at %u (initiator 0x%08x), args at 0x%" PRIx64 " now %u %u %u, user data 0x%" PRIx64 "%s\n", pgm, kind,
++					        num_dwords, q, ib[q + 3], a, ok ? t[0] : 0u, ok ? t[1] : 0u, ok ? t[2] : 0u, ud01, skip_pgm.count(pgm) != 0 ? " (skipped)" : "");
++					if (ok && skip_pgm.count(pgm) == 0) t_watch_args.push_back(a);
++					if (ok && skip_pgm.count(pgm) == 0 && t_watch_ud == 0 && g_watch_dumps.fetch_add(1) < 8) {
++						t_watch_ud = ud01;
++						watch_dump("at submit", ud01);
++					}
++				}
++				// Experiment 0050: BC5_DIRECT_REFIT_GUARD=<hex> (the second title's tree refit, 0x909939900)
++				// runs that program's dispatches only on trees whose leaf lists are complete: the tree
++				// itself, or, for a tree a DMA_DATA of this buffer copies in, the copy's source. A tree
++				// the host cannot check, or one with an unfinished list, would make it loop forever.
++				static const uint64_t refit_guard = [] {
++					const char* e = std::getenv("BC5_DIRECT_REFIT_GUARD");
++					return e != nullptr ? std::strtoull(e, nullptr, 16) : 0ull;
++				}();
++				if (mec && mec_on && refit_guard != 0 && pgm == refit_guard) {
++					const uint64_t hb = (ud01 & 0xffffffffull) | (((ud01 >> 32u) & 0xffffull) << 32u);
++					uint64_t       check = hb;
++					{
++						std::lock_guard<std::mutex> lk(g_dma_src_mutex);
++						if (auto it = g_dma_src.find(hb); it != g_dma_src.end()) check = it->second;
++					}
++					// A tree's verdict is kept for a second (its lists are written once; the walk over a large
++					// tree's lists is thousands of reads, for every refit dispatch of every frame).
++					static std::mutex                                      cache_mutex;
++					static std::unordered_map<uint64_t, std::pair<bool, double>> cache;
++					const double now = timing_now();
++					bool         ok  = false;
++					bool         hit = false;
++					{
++						std::lock_guard<std::mutex> lk(cache_mutex);
++						if (auto it = cache.find(check); it != cache.end() && now - it->second.second < 1.0) {
++							ok  = it->second.first;
++							hit = true;
++						}
++					}
++					if (!hit) {
++						ok = check != 0 && covered_sorted(*maps_p, check, 0x100) && refit_tree_complete(check);
++						std::lock_guard<std::mutex> lk(cache_mutex);
++						if (cache.size() > 100000) cache.clear();
++						cache[check] = {ok, now};
++					}
++					static std::atomic<uint64_t> n_run {0}, n_dropped {0};
++					(ok ? n_run : n_dropped)++;
++					if (((n_run + n_dropped) & 0x3ffu) == 1) journal("refit guard: %" PRIu64 " run, %" PRIu64 " held back (incomplete or unknown trees)\n", n_run.load(), n_dropped.load());
++					if (!ok) {
++						opt.drop_offsets.push_back(q);
++						q += len;
++						continue;
++					}
 +				}
 +				if (mec && mec_on && ((!only_pgm.empty() && only_pgm.count(pgm) == 0) || skip_pgm.count(pgm) != 0)) {
 +					opt.drop_offsets.push_back(q);
@@ -7961,15 +8214,18 @@ index 0000000..138547d
 +					static const int trust_mode = [] {
 +						const char* e = std::getenv("BC5_DIRECT_TRUST_DISPATCH");
 +						if (e == nullptr) return 0;
-+						return std::strcmp(e, "dcb") == 0 ? 1 : 2;
++						return std::strcmp(e, "dcb") == 0 ? 1 : (std::strcmp(e, "acb") == 0 ? 3 : 2); // experiment 0050: acb
 +					}();
-+					const bool trust_dispatch = trust_mode == 2 || (trust_mode == 1 && !compute_ib);
++					static const std::set<uint64_t> trust_pgm = pgm_list("BC5_DIRECT_TRUST_PGM");
++					const bool trust_dispatch = !t_wait_given_up &&
++					                            (trust_mode == 2 || (trust_mode == 1 && !compute_ib) || (trust_mode == 3 && compute_ib) || trust_pgm.count(pgm) != 0);
 +					const bool        too_many_groups = v[0] > 65536u * 64u || v[1] > 65536u * 64u || v[2] > 65536u * 64u ||
 +					                             static_cast<uint64_t>(v[0]) * v[1] > 65536ull * 64ull ||
 +					                             static_cast<uint64_t>(v[0]) * v[1] * v[2] > 65536ull * 64ull;
 +					const bool insane = op == 0x16 ? (!trust_dispatch && too_many_groups)
 +					                               : (v[0] > max_count || v[1] > 1024u || static_cast<uint64_t>(v[0]) * v[1] > max_count);
-+					if (survey) journal("  indirect op %02x at %u: base 0x%" PRIx64 " +0x%x -> %u %u %u %u %u%s\n", op, q, base1, ib[q + 1], v[0], v[1], v[2], v[3], v[4], insane ? " DROPPED" : "");
++					if (survey) journal("  indirect op %02x at %u: base 0x%" PRIx64 " +0x%x -> %u %u %u %u %u%s pgm 0x%" PRIx64 "\n", op, q, base1, ib[q + 1], v[0], v[1], v[2], v[3], v[4],
++					                    insane ? " DROPPED" : "", pgm);
 +					if (insane) opt.drop_offsets.push_back(q);
 +				} else {
 +					if (survey) journal("  indirect op %02x at %u: args 0x%" PRIx64 " not mapped, DROPPED\n", op, q, a);
@@ -8361,6 +8617,10 @@ index 0000000..138547d
 +		it.job.queued_ns  = SoftCp::now_ns();
 +		it.job.dev_gen    = g_dev_gen.load();
 +		if (ts_scale() != 1.0) ts_collect(ib, num_dwords, &it.job.ts_addrs);
++		it.job.watch_args.swap(t_watch_args);
++		t_watch_args.clear();
++		it.job.watch_ud = t_watch_ud;
++		t_watch_ud      = 0;
 +		frame_profile_job(t_cq == 0, r.prepare_ms, r.list_ms, r.cs_ms);
 +		frame_profile_prep(t_cq == 0, r.prep_filter_ms, r.prep_tracker_ms, r.prep_cu_ms, r.prep_nested_ms, r.prep_copy_ms);
 +		{

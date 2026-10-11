@@ -1,0 +1,50 @@
+run 181: kyty exit 124 after 241 s; faults: 0x0 0x0 0x0 ; failed 789; last submit at 181.636 s; access violations 0; 250 s on: frames 0 fps 0.00 (pkg-20261011-2116)
+run 182: kyty exit 0 after 180 s; faults: 0x0 0x0 0x0 0x0 ; failed 828; last submit at 157.755 s; access violations 0; 250 s on: frames 0 fps 0.00 (pkg-20261011-2122)
+run 183: kyty exit 124 after 201 s; faults: 0x0 ; failed 465; last submit at 118.078 s; access violations 0; 250 s on: frames 0 fps 0.00 (pkg-20261011-2126)
+run 184: kyty exit 124 after 111 s; faults: 0x0 ; failed 444; last submit at 97.287 s; access violations 0; 250 s on: frames 0 fps 0.00 (pkg-20261011-2129)
+run 185: kyty exit 0 after 180 s; faults: 0x0 0x0 0x0 0x0 ; failed 807; last submit at 163.317 s; access violations 0; 250 s on: frames 0 fps 0.00 (pkg-20261011-2134)
+run 189: kyty exit 124 after 181 s; faults: 0x0 0x0 0x0 ; failed 67; last submit at 169.840 s; access violations 0; 250 s on: frames 0 fps 0.00 (pkg-20261011-2146)
+run 190: kyty exit 124 after 161 s; faults: 0x0 0x0 ; failed 769; last submit at 157.091 s; access violations 0; 250 s on: frames 0 fps 0.00 (pkg-20261011-2150)
+run 193: kyty exit 124 after 161 s; faults: 0x0 ; failed 444; last submit at 147.166 s; access violations 0; 250 s on: frames 0 fps 0.00 (pkg-20261011-2202)
+run 194: kyty exit 0 after 151 s; faults: 0x0 0x0 0x0 0x0 ; failed 828; last submit at 147.272 s; access violations 0; 250 s on: frames 0 fps 0.00 (pkg-20261011-2205)
+run 195: kyty exit 124 after 161 s; faults: none; failed 0; last submit at 108.094 s; access violations 0; 250 s on: frames 0 fps 0.00 (pkg-20261011-2209)
+run 197: kyty exit 0 after 180 s; faults: 0x0 0x0 0x0 0x0 ; failed 807; last submit at 160.498 s; access violations 0; 250 s on: frames 0 fps 0.00 (pkg-20261011-2215)
+run 198: kyty exit 0 after 180 s; faults: 0x0 0x0 0x0 0x0 ; failed 800; last submit at 166.139 s; access violations 0; 250 s on: frames 0 fps 0.00 (pkg-20261011-2218)
+run 199: kyty exit 0 after 180 s; faults: 0x0 0x0 0x0 0x0 ; failed 828; last submit at 172.553 s; access violations 0; 250 s on: frames 0 fps 0.00 (pkg-20261011-2222)
+run 200: kyty exit 0 after 240 s; faults: 0x0 0x0 0x0 0x0 ; failed 746; last submit at 183.506 s; access violations 0; 250 s on: frames 0 fps 0.00 (pkg-20261011-2226)
+run 202: kyty exit 0 after 240 s; faults: 0x0 0x0 0x0 0x0 ; failed 746; last submit at 198.511 s; access violations 0; 250 s on: frames 0 fps 0.00 (pkg-20261011-2234)
+run 203: kyty exit 0 after 240 s; faults: 0x0 0x0 0x0 0x0 ; failed 762; last submit at 177.418 s; access violations 0; 250 s on: frames 0 fps 0.00 (pkg-20261011-2239)
+run 204: kyty exit 0 after 240 s; faults: 0x0 0x0 0x0 0x0 ; failed 790; last submit at 223.080 s; access violations 0; 250 s on: frames 0 fps 0.00 (pkg-20261011-2244)
+run 205: kyty exit 124 after 421 s; faults: 0x512606e9000 ; failed 36; last submit at 418.807 s; access violations 0; 250 s on: frames 3073 fps 18.08 (pkg-20261011-2250)
+
+== run 181
+watch pgm: #70764 FAILED, args at 0x12104cdf80 at the end: 44 1 1 (timed out)
+== run 183
+watch pgm: header at 0x12104eef00 at submit: f00d4abd 0000baad 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+watch pgm: header at 0x12104eef00 after the timeout: 5f525350 4c485642 3aee9ad9 00000000 00001660 00000000 01032070 00000000 00000000 00000000 00001268 00000000 00000000 00000000 000015c8 00000000 000012f8 00000000 00001634 00000000 00001630 00000000 0000003e 
+watch pgm: #70135 FAILED, args at 0x12104eef80 at the end: 44 1 1 (timed out)
+== run 189
+split at pgm: acb 0..17294 of 23627 dwords before the dispatch
+split at pgm: the dispatch at 17294 alone (state 7839 dwords + 4)
+split at pgm: acb 17298..17305 of 23627 dwords before the dispatch
+== run 197
+watch pgm: header at 0x12104df100 at submit: f00d4abd 0000baad 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+watch pgm: header at 0x12104df100 after the timeout: 5f525350 4c485642 3aee9ad9 00000000 00001660 00000000 01032070 00000000 00000000 00000000 00001268 00000000 00000000 00000000 000015c8 00000000 000012f8 00000000 00001634 00000000 00001630 00000000 0000003e 
+refit check: thread 0 node 6 child 0x00000f80, list from 496: 00000000:00000000 00000000:00000000 00000000:00000000 00000000:00000000 00000000:00000000 00000000:00000000 00000000:00000000 00000000:00000000 00000000:00000000 00000000:00000000 00000000:00000000 
+refit check: node 6: 00000f80 00000f98 0000001e 0000001e 7f800000 7f800000 7f800000 ff800000 ff800000 ff800000 7f800000 7f800000 7f800000 ff800000 ff800000 ff800000
+refit check: copied from 0x122381e700; dwords 0xf80..0x1268 not zero: source 0, copy 0; source header 5f525350 4c485642
+watch pgm: #71657 FAILED, args at 0x12104df180 at the end: 44 1 1 (timed out)
+== run 195
+watch pgm: header at 0x12104eeb00 at submit: f00d4abd 0000baad 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+watch pgm: header at 0x12104eeb00 at the end: 5f525350 4c485642 3aee9ad9 00000000 00001660 00000000 01032070 00000000 00000000 00000000 00001268 00000000 00000000 00000000 000015c8 00000000 000012f8 00000000 00001634 00000000 00001630 00000000 0000003e 0000000
+refit check: copied from 0x121e3e6900; dwords 0xf80..0x1268 not zero: source 186, copy 186; source header 5f525350 4c485642
+refit check at 0x12104eeb00: index 0x1634 (11), nodes 62, list 589; 28 leaf walks, 0 without an end in range, longest 7, 0 bad node indices
+refit check: copied from 0x1229207500; dwords 0xf80..0x1268 not zero: source 186, copy 186; source header 5f525350 4c485642
+watch pgm: #70149 done, args at 0x12104eeb80 at the end: 44 1 1
+== run 205
+watch pgm: header at 0x12104eef00 at submit: f00d4abd 0000baad 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000
+watch pgm: header at 0x12104eef00 at the end: 5f525350 4c485642 3aee9ad9 00000000 00001660 00000000 01032070 00000000 00000000 00000000 00001268 00000000 00000000 00000000 000015c8 00000000 000012f8 00000000 00001634 00000000 00001630 00000000 0000003e 0000000
+refit check: copied from 0x121e3e6900; dwords 0xf80..0x1268 not zero: source 186, copy 186; source header 5f525350 4c485642
+refit check at 0x12104eef00: index 0x1634 (11), nodes 62, list 589; 28 leaf walks, 0 without an end in range, longest 7, 0 bad node indices
+refit check: copied from 0x121e3e6900; dwords 0xf80..0x1268 not zero: source 186, copy 186; source header 5f525350 4c485642
+watch pgm: #71473 done, args at 0x12104eef80 at the end: 44 1 1
