@@ -1,0 +1,44 @@
+317 programs, 1748774 dwords of code
+programs with ray tracing instructions: 1, instructions: 1
+  11d040e200.bin: 7560 dwords, 1 x, e.g. dword 912: image_bvh_intersect_ray v[0:3], v[87:97], s[24:27]
+== run 178
+704 frames in 250.0-298.0 s, 82489 jobs
+  frame             median  54.00 ms   p10  51.00   p90  62.00
+  gpu busy          median  23.28 ms   p10  22.11   p90  24.70
+  gpu idle          median  30.36 ms   p10  27.33   p90  37.16
+  longest idle gap  median   4.93 ms   p10   3.93   p90   6.93
+  GPU busy per frame by job kind:
+    dcb           20.13 ms
+    acb            3.50 ms
+    cc             0.04 ms
+    hib            0.03 ms
+sizes: CB0 2560x1440, depth 2560x1440, viewport scissor 0 to 1664x936                   404
+sizes: CB0 2560x1440, depth 2560x1440, viewport scissor 0 to 2560x1440                  709
+sizes: CB0 2560x1440, depth 2560x1440, viewport scissor 0 to 832x468                    178
+sizes: CB0 2560x1440, depth 2560x1440, viewport scissor 0 to 960x540                    356
+== run 179
+910 frames in 250.0-298.0 s, 109696 jobs
+  frame             median  52.00 ms   p10  50.00   p90  56.00
+  gpu busy          median  23.42 ms   p10  22.30   p90  24.53
+  gpu idle          median  28.49 ms   p10  26.23   p90  32.29
+  longest idle gap  median   4.92 ms   p10   3.93   p90   5.93
+  GPU busy per frame by job kind:
+    dcb           20.16 ms
+    acb            3.48 ms
+    cc             0.03 ms
+    hib            0.03 ms
+sizes: CB0 2560x1440, depth 2560x1440, viewport scissor 0 to 1664x936                   518
+sizes: CB0 2560x1440, depth 2560x1440, viewport scissor 0 to 2560x1440                  764
+sizes: CB0 2560x1440, depth 2560x1440, viewport scissor 0 to 832x468                    191
+sizes: CB0 2560x1440, depth 2560x1440, viewport scissor 0 to 960x540                    382
+== run 180
+923 frames in 250.0-298.0 s, 110608 jobs
+  frame             median  50.00 ms   p10  48.00   p90  58.00
+  gpu busy          median  23.29 ms   p10  22.14   p90  36.23
+  gpu idle          median  26.64 ms   p10  22.74   p90  29.94
+  longest idle gap  median   3.94 ms   p10   3.93   p90   4.94
+  GPU busy per frame by job kind:
+    dcb           20.18 ms
+    acb            4.85 ms
+    cc             0.03 ms
+    hib            0.03 ms
