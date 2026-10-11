@@ -63,6 +63,7 @@ struct FilterStats {
     std::uint64_t clear_state_rewrites = 0; // CLEAR_STATE cmd 1/2 -> cmd 0
     std::uint64_t cs_done_rewrites = 0; // RELEASE_MEM CS_DONE/index 6 without data -> BOTTOM_OF_PIPE_TS/5
     std::uint64_t gcr_rewrites = 0;     // ACQUIRE_MEM with FilterOptions::gcr_clear bits cleared
+    std::uint64_t dma_syncs = 0;        // CP DMA waits inserted before dispatches (Device::submit)
     // IB offsets (dwords) where a SAMPLE_PIPELINESTAT took a dropped marker's place
     // (FilterOptions::stat_sample_va); sample k went to stat_sample_va + k * kStatSampleStride.
     std::vector<std::uint32_t> stat_sample_offsets;
@@ -77,6 +78,14 @@ struct FilterOptions {
     // Experiment 0044: GCR_CNTL bits (ACQUIRE_MEM dword 7 on gfx10; GL2_WB is bit 15, layout in
     // tools/bc5-agc/regdb/pkt3.json from Mesa) cleared in every ACQUIRE_MEM. 0 = unchanged.
     std::uint32_t gcr_clear = 0;
+    // Experiment 0050: before the first dispatch that follows a DMA_DATA without CP_SYNC, a
+    // zero-byte DMA_DATA with CP_SYNC (the CP waits for its DMA to finish). Device::submit; an IB
+    // with COND_EXEC is left alone.
+    bool dma_sync_before_dispatch = false;
+    // Experiment 0050: a PFP_SYNC_ME before every DISPATCH_INDIRECT of any IB (as for the rebuilt
+    // compute IBs of experiment 0039): the prefetch parser must not read arguments the GPU is
+    // still writing. Device::submit; an IB with COND_EXEC is left alone.
+    bool pfp_sync_indirect = false;
     bool drop_draws = false;             // staging (ADR 0005 §5c): NOP every draw and dispatch
     // CONTEXT_CONTROL as RADV/radeonsi emit it (0x80000000 0x80000000: update the enables, load
     // and shadow nothing). The console's 0x91018003/0x80018003 asks the CP to load and shadow

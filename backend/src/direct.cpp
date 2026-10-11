@@ -614,7 +614,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     // same before an indirect draw or dispatch whose arguments the GPU wrote (Mesa
     // PKT3_PFP_SYNC_ME, TODO(verify) the lines). Inserting dwords moves every offset after it, so
     // an IB with COND_EXEC (whose skip counts are offsets) is left as it is.
-    if (opt.mec_indirect_base != 0) {
+    if (opt.mec_indirect_base != 0 || opt.pfp_sync_indirect) {
         bool has_cond_exec = false;
         std::size_t dispatches = 0;
         for (std::size_t i = 0; i < main_out.size();) {
@@ -651,6 +651,54 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
             }
             main_out.swap(grown);
             r.filter.pfp_syncs += dispatches;
+        }
+    }
+    // Experiment 0050: CP DMA runs beside the CP, and a DMA_DATA without CP_SYNC is not waited for
+    // by the dispatches after it. The second title's compute IB copies BVH headers with such
+    // DMA_DATAs, then dispatches the tree refit that reads them; on the GFX ring the refit read
+    // the 0xBAADF00D the header held before the copy and looped (journal: header at submit
+    // f00d4abd 0000baad, after the timeout the copied "PSR_BVHL"). Before the first dispatch after
+    // an unsynced DMA_DATA goes the zero-byte DMA_DATA with CP_SYNC of the IB's end (dma_idle_).
+    if (opt.dma_sync_before_dispatch) {
+        bool has_cond_exec = false;
+        for (std::size_t i = 0; i < main_out.size();) {
+            const std::uint32_t h = main_out[i];
+            const std::uint32_t type = h >> 30;
+            std::size_t len = 1;
+            if (type == 3 || type == 0) {
+                const std::uint32_t count = (h >> 16) & 0x3fff;
+                len = count == 0x3fff ? 1 : count + 2;
+            }
+            if (type == 3 && ((h >> 8) & 0xff) == 0x22) has_cond_exec = true;
+            i += len;
+        }
+        if (!has_cond_exec) {
+            std::vector<std::uint32_t> grown;
+            grown.reserve(main_out.size() + 64);
+            bool pending = false;
+            std::size_t added = 0;
+            for (std::size_t i = 0; i < main_out.size();) {
+                const std::uint32_t h = main_out[i];
+                const std::uint32_t type = h >> 30;
+                std::size_t len = 1;
+                if (type == 3 || type == 0) {
+                    const std::uint32_t count = (h >> 16) & 0x3fff;
+                    len = count == 0x3fff ? 1 : count + 2;
+                }
+                if (i + len > main_out.size()) len = main_out.size() - i;
+                const std::uint32_t op = (h >> 8) & 0xff;
+                if (type == 3 && op == 0x50 && len >= 2) pending = (main_out[i + 1] & 0x80000000u) == 0;
+                if (type == 3 && (op == 0x15 || op == 0x16) && pending) {
+                    grown.insert(grown.end(), {0xC0055000u, 0xE0300000u, 0u, 0u, 0u, 0u, 0u});
+                    pending = false;
+                    added++;
+                }
+                grown.insert(grown.end(), main_out.begin() + static_cast<std::ptrdiff_t>(i),
+                             main_out.begin() + static_cast<std::ptrdiff_t>(i + len));
+                i += len;
+            }
+            if (added != 0) main_out.swap(grown);
+            r.filter.dma_syncs += added;
         }
     }
     if (dma_idle_) {

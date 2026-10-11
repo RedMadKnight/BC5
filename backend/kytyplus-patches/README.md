@@ -267,6 +267,13 @@ page of its arguments), `PFP_SYNC_ME` and the GFX-form dispatch; the drop list a
 offsets are mapped between the two layouts; an IB with COND_EXEC has these dispatches dropped.
 `BC5_DIRECT_MEC_ONLY_PGM` / `BC5_DIRECT_MEC_SKIP_PGM` (hex lists of compute program addresses,
 COMPUTE_PGM_LO/HI) choose which run; the journal names each program once ("mec pgm").
+Experiment 0050 (all off by default): `BC5_DIRECT_WATCH_PGM=<hex>` journals a compute program's
+dispatches and checks its ray tracing trees on the CPU after each job; `BC5_DIRECT_SPLIT_AT_PGM`
+sends its dispatches as jobs of their own; `BC5_DIRECT_TRUST_PGM=<hex list>` and
+`BC5_DIRECT_TRUST_DISPATCH=acb` trust indirect arguments selectively (not in a buffer whose
+CPU-side wait was given up); `BC5_DIRECT_REFIT_GUARD=<hex>` runs a tree refit only on complete
+trees; `BC5_DIRECT_DMA_SYNC=1` and `BC5_DIRECT_PFP_SYNC=1` set the backend's
+`dma_sync_before_dispatch` and `pfp_sync_indirect`.
 Experiment 0049: `BC5_DIRECT_SHADER_DUMP=<dir>` writes every shader program a buffer points at
 (the six graphics stages' and the compute program registers, set or loaded by pairs), 64 KiB
 each, once; keep the directory private (a title's code).
