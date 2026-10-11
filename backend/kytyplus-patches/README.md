@@ -267,6 +267,9 @@ page of its arguments), `PFP_SYNC_ME` and the GFX-form dispatch; the drop list a
 offsets are mapped between the two layouts; an IB with COND_EXEC has these dispatches dropped.
 `BC5_DIRECT_MEC_ONLY_PGM` / `BC5_DIRECT_MEC_SKIP_PGM` (hex lists of compute program addresses,
 COMPUTE_PGM_LO/HI) choose which run; the journal names each program once ("mec pgm").
+Experiment 0049: `BC5_DIRECT_SHADER_DUMP=<dir>` writes every shader program a buffer points at
+(the six graphics stages' and the compute program registers, set or loaded by pairs), 64 KiB
+each, once; keep the directory private (a title's code).
 Experiment 0048: borderless fullscreen at the display's resolution, live: F11, the *Video*
 tab's box, or `Fullscreen=on|off` in the input file (also at start); presets 1.0 / 1.25 / 1.7 / 3.0
 named 4K UHD, 1800p class, 1440p class, Full HD.
