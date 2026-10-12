@@ -1,0 +1,8 @@
+drop tally: [acb 37 dst_sel 0] 4310 [acb 76] 596 [acb 79] 14510 [acb 93] 2340 [dcb 24] 37633 [dcb 2c] 1379 [dcb 37 dst_sel 0] 46948 [dcb 38] 394 [dcb 49] 197 [dcb 79] 130571 [dcb 93] 2543 [hib 4a] 394
+drop tally: [acb 37 dst_sel 0] 20 [acb 76] 3 [acb 79] 73 [acb 93] 12 [dcb 37 dst_sel 0] 220 [dcb 49] 1 [dcb 79] 615 [dcb 93] 13 [hib 4a] 2
+AudioOut2: port data_format=0x00000c00 maps to Format::Unknown (type=0, freq=48000); no audio device will be opened
+AudioOut: opened SDL device (48000 Hz, 8 ch, format 0x8010) for port type 0, 8 ch
+AudioOut: opened SDL device (48000 Hz, 6 ch, format 0x8120) for port type 4, 1 ch on DualSense wireless controller (PS5) Direct DualSense Wireless Controller
+AudioOut: opened SDL device (48000 Hz, 8 ch, format 0x8120) for port type 0, 8 ch
+AudioOut: opened SDL device (48000 Hz, 8 ch, format 0x8010) for port type 0, 8 ch
+AudioOut: opened SDL device (48000 Hz, 6 ch, format 0x8120) for port type 4, 1 ch on DualSense wireless controller (PS5) Direct DualSense Wireless Controller

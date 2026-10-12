@@ -395,3 +395,21 @@ TEST_CASE("indirect multi draws: the count address is an operand only when it is
     CHECK(policy::Policy::builtin().op(0x24) == policy::Verdict::Pass);
     CHECK(policy::is_draw_or_dispatch(0x2c));
 }
+
+TEST_CASE("keep_wait_offsets: a wait on a label an earlier job writes passes", "[policy]") {
+    // WAIT_REG_MEM64 on 0x12_0000_4438 == 0 (function 3, memory space), nothing in the IB writes it.
+    const std::vector<std::uint32_t> ib = {0xC0079300u, 0x00000113u, 0x00004438u, 0x12u, 0u, 0u,
+                                           0xffffffffu, 0xffffffffu, 0x19u};
+    std::vector<std::uint32_t> out(ib.size());
+    policy::FilterStats st;
+    policy::FilterOptions opt;
+    policy::filter(policy::Policy::builtin(), ib, out, opt, st);
+    CHECK(st.unsatisfiable_wait_drops == 1);
+    CHECK(out[0] != ib[0]);
+    opt.keep_wait_offsets = {0};
+    policy::FilterStats st2;
+    policy::filter(policy::Policy::builtin(), ib, out, opt, st2);
+    CHECK(st2.ring_ordered_waits == 1);
+    CHECK(st2.unsatisfiable_wait_drops == 0);
+    CHECK(out == ib);
+}

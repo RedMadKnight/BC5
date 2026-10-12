@@ -1,0 +1,6 @@
+run 239: kyty exit 124 after 301 s; faults: none; failed 0; last submit at 298.445 s; access violations 0; 250 s on: frames 948 fps 18.96 (/home/kjaniszewski/bc5-data/captures/pkg-20261012-0715)
+series done
+run 240: kyty exit 124 after 301 s; faults: 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 ; failed 225; last submit at 292.831 s; access violations 0; 250 s on: frames 2 fps 0.04 (/home/kjaniszewski/bc5-data/captures/pkg-20261012-0849)
+series done
+run 241: kyty exit 124 after 301 s; faults: 0x8011d0288000 ; failed 24; last submit at 166.258 s; access violations 0; 250 s on: frames 0 fps 0.00 (/home/kjaniszewski/bc5-data/captures/pkg-20261012-0857)
+series done

@@ -1,0 +1,53 @@
+run 245: kyty exit 124 after 201 s; faults: none; failed 0; last submit at 187.901 s; access violations 0; 250 s on: frames 0 fps 0.00 (/home/kjaniszewski/bc5-data/captures/pkg-20261012-1423)
+series done
+90
+     46 0x12004b4438  8.1 ms
+     41 0x12004b4438  8.0 ms
+      1 0x12004b5438  8.0 ms
+      1 0x12004b4838  8.0 ms
+      1 0x12004b4438  8.2 ms
+1 waits satisfied after more than 8 ms
+frames per 5 s: 0:14 5:30 10:5 15:15 20:41 25:98 30:80 35:96 40:93 45:100 50:87 55:77 60:6 65:15 70:25 75:11 80:97 85:105 90:108 95:107 100:105 105:85 110:88 115:107 120:109 125:98 130:109 135:90 140:27 145:93 150:97 155:101 160:100 165:78 170:100 175:99 180:102 185:38
+
+[exited with code 0]
+-rwxr-xr-x. 1 kjaniszewski kjaniszewski 162272064 14:31:11 /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator
+run 246: kyty exit 124 after 201 s; faults: 0x8011d0375000 0x0 0x0 ; failed 28; last submit at 187.184 s; access violations 0; 250 s on: frames 0 fps 0.00 (/home/kjaniszewski/bc5-data/captures/pkg-20261012-1431)
+series done
+ring order: dcb 1153 dwords keeps its wait at 590 on 0x12004b4838 for the GPU (1 so far)
+17
+      4 0x12004b5438
+      3 0x12004b5c38
+      2 0x12004b7838
+      2 0x12004b6438
+      2 0x12004b6038
+      2 timeout: fault 0x0 status 0x00000000
+      1 timeout: fault 0x8011d0375000 status 0x006012b0
+frames per 5 s: 0:35 5:8 10:33 15:76 20:97 25:97 30:95 35:98 40:98 45:89 50:8 55:5 60:36 65:14 70:68 75:78 80:92 85:98 90:97 95:96 100:99 105:95 110:97 115:86 120:94 125:96 130:97 135:79 140:69 145:87 150:5 165:1 185:1
+
+[exited with code 0]
+run 247: kyty exit 124 after 301 s; faults: none; failed 0; last submit at 298.533 s; access violations 0; 250 s on: frames 937 fps 18.74 (/home/kjaniszewski/bc5-data/captures/pkg-20261012-1436)
+series done
+ring order: dcb 5703 dwords keeps its wait at 5635 on 0x12004b7838 for the GPU (3073 so far)
+ring order: acb 8008 dwords keeps its wait at 28 on 0x12004b4fc8 for the GPU (4097 so far)
+1
+      1 0x12004b3038
+0
+frames per 5 s: 0:34 5:9 10:38 15:84 20:100 25:100 30:100 35:99 40:100 45:69 50:1 55:22 60:28 65:32 70:98 75:105 80:108 85:105 90:108 95:107 100:106 105:105 110:106 115:100 120:102 125:106 130:103 135:106 140:106 145:98 150:15 155:97 160:99 165:100 170:95 175:81 180:68 185:91 190:96 195:93 200:97 205:97 210:66 215:97 220:100 225:97 230:90 235:91 240:96 245:100 250:102 255:97 260:99 265:99 270:78 275:98 280:100 285:97 290:97 295:70
+
+[exited with code 0]
+run 248: kyty exit 124 after 301 s; faults: 0x8011d0374000 ; failed 25; last submit at 168.779 s; access violations 0; 250 s on: frames 0 fps 0.00 (/home/kjaniszewski/bc5-data/captures/pkg-20261012-1441)
+series done
+0
+      1 timeout: fault 0x8011d0374000 status 0x007012b0
+0
+frames per 5 s: 0:34 5:12 10:54 15:97 20:100 25:100 30:100 35:99 40:86 45:8 50:19 55:28 60:12 65:100 70:106 75:107 80:102 85:108 90:81 95:95 100:108 105:107 110:110 115:100 120:106 125:110 130:109 135:109 140:104 145:95 150:9
+t120.png t180.png t20.png t240.png t45.png t75.png 
+[exited with code 0]
+ok
+run 250: kyty exit 124 after 201 s; faults: none; failed 0; last submit at 198.574 s; access violations 0; 250 s on: frames 0 fps 0.00 (/home/kjaniszewski/bc5-data/captures/pkg-20261012-1453)
+series done
+trap stats: RSRC2 with TRAP_PRESENT 0, without 1513084; PGM_HI not 0: 0 (last 0x0 in SH 0x0)
+trap stats: RSRC2 with TRAP_PRESENT 0, without 1551374; PGM_HI not 0: 0 (last 0x0 in SH 0x0)
+trap stats: RSRC2 with TRAP_PRESENT 0, without 1589218; PGM_HI not 0: 0 (last 0x0 in SH 0x0)
+
+[exited with code 0]

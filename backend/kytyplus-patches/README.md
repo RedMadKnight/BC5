@@ -267,7 +267,10 @@ page of its arguments), `PFP_SYNC_ME` and the GFX-form dispatch; the drop list a
 offsets are mapped between the two layouts; an IB with COND_EXEC has these dispatches dropped.
 `BC5_DIRECT_MEC_ONLY_PGM` / `BC5_DIRECT_MEC_SKIP_PGM` (hex lists of compute program addresses,
 COMPUTE_PGM_LO/HI) choose which run; the journal names each program once ("mec pgm").
-Experiment 0054 (in progress): `BC5_DIRECT_INDIRECT_DRAWS=1` lets DRAW_INDIRECT (0x24) and the
+Experiment 0055: `BC5_DIRECT_RING_ORDER_WAITS=1` leaves a cross-queue wait to the GPU when the last
+pending label write of a job already on the ring satisfies it (backend `keep_wait_offsets`);
+`BC5_DIRECT_DCB_WAIT_UNBLOCKED_MS`, `BC5_DIRECT_TRAP_STATS=1` (diagnostics).
+Experiment 0054: `BC5_DIRECT_INDIRECT_DRAWS=1` lets DRAW_INDIRECT (0x24) and the
 two multi-draw packets (0x2c, 0x38) through (the backend policy passes them now; off, the host
 keeps dropping them); with `BC5_DIRECT_GPU_CHECK` the CP also checks an indirect draw's vertex
 and instance counts; in a buffer with a given-up wait the indirect draws are dropped. The

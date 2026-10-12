@@ -366,7 +366,14 @@ std::size_t filter(const Policy &policy, std::span<const std::uint32_t> src,
                 const bool mem_space = ((src[i + 1] >> 4) & 1) != 0;
                 const std::uint64_t target = (static_cast<std::uint64_t>(src[i + 2]) & ~3ull) |
                                              (static_cast<std::uint64_t>(src[i + 3] & 0xffffu) << 32);
-                if (!mem_space || std::find(written.begin(), written.end(), target) == written.end()) {
+                const bool kept = mem_space && std::find(opt.keep_wait_offsets.begin(),
+                                                         opt.keep_wait_offsets.end(),
+                                                         static_cast<std::uint32_t>(i)) !=
+                                                   opt.keep_wait_offsets.end();
+                if (kept) {
+                    stats.ring_ordered_waits++;
+                } else if (!mem_space ||
+                           std::find(written.begin(), written.end(), target) == written.end()) {
                     v = Verdict::Drop;
                     stats.unsatisfiable_wait_drops++;
                 }
