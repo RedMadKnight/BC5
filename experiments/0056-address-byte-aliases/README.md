@@ -13,7 +13,7 @@ Host `BC5_DIRECT_ALIASES=1`: windows "byte lo size" from `~/bc5-work/direct-alia
 mapped at (byte << 40) + address whenever the mappings change (at most once a second); a timeout's
 fault with a non-zero byte adds its window. Seeded with byte 0x80 over 0x11ce000000+0x6000000 (the
 programs at 0x11d0288000–0x11d3xxxxxx). Runs 251–253, 2026-10-12 15:03–17:47, with
-`BC5_DIRECT_INDIRECT_DRAWS=1`; 252 with `BC5_DIRECT_JOURNAL_SYNC=1`. Raw output in `raw/`.
+`BC5_DIRECT_INDIRECT_DRAWS=1`; 252 with `BC5_DIRECT_JOURNAL_SYNC=1`. Raw output in `raw/`; `run-pkg.sh` and `play-pkg.sh` are the launchers as of this experiment (the ring order of 0055 on, aliases and indirect draws off).
 
 **Result.**
 
