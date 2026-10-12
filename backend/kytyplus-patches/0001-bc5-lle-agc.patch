@@ -4157,10 +4157,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..b21707f
+index 0000000..616f998
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,5714 @@
+@@ -0,0 +1,5783 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -4219,6 +4219,7 @@ index 0000000..b21707f
 +#include <shared_mutex>
 +#include <string>
 +#include <thread>
++#include <tuple>
 +#include <vector>
 +
 +namespace Libs {
@@ -6074,6 +6075,72 @@ index 0000000..b21707f
 +	}
 +	LOGF("[bc5-direct] learned regions: %zu from %s\n", g_learned.size(), learned_path());
 +}
++// Experiment 0056 (BC5_DIRECT_ALIASES=1): the guest's memory also mapped under a non-zero address
++// byte 47:40. The title's faults have a valid address in their low 40 bits and junk above
++// (experiment 0055: its programs at 0x11d03xxxxx fetched at 0x8011d03xxxxx) — as if the PS5 GPU
++// ignored bits 40-47, TODO(verify). Each (byte, window) from BC5_DIRECT_ALIAS_FILE (default
++// ~/bc5-work/direct-aliases-pkg.txt: "byte lo size" in hex per line) is mapped at
++// (byte << 40) + address over what is mapped in the window (Device::map_alias), again whenever the
++// mappings change (at most once a second); a timeout's fault with such a byte adds its window.
++static std::mutex                                        g_alias_mutex;
++static std::vector<std::tuple<uint64_t, uint64_t, uint64_t>> g_aliases; // byte, lo, size
++static const char* alias_path() {
++	static const std::string p = std::getenv("BC5_DIRECT_ALIAS_FILE") ? std::string(std::getenv("BC5_DIRECT_ALIAS_FILE"))
++	                                                                : std::string(std::getenv("HOME") ? std::getenv("HOME") : ".") + "/bc5-work/direct-aliases-pkg.txt";
++	return p.c_str();
++}
++static bool aliases_on() {
++	static const bool on = std::getenv("BC5_DIRECT_ALIASES") != nullptr;
++	return on;
++}
++static void aliases_load() {
++	static bool done = false;
++	if (done) return;
++	done = true;
++	if (FILE* f = std::fopen(alias_path(), "r")) {
++		unsigned long long t = 0, a = 0, n = 0;
++		while (std::fscanf(f, "%llx %llx %llx", &t, &a, &n) == 3) g_aliases.emplace_back(t, a, n);
++		std::fclose(f);
++	}
++}
++static void aliases_apply(bool force) {
++	if (!aliases_on() || !g_dev) return;
++	static const void* last_maps = nullptr;
++	static double      last_t    = -10.0;
++	std::lock_guard lk(g_alias_mutex);
++	aliases_load();
++	if (g_aliases.empty()) return;
++	const auto   maps = g_dev->sorted_mappings();
++	const double now  = timing_now();
++	if (!force && (maps.get() == last_maps || now - last_t < 1.0)) return;
++	last_maps = maps.get();
++	last_t    = now;
++	g_dev->unmap_aliases();
++	uint64_t bytes = 0;
++	for (const auto& [t, a, n]: g_aliases) bytes += g_dev->map_alias(a, n, (t << 40u) + a);
++	static int reports = 0;
++	if (reports++ < 20) journal("aliases: %zu windows, %.1f MiB mapped again under their address bytes\n", g_aliases.size(), static_cast<double>(bytes) / 1048576.0);
++}
++static void alias_learn(uint64_t fault_addr) {
++	if (!aliases_on()) return;
++	const uint64_t t = fault_addr >> 40u, low = fault_addr & ((1ull << 40u) - 1);
++	if (t == 0 || t == 0x10 || low == 0) return; // 0x10: the device's own scratch at 16 TiB
++	const uint64_t lo = (low & ~0x3ffffffull) > 0x2000000ull ? (low & ~0x3ffffffull) - 0x2000000ull : 0;
++	const uint64_t n  = 0x6000000ull;
++	{
++		std::lock_guard lk(g_alias_mutex);
++		aliases_load();
++		for (const auto& [ta, a, b]: g_aliases) {
++			if (ta == t && a == lo && b == n) return;
++		}
++		g_aliases.emplace_back(t, lo, n);
++	}
++	if (FILE* f = std::fopen(alias_path(), "a")) {
++		std::fprintf(f, "0x%llx 0x%llx 0x%llx\n", static_cast<unsigned long long>(t), static_cast<unsigned long long>(lo), static_cast<unsigned long long>(n));
++		std::fclose(f);
++	}
++	journal("aliases: fault 0x%" PRIx64 " -> byte 0x%" PRIx64 " over 0x%" PRIx64 "+0x%" PRIx64 " (saved)\n", fault_addr, t, lo, n);
++}
 +static void learned_add(uint64_t fault_addr) {
 +	const uint64_t lo = (fault_addr & ~0x3ffffffull) > 0x2000000ull ? (fault_addr & ~0x3ffffffull) - 0x2000000ull : 0; // 64 MiB aligned, 32 MiB before
 +	const uint64_t n  = 0x6000000ull; // 96 MiB
@@ -7253,7 +7320,8 @@ index 0000000..b21707f
 +static void recover_after_timeout(const bc5::direct::SubmitResult& r) {
 +		LOGF_COLOR(Log::Color::Red, "[bc5-direct] fence timeout: fault 0x%" PRIx64 " status 0x%08x\n", r.fault_addr, r.fault_status);
 +		journal("timeout: fault 0x%" PRIx64 " status 0x%08x\n", r.fault_addr, r.fault_status);
-+		if (r.fault_addr != 0) learned_add(r.fault_addr);
++		if (r.fault_addr != 0 && (r.fault_addr >> 40u) != 0 && aliases_on()) alias_learn(r.fault_addr); // experiment 0056
++		else if (r.fault_addr != 0) learned_add(r.fault_addr);
 +		// BC5_DIRECT_REOPEN=1: after the kernel's ring reset (F28) the process may open a fresh
 +		// device and go on; the mappings are rebuilt by the next sync, the learned region is in.
 +		static const bool reopen = std::getenv("BC5_DIRECT_REOPEN") != nullptr;
@@ -8073,6 +8141,7 @@ index 0000000..b21707f
 +	// page fault on the BC-250 ends in a reset that takes the machine down (F6, experiment 0016).
 +	// Experiment 0037: the device keeps this list sorted and rebuilds it only when a mapping
 +	// changes (a copy and a sort of 12,000 mappings per submission before).
++	aliases_apply(false); // experiment 0056
 +	std::shared_ptr<const std::vector<bc5::direct::Mapping>> maps_p = g_dev->sorted_mappings();
 +	shader_dump(ib, num_dwords, *maps_p); // experiment 0049
 +	bc5::policy::FilterOptions opt;
