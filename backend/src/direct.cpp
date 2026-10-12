@@ -69,6 +69,23 @@ struct Device::Impl {
     std::vector<UserptrBo> userptrs;
     std::vector<SharedBo> shared;
     std::vector<SharedMap> shared_maps;
+    struct Alias {
+        std::uint64_t va = 0; // as passed to the kernel (sign-extended from 2^47 up)
+        std::uint64_t size = 0;
+        std::uint64_t bo_offset = 0;
+        amdgpu_bo_handle bo = nullptr;
+    };
+    std::vector<Alias> aliases; // Device::map_alias (experiment 0056)
+    void drop_aliases_of(amdgpu_bo_handle bo) {
+        for (auto a = aliases.begin(); a != aliases.end();) {
+            if (a->bo == bo) {
+                amdgpu_bo_va_op_raw(dev, a->bo, a->bo_offset, a->size, a->va, 0, AMDGPU_VA_OP_UNMAP);
+                a = aliases.erase(a);
+            } else {
+                ++a;
+            }
+        }
+    }
     // Experiment 0027: the IB is assembled and scanned in this cached buffer and copied into the
     // scratch once; every read of the uncached scratch cost more than the walk itself.
     std::vector<std::uint32_t> image;
@@ -333,6 +350,7 @@ bool Device::unmap_userptr(std::uint64_t cpu_va) {
     std::lock_guard lock(impl_->mutex);
     for (auto it = impl_->userptrs.begin(); it != impl_->userptrs.end(); ++it) {
         if (it->va == cpu_va) {
+            impl_->drop_aliases_of(it->bo);
             amdgpu_bo_va_op(it->bo, 0, it->size, it->va, 0, AMDGPU_VA_OP_UNMAP);
             amdgpu_bo_free(it->bo);
             impl_->userptrs.erase(it);
@@ -443,6 +461,40 @@ bool Device::unmap_shared(std::uint64_t gpu_va) {
     return false;
 }
 
+std::uint64_t Device::map_alias(std::uint64_t src_va, std::uint64_t size, std::uint64_t alias_va) {
+    std::lock_guard lock(impl_->mutex);
+    if (size == 0 || ((src_va | size | alias_va) & 0xfff) != 0) return 0;
+    const std::uint64_t end = src_va + size;
+    std::uint64_t mapped = 0;
+    auto one = [&](amdgpu_bo_handle bo, std::uint64_t va, std::uint64_t len, std::uint64_t bo_offset,
+                   bool readonly) {
+        const std::uint64_t s = std::max(va, src_va), e = std::min(va + len, end);
+        if (s >= e) return;
+        std::uint64_t to = alias_va + (s - src_va);
+        if (to >= (1ull << 47)) to |= 0xffff000000000000ull; // the kernel's VA hole (amdgpu_vm_ioctl)
+        const std::uint64_t flags = AMDGPU_VM_PAGE_READABLE | AMDGPU_VM_PAGE_EXECUTABLE |
+                                    (readonly ? 0 : AMDGPU_VM_PAGE_WRITEABLE);
+        const std::uint64_t off = bo_offset + (s - va);
+        if (amdgpu_bo_va_op_raw(impl_->dev, bo, off, e - s, to, flags, AMDGPU_VA_OP_MAP) != 0) {
+            std::fprintf(stderr, "bc5-direct: alias map at 0x%llx+0x%llx failed\n",
+                         static_cast<unsigned long long>(to), static_cast<unsigned long long>(e - s));
+            return;
+        }
+        impl_->aliases.push_back({to, e - s, off, bo});
+        mapped += e - s;
+    };
+    for (const auto &u : impl_->userptrs) one(u.bo, u.va, u.size, 0, u.readonly);
+    for (const auto &m : impl_->shared_maps) one(m.bo, m.va, m.size, m.bo_offset, false);
+    return mapped;
+}
+
+void Device::unmap_aliases() {
+    std::lock_guard lock(impl_->mutex);
+    for (const auto &a : impl_->aliases)
+        amdgpu_bo_va_op_raw(impl_->dev, a.bo, a.bo_offset, a.size, a.va, 0, AMDGPU_VA_OP_UNMAP);
+    impl_->aliases.clear();
+}
+
 bool Device::free_shared(std::uint32_t id) {
     std::lock_guard lock(impl_->mutex);
     for (auto b = impl_->shared.begin(); b != impl_->shared.end(); ++b) {
@@ -455,6 +507,7 @@ bool Device::free_shared(std::uint32_t id) {
                 ++it;
             }
         }
+        impl_->drop_aliases_of(b->bo);
         // a kept list would hold the BO (and its pages) alive
         if (impl_->full_list) {
             amdgpu_bo_list_destroy(impl_->full_list);

@@ -112,6 +112,13 @@ public:
     // range may be mapped at several addresses (the guest's aliases of one physical range).
     bool map_shared(std::uint32_t id, std::uint64_t bo_offset, std::uint64_t size, std::uint64_t gpu_va);
     bool unmap_shared(std::uint64_t gpu_va);
+    // Experiment 0056: maps the pages already mapped at [src_va, src_va + size) (userptr or shared
+    // mappings, page aligned) a second time at alias_va, e.g. under a non-zero address byte 47:40
+    // (an address from 2^47 up is passed to the kernel sign-extended, as its VA hole requires).
+    // Returns the bytes mapped. Aliases are not in mappings(); unmap_aliases() removes them all,
+    // and unmapping or freeing the source removes those on its BO.
+    std::uint64_t map_alias(std::uint64_t src_va, std::uint64_t size, std::uint64_t alias_va);
+    void unmap_aliases();
     // Unmaps an imported range everywhere and frees its BO (experiment 0022: small imports are
     // replaced by one merged import).
     bool free_shared(std::uint32_t id);
