@@ -1,0 +1,9 @@
+# direct-selftest --submit --skip-synthetic --cp-check (backend-amdgpu, fedora container), 2026-10-12 02:39
+userptr 1:1 1 MiB at 0x7f653f06f000: ok
+cp-check 44 1 1: OK rc 0, result 0x1 flag 0x1 confirm 0x0 -> as expected
+cp-check 2139095040 2139095040 2139095040: OK rc 0, result 0xdead flag 0x0 confirm 0x0 -> as expected
+cp-check 28800 4286578688 1: OK rc 0, result 0xdead flag 0x0 confirm 0x0 -> as expected
+cp-check 1 1 2000: OK rc 0, result 0xdead flag 0x0 confirm 0x0 -> as expected
+cp-check 1048576 1024 1024: OK rc 0, result 0x1 flag 0x1 confirm 0x0 -> as expected
+cp-check: 0 wrong
+exit 0

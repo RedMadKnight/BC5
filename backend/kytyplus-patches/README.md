@@ -267,6 +267,10 @@ page of its arguments), `PFP_SYNC_ME` and the GFX-form dispatch; the drop list a
 offsets are mapped between the two layouts; an IB with COND_EXEC has these dispatches dropped.
 `BC5_DIRECT_MEC_ONLY_PGM` / `BC5_DIRECT_MEC_SKIP_PGM` (hex lists of compute program addresses,
 COMPUTE_PGM_LO/HI) choose which run; the journal names each program once ("mec pgm").
+Experiment 0052: `BC5_DIRECT_GPU_CHECK=1` (backend `FilterOptions::gpu_check_indirect`): the CP
+checks every `DISPATCH_INDIRECT`'s group counts when it runs it, and the host no longer drops one
+it will check for counts read at submit time; the refit guard also holds the refit back in a
+buffer with a given-up wait.
 Experiment 0051: the `direct by name (growth)` breakdown (every 512 MiB of imports, a walk of
 every view with SEEK_DATA: 25–80 s on the game's thread while the second title loads) only with
 `BC5_DIRECT_BREAKDOWN=1`.

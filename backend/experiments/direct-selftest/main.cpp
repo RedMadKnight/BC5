@@ -3,15 +3,21 @@
 // of the track-B direct mode (private amdgpu device, high-VA scratch IB, policy filter, fence),
 // with synthetic IBs and optionally recorded ones. Phase-3 isolation tool (experiment 0016).
 //
-//   direct-selftest --submit [--render-node PATH] [--ib-file FILE]... [--map-mib N]
+//   direct-selftest --submit [--render-node PATH] [--ib-file FILE]... [--map-mib N] [--cp-check]
+//
+// --cp-check (experiment 0052): the CP check of bc5/indirect_check.hpp on five argument triples,
+// with the dispatch replaced by a WRITE_DATA (no shader runs): the write must happen for sane
+// group counts only. The packets go in the unfiltered prologue (the policy drops COND_WRITE).
 //
 // Hard rule 5 (CLAUDE.md): --submit runs on the GPU; never in tests or CI.
 #include "bc5/direct.hpp"
+#include "bc5/indirect_check.hpp"
 #include "bc5/policy.hpp"
 
 #include <cstdint>
 #include <cstdio>
 #include <fstream>
+#include <iterator>
 #include <string>
 #include <string_view>
 #include <vector>
@@ -77,6 +83,7 @@ int main(int argc, char **argv) {
     std::uint64_t map_mib = 0;
     bool submit = false;
     bool synthetic = true;
+    bool cp_check = false;
     std::string journal_path;
     bc5::direct::OpenOptions open_opts;
     for (int i = 1; i < argc; ++i) {
@@ -89,9 +96,10 @@ int main(int argc, char **argv) {
         else if (a == "--dedup") open_opts.deduplicate_device = true;
         else if (a == "--legacy-va") open_opts.legacy_scratch_va = true;
         else if (a == "--skip-synthetic") synthetic = false;
+        else if (a == "--cp-check") cp_check = true;
         else {
             std::fputs("usage: direct-selftest --submit [--render-node PATH] [--ib-file FILE]... [--map-mib N] [--journal FILE]\n"
-                       "                       [--dedup] [--legacy-va] [--skip-synthetic]\n", stderr);
+                       "                       [--dedup] [--legacy-va] [--skip-synthetic] [--cp-check]\n", stderr);
             return 2;
         }
     }
@@ -108,14 +116,69 @@ int main(int argc, char **argv) {
     journal(hdr);
     auto dev = bc5::direct::Device::open(node, open_opts);
     if (!dev) return 1;
+    if (cp_check && map_mib == 0) map_mib = 1;
+    void *mem = nullptr;
     if (map_mib != 0) {
         // Anonymous memory mapped 1:1, as the host does; touched so it is resident.
         const std::uint64_t bytes = map_mib << 20;
-        void *mem = mmap(nullptr, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_POPULATE, -1, 0);
+        mem = mmap(nullptr, bytes, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS | MAP_POPULATE, -1, 0);
         if (mem == MAP_FAILED) return 1;
         const bool ok = dev->map_userptr(reinterpret_cast<std::uint64_t>(mem), bytes);
         std::printf("userptr 1:1 %llu MiB at %p: %s\n", static_cast<unsigned long long>(map_mib), mem, ok ? "ok" : "FAILED");
         if (!ok) return 1;
+    }
+    if (cp_check) {
+        // Per case a 4 KiB page of the mapping: arguments at +0x40, the result word at +0x80, the
+        // flag and its confirm word at +0x100. Expected: the result written (1) only when all
+        // three counts are within bc5::policy::FilterOptions{}.gpu_check_max.
+        const bc5::policy::FilterOptions defaults;
+        struct Case {
+            std::uint32_t x, y, z;
+            bool runs;
+        };
+        const Case cases[] = {{44, 1, 1, true},
+                              {0x7f800000u, 0x7f800000u, 0x7f800000u, false},
+                              {28800, 0xff800000u, 1, false},
+                              {1, 1, 2000, false},
+                              {1u << 20, 1024, 1024, true}};
+        int failures = 0;
+        for (std::size_t k = 0; k < std::size(cases); ++k) {
+            auto *page = reinterpret_cast<volatile std::uint32_t *>(static_cast<char *>(mem) + 0x1000 * k);
+            const std::uint64_t va = reinterpret_cast<std::uint64_t>(page);
+            page[0x40 / 4] = cases[k].x;
+            page[0x44 / 4] = cases[k].y;
+            page[0x48 / 4] = cases[k].z;
+            page[0x80 / 4] = 0xdeadu;
+            page[0x100 / 4] = 0xdeadu;
+            page[0x104 / 4] = 0xdeadu;
+            // SET_BASE index 1 = the page, DISPATCH_INDIRECT offset 0x40; then the dispatch is
+            // replaced by WRITE_DATA result = 1 and the COND_EXEC count set to its 5 dwords.
+            const std::vector<std::uint32_t> in = {0xC0021100u, 1u, static_cast<std::uint32_t>(va),
+                                                   static_cast<std::uint32_t>(va >> 32), 0xC0011600u, 0x40u, 0x41u};
+            std::vector<std::size_t> refs;
+            bc5::indirect_check::Stats st;
+            auto seq = bc5::indirect_check::apply(in, 0, defaults.gpu_check_max, refs, st);
+            bc5::indirect_check::patch(seq, refs, va + 0x100);
+            seq.resize(seq.size() - 3);
+            seq.back() = 5;
+            const std::uint64_t res = va + 0x80;
+            seq.insert(seq.end(), {0xC0033700u, (5u << 8) | (1u << 20), static_cast<std::uint32_t>(res),
+                                   static_cast<std::uint32_t>(res >> 32), 1u});
+            bc5::policy::FilterOptions opt;
+            opt.prologue = seq;
+            const auto r = dev->submit(std::vector<std::uint32_t>(8, bc5::policy::kNop), opt, 2'000'000'000ull);
+            const std::uint32_t got = page[0x80 / 4], flag = page[0x100 / 4], confirm = page[0x104 / 4];
+            const bool pass = r.ok && got == (cases[k].runs ? 1u : 0xdeadu) &&
+                              flag == (cases[k].runs ? 1u : 0u) && confirm == 0u;
+            std::printf("cp-check %u %u %u: %s rc %d%s, result 0x%x flag 0x%x confirm 0x%x -> %s\n", cases[k].x,
+                        cases[k].y, cases[k].z, r.ok ? "OK" : "FAILED", r.rc, r.timed_out ? " TIMEOUT" : "", got,
+                        flag, confirm, pass ? "as expected" : "WRONG");
+            std::fflush(stdout);
+            if (!pass) failures++;
+            if (!r.ok) return 1;
+        }
+        std::printf("cp-check: %d wrong\n", failures);
+        return failures == 0 ? 0 : 1;
     }
     std::vector<std::uint32_t> ib;
     if (synthetic) {

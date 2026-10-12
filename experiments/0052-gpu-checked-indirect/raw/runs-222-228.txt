@@ -1,0 +1,63 @@
+== run 222 (pkg-20261012-0239)
+run 222: kyty exit 124 after 301 s; faults: none; failed 0; last submit at 298.496 s; access violations 0; 250 s on: frames 919 fps 18.38 (/home/kjaniszewski/bc5-data/captures/pkg-20261012-0239)
+gpu check: 2414355 dispatches checked by the CP, 0 without a base, 148943 in IBs with COND_EXEC
+gpu check: 2424833 dispatches left to the CP that the host would have dropped
+0
+pkg-20261012-0239: steady 3D from 70 s, longest gap before it 3.5 s
+frames per 5 s: 0:35 5:10 10:40 15:94 20:100 25:100 30:99 35:100 40:99 45:59 50:2 55:37 60:13 65:55 70:102 75:101 80:106 85:109 90:111 95:110 100:103 105:109 110:109 115:100 120:103 125:103 130:107 135:105 140:109 145:98 150:59 155:92 160:101 165:94 170:92 175:87 180:87 185:100 190:98 195:94 200:99 205:101 210:93 215:94 220:93 225:94 230:91 235:93 240:93 245:100 250:88 255:94 260:99 265:94 270:98 275:100 280:94 285:99 290:90 295:63
+== run 223 (pkg-20261012-0244)
+run 223: kyty exit 124 after 301 s; faults: 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 ; failed 3136; last submit at 296.627 s; access violations 0; 250 s on: frames 1 fps 0.02 (/home/kjaniszewski/bc5-data/captures/pkg-20261012-0244)
+gpu check: 16670 dispatches checked by the CP, 0 without a base, 917 in IBs with COND_EXEC
+gpu check: 1 dispatches left to the CP that the host would have dropped
+     16 timeout: fault 0x0 status 0x00000000
+0
+refit check at 0x12104df100: index 0x1634 (11), nodes 62, list 589; 28 leaf walks, 28 without an end in range, longest 94, 0 bad node indices
+refit check at 0x1256d9ad00: index 0x4e308 (637), nodes 3433, list 32728; 1524 leaf walks, 0 without an end in range, longest 11, 0 bad node indices
+pkg-20261012-0244: steady 3D from None s, longest gap before it 0.0 s
+frames per 5 s: 0:35 5:9 10:45 15:97 20:100 25:100 30:100 35:98 40:100 45:64 50:2 55:37 60:13 90:1 125:1 155:1 185:1 215:1 245:1 275:1
+== run 224 (pkg-20261012-0250)
+run 224: kyty exit 124 after 302 s; faults: 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 ; failed 3019; last submit at 294.182 s; access violations 0; 250 s on: frames 1 fps 0.02 (/home/kjaniszewski/bc5-data/captures/pkg-20261012-0250)
+gpu check: 15998 dispatches checked by the CP, 0 without a base, 889 in IBs with COND_EXEC
+gpu check: 1 dispatches left to the CP that the host would have dropped
+     16 timeout: fault 0x0 status 0x00000000
+0
+refit check at 0x12104df100: index 0x1634 (11), nodes 62, list 589; 28 leaf walks, 28 without an end in range, longest 94, 0 bad node indices
+refit check at 0x1256c43000: index 0x4e308 (637), nodes 3433, list 32728; 1524 leaf walks, 0 without an end in range, longest 11, 0 bad node indices
+pkg-20261012-0250: steady 3D from None s, longest gap before it 0.0 s
+frames per 5 s: 0:35 5:9 10:49 15:97 20:100 25:100 30:100 35:98 40:99 45:30 50:15 55:29 60:7 90:1 120:1 155:1 185:1 215:1 245:1 275:1
+== run 225 (pkg-20261012-0256)
+run 225: kyty exit 124 after 301 s; faults: 0x122256f18000 0x0 0x0 0x0 0x0 0x0 0x0 0x0 ; failed 1354; last submit at 289.830 s; access violations 0; 250 s on: frames 3 fps 0.06 (/home/kjaniszewski/bc5-data/captures/pkg-20261012-0256)
+gpu check: 1296053 dispatches checked by the CP, 0 without a base, 0 NOP-ed (a COND_EXEC range too long)
+gpu check: 655361 dispatches left to the CP that the host would have dropped
+      7 timeout: fault 0x0 status 0x00000000
+      1 timeout: fault 0x122256f18000 status 0x00601031
+560524
+refit check at 0x12104df100: index 0x1634 (11), nodes 62, list 589; 28 leaf walks, 0 without an end in range, longest 7, 0 bad node indices
+refit check at 0x12104df100: index 0x1634 (11), nodes 62, list 589; 28 leaf walks, 0 without an end in range, longest 7, 0 bad node indices
+pkg-20261012-0256: steady 3D from 65 s, longest gap before it 3.3 s
+frames per 5 s: 0:35 5:12 10:54 15:96 20:96 25:100 30:100 35:100 40:95 45:14 50:18 55:30 60:36 65:104 70:101 75:100 80:111 85:108 90:110 95:99 100:106 105:108 110:104 115:94 120:101 125:108 130:108 135:107 140:107 145:101 150:6 165:35 170:93 175:80 180:1 195:12 210:1 225:1 240:1 255:1 270:1 285:1
+== run 226 (pkg-20261012-0302)
+run 226: kyty exit 124 after 301 s; faults: none; failed 0; last submit at 298.633 s; access violations 0; 250 s on: frames 934 fps 18.68 (/home/kjaniszewski/bc5-data/captures/pkg-20261012-0302)
+gpu check: 2424833 dispatches left to the CP that the host would have dropped
+gpu check: 2643674 dispatches checked by the CP, 0 without a base, 0 NOP-ed (a COND_EXEC range too long)
+0
+pkg-20261012-0302: steady 3D from 65 s, longest gap before it 4.3 s
+frames per 5 s: 0:34 5:12 10:52 15:95 20:99 25:100 30:100 35:100 40:100 45:46 50:3 55:36 60:14 65:88 70:106 75:102 80:109 85:107 90:110 95:108 100:109 105:109 110:104 115:104 120:100 125:107 130:107 135:108 140:108 145:101 150:59 155:90 160:100 165:91 170:93 175:88 180:87 185:95 190:96 195:97 200:95 205:90 210:92 215:96 220:90 225:95 230:96 235:97 240:93 245:97 250:98 255:90 260:98 265:99 270:99 275:89 280:99 285:98 290:92 295:72
+== run 227 (pkg-20261012-0307)
+run 227: kyty exit 124 after 301 s; faults: 0x221296844000 0x14c56d48000 0x0 0x0 0x0 0x0 0x0 0x0 0x0 ; failed 216; last submit at 296.806 s; access violations 0; 250 s on: frames 4 fps 0.08 (/home/kjaniszewski/bc5-data/captures/pkg-20261012-0307)
+refit guard: 467969 run, 0 held back (incomplete or unknown trees)
+refit guard: 468993 run, 0 held back (incomplete or unknown trees)
+      7 timeout: fault 0x0 status 0x00000000
+      1 timeout: fault 0x14c56d48000 status 0x00601030
+      1 timeout: fault 0x221296844000 status 0x00701031
+0
+pkg-20261012-0307: steady 3D from 70 s, longest gap before it 4.5 s
+frames per 5 s: 0:35 5:11 10:50 15:97 20:100 25:100 30:100 35:98 40:100 45:59 50:1 55:37 60:14 65:76 70:104 75:97 80:106 85:108 90:109 95:99 100:108 105:109 110:105 115:75 120:101 125:108 130:107 135:106 140:108 145:95 150:3 165:1 180:7 195:15 200:88 220:1 235:1 250:1 265:1 280:1 295:1
+== run 228 (pkg-20261012-0314)
+run 228: kyty exit 124 after 303 s; faults: 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 ; failed 360; last submit at 298.723 s; access violations 0; 250 s on: frames 3 fps 0.06 (/home/kjaniszewski/bc5-data/captures/pkg-20261012-0314)
+refit guard: 12289 run, 0 held back (incomplete or unknown trees, or a given-up wait: 0)
+refit guard: 13313 run, 0 held back (incomplete or unknown trees, or a given-up wait: 0)
+     15 timeout: fault 0x0 status 0x00000000
+0
+pkg-20261012-0314: steady 3D from None s, longest gap before it 0.0 s
+frames per 5 s: 0:36 5:6 10:38 15:89 20:100 25:100 30:100 35:100 40:100 45:78 55:25 60:24 65:1 80:1 95:28 100:10 115:2 130:2 145:2 160:1 175:1 190:1 205:1 220:1 235:1 250:1 265:1 280:1
