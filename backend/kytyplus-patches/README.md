@@ -267,6 +267,9 @@ page of its arguments), `PFP_SYNC_ME` and the GFX-form dispatch; the drop list a
 offsets are mapped between the two layouts; an IB with COND_EXEC has these dispatches dropped.
 `BC5_DIRECT_MEC_ONLY_PGM` / `BC5_DIRECT_MEC_SKIP_PGM` (hex lists of compute program addresses,
 COMPUTE_PGM_LO/HI) choose which run; the journal names each program once ("mec pgm").
+Experiment 0056: `BC5_DIRECT_ALIASES=1` maps the memory of the windows in
+`~/bc5-work/direct-aliases-pkg.txt` ("byte lo size") again at (byte << 40) + address (backend
+`Device::map_alias`); unverified and dangerous with the indirect draws (F110).
 Experiment 0055: `BC5_DIRECT_RING_ORDER_WAITS=1` leaves a cross-queue wait to the GPU when the last
 pending label write of a job already on the ring satisfies it (backend `keep_wait_offsets`);
 `BC5_DIRECT_DCB_WAIT_UNBLOCKED_MS`, `BC5_DIRECT_TRAP_STATS=1` (diagnostics).

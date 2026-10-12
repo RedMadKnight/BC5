@@ -1,0 +1,22 @@
+run 253: kyty exit 124 after 202 s; faults: 0x0 0x0 0x0 ; failed 74; last submit at 193.991 s; access violations 0; 250 s on: frames 0 fps 0.00 (/home/kjaniszewski/bc5-data/captures/pkg-20261012-1744)
+series done
+== pkg-20261012-1503
+aliases: 1 windows, 96.0 MiB mapped again under their address bytes
+submit #278282 dcb 2533 dwords at 0x11e0250050: pass 229 rewrite 59 drop 82 unmapped 0 cc 0 mappings 13314 ... FAILED rc 0 TIMEOUT 2021.48 ms
+submit #278285 acb 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 13314 ... FAILED rc 0 TIMEOUT 2020.34 ms
+frames per 5 s: 0:35 5:10 10:42 15:89 20:100 25:100 30:100 35:99 40:100 45:73 50:1 55:31 60:17 65:29 70:100 75:106 80:112 85:94 90:106 95:107 100:104 105:106 110:111 115:104 120:103 125:107 130:107 135:108 140:104 145:100 150:7
+== pkg-20261012-1735
+aliases: 1 windows, 96.0 MiB mapped again under their address bytes
+submit #204105 dcb 2588 dwords at 0x11e06d0050: pass 234 rewrite 59 drop 82 unmapped 0 cc 0 mappings 13307 ... FAILED rc 0 TIMEOUT 2006.23 ms
+submit #204109 acb 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 13307 ... FAILED rc 0 TIMEOUT 2005.18 ms
+frames per 5 s: 0:35 5:11 10:58 15:99 20:100 25:100 30:100 35:100 40:89 45:11 50:23 55:27 60:7 65:103 70:109 75:110 80:78 85:106 90:109 95:110 100:110 105:78 110:111 115:101 120:3
+== pkg-20261012-1744
+aliases: 1 windows, 96.0 MiB mapped again under their address bytes
+submit #240600 dcb 922 dwords at 0x11e0a70050: pass 115 rewrite 25 drop 22 unmapped 0 cc 0 mappings 13317 ... FAILED rc 0 TIMEOUT 2023.26 ms
+submit #240601 acb 28 dwords at 0x11e0ee0050: pass 1 rewrite 2 drop 1 unmapped 0 cc 0 mappings 13317 ... FAILED rc 0 TIMEOUT 2023.89 ms
+timeout: fault 0x0 status 0x00000000
+submit #240804 dcb 942 dwords at 0x11e0950050: pass 119 rewrite 25 drop 22 unmapped 0 cc 0 mappings 13307 ... FAILED rc 0 TIMEOUT 2059.61 ms
+frames per 5 s: 0:22 5:18 10:9 15:36 20:83 25:100 30:98 35:100 40:100 45:100 50:86 55:3 65:2 70:36 75:13 80:57 85:106 90:110 95:108 100:109 105:109 110:108 115:101 120:110 125:109 130:109 135:109 140:107 145:29 160:1 190:1
+paź 12 17:38:34 bazzite kernel: x86/amd: Previous system reset reason [0x40000400]: a parity error occurred
+paź 12 17:40:11 bazzite kernel: x86/amd: Previous system reset reason [0x40080400]: software wrote 0x6 to reset control register 0xCF9
+paź 12 17:40:11 bazzite kernel: x86/amd: Previous system reset reason [0x40080400]: a parity error occurred
