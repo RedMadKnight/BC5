@@ -267,6 +267,13 @@ page of its arguments), `PFP_SYNC_ME` and the GFX-form dispatch; the drop list a
 offsets are mapped between the two layouts; an IB with COND_EXEC has these dispatches dropped.
 `BC5_DIRECT_MEC_ONLY_PGM` / `BC5_DIRECT_MEC_SKIP_PGM` (hex lists of compute program addresses,
 COMPUTE_PGM_LO/HI) choose which run; the journal names each program once ("mec pgm").
+Experiment 0054 (in progress): `BC5_DIRECT_INDIRECT_DRAWS=1` lets DRAW_INDIRECT (0x24) and the
+two multi-draw packets (0x2c, 0x38) through (the backend policy passes them now; off, the host
+keeps dropping them); with `BC5_DIRECT_GPU_CHECK` the CP also checks an indirect draw's vertex
+and instance counts; in a buffer with a given-up wait the indirect draws are dropped. The
+second title's 12-channel float AudioOut2 port (data_format 0xc00) is opened as 8-channel float
+and mixed down (libAudio2.cpp). `BC5_DIRECT_DROP_TALLY=1` journals the packets the filter took
+out, per buffer kind and opcode, every 10 s.
 Experiment 0052: `BC5_DIRECT_GPU_CHECK=1` (backend `FilterOptions::gpu_check_indirect`): the CP
 checks every `DISPATCH_INDIRECT`'s group counts when it runs it, and the host no longer drops one
 it will check for counts read at submit time; the refit guard also holds the refit back in a

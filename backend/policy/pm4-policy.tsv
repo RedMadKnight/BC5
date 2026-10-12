@@ -19,16 +19,19 @@ op	0x15	pass	DISPATCH_DIRECT
 op	0x16	pass	DISPATCH_INDIRECT
 op	0x1e	pass	ATOMIC_MEM
 op	0x22	pass	COND_EXEC
+op	0x24	pass	DRAW_INDIRECT: the form of DRAW_INDEX_INDIRECT without indices (Mesa radv_cs_emit_indirect_draw_packet); the host keeps it dropped unless BC5_DIRECT_INDIRECT_DRAWS=1 (experiment 0054)
 op	0x25	pass	DRAW_INDEX_INDIRECT
 op	0x26	pass	INDEX_BASE
 op	0x27	pass	DRAW_INDEX_2
 op	0x28	rewrite	CONTEXT_CONTROL: load/shadow enables forced to 0x80000000/0x80000000 (RADV's); the console's 0x91018003/0x80018003 hung the BC-250 (experiment 0016)
 op	0x2a	pass	INDEX_TYPE
+op	0x2c	pass	DRAW_INDIRECT_MULTI: draw_count draws (fewer if a count at count_addr says so), args at base + offset with stride (Mesa radv_cmd_buffer.c); host opt-in as 0x24
 op	0x2d	pass	DRAW_INDEX_AUTO
 op	0x2f	pass	NUM_INSTANCES
 op	0x33	pass	INDIRECT_BUFFER_CNST
 op	0x35	pass	DRAW_INDEX_OFFSET_2
 op	0x37	pass	WRITE_DATA (memory destinations; DST_SEL 0 = register is dropped in code, FilterStats::reg_write_drops)
+op	0x38	pass	DRAW_INDEX_INDIRECT_MULTI: the indexed form of 0x2c (Mesa sid.h PKT3_DRAW_INDEX_INDIRECT_MULTI); host opt-in as 0x24
 op	0x3c	pass	WAIT_REG_MEM
 op	0x3f	pass	INDIRECT_BUFFER
 op	0x40	pass	COPY_DATA

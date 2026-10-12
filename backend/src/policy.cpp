@@ -141,6 +141,12 @@ std::vector<std::pair<std::uint64_t, std::uint64_t>> memory_operands(const std::
     case 0x11: // SET_BASE: base_index at 1, addr lo/hi at 2/3
         if (len >= 4 && (p[2] != 0 || p[3] != 0)) out.emplace_back(addr(2, 3), 4);
         break;
+    case 0x2c: // DRAW_INDIRECT_MULTI
+    case 0x38: // DRAW_INDEX_INDIRECT_MULTI: count_addr lo/hi at 6/7 when COUNT_INDIRECT_ENABLE
+        // (dword 4 bit 30; Mesa radv_cmd_buffer.c emits the packet, the bit as S_4C2_ of the
+        // same layout in sid.h, TODO(verify) for 2C4); the arguments are relative to SET_BASE.
+        if (len >= 10 && ((p[4] >> 30) & 1)) out.emplace_back(addr(6, 7), 4);
+        break;
     case 0x26: // INDEX_BASE
         if (len >= 3 && (p[1] != 0 || p[2] != 0)) out.emplace_back(addr(1, 2), 4);
         break;
@@ -188,8 +194,9 @@ bool is_draw_or_dispatch(std::uint8_t opcode) {
     case 0x27: // DRAW_INDEX_2
     case 0x2d: // DRAW_INDEX_AUTO
     case 0x35: // DRAW_INDEX_OFFSET_2
-    case 0x38: // DRAW_INDEX_MULTI_AUTO
+    case 0x38: // DRAW_INDEX_INDIRECT_MULTI (Mesa sid.h)
     case 0x24: // DRAW_INDIRECT
+    case 0x2c: // DRAW_INDIRECT_MULTI
         return true;
     default:
         return false;

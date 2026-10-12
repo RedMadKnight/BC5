@@ -157,7 +157,7 @@ int main(int argc, char **argv) {
                                                    static_cast<std::uint32_t>(va >> 32), 0xC0011600u, 0x40u, 0x41u};
             std::vector<std::size_t> refs;
             bc5::indirect_check::Stats st;
-            auto seq = bc5::indirect_check::apply(in, 0, defaults.gpu_check_max, refs, st);
+            auto seq = bc5::indirect_check::apply(in, 0, defaults.gpu_check_max, defaults.gpu_check_draw_max, refs, st);
             bc5::indirect_check::patch(seq, refs, va + 0x100);
             seq.resize(seq.size() - 3);
             seq.back() = 5;

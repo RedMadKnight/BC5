@@ -7,6 +7,8 @@ namespace {
 
 constexpr std::uint32_t kOpSetBase = 0x11;
 constexpr std::uint32_t kOpDispatchIndirect = 0x16;
+constexpr std::uint32_t kOpDrawIndirect = 0x24;
+constexpr std::uint32_t kOpDrawIndexIndirect = 0x25;
 constexpr std::uint32_t kOpCondExec = 0x22;
 
 constexpr std::uint32_t kWriteData = 0xC0033700u; // PKT3(WRITE_DATA, 3, 0)
@@ -18,6 +20,21 @@ constexpr std::uint32_t kPollMem = 1u << 4;
 constexpr std::uint32_t kWriteMem = 1u << 8;
 constexpr std::uint32_t kPfpSyncMe = 0xC0004200u; // PKT3(PFP_SYNC_ME, 0, 0)
 constexpr std::uint32_t kCondExec = 0xC0032200u;  // PKT3(COND_EXEC, 3, 0), GFX7+ form
+
+// The argument dwords the check compares for an indirect packet, 0 for other packets:
+// DISPATCH_INDIRECT (GFX form, 3 dwords) x, y, z; DRAW_INDIRECT and DRAW_INDEX_INDIRECT (5 dwords)
+// the vertex or index count and the instance count (Mesa radv_cs_emit_indirect_draw_packet; the
+// arguments as VkDrawIndirectCommand / VkDrawIndexedIndirectCommand).
+std::uint32_t checked_dims(std::uint32_t h, std::size_t len) {
+    if (h >> 30 != 3)
+        return 0;
+    const std::uint32_t op = (h >> 8) & 0xff;
+    if (op == kOpDispatchIndirect && len == 3)
+        return 3;
+    if ((op == kOpDrawIndirect || op == kOpDrawIndexIndirect) && len == 5)
+        return 2;
+    return 0;
+}
 
 std::size_t packet_len(std::uint32_t h) {
     const std::uint32_t type = h >> 30;
@@ -31,8 +48,8 @@ std::size_t packet_len(std::uint32_t h) {
 } // namespace
 
 std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib, std::uint64_t base,
-                                 const std::uint32_t (&max)[3], std::vector<std::size_t> &flag_refs,
-                                 Stats &stats) {
+                                 const std::uint32_t (&max)[3], const std::uint32_t (&draw_max)[2],
+                                 std::vector<std::size_t> &flag_refs, Stats &stats) {
     std::uint32_t dispatches = 0;
     bool has_cond_exec = false;
     for (std::size_t i = 0; i < ib.size();) {
@@ -41,7 +58,7 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib, std::uint64_
         const std::uint32_t op = (h >> 8) & 0xff;
         if (h >> 30 == 3 && op == kOpCondExec)
             has_cond_exec = true;
-        if (h >> 30 == 3 && op == kOpDispatchIndirect && len == 3)
+        if (checked_dims(h, len) != 0)
             dispatches++;
         i += len;
     }
@@ -73,7 +90,8 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib, std::uint64_
             base = (static_cast<std::uint64_t>(ib[i + 2]) & ~3ull) |
                    (static_cast<std::uint64_t>(ib[i + 3] & 0xffffu) << 32);
         }
-        if (h >> 30 == 3 && op == kOpDispatchIndirect && len == 3) {
+        if (const std::uint32_t dims = checked_dims(h, len); dims != 0) {
+            const std::uint32_t *limit = dims == 3 ? max : draw_max;
             const std::size_t before = out.size();
             if (base != 0) {
                 const std::uint64_t args = base + ib[i + 1];
@@ -85,19 +103,18 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib, std::uint64_
                 out.insert(out.end(), {kWriteData, kWriteDataMem});
                 flag();
                 out.push_back(1);
-                for (std::uint32_t k = 0; k < 3; ++k) {
+                for (std::uint32_t k = 0; k < dims; ++k) {
                     const std::uint64_t a = args + 4 * k;
                     out.insert(out.end(), {kCondWrite, kGreater | kPollMem | kWriteMem,
                                            static_cast<std::uint32_t>(a) & ~3u,
-                                           static_cast<std::uint32_t>(a >> 32) & 0xffffu, max[k],
+                                           static_cast<std::uint32_t>(a >> 32) & 0xffffu, limit[k],
                                            0xffffffffu});
                     flag();
                     out.push_back(0);
                 }
                 out.insert(out.end(), {kWriteData, kWriteDataMem | kWrConfirm});
                 flag_refs.push_back(out.size());
-                out.push_back(
-                    4); // the confirm word: the flag's address + 4 (patch() adds the base)
+                out.push_back(4); // the confirm word: the flag's address + 4 (patch() adds it)
                 out.push_back(0);
                 out.push_back(0);
                 out.insert(out.end(), {kPfpSyncMe, 0u, kCondExec});
@@ -127,16 +144,13 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib, std::uint64_
             out[c.at + 4] =
                 (out[c.at + 4] & ~0x3fffu) | static_cast<std::uint32_t>(count & 0x3fffu);
         }
-        if (!fits) { // a grown range no longer fits the count: no dispatch of this IB runs
-                     // unchecked
+        if (!fits) { // a grown range no longer fits its count: nothing runs unchecked
             out.assign(ib.begin(), ib.end());
             flag_refs.clear();
             for (std::size_t i = 0; i < out.size();) {
                 const std::size_t len = packet_len(out[i]);
-                if (out[i] >> 30 == 3 && ((out[i] >> 8) & 0xff) == kOpDispatchIndirect &&
-                    len == 3) {
-                    out[i] = 0xC0011000u; // PKT3(NOP, 1, 0) over the 3 dwords
-                }
+                if (checked_dims(out[i], len) != 0)
+                    out[i] = 0xC0001000u | (static_cast<std::uint32_t>(len - 2) << 16); // NOP
                 i += len;
             }
             stats.conditional += dispatches;

@@ -95,6 +95,7 @@ struct FilterOptions {
     // grow by what is inserted in their ranges. The base of a rebuilt compute IB is mec_indirect_base.
     bool gpu_check_indirect = false;
     std::uint32_t gpu_check_max[3] = {1u << 20, 1u << 10, 1u << 10};
+    std::uint32_t gpu_check_draw_max[2] = {1u << 22, 1024}; // experiment 0054: indirect draws
     bool drop_draws = false;             // staging (ADR 0005 §5c): NOP every draw and dispatch
     // CONTEXT_CONTROL as RADV/radeonsi emit it (0x80000000 0x80000000: update the enables, load
     // and shadow nothing). The console's 0x91018003/0x80018003 asks the CP to load and shadow
