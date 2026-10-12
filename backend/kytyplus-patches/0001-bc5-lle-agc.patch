@@ -4157,10 +4157,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..d40b0ba
+index 0000000..958ebe3
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,5463 @@
+@@ -0,0 +1,5495 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -8092,6 +8092,14 @@ index 0000000..d40b0ba
 +		static const std::set<uint64_t> only_pgm = pgm_list("BC5_DIRECT_MEC_ONLY_PGM");
 +		static const std::set<uint64_t> skip_pgm = pgm_list("BC5_DIRECT_MEC_SKIP_PGM");
 +		static std::set<uint64_t>       seen_pgm;
++		// Experiment 0052: BC5_DIRECT_GPU_CHECK=1, the CP checks a dispatch's group counts when it runs
++		// it (backend FilterOptions::gpu_check_indirect) and skips it if they are absurd; the host's
++		// check below, on values read at submit time (stale for arguments the GPU writes earlier in
++		// the frame), then no longer drops a dispatch the CP will check: one with a known base (a
++		// SET_BASE earlier in this IB, or a rebuilt compute dispatch). The backend grows the IB's own
++		// COND_EXEC counts around what it inserts.
++		static const bool gpu_check = std::getenv("BC5_DIRECT_GPU_CHECK") != nullptr;
++		if (gpu_check) opt.gpu_check_indirect = true;
 +		for (uint32_t q = 0; q < num_dwords;) {
 +			const uint32_t h = ib[q];
 +			const uint32_t type = h >> 30u;
@@ -8180,9 +8188,18 @@ index 0000000..d40b0ba
 +						if (cache.size() > 100000) cache.clear();
 +						cache[check] = {ok, now};
 +					}
-+					static std::atomic<uint64_t> n_run {0}, n_dropped {0};
++					// Experiment 0052: nor in a buffer one of whose CPU-side waits was given up: it runs before
++					// the other queue's work it waits for, and with the lists built (BC5_DIRECT_GPU_CHECK) the
++					// refit hung there in every run (225, 227), on trees the check above found complete.
++					static std::atomic<uint64_t> n_run {0}, n_dropped {0}, n_unwaited {0};
++					if (ok && t_wait_given_up) {
++						ok = false;
++						n_unwaited++;
++					}
 +					(ok ? n_run : n_dropped)++;
-+					if (((n_run + n_dropped) & 0x3ffu) == 1) journal("refit guard: %" PRIu64 " run, %" PRIu64 " held back (incomplete or unknown trees)\n", n_run.load(), n_dropped.load());
++					if (((n_run + n_dropped) & 0x3ffu) == 1)
++						journal("refit guard: %" PRIu64 " run, %" PRIu64 " held back (incomplete or unknown trees, or a given-up wait: %" PRIu64 ")\n", n_run.load(), n_dropped.load(),
++						        n_unwaited.load());
 +					if (!ok) {
 +						opt.drop_offsets.push_back(q);
 +						q += len;
@@ -8227,7 +8244,12 @@ index 0000000..d40b0ba
 +					const bool        too_many_groups = v[0] > 65536u * 64u || v[1] > 65536u * 64u || v[2] > 65536u * 64u ||
 +					                             static_cast<uint64_t>(v[0]) * v[1] > 65536ull * 64ull ||
 +					                             static_cast<uint64_t>(v[0]) * v[1] * v[2] > 65536ull * 64ull;
-+					const bool insane = op == 0x16 ? (!trust_dispatch && too_many_groups)
++					const bool gpu_checked = gpu_check && op == 0x16 && (mec || base1 != 0); // experiment 0052
++					if (gpu_checked && too_many_groups && !trust_dispatch) {
++						static std::atomic<uint64_t> n_deferred {0};
++						if ((n_deferred++ & 0xffffu) == 0) journal("gpu check: %" PRIu64 " dispatches left to the CP that the host would have dropped\n", n_deferred.load());
++					}
++					const bool insane = op == 0x16 ? (!trust_dispatch && !gpu_checked && too_many_groups)
 +					                               : (v[0] > max_count || v[1] > 1024u || static_cast<uint64_t>(v[0]) * v[1] > max_count);
 +					if (survey) journal("  indirect op %02x at %u: base 0x%" PRIx64 " +0x%x -> %u %u %u %u %u%s pgm 0x%" PRIx64 "\n", op, q, base1, ib[q + 1], v[0], v[1], v[2], v[3], v[4],
 +					                    insane ? " DROPPED" : "", pgm);
@@ -8570,6 +8592,16 @@ index 0000000..d40b0ba
 +	};
 +	auto r = g_dev->submit(std::span<const uint32_t>(sub_ib, sub_n), opt, 2'000'000'000ull, with_gds);
 +	mec_back(r.executed_offsets);
++	if (opt.gpu_check_indirect) { // experiment 0052
++		static std::atomic<uint64_t> checked {0}, unbased {0}, skipped {0}, ibs {0};
++		checked += r.filter.gpu_checks;
++		unbased += r.filter.gpu_check_unbased;
++		skipped += r.filter.gpu_check_skipped;
++		if ((ibs++ & 0x3fffu) == 0) {
++			journal("gpu check: %" PRIu64 " dispatches checked by the CP, %" PRIu64 " without a base, %" PRIu64 " NOP-ed (a COND_EXEC range too long)\n", checked.load(), unbased.load(),
++			        skipped.load());
++		}
++	}
 +	// -EFAULT is not a GPU hang: a userptr BO in the list lost its pages (the guest unmapped
 +	// or re-protected the range since the last sync). Revalidate the mappings now and retry once.
 +	bool retried = false;

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 #include "bc5/direct.hpp"
+#include "bc5/indirect_check.hpp"
 
 #include <amdgpu.h>
 #include <amdgpu_drm.h>
@@ -614,7 +615,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     // same before an indirect draw or dispatch whose arguments the GPU wrote (Mesa
     // PKT3_PFP_SYNC_ME, TODO(verify) the lines). Inserting dwords moves every offset after it, so
     // an IB with COND_EXEC (whose skip counts are offsets) is left as it is.
-    if (opt.mec_indirect_base != 0 || opt.pfp_sync_indirect) {
+    if ((opt.mec_indirect_base != 0 || opt.pfp_sync_indirect) && !opt.gpu_check_indirect) {
         bool has_cond_exec = false;
         std::size_t dispatches = 0;
         for (std::size_t i = 0; i < main_out.size();) {
@@ -701,6 +702,18 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
             r.filter.dma_syncs += added;
         }
     }
+    // Experiment 0052: the group counts checked by the CP when it runs the dispatch (after the
+    // DMA waits above: a COND_EXEC must skip exactly the dispatch). The flag lives in this job's
+    // scratch, after the last piece; its address is filled in once the slot is known.
+    std::vector<std::size_t> flag_refs;
+    if (opt.gpu_check_indirect) {
+        indirect_check::Stats st;
+        main_out = indirect_check::apply(main_out, opt.mec_indirect_base, opt.gpu_check_max,
+                                         flag_refs, st);
+        r.filter.gpu_checks += st.checked;
+        r.filter.gpu_check_unbased += st.unbased;
+        r.filter.gpu_check_skipped += st.conditional;
+    }
     if (dma_idle_) {
         // PKT3(DMA_DATA, 5, 0); CP_SYNC | SRC_SEL and DST_SEL "address using L2"; no addresses;
         // zero bytes — as si_emit_cp_dma(sctx, cs, 0, 0, 0, CP_DMA_SYNC) emits it (Mesa 0866ae7).
@@ -721,7 +734,8 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
         }
     }
     const Piece &last = pieces.back();
-    const std::uint64_t bytes = (last.off + last.padded) * sizeof(std::uint32_t);
+    const std::size_t flag_off = last.off + last.padded; // experiment 0052: 8 dwords
+    const std::uint64_t bytes = (flag_off + (flag_refs.empty() ? 0 : 8)) * sizeof(std::uint32_t);
     r.prep_nested_ms = now_ms() - t_phase; // the survey; the nested filters are added below
     t_phase = now_ms();
     if (!impl_->scratch_reserve(bytes)) {
@@ -730,6 +744,10 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     }
     if (impl_->image.size() < bytes / sizeof(std::uint32_t)) impl_->image.resize(bytes / sizeof(std::uint32_t));
     auto *dst = impl_->image.data();
+    if (!flag_refs.empty()) {
+        indirect_check::patch(main_out, flag_refs, impl_->slots[impl_->cur].va + flag_off * 4);
+        for (std::size_t i = 0; i < 8; ++i) dst[flag_off + i] = 0;
+    }
     for (std::size_t i = 0; i < pro; ++i) dst[i] = opt.prologue[i];
     for (std::size_t i = pro; i < pro_padded; ++i) dst[i] = policy::kNop;
     for (std::size_t k = 0; k < pieces.size(); ++k) {

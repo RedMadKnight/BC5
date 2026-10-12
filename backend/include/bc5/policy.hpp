@@ -64,6 +64,9 @@ struct FilterStats {
     std::uint64_t cs_done_rewrites = 0; // RELEASE_MEM CS_DONE/index 6 without data -> BOTTOM_OF_PIPE_TS/5
     std::uint64_t gcr_rewrites = 0;     // ACQUIRE_MEM with FilterOptions::gcr_clear bits cleared
     std::uint64_t dma_syncs = 0;        // CP DMA waits inserted before dispatches (Device::submit)
+    std::uint64_t gpu_checks = 0;       // DISPATCH_INDIRECT checked by the CP (gpu_check_indirect)
+    std::uint64_t gpu_check_unbased = 0; // the same without a known base: PFP_SYNC_ME only
+    std::uint64_t gpu_check_skipped = 0; // NOP-ed instead: a COND_EXEC range grew past its count
     // IB offsets (dwords) where a SAMPLE_PIPELINESTAT took a dropped marker's place
     // (FilterOptions::stat_sample_va); sample k went to stat_sample_va + k * kStatSampleStride.
     std::vector<std::uint32_t> stat_sample_offsets;
@@ -86,6 +89,12 @@ struct FilterOptions {
     // compute IBs of experiment 0039): the prefetch parser must not read arguments the GPU is
     // still writing. Device::submit; an IB with COND_EXEC is left alone.
     bool pfp_sync_indirect = false;
+    // Experiment 0052: the CP checks every DISPATCH_INDIRECT's group counts when it runs it
+    // (bc5/indirect_check.hpp) and skips the dispatch if one exceeds gpu_check_max; a PFP_SYNC_ME
+    // goes before each, as with pfp_sync_indirect. Device::submit; the IB's own COND_EXEC counts
+    // grow by what is inserted in their ranges. The base of a rebuilt compute IB is mec_indirect_base.
+    bool gpu_check_indirect = false;
+    std::uint32_t gpu_check_max[3] = {1u << 20, 1u << 10, 1u << 10};
     bool drop_draws = false;             // staging (ADR 0005 §5c): NOP every draw and dispatch
     // CONTEXT_CONTROL as RADV/radeonsi emit it (0x80000000 0x80000000: update the enables, load
     // and shadow nothing). The console's 0x91018003/0x80018003 asks the CP to load and shadow
