@@ -379,3 +379,19 @@ TEST_CASE("filter: dropped markers become pipeline-statistics samples on request
     CHECK(plain.stat_sample_offsets.empty());
     CHECK(out[0] == kNop);
 }
+
+TEST_CASE("indirect multi draws: the count address is an operand only when it is used", "[policy]") {
+    // DRAW_INDIRECT_MULTI: offset, vertex-offset reg, start-instance reg, draw-id reg | flags,
+    // draw count, count address lo/hi, stride, draw initiator (Mesa radv_cmd_buffer.c).
+    std::vector<std::uint32_t> pkt = {0xC0082C00u, 0, 0x4c, 0x4d, 0x4e, 16, 0x1000u, 0x12u, 16, 2};
+    CHECK(policy::memory_operands(pkt.data(), 10).empty());
+    pkt[4] |= 1u << 30; // COUNT_INDIRECT_ENABLE
+    const auto ops = policy::memory_operands(pkt.data(), 10);
+    REQUIRE(ops.size() == 1);
+    CHECK(ops[0].first == 0x12'0000'1000ull);
+    CHECK(ops[0].second == 4);
+    CHECK(policy::Policy::builtin().op(0x2c) == policy::Verdict::Pass);
+    CHECK(policy::Policy::builtin().op(0x38) == policy::Verdict::Pass);
+    CHECK(policy::Policy::builtin().op(0x24) == policy::Verdict::Pass);
+    CHECK(policy::is_draw_or_dispatch(0x2c));
+}

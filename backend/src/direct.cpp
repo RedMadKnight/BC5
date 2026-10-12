@@ -690,7 +690,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     if (opt.gpu_check_indirect) {
         indirect_check::Stats st;
         main_out = indirect_check::apply(main_out, opt.mec_indirect_base, opt.gpu_check_max,
-                                         flag_refs, st);
+                                         opt.gpu_check_draw_max, flag_refs, st);
         r.filter.gpu_checks += st.checked;
         r.filter.gpu_check_unbased += st.unbased;
         r.filter.gpu_check_skipped += st.conditional;

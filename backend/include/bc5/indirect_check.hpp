@@ -40,16 +40,19 @@ struct Stats {
     std::uint32_t inserted_dwords = 0; // growth of the IB
 };
 
-// Dwords inserted before a checked dispatch.
+// Dwords inserted before a checked dispatch (three counts) and a checked draw (two).
 inline constexpr std::size_t kCheckDwords = 5 + 3 * 9 + 5 + 2 + 5;
+inline constexpr std::size_t kDrawCheckDwords = 5 + 2 * 9 + 5 + 2 + 5;
 
 // ib: a filtered IB. base: the SET_BASE index-1 base in effect at its start (0 = unknown).
-// max: the largest group count accepted per dimension. flag_refs receives the positions (in the
-// returned IB) of the flag address pairs (lo, hi); patch() fills them in once the flag's GPU
-// address is known (two dwords: the flag and the confirm word after it).
+// max: the largest group count accepted per dimension; draw_max: the largest vertex (index) count
+// and instance count of a DRAW_INDIRECT / DRAW_INDEX_INDIRECT, checked the same way (0054).
+// flag_refs receives the positions (in the returned IB) of the flag address pairs (lo, hi); patch()
+// fills them in once the flag's GPU address is known (two dwords: the flag and the confirm word
+// after it).
 std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib, std::uint64_t base,
-                                 const std::uint32_t (&max)[3], std::vector<std::size_t> &flag_refs,
-                                 Stats &stats);
+                                 const std::uint32_t (&max)[3], const std::uint32_t (&draw_max)[2],
+                                 std::vector<std::size_t> &flag_refs, Stats &stats);
 
 void patch(std::span<std::uint32_t> ib, const std::vector<std::size_t> &flag_refs,
            std::uint64_t flag_va);

@@ -10,6 +10,7 @@ using namespace bc5;
 
 namespace {
 constexpr std::uint32_t kMax[3] = {1u << 20, 1u << 10, 1u << 10};
+constexpr std::uint32_t kDrawMax[2] = {1u << 22, 1024};
 constexpr std::uint32_t kNop = 0xC0001000u;              // PKT3(NOP, 0, 0) + one dword
 constexpr std::uint32_t kDispatchIndirect = 0xC0011600u; // PKT3(DISPATCH_INDIRECT, 1, 0)
 } // namespace
@@ -20,7 +21,7 @@ TEST_CASE("indirect_check: a dispatch with a known base gets the CP check", "[in
                                            kDispatchIndirect, 0x40u, 0x41u};
     std::vector<std::size_t> refs;
     indirect_check::Stats st;
-    auto out = indirect_check::apply(ib, 0, kMax, refs, st);
+    auto out = indirect_check::apply(ib, 0, kMax, kDrawMax, refs, st);
     REQUIRE(st.checked == 1);
     REQUIRE(out.size() == ib.size() + indirect_check::kCheckDwords);
     CHECK(st.inserted_dwords == indirect_check::kCheckDwords);
@@ -61,7 +62,7 @@ TEST_CASE("indirect_check: the caller's base, no base, and the IB's own COND_EXE
     {
         std::vector<std::size_t> refs;
         indirect_check::Stats st;
-        auto out = indirect_check::apply(ib, 0x2'0000'0000ull, kMax, refs, st);
+        auto out = indirect_check::apply(ib, 0x2'0000'0000ull, kMax, kDrawMax, refs, st);
         CHECK(st.checked == 1);
         CHECK(out[7] == 0x40u); // the first COND_WRITE (after WRITE_DATA) polls base + offset
         CHECK(out[8] == 0x2u);
@@ -69,7 +70,7 @@ TEST_CASE("indirect_check: the caller's base, no base, and the IB's own COND_EXE
     {
         std::vector<std::size_t> refs;
         indirect_check::Stats st;
-        auto out = indirect_check::apply(ib, 0, kMax, refs, st);
+        auto out = indirect_check::apply(ib, 0, kMax, kDrawMax, refs, st);
         CHECK(st.checked == 0);
         CHECK(st.unbased == 1);
         CHECK(refs.empty());
@@ -83,7 +84,7 @@ TEST_CASE("indirect_check: the caller's base, no base, and the IB's own COND_EXE
         cond.insert(cond.begin(), {0xC0032200u, 0x1000u, 0u, 0u, 3u});
         std::vector<std::size_t> refs;
         indirect_check::Stats st;
-        auto out = indirect_check::apply(cond, 0x2'0000'0000ull, kMax, refs, st);
+        auto out = indirect_check::apply(cond, 0x2'0000'0000ull, kMax, kDrawMax, refs, st);
         CHECK(st.checked == 1);
         REQUIRE(out.size() == cond.size() + indirect_check::kCheckDwords);
         CHECK(out[0] == 0xC0032200u);
@@ -93,7 +94,7 @@ TEST_CASE("indirect_check: the caller's base, no base, and the IB's own COND_EXE
         std::vector<std::uint32_t> before = {0xC0032200u, 0x1000u, 0u, 0u, 2u, kNop, 0u};
         before.insert(before.end(), ib.begin(), ib.end());
         refs.clear();
-        out = indirect_check::apply(before, 0x2'0000'0000ull, kMax, refs, st);
+        out = indirect_check::apply(before, 0x2'0000'0000ull, kMax, kDrawMax, refs, st);
         CHECK(out[4] == 2u);
     }
 }
@@ -112,4 +113,25 @@ TEST_CASE("insert_before: packets inserted, COND_EXEC counts grown around them",
     CHECK(ib[14] == kDispatchIndirect);
     CHECK(ib[17] == 0xC0055000u);
     CHECK(ib[24] == kDispatchIndirect);
+}
+
+TEST_CASE("indirect_check: indirect draws get the check of their two counts", "[indirect_check]") {
+    // SET_BASE index 1, DRAW_INDIRECT (offset 0x20, two SH register offsets, initiator).
+    const std::vector<std::uint32_t> ib = {0xC0021100u, 1u,    0x1000u, 0x12u, 0xC0032400u,
+                                           0x20u,       0x4cu, 0x4du,   2u};
+    std::vector<std::size_t> refs;
+    indirect_check::Stats st;
+    auto out = indirect_check::apply(ib, 0, kMax, kDrawMax, refs, st);
+    REQUIRE(st.checked == 1);
+    REQUIRE(out.size() == ib.size() + indirect_check::kDrawCheckDwords);
+    CHECK(refs.size() == 5);
+    CHECK(out[4 + 5] == 0xC0074500u); // COND_WRITE on the vertex count
+    CHECK(out[4 + 5 + 2] == 0x1020u);
+    CHECK(out[4 + 5 + 4] == (1u << 22));
+    CHECK(out[4 + 14 + 2] == 0x1024u); // and on the instance count
+    CHECK(out[4 + 14 + 4] == 1024u);
+    const std::size_t cond = 4 + indirect_check::kDrawCheckDwords - 5;
+    CHECK(out[cond] == 0xC0032200u);
+    CHECK(out[cond + 4] == 5u); // COND_EXEC over the 5-dword draw
+    CHECK(out[cond + 5] == 0xC0032400u);
 }
