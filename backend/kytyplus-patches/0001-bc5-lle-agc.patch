@@ -4157,10 +4157,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..6d06876
+index 0000000..5b2e683
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,5823 @@
+@@ -0,0 +1,5873 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -7317,6 +7317,53 @@ index 0000000..6d06876
 +
 +// After a fence timeout: learn the fault, and with BC5_DIRECT_REOPEN=1 wait out the kernel's reset and
 +// open a fresh device. The caller holds g_dev_mutex.
++// Experiment 0058: BC5_DIRECT_UMR_ON_TIMEOUT=1 — at the host's fence timeout (2 s), before anything
++// else and long before the kernel's own timeout and ring reset, the waves still on the GPU are
++// dumped with umr on the host (the emulator runs in a container): halted SQ, the gfx ring searched
++// for the shaders they run, disassembly. Output in the capture directory, synced to disk at once
++// (a reset after a hang without a page fault has taken the machine down). The first two only.
++static void umr_on_timeout() {
++	static const bool on = std::getenv("BC5_DIRECT_UMR_ON_TIMEOUT") != nullptr;
++	static std::atomic<int> n {0};
++	if (!on || n.load() >= 2) return;
++	const int k = n++;
++	if (k >= 2) return;
++	const std::string dir = g_dump_dir.empty() ? std::string(std::getenv("HOME") ? std::getenv("HOME") : ".") + "/bc5-work" : g_dump_dir;
++	char cmd[1024];
++	std::snprintf(cmd, sizeof(cmd),
++	              "(distrobox-host-exec sudo -n /usr/local/bin/bc5-gpu-hang-dump || distrobox-host-exec sudo -n /usr/bin/umr -O halt_waves -wa gfx_0.0.0) > %s/umr-waves-%d.txt 2>&1; "
++	              "sync",
++	              dir.c_str(), k);
++	const int rc = std::system(cmd);
++	if (FILE* f = journal_min_file(true); f != nullptr) {
++		std::fprintf(f, "umr: waves dumped to %s/umr-waves-%d.txt (rc %d)\n", dir.c_str(), k, rc);
++		std::fflush(f);
++		fsync(fileno(f));
++	}
++}
++
++// Experiment 0058: the kernel resets the gfx ring ~2 s after a job hangs on it — at the moment the
++// host's own 2 s fence wait gives up — so a dump at the host's timeout shows the ring after the
++// reset (run 267). A watchdog dumps instead once a completion wait has lasted 0.9 s.
++static std::atomic<uint64_t> g_fence_wait_since {0}; // SoftCp::now_ns() at the start of a completion wait, 0 = none
++static void umr_watchdog_start() {
++	static const bool on = std::getenv("BC5_DIRECT_UMR_ON_TIMEOUT") != nullptr;
++	if (!on) return;
++	static std::once_flag once;
++	std::call_once(once, [] {
++		std::thread([] {
++			for (;;) {
++				std::this_thread::sleep_for(std::chrono::milliseconds(20));
++				const uint64_t t0 = g_fence_wait_since.load();
++				if (t0 != 0 && SoftCp::now_ns() - t0 > 900'000'000ull) {
++					umr_on_timeout();
++					while (g_fence_wait_since.load() == t0) std::this_thread::sleep_for(std::chrono::milliseconds(20));
++				}
++			}
++		}).detach();
++	});
++}
++
 +static void recover_after_timeout(const bc5::direct::SubmitResult& r) {
 +		LOGF_COLOR(Log::Color::Red, "[bc5-direct] fence timeout: fault 0x%" PRIx64 " status 0x%08x\n", r.fault_addr, r.fault_status);
 +		journal("timeout: fault 0x%" PRIx64 " status 0x%08x\n", r.fault_addr, r.fault_status);
@@ -7583,7 +7630,10 @@ index 0000000..6d06876
 +			while (g_recovering.load()) std::this_thread::sleep_for(std::chrono::milliseconds(1));
 +			if (g_dev && j.dev_gen == g_dev_gen.load()) {
 +				std::shared_lock finish_lock(g_finish_mutex);
++				umr_watchdog_start(); // experiment 0058
++				g_fence_wait_since = j.queued_ns != 0 ? j.queued_ns : SoftCp::now_ns(); // from the job's submission: the kernel resets ~2 s after it hangs
 +				if (g_dev) r = g_dev->finish(j.seq, j.slot, 2'000'000'000ull);
++				g_fence_wait_since = 0;
 +			} else {
 +				r.rc = -125; // -ECANCELED: the device it was queued on is gone
 +			}
