@@ -267,7 +267,10 @@ page of its arguments), `PFP_SYNC_ME` and the GFX-form dispatch; the drop list a
 offsets are mapped between the two layouts; an IB with COND_EXEC has these dispatches dropped.
 `BC5_DIRECT_MEC_ONLY_PGM` / `BC5_DIRECT_MEC_SKIP_PGM` (hex lists of compute program addresses,
 COMPUTE_PGM_LO/HI) choose which run; the journal names each program once ("mec pgm").
-Experiment 0058 (in progress): `BC5_DIRECT_UMR_ON_TIMEOUT=1` runs the root-owned read-only
+Experiment 0059 (in progress): `BC5_DIRECT_SKIP_PGM=<hex list>` drops every dispatch of these
+programs in any buffer; `BC5_DIRECT_SNAP=<va>:<bytes>:<every>` copies guest memory every <every>
+submissions to the capture directory (8 files in turn, fsync'd; private data).
+Experiment 0058: `BC5_DIRECT_UMR_ON_TIMEOUT=1` runs the root-owned read-only
 `/usr/local/bin/bc5-gpu-hang-dump` (umr waves, CP registers, the gfx ring; fence info) on the
 host through `distrobox-host-exec sudo -n` once a job has waited 0.9 s since its submission (at
 most twice a run); the kernel's own ring reset comes ~2 s after a hang.

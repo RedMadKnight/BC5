@@ -4157,10 +4157,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..5b2e683
+index 0000000..948be2d
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,5873 @@
+@@ -0,0 +1,5916 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -8192,6 +8192,35 @@ index 0000000..5b2e683
 +	// Experiment 0037: the device keeps this list sorted and rebuilds it only when a mapping
 +	// changes (a copy and a sort of 12,000 mappings per submission before).
 +	aliases_apply(false); // experiment 0056
++	// Experiment 0059: BC5_DIRECT_SNAP=<va>:<bytes>:<every> copies guest memory [va, va + bytes) every
++	// <every> submissions to <capture dir>/snap-<k mod 8>.bin, fsync'd (a hang can take the machine
++	// down), with a journal line naming the submission; for the bad tree the second title's
++	// reflection traversal loops on (experiment 0058). Private data, never committed.
++	{
++		static const auto snap = [] {
++			struct Cfg {
++				uint64_t va = 0, bytes = 0, every = 0;
++			} c;
++			if (const char* e = std::getenv("BC5_DIRECT_SNAP"); e != nullptr) {
++				unsigned long long a = 0, b = 0, n = 0;
++				if (std::sscanf(e, "%llx:%llu:%llu", &a, &b, &n) == 3) c = {a, b, n == 0 ? 1 : n};
++			}
++			return c;
++		}();
++		static std::atomic<uint64_t> snap_k {0};
++		if (snap.bytes != 0 && !g_dump_dir.empty() && (g_submits.load() % snap.every) == 0 && covered_sorted(*g_dev->sorted_mappings(), snap.va, snap.bytes)) {
++			const uint64_t k = snap_k++;
++			char name[512];
++			std::snprintf(name, sizeof(name), "%s/snap-%" PRIu64 ".bin", g_dump_dir.c_str(), k % 8);
++			if (FILE* f = std::fopen(name, "wb"); f != nullptr) {
++				std::fwrite(reinterpret_cast<const void*>(snap.va), 1, snap.bytes, f);
++				std::fflush(f);
++				fsync(fileno(f));
++				std::fclose(f);
++				journal("snap %" PRIu64 " -> snap-%" PRIu64 ".bin before #%" PRIu64 " at t %.3f s\n", k, k % 8, g_submits.load(), timing_now());
++			}
++		}
++	}
 +	// Experiment 0057: BC5_DIRECT_IB_DUMP=<min>:<max>:<t0>:<count>[:<dir>] writes the first <count>
 +	// buffers of <min>..<max> dwords submitted from <t0> s on, as the game wrote them, to
 +	// <dir>/ib-<submission>-<kind>-<dwords>.bin (default: the capture directory). For offline
@@ -8456,6 +8485,20 @@ index 0000000..5b2e683
 +				opt.drop_offsets.push_back(q);
 +				q += len;
 +				continue;
++			}
++			// Experiment 0059: BC5_DIRECT_SKIP_PGM=<hex list> drops every dispatch (DISPATCH_DIRECT and both
++			// forms of DISPATCH_INDIRECT, in any kind of buffer) of these compute programs — e.g. the
++			// second title's ray-traced-reflection traversal 0x11d049aa00, which loops forever on a bad
++			// tree once its multi-draw packets run (experiment 0058).
++			{
++				static const std::set<uint64_t> any_skip = pgm_list("BC5_DIRECT_SKIP_PGM");
++				if (!any_skip.empty() && type == 3 && (op == 0x15 || op == 0x16) && any_skip.count(pgm) != 0) {
++					static std::atomic<uint64_t> n_skipped {0};
++					if ((n_skipped++ & 0xfffu) == 0) journal("  skip pgm 0x%" PRIx64 ": %s dispatch op %02x at %u dropped (%" PRIu64 " so far)\n", pgm, kind, op, q, n_skipped.load());
++					opt.drop_offsets.push_back(q);
++					q += len;
++					continue;
++				}
 +			}
 +			if (type == 3 && (op == 0x2c || op == 0x38) && len >= 10 && ib[q + 5] > 65536u) { // experiment 0054
 +				static std::atomic<uint64_t> n_multi {0};
