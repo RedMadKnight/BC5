@@ -267,6 +267,9 @@ page of its arguments), `PFP_SYNC_ME` and the GFX-form dispatch; the drop list a
 offsets are mapped between the two layouts; an IB with COND_EXEC has these dispatches dropped.
 `BC5_DIRECT_MEC_ONLY_PGM` / `BC5_DIRECT_MEC_SKIP_PGM` (hex lists of compute program addresses,
 COMPUTE_PGM_LO/HI) choose which run; the journal names each program once ("mec pgm").
+Experiment 0057: `BC5_DIRECT_INDIRECT_DRAWS=1` lets only `DRAW_INDIRECT` through (`=multi` also the
+multi-draw packets); indirect draws checked at ≤ 2^20 vertices, ≤ 64 instances;
+`BC5_DIRECT_IB_DUMP=<min>:<max>:<t0>:<count>[:<dir>]` dumps buffers of a size range (private).
 Experiment 0056: `BC5_DIRECT_ALIASES=1` maps the memory of the windows in
 `~/bc5-work/direct-aliases-pkg.txt` ("byte lo size") again at (byte << 40) + address (backend
 `Device::map_alias`); unverified and dangerous with the indirect draws (F110).
