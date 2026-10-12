@@ -4157,10 +4157,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..616f998
+index 0000000..6d06876
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,5783 @@
+@@ -0,0 +1,5823 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -8142,6 +8142,37 @@ index 0000000..616f998
 +	// Experiment 0037: the device keeps this list sorted and rebuilds it only when a mapping
 +	// changes (a copy and a sort of 12,000 mappings per submission before).
 +	aliases_apply(false); // experiment 0056
++	// Experiment 0057: BC5_DIRECT_IB_DUMP=<min>:<max>:<t0>:<count>[:<dir>] writes the first <count>
++	// buffers of <min>..<max> dwords submitted from <t0> s on, as the game wrote them, to
++	// <dir>/ib-<submission>-<kind>-<dwords>.bin (default: the capture directory). For offline
++	// decoding (bc5-agc) of the buffer that hangs; the files stay private.
++	{
++		static const auto ibd = [] {
++			struct Cfg {
++				uint32_t    lo = 0, hi = 0, count = 0;
++				double      t0 = 0;
++				std::string dir;
++			} c;
++			if (const char* e = std::getenv("BC5_DIRECT_IB_DUMP"); e != nullptr) {
++				char dir[400] = {};
++				const int n = std::sscanf(e, "%u:%u:%lf:%u:%399s", &c.lo, &c.hi, &c.t0, &c.count, dir);
++				if (n >= 4) c.dir = n == 5 ? std::string(dir) : g_dump_dir;
++			}
++			return c;
++		}();
++		static std::atomic<uint32_t> ibd_n {0};
++		if (ibd.count != 0 && !ibd.dir.empty() && num_dwords >= ibd.lo && num_dwords <= ibd.hi && timing_now() >= ibd.t0 && ibd_n.load() < ibd.count) {
++			const uint32_t k = ibd_n++;
++			if (k < ibd.count) {
++				char name[512];
++				std::snprintf(name, sizeof(name), "%s/ib-%08" PRIu64 "-%.8s-%u.bin", ibd.dir.c_str(), g_submits.load(), kind, num_dwords);
++				if (FILE* f = std::fopen(name, "wb"); f != nullptr) {
++					std::fwrite(ib, sizeof(uint32_t), num_dwords, f);
++					std::fclose(f);
++				}
++			}
++		}
++	}
 +	std::shared_ptr<const std::vector<bc5::direct::Mapping>> maps_p = g_dev->sorted_mappings();
 +	shader_dump(ib, num_dwords, *maps_p); // experiment 0049
 +	bc5::policy::FilterOptions opt;
@@ -8229,10 +8260,19 @@ index 0000000..616f998
 +		// Experiment 0054: DRAW_INDIRECT (0x24), DRAW_INDIRECT_MULTI (0x2c) and
 +		// DRAW_INDEX_INDIRECT_MULTI (0x38) pass the backend's policy now; they stay dropped here
 +		// unless BC5_DIRECT_INDIRECT_DRAWS=1 (the second title draws its scene with them).
-+		if (std::getenv("BC5_DIRECT_INDIRECT_DRAWS") == nullptr) v.insert(v.end(), {0x24, 0x2c, 0x38});
++		// Experiment 0057: "=1" lets DRAW_INDIRECT through only; the multi-draw packets, whose per-draw
++		// arguments nobody checks, need "=multi".
++		const char* idraws = std::getenv("BC5_DIRECT_INDIRECT_DRAWS");
++		if (idraws == nullptr) v.insert(v.end(), {0x24, 0x2c, 0x38});
++		else if (std::strcmp(idraws, "multi") != 0) v.insert(v.end(), {0x2c, 0x38});
 +		return v;
 +	}();
 +	opt.extra_drop = extra;
++	// Experiment 0057: an indirect draw's counts as the CP checks them: at most 2^20 vertices (the
++	// second title's largest is 94,322) and 64 instances (it draws one); 2^22 x 1024 let a draw on
++	// stale arguments run for seconds.
++	opt.gpu_check_draw_max[0] = 1u << 20;
++	opt.gpu_check_draw_max[1] = 64;
 +	opt.keep_wait_offsets.clear(); // experiment 0055
 +	for (const uint32_t* w: t_keep_waits) {
 +		if (w >= ib && w < ib + num_dwords) opt.keep_wait_offsets.push_back(static_cast<uint32_t>(w - ib));

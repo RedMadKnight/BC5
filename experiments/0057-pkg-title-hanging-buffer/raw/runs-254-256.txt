@@ -1,0 +1,47 @@
+run 254: kyty exit 124 after 241 s; faults: none; failed 0; last submit at 238.721 s; access violations 0; 250 s on: frames 0 fps 0.00 (/home/kjaniszewski/bc5-data/captures/pkg-20261012-1751)
+series done
+run 256: kyty exit 124 after 201 s; faults: none; failed 0; last submit at 198.464 s; access violations 0; 250 s on: frames 0 fps 0.00 (/home/kjaniszewski/bc5-data/captures/pkg-20261012-1806)
+series done
+== run 255 (pkg-20261012-1757)
+aliases: 1 windows, 96.0 MiB mapped again under their address bytes
+submit #266509 dcb 2533 dwords at 0x11e0d10050: pass 228 rewrite 59 drop 83 unmapped 0 cc 0 mappings 13318 ... FAILED rc 0 TIMEOUT 2022.03 ms
+submit #266513 acb 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 13318 ... FAILED rc 0 TIMEOUT 2021.01 ms
+frames per 5 s: 0:37 5:7 10:38 15:87 20:100 25:100 30:100 35:98 40:100 45:66 50:2 55:15 60:28 65:24 70:102 75:106 80:87 85:110 90:108 95:108 100:76 105:109 110:109 115:101 120:97 125:96 130:108 135:108 140:108 145:72 150:6
+== bc5-agc report of the dumped 2588-dword DCB (run 256)
+streams: 1  packets: 375
+known opcodes (22):
+  0x10 NOP                          1
+  0x11 SET_BASE                     26
+  0x12 CLEAR_STATE                  1
+  0x13 INDEX_BUFFER_SIZE            1
+  0x15 DISPATCH_DIRECT              1
+  0x1e ATOMIC_MEM                   1
+  0x22 COND_EXEC                    1
+  0x24 DRAW_INDIRECT                23
+  0x26 INDEX_BASE                   3
+  0x27 DRAW_INDEX_2                 2
+  0x2c DRAW_INDIRECT_MULTI          1
+  0x2d DRAW_INDEX_AUTO              6
+  0x2f NUM_INSTANCES                9
+  0x37 WRITE_DATA                   26
+  0x46 EVENT_WRITE                  5
+  0x49 RELEASE_MEM                  58
+  0x58 ACQUIRE_MEM                  3
+  0x63 LOAD_SH_REG_INDEX            28
+  0x76 SET_SH_REG                   49
+  0x79 SET_UCONFIG_REG              56
+  0x7a SET_UCONFIG_REG_INDEX        6
+  0x9f LOAD_CONTEXT_REG_INDEX       42
+unknown opcodes (1):
+  0x64 -                            26
+register writes: 65 named, 0 unresolved offsets
+cu-mask register writes (Q3): 0
+== its draws (offsets and register locations only)
+pkt      DISPATCH_DIRECT                      [0x00000010 0x00000010 0x00000001 0x00000041]
+pkt      DRAW_INDIRECT                        [0x001accc0 0x00000280 0x00000280 0x00000002]
+pkt      DRAW_INDIRECT                        [0x001acce0 0x00000280 0x00000280 0x00000002]
+pkt      DRAW_INDEX_AUTO                      [0x00000004 0x00000002]
+pkt      DRAW_INDEX_2                         [0x00000024 0x10008d54 0x00000012 0x00000024 0x00000000]
+pkt      DRAW_INDIRECT                        [0x001caf00 0x00000280 0x00000280 0x00000002]
+pkt      DRAW_INDIRECT                        [0x001caf20 0x00000280 0x00000280 0x00000002]
+pkt      DRAW_INDIRECT                        [0x001caf40 0x00000280 0x00000280 0x00000002]
