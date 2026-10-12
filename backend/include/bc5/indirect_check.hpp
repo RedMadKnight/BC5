@@ -54,4 +54,15 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib, std::uint64_
 void patch(std::span<std::uint32_t> ib, const std::vector<std::size_t> &flag_refs,
            std::uint64_t flag_va);
 
+// Packets to insert before the packet at dword offset `at` of an IB.
+struct Insert {
+    std::size_t at = 0;
+    std::vector<std::uint32_t> words;
+};
+
+// Inserts them (offsets ascending, each a packet start) and grows the IB's own COND_EXEC counts
+// by what lands inside their ranges (experiment 0052: Device::submit's CP DMA waits). Returns false
+// and leaves the IB unchanged if a count would no longer fit its 14 bits.
+bool insert_before(std::vector<std::uint32_t> &ib, const std::vector<Insert> &inserts);
+
 } // namespace bc5::indirect_check

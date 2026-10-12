@@ -97,3 +97,19 @@ TEST_CASE("indirect_check: the caller's base, no base, and the IB's own COND_EXE
         CHECK(out[4] == 2u);
     }
 }
+
+TEST_CASE("insert_before: packets inserted, COND_EXEC counts grown around them",
+          "[indirect_check]") {
+    // COND_EXEC over NOP(2 dwords) + dispatch (3 dwords), then a dispatch outside its range.
+    std::vector<std::uint32_t> ib = {
+        0xC0032200u, 0x1000u,           0u,    0u,   5u, kNop, 0u, kDispatchIndirect, 0x40u,
+        0x41u,       kDispatchIndirect, 0x80u, 0x41u};
+    const std::vector<std::uint32_t> wait = {0xC0055000u, 0xE0300000u, 0u, 0u, 0u, 0u, 0u};
+    REQUIRE(indirect_check::insert_before(ib, {{7, wait}, {10, wait}}));
+    REQUIRE(ib.size() == 13 + 14);
+    CHECK(ib[4] == 5u + 7u); // only the first wait lies in the range
+    CHECK(ib[7] == 0xC0055000u);
+    CHECK(ib[14] == kDispatchIndirect);
+    CHECK(ib[17] == 0xC0055000u);
+    CHECK(ib[24] == kDispatchIndirect);
+}
