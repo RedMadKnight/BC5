@@ -22,7 +22,7 @@ Every number has its experiment under `experiments/` and its finding in [`docs/H
 | Title | From | State | Frame rate | Record |
 | --- | --- | --- | --- | --- |
 | ASTRO BOT (the maintainer's own dump) | `.ffpfsc` container through `bc5-mount` | **fully playable**: intro, menus, every level the maintainer has played; controller with haptics and adaptive triggers; saves | 47–55 fps in the first level, 40–51 in the second (built for 60) | F43–F85 |
-| A second title (the maintainer's own copy; not named here) | PS5 debug package (`.pkg`, 101.8 GB) through `bc5-mount` | **loads and renders 3D**: about five minutes of loading, then its first 3D scene; 300–600 s runs end clean in nine of twelve, the others stop on a GPU fault; menu input not yet effective | 16–24 fps | F86–F92 |
+| A second title (the maintainer's own copy; not named here) | PS5 debug package (`.pkg`, 101.8 GB) through `bc5-mount` | **loads and renders 3D**: about 70 s of loading (from 95–155 s before experiment 0051), then its first 3D scene; 300–600 s runs end clean in nine of twelve, the others stop on a GPU fault; menu input not yet effective | 16–24 fps | F86–F92 |
 
 Which game formats are read:
 
@@ -168,11 +168,11 @@ Open:
 - [ ] **The second title's stops** (F90–F95). Its compute work runs and nine of twelve runs end clean; the others stop on a GPU fault. Open: where the wild addresses come from (the guest's layout in the faulting range is fixed, F96, and the heaps the GPU touches first are now imported), whether the PS5 GPU ignores virtual-address bits from 40 up (seven of 73 fault addresses are heap addresses with a junk top byte), and why one compute program (0x909939900, a bottom-up tree refit with atomic counters) does not finish on the single ring. The `LOAD_SH_REG_INDEX` before the stops turned out to be a no-op (F95).
 - [ ] **Console-specific packets and registers** (HANDOFF Q4). Parked while only ASTRO BOT ran; reopened by the second title: the compute-queue form of `DISPATCH_INDIRECT` (F90) and a zero-length `LOAD_SH_REG_INDEX` (F95). More important than any register so far was command-processor behaviour the console's system provides and `amdgpu` does not: `CLEAR_STATE` push/pop (F35), waiting for CP DMA (F41), register shadowing.
 - [ ] **The second title's menu**: whether it should show over the 3D backdrop; the scene renders and button presses after the first dialog change nothing.
-- [ ] **The second title's load**: about five minutes from start to the 3D scene, with the package's Kraken blocks decoded in software by `bc5-mount`; what paces it has not been measured. ASTRO BOT's answer (the host, not the storage, F84) may or may not carry over.
 - [ ] **Presentation without a copy**: the game's flip buffer is already a GPU buffer; today it is read back and drawn by the host's Vulkan side.
 
 Answered:
 
+- [x] **The second title's load.** About 70 s to the 3D scene now (experiment 0051, F105): most of the earlier 95–155 s were the host walking its own imported memory for a journal report, 25–80 s at a time on the game's thread; the storage was not the limit, as with ASTRO BOT (F84).
 - [x] **1:1 memory mapping.** Yes (experiment 0014, F23): a userptr BO mapped at GPU VA = CPU pointer works with zero copies. Since experiments 0017 and 0023 all guest memory is imported as dma-bufs of the host's memfds and mapped at the guest's addresses, without userptr's per-submission page walk (ADR 0006, F40, F55).
 - [x] **How RPCSX handles AGC.** It has no AGC parser; PS5 submits enter through `/dev/gc` ioctls carrying a `CONTEXT_CONTROL` packet, a state-preamble IB and the frame DCB (F12, F19). Track B therefore runs the game's own `libSceAgc` on an emulated `/dev/gc`.
 - [x] **Whether PS5 titles write CU masks themselves.** Yes (F21, F39): every compute dispatch writes `COMPUTE_STATIC_THREAD_MGMT_SE0..3` = 0xffffffff and the graphics stages load `RSRC3.CU_EN` = 0xffff; BC5's mask is ANDed into both. On the BC-250 bits 0–19 per shader engine are one CU each (experiment 0019). *Parked:* which CUs the graphics stages' 16-bit `CU_EN` selects; not needed to play.
@@ -346,7 +346,7 @@ All switches are listed in [`backend/kytyplus-patches/README.md`](backend/kytypl
 
 ### 7. What to expect
 
-With ASTRO BOT: the whole game as far as the maintainer has played it: intro videos, the title screen at 54–60 fps, a level load of about 18 s, the first level at about 50 fps and the second at about 40, haptics and adaptive triggers on the controller. With the second title (from its package, through `play-pkg.sh` or the settings in it): about five minutes of loading, then its first 3D scene at 16–24 fps; one run in four still stops on a GPU fault (F91, F95). With any other title: unknown; a game that links against a system library the host has no stand-in for stops there.
+With ASTRO BOT: the whole game as far as the maintainer has played it: intro videos, the title screen at 54–60 fps, a level load of about 18 s, the first level at about 50 fps and the second at about 40, haptics and adaptive triggers on the controller. With the second title (from its package, through `play-pkg.sh` or the settings in it): about 70 s of loading (from 95–155 s before experiment 0051), then its first 3D scene at 16–24 fps; one run in four still stops on a GPU fault (F91, F95). With any other title: unknown; a game that links against a system library the host has no stand-in for stops there.
 
 If it does not work:
 

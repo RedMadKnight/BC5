@@ -1,0 +1,21 @@
+run 217: kyty exit 124 after 301 s; faults: none; failed 0; last submit at 298.732 s; access violations 0; 250 s on: frames 935 fps 18.70 (pkg-20261012-0158)
+run 218: kyty exit 124 after 301 s; faults: none; failed 0; last submit at 298.323 s; access violations 0; 250 s on: frames 904 fps 18.08 (pkg-20261012-0203)
+run 219: kyty exit 124 after 301 s; faults: 0x401296a83000 ; failed 24; last submit at 166.829 s; access violations 0; 250 s on: frames 0 fps 0.00 (pkg-20261012-0209)
+
+pkg-20261009-2213: steady 3D from 100 s, longest gap before it 31.6 s
+pkg-20261009-2218: steady 3D from 140 s, longest gap before it 52.0 s
+pkg-20261009-2223: steady 3D from 120 s, longest gap before it 37.7 s
+pkg-20261010-0002: steady 3D from 95 s, longest gap before it 30.0 s
+pkg-20261011-2039: steady 3D from 155 s, longest gap before it 54.8 s
+pkg-20261012-0158: steady 3D from 70 s, longest gap before it 4.5 s
+pkg-20261012-0203: steady 3D from 70 s, longest gap before it 4.6 s
+pkg-20261012-0209: steady 3D from 70 s, longest gap before it 4.7 s
+
+== pkg-20261009-2213
+  63.898 long sync/hints: timing: t 63.898 s dcb 599 dwords: sync 30506.1 ms, hints 6.6 ms
+ 149.771 long sync/hints: timing: t 149.771 s dcb 140 dwords: sync (lazy) 55347.0 ms, hints 0.1 ms
+== pkg-20261011-2335
+  57.069 long sync/hints: timing: t 57.069 s dcb 140 dwords: sync (lazy) 30621.0 ms, hints 27.6 ms
+  92.829 long sync/hints: timing: t 92.829 s dcb 16 dwords: sync (lazy) 48104.4 ms, hints 7.8 ms
+ 149.505 long sync/hints: timing: t 149.505 s acb 430 dwords: sync 80397.8 ms, hints 7.7 ms
+== pkg-20261012-0158

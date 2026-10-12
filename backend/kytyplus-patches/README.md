@@ -267,6 +267,9 @@ page of its arguments), `PFP_SYNC_ME` and the GFX-form dispatch; the drop list a
 offsets are mapped between the two layouts; an IB with COND_EXEC has these dispatches dropped.
 `BC5_DIRECT_MEC_ONLY_PGM` / `BC5_DIRECT_MEC_SKIP_PGM` (hex lists of compute program addresses,
 COMPUTE_PGM_LO/HI) choose which run; the journal names each program once ("mec pgm").
+Experiment 0051: the `direct by name (growth)` breakdown (every 512 MiB of imports, a walk of
+every view with SEEK_DATA: 25–80 s on the game's thread while the second title loads) only with
+`BC5_DIRECT_BREAKDOWN=1`.
 Experiment 0050 (all off by default): `BC5_DIRECT_WATCH_PGM=<hex>` journals a compute program's
 dispatches and checks its ray tracing trees on the CPU after each job; `BC5_DIRECT_SPLIT_AT_PGM`
 sends its dispatches as jobs of their own; `BC5_DIRECT_TRUST_PGM=<hex list>` and
