@@ -1,0 +1,8 @@
+[ 2113.529319] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:88 vmid:6 pasid:120)
+[ 2113.529325] amdgpu 0000:01:00.0:  Process kyty_emulator pid 26085 thread Render Thread pid 26180
+[ 2113.529328] amdgpu 0000:01:00.0:   in page starting at address 0x00008011d0375000 from client 0x1b (UTCL2)
+[ 2113.529331] amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x006012B0
+[ 2728.965105] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:88 vmid:7 pasid:126)
+[ 2728.965114] amdgpu 0000:01:00.0:  Process kyty_emulator pid 39260 thread Render Thread pid 39392
+[ 2728.965117] amdgpu 0000:01:00.0:   in page starting at address 0x00008011d0374000 from client 0x1b (UTCL2)
+[ 2728.965120] amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x007012B0

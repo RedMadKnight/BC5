@@ -53,6 +53,7 @@ struct FilterStats {
     std::uint64_t extra_drops = 0;    // packets dropped by FilterOptions::extra_drop
     std::uint64_t reg_write_drops = 0; // WRITE_DATA with a register destination (DST_SEL 0)
     std::uint64_t unsatisfiable_wait_drops = 0; // WAIT_REG_MEM[64] on a label this IB never writes
+    std::uint64_t ring_ordered_waits = 0; // ... kept for the GPU (FilterOptions::keep_wait_offsets)
     std::uint64_t gds_drops = 0; // DMA_DATA / WRITE_DATA to or from GDS (FilterOptions::drop_gds)
     std::uint64_t gds_rewrites = 0; // GDS accesses redirected to the shadow buffer (gds_shadow_va)
     std::uint64_t offset_drops = 0; // packets dropped through FilterOptions::drop_offsets
@@ -113,6 +114,10 @@ struct FilterOptions {
     // passing WRITE_DATA/RELEASE_MEM/EVENT_WRITE_EOP/ATOMIC_MEM); other waits are dropped and
     // left to the host. A wait the GPU can never satisfy ends in the kernel's GPU timeout.
     bool self_waits_only = true;
+    // Experiment 0055: dword offsets of WAIT_REG_MEM[64] packets that pass although no earlier packet
+    // of the IB writes their label: the caller knows a job already on the ring ahead of this one
+    // will write a value that satisfies them.
+    std::vector<std::uint32_t> keep_wait_offsets;
     // Drop CP packets that read or write GDS (DMA_DATA SRC/DST_SEL 1, WRITE_DATA DST_SEL 3): the
     // context has no GDS unless a GDS BO is in its BO lists.
     bool drop_gds = true;

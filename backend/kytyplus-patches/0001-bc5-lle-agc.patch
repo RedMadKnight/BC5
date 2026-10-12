@@ -4157,10 +4157,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..a851fca
+index 0000000..b21707f
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,5560 @@
+@@ -0,0 +1,5714 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -4344,6 +4344,7 @@ index 0000000..a851fca
 +static std::mutex            g_unready_mutex;
 +static std::vector<uint64_t> g_unready_writes; // the labels that buffer writes past its wait
 +static bool acb_ready(const uint32_t* ib, uint32_t num_dwords);
++static bool ring_will_satisfy(const uint32_t* p, bool is64); // experiment 0055
 +static void journal(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
 +// Experiment 0024 (BC5_DIRECT_ASYNC=1): what has to follow a buffer's execution on the GPU — the
 +// soft CP's pass over it, a ring's read-pointer publication — runs through post(): at once when
@@ -6873,7 +6874,10 @@ index 0000000..a851fca
 +			else if (op == 0x1e && len >= 4) written.push_back((p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u));
 +			else if ((op == 0x3c || op == 0x93) && len >= 4 && ((p[1] >> 4u) & 1u) != 0) {
 +				const uint64_t label = (p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u);
-+				if (i >= done && std::find(written.begin(), written.end(), label) == written.end() && !wait_satisfied(p, op == 0x93)) {
++				// Experiment 0055: a wait the ring's pending writes will satisfy does not hold the buffer back.
++				static const bool ring_order = std::getenv("BC5_DIRECT_RING_ORDER_WAITS") != nullptr;
++				if (i >= done && std::find(written.begin(), written.end(), label) == written.end() && !wait_satisfied(p, op == 0x93) &&
++				    !(ring_order && ring_will_satisfy(p, op == 0x93))) {
 +					t_unready.ib         = ib;
 +					t_unready.num_dwords = num_dwords;
 +					t_unready.pos        = i;
@@ -6935,8 +6939,96 @@ index 0000000..a851fca
 +// arguments are checked again in it.
 +static thread_local bool t_wait_given_up = false;
 +
++// Experiment 0055 (BC5_DIRECT_RING_ORDER_WAITS=1): the label writes with immediate data
++// (RELEASE_MEM, EVENT_WRITE_EOP, WRITE_DATA to memory) of the jobs on the ring that have not
++// completed yet. A cross-queue wait whose label the last such write sets to a value that satisfies
++// it needs no CPU-side wait: the job that writes it runs ahead of this one on the one ring, so the
++// WAIT_REG_MEM stays in the buffer for the GPU (FilterOptions::keep_wait_offsets). The second
++// title's scene change: a label set to 0 by a compute job 14-15 ms after the graphics buffer's
++// 8 ms wait for it was given up, the compute job already submitted (run 244). As AnyPS5's
++// noteHeldAtSubmit treats a wait whose write is recorded but not finished.
++struct PendingLabelWrite {
++	uint64_t label;
++	uint64_t value;
++	uint64_t seq;
++	bool     is64;
++};
++static std::mutex                          g_plw_mutex;
++static std::vector<PendingLabelWrite>      g_plw;
++static thread_local std::vector<const uint32_t*> t_keep_waits;
++
++static void register_label_writes(const uint32_t* ib, uint32_t num_dwords, const std::vector<uint32_t>& executed, uint64_t seq) {
++	std::vector<PendingLabelWrite> found;
++	for (const uint32_t q: executed) {
++		if (q >= num_dwords) continue;
++		const uint32_t* w   = ib + q;
++		const uint32_t  h   = w[0];
++		const uint32_t  c   = (h >> 16u) & 0x3fffu;
++		const uint32_t  len = c == 0x3fffu ? 1 : c + 2;
++		const uint32_t  op  = (h >> 8u) & 0xffu;
++		if ((h >> 30u) != 3 || q + len > num_dwords) continue;
++		auto addr = [w](int lo, int hi) { return (static_cast<uint64_t>(w[lo]) & ~3ull) | (static_cast<uint64_t>(w[hi] & 0xffffu) << 32u); };
++		if (op == 0x49 && len >= 8) { // RELEASE_MEM: DATA_SEL dword 2 bits 31:29, address 3/4, data 5/6
++			const uint32_t ds = w[2] >> 29u;
++			if (ds == 1) found.push_back({addr(3, 4), w[5], seq, false});
++			if (ds == 2) found.push_back({addr(3, 4), w[5] | (static_cast<uint64_t>(w[6]) << 32u), seq, true});
++		} else if (op == 0x47 && len >= 6) { // EVENT_WRITE_EOP: DATA_SEL dword 3 bits 31:29, address 2/3, data 4/5
++			const uint32_t ds = w[3] >> 29u;
++			if (ds == 1) found.push_back({addr(2, 3), w[4], seq, false});
++			if (ds == 2) found.push_back({addr(2, 3), w[4] | (static_cast<uint64_t>(w[5]) << 32u), seq, true});
++		} else if (op == 0x37 && len >= 5) { // WRITE_DATA to memory: address 2/3, data from 4
++			const uint32_t dst = (w[1] >> 8u) & 0xfu;
++			if (dst == 1 || dst == 2 || dst == 5) {
++				if (len >= 6) found.push_back({addr(2, 3), w[4] | (static_cast<uint64_t>(w[5]) << 32u), seq, true});
++				else found.push_back({addr(2, 3), w[4], seq, false});
++			}
++		}
++	}
++	if (found.empty()) return;
++	std::lock_guard lk(g_plw_mutex);
++	if (g_plw.size() > 8192) g_plw.erase(g_plw.begin(), g_plw.begin() + 4096);
++	g_plw.insert(g_plw.end(), found.begin(), found.end());
++}
++
++static void forget_label_writes(uint64_t seq, bool all) {
++	std::lock_guard lk(g_plw_mutex);
++	if (all) {
++		g_plw.clear();
++		return;
++	}
++	g_plw.erase(std::remove_if(g_plw.begin(), g_plw.end(), [seq](const PendingLabelWrite& w) { return w.seq == seq; }), g_plw.end());
++}
++
++// Will the last pending write of this wait's label satisfy it?
++static bool ring_will_satisfy(const uint32_t* p, bool is64) {
++	const uint32_t function = p[1] & 7u;
++	const uint64_t a        = (p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u);
++	std::lock_guard lk(g_plw_mutex);
++	const PendingLabelWrite* last = nullptr;
++	for (const auto& w: g_plw) {
++		if (w.label == a && (last == nullptr || w.seq >= last->seq)) last = &w;
++	}
++	if (last == nullptr) return false;
++	if (is64) {
++		if (!last->is64) return false;
++		const uint64_t ref = p[4] | (static_cast<uint64_t>(p[5]) << 32u), mask = p[6] | (static_cast<uint64_t>(p[7]) << 32u);
++		const uint64_t vm = last->value & mask, rm = ref & mask;
++		switch (function) {
++			case 1: return vm < rm;
++			case 2: return vm <= rm;
++			case 3: return vm == rm;
++			case 4: return vm != rm;
++			case 5: return vm >= rm;
++			case 6: return vm > rm;
++			default: return false;
++		}
++	}
++	return SoftCp::compare(function, static_cast<uint32_t>(last->value), p[5], p[4]);
++}
++
 +static void submit_split(const uint32_t* ib, uint32_t num_dwords, const char* kind, bool from_header) {
 +	t_wait_given_up = false;
++	t_keep_waits.clear();
 +	std::vector<uint64_t> written;
 +	uint32_t start = 0, i = 0;
 +	// Run 122 (BC5_DIRECT_NO_PIECES=1 brings the old way back): a wait that is not satisfied at once
@@ -7012,6 +7104,15 @@ index 0000000..a851fca
 +						submit_one(ib + start, i - start, kind, from_header && start == 0);
 +						start = i;
 +					}
++					static const bool ring_order = std::getenv("BC5_DIRECT_RING_ORDER_WAITS") != nullptr;
++					if (ring_order && !wait_satisfied(p, op == 0x93) && ring_will_satisfy(p, op == 0x93)) {
++						static std::atomic<uint64_t> n_kept {0};
++						if ((n_kept++ & 0x3ffu) == 0) journal("ring order: %s %u dwords keeps its wait at %u on 0x%" PRIx64 " for the GPU (%" PRIu64 " so far)\n", kind, num_dwords, i, label, n_kept.load());
++						t_keep_waits.push_back(p);
++						SoftCp::set_gpu_executed(p, len, {0});
++						i += len;
++						continue;
++					}
 +					// Run 123 (BC5_DIRECT_NO_CYCLE_BREAK=1 to disable): the compute queue's blocked buffer waits for a
 +					// label this buffer writes — on the console the two run side by side and this one would
 +					// block at its wait while the other goes on; here this buffer cannot reach the GPU before
@@ -7036,8 +7137,19 @@ index 0000000..a851fca
 +							if (n_broken++ < 50) journal("cycle broken: %s %u dwords waits at %u on 0x%" PRIx64 " for a queue that waits on 0x%" PRIx64 ", which this buffer writes; not waited for\n", kind, num_dwords, i, label, g_unready_label.load());
 +						}
 +					}
++					// Experiment 0055: BC5_DIRECT_DCB_WAIT_UNBLOCKED_MS=<ms> — while the compute queue is not
++					// blocked on a label of its own, what this game-thread wait needs is on its way (the
++					// second title's scene change: a label the compute work set to 0 14-15 ms into a wait
++					// given up at 8 ms), so the wait gets that long; the short limit stays for a blocked
++					// queue, where a cycle is possible.
++					static const uint64_t unblocked_ns = (std::getenv("BC5_DIRECT_DCB_WAIT_UNBLOCKED_MS") ? std::strtoull(std::getenv("BC5_DIRECT_DCB_WAIT_UNBLOCKED_MS"), nullptr, 10) : 0ull) * 1'000'000ull;
++					const bool            adaptive     = unblocked_ns > limit && limit == dcb_ns && std::strcmp(kind, "acb") != 0 && on_game_thread();
 +					if (!broken && (!g_dev || !g_dev->wedged())) {
-+						while (!(ok = wait_satisfied(p, op == 0x93)) && SoftCp::now_ns() - t0 < limit) std::this_thread::sleep_for(std::chrono::microseconds(50));
++						while (!(ok = wait_satisfied(p, op == 0x93))) {
++							const uint64_t now = SoftCp::now_ns() - t0;
++							if (now >= (adaptive && g_unready_label.load() == 0 ? unblocked_ns : limit)) break;
++							std::this_thread::sleep_for(std::chrono::microseconds(50));
++						}
 +					}
 +					if (!ok && op == 0x93 && len >= 8) {
 +						journal("  wait detail: function %u, value 0x%" PRIx64 ", reference 0x%" PRIx64 ", mask 0x%" PRIx64 "\n", p[1] & 7u,
@@ -7407,6 +7519,7 @@ index 0000000..a851fca
 +			} else {
 +				r.rc = -125; // -ECANCELED: the device it was queued on is gone
 +			}
++			forget_label_writes(j.seq, r.timed_out || r.rc == -125); // experiment 0055
 +			const double total_ms = static_cast<double>(SoftCp::now_ns() - j.queued_ns) / 1e6 + j.cs_ms;
 +			frame_profile_done(index == 0, j.queued_ns, SoftCp::now_ns(), 0.0);
 +			journal("submit #%" PRIu64 " %s %u dwords at %p: pass %" PRIu64 " rewrite %" PRIu64 " drop %" PRIu64 " unmapped %" PRIu64 " cc %" PRIu64 " mappings %zu ... %s rc %d%s%s %.2f ms\n",
@@ -8051,6 +8164,10 @@ index 0000000..a851fca
 +		return v;
 +	}();
 +	opt.extra_drop = extra;
++	opt.keep_wait_offsets.clear(); // experiment 0055
++	for (const uint32_t* w: t_keep_waits) {
++		if (w >= ib && w < ib + num_dwords) opt.keep_wait_offsets.push_back(static_cast<uint32_t>(w - ib));
++	}
 +	// Indirect draws and dispatches (runs 53–54): their arguments live in memory the filter does
 +	// not read — the counters the compute queues produce. With real GDS they are non-zero and one
 +	// of them kept the CP busy past the kernel's timeout. Survey them (journal) and NOP the ones
@@ -8128,6 +8245,38 @@ index 0000000..a851fca
 +						if (r == 0x20du) pgm = (pgm & 0xffffffff00ull) | (static_cast<uint64_t>(v & 0xffu) << 40u);
 +					}
 +				}
++			}
++			// Experiment 0055: BC5_DIRECT_TRAP_STATS=1 counts the program RSRC2 values (COMPUTE_PGM_RSRC2 and
++			// SPI_SHADER_PGM_RSRC2_*; SH offsets 0x213, 0x0b, 0x4b, 0x8b, 0xcb, 0x10b, 0x14b) with and
++			// without TRAP_PRESENT (bit 6; Mesa gfx10.json), as SET_SH_REG writes or LOAD_SH_REG_INDEX
++			// loads them: does the title enable the trap handler its s_trap instructions jump to?
++			static const bool trap_stats = std::getenv("BC5_DIRECT_TRAP_STATS") != nullptr;
++			if (trap_stats && type == 3 && (op == 0x76 || (op == 0x63 && len >= 5 && (ib[q + 3] >> 31u) != 0))) {
++				static std::atomic<uint64_t> n_trap {0}, n_plain {0}, n_hi {0};
++				static std::atomic<uint32_t> last_hi {0}, last_hi_reg {0};
++				auto count = [](uint32_t r, uint32_t v) {
++					if (r == 0x213u || r == 0x0bu || r == 0x4bu || r == 0x8bu || r == 0xcbu || r == 0x10bu || r == 0x14bu) ((v >> 6u) & 1u ? n_trap : n_plain)++;
++					// the program address' bits 47:40 (*_PGM_HI: SH 0x20d, 0x09, 0x49, 0x89, 0xc9, 0x109, 0x149)
++					if ((r == 0x20du || r == 0x09u || r == 0x49u || r == 0x89u || r == 0xc9u || r == 0x109u || r == 0x149u) && (v & 0xffu) != 0) {
++						n_hi++;
++						last_hi     = v;
++						last_hi_reg = r;
++					}
++				};
++				if (op == 0x76) {
++					for (uint32_t k = 0; k + 2 < len; k++) count((ib[q + 1] & 0xffffu) + k, ib[q + 2 + k]);
++				} else {
++					const uint64_t ta = (ib[q + 1] & ~3u) | (static_cast<uint64_t>(ib[q + 2] & 0xffffu) << 32u);
++					const uint32_t tn = ib[q + 4] & 0x3fffu;
++					if (ta != 0 && tn != 0 && covered_sorted(*maps_p, ta, static_cast<uint64_t>(tn) * 8)) {
++						const auto* t = reinterpret_cast<const volatile uint32_t*>(ta);
++						for (uint32_t k = 0; k < tn; k++) count(t[2 * k] & 0xffffu, t[2 * k + 1]);
++					}
++				}
++				static std::atomic<uint64_t> n_seen {0};
++				if ((n_seen++ & 0x3ffffu) == 0)
++					journal("trap stats: RSRC2 with TRAP_PRESENT %" PRIu64 ", without %" PRIu64 "; PGM_HI not 0: %" PRIu64 " (last 0x%x in SH 0x%x)\n", n_trap.load(), n_plain.load(), n_hi.load(),
++					        last_hi.load(), last_hi_reg.load());
 +			}
 +			if (type == 3 && op == 0x76 && len >= 3) { // SET_SH_REG: watch COMPUTE_PGM_LO/HI
 +				const uint32_t first = ib[q + 1] & 0xffffu;
@@ -8600,6 +8749,9 @@ index 0000000..a851fca
 +			for (auto& d: opt.drop_offsets) {
 +				if (d < num_dwords && old_to_new[d] != ~0u) d = old_to_new[d];
 +			}
++			for (auto& d: opt.keep_wait_offsets) {
++				if (d < num_dwords && old_to_new[d] != ~0u) d = old_to_new[d];
++			}
 +			sub_ib = mec_ib.data();
 +			sub_n  = static_cast<uint32_t>(mec_ib.size());
 +		}
@@ -8729,6 +8881,8 @@ index 0000000..a851fca
 +			static const bool trace = std::getenv("BC5_DIRECT_LABEL_TRACE") != nullptr;
 +			if (trace) journal("queued #%" PRIu64 " %s %u dwords at t %.6f s\n", n, kind, num_dwords, timing_now());
 +		}
++		static const bool ring_order_reg = std::getenv("BC5_DIRECT_RING_ORDER_WAITS") != nullptr; // experiment 0055
++		if (ring_order_reg) register_label_writes(ib, num_dwords, r.executed_offsets, r.seq_no);
 +		cq_push(std::move(it));
 +		return;
 +	}
