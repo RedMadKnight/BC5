@@ -1,0 +1,26 @@
+run 264: kyty exit 124 after 301 s; faults: 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 0x0 ; failed 219; last submit at 295.815 s; access violations 0; 250 s on: frames 3 fps 0.06 (/home/kjaniszewski/bc5-data/captures/pkg-20261012-2001)
+run 265: kyty exit 124 after 241 s; faults: 0x0 0x0 0x0 0x0 0x0 ; failed 122; last submit at 230.893 s; access violations 0; 250 s on: frames 0 fps 0.00 (/home/kjaniszewski/bc5-data/captures/pkg-20261012-2008)
+run 266: kyty exit 124 after 241 s; faults: 0x0 0x0 0x0 0x0 0x0 0x0 0x0 ; failed 170; last submit at 225.097 s; access violations 0; 250 s on: frames 0 fps 0.00 (/home/kjaniszewski/bc5-data/captures/pkg-20261012-2046)
+run 267: kyty exit 124 after 241 s; faults: 0x0 0x0 0x0 0x0 0x0 ; failed 122; last submit at 234.335 s; access violations 0; 250 s on: frames 0 fps 0.00 (/home/kjaniszewski/bc5-data/captures/pkg-20261012-2059)
+run 268: kyty exit 124 after 241 s; faults: 0x0 0x0 0x0 0x0 0x0 ; failed 123; last submit at 229.088 s; access violations 0; 250 s on: frames 0 fps 0.00 (/home/kjaniszewski/bc5-data/captures/pkg-20261012-2105)
+run 269: kyty exit 124 after 242 s; faults: none; failed 0; last submit at 124.351 s; access violations 0; 250 s on: frames 0 fps 0.00 (/home/kjaniszewski/bc5-data/captures/pkg-20261012-2110)
+run 270: kyty exit 124 after 211 s; faults: 0x0 0x0 0x0 ; failed 75; last submit at 200.113 s; access violations 0; 250 s on: frames 0 fps 0.00 (/home/kjaniszewski/bc5-data/captures/pkg-20261012-2116)
+run 271: kyty exit 124 after 211 s; faults: 0x0 0x0 0x0 ; failed 74; last submit at 199.258 s; access violations 0; 250 s on: frames 0 fps 0.00 (/home/kjaniszewski/bc5-data/captures/pkg-20261012-2122)
+run 272: kyty exit 124 after 211 s; faults: 0x0 0x0 0x0 ; failed 74; last submit at 198.112 s; access violations 0; 250 s on: frames 0 fps 0.00 (/home/kjaniszewski/bc5-data/captures/pkg-20261012-2128)
+== devcoredump (run 271), CP state before the kernel ring reset
+time: 12201.096260523
+pasid: 149
+vmid: 6
+process_name: kyty_emulator TGID: 138652 thread: bc5-ring PID: 138728
+IB #0 0x100700000000 1064 dw
+mmGRBM_STATUS                                      	 0xa0403028
+mmGRBM_STATUS2                                     	 0x50000008
+mmCP_STALLED_STAT1                                 	 0x00000c00
+mmCP_STALLED_STAT2                                 	 0x00210400
+mmCP_BUSY_STAT                                     	 0x00440000
+mmCP_CPF_STATUS                                    	 0xb4000223
+mmCP_IB1_BASE_LO                                   	 0x00000000
+mmCP_IB1_BASE_HI                                   	 0x00001008
+== host watcher (run 272): hung waves by PC
+bc5-hang-213109.txt waves 193 distinct PCs 12 top [('0x11d049c704', 122), ('0x11d049c6fc', 22), ('0x11d049c770', 13), ('0x11d049c764', 11), ('0x11d049c758', 11)]
+bc5-hang-213124.txt waves 336 distinct PCs 13 top [('0x11d049c704', 224), ('0x11d049c6fc', 40), ('0x11d049c764', 25), ('0x11d049c768', 14), ('0x11d049c770', 10)]
