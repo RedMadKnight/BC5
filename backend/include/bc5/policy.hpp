@@ -82,8 +82,8 @@ struct FilterOptions {
     // tools/bc5-agc/regdb/pkt3.json from Mesa) cleared in every ACQUIRE_MEM. 0 = unchanged.
     std::uint32_t gcr_clear = 0;
     // Experiment 0050: before the first dispatch that follows a DMA_DATA without CP_SYNC, a
-    // zero-byte DMA_DATA with CP_SYNC (the CP waits for its DMA to finish). Device::submit; an IB
-    // with COND_EXEC is left alone.
+    // zero-byte DMA_DATA with CP_SYNC (the CP waits for its DMA to finish). Device::submit; the
+    // IB's own COND_EXEC counts grow around them (experiment 0052).
     bool dma_sync_before_dispatch = false;
     // Experiment 0050: a PFP_SYNC_ME before every DISPATCH_INDIRECT of any IB (as for the rebuilt
     // compute IBs of experiment 0039): the prefetch parser must not read arguments the GPU is

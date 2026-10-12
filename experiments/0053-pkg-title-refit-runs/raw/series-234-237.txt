@@ -1,0 +1,15 @@
+run 234: kyty exit 124 after 301 s; faults: none; failed 0; last submit at 298.578 s; access violations 0; 250 s on: frames 914 fps 18.28 (/home/kjaniszewski/bc5-data/captures/pkg-20261012-0611)
+run 235: kyty exit 124 after 302 s; faults: none; failed 0; last submit at 298.582 s; access violations 0; 250 s on: frames 919 fps 18.38 (/home/kjaniszewski/bc5-data/captures/pkg-20261012-0617)
+run 236: kyty exit 124 after 301 s; faults: none; failed 0; last submit at 298.631 s; access violations 0; 250 s on: frames 957 fps 19.14 (/home/kjaniszewski/bc5-data/captures/pkg-20261012-0622)
+run 237: kyty exit 124 after 301 s; faults: none; failed 0; last submit at 298.499 s; access violations 0; 250 s on: frames 943 fps 18.86 (/home/kjaniszewski/bc5-data/captures/pkg-20261012-0627)
+series done
+pkg-20261012-0611: steady 3D from 65 s, longest gap before it 4.6 s
+2187376
+pkg-20261012-0617: steady 3D from 70 s, longest gap before it 4.0 s
+2113756
+pkg-20261012-0622: steady 3D from 45 s, longest gap before it 1.8 s
+2130662
+pkg-20261012-0627: steady 3D from 45 s, longest gap before it 5.1 s
+2090920
+
+[exited with code 0]

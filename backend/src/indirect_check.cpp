@@ -148,6 +148,52 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib, std::uint64_
     return out;
 }
 
+bool insert_before(std::vector<std::uint32_t> &ib, const std::vector<Insert> &inserts) {
+    if (inserts.empty())
+        return true;
+    std::vector<std::uint32_t> out;
+    std::size_t extra = 0;
+    for (const Insert &in : inserts)
+        extra += in.words.size();
+    out.reserve(ib.size() + extra);
+    std::vector<std::size_t> new_at(ib.size() + 1, ~std::size_t{0});
+    struct Cond {
+        std::size_t old_end, at;
+    };
+    std::vector<Cond> conds;
+    std::size_t next = 0;
+    for (std::size_t i = 0; i < ib.size();) {
+        std::size_t len = packet_len(ib[i]);
+        if (i + len > ib.size())
+            len = ib.size() - i;
+        new_at[i] = out.size();
+        while (next < inserts.size() && inserts[next].at <= i) {
+            if (inserts[next].at == i) {
+                out.insert(out.end(), inserts[next].words.begin(), inserts[next].words.end());
+            }
+            next++;
+        }
+        if (ib[i] >> 30 == 3 && ((ib[i] >> 8) & 0xff) == kOpCondExec && len == 5) {
+            conds.push_back({i + len + (ib[i + 4] & 0x3fffu), out.size()});
+        }
+        out.insert(out.end(), ib.begin() + static_cast<std::ptrdiff_t>(i),
+                   ib.begin() + static_cast<std::ptrdiff_t>(i + len));
+        i += len;
+    }
+    new_at[ib.size()] = out.size();
+    for (const Cond &c : conds) {
+        std::size_t e = c.old_end < ib.size() ? c.old_end : ib.size();
+        while (new_at[e] == ~std::size_t{0})
+            e++;
+        const std::size_t count = new_at[e] - (c.at + 5);
+        if (count > 0x3fffu)
+            return false;
+        out[c.at + 4] = (out[c.at + 4] & ~0x3fffu) | static_cast<std::uint32_t>(count);
+    }
+    ib.swap(out);
+    return true;
+}
+
 void patch(std::span<std::uint32_t> ib, const std::vector<std::size_t> &flag_refs,
            std::uint64_t flag_va) {
     for (const std::size_t r : flag_refs) {
