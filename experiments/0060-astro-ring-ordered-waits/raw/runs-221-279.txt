@@ -1,0 +1,20 @@
+== run 221 (kytyplus-20261012-0217)
+given up: 13378, failed: 0, ring-order kept (journal counter): 
+   4471 115 0x400202d40
+   4465 115 0x400203940
+   4436 115 0x400201d40
+      2 2266 0x400202dc0
+cpu waits 122939 total ms 156644 over 4 ms 16721
+frames 2193 fps 57.71
+frame     mean    17.3 median    17.2 p90    18.1
+inside    mean    12.2 median    12.1 p90    12.9
+== run 279 (kytyplus-20261013-0918)
+given up: 1777, failed: 0, ring-order kept (journal counter): (75777 so far)
+    634 115 0x400202d40
+    566 115 0x400203940
+    566 115 0x400201d40
+      3 3448 0x400201840
+cpu waits 44164 total ms 21116 over 4 ms 2050
+frames 2142 fps 56.37
+frame     mean    17.7 median    17.0 p90    18.9
+inside    mean     4.1 median     2.8 p90    11.0
