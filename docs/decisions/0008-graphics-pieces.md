@@ -1,6 +1,6 @@
 # ADR 0008 — Graphics buffers split at cross-queue waits, with their state replayed
 
-**Status:** proposed (2026-10-13), not implemented. Nothing in it has run on the GPU.
+**Status:** proposed (2026-10-13). Step 1 passed (experiments 0072, 0073: `bc5::full_state`, prefix ~1,260 dwords, 0 differing draws in run 316). Nothing in it has run on the GPU.
 
 ## Context
 
