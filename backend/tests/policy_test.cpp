@@ -413,3 +413,36 @@ TEST_CASE("keep_wait_offsets: a wait on a label an earlier job writes passes", "
     CHECK(st2.unsatisfiable_wait_drops == 0);
     CHECK(out == ib);
 }
+
+TEST_CASE("SET packet verdicts by span equal the register-by-register answer", "[policy]") {
+    // Experiment 0061: packet() decides a span that touches no listed range in one step; the
+    // answer must be the one the per-register walk gives, around every entry of the table.
+    const auto &p = policy::Policy::builtin();
+    const std::uint8_t ops[] = {0x68, 0x69, 0x76, 0x79, 0x9b};
+    const std::uint32_t bases[] = {0x2000, 0xa000, 0x2c00, 0xc000, 0x2c00};
+    for (int k = 0; k < 5; ++k) {
+        for (std::uint32_t off = 0; off < 0x400; ++off) {
+            for (std::uint32_t n : {1u, 2u, 3u, 7u, 30u, 64u}) {
+                std::vector<std::uint32_t> pkt(n + 2, 0);
+                pkt[0] = 0xC0000000u | ((n) << 16) | (static_cast<std::uint32_t>(ops[k]) << 8);
+                pkt[1] = off;
+                policy::Verdict want = policy::Verdict::Pass;
+                for (std::uint32_t r = 0; r < n; ++r) {
+                    const auto v = p.reg(bases[k] + off + r);
+                    if (r == 0) want = v;
+                    else if (v != want) {
+                        want = policy::Verdict::Split;
+                        break;
+                    }
+                }
+                if (p.op(ops[k]) != policy::Verdict::Pass) want = p.op(ops[k]);
+                INFO("op " << int(ops[k]) << " offset " << off << " count " << n);
+                REQUIRE(p.packet(pkt.data(), n + 2) == want);
+                bool any_rewrite = false;
+                for (std::uint32_t r = 0; r < n; ++r)
+                    any_rewrite |= p.reg(bases[k] + off + r) == policy::Verdict::Rewrite;
+                if (any_rewrite) REQUIRE(p.span_has(bases[k] + off, n, policy::Verdict::Rewrite));
+            }
+        }
+    }
+}

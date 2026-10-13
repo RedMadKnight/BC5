@@ -27,6 +27,13 @@ public:
     Verdict op(std::uint8_t opcode) const;
     Verdict reg(std::uint32_t mm) const;
     Verdict type0() const { return type0_; }
+    // span_listed: does any register of [first, first + count) fall in a listed range? A span
+    // that touches none has the default verdict throughout: one test per range instead of one
+    // per register (experiment 0061: SET_SH_REG packets of ~30 registers are 85% of a
+    // second-level frame's 355,000 dwords). span_has: may a register of the span have verdict
+    // `v`? Never a false "no"; "yes" for the default verdict.
+    bool span_listed(std::uint32_t first, std::uint32_t count) const;
+    bool span_has(std::uint32_t first, std::uint32_t count, Verdict v) const;
 
     // Verdict for one packet at `p` (header first), `len` dwords including the header.
     Verdict packet(const std::uint32_t *p, std::uint32_t len) const;
