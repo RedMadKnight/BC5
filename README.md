@@ -50,6 +50,7 @@ Whatever the format, the host loads two Sony modules from your own dump, `libSce
 | Frame rate | title and loading 54–60 fps, cutscene 50–53, first level 59–60 at 3328×1872 (57 at native 4K, 47–55 before experiment 0045), second level 40–51: from 6–8 fps, all of it host overhead removed, submissions overlapped, the flip queued behind the frame and the title's dynamic resolution fed scaled GPU timestamps | experiments 0022–0024, 0045–0046, F49–F59, F99–F100 |
 | GPU time in a frame | first level 12.9 ms, second level 18.6 ms; in the second level the GPU is busy 17–18 ms of a 21–24 ms frame, the game's own thread 12, the host's pass over the main buffer 4 | experiments 0023–0027, F65 |
 | Level load | about 18 s, from 240 s: the host's directory scans, the mount's negative lookups and its single read thread were the cost, not the storage | experiments 0022, 0029, 0032–0033, F71, F83–F84 |
+| Cross-queue waits | the main buffer's waits on its frame labels, given up at 8 ms some 13,000 times in 7 minutes since the 24-deep queue, now go to the GPU when the job that writes the label is already on the ring: the game thread spends 4.1 ms a frame in the host instead of 12.2 (the first level's frame rate is GPU-bound and unchanged; the headroom is for the second level, still to be measured in play) | experiment 0060, F117 |
 | Longest runs | 30 minutes with jobs in flight, 1,332,438 submissions, none failed; hours of play by the maintainer | run 116, F85 |
 
 ### The second title
