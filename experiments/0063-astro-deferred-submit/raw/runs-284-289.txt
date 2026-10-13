@@ -1,0 +1,42 @@
+== kytyplus-20261013-1121: 0 timeouts, 0 failed, 43 waits given up, 10950 frames
+ib stable check: 196608 jobs (1408200460 dwords), 54874 changed before done (1344788278 dwords)
+     17 cpu-wait WAIT_REG_MEM64 at 115 on 0x400203940: GIVEN UP 
+     13 cpu-wait WAIT_REG_MEM64 at 115 on 0x400202d40: GIVEN UP 
+     13 cpu-wait WAIT_REG_MEM64 at 115 on 0x400201d40: GIVEN UP 
+== kytyplus-20261013-1129: 0 timeouts, 0 failed, 20 waits given up, 23884 frames
+ib stable check: 442368 jobs (5965150995 dwords), 120429 changed before done (5808488767 dwords)
+ib stable diff: 3584 changed jobs compared, 75 with a change outside NOP payloads
+     59 ib stable diff: cc 3 dwords: [0: pkt 0 op 28 +0] [1: pkt 0 op 28 +1] [2: pkt 0 op 28 +2] (3 packet dwords differ, NOP payloads not counted)
+      1 ib stable diff: cc 3 dwords: [0: pkt 0 op 28 +0] [1: pkt 0 op 28 +1] (2 packet dwords differ, NOP payloads not counted)
+      7 cpu-wait WAIT_REG_MEM64 at 115 on 0x400203940: GIVEN UP 
+      7 cpu-wait WAIT_REG_MEM64 at 115 on 0x400202d40: GIVEN UP 
+      6 cpu-wait WAIT_REG_MEM64 at 115 on 0x400201d40: GIVEN UP 
+== kytyplus-20261013-1138: 6 timeouts, 74 failed, 709 waits given up, 5203 frames
+    238 cpu-wait WAIT_REG_MEM64 at 115 on 0x400201d40: GIVEN UP 
+    237 cpu-wait WAIT_REG_MEM64 at 115 on 0x400202d40: GIVEN UP 
+    229 cpu-wait WAIT_REG_MEM64 at 115 on 0x400203940: GIVEN UP 
+submit #49990 acb 49 dwords at 0x4002a8a0c: pass 3 rewrite 3 drop 2 unmapped 0 cc 0 mappings 576 ... FAILED rc 0 TIMEOUT 2076.70 ms
+submit #49992 dcb 96 dwords at 0xfe0042920: pass 20 rewrite 2 drop 2 unmapped 0 cc 0 mappings 576 ... FAILED rc 0 TIMEOUT 2077.69 ms
+== kytyplus-20261013-1143: 2 timeouts, 25 failed, 476 waits given up, 6308 frames
+    158 cpu-wait WAIT_REG_MEM64 at 115 on 0x400203940: GIVEN UP 
+    158 cpu-wait WAIT_REG_MEM64 at 115 on 0x400202d40: GIVEN UP 
+    157 cpu-wait WAIT_REG_MEM64 at 115 on 0x400201d40: GIVEN UP 
+submit #29182 dcb 1500 dwords at 0x505602500: pass 113 rewrite 78 drop 62 unmapped 0 cc 4 mappings 498 ... FAILED rc 0 TIMEOUT 2060.52 ms
+submit #29178 acb 49 dwords at 0x400348a8c: pass 3 rewrite 3 drop 2 unmapped 0 cc 0 mappings 498 ... FAILED rc 0 TIMEOUT 2061.45 ms
+== kytyplus-20261013-1147: 0 timeouts, 0 failed, 15 waits given up, 8511 frames
+      8 cpu-wait WAIT_REG_MEM64 at 115 on 0x400202d40: GIVEN UP 
+      6 cpu-wait WAIT_REG_MEM64 at 115 on 0x400201d40: GIVEN UP 
+      1 cpu-wait WAIT_REG_MEM64 at 115 on 0x400203940: GIVEN UP 
+== kernel log (runs 287, 288)
+[12803.673540] amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=6094895, emitted seq=6094897
+[12803.673544] amdgpu 0000:01:00.0:  Process kyty_emulator pid 175702 thread bc5-submit pid 175755
+[12803.673547] amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+[12887.064518] amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=6165359, emitted seq=6165362
+[12887.064523] amdgpu 0000:01:00.0:  Process kyty_emulator pid 175702 thread bc5-submit pid 175755
+[12887.064526] amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+[12927.768526] amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=6166377, emitted seq=6166379
+[12927.768530] amdgpu 0000:01:00.0:  Process kyty_emulator pid 175702 thread bc5-ring pid 175733
+[12927.768533] amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+[13031.768560] amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=6209347, emitted seq=6209349
+[13031.768565] amdgpu 0000:01:00.0:  Process kyty_emulator pid 178119 thread bc5-ring pid 178151
+[13031.768569] amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
