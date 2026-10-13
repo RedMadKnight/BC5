@@ -1,0 +1,18 @@
+Sky Garden, the level's start, Astro standing; 60 s window from the first frame profile line
+after the level loaded; ring order on; settings of run 282; 2026-10-13 18:52-19:16.
+winsum.py / frameprof.py output, as printed during the runs:
+
+run 305, release after the GPU copy (FlipQueue state Ready), window 185-245 s
+  fps 36.13, frame 27.7 ms, inside 13.1, label waits 9.0, GPU busy 15.5; cleared 1, timeouts 0
+run 306, BC5_DIRECT_FLIP_RELEASE_EARLY=1 (the 0069 default), window 233-293 s
+  fps 41.43, frame 24.1 ms, inside 8.9, label waits 4.8, GPU busy 16.0
+run 307, release once the flip is recorded (pixels read into staging), window 180-240 s
+  fps 36.33, frame 27.5 ms, inside 12.9, label waits 8.7, GPU busy 15.5; cleared 0, timeouts 0
+run 308, as 307 with KYTY_BC5_FLIP_TIMING=1
+  "submit to prepare 0.02 ms, prepare 3.91-4.42 ms (mean of 120)"
+run 309, as 308 with the guest read split over 4 threads, window 168-228 s
+  fps 37.85, frame 26.4 ms, inside 11.8, label waits 7.6, GPU busy 15.5; cleared 0, timeouts 0
+  "submit to prepare 0.02 ms, prepare 2.91-3.09 ms (mean of 120)"
+
+For reference, same place: run 283 (before experiment 0069, the label cleared at the wait,
+tearing) 46.18 fps, frame 21.7 ms. Galaxy map, run 304 (release after the GPU copy): 59.7 fps.

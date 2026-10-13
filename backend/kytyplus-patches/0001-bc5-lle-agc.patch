@@ -1298,17 +1298,20 @@ index 0000000..deb84e4
 +
 +#endif // KYTY_GRAPHICS_PRESENTATION_SETTINGS_OVERLAY_H_
 diff --git a/src/graphics/presentation/videoOut.cpp b/src/graphics/presentation/videoOut.cpp
-index f980320..76ff1d9 100644
+index f980320..11190a8 100644
 --- a/src/graphics/presentation/videoOut.cpp
 +++ b/src/graphics/presentation/videoOut.cpp
-@@ -1,3 +1,6 @@
+@@ -1,3 +1,9 @@
 +#include <pthread.h>
 +#include <cstdlib>
 +#include <cstring>
++#include <chrono>
++#include <atomic>
++#include <cstdio>
  #include "graphics/presentation/videoOut.h"
  
  #include "common/abi.h"
-@@ -16,6 +19,7 @@
+@@ -16,6 +22,7 @@
  #include "graphics/host_gpu/renderer/render.h"
  #include "graphics/host_gpu/renderer/renderContext.h"
  #include "graphics/presentation/presenter.h"
@@ -1316,7 +1319,17 @@ index f980320..76ff1d9 100644
  #include "kernel/pthread.h"
  #include "libs/errno.h"
  #include "libs/libs.h"
-@@ -781,6 +785,7 @@ void VideoOutDriver::Impl::VblankEnd() {
+@@ -203,6 +210,9 @@ public:
+ 	bool Flip(uint32_t micros);
+ 	void GetFlipStatus(VideoOutConfig& cfg, VideoOutFlipStatus& out);
+ 	void Wait(VideoOutConfig& cfg, int index);
++	// BC5 (experiment 0070): until every flip of that buffer has been recorded (its pixels read
++	// from the guest into staging memory); the presentation at the refresh shows the copy.
++	void WaitCopied(VideoOutConfig& cfg, int index);
+ 
+ private:
+ 	enum class RequestState { Reserved, Recording, Ready, Presenting };
+@@ -781,6 +791,7 @@ void VideoOutDriver::Impl::VblankEnd() {
  }
  
  void VideoOutDriver::Impl::PresentThread(std::stop_token token) {
@@ -1324,7 +1337,25 @@ index f980320..76ff1d9 100644
  	const auto frequency = Common::Timer::QueryPerformanceFrequency();
  	EXIT_IF(frequency == 0);
  
-@@ -1012,6 +1017,13 @@ void FlipQueue::Prepare(uint64_t request_id, Graphics::CommandBuffer& buffer) {
+@@ -934,7 +945,17 @@ void FlipQueue::Cancel(VideoOutConfig& cfg) {
+ 	cfg.flip_status.gcQueueNum     = 0;
+ }
+ 
++// BC5 (experiment 0070): KYTY_BC5_FLIP_TIMING=1 prints, every 120 flips, how long a CPU flip
++// waited from VideoOutSubmitFlip to its preparation and how long the preparation (the guest
++// buffer read and the copy recording) took.
++static std::atomic<int64_t> g_bc5_flip_submit_ns {0};
++static int64_t              Bc5FlipNowNs() {
++	return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
++}
++
+ void FlipQueue::Prepare(uint64_t request_id, Graphics::CommandBuffer& buffer) {
++	static const bool bc5_timing = std::getenv("KYTY_BC5_FLIP_TIMING") != nullptr;
++	const int64_t     bc5_t0     = Bc5FlipNowNs();
+ 	VideoOutConfig* cfg        = nullptr;
+ 	uint64_t        generation = 0;
+ 	int             index      = 0;
+@@ -1012,6 +1033,13 @@ void FlipQueue::Prepare(uint64_t request_id, Graphics::CommandBuffer& buffer) {
  		frame = &m_presenter.PrepareBlankFrame(width, height, index == VIDEO_OUT_BUFFER_INDEX_BLACK,
  		                                       &buffer);
  	} else {
@@ -1338,7 +1369,86 @@ index f980320..76ff1d9 100644
  		frame = &m_presenter.PrepareFrame(buffer, source_info);
  	}
  
-@@ -1505,8 +1517,34 @@ void VideoOutDriver::WaitFlipDone(int handle, int index) {
+@@ -1033,6 +1061,20 @@ void FlipQueue::Prepare(uint64_t request_id, Graphics::CommandBuffer& buffer) {
+ 		EXIT("video-out request changed while recording, id=%" PRIu64 "\n", request_id);
+ 	}
+ 	prepared->frame = frame;
++	m_done_cond_var.SignalAll(); // BC5 (experiment 0070): WaitCopied
++	if (bc5_timing) {
++		static double  lat = 0, dur = 0;
++		static int     n   = 0;
++		const int64_t  t1  = Bc5FlipNowNs();
++		const int64_t  sub = g_bc5_flip_submit_ns.load();
++		lat += sub != 0 && bc5_t0 > sub ? static_cast<double>(bc5_t0 - sub) / 1e6 : 0.0;
++		dur += static_cast<double>(t1 - bc5_t0) / 1e6;
++		if (++n == 120) {
++			std::fprintf(stderr, "bc5 flip timing: submit to prepare %.2f ms, prepare %.2f ms (mean of 120)\n", lat / n, dur / n);
++			lat = dur = 0;
++			n         = 0;
++		}
++	}
+ }
+ 
+ void FlipQueue::Complete(uint64_t request_id) {
+@@ -1046,6 +1088,7 @@ void FlipQueue::Complete(uint64_t request_id) {
+ 		}
+ 		request->state = RequestState::Ready;
+ 		m_submit_cond_var.Signal();
++		m_done_cond_var.SignalAll(); // BC5 (experiment 0070): WaitCopied
+ 		m_mutex.Unlock();
+ 		return;
+ 	}
+@@ -1087,6 +1130,26 @@ void FlipQueue::Wait(VideoOutConfig& cfg, int index) {
+ 	}
+ }
+ 
++void FlipQueue::WaitCopied(VideoOutConfig& cfg, int index) {
++	Common::LockGuard lock(m_mutex);
++
++	auto uncopied = [this, &cfg, index] {
++		auto matches = [&cfg, index](const auto& r) {
++			// In BC5 direct mode the guest's buffer is read by the CPU while the flip is recorded
++			// (BufferCache::ObtainBufferForImage reads the invalidated range into staging memory),
++			// so a request whose frame has been recorded no longer needs the buffer.
++			return r.cfg == &cfg && r.index == index &&
++			       (r.state == RequestState::Reserved ||
++			        (r.state == RequestState::Recording && r.frame == nullptr));
++		};
++		return std::any_of(m_requests.begin(), m_requests.end(), matches) ||
++		       std::any_of(m_cpu_requests.begin(), m_cpu_requests.end(), matches);
++	};
++	while (uncopied()) {
++		m_done_cond_var.Wait(&m_mutex);
++	}
++}
++
+ bool FlipQueue::Flip(uint32_t micros) {
+ 	KYTY_PROFILER_BLOCK("FlipQueue::Flip");
+ 
+@@ -1462,6 +1525,7 @@ KYTY_SYSV_ABI int VideoOutSubmitFlip(int handle, int index, int flip_mode, int64
+ 	if (result != OK) {
+ 		return result;
+ 	}
++	g_bc5_flip_submit_ns.store(Bc5FlipNowNs()); // BC5 (experiment 0070)
+ 	g_video_out_driver->SubmitFlipPreparation(request_id);
+ 
+ 	return OK;
+@@ -1497,6 +1561,14 @@ void VideoOutDriver::WaitForSubmitSlot() {
+ 	m_impl->GetFlipQueue().WaitForSubmitSlot();
+ }
+ 
++void VideoOutDriver::WaitFlipCopied(int handle, int index) {
++	auto* ctx = m_impl->Get(handle);
++	if (ctx == nullptr || !IsValidBufferIndex(index)) {
++		return;
++	}
++	m_impl->GetFlipQueue().WaitCopied(*ctx, index);
++}
++
+ void VideoOutDriver::WaitFlipDone(int handle, int index) {
+ 	auto* ctx = m_impl->Get(handle);
+ 	EXIT_IF(ctx == nullptr);
+@@ -1505,8 +1577,42 @@ void VideoOutDriver::WaitFlipDone(int handle, int index) {
  	m_impl->GetFlipQueue().Wait(*ctx, index);
  }
  
@@ -1349,6 +1459,14 @@ index f980320..76ff1d9 100644
 +void Bc5VideoOutWaitFlipDone(int handle, int index) {
 +	if (g_video_out_driver != nullptr && IsValidBufferIndex(index) && !IsSpecialBufferIndex(index)) {
 +		g_video_out_driver->WaitFlipDone(handle, index);
++	}
++}
++
++// BC5 (experiment 0070): returns once every queued flip of that buffer has been copied into its
++// presenter frame; the guest may then render into the buffer again.
++void Bc5VideoOutWaitFlipCopied(int handle, int index) {
++	if (g_video_out_driver != nullptr && IsValidBufferIndex(index) && !IsSpecialBufferIndex(index)) {
++		g_video_out_driver->WaitFlipCopied(handle, index);
 +	}
 +}
 +
@@ -1376,10 +1494,18 @@ index f980320..76ff1d9 100644
  	if (status == nullptr) {
  		return VIDEO_OUT_ERROR_INVALID_ADDRESS;
 diff --git a/src/graphics/presentation/videoOut.h b/src/graphics/presentation/videoOut.h
-index 58f16c6..19849ac 100644
+index 58f16c6..a606bbc 100644
 --- a/src/graphics/presentation/videoOut.h
 +++ b/src/graphics/presentation/videoOut.h
-@@ -80,6 +80,10 @@ KYTY_SYSV_ABI int VideoOutSubmitChangeBufferAttribute2(int handle, int set_index
+@@ -39,6 +39,7 @@ public:
+ 	void SubmitFlipPreparation(uint64_t request_id);
+ 	void WaitForSubmitSlot();
+ 	void WaitFlipDone(int handle, int index);
++	void WaitFlipCopied(int handle, int index); // BC5 (experiment 0070)
+ 
+ 	[[nodiscard]] Impl& State() noexcept;
+ 
+@@ -80,6 +81,12 @@ KYTY_SYSV_ABI int VideoOutSubmitChangeBufferAttribute2(int handle, int set_index
  KYTY_SYSV_ABI int VideoOutUnregisterBuffers(int handle, int set_index);
  KYTY_SYSV_ABI int VideoOutSubmitFlip(int handle, int index, int flip_mode, int64_t flip_arg);
  KYTY_SYSV_ABI int VideoOutGetFlipStatus(int handle, VideoOutFlipStatus* status);
@@ -1387,6 +1513,8 @@ index 58f16c6..19849ac 100644
 +bool Bc5VideoOutBufferRange(int handle, int index, uint64_t* addr, uint64_t* size);
 +// BC5 (experiment 0069): returns once no flip of that buffer is queued or being presented.
 +void Bc5VideoOutWaitFlipDone(int handle, int index);
++// BC5 (experiment 0070): returns once every queued flip of that buffer has been copied.
++void Bc5VideoOutWaitFlipCopied(int handle, int index);
  KYTY_SYSV_ABI int VideoOutIsFlipPending(int handle);
  KYTY_SYSV_ABI int VideoOutGetVblankStatus(int handle, VideoOutVblankStatus* status);
  KYTY_SYSV_ABI int VideoOutGetEventId(const LibKernel::EventQueue::KernelEvent* ev);
@@ -3199,7 +3327,7 @@ index bc73d18..252c692 100644
  
  #endif /* EMULATOR_INCLUDE_EMULATOR_KERNEL_FILESYSTEM_H_ */
 diff --git a/src/kernel/memory.cpp b/src/kernel/memory.cpp
-index 02fc0fc..35b471b 100644
+index 02fc0fc..c3f3cf0 100644
 --- a/src/kernel/memory.cpp
 +++ b/src/kernel/memory.cpp
 @@ -1,3 +1,6 @@
@@ -3209,7 +3337,17 @@ index 02fc0fc..35b471b 100644
  #include "kernel/memory.h"
  
  #include "common/assert.h"
-@@ -199,8 +202,41 @@ static bool IsPrivateCommittedRangeType(VirtualRangeType type) {
+@@ -20,7 +23,8 @@
+ #include <map>
+ #include <memory>
+ #include <mutex>
+-#include <vector>
++#include <vector>
++#include <thread>
+ 
+ #if KYTY_PLATFORM == KYTY_PLATFORM_WINDOWS
+ #ifndef NOMINMAX
+@@ -199,8 +203,41 @@ static bool IsPrivateCommittedRangeType(VirtualRangeType type) {
  	       type == VirtualRangeType::Runtime;
  }
  
@@ -3251,7 +3389,7 @@ index 02fc0fc..35b471b 100644
  	struct Range {
  		uint64_t         start          = 0;
  		uint64_t         size           = 0;
-@@ -215,6 +251,7 @@ public:
+@@ -215,6 +252,7 @@ public:
  	bool Add(uint64_t start, uint64_t size, uint64_t offset, int protection, int memory_type,
  	         VirtualRangeType type, const char* name, bool disallow_merge = false) {
  		Common::LockGuard lock(m_mutex);
@@ -3259,7 +3397,7 @@ index 02fc0fc..35b471b 100644
  
  		if (start == 0 || size == 0) {
  			return false;
-@@ -240,11 +277,14 @@ public:
+@@ -240,11 +278,14 @@ public:
  		const auto index = static_cast<size_t>(position - m_ranges.begin());
  		m_ranges.insert(position, r);
  		MergeAroundUnlocked(index);
@@ -3274,7 +3412,7 @@ index 02fc0fc..35b471b 100644
  
  		auto position = LowerBound(start);
  		if (position != m_ranges.end() && position->start == start && position->size == size) {
-@@ -276,6 +316,8 @@ public:
+@@ -276,6 +317,8 @@ public:
  
  	bool ReleaseReserved(uint64_t start, uint64_t size) {
  		Common::LockGuard lock(m_mutex);
@@ -3283,7 +3421,7 @@ index 02fc0fc..35b471b 100644
  
  		for (size_t index = 0; index < m_ranges.size(); index++) {
  			auto& r = m_ranges[index];
-@@ -290,6 +332,8 @@ public:
+@@ -290,6 +333,8 @@ public:
  	bool ConsumeReserved(uint64_t start, uint64_t size,
  	                     VirtualRangeType type = VirtualRangeType::Reserved) {
  		Common::LockGuard lock(m_mutex);
@@ -3292,7 +3430,7 @@ index 02fc0fc..35b471b 100644
  
  		auto end = End(start, size);
  		for (const auto& r: m_ranges) {
-@@ -306,6 +350,8 @@ public:
+@@ -306,6 +351,8 @@ public:
  	bool ConsumeReservedSpan(uint64_t start, uint64_t size, Range* first_range = nullptr,
  	                         VirtualRangeType type = VirtualRangeType::Reserved) {
  		Common::LockGuard lock(m_mutex);
@@ -3301,7 +3439,7 @@ index 02fc0fc..35b471b 100644
  
  		if (size == 0) {
  			return false;
-@@ -337,6 +383,7 @@ public:
+@@ -337,6 +384,7 @@ public:
  
  	void Rename(uint64_t start, uint64_t size, const char* name) {
  		Common::LockGuard lock(m_mutex);
@@ -3309,7 +3447,7 @@ index 02fc0fc..35b471b 100644
  
  		auto position = LowerBound(start);
  		if (position != m_ranges.end() && position->start == start && position->size == size) {
-@@ -349,12 +396,15 @@ public:
+@@ -349,12 +397,15 @@ public:
  
  	void Protect(uint64_t start, uint64_t size, int protection) {
  		Common::LockGuard lock(m_mutex);
@@ -3325,7 +3463,7 @@ index 02fc0fc..35b471b 100644
  
  		EditUnlocked(start, size, [memory_type](Range* r) { r->memory_type = memory_type; });
  	}
-@@ -382,6 +432,13 @@ public:
+@@ -382,6 +433,13 @@ public:
  		return true;
  	}
  
@@ -3339,7 +3477,7 @@ index 02fc0fc..35b471b 100644
  	bool QuerySpan(uint64_t start, uint64_t size, std::vector<Range>* out) {
  		EXIT_IF(out == nullptr);
  
-@@ -644,6 +701,7 @@ private:
+@@ -644,6 +702,7 @@ private:
  	}
  
  	std::vector<Range> m_ranges;
@@ -3347,7 +3485,7 @@ index 02fc0fc..35b471b 100644
  	Common::Mutex      m_mutex;
  };
  
-@@ -712,6 +770,12 @@ public:
+@@ -712,6 +771,12 @@ public:
  				                            : minimum;
  				target = std::max(minimum, std::min(ps5_game_total, capped));
  			}
@@ -3360,7 +3498,7 @@ index 02fc0fc..35b471b 100644
  			target = target & ~(0x4000ull - 1ull);
  			LOGF("guest memory total = %llu MiB\n", static_cast<unsigned long long>(target / megabyte));
  			return target;
-@@ -850,7 +914,99 @@ static std::unique_ptr<PhysicalMemory>    g_physical_memory;
+@@ -850,7 +915,99 @@ static std::unique_ptr<PhysicalMemory>    g_physical_memory;
  static std::unique_ptr<FlexibleMemory>    g_flexible_memory;
  static std::unique_ptr<PooledMemory>      g_pooled_memory;
  static std::unique_ptr<VirtualRanges>     g_virtual_ranges;
@@ -3460,7 +3598,7 @@ index 02fc0fc..35b471b 100644
  static callback_func_t                    g_alloc_callback        = nullptr;
  static callback_func_t                    g_free_callback         = nullptr;
  static std::atomic<uint64_t>              g_memory_pool_committed = 0;
-@@ -3193,6 +3349,16 @@ static bool ReplaceFixedRangeWithReserved(uint64_t start, uint64_t size) {
+@@ -3193,6 +3350,16 @@ static bool ReplaceFixedRangeWithReserved(uint64_t start, uint64_t size) {
  			replaced.range.offset += current - range.start;
  		}
  		DecodeMemoryProtection(replaced.range.protection, &replaced.mode, &replaced.gpu_mode);
@@ -3477,7 +3615,7 @@ index 02fc0fc..35b471b 100644
  		if (range.type == VirtualRangeType::Direct &&
  		    !g_guest_address_space->BackingContains(current, chunk)) {
  			return false;
-@@ -3465,7 +3631,70 @@ bool KernelHandleReservedRangeAccessViolation(uint64_t vaddr) {
+@@ -3465,7 +3632,70 @@ bool KernelHandleReservedRangeAccessViolation(uint64_t vaddr) {
  	    std::strncmp(range.name, "AMM", KERNEL_MAXIMUM_NAME_LENGTH) != 0) {
  		return false;
  	}
@@ -3578,7 +3716,7 @@ index d1fc7f8..0eeb1cd 100644
  void                   WriteBacking(uint64_t vaddr, const void* data, uint64_t size) noexcept;
  void                   InvalidateMemory(uint64_t vaddr, uint64_t size);
 diff --git a/src/kernel/memoryAddressSpace.inc b/src/kernel/memoryAddressSpace.inc
-index 9ea25b0..94749b5 100644
+index 9ea25b0..b922b68 100644
 --- a/src/kernel/memoryAddressSpace.inc
 +++ b/src/kernel/memoryAddressSpace.inc
 @@ -31,6 +31,24 @@ static bool CoalescePlaceholders(uint64_t vaddr, uint64_t size) {
@@ -3637,7 +3775,37 @@ index 9ea25b0..94749b5 100644
  		std::memset(m_backing_base + backing_offset, 0, size);
  		return true;
  	}
-@@ -469,7 +495,8 @@ private:
+@@ -184,7 +210,28 @@ public:
+ 		auto* destination = static_cast<uint8_t*>(data);
+ 		return TryTransferBacking(
+ 		    vaddr, size, [destination](uint8_t* backing, uint64_t data_offset, size_t bytes) {
+-			    std::memcpy(destination + data_offset, backing, bytes);
++			    // BC5 (experiment 0070): a display buffer (33 MB at 4K) is read here while a flip is
++			    // prepared, and the game waits for that; one thread took ~4 ms. Large reads are
++			    // split over 4 threads (KYTY_BC5_READ_THREADS=<n> to change, 1 = as before).
++			    static const size_t threads = [] {
++				    const char* e = std::getenv("KYTY_BC5_READ_THREADS");
++				    const long  n = e != nullptr ? std::atol(e) : 4;
++				    return static_cast<size_t>(n < 1 ? 1 : (n > 16 ? 16 : n));
++			    }();
++			    if (threads <= 1 || bytes < (4u << 20u)) {
++				    std::memcpy(destination + data_offset, backing, bytes);
++				    return;
++			    }
++			    const size_t part = ((bytes / threads) + 4095u) & ~static_cast<size_t>(4095u);
++			    std::vector<std::thread> workers;
++			    for (size_t k = 1; k < threads; k++) {
++				    const size_t off = k * part;
++				    if (off >= bytes) break;
++				    const size_t n = std::min(part, bytes - off);
++				    workers.emplace_back([=] { std::memcpy(destination + data_offset + off, backing + off, n); });
++			    }
++			    std::memcpy(destination + data_offset, backing, std::min(part, bytes));
++			    for (auto& w: workers) w.join();
+ 		    });
+ 	}
+ 
+@@ -469,7 +516,8 @@ private:
  			EXIT_IF(!FindContainingUnlocked(current, 1, &entry));
  			const auto bytes  = std::min(end, entry.vaddr + entry.size) - current;
  			const auto offset = entry.backing_offset + current - entry.vaddr;
@@ -3647,7 +3815,7 @@ index 9ea25b0..94749b5 100644
  			current += bytes;
  		}
  		return true;
-@@ -572,12 +599,15 @@ private:
+@@ -572,12 +620,15 @@ private:
  	[[nodiscard]] static uint64_t GetMappableTestSize() { return 0x4000; }
  
  	static int GetProtect(VirtualMemory::Mode mode) {
@@ -3665,7 +3833,7 @@ index 9ea25b0..94749b5 100644
  			case VirtualMemory::Mode::ExecuteWrite:
  			case VirtualMemory::Mode::ExecuteReadWrite: return PROT_EXEC | PROT_READ | PROT_WRITE;
  			case VirtualMemory::Mode::NoAccess:
-@@ -587,8 +617,24 @@ private:
+@@ -587,8 +638,24 @@ private:
  
  	void* MapView(uint64_t vaddr, uint64_t size, uint64_t backing_offset, VirtualMemory::Mode mode,
  	              FailureReason* failure_reason) {
@@ -3692,7 +3860,7 @@ index 9ea25b0..94749b5 100644
  		if (ptr == MAP_FAILED) {
  			SetFailure(failure_reason, FailureReason::FixedMapViewFailed);
  			return nullptr;
-@@ -599,6 +645,10 @@ private:
+@@ -599,6 +666,10 @@ private:
  	// Replace the file view atomically instead of exposing an unmapped hole in the
  	// process-lifetime guest reservation.
  	static bool UnmapViewPreservePlaceholder(void* vaddr, uint64_t size) {
@@ -3703,7 +3871,7 @@ index 9ea25b0..94749b5 100644
  		void* ptr = mmap(vaddr, size, PROT_NONE, MAP_PRIVATE | MAP_ANON | MAP_FIXED, -1, 0);
  		return ptr != MAP_FAILED && ptr == vaddr;
  	}
-@@ -798,6 +848,51 @@ public:
+@@ -798,6 +869,51 @@ public:
  		return FindContaining(vaddr, size) != m_free.end();
  	}
  
@@ -3755,7 +3923,7 @@ index 9ea25b0..94749b5 100644
  	bool Commit(uint64_t vaddr, uint64_t size, VirtualMemory::Mode mode) {
  		std::lock_guard lock(m_mutex);
  		if (!ConsumeUnlocked(vaddr, size)) {
-@@ -821,6 +916,33 @@ public:
+@@ -821,6 +937,33 @@ public:
  		EXIT_IF(!AddMappedUnlocked(vaddr, size, MappingType::Private));
  		return true;
  #else
@@ -4167,10 +4335,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..45f86ad
+index 0000000..0c8df18
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,6106 @@
+@@ -0,0 +1,6115 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -10123,9 +10291,14 @@ index 0000000..45f86ad
 +				// into it) once that is done, by a thread of its own so that the completion thread
 +				// goes on with the jobs: no tearing, but double-buffered at 60 Hz a frame of a bit
 +				// more than 16.7 ms waits for the next refresh (30 fps in the later level, run 303).
-+				// Without it the label is cleared now, as before.
++				// Experiment 0070 (the default): without it the label is cleared once the flip has
++				// been copied into the presenter's own frame (KytyPlus FlipQueue::Prepare records
++				// the copy, Complete marks it done), which is what the console's flip guarantees
++				// for the buffer; the presentation at the refresh shows the copy.
++				// BC5_DIRECT_FLIP_RELEASE_EARLY=1: cleared at once, as before 0070.
 +				static const bool wait_done = std::getenv("BC5_DIRECT_FLIP_WAIT_DONE") != nullptr;
-+				if (!wait_done) {
++				static const bool early     = std::getenv("BC5_DIRECT_FLIP_RELEASE_EARLY") != nullptr;
++				if (early && !wait_done) {
 +					Bc5Gc::g_labels[index] = 0;
 +					Bc5Gc::g_flip_pending[index]--;
 +					return;
@@ -10145,7 +10318,11 @@ index 0000000..45f86ad
 +								it = q.front();
 +								q.pop_front();
 +							}
-+							VideoOut::Bc5VideoOutWaitFlipDone(it.first, it.second);
++							if (wait_done) {
++								VideoOut::Bc5VideoOutWaitFlipDone(it.first, it.second);
++							} else {
++								VideoOut::Bc5VideoOutWaitFlipCopied(it.first, it.second);
++							}
 +							Bc5Gc::g_labels[it.second] = 0;
 +							Bc5Gc::g_flip_pending[it.second]--;
 +						}
