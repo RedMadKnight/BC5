@@ -299,6 +299,11 @@ Experiment 0070 (default): the label is cleared once KytyPlus has recorded the f
 the buffer (`Bc5VideoOutWaitFlipCopied`); `BC5_DIRECT_FLIP_RELEASE_EARLY=1` restores 0069's
 release when the flip is queued. `KYTY_BC5_READ_THREADS=<n>` (default 4) splits guest reads of
 4 MiB and more; `KYTY_BC5_FLIP_TIMING=1` prints the flip preparation's timing.
+ADR 0008 step 1: `BC5_DIRECT_PIECE_CHECK=<n>` follows the graphics queue's full register state
+(`bc5::full_state`, every cc/hib/dcb buffer, tables and nested buffers read from guest memory)
+and, for every n-th graphics buffer with memory waits, checks at each wait whether a piece
+started there after the tracker's prefix would see the same registers at every later draw as the
+unsplit buffer. CPU only, nothing submitted changes; a `piece check:` journal line every 10 s.
 Experiment 0063: `BC5_DIRECT_IB_STABLE_CHECK=1` hashes every job's buffers at submission and when the
 job is done and journals how many changed (`=2`: every 32nd job keeps a copy, and the changed
 dwords are located by packet, NOP payloads apart).

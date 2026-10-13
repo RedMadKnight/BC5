@@ -32,6 +32,7 @@ add_library(bc5_backend
     src/dispatch_min.cpp
     src/policy.cpp
     src/state_stack.cpp
+    src/full_state.cpp
     src/cu_tables.cpp
     src/indirect_check.cpp
 )
@@ -94,7 +95,7 @@ if(BC5_BUILD_TESTS)
     include(Catch)
 
     add_executable(bc5_backend_tests tests/placeholder_test.cpp tests/pm4_test.cpp tests/policy_test.cpp
-                   tests/state_stack_test.cpp tests/cu_tables_test.cpp
+                   tests/state_stack_test.cpp tests/full_state_test.cpp tests/cu_tables_test.cpp
                    tests/indirect_check_test.cpp)
     target_link_libraries(bc5_backend_tests PRIVATE bc5_backend bc5_warnings Catch2::Catch2WithMain)
     catch_discover_tests(bc5_backend_tests)
