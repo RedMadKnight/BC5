@@ -158,6 +158,10 @@ a thread tails the file every 20 ms and runs each new line in order: `press <but
 it re-centres afterwards), `trigger <l2|r2> <0..255> [ms]`, `shake`, `wait <ms>`, `reset`.
 Buttons: cross circle square triangle options up down left right l1 r1 l2 r2 l3 r3 touchpad.
 After each line, `<file>.done` holds the number of lines run.
+`KYTY_BC5_INPUT_RECORD=<file>` writes what the real pad does in the same format (`hold`/`release`,
+`stick`, `trigger`, `wait` lines between them; stick moves at most every 30 ms and only past a
+change of 6), so a route played once by hand can be replayed through `KYTY_BC5_INPUT_CMD`. The
+scripted input is not recorded.
 `KYTY_BC5_SAVEDATA_DIR=<dir>` puts the save data memory file (`<title>/sce_sdmemory/memory.dat`)
 under that directory instead of `_SaveData` in the working directory, so that runs started in
 different directories share one save.

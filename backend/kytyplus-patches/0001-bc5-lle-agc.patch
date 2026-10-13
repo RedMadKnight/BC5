@@ -10203,7 +10203,7 @@ index 0000000..0ace4d9
 +
 +} // namespace Libs
 diff --git a/src/libs/controller.cpp b/src/libs/controller.cpp
-index 55718eb..f3bdf4a 100644
+index 55718eb..24bf963 100644
 --- a/src/libs/controller.cpp
 +++ b/src/libs/controller.cpp
 @@ -1,4 +1,8 @@
@@ -10215,7 +10215,7 @@ index 55718eb..f3bdf4a 100644
  
  #include "common/assert.h"
  #include "common/common.h"
-@@ -12,6 +16,11 @@
+@@ -12,9 +16,15 @@
  #include "libs/libs.h"
  #include "libs/padData.h"
  
@@ -10227,7 +10227,11 @@ index 55718eb..f3bdf4a 100644
  #include <algorithm>
  #include <cstring>
  #include <vector>
-@@ -45,6 +54,9 @@ struct ControllerState {
++#include <mutex>
+ 
+ namespace Libs::Controller {
+ 
+@@ -45,6 +55,9 @@ struct ControllerState {
  	uint64_t time                                  = 0;
  	uint32_t buttons                               = 0;
  	int      axes[static_cast<int>(Axis::AxisMax)] = {128, 128, 128, 128, 0, 0};
@@ -10237,7 +10241,7 @@ index 55718eb..f3bdf4a 100644
  };
  
  // Local-multiplayer: one GameController owns up to PAD_MAX_CONTROLLERS player
-@@ -61,6 +73,8 @@ public:
+@@ -61,6 +74,8 @@ public:
  	void Disconnect(int id);
  	void Button(int id, uint32_t button, bool down);
  	void Axis(int id, Axis axis, int value);
@@ -10246,7 +10250,7 @@ index 55718eb..f3bdf4a 100644
  	void ResetInputState();
  	void GetConnectionInfo(bool* flag, int* count);
  	void ReadState(ControllerState* state, bool* flag, int* count);
-@@ -78,7 +92,25 @@ private:
+@@ -78,7 +93,25 @@ private:
  		bool            obtained[STATES_MAX] = {};
  		uint32_t        states_num          = 0;
  		uint32_t        first_state         = 0;
@@ -10272,7 +10276,7 @@ index 55718eb..f3bdf4a 100644
  
  	void EnsureSlot(int index);
  	int  OwnerSlot(int id) const;
-@@ -94,6 +126,34 @@ private:
+@@ -94,6 +127,34 @@ private:
  	std::vector<SlotState> m_slots;
  };
  static GameController* g_controller = nullptr;
@@ -10307,7 +10311,7 @@ index 55718eb..f3bdf4a 100644
  // Native DualSense driver instance (spec-accurate, hardware-unvalidated).
  // Owned by the Controller subsystem; opened on subsystem init if a device is
  // present, polled on an internal thread, and closed on subsystem destroy.
-@@ -180,7 +240,30 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
+@@ -180,7 +241,30 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
  	data->right_stick_y          = state.axes[static_cast<int>(Axis::RightY)];
  	data->analog_buttons_l2      = state.axes[static_cast<int>(Axis::TriggerLeft)];
  	data->analog_buttons_r2      = state.axes[static_cast<int>(Axis::TriggerRight)];
@@ -10339,7 +10343,7 @@ index 55718eb..f3bdf4a 100644
  	data->touch_data_touch0_id   = 1;
  	data->touch_data_touch1_id   = 2;
  	data->connected              = connected;
-@@ -189,11 +272,177 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
+@@ -189,11 +273,177 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
  	data->device_unique_data_len = 0;
  }
  
@@ -10517,7 +10521,85 @@ index 55718eb..f3bdf4a 100644
  
  	// The native DualSense HID driver is opt-in and off by default. SDL already
  	// handles every standard pad (including a DualSense); this unvalidated driver is
-@@ -268,6 +517,26 @@ void ControllerAxis(int id, Axis axis, int value) {
+@@ -258,16 +508,104 @@ void ControllerDisconnect(int id) {
+ 	g_controller->Disconnect(id);
+ }
+ 
++// BC5: KYTY_BC5_INPUT_RECORD=<file> writes what the real pad does as KYTY_BC5_INPUT_CMD lines
++// (hold/release, stick, trigger, with wait lines between them), so that a route played once by
++// hand can be replayed by a script. Stick moves are written at most every 30 ms, when one axis
++// moved by more than 6. The scripted input itself (id -1000) is not recorded.
++static std::mutex g_rec_mutex;
++static FILE*      Bc5RecFile() {
++	static FILE* f = [] {
++		const char* path = std::getenv("KYTY_BC5_INPUT_RECORD");
++		return (path != nullptr && *path != 0) ? std::fopen(path, "w") : nullptr;
++	}();
++	return f;
++}
++static void Bc5RecLine(const char* line) { // the caller holds g_rec_mutex
++	static auto last = std::chrono::steady_clock::now();
++	static bool first = true;
++	const auto  now   = std::chrono::steady_clock::now();
++	const auto  ms    = std::chrono::duration_cast<std::chrono::milliseconds>(now - last).count();
++	FILE*       f     = Bc5RecFile();
++	if (!first && ms > 0) std::fprintf(f, "wait %lld\n", static_cast<long long>(ms));
++	first = false;
++	last  = now;
++	std::fprintf(f, "%s\n", line);
++	std::fflush(f);
++}
++static void Bc5RecButton(int id, uint32_t button, bool down) {
++	if (id == -1000 || Bc5RecFile() == nullptr) return;
++	static const std::pair<const char*, uint32_t> names[] = {
++	    {"cross", PAD_BUTTON_CROSS}, {"circle", PAD_BUTTON_CIRCLE}, {"square", PAD_BUTTON_SQUARE},
++	    {"triangle", PAD_BUTTON_TRIANGLE}, {"options", PAD_BUTTON_OPTIONS}, {"up", PAD_BUTTON_UP},
++	    {"down", PAD_BUTTON_DOWN}, {"left", PAD_BUTTON_LEFT}, {"right", PAD_BUTTON_RIGHT},
++	    {"l1", PAD_BUTTON_L1}, {"r1", PAD_BUTTON_R1}, {"l2", PAD_BUTTON_L2}, {"r2", PAD_BUTTON_R2},
++	    {"l3", PAD_BUTTON_L3}, {"r3", PAD_BUTTON_R3}, {"touchpad", PAD_BUTTON_TOUCH_PAD}};
++	std::lock_guard lock(g_rec_mutex);
++	for (const auto& [name, bit]: names) {
++		if ((button & bit) == 0) continue;
++		char line[64];
++		std::snprintf(line, sizeof(line), "%s %s", down ? "hold" : "release", name);
++		Bc5RecLine(line);
++	}
++}
++static void Bc5RecAxis(int id, Axis axis, int value) {
++	if (id == -1000 || Bc5RecFile() == nullptr) return;
++	static int  cur[6] = {128, 128, 128, 128, 0, 0}, written[6] = {128, 128, 128, 128, 0, 0};
++	static auto last_write = std::chrono::steady_clock::now();
++	const int   a          = static_cast<int>(axis);
++	if (a < 0 || a >= 6) return;
++	std::lock_guard lock(g_rec_mutex);
++	cur[a] = value;
++	if (std::abs(cur[a] - written[a]) <= 6 && !(value == 128 && a < 4 && written[a] != 128) && !(value == 0 && a >= 4 && written[a] != 0)) return;
++	const auto now = std::chrono::steady_clock::now();
++	const bool settle = (a < 4 && value == 128) || (a >= 4 && value == 0); // a stick back to rest is never dropped
++	if (!settle && now - last_write < std::chrono::milliseconds(30)) return;
++	last_write = now;
++	char line[64];
++	if (a < 4) {
++		const int sx = a < 2 ? 0 : 2;
++		std::snprintf(line, sizeof(line), "stick %s %d %d", a < 2 ? "l" : "r", cur[sx], cur[sx + 1]);
++		written[sx]     = cur[sx];
++		written[sx + 1] = cur[sx + 1];
++	} else {
++		std::snprintf(line, sizeof(line), "trigger %s %d", a == 4 ? "l2" : "r2", cur[a]);
++		written[a] = cur[a];
++	}
++	Bc5RecLine(line);
++}
++
+ void ControllerButton(int id, uint32_t button, bool down) {
+ 	EXIT_IF(g_controller == nullptr);
++	Bc5RecButton(id, button, down);
+ 	g_controller->Button(id, button, down);
+ }
+ 
+ void ControllerAxis(int id, Axis axis, int value) {
+ 	EXIT_IF(g_controller == nullptr);
++	Bc5RecAxis(id, axis, value);
  	g_controller->Axis(id, axis, value);
  }
  
@@ -10544,7 +10626,7 @@ index 55718eb..f3bdf4a 100644
  void ControllerResetInputState() {
  	EXIT_IF(g_controller == nullptr);
  	g_controller->ResetInputState();
-@@ -395,6 +664,11 @@ void GameController::Button(int id, uint32_t button, bool down) {
+@@ -395,6 +733,11 @@ void GameController::Button(int id, uint32_t button, bool down) {
  	if (slot == -1) {
  		slot = FallbackSlot();
  	}
@@ -10556,7 +10638,7 @@ index 55718eb..f3bdf4a 100644
  
  	auto state = GetLastState(slot);
  	state.time = LibKernel::KernelGetProcessTime();
-@@ -415,6 +689,13 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
+@@ -415,6 +758,13 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
  	if (slot == -1) {
  		slot = FallbackSlot();
  	}
@@ -10570,7 +10652,7 @@ index 55718eb..f3bdf4a 100644
  
  	auto state = GetLastState(slot);
  	state.time = LibKernel::KernelGetProcessTime();
-@@ -422,8 +703,28 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
+@@ -422,8 +772,28 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
  	const int axis_id = static_cast<int>(axis);
  	EXIT_IF(axis_id < 0 || axis_id >= static_cast<int>(Controller::Axis::AxisMax));
  
@@ -10599,7 +10681,7 @@ index 55718eb..f3bdf4a 100644
  	if (axis == Controller::Axis::TriggerLeft) {
  		if (value > 0) {
  			state.buttons |= PAD_BUTTON_L2;
-@@ -443,6 +744,86 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
+@@ -443,6 +813,86 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
  	AddState(slot, state);
  }
  
@@ -10686,7 +10768,7 @@ index 55718eb..f3bdf4a 100644
  void GameController::ResetInputState() {
  	Common::LockGuard lock(m_mutex);
  
-@@ -488,6 +869,13 @@ int GameController::ReadStateForSlot(int index, ControllerState* state, bool* fl
+@@ -488,6 +938,13 @@ int GameController::ReadStateForSlot(int index, ControllerState* state, bool* fl
  	*flag  = SlotConnected(index);
  	*count = PresentCount();
  	*state = GetLastState(index);
@@ -10700,7 +10782,7 @@ index 55718eb..f3bdf4a 100644
  
  	return 0;
  }
-@@ -515,7 +903,27 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
+@@ -515,7 +972,27 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
  	int ret_num = 0;
  
  	auto& s = m_slots[index];
@@ -10728,7 +10810,7 @@ index 55718eb..f3bdf4a 100644
  		for (uint32_t i = 0; i < s.states_num; i++) {
  			if (ret_num >= states_num) {
  				break;
-@@ -523,11 +931,21 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
+@@ -523,11 +1000,21 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
  			auto state_index = (s.first_state + i) % STATES_MAX;
  			if (!s.obtained[state_index]) {
  				s.obtained[state_index] = true;
@@ -10751,7 +10833,7 @@ index 55718eb..f3bdf4a 100644
  	return ret_num;
  }
  int KYTY_SYSV_ABI PadInit() {
-@@ -625,6 +1043,9 @@ int KYTY_SYSV_ABI PadResetOrientation(int handle) {
+@@ -625,6 +1112,9 @@ int KYTY_SYSV_ABI PadResetOrientation(int handle) {
  	if (ControllerIndexFromHandle(handle) < 0) {
  		return PAD_ERROR_INVALID_HANDLE;
  	}
@@ -10761,7 +10843,7 @@ index 55718eb..f3bdf4a 100644
  
  	return OK;
  }
-@@ -682,6 +1103,10 @@ int KYTY_SYSV_ABI PadReadState(int handle, PadData* data) {
+@@ -682,6 +1172,10 @@ int KYTY_SYSV_ABI PadReadState(int handle, PadData* data) {
  	g_controller->ReadStateForSlot(ControllerIndexFromHandle(handle), &state, &connected,
  	                               &connected_count);
  
@@ -10772,7 +10854,7 @@ index 55718eb..f3bdf4a 100644
  	pad_fill_data(data, state, connected, connected_count);
  
  	return OK;
-@@ -718,6 +1143,10 @@ int KYTY_SYSV_ABI PadRead(int handle, PadData* data, int num) {
+@@ -718,6 +1212,10 @@ int KYTY_SYSV_ABI PadRead(int handle, PadData* data, int num) {
  	}
  
  	for (int i = 0; i < ret_num; i++) {
