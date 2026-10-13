@@ -51,7 +51,7 @@ struct SplitCheck {
     std::size_t mismatched_draws = 0; // whose tracked state differs between the two
     int first_space = -1;             // the first difference: space, register offset
     std::uint32_t first_offset = 0;
-    std::size_t stack_depth = 0;      // CLEAR_STATE pushes open at the split (not in the prefix)
+    std::size_t stack_depth = 0;      // CLEAR_STATE pushes open at the split
 };
 
 class Tracker {
@@ -73,6 +73,10 @@ public:
     // The first register that differs from o (space, offset); false if the registers are equal.
     bool first_difference(const Tracker &o, int &space, std::uint32_t &offset) const;
     std::size_t stack_depth() const { return context_stack_.size(); }
+    // The saved contexts of o's open pushes. A piece needs no prefix for them: the device's
+    // state-stack emulation (bc5::state_stack, direct.cpp) keeps its stack across submissions
+    // and restores a pop from it.
+    void adopt_stack(const Tracker &o) { context_stack_ = o.context_stack_; }
 
 private:
     void apply_level(std::span<const std::uint32_t> ib, const Reader &read, Stats &stats, int depth);

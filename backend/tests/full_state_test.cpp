@@ -208,7 +208,8 @@ TEST_CASE("full state: a split checked against the unsplit buffer", "[full_state
     CHECK(c.stack_depth == 0);
     CHECK(c.prefix_dwords > 0);
 
-    // A push open at the split: the prefix does not carry the saved context, the pop differs.
+    // A push open at the split: the saved context is the device's state stack's (adopted), so
+    // the pop restores the same registers in the piece.
     const std::vector<std::uint32_t> pushed = {
         0xC0001200u, 1,                                // push (offset 0)
         0xC0016900u, 0x300, 9,
@@ -219,6 +220,5 @@ TEST_CASE("full state: a split checked against the unsplit buffer", "[full_state
     const auto d = full_state::check_split(before, pushed, 5, kNone);
     CHECK(d.stack_depth == 1);
     CHECK(d.draws == 1);
-    CHECK(d.mismatched_draws == 1);
-    CHECK(d.first_space == full_state::Context);
+    CHECK(d.mismatched_draws == 0);
 }
