@@ -53,49 +53,94 @@ void put_header(std::vector<std::uint32_t> &out, std::uint8_t op, std::size_t bo
 
 } // namespace
 
+void Tracker::RegFile::set(std::uint32_t off, std::uint32_t v) {
+    if (off < has.size()) {
+        if (has[off] == 0) {
+            has[off] = 1;
+            n++;
+        }
+        value[off] = v;
+        return;
+    }
+    if (overflow.insert_or_assign(off, v).second) n++;
+}
+
+bool Tracker::RegFile::get(std::uint32_t off, std::uint32_t &v) const {
+    if (off < has.size()) {
+        if (has[off] == 0) return false;
+        v = value[off];
+        return true;
+    }
+    const auto it = overflow.find(off);
+    if (it == overflow.end()) return false;
+    v = it->second;
+    return true;
+}
+
+void Tracker::RegFile::clear() {
+    if (n == 0) return;
+    std::fill(has.begin(), has.end(), std::uint8_t{0});
+    overflow.clear();
+    n = 0;
+}
+
+bool Tracker::RegFile::operator==(const RegFile &o) const {
+    std::uint32_t off = 0;
+    return !first_difference(o, off);
+}
+
+bool Tracker::RegFile::first_difference(const RegFile &o, std::uint32_t &off) const {
+    for (std::size_t k = 0; k < has.size(); ++k) {
+        if (has[k] != o.has[k] || (has[k] != 0 && value[k] != o.value[k])) {
+            off = static_cast<std::uint32_t>(k);
+            return true;
+        }
+    }
+    auto a = overflow.begin(), b = o.overflow.begin();
+    while (a != overflow.end() || b != o.overflow.end()) {
+        if (a == overflow.end() || (b != o.overflow.end() && b->first < a->first)) {
+            off = b->first;
+            return true;
+        }
+        if (b == o.overflow.end() || a->first < b->first || a->second != b->second) {
+            off = a->first;
+            return true;
+        }
+        ++a;
+        ++b;
+    }
+    return false;
+}
+
 void Tracker::set(Space space, std::uint32_t offset, std::uint32_t value) {
-    regs_[space][offset & 0xffffu] = value;
+    regs_[space].set(offset & 0xffffu, value);
 }
 
 bool Tracker::get(Space space, std::uint32_t offset, std::uint32_t &value) const {
-    const auto it = regs_[space].find(offset);
-    if (it == regs_[space].end()) return false;
-    value = it->second;
-    return true;
+    return regs_[space].get(offset, value);
 }
 
 bool Tracker::operator==(const Tracker &o) const {
     for (int s = 0; s < Spaces; ++s)
-        if (regs_[s] != o.regs_[s]) return false;
+        if (!(regs_[s] == o.regs_[s])) return false;
     const auto &a = packets_, &b = o.packets_;
     return a.set_base == b.set_base && a.index_base == b.index_base &&
            a.index_buffer_size == b.index_buffer_size && a.index_type == b.index_type &&
            a.num_instances == b.num_instances;
 }
 
-void Tracker::apply(std::span<const std::uint32_t> ib, const Reader &read, Stats &stats) {
-    apply_level(ib, read, stats, 0);
-}
-
 bool Tracker::first_difference(const Tracker &o, int &space, std::uint32_t &offset) const {
     for (int s = 0; s < Spaces; ++s) {
-        auto a = regs_[s].begin(), b = o.regs_[s].begin();
-        while (a != regs_[s].end() || b != o.regs_[s].end()) {
-            if (a == regs_[s].end() || (b != o.regs_[s].end() && b->first < a->first)) {
-                space = s;
-                offset = b->first;
-                return true;
-            }
-            if (b == o.regs_[s].end() || a->first < b->first || a->second != b->second) {
-                space = s;
-                offset = a->first;
-                return true;
-            }
-            ++a;
-            ++b;
+        if (regs_[s].first_difference(o.regs_[s], offset)) {
+            space = s;
+            return true;
         }
     }
     return false;
+}
+
+void Tracker::apply(std::span<const std::uint32_t> ib, const Reader &read, Stats &stats) {
+    apply_level(ib, read, stats, 0);
 }
 
 void Tracker::apply_level(std::span<const std::uint32_t> ib, const Reader &read, Stats &stats, int depth) {
@@ -199,21 +244,24 @@ std::vector<std::uint32_t> Tracker::emit_prefix() const {
     out.insert(out.end(), {0xC0012800u, 0x80000000u, 0x80000000u});
     out.insert(out.end(), {0xC0001200u, 0u}); // CLEAR_STATE cmd 0
     for (int s = 0; s < Spaces; ++s) {
-        const auto &m = regs_[s];
-        for (auto it = m.begin(); it != m.end();) {
-            auto run_end = it;
-            std::vector<std::uint32_t> values;
-            std::uint32_t next = it->first;
-            while (run_end != m.end() && run_end->first == next && values.size() < 0x3fff - 1) {
-                values.push_back(run_end->second);
-                ++next;
-                ++run_end;
-            }
+        // Runs of consecutive registers, at most 0x3ffe values per packet.
+        std::uint32_t first = 0;
+        std::vector<std::uint32_t> values;
+        const auto flush = [&] {
+            if (values.empty()) return;
             put_header(out, kSetOp[s], values.size() + 1);
-            out.push_back(it->first);
+            out.push_back(first);
             out.insert(out.end(), values.begin(), values.end());
-            it = run_end;
-        }
+            values.clear();
+        };
+        regs_[s].for_each([&](std::uint32_t off, std::uint32_t v) {
+            if (values.empty() || off != first + values.size() || values.size() >= 0x3fff - 1) {
+                flush();
+                first = off;
+            }
+            values.push_back(v);
+        });
+        flush();
     }
     const auto put = [&out](std::uint8_t op, const std::vector<std::uint32_t> &b) {
         if (b.empty()) return;
