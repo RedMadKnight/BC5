@@ -4387,10 +4387,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..0c8df18
+index 0000000..b520567
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,6115 @@
+@@ -0,0 +1,6170 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -4476,10 +4476,18 @@ index 0000000..0c8df18
 +
 +static std::mutex        g_mutex;
 +static void*             g_submit_area = nullptr; // 0xc008811b "submit done flag" page
-+static uint64_t          g_labels[64];             // sceVideoOutGetBufferLabelAddress target
++// sceVideoOutGetBufferLabelAddress target. Experiment 0071: on a page of its own, anonymous and
++// read-write, so that it can be mapped for the GPU (the direct path's anonymous mappings and an
++// explicit map before a flip-label wait is left to the GPU); in the binary's data it was not
++// mapped, and the first wait left to the GPU hung the ring (run 312).
++static uint64_t (&g_labels)[64] = *reinterpret_cast<uint64_t (*)[64]>(
++    ::mmap(nullptr, 4096, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0));
 +// Experiment 0069: deferred flips (BC5_DIRECT_FLIP_DEFER) of each buffer still queued; while one
 +// is, the buffer's label is legitimately set and the next frame must not render into it.
 +static std::atomic<int>  g_flip_pending[64];
++// Experiment 0071: when the last deferred flip of each buffer was queued (steady ns), for the
++// watchdog of BC5_DIRECT_FLIP_GPU_WAIT.
++static std::atomic<uint64_t> g_flip_since[64];
 +static std::atomic<int>  g_dump_count {0};
 +static int               g_dump_limit = -1;
 +static std::string       g_dump_dir;
@@ -7408,6 +7416,50 @@ index 0000000..0c8df18
 +							// order). The wait is served on the CPU until that flip has happened (it
 +							// clears the label), at most 100 ms; only then is the label cleared.
 +							const size_t idx = static_cast<size_t>((label - l0) / sizeof(uint64_t));
++							// Experiment 0071 (BC5_DIRECT_FLIP_GPU_WAIT=1): the wait stays in the buffer for
++							// the GPU, like the ring order's waits; the game's thread goes on, and the ring
++							// waits only for the flip's copy (the label is cleared once KytyPlus has read
++							// the buffer, 0070). The jobs before it on the ring are the frame whose flip
++							// clears the label, so the wait cannot block its own release; a watchdog clears
++							// a label whose flip has been queued for more than 150 ms.
++							static const bool gpu_wait = std::getenv("BC5_DIRECT_FLIP_GPU_WAIT") != nullptr;
++							// Only with the label page mapped for the GPU (mapped here if it is not yet);
++							// otherwise the wait stays on the CPU.
++							bool label_mapped = false;
++							if (gpu_wait && g_flip_pending[idx].load() > 0 && g_dev) {
++								std::lock_guard lk(g_dev_mutex);
++								label_mapped = covered_sorted(*g_dev->sorted_mappings(), l0, sizeof(g_labels));
++								if (!label_mapped) {
++									const bool ok = g_dev->map_userptr(l0 & ~0xfffull, 4096);
++									label_mapped  = ok && covered_sorted(*g_dev->sorted_mappings(), l0, sizeof(g_labels));
++									journal("flip labels at 0x%" PRIx64 ": mapped for the GPU %s\n", l0, label_mapped ? "now" : "FAILED, the waits stay on the CPU");
++								}
++							}
++							if (gpu_wait && label_mapped && g_flip_pending[idx].load() > 0) {
++								static std::once_flag watchdog;
++								std::call_once(watchdog, [] {
++									std::thread([] {
++										pthread_setname_np(pthread_self(), "bc5-flipwatch");
++										for (;;) {
++											std::this_thread::sleep_for(std::chrono::milliseconds(10));
++											const uint64_t now = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count());
++											for (size_t k = 0; k < 64; k++) {
++												const uint64_t since = g_flip_since[k].load();
++												if (g_flip_pending[k].load() > 0 && since != 0 && now - since > 150'000'000ull && g_labels[k] != 0) {
++													g_labels[k] = 0;
++													journal("flip watchdog: label %zu cleared, its flip queued %.1f ms ago\n", k, static_cast<double>(now - since) / 1e6);
++												}
++											}
++										}
++									}).detach();
++								});
++								static std::atomic<uint64_t> n_gpu {0};
++								if ((n_gpu++ & 0x3ffu) == 0) journal("flip label 0x%" PRIx64 " set by a queued flip: the wait goes to the GPU (%" PRIu64 " so far)\n", label, n_gpu.load());
++								t_keep_waits.push_back(p);
++								SoftCp::set_gpu_executed(p, len, {0});
++								i += len;
++								continue;
++							}
 +							if (g_flip_pending[idx].load() > 0) {
 +								const uint64_t tw = SoftCp::now_ns();
 +								while (g_flip_pending[idx].load() > 0 && !wait_satisfied(p, op == 0x93) && SoftCp::now_ns() - tw < 100'000'000ull) {
@@ -10333,7 +10385,10 @@ index 0000000..0c8df18
 +	if (!defer) Bc5Gc::Direct::drain(); // BC5_DIRECT_ASYNC: nothing of the frame may still be in flight
 +	Bc5Gc::Direct::frame_profile_flip((Bc5Gc::Direct::timing_now() - t_drain) * 1e3);
 +	if (defer) {
-+		if (index >= 0 && index < 64) Bc5Gc::g_flip_pending[index]++; // experiment 0069
++		if (index >= 0 && index < 64) {
++			Bc5Gc::g_flip_pending[index]++; // experiment 0069
++			Bc5Gc::g_flip_since[index] = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count()); // experiment 0071
++		}
 +		Bc5Gc::Direct::post([handle, index, flip_mode, flip_arg](bool) {
 +			VideoOut::VideoOutSubmitFlip(handle, index, flip_mode, flip_arg);
 +			if (index >= 0 && index < 64) {
