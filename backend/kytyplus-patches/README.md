@@ -287,6 +287,9 @@ multi-draw packets); indirect draws checked at ≤ 2^20 vertices, ≤ 64 instanc
 Experiment 0056: `BC5_DIRECT_ALIASES=1` maps the memory of the windows in
 `~/bc5-work/direct-aliases-pkg.txt` ("byte lo size") again at (byte << 40) + address (backend
 `Device::map_alias`); unverified and dangerous with the indirect draws (F110).
+Experiment 0063: `BC5_DIRECT_IB_STABLE_CHECK=1` hashes every job's buffers at submission and when the
+job is done and journals how many changed (`=2`: every 32nd job keeps a copy, and the changed
+dwords are located by packet, NOP payloads apart).
 Experiment 0055: `BC5_DIRECT_RING_ORDER_WAITS=1` leaves a cross-queue wait to the GPU when the last
 pending label write of a job already on the ring satisfies it (backend `keep_wait_offsets`);
 `BC5_DIRECT_DCB_WAIT_UNBLOCKED_MS`, `BC5_DIRECT_TRAP_STATS=1` (diagnostics).
