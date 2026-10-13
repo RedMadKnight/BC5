@@ -152,6 +152,12 @@ for them; the soft CP's pass over each buffer then runs on a completion thread p
 thread, and a flip waits until nothing is in flight.
 `KYTY_BC5_AUTOPRESS="55:cross,62:cross,330:shake"` presses pad buttons (cross, circle, square,
 triangle, options) or shakes the pad at the given seconds after start, for unattended runs.
+`KYTY_BC5_INPUT_CMD=<file>` drives the pad from a script while the title runs (experiment 0061):
+a thread tails the file every 20 ms and runs each new line in order: `press <button> [ms]`,
+`hold <button>`, `release <button>`, `stick <l|r> <x> <y> [ms]` (0–255, 128 = centre; with `ms`
+it re-centres afterwards), `trigger <l2|r2> <0..255> [ms]`, `shake`, `wait <ms>`, `reset`.
+Buttons: cross circle square triangle options up down left right l1 r1 l2 r2 l3 r3 touchpad.
+After each line, `<file>.done` holds the number of lines run.
 `KYTY_BC5_SAVEDATA_DIR=<dir>` puts the save data memory file (`<title>/sce_sdmemory/memory.dat`)
 under that directory instead of `_SaveData` in the working directory, so that runs started in
 different directories share one save.

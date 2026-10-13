@@ -6,10 +6,11 @@
 // writes into its uncached scratch. Nested INDIRECT_BUFFER targets are not available offline and
 // count as unmapped. Nothing here touches a GPU.
 //
-//   prepare-bench [--repeat N] [--no-mapped] <buffer.bin>...
+//   prepare-bench [--repeat N] [--no-mapped] [--filter-only] [--hash] <buffer.bin>...
 //
 // Output: one line per buffer with the phase times in ms (median over the repetitions), then a
-// total line. GPL-2.0.
+// total line. --hash adds the FNV-1a hash of each buffer's output, to check that a faster filter
+// writes the same dwords (experiment 0061). GPL-2.0.
 
 #include "bc5/cu_tables.hpp"
 #include "bc5/policy.hpp"
@@ -137,6 +138,7 @@ int main(int argc, char **argv) {
     int repeat = 7;
     bool mapped_all = true;
     bool filter_only = false;
+    bool hash = false;
     std::vector<std::string> files;
     for (int i = 1; i < argc; ++i) {
         const std::string a = argv[i];
@@ -146,12 +148,14 @@ int main(int argc, char **argv) {
             mapped_all = false;
         } else if (a == "--filter-only") {
             filter_only = true;
+        } else if (a == "--hash") {
+            hash = true;
         } else {
             files.push_back(a);
         }
     }
     if (files.empty()) {
-        std::fprintf(stderr, "usage: prepare-bench [--repeat N] [--no-mapped] [--filter-only] <buffer.bin>...\n");
+        std::fprintf(stderr, "usage: prepare-bench [--repeat N] [--no-mapped] [--filter-only] [--hash] <buffer.bin>...\n");
         return 2;
     }
     std::printf("%-28s %7s %7s | %7s %7s %7s %7s %7s %7s | %7s | pops/restored/inserted\n", "buffer", "dwords", "out", "filter",
@@ -183,6 +187,13 @@ int main(int argc, char **argv) {
         std::printf("%-28s %7zu %7zu | %7.3f %7.3f %7.3f %7.3f %7.3f %7.3f | %7.3f | %u/%u/%u\n", name.c_str(), last.in, last.out,
                     median(t_filter), median(t_offsets), median(t_tracker), median(t_cu), median(t_copy), median(t_repoint), total,
                     last.ss.pops, last.ss.restored_regs, last.ss.inserted_dwords);
+        if (hash) {
+            std::uint64_t h = 0xcbf29ce484222325ull;
+            for (std::size_t i = 0; i < last.out; ++i) {
+                for (int b = 0; b < 4; ++b) h = (h ^ ((dst[i] >> (8 * b)) & 0xffu)) * 0x100000001b3ull;
+            }
+            std::printf("hash %s %016llx\n", name.c_str(), static_cast<unsigned long long>(h));
+        }
     }
     std::printf("total over %zu buffers: %.3f ms\n", files.size(), sum);
     return 0;

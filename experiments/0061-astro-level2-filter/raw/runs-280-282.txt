@@ -1,0 +1,75 @@
+== run 281 (kytyplus-20261013-1028, rule-8ms, old-filter), level 2 window 212-292 s (55-135 s after the level loaded)
+window 212-292 s
+given up: 0
+cpu waits 13950 total ms 7912 over 4 ms 1; ring order kept 0
+frames 2790 fps 34.88
+frame   mean  28.7 median  28.2 p90  30.8
+inside  mean  12.8 median  12.8 p90  13.6
+frames 2790 fps 34.88
+frame     mean    28.7 median    28.2 p90    30.8
+inside    mean    12.8 median    12.8 p90    13.6
+sync      mean     0.1 median     0.1 p90     0.2
+hints     mean     0.6 median     0.5 p90     0.7
+prepare   mean     7.8 median     7.5 p90     8.6
+list      mean     0.1 median     0.1 p90     0.1
+cs        mean     1.4 median     1.4 p90     1.7
+fence     mean     0.0 median     0.0 p90     0.0
+cap       mean     0.0 median     0.0 p90     0.0
+label     mean     2.8 median     2.9 p90     3.5
+event     mean     0.0 median     0.0 p90     0.0
+atflip    mean     0.0 median     0.0 p90     0.0
+outside   mean    15.9 median    15.5 p90    17.5
+gpu       mean    15.0 median    15.1 p90    18.1
+jobs      mean     9.0 median     9.0 p90     9.0
+ringjobs  mean    12.2 median    12.0 p90    14.0
+softcp 0.98  passes 8.00  filter 6.32  tracker 0.75  cu 0.00  nested 0.10  copy 0.43
+== run 280 (kytyplus-20261013-1007, ring-order, old-filter), level 2 window 881-961 s (55-135 s after the level loaded)
+window 881-961 s
+given up: 0
+cpu waits 9006 total ms 224 over 4 ms 1; ring order kept 4096
+frames 2975 fps 37.19
+frame   mean  26.9 median  26.1 p90  29.3
+inside  mean  10.0 median   9.7 p90  11.6
+frames 2975 fps 37.19
+frame     mean    26.9 median    26.1 p90    29.3
+inside    mean    10.0 median     9.7 p90    11.6
+sync      mean     0.1 median     0.1 p90     0.1
+hints     mean     0.5 median     0.5 p90     0.6
+prepare   mean     7.8 median     7.5 p90     8.8
+list      mean     0.1 median     0.1 p90     0.1
+cs        mean     1.4 median     1.4 p90     1.7
+fence     mean     0.0 median     0.0 p90     0.0
+cap       mean     0.0 median     0.0 p90     0.0
+label     mean     0.1 median     0.0 p90     0.0
+event     mean     0.0 median     0.0 p90     0.0
+atflip    mean     0.0 median     0.0 p90     0.0
+outside   mean    16.9 median    16.4 p90    18.0
+gpu       mean    15.8 median    15.6 p90    18.0
+jobs      mean     9.0 median     9.0 p90     9.0
+ringjobs  mean    11.9 median    12.0 p90    14.0
+softcp 1.01  passes 8.00  filter 6.37  tracker 0.74  cu 0.00  nested 0.10  copy 0.42
+== run 282 (kytyplus-20261013-1041, ring-order, new-filter), level 2 window 228-308 s (55-135 s after the level loaded)
+window 228-308 s
+given up: 0
+cpu waits 8493 total ms 1212 over 4 ms 168; ring order kept 7168
+frames 3334 fps 41.67
+frame   mean  24.0 median  24.1 p90  26.2
+inside  mean   6.3 median   6.1 p90   7.4
+frames 3334 fps 41.67
+frame     mean    24.0 median    24.1 p90    26.2
+inside    mean     6.3 median     6.1 p90     7.4
+sync      mean     0.1 median     0.1 p90     0.2
+hints     mean     0.6 median     0.6 p90     0.7
+prepare   mean     3.5 median     3.6 p90     4.0
+list      mean     0.1 median     0.1 p90     0.1
+cs        mean     1.6 median     1.6 p90     1.9
+fence     mean     0.0 median     0.0 p90     0.0
+cap       mean     0.0 median     0.0 p90     0.0
+label     mean     0.4 median     0.0 p90     0.1
+event     mean     0.0 median     0.0 p90     0.0
+atflip    mean     0.0 median     0.0 p90     0.0
+outside   mean    17.7 median    17.6 p90    19.0
+gpu       mean    15.6 median    15.5 p90    17.0
+jobs      mean     9.0 median     9.0 p90     9.0
+ringjobs  mean    12.0 median    12.0 p90    14.0
+softcp 1.17  passes 8.00  filter 1.84  tracker 0.91  cu 0.00  nested 0.12  copy 0.47

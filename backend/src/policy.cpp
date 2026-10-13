@@ -280,6 +280,25 @@ Verdict Policy::reg(std::uint32_t mm) const {
     return default_reg_;
 }
 
+bool Policy::span_listed(std::uint32_t first, std::uint32_t count) const {
+    if (count == 0) return false;
+    const std::uint64_t last = static_cast<std::uint64_t>(first) + count - 1;
+    for (const auto &r : regs_) {
+        if (r.first <= last && first <= r.last) return true;
+    }
+    return false;
+}
+
+bool Policy::span_has(std::uint32_t first, std::uint32_t count, Verdict v) const {
+    if (count == 0) return false;
+    if (v == default_reg_) return true; // unlisted registers have it; not worth the exact answer
+    const std::uint64_t last = static_cast<std::uint64_t>(first) + count - 1;
+    for (const auto &r : regs_) {
+        if (r.verdict == v && r.first <= last && first <= r.last) return true;
+    }
+    return false;
+}
+
 Verdict Policy::packet(const std::uint32_t *p, std::uint32_t len) const {
     const std::uint32_t header = p[0];
     const std::uint32_t type = header >> 30;
@@ -291,6 +310,7 @@ Verdict Policy::packet(const std::uint32_t *p, std::uint32_t len) const {
     std::uint32_t base = 0;
     if (ov != Verdict::Pass || !is_plain_set(opcode, base) || len < 2) return ov;
     const std::uint32_t offset = p[1] & 0xffff;
+    if (len > 2 && !span_listed(base + offset, len - 2)) return default_reg_;
     bool seen = false;
     Verdict first{};
     for (std::uint32_t i = 0; i + 2 < len; ++i) {
@@ -531,7 +551,8 @@ std::size_t filter(const Policy &policy, std::span<const std::uint32_t> src,
                 }
             }
             std::uint32_t base = 0;
-            if (is_plain_set(opcode, base) && len >= 3) {
+            if (is_plain_set(opcode, base) && len >= 3 &&
+                policy.span_has(base + (src[i + 1] & 0xffff), len - 2, Verdict::Rewrite)) {
                 const std::uint32_t offset = src[i + 1] & 0xffff;
                 for (std::uint32_t k = 0; k + 2 < len; ++k) {
                     const std::uint32_t mm = base + offset + k;

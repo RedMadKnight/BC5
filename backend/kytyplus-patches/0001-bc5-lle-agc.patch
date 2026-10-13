@@ -10108,7 +10108,7 @@ index 0000000..9c35e40
 +
 +} // namespace Libs
 diff --git a/src/libs/controller.cpp b/src/libs/controller.cpp
-index 55718eb..3e1e8f9 100644
+index 55718eb..f3bdf4a 100644
 --- a/src/libs/controller.cpp
 +++ b/src/libs/controller.cpp
 @@ -1,4 +1,8 @@
@@ -10244,7 +10244,7 @@ index 55718eb..3e1e8f9 100644
  	data->touch_data_touch0_id   = 1;
  	data->touch_data_touch1_id   = 2;
  	data->connected              = connected;
-@@ -189,11 +272,60 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
+@@ -189,11 +272,177 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
  	data->device_unique_data_len = 0;
  }
  
@@ -10294,6 +10294,120 @@ index 55718eb..3e1e8f9 100644
 +	}
 +}
 +
++// BC5: KYTY_BC5_INPUT_CMD=<file> lets a script drive the pad while the title runs. A thread tails
++// the file (every 20 ms) and runs each new line in order:
++//   press <button> [ms]          down, ms (default 150), up
++//   hold <button> / release <button>
++//   stick <l|r> <x> <y> [ms]     0..255, 128 = centre; with ms it re-centres afterwards
++//   trigger <l2|r2> <0..255> [ms]
++//   shake | wait <ms> | reset    (reset: centre the sticks, release everything)
++// Buttons: cross circle square triangle options up down left right l1 r1 l2 r2 l3 r3 touchpad.
++// After each line the count of lines done is written to <file>.done. Nothing runs without the
++// variable.
++static uint32_t Bc5ButtonByName(const std::string& n) {
++	static const std::pair<const char*, uint32_t> names[] = {
++	    {"cross", PAD_BUTTON_CROSS}, {"circle", PAD_BUTTON_CIRCLE}, {"square", PAD_BUTTON_SQUARE},
++	    {"triangle", PAD_BUTTON_TRIANGLE}, {"options", PAD_BUTTON_OPTIONS}, {"up", PAD_BUTTON_UP},
++	    {"down", PAD_BUTTON_DOWN}, {"left", PAD_BUTTON_LEFT}, {"right", PAD_BUTTON_RIGHT},
++	    {"l1", PAD_BUTTON_L1}, {"r1", PAD_BUTTON_R1}, {"l2", PAD_BUTTON_L2}, {"r2", PAD_BUTTON_R2},
++	    {"l3", PAD_BUTTON_L3}, {"r3", PAD_BUTTON_R3}, {"touchpad", PAD_BUTTON_TOUCH_PAD}};
++	for (const auto& [name, bit]: names) {
++		if (n == name) return bit;
++	}
++	return 0;
++}
++
++static void Bc5InputCmd(std::string path) {
++	pthread_setname_np(pthread_self(), "bc5-input-cmd");
++	const auto ms = [](int v) { std::this_thread::sleep_for(std::chrono::milliseconds(v)); };
++	uint32_t   held = 0;
++	const auto reset = [&] {
++		for (int a = 0; a < 4; a++) ControllerAxis(-1000, static_cast<Axis>(a), 128);
++		ControllerAxis(-1000, Axis::TriggerLeft, 0);
++		ControllerAxis(-1000, Axis::TriggerRight, 0);
++		for (uint32_t b = 1; b != 0; b <<= 1u) {
++			if ((held & b) != 0) ControllerButton(-1000, b, false);
++		}
++		held = 0;
++	};
++	long        offset = 0;
++	uint64_t    done   = 0;
++	std::string partial;
++	for (;;) {
++		ms(20);
++		FILE* f = std::fopen(path.c_str(), "rb");
++		if (f == nullptr) continue;
++		std::fseek(f, 0, SEEK_END);
++		const long size = std::ftell(f);
++		if (size < offset) offset = 0; // truncated: start over
++		std::fseek(f, offset, SEEK_SET);
++		std::string chunk(static_cast<size_t>(size - offset), '\0');
++		const size_t got = chunk.empty() ? 0 : std::fread(chunk.data(), 1, chunk.size(), f);
++		std::fclose(f);
++		offset += static_cast<long>(got);
++		partial += chunk.substr(0, got);
++		size_t eol = 0;
++		while ((eol = partial.find('\n')) != std::string::npos) {
++			const std::string line = partial.substr(0, eol);
++			partial.erase(0, eol + 1);
++			char a[32] = {}, b[32] = {};
++			int  x = -1, y = -1, t = -1;
++			const int n = std::sscanf(line.c_str(), "%31s %31s %d %d %d", a, b, &x, &y, &t);
++			const std::string cmd = a, arg = b;
++			if (n >= 2 && cmd == "press" && Bc5ButtonByName(arg) != 0) {
++				ControllerButton(-1000, Bc5ButtonByName(arg), true);
++				ms(n >= 3 && x > 0 ? x : 150);
++				ControllerButton(-1000, Bc5ButtonByName(arg), false);
++			} else if (n >= 2 && cmd == "hold" && Bc5ButtonByName(arg) != 0) {
++				held |= Bc5ButtonByName(arg);
++				ControllerButton(-1000, Bc5ButtonByName(arg), true);
++			} else if (n >= 2 && cmd == "release" && Bc5ButtonByName(arg) != 0) {
++				held &= ~Bc5ButtonByName(arg);
++				ControllerButton(-1000, Bc5ButtonByName(arg), false);
++			} else if (n >= 4 && cmd == "stick" && (arg == "l" || arg == "r")) {
++				const Axis ax = arg == "l" ? Axis::LeftX : Axis::RightX;
++				const Axis ay = arg == "l" ? Axis::LeftY : Axis::RightY;
++				ControllerAxis(-1000, ax, std::clamp(x, 0, 255));
++				ControllerAxis(-1000, ay, std::clamp(y, 0, 255));
++				if (n >= 5 && t > 0) {
++					ms(t);
++					ControllerAxis(-1000, ax, 128);
++					ControllerAxis(-1000, ay, 128);
++				}
++			} else if (n >= 3 && cmd == "trigger" && (arg == "l2" || arg == "r2")) {
++				const Axis at = arg == "l2" ? Axis::TriggerLeft : Axis::TriggerRight;
++				ControllerAxis(-1000, at, std::clamp(x, 0, 255));
++				if (n >= 4 && y > 0) {
++					ms(y);
++					ControllerAxis(-1000, at, 0);
++				}
++			} else if (n >= 1 && cmd == "shake") {
++				for (int k = 0; k < 40; k++) {
++					const float acc[3] = {(k & 1) != 0 ? 3.0f : -3.0f, 1.0f, (k & 1) != 0 ? -2.0f : 2.0f};
++					const float w[3]   = {(k & 1) != 0 ? 8.0f : -8.0f, 0.0f, 0.0f};
++					ControllerMotion(-1000, false, acc);
++					ControllerMotion(-1000, true, w);
++					ms(50);
++				}
++				const float rest[3] = {0.0f, 1.0f, 0.0f}, still[3] = {0.0f, 0.0f, 0.0f};
++				ControllerMotion(-1000, false, rest);
++				ControllerMotion(-1000, true, still);
++			} else if (n >= 2 && cmd == "wait") {
++				ms(std::clamp(std::atoi(b), 0, 600000));
++			} else if (n >= 1 && cmd == "reset") {
++				reset();
++			} else if (n >= 1 && a[0] != '#') {
++				LOGF("[bc5] input-cmd: unknown line '%s'\n", line.c_str());
++			}
++			done++;
++			if (FILE* d = std::fopen((path + ".done").c_str(), "wb"); d != nullptr) {
++				std::fprintf(d, "%" PRIu64 "\n", done);
++				std::fclose(d);
++			}
++		}
++	}
++}
++
  KYTY_SUBSYSTEM_INIT(Controller) {
  	EXIT_IF(g_controller != nullptr);
  
@@ -10302,10 +10416,13 @@ index 55718eb..3e1e8f9 100644
 +	if (const char* plan = std::getenv("KYTY_BC5_AUTOPRESS"); plan != nullptr && *plan != 0) {
 +		std::thread(Bc5AutoPress, std::string(plan)).detach();
 +	}
++	if (const char* path = std::getenv("KYTY_BC5_INPUT_CMD"); path != nullptr && *path != 0) {
++		std::thread(Bc5InputCmd, std::string(path)).detach();
++	}
  
  	// The native DualSense HID driver is opt-in and off by default. SDL already
  	// handles every standard pad (including a DualSense); this unvalidated driver is
-@@ -268,6 +400,26 @@ void ControllerAxis(int id, Axis axis, int value) {
+@@ -268,6 +517,26 @@ void ControllerAxis(int id, Axis axis, int value) {
  	g_controller->Axis(id, axis, value);
  }
  
@@ -10332,7 +10449,7 @@ index 55718eb..3e1e8f9 100644
  void ControllerResetInputState() {
  	EXIT_IF(g_controller == nullptr);
  	g_controller->ResetInputState();
-@@ -395,6 +547,11 @@ void GameController::Button(int id, uint32_t button, bool down) {
+@@ -395,6 +664,11 @@ void GameController::Button(int id, uint32_t button, bool down) {
  	if (slot == -1) {
  		slot = FallbackSlot();
  	}
@@ -10344,7 +10461,7 @@ index 55718eb..3e1e8f9 100644
  
  	auto state = GetLastState(slot);
  	state.time = LibKernel::KernelGetProcessTime();
-@@ -415,6 +572,13 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
+@@ -415,6 +689,13 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
  	if (slot == -1) {
  		slot = FallbackSlot();
  	}
@@ -10358,7 +10475,7 @@ index 55718eb..3e1e8f9 100644
  
  	auto state = GetLastState(slot);
  	state.time = LibKernel::KernelGetProcessTime();
-@@ -422,8 +586,28 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
+@@ -422,8 +703,28 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
  	const int axis_id = static_cast<int>(axis);
  	EXIT_IF(axis_id < 0 || axis_id >= static_cast<int>(Controller::Axis::AxisMax));
  
@@ -10387,7 +10504,7 @@ index 55718eb..3e1e8f9 100644
  	if (axis == Controller::Axis::TriggerLeft) {
  		if (value > 0) {
  			state.buttons |= PAD_BUTTON_L2;
-@@ -443,6 +627,86 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
+@@ -443,6 +744,86 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
  	AddState(slot, state);
  }
  
@@ -10474,7 +10591,7 @@ index 55718eb..3e1e8f9 100644
  void GameController::ResetInputState() {
  	Common::LockGuard lock(m_mutex);
  
-@@ -488,6 +752,13 @@ int GameController::ReadStateForSlot(int index, ControllerState* state, bool* fl
+@@ -488,6 +869,13 @@ int GameController::ReadStateForSlot(int index, ControllerState* state, bool* fl
  	*flag  = SlotConnected(index);
  	*count = PresentCount();
  	*state = GetLastState(index);
@@ -10488,7 +10605,7 @@ index 55718eb..3e1e8f9 100644
  
  	return 0;
  }
-@@ -515,7 +786,27 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
+@@ -515,7 +903,27 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
  	int ret_num = 0;
  
  	auto& s = m_slots[index];
@@ -10516,7 +10633,7 @@ index 55718eb..3e1e8f9 100644
  		for (uint32_t i = 0; i < s.states_num; i++) {
  			if (ret_num >= states_num) {
  				break;
-@@ -523,11 +814,21 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
+@@ -523,11 +931,21 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
  			auto state_index = (s.first_state + i) % STATES_MAX;
  			if (!s.obtained[state_index]) {
  				s.obtained[state_index] = true;
@@ -10539,7 +10656,7 @@ index 55718eb..3e1e8f9 100644
  	return ret_num;
  }
  int KYTY_SYSV_ABI PadInit() {
-@@ -625,6 +926,9 @@ int KYTY_SYSV_ABI PadResetOrientation(int handle) {
+@@ -625,6 +1043,9 @@ int KYTY_SYSV_ABI PadResetOrientation(int handle) {
  	if (ControllerIndexFromHandle(handle) < 0) {
  		return PAD_ERROR_INVALID_HANDLE;
  	}
@@ -10549,7 +10666,7 @@ index 55718eb..3e1e8f9 100644
  
  	return OK;
  }
-@@ -682,6 +986,10 @@ int KYTY_SYSV_ABI PadReadState(int handle, PadData* data) {
+@@ -682,6 +1103,10 @@ int KYTY_SYSV_ABI PadReadState(int handle, PadData* data) {
  	g_controller->ReadStateForSlot(ControllerIndexFromHandle(handle), &state, &connected,
  	                               &connected_count);
  
@@ -10560,7 +10677,7 @@ index 55718eb..3e1e8f9 100644
  	pad_fill_data(data, state, connected, connected_count);
  
  	return OK;
-@@ -718,6 +1026,10 @@ int KYTY_SYSV_ABI PadRead(int handle, PadData* data, int num) {
+@@ -718,6 +1143,10 @@ int KYTY_SYSV_ABI PadRead(int handle, PadData* data, int num) {
  	}
  
  	for (int i = 0; i < ret_num; i++) {
