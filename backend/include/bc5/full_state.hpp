@@ -68,7 +68,7 @@ public:
     // Register value, if tracked. space: Context (offset from 0xa000), Sh (0x2c00), Uconfig
     // (0xc000), Config (0x2000).
     bool get(Space space, std::uint32_t offset, std::uint32_t &value) const;
-    std::size_t count(Space space) const { return regs_[space].size(); }
+    std::size_t count(Space space) const { return regs_[space].n; }
     bool operator==(const Tracker &o) const;
     // The first register that differs from o (space, offset); false if the registers are equal.
     bool first_difference(const Tracker &o, int &space, std::uint32_t &offset) const;
@@ -86,8 +86,29 @@ private:
             context_control;
     };
     void set(Space space, std::uint32_t offset, std::uint32_t value);
-    std::map<std::uint32_t, std::uint32_t> regs_[Spaces];
-    std::vector<std::map<std::uint32_t, std::uint32_t>> context_stack_;
+    // One register space: flat arrays over the space's range (experiment 0074: a std::map per
+    // register cost 16-33 % of a core in the host), offsets past it in a map.
+    struct RegFile {
+        explicit RegFile(std::size_t size) : value(size, 0), has(size, 0) {}
+        std::vector<std::uint32_t> value;
+        std::vector<std::uint8_t> has;
+        std::map<std::uint32_t, std::uint32_t> overflow;
+        std::size_t n = 0;
+        void set(std::uint32_t off, std::uint32_t v);
+        bool get(std::uint32_t off, std::uint32_t &v) const;
+        void clear();
+        bool operator==(const RegFile &o) const;
+        bool first_difference(const RegFile &o, std::uint32_t &off) const;
+        template <class F> void for_each(F f) const {
+            for (std::size_t k = 0; k < has.size(); ++k)
+                if (has[k] != 0) f(static_cast<std::uint32_t>(k), value[k]);
+            for (const auto &[k, v] : overflow) f(k, v);
+        }
+    };
+    // Sizes from Mesa src/amd/common/sid.h (sparse clone at 0866ae7): config 0x8000-0xB000,
+    // SH 0xB000-0xC000, context 0x28000-0x30000, UCONFIG 0x30000-0x40000 (byte addresses).
+    RegFile regs_[Spaces] = {RegFile(0xc00), RegFile(0x2000), RegFile(0x400), RegFile(0x4000)};
+    std::vector<RegFile> context_stack_;
     PacketState packets_;
 };
 

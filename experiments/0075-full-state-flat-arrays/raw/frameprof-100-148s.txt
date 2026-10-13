@@ -1,0 +1,17 @@
+frames 2877 fps 59.94
+frame     mean    16.7 median    16.7 p90    17.1
+inside    mean     4.5 median     4.5 p90     4.9
+sync      mean     0.1 median     0.0 p90     0.1
+hints     mean     0.2 median     0.2 p90     0.2
+prepare   mean     0.8 median     0.8 p90     0.9
+list      mean     0.1 median     0.1 p90     0.1
+cs        mean     0.6 median     0.5 p90     0.7
+fence     mean     0.0 median     0.0 p90     0.0
+cap       mean     0.0 median     0.0 p90     0.0
+label     mean     2.9 median     2.8 p90     3.3
+event     mean     0.0 median     0.0 p90     0.0
+atflip    mean     0.0 median     0.0 p90     0.0
+outside   mean    12.1 median    12.2 p90    12.6
+gpu       mean    11.3 median    11.3 p90    11.8
+jobs      mean     9.0 median     9.0 p90     9.0
+ringjobs  mean    10.0 median    10.0 p90    11.0
