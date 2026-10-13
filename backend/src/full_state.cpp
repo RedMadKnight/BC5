@@ -253,6 +253,7 @@ SplitCheck check_split(const Tracker &before, std::span<const std::uint32_t> ib,
     c.prefix_dwords = prefix.size();
     Tracker piece;
     piece.apply(prefix, nullptr, st);
+    piece.adopt_stack(whole);
     std::size_t from = wait;
     for (std::size_t i = wait; i < ib.size();) {
         const std::uint32_t h = ib[i];
