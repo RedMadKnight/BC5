@@ -45,9 +45,18 @@ void emit_restore(const Context &c, std::vector<std::uint32_t> &out, Stats &stat
 std::vector<std::uint32_t> Tracker::apply(std::span<const std::uint32_t> src,
                                           std::span<const std::uint32_t> filtered,
                                           const Readable &readable, Stats &stats) {
-    std::vector<std::uint32_t> out;
+    std::vector<std::uint32_t> io(filtered.begin(), filtered.end());
+    apply_in_place(src, io, readable, stats);
+    return io;
+}
+
+void Tracker::apply_in_place(std::span<const std::uint32_t> src, std::vector<std::uint32_t> &io,
+                             const Readable &readable, Stats &stats) {
+    const std::span<const std::uint32_t> filtered(io);
+    std::vector<std::uint32_t> out; // the rebuilt IB, once a pop needs one
+    bool rebuilt = false;
+    std::size_t flushed = 0; // filtered[flushed, i) is not in `out` yet
     const std::size_t n = std::min(src.size(), filtered.size());
-    out.reserve(n + 2048);
     std::size_t cond_end = 0; // packets before this offset sit inside a COND_EXEC range
     std::size_t i = 0;
     while (i < n) {
@@ -80,6 +89,13 @@ std::vector<std::uint32_t> Tracker::apply(std::span<const std::uint32_t> src,
                     ctx_ = stack_.back();
                     stack_.pop_back();
                     stats.pops++;
+                    if (!rebuilt) {
+                        out.reserve(n + 2048);
+                        rebuilt = true;
+                    }
+                    out.insert(out.end(), filtered.begin() + static_cast<std::ptrdiff_t>(flushed),
+                               filtered.begin() + static_cast<std::ptrdiff_t>(i));
+                    flushed = i + len;
                     for (std::size_t k = 0; k < len; ++k) out.push_back(policy::kNop);
                     emit_restore(ctx_, out, stats);
                     replaced = true;
@@ -126,13 +142,16 @@ std::vector<std::uint32_t> Tracker::apply(std::span<const std::uint32_t> src,
                 }
             }
         }
-        if (!replaced) {
-            for (std::size_t k = 0; k < len; ++k) out.push_back(filtered[i + k]);
-        }
+        (void)replaced; // a replaced packet's dwords are skipped through `flushed`
         i += len;
     }
-    for (; i < n; ++i) out.push_back(filtered[i]);
-    return out;
+    if (!rebuilt) {
+        if (io.size() > n) io.resize(n);
+        return;
+    }
+    out.insert(out.end(), filtered.begin() + static_cast<std::ptrdiff_t>(flushed),
+               filtered.begin() + static_cast<std::ptrdiff_t>(n));
+    io.swap(out);
 }
 
 } // namespace bc5::state_stack

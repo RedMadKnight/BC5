@@ -56,6 +56,11 @@ class Tracker {
     std::vector<std::uint32_t> apply(std::span<const std::uint32_t> src,
                                      std::span<const std::uint32_t> filtered,
                                      const Readable &readable, Stats &stats);
+    // The same on the filtered IB in place: `io` is rebuilt only when a pop inserts packets, and
+    // left as it is otherwise (experiment 0064: the copy cost 0.8 ms a frame for ~355,000 dwords
+    // that almost never change here).
+    void apply_in_place(std::span<const std::uint32_t> src, std::vector<std::uint32_t> &io,
+                        const Readable &readable, Stats &stats);
 
     const Context &context() const { return ctx_; }
     std::size_t depth() const { return stack_.size(); }
