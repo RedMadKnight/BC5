@@ -48,6 +48,10 @@ target_link_libraries(dispatch-min PRIVATE bc5_backend bc5_warnings)
 add_executable(userptr-min experiments/userptr-min/main.cpp)
 target_link_libraries(userptr-min PRIVATE bc5_backend bc5_warnings)
 
+# piece-check: ADR 0008 step 1 (experiment 0072), what a graphics piece would lose. No GPU.
+add_executable(piece-check experiments/piece-check/main.cpp)
+target_link_libraries(piece-check PRIVATE bc5_warnings)
+
 # prepare-bench: experiment 0027, the host's prepare pass over dumped command buffers, offline. No GPU.
 add_executable(prepare-bench experiments/prepare-bench/main.cpp)
 target_link_libraries(prepare-bench PRIVATE bc5_backend bc5_warnings)
