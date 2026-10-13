@@ -308,6 +308,11 @@ ADR 0008 step 2: `BC5_DIRECT_PIECES_DRY=1` builds the prefix at every game-threa
 is not satisfied when reached (where `BC5_DIRECT_PIECES` would split), submits nothing
 differently, and journals `pieces dry:` (splits, prefix size, build time, and whether each wait
 was then kept for the GPU, served on the CPU or given up).
+ADR 0008 step 3, prepared and **not run** (GPU; only with the maintainer present):
+`BC5_DIRECT_PIECES_FULL=1` splits a game-thread graphics buffer only at a wait that was not
+satisfied, not kept for the GPU by ring order and not served within the limit. The head goes to
+the GPU, the wait is tried again, and the rest follows behind the full-state prefix. Journal:
+`piece:` (first 100) and `pieces full:` every 10 s.
 Experiment 0063: `BC5_DIRECT_IB_STABLE_CHECK=1` hashes every job's buffers at submission and when the
 job is done and journals how many changed (`=2`: every 32nd job keeps a copy, and the changed
 dwords are located by packet, NOP payloads apart).
