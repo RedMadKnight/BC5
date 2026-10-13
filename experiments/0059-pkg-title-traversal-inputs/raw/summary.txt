@@ -1,0 +1,26 @@
+run 274: kyty exit 124 after 171 s; faults: none; failed 0; last submit at 166.113 s; access violations 0; 250 s on: frames 0 fps 0.00 (/home/kjaniszewski/bc5-data/captures/pkg-20261012-2219)
+run 275: kyty exit 124 after 171 s; faults: none; failed 0; last submit at 157.866 s; access violations 0; 250 s on: frames 0 fps 0.00 (/home/kjaniszewski/bc5-data/captures/pkg-20261012-2224)
+run 276: kyty exit 124 after 202 s; faults: 0x0 0x0 ; failed 51; last submit at 180.630 s; access violations 0; 250 s on: frames 0 fps 0.00 (/home/kjaniszewski/bc5-data/captures/pkg-20261012-2227)
+run 278: kyty exit 124 after 171 s; faults: none; failed 0; last submit at 166.401 s; access violations 0; 250 s on: frames 0 fps 0.00 (/home/kjaniszewski/bc5-data/captures/pkg-20261013-0814)
+== find (run 277, multi; run 278, DRAW_INDIRECT only)
+find: dcb #70653 18109 dwords, dispatch op 15 at 1791, pgm 0x11d0287900, user data 0:1 = 0x12102a2fc0 (+0xcc7c0)
+find: dcb #70653 18109 dwords, dispatch op 15 at 3351, pgm 0x11d0287900, user data 0:1 = 0x12102af7c0 (+0xd8fc0)
+find: dcb #70653 18109 dwords, dispatch op 15 at 4751, pgm 0x11d0287900, user data 0:1 = 0x12101d68c0 (+0xc0)
+find: dcb #70653 18109 dwords, dispatch op 15 at 5504, pgm 0x90985f200, user data 0:1 = 0x12102a2f00 (+0xcc700)
+find: dcb #70653 18109 dwords, dispatch op 15 at 11227, pgm 0x90985f200, user data 0:1 = 0x12102af700 (+0xd8f00)
+find: dcb #70653 18109 dwords, dispatch op 15 at 11717, pgm 0x90985f200, user data 0:1 = 0x12101d6800 (+0x0)
+find: dcb #242424 22126 dwords, dispatch op 15 at 747, pgm 0x11d0287900, user data 0:1 = 0x12102997c0 (+0xc2fc0)
+find: dcb #242424 22126 dwords, dispatch op 15 at 3318, pgm 0x90985f200, user data 0:1 = 0x1210299700 (+0xc2f00)
+find: dcb #67514 18111 dwords, dispatch op 15 at 1791, pgm 0x11d0287900, user data 0:1 = 0x12102a2fc0 (+0xcc7c0)
+find: dcb #67514 18111 dwords, dispatch op 15 at 3351, pgm 0x11d0287900, user data 0:1 = 0x12102af7c0 (+0xd8fc0)
+find: dcb #67514 18111 dwords, dispatch op 15 at 4751, pgm 0x11d0287900, user data 0:1 = 0x12101d68c0 (+0xc0)
+find: dcb #67514 18111 dwords, dispatch op 15 at 5504, pgm 0x90985f200, user data 0:1 = 0x12102a2f00 (+0xcc700)
+find: dcb #67514 18111 dwords, dispatch op 15 at 11229, pgm 0x90985f200, user data 0:1 = 0x12102af700 (+0xd8f00)
+find: dcb #67514 18111 dwords, dispatch op 15 at 11719, pgm 0x90985f200, user data 0:1 = 0x12101d6800 (+0x0)
+== tree snapshots 0x12102af700 (structure only)
+snap-0.bin  mtime 36987  entries 1171  ends(-1) 44  zero 16  out-of-range 860  types {0: 979, 1: 34, 4: 1, 7: 1, 3: 31, 5: 21, 6: 23, 2: 37}  cycles 1 (1 entries)  top hi [('ffffffff', 48), ('0', 22), ('1e', 22)]
+snap-0.bin  mtime 72217  entries 1171  ends(-1) 44  zero 16  out-of-range 860  types {0: 979, 1: 34, 4: 1, 7: 1, 3: 31, 5: 21, 6: 23, 2: 37}  cycles 1 (1 entries)  top hi [('ffffffff', 48), ('0', 22), ('1e', 22)]
+== hung waves run 276 by node-buffer descriptor
+    278 >SGPRS[56..59] = { 102af700, 00080012, 00000493, 00016204 }
+     57 >SGPRS[56..59] = { 101d6800, 00080012, 00000336, 00016204 }
+      1 >SGPRS[56..59] = { 1be23400, 00080012, 00001dc9, 00016204 }
