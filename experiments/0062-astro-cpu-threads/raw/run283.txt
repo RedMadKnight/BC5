@@ -1,0 +1,48 @@
+== run 283 (kytyplus-20261013-1100), ring order + span filter (exp. 0061), the first level (flamingo
+== island), standing at the start; 2026-10-13 11:04-11:10
+
+-- threadsample.py, 15 s: CPU share and share of samples in state R, busiest threads
+tid      name                cpu      R
+153316   DrawThread          63%    68%
+153292   game-main           61%    63%
+(11 x)   tbb_thead           59-60% 66-68%
+153271   kyty-gpu            27%    26%
+153337   Physics_ATQT        17%    22%
+153310   Draw Extra Geom     13%    14%
+153340   SceSndzAudioOut     13%    21%
+153309   Draw Geometry       13%    14%
+153296   bc5-ring            12%    26%
+
+-- 10 s of /proc/<pid>/task/*/stat and status, summed per thread name
+name                 n   user%    sys%  vol cs/s   invol/s
+tbb_thead           11    578%     82%     60845      8199
+DrawThread           1     56%      8%       714       217
+game-main            1     53%      6%     11311      1250
+BackgroundTaskW      8     46%      9%     12253      1526
+Havok Worker        18     29%      3%      5528        98
+kyty-gpu             1     26%      2%       146       134
+Physics_ATQT         1     13%      4%      2382       115
+load average 14.5 on 16 hardware threads
+
+-- ripsample.py (ptrace one thread at a time, 2 ms apart)
+tbb_thead:  11 threads, 3000 samples, in a syscall 51%; user: 47.5% guest code, 0.7% libc, 0.5% host
+            the hottest guest PC (16% of the user samples) is inside a spin-wait: a counted loop of
+            80 PAUSE instructions, the count doubling between rounds
+game-main:  1500 samples, in a syscall 50%; user 48.1% guest, 1.0% libc, 0.7% host; the same
+            spin-wait is its hottest PC (40 samples)
+DrawThread: 1500 samples, in a syscall 44%; user 31.7% guest, 20.7% host (kyty_emulator), 3.6% libc
+
+-- gdb backtraces of game-main and DrawThread only (10 rounds, 20 samples)
+ 4 semaphore wait (KernelWaitSema -> PosixSemPrivate::Wait -> CondVar::WaitFor)
+ 4 guest code
+ 2 PthreadCondWait
+ 4 the direct path (submit_split/submit_one/Device::submit/ioctl)
+ 6 mutexes, semaphore signals, TSC reads, pthread_getspecific
+
+-- the pool threads at nice +10 (setpriority, reversible only by the end of the process)
+window 463.9-493.9 s, nice 0:   frames 1387  fps 46.18  frame 21.7 ms  inside 5.8
+window 493.9-524.2 s, nice +10: frames 1400  fps 46.18  frame 21.7 ms  inside 5.8
+
+-- frame profile 463.9-493.9 s (frameprof.py, prepparts.py)
+frame 21.7  inside 5.8  prepare 2.9  cs 1.6  label 0.5  outside 15.9  GPU busy 15.8  jobs 9 (+10)
+softcp 1.11  filter 1.53  tracker 0.76  nested 0.10  copy 0.40
