@@ -4157,10 +4157,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..948be2d
+index 0000000..9c35e40
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,5916 @@
+@@ -0,0 +1,5946 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -8385,6 +8385,7 @@ index 0000000..948be2d
 +		// BC5_DIRECT_MEC_ONLY_PGM / BC5_DIRECT_MEC_SKIP_PGM (hex lists) to run only some of them.
 +		uint64_t pgm = 0;
 +		uint64_t ud01 = 0; // experiment 0050: COMPUTE_USER_DATA_0/1
++		uint32_t ud[16] = {}; // experiment 0059: COMPUTE_USER_DATA_0..15 as this buffer sets them
 +		static const auto pgm_list = [](const char* name) {
 +			std::set<uint64_t> v;
 +			if (const char* e = std::getenv(name); e != nullptr) {
@@ -8431,6 +8432,7 @@ index 0000000..948be2d
 +						const uint32_t r = t[2 * k] & 0xffffu, v = t[2 * k + 1];
 +						if (r == 0x20cu) pgm = (pgm & ~0xffffffff00ull) | (static_cast<uint64_t>(v) << 8u);
 +						if (r == 0x20du) pgm = (pgm & 0xffffffff00ull) | (static_cast<uint64_t>(v & 0xffu) << 40u);
++						if (r >= 0x240u && r < 0x250u) ud[r - 0x240u] = v; // experiment 0059
 +					}
 +				}
 +			}
@@ -8473,6 +8475,7 @@ index 0000000..948be2d
 +					if (first + k == 0x20du) pgm = (pgm & 0xffffffff00ull) | (static_cast<uint64_t>(ib[q + 2 + k] & 0xffu) << 40u);
 +					if (first + k == 0x244u) ud01 = (ud01 & ~0xffffffffull) | ib[q + 2 + k]; // USER_DATA_4/5 = s[4:5], the header pointer
 +					if (first + k == 0x245u) ud01 = (ud01 & 0xffffffffull) | (static_cast<uint64_t>(ib[q + 2 + k]) << 32u);
++					if (first + k >= 0x240u && first + k < 0x250u) ud[first + k - 0x240u] = ib[q + 2 + k]; // experiment 0059
 +				}
 +			}
 +			// Experiment 0054: in a buffer one of whose CPU-side waits was given up (a cycle between the
@@ -8485,6 +8488,33 @@ index 0000000..948be2d
 +				opt.drop_offsets.push_back(q);
 +				q += len;
 +				continue;
++			}
++			// Experiment 0059: BC5_DIRECT_FIND_VA=<lo>:<hi> journals the dispatches (any buffer) whose
++			// COMPUTE_USER_DATA pairs point into [lo, hi) — which programs get the tree the second
++			// title's reflection traversal loops on; the first 4 per program and offset.
++			{
++				static const auto find = [] {
++					std::pair<uint64_t, uint64_t> r {0, 0};
++					if (const char* e = std::getenv("BC5_DIRECT_FIND_VA"); e != nullptr) {
++						unsigned long long a = 0, b = 0;
++						if (std::sscanf(e, "%llx:%llx", &a, &b) == 2) r = {a, b};
++					}
++					return r;
++				}();
++				if (find.second > find.first && type == 3 && (op == 0x15 || op == 0x16)) {
++					for (uint32_t k = 0; k + 1 < 16; k++) {
++						const uint64_t a = ud[k] | (static_cast<uint64_t>(ud[k + 1] & 0xffffu) << 32u);
++						if (a >= find.first && a < find.second) {
++							static std::mutex                         find_mutex;
++							static std::map<std::pair<uint64_t, uint32_t>, int> seen;
++							std::lock_guard lk(find_mutex);
++							if (seen[{pgm, (k << 24u) | (q & 0xffffffu)}]++ < 4)
++								journal("find: %s #%" PRIu64 " %u dwords, dispatch op %02x at %u, pgm 0x%" PRIx64 ", user data %u:%u = 0x%" PRIx64 " (+0x%" PRIx64 ")\n", kind,
++								        g_submits.load(), num_dwords, op, q, pgm, k, k + 1, a, a - find.first);
++							break;
++						}
++					}
++				}
 +			}
 +			// Experiment 0059: BC5_DIRECT_SKIP_PGM=<hex list> drops every dispatch (DISPATCH_DIRECT and both
 +			// forms of DISPATCH_INDIRECT, in any kind of buffer) of these compute programs — e.g. the
