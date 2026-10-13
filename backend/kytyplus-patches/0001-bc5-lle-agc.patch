@@ -138,10 +138,16 @@ index 78fd86f..462e774 100644
  namespace Libs::Graphics::Pm4 {
  
 diff --git a/src/graphics/host_gpu/renderer/cache/bufferCache.cpp b/src/graphics/host_gpu/renderer/cache/bufferCache.cpp
-index d429de1..ed4a0fc 100644
+index d429de1..2472c3d 100644
 --- a/src/graphics/host_gpu/renderer/cache/bufferCache.cpp
 +++ b/src/graphics/host_gpu/renderer/cache/bufferCache.cpp
-@@ -15,6 +15,7 @@
+@@ -1,3 +1,5 @@
++#include <cstdio>
++#include <chrono>
+ #include "graphics/host_gpu/renderer/cache/bufferCache.h"
+ 
+ #include "common/assert.h"
+@@ -15,6 +17,7 @@
  #include <array>
  #include <atomic>
  #include <cinttypes>
@@ -149,7 +155,7 @@ index d429de1..ed4a0fc 100644
  #include <cstring>
  #include <utility>
  #include <vector>
-@@ -24,6 +25,23 @@ namespace Libs::Graphics {
+@@ -24,6 +27,23 @@ namespace Libs::Graphics {
  namespace {
  
  constexpr uint64_t MiB           = 1024 * 1024;
@@ -173,7 +179,7 @@ index d429de1..ed4a0fc 100644
  constexpr uint64_t GdsBufferSize = 64 * 1024;
  
  } // namespace
-@@ -247,14 +265,14 @@ BufferCache::BufferCache(GraphicContext& graphics, CommandScheduler& scheduler,
+@@ -247,14 +267,14 @@ BufferCache::BufferCache(GraphicContext& graphics, CommandScheduler& scheduler,
      : m_graphics(graphics), m_scheduler(scheduler),
        m_gds_buffer(graphics, scheduler, MemoryUsage::Stream, 0, AllFlags, GdsBufferSize),
        m_memory_tracker(page_manager),
@@ -192,6 +198,36 @@ index d429de1..ed4a0fc 100644
        m_texture_cache(texture_cache) {
  	std::memset(m_gds_buffer.Mapped().data(), 0, static_cast<size_t>(m_gds_buffer.Size()));
  	m_gds_buffer.Flush(0, m_gds_buffer.Size());
+@@ -681,11 +701,29 @@ ImageBufferSource BufferCache::ObtainBufferForImage(uint64_t vaddr, uint64_t siz
+ 		}
+ 	}
+ 
++	static const bool bc5_timing = std::getenv("KYTY_BC5_FLIP_TIMING") != nullptr; // experiment 0070
++	const auto        bc5_t0     = std::chrono::steady_clock::now();
+ 	auto [staging, stage_offset] = m_staging_buffer.Map(size, 16);
++	const auto bc5_t1 = std::chrono::steady_clock::now();
+ 	if (staging == nullptr || !Libs::LibKernel::Memory::TryReadBacking(vaddr, staging, size)) {
+ 		EXIT("BufferCache: failed to read mapped guest image backing\n");
+ 	}
++	const auto bc5_t2 = std::chrono::steady_clock::now();
+ 	m_staging_buffer.Commit();
++	if (bc5_timing && size >= (16u << 20u)) {
++		static double map_ms = 0, read_ms = 0, commit_ms = 0;
++		static int    n      = 0;
++		const auto    t3     = std::chrono::steady_clock::now();
++		map_ms += std::chrono::duration<double, std::milli>(bc5_t1 - bc5_t0).count();
++		read_ms += std::chrono::duration<double, std::milli>(bc5_t2 - bc5_t1).count();
++		commit_ms += std::chrono::duration<double, std::milli>(t3 - bc5_t2).count();
++		if (++n == 120) {
++			std::fprintf(stderr, "bc5 image read: %llu bytes, map %.2f ms, read %.2f ms, commit %.2f ms (mean of 120)\n",
++			             static_cast<unsigned long long>(size), map_ms / n, read_ms / n, commit_ms / n);
++			map_ms = read_ms = commit_ms = 0;
++			n                            = 0;
++		}
++	}
+ 
+ 	const auto dirty                   = m_gpu_modified_ranges.Intersections(vaddr, size);
+ 	const bool has_dirty_buffer_source = !dirty.empty();
 diff --git a/src/graphics/host_gpu/renderer/cache/streamBuffer.cpp b/src/graphics/host_gpu/renderer/cache/streamBuffer.cpp
 index f6a0e22..7832ea8 100644
 --- a/src/graphics/host_gpu/renderer/cache/streamBuffer.cpp
@@ -1298,7 +1334,7 @@ index 0000000..deb84e4
 +
 +#endif // KYTY_GRAPHICS_PRESENTATION_SETTINGS_OVERLAY_H_
 diff --git a/src/graphics/presentation/videoOut.cpp b/src/graphics/presentation/videoOut.cpp
-index f980320..11190a8 100644
+index f980320..3a17f17 100644
 --- a/src/graphics/presentation/videoOut.cpp
 +++ b/src/graphics/presentation/videoOut.cpp
 @@ -1,3 +1,9 @@
@@ -1355,7 +1391,7 @@ index f980320..11190a8 100644
  	VideoOutConfig* cfg        = nullptr;
  	uint64_t        generation = 0;
  	int             index      = 0;
-@@ -1012,6 +1033,13 @@ void FlipQueue::Prepare(uint64_t request_id, Graphics::CommandBuffer& buffer) {
+@@ -1012,7 +1033,29 @@ void FlipQueue::Prepare(uint64_t request_id, Graphics::CommandBuffer& buffer) {
  		frame = &m_presenter.PrepareBlankFrame(width, height, index == VIDEO_OUT_BUFFER_INDEX_BLACK,
  		                                       &buffer);
  	} else {
@@ -1363,13 +1399,29 @@ index f980320..11190a8 100644
 +		// see; drop the cached image so the presenter re-reads guest memory.
 +		static const bool bc5_direct = std::getenv("BC5_GC_MODE") != nullptr &&
 +		                               std::strcmp(std::getenv("BC5_GC_MODE"), "direct") == 0;
++		const int64_t bc5_i0 = Bc5FlipNowNs();
 +		if (bc5_direct && source_info.data.Valid()) {
 +			LibKernel::Memory::InvalidateMemory(source_info.data.address, source_info.data.size);
 +		}
++		const int64_t bc5_i1 = Bc5FlipNowNs();
  		frame = &m_presenter.PrepareFrame(buffer, source_info);
++		if (bc5_timing) { // experiment 0070
++			static double inv = 0, prep = 0, before = 0;
++			static int    n   = 0;
++			const int64_t i2  = Bc5FlipNowNs();
++			before += static_cast<double>(bc5_i0 - bc5_t0) / 1e6;
++			inv += static_cast<double>(bc5_i1 - bc5_i0) / 1e6;
++			prep += static_cast<double>(i2 - bc5_i1) / 1e6;
++			if (++n == 120) {
++				std::fprintf(stderr, "bc5 flip prepare parts: lookup %.2f ms, invalidate %.2f ms, PrepareFrame %.2f ms (mean of 120)\n", before / n, inv / n, prep / n);
++				before = inv = prep = 0;
++				n                   = 0;
++			}
++		}
  	}
  
-@@ -1033,6 +1061,20 @@ void FlipQueue::Prepare(uint64_t request_id, Graphics::CommandBuffer& buffer) {
+ 	Common::LockGuard lock(m_mutex);
+@@ -1033,6 +1076,20 @@ void FlipQueue::Prepare(uint64_t request_id, Graphics::CommandBuffer& buffer) {
  		EXIT("video-out request changed while recording, id=%" PRIu64 "\n", request_id);
  	}
  	prepared->frame = frame;
@@ -1390,7 +1442,7 @@ index f980320..11190a8 100644
  }
  
  void FlipQueue::Complete(uint64_t request_id) {
-@@ -1046,6 +1088,7 @@ void FlipQueue::Complete(uint64_t request_id) {
+@@ -1046,6 +1103,7 @@ void FlipQueue::Complete(uint64_t request_id) {
  		}
  		request->state = RequestState::Ready;
  		m_submit_cond_var.Signal();
@@ -1398,7 +1450,7 @@ index f980320..11190a8 100644
  		m_mutex.Unlock();
  		return;
  	}
-@@ -1087,6 +1130,26 @@ void FlipQueue::Wait(VideoOutConfig& cfg, int index) {
+@@ -1087,6 +1145,26 @@ void FlipQueue::Wait(VideoOutConfig& cfg, int index) {
  	}
  }
  
@@ -1425,7 +1477,7 @@ index f980320..11190a8 100644
  bool FlipQueue::Flip(uint32_t micros) {
  	KYTY_PROFILER_BLOCK("FlipQueue::Flip");
  
-@@ -1462,6 +1525,7 @@ KYTY_SYSV_ABI int VideoOutSubmitFlip(int handle, int index, int flip_mode, int64
+@@ -1462,6 +1540,7 @@ KYTY_SYSV_ABI int VideoOutSubmitFlip(int handle, int index, int flip_mode, int64
  	if (result != OK) {
  		return result;
  	}
@@ -1433,7 +1485,7 @@ index f980320..11190a8 100644
  	g_video_out_driver->SubmitFlipPreparation(request_id);
  
  	return OK;
-@@ -1497,6 +1561,14 @@ void VideoOutDriver::WaitForSubmitSlot() {
+@@ -1497,6 +1576,14 @@ void VideoOutDriver::WaitForSubmitSlot() {
  	m_impl->GetFlipQueue().WaitForSubmitSlot();
  }
  
@@ -1448,7 +1500,7 @@ index f980320..11190a8 100644
  void VideoOutDriver::WaitFlipDone(int handle, int index) {
  	auto* ctx = m_impl->Get(handle);
  	EXIT_IF(ctx == nullptr);
-@@ -1505,8 +1577,42 @@ void VideoOutDriver::WaitFlipDone(int handle, int index) {
+@@ -1505,8 +1592,42 @@ void VideoOutDriver::WaitFlipDone(int handle, int index) {
  	m_impl->GetFlipQueue().Wait(*ctx, index);
  }
  
