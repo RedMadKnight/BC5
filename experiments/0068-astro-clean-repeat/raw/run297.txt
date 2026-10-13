@@ -1,0 +1,15 @@
+== run 297 (kytyplus-20261013-1404), clean (no rpm-ostree), filter fast path of 0067; the level started at t~130 s (frame rate 60 -> 44-47), no frame over 120 ms during its load; window 205-285 s
+window 205-285 s
+given up: 0
+cpu waits 9372 total ms 2389 over 4 ms 448; ring order kept 8192
+frames 3721 fps 46.51
+frame   mean  21.5 median  20.9 p90  25.0
+inside  mean   4.9 median   4.2 p90   9.3
+hints     mean     0.3 median     0.3 p90     0.4
+prepare   mean     2.7 median     2.7 p90     3.0
+cs        mean     1.0 median     1.0 p90     1.1
+label     mean     0.6 median     0.0 p90     5.0
+outside   mean    16.6 median    16.5 p90    17.6
+gpu       mean    15.7 median    15.6 p90    17.3
+softcp 1.07  passes 8.00  filter 1.42  tracker 0.59  cu 0.00  nested 0.10  copy 0.43
+timeouts 0
