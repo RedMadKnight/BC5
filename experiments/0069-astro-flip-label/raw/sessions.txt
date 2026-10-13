@@ -1,0 +1,8 @@
+== play-20261013-1801 (A-ring-order, the maintainer playing): label cleared at the wait 4691, frames 8221, ring-order lines 20, waits given up 374, timeouts 0
+== play-20261013-1806 (B-no-ring-order-64MiB, the maintainer playing): label cleared at the wait 40, frames 7760, ring-order lines 0, waits given up 518, timeouts 0
+== play-20261013-1812 (C-ring-order-64MiB, the maintainer playing): label cleared at the wait 4850, frames 8052, ring-order lines 20, waits given up 538, timeouts 0
+== play-20261013-1823 (D-ring-order+fix, the maintainer playing): label cleared at the wait 0, frames 8516, ring-order lines 21, waits given up 479, timeouts 0
+== run 303 (kytyplus-20261013-1829): cleared 0, frames 10531, timeouts 0; flip label 0x5561f134c398 set by a queued flip: waited 25.38 ms for it (10241 so far)
+== run 302 (kytyplus-20261013-1817, title to galaxy map, ring order + first fix): cleared 0, frames 10028, timeouts 0; flip label 0x55eeaf6caa58 set by a queued flip: waited 0.99 ms for it (6145 so far)
+   window 100-160 s: frames 3598 fps 59.97
+   run 303 fps per 20 s: 0 53.8;20 37;40 32.55;60 29.95;80 30;100 30.05;120 30;140 30;160 29.95;180 30;200 30;220 29.95;240 29.95;260 30;280 30;300 30;320 13.35;

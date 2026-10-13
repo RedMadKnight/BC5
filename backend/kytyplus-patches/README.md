@@ -291,6 +291,10 @@ multi-draw packets); indirect draws checked at ≤ 2^20 vertices, ≤ 64 instanc
 Experiment 0056: `BC5_DIRECT_ALIASES=1` maps the memory of the windows in
 `~/bc5-work/direct-aliases-pkg.txt` ("byte lo size") again at (byte << 40) + address (backend
 `Device::map_alias`); unverified and dangerous with the indirect draws (F110).
+Experiment 0069: with `BC5_DIRECT_FLIP_DEFER`, a graphics buffer's wait on a display buffer's flip
+label waits (up to 100 ms) while a deferred flip of that buffer is queued, instead of clearing the
+label; `BC5_DIRECT_FLIP_WAIT_DONE=1` also keeps the label set until KytyPlus has presented the
+buffer (`Bc5VideoOutWaitFlipDone`): no tearing, but 30 fps when frames take a bit over 16.7 ms.
 Experiment 0063: `BC5_DIRECT_IB_STABLE_CHECK=1` hashes every job's buffers at submission and when the
 job is done and journals how many changed (`=2`: every 32nd job keeps a copy, and the changed
 dwords are located by packet, NOP payloads apart).

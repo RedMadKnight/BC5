@@ -1298,7 +1298,7 @@ index 0000000..deb84e4
 +
 +#endif // KYTY_GRAPHICS_PRESENTATION_SETTINGS_OVERLAY_H_
 diff --git a/src/graphics/presentation/videoOut.cpp b/src/graphics/presentation/videoOut.cpp
-index f980320..81eb95c 100644
+index f980320..76ff1d9 100644
 --- a/src/graphics/presentation/videoOut.cpp
 +++ b/src/graphics/presentation/videoOut.cpp
 @@ -1,3 +1,6 @@
@@ -1338,12 +1338,20 @@ index f980320..81eb95c 100644
  		frame = &m_presenter.PrepareFrame(buffer, source_info);
  	}
  
-@@ -1505,8 +1517,26 @@ void VideoOutDriver::WaitFlipDone(int handle, int index) {
+@@ -1505,8 +1517,34 @@ void VideoOutDriver::WaitFlipDone(int handle, int index) {
  	m_impl->GetFlipQueue().Wait(*ctx, index);
  }
  
 -KYTY_SYSV_ABI int VideoOutGetFlipStatus(int handle, VideoOutFlipStatus* status) {
 -	PRINT_NAME();
++// BC5 (experiment 0069): the flip is asynchronous (the presentation thread reads the buffer
++// later); the direct-mode host releases the buffer to the game only after this returns.
++void Bc5VideoOutWaitFlipDone(int handle, int index) {
++	if (g_video_out_driver != nullptr && IsValidBufferIndex(index) && !IsSpecialBufferIndex(index)) {
++		g_video_out_driver->WaitFlipDone(handle, index);
++	}
++}
++
 +// BC5: guest range of a registered display buffer (the direct-mode host checksums it at flip).
 +bool Bc5VideoOutBufferRange(int handle, int index, uint64_t* addr, uint64_t* size) {
 +	auto* video_out = DriverState().Get(handle);
@@ -1368,15 +1376,17 @@ index f980320..81eb95c 100644
  	if (status == nullptr) {
  		return VIDEO_OUT_ERROR_INVALID_ADDRESS;
 diff --git a/src/graphics/presentation/videoOut.h b/src/graphics/presentation/videoOut.h
-index 58f16c6..4ab38e9 100644
+index 58f16c6..19849ac 100644
 --- a/src/graphics/presentation/videoOut.h
 +++ b/src/graphics/presentation/videoOut.h
-@@ -80,6 +80,8 @@ KYTY_SYSV_ABI int VideoOutSubmitChangeBufferAttribute2(int handle, int set_index
+@@ -80,6 +80,10 @@ KYTY_SYSV_ABI int VideoOutSubmitChangeBufferAttribute2(int handle, int set_index
  KYTY_SYSV_ABI int VideoOutUnregisterBuffers(int handle, int set_index);
  KYTY_SYSV_ABI int VideoOutSubmitFlip(int handle, int index, int flip_mode, int64_t flip_arg);
  KYTY_SYSV_ABI int VideoOutGetFlipStatus(int handle, VideoOutFlipStatus* status);
 +// BC5: guest range of a registered display buffer.
 +bool Bc5VideoOutBufferRange(int handle, int index, uint64_t* addr, uint64_t* size);
++// BC5 (experiment 0069): returns once no flip of that buffer is queued or being presented.
++void Bc5VideoOutWaitFlipDone(int handle, int index);
  KYTY_SYSV_ABI int VideoOutIsFlipPending(int handle);
  KYTY_SYSV_ABI int VideoOutGetVblankStatus(int handle, VideoOutVblankStatus* status);
  KYTY_SYSV_ABI int VideoOutGetEventId(const LibKernel::EventQueue::KernelEvent* ev);
@@ -4157,10 +4167,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..0ace4d9
+index 0000000..45f86ad
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,6041 @@
+@@ -0,0 +1,6106 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -4247,6 +4257,9 @@ index 0000000..0ace4d9
 +static std::mutex        g_mutex;
 +static void*             g_submit_area = nullptr; // 0xc008811b "submit done flag" page
 +static uint64_t          g_labels[64];             // sceVideoOutGetBufferLabelAddress target
++// Experiment 0069: deferred flips (BC5_DIRECT_FLIP_DEFER) of each buffer still queued; while one
++// is, the buffer's label is legitimately set and the next frame must not render into it.
++static std::atomic<int>  g_flip_pending[64];
 +static std::atomic<int>  g_dump_count {0};
 +static int               g_dump_limit = -1;
 +static std::string       g_dump_dir;
@@ -7168,6 +7181,27 @@ index 0000000..0ace4d9
 +					{
 +						const auto l0 = reinterpret_cast<uint64_t>(&g_labels[0]);
 +						if (label >= l0 && label < l0 + sizeof(g_labels) && !wait_satisfied(p, op == 0x93)) {
++							// Experiment 0069: with the flip deferred, a label still set at the wait
++							// usually belongs to a flip still queued behind the GPU's jobs; clearing it
++							// let the frame render into the buffer on screen (tearing whenever the
++							// game's thread ran ahead, 4,700 clears in a 2.5 min session with the ring
++							// order). The wait is served on the CPU until that flip has happened (it
++							// clears the label), at most 100 ms; only then is the label cleared.
++							const size_t idx = static_cast<size_t>((label - l0) / sizeof(uint64_t));
++							if (g_flip_pending[idx].load() > 0) {
++								const uint64_t tw = SoftCp::now_ns();
++								while (g_flip_pending[idx].load() > 0 && !wait_satisfied(p, op == 0x93) && SoftCp::now_ns() - tw < 100'000'000ull) {
++									std::this_thread::sleep_for(std::chrono::microseconds(50));
++								}
++								static std::atomic<uint64_t> n_waited {0};
++								if ((n_waited++ & 0x3ffu) == 0) {
++									journal("flip label 0x%" PRIx64 " set by a queued flip: waited %.2f ms for it (%" PRIu64 " so far)\n", label,
++									        static_cast<double>(SoftCp::now_ns() - tw) / 1e6, n_waited.load());
++								}
++								frame_profile_wait(on_game_thread(), false, static_cast<double>(SoftCp::now_ns() - tw) / 1e6);
++							}
++						}
++						if (label >= l0 && label < l0 + sizeof(g_labels) && !wait_satisfied(p, op == 0x93)) {
 +							*reinterpret_cast<volatile uint64_t*>(label & ~7ull) = 0;
 +							journal("flip label 0x%" PRIx64 " still set at the wait: cleared\n", label);
 +						}
@@ -10079,9 +10113,50 @@ index 0000000..0ace4d9
 +	if (!defer) Bc5Gc::Direct::drain(); // BC5_DIRECT_ASYNC: nothing of the frame may still be in flight
 +	Bc5Gc::Direct::frame_profile_flip((Bc5Gc::Direct::timing_now() - t_drain) * 1e3);
 +	if (defer) {
++		if (index >= 0 && index < 64) Bc5Gc::g_flip_pending[index]++; // experiment 0069
 +		Bc5Gc::Direct::post([handle, index, flip_mode, flip_arg](bool) {
 +			VideoOut::VideoOutSubmitFlip(handle, index, flip_mode, flip_arg);
-+			if (index >= 0 && index < 64) Bc5Gc::g_labels[index] = 0;
++			if (index >= 0 && index < 64) {
++				// Experiment 0069: the flip only queues the request; the buffer is read by the
++				// presentation thread later, at the display's refresh. With
++				// BC5_DIRECT_FLIP_WAIT_DONE=1 its label is cleared (and the next frame may render
++				// into it) once that is done, by a thread of its own so that the completion thread
++				// goes on with the jobs: no tearing, but double-buffered at 60 Hz a frame of a bit
++				// more than 16.7 ms waits for the next refresh (30 fps in the later level, run 303).
++				// Without it the label is cleared now, as before.
++				static const bool wait_done = std::getenv("BC5_DIRECT_FLIP_WAIT_DONE") != nullptr;
++				if (!wait_done) {
++					Bc5Gc::g_labels[index] = 0;
++					Bc5Gc::g_flip_pending[index]--;
++					return;
++				}
++				static std::mutex                           m;
++				static std::condition_variable              cv;
++				static std::deque<std::pair<int, int>>      q;
++				static std::once_flag                       started;
++				std::call_once(started, [] {
++					std::thread([] {
++						pthread_setname_np(pthread_self(), "bc5-flipdone");
++						for (;;) {
++							std::pair<int, int> it;
++							{
++								std::unique_lock lk(m);
++								cv.wait(lk, [] { return !q.empty(); });
++								it = q.front();
++								q.pop_front();
++							}
++							VideoOut::Bc5VideoOutWaitFlipDone(it.first, it.second);
++							Bc5Gc::g_labels[it.second] = 0;
++							Bc5Gc::g_flip_pending[it.second]--;
++						}
++					}).detach();
++				});
++				{
++					std::lock_guard lk(m);
++					q.emplace_back(handle, index);
++				}
++				cv.notify_one();
++			}
 +		});
 +		return 0;
 +	}
