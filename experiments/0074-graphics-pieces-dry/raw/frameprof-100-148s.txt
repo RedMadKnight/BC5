@@ -1,0 +1,54 @@
+== kytyplus-20261013-2332
+frames 2638 fps 54.96
+frame     mean    18.2 median    18.5 p90    19.7
+inside    mean     6.6 median     8.2 p90     9.2
+sync      mean     0.1 median     0.1 p90     0.1
+hints     mean     0.2 median     0.2 p90     0.2
+prepare   mean     0.9 median     0.8 p90     1.0
+list      mean     0.1 median     0.1 p90     0.1
+cs        mean     0.8 median     0.8 p90     1.0
+fence     mean     0.0 median     0.0 p90     0.0
+cap       mean     0.0 median     0.0 p90     0.0
+label     mean     4.6 median     6.1 p90     7.3
+event     mean     0.0 median     0.0 p90     0.0
+atflip    mean     0.0 median     0.0 p90     0.0
+outside   mean    11.6 median    11.0 p90    14.1
+gpu       mean    13.9 median    15.1 p90    15.4
+jobs      mean     9.0 median     9.0 p90     9.0
+ringjobs  mean    10.0 median    10.0 p90    10.0
+== kytyplus-20261013-2311
+frames 2419 fps 50.40
+frame     mean    19.8 median    15.4 p90    20.9
+inside    mean     3.7 median     3.7 p90     5.0
+sync      mean     0.1 median     0.1 p90     0.1
+hints     mean     0.2 median     0.2 p90     0.2
+prepare   mean     0.9 median     0.9 p90     0.9
+list      mean     0.1 median     0.1 p90     0.1
+cs        mean     0.8 median     0.8 p90     1.0
+fence     mean     0.0 median     0.0 p90     0.0
+cap       mean     0.0 median     0.0 p90     0.0
+label     mean     1.8 median     1.6 p90     3.0
+event     mean     0.0 median     0.0 p90     0.0
+atflip    mean     0.0 median     0.0 p90     0.0
+outside   mean    16.1 median    11.2 p90    18.0
+gpu       mean    11.1 median    11.2 p90    19.9
+jobs      mean     9.0 median     9.0 p90     9.0
+ringjobs  mean    10.0 median    10.0 p90    10.0
+== kytyplus-20261013-2105
+frames 2690 fps 56.04
+frame     mean    17.8 median    17.8 p90    18.5
+inside    mean    12.2 median    12.2 p90    12.8
+sync      mean     0.1 median     0.1 p90     0.1
+hints     mean     0.2 median     0.2 p90     0.2
+prepare   mean     0.8 median     0.8 p90     0.9
+list      mean     0.1 median     0.1 p90     0.1
+cs        mean     1.0 median     1.0 p90     1.2
+fence     mean     0.0 median     0.0 p90     0.0
+cap       mean     0.0 median     0.0 p90     0.0
+label     mean    10.0 median    10.0 p90    10.6
+event     mean     0.0 median     0.0 p90     0.0
+atflip    mean     0.0 median     0.0 p90     0.0
+outside   mean     5.6 median     5.5 p90     6.1
+gpu       mean    14.7 median    14.7 p90    14.8
+jobs      mean     9.0 median     9.0 p90     9.0
+ringjobs  mean    10.0 median    10.0 p90    10.0
