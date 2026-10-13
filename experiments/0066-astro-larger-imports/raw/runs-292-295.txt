@@ -1,0 +1,38 @@
+udmabuf size_limit_mb now: 1024 (set at run time by the maintainer, 2026-10-13 ~13:00)
+== run 292 (kytyplus-20261013-1225, limit-64), window 226-306 s
+window 226-306 s
+given up: 0
+cpu waits 8902 total ms 1433 over 4 ms 270; ring order kept 8192
+frames 3538 fps 44.23
+frame   mean  22.6 median  21.8 p90  25.1
+inside  mean   5.5 median   5.0 p90   6.3
+hints     mean     0.3 median     0.3 p90     0.4
+prepare   mean     3.1 median     3.0 p90     3.5
+list      mean     0.1 median     0.1 p90     0.1
+cs        mean     1.5 median     1.4 p90     1.7
+label     mean     0.4 median     0.0 p90     0.1
+outside   mean    17.1 median    16.8 p90    18.4
+gpu       mean    15.5 median    15.4 p90    16.5
+timing: #315169 done at t 334.079 s, 3.8 ms after the sync and hints; device: prepare 0.76 list 0.00 cs 0.29 fence 2.42 ms, 228 BOs
+direct: 101 views; +0 BOs (144, 8028.0 MiB pinned); maps +2 -5 (238)
+timeouts 0
+== run 295 (kytyplus-20261013-1308, limit-1024+merge-fix), window 196-276 s
+window 196-276 s
+given up: 0
+cpu waits 9300 total ms 2170 over 4 ms 415; ring order kept 7168
+frames 3674 fps 45.92
+frame   mean  21.8 median  21.1 p90  25.0
+inside  mean   5.1 median   4.5 p90   9.4
+hints     mean     0.3 median     0.3 p90     0.4
+prepare   mean     3.0 median     3.0 p90     3.3
+list      mean     0.1 median     0.1 p90     0.1
+cs        mean     1.0 median     1.0 p90     1.1
+label     mean     0.6 median     0.0 p90     4.8
+outside   mean    16.7 median    16.5 p90    17.7
+gpu       mean    15.8 median    15.6 p90    17.0
+timing: #320037 done at t 328.259 s, 4.9 ms after the sync and hints; device: prepare 0.03 list 0.00 cs 0.15 fence 4.75 ms, 123 BOs
+direct: 101 views; +0 BOs (42, 8018.0 MiB pinned); maps +2 -5 (137)
+timeouts 0
+== run 294 (kytyplus-20261013-1305, limit 1024, merge runs not cut at the budget): at the galaxy map
+direct: 96 views; +1 BOs (1854, 8242.0 MiB pinned); maps +1 -0 (1942)
+frame profile: t 144.296 s, 34.8 ms since the last flip; game thread inside the host 17.8 ms (sync 0.1, hints 0.2, prepa
