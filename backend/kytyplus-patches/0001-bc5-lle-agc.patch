@@ -4427,10 +4427,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..b520567
+index 0000000..296f9a9
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,6170 @@
+@@ -0,0 +1,6250 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -4447,6 +4447,7 @@ index 0000000..b520567
 +// handle are logged and answered with zeros. Everything here is a first cut whose purpose is to get
 +// Sony's driver through its initialisation; expect TODOs.
 +
++#include <span>
 +#include <pthread.h>
 +#include "common/abi.h"
 +#include "common/assert.h"
@@ -4463,6 +4464,7 @@ index 0000000..b520567
 +
 +#if defined(KYTY_BC5_DIRECT)
 +#include "bc5/direct.hpp"
++#include "bc5/full_state.hpp"
 +#include <fcntl.h>
 +#include <sys/mman.h>
 +#include <sys/stat.h>
@@ -7634,9 +7636,87 @@ index 0000000..b520567
 +	submit_one(ib, num_dwords, kind, from_header);
 +}
 +
++// ADR 0008 step 1, experiment 0073: BC5_DIRECT_PIECE_CHECK=<n> follows the full register state
++// of the graphics queue (bc5::full_state: every cc/hib/dcb buffer, LOAD_* tables and nested
++// buffers read from memory) and, for every n-th graphics buffer with memory waits, checks at each
++// wait whether a piece started there after the tracker's prefix would see at every later draw
++// the same registers as the unsplit buffer. CPU only: nothing submitted changes. Journals a
++// summary every 10 s.
++static void piece_check(const uint32_t* ib, uint32_t num_dwords, const char* kind) {
++	static const uint32_t every = [] {
++		const char* e = std::getenv("BC5_DIRECT_PIECE_CHECK");
++		return e != nullptr ? std::max<uint32_t>(1u, static_cast<uint32_t>(std::strtoul(e, nullptr, 10))) : 0u;
++	}();
++	if (every == 0) return;
++	if (std::strcmp(kind, "cc") != 0 && std::strcmp(kind, "hib") != 0 && std::strcmp(kind, "dcb") != 0) return;
++	static std::mutex                 mtx;
++	static bc5::full_state::Tracker   tracker;
++	static bc5::full_state::Stats     st;
++	static uint64_t                   bufs = 0, with_waits = 0, checked = 0, splits = 0, draws = 0, bad_draws = 0, bad_splits = 0;
++	static uint64_t                   prefix_sum = 0, prefix_max = 0, stack_max = 0;
++	static int                        last_space = -2;
++	static uint32_t                   last_off   = 0;
++	static double                     ms = 0, last_report = 0;
++	std::lock_guard<std::mutex>       lock(mtx);
++	const double                      t0     = timing_now();
++	std::shared_ptr<const std::vector<bc5::direct::Mapping>> maps_p = g_dev->sorted_mappings();
++	const bc5::full_state::Tracker::Reader read = [&maps_p](uint64_t a, uint64_t bytes) -> const uint32_t* {
++		return covered_sorted(*maps_p, a, bytes) ? reinterpret_cast<const uint32_t*>(a) : nullptr;
++	};
++	const std::span<const uint32_t> span(ib, num_dwords);
++	bufs++;
++	if (std::strcmp(kind, "dcb") == 0) {
++		std::vector<size_t> waits;
++		for (uint32_t i = 0; i < num_dwords;) {
++			const uint32_t h = ib[i], type = h >> 30u;
++			uint32_t len = 1;
++			if (type == 3 || type == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
++			if (i + len > num_dwords) break;
++			const uint32_t op = (h >> 8u) & 0xffu;
++			if (type == 3 && (op == 0x3c || op == 0x93) && len >= 4 && ((ib[i + 1] >> 4u) & 1u) != 0) waits.push_back(i);
++			i += len;
++		}
++		if (!waits.empty() && (with_waits++ % every) == 0) {
++			checked++;
++			for (const size_t w: waits) {
++				const auto c = bc5::full_state::check_split(tracker, span, w, read);
++				splits++;
++				draws += c.draws;
++				bad_draws += c.mismatched_draws;
++				prefix_sum += c.prefix_dwords;
++				prefix_max = std::max<uint64_t>(prefix_max, c.prefix_dwords);
++				stack_max  = std::max<uint64_t>(stack_max, c.stack_depth);
++				if (c.mismatched_draws != 0) {
++					bad_splits++;
++					last_space = c.first_space;
++					last_off   = c.first_offset;
++				}
++			}
++		}
++	}
++	tracker.apply(span, read, st);
++	ms += (timing_now() - t0) * 1000.0;
++	if (t0 - last_report >= 10.0) {
++		last_report = t0;
++		journal("piece check: %" PRIu64 " graphics buffers, %" PRIu64 " with waits, %" PRIu64 " checked, %" PRIu64 " splits, %" PRIu64
++		        " later draws, %" PRIu64 " differ (%" PRIu64 " splits; last first difference space %d offset 0x%x); prefix mean %" PRIu64
++		        " max %" PRIu64 " dwords; open pushes max %" PRIu64 "; tracked config %zu context %zu sh %zu uconfig %zu; tables %" PRIu64
++		        " unreadable %" PRIu64 ", nested %" PRIu64 " unreadable %" PRIu64 ", clears %" PRIu64 " pushes %" PRIu64 " pops %" PRIu64
++		        "; %.0f ms\n",
++		        bufs, with_waits, checked, splits, draws, bad_draws, bad_splits, last_space, last_off, splits != 0 ? prefix_sum / splits : 0,
++		        prefix_max, stack_max, tracker.count(bc5::full_state::Config), tracker.count(bc5::full_state::Context),
++		        tracker.count(bc5::full_state::Sh), tracker.count(bc5::full_state::Uconfig), st.tables, st.unreadable_tables, st.nested,
++		        st.unreadable_nested, st.clears, st.pushes, st.pops, ms);
++		bufs = with_waits = checked = splits = draws = bad_draws = bad_splits = prefix_sum = prefix_max = stack_max = 0;
++		last_space = -2;
++		ms         = 0;
++	}
++}
++
 +static void submit(const uint32_t* ib, uint32_t num_dwords, const char* kind, bool from_header) {
 +	SoftCp::clear_gpu_executed(); // the soft CP runs this buffer next, on this thread
 +	if (g_stage == Stage::Off || !g_dev || ib == nullptr || num_dwords == 0) return;
++	piece_check(ib, num_dwords, kind);
 +	static const bool rings = std::getenv("BC5_DIRECT_RINGS") != nullptr;
 +	static const bool split = std::getenv("BC5_DIRECT_NO_SPLIT") == nullptr;
 +	if (!split) { submit_one(ib, num_dwords, kind, from_header); return; }
