@@ -1,0 +1,41 @@
+flip labels at 0x7fe8e2d94000: mapped for the GPU now
+flip label 0x7fe8e2d94000 set by a queued flip: the wait goes to the GPU (1 so far)
+flip watchdog: label 0 cleared, its flip queued 151.7 ms ago
+flip watchdog: label 0 cleared, its flip queued 161.7 ms ago
+flip watchdog: label 1 cleared, its flip queued 150.1 ms ago
+flip labels at 0x7fe8e2d94000: mapped for the GPU now
+flip labels at 0x7fe8e2d94000: mapped for the GPU now
+flip labels at 0x7fe8e2d94000: mapped for the GPU now
+flip labels at 0x7fe8e2d94000: mapped for the GPU now
+flip labels at 0x7fe8e2d94000: mapped for the GPU now
+flip watchdog: label 0 cleared, its flip queued 157.5 ms ago
+flip watchdog: label 1 cleared, its flip queued 153.2 ms ago
+flip watchdog: label 1 cleared, its flip queued 150.3 ms ago
+flip watchdog: label 0 cleared, its flip queued 154.1 ms ago
+flip labels at 0x7fe8e2d94000: mapped for the GPU now
+flip labels at 0x7fe8e2d94000: mapped for the GPU now
+flip labels at 0x7fe8e2d94000: mapped for the GPU now
+flip labels at 0x7fe8e2d94000: mapped for the GPU now
+flip labels at 0x7fe8e2d94000: mapped for the GPU now
+flip labels at 0x7fe8e2d94000: mapped for the GPU now
+flip labels at 0x7fe8e2d94000: mapped for the GPU now
+flip labels at 0x7fe8e2d94000: mapped for the GPU now
+flip labels at 0x7fe8e2d94000: mapped for the GPU now
+flip labels at 0x7fe8e2d94000: mapped for the GPU now
+flip labels at 0x7fe8e2d94000: mapped for the GPU now
+flip labels at 0x7fe8e2d94000: mapped for the GPU now
+flip labels at 0x7fe8e2d94000: mapped for the GPU now
+flip label 0x7fe8e2d94000 set by a queued flip: the wait goes to the GPU (1025 so far)
+flip labels at 0x7fe8e2d94000: mapped for the GPU now
+flip labels at 0x7fe8e2d94000: mapped for the GPU now
+flip labels at 0x7fe8e2d94000: mapped for the GPU now
+flip labels at 0x7fe8e2d94000: mapped for the GPU now
+flip labels at 0x7fe8e2d94000: mapped for the GPU now
+flip labels at 0x7fe8e2d94000: mapped for the GPU now
+flip labels at 0x7fe8e2d94000: mapped for the GPU now
+flip labels at 0x7fe8e2d94000: mapped for the GPU now
+flip labels at 0x7fe8e2d94000: mapped for the GPU now
+flip labels at 0x7fe8e2d94000: mapped for the GPU now
+flip watchdog: label 1 cleared, its flip queued 158.6 ms ago
+submit #29070 dcb 25009 dwords at 0x502e02500: pass 1991 rewrite 555 drop 503 unmapped 3 cc 16 mappings 753 ... FAILED rc 0 TIMEOUT 2019.81 ms
+submit #29071 acb-state 1563 dwords at 0x7fe53812bd50: pass 207 rewrite 0 drop 103 unmapped 0 cc 0 mappings 753 ... FAILED rc 0 TIMEOUT 2017.75 ms

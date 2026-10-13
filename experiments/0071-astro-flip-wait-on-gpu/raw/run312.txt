@@ -1,0 +1,3 @@
+flip label 0x55f7d4549880 set by a queued flip: the wait goes to the GPU (1 so far)
+submit #173 acb-state 549 dwords at 0x7f6d74073d90: pass 72 rewrite 0 drop 43 unmapped 0 cc 0 mappings 168 ... FAILED rc 0 TIMEOUT 2024.80 ms
+submit #172 dcb 9891 dwords at 0x502002500: pass 670 rewrite 492 drop 435 unmapped 3 cc 8 mappings 168 ... FAILED rc 0 TIMEOUT 2025.09 ms
