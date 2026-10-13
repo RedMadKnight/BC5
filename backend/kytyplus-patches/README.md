@@ -304,6 +304,10 @@ ADR 0008 step 1: `BC5_DIRECT_PIECE_CHECK=<n>` follows the graphics queue's full 
 and, for every n-th graphics buffer with memory waits, checks at each wait whether a piece
 started there after the tracker's prefix would see the same registers at every later draw as the
 unsplit buffer. CPU only, nothing submitted changes; a `piece check:` journal line every 10 s.
+ADR 0008 step 2: `BC5_DIRECT_PIECES_DRY=1` builds the prefix at every game-thread dcb wait that
+is not satisfied when reached (where `BC5_DIRECT_PIECES` would split), submits nothing
+differently, and journals `pieces dry:` (splits, prefix size, build time, and whether each wait
+was then kept for the GPU, served on the CPU or given up).
 Experiment 0063: `BC5_DIRECT_IB_STABLE_CHECK=1` hashes every job's buffers at submission and when the
 job is done and journals how many changed (`=2`: every 32nd job keeps a copy, and the changed
 dwords are located by packet, NOP payloads apart).

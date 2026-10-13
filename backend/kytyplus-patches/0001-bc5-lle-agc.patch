@@ -4427,10 +4427,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..296f9a9
+index 0000000..4f1ffdf
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,6250 @@
+@@ -0,0 +1,6301 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -4447,6 +4447,7 @@ index 0000000..296f9a9
 +// handle are logged and answered with zeros. Everything here is a first cut whose purpose is to get
 +// Sony's driver through its initialisation; expect TODOs.
 +
++#include <optional>
 +#include <span>
 +#include <pthread.h>
 +#include "common/abi.h"
@@ -7325,6 +7326,20 @@ index 0000000..296f9a9
 +static std::mutex                          g_plw_mutex;
 +static std::vector<PendingLabelWrite>      g_plw;
 +static thread_local std::vector<const uint32_t*> t_keep_waits;
++// ADR 0008 step 2, experiment 0074: BC5_DIRECT_PIECES_DRY=1 builds, at every wait of a graphics
++// buffer where BC5_DIRECT_PIECES would split it (not satisfied when reached), the full-state
++// prefix of the later piece (bc5::full_state, from the graphics queue's state before the buffer
++// that piece_check keeps), and counts splits, prefix sizes and the time; nothing is submitted
++// differently. What then happens to the wait (kept for the GPU by ring order, served on the CPU,
++// given up or a cycle) is counted too. Reported with piece_check's journal line.
++static bool pieces_dry() {
++	static const bool v = std::getenv("BC5_DIRECT_PIECES_DRY") != nullptr;
++	return v;
++}
++static thread_local bool                     t_fs_valid = false;
++static thread_local bc5::full_state::Tracker t_fs_before;
++static std::atomic<uint64_t> g_dry_bufs {0}, g_dry_splits {0}, g_dry_prefix {0}, g_dry_ns {0}, g_dry_max_ns {0}, g_dry_kept {0}, g_dry_ok {0},
++    g_dry_failed {0};
 +
 +static void register_label_writes(const uint32_t* ib, uint32_t num_dwords, const std::vector<uint32_t>& executed, uint64_t seq) {
 +	std::vector<PendingLabelWrite> found;
@@ -7417,6 +7432,8 @@ index 0000000..296f9a9
 +		return e != nullptr ? std::strtoull(e, nullptr, 16) : 0ull;
 +	}();
 +	uint64_t split_cur_pgm = 0;
++	std::optional<bc5::full_state::Tracker> dry;     // experiment 0074
++	uint32_t                                dry_at = 0;
 +	while (i < num_dwords) {
 +		const uint32_t h = ib[i];
 +		const uint32_t type = h >> 30u;
@@ -7528,6 +7545,29 @@ index 0000000..296f9a9
 +					const uint64_t limit = std::strcmp(kind, "acb") == 0 ? acb_ns : (on_game_thread() ? dcb_ns : 2'000'000'000ull);
 +					const uint64_t t0 = SoftCp::now_ns();
 +					bool ok = false;
++					bool dry_here = false;
++					if (pieces_dry() && t_fs_valid && i > start && std::strcmp(kind, "dcb") == 0 && !wait_satisfied(p, op == 0x93)) {
++						const uint64_t d0 = SoftCp::now_ns();
++						std::shared_ptr<const std::vector<bc5::direct::Mapping>> maps_p = g_dev->sorted_mappings();
++						const bc5::full_state::Tracker::Reader read = [&maps_p](uint64_t a, uint64_t bytes) -> const uint32_t* {
++							return covered_sorted(*maps_p, a, bytes) ? reinterpret_cast<const uint32_t*>(a) : nullptr;
++						};
++						if (!dry) {
++							dry.emplace(t_fs_before);
++							g_dry_bufs++;
++						}
++						bc5::full_state::Stats dst;
++						dry->apply(std::span<const uint32_t>(ib + dry_at, i - dry_at), read, dst);
++						dry_at = i;
++						const auto     pre = dry->emit_prefix();
++						const uint64_t dn  = SoftCp::now_ns() - d0;
++						g_dry_splits++;
++						g_dry_prefix += pre.size();
++						g_dry_ns += dn;
++						for (uint64_t m = g_dry_max_ns.load(); dn > m && !g_dry_max_ns.compare_exchange_weak(m, dn);) {
++						}
++						dry_here = true;
++					}
 +					if (pieces && i > start && g_stage != Stage::MapOnly && !wait_satisfied(p, op == 0x93)) {
 +						journal("%s piece %u..%u of %u dwords goes ahead of the wait at %u on 0x%" PRIx64 "\n", kind, start, i, num_dwords, i, label);
 +						if (start > 0) {
@@ -7544,6 +7584,7 @@ index 0000000..296f9a9
 +						if ((n_kept++ & 0x3ffu) == 0) journal("ring order: %s %u dwords keeps its wait at %u on 0x%" PRIx64 " for the GPU (%" PRIu64 " so far)\n", kind, num_dwords, i, label, n_kept.load());
 +						t_keep_waits.push_back(p);
 +						SoftCp::set_gpu_executed(p, len, {0});
++						if (dry_here) g_dry_kept++;
 +						i += len;
 +						continue;
 +					}
@@ -7591,6 +7632,7 @@ index 0000000..296f9a9
 +					}
 +					journal("cpu-wait %s at %u on 0x%" PRIx64 ": %s after %.1f ms\n", op == 0x93 ? "WAIT_REG_MEM64" : "WAIT_REG_MEM", i, label, ok ? "satisfied" : (broken ? "CYCLE" : (limit < 1'000'000'000ull ? "GIVEN UP" : "TIMEOUT")), static_cast<double>(SoftCp::now_ns() - t0) / 1e6);
 +					if (!ok) t_wait_given_up = true;
++					if (dry_here) (ok ? g_dry_ok : g_dry_failed)++;
 +					frame_profile_wait(on_game_thread(), false, static_cast<double>(SoftCp::now_ns() - t0) / 1e6);
 +					if (std::getenv("BC5_DIRECT_TIMING") != nullptr) journal("timing: t %.3f s after that wait (%s %u dwords)\n", timing_now(), kind, num_dwords);
 +					SoftCp::set_gpu_executed(p, len, {0}); // the soft CP must not wait again
@@ -7647,7 +7689,7 @@ index 0000000..296f9a9
 +		const char* e = std::getenv("BC5_DIRECT_PIECE_CHECK");
 +		return e != nullptr ? std::max<uint32_t>(1u, static_cast<uint32_t>(std::strtoul(e, nullptr, 10))) : 0u;
 +	}();
-+	if (every == 0) return;
++	if (every == 0 && !pieces_dry()) return;
 +	if (std::strcmp(kind, "cc") != 0 && std::strcmp(kind, "hib") != 0 && std::strcmp(kind, "dcb") != 0) return;
 +	static std::mutex                 mtx;
 +	static bc5::full_state::Tracker   tracker;
@@ -7676,7 +7718,9 @@ index 0000000..296f9a9
 +			if (type == 3 && (op == 0x3c || op == 0x93) && len >= 4 && ((ib[i + 1] >> 4u) & 1u) != 0) waits.push_back(i);
 +			i += len;
 +		}
-+		if (!waits.empty() && (with_waits++ % every) == 0) {
++		t_fs_valid = pieces_dry() && !waits.empty();
++		if (t_fs_valid) t_fs_before = tracker;
++		if (every != 0 && !waits.empty() && (with_waits++ % every) == 0) {
 +			checked++;
 +			for (const size_t w: waits) {
 +				const auto c = bc5::full_state::check_split(tracker, span, w, read);
@@ -7707,6 +7751,13 @@ index 0000000..296f9a9
 +		        prefix_max, stack_max, tracker.count(bc5::full_state::Config), tracker.count(bc5::full_state::Context),
 +		        tracker.count(bc5::full_state::Sh), tracker.count(bc5::full_state::Uconfig), st.tables, st.unreadable_tables, st.nested,
 +		        st.unreadable_nested, st.clears, st.pushes, st.pops, ms);
++		if (pieces_dry()) {
++			const uint64_t n = g_dry_splits.exchange(0);
++			journal("pieces dry: %" PRIu64 " splits in %" PRIu64 " buffers, prefix mean %" PRIu64 " dwords, build %.1f ms in all, max %.2f ms; the waits then: %" PRIu64
++			        " kept for the GPU, %" PRIu64 " served on the CPU, %" PRIu64 " given up or broken\n",
++			        n, g_dry_bufs.exchange(0), n != 0 ? g_dry_prefix.exchange(0) / n : 0, static_cast<double>(g_dry_ns.exchange(0)) / 1e6,
++			        static_cast<double>(g_dry_max_ns.exchange(0)) / 1e6, g_dry_kept.exchange(0), g_dry_ok.exchange(0), g_dry_failed.exchange(0));
++		}
 +		bufs = with_waits = checked = splits = draws = bad_draws = bad_splits = prefix_sum = prefix_max = stack_max = 0;
 +		last_space = -2;
 +		ms         = 0;
