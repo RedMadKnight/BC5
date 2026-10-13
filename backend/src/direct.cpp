@@ -89,6 +89,9 @@ struct Device::Impl {
     // Experiment 0027: the IB is assembled and scanned in this cached buffer and copied into the
     // scratch once; every read of the uncached scratch cost more than the walk itself.
     std::vector<std::uint32_t> image;
+    // Experiment 0064: the filtered main IB, kept between submissions so that its memory is not
+    // allocated and zeroed again for every buffer (up to ~470 KB each, four of them a frame).
+    std::vector<std::uint32_t> main_buf;
     std::uint32_t next_shared_id = 1;
     int udmabuf_fd = -1;
     // The BO list of a submission with draws names every mapping; it is kept between
@@ -643,14 +646,15 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
             return ok;
         };
     }
-    std::vector<std::uint32_t> main_out(ib.size());
+    std::vector<std::uint32_t> &main_out = impl_->main_buf; // every dword is written by the filter
+    main_out.resize(ib.size());
     double t_phase = now_ms();
     policy::filter(policy::Policy::builtin(), ib, main_out, fopt, r.filter);
     executed_offsets_of(ib, main_out.data(), r.executed_offsets);
     r.prep_filter_ms = now_ms() - t_phase;
     t_phase = now_ms();
     if (state_stack_ && opt.mapped) {
-        main_out = impl_->tracker.apply(ib, main_out, opt.mapped, r.state_stack);
+        impl_->tracker.apply_in_place(ib, main_out, opt.mapped, r.state_stack);
     }
     r.prep_tracker_ms = now_ms() - t_phase;
     t_phase = now_ms();

@@ -88,7 +88,7 @@ Phases run_once(const std::vector<std::uint32_t> &ib, bool mapped_all, bool filt
     // mapped() answering yes, that memory is not there, so they are skipped.
     if (!filter_only) {
         t = now_ms();
-        main_out = tracker.apply(ib, main_out, opt.mapped, p.ss);
+        tracker.apply_in_place(ib, main_out, opt.mapped, p.ss);
         p.tracker = now_ms() - t;
 
         t = now_ms();

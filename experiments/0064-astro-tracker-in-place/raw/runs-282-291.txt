@@ -1,0 +1,52 @@
+== run 282 (kytyplus-20261013-1041, baseline(0061)), window 228-308 s (55-135 s after the level loaded)
+window 228-308 s
+given up: 0
+cpu waits 8493 total ms 1212 over 4 ms 168; ring order kept 7168
+frames 3334 fps 41.67
+frame   mean  24.0 median  24.1 p90  26.2
+inside  mean   6.3 median   6.1 p90   7.4
+prepare   mean     3.5 median     3.6 p90     4.0
+cs        mean     1.6 median     1.6 p90     1.9
+label     mean     0.4 median     0.0 p90     0.1
+outside   mean    17.7 median    17.6 p90    19.0
+gpu       mean    15.6 median    15.5 p90    17.0
+softcp 1.17  passes 8.00  filter 1.84  tracker 0.91  cu 0.00  nested 0.12  copy 0.47
+timeouts 0
+== run 290 (kytyplus-20261013-1153, tracker-in-place), window 199-279 s (55-135 s after the level loaded)
+window 199-279 s
+given up: 0
+cpu waits 8490 total ms 1325 over 4 ms 244; ring order kept 7168
+frames 3485 fps 43.56
+frame   mean  23.0 median  22.3 p90  25.5
+inside  mean   5.8 median   5.3 p90   6.7
+prepare   mean     3.1 median     3.0 p90     3.6
+cs        mean     1.5 median     1.5 p90     1.8
+label     mean     0.4 median     0.0 p90     0.1
+outside   mean    17.1 median    16.9 p90    18.6
+gpu       mean    15.6 median    15.5 p90    16.7
+softcp 1.11  passes 8.00  filter 1.78  tracker 0.61  cu 0.00  nested 0.11  copy 0.44
+timeouts 0
+== run 291 (kytyplus-20261013-1200, +main-buffer-reuse), window 200-280 s (55-135 s after the level loaded)
+window 200-280 s
+given up: 1
+       1 115 0x400202d40
+cpu waits 8592 total ms 1593 over 4 ms 284; ring order kept 7168
+frames 3485 fps 43.56
+frame   mean  23.0 median  22.2 p90  25.6
+inside  mean   5.9 median   5.4 p90   7.3
+prepare   mean     3.2 median     3.0 p90     3.6
+cs        mean     1.5 median     1.5 p90     1.8
+label     mean     0.5 median     0.0 p90     0.1
+outside   mean    17.0 median    16.8 p90    18.5
+gpu       mean    15.6 median    15.5 p90    16.7
+softcp 1.16  passes 8.00  filter 1.85  tracker 0.60  cu 0.00  nested 0.11  copy 0.44
+timeouts 0
+== prepare-bench --no-mapped --repeat 9 (13 main buffers), before / after
+-- policy-old-build
+buffer                        dwords     out |  filter offsets tracker      cu    copy repoint |   total | pops/restored/inserted
+ib-00344503-dcb-110015.bin    110015  110015 |   1.356   0.031   0.105   0.012   0.016   0.034 |   1.555 | 2/0/0
+total over 13 buffers: 12.314 ms
+-- backend-ubuntu
+buffer                        dwords     out |  filter offsets tracker      cu    copy repoint |   total | pops/restored/inserted
+ib-00344503-dcb-110015.bin    110015  110015 |   0.618   0.063   0.088   0.024   0.026   0.085 |   0.904 | 2/0/0
+total over 13 buffers: 4.550 ms
