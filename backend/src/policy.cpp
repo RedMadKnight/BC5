@@ -349,6 +349,14 @@ std::size_t filter(const Policy &policy, std::span<const std::uint32_t> src,
         default: return 0;
         }
     };
+    // Experiment 0067: the SET opcodes that may take the fast path.
+    const bool fast_set = opt.drop_offsets.empty();
+    bool fast_op[256] = {};
+    for (const std::uint8_t op : {std::uint8_t{0x68}, std::uint8_t{0x69}, std::uint8_t{0x76},
+                                  std::uint8_t{0x79}, std::uint8_t{0x9b}}) {
+        fast_op[op] = policy.op(op) == Verdict::Pass &&
+                      std::find(opt.extra_drop.begin(), opt.extra_drop.end(), op) == opt.extra_drop.end();
+    }
     while (i < n) {
         const std::uint32_t header = src[i];
         const std::uint32_t type = header >> 30;
@@ -368,6 +376,25 @@ std::size_t filter(const Policy &policy, std::span<const std::uint32_t> src,
             stats.dwords_dropped += n - i;
             i = n;
             break;
+        }
+        // Experiment 0067: a plain SET packet whose registers the table passes as a whole, with no
+        // option that could drop it by offset or opcode, is copied as it is. The full path below
+        // would do the same and nothing else (no label, no memory operand, no rewrite), at several
+        // times the cost: most of a frame's dwords are such packets.
+        if (fast_set && type == 3 && len >= 3) {
+            const auto op = static_cast<std::uint8_t>((header >> 8) & 0xff);
+            std::uint32_t base = 0;
+            if (fast_op[op] && is_plain_set(op, base)) {
+                const std::uint32_t first = base + (src[i + 1] & 0xffff);
+                if (!policy.span_listed(first, len - 2) && policy.reg(first) == Verdict::Pass) {
+                    std::copy(src.begin() + static_cast<std::ptrdiff_t>(i),
+                              src.begin() + static_cast<std::ptrdiff_t>(i + len),
+                              out.begin() + static_cast<std::ptrdiff_t>(i));
+                    stats.passed++;
+                    i += len;
+                    continue;
+                }
+            }
         }
         Verdict v = policy.packet(&src[i], len);
         const auto opcode3 = static_cast<std::uint8_t>((header >> 8) & 0xff);

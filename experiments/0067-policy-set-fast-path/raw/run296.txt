@@ -1,0 +1,14 @@
+== run 296 (kytyplus-20261013-1332), window 520-600 s (55-135 s after the level load); rpm-ostree and kcompactd busy during the run, the disk at 100%
+window 520-600 s
+given up: 0
+cpu waits 9071 total ms 2436 over 4 ms 457; ring order kept 8192
+frames 3618 fps 45.23
+frame   mean  22.1 median  21.3 p90  25.3
+inside  mean   5.0 median   4.3 p90   9.5
+hints     mean     0.3 median     0.3 p90     0.4
+prepare   mean     2.8 median     2.7 p90     3.2
+cs        mean     1.0 median     1.0 p90     1.2
+label     mean     0.7 median     0.0 p90     5.0
+outside   mean    17.1 median    16.9 p90    18.6
+gpu       mean    15.8 median    15.7 p90    17.3
+softcp 1.12  passes 8.00  filter 1.45  tracker 0.62  cu 0.00  nested 0.11  copy 0.44
