@@ -119,4 +119,10 @@ private:
 SplitCheck check_split(const Tracker &before, std::span<const std::uint32_t> ib, std::size_t wait,
                        const Tracker::Reader &read);
 
+// Experiment 0089: calls f for every draw and dispatch of ib (not of its nested buffers) with the
+// packet's offset, its dwords and the tracked state just before it (`before` + the buffer up to
+// there). For a per-draw journal of a frame; no GPU access.
+void for_each_draw(const Tracker &before, std::span<const std::uint32_t> ib, const Tracker::Reader &read,
+                   const std::function<void(std::size_t, std::span<const std::uint32_t>, const Tracker &)> &f);
+
 } // namespace bc5::full_state
