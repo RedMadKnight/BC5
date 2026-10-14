@@ -389,3 +389,5 @@ at the copy (backend `FilterOptions::dma_source`), for the second title's per-fr
 rotating CPU staging (F146). Ring ranges not yet imported are not used.
 Experiment 0088: `BC5_DIRECT_DRAW_MAX=<vertices>:<instances>` overrides the CP's indirect-draw limits
 (default 1048576:64).
+Experiment 0089: `BC5_DIRECT_DRAW_JOURNAL=<t0>:<buffers>` journals every draw and dispatch of the graphics
+buffers from t0 s on (colour target 0, viewport, PS/ES/GS/CS programs, packet dwords).

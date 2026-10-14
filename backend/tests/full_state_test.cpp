@@ -222,3 +222,28 @@ TEST_CASE("full state: a split checked against the unsplit buffer", "[full_state
     CHECK(d.draws == 1);
     CHECK(d.mismatched_draws == 0);
 }
+
+TEST_CASE("full state: for_each_draw sees the state before each draw", "[full_state]") {
+    Tracker before;
+    const std::vector<std::uint32_t> ib = {
+        0xC0016900u, 0x318, 0x100,   // CB_COLOR0_BASE
+        0xC0012D00u, 3, 2,          // DRAW_INDEX_AUTO
+        0xC0016900u, 0x318, 0x200,
+        0xC0012D00u, 6, 2,
+    };
+    std::vector<std::uint32_t> bases;
+    std::vector<std::size_t> offsets;
+    full_state::for_each_draw(before, ib, kNone,
+                              [&](std::size_t off, std::span<const std::uint32_t> pkt, const Tracker &t) {
+                                  std::uint32_t v = 0;
+                                  REQUIRE(t.get(full_state::Context, 0x318, v));
+                                  bases.push_back(v);
+                                  offsets.push_back(off);
+                                  CHECK(pkt.size() == 3);
+                              });
+    REQUIRE(bases.size() == 2);
+    CHECK(bases[0] == 0x100);
+    CHECK(bases[1] == 0x200);
+    CHECK(offsets[0] == 3);
+    CHECK(offsets[1] == 9);
+}

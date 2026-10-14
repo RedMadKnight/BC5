@@ -332,4 +332,27 @@ SplitCheck check_split(const Tracker &before, std::span<const std::uint32_t> ib,
     return c;
 }
 
+void for_each_draw(const Tracker &before, std::span<const std::uint32_t> ib, const Tracker::Reader &read,
+                   const std::function<void(std::size_t, std::span<const std::uint32_t>, const Tracker &)> &f) {
+    Stats st;
+    Tracker t = before;
+    std::size_t from = 0;
+    for (std::size_t i = 0; i < ib.size();) {
+        const std::uint32_t h = ib[i];
+        const std::uint32_t type = h >> 30;
+        std::size_t len = 1;
+        if (type == 3 || type == 0) {
+            const std::uint32_t count = (h >> 16) & 0x3fffu;
+            len = count == 0x3fffu ? 1 : count + 2;
+        }
+        if (i + len > ib.size()) break;
+        if (type == 3 && is_draw(static_cast<std::uint8_t>((h >> 8) & 0xffu))) {
+            t.apply(ib.subspan(from, i - from), read, st);
+            from = i;
+            f(i, ib.subspan(i, len), t);
+        }
+        i += len;
+    }
+}
+
 } // namespace bc5::full_state

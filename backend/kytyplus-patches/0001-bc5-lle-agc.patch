@@ -4427,10 +4427,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..f3521a6
+index 0000000..22c6a0d
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,6447 @@
+@@ -0,0 +1,6494 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -7727,7 +7727,23 @@ index 0000000..f3521a6
 +		const char* e = std::getenv("BC5_DIRECT_PIECE_CHECK");
 +		return e != nullptr ? std::max<uint32_t>(1u, static_cast<uint32_t>(std::strtoul(e, nullptr, 10))) : 0u;
 +	}();
-+	if (every == 0 && !pieces_dry() && !pieces_full()) return;
++	// Experiment 0089: BC5_DIRECT_DRAW_JOURNAL=<t0>:<buffers> journals every draw and dispatch of the
++	// graphics buffers submitted from t0 s on (that many buffers): colour target 0 (base, size,
++	// INFO), CB_TARGET_MASK, viewport, PS and VS/ES/GS programs, the packet's dwords. Registers:
++	// Mesa gfx10 register JSON (tools/bc5-agc/regdb): CB_COLOR0_BASE ctx 0x318, _BASE_EXT 0x390,
++	// _INFO 0x31c, _ATTRIB2 0x3b0 (MIP0_HEIGHT 13:0, MIP0_WIDTH 27:14, TODO(verify)), CB_TARGET_MASK
++	// 0x8e, PA_CL_VPORT_XSCALE..YOFFSET 0x10f-0x112, SPI_SHADER_PGM_LO/HI_PS sh 0x8/0x9, _LO_ES 0xc8,
++	// _LO_GS 0x88, COMPUTE_PGM_LO sh 0x20c.
++	static const std::pair<double, uint32_t> draw_journal = [] {
++		std::pair<double, uint32_t> v {0, 0};
++		if (const char* e = std::getenv("BC5_DIRECT_DRAW_JOURNAL"); e != nullptr) {
++			char* end = nullptr;
++			v.first   = std::strtod(e, &end);
++			if (end != nullptr && *end == ':') v.second = static_cast<uint32_t>(std::strtoul(end + 1, nullptr, 10));
++		}
++		return v;
++	}();
++	if (every == 0 && !pieces_dry() && !pieces_full() && draw_journal.second == 0) return;
 +	if (std::strcmp(kind, "cc") != 0 && std::strcmp(kind, "hib") != 0 && std::strcmp(kind, "dcb") != 0) return;
 +	static std::mutex                 mtx;
 +	static bc5::full_state::Tracker   tracker;
@@ -7757,6 +7773,37 @@ index 0000000..f3521a6
 +			i += len;
 +		}
 +		t_fs_valid = (pieces_dry() || pieces_full()) && !waits.empty();
++		static uint32_t journaled = 0;
++		if (draw_journal.second != 0 && journaled < draw_journal.second && timing_now() >= draw_journal.first) {
++			const uint32_t buf_no = journaled++;
++			bc5::full_state::for_each_draw(tracker, span, read, [&](size_t off, std::span<const uint32_t> pkt, const bc5::full_state::Tracker& t) {
++				auto reg = [&t](bc5::full_state::Space sp, uint32_t o) {
++					uint32_t v = 0;
++					return t.get(sp, o, v) ? v : 0u;
++				};
++				auto flt = [&](uint32_t o) {
++					const uint32_t b = reg(bc5::full_state::Context, o);
++					float f = 0;
++					std::memcpy(&f, &b, 4);
++					return static_cast<double>(f);
++				};
++				using S                = bc5::full_state::Space;
++				const uint64_t rt      = (static_cast<uint64_t>(reg(S::Context, 0x318)) | (static_cast<uint64_t>(reg(S::Context, 0x390) & 0xffu) << 32u)) << 8u;
++				const uint32_t attrib2 = reg(S::Context, 0x3b0);
++				const uint64_t ps      = (static_cast<uint64_t>(reg(S::Sh, 0x8)) | (static_cast<uint64_t>(reg(S::Sh, 0x9) & 0xffu) << 32u)) << 8u;
++				const uint64_t es      = static_cast<uint64_t>(reg(S::Sh, 0xc8)) << 8u;
++				const uint64_t gs      = static_cast<uint64_t>(reg(S::Sh, 0x88)) << 8u;
++				const uint64_t cs      = static_cast<uint64_t>(reg(S::Sh, 0x20c)) << 8u;
++				const double   xs = flt(0x10f), xo = flt(0x110), ys = flt(0x111), yo = flt(0x112);
++				char           words[96] = {};
++				int            w         = 0;
++				for (size_t k = 0; k < pkt.size() && k < 6 && w < 80; k++) w += std::snprintf(words + w, sizeof(words) - static_cast<size_t>(w), " %08x", pkt[k]);
++				journal("draw journal buf %u (%u dwords) at %zu:%s | rt0 %010" PRIx64 " %ux%u info %08x mask %08x | vp %.0fx%.0f at %.0f,%.0f | ps %010" PRIx64
++				                " es %010" PRIx64 " gs %010" PRIx64 " cs %010" PRIx64 "\n",
++				                buf_no, num_dwords, off, words, rt, ((attrib2 >> 14u) & 0x3fffu) + 1u, (attrib2 & 0x3fffu) + 1u, reg(S::Context, 0x31c), reg(S::Context, 0x8e),
++				                2 * xs, 2 * ys, xo - xs, yo - ys, ps, es, gs, cs);
++			});
++		}
 +		if (t_fs_valid) t_fs_before = tracker;
 +		if (every != 0 && !waits.empty() && (with_waits++ % every) == 0) {
 +			checked++;
