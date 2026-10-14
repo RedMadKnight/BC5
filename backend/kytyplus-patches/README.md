@@ -399,3 +399,7 @@ Experiment 0093: the draw journal lists all enabled colour targets; `BC5_DIRECT_
 the user data of every buffer kind for the values.
 Experiments 0095–0098: `BC5_DIRECT_RT_DUMP` formats accept `-lin` (linear) and `-fam<n>` (KytyPlus TileBlockFamily),
 and report the 2-bit alpha histogram of `rgb10a2`.
+Experiment 0102, prepared and **not run** (GPU; only with the maintainer present): `BC5_DIRECT_AMM_PRT=1` maps the
+title's AMM window (0x8000000000, 64 GiB) as PRT pages (`Device::map_prt_window`: reads 0, writes dropped) before
+anything is imported there; the title's mappings replace those pages and their unmapping restores them, as RADV does
+for sparse memory (F161: the second title's sparse UI layer).

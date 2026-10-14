@@ -111,6 +111,11 @@ public:
     // Maps [bo_offset, bo_offset + size) of an imported range at gpu_va (all page aligned). One
     // range may be mapped at several addresses (the guest's aliases of one physical range).
     bool map_shared(std::uint32_t id, std::uint64_t bo_offset, std::uint64_t size, std::uint64_t gpu_va);
+    // Experiment 0102: maps [va, va + size) as PRT pages (AMDGPU_VM_PAGE_PRT without a BO: reads
+    // return 0, writes are dropped), for a window the title leaves partly unbacked on purpose
+    // (the AMM window, F161). Later userptr and shared mappings inside it replace the PRT pages,
+    // and their unmapping restores them. 64 KiB aligned; call before anything is mapped there.
+    bool map_prt_window(std::uint64_t va, std::uint64_t size);
     bool unmap_shared(std::uint64_t gpu_va);
     // Experiment 0056: maps the pages already mapped at [src_va, src_va + size) (userptr or shared
     // mappings, page aligned) a second time at alias_va, e.g. under a non-zero address byte 47:40
