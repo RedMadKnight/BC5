@@ -76,6 +76,23 @@ struct Device::Impl {
         amdgpu_bo_handle bo = nullptr;
     };
     std::vector<Alias> aliases; // Device::map_alias (experiment 0056)
+    // Experiment 0102: VA windows mapped as PRT (Device::map_prt_window). Inside one, mappings are
+    // made with AMDGPU_VA_OP_REPLACE over the PRT pages and undone by replacing them with PRT pages
+    // again, as RADV binds and unbinds sparse memory (Mesa src/amd/vulkan/winsys/amdgpu/
+    // radv_amdgpu_bo.c, radv_amdgpu_virtual_bo_map/_unmap, 0866ae7).
+    std::vector<std::pair<std::uint64_t, std::uint64_t>> prt_windows; // (va, size)
+    bool in_prt(std::uint64_t va, std::uint64_t size) const {
+        for (const auto &[w, n] : prt_windows)
+            if (va >= w && va + size <= w + n) return true;
+        return false;
+    }
+    int va_map(amdgpu_bo_handle bo, std::uint64_t offset, std::uint64_t size, std::uint64_t va, std::uint64_t flags) {
+        return amdgpu_bo_va_op_raw(dev, bo, offset, size, va, flags, in_prt(va, size) ? AMDGPU_VA_OP_REPLACE : AMDGPU_VA_OP_MAP);
+    }
+    int va_unmap(amdgpu_bo_handle bo, std::uint64_t offset, std::uint64_t size, std::uint64_t va) {
+        if (in_prt(va, size)) return amdgpu_bo_va_op_raw(dev, nullptr, 0, size, va, AMDGPU_VM_PAGE_PRT, AMDGPU_VA_OP_REPLACE);
+        return amdgpu_bo_va_op_raw(dev, bo, offset, size, va, 0, AMDGPU_VA_OP_UNMAP);
+    }
     void drop_aliases_of(amdgpu_bo_handle bo) {
         for (auto a = aliases.begin(); a != aliases.end();) {
             if (a->bo == bo) {
@@ -268,6 +285,7 @@ Device::~Device() {
     for (auto &m : impl_->shared_maps)
         amdgpu_bo_va_op_raw(impl_->dev, m.bo, m.bo_offset, m.size, m.va, 0, AMDGPU_VA_OP_UNMAP);
     for (auto &b : impl_->shared) amdgpu_bo_free(b.bo);
+    for (const auto &[w, n] : impl_->prt_windows) amdgpu_bo_va_op_raw(impl_->dev, nullptr, 0, n, w, 0, AMDGPU_VA_OP_CLEAR);
     if (impl_->udmabuf_fd >= 0) close(impl_->udmabuf_fd);
     for (int k = 0; k < Impl::kSlots; ++k) {
         impl_->cur = k;
@@ -333,10 +351,11 @@ bool Device::map_userptr(std::uint64_t cpu_va, std::uint64_t size, bool readonly
         return false;
     }
     if (readonly) {
-        rc = amdgpu_bo_va_op_raw(impl_->dev, u.bo, 0, size, cpu_va,
-                                 AMDGPU_VM_PAGE_READABLE | AMDGPU_VM_PAGE_EXECUTABLE, AMDGPU_VA_OP_MAP);
+        rc = impl_->va_map(u.bo, 0, size, cpu_va, AMDGPU_VM_PAGE_READABLE | AMDGPU_VM_PAGE_EXECUTABLE);
     } else {
-        rc = amdgpu_bo_va_op(u.bo, 0, size, cpu_va, 0, AMDGPU_VA_OP_MAP);
+        // amdgpu_bo_va_op's own flags (libdrm amdgpu_bo.c): readable, writeable, executable
+        rc = impl_->va_map(u.bo, 0, size, cpu_va,
+                           AMDGPU_VM_PAGE_READABLE | AMDGPU_VM_PAGE_WRITEABLE | AMDGPU_VM_PAGE_EXECUTABLE);
     }
     if (rc != 0) {
         std::fprintf(stderr, "bc5-direct: va map 0x%llx+0x%llx failed: %d\n",
@@ -354,7 +373,7 @@ bool Device::unmap_userptr(std::uint64_t cpu_va) {
     for (auto it = impl_->userptrs.begin(); it != impl_->userptrs.end(); ++it) {
         if (it->va == cpu_va) {
             impl_->drop_aliases_of(it->bo);
-            amdgpu_bo_va_op(it->bo, 0, it->size, it->va, 0, AMDGPU_VA_OP_UNMAP);
+            impl_->va_unmap(it->bo, 0, it->size, it->va);
             amdgpu_bo_free(it->bo);
             impl_->userptrs.erase(it);
             impl_->list_gen++;
@@ -438,10 +457,8 @@ bool Device::map_shared(std::uint32_t id, std::uint64_t bo_offset, std::uint64_t
         if (x.id == id) b = &x;
     }
     if (b == nullptr || bo_offset + size > b->size) return false;
-    const int rc = amdgpu_bo_va_op_raw(impl_->dev, b->bo, bo_offset, size, gpu_va,
-                                       AMDGPU_VM_PAGE_READABLE | AMDGPU_VM_PAGE_WRITEABLE |
-                                           AMDGPU_VM_PAGE_EXECUTABLE,
-                                       AMDGPU_VA_OP_MAP);
+    const int rc = impl_->va_map(b->bo, bo_offset, size, gpu_va,
+                                 AMDGPU_VM_PAGE_READABLE | AMDGPU_VM_PAGE_WRITEABLE | AMDGPU_VM_PAGE_EXECUTABLE);
     if (rc != 0) {
         std::fprintf(stderr, "bc5-direct: shared map at 0x%llx+0x%llx: %d\n",
                      static_cast<unsigned long long>(gpu_va), static_cast<unsigned long long>(size), rc);
@@ -452,11 +469,22 @@ bool Device::map_shared(std::uint32_t id, std::uint64_t bo_offset, std::uint64_t
     return true;
 }
 
+bool Device::map_prt_window(std::uint64_t va, std::uint64_t size) {
+    std::lock_guard lock(impl_->mutex);
+    if (size == 0 || ((va | size) & 0xffff) != 0) return false;
+    const int rc = amdgpu_bo_va_op_raw(impl_->dev, nullptr, 0, size, va, AMDGPU_VM_PAGE_PRT, AMDGPU_VA_OP_MAP);
+    std::fprintf(stderr, "bc5-direct: PRT window 0x%llx+0x%llx: %d\n", static_cast<unsigned long long>(va),
+                 static_cast<unsigned long long>(size), rc);
+    if (rc != 0) return false;
+    impl_->prt_windows.emplace_back(va, size);
+    return true;
+}
+
 bool Device::unmap_shared(std::uint64_t gpu_va) {
     std::lock_guard lock(impl_->mutex);
     for (auto it = impl_->shared_maps.begin(); it != impl_->shared_maps.end(); ++it) {
         if (it->va != gpu_va) continue;
-        amdgpu_bo_va_op_raw(impl_->dev, it->bo, it->bo_offset, it->size, it->va, 0, AMDGPU_VA_OP_UNMAP);
+        impl_->va_unmap(it->bo, it->bo_offset, it->size, it->va);
         impl_->shared_maps.erase(it);
         impl_->list_gen++;
         return true;
@@ -504,7 +532,7 @@ bool Device::free_shared(std::uint32_t id) {
         if (b->id != id) continue;
         for (auto it = impl_->shared_maps.begin(); it != impl_->shared_maps.end();) {
             if (it->id == id) {
-                amdgpu_bo_va_op_raw(impl_->dev, it->bo, it->bo_offset, it->size, it->va, 0, AMDGPU_VA_OP_UNMAP);
+                impl_->va_unmap(it->bo, it->bo_offset, it->size, it->va);
                 it = impl_->shared_maps.erase(it);
             } else {
                 ++it;
