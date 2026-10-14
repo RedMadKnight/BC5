@@ -407,3 +407,22 @@ black (F162).
 Experiment 0103: `BC5_DIRECT_REMEMBER_UNMAPPED=1` remembers for 2 s the operand pages a forced sync left unmapped.
 A light buffer (no draws, dispatches or nested buffers) whose only unmapped operands lie there does not force the
 sync walk again; the packet is dropped either way. It saves the second title 9 ms a frame (F163).
+Experiment 0104 (diagnostics, off by default):
+- The draw journal's layer lines report what backs UI layer 0 for the guest and for the GPU.
+- `BC5_DIRECT_RT_DUMP`:
+  - a `layer:<w>:<h>:<fmt>` item dumps that layer;
+  - a surface in the AMM window is read only when the guest maps all of it;
+  - `rgba8` dumps report an alpha histogram and write the alpha as a PGM.
+- `BC5_DIRECT_DRAW_JOURNAL_WATCH=1` journals only the draws and dispatches that touch a surface of
+  the UI layer's size an automatic AMM map created (`bc5_watch_surface`). Each line carries the
+  colour state, the export format and the UI shaders' paint data.
+- `KYTY_BC5_AMM_ZERO_AUTO=1` (libAmpr.cpp) zero-fills fresh automatic AMM maps. With
+  `KYTY_BC5_AMM_TRACE=1`, maps of 1 MiB or more report their non-zero pages.
+
+Experiment 0105:
+- `BC5_DIRECT_TS_LOG=<t0>` journals the raw values of the title's own GPU timestamps for each job.
+- The draw journal shows the parameter and result blocks of the frame-pacing program 0x11d0288100.
+- `BC5_DIRECT_PACE_FIX=<program>:<num>/<den>` multiplies that program's target time and wait limit
+  by num/den before submission. The second title computes them for a 170 MHz clock, while
+  `s_memrealtime` counts at 100 MHz here, so use `11d0288100:100/170`: intro 18 → 52 fps, menu
+  18 → 37 fps, and complete menu text (F165).
