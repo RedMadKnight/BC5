@@ -1,0 +1,19 @@
+pieces full: 0 splits made, the wait then satisfied 0, not satisfied 0
+pieces dry: 509 splits in 498 buffers, prefix mean 1260 dwords, build 31.6 ms in all, max 0.74 ms; the waits then: 428 kept for the GPU, 81 served on the CPU, 0 given up or broken
+piece: dcb 0..115 of 10440 dwords went ahead of the wait at 115 on 0x..; the wait then satisfied after 3.6 ms; rest behind a prefix of 1261 dwords
+pieces full: 1 splits made, the wait then satisfied 1, not satisfied 0
+pieces dry: 687 splits in 601 buffers, prefix mean 1261 dwords, build 40.6 ms in all, max 0.51 ms; the waits then: 393 kept for the GPU, 294 served on the CPU, 0 given up or broken
+pieces full: 0 splits made, the wait then satisfied 0, not satisfied 0
+pieces dry: 837 splits in 563 buffers, prefix mean 1261 dwords, build 45.8 ms in all, max 0.52 ms; the waits then: 600 kept for the GPU, 237 served on the CPU, 0 given up or broken
+piece: dcb 0..115 of 28911 dwords went ahead of the wait at 115 on 0x..; the wait then not satisfied after 8.0 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..115 of 27187 dwords went ahead of the wait at 115 on 0x..; the wait then satisfied after 7.7 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..115 of 26241 dwords went ahead of the wait at 115 on 0x..; the wait then satisfied after 0.0 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..115 of 26163 dwords went ahead of the wait at 115 on 0x..; the wait then satisfied after 0.3 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..115 of 25725 dwords went ahead of the wait at 115 on 0x..; the wait then satisfied after 0.1 ms; rest behind a prefix of 1261 dwords
+pieces full: 5 splits made, the wait then satisfied 4, not satisfied 1
+pieces dry: 1113 splits in 581 buffers, prefix mean 1261 dwords, build 51.6 ms in all, max 0.21 ms; the waits then: 1088 kept for the GPU, 24 served on the CPU, 1 given up or broken
+piece: dcb 0..115 of 43625 dwords went ahead of the wait at 115 on 0x..; the wait then satisfied after 0.4 ms; rest behind a prefix of 1261 dwords
+== frame profile 60-148 s
+frames 0 fps 0.00
+== last frame profile
+frame profile: t 48.934
