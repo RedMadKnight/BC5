@@ -63,7 +63,7 @@ which user-mode submission here does not control. Second choice.
    left to the GPU by ring order. In the water (experiment 0076) a split is needed about 0.4
    times a frame.
 3. **GPU, outside the water, with the maintainer present.** Prepared, not run:
-   `BC5_DIRECT_PIECES_FULL=1` in the KytyPlus patch. Split the main buffer at its first
+   `BC5_DIRECT_PIECES_FULL=1` in the KytyPlus patch. Passed (experiment 0077): 20 pieces, no fault. Split the main buffer at its first
    wait even when that wait is already satisfied, so the pieces run where nothing else changes.
    Use the hang watcher and the devcoredump (experiment 0058). One run, then compare the
    picture.
