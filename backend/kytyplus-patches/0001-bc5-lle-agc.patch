@@ -4427,10 +4427,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..19c4131
+index 0000000..efe4969
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,6581 @@
+@@ -0,0 +1,6625 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -7757,9 +7757,10 @@ index 0000000..19c4131
 +		char     fmt[16] = {};
 +		if (std::sscanf(item.c_str(), "%" SCNx64 ":%u:%u:%15s", &va, &w, &h, fmt) != 4 || w == 0 || h == 0) continue;
 +		using namespace Libs::Graphics;
++		const uint32_t  bpe = std::strcmp(fmt, "rgba16f") == 0 ? 8u : 4u; // experiment 0091
 +		TileBlockLayout block {};
-+		if (!TileGetBlockLayout(TileBlockFamily::RenderTarget64KB, 4, block)) continue;
-+		const uint32_t pitch   = TileGetRenderTargetPitch(w, 4);
++		if (!TileGetBlockLayout(TileBlockFamily::RenderTarget64KB, bpe, block)) continue;
++		const uint32_t pitch   = TileGetRenderTargetPitch(w, bpe);
 +		const uint64_t columns = (pitch + block.block_width - 1u) / block.block_width;
 +		const uint64_t rows    = (h + block.block_height - 1u) / block.block_height;
 +		const uint64_t bytes   = columns * rows * block.block_size;
@@ -7770,6 +7771,7 @@ index 0000000..19c4131
 +		const auto*          src = reinterpret_cast<const uint8_t*>(va);
 +		std::vector<uint8_t> rgb(static_cast<size_t>(w) * h * 3u);
 +		uint64_t             nonzero = 0;
++		double               sum_v = 0, max_v = 0; // raw values before tone mapping (mean of channels)
 +		for (uint32_t y = 0; y < h; y++) {
 +			for (uint32_t x = 0; x < w; x++) {
 +				uint32_t local = 0, bxor = 0;
@@ -7779,16 +7781,42 @@ index 0000000..19c4131
 +				const uint64_t off = ((y / block.block_height) * columns + x / block.block_width) * block.block_size + (local ^ bxor);
 +				uint32_t       v   = 0;
 +				std::memcpy(&v, src + off, 4);
-+				if (v != 0) nonzero++;
++				uint32_t v2 = 0;
++				if (bpe == 8) std::memcpy(&v2, src + off + 4, 4);
++				if (v != 0 || v2 != 0) nonzero++;
 +				float r = 0, g = 0, b = 0;
-+				if (std::strcmp(fmt, "rgba8") == 0) {
++				if (bpe == 8) {
++					auto half = [](uint32_t hb) {
++						const uint32_t sgn = hb >> 15u, e = (hb >> 10u) & 0x1fu, m = hb & 0x3ffu;
++						float f = e == 0 ? std::ldexp(static_cast<float>(m), -24) : e == 31 ? 65504.0f : std::ldexp(1.0f + static_cast<float>(m) / 1024.0f, static_cast<int>(e) - 15);
++						return sgn ? -f : f;
++					};
++					r = half(v & 0xffffu), g = half(v >> 16u), b = half(v2 & 0xffffu);
++					const double mm = (std::fabs(static_cast<double>(r)) + std::fabs(g) + std::fabs(b)) / 3.0;
++					sum_v += mm;
++					max_v = std::max(max_v, mm);
++					r = std::fabs(r), g = std::fabs(g), b = std::fabs(b);
++					r /= 1.0f + r, g /= 1.0f + g, b /= 1.0f + b;
++				} else if (std::strcmp(fmt, "rgb10a2") == 0) { // KytyPlus gpu_defs.h k10_10_10_2UNorm = 50
++					r = static_cast<float>(v & 0x3ffu) / 1023.0f, g = static_cast<float>((v >> 10u) & 0x3ffu) / 1023.0f, b = static_cast<float>((v >> 20u) & 0x3ffu) / 1023.0f;
++					const double mm = (static_cast<double>(r) + g + b) / 3.0;
++					sum_v += mm;
++					max_v = std::max(max_v, mm);
++				} else if (std::strcmp(fmt, "rgba8") == 0) {
 +					r = static_cast<float>(v & 0xffu) / 255.0f, g = static_cast<float>((v >> 8u) & 0xffu) / 255.0f, b = static_cast<float>((v >> 16u) & 0xffu) / 255.0f;
 +				} else if (std::strcmp(fmt, "r32f") == 0) {
 +					float f = 0;
 +					std::memcpy(&f, &v, 4);
++					if (std::isfinite(f)) {
++						sum_v += f;
++						max_v = std::max(max_v, static_cast<double>(f));
++					}
 +					r = g = b = std::isfinite(f) ? std::fabs(f) / (1.0f + std::fabs(f)) : 1.0f;
 +				} else {
 +					r = bc5_small_float(v & 0x7ffu, 6), g = bc5_small_float((v >> 11u) & 0x7ffu, 6), b = bc5_small_float((v >> 22u) & 0x3ffu, 5);
++					const double m = (static_cast<double>(r) + g + b) / 3.0;
++					sum_v += m;
++					max_v = std::max(max_v, m);
 +					r /= 1.0f + r, g /= 1.0f + g, b /= 1.0f + b;
 +				}
 +				uint8_t* o = &rgb[(static_cast<size_t>(y) * w + x) * 3u];
@@ -7804,7 +7832,7 @@ index 0000000..19c4131
 +			std::fwrite(rgb.data(), 1, rgb.size(), f);
 +			std::fclose(f);
 +		}
-+		journal("rt dump %010" PRIx64 " %ux%u %s: %" PRIu64 " of %u pixels non-zero -> %s\n", va, w, h, fmt, nonzero, w * h, name);
++		journal("rt dump %010" PRIx64 " %ux%u %s: %" PRIu64 " of %u pixels non-zero, raw mean %.6g max %.6g -> %s\n", va, w, h, fmt, nonzero, w * h, sum_v / (static_cast<double>(w) * h), max_v, name);
 +	}
 +}
 +
@@ -7889,6 +7917,22 @@ index 0000000..19c4131
 +				                " es %010" PRIx64 " gs %010" PRIx64 " cs %010" PRIx64 "\n",
 +				                buf_no, num_dwords, off, words, rt, ((attrib2 >> 14u) & 0x3fffu) + 1u, (attrib2 & 0x3fffu) + 1u, reg(S::Context, 0x31c), reg(S::Context, 0x8e),
 +				                2 * xs, 2 * ys, xo - xs, yo - ys, ps, es, gs, cs);
++				// Experiment 0091: for a full-screen 2560x1440 compute pass (DISPATCH_DIRECT 320 x 180), the
++				// COMPUTE_USER_DATA_0..15 (sh 0x240-0x24f, Mesa gfx10 register JSON) and, for each pair of
++				// them that forms a mapped guest address, the 16 dwords there.
++				if (pkt.size() >= 4 && ((pkt[0] >> 8u) & 0xffu) == 0x15 && pkt[1] == 320 && pkt[2] == 180) {
++					uint32_t ud[16];
++					for (uint32_t k = 0; k < 16; k++) ud[k] = reg(S::Sh, 0x240 + k);
++					journal("draw journal cs %010" PRIx64 " user data %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x\n", cs, ud[0], ud[1], ud[2], ud[3],
++					        ud[4], ud[5], ud[6], ud[7], ud[8], ud[9], ud[10], ud[11], ud[12], ud[13], ud[14], ud[15]);
++					for (uint32_t k = 0; k + 1 < 16; k++) {
++						const uint64_t a = ud[k] | (static_cast<uint64_t>(ud[k + 1] & 0xffffu) << 32u);
++						if (a < 0x1000000000ull || a >= 0x1400000000ull || (a & 3u) != 0 || read(a, 64) == nullptr) continue;
++						const auto* m = reinterpret_cast<const uint32_t*>(a);
++						journal("draw journal cs %010" PRIx64 " ud%u:%u -> %010" PRIx64 ": %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x\n", cs, k, k + 1, a,
++						        m[0], m[1], m[2], m[3], m[4], m[5], m[6], m[7], m[8], m[9], m[10], m[11], m[12], m[13], m[14], m[15]);
++					}
++				}
 +			});
 +		}
 +		if (t_fs_valid) t_fs_before = tracker;
