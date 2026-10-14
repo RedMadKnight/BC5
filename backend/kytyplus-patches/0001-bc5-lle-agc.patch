@@ -4427,10 +4427,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..ec77c74
+index 0000000..add3f13
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,7121 @@
+@@ -0,0 +1,7133 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -5481,7 +5481,19 @@ index 0000000..ec77c74
 +static uint64_t                             g_chunk_count[5] = {};
 +static uint64_t                             g_last_sync_ns = 0;
 +
++// Experiment 0107: every /dev/gc ioctl calls init_once(); taking g_dev_mutex there made the title's
++// render thread wait for the ring thread's submissions even for ioctls that never touch the device
++// (5 of 19 render-thread stack samples in run 397). Once initialisation has finished, return
++// without the lock.
++static void              init_once_locked();
++static std::atomic<bool> g_init_finished {false};
 +static void init_once() {
++	if (g_init_finished.load(std::memory_order_acquire)) return;
++	init_once_locked();
++	g_init_finished.store(true, std::memory_order_release);
++}
++
++static void init_once_locked() {
 +	std::lock_guard lock(g_dev_mutex);
 +	static bool done = false;
 +	if (done) {
