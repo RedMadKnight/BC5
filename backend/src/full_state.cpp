@@ -332,10 +332,13 @@ SplitCheck check_split(const Tracker &before, std::span<const std::uint32_t> ib,
     return c;
 }
 
-void for_each_draw(const Tracker &before, std::span<const std::uint32_t> ib, const Tracker::Reader &read,
-                   const std::function<void(std::size_t, std::span<const std::uint32_t>, const Tracker &)> &f) {
+namespace {
+
+// Walks ib with t, calling f before every draw; follows INDIRECT_BUFFER packets (Mesa sid.h 0x3F:
+// address lo, hi, IB_SIZE bits 19:0) through the reader, four levels deep.
+void walk_draws(Tracker &t, std::span<const std::uint32_t> ib, const Tracker::Reader &read, int depth,
+                const std::function<void(std::size_t, std::span<const std::uint32_t>, const Tracker &)> &f) {
     Stats st;
-    Tracker t = before;
     std::size_t from = 0;
     for (std::size_t i = 0; i < ib.size();) {
         const std::uint32_t h = ib[i];
@@ -346,13 +349,31 @@ void for_each_draw(const Tracker &before, std::span<const std::uint32_t> ib, con
             len = count == 0x3fffu ? 1 : count + 2;
         }
         if (i + len > ib.size()) break;
-        if (type == 3 && is_draw(static_cast<std::uint8_t>((h >> 8) & 0xffu))) {
+        const auto op = static_cast<std::uint8_t>((h >> 8) & 0xffu);
+        if (type == 3 && is_draw(op)) {
             t.apply(ib.subspan(from, i - from), read, st);
             from = i;
             f(i, ib.subspan(i, len), t);
+        } else if (type == 3 && op == 0x3f && len >= 4 && depth < 4 && read) {
+            t.apply(ib.subspan(from, i - from), read, st);
+            from = i + len;
+            const std::uint32_t n = ib[i + 3] & 0xfffffu;
+            const std::uint64_t a = (static_cast<std::uint64_t>(ib[i + 1]) & ~3ull) |
+                                    (static_cast<std::uint64_t>(ib[i + 2] & 0xffffu) << 32);
+            if (const std::uint32_t *nested = n != 0 ? read(a, n * 4ull) : nullptr; nested != nullptr)
+                walk_draws(t, std::span<const std::uint32_t>(nested, n), read, depth + 1, f);
         }
         i += len;
     }
+    t.apply(ib.subspan(from), read, st);
+}
+
+} // namespace
+
+void for_each_draw(const Tracker &before, std::span<const std::uint32_t> ib, const Tracker::Reader &read,
+                   const std::function<void(std::size_t, std::span<const std::uint32_t>, const Tracker &)> &f) {
+    Tracker t = before;
+    walk_draws(t, ib, read, 0, f);
 }
 
 } // namespace bc5::full_state

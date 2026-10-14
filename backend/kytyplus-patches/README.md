@@ -393,3 +393,5 @@ Experiment 0089: `BC5_DIRECT_DRAW_JOURNAL=<t0>:<buffers>` journals every draw an
 buffers from t0 s on (colour target 0, viewport, PS/ES/GS/CS programs, packet dwords).
 Experiment 0090: `BC5_DIRECT_RT_DUMP=<t0>;<va>:<w>:<h>:<r11g11b10|r32f|rgba8>[;...]` detiles the listed colour
 targets on the CPU once from t0 s on and writes PPM images to the capture directory (private).
+Experiment 0092: the draw journal follows nested buffers; `BC5_DIRECT_DRAW_JOURNAL_FIND=<hex>[,...]` journals
+draws and dispatches whose user data (or the descriptor tables it points to) hold one of the values.
