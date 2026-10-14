@@ -4427,10 +4427,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..efe4969
+index 0000000..3c5b532
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,6625 @@
+@@ -0,0 +1,6672 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -7917,6 +7917,53 @@ index 0000000..efe4969
 +				                " es %010" PRIx64 " gs %010" PRIx64 " cs %010" PRIx64 "\n",
 +				                buf_no, num_dwords, off, words, rt, ((attrib2 >> 14u) & 0x3fffu) + 1u, (attrib2 & 0x3fffu) + 1u, reg(S::Context, 0x31c), reg(S::Context, 0x8e),
 +				                2 * xs, 2 * ys, xo - xs, yo - ys, ps, es, gs, cs);
++				// Experiment 0092: BC5_DIRECT_DRAW_JOURNAL_FIND=<hex>[,<hex>...] journals each draw or dispatch
++				// whose user data (COMPUTE_USER_DATA_0..15 sh 0x240-0x24f, SPI_SHADER_USER_DATA_PS_0..31 sh
++				// 0x0c-0x2b, Mesa gfx10 register JSON) holds one of the values, directly or among the 64 dwords
++				// behind a user-data pair that forms a mapped address (descriptor tables).
++				{
++					static const std::vector<uint32_t> find = [] {
++						std::vector<uint32_t> v;
++						if (const char* e = std::getenv("BC5_DIRECT_DRAW_JOURNAL_FIND"); e != nullptr) {
++							for (const char* q = e; *q != 0;) {
++								char* end = nullptr;
++								v.push_back(static_cast<uint32_t>(std::strtoul(q, &end, 16)));
++								if (end == q) break;
++								q = *end == ',' ? end + 1 : end;
++							}
++						}
++						return v;
++					}();
++					if (!find.empty()) {
++						const bool compute = ((pkt[0] >> 8u) & 0xffu) == 0x15 || ((pkt[0] >> 8u) & 0xffu) == 0x16;
++						const uint32_t base = compute ? 0x240u : 0x0cu, nud = compute ? 16u : 32u;
++						std::vector<uint32_t> ud(nud);
++						for (uint32_t k = 0; k < nud; k++) ud[k] = reg(S::Sh, base + k);
++						for (uint32_t k = 0; k < nud; k++) {
++							bool hit = std::find(find.begin(), find.end(), ud[k]) != find.end();
++							const char* where = "direct";
++							uint64_t    at    = 0;
++							if (!hit && k + 1 < nud) {
++								const uint64_t addr = ud[k] | (static_cast<uint64_t>(ud[k + 1] & 0xffffu) << 32u);
++								if (addr >= 0x1000000000ull && addr < 0x1400000000ull && (addr & 3u) == 0 && read(addr, 256) != nullptr) {
++									const auto* m = reinterpret_cast<const uint32_t*>(addr);
++									for (uint32_t q = 0; q < 64 && !hit; q++) {
++										if (std::find(find.begin(), find.end(), m[q]) != find.end()) {
++											hit   = true;
++											where = "table";
++											at    = addr + q * 4u;
++										}
++									}
++								}
++							}
++							if (hit) {
++								journal("draw journal find: %s %s ud%u (%08x) %s %010" PRIx64 " | rt0 %010" PRIx64 " | ps %010" PRIx64 " cs %010" PRIx64 " | pkt%s\n", compute ? "dispatch" : "draw",
++								        compute ? "cs" : "ps", k, ud[k], where, at, rt, ps, cs, words);
++								break;
++							}
++						}
++					}
++				}
 +				// Experiment 0091: for a full-screen 2560x1440 compute pass (DISPATCH_DIRECT 320 x 180), the
 +				// COMPUTE_USER_DATA_0..15 (sh 0x240-0x24f, Mesa gfx10 register JSON) and, for each pair of
 +				// them that forms a mapped guest address, the 16 dwords there.

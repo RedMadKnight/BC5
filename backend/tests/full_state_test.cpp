@@ -247,3 +247,21 @@ TEST_CASE("full state: for_each_draw sees the state before each draw", "[full_st
     CHECK(offsets[0] == 3);
     CHECK(offsets[1] == 9);
 }
+
+TEST_CASE("full state: for_each_draw follows nested buffers", "[full_state]") {
+    static const std::uint32_t nested[] = {0xC0016900u, 0x318, 0x300, 0xC0012D00u, 3, 2};
+    const std::vector<std::uint32_t> ib = {
+        0xC0016900u, 0x318, 0x100,
+        0xC0023F00u, lo(nested), hi(nested), 6, // INDIRECT_BUFFER
+        0xC0012D00u, 3, 2,                    // draw after the nested buffer: its state stays
+    };
+    std::vector<std::uint32_t> bases;
+    full_state::for_each_draw(Tracker{}, ib, kHost, [&](std::size_t, std::span<const std::uint32_t>, const Tracker &t) {
+        std::uint32_t v = 0;
+        REQUIRE(t.get(full_state::Context, 0x318, v));
+        bases.push_back(v);
+    });
+    REQUIRE(bases.size() == 2);
+    CHECK(bases[0] == 0x300);
+    CHECK(bases[1] == 0x300);
+}
