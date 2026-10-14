@@ -4427,10 +4427,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..8cadf1d
+index 0000000..8232f01
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,6343 @@
+@@ -0,0 +1,6356 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -9890,7 +9890,20 @@ index 0000000..8cadf1d
 +	auto* dcb = reinterpret_cast<uint32_t*>(addr);
 +	dump_cb(kind, dcb, size);
 +	Direct::submit(dcb, size, kind, std::strcmp(kind, "hib") == 0);
-+	if (use_soft_cp()) {
++	// Experiment 0083: BC5_DIRECT_SOFTCP_POST_IB=1 runs the soft CP of an IB-packet submission
++	// once its GPU job has completed (as submit_raw does), so that the EVFILT_GRAPHICS events and
++	// the writes of dropped packets come when the GPU is done, not at submission.
++	static const bool post_ib = std::getenv("BC5_DIRECT_SOFTCP_POST_IB") != nullptr;
++	if (use_soft_cp() && post_ib) {
++		auto marks = std::move(SoftCp::t_gpu_done);
++		SoftCp::t_gpu_done.clear();
++		Direct::post([dcb, size, kind, marks = std::move(marks)](bool failed) mutable {
++			if (failed) Direct::journal("soft-cp: %s %u dwords at %p replayed in full after a failed submission\n", kind, size, static_cast<const void*>(dcb));
++			SoftCp::t_gpu_done = failed ? std::vector<SoftCp::GpuDone>() : std::move(marks);
++			SoftCp::submit(dcb, size, kind);
++			SoftCp::t_gpu_done.clear();
++		});
++	} else if (use_soft_cp()) {
 +		SoftCp::submit(dcb, size, kind);
 +	} else {
 +		Graphics::Gen5Driver::GraphicsDriverSubmitCommandBuffer(0, dcb, size);
