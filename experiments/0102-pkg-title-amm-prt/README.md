@@ -25,8 +25,15 @@ evidently does), is the menu's background scene shown?
 - The direct path's zero-buffer fill of holes (experiment 0037) puts nothing in the UI layer's
   range, so it does not explain the black either.
 
+The maintainer, watching run 371: the menu was shown as before, and **now and then something
+flickered in the background**. No lasting change.
+
 **Verdict.** Failed: reading the unbacked AMM pages as zero does not bring the background back.
-The opaque black is therefore in data the layers actually hold, not in their holes. Two places
+The opaque black is therefore in data the layers actually hold, not in their holes. The
+maintainer's flicker says the scene is in the image and shows through in some frames: whether
+the layer is opaque when the blend reads it depends on timing. That is a race between the passes
+that clear or fill the UI layer and the blend, likely across queues, as with the scene seen in
+the selection bar under deferred flips (experiments 0080 and 0087). Two places
 are left:
 - UI layer 1 (0x80d36d0000, fully backed), or the 8 backed tiles of layer 0, may hold opaque
   black;
