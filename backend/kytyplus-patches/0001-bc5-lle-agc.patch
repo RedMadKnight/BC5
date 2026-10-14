@@ -4427,10 +4427,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..eed5938
+index 0000000..ec77c74
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,6864 @@
+@@ -0,0 +1,7121 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -7743,6 +7743,18 @@ index 0000000..eed5938
 +	if (e == 31) return 65504.0f;
 +	return std::ldexp(1.0f + static_cast<float>(m) / static_cast<float>(1u << mant_bits), static_cast<int>(e) - 15);
 +}
++// Experiment 0104: the base of the final pass's UI layer 0, as the draw journal last saw it.
++static std::atomic<uint64_t> g_layer0_base {0};
++// Experiment 0104: surfaces of the UI layer's size (0x1fe0000 bytes, 3840x2176 RGBA8) that the AMM maps
++// automatically (libAmpr.cpp); BC5_DIRECT_DRAW_JOURNAL_WATCH=1 journals only the draws and dispatches
++// that touch them.
++static std::mutex            g_watch_mutex;
++static std::vector<uint64_t> g_watch_surfaces;
++extern "C" void              bc5_watch_surface(uint64_t va) {
++	std::lock_guard lock(g_watch_mutex);
++	if (g_watch_surfaces.size() < 64) g_watch_surfaces.push_back(va);
++}
++
 +static void bc5_rt_dump_once(const std::shared_ptr<const std::vector<bc5::direct::Mapping>>& maps_p) {
 +	static const std::string spec = [] {
 +		const char* e = std::getenv("BC5_DIRECT_RT_DUMP");
@@ -7760,7 +7772,11 @@ index 0000000..eed5938
 +		uint64_t va = 0;
 +		unsigned w = 0, h = 0;
 +		char     fmt[16] = {};
-+		if (std::sscanf(item.c_str(), "%" SCNx64 ":%u:%u:%15s", &va, &w, &h, fmt) != 4 || w == 0 || h == 0) continue;
++		// Experiment 0104: "layer:<w>:<h>:<fmt>" dumps the UI layer 0 the draw journal last saw.
++		if (item.rfind("layer:", 0) == 0) {
++			va = g_layer0_base.load();
++			if (va == 0 || std::sscanf(item.c_str() + 6, "%u:%u:%15s", &w, &h, fmt) != 3 || w == 0 || h == 0) continue;
++		} else if (std::sscanf(item.c_str(), "%" SCNx64 ":%u:%u:%15s", &va, &w, &h, fmt) != 4 || w == 0 || h == 0) continue;
 +		using namespace Libs::Graphics;
 +		// Experiment 0095: a "-lin" suffix reads the surface linearly (pitch = width), as a display
 +		// buffer registered with tiling_mode 0.
@@ -7810,7 +7826,7 @@ index 0000000..eed5938
 +			});
 +			journal("rt dump %010" PRIx64 " %ux%u: AMM window, guest-mapped %" PRIu64 " of %" PRIu64 " bytes, for the GPU %s:%s\n", va, w, h, cv.covered, bytes,
 +			        covered_sorted(*maps_p, va, bytes) ? "all" : "not all", cv.names.c_str());
-+			continue;
++			if (cv.covered < bytes) continue; // experiment 0104: read only a fully mapped surface
 +		}
 +		if (!covered_sorted(*maps_p, va, bytes) && !host_mapped) {
 +			journal("rt dump %010" PRIx64 " %ux%u: not mapped for the GPU nor in this process (%" PRIu64 " bytes)\n", va, w, h, bytes);
@@ -7821,6 +7837,8 @@ index 0000000..eed5938
 +		uint64_t             nonzero = 0;
 +		double               sum_v = 0, max_v = 0; // raw values before tone mapping (mean of channels)
 +		uint64_t             alpha_hist[4] = {};  // experiment 0099: 2-bit alpha of rgb10a2
++		std::vector<uint8_t> alpha8;              // experiment 0104: rgba8 alpha (0 / 1-127 / 128-254 / 255 in alpha_hist)
++		if (std::strcmp(fmt, "rgba8") == 0) alpha8.assign(static_cast<size_t>(w) * h, 0);
 +		for (uint32_t y = 0; y < h; y++) {
 +			for (uint32_t x = 0; x < w; x++) {
 +				uint32_t local = 0, bxor = 0;
@@ -7857,6 +7875,9 @@ index 0000000..eed5938
 +					max_v = std::max(max_v, mm);
 +				} else if (std::strcmp(fmt, "rgba8") == 0) {
 +					r = static_cast<float>(v & 0xffu) / 255.0f, g = static_cast<float>((v >> 8u) & 0xffu) / 255.0f, b = static_cast<float>((v >> 16u) & 0xffu) / 255.0f;
++					const uint32_t a8 = v >> 24u;
++					alpha_hist[a8 == 0 ? 0 : a8 == 255 ? 3 : a8 < 128 ? 1 : 2]++;
++					alpha8[static_cast<size_t>(y) * w + x] = static_cast<uint8_t>(a8);
 +				} else if (std::strcmp(fmt, "r32f") == 0) {
 +					float f = 0;
 +					std::memcpy(&f, &v, 4);
@@ -7884,6 +7905,15 @@ index 0000000..eed5938
 +			std::fprintf(f, "P6" "\n" "%u %u" "\n" "255" "\n", w, h);
 +			std::fwrite(rgb.data(), 1, rgb.size(), f);
 +			std::fclose(f);
++		}
++		if (!alpha8.empty()) { // experiment 0104: the alpha channel as a grey image
++			char an[540];
++			std::snprintf(an, sizeof(an), "%s-alpha.pgm", name);
++			if (FILE* f = std::fopen(an, "wb"); f != nullptr) {
++				std::fprintf(f, "P5" "\n" "%u %u" "\n" "255" "\n", w, h);
++				std::fwrite(alpha8.data(), 1, alpha8.size(), f);
++				std::fclose(f);
++			}
 +		}
 +		journal("rt dump %010" PRIx64 " %ux%u %s: %" PRIu64 " of %u pixels non-zero, raw mean %.6g max %.6g, 2-bit alpha 0/1/2/3: %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 " -> %s\n", va, w, h, fmt, nonzero, w * h, sum_v / (static_cast<double>(w) * h), max_v,
 +		        alpha_hist[0], alpha_hist[1], alpha_hist[2], alpha_hist[3], name);
@@ -7967,7 +7997,8 @@ index 0000000..eed5938
 +				char           words[96] = {};
 +				int            w         = 0;
 +				for (size_t k = 0; k < pkt.size() && k < 6 && w < 80; k++) w += std::snprintf(words + w, sizeof(words) - static_cast<size_t>(w), " %08x", pkt[k]);
-+				journal("draw journal buf %u (%u dwords) at %zu:%s | rt0 %010" PRIx64 " %ux%u info %08x mask %08x | vp %.0fx%.0f at %.0f,%.0f | ps %010" PRIx64
++				static const bool watch_quiet = std::getenv("BC5_DIRECT_DRAW_JOURNAL_WATCH") != nullptr;
++				if (!watch_quiet) journal("draw journal buf %u (%u dwords) at %zu:%s | rt0 %010" PRIx64 " %ux%u info %08x mask %08x | vp %.0fx%.0f at %.0f,%.0f | ps %010" PRIx64
 +				                " es %010" PRIx64 " gs %010" PRIx64 " cs %010" PRIx64 "\n",
 +				                buf_no, num_dwords, off, words, rt, ((attrib2 >> 14u) & 0x3fffu) + 1u, (attrib2 & 0x3fffu) + 1u, reg(S::Context, 0x31c), reg(S::Context, 0x8e),
 +				                2 * xs, 2 * ys, xo - xs, yo - ys, ps, es, gs, cs);
@@ -7982,7 +8013,110 @@ index 0000000..eed5938
 +						const uint64_t bn = (static_cast<uint64_t>(reg(S::Context, 0x318 + n * 0xf)) | (static_cast<uint64_t>(reg(S::Context, 0x390 + n) & 0xffu) << 32u)) << 8u;
 +						mw += std::snprintf(mrt + mw, sizeof(mrt) - static_cast<size_t>(mw), " %u:%010" PRIx64, n, bn);
 +					}
-+					if (mw > 0) journal("draw journal mrt buf %u at %zu:%s | ps %010" PRIx64 "\n", buf_no, off, mrt, ps);
++					if (mw > 0 && !watch_quiet) journal("draw journal mrt buf %u at %zu:%s | ps %010" PRIx64 "\n", buf_no, off, mrt, ps);
++				}
++				// Experiment 0105: the title's frame-pacing kernel 0x11d0288100 (one workgroup; its
++				// disassembly, private): it spins on s_memrealtime until a deadline computed from the four
++				// dwords of the buffer at user data 4-7 and the times it stored at dwords 64-70 of the
++				// buffer at user data 0-3 (V#: base = dword0 | dword1[15:0] << 32). Both journaled, as the
++				// title left them before this dispatch, with the host's monotonic time.
++				if (((pkt[0] >> 8u) & 0xffu) == 0x15 && cs == 0x11d0288100ull) {
++					uint32_t u[8];
++					for (uint32_t k = 0; k < 8; k++) u[k] = reg(S::Sh, 0x240 + k);
++					const uint64_t pb = u[4] | (static_cast<uint64_t>(u[5] & 0xffffu) << 32u);
++					const uint64_t sb = u[0] | (static_cast<uint64_t>(u[1] & 0xffffu) << 32u);
++					uint32_t       pv[4] = {}, sv[8] = {};
++					const bool     pok = pb != 0 && read(pb, 16) != nullptr, sok = sb != 0 && read(sb + 64 * 4, 32) != nullptr;
++					if (pok) std::memcpy(pv, reinterpret_cast<const void*>(pb), 16);
++					if (sok) std::memcpy(sv, reinterpret_cast<const void*>(sb + 64 * 4), 32);
++					journal("pace kernel t %.4f: params %010" PRIx64 "%s: %08x %08x %08x %08x | stored %010" PRIx64 "%s: %08x %08x %08x %08x %08x %08x %08x %08x\n", timing_now(), pb,
++					        pok ? "" : " (unreadable)", pv[0], pv[1], pv[2], pv[3], sb + 64 * 4, sok ? "" : " (unreadable)", sv[0], sv[1], sv[2], sv[3], sv[4], sv[5], sv[6], sv[7]);
++				}
++				// Experiment 0104: a draw or dispatch touching a watched surface: a colour target based in
++				// it, or user data (direct, or among the 64 dwords of a table a user-data pair points at)
++				// holding its base >> 8. Journaled with the colour state (Mesa gfx10 register JSON: CB_COLORn_INFO
++				// ctx 0x31c + n * 0xf, CB_BLEND0_CONTROL 0x1e0, CB_COLOR_CONTROL 0x202; CB_COLOR0_CLEAR_WORD0/1
++				// 0x323/0x324, TODO(verify)) or the compute user data.
++				if (watch_quiet) {
++					std::vector<uint64_t> wv;
++					{
++						std::lock_guard lock(g_watch_mutex);
++						wv = g_watch_surfaces;
++					}
++					const bool compute = ((pkt[0] >> 8u) & 0xffu) == 0x15 || ((pkt[0] >> 8u) & 0xffu) == 0x16;
++					auto       watched = [&wv](uint64_t a) -> uint64_t {
++						for (const uint64_t w: wv)
++							if (a >= w && a < w + 0x1fe0000ull) return w;
++						return 0;
++					};
++					std::string how;
++					uint64_t    hit = 0;
++					if (!compute) {
++						const uint32_t mask = reg(S::Context, 0x8e);
++						for (uint32_t n = 0; n < 8 && hit == 0; n++) {
++							if (((mask >> (4u * n)) & 0xfu) == 0) continue;
++							const uint64_t bn = (static_cast<uint64_t>(reg(S::Context, 0x318 + n * 0xf)) | (static_cast<uint64_t>(reg(S::Context, 0x390 + n) & 0xffu) << 32u)) << 8u;
++							if ((hit = watched(bn)) != 0) {
++								char b[260];
++								std::snprintf(b, sizeof(b), "CB%u info %08x blend0 %08x color_control %08x clear %08x %08x mask %08x col_format %08x shader_mask %08x", n, reg(S::Context, 0x31c + n * 0xf), reg(S::Context, 0x1e0),
++								              reg(S::Context, 0x202), reg(S::Context, 0x323), reg(S::Context, 0x324), mask, reg(S::Context, 0x1c5), reg(S::Context, 0x8f));
++								how = b;
++							}
++						}
++					}
++					const uint32_t ubase = compute ? 0x240u : 0x0cu, nud = compute ? 16u : 32u;
++					std::vector<uint32_t> ud(nud);
++					for (uint32_t k = 0; k < nud; k++) ud[k] = reg(S::Sh, ubase + k);
++					for (uint32_t k = 0; k < nud && hit == 0; k++) {
++						for (const uint64_t w: wv) {
++							if (ud[k] == static_cast<uint32_t>(w >> 8u)) {
++								hit = w;
++								how = "user data " + std::to_string(k) + " direct";
++								break;
++							}
++						}
++						if (hit == 0 && k + 1 < nud) {
++							const uint64_t addr = ud[k] | (static_cast<uint64_t>(ud[k + 1] & 0xffffu) << 32u);
++							if (addr >= 0x1000000000ull && addr < 0x1400000000ull && (addr & 3u) == 0 && read(addr, 256) != nullptr) {
++								const auto* m = reinterpret_cast<const uint32_t*>(addr);
++								for (uint32_t q = 0; q < 64 && hit == 0; q++) {
++									for (const uint64_t w: wv) {
++										if (m[q] == static_cast<uint32_t>(w >> 8u)) {
++											hit = w;
++											char b[120];
++											std::snprintf(b, sizeof(b), "user data %u table %010" PRIx64 " dword %u", k, addr, q);
++											how = b;
++											break;
++										}
++									}
++								}
++							}
++						}
++					}
++					if (hit != 0) {
++						char u[200] = {};
++						int  uw     = 0;
++						for (uint32_t k = 0; k < 16 && uw < 180; k++) uw += std::snprintf(u + uw, sizeof(u) - static_cast<size_t>(uw), " %08x", ud[k]);
++						journal("watch hit t %.3f: buf %u (%u dwords) at %zu: %s surface %010" PRIx64 " via %s | rt0 %010" PRIx64 " %ux%u | ps %010" PRIx64 " cs %010" PRIx64 " | pkt%s | ud%s\n",
++						        timing_now(), buf_no, num_dwords, off, compute ? "dispatch" : "draw", hit, how.c_str(), rt, ((attrib2 >> 14u) & 0x3fffu) + 1u, (attrib2 & 0x3fffu) + 1u, ps, cs, words, u);
++						// The UI pixel shaders (0x09099c4300 and relatives) read their paint through the V# at
++						// table(user data 28-29) + 0x20 (their disassembly, private): its first 32 dwords as floats.
++						if (!compute && nud > 29) {
++							const uint64_t tab = ud[28] | (static_cast<uint64_t>(ud[29] & 0xffffu) << 32u);
++							if (tab != 0 && read(tab + 0x20, 16) != nullptr) {
++								const auto*    vs   = reinterpret_cast<const uint32_t*>(tab + 0x20);
++								const uint64_t vb   = vs[0] | (static_cast<uint64_t>(vs[1] & 0xffffu) << 32u);
++								const uint32_t strd = (vs[1] >> 16u) & 0x3fffu;
++								if (vb != 0 && read(vb, 128) != nullptr) {
++									const auto* f = reinterpret_cast<const float*>(vb);
++									char        fl[600] = {};
++									int         fw      = 0;
++									for (int q = 0; q < 32 && fw < 560; q++) fw += std::snprintf(fl + fw, sizeof(fl) - static_cast<size_t>(fw), " %.3g", static_cast<double>(f[q]));
++									journal("watch paint: V# base %010" PRIx64 " stride %u records %u:%s\n", vb, strd, vs[2], fl);
++								}
++							}
++						}
++					}
 +				}
 +				// Experiment 0092: BC5_DIRECT_DRAW_JOURNAL_FIND=<hex>[,<hex>...] journals each draw or dispatch
 +				// whose user data (COMPUTE_USER_DATA_0..15 sh 0x240-0x24f, SPI_SHADER_USER_DATA_PS_0..31 sh
@@ -8060,6 +8194,43 @@ index 0000000..eed5938
 +									if (read(da, 32) == nullptr) continue;
 +									const auto* d = reinterpret_cast<const uint32_t*>(da);
 +									journal("draw journal layer %u index %x -> %010" PRIx64 ": %08x %08x %08x %08x %08x %08x %08x %08x\n", l, c[4 + l], da, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
++									// Experiment 0104: what backs the layer at this moment, for the guest (its mapped ranges)
++									// and for the GPU (the direct path's mappings). T# fields (GFX10, as in the RT dump notes):
++									// base = (dword0 | dword1[7:0] << 32) << 8, width - 1 = dword2[13:0] << 2 | dword1[31:30],
++									// height - 1 = dword2[29:14]; 4 bytes a pixel, height padded to 64 rows (TODO(verify)).
++									{
++										const uint64_t lb     = (static_cast<uint64_t>(d[0]) | (static_cast<uint64_t>(d[1] & 0xffu) << 32u)) << 8u;
++										const uint32_t lw     = (((d[2] & 0x3fffu) << 2u) | (d[1] >> 30u)) + 1u;
++										const uint32_t lh     = ((d[2] >> 14u) & 0xffffu) + 1u;
++										const uint64_t lbytes = static_cast<uint64_t>(lw) * ((lh + 63u) & ~63u) * 4u;
++										struct Cover {
++											uint64_t    lo, hi, covered = 0;
++											std::string names;
++										} cv {lb, lb + lbytes};
++										Libs::LibKernel::Memory::Bc5ForEachMappedRange(nullptr, &cv, [](uint64_t start, uint64_t size, uint64_t, int type, int, const char* name, void* p) {
++											auto*          cc = static_cast<Cover*>(p);
++											const uint64_t x = std::max(start, cc->lo), y = std::min(start + size, cc->hi);
++											if (x >= y) return;
++											cc->covered += y - x;
++											char buf[96];
++											std::snprintf(buf, sizeof(buf), " [%010" PRIx64 "+%" PRIx64 " t%d %s]", x, y - x, type, name != nullptr ? name : "");
++											if (cc->names.size() < 400) cc->names += buf;
++										});
++										uint64_t    gpu = 0, gpu_shared = 0;
++										std::string gnames;
++										for (const auto& m: *maps_p) {
++											const uint64_t x = std::max(m.va, lb), y = std::min(m.va + m.size, lb + lbytes);
++											if (x >= y) continue;
++											gpu += y - x;
++											if (m.shared) gpu_shared += y - x;
++											char buf[64];
++											std::snprintf(buf, sizeof(buf), " [%010" PRIx64 "+%" PRIx64 " %s]", x, y - x, m.shared ? "s" : "u");
++											if (gnames.size() < 400) gnames += buf;
++										}
++										if (l == 0) g_layer0_base.store(lb);
++										journal("draw journal layer %u cover %010" PRIx64 " %ux%u (%" PRIu64 " bytes): guest %" PRIu64 ":%s | GPU %" PRIu64 " (shared %" PRIu64 "):%s\n", l, lb, lw, lh, lbytes,
++										        cv.covered, cv.names.c_str(), gpu, gpu_shared, gnames.c_str());
++									}
 +								}
 +							}
 +						}
@@ -8123,10 +8294,79 @@ index 0000000..eed5938
 +	}
 +}
 +
++// Experiment 0105: BC5_DIRECT_PACE_FIX=<program hex>:<num>/<den> rescales the two time values of a
++// frame-pacing compute program before its buffer is submitted. The second title's 0x11d0288100 (one
++// workgroup; its disassembly, private) spins on s_memrealtime until min(target, start + limit), with
++// the target as dwords 0-1 and the limit as dword 2 of the buffer at user data 4-7 (V#: base =
++// dword0 | dword1[15:0] << 32). The title computes both for a 170 MHz clock (target = 1.70000 x the
++// GPU's realtime, run 389); s_memrealtime counts at 100 MHz here, so the target always lay hours ahead
++// and every frame waited the whole limit, 33.4 ms in the intro. With 0x11d0288100:100/170 both are
++// converted to the GPU's clock. Only the title's data changes: the same packets, the same program.
++static void pace_fix(const uint32_t* ib, uint32_t num_dwords, const char* kind) {
++	static const auto cfg = [] {
++		struct C {
++			uint64_t pgm = 0, num = 1, den = 1;
++		} c;
++		if (const char* e = std::getenv("BC5_DIRECT_PACE_FIX"); e != nullptr) {
++			char* end = nullptr;
++			c.pgm     = std::strtoull(e, &end, 16);
++			if (end != nullptr && *end == ':') c.num = std::strtoull(end + 1, &end, 10);
++			if (end != nullptr && *end == '/') c.den = std::strtoull(end + 1, nullptr, 10);
++			if (c.num == 0 || c.den == 0) c.pgm = 0;
++		}
++		return c;
++	}();
++	if (cfg.pgm == 0 || !g_dev) return;
++	if (std::strcmp(kind, "dcb") != 0 && std::strcmp(kind, "acb") != 0) return;
++	bool any = false;
++	for (uint32_t q = 0; q < num_dwords && !any;) {
++		const uint32_t h   = ib[q];
++		uint32_t       len = 1;
++		if ((h >> 30u) == 3 || (h >> 30u) == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
++		any = (h >> 30u) == 3 && ((h >> 8u) & 0xffu) == 0x15;
++		q += len;
++	}
++	if (!any) return;
++	static std::mutex                   mtx;
++	static std::map<uint64_t, uint64_t> converted; // parameter block -> the target it was given
++	std::lock_guard<std::mutex>         lock(mtx);
++	std::shared_ptr<const std::vector<bc5::direct::Mapping>> maps_p = g_dev->sorted_mappings();
++	const bc5::full_state::Tracker::Reader read = [&maps_p](uint64_t a, uint64_t bytes) -> const uint32_t* {
++		return covered_sorted(*maps_p, a, bytes) ? reinterpret_cast<const uint32_t*>(a) : nullptr;
++	};
++	bc5::full_state::for_each_draw(bc5::full_state::Tracker {}, std::span<const uint32_t>(ib, num_dwords), read,
++	                               [&](size_t off, std::span<const uint32_t> pkt, const bc5::full_state::Tracker& t) {
++		                               if (((pkt[0] >> 8u) & 0xffu) != 0x15) return;
++		                               uint32_t lo = 0, hi = 0, u4 = 0, u5 = 0;
++		                               if (!t.get(bc5::full_state::Sh, 0x20cu, lo) || !t.get(bc5::full_state::Sh, 0x20du, hi)) return;
++		                               if (((static_cast<uint64_t>(lo) | (static_cast<uint64_t>(hi & 0xffu) << 32u)) << 8u) != cfg.pgm) return;
++		                               if (!t.get(bc5::full_state::Sh, 0x244u, u4) || !t.get(bc5::full_state::Sh, 0x245u, u5)) return;
++		                               const uint64_t pb = u4 | (static_cast<uint64_t>(u5 & 0xffffu) << 32u);
++		                               if (pb == 0 || read(pb, 16) == nullptr) return;
++		                               auto*          v      = reinterpret_cast<uint32_t*>(pb);
++		                               const uint64_t target = v[0] | (static_cast<uint64_t>(v[1]) << 32u);
++		                               if (const auto it = converted.find(pb); it != converted.end() && it->second == target) return; // done already
++		                               const auto     t2    = static_cast<uint64_t>(static_cast<unsigned __int128>(target) * cfg.num / cfg.den);
++		                               const uint32_t limit = v[2];
++		                               const auto     l2    = static_cast<uint32_t>(static_cast<uint64_t>(limit) * cfg.num / cfg.den);
++		                               v[0]                 = static_cast<uint32_t>(t2);
++		                               v[1]                 = static_cast<uint32_t>(t2 >> 32u);
++		                               v[2]                 = l2;
++		                               if (converted.size() > 4096) converted.clear();
++		                               converted[pb] = t2;
++		                               static std::atomic<uint64_t> n {0};
++		                               if ((n++ & 255u) == 0) {
++			                               journal("pace fix: %s %u dwords at %zu: block %010" PRIx64 " target %" PRIu64 " -> %" PRIu64 ", limit %u -> %u (%" PRIu64 " so far)\n", kind, num_dwords, off, pb, target, t2,
++			                                       limit, l2, n.load());
++		                               }
++	                               });
++}
++
 +static void submit(const uint32_t* ib, uint32_t num_dwords, const char* kind, bool from_header) {
 +	SoftCp::clear_gpu_executed(); // the soft CP runs this buffer next, on this thread
 +	if (g_stage == Stage::Off || !g_dev || ib == nullptr || num_dwords == 0) return;
 +	piece_check(ib, num_dwords, kind);
++	pace_fix(ib, num_dwords, kind); // experiment 0105
 +	static const bool rings = std::getenv("BC5_DIRECT_RINGS") != nullptr;
 +	static const bool split = std::getenv("BC5_DIRECT_NO_SPLIT") == nullptr;
 +	if (!split) { submit_one(ib, num_dwords, kind, from_header); return; }
@@ -8578,6 +8818,23 @@ index 0000000..eed5938
 +				const auto* t = reinterpret_cast<const volatile uint32_t*>(a);
 +				journal("watch pgm: #%" PRIu64 " %s, args at 0x%" PRIx64 " at the end: %u %u %u%s\n", j.n, r.ok ? "done" : "FAILED", a, t[0], t[1], t[2],
 +				        r.timed_out ? " (timed out)" : "");
++			}
++			// Experiment 0105: BC5_DIRECT_TS_LOG=<t0> journals the raw GPU timestamps a job's buffer wrote
++			// (its own RELEASE_MEM / EVENT_WRITE_EOP with DATA_SEL 3; needs BC5_DIRECT_TS_SCALE != 1 for
++			// the collection), from t0 s on, at most 20000 jobs: where a frame's GPU time goes, read
++			// from the title's own profiling points.
++			{
++				static const double ts_log_t0 = std::getenv("BC5_DIRECT_TS_LOG") != nullptr ? std::strtod(std::getenv("BC5_DIRECT_TS_LOG"), nullptr) : -1.0;
++				static std::atomic<uint32_t> ts_logged {0};
++				if (r.ok && !j.ts_addrs.empty() && ts_log_t0 >= 0 && timing_now() >= ts_log_t0 && ts_logged.fetch_add(1) < 20000) {
++					char line[700];
++					int  w = std::snprintf(line, sizeof(line), "ts: #%" PRIu64 " %s %u dwords done %.4f:", j.n, j.kind, j.num_dwords, timing_now());
++					for (const uint64_t a: j.ts_addrs) {
++						if (w > 640) break;
++						w += std::snprintf(line + w, sizeof(line) - static_cast<size_t>(w), " %" PRIx64 "=%" PRIu64, a, *reinterpret_cast<const volatile uint64_t*>(a));
++					}
++					journal("%s\n", line);
++				}
 +			}
 +			if (r.ok && !j.ts_addrs.empty()) {
 +				const double k = ts_scale();
@@ -12025,7 +12282,7 @@ index 3c0684f..ba1c36b 100644
  int KYTY_SYSV_ABI PadInit();
  int KYTY_SYSV_ABI PadOpen(int user_id, int type, int index, const void* param);
 diff --git a/src/libs/libAmpr.cpp b/src/libs/libAmpr.cpp
-index 073361d..63f6453 100644
+index 073361d..5d6a14c 100644
 --- a/src/libs/libAmpr.cpp
 +++ b/src/libs/libAmpr.cpp
 @@ -1,3 +1,4 @@
@@ -12222,7 +12479,16 @@ index 073361d..63f6453 100644
  static bool AllocateAmmAutoDirectMemory(uint64_t size, int memory_type, uint64_t* dmem_offset) {
  	if (dmem_offset == nullptr || size == 0) {
  		return false;
-@@ -1397,9 +1471,27 @@ static int ExecuteAmmMapCommand(const CommandBufferState::AmmMapCommand& command
+@@ -1385,6 +1459,8 @@ static bool AllocateAmmAutoDirectMemory(uint64_t size, int memory_type, uint64_t
+ 	return true;
+ }
+ 
++extern "C" void bc5_watch_surface(uint64_t va); // bc5LleAgc.cpp, experiment 0104
++
+ static int ExecuteAmmMapCommand(const CommandBufferState::AmmMapCommand& command) {
+ 	if (!ValidateAmmMapArgs(command.va, command.size)) {
+ 		return LibKernel::KERNEL_ERROR_EINVAL;
+@@ -1397,9 +1473,50 @@ static int ExecuteAmmMapCommand(const CommandBufferState::AmmMapCommand& command
  	}
  
  	void* addr = reinterpret_cast<void*>(command.va);
@@ -12243,6 +12509,29 @@ index 073361d..63f6453 100644
 +	if (result == OK) {
 +		(void)LibKernel::Memory::KernelSetVirtualRangeName(reinterpret_cast<void*>(command.va), command.size, "AMM");
 +	}
++	// BC5 (experiment 0104): KYTY_BC5_AMM_ZERO_AUTO=1 zero-fills the direct memory an automatic map
++	// has just allocated. Our direct memory is not cleared when it is released and allocated again,
++	// so a fresh allocation can carry an earlier owner's pixels: the second title's UI layer (an
++	// automatic map) read as opaque black where the game draws nothing (runs 380, 381). The game
++	// cannot expect data there, the allocation being new. With the AMM trace on, large maps
++	// report how much of the memory was non-zero before.
++	static const bool zero_auto = std::getenv("KYTY_BC5_AMM_ZERO_AUTO") != nullptr;
++	if (result == OK && command.kind == AmmCommandKind::MapAuto && (zero_auto || AmmTrace())) {
++		auto* bytes = static_cast<uint8_t*>(addr);
++		if (AmmTrace() && command.size >= (1ull << 20u)) {
++			uint64_t pages = 0, dirty = 0;
++			for (uint64_t off = 0; off < command.size; off += 4096) {
++				uint64_t q[2] = {};
++				std::memcpy(q, bytes + off, sizeof(q));
++				pages++;
++				if ((q[0] | q[1]) != 0) dirty++;
++			}
++			AmmTraceStamp(), std::fprintf(stderr, "amm trace: auto map content va 0x%016" PRIx64 " size 0x%" PRIx64 ": %" PRIu64 " of %" PRIu64 " pages non-zero%s\n", command.va,
++			                              command.size, dirty, pages, zero_auto ? ", zero-filled" : "");
++		}
++		if (zero_auto) std::memset(bytes, 0, command.size);
++	}
++	if (result == OK && command.kind == AmmCommandKind::MapAuto && command.size == 0x1fe0000ull) bc5_watch_surface(command.va); // experiment 0104
 +	if (AmmTrace()) {
 +		AmmTraceStamp(), std::fprintf(stderr, "amm trace: map %s va 0x%016" PRIx64 " size 0x%" PRIx64 " dmem 0x%" PRIx64 " type %d prot 0x%x -> 0x%08x\n",
 +		             command.kind == AmmCommandKind::MapAuto ? "auto" : "direct", command.va, command.size, dmem_offset,
@@ -12252,7 +12541,7 @@ index 073361d..63f6453 100644
  }
  
  static bool AppendAmmMapRecord(uint64_t                                 command_buffer,
-@@ -1425,67 +1517,79 @@ static bool AppendAmmMapRecord(uint64_t                                 command_
+@@ -1425,67 +1542,79 @@ static bool AppendAmmMapRecord(uint64_t                                 command_
  
  static int ReadHostFileToGuest(const std::string& host_path, uint64_t file_offset,
                                 uint64_t destination, uint64_t size, uint64_t* bytes_read);
@@ -12316,12 +12605,6 @@ index 073361d..63f6453 100644
 -			ordered.push_back(
 -			    {state.kernel_event_commands[i].record_offset, CommandKind::KernelEvent, i});
 -		}
--	}
--	for (size_t i = 0; i < state.write_address_commands.size(); i++) {
--		if (state.write_address_commands[i].record_offset < state.write_offset) {
--			ordered.push_back(
--			    {state.write_address_commands[i].record_offset, CommandKind::WriteAddress, i});
--		}
 +	size_t                      next = 0;
 +};
 +
@@ -12346,9 +12629,10 @@ index 073361d..63f6453 100644
 +	if (!AprShared::ReadGuest(w.address, &now)) {
 +		return true;
  	}
--	for (size_t i = 0; i < state.amm_map_commands.size(); i++) {
--		if (state.amm_map_commands[i].record_offset < state.write_offset) {
--			ordered.push_back({state.amm_map_commands[i].record_offset, CommandKind::AmmMap, i});
+-	for (size_t i = 0; i < state.write_address_commands.size(); i++) {
+-		if (state.write_address_commands[i].record_offset < state.write_offset) {
+-			ordered.push_back(
+-			    {state.write_address_commands[i].record_offset, CommandKind::WriteAddress, i});
 -		}
 +	constexpr uint64_t SIGN = uint64_t {1} << 63u;
 +	switch (w.op) {
@@ -12360,12 +12644,17 @@ index 073361d..63f6453 100644
 +		case 6: return (now ^ SIGN) < (w.value ^ SIGN);
 +		default: return now - w.value < SIGN;
  	}
-+}
- 
+-	for (size_t i = 0; i < state.amm_map_commands.size(); i++) {
+-		if (state.amm_map_commands[i].record_offset < state.write_offset) {
+-			ordered.push_back({state.amm_map_commands[i].record_offset, CommandKind::AmmMap, i});
+-		}
+-	}
+-
 -	std::sort(ordered.begin(), ordered.end(), [](const OrderedCommand& a, const OrderedCommand& b) {
 -		return a.record_offset < b.record_offset;
 -	});
--
++}
+ 
 -	for (const auto& entry: ordered) {
 +// BC5 (experiment 0035): runs a submission's commands in record order from *next. Returns false
 +// when a WaitOnAddress is not met yet (*next then names it), true when the buffer is done.
@@ -12386,7 +12675,7 @@ index 073361d..63f6453 100644
  			case CommandKind::ReadFile: {
  				const auto& command = state.read_file_commands[entry.index];
  				std::string host_path;
-@@ -1494,25 +1598,42 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+@@ -1494,25 +1623,42 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
  					     command.file_id);
  					*execution_result = LibKernel::KERNEL_ERROR_ENOENT;
  					*error_offset     = static_cast<uint32_t>(command.record_offset);
@@ -12432,7 +12721,7 @@ index 073361d..63f6453 100644
  				    eq, command.id, reinterpret_cast<void*>(command.data));
  				if (result != OK) {
  					LOGF("\tAPR submit event failed: eq=0x%016" PRIx64 ", id=%" PRId32
-@@ -1520,7 +1641,8 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+@@ -1520,7 +1666,8 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
  					     command.eq, command.id, static_cast<uint32_t>(result));
  					*execution_result = result;
  					*error_offset     = static_cast<uint32_t>(command.record_offset);
@@ -12442,7 +12731,7 @@ index 073361d..63f6453 100644
  				}
  			} break;
  			case CommandKind::WriteAddress: {
-@@ -1531,7 +1653,8 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+@@ -1531,7 +1678,8 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
  					     command.address, command.value);
  					*execution_result = LibKernel::KERNEL_ERROR_EFAULT;
  					*error_offset     = static_cast<uint32_t>(command.record_offset);
@@ -12452,7 +12741,7 @@ index 073361d..63f6453 100644
  				}
  			} break;
  			case CommandKind::AmmMap: {
-@@ -1539,6 +1662,10 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+@@ -1539,6 +1687,10 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
  				int         result  = OK;
  				if (command.kind == AmmCommandKind::Unmap) {
  					result = LibKernel::Memory::KernelMunmap(command.va, command.size);
@@ -12463,7 +12752,7 @@ index 073361d..63f6453 100644
  				} else {
  					result = ExecuteAmmMapCommand(command);
  				}
-@@ -1552,12 +1679,130 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+@@ -1552,12 +1704,130 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
  					     static_cast<uint32_t>(result));
  					*execution_result = result;
  					*error_offset     = static_cast<uint32_t>(command.record_offset);
@@ -12477,7 +12766,7 @@ index 073361d..63f6453 100644
 +	*next = ordered.size();
 +	return true;
 +}
-+
+ 
 +// The APR engine runs submissions in order; one stopped at a wait holds those behind it. AMM
 +// submissions (maps only) run at once: they are what the waits wait for.
 +static void PumpParkedAprBuffersLocked() {
@@ -12564,7 +12853,7 @@ index 073361d..63f6453 100644
 +			ordered.push_back({state.wait_address_commands[i].record_offset, CommandKind::WaitAddress, i});
 +		}
 +	}
- 
++
 +	std::sort(ordered.begin(), ordered.end(), [](const OrderedCommand& a, const OrderedCommand& b) {
 +		return a.record_offset < b.record_offset;
 +	});
@@ -12595,7 +12884,7 @@ index 073361d..63f6453 100644
  	return OK;
  }
  
-@@ -1678,13 +1923,50 @@ static int KYTY_SYSV_ABI CommandBufferDestructor(void* command_buffer) {
+@@ -1678,13 +1948,50 @@ static int KYTY_SYSV_ABI CommandBufferDestructor(void* command_buffer) {
  	return OK;
  }
  
@@ -12647,7 +12936,7 @@ index 073361d..63f6453 100644
  	const auto command_buffer_addr = reinterpret_cast<uint64_t>(command_buffer);
  	if (!ValidateCommandBufferHeader(command_buffer_addr)) {
  		return LibKernel::KERNEL_ERROR_EFAULT;
-@@ -2111,16 +2393,31 @@ static int KYTY_SYSV_ABI CommandBufferPopMarker(void* command_buffer) {
+@@ -2111,16 +2418,31 @@ static int KYTY_SYSV_ABI CommandBufferPopMarker(void* command_buffer) {
  	return AppendNoOpCommand(command_buffer, sizeof(uint32_t));
  }
  
@@ -12684,7 +12973,7 @@ index 073361d..63f6453 100644
  
  	return AppendNoOpCommand(command_buffer, 0x20);
  }
-@@ -2139,6 +2436,10 @@ static int AppendWriteAddressCommand(void* command_buffer, volatile uint64_t* ad
+@@ -2139,6 +2461,10 @@ static int AppendWriteAddressCommand(void* command_buffer, volatile uint64_t* ad
  static int KYTY_SYSV_ABI CommandBufferWriteAddress(void* command_buffer, volatile uint64_t* address,
                                                     uint64_t value, uint32_t) {
  	PRINT_NAME();
@@ -12695,7 +12984,7 @@ index 073361d..63f6453 100644
  
  	return AppendWriteAddressCommand(command_buffer, address, value);
  }
-@@ -2314,15 +2615,27 @@ static int KYTY_SYSV_ABI AprCommandBufferResetGatherScatterState(void* command_b
+@@ -2314,15 +2640,27 @@ static int KYTY_SYSV_ABI AprCommandBufferResetGatherScatterState(void* command_b
  	return OK;
  }
  
@@ -12725,7 +13014,7 @@ index 073361d..63f6453 100644
  		return LibKernel::KERNEL_ERROR_EFAULT;
  	}
  
-@@ -2333,7 +2646,7 @@ static int KYTY_SYSV_ABI AprCommandBufferMapBegin(void* command_buffer, uint64_t
+@@ -2333,7 +2671,7 @@ static int KYTY_SYSV_ABI AprCommandBufferMapBegin(void* command_buffer, uint64_t
  
  static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, uint64_t va,
                                                          uint64_t dmem_offset, uint64_t size,
@@ -12734,7 +13023,7 @@ index 073361d..63f6453 100644
  	PRINT_NAME();
  
  	if (command_buffer == nullptr || !ValidateAmmMapArgs(va, size) ||
-@@ -2341,7 +2654,15 @@ static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, ui
+@@ -2341,7 +2679,15 @@ static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, ui
  		return LibKernel::KERNEL_ERROR_EINVAL;
  	}
  
@@ -12751,7 +13040,7 @@ index 073361d..63f6453 100644
  		return LibKernel::KERNEL_ERROR_EFAULT;
  	}
  
-@@ -2504,6 +2825,10 @@ static int KYTY_SYSV_ABI AmmGiveDirectMemory(int64_t search_start, int64_t searc
+@@ -2504,6 +2850,10 @@ static int KYTY_SYSV_ABI AmmGiveDirectMemory(int64_t search_start, int64_t searc
  	}
  
  	*dmem_offset = allocated;
@@ -12762,7 +13051,7 @@ index 073361d..63f6453 100644
  	if (usage == AMM_USAGE_AUTO) {
  		std::scoped_lock lock(g_amm_auto_pool_mutex);
  		g_amm_auto_pool.push_back(AmmAutoPoolRange {static_cast<uint64_t>(allocated), size, 0});
-@@ -2512,30 +2837,48 @@ static int KYTY_SYSV_ABI AmmGiveDirectMemory(int64_t search_start, int64_t searc
+@@ -2512,30 +2862,48 @@ static int KYTY_SYSV_ABI AmmGiveDirectMemory(int64_t search_start, int64_t searc
  	return OK;
  }
  
