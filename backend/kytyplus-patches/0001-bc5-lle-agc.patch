@@ -4427,10 +4427,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..3ee066e
+index 0000000..6c04ad2
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,6733 @@
+@@ -0,0 +1,6743 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -7757,13 +7757,20 @@ index 0000000..3ee066e
 +		char     fmt[16] = {};
 +		if (std::sscanf(item.c_str(), "%" SCNx64 ":%u:%u:%15s", &va, &w, &h, fmt) != 4 || w == 0 || h == 0) continue;
 +		using namespace Libs::Graphics;
++		// Experiment 0095: a "-lin" suffix reads the surface linearly (pitch = width), as a display
++		// buffer registered with tiling_mode 0.
++		bool linear = false;
++		if (char* l = std::strstr(fmt, "-lin"); l != nullptr) {
++			*l     = 0;
++			linear = true;
++		}
 +		const uint32_t  bpe = std::strcmp(fmt, "rgba16f") == 0 ? 8u : 4u; // experiment 0091
 +		TileBlockLayout block {};
 +		if (!TileGetBlockLayout(TileBlockFamily::RenderTarget64KB, bpe, block)) continue;
 +		const uint32_t pitch   = TileGetRenderTargetPitch(w, bpe);
 +		const uint64_t columns = (pitch + block.block_width - 1u) / block.block_width;
 +		const uint64_t rows    = (h + block.block_height - 1u) / block.block_height;
-+		const uint64_t bytes   = columns * rows * block.block_size;
++		const uint64_t bytes   = linear ? static_cast<uint64_t>(w) * h * bpe : columns * rows * block.block_size;
 +		if (!covered_sorted(*maps_p, va, bytes)) {
 +			journal("rt dump %010" PRIx64 " %ux%u: not mapped (%" PRIu64 " bytes)\n", va, w, h, bytes);
 +			continue;
@@ -7775,10 +7782,13 @@ index 0000000..3ee066e
 +		for (uint32_t y = 0; y < h; y++) {
 +			for (uint32_t x = 0; x < w; x++) {
 +				uint32_t local = 0, bxor = 0;
-+				if (!TileGetBlockOffset(block, x % block.block_width, y % block.block_height, 0, local) ||
-+				    !TileGetBlockXor(block, x / block.block_width, y / block.block_height, bxor))
-+					continue;
-+				const uint64_t off = ((y / block.block_height) * columns + x / block.block_width) * block.block_size + (local ^ bxor);
++				uint64_t off   = (static_cast<uint64_t>(y) * w + x) * bpe;
++				if (!linear) {
++					if (!TileGetBlockOffset(block, x % block.block_width, y % block.block_height, 0, local) ||
++					    !TileGetBlockXor(block, x / block.block_width, y / block.block_height, bxor))
++						continue;
++					off = ((y / block.block_height) * columns + x / block.block_width) * block.block_size + (local ^ bxor);
++				}
 +				uint32_t       v   = 0;
 +				std::memcpy(&v, src + off, 4);
 +				uint32_t v2 = 0;
