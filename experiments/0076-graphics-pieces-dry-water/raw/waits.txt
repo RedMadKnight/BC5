@@ -1,0 +1,25 @@
+outcome and time of the waits not satisfied:
+    305 CYCLE 0.1 ms
+     99 UP 8.1 ms
+     61 UP 8.0 ms
+     58 CYCLE 0.2 ms
+      2 UP 8.2 ms
+      2 CYCLE 0.3 ms
+      1 UP 8.7 ms
+offsets:
+     24 at 21807
+     23 at 20841
+     20 at 11379
+     18 at 22185
+     18 at 11456
+     10 at 18859
+      9 at 21987
+      9 at 20837
+      7 at 22072
+      7 at 21773
+      7 at 21739
+      7 at 21184
+cycle broken (first):
+cycle broken: dcb 25199 dwords waits at 11456 on 0x... for a queue that waits on 0x..., which this buffer writes; not waited for
+cycle broken: dcb 25204 dwords waits at 11456 on 0x... for a queue that waits on 0x..., which this buffer writes; not waited for
+cycle broken: dcb 25204 dwords waits at 11456 on 0x... for a queue that waits on 0x..., which this buffer writes; not waited for

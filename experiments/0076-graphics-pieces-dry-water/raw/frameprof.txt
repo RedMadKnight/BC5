@@ -1,0 +1,22 @@
+== 0-140 s
+frames 6543 fps 46.74
+frame     mean    21.2 median    18.6 p90    28.7
+inside    mean     9.1 median     9.2 p90    12.1
+== 140-175 s
+frames 1517 fps 43.34
+frame     mean    22.9 median    22.3 p90    28.6
+inside    mean     9.9 median     9.5 p90    17.1
+sync      mean     0.1 median     0.1 p90     0.2
+hints     mean     0.3 median     0.3 p90     0.4
+prepare   mean     1.9 median     2.1 p90     2.5
+list      mean     0.1 median     0.1 p90     0.1
+cs        mean     1.1 median     1.1 p90     1.3
+fence     mean     0.0 median     0.0 p90     0.0
+cap       mean     0.0 median     0.0 p90     0.0
+label     mean     6.4 median     5.6 p90    13.7
+event     mean     0.0 median     0.0 p90     0.0
+atflip    mean     0.0 median     0.0 p90     0.0
+outside   mean    13.0 median    12.5 p90    14.3
+gpu       mean    12.8 median    12.8 p90    14.8
+jobs      mean     9.0 median     9.0 p90     9.0
+ringjobs  mean     9.7 median    10.0 p90    11.0

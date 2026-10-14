@@ -60,7 +60,8 @@ which user-mode submission here does not control. Second choice.
 2. **Map-only run** (no GPU submission): the host builds the pieces in the water. Count pieces,
    prefix sizes and the time per frame.
    Done outside the water (experiments 0074, 0075): almost every wait not satisfied on arrival is
-   left to the GPU by ring order; the water is still to be measured.
+   left to the GPU by ring order. In the water (experiment 0076) a split is needed about 0.4
+   times a frame.
 3. **GPU, outside the water, with the maintainer present.** Prepared, not run:
    `BC5_DIRECT_PIECES_FULL=1` in the KytyPlus patch. Split the main buffer at its first
    wait even when that wait is already satisfied, so the pieces run where nothing else changes.
