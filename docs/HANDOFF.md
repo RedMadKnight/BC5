@@ -157,6 +157,7 @@ What we deliberately do not do: boot PS5 firmware (PSP/Sony keys/ABL/SMU/hypervi
 | F142 | **Counting deferred flips as pending in the flip status does not stop the second title's text race** (run 334, reverted): the title does not protect its rewritten data by flipPendingNum; undeferred flips work because the host drains at the flip. What it waits on is open (candidates: the per-frame `RELEASE_MEM` to the flip-label page, dropped as unmapped; a label or event signalled at submission). | experiment 0082 | Medium |
 | F143 | **Early EOP events are part of the second title's text race, not all of it.** `BC5_DIRECT_SOFTCP_POST_IB=1` (soft CP of IB-packet submissions after their job, as `submit_raw`) fixes the dialog's text with deferred flips (run 335), but the menu stays broken (title, description); only undeferred flips fix both (run 333). | experiment 0083 | Medium |
 | F144 | **The second title never calls the driver's submit-done or wait-idle ioctls** (run 336, counted in the journal), so draining there (`BC5_DIRECT_IDLE_DRAIN`) cannot be the fix for its text race. | experiment 0084 | High |
+| F145 | **With deferred flips the second title loses the same glyphs in every menu string (n, g, m, I, v, r), the dialog's glyphs survive** (run 337, 3 jobs in flight, 17.8 fps; earlier runs alike): the race is most likely in the upload of newly needed glyphs into the font atlas, after which the atlas keeps blank glyphs. TODO(verify) the copy and the fence it relies on. | experiment 0085 | Medium |
 
 ## 3. Open questions
 
