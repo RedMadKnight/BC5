@@ -20,8 +20,8 @@ evidently does), is the menu's background scene shown?
 - "bc5-direct: PRT window 0x8000000000+0x1000000000: 0": the kernel accepted the PRT mapping.
 - No GPU fault, timeout or ring stall.
 - The menu is drawn and its text is clean. The background is still black.
-- The emulator ended at about 105 s with exit code 0, before the 130 s limit. The window was
-  closed: by the maintainer, or by the title. TODO(verify).
+- The emulator ended at about 105 s with exit code 0, before the 130 s limit. The maintainer
+  closed the window.
 - The direct path's zero-buffer fill of holes (experiment 0037) puts nothing in the UI layer's
   range, so it does not explain the black either.
 
