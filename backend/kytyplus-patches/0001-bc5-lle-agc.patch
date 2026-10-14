@@ -4427,10 +4427,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..1ba1c82
+index 0000000..0b3b1b2
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,6796 @@
+@@ -0,0 +1,6817 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -7785,6 +7785,27 @@ index 0000000..1ba1c82
 +			const uint64_t page = 4096, first = va & ~(page - 1), last = (va + bytes + page - 1) & ~(page - 1);
 +			std::vector<unsigned char> vec((last - first) / page);
 +			host_mapped = ::mincore(reinterpret_cast<void*>(first), last - first, vec.data()) == 0;
++		}
++		// Experiment 0100: inside the AMM window (0x8000000000, 64 GiB) reserved pages count as
++		// mapped for mincore but abort the title when touched; report which parts the guest has
++		// mapped there instead of reading.
++		if (va >= 0x8000000000ull && va < 0x9000000000ull) {
++			struct Cover {
++				uint64_t lo, hi, covered = 0;
++				std::string names;
++			} cv {va, va + bytes};
++			Libs::LibKernel::Memory::Bc5ForEachMappedRange(nullptr, &cv, [](uint64_t start, uint64_t size, uint64_t, int type, int, const char* name, void* p) {
++				auto*          c = static_cast<Cover*>(p);
++				const uint64_t a = std::max(start, c->lo), b = std::min(start + size, c->hi);
++				if (a >= b) return;
++				c->covered += b - a;
++				char buf[96];
++				std::snprintf(buf, sizeof(buf), " [%010" PRIx64 "+%" PRIx64 " t%d %s]", a, b - a, type, name != nullptr ? name : "");
++				if (c->names.size() < 600) c->names += buf;
++			});
++			journal("rt dump %010" PRIx64 " %ux%u: AMM window, guest-mapped %" PRIu64 " of %" PRIu64 " bytes, for the GPU %s:%s\n", va, w, h, cv.covered, bytes,
++			        covered_sorted(*maps_p, va, bytes) ? "all" : "not all", cv.names.c_str());
++			continue;
 +		}
 +		if (!covered_sorted(*maps_p, va, bytes) && !host_mapped) {
 +			journal("rt dump %010" PRIx64 " %ux%u: not mapped for the GPU nor in this process (%" PRIu64 " bytes)\n", va, w, h, bytes);
