@@ -1,6 +1,6 @@
 # ADR 0008 — Graphics buffers split at cross-queue waits, with their state replayed
 
-**Status:** proposed (2026-10-13). Step 1 passed (experiments 0072, 0073: `bc5::full_state`, prefix ~1,260 dwords, 0 differing draws in run 316). Nothing in it has run on the GPU.
+**Status:** accepted (2026-10-14). Steps 1–4 passed (experiments 0072–0078): in the water the pieces remove the given-up waits and broken cycles, the fluid is on time, no fault. `BC5_DIRECT_PIECES_FULL=1` is on in the play settings; making it the default is the remaining step.
 
 ## Context
 

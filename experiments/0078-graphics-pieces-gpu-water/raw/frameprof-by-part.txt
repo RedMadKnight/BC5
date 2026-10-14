@@ -1,0 +1,23 @@
+== 60 100 s
+frames 1396 fps 34.90
+inside    mean    11.9 median    11.8 p90    12.8
+label     mean     7.5 median     7.5 p90     8.1
+gpu       mean    15.8 median    15.6 p90    17.1
+== 100 140 s
+frames 1801 fps 45.02
+inside    mean     9.8 median     9.8 p90    11.2
+label     mean     6.2 median     6.2 p90     7.3
+gpu       mean    13.2 median    13.4 p90    15.0
+== 140 157 s
+frames 738 fps 43.41
+inside    mean    10.0 median     9.9 p90    10.9
+label     mean     6.0 median     5.9 p90     6.7
+gpu       mean    13.7 median    13.6 p90    15.3
+== 0859 60 100 s
+frames 1471 fps 36.77
+label     mean     7.2 median     7.4 p90     8.1
+gpu       mean    15.4 median    15.7 p90    17.0
+== 0859 140 175 s
+frames 1517 fps 43.34
+label     mean     6.4 median     5.6 p90    13.7
+gpu       mean    12.8 median    12.8 p90    14.8

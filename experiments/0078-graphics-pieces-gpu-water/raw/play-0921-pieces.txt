@@ -1,0 +1,131 @@
+== /home/kjaniszewski/bc5-data/captures/play-20261014-0921
+pieces full: 0 splits made, the wait then satisfied 0, not satisfied 0
+pieces dry: 501 splits in 488 buffers, prefix mean 1260 dwords, build 30.6 ms in all, max 0.26 ms; the waits then: 411 kept for the GPU, 90 served on the CPU, 0 given up or broken
+piece: dcb 0..115 of 10440 dwords went ahead of the wait at 115 on 0x..; the wait then satisfied after 5.5 ms; rest behind a prefix of 1261 dwords
+pieces full: 1 splits made, the wait then satisfied 1, not satisfied 0
+pieces dry: 693 splits in 598 buffers, prefix mean 1261 dwords, build 38.4 ms in all, max 0.28 ms; the waits then: 361 kept for the GPU, 332 served on the CPU, 0 given up or broken
+pieces full: 0 splits made, the wait then satisfied 0, not satisfied 0
+pieces dry: 644 splits in 563 buffers, prefix mean 1261 dwords, build 39.9 ms in all, max 0.84 ms; the waits then: 437 kept for the GPU, 207 served on the CPU, 0 given up or broken
+pieces full: 0 splits made, the wait then satisfied 0, not satisfied 0
+pieces dry: 690 splits in 555 buffers, prefix mean 1261 dwords, build 37.2 ms in all, max 0.25 ms; the waits then: 621 kept for the GPU, 69 served on the CPU, 0 given up or broken
+pieces full: 0 splits made, the wait then satisfied 0, not satisfied 0
+pieces dry: 559 splits in 459 buffers, prefix mean 1261 dwords, build 35.7 ms in all, max 0.58 ms; the waits then: 501 kept for the GPU, 58 served on the CPU, 0 given up or broken
+pieces full: 0 splits made, the wait then satisfied 0, not satisfied 0
+pieces dry: 358 splits in 331 buffers, prefix mean 1261 dwords, build 23.3 ms in all, max 0.20 ms; the waits then: 350 kept for the GPU, 8 served on the CPU, 0 given up or broken
+pieces full: 0 splits made, the wait then satisfied 0, not satisfied 0
+pieces dry: 361 splits in 326 buffers, prefix mean 1261 dwords, build 20.7 ms in all, max 0.17 ms; the waits then: 357 kept for the GPU, 4 served on the CPU, 0 given up or broken
+pieces full: 0 splits made, the wait then satisfied 0, not satisfied 0
+pieces dry: 367 splits in 333 buffers, prefix mean 1261 dwords, build 20.0 ms in all, max 0.11 ms; the waits then: 366 kept for the GPU, 1 served on the CPU, 0 given up or broken
+pieces full: 0 splits made, the wait then satisfied 0, not satisfied 0
+pieces dry: 428 splits in 361 buffers, prefix mean 1261 dwords, build 23.9 ms in all, max 0.13 ms; the waits then: 428 kept for the GPU, 0 served on the CPU, 0 given up or broken
+pieces full: 0 splits made, the wait then satisfied 0, not satisfied 0
+pieces dry: 480 splits in 373 buffers, prefix mean 1261 dwords, build 26.5 ms in all, max 0.11 ms; the waits then: 477 kept for the GPU, 3 served on the CPU, 0 given up or broken
+pieces full: 0 splits made, the wait then satisfied 0, not satisfied 0
+pieces dry: 584 splits in 409 buffers, prefix mean 1261 dwords, build 32.3 ms in all, max 0.23 ms; the waits then: 578 kept for the GPU, 6 served on the CPU, 0 given up or broken
+pieces full: 0 splits made, the wait then satisfied 0, not satisfied 0
+pieces dry: 777 splits in 505 buffers, prefix mean 1261 dwords, build 46.0 ms in all, max 0.51 ms; the waits then: 729 kept for the GPU, 48 served on the CPU, 0 given up or broken
+pieces full: 0 splits made, the wait then satisfied 0, not satisfied 0
+pieces dry: 580 splits in 426 buffers, prefix mean 1261 dwords, build 32.8 ms in all, max 0.23 ms; the waits then: 568 kept for the GPU, 12 served on the CPU, 0 given up or broken
+pieces full: 0 splits made, the wait then satisfied 0, not satisfied 0
+pieces dry: 541 splits in 440 buffers, prefix mean 1261 dwords, build 34.7 ms in all, max 0.30 ms; the waits then: 507 kept for the GPU, 34 served on the CPU, 0 given up or broken
+piece: dcb 0..11456 of 24951 dwords went ahead of the wait at 11456 on 0x..; the wait then satisfied after 7.2 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11456 of 24951 dwords went ahead of the wait at 11456 on 0x..; the wait then satisfied after 5.3 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11456 of 24951 dwords went ahead of the wait at 11456 on 0x..; the wait then satisfied after 6.9 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11456 of 24882 dwords went ahead of the wait at 11456 on 0x..; the wait then satisfied after 7.2 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11456 of 24882 dwords went ahead of the wait at 11456 on 0x..; the wait then satisfied after 5.9 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11456 of 24882 dwords went ahead of the wait at 11456 on 0x..; the wait then satisfied after 6.3 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11456 of 24882 dwords went ahead of the wait at 11456 on 0x..; the wait then satisfied after 7.3 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11456 of 24882 dwords went ahead of the wait at 11456 on 0x..; the wait then satisfied after 7.3 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11456 of 24582 dwords went ahead of the wait at 11456 on 0x..; the wait then satisfied after 7.4 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11456 of 24582 dwords went ahead of the wait at 11456 on 0x..; the wait then satisfied after 5.0 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11456 of 24564 dwords went ahead of the wait at 11456 on 0x..; the wait then satisfied after 4.0 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11456 of 24564 dwords went ahead of the wait at 11456 on 0x..; the wait then satisfied after 5.0 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11456 of 24564 dwords went ahead of the wait at 11456 on 0x..; the wait then satisfied after 5.0 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11456 of 24564 dwords went ahead of the wait at 11456 on 0x..; the wait then satisfied after 4.7 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11456 of 24564 dwords went ahead of the wait at 11456 on 0x..; the wait then satisfied after 5.7 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11456 of 24452 dwords went ahead of the wait at 11456 on 0x..; the wait then satisfied after 4.3 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11456 of 24452 dwords went ahead of the wait at 11456 on 0x..; the wait then satisfied after 4.1 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11456 of 24452 dwords went ahead of the wait at 11456 on 0x..; the wait then satisfied after 4.4 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11456 of 24753 dwords went ahead of the wait at 11456 on 0x..; the wait then satisfied after 4.0 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11548 of 24673 dwords went ahead of the wait at 11548 on 0x..; the wait then satisfied after 4.7 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11548 of 25411 dwords went ahead of the wait at 11548 on 0x..; the wait then satisfied after 3.5 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11548 of 25454 dwords went ahead of the wait at 11548 on 0x..; the wait then satisfied after 4.8 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11548 of 25447 dwords went ahead of the wait at 11548 on 0x..; the wait then satisfied after 4.5 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11548 of 25447 dwords went ahead of the wait at 11548 on 0x..; the wait then satisfied after 4.3 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11548 of 25904 dwords went ahead of the wait at 11548 on 0x..; the wait then satisfied after 3.9 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11548 of 25934 dwords went ahead of the wait at 11548 on 0x..; the wait then satisfied after 3.3 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11548 of 25934 dwords went ahead of the wait at 11548 on 0x..; the wait then satisfied after 3.5 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11638 of 26070 dwords went ahead of the wait at 11638 on 0x..; the wait then satisfied after 3.5 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11565 of 25997 dwords went ahead of the wait at 11565 on 0x..; the wait then satisfied after 6.1 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11306 of 25733 dwords went ahead of the wait at 11306 on 0x..; the wait then satisfied after 4.9 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11306 of 25571 dwords went ahead of the wait at 11306 on 0x..; the wait then satisfied after 3.3 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11306 of 25571 dwords went ahead of the wait at 11306 on 0x..; the wait then satisfied after 4.5 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11306 of 25571 dwords went ahead of the wait at 11306 on 0x..; the wait then satisfied after 4.8 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11306 of 25571 dwords went ahead of the wait at 11306 on 0x..; the wait then satisfied after 4.1 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11306 of 25571 dwords went ahead of the wait at 11306 on 0x..; the wait then satisfied after 3.3 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11306 of 25571 dwords went ahead of the wait at 11306 on 0x..; the wait then satisfied after 5.6 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11306 of 25453 dwords went ahead of the wait at 11306 on 0x..; the wait then satisfied after 4.7 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11306 of 25453 dwords went ahead of the wait at 11306 on 0x..; the wait then satisfied after 5.4 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11306 of 25104 dwords went ahead of the wait at 11306 on 0x..; the wait then satisfied after 4.3 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11306 of 25106 dwords went ahead of the wait at 11306 on 0x..; the wait then satisfied after 5.4 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11306 of 25106 dwords went ahead of the wait at 11306 on 0x..; the wait then satisfied after 4.5 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11306 of 25106 dwords went ahead of the wait at 11306 on 0x..; the wait then satisfied after 4.2 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11306 of 25106 dwords went ahead of the wait at 11306 on 0x..; the wait then satisfied after 4.2 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11306 of 25244 dwords went ahead of the wait at 11306 on 0x..; the wait then satisfied after 4.3 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11306 of 25244 dwords went ahead of the wait at 11306 on 0x..; the wait then satisfied after 4.3 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11306 of 25244 dwords went ahead of the wait at 11306 on 0x..; the wait then satisfied after 3.3 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11306 of 25244 dwords went ahead of the wait at 11306 on 0x..; the wait then satisfied after 3.1 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11306 of 25850 dwords went ahead of the wait at 11306 on 0x..; the wait then satisfied after 4.8 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11306 of 25838 dwords went ahead of the wait at 11306 on 0x..; the wait then satisfied after 4.6 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11380 of 25912 dwords went ahead of the wait at 11380 on 0x..; the wait then satisfied after 3.7 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11380 of 25912 dwords went ahead of the wait at 11380 on 0x..; the wait then satisfied after 4.3 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11454 of 25986 dwords went ahead of the wait at 11454 on 0x..; the wait then satisfied after 5.5 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11454 of 25986 dwords went ahead of the wait at 11454 on 0x..; the wait then satisfied after 4.6 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11454 of 25986 dwords went ahead of the wait at 11454 on 0x..; the wait then satisfied after 4.1 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11454 of 25986 dwords went ahead of the wait at 11454 on 0x..; the wait then satisfied after 4.7 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11454 of 25474 dwords went ahead of the wait at 11454 on 0x..; the wait then satisfied after 4.4 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11454 of 25519 dwords went ahead of the wait at 11454 on 0x..; the wait then satisfied after 4.4 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11454 of 25386 dwords went ahead of the wait at 11454 on 0x..; the wait then satisfied after 5.1 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11454 of 25347 dwords went ahead of the wait at 11454 on 0x..; the wait then satisfied after 5.1 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11454 of 25356 dwords went ahead of the wait at 11454 on 0x..; the wait then satisfied after 3.7 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11454 of 25454 dwords went ahead of the wait at 11454 on 0x..; the wait then satisfied after 4.1 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11528 of 25528 dwords went ahead of the wait at 11528 on 0x..; the wait then satisfied after 3.8 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11528 of 25654 dwords went ahead of the wait at 11528 on 0x..; the wait then satisfied after 4.0 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11528 of 25654 dwords went ahead of the wait at 11528 on 0x..; the wait then satisfied after 4.1 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11630 of 25756 dwords went ahead of the wait at 11630 on 0x..; the wait then satisfied after 4.5 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11630 of 25756 dwords went ahead of the wait at 11630 on 0x..; the wait then satisfied after 3.2 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11630 of 25756 dwords went ahead of the wait at 11630 on 0x..; the wait then satisfied after 5.0 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11720 of 25846 dwords went ahead of the wait at 11720 on 0x..; the wait then satisfied after 4.4 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11720 of 25693 dwords went ahead of the wait at 11720 on 0x..; the wait then satisfied after 3.3 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11642 of 25742 dwords went ahead of the wait at 11642 on 0x..; the wait then satisfied after 5.0 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11642 of 25742 dwords went ahead of the wait at 11642 on 0x..; the wait then satisfied after 3.9 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11716 of 25704 dwords went ahead of the wait at 11716 on 0x..; the wait then satisfied after 5.1 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11716 of 25704 dwords went ahead of the wait at 11716 on 0x..; the wait then satisfied after 4.1 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11716 of 25390 dwords went ahead of the wait at 11716 on 0x..; the wait then satisfied after 4.2 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11716 of 25390 dwords went ahead of the wait at 11716 on 0x..; the wait then satisfied after 5.0 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11716 of 25252 dwords went ahead of the wait at 11716 on 0x..; the wait then satisfied after 4.4 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11716 of 24988 dwords went ahead of the wait at 11716 on 0x..; the wait then satisfied after 3.7 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11789 of 25073 dwords went ahead of the wait at 11789 on 0x..; the wait then satisfied after 4.6 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11789 of 24923 dwords went ahead of the wait at 11789 on 0x..; the wait then satisfied after 3.2 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11789 of 24923 dwords went ahead of the wait at 11789 on 0x..; the wait then satisfied after 3.8 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11789 of 24923 dwords went ahead of the wait at 11789 on 0x..; the wait then satisfied after 3.3 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11789 of 25061 dwords went ahead of the wait at 11789 on 0x..; the wait then satisfied after 4.2 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11863 of 25247 dwords went ahead of the wait at 11863 on 0x..; the wait then satisfied after 4.6 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11863 of 25385 dwords went ahead of the wait at 11863 on 0x..; the wait then satisfied after 4.6 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..11937 of 25585 dwords went ahead of the wait at 11937 on 0x..; the wait then satisfied after 4.9 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..12018 of 25671 dwords went ahead of the wait at 12018 on 0x..; the wait then satisfied after 4.0 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..12240 of 25893 dwords went ahead of the wait at 12240 on 0x..; the wait then satisfied after 4.5 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..12314 of 25967 dwords went ahead of the wait at 12314 on 0x..; the wait then satisfied after 4.4 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..12314 of 26117 dwords went ahead of the wait at 12314 on 0x..; the wait then satisfied after 4.7 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..12314 of 26117 dwords went ahead of the wait at 12314 on 0x..; the wait then satisfied after 4.3 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..12388 of 25691 dwords went ahead of the wait at 12388 on 0x..; the wait then satisfied after 3.9 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..12462 of 25956 dwords went ahead of the wait at 12462 on 0x..; the wait then satisfied after 3.2 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..12531 of 25920 dwords went ahead of the wait at 12531 on 0x..; the wait then satisfied after 4.3 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..12679 of 26206 dwords went ahead of the wait at 12679 on 0x..; the wait then satisfied after 3.7 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..13256 of 26768 dwords went ahead of the wait at 13256 on 0x..; the wait then satisfied after 4.1 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..14061 of 27573 dwords went ahead of the wait at 14061 on 0x..; the wait then satisfied after 4.3 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..15763 of 29275 dwords went ahead of the wait at 15763 on 0x..; the wait then satisfied after 4.5 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..17169 of 30636 dwords went ahead of the wait at 17169 on 0x..; the wait then satisfied after 4.6 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..17840 of 31307 dwords went ahead of the wait at 17840 on 0x..; the wait then satisfied after 4.7 ms; rest behind a prefix of 1261 dwords
+pieces full: 205 splits made, the wait then satisfied 204, not satisfied 1
+pieces dry: 733 splits in 436 buffers, prefix mean 1261 dwords, build 56.6 ms in all, max 0.42 ms; the waits then: 479 kept for the GPU, 253 served on the CPU, 1 given up or broken
