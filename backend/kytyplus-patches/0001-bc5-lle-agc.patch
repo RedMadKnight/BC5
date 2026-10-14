@@ -4427,10 +4427,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..658c395
+index 0000000..8cb48ad
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,6755 @@
+@@ -0,0 +1,6765 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -7764,9 +7764,16 @@ index 0000000..658c395
 +			*l     = 0;
 +			linear = true;
 +		}
++		// Experiment 0098: "-fam<n>" picks the KytyPlus TileBlockFamily (0 Standard256B, 1 Standard4KB,
++		// 3 Standard64KB, 7 RenderTarget64KB, ...); default RenderTarget64KB.
++		uint32_t family = 7;
++		if (char* fm = std::strstr(fmt, "-fam"); fm != nullptr) {
++			family = static_cast<uint32_t>(std::strtoul(fm + 4, nullptr, 10));
++			*fm    = 0;
++		}
 +		const uint32_t  bpe = std::strcmp(fmt, "rgba16f") == 0 ? 8u : 4u; // experiment 0091
 +		TileBlockLayout block {};
-+		if (!TileGetBlockLayout(TileBlockFamily::RenderTarget64KB, bpe, block)) continue;
++		if (!TileGetBlockLayout(static_cast<TileBlockFamily>(family), bpe, block)) continue;
 +		const uint32_t pitch   = TileGetRenderTargetPitch(w, bpe);
 +		const uint64_t columns = (pitch + block.block_width - 1u) / block.block_width;
 +		const uint64_t rows    = (h + block.block_height - 1u) / block.block_height;
@@ -7779,6 +7786,7 @@ index 0000000..658c395
 +		std::vector<uint8_t> rgb(static_cast<size_t>(w) * h * 3u);
 +		uint64_t             nonzero = 0;
 +		double               sum_v = 0, max_v = 0; // raw values before tone mapping (mean of channels)
++		uint64_t             alpha_hist[4] = {};  // experiment 0099: 2-bit alpha of rgb10a2
 +		for (uint32_t y = 0; y < h; y++) {
 +			for (uint32_t x = 0; x < w; x++) {
 +				uint32_t local = 0, bxor = 0;
@@ -7808,6 +7816,7 @@ index 0000000..658c395
 +					r = std::fabs(r), g = std::fabs(g), b = std::fabs(b);
 +					r /= 1.0f + r, g /= 1.0f + g, b /= 1.0f + b;
 +				} else if (std::strcmp(fmt, "rgb10a2") == 0) { // KytyPlus gpu_defs.h k10_10_10_2UNorm = 50
++					alpha_hist[v >> 30u]++;
 +					r = static_cast<float>(v & 0x3ffu) / 1023.0f, g = static_cast<float>((v >> 10u) & 0x3ffu) / 1023.0f, b = static_cast<float>((v >> 20u) & 0x3ffu) / 1023.0f;
 +					const double mm = (static_cast<double>(r) + g + b) / 3.0;
 +					sum_v += mm;
@@ -7836,13 +7845,14 @@ index 0000000..658c395
 +			}
 +		}
 +		char name[512];
-+		std::snprintf(name, sizeof(name), "%s/rt-%010" PRIx64 "-%ux%u-%s.ppm", g_dump_dir.c_str(), va, w, h, fmt);
++		std::snprintf(name, sizeof(name), "%s/rt-%010" PRIx64 "-%ux%u-%s-f%u.ppm", g_dump_dir.c_str(), va, w, h, fmt, family);
 +		if (FILE* f = std::fopen(name, "wb"); f != nullptr) {
 +			std::fprintf(f, "P6" "\n" "%u %u" "\n" "255" "\n", w, h);
 +			std::fwrite(rgb.data(), 1, rgb.size(), f);
 +			std::fclose(f);
 +		}
-+		journal("rt dump %010" PRIx64 " %ux%u %s: %" PRIu64 " of %u pixels non-zero, raw mean %.6g max %.6g -> %s\n", va, w, h, fmt, nonzero, w * h, sum_v / (static_cast<double>(w) * h), max_v, name);
++		journal("rt dump %010" PRIx64 " %ux%u %s: %" PRIu64 " of %u pixels non-zero, raw mean %.6g max %.6g, 2-bit alpha 0/1/2/3: %" PRIu64 "/%" PRIu64 "/%" PRIu64 "/%" PRIu64 " -> %s\n", va, w, h, fmt, nonzero, w * h, sum_v / (static_cast<double>(w) * h), max_v,
++		        alpha_hist[0], alpha_hist[1], alpha_hist[2], alpha_hist[3], name);
 +	}
 +}
 +
