@@ -387,3 +387,5 @@ Experiment 0087, prepared and **not run** (GPU; only with the maintainer present
 or more into a 64 MiB ring in guest flexible memory at submission and points the filtered packet
 at the copy (backend `FilterOptions::dma_source`), for the second title's per-frame uploads from
 rotating CPU staging (F146). Ring ranges not yet imported are not used.
+Experiment 0088: `BC5_DIRECT_DRAW_MAX=<vertices>:<instances>` overrides the CP's indirect-draw limits
+(default 1048576:64).
