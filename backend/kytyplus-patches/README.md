@@ -397,3 +397,5 @@ Experiment 0092: the draw journal follows nested buffers; `BC5_DIRECT_DRAW_JOURN
 draws and dispatches whose user data (or the descriptor tables it points to) hold one of the values.
 Experiment 0093: the draw journal lists all enabled colour targets; `BC5_DIRECT_FIND_ALL=<t0>:<s>:<hex>[,...]` searches
 the user data of every buffer kind for the values.
+Experiments 0095–0098: `BC5_DIRECT_RT_DUMP` formats accept `-lin` (linear) and `-fam<n>` (KytyPlus TileBlockFamily),
+and report the 2-bit alpha histogram of `rgb10a2`.
