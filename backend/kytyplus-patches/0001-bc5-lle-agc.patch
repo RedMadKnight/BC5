@@ -4427,10 +4427,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..22c6a0d
+index 0000000..19c4131
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,6494 @@
+@@ -0,0 +1,6581 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -4447,6 +4447,7 @@ index 0000000..22c6a0d
 +// handle are logged and answered with zeros. Everything here is a first cut whose purpose is to get
 +// Sony's driver through its initialisation; expect TODOs.
 +
++#include <cmath>
 +#include <optional>
 +#include <span>
 +#include <pthread.h>
@@ -4466,6 +4467,7 @@ index 0000000..22c6a0d
 +#if defined(KYTY_BC5_DIRECT)
 +#include "bc5/direct.hpp"
 +#include "bc5/full_state.hpp"
++#include "graphics/guest_gpu/tile.h"
 +#include <fcntl.h>
 +#include <sys/mman.h>
 +#include <sys/stat.h>
@@ -7722,6 +7724,90 @@ index 0000000..22c6a0d
 +// wait whether a piece started there after the tracker's prefix would see at every later draw
 +// the same registers as the unsplit buffer. CPU only: nothing submitted changes. Journals a
 +// summary every 10 s.
++
++// Experiment 0090: BC5_DIRECT_RT_DUMP=<t0>;<va hex>:<width>:<height>:<fmt>[;...] writes, once, at the
++// first graphics buffer submitted from t0 s on, each listed colour target detiled on the CPU
++// (KytyPlus's tile helpers: TileBlockFamily::RenderTarget64KB, 4 bytes per element, the address
++// formula of tests/ShaderRecompilerComputeTests.cpp: block index * block size + (offset in block
++// ^ block xor), pitch TileGetRenderTargetPitch) as a PPM image next to the journal. fmt: r11g11b10
++// (packed float, R in bits 10:0 -- TODO(verify) the bit order), r32f, rgba8. Floats are shown
++// tone-mapped (x / (1 + x)). CPU only; private output.
++static float bc5_small_float(uint32_t bits, uint32_t mant_bits) {
++	const uint32_t e = bits >> mant_bits, m = bits & ((1u << mant_bits) - 1u);
++	if (e == 0) return std::ldexp(static_cast<float>(m), -14 - static_cast<int>(mant_bits));
++	if (e == 31) return 65504.0f;
++	return std::ldexp(1.0f + static_cast<float>(m) / static_cast<float>(1u << mant_bits), static_cast<int>(e) - 15);
++}
++static void bc5_rt_dump_once(const std::shared_ptr<const std::vector<bc5::direct::Mapping>>& maps_p) {
++	static const std::string spec = [] {
++		const char* e = std::getenv("BC5_DIRECT_RT_DUMP");
++		return std::string(e != nullptr ? e : "");
++	}();
++	static std::atomic<bool> done {false};
++	if (spec.empty() || done.load()) return;
++	const double t0 = std::strtod(spec.c_str(), nullptr);
++	if (timing_now() < t0 || done.exchange(true)) return;
++	size_t pos = spec.find(';');
++	while (pos != std::string::npos) {
++		const size_t next = spec.find(';', pos + 1);
++		const std::string item = spec.substr(pos + 1, next == std::string::npos ? std::string::npos : next - pos - 1);
++		pos = next;
++		uint64_t va = 0;
++		unsigned w = 0, h = 0;
++		char     fmt[16] = {};
++		if (std::sscanf(item.c_str(), "%" SCNx64 ":%u:%u:%15s", &va, &w, &h, fmt) != 4 || w == 0 || h == 0) continue;
++		using namespace Libs::Graphics;
++		TileBlockLayout block {};
++		if (!TileGetBlockLayout(TileBlockFamily::RenderTarget64KB, 4, block)) continue;
++		const uint32_t pitch   = TileGetRenderTargetPitch(w, 4);
++		const uint64_t columns = (pitch + block.block_width - 1u) / block.block_width;
++		const uint64_t rows    = (h + block.block_height - 1u) / block.block_height;
++		const uint64_t bytes   = columns * rows * block.block_size;
++		if (!covered_sorted(*maps_p, va, bytes)) {
++			journal("rt dump %010" PRIx64 " %ux%u: not mapped (%" PRIu64 " bytes)\n", va, w, h, bytes);
++			continue;
++		}
++		const auto*          src = reinterpret_cast<const uint8_t*>(va);
++		std::vector<uint8_t> rgb(static_cast<size_t>(w) * h * 3u);
++		uint64_t             nonzero = 0;
++		for (uint32_t y = 0; y < h; y++) {
++			for (uint32_t x = 0; x < w; x++) {
++				uint32_t local = 0, bxor = 0;
++				if (!TileGetBlockOffset(block, x % block.block_width, y % block.block_height, 0, local) ||
++				    !TileGetBlockXor(block, x / block.block_width, y / block.block_height, bxor))
++					continue;
++				const uint64_t off = ((y / block.block_height) * columns + x / block.block_width) * block.block_size + (local ^ bxor);
++				uint32_t       v   = 0;
++				std::memcpy(&v, src + off, 4);
++				if (v != 0) nonzero++;
++				float r = 0, g = 0, b = 0;
++				if (std::strcmp(fmt, "rgba8") == 0) {
++					r = static_cast<float>(v & 0xffu) / 255.0f, g = static_cast<float>((v >> 8u) & 0xffu) / 255.0f, b = static_cast<float>((v >> 16u) & 0xffu) / 255.0f;
++				} else if (std::strcmp(fmt, "r32f") == 0) {
++					float f = 0;
++					std::memcpy(&f, &v, 4);
++					r = g = b = std::isfinite(f) ? std::fabs(f) / (1.0f + std::fabs(f)) : 1.0f;
++				} else {
++					r = bc5_small_float(v & 0x7ffu, 6), g = bc5_small_float((v >> 11u) & 0x7ffu, 6), b = bc5_small_float((v >> 22u) & 0x3ffu, 5);
++					r /= 1.0f + r, g /= 1.0f + g, b /= 1.0f + b;
++				}
++				uint8_t* o = &rgb[(static_cast<size_t>(y) * w + x) * 3u];
++				o[0]       = static_cast<uint8_t>(std::clamp(r, 0.0f, 1.0f) * 255.0f);
++				o[1]       = static_cast<uint8_t>(std::clamp(g, 0.0f, 1.0f) * 255.0f);
++				o[2]       = static_cast<uint8_t>(std::clamp(b, 0.0f, 1.0f) * 255.0f);
++			}
++		}
++		char name[512];
++		std::snprintf(name, sizeof(name), "%s/rt-%010" PRIx64 "-%ux%u-%s.ppm", g_dump_dir.c_str(), va, w, h, fmt);
++		if (FILE* f = std::fopen(name, "wb"); f != nullptr) {
++			std::fprintf(f, "P6" "\n" "%u %u" "\n" "255" "\n", w, h);
++			std::fwrite(rgb.data(), 1, rgb.size(), f);
++			std::fclose(f);
++		}
++		journal("rt dump %010" PRIx64 " %ux%u %s: %" PRIu64 " of %u pixels non-zero -> %s\n", va, w, h, fmt, nonzero, w * h, name);
++	}
++}
++
 +static void piece_check(const uint32_t* ib, uint32_t num_dwords, const char* kind) {
 +	static const uint32_t every = [] {
 +		const char* e = std::getenv("BC5_DIRECT_PIECE_CHECK");
@@ -7743,6 +7829,7 @@ index 0000000..22c6a0d
 +		}
 +		return v;
 +	}();
++	if (std::getenv("BC5_DIRECT_RT_DUMP") != nullptr && std::strcmp(kind, "dcb") == 0 && g_dev) bc5_rt_dump_once(g_dev->sorted_mappings());
 +	if (every == 0 && !pieces_dry() && !pieces_full() && draw_journal.second == 0) return;
 +	if (std::strcmp(kind, "cc") != 0 && std::strcmp(kind, "hib") != 0 && std::strcmp(kind, "dcb") != 0) return;
 +	static std::mutex                 mtx;
