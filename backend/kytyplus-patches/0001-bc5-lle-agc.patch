@@ -4427,10 +4427,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..96dbd6c
+index 0000000..f3521a6
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,6433 @@
+@@ -0,0 +1,6447 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -9020,6 +9020,20 @@ index 0000000..96dbd6c
 +	// stale arguments run for seconds.
 +	opt.gpu_check_draw_max[0] = 1u << 20;
 +	opt.gpu_check_draw_max[1] = 64;
++	// Experiment 0088: BC5_DIRECT_DRAW_MAX=<vertices>:<instances> overrides the two limits.
++	{
++		static const std::pair<uint32_t, uint32_t> dm = [] {
++			std::pair<uint32_t, uint32_t> v {1u << 20, 64};
++			if (const char* e = std::getenv("BC5_DIRECT_DRAW_MAX"); e != nullptr) {
++				char* end = nullptr;
++				v.first   = static_cast<uint32_t>(std::strtoul(e, &end, 0));
++				if (end != nullptr && *end == ':') v.second = static_cast<uint32_t>(std::strtoul(end + 1, nullptr, 0));
++			}
++			return v;
++		}();
++		opt.gpu_check_draw_max[0] = dm.first;
++		opt.gpu_check_draw_max[1] = dm.second;
++	}
 +	opt.keep_wait_offsets.clear(); // experiment 0055
 +	for (const uint32_t* w: t_keep_waits) {
 +		if (w >= ib && w < ib + num_dwords) opt.keep_wait_offsets.push_back(static_cast<uint32_t>(w - ib));
