@@ -4427,10 +4427,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..bb8ea64
+index 0000000..eed5938
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,6823 @@
+@@ -0,0 +1,6864 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -8979,6 +8979,13 @@ index 0000000..bb8ea64
 +	static const bool lazy_sync = std::getenv("BC5_DIRECT_NO_LAZY_SYNC") == nullptr;
 +	bool force_sync = true;
 +	bool urgent_sync = !lazy_sync;
++	// Experiment 0103: BC5_DIRECT_REMEMBER_UNMAPPED=1 — a light IB whose only unmapped operands lie in
++	// pages a forced sync left unmapped less than 2 s ago does not force the next one: the packet is
++	// dropped either way. The second title's (and ASTRO BOT's) 84-dword DCB after every flip has one
++	// such operand and cost a 9 ms walk a frame (run 372).
++	static const bool remember_unmapped = std::getenv("BC5_DIRECT_REMEMBER_UNMAPPED") != nullptr;
++	static std::map<uint64_t, double> lazy_unmapped;
++	std::vector<uint64_t> lazy_pages;
 +	if (lazy_sync) {
 +		bool heavy = false;
 +		for (uint32_t i = 0; i < num_dwords && !heavy;) {
@@ -9001,6 +9008,30 @@ index 0000000..bb8ea64
 +			bc5::policy::FilterStats st;
 +			bc5::policy::filter(bc5::policy::Policy::builtin(), std::span<const uint32_t>(ib, num_dwords), scratch, probe, st);
 +			force_sync = st.unmapped_drops != 0;
++			if (force_sync && remember_unmapped) {
++				for (uint32_t q = 0; q < num_dwords;) {
++					const uint32_t h   = ib[q];
++					uint32_t       len = 1;
++					if ((h >> 30u) == 3 || (h >> 30u) == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
++					if (q + len > num_dwords) break;
++					if ((h >> 30u) == 3) {
++						for (const auto& [a, bytes]: bc5::policy::memory_operands(ib + q, len)) {
++							if (!covered_sorted(*have_p, a, bytes == 0 ? 4 : bytes)) lazy_pages.push_back(a & ~0xfffull);
++						}
++					}
++					q += len;
++				}
++				const double now   = timing_now();
++				bool         known = !lazy_pages.empty();
++				for (const uint64_t pg: lazy_pages) {
++					const auto it = lazy_unmapped.find(pg);
++					if (it == lazy_unmapped.end() || now - it->second > 2.0) known = false;
++				}
++				if (known) {
++					force_sync = false;
++					lazy_pages.clear();
++				}
++			}
 +			urgent_sync = force_sync;
 +		} else {
 +			// Experiment 0040: a heavy IB forces the direct-memory sync but the private-memory sync
@@ -9064,6 +9095,16 @@ index 0000000..bb8ea64
 +	sync_mappings(force_sync, urgent_sync);
 +	const uint64_t tb = SoftCp::now_ns();
 +	direct_sync(force_sync);
++	if (!lazy_pages.empty()) { // experiment 0103: the pages this forced sync left unmapped
++		const auto   after = g_dev->sorted_mappings();
++		const double now   = timing_now();
++		for (const uint64_t pg: lazy_pages) {
++			if (covered_sorted(*after, pg, 4)) continue;
++			const bool fresh = lazy_unmapped.count(pg) == 0;
++			lazy_unmapped[pg] = now;
++			if (fresh) journal("remember unmapped: %s %u dwords, operand page 0x%" PRIx64 " stays unmapped after a forced sync\n", kind, num_dwords, pg);
++		}
++	}
 +	const uint64_t t1 = SoftCp::now_ns();
 +	learned_apply();
 +	const uint64_t tc = SoftCp::now_ns();
