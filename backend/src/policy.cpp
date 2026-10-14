@@ -503,6 +503,21 @@ std::size_t filter(const Policy &policy, std::span<const std::uint32_t> src,
                 out[i + 7] &= ~opt.gcr_clear; // ACQUIRE_MEM GCR_CNTL (experiment 0044)
                 stats.gcr_rewrites++;
             }
+            if (opt.dma_source && opcode == 0x50 && len >= 7) { // experiment 0087
+                const std::uint32_t src_sel = (out[i + 1] >> 29) & 3u;
+                const std::uint32_t bytes = out[i + 6] & 0x1fffffu;
+                const bool sas_register = ((out[i + 6] >> 26) & 1u) != 0;
+                if ((src_sel == 0 || src_sel == 3) && !sas_register && bytes >= opt.dma_source_min) {
+                    const std::uint64_t a = static_cast<std::uint64_t>(out[i + 2]) |
+                                            (static_cast<std::uint64_t>(out[i + 3]) << 32);
+                    const std::uint64_t b = opt.dma_source(a, bytes);
+                    if (b != 0 && b != a) {
+                        out[i + 2] = static_cast<std::uint32_t>(b);
+                        out[i + 3] = static_cast<std::uint32_t>(b >> 32);
+                        stats.dma_sources++;
+                    }
+                }
+            }
             if (!opt.drop_gds && opt.gds_shadow_va == 0 && opcode == 0x50 && is_gds_access(&src[i], len) &&
                 (out[i + 1] & 0x80000000u) != 0) {
                 // A GDS DMA with CP_SYNC (bit 31) on the GFX ring stalled the CP (run 49, #143);
