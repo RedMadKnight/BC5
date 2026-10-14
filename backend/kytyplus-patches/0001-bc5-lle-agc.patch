@@ -4427,10 +4427,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..3c5b532
+index 0000000..0da0302
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,6672 @@
+@@ -0,0 +1,6731 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -7917,6 +7917,19 @@ index 0000000..3c5b532
 +				                " es %010" PRIx64 " gs %010" PRIx64 " cs %010" PRIx64 "\n",
 +				                buf_no, num_dwords, off, words, rt, ((attrib2 >> 14u) & 0x3fffu) + 1u, (attrib2 & 0x3fffu) + 1u, reg(S::Context, 0x31c), reg(S::Context, 0x8e),
 +				                2 * xs, 2 * ys, xo - xs, yo - ys, ps, es, gs, cs);
++				// Experiment 0093: for a draw, the bases of every colour target CB_TARGET_MASK enables
++				// (CB_COLORn_BASE ctx 0x318 + n * 0xf, CB_COLORn_BASE_EXT 0x390 + n; Mesa gfx10 register JSON).
++				if (((pkt[0] >> 8u) & 0xffu) != 0x15 && ((pkt[0] >> 8u) & 0xffu) != 0x16) {
++					const uint32_t mask = reg(S::Context, 0x8e);
++					char           mrt[256] = {};
++					int            mw       = 0;
++					for (uint32_t n = 0; n < 8 && mw < 220; n++) {
++						if (((mask >> (4u * n)) & 0xfu) == 0) continue;
++						const uint64_t bn = (static_cast<uint64_t>(reg(S::Context, 0x318 + n * 0xf)) | (static_cast<uint64_t>(reg(S::Context, 0x390 + n) & 0xffu) << 32u)) << 8u;
++						mw += std::snprintf(mrt + mw, sizeof(mrt) - static_cast<size_t>(mw), " %u:%010" PRIx64, n, bn);
++					}
++					if (mw > 0) journal("draw journal mrt buf %u at %zu:%s | ps %010" PRIx64 "\n", buf_no, off, mrt, ps);
++				}
 +				// Experiment 0092: BC5_DIRECT_DRAW_JOURNAL_FIND=<hex>[,<hex>...] journals each draw or dispatch
 +				// whose user data (COMPUTE_USER_DATA_0..15 sh 0x240-0x24f, SPI_SHADER_USER_DATA_PS_0..31 sh
 +				// 0x0c-0x2b, Mesa gfx10 register JSON) holds one of the values, directly or among the 64 dwords
@@ -8787,6 +8800,52 @@ index 0000000..3c5b532
 +		return;
 +	}
 +	pkt_stats(ib, num_dwords, kind);
++	// Experiment 0093: BC5_DIRECT_FIND_ALL=<t0>:<seconds>:<hex>[,<hex>...] journals, for buffers of every
++	// kind (compute and ring buffers too) submitted in that window, each dispatch or draw whose
++	// COMPUTE_USER_DATA_0..15 / SPI_SHADER_USER_DATA_PS_0..31 (Mesa gfx10 register JSON) hold one of
++	// the values directly, using the buffer's own register state only (a fresh tracker).
++	{
++		static const auto cfg = [] {
++			struct C {
++				double                t0 = 0, len = 0;
++				std::vector<uint32_t> v;
++			} c;
++			if (const char* e = std::getenv("BC5_DIRECT_FIND_ALL"); e != nullptr) {
++				char* end = nullptr;
++				c.t0      = std::strtod(e, &end);
++				if (end != nullptr && *end == ':') c.len = std::strtod(end + 1, &end);
++				if (end != nullptr && *end == ':') {
++					for (const char* q = end + 1; *q != 0;) {
++						char* e2 = nullptr;
++						c.v.push_back(static_cast<uint32_t>(std::strtoul(q, &e2, 16)));
++						if (e2 == q) break;
++						q = *e2 == ',' ? e2 + 1 : e2;
++					}
++				}
++			}
++			return c;
++		}();
++		const double now = timing_now();
++		if (!cfg.v.empty() && now >= cfg.t0 && now < cfg.t0 + cfg.len) {
++			bc5::full_state::for_each_draw(bc5::full_state::Tracker {}, std::span<const uint32_t>(ib, num_dwords), nullptr,
++			                               [&](size_t off, std::span<const uint32_t> pkt, const bc5::full_state::Tracker& t) {
++				                               const bool compute = ((pkt[0] >> 8u) & 0xffu) == 0x15 || ((pkt[0] >> 8u) & 0xffu) == 0x16;
++				                               const uint32_t base = compute ? 0x240u : 0x0cu, nud = compute ? 16u : 32u;
++				                               for (uint32_t k = 0; k < nud; k++) {
++					                               uint32_t v = 0;
++					                               if (!t.get(bc5::full_state::Sh, base + k, v)) continue;
++					                               if (std::find(cfg.v.begin(), cfg.v.end(), v) == cfg.v.end()) continue;
++					                               uint32_t lo = 0, hi = 0;
++					                               t.get(bc5::full_state::Sh, compute ? 0x20cu : 0x8u, lo);
++					                               t.get(bc5::full_state::Sh, compute ? 0x20du : 0x9u, hi);
++					                               journal("find all: %s %u dwords at %zu: %s ud%u = %08x, program %010" PRIx64 ", packet %08x %08x %08x %08x\n", kind, num_dwords, off,
++					                                       compute ? "dispatch" : "draw", k, v, (static_cast<uint64_t>(lo) | (static_cast<uint64_t>(hi & 0xffu) << 32u)) << 8u, pkt[0],
++					                                       pkt.size() > 1 ? pkt[1] : 0u, pkt.size() > 2 ? pkt[2] : 0u, pkt.size() > 3 ? pkt[3] : 0u);
++					                               break;
++				                               }
++			                               });
++		}
++	}
 +	if (g_stage == Stage::Preamble && !from_header) {
 +		return;
 +	}
