@@ -380,3 +380,5 @@ Experiment 0080: `run-pkg.sh` (in `~/bc5-work`, not in the repo) reads the setti
 `BC5_RUN_ENV` (default `~/bc5-work/bc5-run.env`).
 Experiment 0083: `BC5_DIRECT_SOFTCP_POST_IB=1` runs the soft CP of an IB-packet submission on the
 completion thread after its job (EOP events and dropped packets' writes once the GPU is done).
+Experiment 0084: `BC5_DIRECT_IDLE_DRAIN=1` drains the jobs in flight at the driver's wait-idle ioctl
+(`=2` also at submit done); both are counted in the journal.
