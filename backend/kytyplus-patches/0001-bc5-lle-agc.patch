@@ -4427,10 +4427,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..7be5ae0
+index 0000000..5010b60
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,6371 @@
+@@ -0,0 +1,6422 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -8931,6 +8931,57 @@ index 0000000..7be5ae0
 +		opt.prologue.insert(opt.prologue.end(), {0xC0016900u, 0xd7u, static_cast<uint32_t>(std::strtoul(ts, nullptr, 16))});
 +	}
 +	opt.mapped = [&maps_p](uint64_t a, uint64_t bytes) { return covered_sorted(*maps_p, a, bytes); };
++	// Experiment 0087 (prepared, not yet run): BC5_DIRECT_DMA_SNAPSHOT=<min bytes> copies the source
++	// of every DMA_DATA that reads at least that many bytes of memory into a 64 MiB ring in guest
++	// flexible memory (GPU read/write) at submission, and the filtered IB reads the copy: the
++	// second title rewrites its rotating CPU staging before our deferred jobs run (F146). A ring
++	// range the direct path has not imported yet (pages are imported once the CPU has written
++	// them) is not used: the DMA keeps its own source. The ring is reused after 64 MiB, far more
++	// than the jobs in flight carry.
++	{
++		static const uint32_t snap_min = [] {
++			const char* e = std::getenv("BC5_DIRECT_DMA_SNAPSHOT");
++			return e != nullptr ? static_cast<uint32_t>(std::strtoul(e, nullptr, 10)) : 0u;
++		}();
++		if (snap_min != 0) {
++			static constexpr uint64_t kRing = 64ull << 20;
++			static uint8_t*           ring  = [] {
++				void* addr = nullptr;
++				const int r = LibKernel::Memory::KernelMapNamedFlexibleMemory(&addr, kRing, 0x33 /* cpu rw, gpu rw */, 0, "bc5-dma-snap");
++				Direct::journal("dma snapshot ring: %d at %p, %llu MiB\n", r, addr, static_cast<unsigned long long>(kRing >> 20));
++				return r == 0 ? static_cast<uint8_t*>(addr) : nullptr;
++			}();
++			static std::mutex            ring_mutex;
++			static uint64_t              head = 0;
++			static std::atomic<uint64_t> n_snap {0}, n_unmapped {0}, bytes_snap {0};
++			if (ring != nullptr) {
++				opt.dma_source_min = snap_min;
++				opt.dma_source     = [&maps_p](uint64_t a, uint32_t bytes) -> uint64_t {
++					if (!covered_sorted(*maps_p, a, bytes)) return 0;
++					const uint64_t n   = (static_cast<uint64_t>(bytes) + 255u) & ~255ull;
++					uint64_t       off = 0;
++					{
++						std::lock_guard lk(ring_mutex);
++						off  = head + n > kRing ? 0 : head;
++						head = off + n;
++					}
++					uint8_t* dst = ring + off;
++					std::memcpy(dst, reinterpret_cast<const void*>(a), bytes);
++					const uint64_t b = reinterpret_cast<uint64_t>(dst);
++					if (!covered_sorted(*maps_p, b, bytes)) {
++						n_unmapped++;
++						return 0;
++					}
++					const uint64_t k = ++n_snap;
++					bytes_snap += bytes;
++					if (k == 1 || k % 2000 == 0)
++						Direct::journal("dma snapshot: %" PRIu64 " sources copied (%" PRIu64 " MiB), %" PRIu64 " not yet mapped\n", k, bytes_snap.load() >> 20,
++						                n_unmapped.load());
++					return b;
++				};
++			}
++		}
++	}
 +	static const std::vector<uint8_t> extra = [] {
 +		std::vector<uint8_t> v;
 +		if (const char* e = std::getenv("BC5_DIRECT_DROP_OPS"); e != nullptr) {

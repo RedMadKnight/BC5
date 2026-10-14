@@ -71,6 +71,7 @@ struct FilterStats {
     std::uint64_t clear_state_rewrites = 0; // CLEAR_STATE cmd 1/2 -> cmd 0
     std::uint64_t cs_done_rewrites = 0; // RELEASE_MEM CS_DONE/index 6 without data -> BOTTOM_OF_PIPE_TS/5
     std::uint64_t gcr_rewrites = 0;     // ACQUIRE_MEM with FilterOptions::gcr_clear bits cleared
+    std::uint64_t dma_sources = 0;      // DMA_DATA sources replaced (FilterOptions::dma_source)
     std::uint64_t dma_syncs = 0;        // CP DMA waits inserted before dispatches (Device::submit)
     std::uint64_t gpu_checks = 0;       // DISPATCH_INDIRECT checked by the CP (gpu_check_indirect)
     std::uint64_t gpu_check_unbased = 0; // the same without a known base: PFP_SYNC_ME only
@@ -112,6 +113,15 @@ struct FilterOptions {
     // When set, every packet whose memory operand lies outside the mapped ranges is dropped
     // instead of faulting the GPU. Called with (address, bytes).
     std::function<bool(std::uint64_t, std::uint64_t)> mapped;
+    // Experiment 0087: called for every passing DMA_DATA that reads memory (SRC_SEL 0 or 3, SAS 0)
+    // of at least dma_source_min bytes, with (source address, bytes); a non-zero result replaces
+    // the source in the filtered copy (the caller has copied the data there, e.g. at submission,
+    // so that the title may rewrite its staging before the job runs). The returned range must be
+    // mapped. Field layout: RPCSX rpcsx/gpu/Pipe.cpp ComputePipe::dmaData (e8ae148): control
+    // dword 1 (SRC_SEL 30:29), source 2-3, destination 4-5, command dword 6 (BYTE_COUNT 20:0,
+    // SAS 26).
+    std::function<std::uint64_t(std::uint64_t, std::uint32_t)> dma_source;
+    std::uint32_t dma_source_min = 4096;
     // Opcodes to drop in addition to the table (experiments).
     std::vector<std::uint8_t> extra_drop;
     // Dword offsets of packets to drop, decided by the caller from data the filter cannot see

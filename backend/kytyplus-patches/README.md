@@ -382,3 +382,8 @@ Experiment 0083: `BC5_DIRECT_SOFTCP_POST_IB=1` runs the soft CP of an IB-packet 
 completion thread after its job (EOP events and dropped packets' writes once the GPU is done).
 Experiment 0084: `BC5_DIRECT_IDLE_DRAIN=1` drains the jobs in flight at the driver's wait-idle ioctl
 (`=2` also at submit done); both are counted in the journal.
+Experiment 0087, prepared and **not run** (GPU; only with the maintainer present):
+`BC5_DIRECT_DMA_SNAPSHOT=<min bytes>` copies the source of every `DMA_DATA` reading that many bytes
+or more into a 64 MiB ring in guest flexible memory at submission and points the filtered packet
+at the copy (backend `FilterOptions::dma_source`), for the second title's per-frame uploads from
+rotating CPU staging (F146). Ring ranges not yet imported are not used.

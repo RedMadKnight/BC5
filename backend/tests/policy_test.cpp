@@ -446,3 +446,30 @@ TEST_CASE("SET packet verdicts by span equal the register-by-register answer", "
         }
     }
 }
+
+TEST_CASE("policy: DMA_DATA sources can be replaced (experiment 0087)", "[policy]") {
+    // DMA_DATA, SRC_SEL 3 / DST_SEL 3, source 0x1122000000, destination 0x11f0000000, 8192 bytes;
+    // the same with 16 bytes (under the minimum); and one reading GDS (SRC_SEL 1).
+    const std::vector<std::uint32_t> src = {
+        0xC0055000u, 0x60300000u, 0x22000000u, 0x11u, 0xf0000000u, 0x11u, 8192u,
+        0xC0055000u, 0x60300000u, 0x22000100u, 0x11u, 0xf0000100u, 0x11u, 16u,
+        0xC0055000u, 0x20300000u, 0x0u, 0x0u, 0xf0000200u, 0x11u, 8192u,
+    };
+    std::vector<std::uint32_t> out(src.size());
+    policy::FilterStats st;
+    policy::FilterOptions opt;
+    std::vector<std::pair<std::uint64_t, std::uint32_t>> calls;
+    opt.dma_source = [&calls](std::uint64_t a, std::uint32_t bytes) -> std::uint64_t {
+        calls.emplace_back(a, bytes);
+        return 0x7700000000ull;
+    };
+    policy::filter(policy::Policy::builtin(), src, out, opt, st);
+    REQUIRE(calls.size() == 1);
+    CHECK(calls[0].first == 0x1122000000ull);
+    CHECK(calls[0].second == 8192u);
+    CHECK(out[2] == 0u);
+    CHECK(out[3] == 0x77u);
+    CHECK(out[9] == 0x22000100u); // small copy untouched
+    CHECK(out[17] != 0x77u);      // GDS source untouched
+    CHECK(st.dma_sources == 1);
+}
