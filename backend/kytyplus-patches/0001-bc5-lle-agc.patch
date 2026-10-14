@@ -4427,10 +4427,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..0da0302
+index 0000000..3ee066e
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,6731 @@
+@@ -0,0 +1,6733 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -7980,7 +7980,9 @@ index 0000000..0da0302
 +				// Experiment 0091: for a full-screen 2560x1440 compute pass (DISPATCH_DIRECT 320 x 180), the
 +				// COMPUTE_USER_DATA_0..15 (sh 0x240-0x24f, Mesa gfx10 register JSON) and, for each pair of
 +				// them that forms a mapped guest address, the 16 dwords there.
-+				if (pkt.size() >= 4 && ((pkt[0] >> 8u) & 0xffu) == 0x15 && pkt[1] == 320 && pkt[2] == 180) {
++				// Experiment 0094: also the 288-group pass of the copy kernel 0x11d0288a00 run just before the
++				// final composition.
++				if (pkt.size() >= 4 && ((pkt[0] >> 8u) & 0xffu) == 0x15 && ((pkt[1] == 320 && pkt[2] == 180) || (pkt[1] == 0x120 && pkt[2] == 1))) {
 +					uint32_t ud[16];
 +					for (uint32_t k = 0; k < 16; k++) ud[k] = reg(S::Sh, 0x240 + k);
 +					journal("draw journal cs %010" PRIx64 " user data %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x\n", cs, ud[0], ud[1], ud[2], ud[3],
