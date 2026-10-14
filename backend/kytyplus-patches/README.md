@@ -375,3 +375,6 @@ default: it cost ASTRO BOT 6 ms a frame (run 152); the second title's `run-pkg.s
 first n large compute IBs with such dispatches. The backend's `FilterOptions::mec_indirect_base`
 (one base per IB, with PFP_SYNC_ME inserted by `Device::submit`) is the earlier variant and is no
 longer set by the host.
+
+Experiment 0080: `run-pkg.sh` (in `~/bc5-work`, not in the repo) reads the settings file named by
+`BC5_RUN_ENV` (default `~/bc5-work/bc5-run.env`).
