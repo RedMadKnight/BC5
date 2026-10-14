@@ -4427,10 +4427,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..6c04ad2
+index 0000000..658c395
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,6743 @@
+@@ -0,0 +1,6755 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -8842,6 +8842,18 @@ index 0000000..6c04ad2
 +			bc5::full_state::for_each_draw(bc5::full_state::Tracker {}, std::span<const uint32_t>(ib, num_dwords), nullptr,
 +			                               [&](size_t off, std::span<const uint32_t> pkt, const bc5::full_state::Tracker& t) {
 +				                               const bool compute = ((pkt[0] >> 8u) & 0xffu) == 0x15 || ((pkt[0] >> 8u) & 0xffu) == 0x16;
++				                               // Experiment 0096: every large direct dispatch (x >= 200 and y >= 100 groups), with its program
++				                               // and the first two user-data dwords (an output descriptor's base), whatever the values.
++				                               if (((pkt[0] >> 8u) & 0xffu) == 0x15 && pkt.size() >= 3 && pkt[1] >= 200 && pkt[2] >= 100) {
++					                               uint32_t lo = 0, hi = 0, u0 = 0, u1 = 0, u2 = 0;
++					                               t.get(bc5::full_state::Sh, 0x20cu, lo);
++					                               t.get(bc5::full_state::Sh, 0x20du, hi);
++					                               t.get(bc5::full_state::Sh, 0x240u, u0);
++					                               t.get(bc5::full_state::Sh, 0x241u, u1);
++					                               t.get(bc5::full_state::Sh, 0x242u, u2);
++					                               journal("find all big: %s %u dwords at %zu: %ux%u groups, program %010" PRIx64 ", ud0-2 %08x %08x %08x\n", kind, num_dwords, off, pkt[1], pkt[2],
++					                                       (static_cast<uint64_t>(lo) | (static_cast<uint64_t>(hi & 0xffu) << 32u)) << 8u, u0, u1, u2);
++				                               }
 +				                               const uint32_t base = compute ? 0x240u : 0x0cu, nud = compute ? 16u : 32u;
 +				                               for (uint32_t k = 0; k < nud; k++) {
 +					                               uint32_t v = 0;
