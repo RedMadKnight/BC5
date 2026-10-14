@@ -4427,10 +4427,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..8232f01
+index 0000000..7be5ae0
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,6356 @@
+@@ -0,0 +1,6371 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -10044,9 +10044,24 @@ index 0000000..8232f01
 +			return 0;
 +		}
 +		case 0xc0088101: // switch buffer
-+		case 0xc0048116: // submit done
-+		case 0xc0048117: // wait idle
 +			return 0;
++		case 0xc0048116: // submit done
++		case 0xc0048117: { // wait idle
++			// Experiment 0084: with asynchronous submission these returned at once, so a title that
++			// asks for an idle GPU before rewriting its data did not wait. BC5_DIRECT_IDLE_DRAIN=1
++			// drains the jobs in flight at a wait idle (=2: at a submit done too). Calls are counted
++			// in the journal (every 500th).
++			static std::atomic<uint64_t> n_done {0}, n_idle {0};
++			const bool idle = request == 0xc0048117;
++			const uint64_t n = idle ? ++n_idle : ++n_done;
++			if (n == 1 || n % 500 == 0) Direct::journal("gc ioctl %s: %" PRIu64 " calls\n", idle ? "wait idle" : "submit done", n);
++			static const int drain_mode = [] {
++				const char* e = std::getenv("BC5_DIRECT_IDLE_DRAIN");
++				return e != nullptr ? std::atoi(e) : 0;
++			}();
++			if (drain_mode >= 1 && (idle || drain_mode >= 2)) Direct::drain();
++			return 0;
++		}
 +		case 0xc010810b: { // cu masks: every CU of SE0/SE1, SH0/SH1
 +			auto* m = static_cast<uint32_t*>(argp);
 +			m[0] = m[1] = m[2] = m[3] = ~0u;
