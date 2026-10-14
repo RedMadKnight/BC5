@@ -4427,10 +4427,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..8cb48ad
+index 0000000..1ba1c82
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,6765 @@
+@@ -0,0 +1,6796 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -7778,8 +7778,16 @@ index 0000000..8cb48ad
 +		const uint64_t columns = (pitch + block.block_width - 1u) / block.block_width;
 +		const uint64_t rows    = (h + block.block_height - 1u) / block.block_height;
 +		const uint64_t bytes   = linear ? static_cast<uint64_t>(w) * h * bpe : columns * rows * block.block_size;
-+		if (!covered_sorted(*maps_p, va, bytes)) {
-+			journal("rt dump %010" PRIx64 " %ux%u: not mapped (%" PRIu64 " bytes)\n", va, w, h, bytes);
++		// Experiment 0100: a range the direct path does not list (AMM mappings, F88) is still read if
++		// every page of it is mapped in this process (mincore), as the title's CPU sees it.
++		bool host_mapped = true;
++		{
++			const uint64_t page = 4096, first = va & ~(page - 1), last = (va + bytes + page - 1) & ~(page - 1);
++			std::vector<unsigned char> vec((last - first) / page);
++			host_mapped = ::mincore(reinterpret_cast<void*>(first), last - first, vec.data()) == 0;
++		}
++		if (!covered_sorted(*maps_p, va, bytes) && !host_mapped) {
++			journal("rt dump %010" PRIx64 " %ux%u: not mapped for the GPU nor in this process (%" PRIu64 " bytes)\n", va, w, h, bytes);
 +			continue;
 +		}
 +		const auto*          src = reinterpret_cast<const uint8_t*>(va);
@@ -8007,6 +8015,29 @@ index 0000000..8cb48ad
 +					for (uint32_t k = 0; k < 16; k++) ud[k] = reg(S::Sh, 0x240 + k);
 +					journal("draw journal cs %010" PRIx64 " user data %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x %08x\n", cs, ud[0], ud[1], ud[2], ud[3],
 +					        ud[4], ud[5], ud[6], ud[7], ud[8], ud[9], ud[10], ud[11], ud[12], ud[13], ud[14], ud[15]);
++					// Experiment 0099: the layer constants of the final pass: the buffer descriptor at
++					// table(user data 12-13) + 0x10 (V# base: dword 0 + bits 15:0 of dword 1), 12 dwords
++					// there (layer count, scales, layer indices; the pass's disassembly, private).
++					if (cs == 0x11d0404200ull) {
++						const uint64_t tab = ud[12] | (static_cast<uint64_t>(ud[13] & 0xffffu) << 32u);
++						if (read(tab, 32) != nullptr) {
++							const auto*    vd = reinterpret_cast<const uint32_t*>(tab + 0x10);
++							const uint64_t vb = vd[0] | (static_cast<uint64_t>(vd[1] & 0xffffu) << 32u);
++							if (read(vb, 64) != nullptr) {
++								const auto* c = reinterpret_cast<const uint32_t*>(vb);
++								journal("draw journal layers %010" PRIx64 ": %08x %08x %08x %08x | %08x %08x %08x %08x | %08x %08x %08x %08x\n", vb, c[0], c[1], c[2], c[3], c[4], c[5], c[6], c[7], c[8], c[9],
++								        c[10], c[11]);
++								// The image descriptor of each layer: table base (user data 8-9, a V# base) + index * 32.
++								const uint64_t tb = ud[8] | (static_cast<uint64_t>(ud[9] & 0xffffu) << 32u);
++								for (uint32_t l = 0; l < c[0] && l < 4; l++) {
++									const uint64_t da = tb + static_cast<uint64_t>(c[4 + l]) * 32u;
++									if (read(da, 32) == nullptr) continue;
++									const auto* d = reinterpret_cast<const uint32_t*>(da);
++									journal("draw journal layer %u index %x -> %010" PRIx64 ": %08x %08x %08x %08x %08x %08x %08x %08x\n", l, c[4 + l], da, d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7]);
++								}
++							}
++						}
++					}
 +					for (uint32_t k = 0; k + 1 < 16; k++) {
 +						const uint64_t a = ud[k] | (static_cast<uint64_t>(ud[k + 1] & 0xffffu) << 32u);
 +						if (a < 0x1000000000ull || a >= 0x1400000000ull || (a & 3u) != 0 || read(a, 64) == nullptr) continue;
