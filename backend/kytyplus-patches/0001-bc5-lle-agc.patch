@@ -4427,10 +4427,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..add3f13
+index 0000000..f594992
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,7133 @@
+@@ -0,0 +1,7136 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -9435,7 +9435,10 @@ index 0000000..add3f13
 +			}
 +		}
 +	}
-+	dump_shaders(ib, num_dwords, g_dev->mappings());
++	// Experiment 0109: the mapping list is copied only when BC5_DIRECT_SHADER_DUMP is set; the copy
++	// (thousands of entries) ran under g_dev_mutex on every submission (stack samples, run 397).
++	static const bool dump_shaders_on = std::getenv("BC5_DIRECT_SHADER_DUMP") != nullptr;
++	if (dump_shaders_on) dump_shaders(ib, num_dwords, g_dev->mappings());
 +	// BC5_DIRECT_RANGES_DUMP=1: the guest's mapped ranges with their physical (direct-memory)
 +	// offsets, journaled at the 40th and the 200th submission — are there two virtual mappings
 +	// of one physical range (aliases)? Anonymous views (KYTY_BC5_ANON_BACKING) do not share
