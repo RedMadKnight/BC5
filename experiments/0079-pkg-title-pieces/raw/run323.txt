@@ -1,0 +1,56 @@
+piece: dcb 0..758 of 1153 dwords went ahead of the wait at 758 on 0x..; the wait then satisfied after 0.0 ms; rest behind a prefix of 1260 dwords
+piece: dcb 0..758 of 1153 dwords went ahead of the wait at 758 on 0x..; the wait then satisfied after 0.0 ms; rest behind a prefix of 1260 dwords
+piece: dcb 0..758 of 1153 dwords went ahead of the wait at 758 on 0x..; the wait then satisfied after 0.0 ms; rest behind a prefix of 1260 dwords
+pieces full: 3 splits made, the wait then satisfied 3, not satisfied 0
+pieces dry: 91 splits in 47 buffers, prefix mean 1260 dwords, build 7.1 ms in all, max 0.62 ms; the waits then: 34 kept for the GPU, 57 served on the CPU, 0 given up or broken
+pieces full: 0 splits made, the wait then satisfied 0, not satisfied 0
+pieces dry: 243 splits in 135 buffers, prefix mean 1260 dwords, build 14.1 ms in all, max 0.17 ms; the waits then: 52 kept for the GPU, 191 served on the CPU, 0 given up or broken
+pieces full: 0 splits made, the wait then satisfied 0, not satisfied 0
+pieces dry: 367 splits in 198 buffers, prefix mean 1260 dwords, build 20.1 ms in all, max 0.18 ms; the waits then: 85 kept for the GPU, 282 served on the CPU, 0 given up or broken
+pieces full: 0 splits made, the wait then satisfied 0, not satisfied 0
+pieces dry: 388 splits in 199 buffers, prefix mean 1260 dwords, build 20.2 ms in all, max 0.15 ms; the waits then: 85 kept for the GPU, 303 served on the CPU, 0 given up or broken
+pieces full: 0 splits made, the wait then satisfied 0, not satisfied 0
+pieces dry: 332 splits in 169 buffers, prefix mean 1260 dwords, build 18.1 ms in all, max 0.19 ms; the waits then: 77 kept for the GPU, 255 served on the CPU, 0 given up or broken
+pieces full: 0 splits made, the wait then satisfied 0, not satisfied 0
+pieces dry: 0 splits in 0 buffers, prefix mean 0 dwords, build 0.0 ms in all, max 0.00 ms; the waits then: 0 kept for the GPU, 0 served on the CPU, 0 given up or broken
+pieces full: 0 splits made, the wait then satisfied 0, not satisfied 0
+pieces dry: 21 splits in 16 buffers, prefix mean 1260 dwords, build 1.8 ms in all, max 0.20 ms; the waits then: 6 kept for the GPU, 15 served on the CPU, 0 given up or broken
+piece: dcb 0..6830 of 11440 dwords went ahead of the wait at 6830 on 0x..; the wait then satisfied after 1.1 ms; rest behind a prefix of 1260 dwords
+pieces full: 1 splits made, the wait then satisfied 1, not satisfied 0
+pieces dry: 160 splits in 160 buffers, prefix mean 1260 dwords, build 10.8 ms in all, max 0.17 ms; the waits then: 99 kept for the GPU, 61 served on the CPU, 0 given up or broken
+pieces full: 0 splits made, the wait then satisfied 0, not satisfied 0
+pieces dry: 181 splits in 181 buffers, prefix mean 1260 dwords, build 12.3 ms in all, max 0.16 ms; the waits then: 131 kept for the GPU, 50 served on the CPU, 0 given up or broken
+pieces full: 0 splits made, the wait then satisfied 0, not satisfied 0
+pieces dry: 192 splits in 191 buffers, prefix mean 1260 dwords, build 13.4 ms in all, max 0.65 ms; the waits then: 136 kept for the GPU, 56 served on the CPU, 0 given up or broken
+pieces full: 0 splits made, the wait then satisfied 0, not satisfied 0
+pieces dry: 202 splits in 200 buffers, prefix mean 1260 dwords, build 14.4 ms in all, max 0.20 ms; the waits then: 130 kept for the GPU, 72 served on the CPU, 0 given up or broken
+pieces full: 0 splits made, the wait then satisfied 0, not satisfied 0
+pieces dry: 202 splits in 202 buffers, prefix mean 1260 dwords, build 13.8 ms in all, max 0.18 ms; the waits then: 136 kept for the GPU, 66 served on the CPU, 0 given up or broken
+pieces full: 0 splits made, the wait then satisfied 0, not satisfied 0
+pieces dry: 181 splits in 181 buffers, prefix mean 1260 dwords, build 12.1 ms in all, max 0.16 ms; the waits then: 131 kept for the GPU, 50 served on the CPU, 0 given up or broken
+pieces full: 0 splits made, the wait then satisfied 0, not satisfied 0
+pieces dry: 205 splits in 203 buffers, prefix mean 1260 dwords, build 14.0 ms in all, max 0.16 ms; the waits then: 128 kept for the GPU, 77 served on the CPU, 0 given up or broken
+pieces full: 0 splits made, the wait then satisfied 0, not satisfied 0
+pieces dry: 210 splits in 209 buffers, prefix mean 1260 dwords, build 14.5 ms in all, max 0.20 ms; the waits then: 147 kept for the GPU, 63 served on the CPU, 0 given up or broken
+pieces full: 0 splits made, the wait then satisfied 0, not satisfied 0
+pieces dry: 177 splits in 176 buffers, prefix mean 1260 dwords, build 12.2 ms in all, max 0.67 ms; the waits then: 134 kept for the GPU, 43 served on the CPU, 0 given up or broken
+pieces full: 0 splits made, the wait then satisfied 0, not satisfied 0
+pieces dry: 192 splits in 190 buffers, prefix mean 1260 dwords, build 12.4 ms in all, max 0.13 ms; the waits then: 144 kept for the GPU, 48 served on the CPU, 0 given up or broken
+== frame profile 100-175 s
+frames 1851 fps 24.68
+frame     mean    40.5 median    39.9 p90    42.2
+inside    mean    15.8 median    15.5 p90    17.0
+sync      mean     8.0 median     7.9 p90     8.2
+hints     mean     0.1 median     0.1 p90     0.2
+prepare   mean     4.3 median     4.2 p90     4.8
+list      mean     0.6 median     0.6 p90     0.7
+cs        mean     2.5 median     2.3 p90     3.1
+fence     mean     0.0 median     0.0 p90     0.0
+cap       mean     0.0 median     0.0 p90     0.0
+label     mean     0.2 median     0.1 p90     0.7
+event     mean     0.0 median     0.0 p90     0.0
+atflip    mean     0.0 median     0.0 p90     0.0
+outside   mean    24.7 median    24.3 p90    25.7
+gpu       mean    24.9 median    24.7 p90    25.8
+jobs      mean    47.1 median    47.0 p90    47.0
+ringjobs  mean    73.9 median    74.0 p90    74.0
