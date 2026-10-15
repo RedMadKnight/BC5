@@ -1,0 +1,102 @@
+== run dir kytyplus-20261015-0052 (start 00:52:29)
+t= piece: dcb 0..115 of 9891 dwords went ahead of the wait at 115 on 0x400202d40; the wait then not satisfied after 8.1 ms; rest behind a prefix of 1260 dwords
+t=11.486 piece: dcb 0..115 of 10440 dwords went ahead of the wait at 115 on 0x400202d40; the wait then satisfied after 5.3 ms; rest behind a prefix of 1261 dwords
+t=11.736 piece: dcb 0..115 of 10440 dwords went ahead of the wait at 115 on 0x400202d40; the wait then not satisfied after 8.1 ms; rest behind a prefix of 1261 dwords
+t=12.003 piece: dcb 0..115 of 10440 dwords went ahead of the wait at 115 on 0x400203940; the wait then satisfied after 1.1 ms; rest behind a prefix of 1261 dwords
+t=12.265 piece: dcb 0..115 of 10440 dwords went ahead of the wait at 115 on 0x400203940; the wait then satisfied after 7.6 ms; rest behind a prefix of 1261 dwords
+t=15.276 piece: dcb 0..115 of 10440 dwords went ahead of the wait at 115 on 0x400201d40; the wait then not satisfied after 8.1 ms; rest behind a prefix of 1261 dwords
+t=18.301 piece: dcb 0..115 of 10440 dwords went ahead of the wait at 115 on 0x400202d40; the wait then satisfied after 7.5 ms; rest behind a prefix of 1261 dwords
+t=27.868 piece: dcb 0..115 of 25490 dwords went ahead of the wait at 115 on 0x400202d40; the wait then satisfied after 1.9 ms; rest behind a prefix of 1261 dwords
+t=34.886 piece: dcb 0..115 of 27046 dwords went ahead of the wait at 115 on 0x400202d40; the wait then not satisfied after 8.1 ms; rest behind a prefix of 1261 dwords
+== run dir kytyplus-20261015-0113 (start 01:13:41)
+t=11.971 piece: dcb 0..115 of 10440 dwords went ahead of the wait at 115 on 0x400203940; the wait then satisfied after 5.8 ms; rest behind a prefix of 1261 dwords
+t=35.663 piece: dcb 0..115 of 26655 dwords went ahead of the wait at 115 on 0x400202d40; the wait then not satisfied after 8.1 ms; rest behind a prefix of 1261 dwords
+== run dir kytyplus-20261015-0116 (start 01:16:46)
+t= piece: dcb 0..115 of 9891 dwords went ahead of the wait at 115 on 0x400202d40; the wait then not satisfied after 8.0 ms; rest behind a prefix of 1260 dwords
+t=9.714 piece: dcb 0..115 of 10440 dwords went ahead of the wait at 115 on 0x400201d40; the wait then not satisfied after 8.1 ms; rest behind a prefix of 1261 dwords
+t=10.459 piece: dcb 0..115 of 10440 dwords went ahead of the wait at 115 on 0x400201d40; the wait then satisfied after 1.3 ms; rest behind a prefix of 1261 dwords
+t=10.969 piece: dcb 0..115 of 10440 dwords went ahead of the wait at 115 on 0x400201d40; the wait then satisfied after 1.0 ms; rest behind a prefix of 1261 dwords
+t=11.980 piece: dcb 0..115 of 10440 dwords went ahead of the wait at 115 on 0x400202d40; the wait then not satisfied after 8.0 ms; rest behind a prefix of 1261 dwords
+t=27.330 piece: dcb 0..115 of 25792 dwords went ahead of the wait at 115 on 0x400201d40; the wait then satisfied after 3.6 ms; rest behind a prefix of 1261 dwords
+t=30.870 piece: dcb 0..115 of 28626 dwords went ahead of the wait at 115 on 0x400201d40; the wait then satisfied after 3.9 ms; rest behind a prefix of 1261 dwords
+t=31.379 piece: dcb 0..115 of 28596 dwords went ahead of the wait at 115 on 0x400202d40; the wait then satisfied after 8.0 ms; rest behind a prefix of 1261 dwords
+t=34.403 piece: dcb 0..115 of 26720 dwords went ahead of the wait at 115 on 0x400201d40; the wait then satisfied after 3.4 ms; rest behind a prefix of 1261 dwords
+== run dir kytyplus-20261015-0135 (start 01:35:13)
+t= piece: dcb 0..115 of 9891 dwords went ahead of the wait at 115 on 0x400202d40; the wait then not satisfied after 8.0 ms; rest behind a prefix of 1260 dwords
+t=11.538 piece: dcb 0..115 of 10440 dwords went ahead of the wait at 115 on 0x400202d40; the wait then satisfied after 7.3 ms; rest behind a prefix of 1261 dwords
+t=11.783 piece: dcb 0..115 of 10440 dwords went ahead of the wait at 115 on 0x400202d40; the wait then satisfied after 3.7 ms; rest behind a prefix of 1261 dwords
+t=31.687 piece: dcb 0..115 of 29045 dwords went ahead of the wait at 115 on 0x400202d40; the wait then satisfied after 8.1 ms; rest behind a prefix of 1261 dwords
+== run dir kytyplus-20261015-0301 (start 03:01:42)
+t=10.231 piece: dcb 0..115 of 10440 dwords went ahead of the wait at 115 on 0x400202d40; the wait then satisfied after 1.9 ms; rest behind a prefix of 1261 dwords
+t=11.264 piece: dcb 0..115 of 10440 dwords went ahead of the wait at 115 on 0x400203940; the wait then satisfied after 4.6 ms; rest behind a prefix of 1261 dwords
+t=25.738 piece: dcb 0..115 of 10440 dwords went ahead of the wait at 115 on 0x400202d40; the wait then not satisfied after 8.1 ms; rest behind a prefix of 1261 dwords
+t=39.447 piece: dcb 0..115 of 24336 dwords went ahead of the wait at 115 on 0x400202d40; the wait then satisfied after 1.1 ms; rest behind a prefix of 1261 dwords
+t=39.485 piece: dcb 0..115 of 24194 dwords went ahead of the wait at 115 on 0x400201d40; the wait then satisfied after 0.0 ms; rest behind a prefix of 1261 dwords
+t=39.652 piece: dcb 0..115 of 24141 dwords went ahead of the wait at 115 on 0x400202d40; the wait then satisfied after 1.9 ms; rest behind a prefix of 1261 dwords
+t=39.892 piece: dcb 0..115 of 24143 dwords went ahead of the wait at 115 on 0x400201d40; the wait then satisfied after 0.5 ms; rest behind a prefix of 1261 dwords
+t=43.148 piece: dcb 0..115 of 24943 dwords went ahead of the wait at 115 on 0x400203940; the wait then not satisfied after 8.0 ms; rest behind a prefix of 1261 dwords
+t=46.510 piece: dcb 0..115 of 28660 dwords went ahead of the wait at 115 on 0x400202d40; the wait then satisfied after 0.2 ms; rest behind a prefix of 1261 dwords
+t=47.160 piece: dcb 0..115 of 29099 dwords went ahead of the wait at 115 on 0x400202d40; the wait then satisfied after 0.6 ms; rest behind a prefix of 1261 dwords
+t=47.347 piece: dcb 0..115 of 29029 dwords went ahead of the wait at 115 on 0x400202d40; the wait then satisfied after 0.0 ms; rest behind a prefix of 1261 dwords
+t=47.363 piece: dcb 0..115 of 29029 dwords went ahead of the wait at 115 on 0x400203940; the wait then satisfied after 0.9 ms; rest behind a prefix of 1261 dwords
+t=51.154 piece: dcb 0..115 of 27673 dwords went ahead of the wait at 115 on 0x400203940; the wait then satisfied after 0.3 ms; rest behind a prefix of 1261 dwords
+t=73.785 piece: dcb 0..115 of 28359 dwords went ahead of the wait at 115 on 0x400202d40; the wait then satisfied after 0.4 ms; rest behind a prefix of 1261 dwords
+t=92.754 piece: dcb 0..115 of 26813 dwords went ahead of the wait at 115 on 0x400203940; the wait then not satisfied after 8.0 ms; rest behind a prefix of 1261 dwords
+t=94.762 piece: dcb 0..115 of 25999 dwords went ahead of the wait at 115 on 0x400203940; the wait then satisfied after 5.2 ms; rest behind a prefix of 1261 dwords
+t=95.747 piece: dcb 0..115 of 25127 dwords went ahead of the wait at 115 on 0x400203940; the wait then not satisfied after 8.0 ms; rest behind a prefix of 1261 dwords
+== run dir kytyplus-20261015-0859 (start 08:59:11)
+t= piece: dcb 0..115 of 9891 dwords went ahead of the wait at 115 on 0x400202d40; the wait then not satisfied after 8.0 ms; rest behind a prefix of 1260 dwords
+t=10.939 piece: dcb 0..115 of 10440 dwords went ahead of the wait at 115 on 0x400201d40; the wait then satisfied after 3.2 ms; rest behind a prefix of 1261 dwords
+t=12.195 piece: dcb 0..115 of 10440 dwords went ahead of the wait at 115 on 0x400202d40; the wait then satisfied after 6.1 ms; rest behind a prefix of 1261 dwords
+t=17.707 piece: dcb 0..115 of 10440 dwords went ahead of the wait at 115 on 0x400203940; the wait then not satisfied after 8.1 ms; rest behind a prefix of 1261 dwords
+t=17.736 piece: dcb 0..115 of 10440 dwords went ahead of the wait at 115 on 0x400201d40; the wait then satisfied after 0.9 ms; rest behind a prefix of 1261 dwords
+t=34.336 piece: dcb 0..115 of 27139 dwords went ahead of the wait at 115 on 0x400201d40; the wait then satisfied after 3.0 ms; rest behind a prefix of 1261 dwords
+t=37.341 piece: dcb 0..115 of 25537 dwords went ahead of the wait at 115 on 0x400202d40; the wait then not satisfied after 8.0 ms; rest behind a prefix of 1261 dwords
+== run dir kytyplus-20261015-0902 (start 09:02:05)
+t= piece: dcb 0..115 of 9891 dwords went ahead of the wait at 115 on 0x400202d40; the wait then not satisfied after 8.0 ms; rest behind a prefix of 1260 dwords
+t=9.710 piece: dcb 0..115 of 10440 dwords went ahead of the wait at 115 on 0x400203940; the wait then satisfied after 2.2 ms; rest behind a prefix of 1261 dwords
+t=11.974 piece: dcb 0..115 of 10440 dwords went ahead of the wait at 115 on 0x400201d40; the wait then satisfied after 8.1 ms; rest behind a prefix of 1261 dwords
+t=14.490 piece: dcb 0..115 of 10440 dwords went ahead of the wait at 115 on 0x400202d40; the wait then not satisfied after 8.0 ms; rest behind a prefix of 1261 dwords
+t=14.516 piece: dcb 0..115 of 10440 dwords went ahead of the wait at 115 on 0x400203940; the wait then satisfied after 1.3 ms; rest behind a prefix of 1261 dwords
+t=17.527 piece: dcb 0..115 of 10440 dwords went ahead of the wait at 115 on 0x400201d40; the wait then satisfied after 4.5 ms; rest behind a prefix of 1261 dwords
+t=28.128 piece: dcb 0..115 of 25745 dwords went ahead of the wait at 115 on 0x400203940; the wait then satisfied after 5.5 ms; rest behind a prefix of 1261 dwords
+t=28.608 piece: dcb 0..115 of 26342 dwords went ahead of the wait at 115 on 0x400203940; the wait then not satisfied after 8.1 ms; rest behind a prefix of 1261 dwords
+t=34.407 piece: dcb 0..115 of 27290 dwords went ahead of the wait at 115 on 0x400202d40; the wait then satisfied after 6.3 ms; rest behind a prefix of 1261 dwords
+t=48.943 piece: dcb 0..115 of 27218 dwords went ahead of the wait at 115 on 0x400201d40; the wait then not satisfied after 8.1 ms; rest behind a prefix of 1261 dwords
+t=48.943 piece: dcb 115..2266 of 27218 dwords went ahead of the wait at 2266 on 0x400201840; the wait then not satisfied after 8.1 ms; rest behind a prefix of 1261 dwords
+t=49.085 piece: dcb 0..115 of 27074 dwords went ahead of the wait at 115 on 0x400202d40; the wait then not satisfied after 8.1 ms; rest behind a prefix of 1261 dwords
+t=49.085 piece: dcb 115..2266 of 27074 dwords went ahead of the wait at 2266 on 0x400202dc0; the wait then not satisfied after 8.1 ms; rest behind a prefix of 1261 dwords
+== run dir kytyplus-20261015-0922 (start 09:22:06)
+t= piece: dcb 0..115 of 9891 dwords went ahead of the wait at 115 on 0x400202d40; the wait then satisfied after 1.4 ms; rest behind a prefix of 1260 dwords
+t=11.963 piece: dcb 0..115 of 10440 dwords went ahead of the wait at 115 on 0x400202d40; the wait then satisfied after 5.8 ms; rest behind a prefix of 1261 dwords
+t=11.983 piece: dcb 0..115 of 10440 dwords went ahead of the wait at 115 on 0x400203940; the wait then not satisfied after 8.0 ms; rest behind a prefix of 1261 dwords
+t=26.328 piece: dcb 0..115 of 10440 dwords went ahead of the wait at 115 on 0x400201d40; the wait then not satisfied after 8.1 ms; rest behind a prefix of 1261 dwords
+t=45.499 piece: dcb 0..115 of 27311 dwords went ahead of the wait at 115 on 0x400203940; the wait then not satisfied after 8.0 ms; rest behind a prefix of 1261 dwords
+t=47.277 piece: dcb 0..115 of 28797 dwords went ahead of the wait at 115 on 0x400201d40; the wait then satisfied after 4.6 ms; rest behind a prefix of 1261 dwords
+t=50.041 piece: dcb 0..115 of 26837 dwords went ahead of the wait at 115 on 0x400202d40; the wait then satisfied after 0.8 ms; rest behind a prefix of 1261 dwords
+t=50.281 piece: dcb 0..115 of 26613 dwords went ahead of the wait at 115 on 0x400202d40; the wait then not satisfied after 8.0 ms; rest behind a prefix of 1261 dwords
+t=50.308 piece: dcb 0..115 of 26685 dwords went ahead of the wait at 115 on 0x400203940; the wait then satisfied after 0.1 ms; rest behind a prefix of 1261 dwords
+== run dir kytyplus-20261015-0924 (start 09:24:05)
+t= piece: dcb 0..115 of 9891 dwords went ahead of the wait at 115 on 0x400202d40; the wait then not satisfied after 8.1 ms; rest behind a prefix of 1260 dwords
+t=17.312 piece: dcb 0..115 of 10440 dwords went ahead of the wait at 115 on 0x400203940; the wait then not satisfied after 8.1 ms; rest behind a prefix of 1261 dwords
+t=30.135 piece: dcb 0..115 of 27404 dwords went ahead of the wait at 115 on 0x400203940; the wait then satisfied after 6.1 ms; rest behind a prefix of 1261 dwords
+== run dir kytyplus-20261015-1001 (start 10:01:05)
+t= piece: dcb 0..115 of 9891 dwords went ahead of the wait at 115 on 0x400202d40; the wait then not satisfied after 8.1 ms; rest behind a prefix of 1260 dwords
+t=10.968 piece: dcb 0..115 of 10440 dwords went ahead of the wait at 115 on 0x400201d40; the wait then not satisfied after 8.0 ms; rest behind a prefix of 1261 dwords
+t=11.473 piece: dcb 0..115 of 10440 dwords went ahead of the wait at 115 on 0x400202d40; the wait then not satisfied after 8.1 ms; rest behind a prefix of 1261 dwords
+t=12.224 piece: dcb 0..115 of 10440 dwords went ahead of the wait at 115 on 0x400202d40; the wait then satisfied after 2.6 ms; rest behind a prefix of 1261 dwords
+t=27.555 piece: dcb 0..115 of 25554 dwords went ahead of the wait at 115 on 0x400202d40; the wait then not satisfied after 8.0 ms; rest behind a prefix of 1261 dwords
+t=30.848 piece: dcb 0..115 of 28103 dwords went ahead of the wait at 115 on 0x400201d40; the wait then not satisfied after 8.1 ms; rest behind a prefix of 1261 dwords
+t=31.341 piece: dcb 0..115 of 28736 dwords went ahead of the wait at 115 on 0x400201d40; the wait then satisfied after 0.0 ms; rest behind a prefix of 1261 dwords
+== run dir kytyplus-20261015-1028 (start 10:28:05)
+t=10.972 piece: dcb 0..115 of 10440 dwords went ahead of the wait at 115 on 0x400201d40; the wait then satisfied after 2.7 ms; rest behind a prefix of 1261 dwords
+t=11.488 piece: dcb 0..115 of 10440 dwords went ahead of the wait at 115 on 0x400202d40; the wait then satisfied after 0.1 ms; rest behind a prefix of 1261 dwords
+t=24.522 piece: dcb 0..115 of 24212 dwords went ahead of the wait at 115 on 0x400201d40; the wait then satisfied after 0.3 ms; rest behind a prefix of 1261 dwords
+t=24.539 piece: dcb 0..115 of 24280 dwords went ahead of the wait at 115 on 0x400202d40; the wait then satisfied after 1.2 ms; rest behind a prefix of 1261 dwords
+t=24.557 piece: dcb 0..115 of 24212 dwords went ahead of the wait at 115 on 0x400203940; the wait then satisfied after 1.2 ms; rest behind a prefix of 1261 dwords
+t=24.594 piece: dcb 0..115 of 24138 dwords went ahead of the wait at 115 on 0x400202d40; the wait then satisfied after 0.5 ms; rest behind a prefix of 1261 dwords
+t=24.612 piece: dcb 0..115 of 24138 dwords went ahead of the wait at 115 on 0x400203940; the wait then satisfied after 0.2 ms; rest behind a prefix of 1261 dwords
+t=24.789 piece: dcb 0..115 of 24278 dwords went ahead of the wait at 115 on 0x400201d40; the wait then satisfied after 1.1 ms; rest behind a prefix of 1261 dwords
+t=24.808 piece: dcb 0..115 of 24208 dwords went ahead of the wait at 115 on 0x400202d40; the wait then satisfied after 1.4 ms; rest behind a prefix of 1261 dwords
+t=24.844 piece: dcb 0..115 of 24231 dwords went ahead of the wait at 115 on 0x400201d40; the wait then satisfied after 1.2 ms; rest behind a prefix of 1261 dwords
+t=24.864 piece: dcb 0..115 of 24140 dwords went ahead of the wait at 115 on 0x400202d40; the wait then not satisfied after 8.1 ms; rest behind a prefix of 1261 dwords
