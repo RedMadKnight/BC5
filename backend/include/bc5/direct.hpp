@@ -18,6 +18,9 @@
 namespace bc5::direct {
 
 struct SubmitResult {
+    // FilterOptions::job_timestamps (experiment 0124): GPU clock at the job's start and end, 0 if none.
+    std::uint64_t gpu_start = 0;
+    std::uint64_t gpu_end = 0;
     bool ok = false;
     int rc = 0;            // libdrm / ioctl return code when not ok
     bool timed_out = false; // fence did not signal within the timeout

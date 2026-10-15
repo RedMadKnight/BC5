@@ -143,6 +143,14 @@ struct Device::Impl {
     // IB it carried, a few hundred KiB.
     static constexpr int kSlots = 64;
     ScratchBo slots[kSlots];
+    std::uint32_t ts_off[kSlots] = {}; // experiment 0124: dword offset of the job's timestamps, 0 = none
+    // The two timestamps of the slot's last job (FilterOptions::job_timestamps).
+    void read_job_ts(std::uint32_t slot, SubmitResult &r) const {
+        if (slot >= static_cast<std::uint32_t>(kSlots) || ts_off[slot] == 0 || slots[slot].cpu == nullptr) return;
+        const auto *t = reinterpret_cast<const volatile std::uint64_t *>(static_cast<const std::uint32_t *>(slots[slot].cpu) + ts_off[slot]);
+        r.gpu_start = t[0];
+        r.gpu_end = t[1];
+    }
     // Experiment 0122 (FilterOptions::dma_snapshot_min): one ring of copies of the jobs' DMA_DATA
     // sources, 128 MiB above the scratch, allocated on first use. A copy never overwrites the copies
     // of a job still in flight (snap_spans: each job's ranges with its slot and sequence number);
@@ -751,9 +759,20 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     // into what lies past a buffer (experiment 0016). The nested copies let the filter see the
     // console's compute rings, which are rings of INDIRECT_BUFFER packets (step e).
     std::vector<Piece> pieces;
-    const std::size_t pro = opt.prologue.size();
+    // Experiment 0124: the job's own timestamps, at the end of the prologue and of the epilogue; their
+    // address is filled in once the slot is known.
+    std::vector<std::uint32_t> pro_v = opt.prologue;
+    std::vector<std::uint32_t> epi_v = opt.epilogue;
+    std::size_t ts_at_pro = 0, ts_at_epi = 0;
+    if (opt.job_timestamps) {
+        ts_at_pro = pro_v.size();
+        pro_v.insert(pro_v.end(), {0xC0044000u, 9u | (5u << 8) | (1u << 16) | (1u << 20), 0u, 0u, 0u, 0u});
+        ts_at_epi = epi_v.size();
+        epi_v.insert(epi_v.end(), {0xC0064900u, 0x28u | (5u << 8), 3u << 29, 0u, 0u, 0u, 0u, 0u});
+    }
+    const std::size_t pro = pro_v.size();
     const std::size_t pro_padded = (pro + 7) & ~std::size_t{7};
-    const std::size_t epi = opt.epilogue.size();
+    const std::size_t epi = epi_v.size();
     // The IB itself is filtered into a vector first: the state-stack emulation may grow it
     // (a CLEAR_STATE pop becomes the SET_CONTEXT_REG packets of the saved context), and the
     // nested copies are laid out behind what will actually be executed.
@@ -903,7 +922,13 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     }
     const Piece &last = pieces.back();
     const std::size_t flag_off = last.off + last.padded; // experiment 0052: 8 dwords
-    const std::uint64_t bytes = (flag_off + (flag_refs.empty() ? 0 : 8)) * sizeof(std::uint32_t);
+    std::size_t end_off = flag_off + (flag_refs.empty() ? 0 : 8);
+    std::size_t ts_dw = 0;
+    if (opt.job_timestamps) { // experiment 0124: start and end, 8-byte aligned
+        ts_dw = (end_off + 1) & ~std::size_t{1};
+        end_off = ts_dw + 4;
+    }
+    const std::uint64_t bytes = end_off * sizeof(std::uint32_t);
     r.prep_nested_ms = now_ms() - t_phase; // the survey; the nested filters are added below
     t_phase = now_ms();
     if (!impl_->scratch_reserve(bytes)) {
@@ -916,7 +941,16 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
         indirect_check::patch(main_out, flag_refs, impl_->slots[impl_->cur].va + flag_off * 4);
         for (std::size_t i = 0; i < 8; ++i) dst[flag_off + i] = 0;
     }
-    for (std::size_t i = 0; i < pro; ++i) dst[i] = opt.prologue[i];
+    impl_->ts_off[impl_->cur] = static_cast<std::uint32_t>(ts_dw);
+    if (opt.job_timestamps) {
+        const std::uint64_t ts_va = impl_->slots[impl_->cur].va + ts_dw * 4;
+        pro_v[ts_at_pro + 4] = static_cast<std::uint32_t>(ts_va);
+        pro_v[ts_at_pro + 5] = static_cast<std::uint32_t>(ts_va >> 32);
+        epi_v[ts_at_epi + 3] = static_cast<std::uint32_t>(ts_va + 8);
+        epi_v[ts_at_epi + 4] = static_cast<std::uint32_t>((ts_va + 8) >> 32);
+        for (std::size_t i = 0; i < 4; ++i) dst[ts_dw + i] = 0;
+    }
+    for (std::size_t i = 0; i < pro; ++i) dst[i] = pro_v[i];
     for (std::size_t i = pro; i < pro_padded; ++i) dst[i] = policy::kNop;
     for (std::size_t k = 0; k < pieces.size(); ++k) {
         const Piece &pc = pieces[k];
@@ -927,7 +961,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
         if (k == 0) { // filtered above; the epilogue sits between the IB and its padding
             for (std::size_t i = 0; i < main_n; ++i) dst[pc.off + i] = main_out[i];
             for (std::size_t i = main_n; i < pc.padded; ++i) dst[pc.off + i] = policy::kNop;
-            for (std::size_t i = 0; i < epi; ++i) dst[pc.off + main_n + i] = opt.epilogue[i];
+            for (std::size_t i = 0; i < epi; ++i) dst[pc.off + main_n + i] = epi_v[i];
             continue;
         }
         // nested IBs: no statistics samples (their slots belong to the main IB)
@@ -1167,6 +1201,7 @@ SubmitResult Device::finish(std::uint64_t seq_no, std::uint32_t slot, std::uint6
     }
     r.fence_ms = now_ms() - t0;
     r.ok = r.rc == 0 && expired != 0;
+    if (r.ok) impl_->read_job_ts(slot, r); // experiment 0124, before the slot is given back
     if (r.ok && slot < static_cast<std::uint32_t>(Impl::kSlots)) impl_->slot_seq[slot] = 0;
     return r;
 }

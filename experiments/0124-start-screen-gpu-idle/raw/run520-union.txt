@@ -1,0 +1,8 @@
+/home/kjaniszewski/bc5-data/captures/pkg-20261015-1934 timeouts=0 fps 165-180: frames 469 fps 31.27
+53982 jobs over 14970.1 ms: GPU had work 10850.0 ms (72.5 %), idle 4120.1 ms in 46037 holes
+  holes: median 13.6 us, p90 254.1 us, p99 942.2 us; under 50 us 30421, 50-500 us 14196, over 500 us 1420 (1373.6 ms)
+  acb: 31892 jobs, summed start-to-end 8291.6 ms (mean 260.0 us)
+  dcb: 20683 jobs, summed start-to-end 6165.0 ms (mean 298.1 us)
+  hib: 938 jobs, summed start-to-end 0.8 ms (mean 0.9 us)
+  cc: 469 jobs, summed start-to-end 0.3 ms (mean 0.6 us)
+

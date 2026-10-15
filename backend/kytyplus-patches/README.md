@@ -396,6 +396,11 @@ Experiment 0083: `BC5_DIRECT_SOFTCP_POST_IB=1` runs the soft CP of an IB-packet 
 completion thread after its job (EOP events and dropped packets' writes once the GPU is done).
 Experiment 0084: the driver's wait-idle and submit-done ioctls are counted in the journal (draining
 the jobs in flight there changed nothing, F144; the knob was removed in cleanup batch 1).
+Experiment 0124: `BC5_DIRECT_JOB_TS=1` has the backend timestamp each job's start and end on the
+GPU clock (`FilterOptions::job_timestamps`; `COPY_DATA` and `RELEASE_MEM` as Mesa's `sid.h` defines
+them) and journals the GPU's busy and idle time every second (`job ts:`); `=<t0>:<t1>` journals
+every job's interval in that window instead (`jt` lines, for `experiments/0124-*/jtunion.py`).
+`BC5_DIRECT_TS_LOG` now collects the title's own timestamps without a timestamp scale too.
 Experiments 0087 and 0122:
 `BC5_DIRECT_DMA_SNAPSHOT=<min bytes>` (experiment 0122; 0087's ring in guest memory could not be
 mapped) has the backend copy the source of every `DMA_DATA` of a graphics buffer reading that many

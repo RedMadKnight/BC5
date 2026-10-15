@@ -1,0 +1,39 @@
+run 517 frame profile, start screen t 130-230 s, means per frame:
+frames 3155
+  prepare 3.26 ms
+  cap 7.80 ms
+  fence 0.00 ms
+  event waits 0.00 ms
+  outside 11.75 ms
+  at the flip 2.94 ms
+  hints 0.16 ms
+  cs 2.90 ms
+  inside the host 17.00 ms
+  list 0.59 ms
+  GPU busy 23.98 ms
+  sync 0.56 ms
+  label waits 1.72 ms
+
+run 518 render targets on the start screen (pkt stats, t > 170 s):
+     49 CB0 1x1
+     21 CB0 2560x1440
+     20 CB0 256x256
+     18 CB0 832x468
+     18 CB0 1664x936
+     12 CB0 512x512
+      6 CB0 960x540
+      6 CB0 480x270
+
+run 518 GPU time charged to buffers by the title s own timestamps (tsprof.py):
+29083 timestamps, 25594.7 ms of GPU time charged, 912 frames
+per frame: 28.06 ms
+         acb 335:   3.37 ms/frame  (  1.0 gaps/frame)
+         dcb 199:   2.43 ms/frame  (  1.1 gaps/frame)
+         acb 720:   2.24 ms/frame  (  1.0 gaps/frame)
+         acb 504:   2.21 ms/frame  (  1.0 gaps/frame)
+         acb 402:   2.18 ms/frame  (  1.0 gaps/frame)
+        acb 7457:   1.94 ms/frame  (  0.9 gaps/frame)
+        dcb 4984:   1.89 ms/frame  (  4.9 gaps/frame)
+         dcb 957:   1.75 ms/frame  (  1.0 gaps/frame)
+        dcb 7016:   1.52 ms/frame  (  1.0 gaps/frame)
+       acb 22710:   1.19 ms/frame  (  0.5 gaps/frame)

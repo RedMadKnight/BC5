@@ -4391,10 +4391,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..f960592
+index 0000000..fc277ce
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,6264 @@
+@@ -0,0 +1,6310 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -8333,6 +8333,48 @@ index 0000000..f960592
 +				umr_watchdog_start(); // experiment 0058
 +				g_fence_wait_since = j.queued_ns != 0 ? j.queued_ns : SoftCp::now_ns(); // from the job's submission: the kernel resets ~2 s after it hangs
 +				if (g_dev) r = g_dev->finish(j.seq, j.slot, 2'000'000'000ull);
++				// Experiment 0124: the GPU's time line from the jobs' own timestamps (100 MHz clock):
++				// busy (start to end of each job) and the idle gaps between one job's end and the
++				// next one's start, journaled for every second of GPU time.
++				// BC5_DIRECT_JOB_TS=<t0>:<t1> also journals every job's interval in that window (offline union).
++				static const std::pair<double, double> jt_win = [] {
++					std::pair<double, double> w {-1.0, -1.0};
++					if (const char* e = std::getenv("BC5_DIRECT_JOB_TS"); e != nullptr && std::strchr(e, ':') != nullptr) {
++						char* end = nullptr;
++						w.first   = std::strtod(e, &end);
++						w.second  = std::strtod(end + 1, nullptr);
++					}
++					return w;
++				}();
++				if (r.ok && r.gpu_start != 0 && jt_win.first >= 0 && timing_now() >= jt_win.first && timing_now() < jt_win.second) {
++					journal("jt %" PRIu64 " %" PRIu64 " %s %u\n", r.gpu_start, r.gpu_end, j.kind, j.num_dwords);
++				}
++				if (r.ok && r.gpu_start != 0 && r.gpu_end > r.gpu_start) {
++					static uint64_t prev_end = 0, win0 = 0, busy = 0, idle = 0, jobs = 0, gaps = 0, overlaps = 0, big = 0, big_t = 0;
++					if (win0 == 0) win0 = r.gpu_start;
++					busy += r.gpu_end - r.gpu_start;
++					jobs++;
++					if (prev_end != 0 && r.gpu_start >= prev_end) {
++						const uint64_t g = r.gpu_start - prev_end;
++						if (g < 5'000'000ull) {
++							idle += g;
++							gaps++;
++							if (g >= 100'000ull) { // 1 ms or more: the GPU waited for the host
++								big++;
++								big_t += g;
++							}
++						}
++					} else if (prev_end != 0) {
++						overlaps++;
++					}
++					if (r.gpu_end > prev_end) prev_end = r.gpu_end;
++					if (r.gpu_end - win0 >= 100'000'000ull) {
++						journal("job ts: %" PRIu64 " jobs in %.1f ms of GPU time line: busy %.1f ms, idle between jobs %.1f ms in %" PRIu64 " gaps (mean %.1f us; %" PRIu64 " of 1 ms or more, %.1f ms), %" PRIu64 " out of order\n",
++						        jobs, static_cast<double>(r.gpu_end - win0) / 1e5, static_cast<double>(busy) / 1e5, static_cast<double>(idle) / 1e5, gaps,
++						        gaps != 0 ? static_cast<double>(idle) / 1e2 / static_cast<double>(gaps) : 0.0, big, static_cast<double>(big_t) / 1e5, overlaps);
++						win0 = busy = idle = jobs = gaps = overlaps = big = big_t = 0;
++					}
++				}
 +				g_fence_wait_since = 0;
 +			} else {
 +				r.rc = -125; // -ECANCELED: the device it was queued on is gone
@@ -8349,8 +8391,7 @@ index 0000000..f960592
 +				        j.short_list ? " (short list)" : "");
 +			}
 +			// Experiment 0105: BC5_DIRECT_TS_LOG=<t0> journals the raw GPU timestamps a job's buffer wrote
-+			// (its own RELEASE_MEM / EVENT_WRITE_EOP with DATA_SEL 3; needs a timestamp scale other than 1
-+			// for the collection), from t0 s on, at most 20000 jobs: where a frame's GPU time goes, read
++			// (its own RELEASE_MEM / EVENT_WRITE_EOP with DATA_SEL 3), from t0 s on, at most 20000 jobs: where a frame's GPU time goes, read
 +			// from the title's own profiling points.
 +			{
 +				static const double ts_log_t0 = std::getenv("BC5_DIRECT_TS_LOG") != nullptr ? std::strtod(std::getenv("BC5_DIRECT_TS_LOG"), nullptr) : -1.0;
@@ -9084,6 +9125,10 @@ index 0000000..f960592
 +		// before it is written.
 +		opt.dma_snapshot_min = std::strcmp(kind, "dcb") == 0 ? snap_min : 0u;
 +	}
++	// Experiment 0124: BC5_DIRECT_JOB_TS=1, a GPU timestamp at each job's start and end
++	// (FilterOptions::job_timestamps); the completion thread journals busy and idle GPU time.
++	static const bool job_ts = std::getenv("BC5_DIRECT_JOB_TS") != nullptr;
++	opt.job_timestamps = job_ts;
 +	static const std::vector<uint8_t> extra = [] {
 +		std::vector<uint8_t> v;
 +		if (const char* e = std::getenv("BC5_DIRECT_DROP_OPS"); e != nullptr) {
@@ -9673,7 +9718,8 @@ index 0000000..f960592
 +		it.job.t2_ns      = t2;
 +		it.job.queued_ns  = SoftCp::now_ns();
 +		it.job.dev_gen    = g_dev_gen.load();
-+		if (ts_scale() != 1.0) ts_collect(ib, num_dwords, &it.job.ts_addrs);
++		static const bool ts_log_on = std::getenv("BC5_DIRECT_TS_LOG") != nullptr; // also without a scale
++		if (ts_scale() != 1.0 || ts_log_on) ts_collect(ib, num_dwords, &it.job.ts_addrs);
 +		frame_profile_job(t_cq == 0, r.prepare_ms, r.list_ms, r.cs_ms);
 +		frame_profile_prep(t_cq == 0, r.prep_filter_ms, r.prep_tracker_ms, r.prep_cu_ms, r.prep_nested_ms, r.prep_copy_ms);
 +		{
