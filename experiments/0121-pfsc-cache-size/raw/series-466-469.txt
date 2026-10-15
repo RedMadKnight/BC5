@@ -1,0 +1,14 @@
+run 466 cache 256 MiB /home/kjaniszewski/bc5-data/captures/kytyplus-20261015-1303 faults=0 timeouts=0 frames 1499 fps 59.96 min MemAvailable 4531 MiB
+  2000 MiB at 9.0 s, 4000 MiB at 28.0 s
+bc5-mount stats 29.0 s: served 4477 MiB (+182), decoded 88759 blocks 5547 MiB (+164), 9692 decoded again, from disk 0 blocks 0 MiB (+0)
+run 467 cache 1024 MiB /home/kjaniszewski/bc5-data/captures/kytyplus-20261015-1305 faults=0 timeouts=0 frames 1499 fps 59.96 min MemAvailable 3683 MiB
+  2000 MiB at 9.0 s, 4000 MiB at 28.0 s
+bc5-mount stats 29.0 s: served 4504 MiB (+414), decoded 79573 blocks 4973 MiB (+374), 532 decoded again, from disk 0 blocks 0 MiB (+0)
+run 468 cache 2048 MiB /home/kjaniszewski/bc5-data/captures/kytyplus-20261015-1307 faults=0 timeouts=0 frames 1499 fps 59.96 min MemAvailable 2700 MiB
+  2000 MiB at 9.0 s, 4000 MiB at 29.0 s
+bc5-mount stats 30.0 s: served 4627 MiB (+273), decoded 79365 blocks 4960 MiB (+237), 346 decoded again, from disk 0 blocks 0 MiB (+0)
+run 469 cache 1024 MiB /home/kjaniszewski/bc5-data/captures/kytyplus-20261015-1309 faults=0 timeouts=0 frames 1499 fps 59.96 min MemAvailable 3689 MiB
+  2000 MiB at 9.0 s, 4000 MiB at 28.0 s
+bc5-mount stats 29.0 s: served 4501 MiB (+417), decoded 79425 blocks 4964 MiB (+322), 384 decoded again, from disk 0 blocks 0 MiB (+0)
+series done
+

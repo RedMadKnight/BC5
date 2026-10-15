@@ -33,8 +33,12 @@ pub const MAX_BLOCKS: u64 = 1 << 24;
 /// evicted before their read arrived and inflated again (experiment 0114:
 /// 7495 MiB inflated for 5582 MiB served). With 24 files read in parallel
 /// through the mount, 16 MiB inflated ~6000 blocks again, 64 MiB ~300 and
-/// 256 MiB 3 (experiment 0116); 256 MiB is under 2 % of the box's memory.
-const CACHE_MIB: usize = 256;
+/// 256 MiB 3 (experiment 0116). In the game itself 256 MiB still inflated
+/// ~11 % of blocks again in the first 30 s and 61 % over a 1000 s session;
+/// 1024 MiB cut the first to ~0.6 %, 2048 MiB gained little more and left
+/// 1 GiB less free memory at the low point (experiment 0121: 3.7 GB free
+/// with 1024 MiB, 2.7 GB with 2048 MiB).
+const CACHE_MIB: usize = 1024;
 
 /// The fixed PFSC header.
 #[derive(Debug, Clone, PartialEq, Eq)]
