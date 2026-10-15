@@ -325,7 +325,10 @@ impl<T: FileTree + 'static> Filesystem for Bc5Fs<T> {
         self.pool.run(Box::new(move || {
             let mut buf = vec![0u8; want];
             match tree.read_file_at(idx, offset, &mut buf) {
-                Ok(n) => reply.data(&buf[..n]),
+                Ok(n) => {
+                    crate::stats::served(n as u64);
+                    reply.data(&buf[..n]);
+                }
                 Err(err) => {
                     eprintln!("bc5-mount: read {path}: {err}");
                     reply.error(EIO);
@@ -430,5 +433,44 @@ pub fn mount<T: FileTree + 'static>(
     if allow_other {
         options.push(MountOption::AllowOther);
     }
+    report_stats();
     fuser::mount2(fs, mountpoint, &options)
+}
+
+/// With `BC5_MOUNT_STATS=<seconds>`, prints the read and decode counters at that
+/// interval on stderr, while they change (experiment 0112).
+fn report_stats() {
+    let Some(every) = std::env::var("BC5_MOUNT_STATS")
+        .ok()
+        .and_then(|v| v.trim().parse::<f64>().ok())
+        .filter(|s| *s > 0.0)
+    else {
+        return;
+    };
+    crate::stats::enable();
+    let started = std::time::Instant::now();
+    let _ = std::thread::Builder::new()
+        .name("bc5-mount-stats".into())
+        .spawn(move || {
+            let mut last = crate::stats::Snapshot::default();
+            loop {
+                std::thread::sleep(Duration::from_secs_f64(every));
+                let s = crate::stats::snapshot();
+                if s == last {
+                    continue;
+                }
+                let mib = |b: u64| b >> 20;
+                eprintln!(
+                    "bc5-mount stats {:.1} s: served {} MiB (+{}), decoded {} blocks {} MiB (+{}), {} decoded again",
+                    started.elapsed().as_secs_f64(),
+                    mib(s.served_bytes),
+                    mib(s.served_bytes - last.served_bytes),
+                    s.decoded_blocks,
+                    mib(s.decoded_bytes),
+                    mib(s.decoded_bytes - last.decoded_bytes),
+                    s.redecoded_blocks
+                );
+                last = s;
+            }
+        });
 }

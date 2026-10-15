@@ -7,7 +7,7 @@
 
 use std::collections::HashMap;
 use std::io;
-use std::sync::Arc;
+use std::sync::{Arc, Mutex, PoisonError};
 
 use crate::cache::BlockCache;
 use crate::error::{bail_format, Error, Result};
@@ -20,7 +20,19 @@ use crate::tree::{fold_name, EntryRef, FileTree};
 const LAYER: &str = "inner";
 /// Decoded blocks kept: 128 × 256 KiB = 32 MiB, room for the reads in flight
 /// and the decode-ahead of several loader threads (experiment 0033).
+/// `BC5_MOUNT_CACHE_MIB` sets another size (experiment 0112).
 const CACHE_BLOCKS: usize = 128;
+
+/// Cache size in blocks of `block_bytes`, from `BC5_MOUNT_CACHE_MIB` or [`CACHE_BLOCKS`].
+fn cache_blocks(block_bytes: usize) -> usize {
+    std::env::var("BC5_MOUNT_CACHE_MIB")
+        .ok()
+        .and_then(|v| v.trim().parse::<usize>().ok())
+        .filter(|&mib| mib > 0)
+        .map_or(CACHE_BLOCKS, |mib| {
+            ((mib << 20) / block_bytes.max(1)).max(1)
+        })
+}
 /// Inner inode size (the compact layout: data address at 0x60).
 const INODE_SIZE: usize = 0xa8;
 /// The compact inode layout's mode bits (0x10), with case-insensitive names (0x08).
@@ -48,7 +60,15 @@ pub struct InnerImage<R> {
     mount: u64,
     stats: BlockStats,
     cache: BlockCache,
+    /// Striped by block index: held while a missing block is decoded, so a second
+    /// reader of the same block waits for that decode instead of repeating it
+    /// (the kernel splits a 256 KiB block into two 128 KiB reads that arrive on two
+    /// workers at once; experiment 0112).
+    decoding: Vec<Mutex<()>>,
 }
+
+/// Number of decode stripes; a power of two.
+const DECODE_STRIPES: usize = 64;
 
 impl<R: ReadAt> InnerImage<R> {
     /// Resolves the layout against the stored image.
@@ -78,12 +98,16 @@ impl<R: ReadAt> InnerImage<R> {
                 );
             }
         }
+        let cache = BlockCache::new(cache_blocks(
+            blocks.first().map_or(256 << 10, |b| b.uncomp as usize),
+        ));
         Ok(Self {
             image,
             blocks,
             mount,
             stats,
-            cache: BlockCache::new(CACHE_BLOCKS),
+            cache,
+            decoding: (0..DECODE_STRIPES).map(|_| Mutex::new(())).collect(),
         })
     }
 
@@ -121,6 +145,13 @@ impl<R: ReadAt> InnerImage<R> {
         if let Some(b) = self.cache.get(index as u64) {
             return Ok(b);
         }
+        let _decoding = self.decoding[index & (DECODE_STRIPES - 1)]
+            .lock()
+            .unwrap_or_else(PoisonError::into_inner);
+        // Another reader may have decoded it while this one waited.
+        if let Some(b) = self.cache.get(index as u64) {
+            return Ok(b);
+        }
         let b = self.blocks[index];
         let mut out = vec![0u8; b.uncomp as usize];
         if b.comp != 0 {
@@ -141,6 +172,7 @@ impl<R: ReadAt> InnerImage<R> {
                 out.copy_from_slice(&payload);
             }
         }
+        crate::stats::decoded(index as u64, out.len() as u64);
         let out = Arc::new(out);
         self.cache.insert(index as u64, Arc::clone(&out));
         Ok(out)

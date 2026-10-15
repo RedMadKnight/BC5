@@ -426,3 +426,8 @@ Experiment 0105:
   by num/den before submission. The second title computes them for a 170 MHz clock, while
   `s_memrealtime` counts at 100 MHz here, so use `11d0288100:100/170`: intro 18 → 52 fps, menu
   18 → 37 fps, and complete menu text (F165).
+
+Experiment 0112: `KYTY_BC5_APR_PARALLEL=<n>` (`libAmpr.cpp`, off by default) runs a run of
+consecutive APR ReadFile commands on n threads. A run with overlapping destinations stays in
+order, and the commands after the run still follow it. With 8, the second title's start-up logo
+shortens by 2 s.
