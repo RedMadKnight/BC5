@@ -66,7 +66,7 @@ int usage() {
     return 2;
 }
 
-std::vector<std::uint32_t> load_shader(const std::string &path) {
+[[maybe_unused]] std::vector<std::uint32_t> load_shader(const std::string &path) {
     std::vector<std::uint32_t> code;
     std::ifstream in(path, std::ios::binary);
     if (!in) return code;
@@ -107,7 +107,7 @@ int dump_ib(const std::string &path) {
     return 0;
 }
 
-std::vector<std::uint32_t> load_dwords(const std::string &path) {
+[[maybe_unused]] std::vector<std::uint32_t> load_dwords(const std::string &path) {
     std::vector<std::uint32_t> words;
     std::ifstream in(path, std::ios::binary);
     unsigned char b[4];
@@ -469,7 +469,11 @@ int main(int argc, char **argv) {
             o.ib_file = argv[++i];
         } else if (a == "--ip" && i + 1 < argc) {
             const std::string v = argv[++i];
+#ifdef BC5_WITH_AMDGPU
             o.ip = v == "compute" ? AMDGPU_HW_IP_COMPUTE : AMDGPU_HW_IP_GFX;
+#else
+            (void)v; // only --submit uses the ring kind
+#endif
         } else if (a == "--ring" && i + 1 < argc) {
             o.ring = static_cast<unsigned>(std::stoul(argv[++i]));
         } else if (a == "--print" && i + 1 < argc) {

@@ -150,12 +150,14 @@ fn disk_cache_serves_a_second_open() {
         first.info().stats.kraken > 0,
         "the preset must have Kraken blocks"
     );
-    assert!(diff(&want, &hash_volume(&first, |_| {}).unwrap()).is_empty());
+    let d = diff(&want, &hash_volume(&first, |_| {}).unwrap());
+    assert!(d.is_empty(), "first open differs from spec: {d:?}");
     drop(first);
 
     let before = bc5_mount::stats::snapshot();
     let second = PkgImage::open_with(bytes, Some((dir.as_path(), 1 << 30))).unwrap();
-    assert!(diff(&want, &hash_volume(&second, |_| {}).unwrap()).is_empty());
+    let d = diff(&want, &hash_volume(&second, |_| {}).unwrap());
+    assert!(d.is_empty(), "second open differs from spec: {d:?}");
     let after = bc5_mount::stats::snapshot();
     assert!(
         after.disk_blocks > before.disk_blocks,
