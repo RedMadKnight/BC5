@@ -473,3 +473,59 @@ TEST_CASE("policy: DMA_DATA sources can be replaced (experiment 0087)", "[policy
     CHECK(out[17] != 0x77u);      // GDS source untouched
     CHECK(st.dma_sources == 1);
 }
+
+TEST_CASE("compute_ring: graphics-only packets are NOP-ed, compute packets pass", "[policy]") {
+    const auto &p = policy::Policy::builtin();
+    const std::vector<std::uint32_t> src = {
+        0xC0012800u, 0x80000000u, 0x80000000u,                   // CONTEXT_CONTROL: dropped
+        0xC0016900u, 0x1u, 0u,                                   // SET_CONTEXT_REG: dropped
+        0xC0017602u, 0x204u, 0u,                                 // SET_SH_REG COMPUTE_START_X: pass
+        0xC0021602u, 0x1000u, 0x12u, 0x41u,                      // DISPATCH_INDIRECT, MEC form: pass
+        0xC0064900u, 0x628u, 0u, 0u, 0u, 0u, 0u, 0u,             // RELEASE_MEM CS_DONE/6: kept
+    };
+    std::vector<std::uint32_t> out(src.size());
+    policy::FilterOptions opt;
+    opt.compute_ring = true;
+    policy::FilterStats st;
+    policy::filter(p, src, out, opt, st);
+    CHECK(st.gfx_only_drops == 2);
+    for (std::size_t i = 0; i < 6; ++i) CHECK(out[i] == policy::kNop);
+    for (std::size_t i = 6; i < 13; ++i) CHECK(out[i] == src[i]);
+    CHECK(out[14] == 0x628u);
+    CHECK(st.cs_done_rewrites == 0);
+    // the same IB for the GFX ring keeps both and rewrites the event
+    policy::FilterStats gst;
+    policy::filter(p, src, out, policy::FilterOptions{}, gst);
+    CHECK(gst.gfx_only_drops == 0);
+    CHECK(gst.cs_done_rewrites == 1);
+}
+
+TEST_CASE("compute_ring_refusal names what keeps an IB off a compute ring", "[policy]") {
+    const std::vector<std::uint32_t> ok = {0xC0017602u, 0x204u, 0u,
+                                           0xC0031502u, 4u, 1u, 1u, 0x41u}; // DISPATCH_DIRECT
+    CHECK(policy::compute_ring_refusal(ok) == nullptr);
+    const std::vector<std::uint32_t> mec_indirect = {0xC0021602u, 0x1000u, 0x12u, 0x8041u};
+    CHECK(policy::compute_ring_refusal(mec_indirect) == nullptr);
+    const std::vector<std::uint32_t> gfx_indirect = {0xC0011602u, 0x40u, 0x41u};
+    CHECK(policy::compute_ring_refusal(gfx_indirect) != nullptr);
+    const std::vector<std::uint32_t> cc = {0xC0012800u, 0x80000000u, 0x80000000u};
+    CHECK(policy::compute_ring_refusal(cc) != nullptr);
+    const std::vector<std::uint32_t> draw = {0xC0012D00u, 3u, 2u}; // DRAW_INDEX_AUTO
+    CHECK(policy::compute_ring_refusal(draw) != nullptr);
+    // PARTIAL_TG_EN without USE_THREAD_DIMENSIONS (mesa#16054); with it, or without either, fine
+    const std::vector<std::uint32_t> partial = {0xC0031502u, 4u, 1u, 1u, 0x43u};
+    CHECK(policy::compute_ring_refusal(partial) != nullptr);
+    const std::vector<std::uint32_t> dims = {0xC0031502u, 4u, 1u, 1u, 0x63u};
+    CHECK(policy::compute_ring_refusal(dims) == nullptr);
+    // a nested IB is followed when mapped
+    std::vector<std::uint32_t> inner = cc;
+    const auto a = reinterpret_cast<std::uint64_t>(inner.data());
+    const std::vector<std::uint32_t> outer = {0xC0023F00u, static_cast<std::uint32_t>(a),
+                                              static_cast<std::uint32_t>(a >> 32) & 0xffu,
+                                              static_cast<std::uint32_t>(inner.size())};
+    CHECK(policy::compute_ring_refusal(outer) == nullptr);
+    if ((a >> 40) == 0) { // the packet carries 40 address bits
+        CHECK(policy::compute_ring_refusal(outer, [](std::uint64_t, std::uint64_t) { return true; }) !=
+              nullptr);
+    }
+}

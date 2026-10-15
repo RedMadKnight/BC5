@@ -135,3 +135,29 @@ TEST_CASE("indirect_check: indirect draws get the check of their two counts", "[
     CHECK(out[cond + 4] == 5u); // COND_EXEC over the 5-dword draw
     CHECK(out[cond + 5] == 0xC0032400u);
 }
+
+TEST_CASE("indirect_check: on a compute ring the MEC form is checked, without PFP_SYNC_ME",
+          "[indirect_check]") {
+    // DISPATCH_INDIRECT, MEC form: address 0x12_3456_7040, initiator 0x41.
+    const std::vector<std::uint32_t> ib = {0xC0021600u, 0x34567040u, 0x12u, 0x41u};
+    std::vector<std::size_t> refs;
+    indirect_check::Stats st;
+    auto out = indirect_check::apply(ib, 0, kMax, kDrawMax, refs, st, true);
+    REQUIRE(st.checked == 1);
+    REQUIRE(out.size() == ib.size() + indirect_check::kCheckDwords - 2);
+    std::size_t i = 5;
+    for (std::uint32_t k = 0; k < 3; ++k, i += 9) {
+        CHECK(out[i] == 0xC0074500u);
+        CHECK(out[i + 2] == 0x34567040u + 4 * k);
+        CHECK(out[i + 3] == 0x12u);
+    }
+    i += 5;                       // the confirming WRITE_DATA
+    CHECK(out[i] == 0xC0032200u); // COND_EXEC right after it
+    CHECK(out[i + 4] == 4u);      // skips the 4-dword dispatch
+    for (const auto w : out) CHECK(w != 0xC0004200u);
+    // the GFX form is not a compute-ring dispatch: left alone
+    const std::vector<std::uint32_t> gfx = {0xC0021100u, 1u, 0x34567000u, 0x12u, kDispatchIndirect, 0x40u, 0x41u};
+    indirect_check::Stats st2;
+    std::vector<std::size_t> refs2;
+    CHECK(indirect_check::apply(gfx, 0, kMax, kDrawMax, refs2, st2, true) == gfx);
+}

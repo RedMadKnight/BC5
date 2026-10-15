@@ -142,7 +142,12 @@ struct Device::Impl {
     // can let more than a dozen jobs fly (BC5_DIRECT_MAX_IN_FLIGHT); a slot grows to the largest
     // IB it carried, a few hundred KiB.
     static constexpr int kSlots = 64;
+    // ADR 0009: slots [0, kGfxSlots) carry GFX-ring jobs, the rest compute-ring jobs. Each half is
+    // used in turn, so a slot is given back in the order its ring completes jobs; one shared round
+    // would wait for a ring that has fallen behind (-EBUSY).
+    static constexpr int kGfxSlots = 32;
     ScratchBo slots[kSlots];
+    std::atomic<int> slot_ring[kSlots] = {}; // the ring of the slot's last job (kGfxRing or n)
     std::uint32_t ts_off[kSlots] = {}; // experiment 0124: dword offset of the job's timestamps, 0 = none
     // The two timestamps of the slot's last job (FilterOptions::job_timestamps).
     void read_job_ts(std::uint32_t slot, SubmitResult &r) const {
@@ -246,8 +251,21 @@ struct Device::Impl {
         snap_head = 0;
     }
     int cur = 0;
+    int next_gfx = 0, next_comp = kGfxSlots;           // the slot each ring takes next
     std::atomic<std::uint64_t> slot_seq[kSlots] = {}; // sequence number of the job using the slot, 0 = free
-    std::atomic<std::uint64_t> last_seq{0};            // the job queued last (Device::wait_idle)
+    std::atomic<std::uint64_t> last_seq{0};            // the job queued last on the GFX ring (wait_idle)
+    std::atomic<std::uint64_t> last_seq_comp{0};       // ... on the compute ring
+    std::atomic<int> comp_ring{kGfxRing};              // the compute ring in use, kGfxRing = none yet
+
+    // A fence of this context on `ring`.
+    amdgpu_cs_fence fence_of(int ring, std::uint64_t seq) const {
+        amdgpu_cs_fence f{};
+        f.context = ctx;
+        f.ip_type = ring == kGfxRing ? AMDGPU_HW_IP_GFX : AMDGPU_HW_IP_COMPUTE;
+        f.ring = ring == kGfxRing ? 0 : static_cast<std::uint32_t>(ring);
+        f.fence = seq;
+        return f;
+    }
 
     bool scratch_reserve(std::uint64_t bytes) {
         ScratchBo &scratch = slots[cur];
@@ -733,18 +751,31 @@ void nested_targets(std::span<const std::uint32_t> ib, const policy::FilterOptio
 } // namespace
 
 SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::FilterOptions &opt,
-                            std::uint64_t timeout_ns, bool with_gds) {
+                            std::uint64_t timeout_ns, bool with_gds, int ring) {
     SubmitResult r;
     std::lock_guard lock(impl_->mutex);
+    const bool comp = ring != kGfxRing;
+    if (comp) { // ADR 0009: one compute ring per device, so that its slots complete in order
+        int none = kGfxRing;
+        if (ring < 0 || (!impl_->comp_ring.compare_exchange_strong(none, ring) && none != ring)) {
+            r.rc = -EINVAL;
+            return r;
+        }
+    }
+    r.ring = ring;
     if (async_) {
-        impl_->cur = (impl_->cur + 1) % Impl::kSlots;
+        int &next = comp ? impl_->next_comp : impl_->next_gfx;
+        impl_->cur = next;
+        next = comp ? (next + 1 < Impl::kSlots ? next + 1 : Impl::kGfxSlots)
+                    : (next + 1 < Impl::kGfxSlots ? next + 1 : 0);
         if (impl_->slot_seq[impl_->cur].load() != 0) { // the host lets fewer jobs fly than there are slots
             r.rc = -EBUSY;
             return r;
         }
     } else {
-        impl_->cur = 0;
+        impl_->cur = comp ? Impl::kGfxSlots : 0;
     }
+    impl_->slot_ring[impl_->cur] = ring;
     const double t_enter = now_ms();
     if (wedged_) {
         r.rc = -1;
@@ -781,6 +812,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     const bool short_possible = short_lists_ && include_mappings_ && static_cast<bool>(opt.mapped);
     std::vector<std::pair<std::uint64_t, std::uint64_t>> touched;
     policy::FilterOptions fopt = opt;
+    fopt.compute_ring = comp;
     if (short_possible) {
         fopt.mapped = [&opt, &touched](std::uint64_t a, std::uint64_t bytes) {
             const bool ok = opt.mapped(a, bytes);
@@ -802,7 +834,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     executed_offsets_of(ib, main_out.data(), r.executed_offsets);
     r.prep_filter_ms = now_ms() - t_phase;
     t_phase = now_ms();
-    if (state_stack_ && opt.mapped) {
+    if (state_stack_ && opt.mapped && !comp) { // the context registers are the GFX ring's
         impl_->tracker.apply_in_place(ib, main_out, opt.mapped, r.state_stack);
     }
     r.prep_tracker_ms = now_ms() - t_phase;
@@ -821,7 +853,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     // same before an indirect draw or dispatch whose arguments the GPU wrote (Mesa
     // PKT3_PFP_SYNC_ME, TODO(verify) the lines). Inserting dwords moves every offset after it, so
     // an IB with COND_EXEC (whose skip counts are offsets) is left as it is.
-    if ((opt.mec_indirect_base != 0 || opt.pfp_sync_indirect) && !opt.gpu_check_indirect) {
+    if ((opt.mec_indirect_base != 0 || opt.pfp_sync_indirect) && !opt.gpu_check_indirect && !comp) {
         bool has_cond_exec = false;
         std::size_t dispatches = 0;
         for (std::size_t i = 0; i < main_out.size();) {
@@ -867,7 +899,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     // f00d4abd 0000baad, after the timeout the copied "PSR_BVHL"). Before the first dispatch after
     // an unsynced DMA_DATA goes the zero-byte DMA_DATA with CP_SYNC of the IB's end (dma_idle_).
     // Experiment 0052: an IB with its own COND_EXEC gets them too, the counts grown around them.
-    if (opt.dma_sync_before_dispatch) {
+    if (opt.dma_sync_before_dispatch && !comp) { // the MEC waits for its DMA itself
         std::vector<indirect_check::Insert> waits;
         bool pending = false;
         for (std::size_t i = 0; i < main_out.size();) {
@@ -896,12 +928,12 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     if (opt.gpu_check_indirect) {
         indirect_check::Stats st;
         main_out = indirect_check::apply(main_out, opt.mec_indirect_base, opt.gpu_check_max,
-                                         opt.gpu_check_draw_max, flag_refs, st);
+                                         opt.gpu_check_draw_max, flag_refs, st, comp);
         r.filter.gpu_checks += st.checked;
         r.filter.gpu_check_unbased += st.unbased;
         r.filter.gpu_check_skipped += st.conditional;
     }
-    if (dma_idle_) {
+    if (dma_idle_ && !comp) {
         // PKT3(DMA_DATA, 5, 0); CP_SYNC | SRC_SEL and DST_SEL "address using L2"; no addresses;
         // zero bytes — as si_emit_cp_dma(sctx, cs, 0, 0, 0, CP_DMA_SYNC) emits it (Mesa 0866ae7).
         main_out.insert(main_out.end(), {0xC0055000u, 0xE0300000u, 0u, 0u, 0u, 0u, 0u});
@@ -1109,8 +1141,8 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     ib_info.ib_mc_address = impl_->slots[impl_->cur].va;
     ib_info.size = static_cast<std::uint32_t>(padded);
     amdgpu_cs_request req{};
-    req.ip_type = AMDGPU_HW_IP_GFX;
-    req.ring = 0;
+    req.ip_type = comp ? AMDGPU_HW_IP_COMPUTE : AMDGPU_HW_IP_GFX;
+    req.ring = comp ? static_cast<std::uint32_t>(ring) : 0;
     req.resources = list;
     req.number_of_ibs = 1;
     req.ibs = &ib_info;
@@ -1125,7 +1157,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
         r.pending = r.rc == 0;
         if (r.pending) {
             impl_->slot_seq[impl_->cur] = req.seq_no;
-            impl_->last_seq = req.seq_no;
+            (comp ? impl_->last_seq_comp : impl_->last_seq) = req.seq_no;
             impl_->snap_commit(req.seq_no); // experiment 0122
         }
         r.submit_ms = now_ms() - t0;
@@ -1135,11 +1167,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
         return r;
     }
     if (r.rc == 0) {
-        amdgpu_cs_fence fence{};
-        fence.context = impl_->ctx;
-        fence.ip_type = AMDGPU_HW_IP_GFX;
-        fence.ring = 0;
-        fence.fence = req.seq_no;
+        amdgpu_cs_fence fence = impl_->fence_of(ring, req.seq_no);
         r.rc = amdgpu_cs_query_fence_status(&fence, timeout_ns, 0, &expired);
         if (r.rc == 0 && !expired) {
             r.timed_out = true;
@@ -1164,15 +1192,15 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
 }
 
 bool Device::wait_idle(std::uint64_t timeout_ns) {
-    const std::uint64_t seq = impl_->last_seq.load();
-    if (seq == 0) return true;
-    amdgpu_cs_fence fence{};
-    fence.context = impl_->ctx;
-    fence.ip_type = AMDGPU_HW_IP_GFX;
-    fence.ring = 0;
-    fence.fence = seq;
-    std::uint32_t expired = 0;
-    return amdgpu_cs_query_fence_status(&fence, timeout_ns, 0, &expired) == 0 && expired != 0;
+    auto idle = [this, timeout_ns](int ring, std::uint64_t seq) {
+        if (seq == 0) return true;
+        amdgpu_cs_fence fence = impl_->fence_of(ring, seq);
+        std::uint32_t expired = 0;
+        return amdgpu_cs_query_fence_status(&fence, timeout_ns, 0, &expired) == 0 && expired != 0;
+    };
+    const bool gfx = idle(kGfxRing, impl_->last_seq.load());
+    const int cr = impl_->comp_ring.load();
+    return idle(cr, cr == kGfxRing ? 0 : impl_->last_seq_comp.load()) && gfx;
 }
 
 SubmitResult Device::finish(std::uint64_t seq_no, std::uint32_t slot, std::uint64_t timeout_ns) {
@@ -1180,12 +1208,9 @@ SubmitResult Device::finish(std::uint64_t seq_no, std::uint32_t slot, std::uint6
     SubmitResult r;
     r.seq_no = seq_no;
     r.slot = slot;
+    r.ring = slot < static_cast<std::uint32_t>(Impl::kSlots) ? impl_->slot_ring[slot].load() : kGfxRing;
     const double t0 = now_ms();
-    amdgpu_cs_fence fence{};
-    fence.context = impl_->ctx;
-    fence.ip_type = AMDGPU_HW_IP_GFX;
-    fence.ring = 0;
-    fence.fence = seq_no;
+    amdgpu_cs_fence fence = impl_->fence_of(r.ring, seq_no);
     std::uint32_t expired = 0;
     r.rc = amdgpu_cs_query_fence_status(&fence, timeout_ns, 0, &expired);
     if (r.rc == 0 && !expired) {

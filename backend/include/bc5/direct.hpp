@@ -17,6 +17,10 @@
 
 namespace bc5::direct {
 
+// ADR 0009: the kernel ring a job goes to: the GFX ring, or compute ring n (AMDGPU_HW_IP_COMPUTE,
+// n >= 0; one compute ring per device).
+inline constexpr int kGfxRing = -1;
+
 struct SubmitResult {
     // FilterOptions::job_timestamps (experiment 0124): GPU clock at the job's start and end, 0 if none.
     std::uint64_t gpu_start = 0;
@@ -39,6 +43,7 @@ struct SubmitResult {
     // took it. Device::finish(seq_no, slot) waits and completes the result.
     bool pending = false;
     std::uint32_t slot = 0;
+    int ring = kGfxRing; // ADR 0009: where the job went
     // After a timeout: the last GPU VM fault of this process (AMDGPU_INFO_GPUVM_FAULT; page
     // address, GCVM_L2_PROTECTION_FAULT_STATUS), 0 when the kernel has none to report.
     std::uint64_t fault_addr = 0;
@@ -146,18 +151,23 @@ public:
     // with_gds: put the GDS/OA/GWS allocations (OpenOptions) on this submission's BO list — the
     // kernel programs the VMID's partitions per job, so a compute IB can have them while a gfx
     // DCB, whose shaders hang with any partition present, does not (experiment 0016, runs 49–52).
+    // ring (ADR 0009): kGfxRing, or a compute ring. A compute-ring job is filtered with
+    // FilterOptions::compute_ring and gets none of the GFX-ring insertions (PFP_SYNC_ME, the
+    // CP_SYNC DMA_DATA waits: "MEC always sync", Mesa src/amd/vulkan/radv_cp_dma.c, 0866ae7) nor
+    // the state-stack emulation. Its scratch slots are its own (Device::set_async).
     SubmitResult submit(std::span<const std::uint32_t> ib, const policy::FilterOptions &opt,
-                        std::uint64_t timeout_ns, bool with_gds = true);
+                        std::uint64_t timeout_ns, bool with_gds = true, int ring = kGfxRing);
 
     bool wedged() const { return wedged_; }
     // Experiment 0024: submit() returns once the kernel has queued the job, so that the host
     // can prepare the next IB while the GPU runs this one. Each job in flight keeps its own
-    // scratch buffer (16 of them, used in turn); the host calls finish() for every pending
-    // result, in order, and keeps fewer than 16 in flight.
+    // scratch buffer (64 of them: 32 for the GFX ring, 32 for the compute ring, each half used in
+    // turn); the host calls finish() for every pending result, in order per ring, and keeps fewer
+    // than 32 in flight on each.
     void set_async(bool v) { async_ = v; }
     bool async() const { return async_; }
     SubmitResult finish(std::uint64_t seq_no, std::uint32_t slot, std::uint64_t timeout_ns);
-    // Waits for the job queued last (the ring runs them in order, so for all of them). False
+    // Waits for the job queued last on each ring (a ring runs its jobs in order). False
     // when it did not finish within the timeout. For a host that is about to change mappings a
     // running job may be using.
     bool wait_idle(std::uint64_t timeout_ns);

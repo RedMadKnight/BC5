@@ -50,9 +50,14 @@ inline constexpr std::size_t kDrawCheckDwords = 5 + 2 * 9 + 5 + 2 + 5;
 // flag_refs receives the positions (in the returned IB) of the flag address pairs (lo, hi); patch()
 // fills them in once the flag's GPU address is known (two dwords: the flag and the confirm word
 // after it).
+// compute_ring (ADR 0009): the IB runs on a compute ring. The checked dispatches are then the
+// MEC form of DISPATCH_INDIRECT (address lo, hi, initiator), whose address is its own, and no
+// PFP_SYNC_ME is inserted (the MEC has no prefetch parser). TODO(verify): COND_WRITE and
+// COND_EXEC on the BC-250's MEC (ADR 0009, ladder step 5).
 std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib, std::uint64_t base,
                                  const std::uint32_t (&max)[3], const std::uint32_t (&draw_max)[2],
-                                 std::vector<std::size_t> &flag_refs, Stats &stats);
+                                 std::vector<std::size_t> &flag_refs, Stats &stats,
+                                 bool compute_ring = false);
 
 void patch(std::span<std::uint32_t> ib, const std::vector<std::size_t> &flag_refs,
            std::uint64_t flag_va);
