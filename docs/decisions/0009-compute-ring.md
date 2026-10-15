@@ -115,3 +115,11 @@ Each step goes on only after the previous one is recorded as passed.
 - If step 5 passes, the ring-sharing workarounds of ADR 0005 (xviii, xxii) and ADR 0008 become
   fallbacks and can be retired one by one.
 - Until then `BC5_DIRECT_COMPUTE_RING` is off, and nothing changes for the play settings.
+
+*Amended 2026-10-15 (experiments 0128, 0129, F178):*
+- Steps 1-3 passed: no title buffer refused, ladder 7/7, start screen on the compute ring.
+- The waits went further than step 1: `BC5_DIRECT_CROSS_RING_WAITS=all` (step 3 of the waits) gives the gain, +24-31 % on the start screen. Waits on the CPU are slower than one ring.
+- Before a play setting:
+  - the menu race (`BC5_DIRECT_RING_DEPS` to locate it);
+  - ASTRO BOT and its water;
+  - a long run.
