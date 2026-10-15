@@ -72,6 +72,8 @@ struct FilterStats {
     std::uint64_t cs_done_rewrites = 0; // RELEASE_MEM CS_DONE/index 6 without data -> BOTTOM_OF_PIPE_TS/5
     std::uint64_t gcr_rewrites = 0;     // ACQUIRE_MEM with FilterOptions::gcr_clear bits cleared
     std::uint64_t dma_sources = 0;      // DMA_DATA sources replaced (FilterOptions::dma_source)
+    std::uint64_t dma_snapshot_bytes = 0;    // bytes copied by Device::submit (dma_snapshot_min)
+    std::uint64_t dma_snapshot_overflow = 0; // sources left in place: the slot's snapshot buffer was full
     std::uint64_t dma_syncs = 0;        // CP DMA waits inserted before dispatches (Device::submit)
     std::uint64_t gpu_checks = 0;       // DISPATCH_INDIRECT checked by the CP (gpu_check_indirect)
     std::uint64_t gpu_check_unbased = 0; // the same without a known base: PFP_SYNC_ME only
@@ -122,6 +124,12 @@ struct FilterOptions {
     // SAS 26).
     std::function<std::uint64_t(std::uint64_t, std::uint32_t)> dma_source;
     std::uint32_t dma_source_min = 4096;
+    // Experiment 0122: when non-zero, Device::submit itself copies the source of every DMA_DATA
+    // that reads at least this many bytes of memory into a snapshot buffer of the job's own slot
+    // at submission and points the packet at the copy (dma_source above is then the device's).
+    // The second title rewrites its rotating CPU staging before our jobs run (F146); the copy
+    // keeps what it held when the title submitted. 0 = off.
+    std::uint32_t dma_snapshot_min = 0;
     // Opcodes to drop in addition to the table (experiments).
     std::vector<std::uint8_t> extra_drop;
     // Dword offsets of packets to drop, decided by the caller from data the filter cannot see

@@ -143,6 +143,100 @@ struct Device::Impl {
     // IB it carried, a few hundred KiB.
     static constexpr int kSlots = 64;
     ScratchBo slots[kSlots];
+    // Experiment 0122 (FilterOptions::dma_snapshot_min): one ring of copies of the jobs' DMA_DATA
+    // sources, 128 MiB above the scratch, allocated on first use. A copy never overwrites the copies
+    // of a job still in flight (snap_spans: each job's ranges with its slot and sequence number);
+    // when it would, the source is left in place. One buffer, always on the BO list: a buffer per
+    // slot (runs 507-512) put up to 64 more buffers on every submission's list, 1.5 ms of CS ioctl
+    // time a frame in the second title's menu.
+    static constexpr std::uint64_t kSnapRingBytes = 64ull << 20;
+    static constexpr std::uint64_t kSnapRingVa = kScratchVa + (128ull << 20);
+    struct SnapSpan {
+        std::uint64_t start = 0, end = 0;
+        int slot = 0;
+        std::uint64_t seq = 0;
+    };
+    ScratchBo snap_ring;
+    std::uint64_t snap_head = 0;
+    std::vector<SnapSpan> snap_spans;                         // committed jobs' copies, oldest first
+    std::vector<std::pair<std::uint64_t, std::uint64_t>> snap_job; // this submission's copies
+
+    bool snap_in_flight(const SnapSpan &x) const {
+        return x.slot >= 0 && x.slot < kSlots && slot_seq[x.slot].load() == x.seq && x.seq != 0;
+    }
+    // A copy of [a, a + bytes) in the ring, keeping the low eight address bits (the DMA reads the
+    // copy as it would have read the source); 0 when it does not fit now.
+    std::uint64_t snapshot(std::uint64_t a, std::uint32_t bytes, policy::FilterStats &stats) {
+        ScratchBo &s = snap_ring;
+        if (s.bo == nullptr) {
+            amdgpu_bo_alloc_request req{};
+            req.alloc_size = kSnapRingBytes;
+            req.phys_alignment = 4096;
+            req.preferred_heap = AMDGPU_GEM_DOMAIN_GTT;
+            // Write-combined for the CPU: the copies are written once, in order, never read back.
+            req.flags = AMDGPU_GEM_CREATE_CPU_GTT_USWC;
+            if (amdgpu_bo_alloc(dev, &req, &s.bo) != 0) return 0;
+            s.va = kSnapRingVa;
+            // The default (cached) GPU mapping, as the title's own staging has: the DMA reads the
+            // copy where it would have read the source, after the same cache invalidations.
+            const std::uint64_t flags = AMDGPU_VM_PAGE_READABLE | AMDGPU_VM_PAGE_WRITEABLE;
+            if (amdgpu_bo_va_op_raw(dev, s.bo, 0, kSnapRingBytes, s.va, flags, AMDGPU_VA_OP_MAP) != 0) {
+                amdgpu_bo_free(s.bo);
+                s = ScratchBo{};
+                return 0;
+            }
+            if (amdgpu_bo_cpu_map(s.bo, &s.cpu) != 0) {
+                amdgpu_bo_va_op_raw(dev, s.bo, 0, kSnapRingBytes, s.va, 0, AMDGPU_VA_OP_UNMAP);
+                amdgpu_bo_free(s.bo);
+                s = ScratchBo{};
+                return 0;
+            }
+            s.size = kSnapRingBytes;
+            list_gen++; // the BO list must name it
+        }
+        if (bytes > kSnapRingBytes / 4) {
+            stats.dma_snapshot_overflow++;
+            return 0;
+        }
+        std::uint64_t off = ((snap_head + 255) & ~std::uint64_t{255}) + (a & 0xffu);
+        if (off + bytes > s.size) off = a & 0xffu; // wrap
+        const std::uint64_t end = off + bytes;
+        auto overlaps = [off, end](std::uint64_t x0, std::uint64_t x1) { return x0 < end && off < x1; };
+        for (const auto &[x0, x1] : snap_job) {
+            if (overlaps(x0, x1)) {
+                stats.dma_snapshot_overflow++;
+                return 0;
+            }
+        }
+        for (const SnapSpan &x : snap_spans) {
+            if (overlaps(x.start, x.end) && snap_in_flight(x)) {
+                stats.dma_snapshot_overflow++;
+                return 0;
+            }
+        }
+        std::memcpy(static_cast<std::uint8_t *>(s.cpu) + off, reinterpret_cast<const void *>(a), bytes);
+        snap_head = end;
+        snap_job.emplace_back(off, end);
+        stats.dma_snapshot_bytes += bytes;
+        return s.va + off;
+    }
+    // After the job is on the ring: its copies are kept from being overwritten until it is done.
+    void snap_commit(std::uint64_t seq) {
+        if (snap_job.empty()) return;
+        std::erase_if(snap_spans, [this](const SnapSpan &x) { return !snap_in_flight(x); });
+        for (const auto &[x0, x1] : snap_job) snap_spans.push_back({x0, x1, cur, seq});
+        snap_job.clear();
+    }
+    void snap_free() {
+        ScratchBo &s = snap_ring;
+        if (s.cpu) amdgpu_bo_cpu_unmap(s.bo);
+        if (s.va && s.bo) amdgpu_bo_va_op_raw(dev, s.bo, 0, s.size, s.va, 0, AMDGPU_VA_OP_UNMAP);
+        if (s.bo) amdgpu_bo_free(s.bo);
+        s = ScratchBo{};
+        snap_spans.clear();
+        snap_job.clear();
+        snap_head = 0;
+    }
     int cur = 0;
     std::atomic<std::uint64_t> slot_seq[kSlots] = {}; // sequence number of the job using the slot, 0 = free
     std::atomic<std::uint64_t> last_seq{0};            // the job queued last (Device::wait_idle)
@@ -291,6 +385,7 @@ Device::~Device() {
         impl_->cur = k;
         impl_->scratch_free();
     }
+    impl_->snap_free();
     if (impl_->gds) amdgpu_bo_free(impl_->gds);
     if (impl_->oa) amdgpu_bo_free(impl_->oa);
     if (impl_->shadow) {
@@ -674,6 +769,13 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
             return ok;
         };
     }
+    impl_->snap_job.clear();
+    if (opt.dma_snapshot_min != 0 && !impl_->opts.legacy_scratch_va) { // experiment 0122
+        fopt.dma_source_min = opt.dma_snapshot_min;
+        fopt.dma_source = [this, &r](std::uint64_t a, std::uint32_t bytes) -> std::uint64_t {
+            return impl_->snapshot(a, bytes, r.filter);
+        };
+    }
     std::vector<std::uint32_t> &main_out = impl_->main_buf; // every dword is written by the filter
     main_out.resize(ib.size());
     double t_phase = now_ms();
@@ -892,6 +994,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     for (const auto &sl : impl_->slots) {
         if (sl.bo != nullptr) bos.push_back(sl.bo);
     }
+    if (impl_->snap_ring.bo != nullptr) bos.push_back(impl_->snap_ring.bo); // experiment 0122
     if (with_gds && impl_->gds) bos.push_back(impl_->gds);
     if (with_gds && impl_->oa) bos.push_back(impl_->oa);
     if (with_gds && impl_->gws) bos.push_back(impl_->gws);
@@ -989,6 +1092,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
         if (r.pending) {
             impl_->slot_seq[impl_->cur] = req.seq_no;
             impl_->last_seq = req.seq_no;
+            impl_->snap_commit(req.seq_no); // experiment 0122
         }
         r.submit_ms = now_ms() - t0;
         if (list != impl_->full_list) amdgpu_bo_list_destroy(list);

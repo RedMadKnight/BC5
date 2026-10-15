@@ -396,11 +396,14 @@ Experiment 0083: `BC5_DIRECT_SOFTCP_POST_IB=1` runs the soft CP of an IB-packet 
 completion thread after its job (EOP events and dropped packets' writes once the GPU is done).
 Experiment 0084: the driver's wait-idle and submit-done ioctls are counted in the journal (draining
 the jobs in flight there changed nothing, F144; the knob was removed in cleanup batch 1).
-Experiment 0087, prepared and **not run** (GPU; only with the maintainer present):
-`BC5_DIRECT_DMA_SNAPSHOT=<min bytes>` copies the source of every `DMA_DATA` reading that many bytes
-or more into a 64 MiB ring in guest flexible memory at submission and points the filtered packet
-at the copy (backend `FilterOptions::dma_source`), for the second title's per-frame uploads from
-rotating CPU staging (F146). Ring ranges not yet imported are not used.
+Experiments 0087 and 0122:
+`BC5_DIRECT_DMA_SNAPSHOT=<min bytes>` (experiment 0122; 0087's ring in guest memory could not be
+mapped) has the backend copy the source of every `DMA_DATA` of a graphics buffer reading that many
+bytes or more into a shared 64 MiB ring at submission and point the packet at the copy
+(`FilterOptions::dma_snapshot_min`), for the second title's UI uploads from rotating CPU staging
+(F146, F172): its menu text no longer shows other uploads' pictures. 4096 is the tested value;
+`dma snapshot:` journal lines count the copies. `BC5_DIRECT_FLIP_BRIGHT=<t0>[:<points>]` journals
+jumps in the display buffer's share of non-black samples at each flip (default 20 points).
 Experiment 0088: `BC5_DIRECT_DRAW_MAX=<vertices>:<instances>` overrides the CP's indirect-draw limits
 (default 1048576:64).
 Experiment 0089: `BC5_DIRECT_DRAW_JOURNAL=<t0>:<buffers>` journals every draw and dispatch of the graphics
