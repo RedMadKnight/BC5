@@ -306,11 +306,10 @@ buffer (`Bc5VideoOutWaitFlipCopied`). Keeping it until the flip was presented (3
 take a bit over 16.7 ms), releasing it when the flip is queued (tearing), and leaving the wait to
 the GPU (experiment 0071, two machine resets) were removed in cleanup batch 1. `KYTY_BC5_READ_THREADS=<n>` (default 4) splits guest reads of
 4 MiB and more; `KYTY_BC5_FLIP_TIMING=1` prints the flip preparation's timing.
-ADR 0008 step 1: `BC5_DIRECT_PIECE_CHECK=<n>` follows the graphics queue's full register state
-(`bc5::full_state`, every cc/hib/dcb buffer, tables and nested buffers read from guest memory)
-and, for every n-th graphics buffer with memory waits, checks at each wait whether a piece
-started there after the tracker's prefix would see the same registers at every later draw as the
-unsplit buffer. CPU only, nothing submitted changes; a `piece check:` journal line every 10 s.
+ADR 0008 step 1: the host follows the graphics queue's full register state (`bc5::full_state`,
+every cc/hib/dcb buffer, tables and nested buffers read from guest memory) for the pieces'
+prefixes and the draw journal; a `piece check:` journal line every 10 s. (Experiment 0073's
+offline comparison at every wait, `BC5_DIRECT_PIECE_CHECK`, was removed in cleanup batch 5.)
 ADR 0008 step 2: `BC5_DIRECT_PIECES_DRY=1` builds the prefix at every game-thread dcb wait that
 is not satisfied when reached (where `BC5_DIRECT_PIECES_FULL` would split), submits nothing
 differently, and journals `pieces dry:` (splits, prefix size, build time, and whether each wait
@@ -358,9 +357,11 @@ Experiment 0047: the timestamp scale is live: `RenderScale=<k>` (0.5–4) in the
 the F2 menu's *Video* tab (presets 1.0 / 1.2 / 1.5 / 3.0, a slider, the main 3D view's size now,
 Save). *Restart game* exits with code 75; the dev box's `play-astro.sh` and `play-pkg.sh` start
 the emulator again on that code.
-Experiment 0046: `BC5_DIRECT_TS_SCALE=<k>` multiplies the 64-bit GPU timestamps a job's buffers
-wrote (`RELEASE_MEM`/`EVENT_WRITE_EOP` with `DATA_SEL` 3) once the job is done; ASTRO BOT's
-dynamic resolution follows them (×1.2: 3328×1872 at 59–60 fps instead of native 4K at 57).
+Experiment 0046: a timestamp scale k multiplies the 64-bit GPU timestamps a job's buffers wrote
+(`RELEASE_MEM`/`EVENT_WRITE_EOP` with `DATA_SEL` 3) once the job is done; ASTRO BOT's dynamic
+resolution follows them (×1.2: 3328×1872 at 59–60 fps instead of native 4K at 57). Its start
+value from `BC5_DIRECT_TS_SCALE` applied to every title and was removed in cleanup batch 5; the
+scale comes only from the title's own `RenderScale.<TITLE_ID>` (experiment 0115).
 `BC5_DIRECT_PKT_STATS=1` also reports the render sizes the game sets (`sizes:` lines), and the
 title's system parameter queries are reported once each on stderr (`bc5 system param`).
 Experiment 0045: `BC5_DIRECT_MAX_IN_FLIGHT=<n>` (default 12, at most the backend's 64 scratch
@@ -428,10 +429,9 @@ Experiment 0104 (diagnostics, off by default):
 Experiment 0105:
 - `BC5_DIRECT_TS_LOG=<t0>` journals the raw values of the title's own GPU timestamps for each job.
 - The draw journal shows the parameter and result blocks of the frame-pacing program 0x11d0288100.
-- `BC5_DIRECT_PACE_FIX=<program>:<num>/<den>` multiplies that program's target time and wait limit
-  by num/den before submission. The second title computes them for a 170 MHz clock, while
-  `s_memrealtime` counts at 100 MHz here, so use `11d0288100:100/170`: intro 18 → 52 fps, menu
-  18 → 37 fps, and complete menu text (F165).
+- `BC5_DIRECT_PACE_FIX` rescaled that program's target time and wait limit. Experiment 0115 found
+  the "170 MHz" was our own shared timestamp scale; with timestamps left true the title paces
+  itself, and the knob was removed in cleanup batch 5.
 
 Experiment 0112: `KYTY_BC5_APR_PARALLEL=<n>` (`libAmpr.cpp`, off by default) runs a run of
 consecutive APR ReadFile commands on n threads. A run with overlapping destinations stays in
