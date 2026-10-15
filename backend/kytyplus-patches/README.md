@@ -65,8 +65,7 @@ once the `/dev/gc` side is stable; until then it is applied locally.
 
 Direct-mode knobs added during phase 3 (experiment 0016): `BC5_DIRECT_STAGE` (`maponly`,
 `preamble`, `nodraw`, `all`), `BC5_DIRECT_DROP_OPS=<hex opcodes>` (extra drops), `BC5_DIRECT_RINGS=1`
-(compute doorbell rings to the GPU, step e), `BC5_DIRECT_PIECEWISE=<n>` (submit #n one packet at a
-time with a NOP probe after each, for hang isolation), `BC5_DIRECT_SELFTEST=1`. The host revalidates
+(compute doorbell rings to the GPU, step e), `BC5_DIRECT_SELFTEST=1`. The host revalidates
 its 1:1 mappings against `/proc/self/maps` on every sync, journals every `LOAD_*_REG[_INDEX]` table
 before a submit, and its soft CP skips the memory side effects of packets the GPU executed.
 `KYTY_BC5_ALL_RW=1` keeps every readable guest page CPU-writable (the executable's r-x/r-- segments
@@ -75,13 +74,12 @@ hold shader code and rodata; a writable userptr is the only kind libdrm can put 
 Step (d) knobs: `BC5_DIRECT_HINT_MIB`/`BC5_DIRECT_HINT_BELOW_MIB` (render-target windows, 32 MiB
 each side), `BC5_DIRECT_NO_HINTS`, `BC5_DIRECT_LEARNED` (fault-learned regions file, default
 `~/bc5-work/direct-learned.txt`), `BC5_DIRECT_REOPEN=1` (reopen the device after a ring reset),
-`BC5_DIRECT_TABLES_FULL=1` (journal whole LOAD tables), `BC5_DIRECT_MAP_GUEST_RANGES=1` (survey only).
+`BC5_DIRECT_MAP_GUEST_RANGES=1` (survey only).
 
 Added on 2026-10-01 (experiment 0016, runs 67–72): `BC5_DIRECT_SHADER_DUMP=1` (shader programs and
 the memory their user-data registers point at, as `shader-<va>.bin` / `mem-<va>.bin` in the capture
 directory; never committed), `BC5_DIRECT_RANGES_DUMP=1` (the guest's mapped ranges with physical
-offsets), `BC5_DIRECT_PIPESTATS=1` (`SAMPLE_PIPELINESTAT` before and after every frame DCB, needs
-`BC5_DIRECT_GDS_SHADOW=1`), `BC5_DIRECT_PROBE_VA=<hex>[:bytes]` (pagemap state and bytes of one
+offsets), `BC5_DIRECT_PROBE_VA=<hex>[:bytes]` (pagemap state and bytes of one
 guest address, journaled when they change), `BC5_DIRECT_NO_PAGEMAP=1` (residency from `mincore()`
 alone; by default swapped-out pages count as resident), `BC5_DIRECT_NO_TAIL_SPLIT=1` (do not split
 a compute IB at a wait followed only by signalling packets), `BC5_DIRECT_FLIP_PREFILL=1` (a
@@ -89,11 +87,14 @@ a compute IB at a wait followed only by signalling packets), `BC5_DIRECT_FLIP_PR
 buffer is cleared at `SubmitEopFlip`. With `KYTY_BC5_ANON_BACKING=1` a view whose protection
 changes is re-protected with `mprotect` instead of being mapped again (which zeroed it).
 The context-state stack emulation (`Device::set_state_stack`, F35) is on by default since run 75;
-`BC5_DIRECT_NO_STATE_STACK=1` turns it off. `BC5_DIRECT_STATE_STACK=1` in `maponly` is a dry run
-that journals what the emulation would do. `BC5_DIRECT_FLIP_DUMP=<every n>` writes the raw
+`BC5_DIRECT_NO_STATE_STACK=1` turns it off. `BC5_DIRECT_FLIP_DUMP=<every n>` writes the raw
 display buffer of every n-th flip into the capture directory (at most six files).
-`BC5_DIRECT_DRAWSTATS=<min dwords>` (with `BC5_DIRECT_PIPESTATS=1`): pipeline counters per
-marker-delimited section of the first six DCBs of at least that many dwords.
+Cleanup batch 2 (2026-10-15) removed the phase-3 bring-up probes whose questions experiment 0016
+answered: one-packet-at-a-time submission (`PIECEWISE`, `_KIND`, `_MIN`), pipeline statistics
+(`PIPESTATS`, `DRAWSTATS`), IB prologues (`PROLOGUE_PRIM`, `PROLOGUE_UCONFIG`, `TILE_STEERING`),
+`OA_ENBL`, `RAW_CONTEXT_CONTROL`, `NO_BOLIST`, `NO_SPLIT`, the GDS self-test and snapshots, the
+state-stack dry run (`STATE_STACK`) and whole-table journaling (`TABLES_FULL`); `BC5_DIRECT_GDS_KIB`
+is now read once instead of at every submission.
 `BC5_DIRECT_TIMING=1` journals a timeline (each submission with its sync and hint times, CPU
 waits, flips). `BC5_GC_NO_IDENT0=1` stops the EVFILT_GRAPHICS ident-0 events (F36).
 The crash journal is synced once per submission (before the GPU submit) since run 78;
