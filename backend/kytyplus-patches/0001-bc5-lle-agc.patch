@@ -1560,7 +1560,7 @@ index f70995a..1ba5363 100644
  } // namespace Libs::Graphics
  
 diff --git a/src/graphics/presentation/window/hostInput.cpp b/src/graphics/presentation/window/hostInput.cpp
-index edcfdaf..54ae501 100644
+index edcfdaf..4743897 100644
 --- a/src/graphics/presentation/window/hostInput.cpp
 +++ b/src/graphics/presentation/window/hostInput.cpp
 @@ -1,4 +1,6 @@
@@ -2167,7 +2167,7 @@ index edcfdaf..54ae501 100644
 +	uint32_t             m_disabled_buttons = 0;
 +	uint32_t             m_disabled_axes    = 0;
 +	bool                 m_default_keys     = true;
-+	double               m_render_scale     = 0.0; // 0: not set (BC5_DIRECT_TS_SCALE or 1)
++	double               m_render_scale     = 0.0; // 0: not set (timestamps untouched)
 +	std::vector<std::string> m_other_title_scales;   // RenderScale.<id> lines of other titles, kept
 +	int                  m_fullscreen       = -1;  // -1: not set (--fullscreen or windowed)
 +	bool                 m_custom           = false;
@@ -4370,10 +4370,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..be11ced
+index 0000000..06fd3e6
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,6341 @@
+@@ -0,0 +1,6241 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -7506,12 +7506,10 @@ index 0000000..be11ced
 +	submit_one(ib, num_dwords, kind, from_header);
 +}
 +
-+// ADR 0008 step 1, experiment 0073: BC5_DIRECT_PIECE_CHECK=<n> follows the full register state
-+// of the graphics queue (bc5::full_state: every cc/hib/dcb buffer, LOAD_* tables and nested
-+// buffers read from memory) and, for every n-th graphics buffer with memory waits, checks at each
-+// wait whether a piece started there after the tracker's prefix would see at every later draw
-+// the same registers as the unsplit buffer. CPU only: nothing submitted changes. Journals a
-+// summary every 10 s.
++// ADR 0008: the full register state of the graphics queue (bc5::full_state: every cc/hib/dcb
++// buffer, LOAD_* tables and nested buffers read from memory), for the pieces' prefixes and the
++// draw journal; a summary every 10 s. (Experiment 0073's offline check of every split,
++// BC5_DIRECT_PIECE_CHECK, was removed in cleanup batch 5 once pieces ran on the GPU.)
 +
 +// Experiment 0090: BC5_DIRECT_RT_DUMP=<t0>;<va hex>:<width>:<height>:<fmt>[;...] writes, once, at the
 +// first graphics buffer submitted from t0 s on, each listed colour target detiled on the CPU
@@ -7704,10 +7702,6 @@ index 0000000..be11ced
 +}
 +
 +static void piece_check(const uint32_t* ib, uint32_t num_dwords, const char* kind) {
-+	static const uint32_t every = [] {
-+		const char* e = std::getenv("BC5_DIRECT_PIECE_CHECK");
-+		return e != nullptr ? std::max<uint32_t>(1u, static_cast<uint32_t>(std::strtoul(e, nullptr, 10))) : 0u;
-+	}();
 +	// Experiment 0089: BC5_DIRECT_DRAW_JOURNAL=<t0>:<buffers> journals every draw and dispatch of the
 +	// graphics buffers submitted from t0 s on (that many buffers): colour target 0 (base, size,
 +	// INFO), CB_TARGET_MASK, viewport, PS and VS/ES/GS programs, the packet's dwords. Registers:
@@ -7725,15 +7719,12 @@ index 0000000..be11ced
 +		return v;
 +	}();
 +	if (std::getenv("BC5_DIRECT_RT_DUMP") != nullptr && std::strcmp(kind, "dcb") == 0 && g_dev) bc5_rt_dump_once(g_dev->sorted_mappings());
-+	if (every == 0 && !pieces_dry() && !pieces_full() && draw_journal.second == 0) return;
++	if (!pieces_dry() && !pieces_full() && draw_journal.second == 0) return;
 +	if (std::strcmp(kind, "cc") != 0 && std::strcmp(kind, "hib") != 0 && std::strcmp(kind, "dcb") != 0) return;
 +	static std::mutex                 mtx;
 +	static bc5::full_state::Tracker   tracker;
 +	static bc5::full_state::Stats     st;
-+	static uint64_t                   bufs = 0, with_waits = 0, checked = 0, splits = 0, draws = 0, bad_draws = 0, bad_splits = 0;
-+	static uint64_t                   prefix_sum = 0, prefix_max = 0, stack_max = 0;
-+	static int                        last_space = -2;
-+	static uint32_t                   last_off   = 0;
++	static uint64_t                   bufs = 0, with_waits = 0;
 +	static double                     ms = 0, last_report = 0;
 +	std::lock_guard<std::mutex>       lock(mtx);
 +	const double                      t0     = timing_now();
@@ -8029,23 +8020,7 @@ index 0000000..be11ced
 +			});
 +		}
 +		if (t_fs_valid) t_fs_before = tracker;
-+		if (every != 0 && !waits.empty() && (with_waits++ % every) == 0) {
-+			checked++;
-+			for (const size_t w: waits) {
-+				const auto c = bc5::full_state::check_split(tracker, span, w, read);
-+				splits++;
-+				draws += c.draws;
-+				bad_draws += c.mismatched_draws;
-+				prefix_sum += c.prefix_dwords;
-+				prefix_max = std::max<uint64_t>(prefix_max, c.prefix_dwords);
-+				stack_max  = std::max<uint64_t>(stack_max, c.stack_depth);
-+				if (c.mismatched_draws != 0) {
-+					bad_splits++;
-+					last_space = c.first_space;
-+					last_off   = c.first_offset;
-+				}
-+			}
-+		}
++		if (!waits.empty()) with_waits++;
 +	}
 +	tracker.apply(span, read, st);
 +	if (tag_watch()) {
@@ -8060,13 +8035,10 @@ index 0000000..be11ced
 +	ms += (timing_now() - t0) * 1000.0;
 +	if (t0 - last_report >= 10.0) {
 +		last_report = t0;
-+		journal("piece check: %" PRIu64 " graphics buffers, %" PRIu64 " with waits, %" PRIu64 " checked, %" PRIu64 " splits, %" PRIu64
-+		        " later draws, %" PRIu64 " differ (%" PRIu64 " splits; last first difference space %d offset 0x%x); prefix mean %" PRIu64
-+		        " max %" PRIu64 " dwords; open pushes max %" PRIu64 "; tracked config %zu context %zu sh %zu uconfig %zu; tables %" PRIu64
++		journal("piece check: %" PRIu64 " graphics buffers, %" PRIu64 " with waits; tracked config %zu context %zu sh %zu uconfig %zu; tables %" PRIu64
 +		        " unreadable %" PRIu64 ", nested %" PRIu64 " unreadable %" PRIu64 ", clears %" PRIu64 " pushes %" PRIu64 " pops %" PRIu64
 +		        "; %.0f ms\n",
-+		        bufs, with_waits, checked, splits, draws, bad_draws, bad_splits, last_space, last_off, splits != 0 ? prefix_sum / splits : 0,
-+		        prefix_max, stack_max, tracker.count(bc5::full_state::Config), tracker.count(bc5::full_state::Context),
++		        bufs, with_waits, tracker.count(bc5::full_state::Config), tracker.count(bc5::full_state::Context),
 +		        tracker.count(bc5::full_state::Sh), tracker.count(bc5::full_state::Uconfig), st.tables, st.unreadable_tables, st.nested,
 +		        st.unreadable_nested, st.clears, st.pushes, st.pops, ms);
 +		if (pieces_full()) {
@@ -8080,85 +8052,15 @@ index 0000000..be11ced
 +			        n, g_dry_bufs.exchange(0), n != 0 ? g_dry_prefix.exchange(0) / n : 0, static_cast<double>(g_dry_ns.exchange(0)) / 1e6,
 +			        static_cast<double>(g_dry_max_ns.exchange(0)) / 1e6, g_dry_kept.exchange(0), g_dry_ok.exchange(0), g_dry_failed.exchange(0));
 +		}
-+		bufs = with_waits = checked = splits = draws = bad_draws = bad_splits = prefix_sum = prefix_max = stack_max = 0;
-+		last_space = -2;
-+		ms         = 0;
++		bufs = with_waits = 0;
++		ms   = 0;
 +	}
-+}
-+
-+// Experiment 0105: BC5_DIRECT_PACE_FIX=<program hex>:<num>/<den> rescales the two time values of a
-+// frame-pacing compute program before its buffer is submitted. The second title's 0x11d0288100 (one
-+// workgroup; its disassembly, private) spins on s_memrealtime until min(target, start + limit), with
-+// the target as dwords 0-1 and the limit as dword 2 of the buffer at user data 4-7 (V#: base =
-+// dword0 | dword1[15:0] << 32). The title computes both for a 170 MHz clock (target = 1.70000 x the
-+// GPU's realtime, run 389); s_memrealtime counts at 100 MHz here, so the target always lay hours ahead
-+// and every frame waited the whole limit, 33.4 ms in the intro. With 0x11d0288100:100/170 both are
-+// converted to the GPU's clock. Only the title's data changes: the same packets, the same program.
-+static void pace_fix(const uint32_t* ib, uint32_t num_dwords, const char* kind) {
-+	static const auto cfg = [] {
-+		struct C {
-+			uint64_t pgm = 0, num = 1, den = 1;
-+		} c;
-+		if (const char* e = std::getenv("BC5_DIRECT_PACE_FIX"); e != nullptr) {
-+			char* end = nullptr;
-+			c.pgm     = std::strtoull(e, &end, 16);
-+			if (end != nullptr && *end == ':') c.num = std::strtoull(end + 1, &end, 10);
-+			if (end != nullptr && *end == '/') c.den = std::strtoull(end + 1, nullptr, 10);
-+			if (c.num == 0 || c.den == 0) c.pgm = 0;
-+		}
-+		return c;
-+	}();
-+	if (cfg.pgm == 0 || !g_dev) return;
-+	if (std::strcmp(kind, "dcb") != 0 && std::strcmp(kind, "acb") != 0) return;
-+	bool any = false;
-+	for (uint32_t q = 0; q < num_dwords && !any;) {
-+		const uint32_t h   = ib[q];
-+		uint32_t       len = 1;
-+		if ((h >> 30u) == 3 || (h >> 30u) == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
-+		any = (h >> 30u) == 3 && ((h >> 8u) & 0xffu) == 0x15;
-+		q += len;
-+	}
-+	if (!any) return;
-+	static std::mutex                   mtx;
-+	static std::map<uint64_t, uint64_t> converted; // parameter block -> the target it was given
-+	std::lock_guard<std::mutex>         lock(mtx);
-+	std::shared_ptr<const std::vector<bc5::direct::Mapping>> maps_p = g_dev->sorted_mappings();
-+	const bc5::full_state::Tracker::Reader read = [&maps_p](uint64_t a, uint64_t bytes) -> const uint32_t* {
-+		return covered_sorted(*maps_p, a, bytes) ? reinterpret_cast<const uint32_t*>(a) : nullptr;
-+	};
-+	bc5::full_state::for_each_draw(bc5::full_state::Tracker {}, std::span<const uint32_t>(ib, num_dwords), read,
-+	                               [&](size_t off, std::span<const uint32_t> pkt, const bc5::full_state::Tracker& t) {
-+		                               if (((pkt[0] >> 8u) & 0xffu) != 0x15) return;
-+		                               uint32_t lo = 0, hi = 0, u4 = 0, u5 = 0;
-+		                               if (!t.get(bc5::full_state::Sh, 0x20cu, lo) || !t.get(bc5::full_state::Sh, 0x20du, hi)) return;
-+		                               if (((static_cast<uint64_t>(lo) | (static_cast<uint64_t>(hi & 0xffu) << 32u)) << 8u) != cfg.pgm) return;
-+		                               if (!t.get(bc5::full_state::Sh, 0x244u, u4) || !t.get(bc5::full_state::Sh, 0x245u, u5)) return;
-+		                               const uint64_t pb = u4 | (static_cast<uint64_t>(u5 & 0xffffu) << 32u);
-+		                               if (pb == 0 || read(pb, 16) == nullptr) return;
-+		                               auto*          v      = reinterpret_cast<uint32_t*>(pb);
-+		                               const uint64_t target = v[0] | (static_cast<uint64_t>(v[1]) << 32u);
-+		                               if (const auto it = converted.find(pb); it != converted.end() && it->second == target) return; // done already
-+		                               const auto     t2    = static_cast<uint64_t>(static_cast<unsigned __int128>(target) * cfg.num / cfg.den);
-+		                               const uint32_t limit = v[2];
-+		                               const auto     l2    = static_cast<uint32_t>(static_cast<uint64_t>(limit) * cfg.num / cfg.den);
-+		                               v[0]                 = static_cast<uint32_t>(t2);
-+		                               v[1]                 = static_cast<uint32_t>(t2 >> 32u);
-+		                               v[2]                 = l2;
-+		                               if (converted.size() > 4096) converted.clear();
-+		                               converted[pb] = t2;
-+		                               static std::atomic<uint64_t> n {0};
-+		                               if ((n++ & 255u) == 0) {
-+			                               journal("pace fix: %s %u dwords at %zu: block %010" PRIx64 " target %" PRIu64 " -> %" PRIu64 ", limit %u -> %u (%" PRIu64 " so far)\n", kind, num_dwords, off, pb, target, t2,
-+			                                       limit, l2, n.load());
-+		                               }
-+	                               });
 +}
 +
 +static void submit(const uint32_t* ib, uint32_t num_dwords, const char* kind, bool from_header) {
 +	SoftCp::clear_gpu_executed(); // the soft CP runs this buffer next, on this thread
 +	if (g_stage == Stage::Off || !g_dev || ib == nullptr || num_dwords == 0) return;
 +	piece_check(ib, num_dwords, kind);
-+	pace_fix(ib, num_dwords, kind); // experiment 0105
 +	static const bool rings = std::getenv("BC5_DIRECT_RINGS") != nullptr;
 +	if (std::strcmp(kind, "ring") == 0) {
 +		if (!rings) return;
@@ -8314,17 +8216,15 @@ index 0000000..be11ced
 +	uint32_t                 slot = 0;
 +	std::vector<uint64_t>    ts_addrs; // experiment 0046: GPU timestamps to rescale once the job is done
 +};
-+// Experiment 0046: BC5_DIRECT_TS_SCALE=<k> multiplies the 64-bit GPU timestamps (RELEASE_MEM and
++// Experiment 0046: a timestamp scale k multiplies the 64-bit GPU timestamps (RELEASE_MEM and
 +// EVENT_WRITE_EOP with DATA_SEL 3) the game's buffers write, once each job is done, so that the
 +// game measures k times the GPU time it really took. Diagnostic: does the title's dynamic
 +// resolution follow its timestamps?
-+// Experiment 0047: settable while the game runs (the F2 menu's Video tab, RenderScale= in the
-+// input configuration); BC5_DIRECT_TS_SCALE gives the value at start. 1 = timestamps untouched.
-+static std::atomic<double> g_ts_scale {[] {
-+	const char* e = std::getenv("BC5_DIRECT_TS_SCALE");
-+	const double k = e != nullptr ? std::strtod(e, nullptr) : 1.0;
-+	return k > 0.0 ? k : 1.0;
-+}()};
++// Experiment 0047: settable while the game runs (the F2 menu's Video tab). Experiment 0115: only
++// from the running title's own entry, RenderScale.<TITLE_ID> in the input configuration; a title
++// without one runs with its timestamps untouched (1). The BC5_DIRECT_TS_SCALE start value, which
++// applied to every title, was removed in cleanup batch 5.
++static std::atomic<double> g_ts_scale {1.0};
 +static double ts_scale() {
 +	return g_ts_scale.load(std::memory_order_relaxed);
 +}
@@ -8411,8 +8311,8 @@ index 0000000..be11ced
 +				        j.short_list ? " (short list)" : "");
 +			}
 +			// Experiment 0105: BC5_DIRECT_TS_LOG=<t0> journals the raw GPU timestamps a job's buffer wrote
-+			// (its own RELEASE_MEM / EVENT_WRITE_EOP with DATA_SEL 3; needs BC5_DIRECT_TS_SCALE != 1 for
-+			// the collection), from t0 s on, at most 20000 jobs: where a frame's GPU time goes, read
++			// (its own RELEASE_MEM / EVENT_WRITE_EOP with DATA_SEL 3; needs a timestamp scale other than 1
++			// for the collection), from t0 s on, at most 20000 jobs: where a frame's GPU time goes, read
 +			// from the title's own profiling points.
 +			{
 +				static const double ts_log_t0 = std::getenv("BC5_DIRECT_TS_LOG") != nullptr ? std::strtod(std::getenv("BC5_DIRECT_TS_LOG"), nullptr) : -1.0;
