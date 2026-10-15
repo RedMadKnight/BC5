@@ -1,0 +1,24 @@
+run 506 (pkg-20261015-1636): t84-95 fps 43.55 | t100-115 fps 41.20 | t115-135 fps 41.55 | t135-160 fps 39.88 | t160-190 fps 41.43 | 
+   per frame t 100-190 s: cs 2.86 ms; inside the host 9.30 ms; list 0.62 ms; GPU busy 12.69 ms; label waits 0.49 ms;
+   
+run 507 (pkg-20261015-1645): t84-95 fps 37.55 | t100-115 fps 34.20 | t115-135 fps 35.30 | t135-160 fps 35.40 | t160-190 fps 35.00 | 
+   per frame t 100-190 s: cs 4.03 ms; inside the host 12.44 ms; list 0.96 ms; GPU busy 15.31 ms; label waits 2.35 ms;
+   dma snapshot: 22528 jobs, 28748 sources copied (7899 MiB), 0 left in place (slot buffer full)
+run 508 (pkg-20261015-1651): t84-95 fps 36.64 | t100-115 fps 33.67 | t115-135 fps 34.85 | t135-160 fps 34.92 | t160-190 fps 35.07 | 
+   per frame t 100-190 s: cs 4.28 ms; inside the host 12.68 ms; list 1.02 ms; GPU busy 15.11 ms; label waits 2.24 ms;
+   dma snapshot: 22528 jobs, 28748 sources copied (7899 MiB), 0 left in place (slot buffer full)
+run 509 (pkg-20261015-1656): t84-95 fps 36.45 | t100-115 fps 34.93 | t115-135 fps 35.25 | t135-160 fps 34.32 | t160-190 fps 35.10 | 
+   per frame t 100-190 s: cs 4.29 ms; inside the host 12.38 ms; list 1.02 ms; GPU busy 14.72 ms; label waits 2.01 ms;
+   dma snapshot: 22528 jobs, 28746 sources copied (7898 MiB), 0 left in place (slot buffer full)
+run 510 (pkg-20261015-1702): t84-95 fps 38.73 | t100-115 fps 36.07 | t115-135 fps 36.70 | t135-160 fps 35.44 | t160-190 fps 36.53 | 
+   per frame t 100-190 s: cs 4.09 ms; inside the host 11.75 ms; list 0.98 ms; GPU busy 13.52 ms; label waits 1.16 ms;
+   dma snapshot: 5120 jobs, 5196 sources copied (163 MiB), 0 left in place (slot buffer full)
+run 511 (pkg-20261015-1707): t84-95 fps 42.09 | t100-115 fps 40.20 | t115-135 fps 40.40 | t135-160 fps 40.44 | t160-190 fps 41.27 | 
+   per frame t 100-190 s: cs 2.95 ms; inside the host 9.69 ms; list 0.64 ms; GPU busy 12.65 ms; label waits 0.55 ms;
+   
+run 512 (pkg-20261015-1712): t84-95 fps 36.55 | t100-115 fps 35.27 | t115-135 fps 34.75 | t135-160 fps 35.32 | t160-190 fps 35.70 | 
+   per frame t 100-190 s: cs 4.42 ms; inside the host 11.75 ms; list 1.06 ms; GPU busy 13.48 ms; label waits 1.17 ms;
+   dma snapshot: 5120 jobs, 5141 sources copied (122 MiB), 50 left in place (slot buffer full)
+run 513 (pkg-20261015-1718): t84-95 fps 39.91 | t100-115 fps 40.87 | t115-135 fps 42.00 | t135-160 fps 41.92 | t160-190 fps 42.70 | 
+   per frame t 100-190 s: cs 2.86 ms; inside the host 9.19 ms; list 0.64 ms; GPU busy 12.82 ms; label waits 0.73 ms;
+   dma snapshot: 6144 jobs, 6222 sources copied (178 MiB), 0 left in place (slot buffer full)
