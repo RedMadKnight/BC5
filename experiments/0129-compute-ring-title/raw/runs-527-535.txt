@@ -1,0 +1,152 @@
+direct-selftest: --submit runs on the GPU (GFX ring); a bad submission can hang or reset the machine.
+bc5-direct: GDS BO 4 KiB: ok (0)
+userptr 1:1 80 MiB at 0x7f7488200000: ok
+1 nop       ring 0 OK rc 0 seq 1 ts 0..0 gfx-only 0 -> as expected
+2 timestamps ring 0 OK rc 0 seq 2 ts 4057409154603..4057409154955 gfx-only 0 -> as expected
+  bottom-of-pipe 0x5150 cs-done 0x6160
+3 events    ring 0 OK rc 0 seq 3 ts 0..0 gfx-only 0 -> as expected
+  cp-check 44 1 1: result 0x1 flag 0x1 confirm 0x0 -> as expected
+  cp-check 2139095040 2139095040 2139095040: result 0xdead flag 0x0 confirm 0x0 -> as expected
+  cp-check 28800 4286578688 1: result 0xdead flag 0x0 confirm 0x0 -> as expected
+  cp-check 1 1 2000: result 0xdead flag 0x0 confirm 0x0 -> as expected
+  cp-check 1048576 1024 1024: result 0x1 flag 0x1 confirm 0x0 -> as expected
+4 cp-check  ring 0 OK rc 0 seq 8 ts 0..0 gfx-only 0 -> as expected
+5 fill gfx  ring -1 OK rc 0 seq 1 ts 4057409825915..4057409944083 gfx-only 0 -> done
+5 overlap   ring 0 OK rc 0 seq 9 ts 4057409865435..4057409865635 gfx-only 0 -> as expected (compute started inside the fill)
+  mapped 1, waiting before the GFX job 1, result 0x6666
+6 wait      ring 0 OK rc 0 seq 10 ts 4057410079475..4057410148271 gfx-only 0 -> as expected
+6 new range ring 0 OK rc 0 seq 11 ts 0..0 gfx-only 0 -> as expected
+  gds read back 0x7777
+7 gds       ring 0 OK rc 0 seq 12 ts 0..0 gfx-only 0 -> as expected
+compute ladder: all passed
+
+### run 527
+run 527 (baseline, new binary, compute ring off) capture pkg-20261015-2222 timeouts=0 faults=0 resets=0
+  t85-100 frames 701 fps 46.73
+  t130-165 frames 1118 fps 31.94
+  t165-200 frames 1066 fps 30.46
+  jt lines: 55764
+  acb: 33326 jobs, summed start-to-end 7452.8 ms (mean 223.6 us)
+  dcb: 21007 jobs, summed start-to-end 6198.0 ms (mean 295.0 us)
+  hib: 954 jobs, summed start-to-end 0.8 ms (mean 0.9 us)
+  cc: 477 jobs, summed start-to-end 0.3 ms (mean 0.6 us)
+### run 528
+run 528 (compute ring 0) capture pkg-20261015-2226 timeouts=0 faults=0 resets=0
+  t85-100 frames 394 fps 26.27
+  t130-165 frames 944 fps 26.97
+  t165-200 frames 893 fps 25.51
+compute ring 0: 1 jobs so far (rc 0), 0 compute buffers kept on the GFX ring
+compute ring 0: 65537 jobs so far (rc 0), 0 compute buffers kept on the GFX ring
+compute ring 0: 131073 jobs so far (rc 0), 0 compute buffers kept on the GFX ring
+compute ring 0: 196609 jobs so far (rc 0), 0 compute buffers kept on the GFX ring
+compute ring 0: 262145 jobs so far (rc 0), 0 compute buffers kept on the GFX ring
+  jt lines: 50552
+  dcb: 18029 jobs, summed start-to-end 5724.7 ms (mean 317.5 us)
+  acb-state: 1393 jobs, summed start-to-end 1.6 ms (mean 1.1 us)
+  hib: 816 jobs, summed start-to-end 0.7 ms (mean 0.8 us)
+  cc: 408 jobs, summed start-to-end 0.2 ms (mean 0.6 us)
+### run 529
+run 529 (compute ring 0, cross-ring waits compute) capture pkg-20261015-2232 timeouts=0 faults=0 resets=0
+  t85-100 frames 518 fps 34.53
+  t130-165 frames 961 fps 27.46
+  t165-200 frames 914 fps 26.11
+compute ring 0: 1 jobs so far (rc 0), 0 compute buffers kept on the GFX ring
+compute ring 0: 65537 jobs so far (rc 0), 0 compute buffers kept on the GFX ring
+compute ring 0: 131073 jobs so far (rc 0), 0 compute buffers kept on the GFX ring
+compute ring 0: 196609 jobs so far (rc 0), 0 compute buffers kept on the GFX ring
+compute ring 0: 262145 jobs so far (rc 0), 0 compute buffers kept on the GFX ring
+  jt lines: 47220
+  acb: 27850 jobs, summed start-to-end 9591.8 ms (mean 344.4 us)
+  dcb: 18137 jobs, summed start-to-end 5491.6 ms (mean 302.8 us)
+  hib: 822 jobs, summed start-to-end 0.7 ms (mean 0.8 us)
+  cc: 411 jobs, summed start-to-end 0.2 ms (mean 0.6 us)
+### run 530
+run 530 (baseline, compute ring off, untouched) capture pkg-20261015-2236 timeouts=0 faults=0 resets=0
+  t85-100 frames 709 fps 47.27
+  t130-165 frames 1176 fps 33.60
+  t165-200 frames 1106 fps 31.60
+  jt lines: 57925
+  acb: 34219 jobs, summed start-to-end 8185.1 ms (mean 239.2 us)
+  dcb: 22197 jobs, summed start-to-end 6304.5 ms (mean 284.0 us)
+  hib: 1006 jobs, summed start-to-end 0.9 ms (mean 0.8 us)
+  cc: 503 jobs, summed start-to-end 0.3 ms (mean 0.6 us)
+### run 531
+run 531 (compute ring, no deps) capture pkg-20261015-2241 timeouts=0 faults=0
+  flip bright jumps (>3 points) from 85 s: 19; last: flip bright: t 206.379 s 4200 flips, 19 jumps; now 8.8% lit
+frames 519 fps 34.60
+window 14972.2 ms: GPU busy (any ring) 9447.7 ms = 63.1 %, idle 5524.5 ms
+  ring -1:  24479 jobs, busy 3715.8 ms (24.8 %)
+  ring  0:  38485 jobs, busy 7344.7 ms (49.1 %)
+  both rings busy at once: 1612.7 ms (10.8 % of the window)
+### run 532
+run 532 (compute ring, deps acb) capture pkg-20261015-2245 timeouts=0 faults=0
+  flip bright jumps (>3 points) from 85 s: 23; last: flip bright: t 209.956 s 4200 flips, 23 jumps; now 5.7% lit
+frames 500 fps 33.33
+window 14971.9 ms: GPU busy (any ring) 9367.5 ms = 62.6 %, idle 5604.4 ms
+  ring -1:  23567 jobs, busy 3549.8 ms (23.7 %)
+  ring  0:  37047 jobs, busy 6983.9 ms (46.6 %)
+  both rings busy at once: 1166.2 ms (7.8 % of the window)
+### run 533
+run 533 (compute ring, deps dcb) capture pkg-20261015-2249 timeouts=0 faults=0
+  flip bright jumps (>3 points) from 85 s: 15; last: flip bright: t 208.239 s 4200 flips, 15 jumps; now 8.5% lit
+frames 507 fps 33.80
+window 14969.5 ms: GPU busy (any ring) 9324.4 ms = 62.3 %, idle 5645.0 ms
+  ring -1:  23930 jobs, busy 3629.4 ms (24.2 %)
+  ring  0:  37637 jobs, busy 6717.5 ms (44.9 %)
+  both rings busy at once: 1022.4 ms (6.8 % of the window)
+### run 534
+run 534 (baseline, no compute ring) capture pkg-20261015-2253 timeouts=0 faults=0
+  flip bright jumps (>3 points) from 85 s: 21; last: flip bright: t 206.941 s 6000 flips, 21 jumps; now 5.7% lit
+frames 749 fps 49.93
+window 14971.3 ms: GPU busy (any ring) 8003.5 ms = 53.5 %, idle 6967.9 ms
+  ring -1:  90798 jobs, busy 8003.5 ms (53.5 %)
+  both rings busy at once: 0.0 ms (0.0 % of the window)
+  jobs by ring and kind: {(-1, 'acb'): 55516, (-1, 'dcb'): 33032, (-1, 'cc'): 750, (-1, 'hib'): 1500}
+### run 535
+run 535 (compute ring 0, cross-ring waits all) capture pkg-20261015-2300 timeouts=0 faults=0 resets=0
+  t85-100 frames 667 fps 44.47
+  t130-165 frames 1464 fps 41.83
+  t165-200 frames 1449 fps 41.40
+compute ring 0: 1 jobs so far (rc 0), 0 compute buffers kept on the GFX ring
+compute ring 0: 65537 jobs so far (rc 0), 0 compute buffers kept on the GFX ring
+compute ring 0: 131073 jobs so far (rc 0), 0 compute buffers kept on the GFX ring
+compute ring 0: 196609 jobs so far (rc 0), 0 compute buffers kept on the GFX ring
+compute ring 0: 262145 jobs so far (rc 0), 0 compute buffers kept on the GFX ring
+  jt lines: 75088
+  dcb: 28763 jobs, summed start-to-end 9924.0 ms (mean 345.0 us)
+  acb: 44366 jobs, summed start-to-end 8014.2 ms (mean 180.6 us)
+  hib: 1306 jobs, summed start-to-end 1.1 ms (mean 0.8 us)
+  cc: 653 jobs, summed start-to-end 0.4 ms (mean 0.6 us)
+### jtrings pkg-20261015-2222
+window 14971.3 ms: GPU busy (any ring) 10546.0 ms = 70.4 %, idle 4425.3 ms
+  ring -1:  55764 jobs, busy 10546.0 ms (70.4 %)
+  both rings busy at once: 0.0 ms (0.0 % of the window)
+  jobs by ring and kind: {(-1, 'cc'): 477, (-1, 'hib'): 954, (-1, 'dcb'): 21007, (-1, 'acb'): 33326}
+game thread in host: mean 12.85 ms over 6185 frames
+### jtrings pkg-20261015-2226
+window 14972.4 ms: GPU busy (any ring) 11032.1 ms = 73.7 %, idle 3940.2 ms
+  ring -1:  19253 jobs, busy 5123.1 ms (34.2 %)
+  ring  0:  31299 jobs, busy 8850.2 ms (59.1 %)
+  both rings busy at once: 2941.1 ms (19.6 % of the window)
+  jobs by ring and kind: {(-1, 'dcb'): 18029, (0, 'acb'): 29906, (-1, 'cc'): 408, (-1, 'hib'): 816, (0, 'acb-state'): 1393}
+game thread in host: mean 23.93 ms over 4667 frames
+### jtrings pkg-20261015-2232
+window 14971.6 ms: GPU busy (any ring) 10941.8 ms = 73.1 %, idle 4029.8 ms
+  ring -1:  19370 jobs, busy 4840.2 ms (32.3 %)
+  ring  0:  27850 jobs, busy 9584.0 ms (64.0 %)
+  both rings busy at once: 3482.4 ms (23.3 % of the window)
+  jobs by ring and kind: {(0, 'acb'): 27850, (-1, 'dcb'): 18137, (-1, 'cc'): 411, (-1, 'hib'): 822}
+game thread in host: mean 20.76 ms over 5189 frames
+### jtrings pkg-20261015-2236
+window 14979.4 ms: GPU busy (any ring) 10916.8 ms = 72.9 %, idle 4062.6 ms
+  ring -1:  57925 jobs, busy 10916.8 ms (72.9 %)
+  both rings busy at once: 0.0 ms (0.0 % of the window)
+  jobs by ring and kind: {(-1, 'acb'): 34219, (-1, 'dcb'): 22197, (-1, 'cc'): 503, (-1, 'hib'): 1006}
+game thread in host: mean 12.98 ms over 6380 frames
+### jtrings pkg-20261015-2300
+window 14971.9 ms: GPU busy (any ring) 9544.4 ms = 63.7 %, idle 5427.5 ms
+  ring -1:  30722 jobs, busy 8885.4 ms (59.3 %)
+  ring  0:  44366 jobs, busy 7979.3 ms (53.3 %)
+  both rings busy at once: 7320.2 ms (48.9 % of the window)
+  jobs by ring and kind: {(-1, 'dcb'): 28763, (0, 'acb'): 44366, (-1, 'cc'): 653, (-1, 'hib'): 1306}
+game thread in host: mean 10.25 ms over 7020 frames
