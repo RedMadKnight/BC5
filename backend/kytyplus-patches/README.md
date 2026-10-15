@@ -21,10 +21,10 @@ cmake --build ~/bc5-work/kytyplus-build --target kyty_emulator -j8
 Run (paths from the dev box; nothing from `~/bc5-data` is ever committed):
 
 ```bash
-SHADPS4_SYSMODULES_PACK_DIR=$HOME/bc5-data/mnt/PPSA21567/fakelib \
+SHADPS4_SYSMODULES_PACK_DIR=$HOME/bc5-data/mnt/<TITLE_ID>/fakelib \
 KYTY_GUEST_MEMORY_MB=13824 \
 BC5_GC_DUMP_DIR=$HOME/bc5-data/captures/<run>/gc \
-kyty_emulator --game $HOME/bc5-data/mnt/PPSA21567
+kyty_emulator --game $HOME/bc5-data/mnt/<TITLE_ID>
 ```
 
 Direct submission (ADR 0005) additionally needs the BC5 backend built with clang in the same
