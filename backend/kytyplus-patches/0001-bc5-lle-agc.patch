@@ -1337,7 +1337,7 @@ index 0000000..deb84e4
 +
 +#endif // KYTY_GRAPHICS_PRESENTATION_SETTINGS_OVERLAY_H_
 diff --git a/src/graphics/presentation/videoOut.cpp b/src/graphics/presentation/videoOut.cpp
-index f980320..a972841 100644
+index f980320..f754239 100644
 --- a/src/graphics/presentation/videoOut.cpp
 +++ b/src/graphics/presentation/videoOut.cpp
 @@ -1,3 +1,9 @@
@@ -1503,7 +1503,7 @@ index f980320..a972841 100644
  void VideoOutDriver::WaitFlipDone(int handle, int index) {
  	auto* ctx = m_impl->Get(handle);
  	EXIT_IF(ctx == nullptr);
-@@ -1505,8 +1592,34 @@ void VideoOutDriver::WaitFlipDone(int handle, int index) {
+@@ -1505,8 +1592,15 @@ void VideoOutDriver::WaitFlipDone(int handle, int index) {
  	m_impl->GetFlipQueue().Wait(*ctx, index);
  }
  
@@ -1517,31 +1517,12 @@ index f980320..a972841 100644
 +	}
 +}
 +
-+// BC5: guest range of a registered display buffer (the direct-mode host checksums it at flip).
-+bool Bc5VideoOutBufferRange(int handle, int index, uint64_t* addr, uint64_t* size) {
-+	auto* video_out = DriverState().Get(handle);
-+	if (video_out == nullptr || addr == nullptr || size == nullptr || !IsValidBufferIndex(index) ||
-+	    IsSpecialBufferIndex(index)) {
-+		return false;
-+	}
-+	Common::LockGuard lock(video_out->mutex);
-+	const auto&       surface = video_out->buffers[index];
-+	if (!surface.Occupied() || surface.group_index >= VIDEO_OUT_BUFFER_ATTRIBUTE_NUM_MAX ||
-+	    !video_out->groups[surface.group_index].occupied) {
-+		return false;
-+	}
-+	const auto info = video_out->groups[surface.group_index].ImageInfo(surface);
-+	*addr           = info.data.address;
-+	*size           = info.data.size;
-+	return true;
-+}
-+
 +KYTY_SYSV_ABI int VideoOutGetFlipStatus(int handle, VideoOutFlipStatus* status) {	PRINT_NAME();
  
  	if (status == nullptr) {
  		return VIDEO_OUT_ERROR_INVALID_ADDRESS;
 diff --git a/src/graphics/presentation/videoOut.h b/src/graphics/presentation/videoOut.h
-index 58f16c6..cc3e47e 100644
+index 58f16c6..2493f77 100644
 --- a/src/graphics/presentation/videoOut.h
 +++ b/src/graphics/presentation/videoOut.h
 @@ -39,6 +39,7 @@ public:
@@ -1552,12 +1533,11 @@ index 58f16c6..cc3e47e 100644
  
  	[[nodiscard]] Impl& State() noexcept;
  
-@@ -80,6 +81,11 @@ KYTY_SYSV_ABI int VideoOutSubmitChangeBufferAttribute2(int handle, int set_index
+@@ -80,6 +81,10 @@ KYTY_SYSV_ABI int VideoOutSubmitChangeBufferAttribute2(int handle, int set_index
  KYTY_SYSV_ABI int VideoOutUnregisterBuffers(int handle, int set_index);
  KYTY_SYSV_ABI int VideoOutSubmitFlip(int handle, int index, int flip_mode, int64_t flip_arg);
  KYTY_SYSV_ABI int VideoOutGetFlipStatus(int handle, VideoOutFlipStatus* status);
 +// BC5: guest range of a registered display buffer.
-+bool Bc5VideoOutBufferRange(int handle, int index, uint64_t* addr, uint64_t* size);
 +// BC5 (experiment 0069): returns once no flip of that buffer is queued or being presented.
 +// BC5 (experiment 0070): returns once every queued flip of that buffer has been copied.
 +void Bc5VideoOutWaitFlipCopied(int handle, int index);
@@ -3442,7 +3422,7 @@ index bc73d18..252c692 100644
  
  #endif /* EMULATOR_INCLUDE_EMULATOR_KERNEL_FILESYSTEM_H_ */
 diff --git a/src/kernel/memory.cpp b/src/kernel/memory.cpp
-index 02fc0fc..c3f3cf0 100644
+index 02fc0fc..d2f007b 100644
 --- a/src/kernel/memory.cpp
 +++ b/src/kernel/memory.cpp
 @@ -1,3 +1,6 @@
@@ -3730,75 +3710,15 @@ index 02fc0fc..c3f3cf0 100644
  		if (range.type == VirtualRangeType::Direct &&
  		    !g_guest_address_space->BackingContains(current, chunk)) {
  			return false;
-@@ -3465,7 +3632,70 @@ bool KernelHandleReservedRangeAccessViolation(uint64_t vaddr) {
+@@ -3465,7 +3632,11 @@ bool KernelHandleReservedRangeAccessViolation(uint64_t vaddr) {
  	    std::strncmp(range.name, "AMM", KERNEL_MAXIMUM_NAME_LENGTH) != 0) {
  		return false;
  	}
--	EXIT("AMM virtual-memory unmap is unsupported: addr=0x%016" PRIx64 "\n", vaddr);
-+	// BC5 (experiment 0035): a page of the AMM window touched before anything mapped it is
-+	// committed on first touch with fresh direct memory, 64 KiB at a time, and the access is
-+	// retried. Engine allocators reserve a pool in this window and write and read its pages
-+	// without an explicit map for each (prosper's docs/PORTING.md and UE4_APR_IOSTORE_BRINGUP.md
-+	// describe the same lazy commit for reserved ranges above 0x1000000000; no code taken).
-+	// Off by default (KYTY_BC5_AMM_LAZY_COMMIT=1): the AMM failures seen so far were the fixed
-+	// window reservation wiping the game's mappings, not pages it expected to appear.
-+	static const bool lazy = [] {
-+		const char* e = std::getenv("KYTY_BC5_AMM_LAZY_COMMIT");
-+		return e != nullptr && std::strcmp(e, "1") == 0;
-+	}();
-+	if (!lazy) {
-+		EXIT("AMM virtual-memory unmap is unsupported: addr=0x%016" PRIx64 "\n", vaddr);
-+	}
-+	constexpr uint64_t page    = 0x10000;
-+	const uint64_t     base    = vaddr & ~(page - 1);
-+	// A page committed once is never committed again: a second fault on it is someone else's
-+	// (write tracking, protection) and replacing the page would wipe what the game wrote.
-+	static std::set<uint64_t> g_lazy_pages;
-+	if (g_lazy_pages.count(base) != 0) {
-+		std::fprintf(stderr, "amm lazy commit: refault on committed page 0x%016" PRIx64 " (addr 0x%016" PRIx64 ")\n", base, vaddr);
-+		return false;
-+	}
-+	// A page the host already maps is not lazily committed: the fault is a protection fault on
-+	// a mapping the game made inside the AMM window (e.g. "FileSystem" at 0x1110000000), and
-+	// replacing the page would wipe its contents. Report the host mapping instead.
-+	{
-+		unsigned char vec = 0;
-+		if (mincore(reinterpret_cast<void*>(vaddr & ~0xfffull), 0x1000, &vec) == 0) {
-+			char line[512];
-+			FILE* maps = std::fopen("/proc/self/maps", "r");
-+			while (maps != nullptr && std::fgets(line, sizeof(line), maps) != nullptr) {
-+				unsigned long lo = 0, hi = 0;
-+				if (std::sscanf(line, "%lx-%lx", &lo, &hi) == 2 && vaddr >= lo && vaddr < hi) {
-+					std::fprintf(stderr, "amm fault on a mapped page 0x%016" PRIx64 ": %s", vaddr, line);
-+				}
-+			}
-+			if (maps != nullptr) {
-+				std::fclose(maps);
-+			}
-+			std::fprintf(stderr, "amm fault on a mapped page: guest range name %s\n", range.name);
-+			std::fflush(stderr);
-+			EXIT("AMM fault on a mapped page: addr=0x%016" PRIx64 "\n", vaddr);
-+		}
-+	}
-+	g_lazy_pages.insert(base);
-+	int64_t            phys    = 0;
-+	const int          alloc_r = KernelAllocateDirectMemory(0, static_cast<int64_t>(KernelGetDirectMemorySize()), page, page, 0, &phys);
-+	int                map_r   = -1;
-+	if (alloc_r == OK) {
-+		void* addr = reinterpret_cast<void*>(base);
-+		// CPU and GPU read/write, fixed address.
-+		map_r = KernelMapDirectMemory2(&addr, page, 0, 0x33, 0x10, phys, page);
-+	}
-+	static std::atomic<uint64_t> g_lazy_commits {0};
-+	const uint64_t               n = g_lazy_commits.fetch_add(1) + 1;
-+	if (std::getenv("KYTY_BC5_AMM_TRACE") != nullptr || alloc_r != OK || map_r != OK || (n & (n - 1)) == 0) {
-+		std::fprintf(stderr, "amm lazy commit #%" PRIu64 ": page 0x%016" PRIx64 " phys 0x%" PRIx64 " alloc 0x%08x map 0x%08x\n", n, base,
-+		             static_cast<uint64_t>(phys), static_cast<unsigned>(alloc_r), static_cast<unsigned>(map_r));
-+	}
-+	if (alloc_r != OK || map_r != OK) {
-+		EXIT("AMM lazy commit failed: addr=0x%016" PRIx64 "\n", vaddr);
-+	}
-+	return true;
++	// Experiment 0035 tried committing such pages lazily (removed in cleanup batch 3): the AMM
++	// failures seen were the fixed window reservation wiping the game's mappings, not pages it
++	// expected to appear.
+ 	EXIT("AMM virtual-memory unmap is unsupported: addr=0x%016" PRIx64 "\n", vaddr);
++	return false;
  }
  
  int KYTY_SYSV_ABI KernelVirtualQuery(const void* addr, int flags, VirtualQueryInfo* info,
@@ -4450,10 +4370,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..5a2ed7b
+index 0000000..236dbc3
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,6799 @@
+@@ -0,0 +1,6686 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -5495,7 +5415,6 @@ index 0000000..5a2ed7b
 +static std::atomic<uint64_t>                g_ok {0};
 +static std::atomic<uint64_t>                g_bytes_mapped {0};
 +static std::atomic<uint64_t>                g_swapped_pages {0};
-+static uint64_t                             g_chunk_count[5] = {};
 +static uint64_t                             g_last_sync_ns = 0;
 +
 +// Experiment 0107: every /dev/gc ioctl calls init_once(); taking g_dev_mutex there made the title's
@@ -6196,12 +6115,7 @@ index 0000000..5a2ed7b
 +	};
 +	std::vector<unsigned char> vec;
 +	int added = 0;
-+	// BC5_DIRECT_MAP_WHOLE_VMA=1: map every rw anonymous VMA in full, not just its resident
-+	// runs (a shader may touch pages the CPU never did; an unmapped page is a GPU fault and a
-+	// reset). Costs the pages' materialisation; the totals are journaled to judge it.
-+	static const bool whole_vma = std::getenv("BC5_DIRECT_MAP_WHOLE_VMA") != nullptr;
 +	uint64_t vma_total = 0, vma_resident = 0;
-+	for (auto& c: g_chunk_count) c = 0;
 +	for (const auto& v: vmas) {
 +		const uint64_t start = v.start, end = v.end;
 +		const size_t pages = static_cast<size_t>((end - start) / kPage);
@@ -6253,48 +6167,6 @@ index 0000000..5a2ed7b
 +			}
 +		}
 +		for (size_t k = 0; k < pages; k++) vma_resident += (vec[k] & 1) ? kPage : 0;
-+		// BC5_DIRECT_CHUNK_STATS=1: how much memory chunks of a given size would pin if every
-+		// chunk with a resident page were backed in full (ADR 0006: the chunk size of the
-+		// dma-buf backing). Journaled with the "vmas" line.
-+		static const bool chunk_stats = std::getenv("BC5_DIRECT_CHUNK_STATS") != nullptr;
-+		if (chunk_stats) {
-+			static const uint64_t kSizes[] = {65536, 1u << 20, 2u << 20, 8u << 20, 32u << 20};
-+			for (size_t g = 0; g < 5; g++) {
-+				uint64_t last = ~0ull;
-+				for (size_t k = 0; k < pages; k++) {
-+					if ((vec[k] & 1) == 0) continue;
-+					const uint64_t c = (start + k * kPage) / kSizes[g];
-+					if (c != last) { g_chunk_count[g]++; last = c; }
-+				}
-+			}
-+		}
-+		if (whole_vma) std::fill(vec.begin(), vec.end(), 1);
-+		// BC5_DIRECT_MAP_GUEST_RANGES=1 (ADR 0005 §1 as written): every range the game mapped
-+		// (direct, flexible, pooled, stack, code, runtime) is mapped in full, resident or not —
-+		// a render target the CPU never wrote is not resident but the GPU will write it. The
-+		// guest's own reservation (13 GB of rw anonymous VMA in KytyPlus) stays out. Pages get
-+		// materialised at the first submit that lists the BO; the per-type totals are journaled.
-+		static const bool guest_ranges = std::getenv("BC5_DIRECT_MAP_GUEST_RANGES") != nullptr;
-+		if (guest_ranges && !v.readonly) {
-+			struct Ctx { uint64_t start, end; std::vector<unsigned char>* vec; uint64_t by_type[6]; } ctx {start, end, &vec, {}};
-+			Libs::LibKernel::Memory::Bc5ForEachMappedRange([](uint64_t a, uint64_t size, int type, int, const char*, void* p) {
-+				auto* c = static_cast<Ctx*>(p);
-+				if (type >= 0 && type < 6) c->by_type[type] += size;
-+				const uint64_t lo = a > c->start ? a : c->start;
-+				const uint64_t hi = (a + size) < c->end ? (a + size) : c->end;
-+				if (lo >= hi) return;
-+				for (uint64_t x = lo; x < hi; x += kPage) (*c->vec)[static_cast<size_t>((x - c->start) / kPage)] = 1;
-+			}, &ctx);
-+			static uint64_t last_logged = 0;
-+			uint64_t sum = 0;
-+			for (const uint64_t b: ctx.by_type) sum += b;
-+			if (sum != last_logged) {
-+				last_logged = sum;
-+				journal("guest ranges: direct %.1f flexible %.1f pooled %.1f stack %.1f code %.1f runtime %.1f MiB\n",
-+				        ctx.by_type[0] / 1048576.0, ctx.by_type[1] / 1048576.0, ctx.by_type[2] / 1048576.0,
-+				        ctx.by_type[3] / 1048576.0, ctx.by_type[4] / 1048576.0, ctx.by_type[5] / 1048576.0);
-+			}
-+		}
 +		// Resident runs at 64 KiB granularity.
 +		size_t i = 0;
 +		while (i < pages) {
@@ -6346,11 +6218,6 @@ index 0000000..5a2ed7b
 +		const double mib = 1024.0 * 1024.0;
 +		LOGF("[bc5-direct] mappings: +%d -%d, %zu total, %.1f MiB (rw anon VMAs: %zu, %.1f MiB, %.1f MiB resident)\n", added, removed, have.size(), static_cast<double>(g_bytes_mapped.load()) / mib, vmas.size(), static_cast<double>(vma_total) / mib, static_cast<double>(vma_resident) / mib);
 +		journal("swapped pages taken as resident so far: %" PRIu64 "\n", g_swapped_pages.load());
-+		if (std::getenv("BC5_DIRECT_CHUNK_STATS") != nullptr) {
-+			journal("chunk stats: resident %.1f MiB; chunks with a resident page: 64K %" PRIu64 " (%.1f MiB), 1M %" PRIu64 " (%.1f MiB), 2M %" PRIu64 " (%.1f MiB), 8M %" PRIu64 " (%.1f MiB), 32M %" PRIu64 " (%.1f MiB)\n",
-+			        static_cast<double>(vma_resident) / mib, g_chunk_count[0], g_chunk_count[0] / 16.0, g_chunk_count[1], static_cast<double>(g_chunk_count[1]),
-+			        g_chunk_count[2], g_chunk_count[2] * 2.0, g_chunk_count[3], g_chunk_count[3] * 8.0, g_chunk_count[4], g_chunk_count[4] * 32.0);
-+		}
 +		journal("vmas %zu total %.1f MiB resident %.1f MiB mapped %.1f MiB\n", vmas.size(), static_cast<double>(vma_total) / mib, static_cast<double>(vma_resident) / mib, static_cast<double>(g_bytes_mapped.load()) / mib);
 +	}
 +}
@@ -10990,66 +10857,6 @@ index 0000000..5a2ed7b
 +static KYTY_SYSV_ABI int SubmitEopFlip(int handle, int index, int flip_mode, int64_t flip_arg,
 +                                       void* unk) {
 +	PRINT_NAME();
-+	// Direct mode: does the GPU write the display buffer? A sparse sum over the surface, journaled
-+	// per flip (zero = nobody rendered into it; the game's last pass targets these very buffers).
-+	// BC5_DIRECT_FLIP_SAMPLE=1 since 2026-10-07: the diagnostic of runs 60-76 read a word per page
-+	// of the 33 MB display buffer and of every recent target on the game's thread at every flip.
-+	static const bool flip_sample = std::getenv("BC5_DIRECT_FLIP_SAMPLE") != nullptr;
-+	if (flip_sample && std::getenv("BC5_GC_MODE") != nullptr && std::strcmp(std::getenv("BC5_GC_MODE"), "direct") == 0) {
-+		uint64_t a = 0, n = 0;
-+		if (VideoOut::Bc5VideoOutBufferRange(handle, index, &a, &n) && a != 0 && n != 0) {
-+			const auto* w = reinterpret_cast<const volatile uint32_t*>(a);
-+			// BC5_DIRECT_FLIP_PREFILL=1: after sampling, the sample points get a pattern; the next
-+			// flip of this buffer tells "nobody wrote it" (pattern stays) from "the pass wrote
-+			// black" (zero) — run 73.
-+			static const bool prefill = std::getenv("BC5_DIRECT_FLIP_PREFILL") != nullptr;
-+			const uint32_t kPattern = 0x5a5a5a5au;
-+			uint64_t sum = 0, nonzero = 0, samples = 0, pattern = 0;
-+			for (uint64_t k = 0; k < n / 4; k += 1024, samples++) {
-+				const uint32_t v = w[k];
-+				sum += v;
-+				nonzero += v != 0;
-+				pattern += v == kPattern;
-+			}
-+			// BC5_DIRECT_FLIP_DUMP=<every n>: the display buffer as the GPU left it, raw, as
-+			// flip-<count>.raw in the capture directory (when the sampled content changed, at most 10 files; never committed) — the
-+			// image itself, whatever the presenter makes of it (run 76).
-+			static const long dump_every = std::getenv("BC5_DIRECT_FLIP_DUMP") ? std::atol(std::getenv("BC5_DIRECT_FLIP_DUMP")) : 0;
-+			static long flips = 0, dumped = 0;
-+			flips++;
-+			static uint64_t last_sum = 0; // a dump only when the sampled content changed
-+			if (dump_every > 0 && nonzero != 0 && sum != last_sum && (flips % dump_every) == 0 && dumped < 10 && !Bc5Gc::g_dump_dir.empty()) {
-+				last_sum = sum;
-+				char name[512];
-+				std::snprintf(name, sizeof(name), "%s/flip-%03ld.raw", Bc5Gc::g_dump_dir.c_str(), flips);
-+				if (FILE* f = std::fopen(name, "wb")) {
-+					std::fwrite(reinterpret_cast<const void*>(a), 1, n, f);
-+					std::fclose(f);
-+					dumped++;
-+					Bc5Gc::Direct::journal("flip %ld dumped: %s\n", flips, name);
-+				}
-+			}
-+			if (prefill) {
-+				auto* ww = reinterpret_cast<volatile uint32_t*>(a);
-+				for (uint64_t k = 0; k < n / 4; k += 1024) ww[k] = kPattern;
-+			}
-+			Bc5Gc::Direct::journal("flip %d/%d buffer 0x%" PRIx64 " +0x%" PRIx64 ": sum 0x%" PRIx64 " nonzero %" PRIu64 "/%" PRIu64 " pattern %" PRIu64 "\n", handle, index, a, n, sum, nonzero, samples, pattern);
-+			// Do any render targets or depth buffers receive pixels at all? Sample 4 MiB from each
-+			// base the hint mapper saw (run 60: the flip buffer stays zero with sane counters).
-+			for (const auto& t: Bc5Gc::Direct::g_recent_targets) {
-+				const auto* tw = reinterpret_cast<const volatile uint32_t*>(t.second);
-+				uint64_t nz = 0, smp = 0;
-+				std::vector<uint32_t> vals;
-+				for (uint64_t k = 0; k < (4u << 20u) / 4; k += 1024, smp++) { const uint32_t v = tw[k]; nz += v != 0; vals.push_back(v); }
-+				std::sort(vals.begin(), vals.end());
-+				const size_t distinct = static_cast<size_t>(std::unique(vals.begin(), vals.end()) - vals.begin());
-+				// a clear leaves one value, rasterised content many (run 62: are the draws real?)
-+				Bc5Gc::Direct::journal("  target %s 0x%" PRIx64 ": distinct %zu min 0x%08x max 0x%08x, ", t.first, t.second, distinct, vals.front(), vals[distinct - 1]);
-+				Bc5Gc::Direct::journal("  target %s 0x%" PRIx64 ": nonzero %" PRIu64 "/%" PRIu64 "\n", t.first, t.second, nz, smp);
-+			}
-+			LOGF("[bc5-direct] flip buffer 0x%" PRIx64 ": nonzero samples %" PRIu64 "/%" PRIu64 "\n", a, nonzero, samples);
-+		}
-+	}
 +	static int flip_logged = 0;
 +	if (Bc5Gc::gc_log_few(&flip_logged)) {
 +		LOGF("[bc5-gc] VideoOutSubmitEopFlip(%d, %d, %d, 0x%" PRIx64 ", %p)\n", handle, index,

@@ -73,8 +73,7 @@ hold shader code and rodata; a writable userptr is the only kind libdrm can put 
 `backend/src/direct.cpp`). `Bc5ForEachMappedRange` (memory.cpp) enumerates the guest's mapped ranges.
 Step (d) knobs: `BC5_DIRECT_HINT_MIB`/`BC5_DIRECT_HINT_BELOW_MIB` (render-target windows, 32 MiB
 each side), `BC5_DIRECT_NO_HINTS`, `BC5_DIRECT_LEARNED` (fault-learned regions file, default
-`~/bc5-work/direct-learned.txt`), `BC5_DIRECT_REOPEN=1` (reopen the device after a ring reset),
-`BC5_DIRECT_MAP_GUEST_RANGES=1` (survey only).
+`~/bc5-work/direct-learned.txt`), `BC5_DIRECT_REOPEN=1` (reopen the device after a ring reset).
 
 Added on 2026-10-01 (experiment 0016, runs 67–72): `BC5_DIRECT_SHADER_DUMP=1` (shader programs and
 the memory their user-data registers point at, as `shader-<va>.bin` / `mem-<va>.bin` in the capture
@@ -82,13 +81,11 @@ directory; never committed), `BC5_DIRECT_RANGES_DUMP=1` (the guest's mapped rang
 offsets), `BC5_DIRECT_PROBE_VA=<hex>[:bytes]` (pagemap state and bytes of one
 guest address, journaled when they change), `BC5_DIRECT_NO_PAGEMAP=1` (residency from `mincore()`
 alone; by default swapped-out pages count as resident), `BC5_DIRECT_NO_TAIL_SPLIT=1` (do not split
-a compute IB at a wait followed only by signalling packets), `BC5_DIRECT_FLIP_PREFILL=1` (a
-0x5a5a5a5a pattern at the display buffer's sample points after each flip). The flip label of a
+a compute IB at a wait followed only by signalling packets). The flip label of a
 buffer is cleared at `SubmitEopFlip`. With `KYTY_BC5_ANON_BACKING=1` a view whose protection
 changes is re-protected with `mprotect` instead of being mapped again (which zeroed it).
 The context-state stack emulation (`Device::set_state_stack`, F35) is on by default since run 75;
-`BC5_DIRECT_NO_STATE_STACK=1` turns it off. `BC5_DIRECT_FLIP_DUMP=<every n>` writes the raw
-display buffer of every n-th flip into the capture directory (at most six files).
+`BC5_DIRECT_NO_STATE_STACK=1` turns it off.
 Cleanup batch 2 (2026-10-15) removed the phase-3 bring-up probes whose questions experiment 0016
 answered: one-packet-at-a-time submission (`PIECEWISE`, `_KIND`, `_MIN`), pipeline statistics
 (`PIPESTATS`, `DRAWSTATS`), IB prologues (`PROLOGUE_PRIM`, `PROLOGUE_UCONFIG`, `TILE_STEERING`),
@@ -108,8 +105,7 @@ The forced mapping sync is skipped for IBs without draws whose operands are alre
 ADR 0006 (experiment 0017): `KYTY_BC5_DMABUF=1` instead of `KYTY_BC5_ANON_BACKING=1` keeps
 KytyPlus's upstream memfd views for direct memory; the patch seals the memfd against shrinking
 and exposes its fd (`LibKernel::Memory::Bc5DirectMemoryFd`), the host imports 2 MiB chunks of it
-through `/dev/udmabuf` and maps them at the views' addresses. `BC5_DIRECT_CHUNK_STATS=1` journals
-what chunk sizes would pin (anonymous backing).
+through `/dev/udmabuf` and maps them at the views' addresses.
 `BC5_DIRECT_NO_DMA_IDLE=1` turns off the CP-DMA idle wait the device appends to every IB (F41).
 Doorbell queues (experiment 0018): the consumer keeps ring pointers modulo the ring size and
 publishes the read pointer also in the dword behind the ring, where the driver library reads it
@@ -216,8 +212,7 @@ them there every 3 s while that process lives (the ALSA control comes back at 76
 plug-in, F94).
 Logging (F75): `KYTY_BC5_LOG_WAITS=1` restores the `KernelWaitSema`/`Equeue wait` lines,
 `BC5_GC_LOG=verbose` the gc layer's per-flip and per-ioctl lines (otherwise the first few of each
-kind), `BC5_DIRECT_FLIP_SAMPLE=1` the per-flip sampling of the display buffer and recent targets
-(the diagnostic of runs 60–76, off by default: it ran on the game's thread). The per-event input
+kind). The per-event input
 debug lines of `window.cpp` are compiled out; use `KYTY_BC5_INPUT_TRACE=1`.
 Ports from KytyPS5 (F76): a guest path under no mount point never reaches the host
 (`fileSystem.cpp`, `sysLinuxFileIO.cpp`, upstream a107d1e); guest thread names reach the host
@@ -249,7 +244,12 @@ read/write (the host emulates the DMA that fills them); APR `WaitOnAddress` hold
 and those behind it until met, AMM-only submissions run at once, a `bc5-apr-wait` thread
 re-checks; APR `MapBegin`/`MapDirectBegin` map their ranges; `SetBuffer`'s map flavour is
 handled. `KYTY_BC5_AMM_TRACE=1` traces it all (and names the instruction behind a fault in a
-reserved range); `KYTY_BC5_AMM_LAZY_COMMIT=1` commits untouched AMM pages on first access (off).
+reserved range).
+Cleanup batch 3 (2026-10-15) removed the memory surveys `BC5_DIRECT_MAP_WHOLE_VMA`,
+`BC5_DIRECT_MAP_GUEST_RANGES` and `BC5_DIRECT_CHUNK_STATS` (ADR 0006 decided the backing), the
+display-buffer sampling at every flip `BC5_DIRECT_FLIP_SAMPLE`, `_PREFILL` and `_DUMP` (runs 60–76;
+`BC5_DIRECT_RT_DUMP` replaced them) with `Bc5VideoOutBufferRange`, and `KYTY_BC5_AMM_LAZY_COMMIT`
+(experiment 0035: the AMM failures had another cause).
 
 Experiments 0036–0038 (the second title, F88–F90). AMM: the window is searched from 512 GiB
 (titles place their heaps at fixed addresses above 0x1000000000), AMM pages carry the range
