@@ -1146,6 +1146,16 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     req.resources = list;
     req.number_of_ibs = 1;
     req.ibs = &ib_info;
+    amdgpu_cs_fence dep{};
+    if ((ring_deps_ & (comp ? 1 : 2)) != 0) { // set_ring_deps
+        const int other = comp ? kGfxRing : impl_->comp_ring.load();
+        const std::uint64_t seq = comp ? impl_->last_seq.load() : impl_->last_seq_comp.load();
+        if (seq != 0 && (comp || other != kGfxRing)) {
+            dep = impl_->fence_of(other, seq);
+            req.number_of_dependencies = 1;
+            req.dependencies = &dep;
+        }
+    }
 
     const double t0 = now_ms();
     r.rc = amdgpu_cs_submit(impl_->ctx, 0, &req, 1);

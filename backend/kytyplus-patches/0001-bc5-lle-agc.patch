@@ -4391,10 +4391,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..190ef7e
+index 0000000..5d54c92
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,6382 @@
+@@ -0,0 +1,6410 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -5450,6 +5450,16 @@ index 0000000..190ef7e
 +	g_init_finished.store(true, std::memory_order_release);
 +}
 +
++// Experiment 0129 (ADR 0009): BC5_DIRECT_RING_DEPS orders the two rings through the kernel's
++// scheduler: =acb compute-ring jobs start after the GFX ring's last job, =dcb GFX-ring jobs after
++// the compute ring's last job, =both. Diagnostic for races the one ring hid.
++static int ring_deps_env() {
++	const char* e = std::getenv("BC5_DIRECT_RING_DEPS");
++	if (e == nullptr) return 0;
++	if (std::strcmp(e, "acb") == 0) return 1;
++	if (std::strcmp(e, "dcb") == 0) return 2;
++	return 3;
++}
 +static void init_once_locked() {
 +	std::lock_guard lock(g_dev_mutex);
 +	static bool done = false;
@@ -5512,6 +5522,7 @@ index 0000000..190ef7e
 +	// BC5_DIRECT_NO_DMA_IDLE=1 turns it off.
 +	g_dev->set_dma_idle(std::getenv("BC5_DIRECT_NO_DMA_IDLE") == nullptr);
 +	g_dev->set_async(g_async);
++	g_dev->set_ring_deps(ring_deps_env());
 +	if (g_async) journal("direct: jobs are not waited for at submission (BC5_DIRECT_ASYNC)\n");
 +	dump_init();
 +	journal("direct: enabled, stage %s, cu mask 0x%08x, bo list with mappings\n", stage != nullptr ? stage : "preamble", g_cu_mask);
@@ -7323,6 +7334,21 @@ index 0000000..190ef7e
 +	g_plw.erase(std::remove_if(g_plw.begin(), g_plw.end(), [seq, ring](const PendingLabelWrite& w) { return w.seq == seq && w.ring == ring; }), g_plw.end());
 +}
 +
++// ADR 0009, waits steps 2 and 3 (BC5_DIRECT_CROSS_RING_WAITS; experiments only, maintainer present):
++// a wait also stays for the GPU when the last pending write of its label is on the other ring:
++// =compute for the compute ring's waits only (a wait that never ends costs a reset of that ring),
++// =all for the GFX ring's too (a GFX ring that hangs without a fault has taken the machine down,
++// F110). Only writes of jobs already submitted are pending, so each job waits on earlier ones and
++// the waits form no cycle.
++static int cross_ring_waits() {
++	static const int v = [] {
++		const char* e = std::getenv("BC5_DIRECT_CROSS_RING_WAITS");
++		if (e == nullptr) return 0;
++		return std::strcmp(e, "all") == 0 ? 2 : 1;
++	}();
++	return v;
++}
++
 +// Will the last pending write of this wait's label satisfy it?
 +static bool ring_will_satisfy(const uint32_t* p, bool is64, int ring) {
 +	const uint32_t function = p[1] & 7u;
@@ -7332,7 +7358,8 @@ index 0000000..190ef7e
 +	for (const auto& w: g_plw) {
 +		if (w.label == a && (last == nullptr || w.order >= last->order)) last = &w;
 +	}
-+	if (last == nullptr || last->ring != ring) return false;
++	if (last == nullptr) return false;
++	if (last->ring != ring && !(cross_ring_waits() == 2 || (cross_ring_waits() == 1 && ring != bc5::direct::kGfxRing))) return false;
 +	if (is64) {
 +		if (!last->is64) return false;
 +		const uint64_t ref = p[4] | (static_cast<uint64_t>(p[5]) << 32u), mask = p[6] | (static_cast<uint64_t>(p[7]) << 32u);
@@ -8253,6 +8280,7 @@ index 0000000..190ef7e
 +			if (g_dev) g_dev->set_short_lists(std::getenv("BC5_DIRECT_NO_SHORT_LISTS") == nullptr);
 +			if (g_dev) g_dev->set_dma_idle(std::getenv("BC5_DIRECT_NO_DMA_IDLE") == nullptr);
 +			if (g_dev) g_dev->set_async(g_async);
++			if (g_dev) g_dev->set_ring_deps(ring_deps_env());
 +			g_hinted.clear();
 +			g_scratch.clear();
 +			g_scratch_id = 0;

@@ -196,6 +196,11 @@ public:
     // doesn't wait for it"). The console stream leaves 12 MB copies without CP_SYNC behind
     // (experiment 0017: video frames; the machine went down with the next IB). On by default.
     void set_dma_idle(bool v) { dma_idle_ = v; }
+    // ADR 0009, experiment 0129: order between the rings through the kernel's scheduler (a CS
+    // dependency on the other ring's last job, no CPU wait). Bit 0: a compute-ring job starts after
+    // the GFX ring's last job; bit 1: a GFX-ring job after the compute ring's last job. 0 (default):
+    // the rings run side by side.
+    void set_ring_deps(int mask) { ring_deps_ = mask; }
 
 private:
     Device() = default;
@@ -207,6 +212,7 @@ private:
     bool state_stack_ = false;
     bool short_lists_ = false;
     bool dma_idle_ = true;
+    int ring_deps_ = 0;
     std::uint64_t submits_ = 0;
 };
 
