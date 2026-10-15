@@ -8,6 +8,14 @@ A user-space GPU backend for running PS5 titles on the AMD BC-250 (Cyan Skillfis
 
 Non-goals: booting PS5 firmware, writing a new emulator, anything that touches Sony keys or firmware.
 
+Target hardware: optimisations are made for the BC-250 alone, to use its architecture as fully as
+possible. That covers the `gfx1013` GPU (40 CU after the unlock), the 8-core Zen 2 CPU (16
+threads), the unified 16 GB GDDR6, the NVMe at PCIe 2.0 ×2, and the `amdgpu` / RADV stack as
+installed on the maintainer's box. Portability to other GPUs, CPUs or distributions is not a goal
+and does not justify giving up speed on this machine. Examples are build flags such as
+`target-cpu=znver2`, the CU and wave layout of this chip, and its memory and storage limits.
+Correctness, the hard rules and the experiment discipline still apply.
+
 ## Hard rules (never break, never ask to break)
 
 1. **No Sony material in the repo, ever.** No firmware, system modules, keys, SDK headers, `.self`/`.prx` from a console, game dumps, `.ffpfsc` containers of real games, decrypted binaries, or links to any of these. If a task seems to require them, stop and say so. Test data is synthetic (built from files we generate) or from open-source homebrew.
