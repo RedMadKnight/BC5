@@ -4370,10 +4370,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..236dbc3
+index 0000000..be11ced
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,6686 @@
+@@ -0,0 +1,6341 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -7290,14 +7290,6 @@ index 0000000..236dbc3
 +	// objection to pieces: foreign SH state between them).
 +	// Run 123: these pieces faulted from the first frames (0x800000005000, a shader fetch with
 +	// foreign state); BC5_DIRECT_PIECES_FULL (experiments 0077-0079, 0119) replaced them.
-+	// Experiment 0050: BC5_DIRECT_SPLIT_AT_PGM=<hex> sends each compute-form dispatch of that
-+	// compute program as a job of its own (the buffer's register state up to it replayed in the
-+	// same job), and what comes before and after it as further jobs: which of them hangs?
-+	static const uint64_t split_pgm = [] {
-+		const char* e = std::getenv("BC5_DIRECT_SPLIT_AT_PGM");
-+		return e != nullptr ? std::strtoull(e, nullptr, 16) : 0ull;
-+	}();
-+	uint64_t split_cur_pgm = 0;
 +	std::optional<bc5::full_state::Tracker> dry;     // experiment 0074
 +	uint32_t                                dry_at = 0;
 +	std::vector<uint32_t>                   full_prefix; // BC5_DIRECT_PIECES_FULL: the prefix of the piece at start
@@ -7496,32 +7488,6 @@ index 0000000..236dbc3
 +					SoftCp::set_gpu_executed(p, len, {0}); // the soft CP must not wait again
 +				}
 +			}
-+		}
-+		if (split_pgm != 0 && type == 3 && op == 0x76 && len >= 3) {
-+			const uint32_t first = p[1] & 0xffffu;
-+			for (uint32_t k = 0; k + 2 < len; k++) {
-+				if (first + k == 0x20cu) split_cur_pgm = (split_cur_pgm & ~0xffffffff00ull) | (static_cast<uint64_t>(p[2 + k]) << 8u);
-+				if (first + k == 0x20du) split_cur_pgm = (split_cur_pgm & 0xffffffff00ull) | (static_cast<uint64_t>(p[2 + k] & 0xffu) << 40u);
-+			}
-+		}
-+		if (split_pgm != 0 && type == 3 && op == 0x16 && len == 4 && split_cur_pgm == split_pgm && std::strncmp(kind, "acb", 3) == 0) {
-+			if (i > start) {
-+				if (start > 0) {
-+					uint32_t        n   = 0;
-+					const uint32_t* pre = state_prefix(ib, start, &n);
-+					if (pre != nullptr) submit_one(pre, n, "acb-state", false);
-+				}
-+				journal("split at pgm: %s %u..%u of %u dwords before the dispatch\n", kind, start, i, num_dwords);
-+				submit_one(ib + start, i - start, kind, from_header && start == 0);
-+			}
-+			uint32_t        n   = 0;
-+			const uint32_t* pre = state_prefix(ib, i, &n);
-+			static thread_local std::vector<uint32_t> one;
-+			one.assign(pre != nullptr ? pre : p, pre != nullptr ? pre + n : p);
-+			one.insert(one.end(), p, p + len);
-+			journal("split at pgm: the dispatch at %u alone (state %u dwords + 4)\n", i, n);
-+			submit_one(one.data(), static_cast<uint32_t>(one.size()), kind, false);
-+			start = i + len;
 +		}
 +		i += len;
 +	}
@@ -8347,146 +8313,7 @@ index 0000000..236dbc3
 +	uint64_t                 seq = 0, t2_ns = 0, queued_ns = 0, dev_gen = 0;
 +	uint32_t                 slot = 0;
 +	std::vector<uint64_t>    ts_addrs; // experiment 0046: GPU timestamps to rescale once the job is done
-+	std::vector<uint64_t>    watch_args; // experiment 0050: indirect arguments of the watched program
-+	uint64_t                 watch_ud = 0;
-+	// Experiment 0063 (BC5_DIRECT_IB_STABLE_CHECK=1): the buffer and its nested buffers, hashed at
-+	// submission and again once the job is done; a change means the game rewrote a buffer the GPU
-+	// had not finished, and the host could not filter it later than now.
-+	uint64_t                                    ib_hash = 0;
-+	std::vector<std::pair<const uint32_t*, uint32_t>> hashed;
-+	std::vector<uint32_t>                       copy; // BC5_DIRECT_IB_STABLE_CHECK=2: the main buffer at submission
 +};
-+static uint64_t ib_hash(const std::vector<std::pair<const uint32_t*, uint32_t>>& bufs) {
-+	uint64_t h = 0xcbf29ce484222325ull;
-+	for (const auto& [p, n]: bufs) {
-+		const auto* v = reinterpret_cast<const volatile uint32_t*>(p);
-+		for (uint32_t i = 0; i < n; i++) h = (h ^ v[i]) * 0x100000001b3ull;
-+		h = (h ^ n) * 0x100000001b3ull;
-+	}
-+	return h;
-+}
-+static const bool g_stable_check = std::getenv("BC5_DIRECT_IB_STABLE_CHECK") != nullptr;
-+// Experiment 0050: BC5_DIRECT_WATCH_PGM=<hex> journals the indirect arguments of that compute
-+// program's dispatches when the buffer is submitted and again when its job is done or timed out,
-+// with the program's user data pointer (COMPUTE_USER_DATA_0/1).
-+static thread_local std::vector<uint64_t> t_watch_args;
-+// The 36 dwords at the program's user data pointer (its descriptor header), once per job, the first
-+// eight times: at submit and when the job ends.
-+static std::atomic<int> g_watch_dumps {0};
-+static void watch_dump(const char* when, uint64_t ud01) {
-+	const uint64_t base = (ud01 & 0xffffffffull) | (((ud01 >> 32u) & 0xffffull) << 32u);
-+	if (base == 0) return;
-+	char line[600];
-+	int  o = std::snprintf(line, sizeof(line), "watch pgm: header at 0x%" PRIx64 " %s:", base, when);
-+	const auto* t = reinterpret_cast<const volatile uint32_t*>(base);
-+	for (int k = 0; k < 36 && o < 560; k++) o += std::snprintf(line + o, sizeof(line) - static_cast<size_t>(o), " %08x", t[k]);
-+	journal("%s\n", line);
-+}
-+static thread_local uint64_t t_watch_ud = 0;
-+// Experiment 0050: destination -> source of the compute buffers' DMA_DATA copies (with
-+// BC5_DIRECT_WATCH_PGM), to look at a copy's source when its destination is checked.
-+static std::mutex                   g_dma_src_mutex;
-+static std::map<uint64_t, uint64_t> g_dma_src;
-+// Experiment 0050: the tree refit's leaf walk, done on the CPU over the inputs it read. Layout read
-+// from the program (0x909939900): s[4:5] = the header; header+0x48 the offset of a dword index
-+// buffer of header[0x80]/4 entries (one entry per four threads); header+0x58 the number of 64-byte
-+// nodes, which start at the header; each thread takes dword (thread & 3) of its node as a child; a
-+// child c with c != -1 and (c & 7) != 7 starts a list at entry c >> 3 of an 8-byte-stride list
-+// based at the header with header[0x60] records, walked until an entry's second dword is negative.
-+// Out of range the buffer reads zeros, so a list without that end never ends.
-+// Experiment 0050: true when every leaf list of the tree at `base` ends within its records (the
-+// refit walks a list until an entry's second dword is negative; out of range it reads zeros and
-+// never ends). False for a tree whose header is not "PSR_BVHL" yet.
-+static bool refit_tree_complete(uint64_t base) {
-+	const auto* h = reinterpret_cast<const volatile uint32_t*>(base);
-+	if (h[0] != 0x5f525350u || h[1] != 0x4c485642u) return false; // "PSR_BVHL"
-+	const uint64_t idx_off = h[0x48 / 4] | (static_cast<uint64_t>(h[0x48 / 4 + 1]) << 32u);
-+	const uint32_t idx_n = h[0x80 / 4] / 4, nodes_n = h[0x58 / 4], list_n = h[0x60 / 4];
-+	if (idx_off > (64ull << 20u) || idx_n > 65536 || nodes_n > (1u << 20u) || list_n > (1u << 22u)) return false;
-+	const auto* idx = reinterpret_cast<const volatile uint32_t*>(base + idx_off);
-+	for (uint32_t t = 0; t < idx_n * 4; t++) {
-+		const uint32_t node = idx[t >> 2];
-+		if (node >= nodes_n) return false;
-+		const uint32_t c = reinterpret_cast<const volatile uint32_t*>(base + static_cast<uint64_t>(node) * 64)[t & 3];
-+		if (c == 0xffffffffu || (c & 7u) != 0u || c == 30u) continue;
-+		bool ended = false;
-+		for (uint32_t e = c >> 3; e < list_n; e++) {
-+			if (static_cast<int32_t>(reinterpret_cast<const volatile uint32_t*>(base + static_cast<uint64_t>(e) * 8)[1]) < 0) {
-+				ended = true;
-+				break;
-+			}
-+		}
-+		if (!ended) return false;
-+	}
-+	return true;
-+}
-+
-+static void refit_check(uint64_t ud01) {
-+	const uint64_t base = (ud01 & 0xffffffffull) | (((ud01 >> 32u) & 0xffffull) << 32u);
-+	if (base == 0) return;
-+	const auto* h      = reinterpret_cast<const volatile uint32_t*>(base);
-+	const uint64_t idx_off  = h[0x48 / 4] | (static_cast<uint64_t>(h[0x48 / 4 + 1]) << 32u);
-+	const uint32_t idx_n    = h[0x80 / 4] / 4;
-+	const uint32_t nodes_n  = h[0x58 / 4];
-+	const uint32_t list_n   = h[0x60 / 4];
-+	const auto*    idx      = reinterpret_cast<const volatile uint32_t*>(base + idx_off);
-+	uint32_t       leaves = 0, unended = 0, longest = 0, bad_node = 0;
-+	for (uint32_t t = 0; t < idx_n * 4 && t < 65536; t++) {
-+		const uint32_t node = idx[t >> 2];
-+		if (node >= nodes_n) { bad_node++; continue; }
-+		const uint32_t c = reinterpret_cast<const volatile uint32_t*>(base + static_cast<uint64_t>(node) * 64)[t & 3];
-+		if (c == 0xffffffffu || (c & 7u) != 0u || c == 30u) continue; // the list walk is for children with the low bits 0
-+		leaves++;
-+		uint32_t e = c >> 3, steps = 0;
-+		bool     ended = false;
-+		while (steps < 100000) {
-+			const uint32_t hi = e < list_n ? reinterpret_cast<const volatile uint32_t*>(base + static_cast<uint64_t>(e) * 8)[1] : 0u;
-+			steps++;
-+			if (static_cast<int32_t>(hi) < 0) { ended = true; break; }
-+			if (e >= list_n) break; // zeros from here on
-+			e++;
-+		}
-+		if (!ended && unended == 0) {
-+			char line[700];
-+			int  o = std::snprintf(line, sizeof(line), "refit check: thread %u node %u child 0x%08x, list from %u:", t, node, c, c >> 3);
-+			for (uint32_t k = 0; k < 16 && o < 660; k++) {
-+				const auto* q = reinterpret_cast<const volatile uint32_t*>(base + static_cast<uint64_t>((c >> 3) + k) * 8);
-+				o += std::snprintf(line + o, sizeof(line) - static_cast<size_t>(o), " %08x:%08x", q[0], q[1]);
-+			}
-+			journal("%s\n", line);
-+			char line2[700];
-+			int  o2 = std::snprintf(line2, sizeof(line2), "refit check: node %u:", node);
-+			const auto* nd = reinterpret_cast<const volatile uint32_t*>(base + static_cast<uint64_t>(node) * 64);
-+			for (int k = 0; k < 16; k++) o2 += std::snprintf(line2 + o2, sizeof(line2) - static_cast<size_t>(o2), " %08x", nd[k]);
-+			journal("%s\n", line2);
-+		}
-+		if (!ended) unended++;
-+		longest = std::max(longest, steps);
-+	}
-+	{
-+		std::lock_guard<std::mutex> lk(g_dma_src_mutex);
-+		if (auto it = g_dma_src.find(base); it != g_dma_src.end()) {
-+			const auto* src = reinterpret_cast<const volatile uint32_t*>(it->second);
-+			uint32_t    nonzero_src = 0, nonzero_dst = 0;
-+			for (uint32_t k = 0xf80 / 4; k < 0x1268 / 4; k++) {
-+				nonzero_src += src[k] != 0 ? 1u : 0u;
-+				nonzero_dst += h[k] != 0 ? 1u : 0u;
-+			}
-+			journal("refit check: copied from 0x%" PRIx64 "; dwords 0xf80..0x1268 not zero: source %u, copy %u; source header %08x %08x\n", it->second, nonzero_src,
-+			        nonzero_dst, src[0], src[1]);
-+		}
-+	}
-+	journal("refit check at 0x%" PRIx64 ": index 0x%" PRIx64 " (%u), nodes %u, list %u; %u leaf walks, %u without an end in range, longest %u, %u bad node indices\n", base, idx_off,
-+	        idx_n, nodes_n, list_n, leaves, unended, longest, bad_node);
-+}
-+static uint64_t watch_pgm() {
-+	static const uint64_t v = [] {
-+		const char* e = std::getenv("BC5_DIRECT_WATCH_PGM");
-+		return e != nullptr ? std::strtoull(e, nullptr, 16) : 0ull;
-+	}();
-+	return v;
-+}
-+
 +// Experiment 0046: BC5_DIRECT_TS_SCALE=<k> multiplies the 64-bit GPU timestamps (RELEASE_MEM and
 +// EVENT_WRITE_EOP with DATA_SEL 3) the game's buffers write, once each job is done, so that the
 +// game measures k times the GPU time it really took. Diagnostic: does the title's dynamic
@@ -8573,58 +8400,6 @@ index 0000000..236dbc3
 +				r.rc = -125; // -ECANCELED: the device it was queued on is gone
 +			}
 +			forget_label_writes(j.seq, r.timed_out || r.rc == -125); // experiment 0055
-+			if (g_stable_check && !j.hashed.empty() && r.ok) { // experiment 0063
-+				static std::atomic<uint64_t> jobs {0}, changed {0}, dwords {0}, changed_dwords {0};
-+				uint64_t n_dw = 0;
-+				for (const auto& b: j.hashed) n_dw += b.second;
-+				dwords += n_dw;
-+				if (ib_hash(j.hashed) != j.ib_hash) {
-+					const uint64_t c = changed++;
-+					changed_dwords += n_dw;
-+					if (!j.copy.empty()) { // which dwords, in which packets
-+						const auto* now = reinterpret_cast<const volatile uint32_t*>(j.ib);
-+						char        line[900];
-+						int         o = std::snprintf(line, sizeof(line), "ib stable diff: #%" PRIu64 " %s %u dwords:", j.n, j.kind, j.num_dwords);
-+						uint32_t    diffs = 0, pk = 0, pk_len = 1;
-+						for (uint32_t i = 0; i < j.num_dwords; i++) {
-+							while (pk + pk_len <= i) { // the packet holding dword i (walked on the copy)
-+								pk += pk_len;
-+								const uint32_t h = j.copy[pk];
-+								const uint32_t c2 = (h >> 16u) & 0x3fffu;
-+								pk_len = ((h >> 30u) == 3 || (h >> 30u) == 0) ? (c2 == 0x3fffu ? 1 : c2 + 2) : 1;
-+							}
-+							if (i == 0) {
-+								const uint32_t h = j.copy[0];
-+								const uint32_t c2 = (h >> 16u) & 0x3fffu;
-+								pk_len = ((h >> 30u) == 3 || (h >> 30u) == 0) ? (c2 == 0x3fffu ? 1 : c2 + 2) : 1;
-+							}
-+							if (now[i] != j.copy[i]) {
-+								const bool nop_payload = (j.copy[pk] >> 30u) == 3 && ((j.copy[pk] >> 8u) & 0xffu) == 0x10 && i > pk;
-+								if (nop_payload) continue;
-+								if (diffs++ < 12 && o < 820) {
-+									o += std::snprintf(line + o, sizeof(line) - static_cast<size_t>(o), " [%u: pkt %u op %02x +%u]", i, pk, (j.copy[pk] >> 8u) & 0xffu, i - pk);
-+								}
-+							}
-+						}
-+						static std::atomic<uint64_t> copied {0}, packet_changed {0};
-+						copied++;
-+						if (diffs != 0) {
-+							if (packet_changed++ < 60) journal("%s (%u packet dwords differ, NOP payloads not counted)\n", line, diffs);
-+						}
-+						if ((copied.load() & 255u) == 0) {
-+							journal("ib stable diff: %" PRIu64 " changed jobs compared, %" PRIu64 " with a change outside NOP payloads\n", copied.load(), packet_changed.load());
-+						}
-+					}
-+					if (c < 40) {
-+						journal("ib stable check: #%" PRIu64 " %s %u dwords (+%zu nested) CHANGED before its job was done, %.2f ms after submission\n", j.n, j.kind,
-+						        j.num_dwords, j.hashed.size() - 1, static_cast<double>(SoftCp::now_ns() - j.queued_ns) / 1e6);
-+					}
-+				}
-+				if ((++jobs & 0x3fffu) == 0) {
-+					journal("ib stable check: %" PRIu64 " jobs (%" PRIu64 " dwords), %" PRIu64 " changed before done (%" PRIu64 " dwords)\n", jobs.load(), dwords.load(), changed.load(),
-+					        changed_dwords.load());
-+				}
-+			}
 +			const double total_ms = static_cast<double>(SoftCp::now_ns() - j.queued_ns) / 1e6 + j.cs_ms;
 +			frame_profile_done(index == 0, j.queued_ns, SoftCp::now_ns(), 0.0);
 +			journal("submit #%" PRIu64 " %s %u dwords at %p: pass %" PRIu64 " rewrite %" PRIu64 " drop %" PRIu64 " unmapped %" PRIu64 " cc %" PRIu64 " mappings %zu ... %s rc %d%s%s %.2f ms\n",
@@ -8634,13 +8409,6 @@ index 0000000..236dbc3
 +				journal("timing: #%" PRIu64 " done at t %.3f s, %.1f ms after the sync and hints; device: prepare %.2f list %.2f cs %.2f fence %.2f ms, %u BOs%s\n", j.n,
 +				        timing_now(), static_cast<double>(SoftCp::now_ns() - j.t2_ns) / 1e6, j.prepare_ms, j.list_ms, j.cs_ms, total_ms - j.cs_ms, j.bo_count,
 +				        j.short_list ? " (short list)" : "");
-+			}
-+			if (j.watch_ud != 0) watch_dump(r.ok ? "at the end" : (r.timed_out ? "after the timeout" : "after a failure"), j.watch_ud);
-+			if (j.watch_ud != 0) refit_check(j.watch_ud);
-+			for (const uint64_t a: j.watch_args) {
-+				const auto* t = reinterpret_cast<const volatile uint32_t*>(a);
-+				journal("watch pgm: #%" PRIu64 " %s, args at 0x%" PRIx64 " at the end: %u %u %u%s\n", j.n, r.ok ? "done" : "FAILED", a, t[0], t[1], t[2],
-+				        r.timed_out ? " (timed out)" : "");
 +			}
 +			// Experiment 0105: BC5_DIRECT_TS_LOG=<t0> journals the raw GPU timestamps a job's buffer wrote
 +			// (its own RELEASE_MEM / EVENT_WRITE_EOP with DATA_SEL 3; needs BC5_DIRECT_TS_SCALE != 1 for
@@ -9343,24 +9111,6 @@ index 0000000..236dbc3
 +	bc5::policy::FilterOptions opt;
 +	opt.cu_mask       = g_cu_mask;
 +	opt.clear_int_sel = true;
-+	// Experiment 0044: BC5_DIRECT_GCR_CLEAR=<hex>[:acb|:dcb] clears those GCR_CNTL bits in every
-+	// ACQUIRE_MEM (of compute buffers, of graphics buffers, or of all); 8000 = GL2_WB.
-+	{
-+		static const std::pair<uint32_t, int> gcr = [] {
-+			const char* e = std::getenv("BC5_DIRECT_GCR_CLEAR");
-+			if (e == nullptr) return std::pair<uint32_t, int> {0, 0};
-+			char*          end  = nullptr;
-+			const uint32_t bits = static_cast<uint32_t>(std::strtoul(e, &end, 16));
-+			int            only = 0; // 0 all, 1 acb, 2 dcb
-+			if (end != nullptr && std::strcmp(end, ":acb") == 0) only = 1;
-+			if (end != nullptr && std::strcmp(end, ":dcb") == 0) only = 2;
-+			return std::pair<uint32_t, int> {bits, only};
-+		}();
-+		const bool is_acb = std::strncmp(kind, "acb", 3) == 0;
-+		if (gcr.second == 0 || (gcr.second == 1 && is_acb) || (gcr.second == 2 && std::strcmp(kind, "dcb") == 0)) {
-+			opt.gcr_clear = gcr.first;
-+		}
-+	}
 +	// Experiment 0050: BC5_DIRECT_DMA_SYNC=1, a CP DMA wait before the first dispatch after an
 +	// unsynced DMA_DATA (backend FilterOptions::dma_sync_before_dispatch).
 +	static const bool dma_sync = std::getenv("BC5_DIRECT_DMA_SYNC") != nullptr;
@@ -9548,12 +9298,6 @@ index 0000000..236dbc3
 +			if (type == 3 || type == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
 +			if (q + len > num_dwords) break;
 +			const uint32_t op = (h >> 8u) & 0xffu;
-+			if (type == 3 && op == 0x50 && len >= 7 && (watch_pgm() != 0 || std::getenv("BC5_DIRECT_REFIT_GUARD") != nullptr)) { // experiment 0050: DMA_DATA dst -> src
-+				const uint64_t src = (ib[q + 2] & ~3ull) | (static_cast<uint64_t>(ib[q + 3]) << 32u);
-+				const uint64_t dst = (ib[q + 4] & ~3ull) | (static_cast<uint64_t>(ib[q + 5]) << 32u);
-+				std::lock_guard<std::mutex> lk(g_dma_src_mutex);
-+				if (g_dma_src.size() < 100000) g_dma_src[dst] = src;
-+			}
 +			if (type == 3 && op == 0x63 && len >= 5 && (ib[q + 3] >> 31u) != 0) { // experiment 0050: LOAD_SH_REG_INDEX pairs
 +				const uint64_t ta = (ib[q + 1] & ~3u) | (static_cast<uint64_t>(ib[q + 2] & 0xffffu) << 32u);
 +				const uint32_t tn = ib[q + 4] & 0x3fffu;
@@ -9674,70 +9418,6 @@ index 0000000..236dbc3
 +				if (mec && mec_on && survey && seen_pgm.insert(pgm).second) {
 +					journal("  mec pgm 0x%" PRIx64 " first at #%" PRIu64 " offset %u\n", pgm, g_submits.load(), q);
 +				}
-+				if (mec && watch_pgm() != 0 && pgm == watch_pgm()) {
-+					const auto* t = reinterpret_cast<const volatile uint32_t*>(a);
-+					const bool  ok = covered_sorted(*maps_p, a, 12);
-+					journal("watch pgm 0x%" PRIx64 ": %s %u dwords, dispatch at %u (initiator 0x%08x), args at 0x%" PRIx64 " now %u %u %u, user data 0x%" PRIx64 "%s\n", pgm, kind,
-+					        num_dwords, q, ib[q + 3], a, ok ? t[0] : 0u, ok ? t[1] : 0u, ok ? t[2] : 0u, ud01, skip_pgm.count(pgm) != 0 ? " (skipped)" : "");
-+					if (ok && skip_pgm.count(pgm) == 0) t_watch_args.push_back(a);
-+					if (ok && skip_pgm.count(pgm) == 0 && t_watch_ud == 0 && g_watch_dumps.fetch_add(1) < 8) {
-+						t_watch_ud = ud01;
-+						watch_dump("at submit", ud01);
-+					}
-+				}
-+				// Experiment 0050: BC5_DIRECT_REFIT_GUARD=<hex> (the second title's tree refit, 0x909939900)
-+				// runs that program's dispatches only on trees whose leaf lists are complete: the tree
-+				// itself, or, for a tree a DMA_DATA of this buffer copies in, the copy's source. A tree
-+				// the host cannot check, or one with an unfinished list, would make it loop forever.
-+				static const uint64_t refit_guard = [] {
-+					const char* e = std::getenv("BC5_DIRECT_REFIT_GUARD");
-+					return e != nullptr ? std::strtoull(e, nullptr, 16) : 0ull;
-+				}();
-+				if (mec && mec_on && refit_guard != 0 && pgm == refit_guard) {
-+					const uint64_t hb = (ud01 & 0xffffffffull) | (((ud01 >> 32u) & 0xffffull) << 32u);
-+					uint64_t       check = hb;
-+					{
-+						std::lock_guard<std::mutex> lk(g_dma_src_mutex);
-+						if (auto it = g_dma_src.find(hb); it != g_dma_src.end()) check = it->second;
-+					}
-+					// A tree's verdict is kept for a second (its lists are written once; the walk over a large
-+					// tree's lists is thousands of reads, for every refit dispatch of every frame).
-+					static std::mutex                                      cache_mutex;
-+					static std::unordered_map<uint64_t, std::pair<bool, double>> cache;
-+					const double now = timing_now();
-+					bool         ok  = false;
-+					bool         hit = false;
-+					{
-+						std::lock_guard<std::mutex> lk(cache_mutex);
-+						if (auto it = cache.find(check); it != cache.end() && now - it->second.second < 1.0) {
-+							ok  = it->second.first;
-+							hit = true;
-+						}
-+					}
-+					if (!hit) {
-+						ok = check != 0 && covered_sorted(*maps_p, check, 0x100) && refit_tree_complete(check);
-+						std::lock_guard<std::mutex> lk(cache_mutex);
-+						if (cache.size() > 100000) cache.clear();
-+						cache[check] = {ok, now};
-+					}
-+					// Experiment 0052: nor in a buffer one of whose CPU-side waits was given up: it runs before
-+					// the other queue's work it waits for, and with the lists built (BC5_DIRECT_GPU_CHECK) the
-+					// refit hung there in every run (225, 227), on trees the check above found complete.
-+					static std::atomic<uint64_t> n_run {0}, n_dropped {0}, n_unwaited {0};
-+					if (ok && t_wait_given_up) {
-+						ok = false;
-+						n_unwaited++;
-+					}
-+					(ok ? n_run : n_dropped)++;
-+					if (((n_run + n_dropped) & 0x3ffu) == 1)
-+						journal("refit guard: %" PRIu64 " run, %" PRIu64 " held back (incomplete or unknown trees, or a given-up wait: %" PRIu64 ")\n", n_run.load(), n_dropped.load(),
-+						        n_unwaited.load());
-+					if (!ok) {
-+						opt.drop_offsets.push_back(q);
-+						q += len;
-+						continue;
-+					}
-+				}
 +				if (mec && mec_on && ((!only_pgm.empty() && only_pgm.count(pgm) == 0) || skip_pgm.count(pgm) != 0)) {
 +					opt.drop_offsets.push_back(q);
 +					q += len;
@@ -9757,34 +9437,21 @@ index 0000000..236dbc3
 +					const auto* t = reinterpret_cast<const volatile uint32_t*>(a);
 +					uint32_t v[5] = {t[0], t[1], t[2], want > 3 ? t[3] : 0u, want > 4 ? t[4] : 0u};
 +					// Experiment 0038: the product without overflow (+inf as a count, 0x7f800000, wrapped
-+					// it to a small number). BC5_DIRECT_TRUST_DISPATCH=1 skips the check for
-+					// dispatches: their arguments are usually written by earlier GPU work in the same
-+					// IB, so what the CPU reads here is stale, and dropping a producer on stale values
-+					// leaves its consumers with garbage counts.
-+					// Experiment 0041: BC5_DIRECT_TRUST_DISPATCH=dcb trusts only the dispatches of
-+					// graphics buffers (DCBs), where the second title's GPU-driven dispatches read
-+					// their arguments from a per-frame scratch that holds older data at submit time
-+					// (1.5-2.2 million dropped a run).
-+					static const int trust_mode = [] {
-+						const char* e = std::getenv("BC5_DIRECT_TRUST_DISPATCH");
-+						if (e == nullptr) return 0;
-+						return std::strcmp(e, "dcb") == 0 ? 1 : (std::strcmp(e, "acb") == 0 ? 3 : 2); // experiment 0050: acb
-+					}();
-+					static const std::set<uint64_t> trust_pgm = pgm_list("BC5_DIRECT_TRUST_PGM");
-+					const bool trust_dispatch = !t_wait_given_up &&
-+					                            (trust_mode == 2 || (trust_mode == 1 && !compute_ib) || (trust_mode == 3 && compute_ib) || trust_pgm.count(pgm) != 0);
++					// it to a small number). Values read here can be stale (arguments earlier GPU work
++					// writes); trusting them instead (experiment 0041) failed, and 0052's GPU check
++					// replaced that.
 +					const bool        too_many_groups = v[0] > 65536u * 64u || v[1] > 65536u * 64u || v[2] > 65536u * 64u ||
 +					                             static_cast<uint64_t>(v[0]) * v[1] > 65536ull * 64ull ||
 +					                             static_cast<uint64_t>(v[0]) * v[1] * v[2] > 65536ull * 64ull;
 +					const bool gpu_checked = gpu_check && op == 0x16 && (mec || base1 != 0); // experiment 0052
-+					if (gpu_checked && too_many_groups && !trust_dispatch) {
++					if (gpu_checked && too_many_groups) {
 +						static std::atomic<uint64_t> n_deferred {0};
 +						if ((n_deferred++ & 0xffffu) == 0) journal("gpu check: %" PRIu64 " dispatches left to the CP that the host would have dropped\n", n_deferred.load());
 +					}
 +					// Experiment 0054: indirect draws are checked by the CP too (vertex or index count,
 +					// instance count), so a draw with a known base is no longer dropped on stale values.
 +					const bool draw_checked = gpu_check && op != 0x16 && base1 != 0;
-+					const bool insane = op == 0x16 ? (!trust_dispatch && !gpu_checked && too_many_groups)
++					const bool insane = op == 0x16 ? (!gpu_checked && too_many_groups)
 +					                               : (!draw_checked && (v[0] > max_count || v[1] > 1024u || static_cast<uint64_t>(v[0]) * v[1] > max_count));
 +					if (survey) journal("  indirect op %02x at %u: base 0x%" PRIx64 " +0x%x -> %u %u %u %u %u%s pgm 0x%" PRIx64 "\n", op, q, base1, ib[q + 1], v[0], v[1], v[2], v[3], v[4],
 +					                    insane ? " DROPPED" : "", pgm);
@@ -10101,18 +9768,6 @@ index 0000000..236dbc3
 +		it.job.queued_ns  = SoftCp::now_ns();
 +		it.job.dev_gen    = g_dev_gen.load();
 +		if (ts_scale() != 1.0) ts_collect(ib, num_dwords, &it.job.ts_addrs);
-+		it.job.watch_args.swap(t_watch_args);
-+		t_watch_args.clear();
-+		it.job.watch_ud = t_watch_ud;
-+		t_watch_ud      = 0;
-+		if (g_stable_check) { // experiment 0063
-+			it.job.hashed.emplace_back(ib, num_dwords);
-+			for (const auto& nb: r.nested) it.job.hashed.emplace_back(reinterpret_cast<const uint32_t*>(nb.cpu_addr), nb.num_dwords);
-+			it.job.ib_hash = ib_hash(it.job.hashed);
-+			static const bool keep_copy = std::getenv("BC5_DIRECT_IB_STABLE_CHECK")[0] == '2';
-+			static std::atomic<uint64_t> copies {0};
-+			if (keep_copy && (copies++ & 31u) == 0 && num_dwords <= 200000) it.job.copy.assign(ib, ib + num_dwords);
-+		}
 +		frame_profile_job(t_cq == 0, r.prepare_ms, r.list_ms, r.cs_ms);
 +		frame_profile_prep(t_cq == 0, r.prep_filter_ms, r.prep_tracker_ms, r.prep_cu_ms, r.prep_nested_ms, r.prep_copy_ms);
 +		{

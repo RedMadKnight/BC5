@@ -245,6 +245,12 @@ and those behind it until met, AMM-only submissions run at once, a `bc5-apr-wait
 re-checks; APR `MapBegin`/`MapDirectBegin` map their ranges; `SetBuffer`'s map flavour is
 handled. `KYTY_BC5_AMM_TRACE=1` traces it all (and names the instruction behind a fault in a
 reserved range).
+Cleanup batch 4 (2026-10-15) removed the tools of the refit hunt and its neighbours: the watched
+program's journal and CPU tree check `BC5_DIRECT_WATCH_PGM`, the refit guard
+`BC5_DIRECT_REFIT_GUARD` and the dispatch split `BC5_DIRECT_SPLIT_AT_PGM` (experiment 0050; 0053's
+`GPU_CHECK` + `DMA_SYNC` fixed the refit), the trust of indirect arguments `BC5_DIRECT_TRUST_DISPATCH`
+and `BC5_DIRECT_TRUST_PGM` (0041 failed, 0052 replaced it), `BC5_DIRECT_GCR_CLEAR` (0044: slower)
+and `BC5_DIRECT_IB_STABLE_CHECK` (0063).
 Cleanup batch 3 (2026-10-15) removed the memory surveys `BC5_DIRECT_MAP_WHOLE_VMA`,
 `BC5_DIRECT_MAP_GUEST_RANGES` and `BC5_DIRECT_CHUNK_STATS` (ADR 0006 decided the backing), the
 display-buffer sampling at every flip `BC5_DIRECT_FLIP_SAMPLE`, `_PREFILL` and `_DUMP` (runs 60–76;
@@ -319,9 +325,6 @@ ADR 0008 step 3, prepared and **not run** (GPU; only with the maintainer present
 satisfied, not kept for the GPU by ring order and not served within the limit. The head goes to
 the GPU, the wait is tried again, and the rest follows behind the full-state prefix. Journal:
 `piece:` (first 100) and `pieces full:` every 10 s.
-Experiment 0063: `BC5_DIRECT_IB_STABLE_CHECK=1` hashes every job's buffers at submission and when the
-job is done and journals how many changed (`=2`: every 32nd job keeps a copy, and the changed
-dwords are located by packet, NOP payloads apart).
 Experiment 0055: `BC5_DIRECT_RING_ORDER_WAITS=1` leaves a cross-queue wait to the GPU when the last
 pending label write of a job already on the ring satisfies it (backend `keep_wait_offsets`);
 `BC5_DIRECT_DCB_WAIT_UNBLOCKED_MS`, `BC5_DIRECT_TRAP_STATS=1` (diagnostics).
@@ -339,12 +342,7 @@ buffer with a given-up wait.
 Experiment 0051: the `direct by name (growth)` breakdown (every 512 MiB of imports, a walk of
 every view with SEEK_DATA: 25–80 s on the game's thread while the second title loads) only with
 `BC5_DIRECT_BREAKDOWN=1`.
-Experiment 0050 (all off by default): `BC5_DIRECT_WATCH_PGM=<hex>` journals a compute program's
-dispatches and checks its ray tracing trees on the CPU after each job; `BC5_DIRECT_SPLIT_AT_PGM`
-sends its dispatches as jobs of their own; `BC5_DIRECT_TRUST_PGM=<hex list>` and
-`BC5_DIRECT_TRUST_DISPATCH=acb` trust indirect arguments selectively (not in a buffer whose
-CPU-side wait was given up); `BC5_DIRECT_REFIT_GUARD=<hex>` runs a tree refit only on complete
-trees; `BC5_DIRECT_DMA_SYNC=1` and `BC5_DIRECT_PFP_SYNC=1` set the backend's
+Experiment 0050: `BC5_DIRECT_DMA_SYNC=1` and `BC5_DIRECT_PFP_SYNC=1` set the backend's
 `dma_sync_before_dispatch` and `pfp_sync_indirect`.
 Experiment 0049: `BC5_DIRECT_SHADER_DUMP=<dir>` writes every shader program a buffer points at
 (the six graphics stages' and the compute program registers, set or loaded by pairs), 64 KiB
@@ -370,8 +368,7 @@ slots minus the ring thread's jobs) is how many jobs fly before the game's threa
 `BC5_DIRECT_FLIP_DEFER=1` and 24 ASTRO BOT's first level runs at 57 fps instead of 54.
 Experiment 0044: `BC5_DIRECT_PKT_STATS=1` journals, every 10 s, the counts per kind of buffer of
 dispatches, draws, `EVENT_WRITE` by event, `ACQUIRE_MEM` by `GCR_CNTL`, `RELEASE_MEM` and waits, as
-the game wrote them (`pkt stats`). `BC5_DIRECT_GCR_CLEAR=<hex>[:acb|:dcb]` clears those `GCR_CNTL`
-bits in every `ACQUIRE_MEM` (backend `FilterOptions::gcr_clear`); `8000:acb` made ASTRO BOT slower.
+the game wrote them (`pkt stats`).
 Experiment 0042: `KYTY_BC5_RANGE_WATCH=lo:hi` (hex) writes every edit of the guest's ranges
 overlapping that window to stderr with the monotonic clock; the journal's zero on that clock is
 printed once (`bc5 clock`). A direct-memory heap the GPU touches before the CPU must be named in
@@ -380,8 +377,7 @@ Experiment 0040: `BC5_DIRECT_HEAVY_PROBE=1` scans the memory operands of heavy I
 the memory sync urgent for an operand page not yet known to stay unmapped; pages still unmapped
 are journaled once (`heavy probe:`, with the packet's dwords and the IB's `SET_BASE`s). Off by
 default: it cost ASTRO BOT 6 ms a frame (run 152); the second title's `run-pkg.sh` turns it on.
-`BC5_DIRECT_TRUST_DISPATCH=1` (or `=dcb`, graphics buffers only, experiment 0041) skips the sanity check of dispatch arguments read at submit time
-(worse for the second title, off). `BC5_DIRECT_OPS_DUMP=<n>` journals the opcode sequence of the
+`BC5_DIRECT_OPS_DUMP=<n>` journals the opcode sequence of the
 first n large compute IBs with such dispatches. The backend's `FilterOptions::mec_indirect_base`
 (one base per IB, with PFP_SYNC_ME inserted by `Device::submit`) is the earlier variant and is no
 longer set by the host.
