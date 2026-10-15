@@ -1,0 +1,14 @@
+run 451 start 11:50:01 nproc 16
+run 451 /home/kjaniszewski/bc5-data/captures/kytyplus-20261015-1150 faults=0 timeouts=0 pieces=26 splits=26 frames 1499 fps 59.96
+run 452 start 11:52:01 nproc 16
+run 452 /home/kjaniszewski/bc5-data/captures/kytyplus-20261015-1152 faults=0 timeouts=0 pieces=16 splits=16 frames 1499 fps 59.96
+run 453 start 11:54:01 nproc 16
+run 453 /home/kjaniszewski/bc5-data/captures/kytyplus-20261015-1154 faults=0 timeouts=0 pieces=21 splits=20 frames 1496 fps 59.84
+run 454 start 11:56:01 nproc 16
+run 454 /home/kjaniszewski/bc5-data/captures/kytyplus-20261015-1156 faults=0 timeouts=0 pieces=25 splits=25 frames 1498 fps 59.92
+run 455 start 11:58:01 nproc 16
+run 455 /home/kjaniszewski/bc5-data/captures/kytyplus-20261015-1158 faults=0 timeouts=0 pieces=25 splits=25 frames 1499 fps 59.96
+run 456 start 12:00:01 nproc 16
+run 456 /home/kjaniszewski/bc5-data/captures/kytyplus-20261015-1200 faults=0 timeouts=0 pieces=22 splits=22 frames 1499 fps 59.96
+series done
+

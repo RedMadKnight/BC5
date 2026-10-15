@@ -1,0 +1,10 @@
+== kytyplus-20261015-1150
+piece: dcb 0..115 of 9891 dwords went ahead of the wait at 115 on 0x400203940; the wait then satisfied after 4.1 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..115 of 10440 dwords went ahead of the wait at 115 on 0x400203940; the wait then satisfied after 0.1 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..115 of 10440 dwords went ahead of the wait at 115 on 0x400203940; the wait then satisfied after 0.6 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..115 of 26854 dwords went ahead of the wait at 115 on 0x400203940; the wait then satisfied after 0.0 ms; rest behind a prefix of 1261 dwords
+== kytyplus-20261015-1200
+piece: dcb 0..115 of 9891 dwords went ahead of the wait at 115 on 0x400202d40; the wait then not satisfied after 8.1 ms; rest behind a prefix of 1260 dwords
+piece: dcb 0..115 of 9023 dwords went ahead of the wait at 115 on 0x400201d40; the wait then satisfied after 3.2 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..115 of 10440 dwords went ahead of the wait at 115 on 0x400202d40; the wait then satisfied after 2.1 ms; rest behind a prefix of 1261 dwords
+piece: dcb 0..115 of 25608 dwords went ahead of the wait at 115 on 0x400202d40; the wait then satisfied after 0.0 ms; rest behind a prefix of 1261 dwords

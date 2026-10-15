@@ -308,6 +308,11 @@ ADR 0008 step 2: `BC5_DIRECT_PIECES_DRY=1` builds the prefix at every game-threa
 is not satisfied when reached (where `BC5_DIRECT_PIECES` would split), submits nothing
 differently, and journals `pieces dry:` (splits, prefix size, build time, and whether each wait
 was then kept for the GPU, served on the CPU or given up).
+Experiment 0119: a piece goes to the GPU as one job with its full-state prefix in front (two jobs
+let the ring thread's work in between: ASTRO BOT's tagged-address faults, experiment 0118);
+`BC5_DIRECT_PIECES_TWO_JOBS=1` restores two jobs. `BC5_DIRECT_TAG_WATCH=1` journals address
+registers with a non-zero bits 47:40 byte (CB/CMASK/FMASK/DCC `_BASE_EXT`, DB `_BASE_HI`, program
+`_HI`) in dry prefixes and in the stream tracker.
 ADR 0008 step 3, prepared and **not run** (GPU; only with the maintainer present):
 `BC5_DIRECT_PIECES_FULL=1` splits a game-thread graphics buffer only at a wait that was not
 satisfied, not kept for the GPU by ring order and not served within the limit. The head goes to

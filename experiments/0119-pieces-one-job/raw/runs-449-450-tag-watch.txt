@@ -1,0 +1,9 @@
+run 449 /home/kjaniszewski/bc5-data/captures/kytyplus-20261015-1133 faults=0 timeouts=0 frames 1379 fps 55.16 tag-lines=0
+pieces dry: 521 splits in 510 buffers, prefix mean 1260 dwords, build 71.3 ms in all, max 0.98 ms; the waits then: 119 kept for the GPU, 401 served on the CPU, 1 given up or broken
+pieces dry: 689 splits in 600 buffers, prefix mean 1261 dwords, build 61.9 ms in all, max 0.83 ms; the waits then: 194 kept for the GPU, 493 served on the CPU, 2 given up or broken
+pieces dry: 762 splits in 539 buffers, prefix mean 1261 dwords, build 101.1 ms in all, max 1.40 ms; the waits then: 440 kept for the GPU, 284 served on the CPU, 38 given up or broken
+run 450 /home/kjaniszewski/bc5-data/captures/kytyplus-20261015-1135 faults=0 timeouts=0 frames 1380 fps 55.20 tag-lines=0
+pieces dry: 539 splits in 524 buffers, prefix mean 1260 dwords, build 65.3 ms in all, max 1.06 ms; the waits then: 123 kept for the GPU, 414 served on the CPU, 2 given up or broken
+pieces dry: 710 splits in 601 buffers, prefix mean 1261 dwords, build 50.9 ms in all, max 0.41 ms; the waits then: 227 kept for the GPU, 479 served on the CPU, 4 given up or broken
+pieces dry: 769 splits in 541 buffers, prefix mean 1261 dwords, build 88.6 ms in all, max 1.48 ms; the waits then: 453 kept for the GPU, 286 served on the CPU, 30 given up or broken
+
