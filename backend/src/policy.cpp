@@ -186,6 +186,71 @@ bool mask_cu_register(std::uint32_t mm, std::uint32_t &value, std::uint32_t cu_m
     }
 }
 
+bool is_graphics_only(std::uint8_t opcode, std::uint32_t len) {
+    switch (opcode) {
+    case 0x12: // CLEAR_STATE
+    case 0x13: // INDEX_BUFFER_SIZE
+    case 0x26: // INDEX_BASE
+    case 0x28: // CONTEXT_CONTROL
+    case 0x2a: // INDEX_TYPE
+    case 0x2f: // NUM_INSTANCES
+    case 0x42: // PFP_SYNC_ME
+    case 0x61: // LOAD_CONTEXT_REG
+    case 0x69: // SET_CONTEXT_REG
+    case 0x9f: // LOAD_CONTEXT_REG_INDEX
+        return true;
+    case 0x16: // DISPATCH_INDIRECT: the GFX form (offset, initiator)
+        return len == 3;
+    default:
+        return opcode != 0x15 && opcode != 0x16 && is_draw_or_dispatch(opcode);
+    }
+}
+
+namespace {
+
+const char *refusal_in(std::span<const std::uint32_t> ib,
+                       const std::function<bool(std::uint64_t, std::uint64_t)> &mapped, int depth) {
+    for (std::size_t i = 0; i < ib.size();) {
+        const std::uint32_t h = ib[i];
+        const std::uint32_t type = h >> 30;
+        std::size_t len = 1;
+        if (type == 3 || type == 0) {
+            const std::uint32_t count = (h >> 16) & 0x3fff;
+            len = count == 0x3fff ? 1 : count + 2;
+        }
+        if (i + len > ib.size()) break;
+        const auto op = static_cast<std::uint8_t>((h >> 8) & 0xff);
+        if (type == 3) {
+            if (is_graphics_only(op, static_cast<std::uint32_t>(len))) return "graphics-only packet";
+            // DISPATCH_DIRECT: x, y, z, initiator; DISPATCH_INDIRECT (MEC form): lo, hi, initiator.
+            std::uint32_t init = 0;
+            if (op == 0x15 && len >= 5) init = ib[i + 4];
+            if (op == 0x16 && len >= 4) init = ib[i + 3];
+            if ((init & 0x2u) != 0 && (init & 0x20u) == 0) return "PARTIAL_TG_EN dispatch";
+            if ((op == 0x3f || op == 0x33) && len >= 4 && depth < 3 && mapped) {
+                const std::uint64_t a = (static_cast<std::uint64_t>(ib[i + 1]) & ~3ull) |
+                                        (static_cast<std::uint64_t>(ib[i + 2] & 0xffu) << 32);
+                const std::size_t n = ib[i + 3] & 0xfffffu;
+                if (a != 0 && n != 0 && mapped(a, n * 4)) {
+                    const char *why = refusal_in(
+                        std::span<const std::uint32_t>(reinterpret_cast<const std::uint32_t *>(a), n),
+                        mapped, depth + 1);
+                    if (why != nullptr) return why;
+                }
+            }
+        }
+        i += len;
+    }
+    return nullptr;
+}
+
+} // namespace
+
+const char *compute_ring_refusal(std::span<const std::uint32_t> ib,
+                                 const std::function<bool(std::uint64_t, std::uint64_t)> &mapped) {
+    return refusal_in(ib, mapped, 0);
+}
+
 bool is_draw_or_dispatch(std::uint8_t opcode) {
     switch (opcode) {
     case 0x15: // DISPATCH_DIRECT
@@ -354,7 +419,7 @@ std::size_t filter(const Policy &policy, std::span<const std::uint32_t> src,
     bool fast_op[256] = {};
     for (const std::uint8_t op : {std::uint8_t{0x68}, std::uint8_t{0x69}, std::uint8_t{0x76},
                                   std::uint8_t{0x79}, std::uint8_t{0x9b}}) {
-        fast_op[op] = policy.op(op) == Verdict::Pass &&
+        fast_op[op] = policy.op(op) == Verdict::Pass && !(opt.compute_ring && is_graphics_only(op, 0)) &&
                       std::find(opt.extra_drop.begin(), opt.extra_drop.end(), op) == opt.extra_drop.end();
     }
     while (i < n) {
@@ -402,6 +467,9 @@ std::size_t filter(const Policy &policy, std::span<const std::uint32_t> src,
         if (type == 3 && v != Verdict::Drop) {
             if (opt.drop_draws && is_draw_or_dispatch(opcode3)) {
                 v = Verdict::Drop;
+            } else if (opt.compute_ring && is_graphics_only(opcode3, len)) {
+                v = Verdict::Drop; // ADR 0009
+                stats.gfx_only_drops++;
             } else if (!opt.drop_offsets.empty() &&
                        std::find(opt.drop_offsets.begin(), opt.drop_offsets.end(),
                                  static_cast<std::uint32_t>(i)) != opt.drop_offsets.end()) {
@@ -573,7 +641,7 @@ std::size_t filter(const Policy &policy, std::span<const std::uint32_t> src,
                     stats.dispatch_rewrites++;
                 }
             }
-            if (opcode == kOpReleaseMem && opt.cs_done_to_bottom_of_pipe && len >= 3 &&
+            if (opcode == kOpReleaseMem && opt.cs_done_to_bottom_of_pipe && !opt.compute_ring && len >= 3 &&
                 ((out[i + 1] >> 8) & 0xf) == 6 && ((out[i + 2] >> 29) & 7) == 0) {
                 // RELEASE_MEM with EVENT_INDEX 6 (CS_DONE / PS_DONE) and no data: the console's
                 // compute IBs end every dispatch batch with one (address 0, cache flush only);

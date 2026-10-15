@@ -25,12 +25,14 @@ constexpr std::uint32_t kCondExec = 0xC0032200u;  // PKT3(COND_EXEC, 3, 0), GFX7
 // DISPATCH_INDIRECT (GFX form, 3 dwords) x, y, z; DRAW_INDIRECT and DRAW_INDEX_INDIRECT (5 dwords)
 // the vertex or index count and the instance count (Mesa radv_cs_emit_indirect_draw_packet; the
 // arguments as VkDrawIndirectCommand / VkDrawIndexedIndirectCommand).
-std::uint32_t checked_dims(std::uint32_t h, std::size_t len) {
+std::uint32_t checked_dims(std::uint32_t h, std::size_t len, bool compute_ring) {
     if (h >> 30 != 3)
         return 0;
     const std::uint32_t op = (h >> 8) & 0xff;
-    if (op == kOpDispatchIndirect && len == 3)
+    if (op == kOpDispatchIndirect && len == (compute_ring ? 4u : 3u))
         return 3;
+    if (compute_ring)
+        return 0;
     if ((op == kOpDrawIndirect || op == kOpDrawIndexIndirect) && len == 5)
         return 2;
     return 0;
@@ -49,7 +51,8 @@ std::size_t packet_len(std::uint32_t h) {
 
 std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib, std::uint64_t base,
                                  const std::uint32_t (&max)[3], const std::uint32_t (&draw_max)[2],
-                                 std::vector<std::size_t> &flag_refs, Stats &stats) {
+                                 std::vector<std::size_t> &flag_refs, Stats &stats,
+                                 bool compute_ring) {
     std::uint32_t dispatches = 0;
     bool has_cond_exec = false;
     for (std::size_t i = 0; i < ib.size();) {
@@ -58,7 +61,7 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib, std::uint64_
         const std::uint32_t op = (h >> 8) & 0xff;
         if (h >> 30 == 3 && op == kOpCondExec)
             has_cond_exec = true;
-        if (checked_dims(h, len) != 0)
+        if (checked_dims(h, len, compute_ring) != 0)
             dispatches++;
         i += len;
     }
@@ -90,11 +93,14 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib, std::uint64_
             base = (static_cast<std::uint64_t>(ib[i + 2]) & ~3ull) |
                    (static_cast<std::uint64_t>(ib[i + 3] & 0xffffu) << 32);
         }
-        if (const std::uint32_t dims = checked_dims(h, len); dims != 0) {
+        if (const std::uint32_t dims = checked_dims(h, len, compute_ring); dims != 0) {
             const std::uint32_t *limit = dims == 3 ? max : draw_max;
             const std::size_t before = out.size();
-            if (base != 0) {
-                const std::uint64_t args = base + ib[i + 1];
+            if (base != 0 || compute_ring) {
+                const std::uint64_t args =
+                    compute_ring ? (static_cast<std::uint64_t>(ib[i + 1]) & ~3ull) |
+                                       (static_cast<std::uint64_t>(ib[i + 2] & 0xffffu) << 32)
+                                 : base + ib[i + 1];
                 const auto flag = [&out, &flag_refs] {
                     flag_refs.push_back(out.size());
                     out.push_back(0); // lo, filled in by patch()
@@ -117,7 +123,9 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib, std::uint64_
                 out.push_back(4); // the confirm word: the flag's address + 4 (patch() adds it)
                 out.push_back(0);
                 out.push_back(0);
-                out.insert(out.end(), {kPfpSyncMe, 0u, kCondExec});
+                if (!compute_ring)
+                    out.insert(out.end(), {kPfpSyncMe, 0u});
+                out.push_back(kCondExec);
                 flag();
                 out.insert(out.end(), {0u, static_cast<std::uint32_t>(len)});
                 stats.checked++;
@@ -149,7 +157,7 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib, std::uint64_
             flag_refs.clear();
             for (std::size_t i = 0; i < out.size();) {
                 const std::size_t len = packet_len(out[i]);
-                if (checked_dims(out[i], len) != 0)
+                if (checked_dims(out[i], len, compute_ring) != 0)
                     out[i] = 0xC0001000u | (static_cast<std::uint32_t>(len - 2) << 16); // NOP
                 i += len;
             }

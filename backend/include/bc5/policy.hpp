@@ -78,6 +78,7 @@ struct FilterStats {
     std::uint64_t gpu_checks = 0;       // DISPATCH_INDIRECT checked by the CP (gpu_check_indirect)
     std::uint64_t gpu_check_unbased = 0; // the same without a known base: PFP_SYNC_ME only
     std::uint64_t gpu_check_skipped = 0; // NOP-ed instead: a COND_EXEC range grew past its count
+    std::uint64_t gfx_only_drops = 0; // graphics-only packets NOP-ed on a compute ring (FilterOptions::compute_ring)
     // IB offsets (dwords) where a SAMPLE_PIPELINESTAT took a dropped marker's place
     // (FilterOptions::stat_sample_va); sample k went to stat_sample_va + k * kStatSampleStride.
     std::vector<std::uint32_t> stat_sample_offsets;
@@ -189,7 +190,29 @@ struct FilterOptions {
     // multiple of 4 GiB): compute-form packets whose address lies in [base, base + 4 GiB) become
     // GFX form (offset = the low address dword, initiator, NOP), the others are dropped.
     std::uint64_t mec_indirect_base = 0;
+    // ADR 0009: the job goes to a kernel compute ring (the MEC). The packets of
+    // compute_ring_refusal() are NOP-ed (FilterStats::gfx_only_drops; a caller sends IBs holding
+    // them to the GFX ring instead), and RELEASE_MEM keeps CS_DONE (cs_done_to_bottom_of_pipe is
+    // a GFX-ring workaround). Device::submit sets it for its compute-ring jobs.
+    bool compute_ring = false;
 };
+
+// ADR 0009: a packet that has no place on a compute ring: CONTEXT_CONTROL (run 43 hung the MEC
+// with it, experiment 0127; IGT lib/amdgpu/compute_utils/amd_dispatch_helpers.c emits it for
+// AMDGPU_HW_IP_GFX only), CLEAR_STATE, SET_CONTEXT_REG, LOAD_CONTEXT_REG[_INDEX], the draws,
+// INDEX_BASE / INDEX_BUFFER_SIZE / INDEX_TYPE, NUM_INSTANCES, PFP_SYNC_ME (there is no PFP), and
+// DISPATCH_INDIRECT in its GFX form (3 dwords; the MEC's form carries the address, 4 dwords).
+// TODO(verify): beyond CONTEXT_CONTROL the set is what RADV's compute queue never emits, refused
+// rather than tried.
+bool is_graphics_only(std::uint8_t opcode, std::uint32_t len);
+// ADR 0009: why `ib` should not go to a compute ring, nullptr when it may: a graphics-only packet
+// (is_graphics_only), or a dispatch with PARTIAL_TG_EN set and USE_THREAD_DIMENSIONS clear, which
+// the gfx1013 MEC runs with workgroups missing (mesa#16054; COMPUTE_DISPATCH_INITIATOR bits 1 and
+// 5, Mesa src/amd/registers/gfx10.json, 0866ae7). INDIRECT_BUFFER targets are followed (up to
+// three levels) when `mapped` accepts their range; an unmapped target is not refused (the filter
+// NOPs the packet).
+const char *compute_ring_refusal(std::span<const std::uint32_t> ib,
+                                 const std::function<bool(std::uint64_t, std::uint64_t)> &mapped = {});
 
 // Draw and dispatch opcodes (the "work" packets), for staging.
 bool is_draw_or_dispatch(std::uint8_t opcode);
