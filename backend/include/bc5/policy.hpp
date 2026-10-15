@@ -130,6 +130,14 @@ struct FilterOptions {
     // The second title rewrites its rotating CPU staging before our jobs run (F146); the copy
     // keeps what it held when the title submitted. 0 = off.
     std::uint32_t dma_snapshot_min = 0;
+    // Experiment 0124: Device::submit puts a GPU timestamp in front of the job (COPY_DATA from the
+    // GPU clock, as the CP reaches it) and behind it (RELEASE_MEM BOTTOM_OF_PIPE_TS with DATA_SEL 3,
+    // once all its work is done), in the job's scratch; SubmitResult::gpu_start / gpu_end carry them
+    // once the job is finished. Mesa src/amd/common/sid.h (0866ae7): PKT3_COPY_DATA 0x40,
+    // COPY_DATA_TIMESTAMP 9, COPY_DATA_DST_MEM 5, COPY_DATA_COUNT_SEL bit 16, COPY_DATA_WR_CONFIRM
+    // bit 20; PKT3_RELEASE_MEM 0x49, EOP_DATA_SEL_TIMESTAMP 3 at bit 29; radv_query.c writes its
+    // timestamps with the same COPY_DATA.
+    bool job_timestamps = false;
     // Opcodes to drop in addition to the table (experiments).
     std::vector<std::uint8_t> extra_drop;
     // Dword offsets of packets to drop, decided by the caller from data the filter cannot see
