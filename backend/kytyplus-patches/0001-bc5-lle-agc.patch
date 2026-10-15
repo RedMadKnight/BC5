@@ -4370,10 +4370,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..06fd3e6
+index 0000000..34f8ddc
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,6241 @@
+@@ -0,0 +1,6265 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -7041,11 +7041,24 @@ index 0000000..06fd3e6
 +	return kept.back().data();
 +}
 +
++// Cleanup batch 6: the journal lines written for every job, every CPU-served wait and every
++// indirect packet (some 720 a second in ASTRO BOT) are sampled; failures, timeouts and given-up
++// waits are always written. BC5_DIRECT_JOURNAL_ALL=1 writes them all again (and the indirect
++// argument survey, on by default before).
++static bool journal_all() {
++	static const bool v = std::getenv("BC5_DIRECT_JOURNAL_ALL") != nullptr;
++	return v;
++}
++static bool journal_sample(std::atomic<uint64_t>& n, uint64_t mask) {
++	return journal_all() || (n.fetch_add(1, std::memory_order_relaxed) & mask) == 0;
++}
++
 +static void submit_segment(const uint32_t* ib, uint32_t num_dwords, uint32_t from, uint32_t to) {
 +	if (from > 0) {
 +		uint32_t        n   = 0;
 +		const uint32_t* pre = state_prefix(ib, from, &n);
-+		journal("acb segment %u..%u of %u dwords: state prefix of %u dwords replayed first\n", from, to, num_dwords, n);
++		static std::atomic<uint64_t> n_seg {0};
++		if (journal_sample(n_seg, 0x3ffu)) journal("acb segment %u..%u of %u dwords: state prefix of %u dwords replayed first\n", from, to, num_dwords, n);
 +		if (pre != nullptr) submit_one(pre, n, "acb-state", false);
 +	}
 +	submit_one(ib + from, to - from, "acb", false);
@@ -7109,7 +7122,8 @@ index 0000000..06fd3e6
 +					if (tail_split && i > done && g_stage != Stage::MapOnly) {
 +						(void)tail_is_light;
 +						SoftCp::clear_gpu_executed();
-+						journal("acb head: %u of %u dwords go ahead of the wait at %u on 0x%" PRIx64 "\n", i - done, num_dwords, i, label);
++						static std::atomic<uint64_t> n_head {0};
++						if (journal_sample(n_head, 0x3ffu)) journal("acb head: %u of %u dwords go ahead of the wait at %u on 0x%" PRIx64 "\n", i - done, num_dwords, i, label);
 +						submit_segment(ib, num_dwords, done, i);
 +						AcbHead* e = nullptr;
 +						for (auto& x: g_acb_heads) {
@@ -7480,11 +7494,12 @@ index 0000000..06fd3e6
 +						journal("  wait detail: function %u, value 0x%" PRIx64 ", reference 0x%" PRIx64 ", mask 0x%" PRIx64 "\n", p[1] & 7u,
 +						        *reinterpret_cast<const volatile uint64_t*>(label & ~7ull), p[4] | (static_cast<uint64_t>(p[5]) << 32u), p[6] | (static_cast<uint64_t>(p[7]) << 32u));
 +					}
-+					journal("cpu-wait %s at %u on 0x%" PRIx64 ": %s after %.1f ms\n", op == 0x93 ? "WAIT_REG_MEM64" : "WAIT_REG_MEM", i, label, ok ? "satisfied" : (broken ? "CYCLE" : (limit < 1'000'000'000ull ? "GIVEN UP" : "TIMEOUT")), static_cast<double>(SoftCp::now_ns() - t0) / 1e6);
++					if (!ok || journal_all()) journal("cpu-wait %s at %u on 0x%" PRIx64 ": %s after %.1f ms\n", op == 0x93 ? "WAIT_REG_MEM64" : "WAIT_REG_MEM", i, label, ok ? "satisfied" : (broken ? "CYCLE" : (limit < 1'000'000'000ull ? "GIVEN UP" : "TIMEOUT")), static_cast<double>(SoftCp::now_ns() - t0) / 1e6);
 +					if (!ok) t_wait_given_up = true;
 +					if (dry_here) (ok ? g_dry_ok : g_dry_failed)++;
 +					frame_profile_wait(on_game_thread(), false, static_cast<double>(SoftCp::now_ns() - t0) / 1e6);
-+					if (std::getenv("BC5_DIRECT_TIMING") != nullptr) journal("timing: t %.3f s after that wait (%s %u dwords)\n", timing_now(), kind, num_dwords);
++					static const bool timing_waits = std::getenv("BC5_DIRECT_TIMING") != nullptr;
++					if (timing_waits) journal("timing: t %.3f s after that wait (%s %u dwords)\n", timing_now(), kind, num_dwords);
 +					SoftCp::set_gpu_executed(p, len, {0}); // the soft CP must not wait again
 +				}
 +			}
@@ -7498,7 +7513,8 @@ index 0000000..06fd3e6
 +	if (start > 0) {
 +		uint32_t        n   = 0;
 +		const uint32_t* pre = state_prefix(ib, start, &n);
-+		journal("%s rest %u..%u of %u dwords: state prefix of %u dwords replayed first\n", kind, start, num_dwords, num_dwords, n);
++		static std::atomic<uint64_t> n_rest {0};
++		if (journal_sample(n_rest, 0x3ffu)) journal("%s rest %u..%u of %u dwords: state prefix of %u dwords replayed first\n", kind, start, num_dwords, num_dwords, n);
 +		if (pre != nullptr) submit_one(pre, n, "dcb-state", false);
 +		submit_one(ib + start, num_dwords - start, kind, false);
 +		return;
@@ -7718,7 +7734,8 @@ index 0000000..06fd3e6
 +		}
 +		return v;
 +	}();
-+	if (std::getenv("BC5_DIRECT_RT_DUMP") != nullptr && std::strcmp(kind, "dcb") == 0 && g_dev) bc5_rt_dump_once(g_dev->sorted_mappings());
++	static const bool rt_dump = std::getenv("BC5_DIRECT_RT_DUMP") != nullptr;
++	if (rt_dump && std::strcmp(kind, "dcb") == 0 && g_dev) bc5_rt_dump_once(g_dev->sorted_mappings());
 +	if (!pieces_dry() && !pieces_full() && draw_journal.second == 0) return;
 +	if (std::strcmp(kind, "cc") != 0 && std::strcmp(kind, "hib") != 0 && std::strcmp(kind, "dcb") != 0) return;
 +	static std::mutex                 mtx;
@@ -8302,7 +8319,7 @@ index 0000000..06fd3e6
 +			forget_label_writes(j.seq, r.timed_out || r.rc == -125); // experiment 0055
 +			const double total_ms = static_cast<double>(SoftCp::now_ns() - j.queued_ns) / 1e6 + j.cs_ms;
 +			frame_profile_done(index == 0, j.queued_ns, SoftCp::now_ns(), 0.0);
-+			journal("submit #%" PRIu64 " %s %u dwords at %p: pass %" PRIu64 " rewrite %" PRIu64 " drop %" PRIu64 " unmapped %" PRIu64 " cc %" PRIu64 " mappings %zu ... %s rc %d%s%s %.2f ms\n",
++			if (!r.ok || journal_all() || (j.n & 0x3fu) == 0) journal("submit #%" PRIu64 " %s %u dwords at %p: pass %" PRIu64 " rewrite %" PRIu64 " drop %" PRIu64 " unmapped %" PRIu64 " cc %" PRIu64 " mappings %zu ... %s rc %d%s%s %.2f ms\n",
 +			        j.n, j.kind, j.num_dwords, j.ib, j.filter.passed, j.filter.rewritten, j.filter.dropped, j.filter.unmapped_drops, j.filter.context_control_rewrites,
 +			        j.maps, r.ok ? "OK" : "FAILED", r.rc, r.timed_out ? " TIMEOUT" : "", j.retried ? " (retried)" : "", total_ms);
 +			if (timing) {
@@ -9148,7 +9165,8 @@ index 0000000..06fd3e6
 +	std::vector<uint32_t> mec_positions;         // offsets of its compute-form DISPATCH_INDIRECT
 +	{
 +		static const uint64_t max_count = std::getenv("BC5_DIRECT_INDIRECT_MAX") ? std::strtoull(std::getenv("BC5_DIRECT_INDIRECT_MAX"), nullptr, 10) : 4u << 20u;
-+		static const bool     survey    = std::getenv("BC5_DIRECT_NO_INDIRECT_SURVEY") == nullptr;
++		const bool            survey    = journal_all();
++		static std::atomic<uint64_t> n_insane {0}, n_unmapped_args {0};
 +		uint64_t base1 = 0;
 +		// Experiment 0038: a compute IB's DISPATCH_INDIRECT carries its argument address (lo, hi,
 +		// initiator); the GFX ring reads an offset from the SET_BASE index-1 base. The 4 GiB the
@@ -9353,11 +9371,13 @@ index 0000000..06fd3e6
 +					const bool draw_checked = gpu_check && op != 0x16 && base1 != 0;
 +					const bool insane = op == 0x16 ? (!gpu_checked && too_many_groups)
 +					                               : (!draw_checked && (v[0] > max_count || v[1] > 1024u || static_cast<uint64_t>(v[0]) * v[1] > max_count));
-+					if (survey) journal("  indirect op %02x at %u: base 0x%" PRIx64 " +0x%x -> %u %u %u %u %u%s pgm 0x%" PRIx64 "\n", op, q, base1, ib[q + 1], v[0], v[1], v[2], v[3], v[4],
++					if (survey || (insane && (n_insane.fetch_add(1, std::memory_order_relaxed) & 0xfffu) == 0))
++						journal("  indirect op %02x at %u: base 0x%" PRIx64 " +0x%x -> %u %u %u %u %u%s pgm 0x%" PRIx64 "\n", op, q, base1, ib[q + 1], v[0], v[1], v[2], v[3], v[4],
 +					                    insane ? " DROPPED" : "", pgm);
 +					if (insane) opt.drop_offsets.push_back(q);
 +				} else {
-+					if (survey) journal("  indirect op %02x at %u: args 0x%" PRIx64 " not mapped, DROPPED\n", op, q, a);
++					if (survey || (n_unmapped_args.fetch_add(1, std::memory_order_relaxed) & 0xfffu) == 0)
++						journal("  indirect op %02x at %u: args 0x%" PRIx64 " not mapped, DROPPED\n", op, q, a);
 +					opt.drop_offsets.push_back(q);
 +				}
 +			}
@@ -9680,7 +9700,7 @@ index 0000000..06fd3e6
 +		return;
 +	}
 +	if (!g_dump_dir.empty() && g_journal_min) {
-+		journal("submit #%" PRIu64 " %s %u dwords at %p: pass %" PRIu64 " rewrite %" PRIu64 " drop %" PRIu64 " unmapped %" PRIu64 " cc %" PRIu64 " mappings %zu ... %s rc %d%s%s %.2f ms\n",
++		if (!r.ok || journal_all() || (n & 0x3fu) == 0) journal("submit #%" PRIu64 " %s %u dwords at %p: pass %" PRIu64 " rewrite %" PRIu64 " drop %" PRIu64 " unmapped %" PRIu64 " cc %" PRIu64 " mappings %zu ... %s rc %d%s%s %.2f ms\n",
 +		        n, kind, num_dwords, static_cast<const void*>(ib), r.filter.passed, r.filter.rewritten, r.filter.dropped, r.filter.unmapped_drops,
 +		        r.filter.context_control_rewrites, maps_p->size(), r.ok ? "OK" : "FAILED", r.rc, r.timed_out ? " TIMEOUT" : "", retried ? " (retried)" : "", r.submit_ms);
 +		if (!r.ok) {
@@ -9910,7 +9930,8 @@ index 0000000..06fd3e6
 +				uint32_t* cmds;
 +			};
 +			auto* a = static_cast<Args*>(argp);
-+			LOGF("[bc5-gc] submit: arg0 %u count %u\n", a->arg0, a->count);
++			static int submit_logged = 0;
++			if (gc_log_few(&submit_logged)) LOGF("[bc5-gc] submit: arg0 %u count %u\n", a->arg0, a->count);
 +			for (uint32_t i = 0; i < a->count; i++) {
 +				submit_ib_packet(a->cmds + i * 4, "dcb");
 +			}
@@ -9925,8 +9946,10 @@ index 0000000..06fd3e6
 +				uint32_t  wait_flag;
 +			};
 +			auto* a = static_cast<Args*>(argp);
-+			LOGF("[bc5-gc] submit+eop: arg0 %u count %u eop 0x%016" PRIx64 " wait %u\n", a->arg0,
-+			     a->count, a->eop_value, a->wait_flag);
++			static int submit_eop_logged = 0;
++			if (gc_log_few(&submit_eop_logged)) {
++				LOGF("[bc5-gc] submit+eop: arg0 %u count %u eop 0x%016" PRIx64 " wait %u\n", a->arg0, a->count, a->eop_value, a->wait_flag);
++			}
 +			for (uint32_t i = 0; i < a->count; i++) {
 +				submit_ib_packet(a->cmds + i * 4, "dcb");
 +			}
@@ -10500,7 +10523,8 @@ index 0000000..06fd3e6
 +	}
 +	const double flip_t0 = Bc5Gc::Direct::timing_now();
 +	const int rc = VideoOut::VideoOutSubmitFlip(handle, index, flip_mode, flip_arg);
-+	if (std::getenv("BC5_DIRECT_TIMING") != nullptr) {
++	static const bool timing_flips = std::getenv("BC5_DIRECT_TIMING") != nullptr;
++	if (timing_flips) {
 +		Bc5Gc::Direct::journal("timing: t %.3f s flip %d/%d, VideoOutSubmitFlip took %.1f ms\n", flip_t0, handle, index, (Bc5Gc::Direct::timing_now() - flip_t0) * 1e3);
 +	}
 +	// The flip is immediate here: the buffer's flip label goes back to 0, as the console's VideoOut

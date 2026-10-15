@@ -245,6 +245,13 @@ and those behind it until met, AMM-only submissions run at once, a `bc5-apr-wait
 re-checks; APR `MapBegin`/`MapDirectBegin` map their ranges; `SetBuffer`'s map flavour is
 handled. `KYTY_BC5_AMM_TRACE=1` traces it all (and names the instruction behind a fault in a
 reserved range).
+Cleanup batch 6 (2026-10-15): the journal lines written for every job (`submit #n`), every
+CPU-served wait (`cpu-wait ... satisfied`), every compute segment (`acb segment`, `acb head`,
+`rest`) and every indirect packet are sampled (every 64th job, every 1024th segment, every 4096th
+dropped indirect packet); failures, timeouts and given-up waits are always written, and the
+indirect argument survey is opt-in. `BC5_DIRECT_JOURNAL_ALL=1` writes them all, as before
+(`BC5_DIRECT_NO_INDIRECT_SURVEY` is gone). The second title's IB-packet submit ioctls log their
+first few calls only, and `BC5_DIRECT_TIMING` and `BC5_DIRECT_RT_DUMP` are read once.
 Cleanup batch 4 (2026-10-15) removed the tools of the refit hunt and its neighbours: the watched
 program's journal and CPU tree check `BC5_DIRECT_WATCH_PGM`, the refit guard
 `BC5_DIRECT_REFIT_GUARD` and the dispatch split `BC5_DIRECT_SPLIT_AT_PGM` (experiment 0050; 0053's
