@@ -447,10 +447,10 @@ index a656b67..94a249c 100644
  
 diff --git a/src/graphics/presentation/settingsOverlay.cpp b/src/graphics/presentation/settingsOverlay.cpp
 new file mode 100644
-index 0000000..70cf67b
+index 0000000..1aac007
 --- /dev/null
 +++ b/src/graphics/presentation/settingsOverlay.cpp
-@@ -0,0 +1,827 @@
+@@ -0,0 +1,830 @@
 +#include "graphics/presentation/settingsOverlay.h"
 +
 +#include "SDL.h"
@@ -676,10 +676,12 @@ index 0000000..70cf67b
 +	}
 +
 +	// Experiment 0047: RenderScale=<k>, the GPU timestamp scale the title's resolution follows.
++	// Per title since 2026-10-15: RenderScale.<TITLE_ID>=<k> (HostInputTitleId).
 +	[[nodiscard]] double RenderScale() const {
-+		double k = 0.0;
++		const std::string key = "RenderScale." + HostInputTitleId();
++		double            k   = 0.0;
 +		for (const auto& l: lines) {
-+			if (EqualNoCase(StatementLeft(l), "RenderScale")) k = std::strtod(std::string(StatementRight(l)).c_str(), nullptr);
++			if (EqualNoCase(StatementLeft(l), key)) k = std::strtod(std::string(StatementRight(l)).c_str(), nullptr);
 +		}
 +		return k;
 +	}
@@ -692,11 +694,12 @@ index 0000000..70cf67b
 +	}
 +
 +	void SetRenderScale(double k) {
++		const std::string key = "RenderScale." + HostInputTitleId();
 +		lines.erase(std::remove_if(lines.begin(), lines.end(),
-+		                           [&](const std::string& l) { return EqualNoCase(StatementLeft(l), "RenderScale"); }),
++		                           [&](const std::string& l) { return EqualNoCase(StatementLeft(l), key); }),
 +		            lines.end());
-+		char b[48];
-+		std::snprintf(b, sizeof(b), "RenderScale=%.2f", k);
++		char b[64];
++		std::snprintf(b, sizeof(b), "%s=%.2f", key.c_str(), k);
 +		lines.insert(lines.begin(), b);
 +	}
 +};
@@ -1586,7 +1589,7 @@ index f70995a..1ba5363 100644
  } // namespace Libs::Graphics
  
 diff --git a/src/graphics/presentation/window/hostInput.cpp b/src/graphics/presentation/window/hostInput.cpp
-index edcfdaf..4be3306 100644
+index edcfdaf..54ae501 100644
 --- a/src/graphics/presentation/window/hostInput.cpp
 +++ b/src/graphics/presentation/window/hostInput.cpp
 @@ -1,4 +1,6 @@
@@ -1596,12 +1599,13 @@ index edcfdaf..4be3306 100644
  
  #include "SDL_gamecontroller.h"
  #include "SDL_keyboard.h"
-@@ -6,14 +8,57 @@
+@@ -6,17 +8,71 @@
  #include "SDL_mouse.h"
  #include "common/assert.h"
  #include "common/emulatorConfig.h"
 +#include "common/logging/log.h"
  #include "libs/controller.h"
++#include "loader/systemContent.h"
  
  #include <algorithm>
  #include <array>
@@ -1654,7 +1658,20 @@ index edcfdaf..4be3306 100644
  
  namespace Libs::Graphics {
  
-@@ -55,13 +100,68 @@ static constexpr std::array CONTROL_INFO = {
++// BC5 (the maintainer's decision, 2026-10-15): the GPU timestamp scale is kept per title, as
++// RenderScale.<TITLE_ID>=<k>; a title without its own entry runs unscaled, as the game itself
++// expects. A scale chosen for one title (ASTRO BOT's 1.70 dynamic-resolution preset) had been
++// applied to every title and made the second one pace its frames against a 1.7x clock.
++std::string HostInputTitleId() {
++	char id[16] = {};
++	if (!Loader::SystemContentParamSfoGetString("TITLE_ID", id, sizeof(id)) || id[0] == 0) return "UNKNOWN";
++	return id;
++}
++
+ namespace {
+ 
+ struct ControlInfo {
+@@ -55,13 +111,68 @@ static constexpr std::array CONTROL_INFO = {
  
  constexpr std::size_t INVALID_CONTROL = CONTROL_INFO.size();
  
@@ -1727,7 +1744,7 @@ index edcfdaf..4be3306 100644
  std::size_t ControlFromName(std::string_view name) {
  	const auto info = std::find_if(CONTROL_INFO.begin(), CONTROL_INFO.end(),
  	                               [name](const auto& item) { return item.name == name; });
-@@ -74,6 +174,11 @@ const ControlInfo& Info(std::size_t control) {
+@@ -74,6 +185,11 @@ const ControlInfo& Info(std::size_t control) {
  }
  
  SDL_Keycode NormalizeKey(SDL_Keycode key) {
@@ -1739,7 +1756,7 @@ index edcfdaf..4be3306 100644
  	switch (key) {
  		case SDLK_RSHIFT: return SDLK_LSHIFT;
  		case SDLK_RCTRL: return SDLK_LCTRL;
-@@ -83,110 +188,427 @@ SDL_Keycode NormalizeKey(SDL_Keycode key) {
+@@ -83,110 +199,440 @@ SDL_Keycode NormalizeKey(SDL_Keycode key) {
  	}
  }
  
@@ -1782,7 +1799,10 @@ index edcfdaf..4be3306 100644
 +	});
 +	return button != MOUSE_NAMES.end() ? button->second : 0;
 +}
-+
+ 
+-	const auto button = std::find_if(buttons.begin(), buttons.end(),
+-	                                 [name](const auto& item) { return item.first == name; });
+-	return button != buttons.end() ? button->second : 0;
 +std::string MouseButtonName(uint8_t button) {
 +	for (const auto& [name, id]: MOUSE_NAMES) {
 +		if (id == button) {
@@ -1790,11 +1810,12 @@ index edcfdaf..4be3306 100644
 +		}
 +	}
 +	return "Mouse:?";
-+}
+ }
  
--	const auto button = std::find_if(buttons.begin(), buttons.end(),
--	                                 [name](const auto& item) { return item.first == name; });
--	return button != buttons.end() ? button->second : 0;
+-int GamepadButtonFromName(std::string_view name) {
+-	if (!name.starts_with("Pad:")) return -1;
+-	return static_cast<int>(
+-	    SDL_GameControllerGetButtonFromString(std::string(name.substr(4)).c_str()));
 +// "Pad:<name>": a button, a trigger axis, or a stick axis with a direction.
 +bool PadSourceFromName(std::string_view name, Source* out) {
 +	if (!name.starts_with("Pad:")) {
@@ -1829,12 +1850,8 @@ index edcfdaf..4be3306 100644
 +	out->pad_axis  = axis;
 +	out->axis_sign = sign;
 +	return true;
- }
- 
--int GamepadButtonFromName(std::string_view name) {
--	if (!name.starts_with("Pad:")) return -1;
--	return static_cast<int>(
--	    SDL_GameControllerGetButtonFromString(std::string(name.substr(4)).c_str()));
++}
++
 +bool SourceFromName(std::string_view name, Source* out) {
 +	*out = Source {};
 +	if (name.starts_with("Mouse:")) {
@@ -1919,15 +1936,15 @@ index edcfdaf..4be3306 100644
 +			} else {
 +				LOGF("Host input: %s = %s\n", std::string(Info(b.control).name).c_str(),
 +				     SourceToName(b.source).c_str());
- 			}
--			if (binding.mouse_button == 0 && binding.gamepad_button < 0) {
--				binding.key = NormalizeKey(SDL_GetKeyFromName(std::string(host_input).c_str()));
++			}
 +		}
 +		for (int i = 0; i < 32; i++) {
 +			if (((m_disabled_buttons >> i) & 1u) != 0) {
 +				LOGF("Host input: pad button %s disabled\n",
 +				     SDL_GameControllerGetStringForButton(static_cast<SDL_GameControllerButton>(i)));
-+			}
+ 			}
+-			if (binding.mouse_button == 0 && binding.gamepad_button < 0) {
+-				binding.key = NormalizeKey(SDL_GetKeyFromName(std::string(host_input).c_str()));
 +			if (((m_disabled_axes >> i) & 1u) != 0) {
 +				LOGF("Host input: pad axis %s disabled\n",
 +				     SDL_GameControllerGetStringForAxis(static_cast<SDL_GameControllerAxis>(i)));
@@ -1950,13 +1967,13 @@ index edcfdaf..4be3306 100644
 +		std::vector<std::string> out;
 +		if (m_fullscreen >= 0) {
 +			out.emplace_back(m_fullscreen == 1 ? "Fullscreen=on" : "Fullscreen=off");
- 		}
--		Add(binding);
++		}
 +		if (m_render_scale > 0.0) {
-+			char b[48];
-+			std::snprintf(b, sizeof(b), "RenderScale=%.2f", m_render_scale);
++			char b[64];
++			std::snprintf(b, sizeof(b), "RenderScale.%s=%.2f", HostInputTitleId().c_str(), m_render_scale);
 +			out.emplace_back(b);
- 		}
++		}
++		for (const auto& other: m_other_title_scales) out.push_back(other);
 +		if (!m_default_keys) {
 +			out.emplace_back("DefaultKeys=off");
 +		}
@@ -1973,10 +1990,11 @@ index edcfdaf..4be3306 100644
 +				                 SDL_GameControllerGetStringForAxis(static_cast<SDL_GameControllerAxis>(i)) +
 +				                 "=none");
 +			}
-+		}
+ 		}
+-		Add(binding);
 +		for (const auto& b: m_bindings) {
 +			out.emplace_back(std::string(Info(b.control).name) + "=" + SourceToName(b.source));
-+		}
+ 		}
 +		return out;
  	}
 +
@@ -2096,14 +2114,25 @@ index edcfdaf..4be3306 100644
 +			return true;
 +		}
 +
-+		if (EqualNoCase(left, "RenderScale")) { // experiment 0047: the GPU timestamp scale (F2, Video)
++		if (EqualNoCase(left, "RenderScale")) { // the old form, for every title: no longer applied
++			LOGF_COLOR(Log::Color::Yellow, "Input config %s: RenderScale without a title is ignored; use RenderScale.<TITLE_ID>=<k>\n", where.c_str());
++			return true;
++		}
++		if (left.size() > 12 && EqualNoCase(left.substr(0, 12), "RenderScale.")) { // experiment 0047, per title
 +			char*             end = nullptr;
 +			const std::string v(right);
 +			const double      k = std::strtod(v.c_str(), &end);
 +			if (end == v.c_str() || *end != 0 || k < 0.5 || k > 4.0) {
 +				return Fail(error, where + ": RenderScale takes a number from 0.5 to 4, got: " + v);
  			}
-+			m_render_scale = k;
++			const std::string id(left.substr(12));
++			if (EqualNoCase(id, HostInputTitleId())) {
++				m_render_scale = k;
++			} else {
++				char b[64];
++				std::snprintf(b, sizeof(b), "RenderScale.%s=%.2f", id.c_str(), k);
++				m_other_title_scales.emplace_back(b);
++			}
 +			return true;
 +		}
 +
@@ -2168,6 +2197,7 @@ index edcfdaf..4be3306 100644
 +	uint32_t             m_disabled_axes    = 0;
 +	bool                 m_default_keys     = true;
 +	double               m_render_scale     = 0.0; // 0: not set (BC5_DIRECT_TS_SCALE or 1)
++	std::vector<std::string> m_other_title_scales;   // RenderScale.<id> lines of other titles, kept
 +	int                  m_fullscreen       = -1;  // -1: not set (--fullscreen or windowed)
 +	bool                 m_custom           = false;
  };
@@ -2194,8 +2224,8 @@ index edcfdaf..4be3306 100644
 +		lines.emplace_back(line, path + ":" + std::to_string(number));
 +	}
 +	return lines;
- }
- 
++}
++
 +// The map, built on first use from --keymap and the configuration file (a bad line is fatal
 +// there: a wrong binding at start-up is better found than played with). Caller holds g_input_mutex.
 +InputMap& Map() {
@@ -2224,8 +2254,8 @@ index edcfdaf..4be3306 100644
 +		g_map = std::move(map);
 +	}
 +	return *g_map;
-+}
-+
+ }
+ 
 +// --- driving the pad slot ----------------------------------------------------------------------
 +
 +std::array<bool, CONTROL_INFO.size()> g_pressed {}; // button controls the host stream holds
@@ -2233,7 +2263,7 @@ index edcfdaf..4be3306 100644
  void SetButton(uint32_t button, bool down) {
  	if (button == Controller::PAD_BUTTON_L2) {
  		Controller::ControllerAxis(Controller::HOST_INPUT_CONTROLLER_ID,
-@@ -199,40 +621,17 @@ void SetButton(uint32_t button, bool down) {
+@@ -199,40 +645,17 @@ void SetButton(uint32_t button, bool down) {
  	}
  }
  
@@ -2280,7 +2310,7 @@ index edcfdaf..4be3306 100644
  void SetControl(std::size_t control, bool down) {
  	if (control == INVALID_CONTROL) {
  		return;
-@@ -240,93 +639,275 @@ void SetControl(std::size_t control, bool down) {
+@@ -240,93 +663,275 @@ void SetControl(std::size_t control, bool down) {
  
  	const auto& info = Info(control);
  	if (info.button != 0) {
@@ -2431,15 +2461,15 @@ index edcfdaf..4be3306 100644
 +				++it;
 +			}
 +		}
- 	}
- }
++	}
++}
 +
 +void StartReleaseThread() {
 +	if (!g_release_thread_started) {
 +		g_release_thread_started = true;
 +		std::thread(ReleaseThread).detach();
-+	}
-+}
+ 	}
+ }
 +
 +bool Trace() {
 +	static const bool trace = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
@@ -2483,7 +2513,7 @@ index edcfdaf..4be3306 100644
 +	}
 +	if (control == INVALID_CONTROL) {
 +		return;
- 	}
++	}
 +	const double now = NowSeconds();
 +	if (down) {
 +		g_pending.erase(key_code); // a repeat pair: the key stays held
@@ -2503,7 +2533,7 @@ index edcfdaf..4be3306 100644
 +			std::fflush(stderr);
 +		}
 +		return;
-+	}
+ 	}
 +	SetControl(control, false);
  }
  
@@ -2523,18 +2553,18 @@ index edcfdaf..4be3306 100644
  	if (map.Custom() && gamepad_button >= 0) {
 -		SetControl(map.FindGamepadButton(gamepad_button), down);
 +		SetControl(map.FindPadButton(gamepad_button), down);
- 	}
- }
- 
++	}
++}
++
 +void HostInputGamepadAxis(int gamepad_axis, int value) {
 +	std::lock_guard<std::mutex> lock(g_input_mutex);
 +	auto&                       map = Map();
 +	if (map.Custom() && gamepad_axis >= 0) {
 +		map.UpdatePadAxis(gamepad_axis, value,
 +		                  [](std::size_t control, bool down) { SetControl(control, down); });
-+	}
-+}
-+
+ 	}
+ }
+ 
 +bool HostInputPadButtonDisabled(int gamepad_button) {
 +	std::lock_guard<std::mutex> lock(g_input_mutex);
 +	return Map().PadButtonDisabled(gamepad_button);
@@ -2617,7 +2647,7 @@ index edcfdaf..4be3306 100644
 +
  } // namespace Libs::Graphics
 diff --git a/src/graphics/presentation/window/hostInput.h b/src/graphics/presentation/window/hostInput.h
-index c0ac585..83b3232 100644
+index c0ac585..34a3616 100644
 --- a/src/graphics/presentation/window/hostInput.h
 +++ b/src/graphics/presentation/window/hostInput.h
 @@ -2,6 +2,8 @@
@@ -2629,7 +2659,7 @@ index c0ac585..83b3232 100644
  
  namespace Libs::Graphics {
  
-@@ -9,6 +11,24 @@ void HostInputInit();
+@@ -9,6 +11,26 @@ void HostInputInit();
  void HostInputKey(int key_code, bool down);
  void HostInputMouseButton(uint8_t mouse_button, bool down);
  void HostInputGamepadButton(int gamepad_button, bool down);
@@ -2641,6 +2671,8 @@ index c0ac585..83b3232 100644
 +
 +// BC5: the settings overlay (F2) edits the live configuration through these.
 +std::vector<std::string> HostInputControlNames();
++// The running title's TITLE_ID (param.sfo), "UNKNOWN" without one: per-title entries use it.
++std::string HostInputTitleId();
 +// The live configuration as statements, one per line, in the file's grammar.
 +std::vector<std::string> HostInputStatements();
 +// The file the configuration was read from (--input-config / KYTY_BC5_INPUT_CONFIG), or "".

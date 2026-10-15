@@ -1,0 +1,253 @@
+2026-10-13T11:39:54+02:00 ring gfx_0.0.0 timeout, signaled seq=6094895, emitted seq=6094897
+2026-10-13T11:39:54+02:00  Process kyty_emulator pid 175702 thread bc5-submit pid 175755
+2026-10-13T11:41:18+02:00 ring gfx_0.0.0 timeout, signaled seq=6165359, emitted seq=6165362
+2026-10-13T11:41:18+02:00  Process kyty_emulator pid 175702 thread bc5-submit pid 175755
+2026-10-13T11:41:58+02:00 ring gfx_0.0.0 timeout, signaled seq=6166377, emitted seq=6166379
+2026-10-13T11:41:58+02:00  Process kyty_emulator pid 175702 thread bc5-ring pid 175733
+2026-10-13T11:43:42+02:00 ring gfx_0.0.0 timeout, signaled seq=6209347, emitted seq=6209349
+2026-10-13T11:43:42+02:00  Process kyty_emulator pid 178119 thread bc5-ring pid 178151
+2026-10-13T14:44:06+02:00 ring gfx_0.0.0 timeout, signaled seq=13135624, emitted seq=13135626
+2026-10-13T14:44:06+02:00  Process kyty_emulator pid 256250 thread DrawThread pid 256336
+2026-10-13T14:44:06+02:00  Process kyty_emulator pid 256250 thread DrawThread pid 256336
+2026-10-13T14:44:06+02:00   in page starting at address 0x0000000000000000 from client 0x1b (UTCL2)
+2026-10-13T14:44:06+02:00          Faulty UTCL2 client ID: SQC (inst) (0x9)
+2026-10-13T14:44:06+02:00  Process kyty_emulator pid 256250 thread DrawThread pid 256336
+2026-10-13T14:44:06+02:00   in page starting at address 0x0000000000000000 from client 0x1b (UTCL2)
+2026-10-13T14:44:06+02:00  Process kyty_emulator pid 256250 thread DrawThread pid 256336
+2026-10-13T14:44:06+02:00   in page starting at address 0x0000000000000000 from client 0x1b (UTCL2)
+2026-10-13T14:44:06+02:00  Process kyty_emulator pid 256250 thread DrawThread pid 256336
+2026-10-13T14:44:06+02:00   in page starting at address 0x0000000000000000 from client 0x1b (UTCL2)
+2026-10-14T09:51:37+02:00  Process kyty_emulator pid 610603 thread bc5-ring pid 610889
+2026-10-14T09:51:37+02:00   in page starting at address 0x00000011ec013000 from client 0x1b (UTCL2)
+2026-10-14T09:51:37+02:00          Faulty UTCL2 client ID: TCP (0x8)
+2026-10-14T09:51:37+02:00  Process kyty_emulator pid 610603 thread bc5-ring pid 610889
+2026-10-14T09:51:37+02:00   in page starting at address 0x00000011ec004000 from client 0x1b (UTCL2)
+2026-10-14T09:51:37+02:00          Faulty UTCL2 client ID: TCP (0x8)
+2026-10-14T09:51:37+02:00  Process kyty_emulator pid 610603 thread bc5-ring pid 610889
+2026-10-14T09:51:37+02:00   in page starting at address 0x00000011ec01d000 from client 0x1b (UTCL2)
+2026-10-14T09:51:37+02:00          Faulty UTCL2 client ID: TCP (0x8)
+2026-10-14T09:51:37+02:00  Process kyty_emulator pid 610603 thread bc5-ring pid 610889
+2026-10-14T09:51:37+02:00   in page starting at address 0x00000011ec018000 from client 0x1b (UTCL2)
+2026-10-14T09:51:37+02:00          Faulty UTCL2 client ID: TCP (0x8)
+2026-10-14T09:51:37+02:00  Process kyty_emulator pid 610603 thread bc5-ring pid 610889
+2026-10-14T09:51:37+02:00   in page starting at address 0x00000011ec009000 from client 0x1b (UTCL2)
+2026-10-14T09:51:37+02:00          Faulty UTCL2 client ID: TCP (0x8)
+2026-10-14T09:51:37+02:00  Process kyty_emulator pid 610603 thread bc5-ring pid 610889
+2026-10-14T09:51:37+02:00   in page starting at address 0x00000011ec00e000 from client 0x1b (UTCL2)
+2026-10-14T09:51:37+02:00          Faulty UTCL2 client ID: TCP (0x8)
+2026-10-14T09:51:37+02:00  Process kyty_emulator pid 610603 thread bc5-ring pid 610889
+2026-10-14T09:51:37+02:00   in page starting at address 0x00000011ec04d000 from client 0x1b (UTCL2)
+2026-10-14T09:51:37+02:00          Faulty UTCL2 client ID: TCP (0x8)
+2026-10-14T09:51:37+02:00  Process kyty_emulator pid 610603 thread bc5-ring pid 610889
+2026-10-14T09:51:37+02:00   in page starting at address 0x00000011ec01f000 from client 0x1b (UTCL2)
+2026-10-14T09:51:37+02:00          Faulty UTCL2 client ID: TCP (0x8)
+2026-10-14T09:51:37+02:00  Process kyty_emulator pid 610603 thread bc5-ring pid 610889
+2026-10-14T09:51:37+02:00   in page starting at address 0x00000011ec043000 from client 0x1b (UTCL2)
+2026-10-14T09:51:37+02:00          Faulty UTCL2 client ID: TCP (0x8)
+2026-10-14T09:51:37+02:00  Process kyty_emulator pid 610603 thread bc5-ring pid 610889
+2026-10-14T09:51:37+02:00   in page starting at address 0x00000011ec048000 from client 0x1b (UTCL2)
+2026-10-14T09:51:37+02:00          Faulty UTCL2 client ID: TCP (0x8)
+2026-10-14T09:51:39+02:00 ring gfx_0.0.0 timeout, signaled seq=3319912, emitted seq=3319914
+2026-10-14T09:51:39+02:00  Process kyty_emulator pid 610603 thread bc5-ring pid 610889
+2026-10-15T00:52:56+02:00  Process kyty_emulator pid 1336605 thread bc5-ring pid 1336636
+2026-10-15T00:52:56+02:00   in page starting at address 0x0000800109bc0000 from client 0x1b (UTCL2)
+2026-10-15T00:52:56+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T00:52:56+02:00  Process kyty_emulator pid 1336605 thread bc5-ring pid 1336636
+2026-10-15T00:52:56+02:00   in page starting at address 0x0000800109bc0000 from client 0x1b (UTCL2)
+2026-10-15T00:52:56+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T00:52:56+02:00  Process kyty_emulator pid 1336605 thread bc5-ring pid 1336636
+2026-10-15T00:52:56+02:00   in page starting at address 0x0000800109bc0000 from client 0x1b (UTCL2)
+2026-10-15T00:52:56+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T00:52:56+02:00  Process kyty_emulator pid 1336605 thread bc5-ring pid 1336636
+2026-10-15T00:52:56+02:00   in page starting at address 0x0000800109bc0000 from client 0x1b (UTCL2)
+2026-10-15T00:52:56+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T00:52:56+02:00  Process kyty_emulator pid 1336605 thread bc5-ring pid 1336636
+2026-10-15T00:52:56+02:00   in page starting at address 0x0000800109bc0000 from client 0x1b (UTCL2)
+2026-10-15T00:52:56+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T00:52:56+02:00  Process kyty_emulator pid 1336605 thread bc5-ring pid 1336636
+2026-10-15T00:52:56+02:00   in page starting at address 0x0000800109bc0000 from client 0x1b (UTCL2)
+2026-10-15T00:52:56+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T00:52:56+02:00  Process kyty_emulator pid 1336605 thread bc5-ring pid 1336636
+2026-10-15T00:52:56+02:00   in page starting at address 0x0000800109bc0000 from client 0x1b (UTCL2)
+2026-10-15T00:52:56+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T00:52:56+02:00  Process kyty_emulator pid 1336605 thread bc5-ring pid 1336636
+2026-10-15T00:52:56+02:00   in page starting at address 0x0000800109bc0000 from client 0x1b (UTCL2)
+2026-10-15T00:52:56+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T00:52:56+02:00  Process kyty_emulator pid 1336605 thread bc5-ring pid 1336636
+2026-10-15T00:52:56+02:00   in page starting at address 0x0000800109bc1000 from client 0x1b (UTCL2)
+2026-10-15T00:52:56+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T00:52:56+02:00  Process kyty_emulator pid 1336605 thread bc5-ring pid 1336636
+2026-10-15T00:52:56+02:00   in page starting at address 0x0000800109808000 from client 0x1b (UTCL2)
+2026-10-15T00:52:56+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T03:01:52+02:00  Process kyty_emulator pid 1618646 thread DrawThread pid 1618736
+2026-10-15T03:01:52+02:00   in page starting at address 0x0000800000005000 from client 0x1b (UTCL2)
+2026-10-15T03:01:52+02:00          Faulty UTCL2 client ID: SQC (inst) (0x9)
+2026-10-15T03:01:52+02:00  Process kyty_emulator pid 1618646 thread DrawThread pid 1618736
+2026-10-15T03:01:52+02:00   in page starting at address 0x0000800000005000 from client 0x1b (UTCL2)
+2026-10-15T03:01:52+02:00  Process kyty_emulator pid 1618646 thread DrawThread pid 1618736
+2026-10-15T03:01:52+02:00   in page starting at address 0x0000800000005000 from client 0x1b (UTCL2)
+2026-10-15T03:01:52+02:00  Process kyty_emulator pid 1618646 thread DrawThread pid 1618736
+2026-10-15T03:01:52+02:00   in page starting at address 0x0000800000005000 from client 0x1b (UTCL2)
+2026-10-15T03:01:54+02:00 ring gfx_0.0.0 timeout, signaled seq=24313942, emitted seq=24313944
+2026-10-15T03:01:54+02:00  Process kyty_emulator pid 1618646 thread bc5-ring pid 1618716
+2026-10-15T03:01:54+02:00  Process kyty_emulator pid 1618646 thread bc5-ring pid 1618716
+2026-10-15T03:01:54+02:00   in page starting at address 0x0000800000005000 from client 0x1b (UTCL2)
+2026-10-15T03:01:54+02:00          Faulty UTCL2 client ID: SQC (inst) (0x9)
+2026-10-15T03:01:54+02:00  Process kyty_emulator pid 1618646 thread bc5-ring pid 1618716
+2026-10-15T03:01:54+02:00   in page starting at address 0x0000800000005000 from client 0x1b (UTCL2)
+2026-10-15T03:01:54+02:00  Process kyty_emulator pid 1618646 thread bc5-ring pid 1618716
+2026-10-15T03:01:54+02:00   in page starting at address 0x0000800000005000 from client 0x1b (UTCL2)
+2026-10-15T03:01:54+02:00  Process kyty_emulator pid 1618646 thread bc5-ring pid 1618716
+2026-10-15T03:01:54+02:00   in page starting at address 0x0000800000005000 from client 0x1b (UTCL2)
+2026-10-15T03:02:20+02:00  Process kyty_emulator pid 1618646 thread bc5-ring pid 1618716
+2026-10-15T03:02:20+02:00   in page starting at address 0x00008001097c0000 from client 0x1b (UTCL2)
+2026-10-15T03:02:20+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T03:02:20+02:00  Process kyty_emulator pid 1618646 thread bc5-ring pid 1618716
+2026-10-15T03:02:20+02:00   in page starting at address 0x00008001097c0000 from client 0x1b (UTCL2)
+2026-10-15T03:02:20+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T03:02:20+02:00  Process kyty_emulator pid 1618646 thread bc5-ring pid 1618716
+2026-10-15T03:02:20+02:00   in page starting at address 0x00008001097c0000 from client 0x1b (UTCL2)
+2026-10-15T03:02:20+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T03:02:20+02:00  Process kyty_emulator pid 1618646 thread bc5-ring pid 1618716
+2026-10-15T03:02:20+02:00   in page starting at address 0x00008001097c0000 from client 0x1b (UTCL2)
+2026-10-15T03:02:20+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T03:02:20+02:00  Process kyty_emulator pid 1618646 thread bc5-ring pid 1618716
+2026-10-15T03:02:20+02:00   in page starting at address 0x00008001097c0000 from client 0x1b (UTCL2)
+2026-10-15T03:02:20+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T03:02:20+02:00  Process kyty_emulator pid 1618646 thread bc5-ring pid 1618716
+2026-10-15T03:02:20+02:00   in page starting at address 0x00008001097c0000 from client 0x1b (UTCL2)
+2026-10-15T03:02:20+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T03:02:20+02:00  Process kyty_emulator pid 1618646 thread bc5-ring pid 1618716
+2026-10-15T03:02:20+02:00   in page starting at address 0x00008001097c0000 from client 0x1b (UTCL2)
+2026-10-15T03:02:20+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T03:02:20+02:00  Process kyty_emulator pid 1618646 thread bc5-ring pid 1618716
+2026-10-15T03:02:20+02:00   in page starting at address 0x00008001097c0000 from client 0x1b (UTCL2)
+2026-10-15T03:02:20+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T03:02:20+02:00  Process kyty_emulator pid 1618646 thread bc5-ring pid 1618716
+2026-10-15T03:02:20+02:00   in page starting at address 0x00008001097c1000 from client 0x1b (UTCL2)
+2026-10-15T03:02:20+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T03:02:20+02:00  Process kyty_emulator pid 1618646 thread bc5-ring pid 1618716
+2026-10-15T03:02:20+02:00   in page starting at address 0x0000800109400000 from client 0x1b (UTCL2)
+2026-10-15T03:02:20+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T03:03:15+02:00  Process kyty_emulator pid 1618646 thread bc5-ring pid 1618716
+2026-10-15T03:03:15+02:00   in page starting at address 0x0000800109fc0000 from client 0x1b (UTCL2)
+2026-10-15T03:03:15+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T03:03:15+02:00  Process kyty_emulator pid 1618646 thread bc5-ring pid 1618716
+2026-10-15T03:03:15+02:00   in page starting at address 0x0000800109fc0000 from client 0x1b (UTCL2)
+2026-10-15T03:03:15+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T03:03:15+02:00  Process kyty_emulator pid 1618646 thread bc5-ring pid 1618716
+2026-10-15T03:03:15+02:00   in page starting at address 0x0000800109fc0000 from client 0x1b (UTCL2)
+2026-10-15T03:03:15+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T03:03:15+02:00  Process kyty_emulator pid 1618646 thread bc5-ring pid 1618716
+2026-10-15T03:03:15+02:00   in page starting at address 0x0000800109fc0000 from client 0x1b (UTCL2)
+2026-10-15T03:03:15+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T03:03:15+02:00  Process kyty_emulator pid 1618646 thread bc5-ring pid 1618716
+2026-10-15T03:03:15+02:00   in page starting at address 0x0000800109fc0000 from client 0x1b (UTCL2)
+2026-10-15T03:03:15+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T03:03:15+02:00  Process kyty_emulator pid 1618646 thread bc5-ring pid 1618716
+2026-10-15T03:03:15+02:00   in page starting at address 0x0000800109fc0000 from client 0x1b (UTCL2)
+2026-10-15T03:03:15+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T03:03:15+02:00  Process kyty_emulator pid 1618646 thread bc5-ring pid 1618716
+2026-10-15T03:03:15+02:00   in page starting at address 0x0000800109fc0000 from client 0x1b (UTCL2)
+2026-10-15T03:03:15+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T03:03:15+02:00  Process kyty_emulator pid 1618646 thread bc5-ring pid 1618716
+2026-10-15T03:03:15+02:00   in page starting at address 0x0000800109fc0000 from client 0x1b (UTCL2)
+2026-10-15T03:03:15+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T03:03:15+02:00  Process kyty_emulator pid 1618646 thread bc5-ring pid 1618716
+2026-10-15T03:03:15+02:00   in page starting at address 0x0000800109fc1000 from client 0x1b (UTCL2)
+2026-10-15T03:03:15+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T03:03:15+02:00  Process kyty_emulator pid 1618646 thread bc5-ring pid 1618716
+2026-10-15T03:03:15+02:00   in page starting at address 0x0000800109c00000 from client 0x1b (UTCL2)
+2026-10-15T03:03:15+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T07:57:03+02:00  Process kyty_emulator pid 1727223 thread Render Thread pid 1727260
+2026-10-15T07:57:03+02:00   in page starting at address 0x000080c8d799f000 from client 0x1b (UTCL2)
+2026-10-15T07:57:03+02:00          Faulty UTCL2 client ID: SQC (inst) (0x9)
+2026-10-15T07:57:05+02:00 ring gfx_0.0.0 timeout, signaled seq=24989538, emitted seq=24989540
+2026-10-15T07:57:05+02:00  Process kyty_emulator pid 1727223 thread Render Thread pid 1727260
+2026-10-15T07:59:20+02:00 ring gfx_0.0.0 timeout, signaled seq=25458632, emitted seq=25458634
+2026-10-15T07:59:20+02:00  Process kyty_emulator pid 1727223 thread Render Thread pid 1727260
+2026-10-15T07:59:36+02:00 ring gfx_0.0.0 timeout, signaled seq=25458835, emitted seq=25458837
+2026-10-15T07:59:36+02:00  Process kyty_emulator pid 1727223 thread bc5-ring pid 1727241
+2026-10-15T09:22:17+02:00  Process kyty_emulator pid 6754 thread DrawThread pid 6806
+2026-10-15T09:22:17+02:00   in page starting at address 0x0000800000005000 from client 0x1b (UTCL2)
+2026-10-15T09:22:17+02:00          Faulty UTCL2 client ID: SQC (inst) (0x9)
+2026-10-15T09:22:17+02:00  Process kyty_emulator pid 6754 thread DrawThread pid 6806
+2026-10-15T09:22:17+02:00   in page starting at address 0x0000800000005000 from client 0x1b (UTCL2)
+2026-10-15T09:22:17+02:00  Process kyty_emulator pid 6754 thread DrawThread pid 6806
+2026-10-15T09:22:17+02:00   in page starting at address 0x0000800000005000 from client 0x1b (UTCL2)
+2026-10-15T09:22:17+02:00  Process kyty_emulator pid 6754 thread DrawThread pid 6806
+2026-10-15T09:22:17+02:00   in page starting at address 0x0000800000005000 from client 0x1b (UTCL2)
+2026-10-15T09:22:19+02:00 ring gfx_0.0.0 timeout, signaled seq=20445, emitted seq=20447
+2026-10-15T09:22:19+02:00  Process kyty_emulator pid 6754 thread bc5-ring pid 6786
+2026-10-15T09:22:19+02:00  Process kyty_emulator pid 6754 thread bc5-ring pid 6786
+2026-10-15T09:22:19+02:00   in page starting at address 0x0000800000005000 from client 0x1b (UTCL2)
+2026-10-15T09:22:19+02:00          Faulty UTCL2 client ID: SQC (inst) (0x9)
+2026-10-15T09:22:19+02:00  Process kyty_emulator pid 6754 thread bc5-ring pid 6786
+2026-10-15T09:22:19+02:00   in page starting at address 0x0000800000005000 from client 0x1b (UTCL2)
+2026-10-15T09:22:19+02:00  Process kyty_emulator pid 6754 thread bc5-ring pid 6786
+2026-10-15T09:22:19+02:00   in page starting at address 0x0000800000005000 from client 0x1b (UTCL2)
+2026-10-15T09:22:19+02:00  Process kyty_emulator pid 6754 thread bc5-ring pid 6786
+2026-10-15T09:22:19+02:00   in page starting at address 0x0000800000005000 from client 0x1b (UTCL2)
+2026-10-15T10:01:31+02:00  Process kyty_emulator pid 114816 thread bc5-ring pid 114849
+2026-10-15T10:01:31+02:00   in page starting at address 0x0000800109fc0000 from client 0x1b (UTCL2)
+2026-10-15T10:01:31+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T10:01:31+02:00  Process kyty_emulator pid 114816 thread bc5-ring pid 114849
+2026-10-15T10:01:31+02:00   in page starting at address 0x0000800109fc0000 from client 0x1b (UTCL2)
+2026-10-15T10:01:31+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T10:01:31+02:00  Process kyty_emulator pid 114816 thread bc5-ring pid 114849
+2026-10-15T10:01:31+02:00   in page starting at address 0x0000800109fc0000 from client 0x1b (UTCL2)
+2026-10-15T10:01:31+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T10:01:31+02:00  Process kyty_emulator pid 114816 thread bc5-ring pid 114849
+2026-10-15T10:01:31+02:00   in page starting at address 0x0000800109fc0000 from client 0x1b (UTCL2)
+2026-10-15T10:01:31+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T10:01:31+02:00  Process kyty_emulator pid 114816 thread bc5-ring pid 114849
+2026-10-15T10:01:31+02:00   in page starting at address 0x0000800109fc0000 from client 0x1b (UTCL2)
+2026-10-15T10:01:31+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T10:01:31+02:00  Process kyty_emulator pid 114816 thread bc5-ring pid 114849
+2026-10-15T10:01:31+02:00   in page starting at address 0x0000800109fc0000 from client 0x1b (UTCL2)
+2026-10-15T10:01:31+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T10:01:31+02:00  Process kyty_emulator pid 114816 thread bc5-ring pid 114849
+2026-10-15T10:01:31+02:00   in page starting at address 0x0000800109fc0000 from client 0x1b (UTCL2)
+2026-10-15T10:01:31+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T10:01:31+02:00  Process kyty_emulator pid 114816 thread bc5-ring pid 114849
+2026-10-15T10:01:31+02:00   in page starting at address 0x0000800109fc0000 from client 0x1b (UTCL2)
+2026-10-15T10:01:31+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T10:01:31+02:00  Process kyty_emulator pid 114816 thread bc5-ring pid 114849
+2026-10-15T10:01:31+02:00   in page starting at address 0x0000800109fc1000 from client 0x1b (UTCL2)
+2026-10-15T10:01:31+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T10:01:31+02:00  Process kyty_emulator pid 114816 thread bc5-ring pid 114849
+2026-10-15T10:01:31+02:00   in page starting at address 0x0000800109c00000 from client 0x1b (UTCL2)
+2026-10-15T10:01:31+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T10:28:28+02:00  Process kyty_emulator pid 27281 thread bc5-ring pid 27346
+2026-10-15T10:28:28+02:00   in page starting at address 0x00008001097c0000 from client 0x1b (UTCL2)
+2026-10-15T10:28:28+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T10:28:28+02:00  Process kyty_emulator pid 27281 thread bc5-ring pid 27346
+2026-10-15T10:28:28+02:00   in page starting at address 0x00008001097c0000 from client 0x1b (UTCL2)
+2026-10-15T10:28:28+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T10:28:28+02:00  Process kyty_emulator pid 27281 thread bc5-ring pid 27346
+2026-10-15T10:28:28+02:00   in page starting at address 0x00008001097c0000 from client 0x1b (UTCL2)
+2026-10-15T10:28:28+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T10:28:28+02:00  Process kyty_emulator pid 27281 thread bc5-ring pid 27346
+2026-10-15T10:28:28+02:00   in page starting at address 0x00008001097c0000 from client 0x1b (UTCL2)
+2026-10-15T10:28:28+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T10:28:28+02:00  Process kyty_emulator pid 27281 thread bc5-ring pid 27346
+2026-10-15T10:28:28+02:00   in page starting at address 0x00008001097c0000 from client 0x1b (UTCL2)
+2026-10-15T10:28:28+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T10:28:28+02:00  Process kyty_emulator pid 27281 thread bc5-ring pid 27346
+2026-10-15T10:28:28+02:00   in page starting at address 0x00008001097c0000 from client 0x1b (UTCL2)
+2026-10-15T10:28:28+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T10:28:28+02:00  Process kyty_emulator pid 27281 thread bc5-ring pid 27346
+2026-10-15T10:28:28+02:00   in page starting at address 0x00008001097c0000 from client 0x1b (UTCL2)
+2026-10-15T10:28:28+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T10:28:28+02:00  Process kyty_emulator pid 27281 thread bc5-ring pid 27346
+2026-10-15T10:28:28+02:00   in page starting at address 0x00008001097c0000 from client 0x1b (UTCL2)
+2026-10-15T10:28:28+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T10:28:28+02:00  Process kyty_emulator pid 27281 thread bc5-ring pid 27346
+2026-10-15T10:28:28+02:00   in page starting at address 0x00008001097c1000 from client 0x1b (UTCL2)
+2026-10-15T10:28:28+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T10:28:28+02:00  Process kyty_emulator pid 27281 thread bc5-ring pid 27346
+2026-10-15T10:28:28+02:00   in page starting at address 0x0000800109400000 from client 0x1b (UTCL2)
+2026-10-15T10:28:28+02:00          Faulty UTCL2 client ID: CB/DB (0x0)
+2026-10-15T10:28:31+02:00 ring gfx_0.0.0 timeout, signaled seq=562568, emitted seq=562570
+2026-10-15T10:28:31+02:00  Process kyty_emulator pid 27281 thread DrawThread pid 27366
+2026-10-15T10:28:31+02:00 Ring gfx_0.0.0 reset failed

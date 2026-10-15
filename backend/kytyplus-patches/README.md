@@ -346,6 +346,10 @@ each, once; keep the directory private (a title's code).
 Experiment 0048: borderless fullscreen at the display's resolution, live: F11, the *Video*
 tab's box, or `Fullscreen=on|off` in the input file (also at start); presets 1.0 / 1.25 / 1.7 / 3.0
 named 4K UHD, 1800p class, 1440p class, Full HD.
+Experiment 0115: the timestamp scale is per title: `RenderScale.<TITLE_ID>=<k>` in the input file
+applies to that title only (TITLE_ID from `param.sfo`), other titles' entries are kept on save,
+and a plain `RenderScale=<k>` is ignored with a log line; a title without an entry runs with
+untouched timestamps. The F2 *Video* tab reads and writes the running title's entry.
 Experiment 0047: the timestamp scale is live: `RenderScale=<k>` (0.5–4) in the input file, and
 the F2 menu's *Video* tab (presets 1.0 / 1.2 / 1.5 / 3.0, a slider, the main 3D view's size now,
 Save). *Restart game* exits with code 75; the dev box's `play-astro.sh` and `play-pkg.sh` start

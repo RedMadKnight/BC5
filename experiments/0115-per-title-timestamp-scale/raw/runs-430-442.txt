@@ -1,0 +1,28 @@
+run 430 (capture pkg-20261015-0928): intro: SceGnmGpuInfo contents read with gdb
+  intro t 15-28 s: frames 681 fps 52.38; menu t 90-120 s: frames 0 fps 0.00
+run 431 (capture pkg-20261015-0931): intro: the title executable dumped from memory
+  intro t 15-28 s: frames 683 fps 52.54; menu t 90-120 s: frames 0 fps 0.00
+run 432 (capture pkg-20261015-0936): intro: hardware watchpoint on a pacing parameter block
+  intro t 15-28 s: frames 610 fps 46.92; menu t 90-120 s: frames 0 fps 0.00
+run 433 (capture pkg-20261015-0939): intro: timestamps unscaled (TS_SCALE 1.0), no pacing fix: the pacing target ratio
+  intro t 15-28 s: frames 246 fps 18.92; menu t 90-120 s: frames 0 fps 0.00
+run 434 (capture pkg-20261015-0941): intro: the pacing code s time sources resolved with gdb
+  intro t 15-28 s: frames 683 fps 52.54; menu t 90-120 s: frames 0 fps 0.00
+run 435 (capture pkg-20261015-0943): intro: watchpoint on the GPU timestamp query data
+  intro t 15-28 s: frames 701 fps 53.92; menu t 90-120 s: frames 0 fps 0.00
+run 436 (capture pkg-20261015-0945): intro: the time query object and its imports
+  intro t 15-28 s: frames 642 fps 49.38; menu t 90-120 s: frames 0 fps 0.00
+run 437 (capture pkg-20261015-0947): intro: no timestamp scale at all (no RenderScale), no pacing fix
+  intro t 15-28 s: frames 380 fps 29.23; menu t 90-120 s: frames 0 fps 0.00
+run 438 (capture pkg-20261015-0949): menu: no timestamp scale at all, no pacing fix
+  intro t 15-28 s: frames 380 fps 29.23; menu t 90-120 s: frames 1451 fps 48.37
+run 442 (capture pkg-20261015-1025): menu: per-title scale, none for this title; no pacing fix; play settings
+  intro t 15-28 s: frames 379 fps 29.15; menu t 90-120 s: frames 1492 fps 49.73
+
+environment of the second title (play-pkg.sh / bc5-run.env.pkg-noflipdefer), timestamp lines, before and after:
+  before: BC5_DIRECT_TS_SCALE=1.2
+  before: BC5_DIRECT_TS_SCALE=1.2
+  after, TS_SCALE lines: 0
+  after, TS_SCALE lines: 0
+input.cfg before: RenderScale=1.70
+input.cfg after: RenderScale.<ASTRO BOT TITLE_ID>=1.70
