@@ -1,0 +1,16 @@
+run 522 (NOP-only buffers not submitted):
+/home/kjaniszewski/bc5-data/captures/pkg-20261015-1945 timeouts=0 faults=0
+t130-165: fps 29.57 | t165-180: fps 29.93 | t180-200: fps 28.20 | 
+nop buffer: acb 2 dwords not submitted (208897 so far)
+35938 jobs over 14978.1 ms: GPU had work 11388.6 ms (76.0 %), idle 3589.6 ms in 29052 holes
+  holes: median 18.8 us, p90 344.0 us, p99 1114.0 us; under 50 us 17169, 50-500 us 10530, over 500 us 1353 (1327.7 ms)
+  acb: 15248 jobs, summed start-to-end 9597.1 ms (mean 629.4 us)
+
+
+run 523 /home/kjaniszewski/bc5-data/captures/pkg-20261015-1950 timeouts=0 faults=0: t85-100 fps 35.87 | t130-165 fps 25.91 | t165-200 fps 24.77 | 
+run 524 /home/kjaniszewski/bc5-data/captures/pkg-20261015-1954 timeouts=0 faults=0: t85-100 fps 48.00 | t130-165 fps 31.34 | t165-200 fps 30.06 | 
+
+
+small buffers on the start screen (run 521, bc5-agc dump): acb 2 dwords = one NOP; acb 16 and dcb 16 = two RELEASE_MEM (a fence value, then a zero)
+
+GPU governor (/etc/cyan-skillfish-governor-smu/config.toml): frequency-range min 1850 max 2000 MHz

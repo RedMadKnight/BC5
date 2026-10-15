@@ -396,6 +396,8 @@ Experiment 0083: `BC5_DIRECT_SOFTCP_POST_IB=1` runs the soft CP of an IB-packet 
 completion thread after its job (EOP events and dropped packets' writes once the GPU is done).
 Experiment 0084: the driver's wait-idle and submit-done ioctls are counted in the journal (draining
 the jobs in flight there changed nothing, F144; the knob was removed in cleanup batch 1).
+Experiment 0125: `BC5_DIRECT_SKIP_NOPS=1` leaves buffers of nothing but NOPs unsubmitted (opt-in:
+the second title's start screen lost 1.4 fps without its empty compute jobs).
 Experiment 0124: `BC5_DIRECT_JOB_TS=1` has the backend timestamp each job's start and end on the
 GPU clock (`FilterOptions::job_timestamps`; `COPY_DATA` and `RELEASE_MEM` as Mesa's `sid.h` defines
 them) and journals the GPU's busy and idle time every second (`job ts:`); `=<t0>:<t1>` journals
