@@ -471,7 +471,7 @@ mod tests {
         let img = image(&Spec::preset("empty").unwrap());
         let vol = ExfatVolume::open(img).unwrap();
         assert_eq!(vol.entries().len(), 1);
-        assert!(vol.children(0).is_empty());
+        assert_eq!(vol.children(0), &[] as &[usize]);
     }
 
     #[test]
