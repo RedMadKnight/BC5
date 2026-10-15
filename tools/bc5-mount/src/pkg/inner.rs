@@ -9,10 +9,13 @@ use std::collections::HashMap;
 use std::io;
 use std::sync::{Arc, Mutex, PoisonError};
 
+use std::path::Path;
+
 use crate::cache::BlockCache;
 use crate::error::{bail_format, Error, Result};
 use crate::io::{Le, ReadAt};
 use crate::pfs::{parse_dirents, DIRENT_DIR, DIRENT_FILE, MAGIC};
+use crate::pkg::diskcache::{self, DiskCache};
 use crate::pkg::kraken;
 use crate::pkg::naps::{Block, Layout};
 use crate::tree::{fold_name, EntryRef, FileTree};
@@ -65,6 +68,8 @@ pub struct InnerImage<R> {
     /// (the kernel splits a 256 KiB block into two 128 KiB reads that arrive on two
     /// workers at once; experiment 0112).
     decoding: Vec<Mutex<()>>,
+    /// Decoded Kraken blocks kept on disk between mounts (experiment 0112).
+    disk: Option<DiskCache>,
 }
 
 /// Number of decode stripes; a power of two.
@@ -108,7 +113,33 @@ impl<R: ReadAt> InnerImage<R> {
             stats,
             cache,
             decoding: (0..DECODE_STRIPES).map(|_| Mutex::new(())).collect(),
+            disk: None,
         })
+    }
+
+    /// Keeps decoded Kraken blocks in `dir` (files named after the stored
+    /// image), at most `limit` bytes of them, and reads them back from there.
+    pub fn attach_disk_cache(&mut self, dir: &Path, limit: u64) -> io::Result<()> {
+        let key = diskcache::image_key(&self.image)?;
+        let block_bytes = self
+            .blocks
+            .iter()
+            .map(|b| u64::from(b.uncomp))
+            .max()
+            .unwrap_or(0);
+        self.disk = Some(DiskCache::open(
+            dir,
+            &key,
+            self.blocks.len(),
+            block_bytes,
+            limit,
+        )?);
+        Ok(())
+    }
+
+    /// The on-disk cache, if attached.
+    pub fn disk_cache(&self) -> Option<&DiskCache> {
+        self.disk.as_ref()
     }
 
     /// Logical size.
@@ -153,6 +184,16 @@ impl<R: ReadAt> InnerImage<R> {
             return Ok(b);
         }
         let b = self.blocks[index];
+        if b.kraken {
+            if let Some(v) = self.disk.as_ref().and_then(|d| d.get(index)) {
+                if v.len() == b.uncomp as usize {
+                    crate::stats::from_disk(v.len() as u64);
+                    let out = Arc::new(v);
+                    self.cache.insert(index as u64, Arc::clone(&out));
+                    return Ok(out);
+                }
+            }
+        }
         let mut out = vec![0u8; b.uncomp as usize];
         if b.comp != 0 {
             let payload = self.image.read_vec_at(b.on_disk, b.comp as usize)?;
@@ -173,6 +214,11 @@ impl<R: ReadAt> InnerImage<R> {
             }
         }
         crate::stats::decoded(index as u64, out.len() as u64);
+        if b.kraken {
+            if let Some(d) = &self.disk {
+                d.put(index, &out);
+            }
+        }
         let out = Arc::new(out);
         self.cache.insert(index as u64, Arc::clone(&out));
         Ok(out)

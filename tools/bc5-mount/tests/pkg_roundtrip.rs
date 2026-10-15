@@ -135,6 +135,35 @@ fn random_reads_match_spec() {
     }
 }
 
+/// Experiment 0112: with an on-disk block cache, a second open reads the
+/// Kraken blocks back from disk, and every file still matches the spec.
+#[test]
+fn disk_cache_serves_a_second_open() {
+    let spec = Spec::preset("mixed-compress").unwrap();
+    let bytes = build(&spec);
+    let dir = std::env::temp_dir().join(format!("bc5-pkg-diskcache-{}", std::process::id()));
+    let _ = std::fs::remove_dir_all(&dir);
+    let want = expected(&spec);
+
+    let first = PkgImage::open_with(bytes.clone(), Some((dir.as_path(), 1 << 30))).unwrap();
+    assert!(
+        first.info().stats.kraken > 0,
+        "the preset must have Kraken blocks"
+    );
+    assert!(diff(&want, &hash_volume(&first, |_| {}).unwrap()).is_empty());
+    drop(first);
+
+    let before = bc5_mount::stats::snapshot();
+    let second = PkgImage::open_with(bytes, Some((dir.as_path(), 1 << 30))).unwrap();
+    assert!(diff(&want, &hash_volume(&second, |_| {}).unwrap()).is_empty());
+    let after = bc5_mount::stats::snapshot();
+    assert!(
+        after.disk_blocks > before.disk_blocks,
+        "no block came from disk"
+    );
+    let _ = std::fs::remove_dir_all(&dir);
+}
+
 #[test]
 fn lookups_are_case_insensitive_and_paths_work() {
     let spec = Spec::preset("deep").unwrap();

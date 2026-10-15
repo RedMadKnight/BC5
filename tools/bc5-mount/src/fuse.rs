@@ -461,14 +461,17 @@ fn report_stats() {
                 }
                 let mib = |b: u64| b >> 20;
                 eprintln!(
-                    "bc5-mount stats {:.1} s: served {} MiB (+{}), decoded {} blocks {} MiB (+{}), {} decoded again",
+                    "bc5-mount stats {:.1} s: served {} MiB (+{}), decoded {} blocks {} MiB (+{}), {} decoded again, from disk {} blocks {} MiB (+{})",
                     started.elapsed().as_secs_f64(),
                     mib(s.served_bytes),
                     mib(s.served_bytes - last.served_bytes),
                     s.decoded_blocks,
                     mib(s.decoded_bytes),
                     mib(s.decoded_bytes - last.decoded_bytes),
-                    s.redecoded_blocks
+                    s.redecoded_blocks,
+                    s.disk_blocks,
+                    mib(s.disk_bytes),
+                    mib(s.disk_bytes - last.disk_bytes)
                 );
                 last = s;
             }

@@ -13,6 +13,8 @@ static SERVED_BYTES: AtomicU64 = AtomicU64::new(0);
 static DECODED_BLOCKS: AtomicU64 = AtomicU64::new(0);
 static DECODED_BYTES: AtomicU64 = AtomicU64::new(0);
 static REDECODED_BLOCKS: AtomicU64 = AtomicU64::new(0);
+static DISK_BLOCKS: AtomicU64 = AtomicU64::new(0);
+static DISK_BYTES: AtomicU64 = AtomicU64::new(0);
 static SEEN: Mutex<Option<HashSet<u64>>> = Mutex::new(None);
 
 /// A snapshot of the counters.
@@ -26,6 +28,16 @@ pub struct Snapshot {
     pub decoded_bytes: u64,
     /// Decodes of a block that had been decoded before.
     pub redecoded_blocks: u64,
+    /// Blocks read back from the on-disk cache instead of decoded.
+    pub disk_blocks: u64,
+    /// Bytes of those blocks.
+    pub disk_bytes: u64,
+}
+
+/// Counts one block read back from the on-disk cache.
+pub fn from_disk(bytes: u64) {
+    DISK_BLOCKS.fetch_add(1, Ordering::Relaxed);
+    DISK_BYTES.fetch_add(bytes, Ordering::Relaxed);
 }
 
 /// Starts tracking repeated decodes as well.
@@ -60,6 +72,8 @@ pub fn snapshot() -> Snapshot {
         decoded_blocks: DECODED_BLOCKS.load(Ordering::Relaxed),
         decoded_bytes: DECODED_BYTES.load(Ordering::Relaxed),
         redecoded_blocks: REDECODED_BLOCKS.load(Ordering::Relaxed),
+        disk_blocks: DISK_BLOCKS.load(Ordering::Relaxed),
+        disk_bytes: DISK_BYTES.load(Ordering::Relaxed),
     }
 }
 

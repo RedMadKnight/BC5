@@ -9,6 +9,7 @@
 //! * [`inner`] — the logical inner image and its file tree.
 //! * [`PkgImage`] — the package: header, outer PFS, the two inner files.
 
+pub mod diskcache;
 pub mod inner;
 pub mod kraken;
 pub mod naps;
@@ -304,9 +305,29 @@ impl PkgImage<FileSource> {
     }
 }
 
+/// The on-disk block cache from `BC5_MOUNT_DISK_CACHE=<dir>`, with its limit from
+/// `BC5_MOUNT_DISK_CACHE_MIB` (experiment 0112).
+fn disk_cache_from_env() -> Option<(std::path::PathBuf, u64)> {
+    let dir = std::env::var_os("BC5_MOUNT_DISK_CACHE").filter(|d| !d.is_empty())?;
+    let mib = std::env::var("BC5_MOUNT_DISK_CACHE_MIB")
+        .ok()
+        .and_then(|v| v.trim().parse::<u64>().ok())
+        .unwrap_or(diskcache::DEFAULT_LIMIT_MIB);
+    Some((dir.into(), mib << 20))
+}
+
 impl<R: ReadAt> PkgImage<R> {
     /// Parses the header, the outer PFS, the layout and the inner metadata.
+    /// With `BC5_MOUNT_DISK_CACHE` set, decoded blocks are kept on disk too.
     pub fn open(source: R) -> Result<Self> {
+        let disk = disk_cache_from_env();
+        Self::open_with(source, disk.as_ref().map(|(d, l)| (d.as_path(), *l)))
+    }
+
+    /// As [`PkgImage::open`], with decoded blocks kept in `disk.0`, at most
+    /// `disk.1` bytes (`None`: no on-disk cache). A cache that cannot be opened
+    /// is reported on stderr and skipped.
+    pub fn open_with(source: R, disk: Option<(&Path, u64)>) -> Result<Self> {
         let source = Arc::new(source);
         let mut head = [0u8; 0x100];
         source
@@ -353,7 +374,15 @@ impl<R: ReadAt> PkgImage<R> {
         let layout = Layout::parse(&source.read_vec_at(layout_off, layout_len as usize)?)?;
         let image = Window::new(Arc::clone(&source), image_off, image_len)
             .map_err(|e| Error::format(LAYER, format!("inner image window: {e}")))?;
-        let image = InnerImage::open(image, &layout)?;
+        let mut image = InnerImage::open(image, &layout)?;
+        if let Some((dir, limit)) = disk {
+            if let Err(e) = image.attach_disk_cache(dir, limit) {
+                eprintln!(
+                    "bc5-mount: no on-disk block cache in {}: {e}",
+                    dir.display()
+                );
+            }
+        }
         let tree = InnerTree::open(image, &layout)?;
         Ok(Self {
             source,
