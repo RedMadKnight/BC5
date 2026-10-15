@@ -98,6 +98,11 @@ On the BC-250 that translation is unnecessary. CPU code already runs natively (x
 | Boot / security | Sony PSP keys, Sony ABL/SMU, hypervisor | Generic AMD PSP (1022:143e), different ABL/SMU | Sony firmware cannot boot; we stay in user space |
 | Audio / input | Tempest 3D, DualSense | Realtek/USB audio, a DualSense over USB | HLE in the host runtime; buttons, sticks, motion sensors, the orientation derived from them, adaptive triggers and haptics (an audio stream to the controller's own USB audio device) work in the game (F78–F80) |
 
+**Optimised for this machine only.** All performance work targets the BC-250's own architecture:
+its `gfx1013` GPU and CU count, its 8-core Zen 2 CPU, unified GDDR6, its slow NVMe link, and the
+`amdgpu`/RADV stack on it. Portability to other hardware is not a goal and is never bought with
+speed here.
+
 Key facts established so far (September–October 2026):
 
 - **Both the PS5 GPU and the BC-250 are `gfx1013`** (GFX10.1 with ray-tracing instructions), not gfx10.3. A native-homebrew Vulkan project on a real PS5 compiles through the ACO GFX1013 backend, and Mesa/RADV identifies the BC-250 as the same target. There is no ISA gap to close; the only rule is to avoid `gfx10-3-insts`.
