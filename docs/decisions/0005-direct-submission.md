@@ -152,3 +152,9 @@ backend's core is the policy table plus the BO/VA mapper, both testable offline.
 behaviour (Sony CP vs AMD CP for the same opcode) is discovered one dropped packet at a time and
 recorded in `docs/formats/agc.md`. The risk of a GPU reset stays and is contained by staging,
 timeouts and the trimmed host.
+
+*Amended 2026-10-15 (experiment 0127, F177):* (xvi) is lifted for experiments with the maintainer
+present. The compute rings run dispatches; run 43 failed on our own `CONTEXT_CONTROL`. A compute ring
+must only get compute-ring packets (no `CONTEXT_CONTROL`, no graphics state), and dispatches with
+`PARTIAL_TG_EN` but no thread dimensions are suspect (mesa#16054). Play settings keep everything on
+the GFX ring until an ADR for the compute queues is accepted.

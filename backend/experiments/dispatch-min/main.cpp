@@ -330,6 +330,10 @@ int submit(const Options &o) {
     p.rsrc1 = o.rsrc1;
     p.rsrc2 = o.rsrc2;
     p.vsharp_word3 = o.vsharp3;
+    // CONTEXT_CONTROL is a graphics-ring packet: IGT's amdgpu_dispatch_init emits it only for
+    // AMDGPU_HW_IP_GFX (lib/amdgpu/compute_utils/amd_dispatch_helpers.c). Run 43 (F31) sent it to
+    // comp_1.0.0 because gfx_ring was left at its default; the MEC pipes report no illegal packet.
+    p.gfx_ring = o.ip == AMDGPU_HW_IP_GFX;
     std::printf("dispatch: %u bytes (%u groups), value 0x%08x, rsrc1 0x%08x rsrc2 0x%08x v# word3 "
                 "0x%08x\n",
                 bytes, bytes / bc5::dispatch_min::kBytesPerGroup, o.value, o.rsrc1, o.rsrc2,
