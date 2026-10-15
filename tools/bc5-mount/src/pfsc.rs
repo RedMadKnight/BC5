@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-only
 //! PFSC stream: 64 KiB logical blocks, each stored raw or as one zlib stream.
 //! Layout: `docs/formats/ffpfsc.md` §6. [`PfscReader`] exposes the decoded
-//! bytes as a [`ReadAt`] with a block cache that inflates each block once.
+//! bytes as a [`ReadAt`] with a small block cache.
 
 use std::io::{self, Read};
 use std::sync::Arc;
 
-use crate::cache::{cache_blocks, DecodeCache};
+use crate::cache::BlockCache;
 use crate::error::{bail_format, Error, Result};
 use crate::io::{Le, ReadAt};
 
@@ -26,15 +26,9 @@ pub const TABLE_OFFSET: u64 = 0x400;
 pub const INITIAL_DATA_OFFSET: u64 = 0x10000;
 /// Sanity limit on block count (16 Mi blocks = 1 TiB logical).
 pub const MAX_BLOCKS: u64 = 1 << 24;
-/// Decoded blocks kept in memory, in MiB, unless `BC5_MOUNT_CACHE_MIB` says
-/// otherwise: 4096 × 64 KiB. Each sequentially read file runs 2 MiB of
-/// decode-ahead (`fuse.rs`), and ASTRO BOT's loaders read many files at once;
-/// the 16 MiB of experiment 0033 held only eight such windows, so blocks were
-/// evicted before their read arrived and inflated again (experiment 0114:
-/// 7495 MiB inflated for 5582 MiB served). With 24 files read in parallel
-/// through the mount, 16 MiB inflated ~6000 blocks again, 64 MiB ~300 and
-/// 256 MiB 3 (experiment 0116); 256 MiB is under 2 % of the box's memory.
-const CACHE_MIB: usize = 256;
+/// Decoded blocks kept in memory: 256 × 64 KiB = 16 MiB, room for the reads in
+/// flight and the decode-ahead of several loader threads (experiment 0033).
+const CACHE_BLOCKS: usize = 256;
 
 /// The fixed PFSC header.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -152,7 +146,7 @@ pub struct PfscReader<R> {
     header: Header,
     offsets: Vec<u64>,
     logical_len: u64,
-    cache: DecodeCache,
+    cache: BlockCache,
 }
 
 impl<R: ReadAt> PfscReader<R> {
@@ -220,7 +214,7 @@ impl<R: ReadAt> PfscReader<R> {
             header,
             offsets,
             logical_len,
-            cache: DecodeCache::new(cache_blocks(CACHE_MIB, BLOCK_SIZE as usize)),
+            cache: BlockCache::new(CACHE_BLOCKS),
         })
     }
 
@@ -247,15 +241,8 @@ impl<R: ReadAt> PfscReader<R> {
         self.source.len()
     }
 
-    /// Decodes block `idx` from the source (no cache) and counts it in
-    /// [`crate::stats`].
+    /// Decodes block `idx` from the source (no cache).
     fn decode_block(&self, idx: u64) -> Result<Vec<u8>> {
-        let out = self.inflate_block(idx)?;
-        crate::stats::decoded(idx, out.len() as u64);
-        Ok(out)
-    }
-
-    fn inflate_block(&self, idx: u64) -> Result<Vec<u8>> {
         let (Some(&start), Some(&end)) = (
             self.offsets.get(idx as usize),
             self.offsets.get(idx as usize + 1),
@@ -285,11 +272,19 @@ impl<R: ReadAt> PfscReader<R> {
         }
     }
 
-    /// The decoded block `idx`, inflated once however many readers want it.
-    /// No lock is held while a block inflates: threads inflate different
-    /// blocks at the same time, and only readers of the same block wait.
-    fn block(&self, idx: u64) -> Result<Arc<Vec<u8>>> {
-        self.cache.get_or_decode(idx, || self.decode_block(idx))
+    /// Copies `buf.len()` bytes from logical block `idx` at `within`. No lock
+    /// is held while a block inflates, so several threads inflate different
+    /// blocks at the same time.
+    fn copy_from_block(&self, idx: u64, within: usize, buf: &mut [u8]) -> Result<()> {
+        let block = if let Some(b) = self.cache.get(idx) {
+            b
+        } else {
+            let b = Arc::new(self.decode_block(idx)?);
+            self.cache.insert(idx, Arc::clone(&b));
+            b
+        };
+        buf.copy_from_slice(&block[within..within + buf.len()]);
+        Ok(())
     }
 }
 
@@ -311,27 +306,11 @@ impl<R: ReadAt> ReadAt for PfscReader<R> {
             let idx = pos / bs;
             let within = (pos % bs) as usize;
             let n = (total - done).min(BLOCK_SIZE as usize - within);
-            let block = self
-                .block(idx)
+            self.copy_from_block(idx, within, &mut buf[done..done + n])
                 .map_err(|e| io::Error::other(e.to_string()))?;
-            buf[done..done + n].copy_from_slice(&block[within..within + n]);
             done += n;
         }
         Ok(total)
-    }
-
-    fn prefetch(&self, offset: u64, len: u64) -> io::Result<()> {
-        let end = offset.saturating_add(len).min(self.logical_len);
-        if offset >= end {
-            return Ok(());
-        }
-        let bs = u64::from(BLOCK_SIZE);
-        for idx in offset / bs..end.div_ceil(bs) {
-            self.cache
-                .prefetch(idx, || self.decode_block(idx))
-                .map_err(|e| io::Error::other(e.to_string()))?;
-        }
-        Ok(())
     }
 }
 
@@ -339,9 +318,6 @@ impl<R: ReadAt> ReadAt for PfscReader<R> {
 mod tests {
     use super::*;
     use proptest::prelude::*;
-    use std::sync::atomic::{AtomicUsize, Ordering};
-    use std::sync::Barrier;
-    use std::time::{Duration, Instant};
 
     #[test]
     fn header_sizes_follow_the_formula() {
@@ -368,98 +344,6 @@ mod tests {
         b[0x28] = 1; // unaligned length
         assert!(Header::parse(&b).is_err());
         assert!(Header::parse(&b[..0x20]).is_err());
-    }
-
-    /// A PFSC stream whose block 0 takes `delay` to read from the source.
-    struct SlowBlock0 {
-        stream: Vec<u8>,
-        block0: std::ops::Range<u64>,
-        delay: Duration,
-        block0_reads: AtomicUsize,
-    }
-
-    impl ReadAt for SlowBlock0 {
-        fn len(&self) -> u64 {
-            self.stream.len() as u64
-        }
-        fn read_at(&self, offset: u64, buf: &mut [u8]) -> io::Result<usize> {
-            if offset < self.block0.end && offset + buf.len() as u64 > self.block0.start {
-                self.block0_reads.fetch_add(1, Ordering::SeqCst);
-                std::thread::sleep(self.delay);
-            }
-            self.stream.read_at(offset, buf)
-        }
-    }
-
-    /// Two blocks of noise (stored raw) and two of zeros (inflated).
-    fn slow_reader(delay: Duration) -> (PfscReader<SlowBlock0>, Vec<u8>) {
-        use std::io::Write;
-        let mut data = vec![0u8; 4 * BLOCK_SIZE as usize];
-        crate::fixture::Content::Pattern {
-            seed: 5,
-            len: 2 * u64::from(BLOCK_SIZE),
-        }
-        .fill(0, &mut data[..2 * BLOCK_SIZE as usize]);
-        let mut enc = crate::fixture::pfsc_writer::PfscEncoder::new(
-            std::io::Cursor::new(Vec::new()),
-            data.len() as u64,
-        )
-        .unwrap();
-        enc.write_all(&data).unwrap();
-        let stream = enc.finish().unwrap().0.into_inner();
-        let at = |i: u64| {
-            let o = (TABLE_OFFSET + 8 * i) as usize;
-            u64::from_le_bytes(stream[o..o + 8].try_into().unwrap())
-        };
-        let source = SlowBlock0 {
-            block0: at(0)..at(1),
-            stream,
-            delay,
-            block0_reads: AtomicUsize::new(0),
-        };
-        (PfscReader::open(source, None).unwrap(), data)
-    }
-
-    #[test]
-    fn concurrent_reads_of_one_block_inflate_it_once() {
-        let (r, data) = slow_reader(Duration::from_millis(100));
-        let start = Barrier::new(4);
-        std::thread::scope(|s| {
-            for t in 0..4u64 {
-                let (r, data, start) = (&r, &data, &start);
-                s.spawn(move || {
-                    start.wait();
-                    let at = t * 0x1000;
-                    let got = r.read_vec_at(at, 0x1000).unwrap();
-                    assert_eq!(got, &data[at as usize..at as usize + 0x1000]);
-                });
-            }
-        });
-        assert_eq!(r.source.block0_reads.load(Ordering::SeqCst), 1);
-    }
-
-    #[test]
-    fn a_slow_block_does_not_delay_other_blocks_or_decode_ahead() {
-        let (r, data) = slow_reader(Duration::from_millis(500));
-        std::thread::scope(|s| {
-            let slow = s.spawn(|| r.read_vec_at(0, 16).unwrap());
-            while r.source.block0_reads.load(Ordering::SeqCst) == 0 {
-                std::thread::yield_now();
-            }
-            let t = Instant::now();
-            let bs = u64::from(BLOCK_SIZE);
-            // Block 1 (raw) and block 2 (inflated) while block 0 is in flight.
-            assert_eq!(r.read_vec_at(bs, 16).unwrap(), &data[bs as usize..][..16]);
-            assert_eq!(r.read_vec_at(2 * bs, 16).unwrap(), vec![0u8; 16]);
-            // Decode-ahead over the block in flight skips it.
-            r.prefetch(0, 4 * bs).unwrap();
-            let waited = t.elapsed();
-            assert!(!slow.is_finished(), "block 0 should still be in flight");
-            assert!(waited < Duration::from_millis(250), "waited {waited:?}");
-            assert_eq!(slow.join().unwrap(), &data[..16]);
-        });
-        assert_eq!(r.source.block0_reads.load(Ordering::SeqCst), 1);
-        assert!((0..4).all(|i| r.cache.contains(i)));
     }
 
     proptest! {
