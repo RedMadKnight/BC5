@@ -1,0 +1,6 @@
+run 525 (1850-2150 MHz, start screen) timeouts=0 faults=0: t85-100 fps 48.87 | t130-165 fps 34.09 | t165-200 fps 32.80 | 
+  max edge 78.0 C, max tctl 78.5 C (pp_dpm_sclk samples omitted: meaningless with the SMU set method)
+run 526 (1850-2150 MHz, ASTRO BOT) timeouts=0 faults=0: t10-30 fps 58.90 | t40-65 fps 60.00
+  game thread inside the host: mean 6.23 ms
+  max edge 81.0 C, max tctl 80.5 C (pp_dpm_sclk samples omitted: meaningless with the SMU set method)
+
