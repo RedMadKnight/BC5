@@ -4391,10 +4391,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..fc277ce
+index 0000000..d7ef4da
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,6310 @@
+@@ -0,0 +1,6338 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -8707,6 +8707,34 @@ index 0000000..fc277ce
 +		return;
 +	}
 +	pkt_stats(ib, num_dwords, kind);
++	// Experiment 0125: a buffer of nothing but NOPs (type-3 NOP packets, type-2 fillers) is not
++	// submitted: nothing in it runs on the GPU, it writes no label and fires no event, and every
++	// submission costs the CS ioctl, a fence and the kernel's pipeline sync. The second title's
++	// compute ring hands over 34 such 2-dword buffers a frame on its start screen (experiment 0124).
++	// Opt-in (BC5_DIRECT_SKIP_NOPS=1): run 522 lost 1.4 fps without them, the empty compute jobs
++	// spacing out the ring thread's work between the frame's graphics on the one GFX ring.
++	{
++		static const bool skip_nops = std::getenv("BC5_DIRECT_SKIP_NOPS") != nullptr;
++		bool              only_nops = skip_nops;
++		for (uint32_t q = 0; q < num_dwords && only_nops;) {
++			const uint32_t h = ib[q], type = h >> 30u;
++			if (type == 2) {
++				q++;
++				continue;
++			}
++			const uint32_t c = (h >> 16u) & 0x3fffu;
++			if (type == 3 && ((h >> 8u) & 0xffu) == 0x10u) {
++				q += c == 0x3fffu ? 1u : c + 2u;
++				continue;
++			}
++			only_nops = false;
++		}
++		if (only_nops) {
++			static std::atomic<uint64_t> n_nops {0};
++			if (journal_sample(n_nops, 0xfffu)) journal("nop buffer: %s %u dwords not submitted (%" PRIu64 " so far)\n", kind, num_dwords, n_nops.load());
++			return;
++		}
++	}
 +	// Experiment 0093: BC5_DIRECT_FIND_ALL=<t0>:<seconds>:<hex>[,<hex>...] journals, for buffers of every
 +	// kind (compute and ring buffers too) submitted in that window, each dispatch or draw whose
 +	// COMPUTE_USER_DATA_0..15 / SPI_SHADER_USER_DATA_PS_0..31 (Mesa gfx10 register JSON) hold one of
