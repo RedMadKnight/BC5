@@ -4391,10 +4391,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..d7ef4da
+index 0000000..190ef7e
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,6338 @@
+@@ -0,0 +1,6382 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -4592,7 +4592,7 @@ index 0000000..d7ef4da
 +static std::mutex            g_unready_mutex;
 +static std::vector<uint64_t> g_unready_writes; // the labels that buffer writes past its wait
 +static bool acb_ready(const uint32_t* ib, uint32_t num_dwords);
-+static bool ring_will_satisfy(const uint32_t* p, bool is64); // experiment 0055
++static bool ring_will_satisfy(const uint32_t* p, bool is64, int ring); // experiment 0055
 +static void journal(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
 +// Experiment 0024 (BC5_DIRECT_ASYNC=1): what has to follow a buffer's execution on the GPU — the
 +// soft CP's pass over it, a ring's read-pointer publication — runs through post(): at once when
@@ -7074,6 +7074,32 @@ index 0000000..d7ef4da
 +	return journal_all() || (n.fetch_add(1, std::memory_order_relaxed) & mask) == 0;
 +}
 +
++// ADR 0009 (BC5_DIRECT_COMPUTE_RING=<n>; experiments only, with the maintainer present): the ring
++// thread's compute buffers go to kernel compute ring n instead of the GFX ring, except those for
++// which bc5::policy::compute_ring_refusal names a reason (they stay on the GFX ring). The second
++// title's buffers hold none (experiment 0128).
++static int compute_ring_env() {
++	static const int v = [] {
++		const char* e = std::getenv("BC5_DIRECT_COMPUTE_RING");
++		return e != nullptr ? std::atoi(e) : bc5::direct::kGfxRing;
++	}();
++	return v;
++}
++static std::atomic<uint64_t> g_comp_jobs {0}, g_comp_refused {0};
++static thread_local int      t_ring = bc5::direct::kGfxRing; // the ring of the compute buffer being submitted
++static int                   acb_ring(const uint32_t* ib, uint32_t num_dwords) {
++	const int ring = compute_ring_env();
++	if (ring < 0) return bc5::direct::kGfxRing;
++	const char* why = bc5::policy::compute_ring_refusal(std::span<const uint32_t>(ib, num_dwords));
++	if (why == nullptr) return ring;
++	if ((g_comp_refused++ & 0x3ffu) == 0)
++		journal("compute ring: a compute buffer of %u dwords stays on the GFX ring (%s; %" PRIu64 " so far)\n", num_dwords, why, g_comp_refused.load());
++	return bc5::direct::kGfxRing;
++}
++static int job_ring(const char* kind) {
++	return std::strncmp(kind, "acb", 3) == 0 ? t_ring : bc5::direct::kGfxRing;
++}
++
 +static void submit_segment(const uint32_t* ib, uint32_t num_dwords, uint32_t from, uint32_t to) {
 +	if (from > 0) {
 +		uint32_t        n   = 0;
@@ -7087,6 +7113,7 @@ index 0000000..d7ef4da
 +
 +static bool acb_ready(const uint32_t* ib, uint32_t num_dwords) {
 +	static const bool tail_split = std::getenv("BC5_DIRECT_NO_TAIL_SPLIT") == nullptr;
++	const int         ring       = acb_ring(ib, num_dwords); // ADR 0009
 +	uint32_t done = 0;
 +	for (const auto& e: g_acb_heads) {
 +		if (e.ib == ib && e.num_dwords == num_dwords) done = e.done;
@@ -7111,7 +7138,7 @@ index 0000000..d7ef4da
 +				// Experiment 0055: a wait the ring's pending writes will satisfy does not hold the buffer back.
 +				static const bool ring_order = std::getenv("BC5_DIRECT_RING_ORDER_WAITS") != nullptr;
 +				if (i >= done && std::find(written.begin(), written.end(), label) == written.end() && !wait_satisfied(p, op == 0x93) &&
-+				    !(ring_order && ring_will_satisfy(p, op == 0x93))) {
++				    !(ring_order && ring_will_satisfy(p, op == 0x93, ring))) {
 +					t_unready.ib         = ib;
 +					t_unready.num_dwords = num_dwords;
 +					t_unready.pos        = i;
@@ -7145,7 +7172,9 @@ index 0000000..d7ef4da
 +						SoftCp::clear_gpu_executed();
 +						static std::atomic<uint64_t> n_head {0};
 +						if (journal_sample(n_head, 0x3ffu)) journal("acb head: %u of %u dwords go ahead of the wait at %u on 0x%" PRIx64 "\n", i - done, num_dwords, i, label);
++						t_ring = ring;
 +						submit_segment(ib, num_dwords, done, i);
++						t_ring = bc5::direct::kGfxRing;
 +						AcbHead* e = nullptr;
 +						for (auto& x: g_acb_heads) {
 +							if (x.ib == ib && x.num_dwords == num_dwords) e = &x;
@@ -7182,11 +7211,15 @@ index 0000000..d7ef4da
 +// title's scene change: a label set to 0 by a compute job 14-15 ms after the graphics buffer's
 +// 8 ms wait for it was given up, the compute job already submitted (run 244). As AnyPS5's
 +// noteHeldAtSubmit treats a wait whose write is recorded but not finished.
++// ADR 0009: only a write on the ring the waiting job goes to counts (two rings run side by side);
++// the last write is the last registered (sequence numbers are per ring).
 +struct PendingLabelWrite {
 +	uint64_t label;
 +	uint64_t value;
 +	uint64_t seq;
 +	bool     is64;
++	int      ring  = bc5::direct::kGfxRing;
++	uint64_t order = 0;
 +};
 +static std::mutex                          g_plw_mutex;
 +static std::vector<PendingLabelWrite>      g_plw;
@@ -7243,7 +7276,7 @@ index 0000000..d7ef4da
 +static std::atomic<uint64_t> g_dry_bufs {0}, g_dry_splits {0}, g_dry_prefix {0}, g_dry_ns {0}, g_dry_max_ns {0}, g_dry_kept {0}, g_dry_ok {0},
 +    g_dry_failed {0};
 +
-+static void register_label_writes(const uint32_t* ib, uint32_t num_dwords, const std::vector<uint32_t>& executed, uint64_t seq) {
++static void register_label_writes(const uint32_t* ib, uint32_t num_dwords, const std::vector<uint32_t>& executed, uint64_t seq, int ring) {
 +	std::vector<PendingLabelWrite> found;
 +	for (const uint32_t q: executed) {
 +		if (q >= num_dwords) continue;
@@ -7272,29 +7305,34 @@ index 0000000..d7ef4da
 +	}
 +	if (found.empty()) return;
 +	std::lock_guard lk(g_plw_mutex);
++	static uint64_t order = 0;
++	for (auto& w: found) {
++		w.ring  = ring;
++		w.order = ++order;
++	}
 +	if (g_plw.size() > 8192) g_plw.erase(g_plw.begin(), g_plw.begin() + 4096);
 +	g_plw.insert(g_plw.end(), found.begin(), found.end());
 +}
 +
-+static void forget_label_writes(uint64_t seq, bool all) {
++static void forget_label_writes(uint64_t seq, int ring, bool all) {
 +	std::lock_guard lk(g_plw_mutex);
 +	if (all) {
 +		g_plw.clear();
 +		return;
 +	}
-+	g_plw.erase(std::remove_if(g_plw.begin(), g_plw.end(), [seq](const PendingLabelWrite& w) { return w.seq == seq; }), g_plw.end());
++	g_plw.erase(std::remove_if(g_plw.begin(), g_plw.end(), [seq, ring](const PendingLabelWrite& w) { return w.seq == seq && w.ring == ring; }), g_plw.end());
 +}
 +
 +// Will the last pending write of this wait's label satisfy it?
-+static bool ring_will_satisfy(const uint32_t* p, bool is64) {
++static bool ring_will_satisfy(const uint32_t* p, bool is64, int ring) {
 +	const uint32_t function = p[1] & 7u;
 +	const uint64_t a        = (p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u);
 +	std::lock_guard lk(g_plw_mutex);
 +	const PendingLabelWrite* last = nullptr;
 +	for (const auto& w: g_plw) {
-+		if (w.label == a && (last == nullptr || w.seq >= last->seq)) last = &w;
++		if (w.label == a && (last == nullptr || w.order >= last->order)) last = &w;
 +	}
-+	if (last == nullptr) return false;
++	if (last == nullptr || last->ring != ring) return false;
 +	if (is64) {
 +		if (!last->is64) return false;
 +		const uint64_t ref = p[4] | (static_cast<uint64_t>(p[5]) << 32u), mask = p[6] | (static_cast<uint64_t>(p[7]) << 32u);
@@ -7443,7 +7481,7 @@ index 0000000..d7ef4da
 +						dry_here = true;
 +					}
 +					static const bool ring_order = std::getenv("BC5_DIRECT_RING_ORDER_WAITS") != nullptr;
-+					if (ring_order && !wait_satisfied(p, op == 0x93) && ring_will_satisfy(p, op == 0x93)) {
++					if (ring_order && !wait_satisfied(p, op == 0x93) && ring_will_satisfy(p, op == 0x93, job_ring(kind))) {
 +						static std::atomic<uint64_t> n_kept {0};
 +						if ((n_kept++ & 0x3ffu) == 0) journal("ring order: %s %u dwords keeps its wait at %u on 0x%" PRIx64 " for the GPU (%" PRIu64 " so far)\n", kind, num_dwords, i, label, n_kept.load());
 +						t_keep_waits.push_back(p);
@@ -8123,6 +8161,7 @@ index 0000000..d7ef4da
 +						}
 +					}
 +					if (skip < tn) {
++						t_ring = acb_ring(t, tn); // ADR 0009
 +						if (skip > 0) {
 +							uint32_t        n   = 0;
 +							const uint32_t* pre = state_prefix(t, skip, &n);
@@ -8130,6 +8169,7 @@ index 0000000..d7ef4da
 +							if (pre != nullptr) submit_one(pre, n, "acb-state", false);
 +						}
 +						submit_split(t + skip, tn - skip, "acb", false);
++						t_ring = bc5::direct::kGfxRing;
 +					}
 +				}
 +			}
@@ -8347,7 +8387,7 @@ index 0000000..d7ef4da
 +					return w;
 +				}();
 +				if (r.ok && r.gpu_start != 0 && jt_win.first >= 0 && timing_now() >= jt_win.first && timing_now() < jt_win.second) {
-+					journal("jt %" PRIu64 " %" PRIu64 " %s %u\n", r.gpu_start, r.gpu_end, j.kind, j.num_dwords);
++					journal("jt %" PRIu64 " %" PRIu64 " %s %u %d\n", r.gpu_start, r.gpu_end, j.kind, j.num_dwords, r.ring);
 +				}
 +				if (r.ok && r.gpu_start != 0 && r.gpu_end > r.gpu_start) {
 +					static uint64_t prev_end = 0, win0 = 0, busy = 0, idle = 0, jobs = 0, gaps = 0, overlaps = 0, big = 0, big_t = 0;
@@ -8379,7 +8419,7 @@ index 0000000..d7ef4da
 +			} else {
 +				r.rc = -125; // -ECANCELED: the device it was queued on is gone
 +			}
-+			forget_label_writes(j.seq, r.timed_out || r.rc == -125); // experiment 0055
++			forget_label_writes(j.seq, r.ring, r.timed_out || r.rc == -125); // experiment 0055
 +			const double total_ms = static_cast<double>(SoftCp::now_ns() - j.queued_ns) / 1e6 + j.cs_ms;
 +			frame_profile_done(index == 0, j.queued_ns, SoftCp::now_ns(), 0.0);
 +			if (!r.ok || journal_all() || (j.n & 0x3fu) == 0) journal("submit #%" PRIu64 " %s %u dwords at %p: pass %" PRIu64 " rewrite %" PRIu64 " drop %" PRIu64 " unmapped %" PRIu64 " cc %" PRIu64 " mappings %zu ... %s rc %d%s%s %.2f ms\n",
@@ -8706,6 +8746,7 @@ index 0000000..d7ef4da
 +	if (g_stage == Stage::Off || !g_dev || ib == nullptr || num_dwords == 0) {
 +		return;
 +	}
++	const int qring = job_ring(kind); // ADR 0009: the compute ring takes the MEC form as it is
 +	pkt_stats(ib, num_dwords, kind);
 +	// Experiment 0125: a buffer of nothing but NOPs (type-3 NOP packets, type-2 fillers) is not
 +	// submitted: nothing in it runs on the GPU, it writes no label and fires no event, and every
@@ -9384,17 +9425,17 @@ index 0000000..d7ef4da
 +				if (mec && mec_on && survey && seen_pgm.insert(pgm).second) {
 +					journal("  mec pgm 0x%" PRIx64 " first at #%" PRIu64 " offset %u\n", pgm, g_submits.load(), q);
 +				}
-+				if (mec && mec_on && ((!only_pgm.empty() && only_pgm.count(pgm) == 0) || skip_pgm.count(pgm) != 0)) {
++				if (mec && (mec_on || qring != bc5::direct::kGfxRing) && ((!only_pgm.empty() && only_pgm.count(pgm) == 0) || skip_pgm.count(pgm) != 0)) {
 +					opt.drop_offsets.push_back(q);
 +					q += len;
 +					continue;
 +				}
-+				if (mec && !mec_on) {
++				if (mec && !mec_on && qring == bc5::direct::kGfxRing) {
 +					opt.drop_offsets.push_back(q);
 +					q += len;
 +					continue;
 +				}
-+				if (mec) {
++				if (mec && qring == bc5::direct::kGfxRing) {
 +					mec_hi[ib[q + 2] & 0xffffu]++;
 +					mec_positions.push_back(q);
 +				}
@@ -9630,8 +9671,11 @@ index 0000000..d7ef4da
 +		}
 +		offsets.swap(back);
 +	};
-+	auto r = g_dev->submit(std::span<const uint32_t>(sub_ib, sub_n), opt, 2'000'000'000ull, with_gds);
++	auto r = g_dev->submit(std::span<const uint32_t>(sub_ib, sub_n), opt, 2'000'000'000ull, with_gds, qring);
 +	mec_back(r.executed_offsets);
++	if (qring != bc5::direct::kGfxRing && (g_comp_jobs++ & 0xffffu) == 0) {
++		journal("compute ring %d: %" PRIu64 " jobs so far (rc %d), %" PRIu64 " compute buffers kept on the GFX ring\n", qring, g_comp_jobs.load(), r.rc, g_comp_refused.load());
++	}
 +	if (r.filter.dma_sources != 0 || r.filter.dma_snapshot_overflow != 0) { // experiment 0122
 +		static std::atomic<uint64_t> n_jobs {0}, n_src {0}, n_bytes {0}, n_over {0};
 +		n_src += r.filter.dma_sources;
@@ -9703,7 +9747,7 @@ index 0000000..d7ef4da
 +		sync_mappings(true, true);
 +		maps_p  = g_dev->sorted_mappings();
 +		retried = true;
-+		r       = g_dev->submit(std::span<const uint32_t>(sub_ib, sub_n), opt, 2'000'000'000ull, with_gds);
++		r       = g_dev->submit(std::span<const uint32_t>(sub_ib, sub_n), opt, 2'000'000'000ull, with_gds, qring);
 +		mec_back(r.executed_offsets);
 +	}
 +	if (r.pending && t_cq == 1 && !g_ring_async) { // BC5_DIRECT_ASYNC: the doorbell consumer waits for its own jobs
@@ -9755,7 +9799,7 @@ index 0000000..d7ef4da
 +			if (trace) journal("queued #%" PRIu64 " %s %u dwords at t %.6f s\n", n, kind, num_dwords, timing_now());
 +		}
 +		static const bool ring_order_reg = std::getenv("BC5_DIRECT_RING_ORDER_WAITS") != nullptr; // experiment 0055
-+		if (ring_order_reg) register_label_writes(ib, num_dwords, r.executed_offsets, r.seq_no);
++		if (ring_order_reg) register_label_writes(ib, num_dwords, r.executed_offsets, r.seq_no, r.ring);
 +		cq_push(std::move(it));
 +		return;
 +	}
