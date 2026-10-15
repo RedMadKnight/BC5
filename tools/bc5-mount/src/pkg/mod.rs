@@ -485,6 +485,10 @@ impl<R: ReadAt> FileTree for PkgImage<R> {
         self.tree.read_file_at(idx, offset, buf)
     }
 
+    fn prefetch_file(&self, idx: usize, offset: u64, len: u64) -> Result<()> {
+        self.tree.prefetch_file(idx, offset, len)
+    }
+
     fn block_size(&self) -> u32 {
         self.tree.block_size()
     }

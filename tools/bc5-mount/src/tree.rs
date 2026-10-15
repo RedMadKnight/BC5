@@ -42,6 +42,25 @@ pub trait FileTree: Send + Sync {
     /// Reads file data at `offset` into `buf`; returns bytes read (0 at EOF).
     fn read_file_at(&self, idx: usize, offset: u64, buf: &mut [u8]) -> Result<usize>;
 
+    /// Decode-ahead: `[offset, offset + len)` of file `idx` is read soon.
+    /// Trees over a decoding layer override this to decode the missing blocks
+    /// without waiting for other readers ([`ReadAt::prefetch`]); the default
+    /// reads the range and drops it.
+    fn prefetch_file(&self, idx: usize, offset: u64, len: u64) -> Result<()> {
+        const CHUNK: u64 = 256 << 10;
+        let mut buf = vec![0u8; CHUNK.min(len) as usize];
+        let mut pos = offset;
+        let end = offset.saturating_add(len);
+        while pos < end {
+            let n = (end - pos).min(CHUNK) as usize;
+            if self.read_file_at(idx, pos, &mut buf[..n])? == 0 {
+                break;
+            }
+            pos += n as u64;
+        }
+        Ok(())
+    }
+
     /// The allocation unit the tree reports to `statfs`.
     fn block_size(&self) -> u32;
 
