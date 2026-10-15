@@ -37,7 +37,7 @@ where 0114's striped version caused GPU timeouts?
 - So there is a latent race in the direct path (or the host's APR/AMPR completion order) that
   depends on when loaded data arrives. It is open, and is the next thing to find for ASTRO.
 - Until then:
-  - 0116's code is reverted on main (2505bc5);
+  - 0116's code is reverted on main (d0e173e);
   - the games' `bc5-mount` is the previous binary again;
   - mount changes are tested on ASTRO with the maintainer present.
 - 0112's package-reader change (striped locks) stays: the second title has had no timeouts with it.
