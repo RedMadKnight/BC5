@@ -1,0 +1,14 @@
+run 502 pkg-20261015-1607 (play settings, cross at 80/100/110/120 s): timeouts 26, first: submit #339417 acb 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 13166 ... FAILED 
+   t85-100 fps 47.47   t100-110 fps 0.40   t110-130 fps 0.00   t130-200 fps 0.07
+run 514 pkg-20261015-1752 (ring-order waits off): timeouts 18, first: submit #346361 dcb 1891 dwords at 0x7f0a1c36c290: pass 129 rewrite 13 drop 9 unmapped 0 cc 0 mappings 13156 ..
+   t85-100 fps 42.60   t100-110 fps 0.00   t110-130 fps 0.00   t130-200 fps 0.07
+run 515 pkg-20261015-1757 (graphics pieces off): timeouts 18, first: submit #359059 dcb 922 dwords at 0x11e0430050: pass 115 rewrite 25 drop 22 unmapped 0 cc 0 mappings 13151 ... 
+   t85-100 fps 46.40   t100-110 fps 0.50   t110-130 fps 0.00   t130-200 fps 0.07
+run 516 pkg-20261015-1802 (as 515, 922-dword buffers dumped): timeouts 4, first: submit #354840 acb 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 13159 ... FAILED 
+   t85-100 fps 47.27   t100-110 fps 0.70   t110-130 fps 0.00   t130-200 fps 0.00
+run 517 pkg-20261015-1805 (play settings + BC5_DIRECT_SKIP_PGM=11d049aa00): timeouts 0, first: 
+   t85-100 fps 46.47   t100-110 fps 24.70   t110-130 fps 30.75   t130-200 fps 31.39
+
+run 516: the hung buffer (ib-00354838-dcb-922.bin, private) decodes to 264 packets with bc5-agc dump: 4 DISPATCH_DIRECT,
+3 DISPATCH_INDIRECT, 3 WAIT_REG_MEM[64], and the title's pass-name markers for its water simulation and its
+ray-traced reflections.
