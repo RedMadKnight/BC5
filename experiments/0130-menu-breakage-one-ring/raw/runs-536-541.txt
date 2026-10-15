@@ -1,0 +1,60 @@
+### run 536
+run 536 (compute ring, waits all) capture pkg-20261015-2305 timeouts=0 faults=0
+  flip bright jumps (>3 points) from 85 s: 21; last: flip bright: t 212.489 s 5400 flips, 21 jumps; now 17.3% lit
+frames 615 fps 41.00
+window 14972.3 ms: GPU busy (any ring) 7567.4 ms = 50.5 %, idle 7404.8 ms
+  ring -1:  29001 jobs, busy 4615.3 ms (30.8 %)
+  ring  0:  45636 jobs, busy 5148.7 ms (34.4 %)
+  both rings busy at once: 2196.6 ms (14.7 % of the window)
+menubleed (share of colourful pixels in the menu list area, per screenshot second):
+95 0.00% 98 0.00% 101 0.00% 104 0.00% 107 0.00% 110 1.36% 113 0.00% 116 0.00% 119 0.00% 122 0.00% 125 0.00% 128 0.00% 131 0.00% 134 0.00% 137 0.00% 140 0.00% 143 0.01% 146 0.00% 149 0.01% 152 0.21% 155 0.37% 158 0.53% 161 0.66% 164 0.66% 167 0.66% 170 0.66% 173 0.66% 176 0.66% 179 0.66% 182 0.63% 185 0.37% 188 0.06% 191 0.00% 194 0.01% 197 2.85% 200 0.00% 
+### run 537
+run 537 (compute ring, waits all, deps acb) capture pkg-20261015-2310 timeouts=0 faults=0
+  flip bright jumps (>3 points) from 85 s: 17; last: flip bright: t 211.949 s 5400 flips, 17 jumps; now 5.7% lit
+frames 607 fps 40.47
+window 14971.8 ms: GPU busy (any ring) 7247.2 ms = 48.4 %, idle 7724.7 ms
+  ring -1:  28622 jobs, busy 4505.5 ms (30.1 %)
+  ring  0:  45031 jobs, busy 4199.6 ms (28.0 %)
+  both rings busy at once: 1457.9 ms (9.7 % of the window)
+menubleed (share of colourful pixels in the menu list area, per screenshot second):
+95 0.00% 98 0.00% 101 0.00% 104 0.00% 107 1.52% 110 0.00% 113 0.00% 116 0.00% 119 0.00% 122 0.00% 125 0.00% 128 0.00% 131 0.00% 134 0.00% 137 0.00% 140 0.01% 143 0.00% 146 0.01% 149 0.06% 152 0.37% 155 0.53% 158 0.63% 161 0.73% 164 0.73% 167 0.72% 170 0.73% 173 0.73% 176 0.73% 179 0.73% 182 0.66% 185 0.53% 188 0.21% 191 0.01% 194 0.00% 197 2.77% 200 0.00% 
+### run 538
+run 538 (compute ring, waits all, deps dcb) capture pkg-20261015-2314 timeouts=0 faults=0
+  flip bright jumps (>3 points) from 85 s: 21; last: flip bright: t 207.856 s 4200 flips, 21 jumps; now 5.7% lit
+frames 507 fps 33.80
+window 14974.7 ms: GPU busy (any ring) 8935.3 ms = 59.7 %, idle 6039.4 ms
+  ring -1:  23907 jobs, busy 3622.4 ms (24.2 %)
+  ring  0:  37572 jobs, busy 6645.5 ms (44.4 %)
+  both rings busy at once: 1332.6 ms (8.9 % of the window)
+menubleed (share of colourful pixels in the menu list area, per screenshot second):
+95 0.00% 98 0.00% 101 0.00% 104 0.00% 107 0.00% 110 0.00% 113 1.15% 116 0.00% 119 0.00% 122 0.00% 125 0.00% 128 0.00% 131 0.00% 134 0.00% 137 0.00% 140 0.01% 143 0.00% 146 0.01% 149 0.06% 152 0.38% 155 1.73% 158 0.63% 161 0.66% 164 0.73% 167 0.73% 170 0.73% 173 0.73% 176 0.73% 179 0.73% 182 0.66% 185 0.53% 188 0.21% 191 0.01% 194 0.00% 197 0.01% 200 0.00% 
+### run 539
+run 539 (compute ring, waits all, deps both) capture pkg-20261015-2319 timeouts=0 faults=0
+  flip bright jumps (>3 points) from 85 s: 18; last: flip bright: t 209.922 s 4200 flips, 18 jumps; now 8.8% lit
+frames 487 fps 32.47
+window 14972.4 ms: GPU busy (any ring) 8988.5 ms = 60.0 %, idle 5983.8 ms
+  ring -1:  22976 jobs, busy 3423.8 ms (22.9 %)
+  ring  0:  36097 jobs, busy 5564.7 ms (37.2 %)
+  both rings busy at once: 0.0 ms (0.0 % of the window)
+menubleed (share of colourful pixels in the menu list area, per screenshot second):
+95 0.00% 98 0.00% 101 0.00% 104 1.54% 107 0.00% 110 0.00% 113 0.00% 116 0.00% 119 0.00% 122 0.00% 125 0.00% 128 0.00% 131 0.00% 134 0.00% 137 1.63% 140 0.01% 143 0.00% 146 0.01% 149 0.06% 152 0.37% 155 0.53% 158 0.63% 161 2.72% 164 0.73% 167 0.73% 170 0.73% 173 0.73% 176 0.73% 179 0.73% 182 0.66% 185 0.53% 188 0.21% 191 0.01% 194 0.00% 197 0.01% 200 0.00% 
+### run 540
+run 540 (baseline, one ring, dense shots) capture pkg-20261015-2323 timeouts=0 faults=0
+  flip bright jumps (>3 points) from 85 s: 20; last: flip bright: t 213.483 s 6000 flips, 20 jumps; now 5.7% lit
+frames 655 fps 43.67
+window 14971.8 ms: GPU busy (any ring) 6950.3 ms = 46.4 %, idle 8021.5 ms
+  ring -1:  79395 jobs, busy 6950.3 ms (46.4 %)
+  both rings busy at once: 0.0 ms (0.0 % of the window)
+  jobs by ring and kind: {(-1, 'acb'): 48538, (-1, 'dcb'): 28889, (-1, 'cc'): 656, (-1, 'hib'): 1312}
+menubleed (share of colourful pixels in the menu list area, per screenshot second):
+95 0.00% 98 0.00% 101 0.00% 104 0.00% 107 0.00% 110 0.00% 113 0.00% 116 0.00% 119 1.32% 122 0.00% 125 0.00% 128 0.00% 131 0.00% 134 0.00% 137 0.00% 140 0.00% 143 0.00% 146 0.01% 149 0.06% 152 0.37% 155 0.53% 158 0.63% 161 0.73% 164 0.73% 167 0.73% 170 0.73% 173 3.69% 176 0.73% 179 0.73% 182 0.66% 185 0.53% 188 0.21% 191 0.01% 194 0.00% 197 0.00% 200 0.00% 
+### run 541
+run 541 (baseline, one ring, DMA snapshot from 64 bytes) capture pkg-20261015-2328 timeouts=0 faults=0
+  flip bright jumps (>3 points) from 85 s: 20; last: flip bright: t 212.379 s 6000 flips, 20 jumps; now 5.8% lit
+frames 687 fps 45.80
+window 14971.1 ms: GPU busy (any ring) 7110.4 ms = 47.5 %, idle 7860.7 ms
+  ring -1:  83385 jobs, busy 7110.4 ms (47.5 %)
+  both rings busy at once: 0.0 ms (0.0 % of the window)
+  jobs by ring and kind: {(-1, 'acb'): 50981, (-1, 'dcb'): 30340, (-1, 'cc'): 688, (-1, 'hib'): 1376}
+menubleed (share of colourful pixels in the menu list area, per screenshot second):
+95 0.00% 98 0.00% 101 0.00% 104 0.00% 107 1.50% 110 1.27% 113 0.00% 116 0.00% 119 0.00% 122 0.00% 125 0.00% 128 0.00% 131 0.00% 134 0.00% 137 0.00% 140 0.01% 143 0.00% 146 0.01% 149 0.06% 152 0.37% 155 0.53% 158 0.63% 161 0.73% 164 0.73% 167 0.73% 170 0.73% 173 0.73% 176 0.73% 179 0.73% 182 0.66% 185 0.53% 188 0.21% 191 0.01% 194 0.00% 197 0.01% 200 0.30% 
