@@ -25,6 +25,7 @@ pub mod io;
 pub mod pfs;
 pub mod pfsc;
 pub mod pkg;
+pub mod stats;
 pub mod tree;
 pub mod verify;
 
