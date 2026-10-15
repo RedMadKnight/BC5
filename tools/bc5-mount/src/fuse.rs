@@ -41,6 +41,8 @@ const MAX_WORKERS: usize = 8;
 /// Bytes decoded ahead of a file read in order, unless `BC5_MOUNT_PREFETCH_KIB`
 /// says otherwise (0 turns it off).
 const PREFETCH: u64 = 2 << 20;
+/// Decode-ahead reads in this size.
+const PREFETCH_CHUNK: u64 = 256 << 10;
 /// A read starting this close to where the last one of the same file ended
 /// counts as reading in order (the kernel's own readahead skips a little).
 const SEQUENTIAL_SLACK: u64 = 1 << 20;
@@ -214,10 +216,16 @@ impl<T: FileTree + 'static> Bc5Fs<T> {
         s.ahead_to = to;
         let tree = Arc::clone(&self.tree);
         self.pool.run(Box::new(move || {
-            // Blocks another reader is decoding are skipped, not waited for
-            // (experiment 0116). Errors surface on the real read; here they
-            // only end the run.
-            let _ = tree.prefetch_file(idx, from, to - from);
+            let mut buf = vec![0u8; PREFETCH_CHUNK as usize];
+            let mut pos = from;
+            while pos < to {
+                let n = (to - pos).min(PREFETCH_CHUNK) as usize;
+                // Errors surface on the real read; here they only end the run.
+                if tree.read_file_at(idx, pos, &mut buf[..n]).is_err() {
+                    break;
+                }
+                pos += n as u64;
+            }
         }));
     }
 

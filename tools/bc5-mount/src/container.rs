@@ -276,10 +276,6 @@ impl<R: ReadAt> crate::tree::FileTree for Container<R> {
         crate::tree::FileTree::read_file_at(self.exfat(), idx, offset, buf)
     }
 
-    fn prefetch_file(&self, idx: usize, offset: u64, len: u64) -> Result<()> {
-        crate::tree::FileTree::prefetch_file(self.exfat(), idx, offset, len)
-    }
-
     fn block_size(&self) -> u32 {
         crate::tree::FileTree::block_size(self.exfat())
     }

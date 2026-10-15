@@ -182,9 +182,8 @@ and the icons live in the `\x7fCNT` container, not in the inner image.
 
 ## 7. What `bc5-mount` does and does not do
 
-Reads: header, plaintext outer PFS, the layout, the inner tree; decodes each block once on
-demand into a 32 MiB cache (`BC5_MOUNT_CACHE_MIB`; experiments 0112, 0116); FUSE-mounts the
-inner tree. `inspect` prints the content ID
+Reads: header, plaintext outer PFS, the layout, the inner tree; decodes blocks on demand
+with a 64-block (16 MiB) cache; FUSE-mounts the inner tree. `inspect` prints the content ID
 from the `\x7fCNT` when readable.
 
 Does not: decrypt an encrypted outer image, read the `\x7fCNT` metadata beyond the content ID,

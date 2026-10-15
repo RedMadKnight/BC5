@@ -44,13 +44,6 @@ fn check_preset(name: &str) {
     let want = expected(&spec);
     let d = diff(&want, &got);
     assert!(d.is_empty(), "{name}: package differs from spec: {d:?}");
-    // Decode-ahead of every file, then the same bytes from its blocks.
-    let p = PkgImage::open(bytes.clone()).unwrap();
-    for idx in 0..p.entry_count() {
-        p.prefetch_file(idx, 0, u64::MAX).unwrap();
-    }
-    let d = diff(&want, &hash_volume(&p, |_| {}).unwrap());
-    assert!(d.is_empty(), "{name}: differs after decode-ahead: {d:?}");
     // Deterministic: building again yields identical bytes.
     assert!(build(&spec) == bytes, "{name}: build is not deterministic");
 }
