@@ -1,0 +1,16 @@
+swapped in 0116: 7368a3d7
+run 457 start 12:05:01 nproc 16
+run 457 /home/kjaniszewski/bc5-data/captures/kytyplus-20261015-1205 faults=0 timeouts=0 pieces=28 frames 1499 fps 59.96
+bc5-mount stats 29.0 s: served 4494 MiB (+131), decoded 89032 blocks 5564 MiB (+129), 9795 decoded again, from disk 0 blocks 0 MiB (+0)
+run 458 start 12:07:01 nproc 16
+run 458 /home/kjaniszewski/bc5-data/captures/kytyplus-20261015-1207 faults=0 timeouts=0 pieces=25 frames 1498 fps 59.92
+bc5-mount stats 29.0 s: served 4484 MiB (+103), decoded 88645 blocks 5540 MiB (+101), 9578 decoded again, from disk 0 blocks 0 MiB (+0)
+run 459 start 12:09:01 nproc 16
+run 459 /home/kjaniszewski/bc5-data/captures/kytyplus-20261015-1209 faults=0 timeouts=0 pieces=20 frames 1499 fps 59.96
+bc5-mount stats 29.0 s: served 4494 MiB (+101), decoded 89326 blocks 5582 MiB (+107), 10089 decoded again, from disk 0 blocks 0 MiB (+0)
+run 460 start 12:11:01 nproc 16
+run 460 /home/kjaniszewski/bc5-data/captures/kytyplus-20261015-1211 faults=0 timeouts=0 pieces=19 frames 1498 fps 59.92
+bc5-mount stats 29.1 s: served 4484 MiB (+184), decoded 88668 blocks 5541 MiB (+167), 9601 decoded again, from disk 0 blocks 0 MiB (+0)
+series done
+restored: fd749db9
+
