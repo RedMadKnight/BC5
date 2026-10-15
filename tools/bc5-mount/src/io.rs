@@ -44,6 +44,15 @@ pub trait ReadAt: Send + Sync {
         self.read_exact_at(offset, &mut v)?;
         Ok(v)
     }
+
+    /// Hint that `[offset, offset + len)` is read soon (decode-ahead). A
+    /// decoding layer decodes the blocks that are neither cached nor being
+    /// decoded by another reader, and never waits for one; plain sources do
+    /// nothing.
+    fn prefetch(&self, offset: u64, len: u64) -> io::Result<()> {
+        let _ = (offset, len);
+        Ok(())
+    }
 }
 
 impl<T: ReadAt + ?Sized> ReadAt for &T {
@@ -52,6 +61,9 @@ impl<T: ReadAt + ?Sized> ReadAt for &T {
     }
     fn read_at(&self, offset: u64, buf: &mut [u8]) -> io::Result<usize> {
         (**self).read_at(offset, buf)
+    }
+    fn prefetch(&self, offset: u64, len: u64) -> io::Result<()> {
+        (**self).prefetch(offset, len)
     }
 }
 
@@ -62,6 +74,9 @@ impl<T: ReadAt + ?Sized> ReadAt for Arc<T> {
     fn read_at(&self, offset: u64, buf: &mut [u8]) -> io::Result<usize> {
         (**self).read_at(offset, buf)
     }
+    fn prefetch(&self, offset: u64, len: u64) -> io::Result<()> {
+        (**self).prefetch(offset, len)
+    }
 }
 
 impl<T: ReadAt + ?Sized> ReadAt for Box<T> {
@@ -70,6 +85,9 @@ impl<T: ReadAt + ?Sized> ReadAt for Box<T> {
     }
     fn read_at(&self, offset: u64, buf: &mut [u8]) -> io::Result<usize> {
         (**self).read_at(offset, buf)
+    }
+    fn prefetch(&self, offset: u64, len: u64) -> io::Result<()> {
+        (**self).prefetch(offset, len)
     }
 }
 
@@ -172,6 +190,13 @@ impl<R: ReadAt> ReadAt for Window<R> {
         let avail = usize::try_from(self.len - offset).unwrap_or(usize::MAX);
         let n = buf.len().min(avail);
         self.inner.read_at(self.offset + offset, &mut buf[..n])
+    }
+    fn prefetch(&self, offset: u64, len: u64) -> io::Result<()> {
+        if offset >= self.len {
+            return Ok(());
+        }
+        let n = len.min(self.len - offset);
+        self.inner.prefetch(self.offset + offset, n)
     }
 }
 
