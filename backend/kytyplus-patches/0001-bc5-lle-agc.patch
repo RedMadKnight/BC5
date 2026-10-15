@@ -4459,10 +4459,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..f594992
+index 0000000..338a851
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,7136 @@
+@@ -0,0 +1,7199 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -7399,6 +7399,33 @@ index 0000000..f594992
 +static std::atomic<uint64_t> g_full_pieces {0}, g_full_ok {0}, g_full_failed {0};
 +static thread_local bool                     t_fs_valid = false;
 +static thread_local bc5::full_state::Tracker t_fs_before;
++// Experiment 0118: BC5_DIRECT_TAG_WATCH=1 journals the address registers whose bits 47:40 are not
++// zero in a tracker: CB_COLOR0..7_BASE_EXT (ctx 0x390-0x397), CMASK/FMASK/DCC _BASE_EXT
++// (0x398-0x3af), DB_Z/STENCIL_READ/WRITE_BASE_HI and DB_HTILE_DATA_BASE_HI (0x01a-0x01e), and the
++// program HI registers SPI_SHADER_PGM_HI_PS/GS/ES (sh 0x9, 0x89, 0xc9) and COMPUTE_PGM_HI (sh 0x20d)
++// (Mesa gfx10 register JSON via tools/bc5-agc/regdb). ASTRO BOT's CB/DB and SQC faults with pieces
++// carry 0x80 there. CPU only.
++static bool tag_watch() {
++	static const bool v = std::getenv("BC5_DIRECT_TAG_WATCH") != nullptr;
++	return v;
++}
++static int tagged_regs(const bc5::full_state::Tracker& t, char* out, size_t cap) {
++	using S = bc5::full_state::Space;
++	int  w = 0, found = 0;
++	auto one = [&](S sp, uint32_t o, const char* name) {
++		uint32_t v = 0;
++		if (!t.get(sp, o, v) || (v & 0xffu) == 0) return;
++		found++;
++		if (w < static_cast<int>(cap) - 40) w += std::snprintf(out + w, cap - static_cast<size_t>(w), " %s%s0x%x=%08x", name, sp == S::Context ? " ctx " : " sh ", o, v);
++	};
++	for (uint32_t o = 0x390; o <= 0x3af; o++) one(S::Context, o, "ext");
++	for (uint32_t o = 0x01a; o <= 0x01e; o++) one(S::Context, o, "db-hi");
++	one(S::Sh, 0x9, "pgm-hi");
++	one(S::Sh, 0x89, "pgm-hi");
++	one(S::Sh, 0xc9, "pgm-hi");
++	one(S::Sh, 0x20d, "pgm-hi");
++	return found;
++}
 +static std::atomic<uint64_t> g_dry_bufs {0}, g_dry_splits {0}, g_dry_prefix {0}, g_dry_ns {0}, g_dry_max_ns {0}, g_dry_kept {0}, g_dry_ok {0},
 +    g_dry_failed {0};
 +
@@ -7497,6 +7524,27 @@ index 0000000..f594992
 +	uint32_t                                dry_at = 0;
 +	std::vector<uint32_t>                   full_prefix; // BC5_DIRECT_PIECES_FULL: the prefix of the piece at start
 +	bool                                    full_used = false;
++	// Experiment 0118: a piece goes to the GPU as one job with its full-state prefix in front. As two
++	// jobs (prefix, then the piece) the ring thread could submit between them, and ASTRO BOT's colour,
++	// depth and program addresses then came out tagged 0x80 in bits 47:40 (CB/DB and SQC faults, two
++	// machine-downs). BC5_DIRECT_PIECES_TWO_JOBS=1 restores the two jobs.
++	static const bool pieces_two_jobs = std::getenv("BC5_DIRECT_PIECES_TWO_JOBS") != nullptr;
++	const auto submit_prefixed = [&](const std::vector<uint32_t>& pre, const uint32_t* part, uint32_t n, bool hdr) {
++		if (pre.empty()) {
++			submit_one(part, n, kind, hdr);
++			return;
++		}
++		if (pieces_two_jobs) {
++			submit_one(pre.data(), static_cast<uint32_t>(pre.size()), "dcb-state", false);
++			submit_one(part, n, kind, hdr);
++			return;
++		}
++		std::vector<uint32_t> one;
++		one.reserve(pre.size() + n);
++		one.insert(one.end(), pre.begin(), pre.end());
++		one.insert(one.end(), part, part + n);
++		submit_one(one.data(), static_cast<uint32_t>(one.size()), kind, false);
++	};
 +	while (i < num_dwords) {
 +		const uint32_t h = ib[i];
 +		const uint32_t type = h >> 30u;
@@ -7624,6 +7672,13 @@ index 0000000..f594992
 +						dry_at = i;
 +						const auto     pre = dry->emit_prefix();
 +						const uint64_t dn  = SoftCp::now_ns() - d0;
++						if (tag_watch()) {
++							char           tags[512] = {};
++							static std::atomic<uint32_t> tag_logged {0};
++							if (tagged_regs(*dry, tags, sizeof(tags)) != 0 && tag_logged++ < 200) {
++								journal("tag watch: split prefix at %u of %u dwords (t %.3f s):%s\n", i, num_dwords, timing_now(), tags);
++							}
++						}
 +						g_dry_splits++;
 +						g_dry_prefix += pre.size();
 +						g_dry_ns += dn;
@@ -7690,8 +7745,8 @@ index 0000000..f594992
 +						}
 +					}
 +					if (!ok && pieces_full() && dry_here && on_game_thread() && i > start && g_stage != Stage::MapOnly && (!g_dev || !g_dev->wedged())) {
-+						if (start > 0 && !full_prefix.empty()) submit_one(full_prefix.data(), static_cast<uint32_t>(full_prefix.size()), "dcb-state", false);
-+						submit_one(ib + start, i - start, kind, from_header && start == 0);
++						if (start > 0 && !full_prefix.empty()) submit_prefixed(full_prefix, ib + start, i - start, false);
++						else submit_one(ib + start, i - start, kind, from_header && start == 0);
 +						full_prefix = dry->emit_prefix();
 +						const uint32_t head_from = start;
 +						start                    = i;
@@ -7752,8 +7807,7 @@ index 0000000..f594992
 +		i += len;
 +	}
 +	if (start > 0 && full_used) {
-+		submit_one(full_prefix.data(), static_cast<uint32_t>(full_prefix.size()), "dcb-state", false);
-+		submit_one(ib + start, num_dwords - start, kind, false);
++		submit_prefixed(full_prefix, ib + start, num_dwords - start, false);
 +		return;
 +	}
 +	if (start > 0) {
@@ -8309,6 +8363,15 @@ index 0000000..f594992
 +		}
 +	}
 +	tracker.apply(span, read, st);
++	if (tag_watch()) {
++		char                         tags[512] = {};
++		static std::atomic<uint32_t> stream_logged {0};
++		static std::string           last;
++		if (tagged_regs(tracker, tags, sizeof(tags)) != 0 && last != tags && stream_logged++ < 200) {
++			last = tags;
++			journal("tag watch: stream after %s of %u dwords (t %.3f s):%s\n", kind, num_dwords, timing_now(), tags);
++		}
++	}
 +	ms += (timing_now() - t0) * 1000.0;
 +	if (t0 - last_report >= 10.0) {
 +		last_report = t0;
