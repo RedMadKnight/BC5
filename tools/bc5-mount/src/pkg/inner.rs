@@ -7,11 +7,11 @@
 
 use std::collections::HashMap;
 use std::io;
-use std::sync::{Arc, Mutex, PoisonError};
+use std::sync::Arc;
 
 use std::path::Path;
 
-use crate::cache::BlockCache;
+use crate::cache::{cache_blocks, DecodeCache};
 use crate::error::{bail_format, Error, Result};
 use crate::io::{Le, ReadAt};
 use crate::pfs::{parse_dirents, DIRENT_DIR, DIRENT_FILE, MAGIC};
@@ -21,21 +21,10 @@ use crate::pkg::naps::{Block, Layout};
 use crate::tree::{fold_name, EntryRef, FileTree};
 
 const LAYER: &str = "inner";
-/// Decoded blocks kept: 128 × 256 KiB = 32 MiB, room for the reads in flight
+/// Decoded blocks kept, in MiB: 128 × 256 KiB, room for the reads in flight
 /// and the decode-ahead of several loader threads (experiment 0033).
 /// `BC5_MOUNT_CACHE_MIB` sets another size (experiment 0112).
-const CACHE_BLOCKS: usize = 128;
-
-/// Cache size in blocks of `block_bytes`, from `BC5_MOUNT_CACHE_MIB` or [`CACHE_BLOCKS`].
-fn cache_blocks(block_bytes: usize) -> usize {
-    std::env::var("BC5_MOUNT_CACHE_MIB")
-        .ok()
-        .and_then(|v| v.trim().parse::<usize>().ok())
-        .filter(|&mib| mib > 0)
-        .map_or(CACHE_BLOCKS, |mib| {
-            ((mib << 20) / block_bytes.max(1)).max(1)
-        })
-}
+const CACHE_MIB: usize = 32;
 /// Inner inode size (the compact layout: data address at 0x60).
 const INODE_SIZE: usize = 0xa8;
 /// The compact inode layout's mode bits (0x10), with case-insensitive names (0x08).
@@ -62,18 +51,14 @@ pub struct InnerImage<R> {
     blocks: Vec<Block>,
     mount: u64,
     stats: BlockStats,
-    cache: BlockCache,
-    /// Striped by block index: held while a missing block is decoded, so a second
-    /// reader of the same block waits for that decode instead of repeating it
-    /// (the kernel splits a 256 KiB block into two 128 KiB reads that arrive on two
-    /// workers at once; experiment 0112).
-    decoding: Vec<Mutex<()>>,
+    /// Decodes a missing block once: a second reader of the same block waits
+    /// for that decode instead of repeating it (the kernel splits a 256 KiB
+    /// block into two 128 KiB reads that arrive on two workers at once;
+    /// experiment 0112). Readers of other blocks do not wait (experiment 0116).
+    cache: DecodeCache,
     /// Decoded Kraken blocks kept on disk between mounts (experiment 0112).
     disk: Option<DiskCache>,
 }
-
-/// Number of decode stripes; a power of two.
-const DECODE_STRIPES: usize = 64;
 
 impl<R: ReadAt> InnerImage<R> {
     /// Resolves the layout against the stored image.
@@ -103,7 +88,8 @@ impl<R: ReadAt> InnerImage<R> {
                 );
             }
         }
-        let cache = BlockCache::new(cache_blocks(
+        let cache = DecodeCache::new(cache_blocks(
+            CACHE_MIB,
             blocks.first().map_or(256 << 10, |b| b.uncomp as usize),
         ));
         Ok(Self {
@@ -112,7 +98,6 @@ impl<R: ReadAt> InnerImage<R> {
             mount,
             stats,
             cache,
-            decoding: (0..DECODE_STRIPES).map(|_| Mutex::new(())).collect(),
             disk: None,
         })
     }
@@ -173,24 +158,18 @@ impl<R: ReadAt> InnerImage<R> {
     }
 
     fn block(&self, index: usize) -> Result<Arc<Vec<u8>>> {
-        if let Some(b) = self.cache.get(index as u64) {
-            return Ok(b);
-        }
-        let _decoding = self.decoding[index & (DECODE_STRIPES - 1)]
-            .lock()
-            .unwrap_or_else(PoisonError::into_inner);
-        // Another reader may have decoded it while this one waited.
-        if let Some(b) = self.cache.get(index as u64) {
-            return Ok(b);
-        }
+        self.cache
+            .get_or_decode(index as u64, || self.decode_block(index))
+    }
+
+    /// Decodes block `index` (or reads it back from the on-disk cache).
+    fn decode_block(&self, index: usize) -> Result<Vec<u8>> {
         let b = self.blocks[index];
         if b.kraken {
             if let Some(v) = self.disk.as_ref().and_then(|d| d.get(index)) {
                 if v.len() == b.uncomp as usize {
                     crate::stats::from_disk(v.len() as u64);
-                    let out = Arc::new(v);
-                    self.cache.insert(index as u64, Arc::clone(&out));
-                    return Ok(out);
+                    return Ok(v);
                 }
             }
         }
@@ -219,8 +198,6 @@ impl<R: ReadAt> InnerImage<R> {
                 d.put(index, &out);
             }
         }
-        let out = Arc::new(out);
-        self.cache.insert(index as u64, Arc::clone(&out));
         Ok(out)
     }
 }
@@ -253,6 +230,22 @@ impl<R: ReadAt> ReadAt for InnerImage<R> {
             done += n;
         }
         Ok(total)
+    }
+
+    fn prefetch(&self, offset: u64, len: u64) -> io::Result<()> {
+        let end = offset.saturating_add(len).min(self.mount);
+        let mut pos = offset;
+        while pos < end {
+            let Some(index) = self.find_block(pos) else {
+                return Ok(()); // the real read reports it
+            };
+            self.cache
+                .prefetch(index as u64, || self.decode_block(index))
+                .map_err(io::Error::other)?;
+            let b = self.blocks[index];
+            pos = b.logical + u64::from(b.uncomp);
+        }
+        Ok(())
     }
 }
 
@@ -530,6 +523,17 @@ impl<R: ReadAt> FileTree for InnerTree<R> {
         self.image
             .read_exact_at(e.logical + offset, &mut buf[..n])?;
         Ok(n)
+    }
+
+    fn prefetch_file(&self, idx: usize, offset: u64, len: u64) -> Result<()> {
+        let Some(e) = self.entries.get(idx).filter(|e| !e.is_dir) else {
+            return Ok(());
+        };
+        let end = offset.saturating_add(len).min(e.size);
+        if offset < end {
+            self.image.prefetch(e.logical + offset, end - offset)?;
+        }
+        Ok(())
     }
 
     fn block_size(&self) -> u32 {

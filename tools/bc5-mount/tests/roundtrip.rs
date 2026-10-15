@@ -8,6 +8,7 @@ use std::path::PathBuf;
 use bc5_mount::container::Container;
 use bc5_mount::fixture::{build_in_memory, build_to_path, Spec};
 use bc5_mount::io::ReadAt;
+use bc5_mount::tree::FileTree;
 use bc5_mount::verify::{diff, hash_directory, hash_volume, FileHash};
 use bc5_mount::Error;
 
@@ -51,6 +52,14 @@ fn check_preset(name: &str) {
     let want = expected(&spec);
     let d = diff(&want, &got);
     assert!(d.is_empty(), "{name}: container differs from spec: {d:?}");
+
+    // Decode-ahead of every file, then the same bytes from its blocks.
+    let c = Container::open_path(&container_path).unwrap();
+    for idx in 0..c.entry_count() {
+        c.prefetch_file(idx, 0, u64::MAX).unwrap();
+    }
+    let d = diff(&want, &hash_volume(c.exfat(), |_| {}).unwrap());
+    assert!(d.is_empty(), "{name}: differs after decode-ahead: {d:?}");
 
     let tree = dir.join("tree");
     spec.materialize(&tree).unwrap();

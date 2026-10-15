@@ -378,6 +378,44 @@ impl<R: ReadAt> ExfatVolume<R> {
         Ok(total)
     }
 
+    /// Decode-ahead of `[offset, offset + len)` of file `idx`: passes the
+    /// clusters' byte ranges to [`ReadAt::prefetch`], merging adjacent ones.
+    pub fn prefetch_file(&self, idx: usize, offset: u64, len: u64) -> Result<()> {
+        let entry = self
+            .entries
+            .get(idx)
+            .ok_or_else(|| Error::NotFound(format!("entry {idx}")))?;
+        let end = offset.saturating_add(len).min(entry.size);
+        if offset >= end {
+            return Ok(());
+        }
+        let cs = u64::from(self.boot.cluster_size());
+        let chain = self.chain(idx)?;
+        let mut run: Option<(u64, u64)> = None;
+        let mut pos = offset;
+        while pos < end {
+            let within = pos % cs;
+            let n = (end - pos).min(cs - within);
+            let Some(&cluster) = chain.get((pos / cs) as usize) else {
+                break; // the real read reports it
+            };
+            let at = self.boot.cluster_byte_offset(cluster) + within;
+            run = match run {
+                Some((start, l)) if start + l == at => Some((start, l + n)),
+                Some((start, l)) => {
+                    self.source.prefetch(start, l)?;
+                    Some((at, n))
+                }
+                None => Some((at, n)),
+            };
+            pos += n;
+        }
+        if let Some((start, l)) = run {
+            self.source.prefetch(start, l)?;
+        }
+        Ok(())
+    }
+
     /// A [`ReadAt`] view of one file.
     pub fn file(&self, idx: usize) -> Result<ExfatFile<'_, R>> {
         let entry = self
@@ -637,6 +675,10 @@ impl<R: ReadAt> crate::tree::FileTree for ExfatVolume<R> {
 
     fn read_file_at(&self, idx: usize, offset: u64, buf: &mut [u8]) -> Result<usize> {
         ExfatVolume::read_file_at(self, idx, offset, buf)
+    }
+
+    fn prefetch_file(&self, idx: usize, offset: u64, len: u64) -> Result<()> {
+        ExfatVolume::prefetch_file(self, idx, offset, len)
     }
 
     fn block_size(&self) -> u32 {
