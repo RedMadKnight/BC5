@@ -1,0 +1,10 @@
+$ NFILES=24 ROUNDS=2 VARIANTS="old new new16 new64" ./bench-fuse.sh     (2026-10-15 ~09:57, no game running)
+24 files, 3852 MiB in total
+old-1    wall  2.70 s  mount cpu 18.82 s | at open: none | 4.0 s: served 3852 MiB (+640), decoded 0 blocks 0 MiB (+0), 0 decoded again
+new-1    wall  2.21 s  mount cpu 16.83 s | at open: decoded 2983 blocks | 3.5 s: served 3852 MiB (+805), decoded 64635 blocks 4039 MiB (+802), 3 decoded again
+new16-1  wall  2.37 s  mount cpu 18.05 s | at open: decoded 2983 blocks | 4.0 s: served 3852 MiB (+251), decoded 71156 blocks 4447 MiB (+255), 6524 decoded again
+new64-1  wall  2.22 s  mount cpu 16.95 s | at open: decoded 2983 blocks | 4.0 s: served 3852 MiB (+38), decoded 64986 blocks 4061 MiB (+37), 354 decoded again
+old-2    wall  2.55 s  mount cpu 20.26 s | at open: none | 4.0 s: served 3852 MiB (+310), decoded 0 blocks 0 MiB (+0), 0 decoded again
+new-2    wall  2.22 s  mount cpu 16.84 s | at open: decoded 2983 blocks | 4.0 s: served 3852 MiB (+0), decoded 64635 blocks 4039 MiB (+0), 3 decoded again
+new16-2  wall  2.37 s  mount cpu 18.14 s | at open: decoded 2983 blocks | 4.0 s: served 3852 MiB (+254), decoded 70552 blocks 4409 MiB (+254), 5920 decoded again
+new64-2  wall  2.24 s  mount cpu 17.10 s | at open: decoded 2983 blocks | 4.0 s: served 3852 MiB (+63), decoded 64860 blocks 4053 MiB (+62), 228 decoded again

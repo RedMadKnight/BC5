@@ -1,0 +1,16 @@
+$ VARIANTS="old new new16 new64" ./bench-fuse.sh     (2026-10-15 ~09:55, no game running)
+8 files, 1633 MiB in total
+old-1    wall  1.05 s  mount cpu  8.17 s | at open: none | 2.5 s: served 1633 MiB (+331), decoded 0 blocks 0 MiB (+0), 0 decoded again
+new-1    wall  1.02 s  mount cpu  7.05 s | at open: decoded 2983 blocks | 2.5 s: served 1633 MiB (+418), decoded 29122 blocks 1820 MiB (+416), 1 decoded again
+new16-1  wall  1.03 s  mount cpu  7.05 s | at open: decoded 2983 blocks | 2.5 s: served 1633 MiB (+473), decoded 29909 blocks 1869 MiB (+482), 788 decoded again
+new64-1  wall  1.03 s  mount cpu  7.15 s | at open: decoded 2983 blocks | 2.5 s: served 1633 MiB (+488), decoded 29155 blocks 1822 MiB (+485), 34 decoded again
+old-2    wall  1.10 s  mount cpu  8.58 s | at open: none | 2.5 s: served 1633 MiB (+393), decoded 0 blocks 0 MiB (+0), 0 decoded again
+new-2    wall  0.98 s  mount cpu  6.78 s | at open: decoded 2983 blocks | 2.5 s: served 1633 MiB (+377), decoded 29122 blocks 1820 MiB (+375), 1 decoded again
+new16-2  wall  1.02 s  mount cpu  7.11 s | at open: decoded 2983 blocks | 2.5 s: served 1633 MiB (+319), decoded 29962 blocks 1872 MiB (+323), 841 decoded again
+new64-2  wall  0.99 s  mount cpu  6.77 s | at open: decoded 2983 blocks | 2.5 s: served 1633 MiB (+405), decoded 29146 blocks 1821 MiB (+402), 25 decoded again
+old-3    wall  1.04 s  mount cpu  8.11 s | at open: none | 2.5 s: served 1633 MiB (+324), decoded 0 blocks 0 MiB (+0), 0 decoded again
+new-3    wall  0.99 s  mount cpu  6.85 s | at open: decoded 2983 blocks | 2.5 s: served 1633 MiB (+405), decoded 29122 blocks 1820 MiB (+403), 1 decoded again
+new16-3  wall  1.01 s  mount cpu  6.99 s | at open: decoded 2983 blocks | 2.5 s: served 1633 MiB (+459), decoded 29991 blocks 1874 MiB (+468), 870 decoded again
+new64-3  wall  1.02 s  mount cpu  7.04 s | at open: decoded 2983 blocks | 2.5 s: served 1633 MiB (+440), decoded 29136 blocks 1821 MiB (+438), 15 decoded again
+
+(The old binary does not count PFSC decodes; "decoded" stays 0 for it.)

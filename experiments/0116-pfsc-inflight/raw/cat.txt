@@ -1,0 +1,20 @@
+$ ./bench-cat.sh     (2026-10-15 ~09:58, no game running; one process per reader, so no cache is shared)
+8 files, 1633 MiB in total
+round 1 OLD diff8 (wall user sys): 1.36 8.76 0.62
+round 1 OLD same4 (wall user sys): 1.34 4.99 0.35
+round 1 NEW diff8 (wall user sys): 1.42 8.59 1.31
+round 1 NEW same4 (wall user sys): 1.42 4.89 0.74
+round 1 NEW16 diff8 (wall user sys): 1.38 8.66 0.82
+round 1 NEW16 same4 (wall user sys): 1.35 5.01 0.36
+round 2 OLD diff8 (wall user sys): 1.35 8.77 0.61
+round 2 OLD same4 (wall user sys): 1.35 5.02 0.32
+round 2 NEW diff8 (wall user sys): 1.41 8.51 1.36
+round 2 NEW same4 (wall user sys): 1.42 4.94 0.72
+round 2 NEW16 diff8 (wall user sys): 1.37 8.83 0.62
+round 2 NEW16 same4 (wall user sys): 1.35 5.03 0.35
+round 3 OLD diff8 (wall user sys): 1.35 8.56 0.80
+round 3 OLD same4 (wall user sys): 1.34 4.97 0.34
+round 3 NEW diff8 (wall user sys): 1.42 8.75 1.15
+round 3 NEW same4 (wall user sys): 1.42 5.00 0.66
+round 3 NEW16 diff8 (wall user sys): 1.36 8.55 0.91
+round 3 NEW16 same4 (wall user sys): 1.35 5.02 0.35
