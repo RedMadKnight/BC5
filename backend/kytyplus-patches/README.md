@@ -191,8 +191,9 @@ waits, event waits), the wait at the flip, the rest, the GPU's busy time and the
 `BC5_DIRECT_FLIP_DEFER=1` (with jobs in flight) hands the flip to the completion thread instead of
 waiting at it; `BC5_DIRECT_RING_ASYNC=1` lets the doorbell consumer's jobs go unwaited too;
 `BC5_DIRECT_DCB_WAIT_MS=<ms>` (default 8) limits a game-thread cross-queue wait,
-`BC5_DIRECT_NO_CYCLE_BREAK=1` keeps waiting on a queue that waits for this buffer, and
-`BC5_DIRECT_PIECES=1` splits a gfx buffer at an unsatisfied wait (faults, run 123). Compute buffers
+and `BC5_DIRECT_NO_CYCLE_BREAK=1` keeps waiting on a queue that waits for this buffer (the first
+`BC5_DIRECT_PIECES`, which split a gfx buffer at an unsatisfied wait, faulted in run 123 and was
+removed in cleanup batch 1; `BC5_DIRECT_PIECES_FULL` replaced it). Compute buffers
 are split at every cross-queue wait with their register state replayed before each later segment
 (`BC5_DIRECT_NO_TAIL_SPLIT=1` turns the split off). A doorbell queue deferred for more than a
 second journals what its first unready buffer waits for.
@@ -293,11 +294,10 @@ Experiment 0056: `BC5_DIRECT_ALIASES=1` maps the memory of the windows in
 `Device::map_alias`); unverified and dangerous with the indirect draws (F110).
 Experiment 0069: with `BC5_DIRECT_FLIP_DEFER`, a graphics buffer's wait on a display buffer's flip
 label waits (up to 100 ms) while a deferred flip of that buffer is queued, instead of clearing the
-label; `BC5_DIRECT_FLIP_WAIT_DONE=1` also keeps the label set until KytyPlus has presented the
-buffer (`Bc5VideoOutWaitFlipDone`): no tearing, but 30 fps when frames take a bit over 16.7 ms.
-Experiment 0070 (default): the label is cleared once KytyPlus has recorded the flip, i.e. read
-the buffer (`Bc5VideoOutWaitFlipCopied`); `BC5_DIRECT_FLIP_RELEASE_EARLY=1` restores 0069's
-release when the flip is queued. `KYTY_BC5_READ_THREADS=<n>` (default 4) splits guest reads of
+label. Experiment 0070: the label is cleared once KytyPlus has recorded the flip, i.e. read the
+buffer (`Bc5VideoOutWaitFlipCopied`). Keeping it until the flip was presented (30 fps when frames
+take a bit over 16.7 ms), releasing it when the flip is queued (tearing), and leaving the wait to
+the GPU (experiment 0071, two machine resets) were removed in cleanup batch 1. `KYTY_BC5_READ_THREADS=<n>` (default 4) splits guest reads of
 4 MiB and more; `KYTY_BC5_FLIP_TIMING=1` prints the flip preparation's timing.
 ADR 0008 step 1: `BC5_DIRECT_PIECE_CHECK=<n>` follows the graphics queue's full register state
 (`bc5::full_state`, every cc/hib/dcb buffer, tables and nested buffers read from guest memory)
@@ -305,12 +305,12 @@ and, for every n-th graphics buffer with memory waits, checks at each wait wheth
 started there after the tracker's prefix would see the same registers at every later draw as the
 unsplit buffer. CPU only, nothing submitted changes; a `piece check:` journal line every 10 s.
 ADR 0008 step 2: `BC5_DIRECT_PIECES_DRY=1` builds the prefix at every game-thread dcb wait that
-is not satisfied when reached (where `BC5_DIRECT_PIECES` would split), submits nothing
+is not satisfied when reached (where `BC5_DIRECT_PIECES_FULL` would split), submits nothing
 differently, and journals `pieces dry:` (splits, prefix size, build time, and whether each wait
 was then kept for the GPU, served on the CPU or given up).
 Experiment 0119: a piece goes to the GPU as one job with its full-state prefix in front (two jobs
-let the ring thread's work in between: ASTRO BOT's tagged-address faults, experiment 0118);
-`BC5_DIRECT_PIECES_TWO_JOBS=1` restores two jobs. `BC5_DIRECT_TAG_WATCH=1` journals address
+let the ring thread's work in between: ASTRO BOT's tagged-address faults, experiment 0118).
+`BC5_DIRECT_TAG_WATCH=1` journals address
 registers with a non-zero bits 47:40 byte (CB/CMASK/FMASK/DCC `_BASE_EXT`, DB `_BASE_HI`, program
 `_HI`) in dry prefixes and in the stream tracker.
 ADR 0008 step 3, prepared and **not run** (GPU; only with the maintainer present):
@@ -389,8 +389,8 @@ Experiment 0080: `run-pkg.sh` (in `~/bc5-work`, not in the repo) reads the setti
 `BC5_RUN_ENV` (default `~/bc5-work/bc5-run.env`).
 Experiment 0083: `BC5_DIRECT_SOFTCP_POST_IB=1` runs the soft CP of an IB-packet submission on the
 completion thread after its job (EOP events and dropped packets' writes once the GPU is done).
-Experiment 0084: `BC5_DIRECT_IDLE_DRAIN=1` drains the jobs in flight at the driver's wait-idle ioctl
-(`=2` also at submit done); both are counted in the journal.
+Experiment 0084: the driver's wait-idle and submit-done ioctls are counted in the journal (draining
+the jobs in flight there changed nothing, F144; the knob was removed in cleanup batch 1).
 Experiment 0087, prepared and **not run** (GPU; only with the maintainer present):
 `BC5_DIRECT_DMA_SNAPSHOT=<min bytes>` copies the source of every `DMA_DATA` reading that many bytes
 or more into a 64 MiB ring in guest flexible memory at submission and points the filtered packet
