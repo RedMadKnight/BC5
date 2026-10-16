@@ -202,6 +202,13 @@ public:
     // the GFX ring's last job; bit 1: a GFX-ring job after every compute ring's last job. 0
     // (default): the rings run side by side.
     void set_ring_deps(int mask) { ring_deps_ = mask; }
+    // Experiment 0137: 8 MiB the host writes shader code into (a patched copy of a title's program),
+    // mapped readable, writable (the patched code keeps per-wave counters there) and executable at kCodeVa, below 2^40 because a program address has 40 bits
+    // (COMPUTE_PGM_LO/HI hold address >> 8), and listed on every submission. Allocated on first use;
+    // nullptr when it cannot be. The CPU view is write-combined: write, never read back.
+    static constexpr std::uint64_t kCodeVa = 0xFE'0000'0000ull;
+    static constexpr std::uint64_t kCodeBytes = 8ull << 20; // code, then 4 MiB of per-wave data at +4 MiB
+    void *code_area();
 
 private:
     Device() = default;

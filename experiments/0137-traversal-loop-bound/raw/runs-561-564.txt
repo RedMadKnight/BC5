@@ -1,0 +1,52 @@
+### pkg-20261016-1506
+fps per 15 s: 0:12 15:30 30:15 45:25 60:55 75:53 90:42 105:34 120:36 135:33 150:34 165:9
+### pkg-20261016-1513
+loop bound: program 0x11d049aa00 copied to 0xfe00000000 (entry 0xfe00010000), 2 back-edges bounded at 262144 iterations
+loop bound: table 0x11e0a2f730 entry 0 now names the copy (1 so far)
+submit #187868 dcb 922 dwords at 0x11e0a30050: pass 115 rewrite 25 drop 22 unmapped 0 cc 0 mappings 13162 ... FAILED rc 0 TIMEOUT 2039.75 ms
+submit #187870 acb 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 13162 ... FAILED rc 0 TIMEOUT 2039.52 ms
+fps per 15 s: 0:12 15:30 30:14 45:24 60:38 90:0 105:0 120:0 135:0 150:0 165:0 180:0 195:0 210:0
+### pkg-20261016-1519
+loop bound: program 0x11d049aa00 copied to 0xfe00000000 (entry 0xfe00010000), 25 back-edges bounded at 65536 iterations
+loop bound: table 0x11e024f730 entry 0 now names the copy (1 so far)
+submit #349511 dcb 922 dwords at 0x11e08d0050: pass 115 rewrite 25 drop 22 unmapped 0 cc 0 mappings 13145 ... FAILED rc 0 TIMEOUT 2027.43 ms
+submit #349512 acb 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 13145 ... FAILED rc 0 TIMEOUT 2027.35 ms
+fps per 15 s: 0:12 15:30 30:14 45:25 60:49 75:47 90:31 120:0 135:0 150:0 165:0 180:0 195:0 210:0
+### pkg-20261016-1527
+loop bound: program 0x11d049aa00 copied to 0xfe00000000 (entry 0xfe00010000), 25 back-edges bounded at 65536 iterations
+loop bound: table 0x11e05ef730 entry 0 now names the copy (1 so far)
+submit #359320 dcb 922 dwords at 0x11e0630050: pass 116 rewrite 25 drop 21 unmapped 0 cc 0 mappings 13175 ... FAILED rc 0 TIMEOUT 2017.01 ms
+submit #359322 acb 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 13175 ... FAILED rc 0 TIMEOUT 2016.79 ms
+fps per 15 s: 0:11 15:30 30:16 45:24 60:50 75:49 90:33 120:0 135:0 150:0 165:0 180:0 195:0 210:0
+### register dump packets of the 922-dword buffer (run 561): LOAD_SH_REG_INDEX tables and dispatches
+38 0x63 5
+103 0x63 5
+345 0x15 5
+390 0x63 5
+409 0x15 5
+474 0x63 5
+495 0x15 5
+510 0x63 5
+531 0x15 5
+586 0x63 5
+710 0x16 3
+723 0x63 5
+752 0x16 3
+841 0x63 5
+887 0x16 3
+### hang watcher, run 563 (waves in the copy)
+    188 @fe00001ce4
+     35 @fe00001d50
+     33 @fe00001cdc
+     26 @fe00001d38
+      9 @fe00001cf0
+      8 @fe00001d48
+### hang watcher, run 564
+signaled 0x00380370 emitted 0x00380372
+/usr/local/bin/bc5-gpu-hang-watch: linia 21: 239747 Naruszenie ochrony pamięci(zrzut pamięci) /usr/bin/umr -O halt_waves -wa gfx_0.0.0
+gfx1013.mmCP_STAT => 0x9507a200
+gfx1013.mmCP_STALLED_STAT2 => 0x00000000
+gfx1013.mmGRBM_STATUS => 0x00003028
+gfx1013.mmGRBM_STATUS2 => 0x00000008
+gfx1013.mmGRBM_STATUS3 => 0x00000000
+gfx1013.mmGRBM_STATUS_SE0 => 0x00000006

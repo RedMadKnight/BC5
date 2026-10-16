@@ -173,6 +173,7 @@ struct Device::Impl {
         std::uint64_t seq = 0;
     };
     ScratchBo snap_ring;
+    ScratchBo code; // experiment 0137 (Device::code_area)
     std::uint64_t snap_head = 0;
     std::vector<SnapSpan> snap_spans;                         // committed jobs' copies, oldest first
     std::vector<std::pair<std::uint64_t, std::uint64_t>> snap_job; // this submission's copies
@@ -415,6 +416,12 @@ Device::~Device() {
         impl_->scratch_free();
     }
     impl_->snap_free();
+    if (ScratchBo &c = impl_->code; c.bo != nullptr) { // experiment 0137
+        if (c.cpu) amdgpu_bo_cpu_unmap(c.bo);
+        amdgpu_bo_va_op_raw(impl_->dev, c.bo, 0, c.size, c.va, 0, AMDGPU_VA_OP_UNMAP);
+        amdgpu_bo_free(c.bo);
+        c = ScratchBo{};
+    }
     if (impl_->gds) amdgpu_bo_free(impl_->gds);
     if (impl_->oa) amdgpu_bo_free(impl_->oa);
     if (impl_->shadow) {
@@ -1060,6 +1067,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
         if (sl.bo != nullptr) bos.push_back(sl.bo);
     }
     if (impl_->snap_ring.bo != nullptr) bos.push_back(impl_->snap_ring.bo); // experiment 0122
+    if (impl_->code.bo != nullptr) bos.push_back(impl_->code.bo);           // experiment 0137
     if (with_gds && impl_->gds) bos.push_back(impl_->gds);
     if (with_gds && impl_->oa) bos.push_back(impl_->oa);
     if (with_gds && impl_->gws) bos.push_back(impl_->gws);
@@ -1201,6 +1209,34 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     submits_++;
     r.ok = r.rc == 0 && expired != 0;
     return r;
+}
+
+void *Device::code_area() {
+    std::lock_guard lock(impl_->mutex);
+    ScratchBo &c = impl_->code;
+    if (c.bo != nullptr) return c.cpu;
+    amdgpu_bo_alloc_request req{};
+    req.alloc_size = kCodeBytes;
+    req.phys_alignment = 65536;
+    req.preferred_heap = AMDGPU_GEM_DOMAIN_GTT;
+    req.flags = AMDGPU_GEM_CREATE_CPU_GTT_USWC;
+    if (amdgpu_bo_alloc(impl_->dev, &req, &c.bo) != 0) return nullptr;
+    const std::uint64_t flags = AMDGPU_VM_PAGE_READABLE | AMDGPU_VM_PAGE_WRITEABLE | AMDGPU_VM_PAGE_EXECUTABLE | AMDGPU_VM_MTYPE_UC;
+    if (amdgpu_bo_va_op_raw(impl_->dev, c.bo, 0, kCodeBytes, kCodeVa, flags, AMDGPU_VA_OP_MAP) != 0) {
+        amdgpu_bo_free(c.bo);
+        c = ScratchBo{};
+        return nullptr;
+    }
+    if (amdgpu_bo_cpu_map(c.bo, &c.cpu) != 0) {
+        amdgpu_bo_va_op_raw(impl_->dev, c.bo, 0, kCodeBytes, kCodeVa, 0, AMDGPU_VA_OP_UNMAP);
+        amdgpu_bo_free(c.bo);
+        c = ScratchBo{};
+        return nullptr;
+    }
+    c.va = kCodeVa;
+    c.size = kCodeBytes;
+    impl_->list_gen++; // the BO lists must name it
+    return c.cpu;
 }
 
 bool Device::wait_idle(std::uint64_t timeout_ns) {
