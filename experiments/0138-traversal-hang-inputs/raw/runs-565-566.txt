@@ -1,0 +1,66 @@
+### run 565 snapshots (journal)
+snap 83 -> snap-3.bin before #332000 at t 94.734 s
+snap 84 -> snap-4.bin before #336000 at t 95.375 s
+snap 85 -> snap-5.bin before #340000 at t 96.150 s
+snap 86 -> snap-6.bin before #344000 at t 96.762 s
+snap 87 -> snap-7.bin before #348000 at t 97.412 s
+snap 88 -> snap-0.bin before #352000 at t 98.092 s
+snap 89 -> snap-1.bin before #356000 at t 98.785 s
+snap 90 -> snap-2.bin before #360000 at t 99.498 s
+### instance-table summary (insttab.py, F116 layout)
+snap-3.bin 0x3c100 records 126 last index 125 bad transforms 0 flags {'0x1f000000': 126} tree addr>>24 ['0x8c00001210', '0x8c0000121b', '0x8c00001252', '0x8c00001258']
+snap-3.bin 0x36100 records 318 last index 317 bad transforms 0 flags {'0x1f000000': 318} tree addr>>24 ['0x8200001210', '0x820000124f', '0x8200001251', '0x8200001252', '0x8200001253', '0x8200001254', '0x8400001210', '0x8c00001210'
+snap-4.bin 0x3c100 records 126 last index 125 bad transforms 0 flags {'0x1f000000': 126} tree addr>>24 ['0x8c00001210', '0x8c0000121c']
+snap-4.bin 0x36100 records 318 last index 317 bad transforms 19 flags {'0x1f000000': 299, '0x0': 19} tree addr>>24 ['0x0', '0x8c00001210', '0x8c0000121b', '0x8c0000121c', '0x8c00001252', '0x8c00001258']
+snap-5.bin 0x3c100 records 126 last index 125 bad transforms 0 flags {'0x1f000000': 126} tree addr>>24 ['0x8c00001210', '0x8c0000121c']
+snap-5.bin 0x36100 records 318 last index 317 bad transforms 0 flags {'0x1f000000': 318} tree addr>>24 ['0x8c00001210', '0x8c0000121c']
+snap-6.bin 0x3c100 records 126 last index 125 bad transforms 0 flags {'0x1f000000': 126} tree addr>>24 ['0x8c00001210', '0x8c0000121c']
+snap-6.bin 0x36100 records 318 last index 317 bad transforms 0 flags {'0x1f000000': 318} tree addr>>24 ['0x8c00001210', '0x8c0000121c']
+snap-7.bin 0x3c100 records 126 last index 125 bad transforms 0 flags {'0x1f000000': 126} tree addr>>24 ['0x8c00001252']
+snap-7.bin 0x36100 records 318 last index 317 bad transforms 0 flags {'0x1f000000': 318} tree addr>>24 ['0x8c00001210', '0x8c0000121c', '0x8c00001252']
+snap-0.bin 0x3c100 records 126 last index 125 bad transforms 0 flags {'0x1f000000': 126} tree addr>>24 ['0x8c00001210', '0x8c0000121c']
+snap-0.bin 0x36100 records 318 last index 317 bad transforms 19 flags {'0x1f000000': 299, '0x0': 19} tree addr>>24 ['0x0', '0x8c00001210', '0x8c0000121b', '0x8c0000121c', '0x8c00001252', '0x8c00001258']
+snap-1.bin 0x3c100 records 126 last index 125 bad transforms 0 flags {'0x1f000000': 126} tree addr>>24 ['0x8c00001252']
+snap-1.bin 0x36100 records 318 last index 317 bad transforms 0 flags {'0x1f000000': 318} tree addr>>24 ['0x8c00001210', '0x8c0000121c', '0x8c00001252']
+snap-2.bin 0x3c100 records 126 last index 125 bad transforms 0 flags {'0x1f000000': 126} tree addr>>24 ['0x8c00001252']
+snap-2.bin 0x36100 records 318 last index 317 bad transforms 0 flags {'0x1f000000': 318} tree addr>>24 ['0x8c00001210', '0x8c0000121c', '0x8c00001252']
+### timeouts
+submit #361495 dcb 922 dwords at 0x11e06d0050: pass 116 rewrite 25 drop 21 unmapped 0 cc 0 mappings 13172 ... FAILED rc 0 TIMEOUT 2052.62 ms
+submit #361496 acb 291 dwords at 0x11e0ee0050: pass 21 rewrite 15 drop 6 unmapped 0 cc 0 mappings 13172 ... FAILED rc 0 TIMEOUT 2052.54 ms
+submit #361704 acb 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 13163 ... FAILED rc 0 TIMEOUT 2035.75 ms
+### waits given up: 0
+### hang watcher: hung wave PCs (first 5000 waves listed) and the instance registers
+    235 ixSQ_WAVE_PC_LO: d049c704
+     51 ixSQ_WAVE_PC_LO: d049bd20
+     23 ixSQ_WAVE_PC_LO: d049c6fc
+      7 ixSQ_WAVE_PC_LO: d049c764
+      4 ixSQ_WAVE_PC_LO: d049c770
+      3 ixSQ_WAVE_PC_LO: d049c768
+      3 ixSQ_WAVE_PC_LO: d049c758
+      3 ixSQ_WAVE_PC_LO: d049c710
+336
+    322 { 12102af7, 80000000, 0000007f, 81000000 }
+    152 { 102af700, 00000012, 00000003, 8c62c100 }
+     76 { 102af700, 00000012, 00000002, 8c62c100 }
+     63 { 102af700, 00000012, 00000004, 8c62c100 }
+     28 { 102af700, 00000012, 00000005, 8c62c100 }
+    322 { 102af700, 00080012, 00000493, 00016204 }
+     12 { 101d6800, 00080012, 00000336, 00016204 }
+      1 { 106fbd00, 00080012, 0000024d, 00016204 }
+### run 566 (skip on): programs given the instance-table address (find all, 104-110 s)
+    170 find all: acb 7457 dwords at N: dispatch ud0 = 8c5f0000, program 09098eb200, packet c0021600 871ed420 00000011 00000061
+    170 find all: acb 7457 dwords at N: dispatch ud0 = 8c5f0000, program 090985f200, packet c0031500 00000001 00000001 00000001
+     91 find all: acb 7457 dwords at N: dispatch ud2 = 8c5f0000, program 0909875600, packet c0031500 00000f00 00000001 00000001
+     79 find all: acb 7457 dwords at N: dispatch ud2 = 8c5f0000, program 0909875600, packet c0031500 00000d80 00000001 00000001
+     18 find all: acb 7498 dwords at N: dispatch ud2 = 8c5f0000, program 0909875600, packet c0031500 00001080 00000001 00000001
+     18 find all: acb 7498 dwords at N: dispatch ud0 = 8c5f0000, program 09098eb200, packet c0021600 871ed420 00000011 00000061
+     18 find all: acb 7498 dwords at N: dispatch ud0 = 8c5f0000, program 090985f200, packet c0031500 00000001 00000001 00000001
+      6 find all: acb 7441 dwords at N: dispatch ud0 = 8c5f0000, program 09098eb200, packet c0021600 871ed420 00000011 00000061
+      6 find all: acb 7441 dwords at N: dispatch ud0 = 8c5f0000, program 090985f200, packet c0031500 00000001 00000001 00000001
+      3 find all: acb 7441 dwords at N: dispatch ud2 = 8c5f0000, program 0909875600, packet c0031500 00000f00 00000001 00000001
+      3 find all: acb 7441 dwords at N: dispatch ud2 = 8c5f0000, program 0909875600, packet c0031500 00000d80 00000001 00000001
+### run 566 snapshots after New Game: roots and flags of both tables
+snap-0.bin 0x3c100 roots {'0x25': 126} flags {'0x1f000000': 125, '0x8000000': 1} records naming 0x12102af7: 0
+snap-0.bin 0x36100 roots {'0x25': 318} flags {'0x1f000000': 316, '0x8000000': 2} records naming 0x12102af7: 0
+snap-1.bin 0x3c100 roots {'0x25': 126} flags {'0x1f000000': 125, '0x8000000': 1} records naming 0x12102af7: 0
+snap-1.bin 0x36100 roots {'0x25': 318} flags {'0x1f000000': 316, '0x8000000': 2} records naming 0x12102af7: 0
