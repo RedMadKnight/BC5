@@ -1,0 +1,32 @@
+### run 554
+run 554 (compute ring, waits all, no deps, no GDS for graphics, save copy) capture kytyplus-20261016-1338 timeouts=10 faults=0 given-up=3
+  t10-30 fps 0.10 | t40-65 fps 0.08
+  game thread inside the host: mean 178.93 ms
+pieces full: 1 splits made, the wait then satisfied 0, not satisfied 0
+pieces full: 2 splits made, the wait then satisfied 0, not satisfied 0
+pieces full: 2 splits made, the wait then satisfied 0, not satisfied 0
+window 285.5 ms: GPU busy (any ring) 0.5 ms = 0.2 %, idle 285.0 ms
+  ring -1:      3 jobs, busy 0.4 ms (0.1 %)
+  ring  0:      3 jobs, busy 0.5 ms (0.2 %)
+  both rings busy at once: 0.4 ms (0.1 % of the window)
+paź 16 13:38:12 bazzite kernel: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=40655341, emitted seq=40655343
+paź 16 13:38:12 bazzite kernel: amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+paź 16 13:38:12 bazzite kernel: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded
+paź 16 13:38:12 bazzite kernel: amdgpu 0000:01:00.0: ring comp_1.2.0 timeout, signaled seq=3112521, emitted seq=3112524
+paź 16 13:38:12 bazzite kernel: amdgpu 0000:01:00.0: Starting comp_1.2.0 ring reset
+### run 555
+run 555 (compute ring, waits all, no deps, acb head keeps waits (0134), save copy) capture kytyplus-20261016-1342 timeouts=0 faults=0 given-up=0
+  t10-30 fps 58.95 | t40-65 fps 47.96
+  game thread inside the host: mean 8.04 ms
+pieces full: 150 splits made, the wait then satisfied 0, not satisfied 0
+pieces full: 173 splits made, the wait then satisfied 0, not satisfied 0
+pieces full: 211 splits made, the wait then satisfied 0, not satisfied 0
+window 14973.0 ms: GPU busy (any ring) 8572.0 ms = 57.2 %, idle 6401.0 ms
+  ring -1:   8162 jobs, busy 7951.2 ms (53.1 %)
+  ring  0:   8000 jobs, busy 1897.1 ms (12.7 %)
+  both rings busy at once: 1276.3 ms (8.5 % of the window)
+### blockshare 555
+30 0.0% 34 0.2% 36 0.0% 38 0.0% 40 100.0% 42 39.9% 44 78.3% 46 0.0% 48 0.7% 50 0.0% 52 0.0% 54 0.0% 56 0.0% 58 0.0% 60 0.0% 62 0.0% 64 0.0% 66 0.0% 68 0.0% 
+### session play-20261016-1346 (no deps; maintainer: no blocks)
+0:55 15:60 30:57 45:46 60:33 75:36 90:44 105:48 120:43 135:45 150:44 165:33 180:22
+given-up 811 timeouts 0

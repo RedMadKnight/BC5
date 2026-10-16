@@ -140,3 +140,8 @@ Each step goes on only after the previous one is recorded as passed.
   - **One compute ring per guest compute queue.** `BC5_DIRECT_COMPUTE_RINGS=<n>`, at most 4. A queue blocked on its ring's GPU does not hold the others; the title uses four (32, 40, 38, 26).
   - **Backend:** a slot pool and fences per compute ring.
   - **Order of tests:** the ladder on rings 0-3, ASTRO BOT's title, then the geyser, with the maintainer present.
+
+*Amended 2026-10-16 (experiments 0134, 0135, F181):*
+- The four rings are accepted for experiments.
+- The speculative waits' watchdog is rejected as built: a guessed value in a semaphore label hung the GPU on the second title and took the machine down.
+- Play settings: one compute ring, `CROSS_RING_WAITS=all`, no ring dependency, no speculative waits.
