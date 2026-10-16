@@ -1,0 +1,73 @@
+### session play-20261016-1330 (compute ring, acb deps, two-ring limit 4 ms, wait trace), fps per 15 s
+0:55 15:60 30:57 45:45 60:35 75:38 90:43 105:51 120:46 135:46 150:36 165:33 180:34 195:34 210:34 225:34 240:30
+given-up 3365 timeouts 0
+### guest queues registered (index, a b c d)
+queue 0: a 1 b 0 c 0 d 1
+queue 1: a 1 b 0 c 1 d 2
+queue 2: a 1 b 0 c 2 d 3
+queue 3: a 1 b 0 c 3 d 4
+queue 4: a 1 b 0 c 4 d 5
+queue 5: a 1 b 0 c 5 d 6
+queue 6: a 1 b 0 c 6 d 7
+queue 7: a 1 b 0 c 7 d 8
+queue 8: a 1 b 1 c 0 d 9
+queue 9: a 1 b 1 c 1 d 10
+queue 10: a 1 b 1 c 2 d 11
+queue 11: a 1 b 1 c 3 d 12
+queue 12: a 1 b 1 c 4 d 13
+queue 13: a 1 b 1 c 5 d 14
+queue 14: a 1 b 1 c 6 d 15
+queue 15: a 1 b 1 c 7 d 16
+queue 16: a 1 b 2 c 0 d 17
+queue 17: a 1 b 2 c 1 d 18
+queue 18: a 1 b 2 c 2 d 19
+queue 19: a 1 b 2 c 3 d 20
+queue 20: a 1 b 2 c 4 d 21
+queue 21: a 1 b 2 c 5 d 22
+queue 22: a 1 b 2 c 6 d 23
+queue 23: a 1 b 2 c 7 d 24
+queue 24: a 1 b 3 c 0 d 25
+queue 25: a 1 b 3 c 1 d 26
+queue 26: a 1 b 3 c 2 d 27
+queue 27: a 1 b 3 c 3 d 28
+queue 28: a 1 b 3 c 4 d 29
+queue 29: a 1 b 3 c 5 d 30
+queue 30: a 1 b 3 c 6 d 31
+queue 31: a 1 b 3 c 7 d 32
+queue 32: a 2 b 0 c 0 d 33
+queue 33: a 2 b 0 c 1 d 34
+queue 34: a 2 b 0 c 2 d 35
+queue 35: a 2 b 0 c 3 d 36
+queue 36: a 2 b 0 c 4 d 37
+queue 37: a 2 b 0 c 5 d 38
+queue 38: a 2 b 0 c 6 d 39
+queue 39: a 2 b 0 c 7 d 40
+queue 40: a 2 b 1 c 0 d 41
+queue 41: a 2 b 1 c 1 d 42
+queue 42: a 2 b 1 c 2 d 43
+queue 43: a 2 b 1 c 3 d 44
+queue 44: a 2 b 1 c 4 d 45
+queue 45: a 2 b 1 c 5 d 46
+queue 46: a 2 b 1 c 6 d 47
+queue 47: a 2 b 1 c 7 d 48
+queue 48: a 2 b 2 c 0 d 49
+queue 49: a 2 b 2 c 1 d 50
+queue 50: a 2 b 2 c 2 d 51
+queue 51: a 2 b 2 c 3 d 52
+queue 52: a 2 b 2 c 4 d 53
+queue 53: a 2 b 2 c 5 d 54
+queue 54: a 2 b 2 c 6 d 55
+queue 55: a 2 b 2 c 7 d 56
+### compute buffers submitted per guest queue (timing lines)
+  42744 q32
+  21374 q40
+  16610 q38
+   1020 q26
+      2 q9
+      2 q8
+      2 q7
+      2 q6
+### held-back compute buffers by size and queue (last 300 traces)
+    300 acb 3624 dwords (queue 32)
+### the 1332-dword buffer by queue
+   3365 q40
