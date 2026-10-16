@@ -6365,10 +6365,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..5bb2986
+index 0000000..448dd69
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,6519 @@
+@@ -0,0 +1,6526 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -6500,6 +6500,8 @@ index 0000000..5bb2986
 +	uint64_t ring_base, ring_end, doorbell_page, doorbell_slot, rptr_addr;
 +};
 +static std::vector<QueueReg> g_queues;
++// Experiment 0133: the guest queue the ring thread is serving (index into g_queues), -1 elsewhere.
++static thread_local int t_queue_idx = -1;
 +static bool                  g_queue_probe_started = false;
 +// Observed protocol (experiment 0012): the mmap'd submit page is an array of u64 write pointers
 +// in dwords, indexed by (d - 1); the game appends IT_INDIRECT_BUFFER packets to the 16 KiB ring
@@ -7157,6 +7159,11 @@ index 0000000..5bb2986
 +		bool progressed = false;
 +		for (auto& s: states) {
 +			const auto& q     = s.reg;
++			t_queue_idx       = static_cast<int>(&s - states.data()); // experiment 0133
++			if (s.count == 0 && s.deferred_report == 0 && std::getenv("BC5_DIRECT_WAIT_TRACE") != nullptr) {
++				s.deferred_report = 1;
++				Direct::journal("queue %d: a %u b %u c %u d %u ring 0x%" PRIx64 "-0x%" PRIx64 "\n", t_queue_idx, q.a, q.b, q.c, q.d, q.ring_base, q.ring_end);
++			}
 +			const auto* page  = reinterpret_cast<const volatile uint64_t*>(q.doorbell_page);
 +			const uint64_t wraw = page[q.d == 0 ? 0 : q.d - 1];
 +			const uint32_t n    = static_cast<uint32_t>((q.ring_end - q.ring_base) / 4);
@@ -9137,8 +9144,8 @@ index 0000000..5bb2986
 +							describe_pending(label, pend, sizeof(pend));
 +							const uint64_t now_v = op == 0x93 ? *reinterpret_cast<const volatile uint64_t*>(label & ~7ull) : *reinterpret_cast<const volatile uint32_t*>(label & ~3ull);
 +							const uint64_t ref   = op == 0x93 && len >= 8 ? (p[4] | (static_cast<uint64_t>(p[5]) << 32u)) : p[4];
-+							journal("wait trace: t %.3f s acb %u dwords at %p held back by its wait at %u (ring %d) on 0x%" PRIx64 ": function %u reference 0x%" PRIx64 " value 0x%" PRIx64 "; %s\n", timing_now(), num_dwords,
-+							        static_cast<const void*>(ib), i, ring, label, p[1] & 7u, ref, now_v, pend);
++							journal("wait trace: t %.3f s acb %u dwords at %p (queue %d) held back by its wait at %u (ring %d) on 0x%" PRIx64 ": function %u reference 0x%" PRIx64 " value 0x%" PRIx64 "; %s\n", timing_now(), num_dwords,
++							        static_cast<const void*>(ib), t_queue_idx, i, ring, label, p[1] & 7u, ref, now_v, pend);
 +						}
 +					}
 +					t_unready.ib         = ib;
@@ -11136,8 +11143,8 @@ index 0000000..5bb2986
 +	}
 +	frame_profile_submit(t_cq == 0, static_cast<double>(t1 - t0) / 1e6, static_cast<double>(t2 - t1) / 1e6);
 +	if (timing) {
-+		journal("timing: t %.3f s %s %u dwords: sync%s %.1f ms, hints %.1f ms\n", t_start, kind, num_dwords, force_sync ? "" : " (lazy)",
-+		        static_cast<double>(t1 - t0) / 1e6, static_cast<double>(t2 - t1) / 1e6);
++		journal("timing: t %.3f s %s %u dwords: sync%s %.1f ms, hints %.1f ms q%d\n", t_start, kind, num_dwords, force_sync ? "" : " (lazy)",
++		        static_cast<double>(t1 - t0) / 1e6, static_cast<double>(t2 - t1) / 1e6, t_queue_idx);
 +	}
 +	// BC5_DIRECT_PROBE_VA=hexva[:bytes]: the pagemap state (present / swapped / none) of that guest
 +	// address and its bytes, journaled at every submission where either changed (run 73: who
