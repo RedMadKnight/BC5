@@ -1,0 +1,35 @@
+### session play-20261016-1436 (maintainer, cross pressed about 14:38:11)
+fps per 15 s: 0:12 15:30 30:15 45:25 60:50 75:41 90:42 105:45 120:43 135:42 150:42 165:41 180:42 195:42 210:43 225:43 240:43 255:43 270:42 285:14 300:37 315:37 330:40
+timeouts 0 given-up 4 dropped draws 1
+### thread names sampled during the cutscene (6 samples, gdb)
+     30 "Havok Solve"):
+     30 "Havok Queries a"):
+     30 "File Video Stre"):
+     12 "kyty-present"):
+     12 "kyty_em:disk$0"):
+     12 "kyty-cmdsched"):
+      6 "UXAnalytics::Up"):
+      6 "User UDS Thread"):
+      6 "SDLAudioP4"):
+      6 "SDLAudioP3"):
+      6 "SDLAudioP2"):
+      6 "Save Thread"):
+### run 559 (scripted, guest printf): error and stub lines by kind
+ 653081 	Equeue wait timedout: Loose Load EQueue
+   1024 Unresolved import stub called [N]: patch_vaddr=X jmprela_index=N symbol=S type=Func bind=Global 
+      7 	thread create: Unknown Animset, id = -N, N
+      7 	Pthread run begin: Unknown Animset, id = N, os_thread_id = N, entry = X, arg = X, stack_addr = X, stack_size = N
+      2 [bcN-direct] submit #N acb N dwords: FAILED rc -N  N.N ms; filter: N pass N rewrite N split N drop (N dwords) cu N int N cc N unmapped N extra N trunc N; ok so far N
+      1 Relocate: unresolved PLT import patched to stub [N] [NeNfN] <- NeNe, XgVsNjRehcY[libkernel_vN][libkernel_vN.N][Func], Func, Global, /home/kjaniszewski/bcN-data/mnt/pkg-game/sce_module/libc.prx
+      1 Relocate: unresolved PLT import patched to stub [N] [NeNfN] <- N, -YTW+qXcNCQ[libkernel_vN][libkernel_vN.N][Func], Func, Global, /home/kjaniszewski/bcN-data/mnt/pkg-game/sce_module/libc.prx
+      1 Relocate: unresolved PLT import patched to stub [N] [NeNeN] <- NdN, dFymNbNJLU[libkernel_vN][libkernel_vN.N][Func], Func, Global, /home/kjaniszewski/bcN-data/mnt/pkg-game/sce_module/libc.prx
+### run 560 (no traversal skip)
+pad card 2 PCM 100%
+kyty exit 0 after 120 s (timeout=230)
+log lines: 16; printf lines: 532884; shots: t20.png t45.png t75.png 
+paź 16 15:00:26 bazzite kernel: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=1980294, emitted seq=1980296
+paź 16 15:00:26 bazzite kernel: amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+paź 16 15:00:26 bazzite kernel: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded
+paź 16 15:00:41 bazzite kernel: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=1980540, emitted seq=1980542
+paź 16 15:00:41 bazzite kernel: amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+paź 16 15:00:41 bazzite kernel: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded
