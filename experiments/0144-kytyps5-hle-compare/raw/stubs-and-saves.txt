@@ -1,0 +1,27 @@
+# run 572 guest log: unresolved imports actually called (count, NID[library])
+      1 7aGTPfrqT9s[PngEnc_v1][PngEnc_v1.1][Func]
+      1 9030RnBDoh4[PngEnc_v1][PngEnc_v1.1][Func]
+      4 juWbTNM+8hw[Posix_v1][libkernel_v1.1][Func]
+      1 kP2L8t3j-aM[VideoOutVrrStatus_v1][VideoOut_v1.1][Func]
+     12 nAEqawEZG5s[NpEntitlementAccess_v1][NpEntitlementAccess_v1.1][Func]
+     17 NH6xARDOVv8[libkernel_v1][libkernel_v1.1][Func]
+     12 uCZf2L27th8[NpEntitlementAccess_v1][NpEntitlementAccess_v1.1][Func]
+    964 w7Ipp9Xl7hg[VideoOut_v1][VideoOut_v1.1][Func]
+     12 Z0eQj8m7XA8[NpEntitlementAccess_v1][NpEntitlementAccess_v1.1][Func]
+# first/last log line of those calls; log lines at 100 s / 140 s: 624110 / 817949; total 3578088
+141281
+# save-data event polls (SaveDataGetEventResult): count, first line
+642812
+820677
+# SaveDataSyncSaveDataMemory calls
+0
+# KytyPS5 5dec523 names for the NIDs
+7aGTPfrqT9s LIB_FUNC("7aGTPfrqT9s", PngEnc::PngEncCreate);
+9030RnBDoh4 LIB_FUNC("9030RnBDoh4", PngEnc::PngEncQueryMemorySize);
+juWbTNM+8hw not implemented
+kP2L8t3j-aM LIB_FUNC("kP2L8t3j-aM", VideoOutVrrStatus_kP2L8t3j_aM);
+nAEqawEZG5s LIB_FUNC("nAEqawEZG5s", NpEntitlementAccessPollUnifiedEntitlementInfoList);
+NH6xARDOVv8 LIB_FUNC("NH6xARDOVv8", LibKernel::KernelGetOperationMode);
+uCZf2L27th8 LIB_FUNC("uCZf2L27th8", NpEntitlementAccessRequestUnifiedEntitlementInfoList);
+w7Ipp9Xl7hg LIB_FUNC("w7Ipp9Xl7hg", VideoOut::VideoOutAllowOutputResolutionWqhdDetection);
+Z0eQj8m7XA8 LIB_FUNC("Z0eQj8m7XA8", NpEntitlementAccessDeleteRequest);
