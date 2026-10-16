@@ -6365,10 +6365,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..b701798
+index 0000000..fdc355a
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,6826 @@
+@@ -0,0 +1,6879 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -11050,6 +11050,59 @@ index 0000000..b701798
 +// data (s_getpc) lies inside the 64 KiB copied, so it moves with it. Returns the copy's address, 0
 +// when not configured or impossible.
 +static uint64_t loop_bound_copy(uint64_t pgm) {
++	// Experiment 0141 (BC5_DIRECT_BVH_MISS=<program hex>:<dword offset>[,...]): the listed
++	// image_bvh_intersect_ray instructions (MIMG NSA, 5 dwords on gfx1013: [0xF1989F07, vdata in bits
++	// 15:8 of the second dword, ...]) become four v_mov_b32 v<vdata+k>, -1 and an s_nop: every query
++	// returns no child and no hit (0xffffffff, Mesa RADV_BVH_INVALID_NODE), so a ray-traced pass runs
++	// to its end and writes "nothing hit" instead of walking trees. Encodings from llvm-mc -show-encoding.
++	{
++		struct Miss {
++			uint64_t              pgm = 0;
++			std::vector<uint32_t> at;
++		};
++		static const Miss miss = [] {
++			Miss        m;
++			const char* e = std::getenv("BC5_DIRECT_BVH_MISS");
++			if (e == nullptr) return m;
++			char* end = nullptr;
++			m.pgm     = std::strtoull(e, &end, 16);
++			while (end != nullptr && (*end == ':' || *end == ',')) {
++				const char* q = end + 1;
++				const auto  v = static_cast<uint32_t>(std::strtoul(q, &end, 0));
++				if (end == q) break;
++				m.at.push_back(v);
++			}
++			return m;
++		}();
++		if (miss.pgm != 0 && pgm == miss.pgm && g_dev) {
++			static std::mutex           mm;
++			static bc5::direct::Device* built_for = nullptr;
++			static uint64_t             built_va  = 0;
++			std::lock_guard             lk(mm);
++			if (built_for == g_dev.get()) return built_va;
++			built_for              = g_dev.get();
++			constexpr uint32_t kCp = 0x10000 / 4;
++			auto*              code = static_cast<volatile uint32_t*>(g_dev->code_area());
++			if (code == nullptr) return built_va = 0;
++			std::vector<uint32_t> w(kCp);
++			const auto*           src = reinterpret_cast<const volatile uint32_t*>(pgm);
++			for (uint32_t k = 0; k < kCp; k++) w[k] = src[k];
++			for (const uint32_t at: miss.at) {
++				if (at + 5 > kCp || w[at] != 0xF1989F07u) {
++					journal("bvh miss: dword %u of program 0x%" PRIx64 " is 0x%08x, not image_bvh_intersect_ray; not patched\n", at, pgm, at < kCp ? w[at] : 0u);
++					return built_va = 0;
++				}
++				const uint32_t vd = (w[at + 1] >> 8u) & 0xffu;
++				for (uint32_t k = 0; k < 4; k++) w[at + k] = 0x7E0002C1u | ((vd + k) << 17u); // v_mov_b32 v<vd+k>, -1
++				w[at + 4] = 0xBF800000u;                                                      // s_nop 0
++			}
++			for (uint32_t k = 0; k < kCp; k++) code[k] = w[k];
++			std::atomic_thread_fence(std::memory_order_seq_cst);
++			built_va = bc5::direct::Device::kCodeVa;
++			journal("bvh miss: program 0x%" PRIx64 " copied to 0x%" PRIx64 ", %zu ray queries return nothing\n", pgm, built_va, miss.at.size());
++			return built_va;
++		}
++	}
 +	struct Cfg {
 +		uint64_t              pgm   = 0;
 +		uint32_t              limit = 0;
