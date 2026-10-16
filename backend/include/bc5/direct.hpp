@@ -18,8 +18,9 @@
 namespace bc5::direct {
 
 // ADR 0009: the kernel ring a job goes to: the GFX ring, or compute ring n (AMDGPU_HW_IP_COMPUTE,
-// n >= 0; one compute ring per device).
+// 0 <= n < kComputeRings; the BC-250 offers four to user space, experiment 0127).
 inline constexpr int kGfxRing = -1;
+inline constexpr int kComputeRings = 4;
 
 struct SubmitResult {
     // FilterOptions::job_timestamps (experiment 0124): GPU clock at the job's start and end, 0 if none.
@@ -161,9 +162,9 @@ public:
     bool wedged() const { return wedged_; }
     // Experiment 0024: submit() returns once the kernel has queued the job, so that the host
     // can prepare the next IB while the GPU runs this one. Each job in flight keeps its own
-    // scratch buffer (64 of them: 32 for the GFX ring, 32 for the compute ring, each half used in
+    // scratch buffer (128 of them: 32 for the GFX ring, 24 for each compute ring, each pool used in
     // turn); the host calls finish() for every pending result, in order per ring, and keeps fewer
-    // than 32 in flight on each.
+    // than 24 in flight on each compute ring.
     void set_async(bool v) { async_ = v; }
     bool async() const { return async_; }
     SubmitResult finish(std::uint64_t seq_no, std::uint32_t slot, std::uint64_t timeout_ns);
@@ -198,8 +199,8 @@ public:
     void set_dma_idle(bool v) { dma_idle_ = v; }
     // ADR 0009, experiment 0129: order between the rings through the kernel's scheduler (a CS
     // dependency on the other ring's last job, no CPU wait). Bit 0: a compute-ring job starts after
-    // the GFX ring's last job; bit 1: a GFX-ring job after the compute ring's last job. 0 (default):
-    // the rings run side by side.
+    // the GFX ring's last job; bit 1: a GFX-ring job after every compute ring's last job. 0
+    // (default): the rings run side by side.
     void set_ring_deps(int mask) { ring_deps_ = mask; }
 
 private:

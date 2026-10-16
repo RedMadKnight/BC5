@@ -141,11 +141,14 @@ struct Device::Impl {
     // slot 0 only. Each slot has its own VA, 4 GiB apart. Experiment 0045: 64, so that the host
     // can let more than a dozen jobs fly (BC5_DIRECT_MAX_IN_FLIGHT); a slot grows to the largest
     // IB it carried, a few hundred KiB.
-    static constexpr int kSlots = 64;
-    // ADR 0009: slots [0, kGfxSlots) carry GFX-ring jobs, the rest compute-ring jobs. Each half is
-    // used in turn, so a slot is given back in the order its ring completes jobs; one shared round
-    // would wait for a ring that has fallen behind (-EBUSY).
+    static constexpr int kSlots = 128;
+    // ADR 0009: slots [0, kGfxSlots) carry GFX-ring jobs, then kCompSlots for each compute ring.
+    // Each pool is used in turn, so a slot is given back in the order its ring completes jobs; one
+    // shared round would wait for a ring that has fallen behind (-EBUSY).
     static constexpr int kGfxSlots = 32;
+    static constexpr int kCompSlots = (kSlots - kGfxSlots) / kComputeRings;
+    static constexpr int pool_first(int ring) { return ring == kGfxRing ? 0 : kGfxSlots + ring * kCompSlots; }
+    static constexpr int pool_size(int ring) { return ring == kGfxRing ? kGfxSlots : kCompSlots; }
     ScratchBo slots[kSlots];
     std::atomic<int> slot_ring[kSlots] = {}; // the ring of the slot's last job (kGfxRing or n)
     std::uint32_t ts_off[kSlots] = {}; // experiment 0124: dword offset of the job's timestamps, 0 = none
@@ -251,11 +254,11 @@ struct Device::Impl {
         snap_head = 0;
     }
     int cur = 0;
-    int next_gfx = 0, next_comp = kGfxSlots;           // the slot each ring takes next
+    int next_gfx = 0;                                  // the slot each ring takes next
+    int next_comp[kComputeRings] = {pool_first(0), pool_first(1), pool_first(2), pool_first(3)};
     std::atomic<std::uint64_t> slot_seq[kSlots] = {}; // sequence number of the job using the slot, 0 = free
     std::atomic<std::uint64_t> last_seq{0};            // the job queued last on the GFX ring (wait_idle)
-    std::atomic<std::uint64_t> last_seq_comp{0};       // ... on the compute ring
-    std::atomic<int> comp_ring{kGfxRing};              // the compute ring in use, kGfxRing = none yet
+    std::atomic<std::uint64_t> last_seq_comp[kComputeRings] = {}; // ... on each compute ring
 
     // A fence of this context on `ring`.
     amdgpu_cs_fence fence_of(int ring, std::uint64_t seq) const {
@@ -755,25 +758,21 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     SubmitResult r;
     std::lock_guard lock(impl_->mutex);
     const bool comp = ring != kGfxRing;
-    if (comp) { // ADR 0009: one compute ring per device, so that its slots complete in order
-        int none = kGfxRing;
-        if (ring < 0 || (!impl_->comp_ring.compare_exchange_strong(none, ring) && none != ring)) {
-            r.rc = -EINVAL;
-            return r;
-        }
+    if (comp && (ring < 0 || ring >= kComputeRings)) { // ADR 0009
+        r.rc = -EINVAL;
+        return r;
     }
     r.ring = ring;
     if (async_) {
-        int &next = comp ? impl_->next_comp : impl_->next_gfx;
+        int &next = comp ? impl_->next_comp[ring] : impl_->next_gfx;
         impl_->cur = next;
-        next = comp ? (next + 1 < Impl::kSlots ? next + 1 : Impl::kGfxSlots)
-                    : (next + 1 < Impl::kGfxSlots ? next + 1 : 0);
+        next = next + 1 < Impl::pool_first(ring) + Impl::pool_size(ring) ? next + 1 : Impl::pool_first(ring);
         if (impl_->slot_seq[impl_->cur].load() != 0) { // the host lets fewer jobs fly than there are slots
             r.rc = -EBUSY;
             return r;
         }
     } else {
-        impl_->cur = comp ? Impl::kGfxSlots : 0;
+        impl_->cur = Impl::pool_first(ring);
     }
     impl_->slot_ring[impl_->cur] = ring;
     const double t_enter = now_ms();
@@ -1146,15 +1145,18 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     req.resources = list;
     req.number_of_ibs = 1;
     req.ibs = &ib_info;
-    amdgpu_cs_fence dep{};
+    amdgpu_cs_fence deps[kComputeRings]{};
     if ((ring_deps_ & (comp ? 1 : 2)) != 0) { // set_ring_deps
-        const int other = comp ? kGfxRing : impl_->comp_ring.load();
-        const std::uint64_t seq = comp ? impl_->last_seq.load() : impl_->last_seq_comp.load();
-        if (seq != 0 && (comp || other != kGfxRing)) {
-            dep = impl_->fence_of(other, seq);
-            req.number_of_dependencies = 1;
-            req.dependencies = &dep;
+        std::uint32_t n = 0;
+        if (comp) {
+            if (const std::uint64_t seq = impl_->last_seq.load(); seq != 0) deps[n++] = impl_->fence_of(kGfxRing, seq);
+        } else {
+            for (int k = 0; k < kComputeRings; ++k) {
+                if (const std::uint64_t seq = impl_->last_seq_comp[k].load(); seq != 0) deps[n++] = impl_->fence_of(k, seq);
+            }
         }
+        req.number_of_dependencies = n;
+        req.dependencies = n != 0 ? deps : nullptr;
     }
 
     const double t0 = now_ms();
@@ -1167,7 +1169,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
         r.pending = r.rc == 0;
         if (r.pending) {
             impl_->slot_seq[impl_->cur] = req.seq_no;
-            (comp ? impl_->last_seq_comp : impl_->last_seq) = req.seq_no;
+            (comp ? impl_->last_seq_comp[ring] : impl_->last_seq) = req.seq_no;
             impl_->snap_commit(req.seq_no); // experiment 0122
         }
         r.submit_ms = now_ms() - t0;
@@ -1208,9 +1210,9 @@ bool Device::wait_idle(std::uint64_t timeout_ns) {
         std::uint32_t expired = 0;
         return amdgpu_cs_query_fence_status(&fence, timeout_ns, 0, &expired) == 0 && expired != 0;
     };
-    const bool gfx = idle(kGfxRing, impl_->last_seq.load());
-    const int cr = impl_->comp_ring.load();
-    return idle(cr, cr == kGfxRing ? 0 : impl_->last_seq_comp.load()) && gfx;
+    bool all = idle(kGfxRing, impl_->last_seq.load());
+    for (int k = 0; k < kComputeRings; ++k) all = idle(k, impl_->last_seq_comp[k].load()) && all;
+    return all;
 }
 
 SubmitResult Device::finish(std::uint64_t seq_no, std::uint32_t slot, std::uint64_t timeout_ns) {

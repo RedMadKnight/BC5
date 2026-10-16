@@ -130,3 +130,13 @@ Each step goes on only after the previous one is recorded as passed.
 - On two rings, a graphics wait without a writer is split at once (the head goes) and given up after 8 ms.
 - The second title's play shortcut runs on the compute ring since 2026-10-16 (maintainer's yes); ASTRO BOT has a second shortcut for it.
 - Next, the geyser and water cycles: one kernel compute ring per guest compute queue, so that one queue blocks alone, as on the console.
+
+*Amended 2026-10-16 (experiments 0133, 0134):*
+- **The black blocks** were the compute heads (`submit_segment`) dropping their waits on graphics, not the order between the rings. With that fixed (0134) no ring dependency is needed.
+- **The geyser cycle** (0133) crosses guest queues 32 and 40, and the game rings the doorbell of the counter's queue only after it has submitted the graphics buffer that waits for the counter. The host holds the game's thread in that submission, so the writer never comes while it waits.
+- **Decision (proposed):**
+  - **Speculative graphics waits.** A graphics wait on a label last written by a compute ring stays for the GPU even before the writer is submitted. The game's thread goes on and submits the writer.
+  - **Watchdog.** A host watchdog writes the awaited value into the label if the wait is still unserved after `BC5_DIRECT_SPEC_WAIT_MS` (100), so the GFX ring cannot hang on a writer that never comes. It is journaled; it should not fire.
+  - **One compute ring per guest compute queue.** `BC5_DIRECT_COMPUTE_RINGS=<n>`, at most 4. A queue blocked on its ring's GPU does not hold the others; the title uses four (32, 40, 38, 26).
+  - **Backend:** a slot pool and fences per compute ring.
+  - **Order of tests:** the ladder on rings 0-3, ASTRO BOT's title, then the geyser, with the maintainer present.

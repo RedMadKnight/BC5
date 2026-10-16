@@ -6365,10 +6365,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..448dd69
+index 0000000..2728f4a
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,6526 @@
+@@ -0,0 +1,6682 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -9068,6 +9068,7 @@ index 0000000..448dd69
 +	return journal_all() || (n.fetch_add(1, std::memory_order_relaxed) & mask) == 0;
 +}
 +
++static thread_local std::vector<const uint32_t*> t_keep_waits;
 +// ADR 0009 (BC5_DIRECT_COMPUTE_RING=<n>; experiments only, with the maintainer present): the ring
 +// thread's compute buffers go to kernel compute ring n instead of the GFX ring, except those for
 +// which bc5::policy::compute_ring_refusal names a reason (they stay on the GFX ring). The second
@@ -9081,9 +9082,42 @@ index 0000000..448dd69
 +}
 +static std::atomic<uint64_t> g_comp_jobs {0}, g_comp_refused {0};
 +static thread_local int      t_ring = bc5::direct::kGfxRing; // the ring of the compute buffer being submitted
-+static int                   acb_ring(const uint32_t* ib, uint32_t num_dwords) {
-+	const int ring = compute_ring_env();
++// Experiment 0135: BC5_DIRECT_COMPUTE_RINGS=<n> (1-4): a guest compute queue starts on the shared
++// compute ring BC5_DIRECT_COMPUTE_RING; once it has submitted 64 buffers it gets a ring of its own
++// (the next of the n, while any are left), so that a queue waiting on the GPU blocks only its own
++// ring, as on the console (the geyser's cycle crosses queues 32 and 40, experiment 0133). The title
++// rings idle queues first, hence activity rather than first use. Before a queue moves, the host waits
++// until the GPU is idle once, so that its earlier buffers cannot run after its later ones.
++static int queue_ring(int base, bool count) {
++	static const int n = [] {
++		const char* e = std::getenv("BC5_DIRECT_COMPUTE_RINGS");
++		const int   v = e != nullptr ? std::atoi(e) : 1;
++		return v < 1 ? 1 : (v > bc5::direct::kComputeRings ? bc5::direct::kComputeRings : v);
++	}();
++	if (n == 1 || t_queue_idx < 0 || t_queue_idx >= 256) return base;
++	static int      map[256];
++	static uint32_t seen[256];
++	static int      next = 1;
++	static bool     init = false;
++	if (!init) {
++		for (int& m: map) m = -1;
++		init = true;
++	}
++	const int q = t_queue_idx;
++	if (map[q] >= 0) return map[q];
++	if (count && ++seen[q] >= 64 && next < n) {
++		const int r = (base + next++) % bc5::direct::kComputeRings;
++		const bool idle = g_dev && g_dev->wait_idle(2'000'000'000ull);
++		map[q] = r;
++		journal("compute ring: guest queue %d -> its own compute ring %d after %u buffers (GPU idle first: %s)\n", q, r, seen[q], idle ? "yes" : "NO");
++		return r;
++	}
++	return base;
++}
++static int                   acb_ring(const uint32_t* ib, uint32_t num_dwords, bool count = false) {
++	int ring = compute_ring_env();
 +	if (ring < 0) return bc5::direct::kGfxRing;
++	ring = queue_ring(ring, count);
 +	const char* why = bc5::policy::compute_ring_refusal(std::span<const uint32_t>(ib, num_dwords));
 +	if (why == nullptr) return ring;
 +	if ((g_comp_refused++ & 0x3ffu) == 0)
@@ -9102,7 +9136,41 @@ index 0000000..448dd69
 +		if (journal_sample(n_seg, 0x3ffu)) journal("acb segment %u..%u of %u dwords: state prefix of %u dwords replayed first\n", from, to, num_dwords, n);
 +		if (pre != nullptr) submit_one(pre, n, "acb-state", false);
 +	}
++	// Experiment 0134: the segment's waits that a pending write will satisfy stay for the GPU, as in
++	// submit_split. Dropped (the filter keeps only waits on labels the segment writes itself), the
++	// compute ring ran the segment before the graphics job that writes the label: ASTRO BOT's
++	// models in black blocks (experiment 0132).
++	static const bool ring_order = std::getenv("BC5_DIRECT_RING_ORDER_WAITS") != nullptr;
++	t_keep_waits.clear();
++	if (ring_order) {
++		std::vector<uint64_t> written;
++		for (uint32_t i = from; i < to;) {
++			const uint32_t h    = ib[i];
++			const uint32_t type = h >> 30u;
++			uint32_t       len  = 1;
++			if (type == 3 || type == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
++			if (i + len > to) break;
++			const uint32_t  op = (h >> 8u) & 0xffu;
++			const uint32_t* p  = ib + i;
++			if (type == 3) {
++				const uint32_t dst_sel = len >= 2 ? (p[1] >> 8u) & 0xfu : 0;
++				if (op == 0x37 && len >= 4 && (dst_sel == 1 || dst_sel == 2 || dst_sel == 5)) written.push_back((p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u));
++				else if (op == 0x49 && len >= 6) written.push_back((p[3] & ~3u) | (static_cast<uint64_t>(p[4] & 0xffffu) << 32u));
++				else if ((op == 0x47 || op == 0x1e) && len >= 4) written.push_back((p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u));
++				else if ((op == 0x3c || op == 0x93) && len >= 4 && ((p[1] >> 4u) & 1u) != 0) {
++					const uint64_t label = (p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u);
++					if (std::find(written.begin(), written.end(), label) == written.end() && !wait_satisfied(p, op == 0x93) &&
++					    ring_will_satisfy(p, op == 0x93, job_ring("acb"))) {
++						t_keep_waits.push_back(p);
++						SoftCp::set_gpu_executed(p, len, {0});
++					}
++				}
++			}
++			i += len;
++		}
++	}
 +	submit_one(ib + from, to - from, "acb", false);
++	t_keep_waits.clear();
 +}
 +
 +static bool acb_ready(const uint32_t* ib, uint32_t num_dwords) {
@@ -9232,7 +9300,8 @@ index 0000000..448dd69
 +};
 +static std::mutex                          g_plw_mutex;
 +static std::vector<PendingLabelWrite>      g_plw;
-+static thread_local std::vector<const uint32_t*> t_keep_waits;
++// Experiment 0135: the ring that last wrote each label (kept after the job completes), under g_plw_mutex.
++static std::unordered_map<uint64_t, int>   g_label_ring;
 +// ADR 0008 step 2, experiment 0074: BC5_DIRECT_PIECES_DRY=1 builds, at every wait of a graphics
 +// buffer where BC5_DIRECT_PIECES would split it (not satisfied when reached), the full-state
 +// prefix of the later piece (bc5::full_state, from the graphics queue's state before the buffer
@@ -9319,6 +9388,10 @@ index 0000000..448dd69
 +		w.ring  = ring;
 +		w.order = ++order;
 +	}
++	for (const auto& w: found) { // experiment 0135
++		if (g_label_ring.size() > 65536) g_label_ring.clear();
++		g_label_ring[w.label] = ring;
++	}
 +	if (g_plw.size() > 8192) g_plw.erase(g_plw.begin(), g_plw.begin() + 4096);
 +	g_plw.insert(g_plw.end(), found.begin(), found.end());
 +}
@@ -9368,6 +9441,71 @@ index 0000000..448dd69
 +		return;
 +	}
 +	std::snprintf(out, cap, "%d pending writes, last on ring %d value 0x%" PRIx64 " (%" PRIu64 " writes registered since)", count, last->ring, last->value, maxo - last->order);
++}
++
++// Experiment 0135: speculative graphics waits and their watchdog.
++static uint64_t spec_wait_ns() {
++	static const uint64_t v = (std::getenv("BC5_DIRECT_SPEC_WAIT_MS") ? std::strtoull(std::getenv("BC5_DIRECT_SPEC_WAIT_MS"), nullptr, 10) : 0ull) * 1'000'000ull;
++	return v;
++}
++struct SpecWait {
++	uint32_t pkt[10];
++	bool     is64;
++	uint64_t since;
++};
++static std::mutex             g_spec_mutex;
++static std::vector<SpecWait>  g_spec;
++static std::atomic<uint64_t>  g_spec_waits {0}, g_spec_fired {0};
++static void spec_watchdog() {
++	pthread_setname_np(pthread_self(), "bc5-wdog");
++	for (;;) {
++		std::this_thread::sleep_for(std::chrono::milliseconds(1));
++		std::lock_guard lk(g_spec_mutex);
++		const uint64_t  now = SoftCp::now_ns();
++		for (size_t k = 0; k < g_spec.size();) {
++			SpecWait& w = g_spec[k];
++			if (wait_satisfied(w.pkt, w.is64)) {
++				g_spec[k] = g_spec.back();
++				g_spec.pop_back();
++				continue;
++			}
++			if (now - w.since >= spec_wait_ns()) {
++				// The awaited value, as the wait compares it: reference under the mask, the rest kept.
++				const uint64_t a    = (w.pkt[2] & ~3u) | (static_cast<uint64_t>(w.pkt[3] & 0xffffu) << 32u);
++				const uint32_t fn   = w.pkt[1] & 7u;
++				if (w.is64) {
++					const uint64_t ref = w.pkt[4] | (static_cast<uint64_t>(w.pkt[5]) << 32u), mask = w.pkt[6] | (static_cast<uint64_t>(w.pkt[7]) << 32u);
++					auto*          v   = reinterpret_cast<volatile uint64_t*>(a & ~7ull);
++					const uint64_t was = *v;
++					*v                 = (was & ~mask) | ((fn == 6 || fn == 4 ? ref + 1 : (fn == 1 ? ref - 1 : ref)) & mask);
++					journal("spec watchdog: label 0x%" PRIx64 " function %u still 0x%" PRIx64 " after %.1f ms; wrote 0x%" PRIx64 " (%" PRIu64 " fired)\n", a, fn, was,
++					        static_cast<double>(now - w.since) / 1e6, *v, ++g_spec_fired);
++				} else {
++					const uint32_t ref = w.pkt[4], mask = w.pkt[5];
++					auto*          v   = reinterpret_cast<volatile uint32_t*>(a & ~3ull);
++					const uint32_t was = *v;
++					*v                 = (was & ~mask) | ((fn == 6 || fn == 4 ? ref + 1 : (fn == 1 ? ref - 1 : ref)) & mask);
++					journal("spec watchdog: label 0x%" PRIx64 " function %u still 0x%x after %.1f ms; wrote 0x%x (%" PRIu64 " fired)\n", a, fn, was,
++					        static_cast<double>(now - w.since) / 1e6, *v, ++g_spec_fired);
++				}
++				g_spec[k] = g_spec.back();
++				g_spec.pop_back();
++				continue;
++			}
++			k++;
++		}
++	}
++}
++static void spec_watch(const uint32_t* p, uint32_t len, bool is64) {
++	static std::once_flag once;
++	std::call_once(once, [] { std::thread(spec_watchdog).detach(); });
++	SpecWait w {};
++	for (uint32_t k = 0; k < len && k < 10; k++) w.pkt[k] = p[k];
++	w.is64  = is64;
++	w.since = SoftCp::now_ns();
++	std::lock_guard lk(g_spec_mutex);
++	g_spec.push_back(w);
++	if ((g_spec_waits++ & 0x3ffu) == 0) journal("spec waits: %" PRIu64 " graphics waits left to the GPU before their compute writer, %" PRIu64 " released by the watchdog\n", g_spec_waits.load(), g_spec_fired.load());
 +}
 +
 +// Will the last pending write of this wait's label satisfy it?
@@ -9562,6 +9700,24 @@ index 0000000..448dd69
 +					// is submitted and keeps the wait for the GPU, or until it is satisfied.
 +					const bool two_rings = cross_ring_waits() == 2 && compute_ring_env() >= 0 && on_game_thread() && std::strcmp(kind, "dcb") == 0 &&
 +					                       g_stage != Stage::MapOnly && (!g_dev || !g_dev->wedged());
++					// Experiment 0135 (BC5_DIRECT_SPEC_WAIT_MS=<ms>): a graphics wait on a label a compute ring
++					// wrote last stays for the GPU before its writer is submitted: the game's thread goes on
++					// and submits it (the geyser: the counters' queue is rung only after this buffer). The
++					// watchdog writes the awaited value if the label is still unserved after <ms>.
++					if (two_rings && spec_wait_ns() != 0 && !wait_satisfied(p, op == 0x93) && len <= 10) {
++						int last_ring = bc5::direct::kGfxRing;
++						{
++							std::lock_guard lk(g_plw_mutex);
++							if (auto it = g_label_ring.find(label); it != g_label_ring.end()) last_ring = it->second;
++						}
++						if (last_ring != bc5::direct::kGfxRing) {
++							spec_watch(p, len, op == 0x93);
++							t_keep_waits.push_back(p);
++							SoftCp::set_gpu_executed(p, len, {0});
++							i += len;
++							continue;
++						}
++					}
 +					if (two_rings && !wait_satisfied(p, op == 0x93)) {
 +						bool split = false;
 +						if (pieces_full() && dry_here && i > start) {
@@ -10278,7 +10434,7 @@ index 0000000..448dd69
 +						}
 +					}
 +					if (skip < tn) {
-+						t_ring = acb_ring(t, tn); // ADR 0009
++						t_ring = acb_ring(t, tn, true); // ADR 0009
 +						if (skip > 0) {
 +							uint32_t        n   = 0;
 +							const uint32_t* pre = state_prefix(t, skip, &n);
