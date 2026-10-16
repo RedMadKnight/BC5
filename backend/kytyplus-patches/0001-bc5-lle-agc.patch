@@ -6365,10 +6365,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..2728f4a
+index 0000000..a6f1bf7
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,6682 @@
+@@ -0,0 +1,6803 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -11016,6 +11016,119 @@ index 0000000..2728f4a
 +	}
 +}
 +
++// Experiment 0137 (BC5_DIRECT_LOOP_BOUND=<program hex>:<limit>:<dword offset>[,<offset>...]): a copy of
++// the program in the device's code area (bc5::direct::Device::code_area, below 2^40), in which each
++// listed back-edge (s_cbranch_execnz to an earlier instruction) jumps to a trampoline instead:
++//   s_add_u32 s104, s104, 1 ; s_cmp_lt_u32 s104, <limit> ; s_cbranch_scc0 <after the back-edge> ;
++//   s_cbranch_execnz <the loop head> ; s_branch <after the back-edge>
++// and a prologue (s_mov_b32 s104, 0 ; s_branch <the program's start>) is the copy's entry. s104 is a
++// register the program does not use (the second title's reflection traversal 0x11d049aa00 uses up to
++// s101). Encodings: llvm-mc -triple=amdgcn -mcpu=gfx1013 -show-encoding. The program's own PC-relative
++// data (s_getpc) lies inside the 64 KiB copied, so it moves with it. Returns the copy's address, 0
++// when not configured or impossible.
++static uint64_t loop_bound_copy(uint64_t pgm) {
++	struct Cfg {
++		uint64_t              pgm   = 0;
++		uint32_t              limit = 0;
++		std::vector<uint32_t> at;
++	};
++	static const Cfg cfg = [] {
++		Cfg c;
++		const char* e = std::getenv("BC5_DIRECT_LOOP_BOUND");
++		if (e == nullptr) return c;
++		char* end = nullptr;
++		c.pgm     = std::strtoull(e, &end, 16);
++		if (end == nullptr || *end != ':') return Cfg {};
++		c.limit = static_cast<uint32_t>(std::strtoul(end + 1, &end, 0));
++		while (end != nullptr && (*end == ':' || *end == ',')) {
++			const char* q = end + 1;
++			const auto  v = static_cast<uint32_t>(std::strtoul(q, &end, 0));
++			if (end == q) break;
++			c.at.push_back(v);
++		}
++		return c;
++	}();
++	if (cfg.pgm == 0 || pgm != cfg.pgm || !g_dev) return 0;
++	static std::mutex                   m;
++	static bc5::direct::Device*         built_for = nullptr;
++	static uint64_t                     built_va  = 0;
++	std::lock_guard                     lk(m);
++	if (built_for == g_dev.get()) return built_va;
++	constexpr uint32_t kCopy = 0x10000 / 4; // dwords copied (64 KiB, as dumped from the title's memory)
++	auto*              code  = static_cast<volatile uint32_t*>(g_dev->code_area());
++	if (code == nullptr) {
++		journal("loop bound: no code area\n");
++		built_for = g_dev.get();
++		return built_va = 0;
++	}
++	std::vector<uint32_t> w(kCopy);
++	const auto*           src = reinterpret_cast<const volatile uint32_t*>(pgm);
++	for (uint32_t k = 0; k < kCopy; k++) w[k] = src[k];
++	auto sopp = [](uint32_t op, uint32_t from, uint32_t to) { // branch at dword `from` to dword `to`
++		return 0xBF800000u | (op << 16u) | (static_cast<uint32_t>(static_cast<int32_t>(to) - static_cast<int32_t>(from + 1)) & 0xffffu);
++	};
++	// Per-wave counters: dword (HW_ID1 & 0xfffff) of the table at kCodeVa + 4 MiB, read and written with
++	// scalar memory instructions (GFX10 still has s_store_dword). s102-s105 are free in the program.
++	// Encodings from llvm-mc -triple=amdgcn -mcpu=gfx1013 -show-encoding.
++	const uint64_t table = bc5::direct::Device::kCodeVa + (4ull << 20);
++	auto addr = [&](std::vector<uint32_t>& v, uint32_t at) {
++		const uint32_t seq[] = {0xB968F817u,                                // s_getreg_b32 s104, hwreg(HW_REG_HW_ID1)
++		                        0x8768FF68u, 0x000FFFFFu,                    // s_and_b32 s104, s104, 0xfffff
++		                        0x8F688268u,                                 // s_lshl_b32 s104, s104, 2
++		                        0xBEE603FFu, static_cast<uint32_t>(table),   // s_mov_b32 s102, <table lo>
++		                        0xBEE703FFu, static_cast<uint32_t>(table >> 32u)}; // s_mov_b32 s103, <table hi>
++		for (uint32_t k = 0; k < 8; k++) v[at + k] = seq[k];
++		return at + 8;
++	};
++	w.resize(kCopy + 12 + 19 * cfg.at.size());
++	const uint32_t pro = kCopy;
++	uint32_t       x   = addr(w, pro);
++	w[x++]             = 0xBEE90380u;                // s_mov_b32 s105, 0
++	w[x++]             = 0xF4411A73u;                // s_store_dword s105, s[102:103], s104 glc
++	w[x++]             = 0xD0000000u;
++	w[x]               = sopp(2, x, 0);              // s_branch <the program's start>
++	x++;
++	uint32_t t = x;
++	// The wave ends over the limit: the program's s_endpgm (the traversal has no barrier, so a wave that
++	// leaves early holds no other back).
++	uint32_t endpgm = 0;
++	while (endpgm < kCopy && w[endpgm] != 0xBF810000u) endpgm++;
++	for (const uint32_t at: cfg.at) {
++		const uint32_t ins = w[at];
++		const uint32_t op  = (ins >> 16u) & 0x7fu;
++		// backward SOPP branches: s_branch (2), s_cbranch_scc0/scc1/vccz/vccnz/execz/execnz (4-9)
++		if (at >= endpgm || (ins & 0xFF800000u) != 0xBF800000u || (op != 2 && (op < 4 || op > 9)) || (ins & 0x8000u) == 0) {
++			journal("loop bound: dword %u of program 0x%" PRIx64 " is 0x%08x, not a backward branch; not patched\n", at, pgm, ins);
++			built_for = g_dev.get();
++			return built_va = 0;
++		}
++		const uint32_t head = at + 1 + static_cast<uint32_t>(static_cast<int32_t>(static_cast<int16_t>(ins & 0xffffu)));
++		w[at]      = sopp(2, at, t); // the back-edge now goes to the trampoline
++		uint32_t y = addr(w, t);
++		w[y++]     = 0xF4001A73u; w[y++] = 0xD0000000u; // s_load_dword s105, s[102:103], s104
++		w[y++]     = 0xBF8CC07Fu;                          // s_waitcnt lgkmcnt(0)
++		w[y++]     = 0x80698169u;                          // s_add_u32 s105, s105, 1
++		w[y++]     = 0xF4411A73u; w[y++] = 0xD0000000u; // s_store_dword s105, s[102:103], s104 glc
++		w[y++]     = 0xBF0AFF69u; w[y++] = cfg.limit;      // s_cmp_lt_u32 s105, <limit>
++		w[y]       = sopp(4, y, endpgm); y++;              // s_cbranch_scc0: over the limit, the wave ends
++		w[y]       = sopp(op, y, head); y++;               // the original branch (an SCC one is refused below)
++		w[y]       = sopp(2, y, at + 1); y++;              // else fall through as before
++		if (op == 4 || op == 5) {
++			journal("loop bound: dword %u is an SCC branch, which the counter's compare would clobber; not patched\n", at);
++			built_for = g_dev.get();
++			return built_va = 0;
++		}
++		t = y;
++	}
++	for (size_t k = 0; k < w.size(); k++) code[k] = w[k];
++	std::atomic_thread_fence(std::memory_order_seq_cst);
++	built_for = g_dev.get();
++	built_va  = bc5::direct::Device::kCodeVa + static_cast<uint64_t>(pro) * 4u;
++	journal("loop bound: program 0x%" PRIx64 " copied to 0x%" PRIx64 " (entry 0x%" PRIx64 "), %zu back-edges bounded at %u iterations\n", pgm, bc5::direct::Device::kCodeVa, built_va,
++	        cfg.at.size(), cfg.limit);
++	return built_va;
++}
++
 +static void submit_one(const uint32_t* ib, uint32_t num_dwords, const char* kind, bool from_header) {
 +	if (g_stage == Stage::Off || !g_dev || ib == nullptr || num_dwords == 0) {
 +		return;
@@ -11586,6 +11699,14 @@ index 0000000..2728f4a
 +					const auto* t = reinterpret_cast<const volatile uint32_t*>(ta);
 +					for (uint32_t k = 0; k < tn; k++) {
 +						const uint32_t r = t[2 * k] & 0xffffu, v = t[2 * k + 1];
++						if (r == 0x20cu) { // experiment 0137: the program in the table moved to its bounded copy
++							const uint64_t moved = loop_bound_copy(static_cast<uint64_t>(v) << 8u);
++							if (moved != 0) {
++								const_cast<volatile uint32_t*>(t)[2 * k + 1] = static_cast<uint32_t>(moved >> 8u);
++								static std::atomic<uint64_t> n_moved {0};
++								if ((n_moved++ & 0xfffu) == 0) journal("loop bound: table 0x%" PRIx64 " entry %u now names the copy (%" PRIu64 " so far)\n", ta, k, n_moved.load());
++							}
++						}
 +						if (r == 0x20cu) pgm = (pgm & ~0xffffffff00ull) | (static_cast<uint64_t>(v) << 8u);
 +						if (r == 0x20du) pgm = (pgm & 0xffffffff00ull) | (static_cast<uint64_t>(v & 0xffu) << 40u);
 +						if (r >= 0x240u && r < 0x250u) ud[r - 0x240u] = v; // experiment 0059
