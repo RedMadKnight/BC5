@@ -1,0 +1,24 @@
+== 2026-10-16 21:56:35 KytyPS5 5dec523 2026-10-16
+Initialized: Config
+Initialized: Log
+Initialized: Timer
+Initialized: Pthread
+Initialized: Profiler
+Initialized: Network
+Initialized: Memory
+Initialized: FileSystem
+Initialized: Controller
+Initialized: Audio
+--- Build ---
+Source build 5dec523
+--- Error ---
+Could not find suitable device:
+  AMD BC-250 (RADV GFX1013): VK_KHR_fragment_shader_barycentric is not supported
+  llvmpipe (LLVM 21.1.8, 256 bits): image view minLod is not supported; fragmentShaderBarycentric is not supported in /home/kjaniszewski/src/KytyPS5-build/src/graphics/presentation/window/vulkanWindow.cpp:984
+== 2026-10-16 21:56:36 exit 0
+---
+	apiVersion         = 1.4.335
+	deviceName         = AMD BC-250 (RADV GFX1013)
+	driverInfo         = Mesa 26.0.8-1ubuntu0.3
+	apiVersion         = 1.4.335
+ii  mesa-vulkan-drivers:amd64 26.0.8-1ubuntu0.3 amd64        Mesa Vulkan graphics drivers
