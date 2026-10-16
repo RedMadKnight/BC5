@@ -1,0 +1,24 @@
+### 0x11d049aa00, dwords 1133-1214 (offsets from llvm-mc re-encoding): how the BVH descriptor s[28:31] and the node buffer s[56:59] are built
+ 1133  s_load_dwordx16 s[16:31], s[14:15], null
+ 1136  s_and_b32 vcc_lo, s31, 0x68000000
+ 1142  s_and_b32 s29, s29, 0x3fffff
+ 1147  s_lshl_b64 s[32:33], s[28:29], 3
+ 1149  s_load_dwordx4 s[56:59], s[32:33], 0x58
+ 1157  v_mov_b32_e32 v16, s30
+ 1165  s_bfe_u64 s[28:29], s[32:33], 0x280008
+ 1177  s_or_b32 s57, s33, 0x80000
+ 1188  s_add_i32 vcc_lo, s56, 1
+ 1193  s_add_u32 s30, -1, vcc_lo
+ 1194  s_mov_b32 s56, s32
+ 1195  s_addc_u32 s31, -1, 0
+ 1200  s_and_b32 vcc_lo, 0x3ff, s31
+ 1205  s_or_b32 s31, vcc_lo, 0x81000000
+ 1208  s_mov_b32 s59, 0x16204
+ 1212  s_bitset1_b32 s29, 31
+ 1214  image_bvh_intersect_ray v[0:3], [v16, v28, v34, v33, v32, v37, v36, v35, v40, v41, v42], s[28:31]
+### run 567 (CU mask 3ffff, 36 CUs)
+submit #373193 acb 2 dwords at 0xfe003a200: pass 1 rewrite 0 drop 0 unmapped 0 cc 0 mappings 13173 ... FAILED rc 0 TIMEOUT 2009.28 ms
+submit #373191 dcb 922 dwords at 0x11e0390050: pass 115 rewrite 25 drop 22 unmapped 0 cc 0 mappings 13173 ... FAILED rc 0 TIMEOUT 2009.54 ms
+paź 16 15:49:46 bazzite kernel: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=5136716, emitted seq=5136718
+paź 16 15:49:46 bazzite kernel: amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+paź 16 15:49:46 bazzite kernel: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded
