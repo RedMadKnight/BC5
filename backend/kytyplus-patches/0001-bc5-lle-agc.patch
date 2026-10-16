@@ -5235,10 +5235,15 @@ index 765d72f..ea0cc55 100644
  int KYTY_SYSV_ABI KernelDeleteUserEvent(KernelEqueue eq, int id);
  int KYTY_SYSV_ABI KernelAddHRTimerEvent(KernelEqueue eq, int id, const KernelTimespec* ts,
 diff --git a/src/kernel/fileSystem.cpp b/src/kernel/fileSystem.cpp
-index 4034f52..3bb71ec 100644
+index 4034f52..c78ce71 100644
 --- a/src/kernel/fileSystem.cpp
 +++ b/src/kernel/fileSystem.cpp
-@@ -20,6 +20,9 @@
+@@ -1,3 +1,4 @@
++#include <cstdlib>
+ #include "kernel/fileSystem.h"
+ 
+ #include "common/assert.h"
+@@ -20,6 +21,9 @@
  #include <cstdio>
  #include <cstring>
  #include <filesystem>
@@ -5248,7 +5253,7 @@ index 4034f52..3bb71ec 100644
  #include <random>
  #include <system_error>
  #include <vector>
-@@ -33,6 +36,7 @@ constexpr int DESCRIPTOR_MIN = 3;
+@@ -33,6 +37,7 @@ constexpr int DESCRIPTOR_MIN = 3;
  enum class SpecialFile {
  	None,
  	Random,
@@ -5256,7 +5261,7 @@ index 4034f52..3bb71ec 100644
  };
  
  class MountPoints {
-@@ -232,6 +236,49 @@ void MountPoints::Umount(const std::string& folder_or_point) {
+@@ -232,6 +237,49 @@ void MountPoints::Umount(const std::string& folder_or_point) {
  }
  
  #if KYTY_PLATFORM != KYTY_PLATFORM_WINDOWS
@@ -5306,7 +5311,7 @@ index 4034f52..3bb71ec 100644
  // Resolve guest paths case-insensitively on case-sensitive hosts.
  static std::filesystem::path ResolvePathIgnoringCase(const std::filesystem::path& path) {
  	std::error_code ec;
-@@ -256,16 +303,9 @@ static std::filesystem::path ResolvePathIgnoringCase(const std::filesystem::path
+@@ -256,16 +304,9 @@ static std::filesystem::path ResolvePathIgnoringCase(const std::filesystem::path
  		}
  
  		bool found = false;
@@ -5326,7 +5331,21 @@ index 4034f52..3bb71ec 100644
  		}
  
  		if (!found) {
-@@ -309,7 +349,9 @@ std::filesystem::path MountPoints::GetRealFilename(const std::string& mounted_fi
+@@ -305,11 +346,23 @@ std::filesystem::path MountPoints::GetRealFilename(const std::string& mounted_fi
+ 		}
+ 		return p.dir / rel_path;
+ #else
++		// BC5: KYTY_BC5_APP0_OVERRIDE=<dir> serves <dir>/<path> in place of /app0/<path> when it exists.
++		static const char* app0_override = std::getenv("KYTY_BC5_APP0_OVERRIDE");
++		if (app0_override != nullptr && app0_override[0] != 0 && Common::StartsWith(p.point, "/app0")) {
++			std::error_code ec;
++			const auto      o = std::filesystem::path(app0_override) / rel_path;
++			if (std::filesystem::is_regular_file(o, ec)) {
++				::printf("FileSystem: %s served from %s\n", mounted_file_name.c_str(), o.c_str());
++				return o;
++			}
++		}
+ 		return ResolvePathIgnoringCase(p.dir / rel_path);
  #endif
  	}
  
@@ -5337,7 +5356,7 @@ index 4034f52..3bb71ec 100644
  }
  
  std::filesystem::path MountPoints::GetRealDirectory(const std::string& mounted_directory) {
-@@ -334,7 +376,7 @@ std::filesystem::path MountPoints::GetRealDirectory(const std::string& mounted_d
+@@ -334,7 +387,7 @@ std::filesystem::path MountPoints::GetRealDirectory(const std::string& mounted_d
  #endif
  	}
  
@@ -5346,7 +5365,7 @@ index 4034f52..3bb71ec 100644
  }
  
  KYTY_SUBSYSTEM_INIT(FileSystem) {
-@@ -433,8 +475,22 @@ int KYTY_SYSV_ABI KernelOpen(const char* path, int flags, uint16_t mode) {
+@@ -433,8 +486,22 @@ int KYTY_SYSV_ABI KernelOpen(const char* path, int flags, uint16_t mode) {
  		return descriptor;
  	}
  
@@ -5369,7 +5388,7 @@ index 4034f52..3bb71ec 100644
  
  	if (trunc && rw_mode == Common::File::Mode::Read) {
  		return KERNEL_ERROR_EACCES;
-@@ -1080,7 +1136,7 @@ int KYTY_SYSV_ABI KernelRename(const char* from, const char* to) {
+@@ -1080,7 +1147,7 @@ int KYTY_SYSV_ABI KernelRename(const char* from, const char* to) {
  	EXIT_NOT_IMPLEMENTED(g_files->GetFile(real_from) != nullptr);
  	EXIT_NOT_IMPLEMENTED(g_files->GetFile(real_to) != nullptr);
  
@@ -5378,7 +5397,7 @@ index 4034f52..3bb71ec 100644
  		return KERNEL_ERROR_ENOENT;
  	}
  
-@@ -1245,6 +1301,9 @@ int KYTY_SYSV_ABI KernelMkdir(const char* path, uint16_t mode) {
+@@ -1245,6 +1312,9 @@ int KYTY_SYSV_ABI KernelMkdir(const char* path, uint16_t mode) {
  	     path, mode);
  
  	auto real_name = g_mount_points->GetRealDirectory(std::string(path));
@@ -5388,7 +5407,7 @@ index 4034f52..3bb71ec 100644
  
  	if (Common::File::IsDirectoryExisting(real_name)) {
  		return KERNEL_ERROR_EEXIST;
-@@ -1311,4 +1370,13 @@ int KYTY_SYSV_ABI KernelCheckReachability(const char* path) {
+@@ -1311,4 +1381,13 @@ int KYTY_SYSV_ABI KernelCheckReachability(const char* path) {
  	return KERNEL_ERROR_ENOENT;
  }
  
@@ -15521,7 +15540,7 @@ index 183cd85..40d7f58 100644
  	LIB_FUNC("bAM9Qwofus0", LibJson2::JsonArrayBack);
  	LIB_FUNC("UeuWT+yNdCQ", LibJson2::JsonValueBoolCtor);
 diff --git a/src/libs/libKernel.cpp b/src/libs/libKernel.cpp
-index 51c3a0e..01ed1c1 100644
+index 51c3a0e..ecd210f 100644
 --- a/src/libs/libKernel.cpp
 +++ b/src/libs/libKernel.cpp
 @@ -2458,47 +2458,41 @@ static void FiberSetContextValid(FiberObject* fiber, bool valid) {
@@ -15607,6 +15626,90 @@ index 51c3a0e..01ed1c1 100644
  }
  #else
  static int FiberSaveContext(FiberCpuContext* ctx) {
+@@ -3291,7 +3285,21 @@ static void AddLibkernelUnityFunc(Loader::SymbolDatabase* s, const char* nid, ui
+ 	s->Add(sr, func, dbg_name);
+ }
+ 
++// BC5: after KytyPS5 5dec523 (src/libs/libKernel.cpp): a base PS5, no submode. The unresolved stub
++// left both outputs unwritten.
++static int KYTY_SYSV_ABI Bc5KernelGetOperationMode(int* mode, int* submode) {
++	PRINT_NAME();
++	if (mode != nullptr) {
++		*mode = 2;
++	}
++	if (submode != nullptr) {
++		*submode = 0;
++	}
++	return OK;
++}
++
+ LIB_DEFINE(InitLibKernel_1) {
++	LIB_FUNC("NH6xARDOVv8", Bc5KernelGetOperationMode);
+ 	InitLibKernel_1_FS(s);
+ 	InitLibKernel_1_Mem(s);
+ 	InitLibKernel_1_Equeue(s);
+diff --git a/src/libs/libNet.cpp b/src/libs/libNet.cpp
+index 1b9db8a..98aec77 100644
+--- a/src/libs/libNet.cpp
++++ b/src/libs/libNet.cpp
+@@ -1572,7 +1572,57 @@ static int KYTY_SYSV_ABI NpEntitlementAccessGetAddcontEntitlementInfo(
+ 	return NP_ENTITLEMENT_ACCESS_ERROR_NO_ENTITLEMENT;
+ }
+ 
++// BC5: offline entitlement list requests, after KytyPS5 5dec523 (src/libs/libNpEntitlementAccess.cpp):
++// a request completes at once with no entitlements and stays pollable until deleted.
++static std::mutex             g_bc5_ent_mutex;
++static std::map<int64_t, int> g_bc5_ent_requests;
++static int64_t                g_bc5_ent_next = 1;
++
++static int KYTY_SYSV_ABI NpEntitlementAccessRequestUnifiedEntitlementInfoList(int32_t user_id, uint32_t service_label,
++                                                                             const void* list, uint32_t list_num,
++                                                                             const void* param, int64_t* request_id) {
++	PRINT_NAME();
++	LOGF("\t user_id = %" PRId32 ", service_label = %" PRIu32 ", list_num = %" PRIu32 "\n", user_id, service_label, list_num);
++	if (param == nullptr || request_id == nullptr || (list == nullptr && list_num != 0)) {
++		return NP_ENTITLEMENT_ACCESS_ERROR_PARAMETER;
++	}
++	std::lock_guard lock(g_bc5_ent_mutex);
++	*request_id = g_bc5_ent_next++;
++	g_bc5_ent_requests[*request_id] = 0;
++	return 0;
++}
++
++static int KYTY_SYSV_ABI NpEntitlementAccessPollUnifiedEntitlementInfoList(int64_t request_id, int32_t* result, void* list,
++                                                                          uint32_t list_num, uint32_t* hit_num,
++                                                                          int32_t* next_offset, int32_t* previous_offset) {
++	PRINT_NAME();
++	if (result == nullptr || hit_num == nullptr || next_offset == nullptr || previous_offset == nullptr ||
++	    (list == nullptr && list_num != 0)) {
++		return NP_ENTITLEMENT_ACCESS_ERROR_PARAMETER;
++	}
++	std::lock_guard lock(g_bc5_ent_mutex);
++	if (g_bc5_ent_requests.find(request_id) == g_bc5_ent_requests.end()) {
++		return -2122514411; // NP_ENTITLEMENT_ACCESS_ERROR_REQUEST_NOT_FOUND, 0x817D0015
++	}
++	*result          = 0;
++	*hit_num         = 0;
++	*next_offset     = -1;
++	*previous_offset = -1;
++	LOGF("\t request_id = %" PRId64 ": done, 0 entitlements\n", request_id);
++	return 0;
++}
++
++static int KYTY_SYSV_ABI NpEntitlementAccessDeleteRequest(int64_t request_id) {
++	PRINT_NAME();
++	std::lock_guard lock(g_bc5_ent_mutex);
++	g_bc5_ent_requests.erase(request_id);
++	return 0;
++}
++
+ LIB_DEFINE(InitNet_1_NpEntitlementAccess) {
++	LIB_FUNC("uCZf2L27th8", NpEntitlementAccessRequestUnifiedEntitlementInfoList);
++	LIB_FUNC("nAEqawEZG5s", NpEntitlementAccessPollUnifiedEntitlementInfoList);
++	LIB_FUNC("Z0eQj8m7XA8", NpEntitlementAccessDeleteRequest);
+ 	LIB_FUNC("jO8DM8oyego", LibNpEntitlementAccess::NpEntitlementAccessInitialize);
+ 	LIB_FUNC("lPDO62PpJIA", LibNpEntitlementAccess::NpEntitlementAccessGetSkuFlag);
+ 	LIB_FUNC("TFyU+KFBv54",
 diff --git a/src/libs/libPad.cpp b/src/libs/libPad.cpp
 index 676ecb9..4b22f02 100644
 --- a/src/libs/libPad.cpp
@@ -15731,10 +15834,10 @@ index 676ecb9..4b22f02 100644
  	// HONEST: spec-accurate interpretation of the PS5 ScePadTriggerEffect param
  	// forwarded to the driver. UNVALIDATED on hardware — the exact param layout
 diff --git a/src/libs/libSaveData.cpp b/src/libs/libSaveData.cpp
-index 08aa121..a521d61 100644
+index 08aa121..f65804a 100644
 --- a/src/libs/libSaveData.cpp
 +++ b/src/libs/libSaveData.cpp
-@@ -14,7 +14,12 @@
+@@ -14,12 +14,21 @@
  
  #include <algorithm>
  #include <cstring>
@@ -15747,7 +15850,16 @@ index 08aa121..a521d61 100644
  #include <vector>
  
  namespace Libs {
-@@ -484,6 +489,67 @@ int KYTY_SYSV_ABI SaveDataMount3(const SaveDataMount3* mount, SaveDataMountResul
+ 
+ LIB_VERSION("SaveData", 1, "SaveData", 1, 1);
++// BC5: KYTY_BC5_SAVE_TRACE=1 journals every SaveData call by name (save data diagnosis, 2026-10-16).
++static const bool g_bc5_save_trace = std::getenv("KYTY_BC5_SAVE_TRACE") != nullptr;
++#undef PRINT_NAME_ENABLED
++#define PRINT_NAME_ENABLED g_bc5_save_trace
+ 
+ namespace SaveData {
+ 
+@@ -484,6 +493,67 @@ int KYTY_SYSV_ABI SaveDataMount3(const SaveDataMount3* mount, SaveDataMountResul
  	return mount_save_data(slot, dir_name, mount_dir, created ? 1u : 0u, mount_result);
  }
  
@@ -15815,7 +15927,7 @@ index 08aa121..a521d61 100644
  int KYTY_SYSV_ABI SaveDataSetupSaveDataMemory2(const SaveDataMemorySetup2* setup_param,
                                                 SaveDataMemorySetupResult*  result) {
  	PRINT_NAME();
-@@ -500,6 +566,8 @@ int KYTY_SYSV_ABI SaveDataSetupSaveDataMemory2(const SaveDataMemorySetup2* setup
+@@ -500,6 +570,8 @@ int KYTY_SYSV_ABI SaveDataSetupSaveDataMemory2(const SaveDataMemorySetup2* setup
  	     setup_param->option, setup_param->user_id, static_cast<uint64_t>(setup_param->memory_size),
  	     static_cast<uint64_t>(setup_param->icon_memory_size), setup_param->slot_id);
  
@@ -15824,7 +15936,7 @@ index 08aa121..a521d61 100644
  	if (setup_param->memory_size > g_save_data_memory.size()) {
  		g_save_data_memory.resize(setup_param->memory_size);
  	}
-@@ -528,6 +596,8 @@ int KYTY_SYSV_ABI SaveDataGetSaveDataMemory2(SaveDataMemoryGet2* get_param) {
+@@ -528,6 +600,8 @@ int KYTY_SYSV_ABI SaveDataGetSaveDataMemory2(SaveDataMemoryGet2* get_param) {
  	     reinterpret_cast<uint64_t>(get_param->param), reinterpret_cast<uint64_t>(get_param->icon),
  	     get_param->slot_id);
  
@@ -15833,7 +15945,7 @@ index 08aa121..a521d61 100644
  	if (get_param->data != nullptr) {
  		auto* data = get_param->data;
  		if (data->buf == nullptr || data->offset < 0) {
-@@ -567,6 +637,8 @@ int KYTY_SYSV_ABI SaveDataSetSaveDataMemory2(const SaveDataMemorySet2* set_param
+@@ -567,6 +641,8 @@ int KYTY_SYSV_ABI SaveDataSetSaveDataMemory2(const SaveDataMemorySet2* set_param
  	     reinterpret_cast<uint64_t>(set_param->param), reinterpret_cast<uint64_t>(set_param->icon),
  	     set_param->data_num, set_param->slot_id);
  
@@ -15842,7 +15954,7 @@ index 08aa121..a521d61 100644
  	const uint32_t data_num = (set_param->data_num == 0 ? 1 : set_param->data_num);
  	if (set_param->data != nullptr) {
  		for (uint32_t i = 0; i < data_num; i++) {
-@@ -581,6 +653,7 @@ int KYTY_SYSV_ABI SaveDataSetSaveDataMemory2(const SaveDataMemorySet2* set_param
+@@ -581,6 +657,7 @@ int KYTY_SYSV_ABI SaveDataSetSaveDataMemory2(const SaveDataMemorySet2* set_param
  			}
  			std::memcpy(g_save_data_memory.data() + offset, data.buf, data.buf_size);
  		}
@@ -15850,6 +15962,51 @@ index 08aa121..a521d61 100644
  	}
  
  	return OK;
+@@ -777,6 +854,16 @@ int KYTY_SYSV_ABI SaveDataSyncSaveDataMemory(const void* sync_param) {
+ 
+ int KYTY_SYSV_ABI SaveDataGetEventResult(const void* event_param, SaveDataEvent* event) {
+ 	PRINT_NAME();
++	{ // BC5: the guest return addresses of the event polls, each journaled once (save data diagnosis).
++		static std::mutex m;
++		static std::vector<uint64_t> seen;
++		const auto ra = reinterpret_cast<uint64_t>(__builtin_return_address(0));
++		std::lock_guard lk(m);
++		if (seen.size() < 16 && std::find(seen.begin(), seen.end(), ra) == seen.end()) {
++			seen.push_back(ra);
++			LOGF("bc5 save: SaveDataGetEventResult called from 0x%016" PRIx64 "\n", ra);
++		}
++	}
+ 
+ 	LOGF("\t event_param = 0x%016" PRIx64 "\n"
+ 	     "\t event       = 0x%016" PRIx64 "\n",
+@@ -885,7 +972,27 @@ namespace LibSaveDataNative {
+ 
+ LIB_VERSION("SaveData_native", 1, "SaveData_native", 1, 1);
+ 
++// BC5: called by the second title before it mounts a save directory with create (experiment 0145).
++// Its argument starts {int32 user_id; const SceSaveDataDirName* dir_name; ...; uint64 blocks at +0x18}.
++// 0 starts an operation that ends with a save data event of type 5; NOT_FOUND means there is none
++// to run, and the title goes on to SaveDataMount3.
++static int KYTY_SYSV_ABI SaveDataNative_2mfSRGdshtk(const void* param) {
++	const auto* p = static_cast<const uint8_t*>(param);
++	if (p != nullptr) {
++		int32_t     user_id = 0;
++		const char* dir     = nullptr;
++		uint64_t    blocks  = 0;
++		std::memcpy(&user_id, p, sizeof(user_id));
++		std::memcpy(&dir, p + 8, sizeof(dir));
++		std::memcpy(&blocks, p + 0x18, sizeof(blocks));
++		LOGF("bc5 save: native 2mfSRGdshtk user_id = %d dir_name = %s blocks = %" PRIu64 " -> NOT_FOUND\n", user_id,
++		     dir != nullptr ? dir : "<null>", blocks);
++	}
++	return ::Libs::SaveData::SAVE_DATA_ERROR_NOT_FOUND;
++}
++
+ LIB_DEFINE(InitSaveDataNative_1) {
++	LIB_FUNC("2mfSRGdshtk", SaveDataNative_2mfSRGdshtk);
+ 	LIB_FUNC("TywrFKCoLGY", ::Libs::SaveData::SaveDataInitialize3);
+ 	LIB_FUNC("dyIhnXq-0SM", ::Libs::SaveData::SaveDataDirNameSearch);
+ 	LIB_FUNC("PHnuI4LhuRk", ::Libs::SaveData::SaveDataDirNameSearch);
 diff --git a/src/libs/libSystemService.cpp b/src/libs/libSystemService.cpp
 index cd205f6..cc5a8b4 100644
 --- a/src/libs/libSystemService.cpp
@@ -16006,7 +16163,7 @@ index 0000000..5d9456f
 +
 +#endif
 diff --git a/src/loader/runtimeLinker.cpp b/src/loader/runtimeLinker.cpp
-index 343045e..b86095c 100644
+index 343045e..8e5e33f 100644
 --- a/src/loader/runtimeLinker.cpp
 +++ b/src/loader/runtimeLinker.cpp
 @@ -1,3 +1,5 @@
@@ -16015,7 +16172,30 @@ index 343045e..b86095c 100644
  #include "loader/runtimeLinker.h"
  
  #include "common/assert.h"
-@@ -820,10 +822,36 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
+@@ -325,7 +327,21 @@ static KYTY_SYSV_ABI uint64_t ResolveImportStubWithId(uint64_t record_id) {
+ 	}
+ 
+ 	const auto log_index = g_unresolved_stub_call_log_count.fetch_add(1);
+-	if (log_index < 1024) {
++	// BC5: every record's first call is journaled too; frequent stubs used up the 1024 (experiment 0145).
++	static std::mutex          s_first_mutex;
++	static std::vector<bool>   s_first_logged;
++	bool                       first_call = false;
++	{
++		std::lock_guard lock(s_first_mutex);
++		if (record_id < (1u << 20)) {
++			if (s_first_logged.size() <= record_id) {
++				s_first_logged.resize(record_id + 1, false);
++			}
++			first_call                 = !s_first_logged[record_id];
++			s_first_logged[record_id] = true;
++		}
++	}
++	if (log_index < 1024 || first_call) {
+ 		if (record_id < g_stubbed_imports.size()) {
+ 			const auto& record = g_stubbed_imports[record_id];
+ 			LOGF("Unresolved import stub called [%u]: patch_vaddr=0x%016" PRIx64
+@@ -820,10 +836,36 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
  			EXIT("invalid access type for page fault at 0x%016" PRIx64 "\n",
  			     info->access_violation_vaddr);
  		}();
