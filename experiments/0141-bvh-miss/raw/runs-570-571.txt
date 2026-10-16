@@ -1,0 +1,12 @@
+### pkg-20261016-2006
+bvh miss: program 0x11d049aa00 copied to 0xfe00000000, 4 ray queries return nothing
+loop bound: table 0x11e0c8f730 entry 0 now names the copy (1 so far)
+timeouts 0
+fps per 15 s: 0:12 15:30 30:14 45:24 60:30 75:15
+### pkg-20261016-2010
+bvh miss: program 0x11d049aa00 copied to 0xfe00000000, 4 ray queries return nothing
+loop bound: table 0x11e08af730 entry 0 now names the copy (1 so far)
+timeouts 0
+fps per 15 s: 0:12 15:30 30:15 45:22 60:53 75:52 90:40 105:34 120:34 135:32 150:35 165:34 180:34 195:34 210:33 225:9
+### kernel log 20:06-20:16
+0
