@@ -1,0 +1,20 @@
+# PLT: 0x905f21520 -> GOT 0x90980bd80 (jmprel 0x278 = 632, 2mfSRGdshtk, unresolved), 0x905f21530 -> 0x90980bd88 (633, SaveDataGetEventResult)
+
+# run of 22:55 (before the fix): guest return address of the event polls
+bc5 save: SaveDataGetEventResult called from 0x0000000903f90d3b
+# run of 23:01 (with the fix)
+bc5 save: native 2mfSRGdshtk user_id = 1000 dir_name = <title>-slot1-game-autosave blocks = 53 -> NOT_FOUND
+bc5 save: native 2mfSRGdshtk user_id = 1000 dir_name = <title>-null-prefs blocks = 53 -> NOT_FOUND
+bc5 save: native 2mfSRGdshtk user_id = 1000 dir_name = <title>-slot1-settings-autosave blocks = 53 -> NOT_FOUND
+mount_mode lines: 3; event polls: 0
+/home/user/bc5-work/_SaveData/UNKNOWN/<title>-null-prefs/:
+razem 8
+-rw-r--r--. 1 user user 7772 10-16 23:02 prefs.save
+
+/home/user/bc5-work/_SaveData/UNKNOWN/<title>-slot1-game-autosave/:
+razem 460
+-rw-r--r--. 1 user user 468148 10-16 23:02 game.save
+
+/home/user/bc5-work/_SaveData/UNKNOWN/<title>-slot1-settings-autosave/:
+razem 8
+-rw-r--r--. 1 user user 5228 10-16 23:02 settings.save
