@@ -1,0 +1,11 @@
+### run 572 unmapped trace (every unmapped packet, once per buffer kind/size/offset)
+unmapped trace: dcb 40 dwords at 3: op 93 operand 0x7f819c744000 + 8 bytes; packet c0079300 06000113 9c744000 00007f81 00000000 00000000 ffffffff ffffffff 00000040
+unmapped trace: dcb 84 dwords at 22: op 49 operand 0x7f819c744000 + 8 bytes; packet c0064900 06200504 42010000 9c744000 00007f81 00000001 00000000 00000000
+timeouts 0
+### guest log: Loose Load equeue setup and AMPR messages
+658644
+	Equeue create: Loose Load EQueue
+	 AMPR event add: eq = 0x0000000000000001, id = 0, udata = 0x0000000000000000
+	 AMPR event add: eq = 0x0000000000000001, id = 1, udata = 0x0000000000000000
+	 AMPR event add: eq = 0x0000000000000001, id = 2, udata = 0x0000000000000000
+	 AMPR event add: eq = 0x0000000000000001, id = 3, udata = 0x0000000000000000

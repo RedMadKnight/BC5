@@ -6365,10 +6365,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..fdc355a
+index 0000000..88a9b80
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,6879 @@
+@@ -0,0 +1,6908 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -11641,6 +11641,35 @@ index 0000000..fdc355a
 +	opt.drop_gds             = !with_gds;
 +	opt.gds_shadow_va        = with_gds ? 0 : g_dev->gds_shadow_va();
 +	opt.mapped = [&maps_p](uint64_t a, uint64_t bytes) { return covered_sorted(*maps_p, a, bytes); };
++	// Experiment 0142 (BC5_DIRECT_UNMAPPED_TRACE=1): the packets the filter will drop as unmapped, each
++	// (kind, size, offset) journaled once with its opcode, operand and dwords.
++	{
++		static const bool trace = std::getenv("BC5_DIRECT_UNMAPPED_TRACE") != nullptr;
++		if (trace) {
++			static std::mutex                                  um;
++			static std::set<std::tuple<std::string, uint32_t, uint32_t>> seen;
++			for (uint32_t q = 0; q < num_dwords;) {
++				const uint32_t h = ib[q];
++				uint32_t       len = 1;
++				if ((h >> 30u) == 3 || (h >> 30u) == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
++				if (q + len > num_dwords) break;
++				if ((h >> 30u) == 3) {
++					for (const auto& [oa, ob]: bc5::policy::memory_operands(ib + q, len)) {
++						if (oa == 0 || covered_sorted(*maps_p, oa, ob == 0 ? 4 : ob)) continue;
++						std::lock_guard lk(um);
++						if (seen.size() < 4096 && seen.insert({kind, num_dwords, q}).second) {
++							char words[200] = {};
++							int  ww         = 0;
++							for (uint32_t k = 0; k < len && k < 10 && ww < 180; k++) ww += std::snprintf(words + ww, sizeof(words) - static_cast<size_t>(ww), " %08x", ib[q + k]);
++							journal("unmapped trace: t %.3f s %s %u dwords at %u: op %02x operand 0x%" PRIx64 " + %" PRIu64 " bytes; packet%s\n", timing_now(), kind, num_dwords, q, (h >> 8u) & 0xffu,
++							        oa, ob, words);
++						}
++					}
++				}
++				q += len;
++			}
++		}
++	}
 +	// Experiment 0122: BC5_DIRECT_DMA_SNAPSHOT=<min bytes> has the backend copy the source of every
 +	// DMA_DATA that reads at least that many bytes of memory into a buffer of the job's own slot at
 +	// submission, and the filtered IB reads the copy (FilterOptions::dma_snapshot_min): the second
