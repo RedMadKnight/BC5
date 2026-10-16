@@ -6365,10 +6365,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..a6f1bf7
+index 0000000..b701798
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,6803 @@
+@@ -0,0 +1,6826 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -10505,6 +10505,29 @@ index 0000000..a6f1bf7
 +static void recover_after_timeout(const bc5::direct::SubmitResult& r) {
 +		LOGF_COLOR(Log::Color::Red, "[bc5-direct] fence timeout: fault 0x%" PRIx64 " status 0x%08x\n", r.fault_addr, r.fault_status);
 +		journal("timeout: fault 0x%" PRIx64 " status 0x%08x\n", r.fault_addr, r.fault_status);
++		// Experiment 0140: BC5_DIRECT_SNAP_ON_TIMEOUT=<va hex>:<bytes> copies guest memory [va, va + bytes)
++		// once, at the first timeout, to <capture dir>/timeout-snap.bin (fsync'd): the hung job is still
++		// on the GPU, so the copy holds what it reads (the second title's per-frame BVH trees). Private.
++		{
++			static bool done = false;
++			unsigned long long a = 0, n = 0;
++			if (const char* e = std::getenv("BC5_DIRECT_SNAP_ON_TIMEOUT"); !done && e != nullptr && std::sscanf(e, "%llx:%llu", &a, &n) == 2 && n != 0 && !g_dump_dir.empty()) {
++				done = true;
++				char name[512];
++				std::snprintf(name, sizeof(name), "%s/timeout-snap.bin", g_dump_dir.c_str());
++				if (g_dev && covered_sorted(*g_dev->sorted_mappings(), a, n)) {
++					if (FILE* f = std::fopen(name, "wb"); f != nullptr) {
++						std::fwrite(reinterpret_cast<const void*>(a), 1, n, f);
++						std::fflush(f);
++						fsync(fileno(f));
++						std::fclose(f);
++						journal("timeout snapshot: 0x%llx + %llu bytes -> timeout-snap.bin\n", a, n);
++					}
++				} else {
++					journal("timeout snapshot: 0x%llx + %llu bytes not mapped\n", a, n);
++				}
++			}
++		}
 +		if (r.fault_addr != 0 && (r.fault_addr >> 40u) != 0 && aliases_on()) alias_learn(r.fault_addr); // experiment 0056
 +		else if (r.fault_addr != 0) learned_add(r.fault_addr);
 +		// BC5_DIRECT_REOPEN=1: after the kernel's ring reset (F28) the process may open a fresh
