@@ -1,0 +1,115 @@
+### run 546
+run 546 (compute ring, waits all, two-ring split (0132)) capture kytyplus-20261016-0757 timeouts=0 faults=0 given-up=0
+  t10-30 fps 59.85 | t40-65 fps 59.80
+  game thread inside the host: mean 5.74 ms
+pieces full: 280 splits made, the wait then satisfied 0, not satisfied 0
+pieces full: 336 splits made, the wait then satisfied 0, not satisfied 0
+pieces full: 336 splits made, the wait then satisfied 0, not satisfied 0
+window 14973.4 ms: GPU busy (any ring) 6474.3 ms = 43.2 %, idle 8499.2 ms
+  ring -1:   8616 jobs, busy 5875.5 ms (39.2 %)
+  ring  0:   7200 jobs, busy 1021.8 ms (6.8 %)
+  both rings busy at once: 423.1 ms (2.8 % of the window)
+### run 547
+run 547 (compute ring, waits all, no deps; dark-pixel shots) capture kytyplus-20261016-0834 timeouts=0 faults=0 given-up=0
+  t10-30 fps 58.45 | t40-65 fps 56.88
+  game thread inside the host: mean 6.47 ms
+pieces full: 260 splits made, the wait then satisfied 0, not satisfied 0
+pieces full: 320 splits made, the wait then satisfied 0, not satisfied 0
+pieces full: 315 splits made, the wait then satisfied 0, not satisfied 0
+window 14966.5 ms: GPU busy (any ring) 6139.7 ms = 41.0 %, idle 8826.8 ms
+  ring -1:   8173 jobs, busy 5600.4 ms (37.4 %)
+  ring  0:   6832 jobs, busy 1176.9 ms (7.9 %)
+  both rings busy at once: 637.5 ms (4.3 % of the window)
+### run 548
+run 548 (compute ring, waits all, maintainer save copy) capture kytyplus-20261016-0855 timeouts=0 faults=0 given-up=0
+  t10-30 fps 59.40 | t40-65 fps 56.96
+  game thread inside the host: mean 6.76 ms
+pieces full: 69 splits made, the wait then satisfied 0, not satisfied 0
+pieces full: 95 splits made, the wait then satisfied 0, not satisfied 0
+pieces full: 110 splits made, the wait then satisfied 0, not satisfied 0
+window 14883.9 ms: GPU busy (any ring) 7107.8 ms = 47.8 %, idle 7776.1 ms
+  ring -1:   7817 jobs, busy 6987.8 ms (46.9 %)
+  ring  0:   6814 jobs, busy 1343.5 ms (9.0 %)
+  both rings busy at once: 1223.6 ms (8.2 % of the window)
+### run 549
+run 549 (one ring, maintainer save copy) capture kytyplus-20261016-1059 timeouts=0 faults=0 given-up=2
+  t10-30 fps 58.25 | t40-65 fps 56.76
+  game thread inside the host: mean 8.68 ms
+pieces full: 12 splits made, the wait then satisfied 12, not satisfied 0
+pieces full: 17 splits made, the wait then satisfied 17, not satisfied 0
+pieces full: 8 splits made, the wait then satisfied 8, not satisfied 0
+window 14975.2 ms: GPU busy (any ring) 10721.3 ms = 71.6 %, idle 4253.9 ms
+  ring -1:  14420 jobs, busy 10721.3 ms (71.6 %)
+  both rings busy at once: 0.0 ms (0.0 % of the window)
+  jobs by ring and kind: {(-1, 'acb-state'): 1693, (-1, 'dcb'): 5105, (-1, 'acb'): 5081, (-1, 'cc'): 847, (-1, 'hib'): 1694}
+### run 550
+run 550 (compute ring, waits all, deps both, maintainer save copy) capture kytyplus-20261016-1101 timeouts=0 faults=0 given-up=0
+  t10-30 fps 59.45 | t40-65 fps 57.04
+  game thread inside the host: mean 6.81 ms
+pieces full: 125 splits made, the wait then satisfied 0, not satisfied 0
+pieces full: 147 splits made, the wait then satisfied 0, not satisfied 0
+pieces full: 151 splits made, the wait then satisfied 0, not satisfied 0
+window 14969.0 ms: GPU busy (any ring) 7483.0 ms = 50.0 %, idle 7486.0 ms
+  ring -1:   7935 jobs, busy 6676.9 ms (44.6 %)
+  ring  0:   6848 jobs, busy 806.0 ms (5.4 %)
+  both rings busy at once: 0.0 ms (0.0 % of the window)
+### run 551
+run 551 (compute ring, waits all, deps acb, save copy) capture kytyplus-20261016-1103 timeouts=0 faults=0 given-up=0
+  t10-30 fps 59.55 | t40-65 fps 56.96
+  game thread inside the host: mean 6.68 ms
+pieces full: 81 splits made, the wait then satisfied 0, not satisfied 0
+pieces full: 131 splits made, the wait then satisfied 0, not satisfied 0
+pieces full: 127 splits made, the wait then satisfied 0, not satisfied 0
+window 14969.5 ms: GPU busy (any ring) 7865.0 ms = 52.5 %, idle 7104.5 ms
+  ring -1:   7865 jobs, busy 7249.8 ms (48.4 %)
+  ring  0:   6824 jobs, busy 939.4 ms (6.3 %)
+  both rings busy at once: 324.3 ms (2.2 % of the window)
+### run 552
+run 552 (compute ring, waits all, deps dcb, save copy) capture kytyplus-20261016-1105 timeouts=0 faults=0 given-up=0
+  t10-30 fps 59.25 | t40-65 fps 57.04
+  game thread inside the host: mean 7.16 ms
+pieces full: 74 splits made, the wait then satisfied 0, not satisfied 0
+pieces full: 96 splits made, the wait then satisfied 0, not satisfied 0
+pieces full: 101 splits made, the wait then satisfied 0, not satisfied 0
+window 14970.3 ms: GPU busy (any ring) 7434.2 ms = 49.7 %, idle 7536.1 ms
+  ring -1:   7802 jobs, busy 7327.3 ms (48.9 %)
+  ring  0:   6808 jobs, busy 1630.5 ms (10.9 %)
+  both rings busy at once: 1523.6 ms (10.2 % of the window)
+### run 553
+run 553 (compute ring, waits all, deps acb) capture pkg-20261016-1108 timeouts=0 faults=0 resets=0
+  t85-100 frames 692 fps 46.13
+  t130-165 frames 1420 fps 40.57
+  t165-200 frames 1379 fps 39.40
+compute ring 0: 1 jobs so far (rc 0), 0 compute buffers kept on the GFX ring
+compute ring 0: 65537 jobs so far (rc 0), 0 compute buffers kept on the GFX ring
+compute ring 0: 131073 jobs so far (rc 0), 0 compute buffers kept on the GFX ring
+compute ring 0: 196609 jobs so far (rc 0), 0 compute buffers kept on the GFX ring
+compute ring 0: 262145 jobs so far (rc 0), 0 compute buffers kept on the GFX ring
+  jt lines: 70492
+  dcb: 27214 jobs, summed start-to-end 9277.3 ms (mean 340.9 us)
+  acb: 41448 jobs, summed start-to-end 4863.9 ms (mean 117.3 us)
+  hib: 1220 jobs, summed start-to-end 1.0 ms (mean 0.8 us)
+  cc: 610 jobs, summed start-to-end 0.3 ms (mean 0.6 us)
+
+### model-region near-black share per screenshot second (blockshare.py)
+548: 30 0.0% 34 3.7% 36 6.5% 38 2.9% 40 0.4% 42 0.1% 44 2.8% 46 1.2% 48 2.0% 50 2.2% 52 0.7% 54 1.6% 56 3.3% 58 4.2% 60 0.0% 62 0.3% 64 0.0% 66 5.6% 68 4.2% 
+549: 30 0.0% 32 0.0% 34 0.0% 36 0.3% 38 0.1% 40 0.2% 42 0.6% 44 0.2% 46 0.2% 48 0.2% 50 0.2% 52 0.2% 54 0.1% 56 0.1% 58 0.3% 60 0.0% 62 0.1% 64 0.3% 66 0.1% 68 0.2% 
+550: 30 0.0% 32 0.0% 34 0.3% 36 0.3% 38 0.0% 40 0.2% 42 0.1% 44 0.0% 46 0.2% 48 0.0% 50 0.0% 52 0.1% 54 0.0% 56 0.2% 58 1.0% 60 0.0% 62 0.3% 64 0.3% 66 0.0% 68 0.3% 
+551: 30 0.0% 32 0.0% 34 0.3% 36 0.5% 38 0.3% 40 0.2% 42 0.2% 44 0.2% 46 0.5% 48 0.0% 50 0.1% 52 0.2% 54 0.1% 56 0.0% 58 0.1% 60 0.3% 62 0.3% 64 0.3% 66 0.3% 68 0.2% 
+552: 30 0.0% 32 4.4% 34 5.3% 36 0.1% 38 3.0% 40 2.7% 42 6.1% 44 6.8% 46 5.8% 48 3.6% 50 3.5% 52 3.3% 54 3.6% 56 0.0% 58 0.1% 60 4.4% 62 5.2% 64 6.3% 66 0.2% 68 5.1% 
+
+### maintainer sessions (fps per 15 s from the frame profile lines; waits given up)
+play-20261016-0739 compute-ring-lines=2 given-up=251 timeouts=0: 0:54 15:58 30:59 45:56 60:50 75:33 90:34 105:37 120:42 135:44 150:43 165:45 180:34 195:1
+play-20261016-0822 compute-ring-lines=2 given-up=112 timeouts=0: 0:55 15:60 30:60 45:58 60:40 75:35 90:38 105:43 120:51 135:45 150:45 165:24
+play-20261016-1117 compute-ring-lines=2 given-up=261 timeouts=0: 0:54 15:59 30:56 45:47 60:35 75:39 90:43 105:48 120:46 135:45 150:16 165:6
+play-20261016-1312 compute-ring-lines=2 given-up=924 timeouts=0: 0:54 15:60 30:58 45:43 60:36 75:39 90:47 105:47 120:48 135:34 150:13 165:13 180:13 195:13 210:6
+play-20261016-1318 compute-ring-lines=0 given-up=916 timeouts=0: 0:55 15:58 30:56 45:45 60:34 75:37 90:38 105:45 120:41 135:43 150:39 165:27 180:26
+play-20261016-1322 compute-ring-lines=2 given-up=1472 timeouts=0: 0:55 15:59 30:58 45:45 60:34 75:36 90:42 105:50 120:44 135:44 150:38 165:31 180:30 195:20
+
+### geyser wait trace (session 1312, held-back compute buffers, last 6)
+wait trace: t 216.502 s acb 3624 dwords at 0x4002a55c0 held back by its wait at 87 (ring 0) on 0x400202d00: function 3 reference 0x1 value 0x0; no pending write
+wait trace: t 216.559 s acb 3624 dwords at 0x4002a55c0 held back by its wait at 3575 (ring 0) on 0x400202f80: function 3 reference 0x1 value 0x0; no pending write
+wait trace: t 216.578 s acb 3624 dwords at 0x400345640 held back by its wait at 87 (ring 0) on 0x400203900: function 3 reference 0x1 value 0x0; no pending write
+wait trace: t 216.635 s acb 3624 dwords at 0x400345640 held back by its wait at 3575 (ring 0) on 0x400203b80: function 3 reference 0x1 value 0x0; no pending write
+wait trace: t 216.654 s acb 3624 dwords at 0x400205540 held back by its wait at 87 (ring 0) on 0x400202140: function 3 reference 0x1 value 0x0; no pending write
+wait trace: t 216.712 s acb 3624 dwords at 0x400205540 held back by its wait at 3575 (ring 0) on 0x400202380: function 3 reference 0x1 value 0x0; no pending write

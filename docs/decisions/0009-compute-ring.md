@@ -123,3 +123,10 @@ Each step goes on only after the previous one is recorded as passed.
   - the menu race (`BC5_DIRECT_RING_DEPS` to locate it);
   - ASTRO BOT and its water;
   - a long run.
+
+*Amended 2026-10-16 (experiments 0130-0132, F179, F180):*
+- The compute ring needs `BC5_DIRECT_RING_DEPS=acb`: a compute job starts after the graphics jobs submitted before it. Without it ASTRO BOT draws black blocks.
+- With it the second title's start screen keeps 40 of its 42 fps.
+- On two rings, a graphics wait without a writer is split at once (the head goes) and given up after 8 ms.
+- The second title's play shortcut runs on the compute ring since 2026-10-16 (maintainer's yes); ASTRO BOT has a second shortcut for it.
+- Next, the geyser and water cycles: one kernel compute ring per guest compute queue, so that one queue blocks alone, as on the console.
