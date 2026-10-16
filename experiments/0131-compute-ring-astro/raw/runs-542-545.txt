@@ -1,0 +1,46 @@
+### run 542
+run 542 (baseline, one ring) capture kytyplus-20261016-0721 timeouts=0 faults=0 given-up=1
+  t10-30 fps 58.60 | t40-65 fps 59.40
+  game thread inside the host: mean 6.44 ms
+pieces full: 8 splits made, the wait then satisfied 8, not satisfied 0
+pieces full: 0 splits made, the wait then satisfied 0, not satisfied 0
+pieces full: 3 splits made, the wait then satisfied 3, not satisfied 0
+window 14969.3 ms: GPU busy (any ring) 11073.8 ms = 74.0 %, idle 3895.5 ms
+  ring -1:  15300 jobs, busy 11073.8 ms (74.0 %)
+  both rings busy at once: 0.0 ms (0.0 % of the window)
+  jobs by ring and kind: {(-1, 'acb-state'): 1800, (-1, 'dcb'): 5400, (-1, 'acb'): 5400, (-1, 'cc'): 900, (-1, 'hib'): 1800}
+### run 543
+run 543 (compute ring 0, cross-ring waits all) capture kytyplus-20261016-0723 timeouts=0 faults=0 given-up=5
+  t10-30 fps 58.30 | t40-65 fps 59.72
+  game thread inside the host: mean 6.38 ms
+pieces full: 4 splits made, the wait then satisfied 1, not satisfied 3
+pieces full: 0 splits made, the wait then satisfied 0, not satisfied 0
+pieces full: 0 splits made, the wait then satisfied 0, not satisfied 0
+window 14966.1 ms: GPU busy (any ring) 10948.0 ms = 73.2 %, idle 4018.0 ms
+  ring -1:   8095 jobs, busy 10177.0 ms (68.0 %)
+  ring  0:   7198 jobs, busy 1693.7 ms (11.3 %)
+  both rings busy at once: 922.7 ms (6.2 % of the window)
+### run 544
+run 544 (baseline, one ring) capture kytyplus-20261016-0726 timeouts=0 faults=0 given-up=3 cycles=0
+  t60-100 fps 58.98
+  t100-140 fps 59.83
+  t140-170 fps 59.80
+  t170-200 fps 57.63
+  game thread inside the host: mean 6.65 ms
+pieces full: 0 splits made, the wait then satisfied 0, not satisfied 0
+window 14971.3 ms: GPU busy (any ring) 9806.0 ms = 65.5 %, idle 5165.2 ms
+  ring -1:  17094 jobs, busy 9806.0 ms (65.5 %)
+  both rings busy at once: 0.0 ms (0.0 % of the window)
+  jobs by ring and kind: {(-1, 'dcb'): 5399, (-1, 'acb'): 7198, (-1, 'acb-state'): 1800, (-1, 'cc'): 899, (-1, 'hib'): 1798}
+### run 545
+run 545 (compute ring 0, cross-ring waits all) capture kytyplus-20261016-0730 timeouts=0 faults=0 given-up=6 cycles=0
+  t60-100 fps 57.50
+  t100-140 fps 59.38
+  t140-170 fps 59.47
+  t170-200 fps 57.60
+  game thread inside the host: mean 7.20 ms
+pieces full: 0 splits made, the wait then satisfied 0, not satisfied 0
+window 14977.3 ms: GPU busy (any ring) 9840.0 ms = 65.7 %, idle 5137.3 ms
+  ring -1:   8101 jobs, busy 9424.9 ms (62.9 %)
+  ring  0:   8998 jobs, busy 1721.7 ms (11.5 %)
+  both rings busy at once: 1306.6 ms (8.7 % of the window)
