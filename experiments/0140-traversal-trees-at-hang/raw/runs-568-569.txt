@@ -1,0 +1,16 @@
+### run 568 (synchronous submission, bc5-run.env.pkg-sync)
+submit #284204 dcb 922 dwords at 0x11e05f0050: pass 115 rewrite 25 drop 22 unmapped 0 cc 0 mappings 13152 ... FAILED rc 0 TIMEOUT 2030.75 ms
+submit #284402 dcb 942 dwords at 0x11e0cb0050: pass 119 rewrite 25 drop 22 unmapped 0 cc 0 mappings 13142 ... FAILED rc 0 TIMEOUT 2025.36 ms
+### run 569: timeout snapshot and hang watcher
+timeout snapshot: 0x1210000000 + 8388608 bytes -> timeout-snap.bin
+    322 { 102af700, 00080012, 00000493, 00016204 }
+     14 { 101d6800, 00080012, 00000336, 00016204 }
+    233 ixSQ_WAVE_PC_LO: d049c704
+     50 ixSQ_WAVE_PC_LO: d049bd20
+     25 ixSQ_WAVE_PC_LO: d049c6fc
+      9 ixSQ_WAVE_PC_LO: d049c758
+### tree decode (RDNA2 node ids: offset = (id & ~7) << 3, Mesa src/amd/vulkan/bvh/bvh_helpers.h id_to_offset)
+tree 0x12102af700 header[0..3] 5f525350 4c485642 (magic) +0x58 0000007f +0x60 00000493
+  nodes 129, types {5: 44, 0: 85}, max depth 5, back-edges 0, filler children 0x1e 44
+tree 0x12101d6800 header[0..3] 5f525350 4c485642 (magic) +0x58 00000058 +0x60 00000336
+  nodes 93, types {5: 29, 0: 64}, max depth 6, back-edges 0, filler children 0x1e 22
