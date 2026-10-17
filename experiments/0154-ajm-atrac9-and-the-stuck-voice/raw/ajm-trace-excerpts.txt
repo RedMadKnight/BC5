@@ -1,0 +1,31 @@
+# run 615 (silent stub): instance 0x60009 set-gapless, first 3 and last 3 decode-split jobs
+ajm trace: set-gapless inst 0x60009 total 480000 skip 312 skipped 0 reset 0 -> 0x0
+ajm trace: decode-split inst 0x60009 in 684 (2 bufs) out 6144 (1 bufs) -> result 0x0 internal 0x0 consumed 684 written 1296 samples 648 frames 1 in0@[640]=0301f8b52458c52dbff4d5ce87e46252356690d96227e7d0 in1[44]=36dd752ba8c3ba8e gapless total 479352 skip 0 ski
+ajm trace: decode-split inst 0x60009 in 484 (3 bufs) out 5120 (2 bufs) -> result 0x0 internal 0x0 consumed 484 written 1920 samples 1608 frames 1 in0@[20]=8a00f8b2
+ajm trace: decode-split inst 0x60009 in 468 (3 bufs) out 4096 (2 bufs) -> result 0x0 internal 0x0 consumed 468 written 1920 samples 2568 frames 1 in0@[48]=9c00f8b28d3b8d611f8d2758e91357fd74988e9e12bb5c27 in1[384]=9bf19008a142e778 gapless total 477432 skip 0 sk
+...
+ajm trace: decode-split inst 0x60009 in 395 (3 bufs) out 2048 (1 bufs) -> result 0x0 internal 0x0 consumed 395 written 1920 samples 237768 frames 1 in0@[25]=c600f8b28d3b88ce208e55414bed8271731aac9af8d97dd0 in1[320]=b12c15d118bd49c0 gapless total 242232 skip 0 
+ajm trace: decode-split inst 0x60009 in 315 (3 bufs) out 1024 (1 bufs) -> result 0x10 internal 0x0 consumed 0 written 0 samples 237768 frames 0 in0@[14]=3901f8b54e133972e317ea71bd59 in1[256]=72283ba251baf0eb gapless total 242232 skip 0 skipped 312
+ajm trace: decode-split inst 0x60009 in 315 (3 bufs) out 2048 (1 bufs) -> result 0x0 internal 0x0 consumed 315 written 1920 samples 238728 frames 1 in0@[14]=3901f8b54e133972e317ea71bd59 in1[256]=72283ba251baf0eb gapless total 241272 skip 0 skipped 312
+
+# run 619 (libopus, whole-packet counters): last 3 jobs, then nothing
+ajm trace: decode-split inst 0x60009 mf 1 in 195 (3 bufs) out 1024 (1 bufs) -> result 0x0 internal 0x0 consumed 0 written 1024 samples 478720 frames 0 in0@[17]=c100f8b2837b8df9cf65140421e515ed18 in1[128]=0d8ecfede2452d6a gapless total 1280 skip 0 skipped 312
+ajm trace: decode-split inst 0x60009 mf 1 in 195 (3 bufs) out 1024 (1 bufs) -> result 0x0 internal 0x0 consumed 195 written 1024 samples 479232 frames 1 in0@[17]=c100f8b2837b8df9cf65140421e515ed18 in1[128]=0d8ecfede2452d6a gapless total 768 skip 0 skipped 312
+ajm trace: decode-split inst 0x60009 mf 1 in 315 (3 bufs) out 1024 (1 bufs) -> result 0x0 internal 0x0 consumed 315 written 1024 samples 479744 frames 1 in0@[14]=3901f8b54e133972e317ea71bd59 in1[256]=72283ba251baf0eb gapless total 256 skip 0 skipped 312
+
+# run 621 (libopus, per-packet counters): jobs 0x60009 2605, first 3 and last 3
+ajm trace: decode-split inst 0x60009 mf 1 in 684 (2 bufs) out 6144 (1 bufs) -> result 0x0 internal 0x0 consumed 684 written 6144 samples 3528 frames 4 in0@[640]=0301f8b52458c52dbff4d5ce87e46252356690d96227e7d0 in1[44]=36dd752ba8c3ba8e gapless total 476472 skip
+ajm trace: decode-split inst 0x60009 mf 1 in 140 (3 bufs) out 1024 (1 bufs) -> result 0x0 internal 0x0 consumed 140 written 1024 samples 4488 frames 1 in0@[20]=8a00f8b288eee235e98bb6bef265317004d79703 in1[64]=b305b9ba7c5b4f5c gapless total 475512 skip 0 skippe
+ajm trace: decode-split inst 0x60009 mf 1 in 179 (3 bufs) out 1024 (1 bufs) -> result 0x0 internal 0x0 consumed 0 written 1024 samples 4488 frames 0 in0@[8]=b100f8b28cff42c3 in1[128]=7fd49f9b42140efd gapless total 475512 skip 0 skipped 312
+...
+ajm trace: decode-split inst 0x60009 mf 1 in 202 (3 bufs) out 1024 (1 bufs) -> result 0x0 internal 0x0 consumed 0 written 1024 samples 376008 frames 0 in0@[13]=c800f8b28d3b8d611f8d2758e8 in1[128]=3483875d4c253538 gapless total 103992 skip 0 skipped 312
+ajm trace: decode-split inst 0x60009 mf 1 in 202 (3 bufs) out 1024 (1 bufs) -> result 0x0 internal 0x0 consumed 202 written 1024 samples 376968 frames 1 in0@[13]=c800f8b28d3b8d611f8d2758e8 in1[128]=3483875d4c253538 gapless total 103032 skip 0 skipped 312
+ajm trace: decode-split inst 0x60009 mf 1 in 200 (3 bufs) out 1024 (1 bufs) -> result 0x0 internal 0x0 consumed 0 written 1024 samples 376968 frames 0 in0@[3]=c600f8 in1[192]=b28d3b88ce208e55 gapless total 103032 skip 0 skipped 312
+
+# run 620: 0x60002 (menu music, 4ch family 1) first job
+ajm trace: initialize inst 0x60002 params[12]=0400000080bb000001000000 -> result 0x0 internal 0x0
+ajm trace: decode-split inst 0x60002 mf 1 in 2438 (2 bufs) out 24576 (1 bufs) -> result 0x0 internal 0x0 consumed 2438 written 24576 samples 3072 frames 4 in0@[2432]=d402fcfc5f7fd173dc4f0a0108414467c20b87f6f7329a49 in1[6]=2a6743ffaee6 gapless total 19131473 sk
+
+# run 620: ATRAC9 0x4003 last job and 0x4004
+ajm trace: decode-split inst 0x4003 mf 1 in 320 (1 bufs) out 2048 (1 bufs) -> result 0x10 internal 0x0 consumed 64 written 2048 samples 13056 frames 2 in0@[320]=0869be0b4932c7bef31fffe6b12547a8be4b6016c79eeeff gapless total 8687 skip 0 skipped 256
+ajm trace: decode-split inst 0x4004 mf 1 in 256 (1 bufs) out 12288 (1 bufs) -> result 0x0 internal 0x0 consumed 256 written 5400 samples 1350 frames 8 in0@[256]=07acdeffff43b2ccf2520ab54ef607acdeffff43b2ccf252 gapless total 0 skip 0 skipped 442
