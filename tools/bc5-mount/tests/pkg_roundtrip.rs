@@ -234,7 +234,7 @@ fn param_json_synthesised_from_the_content_id() {
             .dir(DirSpec::new("sce_sys").file("keystone", Content::Bytes(vec![7u8; 96]))),
     );
     let mut cur = Cursor::new(Vec::new());
-    let info = write_pkg_with(&with_sce_sys, &mut cur, Some(ID)).unwrap();
+    let info = write_pkg_with(&with_sce_sys, &mut cur, Some((ID, &[]))).unwrap();
     let bytes = cur.into_inner();
     assert_eq!(bytes.len() as u64, info.len);
     let p = PkgImage::open(bytes).unwrap();
@@ -282,7 +282,7 @@ fn param_json_synthesised_from_the_content_id() {
             .dir(DirSpec::new("sce_sys").file("param.json", Content::Bytes(b"{}".to_vec()))),
     );
     let mut cur = Cursor::new(Vec::new());
-    write_pkg_with(&own, &mut cur, Some(ID)).unwrap();
+    write_pkg_with(&own, &mut cur, Some((ID, &[]))).unwrap();
     let p = PkgImage::open(cur.into_inner()).unwrap();
     assert!(!p.param_json_synthesised());
     let idx = p.find(PARAM_JSON_PATH).unwrap();
@@ -292,7 +292,7 @@ fn param_json_synthesised_from_the_content_id() {
         DirSpec::new("").file("a.txt", Content::Bytes(vec![1])),
     );
     let mut cur = Cursor::new(Vec::new());
-    write_pkg_with(&no_dir, &mut cur, Some(ID)).unwrap();
+    write_pkg_with(&no_dir, &mut cur, Some((ID, &[]))).unwrap();
     assert!(!PkgImage::open(cur.into_inner())
         .unwrap()
         .param_json_synthesised());
@@ -302,4 +302,87 @@ fn param_json_synthesised_from_the_content_id() {
     assert_eq!(p.content_id(), None);
     assert!(!p.param_json_synthesised());
     assert_eq!(p.find(PARAM_JSON_PATH), None);
+}
+
+/// The container's own files show under `sce_sys` (experiment 0148): `param.json`
+/// as the title wrote it, the icons, and the ones in subdirectories the inner image has.
+#[test]
+fn container_files_under_sce_sys() {
+    use bc5_mount::fixture::pkg_writer::write_pkg_with;
+    use bc5_mount::fixture::DirSpec;
+    use bc5_mount::pkg::PARAM_JSON_PATH;
+
+    const ID: &str = "UP9000-PPSA03671_00-MARVELSWOLVERINE";
+    const PARAM: &[u8] =
+        b"{\n  \"titleId\": \"PPSA03671\",\n  \"kernel\": {\"flexibleMemorySize\": 1}\n}\n";
+    let icon: Vec<u8> = (0..70_000u32).map(|i| (i % 251) as u8).collect();
+    let spec = Spec::new(
+        "cnt",
+        DirSpec::new("")
+            .file("eboot.bin", Content::Bytes(b"eboot".to_vec()))
+            .dir(
+                DirSpec::new("sce_sys")
+                    .file("keystone", Content::Bytes(vec![7u8; 96]))
+                    .dir(DirSpec::new("uds")),
+            ),
+    );
+    let files: Vec<(u32, &str, &[u8])> = vec![
+        (0x2000, "param.json", PARAM),
+        (0x1200, "icon0.png", &icon),
+        (0x2020, "uds/npbind.dat", b"npbind"),
+        (
+            0x2021,
+            "trophy2/npbind.dat",
+            b"no such directory in the image",
+        ),
+        (0x100d, "keystone", b"the image's own keystone wins"),
+    ];
+    let mut cur = Cursor::new(Vec::new());
+    let info = write_pkg_with(&spec, &mut cur, Some((ID, &files))).unwrap();
+    let bytes = cur.into_inner();
+    assert_eq!(bytes.len() as u64, info.len);
+    let p = PkgImage::open(bytes).unwrap();
+    assert!(
+        !p.param_json_synthesised(),
+        "the container's param.json is used"
+    );
+    let mut shown = p.container_files();
+    shown.sort_unstable();
+    assert_eq!(
+        shown,
+        [
+            "sce_sys/icon0.png",
+            "sce_sys/param.json",
+            "sce_sys/uds/npbind.dat"
+        ]
+    );
+    let read = |path: &str| -> Vec<u8> {
+        let idx = p.find(path).unwrap_or_else(|| panic!("{path} not found"));
+        let f = TreeFile::new(&p, idx).unwrap();
+        let mut v = vec![0u8; f.len() as usize];
+        assert_eq!(f.read_at(0, &mut v).unwrap(), v.len());
+        v
+    };
+    assert_eq!(read(PARAM_JSON_PATH), PARAM);
+    assert_eq!(read("SCE_SYS/ICON0.PNG"), icon);
+    assert_eq!(read("sce_sys/uds/npbind.dat"), b"npbind");
+    assert_eq!(read("sce_sys/keystone"), vec![7u8; 96]);
+    assert_eq!(p.find("sce_sys/trophy2/npbind.dat"), None);
+    let uds = p.find("sce_sys/uds").unwrap();
+    let nb = p.find("sce_sys/uds/npbind.dat").unwrap();
+    assert_eq!(p.children(uds), &[nb]);
+    assert_eq!(p.entry(nb).unwrap().parent, uds);
+    // A read in the middle of the icon, and past its end.
+    let idx = p.find("sce_sys/icon0.png").unwrap();
+    let mut mid = vec![0u8; 1000];
+    assert_eq!(p.read_file_at(idx, 69_500, &mut mid).unwrap(), 500);
+    assert_eq!(&mid[..500], &icon[69_500..]);
+    assert_eq!(p.read_file_at(idx, 70_000, &mut mid).unwrap(), 0);
+    let got = hash_volume(&p, |_| {}).unwrap();
+    assert_eq!(
+        got.iter()
+            .filter(|h| h.path.to_ascii_lowercase().starts_with("sce_sys/"))
+            .count(),
+        4
+    );
 }
