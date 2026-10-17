@@ -15833,13 +15833,74 @@ index 676ecb9..4b22f02 100644
  	// KytyPlus: forward adaptive-trigger effect to the DualSense HID driver.
  	// HONEST: spec-accurate interpretation of the PS5 ScePadTriggerEffect param
  	// forwarded to the driver. UNVALIDATED on hardware — the exact param layout
+diff --git a/src/libs/libRtc.cpp b/src/libs/libRtc.cpp
+index fda2623..db5e40e 100644
+--- a/src/libs/libRtc.cpp
++++ b/src/libs/libRtc.cpp
+@@ -1,4 +1,5 @@
+ #include "common/abi.h"
++#include "common/common.h"
+ #include "common/dateTime.h"
+ #include "libs/errno.h"
+ #include "libs/libs.h"
+@@ -7,6 +8,7 @@
+ #include <chrono>
+ #include <cstdint>
+ #include <cstdio>
++#include <ctime>
+ #include <limits>
+ 
+ namespace Libs {
+@@ -280,6 +282,20 @@ static int KYTY_SYSV_ABI RtcGetCurrentClock(RtcDateTime* time, int time_zone_min
+ 	return RtcSetTick(time, &tick);
+ }
+ 
++// BC5 (experiment 0146): local time is the host's time zone now (daylight saving included), as
++// libkernel's KernelConvertUtcToLocaltime already answers; with the identity the second title's
++// save slot list showed its dates in UTC. Ticks are microseconds.
++static int64_t local_time_offset_ticks() {
++#if KYTY_PLATFORM == KYTY_PLATFORM_WINDOWS
++	return 0;
++#else
++	const std::time_t now = std::time(nullptr);
++	std::tm           local_tm {};
++	localtime_r(&now, &local_tm);
++	return static_cast<int64_t>(local_tm.tm_gmtoff) * 1000000;
++#endif
++}
++
+ static int KYTY_SYSV_ABI RtcConvertUtcToLocalTime(const RtcTick* utc, RtcTick* local_time) {
+ 	PRINT_NAME();
+ 
+@@ -287,8 +303,7 @@ static int KYTY_SYSV_ABI RtcConvertUtcToLocalTime(const RtcTick* utc, RtcTick* l
+ 		return RTC_ERROR_INVALID_POINTER;
+ 	}
+ 
+-	// Keep host-independent behavior for now; Kyty stores RTC ticks in UTC.
+-	*local_time = *utc;
++	local_time->tick = utc->tick + static_cast<uint64_t>(local_time_offset_ticks());
+ 
+ 	return OK;
+ }
+@@ -300,8 +315,7 @@ static int KYTY_SYSV_ABI RtcConvertLocalTimeToUtc(const RtcTick* local_time, Rtc
+ 		return RTC_ERROR_INVALID_POINTER;
+ 	}
+ 
+-	// Keep host-independent behavior for now; Kyty stores RTC ticks in UTC.
+-	*utc = *local_time;
++	utc->tick = local_time->tick - static_cast<uint64_t>(local_time_offset_ticks());
+ 
+ 	return OK;
+ }
 diff --git a/src/libs/libSaveData.cpp b/src/libs/libSaveData.cpp
-index 08aa121..f65804a 100644
+index 08aa121..c0acf56 100644
 --- a/src/libs/libSaveData.cpp
 +++ b/src/libs/libSaveData.cpp
-@@ -14,12 +14,21 @@
+@@ -13,13 +13,24 @@
+ #include "loader/systemContent.h"
  
  #include <algorithm>
++#include <cstddef>
  #include <cstring>
 +#include <cstdio>
 +#include <cstdlib>
@@ -15847,6 +15908,7 @@ index 08aa121..f65804a 100644
 +#include <filesystem>
 +#include <mutex>
 +#include <string>
++#include <sys/stat.h>
  #include <vector>
  
  namespace Libs {
@@ -15859,7 +15921,43 @@ index 08aa121..f65804a 100644
  
  namespace SaveData {
  
-@@ -484,6 +493,67 @@ int KYTY_SYSV_ABI SaveDataMount3(const SaveDataMount3* mount, SaveDataMountResul
+@@ -294,6 +305,25 @@ static bool dir_name_match(const char* str, const char* pattern) {
+ 	return *str == '\0' && *pattern == '\0';
+ }
+ 
++// BC5 (run 573): the time of a save directory for SaveDataParam::mtime, seconds since the epoch —
++// the newest write of a file in it (the directory's own time changes on create and rename only).
++// Titles that never call SaveDataSetParam (the second title) otherwise show 01/01/1970 in their
++// slot lists.
++static int64_t save_data_dir_mtime(const std::string& directory) {
++	struct stat st {};
++	if (::stat(directory.c_str(), &st) != 0) {
++		return 0;
++	}
++	int64_t newest = st.st_mtime;
++	for (const auto& entry: Common::File::GetDirEntries(directory)) {
++		if (entry.is_file && ::stat((directory + "/" + entry.name).c_str(), &st) == 0 &&
++		    st.st_mtime > newest) {
++			newest = st.st_mtime;
++		}
++	}
++	return newest;
++}
++
+ static int mount_save_data(int slot, std::string_view dir_name, const std::string& directory,
+                            uint32_t status, SaveDataMountResult* result) {
+ 	const std::string mount_point = SaveDataMountSlots::MountPoint(static_cast<size_t>(slot));
+@@ -408,7 +438,8 @@ int KYTY_SYSV_ABI SaveDataDirNameSearch(const SaveDataDirNameSearchCond* cond,
+ 		std::snprintf(result->dir_names[i].data, sizeof(result->dir_names[i].data), "%s",
+ 		              dir_list[i].c_str());
+ 		if (result->params != nullptr) {
+-			result->params[i] = {};
++			result->params[i]       = {};
++			result->params[i].mtime = save_data_dir_mtime(root + "/" + dir_list[i]);
+ 		}
+ 		if (result->infos != nullptr) {
+ 			result->infos[i]             = {};
+@@ -484,6 +515,67 @@ int KYTY_SYSV_ABI SaveDataMount3(const SaveDataMount3* mount, SaveDataMountResul
  	return mount_save_data(slot, dir_name, mount_dir, created ? 1u : 0u, mount_result);
  }
  
@@ -15927,7 +16025,7 @@ index 08aa121..f65804a 100644
  int KYTY_SYSV_ABI SaveDataSetupSaveDataMemory2(const SaveDataMemorySetup2* setup_param,
                                                 SaveDataMemorySetupResult*  result) {
  	PRINT_NAME();
-@@ -500,6 +570,8 @@ int KYTY_SYSV_ABI SaveDataSetupSaveDataMemory2(const SaveDataMemorySetup2* setup
+@@ -500,6 +592,8 @@ int KYTY_SYSV_ABI SaveDataSetupSaveDataMemory2(const SaveDataMemorySetup2* setup
  	     setup_param->option, setup_param->user_id, static_cast<uint64_t>(setup_param->memory_size),
  	     static_cast<uint64_t>(setup_param->icon_memory_size), setup_param->slot_id);
  
@@ -15936,7 +16034,7 @@ index 08aa121..f65804a 100644
  	if (setup_param->memory_size > g_save_data_memory.size()) {
  		g_save_data_memory.resize(setup_param->memory_size);
  	}
-@@ -528,6 +600,8 @@ int KYTY_SYSV_ABI SaveDataGetSaveDataMemory2(SaveDataMemoryGet2* get_param) {
+@@ -528,6 +622,8 @@ int KYTY_SYSV_ABI SaveDataGetSaveDataMemory2(SaveDataMemoryGet2* get_param) {
  	     reinterpret_cast<uint64_t>(get_param->param), reinterpret_cast<uint64_t>(get_param->icon),
  	     get_param->slot_id);
  
@@ -15945,7 +16043,7 @@ index 08aa121..f65804a 100644
  	if (get_param->data != nullptr) {
  		auto* data = get_param->data;
  		if (data->buf == nullptr || data->offset < 0) {
-@@ -567,6 +641,8 @@ int KYTY_SYSV_ABI SaveDataSetSaveDataMemory2(const SaveDataMemorySet2* set_param
+@@ -567,6 +663,8 @@ int KYTY_SYSV_ABI SaveDataSetSaveDataMemory2(const SaveDataMemorySet2* set_param
  	     reinterpret_cast<uint64_t>(set_param->param), reinterpret_cast<uint64_t>(set_param->icon),
  	     set_param->data_num, set_param->slot_id);
  
@@ -15954,7 +16052,7 @@ index 08aa121..f65804a 100644
  	const uint32_t data_num = (set_param->data_num == 0 ? 1 : set_param->data_num);
  	if (set_param->data != nullptr) {
  		for (uint32_t i = 0; i < data_num; i++) {
-@@ -581,6 +657,7 @@ int KYTY_SYSV_ABI SaveDataSetSaveDataMemory2(const SaveDataMemorySet2* set_param
+@@ -581,6 +679,7 @@ int KYTY_SYSV_ABI SaveDataSetSaveDataMemory2(const SaveDataMemorySet2* set_param
  			}
  			std::memcpy(g_save_data_memory.data() + offset, data.buf, data.buf_size);
  		}
@@ -15962,7 +16060,27 @@ index 08aa121..f65804a 100644
  	}
  
  	return OK;
-@@ -777,6 +854,16 @@ int KYTY_SYSV_ABI SaveDataSyncSaveDataMemory(const void* sync_param) {
+@@ -722,6 +821,19 @@ int KYTY_SYSV_ABI SaveDataGetParam(const SaveDataMountPoint* mount_point, uint32
+ 			return SAVE_DATA_ERROR_PARAMETER;
+ 		}
+ 		std::memset(param_buf, 0, sizeof(SaveDataParam));
++		// BC5 (run 573): the mounted directory's time, as its slot list expects.
++		{
++			Common::LockGuard lock(g_mount_mutex);
++			const int         slot = g_mount_slots.Find(mount_point->data);
++			if (slot >= 0) {
++				const std::string dir = std::string(SAVE_DATA_DIR) + "/" + get_title_id() + "/" +
++				                        g_mount_slots.Directory(static_cast<size_t>(slot));
++				const int64_t mtime = save_data_dir_mtime(dir);
++				std::memcpy(static_cast<uint8_t*>(param_buf) + offsetof(SaveDataParam, mtime), &mtime,
++				            sizeof(mtime));
++				LOGF("\t mtime          = %" PRId64 " (%s)\n", mtime, dir.c_str());
++			}
++		}
+ 		if (got_size != nullptr) {
+ 			*got_size = sizeof(SaveDataParam);
+ 		}
+@@ -777,6 +889,16 @@ int KYTY_SYSV_ABI SaveDataSyncSaveDataMemory(const void* sync_param) {
  
  int KYTY_SYSV_ABI SaveDataGetEventResult(const void* event_param, SaveDataEvent* event) {
  	PRINT_NAME();
@@ -15979,7 +16097,7 @@ index 08aa121..f65804a 100644
  
  	LOGF("\t event_param = 0x%016" PRIx64 "\n"
  	     "\t event       = 0x%016" PRIx64 "\n",
-@@ -885,7 +972,27 @@ namespace LibSaveDataNative {
+@@ -885,7 +1007,27 @@ namespace LibSaveDataNative {
  
  LIB_VERSION("SaveData_native", 1, "SaveData_native", 1, 1);
  
@@ -16144,6 +16262,23 @@ index 36e4dc8..eaa58d7 100644
  }
  
  namespace LibContentExport {
+diff --git a/src/libs/saveDataMountSlots.h b/src/libs/saveDataMountSlots.h
+index 8be28ca..45a766e 100644
+--- a/src/libs/saveDataMountSlots.h
++++ b/src/libs/saveDataMountSlots.h
+@@ -45,6 +45,12 @@ public:
+ 		return FULL;
+ 	}
+ 
++	// BC5 (run 573): the directory name mounted at a slot, empty when the slot is free.
++	[[nodiscard]] std::string Directory(size_t slot) const {
++		return slot < m_directories.size() && m_directories[slot].has_value() ? *m_directories[slot]
++		                                                                     : std::string();
++	}
++
+ 	[[nodiscard]] static std::string MountPoint(size_t slot) {
+ 		return "/savedata" + std::to_string(slot);
+ 	}
 diff --git a/src/libs/systemService.h b/src/libs/systemService.h
 new file mode 100644
 index 0000000..5d9456f
