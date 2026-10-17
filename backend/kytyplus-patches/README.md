@@ -454,3 +454,7 @@ Experiment 0112: `KYTY_BC5_APR_PARALLEL=<n>` (`libAmpr.cpp`, off by default) run
 consecutive APR ReadFile commands on n threads. A run with overlapping destinations stays in
 order, and the commands after the run still follow it. With 8, the second title's start-up logo
 shortens by 2 s.
+
+Experiment 0155 (diagnostics, off by default): `BC5_DIRECT_DMA_SNAPSHOT_ACB=1` copies the DMA sources of compute buffers at
+submission too (the snapshot ring of experiment 0122 serves graphics buffers only); `BC5_DIRECT_PIECES_NO_CLEAR=1` leaves the
+CONTEXT_CONTROL and CLEAR_STATE out of a graphics piece's prefix (ADR 0008). Neither changed the second title's menu artefact (F202).
