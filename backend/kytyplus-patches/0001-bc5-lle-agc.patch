@@ -1,8 +1,23 @@
 diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
-index db25107..1ab017f 100644
+index db25107..17ab15e 100644
 --- a/src/CMakeLists.txt
 +++ b/src/CMakeLists.txt
-@@ -595,6 +595,18 @@ endif()
+@@ -382,6 +382,14 @@ if(LINUX)
+ 	if(KYTY_LZMA_LIBRARY)
+ 		list(APPEND kyty_emulator_link_libraries ${KYTY_LZMA_LIBRARY})
+ 	endif()
++
++	# BC5 (experiment 0154): the AJM Opus decoder runs on libopus (the FFmpeg prebuilt has no
++	# Opus decoder); without the library the decoder reports a fatal codec error.
++	find_library(KYTY_OPUS_LIBRARY opus)
++	if(KYTY_OPUS_LIBRARY)
++		list(APPEND kyty_emulator_link_libraries ${KYTY_OPUS_LIBRARY})
++		list(APPEND kyty_emulator_compile_definitions KYTY_HAS_OPUS=1)
++	endif()
+ endif()
+ 
+ set(inc_headers
+@@ -595,6 +603,18 @@ endif()
  
  
  add_executable(kyty_emulator main.cpp platformDispatch.cpp shadps4Embedder.cpp ${kyty_emulator_src})
@@ -6084,10 +6099,36 @@ index ed7c35b..9f6635d 100644
  	}
  
 diff --git a/src/libs/ajm.cpp b/src/libs/ajm.cpp
-index 89473ad..95855ae 100644
+index 89473ad..056512e 100644
 --- a/src/libs/ajm.cpp
 +++ b/src/libs/ajm.cpp
-@@ -332,6 +332,9 @@ int KYTY_SYSV_ABI AjmDecAt9ParseConfigData(const void*              config_data,
+@@ -9,7 +9,9 @@
+ #include <atomic>
+ #include <cerrno>
+ #include <cstdint>
++#include <cinttypes>
+ #include <cstdio>
++#include <cstdlib>
+ #include <cstring>
+ #include <limits>
+ #include <memory>
+@@ -183,7 +185,6 @@ constexpr uint64_t AJM_INSTANCE_FLAG_FORMAT_MASK      = 0x7u;
+ constexpr uint64_t AJM_INSTANCE_FLAG_MAX_CHANNEL_MASK = 0x7fu;
+ constexpr uint64_t AJM_INSTANCE_FLAG_CODEC_OFFSET     = 32u;
+ constexpr uint32_t AJM_DEC_OPUS_MAX_CHANNELS_FOR_10CH = 10;
+-constexpr uint32_t AJM_DEC_OPUS_FRAME_SAMPLES         = 960;
+ 
+ static std::atomic_uint32_t g_ajm_next_instance {1};
+ static std::atomic_uint32_t g_ajm_next_batch {1};
+@@ -313,6 +314,7 @@ protected:
+ #include "libs/ajm/aac_decoder.h"
+ #include "libs/ajm/atrac9_decoder.h"
+ #include "libs/ajm/mp3_decoder.h"
++#include "libs/ajm/opus_decoder.h"
+ 
+ namespace Libs::Audio::Ajm {
+ 
+@@ -332,6 +334,9 @@ int KYTY_SYSV_ABI AjmDecAt9ParseConfigData(const void*              config_data,
  
  	uint8_t config[ATRAC9_CONFIG_DATA_SIZE] {};
  	std::memcpy(config, config_data, sizeof(config));
@@ -6097,18 +6138,272 @@ index 89473ad..95855ae 100644
  	Atrac9CodecInfo codec_info {};
  	const int       init_result = Atrac9InitDecoder(handle, config);
  	const int       info_result =
+@@ -354,134 +359,6 @@ int KYTY_SYSV_ABI AjmDecAt9ParseConfigData(const void*              config_data,
+ 	return OK;
+ }
+ 
+-class AjmOpusDecoder final: public AjmDecoder {
+-public:
+-	AjmOpusDecoder(uint32_t channels, uint32_t sample_rate, AjmSampleEncoding encoding,
+-	               uint64_t flags)
+-	    : AjmDecoder(channels, sample_rate, encoding) {
+-		(void)flags;
+-	}
+-
+-	AjmDecodeResult Initialize(const void* codec_parameters,
+-	                           size_t      codec_parameters_size) override {
+-		auto result = MakeResult();
+-
+-		if (codec_parameters == nullptr ||
+-		    codec_parameters_size < sizeof(AjmDecOpusInitializeParameters)) {
+-			result.result = AJM_RESULT_INVALID_PARAMETER;
+-			return result;
+-		}
+-
+-		const auto* params = static_cast<const AjmDecOpusInitializeParameters*>(codec_parameters);
+-		if (params->channel_num == 0 || params->channel_num > AJM_DEC_OPUS_MAX_CHANNELS_FOR_10CH ||
+-		    params->sample_rate == 0) {
+-			result.result = AJM_RESULT_INVALID_PARAMETER;
+-			return result;
+-		}
+-
+-		SetFormat(params->channel_num, params->sample_rate, m_sample_encoding);
+-		m_mapping_family        = params->mapping_family;
+-		m_total_decoded_samples = 0;
+-		m_is_initialized        = true;
+-		m_frames_per_packet     = 1;
+-
+-		LOGF("AJM Opus initialized: %" PRIu32 " Hz, %" PRIu32 " ch, mapping=%" PRIu32 "\n",
+-		     params->sample_rate, params->channel_num, params->mapping_family);
+-
+-		return MakeResult();
+-	}
+-
+-	void Reset() override { m_total_decoded_samples = 0; }
+-
+-	AjmDecodeResult Decode(const void* input, size_t input_size, void* output, size_t output_size,
+-	                       bool multiple_frames, AjmGaplessState* gapless) override {
+-		(void)multiple_frames;
+-		auto result = MakeResult();
+-
+-		if (input == nullptr || input_size == 0) {
+-			result.result = AJM_RESULT_PARTIAL_INPUT;
+-			return result;
+-		}
+-		if (!m_is_initialized) {
+-			result.result = AJM_RESULT_NOT_INITIALIZED;
+-			return result;
+-		}
+-
+-		auto samples_to_write = AJM_DEC_OPUS_FRAME_SAMPLES;
+-		auto skip_samples     = 0u;
+-		if (gapless != nullptr) {
+-			skip_samples = std::min<uint32_t>(samples_to_write, gapless->current.skip_samples);
+-			samples_to_write -= skip_samples;
+-			if (gapless->HasSampleLimit()) {
+-				samples_to_write =
+-				    std::min<uint32_t>(samples_to_write, gapless->current.total_samples);
+-			}
+-		}
+-
+-		const auto output_bytes = static_cast<size_t>(samples_to_write) *
+-		                          static_cast<size_t>(m_channels) *
+-		                          AjmBytesPerSample(m_sample_encoding);
+-		if (output_bytes != 0 && output == nullptr) {
+-			result.result = AJM_RESULT_NOT_ENOUGH_ROOM;
+-			return result;
+-		}
+-		if (output_bytes > output_size) {
+-			result.result = AJM_RESULT_NOT_ENOUGH_ROOM;
+-			return result;
+-		}
+-
+-		if (output_bytes != 0) {
+-			std::memset(output, 0, output_bytes);
+-		}
+-
+-		if (gapless != nullptr) {
+-			gapless->current.skip_samples =
+-			    static_cast<uint16_t>(gapless->current.skip_samples - skip_samples);
+-			if (gapless->HasSampleLimit()) {
+-				gapless->current.total_samples =
+-				    (gapless->current.total_samples > samples_to_write
+-				         ? gapless->current.total_samples - samples_to_write
+-				         : 0);
+-			}
+-
+-			const auto skipped_samples = AJM_DEC_OPUS_FRAME_SAMPLES - samples_to_write;
+-			const auto skipped_total   = std::min<uint32_t>(
+-			    std::numeric_limits<uint16_t>::max(),
+-			    static_cast<uint32_t>(gapless->current.skipped_samples) + skipped_samples);
+-			gapless->current.skipped_samples = static_cast<uint16_t>(skipped_total);
+-		}
+-
+-		result.input_consumed    = input_size;
+-		result.output_written    = output_bytes;
+-		result.frames            = 1;
+-		result.frames_per_packet = m_frames_per_packet;
+-		m_total_decoded_samples += samples_to_write;
+-		result.total_decoded_samples = m_total_decoded_samples;
+-		result.format                = GetFormat();
+-		return result;
+-	}
+-
+-	void WriteCodecInfo(void* output, size_t output_size,
+-	                    const AjmDecodeResult& result) const override {
+-		(void)result;
+-		if (output == nullptr || output_size < sizeof(AjmSidebandDecOpusCodecInfo)) {
+-			return;
+-		}
+-
+-		auto* info              = static_cast<AjmSidebandDecOpusCodecInfo*>(output);
+-		info->frames_per_packet = m_frames_per_packet;
+-	}
+-
+-	[[nodiscard]] size_t CodecInfoSize() const override {
+-		return sizeof(AjmSidebandDecOpusCodecInfo);
+-	}
+-
+-private:
+-	bool     m_is_initialized    = false;
+-	uint32_t m_mapping_family    = 0;
+-	uint32_t m_frames_per_packet = 1;
+-};
+-
+ struct AjmInstanceState {
+ 	uint32_t                    context = 0;
+ 	uint32_t                    codec   = 0;
+@@ -1065,6 +942,17 @@ int KYTY_SYSV_ABI AjmBatchJobInitialize(AjmBatchInfo* info, uint32_t instance,
+ 	const auto decode_result =
+ 	    AjmInitializeInstance(instance, codec_parameters, codec_parameters_size);
+ 	AjmWriteResult(result, AJM_SIDEBAND_RESULT_SIZE, decode_result);
++	// BC5 (experiment 0154): the codec parameters the title passes, per instance.
++	{
++		static const bool trace = std::getenv("KYTY_BC5_AJM_TRACE") != nullptr;
++		if (trace) {
++			std::fprintf(stderr, "ajm trace: initialize inst 0x%x params[%zu]=", instance, codec_parameters_size);
++			const auto* b = static_cast<const uint8_t*>(codec_parameters);
++			for (size_t i = 0; b != nullptr && i < 16 && i < codec_parameters_size; i++) std::fprintf(stderr, "%02x", b[i]);
++			std::fprintf(stderr, " -> result 0x%x internal 0x%x\n", static_cast<unsigned>(decode_result.result),
++			             static_cast<unsigned>(decode_result.internal_result));
++		}
++	}
+ 
+ 	LOGF("\t instance = 0x%08" PRIx32 ", codec_parameters = 0x%016" PRIx64 ", size = 0x%016" PRIx64
+ 	     "\n",
+@@ -1091,6 +979,13 @@ int KYTY_SYSV_ABI AjmBatchJobClearContext(AjmBatchInfo* info, uint32_t instance,
+ 	}
+ 
+ 	AjmWriteResult(result, AJM_SIDEBAND_RESULT_SIZE, decode_result);
++	{
++		static const bool trace = std::getenv("KYTY_BC5_AJM_TRACE") != nullptr;
++		if (trace) {
++			std::fprintf(stderr, "ajm trace: clear-context inst 0x%x -> 0x%x\n", instance,
++			             static_cast<unsigned>(decode_result.result));
++		}
++	}
+ 	LOGF("\t instance = 0x%08" PRIx32 "\n", instance);
+ 	return AjmAppendJob(info, AJM_JOB_CONTROL_SIZE, "clear-context");
+ }
+@@ -1142,6 +1037,35 @@ int KYTY_SYSV_ABI AjmBatchJobDecodeSplit(AjmBatchInfo* info, uint32_t instance,
+ 	AjmWriteStreamResult(
+ 	    result, AJM_SIDEBAND_RESULT_SIZE + AJM_SIDEBAND_STREAM_SIZE + AJM_SIDEBAND_MFRAME_SIZE,
+ 	    decode_result, true);
++	// BC5 (experiment 0154): KYTY_BC5_AJM_TRACE=1 journals every split decode job on stderr: the
++	// second title's cinematic voice stops being decoded after ~4.95 s (F198).
++	{
++		static const bool trace = std::getenv("KYTY_BC5_AJM_TRACE") != nullptr;
++		if (trace) {
++			size_t in_size = 0, out_size = 0;
++			for (size_t i = 0; i < input_buffers_num && input_buffers != nullptr; i++) in_size += input_buffers[i].size;
++			for (size_t i = 0; i < output_buffers_num && output_buffers != nullptr; i++) out_size += output_buffers[i].size;
++			std::fprintf(stderr,
++			             "ajm trace: decode-split inst 0x%x mf %d in %zu (%zu bufs) out %zu (%zu bufs) -> result 0x%x internal 0x%x consumed %zu written %zu samples %" PRIu64 " frames %u",
++			             instance, 1, in_size, input_buffers_num, out_size, output_buffers_num, static_cast<unsigned>(decode_result.result),
++			             static_cast<unsigned>(decode_result.internal_result), decode_result.input_consumed, decode_result.output_written,
++			             decode_result.total_decoded_samples, decode_result.frames);
++			// The first input buffer's first bytes (the superframe start), for the failing jobs.
++			if (input_buffers != nullptr && input_buffers_num > 0 && input_buffers[0].address != nullptr) {
++				const auto* b = static_cast<const uint8_t*>(input_buffers[0].address);
++				std::fprintf(stderr, " in0@%p[%zu]=", input_buffers[0].address, input_buffers[0].size);
++				for (size_t i = 0; i < 24 && i < input_buffers[0].size; i++) std::fprintf(stderr, "%02x", b[i]);
++				if (input_buffers_num > 1 && input_buffers[1].address != nullptr) {
++					const auto* b1 = static_cast<const uint8_t*>(input_buffers[1].address);
++					std::fprintf(stderr, " in1[%zu]=", input_buffers[1].size);
++					for (size_t i = 0; i < 8 && i < input_buffers[1].size; i++) std::fprintf(stderr, "%02x", b1[i]);
++				}
++			}
++			AjmSidebandGaplessDecode g {};
++			(void)AjmGetGaplessDecode(instance, &g);
++			std::fprintf(stderr, " gapless total %u skip %u skipped %u\n", g.total_samples, g.skip_samples, g.skipped_samples);
++		}
++	}
+ 
+ 	LOGF("\t instance = 0x%08" PRIx32 ", input_buffers = 0x%016" PRIx64
+ 	     ", input_num = 0x%016" PRIx64 ", output_buffers = 0x%016" PRIx64
+@@ -1213,6 +1137,14 @@ int KYTY_SYSV_ABI AjmBatchJobSetGaplessDecode(AjmBatchInfo* info, uint32_t insta
+ 	AjmWriteResult(result, AJM_SIDEBAND_RESULT_SIZE, decode_result);
+ 	LOGF("\t instance = 0x%08" PRIx32 ", gapless_decode = 0x%016" PRIx64 ", reset = %d\n", instance,
+ 	     reinterpret_cast<uint64_t>(gapless_decode), reset);
++	{ // BC5 (experiment 0154): the gapless parameters the title sets, per instance.
++		static const bool trace = std::getenv("KYTY_BC5_AJM_TRACE") != nullptr;
++		if (trace && gapless_decode != nullptr) {
++			const auto* g = static_cast<const AjmSidebandGaplessDecode*>(gapless_decode);
++			std::fprintf(stderr, "ajm trace: set-gapless inst 0x%x total %u skip %u skipped %u reset %d -> 0x%x\n", instance,
++			             g->total_samples, g->skip_samples, g->skipped_samples, reset, static_cast<unsigned>(decode_result.result));
++		}
++	}
+ 	return AjmAppendJob(info, AJM_JOB_CONTROL_SIZE, "set-gapless");
+ }
+ 
+@@ -1230,6 +1162,15 @@ int KYTY_SYSV_ABI AjmBatchJobGetGaplessDecode(AjmBatchInfo* info, uint32_t insta
+ 		*gapless      = gapless_decode;
+ 	}
+ 
++	{
++		static const bool trace = std::getenv("KYTY_BC5_AJM_TRACE") != nullptr;
++		if (trace) {
++			std::fprintf(stderr, "ajm trace: get-gapless inst 0x%x -> 0x%x total %u skip %u skipped %u\n",
++			             instance, static_cast<unsigned>(decode_result.result),
++			             gapless_decode.total_samples, gapless_decode.skip_samples,
++			             gapless_decode.skipped_samples);
++		}
++	}
+ 	LOGF("\t instance = 0x%08" PRIx32 "\n", instance);
+ 	return AjmAppendJob(info, AJM_JOB_RUN_SIZE, "get-gapless");
+ }
+@@ -1294,6 +1235,14 @@ int KYTY_SYSV_ABI AjmBatchJobControl(AjmBatchInfo* info, uint32_t instance, uint
+ 	const auto       decode_result = AjmControlInstance(instance, flags, sideband_input,
+ 	                                                    sideband_input_size, &decoder, &gapless);
+ 	AjmWriteSideband(flags, sideband_output, sideband_output_size, decoder, gapless, decode_result);
++	{
++		static const bool trace = std::getenv("KYTY_BC5_AJM_TRACE") != nullptr;
++		if (trace) {
++			std::fprintf(stderr, "ajm trace: control inst 0x%x flags 0x%llx in %zu out %zu -> 0x%x\n",
++			             instance, static_cast<unsigned long long>(flags), sideband_input_size,
++			             sideband_output_size, static_cast<unsigned>(decode_result.result));
++		}
++	}
+ 
+ 	LOGF("\t instance = 0x%08" PRIx32 ", flags = 0x%016" PRIx64 ", input = 0x%016" PRIx64
+ 	     ", input_size = 0x%016" PRIx64 ", output = 0x%016" PRIx64 ", output_size = 0x%016" PRIx64
 diff --git a/src/libs/ajm/atrac9_decoder.h b/src/libs/ajm/atrac9_decoder.h
-index cb7587c..fa37a0f 100644
+index cb7587c..f475044 100644
 --- a/src/libs/ajm/atrac9_decoder.h
 +++ b/src/libs/ajm/atrac9_decoder.h
-@@ -1,5 +1,6 @@
+@@ -1,9 +1,11 @@
  #pragma once
  
 +#include <cstdio>
  #include "common/assert.h"
  #include "common/logging/log.h"
  
-@@ -277,8 +278,20 @@ private:
+ #include <algorithm>
++#include <atomic>
+ #include <cinttypes>
+ #include <cstddef>
+ #include <cstdint>
+@@ -277,8 +279,31 @@ private:
  		std::memcpy(m_config_data, config_data, ATRAC9_CONFIG_DATA_SIZE);
  		m_has_config = true;
  
@@ -6120,8 +6415,19 @@ index cb7587c..fa37a0f 100644
 +		// vibration configuration heap corruption", GPL-2.0). The guest's own bytes stay unchanged.
 +		uint8_t init_config[ATRAC9_CONFIG_DATA_SIZE];
 +		std::memcpy(init_config, m_config_data, ATRAC9_CONFIG_DATA_SIZE);
-+		if (((init_config[1] >> 1u) & 7u) >= 6u) {
++		// BC5 (experiment 0154): the vibration layouts' frames are not the mono/dual-mono bitstream
++		// LibAtrac9 decodes (two low-band blocks per frame; every frame fails to unpack). Until the
++		// layout is implemented, these instances decode to silence of the right length: the voice
++		// stays alive, which the second title's cinematic clock depends on (its sync source is the
++		// haptic track of the opening), and the haptics are simply not produced.
++		m_vibration = ((init_config[1] >> 1u) & 7u) >= 6u;
++		if (m_vibration) {
 +			init_config[1] = static_cast<uint8_t>(init_config[1] - (6u << 1u));
++			static std::atomic_bool noted {false};
++			if (!noted.exchange(true)) {
++				std::fprintf(stderr, "bc5 ajm: ATRAC9 vibration layout %u decoded as silence (haptics not produced)\n",
++				             static_cast<unsigned>((m_config_data[1] >> 1u) & 7u));
++			}
 +		}
 +		const int init_ret = Atrac9InitDecoder(m_handle, init_config);
  		if (init_ret != 0) {
@@ -6130,6 +6436,501 @@ index cb7587c..fa37a0f 100644
  			m_is_initialized        = false;
  			result->result          = AJM_RESULT_CODEC_ERROR | AJM_RESULT_INVALID_DATA;
  			result->internal_result = init_ret;
+@@ -311,6 +336,14 @@ private:
+ 	}
+ 
+ 	int DecodeFrame(const uint8_t* input, int* bytes_used) {
++		if (m_vibration) {
++			// BC5 (experiment 0154): a frame of silence; the input is consumed frame by frame.
++			std::fill(m_pcm_buffer.begin(), m_pcm_buffer.end(), 0);
++			*bytes_used = (m_codec_info.framesInSuperframe > 0
++			                   ? m_codec_info.superframeSize / m_codec_info.framesInSuperframe
++			                   : m_codec_info.superframeSize);
++			return 0;
++		}
+ 		switch (m_sample_encoding) {
+ 			case AjmSampleEncoding::S16:
+ 				return Atrac9Decode(m_handle, input,
+@@ -519,6 +552,7 @@ private:
+ 	bool                 m_parse_riff_header = false;
+ 	bool                 m_is_initialized    = false;
+ 	bool                 m_has_config        = false;
++	bool                 m_vibration         = false;
+ 	void*                m_handle            = nullptr;
+ 	uint8_t              m_config_data[ATRAC9_CONFIG_DATA_SIZE] {};
+ 	uint32_t             m_superframe_bytes_remain = 0;
+diff --git a/src/libs/ajm/opus_decoder.h b/src/libs/ajm/opus_decoder.h
+index e82b93e..6cf1b61 100644
+--- a/src/libs/ajm/opus_decoder.h
++++ b/src/libs/ajm/opus_decoder.h
+@@ -1,7 +1,6 @@
+ ﻿#pragma once
+ 
+ #include "common/logging/log.h"
+-#include "libs/ajm/ffmpeg_decoder_common.h"
+ 
+ #include <algorithm>
+ #include <cinttypes>
+@@ -9,20 +8,33 @@
+ #include <cstdint>
+ #include <cstring>
+ #include <limits>
++#include <vector>
++
++#if KYTY_HAS_OPUS
++#include <opus/opus.h>
++#include <opus/opus_multistream.h>
++#endif
+ 
+ namespace Libs::Audio::Ajm {
+ 
++// BC5 (experiment 0154): the AJM Opus decoder on libopus. The bundled FFmpeg prebuilt carries
++// no Opus decoder and the previous in-tree class returned silence (one 960-sample frame per
++// job, whole input consumed), which left the second title's cinematic voice half-played and
++// its clock stopped (F198/F199).
++//
++// Input framing: a job carries a run of Opus packets, each preceded by its size as a
++// little-endian uint16 (the title's Wwise streams prefix the packet sizes of the file's seek
++// table). Output: the title asks for fewer samples per job than a packet holds (512 or 1024
++// for 960-sample packets), so a decoded packet is handed out across jobs: a job first drains
++// the PCM left from the previous packet, then pulls whole packets while the output has room,
++// and reports the bytes of the packets it pulled, so the title advances its stream by exactly
++// those.
+ class AjmOpusDecoder final: public AjmDecoder {
+ public:
+ 	AjmOpusDecoder(uint32_t channels, uint32_t sample_rate, AjmSampleEncoding encoding,
+-	              uint64_t flags)
++	               uint64_t flags)
+ 	    : AjmDecoder(channels, sample_rate, encoding) {
+ 		(void)flags;
+-
+-		m_codec = avcodec_find_decoder(AV_CODEC_ID_OPUS);
+-		if (m_codec == nullptr) {
+-			LOGF("AJM Opus: avcodec_find_decoder failed\n");
+-		}
+ 	}
+ 
+ 	~AjmOpusDecoder() override { Release(); }
+@@ -52,7 +64,7 @@ public:
+ 
+ 		Reset();
+ 
+-		if (m_codec_context == nullptr) {
++		if (!m_decoder_ok) {
+ 			m_is_initialized = false;
+ 			result.result    = AJM_RESULT_CODEC_ERROR | AJM_RESULT_FATAL;
+ 			return result;
+@@ -67,6 +79,8 @@ public:
+ 	void Reset() override {
+ 		Release();
+ 		m_total_decoded_samples = 0;
++		m_pcm.clear();
++		m_pcm_pos = 0;
+ 		if (m_is_initialized) {
+ 			OpenDecoder();
+ 		}
+@@ -74,37 +88,107 @@ public:
+ 
+ 	AjmDecodeResult Decode(const void* input, size_t input_size, void* output, size_t output_size,
+ 	                       bool multiple_frames, AjmGaplessState* gapless) override {
+-		(void)multiple_frames;
+ 		auto result = MakeResult();
+ 
+ 		if (!m_is_initialized) {
+ 			result.result = AJM_RESULT_NOT_INITIALIZED;
+ 			return result;
+ 		}
+-		if (m_codec_context == nullptr) {
++		if (!m_decoder_ok) {
+ 			result.result = AJM_RESULT_CODEC_ERROR | AJM_RESULT_FATAL;
+ 			return result;
+ 		}
+-		if (input == nullptr || input_size == 0) {
+-			result.result = AJM_RESULT_PARTIAL_INPUT;
+-			return result;
+-		}
+-		if (input_size > static_cast<size_t>(std::numeric_limits<int>::max())) {
+-			result.result = AJM_RESULT_INVALID_PARAMETER;
+-			return result;
++		if (output == nullptr) {
++			output_size = 0;
+ 		}
+ 
+-		size_t output_offset = 0;
+-		// Each AJM Decode call is fed exactly one Opus packet (the PS5 AJM ABI hands packets,
+-		// not raw Ogg pages), so the whole input buffer is a single packet to send.
+-		DecodePacket(static_cast<const uint8_t*>(input), static_cast<int>(input_size), output,
+-		            output_size, &output_offset, gapless, &result);
++		const auto* bytes         = static_cast<const uint8_t*>(input);
++		size_t      output_offset = 0;
++		size_t      consumed      = 0;
++		const auto  bpf = static_cast<size_t>(m_channels) * AjmBytesPerSample(m_sample_encoding);
++		for (;;) {
++			// Hand out the PCM left from the last packet.
++			if (m_pcm_pos < m_pcm.size()) {
++				size_t room = output_size - output_offset;
++				room -= room % bpf;
++				const size_t n = std::min(m_pcm.size() - m_pcm_pos, room);
++				if (n != 0) {
++					std::memcpy(static_cast<uint8_t*>(output) + output_offset, m_pcm.data() + m_pcm_pos,
++					            n);
++					output_offset += n;
++					m_pcm_pos += n;
++				}
++				if (m_pcm_pos < m_pcm.size()) {
++					break; // the output is full
++				}
++			}
++			if (output_offset >= output_size || input == nullptr) {
++				break;
++			}
++			if (!multiple_frames && result.frames > 0) {
++				break;
++			}
+ 
+-		if (result.frames == 0 && result.result == OK) {
+-			result.result = AJM_RESULT_PARTIAL_INPUT;
++			// Pull the next packet.
++			if (consumed + 2 > input_size) {
++				break;
++			}
++			const size_t packet_size = static_cast<size_t>(bytes[consumed]) |
++			                           (static_cast<size_t>(bytes[consumed + 1]) << 8u);
++			if (packet_size == 0) {
++				result.result = AJM_RESULT_CODEC_ERROR | AJM_RESULT_INVALID_DATA;
++				break;
++			}
++			if (consumed + 2 + packet_size > input_size) {
++				break; // a packet cut by the end of the job's input: the title resubmits it
++			}
++			const auto* packet         = bytes + consumed + 2;
++			const int   packet_samples = PacketSamples(packet, packet_size);
++			if (packet_samples <= 0) {
++				result.result = AJM_RESULT_CODEC_ERROR | AJM_RESULT_INVALID_DATA;
++				break;
++			}
++			const int decoded = DecodePacket(packet, packet_size, packet_samples);
++			if (decoded < 0) {
++				result.result = AJM_RESULT_CODEC_ERROR | AJM_RESULT_INVALID_DATA;
++				break;
++			}
++			m_pcm.resize(static_cast<size_t>(decoded) * bpf);
++			m_pcm_pos = 0;
++
++			// Gapless trimming is applied to the decoded packet, and the sample counters
++			// (the stream sideband's total and the gapless remainder) advance per packet
++			// decoded, not per byte handed out: the title ends the stream once the counters
++			// reach the total, without a job to drain the last packet's remainder.
++			auto valid = static_cast<uint32_t>(decoded);
++			if (gapless != nullptr && gapless->current.skip_samples > 0) {
++				const auto skip = std::min<uint32_t>(valid, gapless->current.skip_samples);
++				m_pcm_pos = static_cast<size_t>(skip) * bpf;
++				valid -= skip;
++				gapless->current.skip_samples =
++				    static_cast<uint16_t>(gapless->current.skip_samples - skip);
++				gapless->current.skipped_samples = static_cast<uint16_t>(std::min<uint32_t>(
++				    std::numeric_limits<uint16_t>::max(),
++				    static_cast<uint32_t>(gapless->current.skipped_samples) + skip));
++			}
++			if (gapless != nullptr && gapless->HasSampleLimit()) {
++				valid = std::min(valid, gapless->current.total_samples);
++				gapless->current.total_samples -= valid;
++			}
++			m_pcm.resize(m_pcm_pos + static_cast<size_t>(valid) * bpf);
++			m_total_decoded_samples += valid;
++
++			result.frames++;
++			consumed += 2 + packet_size;
+ 		}
+ 
+-		result.input_consumed        = input_size;
++		if (result.result == OK && output_offset == 0 && result.frames == 0) {
++			result.result = (output_size < bpf && (m_pcm_pos < m_pcm.size() || input_size > 2))
++			                    ? AJM_RESULT_NOT_ENOUGH_ROOM
++			                    : AJM_RESULT_PARTIAL_INPUT;
++		}
++
++		result.input_consumed        = consumed;
+ 		result.output_written        = output_offset;
+ 		result.frames_per_packet     = m_frames_per_packet;
+ 		result.total_decoded_samples = m_total_decoded_samples;
+@@ -128,164 +212,144 @@ public:
+ 	}
+ 
+ private:
++#if KYTY_HAS_OPUS
+ 	void Release() {
+-		if (m_codec_context != nullptr) {
+-			avcodec_free_context(&m_codec_context);
++		if (m_decoder != nullptr) {
++			opus_decoder_destroy(m_decoder);
++			m_decoder = nullptr;
++		}
++		if (m_ms_decoder != nullptr) {
++			opus_multistream_decoder_destroy(m_ms_decoder);
++			m_ms_decoder = nullptr;
+ 		}
++		m_decoder_ok = false;
+ 	}
+ 
+ 	void OpenDecoder() {
+-		if (m_codec == nullptr) {
++		int err = OPUS_OK;
++		if (m_mapping_family == 0 && m_channels <= 2) {
++			m_decoder = opus_decoder_create(static_cast<opus_int32>(m_sample_rate),
++			                                static_cast<int>(m_channels), &err);
++			if (err != OPUS_OK || m_decoder == nullptr) {
++				LOGF("AJM Opus: opus_decoder_create failed: %s\n", opus_strerror(err));
++				m_decoder = nullptr;
++				return;
++			}
++			m_decoder_ok = true;
+ 			return;
+ 		}
+ 
+-		m_codec_context = avcodec_alloc_context3(m_codec);
+-		if (m_codec_context == nullptr) {
++		// Mapping family 1: the Vorbis channel layouts of RFC 7845 §5.1.1.2 (the AJM
++		// initialize parameters carry no stream layout, so the family's defaults apply).
++		static constexpr struct {
++			int           streams;
++			int           coupled;
++			unsigned char mapping[8];
++		} FAMILY1[8] = {
++		    {1, 0, {0}},
++		    {1, 1, {0, 1}},
++		    {2, 1, {0, 2, 1}},
++		    {2, 2, {0, 1, 2, 3}},
++		    {3, 2, {0, 4, 1, 2, 3}},
++		    {4, 2, {0, 4, 1, 2, 3, 5}},
++		    {4, 4, {0, 4, 1, 2, 3, 5, 6}},
++		    {5, 4, {0, 6, 1, 2, 3, 4, 5, 7}},
++		};
++		if (m_mapping_family != 1 || m_channels > 8) {
++			LOGF("AJM Opus: %" PRIu32 " channels, mapping family %" PRIu32 " not supported\n",
++			     m_channels, m_mapping_family);
+ 			return;
+ 		}
+-
+-		m_codec_context->sample_rate = static_cast<int>(m_sample_rate);
+-		av_channel_layout_default(&m_codec_context->ch_layout, static_cast<int>(m_channels));
+-
+-		if (avcodec_open2(m_codec_context, m_codec, nullptr) < 0) {
+-			LOGF("AJM Opus: decoder initialization failed\n");
+-			Release();
++		const auto& layout = FAMILY1[m_channels - 1];
++		m_ms_decoder = opus_multistream_decoder_create(
++		    static_cast<opus_int32>(m_sample_rate), static_cast<int>(m_channels), layout.streams,
++		    layout.coupled, layout.mapping, &err);
++		if (err != OPUS_OK || m_ms_decoder == nullptr) {
++			LOGF("AJM Opus: opus_multistream_decoder_create failed: %s\n", opus_strerror(err));
++			m_ms_decoder = nullptr;
++			return;
+ 		}
++		m_decoder_ok = true;
+ 	}
+ 
+-	bool WriteFrame(const AVFrame* frame, void* output, size_t output_size, size_t* output_offset,
+-	                AjmGaplessState* gapless, AjmDecodeResult* result) {
+-		if (frame == nullptr || output_offset == nullptr || result == nullptr) {
+-			return false;
++	[[nodiscard]] int PacketSamples(const uint8_t* packet, size_t size) const {
++		const int frames = opus_packet_get_nb_frames(packet, static_cast<opus_int32>(size));
++		if (frames > 0) {
++			m_frames_per_packet = static_cast<uint32_t>(frames);
+ 		}
+-
+-		const auto channels = static_cast<uint32_t>(std::max(frame->ch_layout.nb_channels, 1));
+-		const auto bpf      = channels * AjmBytesPerSample(m_sample_encoding);
+-		if (bpf == 0) {
+-			result->result = AJM_RESULT_INVALID_PARAMETER;
+-			return false;
+-		}
+-
+-		SetFormat(channels, static_cast<uint32_t>(std::max(frame->sample_rate, 1)),
+-		          m_sample_encoding);
+-
+-		result->frames++;
+-
+-		uint32_t skip_samples = 0;
+-		if (gapless != nullptr && gapless->current.skip_samples > 0) {
+-			skip_samples = std::min<uint32_t>(frame->nb_samples, gapless->current.skip_samples);
+-			gapless->current.skip_samples =
+-			    static_cast<uint16_t>(gapless->current.skip_samples - skip_samples);
+-		}
+-
+-		uint32_t samples_to_write = static_cast<uint32_t>(frame->nb_samples) - skip_samples;
+-		if (gapless != nullptr && gapless->HasSampleLimit()) {
+-			samples_to_write = std::min(samples_to_write, gapless->current.total_samples);
+-		}
+-
+-		const auto requested_bytes = static_cast<size_t>(samples_to_write) * bpf;
+-		auto       writable_bytes  = requested_bytes;
+-		if (output == nullptr || *output_offset >= output_size) {
+-			writable_bytes = 0;
+-		} else {
+-			writable_bytes = std::min(writable_bytes, output_size - *output_offset);
+-			writable_bytes -= writable_bytes % bpf;
+-		}
+-
+-		if (writable_bytes != 0) {
+-			auto*       dst = static_cast<uint8_t*>(output) + *output_offset;
+-			const auto* src = frame->data[0] + static_cast<size_t>(skip_samples) * bpf;
+-			std::memcpy(dst, src, writable_bytes);
+-			*output_offset += writable_bytes;
+-		}
+-
+-		const auto samples_written = static_cast<uint32_t>(writable_bytes / bpf);
+-		if (gapless != nullptr && gapless->HasSampleLimit()) {
+-			gapless->current.total_samples -=
+-			    std::min(gapless->current.total_samples, samples_written);
+-		}
+-		if (gapless != nullptr) {
+-			const auto skipped_total =
+-			    std::min<uint32_t>(std::numeric_limits<uint16_t>::max(),
+-			                       static_cast<uint32_t>(gapless->current.skipped_samples) +
+-			                           skip_samples + (samples_to_write - samples_written));
+-			gapless->current.skipped_samples = static_cast<uint16_t>(skipped_total);
+-		}
+-
+-		m_total_decoded_samples += samples_written;
+-		result->total_decoded_samples = m_total_decoded_samples;
+-		result->format                = GetFormat();
+-
+-		if (writable_bytes != requested_bytes) {
+-			result->result |= AJM_RESULT_NOT_ENOUGH_ROOM;
+-			return false;
+-		}
+-		return true;
++		return opus_packet_get_nb_samples(packet, static_cast<opus_int32>(size),
++		                                  static_cast<opus_int32>(m_sample_rate));
+ 	}
+ 
+-	bool DecodePacket(const uint8_t* packet_data, int packet_size, void* output, size_t output_size,
+-	                  size_t* output_offset, AjmGaplessState* gapless, AjmDecodeResult* result) {
+-		if (packet_data == nullptr || packet_size <= 0 || result == nullptr) {
+-			return true;
+-		}
+-
+-		AVPacket* packet = av_packet_alloc();
+-		if (packet == nullptr || av_new_packet(packet, packet_size) < 0) {
+-			av_packet_free(&packet);
+-			result->result = AJM_RESULT_CODEC_ERROR | AJM_RESULT_FATAL;
+-			return false;
++	int DecodeS16(const uint8_t* packet, size_t size, opus_int16* pcm, int samples) {
++		if (m_decoder != nullptr) {
++			return opus_decode(m_decoder, packet, static_cast<opus_int32>(size), pcm, samples, 0);
+ 		}
+-		std::memcpy(packet->data, packet_data, static_cast<size_t>(packet_size));
++		return opus_multistream_decode(m_ms_decoder, packet, static_cast<opus_int32>(size), pcm,
++		                               samples, 0);
++	}
+ 
+-		int rc = avcodec_send_packet(m_codec_context, packet);
+-		av_packet_free(&packet);
+-		if (rc == AVERROR_INVALIDDATA) {
+-			result->result = AJM_RESULT_CODEC_ERROR | AJM_RESULT_INVALID_DATA;
+-			return false;
++	int DecodeFloat(const uint8_t* packet, size_t size, float* pcm, int samples) {
++		if (m_decoder != nullptr) {
++			return opus_decode_float(m_decoder, packet, static_cast<opus_int32>(size), pcm, samples,
++			                         0);
+ 		}
+-		if (rc < 0) {
+-			result->result = AJM_RESULT_PARTIAL_INPUT;
+-			return false;
+-		}
+-
+-		for (;;) {
+-			AVFrame* frame = av_frame_alloc();
+-			if (frame == nullptr) {
+-				result->result = AJM_RESULT_CODEC_ERROR | AJM_RESULT_FATAL;
+-				return false;
+-			}
++		return opus_multistream_decode_float(m_ms_decoder, packet, static_cast<opus_int32>(size),
++		                                     pcm, samples, 0);
++	}
+ 
+-			rc = avcodec_receive_frame(m_codec_context, frame);
+-			if (rc == AVERROR(EAGAIN) || rc == AVERROR_EOF) {
+-				av_frame_free(&frame);
+-				return true;
++	// Decodes one packet into m_pcm in the instance's sample encoding; returns the samples per
++	// channel decoded or a negative libopus error.
++	int DecodePacket(const uint8_t* packet, size_t size, int packet_samples) {
++		const auto frame = static_cast<size_t>(packet_samples) * m_channels;
++		switch (m_sample_encoding) {
++			case AjmSampleEncoding::S16: {
++				m_pcm.resize(frame * sizeof(int16_t));
++				return DecodeS16(packet, size, reinterpret_cast<opus_int16*>(m_pcm.data()),
++				                 packet_samples);
+ 			}
+-			if (rc < 0) {
+-				av_frame_free(&frame);
+-				result->result = AJM_RESULT_CODEC_ERROR | AJM_RESULT_INVALID_DATA;
+-				return false;
++			case AjmSampleEncoding::Float: {
++				m_pcm.resize(frame * sizeof(float));
++				return DecodeFloat(packet, size, reinterpret_cast<float*>(m_pcm.data()),
++				                   packet_samples);
+ 			}
+-
+-			AVFrame* converted = AjmConvertFfmpegFrame(frame, m_sample_encoding, result);
+-			av_frame_free(&frame);
+-			if (converted == nullptr) {
+-				return false;
+-			}
+-
+-			const bool ok =
+-			    WriteFrame(converted, output, output_size, output_offset, gapless, result);
+-			av_frame_free(&converted);
+-			if (!ok) {
+-				return false;
++			case AjmSampleEncoding::S32: {
++				m_s16.resize(frame);
++				const int n = DecodeS16(packet, size, m_s16.data(), packet_samples);
++				if (n < 0) {
++					return n;
++				}
++				m_pcm.resize(frame * sizeof(int32_t));
++				auto* dst = reinterpret_cast<int32_t*>(m_pcm.data());
++				for (size_t i = 0; i < static_cast<size_t>(n) * m_channels; i++) {
++					dst[i] = static_cast<int32_t>(m_s16[i]) << 16;
++				}
++				return n;
+ 			}
++			default: return OPUS_BAD_ARG;
+ 		}
+ 	}
+ 
+-	const AVCodec*  m_codec             = nullptr;
+-	AVCodecContext* m_codec_context     = nullptr;
+-	uint32_t        m_mapping_family    = 0;
+-	uint32_t        m_frames_per_packet = 1;
+-	bool            m_is_initialized    = false;
++	OpusDecoder*            m_decoder    = nullptr;
++	OpusMSDecoder*          m_ms_decoder = nullptr;
++	std::vector<opus_int16> m_s16;
++#else
++	void Release() { m_decoder_ok = false; }
++	void OpenDecoder() { LOGF("AJM Opus: built without libopus, no Opus decoding\n"); }
++	[[nodiscard]] static int PacketSamples(const uint8_t* /*packet*/, size_t /*size*/) {
++		return -1;
++	}
++	static int DecodePacket(const uint8_t* /*packet*/, size_t /*size*/, int /*samples*/) {
++		return -1;
++	}
++#endif
++
++	std::vector<uint8_t> m_pcm; // the last packet's PCM; [m_pcm_pos, size) not handed out yet
++	size_t               m_pcm_pos           = 0;
++	uint32_t             m_mapping_family    = 0;
++	mutable uint32_t     m_frames_per_packet = 1;
++	bool                 m_is_initialized    = false;
++	bool                 m_decoder_ok        = false;
+ };
+ 
+ } // namespace Libs::Audio::Ajm
 diff --git a/src/libs/audio.cpp b/src/libs/audio.cpp
 index fe4b332..4f6761f 100644
 --- a/src/libs/audio.cpp
@@ -14026,7 +14827,7 @@ index 3c0684f..ba1c36b 100644
  int KYTY_SYSV_ABI PadInit();
  int KYTY_SYSV_ABI PadOpen(int user_id, int type, int index, const void* param);
 diff --git a/src/libs/libAmpr.cpp b/src/libs/libAmpr.cpp
-index 073361d..bbacbf6 100644
+index 073361d..36f9a2b 100644
 --- a/src/libs/libAmpr.cpp
 +++ b/src/libs/libAmpr.cpp
 @@ -1,3 +1,5 @@
@@ -14491,7 +15292,7 @@ index 073361d..bbacbf6 100644
 +			results[k]          = ReadHostFileToGuest(host_path, command.file_offset, command.destination, command.size, &bytes_read);
 +			if (AmmTrace()) {
 +				AmmTraceStamp(), std::fprintf(stderr, "amm trace: read file 0x%08" PRIx32 " +0x%" PRIx64 " size 0x%" PRIx64 " -> 0x%016" PRIx64 " = 0x%08x (parallel)\n",
-+				                              command.file_id, command.file_offset, command.size, command.destination, static_cast<unsigned>(results[k]));
++				                              command.file_id, command.file_offset, command.size, command.destination, static_cast<unsigned>(results[k]), bytes_read, bytes_read >= 8 ? *reinterpret_cast<const uint64_t*>(command.destination) : 0);
 +			}
  		}
 -	}
@@ -14577,7 +15378,7 @@ index 073361d..bbacbf6 100644
 +				if (AmmTrace()) {
 +					AmmTraceStamp(), std::fprintf(stderr, "amm trace: read file 0x%08" PRIx32 " +0x%" PRIx64 " size 0x%" PRIx64 " -> 0x%016" PRIx64 " = 0x%08x\n",
 +					             command.file_id, command.file_offset, command.size, command.destination,
-+					             static_cast<unsigned>(result));
++					             static_cast<unsigned>(result), bytes_read, bytes_read >= 8 ? *reinterpret_cast<const uint64_t*>(command.destination) : 0);
 +				}
  				if (result != OK) {
  					LOGF("\tAPR submit read failed: id=0x%08" PRIx32 ", result=0x%08" PRIx32
