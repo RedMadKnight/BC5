@@ -185,10 +185,29 @@ and the icons live in the `\x7fCNT` container, not in the inner image.
 Reads: header, plaintext outer PFS, the layout, the inner tree; decodes each block once on
 demand into a 32 MiB cache (`BC5_MOUNT_CACHE_MIB`; experiments 0112, 0116); FUSE-mounts the
 inner tree. `inspect` prints the content ID
-from the `\x7fCNT` when readable. When the inner image has no `sce_sys/param.json` (the title's
-own is in the `\x7fCNT`) and the content ID is readable, the mount shows a synthesised one with
-`contentId` and `titleId` (the ID's bytes 7–16), so that hosts find the `TITLE_ID` they key save
-directories and per-title settings on (experiment 0148).
+from the `\x7fCNT` when readable.
+
+The `\x7fCNT` container (section 6) is read for its named entries, which the mount shows under
+`sce_sys/` of the inner image when that directory (or the entry's subdirectory, `uds/`,
+`trophy2/`) exists there and the file does not: `param.json` as the title wrote it, the icons,
+the PlayGo tables, `npbind.dat`. Entries in the body of a retail image (flag bit 27) are
+skipped, since the body is encrypted there (*TODO(verify)*: the flag, from the debug package
+seen). When no `param.json` comes that way and the content ID is readable, the mount shows a
+synthesised one with `contentId` and `titleId` (the ID's bytes 7–16), so that hosts find the
+`TITLE_ID` they key save directories and per-title settings on (experiment 0148).
+
+### 6a. The `\x7fCNT` container
+
+The PS4 package header's layout, big-endian: entry count at `+0x10` (u32), the entry table's
+offset at `+0x18` (u32, `0x3560` in the package seen), the content ID at `+0x40` (36 bytes),
+32-byte entries `{id u32, name offset u32, flags1 u32, flags2 u32, offset u32, size u32, 8
+reserved}` with offsets relative to the container, names NUL-separated (a leading NUL) in the
+entry with id `0x200`. Entries seen (ids as in PS4 packages): `0x2000` `param.json` (plaintext,
+in the header area), `0x1200` `icon0.png`, `0x1220` `pic0.png`, `0x1240` `snd0.at9`, `0x100d`
+`save_data.png`, `0x1001` `playgo-chunk.dat`, `0x2010`/`0x2011` the PlayGo hash table and FICM,
+`0x2020`/`0x2021` `uds/npbind.dat` and `trophy2/npbind.dat`, `0x1480`/`0x14a0` the trophy and
+UDS `.ucp`, `0x2100`/`0x2101` `origin-`/`target-param.json`, `0x3000` `playgo-scenario.json`.
+In the debug package seen every entry is plaintext (the PNGs start with their magic).
 
 Does not: decrypt an encrypted outer image, read the `\x7fCNT` metadata beyond the content ID,
 verify digests, write packages (the fixture writer produces synthetic ones for tests, with

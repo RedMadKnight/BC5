@@ -7,8 +7,10 @@
 //! * [`naps`] — `naps_pkg_layout.dat`: logical blocks → stored bytes.
 //! * [`kraken`] — the Kraken blocks, through the vendored `oozextract`.
 //! * [`inner`] — the logical inner image and its file tree.
+//! * [`cnt`] — the `CNT` container: the metadata files shown under `sce_sys`.
 //! * [`PkgImage`] — the package: header, outer PFS, the two inner files.
 
+pub mod cnt;
 pub mod diskcache;
 pub mod inner;
 pub mod kraken;
@@ -27,7 +29,6 @@ use naps::Layout;
 const LAYER: &str = "pkg";
 /// The finalized-image header magic.
 pub const FIH_MAGIC: &[u8; 4] = b"\x7fFIH";
-const CNT_MAGIC: &[u8; 4] = b"\x7fCNT";
 /// The seed a plaintext outer image carries where an encrypted one has its key seed.
 const PLAINTEXT_SEED: &[u8; 16] = b"PPRPLAIN-NOAUTH!";
 /// Outer PFS inode size: the signed layout with a 32-byte digest per block pointer.
@@ -316,18 +317,105 @@ pub fn param_json_from_content_id(content_id: &str) -> Option<Vec<u8>> {
     )
 }
 
-/// `sce_sys/param.json` synthesised for an inner image without one (experiment 0148):
-/// the title's own copy lives in the `\x7fCNT` container, which we do not read, and
-/// hosts key save directories and per-title settings on `TITLE_ID` from this file.
+/// Where an added file's bytes come from.
 #[derive(Debug)]
-struct SynthParamJson {
-    /// Index of `sce_sys` in the inner tree.
+enum ExtraData {
+    /// Made up by the mount (the `param.json` from the content ID).
+    Inline(Vec<u8>),
+    /// A plaintext entry of the `\x7fCNT` container: absolute offset and length.
+    Container { offset: u64, size: u64 },
+}
+
+/// A file the mount adds under `sce_sys` of the inner image (experiment 0148): the
+/// container's named entries, as a console shows them under `/app0/sce_sys`, and a
+/// `param.json` made from the content ID when the container gives none. Hosts key
+/// save directories and per-title settings on the `TITLE_ID` in `param.json`.
+#[derive(Debug)]
+struct ExtraFile {
+    /// Index of the parent directory in the inner tree.
     dir: usize,
-    /// Index of the synthesised entry: one past the inner tree's entries.
-    idx: usize,
-    /// `sce_sys`'s children plus the synthesised entry.
-    dir_children: Vec<usize>,
-    data: Vec<u8>,
+    name: String,
+    path: String,
+    /// `path` case-folded, for `find`.
+    folded: String,
+    data: ExtraData,
+}
+
+/// The added files and the inner directories' children lists with them appended.
+#[derive(Debug, Default)]
+struct Extras {
+    /// Index of the first added entry: one past the inner tree's entries.
+    base: usize,
+    files: Vec<ExtraFile>,
+    children: Vec<(usize, Vec<usize>)>,
+}
+
+impl Extras {
+    fn build<R: ReadAt>(tree: &InnerTree<R>, header: &FihHeader, cnt: &cnt::CntTable) -> Self {
+        let base = tree.entry_count();
+        let mut files: Vec<ExtraFile> = Vec::new();
+        let mut add = |path: String, data: ExtraData| {
+            let folded = crate::tree::fold_name(&path);
+            let (parent, name) = path
+                .rsplit_once('/')
+                .map_or(("", path.as_str()), |(d, n)| (d, n));
+            if tree.find(&path).is_some() || files.iter().any(|f| f.folded == folded) {
+                return;
+            }
+            let Some(dir) = tree
+                .find(parent)
+                .filter(|&d| tree.entry(d).is_some_and(|e| e.is_dir))
+            else {
+                return;
+            };
+            files.push(ExtraFile {
+                dir,
+                name: name.to_owned(),
+                path: path.clone(),
+                folded,
+                data,
+            });
+        };
+        for e in &cnt.entries {
+            // A retail image encrypts its body; its entries there are not readable.
+            if e.in_body && header.signed_byte == 0x80 {
+                continue;
+            }
+            add(
+                format!("sce_sys/{}", e.name),
+                ExtraData::Container {
+                    offset: e.offset,
+                    size: e.size,
+                },
+            );
+        }
+        if let Some(json) = cnt
+            .content_id
+            .as_deref()
+            .and_then(param_json_from_content_id)
+        {
+            add(PARAM_JSON_PATH.to_owned(), ExtraData::Inline(json));
+        }
+        let mut children: Vec<(usize, Vec<usize>)> = Vec::new();
+        for (i, f) in files.iter().enumerate() {
+            if let Some((_, list)) = children.iter_mut().find(|(d, _)| *d == f.dir) {
+                list.push(base + i);
+            } else {
+                let mut list = tree.children(f.dir).to_vec();
+                list.push(base + i);
+                children.push((f.dir, list));
+            }
+        }
+        Self {
+            base,
+            files,
+            children,
+        }
+    }
+
+    fn get(&self, idx: usize) -> Option<&ExtraFile> {
+        idx.checked_sub(self.base).and_then(|i| self.files.get(i))
+    }
 }
 
 /// An opened package.
@@ -339,7 +427,8 @@ pub struct PkgImage<R: ReadAt> {
     outer_inodes: usize,
     layout_len: u64,
     tree: InnerTree<Window<Arc<R>>>,
-    param_json: Option<SynthParamJson>,
+    content_id: Option<String>,
+    extras: Extras,
 }
 
 impl PkgImage<FileSource> {
@@ -431,26 +520,12 @@ impl<R: ReadAt> PkgImage<R> {
             }
         }
         let tree = InnerTree::open(image, &layout)?;
-        let param_json = (tree.find(PARAM_JSON_PATH).is_none())
-            .then(|| tree.find("sce_sys"))
-            .flatten()
-            .filter(|&dir| tree.entry(dir).is_some_and(|e| e.is_dir))
-            .zip(
-                read_content_id(&*source, &header)
-                    .as_deref()
-                    .and_then(param_json_from_content_id),
-            )
-            .map(|(dir, data)| {
-                let idx = tree.entry_count();
-                let mut dir_children = tree.children(dir).to_vec();
-                dir_children.push(idx);
-                SynthParamJson {
-                    dir,
-                    idx,
-                    dir_children,
-                    data,
-                }
-            });
+        // A malformed container costs the metadata files, not the mount.
+        let cnt = cnt::CntTable::read(&*source, header.cnt_offset).unwrap_or_else(|e| {
+            eprintln!("bc5-mount: the CNT container is not read: {e}");
+            cnt::CntTable::default()
+        });
+        let extras = Extras::build(&tree, &header, &cnt);
         Ok(Self {
             source,
             header,
@@ -458,13 +533,28 @@ impl<R: ReadAt> PkgImage<R> {
             outer_inodes: outer.inodes.len(),
             layout_len,
             tree,
-            param_json,
+            content_id: cnt.content_id,
+            extras,
         })
     }
 
-    /// True when the mount shows a `sce_sys/param.json` the inner image does not have.
+    /// True when the mount's `sce_sys/param.json` is made from the content ID: the
+    /// inner image and the container have none.
     pub fn param_json_synthesised(&self) -> bool {
-        self.param_json.is_some()
+        self.extras.files.iter().any(|f| {
+            f.folded == crate::tree::fold_name(PARAM_JSON_PATH)
+                && matches!(f.data, ExtraData::Inline(_))
+        })
+    }
+
+    /// The files added under `sce_sys` from the container, by path.
+    pub fn container_files(&self) -> Vec<&str> {
+        self.extras
+            .files
+            .iter()
+            .filter(|f| matches!(f.data, ExtraData::Container { .. }))
+            .map(|f| f.path.as_str())
+            .collect()
     }
 
     /// The header.
@@ -479,7 +569,7 @@ impl<R: ReadAt> PkgImage<R> {
 
     /// The content ID from the embedded container, when it is there and readable.
     pub fn content_id(&self) -> Option<String> {
-        read_content_id(&*self.source, &self.header)
+        self.content_id.clone()
     }
 
     /// Everything `inspect` prints.
@@ -517,83 +607,80 @@ impl<R: ReadAt> PkgImage<R> {
     }
 }
 
-/// The content ID from the `\x7fCNT` container at `header.cnt_offset`, when it is
-/// there and readable: 36 bytes at +0x40 of the container.
-fn read_content_id<R: ReadAt>(source: &R, header: &FihHeader) -> Option<String> {
-    let off = header.cnt_offset;
-    if off == 0 || off.checked_add(0x80).map_or(true, |e| e > source.len()) {
-        return None;
-    }
-    let cnt = source.read_vec_at(off, 0x80).ok()?;
-    if !cnt.starts_with(CNT_MAGIC) {
-        return None;
-    }
-    let id = &cnt[0x40..0x40 + 36];
-    if id
-        .iter()
-        .all(|&b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_')
-    {
-        String::from_utf8(id.to_vec()).ok()
-    } else {
-        None
-    }
-}
-
 impl<R: ReadAt> FileTree for PkgImage<R> {
     fn entry_count(&self) -> usize {
-        self.tree.entry_count() + usize::from(self.param_json.is_some())
+        self.extras.base + self.extras.files.len()
     }
 
     fn entry(&self, idx: usize) -> Option<EntryRef<'_>> {
-        match &self.param_json {
-            Some(s) if idx == s.idx => Some(EntryRef {
-                parent: s.dir,
-                name: "param.json",
-                path: PARAM_JSON_PATH,
+        match self.extras.get(idx) {
+            Some(f) => Some(EntryRef {
+                parent: f.dir,
+                name: &f.name,
+                path: &f.path,
                 is_dir: false,
-                size: s.data.len() as u64,
+                size: match &f.data {
+                    ExtraData::Inline(d) => d.len() as u64,
+                    ExtraData::Container { size, .. } => *size,
+                },
             }),
-            _ => self.tree.entry(idx),
+            None => self.tree.entry(idx),
         }
     }
 
     fn children(&self, idx: usize) -> &[usize] {
-        match &self.param_json {
-            Some(s) if idx == s.dir => &s.dir_children,
-            _ => self.tree.children(idx),
+        match self.extras.children.iter().find(|(d, _)| *d == idx) {
+            Some((_, list)) => list,
+            None => self.tree.children(idx),
         }
     }
 
     fn find(&self, path: &str) -> Option<usize> {
-        if let Some(s) = &self.param_json {
-            let norm: Vec<&str> = path.split(['/', '\\']).filter(|p| !p.is_empty()).collect();
-            if norm.len() == 2
-                && crate::tree::fold_name(norm[0]) == "SCE_SYS"
-                && crate::tree::fold_name(norm[1]) == "PARAM.JSON"
-            {
-                return Some(s.idx);
+        if !self.extras.files.is_empty() {
+            let norm = path
+                .split(['/', '\\'])
+                .filter(|p| !p.is_empty())
+                .collect::<Vec<_>>()
+                .join("/");
+            let folded = crate::tree::fold_name(&norm);
+            if let Some(i) = self.extras.files.iter().position(|f| f.folded == folded) {
+                return Some(self.extras.base + i);
             }
         }
         self.tree.find(path)
     }
 
     fn read_file_at(&self, idx: usize, offset: u64, buf: &mut [u8]) -> Result<usize> {
-        match &self.param_json {
-            Some(s) if idx == s.idx => {
-                let start = usize::try_from(offset.min(s.data.len() as u64)).unwrap_or(usize::MAX);
-                let n = buf.len().min(s.data.len() - start);
-                buf[..n].copy_from_slice(&s.data[start..start + n]);
-                Ok(n)
-            }
-            _ => self.tree.read_file_at(idx, offset, buf),
+        match self.extras.get(idx) {
+            Some(f) => match &f.data {
+                ExtraData::Inline(d) => {
+                    let start = usize::try_from(offset.min(d.len() as u64)).unwrap_or(usize::MAX);
+                    let n = buf.len().min(d.len() - start);
+                    buf[..n].copy_from_slice(&d[start..start + n]);
+                    Ok(n)
+                }
+                ExtraData::Container { offset: at, size } => {
+                    let start = offset.min(*size);
+                    let n = usize::try_from((*size - start).min(buf.len() as u64))
+                        .unwrap_or(usize::MAX);
+                    if n == 0 {
+                        return Ok(0);
+                    }
+                    self.source
+                        .read_exact_at(at + start, &mut buf[..n])
+                        .map_err(|e| Error::format(LAYER, format!("{}: {e}", f.path)))?;
+                    Ok(n)
+                }
+            },
+            None => self.tree.read_file_at(idx, offset, buf),
         }
     }
 
     fn prefetch_file(&self, idx: usize, offset: u64, len: u64) -> Result<()> {
-        match &self.param_json {
-            Some(s) if idx == s.idx => Ok(()),
-            _ => self.tree.prefetch_file(idx, offset, len),
+        if self.extras.get(idx).is_some() {
+            return Ok(());
         }
+        self.tree.prefetch_file(idx, offset, len)
     }
 
     fn block_size(&self) -> u32 {

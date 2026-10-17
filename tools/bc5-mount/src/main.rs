@@ -221,6 +221,16 @@ fn inspect_pkg(path: &Path, p: &PkgImage<FileSource>) {
             ""
         }
     );
+    let from_cnt = p.container_files();
+    println!(
+        "cnt files:        {} shown under sce_sys{}",
+        from_cnt.len(),
+        if from_cnt.is_empty() {
+            String::new()
+        } else {
+            format!(" ({})", from_cnt.join(", "))
+        }
+    );
     println!(
         "outer pfs:        at {:#x}, {} bytes, superblock at {:#x}, mode {:#x}, {} inodes",
         h.pfs_offset, h.pfs_size, h.superblock_offset, info.outer_mode, info.outer_inodes
