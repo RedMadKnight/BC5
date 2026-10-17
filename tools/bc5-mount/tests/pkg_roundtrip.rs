@@ -217,3 +217,89 @@ fn corruption_is_reported_not_panicked() {
     let short = clean[..clean.len() - 0x10000].to_vec();
     assert!(PkgImage::open(short).is_err());
 }
+
+/// `sce_sys/param.json` is synthesised from the content ID when the inner image has
+/// none (experiment 0148): hosts take `TITLE_ID` from it.
+#[test]
+fn param_json_synthesised_from_the_content_id() {
+    use bc5_mount::fixture::pkg_writer::write_pkg_with;
+    use bc5_mount::fixture::DirSpec;
+    use bc5_mount::pkg::PARAM_JSON_PATH;
+
+    const ID: &str = "UP9000-PPSA03671_00-MARVELSWOLVERINE";
+    let with_sce_sys = Spec::new(
+        "sce-sys",
+        DirSpec::new("")
+            .file("eboot.bin", Content::Bytes(b"eboot".to_vec()))
+            .dir(DirSpec::new("sce_sys").file("keystone", Content::Bytes(vec![7u8; 96]))),
+    );
+    let mut cur = Cursor::new(Vec::new());
+    let info = write_pkg_with(&with_sce_sys, &mut cur, Some(ID)).unwrap();
+    let bytes = cur.into_inner();
+    assert_eq!(bytes.len() as u64, info.len);
+    let p = PkgImage::open(bytes).unwrap();
+    assert_eq!(p.content_id().as_deref(), Some(ID));
+    assert!(p.param_json_synthesised());
+    let idx = p
+        .find(PARAM_JSON_PATH)
+        .expect("the synthesised file is found");
+    assert_eq!(
+        p.find(r"SCE_SYS\Param.Json"),
+        Some(idx),
+        "case-insensitive, either slash"
+    );
+    let e = p.entry(idx).unwrap();
+    assert_eq!(
+        (e.name, e.path, e.is_dir),
+        ("param.json", PARAM_JSON_PATH, false)
+    );
+    let sce_sys = p.find("sce_sys").unwrap();
+    assert_eq!(e.parent, sce_sys);
+    assert!(p.children(sce_sys).contains(&idx));
+    assert_eq!(p.entry_count(), idx + 1);
+    // Whole, and in pieces from an offset.
+    let f = TreeFile::new(&p, idx).unwrap();
+    let mut all = vec![0u8; e.size as usize];
+    assert_eq!(f.read_at(0, &mut all).unwrap(), all.len());
+    let text = std::str::from_utf8(&all).unwrap();
+    assert!(text.contains("\"titleId\": \"PPSA03671\""), "{text}");
+    let mut tail = vec![0u8; 8];
+    assert_eq!(f.read_at(e.size - 3, &mut tail).unwrap(), 3);
+    assert_eq!(&tail[..3], &all[all.len() - 3..]);
+    assert_eq!(f.read_at(e.size + 10, &mut tail).unwrap(), 0);
+    // The hashes of the volume list it alongside the real files.
+    let got = hash_volume(&p, |_| {}).unwrap();
+    assert!(
+        got.iter()
+            .any(|h| h.path.eq_ignore_ascii_case(PARAM_JSON_PATH)),
+        "{got:?}"
+    );
+
+    // The inner image's own param.json wins; no sce_sys, nothing to add; no content ID, nothing.
+    let own = Spec::new(
+        "own",
+        DirSpec::new("")
+            .dir(DirSpec::new("sce_sys").file("param.json", Content::Bytes(b"{}".to_vec()))),
+    );
+    let mut cur = Cursor::new(Vec::new());
+    write_pkg_with(&own, &mut cur, Some(ID)).unwrap();
+    let p = PkgImage::open(cur.into_inner()).unwrap();
+    assert!(!p.param_json_synthesised());
+    let idx = p.find(PARAM_JSON_PATH).unwrap();
+    assert_eq!(p.entry(idx).unwrap().size, 2);
+    let no_dir = Spec::new(
+        "no-dir",
+        DirSpec::new("").file("a.txt", Content::Bytes(vec![1])),
+    );
+    let mut cur = Cursor::new(Vec::new());
+    write_pkg_with(&no_dir, &mut cur, Some(ID)).unwrap();
+    assert!(!PkgImage::open(cur.into_inner())
+        .unwrap()
+        .param_json_synthesised());
+    let mut cur = Cursor::new(Vec::new());
+    write_pkg(&with_sce_sys, &mut cur).unwrap();
+    let p = PkgImage::open(cur.into_inner()).unwrap();
+    assert_eq!(p.content_id(), None);
+    assert!(!p.param_json_synthesised());
+    assert_eq!(p.find(PARAM_JSON_PATH), None);
+}
