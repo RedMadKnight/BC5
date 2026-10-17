@@ -284,6 +284,52 @@ pub struct PkgInfo {
     pub total_file_bytes: u64,
 }
 
+/// The name of the title parameter file hosts read from `/app0`.
+pub const PARAM_JSON_PATH: &str = "sce_sys/param.json";
+
+/// The title ID inside a content ID (`UP9000-PPSA03671_00-MARVELSWOLVERINE` →
+/// `PPSA03671`): 36 ASCII bytes, the ID at 7..16 between `-` and `_00-`.
+pub fn title_id_from_content_id(content_id: &str) -> Option<&str> {
+    let b = content_id.as_bytes();
+    if b.len() != 36 || b[6] != b'-' || &b[16..20] != b"_00-" {
+        return None;
+    }
+    let id = &b[7..16];
+    if id[..4].iter().all(u8::is_ascii_uppercase) && id[4..].iter().all(u8::is_ascii_digit) {
+        content_id.get(7..16)
+    } else {
+        None
+    }
+}
+
+/// The `param.json` the mount synthesises from a content ID: the two keys hosts
+/// read for the title (`KytyPlus`: `TITLE_ID`, `CONTENT_ID`), and a note.
+pub fn param_json_from_content_id(content_id: &str) -> Option<Vec<u8>> {
+    let title_id = title_id_from_content_id(content_id)?;
+    Some(
+        format!(
+            "{{\n  \"contentId\": \"{content_id}\",\n  \"titleId\": \"{title_id}\",\n  \
+             \"bc5\": \"synthesised by bc5-mount from the content ID: the package keeps its \
+             param.json in the CNT container, outside the inner image\"\n}}\n"
+        )
+        .into_bytes(),
+    )
+}
+
+/// `sce_sys/param.json` synthesised for an inner image without one (experiment 0148):
+/// the title's own copy lives in the `\x7fCNT` container, which we do not read, and
+/// hosts key save directories and per-title settings on `TITLE_ID` from this file.
+#[derive(Debug)]
+struct SynthParamJson {
+    /// Index of `sce_sys` in the inner tree.
+    dir: usize,
+    /// Index of the synthesised entry: one past the inner tree's entries.
+    idx: usize,
+    /// `sce_sys`'s children plus the synthesised entry.
+    dir_children: Vec<usize>,
+    data: Vec<u8>,
+}
+
 /// An opened package.
 #[derive(Debug)]
 pub struct PkgImage<R: ReadAt> {
@@ -293,6 +339,7 @@ pub struct PkgImage<R: ReadAt> {
     outer_inodes: usize,
     layout_len: u64,
     tree: InnerTree<Window<Arc<R>>>,
+    param_json: Option<SynthParamJson>,
 }
 
 impl PkgImage<FileSource> {
@@ -384,6 +431,26 @@ impl<R: ReadAt> PkgImage<R> {
             }
         }
         let tree = InnerTree::open(image, &layout)?;
+        let param_json = (tree.find(PARAM_JSON_PATH).is_none())
+            .then(|| tree.find("sce_sys"))
+            .flatten()
+            .filter(|&dir| tree.entry(dir).is_some_and(|e| e.is_dir))
+            .zip(
+                read_content_id(&*source, &header)
+                    .as_deref()
+                    .and_then(param_json_from_content_id),
+            )
+            .map(|(dir, data)| {
+                let idx = tree.entry_count();
+                let mut dir_children = tree.children(dir).to_vec();
+                dir_children.push(idx);
+                SynthParamJson {
+                    dir,
+                    idx,
+                    dir_children,
+                    data,
+                }
+            });
         Ok(Self {
             source,
             header,
@@ -391,7 +458,13 @@ impl<R: ReadAt> PkgImage<R> {
             outer_inodes: outer.inodes.len(),
             layout_len,
             tree,
+            param_json,
         })
+    }
+
+    /// True when the mount shows a `sce_sys/param.json` the inner image does not have.
+    pub fn param_json_synthesised(&self) -> bool {
+        self.param_json.is_some()
     }
 
     /// The header.
@@ -406,27 +479,7 @@ impl<R: ReadAt> PkgImage<R> {
 
     /// The content ID from the embedded container, when it is there and readable.
     pub fn content_id(&self) -> Option<String> {
-        let off = self.header.cnt_offset;
-        if off == 0
-            || off
-                .checked_add(0x80)
-                .map_or(true, |e| e > self.source.len())
-        {
-            return None;
-        }
-        let cnt = self.source.read_vec_at(off, 0x80).ok()?;
-        if !cnt.starts_with(CNT_MAGIC) {
-            return None;
-        }
-        let id = &cnt[0x40..0x40 + 36];
-        if id
-            .iter()
-            .all(|&b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_')
-        {
-            String::from_utf8(id.to_vec()).ok()
-        } else {
-            None
-        }
+        read_content_id(&*self.source, &self.header)
     }
 
     /// Everything `inspect` prints.
@@ -464,29 +517,83 @@ impl<R: ReadAt> PkgImage<R> {
     }
 }
 
+/// The content ID from the `\x7fCNT` container at `header.cnt_offset`, when it is
+/// there and readable: 36 bytes at +0x40 of the container.
+fn read_content_id<R: ReadAt>(source: &R, header: &FihHeader) -> Option<String> {
+    let off = header.cnt_offset;
+    if off == 0 || off.checked_add(0x80).map_or(true, |e| e > source.len()) {
+        return None;
+    }
+    let cnt = source.read_vec_at(off, 0x80).ok()?;
+    if !cnt.starts_with(CNT_MAGIC) {
+        return None;
+    }
+    let id = &cnt[0x40..0x40 + 36];
+    if id
+        .iter()
+        .all(|&b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_')
+    {
+        String::from_utf8(id.to_vec()).ok()
+    } else {
+        None
+    }
+}
+
 impl<R: ReadAt> FileTree for PkgImage<R> {
     fn entry_count(&self) -> usize {
-        self.tree.entry_count()
+        self.tree.entry_count() + usize::from(self.param_json.is_some())
     }
 
     fn entry(&self, idx: usize) -> Option<EntryRef<'_>> {
-        self.tree.entry(idx)
+        match &self.param_json {
+            Some(s) if idx == s.idx => Some(EntryRef {
+                parent: s.dir,
+                name: "param.json",
+                path: PARAM_JSON_PATH,
+                is_dir: false,
+                size: s.data.len() as u64,
+            }),
+            _ => self.tree.entry(idx),
+        }
     }
 
     fn children(&self, idx: usize) -> &[usize] {
-        self.tree.children(idx)
+        match &self.param_json {
+            Some(s) if idx == s.dir => &s.dir_children,
+            _ => self.tree.children(idx),
+        }
     }
 
     fn find(&self, path: &str) -> Option<usize> {
+        if let Some(s) = &self.param_json {
+            let norm: Vec<&str> = path.split(['/', '\\']).filter(|p| !p.is_empty()).collect();
+            if norm.len() == 2
+                && crate::tree::fold_name(norm[0]) == "SCE_SYS"
+                && crate::tree::fold_name(norm[1]) == "PARAM.JSON"
+            {
+                return Some(s.idx);
+            }
+        }
         self.tree.find(path)
     }
 
     fn read_file_at(&self, idx: usize, offset: u64, buf: &mut [u8]) -> Result<usize> {
-        self.tree.read_file_at(idx, offset, buf)
+        match &self.param_json {
+            Some(s) if idx == s.idx => {
+                let start = usize::try_from(offset.min(s.data.len() as u64)).unwrap_or(usize::MAX);
+                let n = buf.len().min(s.data.len() - start);
+                buf[..n].copy_from_slice(&s.data[start..start + n]);
+                Ok(n)
+            }
+            _ => self.tree.read_file_at(idx, offset, buf),
+        }
     }
 
     fn prefetch_file(&self, idx: usize, offset: u64, len: u64) -> Result<()> {
-        self.tree.prefetch_file(idx, offset, len)
+        match &self.param_json {
+            Some(s) if idx == s.idx => Ok(()),
+            _ => self.tree.prefetch_file(idx, offset, len),
+        }
     }
 
     fn block_size(&self) -> u32 {
@@ -495,5 +602,46 @@ impl<R: ReadAt> FileTree for PkgImage<R> {
 
     fn block_count(&self) -> u64 {
         self.tree.block_count()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::{param_json_from_content_id, title_id_from_content_id};
+
+    #[test]
+    fn title_id_from_a_content_id() {
+        assert_eq!(
+            title_id_from_content_id("UP9000-PPSA03671_00-MARVELSWOLVERINE"),
+            Some("PPSA03671")
+        );
+        assert_eq!(
+            title_id_from_content_id("EP9000-PPSA21567_00-ASTROBOT00000000"),
+            Some("PPSA21567")
+        );
+        // Wrong length, wrong separators, digits where letters belong.
+        assert_eq!(title_id_from_content_id("UP9000-PPSA03671_00-SHORT"), None);
+        assert_eq!(
+            title_id_from_content_id("UP9000_PPSA03671-00-MARVELSWOLVERINE"),
+            None
+        );
+        assert_eq!(
+            title_id_from_content_id("UP9000-1PSA03671_00-MARVELSWOLVERINE"),
+            None
+        );
+        assert_eq!(
+            title_id_from_content_id("UP9000-PPSA0367A_00-MARVELSWOLVERINE"),
+            None
+        );
+    }
+
+    #[test]
+    fn param_json_carries_both_ids() {
+        let json = param_json_from_content_id("UP9000-PPSA03671_00-MARVELSWOLVERINE").unwrap();
+        let text = std::str::from_utf8(&json).unwrap();
+        assert!(text.contains("\"titleId\": \"PPSA03671\""));
+        assert!(text.contains("\"contentId\": \"UP9000-PPSA03671_00-MARVELSWOLVERINE\""));
+        assert!(text.starts_with("{\n") && text.ends_with("}\n"));
+        assert_eq!(param_json_from_content_id("not a content id"), None);
     }
 }

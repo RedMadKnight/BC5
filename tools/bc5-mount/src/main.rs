@@ -210,6 +210,18 @@ fn inspect_pkg(path: &Path, p: &PkgImage<FileSource>) {
         info.content_id.as_deref().unwrap_or("-")
     );
     println!(
+        "title id:         {}{}",
+        info.content_id
+            .as_deref()
+            .and_then(pkg::title_id_from_content_id)
+            .unwrap_or("-"),
+        if p.param_json_synthesised() {
+            " (sce_sys/param.json synthesised from the content id)"
+        } else {
+            ""
+        }
+    );
+    println!(
         "outer pfs:        at {:#x}, {} bytes, superblock at {:#x}, mode {:#x}, {} inodes",
         h.pfs_offset, h.pfs_size, h.superblock_offset, info.outer_mode, info.outer_inodes
     );

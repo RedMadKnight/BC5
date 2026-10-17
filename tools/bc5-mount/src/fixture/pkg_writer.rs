@@ -64,9 +64,20 @@ fn put(b: &mut [u8], off: usize, v: &[u8]) {
     b[off..off + v.len()].copy_from_slice(v);
 }
 
-/// Writes a package for `spec` to `out`.
-#[allow(clippy::too_many_lines)]
+/// Writes a package for `spec` to `out`, without a `\x7fCNT` container.
 pub fn write_pkg<W: Write + Seek>(spec: &Spec, out: &mut W) -> Result<PkgBuildInfo> {
+    write_pkg_with(spec, out, None)
+}
+
+/// Writes a package for `spec` to `out`; with `content_id`, a minimal `\x7fCNT`
+/// container (the magic and the 36-byte ID at +0x40, as a real one has) follows
+/// the outer image and the header points at it.
+#[allow(clippy::too_many_lines)]
+pub fn write_pkg_with<W: Write + Seek>(
+    spec: &Spec,
+    out: &mut W,
+    content_id: Option<&str>,
+) -> Result<PkgBuildInfo> {
     // ---- the inner tree: super-root, uroot, then the spec's dirs and files ----
     let mut nodes = vec![
         Node {
@@ -407,6 +418,17 @@ pub fn write_pkg<W: Write + Seek>(spec: &Spec, out: &mut W) -> Result<PkgBuildIn
     put(&mut head, 0x18, &(outer_blocks * BS).to_le_bytes());
     put(&mut head, 0x20, &(pfs_offset + sb_block * BS).to_le_bytes());
     put(&mut head, 0x28, &BS.to_le_bytes());
+    let cnt = content_id.map(|id| {
+        assert_eq!(id.len(), 36, "a content ID is 36 bytes");
+        let mut cnt = vec![0u8; 0x80];
+        put(&mut cnt, 0, b"\x7fCNT");
+        put(&mut cnt, 0x40, id.as_bytes());
+        cnt
+    });
+    let pkg_len = pfs_offset + outer_blocks * BS;
+    if cnt.is_some() {
+        put(&mut head, 0x58, &pkg_len.to_le_bytes());
+    }
 
     out.seek(SeekFrom::Start(0))?;
     out.write_all(&head)?;
@@ -420,9 +442,16 @@ pub fn write_pkg<W: Write + Seek>(spec: &Spec, out: &mut W) -> Result<PkgBuildIn
     out.write_all(&table)?;
     write_padded(out, &root_dirents, BS)?;
     write_padded(out, &uroot_dirents, BS)?;
+    let cnt_len = match &cnt {
+        Some(cnt) => {
+            out.write_all(cnt)?;
+            cnt.len() as u64
+        }
+        None => 0,
+    };
     out.flush()?;
     Ok(PkgBuildInfo {
-        len: pfs_offset + outer_blocks * BS,
+        len: pkg_len + cnt_len,
         image_stored_len,
         mount,
         blocks: counts,
