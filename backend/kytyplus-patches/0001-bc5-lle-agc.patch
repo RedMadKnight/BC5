@@ -7185,10 +7185,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..88a9b80
+index 0000000..9273105
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,6908 @@
+@@ -0,0 +1,6920 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -10144,6 +10144,14 @@ index 0000000..88a9b80
 +static std::atomic<uint64_t> g_full_pieces {0}, g_full_ok {0}, g_full_failed {0};
 +static thread_local bool                     t_fs_valid = false;
 +static thread_local bc5::full_state::Tracker t_fs_before;
++// Experiment 0155 (diagnostic, BC5_DIRECT_PIECES_NO_CLEAR=1): a piece's prefix without its
++// CONTEXT_CONTROL and CLEAR_STATE (the first five dwords of Tracker::emit_prefix()).
++static std::vector<uint32_t> prefix_of(const bc5::full_state::Tracker& t) {
++	std::vector<uint32_t> p = t.emit_prefix();
++	static const bool no_clear = std::getenv("BC5_DIRECT_PIECES_NO_CLEAR") != nullptr;
++	if (no_clear && p.size() >= 5) p.erase(p.begin(), p.begin() + 5);
++	return p;
++}
 +// Experiment 0118: BC5_DIRECT_TAG_WATCH=1 journals the address registers whose bits 47:40 are not
 +// zero in a tracker: CB_COLOR0..7_BASE_EXT (ctx 0x390-0x397), CMASK/FMASK/DCC _BASE_EXT
 +// (0x398-0x3af), DB_Z/STENCIL_READ/WRITE_BASE_HI and DB_HTILE_DATA_BASE_HI (0x01a-0x01e), and the
@@ -10543,7 +10551,7 @@ index 0000000..88a9b80
 +						if (pieces_full() && dry_here && i > start) {
 +							if (start > 0 && !full_prefix.empty()) submit_prefixed(full_prefix, ib + start, i - start, false);
 +							else submit_one(ib + start, i - start, kind, from_header && start == 0);
-+							full_prefix = dry->emit_prefix();
++							full_prefix = prefix_of(*dry);
 +							start       = i;
 +							full_used   = true;
 +							split       = true;
@@ -10624,7 +10632,7 @@ index 0000000..88a9b80
 +					if (!ok && pieces_full() && dry_here && on_game_thread() && i > start && g_stage != Stage::MapOnly && (!g_dev || !g_dev->wedged())) {
 +						if (start > 0 && !full_prefix.empty()) submit_prefixed(full_prefix, ib + start, i - start, false);
 +						else submit_one(ib + start, i - start, kind, from_header && start == 0);
-+						full_prefix = dry->emit_prefix();
++						full_prefix = prefix_of(*dry);
 +						const uint32_t head_from = start;
 +						start                    = i;
 +						full_used                = true;
@@ -12504,7 +12512,11 @@ index 0000000..88a9b80
 +		// Graphics buffers only: the compute buffers also copy what the GPU itself wrote earlier
 +		// (experiment 0050: tree headers before the refit), which a copy at submission would freeze
 +		// before it is written.
-+		opt.dma_snapshot_min = std::strcmp(kind, "dcb") == 0 ? snap_min : 0u;
++		// Experiment 0155 (diagnostic, BC5_DIRECT_DMA_SNAPSHOT_ACB=1): the compute buffers too. The
++		// second title's menu text and bars break with the preview pictures although the graphics
++		// buffers' sources are copied (F179): its UI uploads run in compute buffers as well.
++		static const bool snap_acb = std::getenv("BC5_DIRECT_DMA_SNAPSHOT_ACB") != nullptr;
++		opt.dma_snapshot_min = (std::strcmp(kind, "dcb") == 0 || (snap_acb && std::strcmp(kind, "acb") == 0)) ? snap_min : 0u;
 +	}
 +	// Experiment 0124: BC5_DIRECT_JOB_TS=1, a GPU timestamp at each job's start and end
 +	// (FilterOptions::job_timestamps); the completion thread journals busy and idle GPU time.
