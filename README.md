@@ -15,7 +15,7 @@ Every number below has its experiment under [`experiments/`](experiments/) and i
 | Game | Read from | State | Frame rate |
 | --- | --- | --- | --- |
 | ASTRO BOT | `.ffpfsc` dump, through `bc5-mount` | **Playable.** Intro, menus, every level the maintainer has played; controller with haptics and adaptive triggers; saves (F85) | first level 59–60 fps (experiment 0046); a later level 46.5 (0067); the water level 40–51 |
-| A second title (not named here) | PS5 debug package (`.pkg`), through `bc5-mount` | **Menus, saves, and the opening of a new game.** Intro and menus with sound and complete text (0115, 0122); settings and save slots kept between starts, dated, under the title's own ID (0145–0149); New Game loads, with the title's ray-traced reflections skipped (0123), to its opening, which plays since the host decodes the title's Opus voices (0154, F199; runs of ≤ 24 s, the ATRAC9 voices silent, F200). The game past that is untested | intro 29 fps (the title's own 30 fps limit); menus 41–50; start screen 31 |
+| A second title (not named here) | PS5 debug package (`.pkg`), through `bc5-mount` | **Menus, saves, and the opening of a new game.** Intro and menus with sound and complete text (0115, 0122); settings and save slots kept between starts, dated, under the title's own ID (0145–0149); New Game loads, with the title's ray-traced reflections skipped (0123), to its opening, which plays since the host decodes the title's Opus voices (0154, F199; runs of ≤ 24 s, the ATRAC9 voices silent, F200). The game past that is untested | intro 29 fps (the title's own 30 fps limit); its start-up card 86 frames in its first six seconds instead of 21 (0156); menus 41–50; start screen 31 |
 | Any other game | | Untested. A game that calls a system library KytyPlus has no stand-in for stops there | |
 
 Latest (2026-10-17):
@@ -327,7 +327,7 @@ All switches are listed in [`backend/kytyplus-patches/README.md`](backend/kytypl
 
 With ASTRO BOT: the whole game as far as the maintainer has played it: intro videos, the title screen at 54–60 fps, a level load of about 18 s, the first level at 59–60 fps, a later level at about 46 (the water level at 40–51, measured before the host work of 2026-10-13), haptics and adaptive triggers on the controller.
 
-With the second title (from its package, with the settings above): a start-up logo of about 8 s, the intro at 29 fps, its menus at 41–50 fps with sound and complete text, and after New Game its animated start screen at 31 fps without ray-traced reflections. Pressing on from there is untested.
+With the second title (from its package, with the settings above): a start-up card of about 7 s (its loading screen; 0156), the intro at 29 fps, its menus at 41–50 fps with sound and complete text, and after New Game its animated start screen at 31 fps without ray-traced reflections. Pressing on from there is untested.
 
 With any other title: unknown; a game that links against a system library the host has no stand-in for stops there.
 

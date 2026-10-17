@@ -1,0 +1,17 @@
+run 711 (A-C with learned_apply instrumented): the journal's "learned apply:" lines (a pass over 5 ms) and
+"learned_apply took" lines (a call over 20 ms, with its thread), t 4.1-5.4 s.
+
+  (start)  learned apply: 596.6 ms (release 0.0, mappings 0.0 of 1651, windows 589.7, fill 6.8, guards 0.1); views rebuilt 1 times
+  4.146    learned apply:  18.5 ms (release 0.2, mappings 0.0 of 3119, windows 16.6, fill 1.4, guards 0.3); views rebuilt 191 times
+  4.184    learned apply:  20.1 ms (windows 17.2, fill 2.0); views rebuilt 191 times    learned_apply took 20.1 ms on bc5-ring (layout gen 33)
+  4.232    learned apply:  25.0 ms (windows 22.5, fill 1.7); views rebuilt 191 times    learned_apply took 25.0 ms on Render Thread (gen 35)
+  4.378    learned apply:  36.3 ms (windows 33.7, fill 2.0); views rebuilt 191 times
+  4.634    learned_apply took 61.8 ms on Render Thread (gen 46)
+  5.030    learned apply:  52.4 ms (windows 49.8, fill 1.7); views rebuilt 191 times
+  5.418    learned apply:  65.1 ms (windows 62.1, fill 2.1); views rebuilt 191 times    learned_apply took 65.1 ms on Render Thread (gen 60)
+  totals: 90 passes, 6311 ms (windows 6002, fill 220, guards 50), 11,424 views rebuilt; the layout generation went 33 -> 61 in 1.2 s.
+
+run 712 (A-D, the views pinned per pass): 148 passes, 2254 ms (windows 1233, fill 764), 434 rebuilds.
+run 713 (A-E, the mapping list kept sorted): 151 passes, 1984 ms (windows 1420, fill 300), 449 rebuilds.
+Timing splits over 128 submissions, the "learned" bucket (= the learned_apply call), worst window of each run:
+  run 707 (A): 1857.6 ms;  run 709 (A-C): 1932.4 ms;  run 712 (A-D): 418.1 ms;  run 713 (A-E): under 600 ms (the start-up pass).

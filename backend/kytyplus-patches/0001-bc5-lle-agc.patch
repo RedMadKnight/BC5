@@ -243,6 +243,37 @@ index d429de1..2472c3d 100644
  
  	const auto dirty                   = m_gpu_modified_ranges.Intersections(vaddr, size);
  	const bool has_dirty_buffer_source = !dirty.empty();
+diff --git a/src/graphics/host_gpu/renderer/cache/gpuResourceManager.cpp b/src/graphics/host_gpu/renderer/cache/gpuResourceManager.cpp
+index baa1bde..90efc9f 100644
+--- a/src/graphics/host_gpu/renderer/cache/gpuResourceManager.cpp
++++ b/src/graphics/host_gpu/renderer/cache/gpuResourceManager.cpp
+@@ -3,6 +3,9 @@
+ #include "common/assert.h"
+ #include "graphics/guest_gpu/graphicsRun.h"
+ #include "graphics/host_gpu/renderer/commandScheduler.h"
++
++#include <cstdlib>
++#include <cstring>
+ namespace Libs::Graphics {
+ 
+ GpuResourceManager::GpuResourceManager(GraphicContext& graphics, CommandScheduler& scheduler)
+@@ -57,8 +60,15 @@ void GpuResourceManager::UnmapMemory(uint64_t vaddr, uint64_t size) {
+ 		     "addr=0x%016" PRIx64 " size=0x%016" PRIx64 "\n",
+ 		     vaddr, size);
+ 	}
++	// BC5 (experiment 0156): this flush cost a Vulkan submit, a fence wait and a wait for the
++	// priority operations per guest map; the second title's loader maps about 5,700 small pages
++	// while it loads, from the thread that holds its archive lock, so its start-up logo sat at a
++	// few fps for 3 s of them. In direct mode the renderer records only the presentation, and the
++	// caches flush themselves when they hold something in the range (TextureCache::UnmapMemory,
++	// BufferCache::UnmapMemory), so the flush stays for the interpreter modes only.
++	static const bool bc5_direct = std::getenv("BC5_GC_MODE") != nullptr && std::strcmp(std::getenv("BC5_GC_MODE"), "direct") == 0;
+ 	const auto unmap = [this, vaddr, size] {
+-		if (m_scheduler.Active()) {
++		if (!bc5_direct && m_scheduler.Active()) {
+ 			const auto tick = m_scheduler.CurrentTick();
+ 			m_scheduler.FinishCurrent();
+ 			m_scheduler.WaitPriorityOperations(tick);
 diff --git a/src/graphics/host_gpu/renderer/cache/streamBuffer.cpp b/src/graphics/host_gpu/renderer/cache/streamBuffer.cpp
 index f6a0e22..7832ea8 100644
 --- a/src/graphics/host_gpu/renderer/cache/streamBuffer.cpp
@@ -7185,10 +7216,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..9273105
+index 0000000..eab6515
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,6920 @@
+@@ -0,0 +1,7232 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -8518,6 +8549,7 @@ index 0000000..9273105
 +	uint64_t           sig = 0;
 +	bool               sorted = true;
 +};
++static std::atomic<uint64_t> g_views_builds {0}; // experiment 0156: rebuilds of the views
 +static std::shared_ptr<const DViews> direct_views(const DState& S) {
 +	static std::mutex                    m;
 +	static std::shared_ptr<const DViews> cache[2];
@@ -8532,6 +8564,7 @@ index 0000000..9273105
 +	std::lock_guard l(m);
 +	if (g != 0 && g == gen[k] && cache[k] != nullptr && (k == 0 || now - built_ns[k] < 1'000'000'000ull)) return cache[k];
 +	built_ns[k] = now;
++	g_views_builds++;
 +	auto d = std::make_shared<DViews>();
 +	d->v   = direct_views_build(S);
 +	uint64_t sig = 1469598103934665603ull;
@@ -8832,13 +8865,20 @@ index 0000000..9273105
 +// A guest address window the GPU will touch whether or not the CPU ever wrote it (render
 +// targets, learned fault regions): its direct-memory part is imported now. Returns the bytes
 +// newly asked for.
++// Experiment 0156: a pass over the 95 learned windows (learned_apply, on every layout change)
++// asked direct_views for each window, and while the title mapped pages at one a millisecond every
++// call found a new generation and rebuilt the 7,000 views: 191 rebuilds and 20-65 ms per pass, 6 s
++// in the second title's first six seconds. The pass pins the views it starts with; a view that
++// appears meanwhile is covered by the next pass.
++static thread_local std::shared_ptr<const DViews> t_pinned_views[2];
++
 +static uint64_t direct_force(uint64_t lo, uint64_t hi) {
 +	if (!g_dmabuf || !g_dev) return 0;
 +	uint64_t asked = 0;
 +	for (auto& S: g_d) {
 +		if (dstate_fd(S) < 0) continue;
 +		uint64_t   here    = 0;
-+		const auto views_p = direct_views(S);
++		const auto views_p = t_pinned_views[S.kind == 0 ? 0 : 1] ? t_pinned_views[S.kind == 0 ? 0 : 1] : direct_views(S);
 +		const auto& views  = views_p->v;
 +		// Sorted views: start at the first one that ends after lo (experiment 0037).
 +		size_t first = 0;
@@ -9174,10 +9214,17 @@ index 0000000..9273105
 +	}
 +	journal("learned: fault 0x%" PRIx64 " -> region 0x%" PRIx64 "+0x%" PRIx64 " (saved)\n", fault_addr, lo, n);
 +}
++// Experiment 0156: the mapping list a learned pass works on stays sorted by address, so
++// scratch_fill finds a window's holes in one pass instead of sorting the list per window.
++static void have_insert(std::vector<bc5::direct::Mapping>& have, bc5::direct::Mapping m) {
++	have.insert(std::upper_bound(have.begin(), have.end(), m, [](const bc5::direct::Mapping& a, const bc5::direct::Mapping& b) { return a.va < b.va; }), m);
++}
++
 +static void map_window(uint64_t lo, uint64_t hi, std::vector<bc5::direct::Mapping>& have, const char* what, uint64_t addr) {
 +	if (const uint64_t asked = direct_force(lo, hi); asked != 0) {
 +		journal("%s 0x%" PRIx64 ": window 0x%" PRIx64 "+0x%" PRIx64 ", direct memory +%.1f MiB\n", what, addr, lo, hi - lo, static_cast<double>(asked) / 1048576.0);
 +		have = g_dev->mappings();
++		std::sort(have.begin(), have.end(), [](const bc5::direct::Mapping& a, const bc5::direct::Mapping& b) { return a.va < b.va; });
 +	}
 +	std::vector<std::pair<uint64_t, uint64_t>> pieces;
 +	for (const auto& v: g_vmas) { // clip to rw VMAs (the window may span several)
@@ -9199,7 +9246,7 @@ index 0000000..9273105
 +		if (g_dev->map_userptr(pa, pb - pa)) {
 +			added += pb - pa;
 +			g_bytes_mapped += pb - pa;
-+			have.push_back({pa, pb - pa});
++			have_insert(have, {pa, pb - pa});
 +		}
 +	}
 +	if (added != 0) journal("%s 0x%" PRIx64 ": window 0x%" PRIx64 "+0x%" PRIx64 ", mapped +%.1f MiB\n", what, addr, lo, hi - lo, static_cast<double>(added) / 1048576.0);
@@ -9244,7 +9291,22 @@ index 0000000..9273105
 +	constexpr uint64_t kGpuVaEnd = 1ull << 47u; // windows learned from faults at garbage addresses lie beyond it
 +	if (lo >= kGpuVaEnd) return;
 +	if (hi > kGpuVaEnd) hi = kGpuVaEnd;
-+	std::vector<std::pair<uint64_t, uint64_t>> pieces = {{lo, hi}};
++	// Experiment 0156: the holes of [lo, hi) among the mappings, from a sorted walk. Cutting the
++	// window by every mapping in turn was quadratic (7,000 mappings, a window split into thousands
++	// of pieces by the title's small AMM pages): 1.9 s per 128 submissions while the second title
++	// loaded.
++	std::vector<std::pair<uint64_t, uint64_t>> pieces;
++	{
++		uint64_t cur = lo; // `have` is sorted by address (have_insert)
++		for (const auto& m: have) {
++			if (m.va >= hi) break;
++			if (m.va + m.size <= lo) continue;
++			if (m.va > cur) pieces.emplace_back(cur, m.va);
++			if (m.va + m.size > cur) cur = m.va + m.size;
++			if (cur >= hi) break;
++		}
++		if (cur < hi) pieces.emplace_back(cur, hi);
++	}
 +	auto cut = [&pieces](uint64_t a, uint64_t b) {
 +		std::vector<std::pair<uint64_t, uint64_t>> next;
 +		for (const auto& [pa, pb]: pieces) {
@@ -9254,7 +9316,6 @@ index 0000000..9273105
 +		}
 +		pieces.swap(next);
 +	};
-+	for (const auto& m: have) cut(m.va, m.va + m.size);
 +	std::vector<std::pair<uint64_t, uint64_t>> guest;
 +	Libs::LibKernel::Memory::Bc5GuestRangesIn(lo, hi, &guest);
 +	for (const auto& [a, b]: guest) cut(a, b);
@@ -9267,7 +9328,7 @@ index 0000000..9273105
 +			const uint32_t id = scratch_bo();
 +			if (id == 0 || !g_dev->map_shared(id, 0, n, pa)) break;
 +			g_scratch.emplace_back(pa, n);
-+			have.push_back({pa, n});
++			have_insert(have, {pa, n});
 +			added += n;
 +			pa += n;
 +		}
@@ -9281,6 +9342,7 @@ index 0000000..9273105
 +	static uint64_t applied_gen = 0;
 +	if (applied_gen == g_layout_gen) return; // same views, VMAs and learned list as last time
 +	applied_gen = g_layout_gen;
++	const uint64_t la_t0 = SoftCp::now_ns(), la_b0 = g_views_builds.load(); // experiment 0156
 +	// Holes the guest has put a range in since: give them back first.
 +	for (size_t i = 0; i < g_scratch.size();) {
 +		std::vector<std::pair<uint64_t, uint64_t>> guest;
@@ -9291,9 +9353,18 @@ index 0000000..9273105
 +			i++;
 +		}
 +	}
++	const uint64_t la_t1 = SoftCp::now_ns();
 +	std::vector<bc5::direct::Mapping> have = g_dev->mappings();
++	std::sort(have.begin(), have.end(), [](const bc5::direct::Mapping& a, const bc5::direct::Mapping& b) { return a.va < b.va; });
++	const uint64_t la_t2 = SoftCp::now_ns();
++	for (auto& S: g_d) {
++		if (dstate_fd(S) >= 0) t_pinned_views[S.kind == 0 ? 0 : 1] = direct_views(S);
++	}
 +	for (const auto& [a, n]: g_learned) map_window(a, a + n, have, "learned", a);
++	for (auto& pin: t_pinned_views) pin.reset();
++	const uint64_t la_t3 = SoftCp::now_ns();
 +	for (const auto& [a, n]: g_learned) scratch_fill(a, a + n, have);
++	const uint64_t la_t4 = SoftCp::now_ns();
 +	// Experiment 0037: the GPU reads up to 64 KiB past the end of the title's GPU heaps (four
 +	// faults so far, each just past one heap's end), so the hole after every view of an eagerly
 +	// imported heap of 32 MiB or more gets the zero buffer from the start (BC5_DIRECT_GUARD_KIB, 2048 by default;
@@ -9309,6 +9380,12 @@ index 0000000..9273105
 +			if (!guest.empty()) continue; // the next range of the guest starts right there
 +			scratch_fill(end, end + guard, have);
 +		}
++	}
++	const uint64_t la_t5 = SoftCp::now_ns();
++	if (la_t5 - la_t0 > 5'000'000ull) {
++		journal("learned apply: %.1f ms (release %.1f, mappings %.1f of %zu, windows %.1f, fill %.1f, guards %.1f); views rebuilt %" PRIu64 " times\n",
++		        static_cast<double>(la_t5 - la_t0) / 1e6, static_cast<double>(la_t1 - la_t0) / 1e6, static_cast<double>(la_t2 - la_t1) / 1e6, have.size(),
++		        static_cast<double>(la_t3 - la_t2) / 1e6, static_cast<double>(la_t4 - la_t3) / 1e6, static_cast<double>(la_t5 - la_t4) / 1e6, g_views_builds.load() - la_b0);
 +	}
 +}
 +
@@ -10717,10 +10794,29 @@ index 0000000..9273105
 +		const char* e = std::getenv("BC5_DIRECT_RT_DUMP");
 +		return std::string(e != nullptr ? e : "");
 +	}();
++	// Experiment 0156: BC5_DIRECT_RT_DUMP_EVERY=<s> repeats the dump every s seconds from t0 on, the
++	// file names carrying the journal time (-t<seconds>), to catch a target at a broken and at a clean
++	// moment in one run.
++	static const double every = [] {
++		const char* e = std::getenv("BC5_DIRECT_RT_DUMP_EVERY");
++		return e != nullptr ? std::strtod(e, nullptr) : 0.0;
++	}();
 +	static std::atomic<bool> done {false};
++	static std::mutex        every_mutex;
++	static double            next_t = -1;
 +	if (spec.empty() || done.load()) return;
-+	const double t0 = std::strtod(spec.c_str(), nullptr);
-+	if (timing_now() < t0 || done.exchange(true)) return;
++	const double t0    = std::strtod(spec.c_str(), nullptr);
++	const double now_t = timing_now();
++	if (now_t < t0) return;
++	if (every > 0) {
++		std::lock_guard lock(every_mutex);
++		if (next_t < 0) next_t = t0;
++		if (now_t < next_t) return;
++		next_t = now_t + every;
++	} else if (done.exchange(true)) {
++		return;
++	}
++	const double dump_t = now_t;
 +	size_t pos = spec.find(';');
 +	while (pos != std::string::npos) {
 +		const size_t next = spec.find(';', pos + 1);
@@ -10728,12 +10824,22 @@ index 0000000..9273105
 +		pos = next;
 +		uint64_t va = 0;
 +		unsigned w = 0, h = 0;
-+		char     fmt[16] = {};
++		char     fmt[48] = {};
 +		// Experiment 0104: "layer:<w>:<h>:<fmt>" dumps the UI layer 0 the draw journal last saw.
 +		if (item.rfind("layer:", 0) == 0) {
 +			va = g_layer0_base.load();
-+			if (va == 0 || std::sscanf(item.c_str() + 6, "%u:%u:%15s", &w, &h, fmt) != 3 || w == 0 || h == 0) continue;
-+		} else if (std::sscanf(item.c_str(), "%" SCNx64 ":%u:%u:%15s", &va, &w, &h, fmt) != 4 || w == 0 || h == 0) continue;
++			if (va == 0 || std::sscanf(item.c_str() + 6, "%u:%u:%47s", &w, &h, fmt) != 3 || w == 0 || h == 0) continue;
++		} else if (std::sscanf(item.c_str(), "%" SCNx64 ":%u:%u:%47s", &va, &w, &h, fmt) != 4 || w == 0 || h == 0) continue;
++		// Experiment 0157: "<fmt>@<x>,<y>,<w>,<h>" detiles and writes only that window of the surface.
++		uint32_t cx = 0, cy = 0, cw = w, ch = h;
++		if (char* at = std::strchr(fmt, '@'); at != nullptr) {
++			*at = 0;
++			if (std::sscanf(at + 1, "%u,%u,%u,%u", &cx, &cy, &cw, &ch) != 4 || cw == 0 || ch == 0 || cx + cw > w || cy + ch > h) {
++				cx = cy = 0;
++				cw = w;
++				ch = h;
++			}
++		}
 +		using namespace Libs::Graphics;
 +		// Experiment 0095: a "-lin" suffix reads the surface linearly (pitch = width), as a display
 +		// buffer registered with tiling_mode 0.
@@ -10749,7 +10855,8 @@ index 0000000..9273105
 +			family = static_cast<uint32_t>(std::strtoul(fm + 4, nullptr, 10));
 +			*fm    = 0;
 +		}
-+		const uint32_t  bpe = std::strcmp(fmt, "rgba16f") == 0 ? 8u : 4u; // experiment 0091
++		// Experiment 0156: r8 (one byte, UNORM) and r16f (two bytes, half float) for the title's glyph atlases.
++		const uint32_t  bpe = std::strcmp(fmt, "rgba16f") == 0 ? 8u : std::strcmp(fmt, "r8") == 0 ? 1u : std::strcmp(fmt, "r16f") == 0 ? 2u : 4u; // experiment 0091
 +		TileBlockLayout block {};
 +		if (!TileGetBlockLayout(static_cast<TileBlockFamily>(family), bpe, block)) continue;
 +		const uint32_t pitch   = TileGetRenderTargetPitch(w, bpe);
@@ -10796,8 +10903,8 @@ index 0000000..9273105
 +		uint64_t             alpha_hist[4] = {};  // experiment 0099: 2-bit alpha of rgb10a2
 +		std::vector<uint8_t> alpha8;              // experiment 0104: rgba8 alpha (0 / 1-127 / 128-254 / 255 in alpha_hist)
 +		if (std::strcmp(fmt, "rgba8") == 0) alpha8.assign(static_cast<size_t>(w) * h, 0);
-+		for (uint32_t y = 0; y < h; y++) {
-+			for (uint32_t x = 0; x < w; x++) {
++		for (uint32_t y = cy; y < cy + ch; y++) {
++			for (uint32_t x = cx; x < cx + cw; x++) {
 +				uint32_t local = 0, bxor = 0;
 +				uint64_t off   = (static_cast<uint64_t>(y) * w + x) * bpe;
 +				if (!linear) {
@@ -10807,7 +10914,7 @@ index 0000000..9273105
 +					off = ((y / block.block_height) * columns + x / block.block_width) * block.block_size + (local ^ bxor);
 +				}
 +				uint32_t       v   = 0;
-+				std::memcpy(&v, src + off, 4);
++				std::memcpy(&v, src + off, bpe < 4 ? bpe : 4);
 +				uint32_t v2 = 0;
 +				if (bpe == 8) std::memcpy(&v2, src + off + 4, 4);
 +				if (v != 0 || v2 != 0) nonzero++;
@@ -10835,6 +10942,17 @@ index 0000000..9273105
 +					const uint32_t a8 = v >> 24u;
 +					alpha_hist[a8 == 0 ? 0 : a8 == 255 ? 3 : a8 < 128 ? 1 : 2]++;
 +					alpha8[static_cast<size_t>(y) * w + x] = static_cast<uint8_t>(a8);
++				} else if (bpe == 1) {
++					r = g = b = static_cast<float>(v & 0xffu) / 255.0f;
++					sum_v += r;
++					max_v = std::max(max_v, static_cast<double>(r));
++				} else if (bpe == 2) {
++					const uint32_t e = (v >> 10u) & 0x1fu, m = v & 0x3ffu;
++					float          f = e == 0 ? std::ldexp(static_cast<float>(m), -24) : e == 31 ? 65504.0f : std::ldexp(1.0f + static_cast<float>(m) / 1024.0f, static_cast<int>(e) - 15);
++					if ((v >> 15u) & 1u) f = -f;
++					sum_v += f;
++					max_v = std::max(max_v, static_cast<double>(f));
++					r = g = b = std::fabs(f) / (1.0f + std::fabs(f));
 +				} else if (std::strcmp(fmt, "r32f") == 0) {
 +					float f = 0;
 +					std::memcpy(&f, &v, 4);
@@ -10857,18 +10975,21 @@ index 0000000..9273105
 +			}
 +		}
 +		char name[512];
-+		std::snprintf(name, sizeof(name), "%s/rt-%010" PRIx64 "-%ux%u-%s-f%u.ppm", g_dump_dir.c_str(), va, w, h, fmt, family);
++		if (every > 0)
++			std::snprintf(name, sizeof(name), "%s/rt-%010" PRIx64 "-%ux%u-%s-f%u-t%07.2f.ppm", g_dump_dir.c_str(), va, w, h, fmt, family, dump_t);
++		else
++			std::snprintf(name, sizeof(name), "%s/rt-%010" PRIx64 "-%ux%u-%s-f%u.ppm", g_dump_dir.c_str(), va, w, h, fmt, family);
 +		if (FILE* f = std::fopen(name, "wb"); f != nullptr) {
-+			std::fprintf(f, "P6" "\n" "%u %u" "\n" "255" "\n", w, h);
-+			std::fwrite(rgb.data(), 1, rgb.size(), f);
++			std::fprintf(f, "P6" "\n" "%u %u" "\n" "255" "\n", cw, ch);
++			for (uint32_t y = cy; y < cy + ch; y++) std::fwrite(&rgb[(static_cast<size_t>(y) * w + cx) * 3u], 1, static_cast<size_t>(cw) * 3u, f);
 +			std::fclose(f);
 +		}
 +		if (!alpha8.empty()) { // experiment 0104: the alpha channel as a grey image
 +			char an[540];
 +			std::snprintf(an, sizeof(an), "%s-alpha.pgm", name);
 +			if (FILE* f = std::fopen(an, "wb"); f != nullptr) {
-+				std::fprintf(f, "P5" "\n" "%u %u" "\n" "255" "\n", w, h);
-+				std::fwrite(alpha8.data(), 1, alpha8.size(), f);
++				std::fprintf(f, "P5" "\n" "%u %u" "\n" "255" "\n", cw, ch);
++				for (uint32_t y = cy; y < cy + ch; y++) std::fwrite(&alpha8[static_cast<size_t>(y) * w + cx], 1, cw, f);
 +				std::fclose(f);
 +			}
 +		}
@@ -10885,12 +11006,50 @@ index 0000000..9273105
 +	// _INFO 0x31c, _ATTRIB2 0x3b0 (MIP0_HEIGHT 13:0, MIP0_WIDTH 27:14, TODO(verify)), CB_TARGET_MASK
 +	// 0x8e, PA_CL_VPORT_XSCALE..YOFFSET 0x10f-0x112, SPI_SHADER_PGM_LO/HI_PS sh 0x8/0x9, _LO_ES 0xc8,
 +	// _LO_GS 0x88, COMPUTE_PGM_LO sh 0x20c.
++	// Experiment 0156: two optional filters, <t0>:<buffers>[:<min dwords>[:<max rt px>]]: buffers below
++	// <min dwords> are skipped (run 668 caught only small compute-only buffers), and with <max rt px>
++	// only draws whose colour target 0 is at most that wide and high are journaled (the text bakes
++	// into small atlas targets, F202), each with its scissors, colour attributes, the PS and GS user
++	// data and the first 32 dwords of every table they point at; a buffer with no such draw does not
++	// count. Lines then carry the journal time and the wall clock, for matching screenshots.
 +	static const std::pair<double, uint32_t> draw_journal = [] {
 +		std::pair<double, uint32_t> v {0, 0};
 +		if (const char* e = std::getenv("BC5_DIRECT_DRAW_JOURNAL"); e != nullptr) {
 +			char* end = nullptr;
 +			v.first   = std::strtod(e, &end);
 +			if (end != nullptr && *end == ':') v.second = static_cast<uint32_t>(std::strtoul(end + 1, nullptr, 10));
++		}
++		return v;
++	}();
++	static const std::pair<uint32_t, uint32_t> draw_journal_filter = [] {
++		std::pair<uint32_t, uint32_t> v {0, 0};
++		if (const char* e = std::getenv("BC5_DIRECT_DRAW_JOURNAL"); e != nullptr) {
++			const char* c = std::strchr(e, ':');
++			if (c != nullptr) c = std::strchr(c + 1, ':');
++			if (c != nullptr) {
++				char* end = nullptr;
++				v.first   = static_cast<uint32_t>(std::strtoul(c + 1, &end, 10));
++				if (end != nullptr && *end == ':') v.second = static_cast<uint32_t>(std::strtoul(end + 1, nullptr, 10));
++			}
++		}
++		return v;
++	}();
++	// Experiment 0156: BC5_DIRECT_DRAW_JOURNAL_PS=<hex prefix>[,...] journals only the draws whose pixel
++	// shader address (ten hex digits) starts with one of the prefixes (the second title's UI shaders all
++	// lie at 0x09099c....), with the same extras; a buffer with no such draw does not count.
++	static const std::vector<std::string> draw_journal_ps = [] {
++		std::vector<std::string> v;
++		if (const char* e = std::getenv("BC5_DIRECT_DRAW_JOURNAL_PS"); e != nullptr) {
++			std::string cur;
++			for (const char* q = e;; q++) {
++				if (*q == ',' || *q == 0) {
++					if (!cur.empty()) v.push_back(cur);
++					cur.clear();
++					if (*q == 0) break;
++				} else {
++					cur += static_cast<char>(std::tolower(static_cast<unsigned char>(*q)));
++				}
++			}
 +		}
 +		return v;
 +	}();
@@ -10924,13 +11083,92 @@ index 0000000..9273105
 +		}
 +		t_fs_valid = (pieces_dry() || pieces_full()) && !waits.empty();
 +		static uint32_t journaled = 0;
-+		if (draw_journal.second != 0 && journaled < draw_journal.second && timing_now() >= draw_journal.first) {
-+			const uint32_t buf_no = journaled++;
++		if (draw_journal.second != 0 && journaled < draw_journal.second && timing_now() >= draw_journal.first && num_dwords >= draw_journal_filter.first) {
++			const uint32_t buf_no  = journaled;
++			bool           counted = draw_journal_filter.second == 0 && draw_journal_ps.empty();
++			if (counted) journaled++;
++			// Experiment 0157: INDEX_BASE (0x26: lo, hi) and INDEX_TYPE (0x2a) by offset, for the vertex lines.
++			struct IdxState {
++				size_t   off;
++				uint64_t base;
++				uint32_t type;
++			};
++			std::vector<IdxState> idx_states;
++			{
++				uint64_t ib_base = 0;
++				uint32_t ib_type = 0;
++				for (uint32_t i = 0; i < num_dwords;) {
++					const uint32_t h = ib[i], type = h >> 30u;
++					uint32_t       len = 1;
++					if (type == 3 || type == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
++					if (i + len > num_dwords) break;
++					if (type == 3) {
++						const uint32_t op = (h >> 8u) & 0xffu;
++						if (op == 0x26 && len >= 3) { ib_base = ib[i + 1] | (static_cast<uint64_t>(ib[i + 2] & 0xffffu) << 32u); idx_states.push_back({i, ib_base, ib_type}); }
++						if (op == 0x2a && len >= 2) { ib_type = ib[i + 1] & 3u; idx_states.push_back({i, ib_base, ib_type}); }
++					}
++					i += len;
++				}
++			}
++			struct VtxRange {
++				uint64_t             addr;
++				double               t;
++				uint32_t             buf, off;
++				std::vector<uint8_t> copy;
++			};
++			static std::vector<VtxRange> vtx_ranges;
++			static std::mutex            vtx_mutex;
++			{
++				// the re-check of the remembered ranges (600 ms), on this buffer's submission
++				std::lock_guard lock(vtx_mutex);
++				const double    now = timing_now();
++				for (auto it = vtx_ranges.begin(); it != vtx_ranges.end();) {
++					if (now - it->t > 0.6) { it = vtx_ranges.erase(it); continue; }
++					const uint32_t* m = read(it->addr, it->copy.size());
++					if (m != nullptr && std::memcmp(m, it->copy.data(), it->copy.size()) != 0) {
++						size_t first = 0;
++						while (first < it->copy.size() && reinterpret_cast<const uint8_t*>(m)[first] == it->copy[first]) first++;
++						journal("vertex rewrite: buf %u at %u range %010" PRIx64 "+%zx changed %.0f ms after submission (first byte %zx)\n", it->buf, it->off, it->addr, it->copy.size(), (now - it->t) * 1000.0, first);
++						it = vtx_ranges.erase(it);
++						continue;
++					}
++					++it;
++				}
++			}
 +			bc5::full_state::for_each_draw(tracker, span, read, [&](size_t off, std::span<const uint32_t> pkt, const bc5::full_state::Tracker& t) {
 +				auto reg = [&t](bc5::full_state::Space sp, uint32_t o) {
 +					uint32_t v = 0;
 +					return t.get(sp, o, v) ? v : 0u;
 +				};
++				// Experiment 0156: the small-target and pixel-shader filters (draws only; CB_COLOR0_ATTRIB2 and
++				// SPI_SHADER_PGM_LO/HI_PS as below).
++				// A draw or dispatch the filters reject is still shown to BC5_DIRECT_DRAW_JOURNAL_FIND below.
++				const bool filters_on = draw_journal_filter.second != 0 || !draw_journal_ps.empty();
++				const bool matched    = [&]() -> bool {
++					if (!filters_on) return true;
++					const uint32_t op2 = (pkt[0] >> 8u) & 0xffu;
++					if (op2 == 0x15 || op2 == 0x16) return false;
++					if (draw_journal_filter.second != 0) {
++						const uint32_t a2 = reg(bc5::full_state::Context, 0x3b0);
++						if (((a2 >> 14u) & 0x3fffu) + 1u > draw_journal_filter.second || (a2 & 0x3fffu) + 1u > draw_journal_filter.second) return false;
++					}
++					if (!draw_journal_ps.empty()) {
++						const uint64_t ps_now = (static_cast<uint64_t>(reg(bc5::full_state::Sh, 0x8)) | (static_cast<uint64_t>(reg(bc5::full_state::Sh, 0x9) & 0xffu) << 32u)) << 8u;
++						char           pb[24];
++						std::snprintf(pb, sizeof(pb), "%010" PRIx64, ps_now);
++						bool ok = false;
++						for (const std::string& pre: draw_journal_ps)
++							if (std::strncmp(pb, pre.c_str(), pre.size()) == 0) ok = true;
++						if (!ok) return false;
++					}
++					return true;
++				}();
++				static const bool find_set = std::getenv("BC5_DIRECT_DRAW_JOURNAL_FIND") != nullptr;
++				if (!matched && !find_set) return;
++				if (matched && !counted) {
++					counted = true;
++					journaled++;
++				}
 +				auto flt = [&](uint32_t o) {
 +					const uint32_t b = reg(bc5::full_state::Context, o);
 +					float f = 0;
@@ -10949,10 +11187,95 @@ index 0000000..9273105
 +				int            w         = 0;
 +				for (size_t k = 0; k < pkt.size() && k < 6 && w < 80; k++) w += std::snprintf(words + w, sizeof(words) - static_cast<size_t>(w), " %08x", pkt[k]);
 +				static const bool watch_quiet = std::getenv("BC5_DIRECT_DRAW_JOURNAL_WATCH") != nullptr;
-+				if (!watch_quiet) journal("draw journal buf %u (%u dwords) at %zu:%s | rt0 %010" PRIx64 " %ux%u info %08x mask %08x | vp %.0fx%.0f at %.0f,%.0f | ps %010" PRIx64
++				if (!watch_quiet && matched) journal("draw journal buf %u (%u dwords) at %zu:%s | rt0 %010" PRIx64 " %ux%u info %08x mask %08x | vp %.0fx%.0f at %.0f,%.0f | ps %010" PRIx64
 +				                " es %010" PRIx64 " gs %010" PRIx64 " cs %010" PRIx64 "\n",
 +				                buf_no, num_dwords, off, words, rt, ((attrib2 >> 14u) & 0x3fffu) + 1u, (attrib2 & 0x3fffu) + 1u, reg(S::Context, 0x31c), reg(S::Context, 0x8e),
 +				                2 * xs, 2 * ys, xo - xs, yo - ys, ps, es, gs, cs);
++				// Experiment 0156: for a small-target draw, the time, the window and generic scissors
++				// (PA_SC_WINDOW_SCISSOR_TL/BR ctx 0x81/0x82, PA_SC_GENERIC_SCISSOR_TL/BR 0x90/0x91: X 15:0,
++				// Y 31:16), CB_COLOR0_VIEW 0x31b, _ATTRIB 0x31d, _ATTRIB3 0x3b8, CB_BLEND0_CONTROL 0x1e0,
++				// CB_COLOR_CONTROL 0x202, SPI_SHADER_COL_FORMAT 0x1c5, the PS user data (sh 0x0c..0x2b) and
++				// the GS user data (SPI_SHADER_USER_DATA_GS_0 sh 0x8c..0xab), and the first 32 dwords of each
++				// readable table a user-data pair points at (tools/bc5-agc/regdb/gfx10.json).
++				if (filters_on && matched) {
++					const auto     wall = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
++					const uint32_t wtl = reg(S::Context, 0x81), wbr = reg(S::Context, 0x82), gtl = reg(S::Context, 0x90), gbr = reg(S::Context, 0x91);
++					journal("bake draw buf %u at %zu: t %.3f wall %lld.%03lld | win %u,%u-%u,%u gen %u,%u-%u,%u | view %08x attrib %08x attrib3 %08x blend0 %08x cc %08x colfmt %08x\n", buf_no, off,
++					        timing_now(), static_cast<long long>(wall / 1000), static_cast<long long>(wall % 1000), wtl & 0x7fffu, (wtl >> 16u) & 0x7fffu, wbr & 0x7fffu, (wbr >> 16u) & 0x7fffu,
++					        gtl & 0x7fffu, (gtl >> 16u) & 0x7fffu, gbr & 0x7fffu, (gbr >> 16u) & 0x7fffu, reg(S::Context, 0x31b), reg(S::Context, 0x31d), reg(S::Context, 0x3b8),
++					        reg(S::Context, 0x1e0), reg(S::Context, 0x202), reg(S::Context, 0x1c5));
++					for (int stage = 0; stage < 2; stage++) {
++						const uint32_t ubase = stage == 0 ? 0x0cu : 0x8cu;
++						uint32_t       ud[32];
++						char           u[320] = {};
++						int            uw     = 0;
++						for (uint32_t k = 0; k < 32; k++) {
++							ud[k] = reg(S::Sh, ubase + k);
++							uw += std::snprintf(u + uw, sizeof(u) - static_cast<size_t>(uw), " %08x", ud[k]);
++						}
++						journal("bake ud %s buf %u at %zu:%s\n", stage == 0 ? "ps" : "gs", buf_no, off, u);
++						std::vector<uint64_t> seen;
++						for (uint32_t k = 0; k + 1 < 32; k++) {
++							const uint64_t addr = ud[k] | (static_cast<uint64_t>(ud[k + 1] & 0xffffu) << 32u);
++							const bool guest_range = (addr >= 0x1000000000ull && addr < 0x1400000000ull) || (addr >= 0x8000000000ull && addr < 0x9000000000ull);
++							if (!guest_range || (addr & 3u) != 0 || read(addr, 256) == nullptr) continue;
++							if (std::find(seen.begin(), seen.end(), addr) != seen.end()) continue;
++							seen.push_back(addr);
++							const auto* m = reinterpret_cast<const uint32_t*>(addr);
++							char        tb[640] = {};
++							int         tw      = 0;
++							for (uint32_t q = 0; q < 64; q++) tw += std::snprintf(tb + tw, sizeof(tb) - static_cast<size_t>(tw), " %08x", m[q]);
++							journal("bake table %s ud%u %010" PRIx64 ":%s\n", stage == 0 ? "ps" : "gs", k, addr, tb);
++						}
++					}
++					// Experiment 0157: the vertices of a DRAW_INDEX_OFFSET_2 (0x35: max_size, index_offset, count;
++					// Mesa sid.h) through the first V# (base dword 0 | dword 1 bits 15:0 << 32, stride dword 1 bits
++					// 29:16) of the table GS user data 4-5 point at, and the index buffer set before the draw.
++					if (((pkt[0] >> 8u) & 0xffu) == 0x35 && pkt.size() >= 4) {
++						uint64_t ib_base = 0;
++						uint32_t ib_type = 0;
++						for (const IdxState& st: idx_states) {
++							if (st.off >= off) break;
++							ib_base = st.base;
++							ib_type = st.type;
++						}
++						const uint64_t gtab = reg(S::Sh, 0x8c + 4) | (static_cast<uint64_t>(reg(S::Sh, 0x8c + 5) & 0xffffu) << 32u);
++						const uint32_t* tv  = gtab != 0 ? read(gtab, 16) : nullptr;
++						const uint64_t  vb  = tv != nullptr ? (tv[0] | (static_cast<uint64_t>(tv[1] & 0xffffu) << 32u)) : 0;
++						const uint32_t  vst = tv != nullptr ? (tv[1] >> 16u) & 0x3fffu : 0;
++						const uint32_t  isz = ib_type == 0 ? 2u : 4u, cnt = pkt[3];
++						const uint64_t  ia  = ib_base + static_cast<uint64_t>(pkt[2]) * isz;
++						if (ib_base != 0 && vb != 0 && vst != 0 && cnt != 0 && cnt <= 65536 && read(ia, static_cast<uint64_t>(cnt) * isz) != nullptr) {
++							uint32_t imin = 0xffffffffu, imax = 0;
++							for (uint32_t q = 0; q < cnt; q++) {
++								const uint32_t idx = isz == 2 ? reinterpret_cast<const uint16_t*>(ia)[q] : reinterpret_cast<const uint32_t*>(ia)[q];
++								imin = std::min(imin, idx), imax = std::max(imax, idx);
++							}
++							const uint64_t va0 = vb + static_cast<uint64_t>(imin) * vst, vlen = static_cast<uint64_t>(imax - imin + 1) * vst;
++							if (vlen <= 0x100000 && read(va0, vlen) != nullptr) {
++								float    xmin = 1e30f, xmax = -1e30f, ymin = 1e30f, ymax = -1e30f;
++								uint32_t v0[8] = {};
++								std::memcpy(v0, reinterpret_cast<const void*>(va0), std::min<size_t>(32, vst));
++								for (uint32_t q = 0; q < cnt; q++) {
++									const uint32_t idx = isz == 2 ? reinterpret_cast<const uint16_t*>(ia)[q] : reinterpret_cast<const uint32_t*>(ia)[q];
++									float          xy[2];
++									std::memcpy(xy, reinterpret_cast<const void*>(vb + static_cast<uint64_t>(idx) * vst), 8);
++									xmin = std::min(xmin, xy[0]), xmax = std::max(xmax, xy[0]), ymin = std::min(ymin, xy[1]), ymax = std::max(ymax, xy[1]);
++								}
++								journal("bake vertices buf %u at %zu: idx %010" PRIx64 " +%u x%u (%u-bit) -> %u..%u | vb %010" PRIx64 " stride %u | box %.1f,%.1f-%.1f,%.1f | v0 %08x %08x %08x %08x %08x %08x %08x %08x\n", buf_no, off, ib_base,
++								        pkt[2], cnt, isz * 8, imin, imax, vb, vst, static_cast<double>(xmin), static_cast<double>(ymin), static_cast<double>(xmax), static_cast<double>(ymax), v0[0], v0[1], v0[2], v0[3], v0[4], v0[5], v0[6], v0[7]);
++								std::lock_guard lock(vtx_mutex);
++								if (vtx_ranges.size() < 4096) {
++									VtxRange r {va0, timing_now(), buf_no, static_cast<uint32_t>(off), {}};
++									r.copy.assign(reinterpret_cast<const uint8_t*>(va0), reinterpret_cast<const uint8_t*>(va0) + vlen);
++									vtx_ranges.push_back(std::move(r));
++								}
++							}
++						} else {
++							journal("bake vertices buf %u at %zu: idx %010" PRIx64 " +%u x%u | vb %010" PRIx64 " stride %u: unreadable\n", buf_no, off, ib_base, pkt[2], cnt, vb, vst);
++						}
++					}
++				}
 +				// Experiment 0093: for a draw, the bases of every colour target CB_TARGET_MASK enables
 +				// (CB_COLORn_BASE ctx 0x318 + n * 0xf, CB_COLORn_BASE_EXT 0x390 + n; Mesa gfx10 register JSON).
 +				if (((pkt[0] >> 8u) & 0xffu) != 0x15 && ((pkt[0] >> 8u) & 0xffu) != 0x16) {
@@ -10964,7 +11287,7 @@ index 0000000..9273105
 +						const uint64_t bn = (static_cast<uint64_t>(reg(S::Context, 0x318 + n * 0xf)) | (static_cast<uint64_t>(reg(S::Context, 0x390 + n) & 0xffu) << 32u)) << 8u;
 +						mw += std::snprintf(mrt + mw, sizeof(mrt) - static_cast<size_t>(mw), " %u:%010" PRIx64, n, bn);
 +					}
-+					if (mw > 0 && !watch_quiet) journal("draw journal mrt buf %u at %zu:%s | ps %010" PRIx64 "\n", buf_no, off, mrt, ps);
++					if (mw > 0 && !watch_quiet && matched) journal("draw journal mrt buf %u at %zu:%s | ps %010" PRIx64 "\n", buf_no, off, mrt, ps);
 +				}
 +				// Experiment 0105: the title's frame-pacing kernel 0x11d0288100 (one workgroup; its
 +				// disassembly, private): it spins on s_memrealtime until a deadline computed from the four
@@ -11094,7 +11417,7 @@ index 0000000..9273105
 +						for (uint32_t k = 0; k < nud; k++) {
 +							bool hit = std::find(find.begin(), find.end(), ud[k]) != find.end();
 +							const char* where = "direct";
-+							uint64_t    at    = 0;
++							uint64_t    at    = 0, tab = 0;
 +							if (!hit && k + 1 < nud) {
 +								const uint64_t addr = ud[k] | (static_cast<uint64_t>(ud[k + 1] & 0xffffu) << 32u);
 +								if (addr >= 0x1000000000ull && addr < 0x1400000000ull && (addr & 3u) == 0 && read(addr, 256) != nullptr) {
@@ -11104,6 +11427,7 @@ index 0000000..9273105
 +											hit   = true;
 +											where = "table";
 +											at    = addr + q * 4u;
++											tab   = addr;
 +										}
 +									}
 +								}
@@ -11111,6 +11435,20 @@ index 0000000..9273105
 +							if (hit) {
 +								journal("draw journal find: %s %s ud%u (%08x) %s %010" PRIx64 " | rt0 %010" PRIx64 " | ps %010" PRIx64 " cs %010" PRIx64 " | pkt%s\n", compute ? "dispatch" : "draw",
 +								        compute ? "cs" : "ps", k, ud[k], where, at, rt, ps, cs, words);
++								// Experiment 0156: the packet's user data and, for a table hit, the table's 64 dwords.
++								if (compute) {
++									char u[200] = {};
++									int  uw     = 0;
++									for (uint32_t q = 0; q < nud && uw < 180; q++) uw += std::snprintf(u + uw, sizeof(u) - static_cast<size_t>(uw), " %08x", ud[q]);
++									journal("find ud cs %010" PRIx64 " t %.3f:%s\n", cs, timing_now(), u);
++								}
++								if (tab != 0 && read(tab, 256) != nullptr) {
++									const auto* m       = reinterpret_cast<const uint32_t*>(tab);
++									char        tb[640] = {};
++									int         tw      = 0;
++									for (uint32_t q = 0; q < 64; q++) tw += std::snprintf(tb + tw, sizeof(tb) - static_cast<size_t>(tw), " %08x", m[q]);
++									journal("find table %010" PRIx64 ":%s\n", tab, tb);
++								}
 +								break;
 +							}
 +						}
@@ -12295,6 +12633,11 @@ index 0000000..9273105
 +	const uint64_t t1 = SoftCp::now_ns();
 +	learned_apply();
 +	const uint64_t tc = SoftCp::now_ns();
++	if (tc - t1 > 20'000'000ull) { // experiment 0156: a long learned_apply call, with its thread
++		char tn[32] = {};
++		pthread_getname_np(pthread_self(), tn, sizeof(tn));
++		journal("learned_apply took %.1f ms on %s (layout gen %" PRIu64 ")\n", static_cast<double>(tc - t1) / 1e6, tn, static_cast<uint64_t>(g_layout_gen));
++	}
 +	hint_targets(ib, num_dwords);
 +	const uint64_t t2 = SoftCp::now_ns();
 +	if (timing) { // the split of "sync" and "hints", every 128 submissions (experiment 0022, step 3)
@@ -14839,7 +15182,7 @@ index 3c0684f..ba1c36b 100644
  int KYTY_SYSV_ABI PadInit();
  int KYTY_SYSV_ABI PadOpen(int user_id, int type, int index, const void* param);
 diff --git a/src/libs/libAmpr.cpp b/src/libs/libAmpr.cpp
-index 073361d..36f9a2b 100644
+index 073361d..46f9c74 100644
 --- a/src/libs/libAmpr.cpp
 +++ b/src/libs/libAmpr.cpp
 @@ -1,3 +1,5 @@
@@ -14848,12 +15191,13 @@ index 073361d..36f9a2b 100644
  #include "common/abi.h"
  #include "common/dateTime.h"
  #include "common/file.h"
-@@ -11,6 +13,13 @@
+@@ -11,6 +13,14 @@
  #include "loader/symbolDatabase.h"
  
  #include <algorithm>
 +#include <pthread.h>
 +#include <chrono>
++#include <condition_variable>
 +#include <thread>
 +#include <deque>
 +#include <cinttypes>
@@ -14862,7 +15206,7 @@ index 073361d..36f9a2b 100644
  #include <array>
  #include <cstdint>
  #include <cstring>
-@@ -27,6 +36,61 @@
+@@ -27,6 +37,61 @@
  #undef max
  #endif
  
@@ -14924,16 +15268,59 @@ index 073361d..36f9a2b 100644
  namespace Libs {
  
  namespace AprShared {
-@@ -501,7 +565,7 @@ static int WriteResult(void* result, int32_t execution_result = 0, uint32_t erro
+@@ -41,6 +106,7 @@ struct SubmissionState {
+ 	uint64_t result           = 0;
+ 	int32_t  execution_result = 0;
+ 	uint32_t error_offset     = 0;
++	bool     done             = false; // BC5 (experiment 0156): set when the submission has run
+ };
+ 
+ struct ResolvedPathInfo {
+@@ -54,6 +120,7 @@ struct ResolvedPathInfo {
+ static std::mutex                                        g_mutex;
+ static uint32_t                                          g_next_submission_id = 1;
+ static std::unordered_map<uint32_t, SubmissionState>     g_submissions;
++static std::condition_variable                           g_submission_cv; // BC5 (experiment 0156)
+ static std::unordered_map<uint32_t, std::string>         g_files;
+ static std::unordered_map<uint32_t, uint64_t>            g_file_sizes;
+ static std::unordered_map<std::string, ResolvedPathInfo> g_resolved_paths;
+@@ -468,12 +535,23 @@ static void SetSubmissionResult(uint32_t submission_id, int32_t execution_result
+ 	if (it != g_submissions.end()) {
+ 		it->second.execution_result = execution_result;
+ 		it->second.error_offset     = error_offset;
++		it->second.done             = true;
+ 	}
++	g_submission_cv.notify_all();
+ }
+ 
+ static bool CompleteSubmission(uint32_t submission_id, SubmissionState* state) {
+-	std::scoped_lock lock(g_mutex);
+-	auto             it = g_submissions.find(submission_id);
++	std::unique_lock<std::mutex> lock(g_mutex);
++	auto                         it = g_submissions.find(submission_id);
++	if (it == g_submissions.end()) {
++		return false;
++	}
++	// BC5 (experiment 0156): submissions run on host worker threads; a wait blocks until this one
++	// has run (the console's WaitCommandBuffer does the same).
++	g_submission_cv.wait(lock, [&] {
++		it = g_submissions.find(submission_id);
++		return it == g_submissions.end() || it->second.done;
++	});
+ 	if (it == g_submissions.end()) {
+ 		return false;
+ 	}
+@@ -501,7 +579,8 @@ static int WriteResult(void* result, int32_t execution_result = 0, uint32_t erro
  
  namespace LibAmpr::Ampr {
  static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_result,
 -                                   uint32_t* error_offset);
-+                                   uint32_t* error_offset, uint32_t priority = 0);
++                                   uint32_t* error_offset, uint32_t priority = 0, uint32_t submission_id = 0,
++                                   uint64_t result_ptr = 0);
  }
  
  namespace LibKernelApr {
-@@ -667,10 +731,14 @@ static int KYTY_SYSV_ABI ResolveFilepathsWithPrefixToIdsAndFileSizesForEach(
+@@ -667,10 +746,14 @@ static int KYTY_SYSV_ABI ResolveFilepathsWithPrefixToIdsAndFileSizesForEach(
  	    AprShared::ResolvePathsCommon(path_list, count, ids, sizes, nullptr, prefix_buf, results));
  }
  
@@ -14949,17 +15336,20 @@ index 073361d..36f9a2b 100644
  
  	if (command_buffer == nullptr) {
  		return KernelSyscallResult(LibKernel::KERNEL_ERROR_EINVAL);
-@@ -683,7 +751,8 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetResult(void*     command_buffe
+@@ -683,11 +766,10 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetResult(void*     command_buffe
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
  	auto submit_result = LibAmpr::Ampr::ExecuteAprCommandBuffer(command_buffer_addr,
 -	                                                            &execution_result, &error_offset);
-+	                                                            &execution_result, &error_offset,
-+	                                                            static_cast<uint32_t>(priority));
++	                                                            &execution_result, &error_offset, static_cast<uint32_t>(priority), id, reinterpret_cast<uint64_t>(result));
  	if (submit_result != OK) {
  		return KernelSyscallResult(submit_result);
  	}
-@@ -698,8 +767,12 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetResult(void*     command_buffe
+-	AprShared::SetSubmissionResult(id, execution_result, error_offset);
+ 
+ 	if (out_submission_id != nullptr) {
+ 		if (!AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
+@@ -698,8 +780,12 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetResult(void*     command_buffe
  	return KernelSyscallResult(AprShared::WriteResult(result, execution_result, error_offset));
  }
  
@@ -14973,7 +15363,7 @@ index 073361d..36f9a2b 100644
  
  	if (command_buffer == nullptr) {
  		return KernelSyscallResult(LibKernel::KERNEL_ERROR_EINVAL);
-@@ -708,12 +781,17 @@ static int KYTY_SYSV_ABI SubmitCommandBuffer(void* command_buffer, uint64_t) {
+@@ -708,12 +794,17 @@ static int KYTY_SYSV_ABI SubmitCommandBuffer(void* command_buffer, uint64_t) {
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
  	return KernelSyscallResult(LibAmpr::Ampr::ExecuteAprCommandBuffer(
@@ -14993,17 +15383,20 @@ index 073361d..36f9a2b 100644
  
  	if (command_buffer == nullptr || out_submission_id == nullptr) {
  		return KernelSyscallResult(LibKernel::KERNEL_ERROR_EINVAL);
-@@ -725,7 +803,8 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetId(void*     command_buffer, u
+@@ -725,11 +816,10 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetId(void*     command_buffer, u
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
  	auto submit_result = LibAmpr::Ampr::ExecuteAprCommandBuffer(command_buffer_addr,
 -	                                                            &execution_result, &error_offset);
-+	                                                            &execution_result, &error_offset,
-+	                                                            static_cast<uint32_t>(priority));
++	                                                            &execution_result, &error_offset, static_cast<uint32_t>(priority), id, 0);
  	if (submit_result != OK) {
  		return KernelSyscallResult(submit_result);
  	}
-@@ -816,7 +895,11 @@ constexpr int      PROT_AMPR_READ                = 0x40;
+-	AprShared::SetSubmissionResult(id, execution_result, error_offset);
+ 
+ 	if (!AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
+ 		return KernelSyscallResult(LibKernel::KERNEL_ERROR_EFAULT);
+@@ -816,7 +906,11 @@ constexpr int      PROT_AMPR_READ                = 0x40;
  constexpr int      PROT_AMPR_WRITE               = 0x80;
  constexpr int      PROT_ACP_READ                 = 0x100;
  constexpr int      PROT_ACP_WRITE                = 0x200;
@@ -15016,7 +15409,7 @@ index 073361d..36f9a2b 100644
  constexpr uint64_t AMM_VA_SIZE                   = 0x0000001000000000ull;
  constexpr uint64_t APR_MAX_READ_LENGTH           = 0x0000000100000000ull;
  constexpr uint64_t APR_MAX_FILE_OFFSET           = 0x0000010000000000ull;
-@@ -855,6 +938,13 @@ struct CommandBufferState {
+@@ -855,6 +949,13 @@ struct CommandBufferState {
  		uint64_t address       = 0;
  		uint64_t value         = 0;
  	};
@@ -15030,7 +15423,7 @@ index 073361d..36f9a2b 100644
  	struct AmmMapCommand {
  		uint64_t       record_offset = 0;
  		AmmCommandKind kind          = AmmCommandKind::MapAuto;
-@@ -869,6 +959,7 @@ struct CommandBufferState {
+@@ -869,6 +970,7 @@ struct CommandBufferState {
  	std::vector<KernelEventCommand>  kernel_event_commands;
  	std::vector<WriteAddressCommand> write_address_commands;
  	std::vector<AmmMapCommand>       amm_map_commands;
@@ -15038,7 +15431,7 @@ index 073361d..36f9a2b 100644
  	bool                             gather_scatter_valid       = false;
  	uint32_t                         gather_scatter_file_id     = 0;
  	uint64_t                         gather_scatter_destination = 0;
-@@ -1151,6 +1242,7 @@ static bool WriteCommandBufferPointers(uint64_t command_buffer, uint64_t buffer,
+@@ -1151,6 +1253,7 @@ static bool WriteCommandBufferPointers(uint64_t command_buffer, uint64_t buffer,
  	state.kernel_event_commands.clear();
  	state.write_address_commands.clear();
  	state.amm_map_commands.clear();
@@ -15046,7 +15439,7 @@ index 073361d..36f9a2b 100644
  	state.gather_scatter_valid       = false;
  	state.gather_scatter_file_id     = 0;
  	state.gather_scatter_destination = 0;
-@@ -1317,6 +1409,26 @@ static bool AppendWriteAddressRecord(uint64_t command_buffer, uint64_t address,
+@@ -1317,6 +1420,26 @@ static bool AppendWriteAddressRecord(uint64_t command_buffer, uint64_t address,
  	return CommitCommandBufferRecord(command_buffer, &state, record_size);
  }
  
@@ -15073,7 +15466,7 @@ index 073361d..36f9a2b 100644
  static bool ValidateAmmMapArgs(uint64_t va, uint64_t size) {
  	return va != 0 && size != 0 && (va & (AMM_PAGE_SIZE - 1u)) == 0 &&
  	       (size & (AMM_PAGE_SIZE - 1u)) == 0 && va + size >= va;
-@@ -1358,6 +1470,12 @@ static int NormalizeAmmProtection(int prot) {
+@@ -1358,6 +1481,12 @@ static int NormalizeAmmProtection(int prot) {
  	return normalized;
  }
  
@@ -15086,7 +15479,7 @@ index 073361d..36f9a2b 100644
  static bool AllocateAmmAutoDirectMemory(uint64_t size, int memory_type, uint64_t* dmem_offset) {
  	if (dmem_offset == nullptr || size == 0) {
  		return false;
-@@ -1385,6 +1503,8 @@ static bool AllocateAmmAutoDirectMemory(uint64_t size, int memory_type, uint64_t
+@@ -1385,6 +1514,8 @@ static bool AllocateAmmAutoDirectMemory(uint64_t size, int memory_type, uint64_t
  	return true;
  }
  
@@ -15095,7 +15488,7 @@ index 073361d..36f9a2b 100644
  static int ExecuteAmmMapCommand(const CommandBufferState::AmmMapCommand& command) {
  	if (!ValidateAmmMapArgs(command.va, command.size)) {
  		return LibKernel::KERNEL_ERROR_EINVAL;
-@@ -1397,9 +1517,50 @@ static int ExecuteAmmMapCommand(const CommandBufferState::AmmMapCommand& command
+@@ -1397,9 +1528,50 @@ static int ExecuteAmmMapCommand(const CommandBufferState::AmmMapCommand& command
  	}
  
  	void* addr = reinterpret_cast<void*>(command.va);
@@ -15148,7 +15541,7 @@ index 073361d..36f9a2b 100644
  }
  
  static bool AppendAmmMapRecord(uint64_t                                 command_buffer,
-@@ -1425,68 +1586,164 @@ static bool AppendAmmMapRecord(uint64_t                                 command_
+@@ -1425,68 +1597,166 @@ static bool AppendAmmMapRecord(uint64_t                                 command_
  
  static int ReadHostFileToGuest(const std::string& host_path, uint64_t file_offset,
                                 uint64_t destination, uint64_t size, uint64_t* bytes_read);
@@ -15212,7 +15605,9 @@ index 073361d..36f9a2b 100644
 -			ordered.push_back(
 -			    {state.kernel_event_commands[i].record_offset, CommandKind::KernelEvent, i});
 -		}
-+	size_t                      next = 0;
++	size_t                      next          = 0;
++	uint32_t                    submission_id = 0; // BC5 (experiment 0156): completion bookkeeping
++	uint64_t                    result_ptr    = 0;
 +};
 +
 +static std::recursive_mutex        g_apr_queue_mutex;
@@ -15365,7 +15760,7 @@ index 073361d..36f9a2b 100644
  				const auto& command = state.read_file_commands[entry.index];
  				std::string host_path;
  				if (!AprShared::TryGetHostPath(command.file_id, &host_path)) {
-@@ -1494,25 +1751,42 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+@@ -1494,25 +1764,42 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
  					     command.file_id);
  					*execution_result = LibKernel::KERNEL_ERROR_ENOENT;
  					*error_offset     = static_cast<uint32_t>(command.record_offset);
@@ -15411,7 +15806,7 @@ index 073361d..36f9a2b 100644
  				    eq, command.id, reinterpret_cast<void*>(command.data));
  				if (result != OK) {
  					LOGF("\tAPR submit event failed: eq=0x%016" PRIx64 ", id=%" PRId32
-@@ -1520,7 +1794,8 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+@@ -1520,7 +1807,8 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
  					     command.eq, command.id, static_cast<uint32_t>(result));
  					*execution_result = result;
  					*error_offset     = static_cast<uint32_t>(command.record_offset);
@@ -15421,7 +15816,7 @@ index 073361d..36f9a2b 100644
  				}
  			} break;
  			case CommandKind::WriteAddress: {
-@@ -1531,7 +1806,8 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+@@ -1531,7 +1819,8 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
  					     command.address, command.value);
  					*execution_result = LibKernel::KERNEL_ERROR_EFAULT;
  					*error_offset     = static_cast<uint32_t>(command.record_offset);
@@ -15431,7 +15826,7 @@ index 073361d..36f9a2b 100644
  				}
  			} break;
  			case CommandKind::AmmMap: {
-@@ -1539,6 +1815,10 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+@@ -1539,6 +1828,10 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
  				int         result  = OK;
  				if (command.kind == AmmCommandKind::Unmap) {
  					result = LibKernel::Memory::KernelMunmap(command.va, command.size);
@@ -15442,7 +15837,7 @@ index 073361d..36f9a2b 100644
  				} else {
  					result = ExecuteAmmMapCommand(command);
  				}
-@@ -1552,12 +1832,130 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+@@ -1552,12 +1845,203 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
  					     static_cast<uint32_t>(result));
  					*execution_result = result;
  					*error_offset     = static_cast<uint32_t>(command.record_offset);
@@ -15459,6 +15854,17 @@ index 073361d..36f9a2b 100644
  
 +// The APR engine runs submissions in order; one stopped at a wait holds those behind it. AMM
 +// submissions (maps only) run at once: they are what the waits wait for.
++// BC5 (experiment 0156): a submission's result, once it has run, for the title's WaitCommandBuffer
++// and its result buffer.
++static void FinishAprSubmission(const ParkedAprBuffer& b, int32_t result, uint32_t offset) {
++	if (b.submission_id != 0) {
++		AprShared::SetSubmissionResult(b.submission_id, result, offset);
++	}
++	if (b.result_ptr != 0) {
++		(void)AprShared::WriteResult(reinterpret_cast<void*>(b.result_ptr), result, offset);
++	}
++}
++
 +static void PumpParkedAprBuffersLocked() {
 +	for (auto& queue: g_apr_parked) {
 +		while (!queue.empty()) {
@@ -15469,11 +15875,58 @@ index 073361d..36f9a2b 100644
 +			                           &offset)) {
 +				break;
 +			}
++			FinishAprSubmission(front, result, offset);
 +			if (AmmTrace()) {
 +				AmmTraceStamp(), std::fprintf(stderr, "amm trace: resumed submission 0x%016" PRIx64 " finished\n", front.command_buffer);
 +			}
 +			queue.pop_front();
 +		}
++	}
++}
++
++// BC5 (experiment 0156): the console's APR engine is asynchronous: a submit returns at once and the
++// title learns of completion through the buffer's events, its address writes and WaitCommandBuffer.
++// The host ran every submission's reads on the submitting title thread, and the parked ones on
++// whichever title thread next submitted an AMM map, so the title's threads (game-main, its archive
++// thread) sat inside the host for a whole batch, hundreds of ms, holding the title's own locks: the
++// second title's start-up logo ran at 1-3 fps while its loader waited for them. Now one host worker
++// per priority queue runs that queue in order, with the waits polled as before, and a submit only
++// enqueues. KYTY_BC5_APR_SYNC=1 restores the synchronous execution (diagnostic).
++static bool AprAsync() {
++	static const bool sync = std::getenv("KYTY_BC5_APR_SYNC") != nullptr;
++	return !sync;
++}
++static std::condition_variable_any                g_apr_queue_cv;
++static std::array<std::once_flag, APR_PRIORITIES> g_apr_worker_once;
++
++static void AprWorkerThread(size_t qi) {
++	char name[16];
++	std::snprintf(name, sizeof(name), "bc5-apr-q%zu", qi);
++	pthread_setname_np(pthread_self(), name);
++	std::unique_lock<std::recursive_mutex> lock(g_apr_queue_mutex);
++	auto&                                  queue = g_apr_parked[qi];
++	for (;;) {
++		while (queue.empty()) {
++			g_apr_queue_cv.wait(lock);
++		}
++		// Only this thread pops this queue, and a deque's push_back keeps references valid, so the
++		// front can run with the queue unlocked and submitters never wait for a batch.
++		ParkedAprBuffer& front  = queue.front();
++		int32_t          result = OK;
++		uint32_t         offset = 0;
++		lock.unlock();
++		const bool done = RunOrderedAprCommands(front.command_buffer, front.state, front.ordered, &front.next, &result, &offset);
++		lock.lock();
++		if (!done) {
++			g_apr_queue_cv.wait_for(lock, std::chrono::microseconds(500));
++			continue;
++		}
++		FinishAprSubmission(front, result, offset);
++		if (AmmTrace()) {
++			AmmTraceStamp(), std::fprintf(stderr, "amm trace: submission 0x%016" PRIx64 " finished on worker %zu = 0x%08x\n", front.command_buffer, qi,
++			                              static_cast<unsigned>(result));
++		}
++		queue.pop_front();
 +	}
 +}
 +
@@ -15492,7 +15945,8 @@ index 073361d..36f9a2b 100644
 +}
 +
 +static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_result,
-+                                   uint32_t* error_offset, uint32_t priority) {
++                                   uint32_t* error_offset, uint32_t priority, uint32_t submission_id,
++                                   uint64_t result_ptr) {
 +	if (execution_result == nullptr || error_offset == nullptr) {
 +		return LibKernel::KERNEL_ERROR_EINVAL;
 +	}
@@ -15549,10 +16003,18 @@ index 073361d..36f9a2b 100644
 +	});
 +
 +	const bool amm_only = !state.amm_map_commands.empty() && state.read_file_commands.empty();
++	const size_t qi = AprQueueIndex(priority);
 +	std::scoped_lock queue_lock(g_apr_queue_mutex);
-+	auto& queue = g_apr_parked[AprQueueIndex(priority)];
++	auto& queue = g_apr_parked[qi];
++	if (AprAsync() && !amm_only) {
++		// Experiment 0156: queued for the priority's worker; the submit returns at once.
++		queue.push_back({command_buffer, state, ordered, 0, submission_id, result_ptr});
++		std::call_once(g_apr_worker_once[qi], [qi] { std::thread(AprWorkerThread, qi).detach(); });
++		g_apr_queue_cv.notify_all();
++		return OK;
++	}
 +	if (!amm_only && !queue.empty()) {
-+		queue.push_back({command_buffer, state, ordered, 0});
++		queue.push_back({command_buffer, state, ordered, 0, submission_id, result_ptr});
 +		if (AmmTrace()) {
 +			AmmTraceStamp(), std::fprintf(stderr, "amm trace: submission 0x%016" PRIx64 " queued behind a waiting one\n", command_buffer);
 +		}
@@ -15561,20 +16023,26 @@ index 073361d..36f9a2b 100644
 +	}
 +	size_t next = 0;
 +	if (!RunOrderedAprCommands(command_buffer, state, ordered, &next, execution_result, error_offset)) {
-+		queue.push_back({command_buffer, state, ordered, next});
++		queue.push_back({command_buffer, state, ordered, next, submission_id, result_ptr});
 +		StartAprWaitThread();
 +		if (AmmTrace()) {
 +			AmmTraceStamp(), std::fprintf(stderr, "amm trace: submission 0x%016" PRIx64 " waits at command %zu of %zu\n", command_buffer, next,
 +			             ordered.size());
 +		}
++	} else if (submission_id != 0) {
++		AprShared::SetSubmissionResult(submission_id, *execution_result, *error_offset);
 +	}
 +	if (amm_only) {
-+		PumpParkedAprBuffersLocked();
++		if (AprAsync()) {
++			g_apr_queue_cv.notify_all(); // the maps may satisfy a worker's wait
++		} else {
++			PumpParkedAprBuffersLocked();
++		}
 +	}
  	return OK;
  }
  
-@@ -1678,13 +2076,50 @@ static int KYTY_SYSV_ABI CommandBufferDestructor(void* command_buffer) {
+@@ -1678,13 +2162,50 @@ static int KYTY_SYSV_ABI CommandBufferDestructor(void* command_buffer) {
  	return OK;
  }
  
@@ -15626,7 +16094,7 @@ index 073361d..36f9a2b 100644
  	const auto command_buffer_addr = reinterpret_cast<uint64_t>(command_buffer);
  	if (!ValidateCommandBufferHeader(command_buffer_addr)) {
  		return LibKernel::KERNEL_ERROR_EFAULT;
-@@ -1765,6 +2200,9 @@ static int KYTY_SYSV_ABI AprCommandBufferReadFile(void*    command_buffer, uint6
+@@ -1765,6 +2286,9 @@ static int KYTY_SYSV_ABI AprCommandBufferReadFile(void*    command_buffer, uint6
                                                    uint32_t file_id, void* destination,
                                                    uint64_t size, uint64_t file_offset) {
  	PRINT_NAME();
@@ -15636,7 +16104,7 @@ index 073361d..36f9a2b 100644
  
  	const auto destination_addr = reinterpret_cast<uint64_t>(destination);
  	if (command_buffer == nullptr || !IsValidAprReadRange(destination_addr, size) ||
-@@ -2111,16 +2549,31 @@ static int KYTY_SYSV_ABI CommandBufferPopMarker(void* command_buffer) {
+@@ -2111,16 +2635,31 @@ static int KYTY_SYSV_ABI CommandBufferPopMarker(void* command_buffer) {
  	return AppendNoOpCommand(command_buffer, sizeof(uint32_t));
  }
  
@@ -15673,7 +16141,7 @@ index 073361d..36f9a2b 100644
  
  	return AppendNoOpCommand(command_buffer, 0x20);
  }
-@@ -2139,6 +2592,10 @@ static int AppendWriteAddressCommand(void* command_buffer, volatile uint64_t* ad
+@@ -2139,6 +2678,10 @@ static int AppendWriteAddressCommand(void* command_buffer, volatile uint64_t* ad
  static int KYTY_SYSV_ABI CommandBufferWriteAddress(void* command_buffer, volatile uint64_t* address,
                                                     uint64_t value, uint32_t) {
  	PRINT_NAME();
@@ -15684,7 +16152,7 @@ index 073361d..36f9a2b 100644
  
  	return AppendWriteAddressCommand(command_buffer, address, value);
  }
-@@ -2314,15 +2771,27 @@ static int KYTY_SYSV_ABI AprCommandBufferResetGatherScatterState(void* command_b
+@@ -2314,15 +2857,27 @@ static int KYTY_SYSV_ABI AprCommandBufferResetGatherScatterState(void* command_b
  	return OK;
  }
  
@@ -15714,7 +16182,7 @@ index 073361d..36f9a2b 100644
  		return LibKernel::KERNEL_ERROR_EFAULT;
  	}
  
-@@ -2333,7 +2802,7 @@ static int KYTY_SYSV_ABI AprCommandBufferMapBegin(void* command_buffer, uint64_t
+@@ -2333,7 +2888,7 @@ static int KYTY_SYSV_ABI AprCommandBufferMapBegin(void* command_buffer, uint64_t
  
  static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, uint64_t va,
                                                          uint64_t dmem_offset, uint64_t size,
@@ -15723,7 +16191,7 @@ index 073361d..36f9a2b 100644
  	PRINT_NAME();
  
  	if (command_buffer == nullptr || !ValidateAmmMapArgs(va, size) ||
-@@ -2341,7 +2810,15 @@ static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, ui
+@@ -2341,7 +2896,15 @@ static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, ui
  		return LibKernel::KERNEL_ERROR_EINVAL;
  	}
  
@@ -15740,7 +16208,7 @@ index 073361d..36f9a2b 100644
  		return LibKernel::KERNEL_ERROR_EFAULT;
  	}
  
-@@ -2504,6 +2981,10 @@ static int KYTY_SYSV_ABI AmmGiveDirectMemory(int64_t search_start, int64_t searc
+@@ -2504,6 +3067,10 @@ static int KYTY_SYSV_ABI AmmGiveDirectMemory(int64_t search_start, int64_t searc
  	}
  
  	*dmem_offset = allocated;
@@ -15751,7 +16219,7 @@ index 073361d..36f9a2b 100644
  	if (usage == AMM_USAGE_AUTO) {
  		std::scoped_lock lock(g_amm_auto_pool_mutex);
  		g_amm_auto_pool.push_back(AmmAutoPoolRange {static_cast<uint64_t>(allocated), size, 0});
-@@ -2512,30 +2993,48 @@ static int KYTY_SYSV_ABI AmmGiveDirectMemory(int64_t search_start, int64_t searc
+@@ -2512,30 +3079,48 @@ static int KYTY_SYSV_ABI AmmGiveDirectMemory(int64_t search_start, int64_t searc
  	return OK;
  }
  
@@ -15811,6 +16279,32 @@ index 073361d..36f9a2b 100644
  	}
  }
  
+@@ -2589,11 +3174,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetId(void* command_buffer_bas
+ 	int32_t  execution_result = OK;
+ 	uint32_t error_offset     = 0;
+ 	auto     submit_result =
+-	    ExecuteAprCommandBuffer(command_buffer_addr, &execution_result, &error_offset);
++	    ExecuteAprCommandBuffer(command_buffer_addr, &execution_result, &error_offset, 0, id, 0);
+ 	if (submit_result != OK) {
+ 		return submit_result;
+ 	}
+-	AprShared::SetSubmissionResult(id, execution_result, error_offset);
+ 
+ 	if (!AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
+ 		return LibKernel::KERNEL_ERROR_EFAULT;
+@@ -2618,11 +3202,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetResult(void* command_buffer
+ 	int32_t  execution_result = OK;
+ 	uint32_t error_offset     = 0;
+ 	auto     submit_result =
+-	    ExecuteAprCommandBuffer(command_buffer_addr, &execution_result, &error_offset);
++	    ExecuteAprCommandBuffer(command_buffer_addr, &execution_result, &error_offset, 0, id, reinterpret_cast<uint64_t>(result));
+ 	if (submit_result != OK) {
+ 		return submit_result;
+ 	}
+-	AprShared::SetSubmissionResult(id, execution_result, error_offset);
+ 
+ 	if (out_submission_id != nullptr &&
+ 	    !AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
 diff --git a/src/libs/libAppContent.cpp b/src/libs/libAppContent.cpp
 index 6c36a4e..4c8ad53 100644
 --- a/src/libs/libAppContent.cpp

@@ -1,0 +1,35 @@
+run 701 (host before the changes): gdb -batch -p attaches, "thread apply all bt", one line per thread of interest
+(innermost host frames; guest addresses are in the title's executable at 0x900000000).
+
+t 4.0 s (inside the first gap)
+  game-main        NativeMutexLock <- PthreadMutexLock            (a title mutex)
+  Render Thread    guest:0x903f3799e                               (the spin loop of F166: pause x20)
+  Archive Asset IO SysFileSeek <- ReadHostFileToGuest <- RunAprReadsInParallel  (+ 7 helper threads of the same name, all in the reads)
+  Archive Loose IO PthreadCondWait <- guest:0x903a0545b
+  Archive Resolve  CondVar::WaitFor
+  Job Lo/Hi/Bk 0-4 CondVar::WaitFor                               (the title's job workers, idle)
+  bc5-ring         queue_consumer_thread (sleep)
+  kyty-gpu         CondVar::Wait
+t 7.0 s (inside the 2.85 s gap)
+  game-main        NativeMutexLock <- PthreadMutexLock
+  Render Thread    piece_check <- submit <- submit_raw <- gc_ioctl  (submitting)
+  Archive Asset IO SysFileSeek <- ReadHostFileToGuest <- RunAprReadsInParallel (+ 7 helpers)
+  bc5-ring         lll_mutex_lock <- submit_one <- submit_split    (waiting for the submit mutex)
+t 9.0 s
+  game-main        SysFileSeek <- ReadHostFileToGuest <- RunAprReadsInParallel <- PumpParkedAprBuffersLocked <- ExecuteAprCommandBuffer <- AmmSubmitCommandBuffer
+                   (game-main submitted a map-only buffer and ran the parked read batches itself)
+  Render Thread    guest:0x903f37994
+
+run 708 (host with the asynchronous APR execution, A): the same at 5.9, 8.8 and 11.2 s
+  Archive Asset IO SendCommandSync <- UnmapMemory <- KernelMapDirectMemory <- KernelMapNamedDirectMemory <- KernelBatchMap2 <- guest:0x90402601e
+                   (all three attaches: a synchronous round trip to the kyty-gpu thread per guest map)
+  game-main        PthreadCondTimedwait <- guest:0x903f39053        (waiting on the title's own lock)
+  kyty-gpu         drmIoctl <- drmSyncobjQuery2 <- Refresh <- PopPendingOperations (8.8 s)
+  Render Thread    direct_eager_name <- direct_views_build <- Bc5ForEachMappedRange <- direct_views (5.9 s); submit mutex (8.8, 11.2 s)
+  bc5-ring         direct_sync_one (8.8 s); Snapshot <- Bc5ForEachPrivateRegion <- direct_views_build <- direct_views <- direct_force (11.2 s)
+  bc5-apr-q1/q3/q5 AprWorkerThread (the new workers, idle at those instants)
+
+The spin loop (the title's text segment, experiment 0115's dump):
+  903f37960: mov eax,[0x90beac100]; cmp eax,1; jne 903f379b0
+  903f3796b: mov rdi,r15; mov rsi,rbx; call 903ccaa20; test al,al; jne 903f37960
+  903f3797a: pause x20; jmp 903f37960

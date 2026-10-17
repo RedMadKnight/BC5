@@ -1,0 +1,14 @@
+run 700 (capture play-20261017-2316): frame profile per second, t 2-16 (frames, mean frame ms, mean inside/sync/hints/outside ms, mean GPU busy ms)
+  t  2:   7 frames, frame    67.7 ms, inside   10.4 (sync   3.1, hints    1.0), outside    42.4, GPU  19.2
+  t  3:  21 frames, frame    48.3 ms, inside    8.7 (sync   3.1, hints    0.2), outside    26.5, GPU  16.0
+  t  4:   9 frames, frame    41.2 ms, inside    6.1 (sync   1.0, hints    0.7), outside    25.6, GPU  11.9
+  t  5:   5 frames, frame   310.8 ms, inside   21.9 (sync   7.8, hints    2.2), outside   287.1, GPU   7.2
+  t  8:   2 frames, frame  1447.3 ms, inside  468.7 (sync  80.3, hints  356.4), outside   973.7, GPU  18.9
+  t  9:   5 frames, frame   236.0 ms, inside   61.2 (sync  43.2, hints    7.7), outside   173.3, GPU   9.0
+  t 10:   1 frames, frame   748.5 ms, inside  236.1 (sync  29.0, hints  198.2), outside   510.8, GPU   6.8
+  t 11:  16 frames, frame    77.6 ms, inside   25.7 (sync   7.9, hints   10.5), outside    40.0, GPU  14.9
+  t 12:  17 frames, frame    52.1 ms, inside   17.3 (sync   7.1, hints    2.3), outside    23.0, GPU  15.4
+  t 13:  16 frames, frame    68.5 ms, inside   29.0 (sync   7.2, hints   13.2), outside    27.1, GPU  17.3
+  t 14:  30 frames, frame    33.9 ms, inside    7.5 (sync   0.8, hints    0.3), outside     9.2, GPU  20.2
+  t 15:  28 frames, frame    35.3 ms, inside    6.7 (sync   0.4, hints    0.1), outside     9.1, GPU  22.7
+  frames in t 4-11: 38

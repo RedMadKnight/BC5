@@ -458,3 +458,13 @@ shortens by 2 s.
 Experiment 0155 (diagnostics, off by default): `BC5_DIRECT_DMA_SNAPSHOT_ACB=1` copies the DMA sources of compute buffers at
 submission too (the snapshot ring of experiment 0122 serves graphics buffers only); `BC5_DIRECT_PIECES_NO_CLEAR=1` leaves the
 CONTEXT_CONTROL and CLEAR_STATE out of a graphics piece's prefix (ADR 0008). Neither changed the second title's menu artefact (F202).
+
+Experiment 0156: APR command buffers run asynchronously (`libAmpr.cpp`): one host worker per priority queue
+(`bc5-apr-q<n>`) runs that queue in order and a submit only enqueues, as the console's engine does;
+`WaitCommandBuffer` / `AmmWaitCommandBufferCompletion` block until the submission has run, and its result
+buffer is written then. `KYTY_BC5_APR_SYNC=1` restores the synchronous execution on the submitting thread
+(diagnostic). In direct mode `GpuResourceManager::UnmapMemory` no longer flushes the Vulkan scheduler per
+guest map (the caches flush themselves when they hold something in the range). The learned-window pass
+(`learned_apply`) pins the direct views for its 95 windows and keeps its mapping list sorted; a pass over
+5 ms and a call over 20 ms are journaled (`learned apply: ...`, `learned_apply took ...`). The second
+title's start-up card: 21 → 86 frames in its first six seconds (F203).

@@ -1,0 +1,26 @@
+run 704 (KYTY_BC5_AMM_TRACE=1, host before the changes): /proc sampler at 50 Hz of game-main and the Render Thread
+(state, wchan, /proc/<tid>/syscall), runs of identical samples, t 3.7-11.7 s. game-main's futex at 0x55a9ac120340 is a
+host global (the memory-operation mutex of memory.cpp, same low bits as gdb printed in run 702); fds 0x98-0xa2 are the
+title's files on the bc5-mount.
+
+game-main
+   4.44- 4.59  D  folio_wait_bit_common   read(0x9e)          (an APR read run on game-main)
+   4.66- 5.11  D  folio_wait_bit_common   (page fault)
+   6.04- 6.52  D  folio_wait_bit_common   read(0x98)
+   6.52- 8.10  S  futex 0x55a9ac120340    1.58 s on the memory-operation mutex
+   8.10- 8.90  D  folio_wait_bit_common / request_wait_answer  read(0xa1), read(0x9e), read(0x9a), read(0xa2)
+   9.61- 9.73  S  futex 0x7f43709e2378    (a title mutex)
+  10.31-10.83  R  running
+Render Thread
+   4.09- 9.57  R  running (the spin loop), 511 ticks
+  10.31-10.79  S  futex 0x55a9ac16b968
+All threads at 7.47 s (2 Hz snapshot): game-main in the futex above; Archive Asset IO running; Render Thread running;
+bc5-apr-wait in a futex on 0x55a9ac130440 (the APR queue mutex); kyty-gpu 46 ticks; everything else idle.
+
+Per-thread CPU (run 700, sample700.sh, 1-s windows, threads over 15 %):
+  t 4.7  Render Thread 63 %, game-main 24 %        t 5.9  Render Thread 79 %
+  t 6.9  Render Thread 90 %, game-main 26 %        t 8.0  kyty-gpu 24 %, game-main 16 %     (total 68 %)
+  t 9.1  bc5-ring 48 %, kyty-gpu 19 %              t 10.2 bc5-ring 37 %
+  t 11.3 game-main 34 %                            t 12.5 game-main 61 %
+  t 15.9 onwards: BinkAsy0 and BinkAsy1 15-23 % each (the second movie)
+Run 706 (A): t 5.9-8.1 bc5-ring 31-84 %, kyty-gpu 18-24 %, game-main 14 %, the Render Thread no longer spinning.

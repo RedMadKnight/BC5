@@ -1,0 +1,20 @@
+run 702 (KYTY_BC5_AMM_TRACE=1, host before the changes): APR read batches from the trace, time relative to the first
+trace stamp (the journal's t 0 is 0.026 s later). 440 read batches in 33 s, 545 MiB, the batch durations sum to 2.8 s.
+
+The gaps: a submission waits at command 0 on the counter 0x90adf7f98 (op 4 "reached") and the ones behind it queue:
+  3.811 waits (value 0x9b, now 0x98)  -> resumed 3.848 .. 5.349 (63 submissions, as the counter advances)
+  5.830 waits (value 0x489, now 0x44b) -> resumed 8.680 (2.85 s; in between only single AMM maps, 64 KiB-512 KiB, 1-1080 ms apart)
+ 10.205 waits (value 0x4df, now 0x4d9) -> resumed 10.338 .. 10.898
+ 11.341 / 11.448 / 11.779 waits -> resumed within 0.1-0.4 s
+ 13.157 / 13.556 / 14.011 / 15.374 waits -> resumed within 0.02-0.35 s
+The counter is advanced by the write-address commands of the map-only submissions (63 maps + 63 writes each).
+
+Frames (journal): 3.711, 3.746, 3.775, 3.808, then 5.436 (1628 ms), 5.488 .. 5.695, then 9.244 (3549 ms), 9.348, 10.230 (882),
+10.950 (720), 11.049, 11.146, 11.250, 11.773 (522): a frame when a parked chain drains.
+
+APR events per 250 ms (reads / write-address / map auto / waits / resumed), t 3.5-11.5:
+  3.50 read 231  3.75 read 1249 wr 1008 map 254 wait 31 res 25  4.00 read 622 map 322 res 17  4.25 read 353 map 133 res 8
+  5.00 read 279 map 127 res 7  5.25 read 207 map 145 res 6  5.50 read 137 wr 88  5.75 wr 156 read 121 map 60 wait 3
+  6.00 map 4  6.25 map 15  6.50 map 10  6.75 map 3  (7.00-7.75: nothing)  8.00 map 6  8.25 map 12  8.50 read 122 map 5 res 3
+  8.75 map 7  9.00 read 84 map 54  9.25 read 101 map 16  10.00 wr 314 read 150 wait 11  10.25 read 216 map 64  10.50 read 255 map 201
+  10.75 read 575 map 72  11.00 read 678 unmap 150  11.25 wr 263 read 139 map 70
