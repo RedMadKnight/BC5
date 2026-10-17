@@ -1,0 +1,607 @@
+=== gdb-anim2.out
+Breakpoint 1 at 0x55e21d7c2840: file /home/kjaniszewski/src/KytyPlus/src/libs/libAmpr.cpp, line 2201.
+-- stop at pc=55e21d7c2840 thread:
+#0  Libs::LibAmpr::Ampr::AprCommandBufferReadFile (command_buffer=0x1001309338, file_id=1653370291, destination=0x101d86c590, size=259072, file_offset=73327727873) at /home/kjaniszewski/src/KytyPlus/src/libs/libAmpr.cpp:2201
+#1  0x0000000900000194 in ?? ()
+#2  0x0000000002a0b6e0 in ?? ()
+#3  0x00000000ffe00000 in ?? ()
+#4  0x00000007ee267e40 in ?? ()
+#5  0x0000000903c7c1ba in ?? ()
+   rdi=1001309338 rsi=1001309350 rdx=1001309358 rcx=628c6db3 r8=101d86c590 r9=3f400
+   rbx=2a0b6e0 r12=7ee267e60 r13=90b046b50 r14=0 r15=ffe00000 rbp=7ee267db0
+Thread 40 "Archive Loose I" hit Breakpoint 1, Libs::LibAmpr::Ampr::AprCommandBufferReadFile (command_buffer=0x1001309338, file_id=1653370291, destination=0x101d86c590, size=259072, file_offset=73327727873) at /home/kjaniszewski/src/KytyPlus/src/libs/libAmpr.cpp:2201
+2201	                                                  uint64_t size, uint64_t file_offset) {
+== animstrm read: file=628c6db3 dest=101d86c590 size=3f400 off=2a0b6e0
+-- record at r12+r14 and neighbours:
+0x7ee267e40:	0x00000007ee267f70	0x0000000903c7a6bb
+0x7ee267e50:	0x00000007ee267f10	0x0000000903c7a652
+0x7ee267e60:	0x000000101d86c590	0x0000001e02a0abe0
+0x7ee267e70:	0x0000000000000b00	0x000000000003f400
+0x7ee267e80:	0x000000101d8abac0	0x0000001e02a0abe0
+0x7ee267e90:	0x000000000003ff00	0x000000000003ff00
+-- queue object at r13 (128 B):
+0x90b046b50:	0x0000001001308000	0x0000007b00000001
+0x90b046b60:	0x000000001ff1ec7c	0x0000001001288000
+0x90b046b70:	0x0000000000000000	0x0000001001310000
+0x90b046b80:	0x0000001001311000	0x0000001001311008
+0x90b046b90:	0x0000000000000000	0x000000090b046b50
+0x90b046ba0:	0x0000000000000000	0x0000000000000000
+0x90b046bb0:	0x0000400000088000	0x00000009074b406e
+0x90b046bc0:	0x0000001001394000	0xffffffff00000003
+Hardware watchpoint 2: *(long*)$rec
+Hardware watchpoint 3: *(long*)($rec+8)
+-- stop at pc=90e3c8009 thread:
+#0  0x000000090e3c8009 in ?? ()
+#1  0x000000000016794e in ?? ()
+#2  0x0000000000000206 in ?? ()
+#3  0x00000007ee267e60 in ?? ()
+#4  0x0000001112642bf0 in ?? ()
+#5  0x0000001112642bf0 in ?? ()
+   rdi=1112642bf0 rsi=28 rdx=1 rcx=16794e r8=7f92f09e0a68 r9=0
+   rbx=1112642bf0 r12=28 r13=1 r14=1 r15=50 rbp=7ee267f20
+Thread 40 "Archive Loose I" hit Hardware watchpoint 3: *(long*)($rec+8)
+Old value = 128893103072
+New value = 1472846
+0x000000090e3c8009 in ?? ()
+-- stop at pc=90e3c800a thread:
+#0  0x000000090e3c800a in ?? ()
+#1  0x0000000000000001 in ?? ()
+#2  0x000000000016794e in ?? ()
+#3  0x0000000000000206 in ?? ()
+#4  0x00000007ee267e60 in ?? ()
+#5  0x0000001112642bf0 in ?? ()
+   rdi=1112642bf0 rsi=28 rdx=1 rcx=16794e r8=7f92f09e0a68 r9=0
+   rbx=1112642bf0 r12=28 r13=1 r14=1 r15=50 rbp=7ee267f20
+Thread 40 "Archive Loose I" hit Hardware watchpoint 2: *(long*)$rec
+Old value = 69214848400
+New value = 1
+0x000000090e3c800a in ?? ()
+-- stop at pc=90e3c8013 thread:
+#0  0x000000090e3c8013 in ?? ()
+#1  0x0000001112642bc8 in ?? ()
+#2  0x0000000000000246 in ?? ()
+#3  0x0000000000000000 in ?? ()
+   rdi=f0 rsi=bb80000063d8 rdx=62e8 rcx=f0 r8=7f92f09e0a68 r9=0
+   rbx=1112642bc8 r12=28 r13=1 r14=1 r15=1112ac55e8 rbp=7ee267f70
+Thread 40 "Archive Loose I" hit Hardware watchpoint 3: *(long*)($rec+8)
+Old value = 1472846
+New value = 73322998728
+0x000000090e3c8013 in ?? ()
+-- stop at pc=90e3c8014 thread:
+#0  0x000000090e3c8014 in ?? ()
+#1  0x00000000000000f0 in ?? ()
+#2  0x0000001112642bc8 in ?? ()
+#3  0x0000000000000246 in ?? ()
+#4  0x0000000000000000 in ?? ()
+   rdi=f0 rsi=bb80000063d8 rdx=62e8 rcx=f0 r8=7f92f09e0a68 r9=0
+   rbx=1112642bc8 r12=28 r13=1 r14=1 r15=1112ac55e8 rbp=7ee267f70
+Thread 40 "Archive Loose I" hit Hardware watchpoint 2: *(long*)$rec
+Old value = 1
+New value = 240
+0x000000090e3c8014 in ?? ()
+-- stop at pc=90e3c8009 thread:
+#0  0x000000090e3c8009 in ?? ()
+#1  0x000000000016794e in ?? ()
+#2  0x0000000000000206 in ?? ()
+#3  0x00000007ee267dc0 in ?? ()
+#4  0x0000001112642bf0 in ?? ()
+#5  0x0000001112642bf0 in ?? ()
+   rdi=1112642bf0 rsi=28 rdx=1 rcx=16794e r8=d0 r9=0
+   rbx=1112642bf0 r12=28 r13=1 r14=1 r15=f0 rbp=7ee267f20
+Thread 40 "Archive Loose I" hit Hardware watchpoint 3: *(long*)($rec+8)
+Old value = 73322998728
+New value = 1472846
+0x000000090e3c8009 in ?? ()
+-- stop at pc=90e3c800a thread:
+#0  0x000000090e3c800a in ?? ()
+#1  0x0000000000000001 in ?? ()
+#2  0x000000000016794e in ?? ()
+#3  0x0000000000000206 in ?? ()
+#4  0x00000007ee267dc0 in ?? ()
+#5  0x0000001112642bf0 in ?? ()
+   rdi=1112642bf0 rsi=28 rdx=1 rcx=16794e r8=d0 r9=0
+   rbx=1112642bf0 r12=28 r13=1 r14=1 r15=f0 rbp=7ee267f20
+Thread 40 "Archive Loose I" hit Hardware watchpoint 2: *(long*)$rec
+Old value = 240
+New value = 1
+0x000000090e3c800a in ?? ()
+-- stop at pc=90e3c8013 thread:
+#0  0x000000090e3c8013 in ?? ()
+#1  0x0000001112642bc8 in ?? ()
+#2  0x0000000000000246 in ?? ()
+#3  0x00000000000000d5 in ?? ()
+#4  0x0000000000000000 in ?? ()
+   rdi=28 rsi=bb8000006400 rdx=63d8 rcx=28 r8=d0 r9=0
+   rbx=1112642bc8 r12=28 r13=1 r14=1 r15=1112ac56d8 rbp=7ee267f70
+Thread 40 "Archive Loose I" hit Hardware watchpoint 3: *(long*)($rec+8)
+Old value = 1472846
+New value = 73322998728
+0x000000090e3c8013 in ?? ()
+-- stop at pc=90e3c8014 thread:
+#0  0x000000090e3c8014 in ?? ()
+=== gdb-anim3.out
+Breakpoint 1 at 0x5588b4111840: file /home/kjaniszewski/src/KytyPlus/src/libs/libAmpr.cpp, line 2201.
+-- stop at pc=5588b4111840
+#0  Libs::LibAmpr::Ampr::AprCommandBufferReadFile (command_buffer=0x10013091d0, file_id=1653370291, destination=0x101d86c590, size=259072, file_offset=73327727873) at /home/kjaniszewski/src/KytyPlus/src/libs/libAmpr.cpp:2201
+#1  0x0000000900000194 in ?? ()
+#2  0x0000000002a0b6e0 in ?? ()
+#3  0x00000000ffe00000 in ?? ()
+#4  0x00000007ee267e40 in ?? ()
+#5  0x0000000903c7c1ba in ?? ()
+   rdi=10013091d0 rsi=10013091e8 rdx=10013091f0 rcx=628c6db3 r8=101d86c590 r9=3f400 rax=101d86c590
+   rbx=2a0b6e0 r12=7ee267e60 r13=90b046b50 r14=0 r15=ffe00000 rbp=7ee267db0
+Thread 40 "Archive Loose I" hit Breakpoint 1, Libs::LibAmpr::Ampr::AprCommandBufferReadFile (command_buffer=0x10013091d0, file_id=1653370291, destination=0x101d86c590, size=259072, file_offset=73327727873) at /home/kjaniszewski/src/KytyPlus/src/libs/libAmpr.cpp:2201
+2201	                                                  uint64_t size, uint64_t file_offset) {
+== animstrm read: file=628c6db3 dest=101d86c590 size=3f400 off=2a0b6e0 r12=7ee267e60 r14=0
+wrapper rbp=7ee267db0 flush rbp=7ee267e40 outer rbx=7ee267ec0 ptrs=7ee267ea0 k=0 req=10374bac28
+0x10374bac28:	0x0000000100000000	0x0000001e02a0abe0
+0x10374bac38:	0xb0e39db08490a929	0x000000000031c610
+0x10374bac48:	0x00000011126429a0	0x0000000100000170
+0x10374bac58:	0x0000000000000003	0x000000101d8abac0
+0x10374bac68:	0x000001740003ff00	0x0000017400000000
+0x10374bac78:	0x0000000100000000	0x0000001e02a0abe0
+0x10374bac88:	0xb0e39db08490a929	0x000000000031c610
+0x10374bac98:	0x00000011126429a0	0x0000000100000174
+Hardware access (read/write) watchpoint 2: *(int*)($req+4)
+-- stop at pc=903c7a9f5
+#0  0x0000000903c7a9f5 in ?? ()
+#1  0x0000000000000000 in ?? ()
+   rdi=90aec69e8 rsi=0 rdx=1 rcx=16d283 r8=e90 r9=0 rax=0
+   rbx=3 r12=3 r13=1 r14=10374bac28 r15=1112ad3a20 rbp=7ee0c7f70
+Thread 39 "Archive Resolve" hit Hardware access (read/write) watchpoint 2: *(int*)($req+4)
+Old value = 1
+New value = 3
+0x0000000903c7a9f5 in ?? ()
+-- stop at pc=903abbb02
+#0  0x0000000903abbb02 in ?? ()
+#1  0x00000013163ea280 in ?? ()
+#2  0x0000000000000002 in ?? ()
+#3  0x00000010374bac08 in ?? ()
+#4  0x0000001070281360 in ?? ()
+#5  0x0000001070281950 in ?? ()
+   rdi=1070281950 rsi=0 rdx=10374bac08 rcx=10374bac08 r8=0 r9=0 rax=0
+   rbx=1070281950 r12=1b r13=0 r14=1017ad8f58 r15=1070281360 rbp=10367fb820
+Thread 59 "game-main" hit Hardware access (read/write) watchpoint 2: *(int*)($req+4)
+Value = 3
+0x0000000903abbb02 in ?? ()
+Thread 1 "kyty_emulator" received signal SIGTERM, Terminated.
+[Inferior 1 (process 1495592) exited normally]
+Error while running hook_stop:
+No registers.
+/home/kjaniszewski/bc5-work/gdb-anim3.gdb:35: Error in sourced command file:
+The program is not being run.
+=== gdb-anim5.out
+Breakpoint 1 at 0x903abba10
+Breakpoint 2 at 0x55d7b4e21840: file /home/kjaniszewski/src/KytyPlus/src/libs/libAmpr.cpp, line 2201.
+== animstrm read: dest=101d86c590 size=3f400 off=2a0b6e0
+upd rdi=1070281950 flags=5 res=10191797b8 pos=0 prev=0 max=94.033348 fps=30.000000 t=0.031401
+upd rdi=1070281950 flags=5 res=10191797b8 pos=0 prev=0 max=94.033348 fps=30.000000 t=0.069456
+upd rdi=1070281950 flags=5 res=10191797b8 pos=2 prev=0 max=94.033348 fps=30.000000 t=0.109551
+upd rdi=1070281950 flags=5 res=10191797b8 pos=3 prev=2 max=94.033348 fps=30.000000 t=0.157711
+upd rdi=1070281950 flags=5 res=10191797b8 pos=4 prev=3 max=94.033348 fps=30.000000 t=0.204909
+upd rdi=1070281950 flags=5 res=10191797b8 pos=6 prev=4 max=94.033348 fps=30.000000 t=0.266281
+upd rdi=1070281950 flags=5 res=10191797b8 pos=7 prev=6 max=94.033348 fps=30.000000 t=0.318916
+upd rdi=1070281950 flags=5 res=10191797b8 pos=9 prev=7 max=94.033348 fps=30.000000 t=0.362583
+upd rdi=1070281950 flags=5 res=10191797b8 pos=10 prev=9 max=94.033348 fps=30.000000 t=0.396565
+upd rdi=1070281950 flags=5 res=10191797b8 pos=11 prev=10 max=94.033348 fps=30.000000 t=0.420118
+upd rdi=1070281950 flags=5 res=10191797b8 pos=12 prev=11 max=94.033348 fps=30.000000 t=0.441603
+upd rdi=1070281950 flags=5 res=10191797b8 pos=13 prev=12 max=94.033348 fps=30.000000 t=0.455916
+upd rdi=1070281950 flags=5 res=10191797b8 pos=13 prev=13 max=94.033348 fps=30.000000 t=0.479083
+upd rdi=1070281950 flags=5 res=10191797b8 pos=14 prev=13 max=94.033348 fps=30.000000 t=0.511301
+upd rdi=1070281950 flags=5 res=10191797b8 pos=15 prev=14 max=94.033348 fps=30.000000 t=0.558427
+upd rdi=1070281950 flags=5 res=10191797b8 pos=16 prev=15 max=94.033348 fps=30.000000 t=0.612729
+upd rdi=1070281950 flags=5 res=10191797b8 pos=18 prev=16 max=94.033348 fps=30.000000 t=0.665944
+upd rdi=1070281950 flags=5 res=10191797b8 pos=19 prev=18 max=94.033348 fps=30.000000 t=0.718094
+upd rdi=1070281950 flags=5 res=10191797b8 pos=21 prev=19 max=94.033348 fps=30.000000 t=0.769202
+upd rdi=1070281950 flags=5 res=10191797b8 pos=23 prev=21 max=94.033348 fps=30.000000 t=0.816972
+upd rdi=1070281950 flags=5 res=10191797b8 pos=24 prev=23 max=94.033348 fps=30.000000 t=0.857202
+upd rdi=1070281950 flags=5 res=10191797b8 pos=25 prev=24 max=94.033348 fps=30.000000 t=0.896628
+upd rdi=1070281950 flags=5 res=10191797b8 pos=26 prev=25 max=94.033348 fps=30.000000 t=0.924902
+upd rdi=1070281950 flags=5 res=10191797b8 pos=27 prev=26 max=94.033348 fps=30.000000 t=0.947830
+upd rdi=1070281950 flags=5 res=10191797b8 pos=28 prev=27 max=94.033348 fps=30.000000 t=0.957282
+upd rdi=1070281950 flags=5 res=10191797b8 pos=28 prev=28 max=94.033348 fps=30.000000 t=0.966192
+upd rdi=1070281950 flags=5 res=10191797b8 pos=28 prev=28 max=94.033348 fps=30.000000 t=0.973372
+upd rdi=1070281950 flags=5 res=10191797b8 pos=29 prev=28 max=94.033348 fps=30.000000 t=0.980568
+upd rdi=1070281950 flags=5 res=10191797b8 pos=29 prev=29 max=94.033348 fps=30.000000 t=0.987695
+upd rdi=1070281950 flags=5 res=10191797b8 pos=29 prev=29 max=94.033348 fps=30.000000 t=0.994903
+upd rdi=1070281950 flags=5 res=10191797b8 pos=29 prev=29 max=94.033348 fps=30.000000 t=1.001905
+upd rdi=1070281950 flags=5 res=10191797b8 pos=30 prev=29 max=94.033348 fps=30.000000 t=1.009154
+upd rdi=1070281950 flags=5 res=10191797b8 pos=30 prev=30 max=94.033348 fps=30.000000 t=1.016311
+upd rdi=1070281950 flags=5 res=10191797b8 pos=30 prev=30 max=94.033348 fps=30.000000 t=1.026669
+upd rdi=1070281950 flags=5 res=10191797b8 pos=30 prev=30 max=94.033348 fps=30.000000 t=1.036906
+upd rdi=1070281950 flags=5 res=10191797b8 pos=31 prev=30 max=94.033348 fps=30.000000 t=1.047050
+upd rdi=1070281950 flags=5 res=10191797b8 pos=31 prev=31 max=94.033348 fps=30.000000 t=1.054000
+upd rdi=1070281950 flags=5 res=10191797b8 pos=31 prev=31 max=94.033348 fps=30.000000 t=1.060410
+upd rdi=1070281950 flags=5 res=10191797b8 pos=31 prev=31 max=94.033348 fps=30.000000 t=1.066339
+upd rdi=1070281950 flags=5 res=10191797b8 pos=31 prev=31 max=94.033348 fps=30.000000 t=1.072038
+upd rdi=1070281950 flags=5 res=10191797b8 pos=32 prev=31 max=94.033348 fps=30.000000 t=1.077497
+upd rdi=1070281950 flags=5 res=10191797b8 pos=32 prev=32 max=94.033348 fps=30.000000 t=1.083192
+upd rdi=1070281950 flags=5 res=10191797b8 pos=32 prev=32 max=94.033348 fps=30.000000 t=1.088650
+upd rdi=1070281950 flags=5 res=10191797b8 pos=32 prev=32 max=94.033348 fps=30.000000 t=1.094031
+upd rdi=1070281950 flags=5 res=10191797b8 pos=32 prev=32 max=94.033348 fps=30.000000 t=1.099020
+upd rdi=1070281950 flags=5 res=10191797b8 pos=32 prev=32 max=94.033348 fps=30.000000 t=1.116714
+upd rdi=1070281950 flags=5 res=10191797b8 pos=33 prev=32 max=94.033348 fps=30.000000 t=1.144541
+upd rdi=1070281950 flags=5 res=10191797b8 pos=34 prev=33 max=94.033348 fps=30.000000 t=1.171395
+upd rdi=1070281950 flags=5 res=10191797b8 pos=35 prev=34 max=94.033348 fps=30.000000 t=1.184457
+upd rdi=1070281950 flags=5 res=10191797b8 pos=35 prev=35 max=94.033348 fps=30.000000 t=1.187189
+upd rdi=1070281950 flags=5 res=10191797b8 pos=35 prev=35 max=94.033348 fps=30.000000 t=1.190984
+upd rdi=1070281950 flags=5 res=10191797b8 pos=35 prev=35 max=94.033348 fps=30.000000 t=1.195971
+upd rdi=1070281950 flags=5 res=10191797b8 pos=35 prev=35 max=94.033348 fps=30.000000 t=1.201203
+upd rdi=1070281950 flags=5 res=10191797b8 pos=36 prev=35 max=94.033348 fps=30.000000 t=1.218446
+upd rdi=1070281950 flags=5 res=10191797b8 pos=36 prev=36 max=94.033348 fps=30.000000 t=1.234858
+upd rdi=1070281950 flags=5 res=10191797b8 pos=37 prev=36 max=94.033348 fps=30.000000 t=1.252346
+upd rdi=1070281950 flags=5 res=10191797b8 pos=37 prev=37 max=94.033348 fps=30.000000 t=1.256607
+upd rdi=1070281950 flags=5 res=10191797b8 pos=37 prev=37 max=94.033348 fps=30.000000 t=1.260347
+upd rdi=1070281950 flags=5 res=10191797b8 pos=37 prev=37 max=94.033348 fps=30.000000 t=1.262046
+upd rdi=1070281950 flags=5 res=10191797b8 pos=37 prev=37 max=94.033348 fps=30.000000 t=1.263939
+upd rdi=1070281950 flags=5 res=10191797b8 pos=37 prev=37 max=94.033348 fps=30.000000 t=1.266003
+upd rdi=1070281950 flags=5 res=10191797b8 pos=37 prev=37 max=94.033348 fps=30.000000 t=1.268636
+upd rdi=1070281950 flags=5 res=10191797b8 pos=38 prev=37 max=94.033348 fps=30.000000 t=1.271799
+upd rdi=1070281950 flags=5 res=10191797b8 pos=38 prev=38 max=94.033348 fps=30.000000 t=1.282048
+upd rdi=1070281950 flags=5 res=10191797b8 pos=38 prev=38 max=94.033348 fps=30.000000 t=1.291355
+upd rdi=1070281950 flags=5 res=10191797b8 pos=38 prev=38 max=94.033348 fps=30.000000 t=1.299318
+upd rdi=1070281950 flags=5 res=10191797b8 pos=38 prev=38 max=94.033348 fps=30.000000 t=1.299769
+upd rdi=1070281950 flags=5 res=10191797b8 pos=38 prev=38 max=94.033348 fps=30.000000 t=1.300419
+upd rdi=1070281950 flags=5 res=10191797b8 pos=39 prev=38 max=94.033348 fps=30.000000 t=1.302268
+upd rdi=1070281950 flags=5 res=10191797b8 pos=39 prev=39 max=94.033348 fps=30.000000 t=1.304951
+upd rdi=1070281950 flags=5 res=10191797b8 pos=39 prev=39 max=94.033348 fps=30.000000 t=1.307830
+upd rdi=1070281950 flags=5 res=10191797b8 pos=39 prev=39 max=94.033348 fps=30.000000 t=1.317968
+upd rdi=1070281950 flags=5 res=10191797b8 pos=39 prev=39 max=94.033348 fps=30.000000 t=1.327036
+upd rdi=1070281950 flags=5 res=10191797b8 pos=39 prev=39 max=94.033348 fps=30.000000 t=1.335303
+upd rdi=1070281950 flags=5 res=10191797b8 pos=40 prev=39 max=94.033348 fps=30.000000 t=1.348102
+upd rdi=1070281950 flags=5 res=10191797b8 pos=40 prev=40 max=94.033348 fps=30.000000 t=1.361017
+upd rdi=1070281950 flags=5 res=10191797b8 pos=40 prev=40 max=94.033348 fps=30.000000 t=1.374617
+upd rdi=1070281950 flags=5 res=10191797b8 pos=41 prev=40 max=94.033348 fps=30.000000 t=1.374951
+upd rdi=1070281950 flags=5 res=10191797b8 pos=41 prev=41 max=94.033348 fps=30.000000 t=1.374951
+upd rdi=1070281950 flags=5 res=10191797b8 pos=41 prev=41 max=94.033348 fps=30.000000 t=1.374951
+upd rdi=1070281950 flags=5 res=10191797b8 pos=41 prev=41 max=94.033348 fps=30.000000 t=1.374951
+upd rdi=1070281950 flags=5 res=10191797b8 pos=41 prev=41 max=94.033348 fps=30.000000 t=1.374951
+upd rdi=1070281950 flags=5 res=10191797b8 pos=41 prev=41 max=94.033348 fps=30.000000 t=1.374951
+upd rdi=1070281950 flags=5 res=10191797b8 pos=41 prev=41 max=94.033348 fps=30.000000 t=1.374951
+upd rdi=1070281950 flags=5 res=10191797b8 pos=41 prev=41 max=94.033348 fps=30.000000 t=1.387368
+upd rdi=1070281950 flags=5 res=10191797b8 pos=41 prev=41 max=94.033348 fps=30.000000 t=1.399499
+upd rdi=1070281950 flags=5 res=10191797b8 pos=41 prev=41 max=94.033348 fps=30.000000 t=1.411449
+upd rdi=1070281950 flags=5 res=10191797b8 pos=42 prev=41 max=94.033348 fps=30.000000 t=1.411449
+upd rdi=1070281950 flags=5 res=10191797b8 pos=42 prev=42 max=94.033348 fps=30.000000 t=1.411449
+upd rdi=1070281950 flags=5 res=10191797b8 pos=42 prev=42 max=94.033348 fps=30.000000 t=1.411449
+upd rdi=1070281950 flags=5 res=10191797b8 pos=42 prev=42 max=94.033348 fps=30.000000 t=1.411449
+upd rdi=1070281950 flags=5 res=10191797b8 pos=42 prev=42 max=94.033348 fps=30.000000 t=1.411449
+upd rdi=1070281950 flags=5 res=10191797b8 pos=42 prev=42 max=94.033348 fps=30.000000 t=1.411449
+upd rdi=1070281950 flags=5 res=10191797b8 pos=42 prev=42 max=94.033348 fps=30.000000 t=1.411449
+upd rdi=1070281950 flags=5 res=10191797b8 pos=42 prev=42 max=94.033348 fps=30.000000 t=1.411449
+upd rdi=1070281950 flags=5 res=10191797b8 pos=42 prev=42 max=94.033348 fps=30.000000 t=1.413043
+upd rdi=1070281950 flags=5 res=10191797b8 pos=42 prev=42 max=94.033348 fps=30.000000 t=1.414888
+upd rdi=1070281950 flags=5 res=10191797b8 pos=42 prev=42 max=94.033348 fps=30.000000 t=1.416827
+upd rdi=1070281950 flags=5 res=10191797b8 pos=42 prev=42 max=94.033348 fps=30.000000 t=1.416827
+upd rdi=1070281950 flags=5 res=10191797b8 pos=42 prev=42 max=94.033348 fps=30.000000 t=1.416827
+upd rdi=1070281950 flags=5 res=10191797b8 pos=42 prev=42 max=94.033348 fps=30.000000 t=1.417250
+upd rdi=1070281950 flags=5 res=10191797b8 pos=42 prev=42 max=94.033348 fps=30.000000 t=1.419452
+upd rdi=1070281950 flags=5 res=10191797b8 pos=42 prev=42 max=94.033348 fps=30.000000 t=1.422685
+upd rdi=1070281950 flags=5 res=10191797b8 pos=42 prev=42 max=94.033348 fps=30.000000 t=1.425492
+upd rdi=1070281950 flags=5 res=10191797b8 pos=42 prev=42 max=94.033348 fps=30.000000 t=1.427697
+upd rdi=1070281950 flags=5 res=10191797b8 pos=42 prev=42 max=94.033348 fps=30.000000 t=1.429383
+upd rdi=1070281950 flags=5 res=10191797b8 pos=42 prev=42 max=94.033348 fps=30.000000 t=1.430119
+upd rdi=1070281950 flags=5 res=10191797b8 pos=42 prev=42 max=94.033348 fps=30.000000 t=1.430425
+upd rdi=1070281950 flags=5 res=10191797b8 pos=42 prev=42 max=94.033348 fps=30.000000 t=1.430506
+upd rdi=1070281950 flags=5 res=10191797b8 pos=42 prev=42 max=94.033348 fps=30.000000 t=1.430871
+upd rdi=1070281950 flags=5 res=10191797b8 pos=42 prev=42 max=94.033348 fps=30.000000 t=1.431485
+upd rdi=1070281950 flags=5 res=10191797b8 pos=42 prev=42 max=94.033348 fps=30.000000 t=1.432190
+upd rdi=1070281950 flags=5 res=10191797b8 pos=42 prev=42 max=94.033348 fps=30.000000 t=1.432501
+upd rdi=1070281950 flags=5 res=10191797b8 pos=42 prev=42 max=94.033348 fps=30.000000 t=1.432501
+upd rdi=1070281950 flags=5 res=10191797b8 pos=42 prev=42 max=94.033348 fps=30.000000 t=1.432501
+upd rdi=1070281950 flags=5 res=10191797b8 pos=42 prev=42 max=94.033348 fps=30.000000 t=1.432501
+upd rdi=1070281950 flags=5 res=10191797b8 pos=42 prev=42 max=94.033348 fps=30.000000 t=1.432501
+=== gdb-anim11.out
+Breakpoint 1 at 0x903b77670
+Breakpoint 2 at 0x903b77a0f
+Breakpoint 3 at 0x562d78182840: file /home/kjaniszewski/src/KytyPlus/src/libs/libAmpr.cpp, line 2201.
+== animstrm read
+adv owner=1070281360 dt=0.055909 time=0.036935 f548=1 c9=1 f120=3 src=1017ad8f58 state=0 flag=0
+   clamp: time+dt=0.091656 bound=94.033348 src=1017ad8f58
+0x1017ad8f58:	0x0000000208850104	0x8f84d29092e0a0e9
+0x1017ad8f68:	0x0000001060b52438	0x0010d771f0b00000
+0x1017ad8f78:	0x0000001017850a70	0x9248e91e0ef3c5f0
+0x1017ad8f88:	0x00000000000000b8	0x42bc111300630003
+0x1017ad8f98:	0x000000003f000000	0xbf800000bf800000
+0x1017ad8fa8:	0xbf800000bf800000	0x0000000000000004
+adv owner=1070281360 dt=0.060725 time=0.091656 f548=1 c9=1 f120=3 src=1017ad8f58 state=0 flag=0
+   clamp: time+dt=0.149995 bound=94.033348 src=1017ad8f58
+0x1017ad8f58:	0x0000000208850104	0x8f84d29092e0a0e9
+0x1017ad8f68:	0x0000001060b52438	0x0010d771f0b00000
+0x1017ad8f78:	0x0000001017850a70	0x9248e91e0ef3c5f0
+0x1017ad8f88:	0x00000000000000b8	0x42bc111300630003
+0x1017ad8f98:	0x000000003f000000	0xbf800000bf800000
+0x1017ad8fa8:	0xbf800000bf800000	0x0000000000000004
+adv owner=1070281360 dt=0.051264 time=0.149995 f548=1 c9=1 f120=3 src=1017ad8f58 state=0 flag=0
+   clamp: time+dt=0.197907 bound=94.033348 src=1017ad8f58
+adv owner=1070281360 dt=0.051264 time=0.197907 f548=1 c9=1 f120=3 src=1017ad8f58 state=0 flag=0
+   clamp: time+dt=0.244861 bound=94.033348 src=1017ad8f58
+adv owner=1070281360 dt=0.039475 time=0.244861 f548=1 c9=1 f120=3 src=1017ad8f58 state=0 flag=0
+   clamp: time+dt=0.279338 bound=94.033348 src=1017ad8f58
+adv owner=1070281360 dt=0.054878 time=0.279338 f548=1 c9=1 f120=3 src=1017ad8f58 state=0 flag=0
+   clamp: time+dt=0.328200 bound=94.033348 src=1017ad8f58
+adv owner=1070281360 dt=0.047730 time=0.328200 f548=1 c9=1 f120=3 src=1017ad8f58 state=0 flag=0
+   clamp: time+dt=0.369089 bound=94.033348 src=1017ad8f58
+adv owner=1070281360 dt=0.052058 time=0.369089 f548=1 c9=1 f120=3 src=1017ad8f58 state=0 flag=0
+   clamp: time+dt=0.413397 bound=94.033348 src=1017ad8f58
+adv owner=1070281360 dt=0.044383 time=0.413397 f548=1 c9=1 f120=3 src=1017ad8f58 state=0 flag=0
+   clamp: time+dt=0.449306 bound=94.033348 src=1017ad8f58
+adv owner=1070281360 dt=0.034820 time=0.449306 f548=1 c9=1 f120=3 src=1017ad8f58 state=0 flag=0
+   clamp: time+dt=0.475139 bound=94.033348 src=1017ad8f58
+adv owner=1070281360 dt=0.035213 time=0.475139 f548=1 c9=1 f120=3 src=1017ad8f58 state=0 flag=0
+   clamp: time+dt=0.500839 bound=94.033348 src=1017ad8f58
+adv owner=1070281360 dt=0.028389 time=0.500839 f548=1 c9=1 f120=3 src=1017ad8f58 state=0 flag=0
+   clamp: time+dt=0.519346 bound=94.033348 src=1017ad8f58
+adv owner=1070281360 dt=0.045100 time=0.519346 f548=1 c9=1 f120=3 src=1017ad8f58 state=0 flag=0
+   clamp: time+dt=0.553838 bound=94.033348 src=1017ad8f58
+adv owner=1070281360 dt=0.052167 time=0.553838 f548=1 c9=1 f120=3 src=1017ad8f58 state=0 flag=0
+   clamp: time+dt=0.594558 bound=94.033348 src=1017ad8f58
+adv owner=1070281360 dt=0.066667 time=0.594558 f548=1 c9=1 f120=3 src=1017ad8f58 state=0 flag=0
+   clamp: time+dt=0.648654 bound=94.033348 src=1017ad8f58
+adv owner=1070281360 dt=0.066667 time=0.648654 f548=1 c9=1 f120=3 src=1017ad8f58 state=0 flag=0
+   clamp: time+dt=0.701669 bound=94.033348 src=1017ad8f58
+adv owner=1070281360 dt=0.066667 time=0.701669 f548=1 c9=1 f120=3 src=1017ad8f58 state=0 flag=0
+   clamp: time+dt=0.753623 bound=94.033348 src=1017ad8f58
+adv owner=1070281360 dt=0.066667 time=0.753623 f548=1 c9=1 f120=3 src=1017ad8f58 state=0 flag=0
+   clamp: time+dt=0.804538 bound=94.033348 src=1017ad8f58
+adv owner=1070281360 dt=0.065481 time=0.804538 f548=1 c9=1 f120=3 src=1017ad8f58 state=0 flag=0
+   clamp: time+dt=0.853274 bound=94.033348 src=1017ad8f58
+adv owner=1070281360 dt=0.065481 time=0.853274 f548=1 c9=1 f120=3 src=1017ad8f58 state=0 flag=0
+   clamp: time+dt=0.901036 bound=94.033348 src=1017ad8f58
+adv owner=1070281360 dt=0.065481 time=0.901036 f548=1 c9=1 f120=3 src=1017ad8f58 state=0 flag=0
+   clamp: time+dt=0.947843 bound=94.033348 src=1017ad8f58
+adv owner=1070281360 dt=0.055248 time=0.947843 f548=1 c9=1 f120=3 src=1017ad8f58 state=0 flag=0
+   clamp: time+dt=0.983697 bound=94.033348 src=1017ad8f58
+adv owner=1070281360 dt=0.043649 time=0.983697 f548=1 c9=1 f120=3 src=1017ad8f58 state=0 flag=0
+   clamp: time+dt=1.007483 bound=94.033348 src=1017ad8f58
+adv owner=1070281360 dt=0.032561 time=1.007483 f548=1 c9=1 f120=3 src=1017ad8f58 state=0 flag=0
+   clamp: time+dt=1.019940 bound=94.033348 src=1017ad8f58
+adv owner=1070281360 dt=0.032639 time=1.019940 f548=1 c9=1 f120=3 src=1017ad8f58 state=0 flag=0
+   clamp: time+dt=1.032224 bound=94.033348 src=1017ad8f58
+adv owner=1070281360 dt=0.032612 time=1.032224 f548=1 c9=1 f120=3 src=1017ad8f58 state=0 flag=0
+   clamp: time+dt=1.044237 bound=94.033348 src=1017ad8f58
+adv owner=1070281360 dt=0.031897 time=1.044237 f548=1 c9=1 f120=3 src=1017ad8f58 state=0 flag=0
+   clamp: time+dt=1.055309 bound=94.033348 src=1017ad8f58
+adv owner=1070281360 dt=0.031457 time=1.055309 f548=1 c9=1 f120=3 src=1017ad8f58 state=0 flag=0
+   clamp: time+dt=1.065730 bound=94.033348 src=1017ad8f58
+adv owner=1070281360 dt=0.031427 time=1.065730 f548=1 c9=1 f120=3 src=1017ad8f58 state=0 flag=0
+   clamp: time+dt=1.075913 bound=94.033348 src=1017ad8f58
+adv owner=1070281360 dt=0.031026 time=1.075913 f548=1 c9=1 f120=3 src=1017ad8f58 state=0 flag=0
+   clamp: time+dt=1.085500 bound=94.033348 src=1017ad8f58
+Thread 1 "kyty_emulator" received signal SIGTERM, Terminated.
+__syscall_cancel_arch () at ../sysdeps/unix/sysv/linux/x86_64/syscall_cancel.S:56
+56	in ../sysdeps/unix/sysv/linux/x86_64/syscall_cancel.S
+== stop: adv=330 clamp=330
+Kill the program being debugged? (y or n) [answered Y; input not from terminal]
+[Inferior 1 (process 1692617) killed]
+=== gdb-anim13.out
+Breakpoint 1 at 0x903b7df30
+Breakpoint 2 at 0x5653f6c01840: file /home/kjaniszewski/src/KytyPlus/src/libs/libAmpr.cpp, line 2201.
+== animstrm read
+tick owner=1070281360 esi=0 xmm0=0.053769 gmode=1 gclock=4.970000 gwrap=10.000000 f120=3 v114=0.000000 v110=4.970000 ra=903b88114
+tick owner=10704585c0 esi=1 xmm0=0.052694 gmode=1 gclock=4.970000 gwrap=10.000000 f120=1 v114=0.034887 v110=4.970000 ra=903b881f2
+tick owner=10706da890 esi=1 xmm0=0.052694 gmode=1 gclock=4.970000 gwrap=10.000000 f120=1 v114=0.034887 v110=4.970000 ra=903b881f2
+tick owner=10702617a0 esi=1 xmm0=0.052694 gmode=1 gclock=4.970000 gwrap=10.000000 f120=1 v114=0.034887 v110=4.970000 ra=903b881f2
+tick owner=107059cb90 esi=1 xmm0=0.052694 gmode=1 gclock=4.970000 gwrap=10.000000 f120=1 v114=0.034887 v110=4.970000 ra=903b881f2
+tick owner=10706f0840 esi=1 xmm0=0.052694 gmode=1 gclock=4.970000 gwrap=10.000000 f120=1 v114=0.034887 v110=4.970000 ra=903b881f2
+tick owner=107046e550 esi=1 xmm0=0.052694 gmode=1 gclock=4.970000 gwrap=10.000000 f120=1 v114=0.034887 v110=4.970000 ra=903b881f2
+tick owner=1070122a10 esi=1 xmm0=0.052694 gmode=1 gclock=4.970000 gwrap=10.000000 f120=1 v114=0.034887 v110=4.970000 ra=903b881f2
+tick owner=1070474a50 esi=1 xmm0=0.052694 gmode=1 gclock=4.970000 gwrap=10.000000 f120=1 v114=0.034887 v110=4.970000 ra=903b881f2
+tick owner=1070291490 esi=1 xmm0=0.052694 gmode=1 gclock=4.970000 gwrap=10.000000 f120=1 v114=0.034887 v110=4.970000 ra=903b881f2
+tick owner=1070706ba0 esi=1 xmm0=0.052694 gmode=1 gclock=4.970000 gwrap=10.000000 f120=1 v114=0.034887 v110=4.970000 ra=903b881f2
+tick owner=107047afd0 esi=1 xmm0=0.052694 gmode=1 gclock=4.970000 gwrap=10.000000 f120=1 v114=0.034887 v110=4.970000 ra=903b881f2
+tick owner=10705b90c0 esi=1 xmm0=0.052694 gmode=1 gclock=4.970000 gwrap=10.000000 f120=1 v114=0.034887 v110=4.970000 ra=903b881f2
+tick owner=10705cf1a0 esi=1 xmm0=0.052694 gmode=1 gclock=4.970000 gwrap=10.000000 f120=1 v114=0.034887 v110=4.970000 ra=903b881f2
+tick owner=10702b1150 esi=1 xmm0=0.052694 gmode=1 gclock=4.970000 gwrap=10.000000 f120=1 v114=0.034887 v110=4.970000 ra=903b881f2
+tick owner=1070301820 esi=1 xmm0=0.052694 gmode=1 gclock=4.970000 gwrap=10.000000 f120=1 v114=0.034887 v110=4.970000 ra=903b881f2
+tick owner=10707462e0 esi=1 xmm0=0.052694 gmode=1 gclock=4.970000 gwrap=10.000000 f120=1 v114=0.034887 v110=4.970000 ra=903b881f2
+tick owner=1070608730 esi=1 xmm0=0.052694 gmode=1 gclock=4.970000 gwrap=10.000000 f120=1 v114=0.034887 v110=4.970000 ra=903b881f2
+tick owner=10707ea460 esi=1 xmm0=0.052694 gmode=1 gclock=4.970000 gwrap=10.000000 f120=1 v114=0.034887 v110=4.970000 ra=903b881f2
+tick owner=1070321760 esi=1 xmm0=0.052694 gmode=1 gclock=4.970000 gwrap=10.000000 f120=1 v114=0.034887 v110=4.970000 ra=903b881f2
+tick owner=107074cb00 esi=1 xmm0=0.052694 gmode=1 gclock=4.970000 gwrap=10.000000 f120=1 v114=0.034887 v110=4.970000 ra=903b881f2
+tick owner=107060ef80 esi=1 xmm0=0.052694 gmode=1 gclock=4.970000 gwrap=10.000000 f120=1 v114=0.034887 v110=4.970000 ra=903b881f2
+tick owner=1070762eb0 esi=1 xmm0=0.052694 gmode=1 gclock=4.970000 gwrap=10.000000 f120=1 v114=0.034887 v110=4.970000 ra=903b881f2
+tick owner=10704e73c0 esi=1 xmm0=0.052694 gmode=1 gclock=4.970000 gwrap=10.000000 f120=1 v114=0.034887 v110=4.970000 ra=903b881f2
+tick owner=10707989b0 esi=1 xmm0=0.052694 gmode=1 gclock=4.970000 gwrap=10.000000 f120=1 v114=0.034887 v110=4.970000 ra=903b881f2
+tick owner=10707df8e0 esi=1 xmm0=0.052694 gmode=1 gclock=4.970000 gwrap=10.000000 f120=1 v114=0.034887 v110=4.970000 ra=903b881f2
+tick owner=10707f8d70 esi=1 xmm0=0.052694 gmode=1 gclock=4.970000 gwrap=10.000000 f120=1 v114=0.034887 v110=4.970000 ra=903b881f2
+tick owner=1070281360 esi=0 xmm0=0.059933 gmode=1 gclock=4.970000 gwrap=10.000000 f120=3 v114=0.000000 v110=4.970000 ra=903b88114
+tick owner=10704585c0 esi=1 xmm0=0.057681 gmode=1 gclock=4.970000 gwrap=10.000000 f120=1 v114=0.052694 v110=4.970000 ra=903b881f2
+tick owner=10706da890 esi=1 xmm0=0.057681 gmode=1 gclock=4.970000 gwrap=10.000000 f120=1 v114=0.052694 v110=4.970000 ra=903b881f2
+Thread 59 "game-main" received signal SIGTERM, Terminated.
+0x0000000903b7df30 in ?? ()
+== stop: ticks=2715
+Kill the program being debugged? (y or n) [answered Y; input not from terminal]
+[Inferior 1 (process 1737118) killed]
+=== gdb-anim14.out
+Hardware watchpoint 1: *(float*)0x90ae007b4
+-- clock write pc=903b87fea thread=59 value=0.010000 mode=1
+#0  0x0000000903b87fea in ?? ()
+#1  0x0000000000000000 in ?? ()
+Thread 59 "game-main" hit Hardware watchpoint 1: *(float*)0x90ae007b4
+Old value = 4.94900036
+New value = 0.0100000007
+0x0000000903b87fea in ?? ()
+-- clock write pc=903b87fea thread=59 value=0.042000 mode=1
+#0  0x0000000903b87fea in ?? ()
+#1  0x000000003f000000 in ?? ()
+#2  0x00000010100c0000 in ?? ()
+#3  0x0000000000000000 in ?? ()
+Thread 59 "game-main" hit Hardware watchpoint 1: *(float*)0x90ae007b4
+Old value = 0.0100000007
+New value = 0.0420000032
+0x0000000903b87fea in ?? ()
+-- clock write pc=903b87fea thread=59 value=0.170000 mode=1
+#0  0x0000000903b87fea in ?? ()
+#1  0x0000000000000000 in ?? ()
+Thread 59 "game-main" hit Hardware watchpoint 1: *(float*)0x90ae007b4
+Old value = 0.0420000032
+New value = 0.170000002
+0x0000000903b87fea in ?? ()
+-- clock write pc=903b87fea thread=59 value=0.192000 mode=1
+#0  0x0000000903b87fea in ?? ()
+#1  0x000000003f000000 in ?? ()
+#2  0x00000010100c0000 in ?? ()
+#3  0x0000000000000000 in ?? ()
+Thread 59 "game-main" hit Hardware watchpoint 1: *(float*)0x90ae007b4
+Old value = 0.170000002
+New value = 0.192000002
+0x0000000903b87fea in ?? ()
+-- clock write pc=903b87fea thread=59 value=0.373000 mode=1
+#0  0x0000000903b87fea in ?? ()
+#1  0x0000000000000000 in ?? ()
+Thread 59 "game-main" hit Hardware watchpoint 1: *(float*)0x90ae007b4
+Old value = 0.192000002
+New value = 0.373000026
+0x0000000903b87fea in ?? ()
+-- clock write pc=903b87fea thread=59 value=0.394000 mode=1
+#0  0x0000000903b87fea in ?? ()
+#1  0x000000003f000000 in ?? ()
+#2  0x00000010100c0000 in ?? ()
+#3  0x0000000000000000 in ?? ()
+Thread 59 "game-main" hit Hardware watchpoint 1: *(float*)0x90ae007b4
+Old value = 0.373000026
+New value = 0.394000024
+0x0000000903b87fea in ?? ()
+-- clock write pc=903b87fea thread=59 value=0.480000 mode=1
+#0  0x0000000903b87fea in ?? ()
+#1  0x0000000000000000 in ?? ()
+Thread 59 "game-main" hit Hardware watchpoint 1: *(float*)0x90ae007b4
+Old value = 0.394000024
+New value = 0.480000019
+0x0000000903b87fea in ?? ()
+-- clock write pc=903b87fea thread=59 value=0.704000 mode=1
+#0  0x0000000903b87fea in ?? ()
+#1  0x0000000000000000 in ?? ()
+Thread 59 "game-main" hit Hardware watchpoint 1: *(float*)0x90ae007b4
+Old value = 0.480000019
+New value = 0.704000056
+0x0000000903b87fea in ?? ()
+-- clock write pc=903b87fea thread=59 value=0.789000 mode=1
+#0  0x0000000903b87fea in ?? ()
+#1  0x0000000000000000 in ?? ()
+Thread 59 "game-main" hit Hardware watchpoint 1: *(float*)0x90ae007b4
+Old value = 0.704000056
+New value = 0.789000034
+0x0000000903b87fea in ?? ()
+-- clock write pc=903b87fea thread=59 value=0.810000 mode=1
+#0  0x0000000903b87fea in ?? ()
+#1  0x000000003f000000 in ?? ()
+#2  0x00000010100c0000 in ?? ()
+#3  0x0000000000000000 in ?? ()
+Thread 59 "game-main" hit Hardware watchpoint 1: *(float*)0x90ae007b4
+Old value = 0.789000034
+New value = 0.810000062
+0x0000000903b87fea in ?? ()
+-- clock write pc=903b87fea thread=59 value=1.184000 mode=1
+#0  0x0000000903b87fea in ?? ()
+#1  0x0000000000000000 in ?? ()
+Thread 59 "game-main" hit Hardware watchpoint 1: *(float*)0x90ae007b4
+Old value = 0.810000062
+New value = 1.18400002
+0x0000000903b87fea in ?? ()
+-- clock write pc=903b87fea thread=59 value=1.205000 mode=1
+#0  0x0000000903b87fea in ?? ()
+#1  0x000000003f000000 in ?? ()
+#2  0x00000010100c0000 in ?? ()
+#3  0x0000000000000000 in ?? ()
+Thread 59 "game-main" hit Hardware watchpoint 1: *(float*)0x90ae007b4
+Old value = 1.18400002
+New value = 1.20500004
+0x0000000903b87fea in ?? ()
+-- clock write pc=903b87fea thread=59 value=1.290000 mode=1
+#0  0x0000000903b87fea in ?? ()
+#1  0x0000000000000000 in ?? ()
+Thread 59 "game-main" hit Hardware watchpoint 1: *(float*)0x90ae007b4
+Old value = 1.20500004
+New value = 1.29000008
+0x0000000903b87fea in ?? ()
+-- clock write pc=903b87fea thread=59 value=1.504000 mode=1
+#0  0x0000000903b87fea in ?? ()
+#1  0x0000000000000000 in ?? ()
+Thread 59 "game-main" hit Hardware watchpoint 1: *(float*)0x90ae007b4
+Old value = 1.29000008
+New value = 1.50400007
+0x0000000903b87fea in ?? ()
+-- clock write pc=903b87fea thread=59 value=1.525000 mode=1
+#0  0x0000000903b87fea in ?? ()
+#1  0x000000003f000000 in ?? ()
+#2  0x00000010100c0000 in ?? ()
+#3  0x0000000000000000 in ?? ()
+Thread 59 "game-main" hit Hardware watchpoint 1: *(float*)0x90ae007b4
+Old value = 1.50400007
+New value = 1.5250001
+0x0000000903b87fea in ?? ()
+-- clock write pc=903b87fea thread=59 value=1.600000 mode=1
+#0  0x0000000903b87fea in ?? ()
+=== gdb-anim16.out
+Breakpoint 1 at 0x903b87fc7
+Breakpoint 2 at 0x903b87fcc
+Breakpoint 3 at 0x55f40b372840: file /home/kjaniszewski/src/KytyPlus/src/libs/libAmpr.cpp, line 2201.
+== animstrm read
+pos-call playingId=30 edx=0
+   -> ret=1 ms=4949 clock=4.949000
+pos-call playingId=30 edx=0
+   -> ret=1 ms=4949 clock=4.949000
+pos-call playingId=30 edx=0
+   -> ret=1 ms=4949 clock=4.949000
+pos-call playingId=30 edx=0
+   -> ret=1 ms=4949 clock=4.949000
+pos-call playingId=30 edx=0
+   -> ret=1 ms=4949 clock=4.949000
+pos-call playingId=30 edx=0
+   -> ret=1 ms=4949 clock=4.949000
+pos-call playingId=30 edx=0
+   -> ret=1 ms=4949 clock=4.949000
+pos-call playingId=30 edx=0
+   -> ret=1 ms=4949 clock=4.949000
+pos-call playingId=30 edx=0
+   -> ret=1 ms=4949 clock=4.949000
+pos-call playingId=30 edx=0
+   -> ret=1 ms=4949 clock=4.949000
+pos-call playingId=30 edx=0
+   -> ret=1 ms=4949 clock=4.949000
+pos-call playingId=30 edx=0
+   -> ret=1 ms=4949 clock=4.949000
+pos-call playingId=30 edx=0
+   -> ret=1 ms=4949 clock=4.949000
+pos-call playingId=30 edx=0
+   -> ret=1 ms=4949 clock=4.949000
+pos-call playingId=30 edx=0
+   -> ret=1 ms=4949 clock=4.949000
+pos-call playingId=30 edx=0
+   -> ret=1 ms=4949 clock=4.949000
+pos-call playingId=30 edx=0
+   -> ret=1 ms=4949 clock=4.949000
+pos-call playingId=30 edx=0
+   -> ret=1 ms=4949 clock=4.949000
+pos-call playingId=30 edx=0
+   -> ret=1 ms=4949 clock=4.949000
+pos-call playingId=30 edx=0
+   -> ret=1 ms=4949 clock=4.949000
+pos-call playingId=30 edx=0
+   -> ret=1 ms=4949 clock=4.949000
+pos-call playingId=30 edx=0
+   -> ret=1 ms=4949 clock=4.949000
+pos-call playingId=30 edx=0
+   -> ret=1 ms=4949 clock=4.949000
+pos-call playingId=30 edx=0
+   -> ret=1 ms=4949 clock=4.949000
+pos-call playingId=30 edx=0
+   -> ret=1 ms=4949 clock=4.949000
+pos-call playingId=30 edx=0
+   -> ret=1 ms=4949 clock=4.949000
+pos-call playingId=30 edx=0
+   -> ret=1 ms=4949 clock=4.949000
+pos-call playingId=30 edx=0
+   -> ret=1 ms=4949 clock=4.949000
+pos-call playingId=30 edx=0
+   -> ret=1 ms=4949 clock=4.949000
+pos-call playingId=30 edx=0
+   -> ret=1 ms=4949 clock=4.949000
+Thread 1 "kyty_emulator" received signal SIGTERM, Terminated.
+__syscall_cancel_arch () at ../sysdeps/unix/sysv/linux/x86_64/syscall_cancel.S:56
+56	in ../sysdeps/unix/sysv/linux/x86_64/syscall_cancel.S
+== stop: calls=466
+Kill the program being debugged? (y or n) [answered Y; input not from terminal]
+[Inferior 1 (process 1799078) killed]
