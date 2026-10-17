@@ -15,10 +15,16 @@ Every number below has its experiment under [`experiments/`](experiments/) and i
 | Game | Read from | State | Frame rate |
 | --- | --- | --- | --- |
 | ASTRO BOT | `.ffpfsc` dump, through `bc5-mount` | **Playable.** Intro, menus, every level the maintainer has played; controller with haptics and adaptive triggers; saves (F85) | first level 59–60 fps (experiment 0046); a later level 46.5 (0067); the water level 40–51 |
-| A second title (not named here) | PS5 debug package (`.pkg`), through `bc5-mount` | **Menus, and a new game's start screen.** Intro and menus with sound and complete text (0115, 0122); New Game loads to its animated start screen, with the title's ray-traced reflections skipped (0123). The game past that screen is untested | intro 29 fps (the title's own 30 fps limit); menus 41–50; start screen 31 |
+| A second title (not named here) | PS5 debug package (`.pkg`), through `bc5-mount` | **Menus, saves, and the first shot of a new game's opening.** Intro and menus with sound and complete text (0115, 0122); settings and save slots kept between starts, dated, under the title's own ID (0145–0149); New Game loads, with the title's ray-traced reflections skipped (0123), to its opening, which keeps its first shot while its sound and subtitles go on (F182, F192). The game past that is untested | intro 29 fps (the title's own 30 fps limit); menus 41–50; start screen 31 |
 | Any other game | | Untested. A game that calls a system library KytyPlus has no stand-in for stops there | |
 
-Latest (2026-10-15):
+Latest (2026-10-17):
+
+- The second title saves: an unresolved SaveData_native call had left its save thread waiting forever (0145, F189); its settings and slots survive a restart, dated in local time (0146, F190–F191).
+- `bc5-mount` reads a package's `CNT` container and shows `param.json`, the icons and the PlayGo tables under `sce_sys/`; the host keys the title's saves and settings on its real title ID (0148–0149, F193–F194).
+- The opening after New Game still keeps its first shot with saves working (0147, F192).
+
+Earlier (2026-10-15):
 
 - Graphics pieces go to the GPU as one job with their state prefix; ASTRO BOT's tagged-address faults are gone (experiment 0119, F170).
 - `bc5-mount` decodes each PFSC block once, with a 1 GiB block cache by default (0120, 0121, F171).
@@ -150,12 +156,13 @@ Whatever the format, the host loads two Sony modules from your own dump, `libSce
 | Frame pacing | the title paces its frames with a GPU spin on the GPU's clock counter. ASTRO BOT's timestamp scale, then applied to every title, made each frame wait out its whole limit (18 fps). With the scale per title the intro runs at 29.2 fps (the title's own 33.4 ms limit) and the menus at 48–50 fps | experiments 0105, 0109, 0115, F165, F168 |
 | Menu text | the settings menus showed the options' preview pictures inside their text. The title uploads UI images and glyphs by CP DMA from rotating CPU staging, which already held the next upload when our job ran. Copying each graphics-buffer DMA source into a shared ring at submission (`BC5_DIRECT_DMA_SNAPSHOT=4096`) keeps the text clean at no measurable cost. The black Initial Setup screen is correct: the console shows it too | experiment 0122, F146, F164, F172 |
 | New Game | hangs the GPU in the title's ray-traced-reflection traversal, which loops forever on a bad tree. With that one program skipped (`BC5_DIRECT_SKIP_PGM`) the title loads to its animated start screen at 31 fps, without ray-traced reflections, and runs 238 s without a fault or timeout. The game past that screen is untested | experiments 0058–0059, 0123, F113–F116, F173 |
+| Saves | the title never saved: one SaveData_native call (`2mfSRGdshtk`) was unresolved and its "started" answer left the save thread polling for an event forever; answered "not found", the title writes its autosave, prefs and slot settings, finds them at the next start and lists them with their dates in local time (the save directory's time, the host's zone). Its saves live under its own title ID: the package keeps `param.json` in its `CNT` container, which `bc5-mount` now shows under `sce_sys/` with the icons and PlayGo tables | experiments 0145–0149, F189–F194 |
 | Faults | the faults of its first runs were heap pages only the GPU had touched (imported in full since 0042) and the tree refit (fixed in 0053). Since then its runs end clean (six of six in 0053, ten minutes in the menu in 0108, every run of 0122), apart from the New Game hang above | experiments 0040–0042, 0053, 0108, 0122–0123, F92, F95–F96, F107 |
 
 ### Not there yet
 
 - **Full speed in ASTRO BOT's later levels.** The frame has to go under 16.7 ms. In a later level it is 21.5 ms (2026-10-13): the GPU busy 15.7, the host 4.9 on the game's draw thread, the rest the game's own threads waiting on each other (F120). The host's submission cannot leave the game's thread, because the cross-queue order needs it there (F121).
-- **The second title past its start screen.** Untested. Its ray-traced reflections stay skipped until the traversal's bad trees are understood (F116, F173). Whether the console also shows its intro at 30 fps is open (experiment 0115).
+- **The second title's opening.** After New Game it keeps its first shot: the game draws at ~42 fps, loads nothing more, and its threads wait on their own condition variables; not the saves (F192), not the skipped reflections (F186), not a dropped readback (experiment 0142). Its ray-traced reflections stay skipped until the traversal's bad trees are understood (F116, F173). Whether the console also shows its intro at 30 fps is open (experiment 0115).
 - **Tagged addresses.** The second title runs with its code mapped again under the 0x80 byte; whether the PS5 GPU ignores bits 47:40 of an address is unverified (F96, F109, F110).
 - **RPCSX as the host.** It needs system software the maintainer cannot dump at present.
 
