@@ -22,7 +22,7 @@ Latest (2026-10-17):
 
 - The second title saves: an unresolved SaveData_native call had left its save thread waiting forever (0145, F189); its settings and slots survive a restart, dated in local time (0146, F190–F191).
 - `bc5-mount` reads a package's `CNT` container and shows `param.json`, the icons and the PlayGo tables under `sce_sys/`; the host keys the title's saves and settings on its real title ID (0148–0149, F193–F194).
-- The second title's opening plays: its clock was Wwise's play position of a 10-s Opus loop (0153, F198) that the host's AJM Opus decoder — a stub returning silence — never finished; the decoder now runs on libopus with the packet framing, the 512-sample jobs and the per-packet counters the title expects (0154, F199). Its ATRAC9 voices (channel configuration 7, unknown to LibAtrac9) play as silence (F200).
+- The second title's opening plays: its clock was Wwise's play position of a 10-s Opus loop (0153, F198) that the host's AJM Opus decoder — a stub returning silence — never finished; the decoder now runs on libopus with the packet framing, the 512-sample jobs and the per-packet counters the title expects (0154, F199). Its ATRAC9 voices (channel configuration 7, unknown to LibAtrac9) play as silence (F200). Left running, the opening ends in a GPU reset that takes the machine down about 90 s in, near its end (F201).
 
 Earlier (2026-10-15):
 
