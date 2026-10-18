@@ -6129,6 +6129,50 @@ index ed7c35b..9f6635d 100644
  		LOGF("KernelWaitSema: infinite wait sem=%p need=%d\n", static_cast<void*>(sem), need);
  	}
  
+diff --git a/src/libs/agc.cpp b/src/libs/agc.cpp
+index 6c48267..4f3b34a 100644
+--- a/src/libs/agc.cpp
++++ b/src/libs/agc.cpp
+@@ -28,6 +28,7 @@
+ #include <atomic>
+ #include <cmath>
+ #include <cstddef>
++#include <cinttypes>
+ #include <cstring>
+ #include <mutex>
+ #include <vector>
+@@ -3862,6 +3863,15 @@ struct TessellationDriverState {
+ };
+ 
+ static TessellationDriverState g_tessellation_driver_state {};
++// BC5 (experiment 0160): the direct path programs the GE's tessellation-factor ring from what the title gave
++// GraphicsDriverSetTFRing / GraphicsDriverSetHsOffchipParam (on the console the system does; here nothing did).
++extern "C" void Bc5TfRingState(uint64_t* base, uint32_t* size, uint64_t* offchip0, uint64_t* offchip1, uint64_t* offchip2) {
++	*base     = g_tessellation_driver_state.tf_ring_base;
++	*size     = g_tessellation_driver_state.tf_ring_size;
++	*offchip0 = g_tessellation_driver_state.hs_offchip_value0;
++	*offchip1 = g_tessellation_driver_state.hs_offchip_value1;
++	*offchip2 = g_tessellation_driver_state.hs_offchip_value2;
++}
+ 
+ struct Packet {
+ 	uint32_t* addr;
+@@ -4119,6 +4129,7 @@ int KYTY_SYSV_ABI GraphicsDriverSetTFRing(const volatile void* base, uint32_t si
+ 
+ 	g_tessellation_driver_state.tf_ring_base = reinterpret_cast<uint64_t>(base);
+ 	g_tessellation_driver_state.tf_ring_size = size;
++	std::fprintf(stderr, "[bc5-tess] SetTFRing base 0x%016" PRIx64 " size 0x%08" PRIx32 "\n", g_tessellation_driver_state.tf_ring_base, size); // experiment 0160
+ 
+ 	LOGF("\t base = 0x%016" PRIx64 "\n"
+ 	     "\t size = 0x%08" PRIx32 "\n",
+@@ -4134,6 +4145,7 @@ int KYTY_SYSV_ABI GraphicsDriverSetHsOffchipParam(uint64_t value0, uint64_t valu
+ 	g_tessellation_driver_state.hs_offchip_value0 = value0;
+ 	g_tessellation_driver_state.hs_offchip_value1 = value1;
+ 	g_tessellation_driver_state.hs_offchip_value2 = value2;
++	std::fprintf(stderr, "[bc5-tess] SetHsOffchipParam 0x%016" PRIx64 " 0x%016" PRIx64 " 0x%016" PRIx64 "\n", value0, value1, value2); // experiment 0160
+ 
+ 	LOGF("\t value0 = 0x%016" PRIx64 "\n"
+ 	     "\t value1 = 0x%016" PRIx64 "\n"
 diff --git a/src/libs/ajm.cpp b/src/libs/ajm.cpp
 index 89473ad..056512e 100644
 --- a/src/libs/ajm.cpp
@@ -7216,10 +7260,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..8506828
+index 0000000..9d18bad
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,7440 @@
+@@ -0,0 +1,7745 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -7264,6 +7308,7 @@ index 0000000..8506828
 +#endif
 +
 +#include <algorithm>
++#include <array>
 +#include <atomic>
 +#include <chrono>
 +#include <cstdarg>
@@ -10282,10 +10327,48 @@ index 0000000..8506828
 +}
 +// Experiment 0155 (diagnostic, BC5_DIRECT_PIECES_NO_CLEAR=1): a piece's prefix without its
 +// CONTEXT_CONTROL and CLEAR_STATE (the first five dwords of Tracker::emit_prefix()).
++// Experiment 0160: the geometry engine reads tessellation factors from VGT_TF_MEMORY_BASE(_HI) /
++// VGT_TF_RING_SIZE (uconfig 0xc250 / 0xc261 / 0xc24e; Mesa src/amd/registers gfx10 and sid.h
++// R_030940/R_030984/R_030938), which the console's system programs from the ring the title hands to
++// GraphicsDriverSetTFRing; nothing programmed them here, so the GE fetched the ring at address 0 (the
++// second title's night scene, runs 741-766). The prefix of every graphics buffer that draws sets them
++// from the title's call, with VGT_HS_OFFCHIP_PARAM (0xc24f) from GraphicsDriverSetHsOffchipParam's
++// first value. BC5_DIRECT_NO_TF_RING=1 leaves them out (diagnostic).
++extern "C" void Bc5TfRingState(uint64_t* base, uint32_t* size, uint64_t* offchip0, uint64_t* offchip1, uint64_t* offchip2);
++static void tf_ring_prefix(std::vector<uint32_t>& p) {
++	static const bool off = std::getenv("BC5_DIRECT_NO_TF_RING") != nullptr;
++	if (off) return;
++	uint64_t base = 0, o0 = 0, o1 = 0, o2 = 0;
++	uint32_t size = 0;
++	Bc5TfRingState(&base, &size, &o0, &o1, &o2);
++	// Experiment 0160 (diagnostic): BC5_DIRECT_TF_RING=<hex base>:<hex size>[:<hex offchip>] uses this ring when the
++	// title gave none (e.g. the backend's GDS shadow, BC5_DIRECT_GDS_SHADOW=1, 64 KiB at 0x100004000000).
++	if (base == 0 || size == 0) {
++		static const auto forced = [] {
++			std::tuple<uint64_t, uint32_t, uint64_t> r {0, 0, 0};
++			if (const char* e = std::getenv("BC5_DIRECT_TF_RING"); e != nullptr) {
++				unsigned long long b = 0, z = 0, o = 0;
++				if (std::sscanf(e, "%llx:%llx:%llx", &b, &z, &o) >= 2) r = {b, static_cast<uint32_t>(z), o};
++			}
++			return r;
++		}();
++		base = std::get<0>(forced);
++		size = std::get<1>(forced);
++		o0   = std::get<2>(forced);
++	}
++	if (base == 0 || size == 0) return;
++	static std::atomic<uint64_t> n {0};
++	if ((n++ & 0xffffu) == 0) journal("tf ring: base 0x%" PRIx64 " size 0x%x offchip 0x%" PRIx64 " 0x%" PRIx64 " 0x%" PRIx64 " (%" PRIu64 " prefixes)\n", base, size, o0, o1, o2, n.load());
++	const uint32_t size_dw = static_cast<uint32_t>(std::min<uint64_t>(size / 4, 0xffffu));
++	p.insert(p.end(), {0xC0027900u, 0x24eu, size_dw, static_cast<uint32_t>(o0)});          // VGT_TF_RING_SIZE, VGT_HS_OFFCHIP_PARAM
++	p.insert(p.end(), {0xC0007900u, 0x250u, static_cast<uint32_t>(base >> 8u)});           // VGT_TF_MEMORY_BASE
++	p.insert(p.end(), {0xC0007900u, 0x261u, static_cast<uint32_t>(base >> 40u) & 0xffu});  // VGT_TF_MEMORY_BASE_HI
++}
 +static std::vector<uint32_t> prefix_of(const bc5::full_state::Tracker& t) {
 +	std::vector<uint32_t> p = t.emit_prefix();
 +	static const bool no_clear = std::getenv("BC5_DIRECT_PIECES_NO_CLEAR") != nullptr;
 +	if (no_clear && p.size() >= 5) p.erase(p.begin(), p.begin() + 5);
++	tf_ring_prefix(p); // experiment 0160
 +	return p;
 +}
 +// Experiment 0118: BC5_DIRECT_TAG_WATCH=1 journals the address registers whose bits 47:40 are not
@@ -10500,6 +10583,52 @@ index 0000000..8506828
 +	return SoftCp::compare(function, static_cast<uint32_t>(last->value), p[5], p[4]);
 +}
 +
++// Experiment 0160 (diagnostic): BC5_DIRECT_GE_PROBE=<min>:<max> — in every prefixed graphics buffer whose
++// title part has min..max dwords, eight COPY_DATA register reads go in front of each draw and dispatch
++// (WD_INDEX_BUF_BASE/HI 0xc256/7, WD_POS_BUF_BASE 0xc252, WD_CNTL_SB_BUF_BASE 0xc254, GE_DMA_FIRST_INDEX
++// 0xc251, VGT_INDEX_TYPE 0xc243, GE_CNTL 0xc25b, CP_INDEX_BASE_ADDR 0xc0f8; Mesa gfx10 register JSON via
++// tools/bc5-agc/regdb) into a slot of the backend's GDS shadow buffer (BC5_DIRECT_GDS_SHADOW=1, unused
++// with BC5_DIRECT_GDS_ALL), which the timeout probe prints for the buffer that timed out.
++struct GeProbeSlot {
++	uint32_t slot, offset, op;
++};
++static thread_local std::vector<GeProbeSlot> t_ge_probe;
++static std::atomic<uint32_t>                g_ge_probe_next {0};
++static constexpr uint32_t                   kGeProbeRegs[8] = {0xc256u, 0xc257u, 0xc252u, 0xc254u, 0xc251u, 0xc243u, 0xc25bu, 0xc0f8u};
++static constexpr uint64_t                   kGeProbeOff      = 0xc000; // byte offset in the 64 KiB shadow
++static constexpr uint32_t                   kGeProbeSlots    = 512;    // 32 bytes each
++// Experiment 0160 (diagnostic): BC5_DIRECT_UCONFIG_FORCE=<reg>:<value>[,...] (hex, uconfig offsets from
++// 0xc000) — in every prefixed graphics buffer, a SET_UCONFIG_REG of each listed register follows the
++// prefix and every packet that could write it (SET_UCONFIG_REG, SET_UCONFIG_REG_INDEX, LOAD_UCONFIG_REG,
++// LOAD_UCONFIG_REG_INDEX), so the register holds the value when the buffer's draws run.
++static const std::vector<std::pair<uint32_t, uint32_t>>& uconfig_force() {
++	static const std::vector<std::pair<uint32_t, uint32_t>> v = [] {
++		std::vector<std::pair<uint32_t, uint32_t>> r;
++		if (const char* e = std::getenv("BC5_DIRECT_UCONFIG_FORCE"); e != nullptr) {
++			for (const char* c = e; *c != 0;) {
++				char*               end = nullptr;
++				const unsigned long reg = std::strtoul(c, &end, 16);
++				if (end == c || *end != ':') break;
++				const unsigned long val = std::strtoul(end + 1, &end, 16);
++				r.emplace_back(static_cast<uint32_t>(reg & 0xffffu), static_cast<uint32_t>(val));
++				c = (*end == ',') ? end + 1 : end;
++			}
++		}
++		return r;
++	}();
++	return v;
++}
++static std::pair<uint32_t, uint32_t> ge_probe_range() {
++	static const std::pair<uint32_t, uint32_t> r = [] {
++		std::pair<uint32_t, uint32_t> v {0, 0};
++		if (const char* e = std::getenv("BC5_DIRECT_GE_PROBE"); e != nullptr) {
++			unsigned a = 0, b = 0;
++			if (std::sscanf(e, "%u:%u", &a, &b) == 2) v = {a, b};
++		}
++		return v;
++	}();
++	return r;
++}
 +static void submit_split(const uint32_t* ib, uint32_t num_dwords, const char* kind, bool from_header) {
 +	t_wait_given_up = false;
 +	t_keep_waits.clear();
@@ -10533,13 +10662,91 @@ index 0000000..8506828
 +		std::vector<uint32_t> one;
 +		one.reserve(pre.size() + n);
 +		one.insert(one.end(), pre.begin(), pre.end());
-+		one.insert(one.end(), part, part + n);
++		std::vector<uint32_t> ge_new_off; // experiment 0160: part offset -> offset in one, when instrumented
++		{
++			const auto [gmin, gmax] = ge_probe_range();
++			t_ge_probe.clear();
++			const bool ge_capture = gmax != 0 && n >= gmin && n <= gmax && g_dev && g_dev->gds_shadow_va() != 0;
++			const bool uc_force   = !uconfig_force().empty();
++			static const bool ib_dup = std::getenv("BC5_DIRECT_INDEX_BASE_DUP") != nullptr; // experiment 0160: re-emit INDEX_BASE/INDEX_BUFFER_SIZE/INDEX_TYPE before each indexed draw
++			std::vector<uint32_t> last_ibase, last_isize, last_itype;
++			if ((ge_capture || uc_force || ib_dup) && std::strcmp(kind, "dcb") == 0) {
++				for (const auto& [reg, val]: uconfig_force()) one.insert(one.end(), {0xC0017900u, reg, val}); // after the prefix
++				ge_new_off.assign(n + 1, 0);
++				for (uint32_t q = 0; q < n;) {
++					const uint32_t h = part[q], type = h >> 30u;
++					uint32_t       len = 1;
++					if (type == 3 || type == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
++					if (q + len > n) len = n - q;
++					const uint32_t op = type == 3 ? (h >> 8u) & 0xffu : 0;
++					if (ib_dup && type == 3 && (op == 0x25 || op == 0x38) && !last_ibase.empty()) {
++						one.insert(one.end(), last_ibase.begin(), last_ibase.end());
++						if (!last_isize.empty()) one.insert(one.end(), last_isize.begin(), last_isize.end());
++						if (!last_itype.empty()) one.insert(one.end(), last_itype.begin(), last_itype.end());
++						one.insert(one.end(), {0xC0004200u, 0u}); // PFP_SYNC_ME
++						static std::atomic<uint64_t> n_dup {0};
++						if ((n_dup++ & 0x3ffu) == 0) journal("index base dup: before op %02x at %u: INDEX_BASE %08x %08x (%" PRIu64 " so far)\n", op, q, last_ibase[1], last_ibase[2], n_dup.load());
++					}
++					if (ib_dup && type == 3 && op == 0x26 && len == 3) last_ibase.assign(part + q, part + q + 3);
++					if (ib_dup && type == 3 && op == 0x13 && len == 2) last_isize.assign(part + q, part + q + 2);
++					if (ib_dup && type == 3 && op == 0x7a && len == 3 && (part[q + 1] & 0xffffu) == 0x243u) last_itype.assign(part + q, part + q + 3);
++					if (ge_capture && type == 3 && (op == 0x2d || op == 0x38 || op == 0x27 || op == 0x24 || op == 0x25 || op == 0x2c || op == 0x35 || op == 0x15 || op == 0x16)) {
++						const uint32_t slot = g_ge_probe_next++ % kGeProbeSlots;
++						const uint64_t dst  = g_dev->gds_shadow_va() + kGeProbeOff + static_cast<uint64_t>(slot) * 32;
++						for (uint32_t k = 0; k < 8; k++) {
++							const uint64_t a = dst + k * 4;
++							one.insert(one.end(), {0xC0044000u, 0x00100500u, kGeProbeRegs[k], 0u, static_cast<uint32_t>(a), static_cast<uint32_t>(a >> 32u) & 0xffffu});
++						}
++						t_ge_probe.push_back({slot, q, op});
++					}
++					ge_new_off[q] = static_cast<uint32_t>(one.size());
++					one.insert(one.end(), part + q, part + q + len);
++					if (uc_force && type == 3 && (op == 0x79 || op == 0x7a || op == 0x5e || op == 0x64)) {
++						for (const auto& [reg, val]: uconfig_force()) one.insert(one.end(), {0xC0017900u, reg, val});
++					}
++					q += len;
++				}
++				ge_new_off[n] = static_cast<uint32_t>(one.size());
++				static std::atomic<uint64_t> n_inst {0};
++				if ((n_inst++ & 0x3fu) == 0) journal("ge probe: %s part %u dwords, %zu captures (slots from %u), %zu dwords in all\n", kind, n, t_ge_probe.size(), t_ge_probe.empty() ? 0u : t_ge_probe.front().slot, one.size());
++			} else {
++				one.insert(one.end(), part, part + n);
++			}
++		}
++		// Experiment 0160 (diagnostic): BC5_DIRECT_INDEX_TYPE_MASK=<hex> ANDs every VGT_INDEX_TYPE write
++		// (SET_UCONFIG_REG / SET_UCONFIG_REG_INDEX, uconfig 0x243) of the prefixed buffer with the mask: the
++		// second title writes 0x400 / 0x480 / 0x401 there, bits the gfx10 register database does not know.
++		{
++			static const uint32_t itm = std::getenv("BC5_DIRECT_INDEX_TYPE_MASK") != nullptr ? static_cast<uint32_t>(std::strtoul(std::getenv("BC5_DIRECT_INDEX_TYPE_MASK"), nullptr, 16)) : 0xffffffffu;
++			if (itm != 0xffffffffu) {
++				static std::atomic<uint64_t> n_masked {0};
++				for (size_t q = 0; q < one.size();) {
++					const uint32_t h = one[q], type = h >> 30u;
++					size_t         len = 1;
++					if (type == 3 || type == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
++					if (q + len > one.size()) break;
++					if (type == 3) {
++						const uint32_t op = (h >> 8u) & 0xffu;
++						if ((op == 0x79 || op == 0x7a) && len >= 3) {
++							const uint32_t first = one[q + 1] & 0xffffu;
++							for (size_t k = 0; k + 2 < len; k++) {
++								if (first + k == 0x243u && (one[q + 2 + k] & ~itm) != 0) {
++									if ((n_masked++ & 0x3ffu) == 0) journal("index type mask: 0x%x -> 0x%x at %zu (%" PRIu64 " so far)\n", one[q + 2 + k], one[q + 2 + k] & itm, q, n_masked.load());
++									one[q + 2 + k] &= itm;
++								}
++							}
++						}
++					}
++					q += len;
++				}
++			}
++		}
 +		// Experiment 0132: waits kept for the GPU inside the part, moved into the copy.
 +		for (auto& w: t_keep_waits) {
-+			if (w >= part && w < part + n) w = one.data() + pre.size() + (w - part);
++			if (w >= part && w < part + n) w = ge_new_off.empty() ? one.data() + pre.size() + (w - part) : one.data() + ge_new_off[static_cast<size_t>(w - part)];
 +		}
 +		submit_one(one.data(), static_cast<uint32_t>(one.size()), kind, false);
-+		SoftCp::alias_gpu_executed(one.data(), pre.size(), part, n); // experiment 0157
++		if (ge_new_off.empty()) SoftCp::alias_gpu_executed(one.data(), pre.size(), part, n); // experiment 0157 (not for an instrumented copy, experiment 0160)
 +		std::erase_if(t_keep_waits, [&one](const uint32_t* w) { return w >= one.data() && w < one.data() + one.size(); });
 +	};
 +	while (i < num_dwords) {
@@ -11940,7 +12147,94 @@ index 0000000..8506828
 +	uint64_t                 seq = 0, t2_ns = 0, queued_ns = 0, dev_gen = 0;
 +	uint32_t                 slot = 0;
 +	std::vector<uint64_t>    ts_addrs; // experiment 0046: GPU timestamps to rescale once the job is done
++	std::vector<uint32_t>    ib_copy;  // experiment 0160: the executed buffer, kept for the timeout probe
++	std::vector<uint32_t>    ran_copy; // experiment 0160: its executed offsets (what the filter let through)
++	std::vector<GeProbeSlot> ge_probe; // experiment 0160: the register captures inserted in front of its draws
 +};
++// Experiment 0160: BC5_DIRECT_TIMEOUT_PROBE=1 — after a fence timeout, the buffer the GPU ran (prefix
++// and rewrites included) goes to <dump dir>/ib-timeout-<submission>.bin, and its draw packets are
++// journaled with the SET_BASE 1 / INDEX_BASE in force and the memory they name as the GPU left it:
++// the indirect arguments (first draws) and the first index dwords.
++static void timeout_probe(const uint32_t* sub_ib, uint32_t sub_n, const char* kind, uint64_t n, const std::vector<uint32_t>* ran, const std::vector<GeProbeSlot>* gep = nullptr) {
++	if (sub_ib == nullptr || sub_n == 0 || std::getenv("BC5_DIRECT_TIMEOUT_PROBE") == nullptr || g_dump_dir.empty() || !g_dev) return;
++	{
++		char name[512];
++		std::snprintf(name, sizeof(name), "%s/ib-timeout-%08" PRIu64 "-%.8s-%u.bin", g_dump_dir.c_str(), n, kind, sub_n);
++		if (FILE* f = std::fopen(name, "wb"); f != nullptr) { std::fwrite(sub_ib, sizeof(uint32_t), sub_n, f); std::fclose(f); }
++		auto     pm    = g_dev->sorted_mappings();
++		uint64_t b1    = 0, ibase = 0;
++		uint32_t itype = 0;
++		uint32_t ud_probe[16] = {}; // experiment 0160
++		auto     rd    = [&](uint64_t a, uint32_t n, char* out, size_t cap) {
++			if (!covered_sorted(*pm, a, static_cast<uint64_t>(n) * 4)) { std::snprintf(out, cap, "<0x%" PRIx64 " unmapped>", a); return; }
++			const auto* t = reinterpret_cast<const volatile uint32_t*>(a);
++			size_t      o = static_cast<size_t>(std::snprintf(out, cap, "[0x%" PRIx64 "]", a));
++			for (uint32_t k = 0; k < n && o + 10 < cap; k++) o += static_cast<size_t>(std::snprintf(out + o, cap - o, " %08x", t[k]));
++		};
++		journal("timeout probe: %s %u dwords dumped to %s\n", kind, sub_n, name);
++		if (gep != nullptr && !gep->empty() && g_dev->gds_shadow_cpu() != nullptr) {
++			const volatile uint32_t* sh = g_dev->gds_shadow_cpu() + kGeProbeOff / 4;
++			for (const GeProbeSlot& g: *gep) {
++				const volatile uint32_t* v = sh + static_cast<size_t>(g.slot) * 8;
++				journal("timeout probe: ge regs before op %02x at %u (slot %u): WD_INDEX_BUF_BASE %08x %08x WD_POS_BUF_BASE %08x WD_CNTL_SB_BUF_BASE %08x GE_DMA_FIRST_INDEX %08x VGT_INDEX_TYPE %08x GE_CNTL %08x CP_INDEX_BASE_ADDR %08x\n",
++				        g.op, g.offset, g.slot, v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7]);
++			}
++		}
++		for (uint32_t q = 0; q < sub_n;) {
++			const uint32_t h = sub_ib[q], type = h >> 30u;
++			uint32_t       len = 1;
++			if (type == 3 || type == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
++			if (q + len > sub_n) break;
++			if (type == 3) {
++				const uint32_t op = (h >> 8u) & 0xffu;
++				char           a1[400] = {}, a2[400] = {};
++				const char*    ex = ran == nullptr ? "" : (std::binary_search(ran->begin(), ran->end(), q) ? " ran" : " DROPPED");
++				if (op == 0x11 || op == 0x26 || op == 0x13 || op == 0x2a || (op == 0x2e && len >= 3 && (sub_ib[q + 1] & 0xffffu) == 0x243u))
++					journal("timeout probe: op %02x at %u: %08x %08x %08x%s (mapped %d)\n", op, q, len > 1 ? sub_ib[q + 1] : 0u, len > 2 ? sub_ib[q + 2] : 0u, len > 3 ? sub_ib[q + 3] : 0u, ex, op == 0x26 && len >= 3 ? static_cast<int>(covered_sorted(*pm, sub_ib[q + 1] | (static_cast<uint64_t>(sub_ib[q + 2] & 0xffffu) << 32u), 4)) : -1);
++				if (op == 0x11 && len >= 4 && (sub_ib[q + 1] & 0xfu) == 1) {
++					b1 = (sub_ib[q + 2] & ~3u) | (static_cast<uint64_t>(sub_ib[q + 3] & 0xffffu) << 32u);
++				} else if (op == 0x26 && len >= 3) {
++					ibase = sub_ib[q + 1] | (static_cast<uint64_t>(sub_ib[q + 2] & 0xffffu) << 32u);
++				} else if (op == 0x2a && len >= 2) {
++					itype = sub_ib[q + 1];
++				} else if (op == 0x2e && len >= 3 && (sub_ib[q + 1] & 0xffffu) == 0x243u) {
++					itype = sub_ib[q + 2];
++				} else if ((op == 0x2c || op == 0x38) && len >= 10) {
++					const uint64_t a = b1 + sub_ib[q + 1];
++					rd(a, std::min(sub_ib[q + 5] * (sub_ib[q + 8] / 4u), 40u), a1, sizeof(a1));
++					if (op == 0x38 && covered_sorted(*pm, a, 12)) {
++						const auto* t = reinterpret_cast<const volatile uint32_t*>(a);
++						rd(ibase + static_cast<uint64_t>(t[2]) * ((itype & 3u) == 1 ? 4u : 2u), 8, a2, sizeof(a2));
++					}
++					journal("timeout probe: op %02x at %u: off 0x%x count %u stride %u base1 0x%" PRIx64 " index_base 0x%" PRIx64 " type 0x%x args %s indices %s%s\n", op, q, sub_ib[q + 1], sub_ib[q + 5], sub_ib[q + 8], b1, ibase, itype, a1, a2, ex);
++				} else if ((op == 0x24 || op == 0x25) && len >= 2) {
++					rd(b1 + sub_ib[q + 1], 5, a1, sizeof(a1));
++					journal("timeout probe: op %02x at %u: off 0x%x base1 0x%" PRIx64 " index_base 0x%" PRIx64 " args %s%s\n", op, q, sub_ib[q + 1], b1, ibase, a1, ex);
++				} else if (op == 0x76 && len >= 3) { // SET_SH_REG: COMPUTE_USER_DATA for the V# dump below
++					const uint32_t first = sub_ib[q + 1] & 0xffffu;
++					for (uint32_t k = 0; k + 2 < len; k++) {
++						if (first + k >= 0x240u && first + k < 0x250u) ud_probe[first + k - 0x240u] = sub_ib[q + 2 + k];
++					}
++				}
++				if ((op == 0x15 || op == 0x16) && len >= 2) { // experiment 0160: V# memory at the dispatch
++					for (uint32_t k = 0; k + 3 < 16; k += 4) {
++						const uint64_t base = ud_probe[k] | (static_cast<uint64_t>(ud_probe[k + 1] & 0xffffu) << 32u);
++						const uint32_t nrec = ud_probe[k + 2];
++						if (base == 0 || nrec == 0 || (ud_probe[k + 3] & 0xf0000000u) == 0) continue;
++						char buf[400] = {};
++						rd(base, 16, buf, sizeof(buf));
++						journal("timeout probe:   ud%u-%u V# base 0x%" PRIx64 " stride %u records %u: %s\n", k, k + 3, base, (ud_probe[k + 1] >> 16u) & 0x3fffu, nrec, buf);
++					}
++				}
++				if (false) {
++				} if (op == 0x27 || op == 0x2d || op == 0x35 || op == 0x15 || op == 0x16 || op == 0x22 || op == 0x3f) {
++					journal("timeout probe: op %02x at %u: %08x %08x %08x %08x base1 0x%" PRIx64 " index_base 0x%" PRIx64 "%s\n", op, q, len > 1 ? sub_ib[q + 1] : 0u, len > 2 ? sub_ib[q + 2] : 0u, len > 3 ? sub_ib[q + 3] : 0u, len > 4 ? sub_ib[q + 4] : 0u, b1, ibase, ex);
++				}
++			}
++			q += len;
++		}
++	}
++}
 +// Experiment 0046: a timestamp scale k multiplies the 64-bit GPU timestamps (RELEASE_MEM and
 +// EVENT_WRITE_EOP with DATA_SEL 3) the game's buffers write, once each job is done, so that the
 +// game measures k times the GPU time it really took. Diagnostic: does the title's dynamic
@@ -12105,6 +12399,7 @@ index 0000000..8506828
 +				failed = true;
 +				if (FILE* f = journal_min_file(true); f != nullptr) fsync(fileno(f));
 +			}
++			if (r.timed_out && !j.ib_copy.empty()) timeout_probe(j.ib_copy.data(), static_cast<uint32_t>(j.ib_copy.size()), j.kind, j.n, &j.ran_copy, &j.ge_probe); // experiment 0160
 +			if (r.timed_out) {
 +				std::lock_guard lock(g_dev_mutex);
 +				if (j.dev_gen == g_dev_gen.load()) { // the other queue's thread may have been first
@@ -13000,7 +13295,10 @@ index 0000000..8506828
 +	const bool with_gds      = gds_on && (gds_all || std::strcmp(kind, "acb") == 0);
 +	opt.drop_gds             = !with_gds;
 +	opt.gds_shadow_va        = with_gds ? 0 : g_dev->gds_shadow_va();
-+	opt.mapped = [&maps_p](uint64_t a, uint64_t bytes) { return covered_sorted(*maps_p, a, bytes); };
++	opt.mapped = [&maps_p](uint64_t a, uint64_t bytes) {
++		if (ge_probe_range().second != 0 && g_dev && g_dev->gds_shadow_va() != 0 && a >= g_dev->gds_shadow_va() && a + bytes <= g_dev->gds_shadow_va() + 65536) return true; // experiment 0160
++		return covered_sorted(*maps_p, a, bytes);
++	};
 +	// Experiment 0142 (BC5_DIRECT_UNMAPPED_TRACE=1): the packets the filter will drop as unmapped, each
 +	// (kind, size, offset) journaled once with its opcode, operand and dwords.
 +	{
@@ -13240,8 +13538,31 @@ index 0000000..8506828
 +			// buffer with its program and first user data (which program faults the GPU).
 +			{
 +				static const bool dj = std::getenv("BC5_DIRECT_DISPATCH_JOURNAL") != nullptr;
-+				if (dj && type == 3 && (op == 0x15 || op == 0x16) && std::strncmp(kind, "dcb", 3) == 0)
-+					journal("  dispatch op %02x at %u: pgm 0x%" PRIx64 " ud0-3 %08x %08x %08x %08x ud8-11 %08x %08x %08x %08x\n", op, q, pgm, ud[0], ud[1], ud[2], ud[3], ud[8], ud[9], ud[10], ud[11]);
++				if (dj && type == 3 && (op == 0x15 || op == 0x16))
++					journal("  %s dispatch op %02x at %u: pgm 0x%" PRIx64 " ud0-3 %08x %08x %08x %08x ud4-7 %08x %08x %08x %08x ud8-11 %08x %08x %08x %08x ud12-15 %08x %08x %08x %08x%s base1 0x%" PRIx64 " +0x%x len %u\n", kind, op, q, pgm, ud[0], ud[1], ud[2], ud[3], ud[4], ud[5], ud[6], ud[7], ud[8], ud[9], ud[10], ud[11], ud[12], ud[13], ud[14], ud[15], op == 0x16 ? " indirect" : "", base1, op == 0x16 && len >= 2 ? ib[q + 1] : 0u, len); // experiment 0160: all user data and the indirect base
++				// experiment 0160: register tables — LOAD_SH_REG_INDEX (0x63), LOAD_CONTEXT_REG_INDEX (0x9f) and
++				// LOAD_UCONFIG_REG_INDEX (0x64) pairs of a graphics buffer in the GE probe size range, read now.
++				if (dj && type == 3 && (op == 0x63 || op == 0x9f || op == 0x64) && len >= 5 && std::strncmp(kind, "dcb", 3) == 0 && ge_probe_range().second != 0 && num_dwords >= ge_probe_range().first + 1249 && num_dwords <= ge_probe_range().second + 1249) {
++					const uint64_t ta = (ib[q + 1] & ~3u) | (static_cast<uint64_t>(ib[q + 2] & 0xffffu) << 32u);
++					const uint32_t tn = ib[q + 4] & 0x3fffu;
++					char           line[1600];
++					int            w = std::snprintf(line, sizeof(line), "  %s table op %02x at %u: 0x%" PRIx64 " x%u%s:", kind, op, q, ta, tn, (ib[q + 3] >> 31u) != 0 ? " pairs" : " flat");
++					if (ta != 0 && tn != 0 && covered_sorted(*maps_p, ta, static_cast<uint64_t>(tn) * 8)) {
++						const auto* t = reinterpret_cast<const volatile uint32_t*>(ta);
++						for (uint32_t k = 0; k < tn && w < 1500; k++) w += std::snprintf(line + w, sizeof(line) - static_cast<size_t>(w), " %x=%x", t[2 * k] & 0xffffu, t[2 * k + 1]);
++						if (w >= 1500) w += std::snprintf(line + w, sizeof(line) - static_cast<size_t>(w), " ...");
++					} else {
++						w += std::snprintf(line + w, sizeof(line) - static_cast<size_t>(w), " <unreadable>");
++					}
++					journal("%s\n", line);
++				}
++				if (dj && type == 3 && op == 0x22 && len >= 5 && std::strncmp(kind, "dcb", 3) == 0 && ge_probe_range().second != 0) { // COND_EXEC: the flag's value now
++					const uint64_t fa = (ib[q + 1] & ~3u) | (static_cast<uint64_t>(ib[q + 2] & 0xffffu) << 32u);
++					journal("  %s cond_exec at %u: flag 0x%" PRIx64 " = %s, skips %u dwords\n", kind, q, fa, covered_sorted(*maps_p, fa, 4) ? std::to_string(*reinterpret_cast<const volatile uint32_t*>(fa)).c_str() : "<unreadable>", ib[q + 4] & 0x3fffu);
++				}
++				// Experiment 0160: with the dispatch journal, every draw, INDEX_BASE/INDEX_BUFFER_SIZE/INDEX_TYPE and SET_BASE packet of a graphics buffer too (offset, dwords, the SET_BASE 1 base the host knows).
++				if (dj && type == 3 && (op == 0x24 || op == 0x25 || op == 0x27 || op == 0x2c || op == 0x2d || op == 0x35 || op == 0x38 || op == 0x26 || op == 0x13 || op == 0x11 || op == 0x2a) && std::strncmp(kind, "dcb", 3) == 0)
++					journal("  %s pkt op %02x at %u: %08x %08x %08x %08x %08x %08x %08x %08x %08x base1 0x%" PRIx64 " len %u\n", kind, op, q, len > 1 ? ib[q + 1] : 0u, len > 2 ? ib[q + 2] : 0u, len > 3 ? ib[q + 3] : 0u, len > 4 ? ib[q + 4] : 0u, len > 5 ? ib[q + 5] : 0u, len > 6 ? ib[q + 6] : 0u, len > 7 ? ib[q + 7] : 0u, len > 8 ? ib[q + 8] : 0u, len > 9 ? ib[q + 9] : 0u, base1, len);
 +			}
 +			// Experiment 0054: in a buffer one of whose CPU-side waits was given up (a cycle between the
 +			// queues the single ring cannot serve), the indirect draws read arguments and data the other
@@ -13279,6 +13600,31 @@ index 0000000..8506828
 +							break;
 +						}
 +					}
++				}
++			}
++			// Experiment 0160 (diagnostic): BC5_DIRECT_DROP_AT=<dwords>:<offset>[,<offset>...] drops the packets at
++			// these offsets of every graphics buffer of exactly <dwords> dwords (as the filter sees it, prefix included).
++			{
++				static const auto drop_at = [] {
++					std::pair<uint32_t, std::vector<uint32_t>> r {0, {}};
++					if (const char* e = std::getenv("BC5_DIRECT_DROP_AT"); e != nullptr) {
++						char* end = nullptr;
++						r.first   = static_cast<uint32_t>(std::strtoul(e, &end, 10));
++						for (const char* c = end; *c == ':' || *c == ','; ) {
++							const unsigned long o = std::strtoul(c + 1, &end, 10);
++							if (end == c + 1) break;
++							r.second.push_back(static_cast<uint32_t>(o));
++							c = end;
++						}
++					}
++					return r;
++				}();
++				if (drop_at.first != 0 && num_dwords == drop_at.first && std::strncmp(kind, "dcb", 3) == 0 && std::find(drop_at.second.begin(), drop_at.second.end(), q) != drop_at.second.end()) {
++					static std::atomic<uint64_t> n_at {0};
++					if ((n_at++ & 0x3fu) == 0) journal("  drop at %u in a %u-dword %s: op %02x dropped (%" PRIu64 " so far)\n", q, num_dwords, kind, (h >> 8u) & 0xffu, n_at.load());
++					opt.drop_offsets.push_back(q);
++					q += len;
++					continue;
 +				}
 +			}
 +			// Experiment 0059: BC5_DIRECT_SKIP_PGM=<hex list> drops every dispatch (DISPATCH_DIRECT and both
@@ -13648,6 +13994,7 @@ index 0000000..8506828
 +		r.fence_ms     = fr.fence_ms;
 +		r.submit_ms    = r.cs_ms + fr.fence_ms;
 +	}
++	if (r.timed_out) timeout_probe(sub_ib, sub_n, kind, g_submits.load(), &r.executed_offsets); // experiment 0160
 +	if (r.pending) { // BC5_DIRECT_ASYNC: the completion thread waits for it and journals the result
 +		g_ok++;
 +		SoftCp::set_gpu_executed(ib, num_dwords, r.executed_offsets);
@@ -13660,6 +14007,8 @@ index 0000000..8506828
 +		it.job.kind       = kind;
 +		it.job.num_dwords = num_dwords;
 +		it.job.ib         = ib;
++		if (std::getenv("BC5_DIRECT_TIMEOUT_PROBE") != nullptr) { it.job.ib_copy.assign(sub_ib, sub_ib + sub_n); it.job.ran_copy = r.executed_offsets; } // experiment 0160
++		it.job.ge_probe.swap(t_ge_probe); t_ge_probe.clear(); // experiment 0160
 +		it.job.filter     = r.filter;
 +		it.job.maps       = maps_p->size();
 +		it.job.prepare_ms = r.prepare_ms;
