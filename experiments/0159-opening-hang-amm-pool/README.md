@@ -59,6 +59,18 @@ before the reset, and is it the host's?
   (`BC5_DIRECT_DISPATCH_JOURNAL=1`), program tracking through `LOAD_SH_REG_INDEX` tables, the
   launchers keeping an inherited `BC5_DIRECT_SKIP_PGM`.
 
-**Verdict.** F201's "hang 90 s in" was the host leaking the AMM automatic pool; fixed generically
-in the emulator (F206). The opening now runs on for minutes; what remains is a GPU fault raised by
-the compute dispatches of the night scene's graphics buffer (F207), not yet pinned to a program.
+- **The program** (runs 729–735, bisection by `BC5_DIRECT_SKIP_PGM` after the launchers learned
+  to keep an inherited list; the code dumped from guest memory with gdb and read by an agent):
+  dropping every `DISPATCH_INDIRECT` removes the fault; so does skipping the engine's eleven
+  indirect programs; of those, group B (five); of those, three; of those, **0x909974400 alone**.
+  It is the BVH neighbour-link compaction (`buffer_atomic_or` back-pointers, 64-byte records with
+  empty bounds, a compacted index list behind a byte counter; user data tagged `PSR_BVHL`), the
+  stage before the reflection traversal the host already skips. With it skipped the opening
+  plays to its end and the game reaches gameplay (run 735: seven minutes, no fence timeout, the
+  tutorial prompt on screen). Skipping other halves of the eleven took the machine down twice.
+
+**Verdict.** F201 had two host causes. The AMM automatic pool was never recycled — fixed
+generically (F206). One BVH compaction dispatch of the night scene writes what the geometry
+engine then fetches from address 0 — skipped in the launchers with the traversal it feeds (F207),
+a diagnostic like exp 0123's until the BVH inputs are right (F116, F173). The second title now
+runs from its intro through the opening into gameplay.
