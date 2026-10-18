@@ -122,3 +122,10 @@ GS/NGG rings), and read the consumers 0x909977100 / 0x90997a500 for what they em
   a clean run, with `faultdump.sh` firing on the kernel's fault line. Run 780 also suggests testing
   whether the hang is the prefix's `CLEAR_STATE` + state reload colliding with the GE's pending work
   (a run with the prefix only in front of buffers after a fault, or `BC5_DIRECT_PIECES_NO_CLEAR=1`).
+- *Run 782* (`BC5_DIRECT_PIECES_NO_CLEAR=1`: the full-state prefix without its `CONTEXT_CONTROL` and
+  `CLEAR_STATE`): the fault and the fence timeout as before (kernel ring reset at 390 s uptime). The
+  hang that run 780 avoided is not the prefix's `CLEAR_STATE`; it needs the prefix's register reload.
+  Step 3 (the WD/GE base registers at the hang) waits for the root hang-dump helper to read them:
+  `/usr/local/bin/bc5-gpu-hang-dump` on the box is still the 2026-10-12 version. The host now takes
+  `BC5_DIRECT_FENCE_TIMEOUT_MS` (the completion thread's fence wait, default 2000) so a dump has a
+  wider window before the kernel's own reset.
