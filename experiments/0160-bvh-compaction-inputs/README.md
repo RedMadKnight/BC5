@@ -141,3 +141,20 @@ GS/NGG rings), and read the consumers 0x909977100 / 0x90997a500 for what they em
   so a run needs the kill at +200 s or later. To read the stalled state the helper must read the
   registers before halting waves, and the kernel's 2-s gfx timeout (this kernel's default; the module
   parameter is unset) would have to be raised on the kernel command line — both root's.
+- *Run 785* (helper reads the registers before `halt_waves`, kernel `amdgpu.lockup_timeout=10000`,
+  host fence timeout 12 s, kill at +210 s): the previous boot's kernel log shows two GE2 fault bursts.
+  The first (23:00:17, pages 0x0 and 0x18000) fired the dump within a second: `GRBM_STATUS` 0x3028 and
+  `CP_STAT` 0 (idle), every WD/TF/ESGS/GSVS base 0, `GE_CNTL` 0x8040, `VGT_GS_MODE` 0 — **the GPU had
+  already recovered**; the title played on for 25 s (the journal reaches t 197 s). The second burst
+  (23:00:42, pages 0xa000–0x25000) was followed by "Dumping IP State" three seconds later and then
+  nothing: the machine reset itself ("Previous system reset reason: a parity error"). So the address-0
+  read is survivable once (the GE takes the NACK and finishes the draw), and what kills the box is a
+  later job's hang after a repeat of it; the 2-s timeout and reopen of the earlier runs were what kept
+  the machine alive. The registers at the fault cannot name the base: the WD index, position and
+  sideband buffers and the TF ring all read 0 on this host at every moment, idle or not.
+- *What is left:* program the candidates one at a time to a GPU-mapped buffer (root's `umr -w` of
+  `mmWD_INDEX_BUF_BASE(_HI)`, `mmWD_POS_BUF_BASE(_HI)`, `mmWD_CNTL_SB_BUF_BASE(_HI)` to e.g. the backend's
+  GDS shadow at 0x100004000000, encoding unknown — TODO(verify)) before the night scene and see which
+  one moves the fault address; each such run risks the machine. Until then the skip of 0x909974400 and
+  the 2-s kernel/host timeouts are the safe configuration: `amdgpu.lockup_timeout=10000` should be
+  removed again.
