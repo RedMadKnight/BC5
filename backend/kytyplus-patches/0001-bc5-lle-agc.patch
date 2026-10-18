@@ -7216,10 +7216,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..85d371a
+index 0000000..8506828
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,7421 @@
+@@ -0,0 +1,7440 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -13214,15 +13214,34 @@ index 0000000..85d371a
 +					journal("trap stats: RSRC2 with TRAP_PRESENT %" PRIu64 ", without %" PRIu64 "; PGM_HI not 0: %" PRIu64 " (last 0x%x in SH 0x%x)\n", n_trap.load(), n_plain.load(), n_hi.load(),
 +					        last_hi.load(), last_hi_reg.load());
 +			}
++			// BC5 (experiment 0159): the SH registers a dispatch runs with come from SET_SH_REG or from
++			// LOAD_SH_REG_INDEX tables in guest memory (the second title restores its compute state that
++			// way after a mid-buffer CLEAR_STATE), so both feed the program and user-data tracking;
++			// before, BC5_DIRECT_SKIP_PGM and the dispatch journal missed the loaded ones.
++			auto sh_reg = [&](uint32_t r, uint32_t v) {
++				if (r == 0x20cu) pgm = (pgm & ~0xffffffff00ull) | (static_cast<uint64_t>(v) << 8u);
++				if (r == 0x20du) pgm = (pgm & 0xffffffff00ull) | (static_cast<uint64_t>(v & 0xffu) << 40u);
++				if (r == 0x244u) ud01 = (ud01 & ~0xffffffffull) | v; // USER_DATA_4/5 = s[4:5], the header pointer
++				if (r == 0x245u) ud01 = (ud01 & 0xffffffffull) | (static_cast<uint64_t>(v) << 32u);
++				if (r >= 0x240u && r < 0x250u) ud[r - 0x240u] = v; // experiment 0059
++			};
 +			if (type == 3 && op == 0x76 && len >= 3) { // SET_SH_REG: watch COMPUTE_PGM_LO/HI
 +				const uint32_t first = ib[q + 1] & 0xffffu;
-+				for (uint32_t k = 0; k + 2 < len; k++) {
-+					if (first + k == 0x20cu) pgm = (pgm & ~0xffffffff00ull) | (static_cast<uint64_t>(ib[q + 2 + k]) << 8u);
-+					if (first + k == 0x20du) pgm = (pgm & 0xffffffff00ull) | (static_cast<uint64_t>(ib[q + 2 + k] & 0xffu) << 40u);
-+					if (first + k == 0x244u) ud01 = (ud01 & ~0xffffffffull) | ib[q + 2 + k]; // USER_DATA_4/5 = s[4:5], the header pointer
-+					if (first + k == 0x245u) ud01 = (ud01 & 0xffffffffull) | (static_cast<uint64_t>(ib[q + 2 + k]) << 32u);
-+					if (first + k >= 0x240u && first + k < 0x250u) ud[first + k - 0x240u] = ib[q + 2 + k]; // experiment 0059
++				for (uint32_t k = 0; k + 2 < len; k++) sh_reg(first + k, ib[q + 2 + k]);
++			} else if (type == 3 && op == 0x63 && len >= 5 && (ib[q + 3] >> 31u) != 0) { // LOAD_SH_REG_INDEX, (offset, value) pairs
++				const uint64_t ta = (ib[q + 1] & ~3u) | (static_cast<uint64_t>(ib[q + 2] & 0xffffu) << 32u);
++				const uint32_t tn = ib[q + 4] & 0x3fffu;
++				if (ta != 0 && tn != 0 && tn <= 4096 && covered_sorted(*maps_p, ta, static_cast<uint64_t>(tn) * 8)) {
++					const auto* t = reinterpret_cast<const volatile uint32_t*>(ta);
++					for (uint32_t k = 0; k < tn; k++) sh_reg(t[2 * k] & 0xffffu, t[2 * k + 1]);
 +				}
++			}
++			// BC5 (experiment 0159): BC5_DIRECT_DISPATCH_JOURNAL=1 journals every dispatch of a graphics
++			// buffer with its program and first user data (which program faults the GPU).
++			{
++				static const bool dj = std::getenv("BC5_DIRECT_DISPATCH_JOURNAL") != nullptr;
++				if (dj && type == 3 && (op == 0x15 || op == 0x16) && std::strncmp(kind, "dcb", 3) == 0)
++					journal("  dispatch op %02x at %u: pgm 0x%" PRIx64 " ud0-3 %08x %08x %08x %08x ud8-11 %08x %08x %08x %08x\n", op, q, pgm, ud[0], ud[1], ud[2], ud[3], ud[8], ud[9], ud[10], ud[11]);
 +			}
 +			// Experiment 0054: in a buffer one of whose CPU-side waits was given up (a cycle between the
 +			// queues the single ring cannot serve), the indirect draws read arguments and data the other

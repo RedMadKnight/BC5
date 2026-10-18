@@ -42,11 +42,23 @@ before the reset, and is it the host's?
   the direct memory when the pool is full joins the free list after its unmap; a refused map
   and a failed buffer now say so in the AMM trace. Run 637: ten minutes, 13,779 maps / 3,741
   unmaps, no fault, no exhaustion, load 2–4 instead of 8–19.
-- **The opening then stops a second time**, about 100–130 s after New Game (run 637: the APR
-  reads fall from thousands per 30 s to a handful at mono +220…250 s; screenshots from +250 s
-  alternate between two frames of a night scene). The emulator stays up; run 638 (gdb thread
-  dump and the cinematic clock at the stall) is the next step.
+- **The opening then slows to a crawl about 20 s in** (journal t ≈ 140 s): one 12.6–13.9k-dword
+  graphics buffer of the night scene faults the GPU (kernel: `[gfxhub] page fault … in page
+  starting at address 0x8000 / 0x11000 / … / 0x2e000`, the host's status 0x00600631), the
+  host's 2-s fence timeout and the 12-s reopen follow, and every later frame of that kind
+  repeats it (runs 638–639: the cinematic clock at a quarter speed, screenshots alternating
+  between two stale frames). On the maintainer's runs the kernel's reset took the machine down
+  instead. The buffer (`BC5_DIRECT_IB_DUMP`, `bc5-agc`) differs from its neighbours by 21
+  `DISPATCH_DIRECT` + 5 `DISPATCH_INDIRECT`; dropping those dispatches (run 647) removes the
+  fault for the whole run, dropping the multi-draws or the 0157 prefix does not (645, 646, 642).
+  The device coredump names the work distributor (`WD_UTCL1_STATUS` 0x101) and a GDS VM
+  protection fault; two of the 22 programs do `ds_append … gds`, the buffer fills GDS with
+  `DMA_DATA` and reads a counter back into the indirect-dispatch arguments (F32's pattern).
+  Skipping those two programs did not help (721–722). Open: which program, and what it writes
+  that the WD then reads at address 0 + offset. Tooling added on the way: the dispatch journal
+  (`BC5_DIRECT_DISPATCH_JOURNAL=1`), program tracking through `LOAD_SH_REG_INDEX` tables, the
+  launchers keeping an inherited `BC5_DIRECT_SKIP_PGM`.
 
 **Verdict.** F201's "hang 90 s in" was the host leaking the AMM automatic pool; fixed generically
-in the emulator. The opening now runs on for minutes but stalls at a later scene — a separate
-defect, to be read from run 638.
+in the emulator (F206). The opening now runs on for minutes; what remains is a GPU fault raised by
+the compute dispatches of the night scene's graphics buffer (F207), not yet pinned to a program.
