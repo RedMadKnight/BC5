@@ -88,3 +88,37 @@ compaction's output exists. The skip stays in the launchers as a diagnostic. Nex
 system-programmed geometry-engine buffer (the AGC driver's initialisation that the host stubs, or a
 privileged register the kernel driver sets on the console: WD index/position/sideband buffers,
 GS/NGG rings), and read the consumers 0x909977100 / 0x90997a500 for what they emit per element.
+
+## Continued (2026-10-18 20:30–20:40, runs 780–781, the maintainer's directions)
+
+- **The compacted list's consumers write nothing for the geometry engine** (three agent readings of
+  the llvm-mc disassembly, every store and descriptor accounted for). 0x909977e00 is the BVH
+  leaf builder: from a {triangle, 3 neighbours} table at BASE_A+0x80+cb[0x9c]·32 it fetches vertex
+  indices and positions through the two function pointers (s[8:9], s[12:13]) and writes one 64-byte
+  triangle node per leaf at BASE_B+cb[0xa8]·64 (five float3 positions, NaN → FLT_MAX, and a packed
+  triangle-id dword of per-triangle vertex-rotation nibbles — the RT IP 1.1 node layout), plus in mode
+  0 a 20-byte record of the five vertex indices at BASE_B+cb[0x48]. 0x909977100 does the same
+  adjacency/position build with the other pointer pair (0x11d039d400/d800). 0x90997a500 is the
+  bottom-up refit: four lanes per node, child AABBs into the node, the back-pointer table's
+  outstanding-child counters decremented with `buffer_atomic_sub`, the merged box climbing to the root
+  (node 4) whose AABB goes to BASE_B+0x98; it has twelve user SGPRs (s12 is the group id, the journaled
+  ud12–15 are stale), and its s[8:11] V# has one record, so an instance index above 0 yields a zero
+  descriptor and compute loads from address 0 — a TCP-side read, not the GE's. No program writes draw
+  or dispatch arguments, 16/32-bit index data, a ring pointer, a GDS word, an `s_sendmsg` or a base;
+  the only CP-consumed datum is the producer's byte counter at BASE_B+0x80, which is the
+  `DISPATCH_INDIRECT` argument block of 0x90997a500 (x = 4·N; y and z from the ring header).
+- **The prefix is not the base.** The full-state prefix in front of the faulting buffer carries only
+  CB/DB bases, `IA_MULTI_VGT_PARAM` 0xff and `SPI_TMPRING_SIZE` 0x1500 among base/ring/size registers;
+  the title's own writes in that buffer are user data and thread-trace markers. With the prefix off
+  (`BC5_DIRECT_PREFIX_ALL=0`, run 780) the kernel still logs the address-0 faults at the night scene,
+  but **no fence times out and the title plays on** (journal t 169.8 s, the screenshots keep
+  changing): the GE's read of address 0 is survivable by itself; the hang needs the full-state prefix.
+  With the SX-only prefix (`=sx`, run 781) the box stopped answering about three minutes in (no ping,
+  no SSH): the machine-down the maintainer has seen, now reproduced once without the full prefix.
+- Next, in the maintainer's order: step 3 — read the WD/GE base registers at the hang through the
+  root hang-dump helper (its `umr -r` list needs `mmWD_INDEX_BUF_BASE(_HI)`, `mmWD_POS_BUF_BASE(_HI)`,
+  `mmWD_CNTL_SB_BUF_BASE(_HI)`, `mmVGT_TF_MEMORY_BASE(_HI)`, `mmVGT_ESGS_RING_SIZE`,
+  `mmVGT_GSVS_RING_SIZE`, `mmGE_CNTL`, `mmVGT_GS_MODE`; root is the maintainer's), in a faulting and in
+  a clean run, with `faultdump.sh` firing on the kernel's fault line. Run 780 also suggests testing
+  whether the hang is the prefix's `CLEAR_STATE` + state reload colliding with the GE's pending work
+  (a run with the prefix only in front of buffers after a fault, or `BC5_DIRECT_PIECES_NO_CLEAR=1`).
