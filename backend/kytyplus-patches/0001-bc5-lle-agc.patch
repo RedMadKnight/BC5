@@ -16821,6 +16821,144 @@ index 312870a..1978337 100644
  		}
  	}
  	g_audioout2_port_mutex.Unlock();
+diff --git a/src/libs/libInvitationDialog.cpp b/src/libs/libInvitationDialog.cpp
+index aeaa823..9a20ce1 100644
+--- a/src/libs/libInvitationDialog.cpp
++++ b/src/libs/libInvitationDialog.cpp
+@@ -50,20 +50,24 @@ namespace LibInvitationDialog {
+ 
+ LIB_VERSION("libSceInvitationDialog", 1, "libSceInvitationDialog", 1, 1);
+ 
++// BC5 (experiment 0158): the common-dialog status machine (none 0, initialized 1, running 2,
++// finished 3). Before, every call answered 0: a title polling the status after Open would wait
++// forever (the class of defect of F205). The dialog 'runs' until the first status poll, as if
++// the user had closed it at once.
++static int g_status = 0;
+ 
+ 
+ 
+ 
+ 
+-static int KYTY_SYSV_ABI sceInvitationDialogClose() {
+ 
+ 
++static int KYTY_SYSV_ABI sceInvitationDialogClose() {
+ 	PRINT_NAME();
+-
+-
+-	return OK; // STUBBED
+-
+-
++	if (g_status != 0) {
++		g_status = 3;
++	}
++	return OK;
+ }
+ 
+ 
+@@ -101,14 +105,8 @@ static int KYTY_SYSV_ABI sceInvitationDialogGetResultA() {
+ 
+ 
+ static int KYTY_SYSV_ABI sceInvitationDialogGetStatus() {
+-
+-
+ 	PRINT_NAME();
+-
+-
+-	return OK; // STUBBED
+-
+-
++	return g_status;
+ }
+ 
+ 
+@@ -116,14 +114,9 @@ static int KYTY_SYSV_ABI sceInvitationDialogGetStatus() {
+ 
+ 
+ static int KYTY_SYSV_ABI sceInvitationDialogInitialize() {
+-
+-
+ 	PRINT_NAME();
+-
+-
+-	return OK; // STUBBED
+-
+-
++	g_status = 1;
++	return OK;
+ }
+ 
+ 
+@@ -131,14 +124,9 @@ static int KYTY_SYSV_ABI sceInvitationDialogInitialize() {
+ 
+ 
+ static int KYTY_SYSV_ABI sceInvitationDialogOpen() {
+-
+-
+ 	PRINT_NAME();
+-
+-
+-	return OK; // STUBBED
+-
+-
++	g_status = 2;
++	return OK;
+ }
+ 
+ 
+@@ -146,14 +134,9 @@ static int KYTY_SYSV_ABI sceInvitationDialogOpen() {
+ 
+ 
+ static int KYTY_SYSV_ABI sceInvitationDialogOpenA() {
+-
+-
+ 	PRINT_NAME();
+-
+-
+-	return OK; // STUBBED
+-
+-
++	g_status = 2;
++	return OK;
+ }
+ 
+ 
+@@ -161,14 +144,9 @@ static int KYTY_SYSV_ABI sceInvitationDialogOpenA() {
+ 
+ 
+ static int KYTY_SYSV_ABI sceInvitationDialogTerminate() {
+-
+-
+ 	PRINT_NAME();
+-
+-
+-	return OK; // STUBBED
+-
+-
++	g_status = 0;
++	return OK;
+ }
+ 
+ 
+@@ -176,14 +154,11 @@ static int KYTY_SYSV_ABI sceInvitationDialogTerminate() {
+ 
+ 
+ static int KYTY_SYSV_ABI sceInvitationDialogUpdateStatus() {
+-
+-
+ 	PRINT_NAME();
+-
+-
+-	return OK; // STUBBED
+-
+-
++	if (g_status == 2) {
++		g_status = 3;
++	}
++	return g_status;
+ }
+ 
+ 
 diff --git a/src/libs/libJson2.cpp b/src/libs/libJson2.cpp
 index 183cd85..40d7f58 100644
 --- a/src/libs/libJson2.cpp
@@ -18060,6 +18198,110 @@ index 4fd67e0..871bfd1 100644
  	}
  
  	return OK;
+diff --git a/src/libs/libWebBrowserDialog.cpp b/src/libs/libWebBrowserDialog.cpp
+index 2bb809f..eb9002a 100644
+--- a/src/libs/libWebBrowserDialog.cpp
++++ b/src/libs/libWebBrowserDialog.cpp
+@@ -50,20 +50,24 @@ namespace LibWebBrowserDialog {
+ 
+ LIB_VERSION("libSceWebBrowserDialog", 1, "libSceWebBrowserDialog", 1, 1);
+ 
++// BC5 (experiment 0158): the common-dialog status machine (none 0, initialized 1, running 2,
++// finished 3). Before, every call answered 0: a title polling the status after Open would wait
++// forever (the class of defect of F205). The dialog 'runs' until the first status poll, as if
++// the user had closed it at once.
++static int g_status = 0;
+ 
+ 
+ 
+ 
+ 
+-static int KYTY_SYSV_ABI sceWebBrowserDialogClose() {
+ 
+ 
++static int KYTY_SYSV_ABI sceWebBrowserDialogClose() {
+ 	PRINT_NAME();
+-
+-
+-	return OK; // STUBBED
+-
+-
++	if (g_status != 0) {
++		g_status = 3;
++	}
++	return OK;
+ }
+ 
+ 
+@@ -101,14 +105,8 @@ static int KYTY_SYSV_ABI sceWebBrowserDialogGetResult() {
+ 
+ 
+ static int KYTY_SYSV_ABI sceWebBrowserDialogGetStatus() {
+-
+-
+ 	PRINT_NAME();
+-
+-
+-	return OK; // STUBBED
+-
+-
++	return g_status;
+ }
+ 
+ 
+@@ -131,14 +129,9 @@ static int KYTY_SYSV_ABI sceWebBrowserDialogNavigate() {
+ 
+ 
+ static int KYTY_SYSV_ABI sceWebBrowserDialogOpen() {
+-
+-
+ 	PRINT_NAME();
+-
+-
+-	return OK; // STUBBED
+-
+-
++	g_status = 2;
++	return OK;
+ }
+ 
+ 
+@@ -146,14 +139,9 @@ static int KYTY_SYSV_ABI sceWebBrowserDialogOpen() {
+ 
+ 
+ static int KYTY_SYSV_ABI sceWebBrowserDialogOpenForPredeterminedContent() {
+-
+-
+ 	PRINT_NAME();
+-
+-
+-	return OK; // STUBBED
+-
+-
++	g_status = 2;
++	return OK;
+ }
+ 
+ 
+@@ -206,14 +194,11 @@ static int KYTY_SYSV_ABI sceWebBrowserDialogSetZoom() {
+ 
+ 
+ static int KYTY_SYSV_ABI sceWebBrowserDialogUpdateStatus() {
+-
+-
+ 	PRINT_NAME();
+-
+-
+-	return OK; // STUBBED
+-
+-
++	if (g_status == 2) {
++		g_status = 3;
++	}
++	return g_status;
+ }
+ 
+ 
 diff --git a/src/libs/libs.cpp b/src/libs/libs.cpp
 index 36e4dc8..eaa58d7 100644
 --- a/src/libs/libs.cpp
