@@ -129,3 +129,15 @@ GS/NGG rings), and read the consumers 0x909977100 / 0x90997a500 for what they em
   `/usr/local/bin/bc5-gpu-hang-dump` on the box is still the 2026-10-12 version. The host now takes
   `BC5_DIRECT_FENCE_TIMEOUT_MS` (the completion thread's fence wait, default 2000) so a dump has a
   wider window before the kernel's own reset.
+- *Runs 783–784* (the root hang-dump helper now reads `mmWD_INDEX_BUF_BASE(_HI)`,
+  `mmWD_POS_BUF_BASE(_HI)`, `mmWD_CNTL_SB_BUF_BASE(_HI)`, `mmVGT_TF_MEMORY_BASE(_HI)`,
+  `mmVGT_ESGS/GSVS_RING_SIZE`, `mmGE_CNTL`, `mmVGT_GS_MODE`; `faultdump.sh` fires it on the kernel's
+  fault line; `BC5_DIRECT_FENCE_TIMEOUT_MS=8000`): the kernel resets the ring 2.0 s after the fault
+  whatever the host's fence timeout (run 784: fault at 1270.37 s, "ring gfx_0.0.0 timeout" and reset at
+  1272.38 s), and the helper runs `umr -O halt_waves` first, so its register reads land after the reset
+  (CP idle, `GRBM_STATUS` 0x3028): every WD/TF base reads 0, `GE_CNTL` 0xf680, `VGT_GS_MODE` 0 — the
+  post-reset values, not the stalled state. With the longer host timeout the night scene arrives later
+  (journal t 164 and 199 s instead of 145: a job the 2-s timeout used to cut short now waits out),
+  so a run needs the kill at +200 s or later. To read the stalled state the helper must read the
+  registers before halting waves, and the kernel's 2-s gfx timeout (this kernel's default; the module
+  parameter is unset) would have to be raised on the kernel command line — both root's.
