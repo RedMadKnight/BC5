@@ -7216,10 +7216,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..eab6515
+index 0000000..85d371a
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,7232 @@
+@@ -0,0 +1,7421 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -7610,6 +7610,18 @@ index 0000000..eab6515
 +}
 +static void clear_gpu_executed() {
 +	t_gpu_done.clear();
++}
++// Experiment 0157: the marks of a copy that ran on the GPU (a prefix of `skip` dwords, then `n` dwords
++// of `orig`) carried over to `orig`; the copy's own entry goes, its memory is about to be reused.
++static void alias_gpu_executed(const uint32_t* copy, size_t skip, const uint32_t* orig, uint32_t n) {
++	for (auto it = t_gpu_done.begin(); it != t_gpu_done.end(); ++it) {
++		if (it->buf != copy) continue;
++		GpuDone h {orig, std::vector<uint8_t>(n, 0)};
++		for (uint32_t o = 0; o < n && skip + o < it->done.size(); o++) h.done[o] = it->done[skip + o];
++		t_gpu_done.erase(it);
++		t_gpu_done.push_back(std::move(h));
++		return;
++	}
 +}
 +// Was the packet at `pkt` executed by the real GPU? The entries are the IB, its INDIRECT_BUFFER
 +// targets and, for an IB split at a cross-queue wait, its pieces — so the lookup is by range.
@@ -10221,6 +10233,53 @@ index 0000000..eab6515
 +static std::atomic<uint64_t> g_full_pieces {0}, g_full_ok {0}, g_full_failed {0};
 +static thread_local bool                     t_fs_valid = false;
 +static thread_local bc5::full_state::Tracker t_fs_before;
++// Experiment 0157 (F204): other processes' work on the GFX ring (the desktop compositor's RADV jobs
++// between the title's submissions) leaves context registers the title set once and never again per
++// buffer -- the second title's menu redraws then ran with RADV's RB+ blend optimisation
++// (SX_MRT*_BLEND_OPT) and left their element rectangles transparent. BC5_DIRECT_PREFIX_ALL:
++// draws (the default) = the pieces' full-state prefix (CLEAR_STATE, then every tracked context, SH and
++// uconfig register) in front of every graphics buffer that draws (run 690: 0 of 88 flagged, 43.9 fps
++// against 45.0 without); sx = in front of those, one SET_CONTEXT_REG of SX_PS_DOWNCONVERT..
++// SX_MRT7_BLEND_OPT (ctx 0x1d5-0x1df) with the tracked values (run 689: 0 of 88, 45.0 fps); 1|all =
++// the full prefix in front of every graphics buffer (run 684: half the frame rate); 0 = off.
++static int prefix_mode() {
++	static const int v = [] {
++		const char* e = std::getenv("BC5_DIRECT_PREFIX_ALL");
++		if (e == nullptr || *e == 0 || std::strcmp(e, "draws") == 0) return 2;
++		if (std::strcmp(e, "0") == 0) return 0;
++		if (std::strcmp(e, "sx") == 0) return 3;
++		return 1;
++	}();
++	return v;
++}
++static bool prefix_all() {
++	return prefix_mode() != 0;
++}
++static bool ib_has_draw(const uint32_t* ib, uint32_t num_dwords) {
++	for (uint32_t i = 0; i < num_dwords;) {
++		const uint32_t h = ib[i], type = h >> 30u;
++		uint32_t       len = 1;
++		if (type == 3 || type == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
++		if (i + len > num_dwords) break;
++		if (type == 3) {
++			const uint32_t op = (h >> 8u) & 0xffu;
++			if (op == 0x24 || op == 0x25 || op == 0x27 || op == 0x2c || op == 0x2d || op == 0x35 || op == 0x38) return true;
++		}
++		i += len;
++	}
++	return false;
++}
++static std::vector<uint32_t> sx_prefix(const bc5::full_state::Tracker& t) {
++	std::vector<uint32_t> p;
++	p.push_back(0xC0000000u | (11u << 16u) | (0x69u << 8u)); // SET_CONTEXT_REG, 12 body dwords
++	p.push_back(0x1d5u);
++	for (uint32_t o = 0x1d5u; o <= 0x1dfu; o++) {
++		uint32_t v = 0;
++		if (!t.get(bc5::full_state::Context, o, v)) return {};
++		p.push_back(v);
++	}
++	return p;
++}
 +// Experiment 0155 (diagnostic, BC5_DIRECT_PIECES_NO_CLEAR=1): a piece's prefix without its
 +// CONTEXT_CONTROL and CLEAR_STATE (the first five dwords of Tracker::emit_prefix()).
 +static std::vector<uint32_t> prefix_of(const bc5::full_state::Tracker& t) {
@@ -10458,6 +10517,10 @@ index 0000000..eab6515
 +	uint32_t                                dry_at = 0;
 +	std::vector<uint32_t>                   full_prefix; // BC5_DIRECT_PIECES_FULL: the prefix of the piece at start
 +	bool                                    full_used = false;
++	if (prefix_all() && std::strcmp(kind, "dcb") == 0 && g_stage != Stage::MapOnly && (prefix_mode() == 1 || ib_has_draw(ib, num_dwords))) { // experiment 0157
++		full_prefix = prefix_mode() == 3 ? sx_prefix(t_fs_before) : prefix_of(t_fs_before);
++		full_used   = !full_prefix.empty();
++	}
 +	// Experiment 0118: a piece goes to the GPU as one job with its full-state prefix in front. As two
 +	// jobs (prefix, then the piece) the ring thread could submit between them, and ASTRO BOT's colour,
 +	// depth and program addresses then came out tagged 0x80 in bits 47:40 (CB/DB and SQC faults, two
@@ -10476,6 +10539,7 @@ index 0000000..eab6515
 +			if (w >= part && w < part + n) w = one.data() + pre.size() + (w - part);
 +		}
 +		submit_one(one.data(), static_cast<uint32_t>(one.size()), kind, false);
++		SoftCp::alias_gpu_executed(one.data(), pre.size(), part, n); // experiment 0157
 +		std::erase_if(t_keep_waits, [&one](const uint32_t* w) { return w >= one.data() && w < one.data() + one.size(); });
 +	};
 +	while (i < num_dwords) {
@@ -10626,7 +10690,7 @@ index 0000000..eab6515
 +					if (two_rings && !wait_satisfied(p, op == 0x93)) {
 +						bool split = false;
 +						if (pieces_full() && dry_here && i > start) {
-+							if (start > 0 && !full_prefix.empty()) submit_prefixed(full_prefix, ib + start, i - start, false);
++							if ((start > 0 || prefix_all()) && !full_prefix.empty()) submit_prefixed(full_prefix, ib + start, i - start, false);
 +							else submit_one(ib + start, i - start, kind, from_header && start == 0);
 +							full_prefix = prefix_of(*dry);
 +							start       = i;
@@ -10707,7 +10771,7 @@ index 0000000..eab6515
 +						}
 +					}
 +					if (!ok && pieces_full() && dry_here && on_game_thread() && i > start && g_stage != Stage::MapOnly && (!g_dev || !g_dev->wedged())) {
-+						if (start > 0 && !full_prefix.empty()) submit_prefixed(full_prefix, ib + start, i - start, false);
++						if ((start > 0 || prefix_all()) && !full_prefix.empty()) submit_prefixed(full_prefix, ib + start, i - start, false);
 +						else submit_one(ib + start, i - start, kind, from_header && start == 0);
 +						full_prefix = prefix_of(*dry);
 +						const uint32_t head_from = start;
@@ -10743,7 +10807,7 @@ index 0000000..eab6515
 +		}
 +		i += len;
 +	}
-+	if (start > 0 && full_used) {
++	if ((start > 0 || prefix_all()) && full_used && !full_prefix.empty()) {
 +		submit_prefixed(full_prefix, ib + start, num_dwords - start, false);
 +		return;
 +	}
@@ -10789,7 +10853,7 @@ index 0000000..eab6515
 +	if (g_watch_surfaces.size() < 64) g_watch_surfaces.push_back(va);
 +}
 +
-+static void bc5_rt_dump_once(const std::shared_ptr<const std::vector<bc5::direct::Mapping>>& maps_p) {
++static void bc5_rt_dump_once(const std::shared_ptr<const std::vector<bc5::direct::Mapping>>& maps_p, bool force = false, const char* tag = nullptr) {
 +	static const std::string spec = [] {
 +		const char* e = std::getenv("BC5_DIRECT_RT_DUMP");
 +		return std::string(e != nullptr ? e : "");
@@ -10804,19 +10868,23 @@ index 0000000..eab6515
 +	static std::atomic<bool> done {false};
 +	static std::mutex        every_mutex;
 +	static double            next_t = -1;
-+	if (spec.empty() || done.load()) return;
++	if (spec.empty() || (!force && done.load())) return;
 +	const double t0    = std::strtod(spec.c_str(), nullptr);
 +	const double now_t = timing_now();
-+	if (now_t < t0) return;
-+	if (every > 0) {
-+		std::lock_guard lock(every_mutex);
-+		if (next_t < 0) next_t = t0;
-+		if (now_t < next_t) return;
-+		next_t = now_t + every;
-+	} else if (done.exchange(true)) {
-+		return;
++	if (!force) {
++		if (now_t < t0) return;
++		if (every > 0) {
++			std::lock_guard lock(every_mutex);
++			if (next_t < 0) next_t = t0;
++			if (now_t < next_t) return;
++			next_t = now_t + every;
++		} else if (done.exchange(true)) {
++			return;
++		}
 +	}
 +	const double dump_t = now_t;
++	char         tagbuf[72] = {};
++	if (tag != nullptr) std::snprintf(tagbuf, sizeof(tagbuf), "-%s", tag);
 +	size_t pos = spec.find(';');
 +	while (pos != std::string::npos) {
 +		const size_t next = spec.find(';', pos + 1);
@@ -10975,8 +11043,8 @@ index 0000000..eab6515
 +			}
 +		}
 +		char name[512];
-+		if (every > 0)
-+			std::snprintf(name, sizeof(name), "%s/rt-%010" PRIx64 "-%ux%u-%s-f%u-t%07.2f.ppm", g_dump_dir.c_str(), va, w, h, fmt, family, dump_t);
++		if (every > 0 || force)
++			std::snprintf(name, sizeof(name), "%s/rt-%010" PRIx64 "-%ux%u-%s-f%u-t%07.2f%s.ppm", g_dump_dir.c_str(), va, w, h, fmt, family, dump_t, tagbuf);
 +		else
 +			std::snprintf(name, sizeof(name), "%s/rt-%010" PRIx64 "-%ux%u-%s-f%u.ppm", g_dump_dir.c_str(), va, w, h, fmt, family);
 +		if (FILE* f = std::fopen(name, "wb"); f != nullptr) {
@@ -10998,7 +11066,78 @@ index 0000000..eab6515
 +	}
 +}
 +
++// Experiment 0157: memory a journaled draw reads, remembered at submission (bc5_range_remember) and
++// compared at the buffer's fence completion (bc5_ranges_complete, completion_thread): a range the
++// title rewrote while the buffer was in flight is journaled with the draw it belonged to.
++struct Bc5ReadRange {
++	const void*          ib;
++	uint32_t             buf, off;
++	const char*          kind;
++	uint64_t             addr;
++	double               t;
++	std::vector<uint8_t> copy;
++};
++static std::vector<Bc5ReadRange> g_read_ranges;
++static std::mutex                g_read_ranges_mutex;
++// Experiment 0157: the buffer piece_check is working on matched the draw journal's filters (a UI redraw):
++// submit_one dumps it when BC5_DIRECT_IB_DUMP has 0:0 as its size range.
++static thread_local bool     t_ui_buffer = false;
++static thread_local uint32_t t_ui_buf_no = 0;
++static void bc5_range_remember(const void* ib, uint32_t buf, uint32_t off, const char* kind, uint64_t addr, size_t len) {
++	std::lock_guard lock(g_read_ranges_mutex);
++	if (g_read_ranges.size() >= 65536) return;
++	for (const Bc5ReadRange& r: g_read_ranges)
++		if (r.ib == ib && r.addr == addr && r.copy.size() == len) return;
++	Bc5ReadRange r {ib, buf, off, kind, addr, timing_now(), {}};
++	r.copy.assign(reinterpret_cast<const uint8_t*>(addr), reinterpret_cast<const uint8_t*>(addr) + len);
++	g_read_ranges.push_back(std::move(r));
++}
++static void bc5_ranges_complete(const void* ib, uint64_t n, const std::shared_ptr<const std::vector<bc5::direct::Mapping>>& maps_p) {
++	std::vector<Bc5ReadRange> mine;
++	{
++		std::lock_guard lock(g_read_ranges_mutex);
++		for (auto it = g_read_ranges.begin(); it != g_read_ranges.end();) {
++			if (it->ib == ib) {
++				mine.push_back(std::move(*it));
++				it = g_read_ranges.erase(it);
++			} else {
++				++it;
++			}
++		}
++	}
++	if (mine.empty()) return;
++	const double now     = timing_now();
++	size_t       intact  = 0, rewritten = 0, unreadable = 0;
++	for (const Bc5ReadRange& r: mine) {
++		if (!covered_sorted(*maps_p, r.addr, r.copy.size())) {
++			unreadable++;
++			continue;
++		}
++		const auto* m = reinterpret_cast<const uint8_t*>(r.addr);
++		if (std::memcmp(m, r.copy.data(), r.copy.size()) == 0) {
++			intact++;
++			continue;
++		}
++		rewritten++;
++		size_t first = 0, count = 0;
++		while (first < r.copy.size() && m[first] == r.copy[first]) first++;
++		for (size_t q = 0; q < r.copy.size(); q++) count += m[q] != r.copy[q];
++		journal("range rewritten in flight: submit #%" PRIu64 " buf %u at %u %s %010" PRIx64 "+%zx: %zu bytes differ from %zx; submitted t %.3f, completed t %.3f (%.1f ms)\n", n, r.buf, r.off, r.kind, r.addr,
++		        r.copy.size(), count, first, r.t, now, (now - r.t) * 1000.0);
++	}
++	journal("ranges at completion: submit #%" PRIu64 " buf %u: %zu intact, %zu rewritten, %zu unreadable; %.1f ms from the first draw's journal to completion\n", n, mine.front().buf, intact, rewritten,
++	        unreadable, (now - mine.front().t) * 1000.0);
++	// Experiment 0157: BC5_DIRECT_RT_DUMP_AT_COMPLETION=1 dumps the RT_DUMP items now, as the GPU left them.
++	static const bool dump_done = std::getenv("BC5_DIRECT_RT_DUMP_AT_COMPLETION") != nullptr;
++	if (dump_done) {
++		char tag[40];
++		std::snprintf(tag, sizeof(tag), "buf%u-done", mine.front().buf);
++		bc5_rt_dump_once(maps_p, true, tag);
++	}
++}
++
 +static void piece_check(const uint32_t* ib, uint32_t num_dwords, const char* kind) {
++	t_ui_buffer = false;
 +	// Experiment 0089: BC5_DIRECT_DRAW_JOURNAL=<t0>:<buffers> journals every draw and dispatch of the
 +	// graphics buffers submitted from t0 s on (that many buffers): colour target 0 (base, size,
 +	// INFO), CB_TARGET_MASK, viewport, PS and VS/ES/GS programs, the packet's dwords. Registers:
@@ -11055,7 +11194,12 @@ index 0000000..eab6515
 +	}();
 +	static const bool rt_dump = std::getenv("BC5_DIRECT_RT_DUMP") != nullptr;
 +	if (rt_dump && std::strcmp(kind, "dcb") == 0 && g_dev) bc5_rt_dump_once(g_dev->sorted_mappings());
-+	if (!pieces_dry() && !pieces_full() && draw_journal.second == 0) return;
++	if (!pieces_dry() && !pieces_full() && draw_journal.second == 0 && !prefix_all()) return;
++	// Experiment 0157: BC5_DIRECT_DRAW_JOURNAL_ACB=1 takes the compute-queue buffers through the journal too
++	// (as "dcb" below; their packets set SH registers only, so the shared tracker is not disturbed).
++	static const bool journal_acb = std::getenv("BC5_DIRECT_DRAW_JOURNAL_ACB") != nullptr;
++	const bool        acb_as_dcb  = journal_acb && draw_journal.second != 0 && std::strcmp(kind, "acb") == 0;
++	if (acb_as_dcb) kind = "dcb";
 +	if (std::strcmp(kind, "cc") != 0 && std::strcmp(kind, "hib") != 0 && std::strcmp(kind, "dcb") != 0) return;
 +	static std::mutex                 mtx;
 +	static bc5::full_state::Tracker   tracker;
@@ -11110,31 +11254,7 @@ index 0000000..eab6515
 +					i += len;
 +				}
 +			}
-+			struct VtxRange {
-+				uint64_t             addr;
-+				double               t;
-+				uint32_t             buf, off;
-+				std::vector<uint8_t> copy;
-+			};
-+			static std::vector<VtxRange> vtx_ranges;
-+			static std::mutex            vtx_mutex;
-+			{
-+				// the re-check of the remembered ranges (600 ms), on this buffer's submission
-+				std::lock_guard lock(vtx_mutex);
-+				const double    now = timing_now();
-+				for (auto it = vtx_ranges.begin(); it != vtx_ranges.end();) {
-+					if (now - it->t > 0.6) { it = vtx_ranges.erase(it); continue; }
-+					const uint32_t* m = read(it->addr, it->copy.size());
-+					if (m != nullptr && std::memcmp(m, it->copy.data(), it->copy.size()) != 0) {
-+						size_t first = 0;
-+						while (first < it->copy.size() && reinterpret_cast<const uint8_t*>(m)[first] == it->copy[first]) first++;
-+						journal("vertex rewrite: buf %u at %u range %010" PRIx64 "+%zx changed %.0f ms after submission (first byte %zx)\n", it->buf, it->off, it->addr, it->copy.size(), (now - it->t) * 1000.0, first);
-+						it = vtx_ranges.erase(it);
-+						continue;
-+					}
-+					++it;
-+				}
-+			}
++			// (the per-frame re-check of the vertex ranges became bc5_ranges_complete, at fence completion)
 +			bc5::full_state::for_each_draw(tracker, span, read, [&](size_t off, std::span<const uint32_t> pkt, const bc5::full_state::Tracker& t) {
 +				auto reg = [&t](bc5::full_state::Space sp, uint32_t o) {
 +					uint32_t v = 0;
@@ -11163,11 +11283,50 @@ index 0000000..eab6515
 +					}
 +					return true;
 +				}();
-+				static const bool find_set = std::getenv("BC5_DIRECT_DRAW_JOURNAL_FIND") != nullptr;
++				static const bool find_set = std::getenv("BC5_DIRECT_DRAW_JOURNAL_FIND") != nullptr; // "layer" counts too
 +				if (!matched && !find_set) return;
 +				if (matched && !counted) {
-+					counted = true;
++					counted     = true;
 +					journaled++;
++					t_ui_buffer = true;
++					t_ui_buf_no = buf_no;
++					// Experiment 0157: the register tables this buffer loads (LOAD_CONTEXT/SH/UCONFIG_REG 0x61/0x5f/
++					// 0x5e: base lo/hi, then (offset, count) pairs; the _INDEX forms 0x9f/0x63/0x64: base, dword 3
++					// bit 31 = pairs of (offset, value), dword 4 = count; as bc5::full_state::Tracker::apply reads
++					// them) join the completion-time check.
++					for (uint32_t i = 0; i < num_dwords;) {
++						const uint32_t h = ib[i], type = h >> 30u;
++						uint32_t       len = 1;
++						if (type == 3 || type == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
++						if (i + len > num_dwords) break;
++						if (type == 3 && len >= 5) {
++							const uint32_t lop  = (h >> 8u) & 0xffu;
++							const uint64_t base = (static_cast<uint64_t>(ib[i + 1]) & ~3ull) | (static_cast<uint64_t>(ib[i + 2] & 0xffffu) << 32u);
++							if (lop == 0x61 || lop == 0x5f || lop == 0x5e) {
++								for (uint32_t k = 3; k + 1 < len; k += 2) {
++									const uint32_t n = ib[i + k + 1] & 0x3fffu;
++									const uint64_t a = base + static_cast<uint64_t>(ib[i + k] & 0xffffu) * 4u;
++									if (n != 0 && n <= 1024 && read(a, n * 4ull) != nullptr) bc5_range_remember(ib, buf_no, i, "reg table", a, n * 4ull);
++								}
++							} else if (lop == 0x9f || lop == 0x63 || lop == 0x64) {
++								const bool     pairs = (ib[i + 3] >> 31u) != 0;
++								const uint32_t n     = ib[i + 4] & 0x3fffu;
++								const uint64_t bytes = static_cast<uint64_t>(n) * (pairs ? 8u : 4u);
++								if (n != 0 && n <= 1024 && read(base, bytes) != nullptr) {
++									bc5_range_remember(ib, buf_no, i, "reg table", base, bytes);
++									// Experiment 0157: the table's pairs (offset:value), up to 64; dword 1 and 3 of the packet too.
++									const auto* tv = reinterpret_cast<const uint32_t*>(base);
++									char        pb[1400] = {};
++									int         pw       = 0;
++									if (pairs)
++										for (uint32_t q = 0; q < n && q < 64 && pw < 1300; q++) pw += std::snprintf(pb + pw, sizeof(pb) - static_cast<size_t>(pw), " %x:%08x", tv[2 * q] & 0xffffu, tv[2 * q + 1]);
++									journal("load table buf %u at %u: op %02x dw1 %08x dw3 %08x %s x%u at %010" PRIx64 ":%s%s\n", buf_no, i, lop, ib[i + 1], ib[i + 3], pairs ? "pairs" : "span", n, base, pb,
++									        n > 64 ? " ..." : "");
++								}
++							}
++						}
++						i += len;
++					}
 +				}
 +				auto flt = [&](uint32_t o) {
 +					const uint32_t b = reg(bc5::full_state::Context, o);
@@ -11226,6 +11385,12 @@ index 0000000..eab6515
 +							int         tw      = 0;
 +							for (uint32_t q = 0; q < 64; q++) tw += std::snprintf(tb + tw, sizeof(tb) - static_cast<size_t>(tw), " %08x", m[q]);
 +							journal("bake table %s ud%u %010" PRIx64 ":%s\n", stage == 0 ? "ps" : "gs", k, addr, tb);
++							bc5_range_remember(ib, buf_no, static_cast<uint32_t>(off), stage == 0 ? "ps table" : "gs table", addr, 256);
++							// the paint V# at PS table 28 + 0x20 (experiment 0104): its first 128 bytes
++							if (stage == 0 && k == 28) {
++								const uint64_t pv = m[8] | (static_cast<uint64_t>(m[9] & 0xffffu) << 32u);
++								if (pv != 0 && read(pv, 128) != nullptr) bc5_range_remember(ib, buf_no, static_cast<uint32_t>(off), "paint", pv, 128);
++							}
 +						}
 +					}
 +					// Experiment 0157: the vertices of a DRAW_INDEX_OFFSET_2 (0x35: max_size, index_offset, count;
@@ -11264,12 +11429,8 @@ index 0000000..eab6515
 +								}
 +								journal("bake vertices buf %u at %zu: idx %010" PRIx64 " +%u x%u (%u-bit) -> %u..%u | vb %010" PRIx64 " stride %u | box %.1f,%.1f-%.1f,%.1f | v0 %08x %08x %08x %08x %08x %08x %08x %08x\n", buf_no, off, ib_base,
 +								        pkt[2], cnt, isz * 8, imin, imax, vb, vst, static_cast<double>(xmin), static_cast<double>(ymin), static_cast<double>(xmax), static_cast<double>(ymax), v0[0], v0[1], v0[2], v0[3], v0[4], v0[5], v0[6], v0[7]);
-+								std::lock_guard lock(vtx_mutex);
-+								if (vtx_ranges.size() < 4096) {
-+									VtxRange r {va0, timing_now(), buf_no, static_cast<uint32_t>(off), {}};
-+									r.copy.assign(reinterpret_cast<const uint8_t*>(va0), reinterpret_cast<const uint8_t*>(va0) + vlen);
-+									vtx_ranges.push_back(std::move(r));
-+								}
++								bc5_range_remember(ib, buf_no, static_cast<uint32_t>(off), "vertices", va0, vlen);
++								bc5_range_remember(ib, buf_no, static_cast<uint32_t>(off), "indices", ia, static_cast<size_t>(cnt) * isz);
 +							}
 +						} else {
 +							journal("bake vertices buf %u at %zu: idx %010" PRIx64 " +%u x%u | vb %010" PRIx64 " stride %u: unreadable\n", buf_no, off, ib_base, pkt[2], cnt, vb, vst);
@@ -11401,6 +11562,11 @@ index 0000000..eab6515
 +						std::vector<uint32_t> v;
 +						if (const char* e = std::getenv("BC5_DIRECT_DRAW_JOURNAL_FIND"); e != nullptr) {
 +							for (const char* q = e; *q != 0;) {
++								if (*q == 'l') { // experiment 0157: the "layer" token
++									while (*q != 0 && *q != ',') q++;
++									if (*q == ',') q++;
++									continue;
++								}
 +								char* end = nullptr;
 +								v.push_back(static_cast<uint32_t>(std::strtoul(q, &end, 16)));
 +								if (end == q) break;
@@ -11409,13 +11575,19 @@ index 0000000..eab6515
 +						}
 +						return v;
 +					}();
-+					if (!find.empty()) {
++					static const bool find_layer = [] {
++						const char* e = std::getenv("BC5_DIRECT_DRAW_JOURNAL_FIND");
++						return e != nullptr && std::strstr(e, "layer") != nullptr;
++					}();
++					const uint32_t layer_hi = find_layer ? static_cast<uint32_t>(g_layer0_base.load() >> 8u) : 0u;
++					auto           is_hit   = [&](uint32_t v) { return (layer_hi != 0 && v == layer_hi) || std::find(find.begin(), find.end(), v) != find.end(); };
++					if (!find.empty() || layer_hi != 0) {
 +						const bool compute = ((pkt[0] >> 8u) & 0xffu) == 0x15 || ((pkt[0] >> 8u) & 0xffu) == 0x16;
 +						const uint32_t base = compute ? 0x240u : 0x0cu, nud = compute ? 16u : 32u;
 +						std::vector<uint32_t> ud(nud);
 +						for (uint32_t k = 0; k < nud; k++) ud[k] = reg(S::Sh, base + k);
 +						for (uint32_t k = 0; k < nud; k++) {
-+							bool hit = std::find(find.begin(), find.end(), ud[k]) != find.end();
++							bool hit = is_hit(ud[k]);
 +							const char* where = "direct";
 +							uint64_t    at    = 0, tab = 0;
 +							if (!hit && k + 1 < nud) {
@@ -11423,7 +11595,7 @@ index 0000000..eab6515
 +								if (addr >= 0x1000000000ull && addr < 0x1400000000ull && (addr & 3u) == 0 && read(addr, 256) != nullptr) {
 +									const auto* m = reinterpret_cast<const uint32_t*>(addr);
 +									for (uint32_t q = 0; q < 64 && !hit; q++) {
-+										if (std::find(find.begin(), find.end(), m[q]) != find.end()) {
++										if (is_hit(m[q])) {
 +											hit   = true;
 +											where = "table";
 +											at    = addr + q * 4u;
@@ -11534,7 +11706,7 @@ index 0000000..eab6515
 +				}
 +			});
 +		}
-+		if (t_fs_valid) t_fs_before = tracker;
++		if (t_fs_valid || prefix_all()) t_fs_before = tracker;
 +		if (!waits.empty()) with_waits++;
 +	}
 +	tracker.apply(span, read, st);
@@ -11550,6 +11722,18 @@ index 0000000..eab6515
 +	ms += (timing_now() - t0) * 1000.0;
 +	if (t0 - last_report >= 10.0) {
 +		last_report = t0;
++		{ // experiment 0157: every context register the tracker holds (the title's state so far)
++			std::string line = "tracked context:";
++			for (uint32_t o = 0; o < 0x400u; o++) {
++				uint32_t v = 0;
++				if (tracker.get(bc5::full_state::Context, o, v)) {
++					char b[24];
++					std::snprintf(b, sizeof(b), " %x:%08x", o, v);
++					line += b;
++				}
++			}
++			journal("%s\n", line.c_str());
++		}
 +		journal("piece check: %" PRIu64 " graphics buffers, %" PRIu64 " with waits; tracked config %zu context %zu sh %zu uconfig %zu; tables %" PRIu64
 +		        " unreadable %" PRIu64 ", nested %" PRIu64 " unreadable %" PRIu64 ", clears %" PRIu64 " pushes %" PRIu64 " pops %" PRIu64
 +		        "; %.0f ms\n",
@@ -11836,6 +12020,7 @@ index 0000000..eab6515
 +				umr_watchdog_start(); // experiment 0058
 +				g_fence_wait_since = j.queued_ns != 0 ? j.queued_ns : SoftCp::now_ns(); // from the job's submission: the kernel resets ~2 s after it hangs
 +				if (g_dev) r = g_dev->finish(j.seq, j.slot, 2'000'000'000ull);
++				if (g_dev) bc5_ranges_complete(j.ib, j.n, g_dev->sorted_mappings()); // experiment 0157
 +				// Experiment 0124: the GPU's time line from the jobs' own timestamps (100 MHz clock):
 +				// busy (start to end of each job) and the idle gaps between one job's end and the
 +				// next one's start, journaled for every second of GPU time.
@@ -12776,11 +12961,15 @@ index 0000000..eab6515
 +			return c;
 +		}();
 +		static std::atomic<uint32_t> ibd_n {0};
-+		if (ibd.count != 0 && !ibd.dir.empty() && num_dwords >= ibd.lo && num_dwords <= ibd.hi && timing_now() >= ibd.t0 && ibd_n.load() < ibd.count) {
++		const bool ui_pick = ibd.lo == 0 && ibd.hi == 0 && t_ui_buffer; // experiment 0157
++		if (ibd.count != 0 && !ibd.dir.empty() && ((num_dwords >= ibd.lo && num_dwords <= ibd.hi) || ui_pick) && timing_now() >= ibd.t0 && ibd_n.load() < ibd.count) {
 +			const uint32_t k = ibd_n++;
 +			if (k < ibd.count) {
 +				char name[512];
-+				std::snprintf(name, sizeof(name), "%s/ib-%08" PRIu64 "-%.8s-%u.bin", ibd.dir.c_str(), g_submits.load(), kind, num_dwords);
++				if (ui_pick)
++					std::snprintf(name, sizeof(name), "%s/ib-%08" PRIu64 "-%.8s-%u-buf%u.bin", ibd.dir.c_str(), g_submits.load(), kind, num_dwords, t_ui_buf_no);
++				else
++					std::snprintf(name, sizeof(name), "%s/ib-%08" PRIu64 "-%.8s-%u.bin", ibd.dir.c_str(), g_submits.load(), kind, num_dwords);
 +				if (FILE* f = std::fopen(name, "wb"); f != nullptr) {
 +					std::fwrite(ib, sizeof(uint32_t), num_dwords, f);
 +					std::fclose(f);

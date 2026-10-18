@@ -468,3 +468,30 @@ guest map (the caches flush themselves when they hold something in the range). T
 (`learned_apply`) pins the direct views for its 95 windows and keeps its mapping list sorted; a pass over
 5 ms and a call over 20 ms are journaled (`learned apply: ...`, `learned_apply took ...`). The second
 title's start-up card: 21 → 86 frames in its first six seconds (F203).
+
+Experiment 0157 (F204). The fix: `BC5_DIRECT_PREFIX_ALL=<mode>` puts register state in front of a
+graphics-queue buffer before it goes to the GPU, so that nothing another process left on the GFX ring
+(the desktop compositor's RADV work between the title's submissions) reaches the title's draws:
+`draws` (the default) is the pieces' full-state prefix (CLEAR_STATE, then every context, SH and
+uconfig register the title has set so far, ADR 0008) in front of every graphics buffer that draws
+(run 690: 0 of 88 screenshots flagged, 43.9 fps against 45.0 without); `sx` is one `SET_CONTEXT_REG`
+of `SX_PS_DOWNCONVERT`..`SX_MRT7_BLEND_OPT` (ctx 0x1d5–0x1df, the RB+ blend-optimisation registers
+RADV programs per pipeline, the ones that broke the menu) with the values the title set, in front of
+those buffers (run 689: 0 of 88, 45.0 fps); `1` or `all` the full prefix in front of every graphics
+buffer (half the frame rate: the ring thread's 74 small buffers a frame); `0` turns it off. A prefixed submission now also marks
+the GPU-executed packets on the title's own buffer (`SoftCp::alias_gpu_executed`), so the soft CP no
+longer serves that buffer's waits itself; the pieces' path benefits too.
+Diagnostics (off by default): `BC5_DIRECT_DRAW_JOURNAL=<t0>:<buffers>[:<min dwords>[:<max rt px>]]`
+(buffers below the size are skipped; with the pixel size only draws into colour targets that small are
+journaled, with their scissors, colour attributes, PS and GS user data, the tables they point at, index
+range, vertex box and first vertex); `BC5_DIRECT_DRAW_JOURNAL_PS=<hex prefix>[,...]` (only draws whose
+pixel shader address starts so); `BC5_DIRECT_DRAW_JOURNAL_ACB=1` (the compute-queue buffers too);
+`BC5_DIRECT_DRAW_JOURNAL_FIND` accepts `layer` (UI layer 0's base) and prints the hit's user data and
+table; every memory range a journaled draw reads is compared again at the buffer's fence completion
+(`ranges at completion`, `range rewritten in flight`); `load table` lines print the LOAD_*_REG_INDEX
+pair tables of a matched buffer; `tracked context:` with the 10 s summary lists every context register
+the tracker holds. `BC5_DIRECT_RT_DUMP` formats `r8` and `r16f`, a crop `<fmt>@<x>,<y>,<w>,<h>`,
+`BC5_DIRECT_RT_DUMP_EVERY=<s>` (repeated dumps, the time in the file name) and
+`BC5_DIRECT_RT_DUMP_AT_COMPLETION=1` (the items dumped again when a matched buffer's fence completes).
+`BC5_DIRECT_IB_DUMP=0:0:<t0>:<count>[:<dir>]` dumps the raw buffers the draw journal matched
+(`-buf<N>` in the name).
