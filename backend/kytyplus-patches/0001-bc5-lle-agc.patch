@@ -15370,6 +15370,243 @@ index 3c0684f..ba1c36b 100644
  
  int KYTY_SYSV_ABI PadInit();
  int KYTY_SYSV_ABI PadOpen(int user_id, int type, int index, const void* param);
+diff --git a/src/libs/dialog.cpp b/src/libs/dialog.cpp
+index 5b0fc93..d97ba32 100644
+--- a/src/libs/dialog.cpp
++++ b/src/libs/dialog.cpp
+@@ -6,8 +6,21 @@
+ #include "libs/libs.h"
+ 
+ #include <cstdio>
++#include <cstdlib>
+ #include <cstring>
+ 
++// BC5 (experiment 0158): KYTY_BC5_SAVE_TRACE=1 also journals the dialog stand-ins on stderr
++// (the title's save delete opens them, F205).
++static const bool g_bc5_dialog_trace = std::getenv("KYTY_BC5_SAVE_TRACE") != nullptr;
++#define BC5_DIALOG_TRACE(...)                                                                      \
++	do {                                                                                           \
++		if (g_bc5_dialog_trace) {                                                                  \
++			std::fprintf(stderr, "dialog trace: %s ", __func__);                                    \
++			std::fprintf(stderr, __VA_ARGS__);                                                     \
++			std::fputc('\n', stderr);                                                              \
++		}                                                                                          \
++	} while (false)
++
+ // NOLINTNEXTLINE(modernize-concat-nested-namespaces)
+ namespace Libs::Dialog {
+ 
+@@ -299,7 +312,11 @@ LIB_NAME("SaveDataDialog", "SaveDataDialog");
+ 
+ constexpr int SAVE_STATUS_NONE        = 0;
+ constexpr int SAVE_STATUS_INITIALIZED = 1;
++constexpr int SAVE_STATUS_RUNNING     = 2;
+ constexpr int SAVE_STATUS_FINISHED    = 3;
++// BC5 (experiment 0158): the dialog's mode; a progress-bar dialog (mode 5) stays running until
++// the title closes it, the message modes are answered as if the user pressed OK.
++constexpr int SAVE_MODE_PROGRESS_BAR  = 5;
+ constexpr int SAVE_RESULT_OK          = 0;
+ constexpr int SAVE_BUTTON_ID_OK       = 1;
+ 
+@@ -351,6 +368,7 @@ static char  g_save_dir_name[sizeof(SaveDataDirName::data)] {};
+ 
+ int KYTY_SYSV_ABI SaveDataDialogInitialize() {
+ 	PRINT_NAME();
++	BC5_DIALOG_TRACE("%s", "");
+ 
+ 	g_save_status      = SAVE_STATUS_INITIALIZED;
+ 	g_save_mode        = 0;
+@@ -362,18 +380,29 @@ int KYTY_SYSV_ABI SaveDataDialogInitialize() {
+ 
+ int KYTY_SYSV_ABI SaveDataDialogGetStatus() {
+ 	PRINT_NAME();
++	BC5_DIALOG_TRACE("%s", "");
+ 
+ 	return g_save_status;
+ }
+ 
+ int KYTY_SYSV_ABI SaveDataDialogUpdateStatus() {
+ 	PRINT_NAME();
++	BC5_DIALOG_TRACE("status %d mode %d", g_save_status, g_save_mode);
++
++	// BC5 (experiment 0158): the second title opens the delete progress dialog (mode 5, type 3),
++	// expects it to run while it deletes the save, and closes it itself; a stand-in that reports
++	// the dialog finished at once made the title reopen it forever on its "DELETING SAVE DATA"
++	// screen (F205). Message dialogs end at the first poll, as if the user pressed OK.
++	if (g_save_status == SAVE_STATUS_RUNNING && g_save_mode != SAVE_MODE_PROGRESS_BAR) {
++		g_save_status = SAVE_STATUS_FINISHED;
++	}
+ 
+ 	return g_save_status;
+ }
+ 
+ int KYTY_SYSV_ABI SaveDataDialogGetResult(void* result) {
+ 	PRINT_NAME();
++	BC5_DIALOG_TRACE("%s", "");
+ 
+ 	if (result != nullptr) {
+ 		auto* r      = static_cast<SaveDataDialogResult*>(result);
+@@ -392,6 +421,7 @@ int KYTY_SYSV_ABI SaveDataDialogGetResult(void* result) {
+ 
+ int KYTY_SYSV_ABI SaveDataDialogOpen(const void* param) {
+ 	PRINT_NAME();
++	BC5_DIALOG_TRACE("%s", "");
+ 
+ 	const auto* p = static_cast<const SaveDataDialogParam*>(param);
+ 	if (p != nullptr) {
+@@ -424,13 +454,15 @@ int KYTY_SYSV_ABI SaveDataDialogOpen(const void* param) {
+ 		}
+ 	}
+ 
+-	g_save_status = SAVE_STATUS_FINISHED;
++	BC5_DIALOG_TRACE("mode %d disp_type %d items %p user_msg %p sys_msg %p prog_bar %p dir \"%s\"", p != nullptr ? p->mode : -1, p != nullptr ? p->disp_type : -1, p != nullptr ? p->items : nullptr, p != nullptr ? p->user_msg_param : nullptr, p != nullptr ? p->sys_msg_param : nullptr, p != nullptr ? p->prog_bar_param : nullptr, g_save_dir_name);
++	g_save_status = SAVE_STATUS_RUNNING;
+ 
+ 	return OK;
+ }
+ 
+ int KYTY_SYSV_ABI SaveDataDialogClose(const void* close_param) {
+ 	PRINT_NAME();
++	BC5_DIALOG_TRACE("%s", "");
+ 
+ 	LOGF("\t close_param = 0x%016" PRIx64 "\n", reinterpret_cast<uint64_t>(close_param));
+ 
+@@ -441,12 +473,14 @@ int KYTY_SYSV_ABI SaveDataDialogClose(const void* close_param) {
+ 
+ int KYTY_SYSV_ABI SaveDataDialogIsReadyToDisplay() {
+ 	PRINT_NAME();
++	BC5_DIALOG_TRACE("%s", "");
+ 
+ 	return 1;
+ }
+ 
+ int KYTY_SYSV_ABI SaveDataDialogTerminate() {
+ 	PRINT_NAME();
++	BC5_DIALOG_TRACE("%s", "");
+ 
+ 	g_save_status      = SAVE_STATUS_NONE;
+ 	g_save_mode        = 0;
+@@ -458,6 +492,7 @@ int KYTY_SYSV_ABI SaveDataDialogTerminate() {
+ 
+ int KYTY_SYSV_ABI SaveDataDialogProgressBarInc(int target, uint32_t delta) {
+ 	PRINT_NAME();
++	BC5_DIALOG_TRACE("%s", "");
+ 
+ 	LOGF("\t target = %d\n"
+ 	     "\t delta  = %u\n",
+@@ -468,6 +503,7 @@ int KYTY_SYSV_ABI SaveDataDialogProgressBarInc(int target, uint32_t delta) {
+ 
+ int KYTY_SYSV_ABI SaveDataDialogProgressBarSetValue(int target, uint32_t rate) {
+ 	PRINT_NAME();
++	BC5_DIALOG_TRACE("%s", "");
+ 
+ 	LOGF("\t target = %d\n"
+ 	     "\t rate   = %u\n",
+@@ -484,9 +520,11 @@ LIB_NAME("MsgDialog.native", "MsgDialog");
+ 
+ constexpr int STATUS_NONE        = 0;
+ constexpr int STATUS_INITIALIZED = 1;
++constexpr int STATUS_RUNNING     = 2;
+ constexpr int STATUS_FINISHED    = 3;
+ constexpr int RESULT_OK          = 0;
+ constexpr int BUTTON_ID_OK       = 1;
++constexpr int MODE_PROGRESS_BAR  = 2; // BC5 (experiment 0158): runs until the title closes it
+ 
+ struct MsgDialogParam {
+ 	uint8_t  base_param[48];
+@@ -513,6 +551,7 @@ static int g_mode   = 0;
+ 
+ int KYTY_SYSV_ABI MsgDialogInitialize() {
+ 	PRINT_NAME();
++	BC5_DIALOG_TRACE("%s", "");
+ 
+ 	g_status = STATUS_INITIALIZED;
+ 	g_mode   = 0;
+@@ -522,6 +561,7 @@ int KYTY_SYSV_ABI MsgDialogInitialize() {
+ 
+ int KYTY_SYSV_ABI MsgDialogOpen(const void* param) {
+ 	PRINT_NAME();
++	BC5_DIALOG_TRACE("%s", "");
+ 
+ 	const auto* p = static_cast<const MsgDialogParam*>(param);
+ 	if (p != nullptr) {
+@@ -537,25 +577,35 @@ int KYTY_SYSV_ABI MsgDialogOpen(const void* param) {
+ 		     reinterpret_cast<uint64_t>(p->sys_msg_param), p->user_id);
+ 	}
+ 
+-	g_status = STATUS_FINISHED;
++	BC5_DIALOG_TRACE("mode %d user_msg %p prog_bar %p sys_msg %p", p != nullptr ? p->mode : -1, p != nullptr ? p->user_msg_param : nullptr, p != nullptr ? p->prog_bar_param : nullptr, p != nullptr ? p->sys_msg_param : nullptr);
++	g_status = STATUS_RUNNING;
+ 
+ 	return OK;
+ }
+ 
+ int KYTY_SYSV_ABI MsgDialogUpdateStatus() {
+ 	PRINT_NAME();
++	BC5_DIALOG_TRACE("status %d mode %d", g_status, g_mode);
++
++	// BC5 (experiment 0158): as SaveDataDialog — a progress bar runs until closed, a message is
++	// answered at the first poll.
++	if (g_status == STATUS_RUNNING && g_mode != MODE_PROGRESS_BAR) {
++		g_status = STATUS_FINISHED;
++	}
+ 
+ 	return g_status;
+ }
+ 
+ int KYTY_SYSV_ABI MsgDialogGetStatus() {
+ 	PRINT_NAME();
++	BC5_DIALOG_TRACE("%s", "");
+ 
+ 	return g_status;
+ }
+ 
+ int KYTY_SYSV_ABI MsgDialogGetResult(void* result) {
+ 	PRINT_NAME();
++	BC5_DIALOG_TRACE("%s", "");
+ 
+ 	if (result != nullptr) {
+ 		auto* r      = static_cast<MsgDialogResult*>(result);
+@@ -569,6 +619,7 @@ int KYTY_SYSV_ABI MsgDialogGetResult(void* result) {
+ 
+ int KYTY_SYSV_ABI MsgDialogTerminate() {
+ 	PRINT_NAME();
++	BC5_DIALOG_TRACE("%s", "");
+ 
+ 	g_status = STATUS_NONE;
+ 	g_mode   = 0;
+@@ -578,6 +629,7 @@ int KYTY_SYSV_ABI MsgDialogTerminate() {
+ 
+ int KYTY_SYSV_ABI MsgDialogClose() {
+ 	PRINT_NAME();
++	BC5_DIALOG_TRACE("%s", "");
+ 
+ 	g_status = STATUS_FINISHED;
+ 
+@@ -586,6 +638,7 @@ int KYTY_SYSV_ABI MsgDialogClose() {
+ 
+ int KYTY_SYSV_ABI MsgDialogProgressBarInc(int target, uint32_t delta) {
+ 	PRINT_NAME();
++	BC5_DIALOG_TRACE("%s", "");
+ 
+ 	LOGF("\t target = %d\n"
+ 	     "\t delta  = %u\n",
+@@ -596,6 +649,7 @@ int KYTY_SYSV_ABI MsgDialogProgressBarInc(int target, uint32_t delta) {
+ 
+ int KYTY_SYSV_ABI MsgDialogProgressBarSetValue(int target, uint32_t rate) {
+ 	PRINT_NAME();
++	BC5_DIALOG_TRACE("%s", "");
+ 
+ 	LOGF("\t target = %d\n"
+ 	     "\t rate   = %u\n",
+@@ -606,6 +660,7 @@ int KYTY_SYSV_ABI MsgDialogProgressBarSetValue(int target, uint32_t rate) {
+ 
+ int KYTY_SYSV_ABI MsgDialogProgressBarSetMsg(int target, const char* msg) {
+ 	PRINT_NAME();
++	BC5_DIALOG_TRACE("%s", "");
+ 
+ 	LOGF("\t target = %d\n"
+ 	     "\t msg    = 0x%016" PRIx64 "\n",
 diff --git a/src/libs/libAmpr.cpp b/src/libs/libAmpr.cpp
 index 073361d..46f9c74 100644
 --- a/src/libs/libAmpr.cpp
@@ -17448,10 +17685,10 @@ index fda2623..db5e40e 100644
  	return OK;
  }
 diff --git a/src/libs/libSaveData.cpp b/src/libs/libSaveData.cpp
-index 08aa121..c0acf56 100644
+index 08aa121..e5fff47 100644
 --- a/src/libs/libSaveData.cpp
 +++ b/src/libs/libSaveData.cpp
-@@ -13,13 +13,24 @@
+@@ -13,13 +13,26 @@
  #include "loader/systemContent.h"
  
  #include <algorithm>
@@ -17463,6 +17700,8 @@ index 08aa121..c0acf56 100644
 +#include <filesystem>
 +#include <mutex>
 +#include <string>
++#include <filesystem>
++#include <system_error>
 +#include <sys/stat.h>
  #include <vector>
  
@@ -17476,7 +17715,7 @@ index 08aa121..c0acf56 100644
  
  namespace SaveData {
  
-@@ -294,6 +305,25 @@ static bool dir_name_match(const char* str, const char* pattern) {
+@@ -294,6 +307,25 @@ static bool dir_name_match(const char* str, const char* pattern) {
  	return *str == '\0' && *pattern == '\0';
  }
  
@@ -17502,7 +17741,7 @@ index 08aa121..c0acf56 100644
  static int mount_save_data(int slot, std::string_view dir_name, const std::string& directory,
                             uint32_t status, SaveDataMountResult* result) {
  	const std::string mount_point = SaveDataMountSlots::MountPoint(static_cast<size_t>(slot));
-@@ -408,7 +438,8 @@ int KYTY_SYSV_ABI SaveDataDirNameSearch(const SaveDataDirNameSearchCond* cond,
+@@ -408,7 +440,8 @@ int KYTY_SYSV_ABI SaveDataDirNameSearch(const SaveDataDirNameSearchCond* cond,
  		std::snprintf(result->dir_names[i].data, sizeof(result->dir_names[i].data), "%s",
  		              dir_list[i].c_str());
  		if (result->params != nullptr) {
@@ -17512,7 +17751,7 @@ index 08aa121..c0acf56 100644
  		}
  		if (result->infos != nullptr) {
  			result->infos[i]             = {};
-@@ -484,6 +515,67 @@ int KYTY_SYSV_ABI SaveDataMount3(const SaveDataMount3* mount, SaveDataMountResul
+@@ -484,6 +517,67 @@ int KYTY_SYSV_ABI SaveDataMount3(const SaveDataMount3* mount, SaveDataMountResul
  	return mount_save_data(slot, dir_name, mount_dir, created ? 1u : 0u, mount_result);
  }
  
@@ -17580,7 +17819,7 @@ index 08aa121..c0acf56 100644
  int KYTY_SYSV_ABI SaveDataSetupSaveDataMemory2(const SaveDataMemorySetup2* setup_param,
                                                 SaveDataMemorySetupResult*  result) {
  	PRINT_NAME();
-@@ -500,6 +592,8 @@ int KYTY_SYSV_ABI SaveDataSetupSaveDataMemory2(const SaveDataMemorySetup2* setup
+@@ -500,6 +594,8 @@ int KYTY_SYSV_ABI SaveDataSetupSaveDataMemory2(const SaveDataMemorySetup2* setup
  	     setup_param->option, setup_param->user_id, static_cast<uint64_t>(setup_param->memory_size),
  	     static_cast<uint64_t>(setup_param->icon_memory_size), setup_param->slot_id);
  
@@ -17589,7 +17828,7 @@ index 08aa121..c0acf56 100644
  	if (setup_param->memory_size > g_save_data_memory.size()) {
  		g_save_data_memory.resize(setup_param->memory_size);
  	}
-@@ -528,6 +622,8 @@ int KYTY_SYSV_ABI SaveDataGetSaveDataMemory2(SaveDataMemoryGet2* get_param) {
+@@ -528,6 +624,8 @@ int KYTY_SYSV_ABI SaveDataGetSaveDataMemory2(SaveDataMemoryGet2* get_param) {
  	     reinterpret_cast<uint64_t>(get_param->param), reinterpret_cast<uint64_t>(get_param->icon),
  	     get_param->slot_id);
  
@@ -17598,7 +17837,7 @@ index 08aa121..c0acf56 100644
  	if (get_param->data != nullptr) {
  		auto* data = get_param->data;
  		if (data->buf == nullptr || data->offset < 0) {
-@@ -567,6 +663,8 @@ int KYTY_SYSV_ABI SaveDataSetSaveDataMemory2(const SaveDataMemorySet2* set_param
+@@ -567,6 +665,8 @@ int KYTY_SYSV_ABI SaveDataSetSaveDataMemory2(const SaveDataMemorySet2* set_param
  	     reinterpret_cast<uint64_t>(set_param->param), reinterpret_cast<uint64_t>(set_param->icon),
  	     set_param->data_num, set_param->slot_id);
  
@@ -17607,7 +17846,7 @@ index 08aa121..c0acf56 100644
  	const uint32_t data_num = (set_param->data_num == 0 ? 1 : set_param->data_num);
  	if (set_param->data != nullptr) {
  		for (uint32_t i = 0; i < data_num; i++) {
-@@ -581,6 +679,7 @@ int KYTY_SYSV_ABI SaveDataSetSaveDataMemory2(const SaveDataMemorySet2* set_param
+@@ -581,6 +681,7 @@ int KYTY_SYSV_ABI SaveDataSetSaveDataMemory2(const SaveDataMemorySet2* set_param
  			}
  			std::memcpy(g_save_data_memory.data() + offset, data.buf, data.buf_size);
  		}
@@ -17615,7 +17854,31 @@ index 08aa121..c0acf56 100644
  	}
  
  	return OK;
-@@ -722,6 +821,19 @@ int KYTY_SYSV_ABI SaveDataGetParam(const SaveDataMountPoint* mount_point, uint32
+@@ -697,8 +798,21 @@ int KYTY_SYSV_ABI SaveDataDelete(const SaveDataDelete* del) {
+ 
+ 	std::string dir =
+ 	    std::string(SAVE_DATA_DIR) + "/" + get_title_id() + "/" + std::string(del->dir_name->data);
+-	if (Common::File::IsDirectoryExisting(dir)) {
+-		Common::File::DeleteDirectory(dir);
++	if (g_bc5_save_trace) {
++		std::fprintf(stderr, "save trace: SaveDataDelete %s exists %d\n", dir.c_str(),
++		             Common::File::IsDirectoryExisting(dir) ? 1 : 0);
++	}
++	// BC5 (experiment 0158): a save directory holds files, so it goes with std::filesystem's
++	// recursive remove; the host's File::DeleteDirectory is rmdir(2) and left the title's
++	// deleted slots on disk, back in the list at the next start (F205).
++	std::error_code ec;
++	const auto      removed = std::filesystem::remove_all(dir, ec);
++	if (g_bc5_save_trace) {
++		std::fprintf(stderr, "save trace: SaveDataDelete removed %ju entries, error %d\n",
++		             static_cast<uintmax_t>(removed), ec.value());
++	}
++	if (ec) {
++		return SAVE_DATA_ERROR_INTERNAL;
+ 	}
+ 
+ 	return OK;
+@@ -722,6 +836,19 @@ int KYTY_SYSV_ABI SaveDataGetParam(const SaveDataMountPoint* mount_point, uint32
  			return SAVE_DATA_ERROR_PARAMETER;
  		}
  		std::memset(param_buf, 0, sizeof(SaveDataParam));
@@ -17635,7 +17898,7 @@ index 08aa121..c0acf56 100644
  		if (got_size != nullptr) {
  			*got_size = sizeof(SaveDataParam);
  		}
-@@ -777,6 +889,16 @@ int KYTY_SYSV_ABI SaveDataSyncSaveDataMemory(const void* sync_param) {
+@@ -777,6 +904,16 @@ int KYTY_SYSV_ABI SaveDataSyncSaveDataMemory(const void* sync_param) {
  
  int KYTY_SYSV_ABI SaveDataGetEventResult(const void* event_param, SaveDataEvent* event) {
  	PRINT_NAME();
@@ -17652,7 +17915,7 @@ index 08aa121..c0acf56 100644
  
  	LOGF("\t event_param = 0x%016" PRIx64 "\n"
  	     "\t event       = 0x%016" PRIx64 "\n",
-@@ -885,7 +1007,27 @@ namespace LibSaveDataNative {
+@@ -885,7 +1022,27 @@ namespace LibSaveDataNative {
  
  LIB_VERSION("SaveData_native", 1, "SaveData_native", 1, 1);
  
