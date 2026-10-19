@@ -231,3 +231,19 @@ experiment could do.
   before every draw and dispatch, the state the buffer and its register tables set (`VGT_SHADER_STAGES_EN`,
   `GE_NGG_SUBGRP_CNTL`, `VGT_GS_ONCHIP_CNTL`, `VGT_DRAW_PAYLOAD_CNTL`, primitive/index type, instance count,
   `GE_CNTL`, `GE_PC_ALLOC`, the GS/ES/PS/CS programs), for the next hang.
+- *The maintainer's third hang, 13:01 (probe with the per-draw state):* both timed-out graphics buffers
+  (3058 dwords, same layout) hold **exactly one draw**, and it is the same one: a non-indexed
+  `DRAW_INDIRECT_MULTI` of **one point** (arguments {1, 1, 0, …}) in **GS fast-launch mode** —
+  `VGT_SHADER_STAGES_EN` 0x482030 (ES real, GS on, PRIMGEN, GS_FAST_LAUNCH 1, GS_W32), `GE_NGG_SUBGRP_CNTL`
+  0x40 (PRIM_AMP_FACTOR 64), `VGT_GS_ONCHIP_CNTL` 0x400801, `VGT_PRIMITIVE_TYPE` 1 (points), `GE_CNTL`
+  0x201 (one primitive, one vertex per group), `GE_PC_ALLOC` 0, index base 0, the ES program
+  0x11d0132d00 (it fetches its own work descriptors through two `buffer_load_format_x` lookups and
+  `s_trap`s on bad ones), the pixel shader 0x11d1d0e500 — the engine's "primitive shader" path. The
+  same configuration (GE_CNTL 0x201 etc.) runs from journal t 44.6 s on in every run without a fault,
+  so it is this draw's data (one amplified point to draw) that sends the geometry engine to address 0.
+  Linux drivers never use GS fast launch on gfx10 (RADV only uses mode 2 for mesh shaders on gfx10.3),
+  so whatever the engine fetches for it from its own buffers (the WD index/position/sideband buffers,
+  all 0 here, programmed by the console's system) has never been needed on this host before. Test
+  (the 13:11 binary, `BC5_DIRECT_DROP_FAST_LAUNCH_POINTS=1` in both pkg launchers, a diagnostic): drop
+  non-indexed draws whose tracked state is GS_FAST_LAUNCH ≠ 0, points, GE_CNTL 0x201 — does the
+  maintainer's route then play past the night scene?

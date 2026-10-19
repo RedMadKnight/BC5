@@ -6765,10 +6765,10 @@ index fe4b332..5f8808d 100644
  
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..7ba5c54
+index 0000000..f4fdcd5
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,8417 @@
+@@ -0,0 +1,8448 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -13441,6 +13441,7 @@ index 0000000..7ba5c54
 +		uint64_t pgm = 0;
 +		uint64_t ud01 = 0; // experiment 0050: COMPUTE_USER_DATA_0/1
 +		uint32_t ud[16] = {}; // experiment 0059: COMPUTE_USER_DATA_0..15 as this buffer sets them
++		uint32_t fl_stages = 0, fl_prim = 0, fl_gecntl = 0; // experiment 0160: VGT_SHADER_STAGES_EN, VGT_PRIMITIVE_TYPE, GE_CNTL as this buffer sets them
 +		static const bool no_carry = std::getenv("BC5_DIRECT_NO_CARRY") != nullptr; // experiment 0161
 +		CarriedCpState&   carried  = g_carried[compute_ib ? 1 : 0];
 +		if (!no_carry) {
@@ -13538,6 +13539,36 @@ index 0000000..7ba5c54
 +			// LOAD_SH_REG_INDEX tables in guest memory (the second title restores its compute state that
 +			// way after a mid-buffer CLEAR_STATE), so both feed the program and user-data tracking;
 +			// before, BC5_DIRECT_SKIP_PGM and the dispatch journal missed the loaded ones.
++			// Experiment 0160 (F208): the draw that makes the geometry engine read address 0 is a non-indexed
++			// DRAW_INDIRECT_MULTI of one point in GS fast-launch mode (VGT_SHADER_STAGES_EN GS_FAST_LAUNCH != 0,
++			// VGT_PRIMITIVE_TYPE 1, GE_CNTL 0x201, GE_NGG_SUBGRP_CNTL 0x40 — the maintainer's 13:01 hang, probe).
++			// BC5_DIRECT_DROP_FAST_LAUNCH_POINTS=1 drops such draws (diagnostic): the registers are tracked from
++			// SET_CONTEXT_REG / SET_UCONFIG_REG(_INDEX) / LOAD_*_REG_INDEX tables as this buffer sets them.
++			auto fl_reg = [&](uint32_t space, uint32_t r, uint32_t v) {
++				if (space == 0 && r == 0x2d5u) fl_stages = v;
++				if (space == 1 && r == 0x242u) fl_prim = v;
++				if (space == 1 && r == 0x25bu) fl_gecntl = v;
++			};
++			if (type == 3 && op == 0x69 && len >= 3) { const uint32_t f = ib[q + 1] & 0xffffu; for (uint32_t k = 0; k + 2 < len; k++) fl_reg(0, f + k, ib[q + 2 + k]); }
++			if (type == 3 && (op == 0x79 || op == 0x7a) && len >= 3) { const uint32_t f = ib[q + 1] & 0xffffu; for (uint32_t k = 0; k + 2 < len; k++) fl_reg(1, f + k, ib[q + 2 + k]); }
++			if (type == 3 && (op == 0x9f || op == 0x64) && len >= 5 && (ib[q + 3] >> 31u) != 0) {
++				const uint64_t ta = (ib[q + 1] & ~3u) | (static_cast<uint64_t>(ib[q + 2] & 0xffffu) << 32u);
++				const uint32_t tn = ib[q + 4] & 0x3fffu;
++				if (ta != 0 && tn != 0 && tn <= 4096 && covered_sorted(*maps_p, ta, static_cast<uint64_t>(tn) * 8)) {
++					const auto* t = reinterpret_cast<const volatile uint32_t*>(ta);
++					for (uint32_t k = 0; k < tn; k++) fl_reg(op == 0x9f ? 0 : 1, t[2 * k] & 0xffffu, t[2 * k + 1]);
++				}
++			}
++			{
++				static const bool drop_fl = std::getenv("BC5_DIRECT_DROP_FAST_LAUNCH_POINTS") != nullptr;
++				if (drop_fl && type == 3 && (op == 0x2c || op == 0x24) && (fl_stages & 0x180000u) != 0 && fl_prim == 1 && fl_gecntl == 0x201u) {
++					static std::atomic<uint64_t> n_fl {0};
++					if ((n_fl++ & 0x3fu) == 0) journal("  fast-launch point draw op %02x at %u (stages %08x ge_cntl %08x) dropped (%" PRIu64 " so far)\n", op, q, fl_stages, fl_gecntl, n_fl.load());
++					opt.drop_offsets.push_back(q);
++					q += len;
++					continue;
++				}
++			}
 +			auto sh_reg = [&](uint32_t r, uint32_t v) {
 +				if (r == 0x20cu) pgm = (pgm & ~0xffffffff00ull) | (static_cast<uint64_t>(v) << 8u);
 +				if (r == 0x20du) pgm = (pgm & 0xffffffff00ull) | (static_cast<uint64_t>(v & 0xffu) << 40u);
