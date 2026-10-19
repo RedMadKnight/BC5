@@ -16870,7 +16870,7 @@ index 51c3a0e..ecd210f 100644
  	InitLibKernel_1_Mem(s);
  	InitLibKernel_1_Equeue(s);
 diff --git a/src/libs/libNet.cpp b/src/libs/libNet.cpp
-index 1b9db8a..b7ea9cd 100644
+index 1b9db8a..de42235 100644
 --- a/src/libs/libNet.cpp
 +++ b/src/libs/libNet.cpp
 @@ -1414,9 +1414,15 @@ LIB_DEFINE(InitNet_1_NpManager) {
@@ -16949,6 +16949,65 @@ index 1b9db8a..b7ea9cd 100644
  	LIB_FUNC("jO8DM8oyego", LibNpEntitlementAccess::NpEntitlementAccessInitialize);
  	LIB_FUNC("lPDO62PpJIA", LibNpEntitlementAccess::NpEntitlementAccessGetSkuFlag);
  	LIB_FUNC("TFyU+KFBv54",
+@@ -2209,6 +2265,45 @@ static int KYTY_SYSV_ABI NpTrophy2DestroyContext(int context) {
+ 	return 0;
+ }
+ 
++// BC5: three exports KytyPlus lacked, re-implemented after AnyPS5
++// core/libs/prx/libSceNpTrophy2/src/Context.cpp @ 7f596df (GPL-2.0), review item 3: the trophy
++// list "shows" without a UI, the unlock callback (never called here either) unregisters, and a
++// reward icon is not supported, which the title is told with the icon error the other icon
++// getters of this table answer.
++static int KYTY_SYSV_ABI NpTrophy2ShowTrophyList(int context) {
++	PRINT_NAME();
++
++	LOGF("\t context = %d (no trophy UI; reported as shown)\n", context);
++
++	return 0;
++}
++
++static int KYTY_SYSV_ABI NpTrophy2UnregisterUnlockCallback() {
++	PRINT_NAME();
++
++	return 0;
++}
++
++static int KYTY_SYSV_ABI NpTrophy2GetRewardIcon(int context, int handle, int reward_id, void* buffer,
++                                                size_t* size) {
++	PRINT_NAME();
++
++	LOGF("\t context   = %d\n"
++	     "\t handle    = %d\n"
++	     "\t reward_id = %d\n"
++	     "\t buffer    = 0x%016" PRIx64 "\n"
++	     "\t size      = 0x%016" PRIx64 "\n"
++	     "\t reward icons are not supported\n",
++	     context, handle, reward_id, reinterpret_cast<uint64_t>(buffer),
++	     reinterpret_cast<uint64_t>(size));
++
++	if (size != nullptr) {
++		*size = 0;
++	}
++
++	return NP_TROPHY2_ERROR_ICON_FILE_NOT_FOUND;
++}
++
+ LIB_DEFINE(InitNet_1_NpTrophy2) {
+ 	LIB_FUNC("Bagshr7OQ6Q", LibNpTrophy2::NpTrophy2CreateContext);
+ 	LIB_FUNC("Gz1rmUZpROM", LibNpTrophy2::NpTrophy2CreateHandle);
+@@ -2225,6 +2320,12 @@ LIB_DEFINE(InitNet_1_NpTrophy2) {
+ 	LIB_FUNC("fYapWA9xVmA", LibNpTrophy2::NpTrophy2AbortHandle);
+ 	LIB_FUNC("d8P11CI40KE", LibNpTrophy2::NpTrophy2DestroyHandle);
+ 	LIB_FUNC("sysY2FHYff4", LibNpTrophy2::NpTrophy2DestroyContext);
++	// BC5: NIDs computed from the names AnyPS5 exports in
++	// core/libs/prx/libSceNpTrophy2/src/Context.cpp, with the NID scheme of its
++	// core/libs/nid/src/NidCompute.cpp @ 7f596df (GPL-2.0); the scheme reproduces the NIDs above.
++	LIB_FUNC("EHQEDVXZ0TI", LibNpTrophy2::NpTrophy2ShowTrophyList);
++	LIB_FUNC("wVqxM58sIKs", LibNpTrophy2::NpTrophy2UnregisterUnlockCallback);
++	LIB_FUNC("BsE-m8JxIOg", LibNpTrophy2::NpTrophy2GetRewardIcon);
+ }
+ 
+ } // namespace LibNpTrophy2
 diff --git a/src/libs/libNp.cpp b/src/libs/libNp.cpp
 index a0aee52..7951249 100644
 --- a/src/libs/libNp.cpp
