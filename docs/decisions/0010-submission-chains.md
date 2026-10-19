@@ -3,9 +3,7 @@
 **Status:** proposed (2026-10-19), measured in experiment 0163 (F213: the ring thread's buffers
 chain, the game thread's do not — one `dcb` per ioctl, each with `COND_EXEC`), extended the same
 day with §A (a `COND_EXEC` closes nothing any more) and §B (a chain across the game thread's
-ioctls), measured in experiment 0165 (F218: with `=2` the second title's night scene runs at 45
-instead of 33 flips/s, 1,658 instead of 4,463 kernel submissions a second, the render thread
-93 → 83 %). Off by default (`BC5_DIRECT_CHAIN=1`: the chains of one
+ioctls), measured in experiment 0165. Off by default (`BC5_DIRECT_CHAIN=1`: the chains of one
 call; `=2`: also across the game thread's ioctls, §B); nothing of it is in the play settings until
 the experiments have a verdict. Hard rule 5 applies: it changes nothing without the direct path's
 own switches.

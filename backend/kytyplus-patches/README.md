@@ -152,13 +152,20 @@ triangle, options) or shakes the pad at the given seconds after start, for unatt
 `KYTY_BC5_INPUT_CMD=<file>` drives the pad from a script while the title runs (experiment 0061):
 a thread tails the file every 20 ms and runs each new line in order: `press <button> [ms]`,
 `hold <button>`, `release <button>`, `stick <l|r> <x> <y> [ms]` (0–255, 128 = centre; with `ms`
-it re-centres afterwards), `trigger <l2|r2> <0..255> [ms]`, `shake`, `wait <ms>`, `reset`.
+it re-centres afterwards), `trigger <l2|r2> <0..255> [ms]`, `shake`, `wait <ms>`, `reset`,
+`pause` / `resume` (the window's pause, experiment 0166).
 Buttons: cross circle square triangle options up down left right l1 r1 l2 r2 l3 r3 touchpad.
 After each line, `<file>.done` holds the number of lines run.
 `KYTY_BC5_INPUT_RECORD=<file>` writes what the real pad does in the same format (`hold`/`release`,
 `stick`, `trigger`, `wait` lines between them; stick moves at most every 30 ms and only past a
 change of 6), so a route played once by hand can be replayed through `KYTY_BC5_INPUT_CMD`. The
 scripted input is not recorded.
+`KYTY_BC5_AUDIO_TRACE=1` prints once a second, per output port, the frames pushed against wall time
+(the rate the title's audio clock runs at), the time the audio thread was held on the SDL queue
+and the queue's depth (experiment 0162); `KYTY_BC5_AUDIO_DUMP=<dir>` writes the first 40 s of each
+port's PCM before and after the SDL conversion as raw files (experiment 0166, `raw2wav.py` there);
+`KYTY_BC5_VIDEOOUT_TRACE=1` prints the flip rate and event registrations and, once a second, the
+flips by mode and the status polls (experiment 0162).
 `KYTY_BC5_SAVEDATA_DIR=<dir>` puts the save data memory file (`<title>/sce_sdmemory/memory.dat`)
 under that directory instead of `_SaveData` in the working directory, so that runs started in
 different directories share one save.

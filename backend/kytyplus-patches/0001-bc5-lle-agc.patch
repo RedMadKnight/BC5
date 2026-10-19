@@ -3792,7 +3792,7 @@ index 845bfe3..686e380 100644
  		{
  			const auto present_end = std::chrono::steady_clock::now();
 diff --git a/src/graphics/presentation/window/window.cpp b/src/graphics/presentation/window/window.cpp
-index c729a98..cc6132f 100644
+index c729a98..686c97e 100644
 --- a/src/graphics/presentation/window/window.cpp
 +++ b/src/graphics/presentation/window/window.cpp
 @@ -31,7 +31,9 @@
@@ -3813,16 +3813,18 @@ index c729a98..cc6132f 100644
  #include <algorithm>
  #include <cstdio>
  #include <cstdlib>
-@@ -57,7 +60,7 @@
+@@ -57,7 +60,9 @@
  // IWYU pragma: no_include <intrin.h>
  
  #define KYTY_ENABLE_DEBUG_PRINTF
 -#define KYTY_DBG_INPUT
 +// #define KYTY_DBG_INPUT // BC5: off since 2026-10-07 (250 lines a second from the pad); KYTY_BC5_INPUT_TRACE=1 instead
++
++#include "kernel/pthread.h" // BC5 (experiment 0166): KernelPauseClocks
  
  namespace Libs::Graphics {
  
-@@ -193,6 +196,7 @@ constexpr uint32_t KYTY_SDL_BUTTON_X2MASK = SDL_BUTTON_X2MASK; // NOLINT(hicpp-s
+@@ -193,6 +198,7 @@ constexpr uint32_t KYTY_SDL_BUTTON_X2MASK = SDL_BUTTON_X2MASK; // NOLINT(hicpp-s
  namespace {
  
  std::unique_ptr<WindowContext> g_window;
@@ -3830,14 +3832,22 @@ index c729a98..cc6132f 100644
  
  } // namespace
  
-@@ -232,9 +236,23 @@ static void GameEventKeyboard(WindowLoopState& game, const EventKeyboard& key) {
+@@ -205,6 +211,8 @@ static void SetPause(WindowLoopState& game, bool flag) {
+ 	LOGF("Pause: %s\n", flag ? "true" : "false");
+ 
+ 	game.paused.store(flag, std::memory_order_release);
++	LibKernel::KernelPauseClocks(flag); // BC5 (experiment 0166): the title's clocks stop with it
++	std::fprintf(stderr, "window: %s at %.3f s\n", flag ? "paused" : "resumed", static_cast<double>(LibKernel::KernelGetProcessTime()) / 1e6);
+ }
+ 
+ static void GameEventQuit(WindowLoopState& game) {
+@@ -232,9 +240,23 @@ static void GameEventKeyboard(WindowLoopState& game, const EventKeyboard& key) {
  		switch (key.key_code) {
  			case SDLK_ESCAPE: game.need_exit = true; break;
  			case SDLK_SPACE: SetPause(game, !game.paused.load(std::memory_order_acquire)); break;
 -			case SDLK_F1:
 +			case SDLK_F2: // BC5: the settings overlay
- 				if (!key.repeat) {
--					RenderDocRequestCapture();
++				if (!key.repeat) {
 +					SettingsOverlayToggle();
 +				}
 +				break;
@@ -3847,7 +3857,8 @@ index c729a98..cc6132f 100644
 +				}
 +				break;
 +			case SDLK_F1: // BC5 (ADR 0011): the menu bar; RenderDoc's capture only with --rd
-+				if (!key.repeat) {
+ 				if (!key.repeat) {
+-					RenderDocRequestCapture();
 +					if (Config::RenderDocEnabled()) {
 +						RenderDocRequestCapture();
 +					} else {
@@ -3856,7 +3867,7 @@ index c729a98..cc6132f 100644
  				}
  				break;
  			default: break;
-@@ -245,6 +263,12 @@ static void GameEventKeyboard(WindowLoopState& game, const EventKeyboard& key) {
+@@ -245,6 +267,12 @@ static void GameEventKeyboard(WindowLoopState& game, const EventKeyboard& key) {
  
  	if ((key.down || key.up) && !key.repeat) {
  		HostInputKey(key.key_code, key.down);
@@ -3869,7 +3880,7 @@ index c729a98..cc6132f 100644
  	}
  }
  
-@@ -328,12 +352,24 @@ static void GameEventController([[maybe_unused]] const EventController& f) {
+@@ -328,12 +356,24 @@ static void GameEventController([[maybe_unused]] const EventController& f) {
  			if (joy != nullptr) {
  				LOGF("Controller opened as raw joystick: %s\n",
  				     SDL_JoystickName(joy));
@@ -3895,7 +3906,7 @@ index c729a98..cc6132f 100644
  	}
  
  	if (f.removed) {
-@@ -343,19 +379,38 @@ static void GameEventController([[maybe_unused]] const EventController& f) {
+@@ -343,19 +383,38 @@ static void GameEventController([[maybe_unused]] const EventController& f) {
  
  	if (f.down || f.up) {
  		const auto button = ControllerButtonToPadButton(f.button);
@@ -3936,7 +3947,7 @@ index c729a98..cc6132f 100644
  	}
  }
  
-@@ -486,9 +541,20 @@ void WindowContext::ProcessDisplayEvent(const SDL_DisplayEvent& display) {
+@@ -486,9 +545,20 @@ void WindowContext::ProcessDisplayEvent(const SDL_DisplayEvent& display) {
  }
  
  void WindowContext::ProcessEvent(double time_s) {
@@ -3957,7 +3968,7 @@ index c729a98..cc6132f 100644
  	if (ProcessImeInput(*event)) {
  		return;
  	}
-@@ -635,6 +701,17 @@ void WindowContext::ProcessEvent(double time_s) {
+@@ -635,6 +705,17 @@ void WindowContext::ProcessEvent(double time_s) {
  			break;
  		}
  
@@ -3975,7 +3986,7 @@ index c729a98..cc6132f 100644
  		case SDL_CONTROLLERAXISMOTION: {
  			EventController c {};
  
-@@ -717,6 +794,11 @@ void WindowContext::ProcessEvent(double time_s) {
+@@ -717,6 +798,11 @@ void WindowContext::ProcessEvent(double time_s) {
  			    SDL_CONTROLLER_AXIS_TRIGGERLEFT,
  			    SDL_CONTROLLER_AXIS_TRIGGERRIGHT,
  			};
@@ -3987,7 +3998,7 @@ index c729a98..cc6132f 100644
  			EventController c {};
  			c.id         = event->jaxis.which;
  			c.axis_id    = (event->jaxis.axis < 6) ? axis_map[event->jaxis.axis]
-@@ -730,6 +812,9 @@ void WindowContext::ProcessEvent(double time_s) {
+@@ -730,6 +816,9 @@ void WindowContext::ProcessEvent(double time_s) {
  
  		case SDL_JOYBUTTONDOWN:
  		case SDL_JOYBUTTONUP: {
@@ -3997,7 +4008,7 @@ index c729a98..cc6132f 100644
  			EventController c {};
  			c.id    = event->jbutton.which;
  			c.button = event->jbutton.button;
-@@ -743,17 +828,30 @@ void WindowContext::ProcessEvent(double time_s) {
+@@ -743,17 +832,30 @@ void WindowContext::ProcessEvent(double time_s) {
  		}
  
  		case SDL_JOYDEVICEADDED: {
@@ -4030,7 +4041,7 @@ index c729a98..cc6132f 100644
  			auto* joy = SDL_JoystickFromInstanceID(event->jdevice.which);
  			if (joy != nullptr) {
  				SDL_JoystickClose(joy);
-@@ -856,11 +954,13 @@ static void WindowCreate(WindowContext& context) {
+@@ -856,11 +958,13 @@ static void WindowCreate(WindowContext& context) {
  
  	LOGF("WindowCreate(): width = %d, height = %d\n", width, height);
  
@@ -4045,7 +4056,7 @@ index c729a98..cc6132f 100644
  		SDL_Rect usable{};
  		if (SDL_GetDisplayUsableBounds(0, &usable) == 0 && usable.w > 0 && usable.h > 0) {
  			constexpr int margin_x = 48;
-@@ -886,7 +986,7 @@ static void WindowCreate(WindowContext& context) {
+@@ -886,7 +990,7 @@ static void WindowCreate(WindowContext& context) {
  	}
  
  	uint32_t window_flags = KYTY_SDL_WINDOW_FLAGS;
@@ -4054,7 +4065,7 @@ index c729a98..cc6132f 100644
  		window_flags |= static_cast<uint32_t>(SDL_WINDOW_FULLSCREEN_DESKTOP);
  	} else {
  		// Windowed: allow the user to resize; keep the normal frame decorations.
-@@ -909,7 +1009,8 @@ static void WindowCreate(WindowContext& context) {
+@@ -909,7 +1013,8 @@ static void WindowCreate(WindowContext& context) {
  		EXIT("%s\n", SDL_GetError());
  	}
  
@@ -4064,7 +4075,7 @@ index c729a98..cc6132f 100644
  }
  
  Presenter& WindowInit(uint32_t width, uint32_t height) {
-@@ -941,6 +1042,41 @@ void WindowShutdown() {
+@@ -941,6 +1046,41 @@ void WindowShutdown() {
  	}
  }
  
@@ -4106,7 +4117,7 @@ index c729a98..cc6132f 100644
  static int WindowIconRead(void* user, char* data, int size) {
  	auto*    src        = static_cast<Common::File*>(user);
  	uint32_t bytes_read = 0;
-@@ -1043,6 +1179,12 @@ void WindowContext::UpdateTitle() {
+@@ -1043,6 +1183,12 @@ void WindowContext::UpdateTitle() {
  	const auto frequency = Common::Timer::QueryPerformanceFrequency();
  	frame_num++;
  	fps_frames++;
@@ -4119,7 +4130,7 @@ index c729a98..cc6132f 100644
  	if (now - fps_start >= frequency) {
  		current_fps = static_cast<double>(fps_frames) * static_cast<double>(frequency) /
  		              static_cast<double>(now - fps_start);
-@@ -1051,10 +1193,10 @@ void WindowContext::UpdateTitle() {
+@@ -1051,10 +1197,10 @@ void WindowContext::UpdateTitle() {
  	}
  
  	auto fps = fmt::format(
@@ -5026,7 +5037,7 @@ index 9ea25b0..b922b68 100644
  			EXIT_IF(!AddMappedUnlocked(vaddr, size, MappingType::Private));
  			return true;
 diff --git a/src/kernel/pthread.cpp b/src/kernel/pthread.cpp
-index 5f87e6b..0c28cdf 100644
+index 5f87e6b..20a9e4c 100644
 --- a/src/kernel/pthread.cpp
 +++ b/src/kernel/pthread.cpp
 @@ -1,3 +1,4 @@
@@ -5034,7 +5045,78 @@ index 5f87e6b..0c28cdf 100644
  #include "kernel/pthread.h"
  
  #include "common/assert.h"
-@@ -3238,9 +3239,10 @@ int KYTY_SYSV_ABI PthreadCondWait(PthreadCond* cond, PthreadMutex* mutex) {
+@@ -180,9 +181,61 @@ static uint64_t KernelGetInitialTsc() {
+ 	return initial_tsc;
+ }
+ 
++// BC5 (experiment 0166): the window's pause stops the clocks the title sees - its process time
++// and counter, KernelReadTsc, and the monotonic/uptime clocks - as the console's suspend does for
++// a suspended process; wall time (the realtime clocks) goes on. Before, the title came back from
++// a pause with minutes of elapsed time to catch up on: sound and picture ran fast, then went
++// silent (the maintainer's session of 2026-10-19 10:20, a 380 s pause).
++static std::atomic<uint64_t> g_pause_tsc_total {0}; // ticks of past pauses
++static std::atomic<uint64_t> g_pause_tsc_start {0}; // non-zero while paused
++static uint64_t              KernelPausedTsc() {
++	const uint64_t start = g_pause_tsc_start.load(std::memory_order_acquire);
++	const uint64_t now   = KernelReadTscNative();
++	return g_pause_tsc_total.load(std::memory_order_acquire) + (start != 0 && now > start ? now - start : 0);
++}
++void KernelPauseClocks(bool on) {
++	static std::mutex m;
++	std::lock_guard   lock(m);
++	const uint64_t    now   = KernelReadTscNative();
++	const uint64_t    start = g_pause_tsc_start.load(std::memory_order_acquire);
++	if (on && start == 0) {
++		g_pause_tsc_start.store(now, std::memory_order_release);
++	} else if (!on && start != 0) {
++		g_pause_tsc_total.fetch_add(now > start ? now - start : 0, std::memory_order_acq_rel);
++		g_pause_tsc_start.store(0, std::memory_order_release);
++	}
++}
++static uint64_t KernelPausedNs() {
++	const auto frequency = KernelGetTscFrequencyNative();
++	if (frequency == 0) return 0;
++	return static_cast<uint64_t>((static_cast<long double>(KernelPausedTsc()) * 1000000000.0L) / static_cast<long double>(frequency));
++}
++// Takes the paused time off a monotonic/uptime reading (not the realtime, process-CPU or thread-CPU clocks).
++static void KernelPauseAdjust(KernelClockid clock_id, KernelTimespec* tp) {
++	switch (clock_id) {
++		case KERNEL_CLOCK_MONOTONIC:
++		case KERNEL_CLOCK_UPTIME:
++		case KERNEL_CLOCK_UPTIME_PRECISE:
++		case KERNEL_CLOCK_UPTIME_FAST:
++		case KERNEL_CLOCK_MONOTONIC_PRECISE:
++		case KERNEL_CLOCK_MONOTONIC_FAST:
++		case KERNEL_CLOCK_EXT_NETWORK:
++		case KERNEL_CLOCK_EXT_DEBUG_NETWORK:
++		case KERNEL_CLOCK_EXT_AD_NETWORK:
++		case KERNEL_CLOCK_EXT_RAW_NETWORK: break;
++		default: return;
++	}
++	const uint64_t paused = KernelPausedNs();
++	if (paused == 0) return;
++	uint64_t ns = static_cast<uint64_t>(tp->tv_sec) * 1000000000ull + static_cast<uint64_t>(tp->tv_nsec);
++	ns          = ns > paused ? ns - paused : 0;
++	tp->tv_sec  = static_cast<decltype(tp->tv_sec)>(ns / 1000000000ull);
++	tp->tv_nsec = static_cast<decltype(tp->tv_nsec)>(ns % 1000000000ull);
++}
++
+ static uint64_t KernelGetElapsedTsc() {
+ 	const auto initial_tsc = KernelGetInitialTsc();
+-	const auto current_tsc = KernelReadTscNative();
++	const auto current_tsc = KernelReadTscNative() - KernelPausedTsc(); // BC5 (experiment 0166)
+ 	return current_tsc >= initial_tsc ? current_tsc - initial_tsc : 0;
+ }
+ 
+@@ -1303,6 +1356,7 @@ static bool NativeClockGettime(KernelClockid clock_id, KernelTimespec* tp) {
+ 
+ 	tp->tv_sec  = native_time.tv_sec;
+ 	tp->tv_nsec = native_time.tv_nsec;
++	KernelPauseAdjust(clock_id, tp); // BC5 (experiment 0166)
+ 	return true;
+ }
+ 
+@@ -3238,9 +3292,10 @@ int KYTY_SYSV_ABI PthreadCondWait(PthreadCond* cond, PthreadMutex* mutex) {
  		if (cond_elapsed >= 10 &&
  		    std::chrono::steady_clock::now() - cond_wait_logged > std::chrono::seconds(1)) {
  			cond_wait_logged = std::chrono::steady_clock::now();
@@ -5047,7 +5129,7 @@ index 5f87e6b..0c28cdf 100644
  		}
  	}
  	CondRemoveWaiter(cond_value, thread);
-@@ -3396,6 +3398,19 @@ static void* RunThread(void* arg) {
+@@ -3396,6 +3451,19 @@ static void* RunThread(void* arg) {
  	os_thread_id = GetHostThreadId();
  #endif
  	thread->host_thread_id = os_thread_id;
@@ -5067,7 +5149,7 @@ index 5f87e6b..0c28cdf 100644
  
  	LOGF("\tPthread run begin: %s, id = %d, os_thread_id = %" PRIu64 ", entry = 0x%016" PRIx64
  	     ", arg = 0x%016" PRIx64 ", stack_addr = 0x%016" PRIx64 ", stack_size = %" PRIu64 "\n",
-@@ -3791,6 +3806,10 @@ int KYTY_SYSV_ABI PthreadRename(Pthread thread, const char* name) {
+@@ -3791,6 +3859,10 @@ int KYTY_SYSV_ABI PthreadRename(Pthread thread, const char* name) {
  	}
  
  	thread->name = std::string(name);
@@ -5078,6 +5160,45 @@ index 5f87e6b..0c28cdf 100644
  
  	return OK;
  }
+@@ -3850,6 +3922,7 @@ int KYTY_SYSV_ABI KernelClockGettime(KernelClockid clock_id, KernelTimespec* tp)
+ 
+ 	int special_error = OK;
+ 	if (KernelClockGettimeSpecial(clock_id, tp, &special_error)) {
++		if (special_error == OK) KernelPauseAdjust(clock_id, tp); // BC5 (experiment 0166)
+ 		return special_error;
+ 	}
+ 
+@@ -3867,6 +3940,7 @@ int KYTY_SYSV_ABI KernelClockGettime(KernelClockid clock_id, KernelTimespec* tp)
+ 	tp->tv_nsec = t.tv_nsec;
+ 
+ 	if (result == 0) {
++		KernelPauseAdjust(clock_id, tp); // BC5 (experiment 0166)
+ 		return OK;
+ 	}
+ 	return KERNEL_ERROR_EINVAL;
+@@ -3994,7 +4068,7 @@ uint64_t KYTY_SYSV_ABI KernelGetTscFrequency() {
+ }
+ 
+ uint64_t KYTY_SYSV_ABI KernelReadTsc() {
+-	return KernelReadTscNative();
++	return KernelReadTscNative() - KernelPausedTsc(); // BC5 (experiment 0166)
+ }
+ 
+ uint64_t KYTY_SYSV_ABI KernelGetProcessTime() {
+diff --git a/src/kernel/pthread.h b/src/kernel/pthread.h
+index 3b39581..9b90ca3 100644
+--- a/src/kernel/pthread.h
++++ b/src/kernel/pthread.h
+@@ -201,6 +201,9 @@ uint64_t KYTY_SYSV_ABI KernelReadTsc();
+ uint64_t KYTY_SYSV_ABI KernelGetProcessTime();
+ uint64_t KYTY_SYSV_ABI KernelGetProcessTimeCounter();
+ uint64_t KYTY_SYSV_ABI KernelGetProcessTimeCounterFrequency();
++// BC5 (experiment 0166): the window's pause stops the title's clocks (process time, TSC, the
++// monotonic clocks) while it lasts; wall time goes on.
++void KernelPauseClocks(bool on);
+ 
+ } // namespace LibKernel
+ 
 diff --git a/src/kernel/semaphore.cpp b/src/kernel/semaphore.cpp
 index ed7c35b..9f6635d 100644
 --- a/src/kernel/semaphore.cpp
@@ -5986,10 +6107,10 @@ index e82b93e..6cf1b61 100644
  
  } // namespace Libs::Audio::Ajm
 diff --git a/src/libs/audio.cpp b/src/libs/audio.cpp
-index fe4b332..b6e964e 100644
+index fe4b332..5f8808d 100644
 --- a/src/libs/audio.cpp
 +++ b/src/libs/audio.cpp
-@@ -10,6 +10,7 @@
+@@ -10,16 +10,22 @@
  #include "kernel/pthread.h"
  #include "kernel/semaphore.h"
  #include "libs/audio_internal.h"
@@ -5997,7 +6118,11 @@ index fe4b332..b6e964e 100644
  #include "libs/errno.h"
  #include "libs/libs.h"
  
-@@ -20,6 +21,10 @@
+ #include <algorithm>
+ #include <array>
+ #include <atomic>
++#include <cinttypes>
+ #include <cstdlib>
  #include <cstring>
  #include <limits>
  #include <vector>
@@ -6008,7 +6133,7 @@ index fe4b332..b6e964e 100644
  
  namespace Libs::Audio {
  
-@@ -107,8 +112,28 @@ private:
+@@ -107,8 +113,28 @@ private:
  
  		SDL_AudioDeviceID audio_device = 0;
  		SDL_AudioSpec     audio_spec   = {};
@@ -6037,7 +6162,7 @@ index fe4b332..b6e964e 100644
  	struct PortIn {
  		bool     used            = false;
  		uint32_t type            = 0;
-@@ -132,6 +157,7 @@ private:
+@@ -132,6 +158,7 @@ private:
  	static const void*     PrepareOutputBuffer(const PortOut& port, const void* data,
  	                                           std::vector<uint8_t>* buffer);
  	static bool            QueueSdlAudio(PortOut* port, const void* data, bool blocking);
@@ -6045,7 +6170,7 @@ index fe4b332..b6e964e 100644
  };
  
  static Audio* g_audio = nullptr;
-@@ -236,20 +262,51 @@ bool Audio::OpenSdlDevice(PortOut* port) {
+@@ -236,20 +263,51 @@ bool Audio::OpenSdlDevice(PortOut* port) {
  	desired.samples  = static_cast<Uint16>(port->samples_num);
  	desired.callback = nullptr;
  
@@ -6101,7 +6226,7 @@ index fe4b332..b6e964e 100644
  	return true;
  }
  
-@@ -326,16 +383,157 @@ const void* Audio::PrepareOutputBuffer(const PortOut& port, const void* data,
+@@ -326,16 +384,183 @@ const void* Audio::PrepareOutputBuffer(const PortOut& port, const void* data,
  	return buffer->data();
  }
  
@@ -6257,10 +6382,36 @@ index fe4b332..b6e964e 100644
 +		prepared_size = static_cast<uint32_t>(pad_buffer.size());
 +		src_channels  = static_cast<Uint8>(pad_channels);
 +	}
++
++	// BC5 (experiment 0166, KYTY_BC5_AUDIO_DUMP=<dir>): the first 40 s of each non-pad port as raw
++	// PCM, before the SDL conversion (port<N>-in.raw: the port's format, channels, rate) and as
++	// handed to SDL (port<N>-out.raw: the device's), one stderr line describing each.
++	static const char* dump_dir = std::getenv("KYTY_BC5_AUDIO_DUMP");
++	struct DumpFile { FILE* f = nullptr; uint64_t bytes = 0; bool closed = false; };
++	static std::map<const PortOut*, std::pair<DumpFile, DumpFile>> dumps;
++	static std::mutex                                                  dumps_mutex;
++	auto dump = [&](DumpFile& d, const char* suffix, const void* data, uint32_t size, int ch, int freq, const char* fmt) {
++		if (dump_dir == nullptr || port->pad_route != 0 || d.closed) return;
++		if (d.f == nullptr) {
++			char path[512];
++			std::snprintf(path, sizeof(path), "%s/port-%p-%s.raw", dump_dir, static_cast<const void*>(port), suffix);
++			d.f = std::fopen(path, "wb");
++			if (d.f == nullptr) { d.closed = true; return; }
++			std::fprintf(stderr, "audio dump: %s = port type %d, %d ch, %d Hz, %s\n", path, port->type, ch, freq, fmt);
++		}
++		std::fwrite(data, 1, size, d.f);
++		d.bytes += size;
++		const uint64_t limit = static_cast<uint64_t>(freq) * ch * 4 * 40; // 40 s at 4 bytes a sample
++		if (d.bytes >= limit) { std::fclose(d.f); d.f = nullptr; d.closed = true; std::fprintf(stderr, "audio dump: %s closed at %" PRIu64 " bytes\n", suffix, d.bytes); }
++	};
++	{
++		std::lock_guard<std::mutex> lk(dumps_mutex);
++		dump(dumps[port].first, "in", prepared_data, prepared_size, src_channels, static_cast<int>(port->freq), FormatIsFloat(port->format) ? "f32" : "s16");
++	}
  
  	std::vector<uint8_t> convert_buffer;
  	const void*          queue_data = prepared_data;
-@@ -343,7 +541,7 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -343,7 +568,7 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  
  	SDL_AudioCVT cvt {};
  	const int    cvt_result =
@@ -6269,7 +6420,7 @@ index fe4b332..b6e964e 100644
  	                      static_cast<int>(port->freq), port->audio_spec.format,
  	                      port->audio_spec.channels, port->audio_spec.freq);
  
-@@ -368,6 +566,46 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -368,6 +593,46 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  		queue_size = static_cast<uint32_t>(cvt.len_cvt);
  	}
  
@@ -6316,7 +6467,7 @@ index fe4b332..b6e964e 100644
  	if (blocking) {
  		// More aggressive buffer management to prevent audio issues
  		// during heavy GPU load (common in gameplay vs cutscene)
-@@ -380,15 +618,26 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -380,16 +645,32 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  		const auto wait_start      = LibKernel::KernelGetProcessTime();
  		// Timeout faster to avoid blocking the game thread
  		const uint64_t timeout_us = 100000; // 100ms max wait
@@ -6341,9 +6492,15 @@ index fe4b332..b6e964e 100644
 +	port->tr_calls++;
 +	port->tr_frames += port->samples_num;
  
++	{
++		std::lock_guard<std::mutex> lk(dumps_mutex);
++		dump(dumps[port].second, "out", queue_data, queue_size, port->audio_spec.channels, port->audio_spec.freq,
++		     SDL_AUDIO_ISFLOAT(port->audio_spec.format) ? "f32" : SDL_AUDIO_BITSIZE(port->audio_spec.format) == 16 ? "s16" : "other");
++	}
  	if (SDL_QueueAudio(port->audio_device, queue_data, queue_size) < 0) {
  		LOGF("AudioOut: SDL_QueueAudio failed: %s\n", SDL_GetError());
-@@ -428,7 +677,7 @@ Audio::Id Audio::AudioOutOpen(int type, uint32_t samples_num, uint32_t freq, For
+ 		return false;
+@@ -428,7 +709,7 @@ Audio::Id Audio::AudioOutOpen(int type, uint32_t samples_num, uint32_t freq, For
  				port.volume[i] = 32768;
  			}
  
@@ -6352,7 +6509,7 @@ index fe4b332..b6e964e 100644
  				// KytyPlus diagnostic: OpenSdlDevice() may fail (no host audio device,
  				// unsupported sample rate/format, or SDL init failure). The return is
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
-@@ -568,6 +817,42 @@ uint32_t Audio::AudioOutOutputs(OutputParam* params, uint32_t num, bool blocking
+@@ -568,6 +849,42 @@ uint32_t Audio::AudioOutOutputs(OutputParam* params, uint32_t num, bool blocking
  		m_out_ports[params[i].handle.GetId()].last_output_time = LibKernel::KernelGetProcessTime();
  	}
  
@@ -14752,7 +14909,7 @@ index 0000000..888a7d5
 +
 +} // namespace Libs
 diff --git a/src/libs/controller.cpp b/src/libs/controller.cpp
-index 55718eb..3e3504a 100644
+index 55718eb..8ac2193 100644
 --- a/src/libs/controller.cpp
 +++ b/src/libs/controller.cpp
 @@ -1,4 +1,9 @@
@@ -14765,9 +14922,11 @@ index 55718eb..3e3504a 100644
  
  #include "common/assert.h"
  #include "common/common.h"
-@@ -12,9 +17,15 @@
+@@ -11,10 +16,17 @@
+ #include "libs/errno.h"
  #include "libs/libs.h"
  #include "libs/padData.h"
++#include "graphics/presentation/window.h" // BC5 (experiment 0166)
  
 +#include <cmath>
 +#include <thread>
@@ -14781,7 +14940,7 @@ index 55718eb..3e3504a 100644
  
  namespace Libs::Controller {
  
-@@ -45,6 +56,9 @@ struct ControllerState {
+@@ -45,6 +57,9 @@ struct ControllerState {
  	uint64_t time                                  = 0;
  	uint32_t buttons                               = 0;
  	int      axes[static_cast<int>(Axis::AxisMax)] = {128, 128, 128, 128, 0, 0};
@@ -14791,7 +14950,7 @@ index 55718eb..3e3504a 100644
  };
  
  // Local-multiplayer: one GameController owns up to PAD_MAX_CONTROLLERS player
-@@ -59,8 +73,12 @@ public:
+@@ -59,8 +74,12 @@ public:
  
  	void Connect(int id);
  	void Disconnect(int id);
@@ -14804,7 +14963,7 @@ index 55718eb..3e3504a 100644
  	void ResetInputState();
  	void GetConnectionInfo(bool* flag, int* count);
  	void ReadState(ControllerState* state, bool* flag, int* count);
-@@ -78,7 +96,25 @@ private:
+@@ -78,7 +97,25 @@ private:
  		bool            obtained[STATES_MAX] = {};
  		uint32_t        states_num          = 0;
  		uint32_t        first_state         = 0;
@@ -14830,7 +14989,7 @@ index 55718eb..3e3504a 100644
  
  	void EnsureSlot(int index);
  	int  OwnerSlot(int id) const;
-@@ -94,6 +130,34 @@ private:
+@@ -94,6 +131,34 @@ private:
  	std::vector<SlotState> m_slots;
  };
  static GameController* g_controller = nullptr;
@@ -14865,7 +15024,7 @@ index 55718eb..3e3504a 100644
  // Native DualSense driver instance (spec-accurate, hardware-unvalidated).
  // Owned by the Controller subsystem; opened on subsystem init if a device is
  // present, polled on an internal thread, and closed on subsystem destroy.
-@@ -180,7 +244,31 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
+@@ -180,7 +245,31 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
  	data->right_stick_y          = state.axes[static_cast<int>(Axis::RightY)];
  	data->analog_buttons_l2      = state.axes[static_cast<int>(Axis::TriggerLeft)];
  	data->analog_buttons_r2      = state.axes[static_cast<int>(Axis::TriggerRight)];
@@ -14898,7 +15057,7 @@ index 55718eb..3e3504a 100644
  	data->touch_data_touch0_id   = 1;
  	data->touch_data_touch1_id   = 2;
  	data->connected              = connected;
-@@ -189,11 +277,177 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
+@@ -189,11 +278,179 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
  	data->device_unique_data_len = 0;
  }
  
@@ -15046,6 +15205,8 @@ index 55718eb..3e3504a 100644
 +				const float rest[3] = {0.0f, 1.0f, 0.0f}, still[3] = {0.0f, 0.0f, 0.0f};
 +				ControllerMotion(-1000, false, rest);
 +				ControllerMotion(-1000, true, still);
++			} else if (n >= 1 && (cmd == "pause" || cmd == "resume")) { // BC5 (experiment 0166): the window's pause from a script
++				Graphics::WindowSetPaused(cmd == "pause");
 +			} else if (n >= 2 && cmd == "wait") {
 +				ms(std::clamp(std::atoi(b), 0, 600000));
 +			} else if (n >= 1 && cmd == "reset") {
@@ -15076,7 +15237,7 @@ index 55718eb..3e3504a 100644
  
  	// The native DualSense HID driver is opt-in and off by default. SDL already
  	// handles every standard pad (including a DualSense); this unvalidated driver is
-@@ -258,16 +512,162 @@ void ControllerDisconnect(int id) {
+@@ -258,16 +515,162 @@ void ControllerDisconnect(int id) {
  	g_controller->Disconnect(id);
  }
  
@@ -15239,7 +15400,7 @@ index 55718eb..3e3504a 100644
  void ControllerResetInputState() {
  	EXIT_IF(g_controller == nullptr);
  	g_controller->ResetInputState();
-@@ -284,6 +684,11 @@ void GameController::EnsureSlot(int index) {
+@@ -284,6 +687,11 @@ void GameController::EnsureSlot(int index) {
  	}
  }
  
@@ -15251,7 +15412,7 @@ index 55718eb..3e3504a 100644
  int GameController::OwnerSlot(int id) const {
  	for (int i = 0; i < PAD_MAX_CONTROLLERS; i++) {
  		if (m_ids[i] == id) {
-@@ -395,6 +800,12 @@ void GameController::Button(int id, uint32_t button, bool down) {
+@@ -395,6 +803,12 @@ void GameController::Button(int id, uint32_t button, bool down) {
  	if (slot == -1) {
  		slot = FallbackSlot();
  	}
@@ -15264,7 +15425,7 @@ index 55718eb..3e3504a 100644
  
  	auto state = GetLastState(slot);
  	state.time = LibKernel::KernelGetProcessTime();
-@@ -415,6 +826,14 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
+@@ -415,6 +829,14 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
  	if (slot == -1) {
  		slot = FallbackSlot();
  	}
@@ -15279,7 +15440,7 @@ index 55718eb..3e3504a 100644
  
  	auto state = GetLastState(slot);
  	state.time = LibKernel::KernelGetProcessTime();
-@@ -422,8 +841,28 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
+@@ -422,8 +844,28 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
  	const int axis_id = static_cast<int>(axis);
  	EXIT_IF(axis_id < 0 || axis_id >= static_cast<int>(Controller::Axis::AxisMax));
  
@@ -15308,7 +15469,7 @@ index 55718eb..3e3504a 100644
  	if (axis == Controller::Axis::TriggerLeft) {
  		if (value > 0) {
  			state.buttons |= PAD_BUTTON_L2;
-@@ -443,6 +882,87 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
+@@ -443,6 +885,87 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
  	AddState(slot, state);
  }
  
@@ -15396,7 +15557,7 @@ index 55718eb..3e3504a 100644
  void GameController::ResetInputState() {
  	Common::LockGuard lock(m_mutex);
  
-@@ -488,6 +1008,14 @@ int GameController::ReadStateForSlot(int index, ControllerState* state, bool* fl
+@@ -488,6 +1011,14 @@ int GameController::ReadStateForSlot(int index, ControllerState* state, bool* fl
  	*flag  = SlotConnected(index);
  	*count = PresentCount();
  	*state = GetLastState(index);
@@ -15411,7 +15572,7 @@ index 55718eb..3e3504a 100644
  
  	return 0;
  }
-@@ -515,7 +1043,28 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
+@@ -515,7 +1046,28 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
  	int ret_num = 0;
  
  	auto& s = m_slots[index];
@@ -15440,7 +15601,7 @@ index 55718eb..3e3504a 100644
  		for (uint32_t i = 0; i < s.states_num; i++) {
  			if (ret_num >= states_num) {
  				break;
-@@ -523,11 +1072,21 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
+@@ -523,11 +1075,21 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
  			auto state_index = (s.first_state + i) % STATES_MAX;
  			if (!s.obtained[state_index]) {
  				s.obtained[state_index] = true;
@@ -15463,7 +15624,7 @@ index 55718eb..3e3504a 100644
  	return ret_num;
  }
  int KYTY_SYSV_ABI PadInit() {
-@@ -625,6 +1184,9 @@ int KYTY_SYSV_ABI PadResetOrientation(int handle) {
+@@ -625,6 +1187,9 @@ int KYTY_SYSV_ABI PadResetOrientation(int handle) {
  	if (ControllerIndexFromHandle(handle) < 0) {
  		return PAD_ERROR_INVALID_HANDLE;
  	}
@@ -15473,7 +15634,7 @@ index 55718eb..3e3504a 100644
  
  	return OK;
  }
-@@ -682,6 +1244,10 @@ int KYTY_SYSV_ABI PadReadState(int handle, PadData* data) {
+@@ -682,6 +1247,10 @@ int KYTY_SYSV_ABI PadReadState(int handle, PadData* data) {
  	g_controller->ReadStateForSlot(ControllerIndexFromHandle(handle), &state, &connected,
  	                               &connected_count);
  
@@ -15484,7 +15645,7 @@ index 55718eb..3e3504a 100644
  	pad_fill_data(data, state, connected, connected_count);
  
  	return OK;
-@@ -718,6 +1284,10 @@ int KYTY_SYSV_ABI PadRead(int handle, PadData* data, int num) {
+@@ -718,6 +1287,10 @@ int KYTY_SYSV_ABI PadRead(int handle, PadData* data, int num) {
  	}
  
  	for (int i = 0; i < ret_num; i++) {
@@ -15495,7 +15656,7 @@ index 55718eb..3e3504a 100644
  		pad_fill_data(&data[i], states[i], connected, connected_count);
  	}
  
-@@ -738,14 +1308,10 @@ int KYTY_SYSV_ABI PadSetVibration(int handle, const PadVibrationParam* param) {
+@@ -738,14 +1311,10 @@ int KYTY_SYSV_ABI PadSetVibration(int handle, const PadVibrationParam* param) {
  	     "\t small_motor = %d\n",
  	     static_cast<int>(param->large_motor), static_cast<int>(param->small_motor));
  
