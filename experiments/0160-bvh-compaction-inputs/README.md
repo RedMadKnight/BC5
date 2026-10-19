@@ -336,3 +336,34 @@ experiment could do.
   maintainer's play or other sessions' measurements, and read registers without `halt_waves` first.
   The 13:54 and 14:52 sessions above predate the loop (armed 14:17; the 14:52 session had no stall, so
   no dump and no induced reset).
+
+## The reproducible hang after the 18:02 autosave (runs 831–835, 2026-10-19 evening)
+
+The parent session found a hang that comes every time: the title's slot-1 autosave rewritten at 18:02
+(backed up to `~/bc5-data/save-backups/i38-slot1-game-autosave-hang-20261019-1802`) hangs the GPU
+6–20 s after it loads on the scripted route (`route.sh`, the save loads at +121 s): runs 830–833,
+kernel ring timeouts from journal t ≈ 127–145 s every 16 s. Runs 815–828 on the previous save never hung.
+
+- **The stuck waves are a second copy of the ray-traced-reflection traversal.** Run 831's stall dumps
+  (`/var/tmp/bc5-hang-1832*.txt`, the watcher's `halt_waves`): 49, 336 and 13 waves, every one at
+  PC 0x11d04a7cfc–7d88 with `EXEC` 0 at an `s_cbranch_execz` inside a loop of `ds_read`/`scratch_load`/
+  `buffer_load_dwordx2 … idxen` link lookups and a backward `s_cbranch_execnz` — the F113 traversal loop,
+  at the same offset (+0x1cfc) in a program at **0x11d04a6000** (the probe's `cs 0000000011d04a60` in
+  run 833's timed-out buffer). It is not a relocated copy of 0x11d049aa00: 3,036 of the first 3,072
+  dwords differ, the structure (prefetch, flat-scratch setup, the loop) is the same — another compiled
+  variant of the traversal, for a pass this part of the level uses. The address skip
+  (`BC5_DIRECT_SKIP_PGM=11d049aa00,…`, F173) does not cover it, so with this save the traversal runs and
+  loops forever as in F113–F116. Both launchers now skip it too (`11d049aa00,11d04a6000,909974400`).
+- **Run 834** (`BC5_DIRECT_SKIP_PGM=11d049aa00,11d04a6000,909974400`): no timeout; gameplay 130–230 s
+  1,514 frames (mean 66 ms, 237 over 70 ms, none over 250), audio rate 0.998–1.002, 15.4 flips/s;
+  4,097+ dispatches of 0x11d04a6000 dropped. The address-0 fault stream runs from t 121 s, non-fatal.
+- **Run 835** (`11d049aa00,11d04a6000` — the compaction 0x909974400 running, the original question of
+  this experiment): hangs from t 130.7 s, gfx ring timeouts every 16 s (11 fence timeouts). The first
+  timed-out buffer is a 2,893-dword graphics buffer with 15 `DISPATCH_DIRECT`s of **0x11d039cd00**
+  (1×1×1, 480×270, 3072, 16384, 4096, 24576 groups), three 0x2d draws and one `DRAW_INDEX_INDIRECT_MULTI`;
+  every packet carries the probe's "ran" mark, so the CP reached its end and a shader never finishes —
+  not the one-point fast-launch draw of the earlier hangs (it is in a later timed-out buffer). So with the
+  compaction's output present, something this buffer launches loops; which program needs a wave dump
+  from a dedicated run (836, the watcher armed only for it), not yet possible: the box was taken at 19:38.
+- The watcher fired in none of these runs (not armed since 18:40); run 834's clean 100 s shows the
+  18:02 save plays once the second traversal copy is skipped.
