@@ -16870,10 +16870,28 @@ index 51c3a0e..ecd210f 100644
  	InitLibKernel_1_Mem(s);
  	InitLibKernel_1_Equeue(s);
 diff --git a/src/libs/libNet.cpp b/src/libs/libNet.cpp
-index 1b9db8a..98aec77 100644
+index 1b9db8a..b7ea9cd 100644
 --- a/src/libs/libNet.cpp
 +++ b/src/libs/libNet.cpp
-@@ -1572,7 +1572,57 @@ static int KYTY_SYSV_ABI NpEntitlementAccessGetAddcontEntitlementInfo(
+@@ -1414,9 +1414,15 @@ LIB_DEFINE(InitNet_1_NpManager) {
+ 	LIB_FUNC("3Zl8BePTh9Y", NpManager::NpCheckCallback);
+ 	LIB_FUNC("Ec63y59l9tw", NpManager::NpSetNpTitleId);
+ 	LIB_FUNC("A2CQ3kgSopQ", NpManager::NpSetContentRestriction);
++	// BC5: the NIDs of the A variants and the two unregister calls follow from their names
++	// (AnyPS5 core/libs/nid/src/NidCompute.cpp @ 7f596df, GPL-2.0, re-implemented in
++	// tools/nid.py of the BC5 repo's session notes); the four here are the names AnyPS5 exports
++	// in core/libs/prx/libSceNpManager/Export.cpp.
+ 	LIB_FUNC("VfRSmPmj8Q8", NpManager::NpRegisterStateCallback);
+-	LIB_FUNC("qQJfO8HAiaY", NpManager::NpRegisterStateCallback);
+-	LIB_FUNC("M3wFXbYQtAA", NpManager::NpUnregisterStateCallback);
++	LIB_FUNC("qQJfO8HAiaY", NpManager::NpRegisterStateCallbackA);
++	LIB_FUNC("mjjTXh+NHWY", NpManager::NpUnregisterStateCallback);
++	LIB_FUNC("M3wFXbYQtAA", NpManager::NpUnregisterStateCallbackA);
++	LIB_FUNC("cRILAEvn+9M", NpManager::NpUnregisterNpReachabilityStateCallback);
+ 	LIB_FUNC("uFJpaKNBAj4", NpManager::NpRegisterGamePresenceCallback);
+ 	LIB_FUNC("GImICnh+boA", NpManager::NpRegisterPlusEventCallback);
+ 	LIB_FUNC("+yqjab2fUJA", NpManager::NpRegisterPremiumEventCallback);
+@@ -1572,7 +1578,57 @@ static int KYTY_SYSV_ABI NpEntitlementAccessGetAddcontEntitlementInfo(
  	return NP_ENTITLEMENT_ACCESS_ERROR_NO_ENTITLEMENT;
  }
  
@@ -16931,6 +16949,23 @@ index 1b9db8a..98aec77 100644
  	LIB_FUNC("jO8DM8oyego", LibNpEntitlementAccess::NpEntitlementAccessInitialize);
  	LIB_FUNC("lPDO62PpJIA", LibNpEntitlementAccess::NpEntitlementAccessGetSkuFlag);
  	LIB_FUNC("TFyU+KFBv54",
+diff --git a/src/libs/libNp.cpp b/src/libs/libNp.cpp
+index a0aee52..7951249 100644
+--- a/src/libs/libNp.cpp
++++ b/src/libs/libNp.cpp
+@@ -16,6 +16,12 @@ namespace Libs {
+ 
+ // PSN is not available in the emulator. Network-requiring stubs return this
+ // error so games do not proceed as if online services are connected.
++// BC5: none of this file's LIB_DEFINEs is loaded at f266548 (libs.cpp loads InitNet_1, whose
++// NpManager table is libNet.cpp + network.cpp; that is where the state-callback model of AnyPS5
++// was ported, HANDOFF F215).
++// TODO(verify): the signed-out error code. This file answers 0x80550005; network.cpp and AnyPS5
++// (core/libs/prx/libSceNpManager/Export.cpp @ 7f596df, shadPS4's PS4 value) answer 0x80550006.
++// Which one the console gives a signed-out user is unverified on both sides.
+ constexpr int NP_NOT_SIGNED_IN = static_cast<int>(0x80550005u);
+ 
+ namespace NpAuth {
 diff --git a/src/libs/libPad.cpp b/src/libs/libPad.cpp
 index 676ecb9..4b22f02 100644
 --- a/src/libs/libPad.cpp
@@ -17613,6 +17648,227 @@ index 36e4dc8..eaa58d7 100644
  }
  
  namespace LibContentExport {
+diff --git a/src/libs/network.cpp b/src/libs/network.cpp
+index 7f81218..76a5781 100644
+--- a/src/libs/network.cpp
++++ b/src/libs/network.cpp
+@@ -4215,9 +4215,70 @@ static int np_complete_signed_out_locked(NpRequest* request) {
+ 	return (request->async ? OK : np_error_signed_out);
+ }
+ 
++// BC5 (NpManager callbacks). Ported from AnyPS5 core/libs/prx/libSceNpManager/Export.cpp
++// @ 7f596df (GPL-2.0), lines 11-130 and the Register/Unregister exports: PSN is not emulated, so
++// every user is signed out (state 1) and a title that registers a state callback is told so once,
++// from its own sceNpCheckCallback, as on a console whose user is signed out. Up to eight
++// sceNpRegisterStateCallbackA callbacks (the id is the slot plus one; a null or an already
++// registered function is refused), one legacy sceNpRegisterStateCallback, and one reachability
++// callback, retained and never called (reachability stays 0, unavailable). Error codes as AnyPS5
++// (shadPS4's PS4 values).
++// TODO(verify): the signed-out error this file answers is 0x80550006 (np_error_signed_out) where
++// libNp.cpp answers 0x80550005 (NP_NOT_SIGNED_IN); AnyPS5 uses 0x80550006 (shadPS4's PS4 value).
++// Which the console gives a signed-out user is unverified on both sides.
++constexpr int      np_error_callback_already_registered = -2141913080; /* 0x80550008 */
++constexpr int      np_error_callback_not_registered     = -2141913079; /* 0x80550009 */
++constexpr int      np_error_callback_max                = -2141913059; /* 0x8055001D */
++constexpr uint32_t NP_STATE_SIGNED_OUT                  = 1;
++constexpr int      NP_STATE_CALLBACK_MAX                = 8;
++constexpr int      NP_INITIAL_USER_ID                   = 1000; // libUserService.cpp, UserServiceGetInitialUser
++
++struct NpStateCallbackSlotA {
++	NpStateCallbackA callback = nullptr;
++	void*            userdata = nullptr;
++	bool             pending  = false;
++};
++
++struct NpStateCallbackSlot {
++	NpStateCallback callback = nullptr;
++	void*           userdata = nullptr;
++	bool            pending  = false;
++};
++
++static Common::Mutex                                         g_np_state_mutex;
++static std::array<NpStateCallbackSlotA, NP_STATE_CALLBACK_MAX> g_np_state_callbacks_a;
++static NpStateCallbackSlot                                   g_np_state_callback;
++static void*                                                 g_np_reachability_callback = nullptr;
++static void*                                                 g_np_reachability_userdata = nullptr;
++
+ int KYTY_SYSV_ABI NpCheckCallback() {
+ 	PRINT_NAME();
+ 
++	// The pending callbacks are copied and cleared under the lock, then called without it: a
++	// callback may register or unregister another one.
++	std::array<NpStateCallbackSlotA, NP_STATE_CALLBACK_MAX> callbacks_a;
++	NpStateCallbackSlot                                      legacy;
++	{
++		Common::LockGuard lock(g_np_state_mutex);
++		callbacks_a = g_np_state_callbacks_a;
++		legacy      = g_np_state_callback;
++		for (auto& slot: g_np_state_callbacks_a) {
++			slot.pending = false;
++		}
++		g_np_state_callback.pending = false;
++	}
++	if (legacy.pending && legacy.callback != nullptr) {
++		LOGF("\t state callback: user %d signed out\n", NP_INITIAL_USER_ID);
++		legacy.callback(NP_INITIAL_USER_ID, NP_STATE_SIGNED_OUT, nullptr, legacy.userdata);
++	}
++	for (int i = 0; i < NP_STATE_CALLBACK_MAX; i++) {
++		const auto& slot = callbacks_a[static_cast<size_t>(i)];
++		if (slot.pending && slot.callback != nullptr) {
++			LOGF("\t state callback %d: user %d signed out\n", i + 1, NP_INITIAL_USER_ID);
++			slot.callback(NP_INITIAL_USER_ID, NP_STATE_SIGNED_OUT, slot.userdata);
++		}
++	}
++
+ 	return OK;
+ }
+ 
+@@ -4254,15 +4315,78 @@ int KYTY_SYSV_ABI NpSetContentRestriction(const NpContentRestriction* restrictio
+ 	return OK;
+ }
+ 
+-int KYTY_SYSV_ABI NpRegisterStateCallback(void* /*callback*/, void* /*userdata*/) {
++int KYTY_SYSV_ABI NpRegisterStateCallback(NpStateCallback callback, void* userdata) {
+ 	PRINT_NAME();
+ 
++	LOGF("\t callback = %016" PRIx64 "\n", reinterpret_cast<uint64_t>(callback));
++
++	if (callback == nullptr) {
++		return np_error_invalid_argument;
++	}
++
++	Common::LockGuard lock(g_np_state_mutex);
++	if (g_np_state_callback.callback != nullptr) {
++		return np_error_callback_already_registered;
++	}
++	g_np_state_callback = {callback, userdata, true};
++
+ 	return OK;
+ }
+ 
+ int KYTY_SYSV_ABI NpUnregisterStateCallback() {
+ 	PRINT_NAME();
+ 
++	Common::LockGuard lock(g_np_state_mutex);
++	if (g_np_state_callback.callback == nullptr) {
++		return np_error_callback_not_registered;
++	}
++	g_np_state_callback = {};
++
++	return OK;
++}
++
++int KYTY_SYSV_ABI NpRegisterStateCallbackA(NpStateCallbackA callback, void* userdata) {
++	PRINT_NAME();
++
++	LOGF("\t callback = %016" PRIx64 "\n", reinterpret_cast<uint64_t>(callback));
++
++	if (callback == nullptr) {
++		return np_error_invalid_argument;
++	}
++
++	Common::LockGuard lock(g_np_state_mutex);
++	for (const auto& slot: g_np_state_callbacks_a) {
++		if (slot.callback == callback) {
++			return np_error_callback_already_registered;
++		}
++	}
++	for (int i = 0; i < NP_STATE_CALLBACK_MAX; i++) {
++		auto& slot = g_np_state_callbacks_a[static_cast<size_t>(i)];
++		if (slot.callback == nullptr) {
++			slot = {callback, userdata, true};
++			return i + 1;
++		}
++	}
++
++	return np_error_callback_max;
++}
++
++int KYTY_SYSV_ABI NpUnregisterStateCallbackA(int callback_id) {
++	PRINT_NAME();
++
++	LOGF("\t callback_id = %d\n", callback_id);
++
++	if (callback_id < 1 || callback_id > NP_STATE_CALLBACK_MAX) {
++		return np_error_invalid_argument;
++	}
++
++	Common::LockGuard lock(g_np_state_mutex);
++	auto&             slot = g_np_state_callbacks_a[static_cast<size_t>(callback_id - 1)];
++	if (slot.callback == nullptr) {
++		return np_error_callback_not_registered;
++	}
++	slot = {};
++
+ 	return OK;
+ }
+ 
+@@ -4282,9 +4406,33 @@ int KYTY_SYSV_ABI NpRegisterPremiumEventCallback(void* /*callback*/, void* /*use
+ 	return OK;
+ }
+ 
+-int KYTY_SYSV_ABI NpRegisterNpReachabilityStateCallback(void* /*callback*/, void* /*userdata*/) {
++int KYTY_SYSV_ABI NpRegisterNpReachabilityStateCallback(void* callback, void* userdata) {
++	PRINT_NAME();
++
++	if (callback == nullptr) {
++		return np_error_invalid_argument;
++	}
++
++	Common::LockGuard lock(g_np_state_mutex);
++	if (g_np_reachability_callback != nullptr) {
++		return np_error_callback_already_registered;
++	}
++	g_np_reachability_callback = callback;
++	g_np_reachability_userdata = userdata;
++
++	return OK;
++}
++
++int KYTY_SYSV_ABI NpUnregisterNpReachabilityStateCallback() {
+ 	PRINT_NAME();
+ 
++	Common::LockGuard lock(g_np_state_mutex);
++	if (g_np_reachability_callback == nullptr) {
++		return np_error_callback_not_registered;
++	}
++	g_np_reachability_callback = nullptr;
++	g_np_reachability_userdata = nullptr;
++
+ 	return OK;
+ }
+ 
+diff --git a/src/libs/network.h b/src/libs/network.h
+index a4e74ed..d40896b 100644
+--- a/src/libs/network.h
++++ b/src/libs/network.h
+@@ -159,15 +159,25 @@ struct NpCreateAsyncRequestParameter;
+ struct NpCheckPremiumParameter;
+ struct NpCheckPremiumResult;
+ 
++// BC5 (NpManager callbacks). Ported from AnyPS5 core/libs/prx/libSceNpManager/Export.cpp
++// @ 7f596df (GPL-2.0): the state callback of sceNpRegisterStateCallbackA takes
++// (user_id, state, userdata); the older sceNpRegisterStateCallback adds the NpId before userdata.
++using NpStateCallbackA = KYTY_SYSV_ABI void (*)(int user_id, uint32_t state, void* userdata);
++using NpStateCallback  = KYTY_SYSV_ABI void (*)(int user_id, uint32_t state, NpId* np_id,
++                                                void* userdata);
++
+ int KYTY_SYSV_ABI  NpCheckCallback();
+ int KYTY_SYSV_ABI  NpSetNpTitleId(const NpTitleId* title_id, const NpTitleSecret* title_secret);
+ int KYTY_SYSV_ABI  NpSetContentRestriction(const NpContentRestriction* restriction);
+-int KYTY_SYSV_ABI  NpRegisterStateCallback(void* callback, void* userdata);
++int KYTY_SYSV_ABI  NpRegisterStateCallback(NpStateCallback callback, void* userdata);
+ int KYTY_SYSV_ABI  NpUnregisterStateCallback();
++int KYTY_SYSV_ABI  NpRegisterStateCallbackA(NpStateCallbackA callback, void* userdata);
++int KYTY_SYSV_ABI  NpUnregisterStateCallbackA(int callback_id);
+ void KYTY_SYSV_ABI NpRegisterGamePresenceCallback(void* callback, void* userdata);
+ int KYTY_SYSV_ABI  NpRegisterPlusEventCallback(void* callback, void* userdata);
+ int KYTY_SYSV_ABI  NpRegisterPremiumEventCallback(void* callback, void* userdata);
+ int KYTY_SYSV_ABI  NpRegisterNpReachabilityStateCallback(void* callback, void* userdata);
++int KYTY_SYSV_ABI  NpUnregisterNpReachabilityStateCallback();
+ int KYTY_SYSV_ABI  NpGetNpId(int user_id, NpId* np_id);
+ int KYTY_SYSV_ABI  NpGetOnlineId(int user_id, NpOnlineId* online_id);
+ int KYTY_SYSV_ABI  NpGetAccountIdA(int user_id, uint64_t* account_id);
 diff --git a/src/libs/saveDataMountSlots.h b/src/libs/saveDataMountSlots.h
 index 8be28ca..45a766e 100644
 --- a/src/libs/saveDataMountSlots.h
