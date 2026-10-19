@@ -247,3 +247,11 @@ experiment could do.
   (the 13:11 binary, `BC5_DIRECT_DROP_FAST_LAUNCH_POINTS=1` in both pkg launchers, a diagnostic): drop
   non-indexed draws whose tracked state is GS_FAST_LAUNCH ≠ 0, points, GE_CNTL 0x201 — does the
   maintainer's route then play past the night scene?
+- *13:12, the drop test:* too broad — the same state (GS fast launch, points, GE_CNTL 0x201) is the
+  engine's main mesh path: 324,545 `DRAW_INDIRECT(_MULTI)`s dropped in 93 s from journal t 41.8 s (the
+  menu scene), most of the scene missing, no hang in that short session. The knob
+  `BC5_DIRECT_DROP_FAST_LAUNCH_POINTS` stays in the code as a diagnostic only; it is out of both
+  launchers again. So the faulting draw is one instance among hundreds of thousands of identical-state
+  draws, and what singles it out is its data: its arguments ({1, 1, 0, …} in both captures) and the
+  work descriptors the ES program 0x11d0132d00 fetches through its two table lookups — the next probe
+  should read those at the timeout (the V# at s[24:27]+0x540 and the constant block at s[20:23]).
