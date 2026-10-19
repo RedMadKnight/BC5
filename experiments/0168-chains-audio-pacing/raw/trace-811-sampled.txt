@@ -1,0 +1,118 @@
+videoout trace: t 1.326 s: VideoOutSetFlipRate(handle 1, rate 0): a flip every 1 vblank(s)
+audio trace: t 5.129 s port 1 type 0 8 ch 48000 Hz: 192 calls, 49152 frames = 1.024 s of sound in 1.004 s (rate 1.020), held 0.4 ms, 0 clears, sdl queued 0-12288 bytes (0-16 ms), device playing
+videoout trace: t 8.597 s: flips mode0 0 mode1 25 mode2 0 mode3 0, GetFlipStatus 24, IsFlipPending 8324, WaitVblank 0, GetVblankStatus 24 in 1.001 s
+audio trace: t 10.144 s port 1 type 0 8 ch 48000 Hz: 188 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.3 ms, 0 clears, sdl queued 12288-12288 bytes (16-16 ms), device playing
+videoout trace: t 13.666 s: flips mode0 0 mode1 27 mode2 0 mode3 0, GetFlipStatus 27, IsFlipPending 50044, WaitVblank 0, GetVblankStatus 27 in 1.002 s
+audio trace: t 15.156 s port 1 type 0 8 ch 48000 Hz: 188 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.2 ms, 0 clears, sdl queued 12288-16384 bytes (16-21 ms), device playing
+videoout trace: t 18.731 s: flips mode0 0 mode1 30 mode2 0 mode3 0, GetFlipStatus 31, IsFlipPending 19798, WaitVblank 0, GetVblankStatus 31 in 1.011 s
+audio trace: t 20.170 s port 1 type 0 8 ch 48000 Hz: 188 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.2 ms, 0 clears, sdl queued 12288-16384 bytes (16-21 ms), device playing
+videoout trace: t 23.766 s: flips mode0 0 mode1 30 mode2 0 mode3 0, GetFlipStatus 30, IsFlipPending 13386, WaitVblank 0, GetVblankStatus 30 in 1.003 s
+audio trace: t 25.183 s port 1 type 0 8 ch 48000 Hz: 188 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 0.2 ms, 0 clears, sdl queued 12288-16384 bytes (16-21 ms), device playing
+videoout trace: t 28.837 s: flips mode0 0 mode1 30 mode2 0 mode3 0, GetFlipStatus 30, IsFlipPending 8728, WaitVblank 0, GetVblankStatus 30 in 1.017 s
+audio trace: t 30.197 s port 1 type 0 8 ch 48000 Hz: 188 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.2 ms, 0 clears, sdl queued 12288-16384 bytes (16-21 ms), device playing
+videoout trace: t 33.943 s: flips mode0 0 mode1 18 mode2 0 mode3 0, GetFlipStatus 2, IsFlipPending 2, WaitVblank 0, GetVblankStatus 18 in 1.057 s
+videoout trace: t 39.108 s: flips mode0 0 mode1 13 mode2 0 mode3 0, GetFlipStatus 0, IsFlipPending 0, WaitVblank 0, GetVblankStatus 13 in 1.012 s
+audio trace: t 42.958 s port 0 type 0 8 ch 48000 Hz: 76 calls, 38912 frames = 0.811 s of sound in 1.000 s (rate 0.810), held 0.1 ms, 0 clears, sdl queued 0-49152 bytes (0-32 ms), device playing
+videoout trace: t 44.508 s: flips mode0 0 mode1 37 mode2 0 mode3 0, GetFlipStatus 37, IsFlipPending 0, WaitVblank 0, GetVblankStatus 37 in 1.015 s
+audio trace: t 48.068 s port 0 type 0 8 ch 48000 Hz: 91 calls, 46592 frames = 0.971 s of sound in 1.021 s (rate 0.950), held 0.1 ms, 0 clears, sdl queued 0-49152 bytes (0-32 ms), device playing
+videoout trace: t 49.570 s: flips mode0 0 mode1 36 mode2 0 mode3 0, GetFlipStatus 36, IsFlipPending 0, WaitVblank 0, GetVblankStatus 36 in 1.015 s
+audio trace: t 53.133 s port 0 type 0 8 ch 48000 Hz: 95 calls, 48640 frames = 1.013 s of sound in 1.003 s (rate 1.010), held 711.2 ms, 0 clears, sdl queued 32768-65536 bytes (21-42 ms), device playing
+videoout trace: t 54.628 s: flips mode0 0 mode1 41 mode2 0 mode3 0, GetFlipStatus 41, IsFlipPending 0, WaitVblank 0, GetVblankStatus 41 in 1.010 s
+audio trace: t 58.147 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 926.6 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+videoout trace: t 59.679 s: flips mode0 0 mode1 43 mode2 0 mode3 0, GetFlipStatus 43, IsFlipPending 0, WaitVblank 0, GetVblankStatus 43 in 1.008 s
+audio trace: t 63.160 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 920.5 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+videoout trace: t 64.729 s: flips mode0 0 mode1 44 mode2 0 mode3 0, GetFlipStatus 44, IsFlipPending 0, WaitVblank 0, GetVblankStatus 44 in 1.002 s
+audio trace: t 68.173 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 934.9 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+videoout trace: t 69.758 s: flips mode0 0 mode1 44 mode2 0 mode3 0, GetFlipStatus 45, IsFlipPending 0, WaitVblank 0, GetVblankStatus 45 in 1.017 s
+audio trace: t 73.187 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 913.3 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+videoout trace: t 74.792 s: flips mode0 0 mode1 45 mode2 0 mode3 0, GetFlipStatus 44, IsFlipPending 0, WaitVblank 0, GetVblankStatus 44 in 1.002 s
+audio trace: t 78.200 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 913.6 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+videoout trace: t 79.836 s: flips mode0 0 mode1 45 mode2 0 mode3 0, GetFlipStatus 44, IsFlipPending 0, WaitVblank 0, GetVblankStatus 44 in 1.002 s
+audio trace: t 83.214 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 927.5 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+videoout trace: t 84.898 s: flips mode0 0 mode1 38 mode2 0 mode3 0, GetFlipStatus 39, IsFlipPending 0, WaitVblank 0, GetVblankStatus 39 in 1.014 s
+audio trace: t 86.221 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 89.230 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 923.8 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+videoout trace: t 89.946 s: flips mode0 0 mode1 40 mode2 0 mode3 0, GetFlipStatus 40, IsFlipPending 0, WaitVblank 0, GetVblankStatus 40 in 1.006 s
+audio trace: t 91.235 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 94.243 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 930.5 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+videoout trace: t 95.010 s: flips mode0 0 mode1 42 mode2 0 mode3 0, GetFlipStatus 42, IsFlipPending 0, WaitVblank 0, GetVblankStatus 42 in 1.008 s
+audio trace: t 96.248 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 99.256 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 931.5 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+videoout trace: t 100.041 s: flips mode0 0 mode1 43 mode2 0 mode3 0, GetFlipStatus 43, IsFlipPending 0, WaitVblank 0, GetVblankStatus 43 in 1.001 s
+audio trace: t 101.262 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 104.270 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 934.3 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+videoout trace: t 105.123 s: flips mode0 0 mode1 43 mode2 0 mode3 0, GetFlipStatus 43, IsFlipPending 0, WaitVblank 0, GetVblankStatus 43 in 1.023 s
+audio trace: t 106.275 s port 2 type 10 2 ch 48000 Hz (pad): 95 calls, 48640 frames = 1.013 s of sound in 1.002 s (rate 1.011), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 109.283 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 935.1 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+videoout trace: t 110.171 s: flips mode0 0 mode1 41 mode2 0 mode3 0, GetFlipStatus 40, IsFlipPending 0, WaitVblank 0, GetVblankStatus 40 in 1.000 s
+audio trace: t 111.289 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 114.296 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 938.8 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+videoout trace: t 115.323 s: flips mode0 0 mode1 13 mode2 0 mode3 0, GetFlipStatus 0, IsFlipPending 0, WaitVblank 0, GetVblankStatus 13 in 1.034 s
+audio trace: t 116.302 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 119.310 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 996.4 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+videoout trace: t 120.505 s: flips mode0 0 mode1 5 mode2 0 mode3 0, GetFlipStatus 0, IsFlipPending 0, WaitVblank 0, GetVblankStatus 5 in 1.017 s
+audio trace: t 121.315 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 124.323 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 990.2 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+videoout trace: t 125.686 s: flips mode0 0 mode1 4 mode2 0 mode3 0, GetFlipStatus 0, IsFlipPending 0, WaitVblank 0, GetVblankStatus 4 in 1.019 s
+audio trace: t 126.329 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 129.336 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 612.7 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+videoout trace: t 130.822 s: flips mode0 0 mode1 24 mode2 0 mode3 0, GetFlipStatus 24, IsFlipPending 0, WaitVblank 0, GetVblankStatus 24 in 1.010 s
+audio trace: t 131.342 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 134.350 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 674.7 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+videoout trace: t 135.943 s: flips mode0 0 mode1 22 mode2 0 mode3 0, GetFlipStatus 22, IsFlipPending 0, WaitVblank 0, GetVblankStatus 22 in 1.055 s
+audio trace: t 136.355 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 139.363 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 611.5 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+videoout trace: t 141.036 s: flips mode0 0 mode1 30 mode2 0 mode3 0, GetFlipStatus 30, IsFlipPending 0, WaitVblank 0, GetVblankStatus 30 in 1.011 s
+audio trace: t 141.369 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 144.376 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 696.4 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+videoout trace: t 146.136 s: flips mode0 0 mode1 28 mode2 0 mode3 0, GetFlipStatus 28, IsFlipPending 0, WaitVblank 0, GetVblankStatus 28 in 1.013 s
+audio trace: t 146.382 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 149.390 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 680.5 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+videoout trace: t 151.226 s: flips mode0 0 mode1 26 mode2 0 mode3 0, GetFlipStatus 26, IsFlipPending 0, WaitVblank 0, GetVblankStatus 26 in 1.027 s
+audio trace: t 151.396 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 154.404 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 677.1 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+videoout trace: t 156.293 s: flips mode0 0 mode1 27 mode2 0 mode3 0, GetFlipStatus 27, IsFlipPending 0, WaitVblank 0, GetVblankStatus 27 in 1.011 s
+audio trace: t 156.409 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 159.417 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 757.2 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+audio trace: t 161.422 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+videoout trace: t 161.428 s: flips mode0 0 mode1 26 mode2 0 mode3 0, GetFlipStatus 26, IsFlipPending 0, WaitVblank 0, GetVblankStatus 26 in 1.067 s
+audio trace: t 164.430 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 999.9 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+audio trace: t 166.436 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+videoout trace: t 166.596 s: flips mode0 0 mode1 9 mode2 0 mode3 0, GetFlipStatus 11, IsFlipPending 0, WaitVblank 0, GetVblankStatus 10 in 1.003 s
+audio trace: t 169.444 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 999.8 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+audio trace: t 171.449 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+videoout trace: t 171.717 s: flips mode0 0 mode1 24 mode2 0 mode3 0, GetFlipStatus 24, IsFlipPending 0, WaitVblank 0, GetVblankStatus 24 in 1.010 s
+audio trace: t 174.457 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 999.4 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+audio trace: t 176.462 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+videoout trace: t 176.890 s: flips mode0 0 mode1 28 mode2 0 mode3 0, GetFlipStatus 28, IsFlipPending 0, WaitVblank 0, GetVblankStatus 28 in 1.000 s
+audio trace: t 179.470 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 999.9 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+audio trace: t 181.476 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+videoout trace: t 181.955 s: flips mode0 0 mode1 22 mode2 0 mode3 0, GetFlipStatus 22, IsFlipPending 0, WaitVblank 0, GetVblankStatus 22 in 1.011 s
+audio trace: t 184.484 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 999.8 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+audio trace: t 186.489 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+videoout trace: t 187.027 s: flips mode0 0 mode1 26 mode2 0 mode3 0, GetFlipStatus 26, IsFlipPending 0, WaitVblank 0, GetVblankStatus 26 in 1.022 s
+audio trace: t 189.497 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 999.9 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+audio trace: t 191.503 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+videoout trace: t 192.088 s: flips mode0 0 mode1 26 mode2 0 mode3 0, GetFlipStatus 26, IsFlipPending 0, WaitVblank 0, GetVblankStatus 26 in 1.005 s
+audio trace: t 194.511 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 999.5 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+audio trace: t 196.516 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+videoout trace: t 197.186 s: flips mode0 0 mode1 27 mode2 0 mode3 0, GetFlipStatus 27, IsFlipPending 0, WaitVblank 0, GetVblankStatus 27 in 1.009 s
+audio trace: t 199.524 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 999.8 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+audio trace: t 201.529 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+videoout trace: t 202.336 s: flips mode0 0 mode1 13 mode2 0 mode3 0, GetFlipStatus 0, IsFlipPending 0, WaitVblank 0, GetVblankStatus 13 in 1.067 s
+audio trace: t 204.537 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 999.9 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+audio trace: t 206.543 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+videoout trace: t 207.562 s: flips mode0 0 mode1 26 mode2 0 mode3 0, GetFlipStatus 26, IsFlipPending 0, WaitVblank 0, GetVblankStatus 26 in 1.002 s
+audio trace: t 209.551 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 1000.0 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+audio trace: t 211.556 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+videoout trace: t 212.771 s: flips mode0 0 mode1 29 mode2 0 mode3 0, GetFlipStatus 29, IsFlipPending 0, WaitVblank 0, GetVblankStatus 29 in 1.069 s
+audio trace: t 214.564 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 1000.3 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+audio trace: t 216.569 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+videoout trace: t 217.823 s: flips mode0 0 mode1 24 mode2 0 mode3 0, GetFlipStatus 24, IsFlipPending 0, WaitVblank 0, GetVblankStatus 24 in 1.005 s
+audio trace: t 219.578 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 999.7 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+audio trace: t 221.582 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+videoout trace: t 222.936 s: flips mode0 0 mode1 27 mode2 0 mode3 0, GetFlipStatus 27, IsFlipPending 0, WaitVblank 0, GetVblankStatus 27 in 1.059 s
+audio trace: t 224.591 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 1000.2 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+audio trace: t 226.596 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+videoout trace: t 228.004 s: flips mode0 0 mode1 29 mode2 0 mode3 0, GetFlipStatus 29, IsFlipPending 0, WaitVblank 0, GetVblankStatus 29 in 1.028 s
+audio trace: t 229.604 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 999.6 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
