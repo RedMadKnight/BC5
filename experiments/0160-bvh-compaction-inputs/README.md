@@ -337,7 +337,7 @@ experiment could do.
   The 13:54 and 14:52 sessions above predate the loop (armed 14:17; the 14:52 session had no stall, so
   no dump and no induced reset).
 
-## The reproducible hang after the 18:02 autosave (runs 831–835, 2026-10-19 evening)
+## The reproducible hang after the 18:02 autosave (runs 831–835, 2026-10-19 evening; F230, F232)
 
 The parent session found a hang that comes every time: the title's slot-1 autosave rewritten at 18:02
 (backed up to `~/bc5-data/save-backups/i38-slot1-game-autosave-hang-20261019-1802`) hangs the GPU
