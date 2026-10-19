@@ -3054,1315 +3054,46 @@ index 845bfe3..170b24b 100644
  		{
  			const auto present_end = std::chrono::steady_clock::now();
 diff --git a/src/graphics/presentation/window/window.cpp b/src/graphics/presentation/window/window.cpp
-index c729a98..db13022 100644
+index c729a98..82cdac6 100644
 --- a/src/graphics/presentation/window/window.cpp
 +++ b/src/graphics/presentation/window/window.cpp
-@@ -1,1068 +1,1190 @@
--#include "graphics/presentation/window.h"
--
--#include "SDL.h"
--#include "SDL_error.h"
--#include "SDL_events.h"
--#include "SDL_gamecontroller.h"
--#include "SDL_hints.h"
--#include "SDL_joystick.h"
--#include "SDL_keyboard.h"
--#include "SDL_keycode.h"
--#include "SDL_mouse.h"
--#include "SDL_pixels.h"
--#include "SDL_rwops.h"
--#include "SDL_stdinc.h"
--#include "SDL_surface.h"
--#include "SDL_thread.h"
--#include "SDL_touch.h"
--#include "SDL_video.h"
--#include "SDL_vulkan.h"
--#include "common/assert.h"
--#include "common/common.h"
--#include "common/emulatorConfig.h"
--#include "common/file.h"
--#include "common/logging/log.h"
--#include "common/profiler.h"
--#include "common/stringUtils.h"
--#include "common/systemInfo.h"
--#include "common/threads.h"
--#include "common/timer.h"
--#include "graphics/host_gpu/graphicContext.h"
--#include "graphics/host_gpu/renderer/render.h"
--#include "graphics/host_gpu/vma.h"
--#include "graphics/host_gpu/vulkanCommon.h"
--#include "graphics/presentation/imeOverlay.h"
--#include "graphics/presentation/renderDoc.h"
--#include "graphics/presentation/window/hostInput.h"
--#include "graphics/presentation/window/windowInternal.h"
--#include "kytyGitVersion.h"
--#include "libs/controller.h"
--#include "loader/systemContent.h"
--
--#include <algorithm>
--#include <cstdio>
--#include <cstdlib>
--#include <cstring>
--#include <memory>
--#include <string>
--#include <vector>
--#include <vulkan/vk_platform.h>
--
--#define STB_IMAGE_IMPLEMENTATION
--#define STBI_NO_SIMD
--#include "stb_image.h"
--
--#include <fmt/format.h>
--
--// IWYU pragma: no_include <intrin.h>
--
--#define KYTY_ENABLE_DEBUG_PRINTF
--#define KYTY_DBG_INPUT
--
--namespace Libs::Graphics {
--
--struct EventKeyboard {
--	bool     down;
--	bool     up;
--	bool     pressed;
--	bool     released;
--	bool     repeat;
--	int      scan_code;
--	int      key_code;
--	uint16_t mod;
--	double   timestamp_seconds;
--};
--
--static uint32_t ControllerButtonToPadButton(int button) {
--	switch (button) {
--		case SDL_CONTROLLER_BUTTON_A: return Controller::PAD_BUTTON_CROSS;
--		case SDL_CONTROLLER_BUTTON_B: return Controller::PAD_BUTTON_CIRCLE;
--		case SDL_CONTROLLER_BUTTON_X: return Controller::PAD_BUTTON_SQUARE;
--		case SDL_CONTROLLER_BUTTON_Y: return Controller::PAD_BUTTON_TRIANGLE;
--		case SDL_CONTROLLER_BUTTON_BACK: return Controller::PAD_BUTTON_TOUCH_PAD;
--		case SDL_CONTROLLER_BUTTON_START: return Controller::PAD_BUTTON_OPTIONS;
--		case SDL_CONTROLLER_BUTTON_LEFTSTICK: return Controller::PAD_BUTTON_L3;
--		case SDL_CONTROLLER_BUTTON_RIGHTSTICK: return Controller::PAD_BUTTON_R3;
--		case SDL_CONTROLLER_BUTTON_LEFTSHOULDER: return Controller::PAD_BUTTON_L1;
--		case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: return Controller::PAD_BUTTON_R1;
--		case SDL_CONTROLLER_BUTTON_DPAD_UP: return Controller::PAD_BUTTON_UP;
--		case SDL_CONTROLLER_BUTTON_DPAD_DOWN: return Controller::PAD_BUTTON_DOWN;
--		case SDL_CONTROLLER_BUTTON_DPAD_LEFT: return Controller::PAD_BUTTON_LEFT;
--		case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: return Controller::PAD_BUTTON_RIGHT;
--		default: return 0;
--	}
--}
--
--static Controller::Axis ControllerAxisFromSdl(int axis_id) {
--	switch (axis_id) {
--		case SDL_CONTROLLER_AXIS_LEFTX: return Controller::Axis::LeftX;
--		case SDL_CONTROLLER_AXIS_LEFTY: return Controller::Axis::LeftY;
--		case SDL_CONTROLLER_AXIS_RIGHTX: return Controller::Axis::RightX;
--		case SDL_CONTROLLER_AXIS_RIGHTY: return Controller::Axis::RightY;
--		case SDL_CONTROLLER_AXIS_TRIGGERLEFT: return Controller::Axis::TriggerLeft;
--		case SDL_CONTROLLER_AXIS_TRIGGERRIGHT: return Controller::Axis::TriggerRight;
--		default: return Controller::Axis::AxisMax;
--	}
--}
--
--static bool ControllerAxisIsTrigger(int axis_id) {
--	return axis_id == SDL_CONTROLLER_AXIS_TRIGGERLEFT ||
--	       axis_id == SDL_CONTROLLER_AXIS_TRIGGERRIGHT;
--}
--
--static int ControllerAxisValueFromSdl(int axis_id, int axis_value) {
--	return ControllerAxisIsTrigger(axis_id)
--	           ? Controller::controller_get_axis(0, SDL_JOYSTICK_AXIS_MAX, axis_value)
--	           : Controller::controller_get_axis(SDL_JOYSTICK_AXIS_MIN, SDL_JOYSTICK_AXIS_MAX,
--	                                             axis_value);
--}
--
--struct EventMouse {
--	bool   down;
--	bool   up;
--	bool   left;
--	bool   middle;
--	bool   right;
--	bool   x1;
--	bool   x2;
--	bool   touch;
--	bool   pressed;
--	bool   released;
--	int    num_of_clicks;
--	bool   wheel;
--	int    x;
--	int    y;
--	bool   motion;
--	int    motion_x;
--	int    motion_y;
--	double timestamp_seconds;
--};
--
--struct EventFinger {
--	bool   down;
--	bool   up;
--	bool   motion;
--	int    touch_id;
--	int    finger_id;
--	float  x;
--	float  y;
--	float  dx;
--	float  dy;
--	float  pressure;
--	double timestamp_seconds;
--};
--
--struct EventController {
--	int    id;
--	int    button;
--	int    axis_id;
--	int    axis_value;
--	bool   down;
--	bool   up;
--	bool   added;
--	bool   removed;
--	bool   remapped;
--	bool   axis;
--	bool   pressed;
--	bool   released;
--	double timestamp_seconds;
--};
--
--enum class DisplayOrientation {
--	Unknown,   /* The display orientation can't be determined */
--	Landscape, /* The display is in landscape mode, with the right side up, relative to portrait
--	              mode */
--	LandscapeFlipped, /* The display is in landscape mode, with the left side up, relative to
--	                     portrait mode */
--	Portrait,         /* The display is in portrait mode */
--	PortraitFlipped,  /* The display is in portrait mode, upside down */
--
--	DisplayEventOrientation = 0xF0
--};
--
--struct EventDisplay {
--	DisplayOrientation orientation;
--};
--
--constexpr uint32_t KYTY_SDL_BUTTON_LMASK  = SDL_BUTTON_LMASK;  // NOLINT(hicpp-signed-bitwise)
--constexpr uint32_t KYTY_SDL_BUTTON_MMASK  = SDL_BUTTON_MMASK;  // NOLINT(hicpp-signed-bitwise)
--constexpr uint32_t KYTY_SDL_BUTTON_RMASK  = SDL_BUTTON_RMASK;  // NOLINT(hicpp-signed-bitwise)
--constexpr uint32_t KYTY_SDL_BUTTON_X1MASK = SDL_BUTTON_X1MASK; // NOLINT(hicpp-signed-bitwise)
--constexpr uint32_t KYTY_SDL_BUTTON_X2MASK = SDL_BUTTON_X2MASK; // NOLINT(hicpp-signed-bitwise)
--
--namespace {
--
--std::unique_ptr<WindowContext> g_window;
--
--} // namespace
--
--constexpr const char* KYTY_SDL_WINDOW_CAPTION = "Game";
--constexpr uint32_t    KYTY_SDL_WINDOW_FLAGS =
--    (static_cast<uint32_t>(SDL_WINDOW_HIDDEN) | static_cast<uint32_t>(SDL_WINDOW_VULKAN));
--constexpr int KYTY_SDL_WINDOWPOS_CENTERED = SDL_WINDOWPOS_CENTERED; /*NOLINT(hicpp-signed-bitwise)*/
--
--static void SetPause(WindowLoopState& game, bool flag) {
--	LOGF("Pause: %s\n", flag ? "true" : "false");
--
--	game.paused.store(flag, std::memory_order_release);
--}
--
--static void GameEventQuit(WindowLoopState& game) {
--	LOGF("Event: quit\n");
--
--	game.need_exit = true;
--}
--
--static void GameEventTerminate(WindowLoopState& game) {
--	LOGF("Event: terminate\n");
--
--	game.need_exit = true;
--}
--
--static void GameEventKeyboard(WindowLoopState& game, const EventKeyboard& key) {
--#ifdef KYTY_DBG_INPUT
--	LOGF("Key: time = %.04f, %s%s, %s%s, %s, scan = %d, key = %d, mod = %04" PRIx16 "\n",
--	     key.timestamp_seconds, (key.down ? "down" : ""), (key.up ? "up" : ""),
--	     (key.pressed ? "pressed" : ""), (key.released ? "released" : ""),
--	     (key.repeat ? "repeat" : ""), key.scan_code, key.key_code, key.mod);
--#endif
--
--#if KYTY_PLATFORM == KYTY_PLATFORM_WINDOWS || KYTY_PLATFORM == KYTY_PLATFORM_LINUX
--	if (key.down) {
--		switch (key.key_code) {
--			case SDLK_ESCAPE: game.need_exit = true; break;
--			case SDLK_SPACE: SetPause(game, !game.paused.load(std::memory_order_acquire)); break;
--			case SDLK_F1:
--				if (!key.repeat) {
--					RenderDocRequestCapture();
--				}
--				break;
--			default: break;
--		}
--	}
--
--#endif
--
--	if ((key.down || key.up) && !key.repeat) {
--		HostInputKey(key.key_code, key.down);
--	}
--}
--
--static void GameEventMouse([[maybe_unused]] const EventMouse& mb) {
--#ifdef KYTY_DBG_INPUT
--	if (mb.wheel) {
--		LOGF("Mouse wheel: time = %.04f, %s[%d, %d]\n", mb.timestamp_seconds,
--		     (mb.touch ? "touch, " : ""), mb.x, mb.y);
--	} else if (mb.motion) {
--		LOGF("Mouse motion: time = %.04f, %s%s%s%s%s%s, [%d, %d], (%d, %d)\n", mb.timestamp_seconds,
--		     (mb.left ? "left" : ""), (mb.middle ? "middle" : ""), (mb.right ? "right" : ""),
--		     (mb.x1 ? "x1" : ""), (mb.x2 ? "x2" : ""), (mb.touch ? "_touch" : ""), mb.x, mb.y,
--		     mb.motion_x, mb.motion_y);
--	} else {
--		LOGF("Mouse click: time = %.04f, %d, %s%s%s%s%s%s, %s%s, %s%s, [%d, %d]\n",
--		     mb.timestamp_seconds, mb.num_of_clicks, (mb.left ? "left" : ""),
--		     (mb.middle ? "middle" : ""), (mb.right ? "right" : ""), (mb.x1 ? "x1" : ""),
--		     (mb.x2 ? "x2" : ""), (mb.touch ? "_touch" : ""), (mb.down ? "down" : ""),
--		     (mb.up ? "up" : ""), (mb.pressed ? "pressed" : ""), (mb.released ? "released" : ""),
--		     mb.x, mb.y);
--	}
--#endif
--
--	if (mb.down || mb.up) {
--		uint8_t mouse_button = 0;
--		if (mb.left) {
--			mouse_button = SDL_BUTTON_LEFT;
--		} else if (mb.middle) {
--			mouse_button = SDL_BUTTON_MIDDLE;
--		} else if (mb.right) {
--			mouse_button = SDL_BUTTON_RIGHT;
--		} else if (mb.x1) {
--			mouse_button = SDL_BUTTON_X1;
--		} else if (mb.x2) {
--			mouse_button = SDL_BUTTON_X2;
--		}
--
--		HostInputMouseButton(mouse_button, mb.down);
--	}
--}
--
--static void GameEventFinger([[maybe_unused]] const EventFinger& f) {
--#ifdef KYTY_DBG_INPUT
--	if (f.motion) {
--		LOGF("Finger motion: time = %.04f, %d, %d, (x,y) = [%f, %f], (dx,dy) = [%f, %f], pressure "
--		     "= %f\n",
--		     f.timestamp_seconds, f.touch_id, f.finger_id, f.x, f.y, f.dx, f.dy, f.pressure);
--	} else {
--		LOGF("Finger press: time = %.04f, %d, %d, %s%s, (x,y) = [%f, %f], (dx,dy) = [%f, %f], "
--		     "pressure = %f\n",
--		     f.timestamp_seconds, f.touch_id, f.finger_id, (f.down ? "down" : ""),
--		     (f.up ? "up" : ""), f.x, f.y, f.dx, f.dy, f.pressure);
--	}
--#endif
--}
--
--static void GameEventController([[maybe_unused]] const EventController& f) {
--	EXIT_NOT_IMPLEMENTED(f.remapped);
--
--#ifdef KYTY_DBG_INPUT
--	if (f.added || f.removed) {
--		LOGF("Controller %s: %d, time = %.04f\n", (f.added ? "added" : "removed"), f.id,
--		     f.timestamp_seconds);
--	} else if (f.axis) {
--		LOGF("Controller axis: %d, axis = %d, value = %d, time = %.04f\n", f.id, f.axis_id,
--		     f.axis_value, f.timestamp_seconds);
--	} else {
--		LOGF("Controller button: "
--		     "%d, %s%s, %s%s, button = %d, time = %.04f\n",
--		     f.id, (f.down ? "down" : ""), (f.up ? "up" : ""), (f.pressed ? "pressed" : ""),
--		     (f.released ? "released" : ""), f.button, f.timestamp_seconds);
--	}
--#endif
--
--	if (f.added) {
--		auto* pad = SDL_GameControllerOpen(f.id);
--		if (pad == nullptr) {
--			// SDL doesn't recognize this controller in its gamepad database.
--			// Fall back to raw joystick so buttons/axes still route to the guest.
--			auto* joy = SDL_JoystickOpen(f.id);
--			if (joy != nullptr) {
--				LOGF("Controller opened as raw joystick: %s\n",
--				     SDL_JoystickName(joy));
--				Controller::ControllerConnect(f.id);
--			}
--			return;
--		}
--		int id = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(pad));
--		Controller::ControllerConnect(id);
--	}
--
--	if (f.removed) {
--		Controller::ControllerDisconnect(f.id);
--		SDL_GameControllerClose(SDL_GameControllerFromInstanceID(f.id));
--	}
--
--	if (f.down || f.up) {
--		const auto button = ControllerButtonToPadButton(f.button);
--		if (button != 0) {
--			Controller::ControllerButton(f.id, button, f.down);
--		}
--		// Also route through custom gamepad mapping if user has one set.
--		HostInputGamepadButton(static_cast<uint8_t>(f.button), f.down);
--	}
--
--	if (f.axis) {
--		const auto axis = ControllerAxisFromSdl(f.axis_id);
--		if (axis != Controller::Axis::AxisMax) {
--			Controller::ControllerAxis(f.id, axis,
--			                           ControllerAxisValueFromSdl(f.axis_id, f.axis_value));
--		}
--	}
--}
--
--static void GameEventLowMemory() {
--	LOGF("Event: low_memory\n");
--}
--
--static void GameEventWillEnterBackground(WindowLoopState& game) {
--	LOGF("Event: will_enter_background\n");
--
--	SetPause(game, true);
--}
--
--static void GameEventDidEnterBackground() {
--	LOGF("Event: did_enter_background\n");
--}
--
--static void GameEventWillEnterForeground() {
--	LOGF("Event: will_enter_foreground\n");
--}
--
--static void GameEventDidEnterForeground(WindowLoopState& game) {
--	LOGF("Event: did_enter_foreground\n");
--
--	SetPause(game, false);
--}
--
--void WindowContext::Resize(uint32_t new_width, uint32_t new_height) {
--	EXIT_IF(new_width == 0 || new_height == 0);
--	graphic_ctx.screen_width  = new_width;
--	graphic_ctx.screen_height = new_height;
--}
--
--void WindowContext::ProcessWindowEvent(const SDL_WindowEvent& event) {
--	const auto& window_event = event;
--	switch (window_event.event) {
--		case SDL_WINDOWEVENT_SHOWN:
--			LOGF("Window %" PRIu32 " shown\n", window_event.windowID);
--			break;
--
--		case SDL_WINDOWEVENT_HIDDEN:
--			LOGF("Window %" PRIu32 " hidden\n", window_event.windowID);
--			break;
--
--		case SDL_WINDOWEVENT_EXPOSED:
--			LOGF("Window %" PRIu32 " exposed\n", window_event.windowID);
--			break;
--
--		case SDL_WINDOWEVENT_MOVED:
--			LOGF("Window %" PRIu32 " moved to %" PRId32 ",%" PRId32 "\n", window_event.windowID,
--			     window_event.data1, window_event.data2);
--			break;
--
--		case SDL_WINDOWEVENT_RESIZED:
--			LOGF("Window %" PRIu32 " resized to %" PRId32 "x%" PRId32 "\n", window_event.windowID,
--			     window_event.data1, window_event.data2);
--
--			LOGF("m: %d\n", static_cast<int>(SDL_ThreadID()));
--			Resize(window_event.data1, window_event.data2);
--
--			break;
--
--		case SDL_WINDOWEVENT_SIZE_CHANGED:
--			LOGF("Window %" PRIu32 " size changed to %" PRId32 "x%" PRId32 "\n",
--			     window_event.windowID, window_event.data1, window_event.data2);
--
--			LOGF("m: %d\n", static_cast<int>(SDL_ThreadID()));
--			Resize(window_event.data1, window_event.data2);
--
--			break;
--
--		case SDL_WINDOWEVENT_MINIMIZED:
--			LOGF("Window %" PRIu32 " minimized\n", window_event.windowID);
--			break;
--		case SDL_WINDOWEVENT_MAXIMIZED:
--			LOGF("Window %" PRIu32 " maximized\n", window_event.windowID);
--			break;
--		case SDL_WINDOWEVENT_RESTORED:
--			LOGF("Window %" PRIu32 " restored\n", window_event.windowID);
--			break;
--		case SDL_WINDOWEVENT_ENTER:
--			LOGF("Mouse entered window %" PRIu32 "\n", window_event.windowID);
--			break;
--		case SDL_WINDOWEVENT_LEAVE:
--			LOGF("Mouse left window %" PRIu32 "\n", window_event.windowID);
--			break;
--		case SDL_WINDOWEVENT_FOCUS_GAINED:
--			LOGF("Window %" PRIu32 " gained keyboard focus\n", window_event.windowID);
--			break;
--		case SDL_WINDOWEVENT_FOCUS_LOST:
--			LOGF("Window %" PRIu32 " lost keyboard focus\n", window_event.windowID);
--			break;
--		case SDL_WINDOWEVENT_CLOSE:
--			LOGF("Window %" PRIu32 " closed\n", window_event.windowID);
--			break;
--		default:
--			LOGF("Window %" PRIu32 " got unknown event %" PRIu8 "\n", window_event.windowID,
--			     window_event.event);
--			break;
--	}
--}
--
--void WindowContext::ProcessDisplayEvent(const SDL_DisplayEvent& display) {
--	bool sdl = false;
--
--	switch (display.event) {
--		case SDL_DISPLAYEVENT_ORIENTATION: sdl = true; [[fallthrough]];
--		case static_cast<Uint8>(DisplayOrientation::DisplayEventOrientation): {
--			LOGF("Display %" PRIu32 "[%s] changed orientation to %d - ", display.display,
--			     sdl ? "SDL" : "Kyty", static_cast<int>(display.data1));
--
--			switch (display.data1) {
--				case SDL_ORIENTATION_UNKNOWN: LOGF("UNKNOWN\n"); break;
--				case SDL_ORIENTATION_LANDSCAPE: LOGF("LANDSCAPE\n"); break;
--				case SDL_ORIENTATION_LANDSCAPE_FLIPPED: LOGF("LANDSCAPE_FLIPPED\n"); break;
--				case SDL_ORIENTATION_PORTRAIT: LOGF("PORTRAIT\n"); break;
--				case SDL_ORIENTATION_PORTRAIT_FLIPPED: LOGF("PORTRAIT_FLIPPED\n"); break;
--				default: LOGF("???\n");
--			}
--
--			break;
--		}
--		default:
--			LOGF("Display %" PRIu32 " got unknown event 0x%" PRIx8 "\n", display.display,
--			     display.event);
--			break;
--	}
--}
--
--void WindowContext::ProcessEvent(double time_s) {
--	auto& game  = loop;
--	auto* event = &game.event;
--	EXIT_IF(SDL_GetEventState(SDL_DISPLAYEVENT) != SDL_ENABLE);
--	if (ProcessImeInput(*event)) {
--		return;
--	}
--
--	switch (event->type) {
--		case SDL_QUIT: GameEventQuit(game); break;
--
--		case SDL_APP_TERMINATING: GameEventTerminate(game); break;
--
--		case SDL_APP_LOWMEMORY: GameEventLowMemory(); break;
--
--		case SDL_APP_WILLENTERBACKGROUND: GameEventWillEnterBackground(game); break;
--
--		case SDL_APP_DIDENTERBACKGROUND: GameEventDidEnterBackground(); break;
--
--		case SDL_APP_WILLENTERFOREGROUND: GameEventWillEnterForeground(); break;
--
--		case SDL_APP_DIDENTERFOREGROUND: GameEventDidEnterForeground(game); break;
--
--		case SDL_KEYDOWN:
--		case SDL_KEYUP: {
--			EventKeyboard key {};
--
--			key.down              = (event->type == SDL_KEYDOWN);
--			key.up                = (event->type == SDL_KEYUP);
--			key.pressed           = (event->key.state == SDL_PRESSED);
--			key.released          = (event->key.state == SDL_RELEASED);
--			key.repeat            = (event->key.repeat != 0u);
--			key.scan_code         = event->key.keysym.scancode;
--			key.key_code          = event->key.keysym.sym;
--			key.mod               = event->key.keysym.mod;
--			key.timestamp_seconds = time_s;
--
--			GameEventKeyboard(game, key);
--
--			break;
--		}
--
--		case SDL_WINDOWEVENT: ProcessWindowEvent(event->window); break;
--
--		case SDL_DISPLAYEVENT: ProcessDisplayEvent(event->display); break;
--
--		case SDL_MOUSEBUTTONDOWN:
--		case SDL_MOUSEBUTTONUP: {
--			EventMouse mb {};
--
--			mb.down              = (event->button.type == SDL_MOUSEBUTTONDOWN);
--			mb.up                = (event->button.type == SDL_MOUSEBUTTONUP);
--			mb.left              = (event->button.button == SDL_BUTTON_LEFT);
--			mb.middle            = (event->button.button == SDL_BUTTON_MIDDLE);
--			mb.right             = (event->button.button == SDL_BUTTON_RIGHT);
--			mb.x1                = (event->button.button == SDL_BUTTON_X1);
--			mb.x2                = (event->button.button == SDL_BUTTON_X2);
--			mb.touch             = (event->button.which == SDL_TOUCH_MOUSEID);
--			mb.pressed           = (event->button.state == SDL_PRESSED);
--			mb.released          = (event->button.state == SDL_RELEASED);
--			mb.num_of_clicks     = event->button.clicks;
--			mb.wheel             = false;
--			mb.x                 = event->button.x;
--			mb.y                 = event->button.y;
--			mb.motion            = false;
--			mb.motion_x          = 0;
--			mb.motion_y          = 0;
--			mb.timestamp_seconds = time_s;
--
--			GameEventMouse(mb);
--
--			break;
--		}
--
--		case SDL_MOUSEWHEEL: {
--			EventMouse mb {};
--
--			mb.down              = false;
--			mb.up                = false;
--			mb.left              = false;
--			mb.middle            = false;
--			mb.right             = false;
--			mb.x1                = false;
--			mb.x2                = false;
--			mb.touch             = (event->wheel.which == SDL_TOUCH_MOUSEID);
--			mb.pressed           = false;
--			mb.released          = false;
--			mb.num_of_clicks     = 0;
--			mb.wheel             = true;
--			mb.x                 = event->wheel.x;
--			mb.y                 = event->wheel.y;
--			mb.motion            = false;
--			mb.motion_x          = 0;
--			mb.motion_y          = 0;
--			mb.timestamp_seconds = time_s;
--
--			GameEventMouse(mb);
--
--			break;
--		}
--
--		case SDL_MOUSEMOTION: {
--			EventMouse mb {};
--
--			mb.down              = false;
--			mb.up                = false;
--			mb.left              = ((event->motion.state & KYTY_SDL_BUTTON_LMASK) != 0u);
--			mb.middle            = ((event->motion.state & KYTY_SDL_BUTTON_MMASK) != 0u);
--			mb.right             = ((event->motion.state & KYTY_SDL_BUTTON_RMASK) != 0u);
--			mb.x1                = ((event->motion.state & KYTY_SDL_BUTTON_X1MASK) != 0u);
--			mb.x2                = ((event->motion.state & KYTY_SDL_BUTTON_X2MASK) != 0u);
--			mb.touch             = (event->motion.which == SDL_TOUCH_MOUSEID);
--			mb.pressed           = false;
--			mb.released          = false;
--			mb.num_of_clicks     = 0;
--			mb.wheel             = false;
--			mb.x                 = event->motion.x;
--			mb.y                 = event->motion.y;
--			mb.motion            = true;
--			mb.motion_x          = event->motion.xrel;
--			mb.motion_y          = event->motion.yrel;
--			mb.timestamp_seconds = time_s;
--
--			GameEventMouse(mb);
--
--			break;
--		}
--
--		case SDL_FINGERMOTION:
--		case SDL_FINGERDOWN:
--		case SDL_FINGERUP: {
--			EventFinger f {};
--
--			f.down              = (event->tfinger.type == SDL_FINGERDOWN);
--			f.up                = (event->tfinger.type == SDL_FINGERUP);
--			f.motion            = (event->tfinger.type == SDL_FINGERMOTION);
--			f.finger_id         = static_cast<int>(event->tfinger.fingerId);
--			f.touch_id          = static_cast<int>(event->tfinger.touchId);
--			f.x                 = event->tfinger.x;
--			f.y                 = event->tfinger.y;
--			f.dx                = event->tfinger.dx;
--			f.dy                = event->tfinger.dy;
--			f.pressure          = event->tfinger.pressure;
--			f.timestamp_seconds = time_s;
--
--			GameEventFinger(f);
--
--			break;
--		}
--
--		case SDL_CONTROLLERAXISMOTION: {
--			EventController c {};
--
--			c.id                = event->caxis.which;
--			c.button            = SDL_CONTROLLER_BUTTON_INVALID;
--			c.axis_id           = event->caxis.axis;
--			c.axis_value        = event->caxis.value;
--			c.down              = false;
--			c.up                = false;
--			c.added             = false;
--			c.removed           = false;
--			c.remapped          = false;
--			c.axis              = true;
--			c.pressed           = false;
--			c.released          = false;
--			c.timestamp_seconds = time_s;
--
--			GameEventController(c);
--
--			break;
--		}
--
--		case SDL_CONTROLLERBUTTONDOWN:
--		case SDL_CONTROLLERBUTTONUP: {
--			EventController c {};
--
--			c.id                = event->cbutton.which;
--			c.button            = event->cbutton.button;
--			c.axis_id           = SDL_CONTROLLER_AXIS_INVALID;
--			c.axis_value        = 0;
--			c.down              = (event->cbutton.type == SDL_CONTROLLERBUTTONDOWN);
--			c.up                = (event->cbutton.type == SDL_CONTROLLERBUTTONUP);
--			c.added             = false;
--			c.removed           = false;
--			c.remapped          = false;
--			c.axis              = false;
--			c.pressed           = (event->cbutton.state == SDL_PRESSED);
--			c.released          = (event->cbutton.state == SDL_RELEASED);
--			c.timestamp_seconds = time_s;
--
--			GameEventController(c);
--
--			break;
--		}
--
--		case SDL_CONTROLLERDEVICEADDED:
--		case SDL_CONTROLLERDEVICEREMOVED:
--		case SDL_CONTROLLERDEVICEREMAPPED: {
--			EventController c {};
--
--			c.id                = event->cdevice.which;
--			c.button            = SDL_CONTROLLER_BUTTON_INVALID;
--			c.axis_id           = SDL_CONTROLLER_AXIS_INVALID;
--			c.axis_value        = 0;
--			c.down              = false;
--			c.up                = false;
--			c.added             = (event->cdevice.type == SDL_CONTROLLERDEVICEADDED);
--			c.removed           = (event->cdevice.type == SDL_CONTROLLERDEVICEREMOVED);
--			c.remapped          = (event->cdevice.type == SDL_CONTROLLERDEVICEREMAPPED);
--			c.axis              = false;
--			c.pressed           = false;
--			c.released          = false;
--			c.timestamp_seconds = time_s;
--
--			GameEventController(c);
--
--			break;
--		}
--
--		// Raw joystick fallback — when SDL doesn't recognize a controller
--		// in its gamepad DB, events arrive as joystick events instead.
--		case SDL_JOYAXISMOTION: {
--			// Map raw axis to a controller event. Axes 0-5 map to
--			// left stick X/Y, right stick X/Y, L2, R2 by convention.
--			static const uint8_t axis_map[] = {
--			    SDL_CONTROLLER_AXIS_LEFTX,
--			    SDL_CONTROLLER_AXIS_LEFTY,
--			    SDL_CONTROLLER_AXIS_RIGHTX,
--			    SDL_CONTROLLER_AXIS_RIGHTY,
--			    SDL_CONTROLLER_AXIS_TRIGGERLEFT,
--			    SDL_CONTROLLER_AXIS_TRIGGERRIGHT,
--			};
--			EventController c {};
--			c.id         = event->jaxis.which;
--			c.axis_id    = (event->jaxis.axis < 6) ? axis_map[event->jaxis.axis]
--			                                        : SDL_CONTROLLER_AXIS_INVALID;
--			c.axis_value = event->jaxis.value;
--			c.axis       = true;
--			c.timestamp_seconds = time_s;
--			GameEventController(c);
--			break;
--		}
--
--		case SDL_JOYBUTTONDOWN:
--		case SDL_JOYBUTTONUP: {
--			EventController c {};
--			c.id    = event->jbutton.which;
--			c.button = event->jbutton.button;
--			c.down   = (event->jbutton.type == SDL_JOYBUTTONDOWN);
--			c.up     = (event->jbutton.type == SDL_JOYBUTTONUP);
--			c.pressed  = (event->jbutton.state == SDL_PRESSED);
--			c.released = (event->jbutton.state == SDL_RELEASED);
--			c.timestamp_seconds = time_s;
--			GameEventController(c);
--			break;
--		}
--
--		case SDL_JOYDEVICEADDED: {
--			// Open as raw joystick when we don't get a controller event.
--			auto* joy = SDL_JoystickOpen(event->jdevice.which);
--			if (joy != nullptr) {
--				LOGF("Joystick added: %s\n", SDL_JoystickName(joy));
--				Controller::ControllerConnect(event->jdevice.which);
--			}
--			break;
--		}
--
--		case SDL_JOYDEVICEREMOVED: {
--			Controller::ControllerDisconnect(event->jdevice.which);
--			auto* joy = SDL_JoystickFromInstanceID(event->jdevice.which);
--			if (joy != nullptr) {
--				SDL_JoystickClose(joy);
--			}
--			break;
--		}
--	}
--}
--
--#if defined(__APPLE__)
--void WindowContext::RunOnMainThread(std::function<void()> task, bool wait) {
--	if (Common::Thread::IsMainThread()) {
--		task();
--		return;
--	}
--
--	uint64_t ticket = 0;
--	{
--		Common::LockGuard lock(main_task_mutex);
--		main_tasks.push_back(std::move(task));
--		ticket = ++main_tasks_queued;
--	}
--
--	// Wake the main loop in case it is blocked in SDL_WaitEvent.
--	SDL_Event event {};
--	event.type = SDL_USEREVENT;
--	SDL_PushEvent(&event);
--
--	if (!wait) {
--		return;
--	}
--	Common::LockGuard lock(main_task_mutex);
--	while (main_tasks_run < ticket) {
--		main_task_done.Wait(&main_task_mutex);
--	}
--}
--
--void WindowContext::DrainMainThreadTasks() {
--	std::vector<std::function<void()>> tasks;
--	{
--		Common::LockGuard lock(main_task_mutex);
--		tasks.swap(main_tasks);
--	}
--	if (tasks.empty()) {
--		return;
--	}
--	for (auto& task: tasks) {
--		task();
--	}
--	Common::LockGuard lock(main_task_mutex);
--	main_tasks_run += tasks.size();
--	main_task_done.SignalAll();
--}
--#endif
--
--void WindowContext::Run() {
--	Common::Timer timer;
--	timer.Start();
--
--	loop.event     = {};
--	loop.need_exit = false;
--	loop.paused.store(false, std::memory_order_release);
--
--	while (!loop.need_exit) {
--#if defined(__APPLE__)
--		DrainMainThreadTasks();
--#endif
--		if (loop.paused.load(std::memory_order_acquire)) {
--			if (!timer.IsPaused()) {
--				timer.Pause();
--			}
--		} else if (timer.IsPaused()) {
--			timer.Resume();
--		}
--
--		if (SDL_WaitEvent(&loop.event) == 0) {
--			EXIT("%s\n", SDL_GetError());
--		}
--		ProcessEvent(timer.GetTimeS());
--	}
--}
--
--static void WindowCreate(WindowContext& context) {
--	EXIT_IF(context.window != nullptr);
--	EXIT_IF(context.graphic_ctx.screen_width == 0);
--	EXIT_IF(context.graphic_ctx.screen_height == 0);
--
--	int width  = static_cast<int>(context.graphic_ctx.screen_width);
--	int height = static_cast<int>(context.graphic_ctx.screen_height);
--
--#if KYTY_PLATFORM == KYTY_PLATFORM_WINDOWS
--	SDL_SetHint(SDL_HINT_WINDOWS_DPI_SCALING, "0");
--#endif
--
--	if (SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER | SDL_INIT_JOYSTICK) < 0) {
--		EXIT("%s\n", SDL_GetError());
--	}
--	HostInputInit();
--	InitializeImeInput();
--
--	LOGF("WindowCreate(): width = %d, height = %d\n", width, height);
--
--	// KytyPlus: keep the game in an ordinary window. A window that all but matches the
--	// panel (1280x720 on a 1280x800 display) reads as borderless fullscreen, because the
--	// frame ends up flush with the screen edges. Fit the requested size inside the
--	// display's usable area first so the decorations stay visible and usable.
--	if (!Config::FullscreenEnabled()) {
--		SDL_Rect usable{};
--		if (SDL_GetDisplayUsableBounds(0, &usable) == 0 && usable.w > 0 && usable.h > 0) {
--			constexpr int margin_x = 48;
--			constexpr int margin_y = 96;
--			const int     max_w    = std::max(320, usable.w - margin_x);
--			const int     max_h    = std::max(240, usable.h - margin_y);
--			if (width > max_w) {
--				height = static_cast<int>((static_cast<double>(height) * max_w) / width);
--				width  = max_w;
--			}
--			if (height > max_h) {
--				width  = static_cast<int>((static_cast<double>(width) * max_h) / height);
--				height = max_h;
--			}
--			if (width != static_cast<int>(context.graphic_ctx.screen_width) ||
--			    height != static_cast<int>(context.graphic_ctx.screen_height)) {
--				LOGF("Windowed fit: using %dx%d (display usable %dx%d)\n", width, height, usable.w,
--				     usable.h);
--				context.graphic_ctx.screen_width  = static_cast<uint32_t>(width);
--				context.graphic_ctx.screen_height = static_cast<uint32_t>(height);
--			}
--		}
--	}
--
--	uint32_t window_flags = KYTY_SDL_WINDOW_FLAGS;
--	if (Config::FullscreenEnabled()) {
--		window_flags |= static_cast<uint32_t>(SDL_WINDOW_FULLSCREEN_DESKTOP);
--	} else {
--		// Windowed: allow the user to resize; keep the normal frame decorations.
--		window_flags |= static_cast<uint32_t>(SDL_WINDOW_RESIZABLE);
--	}
--#if defined(__APPLE__)
--	// macOS 26 window chrome (CoreUI asset decode, SwiftUI titlebar) has been observed
--	// throwing NSExceptions under Rosetta during the first CATransaction commit. A
--	// borderless window skips that machinery entirely.
--	if (std::getenv("KYTY_BORDERLESS") != nullptr) {
--		window_flags |= static_cast<uint32_t>(SDL_WINDOW_BORDERLESS);
--	}
--#endif
--	context.window = SDL_CreateWindow(KYTY_SDL_WINDOW_CAPTION, KYTY_SDL_WINDOWPOS_CENTERED,
--	                                  KYTY_SDL_WINDOWPOS_CENTERED, width, height, window_flags);
--
--	context.window_hidden = true;
--
--	if (context.window == nullptr) {
--		EXIT("%s\n", SDL_GetError());
--	}
--
--	SDL_SetWindowResizable(context.window, Config::FullscreenEnabled() ? SDL_FALSE : SDL_TRUE);
--}
--
--Presenter& WindowInit(uint32_t width, uint32_t height) {
--	EXIT_NOT_IMPLEMENTED(!Common::Thread::IsMainThread());
--	EXIT_IF(g_window != nullptr);
--
--	auto window = std::make_unique<WindowContext>();
--
--	window->graphic_ctx.screen_width  = width;
--	window->graphic_ctx.screen_height = height;
--
--	WindowCreate(*window);
--	window->CreateVulkan();
--	auto& presenter = *window->presenter;
--	g_window        = std::move(window);
--	return presenter;
--}
--
--void WindowRun() {
--	KYTY_PROFILER_THREAD("Thread_Window");
--	EXIT_IF(g_window == nullptr);
--
--	g_window->Run();
--}
--
--void WindowShutdown() {
--	if (g_window != nullptr) {
--		g_window.reset();
--	}
--}
--
--static int WindowIconRead(void* user, char* data, int size) {
--	auto*    src        = static_cast<Common::File*>(user);
--	uint32_t bytes_read = 0;
--	src->Read(data, static_cast<uint32_t>(size), &bytes_read);
--	return static_cast<int>(bytes_read);
--}
--
--static void WindowIconSkip(void* user, int n) {
--	auto*          src      = static_cast<Common::File*>(user);
--	const uint64_t position = src->Tell();
--
--	if (n >= 0) {
--		src->Seek(position + static_cast<uint64_t>(n));
--	} else {
--		const uint64_t distance = static_cast<uint64_t>(-static_cast<int64_t>(n));
--		EXIT_IF(distance > position);
--		src->Seek(position - distance);
--	}
--}
--
--static int WindowIconEof(void* user) {
--	auto* src = static_cast<Common::File*>(user);
--	return src->IsEOF() ? 1 : 0;
--}
--
--struct WindowIcon {
--	SDL_Surface* surface = nullptr;
--	void*        pixels  = nullptr;
--
--	~WindowIcon() {
--		SDL_FreeSurface(surface);
--		stbi_image_free(pixels);
--	}
--};
--
--static void WindowLoadPngIcon(const std::string& path, WindowIcon* icon) {
--	Common::File f;
--	if (!f.Open(path, Common::File::Mode::Read)) {
--		EXIT("Can't open icon file %s\n", path.c_str());
--	}
--
--	int width  = 0;
--	int height = 0;
--
--	stbi_io_callbacks cb {};
--	cb.read = WindowIconRead;
--	cb.skip = WindowIconSkip;
--	cb.eof  = WindowIconEof;
--
--	icon->pixels = stbi_load_from_callbacks(&cb, &f, &width, &height, nullptr, 4);
--	f.Close();
--
--	EXIT_IF(icon->pixels == nullptr);
--
--	icon->surface = SDL_CreateRGBSurfaceWithFormatFrom(icon->pixels, width, height, 32, width * 4,
--	                                                   SDL_PIXELFORMAT_RGBA32);
--	EXIT_NOT_IMPLEMENTED(icon->surface == nullptr);
--}
--
--void WindowContext::UpdateIcon() {
--	static WindowIcon icon;
--	static bool       icon_loaded = false;
--
--	if (!icon_loaded) {
--		std::string icon_path;
--		if (Loader::SystemContentGetIconPath(&icon_path)) {
--			WindowLoadPngIcon(icon_path, &icon);
--		}
--		icon_loaded = true;
--	}
--
--	if (icon.surface != nullptr) {
--		SDL_SetWindowIcon(window, icon.surface);
--	}
--}
--
--void WindowContext::UpdateTitle() {
--	static char title[128];
--	static char title_id[12];
--	static char app_ver[12];
--	static bool has_title = Loader::SystemContentParamSfoGetString("TITLE", title, sizeof(title));
--	static bool has_title_id =
--	    Loader::SystemContentParamSfoGetString("TITLE_ID", title_id, sizeof(title_id));
--	static bool has_app_ver =
--	    Loader::SystemContentParamSfoGetString("APP_VER", app_ver, sizeof(app_ver));
--	static uint64_t fps_start   = Common::Timer::QueryPerformanceCounter();
--	static uint64_t frame_num   = 0;
--	static uint64_t fps_frames  = 0;
--	static double   current_fps = 0.0;
--
--#if KYTY_BUILD == KYTY_BUILD_DEBUG
--	static constexpr auto build_type = "Debug";
--#elif KYTY_BUILD == KYTY_BUILD_RELEASE
--	static constexpr auto build_type = "Release";
--#else
--	static constexpr auto build_type = "Unknown";
--#endif
--
--	const auto now       = Common::Timer::QueryPerformanceCounter();
--	const auto frequency = Common::Timer::QueryPerformanceFrequency();
--	frame_num++;
--	fps_frames++;
--	if (now - fps_start >= frequency) {
--		current_fps = static_cast<double>(fps_frames) * static_cast<double>(frequency) /
--		              static_cast<double>(now - fps_start);
--		fps_start   = now;
--		fps_frames  = 0;
--	}
--
--	auto fps = fmt::format(
--	    "[{} | {}] {}{}{}{}{}{}[{}] [{}], frame: {}, fps: {:f}", KYTY_BUILD_LABEL, build_type,
--	    (has_title ? title : ""), (has_title ? ", " : ""), (has_title_id ? title_id : ""),
--	    (has_title_id ? ", " : ""), (has_app_ver ? app_ver : ""), (has_app_ver ? " " : ""),
--	    device_name, processor_name, frame_num, current_fps);
--
--#if defined(__APPLE__)
--	// AppKit traps on title changes off the main thread; fire-and-forget keeps present pacing.
--	RunOnMainThread([this, fps = std::move(fps)] { SDL_SetWindowTitle(window, fps.c_str()); },
--	                false);
--#else
--	SDL_SetWindowTitle(window, fps.c_str());
--#endif
--}
--
--} // namespace Libs::Graphics
-+#include "graphics/presentation/window.h"
-+
-+#include "SDL.h"
-+#include "SDL_error.h"
-+#include "SDL_events.h"
-+#include "SDL_gamecontroller.h"
-+#include "SDL_hints.h"
-+#include "SDL_joystick.h"
-+#include "SDL_keyboard.h"
-+#include "SDL_keycode.h"
-+#include "SDL_mouse.h"
-+#include "SDL_pixels.h"
-+#include "SDL_rwops.h"
-+#include "SDL_stdinc.h"
-+#include "SDL_surface.h"
-+#include "SDL_thread.h"
-+#include "SDL_touch.h"
-+#include "SDL_video.h"
-+#include "SDL_vulkan.h"
-+#include "common/assert.h"
-+#include "common/common.h"
-+#include "common/emulatorConfig.h"
-+#include "common/file.h"
-+#include "common/logging/log.h"
-+#include "common/profiler.h"
-+#include "common/stringUtils.h"
-+#include "common/systemInfo.h"
-+#include "common/threads.h"
-+#include "common/timer.h"
-+#include "graphics/host_gpu/graphicContext.h"
-+#include "graphics/host_gpu/renderer/render.h"
-+#include "graphics/host_gpu/vma.h"
-+#include "graphics/host_gpu/vulkanCommon.h"
-+#include "graphics/presentation/imeOverlay.h"
+@@ -32,6 +32,7 @@
+ #include "graphics/host_gpu/vma.h"
+ #include "graphics/host_gpu/vulkanCommon.h"
+ #include "graphics/presentation/imeOverlay.h"
 +#include "graphics/presentation/settingsOverlay.h"
-+#include "graphics/presentation/renderDoc.h"
-+#include "graphics/presentation/window/hostInput.h"
-+#include "graphics/presentation/window/windowInternal.h"
-+#include "kytyGitVersion.h"
-+#include "libs/controller.h"
-+#include "loader/systemContent.h"
-+
+ #include "graphics/presentation/renderDoc.h"
+ #include "graphics/presentation/window/hostInput.h"
+ #include "graphics/presentation/window/windowInternal.h"
+@@ -39,6 +40,7 @@
+ #include "libs/controller.h"
+ #include "loader/systemContent.h"
+ 
 +#include <atomic>
-+#include <algorithm>
-+#include <cstdio>
-+#include <cstdlib>
-+#include <cstring>
-+#include <memory>
-+#include <string>
-+#include <vector>
-+#include <vulkan/vk_platform.h>
-+
-+#define STB_IMAGE_IMPLEMENTATION
-+#define STBI_NO_SIMD
-+#include "stb_image.h"
-+
-+#include <fmt/format.h>
-+
-+// IWYU pragma: no_include <intrin.h>
-+
-+#define KYTY_ENABLE_DEBUG_PRINTF
+ #include <algorithm>
+ #include <cstdio>
+ #include <cstdlib>
+@@ -57,7 +59,7 @@
+ // IWYU pragma: no_include <intrin.h>
+ 
+ #define KYTY_ENABLE_DEBUG_PRINTF
+-#define KYTY_DBG_INPUT
 +// #define KYTY_DBG_INPUT // BC5: off since 2026-10-07 (250 lines a second from the pad); KYTY_BC5_INPUT_TRACE=1 instead
-+
-+namespace Libs::Graphics {
-+
-+struct EventKeyboard {
-+	bool     down;
-+	bool     up;
-+	bool     pressed;
-+	bool     released;
-+	bool     repeat;
-+	int      scan_code;
-+	int      key_code;
-+	uint16_t mod;
-+	double   timestamp_seconds;
-+};
-+
-+static uint32_t ControllerButtonToPadButton(int button) {
-+	switch (button) {
-+		case SDL_CONTROLLER_BUTTON_A: return Controller::PAD_BUTTON_CROSS;
-+		case SDL_CONTROLLER_BUTTON_B: return Controller::PAD_BUTTON_CIRCLE;
-+		case SDL_CONTROLLER_BUTTON_X: return Controller::PAD_BUTTON_SQUARE;
-+		case SDL_CONTROLLER_BUTTON_Y: return Controller::PAD_BUTTON_TRIANGLE;
-+		case SDL_CONTROLLER_BUTTON_BACK: return Controller::PAD_BUTTON_TOUCH_PAD;
-+		case SDL_CONTROLLER_BUTTON_START: return Controller::PAD_BUTTON_OPTIONS;
-+		case SDL_CONTROLLER_BUTTON_LEFTSTICK: return Controller::PAD_BUTTON_L3;
-+		case SDL_CONTROLLER_BUTTON_RIGHTSTICK: return Controller::PAD_BUTTON_R3;
-+		case SDL_CONTROLLER_BUTTON_LEFTSHOULDER: return Controller::PAD_BUTTON_L1;
-+		case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: return Controller::PAD_BUTTON_R1;
-+		case SDL_CONTROLLER_BUTTON_DPAD_UP: return Controller::PAD_BUTTON_UP;
-+		case SDL_CONTROLLER_BUTTON_DPAD_DOWN: return Controller::PAD_BUTTON_DOWN;
-+		case SDL_CONTROLLER_BUTTON_DPAD_LEFT: return Controller::PAD_BUTTON_LEFT;
-+		case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: return Controller::PAD_BUTTON_RIGHT;
-+		default: return 0;
-+	}
-+}
-+
-+static Controller::Axis ControllerAxisFromSdl(int axis_id) {
-+	switch (axis_id) {
-+		case SDL_CONTROLLER_AXIS_LEFTX: return Controller::Axis::LeftX;
-+		case SDL_CONTROLLER_AXIS_LEFTY: return Controller::Axis::LeftY;
-+		case SDL_CONTROLLER_AXIS_RIGHTX: return Controller::Axis::RightX;
-+		case SDL_CONTROLLER_AXIS_RIGHTY: return Controller::Axis::RightY;
-+		case SDL_CONTROLLER_AXIS_TRIGGERLEFT: return Controller::Axis::TriggerLeft;
-+		case SDL_CONTROLLER_AXIS_TRIGGERRIGHT: return Controller::Axis::TriggerRight;
-+		default: return Controller::Axis::AxisMax;
-+	}
-+}
-+
-+static bool ControllerAxisIsTrigger(int axis_id) {
-+	return axis_id == SDL_CONTROLLER_AXIS_TRIGGERLEFT ||
-+	       axis_id == SDL_CONTROLLER_AXIS_TRIGGERRIGHT;
-+}
-+
-+static int ControllerAxisValueFromSdl(int axis_id, int axis_value) {
-+	return ControllerAxisIsTrigger(axis_id)
-+	           ? Controller::controller_get_axis(0, SDL_JOYSTICK_AXIS_MAX, axis_value)
-+	           : Controller::controller_get_axis(SDL_JOYSTICK_AXIS_MIN, SDL_JOYSTICK_AXIS_MAX,
-+	                                             axis_value);
-+}
-+
-+struct EventMouse {
-+	bool   down;
-+	bool   up;
-+	bool   left;
-+	bool   middle;
-+	bool   right;
-+	bool   x1;
-+	bool   x2;
-+	bool   touch;
-+	bool   pressed;
-+	bool   released;
-+	int    num_of_clicks;
-+	bool   wheel;
-+	int    x;
-+	int    y;
-+	bool   motion;
-+	int    motion_x;
-+	int    motion_y;
-+	double timestamp_seconds;
-+};
-+
-+struct EventFinger {
-+	bool   down;
-+	bool   up;
-+	bool   motion;
-+	int    touch_id;
-+	int    finger_id;
-+	float  x;
-+	float  y;
-+	float  dx;
-+	float  dy;
-+	float  pressure;
-+	double timestamp_seconds;
-+};
-+
-+struct EventController {
-+	int    id;
-+	int    button;
-+	int    axis_id;
-+	int    axis_value;
-+	bool   down;
-+	bool   up;
-+	bool   added;
-+	bool   removed;
-+	bool   remapped;
-+	bool   axis;
-+	bool   pressed;
-+	bool   released;
-+	double timestamp_seconds;
-+};
-+
-+enum class DisplayOrientation {
-+	Unknown,   /* The display orientation can't be determined */
-+	Landscape, /* The display is in landscape mode, with the right side up, relative to portrait
-+	              mode */
-+	LandscapeFlipped, /* The display is in landscape mode, with the left side up, relative to
-+	                     portrait mode */
-+	Portrait,         /* The display is in portrait mode */
-+	PortraitFlipped,  /* The display is in portrait mode, upside down */
-+
-+	DisplayEventOrientation = 0xF0
-+};
-+
-+struct EventDisplay {
-+	DisplayOrientation orientation;
-+};
-+
-+constexpr uint32_t KYTY_SDL_BUTTON_LMASK  = SDL_BUTTON_LMASK;  // NOLINT(hicpp-signed-bitwise)
-+constexpr uint32_t KYTY_SDL_BUTTON_MMASK  = SDL_BUTTON_MMASK;  // NOLINT(hicpp-signed-bitwise)
-+constexpr uint32_t KYTY_SDL_BUTTON_RMASK  = SDL_BUTTON_RMASK;  // NOLINT(hicpp-signed-bitwise)
-+constexpr uint32_t KYTY_SDL_BUTTON_X1MASK = SDL_BUTTON_X1MASK; // NOLINT(hicpp-signed-bitwise)
-+constexpr uint32_t KYTY_SDL_BUTTON_X2MASK = SDL_BUTTON_X2MASK; // NOLINT(hicpp-signed-bitwise)
-+
-+namespace {
-+
-+std::unique_ptr<WindowContext> g_window;
+ 
+ namespace Libs::Graphics {
+ 
+@@ -193,6 +195,7 @@ constexpr uint32_t KYTY_SDL_BUTTON_X2MASK = SDL_BUTTON_X2MASK; // NOLINT(hicpp-s
+ namespace {
+ 
+ std::unique_ptr<WindowContext> g_window;
 +std::atomic<int>               g_fullscreen_pending {-1}; // BC5: asked for before the window existed
-+
-+} // namespace
-+
-+constexpr const char* KYTY_SDL_WINDOW_CAPTION = "Game";
-+constexpr uint32_t    KYTY_SDL_WINDOW_FLAGS =
-+    (static_cast<uint32_t>(SDL_WINDOW_HIDDEN) | static_cast<uint32_t>(SDL_WINDOW_VULKAN));
-+constexpr int KYTY_SDL_WINDOWPOS_CENTERED = SDL_WINDOWPOS_CENTERED; /*NOLINT(hicpp-signed-bitwise)*/
-+
-+static void SetPause(WindowLoopState& game, bool flag) {
-+	LOGF("Pause: %s\n", flag ? "true" : "false");
-+
-+	game.paused.store(flag, std::memory_order_release);
-+}
-+
-+static void GameEventQuit(WindowLoopState& game) {
-+	LOGF("Event: quit\n");
-+
-+	game.need_exit = true;
-+}
-+
-+static void GameEventTerminate(WindowLoopState& game) {
-+	LOGF("Event: terminate\n");
-+
-+	game.need_exit = true;
-+}
-+
-+static void GameEventKeyboard(WindowLoopState& game, const EventKeyboard& key) {
-+#ifdef KYTY_DBG_INPUT
-+	LOGF("Key: time = %.04f, %s%s, %s%s, %s, scan = %d, key = %d, mod = %04" PRIx16 "\n",
-+	     key.timestamp_seconds, (key.down ? "down" : ""), (key.up ? "up" : ""),
-+	     (key.pressed ? "pressed" : ""), (key.released ? "released" : ""),
-+	     (key.repeat ? "repeat" : ""), key.scan_code, key.key_code, key.mod);
-+#endif
-+
-+#if KYTY_PLATFORM == KYTY_PLATFORM_WINDOWS || KYTY_PLATFORM == KYTY_PLATFORM_LINUX
-+	if (key.down) {
-+		switch (key.key_code) {
-+			case SDLK_ESCAPE: game.need_exit = true; break;
-+			case SDLK_SPACE: SetPause(game, !game.paused.load(std::memory_order_acquire)); break;
+ 
+ } // namespace
+ 
+@@ -232,6 +235,16 @@ static void GameEventKeyboard(WindowLoopState& game, const EventKeyboard& key) {
+ 		switch (key.key_code) {
+ 			case SDLK_ESCAPE: game.need_exit = true; break;
+ 			case SDLK_SPACE: SetPause(game, !game.paused.load(std::memory_order_acquire)); break;
 +			case SDLK_F2: // BC5: the settings overlay
 +				if (!key.repeat) {
 +					SettingsOverlayToggle();
@@ -4373,113 +3104,32 @@ index c729a98..db13022 100644
 +					WindowSetFullscreen(!WindowIsFullscreen());
 +				}
 +				break;
-+			case SDLK_F1:
-+				if (!key.repeat) {
-+					RenderDocRequestCapture();
-+				}
-+				break;
-+			default: break;
-+		}
-+	}
-+
-+#endif
-+
-+	if ((key.down || key.up) && !key.repeat) {
-+		HostInputKey(key.key_code, key.down);
+ 			case SDLK_F1:
+ 				if (!key.repeat) {
+ 					RenderDocRequestCapture();
+@@ -245,6 +258,11 @@ static void GameEventKeyboard(WindowLoopState& game, const EventKeyboard& key) {
+ 
+ 	if ((key.down || key.up) && !key.repeat) {
+ 		HostInputKey(key.key_code, key.down);
 +	} else {
 +		static const bool trace = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
 +		if (trace) {
 +			std::fprintf(stderr, "input trace: key %d repeat/other event ignored\n", key.key_code);
 +		}
-+	}
-+}
-+
-+static void GameEventMouse([[maybe_unused]] const EventMouse& mb) {
-+#ifdef KYTY_DBG_INPUT
-+	if (mb.wheel) {
-+		LOGF("Mouse wheel: time = %.04f, %s[%d, %d]\n", mb.timestamp_seconds,
-+		     (mb.touch ? "touch, " : ""), mb.x, mb.y);
-+	} else if (mb.motion) {
-+		LOGF("Mouse motion: time = %.04f, %s%s%s%s%s%s, [%d, %d], (%d, %d)\n", mb.timestamp_seconds,
-+		     (mb.left ? "left" : ""), (mb.middle ? "middle" : ""), (mb.right ? "right" : ""),
-+		     (mb.x1 ? "x1" : ""), (mb.x2 ? "x2" : ""), (mb.touch ? "_touch" : ""), mb.x, mb.y,
-+		     mb.motion_x, mb.motion_y);
-+	} else {
-+		LOGF("Mouse click: time = %.04f, %d, %s%s%s%s%s%s, %s%s, %s%s, [%d, %d]\n",
-+		     mb.timestamp_seconds, mb.num_of_clicks, (mb.left ? "left" : ""),
-+		     (mb.middle ? "middle" : ""), (mb.right ? "right" : ""), (mb.x1 ? "x1" : ""),
-+		     (mb.x2 ? "x2" : ""), (mb.touch ? "_touch" : ""), (mb.down ? "down" : ""),
-+		     (mb.up ? "up" : ""), (mb.pressed ? "pressed" : ""), (mb.released ? "released" : ""),
-+		     mb.x, mb.y);
-+	}
-+#endif
-+
-+	if (mb.down || mb.up) {
-+		uint8_t mouse_button = 0;
-+		if (mb.left) {
-+			mouse_button = SDL_BUTTON_LEFT;
-+		} else if (mb.middle) {
-+			mouse_button = SDL_BUTTON_MIDDLE;
-+		} else if (mb.right) {
-+			mouse_button = SDL_BUTTON_RIGHT;
-+		} else if (mb.x1) {
-+			mouse_button = SDL_BUTTON_X1;
-+		} else if (mb.x2) {
-+			mouse_button = SDL_BUTTON_X2;
-+		}
-+
-+		HostInputMouseButton(mouse_button, mb.down);
-+	}
-+}
-+
-+static void GameEventFinger([[maybe_unused]] const EventFinger& f) {
-+#ifdef KYTY_DBG_INPUT
-+	if (f.motion) {
-+		LOGF("Finger motion: time = %.04f, %d, %d, (x,y) = [%f, %f], (dx,dy) = [%f, %f], pressure "
-+		     "= %f\n",
-+		     f.timestamp_seconds, f.touch_id, f.finger_id, f.x, f.y, f.dx, f.dy, f.pressure);
-+	} else {
-+		LOGF("Finger press: time = %.04f, %d, %d, %s%s, (x,y) = [%f, %f], (dx,dy) = [%f, %f], "
-+		     "pressure = %f\n",
-+		     f.timestamp_seconds, f.touch_id, f.finger_id, (f.down ? "down" : ""),
-+		     (f.up ? "up" : ""), f.x, f.y, f.dx, f.dy, f.pressure);
-+	}
-+#endif
-+}
-+
-+static void GameEventController([[maybe_unused]] const EventController& f) {
-+	EXIT_NOT_IMPLEMENTED(f.remapped);
-+
-+#ifdef KYTY_DBG_INPUT
-+	if (f.added || f.removed) {
-+		LOGF("Controller %s: %d, time = %.04f\n", (f.added ? "added" : "removed"), f.id,
-+		     f.timestamp_seconds);
-+	} else if (f.axis) {
-+		LOGF("Controller axis: %d, axis = %d, value = %d, time = %.04f\n", f.id, f.axis_id,
-+		     f.axis_value, f.timestamp_seconds);
-+	} else {
-+		LOGF("Controller button: "
-+		     "%d, %s%s, %s%s, button = %d, time = %.04f\n",
-+		     f.id, (f.down ? "down" : ""), (f.up ? "up" : ""), (f.pressed ? "pressed" : ""),
-+		     (f.released ? "released" : ""), f.button, f.timestamp_seconds);
-+	}
-+#endif
-+
-+	if (f.added) {
-+		auto* pad = SDL_GameControllerOpen(f.id);
-+		if (pad == nullptr) {
-+			// SDL doesn't recognize this controller in its gamepad database.
-+			// Fall back to raw joystick so buttons/axes still route to the guest.
-+			auto* joy = SDL_JoystickOpen(f.id);
-+			if (joy != nullptr) {
-+				LOGF("Controller opened as raw joystick: %s\n",
-+				     SDL_JoystickName(joy));
+ 	}
+ }
+ 
+@@ -328,12 +346,24 @@ static void GameEventController([[maybe_unused]] const EventController& f) {
+ 			if (joy != nullptr) {
+ 				LOGF("Controller opened as raw joystick: %s\n",
+ 				     SDL_JoystickName(joy));
+-				Controller::ControllerConnect(f.id);
 +				Controller::ControllerConnect(SDL_JoystickInstanceID(joy));
-+			}
-+			return;
-+		}
-+		int id = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(pad));
-+		Controller::ControllerConnect(id);
+ 			}
+ 			return;
+ 		}
+ 		int id = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(pad));
+ 		Controller::ControllerConnect(id);
 +		// BC5: the pad's accelerometer and gyroscope, where SDL has them (ASTRO BOT's first
 +		// scene wants the controller shaken).
 +		for (const SDL_SensorType sensor: {SDL_SENSOR_ACCEL, SDL_SENSOR_GYRO}) {
@@ -4492,18 +3142,17 @@ index c729a98..db13022 100644
 +				LOGF("Controller sensor %s: enabled\n", name);
 +			}
 +		}
-+	}
-+
-+	if (f.removed) {
-+		Controller::ControllerDisconnect(f.id);
-+		SDL_GameControllerClose(SDL_GameControllerFromInstanceID(f.id));
-+	}
-+
-+	if (f.down || f.up) {
-+		const auto button = ControllerButtonToPadButton(f.button);
+ 	}
+ 
+ 	if (f.removed) {
+@@ -343,19 +373,38 @@ static void GameEventController([[maybe_unused]] const EventController& f) {
+ 
+ 	if (f.down || f.up) {
+ 		const auto button = ControllerButtonToPadButton(f.button);
+-		if (button != 0) {
 +		// BC5: "Pad:<button>=none" in the input configuration drops the physical button here.
 +		if (button != 0 && !HostInputPadButtonDisabled(f.button)) {
-+			Controller::ControllerButton(f.id, button, f.down);
+ 			Controller::ControllerButton(f.id, button, f.down);
 +		} else if (button != 0) {
 +			static bool once = false;
 +			if (!once) {
@@ -4511,20 +3160,21 @@ index c729a98..db13022 100644
 +				LOGF("Host input: pad button %s is disabled, its presses are dropped\n",
 +				     SDL_GameControllerGetStringForButton(static_cast<SDL_GameControllerButton>(f.button)));
 +			}
-+		}
-+		// Also route through custom gamepad mapping if user has one set.
-+		HostInputGamepadButton(static_cast<uint8_t>(f.button), f.down);
-+	}
-+
-+	if (f.axis) {
+ 		}
+ 		// Also route through custom gamepad mapping if user has one set.
+ 		HostInputGamepadButton(static_cast<uint8_t>(f.button), f.down);
+ 	}
+ 
+ 	if (f.axis) {
 +		// BC5: an axis can drive a control ("R2=Pad:lefttrigger"), and "Pad:<axis>=none" drops
 +		// the physical axis here (a trigger stuck at full travel, say).
 +		HostInputGamepadAxis(f.axis_id, f.axis_value);
-+		const auto axis = ControllerAxisFromSdl(f.axis_id);
+ 		const auto axis = ControllerAxisFromSdl(f.axis_id);
+-		if (axis != Controller::Axis::AxisMax) {
 +		if (axis != Controller::Axis::AxisMax && !HostInputPadAxisDisabled(f.axis_id)) {
-+			Controller::ControllerAxis(f.id, axis,
-+			                           ControllerAxisValueFromSdl(f.axis_id, f.axis_value));
-+		}
+ 			Controller::ControllerAxis(f.id, axis,
+ 			                           ControllerAxisValueFromSdl(f.axis_id, f.axis_value));
+ 		}
 +		else if (axis != Controller::Axis::AxisMax) {
 +			static bool once = false;
 +			if (!once) {
@@ -4533,136 +3183,13 @@ index c729a98..db13022 100644
 +				     SDL_GameControllerGetStringForAxis(static_cast<SDL_GameControllerAxis>(f.axis_id)));
 +			}
 +		}
-+	}
-+}
-+
-+static void GameEventLowMemory() {
-+	LOGF("Event: low_memory\n");
-+}
-+
-+static void GameEventWillEnterBackground(WindowLoopState& game) {
-+	LOGF("Event: will_enter_background\n");
-+
-+	SetPause(game, true);
-+}
-+
-+static void GameEventDidEnterBackground() {
-+	LOGF("Event: did_enter_background\n");
-+}
-+
-+static void GameEventWillEnterForeground() {
-+	LOGF("Event: will_enter_foreground\n");
-+}
-+
-+static void GameEventDidEnterForeground(WindowLoopState& game) {
-+	LOGF("Event: did_enter_foreground\n");
-+
-+	SetPause(game, false);
-+}
-+
-+void WindowContext::Resize(uint32_t new_width, uint32_t new_height) {
-+	EXIT_IF(new_width == 0 || new_height == 0);
-+	graphic_ctx.screen_width  = new_width;
-+	graphic_ctx.screen_height = new_height;
-+}
-+
-+void WindowContext::ProcessWindowEvent(const SDL_WindowEvent& event) {
-+	const auto& window_event = event;
-+	switch (window_event.event) {
-+		case SDL_WINDOWEVENT_SHOWN:
-+			LOGF("Window %" PRIu32 " shown\n", window_event.windowID);
-+			break;
-+
-+		case SDL_WINDOWEVENT_HIDDEN:
-+			LOGF("Window %" PRIu32 " hidden\n", window_event.windowID);
-+			break;
-+
-+		case SDL_WINDOWEVENT_EXPOSED:
-+			LOGF("Window %" PRIu32 " exposed\n", window_event.windowID);
-+			break;
-+
-+		case SDL_WINDOWEVENT_MOVED:
-+			LOGF("Window %" PRIu32 " moved to %" PRId32 ",%" PRId32 "\n", window_event.windowID,
-+			     window_event.data1, window_event.data2);
-+			break;
-+
-+		case SDL_WINDOWEVENT_RESIZED:
-+			LOGF("Window %" PRIu32 " resized to %" PRId32 "x%" PRId32 "\n", window_event.windowID,
-+			     window_event.data1, window_event.data2);
-+
-+			LOGF("m: %d\n", static_cast<int>(SDL_ThreadID()));
-+			Resize(window_event.data1, window_event.data2);
-+
-+			break;
-+
-+		case SDL_WINDOWEVENT_SIZE_CHANGED:
-+			LOGF("Window %" PRIu32 " size changed to %" PRId32 "x%" PRId32 "\n",
-+			     window_event.windowID, window_event.data1, window_event.data2);
-+
-+			LOGF("m: %d\n", static_cast<int>(SDL_ThreadID()));
-+			Resize(window_event.data1, window_event.data2);
-+
-+			break;
-+
-+		case SDL_WINDOWEVENT_MINIMIZED:
-+			LOGF("Window %" PRIu32 " minimized\n", window_event.windowID);
-+			break;
-+		case SDL_WINDOWEVENT_MAXIMIZED:
-+			LOGF("Window %" PRIu32 " maximized\n", window_event.windowID);
-+			break;
-+		case SDL_WINDOWEVENT_RESTORED:
-+			LOGF("Window %" PRIu32 " restored\n", window_event.windowID);
-+			break;
-+		case SDL_WINDOWEVENT_ENTER:
-+			LOGF("Mouse entered window %" PRIu32 "\n", window_event.windowID);
-+			break;
-+		case SDL_WINDOWEVENT_LEAVE:
-+			LOGF("Mouse left window %" PRIu32 "\n", window_event.windowID);
-+			break;
-+		case SDL_WINDOWEVENT_FOCUS_GAINED:
-+			LOGF("Window %" PRIu32 " gained keyboard focus\n", window_event.windowID);
-+			break;
-+		case SDL_WINDOWEVENT_FOCUS_LOST:
-+			LOGF("Window %" PRIu32 " lost keyboard focus\n", window_event.windowID);
-+			break;
-+		case SDL_WINDOWEVENT_CLOSE:
-+			LOGF("Window %" PRIu32 " closed\n", window_event.windowID);
-+			break;
-+		default:
-+			LOGF("Window %" PRIu32 " got unknown event %" PRIu8 "\n", window_event.windowID,
-+			     window_event.event);
-+			break;
-+	}
-+}
-+
-+void WindowContext::ProcessDisplayEvent(const SDL_DisplayEvent& display) {
-+	bool sdl = false;
-+
-+	switch (display.event) {
-+		case SDL_DISPLAYEVENT_ORIENTATION: sdl = true; [[fallthrough]];
-+		case static_cast<Uint8>(DisplayOrientation::DisplayEventOrientation): {
-+			LOGF("Display %" PRIu32 "[%s] changed orientation to %d - ", display.display,
-+			     sdl ? "SDL" : "Kyty", static_cast<int>(display.data1));
-+
-+			switch (display.data1) {
-+				case SDL_ORIENTATION_UNKNOWN: LOGF("UNKNOWN\n"); break;
-+				case SDL_ORIENTATION_LANDSCAPE: LOGF("LANDSCAPE\n"); break;
-+				case SDL_ORIENTATION_LANDSCAPE_FLIPPED: LOGF("LANDSCAPE_FLIPPED\n"); break;
-+				case SDL_ORIENTATION_PORTRAIT: LOGF("PORTRAIT\n"); break;
-+				case SDL_ORIENTATION_PORTRAIT_FLIPPED: LOGF("PORTRAIT_FLIPPED\n"); break;
-+				default: LOGF("???\n");
-+			}
-+
-+			break;
-+		}
-+		default:
-+			LOGF("Display %" PRIu32 " got unknown event 0x%" PRIx8 "\n", display.display,
-+			     display.event);
-+			break;
-+	}
-+}
-+
-+void WindowContext::ProcessEvent(double time_s) {
+ 	}
+ }
+ 
+@@ -486,9 +535,20 @@ void WindowContext::ProcessDisplayEvent(const SDL_DisplayEvent& display) {
+ }
+ 
+ void WindowContext::ProcessEvent(double time_s) {
 +	// BC5 (experiment 0048): a fullscreen request from another thread (WindowSetFullscreen).
 +	if (const int want = g_fullscreen_pending.exchange(-1); want >= 0 && window != nullptr) {
 +		if (SDL_SetWindowFullscreen(window, want == 1 ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0) != 0) {
@@ -4670,159 +3197,20 @@ index c729a98..db13022 100644
 +		}
 +		SDL_SetWindowResizable(window, want == 1 ? SDL_FALSE : SDL_TRUE);
 +	}
-+	auto& game  = loop;
-+	auto* event = &game.event;
-+	EXIT_IF(SDL_GetEventState(SDL_DISPLAYEVENT) != SDL_ENABLE);
+ 	auto& game  = loop;
+ 	auto* event = &game.event;
+ 	EXIT_IF(SDL_GetEventState(SDL_DISPLAYEVENT) != SDL_ENABLE);
 +	// BC5: while the settings overlay is open it takes the keyboard, the mouse and the pad.
 +	if (ProcessSettingsInput(*event)) {
 +		return;
 +	}
-+	if (ProcessImeInput(*event)) {
-+		return;
-+	}
-+
-+	switch (event->type) {
-+		case SDL_QUIT: GameEventQuit(game); break;
-+
-+		case SDL_APP_TERMINATING: GameEventTerminate(game); break;
-+
-+		case SDL_APP_LOWMEMORY: GameEventLowMemory(); break;
-+
-+		case SDL_APP_WILLENTERBACKGROUND: GameEventWillEnterBackground(game); break;
-+
-+		case SDL_APP_DIDENTERBACKGROUND: GameEventDidEnterBackground(); break;
-+
-+		case SDL_APP_WILLENTERFOREGROUND: GameEventWillEnterForeground(); break;
-+
-+		case SDL_APP_DIDENTERFOREGROUND: GameEventDidEnterForeground(game); break;
-+
-+		case SDL_KEYDOWN:
-+		case SDL_KEYUP: {
-+			EventKeyboard key {};
-+
-+			key.down              = (event->type == SDL_KEYDOWN);
-+			key.up                = (event->type == SDL_KEYUP);
-+			key.pressed           = (event->key.state == SDL_PRESSED);
-+			key.released          = (event->key.state == SDL_RELEASED);
-+			key.repeat            = (event->key.repeat != 0u);
-+			key.scan_code         = event->key.keysym.scancode;
-+			key.key_code          = event->key.keysym.sym;
-+			key.mod               = event->key.keysym.mod;
-+			key.timestamp_seconds = time_s;
-+
-+			GameEventKeyboard(game, key);
-+
-+			break;
-+		}
-+
-+		case SDL_WINDOWEVENT: ProcessWindowEvent(event->window); break;
-+
-+		case SDL_DISPLAYEVENT: ProcessDisplayEvent(event->display); break;
-+
-+		case SDL_MOUSEBUTTONDOWN:
-+		case SDL_MOUSEBUTTONUP: {
-+			EventMouse mb {};
-+
-+			mb.down              = (event->button.type == SDL_MOUSEBUTTONDOWN);
-+			mb.up                = (event->button.type == SDL_MOUSEBUTTONUP);
-+			mb.left              = (event->button.button == SDL_BUTTON_LEFT);
-+			mb.middle            = (event->button.button == SDL_BUTTON_MIDDLE);
-+			mb.right             = (event->button.button == SDL_BUTTON_RIGHT);
-+			mb.x1                = (event->button.button == SDL_BUTTON_X1);
-+			mb.x2                = (event->button.button == SDL_BUTTON_X2);
-+			mb.touch             = (event->button.which == SDL_TOUCH_MOUSEID);
-+			mb.pressed           = (event->button.state == SDL_PRESSED);
-+			mb.released          = (event->button.state == SDL_RELEASED);
-+			mb.num_of_clicks     = event->button.clicks;
-+			mb.wheel             = false;
-+			mb.x                 = event->button.x;
-+			mb.y                 = event->button.y;
-+			mb.motion            = false;
-+			mb.motion_x          = 0;
-+			mb.motion_y          = 0;
-+			mb.timestamp_seconds = time_s;
-+
-+			GameEventMouse(mb);
-+
-+			break;
-+		}
-+
-+		case SDL_MOUSEWHEEL: {
-+			EventMouse mb {};
-+
-+			mb.down              = false;
-+			mb.up                = false;
-+			mb.left              = false;
-+			mb.middle            = false;
-+			mb.right             = false;
-+			mb.x1                = false;
-+			mb.x2                = false;
-+			mb.touch             = (event->wheel.which == SDL_TOUCH_MOUSEID);
-+			mb.pressed           = false;
-+			mb.released          = false;
-+			mb.num_of_clicks     = 0;
-+			mb.wheel             = true;
-+			mb.x                 = event->wheel.x;
-+			mb.y                 = event->wheel.y;
-+			mb.motion            = false;
-+			mb.motion_x          = 0;
-+			mb.motion_y          = 0;
-+			mb.timestamp_seconds = time_s;
-+
-+			GameEventMouse(mb);
-+
-+			break;
-+		}
-+
-+		case SDL_MOUSEMOTION: {
-+			EventMouse mb {};
-+
-+			mb.down              = false;
-+			mb.up                = false;
-+			mb.left              = ((event->motion.state & KYTY_SDL_BUTTON_LMASK) != 0u);
-+			mb.middle            = ((event->motion.state & KYTY_SDL_BUTTON_MMASK) != 0u);
-+			mb.right             = ((event->motion.state & KYTY_SDL_BUTTON_RMASK) != 0u);
-+			mb.x1                = ((event->motion.state & KYTY_SDL_BUTTON_X1MASK) != 0u);
-+			mb.x2                = ((event->motion.state & KYTY_SDL_BUTTON_X2MASK) != 0u);
-+			mb.touch             = (event->motion.which == SDL_TOUCH_MOUSEID);
-+			mb.pressed           = false;
-+			mb.released          = false;
-+			mb.num_of_clicks     = 0;
-+			mb.wheel             = false;
-+			mb.x                 = event->motion.x;
-+			mb.y                 = event->motion.y;
-+			mb.motion            = true;
-+			mb.motion_x          = event->motion.xrel;
-+			mb.motion_y          = event->motion.yrel;
-+			mb.timestamp_seconds = time_s;
-+
-+			GameEventMouse(mb);
-+
-+			break;
-+		}
-+
-+		case SDL_FINGERMOTION:
-+		case SDL_FINGERDOWN:
-+		case SDL_FINGERUP: {
-+			EventFinger f {};
-+
-+			f.down              = (event->tfinger.type == SDL_FINGERDOWN);
-+			f.up                = (event->tfinger.type == SDL_FINGERUP);
-+			f.motion            = (event->tfinger.type == SDL_FINGERMOTION);
-+			f.finger_id         = static_cast<int>(event->tfinger.fingerId);
-+			f.touch_id          = static_cast<int>(event->tfinger.touchId);
-+			f.x                 = event->tfinger.x;
-+			f.y                 = event->tfinger.y;
-+			f.dx                = event->tfinger.dx;
-+			f.dy                = event->tfinger.dy;
-+			f.pressure          = event->tfinger.pressure;
-+			f.timestamp_seconds = time_s;
-+
-+			GameEventFinger(f);
-+
-+			break;
-+		}
-+
+ 	if (ProcessImeInput(*event)) {
+ 		return;
+ 	}
+@@ -635,6 +695,17 @@ void WindowContext::ProcessEvent(double time_s) {
+ 			break;
+ 		}
+ 
 +		case SDL_CONTROLLERSENSORUPDATE: { // BC5: SDL gives m/s^2 and rad/s
 +			if (event->csensor.sensor == SDL_SENSOR_ACCEL) {
 +				const float g[3] = {event->csensor.data[0] / 9.80665f, event->csensor.data[1] / 9.80665f,
@@ -4834,122 +3222,36 @@ index c729a98..db13022 100644
 +			break;
 +		}
 +
-+		case SDL_CONTROLLERAXISMOTION: {
-+			EventController c {};
-+
-+			c.id                = event->caxis.which;
-+			c.button            = SDL_CONTROLLER_BUTTON_INVALID;
-+			c.axis_id           = event->caxis.axis;
-+			c.axis_value        = event->caxis.value;
-+			c.down              = false;
-+			c.up                = false;
-+			c.added             = false;
-+			c.removed           = false;
-+			c.remapped          = false;
-+			c.axis              = true;
-+			c.pressed           = false;
-+			c.released          = false;
-+			c.timestamp_seconds = time_s;
-+
-+			GameEventController(c);
-+
-+			break;
-+		}
-+
-+		case SDL_CONTROLLERBUTTONDOWN:
-+		case SDL_CONTROLLERBUTTONUP: {
-+			EventController c {};
-+
-+			c.id                = event->cbutton.which;
-+			c.button            = event->cbutton.button;
-+			c.axis_id           = SDL_CONTROLLER_AXIS_INVALID;
-+			c.axis_value        = 0;
-+			c.down              = (event->cbutton.type == SDL_CONTROLLERBUTTONDOWN);
-+			c.up                = (event->cbutton.type == SDL_CONTROLLERBUTTONUP);
-+			c.added             = false;
-+			c.removed           = false;
-+			c.remapped          = false;
-+			c.axis              = false;
-+			c.pressed           = (event->cbutton.state == SDL_PRESSED);
-+			c.released          = (event->cbutton.state == SDL_RELEASED);
-+			c.timestamp_seconds = time_s;
-+
-+			GameEventController(c);
-+
-+			break;
-+		}
-+
-+		case SDL_CONTROLLERDEVICEADDED:
-+		case SDL_CONTROLLERDEVICEREMOVED:
-+		case SDL_CONTROLLERDEVICEREMAPPED: {
-+			EventController c {};
-+
-+			c.id                = event->cdevice.which;
-+			c.button            = SDL_CONTROLLER_BUTTON_INVALID;
-+			c.axis_id           = SDL_CONTROLLER_AXIS_INVALID;
-+			c.axis_value        = 0;
-+			c.down              = false;
-+			c.up                = false;
-+			c.added             = (event->cdevice.type == SDL_CONTROLLERDEVICEADDED);
-+			c.removed           = (event->cdevice.type == SDL_CONTROLLERDEVICEREMOVED);
-+			c.remapped          = (event->cdevice.type == SDL_CONTROLLERDEVICEREMAPPED);
-+			c.axis              = false;
-+			c.pressed           = false;
-+			c.released          = false;
-+			c.timestamp_seconds = time_s;
-+
-+			GameEventController(c);
-+
-+			break;
-+		}
-+
-+		// Raw joystick fallback — when SDL doesn't recognize a controller
-+		// in its gamepad DB, events arrive as joystick events instead.
-+		case SDL_JOYAXISMOTION: {
-+			// Map raw axis to a controller event. Axes 0-5 map to
-+			// left stick X/Y, right stick X/Y, L2, R2 by convention.
-+			static const uint8_t axis_map[] = {
-+			    SDL_CONTROLLER_AXIS_LEFTX,
-+			    SDL_CONTROLLER_AXIS_LEFTY,
-+			    SDL_CONTROLLER_AXIS_RIGHTX,
-+			    SDL_CONTROLLER_AXIS_RIGHTY,
-+			    SDL_CONTROLLER_AXIS_TRIGGERLEFT,
-+			    SDL_CONTROLLER_AXIS_TRIGGERRIGHT,
-+			};
+ 		case SDL_CONTROLLERAXISMOTION: {
+ 			EventController c {};
+ 
+@@ -717,6 +788,11 @@ void WindowContext::ProcessEvent(double time_s) {
+ 			    SDL_CONTROLLER_AXIS_TRIGGERLEFT,
+ 			    SDL_CONTROLLER_AXIS_TRIGGERRIGHT,
+ 			};
 +			// BC5: a pad SDL knows sends the same motion as a controller event; taking both
 +			// made a trigger alternate between its value and the raw one (below zero: released).
 +			if (SDL_GameControllerFromInstanceID(event->jaxis.which) != nullptr) {
 +				break;
 +			}
-+			EventController c {};
-+			c.id         = event->jaxis.which;
-+			c.axis_id    = (event->jaxis.axis < 6) ? axis_map[event->jaxis.axis]
-+			                                        : SDL_CONTROLLER_AXIS_INVALID;
-+			c.axis_value = event->jaxis.value;
-+			c.axis       = true;
-+			c.timestamp_seconds = time_s;
-+			GameEventController(c);
-+			break;
-+		}
-+
-+		case SDL_JOYBUTTONDOWN:
-+		case SDL_JOYBUTTONUP: {
+ 			EventController c {};
+ 			c.id         = event->jaxis.which;
+ 			c.axis_id    = (event->jaxis.axis < 6) ? axis_map[event->jaxis.axis]
+@@ -730,6 +806,9 @@ void WindowContext::ProcessEvent(double time_s) {
+ 
+ 		case SDL_JOYBUTTONDOWN:
+ 		case SDL_JOYBUTTONUP: {
 +			if (SDL_GameControllerFromInstanceID(event->jbutton.which) != nullptr) {
 +				break; // BC5: as above
 +			}
-+			EventController c {};
-+			c.id    = event->jbutton.which;
-+			c.button = event->jbutton.button;
-+			c.down   = (event->jbutton.type == SDL_JOYBUTTONDOWN);
-+			c.up     = (event->jbutton.type == SDL_JOYBUTTONUP);
-+			c.pressed  = (event->jbutton.state == SDL_PRESSED);
-+			c.released = (event->jbutton.state == SDL_RELEASED);
-+			c.timestamp_seconds = time_s;
-+			GameEventController(c);
-+			break;
-+		}
-+
-+		case SDL_JOYDEVICEADDED: {
+ 			EventController c {};
+ 			c.id    = event->jbutton.which;
+ 			c.button = event->jbutton.button;
+@@ -743,17 +822,30 @@ void WindowContext::ProcessEvent(double time_s) {
+ 		}
+ 
+ 		case SDL_JOYDEVICEADDED: {
+-			// Open as raw joystick when we don't get a controller event.
 +			// BC5: a device SDL knows as a game controller also sends SDL_CONTROLLERDEVICEADDED,
 +			// which opens and connects it; connecting it here too registered one pad twice, under
 +			// its device index and under its instance id. The two are equal for the first pad
@@ -4960,210 +3262,62 @@ index c729a98..db13022 100644
 +			if (SDL_IsGameController(event->jdevice.which) == SDL_TRUE) {
 +				break;
 +			}
-+			auto* joy = SDL_JoystickOpen(event->jdevice.which);
-+			if (joy != nullptr) {
-+				LOGF("Joystick added: %s\n", SDL_JoystickName(joy));
+ 			auto* joy = SDL_JoystickOpen(event->jdevice.which);
+ 			if (joy != nullptr) {
+ 				LOGF("Joystick added: %s\n", SDL_JoystickName(joy));
+-				Controller::ControllerConnect(event->jdevice.which);
 +				Controller::ControllerConnect(SDL_JoystickInstanceID(joy));
-+			}
-+			break;
-+		}
-+
-+		case SDL_JOYDEVICEREMOVED: {
-+			Controller::ControllerDisconnect(event->jdevice.which);
+ 			}
+ 			break;
+ 		}
+ 
+ 		case SDL_JOYDEVICEREMOVED: {
+ 			Controller::ControllerDisconnect(event->jdevice.which);
 +			// A game controller is closed by SDL_CONTROLLERDEVICEREMOVED; only raw joysticks here.
 +			if (SDL_GameControllerFromInstanceID(event->jdevice.which) != nullptr) {
 +				break;
 +			}
-+			auto* joy = SDL_JoystickFromInstanceID(event->jdevice.which);
-+			if (joy != nullptr) {
-+				SDL_JoystickClose(joy);
-+			}
-+			break;
-+		}
-+	}
-+}
-+
-+#if defined(__APPLE__)
-+void WindowContext::RunOnMainThread(std::function<void()> task, bool wait) {
-+	if (Common::Thread::IsMainThread()) {
-+		task();
-+		return;
-+	}
-+
-+	uint64_t ticket = 0;
-+	{
-+		Common::LockGuard lock(main_task_mutex);
-+		main_tasks.push_back(std::move(task));
-+		ticket = ++main_tasks_queued;
-+	}
-+
-+	// Wake the main loop in case it is blocked in SDL_WaitEvent.
-+	SDL_Event event {};
-+	event.type = SDL_USEREVENT;
-+	SDL_PushEvent(&event);
-+
-+	if (!wait) {
-+		return;
-+	}
-+	Common::LockGuard lock(main_task_mutex);
-+	while (main_tasks_run < ticket) {
-+		main_task_done.Wait(&main_task_mutex);
-+	}
-+}
-+
-+void WindowContext::DrainMainThreadTasks() {
-+	std::vector<std::function<void()>> tasks;
-+	{
-+		Common::LockGuard lock(main_task_mutex);
-+		tasks.swap(main_tasks);
-+	}
-+	if (tasks.empty()) {
-+		return;
-+	}
-+	for (auto& task: tasks) {
-+		task();
-+	}
-+	Common::LockGuard lock(main_task_mutex);
-+	main_tasks_run += tasks.size();
-+	main_task_done.SignalAll();
-+}
-+#endif
-+
-+void WindowContext::Run() {
-+	Common::Timer timer;
-+	timer.Start();
-+
-+	loop.event     = {};
-+	loop.need_exit = false;
-+	loop.paused.store(false, std::memory_order_release);
-+
-+	while (!loop.need_exit) {
-+#if defined(__APPLE__)
-+		DrainMainThreadTasks();
-+#endif
-+		if (loop.paused.load(std::memory_order_acquire)) {
-+			if (!timer.IsPaused()) {
-+				timer.Pause();
-+			}
-+		} else if (timer.IsPaused()) {
-+			timer.Resume();
-+		}
-+
-+		if (SDL_WaitEvent(&loop.event) == 0) {
-+			EXIT("%s\n", SDL_GetError());
-+		}
-+		ProcessEvent(timer.GetTimeS());
-+	}
-+}
-+
-+static void WindowCreate(WindowContext& context) {
-+	EXIT_IF(context.window != nullptr);
-+	EXIT_IF(context.graphic_ctx.screen_width == 0);
-+	EXIT_IF(context.graphic_ctx.screen_height == 0);
-+
-+	int width  = static_cast<int>(context.graphic_ctx.screen_width);
-+	int height = static_cast<int>(context.graphic_ctx.screen_height);
-+
-+#if KYTY_PLATFORM == KYTY_PLATFORM_WINDOWS
-+	SDL_SetHint(SDL_HINT_WINDOWS_DPI_SCALING, "0");
-+#endif
-+
-+	if (SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER | SDL_INIT_JOYSTICK) < 0) {
-+		EXIT("%s\n", SDL_GetError());
-+	}
-+	HostInputInit();
-+	InitializeImeInput();
-+
-+	LOGF("WindowCreate(): width = %d, height = %d\n", width, height);
-+
+ 			auto* joy = SDL_JoystickFromInstanceID(event->jdevice.which);
+ 			if (joy != nullptr) {
+ 				SDL_JoystickClose(joy);
+@@ -856,11 +948,13 @@ static void WindowCreate(WindowContext& context) {
+ 
+ 	LOGF("WindowCreate(): width = %d, height = %d\n", width, height);
+ 
 +	const bool fullscreen = Config::FullscreenEnabled() || g_fullscreen_pending.load() == 1; // BC5: or Fullscreen=on
 +
-+	// KytyPlus: keep the game in an ordinary window. A window that all but matches the
-+	// panel (1280x720 on a 1280x800 display) reads as borderless fullscreen, because the
-+	// frame ends up flush with the screen edges. Fit the requested size inside the
-+	// display's usable area first so the decorations stay visible and usable.
+ 	// KytyPlus: keep the game in an ordinary window. A window that all but matches the
+ 	// panel (1280x720 on a 1280x800 display) reads as borderless fullscreen, because the
+ 	// frame ends up flush with the screen edges. Fit the requested size inside the
+ 	// display's usable area first so the decorations stay visible and usable.
+-	if (!Config::FullscreenEnabled()) {
 +	if (!fullscreen) {
-+		SDL_Rect usable{};
-+		if (SDL_GetDisplayUsableBounds(0, &usable) == 0 && usable.w > 0 && usable.h > 0) {
-+			constexpr int margin_x = 48;
-+			constexpr int margin_y = 96;
-+			const int     max_w    = std::max(320, usable.w - margin_x);
-+			const int     max_h    = std::max(240, usable.h - margin_y);
-+			if (width > max_w) {
-+				height = static_cast<int>((static_cast<double>(height) * max_w) / width);
-+				width  = max_w;
-+			}
-+			if (height > max_h) {
-+				width  = static_cast<int>((static_cast<double>(width) * max_h) / height);
-+				height = max_h;
-+			}
-+			if (width != static_cast<int>(context.graphic_ctx.screen_width) ||
-+			    height != static_cast<int>(context.graphic_ctx.screen_height)) {
-+				LOGF("Windowed fit: using %dx%d (display usable %dx%d)\n", width, height, usable.w,
-+				     usable.h);
-+				context.graphic_ctx.screen_width  = static_cast<uint32_t>(width);
-+				context.graphic_ctx.screen_height = static_cast<uint32_t>(height);
-+			}
-+		}
-+	}
-+
-+	uint32_t window_flags = KYTY_SDL_WINDOW_FLAGS;
+ 		SDL_Rect usable{};
+ 		if (SDL_GetDisplayUsableBounds(0, &usable) == 0 && usable.w > 0 && usable.h > 0) {
+ 			constexpr int margin_x = 48;
+@@ -886,7 +980,7 @@ static void WindowCreate(WindowContext& context) {
+ 	}
+ 
+ 	uint32_t window_flags = KYTY_SDL_WINDOW_FLAGS;
+-	if (Config::FullscreenEnabled()) {
 +	if (fullscreen) {
-+		window_flags |= static_cast<uint32_t>(SDL_WINDOW_FULLSCREEN_DESKTOP);
-+	} else {
-+		// Windowed: allow the user to resize; keep the normal frame decorations.
-+		window_flags |= static_cast<uint32_t>(SDL_WINDOW_RESIZABLE);
-+	}
-+#if defined(__APPLE__)
-+	// macOS 26 window chrome (CoreUI asset decode, SwiftUI titlebar) has been observed
-+	// throwing NSExceptions under Rosetta during the first CATransaction commit. A
-+	// borderless window skips that machinery entirely.
-+	if (std::getenv("KYTY_BORDERLESS") != nullptr) {
-+		window_flags |= static_cast<uint32_t>(SDL_WINDOW_BORDERLESS);
-+	}
-+#endif
-+	context.window = SDL_CreateWindow(KYTY_SDL_WINDOW_CAPTION, KYTY_SDL_WINDOWPOS_CENTERED,
-+	                                  KYTY_SDL_WINDOWPOS_CENTERED, width, height, window_flags);
-+
-+	context.window_hidden = true;
-+
-+	if (context.window == nullptr) {
-+		EXIT("%s\n", SDL_GetError());
-+	}
-+
+ 		window_flags |= static_cast<uint32_t>(SDL_WINDOW_FULLSCREEN_DESKTOP);
+ 	} else {
+ 		// Windowed: allow the user to resize; keep the normal frame decorations.
+@@ -909,7 +1003,8 @@ static void WindowCreate(WindowContext& context) {
+ 		EXIT("%s\n", SDL_GetError());
+ 	}
+ 
+-	SDL_SetWindowResizable(context.window, Config::FullscreenEnabled() ? SDL_FALSE : SDL_TRUE);
 +	SDL_SetWindowResizable(context.window, fullscreen ? SDL_FALSE : SDL_TRUE);
 +	g_fullscreen_pending.store(-1); // applied by the flags above
-+}
-+
-+Presenter& WindowInit(uint32_t width, uint32_t height) {
-+	EXIT_NOT_IMPLEMENTED(!Common::Thread::IsMainThread());
-+	EXIT_IF(g_window != nullptr);
-+
-+	auto window = std::make_unique<WindowContext>();
-+
-+	window->graphic_ctx.screen_width  = width;
-+	window->graphic_ctx.screen_height = height;
-+
-+	WindowCreate(*window);
-+	window->CreateVulkan();
-+	auto& presenter = *window->presenter;
-+	g_window        = std::move(window);
-+	return presenter;
-+}
-+
-+void WindowRun() {
-+	KYTY_PROFILER_THREAD("Thread_Window");
-+	EXIT_IF(g_window == nullptr);
-+
-+	g_window->Run();
-+}
-+
-+void WindowShutdown() {
-+	if (g_window != nullptr) {
-+		g_window.reset();
-+	}
-+}
-+
+ }
+ 
+ Presenter& WindowInit(uint32_t width, uint32_t height) {
+@@ -941,6 +1036,27 @@ void WindowShutdown() {
+ 	}
+ }
+ 
 +void WindowSetFullscreen(bool on) {
 +	if (g_window == nullptr || g_window->window == nullptr) {
 +		g_fullscreen_pending.store(on ? 1 : 0);
@@ -5185,137 +3339,35 @@ index c729a98..db13022 100644
 +	return (SDL_GetWindowFlags(g_window->window) & SDL_WINDOW_FULLSCREEN_DESKTOP) == SDL_WINDOW_FULLSCREEN_DESKTOP;
 +}
 +
-+static int WindowIconRead(void* user, char* data, int size) {
-+	auto*    src        = static_cast<Common::File*>(user);
-+	uint32_t bytes_read = 0;
-+	src->Read(data, static_cast<uint32_t>(size), &bytes_read);
-+	return static_cast<int>(bytes_read);
-+}
-+
-+static void WindowIconSkip(void* user, int n) {
-+	auto*          src      = static_cast<Common::File*>(user);
-+	const uint64_t position = src->Tell();
-+
-+	if (n >= 0) {
-+		src->Seek(position + static_cast<uint64_t>(n));
-+	} else {
-+		const uint64_t distance = static_cast<uint64_t>(-static_cast<int64_t>(n));
-+		EXIT_IF(distance > position);
-+		src->Seek(position - distance);
-+	}
-+}
-+
-+static int WindowIconEof(void* user) {
-+	auto* src = static_cast<Common::File*>(user);
-+	return src->IsEOF() ? 1 : 0;
-+}
-+
-+struct WindowIcon {
-+	SDL_Surface* surface = nullptr;
-+	void*        pixels  = nullptr;
-+
-+	~WindowIcon() {
-+		SDL_FreeSurface(surface);
-+		stbi_image_free(pixels);
-+	}
-+};
-+
-+static void WindowLoadPngIcon(const std::string& path, WindowIcon* icon) {
-+	Common::File f;
-+	if (!f.Open(path, Common::File::Mode::Read)) {
-+		EXIT("Can't open icon file %s\n", path.c_str());
-+	}
-+
-+	int width  = 0;
-+	int height = 0;
-+
-+	stbi_io_callbacks cb {};
-+	cb.read = WindowIconRead;
-+	cb.skip = WindowIconSkip;
-+	cb.eof  = WindowIconEof;
-+
-+	icon->pixels = stbi_load_from_callbacks(&cb, &f, &width, &height, nullptr, 4);
-+	f.Close();
-+
-+	EXIT_IF(icon->pixels == nullptr);
-+
-+	icon->surface = SDL_CreateRGBSurfaceWithFormatFrom(icon->pixels, width, height, 32, width * 4,
-+	                                                   SDL_PIXELFORMAT_RGBA32);
-+	EXIT_NOT_IMPLEMENTED(icon->surface == nullptr);
-+}
-+
-+void WindowContext::UpdateIcon() {
-+	static WindowIcon icon;
-+	static bool       icon_loaded = false;
-+
-+	if (!icon_loaded) {
-+		std::string icon_path;
-+		if (Loader::SystemContentGetIconPath(&icon_path)) {
-+			WindowLoadPngIcon(icon_path, &icon);
-+		}
-+		icon_loaded = true;
-+	}
-+
-+	if (icon.surface != nullptr) {
-+		SDL_SetWindowIcon(window, icon.surface);
-+	}
-+}
-+
-+void WindowContext::UpdateTitle() {
-+	static char title[128];
-+	static char title_id[12];
-+	static char app_ver[12];
-+	static bool has_title = Loader::SystemContentParamSfoGetString("TITLE", title, sizeof(title));
-+	static bool has_title_id =
-+	    Loader::SystemContentParamSfoGetString("TITLE_ID", title_id, sizeof(title_id));
-+	static bool has_app_ver =
-+	    Loader::SystemContentParamSfoGetString("APP_VER", app_ver, sizeof(app_ver));
-+	static uint64_t fps_start   = Common::Timer::QueryPerformanceCounter();
-+	static uint64_t frame_num   = 0;
-+	static uint64_t fps_frames  = 0;
-+	static double   current_fps = 0.0;
-+
-+#if KYTY_BUILD == KYTY_BUILD_DEBUG
-+	static constexpr auto build_type = "Debug";
-+#elif KYTY_BUILD == KYTY_BUILD_RELEASE
-+	static constexpr auto build_type = "Release";
-+#else
-+	static constexpr auto build_type = "Unknown";
-+#endif
-+
-+	const auto now       = Common::Timer::QueryPerformanceCounter();
-+	const auto frequency = Common::Timer::QueryPerformanceFrequency();
-+	frame_num++;
-+	fps_frames++;
+ static int WindowIconRead(void* user, char* data, int size) {
+ 	auto*    src        = static_cast<Common::File*>(user);
+ 	uint32_t bytes_read = 0;
+@@ -1043,6 +1159,12 @@ void WindowContext::UpdateTitle() {
+ 	const auto frequency = Common::Timer::QueryPerformanceFrequency();
+ 	frame_num++;
+ 	fps_frames++;
 +	// BC5 (2026-10-16, the maintainer): the title shows the frame rate only, no frame counter, and is
 +	// set once a second when the rate is recomputed instead of at every flip (a compositor round
 +	// trip per frame).
 +	if (now - fps_start < frequency && frame_num > 1) {
 +		return;
 +	}
-+	if (now - fps_start >= frequency) {
-+		current_fps = static_cast<double>(fps_frames) * static_cast<double>(frequency) /
-+		              static_cast<double>(now - fps_start);
-+		fps_start   = now;
-+		fps_frames  = 0;
-+	}
-+
-+	auto fps = fmt::format(
+ 	if (now - fps_start >= frequency) {
+ 		current_fps = static_cast<double>(fps_frames) * static_cast<double>(frequency) /
+ 		              static_cast<double>(now - fps_start);
+@@ -1051,10 +1173,10 @@ void WindowContext::UpdateTitle() {
+ 	}
+ 
+ 	auto fps = fmt::format(
+-	    "[{} | {}] {}{}{}{}{}{}[{}] [{}], frame: {}, fps: {:f}", KYTY_BUILD_LABEL, build_type,
 +	    "[{} | {}] {}{}{}{}{}{}[{}] [{}], fps: {:.1f}", KYTY_BUILD_LABEL, build_type,
-+	    (has_title ? title : ""), (has_title ? ", " : ""), (has_title_id ? title_id : ""),
-+	    (has_title_id ? ", " : ""), (has_app_ver ? app_ver : ""), (has_app_ver ? " " : ""),
+ 	    (has_title ? title : ""), (has_title ? ", " : ""), (has_title_id ? title_id : ""),
+ 	    (has_title_id ? ", " : ""), (has_app_ver ? app_ver : ""), (has_app_ver ? " " : ""),
+-	    device_name, processor_name, frame_num, current_fps);
 +	    device_name, processor_name, current_fps);
-+
-+#if defined(__APPLE__)
-+	// AppKit traps on title changes off the main thread; fire-and-forget keeps present pacing.
-+	RunOnMainThread([this, fps = std::move(fps)] { SDL_SetWindowTitle(window, fps.c_str()); },
-+	                false);
-+#else
-+	SDL_SetWindowTitle(window, fps.c_str());
-+#endif
-+}
-+
-+} // namespace Libs::Graphics
+ 
+ #if defined(__APPLE__)
+ 	// AppKit traps on title changes off the main thread; fire-and-forget keeps present pacing.
 diff --git a/src/kernel/eventQueue.cpp b/src/kernel/eventQueue.cpp
 index 14561b0..d1a0fe6 100644
 --- a/src/kernel/eventQueue.cpp
@@ -7144,10 +5196,18 @@ index e82b93e..6cf1b61 100644
  
  } // namespace Libs::Audio::Ajm
 diff --git a/src/libs/audio.cpp b/src/libs/audio.cpp
-index fe4b332..142802d 100644
+index fe4b332..63f2441 100644
 --- a/src/libs/audio.cpp
 +++ b/src/libs/audio.cpp
-@@ -20,6 +20,10 @@
+@@ -10,6 +10,7 @@
+ #include "kernel/pthread.h"
+ #include "kernel/semaphore.h"
+ #include "libs/audio_internal.h"
++#include "libs/controller.h"
+ #include "libs/errno.h"
+ #include "libs/libs.h"
+ 
+@@ -20,6 +21,10 @@
  #include <cstring>
  #include <limits>
  #include <vector>
@@ -7158,7 +5218,7 @@ index fe4b332..142802d 100644
  
  namespace Libs::Audio {
  
-@@ -107,8 +111,28 @@ private:
+@@ -107,8 +112,28 @@ private:
  
  		SDL_AudioDeviceID audio_device = 0;
  		SDL_AudioSpec     audio_spec   = {};
@@ -7187,7 +5247,15 @@ index fe4b332..142802d 100644
  	struct PortIn {
  		bool     used            = false;
  		uint32_t type            = 0;
-@@ -236,20 +260,51 @@ bool Audio::OpenSdlDevice(PortOut* port) {
+@@ -132,6 +157,7 @@ private:
+ 	static const void*     PrepareOutputBuffer(const PortOut& port, const void* data,
+ 	                                           std::vector<uint8_t>* buffer);
+ 	static bool            QueueSdlAudio(PortOut* port, const void* data, bool blocking);
++	static void            PadRumbleFromVibrationFrames(const PortOut& port, const void* data);
+ };
+ 
+ static Audio* g_audio = nullptr;
+@@ -236,20 +262,51 @@ bool Audio::OpenSdlDevice(PortOut* port) {
  	desired.samples  = static_cast<Uint16>(port->samples_num);
  	desired.callback = nullptr;
  
@@ -7243,7 +5311,73 @@ index fe4b332..142802d 100644
  	return true;
  }
  
-@@ -335,7 +390,90 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -326,16 +383,156 @@ const void* Audio::PrepareOutputBuffer(const PortOut& port, const void* data,
+ 	return buffer->data();
+ }
+ 
++// BC5 (rumble fallback). Ported from AnyPS5 core/libs/prx/libSceAudioOut/src/AudioOut2PadMix.cpp
++// @ 7f596df (GPL-2.0), AudioOut2RumbleFromPadFrames: when the controller has no audio sink (a
++// DualShock 4, F72) or its device has dropped (F61, F93), the vibration port's frames become
++// classic rumble: per channel the RMS of the block, and rms >= 0.01 gives min(1, 2*rms)*255,
++// sent through controller.cpp's rumble path. KYTY_BC5_PAD_RUMBLE_FALLBACK=0 disables it.
++// TODO(verify): AnyPS5 names the pad speaker port type 0x3 and the vibration port type 0x6
++// (AudioOut2PadMix.hpp); F69 recorded the titles opening types 4 and 10, which this file keeps.
++static bool PadRumbleFallbackEnabled() {
++	static const bool enabled = [] {
++		const char* e = std::getenv("KYTY_BC5_PAD_RUMBLE_FALLBACK");
++		return e == nullptr || std::strcmp(e, "0") != 0;
++	}();
++	return enabled;
++}
++
++void Audio::PadRumbleFromVibrationFrames(const PortOut& port, const void* data) {
++	if (data == nullptr || (port.channels_num != 1 && port.channels_num != 2) || port.samples_num == 0) {
++		return;
++	}
++	const bool     is_float  = FormatIsFloat(port.format);
++	const uint32_t frames    = port.samples_num;
++	const uint32_t channels  = static_cast<uint32_t>(port.channels_num);
++	uint8_t        rumble[2] = {0, 0};
++	for (uint32_t ch = 0; ch < 2; ch++) {
++		const uint32_t src_ch = channels == 2 ? ch : 0;
++		const float    volume = static_cast<float>(port.volume[src_ch]) / 32768.0f;
++		double         energy = 0.0;
++		for (uint32_t f = 0; f < frames; f++) {
++			const size_t index = static_cast<size_t>(f) * channels + src_ch;
++			float        v     = 0.0f;
++			if (is_float) {
++				std::memcpy(&v, static_cast<const float*>(data) + index, sizeof(v));
++			} else {
++				int16_t s = 0;
++				std::memcpy(&s, static_cast<const int16_t*>(data) + index, sizeof(s));
++				v = static_cast<float>(s) / 32768.0f;
++			}
++			v *= volume;
++			if (std::isfinite(v)) {
++				energy += static_cast<double>(v) * v;
++			}
++		}
++		const double rms = std::sqrt(energy / frames);
++		if (rms >= 0.01) {
++			rumble[ch] = static_cast<uint8_t>(std::lround(std::min(1.0, rms * 2.0) * 255.0));
++		}
++	}
++	Controller::ControllerAudioRumble(rumble[0], rumble[1]);
++}
++
+ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+ 	EXIT_IF(port == nullptr);
+ 
++	// BC5 (rumble fallback): a vibration port with no controller audio device, or whose device is
++	// not playing (unplugged, F93), drives the pad's motors instead of its actuators.
++	if (port->type == AUDIO_OUT_PORT_TYPE_VIBRATION && data != nullptr && PadRumbleFallbackEnabled() &&
++	    (port->audio_device == 0 || SDL_GetAudioDeviceStatus(port->audio_device) != SDL_AUDIO_PLAYING)) {
++		PadRumbleFromVibrationFrames(*port, data);
++	}
++
+ 	if (port->audio_device == 0 || data == nullptr) {
+ 		return false;
+ 	}
  
  	std::vector<uint8_t> prepared_buffer;
  	const void*          prepared_data = PrepareOutputBuffer(*port, data, &prepared_buffer);
@@ -7335,7 +5469,7 @@ index fe4b332..142802d 100644
  
  	std::vector<uint8_t> convert_buffer;
  	const void*          queue_data = prepared_data;
-@@ -343,7 +481,7 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -343,7 +540,7 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  
  	SDL_AudioCVT cvt {};
  	const int    cvt_result =
@@ -7344,7 +5478,7 @@ index fe4b332..142802d 100644
  	                      static_cast<int>(port->freq), port->audio_spec.format,
  	                      port->audio_spec.channels, port->audio_spec.freq);
  
-@@ -368,6 +506,46 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -368,6 +565,46 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  		queue_size = static_cast<uint32_t>(cvt.len_cvt);
  	}
  
@@ -7391,7 +5525,7 @@ index fe4b332..142802d 100644
  	if (blocking) {
  		// More aggressive buffer management to prevent audio issues
  		// during heavy GPU load (common in gameplay vs cutscene)
-@@ -380,15 +558,26 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -380,15 +617,26 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  		const auto wait_start      = LibKernel::KernelGetProcessTime();
  		// Timeout faster to avoid blocking the game thread
  		const uint64_t timeout_us = 100000; // 100ms max wait
@@ -7418,7 +5552,7 @@ index fe4b332..142802d 100644
  
  	if (SDL_QueueAudio(port->audio_device, queue_data, queue_size) < 0) {
  		LOGF("AudioOut: SDL_QueueAudio failed: %s\n", SDL_GetError());
-@@ -428,7 +617,7 @@ Audio::Id Audio::AudioOutOpen(int type, uint32_t samples_num, uint32_t freq, For
+@@ -428,7 +676,7 @@ Audio::Id Audio::AudioOutOpen(int type, uint32_t samples_num, uint32_t freq, For
  				port.volume[i] = 32768;
  			}
  
@@ -7427,7 +5561,7 @@ index fe4b332..142802d 100644
  				// KytyPlus diagnostic: OpenSdlDevice() may fail (no host audio device,
  				// unsupported sample rate/format, or SDL init failure). The return is
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
-@@ -568,6 +757,41 @@ uint32_t Audio::AudioOutOutputs(OutputParam* params, uint32_t num, bool blocking
+@@ -568,6 +816,41 @@ uint32_t Audio::AudioOutOutputs(OutputParam* params, uint32_t num, bool blocking
  		m_out_ports[params[i].handle.GetId()].last_output_time = LibKernel::KernelGetProcessTime();
  	}
  
@@ -15533,19 +13667,20 @@ index 0000000..6f30649
 +
 +} // namespace Libs
 diff --git a/src/libs/controller.cpp b/src/libs/controller.cpp
-index 55718eb..24bf963 100644
+index 55718eb..2910b71 100644
 --- a/src/libs/controller.cpp
 +++ b/src/libs/controller.cpp
-@@ -1,4 +1,8 @@
+@@ -1,4 +1,9 @@
 +#include <pthread.h>
  #include "libs/controller.h"
++#include "SDL.h"
 +#include <cinttypes>
 +#include <cstdio>
 +#include <cstdlib>
  
  #include "common/assert.h"
  #include "common/common.h"
-@@ -12,9 +16,15 @@
+@@ -12,9 +17,15 @@
  #include "libs/libs.h"
  #include "libs/padData.h"
  
@@ -15561,7 +13696,7 @@ index 55718eb..24bf963 100644
  
  namespace Libs::Controller {
  
-@@ -45,6 +55,9 @@ struct ControllerState {
+@@ -45,6 +56,9 @@ struct ControllerState {
  	uint64_t time                                  = 0;
  	uint32_t buttons                               = 0;
  	int      axes[static_cast<int>(Axis::AxisMax)] = {128, 128, 128, 128, 0, 0};
@@ -15571,7 +13706,7 @@ index 55718eb..24bf963 100644
  };
  
  // Local-multiplayer: one GameController owns up to PAD_MAX_CONTROLLERS player
-@@ -61,6 +74,8 @@ public:
+@@ -61,6 +75,8 @@ public:
  	void Disconnect(int id);
  	void Button(int id, uint32_t button, bool down);
  	void Axis(int id, Axis axis, int value);
@@ -15580,7 +13715,7 @@ index 55718eb..24bf963 100644
  	void ResetInputState();
  	void GetConnectionInfo(bool* flag, int* count);
  	void ReadState(ControllerState* state, bool* flag, int* count);
-@@ -78,7 +93,25 @@ private:
+@@ -78,10 +94,30 @@ private:
  		bool            obtained[STATES_MAX] = {};
  		uint32_t        states_num          = 0;
  		uint32_t        first_state         = 0;
@@ -15606,7 +13741,12 @@ index 55718eb..24bf963 100644
  
  	void EnsureSlot(int index);
  	int  OwnerSlot(int id) const;
-@@ -94,6 +127,34 @@ private:
++	// BC5: the SDL instance id bound to a player slot, -1 when none (rumble output).
++	int  InstanceId(int index);
+ 	int  FallbackSlot() const;
+ 	int  PresentCount() const;
+ 	bool SlotConnected(int index) const;
+@@ -94,6 +130,34 @@ private:
  	std::vector<SlotState> m_slots;
  };
  static GameController* g_controller = nullptr;
@@ -15641,7 +13781,7 @@ index 55718eb..24bf963 100644
  // Native DualSense driver instance (spec-accurate, hardware-unvalidated).
  // Owned by the Controller subsystem; opened on subsystem init if a device is
  // present, polled on an internal thread, and closed on subsystem destroy.
-@@ -180,7 +241,30 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
+@@ -180,7 +244,30 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
  	data->right_stick_y          = state.axes[static_cast<int>(Axis::RightY)];
  	data->analog_buttons_l2      = state.axes[static_cast<int>(Axis::TriggerLeft)];
  	data->analog_buttons_r2      = state.axes[static_cast<int>(Axis::TriggerRight)];
@@ -15673,7 +13813,7 @@ index 55718eb..24bf963 100644
  	data->touch_data_touch0_id   = 1;
  	data->touch_data_touch1_id   = 2;
  	data->connected              = connected;
-@@ -189,11 +273,177 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
+@@ -189,11 +276,177 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
  	data->device_unique_data_len = 0;
  }
  
@@ -15851,10 +13991,68 @@ index 55718eb..24bf963 100644
  
  	// The native DualSense HID driver is opt-in and off by default. SDL already
  	// handles every standard pad (including a DualSense); this unvalidated driver is
-@@ -258,16 +508,104 @@ void ControllerDisconnect(int id) {
+@@ -258,16 +511,162 @@ void ControllerDisconnect(int id) {
  	g_controller->Disconnect(id);
  }
  
++// BC5 (rumble): one place for the two motor bytes to leave the host. The native DualSense driver
++// opens a device on Windows only (dualsense.cpp, OpenWindows), so on the box the path that reaches
++// the pad is SDL's game-controller rumble on the controller window.cpp opened for slot 0; SDL
++// takes the motors as 16-bit values, low frequency (large) first.
++// TODO(verify): which actuator the console drives for each byte of scePadSetVibration; the
++// large/small naming here follows dualsense.h and AnyPS5 (large = the vibration stream's left
++// channel), neither of which was checked against a console.
++void ControllerRumble(uint8_t large, uint8_t small, uint32_t duration_ms) {
++	auto* ds = static_cast<Libs::DualSense::DualSenseDriver*>(DualSenseDriverInstance());
++	if (ds != nullptr && ds->IsOpen()) {
++		Libs::DualSense::VibrationParam v;
++		v.large_motor = large;
++		v.small_motor = small;
++		ds->SetVibration(v);
++	}
++	if (g_controller == nullptr) {
++		return;
++	}
++	const int id = g_controller->InstanceId(0);
++	if (id < 0) {
++		return;
++	}
++	SDL_GameController* pad = SDL_GameControllerFromInstanceID(id);
++	if (pad != nullptr) {
++		SDL_GameControllerRumble(pad, static_cast<Uint16>(static_cast<unsigned>(large) * 257u),
++		                         static_cast<Uint16>(static_cast<unsigned>(small) * 257u), duration_ms);
++	}
++}
++
++// Ported from AnyPS5 core/libs/prx/libScePad/src/PadState.cpp @ 7f596df (GPL-2.0):
++// PadSubmitAudioHaptics keeps the maximum of the values submitted and PadFetchOutput releases
++// them 80 ms after the last non-zero submission. Here the value goes out when it changes, and is
++// refreshed every 40 ms while non-zero because SDL's rumble runs for a duration (100 ms here).
++void ControllerAudioRumble(uint8_t large, uint8_t small) {
++	using Clock = std::chrono::steady_clock;
++	static std::mutex        mutex;
++	static uint8_t           held_large = 0, held_small = 0, sent_large = 0, sent_small = 0;
++	static Clock::time_point hold_end, sent_at;
++	std::lock_guard<std::mutex> lock(mutex);
++	const auto                  now = Clock::now();
++	if (now >= hold_end) {
++		held_large = held_small = 0;
++	}
++	if (large != 0 || small != 0) {
++		held_large = std::max(held_large, large);
++		held_small = std::max(held_small, small);
++		hold_end   = now + std::chrono::milliseconds(80);
++	}
++	const bool changed = held_large != sent_large || held_small != sent_small;
++	const bool refresh = (held_large != 0 || held_small != 0) && now - sent_at >= std::chrono::milliseconds(40);
++	if (changed || refresh) {
++		ControllerRumble(held_large, held_small, 100);
++		sent_large = held_large;
++		sent_small = held_small;
++		sent_at    = now;
++	}
++}
++
 +// BC5: KYTY_BC5_INPUT_RECORD=<file> writes what the real pad does as KYTY_BC5_INPUT_CMD lines
 +// (hold/release, stick, trigger, with wait lines between them), so that a route played once by
 +// hand can be replayed by a script. Stick moves are written at most every 30 ms, when one axis
@@ -15956,7 +14154,19 @@ index 55718eb..24bf963 100644
  void ControllerResetInputState() {
  	EXIT_IF(g_controller == nullptr);
  	g_controller->ResetInputState();
-@@ -395,6 +733,11 @@ void GameController::Button(int id, uint32_t button, bool down) {
+@@ -284,6 +683,11 @@ void GameController::EnsureSlot(int index) {
+ 	}
+ }
+ 
++int GameController::InstanceId(int index) const {
++	Common::LockGuard lock(m_mutex);
++	return index >= 0 && index < PAD_MAX_CONTROLLERS ? m_ids[index] : -1;
++}
++
+ int GameController::OwnerSlot(int id) const {
+ 	for (int i = 0; i < PAD_MAX_CONTROLLERS; i++) {
+ 		if (m_ids[i] == id) {
+@@ -395,6 +799,11 @@ void GameController::Button(int id, uint32_t button, bool down) {
  	if (slot == -1) {
  		slot = FallbackSlot();
  	}
@@ -15968,7 +14178,7 @@ index 55718eb..24bf963 100644
  
  	auto state = GetLastState(slot);
  	state.time = LibKernel::KernelGetProcessTime();
-@@ -415,6 +758,13 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
+@@ -415,6 +824,13 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
  	if (slot == -1) {
  		slot = FallbackSlot();
  	}
@@ -15982,7 +14192,7 @@ index 55718eb..24bf963 100644
  
  	auto state = GetLastState(slot);
  	state.time = LibKernel::KernelGetProcessTime();
-@@ -422,8 +772,28 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
+@@ -422,8 +838,28 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
  	const int axis_id = static_cast<int>(axis);
  	EXIT_IF(axis_id < 0 || axis_id >= static_cast<int>(Controller::Axis::AxisMax));
  
@@ -16011,7 +14221,7 @@ index 55718eb..24bf963 100644
  	if (axis == Controller::Axis::TriggerLeft) {
  		if (value > 0) {
  			state.buttons |= PAD_BUTTON_L2;
-@@ -443,6 +813,86 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
+@@ -443,6 +879,86 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
  	AddState(slot, state);
  }
  
@@ -16098,7 +14308,7 @@ index 55718eb..24bf963 100644
  void GameController::ResetInputState() {
  	Common::LockGuard lock(m_mutex);
  
-@@ -488,6 +938,13 @@ int GameController::ReadStateForSlot(int index, ControllerState* state, bool* fl
+@@ -488,6 +1004,13 @@ int GameController::ReadStateForSlot(int index, ControllerState* state, bool* fl
  	*flag  = SlotConnected(index);
  	*count = PresentCount();
  	*state = GetLastState(index);
@@ -16112,7 +14322,7 @@ index 55718eb..24bf963 100644
  
  	return 0;
  }
-@@ -515,7 +972,27 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
+@@ -515,7 +1038,27 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
  	int ret_num = 0;
  
  	auto& s = m_slots[index];
@@ -16140,7 +14350,7 @@ index 55718eb..24bf963 100644
  		for (uint32_t i = 0; i < s.states_num; i++) {
  			if (ret_num >= states_num) {
  				break;
-@@ -523,11 +1000,21 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
+@@ -523,11 +1066,21 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
  			auto state_index = (s.first_state + i) % STATES_MAX;
  			if (!s.obtained[state_index]) {
  				s.obtained[state_index] = true;
@@ -16163,7 +14373,7 @@ index 55718eb..24bf963 100644
  	return ret_num;
  }
  int KYTY_SYSV_ABI PadInit() {
-@@ -625,6 +1112,9 @@ int KYTY_SYSV_ABI PadResetOrientation(int handle) {
+@@ -625,6 +1178,9 @@ int KYTY_SYSV_ABI PadResetOrientation(int handle) {
  	if (ControllerIndexFromHandle(handle) < 0) {
  		return PAD_ERROR_INVALID_HANDLE;
  	}
@@ -16173,7 +14383,7 @@ index 55718eb..24bf963 100644
  
  	return OK;
  }
-@@ -682,6 +1172,10 @@ int KYTY_SYSV_ABI PadReadState(int handle, PadData* data) {
+@@ -682,6 +1238,10 @@ int KYTY_SYSV_ABI PadReadState(int handle, PadData* data) {
  	g_controller->ReadStateForSlot(ControllerIndexFromHandle(handle), &state, &connected,
  	                               &connected_count);
  
@@ -16184,7 +14394,7 @@ index 55718eb..24bf963 100644
  	pad_fill_data(data, state, connected, connected_count);
  
  	return OK;
-@@ -718,6 +1212,10 @@ int KYTY_SYSV_ABI PadRead(int handle, PadData* data, int num) {
+@@ -718,6 +1278,10 @@ int KYTY_SYSV_ABI PadRead(int handle, PadData* data, int num) {
  	}
  
  	for (int i = 0; i < ret_num; i++) {
@@ -16195,8 +14405,27 @@ index 55718eb..24bf963 100644
  		pad_fill_data(&data[i], states[i], connected, connected_count);
  	}
  
+@@ -738,14 +1302,10 @@ int KYTY_SYSV_ABI PadSetVibration(int handle, const PadVibrationParam* param) {
+ 	     "\t small_motor = %d\n",
+ 	     static_cast<int>(param->large_motor), static_cast<int>(param->small_motor));
+ 
+-	// Drive the real DualSense rumble actuators if a device is attached.
+-	auto* ds = static_cast<Libs::DualSense::DualSenseDriver*>(DualSenseDriverInstance());
+-	if (ds != nullptr && ds->IsOpen()) {
+-		Libs::DualSense::VibrationParam v;
+-		v.large_motor = param->large_motor;
+-		v.small_motor = param->small_motor;
+-		ds->SetVibration(v);
+-	}
++	// BC5: the native DualSense driver when it is open, and SDL's rumble otherwise (ControllerRumble);
++	// before this the call reached no pad on Linux. SDL caps a rumble at 5 s.
++	// TODO(verify): how long the console keeps a scePadSetVibration value without a new call.
++	ControllerRumble(param->large_motor, param->small_motor, 5000);
+ 
+ 	return OK;
+ }
 diff --git a/src/libs/controller.h b/src/libs/controller.h
-index 3c0684f..ba1c36b 100644
+index 3c0684f..fe73665 100644
 --- a/src/libs/controller.h
 +++ b/src/libs/controller.h
 @@ -9,14 +9,14 @@ namespace Libs::Controller {
@@ -16222,7 +14451,7 @@ index 3c0684f..ba1c36b 100644
  constexpr int PAD_HANDLE_BASE     = 1;
  
  constexpr uint32_t PAD_BUTTON_L3        = 0x00000002;
-@@ -64,21 +64,28 @@ inline int controller_get_axis(int min, int max, int value) {
+@@ -64,21 +64,36 @@ inline int controller_get_axis(int min, int max, int value) {
  	return (v < 0 ? 0 : (v > 255 ? 255 : v));
  }
  
@@ -16258,6 +14487,14 @@ index 3c0684f..ba1c36b 100644
  void ControllerResetInputState();
 +// BC5: the analog triggers (0..255) of pad slot 0 as the game reads them, for the trigger-effect state.
 +void ControllerGetTriggers(int* l2, int* r2);
++// BC5: classic rumble (0..255 per motor) to the pad of player slot 0, for duration_ms as SDL takes
++// it: the native DualSense driver when it is open (Windows only at f266548) and SDL's
++// game-controller rumble, the path that reaches a DualShock 4 or a DualSense on Linux.
++void ControllerRumble(uint8_t large, uint8_t small, uint32_t duration_ms);
++// BC5: rumble derived from the vibration ports' audio (audio.cpp) when the controller has no audio
++// sink. The strongest value submitted is kept for 80 ms after the last non-zero submission.
++// Ported from AnyPS5 core/libs/prx/libScePad/src/PadState.cpp @ 7f596df (GPL-2.0).
++void ControllerAudioRumble(uint8_t large, uint8_t small);
  
  int KYTY_SYSV_ABI PadInit();
  int KYTY_SYSV_ABI PadOpen(int user_id, int type, int index, const void* param);
