@@ -1170,10 +1170,10 @@ index 0000000..7b6926c
 +#endif // KYTY_GRAPHICS_PRESENTATION_HOST_MENU_H_
 diff --git a/src/graphics/presentation/settingsOverlay.cpp b/src/graphics/presentation/settingsOverlay.cpp
 new file mode 100644
-index 0000000..ee3fecc
+index 0000000..7f516ed
 --- /dev/null
 +++ b/src/graphics/presentation/settingsOverlay.cpp
-@@ -0,0 +1,878 @@
+@@ -0,0 +1,895 @@
 +#include "graphics/presentation/settingsOverlay.h"
 +
 +#include "SDL.h"
@@ -1730,6 +1730,23 @@ index 0000000..ee3fecc
 +		const float scale = std::clamp(static_cast<float>(extent.height) / 720.0f, 1.0f, 3.0f);
 +		ImGui::GetIO().FontGlobalScale = scale;
 +		HostMenuDraw(static_cast<float>(extent.width), static_cast<float>(extent.height), scale); // ADR 0011
++		// BC5 (experiment 0175): a paused window says so; a frozen picture without it looked like a
++		// hang (the maintainer's ASTRO BOT session of 19:01, paused at its end).
++		if (WindowIsPaused()) {
++			const char*  text = "PAUSED  -  Space, or Emulation > Resume (PS button / F1 opens the menu)";
++			const ImVec2 ts   = ImGui::CalcTextSize(text);
++			const ImVec2 pad {24.0f * scale, 14.0f * scale};
++			ImGui::SetNextWindowPos({(static_cast<float>(extent.width) - ts.x - 2 * pad.x) * 0.5f, static_cast<float>(extent.height) * 0.42f});
++			ImGui::SetNextWindowBgAlpha(0.85f);
++			ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, pad);
++			ImGui::Begin("##bc5-paused", nullptr,
++			             ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoMove |
++			                 ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing | ImGuiWindowFlags_NoNav |
++			                 ImGuiWindowFlags_NoInputs);
++			ImGui::TextUnformatted(text);
++			ImGui::End();
++			ImGui::PopStyleVar();
++		}
 +		if (!g_active.load(std::memory_order_acquire)) {
 +			return;
 +		}
@@ -1957,7 +1974,7 @@ index 0000000..ee3fecc
 +	}
 +
 +	bool PrepareFrame(vk::Extent2D frame_extent, vk::Format format, uint32_t image_count) {
-+		if (!SettingsOverlayActive()) {
++		if (!SettingsOverlayActive() && !WindowIsPaused()) { // experiment 0175: the pause banner draws too
 +			was_active = false;
 +			return false;
 +		}
@@ -3632,7 +3649,7 @@ index c0ac585..34a3616 100644
  } // namespace Libs::Graphics
  
 diff --git a/src/graphics/presentation/window/swapchain.cpp b/src/graphics/presentation/window/swapchain.cpp
-index 845bfe3..686e380 100644
+index 845bfe3..4e6142c 100644
 --- a/src/graphics/presentation/window/swapchain.cpp
 +++ b/src/graphics/presentation/window/swapchain.cpp
 @@ -1,3 +1,4 @@
@@ -3806,17 +3823,18 @@ index 845bfe3..686e380 100644
  	for (uint32_t attempt = 0; attempt < 2; attempt++) {
  		auto status = swapchain.AcquireNextImage();
  		if (status != Swapchain::Status::Success) {
-@@ -1033,7 +1084,8 @@ void Presenter::Present(Frame& frame, bool reuse) {
+@@ -1033,7 +1084,9 @@ void Presenter::Present(Frame& frame, bool reuse) {
  			frame.present_commands->WaitForFenceAndReset();
  			auto&      command          = *frame.present_commands;
  			const bool draw_ime_overlay = ime_visual.active && swapchain.PrepareImeOverlay();
 -			swapchain.RecordPresentCommands(command, frame.image, draw_ime_overlay);
-+			const bool draw_settings_overlay = SettingsOverlayActive() && swapchain.PrepareSettingsOverlay();
++			// BC5 (experiment 0175): the overlay pass also runs while the window is paused, for its banner.
++			const bool draw_settings_overlay = (SettingsOverlayActive() || IsGuestPaused()) && swapchain.PrepareSettingsOverlay();
 +			swapchain.RecordPresentCommands(command, frame.image, draw_ime_overlay, draw_settings_overlay);
  			swapchain.Submit(command);
  		}
  		status = swapchain.Present();
-@@ -1044,6 +1096,7 @@ void Presenter::Present(Frame& frame, bool reuse) {
+@@ -1044,6 +1097,7 @@ void Presenter::Present(Frame& frame, bool reuse) {
  
  		RenderDocOnPresent();
  		m_impl->presented_ime_revision.store(ime_visual.revision, std::memory_order_release);

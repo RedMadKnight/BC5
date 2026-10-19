@@ -17,4 +17,4 @@ fast stretches of real play?
 - Check (17:43, the start screen with `BC5_LOGGING=0`): 71 frame-counter lines, 65 audio lines and
   the CPU file in 75 s.
 
-**Result.** *(pending the maintainer's next session)*
+**Result.** See experiment 0175: the 17:58 session's counters (23.4 frames a second, the audio at 75–94 % during the load, 1.000 in gameplay).
