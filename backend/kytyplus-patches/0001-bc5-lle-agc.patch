@@ -4465,7 +4465,7 @@ index bc73d18..252c692 100644
  
  #endif /* EMULATOR_INCLUDE_EMULATOR_KERNEL_FILESYSTEM_H_ */
 diff --git a/src/kernel/memory.cpp b/src/kernel/memory.cpp
-index 02fc0fc..6f9d340 100644
+index 02fc0fc..ec025b2 100644
 --- a/src/kernel/memory.cpp
 +++ b/src/kernel/memory.cpp
 @@ -1,3 +1,6 @@
@@ -4485,7 +4485,64 @@ index 02fc0fc..6f9d340 100644
  
  #if KYTY_PLATFORM == KYTY_PLATFORM_WINDOWS
  #ifndef NOMINMAX
-@@ -199,8 +203,41 @@ static bool IsPrivateCommittedRangeType(VirtualRangeType type) {
+@@ -88,11 +92,56 @@ static void MapGpuRange(uint64_t vaddr, uint64_t size) {
+ 	GetGpuResources().MapMemory(vaddr, size);
+ }
+ 
++// BC5 (experiment 0169, KYTY_BC5_MAP_STATS=1): what the title's memory maps cost the calling
++// thread, once a second: the GPU-side unmaps (a synchronous round trip to the GPU thread) and the
++// AMM map/unmap commands (counted in libAmpr.cpp through Bc5MapStatsAdd).
++std::atomic<uint64_t> g_bc5_ms_gpu_unmaps {0}, g_bc5_ms_gpu_unmap_ns {0}, g_bc5_ms_gpu_unmap_max_ns {0};
++std::atomic<uint64_t> g_bc5_ms_amm_maps {0}, g_bc5_ms_amm_map_ns {0}, g_bc5_ms_amm_unmaps {0}, g_bc5_ms_amm_unmap_ns {0};
++static uint64_t       Bc5MonoNs() {
++	timespec t {};
++	clock_gettime(CLOCK_MONOTONIC, &t);
++	return static_cast<uint64_t>(t.tv_sec) * 1000000000ull + static_cast<uint64_t>(t.tv_nsec);
++}
++bool Bc5MapStatsOn() {
++	static const bool on = std::getenv("KYTY_BC5_MAP_STATS") != nullptr;
++	return on;
++}
++void Bc5MapStatsTick() {
++	static std::atomic<uint64_t> last {0};
++	const uint64_t               now  = Bc5MonoNs();
++	uint64_t                     prev = last.load(std::memory_order_relaxed);
++	if (prev == 0) {
++		last.compare_exchange_strong(prev, now);
++		return;
++	}
++	if (now - prev < 1000000000ull || !last.compare_exchange_strong(prev, now)) {
++		return;
++	}
++	const uint64_t gu = g_bc5_ms_gpu_unmaps.exchange(0), gun = g_bc5_ms_gpu_unmap_ns.exchange(0), gmax = g_bc5_ms_gpu_unmap_max_ns.exchange(0);
++	const uint64_t am = g_bc5_ms_amm_maps.exchange(0), amn = g_bc5_ms_amm_map_ns.exchange(0), au = g_bc5_ms_amm_unmaps.exchange(0), aun = g_bc5_ms_amm_unmap_ns.exchange(0);
++	if (gu == 0 && am == 0 && au == 0) return;
++	std::fprintf(stderr, "map stats: t %.3f s: AMM maps %" PRIu64 " (%.1f ms), AMM unmaps %" PRIu64 " (%.1f ms), GPU-side unmaps %" PRIu64 " (%.1f ms, max %.2f ms)\n",
++	             static_cast<double>(now) / 1e9, am, static_cast<double>(amn) / 1e6, au, static_cast<double>(aun) / 1e6, gu,
++	             static_cast<double>(gun) / 1e6, static_cast<double>(gmax) / 1e6);
++}
++
+ static void UnmapGpuRange(uint64_t vaddr, uint64_t size) {
+ 	if (g_gpu_resources == nullptr || !IsGpuAddressRange(vaddr, size)) {
+ 		return;
+ 	}
++	if (!Bc5MapStatsOn()) {
++		GetGpuResources().UnmapMemory(vaddr, size);
++		return;
++	}
++	const uint64_t t0 = Bc5MonoNs();
+ 	GetGpuResources().UnmapMemory(vaddr, size);
++	const uint64_t d = Bc5MonoNs() - t0;
++	g_bc5_ms_gpu_unmaps++;
++	g_bc5_ms_gpu_unmap_ns += d;
++	uint64_t m = g_bc5_ms_gpu_unmap_max_ns.load();
++	while (d > m && !g_bc5_ms_gpu_unmap_max_ns.compare_exchange_weak(m, d)) {
++	}
++	Bc5MapStatsTick();
+ }
+ 
+ static bool DecodeMemoryProtection(int prot, VirtualMemory::Mode* mode, GpuAccessMode* gpu_mode) {
+@@ -199,8 +248,41 @@ static bool IsPrivateCommittedRangeType(VirtualRangeType type) {
  	       type == VirtualRangeType::Runtime;
  }
  
@@ -4527,7 +4584,7 @@ index 02fc0fc..6f9d340 100644
  	struct Range {
  		uint64_t         start          = 0;
  		uint64_t         size           = 0;
-@@ -215,6 +252,7 @@ public:
+@@ -215,6 +297,7 @@ public:
  	bool Add(uint64_t start, uint64_t size, uint64_t offset, int protection, int memory_type,
  	         VirtualRangeType type, const char* name, bool disallow_merge = false) {
  		Common::LockGuard lock(m_mutex);
@@ -4535,7 +4592,7 @@ index 02fc0fc..6f9d340 100644
  
  		if (start == 0 || size == 0) {
  			return false;
-@@ -240,20 +278,21 @@ public:
+@@ -240,20 +323,21 @@ public:
  		const auto index = static_cast<size_t>(position - m_ranges.begin());
  		m_ranges.insert(position, r);
  		MergeAroundUnlocked(index);
@@ -4560,7 +4617,7 @@ index 02fc0fc..6f9d340 100644
  	}
  
  	bool HasOverlap(uint64_t start, uint64_t size) {
-@@ -276,6 +315,8 @@ public:
+@@ -276,6 +360,8 @@ public:
  
  	bool ReleaseReserved(uint64_t start, uint64_t size) {
  		Common::LockGuard lock(m_mutex);
@@ -4569,7 +4626,7 @@ index 02fc0fc..6f9d340 100644
  
  		for (size_t index = 0; index < m_ranges.size(); index++) {
  			auto& r = m_ranges[index];
-@@ -290,14 +331,13 @@ public:
+@@ -290,14 +376,13 @@ public:
  	bool ConsumeReserved(uint64_t start, uint64_t size,
  	                     VirtualRangeType type = VirtualRangeType::Reserved) {
  		Common::LockGuard lock(m_mutex);
@@ -4589,7 +4646,7 @@ index 02fc0fc..6f9d340 100644
  		}
  
  		return false;
-@@ -306,6 +346,8 @@ public:
+@@ -306,6 +391,8 @@ public:
  	bool ConsumeReservedSpan(uint64_t start, uint64_t size, Range* first_range = nullptr,
  	                         VirtualRangeType type = VirtualRangeType::Reserved) {
  		Common::LockGuard lock(m_mutex);
@@ -4598,7 +4655,7 @@ index 02fc0fc..6f9d340 100644
  
  		if (size == 0) {
  			return false;
-@@ -314,14 +356,8 @@ public:
+@@ -314,14 +401,8 @@ public:
  		auto current = start;
  		auto end     = End(start, size);
  		while (current < end) {
@@ -4615,7 +4672,7 @@ index 02fc0fc..6f9d340 100644
  				return false;
  			}
  			if (current == start && first_range != nullptr) {
-@@ -330,13 +366,13 @@ public:
+@@ -330,13 +411,13 @@ public:
  			current = std::min(end, End(candidate->start, candidate->size));
  		}
  
@@ -4631,7 +4688,7 @@ index 02fc0fc..6f9d340 100644
  
  		auto position = LowerBound(start);
  		if (position != m_ranges.end() && position->start == start && position->size == size) {
-@@ -349,12 +385,15 @@ public:
+@@ -349,12 +430,15 @@ public:
  
  	void Protect(uint64_t start, uint64_t size, int protection) {
  		Common::LockGuard lock(m_mutex);
@@ -4647,7 +4704,7 @@ index 02fc0fc..6f9d340 100644
  
  		EditUnlocked(start, size, [memory_type](Range* r) { r->memory_type = memory_type; });
  	}
-@@ -382,6 +421,13 @@ public:
+@@ -382,6 +466,13 @@ public:
  		return true;
  	}
  
@@ -4661,7 +4718,7 @@ index 02fc0fc..6f9d340 100644
  	bool QuerySpan(uint64_t start, uint64_t size, std::vector<Range>* out) {
  		EXIT_IF(out == nullptr);
  
-@@ -544,6 +590,40 @@ private:
+@@ -544,6 +635,40 @@ private:
  		}
  	}
  
@@ -4702,7 +4759,7 @@ index 02fc0fc..6f9d340 100644
  	template <typename EditFunc>
  	void EditUnlocked(uint64_t start, uint64_t size, EditFunc edit) {
  		if (size == 0) {
-@@ -552,13 +632,11 @@ private:
+@@ -552,13 +677,11 @@ private:
  
  		std::vector<Range> out;
  		auto               edit_end = End(start, size);
@@ -4720,7 +4777,7 @@ index 02fc0fc..6f9d340 100644
  
  			auto mid_start = std::max(start, r.start);
  			auto mid_end   = std::min(edit_end, r_end);
-@@ -577,8 +655,10 @@ private:
+@@ -577,8 +700,10 @@ private:
  			AddPiece(&out, r, mid_end, r_end);
  		}
  
@@ -4733,7 +4790,7 @@ index 02fc0fc..6f9d340 100644
  	}
  
  	bool RemoveUnlocked(uint64_t start, uint64_t size) {
-@@ -587,23 +667,40 @@ private:
+@@ -587,23 +712,40 @@ private:
  		}
  
  		std::vector<Range> out;
@@ -4787,7 +4844,7 @@ index 02fc0fc..6f9d340 100644
  	}
  
  	void MergeUnlocked() {
-@@ -611,21 +708,26 @@ private:
+@@ -611,21 +753,26 @@ private:
  			return;
  		}
  
@@ -4826,7 +4883,7 @@ index 02fc0fc..6f9d340 100644
  	}
  
  	Range* FindOverlap(uint64_t start, uint64_t size) {
-@@ -644,6 +746,7 @@ private:
+@@ -644,6 +791,7 @@ private:
  	}
  
  	std::vector<Range> m_ranges;
@@ -4834,7 +4891,7 @@ index 02fc0fc..6f9d340 100644
  	Common::Mutex      m_mutex;
  };
  
-@@ -712,6 +815,12 @@ public:
+@@ -712,6 +860,12 @@ public:
  				                            : minimum;
  				target = std::max(minimum, std::min(ps5_game_total, capped));
  			}
@@ -4847,7 +4904,7 @@ index 02fc0fc..6f9d340 100644
  			target = target & ~(0x4000ull - 1ull);
  			LOGF("guest memory total = %llu MiB\n", static_cast<unsigned long long>(target / megabyte));
  			return target;
-@@ -850,7 +959,99 @@ static std::unique_ptr<PhysicalMemory>    g_physical_memory;
+@@ -850,7 +1004,99 @@ static std::unique_ptr<PhysicalMemory>    g_physical_memory;
  static std::unique_ptr<FlexibleMemory>    g_flexible_memory;
  static std::unique_ptr<PooledMemory>      g_pooled_memory;
  static std::unique_ptr<VirtualRanges>     g_virtual_ranges;
@@ -4947,7 +5004,7 @@ index 02fc0fc..6f9d340 100644
  static callback_func_t                    g_alloc_callback        = nullptr;
  static callback_func_t                    g_free_callback         = nullptr;
  static std::atomic<uint64_t>              g_memory_pool_committed = 0;
-@@ -3193,6 +3394,17 @@ static bool ReplaceFixedRangeWithReserved(uint64_t start, uint64_t size) {
+@@ -3193,6 +3439,17 @@ static bool ReplaceFixedRangeWithReserved(uint64_t start, uint64_t size) {
  			replaced.range.offset += current - range.start;
  		}
  		DecodeMemoryProtection(replaced.range.protection, &replaced.mode, &replaced.gpu_mode);
@@ -4965,7 +5022,7 @@ index 02fc0fc..6f9d340 100644
  		if (range.type == VirtualRangeType::Direct &&
  		    !g_guest_address_space->BackingContains(current, chunk)) {
  			return false;
-@@ -3465,7 +3677,11 @@ bool KernelHandleReservedRangeAccessViolation(uint64_t vaddr) {
+@@ -3465,7 +3722,11 @@ bool KernelHandleReservedRangeAccessViolation(uint64_t vaddr) {
  	    std::strncmp(range.name, "AMM", KERNEL_MAXIMUM_NAME_LENGTH) != 0) {
  		return false;
  	}
@@ -6765,10 +6822,10 @@ index fe4b332..5f8808d 100644
  
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..7492cad
+index 0000000..6f7c477
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,8493 @@
+@@ -0,0 +1,8540 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -6827,6 +6884,7 @@ index 0000000..7492cad
 +#include <deque>
 +#include <functional>
 +#include <map>
++#include <iterator>
 +#include <unordered_map>
 +#include <set>
 +#include <mutex>
@@ -8051,6 +8109,10 @@ index 0000000..7492cad
 +// every page the game first writes), so an unchanged file needs no SEEK_DATA walk.
 +static uint64_t g_layout_gen = 1;
 +static uint64_t g_dprof_views_ns = 0, g_dprof_full = 0, g_dprof_fast = 0; // direct_sync profile (timing split line)
++// Experiment 0169: where a full direct sync goes - the chunk scan and imports, the merge pass, the
++// GPU drain before the mappings change, the mapping rebuild - and how many full syncs drained.
++static uint64_t g_dprof_scan_ns = 0, g_dprof_merge_ns = 0, g_dprof_drain_ns = 0, g_dprof_maps_ns = 0, g_dprof_drains = 0;
++static uint64_t g_dprof_want_ns = 0, g_dprof_drop_ns = 0, g_dprof_scratch_ns = 0, g_dprof_add_ns = 0; // the mapping rebuild's parts
 +
 +// BC5_DIRECT_LAZY_NAMES=name[,name...]: views of direct memory with these names (the game names
 +// its mappings; "orbis_user_malloc" is its CPU heap) are not imported for holding data, only where
@@ -8291,6 +8353,7 @@ index 0000000..7492cad
 +		S.forced_seen = S.forced.size();
 +	}
 +
++	const uint64_t t_scan0 = SoftCp::now_ns(); // experiment 0169
 +	// 1. chunks to import: data inside a view, and the forced ones
 +	std::vector<uint64_t> need;
 +	for (const auto& v: views) {
@@ -8340,6 +8403,8 @@ index 0000000..7492cad
 +	// lists it (experiment 0022). Neighbours that have been there for a while are replaced by
 +	// one merged import — a bounded amount per call, the old BOs freed after the remap below.
 +	// BC5_DIRECT_NO_MERGE=1 turns it off.
++	const uint64_t        t_merge0 = SoftCp::now_ns(); // experiment 0169
++	g_dprof_scan_ns += t_merge0 - t_scan0;
 +	std::vector<uint32_t> retired;
 +	uint32_t              merged = 0;
 +	static const bool     no_merge = std::getenv("BC5_DIRECT_NO_MERGE") != nullptr;
@@ -8409,7 +8474,14 @@ index 0000000..7492cad
 +	}
 +
 +	// 2. the views' addresses: every (view, imported range) intersection is one GPU mapping
-+	if (!retired.empty() || sig != S.views_sig) wait_jobs(); // mappings are about to go or be replaced
++	const uint64_t t_drain0 = SoftCp::now_ns(); // experiment 0169
++	g_dprof_merge_ns += t_drain0 - t_merge0;
++	if (!retired.empty() || sig != S.views_sig) {
++		wait_jobs(); // mappings are about to go or be replaced
++		g_dprof_drains++;
++	}
++	const uint64_t t_maps0 = SoftCp::now_ns();
++	g_dprof_drain_ns += t_maps0 - t_drain0;
 +	uint32_t mapped = 0, unmapped = 0, map_failed = 0;
 +	if (sig != S.views_sig || S.bos.size() != S.bos_mapped || !retired.empty()) {
 +		std::vector<DMap> want;
@@ -8425,7 +8497,10 @@ index 0000000..7492cad
 +			}
 +		}
 +		std::sort(want.begin(), want.end(), [](const DMap& a, const DMap& b) { return a.va < b.va; });
++		const uint64_t    t_want = SoftCp::now_ns(); // experiment 0169
++		g_dprof_want_ns += t_want - t_maps0;
 +		std::vector<DMap> next;
++		next.reserve(want.size());
 +		for (const auto& m: S.maps) { // drop what no view asks for any more, before adding (addresses get reused)
 +			const auto w = std::lower_bound(want.begin(), want.end(), m.va, [](const DMap& a, uint64_t va) { return a.va < va; });
 +			if (w != want.end() && *w == m) {
@@ -8435,23 +8510,48 @@ index 0000000..7492cad
 +				unmapped++;
 +			}
 +		}
-+		if (!g_scratch.empty()) {
-+			for (const auto& w: want) scratch_release(w.va, w.va + w.size);
-+		}
-+		for (const auto& w: want) {
-+			const auto e = std::lower_bound(next.begin(), next.end(), w.va, [](const DMap& a, uint64_t va) { return a.va < va; });
-+			if (e != next.end() && *e == w) continue;
-+			if (g_dev->map_shared(w.id, w.bo_off, w.size, w.va)) {
-+				next.insert(e, w);
-+				mapped++;
-+			} else {
-+				map_failed++;
++		const uint64_t t_drop = SoftCp::now_ns(); // experiment 0169
++		g_dprof_drop_ns += t_drop - t_want;
++		// Experiment 0169: the zero pieces are released only for the mappings about to be added. A
++		// zero piece is never under a kept mapping (scratch_fill fills holes between mappings), so
++		// the old pass over every wanted mapping (~17,000) against every piece found nothing new and
++		// cost ~25 ms per rebuild on the game thread - most of the second title's slow frames.
++		// The new mappings are collected first and merged into `next` in one pass (inserting each
++		// into the sorted vector was quadratic as well).
++		std::vector<DMap> added;
++		uint64_t          scratch_ns = 0;
++		{
++			size_t k = 0;
++			for (const auto& w: want) {
++				while (k < next.size() && next[k].va < w.va) k++;
++				if (k < next.size() && next[k] == w) continue;
++				if (!g_scratch.empty()) {
++					const uint64_t ts = SoftCp::now_ns();
++					scratch_release(w.va, w.va + w.size);
++					scratch_ns += SoftCp::now_ns() - ts;
++				}
++				if (g_dev->map_shared(w.id, w.bo_off, w.size, w.va)) {
++					added.push_back(w);
++					mapped++;
++				} else {
++					map_failed++;
++				}
 +			}
 +		}
++		if (!added.empty()) {
++			std::vector<DMap> merged_maps;
++			merged_maps.reserve(next.size() + added.size());
++			std::merge(next.begin(), next.end(), added.begin(), added.end(), std::back_inserter(merged_maps),
++			           [](const DMap& a, const DMap& b) { return a.va < b.va; });
++			next.swap(merged_maps);
++		}
++		g_dprof_scratch_ns += scratch_ns;
++		g_dprof_add_ns += SoftCp::now_ns() - t_drop - scratch_ns;
 +		S.maps.swap(next);
 +		S.views_sig  = sig;
 +		S.bos_mapped = map_failed == 0 ? S.bos.size() : 0; // a failure is retried at the next sync
 +	}
++	g_dprof_maps_ns += SoftCp::now_ns() - t_maps0; // experiment 0169
 +	if (imported != 0) S.blocks = ~0ull; // pinning may have allocated pages: look once more
 +	for (const uint32_t id: retired) g_dev->free_shared(id);
 +	if (merged != 0 || deferred != 0) {
@@ -13157,10 +13257,14 @@ index 0000000..7492cad
 +		acc[3] += tc - t1;
 +		acc[4] += t2 - tc;
 +		if ((++count & 127u) == 0) {
-+			journal("timing split over 128 submissions: probe %.1f ms, anon sync %.1f, direct sync %.1f (views %.1f; %" PRIu64 " full, %" PRIu64 " fast), learned %.1f, hints %.1f\n",
++			journal("timing split over 128 submissions: probe %.1f ms, anon sync %.1f, direct sync %.1f (views %.1f; %" PRIu64 " full, %" PRIu64 " fast; scan %.1f, merge %.1f, drain %.1f in %" PRIu64 ", maps %.1f = want %.1f + drop %.1f + zero %.1f + add %.1f), learned %.1f, hints %.1f\n",
 +			        static_cast<double>(acc[0]) / 1e6, static_cast<double>(acc[1]) / 1e6, static_cast<double>(acc[2]) / 1e6, static_cast<double>(g_dprof_views_ns) / 1e6, g_dprof_full,
-+			        g_dprof_fast, static_cast<double>(acc[3]) / 1e6, static_cast<double>(acc[4]) / 1e6);
++			        g_dprof_fast, static_cast<double>(g_dprof_scan_ns) / 1e6, static_cast<double>(g_dprof_merge_ns) / 1e6, static_cast<double>(g_dprof_drain_ns) / 1e6, g_dprof_drains,
++			        static_cast<double>(g_dprof_maps_ns) / 1e6, static_cast<double>(g_dprof_want_ns) / 1e6, static_cast<double>(g_dprof_drop_ns) / 1e6,
++			        static_cast<double>(g_dprof_scratch_ns) / 1e6, static_cast<double>(g_dprof_add_ns) / 1e6, static_cast<double>(acc[3]) / 1e6, static_cast<double>(acc[4]) / 1e6);
++			g_dprof_want_ns = g_dprof_drop_ns = g_dprof_scratch_ns = g_dprof_add_ns = 0;
 +			g_dprof_views_ns = 0;
++			g_dprof_scan_ns = g_dprof_merge_ns = g_dprof_drain_ns = g_dprof_maps_ns = g_dprof_drains = 0; // experiment 0169
 +			g_dprof_full     = 0;
 +			g_dprof_fast     = 0;
 +			for (auto& a: acc) a = 0;
@@ -16341,7 +16445,7 @@ index 5b0fc93..59e0c0f 100644
  	LOGF("\t target = %d\n"
  	     "\t msg    = 0x%016" PRIx64 "\n",
 diff --git a/src/libs/libAmpr.cpp b/src/libs/libAmpr.cpp
-index 073361d..2424929 100644
+index 073361d..3b3e1ca 100644
 --- a/src/libs/libAmpr.cpp
 +++ b/src/libs/libAmpr.cpp
 @@ -1,3 +1,5 @@
@@ -16370,7 +16474,7 @@ index 073361d..2424929 100644
  #include <mutex>
  #include <string>
  #include <unordered_map>
-@@ -27,6 +38,61 @@
+@@ -27,6 +38,77 @@
  #undef max
  #endif
  
@@ -16429,10 +16533,26 @@ index 073361d..2424929 100644
 +		AmmTraceStamp(), std::fprintf(stderr, "amm trace: call %s\n", __func__);                                    \
 +	}
 +
++// BC5 (experiment 0169): KYTY_BC5_MAP_STATS counters, defined in memory.cpp.
++namespace Libs::LibKernel::Memory {
++extern std::atomic<uint64_t> g_bc5_ms_amm_maps, g_bc5_ms_amm_map_ns, g_bc5_ms_amm_unmaps, g_bc5_ms_amm_unmap_ns;
++void                         Bc5MapStatsTick();
++inline void                  Bc5MapStatsAdd(bool unmap, uint64_t ns) {
++	if (unmap) {
++		g_bc5_ms_amm_unmaps++;
++		g_bc5_ms_amm_unmap_ns += ns;
++	} else {
++		g_bc5_ms_amm_maps++;
++		g_bc5_ms_amm_map_ns += ns;
++	}
++	Bc5MapStatsTick();
++}
++} // namespace Libs::LibKernel::Memory
++
  namespace Libs {
  
  namespace AprShared {
-@@ -41,6 +107,7 @@ struct SubmissionState {
+@@ -41,6 +123,7 @@ struct SubmissionState {
  	uint64_t result           = 0;
  	int32_t  execution_result = 0;
  	uint32_t error_offset     = 0;
@@ -16440,7 +16560,7 @@ index 073361d..2424929 100644
  };
  
  struct ResolvedPathInfo {
-@@ -54,6 +121,7 @@ struct ResolvedPathInfo {
+@@ -54,6 +137,7 @@ struct ResolvedPathInfo {
  static std::mutex                                        g_mutex;
  static uint32_t                                          g_next_submission_id = 1;
  static std::unordered_map<uint32_t, SubmissionState>     g_submissions;
@@ -16448,7 +16568,7 @@ index 073361d..2424929 100644
  static std::unordered_map<uint32_t, std::string>         g_files;
  static std::unordered_map<uint32_t, uint64_t>            g_file_sizes;
  static std::unordered_map<std::string, ResolvedPathInfo> g_resolved_paths;
-@@ -468,12 +536,23 @@ static void SetSubmissionResult(uint32_t submission_id, int32_t execution_result
+@@ -468,12 +552,23 @@ static void SetSubmissionResult(uint32_t submission_id, int32_t execution_result
  	if (it != g_submissions.end()) {
  		it->second.execution_result = execution_result;
  		it->second.error_offset     = error_offset;
@@ -16474,7 +16594,7 @@ index 073361d..2424929 100644
  	if (it == g_submissions.end()) {
  		return false;
  	}
-@@ -501,7 +580,8 @@ static int WriteResult(void* result, int32_t execution_result = 0, uint32_t erro
+@@ -501,7 +596,8 @@ static int WriteResult(void* result, int32_t execution_result = 0, uint32_t erro
  
  namespace LibAmpr::Ampr {
  static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_result,
@@ -16484,7 +16604,7 @@ index 073361d..2424929 100644
  }
  
  namespace LibKernelApr {
-@@ -667,10 +747,14 @@ static int KYTY_SYSV_ABI ResolveFilepathsWithPrefixToIdsAndFileSizesForEach(
+@@ -667,10 +763,14 @@ static int KYTY_SYSV_ABI ResolveFilepathsWithPrefixToIdsAndFileSizesForEach(
  	    AprShared::ResolvePathsCommon(path_list, count, ids, sizes, nullptr, prefix_buf, results));
  }
  
@@ -16500,7 +16620,7 @@ index 073361d..2424929 100644
  
  	if (command_buffer == nullptr) {
  		return KernelSyscallResult(LibKernel::KERNEL_ERROR_EINVAL);
-@@ -683,11 +767,10 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetResult(void*     command_buffe
+@@ -683,11 +783,10 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetResult(void*     command_buffe
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
  	auto submit_result = LibAmpr::Ampr::ExecuteAprCommandBuffer(command_buffer_addr,
@@ -16513,7 +16633,7 @@ index 073361d..2424929 100644
  
  	if (out_submission_id != nullptr) {
  		if (!AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
-@@ -698,8 +781,12 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetResult(void*     command_buffe
+@@ -698,8 +797,12 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetResult(void*     command_buffe
  	return KernelSyscallResult(AprShared::WriteResult(result, execution_result, error_offset));
  }
  
@@ -16527,7 +16647,7 @@ index 073361d..2424929 100644
  
  	if (command_buffer == nullptr) {
  		return KernelSyscallResult(LibKernel::KERNEL_ERROR_EINVAL);
-@@ -708,12 +795,17 @@ static int KYTY_SYSV_ABI SubmitCommandBuffer(void* command_buffer, uint64_t) {
+@@ -708,12 +811,17 @@ static int KYTY_SYSV_ABI SubmitCommandBuffer(void* command_buffer, uint64_t) {
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
  	return KernelSyscallResult(LibAmpr::Ampr::ExecuteAprCommandBuffer(
@@ -16547,7 +16667,7 @@ index 073361d..2424929 100644
  
  	if (command_buffer == nullptr || out_submission_id == nullptr) {
  		return KernelSyscallResult(LibKernel::KERNEL_ERROR_EINVAL);
-@@ -725,11 +817,10 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetId(void*     command_buffer, u
+@@ -725,11 +833,10 @@ static int KYTY_SYSV_ABI SubmitCommandBufferAndGetId(void*     command_buffer, u
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
  	auto submit_result = LibAmpr::Ampr::ExecuteAprCommandBuffer(command_buffer_addr,
@@ -16560,7 +16680,7 @@ index 073361d..2424929 100644
  
  	if (!AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
  		return KernelSyscallResult(LibKernel::KERNEL_ERROR_EFAULT);
-@@ -816,7 +907,11 @@ constexpr int      PROT_AMPR_READ                = 0x40;
+@@ -816,7 +923,11 @@ constexpr int      PROT_AMPR_READ                = 0x40;
  constexpr int      PROT_AMPR_WRITE               = 0x80;
  constexpr int      PROT_ACP_READ                 = 0x100;
  constexpr int      PROT_ACP_WRITE                = 0x200;
@@ -16573,7 +16693,7 @@ index 073361d..2424929 100644
  constexpr uint64_t AMM_VA_SIZE                   = 0x0000001000000000ull;
  constexpr uint64_t APR_MAX_READ_LENGTH           = 0x0000000100000000ull;
  constexpr uint64_t APR_MAX_FILE_OFFSET           = 0x0000010000000000ull;
-@@ -855,6 +950,13 @@ struct CommandBufferState {
+@@ -855,6 +966,13 @@ struct CommandBufferState {
  		uint64_t address       = 0;
  		uint64_t value         = 0;
  	};
@@ -16587,7 +16707,7 @@ index 073361d..2424929 100644
  	struct AmmMapCommand {
  		uint64_t       record_offset = 0;
  		AmmCommandKind kind          = AmmCommandKind::MapAuto;
-@@ -869,16 +971,22 @@ struct CommandBufferState {
+@@ -869,16 +987,22 @@ struct CommandBufferState {
  	std::vector<KernelEventCommand>  kernel_event_commands;
  	std::vector<WriteAddressCommand> write_address_commands;
  	std::vector<AmmMapCommand>       amm_map_commands;
@@ -16614,7 +16734,7 @@ index 073361d..2424929 100644
  };
  
  struct AmmVirtualAddressRanges {
-@@ -902,7 +1010,8 @@ static std::mutex                                       g_command_buffer_mutex;
+@@ -902,7 +1026,8 @@ static std::mutex                                       g_command_buffer_mutex;
  static std::unordered_map<uint64_t, CommandBufferState> g_command_buffers;
  static std::unordered_map<uint64_t, uint64_t>           g_command_buffer_aliases;
  static std::mutex                                       g_amm_auto_pool_mutex;
@@ -16624,7 +16744,7 @@ index 073361d..2424929 100644
  using CommandBufferIterator = std::unordered_map<uint64_t, CommandBufferState>::iterator;
  
  static bool HasQueuedCommands(const CommandBufferState& state) {
-@@ -1151,6 +1260,7 @@ static bool WriteCommandBufferPointers(uint64_t command_buffer, uint64_t buffer,
+@@ -1151,6 +1276,7 @@ static bool WriteCommandBufferPointers(uint64_t command_buffer, uint64_t buffer,
  	state.kernel_event_commands.clear();
  	state.write_address_commands.clear();
  	state.amm_map_commands.clear();
@@ -16632,7 +16752,7 @@ index 073361d..2424929 100644
  	state.gather_scatter_valid       = false;
  	state.gather_scatter_file_id     = 0;
  	state.gather_scatter_destination = 0;
-@@ -1317,6 +1427,26 @@ static bool AppendWriteAddressRecord(uint64_t command_buffer, uint64_t address,
+@@ -1317,6 +1443,26 @@ static bool AppendWriteAddressRecord(uint64_t command_buffer, uint64_t address,
  	return CommitCommandBufferRecord(command_buffer, &state, record_size);
  }
  
@@ -16659,7 +16779,7 @@ index 073361d..2424929 100644
  static bool ValidateAmmMapArgs(uint64_t va, uint64_t size) {
  	return va != 0 && size != 0 && (va & (AMM_PAGE_SIZE - 1u)) == 0 &&
  	       (size & (AMM_PAGE_SIZE - 1u)) == 0 && va + size >= va;
-@@ -1358,26 +1488,112 @@ static int NormalizeAmmProtection(int prot) {
+@@ -1358,26 +1504,112 @@ static int NormalizeAmmProtection(int prot) {
  	return normalized;
  }
  
@@ -16780,7 +16900,7 @@ index 073361d..2424929 100644
  		return false;
  	}
  
-@@ -1385,6 +1601,8 @@ static bool AllocateAmmAutoDirectMemory(uint64_t size, int memory_type, uint64_t
+@@ -1385,6 +1617,8 @@ static bool AllocateAmmAutoDirectMemory(uint64_t size, int memory_type, uint64_t
  	return true;
  }
  
@@ -16789,7 +16909,7 @@ index 073361d..2424929 100644
  static int ExecuteAmmMapCommand(const CommandBufferState::AmmMapCommand& command) {
  	if (!ValidateAmmMapArgs(command.va, command.size)) {
  		return LibKernel::KERNEL_ERROR_EINVAL;
-@@ -1397,9 +1615,59 @@ static int ExecuteAmmMapCommand(const CommandBufferState::AmmMapCommand& command
+@@ -1397,9 +1631,59 @@ static int ExecuteAmmMapCommand(const CommandBufferState::AmmMapCommand& command
  	}
  
  	void* addr = reinterpret_cast<void*>(command.va);
@@ -16851,7 +16971,7 @@ index 073361d..2424929 100644
  }
  
  static bool AppendAmmMapRecord(uint64_t                                 command_buffer,
-@@ -1425,68 +1693,166 @@ static bool AppendAmmMapRecord(uint64_t                                 command_
+@@ -1425,68 +1709,166 @@ static bool AppendAmmMapRecord(uint64_t                                 command_
  
  static int ReadHostFileToGuest(const std::string& host_path, uint64_t file_offset,
                                 uint64_t destination, uint64_t size, uint64_t* bytes_read);
@@ -17070,7 +17190,7 @@ index 073361d..2424929 100644
  				const auto& command = state.read_file_commands[entry.index];
  				std::string host_path;
  				if (!AprShared::TryGetHostPath(command.file_id, &host_path)) {
-@@ -1494,25 +1860,42 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+@@ -1494,25 +1876,42 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
  					     command.file_id);
  					*execution_result = LibKernel::KERNEL_ERROR_ENOENT;
  					*error_offset     = static_cast<uint32_t>(command.record_offset);
@@ -17116,7 +17236,7 @@ index 073361d..2424929 100644
  				    eq, command.id, reinterpret_cast<void*>(command.data));
  				if (result != OK) {
  					LOGF("\tAPR submit event failed: eq=0x%016" PRIx64 ", id=%" PRId32
-@@ -1520,7 +1903,8 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+@@ -1520,7 +1919,8 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
  					     command.eq, command.id, static_cast<uint32_t>(result));
  					*execution_result = result;
  					*error_offset     = static_cast<uint32_t>(command.record_offset);
@@ -17126,7 +17246,7 @@ index 073361d..2424929 100644
  				}
  			} break;
  			case CommandKind::WriteAddress: {
-@@ -1531,7 +1915,8 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+@@ -1531,18 +1931,36 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
  					     command.address, command.value);
  					*execution_result = LibKernel::KERNEL_ERROR_EFAULT;
  					*error_offset     = static_cast<uint32_t>(command.record_offset);
@@ -17136,8 +17256,10 @@ index 073361d..2424929 100644
  				}
  			} break;
  			case CommandKind::AmmMap: {
-@@ -1539,10 +1924,21 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+ 				const auto& command = state.amm_map_commands[entry.index];
  				int         result  = OK;
++				static const bool map_stats = std::getenv("KYTY_BC5_MAP_STATS") != nullptr; // experiment 0169
++				const auto        ms_t0     = map_stats ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point {};
  				if (command.kind == AmmCommandKind::Unmap) {
  					result = LibKernel::Memory::KernelMunmap(command.va, command.size);
 +					if (result == OK) {
@@ -17150,6 +17272,10 @@ index 073361d..2424929 100644
  				} else {
  					result = ExecuteAmmMapCommand(command);
  				}
++				if (map_stats) { // experiment 0169
++					const auto ns = static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - ms_t0).count());
++					LibKernel::Memory::Bc5MapStatsAdd(command.kind == AmmCommandKind::Unmap, ns);
++				}
  
 +				if (result != OK && AmmTrace()) {
 +					AmmTraceStamp(), std::fprintf(stderr, "amm trace: AMM command failed and the buffer stops here: kind %u va 0x%016" PRIx64 " size 0x%" PRIx64 " -> 0x%08x\n",
@@ -17158,7 +17284,7 @@ index 073361d..2424929 100644
  				if (result != OK) {
  					LOGF("\tAMM submit command failed: kind=%u va=0x%016" PRIx64
  					     " dmem=0x%016" PRIx64 " size=0x%016" PRIx64 " type=%" PRId32
-@@ -1552,12 +1948,203 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+@@ -1552,12 +1970,203 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
  					     static_cast<uint32_t>(result));
  					*execution_result = result;
  					*error_offset     = static_cast<uint32_t>(command.record_offset);
@@ -17363,7 +17489,7 @@ index 073361d..2424929 100644
  	return OK;
  }
  
-@@ -1678,13 +2265,50 @@ static int KYTY_SYSV_ABI CommandBufferDestructor(void* command_buffer) {
+@@ -1678,13 +2287,50 @@ static int KYTY_SYSV_ABI CommandBufferDestructor(void* command_buffer) {
  	return OK;
  }
  
@@ -17415,7 +17541,7 @@ index 073361d..2424929 100644
  	const auto command_buffer_addr = reinterpret_cast<uint64_t>(command_buffer);
  	if (!ValidateCommandBufferHeader(command_buffer_addr)) {
  		return LibKernel::KERNEL_ERROR_EFAULT;
-@@ -1765,6 +2389,9 @@ static int KYTY_SYSV_ABI AprCommandBufferReadFile(void*    command_buffer, uint6
+@@ -1765,6 +2411,9 @@ static int KYTY_SYSV_ABI AprCommandBufferReadFile(void*    command_buffer, uint6
                                                    uint32_t file_id, void* destination,
                                                    uint64_t size, uint64_t file_offset) {
  	PRINT_NAME();
@@ -17425,7 +17551,7 @@ index 073361d..2424929 100644
  
  	const auto destination_addr = reinterpret_cast<uint64_t>(destination);
  	if (command_buffer == nullptr || !IsValidAprReadRange(destination_addr, size) ||
-@@ -2111,16 +2738,31 @@ static int KYTY_SYSV_ABI CommandBufferPopMarker(void* command_buffer) {
+@@ -2111,16 +2760,31 @@ static int KYTY_SYSV_ABI CommandBufferPopMarker(void* command_buffer) {
  	return AppendNoOpCommand(command_buffer, sizeof(uint32_t));
  }
  
@@ -17462,7 +17588,7 @@ index 073361d..2424929 100644
  
  	return AppendNoOpCommand(command_buffer, 0x20);
  }
-@@ -2139,6 +2781,10 @@ static int AppendWriteAddressCommand(void* command_buffer, volatile uint64_t* ad
+@@ -2139,6 +2803,10 @@ static int AppendWriteAddressCommand(void* command_buffer, volatile uint64_t* ad
  static int KYTY_SYSV_ABI CommandBufferWriteAddress(void* command_buffer, volatile uint64_t* address,
                                                     uint64_t value, uint32_t) {
  	PRINT_NAME();
@@ -17473,7 +17599,7 @@ index 073361d..2424929 100644
  
  	return AppendWriteAddressCommand(command_buffer, address, value);
  }
-@@ -2314,15 +2960,27 @@ static int KYTY_SYSV_ABI AprCommandBufferResetGatherScatterState(void* command_b
+@@ -2314,15 +2982,27 @@ static int KYTY_SYSV_ABI AprCommandBufferResetGatherScatterState(void* command_b
  	return OK;
  }
  
@@ -17503,7 +17629,7 @@ index 073361d..2424929 100644
  		return LibKernel::KERNEL_ERROR_EFAULT;
  	}
  
-@@ -2333,7 +2991,7 @@ static int KYTY_SYSV_ABI AprCommandBufferMapBegin(void* command_buffer, uint64_t
+@@ -2333,7 +3013,7 @@ static int KYTY_SYSV_ABI AprCommandBufferMapBegin(void* command_buffer, uint64_t
  
  static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, uint64_t va,
                                                          uint64_t dmem_offset, uint64_t size,
@@ -17512,7 +17638,7 @@ index 073361d..2424929 100644
  	PRINT_NAME();
  
  	if (command_buffer == nullptr || !ValidateAmmMapArgs(va, size) ||
-@@ -2341,7 +2999,15 @@ static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, ui
+@@ -2341,7 +3021,15 @@ static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, ui
  		return LibKernel::KERNEL_ERROR_EINVAL;
  	}
  
@@ -17529,7 +17655,7 @@ index 073361d..2424929 100644
  		return LibKernel::KERNEL_ERROR_EFAULT;
  	}
  
-@@ -2504,38 +3170,60 @@ static int KYTY_SYSV_ABI AmmGiveDirectMemory(int64_t search_start, int64_t searc
+@@ -2504,38 +3192,60 @@ static int KYTY_SYSV_ABI AmmGiveDirectMemory(int64_t search_start, int64_t searc
  	}
  
  	*dmem_offset = allocated;
@@ -17602,7 +17728,7 @@ index 073361d..2424929 100644
  	}
  }
  
-@@ -2589,11 +3277,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetId(void* command_buffer_bas
+@@ -2589,11 +3299,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetId(void* command_buffer_bas
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
  	auto     submit_result =
@@ -17615,7 +17741,7 @@ index 073361d..2424929 100644
  
  	if (!AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
  		return LibKernel::KERNEL_ERROR_EFAULT;
-@@ -2618,11 +3305,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetResult(void* command_buffer
+@@ -2618,11 +3327,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetResult(void* command_buffer
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
  	auto     submit_result =
