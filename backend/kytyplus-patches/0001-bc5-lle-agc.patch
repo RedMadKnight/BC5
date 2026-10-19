@@ -6765,10 +6765,10 @@ index fe4b332..5f8808d 100644
  
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..cf93b01
+index 0000000..7ba5c54
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,8380 @@
+@@ -0,0 +1,8417 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -12116,6 +12116,31 @@ index 0000000..cf93b01
 +		uint64_t b1    = 0, ibase = 0;
 +		uint32_t itype = 0;
 +		uint32_t ud_probe[16] = {}; // experiment 0160
++		// experiment 0160: draw-time state — context 0x2d5 (VGT_SHADER_STAGES_EN), 0x2d3 (GE_NGG_SUBGRP_CNTL),
++		// 0x291 (VGT_GS_ONCHIP_CNTL), 0x2a6 (VGT_DRAW_PAYLOAD_CNTL); uconfig 0x242 (VGT_PRIMITIVE_TYPE), 0x243
++		// (VGT_INDEX_TYPE), 0x24d (VGT_NUM_INSTANCES), 0x25b (GE_CNTL), 0x25f (GE_PC_ALLOC); SH 0x88/0x89
++		// (SPI_SHADER_PGM_LO/HI_GS), 0xc8/0xc9 (ES), 0x8/0x9 (PS), 0x20c/0x20d (COMPUTE_PGM) — from SET_*_REG,
++		// SET_UCONFIG_REG_INDEX and the LOAD_*_REG_INDEX tables as they read now (Mesa gfx10 register JSON).
++		std::map<uint32_t, uint32_t> st_ctx, st_uc, st_sh;
++		auto load_pairs = [&](const uint32_t* pk, uint32_t ln, std::map<uint32_t, uint32_t>& into) {
++			if (ln < 5 || (pk[3] >> 31u) == 0) return;
++			const uint64_t ta = (pk[1] & ~3u) | (static_cast<uint64_t>(pk[2] & 0xffffu) << 32u);
++			const uint32_t tn = pk[4] & 0x3fffu;
++			if (ta == 0 || tn == 0 || tn > 4096 || !covered_sorted(*pm, ta, static_cast<uint64_t>(tn) * 8)) return;
++			const auto* t = reinterpret_cast<const volatile uint32_t*>(ta);
++			for (uint32_t k = 0; k < tn; k++) into[t[2 * k] & 0xffffu] = t[2 * k + 1];
++		};
++		auto set_regs = [](const uint32_t* pk, uint32_t ln, std::map<uint32_t, uint32_t>& into) {
++			if (ln < 3) return;
++			const uint32_t first = pk[1] & 0xffffu;
++			for (uint32_t k = 0; k + 2 < ln; k++) into[first + k] = pk[2 + k];
++		};
++		auto g = [](const std::map<uint32_t, uint32_t>& m, uint32_t r) { auto it = m.find(r); return it == m.end() ? 0xffffffffu : it->second; };
++		auto state_line = [&](char* out, size_t cap) {
++			std::snprintf(out, cap, "stages %08x subgrp %08x onchip %08x payload %08x | prim %08x itype %08x ninst %08x ge_cntl %08x pc_alloc %08x | gs %08x%08x es %08x%08x ps %08x%08x cs %08x%08x",
++			              g(st_ctx, 0x2d5), g(st_ctx, 0x2d3), g(st_ctx, 0x291), g(st_ctx, 0x2a6), g(st_uc, 0x242), g(st_uc, 0x243), g(st_uc, 0x24d), g(st_uc, 0x25b), g(st_uc, 0x25f),
++			              g(st_sh, 0x89), g(st_sh, 0x88), g(st_sh, 0xc9), g(st_sh, 0xc8), g(st_sh, 0x9), g(st_sh, 0x8), g(st_sh, 0x20d), g(st_sh, 0x20c));
++		};
 +		auto     rd    = [&](uint64_t a, uint32_t n, char* out, size_t cap) {
 +			if (!covered_sorted(*pm, a, static_cast<uint64_t>(n) * 4)) { std::snprintf(out, cap, "<0x%" PRIx64 " unmapped>", a); return; }
 +			const auto* t = reinterpret_cast<const volatile uint32_t*>(a);
@@ -12139,6 +12164,18 @@ index 0000000..cf93b01
 +			if (type == 3) {
 +				const uint32_t op = (h >> 8u) & 0xffu;
 +				char           a1[400] = {}, a2[400] = {};
++				if (op == 0x69) set_regs(sub_ib + q, len, st_ctx);
++				else if (op == 0x79 || op == 0x7a) set_regs(sub_ib + q, len, st_uc);
++				else if (op == 0x76) set_regs(sub_ib + q, len, st_sh);
++				else if (op == 0x9f) load_pairs(sub_ib + q, len, st_ctx);
++				else if (op == 0x64) load_pairs(sub_ib + q, len, st_uc);
++				else if (op == 0x63) load_pairs(sub_ib + q, len, st_sh);
++				else if (op == 0x2f && len >= 2) st_uc[0x24d] = sub_ib[q + 1];
++				if (op == 0x24 || op == 0x25 || op == 0x27 || op == 0x2c || op == 0x2d || op == 0x35 || op == 0x38 || op == 0x15 || op == 0x16) {
++					char sl[600];
++					state_line(sl, sizeof(sl));
++					journal("timeout probe:   state before op %02x at %u: %s\n", op, q, sl);
++				}
 +				const char*    ex = ran == nullptr ? "" : (std::binary_search(ran->begin(), ran->end(), q) ? " ran" : " DROPPED");
 +				if (op == 0x11 || op == 0x26 || op == 0x13 || op == 0x2a || (op == 0x2e && len >= 3 && (sub_ib[q + 1] & 0xffffu) == 0x243u))
 +					journal("timeout probe: op %02x at %u: %08x %08x %08x%s (mapped %d)\n", op, q, len > 1 ? sub_ib[q + 1] : 0u, len > 2 ? sub_ib[q + 2] : 0u, len > 3 ? sub_ib[q + 3] : 0u, ex, op == 0x26 && len >= 3 ? static_cast<int>(covered_sorted(*pm, sub_ib[q + 1] | (static_cast<uint64_t>(sub_ib[q + 2] & 0xffffu) << 32u), 4)) : -1);

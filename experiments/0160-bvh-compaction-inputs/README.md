@@ -215,3 +215,19 @@ experiment could do.
   faulted range; whether the engine fetches them with the base at 0 (a `SET_BASE` the title resets to 0
   at each buffer's start, or one the filter dropped) is the next thing to test — with the dispatch
   journal on in the maintainer's launcher, the fault's buffer can be read.
+- *The maintainer's second hang of the day, 12:39 (both skips on, the timeout probe on in the launchers):*
+  the probe recorded the two timed-out buffers. The graphics one (3038 dwords) holds **no indexed draw**
+  — one `DRAW_INDIRECT_MULTI` (count 1, arguments read two seconds later {1, 1, 0, 0xc2940000, …},
+  float-looking), DISPATCH_DIRECTs and DISPATCH_INDIRECTs each behind its own `SET_BASE`
+  (0x11d0640600, 0x11d0646a00, 0x11d0627e00, 0x11d081ab00, offset 0), every packet executed, index base
+  0 throughout, ten of its compute descriptors pointing at memory unmapped at probe time; the compute
+  buffer (18079 dwords) is DISPATCH_DIRECTs plus compute-form DISPATCH_INDIRECTs with arguments in the
+  0x12 heap. The coredump's CP headers again put the ME at a `DISPATCH_INDIRECT` inside the host's
+  GPU-check sequence; `WD_UTCL1_STATUS` 1. The kernel's fault order is four rising walks inside the first
+  64 KiB (pages 0x0–0x9000, 0x7000–0xf000, 0x3000–0xc000 twice), i.e. ~40 KiB reads from varying
+  starts — not the shape of a dispatch-argument fetch (12 bytes at offset 0). With no indexed draw in
+  the buffer, the engine's read is not an index fetch either; what the geometry engine reads for a
+  non-indexed draw or a dispatch from a base of 0 remains the question. The probe now also journals,
+  before every draw and dispatch, the state the buffer and its register tables set (`VGT_SHADER_STAGES_EN`,
+  `GE_NGG_SUBGRP_CNTL`, `VGT_GS_ONCHIP_CNTL`, `VGT_DRAW_PAYLOAD_CNTL`, primitive/index type, instance count,
+  `GE_CNTL`, `GE_PC_ALLOC`, the GS/ES/PS/CS programs), for the next hang.
