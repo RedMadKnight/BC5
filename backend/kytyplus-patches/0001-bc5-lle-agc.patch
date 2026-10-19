@@ -7471,10 +7471,10 @@ index fe4b332..142802d 100644
  
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..6f0917c
+index 0000000..08f3373
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,7814 @@
+@@ -0,0 +1,7828 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -9607,7 +9607,21 @@ index 0000000..6f0917c
 +		while (pa < pb) {
 +			const uint64_t n  = pb - pa < kDChunk ? pb - pa : kDChunk;
 +			const uint32_t id = scratch_bo();
-+			if (id == 0 || !g_dev->map_shared(id, 0, n, pa)) break;
++			if (id == 0) break;
++			if (!g_dev->map_shared(id, 0, n, pa)) {
++				// Experiment 0160 (F208): amdgpu refuses a GPU VA below its reserved bottom (the first 64 KiB on
++				// recent kernels, amdgpu_vm.h AMDGPU_VA_RESERVED_BOTTOM, TODO(verify) the value of this box's
++				// 7.2.8 kernel). The learned window at 0 lost all its zero pages to the one refusal at 0, and
++				// the geometry engine's reads of pages 0x0-0x2f000 faulted. Below 2 MiB the piece is retried
++				// from the next 64 KiB boundary, so the pages above the reserved bottom read as zero.
++				if (pa < 0x200000ull) {
++					static std::atomic<uint64_t> n_low {0};
++					if ((n_low++ & 0xffu) == 0) journal("scratch: zero page at 0x%" PRIx64 " refused, trying from 0x%" PRIx64 "\n", pa, pa + 0x10000ull);
++					pa += 0x10000ull;
++					continue;
++				}
++				break;
++			}
 +			g_scratch.emplace_back(pa, n);
 +			have_insert(have, {pa, n});
 +			added += n;

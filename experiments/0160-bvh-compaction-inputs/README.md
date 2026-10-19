@@ -158,3 +158,28 @@ GS/NGG rings), and read the consumers 0x909977100 / 0x90997a500 for what they em
   one moves the fault address; each such run risks the machine. Until then the skip of 0x909974400 and
   the 2-s kernel/host timeouts are the safe configuration: `amdgpu.lockup_timeout=10000` should be
   removed again.
+
+## Continued (2026-10-19 08:00–08:25, runs 786–787): the window at address 0 and the zero pages
+
+- The lead (the main session): the host's learned-window file holds a window `0x0 0x6000000` (learned
+  from the faults), and `scratch_fill` tries to back its holes with 2 MiB zero buffers; the first piece
+  at GPU VA 0 is refused by amdgpu (`shared map at 0x0+0x200000: -22`, the VA below the driver's
+  reserved bottom), and the loop gave up on the whole piece, so none of the 96 MiB was zero-backed.
+  Now a refused piece below 2 MiB is retried from the next 64 KiB boundary: run 786 (skips on) maps
+  from 0x10000 (`scratch: zero page at 0x0 refused, trying from 0x10000`); only `0x0+0x10000` stays
+  refused — this kernel's (7.2.8) reserved bottom is 64 KiB (TODO(verify) against amdgpu_vm.h).
+- Run 787 (no skip of 0x909974400): the geometry engine's faults now cover **only pages 0x0–0xe000**
+  (15 pages, two per page at most), nothing above 0x10000 — the zero pages serve the rest of its
+  ~200 KiB read. The fence still times out (one 2-s timeout, the kernel's ring reset succeeded, the box
+  stayed up), and the dump fired on the fault caught the stalled state this time: `CP_STAT` 0x94038600,
+  `CP_IB1_BUFSZ` 0xd8 (the same position as the kernel's coredump), `CP_PFP_HEADER_DUMP` ACQUIRE_MEM,
+  `CP_ME_HEADER_DUMP` EVENT_WRITE — and `WD_INDEX_BUF_BASE(_HI)`, `WD_POS_BUF_BASE(_HI)`,
+  `WD_CNTL_SB_BUF_BASE(_HI)`, `VGT_TF_MEMORY_BASE(_HI)`, `VGT_ESGS/GSVS_RING_SIZE` all 0 while the job
+  is in flight, `GE_CNTL` 0x8040. So the CP does not program any of these per draw either; the base
+  the engine reads through is 0 for the whole run and is none of the registers that can be read.
+- What hangs is the retried fault, not the data: the kernel logs each page up to twice (retry faults;
+  `amdgpu.noretry` is at its default -1), and a translation that never succeeds stalls the engine until
+  the ring reset. With the first 64 KiB unmappable from user space, the remaining mitigation on the
+  kernel side is `amdgpu.noretry=1` (the engine gets a NACK and reads zeros, as it does above 0x10000)
+  — to be tested next (run 788 without the skip), together with `amdgpu.lockup_timeout` back at its
+  default, since 10 s let a repeated fault take the box down (run 785).
