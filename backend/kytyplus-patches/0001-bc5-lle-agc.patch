@@ -6408,7 +6408,7 @@ index e82b93e..6cf1b61 100644
  
  } // namespace Libs::Audio::Ajm
 diff --git a/src/libs/audio.cpp b/src/libs/audio.cpp
-index fe4b332..5f8808d 100644
+index fe4b332..e26de46 100644
 --- a/src/libs/audio.cpp
 +++ b/src/libs/audio.cpp
 @@ -10,16 +10,22 @@
@@ -6810,7 +6810,7 @@ index fe4b332..5f8808d 100644
  				// KytyPlus diagnostic: OpenSdlDevice() may fail (no host audio device,
  				// unsupported sample rate/format, or SDL init failure). The return is
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
-@@ -568,6 +849,42 @@ uint32_t Audio::AudioOutOutputs(OutputParam* params, uint32_t num, bool blocking
+@@ -568,6 +849,45 @@ uint32_t Audio::AudioOutOutputs(OutputParam* params, uint32_t num, bool blocking
  		m_out_ports[params[i].handle.GetId()].last_output_time = LibKernel::KernelGetProcessTime();
  	}
  
@@ -6818,7 +6818,10 @@ index fe4b332..5f8808d 100644
 +	// thread pushed frames against the wall clock (the title's game clock is Wwise's play
 +	// position, i.e. the frames the host accepted), how long it was held, and the SDL queue.
 +	static const bool trace_env = std::getenv("KYTY_BC5_AUDIO_TRACE") != nullptr;
-+	const bool trace = trace_env && ::Log::Bc5LoggingOn();
++	// Experiment 0174: KYTY_BC5_MEASURE=1 keeps this one-line-a-second measurement on when the
++	// session's logging is switched off (the maintainer plays with logging off).
++	static const bool measure = std::getenv("KYTY_BC5_MEASURE") != nullptr;
++	const bool trace = trace_env && (measure || ::Log::Bc5LoggingOn());
 +	if (trace) {
 +		static uint64_t last_us = 0;
 +		const uint64_t  now     = LibKernel::KernelGetProcessTime();
