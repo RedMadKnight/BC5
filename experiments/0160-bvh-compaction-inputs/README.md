@@ -255,3 +255,16 @@ experiment could do.
   draws, and what singles it out is its data: its arguments ({1, 1, 0, …} in both captures) and the
   work descriptors the ES program 0x11d0132d00 fetches through its two table lookups — the next probe
   should read those at the timeout (the V# at s[24:27]+0x540 and the constant block at s[20:23]).
+- *13:17, the maintainer's fourth hang (launchers back to the skips + probe):* ten minutes of play this
+  time, the hang at journal t 590.7 s (fault page 0x5000). The timed-out graphics buffer has the same
+  layout and the same single draw as before (fast-launch points, ES 0x11d0132d00, PS 0x11d2c04600),
+  now with **14 draw records** (`DRAW_INDIRECT_MULTI` count 14; records {1,1,0,1.0f,0.5f,…}, {2,1,0,…},
+  {3,1,0,…}: a count, 1, 0 and per-draw float payload — the draw index selects the record for the
+  shader) against one record in the 12:39/13:01 cases. So the instance is singled out by what the ES
+  reads, not by the packet: the probe now also prints the 32 GS user-data registers and the memory
+  behind the ES's three descriptors (`s[8:11]`, `s[20:23]`, `s[24:27]` with the table at +0x540), and
+  `BC5_DIRECT_FL_JOURNAL=1` (now in both pkg launchers) journals one line per such draw at submission
+  (arguments and user data) so the hanging instance can be diffed against the healthy ones before it.
+- The audio and picture speeding up and slowing down in that session were not fence timeouts (only the
+  two at the hang): the journal has three learned-window passes of 295–686 ms around t 400 s and a
+  562 ms sync at t 605 s; 1,361 learned passes in ten minutes (the F203/F206 territory, not this fault).

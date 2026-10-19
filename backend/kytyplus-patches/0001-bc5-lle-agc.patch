@@ -6765,10 +6765,10 @@ index fe4b332..5f8808d 100644
  
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..f4fdcd5
+index 0000000..7492cad
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,8448 @@
+@@ -0,0 +1,8493 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -12175,6 +12175,27 @@ index 0000000..f4fdcd5
 +					char sl[600];
 +					state_line(sl, sizeof(sl));
 +					journal("timeout probe:   state before op %02x at %u: %s\n", op, q, sl);
++					if (op != 0x15 && op != 0x16) { // experiment 0160: GS user data (SH 0x2c8c..0x2cab) and the ES's descriptors
++						char ul[700];
++						int  w = std::snprintf(ul, sizeof(ul), "timeout probe:   gs user data:");
++						for (uint32_t k = 0; k < 32 && w < 650; k++) w += std::snprintf(ul + w, sizeof(ul) - static_cast<size_t>(w), " %08x", g(st_sh, 0x8cu + k));
++						journal("%s\n", ul);
++						auto vsharp = [&](uint32_t k0, const char* name) {
++							const uint64_t base = g(st_sh, 0x8cu + k0) | (static_cast<uint64_t>(g(st_sh, 0x8cu + k0 + 1) & 0xffffu) << 32u);
++							char           m1[400] = {}, m2[400] = {}, m3[400] = {};
++							if (base != 0 && base != 0xffffffffull) rd(base, 16, m1, sizeof(m1));
++							if (base != 0 && base != 0xffffffffull && covered_sorted(*pm, base + 0x540, 16)) {
++								rd(base + 0x540, 4, m2, sizeof(m2));
++								const auto*    t  = reinterpret_cast<const volatile uint32_t*>(base + 0x540);
++								const uint64_t b2 = t[0] | (static_cast<uint64_t>(t[1] & 0xffffu) << 32u);
++								if (b2 != 0) rd(b2, 16, m3, sizeof(m3));
++							}
++							journal("timeout probe:   %s: base 0x%" PRIx64 " %s | +0x540 %s | table %s\n", name, base, m1, m2, m3);
++						};
++						vsharp(8, "s[8:11]");
++						vsharp(20, "s[20:23]");
++						vsharp(24, "s[24:27]");
++					}
 +				}
 +				const char*    ex = ran == nullptr ? "" : (std::binary_search(ran->begin(), ran->end(), q) ? " ran" : " DROPPED");
 +				if (op == 0x11 || op == 0x26 || op == 0x13 || op == 0x2a || (op == 0x2e && len >= 3 && (sub_ib[q + 1] & 0xffffu) == 0x243u))
@@ -13442,6 +13463,7 @@ index 0000000..f4fdcd5
 +		uint64_t ud01 = 0; // experiment 0050: COMPUTE_USER_DATA_0/1
 +		uint32_t ud[16] = {}; // experiment 0059: COMPUTE_USER_DATA_0..15 as this buffer sets them
 +		uint32_t fl_stages = 0, fl_prim = 0, fl_gecntl = 0; // experiment 0160: VGT_SHADER_STAGES_EN, VGT_PRIMITIVE_TYPE, GE_CNTL as this buffer sets them
++		uint32_t fl_gs[32] = {}; // experiment 0160: SPI_SHADER_USER_DATA_GS_0..31 as this buffer sets them
 +		static const bool no_carry = std::getenv("BC5_DIRECT_NO_CARRY") != nullptr; // experiment 0161
 +		CarriedCpState&   carried  = g_carried[compute_ib ? 1 : 0];
 +		if (!no_carry) {
@@ -13557,6 +13579,29 @@ index 0000000..f4fdcd5
 +				if (ta != 0 && tn != 0 && tn <= 4096 && covered_sorted(*maps_p, ta, static_cast<uint64_t>(tn) * 8)) {
 +					const auto* t = reinterpret_cast<const volatile uint32_t*>(ta);
 +					for (uint32_t k = 0; k < tn; k++) fl_reg(op == 0x9f ? 0 : 1, t[2 * k] & 0xffffu, t[2 * k + 1]);
++				}
++			}
++			if (type == 3 && op == 0x76 && len >= 3) { const uint32_t f = ib[q + 1] & 0xffffu; for (uint32_t k = 0; k + 2 < len; k++) if (f + k >= 0x8cu && f + k < 0xacu) fl_gs[f + k - 0x8cu] = ib[q + 2 + k]; }
++			if (type == 3 && op == 0x63 && len >= 5 && (ib[q + 3] >> 31u) != 0) { // the GS user data from LOAD_SH_REG_INDEX tables too
++				const uint64_t ta = (ib[q + 1] & ~3u) | (static_cast<uint64_t>(ib[q + 2] & 0xffffu) << 32u);
++				const uint32_t tn = ib[q + 4] & 0x3fffu;
++				if (ta != 0 && tn != 0 && tn <= 4096 && covered_sorted(*maps_p, ta, static_cast<uint64_t>(tn) * 8)) {
++					const auto* t = reinterpret_cast<const volatile uint32_t*>(ta);
++					for (uint32_t k = 0; k < tn; k++) { const uint32_t r = t[2 * k] & 0xffffu; if (r >= 0x8cu && r < 0xacu) fl_gs[r - 0x8cu] = t[2 * k + 1]; }
++				}
++			}
++			{
++				// experiment 0160: BC5_DIRECT_FL_JOURNAL=1 journals every fast-launch point draw at submission: its
++				// arguments (as they read now) and the GS user data, to compare healthy instances with the one that hangs.
++				static const bool fl_journal = std::getenv("BC5_DIRECT_FL_JOURNAL") != nullptr;
++				if (fl_journal && type == 3 && (op == 0x2c || op == 0x24) && (fl_stages & 0x180000u) != 0 && fl_prim == 1 && fl_gecntl == 0x201u) {
++					char line[900];
++					int  w = std::snprintf(line, sizeof(line), "  fl draw op %02x at %u (%s #%" PRIu64 " %u dw): base1 0x%" PRIx64 " +0x%x count %u args", op, q, kind, g_submits.load(), num_dwords, base1, ib[q + 1], len >= 10 ? ib[q + 5] : 0u);
++					const uint64_t a = base1 + ib[q + 1];
++					if (base1 != 0 && covered_sorted(*maps_p, a, 32)) { const auto* t = reinterpret_cast<const volatile uint32_t*>(a); for (uint32_t k = 0; k < 8; k++) w += std::snprintf(line + w, sizeof(line) - static_cast<size_t>(w), " %08x", t[k]); } else { w += std::snprintf(line + w, sizeof(line) - static_cast<size_t>(w), " <unmapped>"); }
++					w += std::snprintf(line + w, sizeof(line) - static_cast<size_t>(w), " | gs ud");
++					for (uint32_t k = 0; k < 32 && w < 850; k++) w += std::snprintf(line + w, sizeof(line) - static_cast<size_t>(w), " %08x", fl_gs[k]);
++					journal("%s\n", line);
 +				}
 +			}
 +			{
