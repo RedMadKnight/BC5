@@ -11,6 +11,7 @@
 #include <unistd.h>
 
 #include <algorithm>
+#include <iterator>
 #include <atomic>
 #include <cerrno>
 #include <chrono>
@@ -40,6 +41,7 @@ struct SharedBo {
     std::uint32_t id = 0;
     amdgpu_bo_handle bo = nullptr;
     std::uint64_t size = 0;
+    std::uint32_t maps = 0; // experiment 0170: how many shared mappings lie on this BO
 };
 struct SharedMap {
     std::uint64_t va = 0;
@@ -129,6 +131,29 @@ struct Device::Impl {
     // Device::sorted_mappings: the sorted list and the list_gen it was built at.
     std::shared_ptr<const std::vector<Mapping>> sorted;
     std::uint64_t sorted_gen = ~0ull;
+    // Experiment 0170: shared_maps is kept sorted by address (map_shared inserts in place,
+    // unmap_shared finds by binary search), and the direct mapper never maps two pieces over the
+    // same addresses, so the short BO list finds the mappings around an operand by binary search
+    // instead of walking all ~17,000 of them for every operand of every submission. Whether the
+    // pieces really are disjoint is checked once per change of the list (disjoint_gen); if they
+    // are not, the old walk is used.
+    std::uint64_t disjoint_gen = ~0ull;
+    bool disjoint = false;
+    bool shared_disjoint_locked() {
+        if (disjoint_gen != list_gen) {
+            disjoint = true;
+            for (std::size_t i = 1; i < shared_maps.size() && disjoint; ++i)
+                disjoint = shared_maps[i - 1].va + shared_maps[i - 1].size <= shared_maps[i].va;
+            disjoint_gen = list_gen;
+        }
+        return disjoint;
+    }
+    SharedBo *shared_bo_locked(std::uint32_t id) {
+        for (auto &x : shared) {
+            if (x.id == id) return &x;
+        }
+        return nullptr;
+    }
 
     // The scratch IB lives at a fixed GPU VA of 16 TiB: inside the 48-bit range the CP can
     // address (an IB address above 2^48 is truncated by the CP — the kernel-half "high VA" range
@@ -530,11 +555,22 @@ std::vector<Mapping> Device::mappings() const {
 std::shared_ptr<const std::vector<Mapping>> Device::sorted_mappings() const {
     std::lock_guard lock(impl_->mutex);
     if (impl_->sorted == nullptr || impl_->sorted_gen != impl_->list_gen) {
+        // Experiment 0170: shared_maps is already sorted; only the few userptrs are sorted here
+        // and merged in (a full sort of ~17,000 entries at every change of the list cost the
+        // submitting thread a millisecond or more each time).
+        std::vector<Mapping> users;
+        users.reserve(impl_->userptrs.size());
+        for (const auto &u : impl_->userptrs) users.push_back({u.va, u.size, u.readonly, false});
+        const auto by_va = [](const Mapping &x, const Mapping &y) { return x.va < y.va; };
+        std::sort(users.begin(), users.end(), by_va);
         auto out = std::make_shared<std::vector<Mapping>>();
-        out->reserve(impl_->userptrs.size() + impl_->shared_maps.size());
-        for (const auto &u : impl_->userptrs) out->push_back({u.va, u.size, u.readonly, false});
-        for (const auto &m : impl_->shared_maps) out->push_back({m.va, m.size, false, true});
-        std::sort(out->begin(), out->end(), [](const Mapping &x, const Mapping &y) { return x.va < y.va; });
+        out->reserve(users.size() + impl_->shared_maps.size());
+        auto u = users.begin();
+        for (const auto &m : impl_->shared_maps) {
+            while (u != users.end() && u->va < m.va) out->push_back(*u++);
+            out->push_back({m.va, m.size, false, true});
+        }
+        out->insert(out->end(), u, users.end());
         impl_->sorted = std::move(out);
         impl_->sorted_gen = impl_->list_gen;
     }
@@ -583,10 +619,7 @@ std::uint32_t Device::import_memfd(int memfd, std::uint64_t offset, std::uint64_
 bool Device::map_shared(std::uint32_t id, std::uint64_t bo_offset, std::uint64_t size, std::uint64_t gpu_va) {
     std::lock_guard lock(impl_->mutex);
     if (size == 0 || ((bo_offset | size | gpu_va) & 0xfff) != 0) return false;
-    const SharedBo *b = nullptr;
-    for (const auto &x : impl_->shared) {
-        if (x.id == id) b = &x;
-    }
+    SharedBo *b = impl_->shared_bo_locked(id);
     if (b == nullptr || bo_offset + size > b->size) return false;
     const int rc = impl_->va_map(b->bo, bo_offset, size, gpu_va,
                                  AMDGPU_VM_PAGE_READABLE | AMDGPU_VM_PAGE_WRITEABLE | AMDGPU_VM_PAGE_EXECUTABLE);
@@ -595,7 +628,11 @@ bool Device::map_shared(std::uint32_t id, std::uint64_t bo_offset, std::uint64_t
                      static_cast<unsigned long long>(gpu_va), static_cast<unsigned long long>(size), rc);
         return false;
     }
-    impl_->shared_maps.push_back({gpu_va, size, bo_offset, id, b->bo});
+    // Experiment 0170: kept sorted by address (after any equal address, as push_back did).
+    const auto at = std::upper_bound(impl_->shared_maps.begin(), impl_->shared_maps.end(), gpu_va,
+                                     [](std::uint64_t va, const SharedMap &m) { return va < m.va; });
+    impl_->shared_maps.insert(at, SharedMap{gpu_va, size, bo_offset, id, b->bo});
+    b->maps++;
     impl_->list_gen++;
     return true;
 }
@@ -613,14 +650,16 @@ bool Device::map_prt_window(std::uint64_t va, std::uint64_t size) {
 
 bool Device::unmap_shared(std::uint64_t gpu_va) {
     std::lock_guard lock(impl_->mutex);
-    for (auto it = impl_->shared_maps.begin(); it != impl_->shared_maps.end(); ++it) {
-        if (it->va != gpu_va) continue;
-        impl_->va_unmap(it->bo, it->bo_offset, it->size, it->va);
-        impl_->shared_maps.erase(it);
-        impl_->list_gen++;
-        return true;
-    }
-    return false;
+    // Experiment 0170: binary search in the sorted list (the first mapping at that address, as
+    // the old walk found).
+    const auto it = std::lower_bound(impl_->shared_maps.begin(), impl_->shared_maps.end(), gpu_va,
+                                     [](const SharedMap &m, std::uint64_t va) { return m.va < va; });
+    if (it == impl_->shared_maps.end() || it->va != gpu_va) return false;
+    impl_->va_unmap(it->bo, it->bo_offset, it->size, it->va);
+    if (SharedBo *b = impl_->shared_bo_locked(it->id); b != nullptr && b->maps != 0) b->maps--;
+    impl_->shared_maps.erase(it);
+    impl_->list_gen++;
+    return true;
 }
 
 std::uint64_t Device::map_alias(std::uint64_t src_va, std::uint64_t size, std::uint64_t alias_va) {
@@ -661,14 +700,19 @@ bool Device::free_shared(std::uint32_t id) {
     std::lock_guard lock(impl_->mutex);
     for (auto b = impl_->shared.begin(); b != impl_->shared.end(); ++b) {
         if (b->id != id) continue;
-        for (auto it = impl_->shared_maps.begin(); it != impl_->shared_maps.end();) {
-            if (it->id == id) {
-                impl_->va_unmap(it->bo, it->bo_offset, it->size, it->va);
-                it = impl_->shared_maps.erase(it);
-            } else {
-                ++it;
+        // Experiment 0170: one pass that keeps the list's order (erasing one by one was quadratic).
+        std::size_t w = 0;
+        for (std::size_t r = 0; r < impl_->shared_maps.size(); ++r) {
+            auto &m = impl_->shared_maps[r];
+            if (m.id == id) {
+                impl_->va_unmap(m.bo, m.bo_offset, m.size, m.va);
+                continue;
             }
+            if (w != r) impl_->shared_maps[w] = m;
+            ++w;
         }
+        impl_->shared_maps.resize(w);
+        b->maps = 0;
         impl_->drop_aliases_of(b->bo);
         // a kept list would hold the BO (and its pages) alive
         if (impl_->full_list) {
@@ -1070,15 +1114,11 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
         // the list of the last submission with draws still names every mapping
     } else if (full) {
         for (const auto &u : impl_->userptrs) bos.push_back(u.bo);
-        const std::size_t first_shared = bos.size();
         bos.reserve(bos.size() + impl_->shared.size());
-        // every imported BO that is mapped somewhere; the maps are grouped by BO in practice,
-        // so comparing with the last one added keeps this linear
-        for (const auto &m : impl_->shared_maps) {
-            if (bos.size() > first_shared && bos.back() == m.bo) continue;
-            bool seen = false;
-            for (std::size_t k = first_shared; k < bos.size() && !seen; ++k) seen = bos[k] == m.bo;
-            if (!seen) bos.push_back(m.bo);
+        // every imported BO that is mapped somewhere (experiment 0170: from the per-BO count,
+        // not a walk of every mapping)
+        for (const auto &b : impl_->shared) {
+            if (b.maps != 0) bos.push_back(b.bo);
         }
     } else if (include_mappings_) {
         // Table operands are declared with a nominal size; the margins cover their real extent.
@@ -1093,13 +1133,29 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
                 }
             }
         }
-        for (const auto &m : impl_->shared_maps) {
+        if (impl_->shared_disjoint_locked()) {
+            // Experiment 0170: the mappings are sorted and disjoint, so those overlapping
+            // [lo, hi) are the one holding lo (if any) and the ones starting before hi.
+            const auto &maps = impl_->shared_maps;
             for (const auto &[a, span_bytes] : touched) {
                 const std::uint64_t lo = a > kBefore ? a - kBefore : 0;
                 const std::uint64_t hi = a + 2 * span_bytes + kAfter;
-                if (m.va < hi && m.va + m.size > lo) {
-                    add_shared(m.bo);
-                    break;
+                auto it = std::upper_bound(maps.begin(), maps.end(), lo,
+                                           [](std::uint64_t va, const SharedMap &m) { return va < m.va; });
+                if (it != maps.begin() && std::prev(it)->va + std::prev(it)->size > lo) --it;
+                for (; it != maps.end() && it->va < hi; ++it) {
+                    if (it->va + it->size > lo) add_shared(it->bo);
+                }
+            }
+        } else {
+            for (const auto &m : impl_->shared_maps) {
+                for (const auto &[a, span_bytes] : touched) {
+                    const std::uint64_t lo = a > kBefore ? a - kBefore : 0;
+                    const std::uint64_t hi = a + 2 * span_bytes + kAfter;
+                    if (m.va < hi && m.va + m.size > lo) {
+                        add_shared(m.bo);
+                        break;
+                    }
                 }
             }
         }
