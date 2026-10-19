@@ -39,3 +39,21 @@ spend ~34 ms of host memory sync on the game thread). Where does that sync go?
 the zero pieces; it now touches only what changed (F223). The long frames (over 70 ms) are gone
 from the measured window; the rest of the frame time is the title's own and the per-submission
 cost of exp 0162 (chains, ADR 0010, still off by default).
+
+**Addendum (run 819, the same day): the submission chains on this build.** `route.sh 819
+"BC5_DIRECT_CHAIN=2"` against run 818 (chains off), the same route and binary, compared with
+`stallcmp.sh` (here; it now also reports flips per second and the game thread's host time per
+frame):
+
+| | 818, chains off | 819, `BC5_DIRECT_CHAIN=2` |
+|---|---|---|
+| flips per second | 33.1 | 48.1 |
+| mean frame | 30.6 ms | 20.9 ms |
+| frames over 70 ms | 6 | 4 |
+| host time per frame (sync, prepare, CS) | 12.1 ms (1.1, 4.9, 4.8) | 8.1 ms (0.6, 2.5, 1.7) |
+| kernel jobs per frame (game thread + ring thread) | 51 + 78 | 9 + 23 |
+| audio rate, seconds off by more than 5 % | 0.999–1.001, 0 | 0.999–1.001, 0 |
+
+No fence timeout and no ring reset in either run (the F208 address-0 faults are logged, non-fatal).
+The audio distortion the maintainer heard with the chains at 11:16 came with the stalls F221–F223
+removed; whether the chains become the default is the maintainer's call after a session at the pad.
