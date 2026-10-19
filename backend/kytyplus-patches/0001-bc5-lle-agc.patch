@@ -1383,7 +1383,7 @@ index 0000000..deb84e4
 +
 +#endif // KYTY_GRAPHICS_PRESENTATION_SETTINGS_OVERLAY_H_
 diff --git a/src/graphics/presentation/videoOut.cpp b/src/graphics/presentation/videoOut.cpp
-index f980320..87d54d2 100644
+index f980320..660eea7 100644
 --- a/src/graphics/presentation/videoOut.cpp
 +++ b/src/graphics/presentation/videoOut.cpp
 @@ -1,3 +1,9 @@
@@ -1414,7 +1414,58 @@ index f980320..87d54d2 100644
  
  private:
  	enum class RequestState { Reserved, Recording, Ready, Presenting };
-@@ -781,6 +791,7 @@ void VideoOutDriver::Impl::VblankEnd() {
+@@ -379,6 +389,15 @@ static void DeleteVideoOutEvents(const VideoOutEventQueues& queues, VideoOutEven
+ 	}
+ }
+ 
++static const char* Bc5VideoOutEventName(VideoOutEventKind kind) {
++	switch (kind) {
++		case VideoOutEventKind::Flip: return "flip";
++		case VideoOutEventKind::Vblank: return "vblank";
++		case VideoOutEventKind::PreVblankStart: return "pre-vblank";
++		default: return "other";
++	}
++}
++
+ static int RegisterVideoOutEvent(int handle, EventQueue::KernelEqueue eq, VideoOutEventKind kind,
+                                  void* udata) {
+ 	uint64_t generation = 0;
+@@ -471,6 +490,34 @@ static int DeleteVideoOutEvent(int handle, EventQueue::KernelEqueue eq, VideoOut
+ 	return result == LibKernel::KERNEL_ERROR_ENOENT ? OK : result;
+ }
+ 
++// BC5 (experiment 0162, KYTY_BC5_VIDEOOUT_TRACE=1): what the title asks of VideoOut - the flip
++// rate and the event registrations as they happen, and once a second the counts of flips (by
++// mode), flip-status polls and vblank waits.
++static bool Bc5VideoOutTraceOn() {
++	static const bool on = std::getenv("KYTY_BC5_VIDEOOUT_TRACE") != nullptr;
++	return on;
++}
++static std::atomic<uint32_t> g_bc5_vo_flips[4], g_bc5_vo_status, g_bc5_vo_pending, g_bc5_vo_waitvb, g_bc5_vo_vbstatus;
++static void Bc5VideoOutTraceTick() {
++	if (!Bc5VideoOutTraceOn()) {
++		return;
++	}
++	static uint64_t last = 0;
++	const uint64_t  now  = LibKernel::KernelGetProcessTime();
++	if (last == 0) {
++		last = now;
++		return;
++	}
++	if (now - last < 1000000) {
++		return;
++	}
++	std::fprintf(stderr, "videoout trace: t %.3f s: flips mode0 %u mode1 %u mode2 %u mode3 %u, GetFlipStatus %u, IsFlipPending %u, WaitVblank %u, GetVblankStatus %u in %.3f s\n",
++	             static_cast<double>(now) / 1e6, g_bc5_vo_flips[0].exchange(0), g_bc5_vo_flips[1].exchange(0), g_bc5_vo_flips[2].exchange(0), g_bc5_vo_flips[3].exchange(0),
++	             g_bc5_vo_status.exchange(0), g_bc5_vo_pending.exchange(0), g_bc5_vo_waitvb.exchange(0), g_bc5_vo_vbstatus.exchange(0), static_cast<double>(now - last) / 1e6);
++	std::fflush(stderr);
++	last = now;
++}
++
+ static bool IsFlipDueLocked(const VideoOutConfig& cfg, uint64_t generation) {
+ 	if (!cfg.opened || cfg.closing || cfg.generation != generation) {
+ 		return false;
+@@ -781,6 +828,7 @@ void VideoOutDriver::Impl::VblankEnd() {
  }
  
  void VideoOutDriver::Impl::PresentThread(std::stop_token token) {
@@ -1422,7 +1473,7 @@ index f980320..87d54d2 100644
  	const auto frequency = Common::Timer::QueryPerformanceFrequency();
  	EXIT_IF(frequency == 0);
  
-@@ -934,7 +945,17 @@ void FlipQueue::Cancel(VideoOutConfig& cfg) {
+@@ -934,7 +982,17 @@ void FlipQueue::Cancel(VideoOutConfig& cfg) {
  	cfg.flip_status.gcQueueNum     = 0;
  }
  
@@ -1440,7 +1491,7 @@ index f980320..87d54d2 100644
  	VideoOutConfig* cfg        = nullptr;
  	uint64_t        generation = 0;
  	int             index      = 0;
-@@ -1012,7 +1033,29 @@ void FlipQueue::Prepare(uint64_t request_id, Graphics::CommandBuffer& buffer) {
+@@ -1012,7 +1070,29 @@ void FlipQueue::Prepare(uint64_t request_id, Graphics::CommandBuffer& buffer) {
  		frame = &m_presenter.PrepareBlankFrame(width, height, index == VIDEO_OUT_BUFFER_INDEX_BLACK,
  		                                       &buffer);
  	} else {
@@ -1470,7 +1521,7 @@ index f980320..87d54d2 100644
  	}
  
  	Common::LockGuard lock(m_mutex);
-@@ -1033,6 +1076,20 @@ void FlipQueue::Prepare(uint64_t request_id, Graphics::CommandBuffer& buffer) {
+@@ -1033,6 +1113,20 @@ void FlipQueue::Prepare(uint64_t request_id, Graphics::CommandBuffer& buffer) {
  		EXIT("video-out request changed while recording, id=%" PRIu64 "\n", request_id);
  	}
  	prepared->frame = frame;
@@ -1491,7 +1542,7 @@ index f980320..87d54d2 100644
  }
  
  void FlipQueue::Complete(uint64_t request_id) {
-@@ -1046,6 +1103,7 @@ void FlipQueue::Complete(uint64_t request_id) {
+@@ -1046,6 +1140,7 @@ void FlipQueue::Complete(uint64_t request_id) {
  		}
  		request->state = RequestState::Ready;
  		m_submit_cond_var.Signal();
@@ -1499,7 +1550,7 @@ index f980320..87d54d2 100644
  		m_mutex.Unlock();
  		return;
  	}
-@@ -1087,6 +1145,26 @@ void FlipQueue::Wait(VideoOutConfig& cfg, int index) {
+@@ -1087,6 +1182,26 @@ void FlipQueue::Wait(VideoOutConfig& cfg, int index) {
  	}
  }
  
@@ -1526,7 +1577,52 @@ index f980320..87d54d2 100644
  bool FlipQueue::Flip(uint32_t micros) {
  	KYTY_PROFILER_BLOCK("FlipQueue::Flip");
  
-@@ -1462,6 +1540,7 @@ KYTY_SYSV_ABI int VideoOutSubmitFlip(int handle, int index, int flip_mode, int64
+@@ -1240,6 +1355,10 @@ KYTY_SYSV_ABI int VideoOutSetFlipRate(int handle, int rate) {
+ 
+ 	Common::LockGuard lock(ctx->mutex);
+ 	ctx->flip_rate = rate;
++	if (Bc5VideoOutTraceOn()) {
++		std::fprintf(stderr, "videoout trace: t %.3f s: VideoOutSetFlipRate(handle %d, rate %d): a flip every %d vblank(s)\n",
++		             static_cast<double>(LibKernel::KernelGetProcessTime()) / 1e6, handle, rate, rate + 1);
++	}
+ 
+ 	return OK;
+ }
+@@ -1251,6 +1370,7 @@ KYTY_SYSV_ABI int VideoOutDeleteFlipEvent(EventQueue::KernelEqueue eq, int handl
+ 
+ KYTY_SYSV_ABI int VideoOutAddFlipEvent(EventQueue::KernelEqueue eq, int handle, void* udata) {
+ 	PRINT_NAME();
++	if (Bc5VideoOutTraceOn()) std::fprintf(stderr, "videoout trace: VideoOutAddFlipEvent(handle %d)\n", handle);
+ 	return RegisterVideoOutEvent(handle, eq, VideoOutEventKind::Flip, udata);
+ }
+ 
+@@ -1267,12 +1387,14 @@ KYTY_SYSV_ABI int VideoOutDeletePreVblankStartEvent(EventQueue::KernelEqueue eq,
+ KYTY_SYSV_ABI int VideoOutAddVblankEvent(LibKernel::EventQueue::KernelEqueue eq, int handle,
+                                          void* udata) {
+ 	PRINT_NAME();
++	if (Bc5VideoOutTraceOn()) std::fprintf(stderr, "videoout trace: VideoOutAddVblankEvent(handle %d)\n", handle);
+ 	return RegisterVideoOutEvent(handle, eq, VideoOutEventKind::Vblank, udata);
+ }
+ 
+ KYTY_SYSV_ABI int VideoOutAddPreVblankStartEvent(LibKernel::EventQueue::KernelEqueue eq, int handle,
+                                                  void* udata) {
+ 	PRINT_NAME();
++	if (Bc5VideoOutTraceOn()) std::fprintf(stderr, "videoout trace: VideoOutAddPreVblankStartEvent(handle %d)\n", handle);
+ 	return RegisterVideoOutEvent(handle, eq, VideoOutEventKind::PreVblankStart, udata);
+ }
+ 
+@@ -1452,6 +1574,10 @@ KYTY_SYSV_ABI int VideoOutUnregisterBuffers(int handle, int set_index) {
+ 
+ KYTY_SYSV_ABI int VideoOutSubmitFlip(int handle, int index, int flip_mode, int64_t flip_arg) {
+ 	PRINT_NAME();
++	if (Bc5VideoOutTraceOn()) {
++		g_bc5_vo_flips[flip_mode >= 0 && flip_mode < 4 ? flip_mode : 3]++;
++		Bc5VideoOutTraceTick();
++	}
+ 
+ 	uint64_t  request_id = 0;
+ 	const int result     = ReserveFlipRequest(DriverState(), handle, index, flip_mode, flip_arg,
+@@ -1462,6 +1588,7 @@ KYTY_SYSV_ABI int VideoOutSubmitFlip(int handle, int index, int flip_mode, int64
  	if (result != OK) {
  		return result;
  	}
@@ -1534,7 +1630,7 @@ index f980320..87d54d2 100644
  	g_video_out_driver->SubmitFlipPreparation(request_id);
  
  	return OK;
-@@ -1497,6 +1576,14 @@ void VideoOutDriver::WaitForSubmitSlot() {
+@@ -1497,6 +1624,14 @@ void VideoOutDriver::WaitForSubmitSlot() {
  	m_impl->GetFlipQueue().WaitForSubmitSlot();
  }
  
@@ -1549,7 +1645,7 @@ index f980320..87d54d2 100644
  void VideoOutDriver::WaitFlipDone(int handle, int index) {
  	auto* ctx = m_impl->Get(handle);
  	EXIT_IF(ctx == nullptr);
-@@ -1505,8 +1592,35 @@ void VideoOutDriver::WaitFlipDone(int handle, int index) {
+@@ -1505,8 +1640,45 @@ void VideoOutDriver::WaitFlipDone(int handle, int index) {
  	m_impl->GetFlipQueue().Wait(*ctx, index);
  }
  
@@ -1560,6 +1656,12 @@ index f980320..87d54d2 100644
 +void Bc5VideoOutWaitFlipCopied(int handle, int index) {
 +	if (g_video_out_driver != nullptr && IsValidBufferIndex(index) && !IsSpecialBufferIndex(index)) {
 +		g_video_out_driver->WaitFlipCopied(handle, index);
++	}
++}
++
++void Bc5VideoOutWaitFlipDone(int handle, int index) {
++	if (g_video_out_driver != nullptr && IsValidBufferIndex(index) && !IsSpecialBufferIndex(index)) {
++		g_video_out_driver->WaitFlipDone(handle, index);
 +	}
 +}
 +
@@ -1584,11 +1686,42 @@ index f980320..87d54d2 100644
 +}
 +
 +KYTY_SYSV_ABI int VideoOutGetFlipStatus(int handle, VideoOutFlipStatus* status) {	PRINT_NAME();
++	if (Bc5VideoOutTraceOn()) {
++		g_bc5_vo_status++;
++		Bc5VideoOutTraceTick();
++	}
  
  	if (status == nullptr) {
  		return VIDEO_OUT_ERROR_INVALID_ADDRESS;
+@@ -1536,6 +1708,7 @@ KYTY_SYSV_ABI int VideoOutGetFlipStatus(int handle, VideoOutFlipStatus* status)
+ 
+ KYTY_SYSV_ABI int VideoOutIsFlipPending(int handle) {
+ 	PRINT_NAME();
++	if (Bc5VideoOutTraceOn()) g_bc5_vo_pending++;
+ 
+ 	auto* ctx = DriverState().Get(handle);
+ 	if (ctx == nullptr) {
+@@ -1552,6 +1725,7 @@ KYTY_SYSV_ABI int VideoOutIsFlipPending(int handle) {
+ 
+ KYTY_SYSV_ABI int VideoOutGetVblankStatus(int handle, VideoOutVblankStatus* status) {
+ 	PRINT_NAME();
++	if (Bc5VideoOutTraceOn()) g_bc5_vo_vbstatus++;
+ 
+ 	if (status == nullptr) {
+ 		return VIDEO_OUT_ERROR_INVALID_ADDRESS;
+@@ -1632,6 +1806,10 @@ KYTY_SYSV_ABI int VideoOutGetEventCount(const EventQueue::KernelEvent* ev) {
+ 
+ KYTY_SYSV_ABI int VideoOutWaitVblank(int handle) {
+ 	PRINT_NAME();
++	if (Bc5VideoOutTraceOn()) {
++		g_bc5_vo_waitvb++;
++		Bc5VideoOutTraceTick();
++	}
+ 
+ 	auto* ctx = DriverState().Get(handle);
+ 	if (ctx == nullptr) {
 diff --git a/src/graphics/presentation/videoOut.h b/src/graphics/presentation/videoOut.h
-index 58f16c6..70c512d 100644
+index 58f16c6..fbce081 100644
 --- a/src/graphics/presentation/videoOut.h
 +++ b/src/graphics/presentation/videoOut.h
 @@ -39,6 +39,7 @@ public:
@@ -1599,7 +1732,7 @@ index 58f16c6..70c512d 100644
  
  	[[nodiscard]] Impl& State() noexcept;
  
-@@ -80,6 +81,11 @@ KYTY_SYSV_ABI int VideoOutSubmitChangeBufferAttribute2(int handle, int set_index
+@@ -80,6 +81,15 @@ KYTY_SYSV_ABI int VideoOutSubmitChangeBufferAttribute2(int handle, int set_index
  KYTY_SYSV_ABI int VideoOutUnregisterBuffers(int handle, int set_index);
  KYTY_SYSV_ABI int VideoOutSubmitFlip(int handle, int index, int flip_mode, int64_t flip_arg);
  KYTY_SYSV_ABI int VideoOutGetFlipStatus(int handle, VideoOutFlipStatus* status);
@@ -1607,6 +1740,10 @@ index 58f16c6..70c512d 100644
 +// BC5 (experiment 0069): returns once no flip of that buffer is queued or being presented.
 +// BC5 (experiment 0070): returns once every queued flip of that buffer has been copied.
 +void Bc5VideoOutWaitFlipCopied(int handle, int index);
++// BC5 (experiment 0162): returns once every queued flip of that buffer has been presented (at the
++// vblank it was due, by the flip rate), which is when the console's VideoOut resets the buffer's
++// flip label.
++void Bc5VideoOutWaitFlipDone(int handle, int index);
 +bool Bc5VideoOutBufferRange(int handle, int index, uint64_t* addr, uint64_t* size);
  KYTY_SYSV_ABI int VideoOutIsFlipPending(int handle);
  KYTY_SYSV_ABI int VideoOutGetVblankStatus(int handle, VideoOutVblankStatus* status);
@@ -7007,7 +7144,7 @@ index e82b93e..6cf1b61 100644
  
  } // namespace Libs::Audio::Ajm
 diff --git a/src/libs/audio.cpp b/src/libs/audio.cpp
-index fe4b332..4f6761f 100644
+index fe4b332..142802d 100644
 --- a/src/libs/audio.cpp
 +++ b/src/libs/audio.cpp
 @@ -20,6 +20,10 @@
@@ -7021,7 +7158,7 @@ index fe4b332..4f6761f 100644
  
  namespace Libs::Audio {
  
-@@ -107,8 +111,23 @@ private:
+@@ -107,8 +111,28 @@ private:
  
  		SDL_AudioDeviceID audio_device = 0;
  		SDL_AudioSpec     audio_spec   = {};
@@ -7031,6 +7168,11 @@ index fe4b332..4f6761f 100644
 +		int pad_route = 0;
 +		// BC5: when the controller's device last had to be reopened (ms), see QueueSdlAudio.
 +		uint64_t pad_retry_ms = 0;
++		// BC5 (audio pacing, KYTY_BC5_AUDIO_TRACE=1): what the port did since the last trace line.
++		uint32_t tr_calls = 0, tr_frames = 0, tr_clears = 0;
++		uint64_t tr_blocked_us = 0;
++		uint32_t tr_queued_min = 0xffffffffu, tr_queued_max = 0;
++		uint32_t tr_queued_bytes_per_ms = 0;
  	};
  
 +	// BC5: the channel count of the stream opened on the controller's audio device. The device
@@ -7045,7 +7187,7 @@ index fe4b332..4f6761f 100644
  	struct PortIn {
  		bool     used            = false;
  		uint32_t type            = 0;
-@@ -236,20 +255,51 @@ bool Audio::OpenSdlDevice(PortOut* port) {
+@@ -236,20 +260,51 @@ bool Audio::OpenSdlDevice(PortOut* port) {
  	desired.samples  = static_cast<Uint16>(port->samples_num);
  	desired.callback = nullptr;
  
@@ -7101,7 +7243,7 @@ index fe4b332..4f6761f 100644
  	return true;
  }
  
-@@ -335,7 +385,90 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -335,7 +390,90 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  
  	std::vector<uint8_t> prepared_buffer;
  	const void*          prepared_data = PrepareOutputBuffer(*port, data, &prepared_buffer);
@@ -7193,7 +7335,7 @@ index fe4b332..4f6761f 100644
  
  	std::vector<uint8_t> convert_buffer;
  	const void*          queue_data = prepared_data;
-@@ -343,7 +476,7 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -343,7 +481,7 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  
  	SDL_AudioCVT cvt {};
  	const int    cvt_result =
@@ -7202,7 +7344,7 @@ index fe4b332..4f6761f 100644
  	                      static_cast<int>(port->freq), port->audio_spec.format,
  	                      port->audio_spec.channels, port->audio_spec.freq);
  
-@@ -368,6 +501,46 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -368,6 +506,46 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  		queue_size = static_cast<uint32_t>(cvt.len_cvt);
  	}
  
@@ -7249,7 +7391,34 @@ index fe4b332..4f6761f 100644
  	if (blocking) {
  		// More aggressive buffer management to prevent audio issues
  		// during heavy GPU load (common in gameplay vs cutscene)
-@@ -428,7 +601,7 @@ Audio::Id Audio::AudioOutOpen(int type, uint32_t samples_num, uint32_t freq, For
+@@ -380,15 +558,26 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+ 		const auto wait_start      = LibKernel::KernelGetProcessTime();
+ 		// Timeout faster to avoid blocking the game thread
+ 		const uint64_t timeout_us = 100000; // 100ms max wait
++		{
++			const auto q = SDL_GetQueuedAudioSize(port->audio_device);
++			port->tr_queued_min = std::min<uint32_t>(port->tr_queued_min, q);
++			port->tr_queued_max = std::max<uint32_t>(port->tr_queued_max, q);
++		}
+ 		while (SDL_GetQueuedAudioSize(port->audio_device) > min_queued_size) {
+ 			if (LibKernel::KernelGetProcessTime() - wait_start > timeout_us) {
+ 				// Force clear if we're waiting too long - prevents audio stutter
+ 				SDL_ClearQueuedAudio(port->audio_device);
++				port->tr_clears++;
+ 				break;
+ 			}
+ 			Common::Thread::SleepMicro(500); // Sleep less to check more frequently
+ 		}
++		port->tr_blocked_us += LibKernel::KernelGetProcessTime() - wait_start;
++		port->tr_queued_bytes_per_ms = static_cast<uint32_t>(
++		    (static_cast<uint64_t>(port->audio_spec.freq) * port->audio_spec.channels * SDL_AUDIO_BITSIZE(port->audio_spec.format)) / 8000u);
+ 	}
++	port->tr_calls++;
++	port->tr_frames += port->samples_num;
+ 
+ 	if (SDL_QueueAudio(port->audio_device, queue_data, queue_size) < 0) {
+ 		LOGF("AudioOut: SDL_QueueAudio failed: %s\n", SDL_GetError());
+@@ -428,7 +617,7 @@ Audio::Id Audio::AudioOutOpen(int type, uint32_t samples_num, uint32_t freq, For
  				port.volume[i] = 32768;
  			}
  
@@ -7258,12 +7427,54 @@ index fe4b332..4f6761f 100644
  				// KytyPlus diagnostic: OpenSdlDevice() may fail (no host audio device,
  				// unsupported sample rate/format, or SDL init failure). The return is
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
+@@ -568,6 +757,41 @@ uint32_t Audio::AudioOutOutputs(OutputParam* params, uint32_t num, bool blocking
+ 		m_out_ports[params[i].handle.GetId()].last_output_time = LibKernel::KernelGetProcessTime();
+ 	}
+ 
++	// BC5 (audio pacing): KYTY_BC5_AUDIO_TRACE=1 prints, once a second, how fast the game's audio
++	// thread pushed frames against the wall clock (the title's game clock is Wwise's play
++	// position, i.e. the frames the host accepted), how long it was held, and the SDL queue.
++	static const bool trace = std::getenv("KYTY_BC5_AUDIO_TRACE") != nullptr;
++	if (trace) {
++		static uint64_t last_us = 0;
++		const uint64_t  now     = LibKernel::KernelGetProcessTime();
++		if (last_us == 0) {
++			last_us = now;
++		} else if (now - last_us >= 1000000) {
++			const double wall_s = static_cast<double>(now - last_us) / 1e6;
++			for (int id = 0; id < OUT_PORTS_MAX; id++) {
++				auto& p = m_out_ports[id];
++				if (!p.used || p.tr_calls == 0) {
++					continue;
++				}
++				const double  pushed_s = p.freq != 0 ? static_cast<double>(p.tr_frames) / p.freq : 0.0;
++				const uint32_t per_ms  = p.tr_queued_bytes_per_ms != 0 ? p.tr_queued_bytes_per_ms : 1;
++				std::fprintf(stderr, "audio trace: t %.3f s port %d type %d %d ch %u Hz%s: %u calls, %u frames = %.3f s of sound in %.3f s (rate %.3f), held %.1f ms, %u clears, sdl queued %u-%u bytes (%u-%u ms), device %s\n",
++				             static_cast<double>(now) / 1e6, id, p.type, p.channels_num, p.freq, p.pad_route != 0 ? " (pad)" : "",
++				             p.tr_calls, p.tr_frames, pushed_s, wall_s, wall_s > 0 ? pushed_s / wall_s : 0.0,
++				             static_cast<double>(p.tr_blocked_us) / 1e3, p.tr_clears,
++				             p.tr_queued_min == 0xffffffffu ? 0u : p.tr_queued_min, p.tr_queued_max,
++				             (p.tr_queued_min == 0xffffffffu ? 0u : p.tr_queued_min) / per_ms, p.tr_queued_max / per_ms,
++				             p.audio_device == 0 ? "none" : SDL_GetAudioDeviceStatus(p.audio_device) == SDL_AUDIO_PLAYING ? "playing" : "not playing");
++				p.tr_calls = p.tr_frames = p.tr_clears = 0;
++				p.tr_blocked_us = 0;
++				p.tr_queued_min = 0xffffffffu;
++				p.tr_queued_max = 0;
++			}
++			std::fflush(stderr);
++			last_us = now;
++		}
++	}
++
+ 	return first_port.samples_num;
+ }
+ 
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..30ccfbc
+index 0000000..6f0917c
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,7775 @@
+@@ -0,0 +1,7814 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -14927,10 +15138,49 @@ index 0000000..30ccfbc
 +	if (timing_flips) {
 +		Bc5Gc::Direct::journal("timing: t %.3f s flip %d/%d, VideoOutSubmitFlip took %.1f ms\n", flip_t0, handle, index, (Bc5Gc::Direct::timing_now() - flip_t0) * 1e3);
 +	}
-+	// The flip is immediate here: the buffer's flip label goes back to 0, as the console's VideoOut
-+	// does once the flip has happened (the game waits for that before it renders into the buffer
-+	// again; run 73).
-+	if (index >= 0 && index < 64) Bc5Gc::g_labels[index] = 0;
++	// Experiment 0162: the buffer's flip label goes back to 0 when the flip has been presented, at
++	// the vblank it was due by the flip rate (VideoOutSetFlipRate), as the console's VideoOut does
++	// (the game waits for the label before it renders into the buffer again; run 73). Resetting it
++	// here, at submission, let the second title run its frames at whatever the GPU allowed (22-31
++	// ms instead of the 33.3 ms of its 30 Hz flip rate), and its cutscenes and gameplay sped up and
++	// slowed down with the frame time (the maintainer, runs 793-795). A thread of its own waits for
++	// the presentation, so the game's thread is not held here. BC5_DIRECT_FLIP_LABEL=submit restores
++	// the reset at submission.
++	static const bool label_at_submit = [] {
++		const char* e = std::getenv("BC5_DIRECT_FLIP_LABEL");
++		return e != nullptr && std::strcmp(e, "submit") == 0;
++	}();
++	if (index >= 0 && index < 64) {
++		if (rc != 0 || label_at_submit) {
++			Bc5Gc::g_labels[index] = 0;
++		} else {
++			static std::mutex                      lm;
++			static std::condition_variable         lcv;
++			static std::deque<std::pair<int, int>> lq;
++			static std::once_flag                  lstarted;
++			std::call_once(lstarted, [] {
++				std::thread([] {
++					pthread_setname_np(pthread_self(), "bc5-fliplabel");
++					for (;;) {
++						std::pair<int, int> it;
++						{
++							std::unique_lock lk(lm);
++							lcv.wait(lk, [] { return !lq.empty(); });
++							it = lq.front();
++							lq.pop_front();
++						}
++						VideoOut::Bc5VideoOutWaitFlipDone(it.first, it.second);
++						Bc5Gc::g_labels[it.second] = 0;
++					}
++				}).detach();
++			});
++			{
++				std::lock_guard lk(lm);
++				lq.emplace_back(handle, index);
++			}
++			lcv.notify_one();
++		}
++	}
 +	return rc;
 +}
 +

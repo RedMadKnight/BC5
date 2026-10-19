@@ -1,0 +1,21 @@
+videoout trace: VideoOutAddFlipEvent(handle 1)
+videoout trace: t 1.681 s: VideoOutSetFlipRate(handle 1, rate 0): a flip every 1 vblank(s)
+videoout trace: t 4.886 s: flips mode0 0 mode1 29 mode2 0 mode3 0, GetFlipStatus 31, IsFlipPending 34458, WaitVblank 0, GetVblankStatus 31 in 1.004 s
+videoout trace: t 12.187 s: flips mode0 0 mode1 29 mode2 0 mode3 0, GetFlipStatus 30, IsFlipPending 7095, WaitVblank 0, GetVblankStatus 30 in 1.005 s
+videoout trace: t 22.751 s: flips mode0 0 mode1 29 mode2 0 mode3 0, GetFlipStatus 29, IsFlipPending 43233, WaitVblank 0, GetVblankStatus 29 in 1.000 s
+videoout trace: t 32.867 s: flips mode0 0 mode1 30 mode2 0 mode3 0, GetFlipStatus 30, IsFlipPending 21197, WaitVblank 0, GetVblankStatus 30 in 1.017 s
+videoout trace: t 46.200 s: flips mode0 0 mode1 10 mode2 0 mode3 0, GetFlipStatus 0, IsFlipPending 0, WaitVblank 0, GetVblankStatus 10 in 1.017 s
+videoout trace: t 56.620 s: flips mode0 0 mode1 37 mode2 0 mode3 0, GetFlipStatus 37, IsFlipPending 0, WaitVblank 0, GetVblankStatus 37 in 1.017 s
+videoout trace: t 66.689 s: flips mode0 0 mode1 45 mode2 0 mode3 0, GetFlipStatus 45, IsFlipPending 0, WaitVblank 0, GetVblankStatus 45 in 1.006 s
+videoout trace: t 76.756 s: flips mode0 0 mode1 43 mode2 0 mode3 0, GetFlipStatus 44, IsFlipPending 0, WaitVblank 0, GetVblankStatus 44 in 1.000 s
+videoout trace: t 86.872 s: flips mode0 0 mode1 38 mode2 0 mode3 0, GetFlipStatus 38, IsFlipPending 0, WaitVblank 0, GetVblankStatus 38 in 1.047 s
+videoout trace: t 96.965 s: flips mode0 0 mode1 44 mode2 0 mode3 0, GetFlipStatus 43, IsFlipPending 0, WaitVblank 0, GetVblankStatus 43 in 1.003 s
+videoout trace: t 107.110 s: flips mode0 0 mode1 44 mode2 0 mode3 0, GetFlipStatus 44, IsFlipPending 0, WaitVblank 0, GetVblankStatus 44 in 1.001 s
+videoout trace: t 118.407 s: flips mode0 0 mode1 15 mode2 0 mode3 0, GetFlipStatus 0, IsFlipPending 0, WaitVblank 0, GetVblankStatus 15 in 1.032 s
+videoout trace: t 134.373 s: flips mode0 0 mode1 10 mode2 0 mode3 0, GetFlipStatus 0, IsFlipPending 0, WaitVblank 0, GetVblankStatus 10 in 1.791 s
+videoout trace: t 144.709 s: flips mode0 0 mode1 24 mode2 0 mode3 0, GetFlipStatus 24, IsFlipPending 0, WaitVblank 0, GetVblankStatus 24 in 1.017 s
+videoout trace: t 155.039 s: flips mode0 0 mode1 21 mode2 0 mode3 0, GetFlipStatus 21, IsFlipPending 0, WaitVblank 0, GetVblankStatus 21 in 1.024 s
+videoout trace: t 165.449 s: flips mode0 0 mode1 29 mode2 0 mode3 0, GetFlipStatus 29, IsFlipPending 0, WaitVblank 0, GetVblankStatus 29 in 1.017 s
+videoout trace: t 175.637 s: flips mode0 0 mode1 35 mode2 0 mode3 0, GetFlipStatus 35, IsFlipPending 0, WaitVblank 0, GetVblankStatus 35 in 1.025 s
+videoout trace: t 185.743 s: flips mode0 0 mode1 35 mode2 0 mode3 0, GetFlipStatus 35, IsFlipPending 0, WaitVblank 0, GetVblankStatus 35 in 1.001 s
+videoout trace: t 195.861 s: flips mode0 0 mode1 35 mode2 0 mode3 0, GetFlipStatus 35, IsFlipPending 0, WaitVblank 0, GetVblankStatus 35 in 1.002 s
