@@ -2114,7 +2114,7 @@ index 0000000..c245d62
 +
 +#endif // KYTY_GRAPHICS_PRESENTATION_SETTINGS_OVERLAY_H_
 diff --git a/src/graphics/presentation/videoOut.cpp b/src/graphics/presentation/videoOut.cpp
-index f980320..bc8c82e 100644
+index f980320..7331487 100644
 --- a/src/graphics/presentation/videoOut.cpp
 +++ b/src/graphics/presentation/videoOut.cpp
 @@ -1,3 +1,9 @@
@@ -2344,10 +2344,43 @@ index f980320..bc8c82e 100644
  	return RegisterVideoOutEvent(handle, eq, VideoOutEventKind::PreVblankStart, udata);
  }
  
-@@ -1452,6 +1576,10 @@ KYTY_SYSV_ABI int VideoOutUnregisterBuffers(int handle, int set_index) {
+@@ -1450,8 +1574,43 @@ KYTY_SYSV_ABI int VideoOutUnregisterBuffers(int handle, int set_index) {
+ 	return OK;
+ }
  
++// BC5 (experiment 0172, KYTY_BC5_FPS_COUNTER=1): a measurement, not a log - it ignores the logging
++// switch. Once a second one stderr line: the flips submitted, the longest interval between two of
++// them, and how many intervals were over 40 and 70 ms (the frame times as the title sees them).
++static void Bc5FpsCount() {
++	static const bool on = std::getenv("KYTY_BC5_FPS_COUNTER") != nullptr;
++	if (!on) {
++		return;
++	}
++	static std::mutex m;
++	static uint64_t   last_flip = 0, window = 0, flips = 0, max_gap = 0, over40 = 0, over70 = 0;
++	std::lock_guard   lock(m);
++	const uint64_t    now = LibKernel::KernelGetProcessTime();
++	if (last_flip != 0) {
++		const uint64_t gap = now - last_flip;
++		max_gap            = std::max(max_gap, gap);
++		over40 += gap > 40000 ? 1 : 0;
++		over70 += gap > 70000 ? 1 : 0;
++	}
++	last_flip = now;
++	flips++;
++	if (window == 0) {
++		window = now;
++	} else if (now - window >= 1000000) {
++		std::fprintf(stderr, "fps counter: t %.3f s: %" PRIu64 " flips in %.3f s, longest gap %.1f ms, gaps over 40 ms %" PRIu64 ", over 70 ms %" PRIu64 "\n",
++		             static_cast<double>(now) / 1e6, flips, static_cast<double>(now - window) / 1e6, static_cast<double>(max_gap) / 1e3, over40, over70);
++		window = now;
++		flips = max_gap = over40 = over70 = 0;
++	}
++}
++
  KYTY_SYSV_ABI int VideoOutSubmitFlip(int handle, int index, int flip_mode, int64_t flip_arg) {
  	PRINT_NAME();
++	Bc5FpsCount(); // experiment 0172
 +	if (Bc5VideoOutTraceOn()) {
 +		g_bc5_vo_flips[flip_mode >= 0 && flip_mode < 4 ? flip_mode : 3]++;
 +		Bc5VideoOutTraceTick();
@@ -2355,7 +2388,7 @@ index f980320..bc8c82e 100644
  
  	uint64_t  request_id = 0;
  	const int result     = ReserveFlipRequest(DriverState(), handle, index, flip_mode, flip_arg,
-@@ -1462,6 +1590,7 @@ KYTY_SYSV_ABI int VideoOutSubmitFlip(int handle, int index, int flip_mode, int64
+@@ -1462,6 +1621,7 @@ KYTY_SYSV_ABI int VideoOutSubmitFlip(int handle, int index, int flip_mode, int64
  	if (result != OK) {
  		return result;
  	}
@@ -2363,7 +2396,7 @@ index f980320..bc8c82e 100644
  	g_video_out_driver->SubmitFlipPreparation(request_id);
  
  	return OK;
-@@ -1497,6 +1626,14 @@ void VideoOutDriver::WaitForSubmitSlot() {
+@@ -1497,6 +1657,14 @@ void VideoOutDriver::WaitForSubmitSlot() {
  	m_impl->GetFlipQueue().WaitForSubmitSlot();
  }
  
@@ -2378,7 +2411,7 @@ index f980320..bc8c82e 100644
  void VideoOutDriver::WaitFlipDone(int handle, int index) {
  	auto* ctx = m_impl->Get(handle);
  	EXIT_IF(ctx == nullptr);
-@@ -1505,8 +1642,45 @@ void VideoOutDriver::WaitFlipDone(int handle, int index) {
+@@ -1505,8 +1673,45 @@ void VideoOutDriver::WaitFlipDone(int handle, int index) {
  	m_impl->GetFlipQueue().Wait(*ctx, index);
  }
  
@@ -2426,7 +2459,7 @@ index f980320..bc8c82e 100644
  
  	if (status == nullptr) {
  		return VIDEO_OUT_ERROR_INVALID_ADDRESS;
-@@ -1536,6 +1710,7 @@ KYTY_SYSV_ABI int VideoOutGetFlipStatus(int handle, VideoOutFlipStatus* status)
+@@ -1536,6 +1741,7 @@ KYTY_SYSV_ABI int VideoOutGetFlipStatus(int handle, VideoOutFlipStatus* status)
  
  KYTY_SYSV_ABI int VideoOutIsFlipPending(int handle) {
  	PRINT_NAME();
@@ -2434,7 +2467,7 @@ index f980320..bc8c82e 100644
  
  	auto* ctx = DriverState().Get(handle);
  	if (ctx == nullptr) {
-@@ -1552,6 +1727,7 @@ KYTY_SYSV_ABI int VideoOutIsFlipPending(int handle) {
+@@ -1552,6 +1758,7 @@ KYTY_SYSV_ABI int VideoOutIsFlipPending(int handle) {
  
  KYTY_SYSV_ABI int VideoOutGetVblankStatus(int handle, VideoOutVblankStatus* status) {
  	PRINT_NAME();
@@ -2442,7 +2475,7 @@ index f980320..bc8c82e 100644
  
  	if (status == nullptr) {
  		return VIDEO_OUT_ERROR_INVALID_ADDRESS;
-@@ -1632,6 +1808,10 @@ KYTY_SYSV_ABI int VideoOutGetEventCount(const EventQueue::KernelEvent* ev) {
+@@ -1632,6 +1839,10 @@ KYTY_SYSV_ABI int VideoOutGetEventCount(const EventQueue::KernelEvent* ev) {
  
  KYTY_SYSV_ABI int VideoOutWaitVblank(int handle) {
  	PRINT_NAME();
