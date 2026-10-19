@@ -7260,10 +7260,10 @@ index fe4b332..4f6761f 100644
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..637cca5
+index 0000000..30ccfbc
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,7746 @@
+@@ -0,0 +1,7775 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -7398,6 +7398,19 @@ index 0000000..637cca5
 +static std::vector<QueueReg> g_queues;
 +// Experiment 0133: the guest queue the ring thread is serving (index into g_queues), -1 elsewhere.
 +static thread_local int t_queue_idx = -1;
++// BC5 (experiment 0161): the CP keeps SET_BASE, the compute program and the user data across the
++// buffers of a queue (an INDIRECT_BUFFER continues the ring's state); the filter tracked them per
++// buffer from zero, so a DISPATCH_INDIRECT or a BC5_DIRECT_SKIP_PGM program set in an earlier
++// buffer went unseen. One per ring kind (graphics, compute), shared by the submitting threads;
++// BC5_DIRECT_NO_CARRY=1 restores the per-buffer start. It did not change the "args not mapped"
++// drops (runs 790-791): those come from the title's own SET_BASE [1,0,0] with small offsets
++// (0x40, 0x2dfa20) in the same buffer. TODO(verify): what the CP reads for those dispatches.
++struct CarriedCpState {
++	uint64_t base1 = 0, pgm = 0, ud01 = 0;
++	uint32_t ud[16] = {};
++};
++static CarriedCpState g_carried[2];
++static std::mutex     g_carried_mutex;
 +static bool                  g_queue_probe_started = false;
 +// Observed protocol (experiment 0012): the mmap'd submit page is an array of u64 write pointers
 +// in dwords, indexed by (d - 1); the game appends IT_INDIRECT_BUFFER packets to the 16 KiB ring
@@ -13429,6 +13442,15 @@ index 0000000..637cca5
 +		uint64_t pgm = 0;
 +		uint64_t ud01 = 0; // experiment 0050: COMPUTE_USER_DATA_0/1
 +		uint32_t ud[16] = {}; // experiment 0059: COMPUTE_USER_DATA_0..15 as this buffer sets them
++		static const bool no_carry = std::getenv("BC5_DIRECT_NO_CARRY") != nullptr; // experiment 0161
++		CarriedCpState&   carried  = g_carried[compute_ib ? 1 : 0];
++		if (!no_carry) {
++			std::lock_guard<std::mutex> lk(g_carried_mutex);
++			base1 = carried.base1;
++			pgm   = carried.pgm;
++			ud01  = carried.ud01;
++			std::memcpy(ud, carried.ud, sizeof(ud));
++		}
 +		static const auto pgm_list = [](const char* name) {
 +			std::set<uint64_t> v;
 +			if (const char* e = std::getenv(name); e != nullptr) {
@@ -13701,6 +13723,13 @@ index 0000000..637cca5
 +				}
 +			}
 +			q += len;
++		}
++		if (!no_carry) { // experiment 0161
++			std::lock_guard<std::mutex> lk(g_carried_mutex);
++			carried.base1 = base1;
++			carried.pgm   = pgm;
++			carried.ud01  = ud01;
++			std::memcpy(carried.ud, ud, sizeof(ud));
 +		}
 +		if (!mec_hi.empty() && mec_on) mec_expand_ib = true;
 +	}
