@@ -1,0 +1,185 @@
+== stall 400 ms at 11:43:11.321, journal 97784988 bytes
+thread 646109 kyty_emulator S
+thread 646110 kyty-thread S
+thread 646111 bc5-input-cmd S
+thread 646140 kyty_em:disk$0 S
+thread 646141 kyty_em:disk$0 S
+thread 646142 kyty-cmdsched S
+thread 646143 kyty-cmdsched S
+thread 646144 kyty-present S
+thread 646145 kyty-gpu S
+thread 646146 kyty-present S
+thread 646209 game-main R
+thread 646210 HIDAPI Rumble Rumble)
+thread 646300 bc5-ring R
+thread 646301 Job Lo 0 Lo
+thread 646302 Job Lo 1 Lo
+thread 646303 Job Lo 2 Lo
+thread 646304 Job Lo 3 Lo
+thread 646305 Job Lo 4 Lo
+thread 646306 Job Hi 0 Hi
+thread 646307 Job Hi 1 Hi
+thread 646308 Job Hi 2 Hi
+thread 646309 Job Hi 3 Hi
+thread 646310 Job Hi 4 Hi
+thread 646311 Job Bk 0 Bk
+thread 646312 Job Bk 1 Bk
+thread 646313 Job Bk 2 Bk
+thread 646314 Job Bk 3 Bk
+thread 646315 Job Bk 4 Bk
+thread 646316 Archive Asset I Asset
+thread 646317 Archive Loose I Loose
+thread 646318 Archive Resolve Resolve)
+thread 646319 Render Thread Thread)
+thread 646360 bc5-cq1 S
+thread 646361 bc5-cq0 S
+thread 646362 Havok Solve Solve)
+thread 646363 Havok Solve Solve)
+thread 646364 Havok Solve Solve)
+thread 646365 Havok Solve Solve)
+thread 646366 Havok Solve Solve)
+thread 646367 Havok Queries a Queries
+thread 646368 Havok Queries a Queries
+thread 646369 Havok Queries a Queries
+thread 646370 Havok Queries a Queries
+thread 646371 Havok Queries a Queries
+thread 646386 AK::IOThread S
+thread 646387 AK::JobWrkr-Acm S
+thread 646388 AK::BankMgr S
+thread 646389 AK::Suspended S
+thread 646390 AK::AudioMgr S
+thread 646391 Coherent Thread Thread)
+thread 646392 Coherent Resour Resour)
+thread 646393 Coherent Layout Layout)
+thread 646394 UXAnalytics::Up S
+thread 646395 EntitlementSysP S
+thread 646396 File Video Stre Video
+thread 646397 File Video Stre Video
+thread 646398 File Video Stre Video
+thread 646399 File Video Stre Video
+thread 646400 File Video Stre Video
+thread 646401 Save Thread Thread)
+thread 646402 User UDS Thread UDS
+thread 646404 bc5-apr-q5 S
+thread 646435 bc5-fliplabel S
+thread 646483 AK::AudioOutThr S
+thread 646486 PulseMainloop S
+thread 646523 PulseHotplug S
+thread 646578 bc5-apr-q3 S
+thread 646687 SDLAudioP2 S
+thread 648310 bc5-apr-q1 S
+thread 652935 SDLAudioP4 S
+PID 646109 - process
+TID 646109:
+TID 646110:
+eu-stack: dwfl_thread_getframes tid 646110 at 0x7f4c165065cb in /usr/lib/x86_64-linux-gnu/libc.so.6: Wywo³anie zwrotne zwróci³o niepowodzenie
+TID 646111:
+eu-stack: dwfl_thread_getframes tid 646111 at 0x7f4c165065cb in /usr/lib/x86_64-linux-gnu/libc.so.6: Wywo³anie zwrotne zwróci³o niepowodzenie
+TID 646140:
+eu-stack: dwfl_thread_getframes tid 646140 at 0x7f4c165065cb in /usr/lib/x86_64-linux-gnu/libc.so.6: Wywo³anie zwrotne zwróci³o niepowodzenie
+TID 646141:
+eu-stack: dwfl_thread_getframes tid 646141 at 0x7f4c165065cb in /usr/lib/x86_64-linux-gnu/libc.so.6: Wywo³anie zwrotne zwróci³o niepowodzenie
+TID 646142:
+eu-stack: dwfl_thread_getframes tid 646142 at 0x7f4c165065cb in /usr/lib/x86_64-linux-gnu/libc.so.6: Wywo³anie zwrotne zwróci³o niepowodzenie
+TID 646143:
+eu-stack: dwfl_thread_getframes tid 646143 at 0x7f4c165065cb in /usr/lib/x86_64-linux-gnu/libc.so.6: Wywo³anie zwrotne zwróci³o niepowodzenie
+TID 646144:
+eu-stack: dwfl_thread_getframes tid 646144 at 0x7f4c165065cb in /usr/lib/x86_64-linux-gnu/libc.so.6: Wywo³anie zwrotne zwróci³o niepowodzenie
+TID 646145:
+eu-stack: dwfl_thread_getframes tid 646145 at 0x7f4c165065cb in /usr/lib/x86_64-linux-gnu/libc.so.6: Wywo³anie zwrotne zwróci³o niepowodzenie
+TID 646146:
+eu-stack: dwfl_thread_getframes tid 646146 at 0x7f4c165065cb in /usr/lib/x86_64-linux-gnu/libc.so.6: Wywo³anie zwrotne zwróci³o niepowodzenie
+TID 646209:
+#0  0x00007f4c16503acd - /usr/lib/x86_64-linux-gnu/libc.so.6
+#1  0x0000563ea024f029 Libs::Graphics::GpuState::SendCommandSync(Common::UniqueFunction<void>&&) - /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator
+#2  0x0000563ea0276afd Libs::Graphics::GpuResourceManager::UnmapMemory(unsigned long, unsigned long) - /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator
+#3  0x0000563ea0438933 Libs::LibKernel::Memory::ReplaceFixedRangeWithReserved(unsigned long, unsigned long) - /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator
+#4  0x0000563ea043dcaa Libs::LibKernel::Memory::KernelMapDirectMemory(void**, unsigned long, int, int, long, unsigned long) - /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator
+#5  0x0000563ea043dff1 Libs::LibKernel::Memory::KernelMapDirectMemory2(void**, unsigned long, int, int, int, long, unsigned long) - /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator
+#6  0x0000563ea051883a Libs::LibAmpr::Ampr::ExecuteAmmMapCommand(Libs::LibAmpr::Ampr::CommandBufferState::AmmMapCommand const&) - /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator
+#7  0x0000563ea051636d Libs::LibAmpr::Ampr::RunOrderedAprCommands(unsigned long, Libs::LibAmpr::Ampr::CommandBufferState const&, std::vector<Libs::LibAmpr::Ampr::OrderedCommand, std::allocator<Libs::L
+#8  0x0000563ea051494b Libs::LibAmpr::Ampr::ExecuteAprCommandBuffer(unsigned long, int*, unsigned int*, unsigned int, unsigned int, unsigned long) - /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty
+#9  0x0000563ea0511f13 Libs::LibAmpr::Ampr::AmmSubmitCommandBuffer(void*, unsigned int, unsigned int) - /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator
+#10 0x0000000903b0b179 - /memfd:KytyPrivateMemory (deleted)
+#11 0x0000000903d74583 - /memfd:KytyPrivateMemory (deleted)
+#12 0x0000000903d73383 - /memfd:KytyPrivateMemory (deleted)
+#13 0x0000000903d77518 - /memfd:KytyPrivateMemory (deleted)
+#14 0x0000563ea05fc053 Libs::Fiber::FiberStartTrampoline() - /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator
+TID 646210:
+eu-stack: dwfl_thread_getframes tid 646210 at 0x7f4c165065cb in /usr/lib/x86_64-linux-gnu/libc.so.6: Wywo³anie zwrotne zwróci³o niepowodzenie
+TID 646300:
+#0  0x00007f4c1647b802 - /usr/lib/x86_64-linux-gnu/libc.so.6
+#1  0x00007f4c164c4af2 - /usr/lib/x86_64-linux-gnu/libc.so.6
+#2  0x00007f4c164d2707 - /usr/lib/x86_64-linux-gnu/libc.so.6
+#3  0x0000563ea04d0e5b Libs::Bc5Gc::SoftCp::queue_consumer_thread() - /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator
+#4  0x00007f4c16713ef9 - /usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.35
+#5  0x00007f4c16472dfa - /usr/lib/x86_64-linux-gnu/libc.so.6
+#6  0x00007f4c165065cc - /usr/lib/x86_64-linux-gnu/libc.so.6
+eu-stack: dwfl_thread_getframes tid 646300 at 0x7f4c165065cb in /usr/lib/x86_64-linux-gnu/libc.so.6: Wywo³anie zwrotne zwróci³o niepowodzenie
+TID 646301:
+TID 646302:
+TID 646303:
+TID 646304:
+TID 646305:
+TID 646306:
+TID 646307:
+TID 646308:
+TID 646309:
+TID 646310:
+TID 646311:
+TID 646312:
+TID 646313:
+TID 646314:
+TID 646315:
+TID 646316:
+TID 646317:
+TID 646318:
+TID 646319:
+TID 646360:
+eu-stack: dwfl_thread_getframes tid 646360 at 0x7f4c165065cb in /usr/lib/x86_64-linux-gnu/libc.so.6: Wywo³anie zwrotne zwróci³o niepowodzenie
+TID 646361:
+eu-stack: dwfl_thread_getframes tid 646361 at 0x7f4c165065cb in /usr/lib/x86_64-linux-gnu/libc.so.6: Wywo³anie zwrotne zwróci³o niepowodzenie
+TID 646362:
+TID 646363:
+TID 646364:
+TID 646365:
+TID 646366:
+TID 646367:
+TID 646368:
+TID 646369:
+TID 646370:
+TID 646371:
+TID 646386:
+TID 646387:
+TID 646388:
+TID 646389:
+TID 646390:
+TID 646391:
+TID 646392:
+TID 646393:
+TID 646394:
+TID 646395:
+TID 646396:
+TID 646397:
+TID 646398:
+TID 646399:
+TID 646400:
+TID 646401:
+TID 646402:
+TID 646404:
+eu-stack: dwfl_thread_getframes tid 646404 at 0x7f4c165065cb in /usr/lib/x86_64-linux-gnu/libc.so.6: Wywo³anie zwrotne zwróci³o niepowodzenie
+TID 646435:
+eu-stack: dwfl_thread_getframes tid 646435 at 0x7f4c165065cb in /usr/lib/x86_64-linux-gnu/libc.so.6: Wywo³anie zwrotne zwróci³o niepowodzenie
+TID 646483:
+TID 646486:
+eu-stack: dwfl_thread_getframes tid 646486 at 0x7f4c165065cb in /usr/lib/x86_64-linux-gnu/libc.so.6: Wywo³anie zwrotne zwróci³o niepowodzenie
+TID 646523:
+eu-stack: dwfl_thread_getframes tid 646523 at 0x7f4c165065cb in /usr/lib/x86_64-linux-gnu/libc.so.6: Wywo³anie zwrotne zwróci³o niepowodzenie
+TID 646578:
+eu-stack: dwfl_thread_getframes tid 646578 at 0x7f4c165065cb in /usr/lib/x86_64-linux-gnu/libc.so.6: Wywo³anie zwrotne zwróci³o niepowodzenie
+TID 646687:
+eu-stack: dwfl_thread_getframes tid 646687 at 0x7f4c165065cb in /usr/lib/x86_64-linux-gnu/libc.so.6: Wywo³anie zwrotne zwróci³o niepowodzenie
+TID 648310:
+eu-stack: dwfl_thread_getframes tid 648310 at 0x7f4c165065cb in /usr/lib/x86_64-linux-gnu/libc.so.6: Wywo³anie zwrotne zwróci³o niepowodzenie
+TID 652935:
+eu-stack: dwfl_thread_getframes tid 652935 at 0x7f4c165065cb in /usr/lib/x86_64-linux-gnu/libc.so.6: Wywo³anie zwrotne zwróci³o niepowodzenie

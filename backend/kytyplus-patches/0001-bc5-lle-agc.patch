@@ -4465,7 +4465,7 @@ index bc73d18..252c692 100644
  
  #endif /* EMULATOR_INCLUDE_EMULATOR_KERNEL_FILESYSTEM_H_ */
 diff --git a/src/kernel/memory.cpp b/src/kernel/memory.cpp
-index 02fc0fc..3facc93 100644
+index 02fc0fc..6f9d340 100644
 --- a/src/kernel/memory.cpp
 +++ b/src/kernel/memory.cpp
 @@ -1,3 +1,6 @@
@@ -4535,7 +4535,7 @@ index 02fc0fc..3facc93 100644
  
  		if (start == 0 || size == 0) {
  			return false;
-@@ -240,11 +278,14 @@ public:
+@@ -240,20 +278,21 @@ public:
  		const auto index = static_cast<size_t>(position - m_ranges.begin());
  		m_ranges.insert(position, r);
  		MergeAroundUnlocked(index);
@@ -4550,7 +4550,17 @@ index 02fc0fc..3facc93 100644
  
  		auto position = LowerBound(start);
  		if (position != m_ranges.end() && position->start == start && position->size == size) {
-@@ -276,6 +317,8 @@ public:
+ 			m_ranges.erase(position);
+ 			return true;
+ 		}
+-		auto removed = RemoveUnlocked(start, size);
+-		MergeUnlocked();
+-		return removed;
++		return RemoveUnlocked(start, size); // BC5 (experiment 0167): a window-local edit, no sort
+ 	}
+ 
+ 	bool HasOverlap(uint64_t start, uint64_t size) {
+@@ -276,6 +315,8 @@ public:
  
  	bool ReleaseReserved(uint64_t start, uint64_t size) {
  		Common::LockGuard lock(m_mutex);
@@ -4559,7 +4569,7 @@ index 02fc0fc..3facc93 100644
  
  		for (size_t index = 0; index < m_ranges.size(); index++) {
  			auto& r = m_ranges[index];
-@@ -290,6 +333,8 @@ public:
+@@ -290,14 +331,13 @@ public:
  	bool ConsumeReserved(uint64_t start, uint64_t size,
  	                     VirtualRangeType type = VirtualRangeType::Reserved) {
  		Common::LockGuard lock(m_mutex);
@@ -4567,8 +4577,19 @@ index 02fc0fc..3facc93 100644
 +		Bc5RangeWatch("consume", start, size, 0, static_cast<int>(type), nullptr, true);
  
  		auto end = End(start, size);
- 		for (const auto& r: m_ranges) {
-@@ -306,6 +351,8 @@ public:
+-		for (const auto& r: m_ranges) {
+-			if (r.type == type && start >= r.start && end <= End(r.start, r.size)) {
+-				RemoveUnlocked(start, size);
+-				MergeUnlocked();
+-				return true;
+-			}
++		if (const Range* r = ContainingUnlocked(start); r != nullptr && r->type == type && end <= End(r->start, r->size)) {
++			RemoveUnlocked(start, size); // BC5 (experiment 0167): a window-local edit, no sort
++			return true;
+ 		}
+ 
+ 		return false;
+@@ -306,6 +346,8 @@ public:
  	bool ConsumeReservedSpan(uint64_t start, uint64_t size, Range* first_range = nullptr,
  	                         VirtualRangeType type = VirtualRangeType::Reserved) {
  		Common::LockGuard lock(m_mutex);
@@ -4577,7 +4598,32 @@ index 02fc0fc..3facc93 100644
  
  		if (size == 0) {
  			return false;
-@@ -337,6 +384,7 @@ public:
+@@ -314,14 +356,8 @@ public:
+ 		auto current = start;
+ 		auto end     = End(start, size);
+ 		while (current < end) {
+-			const Range* candidate = nullptr;
+-			for (const auto& r: m_ranges) {
+-				if (r.type == type && current >= r.start && current < End(r.start, r.size)) {
+-					candidate = &r;
+-					break;
+-				}
+-			}
+-			if (candidate == nullptr) {
++			const Range* candidate = ContainingUnlocked(current); // BC5 (experiment 0167): binary search
++			if (candidate == nullptr || candidate->type != type) {
+ 				return false;
+ 			}
+ 			if (current == start && first_range != nullptr) {
+@@ -330,13 +366,13 @@ public:
+ 			current = std::min(end, End(candidate->start, candidate->size));
+ 		}
+ 
+-		RemoveUnlocked(start, size);
+-		MergeUnlocked();
++		RemoveUnlocked(start, size); // BC5 (experiment 0167): a window-local edit, no sort
+ 		return true;
+ 	}
  
  	void Rename(uint64_t start, uint64_t size, const char* name) {
  		Common::LockGuard lock(m_mutex);
@@ -4585,7 +4631,7 @@ index 02fc0fc..3facc93 100644
  
  		auto position = LowerBound(start);
  		if (position != m_ranges.end() && position->start == start && position->size == size) {
-@@ -349,12 +397,15 @@ public:
+@@ -349,12 +385,15 @@ public:
  
  	void Protect(uint64_t start, uint64_t size, int protection) {
  		Common::LockGuard lock(m_mutex);
@@ -4601,7 +4647,7 @@ index 02fc0fc..3facc93 100644
  
  		EditUnlocked(start, size, [memory_type](Range* r) { r->memory_type = memory_type; });
  	}
-@@ -382,6 +433,13 @@ public:
+@@ -382,6 +421,13 @@ public:
  		return true;
  	}
  
@@ -4615,7 +4661,172 @@ index 02fc0fc..3facc93 100644
  	bool QuerySpan(uint64_t start, uint64_t size, std::vector<Range>* out) {
  		EXIT_IF(out == nullptr);
  
-@@ -644,6 +702,7 @@ private:
+@@ -544,6 +590,40 @@ private:
+ 		}
+ 	}
+ 
++	// BC5 (experiment 0167): the three editing operations touch only the ranges that overlap
++	// [start, start + size); the table stays sorted, nothing else is copied or sorted. Before,
++	// each of them rebuilt the whole vector and MergeUnlocked re-sorted it: with 14,000 ranges
++	// and three edits per AMM map, a burst of the second title's streaming maps held the game
++	// thread for a second or more (run 810: the stall dumps in introsort and MergeUnlocked).
++	// Returns [first, last) of the overlapping ranges.
++	std::pair<std::vector<Range>::iterator, std::vector<Range>::iterator> OverlapWindowUnlocked(uint64_t start, uint64_t size) {
++		const auto end   = End(start, size);
++		auto       first = LowerBound(start);
++		if (first != m_ranges.begin()) {
++			auto prev = std::prev(first);
++			if (VirtualRangesOverlap(start, size, prev->start, prev->size)) {
++				first = prev;
++			}
++		}
++		auto last = first;
++		while (last != m_ranges.end() && last->start < end) {
++			++last;
++		}
++		return {first, last};
++	}
++
++	const Range* ContainingUnlocked(uint64_t address) {
++		auto it = LowerBound(address);
++		if (it != m_ranges.end() && it->start == address) {
++			return &*it;
++		}
++		if (it == m_ranges.begin()) {
++			return nullptr;
++		}
++		--it;
++		return address >= it->start && address < End(it->start, it->size) ? &*it : nullptr;
++	}
++
+ 	template <typename EditFunc>
+ 	void EditUnlocked(uint64_t start, uint64_t size, EditFunc edit) {
+ 		if (size == 0) {
+@@ -552,13 +632,11 @@ private:
+ 
+ 		std::vector<Range> out;
+ 		auto               edit_end = End(start, size);
++		auto [first, last]          = OverlapWindowUnlocked(start, size);
+ 
+-		for (const auto& r: m_ranges) {
+-			auto r_end = End(r.start, r.size);
+-			if (!VirtualRangesOverlap(start, size, r.start, r.size)) {
+-				out.push_back(r);
+-				continue;
+-			}
++		for (auto it = first; it != last; ++it) {
++			const auto& r     = *it;
++			auto        r_end = End(r.start, r.size);
+ 
+ 			auto mid_start = std::max(start, r.start);
+ 			auto mid_end   = std::min(edit_end, r_end);
+@@ -577,8 +655,10 @@ private:
+ 			AddPiece(&out, r, mid_end, r_end);
+ 		}
+ 
+-		m_ranges = out;
+-		MergeUnlocked();
++		const auto index = static_cast<size_t>(first - m_ranges.begin());
++		m_ranges.erase(first, last);
++		m_ranges.insert(m_ranges.begin() + static_cast<std::ptrdiff_t>(index), out.begin(), out.end());
++		MergeWindowUnlocked(index, out.size());
+ 	}
+ 
+ 	bool RemoveUnlocked(uint64_t start, uint64_t size) {
+@@ -587,23 +667,40 @@ private:
+ 		}
+ 
+ 		std::vector<Range> out;
+-		bool               removed = false;
+-		auto               rem_end = End(start, size);
+-
+-		for (const auto& r: m_ranges) {
+-			auto r_end = End(r.start, r.size);
+-			if (!VirtualRangesOverlap(start, size, r.start, r.size)) {
+-				out.push_back(r);
+-				continue;
+-			}
+-
+-			removed = true;
++		auto               rem_end       = End(start, size);
++		auto [first, last]               = OverlapWindowUnlocked(start, size); // BC5 (experiment 0167)
++		if (first == last) {
++			return false;
++		}
++		for (auto it = first; it != last; ++it) {
++			const auto& r     = *it;
++			auto        r_end = End(r.start, r.size);
+ 			AddPiece(&out, r, r.start, std::max(start, r.start));
+ 			AddPiece(&out, r, std::min(rem_end, r_end), r_end);
+ 		}
+ 
+-		m_ranges = out;
+-		return removed;
++		const auto index = static_cast<size_t>(first - m_ranges.begin());
++		m_ranges.erase(first, last);
++		m_ranges.insert(m_ranges.begin() + static_cast<std::ptrdiff_t>(index), out.begin(), out.end());
++		return true;
++	}
++
++	// BC5 (experiment 0167): merges the `count` ranges inserted at `index` with each other and
++	// with their two neighbours, in place.
++	void MergeWindowUnlocked(size_t index, size_t count) {
++		size_t lo = index > 0 ? index - 1 : 0;
++		size_t hi = std::min(m_ranges.size(), index + count + 1); // exclusive
++		for (size_t i = lo; i + 1 < hi && i + 1 < m_ranges.size();) {
++			auto&       current = m_ranges[i];
++			const auto& next    = m_ranges[i + 1];
++			if (End(current.start, current.size) == next.start && SameMergeKey(current, next)) {
++				current.size += next.size;
++				m_ranges.erase(m_ranges.begin() + static_cast<std::ptrdiff_t>(i + 1));
++				hi--;
++			} else {
++				i++;
++			}
++		}
+ 	}
+ 
+ 	void MergeUnlocked() {
+@@ -611,21 +708,26 @@ private:
+ 			return;
+ 		}
+ 
+-		std::sort(m_ranges.begin(), m_ranges.end(),
+-		          [](const Range& left, const Range& right) { return left.start < right.start; });
++		// BC5 (experiment 0167): every edit keeps the table sorted; the sort is a safety net.
++		const auto by_start = [](const Range& left, const Range& right) { return left.start < right.start; };
++		if (!std::is_sorted(m_ranges.begin(), m_ranges.end(), by_start)) {
++			std::sort(m_ranges.begin(), m_ranges.end(), by_start);
++		}
+ 
+-		std::vector<Range> merged;
+-		for (const auto& r: m_ranges) {
+-			if (!merged.empty()) {
+-				auto& last = merged[merged.size() - 1];
+-				if (End(last.start, last.size) == r.start && SameMergeKey(last, r)) {
+-					last.size += r.size;
+-					continue;
+-				}
++		size_t w = 0;
++		for (size_t i = 1; i < m_ranges.size(); i++) {
++			auto&       last = m_ranges[w];
++			const auto& r    = m_ranges[i];
++			if (End(last.start, last.size) == r.start && SameMergeKey(last, r)) {
++				last.size += r.size;
++				continue;
++			}
++			w++;
++			if (w != i) {
++				m_ranges[w] = r;
+ 			}
+-			merged.push_back(r);
+ 		}
+-		m_ranges = merged;
++		m_ranges.resize(w + 1);
+ 	}
+ 
+ 	Range* FindOverlap(uint64_t start, uint64_t size) {
+@@ -644,6 +746,7 @@ private:
  	}
  
  	std::vector<Range> m_ranges;
@@ -4623,7 +4834,7 @@ index 02fc0fc..3facc93 100644
  	Common::Mutex      m_mutex;
  };
  
-@@ -712,6 +771,12 @@ public:
+@@ -712,6 +815,12 @@ public:
  				                            : minimum;
  				target = std::max(minimum, std::min(ps5_game_total, capped));
  			}
@@ -4636,7 +4847,7 @@ index 02fc0fc..3facc93 100644
  			target = target & ~(0x4000ull - 1ull);
  			LOGF("guest memory total = %llu MiB\n", static_cast<unsigned long long>(target / megabyte));
  			return target;
-@@ -850,7 +915,99 @@ static std::unique_ptr<PhysicalMemory>    g_physical_memory;
+@@ -850,7 +959,99 @@ static std::unique_ptr<PhysicalMemory>    g_physical_memory;
  static std::unique_ptr<FlexibleMemory>    g_flexible_memory;
  static std::unique_ptr<PooledMemory>      g_pooled_memory;
  static std::unique_ptr<VirtualRanges>     g_virtual_ranges;
@@ -4736,7 +4947,7 @@ index 02fc0fc..3facc93 100644
  static callback_func_t                    g_alloc_callback        = nullptr;
  static callback_func_t                    g_free_callback         = nullptr;
  static std::atomic<uint64_t>              g_memory_pool_committed = 0;
-@@ -3193,6 +3350,17 @@ static bool ReplaceFixedRangeWithReserved(uint64_t start, uint64_t size) {
+@@ -3193,6 +3394,17 @@ static bool ReplaceFixedRangeWithReserved(uint64_t start, uint64_t size) {
  			replaced.range.offset += current - range.start;
  		}
  		DecodeMemoryProtection(replaced.range.protection, &replaced.mode, &replaced.gpu_mode);
@@ -4754,7 +4965,7 @@ index 02fc0fc..3facc93 100644
  		if (range.type == VirtualRangeType::Direct &&
  		    !g_guest_address_space->BackingContains(current, chunk)) {
  			return false;
-@@ -3465,7 +3633,11 @@ bool KernelHandleReservedRangeAccessViolation(uint64_t vaddr) {
+@@ -3465,7 +3677,11 @@ bool KernelHandleReservedRangeAccessViolation(uint64_t vaddr) {
  	    std::strncmp(range.name, "AMM", KERNEL_MAXIMUM_NAME_LENGTH) != 0) {
  		return false;
  	}
