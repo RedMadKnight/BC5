@@ -39,6 +39,22 @@ started for the session), the window focused and the pointer read back with a KW
 | `d3`, `d4-recent-hover`, `d5-reopened-game` | *File > Recent* in the windowed empty window (Close session greyed out there), the submenu with the package and *Clear list*; one click: exit 76, the title's start screen again 50 s later |
 | `e1-about`, `e2-file-again` | *Help > About* over the title (host version, ImGui and SDL versions, the keys); *File > Quit* ended the title with exit 0 and the launcher with it |
 
+**Addendum, the logging switch** (the maintainer's request, ADR 0011 §6; binary of 10:06). The
+title started through `play-any.sh <game.pkg>` with the shortcut's capture settings
+(`BC5_GC_DUMP_DIR`, `BC5_DIRECT_TIMING=1`, `BC5_DIRECT_FRAME_PROFILE=1`), measured at its start
+screen with [`logsize.sh`](logsize.sh) (bytes the journal and the stderr log gained in 10 s):
+
+| State | `direct.log` | stderr log | Screenshot |
+| --- | --- | --- | --- |
+| Logging on (start) | +7,630,994 B | +86 B (2 lines) | `f1-emulation-menu`: *Emulation* open over the title, *Logging: on* with its check mark |
+| *Logging* clicked → off | +0 B | +0 B | `f2-logging-off`: the item reads *Logging: off*, the bar's right hint says *logging off*; `host menu: logging off` in the stderr log |
+| clicked again → on | +7,631,074 B | +86 B (2 lines) | `f3-logging-on-again` |
+
+The two stderr lines a window are the title's own `bc5-direct: shared map ... -22` reports from
+the backend library (`backend/src/direct.cpp`), which has no switch; they stop too, because the
+backend is only called while the game maps, and they are error reports rather than logging. Not
+measured: the frame rate with the switch off (experiment 0162 found the journal's cost invisible).
+
 Timings: the window closes and reopens between sessions (exit, unmount, mount, start) in about
 2 s for the empty window and 5 s to the title's first frame; the start screen as before (F203).
 Not tested here: the pad (no controller input can be injected from ssh; ImGui's gamepad nav is
@@ -50,6 +66,7 @@ exit-75 paths behind the items).
 shortcut) opens it empty, the menu bar opens a package or an image through the same mount and
 settings as the shortcut scripts, closes the session back to the empty window, and reopens from
 *Recent*; it works fullscreen and with the keyboard and the mouse. The host still mounts
-nothing. Open: the pad path (untested), a per-title settings file for a third title (the title
+nothing. *Emulation > Logging* silences the journal, the host's log and every trace live (0 B in
+10 s against 7.6 MB) and `BC5_LOGGING=0` starts a session that way. Open: the pad path (untested), a per-title settings file for a third title (the title
 scripts are keyed by file kind), and the two seconds of black between sessions (a session change
 is a process change, ADR 0011).

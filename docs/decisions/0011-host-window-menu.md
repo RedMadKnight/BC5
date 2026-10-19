@@ -59,6 +59,17 @@ and the dev box's `play-any.sh` launcher; verified in experiment 0164.
    present thread repeats the last frame and stops taking flips, so the title waits); Restart is
    exit code 75 behind a confirmation. Both are disabled on the launcher page.
 
+6. **One logging switch for the session** (the maintainer's addition, 2026-10-19): *Emulation >
+   Logging: on/off*. It is a runtime flag, `Log::Bc5LoggingOn()` (an atomic bool in `log.cpp`,
+   initial value from `BC5_LOGGING`, unset = on), not the environment variables at start: the
+   direct path's `journal()` and dump writers, `LOGF` / `Log::Write` (the guest's printf too),
+   every stderr trace gate and the frame profile, drop tally and dispatch journal hooks read it
+   first and return when it is off, so "off" costs one relaxed load per call site and the frame
+   profile keeps no counters. The menu shows the state; `BC5_LOGGING=0` in the launcher's
+   environment starts a session quiet. Experiment 0162 measured the journal's own cost as
+   nothing visible (42.1 against 41.3 fps): the switch is for the traces and for the
+   maintainer's peace of mind, not a performance setting.
+
 ## Consequences
 
 - A session change is a process change: the title's memory, the GPU mappings and the learned-fault

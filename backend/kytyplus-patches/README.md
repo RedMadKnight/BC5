@@ -365,6 +365,14 @@ to `$KYTY_BC5_MENU_DIR/choice.txt` (and `recent.txt`, eight entries; the browser
 `lastdir-*.txt`) and ends the process with exit code 76, *Close session* with 77; without
 `KYTY_BC5_MENU_DIR` the open items are disabled. The dev box's `play-any.sh` loops over those
 codes (`.pkg` → `play-pkg.sh`, `.ffpfsc` → `play-astro.sh`, a directory → `--game`).
+The session's logging switch (`Log::Bc5LoggingOn()`, `log.cpp`: an atomic bool from
+`BC5_LOGGING`, unset or anything but `0` = on; *Emulation > Logging* toggles it live): off, `LOGF`
+and `Log::Write` (the guest's printf) return at once, `journal()`, `dump_cb` and
+`record_dispatch` return before touching a file, the frame profile's hooks return before counting
+(`g_frame_profile_on()`), and every `static const bool trace = getenv(...)` gate became
+`trace_env && Bc5LoggingOn()` (38 sites in 14 files: the input, motion, AJM, audio, AMM, VMA,
+JSON, VideoOut, flip-timing, save and dialog traces, `BC5_DIRECT_TIMING`, `_LABEL_TRACE`,
+`_UNMAPPED_TRACE`, `_WAIT_TRACE`, `_DROP_TALLY`, `_DISPATCH_JOURNAL`, the draw-journal gates).
 Experiment 0048: borderless fullscreen at the display's resolution, live: F11, the *Video*
 tab's box, or `Fullscreen=on|off` in the input file (also at start); presets 1.0 / 1.25 / 1.7 / 3.0
 named 4K UHD, 1800p class, 1440p class, Full HD.

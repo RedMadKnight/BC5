@@ -36,6 +36,70 @@ index db25107..17ab15e 100644
  # Build the generated FSR shader headers before any kyty_emulator source compiles
  # (fsrUpscaler.cpp #includes them and is GLOB-collected, so it needs an explicit edge).
  add_dependencies(kyty_emulator fsr_shaders)
+diff --git a/src/common/logging/log.cpp b/src/common/logging/log.cpp
+index e4e2434..f1ae8d0 100644
+--- a/src/common/logging/log.cpp
++++ b/src/common/logging/log.cpp
+@@ -6,6 +6,9 @@
+ #include "common/stringUtils.h"
+ 
+ #include <cstdint>
++#include <cstring>
++#include <cstdlib>
++#include <atomic>
+ #include <cstdio>
+ #include <filesystem>
+ #include <fmt/format.h>
+@@ -213,16 +216,32 @@ Direction GetDirection() {
+ 	return g_direction;
+ }
+ 
++static std::atomic<bool> g_bc5_logging {[] {
++	const char* e = std::getenv("BC5_LOGGING");
++	return e == nullptr || std::strcmp(e, "0") != 0;
++}()};
++
++bool Bc5LoggingOn() noexcept {
++	return g_bc5_logging.load(std::memory_order_relaxed);
++}
++
++void Bc5SetLogging(bool on) {
++	g_bc5_logging.store(on, std::memory_order_relaxed);
++}
++
+ bool IsSilent() {
+ 	// Before init LOGF must keep writing to stdout, so report non-silent.
++	if (!Bc5LoggingOn()) return true; // BC5: logging off for the session
+ 	return g_initialized && g_direction == Direction::Silent;
+ }
+ 
+ void Write(std::string_view text) {
++	if (!Bc5LoggingOn()) return;
+ 	WriteImpl(text);
+ }
+ 
+ void Write(fmt::text_style style, std::string_view text) {
++	if (!Bc5LoggingOn()) return;
+ 	WriteImpl(text, style);
+ }
+ 
+diff --git a/src/common/logging/log.h b/src/common/logging/log.h
+index 3ce29cf..464ee06 100644
+--- a/src/common/logging/log.h
++++ b/src/common/logging/log.h
+@@ -16,6 +16,12 @@ enum class Direction { Silent, Console, File };
+ 
+ Direction GetDirection();
+ bool      IsSilent();
++// BC5 (ADR 0011): the session's logging switch. Off, nothing is written: LOGF and the guest's
++// printf, the direct path's journal and dumps, every stderr trace, the frame profile, the drop
++// tally and the dispatch journal. Starts from BC5_LOGGING (unset or anything but 0 = on); the
++// window's Emulation > Logging item toggles it live. One atomic load per check.
++bool Bc5LoggingOn() noexcept;
++void Bc5SetLogging(bool on);
+ void      Write(std::string_view text);
+ void      Write(fmt::text_style style, std::string_view text);
+ void      WriteFatal(std::string_view text);
 diff --git a/src/common/platform/sysLinuxFileIO.cpp b/src/common/platform/sysLinuxFileIO.cpp
 index 0a6ef8b..97b2614 100644
 --- a/src/common/platform/sysLinuxFileIO.cpp
@@ -199,7 +263,7 @@ index 78fd86f..462e774 100644
  namespace Libs::Graphics::Pm4 {
  
 diff --git a/src/graphics/host_gpu/renderer/cache/bufferCache.cpp b/src/graphics/host_gpu/renderer/cache/bufferCache.cpp
-index d429de1..2472c3d 100644
+index d429de1..a8b1d9c 100644
 --- a/src/graphics/host_gpu/renderer/cache/bufferCache.cpp
 +++ b/src/graphics/host_gpu/renderer/cache/bufferCache.cpp
 @@ -1,3 +1,5 @@
@@ -259,11 +323,12 @@ index d429de1..2472c3d 100644
        m_texture_cache(texture_cache) {
  	std::memset(m_gds_buffer.Mapped().data(), 0, static_cast<size_t>(m_gds_buffer.Size()));
  	m_gds_buffer.Flush(0, m_gds_buffer.Size());
-@@ -681,11 +701,29 @@ ImageBufferSource BufferCache::ObtainBufferForImage(uint64_t vaddr, uint64_t siz
+@@ -681,11 +701,30 @@ ImageBufferSource BufferCache::ObtainBufferForImage(uint64_t vaddr, uint64_t siz
  		}
  	}
  
-+	static const bool bc5_timing = std::getenv("KYTY_BC5_FLIP_TIMING") != nullptr; // experiment 0070
++	static const bool bc5_timing_env = std::getenv("KYTY_BC5_FLIP_TIMING") != nullptr; // experiment 0070
++	const bool bc5_timing = bc5_timing_env && ::Log::Bc5LoggingOn();
 +	const auto        bc5_t0     = std::chrono::steady_clock::now();
  	auto [staging, stage_offset] = m_staging_buffer.Map(size, 16);
 +	const auto bc5_t1 = std::chrono::steady_clock::now();
@@ -423,7 +488,7 @@ index 8c19ba5..85d0bcb 100644
  	LOGF("AsyncPipelineCompiler: started %zu worker threads\n", kWorkerCount);
  }
 diff --git a/src/graphics/host_gpu/vma.cpp b/src/graphics/host_gpu/vma.cpp
-index 14608a6..814f364 100644
+index 14608a6..8504a95 100644
 --- a/src/graphics/host_gpu/vma.cpp
 +++ b/src/graphics/host_gpu/vma.cpp
 @@ -25,6 +25,12 @@
@@ -451,7 +516,7 @@ index 14608a6..814f364 100644
  
  	const auto result = static_cast<vk::Result>(vmaCreateAllocator(&info, &allocator));
  	if (result != vk::Result::eSuccess) {
-@@ -131,6 +142,30 @@ void GraphicContext::DestroyAllocator() {
+@@ -131,6 +142,31 @@ void GraphicContext::DestroyAllocator() {
  	allocator = nullptr;
  }
  
@@ -459,7 +524,8 @@ index 14608a6..814f364 100644
 +// game's memory. KYTY_BC5_VMA_TRACE=1: one line per allocation and release — kind, handle, bytes,
 +// a description, and the callers as offsets into the executable (for addr2line).
 +void VulkanTraceMemory(const char* what, const void* handle, uint64_t size, const char* detail) {
-+	static const bool on = std::getenv("KYTY_BC5_VMA_TRACE") != nullptr;
++	static const bool on_env = std::getenv("KYTY_BC5_VMA_TRACE") != nullptr;
++	const bool on = on_env && ::Log::Bc5LoggingOn();
 +	if (!on) {
 +		return;
 +	}
@@ -482,7 +548,7 @@ index 14608a6..814f364 100644
  uint64_t VulkanNextMemoryUniqueId() {
  	static std::atomic_uint64_t sequence = 0;
  	return ++sequence;
-@@ -238,6 +273,11 @@ void GraphicContext::CreateBuffer(uint64_t size, VulkanBuffer& buffer) {
+@@ -238,6 +274,11 @@ void GraphicContext::CreateBuffer(uint64_t size, VulkanBuffer& buffer) {
  	buffer.memory.unique_id = VulkanNextMemoryUniqueId();
  	buffer.buffer_size      = size;
  	VulkanTrackAllocation(buffer.memory);
@@ -494,7 +560,7 @@ index 14608a6..814f364 100644
  }
  
  void GraphicContext::DeleteBuffer(VulkanBuffer& buffer) {
-@@ -246,6 +286,7 @@ void GraphicContext::DeleteBuffer(VulkanBuffer& buffer) {
+@@ -246,6 +287,7 @@ void GraphicContext::DeleteBuffer(VulkanBuffer& buffer) {
  	        buffer.memory.allocation == nullptr);
  
  	VulkanUntrackAllocation(buffer.memory);
@@ -502,7 +568,7 @@ index 14608a6..814f364 100644
  	vmaDestroyBuffer(allocator, buffer.buffer, buffer.memory.allocation);
  	buffer.buffer                 = nullptr;
  	buffer.memory.memory          = nullptr;
-@@ -280,6 +321,13 @@ bool GraphicContext::CreateImage(const vk::ImageCreateInfo& image_info, VulkanIm
+@@ -280,6 +322,13 @@ bool GraphicContext::CreateImage(const vk::ImageCreateInfo& image_info, VulkanIm
  	memory.offset    = memory.allocation_info.offset;
  	memory.unique_id = VulkanNextMemoryUniqueId();
  	VulkanTrackAllocation(memory);
@@ -516,7 +582,7 @@ index 14608a6..814f364 100644
  	return true;
  }
  
-@@ -289,6 +337,7 @@ void GraphicContext::DeleteImage(VulkanImage& image) {
+@@ -289,6 +338,7 @@ void GraphicContext::DeleteImage(VulkanImage& image) {
  
  	auto& memory = image.memory;
  	VulkanUntrackAllocation(memory);
@@ -539,15 +605,16 @@ index a656b67..94a249c 100644
  
 diff --git a/src/graphics/presentation/hostMenu.cpp b/src/graphics/presentation/hostMenu.cpp
 new file mode 100644
-index 0000000..710b767
+index 0000000..f3f86d9
 --- /dev/null
 +++ b/src/graphics/presentation/hostMenu.cpp
-@@ -0,0 +1,518 @@
+@@ -0,0 +1,526 @@
 +#include "graphics/presentation/hostMenu.h"
 +
 +#include "SDL.h"
 +#include "graphics/presentation/settingsOverlay.h"
 +#include "graphics/presentation/window.h"
++#include "common/logging/log.h"
 +#include "imgui.h"
 +#include "kytyGitVersion.h"
 +
@@ -911,7 +978,7 @@ index 0000000..710b767
 +	ImGui::Begin("BC5##launcher", nullptr,
 +	             ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
 +	                 ImGuiWindowFlags_NoSavedSettings);
-+	ImGui::TextUnformatted("No game is open.");
++	ImGui::Text("No game is open.   Logging: %s (Emulation menu)", Log::Bc5LoggingOn() ? "on" : "off");
 +	ImGui::TextWrapped("Open a game image or a PS5 package: the launcher mounts it with bc5-mount, keeps the title's "
 +	                   "settings, and starts the game in this window. Close session brings this page back.");
 +	ImGui::Separator();
@@ -1024,6 +1091,13 @@ index 0000000..710b767
 +			if (ImGui::MenuItem("Fullscreen", "F11", WindowIsFullscreen())) {
 +				WindowSetFullscreen(!WindowIsFullscreen());
 +			}
++			ImGui::Separator();
++			// The session's logging switch (journal, LOGF, traces, profile, tally); BC5_LOGGING=0 starts it off.
++			const bool logging = Log::Bc5LoggingOn();
++			if (ImGui::MenuItem(logging ? "Logging: on" : "Logging: off", nullptr, logging)) {
++				Log::Bc5SetLogging(!logging);
++				std::fprintf(stderr, "host menu: logging %s\n", logging ? "off" : "on");
++			}
 +			ImGui::EndMenu();
 +		}
 +		if (ImGui::BeginMenu("Help")) {
@@ -1033,7 +1107,7 @@ index 0000000..710b767
 +			ImGui::EndMenu();
 +		}
 +		if (!launcher) {
-+			const char* hint = "F1 / PS: hide menu";
++			const char* hint = Log::Bc5LoggingOn() ? "F1 / PS: hide menu" : "logging off   F1 / PS: hide menu";
 +			ImGui::SameLine(ImGui::GetWindowWidth() - ImGui::CalcTextSize(hint).x - ImGui::GetStyle().ItemSpacing.x * 4.0f);
 +			ImGui::TextDisabled("%s", hint);
 +		}
@@ -2040,7 +2114,7 @@ index 0000000..c245d62
 +
 +#endif // KYTY_GRAPHICS_PRESENTATION_SETTINGS_OVERLAY_H_
 diff --git a/src/graphics/presentation/videoOut.cpp b/src/graphics/presentation/videoOut.cpp
-index f980320..660eea7 100644
+index f980320..bc8c82e 100644
 --- a/src/graphics/presentation/videoOut.cpp
 +++ b/src/graphics/presentation/videoOut.cpp
 @@ -1,3 +1,9 @@
@@ -2087,7 +2161,7 @@ index f980320..660eea7 100644
  static int RegisterVideoOutEvent(int handle, EventQueue::KernelEqueue eq, VideoOutEventKind kind,
                                   void* udata) {
  	uint64_t generation = 0;
-@@ -471,6 +490,34 @@ static int DeleteVideoOutEvent(int handle, EventQueue::KernelEqueue eq, VideoOut
+@@ -471,6 +490,35 @@ static int DeleteVideoOutEvent(int handle, EventQueue::KernelEqueue eq, VideoOut
  	return result == LibKernel::KERNEL_ERROR_ENOENT ? OK : result;
  }
  
@@ -2095,7 +2169,8 @@ index f980320..660eea7 100644
 +// rate and the event registrations as they happen, and once a second the counts of flips (by
 +// mode), flip-status polls and vblank waits.
 +static bool Bc5VideoOutTraceOn() {
-+	static const bool on = std::getenv("KYTY_BC5_VIDEOOUT_TRACE") != nullptr;
++	static const bool on_env = std::getenv("KYTY_BC5_VIDEOOUT_TRACE") != nullptr;
++	const bool on = on_env && ::Log::Bc5LoggingOn();
 +	return on;
 +}
 +static std::atomic<uint32_t> g_bc5_vo_flips[4], g_bc5_vo_status, g_bc5_vo_pending, g_bc5_vo_waitvb, g_bc5_vo_vbstatus;
@@ -2122,7 +2197,7 @@ index f980320..660eea7 100644
  static bool IsFlipDueLocked(const VideoOutConfig& cfg, uint64_t generation) {
  	if (!cfg.opened || cfg.closing || cfg.generation != generation) {
  		return false;
-@@ -781,6 +828,7 @@ void VideoOutDriver::Impl::VblankEnd() {
+@@ -781,6 +829,7 @@ void VideoOutDriver::Impl::VblankEnd() {
  }
  
  void VideoOutDriver::Impl::PresentThread(std::stop_token token) {
@@ -2130,7 +2205,7 @@ index f980320..660eea7 100644
  	const auto frequency = Common::Timer::QueryPerformanceFrequency();
  	EXIT_IF(frequency == 0);
  
-@@ -934,7 +982,17 @@ void FlipQueue::Cancel(VideoOutConfig& cfg) {
+@@ -934,7 +983,18 @@ void FlipQueue::Cancel(VideoOutConfig& cfg) {
  	cfg.flip_status.gcQueueNum     = 0;
  }
  
@@ -2143,12 +2218,13 @@ index f980320..660eea7 100644
 +}
 +
  void FlipQueue::Prepare(uint64_t request_id, Graphics::CommandBuffer& buffer) {
-+	static const bool bc5_timing = std::getenv("KYTY_BC5_FLIP_TIMING") != nullptr;
++	static const bool bc5_timing_env = std::getenv("KYTY_BC5_FLIP_TIMING") != nullptr;
++	const bool bc5_timing = bc5_timing_env && ::Log::Bc5LoggingOn();
 +	const int64_t     bc5_t0     = Bc5FlipNowNs();
  	VideoOutConfig* cfg        = nullptr;
  	uint64_t        generation = 0;
  	int             index      = 0;
-@@ -1012,7 +1070,29 @@ void FlipQueue::Prepare(uint64_t request_id, Graphics::CommandBuffer& buffer) {
+@@ -1012,7 +1072,29 @@ void FlipQueue::Prepare(uint64_t request_id, Graphics::CommandBuffer& buffer) {
  		frame = &m_presenter.PrepareBlankFrame(width, height, index == VIDEO_OUT_BUFFER_INDEX_BLACK,
  		                                       &buffer);
  	} else {
@@ -2178,7 +2254,7 @@ index f980320..660eea7 100644
  	}
  
  	Common::LockGuard lock(m_mutex);
-@@ -1033,6 +1113,20 @@ void FlipQueue::Prepare(uint64_t request_id, Graphics::CommandBuffer& buffer) {
+@@ -1033,6 +1115,20 @@ void FlipQueue::Prepare(uint64_t request_id, Graphics::CommandBuffer& buffer) {
  		EXIT("video-out request changed while recording, id=%" PRIu64 "\n", request_id);
  	}
  	prepared->frame = frame;
@@ -2199,7 +2275,7 @@ index f980320..660eea7 100644
  }
  
  void FlipQueue::Complete(uint64_t request_id) {
-@@ -1046,6 +1140,7 @@ void FlipQueue::Complete(uint64_t request_id) {
+@@ -1046,6 +1142,7 @@ void FlipQueue::Complete(uint64_t request_id) {
  		}
  		request->state = RequestState::Ready;
  		m_submit_cond_var.Signal();
@@ -2207,7 +2283,7 @@ index f980320..660eea7 100644
  		m_mutex.Unlock();
  		return;
  	}
-@@ -1087,6 +1182,26 @@ void FlipQueue::Wait(VideoOutConfig& cfg, int index) {
+@@ -1087,6 +1184,26 @@ void FlipQueue::Wait(VideoOutConfig& cfg, int index) {
  	}
  }
  
@@ -2234,7 +2310,7 @@ index f980320..660eea7 100644
  bool FlipQueue::Flip(uint32_t micros) {
  	KYTY_PROFILER_BLOCK("FlipQueue::Flip");
  
-@@ -1240,6 +1355,10 @@ KYTY_SYSV_ABI int VideoOutSetFlipRate(int handle, int rate) {
+@@ -1240,6 +1357,10 @@ KYTY_SYSV_ABI int VideoOutSetFlipRate(int handle, int rate) {
  
  	Common::LockGuard lock(ctx->mutex);
  	ctx->flip_rate = rate;
@@ -2245,7 +2321,7 @@ index f980320..660eea7 100644
  
  	return OK;
  }
-@@ -1251,6 +1370,7 @@ KYTY_SYSV_ABI int VideoOutDeleteFlipEvent(EventQueue::KernelEqueue eq, int handl
+@@ -1251,6 +1372,7 @@ KYTY_SYSV_ABI int VideoOutDeleteFlipEvent(EventQueue::KernelEqueue eq, int handl
  
  KYTY_SYSV_ABI int VideoOutAddFlipEvent(EventQueue::KernelEqueue eq, int handle, void* udata) {
  	PRINT_NAME();
@@ -2253,7 +2329,7 @@ index f980320..660eea7 100644
  	return RegisterVideoOutEvent(handle, eq, VideoOutEventKind::Flip, udata);
  }
  
-@@ -1267,12 +1387,14 @@ KYTY_SYSV_ABI int VideoOutDeletePreVblankStartEvent(EventQueue::KernelEqueue eq,
+@@ -1267,12 +1389,14 @@ KYTY_SYSV_ABI int VideoOutDeletePreVblankStartEvent(EventQueue::KernelEqueue eq,
  KYTY_SYSV_ABI int VideoOutAddVblankEvent(LibKernel::EventQueue::KernelEqueue eq, int handle,
                                           void* udata) {
  	PRINT_NAME();
@@ -2268,7 +2344,7 @@ index f980320..660eea7 100644
  	return RegisterVideoOutEvent(handle, eq, VideoOutEventKind::PreVblankStart, udata);
  }
  
-@@ -1452,6 +1574,10 @@ KYTY_SYSV_ABI int VideoOutUnregisterBuffers(int handle, int set_index) {
+@@ -1452,6 +1576,10 @@ KYTY_SYSV_ABI int VideoOutUnregisterBuffers(int handle, int set_index) {
  
  KYTY_SYSV_ABI int VideoOutSubmitFlip(int handle, int index, int flip_mode, int64_t flip_arg) {
  	PRINT_NAME();
@@ -2279,7 +2355,7 @@ index f980320..660eea7 100644
  
  	uint64_t  request_id = 0;
  	const int result     = ReserveFlipRequest(DriverState(), handle, index, flip_mode, flip_arg,
-@@ -1462,6 +1588,7 @@ KYTY_SYSV_ABI int VideoOutSubmitFlip(int handle, int index, int flip_mode, int64
+@@ -1462,6 +1590,7 @@ KYTY_SYSV_ABI int VideoOutSubmitFlip(int handle, int index, int flip_mode, int64
  	if (result != OK) {
  		return result;
  	}
@@ -2287,7 +2363,7 @@ index f980320..660eea7 100644
  	g_video_out_driver->SubmitFlipPreparation(request_id);
  
  	return OK;
-@@ -1497,6 +1624,14 @@ void VideoOutDriver::WaitForSubmitSlot() {
+@@ -1497,6 +1626,14 @@ void VideoOutDriver::WaitForSubmitSlot() {
  	m_impl->GetFlipQueue().WaitForSubmitSlot();
  }
  
@@ -2302,7 +2378,7 @@ index f980320..660eea7 100644
  void VideoOutDriver::WaitFlipDone(int handle, int index) {
  	auto* ctx = m_impl->Get(handle);
  	EXIT_IF(ctx == nullptr);
-@@ -1505,8 +1640,45 @@ void VideoOutDriver::WaitFlipDone(int handle, int index) {
+@@ -1505,8 +1642,45 @@ void VideoOutDriver::WaitFlipDone(int handle, int index) {
  	m_impl->GetFlipQueue().Wait(*ctx, index);
  }
  
@@ -2350,7 +2426,7 @@ index f980320..660eea7 100644
  
  	if (status == nullptr) {
  		return VIDEO_OUT_ERROR_INVALID_ADDRESS;
-@@ -1536,6 +1708,7 @@ KYTY_SYSV_ABI int VideoOutGetFlipStatus(int handle, VideoOutFlipStatus* status)
+@@ -1536,6 +1710,7 @@ KYTY_SYSV_ABI int VideoOutGetFlipStatus(int handle, VideoOutFlipStatus* status)
  
  KYTY_SYSV_ABI int VideoOutIsFlipPending(int handle) {
  	PRINT_NAME();
@@ -2358,7 +2434,7 @@ index f980320..660eea7 100644
  
  	auto* ctx = DriverState().Get(handle);
  	if (ctx == nullptr) {
-@@ -1552,6 +1725,7 @@ KYTY_SYSV_ABI int VideoOutIsFlipPending(int handle) {
+@@ -1552,6 +1727,7 @@ KYTY_SYSV_ABI int VideoOutIsFlipPending(int handle) {
  
  KYTY_SYSV_ABI int VideoOutGetVblankStatus(int handle, VideoOutVblankStatus* status) {
  	PRINT_NAME();
@@ -2366,7 +2442,7 @@ index f980320..660eea7 100644
  
  	if (status == nullptr) {
  		return VIDEO_OUT_ERROR_INVALID_ADDRESS;
-@@ -1632,6 +1806,10 @@ KYTY_SYSV_ABI int VideoOutGetEventCount(const EventQueue::KernelEvent* ev) {
+@@ -1632,6 +1808,10 @@ KYTY_SYSV_ABI int VideoOutGetEventCount(const EventQueue::KernelEvent* ev) {
  
  KYTY_SYSV_ABI int VideoOutWaitVblank(int handle) {
  	PRINT_NAME();
@@ -2424,7 +2500,7 @@ index f70995a..8bc9175 100644
  } // namespace Libs::Graphics
  
 diff --git a/src/graphics/presentation/window/hostInput.cpp b/src/graphics/presentation/window/hostInput.cpp
-index edcfdaf..4743897 100644
+index edcfdaf..ff27370 100644
 --- a/src/graphics/presentation/window/hostInput.cpp
 +++ b/src/graphics/presentation/window/hostInput.cpp
 @@ -1,4 +1,6 @@
@@ -3145,7 +3221,7 @@ index edcfdaf..4743897 100644
  void SetControl(std::size_t control, bool down) {
  	if (control == INVALID_CONTROL) {
  		return;
-@@ -240,93 +663,275 @@ void SetControl(std::size_t control, bool down) {
+@@ -240,93 +663,276 @@ void SetControl(std::size_t control, bool down) {
  
  	const auto& info = Info(control);
  	if (info.button != 0) {
@@ -3307,7 +3383,8 @@ index edcfdaf..4743897 100644
  }
 +
 +bool Trace() {
-+	static const bool trace = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
++	static const bool trace_env = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
++	const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +	return trace;
 +}
 +
@@ -3522,7 +3599,7 @@ index c0ac585..34a3616 100644
  } // namespace Libs::Graphics
  
 diff --git a/src/graphics/presentation/window/swapchain.cpp b/src/graphics/presentation/window/swapchain.cpp
-index 845bfe3..170b24b 100644
+index 845bfe3..686e380 100644
 --- a/src/graphics/presentation/window/swapchain.cpp
 +++ b/src/graphics/presentation/window/swapchain.cpp
 @@ -1,3 +1,4 @@
@@ -3637,11 +3714,12 @@ index 845bfe3..170b24b 100644
  			to_present.srcAccessMask = vk::AccessFlagBits::eColorAttachmentWrite;
  			to_present.dstAccessMask = vk::AccessFlagBits::eMemoryRead;
  			to_present.oldLayout     = vk::ImageLayout::eColorAttachmentOptimal;
-@@ -921,9 +943,34 @@ Presenter::~Presenter() = default;
+@@ -921,9 +943,35 @@ Presenter::~Presenter() = default;
  Presenter::Frame& Presenter::PrepareFrame(CommandBuffer& buffer, const ImageInfo& info) {
  	KYTY_PROFILER_FUNCTION();
  	EXIT_IF(buffer.IsInvalid());
-+	static const bool bc5_timing = std::getenv("KYTY_BC5_FLIP_TIMING") != nullptr; // experiment 0072
++	static const bool bc5_timing_env = std::getenv("KYTY_BC5_FLIP_TIMING") != nullptr; // experiment 0072
++	const bool bc5_timing = bc5_timing_env && ::Log::Bc5LoggingOn();
 +	const auto        bc5_t0     = std::chrono::steady_clock::now();
  	auto*             frame = m_impl->frames.Acquire();
 +	const auto        bc5_t1     = std::chrono::steady_clock::now();
@@ -3672,7 +3750,7 @@ index 845bfe3..170b24b 100644
  	if (image.backing.format == vk::Format::eUndefined) {
  		EXIT("unsupported presentation source, image=%p\n", static_cast<const void*>(&image));
  	}
-@@ -977,7 +1024,9 @@ bool Presenter::IsGuestPaused() const noexcept {
+@@ -977,7 +1025,9 @@ bool Presenter::IsGuestPaused() const noexcept {
  bool Presenter::NeedsImeRefresh() const noexcept {
  	const auto visual = GetImeVisualState();
  	return visual.active ||
@@ -3683,7 +3761,7 @@ index 845bfe3..170b24b 100644
  }
  
  RenderContext& Presenter::Renderer() const noexcept {
-@@ -1017,8 +1066,9 @@ void Presenter::Present(Frame& frame, bool reuse) {
+@@ -1017,8 +1067,9 @@ void Presenter::Present(Frame& frame, bool reuse) {
  		m_impl->RecoverSwapchain(Swapchain::Status::Recreate);
  	}
  
@@ -3695,7 +3773,7 @@ index 845bfe3..170b24b 100644
  	for (uint32_t attempt = 0; attempt < 2; attempt++) {
  		auto status = swapchain.AcquireNextImage();
  		if (status != Swapchain::Status::Success) {
-@@ -1033,7 +1083,8 @@ void Presenter::Present(Frame& frame, bool reuse) {
+@@ -1033,7 +1084,8 @@ void Presenter::Present(Frame& frame, bool reuse) {
  			frame.present_commands->WaitForFenceAndReset();
  			auto&      command          = *frame.present_commands;
  			const bool draw_ime_overlay = ime_visual.active && swapchain.PrepareImeOverlay();
@@ -3705,7 +3783,7 @@ index 845bfe3..170b24b 100644
  			swapchain.Submit(command);
  		}
  		status = swapchain.Present();
-@@ -1044,6 +1095,7 @@ void Presenter::Present(Frame& frame, bool reuse) {
+@@ -1044,6 +1096,7 @@ void Presenter::Present(Frame& frame, bool reuse) {
  
  		RenderDocOnPresent();
  		m_impl->presented_ime_revision.store(ime_visual.revision, std::memory_order_release);
@@ -3714,7 +3792,7 @@ index 845bfe3..170b24b 100644
  		{
  			const auto present_end = std::chrono::steady_clock::now();
 diff --git a/src/graphics/presentation/window/window.cpp b/src/graphics/presentation/window/window.cpp
-index c729a98..0875f1e 100644
+index c729a98..cc6132f 100644
 --- a/src/graphics/presentation/window/window.cpp
 +++ b/src/graphics/presentation/window/window.cpp
 @@ -31,7 +31,9 @@
@@ -3778,19 +3856,20 @@ index c729a98..0875f1e 100644
  				}
  				break;
  			default: break;
-@@ -245,6 +263,11 @@ static void GameEventKeyboard(WindowLoopState& game, const EventKeyboard& key) {
+@@ -245,6 +263,12 @@ static void GameEventKeyboard(WindowLoopState& game, const EventKeyboard& key) {
  
  	if ((key.down || key.up) && !key.repeat) {
  		HostInputKey(key.key_code, key.down);
 +	} else {
-+		static const bool trace = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
++		static const bool trace_env = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
++		const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +		if (trace) {
 +			std::fprintf(stderr, "input trace: key %d repeat/other event ignored\n", key.key_code);
 +		}
  	}
  }
  
-@@ -328,12 +351,24 @@ static void GameEventController([[maybe_unused]] const EventController& f) {
+@@ -328,12 +352,24 @@ static void GameEventController([[maybe_unused]] const EventController& f) {
  			if (joy != nullptr) {
  				LOGF("Controller opened as raw joystick: %s\n",
  				     SDL_JoystickName(joy));
@@ -3816,7 +3895,7 @@ index c729a98..0875f1e 100644
  	}
  
  	if (f.removed) {
-@@ -343,19 +378,38 @@ static void GameEventController([[maybe_unused]] const EventController& f) {
+@@ -343,19 +379,38 @@ static void GameEventController([[maybe_unused]] const EventController& f) {
  
  	if (f.down || f.up) {
  		const auto button = ControllerButtonToPadButton(f.button);
@@ -3857,7 +3936,7 @@ index c729a98..0875f1e 100644
  	}
  }
  
-@@ -486,9 +540,20 @@ void WindowContext::ProcessDisplayEvent(const SDL_DisplayEvent& display) {
+@@ -486,9 +541,20 @@ void WindowContext::ProcessDisplayEvent(const SDL_DisplayEvent& display) {
  }
  
  void WindowContext::ProcessEvent(double time_s) {
@@ -3878,7 +3957,7 @@ index c729a98..0875f1e 100644
  	if (ProcessImeInput(*event)) {
  		return;
  	}
-@@ -635,6 +700,17 @@ void WindowContext::ProcessEvent(double time_s) {
+@@ -635,6 +701,17 @@ void WindowContext::ProcessEvent(double time_s) {
  			break;
  		}
  
@@ -3896,7 +3975,7 @@ index c729a98..0875f1e 100644
  		case SDL_CONTROLLERAXISMOTION: {
  			EventController c {};
  
-@@ -717,6 +793,11 @@ void WindowContext::ProcessEvent(double time_s) {
+@@ -717,6 +794,11 @@ void WindowContext::ProcessEvent(double time_s) {
  			    SDL_CONTROLLER_AXIS_TRIGGERLEFT,
  			    SDL_CONTROLLER_AXIS_TRIGGERRIGHT,
  			};
@@ -3908,7 +3987,7 @@ index c729a98..0875f1e 100644
  			EventController c {};
  			c.id         = event->jaxis.which;
  			c.axis_id    = (event->jaxis.axis < 6) ? axis_map[event->jaxis.axis]
-@@ -730,6 +811,9 @@ void WindowContext::ProcessEvent(double time_s) {
+@@ -730,6 +812,9 @@ void WindowContext::ProcessEvent(double time_s) {
  
  		case SDL_JOYBUTTONDOWN:
  		case SDL_JOYBUTTONUP: {
@@ -3918,7 +3997,7 @@ index c729a98..0875f1e 100644
  			EventController c {};
  			c.id    = event->jbutton.which;
  			c.button = event->jbutton.button;
-@@ -743,17 +827,30 @@ void WindowContext::ProcessEvent(double time_s) {
+@@ -743,17 +828,30 @@ void WindowContext::ProcessEvent(double time_s) {
  		}
  
  		case SDL_JOYDEVICEADDED: {
@@ -3951,7 +4030,7 @@ index c729a98..0875f1e 100644
  			auto* joy = SDL_JoystickFromInstanceID(event->jdevice.which);
  			if (joy != nullptr) {
  				SDL_JoystickClose(joy);
-@@ -856,11 +953,13 @@ static void WindowCreate(WindowContext& context) {
+@@ -856,11 +954,13 @@ static void WindowCreate(WindowContext& context) {
  
  	LOGF("WindowCreate(): width = %d, height = %d\n", width, height);
  
@@ -3966,7 +4045,7 @@ index c729a98..0875f1e 100644
  		SDL_Rect usable{};
  		if (SDL_GetDisplayUsableBounds(0, &usable) == 0 && usable.w > 0 && usable.h > 0) {
  			constexpr int margin_x = 48;
-@@ -886,7 +985,7 @@ static void WindowCreate(WindowContext& context) {
+@@ -886,7 +986,7 @@ static void WindowCreate(WindowContext& context) {
  	}
  
  	uint32_t window_flags = KYTY_SDL_WINDOW_FLAGS;
@@ -3975,7 +4054,7 @@ index c729a98..0875f1e 100644
  		window_flags |= static_cast<uint32_t>(SDL_WINDOW_FULLSCREEN_DESKTOP);
  	} else {
  		// Windowed: allow the user to resize; keep the normal frame decorations.
-@@ -909,7 +1008,8 @@ static void WindowCreate(WindowContext& context) {
+@@ -909,7 +1009,8 @@ static void WindowCreate(WindowContext& context) {
  		EXIT("%s\n", SDL_GetError());
  	}
  
@@ -3985,7 +4064,7 @@ index c729a98..0875f1e 100644
  }
  
  Presenter& WindowInit(uint32_t width, uint32_t height) {
-@@ -941,6 +1041,41 @@ void WindowShutdown() {
+@@ -941,6 +1042,41 @@ void WindowShutdown() {
  	}
  }
  
@@ -4027,7 +4106,7 @@ index c729a98..0875f1e 100644
  static int WindowIconRead(void* user, char* data, int size) {
  	auto*    src        = static_cast<Common::File*>(user);
  	uint32_t bytes_read = 0;
-@@ -1043,6 +1178,12 @@ void WindowContext::UpdateTitle() {
+@@ -1043,6 +1179,12 @@ void WindowContext::UpdateTitle() {
  	const auto frequency = Common::Timer::QueryPerformanceFrequency();
  	frame_num++;
  	fps_frames++;
@@ -4040,7 +4119,7 @@ index c729a98..0875f1e 100644
  	if (now - fps_start >= frequency) {
  		current_fps = static_cast<double>(fps_frames) * static_cast<double>(frequency) /
  		              static_cast<double>(now - fps_start);
-@@ -1051,10 +1192,10 @@ void WindowContext::UpdateTitle() {
+@@ -1051,10 +1193,10 @@ void WindowContext::UpdateTitle() {
  	}
  
  	auto fps = fmt::format(
@@ -4054,7 +4133,7 @@ index c729a98..0875f1e 100644
  #if defined(__APPLE__)
  	// AppKit traps on title changes off the main thread; fire-and-forget keeps present pacing.
 diff --git a/src/kernel/eventQueue.cpp b/src/kernel/eventQueue.cpp
-index 14561b0..440a253 100644
+index 14561b0..4960969 100644
 --- a/src/kernel/eventQueue.cpp
 +++ b/src/kernel/eventQueue.cpp
 @@ -1,8 +1,12 @@
@@ -4099,7 +4178,7 @@ index 14561b0..440a253 100644
 +
 +int KYTY_SYSV_ABI KernelTriggerAmprEvent(KernelEqueue eq, int id, void* data) {
 +	const int result = KernelTriggerEvent(eq, static_cast<uintptr_t>(id), AmprEventFilter(), data);
-+	if (getenv("KYTY_BC5_AMM_TRACE") != nullptr) {
++	if (::Log::Bc5LoggingOn() && getenv("KYTY_BC5_AMM_TRACE") != nullptr) {
 +		std::fprintf(stderr, "amm trace: trigger ampr event eq 0x%016" PRIx64 " id %d data 0x%016" PRIx64 " = 0x%08x\n",
 +		             static_cast<uint64_t>(eq), id, reinterpret_cast<uint64_t>(data), static_cast<unsigned>(result));
 +	}
@@ -4139,7 +4218,7 @@ index 14561b0..440a253 100644
  	LOGF("\t AMPR event add: eq = 0x%016" PRIx64 ", id = %d, udata = 0x%016" PRIx64 "\n",
  	     static_cast<uint64_t>(eq), id, reinterpret_cast<uint64_t>(udata));
  
-+	if (getenv("KYTY_BC5_AMM_TRACE") != nullptr) {
++	if (::Log::Bc5LoggingOn() && getenv("KYTY_BC5_AMM_TRACE") != nullptr) {
 +		std::fprintf(stderr, "amm trace: add ampr event eq 0x%016" PRIx64 " id %d udata 0x%016" PRIx64 "\n",
 +		             static_cast<uint64_t>(eq), id, reinterpret_cast<uint64_t>(udata));
 +	}
@@ -4375,7 +4454,7 @@ index bc73d18..252c692 100644
  
  #endif /* EMULATOR_INCLUDE_EMULATOR_KERNEL_FILESYSTEM_H_ */
 diff --git a/src/kernel/memory.cpp b/src/kernel/memory.cpp
-index 02fc0fc..d2f007b 100644
+index 02fc0fc..3facc93 100644
 --- a/src/kernel/memory.cpp
 +++ b/src/kernel/memory.cpp
 @@ -1,3 +1,6 @@
@@ -4646,13 +4725,14 @@ index 02fc0fc..d2f007b 100644
  static callback_func_t                    g_alloc_callback        = nullptr;
  static callback_func_t                    g_free_callback         = nullptr;
  static std::atomic<uint64_t>              g_memory_pool_committed = 0;
-@@ -3193,6 +3350,16 @@ static bool ReplaceFixedRangeWithReserved(uint64_t start, uint64_t size) {
+@@ -3193,6 +3350,17 @@ static bool ReplaceFixedRangeWithReserved(uint64_t start, uint64_t size) {
  			replaced.range.offset += current - range.start;
  		}
  		DecodeMemoryProtection(replaced.range.protection, &replaced.mode, &replaced.gpu_mode);
 +		// BC5 (experiment 0036): a fixed mapping over live memory replaces it silently; trace it.
 +		if (range.type != VirtualRangeType::Reserved && range.type != VirtualRangeType::PoolReserved) {
-+			static const bool trace = (getenv("KYTY_BC5_AMM_TRACE") != nullptr);
++			static const bool trace_env = (getenv("KYTY_BC5_AMM_TRACE") != nullptr);
++			const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +			if (trace) {
 +				std::fprintf(stderr,
 +				             "amm trace: fixed map over live range: new 0x%016" PRIx64 "+0x%" PRIx64
@@ -4663,7 +4743,7 @@ index 02fc0fc..d2f007b 100644
  		if (range.type == VirtualRangeType::Direct &&
  		    !g_guest_address_space->BackingContains(current, chunk)) {
  			return false;
-@@ -3465,7 +3632,11 @@ bool KernelHandleReservedRangeAccessViolation(uint64_t vaddr) {
+@@ -3465,7 +3633,11 @@ bool KernelHandleReservedRangeAccessViolation(uint64_t vaddr) {
  	    std::strncmp(range.name, "AMM", KERNEL_MAXIMUM_NAME_LENGTH) != 0) {
  		return false;
  	}
@@ -5067,7 +5147,7 @@ index 6c48267..4f3b34a 100644
  	LOGF("\t value0 = 0x%016" PRIx64 "\n"
  	     "\t value1 = 0x%016" PRIx64 "\n"
 diff --git a/src/libs/ajm.cpp b/src/libs/ajm.cpp
-index 89473ad..056512e 100644
+index 89473ad..cc89450 100644
 --- a/src/libs/ajm.cpp
 +++ b/src/libs/ajm.cpp
 @@ -9,7 +9,9 @@
@@ -5241,13 +5321,14 @@ index 89473ad..056512e 100644
  struct AjmInstanceState {
  	uint32_t                    context = 0;
  	uint32_t                    codec   = 0;
-@@ -1065,6 +942,17 @@ int KYTY_SYSV_ABI AjmBatchJobInitialize(AjmBatchInfo* info, uint32_t instance,
+@@ -1065,6 +942,18 @@ int KYTY_SYSV_ABI AjmBatchJobInitialize(AjmBatchInfo* info, uint32_t instance,
  	const auto decode_result =
  	    AjmInitializeInstance(instance, codec_parameters, codec_parameters_size);
  	AjmWriteResult(result, AJM_SIDEBAND_RESULT_SIZE, decode_result);
 +	// BC5 (experiment 0154): the codec parameters the title passes, per instance.
 +	{
-+		static const bool trace = std::getenv("KYTY_BC5_AJM_TRACE") != nullptr;
++		static const bool trace_env = std::getenv("KYTY_BC5_AJM_TRACE") != nullptr;
++		const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +		if (trace) {
 +			std::fprintf(stderr, "ajm trace: initialize inst 0x%x params[%zu]=", instance, codec_parameters_size);
 +			const auto* b = static_cast<const uint8_t*>(codec_parameters);
@@ -5259,12 +5340,13 @@ index 89473ad..056512e 100644
  
  	LOGF("\t instance = 0x%08" PRIx32 ", codec_parameters = 0x%016" PRIx64 ", size = 0x%016" PRIx64
  	     "\n",
-@@ -1091,6 +979,13 @@ int KYTY_SYSV_ABI AjmBatchJobClearContext(AjmBatchInfo* info, uint32_t instance,
+@@ -1091,6 +980,14 @@ int KYTY_SYSV_ABI AjmBatchJobClearContext(AjmBatchInfo* info, uint32_t instance,
  	}
  
  	AjmWriteResult(result, AJM_SIDEBAND_RESULT_SIZE, decode_result);
 +	{
-+		static const bool trace = std::getenv("KYTY_BC5_AJM_TRACE") != nullptr;
++		static const bool trace_env = std::getenv("KYTY_BC5_AJM_TRACE") != nullptr;
++		const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +		if (trace) {
 +			std::fprintf(stderr, "ajm trace: clear-context inst 0x%x -> 0x%x\n", instance,
 +			             static_cast<unsigned>(decode_result.result));
@@ -5273,14 +5355,15 @@ index 89473ad..056512e 100644
  	LOGF("\t instance = 0x%08" PRIx32 "\n", instance);
  	return AjmAppendJob(info, AJM_JOB_CONTROL_SIZE, "clear-context");
  }
-@@ -1142,6 +1037,35 @@ int KYTY_SYSV_ABI AjmBatchJobDecodeSplit(AjmBatchInfo* info, uint32_t instance,
+@@ -1142,6 +1039,36 @@ int KYTY_SYSV_ABI AjmBatchJobDecodeSplit(AjmBatchInfo* info, uint32_t instance,
  	AjmWriteStreamResult(
  	    result, AJM_SIDEBAND_RESULT_SIZE + AJM_SIDEBAND_STREAM_SIZE + AJM_SIDEBAND_MFRAME_SIZE,
  	    decode_result, true);
 +	// BC5 (experiment 0154): KYTY_BC5_AJM_TRACE=1 journals every split decode job on stderr: the
 +	// second title's cinematic voice stops being decoded after ~4.95 s (F198).
 +	{
-+		static const bool trace = std::getenv("KYTY_BC5_AJM_TRACE") != nullptr;
++		static const bool trace_env = std::getenv("KYTY_BC5_AJM_TRACE") != nullptr;
++		const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +		if (trace) {
 +			size_t in_size = 0, out_size = 0;
 +			for (size_t i = 0; i < input_buffers_num && input_buffers != nullptr; i++) in_size += input_buffers[i].size;
@@ -5309,12 +5392,13 @@ index 89473ad..056512e 100644
  
  	LOGF("\t instance = 0x%08" PRIx32 ", input_buffers = 0x%016" PRIx64
  	     ", input_num = 0x%016" PRIx64 ", output_buffers = 0x%016" PRIx64
-@@ -1213,6 +1137,14 @@ int KYTY_SYSV_ABI AjmBatchJobSetGaplessDecode(AjmBatchInfo* info, uint32_t insta
+@@ -1213,6 +1140,15 @@ int KYTY_SYSV_ABI AjmBatchJobSetGaplessDecode(AjmBatchInfo* info, uint32_t insta
  	AjmWriteResult(result, AJM_SIDEBAND_RESULT_SIZE, decode_result);
  	LOGF("\t instance = 0x%08" PRIx32 ", gapless_decode = 0x%016" PRIx64 ", reset = %d\n", instance,
  	     reinterpret_cast<uint64_t>(gapless_decode), reset);
 +	{ // BC5 (experiment 0154): the gapless parameters the title sets, per instance.
-+		static const bool trace = std::getenv("KYTY_BC5_AJM_TRACE") != nullptr;
++		static const bool trace_env = std::getenv("KYTY_BC5_AJM_TRACE") != nullptr;
++		const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +		if (trace && gapless_decode != nullptr) {
 +			const auto* g = static_cast<const AjmSidebandGaplessDecode*>(gapless_decode);
 +			std::fprintf(stderr, "ajm trace: set-gapless inst 0x%x total %u skip %u skipped %u reset %d -> 0x%x\n", instance,
@@ -5324,12 +5408,13 @@ index 89473ad..056512e 100644
  	return AjmAppendJob(info, AJM_JOB_CONTROL_SIZE, "set-gapless");
  }
  
-@@ -1230,6 +1162,15 @@ int KYTY_SYSV_ABI AjmBatchJobGetGaplessDecode(AjmBatchInfo* info, uint32_t insta
+@@ -1230,6 +1166,16 @@ int KYTY_SYSV_ABI AjmBatchJobGetGaplessDecode(AjmBatchInfo* info, uint32_t insta
  		*gapless      = gapless_decode;
  	}
  
 +	{
-+		static const bool trace = std::getenv("KYTY_BC5_AJM_TRACE") != nullptr;
++		static const bool trace_env = std::getenv("KYTY_BC5_AJM_TRACE") != nullptr;
++		const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +		if (trace) {
 +			std::fprintf(stderr, "ajm trace: get-gapless inst 0x%x -> 0x%x total %u skip %u skipped %u\n",
 +			             instance, static_cast<unsigned>(decode_result.result),
@@ -5340,12 +5425,13 @@ index 89473ad..056512e 100644
  	LOGF("\t instance = 0x%08" PRIx32 "\n", instance);
  	return AjmAppendJob(info, AJM_JOB_RUN_SIZE, "get-gapless");
  }
-@@ -1294,6 +1235,14 @@ int KYTY_SYSV_ABI AjmBatchJobControl(AjmBatchInfo* info, uint32_t instance, uint
+@@ -1294,6 +1240,15 @@ int KYTY_SYSV_ABI AjmBatchJobControl(AjmBatchInfo* info, uint32_t instance, uint
  	const auto       decode_result = AjmControlInstance(instance, flags, sideband_input,
  	                                                    sideband_input_size, &decoder, &gapless);
  	AjmWriteSideband(flags, sideband_output, sideband_output_size, decoder, gapless, decode_result);
 +	{
-+		static const bool trace = std::getenv("KYTY_BC5_AJM_TRACE") != nullptr;
++		static const bool trace_env = std::getenv("KYTY_BC5_AJM_TRACE") != nullptr;
++		const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +		if (trace) {
 +			std::fprintf(stderr, "ajm trace: control inst 0x%x flags 0x%llx in %zu out %zu -> 0x%x\n",
 +			             instance, static_cast<unsigned long long>(flags), sideband_input_size,
@@ -5900,7 +5986,7 @@ index e82b93e..6cf1b61 100644
  
  } // namespace Libs::Audio::Ajm
 diff --git a/src/libs/audio.cpp b/src/libs/audio.cpp
-index fe4b332..63f2441 100644
+index fe4b332..b6e964e 100644
 --- a/src/libs/audio.cpp
 +++ b/src/libs/audio.cpp
 @@ -10,6 +10,7 @@
@@ -6015,7 +6101,7 @@ index fe4b332..63f2441 100644
  	return true;
  }
  
-@@ -326,16 +383,156 @@ const void* Audio::PrepareOutputBuffer(const PortOut& port, const void* data,
+@@ -326,16 +383,157 @@ const void* Audio::PrepareOutputBuffer(const PortOut& port, const void* data,
  	return buffer->data();
  }
  
@@ -6141,7 +6227,8 @@ index fe4b332..63f2441 100644
 +			}
 +		}
 +		// KYTY_BC5_INPUT_TRACE=1: once a second per port, what reaches the pad.
-+		static const bool trace = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
++		static const bool trace_env = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
++		const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +		if (trace) {
 +			static std::map<const PortOut*, std::pair<uint64_t, float>> seen; // port -> (last ms, max peak)
 +			static std::map<const PortOut*, std::pair<uint32_t, uint32_t>> counts; // port -> (calls, frames)
@@ -6173,7 +6260,7 @@ index fe4b332..63f2441 100644
  
  	std::vector<uint8_t> convert_buffer;
  	const void*          queue_data = prepared_data;
-@@ -343,7 +540,7 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -343,7 +541,7 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  
  	SDL_AudioCVT cvt {};
  	const int    cvt_result =
@@ -6182,7 +6269,7 @@ index fe4b332..63f2441 100644
  	                      static_cast<int>(port->freq), port->audio_spec.format,
  	                      port->audio_spec.channels, port->audio_spec.freq);
  
-@@ -368,6 +565,46 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -368,6 +566,46 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  		queue_size = static_cast<uint32_t>(cvt.len_cvt);
  	}
  
@@ -6229,7 +6316,7 @@ index fe4b332..63f2441 100644
  	if (blocking) {
  		// More aggressive buffer management to prevent audio issues
  		// during heavy GPU load (common in gameplay vs cutscene)
-@@ -380,15 +617,26 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -380,15 +618,26 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  		const auto wait_start      = LibKernel::KernelGetProcessTime();
  		// Timeout faster to avoid blocking the game thread
  		const uint64_t timeout_us = 100000; // 100ms max wait
@@ -6256,7 +6343,7 @@ index fe4b332..63f2441 100644
  
  	if (SDL_QueueAudio(port->audio_device, queue_data, queue_size) < 0) {
  		LOGF("AudioOut: SDL_QueueAudio failed: %s\n", SDL_GetError());
-@@ -428,7 +676,7 @@ Audio::Id Audio::AudioOutOpen(int type, uint32_t samples_num, uint32_t freq, For
+@@ -428,7 +677,7 @@ Audio::Id Audio::AudioOutOpen(int type, uint32_t samples_num, uint32_t freq, For
  				port.volume[i] = 32768;
  			}
  
@@ -6265,14 +6352,15 @@ index fe4b332..63f2441 100644
  				// KytyPlus diagnostic: OpenSdlDevice() may fail (no host audio device,
  				// unsupported sample rate/format, or SDL init failure). The return is
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
-@@ -568,6 +816,41 @@ uint32_t Audio::AudioOutOutputs(OutputParam* params, uint32_t num, bool blocking
+@@ -568,6 +817,42 @@ uint32_t Audio::AudioOutOutputs(OutputParam* params, uint32_t num, bool blocking
  		m_out_ports[params[i].handle.GetId()].last_output_time = LibKernel::KernelGetProcessTime();
  	}
  
 +	// BC5 (audio pacing): KYTY_BC5_AUDIO_TRACE=1 prints, once a second, how fast the game's audio
 +	// thread pushed frames against the wall clock (the title's game clock is Wwise's play
 +	// position, i.e. the frames the host accepted), how long it was held, and the SDL queue.
-+	static const bool trace = std::getenv("KYTY_BC5_AUDIO_TRACE") != nullptr;
++	static const bool trace_env = std::getenv("KYTY_BC5_AUDIO_TRACE") != nullptr;
++	const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +	if (trace) {
 +		static uint64_t last_us = 0;
 +		const uint64_t  now     = LibKernel::KernelGetProcessTime();
@@ -6309,10 +6397,10 @@ index fe4b332..63f2441 100644
  
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..3cdba73
+index 0000000..888a7d5
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,8336 @@
+@@ -0,0 +1,8350 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -6483,7 +6571,7 @@ index 0000000..3cdba73
 +
 +static void dump_cb(const char* kind, const uint32_t* dwords, uint32_t num_dwords) {
 +	dump_init();
-+	if (g_dump_dir.empty() || g_journal_min || dwords == nullptr || num_dwords == 0) {
++	if (g_dump_dir.empty() || g_journal_min || !::Log::Bc5LoggingOn() || dwords == nullptr || num_dwords == 0) {
 +		return;
 +	}
 +	int n = g_dump_count.fetch_add(1);
@@ -6971,7 +7059,7 @@ index 0000000..3cdba73
 +
 +static void record_dispatch(const uint32_t* p, bool indirect) {
 +	const uint64_t n = g_dispatches.fetch_add(1);
-+	if (g_dump_dir.empty() || g_journal_min) {
++	if (g_dump_dir.empty() || g_journal_min || !::Log::Bc5LoggingOn()) {
 +		return;
 +	}
 +	const uint64_t pgm = (static_cast<uint64_t>(t_sh[0x20c]) | (static_cast<uint64_t>(t_sh[0x20d]) << 32u)) << 8u;
@@ -7138,7 +7226,7 @@ index 0000000..3cdba73
 +		for (auto& s: states) {
 +			const auto& q     = s.reg;
 +			t_queue_idx       = static_cast<int>(&s - states.data()); // experiment 0133
-+			if (s.count == 0 && s.deferred_report == 0 && std::getenv("BC5_DIRECT_WAIT_TRACE") != nullptr) {
++			if (s.count == 0 && s.deferred_report == 0 && ::Log::Bc5LoggingOn() && std::getenv("BC5_DIRECT_WAIT_TRACE") != nullptr) {
 +				s.deferred_report = 1;
 +				Direct::journal("queue %d: a %u b %u c %u d %u ring 0x%" PRIx64 "-0x%" PRIx64 "\n", t_queue_idx, q.a, q.b, q.c, q.d, q.ring_base, q.ring_end);
 +			}
@@ -7340,7 +7428,7 @@ index 0000000..3cdba73
 +	return f;
 +}
 +static void journal(const char* fmt, ...) {
-+	if (g_dump_dir.empty()) {
++	if (g_dump_dir.empty() || !::Log::Bc5LoggingOn()) { // BC5: the session's logging switch
 +		return;
 +	}
 +	if (g_journal_min) {
@@ -8924,7 +9012,8 @@ index 0000000..3cdba73
 +static std::mutex                                 g_lw_mutex;
 +static std::vector<std::pair<uint64_t, uint64_t>> g_lw; // address, last value seen
 +static void label_watch(uint64_t a) {
-+	static const bool on = std::getenv("BC5_DIRECT_LABEL_TRACE") != nullptr;
++	static const bool on_env = std::getenv("BC5_DIRECT_LABEL_TRACE") != nullptr;
++	const bool on = on_env && ::Log::Bc5LoggingOn();
 +	if (!on || a == 0) return;
 +	a &= ~7ull;
 +	std::lock_guard lock(g_lw_mutex);
@@ -9916,7 +10005,8 @@ index 0000000..3cdba73
 +
 +// Experiment 0133 (BC5_DIRECT_WAIT_TRACE=1): the last pending write of a label, for the journal.
 +static bool wait_trace() {
-+	static const bool v = std::getenv("BC5_DIRECT_WAIT_TRACE") != nullptr;
++	static const bool v_env = std::getenv("BC5_DIRECT_WAIT_TRACE") != nullptr;
++	const bool v = v_env && ::Log::Bc5LoggingOn();
 +	return v;
 +}
 +static void describe_pending(uint64_t a, char* out, size_t cap) {
@@ -10464,7 +10554,8 @@ index 0000000..3cdba73
 +					if (!ok) t_wait_given_up = true;
 +					if (dry_here) (ok ? g_dry_ok : g_dry_failed)++;
 +					frame_profile_wait(on_game_thread(), false, static_cast<double>(SoftCp::now_ns() - t0) / 1e6);
-+					static const bool timing_waits = std::getenv("BC5_DIRECT_TIMING") != nullptr;
++					static const bool timing_waits_env = std::getenv("BC5_DIRECT_TIMING") != nullptr;
++					const bool timing_waits = timing_waits_env && ::Log::Bc5LoggingOn();
 +					if (timing_waits) journal("timing: t %.3f s after that wait (%s %u dwords)\n", timing_now(), kind, num_dwords);
 +					SoftCp::set_gpu_executed(p, len, {0}); // the soft CP must not wait again
 +				}
@@ -10862,7 +10953,8 @@ index 0000000..3cdba73
 +	if (!pieces_dry() && !pieces_full() && draw_journal.second == 0 && !prefix_all()) return;
 +	// Experiment 0157: BC5_DIRECT_DRAW_JOURNAL_ACB=1 takes the compute-queue buffers through the journal too
 +	// (as "dcb" below; their packets set SH registers only, so the shared tracker is not disturbed).
-+	static const bool journal_acb = std::getenv("BC5_DIRECT_DRAW_JOURNAL_ACB") != nullptr;
++	static const bool journal_acb_env = std::getenv("BC5_DIRECT_DRAW_JOURNAL_ACB") != nullptr;
++	const bool journal_acb = journal_acb_env && ::Log::Bc5LoggingOn();
 +	const bool        acb_as_dcb  = journal_acb && draw_journal.second != 0 && std::strcmp(kind, "acb") == 0;
 +	if (acb_as_dcb) kind = "dcb";
 +	if (std::strcmp(kind, "cc") != 0 && std::strcmp(kind, "hib") != 0 && std::strcmp(kind, "dcb") != 0) return;
@@ -10948,7 +11040,8 @@ index 0000000..3cdba73
 +					}
 +					return true;
 +				}();
-+				static const bool find_set = std::getenv("BC5_DIRECT_DRAW_JOURNAL_FIND") != nullptr; // "layer" counts too
++				static const bool find_set_env = std::getenv("BC5_DIRECT_DRAW_JOURNAL_FIND") != nullptr; // "layer" counts too
++				const bool find_set = find_set_env && ::Log::Bc5LoggingOn();
 +				if (!matched && !find_set) return;
 +				if (matched && !counted) {
 +					counted     = true;
@@ -11010,7 +11103,8 @@ index 0000000..3cdba73
 +				char           words[96] = {};
 +				int            w         = 0;
 +				for (size_t k = 0; k < pkt.size() && k < 6 && w < 80; k++) w += std::snprintf(words + w, sizeof(words) - static_cast<size_t>(w), " %08x", pkt[k]);
-+				static const bool watch_quiet = std::getenv("BC5_DIRECT_DRAW_JOURNAL_WATCH") != nullptr;
++				static const bool watch_quiet_env = std::getenv("BC5_DIRECT_DRAW_JOURNAL_WATCH") != nullptr;
++				const bool watch_quiet = watch_quiet_env && ::Log::Bc5LoggingOn();
 +				if (!watch_quiet && matched) journal("draw journal buf %u (%u dwords) at %zu:%s | rt0 %010" PRIx64 " %ux%u info %08x mask %08x | vp %.0fx%.0f at %.0f,%.0f | ps %010" PRIx64
 +				                " es %010" PRIx64 " gs %010" PRIx64 " cs %010" PRIx64 "\n",
 +				                buf_no, num_dwords, off, words, rt, ((attrib2 >> 14u) & 0x3fffu) + 1u, (attrib2 & 0x3fffu) + 1u, reg(S::Context, 0x31c), reg(S::Context, 0x8e),
@@ -11753,7 +11847,8 @@ index 0000000..3cdba73
 +		std::snprintf(name, sizeof(name), "bc5-cq%d", index);
 +		pthread_setname_np(pthread_self(), name);
 +	}
-+	static const bool timing = std::getenv("BC5_DIRECT_TIMING") != nullptr;
++	static const bool timing_env = std::getenv("BC5_DIRECT_TIMING") != nullptr;
++	const bool timing = timing_env && ::Log::Bc5LoggingOn();
 +	Cq&  cq     = g_cqs[index];
 +	bool failed = false; // a job since the last post did not complete
 +	for (;;) {
@@ -11932,16 +12027,18 @@ index 0000000..3cdba73
 +	std::thread::id render_thread;
 +	double   t_last_flip = 0;
 +} g_fp;
-+static const bool g_frame_profile = std::getenv("BC5_DIRECT_FRAME_PROFILE") != nullptr;
++static const bool g_frame_profile_env = std::getenv("BC5_DIRECT_FRAME_PROFILE") != nullptr;
++// Off (or logging off for the session): one load, no counters.
++static inline bool g_frame_profile_on() { return g_frame_profile_env && ::Log::Bc5LoggingOn(); }
 +
 +static void frame_profile_wait(bool game_thread, bool cap, double ms) {
-+	if (!g_frame_profile || !game_thread) return;
++	if (!g_frame_profile_on() || !game_thread) return;
 +	std::lock_guard lock(g_fp_mutex);
 +	(cap ? g_fp.cap_ms : g_fp.cpuwait_ms) += ms;
 +}
 +
 +static void frame_profile_prep(bool game_thread, double filter_ms, double tracker_ms, double cu_ms, double nested_ms, double copy_ms) {
-+	if (!g_frame_profile || !game_thread) return;
++	if (!g_frame_profile_on() || !game_thread) return;
 +	std::lock_guard lock(g_fp_mutex);
 +	g_fp.pf_ms += filter_ms;
 +	g_fp.pt_ms += tracker_ms;
@@ -11951,20 +12048,20 @@ index 0000000..3cdba73
 +}
 +
 +static void frame_profile_eqwait(double ms) {
-+	if (!g_frame_profile) return;
++	if (!g_frame_profile_on()) return;
 +	std::lock_guard lock(g_fp_mutex);
 +	if (std::this_thread::get_id() == g_fp.render_thread) g_fp.eqwait_ms += ms;
 +}
 +
 +static void frame_profile_post(double ms) {
-+	if (!g_frame_profile) return;
++	if (!g_frame_profile_on()) return;
 +	std::lock_guard lock(g_fp_mutex);
 +	g_fp.post_ms += ms;
 +	g_fp.posts++;
 +}
 +
 +static void frame_profile_submit(bool game_thread, double sync_ms, double hints_ms) {
-+	if (!g_frame_profile || !game_thread) return;
++	if (!g_frame_profile_on() || !game_thread) return;
 +	std::lock_guard lock(g_fp_mutex);
 +	g_fp.render_thread = std::this_thread::get_id();
 +	g_fp.sync_ms += sync_ms;
@@ -11972,7 +12069,7 @@ index 0000000..3cdba73
 +}
 +
 +static void frame_profile_job(bool game_thread, double prepare_ms, double list_ms, double cs_ms) {
-+	if (!g_frame_profile) return;
++	if (!g_frame_profile_on()) return;
 +	std::lock_guard lock(g_fp_mutex);
 +	if (game_thread) {
 +		g_fp.prepare_ms += prepare_ms;
@@ -11988,7 +12085,7 @@ index 0000000..3cdba73
 +// still ran only adds what is past that one's completion. Synchronously (done_ns == 0) the wait
 +// for the fence is the GPU's time, and it is the game thread's too.
 +static void frame_profile_done(bool game_thread, uint64_t queued_ns, uint64_t done_ns, double fence_ms) {
-+	if (!g_frame_profile) return;
++	if (!g_frame_profile_on()) return;
 +	std::lock_guard lock(g_fp_mutex);
 +	if (done_ns == 0) {
 +		g_fp.gpu_busy_ns += static_cast<uint64_t>(fence_ms * 1e6);
@@ -12001,7 +12098,7 @@ index 0000000..3cdba73
 +}
 +
 +static void frame_profile_flip(double drain_ms) {
-+	if (!g_frame_profile) return;
++	if (!g_frame_profile_on()) return;
 +	std::lock_guard lock(g_fp_mutex);
 +	const double now = timing_now();
 +	if (g_fp.t_last_flip != 0) {
@@ -12449,7 +12546,8 @@ index 0000000..3cdba73
 +	// target for the hint mapper (run 29: 52 unmapped operands in the first frame DCB).
 +	// BC5_DIRECT_TIMING=1: where a submission's wall-clock time goes (run 77: ~1 s between the
 +	// game's submissions) — seconds since the first submission, then the host's own steps.
-+	static const bool timing = std::getenv("BC5_DIRECT_TIMING") != nullptr;
++	static const bool timing_env = std::getenv("BC5_DIRECT_TIMING") != nullptr;
++	const bool timing = timing_env && ::Log::Bc5LoggingOn();
 +	const double   t_start = timing_now();
 +	const uint64_t t0 = SoftCp::now_ns();
 +	// The forced sync (a walk over the guest's 13 GB of VMAs, ~11 ms) is for what the filter
@@ -12777,7 +12875,8 @@ index 0000000..3cdba73
 +	// Experiment 0142 (BC5_DIRECT_UNMAPPED_TRACE=1): the packets the filter will drop as unmapped, each
 +	// (kind, size, offset) journaled once with its opcode, operand and dwords.
 +	{
-+		static const bool trace = std::getenv("BC5_DIRECT_UNMAPPED_TRACE") != nullptr;
++		static const bool trace_env = std::getenv("BC5_DIRECT_UNMAPPED_TRACE") != nullptr;
++		const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +		if (trace) {
 +			static std::mutex                                  um;
 +			static std::set<std::tuple<std::string, uint32_t, uint32_t>> seen;
@@ -13442,7 +13541,8 @@ index 0000000..3cdba73
 +	// Experiment 0054: BC5_DIRECT_DROP_TALLY=1 counts the packets the filter took out (type 3, not
 +	// NOP, not among the executed offsets), per kind of buffer and opcode (WRITE_DATA by DST_SEL,
 +	// EVENT_WRITE by event type), and every 10 s journals the counts since the last report.
-+	static const bool drop_tally = std::getenv("BC5_DIRECT_DROP_TALLY") != nullptr;
++	static const bool drop_tally_env = std::getenv("BC5_DIRECT_DROP_TALLY") != nullptr;
++	const bool drop_tally = drop_tally_env && ::Log::Bc5LoggingOn();
 +	if (drop_tally) {
 +		static std::mutex                      tally_mutex;
 +		static std::map<std::string, uint64_t> tally;
@@ -13550,7 +13650,8 @@ index 0000000..3cdba73
 +		frame_profile_job(t_cq == 0, r.prepare_ms, r.list_ms, r.cs_ms);
 +		frame_profile_prep(t_cq == 0, r.prep_filter_ms, r.prep_tracker_ms, r.prep_cu_ms, r.prep_nested_ms, r.prep_copy_ms);
 +		{
-+			static const bool trace = std::getenv("BC5_DIRECT_LABEL_TRACE") != nullptr;
++			static const bool trace_env = std::getenv("BC5_DIRECT_LABEL_TRACE") != nullptr;
++			const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +			if (trace) journal("queued #%" PRIu64 " %s %u dwords at t %.6f s\n", n, kind, num_dwords, timing_now());
 +		}
 +		static const bool ring_order_reg = std::getenv("BC5_DIRECT_RING_ORDER_WAITS") != nullptr; // experiment 0055
@@ -14494,7 +14595,8 @@ index 0000000..3cdba73
 +	}
 +	const double flip_t0 = Bc5Gc::Direct::timing_now();
 +	const int rc = VideoOut::VideoOutSubmitFlip(handle, index, flip_mode, flip_arg);
-+	static const bool timing_flips = std::getenv("BC5_DIRECT_TIMING") != nullptr;
++	static const bool timing_flips_env = std::getenv("BC5_DIRECT_TIMING") != nullptr;
++	const bool timing_flips = timing_flips_env && ::Log::Bc5LoggingOn();
 +	if (timing_flips) {
 +		Bc5Gc::Direct::journal("timing: t %.3f s flip %d/%d, VideoOutSubmitFlip took %.1f ms\n", flip_t0, handle, index, (Bc5Gc::Direct::timing_now() - flip_t0) * 1e3);
 +	}
@@ -14650,7 +14752,7 @@ index 0000000..3cdba73
 +
 +} // namespace Libs
 diff --git a/src/libs/controller.cpp b/src/libs/controller.cpp
-index 55718eb..6d66359 100644
+index 55718eb..3e3504a 100644
 --- a/src/libs/controller.cpp
 +++ b/src/libs/controller.cpp
 @@ -1,4 +1,9 @@
@@ -14763,13 +14865,14 @@ index 55718eb..6d66359 100644
  // Native DualSense driver instance (spec-accurate, hardware-unvalidated).
  // Owned by the Controller subsystem; opened on subsystem init if a device is
  // present, polled on an internal thread, and closed on subsystem destroy.
-@@ -180,7 +244,30 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
+@@ -180,7 +244,31 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
  	data->right_stick_y          = state.axes[static_cast<int>(Axis::RightY)];
  	data->analog_buttons_l2      = state.axes[static_cast<int>(Axis::TriggerLeft)];
  	data->analog_buttons_r2      = state.axes[static_cast<int>(Axis::TriggerRight)];
 -	data->orientation_w          = 1.0f;
 +	// BC5: KYTY_BC5_INPUT_TRACE=1 shows R2 as the game reads it, at every change of state.
-+	static const bool trace   = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
++	static const bool trace_env   = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
++	const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +	static int        last_r2      = -1;
 +	static int        last_l2      = -1;
 +	static uint32_t   last_buttons = 0xffffffffu;
@@ -14795,7 +14898,7 @@ index 55718eb..6d66359 100644
  	data->touch_data_touch0_id   = 1;
  	data->touch_data_touch1_id   = 2;
  	data->connected              = connected;
-@@ -189,11 +276,177 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
+@@ -189,11 +277,177 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
  	data->device_unique_data_len = 0;
  }
  
@@ -14973,7 +15076,7 @@ index 55718eb..6d66359 100644
  
  	// The native DualSense HID driver is opt-in and off by default. SDL already
  	// handles every standard pad (including a DualSense); this unvalidated driver is
-@@ -258,16 +511,162 @@ void ControllerDisconnect(int id) {
+@@ -258,16 +512,162 @@ void ControllerDisconnect(int id) {
  	g_controller->Disconnect(id);
  }
  
@@ -15136,7 +15239,7 @@ index 55718eb..6d66359 100644
  void ControllerResetInputState() {
  	EXIT_IF(g_controller == nullptr);
  	g_controller->ResetInputState();
-@@ -284,6 +683,11 @@ void GameController::EnsureSlot(int index) {
+@@ -284,6 +684,11 @@ void GameController::EnsureSlot(int index) {
  	}
  }
  
@@ -15148,11 +15251,12 @@ index 55718eb..6d66359 100644
  int GameController::OwnerSlot(int id) const {
  	for (int i = 0; i < PAD_MAX_CONTROLLERS; i++) {
  		if (m_ids[i] == id) {
-@@ -395,6 +799,11 @@ void GameController::Button(int id, uint32_t button, bool down) {
+@@ -395,6 +800,12 @@ void GameController::Button(int id, uint32_t button, bool down) {
  	if (slot == -1) {
  		slot = FallbackSlot();
  	}
-+	static const bool trace = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
++	static const bool trace_env = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
++	const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +	if (trace && id == HOST_INPUT_CONTROLLER_ID) {
 +		std::fprintf(stderr, "input trace: t=%.3f host stream button 0x%x %s -> slot %d\n", InputTraceSeconds(), button, down ? "down" : "up", slot);
 +		std::fflush(stderr);
@@ -15160,12 +15264,13 @@ index 55718eb..6d66359 100644
  
  	auto state = GetLastState(slot);
  	state.time = LibKernel::KernelGetProcessTime();
-@@ -415,6 +824,13 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
+@@ -415,6 +826,14 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
  	if (slot == -1) {
  		slot = FallbackSlot();
  	}
 +	// BC5: KYTY_BC5_INPUT_TRACE=1 shows what the keyboard/mouse stream writes into the pad slot.
-+	static const bool trace = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
++	static const bool trace_env = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
++	const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +	if (trace && id == HOST_INPUT_CONTROLLER_ID) {
 +		std::fprintf(stderr, "input trace: t=%.3f host stream axis %d = %d -> slot %d (pad in slot 0: id %d)\n",
 +		             InputTraceSeconds(), static_cast<int>(axis), value, slot, m_ids[0]);
@@ -15174,7 +15279,7 @@ index 55718eb..6d66359 100644
  
  	auto state = GetLastState(slot);
  	state.time = LibKernel::KernelGetProcessTime();
-@@ -422,8 +838,28 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
+@@ -422,8 +841,28 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
  	const int axis_id = static_cast<int>(axis);
  	EXIT_IF(axis_id < 0 || axis_id >= static_cast<int>(Controller::Axis::AxisMax));
  
@@ -15203,7 +15308,7 @@ index 55718eb..6d66359 100644
  	if (axis == Controller::Axis::TriggerLeft) {
  		if (value > 0) {
  			state.buttons |= PAD_BUTTON_L2;
-@@ -443,6 +879,86 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
+@@ -443,6 +882,87 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
  	AddState(slot, state);
  }
  
@@ -15264,7 +15369,8 @@ index 55718eb..6d66359 100644
 +		}
 +	}
 +	// KYTY_BC5_MOTION_TRACE=1: one line a second with what the guest is given.
-+	static const bool trace = std::getenv("KYTY_BC5_MOTION_TRACE") != nullptr;
++	static const bool trace_env = std::getenv("KYTY_BC5_MOTION_TRACE") != nullptr;
++	const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +	if (trace) {
 +		static std::chrono::steady_clock::time_point last;
 +		if (now - last >= std::chrono::seconds(1)) {
@@ -15290,13 +15396,14 @@ index 55718eb..6d66359 100644
  void GameController::ResetInputState() {
  	Common::LockGuard lock(m_mutex);
  
-@@ -488,6 +1004,13 @@ int GameController::ReadStateForSlot(int index, ControllerState* state, bool* fl
+@@ -488,6 +1008,14 @@ int GameController::ReadStateForSlot(int index, ControllerState* state, bool* fl
  	*flag  = SlotConnected(index);
  	*count = PresentCount();
  	*state = GetLastState(index);
 +	ApplyMotion(index, state);
 +
-+	static const bool trace = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
++	static const bool trace_env = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
++	const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +	if (trace) {
 +		g_pad_read_stats.read_state++;
 +		TracePadReads(InputTraceSeconds());
@@ -15304,11 +15411,12 @@ index 55718eb..6d66359 100644
  
  	return 0;
  }
-@@ -515,7 +1038,27 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
+@@ -515,7 +1043,28 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
  	int ret_num = 0;
  
  	auto& s = m_slots[index];
-+	static const bool trace   = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
++	static const bool trace_env   = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
++	const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +	uint32_t          skipped = 0;
  	if (SlotConnected(index) && s.states_num != 0) {
 +		// BC5: the newest states, as scePadRead gives them, not the oldest unread ones. A pad
@@ -15332,7 +15440,7 @@ index 55718eb..6d66359 100644
  		for (uint32_t i = 0; i < s.states_num; i++) {
  			if (ret_num >= states_num) {
  				break;
-@@ -523,11 +1066,21 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
+@@ -523,11 +1072,21 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
  			auto state_index = (s.first_state + i) % STATES_MAX;
  			if (!s.obtained[state_index]) {
  				s.obtained[state_index] = true;
@@ -15355,7 +15463,7 @@ index 55718eb..6d66359 100644
  	return ret_num;
  }
  int KYTY_SYSV_ABI PadInit() {
-@@ -625,6 +1178,9 @@ int KYTY_SYSV_ABI PadResetOrientation(int handle) {
+@@ -625,6 +1184,9 @@ int KYTY_SYSV_ABI PadResetOrientation(int handle) {
  	if (ControllerIndexFromHandle(handle) < 0) {
  		return PAD_ERROR_INVALID_HANDLE;
  	}
@@ -15365,7 +15473,7 @@ index 55718eb..6d66359 100644
  
  	return OK;
  }
-@@ -682,6 +1238,10 @@ int KYTY_SYSV_ABI PadReadState(int handle, PadData* data) {
+@@ -682,6 +1244,10 @@ int KYTY_SYSV_ABI PadReadState(int handle, PadData* data) {
  	g_controller->ReadStateForSlot(ControllerIndexFromHandle(handle), &state, &connected,
  	                               &connected_count);
  
@@ -15376,7 +15484,7 @@ index 55718eb..6d66359 100644
  	pad_fill_data(data, state, connected, connected_count);
  
  	return OK;
-@@ -718,6 +1278,10 @@ int KYTY_SYSV_ABI PadRead(int handle, PadData* data, int num) {
+@@ -718,6 +1284,10 @@ int KYTY_SYSV_ABI PadRead(int handle, PadData* data, int num) {
  	}
  
  	for (int i = 0; i < ret_num; i++) {
@@ -15387,7 +15495,7 @@ index 55718eb..6d66359 100644
  		pad_fill_data(&data[i], states[i], connected, connected_count);
  	}
  
-@@ -738,14 +1302,10 @@ int KYTY_SYSV_ABI PadSetVibration(int handle, const PadVibrationParam* param) {
+@@ -738,14 +1308,10 @@ int KYTY_SYSV_ABI PadSetVibration(int handle, const PadVibrationParam* param) {
  	     "\t small_motor = %d\n",
  	     static_cast<int>(param->large_motor), static_cast<int>(param->small_motor));
  
@@ -15481,7 +15589,7 @@ index 3c0684f..fe73665 100644
  int KYTY_SYSV_ABI PadInit();
  int KYTY_SYSV_ABI PadOpen(int user_id, int type, int index, const void* param);
 diff --git a/src/libs/dialog.cpp b/src/libs/dialog.cpp
-index 5b0fc93..d97ba32 100644
+index 5b0fc93..59e0c0f 100644
 --- a/src/libs/dialog.cpp
 +++ b/src/libs/dialog.cpp
 @@ -6,8 +6,21 @@
@@ -15496,7 +15604,7 @@ index 5b0fc93..d97ba32 100644
 +static const bool g_bc5_dialog_trace = std::getenv("KYTY_BC5_SAVE_TRACE") != nullptr;
 +#define BC5_DIALOG_TRACE(...)                                                                      \
 +	do {                                                                                           \
-+		if (g_bc5_dialog_trace) {                                                                  \
++		if ((g_bc5_dialog_trace && ::Log::Bc5LoggingOn())) {                                                                  \
 +			std::fprintf(stderr, "dialog trace: %s ", __func__);                                    \
 +			std::fprintf(stderr, __VA_ARGS__);                                                     \
 +			std::fputc('\n', stderr);                                                              \
@@ -15718,7 +15826,7 @@ index 5b0fc93..d97ba32 100644
  	LOGF("\t target = %d\n"
  	     "\t msg    = 0x%016" PRIx64 "\n",
 diff --git a/src/libs/libAmpr.cpp b/src/libs/libAmpr.cpp
-index 073361d..35cb068 100644
+index 073361d..2424929 100644
 --- a/src/libs/libAmpr.cpp
 +++ b/src/libs/libAmpr.cpp
 @@ -1,3 +1,5 @@
@@ -15759,7 +15867,7 @@ index 073361d..35cb068 100644
 +		const char* e = std::getenv("KYTY_BC5_AMM_TRACE");
 +		return e != nullptr && std::strcmp(e, "2") == 0;
 +	}();
-+	return on;
++	return on && ::Log::Bc5LoggingOn();
 +}
 +// Experiment 0043: every "amm trace:" line starts with the monotonic clock (the direct path's
 +// journal prints its zero on it once, "bc5 clock").
@@ -16036,13 +16144,14 @@ index 073361d..35cb068 100644
  static bool ValidateAmmMapArgs(uint64_t va, uint64_t size) {
  	return va != 0 && size != 0 && (va & (AMM_PAGE_SIZE - 1u)) == 0 &&
  	       (size & (AMM_PAGE_SIZE - 1u)) == 0 && va + size >= va;
-@@ -1358,26 +1488,111 @@ static int NormalizeAmmProtection(int prot) {
+@@ -1358,26 +1488,112 @@ static int NormalizeAmmProtection(int prot) {
  	return normalized;
  }
  
 +// BC5: KYTY_BC5_AMM_TRACE=1 writes every AMM map, unmap and pool operation to stderr.
 +static bool AmmTrace() {
-+	static const bool on = std::getenv("KYTY_BC5_AMM_TRACE") != nullptr;
++	static const bool on_env = std::getenv("KYTY_BC5_AMM_TRACE") != nullptr;
++	const bool on = on_env && ::Log::Bc5LoggingOn();
 +	return on;
 +}
 +
@@ -16156,7 +16265,7 @@ index 073361d..35cb068 100644
  		return false;
  	}
  
-@@ -1385,6 +1600,8 @@ static bool AllocateAmmAutoDirectMemory(uint64_t size, int memory_type, uint64_t
+@@ -1385,6 +1601,8 @@ static bool AllocateAmmAutoDirectMemory(uint64_t size, int memory_type, uint64_t
  	return true;
  }
  
@@ -16165,7 +16274,7 @@ index 073361d..35cb068 100644
  static int ExecuteAmmMapCommand(const CommandBufferState::AmmMapCommand& command) {
  	if (!ValidateAmmMapArgs(command.va, command.size)) {
  		return LibKernel::KERNEL_ERROR_EINVAL;
-@@ -1397,9 +1614,59 @@ static int ExecuteAmmMapCommand(const CommandBufferState::AmmMapCommand& command
+@@ -1397,9 +1615,59 @@ static int ExecuteAmmMapCommand(const CommandBufferState::AmmMapCommand& command
  	}
  
  	void* addr = reinterpret_cast<void*>(command.va);
@@ -16227,7 +16336,7 @@ index 073361d..35cb068 100644
  }
  
  static bool AppendAmmMapRecord(uint64_t                                 command_buffer,
-@@ -1425,68 +1692,166 @@ static bool AppendAmmMapRecord(uint64_t                                 command_
+@@ -1425,68 +1693,166 @@ static bool AppendAmmMapRecord(uint64_t                                 command_
  
  static int ReadHostFileToGuest(const std::string& host_path, uint64_t file_offset,
                                 uint64_t destination, uint64_t size, uint64_t* bytes_read);
@@ -16446,7 +16555,7 @@ index 073361d..35cb068 100644
  				const auto& command = state.read_file_commands[entry.index];
  				std::string host_path;
  				if (!AprShared::TryGetHostPath(command.file_id, &host_path)) {
-@@ -1494,25 +1859,42 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+@@ -1494,25 +1860,42 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
  					     command.file_id);
  					*execution_result = LibKernel::KERNEL_ERROR_ENOENT;
  					*error_offset     = static_cast<uint32_t>(command.record_offset);
@@ -16492,7 +16601,7 @@ index 073361d..35cb068 100644
  				    eq, command.id, reinterpret_cast<void*>(command.data));
  				if (result != OK) {
  					LOGF("\tAPR submit event failed: eq=0x%016" PRIx64 ", id=%" PRId32
-@@ -1520,7 +1902,8 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+@@ -1520,7 +1903,8 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
  					     command.eq, command.id, static_cast<uint32_t>(result));
  					*execution_result = result;
  					*error_offset     = static_cast<uint32_t>(command.record_offset);
@@ -16502,7 +16611,7 @@ index 073361d..35cb068 100644
  				}
  			} break;
  			case CommandKind::WriteAddress: {
-@@ -1531,7 +1914,8 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+@@ -1531,7 +1915,8 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
  					     command.address, command.value);
  					*execution_result = LibKernel::KERNEL_ERROR_EFAULT;
  					*error_offset     = static_cast<uint32_t>(command.record_offset);
@@ -16512,7 +16621,7 @@ index 073361d..35cb068 100644
  				}
  			} break;
  			case CommandKind::AmmMap: {
-@@ -1539,10 +1923,21 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+@@ -1539,10 +1924,21 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
  				int         result  = OK;
  				if (command.kind == AmmCommandKind::Unmap) {
  					result = LibKernel::Memory::KernelMunmap(command.va, command.size);
@@ -16534,7 +16643,7 @@ index 073361d..35cb068 100644
  				if (result != OK) {
  					LOGF("\tAMM submit command failed: kind=%u va=0x%016" PRIx64
  					     " dmem=0x%016" PRIx64 " size=0x%016" PRIx64 " type=%" PRId32
-@@ -1552,12 +1947,203 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+@@ -1552,12 +1948,203 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
  					     static_cast<uint32_t>(result));
  					*execution_result = result;
  					*error_offset     = static_cast<uint32_t>(command.record_offset);
@@ -16739,7 +16848,7 @@ index 073361d..35cb068 100644
  	return OK;
  }
  
-@@ -1678,13 +2264,50 @@ static int KYTY_SYSV_ABI CommandBufferDestructor(void* command_buffer) {
+@@ -1678,13 +2265,50 @@ static int KYTY_SYSV_ABI CommandBufferDestructor(void* command_buffer) {
  	return OK;
  }
  
@@ -16791,7 +16900,7 @@ index 073361d..35cb068 100644
  	const auto command_buffer_addr = reinterpret_cast<uint64_t>(command_buffer);
  	if (!ValidateCommandBufferHeader(command_buffer_addr)) {
  		return LibKernel::KERNEL_ERROR_EFAULT;
-@@ -1765,6 +2388,9 @@ static int KYTY_SYSV_ABI AprCommandBufferReadFile(void*    command_buffer, uint6
+@@ -1765,6 +2389,9 @@ static int KYTY_SYSV_ABI AprCommandBufferReadFile(void*    command_buffer, uint6
                                                    uint32_t file_id, void* destination,
                                                    uint64_t size, uint64_t file_offset) {
  	PRINT_NAME();
@@ -16801,7 +16910,7 @@ index 073361d..35cb068 100644
  
  	const auto destination_addr = reinterpret_cast<uint64_t>(destination);
  	if (command_buffer == nullptr || !IsValidAprReadRange(destination_addr, size) ||
-@@ -2111,16 +2737,31 @@ static int KYTY_SYSV_ABI CommandBufferPopMarker(void* command_buffer) {
+@@ -2111,16 +2738,31 @@ static int KYTY_SYSV_ABI CommandBufferPopMarker(void* command_buffer) {
  	return AppendNoOpCommand(command_buffer, sizeof(uint32_t));
  }
  
@@ -16838,7 +16947,7 @@ index 073361d..35cb068 100644
  
  	return AppendNoOpCommand(command_buffer, 0x20);
  }
-@@ -2139,6 +2780,10 @@ static int AppendWriteAddressCommand(void* command_buffer, volatile uint64_t* ad
+@@ -2139,6 +2781,10 @@ static int AppendWriteAddressCommand(void* command_buffer, volatile uint64_t* ad
  static int KYTY_SYSV_ABI CommandBufferWriteAddress(void* command_buffer, volatile uint64_t* address,
                                                     uint64_t value, uint32_t) {
  	PRINT_NAME();
@@ -16849,7 +16958,7 @@ index 073361d..35cb068 100644
  
  	return AppendWriteAddressCommand(command_buffer, address, value);
  }
-@@ -2314,15 +2959,27 @@ static int KYTY_SYSV_ABI AprCommandBufferResetGatherScatterState(void* command_b
+@@ -2314,15 +2960,27 @@ static int KYTY_SYSV_ABI AprCommandBufferResetGatherScatterState(void* command_b
  	return OK;
  }
  
@@ -16879,7 +16988,7 @@ index 073361d..35cb068 100644
  		return LibKernel::KERNEL_ERROR_EFAULT;
  	}
  
-@@ -2333,7 +2990,7 @@ static int KYTY_SYSV_ABI AprCommandBufferMapBegin(void* command_buffer, uint64_t
+@@ -2333,7 +2991,7 @@ static int KYTY_SYSV_ABI AprCommandBufferMapBegin(void* command_buffer, uint64_t
  
  static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, uint64_t va,
                                                          uint64_t dmem_offset, uint64_t size,
@@ -16888,7 +16997,7 @@ index 073361d..35cb068 100644
  	PRINT_NAME();
  
  	if (command_buffer == nullptr || !ValidateAmmMapArgs(va, size) ||
-@@ -2341,7 +2998,15 @@ static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, ui
+@@ -2341,7 +2999,15 @@ static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, ui
  		return LibKernel::KERNEL_ERROR_EINVAL;
  	}
  
@@ -16905,7 +17014,7 @@ index 073361d..35cb068 100644
  		return LibKernel::KERNEL_ERROR_EFAULT;
  	}
  
-@@ -2504,38 +3169,60 @@ static int KYTY_SYSV_ABI AmmGiveDirectMemory(int64_t search_start, int64_t searc
+@@ -2504,38 +3170,60 @@ static int KYTY_SYSV_ABI AmmGiveDirectMemory(int64_t search_start, int64_t searc
  	}
  
  	*dmem_offset = allocated;
@@ -16978,7 +17087,7 @@ index 073361d..35cb068 100644
  	}
  }
  
-@@ -2589,11 +3276,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetId(void* command_buffer_bas
+@@ -2589,11 +3277,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetId(void* command_buffer_bas
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
  	auto     submit_result =
@@ -16991,7 +17100,7 @@ index 073361d..35cb068 100644
  
  	if (!AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
  		return LibKernel::KERNEL_ERROR_EFAULT;
-@@ -2618,11 +3304,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetResult(void* command_buffer
+@@ -2618,11 +3305,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetResult(void* command_buffer
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
  	auto     submit_result =
@@ -17233,7 +17342,7 @@ index aeaa823..9a20ce1 100644
  
  
 diff --git a/src/libs/libJson2.cpp b/src/libs/libJson2.cpp
-index 183cd85..40d7f58 100644
+index 183cd85..8b87d36 100644
 --- a/src/libs/libJson2.cpp
 +++ b/src/libs/libJson2.cpp
 @@ -4,9 +4,12 @@
@@ -17249,7 +17358,7 @@ index 183cd85..40d7f58 100644
  #include <string>
  #include <vector>
  
-@@ -68,6 +71,20 @@ struct JsonInitParameter2 {
+@@ -68,6 +71,21 @@ struct JsonInitParameter2 {
  	uint32_t reserved[3];
  };
  
@@ -17257,7 +17366,8 @@ index 183cd85..40d7f58 100644
 +// produced text, cut to 240 characters) — to see which document and member an assertion in the
 +// game is about (experiment 0020).
 +static bool JsonTraceOn() {
-+	static const bool v = std::getenv("KYTY_BC5_JSON_TRACE") != nullptr;
++	static const bool v_env = std::getenv("KYTY_BC5_JSON_TRACE") != nullptr;
++	const bool v = v_env && ::Log::Bc5LoggingOn();
 +	return v;
 +}
 +#define JSON_TRACE(...)                                                                             \
@@ -17270,7 +17380,7 @@ index 183cd85..40d7f58 100644
  static std::string* JsonStringImpl(JsonString* self) {
  	if (self == nullptr) {
  		return nullptr;
-@@ -664,6 +681,8 @@ static void KYTY_SYSV_ABI JsonValueSetType(JsonValue* self, uint32_t type) {
+@@ -664,6 +682,8 @@ static void KYTY_SYSV_ABI JsonValueSetType(JsonValue* self, uint32_t type) {
  static uint32_t KYTY_SYSV_ABI JsonValueGetType(const JsonValue* self) {
  	PRINT_NAME();
  
@@ -17279,7 +17389,7 @@ index 183cd85..40d7f58 100644
  	return (self != nullptr ? self->type : JsonValueTypeNull);
  }
  
-@@ -703,14 +722,19 @@ static const bool* KYTY_SYSV_ABI JsonValueGetBoolean(const JsonValue* self) {
+@@ -703,14 +723,19 @@ static const bool* KYTY_SYSV_ABI JsonValueGetBoolean(const JsonValue* self) {
  	PRINT_NAME();
  
  	static const bool false_value = false;
@@ -17300,7 +17410,7 @@ index 183cd85..40d7f58 100644
  }
  
  static const double* KYTY_SYSV_ABI JsonValueGetReal(const JsonValue* self) {
-@@ -724,9 +748,12 @@ static const JsonValue* KYTY_SYSV_ABI JsonValueIndexString(const JsonValue* self
+@@ -724,9 +749,12 @@ static const JsonValue* KYTY_SYSV_ABI JsonValueIndexString(const JsonValue* self
  	PRINT_NAME();
  
  	if (self == nullptr || self->type != JsonValueTypeObject) {
@@ -17314,7 +17424,7 @@ index 183cd85..40d7f58 100644
  }
  
  static const JsonValue* KYTY_SYSV_ABI JsonValueIndexUInt(const JsonValue* self, uint64_t index) {
-@@ -739,6 +766,48 @@ static const JsonValue* KYTY_SYSV_ABI JsonValueIndexUInt(const JsonValue* self,
+@@ -739,6 +767,48 @@ static const JsonValue* KYTY_SYSV_ABI JsonValueIndexUInt(const JsonValue* self,
  	return (index < impl->size() ? (*impl)[static_cast<size_t>(index)] : JsonStaticNullValue());
  }
  
@@ -17363,7 +17473,7 @@ index 183cd85..40d7f58 100644
  static int32_t KYTY_SYSV_ABI JsonValueSerialize(JsonValue* self, JsonString* dst) {
  	PRINT_NAME();
  
-@@ -873,6 +942,7 @@ static JsonObject* KYTY_SYSV_ABI JsonObjectAssign(JsonObject* self, const JsonOb
+@@ -873,6 +943,7 @@ static JsonObject* KYTY_SYSV_ABI JsonObjectAssign(JsonObject* self, const JsonOb
  static JsonValue* KYTY_SYSV_ABI JsonObjectIndex(JsonObject* self, const JsonString* key) {
  	PRINT_NAME();
  
@@ -17371,7 +17481,7 @@ index 183cd85..40d7f58 100644
  	return JsonObjectLookup(self, *JsonStringImpl(key), true);
  }
  
-@@ -898,6 +968,8 @@ static int32_t KYTY_SYSV_ABI JsonParserParse(JsonValue* dst, const char* src, si
+@@ -898,6 +969,8 @@ static int32_t KYTY_SYSV_ABI JsonParserParse(JsonValue* dst, const char* src, si
  	JsonValue parsed {};
  	JsonValueInit(&parsed);
  	auto json = nlohmann::json::parse(src, src + size, nullptr, false);
@@ -17380,7 +17490,7 @@ index 183cd85..40d7f58 100644
  	if (json.is_discarded() || !JsonValueFromNlohmann(&parsed, json)) {
  		JsonValueClear(&parsed);
  		return JSON_ERROR_PARSE_INVALID_CHAR;
-@@ -935,6 +1007,326 @@ static int32_t KYTY_SYSV_ABI JsonValueCount(const JsonValue* self) {
+@@ -935,6 +1008,326 @@ static int32_t KYTY_SYSV_ABI JsonValueCount(const JsonValue* self) {
  	}
  }
  
@@ -17707,7 +17817,7 @@ index 183cd85..40d7f58 100644
  LIB_DEFINE(InitNet_1_Json2) {
  	LIB_FUNC("-hJRce8wn1U", LibJson2::JsonMemAllocatorCtor);
  	LIB_FUNC("WSOuge5IsCg", LibJson2::JsonInitParameter2Ctor);
-@@ -971,6 +1363,34 @@ LIB_DEFINE(InitNet_1_Json2) {
+@@ -971,6 +1364,34 @@ LIB_DEFINE(InitNet_1_Json2) {
  	LIB_FUNC("urOpESTBZmo", LibJson2::JsonObjectAssign);
  	LIB_FUNC("zTwZdI8AZ5Y", LibJson2::JsonValueGetBoolean);
  	LIB_FUNC("R7FDWtcN6f8", LibJson2::JsonValueSerialize);
@@ -18008,7 +18118,7 @@ index a0aee52..7951249 100644
  
  namespace NpAuth {
 diff --git a/src/libs/libPad.cpp b/src/libs/libPad.cpp
-index 676ecb9..4b22f02 100644
+index 676ecb9..aff4817 100644
 --- a/src/libs/libPad.cpp
 +++ b/src/libs/libPad.cpp
 @@ -7,6 +7,8 @@
@@ -18072,7 +18182,7 @@ index 676ecb9..4b22f02 100644
  static int KYTY_SYSV_ABI PadGetTriggerEffectState(int                               handle,
                                                    PadTriggerEffectStateInformation* info) {
  	PRINT_NAME();
-@@ -37,8 +84,22 @@ static int KYTY_SYSV_ABI PadGetTriggerEffectState(int
+@@ -37,8 +84,23 @@ static int KYTY_SYSV_ABI PadGetTriggerEffectState(int
  		return -2137653243; /* 0x80960005 */
  	}
  
@@ -18085,7 +18195,8 @@ index 676ecb9..4b22f02 100644
 +	info->state[1] = Bc5TriggerEffectState(g_bc5_effect[1], r2);
 +
 +	// BC5: KYTY_BC5_INPUT_TRACE=1 — every change of the answer.
-+	static const bool trace = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
++	static const bool trace_env = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
++	const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +	static int32_t    last[2] = {-1, -1};
 +	if (trace && (info->state[0] != last[0] || info->state[1] != last[1])) {
 +		std::fprintf(stderr, "input trace: trigger effect state -> L2 %d (mode %u, analog %d), R2 %d (mode %u, analog %d)\n",
@@ -18097,13 +18208,14 @@ index 676ecb9..4b22f02 100644
  
  	return 0;
  }
-@@ -57,6 +118,32 @@ static int KYTY_SYSV_ABI PadSetTriggerEffect(int handle, const void* param) {
+@@ -57,6 +119,33 @@ static int KYTY_SYSV_ABI PadSetTriggerEffect(int handle, const void* param) {
  		return -2137915391; /* 0x80920001 */
  	}
  
 +	// BC5: KYTY_BC5_INPUT_TRACE=1 — the request as the game wrote it (ScePadTriggerEffectParam:
 +	// trigger mask, then two 56-byte commands of mode + data; layout as KytyPS5 reads it).
-+	static const bool trace = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
++	static const bool trace_env = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
++	const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +	if (trace) {
 +		const auto* b = static_cast<const uint8_t*>(param);
 +		std::fprintf(stderr, "input trace: trigger effect set: handle %d mask 0x%02x; L2 mode %u data", handle, b[0],
@@ -18190,7 +18302,7 @@ index fda2623..db5e40e 100644
  	return OK;
  }
 diff --git a/src/libs/libSaveData.cpp b/src/libs/libSaveData.cpp
-index 08aa121..aec9575 100644
+index 08aa121..2944e2d 100644
 --- a/src/libs/libSaveData.cpp
 +++ b/src/libs/libSaveData.cpp
 @@ -13,13 +13,26 @@
@@ -18482,7 +18594,7 @@ index 08aa121..aec9575 100644
 -			result->infos[i].free_blocks = SAVE_DATA_BLOCKS_MAX;
 +			result->infos[i] = matches[i].info;
 +		}
-+		if (g_bc5_save_trace) {
++		if ((g_bc5_save_trace && ::Log::Bc5LoggingOn())) {
 +			std::fprintf(stderr, "save trace: search[%zu] %s user_param %u mtime %" PRId64 " blocks %" PRIu64 " free %" PRIu64 "\n",
 +			             i, matches[i].name.c_str(), matches[i].param.user_param, matches[i].param.mtime,
 +			             matches[i].info.blocks, matches[i].info.free_blocks);
@@ -18608,7 +18720,7 @@ index 08aa121..aec9575 100644
  	    std::string(SAVE_DATA_DIR) + "/" + get_title_id() + "/" + std::string(del->dir_name->data);
 -	if (Common::File::IsDirectoryExisting(dir)) {
 -		Common::File::DeleteDirectory(dir);
-+	if (g_bc5_save_trace) {
++	if ((g_bc5_save_trace && ::Log::Bc5LoggingOn())) {
 +		std::fprintf(stderr, "save trace: SaveDataDelete %s exists %d\n", dir.c_str(),
 +		             Common::File::IsDirectoryExisting(dir) ? 1 : 0);
 +	}
@@ -18617,7 +18729,7 @@ index 08aa121..aec9575 100644
 +	// deleted slots on disk, back in the list at the next start (F205).
 +	std::error_code ec;
 +	const auto      removed = std::filesystem::remove_all(dir, ec);
-+	if (g_bc5_save_trace) {
++	if ((g_bc5_save_trace && ::Log::Bc5LoggingOn())) {
 +		std::fprintf(stderr, "save trace: SaveDataDelete removed %ju entries, error %d\n",
 +		             static_cast<uintmax_t>(removed), ec.value());
  	}
@@ -19235,7 +19347,7 @@ index 0000000..5d9456f
 +
 +#endif
 diff --git a/src/loader/runtimeLinker.cpp b/src/loader/runtimeLinker.cpp
-index 343045e..8e5e33f 100644
+index 343045e..c814e2a 100644
 --- a/src/loader/runtimeLinker.cpp
 +++ b/src/loader/runtimeLinker.cpp
 @@ -1,3 +1,5 @@
@@ -19281,7 +19393,7 @@ index 343045e..8e5e33f 100644
  
 +		// BC5: which instruction touched a reserved range (KYTY_BC5_AMM_TRACE=1): the module and
 +		// offset of the faulting instruction, for faults the handler below cannot serve.
-+		if (std::getenv("KYTY_BC5_AMM_TRACE") != nullptr) {
++		if (::Log::Bc5LoggingOn() && std::getenv("KYTY_BC5_AMM_TRACE") != nullptr) {
 +			auto* rt   = Common::Singleton<Loader::RuntimeLinker>::Instance();
 +			auto* prog = rt->FindProgramByAddr(info->exception_address);
 +			std::fprintf(stderr, "amm trace: fault at 0x%016" PRIx64 " from rip 0x%016" PRIx64 " (%s +0x%" PRIx64 ")\n",
