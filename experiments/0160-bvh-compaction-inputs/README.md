@@ -201,3 +201,17 @@ zero pages above 64 KiB (kept, generic) and the skip (diagnostic). Left to find:
 the console's system programs — only writable as root (`umr -w` of the WD buffer bases to a mapped
 buffer, one per run) or by reading the console driver's initialisation, neither of which this
 experiment could do.
+- *The maintainer's own session, 2026-10-19 12:19 (both skips on, the zero pages in):* the same hang
+  5–6 minutes into the night scene, at journal t 342.6 s — GE2 faults only in the first 64 KiB (pages
+  0x0–0xf000, status 0x500631), fence timeouts on both rings, kernel ring resets, the title frozen
+  (`~/bc5-work/coredump-1219-f208.txt`, `dmesg-1219-f208.txt`, capture `play-20261019-1219`). The
+  coredump has no geometry-engine base registers (its set stops at the UTCL1 statuses); its CP
+  header dumps put the ME at a `DISPATCH_INDIRECT` (0xc0011600) inside the host's GPU-check sequence
+  (WRITE_DATA, COND_WRITE ×2, PFP_SYNC_ME, COND_EXEC) in a 3048-dword graphics buffer with no unmapped
+  drops. **So the skip of 0x909974400 only delays the fault; the engine's read of address 0 also comes
+  without the compaction**, and the first case had the CP at a DISPATCH_DIRECT, this one at a
+  DISPATCH_INDIRECT: the common factor stays the night scene's state, not one packet. The
+  dispatch-argument offsets of the title's `DISPATCH_INDIRECT`s (0x0–0x30000 from `SET_BASE` 1) match the
+  faulted range; whether the engine fetches them with the base at 0 (a `SET_BASE` the title resets to 0
+  at each buffer's start, or one the filter dropped) is the next thing to test — with the dispatch
+  journal on in the maintainer's launcher, the fault's buffer can be read.
