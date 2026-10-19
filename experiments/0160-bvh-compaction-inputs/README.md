@@ -268,3 +268,42 @@ experiment could do.
 - The audio and picture speeding up and slowing down in that session were not fence timeouts (only the
   two at the hang): the journal has three learned-window passes of 295–686 ms around t 400 s and a
   562 ms sync at t 605 s; 1,361 learned passes in ten minutes (the F203/F206 territory, not this fault).
+- *13:54, the maintainer's fifth hang (the 13:32 binary: probe with user data and descriptors, per-draw
+  journal; five minutes of play, "no improvement, a hang at the end"):* the logs are in
+  `~/bc5-data/captures/play-20261019-1354` (journal 981 MB, two timed-out buffers dumped) and the kernel
+  log. Two separate things happened:
+  1. **The engine's address-0 reads started at journal t 170.0 s and went on for two minutes while the
+     game ran.** The kernel prints ten fault lines per five seconds (its rate limit) in every five-second
+     window from t 169 to t 291 — a steady stream, not one burst — and 188,001 submissions completed
+     between t 170 and t 290. The faulting pages are 0x0–0x9000 only: the zero pages above 64 KiB hold,
+     the reads from 0 are non-fatal (zeros) and the title plays on. The first draws of a new ES user-data
+     form (a V# at 0x8378c640…, the scene streaming in) appear at t 169.5 s, half a second before the
+     first fault; two more forms at t 175.3/175.5 s. A correlation, nothing more yet.
+  2. **The hang at t 292.5 s is the usual pair:** the 3058-dword graphics buffer with the one fast-launch
+     draw (`DRAW_INDIRECT_MULTI` at 2371: count 2, stride 32, records {4,1,0,0 | floats} and
+     {1,1,0,0 | floats}; ES 0x11d0132d00, PS 0x11d1d0e500) and, on the compute ring, the per-frame BVH
+     build buffer (9398 dwords: 160 trees × {0x909939400, 0x909939700, the leaf builder 0x909936c00
+     indirect, the refit 0x909939900 indirect}) — both 2-s timeouts, both ring resets, the box alive. The
+     13:17 hang had the same pair (3038 + 4956 dwords, 93 trees). The compute buffer stalls with the
+     graphics one (its waits on the graphics ring's labels, F109), so the draw remains the suspect.
+- **The probe's diff shows nothing in the packet, the arguments or the user data that singles the hanging
+  instance out.** Its GS user data are five V#s (s[0:3] 0x1122beb4e0 stride 16, 2 records; s[4:7]
+  0x1122662b80, 0x28; s[8:11] 0x1122659f00, 0x4d; s[12:15] 0x1122be8d80, 1; s[16:19] 0x112383b000,
+  0xa8), s[20..31] never set — the same shape as the 1,233 healthy instances of this buffer kind in the
+  run (`BC5_DIRECT_FL_JOURNAL`): a record count of 2 occurs 63 times, a first-record vertex count of 4
+  284 times (1,234 draws of this kind in five minutes, 1.7 million fast-launch draws in all). The probe's
+  `s[20:23]`/`s[24:27]` lines read user-data slots the title never writes (the ES builds those descriptors
+  with its own loads, not from user SGPRs): a wrong guess, uninformative. So the hanging instance is
+  singled out by what the shaders and the engine *read*, at run time — the SGPRs of the stuck ES waves and
+  the WD/GE base registers at the moment of the reads, which only a dump on the box can give.
+- Neither watcher was armed for this session (no `faultdump`, no `bc5-gpu-hang-watch`; the devcoredump
+  expires after five minutes). Now armed in the background for the next one, for eight hours:
+  `~/bc5-work/exp0160/faultdump2.sh` runs the root hang-dump (WD/GE registers, CP headers, waves, the ring)
+  at the first new fault line — with the two-minute fault stream there is no 2-s race any more — and
+  `hangwatch-loop.sh` keeps the maintainer's `bc5-gpu-hang-watch` running (waves with SGPRs and CP
+  registers at a 0.6-s stall of the gfx ring, i.e. at the hang). `BC5_DIRECT_FL_JOURNAL` is out of both
+  launchers again (1.7 million journal lines in five minutes; its question is answered); the timeout probe
+  and the skips stay.
+- The "no improvement" of the sound and picture is not this fault: 466 learned-window passes in five
+  minutes, one of them slow (600 ms); the frame profile around t 170 s shows 100 ms frames with 50 ms of
+  host memory sync per frame (the F203/F206 territory), which nothing in this experiment changes.
