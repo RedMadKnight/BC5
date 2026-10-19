@@ -90,7 +90,7 @@ index c0b4bbe..1870594 100644
  		t->started   = true;
  		t->func(t->arg);
 diff --git a/src/emulator.cpp b/src/emulator.cpp
-index 1d2b7e1..f3ce6ab 100644
+index 1d2b7e1..84c37ac 100644
 --- a/src/emulator.cpp
 +++ b/src/emulator.cpp
 @@ -1,3 +1,4 @@
@@ -98,7 +98,15 @@ index 1d2b7e1..f3ce6ab 100644
  #include "emulator.h"
  
  #include "common/abi.h"
-@@ -174,6 +175,10 @@ static void Execute(const std::filesystem::path& game_patch) {
+@@ -12,6 +13,7 @@
+ #include "common/subsystems.h"
+ #include "common/systemInfo.h"
+ #include "common/threads.h"
++#include "graphics/presentation/hostMenu.h"
+ #include "graphics/presentation/window.h"
+ #include "kernel/fileSystem.h"
+ #include "kernel/memory.h"
+@@ -174,6 +176,10 @@ static void Execute(const std::filesystem::path& game_patch) {
  	auto           patch_path = game_patch;
  	Common::Thread guest_thread(
  	    [](void* param) {
@@ -109,6 +117,44 @@ index 1d2b7e1..f3ce6ab 100644
  		    auto* rt = Common::Singleton<Loader::RuntimeLinker>::Instance();
  		    rt->Execute(*static_cast<const std::filesystem::path*>(param));
  	    },
+@@ -198,7 +204,25 @@ static void PrepareLleSysmoduleDirs() {
+ 	     Common::PathToString(user_dir / "sys_modules").c_str());
+ }
+ 
++// BC5 (ADR 0011): --menu. The subsystems come up as for a game (the graphics init opens the
++// window and starts the present thread, which draws the overlay over a blank frame), nothing is
++// mounted or loaded, and the window loop runs with the menu bar and the launcher page. Its
++// actions end the process with an exit code the launcher script understands (hostMenu.cpp).
++static void RunMenu(const RunOptions& options) {
++	Init(options.config, {});
++	PrintSystemInfo();
++	int ok = atexit(KytyClose);
++	EXIT_NOT_IMPLEMENTED(ok != 0);
++	Libs::Graphics::HostMenuSetLauncherMode();
++	Libs::Graphics::WindowRun();
++	std::quick_exit(0);
++}
++
+ void Run(const RunOptions& options) {
++	if (options.app0_dir.empty() && options.menu_only) {
++		RunMenu(options);
++		return;
++	}
+ 	if (options.app0_dir.empty()) {
+ 		EXIT("app0 directory is required\n");
+ 	}
+diff --git a/src/emulator.h b/src/emulator.h
+index 9ff761c..faba099 100644
+--- a/src/emulator.h
++++ b/src/emulator.h
+@@ -14,6 +14,7 @@ struct RunOptions {
+ 	std::filesystem::path elf;
+ 	std::filesystem::path game_patch;
+ 	std::filesystem::path install_pkg;     // KytyPlus: --install-pkg <pkg>
++	bool                  menu_only = false; // BC5 (ADR 0011): --menu, the window with the host menu and no game
+ };
+ 
+ void Run(const RunOptions& options);
 diff --git a/src/graphics/guest_gpu/graphicsRun.cpp b/src/graphics/guest_gpu/graphicsRun.cpp
 index 2918b0d..59ae0b6 100644
 --- a/src/graphics/guest_gpu/graphicsRun.cpp
@@ -491,17 +537,575 @@ index a656b67..94a249c 100644
  
  } // namespace Libs::Graphics
  
+diff --git a/src/graphics/presentation/hostMenu.cpp b/src/graphics/presentation/hostMenu.cpp
+new file mode 100644
+index 0000000..710b767
+--- /dev/null
++++ b/src/graphics/presentation/hostMenu.cpp
+@@ -0,0 +1,518 @@
++#include "graphics/presentation/hostMenu.h"
++
++#include "SDL.h"
++#include "graphics/presentation/settingsOverlay.h"
++#include "graphics/presentation/window.h"
++#include "imgui.h"
++#include "kytyGitVersion.h"
++
++#include <algorithm>
++#include <atomic>
++#include <cctype>
++#include <cstdio>
++#include <cstdlib>
++#include <filesystem>
++#include <fstream>
++#include <string>
++#include <system_error>
++#include <unistd.h>
++#include <vector>
++
++namespace Libs::Graphics {
++
++namespace {
++
++constexpr int EXIT_CODE_RESTART = 75; // experiment 0047: the launcher starts the same game again
++constexpr int EXIT_CODE_OPEN    = 76; // ADR 0011: the launcher opens the path in choice.txt
++constexpr int EXIT_CODE_CLOSE   = 77; // ADR 0011: the launcher comes back with --menu
++constexpr size_t RECENT_MAX     = 8;
++
++std::atomic<bool> g_visible {false};
++std::atomic<bool> g_launcher {false};
++
++const char* MenuDir() {
++	static const char* dir = std::getenv("KYTY_BC5_MENU_DIR");
++	return (dir != nullptr && dir[0] != 0) ? dir : nullptr;
++}
++
++std::filesystem::path MenuFile(const char* name) {
++	return std::filesystem::path(MenuDir()) / name;
++}
++
++std::vector<std::string> ReadLines(const std::filesystem::path& path) {
++	std::vector<std::string> lines;
++	std::ifstream            in(path);
++	std::string              line;
++	while (std::getline(in, line)) {
++		if (!line.empty()) {
++			lines.push_back(line);
++		}
++	}
++	return lines;
++}
++
++bool WriteLines(const std::filesystem::path& path, const std::vector<std::string>& lines) {
++	std::error_code ec;
++	std::filesystem::create_directories(path.parent_path(), ec);
++	std::ofstream out(path, std::ios::trunc);
++	for (const auto& l: lines) {
++		out << l << '\n';
++	}
++	return static_cast<bool>(out);
++}
++
++std::string Lower(std::string s) {
++	for (auto& c: s) {
++		c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
++	}
++	return s;
++}
++
++enum class Kind {
++	Image,
++	Package,
++};
++
++const char* KindExt(Kind k) {
++	return k == Kind::Image ? ".ffpfsc" : ".pkg";
++}
++
++const char* KindLastDirFile(Kind k) {
++	return k == Kind::Image ? "lastdir-image.txt" : "lastdir-package.txt";
++}
++
++[[noreturn]] void ExitWith(int code) {
++	std::fflush(nullptr);
++	::sync();
++	std::_Exit(code);
++}
++
++struct Entry {
++	std::string name;
++	bool        dir;
++};
++
++struct Browser {
++	bool                  open = false;
++	bool                  want_popup = false;
++	Kind                  kind = Kind::Image;
++	std::filesystem::path dir;
++	std::vector<Entry>    entries;
++	int                   selected = -1;
++	bool                  focus_first = false; // after a folder change the first entry takes the nav focus
++	std::string           error;
++	char                  path_edit[1024] = {};
++
++	void Start(Kind k) {
++		kind     = k;
++		selected = -1;
++		error.clear();
++		dir.clear();
++		if (MenuDir() != nullptr) {
++			const auto last = ReadLines(MenuFile(KindLastDirFile(k)));
++			if (!last.empty() && std::filesystem::is_directory(last.front())) {
++				dir = last.front();
++			}
++		}
++		if (dir.empty()) {
++			const char* home = std::getenv("HOME");
++			const auto  data = std::filesystem::path(home != nullptr ? home : "/") / "bc5-data";
++			dir              = std::filesystem::is_directory(data) ? data : std::filesystem::path(home != nullptr ? home : "/");
++		}
++		Refresh();
++		open       = true;
++		want_popup = true;
++	}
++
++	void Refresh() {
++		entries.clear();
++		selected = -1;
++		error.clear();
++		std::error_code ec;
++		const std::string ext = KindExt(kind);
++		for (const auto& e: std::filesystem::directory_iterator(dir, std::filesystem::directory_options::skip_permission_denied, ec)) {
++			const auto name = e.path().filename().string();
++			if (name.empty() || name[0] == '.') {
++				continue;
++			}
++			std::error_code tec;
++			if (e.is_directory(tec)) {
++				entries.push_back({name, true});
++			} else if (e.is_regular_file(tec)) {
++				const auto lname = Lower(name);
++				if (lname.size() > ext.size() && lname.compare(lname.size() - ext.size(), ext.size(), ext) == 0) {
++					entries.push_back({name, false});
++				}
++			}
++		}
++		if (ec) {
++			error = "cannot read " + dir.string() + ": " + ec.message();
++		}
++		focus_first = true;
++		std::sort(entries.begin(), entries.end(), [](const Entry& a, const Entry& b) {
++			if (a.dir != b.dir) return a.dir;
++			return Lower(a.name) < Lower(b.name);
++		});
++		std::snprintf(path_edit, sizeof(path_edit), "%s", dir.string().c_str());
++	}
++
++	void Enter(const std::filesystem::path& p) {
++		dir = p.lexically_normal();
++		if (MenuDir() != nullptr) {
++			WriteLines(MenuFile(KindLastDirFile(kind)), {dir.string()});
++		}
++		Refresh();
++	}
++};
++
++struct State {
++	Browser                  browser;
++	std::string              status;
++	bool                     want_about        = false;
++	bool                     want_restart      = false;
++	bool                     restart_armed     = false;
++	std::vector<std::string> recent;
++	bool                     recent_loaded     = false;
++};
++
++State& GetState() {
++	static State s;
++	return s;
++}
++
++void LoadRecent(State& s) {
++	if (s.recent_loaded) {
++		return;
++	}
++	s.recent_loaded = true;
++	if (MenuDir() != nullptr) {
++		s.recent = ReadLines(MenuFile("recent.txt"));
++	}
++}
++
++void OpenPath(State& s, const std::string& path) {
++	if (MenuDir() == nullptr) {
++		s.status = "No launcher: start the emulator through play-any.sh (KYTY_BC5_MENU_DIR is not set), "
++		           "or run it with --game <mounted directory>.";
++		return;
++	}
++	auto recent = ReadLines(MenuFile("recent.txt"));
++	recent.erase(std::remove(recent.begin(), recent.end(), path), recent.end());
++	recent.insert(recent.begin(), path);
++	if (recent.size() > RECENT_MAX) {
++		recent.resize(RECENT_MAX);
++	}
++	WriteLines(MenuFile("recent.txt"), recent);
++	if (!WriteLines(MenuFile("choice.txt"), {path})) {
++		s.status = "Cannot write " + MenuFile("choice.txt").string();
++		return;
++	}
++	std::fprintf(stderr, "host menu: open %s (exit %d)\n", path.c_str(), EXIT_CODE_OPEN);
++	ExitWith(EXIT_CODE_OPEN);
++}
++
++void CloseSession() {
++	std::fprintf(stderr, "host menu: close session (exit %d)\n", EXIT_CODE_CLOSE);
++	ExitWith(EXIT_CODE_CLOSE);
++}
++
++void Quit() {
++	// The window loop ends the process as it does when the window is closed.
++	SDL_Event event {};
++	event.type = SDL_QUIT;
++	SDL_PushEvent(&event);
++}
++
++void DrawBrowser(State& s, float width, float height, float scale) {
++	auto& b = s.browser;
++	if (b.want_popup) {
++		ImGui::OpenPopup("Open##browser");
++		b.want_popup = false;
++	}
++	if (!b.open) {
++		return;
++	}
++	const ImVec2 size {std::min(width * 0.85f, 960.0f * scale), std::min(height * 0.85f, 640.0f * scale)};
++	ImGui::SetNextWindowSize(size);
++	ImGui::SetNextWindowPos({(width - size.x) * 0.5f, (height - size.y) * 0.5f});
++	if (!ImGui::BeginPopupModal("Open##browser", &b.open, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
++	                                                            ImGuiWindowFlags_NoSavedSettings)) {
++		return;
++	}
++	ImGui::TextWrapped("%s", b.kind == Kind::Image ? "A game image (.ffpfsc): the launcher mounts it with bc5-mount and starts the game."
++	                                                : "A PS5 package (.pkg): the launcher mounts it with bc5-mount at ~/bc5-data/mnt/pkg-play and starts the game.");
++	ImGui::BeginDisabled(!b.dir.has_parent_path() || b.dir == b.dir.root_path());
++	if (ImGui::Button("Up")) {
++		b.Enter(b.dir.parent_path());
++	}
++	ImGui::EndDisabled();
++	ImGui::SameLine();
++	ImGui::SetNextItemWidth(-1.0f);
++	if (ImGui::InputText("##path", b.path_edit, sizeof(b.path_edit), ImGuiInputTextFlags_EnterReturnsTrue)) {
++		const std::filesystem::path typed(b.path_edit);
++		if (std::filesystem::is_directory(typed)) {
++			b.Enter(typed);
++		} else if (std::filesystem::is_regular_file(typed)) {
++			OpenPath(s, typed.string());
++		} else {
++			b.error = "not found: " + typed.string();
++		}
++	}
++	if (!b.error.empty()) {
++		ImGui::TextColored({1.0f, 0.5f, 0.4f, 1.0f}, "%s", b.error.c_str());
++	}
++	// NavFlattened: the arrows and the d-pad go straight to the entries, no Enter on the list first.
++	ImGui::BeginChild("entries", {0.0f, -ImGui::GetFrameHeightWithSpacing() * 2.2f},
++	                  ImGuiChildFlags_Borders | ImGuiChildFlags_NavFlattened);
++	if (b.entries.empty()) {
++		ImGui::TextDisabled("(no folders and no %s files here)", KindExt(b.kind));
++	}
++	for (int i = 0; i < static_cast<int>(b.entries.size()); i++) {
++		const auto& e     = b.entries[i];
++		const auto  label = (e.dir ? "[" + e.name + "]" : e.name) + "##" + std::to_string(i);
++		if (b.focus_first) {
++			ImGui::SetKeyboardFocusHere();
++			b.focus_first = false;
++		}
++		if (ImGui::Selectable(label.c_str(), b.selected == i, ImGuiSelectableFlags_AllowDoubleClick)) {
++			if (e.dir) {
++				b.Enter(b.dir / e.name);
++				ImGui::EndChild();
++				ImGui::EndPopup();
++				return;
++			}
++			if (b.selected == i && (ImGui::IsMouseDoubleClicked(0) || ImGui::IsKeyPressed(ImGuiKey_Enter) ||
++			                        ImGui::IsKeyPressed(ImGuiKey_GamepadFaceDown))) {
++				OpenPath(s, (b.dir / e.name).string());
++			}
++			b.selected = i;
++		}
++	}
++	ImGui::EndChild();
++	const bool has_file = b.selected >= 0 && b.selected < static_cast<int>(b.entries.size()) && !b.entries[b.selected].dir;
++	if (has_file) {
++		ImGui::TextUnformatted(b.entries[b.selected].name.c_str());
++	} else {
++		ImGui::TextDisabled("Pick a %s file (Cross or Enter on a folder opens it).", KindExt(b.kind));
++	}
++	ImGui::BeginDisabled(!has_file);
++	if (ImGui::Button("Open", {120.0f * scale, 0.0f})) {
++		OpenPath(s, (b.dir / b.entries[b.selected].name).string());
++	}
++	ImGui::EndDisabled();
++	ImGui::SameLine();
++	if (ImGui::Button("Cancel", {120.0f * scale, 0.0f})) {
++		b.open = false;
++		ImGui::CloseCurrentPopup();
++	}
++	if (!s.status.empty()) {
++		ImGui::SameLine();
++		ImGui::TextColored({1.0f, 0.8f, 0.2f, 1.0f}, "%s", s.status.c_str());
++	}
++	ImGui::EndPopup();
++}
++
++void DrawRestartPopup(State& s, float scale) {
++	if (s.want_restart) {
++		ImGui::OpenPopup("Restart game##restart");
++		s.want_restart  = false;
++		s.restart_armed = false;
++	}
++	if (ImGui::BeginPopupModal("Restart game##restart", nullptr,
++	                           ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings)) {
++		ImGui::TextWrapped("The emulator stops and the launcher starts the game again from the beginning. "
++		                   "Progress since the last save is lost.");
++		ImGui::Checkbox("I have saved", &s.restart_armed);
++		ImGui::BeginDisabled(!s.restart_armed);
++		if (ImGui::Button("Restart", {120.0f * scale, 0.0f})) {
++			ExitWith(EXIT_CODE_RESTART);
++		}
++		ImGui::EndDisabled();
++		ImGui::SameLine();
++		if (ImGui::Button("Cancel", {120.0f * scale, 0.0f})) {
++			ImGui::CloseCurrentPopup();
++		}
++		ImGui::EndPopup();
++	}
++}
++
++void DrawAboutPopup(State& s, float scale) {
++	if (s.want_about) {
++		ImGui::OpenPopup("About##about");
++		s.want_about = false;
++	}
++	if (ImGui::BeginPopupModal("About##about", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings)) {
++		ImGui::Text("BC5 - PS5 titles on the AMD BC-250"); // ASCII: ImGui's default font has no dash
++		ImGui::Separator();
++		ImGui::Text("Host: KytyPlus %s (GPL-2.0) with the BC5 patch", KYTY_GIT_VERSION);
++		ImGui::Text("GPU path: the title's AGC/PM4 streams and RDNA shaders go to amdgpu as they are.");
++		ImGui::Text("ImGui %s, SDL %d.%d.%d", IMGUI_VERSION, SDL_MAJOR_VERSION, SDL_MINOR_VERSION, SDL_PATCHLEVEL);
++		ImGui::Separator();
++		ImGui::TextUnformatted("F1 or the pad's PS button: menu bar.  F2: settings.  F11: fullscreen.  Space: pause.");
++		ImGui::TextUnformatted("Pad in the menus: d-pad or left stick, Cross = choose, Circle = back, Square = the menu bar.");
++		if (ImGui::Button("Close", {120.0f * scale, 0.0f})) {
++			ImGui::CloseCurrentPopup();
++		}
++		ImGui::EndPopup();
++	}
++}
++
++void DrawLauncherPage(State& s, float width, float height, float scale) {
++	const float  bar  = ImGui::GetFrameHeight();
++	const ImVec2 size {std::min(width * 0.7f, 720.0f * scale), std::min((height - bar) * 0.7f, 480.0f * scale)};
++	ImGui::SetNextWindowPos({(width - size.x) * 0.5f, bar + (height - bar - size.y) * 0.5f});
++	ImGui::SetNextWindowSize(size);
++	ImGui::SetNextWindowBgAlpha(0.9f);
++	ImGui::Begin("BC5##launcher", nullptr,
++	             ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove |
++	                 ImGuiWindowFlags_NoSavedSettings);
++	ImGui::TextUnformatted("No game is open.");
++	ImGui::TextWrapped("Open a game image or a PS5 package: the launcher mounts it with bc5-mount, keeps the title's "
++	                   "settings, and starts the game in this window. Close session brings this page back.");
++	ImGui::Separator();
++	if (ImGui::Button("Open game image...", {-1.0f, 0.0f})) {
++		s.browser.Start(Kind::Image);
++	}
++	if (ImGui::Button("Open package (.pkg)...", {-1.0f, 0.0f})) {
++		s.browser.Start(Kind::Package);
++	}
++	ImGui::Separator();
++	ImGui::TextDisabled("Recent");
++	if (s.recent.empty()) {
++		ImGui::TextDisabled("(nothing yet)");
++	}
++	ImGui::BeginChild("recent", {0.0f, -ImGui::GetFrameHeightWithSpacing() * 1.4f}, ImGuiChildFlags_NavFlattened);
++	for (size_t i = 0; i < s.recent.size(); i++) {
++		const auto label = s.recent[i] + "##recent" + std::to_string(i);
++		if (ImGui::Selectable(label.c_str(), false)) {
++			OpenPath(s, s.recent[i]);
++		}
++	}
++	ImGui::EndChild();
++	if (!s.status.empty()) {
++		ImGui::TextColored({1.0f, 0.8f, 0.2f, 1.0f}, "%s", s.status.c_str());
++	} else {
++		ImGui::TextDisabled("Pad: d-pad or left stick, Cross = choose, Square = the menu bar. Keyboard: F1 hides the menu.");
++	}
++	ImGui::End();
++}
++
++} // namespace
++
++void HostMenuSetLauncherMode() {
++	g_launcher.store(true, std::memory_order_release);
++	g_visible.store(true, std::memory_order_release);
++}
++
++bool HostMenuLauncherMode() noexcept {
++	return g_launcher.load(std::memory_order_acquire);
++}
++
++void HostMenuToggle() {
++	if (g_launcher.load(std::memory_order_acquire)) {
++		return; // the launcher page needs its menu
++	}
++	const bool now = !g_visible.load(std::memory_order_acquire);
++	g_visible.store(now, std::memory_order_release);
++	SettingsOverlayHostUiChanged();
++}
++
++bool HostMenuVisible() noexcept {
++	return g_visible.load(std::memory_order_acquire);
++}
++
++void HostMenuDraw(float width, float height, float scale) {
++	if (!g_visible.load(std::memory_order_acquire)) {
++		return;
++	}
++	auto&      s        = GetState();
++	const bool launcher = g_launcher.load(std::memory_order_acquire);
++	const bool has_dir  = MenuDir() != nullptr;
++	LoadRecent(s);
++
++	if (ImGui::BeginMainMenuBar()) {
++		if (ImGui::BeginMenu("File")) {
++			if (ImGui::MenuItem("Open game image...", nullptr, false, has_dir)) {
++				s.browser.Start(Kind::Image);
++			}
++			if (ImGui::MenuItem("Open package (.pkg)...", nullptr, false, has_dir)) {
++				s.browser.Start(Kind::Package);
++			}
++			if (ImGui::BeginMenu("Recent", has_dir && !s.recent.empty())) {
++				for (size_t i = 0; i < s.recent.size(); i++) {
++					const auto label = s.recent[i] + "##r" + std::to_string(i);
++					if (ImGui::MenuItem(label.c_str())) {
++						OpenPath(s, s.recent[i]);
++					}
++				}
++				ImGui::Separator();
++				if (ImGui::MenuItem("Clear list")) {
++					s.recent.clear();
++					WriteLines(MenuFile("recent.txt"), {});
++				}
++				ImGui::EndMenu();
++			}
++			if (!has_dir && ImGui::IsItemHovered(ImGuiHoveredFlags_AllowWhenDisabled)) {
++				ImGui::SetTooltip("Start the emulator through play-any.sh to open games from here.");
++			}
++			ImGui::Separator();
++			if (ImGui::MenuItem("Close session", nullptr, false, !launcher)) {
++				CloseSession();
++			}
++			if (ImGui::MenuItem("Quit")) {
++				Quit();
++			}
++			ImGui::EndMenu();
++		}
++		if (ImGui::BeginMenu("Emulation")) {
++			const bool paused = WindowIsPaused();
++			if (ImGui::MenuItem(paused ? "Resume" : "Pause", "Space", false, !launcher)) {
++				WindowSetPaused(!paused);
++			}
++			if (ImGui::MenuItem("Restart", nullptr, false, !launcher)) {
++				s.want_restart = true;
++			}
++			ImGui::Separator();
++			if (ImGui::MenuItem("Settings...", "F2")) {
++				SettingsOverlayOpen();
++			}
++			if (ImGui::MenuItem("Fullscreen", "F11", WindowIsFullscreen())) {
++				WindowSetFullscreen(!WindowIsFullscreen());
++			}
++			ImGui::EndMenu();
++		}
++		if (ImGui::BeginMenu("Help")) {
++			if (ImGui::MenuItem("About")) {
++				s.want_about = true;
++			}
++			ImGui::EndMenu();
++		}
++		if (!launcher) {
++			const char* hint = "F1 / PS: hide menu";
++			ImGui::SameLine(ImGui::GetWindowWidth() - ImGui::CalcTextSize(hint).x - ImGui::GetStyle().ItemSpacing.x * 4.0f);
++			ImGui::TextDisabled("%s", hint);
++		}
++		ImGui::EndMainMenuBar();
++	}
++
++	if (launcher) {
++		DrawLauncherPage(s, width, height, scale);
++	} else if (!s.status.empty() && !s.browser.open) {
++		ImGui::SetNextWindowPos({8.0f, ImGui::GetFrameHeight() + 6.0f});
++		ImGui::SetNextWindowBgAlpha(0.8f);
++		ImGui::Begin("##status", nullptr,
++		             ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoSavedSettings |
++		                 ImGuiWindowFlags_NoFocusOnAppearing);
++		ImGui::TextColored({1.0f, 0.8f, 0.2f, 1.0f}, "%s", s.status.c_str());
++		ImGui::SameLine();
++		if (ImGui::SmallButton("Dismiss")) {
++			s.status.clear();
++		}
++		ImGui::End();
++	}
++	DrawBrowser(s, width, height, scale);
++	DrawRestartPopup(s, scale);
++	DrawAboutPopup(s, scale);
++}
++
++} // namespace Libs::Graphics
+diff --git a/src/graphics/presentation/hostMenu.h b/src/graphics/presentation/hostMenu.h
+new file mode 100644
+index 0000000..7b6926c
+--- /dev/null
++++ b/src/graphics/presentation/hostMenu.h
+@@ -0,0 +1,27 @@
++#ifndef KYTY_GRAPHICS_PRESENTATION_HOST_MENU_H_
++#define KYTY_GRAPHICS_PRESENTATION_HOST_MENU_H_
++
++// BC5 (ADR 0011): the menu bar at the top of the emulator window — File (Open game image...,
++// Open package (.pkg)..., Recent, Close session, Quit), Emulation (Pause/Resume, Restart,
++// Settings..., Fullscreen), Help (About) — and the launcher page shown when the emulator runs
++// without a game (--menu). Drawn with ImGui in the settings overlay's pass; F1 or the pad's Guide
++// (PS) button shows and hides it during play. The host never mounts anything: opening a path
++// writes it to $KYTY_BC5_MENU_DIR/choice.txt and ends the process with exit code 76, closing the
++// session ends it with 77, like the F2 menu's "Restart game" does with 75; the launcher script
++// (play-any.sh on the dev box) mounts and starts the emulator again.
++
++namespace Libs::Graphics {
++
++// No game is loaded: the menu bar stays visible and the launcher page is drawn.
++void HostMenuSetLauncherMode();
++bool HostMenuLauncherMode() noexcept;
++
++void HostMenuToggle();
++bool HostMenuVisible() noexcept;
++
++// Presenter thread, inside the settings overlay's ImGui frame. scale: the overlay's font scale.
++void HostMenuDraw(float width, float height, float scale);
++
++} // namespace Libs::Graphics
++
++#endif // KYTY_GRAPHICS_PRESENTATION_HOST_MENU_H_
 diff --git a/src/graphics/presentation/settingsOverlay.cpp b/src/graphics/presentation/settingsOverlay.cpp
 new file mode 100644
-index 0000000..1aac007
+index 0000000..ee3fecc
 --- /dev/null
 +++ b/src/graphics/presentation/settingsOverlay.cpp
-@@ -0,0 +1,830 @@
+@@ -0,0 +1,878 @@
 +#include "graphics/presentation/settingsOverlay.h"
 +
 +#include "SDL.h"
 +#include "common/assert.h"
 +#include "graphics/host_gpu/graphicContext.h"
++#include "graphics/presentation/hostMenu.h"
 +#include "graphics/presentation/window/hostInput.h"
 +#include "graphics/presentation/window.h"
 +#include "imgui.h"
@@ -540,6 +1144,7 @@ index 0000000..1aac007
 +	MouseWheel,
 +	PadButton,
 +	PadAxis,
++	Text, // BC5 (ADR 0011): typed characters, for the file browser's path box
 +};
 +
 +struct InputEvent {
@@ -547,6 +1152,7 @@ index 0000000..1aac007
 +	int       id;
 +	float     x;
 +	float     y;
++	char      text[32] = {};
 +};
 +
 +// KYTY_BC5_SETTINGS_OPEN=1 opens the overlay at start (screenshots, a box without a keyboard).
@@ -754,23 +1360,33 @@ index 0000000..1aac007
 +
 +// --- window-thread side -----------------------------------------------------------------------
 +
-+void SettingsOverlayToggle() {
-+	const bool now_active = !g_active.load(std::memory_order_acquire);
-+	g_active.store(now_active, std::memory_order_release);
++void SettingsOverlayHostUiChanged() {
 +	g_capture_control.store(-1);
 +	{
 +		std::scoped_lock lock(g_mutex);
 +		g_events.clear();
 +		g_reset_input = true;
 +	}
-+	if (now_active) {
++	if (SettingsOverlayActive()) {
 +		HostInputReleaseAll();
 +	}
 +	Bump();
 +}
 +
++void SettingsOverlayToggle() {
++	const bool now_active = !g_active.load(std::memory_order_acquire);
++	g_active.store(now_active, std::memory_order_release);
++	SettingsOverlayHostUiChanged();
++}
++
++void SettingsOverlayOpen() {
++	if (!g_active.load(std::memory_order_acquire)) {
++		SettingsOverlayToggle();
++	}
++}
++
 +bool SettingsOverlayActive() noexcept {
-+	return g_active.load(std::memory_order_acquire);
++	return g_active.load(std::memory_order_acquire) || HostMenuVisible();
 +}
 +
 +uint64_t SettingsOverlayRevision() noexcept {
@@ -778,7 +1394,17 @@ index 0000000..1aac007
 +}
 +
 +bool ProcessSettingsInput(const SDL_Event& event) {
-+	if (!g_active.load(std::memory_order_acquire)) {
++	// BC5 (ADR 0011): the pad's Guide (PS) button shows and hides the menu bar; a PS5 title never
++	// sees that button (the console keeps it for its own menu), so neither its press nor its
++	// release goes on to the game.
++	if ((event.type == SDL_CONTROLLERBUTTONDOWN || event.type == SDL_CONTROLLERBUTTONUP) &&
++	    event.cbutton.button == SDL_CONTROLLER_BUTTON_GUIDE) {
++		if (event.type == SDL_CONTROLLERBUTTONDOWN) {
++			HostMenuToggle();
++		}
++		return true;
++	}
++	if (!SettingsOverlayActive()) {
 +		return false;
 +	}
 +	const bool capturing = g_capture_control.load() >= 0;
@@ -791,6 +1417,14 @@ index 0000000..1aac007
 +				SettingsOverlayToggle();
 +				return true;
 +			}
++			if (down && !event.key.repeat && key == SDLK_F1) {
++				HostMenuToggle();
++				return true;
++			}
++			if (down && !event.key.repeat && key == SDLK_F11) {
++				WindowSetFullscreen(!WindowIsFullscreen());
++				return true;
++			}
 +			if (capturing) {
 +				if (down && key == SDLK_ESCAPE) {
 +					g_capture_control.store(-1);
@@ -801,7 +1435,11 @@ index 0000000..1aac007
 +				return true;
 +			}
 +			if (down && !event.key.repeat && key == SDLK_ESCAPE) {
-+				SettingsOverlayToggle();
++				if (g_active.load(std::memory_order_acquire)) {
++					SettingsOverlayToggle();
++				} else {
++					HostMenuToggle();
++				}
 +				return true;
 +			}
 +			const ImGuiKey imgui_key = KeyToImGui(key);
@@ -811,7 +1449,13 @@ index 0000000..1aac007
 +			}
 +			return true;
 +		}
-+		case SDL_TEXTINPUT:
++		case SDL_TEXTINPUT: {
++			InputEvent text {InputKind::Text, 0, 0.0f, 0.0f};
++			std::snprintf(text.text, sizeof(text.text), "%s", event.text.text);
++			QueueInput(text);
++			Bump();
++			return true;
++		}
 +		case SDL_TEXTEDITING: return true;
 +		case SDL_MOUSEMOTION:
 +			QueueInput({InputKind::MousePosition, 0, static_cast<float>(event.motion.x),
@@ -968,6 +1612,7 @@ index 0000000..1aac007
 +					break;
 +				}
 +				case InputKind::MouseWheel: io.AddMouseWheelEvent(event.x, event.y); break;
++				case InputKind::Text: io.AddInputCharactersUTF8(event.text); break;
 +				case InputKind::PadButton: {
 +					const ImGuiKey key = PadButtonToImGui(event.id);
 +					if (key != ImGuiKey_None) {
@@ -1010,6 +1655,10 @@ index 0000000..1aac007
 +	void Draw(vk::Extent2D extent) {
 +		const float scale = std::clamp(static_cast<float>(extent.height) / 720.0f, 1.0f, 3.0f);
 +		ImGui::GetIO().FontGlobalScale = scale;
++		HostMenuDraw(static_cast<float>(extent.width), static_cast<float>(extent.height), scale); // ADR 0011
++		if (!g_active.load(std::memory_order_acquire)) {
++			return;
++		}
 +		const ImVec2 size {std::min(static_cast<float>(extent.width) * 0.9f, 760.0f * scale),
 +		                   std::min(static_cast<float>(extent.height) * 0.92f, 640.0f * scale)};
 +		ImGui::SetNextWindowPos({(static_cast<float>(extent.width) - size.x) * 0.5f,
@@ -1234,19 +1883,21 @@ index 0000000..1aac007
 +	}
 +
 +	bool PrepareFrame(vk::Extent2D frame_extent, vk::Format format, uint32_t image_count) {
-+		if (!g_active.load(std::memory_order_acquire)) {
++		if (!SettingsOverlayActive()) {
 +			was_active = false;
 +			return false;
 +		}
 +		EnsureVulkan(format, image_count);
-+		if (!was_active) {
-+			was_active = true;
++		// The settings window loads the live configuration when it opens (the menu bar alone does not).
++		const bool settings_open = g_active.load(std::memory_order_acquire);
++		if (settings_open && !was_active) {
 +			LoadDraft();
 +			auto& io = ImGui::GetIO();
 +			io.ClearEventsQueue();
 +			io.ClearInputKeys();
 +			io.ClearInputMouse();
 +		}
++		was_active = settings_open;
 +		DrainInput();
 +		TakeCapture();
 +
@@ -1329,10 +1980,10 @@ index 0000000..1aac007
 +} // namespace Libs::Graphics
 diff --git a/src/graphics/presentation/settingsOverlay.h b/src/graphics/presentation/settingsOverlay.h
 new file mode 100644
-index 0000000..deb84e4
+index 0000000..c245d62
 --- /dev/null
 +++ b/src/graphics/presentation/settingsOverlay.h
-@@ -0,0 +1,49 @@
+@@ -0,0 +1,55 @@
 +#ifndef KYTY_GRAPHICS_PRESENTATION_SETTINGS_OVERLAY_H_
 +#define KYTY_GRAPHICS_PRESENTATION_SETTINGS_OVERLAY_H_
 +
@@ -1357,7 +2008,13 @@ index 0000000..deb84e4
 +
 +// Window-thread side.
 +void SettingsOverlayToggle();
++// BC5 (ADR 0011): opens the settings window if it is closed (the menu bar's Settings...).
++void SettingsOverlayOpen();
++// True while the host's UI takes the window's input and is drawn: the settings window, or the
++// menu bar (hostMenu.h).
 +bool SettingsOverlayActive() noexcept;
++// The menu bar was shown or hidden: drop queued input, release the game's keys, redraw.
++void SettingsOverlayHostUiChanged();
 +// A counter that changes whenever the overlay opens, closes or wants a redraw.
 +uint64_t SettingsOverlayRevision() noexcept;
 +// Takes an SDL event for the overlay; true when the event was consumed (it must not reach the game).
@@ -1749,10 +2406,10 @@ index 58f16c6..fbce081 100644
  KYTY_SYSV_ABI int VideoOutGetVblankStatus(int handle, VideoOutVblankStatus* status);
  KYTY_SYSV_ABI int VideoOutGetEventId(const LibKernel::EventQueue::KernelEvent* ev);
 diff --git a/src/graphics/presentation/window.h b/src/graphics/presentation/window.h
-index f70995a..1ba5363 100644
+index f70995a..8bc9175 100644
 --- a/src/graphics/presentation/window.h
 +++ b/src/graphics/presentation/window.h
-@@ -11,6 +11,10 @@ class Presenter;
+@@ -11,6 +11,13 @@ class Presenter;
  [[nodiscard]] Presenter& WindowInit(uint32_t width, uint32_t height);
  void                     WindowRun();
  void                     WindowShutdown();
@@ -1760,6 +2417,9 @@ index f70995a..1ba5363 100644
 +// game runs (the F2 menu, F11, Fullscreen= in the input configuration).
 +void WindowSetFullscreen(bool on);
 +bool WindowIsFullscreen();
++// BC5 (ADR 0011): the window loop's pause (Space) from the menu bar, any thread.
++void WindowSetPaused(bool on);
++bool WindowIsPaused();
  
  } // namespace Libs::Graphics
  
@@ -3054,1317 +3714,52 @@ index 845bfe3..170b24b 100644
  		{
  			const auto present_end = std::chrono::steady_clock::now();
 diff --git a/src/graphics/presentation/window/window.cpp b/src/graphics/presentation/window/window.cpp
-index c729a98..db13022 100644
+index c729a98..0875f1e 100644
 --- a/src/graphics/presentation/window/window.cpp
 +++ b/src/graphics/presentation/window/window.cpp
-@@ -1,1068 +1,1190 @@
--#include "graphics/presentation/window.h"
--
--#include "SDL.h"
--#include "SDL_error.h"
--#include "SDL_events.h"
--#include "SDL_gamecontroller.h"
--#include "SDL_hints.h"
--#include "SDL_joystick.h"
--#include "SDL_keyboard.h"
--#include "SDL_keycode.h"
--#include "SDL_mouse.h"
--#include "SDL_pixels.h"
--#include "SDL_rwops.h"
--#include "SDL_stdinc.h"
--#include "SDL_surface.h"
--#include "SDL_thread.h"
--#include "SDL_touch.h"
--#include "SDL_video.h"
--#include "SDL_vulkan.h"
--#include "common/assert.h"
--#include "common/common.h"
--#include "common/emulatorConfig.h"
--#include "common/file.h"
--#include "common/logging/log.h"
--#include "common/profiler.h"
--#include "common/stringUtils.h"
--#include "common/systemInfo.h"
--#include "common/threads.h"
--#include "common/timer.h"
--#include "graphics/host_gpu/graphicContext.h"
--#include "graphics/host_gpu/renderer/render.h"
--#include "graphics/host_gpu/vma.h"
--#include "graphics/host_gpu/vulkanCommon.h"
--#include "graphics/presentation/imeOverlay.h"
--#include "graphics/presentation/renderDoc.h"
--#include "graphics/presentation/window/hostInput.h"
--#include "graphics/presentation/window/windowInternal.h"
--#include "kytyGitVersion.h"
--#include "libs/controller.h"
--#include "loader/systemContent.h"
--
--#include <algorithm>
--#include <cstdio>
--#include <cstdlib>
--#include <cstring>
--#include <memory>
--#include <string>
--#include <vector>
--#include <vulkan/vk_platform.h>
--
--#define STB_IMAGE_IMPLEMENTATION
--#define STBI_NO_SIMD
--#include "stb_image.h"
--
--#include <fmt/format.h>
--
--// IWYU pragma: no_include <intrin.h>
--
--#define KYTY_ENABLE_DEBUG_PRINTF
--#define KYTY_DBG_INPUT
--
--namespace Libs::Graphics {
--
--struct EventKeyboard {
--	bool     down;
--	bool     up;
--	bool     pressed;
--	bool     released;
--	bool     repeat;
--	int      scan_code;
--	int      key_code;
--	uint16_t mod;
--	double   timestamp_seconds;
--};
--
--static uint32_t ControllerButtonToPadButton(int button) {
--	switch (button) {
--		case SDL_CONTROLLER_BUTTON_A: return Controller::PAD_BUTTON_CROSS;
--		case SDL_CONTROLLER_BUTTON_B: return Controller::PAD_BUTTON_CIRCLE;
--		case SDL_CONTROLLER_BUTTON_X: return Controller::PAD_BUTTON_SQUARE;
--		case SDL_CONTROLLER_BUTTON_Y: return Controller::PAD_BUTTON_TRIANGLE;
--		case SDL_CONTROLLER_BUTTON_BACK: return Controller::PAD_BUTTON_TOUCH_PAD;
--		case SDL_CONTROLLER_BUTTON_START: return Controller::PAD_BUTTON_OPTIONS;
--		case SDL_CONTROLLER_BUTTON_LEFTSTICK: return Controller::PAD_BUTTON_L3;
--		case SDL_CONTROLLER_BUTTON_RIGHTSTICK: return Controller::PAD_BUTTON_R3;
--		case SDL_CONTROLLER_BUTTON_LEFTSHOULDER: return Controller::PAD_BUTTON_L1;
--		case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: return Controller::PAD_BUTTON_R1;
--		case SDL_CONTROLLER_BUTTON_DPAD_UP: return Controller::PAD_BUTTON_UP;
--		case SDL_CONTROLLER_BUTTON_DPAD_DOWN: return Controller::PAD_BUTTON_DOWN;
--		case SDL_CONTROLLER_BUTTON_DPAD_LEFT: return Controller::PAD_BUTTON_LEFT;
--		case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: return Controller::PAD_BUTTON_RIGHT;
--		default: return 0;
--	}
--}
--
--static Controller::Axis ControllerAxisFromSdl(int axis_id) {
--	switch (axis_id) {
--		case SDL_CONTROLLER_AXIS_LEFTX: return Controller::Axis::LeftX;
--		case SDL_CONTROLLER_AXIS_LEFTY: return Controller::Axis::LeftY;
--		case SDL_CONTROLLER_AXIS_RIGHTX: return Controller::Axis::RightX;
--		case SDL_CONTROLLER_AXIS_RIGHTY: return Controller::Axis::RightY;
--		case SDL_CONTROLLER_AXIS_TRIGGERLEFT: return Controller::Axis::TriggerLeft;
--		case SDL_CONTROLLER_AXIS_TRIGGERRIGHT: return Controller::Axis::TriggerRight;
--		default: return Controller::Axis::AxisMax;
--	}
--}
--
--static bool ControllerAxisIsTrigger(int axis_id) {
--	return axis_id == SDL_CONTROLLER_AXIS_TRIGGERLEFT ||
--	       axis_id == SDL_CONTROLLER_AXIS_TRIGGERRIGHT;
--}
--
--static int ControllerAxisValueFromSdl(int axis_id, int axis_value) {
--	return ControllerAxisIsTrigger(axis_id)
--	           ? Controller::controller_get_axis(0, SDL_JOYSTICK_AXIS_MAX, axis_value)
--	           : Controller::controller_get_axis(SDL_JOYSTICK_AXIS_MIN, SDL_JOYSTICK_AXIS_MAX,
--	                                             axis_value);
--}
--
--struct EventMouse {
--	bool   down;
--	bool   up;
--	bool   left;
--	bool   middle;
--	bool   right;
--	bool   x1;
--	bool   x2;
--	bool   touch;
--	bool   pressed;
--	bool   released;
--	int    num_of_clicks;
--	bool   wheel;
--	int    x;
--	int    y;
--	bool   motion;
--	int    motion_x;
--	int    motion_y;
--	double timestamp_seconds;
--};
--
--struct EventFinger {
--	bool   down;
--	bool   up;
--	bool   motion;
--	int    touch_id;
--	int    finger_id;
--	float  x;
--	float  y;
--	float  dx;
--	float  dy;
--	float  pressure;
--	double timestamp_seconds;
--};
--
--struct EventController {
--	int    id;
--	int    button;
--	int    axis_id;
--	int    axis_value;
--	bool   down;
--	bool   up;
--	bool   added;
--	bool   removed;
--	bool   remapped;
--	bool   axis;
--	bool   pressed;
--	bool   released;
--	double timestamp_seconds;
--};
--
--enum class DisplayOrientation {
--	Unknown,   /* The display orientation can't be determined */
--	Landscape, /* The display is in landscape mode, with the right side up, relative to portrait
--	              mode */
--	LandscapeFlipped, /* The display is in landscape mode, with the left side up, relative to
--	                     portrait mode */
--	Portrait,         /* The display is in portrait mode */
--	PortraitFlipped,  /* The display is in portrait mode, upside down */
--
--	DisplayEventOrientation = 0xF0
--};
--
--struct EventDisplay {
--	DisplayOrientation orientation;
--};
--
--constexpr uint32_t KYTY_SDL_BUTTON_LMASK  = SDL_BUTTON_LMASK;  // NOLINT(hicpp-signed-bitwise)
--constexpr uint32_t KYTY_SDL_BUTTON_MMASK  = SDL_BUTTON_MMASK;  // NOLINT(hicpp-signed-bitwise)
--constexpr uint32_t KYTY_SDL_BUTTON_RMASK  = SDL_BUTTON_RMASK;  // NOLINT(hicpp-signed-bitwise)
--constexpr uint32_t KYTY_SDL_BUTTON_X1MASK = SDL_BUTTON_X1MASK; // NOLINT(hicpp-signed-bitwise)
--constexpr uint32_t KYTY_SDL_BUTTON_X2MASK = SDL_BUTTON_X2MASK; // NOLINT(hicpp-signed-bitwise)
--
--namespace {
--
--std::unique_ptr<WindowContext> g_window;
--
--} // namespace
--
--constexpr const char* KYTY_SDL_WINDOW_CAPTION = "Game";
--constexpr uint32_t    KYTY_SDL_WINDOW_FLAGS =
--    (static_cast<uint32_t>(SDL_WINDOW_HIDDEN) | static_cast<uint32_t>(SDL_WINDOW_VULKAN));
--constexpr int KYTY_SDL_WINDOWPOS_CENTERED = SDL_WINDOWPOS_CENTERED; /*NOLINT(hicpp-signed-bitwise)*/
--
--static void SetPause(WindowLoopState& game, bool flag) {
--	LOGF("Pause: %s\n", flag ? "true" : "false");
--
--	game.paused.store(flag, std::memory_order_release);
--}
--
--static void GameEventQuit(WindowLoopState& game) {
--	LOGF("Event: quit\n");
--
--	game.need_exit = true;
--}
--
--static void GameEventTerminate(WindowLoopState& game) {
--	LOGF("Event: terminate\n");
--
--	game.need_exit = true;
--}
--
--static void GameEventKeyboard(WindowLoopState& game, const EventKeyboard& key) {
--#ifdef KYTY_DBG_INPUT
--	LOGF("Key: time = %.04f, %s%s, %s%s, %s, scan = %d, key = %d, mod = %04" PRIx16 "\n",
--	     key.timestamp_seconds, (key.down ? "down" : ""), (key.up ? "up" : ""),
--	     (key.pressed ? "pressed" : ""), (key.released ? "released" : ""),
--	     (key.repeat ? "repeat" : ""), key.scan_code, key.key_code, key.mod);
--#endif
--
--#if KYTY_PLATFORM == KYTY_PLATFORM_WINDOWS || KYTY_PLATFORM == KYTY_PLATFORM_LINUX
--	if (key.down) {
--		switch (key.key_code) {
--			case SDLK_ESCAPE: game.need_exit = true; break;
--			case SDLK_SPACE: SetPause(game, !game.paused.load(std::memory_order_acquire)); break;
--			case SDLK_F1:
--				if (!key.repeat) {
--					RenderDocRequestCapture();
--				}
--				break;
--			default: break;
--		}
--	}
--
--#endif
--
--	if ((key.down || key.up) && !key.repeat) {
--		HostInputKey(key.key_code, key.down);
--	}
--}
--
--static void GameEventMouse([[maybe_unused]] const EventMouse& mb) {
--#ifdef KYTY_DBG_INPUT
--	if (mb.wheel) {
--		LOGF("Mouse wheel: time = %.04f, %s[%d, %d]\n", mb.timestamp_seconds,
--		     (mb.touch ? "touch, " : ""), mb.x, mb.y);
--	} else if (mb.motion) {
--		LOGF("Mouse motion: time = %.04f, %s%s%s%s%s%s, [%d, %d], (%d, %d)\n", mb.timestamp_seconds,
--		     (mb.left ? "left" : ""), (mb.middle ? "middle" : ""), (mb.right ? "right" : ""),
--		     (mb.x1 ? "x1" : ""), (mb.x2 ? "x2" : ""), (mb.touch ? "_touch" : ""), mb.x, mb.y,
--		     mb.motion_x, mb.motion_y);
--	} else {
--		LOGF("Mouse click: time = %.04f, %d, %s%s%s%s%s%s, %s%s, %s%s, [%d, %d]\n",
--		     mb.timestamp_seconds, mb.num_of_clicks, (mb.left ? "left" : ""),
--		     (mb.middle ? "middle" : ""), (mb.right ? "right" : ""), (mb.x1 ? "x1" : ""),
--		     (mb.x2 ? "x2" : ""), (mb.touch ? "_touch" : ""), (mb.down ? "down" : ""),
--		     (mb.up ? "up" : ""), (mb.pressed ? "pressed" : ""), (mb.released ? "released" : ""),
--		     mb.x, mb.y);
--	}
--#endif
--
--	if (mb.down || mb.up) {
--		uint8_t mouse_button = 0;
--		if (mb.left) {
--			mouse_button = SDL_BUTTON_LEFT;
--		} else if (mb.middle) {
--			mouse_button = SDL_BUTTON_MIDDLE;
--		} else if (mb.right) {
--			mouse_button = SDL_BUTTON_RIGHT;
--		} else if (mb.x1) {
--			mouse_button = SDL_BUTTON_X1;
--		} else if (mb.x2) {
--			mouse_button = SDL_BUTTON_X2;
--		}
--
--		HostInputMouseButton(mouse_button, mb.down);
--	}
--}
--
--static void GameEventFinger([[maybe_unused]] const EventFinger& f) {
--#ifdef KYTY_DBG_INPUT
--	if (f.motion) {
--		LOGF("Finger motion: time = %.04f, %d, %d, (x,y) = [%f, %f], (dx,dy) = [%f, %f], pressure "
--		     "= %f\n",
--		     f.timestamp_seconds, f.touch_id, f.finger_id, f.x, f.y, f.dx, f.dy, f.pressure);
--	} else {
--		LOGF("Finger press: time = %.04f, %d, %d, %s%s, (x,y) = [%f, %f], (dx,dy) = [%f, %f], "
--		     "pressure = %f\n",
--		     f.timestamp_seconds, f.touch_id, f.finger_id, (f.down ? "down" : ""),
--		     (f.up ? "up" : ""), f.x, f.y, f.dx, f.dy, f.pressure);
--	}
--#endif
--}
--
--static void GameEventController([[maybe_unused]] const EventController& f) {
--	EXIT_NOT_IMPLEMENTED(f.remapped);
--
--#ifdef KYTY_DBG_INPUT
--	if (f.added || f.removed) {
--		LOGF("Controller %s: %d, time = %.04f\n", (f.added ? "added" : "removed"), f.id,
--		     f.timestamp_seconds);
--	} else if (f.axis) {
--		LOGF("Controller axis: %d, axis = %d, value = %d, time = %.04f\n", f.id, f.axis_id,
--		     f.axis_value, f.timestamp_seconds);
--	} else {
--		LOGF("Controller button: "
--		     "%d, %s%s, %s%s, button = %d, time = %.04f\n",
--		     f.id, (f.down ? "down" : ""), (f.up ? "up" : ""), (f.pressed ? "pressed" : ""),
--		     (f.released ? "released" : ""), f.button, f.timestamp_seconds);
--	}
--#endif
--
--	if (f.added) {
--		auto* pad = SDL_GameControllerOpen(f.id);
--		if (pad == nullptr) {
--			// SDL doesn't recognize this controller in its gamepad database.
--			// Fall back to raw joystick so buttons/axes still route to the guest.
--			auto* joy = SDL_JoystickOpen(f.id);
--			if (joy != nullptr) {
--				LOGF("Controller opened as raw joystick: %s\n",
--				     SDL_JoystickName(joy));
--				Controller::ControllerConnect(f.id);
--			}
--			return;
--		}
--		int id = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(pad));
--		Controller::ControllerConnect(id);
--	}
--
--	if (f.removed) {
--		Controller::ControllerDisconnect(f.id);
--		SDL_GameControllerClose(SDL_GameControllerFromInstanceID(f.id));
--	}
--
--	if (f.down || f.up) {
--		const auto button = ControllerButtonToPadButton(f.button);
--		if (button != 0) {
--			Controller::ControllerButton(f.id, button, f.down);
--		}
--		// Also route through custom gamepad mapping if user has one set.
--		HostInputGamepadButton(static_cast<uint8_t>(f.button), f.down);
--	}
--
--	if (f.axis) {
--		const auto axis = ControllerAxisFromSdl(f.axis_id);
--		if (axis != Controller::Axis::AxisMax) {
--			Controller::ControllerAxis(f.id, axis,
--			                           ControllerAxisValueFromSdl(f.axis_id, f.axis_value));
--		}
--	}
--}
--
--static void GameEventLowMemory() {
--	LOGF("Event: low_memory\n");
--}
--
--static void GameEventWillEnterBackground(WindowLoopState& game) {
--	LOGF("Event: will_enter_background\n");
--
--	SetPause(game, true);
--}
--
--static void GameEventDidEnterBackground() {
--	LOGF("Event: did_enter_background\n");
--}
--
--static void GameEventWillEnterForeground() {
--	LOGF("Event: will_enter_foreground\n");
--}
--
--static void GameEventDidEnterForeground(WindowLoopState& game) {
--	LOGF("Event: did_enter_foreground\n");
--
--	SetPause(game, false);
--}
--
--void WindowContext::Resize(uint32_t new_width, uint32_t new_height) {
--	EXIT_IF(new_width == 0 || new_height == 0);
--	graphic_ctx.screen_width  = new_width;
--	graphic_ctx.screen_height = new_height;
--}
--
--void WindowContext::ProcessWindowEvent(const SDL_WindowEvent& event) {
--	const auto& window_event = event;
--	switch (window_event.event) {
--		case SDL_WINDOWEVENT_SHOWN:
--			LOGF("Window %" PRIu32 " shown\n", window_event.windowID);
--			break;
--
--		case SDL_WINDOWEVENT_HIDDEN:
--			LOGF("Window %" PRIu32 " hidden\n", window_event.windowID);
--			break;
--
--		case SDL_WINDOWEVENT_EXPOSED:
--			LOGF("Window %" PRIu32 " exposed\n", window_event.windowID);
--			break;
--
--		case SDL_WINDOWEVENT_MOVED:
--			LOGF("Window %" PRIu32 " moved to %" PRId32 ",%" PRId32 "\n", window_event.windowID,
--			     window_event.data1, window_event.data2);
--			break;
--
--		case SDL_WINDOWEVENT_RESIZED:
--			LOGF("Window %" PRIu32 " resized to %" PRId32 "x%" PRId32 "\n", window_event.windowID,
--			     window_event.data1, window_event.data2);
--
--			LOGF("m: %d\n", static_cast<int>(SDL_ThreadID()));
--			Resize(window_event.data1, window_event.data2);
--
--			break;
--
--		case SDL_WINDOWEVENT_SIZE_CHANGED:
--			LOGF("Window %" PRIu32 " size changed to %" PRId32 "x%" PRId32 "\n",
--			     window_event.windowID, window_event.data1, window_event.data2);
--
--			LOGF("m: %d\n", static_cast<int>(SDL_ThreadID()));
--			Resize(window_event.data1, window_event.data2);
--
--			break;
--
--		case SDL_WINDOWEVENT_MINIMIZED:
--			LOGF("Window %" PRIu32 " minimized\n", window_event.windowID);
--			break;
--		case SDL_WINDOWEVENT_MAXIMIZED:
--			LOGF("Window %" PRIu32 " maximized\n", window_event.windowID);
--			break;
--		case SDL_WINDOWEVENT_RESTORED:
--			LOGF("Window %" PRIu32 " restored\n", window_event.windowID);
--			break;
--		case SDL_WINDOWEVENT_ENTER:
--			LOGF("Mouse entered window %" PRIu32 "\n", window_event.windowID);
--			break;
--		case SDL_WINDOWEVENT_LEAVE:
--			LOGF("Mouse left window %" PRIu32 "\n", window_event.windowID);
--			break;
--		case SDL_WINDOWEVENT_FOCUS_GAINED:
--			LOGF("Window %" PRIu32 " gained keyboard focus\n", window_event.windowID);
--			break;
--		case SDL_WINDOWEVENT_FOCUS_LOST:
--			LOGF("Window %" PRIu32 " lost keyboard focus\n", window_event.windowID);
--			break;
--		case SDL_WINDOWEVENT_CLOSE:
--			LOGF("Window %" PRIu32 " closed\n", window_event.windowID);
--			break;
--		default:
--			LOGF("Window %" PRIu32 " got unknown event %" PRIu8 "\n", window_event.windowID,
--			     window_event.event);
--			break;
--	}
--}
--
--void WindowContext::ProcessDisplayEvent(const SDL_DisplayEvent& display) {
--	bool sdl = false;
--
--	switch (display.event) {
--		case SDL_DISPLAYEVENT_ORIENTATION: sdl = true; [[fallthrough]];
--		case static_cast<Uint8>(DisplayOrientation::DisplayEventOrientation): {
--			LOGF("Display %" PRIu32 "[%s] changed orientation to %d - ", display.display,
--			     sdl ? "SDL" : "Kyty", static_cast<int>(display.data1));
--
--			switch (display.data1) {
--				case SDL_ORIENTATION_UNKNOWN: LOGF("UNKNOWN\n"); break;
--				case SDL_ORIENTATION_LANDSCAPE: LOGF("LANDSCAPE\n"); break;
--				case SDL_ORIENTATION_LANDSCAPE_FLIPPED: LOGF("LANDSCAPE_FLIPPED\n"); break;
--				case SDL_ORIENTATION_PORTRAIT: LOGF("PORTRAIT\n"); break;
--				case SDL_ORIENTATION_PORTRAIT_FLIPPED: LOGF("PORTRAIT_FLIPPED\n"); break;
--				default: LOGF("???\n");
--			}
--
--			break;
--		}
--		default:
--			LOGF("Display %" PRIu32 " got unknown event 0x%" PRIx8 "\n", display.display,
--			     display.event);
--			break;
--	}
--}
--
--void WindowContext::ProcessEvent(double time_s) {
--	auto& game  = loop;
--	auto* event = &game.event;
--	EXIT_IF(SDL_GetEventState(SDL_DISPLAYEVENT) != SDL_ENABLE);
--	if (ProcessImeInput(*event)) {
--		return;
--	}
--
--	switch (event->type) {
--		case SDL_QUIT: GameEventQuit(game); break;
--
--		case SDL_APP_TERMINATING: GameEventTerminate(game); break;
--
--		case SDL_APP_LOWMEMORY: GameEventLowMemory(); break;
--
--		case SDL_APP_WILLENTERBACKGROUND: GameEventWillEnterBackground(game); break;
--
--		case SDL_APP_DIDENTERBACKGROUND: GameEventDidEnterBackground(); break;
--
--		case SDL_APP_WILLENTERFOREGROUND: GameEventWillEnterForeground(); break;
--
--		case SDL_APP_DIDENTERFOREGROUND: GameEventDidEnterForeground(game); break;
--
--		case SDL_KEYDOWN:
--		case SDL_KEYUP: {
--			EventKeyboard key {};
--
--			key.down              = (event->type == SDL_KEYDOWN);
--			key.up                = (event->type == SDL_KEYUP);
--			key.pressed           = (event->key.state == SDL_PRESSED);
--			key.released          = (event->key.state == SDL_RELEASED);
--			key.repeat            = (event->key.repeat != 0u);
--			key.scan_code         = event->key.keysym.scancode;
--			key.key_code          = event->key.keysym.sym;
--			key.mod               = event->key.keysym.mod;
--			key.timestamp_seconds = time_s;
--
--			GameEventKeyboard(game, key);
--
--			break;
--		}
--
--		case SDL_WINDOWEVENT: ProcessWindowEvent(event->window); break;
--
--		case SDL_DISPLAYEVENT: ProcessDisplayEvent(event->display); break;
--
--		case SDL_MOUSEBUTTONDOWN:
--		case SDL_MOUSEBUTTONUP: {
--			EventMouse mb {};
--
--			mb.down              = (event->button.type == SDL_MOUSEBUTTONDOWN);
--			mb.up                = (event->button.type == SDL_MOUSEBUTTONUP);
--			mb.left              = (event->button.button == SDL_BUTTON_LEFT);
--			mb.middle            = (event->button.button == SDL_BUTTON_MIDDLE);
--			mb.right             = (event->button.button == SDL_BUTTON_RIGHT);
--			mb.x1                = (event->button.button == SDL_BUTTON_X1);
--			mb.x2                = (event->button.button == SDL_BUTTON_X2);
--			mb.touch             = (event->button.which == SDL_TOUCH_MOUSEID);
--			mb.pressed           = (event->button.state == SDL_PRESSED);
--			mb.released          = (event->button.state == SDL_RELEASED);
--			mb.num_of_clicks     = event->button.clicks;
--			mb.wheel             = false;
--			mb.x                 = event->button.x;
--			mb.y                 = event->button.y;
--			mb.motion            = false;
--			mb.motion_x          = 0;
--			mb.motion_y          = 0;
--			mb.timestamp_seconds = time_s;
--
--			GameEventMouse(mb);
--
--			break;
--		}
--
--		case SDL_MOUSEWHEEL: {
--			EventMouse mb {};
--
--			mb.down              = false;
--			mb.up                = false;
--			mb.left              = false;
--			mb.middle            = false;
--			mb.right             = false;
--			mb.x1                = false;
--			mb.x2                = false;
--			mb.touch             = (event->wheel.which == SDL_TOUCH_MOUSEID);
--			mb.pressed           = false;
--			mb.released          = false;
--			mb.num_of_clicks     = 0;
--			mb.wheel             = true;
--			mb.x                 = event->wheel.x;
--			mb.y                 = event->wheel.y;
--			mb.motion            = false;
--			mb.motion_x          = 0;
--			mb.motion_y          = 0;
--			mb.timestamp_seconds = time_s;
--
--			GameEventMouse(mb);
--
--			break;
--		}
--
--		case SDL_MOUSEMOTION: {
--			EventMouse mb {};
--
--			mb.down              = false;
--			mb.up                = false;
--			mb.left              = ((event->motion.state & KYTY_SDL_BUTTON_LMASK) != 0u);
--			mb.middle            = ((event->motion.state & KYTY_SDL_BUTTON_MMASK) != 0u);
--			mb.right             = ((event->motion.state & KYTY_SDL_BUTTON_RMASK) != 0u);
--			mb.x1                = ((event->motion.state & KYTY_SDL_BUTTON_X1MASK) != 0u);
--			mb.x2                = ((event->motion.state & KYTY_SDL_BUTTON_X2MASK) != 0u);
--			mb.touch             = (event->motion.which == SDL_TOUCH_MOUSEID);
--			mb.pressed           = false;
--			mb.released          = false;
--			mb.num_of_clicks     = 0;
--			mb.wheel             = false;
--			mb.x                 = event->motion.x;
--			mb.y                 = event->motion.y;
--			mb.motion            = true;
--			mb.motion_x          = event->motion.xrel;
--			mb.motion_y          = event->motion.yrel;
--			mb.timestamp_seconds = time_s;
--
--			GameEventMouse(mb);
--
--			break;
--		}
--
--		case SDL_FINGERMOTION:
--		case SDL_FINGERDOWN:
--		case SDL_FINGERUP: {
--			EventFinger f {};
--
--			f.down              = (event->tfinger.type == SDL_FINGERDOWN);
--			f.up                = (event->tfinger.type == SDL_FINGERUP);
--			f.motion            = (event->tfinger.type == SDL_FINGERMOTION);
--			f.finger_id         = static_cast<int>(event->tfinger.fingerId);
--			f.touch_id          = static_cast<int>(event->tfinger.touchId);
--			f.x                 = event->tfinger.x;
--			f.y                 = event->tfinger.y;
--			f.dx                = event->tfinger.dx;
--			f.dy                = event->tfinger.dy;
--			f.pressure          = event->tfinger.pressure;
--			f.timestamp_seconds = time_s;
--
--			GameEventFinger(f);
--
--			break;
--		}
--
--		case SDL_CONTROLLERAXISMOTION: {
--			EventController c {};
--
--			c.id                = event->caxis.which;
--			c.button            = SDL_CONTROLLER_BUTTON_INVALID;
--			c.axis_id           = event->caxis.axis;
--			c.axis_value        = event->caxis.value;
--			c.down              = false;
--			c.up                = false;
--			c.added             = false;
--			c.removed           = false;
--			c.remapped          = false;
--			c.axis              = true;
--			c.pressed           = false;
--			c.released          = false;
--			c.timestamp_seconds = time_s;
--
--			GameEventController(c);
--
--			break;
--		}
--
--		case SDL_CONTROLLERBUTTONDOWN:
--		case SDL_CONTROLLERBUTTONUP: {
--			EventController c {};
--
--			c.id                = event->cbutton.which;
--			c.button            = event->cbutton.button;
--			c.axis_id           = SDL_CONTROLLER_AXIS_INVALID;
--			c.axis_value        = 0;
--			c.down              = (event->cbutton.type == SDL_CONTROLLERBUTTONDOWN);
--			c.up                = (event->cbutton.type == SDL_CONTROLLERBUTTONUP);
--			c.added             = false;
--			c.removed           = false;
--			c.remapped          = false;
--			c.axis              = false;
--			c.pressed           = (event->cbutton.state == SDL_PRESSED);
--			c.released          = (event->cbutton.state == SDL_RELEASED);
--			c.timestamp_seconds = time_s;
--
--			GameEventController(c);
--
--			break;
--		}
--
--		case SDL_CONTROLLERDEVICEADDED:
--		case SDL_CONTROLLERDEVICEREMOVED:
--		case SDL_CONTROLLERDEVICEREMAPPED: {
--			EventController c {};
--
--			c.id                = event->cdevice.which;
--			c.button            = SDL_CONTROLLER_BUTTON_INVALID;
--			c.axis_id           = SDL_CONTROLLER_AXIS_INVALID;
--			c.axis_value        = 0;
--			c.down              = false;
--			c.up                = false;
--			c.added             = (event->cdevice.type == SDL_CONTROLLERDEVICEADDED);
--			c.removed           = (event->cdevice.type == SDL_CONTROLLERDEVICEREMOVED);
--			c.remapped          = (event->cdevice.type == SDL_CONTROLLERDEVICEREMAPPED);
--			c.axis              = false;
--			c.pressed           = false;
--			c.released          = false;
--			c.timestamp_seconds = time_s;
--
--			GameEventController(c);
--
--			break;
--		}
--
--		// Raw joystick fallback — when SDL doesn't recognize a controller
--		// in its gamepad DB, events arrive as joystick events instead.
--		case SDL_JOYAXISMOTION: {
--			// Map raw axis to a controller event. Axes 0-5 map to
--			// left stick X/Y, right stick X/Y, L2, R2 by convention.
--			static const uint8_t axis_map[] = {
--			    SDL_CONTROLLER_AXIS_LEFTX,
--			    SDL_CONTROLLER_AXIS_LEFTY,
--			    SDL_CONTROLLER_AXIS_RIGHTX,
--			    SDL_CONTROLLER_AXIS_RIGHTY,
--			    SDL_CONTROLLER_AXIS_TRIGGERLEFT,
--			    SDL_CONTROLLER_AXIS_TRIGGERRIGHT,
--			};
--			EventController c {};
--			c.id         = event->jaxis.which;
--			c.axis_id    = (event->jaxis.axis < 6) ? axis_map[event->jaxis.axis]
--			                                        : SDL_CONTROLLER_AXIS_INVALID;
--			c.axis_value = event->jaxis.value;
--			c.axis       = true;
--			c.timestamp_seconds = time_s;
--			GameEventController(c);
--			break;
--		}
--
--		case SDL_JOYBUTTONDOWN:
--		case SDL_JOYBUTTONUP: {
--			EventController c {};
--			c.id    = event->jbutton.which;
--			c.button = event->jbutton.button;
--			c.down   = (event->jbutton.type == SDL_JOYBUTTONDOWN);
--			c.up     = (event->jbutton.type == SDL_JOYBUTTONUP);
--			c.pressed  = (event->jbutton.state == SDL_PRESSED);
--			c.released = (event->jbutton.state == SDL_RELEASED);
--			c.timestamp_seconds = time_s;
--			GameEventController(c);
--			break;
--		}
--
--		case SDL_JOYDEVICEADDED: {
--			// Open as raw joystick when we don't get a controller event.
--			auto* joy = SDL_JoystickOpen(event->jdevice.which);
--			if (joy != nullptr) {
--				LOGF("Joystick added: %s\n", SDL_JoystickName(joy));
--				Controller::ControllerConnect(event->jdevice.which);
--			}
--			break;
--		}
--
--		case SDL_JOYDEVICEREMOVED: {
--			Controller::ControllerDisconnect(event->jdevice.which);
--			auto* joy = SDL_JoystickFromInstanceID(event->jdevice.which);
--			if (joy != nullptr) {
--				SDL_JoystickClose(joy);
--			}
--			break;
--		}
--	}
--}
--
--#if defined(__APPLE__)
--void WindowContext::RunOnMainThread(std::function<void()> task, bool wait) {
--	if (Common::Thread::IsMainThread()) {
--		task();
--		return;
--	}
--
--	uint64_t ticket = 0;
--	{
--		Common::LockGuard lock(main_task_mutex);
--		main_tasks.push_back(std::move(task));
--		ticket = ++main_tasks_queued;
--	}
--
--	// Wake the main loop in case it is blocked in SDL_WaitEvent.
--	SDL_Event event {};
--	event.type = SDL_USEREVENT;
--	SDL_PushEvent(&event);
--
--	if (!wait) {
--		return;
--	}
--	Common::LockGuard lock(main_task_mutex);
--	while (main_tasks_run < ticket) {
--		main_task_done.Wait(&main_task_mutex);
--	}
--}
--
--void WindowContext::DrainMainThreadTasks() {
--	std::vector<std::function<void()>> tasks;
--	{
--		Common::LockGuard lock(main_task_mutex);
--		tasks.swap(main_tasks);
--	}
--	if (tasks.empty()) {
--		return;
--	}
--	for (auto& task: tasks) {
--		task();
--	}
--	Common::LockGuard lock(main_task_mutex);
--	main_tasks_run += tasks.size();
--	main_task_done.SignalAll();
--}
--#endif
--
--void WindowContext::Run() {
--	Common::Timer timer;
--	timer.Start();
--
--	loop.event     = {};
--	loop.need_exit = false;
--	loop.paused.store(false, std::memory_order_release);
--
--	while (!loop.need_exit) {
--#if defined(__APPLE__)
--		DrainMainThreadTasks();
--#endif
--		if (loop.paused.load(std::memory_order_acquire)) {
--			if (!timer.IsPaused()) {
--				timer.Pause();
--			}
--		} else if (timer.IsPaused()) {
--			timer.Resume();
--		}
--
--		if (SDL_WaitEvent(&loop.event) == 0) {
--			EXIT("%s\n", SDL_GetError());
--		}
--		ProcessEvent(timer.GetTimeS());
--	}
--}
--
--static void WindowCreate(WindowContext& context) {
--	EXIT_IF(context.window != nullptr);
--	EXIT_IF(context.graphic_ctx.screen_width == 0);
--	EXIT_IF(context.graphic_ctx.screen_height == 0);
--
--	int width  = static_cast<int>(context.graphic_ctx.screen_width);
--	int height = static_cast<int>(context.graphic_ctx.screen_height);
--
--#if KYTY_PLATFORM == KYTY_PLATFORM_WINDOWS
--	SDL_SetHint(SDL_HINT_WINDOWS_DPI_SCALING, "0");
--#endif
--
--	if (SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER | SDL_INIT_JOYSTICK) < 0) {
--		EXIT("%s\n", SDL_GetError());
--	}
--	HostInputInit();
--	InitializeImeInput();
--
--	LOGF("WindowCreate(): width = %d, height = %d\n", width, height);
--
--	// KytyPlus: keep the game in an ordinary window. A window that all but matches the
--	// panel (1280x720 on a 1280x800 display) reads as borderless fullscreen, because the
--	// frame ends up flush with the screen edges. Fit the requested size inside the
--	// display's usable area first so the decorations stay visible and usable.
--	if (!Config::FullscreenEnabled()) {
--		SDL_Rect usable{};
--		if (SDL_GetDisplayUsableBounds(0, &usable) == 0 && usable.w > 0 && usable.h > 0) {
--			constexpr int margin_x = 48;
--			constexpr int margin_y = 96;
--			const int     max_w    = std::max(320, usable.w - margin_x);
--			const int     max_h    = std::max(240, usable.h - margin_y);
--			if (width > max_w) {
--				height = static_cast<int>((static_cast<double>(height) * max_w) / width);
--				width  = max_w;
--			}
--			if (height > max_h) {
--				width  = static_cast<int>((static_cast<double>(width) * max_h) / height);
--				height = max_h;
--			}
--			if (width != static_cast<int>(context.graphic_ctx.screen_width) ||
--			    height != static_cast<int>(context.graphic_ctx.screen_height)) {
--				LOGF("Windowed fit: using %dx%d (display usable %dx%d)\n", width, height, usable.w,
--				     usable.h);
--				context.graphic_ctx.screen_width  = static_cast<uint32_t>(width);
--				context.graphic_ctx.screen_height = static_cast<uint32_t>(height);
--			}
--		}
--	}
--
--	uint32_t window_flags = KYTY_SDL_WINDOW_FLAGS;
--	if (Config::FullscreenEnabled()) {
--		window_flags |= static_cast<uint32_t>(SDL_WINDOW_FULLSCREEN_DESKTOP);
--	} else {
--		// Windowed: allow the user to resize; keep the normal frame decorations.
--		window_flags |= static_cast<uint32_t>(SDL_WINDOW_RESIZABLE);
--	}
--#if defined(__APPLE__)
--	// macOS 26 window chrome (CoreUI asset decode, SwiftUI titlebar) has been observed
--	// throwing NSExceptions under Rosetta during the first CATransaction commit. A
--	// borderless window skips that machinery entirely.
--	if (std::getenv("KYTY_BORDERLESS") != nullptr) {
--		window_flags |= static_cast<uint32_t>(SDL_WINDOW_BORDERLESS);
--	}
--#endif
--	context.window = SDL_CreateWindow(KYTY_SDL_WINDOW_CAPTION, KYTY_SDL_WINDOWPOS_CENTERED,
--	                                  KYTY_SDL_WINDOWPOS_CENTERED, width, height, window_flags);
--
--	context.window_hidden = true;
--
--	if (context.window == nullptr) {
--		EXIT("%s\n", SDL_GetError());
--	}
--
--	SDL_SetWindowResizable(context.window, Config::FullscreenEnabled() ? SDL_FALSE : SDL_TRUE);
--}
--
--Presenter& WindowInit(uint32_t width, uint32_t height) {
--	EXIT_NOT_IMPLEMENTED(!Common::Thread::IsMainThread());
--	EXIT_IF(g_window != nullptr);
--
--	auto window = std::make_unique<WindowContext>();
--
--	window->graphic_ctx.screen_width  = width;
--	window->graphic_ctx.screen_height = height;
--
--	WindowCreate(*window);
--	window->CreateVulkan();
--	auto& presenter = *window->presenter;
--	g_window        = std::move(window);
--	return presenter;
--}
--
--void WindowRun() {
--	KYTY_PROFILER_THREAD("Thread_Window");
--	EXIT_IF(g_window == nullptr);
--
--	g_window->Run();
--}
--
--void WindowShutdown() {
--	if (g_window != nullptr) {
--		g_window.reset();
--	}
--}
--
--static int WindowIconRead(void* user, char* data, int size) {
--	auto*    src        = static_cast<Common::File*>(user);
--	uint32_t bytes_read = 0;
--	src->Read(data, static_cast<uint32_t>(size), &bytes_read);
--	return static_cast<int>(bytes_read);
--}
--
--static void WindowIconSkip(void* user, int n) {
--	auto*          src      = static_cast<Common::File*>(user);
--	const uint64_t position = src->Tell();
--
--	if (n >= 0) {
--		src->Seek(position + static_cast<uint64_t>(n));
--	} else {
--		const uint64_t distance = static_cast<uint64_t>(-static_cast<int64_t>(n));
--		EXIT_IF(distance > position);
--		src->Seek(position - distance);
--	}
--}
--
--static int WindowIconEof(void* user) {
--	auto* src = static_cast<Common::File*>(user);
--	return src->IsEOF() ? 1 : 0;
--}
--
--struct WindowIcon {
--	SDL_Surface* surface = nullptr;
--	void*        pixels  = nullptr;
--
--	~WindowIcon() {
--		SDL_FreeSurface(surface);
--		stbi_image_free(pixels);
--	}
--};
--
--static void WindowLoadPngIcon(const std::string& path, WindowIcon* icon) {
--	Common::File f;
--	if (!f.Open(path, Common::File::Mode::Read)) {
--		EXIT("Can't open icon file %s\n", path.c_str());
--	}
--
--	int width  = 0;
--	int height = 0;
--
--	stbi_io_callbacks cb {};
--	cb.read = WindowIconRead;
--	cb.skip = WindowIconSkip;
--	cb.eof  = WindowIconEof;
--
--	icon->pixels = stbi_load_from_callbacks(&cb, &f, &width, &height, nullptr, 4);
--	f.Close();
--
--	EXIT_IF(icon->pixels == nullptr);
--
--	icon->surface = SDL_CreateRGBSurfaceWithFormatFrom(icon->pixels, width, height, 32, width * 4,
--	                                                   SDL_PIXELFORMAT_RGBA32);
--	EXIT_NOT_IMPLEMENTED(icon->surface == nullptr);
--}
--
--void WindowContext::UpdateIcon() {
--	static WindowIcon icon;
--	static bool       icon_loaded = false;
--
--	if (!icon_loaded) {
--		std::string icon_path;
--		if (Loader::SystemContentGetIconPath(&icon_path)) {
--			WindowLoadPngIcon(icon_path, &icon);
--		}
--		icon_loaded = true;
--	}
--
--	if (icon.surface != nullptr) {
--		SDL_SetWindowIcon(window, icon.surface);
--	}
--}
--
--void WindowContext::UpdateTitle() {
--	static char title[128];
--	static char title_id[12];
--	static char app_ver[12];
--	static bool has_title = Loader::SystemContentParamSfoGetString("TITLE", title, sizeof(title));
--	static bool has_title_id =
--	    Loader::SystemContentParamSfoGetString("TITLE_ID", title_id, sizeof(title_id));
--	static bool has_app_ver =
--	    Loader::SystemContentParamSfoGetString("APP_VER", app_ver, sizeof(app_ver));
--	static uint64_t fps_start   = Common::Timer::QueryPerformanceCounter();
--	static uint64_t frame_num   = 0;
--	static uint64_t fps_frames  = 0;
--	static double   current_fps = 0.0;
--
--#if KYTY_BUILD == KYTY_BUILD_DEBUG
--	static constexpr auto build_type = "Debug";
--#elif KYTY_BUILD == KYTY_BUILD_RELEASE
--	static constexpr auto build_type = "Release";
--#else
--	static constexpr auto build_type = "Unknown";
--#endif
--
--	const auto now       = Common::Timer::QueryPerformanceCounter();
--	const auto frequency = Common::Timer::QueryPerformanceFrequency();
--	frame_num++;
--	fps_frames++;
--	if (now - fps_start >= frequency) {
--		current_fps = static_cast<double>(fps_frames) * static_cast<double>(frequency) /
--		              static_cast<double>(now - fps_start);
--		fps_start   = now;
--		fps_frames  = 0;
--	}
--
--	auto fps = fmt::format(
--	    "[{} | {}] {}{}{}{}{}{}[{}] [{}], frame: {}, fps: {:f}", KYTY_BUILD_LABEL, build_type,
--	    (has_title ? title : ""), (has_title ? ", " : ""), (has_title_id ? title_id : ""),
--	    (has_title_id ? ", " : ""), (has_app_ver ? app_ver : ""), (has_app_ver ? " " : ""),
--	    device_name, processor_name, frame_num, current_fps);
--
--#if defined(__APPLE__)
--	// AppKit traps on title changes off the main thread; fire-and-forget keeps present pacing.
--	RunOnMainThread([this, fps = std::move(fps)] { SDL_SetWindowTitle(window, fps.c_str()); },
--	                false);
--#else
--	SDL_SetWindowTitle(window, fps.c_str());
--#endif
--}
--
--} // namespace Libs::Graphics
-+#include "graphics/presentation/window.h"
-+
-+#include "SDL.h"
-+#include "SDL_error.h"
-+#include "SDL_events.h"
-+#include "SDL_gamecontroller.h"
-+#include "SDL_hints.h"
-+#include "SDL_joystick.h"
-+#include "SDL_keyboard.h"
-+#include "SDL_keycode.h"
-+#include "SDL_mouse.h"
-+#include "SDL_pixels.h"
-+#include "SDL_rwops.h"
-+#include "SDL_stdinc.h"
-+#include "SDL_surface.h"
-+#include "SDL_thread.h"
-+#include "SDL_touch.h"
-+#include "SDL_video.h"
-+#include "SDL_vulkan.h"
-+#include "common/assert.h"
-+#include "common/common.h"
-+#include "common/emulatorConfig.h"
-+#include "common/file.h"
-+#include "common/logging/log.h"
-+#include "common/profiler.h"
-+#include "common/stringUtils.h"
-+#include "common/systemInfo.h"
-+#include "common/threads.h"
-+#include "common/timer.h"
-+#include "graphics/host_gpu/graphicContext.h"
-+#include "graphics/host_gpu/renderer/render.h"
-+#include "graphics/host_gpu/vma.h"
-+#include "graphics/host_gpu/vulkanCommon.h"
-+#include "graphics/presentation/imeOverlay.h"
+@@ -31,7 +31,9 @@
+ #include "graphics/host_gpu/renderer/render.h"
+ #include "graphics/host_gpu/vma.h"
+ #include "graphics/host_gpu/vulkanCommon.h"
++#include "graphics/presentation/hostMenu.h"
+ #include "graphics/presentation/imeOverlay.h"
 +#include "graphics/presentation/settingsOverlay.h"
-+#include "graphics/presentation/renderDoc.h"
-+#include "graphics/presentation/window/hostInput.h"
-+#include "graphics/presentation/window/windowInternal.h"
-+#include "kytyGitVersion.h"
-+#include "libs/controller.h"
-+#include "loader/systemContent.h"
-+
+ #include "graphics/presentation/renderDoc.h"
+ #include "graphics/presentation/window/hostInput.h"
+ #include "graphics/presentation/window/windowInternal.h"
+@@ -39,6 +41,7 @@
+ #include "libs/controller.h"
+ #include "loader/systemContent.h"
+ 
 +#include <atomic>
-+#include <algorithm>
-+#include <cstdio>
-+#include <cstdlib>
-+#include <cstring>
-+#include <memory>
-+#include <string>
-+#include <vector>
-+#include <vulkan/vk_platform.h>
-+
-+#define STB_IMAGE_IMPLEMENTATION
-+#define STBI_NO_SIMD
-+#include "stb_image.h"
-+
-+#include <fmt/format.h>
-+
-+// IWYU pragma: no_include <intrin.h>
-+
-+#define KYTY_ENABLE_DEBUG_PRINTF
+ #include <algorithm>
+ #include <cstdio>
+ #include <cstdlib>
+@@ -57,7 +60,7 @@
+ // IWYU pragma: no_include <intrin.h>
+ 
+ #define KYTY_ENABLE_DEBUG_PRINTF
+-#define KYTY_DBG_INPUT
 +// #define KYTY_DBG_INPUT // BC5: off since 2026-10-07 (250 lines a second from the pad); KYTY_BC5_INPUT_TRACE=1 instead
-+
-+namespace Libs::Graphics {
-+
-+struct EventKeyboard {
-+	bool     down;
-+	bool     up;
-+	bool     pressed;
-+	bool     released;
-+	bool     repeat;
-+	int      scan_code;
-+	int      key_code;
-+	uint16_t mod;
-+	double   timestamp_seconds;
-+};
-+
-+static uint32_t ControllerButtonToPadButton(int button) {
-+	switch (button) {
-+		case SDL_CONTROLLER_BUTTON_A: return Controller::PAD_BUTTON_CROSS;
-+		case SDL_CONTROLLER_BUTTON_B: return Controller::PAD_BUTTON_CIRCLE;
-+		case SDL_CONTROLLER_BUTTON_X: return Controller::PAD_BUTTON_SQUARE;
-+		case SDL_CONTROLLER_BUTTON_Y: return Controller::PAD_BUTTON_TRIANGLE;
-+		case SDL_CONTROLLER_BUTTON_BACK: return Controller::PAD_BUTTON_TOUCH_PAD;
-+		case SDL_CONTROLLER_BUTTON_START: return Controller::PAD_BUTTON_OPTIONS;
-+		case SDL_CONTROLLER_BUTTON_LEFTSTICK: return Controller::PAD_BUTTON_L3;
-+		case SDL_CONTROLLER_BUTTON_RIGHTSTICK: return Controller::PAD_BUTTON_R3;
-+		case SDL_CONTROLLER_BUTTON_LEFTSHOULDER: return Controller::PAD_BUTTON_L1;
-+		case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: return Controller::PAD_BUTTON_R1;
-+		case SDL_CONTROLLER_BUTTON_DPAD_UP: return Controller::PAD_BUTTON_UP;
-+		case SDL_CONTROLLER_BUTTON_DPAD_DOWN: return Controller::PAD_BUTTON_DOWN;
-+		case SDL_CONTROLLER_BUTTON_DPAD_LEFT: return Controller::PAD_BUTTON_LEFT;
-+		case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: return Controller::PAD_BUTTON_RIGHT;
-+		default: return 0;
-+	}
-+}
-+
-+static Controller::Axis ControllerAxisFromSdl(int axis_id) {
-+	switch (axis_id) {
-+		case SDL_CONTROLLER_AXIS_LEFTX: return Controller::Axis::LeftX;
-+		case SDL_CONTROLLER_AXIS_LEFTY: return Controller::Axis::LeftY;
-+		case SDL_CONTROLLER_AXIS_RIGHTX: return Controller::Axis::RightX;
-+		case SDL_CONTROLLER_AXIS_RIGHTY: return Controller::Axis::RightY;
-+		case SDL_CONTROLLER_AXIS_TRIGGERLEFT: return Controller::Axis::TriggerLeft;
-+		case SDL_CONTROLLER_AXIS_TRIGGERRIGHT: return Controller::Axis::TriggerRight;
-+		default: return Controller::Axis::AxisMax;
-+	}
-+}
-+
-+static bool ControllerAxisIsTrigger(int axis_id) {
-+	return axis_id == SDL_CONTROLLER_AXIS_TRIGGERLEFT ||
-+	       axis_id == SDL_CONTROLLER_AXIS_TRIGGERRIGHT;
-+}
-+
-+static int ControllerAxisValueFromSdl(int axis_id, int axis_value) {
-+	return ControllerAxisIsTrigger(axis_id)
-+	           ? Controller::controller_get_axis(0, SDL_JOYSTICK_AXIS_MAX, axis_value)
-+	           : Controller::controller_get_axis(SDL_JOYSTICK_AXIS_MIN, SDL_JOYSTICK_AXIS_MAX,
-+	                                             axis_value);
-+}
-+
-+struct EventMouse {
-+	bool   down;
-+	bool   up;
-+	bool   left;
-+	bool   middle;
-+	bool   right;
-+	bool   x1;
-+	bool   x2;
-+	bool   touch;
-+	bool   pressed;
-+	bool   released;
-+	int    num_of_clicks;
-+	bool   wheel;
-+	int    x;
-+	int    y;
-+	bool   motion;
-+	int    motion_x;
-+	int    motion_y;
-+	double timestamp_seconds;
-+};
-+
-+struct EventFinger {
-+	bool   down;
-+	bool   up;
-+	bool   motion;
-+	int    touch_id;
-+	int    finger_id;
-+	float  x;
-+	float  y;
-+	float  dx;
-+	float  dy;
-+	float  pressure;
-+	double timestamp_seconds;
-+};
-+
-+struct EventController {
-+	int    id;
-+	int    button;
-+	int    axis_id;
-+	int    axis_value;
-+	bool   down;
-+	bool   up;
-+	bool   added;
-+	bool   removed;
-+	bool   remapped;
-+	bool   axis;
-+	bool   pressed;
-+	bool   released;
-+	double timestamp_seconds;
-+};
-+
-+enum class DisplayOrientation {
-+	Unknown,   /* The display orientation can't be determined */
-+	Landscape, /* The display is in landscape mode, with the right side up, relative to portrait
-+	              mode */
-+	LandscapeFlipped, /* The display is in landscape mode, with the left side up, relative to
-+	                     portrait mode */
-+	Portrait,         /* The display is in portrait mode */
-+	PortraitFlipped,  /* The display is in portrait mode, upside down */
-+
-+	DisplayEventOrientation = 0xF0
-+};
-+
-+struct EventDisplay {
-+	DisplayOrientation orientation;
-+};
-+
-+constexpr uint32_t KYTY_SDL_BUTTON_LMASK  = SDL_BUTTON_LMASK;  // NOLINT(hicpp-signed-bitwise)
-+constexpr uint32_t KYTY_SDL_BUTTON_MMASK  = SDL_BUTTON_MMASK;  // NOLINT(hicpp-signed-bitwise)
-+constexpr uint32_t KYTY_SDL_BUTTON_RMASK  = SDL_BUTTON_RMASK;  // NOLINT(hicpp-signed-bitwise)
-+constexpr uint32_t KYTY_SDL_BUTTON_X1MASK = SDL_BUTTON_X1MASK; // NOLINT(hicpp-signed-bitwise)
-+constexpr uint32_t KYTY_SDL_BUTTON_X2MASK = SDL_BUTTON_X2MASK; // NOLINT(hicpp-signed-bitwise)
-+
-+namespace {
-+
-+std::unique_ptr<WindowContext> g_window;
+ 
+ namespace Libs::Graphics {
+ 
+@@ -193,6 +196,7 @@ constexpr uint32_t KYTY_SDL_BUTTON_X2MASK = SDL_BUTTON_X2MASK; // NOLINT(hicpp-s
+ namespace {
+ 
+ std::unique_ptr<WindowContext> g_window;
 +std::atomic<int>               g_fullscreen_pending {-1}; // BC5: asked for before the window existed
-+
-+} // namespace
-+
-+constexpr const char* KYTY_SDL_WINDOW_CAPTION = "Game";
-+constexpr uint32_t    KYTY_SDL_WINDOW_FLAGS =
-+    (static_cast<uint32_t>(SDL_WINDOW_HIDDEN) | static_cast<uint32_t>(SDL_WINDOW_VULKAN));
-+constexpr int KYTY_SDL_WINDOWPOS_CENTERED = SDL_WINDOWPOS_CENTERED; /*NOLINT(hicpp-signed-bitwise)*/
-+
-+static void SetPause(WindowLoopState& game, bool flag) {
-+	LOGF("Pause: %s\n", flag ? "true" : "false");
-+
-+	game.paused.store(flag, std::memory_order_release);
-+}
-+
-+static void GameEventQuit(WindowLoopState& game) {
-+	LOGF("Event: quit\n");
-+
-+	game.need_exit = true;
-+}
-+
-+static void GameEventTerminate(WindowLoopState& game) {
-+	LOGF("Event: terminate\n");
-+
-+	game.need_exit = true;
-+}
-+
-+static void GameEventKeyboard(WindowLoopState& game, const EventKeyboard& key) {
-+#ifdef KYTY_DBG_INPUT
-+	LOGF("Key: time = %.04f, %s%s, %s%s, %s, scan = %d, key = %d, mod = %04" PRIx16 "\n",
-+	     key.timestamp_seconds, (key.down ? "down" : ""), (key.up ? "up" : ""),
-+	     (key.pressed ? "pressed" : ""), (key.released ? "released" : ""),
-+	     (key.repeat ? "repeat" : ""), key.scan_code, key.key_code, key.mod);
-+#endif
-+
-+#if KYTY_PLATFORM == KYTY_PLATFORM_WINDOWS || KYTY_PLATFORM == KYTY_PLATFORM_LINUX
-+	if (key.down) {
-+		switch (key.key_code) {
-+			case SDLK_ESCAPE: game.need_exit = true; break;
-+			case SDLK_SPACE: SetPause(game, !game.paused.load(std::memory_order_acquire)); break;
+ 
+ } // namespace
+ 
+@@ -232,9 +236,23 @@ static void GameEventKeyboard(WindowLoopState& game, const EventKeyboard& key) {
+ 		switch (key.key_code) {
+ 			case SDLK_ESCAPE: game.need_exit = true; break;
+ 			case SDLK_SPACE: SetPause(game, !game.paused.load(std::memory_order_acquire)); break;
+-			case SDLK_F1:
 +			case SDLK_F2: // BC5: the settings overlay
-+				if (!key.repeat) {
+ 				if (!key.repeat) {
+-					RenderDocRequestCapture();
 +					SettingsOverlayToggle();
 +				}
 +				break;
@@ -4373,113 +3768,39 @@ index c729a98..db13022 100644
 +					WindowSetFullscreen(!WindowIsFullscreen());
 +				}
 +				break;
-+			case SDLK_F1:
++			case SDLK_F1: // BC5 (ADR 0011): the menu bar; RenderDoc's capture only with --rd
 +				if (!key.repeat) {
-+					RenderDocRequestCapture();
-+				}
-+				break;
-+			default: break;
-+		}
-+	}
-+
-+#endif
-+
-+	if ((key.down || key.up) && !key.repeat) {
-+		HostInputKey(key.key_code, key.down);
++					if (Config::RenderDocEnabled()) {
++						RenderDocRequestCapture();
++					} else {
++						HostMenuToggle();
++					}
+ 				}
+ 				break;
+ 			default: break;
+@@ -245,6 +263,11 @@ static void GameEventKeyboard(WindowLoopState& game, const EventKeyboard& key) {
+ 
+ 	if ((key.down || key.up) && !key.repeat) {
+ 		HostInputKey(key.key_code, key.down);
 +	} else {
 +		static const bool trace = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
 +		if (trace) {
 +			std::fprintf(stderr, "input trace: key %d repeat/other event ignored\n", key.key_code);
 +		}
-+	}
-+}
-+
-+static void GameEventMouse([[maybe_unused]] const EventMouse& mb) {
-+#ifdef KYTY_DBG_INPUT
-+	if (mb.wheel) {
-+		LOGF("Mouse wheel: time = %.04f, %s[%d, %d]\n", mb.timestamp_seconds,
-+		     (mb.touch ? "touch, " : ""), mb.x, mb.y);
-+	} else if (mb.motion) {
-+		LOGF("Mouse motion: time = %.04f, %s%s%s%s%s%s, [%d, %d], (%d, %d)\n", mb.timestamp_seconds,
-+		     (mb.left ? "left" : ""), (mb.middle ? "middle" : ""), (mb.right ? "right" : ""),
-+		     (mb.x1 ? "x1" : ""), (mb.x2 ? "x2" : ""), (mb.touch ? "_touch" : ""), mb.x, mb.y,
-+		     mb.motion_x, mb.motion_y);
-+	} else {
-+		LOGF("Mouse click: time = %.04f, %d, %s%s%s%s%s%s, %s%s, %s%s, [%d, %d]\n",
-+		     mb.timestamp_seconds, mb.num_of_clicks, (mb.left ? "left" : ""),
-+		     (mb.middle ? "middle" : ""), (mb.right ? "right" : ""), (mb.x1 ? "x1" : ""),
-+		     (mb.x2 ? "x2" : ""), (mb.touch ? "_touch" : ""), (mb.down ? "down" : ""),
-+		     (mb.up ? "up" : ""), (mb.pressed ? "pressed" : ""), (mb.released ? "released" : ""),
-+		     mb.x, mb.y);
-+	}
-+#endif
-+
-+	if (mb.down || mb.up) {
-+		uint8_t mouse_button = 0;
-+		if (mb.left) {
-+			mouse_button = SDL_BUTTON_LEFT;
-+		} else if (mb.middle) {
-+			mouse_button = SDL_BUTTON_MIDDLE;
-+		} else if (mb.right) {
-+			mouse_button = SDL_BUTTON_RIGHT;
-+		} else if (mb.x1) {
-+			mouse_button = SDL_BUTTON_X1;
-+		} else if (mb.x2) {
-+			mouse_button = SDL_BUTTON_X2;
-+		}
-+
-+		HostInputMouseButton(mouse_button, mb.down);
-+	}
-+}
-+
-+static void GameEventFinger([[maybe_unused]] const EventFinger& f) {
-+#ifdef KYTY_DBG_INPUT
-+	if (f.motion) {
-+		LOGF("Finger motion: time = %.04f, %d, %d, (x,y) = [%f, %f], (dx,dy) = [%f, %f], pressure "
-+		     "= %f\n",
-+		     f.timestamp_seconds, f.touch_id, f.finger_id, f.x, f.y, f.dx, f.dy, f.pressure);
-+	} else {
-+		LOGF("Finger press: time = %.04f, %d, %d, %s%s, (x,y) = [%f, %f], (dx,dy) = [%f, %f], "
-+		     "pressure = %f\n",
-+		     f.timestamp_seconds, f.touch_id, f.finger_id, (f.down ? "down" : ""),
-+		     (f.up ? "up" : ""), f.x, f.y, f.dx, f.dy, f.pressure);
-+	}
-+#endif
-+}
-+
-+static void GameEventController([[maybe_unused]] const EventController& f) {
-+	EXIT_NOT_IMPLEMENTED(f.remapped);
-+
-+#ifdef KYTY_DBG_INPUT
-+	if (f.added || f.removed) {
-+		LOGF("Controller %s: %d, time = %.04f\n", (f.added ? "added" : "removed"), f.id,
-+		     f.timestamp_seconds);
-+	} else if (f.axis) {
-+		LOGF("Controller axis: %d, axis = %d, value = %d, time = %.04f\n", f.id, f.axis_id,
-+		     f.axis_value, f.timestamp_seconds);
-+	} else {
-+		LOGF("Controller button: "
-+		     "%d, %s%s, %s%s, button = %d, time = %.04f\n",
-+		     f.id, (f.down ? "down" : ""), (f.up ? "up" : ""), (f.pressed ? "pressed" : ""),
-+		     (f.released ? "released" : ""), f.button, f.timestamp_seconds);
-+	}
-+#endif
-+
-+	if (f.added) {
-+		auto* pad = SDL_GameControllerOpen(f.id);
-+		if (pad == nullptr) {
-+			// SDL doesn't recognize this controller in its gamepad database.
-+			// Fall back to raw joystick so buttons/axes still route to the guest.
-+			auto* joy = SDL_JoystickOpen(f.id);
-+			if (joy != nullptr) {
-+				LOGF("Controller opened as raw joystick: %s\n",
-+				     SDL_JoystickName(joy));
+ 	}
+ }
+ 
+@@ -328,12 +351,24 @@ static void GameEventController([[maybe_unused]] const EventController& f) {
+ 			if (joy != nullptr) {
+ 				LOGF("Controller opened as raw joystick: %s\n",
+ 				     SDL_JoystickName(joy));
+-				Controller::ControllerConnect(f.id);
 +				Controller::ControllerConnect(SDL_JoystickInstanceID(joy));
-+			}
-+			return;
-+		}
-+		int id = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(pad));
-+		Controller::ControllerConnect(id);
+ 			}
+ 			return;
+ 		}
+ 		int id = SDL_JoystickInstanceID(SDL_GameControllerGetJoystick(pad));
+ 		Controller::ControllerConnect(id);
 +		// BC5: the pad's accelerometer and gyroscope, where SDL has them (ASTRO BOT's first
 +		// scene wants the controller shaken).
 +		for (const SDL_SensorType sensor: {SDL_SENSOR_ACCEL, SDL_SENSOR_GYRO}) {
@@ -4492,18 +3813,17 @@ index c729a98..db13022 100644
 +				LOGF("Controller sensor %s: enabled\n", name);
 +			}
 +		}
-+	}
-+
-+	if (f.removed) {
-+		Controller::ControllerDisconnect(f.id);
-+		SDL_GameControllerClose(SDL_GameControllerFromInstanceID(f.id));
-+	}
-+
-+	if (f.down || f.up) {
-+		const auto button = ControllerButtonToPadButton(f.button);
+ 	}
+ 
+ 	if (f.removed) {
+@@ -343,19 +378,38 @@ static void GameEventController([[maybe_unused]] const EventController& f) {
+ 
+ 	if (f.down || f.up) {
+ 		const auto button = ControllerButtonToPadButton(f.button);
+-		if (button != 0) {
 +		// BC5: "Pad:<button>=none" in the input configuration drops the physical button here.
 +		if (button != 0 && !HostInputPadButtonDisabled(f.button)) {
-+			Controller::ControllerButton(f.id, button, f.down);
+ 			Controller::ControllerButton(f.id, button, f.down);
 +		} else if (button != 0) {
 +			static bool once = false;
 +			if (!once) {
@@ -4511,20 +3831,21 @@ index c729a98..db13022 100644
 +				LOGF("Host input: pad button %s is disabled, its presses are dropped\n",
 +				     SDL_GameControllerGetStringForButton(static_cast<SDL_GameControllerButton>(f.button)));
 +			}
-+		}
-+		// Also route through custom gamepad mapping if user has one set.
-+		HostInputGamepadButton(static_cast<uint8_t>(f.button), f.down);
-+	}
-+
-+	if (f.axis) {
+ 		}
+ 		// Also route through custom gamepad mapping if user has one set.
+ 		HostInputGamepadButton(static_cast<uint8_t>(f.button), f.down);
+ 	}
+ 
+ 	if (f.axis) {
 +		// BC5: an axis can drive a control ("R2=Pad:lefttrigger"), and "Pad:<axis>=none" drops
 +		// the physical axis here (a trigger stuck at full travel, say).
 +		HostInputGamepadAxis(f.axis_id, f.axis_value);
-+		const auto axis = ControllerAxisFromSdl(f.axis_id);
+ 		const auto axis = ControllerAxisFromSdl(f.axis_id);
+-		if (axis != Controller::Axis::AxisMax) {
 +		if (axis != Controller::Axis::AxisMax && !HostInputPadAxisDisabled(f.axis_id)) {
-+			Controller::ControllerAxis(f.id, axis,
-+			                           ControllerAxisValueFromSdl(f.axis_id, f.axis_value));
-+		}
+ 			Controller::ControllerAxis(f.id, axis,
+ 			                           ControllerAxisValueFromSdl(f.axis_id, f.axis_value));
+ 		}
 +		else if (axis != Controller::Axis::AxisMax) {
 +			static bool once = false;
 +			if (!once) {
@@ -4533,136 +3854,13 @@ index c729a98..db13022 100644
 +				     SDL_GameControllerGetStringForAxis(static_cast<SDL_GameControllerAxis>(f.axis_id)));
 +			}
 +		}
-+	}
-+}
-+
-+static void GameEventLowMemory() {
-+	LOGF("Event: low_memory\n");
-+}
-+
-+static void GameEventWillEnterBackground(WindowLoopState& game) {
-+	LOGF("Event: will_enter_background\n");
-+
-+	SetPause(game, true);
-+}
-+
-+static void GameEventDidEnterBackground() {
-+	LOGF("Event: did_enter_background\n");
-+}
-+
-+static void GameEventWillEnterForeground() {
-+	LOGF("Event: will_enter_foreground\n");
-+}
-+
-+static void GameEventDidEnterForeground(WindowLoopState& game) {
-+	LOGF("Event: did_enter_foreground\n");
-+
-+	SetPause(game, false);
-+}
-+
-+void WindowContext::Resize(uint32_t new_width, uint32_t new_height) {
-+	EXIT_IF(new_width == 0 || new_height == 0);
-+	graphic_ctx.screen_width  = new_width;
-+	graphic_ctx.screen_height = new_height;
-+}
-+
-+void WindowContext::ProcessWindowEvent(const SDL_WindowEvent& event) {
-+	const auto& window_event = event;
-+	switch (window_event.event) {
-+		case SDL_WINDOWEVENT_SHOWN:
-+			LOGF("Window %" PRIu32 " shown\n", window_event.windowID);
-+			break;
-+
-+		case SDL_WINDOWEVENT_HIDDEN:
-+			LOGF("Window %" PRIu32 " hidden\n", window_event.windowID);
-+			break;
-+
-+		case SDL_WINDOWEVENT_EXPOSED:
-+			LOGF("Window %" PRIu32 " exposed\n", window_event.windowID);
-+			break;
-+
-+		case SDL_WINDOWEVENT_MOVED:
-+			LOGF("Window %" PRIu32 " moved to %" PRId32 ",%" PRId32 "\n", window_event.windowID,
-+			     window_event.data1, window_event.data2);
-+			break;
-+
-+		case SDL_WINDOWEVENT_RESIZED:
-+			LOGF("Window %" PRIu32 " resized to %" PRId32 "x%" PRId32 "\n", window_event.windowID,
-+			     window_event.data1, window_event.data2);
-+
-+			LOGF("m: %d\n", static_cast<int>(SDL_ThreadID()));
-+			Resize(window_event.data1, window_event.data2);
-+
-+			break;
-+
-+		case SDL_WINDOWEVENT_SIZE_CHANGED:
-+			LOGF("Window %" PRIu32 " size changed to %" PRId32 "x%" PRId32 "\n",
-+			     window_event.windowID, window_event.data1, window_event.data2);
-+
-+			LOGF("m: %d\n", static_cast<int>(SDL_ThreadID()));
-+			Resize(window_event.data1, window_event.data2);
-+
-+			break;
-+
-+		case SDL_WINDOWEVENT_MINIMIZED:
-+			LOGF("Window %" PRIu32 " minimized\n", window_event.windowID);
-+			break;
-+		case SDL_WINDOWEVENT_MAXIMIZED:
-+			LOGF("Window %" PRIu32 " maximized\n", window_event.windowID);
-+			break;
-+		case SDL_WINDOWEVENT_RESTORED:
-+			LOGF("Window %" PRIu32 " restored\n", window_event.windowID);
-+			break;
-+		case SDL_WINDOWEVENT_ENTER:
-+			LOGF("Mouse entered window %" PRIu32 "\n", window_event.windowID);
-+			break;
-+		case SDL_WINDOWEVENT_LEAVE:
-+			LOGF("Mouse left window %" PRIu32 "\n", window_event.windowID);
-+			break;
-+		case SDL_WINDOWEVENT_FOCUS_GAINED:
-+			LOGF("Window %" PRIu32 " gained keyboard focus\n", window_event.windowID);
-+			break;
-+		case SDL_WINDOWEVENT_FOCUS_LOST:
-+			LOGF("Window %" PRIu32 " lost keyboard focus\n", window_event.windowID);
-+			break;
-+		case SDL_WINDOWEVENT_CLOSE:
-+			LOGF("Window %" PRIu32 " closed\n", window_event.windowID);
-+			break;
-+		default:
-+			LOGF("Window %" PRIu32 " got unknown event %" PRIu8 "\n", window_event.windowID,
-+			     window_event.event);
-+			break;
-+	}
-+}
-+
-+void WindowContext::ProcessDisplayEvent(const SDL_DisplayEvent& display) {
-+	bool sdl = false;
-+
-+	switch (display.event) {
-+		case SDL_DISPLAYEVENT_ORIENTATION: sdl = true; [[fallthrough]];
-+		case static_cast<Uint8>(DisplayOrientation::DisplayEventOrientation): {
-+			LOGF("Display %" PRIu32 "[%s] changed orientation to %d - ", display.display,
-+			     sdl ? "SDL" : "Kyty", static_cast<int>(display.data1));
-+
-+			switch (display.data1) {
-+				case SDL_ORIENTATION_UNKNOWN: LOGF("UNKNOWN\n"); break;
-+				case SDL_ORIENTATION_LANDSCAPE: LOGF("LANDSCAPE\n"); break;
-+				case SDL_ORIENTATION_LANDSCAPE_FLIPPED: LOGF("LANDSCAPE_FLIPPED\n"); break;
-+				case SDL_ORIENTATION_PORTRAIT: LOGF("PORTRAIT\n"); break;
-+				case SDL_ORIENTATION_PORTRAIT_FLIPPED: LOGF("PORTRAIT_FLIPPED\n"); break;
-+				default: LOGF("???\n");
-+			}
-+
-+			break;
-+		}
-+		default:
-+			LOGF("Display %" PRIu32 " got unknown event 0x%" PRIx8 "\n", display.display,
-+			     display.event);
-+			break;
-+	}
-+}
-+
-+void WindowContext::ProcessEvent(double time_s) {
+ 	}
+ }
+ 
+@@ -486,9 +540,20 @@ void WindowContext::ProcessDisplayEvent(const SDL_DisplayEvent& display) {
+ }
+ 
+ void WindowContext::ProcessEvent(double time_s) {
 +	// BC5 (experiment 0048): a fullscreen request from another thread (WindowSetFullscreen).
 +	if (const int want = g_fullscreen_pending.exchange(-1); want >= 0 && window != nullptr) {
 +		if (SDL_SetWindowFullscreen(window, want == 1 ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0) != 0) {
@@ -4670,159 +3868,20 @@ index c729a98..db13022 100644
 +		}
 +		SDL_SetWindowResizable(window, want == 1 ? SDL_FALSE : SDL_TRUE);
 +	}
-+	auto& game  = loop;
-+	auto* event = &game.event;
-+	EXIT_IF(SDL_GetEventState(SDL_DISPLAYEVENT) != SDL_ENABLE);
+ 	auto& game  = loop;
+ 	auto* event = &game.event;
+ 	EXIT_IF(SDL_GetEventState(SDL_DISPLAYEVENT) != SDL_ENABLE);
 +	// BC5: while the settings overlay is open it takes the keyboard, the mouse and the pad.
 +	if (ProcessSettingsInput(*event)) {
 +		return;
 +	}
-+	if (ProcessImeInput(*event)) {
-+		return;
-+	}
-+
-+	switch (event->type) {
-+		case SDL_QUIT: GameEventQuit(game); break;
-+
-+		case SDL_APP_TERMINATING: GameEventTerminate(game); break;
-+
-+		case SDL_APP_LOWMEMORY: GameEventLowMemory(); break;
-+
-+		case SDL_APP_WILLENTERBACKGROUND: GameEventWillEnterBackground(game); break;
-+
-+		case SDL_APP_DIDENTERBACKGROUND: GameEventDidEnterBackground(); break;
-+
-+		case SDL_APP_WILLENTERFOREGROUND: GameEventWillEnterForeground(); break;
-+
-+		case SDL_APP_DIDENTERFOREGROUND: GameEventDidEnterForeground(game); break;
-+
-+		case SDL_KEYDOWN:
-+		case SDL_KEYUP: {
-+			EventKeyboard key {};
-+
-+			key.down              = (event->type == SDL_KEYDOWN);
-+			key.up                = (event->type == SDL_KEYUP);
-+			key.pressed           = (event->key.state == SDL_PRESSED);
-+			key.released          = (event->key.state == SDL_RELEASED);
-+			key.repeat            = (event->key.repeat != 0u);
-+			key.scan_code         = event->key.keysym.scancode;
-+			key.key_code          = event->key.keysym.sym;
-+			key.mod               = event->key.keysym.mod;
-+			key.timestamp_seconds = time_s;
-+
-+			GameEventKeyboard(game, key);
-+
-+			break;
-+		}
-+
-+		case SDL_WINDOWEVENT: ProcessWindowEvent(event->window); break;
-+
-+		case SDL_DISPLAYEVENT: ProcessDisplayEvent(event->display); break;
-+
-+		case SDL_MOUSEBUTTONDOWN:
-+		case SDL_MOUSEBUTTONUP: {
-+			EventMouse mb {};
-+
-+			mb.down              = (event->button.type == SDL_MOUSEBUTTONDOWN);
-+			mb.up                = (event->button.type == SDL_MOUSEBUTTONUP);
-+			mb.left              = (event->button.button == SDL_BUTTON_LEFT);
-+			mb.middle            = (event->button.button == SDL_BUTTON_MIDDLE);
-+			mb.right             = (event->button.button == SDL_BUTTON_RIGHT);
-+			mb.x1                = (event->button.button == SDL_BUTTON_X1);
-+			mb.x2                = (event->button.button == SDL_BUTTON_X2);
-+			mb.touch             = (event->button.which == SDL_TOUCH_MOUSEID);
-+			mb.pressed           = (event->button.state == SDL_PRESSED);
-+			mb.released          = (event->button.state == SDL_RELEASED);
-+			mb.num_of_clicks     = event->button.clicks;
-+			mb.wheel             = false;
-+			mb.x                 = event->button.x;
-+			mb.y                 = event->button.y;
-+			mb.motion            = false;
-+			mb.motion_x          = 0;
-+			mb.motion_y          = 0;
-+			mb.timestamp_seconds = time_s;
-+
-+			GameEventMouse(mb);
-+
-+			break;
-+		}
-+
-+		case SDL_MOUSEWHEEL: {
-+			EventMouse mb {};
-+
-+			mb.down              = false;
-+			mb.up                = false;
-+			mb.left              = false;
-+			mb.middle            = false;
-+			mb.right             = false;
-+			mb.x1                = false;
-+			mb.x2                = false;
-+			mb.touch             = (event->wheel.which == SDL_TOUCH_MOUSEID);
-+			mb.pressed           = false;
-+			mb.released          = false;
-+			mb.num_of_clicks     = 0;
-+			mb.wheel             = true;
-+			mb.x                 = event->wheel.x;
-+			mb.y                 = event->wheel.y;
-+			mb.motion            = false;
-+			mb.motion_x          = 0;
-+			mb.motion_y          = 0;
-+			mb.timestamp_seconds = time_s;
-+
-+			GameEventMouse(mb);
-+
-+			break;
-+		}
-+
-+		case SDL_MOUSEMOTION: {
-+			EventMouse mb {};
-+
-+			mb.down              = false;
-+			mb.up                = false;
-+			mb.left              = ((event->motion.state & KYTY_SDL_BUTTON_LMASK) != 0u);
-+			mb.middle            = ((event->motion.state & KYTY_SDL_BUTTON_MMASK) != 0u);
-+			mb.right             = ((event->motion.state & KYTY_SDL_BUTTON_RMASK) != 0u);
-+			mb.x1                = ((event->motion.state & KYTY_SDL_BUTTON_X1MASK) != 0u);
-+			mb.x2                = ((event->motion.state & KYTY_SDL_BUTTON_X2MASK) != 0u);
-+			mb.touch             = (event->motion.which == SDL_TOUCH_MOUSEID);
-+			mb.pressed           = false;
-+			mb.released          = false;
-+			mb.num_of_clicks     = 0;
-+			mb.wheel             = false;
-+			mb.x                 = event->motion.x;
-+			mb.y                 = event->motion.y;
-+			mb.motion            = true;
-+			mb.motion_x          = event->motion.xrel;
-+			mb.motion_y          = event->motion.yrel;
-+			mb.timestamp_seconds = time_s;
-+
-+			GameEventMouse(mb);
-+
-+			break;
-+		}
-+
-+		case SDL_FINGERMOTION:
-+		case SDL_FINGERDOWN:
-+		case SDL_FINGERUP: {
-+			EventFinger f {};
-+
-+			f.down              = (event->tfinger.type == SDL_FINGERDOWN);
-+			f.up                = (event->tfinger.type == SDL_FINGERUP);
-+			f.motion            = (event->tfinger.type == SDL_FINGERMOTION);
-+			f.finger_id         = static_cast<int>(event->tfinger.fingerId);
-+			f.touch_id          = static_cast<int>(event->tfinger.touchId);
-+			f.x                 = event->tfinger.x;
-+			f.y                 = event->tfinger.y;
-+			f.dx                = event->tfinger.dx;
-+			f.dy                = event->tfinger.dy;
-+			f.pressure          = event->tfinger.pressure;
-+			f.timestamp_seconds = time_s;
-+
-+			GameEventFinger(f);
-+
-+			break;
-+		}
-+
+ 	if (ProcessImeInput(*event)) {
+ 		return;
+ 	}
+@@ -635,6 +700,17 @@ void WindowContext::ProcessEvent(double time_s) {
+ 			break;
+ 		}
+ 
 +		case SDL_CONTROLLERSENSORUPDATE: { // BC5: SDL gives m/s^2 and rad/s
 +			if (event->csensor.sensor == SDL_SENSOR_ACCEL) {
 +				const float g[3] = {event->csensor.data[0] / 9.80665f, event->csensor.data[1] / 9.80665f,
@@ -4834,122 +3893,36 @@ index c729a98..db13022 100644
 +			break;
 +		}
 +
-+		case SDL_CONTROLLERAXISMOTION: {
-+			EventController c {};
-+
-+			c.id                = event->caxis.which;
-+			c.button            = SDL_CONTROLLER_BUTTON_INVALID;
-+			c.axis_id           = event->caxis.axis;
-+			c.axis_value        = event->caxis.value;
-+			c.down              = false;
-+			c.up                = false;
-+			c.added             = false;
-+			c.removed           = false;
-+			c.remapped          = false;
-+			c.axis              = true;
-+			c.pressed           = false;
-+			c.released          = false;
-+			c.timestamp_seconds = time_s;
-+
-+			GameEventController(c);
-+
-+			break;
-+		}
-+
-+		case SDL_CONTROLLERBUTTONDOWN:
-+		case SDL_CONTROLLERBUTTONUP: {
-+			EventController c {};
-+
-+			c.id                = event->cbutton.which;
-+			c.button            = event->cbutton.button;
-+			c.axis_id           = SDL_CONTROLLER_AXIS_INVALID;
-+			c.axis_value        = 0;
-+			c.down              = (event->cbutton.type == SDL_CONTROLLERBUTTONDOWN);
-+			c.up                = (event->cbutton.type == SDL_CONTROLLERBUTTONUP);
-+			c.added             = false;
-+			c.removed           = false;
-+			c.remapped          = false;
-+			c.axis              = false;
-+			c.pressed           = (event->cbutton.state == SDL_PRESSED);
-+			c.released          = (event->cbutton.state == SDL_RELEASED);
-+			c.timestamp_seconds = time_s;
-+
-+			GameEventController(c);
-+
-+			break;
-+		}
-+
-+		case SDL_CONTROLLERDEVICEADDED:
-+		case SDL_CONTROLLERDEVICEREMOVED:
-+		case SDL_CONTROLLERDEVICEREMAPPED: {
-+			EventController c {};
-+
-+			c.id                = event->cdevice.which;
-+			c.button            = SDL_CONTROLLER_BUTTON_INVALID;
-+			c.axis_id           = SDL_CONTROLLER_AXIS_INVALID;
-+			c.axis_value        = 0;
-+			c.down              = false;
-+			c.up                = false;
-+			c.added             = (event->cdevice.type == SDL_CONTROLLERDEVICEADDED);
-+			c.removed           = (event->cdevice.type == SDL_CONTROLLERDEVICEREMOVED);
-+			c.remapped          = (event->cdevice.type == SDL_CONTROLLERDEVICEREMAPPED);
-+			c.axis              = false;
-+			c.pressed           = false;
-+			c.released          = false;
-+			c.timestamp_seconds = time_s;
-+
-+			GameEventController(c);
-+
-+			break;
-+		}
-+
-+		// Raw joystick fallback — when SDL doesn't recognize a controller
-+		// in its gamepad DB, events arrive as joystick events instead.
-+		case SDL_JOYAXISMOTION: {
-+			// Map raw axis to a controller event. Axes 0-5 map to
-+			// left stick X/Y, right stick X/Y, L2, R2 by convention.
-+			static const uint8_t axis_map[] = {
-+			    SDL_CONTROLLER_AXIS_LEFTX,
-+			    SDL_CONTROLLER_AXIS_LEFTY,
-+			    SDL_CONTROLLER_AXIS_RIGHTX,
-+			    SDL_CONTROLLER_AXIS_RIGHTY,
-+			    SDL_CONTROLLER_AXIS_TRIGGERLEFT,
-+			    SDL_CONTROLLER_AXIS_TRIGGERRIGHT,
-+			};
+ 		case SDL_CONTROLLERAXISMOTION: {
+ 			EventController c {};
+ 
+@@ -717,6 +793,11 @@ void WindowContext::ProcessEvent(double time_s) {
+ 			    SDL_CONTROLLER_AXIS_TRIGGERLEFT,
+ 			    SDL_CONTROLLER_AXIS_TRIGGERRIGHT,
+ 			};
 +			// BC5: a pad SDL knows sends the same motion as a controller event; taking both
 +			// made a trigger alternate between its value and the raw one (below zero: released).
 +			if (SDL_GameControllerFromInstanceID(event->jaxis.which) != nullptr) {
 +				break;
 +			}
-+			EventController c {};
-+			c.id         = event->jaxis.which;
-+			c.axis_id    = (event->jaxis.axis < 6) ? axis_map[event->jaxis.axis]
-+			                                        : SDL_CONTROLLER_AXIS_INVALID;
-+			c.axis_value = event->jaxis.value;
-+			c.axis       = true;
-+			c.timestamp_seconds = time_s;
-+			GameEventController(c);
-+			break;
-+		}
-+
-+		case SDL_JOYBUTTONDOWN:
-+		case SDL_JOYBUTTONUP: {
+ 			EventController c {};
+ 			c.id         = event->jaxis.which;
+ 			c.axis_id    = (event->jaxis.axis < 6) ? axis_map[event->jaxis.axis]
+@@ -730,6 +811,9 @@ void WindowContext::ProcessEvent(double time_s) {
+ 
+ 		case SDL_JOYBUTTONDOWN:
+ 		case SDL_JOYBUTTONUP: {
 +			if (SDL_GameControllerFromInstanceID(event->jbutton.which) != nullptr) {
 +				break; // BC5: as above
 +			}
-+			EventController c {};
-+			c.id    = event->jbutton.which;
-+			c.button = event->jbutton.button;
-+			c.down   = (event->jbutton.type == SDL_JOYBUTTONDOWN);
-+			c.up     = (event->jbutton.type == SDL_JOYBUTTONUP);
-+			c.pressed  = (event->jbutton.state == SDL_PRESSED);
-+			c.released = (event->jbutton.state == SDL_RELEASED);
-+			c.timestamp_seconds = time_s;
-+			GameEventController(c);
-+			break;
-+		}
-+
-+		case SDL_JOYDEVICEADDED: {
+ 			EventController c {};
+ 			c.id    = event->jbutton.which;
+ 			c.button = event->jbutton.button;
+@@ -743,17 +827,30 @@ void WindowContext::ProcessEvent(double time_s) {
+ 		}
+ 
+ 		case SDL_JOYDEVICEADDED: {
+-			// Open as raw joystick when we don't get a controller event.
 +			// BC5: a device SDL knows as a game controller also sends SDL_CONTROLLERDEVICEADDED,
 +			// which opens and connects it; connecting it here too registered one pad twice, under
 +			// its device index and under its instance id. The two are equal for the first pad
@@ -4960,210 +3933,62 @@ index c729a98..db13022 100644
 +			if (SDL_IsGameController(event->jdevice.which) == SDL_TRUE) {
 +				break;
 +			}
-+			auto* joy = SDL_JoystickOpen(event->jdevice.which);
-+			if (joy != nullptr) {
-+				LOGF("Joystick added: %s\n", SDL_JoystickName(joy));
+ 			auto* joy = SDL_JoystickOpen(event->jdevice.which);
+ 			if (joy != nullptr) {
+ 				LOGF("Joystick added: %s\n", SDL_JoystickName(joy));
+-				Controller::ControllerConnect(event->jdevice.which);
 +				Controller::ControllerConnect(SDL_JoystickInstanceID(joy));
-+			}
-+			break;
-+		}
-+
-+		case SDL_JOYDEVICEREMOVED: {
-+			Controller::ControllerDisconnect(event->jdevice.which);
+ 			}
+ 			break;
+ 		}
+ 
+ 		case SDL_JOYDEVICEREMOVED: {
+ 			Controller::ControllerDisconnect(event->jdevice.which);
 +			// A game controller is closed by SDL_CONTROLLERDEVICEREMOVED; only raw joysticks here.
 +			if (SDL_GameControllerFromInstanceID(event->jdevice.which) != nullptr) {
 +				break;
 +			}
-+			auto* joy = SDL_JoystickFromInstanceID(event->jdevice.which);
-+			if (joy != nullptr) {
-+				SDL_JoystickClose(joy);
-+			}
-+			break;
-+		}
-+	}
-+}
-+
-+#if defined(__APPLE__)
-+void WindowContext::RunOnMainThread(std::function<void()> task, bool wait) {
-+	if (Common::Thread::IsMainThread()) {
-+		task();
-+		return;
-+	}
-+
-+	uint64_t ticket = 0;
-+	{
-+		Common::LockGuard lock(main_task_mutex);
-+		main_tasks.push_back(std::move(task));
-+		ticket = ++main_tasks_queued;
-+	}
-+
-+	// Wake the main loop in case it is blocked in SDL_WaitEvent.
-+	SDL_Event event {};
-+	event.type = SDL_USEREVENT;
-+	SDL_PushEvent(&event);
-+
-+	if (!wait) {
-+		return;
-+	}
-+	Common::LockGuard lock(main_task_mutex);
-+	while (main_tasks_run < ticket) {
-+		main_task_done.Wait(&main_task_mutex);
-+	}
-+}
-+
-+void WindowContext::DrainMainThreadTasks() {
-+	std::vector<std::function<void()>> tasks;
-+	{
-+		Common::LockGuard lock(main_task_mutex);
-+		tasks.swap(main_tasks);
-+	}
-+	if (tasks.empty()) {
-+		return;
-+	}
-+	for (auto& task: tasks) {
-+		task();
-+	}
-+	Common::LockGuard lock(main_task_mutex);
-+	main_tasks_run += tasks.size();
-+	main_task_done.SignalAll();
-+}
-+#endif
-+
-+void WindowContext::Run() {
-+	Common::Timer timer;
-+	timer.Start();
-+
-+	loop.event     = {};
-+	loop.need_exit = false;
-+	loop.paused.store(false, std::memory_order_release);
-+
-+	while (!loop.need_exit) {
-+#if defined(__APPLE__)
-+		DrainMainThreadTasks();
-+#endif
-+		if (loop.paused.load(std::memory_order_acquire)) {
-+			if (!timer.IsPaused()) {
-+				timer.Pause();
-+			}
-+		} else if (timer.IsPaused()) {
-+			timer.Resume();
-+		}
-+
-+		if (SDL_WaitEvent(&loop.event) == 0) {
-+			EXIT("%s\n", SDL_GetError());
-+		}
-+		ProcessEvent(timer.GetTimeS());
-+	}
-+}
-+
-+static void WindowCreate(WindowContext& context) {
-+	EXIT_IF(context.window != nullptr);
-+	EXIT_IF(context.graphic_ctx.screen_width == 0);
-+	EXIT_IF(context.graphic_ctx.screen_height == 0);
-+
-+	int width  = static_cast<int>(context.graphic_ctx.screen_width);
-+	int height = static_cast<int>(context.graphic_ctx.screen_height);
-+
-+#if KYTY_PLATFORM == KYTY_PLATFORM_WINDOWS
-+	SDL_SetHint(SDL_HINT_WINDOWS_DPI_SCALING, "0");
-+#endif
-+
-+	if (SDL_InitSubSystem(SDL_INIT_VIDEO | SDL_INIT_GAMECONTROLLER | SDL_INIT_JOYSTICK) < 0) {
-+		EXIT("%s\n", SDL_GetError());
-+	}
-+	HostInputInit();
-+	InitializeImeInput();
-+
-+	LOGF("WindowCreate(): width = %d, height = %d\n", width, height);
-+
+ 			auto* joy = SDL_JoystickFromInstanceID(event->jdevice.which);
+ 			if (joy != nullptr) {
+ 				SDL_JoystickClose(joy);
+@@ -856,11 +953,13 @@ static void WindowCreate(WindowContext& context) {
+ 
+ 	LOGF("WindowCreate(): width = %d, height = %d\n", width, height);
+ 
 +	const bool fullscreen = Config::FullscreenEnabled() || g_fullscreen_pending.load() == 1; // BC5: or Fullscreen=on
 +
-+	// KytyPlus: keep the game in an ordinary window. A window that all but matches the
-+	// panel (1280x720 on a 1280x800 display) reads as borderless fullscreen, because the
-+	// frame ends up flush with the screen edges. Fit the requested size inside the
-+	// display's usable area first so the decorations stay visible and usable.
+ 	// KytyPlus: keep the game in an ordinary window. A window that all but matches the
+ 	// panel (1280x720 on a 1280x800 display) reads as borderless fullscreen, because the
+ 	// frame ends up flush with the screen edges. Fit the requested size inside the
+ 	// display's usable area first so the decorations stay visible and usable.
+-	if (!Config::FullscreenEnabled()) {
 +	if (!fullscreen) {
-+		SDL_Rect usable{};
-+		if (SDL_GetDisplayUsableBounds(0, &usable) == 0 && usable.w > 0 && usable.h > 0) {
-+			constexpr int margin_x = 48;
-+			constexpr int margin_y = 96;
-+			const int     max_w    = std::max(320, usable.w - margin_x);
-+			const int     max_h    = std::max(240, usable.h - margin_y);
-+			if (width > max_w) {
-+				height = static_cast<int>((static_cast<double>(height) * max_w) / width);
-+				width  = max_w;
-+			}
-+			if (height > max_h) {
-+				width  = static_cast<int>((static_cast<double>(width) * max_h) / height);
-+				height = max_h;
-+			}
-+			if (width != static_cast<int>(context.graphic_ctx.screen_width) ||
-+			    height != static_cast<int>(context.graphic_ctx.screen_height)) {
-+				LOGF("Windowed fit: using %dx%d (display usable %dx%d)\n", width, height, usable.w,
-+				     usable.h);
-+				context.graphic_ctx.screen_width  = static_cast<uint32_t>(width);
-+				context.graphic_ctx.screen_height = static_cast<uint32_t>(height);
-+			}
-+		}
-+	}
-+
-+	uint32_t window_flags = KYTY_SDL_WINDOW_FLAGS;
+ 		SDL_Rect usable{};
+ 		if (SDL_GetDisplayUsableBounds(0, &usable) == 0 && usable.w > 0 && usable.h > 0) {
+ 			constexpr int margin_x = 48;
+@@ -886,7 +985,7 @@ static void WindowCreate(WindowContext& context) {
+ 	}
+ 
+ 	uint32_t window_flags = KYTY_SDL_WINDOW_FLAGS;
+-	if (Config::FullscreenEnabled()) {
 +	if (fullscreen) {
-+		window_flags |= static_cast<uint32_t>(SDL_WINDOW_FULLSCREEN_DESKTOP);
-+	} else {
-+		// Windowed: allow the user to resize; keep the normal frame decorations.
-+		window_flags |= static_cast<uint32_t>(SDL_WINDOW_RESIZABLE);
-+	}
-+#if defined(__APPLE__)
-+	// macOS 26 window chrome (CoreUI asset decode, SwiftUI titlebar) has been observed
-+	// throwing NSExceptions under Rosetta during the first CATransaction commit. A
-+	// borderless window skips that machinery entirely.
-+	if (std::getenv("KYTY_BORDERLESS") != nullptr) {
-+		window_flags |= static_cast<uint32_t>(SDL_WINDOW_BORDERLESS);
-+	}
-+#endif
-+	context.window = SDL_CreateWindow(KYTY_SDL_WINDOW_CAPTION, KYTY_SDL_WINDOWPOS_CENTERED,
-+	                                  KYTY_SDL_WINDOWPOS_CENTERED, width, height, window_flags);
-+
-+	context.window_hidden = true;
-+
-+	if (context.window == nullptr) {
-+		EXIT("%s\n", SDL_GetError());
-+	}
-+
+ 		window_flags |= static_cast<uint32_t>(SDL_WINDOW_FULLSCREEN_DESKTOP);
+ 	} else {
+ 		// Windowed: allow the user to resize; keep the normal frame decorations.
+@@ -909,7 +1008,8 @@ static void WindowCreate(WindowContext& context) {
+ 		EXIT("%s\n", SDL_GetError());
+ 	}
+ 
+-	SDL_SetWindowResizable(context.window, Config::FullscreenEnabled() ? SDL_FALSE : SDL_TRUE);
 +	SDL_SetWindowResizable(context.window, fullscreen ? SDL_FALSE : SDL_TRUE);
 +	g_fullscreen_pending.store(-1); // applied by the flags above
-+}
-+
-+Presenter& WindowInit(uint32_t width, uint32_t height) {
-+	EXIT_NOT_IMPLEMENTED(!Common::Thread::IsMainThread());
-+	EXIT_IF(g_window != nullptr);
-+
-+	auto window = std::make_unique<WindowContext>();
-+
-+	window->graphic_ctx.screen_width  = width;
-+	window->graphic_ctx.screen_height = height;
-+
-+	WindowCreate(*window);
-+	window->CreateVulkan();
-+	auto& presenter = *window->presenter;
-+	g_window        = std::move(window);
-+	return presenter;
-+}
-+
-+void WindowRun() {
-+	KYTY_PROFILER_THREAD("Thread_Window");
-+	EXIT_IF(g_window == nullptr);
-+
-+	g_window->Run();
-+}
-+
-+void WindowShutdown() {
-+	if (g_window != nullptr) {
-+		g_window.reset();
-+	}
-+}
-+
+ }
+ 
+ Presenter& WindowInit(uint32_t width, uint32_t height) {
+@@ -941,6 +1041,41 @@ void WindowShutdown() {
+ 	}
+ }
+ 
 +void WindowSetFullscreen(bool on) {
 +	if (g_window == nullptr || g_window->window == nullptr) {
 +		g_fullscreen_pending.store(on ? 1 : 0);
@@ -5177,6 +4002,20 @@ index c729a98..db13022 100644
 +	SDL_PushEvent(&event);
 +}
 +
++void WindowSetPaused(bool on) {
++	if (g_window == nullptr) {
++		return;
++	}
++	SetPause(g_window->loop, on);
++	SDL_Event event {}; // wake the loop so its timer follows
++	event.type = SDL_USEREVENT;
++	SDL_PushEvent(&event);
++}
++
++bool WindowIsPaused() {
++	return g_window != nullptr && g_window->loop.paused.load(std::memory_order_acquire);
++}
++
 +bool WindowIsFullscreen() {
 +	if (g_window == nullptr || g_window->window == nullptr) {
 +		return Config::FullscreenEnabled() || g_fullscreen_pending.load() == 1;
@@ -5185,137 +4024,35 @@ index c729a98..db13022 100644
 +	return (SDL_GetWindowFlags(g_window->window) & SDL_WINDOW_FULLSCREEN_DESKTOP) == SDL_WINDOW_FULLSCREEN_DESKTOP;
 +}
 +
-+static int WindowIconRead(void* user, char* data, int size) {
-+	auto*    src        = static_cast<Common::File*>(user);
-+	uint32_t bytes_read = 0;
-+	src->Read(data, static_cast<uint32_t>(size), &bytes_read);
-+	return static_cast<int>(bytes_read);
-+}
-+
-+static void WindowIconSkip(void* user, int n) {
-+	auto*          src      = static_cast<Common::File*>(user);
-+	const uint64_t position = src->Tell();
-+
-+	if (n >= 0) {
-+		src->Seek(position + static_cast<uint64_t>(n));
-+	} else {
-+		const uint64_t distance = static_cast<uint64_t>(-static_cast<int64_t>(n));
-+		EXIT_IF(distance > position);
-+		src->Seek(position - distance);
-+	}
-+}
-+
-+static int WindowIconEof(void* user) {
-+	auto* src = static_cast<Common::File*>(user);
-+	return src->IsEOF() ? 1 : 0;
-+}
-+
-+struct WindowIcon {
-+	SDL_Surface* surface = nullptr;
-+	void*        pixels  = nullptr;
-+
-+	~WindowIcon() {
-+		SDL_FreeSurface(surface);
-+		stbi_image_free(pixels);
-+	}
-+};
-+
-+static void WindowLoadPngIcon(const std::string& path, WindowIcon* icon) {
-+	Common::File f;
-+	if (!f.Open(path, Common::File::Mode::Read)) {
-+		EXIT("Can't open icon file %s\n", path.c_str());
-+	}
-+
-+	int width  = 0;
-+	int height = 0;
-+
-+	stbi_io_callbacks cb {};
-+	cb.read = WindowIconRead;
-+	cb.skip = WindowIconSkip;
-+	cb.eof  = WindowIconEof;
-+
-+	icon->pixels = stbi_load_from_callbacks(&cb, &f, &width, &height, nullptr, 4);
-+	f.Close();
-+
-+	EXIT_IF(icon->pixels == nullptr);
-+
-+	icon->surface = SDL_CreateRGBSurfaceWithFormatFrom(icon->pixels, width, height, 32, width * 4,
-+	                                                   SDL_PIXELFORMAT_RGBA32);
-+	EXIT_NOT_IMPLEMENTED(icon->surface == nullptr);
-+}
-+
-+void WindowContext::UpdateIcon() {
-+	static WindowIcon icon;
-+	static bool       icon_loaded = false;
-+
-+	if (!icon_loaded) {
-+		std::string icon_path;
-+		if (Loader::SystemContentGetIconPath(&icon_path)) {
-+			WindowLoadPngIcon(icon_path, &icon);
-+		}
-+		icon_loaded = true;
-+	}
-+
-+	if (icon.surface != nullptr) {
-+		SDL_SetWindowIcon(window, icon.surface);
-+	}
-+}
-+
-+void WindowContext::UpdateTitle() {
-+	static char title[128];
-+	static char title_id[12];
-+	static char app_ver[12];
-+	static bool has_title = Loader::SystemContentParamSfoGetString("TITLE", title, sizeof(title));
-+	static bool has_title_id =
-+	    Loader::SystemContentParamSfoGetString("TITLE_ID", title_id, sizeof(title_id));
-+	static bool has_app_ver =
-+	    Loader::SystemContentParamSfoGetString("APP_VER", app_ver, sizeof(app_ver));
-+	static uint64_t fps_start   = Common::Timer::QueryPerformanceCounter();
-+	static uint64_t frame_num   = 0;
-+	static uint64_t fps_frames  = 0;
-+	static double   current_fps = 0.0;
-+
-+#if KYTY_BUILD == KYTY_BUILD_DEBUG
-+	static constexpr auto build_type = "Debug";
-+#elif KYTY_BUILD == KYTY_BUILD_RELEASE
-+	static constexpr auto build_type = "Release";
-+#else
-+	static constexpr auto build_type = "Unknown";
-+#endif
-+
-+	const auto now       = Common::Timer::QueryPerformanceCounter();
-+	const auto frequency = Common::Timer::QueryPerformanceFrequency();
-+	frame_num++;
-+	fps_frames++;
+ static int WindowIconRead(void* user, char* data, int size) {
+ 	auto*    src        = static_cast<Common::File*>(user);
+ 	uint32_t bytes_read = 0;
+@@ -1043,6 +1178,12 @@ void WindowContext::UpdateTitle() {
+ 	const auto frequency = Common::Timer::QueryPerformanceFrequency();
+ 	frame_num++;
+ 	fps_frames++;
 +	// BC5 (2026-10-16, the maintainer): the title shows the frame rate only, no frame counter, and is
 +	// set once a second when the rate is recomputed instead of at every flip (a compositor round
 +	// trip per frame).
 +	if (now - fps_start < frequency && frame_num > 1) {
 +		return;
 +	}
-+	if (now - fps_start >= frequency) {
-+		current_fps = static_cast<double>(fps_frames) * static_cast<double>(frequency) /
-+		              static_cast<double>(now - fps_start);
-+		fps_start   = now;
-+		fps_frames  = 0;
-+	}
-+
-+	auto fps = fmt::format(
+ 	if (now - fps_start >= frequency) {
+ 		current_fps = static_cast<double>(fps_frames) * static_cast<double>(frequency) /
+ 		              static_cast<double>(now - fps_start);
+@@ -1051,10 +1192,10 @@ void WindowContext::UpdateTitle() {
+ 	}
+ 
+ 	auto fps = fmt::format(
+-	    "[{} | {}] {}{}{}{}{}{}[{}] [{}], frame: {}, fps: {:f}", KYTY_BUILD_LABEL, build_type,
 +	    "[{} | {}] {}{}{}{}{}{}[{}] [{}], fps: {:.1f}", KYTY_BUILD_LABEL, build_type,
-+	    (has_title ? title : ""), (has_title ? ", " : ""), (has_title_id ? title_id : ""),
-+	    (has_title_id ? ", " : ""), (has_app_ver ? app_ver : ""), (has_app_ver ? " " : ""),
+ 	    (has_title ? title : ""), (has_title ? ", " : ""), (has_title_id ? title_id : ""),
+ 	    (has_title_id ? ", " : ""), (has_app_ver ? app_ver : ""), (has_app_ver ? " " : ""),
+-	    device_name, processor_name, frame_num, current_fps);
 +	    device_name, processor_name, current_fps);
-+
-+#if defined(__APPLE__)
-+	// AppKit traps on title changes off the main thread; fire-and-forget keeps present pacing.
-+	RunOnMainThread([this, fps = std::move(fps)] { SDL_SetWindowTitle(window, fps.c_str()); },
-+	                false);
-+#else
-+	SDL_SetWindowTitle(window, fps.c_str());
-+#endif
-+}
-+
-+} // namespace Libs::Graphics
+ 
+ #if defined(__APPLE__)
+ 	// AppKit traps on title changes off the main thread; fire-and-forget keeps present pacing.
 diff --git a/src/kernel/eventQueue.cpp b/src/kernel/eventQueue.cpp
 index 14561b0..d1a0fe6 100644
 --- a/src/kernel/eventQueue.cpp
@@ -7144,10 +5881,18 @@ index e82b93e..6cf1b61 100644
  
  } // namespace Libs::Audio::Ajm
 diff --git a/src/libs/audio.cpp b/src/libs/audio.cpp
-index fe4b332..142802d 100644
+index fe4b332..63f2441 100644
 --- a/src/libs/audio.cpp
 +++ b/src/libs/audio.cpp
-@@ -20,6 +20,10 @@
+@@ -10,6 +10,7 @@
+ #include "kernel/pthread.h"
+ #include "kernel/semaphore.h"
+ #include "libs/audio_internal.h"
++#include "libs/controller.h"
+ #include "libs/errno.h"
+ #include "libs/libs.h"
+ 
+@@ -20,6 +21,10 @@
  #include <cstring>
  #include <limits>
  #include <vector>
@@ -7158,7 +5903,7 @@ index fe4b332..142802d 100644
  
  namespace Libs::Audio {
  
-@@ -107,8 +111,28 @@ private:
+@@ -107,8 +112,28 @@ private:
  
  		SDL_AudioDeviceID audio_device = 0;
  		SDL_AudioSpec     audio_spec   = {};
@@ -7187,7 +5932,15 @@ index fe4b332..142802d 100644
  	struct PortIn {
  		bool     used            = false;
  		uint32_t type            = 0;
-@@ -236,20 +260,51 @@ bool Audio::OpenSdlDevice(PortOut* port) {
+@@ -132,6 +157,7 @@ private:
+ 	static const void*     PrepareOutputBuffer(const PortOut& port, const void* data,
+ 	                                           std::vector<uint8_t>* buffer);
+ 	static bool            QueueSdlAudio(PortOut* port, const void* data, bool blocking);
++	static void            PadRumbleFromVibrationFrames(const PortOut& port, const void* data);
+ };
+ 
+ static Audio* g_audio = nullptr;
+@@ -236,20 +262,51 @@ bool Audio::OpenSdlDevice(PortOut* port) {
  	desired.samples  = static_cast<Uint16>(port->samples_num);
  	desired.callback = nullptr;
  
@@ -7243,7 +5996,73 @@ index fe4b332..142802d 100644
  	return true;
  }
  
-@@ -335,7 +390,90 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -326,16 +383,156 @@ const void* Audio::PrepareOutputBuffer(const PortOut& port, const void* data,
+ 	return buffer->data();
+ }
+ 
++// BC5 (rumble fallback). Ported from AnyPS5 core/libs/prx/libSceAudioOut/src/AudioOut2PadMix.cpp
++// @ 7f596df (GPL-2.0), AudioOut2RumbleFromPadFrames: when the controller has no audio sink (a
++// DualShock 4, F72) or its device has dropped (F61, F93), the vibration port's frames become
++// classic rumble: per channel the RMS of the block, and rms >= 0.01 gives min(1, 2*rms)*255,
++// sent through controller.cpp's rumble path. KYTY_BC5_PAD_RUMBLE_FALLBACK=0 disables it.
++// TODO(verify): AnyPS5 names the pad speaker port type 0x3 and the vibration port type 0x6
++// (AudioOut2PadMix.hpp); F69 recorded the titles opening types 4 and 10, which this file keeps.
++static bool PadRumbleFallbackEnabled() {
++	static const bool enabled = [] {
++		const char* e = std::getenv("KYTY_BC5_PAD_RUMBLE_FALLBACK");
++		return e == nullptr || std::strcmp(e, "0") != 0;
++	}();
++	return enabled;
++}
++
++void Audio::PadRumbleFromVibrationFrames(const PortOut& port, const void* data) {
++	if (data == nullptr || (port.channels_num != 1 && port.channels_num != 2) || port.samples_num == 0) {
++		return;
++	}
++	const bool     is_float  = FormatIsFloat(port.format);
++	const uint32_t frames    = port.samples_num;
++	const uint32_t channels  = static_cast<uint32_t>(port.channels_num);
++	uint8_t        rumble[2] = {0, 0};
++	for (uint32_t ch = 0; ch < 2; ch++) {
++		const uint32_t src_ch = channels == 2 ? ch : 0;
++		const float    volume = static_cast<float>(port.volume[src_ch]) / 32768.0f;
++		double         energy = 0.0;
++		for (uint32_t f = 0; f < frames; f++) {
++			const size_t index = static_cast<size_t>(f) * channels + src_ch;
++			float        v     = 0.0f;
++			if (is_float) {
++				std::memcpy(&v, static_cast<const float*>(data) + index, sizeof(v));
++			} else {
++				int16_t s = 0;
++				std::memcpy(&s, static_cast<const int16_t*>(data) + index, sizeof(s));
++				v = static_cast<float>(s) / 32768.0f;
++			}
++			v *= volume;
++			if (std::isfinite(v)) {
++				energy += static_cast<double>(v) * v;
++			}
++		}
++		const double rms = std::sqrt(energy / frames);
++		if (rms >= 0.01) {
++			rumble[ch] = static_cast<uint8_t>(std::lround(std::min(1.0, rms * 2.0) * 255.0));
++		}
++	}
++	Controller::ControllerAudioRumble(rumble[0], rumble[1]);
++}
++
+ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+ 	EXIT_IF(port == nullptr);
+ 
++	// BC5 (rumble fallback): a vibration port with no controller audio device, or whose device is
++	// not playing (unplugged, F93), drives the pad's motors instead of its actuators.
++	if (port->type == AUDIO_OUT_PORT_TYPE_VIBRATION && data != nullptr && PadRumbleFallbackEnabled() &&
++	    (port->audio_device == 0 || SDL_GetAudioDeviceStatus(port->audio_device) != SDL_AUDIO_PLAYING)) {
++		PadRumbleFromVibrationFrames(*port, data);
++	}
++
+ 	if (port->audio_device == 0 || data == nullptr) {
+ 		return false;
+ 	}
  
  	std::vector<uint8_t> prepared_buffer;
  	const void*          prepared_data = PrepareOutputBuffer(*port, data, &prepared_buffer);
@@ -7335,7 +6154,7 @@ index fe4b332..142802d 100644
  
  	std::vector<uint8_t> convert_buffer;
  	const void*          queue_data = prepared_data;
-@@ -343,7 +481,7 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -343,7 +540,7 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  
  	SDL_AudioCVT cvt {};
  	const int    cvt_result =
@@ -7344,7 +6163,7 @@ index fe4b332..142802d 100644
  	                      static_cast<int>(port->freq), port->audio_spec.format,
  	                      port->audio_spec.channels, port->audio_spec.freq);
  
-@@ -368,6 +506,46 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -368,6 +565,46 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  		queue_size = static_cast<uint32_t>(cvt.len_cvt);
  	}
  
@@ -7391,7 +6210,7 @@ index fe4b332..142802d 100644
  	if (blocking) {
  		// More aggressive buffer management to prevent audio issues
  		// during heavy GPU load (common in gameplay vs cutscene)
-@@ -380,15 +558,26 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -380,15 +617,26 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  		const auto wait_start      = LibKernel::KernelGetProcessTime();
  		// Timeout faster to avoid blocking the game thread
  		const uint64_t timeout_us = 100000; // 100ms max wait
@@ -7418,7 +6237,7 @@ index fe4b332..142802d 100644
  
  	if (SDL_QueueAudio(port->audio_device, queue_data, queue_size) < 0) {
  		LOGF("AudioOut: SDL_QueueAudio failed: %s\n", SDL_GetError());
-@@ -428,7 +617,7 @@ Audio::Id Audio::AudioOutOpen(int type, uint32_t samples_num, uint32_t freq, For
+@@ -428,7 +676,7 @@ Audio::Id Audio::AudioOutOpen(int type, uint32_t samples_num, uint32_t freq, For
  				port.volume[i] = 32768;
  			}
  
@@ -7427,7 +6246,7 @@ index fe4b332..142802d 100644
  				// KytyPlus diagnostic: OpenSdlDevice() may fail (no host audio device,
  				// unsupported sample rate/format, or SDL init failure). The return is
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
-@@ -568,6 +757,41 @@ uint32_t Audio::AudioOutOutputs(OutputParam* params, uint32_t num, bool blocking
+@@ -568,6 +816,41 @@ uint32_t Audio::AudioOutOutputs(OutputParam* params, uint32_t num, bool blocking
  		m_out_ports[params[i].handle.GetId()].last_output_time = LibKernel::KernelGetProcessTime();
  	}
  
@@ -15533,19 +14352,20 @@ index 0000000..6f30649
 +
 +} // namespace Libs
 diff --git a/src/libs/controller.cpp b/src/libs/controller.cpp
-index 55718eb..24bf963 100644
+index 55718eb..6d66359 100644
 --- a/src/libs/controller.cpp
 +++ b/src/libs/controller.cpp
-@@ -1,4 +1,8 @@
+@@ -1,4 +1,9 @@
 +#include <pthread.h>
  #include "libs/controller.h"
++#include "SDL.h"
 +#include <cinttypes>
 +#include <cstdio>
 +#include <cstdlib>
  
  #include "common/assert.h"
  #include "common/common.h"
-@@ -12,9 +16,15 @@
+@@ -12,9 +17,15 @@
  #include "libs/libs.h"
  #include "libs/padData.h"
  
@@ -15561,7 +14381,7 @@ index 55718eb..24bf963 100644
  
  namespace Libs::Controller {
  
-@@ -45,6 +55,9 @@ struct ControllerState {
+@@ -45,6 +56,9 @@ struct ControllerState {
  	uint64_t time                                  = 0;
  	uint32_t buttons                               = 0;
  	int      axes[static_cast<int>(Axis::AxisMax)] = {128, 128, 128, 128, 0, 0};
@@ -15571,8 +14391,12 @@ index 55718eb..24bf963 100644
  };
  
  // Local-multiplayer: one GameController owns up to PAD_MAX_CONTROLLERS player
-@@ -61,6 +74,8 @@ public:
+@@ -59,8 +73,12 @@ public:
+ 
+ 	void Connect(int id);
  	void Disconnect(int id);
++	// BC5: the SDL instance id bound to a player slot, -1 when none (rumble output).
++	int  InstanceId(int index);
  	void Button(int id, uint32_t button, bool down);
  	void Axis(int id, Axis axis, int value);
 +	void Motion(int id, bool gyro, const float* xyz);
@@ -15580,7 +14404,7 @@ index 55718eb..24bf963 100644
  	void ResetInputState();
  	void GetConnectionInfo(bool* flag, int* count);
  	void ReadState(ControllerState* state, bool* flag, int* count);
-@@ -78,7 +93,25 @@ private:
+@@ -78,7 +96,25 @@ private:
  		bool            obtained[STATES_MAX] = {};
  		uint32_t        states_num          = 0;
  		uint32_t        first_state         = 0;
@@ -15606,7 +14430,7 @@ index 55718eb..24bf963 100644
  
  	void EnsureSlot(int index);
  	int  OwnerSlot(int id) const;
-@@ -94,6 +127,34 @@ private:
+@@ -94,6 +130,34 @@ private:
  	std::vector<SlotState> m_slots;
  };
  static GameController* g_controller = nullptr;
@@ -15641,7 +14465,7 @@ index 55718eb..24bf963 100644
  // Native DualSense driver instance (spec-accurate, hardware-unvalidated).
  // Owned by the Controller subsystem; opened on subsystem init if a device is
  // present, polled on an internal thread, and closed on subsystem destroy.
-@@ -180,7 +241,30 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
+@@ -180,7 +244,30 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
  	data->right_stick_y          = state.axes[static_cast<int>(Axis::RightY)];
  	data->analog_buttons_l2      = state.axes[static_cast<int>(Axis::TriggerLeft)];
  	data->analog_buttons_r2      = state.axes[static_cast<int>(Axis::TriggerRight)];
@@ -15673,7 +14497,7 @@ index 55718eb..24bf963 100644
  	data->touch_data_touch0_id   = 1;
  	data->touch_data_touch1_id   = 2;
  	data->connected              = connected;
-@@ -189,11 +273,177 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
+@@ -189,11 +276,177 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
  	data->device_unique_data_len = 0;
  }
  
@@ -15851,10 +14675,68 @@ index 55718eb..24bf963 100644
  
  	// The native DualSense HID driver is opt-in and off by default. SDL already
  	// handles every standard pad (including a DualSense); this unvalidated driver is
-@@ -258,16 +508,104 @@ void ControllerDisconnect(int id) {
+@@ -258,16 +511,162 @@ void ControllerDisconnect(int id) {
  	g_controller->Disconnect(id);
  }
  
++// BC5 (rumble): one place for the two motor bytes to leave the host. The native DualSense driver
++// opens a device on Windows only (dualsense.cpp, OpenWindows), so on the box the path that reaches
++// the pad is SDL's game-controller rumble on the controller window.cpp opened for slot 0; SDL
++// takes the motors as 16-bit values, low frequency (large) first.
++// TODO(verify): which actuator the console drives for each byte of scePadSetVibration; the
++// large/small naming here follows dualsense.h and AnyPS5 (large = the vibration stream's left
++// channel), neither of which was checked against a console.
++void ControllerRumble(uint8_t large, uint8_t small, uint32_t duration_ms) {
++	auto* ds = static_cast<Libs::DualSense::DualSenseDriver*>(DualSenseDriverInstance());
++	if (ds != nullptr && ds->IsOpen()) {
++		Libs::DualSense::VibrationParam v;
++		v.large_motor = large;
++		v.small_motor = small;
++		ds->SetVibration(v);
++	}
++	if (g_controller == nullptr) {
++		return;
++	}
++	const int id = g_controller->InstanceId(0);
++	if (id < 0) {
++		return;
++	}
++	SDL_GameController* pad = SDL_GameControllerFromInstanceID(id);
++	if (pad != nullptr) {
++		SDL_GameControllerRumble(pad, static_cast<Uint16>(static_cast<unsigned>(large) * 257u),
++		                         static_cast<Uint16>(static_cast<unsigned>(small) * 257u), duration_ms);
++	}
++}
++
++// Ported from AnyPS5 core/libs/prx/libScePad/src/PadState.cpp @ 7f596df (GPL-2.0):
++// PadSubmitAudioHaptics keeps the maximum of the values submitted and PadFetchOutput releases
++// them 80 ms after the last non-zero submission. Here the value goes out when it changes, and is
++// refreshed every 40 ms while non-zero because SDL's rumble runs for a duration (100 ms here).
++void ControllerAudioRumble(uint8_t large, uint8_t small) {
++	using Clock = std::chrono::steady_clock;
++	static std::mutex        mutex;
++	static uint8_t           held_large = 0, held_small = 0, sent_large = 0, sent_small = 0;
++	static Clock::time_point hold_end, sent_at;
++	std::lock_guard<std::mutex> lock(mutex);
++	const auto                  now = Clock::now();
++	if (now >= hold_end) {
++		held_large = held_small = 0;
++	}
++	if (large != 0 || small != 0) {
++		held_large = std::max(held_large, large);
++		held_small = std::max(held_small, small);
++		hold_end   = now + std::chrono::milliseconds(80);
++	}
++	const bool changed = held_large != sent_large || held_small != sent_small;
++	const bool refresh = (held_large != 0 || held_small != 0) && now - sent_at >= std::chrono::milliseconds(40);
++	if (changed || refresh) {
++		ControllerRumble(held_large, held_small, 100);
++		sent_large = held_large;
++		sent_small = held_small;
++		sent_at    = now;
++	}
++}
++
 +// BC5: KYTY_BC5_INPUT_RECORD=<file> writes what the real pad does as KYTY_BC5_INPUT_CMD lines
 +// (hold/release, stick, trigger, with wait lines between them), so that a route played once by
 +// hand can be replayed by a script. Stick moves are written at most every 30 ms, when one axis
@@ -15956,7 +14838,19 @@ index 55718eb..24bf963 100644
  void ControllerResetInputState() {
  	EXIT_IF(g_controller == nullptr);
  	g_controller->ResetInputState();
-@@ -395,6 +733,11 @@ void GameController::Button(int id, uint32_t button, bool down) {
+@@ -284,6 +683,11 @@ void GameController::EnsureSlot(int index) {
+ 	}
+ }
+ 
++int GameController::InstanceId(int index) {
++	Common::LockGuard lock(m_mutex);
++	return index >= 0 && index < PAD_MAX_CONTROLLERS ? m_ids[index] : -1;
++}
++
+ int GameController::OwnerSlot(int id) const {
+ 	for (int i = 0; i < PAD_MAX_CONTROLLERS; i++) {
+ 		if (m_ids[i] == id) {
+@@ -395,6 +799,11 @@ void GameController::Button(int id, uint32_t button, bool down) {
  	if (slot == -1) {
  		slot = FallbackSlot();
  	}
@@ -15968,7 +14862,7 @@ index 55718eb..24bf963 100644
  
  	auto state = GetLastState(slot);
  	state.time = LibKernel::KernelGetProcessTime();
-@@ -415,6 +758,13 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
+@@ -415,6 +824,13 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
  	if (slot == -1) {
  		slot = FallbackSlot();
  	}
@@ -15982,7 +14876,7 @@ index 55718eb..24bf963 100644
  
  	auto state = GetLastState(slot);
  	state.time = LibKernel::KernelGetProcessTime();
-@@ -422,8 +772,28 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
+@@ -422,8 +838,28 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
  	const int axis_id = static_cast<int>(axis);
  	EXIT_IF(axis_id < 0 || axis_id >= static_cast<int>(Controller::Axis::AxisMax));
  
@@ -16011,7 +14905,7 @@ index 55718eb..24bf963 100644
  	if (axis == Controller::Axis::TriggerLeft) {
  		if (value > 0) {
  			state.buttons |= PAD_BUTTON_L2;
-@@ -443,6 +813,86 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
+@@ -443,6 +879,86 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
  	AddState(slot, state);
  }
  
@@ -16098,7 +14992,7 @@ index 55718eb..24bf963 100644
  void GameController::ResetInputState() {
  	Common::LockGuard lock(m_mutex);
  
-@@ -488,6 +938,13 @@ int GameController::ReadStateForSlot(int index, ControllerState* state, bool* fl
+@@ -488,6 +1004,13 @@ int GameController::ReadStateForSlot(int index, ControllerState* state, bool* fl
  	*flag  = SlotConnected(index);
  	*count = PresentCount();
  	*state = GetLastState(index);
@@ -16112,7 +15006,7 @@ index 55718eb..24bf963 100644
  
  	return 0;
  }
-@@ -515,7 +972,27 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
+@@ -515,7 +1038,27 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
  	int ret_num = 0;
  
  	auto& s = m_slots[index];
@@ -16140,7 +15034,7 @@ index 55718eb..24bf963 100644
  		for (uint32_t i = 0; i < s.states_num; i++) {
  			if (ret_num >= states_num) {
  				break;
-@@ -523,11 +1000,21 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
+@@ -523,11 +1066,21 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
  			auto state_index = (s.first_state + i) % STATES_MAX;
  			if (!s.obtained[state_index]) {
  				s.obtained[state_index] = true;
@@ -16163,7 +15057,7 @@ index 55718eb..24bf963 100644
  	return ret_num;
  }
  int KYTY_SYSV_ABI PadInit() {
-@@ -625,6 +1112,9 @@ int KYTY_SYSV_ABI PadResetOrientation(int handle) {
+@@ -625,6 +1178,9 @@ int KYTY_SYSV_ABI PadResetOrientation(int handle) {
  	if (ControllerIndexFromHandle(handle) < 0) {
  		return PAD_ERROR_INVALID_HANDLE;
  	}
@@ -16173,7 +15067,7 @@ index 55718eb..24bf963 100644
  
  	return OK;
  }
-@@ -682,6 +1172,10 @@ int KYTY_SYSV_ABI PadReadState(int handle, PadData* data) {
+@@ -682,6 +1238,10 @@ int KYTY_SYSV_ABI PadReadState(int handle, PadData* data) {
  	g_controller->ReadStateForSlot(ControllerIndexFromHandle(handle), &state, &connected,
  	                               &connected_count);
  
@@ -16184,7 +15078,7 @@ index 55718eb..24bf963 100644
  	pad_fill_data(data, state, connected, connected_count);
  
  	return OK;
-@@ -718,6 +1212,10 @@ int KYTY_SYSV_ABI PadRead(int handle, PadData* data, int num) {
+@@ -718,6 +1278,10 @@ int KYTY_SYSV_ABI PadRead(int handle, PadData* data, int num) {
  	}
  
  	for (int i = 0; i < ret_num; i++) {
@@ -16195,8 +15089,27 @@ index 55718eb..24bf963 100644
  		pad_fill_data(&data[i], states[i], connected, connected_count);
  	}
  
+@@ -738,14 +1302,10 @@ int KYTY_SYSV_ABI PadSetVibration(int handle, const PadVibrationParam* param) {
+ 	     "\t small_motor = %d\n",
+ 	     static_cast<int>(param->large_motor), static_cast<int>(param->small_motor));
+ 
+-	// Drive the real DualSense rumble actuators if a device is attached.
+-	auto* ds = static_cast<Libs::DualSense::DualSenseDriver*>(DualSenseDriverInstance());
+-	if (ds != nullptr && ds->IsOpen()) {
+-		Libs::DualSense::VibrationParam v;
+-		v.large_motor = param->large_motor;
+-		v.small_motor = param->small_motor;
+-		ds->SetVibration(v);
+-	}
++	// BC5: the native DualSense driver when it is open, and SDL's rumble otherwise (ControllerRumble);
++	// before this the call reached no pad on Linux. SDL caps a rumble at 5 s.
++	// TODO(verify): how long the console keeps a scePadSetVibration value without a new call.
++	ControllerRumble(param->large_motor, param->small_motor, 5000);
+ 
+ 	return OK;
+ }
 diff --git a/src/libs/controller.h b/src/libs/controller.h
-index 3c0684f..ba1c36b 100644
+index 3c0684f..fe73665 100644
 --- a/src/libs/controller.h
 +++ b/src/libs/controller.h
 @@ -9,14 +9,14 @@ namespace Libs::Controller {
@@ -16222,7 +15135,7 @@ index 3c0684f..ba1c36b 100644
  constexpr int PAD_HANDLE_BASE     = 1;
  
  constexpr uint32_t PAD_BUTTON_L3        = 0x00000002;
-@@ -64,21 +64,28 @@ inline int controller_get_axis(int min, int max, int value) {
+@@ -64,21 +64,36 @@ inline int controller_get_axis(int min, int max, int value) {
  	return (v < 0 ? 0 : (v > 255 ? 255 : v));
  }
  
@@ -16258,6 +15171,14 @@ index 3c0684f..ba1c36b 100644
  void ControllerResetInputState();
 +// BC5: the analog triggers (0..255) of pad slot 0 as the game reads them, for the trigger-effect state.
 +void ControllerGetTriggers(int* l2, int* r2);
++// BC5: classic rumble (0..255 per motor) to the pad of player slot 0, for duration_ms as SDL takes
++// it: the native DualSense driver when it is open (Windows only at f266548) and SDL's
++// game-controller rumble, the path that reaches a DualShock 4 or a DualSense on Linux.
++void ControllerRumble(uint8_t large, uint8_t small, uint32_t duration_ms);
++// BC5: rumble derived from the vibration ports' audio (audio.cpp) when the controller has no audio
++// sink. The strongest value submitted is kept for 80 ms after the last non-zero submission.
++// Ported from AnyPS5 core/libs/prx/libScePad/src/PadState.cpp @ 7f596df (GPL-2.0).
++void ControllerAudioRumble(uint8_t large, uint8_t small);
  
  int KYTY_SYSV_ABI PadInit();
  int KYTY_SYSV_ABI PadOpen(int user_id, int type, int index, const void* param);
@@ -18633,10 +17554,28 @@ index 51c3a0e..ecd210f 100644
  	InitLibKernel_1_Mem(s);
  	InitLibKernel_1_Equeue(s);
 diff --git a/src/libs/libNet.cpp b/src/libs/libNet.cpp
-index 1b9db8a..98aec77 100644
+index 1b9db8a..de42235 100644
 --- a/src/libs/libNet.cpp
 +++ b/src/libs/libNet.cpp
-@@ -1572,7 +1572,57 @@ static int KYTY_SYSV_ABI NpEntitlementAccessGetAddcontEntitlementInfo(
+@@ -1414,9 +1414,15 @@ LIB_DEFINE(InitNet_1_NpManager) {
+ 	LIB_FUNC("3Zl8BePTh9Y", NpManager::NpCheckCallback);
+ 	LIB_FUNC("Ec63y59l9tw", NpManager::NpSetNpTitleId);
+ 	LIB_FUNC("A2CQ3kgSopQ", NpManager::NpSetContentRestriction);
++	// BC5: the NIDs of the A variants and the two unregister calls follow from their names
++	// (AnyPS5 core/libs/nid/src/NidCompute.cpp @ 7f596df, GPL-2.0, re-implemented in
++	// tools/nid.py of the BC5 repo's session notes); the four here are the names AnyPS5 exports
++	// in core/libs/prx/libSceNpManager/Export.cpp.
+ 	LIB_FUNC("VfRSmPmj8Q8", NpManager::NpRegisterStateCallback);
+-	LIB_FUNC("qQJfO8HAiaY", NpManager::NpRegisterStateCallback);
+-	LIB_FUNC("M3wFXbYQtAA", NpManager::NpUnregisterStateCallback);
++	LIB_FUNC("qQJfO8HAiaY", NpManager::NpRegisterStateCallbackA);
++	LIB_FUNC("mjjTXh+NHWY", NpManager::NpUnregisterStateCallback);
++	LIB_FUNC("M3wFXbYQtAA", NpManager::NpUnregisterStateCallbackA);
++	LIB_FUNC("cRILAEvn+9M", NpManager::NpUnregisterNpReachabilityStateCallback);
+ 	LIB_FUNC("uFJpaKNBAj4", NpManager::NpRegisterGamePresenceCallback);
+ 	LIB_FUNC("GImICnh+boA", NpManager::NpRegisterPlusEventCallback);
+ 	LIB_FUNC("+yqjab2fUJA", NpManager::NpRegisterPremiumEventCallback);
+@@ -1572,7 +1578,57 @@ static int KYTY_SYSV_ABI NpEntitlementAccessGetAddcontEntitlementInfo(
  	return NP_ENTITLEMENT_ACCESS_ERROR_NO_ENTITLEMENT;
  }
  
@@ -18694,6 +17633,82 @@ index 1b9db8a..98aec77 100644
  	LIB_FUNC("jO8DM8oyego", LibNpEntitlementAccess::NpEntitlementAccessInitialize);
  	LIB_FUNC("lPDO62PpJIA", LibNpEntitlementAccess::NpEntitlementAccessGetSkuFlag);
  	LIB_FUNC("TFyU+KFBv54",
+@@ -2209,6 +2265,45 @@ static int KYTY_SYSV_ABI NpTrophy2DestroyContext(int context) {
+ 	return 0;
+ }
+ 
++// BC5: three exports KytyPlus lacked, re-implemented after AnyPS5
++// core/libs/prx/libSceNpTrophy2/src/Context.cpp @ 7f596df (GPL-2.0), review item 3: the trophy
++// list "shows" without a UI, the unlock callback (never called here either) unregisters, and a
++// reward icon is not supported, which the title is told with the icon error the other icon
++// getters of this table answer.
++static int KYTY_SYSV_ABI NpTrophy2ShowTrophyList(int context) {
++	PRINT_NAME();
++
++	LOGF("\t context = %d (no trophy UI; reported as shown)\n", context);
++
++	return 0;
++}
++
++static int KYTY_SYSV_ABI NpTrophy2UnregisterUnlockCallback() {
++	PRINT_NAME();
++
++	return 0;
++}
++
++static int KYTY_SYSV_ABI NpTrophy2GetRewardIcon(int context, int handle, int reward_id, void* buffer,
++                                                size_t* size) {
++	PRINT_NAME();
++
++	LOGF("\t context   = %d\n"
++	     "\t handle    = %d\n"
++	     "\t reward_id = %d\n"
++	     "\t buffer    = 0x%016" PRIx64 "\n"
++	     "\t size      = 0x%016" PRIx64 "\n"
++	     "\t reward icons are not supported\n",
++	     context, handle, reward_id, reinterpret_cast<uint64_t>(buffer),
++	     reinterpret_cast<uint64_t>(size));
++
++	if (size != nullptr) {
++		*size = 0;
++	}
++
++	return NP_TROPHY2_ERROR_ICON_FILE_NOT_FOUND;
++}
++
+ LIB_DEFINE(InitNet_1_NpTrophy2) {
+ 	LIB_FUNC("Bagshr7OQ6Q", LibNpTrophy2::NpTrophy2CreateContext);
+ 	LIB_FUNC("Gz1rmUZpROM", LibNpTrophy2::NpTrophy2CreateHandle);
+@@ -2225,6 +2320,12 @@ LIB_DEFINE(InitNet_1_NpTrophy2) {
+ 	LIB_FUNC("fYapWA9xVmA", LibNpTrophy2::NpTrophy2AbortHandle);
+ 	LIB_FUNC("d8P11CI40KE", LibNpTrophy2::NpTrophy2DestroyHandle);
+ 	LIB_FUNC("sysY2FHYff4", LibNpTrophy2::NpTrophy2DestroyContext);
++	// BC5: NIDs computed from the names AnyPS5 exports in
++	// core/libs/prx/libSceNpTrophy2/src/Context.cpp, with the NID scheme of its
++	// core/libs/nid/src/NidCompute.cpp @ 7f596df (GPL-2.0); the scheme reproduces the NIDs above.
++	LIB_FUNC("EHQEDVXZ0TI", LibNpTrophy2::NpTrophy2ShowTrophyList);
++	LIB_FUNC("wVqxM58sIKs", LibNpTrophy2::NpTrophy2UnregisterUnlockCallback);
++	LIB_FUNC("BsE-m8JxIOg", LibNpTrophy2::NpTrophy2GetRewardIcon);
+ }
+ 
+ } // namespace LibNpTrophy2
+diff --git a/src/libs/libNp.cpp b/src/libs/libNp.cpp
+index a0aee52..7951249 100644
+--- a/src/libs/libNp.cpp
++++ b/src/libs/libNp.cpp
+@@ -16,6 +16,12 @@ namespace Libs {
+ 
+ // PSN is not available in the emulator. Network-requiring stubs return this
+ // error so games do not proceed as if online services are connected.
++// BC5: none of this file's LIB_DEFINEs is loaded at f266548 (libs.cpp loads InitNet_1, whose
++// NpManager table is libNet.cpp + network.cpp; that is where the state-callback model of AnyPS5
++// was ported, HANDOFF F215).
++// TODO(verify): the signed-out error code. This file answers 0x80550005; network.cpp and AnyPS5
++// (core/libs/prx/libSceNpManager/Export.cpp @ 7f596df, shadPS4's PS4 value) answer 0x80550006.
++// Which one the console gives a signed-out user is unverified on both sides.
+ constexpr int NP_NOT_SIGNED_IN = static_cast<int>(0x80550005u);
+ 
+ namespace NpAuth {
 diff --git a/src/libs/libPad.cpp b/src/libs/libPad.cpp
 index 676ecb9..4b22f02 100644
 --- a/src/libs/libPad.cpp
@@ -18877,7 +17892,7 @@ index fda2623..db5e40e 100644
  	return OK;
  }
 diff --git a/src/libs/libSaveData.cpp b/src/libs/libSaveData.cpp
-index 08aa121..e5fff47 100644
+index 08aa121..aec9575 100644
 --- a/src/libs/libSaveData.cpp
 +++ b/src/libs/libSaveData.cpp
 @@ -13,13 +13,26 @@
@@ -18907,10 +17922,139 @@ index 08aa121..e5fff47 100644
  
  namespace SaveData {
  
-@@ -294,6 +307,25 @@ static bool dir_name_match(const char* str, const char* pattern) {
+@@ -267,7 +280,14 @@ static void queue_save_data_event(uint32_t type, int32_t user_id,
+ 	}
+ }
+ 
++// BC5 (search). Ported from AnyPS5 core/libs/prx/libSceSaveData.native/Export.cpp @ 7f596df
++// (GPL-2.0), dir_name_match: '%' matches any run of characters, '_' one character; an empty
++// pattern matches every name, and a pattern ending in '%' matches a name that ends where the
++// '%' starts (the loop below left such a pattern unconsumed and answered no match).
+ static bool dir_name_match(const char* str, const char* pattern) {
++	if (pattern == nullptr || pattern[0] == '\0') {
++		return true;
++	}
+ 	while (*str != '\0' && *pattern != '\0') {
+ 		if (*pattern == '%') {
+ 			for (const char* s = str;; s++) {
+@@ -291,9 +311,139 @@ static bool dir_name_match(const char* str, const char* pattern) {
+ 		str++;
+ 		pattern++;
+ 	}
++	while (*pattern == '%') {
++		pattern++;
++	}
  	return *str == '\0' && *pattern == '\0';
  }
  
++// BC5 (blocks and params). Ported from AnyPS5 core/libs/prx/libSceSaveData.native/Export.cpp
++// @ 7f596df (GPL-2.0), blocks_path/save_blocks/keep_save_blocks/used_blocks/search_info and
++// param_path/load_param/store_param: two sidecar files next to a save directory, never inside it
++// (the title sees the mount's files), under _SaveData/<title>/: <dir>.blocks holds, in decimal,
++// the blocks the Mount3 that created the save asked for, and <dir>.param the SaveDataParam the
++// title last set. A save is 32 KiB blocks; free blocks are the save's blocks minus its files'
++// sizes, each rounded up to a block. A save without a .blocks file reports the maximum.
++// TODO(verify): the block count cap. This file keeps SAVE_DATA_BLOCKS_MAX = 16384 (KytyPlus);
++// AnyPS5 and shadPS4 use 32768. Neither is from a console measurement.
++static constexpr uint64_t SAVE_DATA_BLOCK_BYTES = 32768;
++
++static std::string save_data_title_root() {
++	return Common::FixDirectorySlash(std::string(SAVE_DATA_DIR) + "/" + get_title_id());
++}
++
++static std::string save_data_blocks_path(const std::string& directory) {
++	return directory + ".blocks";
++}
++
++static std::string save_data_param_path(const std::string& directory) {
++	return directory + ".param";
++}
++
++static uint64_t save_data_blocks(const std::string& directory) {
++	std::FILE* f = std::fopen(save_data_blocks_path(directory).c_str(), "rb");
++	if (f == nullptr) {
++		return SAVE_DATA_BLOCKS_MAX;
++	}
++	unsigned long long blocks = 0;
++	const int          read   = std::fscanf(f, "%llu", &blocks);
++	std::fclose(f);
++	if (read != 1 || blocks == 0) {
++		return SAVE_DATA_BLOCKS_MAX;
++	}
++	return std::min<uint64_t>(blocks, SAVE_DATA_BLOCKS_MAX);
++}
++
++static void save_data_keep_blocks(const std::string& directory, uint64_t blocks) {
++	std::FILE* f = std::fopen(save_data_blocks_path(directory).c_str(), "wb");
++	if (f == nullptr) {
++		LOGF("\t save data: the blocks of %s could not be kept\n", directory.c_str());
++		return;
++	}
++	std::fprintf(f, "%llu\n", static_cast<unsigned long long>(std::min<uint64_t>(blocks, SAVE_DATA_BLOCKS_MAX)));
++	std::fclose(f);
++}
++
++static uint64_t save_data_used_blocks(const std::string& directory) {
++	uint64_t        blocks = 0;
++	std::error_code ec;
++	for (auto it = std::filesystem::recursive_directory_iterator(directory, ec);
++	     !ec && it != std::filesystem::recursive_directory_iterator(); it.increment(ec)) {
++		if (!it->is_regular_file(ec)) {
++			continue;
++		}
++		const auto bytes = it->file_size(ec);
++		if (!ec) {
++			blocks += (bytes + SAVE_DATA_BLOCK_BYTES - 1) / SAVE_DATA_BLOCK_BYTES;
++		}
++	}
++	return blocks;
++}
++
++static SaveDataSearchInfo save_data_search_info(const std::string& directory) {
++	SaveDataSearchInfo info {};
++	info.blocks      = save_data_blocks(directory);
++	info.free_blocks = info.blocks - std::min(info.blocks, save_data_used_blocks(directory));
++	return info;
++}
++
++static int64_t save_data_dir_mtime(const std::string& directory);
++
++// The param the title set, or zeros; an mtime of 0 becomes the directory's time (run 573).
++static SaveDataParam save_data_load_param(const std::string& directory) {
++	SaveDataParam param {};
++	std::FILE*    f = std::fopen(save_data_param_path(directory).c_str(), "rb");
++	if (f != nullptr) {
++		if (std::fread(&param, 1, sizeof(param), f) != sizeof(param)) {
++			param = {};
++		}
++		std::fclose(f);
++	}
++	if (param.mtime == 0) {
++		param.mtime = save_data_dir_mtime(directory);
++	}
++	return param;
++}
++
++static void save_data_store_param(const std::string& directory, const SaveDataParam& param) {
++	const std::string path = save_data_param_path(directory);
++	const std::string tmp  = path + ".tmp";
++	std::FILE*        f    = std::fopen(tmp.c_str(), "wb");
++	if (f == nullptr) {
++		LOGF("\t save data: the param of %s could not be kept\n", directory.c_str());
++		return;
++	}
++	const bool ok = std::fwrite(&param, 1, sizeof(param), f) == sizeof(param);
++	std::fclose(f);
++	std::error_code ec;
++	if (ok) {
++		std::filesystem::rename(tmp, path, ec);
++	}
++	if (!ok || ec) {
++		std::filesystem::remove(tmp, ec);
++		LOGF("\t save data: the param of %s could not be kept\n", directory.c_str());
++	}
++}
++
 +// BC5 (run 573): the time of a save directory for SaveDataParam::mtime, seconds since the epoch —
 +// the newest write of a file in it (the directory's own time changes on create and rename only).
 +// Titles that never call SaveDataSetParam (the second title) otherwise show 01/01/1970 in their
@@ -18933,17 +18077,131 @@ index 08aa121..e5fff47 100644
  static int mount_save_data(int slot, std::string_view dir_name, const std::string& directory,
                             uint32_t status, SaveDataMountResult* result) {
  	const std::string mount_point = SaveDataMountSlots::MountPoint(static_cast<size_t>(slot));
-@@ -408,7 +440,8 @@ int KYTY_SYSV_ABI SaveDataDirNameSearch(const SaveDataDirNameSearchCond* cond,
+@@ -369,51 +519,85 @@ int KYTY_SYSV_ABI SaveDataDirNameSearch(const SaveDataDirNameSearchCond* cond,
+ 	std::memset(result->reserved, 0, sizeof(result->reserved));
+ 	result->pad2 = 0;
+ 
+-	std::vector<std::string> dir_list;
+-	std::string              root =
+-	    Common::FixDirectorySlash((std::string(SAVE_DATA_DIR) + "/" + get_title_id()));
+-
+-	if (Common::File::IsDirectoryExisting(root)) {
++	// BC5 (search). Ported from AnyPS5 core/libs/prx/libSceSaveData.native/Export.cpp @ 7f596df
++	// (GPL-2.0), dirNameSearch: every save directory whose name matches the pattern, in name
++	// order, then stably by the sort key (user param, blocks, mtime or free blocks; the name key
++	// changes nothing), reversed for the descending order; params and infos from the sidecars.
++	// A title id other than this title's finds nothing (AnyPS5); the name match is case-insensitive
++	// here as before.
++	struct Match {
++		std::string        name;
++		std::string        path;
++		SaveDataParam      param;
++		SaveDataSearchInfo info;
++	};
++	std::vector<Match> matches;
++	const std::string  root = save_data_title_root();
++
++	if (cond->title_id != nullptr && cond->title_id->data[0] != '\0' &&
++	    std::strncmp(cond->title_id->data, get_title_id().c_str(), sizeof(cond->title_id->data)) != 0) {
++		LOGF("\t title_id %s is not this title's; no match\n", cond->title_id->data);
++	} else if (Common::File::IsDirectoryExisting(root)) {
++		const std::string pattern =
++		    cond->dir_name != nullptr ? Common::ToLower(std::string(cond->dir_name->data)) : std::string();
+ 		for (const auto& entry: Common::File::GetDirEntries(root)) {
+ 			if (!entry.is_file && entry.name != "." && entry.name != ".." &&
+-			    !Common::StartsWith(entry.name, "sce_")) {
+-				if (cond->dir_name == nullptr || cond->dir_name->data[0] == '\0' ||
+-				    dir_name_match(Common::ToLower(entry.name).c_str(),
+-				                   Common::ToLower(std::string(cond->dir_name->data)).c_str())) {
+-					dir_list.push_back(entry.name);
+-				}
++			    !Common::StartsWith(entry.name, "sce_") &&
++			    dir_name_match(Common::ToLower(entry.name).c_str(), pattern.c_str())) {
++				Match m;
++				m.name  = entry.name;
++				m.path  = root + "/" + entry.name;
++				m.param = save_data_load_param(m.path);
++				m.info  = save_data_search_info(m.path);
++				matches.push_back(std::move(m));
+ 			}
+ 		}
+ 	}
+ 
+-	std::sort(dir_list.begin(), dir_list.end(), [](const std::string& a, const std::string& b) {
+-		return std::strcmp(a.c_str(), b.c_str()) < 0;
+-	});
+-
++	std::sort(matches.begin(), matches.end(),
++	          [](const Match& a, const Match& b) { return std::strcmp(a.name.c_str(), b.name.c_str()) < 0; });
++	switch (cond->key) {
++		case SaveDataSortKey::UserParam:
++			std::stable_sort(matches.begin(), matches.end(),
++			                 [](const Match& a, const Match& b) { return a.param.user_param < b.param.user_param; });
++			break;
++		case SaveDataSortKey::Blocks:
++			std::stable_sort(matches.begin(), matches.end(),
++			                 [](const Match& a, const Match& b) { return a.info.blocks < b.info.blocks; });
++			break;
++		case SaveDataSortKey::Mtime:
++			std::stable_sort(matches.begin(), matches.end(),
++			                 [](const Match& a, const Match& b) { return a.param.mtime < b.param.mtime; });
++			break;
++		case SaveDataSortKey::FreeBlocks:
++			std::stable_sort(matches.begin(), matches.end(),
++			                 [](const Match& a, const Match& b) { return a.info.free_blocks < b.info.free_blocks; });
++			break;
++		case SaveDataSortKey::DirName: break;
++	}
+ 	if (cond->order == SaveDataSortOrder::Descent) {
+-		std::vector<std::string> reversed;
+-		for (size_t i = dir_list.size(); i > 0; i--) {
+-			reversed.push_back(dir_list[i - 1]);
+-		}
+-		dir_list = reversed;
++		std::reverse(matches.begin(), matches.end());
+ 	}
+ 
+-	auto max_count =
+-	    (result->dir_names_num < dir_list.size() ? result->dir_names_num : dir_list.size());
++	const size_t max_count =
++	    result->dir_names == nullptr ? 0 : std::min<size_t>(result->dir_names_num, matches.size());
+ 
+-	result->hit_num = static_cast<uint32_t>(dir_list.size());
++	result->hit_num = static_cast<uint32_t>(matches.size());
+ 	result->set_num = static_cast<uint32_t>(max_count);
+ 
+ 	for (size_t i = 0; i < max_count; i++) {
  		std::snprintf(result->dir_names[i].data, sizeof(result->dir_names[i].data), "%s",
- 		              dir_list[i].c_str());
+-		              dir_list[i].c_str());
++		              matches[i].name.c_str());
  		if (result->params != nullptr) {
 -			result->params[i] = {};
-+			result->params[i]       = {};
-+			result->params[i].mtime = save_data_dir_mtime(root + "/" + dir_list[i]);
++			result->params[i] = matches[i].param;
  		}
  		if (result->infos != nullptr) {
- 			result->infos[i]             = {};
-@@ -484,6 +517,67 @@ int KYTY_SYSV_ABI SaveDataMount3(const SaveDataMount3* mount, SaveDataMountResul
+-			result->infos[i]             = {};
+-			result->infos[i].blocks      = SAVE_DATA_BLOCKS_MAX;
+-			result->infos[i].free_blocks = SAVE_DATA_BLOCKS_MAX;
++			result->infos[i] = matches[i].info;
++		}
++		if (g_bc5_save_trace) {
++			std::fprintf(stderr, "save trace: search[%zu] %s user_param %u mtime %" PRId64 " blocks %" PRIu64 " free %" PRIu64 "\n",
++			             i, matches[i].name.c_str(), matches[i].param.user_param, matches[i].param.mtime,
++			             matches[i].info.blocks, matches[i].info.free_blocks);
+ 		}
+ 	}
+ 
+@@ -481,9 +665,77 @@ int KYTY_SYSV_ABI SaveDataMount3(const SaveDataMount3* mount, SaveDataMountResul
+ 		}
+ 	}
+ 
++	// BC5 (blocks): the size the title asked for is kept with the save it created (AnyPS5 mount3);
++	// a save from before this had no record and gets one from the first mount that names a size.
++	if (mount->blocks != 0 &&
++	    (created || !Common::File::IsFileExisting(save_data_blocks_path(Common::FixDirectorySlash(mount_dir))))) {
++		save_data_keep_blocks(Common::FixDirectorySlash(mount_dir), mount->blocks);
++	}
++
  	return mount_save_data(slot, dir_name, mount_dir, created ? 1u : 0u, mount_result);
  }
  
@@ -19011,7 +18269,7 @@ index 08aa121..e5fff47 100644
  int KYTY_SYSV_ABI SaveDataSetupSaveDataMemory2(const SaveDataMemorySetup2* setup_param,
                                                 SaveDataMemorySetupResult*  result) {
  	PRINT_NAME();
-@@ -500,6 +594,8 @@ int KYTY_SYSV_ABI SaveDataSetupSaveDataMemory2(const SaveDataMemorySetup2* setup
+@@ -500,6 +752,8 @@ int KYTY_SYSV_ABI SaveDataSetupSaveDataMemory2(const SaveDataMemorySetup2* setup
  	     setup_param->option, setup_param->user_id, static_cast<uint64_t>(setup_param->memory_size),
  	     static_cast<uint64_t>(setup_param->icon_memory_size), setup_param->slot_id);
  
@@ -19020,7 +18278,7 @@ index 08aa121..e5fff47 100644
  	if (setup_param->memory_size > g_save_data_memory.size()) {
  		g_save_data_memory.resize(setup_param->memory_size);
  	}
-@@ -528,6 +624,8 @@ int KYTY_SYSV_ABI SaveDataGetSaveDataMemory2(SaveDataMemoryGet2* get_param) {
+@@ -528,6 +782,8 @@ int KYTY_SYSV_ABI SaveDataGetSaveDataMemory2(SaveDataMemoryGet2* get_param) {
  	     reinterpret_cast<uint64_t>(get_param->param), reinterpret_cast<uint64_t>(get_param->icon),
  	     get_param->slot_id);
  
@@ -19029,7 +18287,7 @@ index 08aa121..e5fff47 100644
  	if (get_param->data != nullptr) {
  		auto* data = get_param->data;
  		if (data->buf == nullptr || data->offset < 0) {
-@@ -567,6 +665,8 @@ int KYTY_SYSV_ABI SaveDataSetSaveDataMemory2(const SaveDataMemorySet2* set_param
+@@ -567,6 +823,8 @@ int KYTY_SYSV_ABI SaveDataSetSaveDataMemory2(const SaveDataMemorySet2* set_param
  	     reinterpret_cast<uint64_t>(set_param->param), reinterpret_cast<uint64_t>(set_param->icon),
  	     set_param->data_num, set_param->slot_id);
  
@@ -19038,7 +18296,7 @@ index 08aa121..e5fff47 100644
  	const uint32_t data_num = (set_param->data_num == 0 ? 1 : set_param->data_num);
  	if (set_param->data != nullptr) {
  		for (uint32_t i = 0; i < data_num; i++) {
-@@ -581,6 +681,7 @@ int KYTY_SYSV_ABI SaveDataSetSaveDataMemory2(const SaveDataMemorySet2* set_param
+@@ -581,6 +839,7 @@ int KYTY_SYSV_ABI SaveDataSetSaveDataMemory2(const SaveDataMemorySet2* set_param
  			}
  			std::memcpy(g_save_data_memory.data() + offset, data.buf, data.buf_size);
  		}
@@ -19046,7 +18304,7 @@ index 08aa121..e5fff47 100644
  	}
  
  	return OK;
-@@ -697,8 +798,21 @@ int KYTY_SYSV_ABI SaveDataDelete(const SaveDataDelete* del) {
+@@ -697,9 +956,26 @@ int KYTY_SYSV_ABI SaveDataDelete(const SaveDataDelete* del) {
  
  	std::string dir =
  	    std::string(SAVE_DATA_DIR) + "/" + get_title_id() + "/" + std::string(del->dir_name->data);
@@ -19064,33 +18322,38 @@ index 08aa121..e5fff47 100644
 +	if (g_bc5_save_trace) {
 +		std::fprintf(stderr, "save trace: SaveDataDelete removed %ju entries, error %d\n",
 +		             static_cast<uintmax_t>(removed), ec.value());
-+	}
+ 	}
 +	if (ec) {
 +		return SAVE_DATA_ERROR_INTERNAL;
- 	}
++	}
++	// BC5 (blocks): the save's sidecars go with it.
++	std::error_code sidecar_ec;
++	std::filesystem::remove(save_data_blocks_path(Common::FixDirectorySlash(dir)), sidecar_ec);
++	std::filesystem::remove(save_data_param_path(Common::FixDirectorySlash(dir)), sidecar_ec);
  
  	return OK;
-@@ -722,6 +836,19 @@ int KYTY_SYSV_ABI SaveDataGetParam(const SaveDataMountPoint* mount_point, uint32
+ }
+@@ -722,6 +998,19 @@ int KYTY_SYSV_ABI SaveDataGetParam(const SaveDataMountPoint* mount_point, uint32
  			return SAVE_DATA_ERROR_PARAMETER;
  		}
  		std::memset(param_buf, 0, sizeof(SaveDataParam));
-+		// BC5 (run 573): the mounted directory's time, as its slot list expects.
++		// BC5 (run 573, and the .param sidecar): the param the title set for this save, its mtime
++		// the mounted directory's time when the title set none, as its slot list expects.
 +		{
 +			Common::LockGuard lock(g_mount_mutex);
 +			const int         slot = g_mount_slots.Find(mount_point->data);
 +			if (slot >= 0) {
-+				const std::string dir = std::string(SAVE_DATA_DIR) + "/" + get_title_id() + "/" +
-+				                        g_mount_slots.Directory(static_cast<size_t>(slot));
-+				const int64_t mtime = save_data_dir_mtime(dir);
-+				std::memcpy(static_cast<uint8_t*>(param_buf) + offsetof(SaveDataParam, mtime), &mtime,
-+				            sizeof(mtime));
-+				LOGF("\t mtime          = %" PRId64 " (%s)\n", mtime, dir.c_str());
++				const std::string dir =
++				    save_data_title_root() + "/" + g_mount_slots.Directory(static_cast<size_t>(slot));
++				const SaveDataParam param = save_data_load_param(dir);
++				std::memcpy(param_buf, &param, sizeof(param));
++				LOGF("\t mtime          = %" PRId64 " (%s)\n", param.mtime, dir.c_str());
 +			}
 +		}
  		if (got_size != nullptr) {
  			*got_size = sizeof(SaveDataParam);
  		}
-@@ -777,6 +904,16 @@ int KYTY_SYSV_ABI SaveDataSyncSaveDataMemory(const void* sync_param) {
+@@ -777,6 +1066,16 @@ int KYTY_SYSV_ABI SaveDataSyncSaveDataMemory(const void* sync_param) {
  
  int KYTY_SYSV_ABI SaveDataGetEventResult(const void* event_param, SaveDataEvent* event) {
  	PRINT_NAME();
@@ -19107,7 +18370,48 @@ index 08aa121..e5fff47 100644
  
  	LOGF("\t event_param = 0x%016" PRIx64 "\n"
  	     "\t event       = 0x%016" PRIx64 "\n",
-@@ -885,7 +1022,27 @@ namespace LibSaveDataNative {
+@@ -844,6 +1143,20 @@ int KYTY_SYSV_ABI SaveDataSetParam(const SaveDataMountPoint* mount_point, uint32
+ 		     "\t detail     = %s\n"
+ 		     "\t user_param = %u\n",
+ 		     p->title, p->sub_title, p->detail, p->user_param);
++
++		// BC5 (params): kept in the save's .param sidecar for the search and GetParam (AnyPS5
++		// store_param); before this the call was a log line and the search reported zeros.
++		if (p != nullptr && param_buf_size >= sizeof(SaveDataParam)) {
++			Common::LockGuard lock(g_mount_mutex);
++			const int         slot = g_mount_slots.Find(mount_point->data);
++			if (slot >= 0) {
++				save_data_store_param(save_data_title_root() + "/" +
++				                          g_mount_slots.Directory(static_cast<size_t>(slot)),
++				                      *p);
++			} else {
++				return SAVE_DATA_ERROR_NOT_MOUNTED;
++			}
++		}
+ 	} else {
+ 		LOGF("\t unsupported param_type, accepting as no-op\n");
+ 	}
+@@ -860,8 +1173,19 @@ int KYTY_SYSV_ABI SaveDataGetMountInfo(const SaveDataMountPoint* mount_point,
+ 
+ 	*info = {};
+ 
++	// BC5 (blocks): the mounted save's blocks and what is left of them (AnyPS5 getMountInfo).
+ 	info->blocks      = SAVE_DATA_BLOCKS_MAX;
+ 	info->free_blocks = SAVE_DATA_BLOCKS_MAX;
++	{
++		Common::LockGuard lock(g_mount_mutex);
++		const int         slot = g_mount_slots.Find(mount_point->data);
++		if (slot >= 0) {
++			const SaveDataSearchInfo search = save_data_search_info(
++			    save_data_title_root() + "/" + g_mount_slots.Directory(static_cast<size_t>(slot)));
++			info->blocks      = search.blocks;
++			info->free_blocks = search.free_blocks;
++		}
++	}
+ 
+ 	return OK;
+ }
+@@ -885,7 +1209,27 @@ namespace LibSaveDataNative {
  
  LIB_VERSION("SaveData_native", 1, "SaveData_native", 1, 1);
  
@@ -19376,6 +18680,227 @@ index 36e4dc8..eaa58d7 100644
  }
  
  namespace LibContentExport {
+diff --git a/src/libs/network.cpp b/src/libs/network.cpp
+index 7f81218..76a5781 100644
+--- a/src/libs/network.cpp
++++ b/src/libs/network.cpp
+@@ -4215,9 +4215,70 @@ static int np_complete_signed_out_locked(NpRequest* request) {
+ 	return (request->async ? OK : np_error_signed_out);
+ }
+ 
++// BC5 (NpManager callbacks). Ported from AnyPS5 core/libs/prx/libSceNpManager/Export.cpp
++// @ 7f596df (GPL-2.0), lines 11-130 and the Register/Unregister exports: PSN is not emulated, so
++// every user is signed out (state 1) and a title that registers a state callback is told so once,
++// from its own sceNpCheckCallback, as on a console whose user is signed out. Up to eight
++// sceNpRegisterStateCallbackA callbacks (the id is the slot plus one; a null or an already
++// registered function is refused), one legacy sceNpRegisterStateCallback, and one reachability
++// callback, retained and never called (reachability stays 0, unavailable). Error codes as AnyPS5
++// (shadPS4's PS4 values).
++// TODO(verify): the signed-out error this file answers is 0x80550006 (np_error_signed_out) where
++// libNp.cpp answers 0x80550005 (NP_NOT_SIGNED_IN); AnyPS5 uses 0x80550006 (shadPS4's PS4 value).
++// Which the console gives a signed-out user is unverified on both sides.
++constexpr int      np_error_callback_already_registered = -2141913080; /* 0x80550008 */
++constexpr int      np_error_callback_not_registered     = -2141913079; /* 0x80550009 */
++constexpr int      np_error_callback_max                = -2141913059; /* 0x8055001D */
++constexpr uint32_t NP_STATE_SIGNED_OUT                  = 1;
++constexpr int      NP_STATE_CALLBACK_MAX                = 8;
++constexpr int      NP_INITIAL_USER_ID                   = 1000; // libUserService.cpp, UserServiceGetInitialUser
++
++struct NpStateCallbackSlotA {
++	NpStateCallbackA callback = nullptr;
++	void*            userdata = nullptr;
++	bool             pending  = false;
++};
++
++struct NpStateCallbackSlot {
++	NpStateCallback callback = nullptr;
++	void*           userdata = nullptr;
++	bool            pending  = false;
++};
++
++static Common::Mutex                                         g_np_state_mutex;
++static std::array<NpStateCallbackSlotA, NP_STATE_CALLBACK_MAX> g_np_state_callbacks_a;
++static NpStateCallbackSlot                                   g_np_state_callback;
++static void*                                                 g_np_reachability_callback = nullptr;
++static void*                                                 g_np_reachability_userdata = nullptr;
++
+ int KYTY_SYSV_ABI NpCheckCallback() {
+ 	PRINT_NAME();
+ 
++	// The pending callbacks are copied and cleared under the lock, then called without it: a
++	// callback may register or unregister another one.
++	std::array<NpStateCallbackSlotA, NP_STATE_CALLBACK_MAX> callbacks_a;
++	NpStateCallbackSlot                                      legacy;
++	{
++		Common::LockGuard lock(g_np_state_mutex);
++		callbacks_a = g_np_state_callbacks_a;
++		legacy      = g_np_state_callback;
++		for (auto& slot: g_np_state_callbacks_a) {
++			slot.pending = false;
++		}
++		g_np_state_callback.pending = false;
++	}
++	if (legacy.pending && legacy.callback != nullptr) {
++		LOGF("\t state callback: user %d signed out\n", NP_INITIAL_USER_ID);
++		legacy.callback(NP_INITIAL_USER_ID, NP_STATE_SIGNED_OUT, nullptr, legacy.userdata);
++	}
++	for (int i = 0; i < NP_STATE_CALLBACK_MAX; i++) {
++		const auto& slot = callbacks_a[static_cast<size_t>(i)];
++		if (slot.pending && slot.callback != nullptr) {
++			LOGF("\t state callback %d: user %d signed out\n", i + 1, NP_INITIAL_USER_ID);
++			slot.callback(NP_INITIAL_USER_ID, NP_STATE_SIGNED_OUT, slot.userdata);
++		}
++	}
++
+ 	return OK;
+ }
+ 
+@@ -4254,15 +4315,78 @@ int KYTY_SYSV_ABI NpSetContentRestriction(const NpContentRestriction* restrictio
+ 	return OK;
+ }
+ 
+-int KYTY_SYSV_ABI NpRegisterStateCallback(void* /*callback*/, void* /*userdata*/) {
++int KYTY_SYSV_ABI NpRegisterStateCallback(NpStateCallback callback, void* userdata) {
+ 	PRINT_NAME();
+ 
++	LOGF("\t callback = %016" PRIx64 "\n", reinterpret_cast<uint64_t>(callback));
++
++	if (callback == nullptr) {
++		return np_error_invalid_argument;
++	}
++
++	Common::LockGuard lock(g_np_state_mutex);
++	if (g_np_state_callback.callback != nullptr) {
++		return np_error_callback_already_registered;
++	}
++	g_np_state_callback = {callback, userdata, true};
++
+ 	return OK;
+ }
+ 
+ int KYTY_SYSV_ABI NpUnregisterStateCallback() {
+ 	PRINT_NAME();
+ 
++	Common::LockGuard lock(g_np_state_mutex);
++	if (g_np_state_callback.callback == nullptr) {
++		return np_error_callback_not_registered;
++	}
++	g_np_state_callback = {};
++
++	return OK;
++}
++
++int KYTY_SYSV_ABI NpRegisterStateCallbackA(NpStateCallbackA callback, void* userdata) {
++	PRINT_NAME();
++
++	LOGF("\t callback = %016" PRIx64 "\n", reinterpret_cast<uint64_t>(callback));
++
++	if (callback == nullptr) {
++		return np_error_invalid_argument;
++	}
++
++	Common::LockGuard lock(g_np_state_mutex);
++	for (const auto& slot: g_np_state_callbacks_a) {
++		if (slot.callback == callback) {
++			return np_error_callback_already_registered;
++		}
++	}
++	for (int i = 0; i < NP_STATE_CALLBACK_MAX; i++) {
++		auto& slot = g_np_state_callbacks_a[static_cast<size_t>(i)];
++		if (slot.callback == nullptr) {
++			slot = {callback, userdata, true};
++			return i + 1;
++		}
++	}
++
++	return np_error_callback_max;
++}
++
++int KYTY_SYSV_ABI NpUnregisterStateCallbackA(int callback_id) {
++	PRINT_NAME();
++
++	LOGF("\t callback_id = %d\n", callback_id);
++
++	if (callback_id < 1 || callback_id > NP_STATE_CALLBACK_MAX) {
++		return np_error_invalid_argument;
++	}
++
++	Common::LockGuard lock(g_np_state_mutex);
++	auto&             slot = g_np_state_callbacks_a[static_cast<size_t>(callback_id - 1)];
++	if (slot.callback == nullptr) {
++		return np_error_callback_not_registered;
++	}
++	slot = {};
++
+ 	return OK;
+ }
+ 
+@@ -4282,9 +4406,33 @@ int KYTY_SYSV_ABI NpRegisterPremiumEventCallback(void* /*callback*/, void* /*use
+ 	return OK;
+ }
+ 
+-int KYTY_SYSV_ABI NpRegisterNpReachabilityStateCallback(void* /*callback*/, void* /*userdata*/) {
++int KYTY_SYSV_ABI NpRegisterNpReachabilityStateCallback(void* callback, void* userdata) {
++	PRINT_NAME();
++
++	if (callback == nullptr) {
++		return np_error_invalid_argument;
++	}
++
++	Common::LockGuard lock(g_np_state_mutex);
++	if (g_np_reachability_callback != nullptr) {
++		return np_error_callback_already_registered;
++	}
++	g_np_reachability_callback = callback;
++	g_np_reachability_userdata = userdata;
++
++	return OK;
++}
++
++int KYTY_SYSV_ABI NpUnregisterNpReachabilityStateCallback() {
+ 	PRINT_NAME();
+ 
++	Common::LockGuard lock(g_np_state_mutex);
++	if (g_np_reachability_callback == nullptr) {
++		return np_error_callback_not_registered;
++	}
++	g_np_reachability_callback = nullptr;
++	g_np_reachability_userdata = nullptr;
++
+ 	return OK;
+ }
+ 
+diff --git a/src/libs/network.h b/src/libs/network.h
+index a4e74ed..d40896b 100644
+--- a/src/libs/network.h
++++ b/src/libs/network.h
+@@ -159,15 +159,25 @@ struct NpCreateAsyncRequestParameter;
+ struct NpCheckPremiumParameter;
+ struct NpCheckPremiumResult;
+ 
++// BC5 (NpManager callbacks). Ported from AnyPS5 core/libs/prx/libSceNpManager/Export.cpp
++// @ 7f596df (GPL-2.0): the state callback of sceNpRegisterStateCallbackA takes
++// (user_id, state, userdata); the older sceNpRegisterStateCallback adds the NpId before userdata.
++using NpStateCallbackA = KYTY_SYSV_ABI void (*)(int user_id, uint32_t state, void* userdata);
++using NpStateCallback  = KYTY_SYSV_ABI void (*)(int user_id, uint32_t state, NpId* np_id,
++                                                void* userdata);
++
+ int KYTY_SYSV_ABI  NpCheckCallback();
+ int KYTY_SYSV_ABI  NpSetNpTitleId(const NpTitleId* title_id, const NpTitleSecret* title_secret);
+ int KYTY_SYSV_ABI  NpSetContentRestriction(const NpContentRestriction* restriction);
+-int KYTY_SYSV_ABI  NpRegisterStateCallback(void* callback, void* userdata);
++int KYTY_SYSV_ABI  NpRegisterStateCallback(NpStateCallback callback, void* userdata);
+ int KYTY_SYSV_ABI  NpUnregisterStateCallback();
++int KYTY_SYSV_ABI  NpRegisterStateCallbackA(NpStateCallbackA callback, void* userdata);
++int KYTY_SYSV_ABI  NpUnregisterStateCallbackA(int callback_id);
+ void KYTY_SYSV_ABI NpRegisterGamePresenceCallback(void* callback, void* userdata);
+ int KYTY_SYSV_ABI  NpRegisterPlusEventCallback(void* callback, void* userdata);
+ int KYTY_SYSV_ABI  NpRegisterPremiumEventCallback(void* callback, void* userdata);
+ int KYTY_SYSV_ABI  NpRegisterNpReachabilityStateCallback(void* callback, void* userdata);
++int KYTY_SYSV_ABI  NpUnregisterNpReachabilityStateCallback();
+ int KYTY_SYSV_ABI  NpGetNpId(int user_id, NpId* np_id);
+ int KYTY_SYSV_ABI  NpGetOnlineId(int user_id, NpOnlineId* online_id);
+ int KYTY_SYSV_ABI  NpGetAccountIdA(int user_id, uint64_t* account_id);
 diff --git a/src/libs/saveDataMountSlots.h b/src/libs/saveDataMountSlots.h
 index 8be28ca..45a766e 100644
 --- a/src/libs/saveDataMountSlots.h
@@ -19483,7 +19008,7 @@ index 343045e..8e5e33f 100644
  		        info->access_violation_vaddr)) {
  			return true;
 diff --git a/src/main.cpp b/src/main.cpp
-index c44d32f..d016ad7 100644
+index c44d32f..1454405 100644
 --- a/src/main.cpp
 +++ b/src/main.cpp
 @@ -16,6 +16,7 @@
@@ -19494,7 +19019,15 @@ index c44d32f..d016ad7 100644
  #include <new>
  #include <system_error>
  #include <fmt/format.h>
-@@ -78,6 +79,8 @@ static void PrintUsage() {
+@@ -55,6 +56,7 @@ static void PrintUsage() {
+ 	::printf("  --screen-width <num>                 Window width. Default: 1280.\n");
+ 	::printf("  --screen-height <num>                Window height. Default: 720.\n");
+ 	::printf("  --fullscreen                         Run in borderless desktop fullscreen.\n");
++	::printf("  --menu                               Open the window with the host menu and no game (BC5).\n");
+ 	::printf("  --vblank-frequency <num>             Virtual vblank frequency. Default: 60.\n");
+ 	::printf("  --console-language <0-29>            Console language. Default: 1 (English US).\n");
+ 	::printf("  --vulkan-validation <true|false>     Enable Vulkan validation.\n");
+@@ -78,6 +80,8 @@ static void PrintUsage() {
             "                                       (default: log and skip, keep rendering).\n");
  #endif
  	::printf("  --keymap <Control=Input>             DualSense mapping; may be repeated.\n");
@@ -19503,7 +19036,19 @@ index c44d32f..d016ad7 100644
  	::printf("  --rd                                 Enable RenderDoc capture.\n");
  }
  
-@@ -336,6 +339,17 @@ static bool ParseArgs(int argc, char* argv[], RunOptions& options, bool& show_he
+@@ -177,6 +181,11 @@ static bool ParseArgs(int argc, char* argv[], RunOptions& options, bool& show_he
+ 			continue;
+ 		}
+ 
++		if (arg == "--menu") { // BC5 (ADR 0011)
++			options.menu_only = true;
++			continue;
++		}
++
+ #if KYTY_PLATFORM == KYTY_PLATFORM_WINDOWS
+ 		if (arg == "--redzone") {
+ 			options.config.red_zone_protection_enabled = true;
+@@ -336,6 +345,17 @@ static bool ParseArgs(int argc, char* argv[], RunOptions& options, bool& show_he
  				::printf("invalid boolean for %s: %s\n", arg.c_str(), value.c_str());
  				return false;
  			}
@@ -19521,3 +19066,21 @@ index c44d32f..d016ad7 100644
  		} else if (arg == "--keymap") {
  			const auto split = value.find('=');
  			if (split == std::string::npos || split == 0 || split + 1 == value.size()) {
+@@ -356,7 +376,7 @@ static bool ParseArgs(int argc, char* argv[], RunOptions& options, bool& show_he
+ 		}
+ 	}
+ 
+-	return show_help || 	       (!options.install_pkg.empty()) ||
++	return show_help || options.menu_only || (!options.install_pkg.empty()) ||
+ 	       (!options.app0_dir.empty() && !options.elf.empty());
+ }
+ 
+@@ -474,7 +494,7 @@ int main(int argc, char* argv[]) {
+ 	// shadPS4; only PS5 (Prospero) titles reach the native Run() path. This
+ 	// must happen BEFORE Run() so no PS5 Vulkan/memory subsystems are
+ 	// initialized for a PS4 title (and vice versa).
+-	{
++	if (!options.app0_dir.empty()) { // BC5: nothing to detect for --menu
+ 		using namespace Emulator::PlatformDispatch;
+ 
+ 		const auto eboot = ResolveEbootHostPath(options.app0_dir, options.elf);

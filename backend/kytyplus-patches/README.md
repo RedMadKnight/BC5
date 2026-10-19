@@ -353,6 +353,18 @@ Experiment 0050: `BC5_DIRECT_DMA_SYNC=1` and `BC5_DIRECT_PFP_SYNC=1` set the bac
 Experiment 0049: `BC5_DIRECT_SHADER_DUMP=<dir>` writes every shader program a buffer points at
 (the six graphics stages' and the compute program registers, set or loaded by pairs), 64 KiB
 each, once; keep the directory private (a title's code).
+Experiment 0164 (ADR 0011): the window's menu bar (`src/graphics/presentation/hostMenu.cpp`,
+drawn in the settings overlay's ImGui pass): *File* (Open game image... / Open package (.pkg)...
+through a file browser, Recent, Close session, Quit), *Emulation* (Pause/Resume = the window
+loop's Space pause, Restart = exit 75 behind a confirmation, Settings... = F2, Fullscreen = F11),
+*Help* (About). `--menu` opens the window without a game, with the bar and a launcher page
+(`Emulator::RunMenu`: the subsystems as for a game, no mount, no ELF). F1 and the pad's Guide
+(PS) button toggle the bar during play (F1 stays RenderDoc's capture with `--rd`); while it is up
+the host UI takes the input, as the F2 menu does. The host never mounts: *Open* writes the path
+to `$KYTY_BC5_MENU_DIR/choice.txt` (and `recent.txt`, eight entries; the browser's last folders in
+`lastdir-*.txt`) and ends the process with exit code 76, *Close session* with 77; without
+`KYTY_BC5_MENU_DIR` the open items are disabled. The dev box's `play-any.sh` loops over those
+codes (`.pkg` → `play-pkg.sh`, `.ffpfsc` → `play-astro.sh`, a directory → `--game`).
 Experiment 0048: borderless fullscreen at the display's resolution, live: F11, the *Video*
 tab's box, or `Fullscreen=on|off` in the input file (also at start); presets 1.0 / 1.25 / 1.7 / 3.0
 named 4K UHD, 1800p class, 1440p class, Full HD.
