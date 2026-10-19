@@ -4054,7 +4054,7 @@ index c729a98..0875f1e 100644
  #if defined(__APPLE__)
  	// AppKit traps on title changes off the main thread; fire-and-forget keeps present pacing.
 diff --git a/src/kernel/eventQueue.cpp b/src/kernel/eventQueue.cpp
-index 14561b0..d1a0fe6 100644
+index 14561b0..440a253 100644
 --- a/src/kernel/eventQueue.cpp
 +++ b/src/kernel/eventQueue.cpp
 @@ -1,8 +1,12 @@
@@ -4070,7 +4070,18 @@ index 14561b0..d1a0fe6 100644
  #include "common/stringUtils.h"
  #include "common/threads.h"
  #include "common/timer.h"
-@@ -255,6 +259,27 @@ static void UserEventTriggerFunc(KernelEqueueEvent* event, void* trigger_data) {
+@@ -17,6 +21,10 @@
+ #include <unordered_map>
+ #include <vector>
+ 
++namespace Libs {
++void Bc5ChainObserveEqueue(LibKernel::EventQueue::KernelEqueue eq); // bc5LleAgc.cpp
++} // namespace Libs
++
+ namespace Libs::LibKernel::EventQueue {
+ 
+ LIB_NAME("libkernel", "libkernel");
+@@ -255,6 +263,27 @@ static void UserEventTriggerFunc(KernelEqueueEvent* event, void* trigger_data) {
  	event->event.udata = trigger_data;
  }
  
@@ -4098,7 +4109,15 @@ index 14561b0..d1a0fe6 100644
  static void AmprEventTriggerFunc(KernelEqueueEvent* event, void* trigger_data) {
  	EXIT_IF(event == nullptr);
  	auto triggered_event = event->event;
-@@ -402,6 +427,9 @@ int KYTY_SYSV_ABI KernelWaitEqueue(KernelEqueue eq, KernelEvent* ev, int num, in
+@@ -396,12 +425,17 @@ int KYTY_SYSV_ABI KernelWaitEqueue(KernelEqueue eq, KernelEvent* ev, int num, in
+ 		return KERNEL_ERROR_EFAULT;
+ 	}
+ 
++	Libs::Bc5ChainObserveEqueue(eq); // BC5 (ADR 0010 section B): a held submission chain is submitted before the title waits for its events
++
+ 	if (num < 1) {
+ 		return KERNEL_ERROR_EINVAL;
+ 	}
  
  	EXIT_NOT_IMPLEMENTED(out == nullptr);
  
@@ -4108,7 +4127,7 @@ index 14561b0..d1a0fe6 100644
  	LOGF("\tEqueue wait: %s, caller = 0x%016" PRIx64 ", eq = 0x%016" PRIx64 ", ev = 0x%016" PRIx64
  	     ", num = %d, timo = %s, thread_id = %d\n",
  	     owner->GetName().c_str(), reinterpret_cast<uint64_t>(__builtin_return_address(0)),
-@@ -429,6 +457,7 @@ int KYTY_SYSV_ABI KernelWaitEqueue(KernelEqueue eq, KernelEvent* ev, int num, in
+@@ -429,6 +463,7 @@ int KYTY_SYSV_ABI KernelWaitEqueue(KernelEqueue eq, KernelEvent* ev, int num, in
  		return KERNEL_ERROR_ETIMEDOUT;
  	}
  
@@ -4116,7 +4135,7 @@ index 14561b0..d1a0fe6 100644
  	LOGF("\tEqueue wait received %u events: ident = 0x%016" PRIx64
  	     ", filter = %d, flags = 0x%04" PRIx16 ", fflags = 0x%08" PRIx32 ", data = 0x%016" PRIx64
  	     ", udata = 0x%016" PRIx64 "\n",
-@@ -547,10 +576,14 @@ int KYTY_SYSV_ABI KernelAddAmprEvent(KernelEqueue eq, int id, void* udata) {
+@@ -547,10 +582,14 @@ int KYTY_SYSV_ABI KernelAddAmprEvent(KernelEqueue eq, int id, void* udata) {
  	LOGF("\t AMPR event add: eq = 0x%016" PRIx64 ", id = %d, udata = 0x%016" PRIx64 "\n",
  	     static_cast<uint64_t>(eq), id, reinterpret_cast<uint64_t>(udata));
  
@@ -4132,7 +4151,7 @@ index 14561b0..d1a0fe6 100644
  		event.event.flags         = EV_ADD | EV_CLEAR;
  		event.event.fflags        = 0;
  		event.event.data          = 0;
-@@ -578,7 +611,7 @@ int KYTY_SYSV_ABI KernelDeleteAmprEvent(KernelEqueue eq, int id) {
+@@ -578,7 +617,7 @@ int KYTY_SYSV_ABI KernelDeleteAmprEvent(KernelEqueue eq, int id) {
  	LOGF("\t AMPR event delete: eq = 0x%016" PRIx64 ", id = %d\n", static_cast<uint64_t>(eq), id);
  
  	if (eq != KERNEL_EQUEUE_INVALID) {
@@ -6290,10 +6309,10 @@ index fe4b332..63f2441 100644
  
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..6f30649
+index 0000000..3cdba73
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,8057 @@
+@@ -0,0 +1,8336 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -6520,8 +6539,12 @@ index 0000000..6f30649
 +static void drain();
 +// ADR 0010 (BC5_DIRECT_CHAIN=1): the buffers one call hands over go to the GPU as one submission.
 +static void chain_begin(); // at the start of a submit ioctl / a ring slice: the soft-CP marks start afresh
-+static void chain_end();   // at its end: the chain is submitted
++static void chain_end();   // at its end: the chain is submitted (mode 1), or kept open across the game thread's ioctls (mode 2, ADR 0010 section B)
 +static bool chain_on();
++static bool chain_cross();   // ADR 0010 section B: this thread's chain is held across its ioctls (BC5_DIRECT_CHAIN=2, a game thread)
++static bool chain_cross_mode(); // BC5_DIRECT_CHAIN=2 at all
++static void chain_observe(); // the title can observe the GPU now (submit done / wait idle / an event-queue wait): every held chain is submitted
++static void chain_soft_push(const uint32_t* dwords, uint32_t n, const char* kind); // a soft-CP replay to post once the chain holding the buffer is submitted
 +// The doorbell-queue consumer (source 1) keeps waiting for its own jobs and runs its soft-CP
 +// pass itself: a compute buffer may end in a wait for the next frame's label, and that wait has
 +// to block the compute queue and nothing else (run 110: on a shared completion thread it held
@@ -9316,6 +9339,7 @@ index 0000000..6f30649
 +	uint32_t        prefix;   // host prefix dwords laid in front of it
 +	uint32_t        off;      // where the prefix starts in the chain
 +	bool            given_up; // t_wait_given_up when it was appended (experiment 0054's indirect-draw drop)
++	std::vector<uint32_t> keep; // ADR 0010 section B: the waits kept for the GPU, as chain offsets (t_keep_waits is per buffer)
 +};
 +struct Chain {
 +	std::vector<uint32_t> buf;
@@ -9324,96 +9348,314 @@ index 0000000..6f30649
 +	bool                  compute = false; // acb class
 +	bool                  gds     = false;
 +};
-+static thread_local Chain g_chain_tl;
-+static const bool         g_chain_env = std::getenv("BC5_DIRECT_CHAIN") != nullptr && std::strcmp(std::getenv("BC5_DIRECT_CHAIN"), "0") != 0;
-+static std::atomic<uint64_t> g_chain_flushes {0}, g_chain_segments {0}, g_chain_single {0}, g_chain_dwords {0};
-+static std::atomic<uint64_t> g_chain_why[8]; // 0 end, 1 wait, 2 ring/class, 3 cond_exec, 4 size, 5 drain, 6 acb head, 7 other
++// ADR 0010 section B (BC5_DIRECT_CHAIN=2): a game thread's chain is held open across its ioctls and may be
++// submitted by another thread (the watchdog at the hold bound, a thread at an observe point), so the slot
++// carries what the owner's thread-local state used to: the soft-CP replays waiting for the chain's marks,
++// the marks themselves, and the owner's state (inside Direct::submit or not).
++struct ChainSoft {
++	const uint32_t* dwords;
++	uint32_t        n;
++	const char*     kind;
++};
++struct ChainSlot {
++	Chain                        c;
++	std::mutex                   mu;         // c, soft, marks, open_ns, in_submit
++	std::recursive_mutex         flush_mu;   // held through a submission: the owner's next flush waits for the watchdog's (ring order); recursive: submit_now's mapping sync calls wait_jobs -> chain_flush on the same thread
++	uint64_t                     open_ns    = 0;     // when the first segment was appended
++	bool                         cross      = false; // held across ioctls (set at chain_begin on a game thread in mode 2)
++	bool                         in_submit  = false; // the owner is inside Direct::submit (a buffer may be split at a wait)
++	bool                         registered = false;
++	std::vector<ChainSoft>       soft;  // replays posted once the chain that holds their buffers is submitted
++	std::vector<SoftCp::GpuDone> marks; // the marks of the chains that carried the pending replays' buffers
++	~ChainSlot();
++};
++static thread_local ChainSlot g_chain_tl;
++static std::mutex             g_chains_mu;
++static std::vector<ChainSlot*> g_chains; // the registered (cross) slots, for the watchdog and the observe points
++static const int g_chain_mode = [] {
++	const char* e = std::getenv("BC5_DIRECT_CHAIN");
++	if (e == nullptr) return 0;
++	const long v = std::strtol(e, nullptr, 10);
++	return v == 0 && std::strcmp(e, "0") != 0 ? 1 : static_cast<int>(v < 0 ? 0 : (v > 2 ? 2 : v));
++}();
++static uint64_t chain_hold_ns() {
++	static const uint64_t v = (std::getenv("BC5_DIRECT_CHAIN_HOLD_US") != nullptr ? std::strtoull(std::getenv("BC5_DIRECT_CHAIN_HOLD_US"), nullptr, 10) : 2000ull) * 1000ull;
++	return v;
++}
++static std::atomic<uint64_t> g_chain_flushes {0}, g_chain_segments {0}, g_chain_single {0}, g_chain_dwords {0}, g_chain_cond_segs {0};
++static std::atomic<uint64_t> g_chain_why[12]; // 0 end, 1 wait, 2 ring/class, 3 cond-past-end, 4 size, 5 drain, 6 acb head, 7 other, 8 observe, 9 hold (watchdog), 10 hold (owner)
 +static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char* kind, bool from_header, int ring, const Chain* chain);
 +static bool chain_on() {
-+	return g_chain_env && g_stage == Stage::All;
++	return g_chain_mode >= 1 && g_stage == Stage::All;
++}
++static bool chain_cross() {
++	return chain_on() && g_chain_tl.cross;
++}
++static bool chain_cross_mode() {
++	return g_chain_mode >= 2;
 +}
 +static bool chain_gds_for(const char* kind) {
 +	static const bool gds_all = std::getenv("BC5_DIRECT_GDS_ALL") != nullptr;
 +	static const bool gds_on  = std::getenv("BC5_DIRECT_GDS_KIB") != nullptr;
 +	return gds_on && (gds_all || std::strncmp(kind, "acb", 3) == 0);
 +}
-+static bool ib_has_cond_exec(const uint32_t* ib, uint32_t n) {
++// ADR 0010 section A: a COND_EXEC's skip count only covers dwords of its own buffer, and the passes that
++// grow an IB grow the counts per packet now, so a COND_EXEC no longer closes a chain. One whose range runs
++// past the end of its buffer is malformed for that reasoning (the console would skip into whatever
++// follows the buffer in memory); such a buffer still goes alone, and is counted.
++static bool ib_cond_past_end(const uint32_t* ib, uint32_t n, bool* any) {
++	bool past = false;
 +	for (uint32_t q = 0; q < n;) {
 +		const uint32_t h = ib[q], type = h >> 30u;
 +		uint32_t       len = 1;
 +		if (type == 3 || type == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
-+		if (type == 3 && ((h >> 8u) & 0xffu) == 0x22) return true;
++		if (type == 3 && ((h >> 8u) & 0xffu) == 0x22) {
++			*any = true;
++			if (len == 5 && q + 5 + (ib[q + 4] & 0x3fffu) > n) past = true;
++		}
 +		q += len;
 +	}
-+	return false;
++	return past;
 +}
-+static void chain_flush(int why) {
-+	Chain& c = g_chain_tl;
-+	if (c.segs.empty()) return;
++// Posts the slot's pending soft-CP replays behind the chain's fence item, each with the marks gathered so
++// far (section B.4). Caller holds slot.mu. The marks stay while the owner is inside Direct::submit: the
++// buffer being split there gets its replay later, with the marks of every chain that carried a piece of it.
++static void chain_post_soft_locked(ChainSlot& s) {
++	if (s.soft.empty()) return;
++	auto marks = std::make_shared<std::vector<SoftCp::GpuDone>>(s.marks);
++	for (const ChainSoft& e: s.soft) {
++		post([e, marks](bool failed) {
++			if (failed) journal("soft-cp: %s %u dwords at %p replayed in full after a failed submission\n", e.kind, e.n, static_cast<const void*>(e.dwords));
++			SoftCp::t_gpu_done = failed ? std::vector<SoftCp::GpuDone>() : *marks;
++			SoftCp::submit(e.dwords, e.n, e.kind);
++			SoftCp::t_gpu_done.clear();
++		});
++	}
++	s.soft.clear();
++	if (!s.in_submit) s.marks.clear();
++}
++// Submits the slot's chain, from whatever thread. foreign: not the owner (the watchdog, an observe point):
++// a chain whose owner is inside Direct::submit is left to the owner (it flushes at its own waits, and a
++// buffer split at a wait must not have its head submitted from elsewhere between the pieces).
++static void chain_submit(ChainSlot& s, int why, bool foreign) {
++	{ // nothing to do: before the flush lock (a re-entrant call from inside submit_now sees its chain already taken)
++		std::lock_guard lk(s.mu);
++		if (s.c.segs.empty() || (foreign && s.in_submit)) return;
++	}
++	std::lock_guard order(s.flush_mu);
 +	Chain mine;
-+	mine.buf.swap(c.buf);
-+	mine.segs.swap(c.segs);
-+	mine.ring    = c.ring;
-+	mine.compute = c.compute;
-+	mine.gds     = c.gds;
++	{
++		std::lock_guard lk(s.mu);
++		Chain& c = s.c;
++		if (c.segs.empty() || (foreign && s.in_submit)) return;
++		mine.buf.swap(c.buf);
++		mine.segs.swap(c.segs);
++		mine.ring    = c.ring;
++		mine.compute = c.compute;
++		mine.gds     = c.gds;
++		s.open_ns    = 0;
++	}
 +	g_chain_flushes++;
 +	g_chain_segments += mine.segs.size();
 +	g_chain_dwords += mine.buf.size();
 +	if (mine.segs.size() == 1) g_chain_single++;
-+	g_chain_why[why & 7]++;
++	g_chain_why[why < 12 ? why : 7]++;
 +	{
-+		static std::atomic<uint64_t> n_lines {0};
-+		static double                last = 0;
-+		const double                 now  = timing_now();
++		static double last = 0;
++		const double  now  = timing_now();
 +		if (now - last >= 10.0) {
 +			last = now;
-+			journal("chains: %" PRIu64 " submitted, %" PRIu64 " segments (%" PRIu64 " single), %" PRIu64 " dwords; closed by: end %" PRIu64 " wait %" PRIu64 " ring/class %" PRIu64 " cond_exec %" PRIu64 " size %" PRIu64 " drain %" PRIu64 " acb-head %" PRIu64 "\n",
-+			        g_chain_flushes.load(), g_chain_segments.load(), g_chain_single.load(), g_chain_dwords.load(), g_chain_why[0].load(), g_chain_why[1].load(), g_chain_why[2].load(),
-+			        g_chain_why[3].load(), g_chain_why[4].load(), g_chain_why[5].load(), g_chain_why[6].load());
-+			n_lines++;
++			journal("chains: %" PRIu64 " submitted, %" PRIu64 " segments (%" PRIu64 " single, %" PRIu64 " with cond_exec), %" PRIu64 " dwords; closed by: end %" PRIu64 " wait %" PRIu64 " ring/class %" PRIu64 " cond_exec %" PRIu64 " size %" PRIu64 " drain %" PRIu64 " acb-head %" PRIu64 " other %" PRIu64 " observe %" PRIu64 " hold-wd %" PRIu64 " hold-end %" PRIu64 "\n",
++			        g_chain_flushes.load(), g_chain_segments.load(), g_chain_single.load(), g_chain_cond_segs.load(), g_chain_dwords.load(), g_chain_why[0].load(), g_chain_why[1].load(),
++			        g_chain_why[2].load(), g_chain_why[3].load(), g_chain_why[4].load(), g_chain_why[5].load(), g_chain_why[6].load(), g_chain_why[7].load(), g_chain_why[8].load(),
++			        g_chain_why[9].load(), g_chain_why[10].load());
 +		}
 +	}
 +	submit_now(mine.buf.data(), static_cast<uint32_t>(mine.buf.size()), mine.compute ? "acb" : "dcb", false, mine.ring, &mine);
-+	// keep-waits inside the submitted segments are done with (submit_split clears the list per buffer anyway)
-+	std::erase_if(t_keep_waits, [&mine](const uint32_t* w) {
-+		for (const ChainSeg& s: mine.segs) {
-+			if (s.src != nullptr && w >= s.src && w < s.src + s.n) return true;
++	if (s.cross) { // section B.4: the marks this submission produced belong to the slot; replays wait for the chain to be empty
++		std::lock_guard lk(s.mu);
++		s.marks.insert(s.marks.end(), SoftCp::t_gpu_done.begin(), SoftCp::t_gpu_done.end());
++		SoftCp::t_gpu_done.clear();
++		if (s.c.segs.empty() && !s.in_submit) chain_post_soft_locked(s);
++	}
++}
++static void chain_flush(int why) {
++	chain_submit(g_chain_tl, why, false);
++}
++// Section B.2: the hold bound. A watchdog submits a game thread's chain that has been open for
++// BC5_DIRECT_CHAIN_HOLD_US (default 2000) and whose owner is not inside Direct::submit; the owner wakes it
++// when a chain opens and when it leaves Direct::submit with the chain open.
++static std::mutex              g_chainwd_mu;
++static std::condition_variable g_chainwd_cv;
++static uint64_t                g_chainwd_gen = 0;
++static void chainwd_wake() {
++	{
++		std::lock_guard lk(g_chainwd_mu);
++		g_chainwd_gen++;
++	}
++	g_chainwd_cv.notify_one();
++}
++static void chainwd_thread() {
++	pthread_setname_np(pthread_self(), "bc5-chainwd");
++	static std::atomic<uint64_t> n_wd {0};
++	for (;;) {
++		uint64_t gen = 0;
++		{
++			std::lock_guard lk(g_chainwd_mu);
++			gen = g_chainwd_gen;
 +		}
-+		return false;
++		uint64_t deadline = ~0ull;
++		{
++			std::lock_guard lk(g_chains_mu);
++			for (ChainSlot* s: g_chains) {
++				std::lock_guard sl(s->mu);
++				if (!s->c.segs.empty() && !s->in_submit && s->open_ns + chain_hold_ns() < deadline) deadline = s->open_ns + chain_hold_ns();
++			}
++		}
++		{
++			std::unique_lock lk(g_chainwd_mu);
++			const uint64_t now = SoftCp::now_ns();
++			if (deadline == ~0ull) g_chainwd_cv.wait(lk, [&] { return g_chainwd_gen != gen; });
++			else if (now < deadline) g_chainwd_cv.wait_for(lk, std::chrono::nanoseconds(deadline - now), [&] { return g_chainwd_gen != gen; });
++		}
++		std::lock_guard lk(g_chains_mu);
++		for (ChainSlot* s: g_chains) {
++			bool due = false;
++			{
++				std::lock_guard sl(s->mu);
++				due = !s->c.segs.empty() && !s->in_submit && SoftCp::now_ns() >= s->open_ns + chain_hold_ns();
++			}
++			if (due) {
++				chain_submit(*s, 9, true);
++				if ((n_wd++ & 0x3ffu) == 0) journal("chain hold: the watchdog submitted a chain of a game thread (%" PRIu64 " so far)\n", n_wd.load());
++			}
++		}
++	}
++}
++static void chain_register(ChainSlot& s) {
++	std::lock_guard lk(g_chains_mu);
++	if (s.registered) return;
++	g_chains.push_back(&s);
++	s.registered = true;
++	static std::once_flag started;
++	std::call_once(started, [] {
++		journal("chains: mode 2, a game thread's chain is held across its ioctls for up to %" PRIu64 " us (BC5_DIRECT_CHAIN_HOLD_US)\n", chain_hold_ns() / 1000);
++		std::thread(chainwd_thread).detach();
 +	});
++}
++ChainSlot::~ChainSlot() {
++	if (!registered) return;
++	std::lock_guard lk(g_chains_mu);
++	std::erase(g_chains, this);
++}
++// Every registered chain is submitted now (the flip's drain, the observe points of section B.2).
++static void chain_flush_all(int why) {
++	std::lock_guard lk(g_chains_mu);
++	for (ChainSlot* s: g_chains) chain_submit(*s, why, s != &g_chain_tl);
++}
++static void chain_observe() {
++	if (g_chain_mode >= 2) chain_flush_all(8);
++}
++static void chain_soft_push(const uint32_t* dwords, uint32_t n, const char* kind) {
++	ChainSlot&      s = g_chain_tl;
++	std::lock_guard lk(s.mu);
++	s.soft.push_back({dwords, n, kind});
++	if (s.c.segs.empty() && !s.in_submit) chain_post_soft_locked(s); // nothing of the buffer is held back (flushed at a wait, or never appended)
 +}
 +// Appends `pre` (host-built, may be empty) then `ib` to the thread's chain, closing it first if the buffer
 +// cannot share it. host_built: no soft-CP marks for `ib` (a state prefix submitted on its own).
 +static void chain_append(const uint32_t* pre, uint32_t pre_n, const uint32_t* ib, uint32_t n, const char* kind, bool host_built) {
-+	Chain&     c       = g_chain_tl;
++	ChainSlot& s       = g_chain_tl;
 +	const bool compute = std::strncmp(kind, "acb", 3) == 0;
 +	const int  ring    = job_ring(kind);
 +	const bool gds     = chain_gds_for(kind);
-+	const bool cond    = ib_has_cond_exec(ib, n);
-+	if (!c.segs.empty() && (c.compute != compute || c.ring != ring || c.gds != gds)) chain_flush(2);
-+	if (!c.segs.empty() && cond) chain_flush(3);
-+	if (!c.segs.empty() && c.buf.size() + pre_n + n > (1u << 20u)) chain_flush(4);
-+	if (c.segs.empty()) {
-+		c.compute = compute;
-+		c.ring    = ring;
-+		c.gds     = gds;
-+		c.buf.clear();
++	bool       any_cond = false;
++	const bool cond_past = ib_cond_past_end(ib, n, &any_cond);
++	if (any_cond) g_chain_cond_segs++;
++	bool opened = false;
++	for (;;) {
++		int why = -1;
++		{
++			std::lock_guard lk(s.mu);
++			Chain& c = s.c;
++			if (!c.segs.empty() && (c.compute != compute || c.ring != ring || c.gds != gds)) why = 2;
++			else if (!c.segs.empty() && cond_past) why = 3;
++			else if (!c.segs.empty() && c.buf.size() + pre_n + n > (1u << 20u)) why = 4;
++			if (why < 0) {
++				if (c.segs.empty()) {
++					c.compute = compute;
++					c.ring    = ring;
++					c.gds     = gds;
++					c.buf.clear();
++					s.open_ns = SoftCp::now_ns();
++					opened    = true;
++				}
++				ChainSeg seg {host_built ? nullptr : ib, n, pre_n, static_cast<uint32_t>(c.buf.size()), t_wait_given_up, {}};
++				for (const uint32_t* w: t_keep_waits) { // section B.3: the kept waits travel with the segment
++					if (w >= ib && w < ib + n) seg.keep.push_back(seg.off + pre_n + static_cast<uint32_t>(w - ib));
++				}
++				std::erase_if(t_keep_waits, [ib, n](const uint32_t* w) { return w >= ib && w < ib + n; });
++				if (pre_n != 0) c.buf.insert(c.buf.end(), pre, pre + pre_n);
++				c.buf.insert(c.buf.end(), ib, ib + n);
++				c.segs.push_back(std::move(seg));
++				break;
++			}
++		}
++		chain_flush(why);
 +	}
-+	ChainSeg s {host_built ? nullptr : ib, n, pre_n, static_cast<uint32_t>(c.buf.size()), t_wait_given_up};
-+	if (pre_n != 0) c.buf.insert(c.buf.end(), pre, pre + pre_n);
-+	c.buf.insert(c.buf.end(), ib, ib + n);
-+	c.segs.push_back(s);
-+	if (cond) chain_flush(3);
++	if (cond_past) chain_flush(3);
++	else if (opened && s.cross) chainwd_wake();
 +}
 +static void chain_begin() {
 +	if (!chain_on()) return;
++	ChainSlot& s = g_chain_tl;
++	if (g_chain_mode >= 2 && on_game_thread()) { // section B.1: the chain stays open across the thread's ioctls
++		if (!s.registered) chain_register(s);
++		s.cross = true;
++		return;
++	}
 +	chain_flush(7); // nothing should be open here
 +	SoftCp::clear_gpu_executed(); // the marks of this call's buffers start here (Direct::submit skips its per-buffer clear)
 +}
 +static void chain_end() {
 +	if (!chain_on()) return;
++	ChainSlot& s = g_chain_tl;
++	if (s.cross) {
++		bool over = false;
++		{
++			std::lock_guard lk(s.mu);
++			over = !s.c.segs.empty() && SoftCp::now_ns() >= s.open_ns + chain_hold_ns();
++			if (s.c.segs.empty() && !s.in_submit) chain_post_soft_locked(s);
++		}
++		if (over) chain_flush(10);
++		return;
++	}
 +	chain_flush(0);
 +}
++// Section B.3: the owner's state for the watchdog, around Direct::submit; the thread's own marks (a
++// wait served on the CPU marks itself executed) go to the slot when the buffer is done with.
++struct ChainInSubmit {
++	ChainSlot* s = nullptr;
++	explicit ChainInSubmit(bool cross) {
++		if (!cross) return;
++		s = &g_chain_tl;
++		std::lock_guard lk(s->mu);
++		s->in_submit = true;
++	}
++	~ChainInSubmit() {
++		if (s == nullptr) return;
++		bool open = false;
++		{
++			std::lock_guard lk(s->mu);
++			s->in_submit = false;
++			s->marks.insert(s->marks.end(), SoftCp::t_gpu_done.begin(), SoftCp::t_gpu_done.end());
++			SoftCp::t_gpu_done.clear();
++			open = !s->c.segs.empty();
++			if (!open) chain_post_soft_locked(*s);
++		}
++		if (open) chainwd_wake();
++	}
++};
 +// The soft-CP marks of a chain, per title buffer: the executed offsets inside a segment, less its start.
 +static void chain_mark_executed(const Chain* chain, const uint32_t* ib, uint32_t num_dwords, const std::vector<uint32_t>& offsets) {
 +	if (chain == nullptr) {
@@ -11182,6 +11424,7 @@ index 0000000..6f30649
 +static void submit(const uint32_t* ib, uint32_t num_dwords, const char* kind, bool from_header) {
 +	if (!chain_on()) SoftCp::clear_gpu_executed(); // the soft CP runs this buffer next, on this thread (ADR 0010: per call, chain_begin)
 +	if (g_stage == Stage::Off || !g_dev || ib == nullptr || num_dwords == 0) return;
++	const ChainInSubmit in_submit(chain_cross()); // ADR 0010 section B
 +	piece_check(ib, num_dwords, kind);
 +	static const bool rings = std::getenv("BC5_DIRECT_RINGS") != nullptr;
 +	if (std::strcmp(kind, "ring") == 0) {
@@ -11662,6 +11905,7 @@ index 0000000..6f30649
 +
 +static void drain() {
 +	chain_flush(5); // ADR 0010
++	if (g_chain_mode >= 2) chain_flush_all(5); // section B: the flip may come from another thread than the submitting one
 +	if (!g_async) return;
 +	while (g_cq_items.load() != 0) std::this_thread::sleep_for(std::chrono::microseconds(50));
 +}
@@ -12625,13 +12869,11 @@ index 0000000..6f30649
 +		opt.gpu_check_draw_max[1] = dm.second;
 +	}
 +	opt.keep_wait_offsets.clear(); // experiment 0055
-+	for (const uint32_t* w: t_keep_waits) {
-+		if (chain != nullptr) { // ADR 0010: a pointer into a segment's title buffer, as an offset in the chain
-+			for (const ChainSeg& s: chain->segs) {
-+				if (s.src != nullptr && w >= s.src && w < s.src + s.n) opt.keep_wait_offsets.push_back(s.off + s.prefix + static_cast<uint32_t>(w - s.src));
-+			}
-+		} else if (w >= ib && w < ib + num_dwords) {
-+			opt.keep_wait_offsets.push_back(static_cast<uint32_t>(w - ib));
++	if (chain != nullptr) { // ADR 0010: the kept waits were converted to chain offsets when the segment was appended
++		for (const ChainSeg& s: chain->segs) opt.keep_wait_offsets.insert(opt.keep_wait_offsets.end(), s.keep.begin(), s.keep.end());
++	} else {
++		for (const uint32_t* w: t_keep_waits) {
++			if (w >= ib && w < ib + num_dwords) opt.keep_wait_offsets.push_back(static_cast<uint32_t>(w - ib));
 +		}
 +	}
 +	// Indirect draws and dispatches (runs 53–54): their arguments live in memory the filter does
@@ -13090,25 +13332,19 @@ index 0000000..6f30649
 +	// not hold it back), and the GFX-form DISPATCH_INDIRECT (offset in that page, initiator), as
 +	// RADV emits an indirect dispatch on the GFX ring (Mesa radv_emit_dispatch_packets,
 +	// TODO(verify) the lines). The IB grows, so the host submits a copy and maps offsets both
-+	// ways (the drop list in, the executed offsets out); an IB with COND_EXEC, whose skip counts
-+	// are offsets, has these dispatches dropped instead.
++	// ways (the drop list in, the executed offsets out). ADR 0010 section A: the IB's own
++	// COND_EXEC counts (dword offsets) are grown by what the rebuild inserts in their ranges; a
++	// range whose grown count would not fit its 14 bits keeps its rebuilt dispatches dropped
++	// instead (what every dispatch of an IB with a COND_EXEC got before).
 +	std::vector<uint32_t> mec_ib;
 +	std::vector<uint32_t> mec_new_to_old;
 +	const uint32_t*       sub_ib = ib;
 +	uint32_t              sub_n  = num_dwords;
 +	if (mec_expand_ib) {
-+		bool cond_exec = false;
-+		for (uint32_t q = 0; q < num_dwords;) {
-+			const uint32_t h = ib[q];
-+			uint32_t       len = 1;
-+			if ((h >> 30u) == 3 || (h >> 30u) == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
-+			if ((h >> 30u) == 3 && ((h >> 8u) & 0xffu) == 0x22) cond_exec = true;
-+			q += len;
-+		}
-+		if (cond_exec) {
-+			opt.drop_offsets.insert(opt.drop_offsets.end(), mec_positions.begin(), mec_positions.end());
-+		} else {
-+			std::vector<uint32_t> old_to_new(num_dwords + 1, ~0u);
++		std::vector<uint32_t> old_to_new(num_dwords + 1, ~0u);
++		for (int attempt = 0; attempt < 64; attempt++) {
++			mec_ib.clear();
++			std::fill(old_to_new.begin(), old_to_new.end(), ~0u);
 +			mec_ib.reserve(num_dwords + 5 * mec_positions.size());
 +			for (uint32_t q = 0; q < num_dwords;) {
 +				const uint32_t h = ib[q];
@@ -13130,6 +13366,40 @@ index 0000000..6f30649
 +				}
 +				q += len;
 +			}
++			old_to_new[num_dwords] = static_cast<uint32_t>(mec_ib.size());
++			// the COND_EXEC counts, grown; the ranges that no longer fit have their dispatches dropped and the rebuild redone
++			std::vector<std::pair<uint32_t, uint32_t>> overflow;
++			for (uint32_t q = 0; q < num_dwords;) {
++				const uint32_t h = ib[q];
++				uint32_t       len = 1;
++				if ((h >> 30u) == 3 || (h >> 30u) == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
++				if (q + len > num_dwords) break;
++				if ((h >> 30u) == 3 && ((h >> 8u) & 0xffu) == 0x22 && len == 5) {
++					uint32_t e = q + 5 + (ib[q + 4] & 0x3fffu);
++					if (e > num_dwords) e = num_dwords;
++					while (old_to_new[e] == ~0u) e++; // a range ending inside a packet: to its end
++					const uint32_t at    = old_to_new[q];
++					const uint32_t count = old_to_new[e] - (at + 5);
++					if (count > 0x3fffu) overflow.emplace_back(q + 5, e);
++					mec_ib[at + 4] = (mec_ib[at + 4] & ~0x3fffu) | (count & 0x3fffu);
++				}
++				q += len;
++			}
++			if (overflow.empty()) break;
++			uint32_t excluded = 0;
++			for (const uint32_t m: mec_positions) {
++				bool inside = false;
++				for (const auto& [lo, hi]: overflow) inside = inside || (m >= lo && m < hi);
++				if (inside && std::find(opt.drop_offsets.begin(), opt.drop_offsets.end(), m) == opt.drop_offsets.end()) {
++					opt.drop_offsets.push_back(m);
++					excluded++;
++				}
++			}
++			static std::atomic<uint64_t> n_over {0};
++			if ((n_over++ & 0x3fu) == 0) journal("mec rebuild: %s %u dwords: %zu COND_EXEC range(s) would overflow, %u rebuilt dispatches dropped (%" PRIu64 " so far)\n", kind, num_dwords, overflow.size(), excluded, n_over.load());
++			if (excluded == 0) break; // cannot happen: a range only grows by a rebuilt dispatch inside it
++		}
++		{
 +			mec_new_to_old.assign(mec_ib.size(), ~0u);
 +			for (uint32_t q = 0; q < num_dwords; q++) {
 +				if (old_to_new[q] != ~0u && old_to_new[q] < mec_new_to_old.size()) mec_new_to_old[old_to_new[q]] = q;
@@ -13364,6 +13634,10 @@ index 0000000..6f30649
 +static void chain_begin() {}
 +static void chain_end() {}
 +static bool chain_on() { return false; }
++static bool chain_cross() { return false; }
++static bool chain_cross_mode() { return false; }
++static void chain_observe() {}
++static void chain_soft_push(const uint32_t*, uint32_t, const char*) {}
 +static void set_source(int) {}
 +static bool async_on() { return false; }
 +static bool on_game_thread() { return true; }
@@ -13431,7 +13705,9 @@ index 0000000..6f30649
 +	// once its GPU job has completed (as submit_raw does), so that the EVFILT_GRAPHICS events and
 +	// the writes of dropped packets come when the GPU is done, not at submission.
 +	static const bool post_ib = std::getenv("BC5_DIRECT_SOFTCP_POST_IB") != nullptr;
-+	if (use_soft_cp() && Direct::chain_on()) { // ADR 0010
++	if (use_soft_cp() && Direct::chain_cross()) { // ADR 0010 section B: posted behind the chain's fence, once it is submitted
++		Direct::chain_soft_push(dcb, size, kind);
++	} else if (use_soft_cp() && Direct::chain_on()) { // ADR 0010
 +		t_soft_pending.push_back({dcb, size, kind, post_ib});
 +	} else if (use_soft_cp() && post_ib) {
 +		auto marks = std::move(SoftCp::t_gpu_done);
@@ -13455,7 +13731,9 @@ index 0000000..6f30649
 +	}
 +	dump_cb(kind, dwords, num);
 +	Direct::submit(dwords, num, kind, std::strcmp(kind, "cc") == 0);
-+	if (use_soft_cp() && Direct::chain_on()) { // ADR 0010
++	if (use_soft_cp() && Direct::chain_cross()) { // ADR 0010 section B
++		Direct::chain_soft_push(dwords, num, kind);
++	} else if (use_soft_cp() && Direct::chain_on()) { // ADR 0010
 +		t_soft_pending.push_back({dwords, num, kind, true});
 +	} else if (use_soft_cp()) {
 +		auto marks = std::move(SoftCp::t_gpu_done);
@@ -13610,6 +13888,7 @@ index 0000000..6f30649
 +			const bool idle = request == 0xc0048117;
 +			const uint64_t n = idle ? ++n_idle : ++n_done;
 +			if (n == 1 || n % 500 == 0) Direct::journal("gc ioctl %s: %" PRIu64 " calls\n", idle ? "wait idle" : "submit done", n);
++			Direct::chain_observe(); // ADR 0010 section B: the title asks about the GPU
 +			return 0;
 +		}
 +		case 0xc010810b: { // cu masks: every CU of SE0/SE1, SH0/SH1
@@ -13726,6 +14005,24 @@ index 0000000..6f30649
 +
 +} // namespace Bc5Gc
 +
++// ADR 0010 section B: a wait on an event queue that carries EVFILT_GRAPHICS events (the title's EOP
++// queues) is a point where the title observes the GPU; the chains held across ioctls are submitted
++// first (their replays post those events). Called by LibKernel::EventQueue::KernelWaitEqueue.
++void Bc5ChainObserveEqueue(LibKernel::EventQueue::KernelEqueue eq) {
++	if (!Bc5Gc::Direct::chain_cross_mode()) return;
++	bool graphics = false;
++	{
++		std::lock_guard lock(Bc5Gc::SoftCp::g_eq_mutex);
++		for (const auto& r: Bc5Gc::SoftCp::g_eqs) {
++			if (r.eq == eq) {
++				graphics = true;
++				break;
++			}
++		}
++	}
++	if (graphics) Bc5Gc::Direct::chain_observe();
++}
++
 +// ---------------------------------------------------------------------------------------------
 +// libkernel
 +// ---------------------------------------------------------------------------------------------
@@ -13821,6 +14118,7 @@ index 0000000..6f30649
 +	}
 +	if (nevents > 0 && events != nullptr) {
 +		int out = 0;
++		Bc5Gc::Direct::chain_observe(); // ADR 0010 section B: the EOP events it waits for come after the chain's fence
 +		const uint64_t t_eq = Bc5Gc::SoftCp::now_ns();
 +		int r   = EQ::KernelWaitEqueue(eq, reinterpret_cast<EQ::KernelEvent*>(events), nevents,
 +		                               &out, nullptr);

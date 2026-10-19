@@ -99,7 +99,8 @@ struct FilterOptions {
     bool dma_sync_before_dispatch = false;
     // Experiment 0050: a PFP_SYNC_ME before every DISPATCH_INDIRECT of any IB (as for the rebuilt
     // compute IBs of experiment 0039): the prefetch parser must not read arguments the GPU is
-    // still writing. Device::submit; an IB with COND_EXEC is left alone.
+    // still writing. Device::submit; the IB's own COND_EXEC counts grow around them (ADR 0010
+    // section A; an IB with one used to be left alone).
     bool pfp_sync_indirect = false;
     // Experiment 0052: the CP checks every DISPATCH_INDIRECT's group counts when it runs it
     // (bc5/indirect_check.hpp) and skips the dispatch if one exceeds gpu_check_max; a PFP_SYNC_ME

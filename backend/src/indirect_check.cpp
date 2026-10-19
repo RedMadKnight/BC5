@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-2.0-only
 #include "bc5/indirect_check.hpp"
 
+#include <algorithm>
+
 namespace bc5::indirect_check {
 
 namespace {
@@ -49,10 +51,19 @@ std::size_t packet_len(std::uint32_t h) {
 
 } // namespace
 
-std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib, std::uint64_t base,
+std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib_in, std::uint64_t base_in,
                                  const std::uint32_t (&max)[3], const std::uint32_t (&draw_max)[2],
                                  std::vector<std::size_t> &flag_refs, Stats &stats,
                                  bool compute_ring) {
+    // ADR 0010 section A: a COND_EXEC range whose grown count no longer fits has its own checked
+    // packets NOP-ed (nothing of that range runs unchecked) and the pass runs again over the
+    // rest; it used to give up on the whole IB, which in a chain is several buffers.
+    std::vector<std::uint32_t> excluded; // ib_in with those packets NOP-ed, once needed
+    std::span<const std::uint32_t> ib = ib_in;
+    const Stats at_entry = stats;
+    std::uint32_t dropped_total = 0;
+    for (int attempt = 0; attempt < 64; ++attempt) {
+    std::uint64_t base = base_in;
     std::uint32_t dispatches = 0;
     bool has_cond_exec = false;
     for (std::size_t i = 0; i < ib.size();) {
@@ -73,7 +84,7 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib, std::uint64_
     // new_at[i]: where the packet at offset i starts in out, its inserted check included.
     std::vector<std::size_t> new_at;
     struct Cond {
-        std::size_t old_end, at;
+        std::size_t old_start, old_end, at;
     };
     std::vector<Cond> conds;
     if (has_cond_exec)
@@ -87,7 +98,7 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib, std::uint64_
         if (has_cond_exec)
             new_at[i] = out.size();
         if (h >> 30 == 3 && op == kOpCondExec && len == 5) {
-            conds.push_back({i + len + (ib[i + 4] & 0x3fffu), out.size()});
+            conds.push_back({i + len, i + len + (ib[i + 4] & 0x3fffu), out.size()});
         }
         if (h >> 30 == 3 && op == kOpSetBase && len >= 4 && (ib[i + 1] & 0xfu) == 1) {
             base = (static_cast<std::uint64_t>(ib[i + 2]) & ~3ull) |
@@ -141,31 +152,55 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib, std::uint64_
     }
     if (has_cond_exec) {
         new_at[ib.size()] = out.size();
-        bool fits = true;
+        std::vector<std::pair<std::size_t, std::size_t>> overflow; // old [start, end) of such ranges
         for (const Cond &c : conds) {
             std::size_t e = c.old_end < ib.size() ? c.old_end : ib.size();
             while (new_at[e] == ~std::size_t{0})
                 e++; // a range ending inside a packet: to its end
             const std::size_t count = new_at[e] - (c.at + 5);
             if (count > 0x3fffu)
-                fits = false;
+                overflow.emplace_back(c.old_start, e);
             out[c.at + 4] =
                 (out[c.at + 4] & ~0x3fffu) | static_cast<std::uint32_t>(count & 0x3fffu);
         }
-        if (!fits) { // a grown range no longer fits its count: nothing runs unchecked
-            out.assign(ib.begin(), ib.end());
-            flag_refs.clear();
-            for (std::size_t i = 0; i < out.size();) {
-                const std::size_t len = packet_len(out[i]);
-                if (checked_dims(out[i], len, compute_ring) != 0)
-                    out[i] = 0xC0001000u | (static_cast<std::uint32_t>(len - 2) << 16); // NOP
+        if (!overflow.empty()) { // those ranges' checked packets are NOP-ed; the rest is redone
+            if (excluded.empty())
+                excluded.assign(ib_in.begin(), ib_in.end());
+            std::uint32_t dropped = 0;
+            for (std::size_t i = 0; i < excluded.size();) {
+                const std::size_t len = packet_len(excluded[i]);
+                bool inside = false;
+                for (const auto &[lo, hi] : overflow)
+                    inside = inside || (i >= lo && i < hi);
+                if (inside && checked_dims(excluded[i], len, compute_ring) != 0) {
+                    excluded[i] = 0xC0001000u | (static_cast<std::uint32_t>(len - 2) << 16); // NOP
+                    dropped++;
+                }
                 i += len;
             }
-            stats.conditional += dispatches;
-            stats.checked = 0;
-            stats.unbased = 0;
-            stats.inserted_dwords = 0;
+            flag_refs.clear();
+            dropped_total += dropped;
+            stats = at_entry;
+            stats.conditional += dropped_total;
+            if (dropped == 0) // cannot happen: a range holds the packet whose check grew it
+                break;
+            ib = excluded;
+            continue;
         }
+    }
+    return out;
+    }
+    // no fit in 64 attempts: every checked packet NOP-ed, as the whole-IB fallback did
+    std::vector<std::uint32_t> out(ib_in.begin(), ib_in.end());
+    flag_refs.clear();
+    stats = at_entry;
+    for (std::size_t i = 0; i < out.size();) {
+        const std::size_t len = packet_len(out[i]);
+        if (checked_dims(out[i], len, compute_ring) != 0) {
+            out[i] = 0xC0001000u | (static_cast<std::uint32_t>(len - 2) << 16); // NOP
+            stats.conditional++;
+        }
+        i += len;
     }
     return out;
 }
@@ -180,7 +215,7 @@ bool insert_before(std::vector<std::uint32_t> &ib, const std::vector<Insert> &in
     out.reserve(ib.size() + extra);
     std::vector<std::size_t> new_at(ib.size() + 1, ~std::size_t{0});
     struct Cond {
-        std::size_t old_end, at;
+        std::size_t old_start, old_end, at;
     };
     std::vector<Cond> conds;
     std::size_t next = 0;
@@ -196,7 +231,7 @@ bool insert_before(std::vector<std::uint32_t> &ib, const std::vector<Insert> &in
             next++;
         }
         if (ib[i] >> 30 == 3 && ((ib[i] >> 8) & 0xff) == kOpCondExec && len == 5) {
-            conds.push_back({i + len + (ib[i + 4] & 0x3fffu), out.size()});
+            conds.push_back({i + len, i + len + (ib[i + 4] & 0x3fffu), out.size()});
         }
         out.insert(out.end(), ib.begin() + static_cast<std::ptrdiff_t>(i),
                    ib.begin() + static_cast<std::ptrdiff_t>(i + len));

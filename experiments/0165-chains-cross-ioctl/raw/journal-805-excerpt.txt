@@ -1,0 +1,28 @@
+chains: mode 2, a game thread's chain is held across its ioctls for up to 2000 us (BC5_DIRECT_CHAIN_HOLD_US)
+chain hold: the watchdog submitted a chain of a game thread (1 so far)
+cpu-wait WAIT_REG_MEM64 at 590 on 0x12004b4838: GIVEN UP after 22.6 ms
+chains: 2530 submitted, 14154 segments (585 single, 2550 with cond_exec), 3612277 dwords; closed by: end 1108 wait 810 ring/class 0 cond_exec 0 size 0 drain 151 acb-head 166 other 0 observe 0 hold-wd 204 hold-end 91
+chains: 7259 submitted, 40835 segments (1764 single, 7435 with cond_exec), 10407141 dwords; closed by: end 3188 wait 2209 ring/class 0 cond_exec 0 size 0 drain 437 acb-head 515 other 0 observe 0 hold-wd 601 hold-end 309
+chains: 12163 submitted, 68386 segments (2990 single, 12481 with cond_exec), 17414277 dwords; closed by: end 5338 wait 3686 ring/class 0 cond_exec 0 size 0 drain 734 acb-head 883 other 0 observe 0 hold-wd 987 hold-end 535
+chain hold: the watchdog submitted a chain of a game thread (1025 so far)
+chains: 17400 submitted, 100959 segments (3429 single, 19236 with cond_exec), 23657839 dwords; closed by: end 8901 wait 4157 ring/class 0 cond_exec 0 size 0 drain 879 acb-head 1021 other 0 observe 0 hold-wd 1807 hold-end 635
+chain hold: the watchdog submitted a chain of a game thread (2049 so far)
+chains: 25460 submitted, 133549 segments (6202 single, 25187 with cond_exec), 43089643 dwords; closed by: end 12250 wait 7373 ring/class 0 cond_exec 0 size 0 drain 1126 acb-head 1852 other 0 observe 0 hold-wd 2065 hold-end 794
+chains: 41462 submitted, 194381 segments (12367 single, 35918 with cond_exec), 84006946 dwords; closed by: end 18386 wait 14373 ring/class 0 cond_exec 0 size 0 drain 1613 acb-head 3711 other 0 observe 0 hold-wd 2207 hold-end 1172
+chains: 58098 submitted, 257568 segments (18752 single, 47072 with cond_exec), 126532052 dwords; closed by: end 24760 wait 21679 ring/class 0 cond_exec 0 size 0 drain 2119 acb-head 5635 other 0 observe 0 hold-wd 2350 hold-end 1555
+chains: 74713 submitted, 320758 segments (25156 single, 58222 with cond_exec), 169078068 dwords; closed by: end 31136 wait 28970 ring/class 0 cond_exec 0 size 0 drain 2625 acb-head 7557 other 0 observe 0 hold-wd 2470 hold-end 1955
+chains: 89920 submitted, 376759 segments (31093 single, 68091 with cond_exec), 208432549 dwords; closed by: end 36778 wait 35828 ring/class 0 cond_exec 0 size 0 drain 3073 acb-head 9288 other 0 observe 0 hold-wd 2715 hold-end 2238
+chains: 106472 submitted, 436961 segments (37644 single, 78699 with cond_exec), 251716385 dwords; closed by: end 42802 wait 43447 ring/class 0 cond_exec 0 size 0 drain 3555 acb-head 11167 other 0 observe 0 hold-wd 2957 hold-end 2544
+chain hold: the watchdog submitted a chain of a game thread (3073 so far)
+chains: 122578 submitted, 496456 segments (44014 single, 89172 with cond_exec), 293068815 dwords; closed by: end 48782 wait 50723 ring/class 0 cond_exec 0 size 0 drain 4030 acb-head 13005 other 0 observe 0 hold-wd 3171 hold-end 2867
+chains: 129349 submitted, 531695 segments (45266 single, 96362 with cond_exec), 304884033 dwords; closed by: end 52818 wait 52135 ring/class 0 cond_exec 0 size 0 drain 4159 acb-head 13373 other 0 observe 0 hold-wd 3897 hold-end 2967
+chain hold: the watchdog submitted a chain of a game thread (4097 so far)
+chains: 132543 submitted, 552565 segments (45266 single, 100914 with cond_exec), 308322007 dwords; closed by: end 55302 wait 52180 ring/class 0 cond_exec 0 size 0 drain 4204 acb-head 13373 other 0 observe 0 hold-wd 4506 hold-end 2978
+chains: 134811 submitted, 564246 segments (45733 single, 103243 with cond_exec), 315503913 dwords; closed by: end 56387 wait 52901 ring/class 0 cond_exec 0 size 0 drain 4285 acb-head 13519 other 0 observe 0 hold-wd 4689 hold-end 3030
+chains: 144618 submitted, 605302 segments (49016 single, 110494 with cond_exec), 362274561 dwords; closed by: end 59999 wait 56901 ring/class 0 cond_exec 0 size 0 drain 4564 acb-head 14676 other 0 observe 0 hold-wd 5066 hold-end 3412
+chain hold: the watchdog submitted a chain of a game thread (5121 so far)
+chains: 160672 submitted, 669190 segments (54531 single, 121366 with cond_exec), 439676677 dwords; closed by: end 65830 wait 63706 ring/class 0 cond_exec 0 size 0 drain 4999 acb-head 16565 other 0 observe 0 hold-wd 5543 hold-end 4029
+chains: 176881 submitted, 733619 segments (60121 single, 132316 with cond_exec), 517637519 dwords; closed by: end 71736 wait 70556 ring/class 0 cond_exec 0 size 0 drain 5436 acb-head 18491 other 0 observe 0 hold-wd 6021 hold-end 4641
+chain hold: the watchdog submitted a chain of a game thread (6145 so far)
+chains: 193450 submitted, 800356 segments (65926 single, 143676 with cond_exec), 598700311 dwords; closed by: end 77661 wait 78044 ring/class 0 cond_exec 0 size 0 drain 5891 acb-head 20371 other 0 observe 0 hold-wd 6277 hold-end 5206
+chains: 210432 submitted, 868955 segments (71901 single, 155350 with cond_exec), 682085313 dwords; closed by: end 83743 wait 85812 ring/class 0 cond_exec 0 size 0 drain 6358 acb-head 22277 other 0 observe 0 hold-wd 6424 hold-end 5818

@@ -1,0 +1,40 @@
+[ 3526.510013] amdgpu 0000:01:00.0: 	 Faulty UTCL2 client ID: GE2 (0x3)
+[ 3526.510014] amdgpu 0000:01:00.0: 	 MORE_FAULTS: 0x1
+[ 3526.510016] amdgpu 0000:01:00.0: 	 WALKER_ERROR: 0x0
+[ 3526.510016] amdgpu 0000:01:00.0: 	 PERMISSION_FAULTS: 0x3
+[ 3526.510018] amdgpu 0000:01:00.0: 	 MAPPING_ERROR: 0x0
+[ 3526.510018] amdgpu 0000:01:00.0: 	 RW: 0x0
+[ 3526.510021] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:6 pasid:116)
+[ 3526.510023] amdgpu 0000:01:00.0:  Process kyty_emulator pid 173696 thread bc5-ring pid 173742
+[ 3526.510024] amdgpu 0000:01:00.0:   in page starting at address 0x0000000000001000 from client 0x1b (UTCL2)
+[ 3526.510028] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:6 pasid:116)
+[ 3526.510029] amdgpu 0000:01:00.0:  Process kyty_emulator pid 173696 thread bc5-ring pid 173742
+[ 3526.510030] amdgpu 0000:01:00.0:   in page starting at address 0x0000000000002000 from client 0x1b (UTCL2)
+[ 3526.510033] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:6 pasid:116)
+[ 3526.510034] amdgpu 0000:01:00.0:  Process kyty_emulator pid 173696 thread bc5-ring pid 173742
+[ 3526.510035] amdgpu 0000:01:00.0:   in page starting at address 0x0000000000003000 from client 0x1b (UTCL2)
+[ 3526.510038] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:6 pasid:116)
+[ 3526.510040] amdgpu 0000:01:00.0:  Process kyty_emulator pid 173696 thread bc5-ring pid 173742
+[ 3526.510041] amdgpu 0000:01:00.0:   in page starting at address 0x0000000000004000 from client 0x1b (UTCL2)
+[ 3526.533860] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:6 pasid:116)
+[ 3526.533871] amdgpu 0000:01:00.0:  Process kyty_emulator pid 173696 thread Render Thread pid 173763
+[ 3526.533874] amdgpu 0000:01:00.0:   in page starting at address 0x0000000000005000 from client 0x1b (UTCL2)
+[ 3526.533876] amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00600631
+[ 3526.533877] amdgpu 0000:01:00.0: 	 Faulty UTCL2 client ID: GE2 (0x3)
+[ 3526.533878] amdgpu 0000:01:00.0: 	 MORE_FAULTS: 0x1
+[ 3526.533879] amdgpu 0000:01:00.0: 	 WALKER_ERROR: 0x0
+[ 3526.533881] amdgpu 0000:01:00.0: 	 PERMISSION_FAULTS: 0x3
+[ 3526.533881] amdgpu 0000:01:00.0: 	 MAPPING_ERROR: 0x0
+[ 3526.533882] amdgpu 0000:01:00.0: 	 RW: 0x0
+[ 3526.533885] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:6 pasid:116)
+[ 3526.533887] amdgpu 0000:01:00.0:  Process kyty_emulator pid 173696 thread Render Thread pid 173763
+[ 3526.533888] amdgpu 0000:01:00.0:   in page starting at address 0x0000000000006000 from client 0x1b (UTCL2)
+[ 3526.533892] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:6 pasid:116)
+[ 3526.533893] amdgpu 0000:01:00.0:  Process kyty_emulator pid 173696 thread Render Thread pid 173763
+[ 3526.533894] amdgpu 0000:01:00.0:   in page starting at address 0x0000000000007000 from client 0x1b (UTCL2)
+[ 3526.533897] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:6 pasid:116)
+[ 3526.533899] amdgpu 0000:01:00.0:  Process kyty_emulator pid 173696 thread Render Thread pid 173763
+[ 3526.533900] amdgpu 0000:01:00.0:   in page starting at address 0x0000000000008000 from client 0x1b (UTCL2)
+[ 3526.533903] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:6 pasid:116)
+[ 3526.533904] amdgpu 0000:01:00.0:  Process kyty_emulator pid 173696 thread Render Thread pid 173763
+[ 3526.533905] amdgpu 0000:01:00.0:   in page starting at address 0x0000000000009000 from client 0x1b (UTCL2)

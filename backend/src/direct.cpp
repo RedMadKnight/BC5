@@ -857,11 +857,11 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     // ACQUIRE_MEM the console puts between the dispatch that writes them and this one did not
     // hold it back, and it read stale values (+inf as a group count). RADV and radeonsi do the
     // same before an indirect draw or dispatch whose arguments the GPU wrote (Mesa
-    // PKT3_PFP_SYNC_ME, TODO(verify) the lines). Inserting dwords moves every offset after it, so
-    // an IB with COND_EXEC (whose skip counts are offsets) is left as it is.
+    // PKT3_PFP_SYNC_ME, TODO(verify) the lines). Inserting dwords moves every offset after it:
+    // the IB's own COND_EXEC counts are grown around the insertions (ADR 0010 section A, as the
+    // CP DMA waits below since experiment 0052); an IB used to be left alone when it held one.
     if ((opt.mec_indirect_base != 0 || opt.pfp_sync_indirect) && !opt.gpu_check_indirect && !comp) {
-        bool has_cond_exec = false;
-        std::size_t dispatches = 0;
+        std::vector<indirect_check::Insert> syncs;
         for (std::size_t i = 0; i < main_out.size();) {
             const std::uint32_t h = main_out[i];
             const std::uint32_t type = h >> 30;
@@ -870,32 +870,13 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
                 const std::uint32_t count = (h >> 16) & 0x3fff;
                 len = count == 0x3fff ? 1 : count + 2;
             }
-            if (type == 3 && ((h >> 8) & 0xff) == 0x22) has_cond_exec = true;
-            if (type == 3 && ((h >> 8) & 0xff) == 0x16 && len == 3) dispatches++;
+            if (type == 3 && ((h >> 8) & 0xff) == 0x16 && len == 3) {
+                syncs.push_back({i, {kPfpSyncMe, 0u}});
+            }
             i += len;
         }
-        if (!has_cond_exec && dispatches != 0) {
-            std::vector<std::uint32_t> grown;
-            grown.reserve(main_out.size() + 2 * dispatches);
-            for (std::size_t i = 0; i < main_out.size();) {
-                const std::uint32_t h = main_out[i];
-                const std::uint32_t type = h >> 30;
-                std::size_t len = 1;
-                if (type == 3 || type == 0) {
-                    const std::uint32_t count = (h >> 16) & 0x3fff;
-                    len = count == 0x3fff ? 1 : count + 2;
-                }
-                if (i + len > main_out.size()) len = main_out.size() - i;
-                if (type == 3 && ((h >> 8) & 0xff) == 0x16 && len == 3) {
-                    grown.push_back(kPfpSyncMe);
-                    grown.push_back(0);
-                }
-                grown.insert(grown.end(), main_out.begin() + static_cast<std::ptrdiff_t>(i),
-                             main_out.begin() + static_cast<std::ptrdiff_t>(i + len));
-                i += len;
-            }
-            main_out.swap(grown);
-            r.filter.pfp_syncs += dispatches;
+        if (!syncs.empty() && indirect_check::insert_before(main_out, syncs)) {
+            r.filter.pfp_syncs += syncs.size();
         }
     }
     // Experiment 0050: CP DMA runs beside the CP, and a DMA_DATA without CP_SYNC is not waited for

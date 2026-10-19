@@ -99,6 +99,32 @@ TEST_CASE("indirect_check: the caller's base, no base, and the IB's own COND_EXE
     }
 }
 
+TEST_CASE("indirect_check: a COND_EXEC range whose grown count overflows drops only its own "
+          "dispatches (ADR 0010 section A)",
+          "[indirect_check]") {
+    // A range of 0x3fff - 10 dwords (one long NOP, then a dispatch) grows past 14 bits with the
+    // check; the dispatch after the range is checked as usual. The whole IB used to be NOP-ed.
+    const std::uint32_t nop_len = 0x3fffu - 10u - 3u; // dwords of the filler NOP packet
+    std::vector<std::uint32_t> ib = {0xC0032200u, 0x1000u, 0u, 0u, nop_len + 3u};
+    ib.push_back(0xC0001000u | ((nop_len - 2u) << 16)); // PKT3(NOP, nop_len - 2, 0)
+    ib.resize(ib.size() + nop_len - 1, 0u);
+    const std::size_t inside = ib.size();
+    ib.insert(ib.end(), {kDispatchIndirect, 0x40u, 0x41u});
+    const std::size_t outside = ib.size();
+    ib.insert(ib.end(), {kDispatchIndirect, 0x80u, 0x41u});
+    std::vector<std::size_t> refs;
+    indirect_check::Stats st;
+    auto out = indirect_check::apply(ib, 0x2'0000'0000ull, kMax, kDrawMax, refs, st);
+    CHECK(st.conditional == 1);
+    CHECK(st.checked == 1);
+    REQUIRE(out.size() == ib.size() + indirect_check::kCheckDwords);
+    CHECK(out[4] == nop_len + 3u); // the range's count is unchanged: nothing was inserted in it
+    CHECK(out[inside] == 0xC0011000u);                                    // NOP-ed, 3 dwords
+    CHECK(out[outside + indirect_check::kCheckDwords] == kDispatchIndirect); // checked
+    CHECK(out[outside] == 0xC0033700u); // its check starts with WRITE_DATA
+    REQUIRE(refs.size() == 6);
+}
+
 TEST_CASE("insert_before: packets inserted, COND_EXEC counts grown around them",
           "[indirect_check]") {
     // COND_EXEC over NOP(2 dwords) + dispatch (3 dwords), then a dispatch outside its range.
