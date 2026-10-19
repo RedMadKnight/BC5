@@ -1260,10 +1260,10 @@ index 0000000..7b6926c
 +#endif // KYTY_GRAPHICS_PRESENTATION_HOST_MENU_H_
 diff --git a/src/graphics/presentation/settingsOverlay.cpp b/src/graphics/presentation/settingsOverlay.cpp
 new file mode 100644
-index 0000000..7f516ed
+index 0000000..6bc40a0
 --- /dev/null
 +++ b/src/graphics/presentation/settingsOverlay.cpp
-@@ -0,0 +1,895 @@
+@@ -0,0 +1,906 @@
 +#include "graphics/presentation/settingsOverlay.h"
 +
 +#include "SDL.h"
@@ -2016,6 +2016,17 @@ index 0000000..7f516ed
 +			video_status = std::string("fullscreen ") + (fs ? "on" : "off") + " (live); Save to keep it";
 +		}
 +		ImGui::TextDisabled("Resolution of the game's 3D view:");
++		// BC5 (experiment 0179, F237): the steps below were measured on ASTRO BOT. The second title
++		// (PPSA03671) paces its frames by the scaled GPU time instead: at 1.7 its intro ran at 18-20
++		// flips/s instead of 28-30 and its start screen at 25 instead of 46, from one save of this tab.
++		if (HostInputTitleId() != "PPSA21567") {
++			const std::string warn = "These steps were measured on ASTRO BOT, not on this title (" + HostInputTitleId() +
++			                         "). A title that paces its frames by the GPU time runs slower above 1.0: the second "
++			                         "title runs at half rate at 1.7. Keep 1.0 (the first step) unless you have measured it.";
++			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1.0f, 0.75f, 0.3f, 1.0f));
++			ImGui::TextWrapped("%s", warn.c_str());
++			ImGui::PopStyleColor();
++		}
 +		double k = draft.RenderScale() > 0.0 ? draft.RenderScale() : live;
 +		for (const auto& p: presets) {
 +			if (ImGui::RadioButton(p.label, std::abs(k - p.k) < 0.005)) {

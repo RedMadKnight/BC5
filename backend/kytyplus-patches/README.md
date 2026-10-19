@@ -402,6 +402,9 @@ Experiment 0115: the timestamp scale is per title: `RenderScale.<TITLE_ID>=<k>` 
 applies to that title only (TITLE_ID from `param.sfo`), other titles' entries are kept on save,
 and a plain `RenderScale=<k>` is ignored with a log line; a title without an entry runs with
 untouched timestamps. The F2 *Video* tab reads and writes the running title's entry.
+Experiment 0179 (F237): the tab's presets were measured on ASTRO BOT; for any other title it now
+warns that a title pacing its frames by the GPU time runs slower above 1.0 (the second title ran at
+half rate at 1.7, saved from this tab).
 Experiment 0047: the timestamp scale is live: `RenderScale=<k>` (0.5–4) in the input file, and
 the F2 menu's *Video* tab (presets 1.0 / 1.2 / 1.5 / 3.0, a slider, the main 3D view's size now,
 Save). *Restart game* exits with code 75; the dev box's `play-astro.sh` and `play-pkg.sh` start
