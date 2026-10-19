@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=BC5 emulator (lean)
+Comment=BC5: the emulator built without tracing, journals and measurements (experiment 0177), with its menu
+Exec=/usr/bin/distrobox enter ubuntu -- /usr/bin/env BC5_LEAN=1 /home/kjaniszewski/bc5-work/play-any.sh
+Icon=applications-games
+Terminal=false
+Categories=Game;
+StartupNotify=false

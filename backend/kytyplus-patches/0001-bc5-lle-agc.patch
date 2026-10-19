@@ -1,8 +1,26 @@
 diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
-index db25107..17ab15e 100644
+index db25107..533100d 100644
 --- a/src/CMakeLists.txt
 +++ b/src/CMakeLists.txt
-@@ -382,6 +382,14 @@ if(LINUX)
+@@ -168,6 +168,17 @@ if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 12.0.0)
+ endif()
+ 
+ option(KYTY_BUILD_LAUNCHER "Build Qt launcher" ON)
++
++# BC5 (experiment 0177): KYTY_BC5_LEAN=ON builds the emulator without its diagnostics. The session's
++# logging switch is off at compile time, so every gated trace, LOGF, the guest's printf, the direct
++# path's journal and dumps, the frame profile and the tallies drop out of the code; the guest's
++# printf direction is Silent; the direct path's journal mode is fixed to "min" (asynchronous
++# submission does not need a journal); and main.cpp removes the diagnostic environment variables
++# before any static initializer reads them. Built next to the normal emulator, in its own directory.
++option(KYTY_BC5_LEAN "BC5: build without tracing, journals and measurements" OFF)
++if(KYTY_BC5_LEAN)
++	add_compile_definitions(BC5_LEAN=1)
++endif()
+   
+ config_compiler_and_linker()  
+   
+@@ -382,6 +393,14 @@ if(LINUX)
  	if(KYTY_LZMA_LIBRARY)
  		list(APPEND kyty_emulator_link_libraries ${KYTY_LZMA_LIBRARY})
  	endif()
@@ -17,7 +35,7 @@ index db25107..17ab15e 100644
  endif()
  
  set(inc_headers
-@@ -595,6 +603,18 @@ endif()
+@@ -595,6 +614,18 @@ endif()
  
  
  add_executable(kyty_emulator main.cpp platformDispatch.cpp shadps4Embedder.cpp ${kyty_emulator_src})
@@ -36,8 +54,36 @@ index db25107..17ab15e 100644
  # Build the generated FSR shader headers before any kyty_emulator source compiles
  # (fsrUpscaler.cpp #includes them and is GLOB-collected, so it needs an explicit edge).
  add_dependencies(kyty_emulator fsr_shaders)
+diff --git a/src/common/emulatorConfig.cpp b/src/common/emulatorConfig.cpp
+index 15a98b9..0e3d63d 100644
+--- a/src/common/emulatorConfig.cpp
++++ b/src/common/emulatorConfig.cpp
+@@ -114,7 +114,11 @@ bool GraphicsDebugDumpEnabled() {
+ }
+ 
+ OutputDirection GetPrintfDirection() {
++#ifdef BC5_LEAN
++	return OutputDirection::Silent; // KYTY_BC5_LEAN
++#else
+ 	return g_config->printf_direction;
++#endif
+ }
+ 
+ std::filesystem::path GetPrintfOutputFile() {
+@@ -122,7 +126,11 @@ std::filesystem::path GetPrintfOutputFile() {
+ }
+ 
+ ProfilerDirection GetProfilerDirection() {
++#ifdef BC5_LEAN
++	return ProfilerDirection::None; // KYTY_BC5_LEAN
++#else
+ 	return g_config->profiler_direction;
++#endif
+ }
+ 
+ bool SpirvDebugPrintfEnabled() {
 diff --git a/src/common/logging/log.cpp b/src/common/logging/log.cpp
-index e4e2434..f1ae8d0 100644
+index e4e2434..a0f6bbf 100644
 --- a/src/common/logging/log.cpp
 +++ b/src/common/logging/log.cpp
 @@ -6,6 +6,9 @@
@@ -50,7 +96,7 @@ index e4e2434..f1ae8d0 100644
  #include <cstdio>
  #include <filesystem>
  #include <fmt/format.h>
-@@ -213,16 +216,32 @@ Direction GetDirection() {
+@@ -213,16 +216,34 @@ Direction GetDirection() {
  	return g_direction;
  }
  
@@ -59,9 +105,11 @@ index e4e2434..f1ae8d0 100644
 +	return e == nullptr || std::strcmp(e, "0") != 0;
 +}()};
 +
++#ifndef BC5_LEAN
 +bool Bc5LoggingOn() noexcept {
 +	return g_bc5_logging.load(std::memory_order_relaxed);
 +}
++#endif
 +
 +void Bc5SetLogging(bool on) {
 +	g_bc5_logging.store(on, std::memory_order_relaxed);
@@ -84,10 +132,18 @@ index e4e2434..f1ae8d0 100644
  }
  
 diff --git a/src/common/logging/log.h b/src/common/logging/log.h
-index 3ce29cf..464ee06 100644
+index 3ce29cf..0df082c 100644
 --- a/src/common/logging/log.h
 +++ b/src/common/logging/log.h
-@@ -16,6 +16,12 @@ enum class Direction { Silent, Console, File };
+@@ -1,6 +1,7 @@
+ #ifndef KYTY_COMMON_LOGGING_LOG_H_
+ #define KYTY_COMMON_LOGGING_LOG_H_
+ 
++#include <cstdlib>
+ #include "common/common.h"
+ #include "common/subsystems.h"
+ 
+@@ -16,6 +17,24 @@ enum class Direction { Silent, Console, File };
  
  Direction GetDirection();
  bool      IsSilent();
@@ -95,7 +151,19 @@ index 3ce29cf..464ee06 100644
 +// printf, the direct path's journal and dumps, every stderr trace, the frame profile, the drop
 +// tally and the dispatch journal. Starts from BC5_LOGGING (unset or anything but 0 = on); the
 +// window's Emulation > Logging item toggles it live. One atomic load per check.
++// BC5 (KYTY_BC5_LEAN, experiment 0177): the diagnostic switches (the list in main.cpp) are read
++// through this; in the lean build it is a null pointer, so the code behind them is not compiled in.
++#ifdef BC5_LEAN
++#define BC5_DIAG_ENV(name) static_cast<const char*>(nullptr)
++#else
++#define BC5_DIAG_ENV(name) std::getenv(name)
++#endif
++
++#ifdef BC5_LEAN
++inline constexpr bool Bc5LoggingOn() noexcept { return false; } // KYTY_BC5_LEAN: no logging at all
++#else
 +bool Bc5LoggingOn() noexcept;
++#endif
 +void Bc5SetLogging(bool on);
  void      Write(std::string_view text);
  void      Write(fmt::text_style style, std::string_view text);
@@ -133,6 +201,28 @@ index 7225e2e..1ca144d 100644
  	return protect;
  }
  
+diff --git a/src/common/profiler.h b/src/common/profiler.h
+index a84e308..a13c65f 100644
+--- a/src/common/profiler.h
++++ b/src/common/profiler.h
+@@ -75,4 +75,17 @@ KYTY_SUBSYSTEM_DEFINE(Profiler);
+ 
+ #define KYTY_PROFILER_THREAD(name) Profiler::SetThreadName(name)
+ 
++#ifdef BC5_LEAN
++// BC5 (KYTY_BC5_LEAN, experiment 0177): no profiler zones in the code at all (each was a call that
++// checked whether Tracy runs); --profiler-direction is ignored (emulatorConfig.cpp).
++#undef KYTY_PROFILER_BLOCK
++#undef KYTY_PROFILER_FUNCTION
++#undef KYTY_PROFILER_END_BLOCK
++#undef KYTY_PROFILER_THREAD
++#define KYTY_PROFILER_BLOCK(name, ...) static_cast<void>(0)
++#define KYTY_PROFILER_FUNCTION(...)    static_cast<void>(0)
++#define KYTY_PROFILER_END_BLOCK        static_cast<void>(0)
++#define KYTY_PROFILER_THREAD(name)     static_cast<void>(0)
++#endif
++
+ #endif /* KYTY_COMMON_PROFILER_H_ */
 diff --git a/src/common/threads.cpp b/src/common/threads.cpp
 index c0b4bbe..1870594 100644
 --- a/src/common/threads.cpp
@@ -263,7 +353,7 @@ index 78fd86f..462e774 100644
  namespace Libs::Graphics::Pm4 {
  
 diff --git a/src/graphics/host_gpu/renderer/cache/bufferCache.cpp b/src/graphics/host_gpu/renderer/cache/bufferCache.cpp
-index d429de1..a8b1d9c 100644
+index d429de1..cf4e828 100644
 --- a/src/graphics/host_gpu/renderer/cache/bufferCache.cpp
 +++ b/src/graphics/host_gpu/renderer/cache/bufferCache.cpp
 @@ -1,3 +1,5 @@
@@ -327,7 +417,7 @@ index d429de1..a8b1d9c 100644
  		}
  	}
  
-+	static const bool bc5_timing_env = std::getenv("KYTY_BC5_FLIP_TIMING") != nullptr; // experiment 0070
++	static const bool bc5_timing_env = BC5_DIAG_ENV("KYTY_BC5_FLIP_TIMING") != nullptr; // experiment 0070
 +	const bool bc5_timing = bc5_timing_env && ::Log::Bc5LoggingOn();
 +	const auto        bc5_t0     = std::chrono::steady_clock::now();
  	auto [staging, stage_offset] = m_staging_buffer.Map(size, 16);
@@ -488,7 +578,7 @@ index 8c19ba5..85d0bcb 100644
  	LOGF("AsyncPipelineCompiler: started %zu worker threads\n", kWorkerCount);
  }
 diff --git a/src/graphics/host_gpu/vma.cpp b/src/graphics/host_gpu/vma.cpp
-index 14608a6..8504a95 100644
+index 14608a6..31bc996 100644
 --- a/src/graphics/host_gpu/vma.cpp
 +++ b/src/graphics/host_gpu/vma.cpp
 @@ -25,6 +25,12 @@
@@ -524,7 +614,7 @@ index 14608a6..8504a95 100644
 +// game's memory. KYTY_BC5_VMA_TRACE=1: one line per allocation and release — kind, handle, bytes,
 +// a description, and the callers as offsets into the executable (for addr2line).
 +void VulkanTraceMemory(const char* what, const void* handle, uint64_t size, const char* detail) {
-+	static const bool on_env = std::getenv("KYTY_BC5_VMA_TRACE") != nullptr;
++	static const bool on_env = BC5_DIAG_ENV("KYTY_BC5_VMA_TRACE") != nullptr;
 +	const bool on = on_env && ::Log::Bc5LoggingOn();
 +	if (!on) {
 +		return;
@@ -2131,7 +2221,7 @@ index 0000000..c245d62
 +
 +#endif // KYTY_GRAPHICS_PRESENTATION_SETTINGS_OVERLAY_H_
 diff --git a/src/graphics/presentation/videoOut.cpp b/src/graphics/presentation/videoOut.cpp
-index f980320..7331487 100644
+index f980320..cc504c1 100644
 --- a/src/graphics/presentation/videoOut.cpp
 +++ b/src/graphics/presentation/videoOut.cpp
 @@ -1,3 +1,9 @@
@@ -2186,7 +2276,7 @@ index f980320..7331487 100644
 +// rate and the event registrations as they happen, and once a second the counts of flips (by
 +// mode), flip-status polls and vblank waits.
 +static bool Bc5VideoOutTraceOn() {
-+	static const bool on_env = std::getenv("KYTY_BC5_VIDEOOUT_TRACE") != nullptr;
++	static const bool on_env = BC5_DIAG_ENV("KYTY_BC5_VIDEOOUT_TRACE") != nullptr;
 +	const bool on = on_env && ::Log::Bc5LoggingOn();
 +	return on;
 +}
@@ -2235,7 +2325,7 @@ index f980320..7331487 100644
 +}
 +
  void FlipQueue::Prepare(uint64_t request_id, Graphics::CommandBuffer& buffer) {
-+	static const bool bc5_timing_env = std::getenv("KYTY_BC5_FLIP_TIMING") != nullptr;
++	static const bool bc5_timing_env = BC5_DIAG_ENV("KYTY_BC5_FLIP_TIMING") != nullptr;
 +	const bool bc5_timing = bc5_timing_env && ::Log::Bc5LoggingOn();
 +	const int64_t     bc5_t0     = Bc5FlipNowNs();
  	VideoOutConfig* cfg        = nullptr;
@@ -2369,7 +2459,7 @@ index f980320..7331487 100644
 +// switch. Once a second one stderr line: the flips submitted, the longest interval between two of
 +// them, and how many intervals were over 40 and 70 ms (the frame times as the title sees them).
 +static void Bc5FpsCount() {
-+	static const bool on = std::getenv("KYTY_BC5_FPS_COUNTER") != nullptr;
++	static const bool on = BC5_DIAG_ENV("KYTY_BC5_FPS_COUNTER") != nullptr;
 +	if (!on) {
 +		return;
 +	}
@@ -2550,7 +2640,7 @@ index f70995a..8bc9175 100644
  } // namespace Libs::Graphics
  
 diff --git a/src/graphics/presentation/window/hostInput.cpp b/src/graphics/presentation/window/hostInput.cpp
-index edcfdaf..ff27370 100644
+index edcfdaf..ad82cd3 100644
 --- a/src/graphics/presentation/window/hostInput.cpp
 +++ b/src/graphics/presentation/window/hostInput.cpp
 @@ -1,4 +1,6 @@
@@ -3433,7 +3523,7 @@ index edcfdaf..ff27370 100644
  }
 +
 +bool Trace() {
-+	static const bool trace_env = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
++	static const bool trace_env = BC5_DIAG_ENV("KYTY_BC5_INPUT_TRACE") != nullptr;
 +	const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +	return trace;
 +}
@@ -3649,7 +3739,7 @@ index c0ac585..34a3616 100644
  } // namespace Libs::Graphics
  
 diff --git a/src/graphics/presentation/window/swapchain.cpp b/src/graphics/presentation/window/swapchain.cpp
-index 845bfe3..4e6142c 100644
+index 845bfe3..f05d3a2 100644
 --- a/src/graphics/presentation/window/swapchain.cpp
 +++ b/src/graphics/presentation/window/swapchain.cpp
 @@ -1,3 +1,4 @@
@@ -3768,7 +3858,7 @@ index 845bfe3..4e6142c 100644
  Presenter::Frame& Presenter::PrepareFrame(CommandBuffer& buffer, const ImageInfo& info) {
  	KYTY_PROFILER_FUNCTION();
  	EXIT_IF(buffer.IsInvalid());
-+	static const bool bc5_timing_env = std::getenv("KYTY_BC5_FLIP_TIMING") != nullptr; // experiment 0072
++	static const bool bc5_timing_env = BC5_DIAG_ENV("KYTY_BC5_FLIP_TIMING") != nullptr; // experiment 0072
 +	const bool bc5_timing = bc5_timing_env && ::Log::Bc5LoggingOn();
 +	const auto        bc5_t0     = std::chrono::steady_clock::now();
  	auto*             frame = m_impl->frames.Acquire();
@@ -3843,7 +3933,7 @@ index 845bfe3..4e6142c 100644
  		{
  			const auto present_end = std::chrono::steady_clock::now();
 diff --git a/src/graphics/presentation/window/window.cpp b/src/graphics/presentation/window/window.cpp
-index c729a98..1f72bc2 100644
+index c729a98..271e401 100644
 --- a/src/graphics/presentation/window/window.cpp
 +++ b/src/graphics/presentation/window/window.cpp
 @@ -31,7 +31,9 @@
@@ -3945,7 +4035,7 @@ index c729a98..1f72bc2 100644
  	if ((key.down || key.up) && !key.repeat) {
  		HostInputKey(key.key_code, key.down);
 +	} else {
-+		static const bool trace_env = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
++		static const bool trace_env = BC5_DIAG_ENV("KYTY_BC5_INPUT_TRACE") != nullptr;
 +		const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +		if (trace) {
 +			std::fprintf(stderr, "input trace: key %d repeat/other event ignored\n", key.key_code);
@@ -4243,7 +4333,7 @@ index c729a98..1f72bc2 100644
  #if defined(__APPLE__)
  	// AppKit traps on title changes off the main thread; fire-and-forget keeps present pacing.
 diff --git a/src/kernel/eventQueue.cpp b/src/kernel/eventQueue.cpp
-index 14561b0..4960969 100644
+index 14561b0..f9fe0d7 100644
 --- a/src/kernel/eventQueue.cpp
 +++ b/src/kernel/eventQueue.cpp
 @@ -1,8 +1,12 @@
@@ -4288,7 +4378,7 @@ index 14561b0..4960969 100644
 +
 +int KYTY_SYSV_ABI KernelTriggerAmprEvent(KernelEqueue eq, int id, void* data) {
 +	const int result = KernelTriggerEvent(eq, static_cast<uintptr_t>(id), AmprEventFilter(), data);
-+	if (::Log::Bc5LoggingOn() && getenv("KYTY_BC5_AMM_TRACE") != nullptr) {
++	if (::Log::Bc5LoggingOn() && BC5_DIAG_ENV("KYTY_BC5_AMM_TRACE") != nullptr) {
 +		std::fprintf(stderr, "amm trace: trigger ampr event eq 0x%016" PRIx64 " id %d data 0x%016" PRIx64 " = 0x%08x\n",
 +		             static_cast<uint64_t>(eq), id, reinterpret_cast<uint64_t>(data), static_cast<unsigned>(result));
 +	}
@@ -4311,7 +4401,7 @@ index 14561b0..4960969 100644
  	EXIT_NOT_IMPLEMENTED(out == nullptr);
  
 +	// BC5: KYTY_BC5_LOG_WAITS=1 for the two wait lines below (a tenth of a capture otherwise).
-+	static const bool log_waits = std::getenv("KYTY_BC5_LOG_WAITS") != nullptr;
++	static const bool log_waits = BC5_DIAG_ENV("KYTY_BC5_LOG_WAITS") != nullptr;
 +	if (log_waits)
  	LOGF("\tEqueue wait: %s, caller = 0x%016" PRIx64 ", eq = 0x%016" PRIx64 ", ev = 0x%016" PRIx64
  	     ", num = %d, timo = %s, thread_id = %d\n",
@@ -4328,7 +4418,7 @@ index 14561b0..4960969 100644
  	LOGF("\t AMPR event add: eq = 0x%016" PRIx64 ", id = %d, udata = 0x%016" PRIx64 "\n",
  	     static_cast<uint64_t>(eq), id, reinterpret_cast<uint64_t>(udata));
  
-+	if (::Log::Bc5LoggingOn() && getenv("KYTY_BC5_AMM_TRACE") != nullptr) {
++	if (::Log::Bc5LoggingOn() && BC5_DIAG_ENV("KYTY_BC5_AMM_TRACE") != nullptr) {
 +		std::fprintf(stderr, "amm trace: add ampr event eq 0x%016" PRIx64 " id %d udata 0x%016" PRIx64 "\n",
 +		             static_cast<uint64_t>(eq), id, reinterpret_cast<uint64_t>(udata));
 +	}
@@ -4564,7 +4654,7 @@ index bc73d18..252c692 100644
  
  #endif /* EMULATOR_INCLUDE_EMULATOR_KERNEL_FILESYSTEM_H_ */
 diff --git a/src/kernel/memory.cpp b/src/kernel/memory.cpp
-index 02fc0fc..ec025b2 100644
+index 02fc0fc..615e1ee 100644
 --- a/src/kernel/memory.cpp
 +++ b/src/kernel/memory.cpp
 @@ -1,3 +1,6 @@
@@ -4599,7 +4689,7 @@ index 02fc0fc..ec025b2 100644
 +	return static_cast<uint64_t>(t.tv_sec) * 1000000000ull + static_cast<uint64_t>(t.tv_nsec);
 +}
 +bool Bc5MapStatsOn() {
-+	static const bool on = std::getenv("KYTY_BC5_MAP_STATS") != nullptr;
++	static const bool on = BC5_DIAG_ENV("KYTY_BC5_MAP_STATS") != nullptr;
 +	return on;
 +}
 +void Bc5MapStatsTick() {
@@ -4650,7 +4740,7 @@ index 02fc0fc..ec025b2 100644
 +// own zero on that clock once, "bc5 clock").
 +static void Bc5RangeWatch(const char* what, uint64_t start, uint64_t size, int protection, int type, const char* name, bool ok) {
 +	static const std::pair<uint64_t, uint64_t> w = [] {
-+		const char* e = std::getenv("KYTY_BC5_RANGE_WATCH");
++		const char* e = BC5_DIAG_ENV("KYTY_BC5_RANGE_WATCH");
 +		if (e == nullptr) return std::pair<uint64_t, uint64_t> {0, 0};
 +		char*          end = nullptr;
 +		const uint64_t lo  = std::strtoull(e, &end, 16);
@@ -5109,7 +5199,7 @@ index 02fc0fc..ec025b2 100644
  		DecodeMemoryProtection(replaced.range.protection, &replaced.mode, &replaced.gpu_mode);
 +		// BC5 (experiment 0036): a fixed mapping over live memory replaces it silently; trace it.
 +		if (range.type != VirtualRangeType::Reserved && range.type != VirtualRangeType::PoolReserved) {
-+			static const bool trace_env = (getenv("KYTY_BC5_AMM_TRACE") != nullptr);
++			static const bool trace_env = (BC5_DIAG_ENV("KYTY_BC5_AMM_TRACE") != nullptr);
 +			const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +			if (trace) {
 +				std::fprintf(stderr,
@@ -5567,7 +5657,7 @@ index 3b39581..9b90ca3 100644
  } // namespace LibKernel
  
 diff --git a/src/kernel/semaphore.cpp b/src/kernel/semaphore.cpp
-index ed7c35b..9f6635d 100644
+index ed7c35b..847f250 100644
 --- a/src/kernel/semaphore.cpp
 +++ b/src/kernel/semaphore.cpp
 @@ -2,6 +2,8 @@
@@ -5585,7 +5675,7 @@ index ed7c35b..9f6635d 100644
  
 -	if (time == nullptr) {
 +	// BC5: KYTY_BC5_LOG_WAITS=1 for this line; it was 63 % of a 780 MB capture (2026-10-07).
-+	static const bool log_waits = std::getenv("KYTY_BC5_LOG_WAITS") != nullptr;
++	static const bool log_waits = BC5_DIAG_ENV("KYTY_BC5_LOG_WAITS") != nullptr;
 +	if (time == nullptr && log_waits) {
  		LOGF("KernelWaitSema: infinite wait sem=%p need=%d\n", static_cast<void*>(sem), need);
  	}
@@ -5635,7 +5725,7 @@ index 6c48267..4f3b34a 100644
  	LOGF("\t value0 = 0x%016" PRIx64 "\n"
  	     "\t value1 = 0x%016" PRIx64 "\n"
 diff --git a/src/libs/ajm.cpp b/src/libs/ajm.cpp
-index 89473ad..cc89450 100644
+index 89473ad..be91543 100644
 --- a/src/libs/ajm.cpp
 +++ b/src/libs/ajm.cpp
 @@ -9,7 +9,9 @@
@@ -5815,7 +5905,7 @@ index 89473ad..cc89450 100644
  	AjmWriteResult(result, AJM_SIDEBAND_RESULT_SIZE, decode_result);
 +	// BC5 (experiment 0154): the codec parameters the title passes, per instance.
 +	{
-+		static const bool trace_env = std::getenv("KYTY_BC5_AJM_TRACE") != nullptr;
++		static const bool trace_env = BC5_DIAG_ENV("KYTY_BC5_AJM_TRACE") != nullptr;
 +		const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +		if (trace) {
 +			std::fprintf(stderr, "ajm trace: initialize inst 0x%x params[%zu]=", instance, codec_parameters_size);
@@ -5833,7 +5923,7 @@ index 89473ad..cc89450 100644
  
  	AjmWriteResult(result, AJM_SIDEBAND_RESULT_SIZE, decode_result);
 +	{
-+		static const bool trace_env = std::getenv("KYTY_BC5_AJM_TRACE") != nullptr;
++		static const bool trace_env = BC5_DIAG_ENV("KYTY_BC5_AJM_TRACE") != nullptr;
 +		const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +		if (trace) {
 +			std::fprintf(stderr, "ajm trace: clear-context inst 0x%x -> 0x%x\n", instance,
@@ -5850,7 +5940,7 @@ index 89473ad..cc89450 100644
 +	// BC5 (experiment 0154): KYTY_BC5_AJM_TRACE=1 journals every split decode job on stderr: the
 +	// second title's cinematic voice stops being decoded after ~4.95 s (F198).
 +	{
-+		static const bool trace_env = std::getenv("KYTY_BC5_AJM_TRACE") != nullptr;
++		static const bool trace_env = BC5_DIAG_ENV("KYTY_BC5_AJM_TRACE") != nullptr;
 +		const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +		if (trace) {
 +			size_t in_size = 0, out_size = 0;
@@ -5885,7 +5975,7 @@ index 89473ad..cc89450 100644
  	LOGF("\t instance = 0x%08" PRIx32 ", gapless_decode = 0x%016" PRIx64 ", reset = %d\n", instance,
  	     reinterpret_cast<uint64_t>(gapless_decode), reset);
 +	{ // BC5 (experiment 0154): the gapless parameters the title sets, per instance.
-+		static const bool trace_env = std::getenv("KYTY_BC5_AJM_TRACE") != nullptr;
++		static const bool trace_env = BC5_DIAG_ENV("KYTY_BC5_AJM_TRACE") != nullptr;
 +		const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +		if (trace && gapless_decode != nullptr) {
 +			const auto* g = static_cast<const AjmSidebandGaplessDecode*>(gapless_decode);
@@ -5901,7 +5991,7 @@ index 89473ad..cc89450 100644
  	}
  
 +	{
-+		static const bool trace_env = std::getenv("KYTY_BC5_AJM_TRACE") != nullptr;
++		static const bool trace_env = BC5_DIAG_ENV("KYTY_BC5_AJM_TRACE") != nullptr;
 +		const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +		if (trace) {
 +			std::fprintf(stderr, "ajm trace: get-gapless inst 0x%x -> 0x%x total %u skip %u skipped %u\n",
@@ -5918,7 +6008,7 @@ index 89473ad..cc89450 100644
  	                                                    sideband_input_size, &decoder, &gapless);
  	AjmWriteSideband(flags, sideband_output, sideband_output_size, decoder, gapless, decode_result);
 +	{
-+		static const bool trace_env = std::getenv("KYTY_BC5_AJM_TRACE") != nullptr;
++		static const bool trace_env = BC5_DIAG_ENV("KYTY_BC5_AJM_TRACE") != nullptr;
 +		const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +		if (trace) {
 +			std::fprintf(stderr, "ajm trace: control inst 0x%x flags 0x%llx in %zu out %zu -> 0x%x\n",
@@ -6474,7 +6564,7 @@ index e82b93e..6cf1b61 100644
  
  } // namespace Libs::Audio::Ajm
 diff --git a/src/libs/audio.cpp b/src/libs/audio.cpp
-index fe4b332..e26de46 100644
+index fe4b332..b7ede00 100644
 --- a/src/libs/audio.cpp
 +++ b/src/libs/audio.cpp
 @@ -10,16 +10,22 @@
@@ -6719,7 +6809,7 @@ index fe4b332..e26de46 100644
 +			}
 +		}
 +		// KYTY_BC5_INPUT_TRACE=1: once a second per port, what reaches the pad.
-+		static const bool trace_env = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
++		static const bool trace_env = BC5_DIAG_ENV("KYTY_BC5_INPUT_TRACE") != nullptr;
 +		const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +		if (trace) {
 +			static std::map<const PortOut*, std::pair<uint64_t, float>> seen; // port -> (last ms, max peak)
@@ -6753,7 +6843,7 @@ index fe4b332..e26de46 100644
 +	// BC5 (experiment 0166, KYTY_BC5_AUDIO_DUMP=<dir>): the first 40 s of each non-pad port as raw
 +	// PCM, before the SDL conversion (port<N>-in.raw: the port's format, channels, rate) and as
 +	// handed to SDL (port<N>-out.raw: the device's), one stderr line describing each.
-+	static const char* dump_dir = std::getenv("KYTY_BC5_AUDIO_DUMP");
++	static const char* dump_dir = BC5_DIAG_ENV("KYTY_BC5_AUDIO_DUMP");
 +	struct DumpFile { FILE* f = nullptr; uint64_t bytes = 0; bool closed = false; };
 +	static std::map<const PortOut*, std::pair<DumpFile, DumpFile>> dumps;
 +	static std::mutex                                                  dumps_mutex;
@@ -6883,10 +6973,10 @@ index fe4b332..e26de46 100644
 +	// BC5 (audio pacing): KYTY_BC5_AUDIO_TRACE=1 prints, once a second, how fast the game's audio
 +	// thread pushed frames against the wall clock (the title's game clock is Wwise's play
 +	// position, i.e. the frames the host accepted), how long it was held, and the SDL queue.
-+	static const bool trace_env = std::getenv("KYTY_BC5_AUDIO_TRACE") != nullptr;
++	static const bool trace_env = BC5_DIAG_ENV("KYTY_BC5_AUDIO_TRACE") != nullptr;
 +	// Experiment 0174: KYTY_BC5_MEASURE=1 keeps this one-line-a-second measurement on when the
 +	// session's logging is switched off (the maintainer plays with logging off).
-+	static const bool measure = std::getenv("KYTY_BC5_MEASURE") != nullptr;
++	static const bool measure = BC5_DIAG_ENV("KYTY_BC5_MEASURE") != nullptr;
 +	const bool trace = trace_env && (measure || ::Log::Bc5LoggingOn());
 +	if (trace) {
 +		static uint64_t last_us = 0;
@@ -6924,10 +7014,10 @@ index fe4b332..e26de46 100644
  
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..5811133
+index 0000000..65d6f1f
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,8548 @@
+@@ -0,0 +1,8554 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -7042,17 +7132,21 @@ index 0000000..5811133
 +// default since 2026-10-07: they were a fifth of a 780 MB capture and say the same thing every
 +// frame. The first few of each kind are still logged.
 +static const bool g_gc_verbose = [] {
-+	const char* e = std::getenv("BC5_GC_LOG");
++	const char* e = BC5_DIAG_ENV("BC5_GC_LOG");
 +	return e != nullptr && std::strcmp(e, "verbose") == 0;
 +}();
 +static bool gc_log_few(int* counter, int limit = 8) {
 +	return g_gc_verbose || (*counter)++ < limit;
 +}
 +
++#ifdef BC5_LEAN
++static const bool g_journal_min = true; // KYTY_BC5_LEAN: the "min" mode's behaviour (async allowed), no journal
++#else
 +static const bool g_journal_min = [] {
-+	const char* e = std::getenv("BC5_DIRECT_JOURNAL");
++	const char* e = BC5_DIAG_ENV("BC5_DIRECT_JOURNAL");
 +	return e != nullptr && std::strcmp(e, "min") == 0;
 +}();
++#endif
 +
 +// Compute/graphics queues registered through ioctl 0xc0408121. Until the doorbell protocol is
 +// understood, a probe thread logs the submit page and the ring heads for the first minute.
@@ -7085,10 +7179,10 @@ index 0000000..5811133
 +static void dump_init() {
 +	static std::once_flag once;
 +	std::call_once(once, [] {
-+		if (const char* d = std::getenv("BC5_GC_DUMP_DIR"); d != nullptr && *d != 0) {
++		if (const char* d = BC5_DIAG_ENV("BC5_GC_DUMP_DIR"); d != nullptr && *d != 0) {
 +			g_dump_dir = d;
 +			g_dump_limit = 4000;
-+			if (const char* l = std::getenv("BC5_GC_DUMP_LIMIT"); l != nullptr && *l != 0) {
++			if (const char* l = BC5_DIAG_ENV("BC5_GC_DUMP_LIMIT"); l != nullptr && *l != 0) {
 +				g_dump_limit = std::atoi(l);
 +			}
 +			LOGF_COLOR(Log::Color::Green, "[bc5-gc] capturing command buffers to %s (limit %d)\n",
@@ -7299,7 +7393,7 @@ index 0000000..5811133
 +	}
 +	// Experiment 0038: BC5_DIRECT_WATCH_VA also journals the soft CP's writes in that range.
 +	static const std::pair<uint64_t, uint64_t> watch = [] {
-+		const char* e = std::getenv("BC5_DIRECT_WATCH_VA");
++		const char* e = BC5_DIAG_ENV("BC5_DIRECT_WATCH_VA");
 +		if (e == nullptr) return std::pair<uint64_t, uint64_t> {0, 0};
 +		char*          end = nullptr;
 +		const uint64_t a   = std::strtoull(e, &end, 16);
@@ -7754,7 +7848,7 @@ index 0000000..5811133
 +		for (auto& s: states) {
 +			const auto& q     = s.reg;
 +			t_queue_idx       = static_cast<int>(&s - states.data()); // experiment 0133
-+			if (s.count == 0 && s.deferred_report == 0 && ::Log::Bc5LoggingOn() && std::getenv("BC5_DIRECT_WAIT_TRACE") != nullptr) {
++			if (s.count == 0 && s.deferred_report == 0 && ::Log::Bc5LoggingOn() && BC5_DIAG_ENV("BC5_DIRECT_WAIT_TRACE") != nullptr) {
 +				s.deferred_report = 1;
 +				Direct::journal("queue %d: a %u b %u c %u d %u ring 0x%" PRIx64 "-0x%" PRIx64 "\n", t_queue_idx, q.a, q.b, q.c, q.d, q.ring_base, q.ring_end);
 +			}
@@ -7935,7 +8029,7 @@ index 0000000..5811133
 +// makes every earlier line durable too. Syncing each line and each IB dump cost most of a frame
 +// (run 78: 1.3 s for the frame DCB with its hundred table lines); BC5_DIRECT_JOURNAL_SYNC=1
 +// brings that back for chasing a hang.
-+static const bool g_journal_sync = std::getenv("BC5_DIRECT_JOURNAL_SYNC") != nullptr;
++static const bool g_journal_sync = BC5_DIAG_ENV("BC5_DIRECT_JOURNAL_SYNC") != nullptr;
 +static void journal(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
 +static FILE* journal_min_file(bool flush_now) {
 +	static FILE* const f = [] {
@@ -8109,7 +8203,7 @@ index 0000000..5811133
 +	// BC5_DIRECT_SELFTEST=1: before the game submits anything, run synthetic IBs through the very
 +	// same path (no userptr BOs yet): 8 NOPs, 152 NOPs, 8 x (CONTEXT_CONTROL + NOPs) — the shapes
 +	// that hung the box from inside this process but not standalone (experiment 0016).
-+	if (std::getenv("BC5_DIRECT_SELFTEST") != nullptr) {
++	if (BC5_DIAG_ENV("BC5_DIRECT_SELFTEST") != nullptr) {
 +		std::vector<uint32_t> ib;
 +		bc5::policy::FilterOptions opt;
 +		auto run = [&](const char* name) {
@@ -8668,7 +8762,7 @@ index 0000000..5811133
 +	// views, aliases included, over 9 GiB): 25-80 s on the game's thread each time the second
 +	// title's imports grew by 512 MiB while it loads. A diagnostic now, BC5_DIRECT_BREAKDOWN=1;
 +	// the breakdown on -ENOMEM stays.
-+	static const bool breakdown = std::getenv("BC5_DIRECT_BREAKDOWN") != nullptr;
++	static const bool breakdown = BC5_DIAG_ENV("BC5_DIRECT_BREAKDOWN") != nullptr;
 +	if (S.bytes >= S.reported + (512ull << 20u)) {
 +		S.reported = S.bytes;
 +		if (breakdown) direct_breakdown_one(S, "growth", 0);
@@ -9243,7 +9337,7 @@ index 0000000..5811133
 +	}
 +};
 +static void size_tally(const HintCtx& ctx) {
-+	static const bool on = std::getenv("BC5_DIRECT_PKT_STATS") != nullptr;
++	static const bool on = BC5_DIAG_ENV("BC5_DIRECT_PKT_STATS") != nullptr;
 +	if (!on) return;
 +	char k[160];
 +	auto get = [&](uint32_t r) { return ctx.has(r) ? ctx.get(r) : 0xffffffffu; };
@@ -9447,7 +9541,7 @@ index 0000000..5811133
 +// gfx10), 32 KiB from each distinct address, once per run, as shader-<va>.bin — for the
 +// standalone replay of a pass in draw-min (experiment 0016, run 67).
 +static void dump_shaders(const uint32_t* ib, uint32_t num_dwords, const std::vector<bc5::direct::Mapping>& maps) {
-+	static const bool on = std::getenv("BC5_DIRECT_SHADER_DUMP") != nullptr;
++	static const bool on = BC5_DIAG_ENV("BC5_DIRECT_SHADER_DUMP") != nullptr;
 +	if (!on || g_dump_dir.empty()) return;
 +	static std::vector<uint64_t> seen;
 +	static const uint32_t lo_offsets[] = {0x08, 0x48, 0x88, 0xc8, 0x108, 0x148};
@@ -9612,7 +9706,7 @@ index 0000000..5811133
 +static std::mutex                                 g_lw_mutex;
 +static std::vector<std::pair<uint64_t, uint64_t>> g_lw; // address, last value seen
 +static void label_watch(uint64_t a) {
-+	static const bool on_env = std::getenv("BC5_DIRECT_LABEL_TRACE") != nullptr;
++	static const bool on_env = BC5_DIAG_ENV("BC5_DIRECT_LABEL_TRACE") != nullptr;
 +	const bool on = on_env && ::Log::Bc5LoggingOn();
 +	if (!on || a == 0) return;
 +	a &= ~7ull;
@@ -9791,7 +9885,7 @@ index 0000000..5811133
 +// waits are always written. BC5_DIRECT_JOURNAL_ALL=1 writes them all again (and the indirect
 +// argument survey, on by default before).
 +static bool journal_all() {
-+	static const bool v = std::getenv("BC5_DIRECT_JOURNAL_ALL") != nullptr;
++	static const bool v = BC5_DIAG_ENV("BC5_DIRECT_JOURNAL_ALL") != nullptr;
 +	return v;
 +}
 +static bool journal_sample(std::atomic<uint64_t>& n, uint64_t mask) {
@@ -10514,7 +10608,7 @@ index 0000000..5811133
 +// (Mesa gfx10 register JSON via tools/bc5-agc/regdb). ASTRO BOT's CB/DB and SQC faults with pieces
 +// carry 0x80 there. CPU only.
 +static bool tag_watch() {
-+	static const bool v = std::getenv("BC5_DIRECT_TAG_WATCH") != nullptr;
++	static const bool v = BC5_DIAG_ENV("BC5_DIRECT_TAG_WATCH") != nullptr;
 +	return v;
 +}
 +static int tagged_regs(const bc5::full_state::Tracker& t, char* out, size_t cap) {
@@ -10605,7 +10699,7 @@ index 0000000..5811133
 +
 +// Experiment 0133 (BC5_DIRECT_WAIT_TRACE=1): the last pending write of a label, for the journal.
 +static bool wait_trace() {
-+	static const bool v_env = std::getenv("BC5_DIRECT_WAIT_TRACE") != nullptr;
++	static const bool v_env = BC5_DIAG_ENV("BC5_DIRECT_WAIT_TRACE") != nullptr;
 +	const bool v = v_env && ::Log::Bc5LoggingOn();
 +	return v;
 +}
@@ -10758,7 +10852,7 @@ index 0000000..5811133
 +static std::pair<uint32_t, uint32_t> ge_probe_range() {
 +	static const std::pair<uint32_t, uint32_t> r = [] {
 +		std::pair<uint32_t, uint32_t> v {0, 0};
-+		if (const char* e = std::getenv("BC5_DIRECT_GE_PROBE"); e != nullptr) {
++		if (const char* e = BC5_DIAG_ENV("BC5_DIRECT_GE_PROBE"); e != nullptr) {
 +			unsigned a = 0, b = 0;
 +			if (std::sscanf(e, "%u:%u", &a, &b) == 2) v = {a, b};
 +		}
@@ -11069,12 +11163,14 @@ index 0000000..5811133
 +						n_two++;
 +						if (split) n_two_split++;
 +						(kept ? n_two_kept : (ok ? n_two_ok : n_two_lost))++;
++#ifndef BC5_LEAN
 +						(kept ? ns_two_kept : (ok ? ns_two_ok : ns_two_lost)) += SoftCp::now_ns() - t1;
 +						if ((n_two.load() & 0x3ffu) == 0) {
 +							journal("two rings, time in the waits: kept for the GPU %.1f ms in %" PRIu64 ", satisfied on the CPU %.1f ms in %" PRIu64 ", not served %.1f ms in %" PRIu64 "\n",
 +							        static_cast<double>(ns_two_kept.load()) / 1e6, n_two_kept.load(), static_cast<double>(ns_two_ok.load()) / 1e6, n_two_ok.load(),
 +							        static_cast<double>(ns_two_lost.load()) / 1e6, n_two_lost.load());
 +						}
++#endif // BC5_LEAN
 +						if ((n_two.load() & 0x3ffu) == 1 || (!ok && !kept && n_two_lost.load() <= 50)) {
 +							journal("two rings: %s %u dwords waits at %u on 0x%" PRIx64 ": %s after %.2f ms%s (%" PRIu64 " waits: %" PRIu64 " split, %" PRIu64 " kept for the GPU, %" PRIu64 " satisfied, %" PRIu64 " lost)\n",
 +							        kind, num_dwords, i, label, kept ? "kept for the GPU" : (ok ? "satisfied" : "NOT served"), static_cast<double>(SoftCp::now_ns() - t1) / 1e6,
@@ -11162,7 +11258,7 @@ index 0000000..5811133
 +					if (!ok) t_wait_given_up = true;
 +					if (dry_here) (ok ? g_dry_ok : g_dry_failed)++;
 +					frame_profile_wait(on_game_thread(), false, static_cast<double>(SoftCp::now_ns() - t0) / 1e6);
-+					static const bool timing_waits_env = std::getenv("BC5_DIRECT_TIMING") != nullptr;
++					static const bool timing_waits_env = BC5_DIAG_ENV("BC5_DIRECT_TIMING") != nullptr;
 +					const bool timing_waits = timing_waits_env && ::Log::Bc5LoggingOn();
 +					if (timing_waits) journal("timing: t %.3f s after that wait (%s %u dwords)\n", timing_now(), kind, num_dwords);
 +					SoftCp::set_gpu_executed(p, len, {0}); // the soft CP must not wait again
@@ -11219,14 +11315,14 @@ index 0000000..5811133
 +
 +static void bc5_rt_dump_once(const std::shared_ptr<const std::vector<bc5::direct::Mapping>>& maps_p, bool force = false, const char* tag = nullptr) {
 +	static const std::string spec = [] {
-+		const char* e = std::getenv("BC5_DIRECT_RT_DUMP");
++		const char* e = BC5_DIAG_ENV("BC5_DIRECT_RT_DUMP");
 +		return std::string(e != nullptr ? e : "");
 +	}();
 +	// Experiment 0156: BC5_DIRECT_RT_DUMP_EVERY=<s> repeats the dump every s seconds from t0 on, the
 +	// file names carrying the journal time (-t<seconds>), to catch a target at a broken and at a clean
 +	// moment in one run.
 +	static const double every = [] {
-+		const char* e = std::getenv("BC5_DIRECT_RT_DUMP_EVERY");
++		const char* e = BC5_DIAG_ENV("BC5_DIRECT_RT_DUMP_EVERY");
 +		return e != nullptr ? std::strtod(e, nullptr) : 0.0;
 +	}();
 +	static std::atomic<bool> done {false};
@@ -11492,7 +11588,7 @@ index 0000000..5811133
 +	journal("ranges at completion: submit #%" PRIu64 " buf %u: %zu intact, %zu rewritten, %zu unreadable; %.1f ms from the first draw's journal to completion\n", n, mine.front().buf, intact, rewritten,
 +	        unreadable, (now - mine.front().t) * 1000.0);
 +	// Experiment 0157: BC5_DIRECT_RT_DUMP_AT_COMPLETION=1 dumps the RT_DUMP items now, as the GPU left them.
-+	static const bool dump_done = std::getenv("BC5_DIRECT_RT_DUMP_AT_COMPLETION") != nullptr;
++	static const bool dump_done = BC5_DIAG_ENV("BC5_DIRECT_RT_DUMP_AT_COMPLETION") != nullptr;
 +	if (dump_done) {
 +		char tag[40];
 +		std::snprintf(tag, sizeof(tag), "buf%u-done", mine.front().buf);
@@ -11517,7 +11613,7 @@ index 0000000..5811133
 +	// count. Lines then carry the journal time and the wall clock, for matching screenshots.
 +	static const std::pair<double, uint32_t> draw_journal = [] {
 +		std::pair<double, uint32_t> v {0, 0};
-+		if (const char* e = std::getenv("BC5_DIRECT_DRAW_JOURNAL"); e != nullptr) {
++		if (const char* e = BC5_DIAG_ENV("BC5_DIRECT_DRAW_JOURNAL"); e != nullptr) {
 +			char* end = nullptr;
 +			v.first   = std::strtod(e, &end);
 +			if (end != nullptr && *end == ':') v.second = static_cast<uint32_t>(std::strtoul(end + 1, nullptr, 10));
@@ -11526,7 +11622,7 @@ index 0000000..5811133
 +	}();
 +	static const std::pair<uint32_t, uint32_t> draw_journal_filter = [] {
 +		std::pair<uint32_t, uint32_t> v {0, 0};
-+		if (const char* e = std::getenv("BC5_DIRECT_DRAW_JOURNAL"); e != nullptr) {
++		if (const char* e = BC5_DIAG_ENV("BC5_DIRECT_DRAW_JOURNAL"); e != nullptr) {
 +			const char* c = std::strchr(e, ':');
 +			if (c != nullptr) c = std::strchr(c + 1, ':');
 +			if (c != nullptr) {
@@ -11542,7 +11638,7 @@ index 0000000..5811133
 +	// lie at 0x09099c....), with the same extras; a buffer with no such draw does not count.
 +	static const std::vector<std::string> draw_journal_ps = [] {
 +		std::vector<std::string> v;
-+		if (const char* e = std::getenv("BC5_DIRECT_DRAW_JOURNAL_PS"); e != nullptr) {
++		if (const char* e = BC5_DIAG_ENV("BC5_DIRECT_DRAW_JOURNAL_PS"); e != nullptr) {
 +			std::string cur;
 +			for (const char* q = e;; q++) {
 +				if (*q == ',' || *q == 0) {
@@ -11556,12 +11652,12 @@ index 0000000..5811133
 +		}
 +		return v;
 +	}();
-+	static const bool rt_dump = std::getenv("BC5_DIRECT_RT_DUMP") != nullptr;
++	static const bool rt_dump = BC5_DIAG_ENV("BC5_DIRECT_RT_DUMP") != nullptr;
 +	if (rt_dump && std::strcmp(kind, "dcb") == 0 && g_dev) bc5_rt_dump_once(g_dev->sorted_mappings());
 +	if (!pieces_dry() && !pieces_full() && draw_journal.second == 0 && !prefix_all()) return;
 +	// Experiment 0157: BC5_DIRECT_DRAW_JOURNAL_ACB=1 takes the compute-queue buffers through the journal too
 +	// (as "dcb" below; their packets set SH registers only, so the shared tracker is not disturbed).
-+	static const bool journal_acb_env = std::getenv("BC5_DIRECT_DRAW_JOURNAL_ACB") != nullptr;
++	static const bool journal_acb_env = BC5_DIAG_ENV("BC5_DIRECT_DRAW_JOURNAL_ACB") != nullptr;
 +	const bool journal_acb = journal_acb_env && ::Log::Bc5LoggingOn();
 +	const bool        acb_as_dcb  = journal_acb && draw_journal.second != 0 && std::strcmp(kind, "acb") == 0;
 +	if (acb_as_dcb) kind = "dcb";
@@ -11648,7 +11744,7 @@ index 0000000..5811133
 +					}
 +					return true;
 +				}();
-+				static const bool find_set_env = std::getenv("BC5_DIRECT_DRAW_JOURNAL_FIND") != nullptr; // "layer" counts too
++				static const bool find_set_env = BC5_DIAG_ENV("BC5_DIRECT_DRAW_JOURNAL_FIND") != nullptr; // "layer" counts too
 +				const bool find_set = find_set_env && ::Log::Bc5LoggingOn();
 +				if (!matched && !find_set) return;
 +				if (matched && !counted) {
@@ -11711,7 +11807,7 @@ index 0000000..5811133
 +				char           words[96] = {};
 +				int            w         = 0;
 +				for (size_t k = 0; k < pkt.size() && k < 6 && w < 80; k++) w += std::snprintf(words + w, sizeof(words) - static_cast<size_t>(w), " %08x", pkt[k]);
-+				static const bool watch_quiet_env = std::getenv("BC5_DIRECT_DRAW_JOURNAL_WATCH") != nullptr;
++				static const bool watch_quiet_env = BC5_DIAG_ENV("BC5_DIRECT_DRAW_JOURNAL_WATCH") != nullptr;
 +				const bool watch_quiet = watch_quiet_env && ::Log::Bc5LoggingOn();
 +				if (!watch_quiet && matched) journal("draw journal buf %u (%u dwords) at %zu:%s | rt0 %010" PRIx64 " %ux%u info %08x mask %08x | vp %.0fx%.0f at %.0f,%.0f | ps %010" PRIx64
 +				                " es %010" PRIx64 " gs %010" PRIx64 " cs %010" PRIx64 "\n",
@@ -11927,7 +12023,7 @@ index 0000000..5811133
 +				{
 +					static const std::vector<uint32_t> find = [] {
 +						std::vector<uint32_t> v;
-+						if (const char* e = std::getenv("BC5_DIRECT_DRAW_JOURNAL_FIND"); e != nullptr) {
++						if (const char* e = BC5_DIAG_ENV("BC5_DIRECT_DRAW_JOURNAL_FIND"); e != nullptr) {
 +							for (const char* q = e; *q != 0;) {
 +								if (*q == 'l') { // experiment 0157: the "layer" token
 +									while (*q != 0 && *q != ',') q++;
@@ -11943,7 +12039,7 @@ index 0000000..5811133
 +						return v;
 +					}();
 +					static const bool find_layer = [] {
-+						const char* e = std::getenv("BC5_DIRECT_DRAW_JOURNAL_FIND");
++						const char* e = BC5_DIAG_ENV("BC5_DIRECT_DRAW_JOURNAL_FIND");
 +						return e != nullptr && std::strstr(e, "layer") != nullptr;
 +					}();
 +					const uint32_t layer_hi = find_layer ? static_cast<uint32_t>(g_layer0_base.load() >> 8u) : 0u;
@@ -12179,7 +12275,7 @@ index 0000000..5811133
 +// for the shaders they run, disassembly. Output in the capture directory, synced to disk at once
 +// (a reset after a hang without a page fault has taken the machine down). The first two only.
 +static void umr_on_timeout() {
-+	static const bool on = std::getenv("BC5_DIRECT_UMR_ON_TIMEOUT") != nullptr;
++	static const bool on = BC5_DIAG_ENV("BC5_DIRECT_UMR_ON_TIMEOUT") != nullptr;
 +	static std::atomic<int> n {0};
 +	if (!on || n.load() >= 2) return;
 +	const int k = n++;
@@ -12203,7 +12299,7 @@ index 0000000..5811133
 +// reset (run 267). A watchdog dumps instead once a completion wait has lasted 0.9 s.
 +static std::atomic<uint64_t> g_fence_wait_since {0}; // SoftCp::now_ns() at the start of a completion wait, 0 = none
 +static void umr_watchdog_start() {
-+	static const bool on = std::getenv("BC5_DIRECT_UMR_ON_TIMEOUT") != nullptr;
++	static const bool on = BC5_DIAG_ENV("BC5_DIRECT_UMR_ON_TIMEOUT") != nullptr;
 +	if (!on) return;
 +	static std::once_flag once;
 +	std::call_once(once, [] {
@@ -12229,7 +12325,7 @@ index 0000000..5811133
 +		{
 +			static bool done = false;
 +			unsigned long long a = 0, n = 0;
-+			if (const char* e = std::getenv("BC5_DIRECT_SNAP_ON_TIMEOUT"); !done && e != nullptr && std::sscanf(e, "%llx:%llu", &a, &n) == 2 && n != 0 && !g_dump_dir.empty()) {
++			if (const char* e = BC5_DIAG_ENV("BC5_DIRECT_SNAP_ON_TIMEOUT"); !done && e != nullptr && std::sscanf(e, "%llx:%llu", &a, &n) == 2 && n != 0 && !g_dump_dir.empty()) {
 +				done = true;
 +				char name[512];
 +				std::snprintf(name, sizeof(name), "%s/timeout-snap.bin", g_dump_dir.c_str());
@@ -12317,7 +12413,7 @@ index 0000000..5811133
 +// journaled with the SET_BASE 1 / INDEX_BASE in force and the memory they name as the GPU left it:
 +// the indirect arguments (first draws) and the first index dwords.
 +static void timeout_probe(const uint32_t* sub_ib, uint32_t sub_n, const char* kind, uint64_t n, const std::vector<uint32_t>* ran, const std::vector<GeProbeSlot>* gep = nullptr) {
-+	if (sub_ib == nullptr || sub_n == 0 || std::getenv("BC5_DIRECT_TIMEOUT_PROBE") == nullptr || g_dump_dir.empty() || !g_dev) return;
++	if (sub_ib == nullptr || sub_n == 0 || BC5_DIAG_ENV("BC5_DIRECT_TIMEOUT_PROBE") == nullptr || g_dump_dir.empty() || !g_dev) return;
 +	{
 +		char name[512];
 +		std::snprintf(name, sizeof(name), "%s/ib-timeout-%08" PRIu64 "-%.8s-%u.bin", g_dump_dir.c_str(), n, kind, sub_n);
@@ -12513,7 +12609,7 @@ index 0000000..5811133
 +		std::snprintf(name, sizeof(name), "bc5-cq%d", index);
 +		pthread_setname_np(pthread_self(), name);
 +	}
-+	static const bool timing_env = std::getenv("BC5_DIRECT_TIMING") != nullptr;
++	static const bool timing_env = BC5_DIAG_ENV("BC5_DIRECT_TIMING") != nullptr;
 +	const bool timing = timing_env && ::Log::Bc5LoggingOn();
 +	Cq&  cq     = g_cqs[index];
 +	bool failed = false; // a job since the last post did not complete
@@ -12542,7 +12638,7 @@ index 0000000..5811133
 +				// BC5_DIRECT_JOB_TS=<t0>:<t1> also journals every job's interval in that window (offline union).
 +				static const std::pair<double, double> jt_win = [] {
 +					std::pair<double, double> w {-1.0, -1.0};
-+					if (const char* e = std::getenv("BC5_DIRECT_JOB_TS"); e != nullptr && std::strchr(e, ':') != nullptr) {
++					if (const char* e = BC5_DIAG_ENV("BC5_DIRECT_JOB_TS"); e != nullptr && std::strchr(e, ':') != nullptr) {
 +						char* end = nullptr;
 +						w.first   = std::strtod(e, &end);
 +						w.second  = std::strtod(end + 1, nullptr);
@@ -12597,7 +12693,7 @@ index 0000000..5811133
 +			// (its own RELEASE_MEM / EVENT_WRITE_EOP with DATA_SEL 3), from t0 s on, at most 20000 jobs: where a frame's GPU time goes, read
 +			// from the title's own profiling points.
 +			{
-+				static const double ts_log_t0 = std::getenv("BC5_DIRECT_TS_LOG") != nullptr ? std::strtod(std::getenv("BC5_DIRECT_TS_LOG"), nullptr) : -1.0;
++				static const double ts_log_t0 = BC5_DIAG_ENV("BC5_DIRECT_TS_LOG") != nullptr ? std::strtod(BC5_DIAG_ENV("BC5_DIRECT_TS_LOG"), nullptr) : -1.0;
 +				static std::atomic<uint32_t> ts_logged {0};
 +				if (r.ok && !j.ts_addrs.empty() && ts_log_t0 >= 0 && timing_now() >= ts_log_t0 && ts_logged.fetch_add(1) < 20000) {
 +					char line[700];
@@ -12693,7 +12789,7 @@ index 0000000..5811133
 +	std::thread::id render_thread;
 +	double   t_last_flip = 0;
 +} g_fp;
-+static const bool g_frame_profile_env = std::getenv("BC5_DIRECT_FRAME_PROFILE") != nullptr;
++static const bool g_frame_profile_env = BC5_DIAG_ENV("BC5_DIRECT_FRAME_PROFILE") != nullptr;
 +// Off (or logging off for the session): one load, no counters.
 +static inline bool g_frame_profile_on() { return g_frame_profile_env && ::Log::Bc5LoggingOn(); }
 +
@@ -12793,7 +12889,7 @@ index 0000000..5811133
 +// them or LOAD_SH_REG_INDEX loads them as (offset, value) pairs. For finding out which
 +// instructions a title uses (ray tracing); the files stay in the private capture directory.
 +static void shader_dump(const uint32_t* ib, uint32_t num_dwords, const std::vector<bc5::direct::Mapping>& maps) {
-+	static const char* dir = std::getenv("BC5_DIRECT_SHADER_DUMP");
++	static const char* dir = BC5_DIAG_ENV("BC5_DIRECT_SHADER_DUMP");
 +	if (dir == nullptr) return;
 +	static std::mutex                  m;
 +	static std::set<uint64_t>          seen;
@@ -12841,7 +12937,7 @@ index 0000000..5811133
 +}
 +
 +static void pkt_stats(const uint32_t* ib, uint32_t num_dwords, const char* kind) {
-+	static const bool on = std::getenv("BC5_DIRECT_PKT_STATS") != nullptr;
++	static const bool on = BC5_DIAG_ENV("BC5_DIRECT_PKT_STATS") != nullptr;
 +	if (!on) return;
 +	static std::mutex                      m;
 +	static std::map<std::string, uint64_t> counts;
@@ -13133,7 +13229,7 @@ index 0000000..5811133
 +				double                t0 = 0, len = 0;
 +				std::vector<uint32_t> v;
 +			} c;
-+			if (const char* e = std::getenv("BC5_DIRECT_FIND_ALL"); e != nullptr) {
++			if (const char* e = BC5_DIAG_ENV("BC5_DIRECT_FIND_ALL"); e != nullptr) {
 +				char* end = nullptr;
 +				c.t0      = std::strtod(e, &end);
 +				if (end != nullptr && *end == ':') c.len = std::strtod(end + 1, &end);
@@ -13212,7 +13308,7 @@ index 0000000..5811133
 +	// target for the hint mapper (run 29: 52 unmapped operands in the first frame DCB).
 +	// BC5_DIRECT_TIMING=1: where a submission's wall-clock time goes (run 77: ~1 s between the
 +	// game's submissions) — seconds since the first submission, then the host's own steps.
-+	static const bool timing_env = std::getenv("BC5_DIRECT_TIMING") != nullptr;
++	static const bool timing_env = BC5_DIAG_ENV("BC5_DIRECT_TIMING") != nullptr;
 +	const bool timing = timing_env && ::Log::Bc5LoggingOn();
 +	const double   t_start = timing_now();
 +	const uint64_t t0 = SoftCp::now_ns();
@@ -13285,7 +13381,7 @@ index 0000000..5811133
 +			// packets' operands; one in a page not known to stay unmapped makes the sync urgent.
 +			// Pages still unmapped after an urgent sync are remembered, so the routine ones (an
 +			// 84-dword DCB drops one every frame) cost the walk once. Off by default (6 ms a frame in ASTRO BOT, run 152): BC5_DIRECT_HEAVY_PROBE=1.
-+			static const bool no_heavy_probe = std::getenv("BC5_DIRECT_HEAVY_PROBE") == nullptr;
++			static const bool no_heavy_probe = BC5_DIAG_ENV("BC5_DIRECT_HEAVY_PROBE") == nullptr;
 +			static std::set<uint64_t> known_unmapped;
 +			if (!no_heavy_probe) {
 +				const auto have_p = g_dev->sorted_mappings();
@@ -13389,7 +13485,7 @@ index 0000000..5811133
 +	// address and its bytes, journaled at every submission where either changed (run 73: who
 +	// writes the flip pass's vertex buffer, and when).
 +	{
-+		static const char* probe_env = std::getenv("BC5_DIRECT_PROBE_VA");
++		static const char* probe_env = BC5_DIAG_ENV("BC5_DIRECT_PROBE_VA");
 +		static const uint64_t probe_va = probe_env != nullptr ? std::strtoull(probe_env, nullptr, 16) : 0;
 +		static const size_t probe_n = []() -> size_t {
 +			const char* c = probe_env != nullptr ? std::strchr(probe_env, ':') : nullptr;
@@ -13421,14 +13517,14 @@ index 0000000..5811133
 +	}
 +	// Experiment 0109: the mapping list is copied only when BC5_DIRECT_SHADER_DUMP is set; the copy
 +	// (thousands of entries) ran under g_dev_mutex on every submission (stack samples, run 397).
-+	static const bool dump_shaders_on = std::getenv("BC5_DIRECT_SHADER_DUMP") != nullptr;
++	static const bool dump_shaders_on = BC5_DIAG_ENV("BC5_DIRECT_SHADER_DUMP") != nullptr;
 +	if (dump_shaders_on) dump_shaders(ib, num_dwords, g_dev->mappings());
 +	// BC5_DIRECT_RANGES_DUMP=1: the guest's mapped ranges with their physical (direct-memory)
 +	// offsets, journaled at the 40th and the 200th submission — are there two virtual mappings
 +	// of one physical range (aliases)? Anonymous views (KYTY_BC5_ANON_BACKING) do not share
 +	// their pages, so data the CPU writes through one alias never reaches the other (run 69).
 +	{
-+		static const bool ranges_dump = std::getenv("BC5_DIRECT_RANGES_DUMP") != nullptr;
++		static const bool ranges_dump = BC5_DIAG_ENV("BC5_DIRECT_RANGES_DUMP") != nullptr;
 +		static uint64_t calls = 0;
 +		calls++;
 +		if (ranges_dump && (calls == 40 || calls == 200)) {
@@ -13460,7 +13556,7 @@ index 0000000..5811133
 +			struct Cfg {
 +				uint64_t va = 0, bytes = 0, every = 0;
 +			} c;
-+			if (const char* e = std::getenv("BC5_DIRECT_SNAP"); e != nullptr) {
++			if (const char* e = BC5_DIAG_ENV("BC5_DIRECT_SNAP"); e != nullptr) {
 +				unsigned long long a = 0, b = 0, n = 0;
 +				if (std::sscanf(e, "%llx:%llu:%llu", &a, &b, &n) == 3) c = {a, b, n == 0 ? 1 : n};
 +			}
@@ -13491,7 +13587,7 @@ index 0000000..5811133
 +				double      t0 = 0;
 +				std::string dir;
 +			} c;
-+			if (const char* e = std::getenv("BC5_DIRECT_IB_DUMP"); e != nullptr) {
++			if (const char* e = BC5_DIAG_ENV("BC5_DIRECT_IB_DUMP"); e != nullptr) {
 +				char dir[400] = {};
 +				const int n = std::sscanf(e, "%u:%u:%lf:%u:%399s", &c.lo, &c.hi, &c.t0, &c.count, dir);
 +				if (n >= 4) c.dir = n == 5 ? std::string(dir) : g_dump_dir;
@@ -13545,7 +13641,7 @@ index 0000000..5811133
 +	// Experiment 0142 (BC5_DIRECT_UNMAPPED_TRACE=1): the packets the filter will drop as unmapped, each
 +	// (kind, size, offset) journaled once with its opcode, operand and dwords.
 +	{
-+		static const bool trace_env = std::getenv("BC5_DIRECT_UNMAPPED_TRACE") != nullptr;
++		static const bool trace_env = BC5_DIAG_ENV("BC5_DIRECT_UNMAPPED_TRACE") != nullptr;
 +		const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +		if (trace) {
 +			static std::mutex                                  um;
@@ -13594,7 +13690,7 @@ index 0000000..5811133
 +	}
 +	// Experiment 0124: BC5_DIRECT_JOB_TS=1, a GPU timestamp at each job's start and end
 +	// (FilterOptions::job_timestamps); the completion thread journals busy and idle GPU time.
-+	static const bool job_ts = std::getenv("BC5_DIRECT_JOB_TS") != nullptr;
++	static const bool job_ts = BC5_DIAG_ENV("BC5_DIRECT_JOB_TS") != nullptr;
 +	opt.job_timestamps = job_ts;
 +	static const std::vector<uint8_t> extra = [] {
 +		std::vector<uint8_t> v;
@@ -13743,7 +13839,7 @@ index 0000000..5811133
 +			// SPI_SHADER_PGM_RSRC2_*; SH offsets 0x213, 0x0b, 0x4b, 0x8b, 0xcb, 0x10b, 0x14b) with and
 +			// without TRAP_PRESENT (bit 6; Mesa gfx10.json), as SET_SH_REG writes or LOAD_SH_REG_INDEX
 +			// loads them: does the title enable the trap handler its s_trap instructions jump to?
-+			static const bool trap_stats = std::getenv("BC5_DIRECT_TRAP_STATS") != nullptr;
++			static const bool trap_stats = BC5_DIAG_ENV("BC5_DIRECT_TRAP_STATS") != nullptr;
 +			if (trap_stats && type == 3 && (op == 0x76 || (op == 0x63 && len >= 5 && (ib[q + 3] >> 31u) != 0))) {
 +				static std::atomic<uint64_t> n_trap {0}, n_plain {0}, n_hi {0};
 +				static std::atomic<uint32_t> last_hi {0}, last_hi_reg {0};
@@ -13807,7 +13903,7 @@ index 0000000..5811133
 +			{
 +				// experiment 0160: BC5_DIRECT_FL_JOURNAL=1 journals every fast-launch point draw at submission: its
 +				// arguments (as they read now) and the GS user data, to compare healthy instances with the one that hangs.
-+				static const bool fl_journal = std::getenv("BC5_DIRECT_FL_JOURNAL") != nullptr;
++				static const bool fl_journal = BC5_DIAG_ENV("BC5_DIRECT_FL_JOURNAL") != nullptr;
 +				if (fl_journal && type == 3 && (op == 0x2c || op == 0x24) && (fl_stages & 0x180000u) != 0 && fl_prim == 1 && fl_gecntl == 0x201u) {
 +					char line[900];
 +					int  w = std::snprintf(line, sizeof(line), "  fl draw op %02x at %u (%s #%" PRIu64 " %u dw): base1 0x%" PRIx64 " +0x%x count %u args", op, q, kind, g_submits.load(), num_dwords, base1, ib[q + 1], len >= 10 ? ib[q + 5] : 0u);
@@ -13849,7 +13945,7 @@ index 0000000..5811133
 +			// BC5 (experiment 0159): BC5_DIRECT_DISPATCH_JOURNAL=1 journals every dispatch of a graphics
 +			// buffer with its program and first user data (which program faults the GPU).
 +			{
-+				static const bool dj = std::getenv("BC5_DIRECT_DISPATCH_JOURNAL") != nullptr;
++				static const bool dj = BC5_DIAG_ENV("BC5_DIRECT_DISPATCH_JOURNAL") != nullptr;
 +				if (dj && type == 3 && (op == 0x15 || op == 0x16))
 +					journal("  %s dispatch op %02x at %u: pgm 0x%" PRIx64 " ud0-3 %08x %08x %08x %08x ud4-7 %08x %08x %08x %08x ud8-11 %08x %08x %08x %08x ud12-15 %08x %08x %08x %08x%s base1 0x%" PRIx64 " +0x%x len %u\n", kind, op, q, pgm, ud[0], ud[1], ud[2], ud[3], ud[4], ud[5], ud[6], ud[7], ud[8], ud[9], ud[10], ud[11], ud[12], ud[13], ud[14], ud[15], op == 0x16 ? " indirect" : "", base1, op == 0x16 && len >= 2 ? ib[q + 1] : 0u, len); // experiment 0160: all user data and the indirect base
 +				// experiment 0160: register tables — LOAD_SH_REG_INDEX (0x63), LOAD_CONTEXT_REG_INDEX (0x9f) and
@@ -13893,7 +13989,7 @@ index 0000000..5811133
 +			{
 +				static const auto find = [] {
 +					std::pair<uint64_t, uint64_t> r {0, 0};
-+					if (const char* e = std::getenv("BC5_DIRECT_FIND_VA"); e != nullptr) {
++					if (const char* e = BC5_DIAG_ENV("BC5_DIRECT_FIND_VA"); e != nullptr) {
 +						unsigned long long a = 0, b = 0;
 +						if (std::sscanf(e, "%llx:%llx", &a, &b) == 2) r = {a, b};
 +					}
@@ -14027,7 +14123,7 @@ index 0000000..5811133
 +	// DISPATCH_INDIRECT, to see what separates the dispatch that writes the arguments from the one
 +	// that reads them.
 +	{
-+		static const long ops_dump = std::getenv("BC5_DIRECT_OPS_DUMP") ? std::atol(std::getenv("BC5_DIRECT_OPS_DUMP")) : 0;
++		static const long ops_dump = BC5_DIAG_ENV("BC5_DIRECT_OPS_DUMP") ? std::atol(BC5_DIAG_ENV("BC5_DIRECT_OPS_DUMP")) : 0;
 +		static long       ops_done = 0;
 +		if (ops_done < ops_dump && std::strncmp(kind, "acb", 3) == 0 && num_dwords >= 1000) {
 +			bool has_mec = false;
@@ -14078,7 +14174,7 @@ index 0000000..5811133
 +	// a queue waits on.
 +	{
 +		static const std::pair<uint64_t, uint64_t> watch = [] {
-+			const char* e = std::getenv("BC5_DIRECT_WATCH_VA");
++			const char* e = BC5_DIAG_ENV("BC5_DIRECT_WATCH_VA");
 +			if (e == nullptr) return std::pair<uint64_t, uint64_t> {0, 0};
 +			char*          end = nullptr;
 +			const uint64_t lo  = std::strtoull(e, &end, 16);
@@ -14266,7 +14362,7 @@ index 0000000..5811133
 +	// Experiment 0054: BC5_DIRECT_DROP_TALLY=1 counts the packets the filter took out (type 3, not
 +	// NOP, not among the executed offsets), per kind of buffer and opcode (WRITE_DATA by DST_SEL,
 +	// EVENT_WRITE by event type), and every 10 s journals the counts since the last report.
-+	static const bool drop_tally_env = std::getenv("BC5_DIRECT_DROP_TALLY") != nullptr;
++	static const bool drop_tally_env = BC5_DIAG_ENV("BC5_DIRECT_DROP_TALLY") != nullptr;
 +	const bool drop_tally = drop_tally_env && ::Log::Bc5LoggingOn();
 +	if (drop_tally) {
 +		static std::mutex                      tally_mutex;
@@ -14355,7 +14451,7 @@ index 0000000..5811133
 +		it.job.kind       = kind;
 +		it.job.num_dwords = num_dwords;
 +		it.job.ib         = ib;
-+		if (std::getenv("BC5_DIRECT_TIMEOUT_PROBE") != nullptr) { it.job.ib_copy.assign(sub_ib, sub_ib + sub_n); it.job.ran_copy = r.executed_offsets; } // experiment 0160
++		if (BC5_DIAG_ENV("BC5_DIRECT_TIMEOUT_PROBE") != nullptr) { it.job.ib_copy.assign(sub_ib, sub_ib + sub_n); it.job.ran_copy = r.executed_offsets; } // experiment 0160
 +		it.job.ge_probe.swap(t_ge_probe); t_ge_probe.clear(); // experiment 0160
 +		it.job.filter     = r.filter;
 +		it.job.maps       = maps_p->size();
@@ -14370,12 +14466,12 @@ index 0000000..5811133
 +		it.job.t2_ns      = t2;
 +		it.job.queued_ns  = SoftCp::now_ns();
 +		it.job.dev_gen    = g_dev_gen.load();
-+		static const bool ts_log_on = std::getenv("BC5_DIRECT_TS_LOG") != nullptr; // also without a scale
++		static const bool ts_log_on = BC5_DIAG_ENV("BC5_DIRECT_TS_LOG") != nullptr; // also without a scale
 +		if (ts_scale() != 1.0 || ts_log_on) ts_collect(ib, num_dwords, &it.job.ts_addrs);
 +		frame_profile_job(t_cq == 0, r.prepare_ms, r.list_ms, r.cs_ms);
 +		frame_profile_prep(t_cq == 0, r.prep_filter_ms, r.prep_tracker_ms, r.prep_cu_ms, r.prep_nested_ms, r.prep_copy_ms);
 +		{
-+			static const bool trace_env = std::getenv("BC5_DIRECT_LABEL_TRACE") != nullptr;
++			static const bool trace_env = BC5_DIAG_ENV("BC5_DIRECT_LABEL_TRACE") != nullptr;
 +			const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +			if (trace) journal("queued #%" PRIu64 " %s %u dwords at t %.6f s\n", n, kind, num_dwords, timing_now());
 +		}
@@ -15292,7 +15388,7 @@ index 0000000..5811133
 +	{
 +		static double       fb_points = 20.0;
 +		static const double fb_t0     = [] {
-+			const char* e = std::getenv("BC5_DIRECT_FLIP_BRIGHT");
++			const char* e = BC5_DIAG_ENV("BC5_DIRECT_FLIP_BRIGHT");
 +			if (e == nullptr) return -1.0;
 +			char*        end = nullptr;
 +			const double t   = std::strtod(e, &end);
@@ -15320,7 +15416,7 @@ index 0000000..5811133
 +	}
 +	const double flip_t0 = Bc5Gc::Direct::timing_now();
 +	const int rc = VideoOut::VideoOutSubmitFlip(handle, index, flip_mode, flip_arg);
-+	static const bool timing_flips_env = std::getenv("BC5_DIRECT_TIMING") != nullptr;
++	static const bool timing_flips_env = BC5_DIAG_ENV("BC5_DIRECT_TIMING") != nullptr;
 +	const bool timing_flips = timing_flips_env && ::Log::Bc5LoggingOn();
 +	if (timing_flips) {
 +		Bc5Gc::Direct::journal("timing: t %.3f s flip %d/%d, VideoOutSubmitFlip took %.1f ms\n", flip_t0, handle, index, (Bc5Gc::Direct::timing_now() - flip_t0) * 1e3);
@@ -15477,7 +15573,7 @@ index 0000000..5811133
 +
 +} // namespace Libs
 diff --git a/src/libs/controller.cpp b/src/libs/controller.cpp
-index 55718eb..8ac2193 100644
+index 55718eb..57593d8 100644
 --- a/src/libs/controller.cpp
 +++ b/src/libs/controller.cpp
 @@ -1,4 +1,9 @@
@@ -15598,7 +15694,7 @@ index 55718eb..8ac2193 100644
  	data->analog_buttons_r2      = state.axes[static_cast<int>(Axis::TriggerRight)];
 -	data->orientation_w          = 1.0f;
 +	// BC5: KYTY_BC5_INPUT_TRACE=1 shows R2 as the game reads it, at every change of state.
-+	static const bool trace_env   = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
++	static const bool trace_env   = BC5_DIAG_ENV("KYTY_BC5_INPUT_TRACE") != nullptr;
 +	const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +	static int        last_r2      = -1;
 +	static int        last_l2      = -1;
@@ -15874,7 +15970,7 @@ index 55718eb..8ac2193 100644
 +static std::mutex g_rec_mutex;
 +static FILE*      Bc5RecFile() {
 +	static FILE* f = [] {
-+		const char* path = std::getenv("KYTY_BC5_INPUT_RECORD");
++		const char* path = BC5_DIAG_ENV("KYTY_BC5_INPUT_RECORD");
 +		return (path != nullptr && *path != 0) ? std::fopen(path, "w") : nullptr;
 +	}();
 +	return f;
@@ -15984,7 +16080,7 @@ index 55718eb..8ac2193 100644
  	if (slot == -1) {
  		slot = FallbackSlot();
  	}
-+	static const bool trace_env = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
++	static const bool trace_env = BC5_DIAG_ENV("KYTY_BC5_INPUT_TRACE") != nullptr;
 +	const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +	if (trace && id == HOST_INPUT_CONTROLLER_ID) {
 +		std::fprintf(stderr, "input trace: t=%.3f host stream button 0x%x %s -> slot %d\n", InputTraceSeconds(), button, down ? "down" : "up", slot);
@@ -15998,7 +16094,7 @@ index 55718eb..8ac2193 100644
  		slot = FallbackSlot();
  	}
 +	// BC5: KYTY_BC5_INPUT_TRACE=1 shows what the keyboard/mouse stream writes into the pad slot.
-+	static const bool trace_env = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
++	static const bool trace_env = BC5_DIAG_ENV("KYTY_BC5_INPUT_TRACE") != nullptr;
 +	const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +	if (trace && id == HOST_INPUT_CONTROLLER_ID) {
 +		std::fprintf(stderr, "input trace: t=%.3f host stream axis %d = %d -> slot %d (pad in slot 0: id %d)\n",
@@ -16098,7 +16194,7 @@ index 55718eb..8ac2193 100644
 +		}
 +	}
 +	// KYTY_BC5_MOTION_TRACE=1: one line a second with what the guest is given.
-+	static const bool trace_env = std::getenv("KYTY_BC5_MOTION_TRACE") != nullptr;
++	static const bool trace_env = BC5_DIAG_ENV("KYTY_BC5_MOTION_TRACE") != nullptr;
 +	const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +	if (trace) {
 +		static std::chrono::steady_clock::time_point last;
@@ -16131,7 +16227,7 @@ index 55718eb..8ac2193 100644
  	*state = GetLastState(index);
 +	ApplyMotion(index, state);
 +
-+	static const bool trace_env = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
++	static const bool trace_env = BC5_DIAG_ENV("KYTY_BC5_INPUT_TRACE") != nullptr;
 +	const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +	if (trace) {
 +		g_pad_read_stats.read_state++;
@@ -16144,7 +16240,7 @@ index 55718eb..8ac2193 100644
  	int ret_num = 0;
  
  	auto& s = m_slots[index];
-+	static const bool trace_env   = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
++	static const bool trace_env   = BC5_DIAG_ENV("KYTY_BC5_INPUT_TRACE") != nullptr;
 +	const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +	uint32_t          skipped = 0;
  	if (SlotConnected(index) && s.states_num != 0) {
@@ -16318,7 +16414,7 @@ index 3c0684f..fe73665 100644
  int KYTY_SYSV_ABI PadInit();
  int KYTY_SYSV_ABI PadOpen(int user_id, int type, int index, const void* param);
 diff --git a/src/libs/dialog.cpp b/src/libs/dialog.cpp
-index 5b0fc93..59e0c0f 100644
+index 5b0fc93..5b78760 100644
 --- a/src/libs/dialog.cpp
 +++ b/src/libs/dialog.cpp
 @@ -6,8 +6,21 @@
@@ -16330,7 +16426,7 @@ index 5b0fc93..59e0c0f 100644
  
 +// BC5 (experiment 0158): KYTY_BC5_SAVE_TRACE=1 also journals the dialog stand-ins on stderr
 +// (the title's save delete opens them, F205).
-+static const bool g_bc5_dialog_trace = std::getenv("KYTY_BC5_SAVE_TRACE") != nullptr;
++static const bool g_bc5_dialog_trace = BC5_DIAG_ENV("KYTY_BC5_SAVE_TRACE") != nullptr;
 +#define BC5_DIALOG_TRACE(...)                                                                      \
 +	do {                                                                                           \
 +		if ((g_bc5_dialog_trace && ::Log::Bc5LoggingOn())) {                                                                  \
@@ -16555,7 +16651,7 @@ index 5b0fc93..59e0c0f 100644
  	LOGF("\t target = %d\n"
  	     "\t msg    = 0x%016" PRIx64 "\n",
 diff --git a/src/libs/libAmpr.cpp b/src/libs/libAmpr.cpp
-index 073361d..3b3e1ca 100644
+index 073361d..ea12e17 100644
 --- a/src/libs/libAmpr.cpp
 +++ b/src/libs/libAmpr.cpp
 @@ -1,3 +1,5 @@
@@ -16593,7 +16689,7 @@ index 073361d..3b3e1ca 100644
 +static bool AmmTraceCalls() {
 +	// Experiment 0043: the per-call lines only with KYTY_BC5_AMM_TRACE=2 (they are most of the volume).
 +	static const bool on = [] {
-+		const char* e = std::getenv("KYTY_BC5_AMM_TRACE");
++		const char* e = BC5_DIAG_ENV("KYTY_BC5_AMM_TRACE");
 +		return e != nullptr && std::strcmp(e, "2") == 0;
 +	}();
 +	return on && ::Log::Bc5LoggingOn();
@@ -16609,7 +16705,7 @@ index 073361d..3b3e1ca 100644
 +// distinct (call site, file id) pair of the read-file command and each submit call site, once,
 +// on stderr: which code of the title streams which file.
 +static bool AprCallersTrace() {
-+	static const bool on = std::getenv("KYTY_BC5_APR_CALLERS") != nullptr;
++	static const bool on = BC5_DIAG_ENV("KYTY_BC5_APR_CALLERS") != nullptr;
 +	return on;
 +}
 +
@@ -16895,7 +16991,7 @@ index 073361d..3b3e1ca 100644
  
 +// BC5: KYTY_BC5_AMM_TRACE=1 writes every AMM map, unmap and pool operation to stderr.
 +static bool AmmTrace() {
-+	static const bool on_env = std::getenv("KYTY_BC5_AMM_TRACE") != nullptr;
++	static const bool on_env = BC5_DIAG_ENV("KYTY_BC5_AMM_TRACE") != nullptr;
 +	const bool on = on_env && ::Log::Bc5LoggingOn();
 +	return on;
 +}
@@ -17368,7 +17464,7 @@ index 073361d..3b3e1ca 100644
  			case CommandKind::AmmMap: {
  				const auto& command = state.amm_map_commands[entry.index];
  				int         result  = OK;
-+				static const bool map_stats = std::getenv("KYTY_BC5_MAP_STATS") != nullptr; // experiment 0169
++				static const bool map_stats = BC5_DIAG_ENV("KYTY_BC5_MAP_STATS") != nullptr; // experiment 0169
 +				const auto        ms_t0     = map_stats ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point {};
  				if (command.kind == AmmCommandKind::Unmap) {
  					result = LibKernel::Memory::KernelMunmap(command.va, command.size);
@@ -18093,7 +18189,7 @@ index aeaa823..9a20ce1 100644
  
  
 diff --git a/src/libs/libJson2.cpp b/src/libs/libJson2.cpp
-index 183cd85..8b87d36 100644
+index 183cd85..d8a156c 100644
 --- a/src/libs/libJson2.cpp
 +++ b/src/libs/libJson2.cpp
 @@ -4,9 +4,12 @@
@@ -18117,7 +18213,7 @@ index 183cd85..8b87d36 100644
 +// produced text, cut to 240 characters) — to see which document and member an assertion in the
 +// game is about (experiment 0020).
 +static bool JsonTraceOn() {
-+	static const bool v_env = std::getenv("KYTY_BC5_JSON_TRACE") != nullptr;
++	static const bool v_env = BC5_DIAG_ENV("KYTY_BC5_JSON_TRACE") != nullptr;
 +	const bool v = v_env && ::Log::Bc5LoggingOn();
 +	return v;
 +}
@@ -18869,7 +18965,7 @@ index a0aee52..7951249 100644
  
  namespace NpAuth {
 diff --git a/src/libs/libPad.cpp b/src/libs/libPad.cpp
-index 676ecb9..aff4817 100644
+index 676ecb9..d8df050 100644
 --- a/src/libs/libPad.cpp
 +++ b/src/libs/libPad.cpp
 @@ -7,6 +7,8 @@
@@ -18946,7 +19042,7 @@ index 676ecb9..aff4817 100644
 +	info->state[1] = Bc5TriggerEffectState(g_bc5_effect[1], r2);
 +
 +	// BC5: KYTY_BC5_INPUT_TRACE=1 — every change of the answer.
-+	static const bool trace_env = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
++	static const bool trace_env = BC5_DIAG_ENV("KYTY_BC5_INPUT_TRACE") != nullptr;
 +	const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +	static int32_t    last[2] = {-1, -1};
 +	if (trace && (info->state[0] != last[0] || info->state[1] != last[1])) {
@@ -18965,7 +19061,7 @@ index 676ecb9..aff4817 100644
  
 +	// BC5: KYTY_BC5_INPUT_TRACE=1 — the request as the game wrote it (ScePadTriggerEffectParam:
 +	// trigger mask, then two 56-byte commands of mode + data; layout as KytyPS5 reads it).
-+	static const bool trace_env = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
++	static const bool trace_env = BC5_DIAG_ENV("KYTY_BC5_INPUT_TRACE") != nullptr;
 +	const bool trace = trace_env && ::Log::Bc5LoggingOn();
 +	if (trace) {
 +		const auto* b = static_cast<const uint8_t*>(param);
@@ -19053,7 +19149,7 @@ index fda2623..db5e40e 100644
  	return OK;
  }
 diff --git a/src/libs/libSaveData.cpp b/src/libs/libSaveData.cpp
-index 08aa121..2944e2d 100644
+index 08aa121..e193d8b 100644
 --- a/src/libs/libSaveData.cpp
 +++ b/src/libs/libSaveData.cpp
 @@ -13,13 +13,26 @@
@@ -19077,7 +19173,7 @@ index 08aa121..2944e2d 100644
  
  LIB_VERSION("SaveData", 1, "SaveData", 1, 1);
 +// BC5: KYTY_BC5_SAVE_TRACE=1 journals every SaveData call by name (save data diagnosis, 2026-10-16).
-+static const bool g_bc5_save_trace = std::getenv("KYTY_BC5_SAVE_TRACE") != nullptr;
++static const bool g_bc5_save_trace = BC5_DIAG_ENV("KYTY_BC5_SAVE_TRACE") != nullptr;
 +#undef PRINT_NAME_ENABLED
 +#define PRINT_NAME_ENABLED g_bc5_save_trace
  
@@ -20098,7 +20194,7 @@ index 0000000..5d9456f
 +
 +#endif
 diff --git a/src/loader/runtimeLinker.cpp b/src/loader/runtimeLinker.cpp
-index 343045e..c814e2a 100644
+index 343045e..db295f0 100644
 --- a/src/loader/runtimeLinker.cpp
 +++ b/src/loader/runtimeLinker.cpp
 @@ -1,3 +1,5 @@
@@ -20144,7 +20240,7 @@ index 343045e..c814e2a 100644
  
 +		// BC5: which instruction touched a reserved range (KYTY_BC5_AMM_TRACE=1): the module and
 +		// offset of the faulting instruction, for faults the handler below cannot serve.
-+		if (::Log::Bc5LoggingOn() && std::getenv("KYTY_BC5_AMM_TRACE") != nullptr) {
++		if (::Log::Bc5LoggingOn() && BC5_DIAG_ENV("KYTY_BC5_AMM_TRACE") != nullptr) {
 +			auto* rt   = Common::Singleton<Loader::RuntimeLinker>::Instance();
 +			auto* prog = rt->FindProgramByAddr(info->exception_address);
 +			std::fprintf(stderr, "amm trace: fault at 0x%016" PRIx64 " from rip 0x%016" PRIx64 " (%s +0x%" PRIx64 ")\n",
@@ -20169,7 +20265,7 @@ index 343045e..c814e2a 100644
  		        info->access_violation_vaddr)) {
  			return true;
 diff --git a/src/main.cpp b/src/main.cpp
-index c44d32f..1454405 100644
+index c44d32f..254b9ff 100644
 --- a/src/main.cpp
 +++ b/src/main.cpp
 @@ -16,6 +16,7 @@
@@ -20227,7 +20323,7 @@ index c44d32f..1454405 100644
  		} else if (arg == "--keymap") {
  			const auto split = value.find('=');
  			if (split == std::string::npos || split == 0 || split + 1 == value.size()) {
-@@ -356,7 +376,7 @@ static bool ParseArgs(int argc, char* argv[], RunOptions& options, bool& show_he
+@@ -356,10 +376,41 @@ static bool ParseArgs(int argc, char* argv[], RunOptions& options, bool& show_he
  		}
  	}
  
@@ -20236,7 +20332,41 @@ index c44d32f..1454405 100644
  	       (!options.app0_dir.empty() && !options.elf.empty());
  }
  
-@@ -474,7 +494,7 @@ int main(int argc, char* argv[]) {
++#ifdef BC5_LEAN
++#include <cstdlib>
++// BC5 (KYTY_BC5_LEAN, experiment 0177): the diagnostic switches of the host and the direct path,
++// removed before any static initializer can read them (priority 101 runs ahead of the default
++// static constructors), so no trace, journal, dump, probe, counter or recorder can be enabled from
++// the environment. The functional switches (rings, async, memory, skips, input) are left alone.
++__attribute__((constructor(101))) static void Bc5LeanEnvironment() {
++	static const char* const kDiagnostic[] = {
++	    "BC5_AGC_DUMP_DIR", "BC5_DIRECT_BREAKDOWN", "BC5_DIRECT_DISPATCH_JOURNAL", "BC5_DIRECT_DRAW_JOURNAL",
++	    "BC5_DIRECT_DRAW_JOURNAL_ACB", "BC5_DIRECT_DRAW_JOURNAL_FIND", "BC5_DIRECT_DRAW_JOURNAL_PS",
++	    "BC5_DIRECT_DRAW_JOURNAL_WATCH", "BC5_DIRECT_DROP_TALLY", "BC5_DIRECT_FIND_ALL", "BC5_DIRECT_FIND_VA",
++	    "BC5_DIRECT_FLIP_BRIGHT", "BC5_DIRECT_FL_JOURNAL", "BC5_DIRECT_FRAME_PROFILE", "BC5_DIRECT_GE_PROBE",
++	    "BC5_DIRECT_HEAVY_PROBE", "BC5_DIRECT_IB_DUMP", "BC5_DIRECT_JOB_TS", "BC5_DIRECT_JOURNAL",
++	    "BC5_DIRECT_JOURNAL_ALL", "BC5_DIRECT_JOURNAL_SYNC", "BC5_DIRECT_LABEL_TRACE", "BC5_DIRECT_OPS_DUMP",
++	    "BC5_DIRECT_PKT_STATS", "BC5_DIRECT_PROBE_VA", "BC5_DIRECT_RANGES_DUMP", "BC5_DIRECT_RT_DUMP",
++	    "BC5_DIRECT_RT_DUMP_AT_COMPLETION", "BC5_DIRECT_RT_DUMP_EVERY", "BC5_DIRECT_SELFTEST",
++	    "BC5_DIRECT_SHADER_DUMP", "BC5_DIRECT_SNAP", "BC5_DIRECT_SNAP_ON_TIMEOUT", "BC5_DIRECT_TAG_WATCH",
++	    "BC5_DIRECT_TIMEOUT_PROBE", "BC5_DIRECT_TIMING", "BC5_DIRECT_TRAP_STATS", "BC5_DIRECT_TS_LOG",
++	    "BC5_DIRECT_UMR_ON_TIMEOUT", "BC5_DIRECT_UNMAPPED_TRACE", "BC5_DIRECT_WAIT_TRACE", "BC5_DIRECT_WATCH_VA",
++	    "BC5_GC_DUMP_DIR", "BC5_GC_DUMP_LIMIT", "BC5_GC_LOG", "KYTY_BC5_AJM_TRACE", "KYTY_BC5_AMM_TRACE",
++	    "KYTY_BC5_APR_CALLERS", "KYTY_BC5_AUDIO_DUMP", "KYTY_BC5_AUDIO_TRACE", "KYTY_BC5_FLIP_TIMING",
++	    "KYTY_BC5_FPS_COUNTER", "KYTY_BC5_INPUT_RECORD", "KYTY_BC5_INPUT_TRACE", "KYTY_BC5_JSON_TRACE",
++	    "KYTY_BC5_LOG_WAITS", "KYTY_BC5_MAP_STATS", "KYTY_BC5_MEASURE", "KYTY_BC5_MOTION_TRACE",
++	    "KYTY_BC5_RANGE_WATCH", "KYTY_BC5_SAVE_TRACE", "KYTY_BC5_VIDEOOUT_TRACE", "KYTY_BC5_VMA_TRACE"};
++	for (const char* name: kDiagnostic) {
++		unsetenv(name);
++	}
++	setenv("BC5_LOGGING", "0", 1);
++}
++#endif
++
+ int main(int argc, char* argv[]) {
+ 	auto& slist = *SubsystemsList::Instance();
+ 
+@@ -474,7 +525,7 @@ int main(int argc, char* argv[]) {
  	// shadPS4; only PS5 (Prospero) titles reach the native Run() path. This
  	// must happen BEFORE Run() so no PS5 Vulkan/memory subsystems are
  	// initialized for a PS4 title (and vice versa).

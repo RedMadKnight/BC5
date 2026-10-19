@@ -7,7 +7,8 @@
 #      clean tree, and apply backend/kytyplus-patches/0001-bc5-lle-agc.patch;
 #   3. inside the `ubuntu` distrobox: apt packages, the backend library (BC5_WITH_AMDGPU=ON,
 #      Release) into $WORK/backend-ubuntu and kyty_emulator (Ninja, clang, Release) into
-#      $WORK/kytyplus-build;
+#      $WORK/kytyplus-build, then the lean variant (KYTY_BC5_LEAN=ON: no tracing, journals or
+#      measurements, experiment 0177) into $WORK/kytyplus-build-lean;
 #   4. keep the previous binary as kyty_emulator.prev and print what was built.
 # Local changes in either checkout are never discarded silently: they go to a diff file under
 # $WORK (and a git stash for the BC5 checkout) and the script says where.
@@ -18,7 +19,7 @@
 # running emulator before replacing its binary, 0 = forever), BC5_BUILD_KEEP_KYTY=1 (build the
 # KytyPlus tree as it is, for host-side experiments), BC5_BUILD_MOUNT=1 (also build bc5-mount with
 # cargo; off by default because cargo may need the network for crates and overwrites a binary a
-# running mount may use).
+# running mount may use), BC5_BUILD_LEAN=0 (skip the lean variant).
 set -euo pipefail
 
 BC5_SRC=${BC5_SRC:-$HOME/src/bc5}
@@ -37,6 +38,8 @@ PATCH_REL=backend/kytyplus-patches/0001-bc5-lle-agc.patch
 BACKEND_BUILD=$WORK/backend-ubuntu
 EMU_BUILD=$WORK/kytyplus-build
 EMU=$EMU_BUILD/src/kyty_emulator
+LEAN_BUILD=$WORK/kytyplus-build-lean
+BC5_BUILD_LEAN=${BC5_BUILD_LEAN:-1}
 
 # The script may live inside the checkout it fast-forwards; run from a copy so that git cannot
 # change the file bash is reading.
@@ -169,6 +172,17 @@ cmake -S "$KYTY_SRC" -B "$EMU_BUILD" -G Ninja -DCMAKE_BUILD_TYPE=Release \\
   || { tail -30 "$WORK/bc5-build-emulator-configure.log"; say "emulator configure failed"; exit 1; }
 say "emulator: build kyty_emulator -j$JOBS"
 cmake --build "$EMU_BUILD" --target kyty_emulator -j$JOBS
+if [ "$BC5_BUILD_LEAN" = 1 ]; then
+  # Experiment 0177: the same tree without tracing, journals and measurements, next to the normal
+  # build (the "BC5 emulator (lean)" shortcut, BC5_LEAN=1 in the play-*.sh launchers).
+  say "lean emulator: cmake configure (KYTY_BC5_LEAN=ON)"
+  cmake -S "$KYTY_SRC" -B "$LEAN_BUILD" -G Ninja -DCMAKE_BUILD_TYPE=Release \\
+    -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DKYTY_BUILD_LAUNCHER=OFF \\
+    -DKYTY_BC5_BACKEND_SRC="$BC5_SRC/backend" -DKYTY_BC5_BACKEND_BUILD="$BACKEND_BUILD" -DKYTY_BC5_LEAN=ON > "$WORK/bc5-build-lean-configure.log" 2>&1 \\
+    || { tail -30 "$WORK/bc5-build-lean-configure.log"; say "lean emulator configure failed"; exit 1; }
+  say "lean emulator: build kyty_emulator -j$JOBS"
+  cmake --build "$LEAN_BUILD" --target kyty_emulator -j$JOBS
+fi
 if [ "${BC5_BUILD_MOUNT:-0}" = 1 ]; then
   say "bc5-mount: cargo build"
   (cd "$BC5_SRC/tools" && CARGO_TARGET_DIR="$WORK/bc5-tools-ubuntu" cargo build --release --locked -p bc5-mount)
@@ -189,4 +203,8 @@ say "  size:    $(stat -c %s "$EMU") bytes"
 say "  bc5:     $BC5_HEAD ($(git -C "$BC5_SRC" log -1 --format=%s | cut -c1-70))"
 say "  kytyplus: $(git -C "$KYTY_SRC" rev-parse HEAD) + $PATCH_REL (sha256 $PATCH_SHA...)"
 say "  backend: $BACKEND_BUILD   emulator build: $EMU_BUILD"
+if [ "$BC5_BUILD_LEAN" = 1 ]; then
+  [ -x "$LEAN_BUILD/src/kyty_emulator" ] || fail "$LEAN_BUILD/src/kyty_emulator was not produced"
+  say "  lean:    $LEAN_BUILD/src/kyty_emulator ($(stat -c %y "$LEAN_BUILD/src/kyty_emulator" | cut -c1-19))"
+fi
 say "OK; log: $LOG"

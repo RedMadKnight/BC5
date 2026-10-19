@@ -380,6 +380,21 @@ and `Log::Write` (the guest's printf) return at once, `journal()`, `dump_cb` and
 `trace_env && Bc5LoggingOn()` (38 sites in 14 files: the input, motion, AJM, audio, AMM, VMA,
 JSON, VideoOut, flip-timing, save and dialog traces, `BC5_DIRECT_TIMING`, `_LABEL_TRACE`,
 `_UNMAPPED_TRACE`, `_WAIT_TRACE`, `_DROP_TALLY`, `_DISPATCH_JOURNAL`, the draw-journal gates).
+Experiment 0177: the lean build, `-DKYTY_BC5_LEAN=ON` (CMake option in `src/CMakeLists.txt`,
+compile definition `BC5_LEAN`), is the same tree with the diagnostics compiled out:
+`Bc5LoggingOn()` is a `constexpr false` (every gated trace, `LOGF`, the guest's printf, the
+journal, the dumps, the frame profile and the tallies drop out); every read of a diagnostic switch
+goes through `BC5_DIAG_ENV(name)` (`log.h`), a null pointer in the lean build, so the measurements
+that ignore the logging switch go too (the frame counter, the audio measure, the map statistics,
+the timeout probe and its IB copy per job, the input recorder; 105 sites in 19 files); the Tracy
+profiler zones (`KYTY_PROFILER_*`) expand to nothing and `--profiler-direction` is ignored; the
+guest's printf direction is Silent; the journal mode is fixed to "min" (asynchronous submission
+allowed, no journal); and a `constructor(101)` in `main.cpp` removes the diagnostic variables
+(the list there, ~60) from the environment before any static initializer, then sets
+`BC5_LOGGING=0`. Functional switches are untouched. What still prints: the setup lines of the
+direct path, the window's pause/resume lines, fatal errors with the crash handler's backtrace.
+`bc5-build.sh` builds it into `~/bc5-work/kytyplus-build-lean` (`BC5_BUILD_LEAN=0` skips it);
+the dev box's launchers run it with `BC5_LEAN=1`.
 Experiment 0048: borderless fullscreen at the display's resolution, live: F11, the *Video*
 tab's box, or `Fullscreen=on|off` in the input file (also at start); presets 1.0 / 1.25 / 1.7 / 3.0
 named 4K UHD, 1800p class, 1440p class, Full HD.
