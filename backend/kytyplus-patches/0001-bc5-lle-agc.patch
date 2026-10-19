@@ -13667,7 +13667,7 @@ index 0000000..6f30649
 +
 +} // namespace Libs
 diff --git a/src/libs/controller.cpp b/src/libs/controller.cpp
-index 55718eb..2910b71 100644
+index 55718eb..6d66359 100644
 --- a/src/libs/controller.cpp
 +++ b/src/libs/controller.cpp
 @@ -1,4 +1,9 @@
@@ -13706,8 +13706,12 @@ index 55718eb..2910b71 100644
  };
  
  // Local-multiplayer: one GameController owns up to PAD_MAX_CONTROLLERS player
-@@ -61,6 +75,8 @@ public:
+@@ -59,8 +73,12 @@ public:
+ 
+ 	void Connect(int id);
  	void Disconnect(int id);
++	// BC5: the SDL instance id bound to a player slot, -1 when none (rumble output).
++	int  InstanceId(int index);
  	void Button(int id, uint32_t button, bool down);
  	void Axis(int id, Axis axis, int value);
 +	void Motion(int id, bool gyro, const float* xyz);
@@ -13715,7 +13719,7 @@ index 55718eb..2910b71 100644
  	void ResetInputState();
  	void GetConnectionInfo(bool* flag, int* count);
  	void ReadState(ControllerState* state, bool* flag, int* count);
-@@ -78,10 +94,30 @@ private:
+@@ -78,7 +96,25 @@ private:
  		bool            obtained[STATES_MAX] = {};
  		uint32_t        states_num          = 0;
  		uint32_t        first_state         = 0;
@@ -13741,11 +13745,6 @@ index 55718eb..2910b71 100644
  
  	void EnsureSlot(int index);
  	int  OwnerSlot(int id) const;
-+	// BC5: the SDL instance id bound to a player slot, -1 when none (rumble output).
-+	int  InstanceId(int index);
- 	int  FallbackSlot() const;
- 	int  PresentCount() const;
- 	bool SlotConnected(int index) const;
 @@ -94,6 +130,34 @@ private:
  	std::vector<SlotState> m_slots;
  };
@@ -14158,7 +14157,7 @@ index 55718eb..2910b71 100644
  	}
  }
  
-+int GameController::InstanceId(int index) const {
++int GameController::InstanceId(int index) {
 +	Common::LockGuard lock(m_mutex);
 +	return index >= 0 && index < PAD_MAX_CONTROLLERS ? m_ids[index] : -1;
 +}
