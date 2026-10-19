@@ -17208,7 +17208,7 @@ index fda2623..db5e40e 100644
  	return OK;
  }
 diff --git a/src/libs/libSaveData.cpp b/src/libs/libSaveData.cpp
-index 08aa121..e5fff47 100644
+index 08aa121..aec9575 100644
 --- a/src/libs/libSaveData.cpp
 +++ b/src/libs/libSaveData.cpp
 @@ -13,13 +13,26 @@
@@ -17238,10 +17238,139 @@ index 08aa121..e5fff47 100644
  
  namespace SaveData {
  
-@@ -294,6 +307,25 @@ static bool dir_name_match(const char* str, const char* pattern) {
+@@ -267,7 +280,14 @@ static void queue_save_data_event(uint32_t type, int32_t user_id,
+ 	}
+ }
+ 
++// BC5 (search). Ported from AnyPS5 core/libs/prx/libSceSaveData.native/Export.cpp @ 7f596df
++// (GPL-2.0), dir_name_match: '%' matches any run of characters, '_' one character; an empty
++// pattern matches every name, and a pattern ending in '%' matches a name that ends where the
++// '%' starts (the loop below left such a pattern unconsumed and answered no match).
+ static bool dir_name_match(const char* str, const char* pattern) {
++	if (pattern == nullptr || pattern[0] == '\0') {
++		return true;
++	}
+ 	while (*str != '\0' && *pattern != '\0') {
+ 		if (*pattern == '%') {
+ 			for (const char* s = str;; s++) {
+@@ -291,9 +311,139 @@ static bool dir_name_match(const char* str, const char* pattern) {
+ 		str++;
+ 		pattern++;
+ 	}
++	while (*pattern == '%') {
++		pattern++;
++	}
  	return *str == '\0' && *pattern == '\0';
  }
  
++// BC5 (blocks and params). Ported from AnyPS5 core/libs/prx/libSceSaveData.native/Export.cpp
++// @ 7f596df (GPL-2.0), blocks_path/save_blocks/keep_save_blocks/used_blocks/search_info and
++// param_path/load_param/store_param: two sidecar files next to a save directory, never inside it
++// (the title sees the mount's files), under _SaveData/<title>/: <dir>.blocks holds, in decimal,
++// the blocks the Mount3 that created the save asked for, and <dir>.param the SaveDataParam the
++// title last set. A save is 32 KiB blocks; free blocks are the save's blocks minus its files'
++// sizes, each rounded up to a block. A save without a .blocks file reports the maximum.
++// TODO(verify): the block count cap. This file keeps SAVE_DATA_BLOCKS_MAX = 16384 (KytyPlus);
++// AnyPS5 and shadPS4 use 32768. Neither is from a console measurement.
++static constexpr uint64_t SAVE_DATA_BLOCK_BYTES = 32768;
++
++static std::string save_data_title_root() {
++	return Common::FixDirectorySlash(std::string(SAVE_DATA_DIR) + "/" + get_title_id());
++}
++
++static std::string save_data_blocks_path(const std::string& directory) {
++	return directory + ".blocks";
++}
++
++static std::string save_data_param_path(const std::string& directory) {
++	return directory + ".param";
++}
++
++static uint64_t save_data_blocks(const std::string& directory) {
++	std::FILE* f = std::fopen(save_data_blocks_path(directory).c_str(), "rb");
++	if (f == nullptr) {
++		return SAVE_DATA_BLOCKS_MAX;
++	}
++	unsigned long long blocks = 0;
++	const int          read   = std::fscanf(f, "%llu", &blocks);
++	std::fclose(f);
++	if (read != 1 || blocks == 0) {
++		return SAVE_DATA_BLOCKS_MAX;
++	}
++	return std::min<uint64_t>(blocks, SAVE_DATA_BLOCKS_MAX);
++}
++
++static void save_data_keep_blocks(const std::string& directory, uint64_t blocks) {
++	std::FILE* f = std::fopen(save_data_blocks_path(directory).c_str(), "wb");
++	if (f == nullptr) {
++		LOGF("\t save data: the blocks of %s could not be kept\n", directory.c_str());
++		return;
++	}
++	std::fprintf(f, "%llu\n", static_cast<unsigned long long>(std::min<uint64_t>(blocks, SAVE_DATA_BLOCKS_MAX)));
++	std::fclose(f);
++}
++
++static uint64_t save_data_used_blocks(const std::string& directory) {
++	uint64_t        blocks = 0;
++	std::error_code ec;
++	for (auto it = std::filesystem::recursive_directory_iterator(directory, ec);
++	     !ec && it != std::filesystem::recursive_directory_iterator(); it.increment(ec)) {
++		if (!it->is_regular_file(ec)) {
++			continue;
++		}
++		const auto bytes = it->file_size(ec);
++		if (!ec) {
++			blocks += (bytes + SAVE_DATA_BLOCK_BYTES - 1) / SAVE_DATA_BLOCK_BYTES;
++		}
++	}
++	return blocks;
++}
++
++static SaveDataSearchInfo save_data_search_info(const std::string& directory) {
++	SaveDataSearchInfo info {};
++	info.blocks      = save_data_blocks(directory);
++	info.free_blocks = info.blocks - std::min(info.blocks, save_data_used_blocks(directory));
++	return info;
++}
++
++static int64_t save_data_dir_mtime(const std::string& directory);
++
++// The param the title set, or zeros; an mtime of 0 becomes the directory's time (run 573).
++static SaveDataParam save_data_load_param(const std::string& directory) {
++	SaveDataParam param {};
++	std::FILE*    f = std::fopen(save_data_param_path(directory).c_str(), "rb");
++	if (f != nullptr) {
++		if (std::fread(&param, 1, sizeof(param), f) != sizeof(param)) {
++			param = {};
++		}
++		std::fclose(f);
++	}
++	if (param.mtime == 0) {
++		param.mtime = save_data_dir_mtime(directory);
++	}
++	return param;
++}
++
++static void save_data_store_param(const std::string& directory, const SaveDataParam& param) {
++	const std::string path = save_data_param_path(directory);
++	const std::string tmp  = path + ".tmp";
++	std::FILE*        f    = std::fopen(tmp.c_str(), "wb");
++	if (f == nullptr) {
++		LOGF("\t save data: the param of %s could not be kept\n", directory.c_str());
++		return;
++	}
++	const bool ok = std::fwrite(&param, 1, sizeof(param), f) == sizeof(param);
++	std::fclose(f);
++	std::error_code ec;
++	if (ok) {
++		std::filesystem::rename(tmp, path, ec);
++	}
++	if (!ok || ec) {
++		std::filesystem::remove(tmp, ec);
++		LOGF("\t save data: the param of %s could not be kept\n", directory.c_str());
++	}
++}
++
 +// BC5 (run 573): the time of a save directory for SaveDataParam::mtime, seconds since the epoch —
 +// the newest write of a file in it (the directory's own time changes on create and rename only).
 +// Titles that never call SaveDataSetParam (the second title) otherwise show 01/01/1970 in their
@@ -17264,17 +17393,131 @@ index 08aa121..e5fff47 100644
  static int mount_save_data(int slot, std::string_view dir_name, const std::string& directory,
                             uint32_t status, SaveDataMountResult* result) {
  	const std::string mount_point = SaveDataMountSlots::MountPoint(static_cast<size_t>(slot));
-@@ -408,7 +440,8 @@ int KYTY_SYSV_ABI SaveDataDirNameSearch(const SaveDataDirNameSearchCond* cond,
+@@ -369,51 +519,85 @@ int KYTY_SYSV_ABI SaveDataDirNameSearch(const SaveDataDirNameSearchCond* cond,
+ 	std::memset(result->reserved, 0, sizeof(result->reserved));
+ 	result->pad2 = 0;
+ 
+-	std::vector<std::string> dir_list;
+-	std::string              root =
+-	    Common::FixDirectorySlash((std::string(SAVE_DATA_DIR) + "/" + get_title_id()));
+-
+-	if (Common::File::IsDirectoryExisting(root)) {
++	// BC5 (search). Ported from AnyPS5 core/libs/prx/libSceSaveData.native/Export.cpp @ 7f596df
++	// (GPL-2.0), dirNameSearch: every save directory whose name matches the pattern, in name
++	// order, then stably by the sort key (user param, blocks, mtime or free blocks; the name key
++	// changes nothing), reversed for the descending order; params and infos from the sidecars.
++	// A title id other than this title's finds nothing (AnyPS5); the name match is case-insensitive
++	// here as before.
++	struct Match {
++		std::string        name;
++		std::string        path;
++		SaveDataParam      param;
++		SaveDataSearchInfo info;
++	};
++	std::vector<Match> matches;
++	const std::string  root = save_data_title_root();
++
++	if (cond->title_id != nullptr && cond->title_id->data[0] != '\0' &&
++	    std::strncmp(cond->title_id->data, get_title_id().c_str(), sizeof(cond->title_id->data)) != 0) {
++		LOGF("\t title_id %s is not this title's; no match\n", cond->title_id->data);
++	} else if (Common::File::IsDirectoryExisting(root)) {
++		const std::string pattern =
++		    cond->dir_name != nullptr ? Common::ToLower(std::string(cond->dir_name->data)) : std::string();
+ 		for (const auto& entry: Common::File::GetDirEntries(root)) {
+ 			if (!entry.is_file && entry.name != "." && entry.name != ".." &&
+-			    !Common::StartsWith(entry.name, "sce_")) {
+-				if (cond->dir_name == nullptr || cond->dir_name->data[0] == '\0' ||
+-				    dir_name_match(Common::ToLower(entry.name).c_str(),
+-				                   Common::ToLower(std::string(cond->dir_name->data)).c_str())) {
+-					dir_list.push_back(entry.name);
+-				}
++			    !Common::StartsWith(entry.name, "sce_") &&
++			    dir_name_match(Common::ToLower(entry.name).c_str(), pattern.c_str())) {
++				Match m;
++				m.name  = entry.name;
++				m.path  = root + "/" + entry.name;
++				m.param = save_data_load_param(m.path);
++				m.info  = save_data_search_info(m.path);
++				matches.push_back(std::move(m));
+ 			}
+ 		}
+ 	}
+ 
+-	std::sort(dir_list.begin(), dir_list.end(), [](const std::string& a, const std::string& b) {
+-		return std::strcmp(a.c_str(), b.c_str()) < 0;
+-	});
+-
++	std::sort(matches.begin(), matches.end(),
++	          [](const Match& a, const Match& b) { return std::strcmp(a.name.c_str(), b.name.c_str()) < 0; });
++	switch (cond->key) {
++		case SaveDataSortKey::UserParam:
++			std::stable_sort(matches.begin(), matches.end(),
++			                 [](const Match& a, const Match& b) { return a.param.user_param < b.param.user_param; });
++			break;
++		case SaveDataSortKey::Blocks:
++			std::stable_sort(matches.begin(), matches.end(),
++			                 [](const Match& a, const Match& b) { return a.info.blocks < b.info.blocks; });
++			break;
++		case SaveDataSortKey::Mtime:
++			std::stable_sort(matches.begin(), matches.end(),
++			                 [](const Match& a, const Match& b) { return a.param.mtime < b.param.mtime; });
++			break;
++		case SaveDataSortKey::FreeBlocks:
++			std::stable_sort(matches.begin(), matches.end(),
++			                 [](const Match& a, const Match& b) { return a.info.free_blocks < b.info.free_blocks; });
++			break;
++		case SaveDataSortKey::DirName: break;
++	}
+ 	if (cond->order == SaveDataSortOrder::Descent) {
+-		std::vector<std::string> reversed;
+-		for (size_t i = dir_list.size(); i > 0; i--) {
+-			reversed.push_back(dir_list[i - 1]);
+-		}
+-		dir_list = reversed;
++		std::reverse(matches.begin(), matches.end());
+ 	}
+ 
+-	auto max_count =
+-	    (result->dir_names_num < dir_list.size() ? result->dir_names_num : dir_list.size());
++	const size_t max_count =
++	    result->dir_names == nullptr ? 0 : std::min<size_t>(result->dir_names_num, matches.size());
+ 
+-	result->hit_num = static_cast<uint32_t>(dir_list.size());
++	result->hit_num = static_cast<uint32_t>(matches.size());
+ 	result->set_num = static_cast<uint32_t>(max_count);
+ 
+ 	for (size_t i = 0; i < max_count; i++) {
  		std::snprintf(result->dir_names[i].data, sizeof(result->dir_names[i].data), "%s",
- 		              dir_list[i].c_str());
+-		              dir_list[i].c_str());
++		              matches[i].name.c_str());
  		if (result->params != nullptr) {
 -			result->params[i] = {};
-+			result->params[i]       = {};
-+			result->params[i].mtime = save_data_dir_mtime(root + "/" + dir_list[i]);
++			result->params[i] = matches[i].param;
  		}
  		if (result->infos != nullptr) {
- 			result->infos[i]             = {};
-@@ -484,6 +517,67 @@ int KYTY_SYSV_ABI SaveDataMount3(const SaveDataMount3* mount, SaveDataMountResul
+-			result->infos[i]             = {};
+-			result->infos[i].blocks      = SAVE_DATA_BLOCKS_MAX;
+-			result->infos[i].free_blocks = SAVE_DATA_BLOCKS_MAX;
++			result->infos[i] = matches[i].info;
++		}
++		if (g_bc5_save_trace) {
++			std::fprintf(stderr, "save trace: search[%zu] %s user_param %u mtime %" PRId64 " blocks %" PRIu64 " free %" PRIu64 "\n",
++			             i, matches[i].name.c_str(), matches[i].param.user_param, matches[i].param.mtime,
++			             matches[i].info.blocks, matches[i].info.free_blocks);
+ 		}
+ 	}
+ 
+@@ -481,9 +665,77 @@ int KYTY_SYSV_ABI SaveDataMount3(const SaveDataMount3* mount, SaveDataMountResul
+ 		}
+ 	}
+ 
++	// BC5 (blocks): the size the title asked for is kept with the save it created (AnyPS5 mount3);
++	// a save from before this had no record and gets one from the first mount that names a size.
++	if (mount->blocks != 0 &&
++	    (created || !Common::File::IsFileExisting(save_data_blocks_path(Common::FixDirectorySlash(mount_dir))))) {
++		save_data_keep_blocks(Common::FixDirectorySlash(mount_dir), mount->blocks);
++	}
++
  	return mount_save_data(slot, dir_name, mount_dir, created ? 1u : 0u, mount_result);
  }
  
@@ -17342,7 +17585,7 @@ index 08aa121..e5fff47 100644
  int KYTY_SYSV_ABI SaveDataSetupSaveDataMemory2(const SaveDataMemorySetup2* setup_param,
                                                 SaveDataMemorySetupResult*  result) {
  	PRINT_NAME();
-@@ -500,6 +594,8 @@ int KYTY_SYSV_ABI SaveDataSetupSaveDataMemory2(const SaveDataMemorySetup2* setup
+@@ -500,6 +752,8 @@ int KYTY_SYSV_ABI SaveDataSetupSaveDataMemory2(const SaveDataMemorySetup2* setup
  	     setup_param->option, setup_param->user_id, static_cast<uint64_t>(setup_param->memory_size),
  	     static_cast<uint64_t>(setup_param->icon_memory_size), setup_param->slot_id);
  
@@ -17351,7 +17594,7 @@ index 08aa121..e5fff47 100644
  	if (setup_param->memory_size > g_save_data_memory.size()) {
  		g_save_data_memory.resize(setup_param->memory_size);
  	}
-@@ -528,6 +624,8 @@ int KYTY_SYSV_ABI SaveDataGetSaveDataMemory2(SaveDataMemoryGet2* get_param) {
+@@ -528,6 +782,8 @@ int KYTY_SYSV_ABI SaveDataGetSaveDataMemory2(SaveDataMemoryGet2* get_param) {
  	     reinterpret_cast<uint64_t>(get_param->param), reinterpret_cast<uint64_t>(get_param->icon),
  	     get_param->slot_id);
  
@@ -17360,7 +17603,7 @@ index 08aa121..e5fff47 100644
  	if (get_param->data != nullptr) {
  		auto* data = get_param->data;
  		if (data->buf == nullptr || data->offset < 0) {
-@@ -567,6 +665,8 @@ int KYTY_SYSV_ABI SaveDataSetSaveDataMemory2(const SaveDataMemorySet2* set_param
+@@ -567,6 +823,8 @@ int KYTY_SYSV_ABI SaveDataSetSaveDataMemory2(const SaveDataMemorySet2* set_param
  	     reinterpret_cast<uint64_t>(set_param->param), reinterpret_cast<uint64_t>(set_param->icon),
  	     set_param->data_num, set_param->slot_id);
  
@@ -17369,7 +17612,7 @@ index 08aa121..e5fff47 100644
  	const uint32_t data_num = (set_param->data_num == 0 ? 1 : set_param->data_num);
  	if (set_param->data != nullptr) {
  		for (uint32_t i = 0; i < data_num; i++) {
-@@ -581,6 +681,7 @@ int KYTY_SYSV_ABI SaveDataSetSaveDataMemory2(const SaveDataMemorySet2* set_param
+@@ -581,6 +839,7 @@ int KYTY_SYSV_ABI SaveDataSetSaveDataMemory2(const SaveDataMemorySet2* set_param
  			}
  			std::memcpy(g_save_data_memory.data() + offset, data.buf, data.buf_size);
  		}
@@ -17377,7 +17620,7 @@ index 08aa121..e5fff47 100644
  	}
  
  	return OK;
-@@ -697,8 +798,21 @@ int KYTY_SYSV_ABI SaveDataDelete(const SaveDataDelete* del) {
+@@ -697,9 +956,26 @@ int KYTY_SYSV_ABI SaveDataDelete(const SaveDataDelete* del) {
  
  	std::string dir =
  	    std::string(SAVE_DATA_DIR) + "/" + get_title_id() + "/" + std::string(del->dir_name->data);
@@ -17395,33 +17638,38 @@ index 08aa121..e5fff47 100644
 +	if (g_bc5_save_trace) {
 +		std::fprintf(stderr, "save trace: SaveDataDelete removed %ju entries, error %d\n",
 +		             static_cast<uintmax_t>(removed), ec.value());
-+	}
+ 	}
 +	if (ec) {
 +		return SAVE_DATA_ERROR_INTERNAL;
- 	}
++	}
++	// BC5 (blocks): the save's sidecars go with it.
++	std::error_code sidecar_ec;
++	std::filesystem::remove(save_data_blocks_path(Common::FixDirectorySlash(dir)), sidecar_ec);
++	std::filesystem::remove(save_data_param_path(Common::FixDirectorySlash(dir)), sidecar_ec);
  
  	return OK;
-@@ -722,6 +836,19 @@ int KYTY_SYSV_ABI SaveDataGetParam(const SaveDataMountPoint* mount_point, uint32
+ }
+@@ -722,6 +998,19 @@ int KYTY_SYSV_ABI SaveDataGetParam(const SaveDataMountPoint* mount_point, uint32
  			return SAVE_DATA_ERROR_PARAMETER;
  		}
  		std::memset(param_buf, 0, sizeof(SaveDataParam));
-+		// BC5 (run 573): the mounted directory's time, as its slot list expects.
++		// BC5 (run 573, and the .param sidecar): the param the title set for this save, its mtime
++		// the mounted directory's time when the title set none, as its slot list expects.
 +		{
 +			Common::LockGuard lock(g_mount_mutex);
 +			const int         slot = g_mount_slots.Find(mount_point->data);
 +			if (slot >= 0) {
-+				const std::string dir = std::string(SAVE_DATA_DIR) + "/" + get_title_id() + "/" +
-+				                        g_mount_slots.Directory(static_cast<size_t>(slot));
-+				const int64_t mtime = save_data_dir_mtime(dir);
-+				std::memcpy(static_cast<uint8_t*>(param_buf) + offsetof(SaveDataParam, mtime), &mtime,
-+				            sizeof(mtime));
-+				LOGF("\t mtime          = %" PRId64 " (%s)\n", mtime, dir.c_str());
++				const std::string dir =
++				    save_data_title_root() + "/" + g_mount_slots.Directory(static_cast<size_t>(slot));
++				const SaveDataParam param = save_data_load_param(dir);
++				std::memcpy(param_buf, &param, sizeof(param));
++				LOGF("\t mtime          = %" PRId64 " (%s)\n", param.mtime, dir.c_str());
 +			}
 +		}
  		if (got_size != nullptr) {
  			*got_size = sizeof(SaveDataParam);
  		}
-@@ -777,6 +904,16 @@ int KYTY_SYSV_ABI SaveDataSyncSaveDataMemory(const void* sync_param) {
+@@ -777,6 +1066,16 @@ int KYTY_SYSV_ABI SaveDataSyncSaveDataMemory(const void* sync_param) {
  
  int KYTY_SYSV_ABI SaveDataGetEventResult(const void* event_param, SaveDataEvent* event) {
  	PRINT_NAME();
@@ -17438,7 +17686,48 @@ index 08aa121..e5fff47 100644
  
  	LOGF("\t event_param = 0x%016" PRIx64 "\n"
  	     "\t event       = 0x%016" PRIx64 "\n",
-@@ -885,7 +1022,27 @@ namespace LibSaveDataNative {
+@@ -844,6 +1143,20 @@ int KYTY_SYSV_ABI SaveDataSetParam(const SaveDataMountPoint* mount_point, uint32
+ 		     "\t detail     = %s\n"
+ 		     "\t user_param = %u\n",
+ 		     p->title, p->sub_title, p->detail, p->user_param);
++
++		// BC5 (params): kept in the save's .param sidecar for the search and GetParam (AnyPS5
++		// store_param); before this the call was a log line and the search reported zeros.
++		if (p != nullptr && param_buf_size >= sizeof(SaveDataParam)) {
++			Common::LockGuard lock(g_mount_mutex);
++			const int         slot = g_mount_slots.Find(mount_point->data);
++			if (slot >= 0) {
++				save_data_store_param(save_data_title_root() + "/" +
++				                          g_mount_slots.Directory(static_cast<size_t>(slot)),
++				                      *p);
++			} else {
++				return SAVE_DATA_ERROR_NOT_MOUNTED;
++			}
++		}
+ 	} else {
+ 		LOGF("\t unsupported param_type, accepting as no-op\n");
+ 	}
+@@ -860,8 +1173,19 @@ int KYTY_SYSV_ABI SaveDataGetMountInfo(const SaveDataMountPoint* mount_point,
+ 
+ 	*info = {};
+ 
++	// BC5 (blocks): the mounted save's blocks and what is left of them (AnyPS5 getMountInfo).
+ 	info->blocks      = SAVE_DATA_BLOCKS_MAX;
+ 	info->free_blocks = SAVE_DATA_BLOCKS_MAX;
++	{
++		Common::LockGuard lock(g_mount_mutex);
++		const int         slot = g_mount_slots.Find(mount_point->data);
++		if (slot >= 0) {
++			const SaveDataSearchInfo search = save_data_search_info(
++			    save_data_title_root() + "/" + g_mount_slots.Directory(static_cast<size_t>(slot)));
++			info->blocks      = search.blocks;
++			info->free_blocks = search.free_blocks;
++		}
++	}
+ 
+ 	return OK;
+ }
+@@ -885,7 +1209,27 @@ namespace LibSaveDataNative {
  
  LIB_VERSION("SaveData_native", 1, "SaveData_native", 1, 1);
  
