@@ -55,6 +55,16 @@ the backend library (`backend/src/direct.cpp`), which has no switch; they stop t
 backend is only called while the game maps, and they are error reports rather than logging. Not
 measured: the frame rate with the switch off (experiment 0162 found the journal's cost invisible).
 
+**Build of the union** (10:17). Patch 0001 as committed at `27338e4` (this menu bar and the logging switch,
+the AnyPS5 ports 1-4 and experiment 0165's chain code, merged textually and never compiled as a
+whole) was applied to a clean `f266548` tree on the box (`git checkout -- . && git clean -fd src`,
+`git apply --intent-to-add`; the tree's previous diff kept as `~/bc5-work/0001-before-union.patch`)
+and built with the usual command: 211 objects, no errors, no change to the patch needed; the three
+CRLF files stayed CRLF. `play-any.sh` with no path drew the empty window from that binary (the
+menu bar, the launcher page with *Logging: on (Emulation menu)* and the package in *Recent*, 60 fps;
+screenshot `union-empty-window` in `~/bc5-work/shots0165/`); quit with a signal. That binary is
+now the one the shortcuts run.
+
 Timings: the window closes and reopens between sessions (exit, unmount, mount, start) in about
 2 s for the empty window and 5 s to the title's first frame; the start screen as before (F203).
 Not tested here: the pad (no controller input can be injected from ssh; ImGui's gamepad nav is
