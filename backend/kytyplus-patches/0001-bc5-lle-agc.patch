@@ -6765,10 +6765,10 @@ index fe4b332..5f8808d 100644
  
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..888a7d5
+index 0000000..cf93b01
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,8350 @@
+@@ -0,0 +1,8380 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -8343,10 +8343,27 @@ index 0000000..888a7d5
 +	std::vector<uint32_t> retired;
 +	uint32_t              merged = 0;
 +	static const bool     no_merge = std::getenv("BC5_DIRECT_NO_MERGE") != nullptr;
++	// Experiment 0167 (F222): a merge moves every GPU mapping that lies on the merged BOs - an
++	// unmap and a map each, on this thread, with the GPU drained first - and the second title's
++	// streaming heaps carry thousands of small AMM mappings: one merge pass remapped 7,800-8,100
++	// of them and held the game thread for 0.4-0.75 s (the maintainer's session of 12:19, frames
++	// at t 169-181 s). The pass now has a budget of mappings to move (BC5_DIRECT_MERGE_MAPS,
++	// default 512, 0 = unbounded as before); a run of BOs whose mappings do not fit is left for a
++	// later pass, so the per-submission saving of the merge arrives over several frames instead
++	// of one stall.
++	static const uint32_t merge_map_cap = [] {
++		const char* e = std::getenv("BC5_DIRECT_MERGE_MAPS");
++		return e != nullptr ? static_cast<uint32_t>(std::strtoul(e, nullptr, 10)) : 512u;
++	}();
++	uint32_t remaps = 0, deferred = 0; // experiment 0167
 +	if (!no_merge && now - S.merge_ns > 250'000'000ull) {
 +		S.merge_ns = now;
 +		constexpr uint64_t settle = 3'000'000'000ull;
 +		uint64_t           budget = 256ull << 20u;
++		std::unordered_map<uint32_t, uint32_t> maps_on_bo; // BO id -> mappings that lie on it
++		if (merge_map_cap != 0) {
++			for (const auto& m: S.maps) maps_on_bo[m.id]++;
++		}
 +		for (size_t i = 0; i < S.bos.size();) {
 +			size_t   j       = i;
 +			uint64_t total   = S.bos[i].size;
@@ -8361,6 +8378,18 @@ index 0000000..888a7d5
 +			if (j == i || !settled || total > budget || S.merge_failed.count(S.bos[i].off) != 0) {
 +				i = j + 1;
 +				continue;
++			}
++			if (merge_map_cap != 0) { // experiment 0167: the run's mappings must fit the pass's budget
++				uint32_t run_maps = 0;
++				for (size_t k = i; k <= j; k++) {
++					if (auto it = maps_on_bo.find(S.bos[k].id); it != maps_on_bo.end()) run_maps += it->second;
++				}
++				if (remaps + run_maps > merge_map_cap) {
++					deferred++;
++					i = j + 1;
++					continue;
++				}
++				remaps += run_maps;
 +			}
 +			const uint64_t off = S.bos[i].off;
 +			const uint32_t id  = g_dev->import_memfd(fd, off, total);
@@ -8425,8 +8454,9 @@ index 0000000..888a7d5
 +	}
 +	if (imported != 0) S.blocks = ~0ull; // pinning may have allocated pages: look once more
 +	for (const uint32_t id: retired) g_dev->free_shared(id);
-+	if (merged != 0) {
-+		journal("%s merge: %zu BOs became %u (%zu BOs now)\n", S.label, retired.size(), merged, S.bos.size());
++	if (merged != 0 || deferred != 0) {
++		journal("%s merge: %zu BOs became %u (%zu BOs now), %u mappings moved, %u runs deferred by the mapping budget\n", S.label, retired.size(), merged, S.bos.size(),
++		        remaps, deferred);
 +	}
 +	if (imported != 0 || mapped != 0 || unmapped != 0 || map_failed != 0) {
 +		journal("%s: %zu views; +%u BOs (%zu, %.1f MiB pinned); maps +%u -%u (%zu)%s\n", S.label, views.size(), imported, S.bos.size(), static_cast<double>(S.bytes) / 1048576.0,

@@ -22,6 +22,11 @@ such a freeze?
   Before, each of them rebuilt the whole vector and `MergeUnlocked` re-sorted it.
 - Run 811: the same route with the fix and the watchdog; run 812: the old table again,
   without the watchdog (control); run 813: the fix without the watchdog.
+- The maintainer's session with the fix (12:19–12:25, no chains): "much better, smaller freezes
+  remain; at the end the game almost froze completely". Its journal and the kernel log.
+- Second fix (`bc5LleAgc.cpp`, the direct mapper's BO merge): a merge pass may move at most
+  `BC5_DIRECT_MERGE_MAPS` GPU mappings (default 512; 0 = unbounded as before); runs of BOs whose
+  mappings do not fit are deferred. Run 814: the route with it.
 
 **Result.**
 - In the maintainer's 11:09 session the long frames were of two kinds: frames of 0.5–2.4 s
@@ -47,10 +52,24 @@ such a freeze?
   500 ms 12 (11.6 s of the 100-s window) → 0; over 250 ms 24 (15.4 s) → 1 (0.3 s); frames in
   the window 1,840 → 2,383 (+30 %); audio rate deviations 0 → 0; no fault, no reset.
 
+- The maintainer's 12:19 session: the remaining freezes of 0.5–0.95 s (t 164–181 s) are inside
+  the host, `sync` 394–752 ms: the direct mapper's **BO merge** moving every GPU mapping that lies
+  on the merged BOs — `maps +7808 -7808`, `+8137 -7798`, `+8012 -8018` in one sync each, with
+  the GPU drained first (8 such passes in the session, 1,300–8,100 mappings each). The title's
+  streaming heaps carry thousands of small AMM mappings. With the budget (run 814) no pass moves
+  more than 512 mappings; four runs stay unmerged (102 BOs instead of ~60), the gameplay window
+  is unchanged against 813 (2,394 frames, 1 frame over 250 ms, none over 500 ms).
+- The **final freeze** of that session is not a host stall: at t 342.6 s the GE faulted on pages
+  0x1000–0xf000 (the first 64 KiB, F208's read from address 0 — the part no user-space mapping
+  can cover), the kernel reset the gfx and compute rings ("device wedged"), the host's fences
+  timed out at 2 s. The device coredump and the kernel log are saved on the box
+  (`~/bc5-work/coredump-1219-f208.txt`, `dmesg-1219-f208.txt`) for the F208 work.
+
 **Verdict.** The freezes the maintainer saw without chains were the host's virtual-range table:
 a full copy and a full sort of ~14,000 ranges three times per AMM map, on the game thread, for
 every burst of the title's streaming maps. The table is now edited in place around the touched
 ranges (F221); the gameplay window lost its half-second-and-longer frames altogether and gained
-30 % frames. Still different from the console: the map-only AMM submissions run on the submitting
+30 % frames. The remaining 0.5–0.95 s freezes were the BO merge's mass remaps, now budgeted
+(F222). The session-ending freeze is F208 (open). Still different from the console: the map-only AMM submissions run on the submitting
 thread (the console's AMM engine runs them off the CPU) and each map's GPU-side unmap is a
 synchronous round trip to the renderer thread — the next steps if streaming stalls remain.
