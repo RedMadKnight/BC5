@@ -1,6 +1,8 @@
 # ADR 0010 — A queue's consecutive buffers in one kernel submission
 
-**Status:** proposed (2026-10-19), measured in experiment 0163. Off by default
+**Status:** proposed (2026-10-19), measured in experiment 0163 (F213: the ring thread's buffers
+chain, the game thread's do not — one `dcb` per ioctl, each with `COND_EXEC`; next steps there).
+Off by default
 (`BC5_DIRECT_CHAIN=1` turns it on); nothing of it is in the play settings until the experiment
 has a verdict. Hard rule 5 applies: it changes nothing without the direct path's own switches.
 

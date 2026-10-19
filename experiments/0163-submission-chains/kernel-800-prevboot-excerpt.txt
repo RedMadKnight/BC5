@@ -1,0 +1,56 @@
+2:paź 19 08:36:16 bazzite kernel: Command line: BOOT_IMAGE=(hd0,gpt2)/ostree/default-6d7b72549d9a0fcfa4475d1f692127da437b2072e4270109b08a19f66aae7ca1/vmlinuz-7.2.9-ogc3.1.fc44.x86_64 ostree=/ostree/boot.1/default/6d7b72
+158:paź 19 08:36:16 bazzite kernel: Kernel command line: BOOT_IMAGE=(hd0,gpt2)/ostree/default-6d7b72549d9a0fcfa4475d1f692127da437b2072e4270109b08a19f66aae7ca1/vmlinuz-7.2.9-ogc3.1.fc44.x86_64 ostree=/ostree/boot.1/defau
+903:paź 19 08:36:22 bazzite kernel: amdgpu: Virtual CRAT table created for CPU
+904:paź 19 08:36:22 bazzite kernel: amdgpu: Topology: Add CPU node
+905:paź 19 08:36:22 bazzite kernel: amdgpu 0000:01:00.0: enabling device (0006 -> 0007)
+906:paź 19 08:36:22 bazzite kernel: amdgpu 0000:01:00.0: initializing kernel modesetting (CYAN_SKILLFISH 0x1002:0x13FE 0x1022:0x0000 0x00).
+907:paź 19 08:36:22 bazzite kernel: amdgpu 0000:01:00.0: register mmio base: 0xFE800000
+908:paź 19 08:36:22 bazzite kernel: amdgpu 0000:01:00.0: register mmio size: 524288
+909:paź 19 08:36:22 bazzite kernel: amdgpu 0000:01:00.0: detected ip block number 0 <common_v1_0_0> (nv_common)
+910:paź 19 08:36:22 bazzite kernel: amdgpu 0000:01:00.0: detected ip block number 1 <gmc_v10_0_0> (gmc_v10_0)
+911:paź 19 08:36:22 bazzite kernel: amdgpu 0000:01:00.0: detected ip block number 2 <ih_v5_0_0> (navi10_ih)
+912:paź 19 08:36:22 bazzite kernel: amdgpu 0000:01:00.0: detected ip block number 3 <psp_v11_0_8> (psp)
+3019:paź 19 08:59:14 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x0000000000001000 from client 0x1b (UTCL2)
+     10 08:47:21
+     10 08:47:26
+     10 08:47:47
+     10 08:48:03
+     10 08:48:18
+     10 08:48:34
+     10 08:48:50
+      5 08:49:05
+     10 08:49:21
+      3 08:49:37
+     10 08:49:52
+      7 08:50:08
+      4 08:50:24
+     10 08:50:39
+      3 08:50:55
+      9 08:51:10
+      8 08:51:26
+      1 08:51:42
+      9 08:51:57
+     10 08:54:54
+     10 08:54:59
+     10 08:55:04
+     10 08:55:09
+     10 08:55:14
+     10 08:55:19
+     10 08:55:24
+      9 08:55:29
+      1 08:55:30
+     10 08:55:34
+      6 08:55:39
+      4 08:55:40
+     10 08:55:45
+     10 08:55:50
+     10 08:55:55
+      2 08:58:53
+      8 08:58:54
+     10 08:58:58
+      1 08:59:03
+      9 08:59:04
+      7 08:59:08
+      3 08:59:09
+      8 08:59:13
+      2 08:59:14

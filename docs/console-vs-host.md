@@ -87,10 +87,13 @@ time: the title targets 60 fps and gets 30-42, varying with the scene, which the
 sees as speed-ups and slow-downs. The direct journal itself costs nothing measurable (42.1 vs
 41.3 fps in the menu, 31.0 vs 29.5 in gameplay, runs 797/798).
 
-**The console-like change (exp 0163, next).** Chain consecutive buffers of a queue into one
-kernel submission - one host IB of `INDIRECT_BUFFER` packets (or several IB chunks per CS) per
-run of buffers that needs no CPU-side wait - and stop copying what is already mapped, so that
-a frame costs a few ioctls, not 133; keep the filter but run it once per chain. The stalls of
+**The console-like change (exp 0163, ADR 0010, `BC5_DIRECT_CHAIN=1`, off).** The buffers one
+submit ioctl or one ring poll slice hands over go as one scratch IB; the filter runs once per
+chain. Measured (F213): the ring thread's ACBs chain (3.9 a chain, its CPU halved, submissions
+4,400 → 2,700 /s), the game thread's do not — one `dcb` per ioctl, each with `COND_EXEC`, which
+closes a chain — so the render thread's frame did not shorten. Still to do: `COND_EXEC`-aware
+chaining, chains across the game thread's ioctls (the console's queue never returns to the CPU
+between buffers), and executing untouched segments in place instead of copying them. The stalls of
 seconds seen in the opening (run 794: 8.1 s at t 152.9 s, almost all of it outside the host)
 are a second question: the stack sampler should run through an opening (runs 794-798 loaded
 the save into gameplay instead).
@@ -139,6 +142,7 @@ game thread's frame (the frame profile's `inside the host`).
 
 ## 7. What to do next, in order
 
-1. §3: chain the title's buffers into few kernel submissions (exp 0163).
+1. §3: chains across the game thread's ioctls and through `COND_EXEC` buffers (exp 0163 did
+   the per-call chains; F213).
 2. Sample the opening's second-long stalls with `eu-sampler.sh` (likely §5).
 3. §4: measure the pinned set against the title's allocation and make the eager heaps lazy.

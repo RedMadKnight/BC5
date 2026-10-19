@@ -1,0 +1,31 @@
+== 08:58:36 load 8.29 memavail 1543 MiB swapused 1513 MiB:
+== 08:58:38 load 8.29 memavail 1524 MiB swapused 1509 MiB: game-main=58% bc5-ring=19% Job Lo 0=7% Job Lo 1=7% Job Lo 2=7% Job Lo 3=7% Job Lo 4=7% Job Hi 0=7% Job Hi 1=7% Job Hi 2=8% Job Hi 3=8% Job Hi 4=7% Render Thread=106% bc5-cq0=7% bc5-apr-q5=5%
+== 08:58:39 load 8.29 memavail 1503 MiB swapused 1504 MiB: game-main=23% bc5-ring=20% Job Hi 0=5% Job Hi 1=5% Archive Asset I=70% Render Thread=86% bc5-apr-q5=8%
+== 08:58:40 load 8.29 memavail 1501 MiB swapused 1500 MiB: bc5-ring=22% Archive Asset I=116% Render Thread=67%
+== 08:58:41 load 7.94 memavail 1500 MiB swapused 1507 MiB: game-main=9% bc5-ring=20% Archive Asset I=111% Render Thread=68%
+== 08:58:42 load 7.94 memavail 1549 MiB swapused 1538 MiB: bc5-ring=20% Archive Asset I=114% Render Thread=64%
+== 08:58:44 load 7.94 memavail 1562 MiB swapused 1539 MiB: bc5-ring=20% Archive Asset I=113% Render Thread=75%
+== 08:58:45 load 7.94 memavail 1678 MiB swapused 1640 MiB: bc5-ring=23% Archive Asset I=114% Render Thread=71% PulseMainloop=5%
+== 08:58:46 load 7.71 memavail 1715 MiB swapused 1669 MiB: game-main=17% bc5-ring=17% Archive Asset I=92% Render Thread=95%
+== 08:58:47 load 7.71 memavail 1695 MiB swapused 1660 MiB: game-main=80% bc5-ring=7% Render Thread=113% AK::BankMgr=7%
+== 08:58:49 load 7.71 memavail 1639 MiB swapused 1655 MiB: game-main=92% Render Thread=118% Coherent Thread=6%
+== 08:58:50 load 7.71 memavail 1605 MiB swapused 1646 MiB: game-main=52% bc5-ring=16% Job Lo 0=5% Render Thread=95% Coherent Thread=26%
+== 08:58:51 load 7.41 memavail 1668 MiB swapused 1646 MiB: game-main=11% bc5-ring=15% Render Thread=90% Coherent Thread=23%
+== 08:58:52 load 7.41 memavail 1631 MiB swapused 1645 MiB: game-main=46% bc5-ring=19% Job Lo 0=5% Job Lo 3=5% Render Thread=95% Coherent Thread=16%
+== 08:58:53 load 7.41 memavail 1637 MiB swapused 1643 MiB: game-main=113% bc5-ring=6% Archive Resolve=5% Render Thread=120%
+== 08:58:55 load 7.41 memavail 1587 MiB swapused 1638 MiB: kyty-gpu=5% game-main=81% bc5-ring=20% Job Hi 0=5% Job Hi 1=6% Job Hi 2=6% Job Hi 3=7% Job Hi 4=6% Render Thread=102% AK::AudioMgr=29% PulseMainloop=5% bc5-apr-q3=5%
+== 08:58:56 load 7.86 memavail 1568 MiB swapused 1641 MiB: game-main=97% bc5-ring=7% Archive Resolve=6% Render Thread=115% AK::AudioMgr=23% bc5-apr-q3=7%
+== 08:58:57 load 7.86 memavail 1291 MiB swapused 1641 MiB: game-main=96% bc5-ring=7% Render Thread=110% AK::AudioMgr=23%
+== 08:58:59 load 7.86 memavail 1003 MiB swapused 1640 MiB: game-main=103% bc5-ring=11% Render Thread=109% AK::AudioMgr=23% bc5-apr-q3=6%
+== 08:59:00 load 7.86 memavail 939 MiB swapused 1649 MiB: game-main=103% Render Thread=112% AK::AudioMgr=31% PulseMainloop=8% bc5-apr-q3=12%
+== 08:59:01 load 7.63 memavail 909 MiB swapused 1648 MiB: kyty-gpu=8% game-main=59% bc5-ring=23% Job Lo 0=5% Job Lo 1=6% Job Lo 2=5% Job Lo 3=6% Job Hi 0=7% Job Hi 1=9% Job Hi 2=8% Job Hi 3=8% Job Hi 4=8% Job Bk 0=6% Job Bk 1=6% Job Bk 2=5% Job Bk 3=6% Job Bk 4=6% Archive Resolve=5% Render Thread=94% bc5-cq0=5% AK::AudioMgr=34%
+== 08:59:02 load 7.63 memavail 719 MiB swapused 1736 MiB: game-main=108% bc5-ring=9% Job Hi 0=5% Job Hi 2=5% Render Thread=133% AK::AudioMgr=57% PulseMainloop=22% bc5-apr-q3=9%
+== 08:59:04 load 7.63 memavail 785 MiB swapused 1838 MiB: game-main=89% bc5-ring=8% Job Hi 0=6% Job Hi 1=7% Job Hi 2=6% Job Hi 3=6% Job Hi 4=6% Render Thread=112% AK::AudioMgr=73% PulseMainloop=9% bc5-apr-q3=5%
+== 08:59:05 load 7.63 memavail 710 MiB swapused 1861 MiB: kyty-gpu=5% game-main=84% bc5-ring=15% Job Lo 1=5% Job Hi 0=9% Job Hi 1=8% Job Hi 2=9% Job Hi 3=9% Job Hi 4=8% Render Thread=103% AK::AudioMgr=99% bc5-apr-q3=10%
+== 08:59:06 load 8.30 memavail 731 MiB swapused 1870 MiB: kyty-gpu=6% game-main=67% bc5-ring=15% Job Lo 0=5% Job Lo 3=6% Job Lo 4=5% Job Hi 0=11% Job Hi 1=11% Job Hi 2=10% Job Hi 3=11% Job Hi 4=12% Job Bk 0=5% Job Bk 2=5% Job Bk 3=5% Job Bk 4=5% Render Thread=101% bc5-cq0=5% AK::AudioMgr=101%
+== 08:59:07 load 8.30 memavail 716 MiB swapused 1867 MiB: kyty-gpu=6% game-main=70% bc5-ring=27% Job Hi 0=8% Job Hi 1=8% Job Hi 2=9% Job Hi 3=8% Job Hi 4=8% Render Thread=94% AK::AudioMgr=68%
+== 08:59:09 load 8.30 memavail 691 MiB swapused 1866 MiB: kyty-gpu=8% game-main=59% bc5-ring=18% Job Lo 1=5% Job Lo 2=5% Job Lo 4=5% Job Hi 0=13% Job Hi 1=13% Job Hi 2=12% Job Hi 3=12% Job Hi 4=13% Job Bk 0=6% Job Bk 1=7% Job Bk 2=6% Job Bk 3=7% Job Bk 4=7% Render Thread=104% bc5-cq0=6% AK::AudioMgr=61%
+== 08:59:10 load 8.30 memavail 728 MiB swapused 1866 MiB: kyty-gpu=9% game-main=54% bc5-ring=21% Job Lo 3=5% Job Hi 0=11% Job Hi 1=12% Job Hi 2=13% Job Hi 3=13% Job Hi 4=12% Job Bk 0=6% Job Bk 1=6% Job Bk 2=7% Job Bk 3=6% Job Bk 4=6% Render Thread=105% bc5-cq0=7% AK::AudioMgr=41%
+== 08:59:11 load 8.36 memavail 713 MiB swapused 1864 MiB: kyty-gpu=9% game-main=52% bc5-ring=19% Job Lo 0=5% Job Lo 1=5% Job Lo 2=5% Job Hi 0=14% Job Hi 1=12% Job Hi 2=12% Job Hi 3=12% Job Hi 4=12% Job Bk 0=7% Job Bk 1=7% Job Bk 2=7% Job Bk 3=6% Job Bk 4=7% Render Thread=106% bc5-cq0=5% AK::AudioMgr=37%
+== 08:59:13 load 8.36 memavail 671 MiB swapused 1834 MiB: kyty-gpu=8% game-main=55% bc5-ring=18% Job Lo 1=5% Job Lo 4=5% Job Hi 0=11% Job Hi 1=13% Job Hi 2=12% Job Hi 3=13% Job Hi 4=12% Job Bk 0=7% Job Bk 1=7% Job Bk 2=5% Job Bk 3=8% Job Bk 4=7% Render Thread=105% bc5-cq0=6% AK::AudioMgr=35%
+== 08:59:14 load 8.36 memavail 645 MiB swapused 1799 MiB: kyty-gpu=9% game-main=58% bc5-ring=22% Job Lo 0=5% Job Lo 3=5% Job Hi 0=13% Job Hi 1=12% Job Hi 2=13% Job Hi 3=12% Job Hi 4=13% Job Bk 0=7% Job Bk 1=7% Job Bk 2=8% Job Bk 3=6% Job Bk 4=7% Render Thread=103% bc5-cq0=6% AK::AudioMgr=35%
