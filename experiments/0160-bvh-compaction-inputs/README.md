@@ -307,3 +307,20 @@ experiment could do.
 - The "no improvement" of the sound and picture is not this fault: 466 learned-window passes in five
   minutes, one of them slow (600 ms); the frame profile around t 170 s shows 100 ms frames with 50 ms of
   host memory sync per frame (the F203/F206 territory), which nothing in this experiment changes.
+- *14:52, the maintainer's sixth session (eight minutes; "hangs at the transitions in-game ↔ gameplay,
+  the delays and speed-ups all the time"):* capture `play-20261019-1452`. **No GPU hang this time**: no
+  fence timeout, no ring reset, no probe dump; the engine's address-0 stream again from journal t 187 s
+  to the end (t 480 s), non-fatal. The "hangs" are two stalls of the title's own thread *outside* the
+  host — 1,708 ms at t 118.5 s and 2,091 ms at t 475.1 s (frame profile: inside the host 63 / 37 ms,
+  GPU busy 34 / 15 ms, "outside" 1,644 / 2,054 ms) — the transitions' loading, not graphics; a third of
+  553 ms at t 159 s is half host sync (179 ms + 49 ms of hints). The root hang-dump fired at the first
+  fault (14:55:02, `faultdump-next.txt`): the CP was idle (IB1/IB2 sizes 0, no active waves), the
+  `WD_*_BUF_BASE`, `VGT_TF_MEMORY_BASE` and ring-size registers all 0 read by root — so the engine's read
+  from 0 is short and over within the watcher's 50 ms, and the console-side bases really are 0 here.
+  The faults come in pairs about 30 ms apart (one per frame) once the stream starts.
+- The delays and speed-ups are the frame pacing, not this fault: 12,814 frames, 80 % under 40 ms, 1,060
+  of 70–150 ms and 65 of 150–500 ms; the slow frames spend 54 ms in the host (34 ms of it the memory
+  sync on the game thread) and 33 ms in the title; per 30 s the mean frame swings between 26 and 74 ms
+  (the 210–240 s window: 74 ms, host 41 ms). That is the host sync of F203/F206, outside this experiment.
+  Also seen: 2,273 refused maps of the zero window at VA 0 in eight minutes (the scratch retry logs one in
+  256) — harmless, worth remembering the refusal instead of retrying.
