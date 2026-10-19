@@ -183,3 +183,21 @@ GS/NGG rings), and read the consumers 0x909977100 / 0x90997a500 for what they em
   kernel side is `amdgpu.noretry=1` (the engine gets a NACK and reads zeros, as it does above 0x10000)
   — to be tested next (run 788 without the skip), together with `amdgpu.lockup_timeout` back at its
   default, since 10 s let a repeated fault take the box down (run 785).
+- *Run 788* (`amdgpu.noretry=1`, `lockup_timeout` back at default, zero pages above 64 KiB, the
+  compaction running, seven minutes like run 735): 17 fence timeouts with reopens and 26 failed
+  submissions, the kernel's ring resets succeeded every time (the box stayed up), the faults still at
+  pages 0x0–0x5000 (the first 64 KiB), the opening a crawl as in runs 638–639. The no-retry mode does
+  not make the engine's read of the unmappable first 64 KiB survivable; the skip stays. `amdgpu.noretry=1`
+  has no further use and should go back to the default (it changes how shader faults behave in every
+  other experiment).
+
+**Verdict (continued).** The program's inputs are correct; the fault is the geometry engine reading the
+first 64 KiB of GPU address space (and, before the zero-page fix, ~200 KiB) at any draw of the night
+scene's first frames once the compaction's output exists, through a base that is 0 here and none of the
+readable registers (WD index/position/sideband buffers, TF ring, ES/GS rings all read 0 while the job is
+in flight). User space cannot map those 64 KiB (amdgpu's reserved bottom), retry-less faults still stall
+the engine, and a longer kernel timeout lets a repeat take the machine down. Left for the host: the
+zero pages above 64 KiB (kept, generic) and the skip (diagnostic). Left to find: which GE base register
+the console's system programs — only writable as root (`umr -w` of the WD buffer bases to a mapped
+buffer, one per run) or by reading the console driver's initialisation, neither of which this
+experiment could do.
