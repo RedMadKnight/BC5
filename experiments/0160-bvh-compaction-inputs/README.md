@@ -397,3 +397,11 @@ kernel ring timeouts from journal t ≈ 127–145 s every 16 s. Runs 815–828 o
 - State of the launchers: `BC5_DIRECT_SKIP_PGM=11d049aa00,11d04a6000,909974400` (all three pkg launchers).
   With the compaction skipped the other two traversal variants are harmless (834), so they are not added.
   Unskipping the compaction needs the traversal fixed, not another address on the list.
+- **Caveat (F235, exp 0178, the parent session, 21:4x):** since about 17:57 the box runs the second title
+  1.5–2× slower for any build (intro 17.9–20.0 flips/s against 27.5–29.7 in every session before; the
+  start screen 24–26 against 41–50), and the only event on record is the looping watcher's `umr -O
+  halt_waves` dump at 17:57:17–18 (the one with "Cannot access system ram" errors) — from the loop this
+  experiment armed at 14:17. So every fps or timing number from the box after 17:57 (runs 830–838, the
+  14:52 session excepted) is off by that factor, and no `halt_waves` dump is to be run until the
+  maintainer reboots and the speed is measured again. The hang results above (what hangs, which program
+  loops, 834 clean) do not depend on the speed.
