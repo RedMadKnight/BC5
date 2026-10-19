@@ -257,6 +257,16 @@ cmake --build ~/bc5-work/kytyplus-build --target kyty_emulator -j8
 
 The emulator is `~/bc5-work/kytyplus-build/src/kyty_emulator`.
 
+#### Build from scratch
+
+Steps 3 and 4 as one idempotent script, [`tools/scripts/bc5-build.sh`](tools/scripts/bc5-build.sh). It clones or fast-forwards this repository into `~/src/bc5`, clones KytyPlus at `f266548` into `~/src/KytyPlus` (or checks it out there) and applies the patch, then builds the backend into `~/bc5-work/backend-ubuntu` and `kyty_emulator` into `~/bc5-work/kytyplus-build` inside the `ubuntu` distrobox with the flags above. A re-run only redoes what changed. Run it on the box from any copy of the script, after steps 1 and 2:
+
+```bash
+bash ~/src/bc5/tools/scripts/bc5-build.sh
+```
+
+It refuses to start with less than 15 GB free, waits while an emulator is running before replacing the binary, keeps the previous one as `kyty_emulator.prev`, and prints the binary's timestamp and size and the commits used. Local changes in either checkout are saved to a diff file under `~/bc5-work` (and a `git stash` for `~/src/bc5`) before the trees are brought to origin `main` and `f266548` + patch, never dropped silently. Everything goes to `~/bc5-work/bc5-build.log`; a failure exits non-zero and names the log. `BC5_BUILD_KEEP_KYTY=1` builds the KytyPlus tree as it is (host experiments), `BC5_BUILD_MOUNT=1` also builds `bc5-mount`.
+
 ### 5. The game
 
 You need your own copy, dumped and decrypted on your own console, in one of the formats under [Games and formats](#games-and-formats). A container is mounted read-only:
