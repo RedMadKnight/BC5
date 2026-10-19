@@ -324,3 +324,15 @@ experiment could do.
   (the 210–240 s window: 74 ms, host 41 ms). That is the host sync of F203/F206, outside this experiment.
   Also seen: 2,273 refused maps of the zero window at VA 0 in eight minutes (the scratch retry logs one in
   256) — harmless, worth remembering the refusal instead of retrying.
+- **Warning (18:40, found by the parent session): the looping hang watcher manufactures the hangs it was
+  armed for.** `bc5-gpu-hang-watch` halts the waves (`umr -O halt_waves`) whenever the gfx ring's fence
+  stalls 0.6 s, and ordinary play has such stalls that recover on their own (a 1.0 s GPU-busy frame at
+  t 143 s of run 821 played on). With the watcher armed every dump was followed about a second later by a
+  kernel ring timeout and reset: run 831 (18:30) has dumps at 18:32:07, :22, :38, :54, 18:33:13, :29, :45
+  and ring timeouts one second after each; run 830 the same from 18:10:17; and it fired in the
+  maintainer's own sessions (17:53–18:03), freezing the picture for each dump — part of the "freezes then
+  races" reported that afternoon. The loop was stopped at 18:40 (36 ring timeouts in the kernel log since
+  it was armed). Lesson: arm the watcher only for a dedicated hang-hunting run, never during the
+  maintainer's play or other sessions' measurements, and read registers without `halt_waves` first.
+  The 13:54 and 14:52 sessions above predate the loop (armed 14:17; the 14:52 session had no stall, so
+  no dump and no induced reset).
