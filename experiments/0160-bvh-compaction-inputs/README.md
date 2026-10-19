@@ -367,3 +367,33 @@ kernel ring timeouts from journal t ≈ 127–145 s every 16 s. Runs 815–828 o
   from a dedicated run (836, the watcher armed only for it), not yet possible: the box was taken at 19:38.
 - The watcher fired in none of these runs (not armed since 18:40); run 834's clean 100 s shows the
   18:02 save plays once the second traversal copy is skipped.
+- **Runs 836–838 (20:05–20:20, the box handed over by the parent session; the watcher armed only for 836
+  and 838, stopped after each): with the compaction running, every compiled variant of the reflection
+  traversal loops forever on the same per-frame tree.**
+  - Run 836 (`BC5_DIRECT_SKIP_PGM=11d049aa00,11d04a6000`, as 835): stall at 20:07:56, 33 waves at
+    PC 0x11d040f43c–f680 — program **0x11d040e200** (the probe's `cs 0000000011d040e2`, two dispatches in
+    the 2,893-dword buffer), code at +0x123c–0x1480: the F113 loop again (`ds_read`/`scratch_load` stack,
+    `buffer_load_dwordx2 … idxen` link lookups through the V# in s[32:35], `image_bvh_intersect_ray`,
+    `s_cbranch_execnz` back). The wave's V# s[32:35]: base 0x122ed6e300, stride 8, 0x6de0 (28,128)
+    records — a PSR_BVHL tree in the per-frame ring (F184); s[16:19] the hardware BVH descriptor for it.
+  - Run 837 (`11d049aa00,11d04a6000,11d040e200`, no watcher): still hangs from t 130.4 s (12 fence
+    timeouts, every 16 s); 4,097+ dispatches of 0x11d040e200 dropped. Run 838 (same, watcher): stall at
+    20:18:12, 4 waves at PC 0x11d040d6f0/d998 — program **0x11d040c900**, the same loop at +0xdf0–0x1098,
+    the same V# shape (base 0x122e7e7e00, stride 8, 0x6de0 records). So the title carries at least four
+    compiled variants of the traversal (0x11d049aa00, 0x11d04a6000, 0x11d040e200, 0x11d040c900 — the
+    4,735- and 905-line disassemblies are in `~/bc5-work/dis-0160-*.txt`, private), and the one that
+    runs loops.
+  - Run 834 showed the other side: with the compaction skipped the two unskipped variants
+    (0x11d040e200, 0x11d040c900) run through 100 s of gameplay without a hang. **So the compaction's
+    output is what sends the traversals into their endless walk** — the F113–F116/F184 loop depends on
+    the neighbour links the compaction writes (the trees the traversal walks are built from its list by
+    0x909977e00 and the other consumers read in this experiment), and with the links present the walk
+    never ends. The compaction's own inputs were correct (above); its output, or what the consumers
+    make of it, is where the host differs from the console. The geometry engine's address-0 stream is
+    separate and non-fatal (13:54, 14:52, 834).
+  - Caveat from the parent session: since 17:42 the pkg launchers ran a per-second CPU sampler that cut
+    the start screen to ~25 flips/s, so frame times in runs 830–838 are lower than normal; the hang
+    behaviour does not depend on it.
+- State of the launchers: `BC5_DIRECT_SKIP_PGM=11d049aa00,11d04a6000,909974400` (all three pkg launchers).
+  With the compaction skipped the other two traversal variants are harmless (834), so they are not added.
+  Unskipping the compaction needs the traversal fixed, not another address on the list.
