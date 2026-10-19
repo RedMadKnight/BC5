@@ -6855,10 +6855,10 @@ index fe4b332..5f8808d 100644
  
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..6f7c477
+index 0000000..5811133
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,8540 @@
+@@ -0,0 +1,8548 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -10995,9 +10995,17 @@ index 0000000..6f7c477
 +							std::this_thread::sleep_for(std::chrono::microseconds(20));
 +						}
 +						static std::atomic<uint64_t> n_two {0}, n_two_kept {0}, n_two_ok {0}, n_two_split {0}, n_two_lost {0};
++						// Experiment 0173: the time the game's thread spent in these waits, by outcome.
++						static std::atomic<uint64_t> ns_two_kept {0}, ns_two_ok {0}, ns_two_lost {0};
 +						n_two++;
 +						if (split) n_two_split++;
 +						(kept ? n_two_kept : (ok ? n_two_ok : n_two_lost))++;
++						(kept ? ns_two_kept : (ok ? ns_two_ok : ns_two_lost)) += SoftCp::now_ns() - t1;
++						if ((n_two.load() & 0x3ffu) == 0) {
++							journal("two rings, time in the waits: kept for the GPU %.1f ms in %" PRIu64 ", satisfied on the CPU %.1f ms in %" PRIu64 ", not served %.1f ms in %" PRIu64 "\n",
++							        static_cast<double>(ns_two_kept.load()) / 1e6, n_two_kept.load(), static_cast<double>(ns_two_ok.load()) / 1e6, n_two_ok.load(),
++							        static_cast<double>(ns_two_lost.load()) / 1e6, n_two_lost.load());
++						}
 +						if ((n_two.load() & 0x3ffu) == 1 || (!ok && !kept && n_two_lost.load() <= 50)) {
 +							journal("two rings: %s %u dwords waits at %u on 0x%" PRIx64 ": %s after %.2f ms%s (%" PRIu64 " waits: %" PRIu64 " split, %" PRIu64 " kept for the GPU, %" PRIu64 " satisfied, %" PRIu64 " lost)\n",
 +							        kind, num_dwords, i, label, kept ? "kept for the GPU" : (ok ? "satisfied" : "NOT served"), static_cast<double>(SoftCp::now_ns() - t1) / 1e6,
