@@ -6646,10 +6646,10 @@ index e82b93e..6cf1b61 100644
  
  } // namespace Libs::Audio::Ajm
 diff --git a/src/libs/audio.cpp b/src/libs/audio.cpp
-index fe4b332..9b54694 100644
+index fe4b332..acdca33 100644
 --- a/src/libs/audio.cpp
 +++ b/src/libs/audio.cpp
-@@ -10,16 +10,25 @@
+@@ -10,16 +10,27 @@
  #include "kernel/pthread.h"
  #include "kernel/semaphore.h"
  #include "libs/audio_internal.h"
@@ -6671,11 +6671,13 @@ index fe4b332..9b54694 100644
 +#include <cmath>
 +#if KYTY_PLATFORM == KYTY_PLATFORM_LINUX
 +#include <dirent.h> // BC5 (experiment 0180): Bc5RaiseAudioClientThreads
++#include <cerrno>
++#include <sys/resource.h>
 +#endif
  
  namespace Libs::Audio {
  
-@@ -107,8 +116,28 @@ private:
+@@ -107,8 +118,28 @@ private:
  
  		SDL_AudioDeviceID audio_device = 0;
  		SDL_AudioSpec     audio_spec   = {};
@@ -6704,7 +6706,7 @@ index fe4b332..9b54694 100644
  	struct PortIn {
  		bool     used            = false;
  		uint32_t type            = 0;
-@@ -132,6 +161,7 @@ private:
+@@ -132,6 +163,7 @@ private:
  	static const void*     PrepareOutputBuffer(const PortOut& port, const void* data,
  	                                           std::vector<uint8_t>* buffer);
  	static bool            QueueSdlAudio(PortOut* port, const void* data, bool blocking);
@@ -6712,7 +6714,45 @@ index fe4b332..9b54694 100644
  };
  
  static Audio* g_audio = nullptr;
-@@ -236,20 +266,51 @@ bool Audio::OpenSdlDevice(PortOut* port) {
+@@ -224,10 +256,37 @@ SDL_AudioFormat Audio::SdlFormat(Format format) {
+ bool Audio::OpenSdlDevice(PortOut* port) {
+ 	EXIT_IF(port == nullptr);
+ 
++	// BC5 (experiment 0181): SDL's own PipeWire backend first. Through its PulseAudio backend the
++	// sound went SDL -> libpulse ("PulseMainloop") -> pipewire-pulse -> PipeWire; the native backend
++	// is one client stream with PipeWire's real-time data thread in this process. SDL tries
++	// PulseAudio first unless told otherwise; SDL_AUDIODRIVER set by the user still wins.
++	if (std::getenv("SDL_AUDIODRIVER") == nullptr && SDL_GetHint(SDL_HINT_AUDIODRIVER) == nullptr) {
++		SDL_SetHint(SDL_HINT_AUDIODRIVER, "pipewire,pulseaudio,alsa");
++	}
++	// Experiment 0181: PipeWire mixes the title's 7.1 down to the device's channels in this
++	// process; by default it sums the channels, and the second title's loud scenes clipped on a
++	// stereo headset (1116 samples at full scale in the night part of the opening: crackle).
++	// channelmix.normalize scales the mix so that it cannot clip (0 clipped samples, peaks at half
++	// scale). PIPEWIRE_PROPS set by the user still wins.
++	{
++		static std::once_flag once;
++		std::call_once(once, [] {
++			if (std::getenv("PIPEWIRE_PROPS") == nullptr) {
++				setenv("PIPEWIRE_PROPS", "{ channelmix.normalize = true }", 0);
++			}
++		});
++	}
+ 	if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0) {
+ 		LOGF("AudioOut: SDL audio init failed: %s\n", SDL_GetError());
+ 		return false;
+ 	}
++	{
++		static std::atomic<bool> told {false};
++		if (!told.exchange(true)) {
++			const char* d = SDL_GetCurrentAudioDriver();
++			std::fprintf(stderr, "AudioOut: SDL audio driver %s\n", d != nullptr ? d : "?");
++		}
++	}
+ 
+ 	SDL_AudioSpec desired {};
+ 	desired.freq     = static_cast<int>(port->freq);
+@@ -236,20 +295,51 @@ bool Audio::OpenSdlDevice(PortOut* port) {
  	desired.samples  = static_cast<Uint16>(port->samples_num);
  	desired.callback = nullptr;
  
@@ -6768,7 +6808,7 @@ index fe4b332..9b54694 100644
  	return true;
  }
  
-@@ -326,16 +387,183 @@ const void* Audio::PrepareOutputBuffer(const PortOut& port, const void* data,
+@@ -326,16 +416,195 @@ const void* Audio::PrepareOutputBuffer(const PortOut& port, const void* data,
  	return buffer->data();
  }
  
@@ -6929,11 +6969,23 @@ index fe4b332..9b54694 100644
 +	// PCM, before the SDL conversion (port<N>-in.raw: the port's format, channels, rate) and as
 +	// handed to SDL (port<N>-out.raw: the device's), one stderr line describing each.
 +	static const char* dump_dir = BC5_DIAG_ENV("KYTY_BC5_AUDIO_DUMP");
++	// Experiment 0181: KYTY_BC5_AUDIO_DUMP_FROM=<s> starts the dump at that process time (a
++	// cutscene, not the first 40 s), KYTY_BC5_AUDIO_DUMP_SECONDS=<s> sets its length (default 40).
++	static const uint64_t dump_from_us = [] {
++		const char* e = BC5_DIAG_ENV("KYTY_BC5_AUDIO_DUMP_FROM");
++		return e != nullptr ? static_cast<uint64_t>(std::strtoull(e, nullptr, 10)) * 1000000u : 0u;
++	}();
++	static const uint64_t dump_seconds = [] {
++		const char* e = BC5_DIAG_ENV("KYTY_BC5_AUDIO_DUMP_SECONDS");
++		const long  v = e != nullptr ? std::strtol(e, nullptr, 10) : 40;
++		return static_cast<uint64_t>(v > 0 ? v : 40);
++	}();
 +	struct DumpFile { FILE* f = nullptr; uint64_t bytes = 0; bool closed = false; };
 +	static std::map<const PortOut*, std::pair<DumpFile, DumpFile>> dumps;
 +	static std::mutex                                                  dumps_mutex;
 +	auto dump = [&](DumpFile& d, const char* suffix, const void* data, uint32_t size, int ch, int freq, const char* fmt) {
 +		if (dump_dir == nullptr || port->pad_route != 0 || d.closed) return;
++		if (d.f == nullptr && LibKernel::KernelGetProcessTime() < dump_from_us) return;
 +		if (d.f == nullptr) {
 +			char path[512];
 +			std::snprintf(path, sizeof(path), "%s/port-%p-%s.raw", dump_dir, static_cast<const void*>(port), suffix);
@@ -6943,7 +6995,7 @@ index fe4b332..9b54694 100644
 +		}
 +		std::fwrite(data, 1, size, d.f);
 +		d.bytes += size;
-+		const uint64_t limit = static_cast<uint64_t>(freq) * ch * 4 * 40; // 40 s at 4 bytes a sample
++		const uint64_t limit = static_cast<uint64_t>(freq) * ch * 4 * dump_seconds; // at 4 bytes a sample
 +		if (d.bytes >= limit) { std::fclose(d.f); d.f = nullptr; d.closed = true; std::fprintf(stderr, "audio dump: %s closed at %" PRIu64 " bytes\n", suffix, d.bytes); }
 +	};
 +	{
@@ -6953,7 +7005,7 @@ index fe4b332..9b54694 100644
  
  	std::vector<uint8_t> convert_buffer;
  	const void*          queue_data = prepared_data;
-@@ -343,7 +571,7 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -343,7 +612,7 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  
  	SDL_AudioCVT cvt {};
  	const int    cvt_result =
@@ -6962,7 +7014,7 @@ index fe4b332..9b54694 100644
  	                      static_cast<int>(port->freq), port->audio_spec.format,
  	                      port->audio_spec.channels, port->audio_spec.freq);
  
-@@ -368,6 +596,46 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -368,6 +637,46 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  		queue_size = static_cast<uint32_t>(cvt.len_cvt);
  	}
  
@@ -7009,7 +7061,7 @@ index fe4b332..9b54694 100644
  	if (blocking) {
  		// More aggressive buffer management to prevent audio issues
  		// during heavy GPU load (common in gameplay vs cutscene)
-@@ -378,18 +646,45 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -378,18 +687,45 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  		                   : 2u;
  		const auto min_queued_size = queue_size * std::clamp(buffers, 2u, 8u); // Smaller max
  		const auto wait_start      = LibKernel::KernelGetProcessTime();
@@ -7057,7 +7109,7 @@ index fe4b332..9b54694 100644
  	if (SDL_QueueAudio(port->audio_device, queue_data, queue_size) < 0) {
  		LOGF("AudioOut: SDL_QueueAudio failed: %s\n", SDL_GetError());
  		return false;
-@@ -398,7 +693,53 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -398,7 +734,56 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  	return true;
  }
  
@@ -7067,18 +7119,19 @@ index fe4b332..9b54694 100644
 +// nice -15. When it waited for a CPU the server ran dry (a gap) and the host's queue backed up
 +// until the 100-ms limit below cleared it (a jump): the cutscene's sound slowed and sped up. It
 +// gets the same -15 (SDL_LinuxSetThreadPriority: setpriority, else RealtimeKit1), once a port is
-+// open. KYTY_BC5_AUDIO_PRIORITY=0 leaves it alone.
++// open. Experiment 0181: with SDL's native PipeWire backend the stream runs on SDL's PipeWire thread
++// loops ("SDLAudioP<n>"), which PipeWire's own real-time module cannot raise from the container;
++// they get -15 too. Every open looks again (each device brings its own thread), and a thread
++// already at -15 is left alone. KYTY_BC5_AUDIO_PRIORITY=0 leaves them all.
 +static void Bc5RaiseAudioClientThreads() {
-+	static std::atomic<bool> done {false};
-+	const char*              e = std::getenv("KYTY_BC5_AUDIO_PRIORITY");
-+	if ((e != nullptr && std::strcmp(e, "0") == 0) || done.load()) {
++	const char* e = std::getenv("KYTY_BC5_AUDIO_PRIORITY");
++	if (e != nullptr && std::strcmp(e, "0") == 0) {
 +		return;
 +	}
 +	DIR* d = opendir("/proc/self/task");
 +	if (d == nullptr) {
 +		return;
 +	}
-+	bool found = false;
 +	while (const dirent* de = readdir(d)) {
 +		if (de->d_name[0] < '0' || de->d_name[0] > '9') continue;
 +		char path[64];
@@ -7088,17 +7141,19 @@ index fe4b332..9b54694 100644
 +		if (f == nullptr) continue;
 +		const bool got = std::fgets(comm, sizeof(comm), f) != nullptr;
 +		std::fclose(f);
-+		if (got && std::strncmp(comm, "PulseMainloop", 13) == 0) {
++		if (got && (std::strncmp(comm, "PulseMainloop", 13) == 0 || std::strncmp(comm, "SDLAudioP", 9) == 0)) {
 +			const long tid = std::strtol(de->d_name, nullptr, 10);
-+			const int  rc  = SDL_LinuxSetThreadPriority(tid, -15);
-+			std::fprintf(stderr, "AudioOut: PulseMainloop thread %ld at nice -15%s\n", tid, rc == 0 ? "" : " refused");
-+			found = true;
++			errno          = 0;
++			const int now  = getpriority(PRIO_PROCESS, static_cast<id_t>(tid));
++			if (errno == 0 && now <= -15) {
++				continue;
++			}
++			comm[std::strcspn(comm, "\n")] = 0;
++			const int rc = SDL_LinuxSetThreadPriority(tid, -15);
++			std::fprintf(stderr, "AudioOut: %s thread %ld at nice -15%s\n", comm, tid, rc == 0 ? "" : " refused");
 +		}
 +	}
 +	closedir(d);
-+	if (found) {
-+		done.store(true); // a port opened before SDL's backend made the thread looks again next time
-+	}
 +}
 +#endif
 +
@@ -7111,7 +7166,7 @@ index fe4b332..9b54694 100644
  	Common::LockGuard lock(m_mutex);
  
  	for (int id = 0; id < OUT_PORTS_MAX; id++) {
-@@ -428,7 +769,7 @@ Audio::Id Audio::AudioOutOpen(int type, uint32_t samples_num, uint32_t freq, For
+@@ -428,7 +813,7 @@ Audio::Id Audio::AudioOutOpen(int type, uint32_t samples_num, uint32_t freq, For
  				port.volume[i] = 32768;
  			}
  
@@ -7120,7 +7175,7 @@ index fe4b332..9b54694 100644
  				// KytyPlus diagnostic: OpenSdlDevice() may fail (no host audio device,
  				// unsupported sample rate/format, or SDL init failure). The return is
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
-@@ -568,6 +909,45 @@ uint32_t Audio::AudioOutOutputs(OutputParam* params, uint32_t num, bool blocking
+@@ -568,6 +953,45 @@ uint32_t Audio::AudioOutOutputs(OutputParam* params, uint32_t num, bool blocking
  		m_out_ports[params[i].handle.GetId()].last_output_time = LibKernel::KernelGetProcessTime();
  	}
  
@@ -20419,7 +20474,7 @@ index 343045e..db295f0 100644
  		        info->access_violation_vaddr)) {
  			return true;
 diff --git a/src/main.cpp b/src/main.cpp
-index c44d32f..603c752 100644
+index c44d32f..41e5587 100644
 --- a/src/main.cpp
 +++ b/src/main.cpp
 @@ -16,6 +16,7 @@
@@ -20510,7 +20565,7 @@ index c44d32f..603c752 100644
 +	    "KYTY_BC5_FPS_COUNTER", "KYTY_BC5_INPUT_RECORD", "KYTY_BC5_INPUT_TRACE", "KYTY_BC5_JSON_TRACE",
 +	    "KYTY_BC5_LOG_WAITS", "KYTY_BC5_MAP_STATS", "KYTY_BC5_MEASURE", "KYTY_BC5_MOTION_TRACE",
 +	    "KYTY_BC5_RANGE_WATCH", "KYTY_BC5_SAVE_TRACE", "KYTY_BC5_VIDEOOUT_TRACE", "KYTY_BC5_VMA_TRACE",
-+	    "KYTY_BC5_THREAD_TRACE"};
++	    "KYTY_BC5_THREAD_TRACE", "KYTY_BC5_AUDIO_DUMP_FROM", "KYTY_BC5_AUDIO_DUMP_SECONDS"};
 +	for (const char* name: kDiagnostic) {
 +		unsetenv(name);
 +	}

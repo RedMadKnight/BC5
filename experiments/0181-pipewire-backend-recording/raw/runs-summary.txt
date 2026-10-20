@@ -1,0 +1,18 @@
+BC5 experiment 0181, 2026-10-20. The second title's opening, New Game in slot 3, saves restored.
+
+Opening A/B (opening-run.sh of exp 0180, normal build, hold 1000 ms, t 150-300 s):
+opW1  PipeWire    0 slow seconds, 0 clears; 37.6 flips/s; pw errors stream 0, headset 0; quantum 512 (316 s), 256 (29 s)
+opP1  PulseAudio  0 slow seconds, 0 clears; 38.0 flips/s; pw errors 0/0; quantum 256 (338 s)
+opW2  PipeWire    0 slow seconds, 0 clears; 39.3 flips/s; pw errors stream 1, headset 0; quantum 512 (311 s)
+opP2  PulseAudio  0 slow seconds, 0 clears; 37.7 flips/s; pw errors 0/0; quantum 256 (337 s)
+
+Captures (capture-run.sh: title dump t 150-300 s + headset recording; align.py lag drift over the dump):
+c1  PipeWire, normalized, pw-record   host pushed 150.40 s in 150 s, 0 clears; drift -400 ms (steps at 165-170, 195, 245-270, 290); recorder errors not counted; clipped 0
+c2  PipeWire, normalized, pw-record   recorder errors 138, headset 0; drift -190 ms
+c3  PulseAudio, pw-record             recorder errors 284, headset 0; drift -380 ms; clipped 1116 (peak 32768)
+c4  PipeWire, normalized, parecord    recorder errors 0, headset 0; drift 0 ms over the whole cutscene (one window at 270 s a weak match, corr 0.36); clipped 0 (peak 17953)
+c1 clipped 0 (peak 15433)
+
+Final recording (record-final.sh f1, lean build, PipeWire, normalized, parecord): 404.1 s, recorder errors 0,
+headset errors 0, 61 of 61 inputs run, peak 15559, clipped 0; SDLAudioP threads at nice -15.
+Exp 0180's recording (pw-record): ~1000 clipped samples at 225-255 s, and recorder losses.

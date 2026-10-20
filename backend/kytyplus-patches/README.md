@@ -175,6 +175,13 @@ guest's thread priorities are applied: up to 299 → nice −15 (the second titl
 decode threads), 733 and above → nice +5, the rest 0. This goes through
 `SDL_LinuxSetThreadPriority` (setpriority, else RealtimeKit1). `KYTY_BC5_GUEST_PRIORITY=0` leaves
 every thread at 0, and `KYTY_BC5_THREAD_TRACE=1` prints each thread's priority and the nice it got.
+Experiment 0181: SDL's driver order is `pipewire,pulseaudio,alsa` unless `SDL_AUDIODRIVER` is set, and
+the driver in use is printed once. The native backend needs `libpipewire-0.3-dev`,
+`libpipewire-0.3-modules` and `pipewire-bin` in the build container (`bc5-build.sh` installs them).
+SDL's PipeWire threads (`SDLAudioP<n>`) get nice −15 like its PulseAudio ones.
+`PIPEWIRE_PROPS` defaults to `{ channelmix.normalize = true }`, so the downmix of the title's 7.1 to a
+stereo device cannot clip. `KYTY_BC5_AUDIO_DUMP_FROM=<s>` and `KYTY_BC5_AUDIO_DUMP_SECONDS=<s>` place
+the audio dump on a cutscene.
 `KYTY_BC5_SAVEDATA_DIR=<dir>` puts the save data memory file (`<title>/sce_sdmemory/memory.dat`)
 under that directory instead of `_SaveData` in the working directory, so that runs started in
 different directories share one save.

@@ -153,7 +153,7 @@ cat > "$INNER" <<INNER_EOF
 set -euo pipefail
 say() { printf '[bc5-build %s] %s\n' "\$(date +%H:%M:%S)" "\$*"; }
 # The package list of README "How to start", 2 (the KytyPlus and BC5 build dependencies).
-PKGS="git cmake pkg-config cargo fuse3 libfuse3-dev libdrm-dev clang lld ninja-build glslang-tools libasound2-dev libdbus-1-dev libgl1-mesa-dev libpulse-dev libudev-dev libwayland-dev libx11-dev libxcursor-dev libxext-dev libxfixes-dev libxi-dev libxkbcommon-dev libxrandr-dev libxss-dev wayland-protocols libedit-dev libevdev-dev libjack-dev libopenal-dev libpng-dev libsdl2-dev libsndio-dev libssl-dev libvulkan-dev zlib1g-dev"
+PKGS="git cmake pkg-config cargo fuse3 libfuse3-dev libdrm-dev clang lld ninja-build glslang-tools libasound2-dev libdbus-1-dev libgl1-mesa-dev libpulse-dev libpipewire-0.3-dev libpipewire-0.3-modules pipewire-bin libudev-dev libwayland-dev libx11-dev libxcursor-dev libxext-dev libxfixes-dev libxi-dev libxkbcommon-dev libxrandr-dev libxss-dev wayland-protocols libedit-dev libevdev-dev libjack-dev libopenal-dev libpng-dev libsdl2-dev libsndio-dev libssl-dev libvulkan-dev zlib1g-dev"
 say "apt packages (no-op when installed)"
 if ! sudo apt-get install --no-install-recommends --yes \$PKGS > "$WORK/bc5-build-apt.log" 2>&1; then
   say "apt-get install failed (no network?); continuing with what is installed, see $WORK/bc5-build-apt.log"
@@ -166,7 +166,7 @@ cmake -S "$BC5_SRC/backend" -B "$BACKEND_BUILD" -G Ninja -DCMAKE_BUILD_TYPE=Rele
 say "backend: build"
 cmake --build "$BACKEND_BUILD" -j$JOBS
 say "emulator: cmake configure"
-cmake -S "$KYTY_SRC" -B "$EMU_BUILD" -G Ninja -DCMAKE_BUILD_TYPE=Release \\
+cmake -S "$KYTY_SRC" -B "$EMU_BUILD" -U "*PIPEWIRE*" -G Ninja -DCMAKE_BUILD_TYPE=Release \\
   -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DKYTY_BUILD_LAUNCHER=OFF \\
   -DKYTY_BC5_BACKEND_SRC="$BC5_SRC/backend" -DKYTY_BC5_BACKEND_BUILD="$BACKEND_BUILD" > "$WORK/bc5-build-emulator-configure.log" 2>&1 \\
   || { tail -30 "$WORK/bc5-build-emulator-configure.log"; say "emulator configure failed"; exit 1; }
@@ -176,7 +176,7 @@ if [ "$BC5_BUILD_LEAN" = 1 ]; then
   # Experiment 0177: the same tree without tracing, journals and measurements, next to the normal
   # build (the "BC5 emulator (lean)" shortcut, BC5_LEAN=1 in the play-*.sh launchers).
   say "lean emulator: cmake configure (KYTY_BC5_LEAN=ON)"
-  cmake -S "$KYTY_SRC" -B "$LEAN_BUILD" -G Ninja -DCMAKE_BUILD_TYPE=Release \\
+  cmake -S "$KYTY_SRC" -B "$LEAN_BUILD" -U "*PIPEWIRE*" -G Ninja -DCMAKE_BUILD_TYPE=Release \\
     -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DKYTY_BUILD_LAUNCHER=OFF \\
     -DKYTY_BC5_BACKEND_SRC="$BC5_SRC/backend" -DKYTY_BC5_BACKEND_BUILD="$BACKEND_BUILD" -DKYTY_BC5_LEAN=ON > "$WORK/bc5-build-lean-configure.log" 2>&1 \\
     || { tail -30 "$WORK/bc5-build-lean-configure.log"; say "lean emulator configure failed"; exit 1; }
