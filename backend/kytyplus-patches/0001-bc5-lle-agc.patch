@@ -2232,7 +2232,7 @@ index 0000000..c245d62
 +
 +#endif // KYTY_GRAPHICS_PRESENTATION_SETTINGS_OVERLAY_H_
 diff --git a/src/graphics/presentation/videoOut.cpp b/src/graphics/presentation/videoOut.cpp
-index f980320..378aba6 100644
+index f980320..b982450 100644
 --- a/src/graphics/presentation/videoOut.cpp
 +++ b/src/graphics/presentation/videoOut.cpp
 @@ -1,3 +1,9 @@
@@ -2604,10 +2604,20 @@ index f980320..378aba6 100644
  
  	if (status == nullptr) {
  		return VIDEO_OUT_ERROR_INVALID_ADDRESS;
-@@ -1518,6 +1744,10 @@ KYTY_SYSV_ABI int VideoOutGetFlipStatus(int handle, VideoOutFlipStatus* status)
+@@ -1518,6 +1744,20 @@ KYTY_SYSV_ABI int VideoOutGetFlipStatus(int handle, VideoOutFlipStatus* status)
  	}
  
  	DriverState().GetFlipQueue().GetFlipStatus(*ctx, *status);
++	// BC5 (experiment 0186): KYTY_BC5_FLIP_STATUS_TRACE=1, one stderr line per flip-status read: what the
++	// title sees (count, the presented flip's process time, flipArg, queue and pending counts).
++	{
++		static const bool fs_trace = BC5_DIAG_ENV("KYTY_BC5_FLIP_STATUS_TRACE") != nullptr;
++		if (fs_trace) {
++			std::fprintf(stderr, "fs %.6f c %" PRIu64 " pt %" PRIu64 " arg %" PRId64 " gq %d pend %d buf %d\n",
++			             static_cast<double>(LibKernel::KernelGetProcessTime()) / 1e6, status->count, status->processTime, status->flipArg,
++			             status->gcQueueNum, status->flipPendingNum, status->currentBuffer);
++		}
++	}
 +	if (Bc5VideoOutTraceOn()) {
 +		g_bc5_vo_fl_count.store(status->count);
 +		g_bc5_vo_fl_ptime.store(status->processTime);
@@ -2615,7 +2625,7 @@ index f980320..378aba6 100644
  
  	LOGF("\t count = %" PRIu64 "\n"
  	     "\t processTime = %" PRIu64 "\n"
-@@ -1536,6 +1766,7 @@ KYTY_SYSV_ABI int VideoOutGetFlipStatus(int handle, VideoOutFlipStatus* status)
+@@ -1536,6 +1776,7 @@ KYTY_SYSV_ABI int VideoOutGetFlipStatus(int handle, VideoOutFlipStatus* status)
  
  KYTY_SYSV_ABI int VideoOutIsFlipPending(int handle) {
  	PRINT_NAME();
@@ -2623,7 +2633,7 @@ index f980320..378aba6 100644
  
  	auto* ctx = DriverState().Get(handle);
  	if (ctx == nullptr) {
-@@ -1552,6 +1783,7 @@ KYTY_SYSV_ABI int VideoOutIsFlipPending(int handle) {
+@@ -1552,6 +1793,7 @@ KYTY_SYSV_ABI int VideoOutIsFlipPending(int handle) {
  
  KYTY_SYSV_ABI int VideoOutGetVblankStatus(int handle, VideoOutVblankStatus* status) {
  	PRINT_NAME();
@@ -2631,10 +2641,17 @@ index f980320..378aba6 100644
  
  	if (status == nullptr) {
  		return VIDEO_OUT_ERROR_INVALID_ADDRESS;
-@@ -1565,6 +1797,10 @@ KYTY_SYSV_ABI int VideoOutGetVblankStatus(int handle, VideoOutVblankStatus* stat
+@@ -1565,6 +1807,17 @@ KYTY_SYSV_ABI int VideoOutGetVblankStatus(int handle, VideoOutVblankStatus* stat
  	ctx->mutex.Lock();
  	*status = ctx->vblank_status;
  	ctx->mutex.Unlock();
++	{
++		static const bool fs_trace = BC5_DIAG_ENV("KYTY_BC5_FLIP_STATUS_TRACE") != nullptr;
++		if (fs_trace) {
++			std::fprintf(stderr, "vs %.6f c %" PRIu64 " pt %" PRIu64 "\n", static_cast<double>(LibKernel::KernelGetProcessTime()) / 1e6, status->count,
++			             status->processTime);
++		}
++	}
 +	if (Bc5VideoOutTraceOn()) {
 +		g_bc5_vo_vb_count.store(status->count);
 +		g_bc5_vo_vb_ptime.store(status->processTime);
@@ -2642,7 +2659,7 @@ index f980320..378aba6 100644
  
  	LOGF("\t count = %" PRIu64 "\n"
  	     "\t processTime = %" PRIu64 "\n"
-@@ -1632,6 +1868,10 @@ KYTY_SYSV_ABI int VideoOutGetEventCount(const EventQueue::KernelEvent* ev) {
+@@ -1632,6 +1885,10 @@ KYTY_SYSV_ABI int VideoOutGetEventCount(const EventQueue::KernelEvent* ev) {
  
  KYTY_SYSV_ABI int VideoOutWaitVblank(int handle) {
  	PRINT_NAME();
@@ -20588,7 +20605,7 @@ index 343045e..db295f0 100644
  		        info->access_violation_vaddr)) {
  			return true;
 diff --git a/src/main.cpp b/src/main.cpp
-index c44d32f..c6a4257 100644
+index c44d32f..8862aa7 100644
 --- a/src/main.cpp
 +++ b/src/main.cpp
 @@ -16,6 +16,7 @@
@@ -20679,7 +20696,7 @@ index c44d32f..c6a4257 100644
 +	    "KYTY_BC5_FPS_COUNTER", "KYTY_BC5_INPUT_RECORD", "KYTY_BC5_INPUT_TRACE", "KYTY_BC5_JSON_TRACE",
 +	    "KYTY_BC5_LOG_WAITS", "KYTY_BC5_MAP_STATS", "KYTY_BC5_MEASURE", "KYTY_BC5_MOTION_TRACE",
 +	    "KYTY_BC5_RANGE_WATCH", "KYTY_BC5_SAVE_TRACE", "KYTY_BC5_VIDEOOUT_TRACE", "KYTY_BC5_VMA_TRACE",
-+	    "KYTY_BC5_THREAD_TRACE", "KYTY_BC5_AUDIO_DUMP_FROM", "KYTY_BC5_AUDIO_DUMP_SECONDS", "KYTY_BC5_AJM_DUMP"};
++	    "KYTY_BC5_THREAD_TRACE", "KYTY_BC5_AUDIO_DUMP_FROM", "KYTY_BC5_AUDIO_DUMP_SECONDS", "KYTY_BC5_AJM_DUMP", "KYTY_BC5_FLIP_STATUS_TRACE"};
 +	for (const char* name: kDiagnostic) {
 +		unsetenv(name);
 +	}

@@ -1,0 +1,39 @@
+saves as in save-backup-0180-0953
+saves as in save-backup-0180-0953
+== 2026-10-20 21:30:24 emulator 2026-10-20 21:26:20
+BC5_GC_MODE=direct
+856
+21-31 0.99x 31-46 0.65x 46-57 0.89x 57-67 1.01x 67-75 1.36x 75-81 1.47x 81-88 1.46x 88-95 1.50x 95-101 1.56x 101-108 1.46x 118-126 1.27x 126-135 1.13x 135-143 1.20x 143-151 1.35x 151-158 1.45x 158-164
+ 1.49x 164-171 1.51x 171-178 1.52x 178-184 1.55x 184-190 1.59x 190-196 1.63x 196-203 1.64x 203-209 1.67x 209-214 1.83x 214-218 2.36x 218-222 2.64x 222-226 2.62x 226-230 2.64x 230-233 2.65x 233-237 2.6
+3x 237-241 2.65x 241-245 2.67x 245-248 2.69x 248-252 2.69x 252-256 2.69x 256-260 2.65x 260-263 2.70x 263-267 2.71x 267-271 2.74x 271-274 2.72x 274-278 2.75x 278-282 2.74x 282-285 2.73x 285-289 2.73x 2
+89-292 2.77x 292-296 2.76x 296-300 2.78x 300-303 2.79x 303-307 2.81x 307-310 2.81x 310-314 2.79x 314-317 2.83x 317-321 2.83x 321-324 2.89x 324-328 2.92x 328-331 2.93x 331-335 2.96x 335-338 3.00x 338-3
+41 2.97x 341-345 2.95x 345-348 2.96x 348-351 2.96x 351-355 3.02x 355-358 3.00x 358-361 3.00x 361-365 3.00x 365-368 3.00x 368-371 2.99x 371-375 3.04x 375-378 3.03x 378-381 3.02x 381-385 3.02x 385-388 3
+.00x 388-391 2.96x 391-395 2.97x 395-398 3.03x 398-401 3.00x 401-405 3.00x 405-408 2.98x 408-411 3.02x 411-415 3.00x 415-418 3.02x 418-421 2.98x 421-425 2.98x 425-428 2.98x 428-431 2.99x 431-435 3.01x
+ 435-438 3.01x 438-441 2.99x 441-445 2.97x 445-448 2.99x 448-451 2.96x 451-455 2.95x 455-458 2.99x 458-461 3.00x 461-465 2.98x 465-468 3.01x 468-471 2.98x 471-475 3.02x 475-478 2.99x 
+audio trace: t 5.736 s port 1 type 0 8 ch 48000 Hz: 192 calls, 49152 frames = 1.024 s of sound in 1.003 s (rate 1.021), held 0.3 ms, 0 clears, sdl queued 0-16384 bytes (0-21 ms), device playing
+audio trace: t 45.647 s port 0 type 0 8 ch 48000 Hz: 1 calls, 512 frames = 0.011 s of sound in 10.835 s (rate 0.001), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 75.887 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 1000.6 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+audio trace: t 95.940 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 999.6 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+audio trace: t 110.981 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 999.7 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+audio trace: t 126.021 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 1000.1 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playi
+audio trace: t 141.061 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 1000.3 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playi
+audio trace: t 156.101 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 999.8 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+audio trace: t 171.141 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 999.9 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+audio trace: t 186.182 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 1000.4 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playi
+audio trace: t 201.222 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 999.8 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+audio trace: t 216.262 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 999.6 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+audio trace: t 231.302 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 1000.2 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playi
+audio trace: t 246.342 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 999.7 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+audio trace: t 261.382 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 1000.0 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playi
+audio trace: t 276.423 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 1000.0 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playi
+audio trace: t 291.462 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 999.5 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+audio trace: t 306.502 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 999.2 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+audio trace: t 321.543 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 999.5 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+audio trace: t 336.583 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 999.5 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+
+[exited with code 0]
+== L8: music stems by job count (start s: lifetime s)
+  1437 jobs: 147:10.5 220:5.8 234:5.8 245:5.7 258:5.7 269:5.6 282:5.6 287:5.6 298:5.5 302:5.5 321:5.3 339:5.2 344:5.2 354:5.1 366:5.1 370:5.1 387:5.2 391:5.1 423:5.2 428:5.1 432:5.1 442:5.1 454:5.1 466:5.1
+  1999 jobs: 172:13.8 191:13.0 238:8.0 263:7.9 291:7.7 306:7.6 333:7.1 348:7.1 374:7.0 396:7.1 409:7.1 436:7.1 470:7.1
+  2562 jobs: 156:18.2 224:10.3 249:10.2 274:10.0 313:9.6 325:9.3 358:9.1 379:9.1 401:9.1 415:9.1 446:9.2 458:9.1
+f5cabcb9c95663ae

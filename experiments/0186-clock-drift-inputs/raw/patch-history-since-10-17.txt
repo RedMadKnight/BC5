@@ -1,0 +1,165 @@
+8b7abcd 10-17 08:21 exp: 0146 save slot dates: SaveDataParam mtime from the directory, libRtc local time
+     src/libs/libRtc.cpp                                          +57 -0
+     src/libs/libSaveData.cpp                                     +68 -9
+     src/libs/saveDataMountSlots.h                                +15 -0
+979c95d 10-17 11:28 exp: 0152 APR caller journal (KYTY_BC5_APR_CALLERS): all reads go through one queue flush (F197)
+     src/libs/libAmpr.cpp                                         +90 -31
+5fc9236 10-17 16:54 exp: 0154 the opening plays: the AJM Opus decoder was a stub; libopus with packet framing and per-packet count
+     src/CMakeLists.txt                                           +17 -2
+     src/libs/ajm.cpp                                             +277 -2
+     src/libs/ajm/atrac9_decoder.h                                +43 -4
+     src/libs/ajm/opus_decoder.h                                  +470 -0
+     src/libs/libAmpr.cpp                                         +3 -3
+5b5e2bf 10-17 22:01 exp: 0155 the second title's menu artefact is a wrong bake of new text; fourteen host variables ruled out (F20
+     src/libs/bc5LleAgc.cpp                                       +17 -5
+a6f2c8b 10-18 00:30 exp: 0156 the second title's start-up card at a few fps was the host holding its threads in APR, map and learn
+     src/graphics/host_gpu/renderer/cache/gpuResourceManager.cpp  +29 -0
+     src/libs/bc5LleAgc.cpp                                       +338 -26
+     src/libs/libAmpr.cpp                                         +194 -43
+6fbda1a 10-18 02:16 exp: 0157 the second title's menu artefact is GPU state inherited from other processes' ring work; a state pre
+     src/libs/bc5LleAgc.cpp                                       +246 -57
+ac25582 10-18 09:49 exp: 0158 save delete stuck on the progress dialog: dialog stand-ins report running until closed; SaveDataDele
+     src/libs/dialog.cpp                                          +235 -0
+     src/libs/libSaveData.cpp                                     +38 -12
+8ba797e 10-18 10:38 fix(host): web-browser and invitation dialog stand-ins get the common-dialog status machine (F205)
+     src/libs/libInvitationDialog.cpp                             +136 -0
+     src/libs/libWebBrowserDialog.cpp                             +102 -0
+190656c 10-18 12:27 exp: 0159 the opening's hang was the AMM automatic pool never recycled; a GPU index-fetch fault 20 s in remain
+     src/libs/libAmpr.cpp                                         +203 -40
+2ccea41 10-18 13:06 exp: 0159 — the remaining opening fault comes from the night scene's compute dispatches (F207); dispatch journ
+     src/libs/bc5LleAgc.cpp                                       +27 -8
+f927d97 10-18 20:28 exp: 0160 — the F207 fault is the geometry engine reading address 0 through a system-programmed base, not the 
+     src/libs/agc.cpp                                             +42 -0
+     src/libs/bc5LleAgc.cpp                                       +313 -8
+5aadeb0 10-18 21:01 host: BC5_DIRECT_FENCE_TIMEOUT_MS in the patch (exp 0160)
+     src/libs/bc5LleAgc.cpp                                       +4 -3
+1d97cc3 10-19 07:03 host: carry SET_BASE, program and user data across a queue's buffers (F209)
+     src/libs/bc5LleAgc.cpp                                       +31 -2
+ddb1a1e 10-19 08:18 exp: 0162 — the second title's speed changes are frame-time changes from the host's per-submission cost; audio
+     src/graphics/presentation/videoOut.cpp                       +143 -10
+     src/graphics/presentation/videoOut.h                         +6 -2
+     src/libs/audio.cpp                                           +81 -7
+     src/libs/bc5LleAgc.cpp                                       +45 -6
+3036c73 10-19 08:22 fix(host): zero pages for a learned window at address 0 start above amdgpu's reserved bottom; exp 0160 runs 78
+     src/libs/bc5LleAgc.cpp                                       +17 -3
+6257ec1 10-19 08:39 feat(host): submission chains behind BC5_DIRECT_CHAIN=1 (ADR 0010), unmeasured
+     src/libs/bc5LleAgc.cpp                                       +239 -10
+5cc7565 10-19 09:51 feat(host): a menu bar in the emulator window (ADR 0011, experiment 0164)
+     src/emulator.cpp                                             +36 -2
+     src/emulator.h                                               +10 -0
+     src/graphics/presentation/hostMenu.cpp                       +522 -0
+     src/graphics/presentation/hostMenu.h                         +31 -0
+     src/graphics/presentation/settingsOverlay.cpp                +61 -13
+     src/graphics/presentation/settingsOverlay.h                  +8 -2
+     src/graphics/presentation/window.h                           +5 -2
+     src/graphics/presentation/window/window.cpp                  +206 -2129
+     src/libs/audio.cpp                                           +92 -10
+     src/libs/controller.cpp                                      +114 -20
+     src/libs/controller.h                                        +10 -2
+     src/libs/libNet.cpp                                          +79 -2
+     src/libs/libNp.cpp                                           +15 -0
+     src/libs/libSaveData.cpp                                     +314 -25
+     src/libs/network.cpp                                         +188 -0
+     src/libs/network.h                                           +29 -0
+     src/main.cpp                                                 +41 -3
+c69f141 10-19 10:07 exp: 0165 — submission chains reach the game thread: COND_EXEC segment-local (ADR 0010 §A), chains across its 
+     src/kernel/eventQueue.cpp                                    +25 -6
+     src/libs/bc5LleAgc.cpp                                       +352 -73
+27338e4 10-19 10:12 feat(host): one logging switch for the session (ADR 0011 §6): Emulation > Logging, BC5_LOGGING
+     src/common/logging/log.cpp                                   +45 -0
+     src/common/logging/log.h                                     +15 -0
+     src/graphics/host_gpu/renderer/cache/bufferCache.cpp         +4 -3
+     src/graphics/host_gpu/vma.cpp                                +8 -7
+     src/graphics/presentation/hostMenu.cpp                       +12 -4
+     src/graphics/presentation/videoOut.cpp                       +22 -20
+     src/graphics/presentation/window/hostInput.cpp               +4 -3
+     src/graphics/presentation/window/swapchain.cpp               +8 -7
+     src/graphics/presentation/window/window.cpp                  +17 -16
+     src/kernel/eventQueue.cpp                                    +3 -3
+     src/kernel/memory.cpp                                        +5 -4
+     src/libs/ajm.cpp                                             +19 -13
+     src/libs/audio.cpp                                           +11 -9
+     src/libs/bc5LleAgc.cpp                                       +41 -27
+     src/libs/controller.cpp                                      +28 -22
+     src/libs/dialog.cpp                                          +2 -2
+     src/libs/libAmpr.cpp                                         +23 -22
+     src/libs/libJson2.cpp                                        +12 -11
+     src/libs/libPad.cpp                                          +7 -5
+     src/libs/libSaveData.cpp                                     +4 -4
+     src/loader/runtimeLinker.cpp                                 +2 -2
+ff45ba2 10-19 11:04 fix(host): the window's pause stops the title's clocks; audio PCM dump; pause/resume input verbs (exp 0166, F2
+     src/graphics/presentation/window/window.cpp                  +32 -21
+     src/kernel/pthread.cpp                                       +100 -4
+     src/kernel/pthread.h                                         +12 -0
+     src/libs/audio.cpp                                           +48 -12
+     src/libs/controller.cpp                                      +25 -21
+849fa7e 10-19 12:07 fix(host): the virtual-range table is edited in place, no full sort per AMM map (exp 0167, F221)
+     src/kernel/memory.cpp                                        +225 -14
+6a06a39 10-19 12:35 fix(host): the direct mapper's BO merge moves at most 512 mappings a pass (exp 0167, F222)
+     src/libs/bc5LleAgc.cpp                                       +34 -4
+1973e7b 10-19 12:50 exp: 0160 — the 12:39 hang's buffer has no indexed draw; the timeout probe now journals the per-draw state (F2
+     src/libs/bc5LleAgc.cpp                                       +39 -2
+29469e4 10-19 13:11 exp: 0160 — the GE's address-0 read comes with a one-point GS fast-launch draw (13:01 probe); diagnostic drop 
+     src/libs/bc5LleAgc.cpp                                       +33 -2
+6093cad 10-19 13:32 exp: 0160 — 13:17 hang: the same fast-launch draw with 14 records; the probe dumps the GS user data and ES des
+     src/libs/bc5LleAgc.cpp                                       +47 -2
+47c279f 10-19 15:31 fix(host): the mapping rebuild handles only new mappings, not all ~17,000 against every zero piece (exp 0169, 
+     src/kernel/memory.cpp                                        +78 -21
+     src/libs/bc5LleAgc.cpp                                       +65 -18
+     src/libs/libAmpr.cpp                                         +58 -36
+d7b12d7 10-19 17:10 exp: 0172 — logging off, timing only: 43.5 fps without chains, 49.4 with them (F227); KYTY_BC5_FPS_COUNTER
+     src/graphics/presentation/videoOut.cpp                       +42 -9
+1819274 10-19 17:22 exp: 0173 — the game thread's label waits are the title submitting the writer after the reader; faster polling
+     src/libs/bc5LleAgc.cpp                                       +10 -2
+8190146 10-19 17:44 exp: 0174 — measurements that survive the logging switch (KYTY_BC5_MEASURE), on in the pkg launchers with a CP
+     src/libs/audio.cpp                                           +6 -3
+6d57956 10-19 19:30 exp: 0175 — real play: frame-rate drops drag the audio; the GPU watcher froze the GPU (F229); a save that hang
+     src/graphics/presentation/settingsOverlay.cpp                +20 -3
+     src/graphics/presentation/window/swapchain.cpp               +5 -4
+bea274a 10-19 20:01 fix(host): the window no longer pauses on SDL background events or Space autorepeat; each pause logs its cause
+     src/graphics/presentation/window/window.cpp                  +71 -23
+0dea902 10-19 21:37 feat(host): lean build without tracing, journals and measurements; start screen still at half speed (exp 0177,
+     src/CMakeLists.txt                                           +21 -3
+     src/common/emulatorConfig.cpp                                +26 -0
+     src/common/logging/log.cpp                                   +4 -2
+     src/common/logging/log.h                                     +22 -2
+     src/common/profiler.h                                        +20 -0
+     src/graphics/host_gpu/renderer/cache/bufferCache.cpp         +2 -2
+     src/graphics/host_gpu/vma.cpp                                +2 -2
+     src/graphics/presentation/videoOut.cpp                       +4 -4
+     src/graphics/presentation/window/hostInput.cpp               +2 -2
+     src/graphics/presentation/window/swapchain.cpp               +2 -2
+     src/graphics/presentation/window/window.cpp                  +2 -2
+     src/kernel/eventQueue.cpp                                    +4 -4
+     src/kernel/memory.cpp                                        +4 -4
+     src/kernel/semaphore.cpp                                     +2 -2
+     src/libs/ajm.cpp                                             +7 -7
+     src/libs/audio.cpp                                           +5 -5
+     src/libs/bc5LleAgc.cpp                                       +69 -63
+     src/libs/controller.cpp                                      +8 -8
+     src/libs/dialog.cpp                                          +2 -2
+     src/libs/libAmpr.cpp                                         +5 -5
+     src/libs/libJson2.cpp                                        +2 -2
+     src/libs/libPad.cpp                                          +3 -3
+     src/libs/libSaveData.cpp                                     +2 -2
+     src/loader/runtimeLinker.cpp                                 +2 -2
+     src/main.cpp                                                 +37 -3
+53ed476 10-19 23:08 exp: 0179 — the second title's halved frame rate was its timestamp scale 1.70 saved from the Video tab (F237);
+     src/graphics/presentation/settingsOverlay.cpp                +13 -2
+5ac72bb 10-20 12:24 fix(host): the audio output holds like the console's instead of dropping its queue after 100 ms; guest thread 
+     src/kernel/pthread.cpp                                       +80 -9
+     src/libs/audio.cpp                                           +85 -13
+     src/main.cpp                                                 +5 -4
+8c9dccb 10-20 14:13 feat(host): SDL's native PipeWire audio backend by default, a downmix that cannot clip; the earlier recording'
+     src/libs/audio.cpp                                           +80 -25
+     src/main.cpp                                                 +2 -2
+3ef4048 10-20 15:20 fix(host): a pause holds the title's sound with its clocks; chains by default for the second title (exp 0182, 
+     src/kernel/pthread.cpp                                       +14 -11
+     src/kernel/pthread.h                                         +4 -2
+     src/libs/audio.cpp                                           +24 -8
+8673105 10-20 18:28 exp: 0183 — the second title's looped sounds and cutscene run 1.3-2x fast: per frame (1/30 s) in the daytime c
+     src/graphics/presentation/videoOut.cpp                       +37 -18
+     src/libs/ajm.cpp                                             +56 -12
+     src/main.cpp                                                 +2 -2
+aa73775 10-20 19:28 exp: 0184 — 30 fps by default for the second title: its clock runs at real time in night gameplay and the dayt
+     src/graphics/presentation/videoOut.cpp                       +50 -20

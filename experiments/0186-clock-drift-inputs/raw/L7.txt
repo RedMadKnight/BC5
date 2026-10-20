@@ -1,0 +1,102 @@
+== L7 (BC5_DIRECT_CHAIN=0): clock-voice passes (start-end s, speed)
+19-29 0.99x 29-40 0.93x 40-50 0.94x 50-61 0.95x 61-71 0.96x 71-82 0.95x 82-92 0.94x 92-103 0.96x 103-113 0.99x 124-134 1.00x 134-144 1.00x 144-154 1.00x 154-164 1.00x 164-174 1.00x
+ 174-184 1.00x 184-194 1.00x 194-204 1.00x 204-214 1.00x 214-223 1.11x 223-230 1.32x 230-238 1.34x 238-245 1.35x 245-253 1.38x 253-260 1.37x 260-267 1.38x 267-274 1.42x 274-281 1.4
+1x 281-288 1.45x 288-295 1.45x 295-302 1.46x 302-309 1.47x 309-315 1.51x 315-322 1.50x 322-328 1.53x 328-335 1.54x 335-341 1.58x 341-347 1.61x 347-353 1.63x 353-360 1.64x 360-365 1
+.90x 365-369 2.43x 369-373 2.61x 373-377 2.63x 377-380 2.63x 380-384 2.63x 384-388 2.65x 388-392 2.64x 392-396 2.64x 396-399 2.65x 399-403 2.69x 403-407 2.68x 407-410 2.70x 410-414
+ 2.68x 414-418 2.71x 418-422 2.70x 422-425 2.71x 425-429 2.73x 429-433 2.75x 433-436 2.75x 436-440 2.75x 440-443 2.74x 443-447 2.74x 447-451 2.77x 451-454 2.77x 454-458 2.78x 458-4
+61 2.78x 461-465 2.79x 465-469 2.83x 469-472 2.83x 472-476 2.89x 476-479 2.93x 479-482 2.91x 482-486 2.95x 486-489 2.94x 489-493 2.97x 493-496 2.94x 496-499 2.94x 499-503 2.97x 503
+-506 2.95x 506-509 3.02x 509-513 3.02x 513-516 3.02x 516-519 3.02x 519-523 3.00x 523-526 2.98x 526-529 3.00x 529-533 2.99x 533-536 3.01x 536-539 2.97x 539-543 2.98x 543-546 3.01x 5
+46-549 3.00x 549-553 2.99x 553-556 2.95x 556-559 3.01x 559-563 2.99x 563-566 3.01x 566-569 2.97x 569-573 2.99x 573-576 3.01x 576-579 2.96x 579-583 2.92x 583-586 3.02x 586-589 2.98x
+ 589-593 2.98x 593-596 3.01x 596-599 3.00x 
+== L7: per-read flip and vblank status, 10-s windows
+   0 s: clock nanx | 155 reads, 153 shown, arg-count {-1: 3, -2: 1, -3: 1}, pend 0.00, gq 0.00 | vblank steps {0: 1, 2: 129, 3: 15, 4: 5, 5: 1, 7: 1, 13: 1, 138: 1} | shown-to-shown ms mean 65.3 max 4194
+  10 s: clock 0.99x | 290 reads, 289 shown, arg-count {-154: 1, -155: 1, -156: 1}, pend 0.00, gq 0.00 | vblank steps {1: 1, 2: 276, 3: 5, 4: 8} | shown-to-shown ms mean 34.5 max 67
+  20 s: clock 0.93x | 295 reads, 294 shown, arg-count {-444: 1, -445: 1, -446: 1}, pend 0.00, gq 0.00 | vblank steps {1: 1, 2: 286, 3: 5, 4: 3} | shown-to-shown ms mean 33.9 max 67
+  30 s: clock 0.94x | 109 reads, 108 shown, arg-count {-739: 1, -740: 1, -741: 1}, pend 0.00, gq 0.00 | vblank steps {1: 3, 2: 106, 3: 4, 4: 52, 5: 21, 6: 2, 8: 1, 9: 1, 10: 1, 19: 1} | shown-to-shown ms mean 34.2 max 67
+  40 s: clock 0.94x | 267 reads, 264 shown, arg-count {-943: 2, -944: 2, -950: 2}, pend 0.81, gq 0.00 | vblank steps {1: 84, 2: 92, 3: 82, 4: 15, 5: 4, 9: 1} | shown-to-shown ms mean 64.7 max 7100
+  50 s: clock 0.95x | 300 reads, 299 shown, arg-count {-1232: 2, -1299: 2, -1421: 2}, pend 0.99, gq 0.00 | vblank steps {1: 98, 2: 108, 3: 91, 4: 3} | shown-to-shown ms mean 33.7 max 67
+  60 s: clock 0.96x | 300 reads, 299 shown, arg-count {-1665: 2, -1507: 1, -1508: 1}, pend 1.00, gq 0.00 | vblank steps {1: 96, 2: 108, 3: 96} | shown-to-shown ms mean 33.4 max 67
+  70 s: clock 0.95x | 300 reads, 299 shown, arg-count {-1807: 1, -1808: 1, -1809: 1}, pend 1.00, gq 0.00 | vblank steps {1: 95, 2: 109, 3: 96} | shown-to-shown ms mean 33.3 max 35
+  80 s: clock 0.94x | 297 reads, 296 shown, arg-count {-2261: 2, -2272: 2, -2298: 2}, pend 0.98, gq 0.00 | vblank steps {1: 98, 2: 101, 3: 95, 4: 2, 6: 1} | shown-to-shown ms mean 34.2 max 100
+  90 s: clock 0.96x | 300 reads, 299 shown, arg-count {-2516: 2, -2699: 2, -2404: 1}, pend 0.99, gq 0.00 | vblank steps {1: 107, 2: 88, 3: 103, 4: 2} | shown-to-shown ms mean 33.6 max 68
+ 100 s: clock 0.99x | 287 reads, 287 shown, arg-count {-2730: 2, -2851: 2, -2704: 1}, pend 0.55, gq 0.00 | vblank steps {1: 60, 2: 151, 3: 69, 4: 6, 7: 1} | shown-to-shown ms mean 35.1 max 133
+ 110 s: clock 0.99x | 112 reads, 111 shown, arg-count {-2992: 1, -2993: 1, -2994: 1}, pend 0.00, gq 0.00 | vblank steps {2: 109, 3: 3, 4: 60, 5: 10, 6: 3, 7: 1, 13: 1, 16: 1, 18: 1} | shown-to-shown ms mean 34.5 max 67
+ 120 s: clock 1.00x | 155 reads, 153 shown, arg-count {-3217: 2, -3216: 1, -3218: 1}, pend 0.00, gq 0.00 | vblank steps {1: 1, 2: 89, 3: 33, 4: 42, 5: 15, 6: 4, 9: 1, 10: 1, 13: 1, 16: 1, 18: 1} | shown-to-shown ms mean 104.8 max 9033
+ 130 s: clock 1.00x | 260 reads, 259 shown, arg-count {-3370: 1, -3371: 1, -3372: 1}, pend 0.00, gq 0.00 | vblank steps {1: 1, 2: 206, 3: 29, 4: 18, 5: 4, 6: 1} | shown-to-shown ms mean 38.6 max 100
+ 140 s: clock 1.00x | 282 reads, 281 shown, arg-count {-3630: 1, -3631: 1, -3632: 1}, pend 0.00, gq 0.00 | vblank steps {2: 259, 3: 12, 4: 12} | shown-to-shown ms mean 35.3 max 67
+ 150 s: clock 1.00x | 285 reads, 284 shown, arg-count {-3912: 1, -3913: 1, -3914: 1}, pend 0.00, gq 0.00 | vblank steps {2: 262, 3: 13, 4: 9} | shown-to-shown ms mean 35.2 max 67
+ 160 s: clock 1.00x | 276 reads, 275 shown, arg-count {-4197: 1, -4198: 1, -4199: 1}, pend 0.00, gq 0.00 | vblank steps {2: 245, 3: 21, 4: 9, 5: 1, 7: 1} | shown-to-shown ms mean 36.1 max 133
+ 170 s: clock 1.00x | 281 reads, 280 shown, arg-count {-4473: 1, -4474: 1, -4475: 1}, pend 0.00, gq 0.00 | vblank steps {2: 252, 3: 20, 4: 9} | shown-to-shown ms mean 35.6 max 67
+ 180 s: clock 1.00x | 280 reads, 279 shown, arg-count {-4754: 1, -4755: 1, -4756: 1}, pend 0.00, gq 0.00 | vblank steps {1: 1, 2: 249, 3: 23, 4: 6, 8: 1} | shown-to-shown ms mean 35.7 max 133
+ 190 s: clock 1.00x | 282 reads, 281 shown, arg-count {-5034: 1, -5035: 1, -5036: 1}, pend 0.00, gq 0.00 | vblank steps {2: 255, 3: 19, 4: 7, 5: 1} | shown-to-shown ms mean 35.5 max 67
+ 200 s: clock 1.00x | 281 reads, 280 shown, arg-count {-5316: 1, -5317: 1, -5318: 1}, pend 0.00, gq 0.00 | vblank steps {2: 256, 3: 12, 4: 13} | shown-to-shown ms mean 35.6 max 67
+ 210 s: clock 1.11x | 279 reads, 278 shown, arg-count {-5597: 1, -5598: 1, -5599: 1}, pend 0.00, gq 0.00 | vblank steps {2: 250, 3: 18, 4: 10, 6: 1} | shown-to-shown ms mean 35.8 max 100
+ 220 s: clock 1.32x | 282 reads, 281 shown, arg-count {-5876: 1, -5877: 1, -5878: 1}, pend 0.00, gq 0.00 | vblank steps {2: 259, 3: 10, 4: 13} | shown-to-shown ms mean 35.5 max 67
+ 230 s: clock 1.35x | 280 reads, 279 shown, arg-count {-6158: 1, -6159: 1, -6160: 1}, pend 0.00, gq 0.00 | vblank steps {2: 252, 3: 18, 4: 9, 6: 1} | shown-to-shown ms mean 35.7 max 100
+ 240 s: clock 1.38x | 283 reads, 282 shown, arg-count {-6438: 1, -6439: 1, -6440: 1}, pend 0.00, gq 0.00 | vblank steps {2: 255, 3: 22, 4: 6} | shown-to-shown ms mean 35.3 max 67
+ 250 s: clock 1.38x | 283 reads, 282 shown, arg-count {-6721: 1, -6722: 1, -6723: 1}, pend 0.00, gq 0.00 | vblank steps {2: 259, 3: 14, 4: 10} | shown-to-shown ms mean 35.3 max 67
+ 260 s: clock 1.42x | 280 reads, 279 shown, arg-count {-7004: 1, -7005: 1, -7006: 1}, pend 0.00, gq 0.00 | vblank steps {2: 249, 3: 22, 4: 9} | shown-to-shown ms mean 35.7 max 100
+ 270 s: clock 1.41x | 281 reads, 280 shown, arg-count {-7284: 1, -7285: 1, -7286: 1}, pend 0.00, gq 0.00 | vblank steps {2: 255, 3: 14, 4: 12} | shown-to-shown ms mean 35.6 max 67
+ 280 s: clock 1.45x | 281 reads, 280 shown, arg-count {-7565: 1, -7566: 1, -7567: 1}, pend 0.00, gq 0.00 | vblank steps {1: 2, 2: 251, 3: 16, 4: 12} | shown-to-shown ms mean 35.6 max 67
+ 290 s: clock 1.46x | 281 reads, 280 shown, arg-count {-7846: 1, -7847: 1, -7848: 1}, pend 0.00, gq 0.00 | vblank steps {2: 250, 3: 24, 4: 7} | shown-to-shown ms mean 35.6 max 67
+ 300 s: clock 1.51x | 281 reads, 280 shown, arg-count {-8127: 1, -8128: 1, -8129: 1}, pend 0.00, gq 0.00 | vblank steps {1: 2, 2: 249, 3: 22, 4: 6, 5: 2} | shown-to-shown ms mean 35.6 max 100
+ 310 s: clock 1.50x | 284 reads, 283 shown, arg-count {-8408: 1, -8409: 1, -8410: 1}, pend 0.00, gq 0.00 | vblank steps {2: 262, 3: 13, 4: 8, 5: 1} | shown-to-shown ms mean 35.2 max 67
+ 320 s: clock 1.54x | 280 reads, 279 shown, arg-count {-8692: 1, -8693: 1, -8694: 1}, pend 0.00, gq 0.00 | vblank steps {1: 1, 2: 250, 3: 17, 4: 10, 6: 1} | shown-to-shown ms mean 35.8 max 100
+ 330 s: clock 1.58x | 283 reads, 282 shown, arg-count {-8972: 1, -8973: 1, -8974: 1}, pend 0.00, gq 0.00 | vblank steps {2: 258, 3: 19, 4: 6, 5: 1} | shown-to-shown ms mean 35.2 max 67
+ 340 s: clock 1.63x | 282 reads, 281 shown, arg-count {-9255: 1, -9256: 1, -9257: 1}, pend 0.00, gq 0.00 | vblank steps {2: 258, 3: 12, 4: 12} | shown-to-shown ms mean 35.5 max 67
+ 350 s: clock 1.90x | 278 reads, 277 shown, arg-count {-9537: 1, -9538: 1, -9539: 1}, pend 0.00, gq 0.00 | vblank steps {2: 249, 3: 16, 4: 12, 6: 1} | shown-to-shown ms mean 36.0 max 100
+ 360 s: clock 2.61x | 281 reads, 280 shown, arg-count {-9815: 1, -9816: 1, -9817: 1}, pend 0.00, gq 0.00 | vblank steps {2: 250, 3: 24, 4: 7} | shown-to-shown ms mean 35.6 max 67
+ 370 s: clock 2.63x | 282 reads, 281 shown, arg-count {-10096: 1, -10097: 1, -10098: 1}, pend 0.00, gq 0.00 | vblank steps {2: 257, 3: 14, 4: 11} | shown-to-shown ms mean 35.5 max 67
+ 380 s: clock 2.64x | 281 reads, 280 shown, arg-count {-10378: 1, -10379: 1, -10380: 1}, pend 0.00, gq 0.00 | vblank steps {2: 257, 3: 11, 4: 11, 7: 1} | shown-to-shown ms mean 35.6 max 100
+ 390 s: clock 2.69x | 281 reads, 280 shown, arg-count {-10659: 1, -10660: 1, -10661: 1}, pend 0.00, gq 0.00 | vblank steps {2: 253, 3: 21, 4: 8} | shown-to-shown ms mean 35.5 max 67
+ 400 s: clock 2.70x | 278 reads, 277 shown, arg-count {-10940: 1, -10941: 1, -10942: 1}, pend 0.00, gq 0.00 | vblank steps {2: 248, 3: 17, 4: 12, 6: 1} | shown-to-shown ms mean 36.1 max 100
+ 410 s: clock 2.70x | 282 reads, 281 shown, arg-count {-11218: 1, -11219: 1, -11220: 1}, pend 0.00, gq 0.00 | vblank steps {2: 255, 3: 18, 4: 9} | shown-to-shown ms mean 35.5 max 67
+ 420 s: clock 2.75x | 278 reads, 277 shown, arg-count {-11500: 1, -11501: 1, -11502: 1}, pend 0.00, gq 0.00 | vblank steps {1: 1, 2: 243, 3: 25, 4: 8, 6: 1} | shown-to-shown ms mean 36.0 max 100
+ 430 s: clock 2.74x | 283 reads, 282 shown, arg-count {-11778: 1, -11779: 1, -11780: 1}, pend 0.00, gq 0.00 | vblank steps {2: 258, 3: 16, 4: 9} | shown-to-shown ms mean 35.3 max 67
+ 440 s: clock 2.77x | 280 reads, 279 shown, arg-count {-12061: 1, -12062: 1, -12063: 1}, pend 0.00, gq 0.00 | vblank steps {2: 250, 3: 23, 4: 6, 7: 1} | shown-to-shown ms mean 35.7 max 133
+ 450 s: clock 2.78x | 279 reads, 278 shown, arg-count {-12341: 1, -12342: 1, -12343: 1}, pend 0.00, gq 0.00 | vblank steps {2: 248, 3: 20, 4: 11} | shown-to-shown ms mean 35.8 max 67
+ 460 s: clock 2.83x | 282 reads, 281 shown, arg-count {-12620: 1, -12621: 1, -12622: 1}, pend 0.00, gq 0.00 | vblank steps {2: 258, 3: 14, 4: 9, 6: 1} | shown-to-shown ms mean 35.5 max 100
+ 470 s: clock 2.91x | 283 reads, 282 shown, arg-count {-12902: 1, -12903: 1, -12904: 1}, pend 0.00, gq 0.00 | vblank steps {2: 261, 3: 10, 4: 12} | shown-to-shown ms mean 35.3 max 67
+ 480 s: clock 2.97x | 280 reads, 279 shown, arg-count {-13185: 1, -13186: 1, -13187: 1}, pend 0.00, gq 0.00 | vblank steps {1: 2, 2: 245, 3: 24, 4: 9} | shown-to-shown ms mean 35.7 max 100
+ 490 s: clock 2.97x | 280 reads, 279 shown, arg-count {-13465: 1, -13466: 1, -13467: 1}, pend 0.00, gq 0.00 | vblank steps {2: 251, 3: 19, 4: 10} | shown-to-shown ms mean 35.6 max 67
+ 500 s: clock 3.02x | 283 reads, 282 shown, arg-count {-13745: 1, -13746: 1, -13747: 1}, pend 0.00, gq 0.00 | vblank steps {2: 256, 3: 19, 4: 8} | shown-to-shown ms mean 35.5 max 67
+ 510 s: clock 3.00x | 283 reads, 282 shown, arg-count {-14028: 1, -14029: 1, -14030: 1}, pend 0.00, gq 0.00 | vblank steps {2: 256, 3: 20, 4: 7} | shown-to-shown ms mean 35.3 max 67
+ 520 s: clock 2.99x | 279 reads, 278 shown, arg-count {-14311: 1, -14312: 1, -14313: 1}, pend 0.00, gq 0.00 | vblank steps {1: 1, 2: 245, 3: 23, 4: 10} | shown-to-shown ms mean 35.8 max 67
+ 530 s: clock 2.98x | 285 reads, 284 shown, arg-count {-14590: 1, -14591: 1, -14592: 1}, pend 0.00, gq 0.00 | vblank steps {2: 261, 3: 18, 4: 6} | shown-to-shown ms mean 35.1 max 67
+ 540 s: clock 2.99x | 285 reads, 284 shown, arg-count {-14875: 1, -14876: 1, -14877: 1}, pend 0.00, gq 0.00 | vblank steps {2: 263, 3: 14, 4: 8} | shown-to-shown ms mean 35.1 max 67
+ 550 s: clock 2.99x | 284 reads, 283 shown, arg-count {-15160: 1, -15161: 1, -15162: 1}, pend 0.00, gq 0.00 | vblank steps {2: 261, 3: 15, 4: 8} | shown-to-shown ms mean 35.1 max 67
+ 560 s: clock 2.99x | 283 reads, 282 shown, arg-count {-15444: 1, -15445: 1, -15446: 1}, pend 0.00, gq 0.00 | vblank steps {2: 254, 3: 21, 4: 7} | shown-to-shown ms mean 35.5 max 67
+ 570 s: clock 2.92x | 283 reads, 282 shown, arg-count {-15727: 1, -15728: 1, -15729: 1}, pend 0.00, gq 0.00 | vblank steps {1: 1, 2: 256, 3: 19, 4: 8} | shown-to-shown ms mean 35.3 max 67
+ 580 s: clock 2.98x | 281 reads, 280 shown, arg-count {-16010: 1, -16011: 1, -16012: 1}, pend 0.00, gq 0.00 | vblank steps {2: 253, 3: 20, 4: 7, 6: 1} | shown-to-shown ms mean 35.6 max 100
+ 590 s: clock 3.00x | 281 reads, 280 shown, arg-count {-16291: 1, -16292: 1, -16293: 1}, pend 0.00, gq 0.00 | vblank steps {2: 252, 3: 20, 4: 9} | shown-to-shown ms mean 35.6 max 67
+ 600 s: clock nanx |  17 reads,  16 shown, arg-count {-16572: 1, -16573: 1, -16574: 1}, pend 0.00, gq 0.00 | vblank steps {2: 17} | shown-to-shown ms mean 33.3 max 33
+== L7: long frames
+    4.18 s: 138 vblanks (2300 ms) between reads | clock before nanx, after nanx
+    7.33 s:  13 vblanks (217 ms) between reads | clock before nanx, after nanx
+   34.78 s:  19 vblanks (317 ms) between reads | clock before 0.93x, after 0.93x
+   35.04 s:   8 vblanks (133 ms) between reads | clock before 0.93x, after 0.93x
+   35.20 s:  10 vblanks (167 ms) between reads | clock before 0.93x, after 0.93x
+   35.35 s:   9 vblanks (150 ms) between reads | clock before 0.93x, after 0.93x
+   41.02 s:   9 vblanks (150 ms) between reads | clock before 0.93x, after 0.94x
+  116.19 s:  13 vblanks (217 ms) between reads | clock before 0.99x, after nanx
+  119.50 s:  16 vblanks (267 ms) between reads | clock before nanx, after nanx
+  119.81 s:  18 vblanks (300 ms) between reads | clock before nanx, after nanx
+  120.11 s:  18 vblanks (300 ms) between reads | clock before nanx, after 1.00x
+  121.27 s:  13 vblanks (217 ms) between reads | clock before nanx, after 1.00x
+  122.78 s:  10 vblanks (167 ms) between reads | clock before nanx, after 1.00x
+  123.04 s:   9 vblanks (150 ms) between reads | clock before nanx, after 1.00x
+  127.70 s:  16 vblanks (267 ms) between reads | clock before nanx, after 1.00x
+  189.52 s:   8 vblanks (133 ms) between reads | clock before 1.00x, after 1.00x
+16 long frames
+== L5: music stems by job count (start s: lifetime s)
+  1437 jobs: 136:16.2 149:16.1 206:15.8 244:16.5 277:16.0 315:16.3 350:18.4 363:18.9 424:16.7 437:17.2
+  1999 jobs: 161:22.9 257:22.8 328:26.3 405:22.9 450:22.6
+  2562 jobs: 181:28.4 218:29.7 289:29.4 379:29.4
+== L6: music stems by job count (start s: lifetime s)
+  1437 jobs: 164:37.9 244:11.6 292:10.5 312:10.2 362:6.5 367:6.0 372:5.9 377:5.8 397:5.7 401:5.7 421:5.6 435:5.6 445:5.5 450:5.5 469:5.3 487:5.2 491:5.2 495:5.1 513:5.2 525:5.1 543:5.2 554:5.1 566:5.1 576:5.2 594:5.2 598:5.1 616:5.1 620:5.1 638:5.2 642:5.2 660:5.2 664:5.2 674:5.1 686:5.1 690:5.1 708:5.1 712:5.2 717:5.2 735:5.1 747:5.2 771:5.1
+  1999 jobs: 221:16.0 271:15.0 300:14.2 336:13.8 381:8.0 406:7.9 439:7.8 454:7.6 473:7.2 507:7.1 529:7.1 548:7.1 570:7.2 588:7.1 610:7.0 624:7.2 646:7.1 668:7.1 694:7.1 721:7.3 751:7.1 765:7.1
+  2562 jobs: 198:25.6 253:20.4 320:18.5 348:15.5 388:10.3 413:10.0 426:10.0 460:9.5 479:9.3 499:9.1 517:9.1 535:9.2 558:9.1 580:9.2 602:9.2 630:9.4 652:9.2 678:9.2 700:9.2 727:9.1 739:9.2 757:9.1
+== L7: music stems by job count (start s: lifetime s)
+  1437 jobs: 187:15.4 236:11.2 245:11.2 283:10.6 292:10.5 300:10.4 324:10.0 343:9.5 350:9.3 376:5.9 387:5.8 401:5.7 414:5.7 425:5.6 436:5.6 449:5.5 460:5.5 473:5.3 491:5.2 504:5.1 508:5.1 518:5.1 536:5.1 540:5.1 544:5.1 562:5.1 566:5.1 584:5.1 588:5.1
+  1999 jobs: 169:21.4 222:16.0 253:15.4 332:13.4 369:8.2 381:8.1 419:7.9 430:7.8 454:7.7 485:7.2 512:7.1 530:7.1 556:7.1 578:7.2 592:7.1
+  2562 jobs: 145:27.4 199:25.6 266:19.2 308:18.1 358:12.7 392:10.3 405:10.1 441:9.9 465:9.6 477:9.3 495:9.3 522:9.1 548:9.2 570:9.1
