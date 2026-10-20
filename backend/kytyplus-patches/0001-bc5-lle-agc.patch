@@ -5505,7 +5505,7 @@ index 9ea25b0..b922b68 100644
  			EXIT_IF(!AddMappedUnlocked(vaddr, size, MappingType::Private));
  			return true;
 diff --git a/src/kernel/pthread.cpp b/src/kernel/pthread.cpp
-index 5f87e6b..20a9e4c 100644
+index 5f87e6b..e6f5ccf 100644
 --- a/src/kernel/pthread.cpp
 +++ b/src/kernel/pthread.cpp
 @@ -1,3 +1,4 @@
@@ -5513,7 +5513,15 @@ index 5f87e6b..20a9e4c 100644
  #include "kernel/pthread.h"
  
  #include "common/assert.h"
-@@ -180,9 +181,61 @@ static uint64_t KernelGetInitialTsc() {
+@@ -49,6 +50,7 @@
+ #elif !defined(__APPLE__)
+ #include <sys/syscall.h>
+ #include <unistd.h>
++#include <SDL_system.h> // BC5 (experiment 0180): SDL_LinuxSetThreadPriority
+ #endif
+ 
+ #if KYTY_PLATFORM != KYTY_PLATFORM_WINDOWS
+@@ -180,9 +182,61 @@ static uint64_t KernelGetInitialTsc() {
  	return initial_tsc;
  }
  
@@ -5576,7 +5584,7 @@ index 5f87e6b..20a9e4c 100644
  	return current_tsc >= initial_tsc ? current_tsc - initial_tsc : 0;
  }
  
-@@ -1303,6 +1356,7 @@ static bool NativeClockGettime(KernelClockid clock_id, KernelTimespec* tp) {
+@@ -1303,6 +1357,7 @@ static bool NativeClockGettime(KernelClockid clock_id, KernelTimespec* tp) {
  
  	tp->tv_sec  = native_time.tv_sec;
  	tp->tv_nsec = native_time.tv_nsec;
@@ -5584,7 +5592,7 @@ index 5f87e6b..20a9e4c 100644
  	return true;
  }
  
-@@ -3238,9 +3292,10 @@ int KYTY_SYSV_ABI PthreadCondWait(PthreadCond* cond, PthreadMutex* mutex) {
+@@ -3238,9 +3293,10 @@ int KYTY_SYSV_ABI PthreadCondWait(PthreadCond* cond, PthreadMutex* mutex) {
  		if (cond_elapsed >= 10 &&
  		    std::chrono::steady_clock::now() - cond_wait_logged > std::chrono::seconds(1)) {
  			cond_wait_logged = std::chrono::steady_clock::now();
@@ -5597,7 +5605,59 @@ index 5f87e6b..20a9e4c 100644
  		}
  	}
  	CondRemoveWaiter(cond_value, thread);
-@@ -3396,6 +3451,19 @@ static void* RunThread(void* arg) {
+@@ -3381,6 +3437,51 @@ static void CleanupThread(void* arg) {
+ 	thread->almost_done = true;
+ }
+ 
++#if KYTY_PLATFORM == KYTY_PLATFORM_LINUX
++// BC5 (experiment 0180): the guest's thread priorities on the host. On the console a title's
++// audio threads run above its workers; here every guest thread ran at the same nice 0 (only the
++// Windows build mapped the priority, above), so under load the title's audio engine waited for a
++// CPU like any job worker. The bands are the Windows mapping's of this file: a guest priority up to
++// 478 is above normal, from 733 below normal (256 is the highest, 767 the lowest, 700 the default:
++// PthreadGetPriorityForKernel). Only the top of the range moves up: the second title gives 256 to
++// its audio output and decode threads, 300 to its main and render threads, 450 to its physics
++// solvers and audio mixer, 500-750 to its job workers (KYTY_BC5_THREAD_TRACE, experiment 0180);
++// raising the 450s too would put five busy solvers above the host's own GPU threads. Up to 299 ->
++// nice -15 (the level SDL gives its own audio threads), from 733 (below normal) -> nice +5, the rest
++// 0, through SDL_LinuxSetThreadPriority (setpriority, else the RealtimeKit1 D-Bus service).
++// KYTY_BC5_GUEST_PRIORITY=0 leaves every thread at nice 0; KYTY_BC5_THREAD_TRACE=1 prints each
++// thread's guest priority, policy and the nice it got.
++static int Bc5GuestNice(int guest_priority) {
++	if (guest_priority <= 299) {
++		return -15;
++	}
++	if (guest_priority >= 733) {
++		return 5;
++	}
++	return 0;
++}
++
++static void Bc5ApplyGuestPriority(Pthread thread, const char* why) {
++	static const bool on = [] {
++		const char* e = std::getenv("KYTY_BC5_GUEST_PRIORITY");
++		return e == nullptr || std::strcmp(e, "0") != 0;
++	}();
++	static const bool trace = BC5_DIAG_ENV("KYTY_BC5_THREAD_TRACE") != nullptr;
++	if (thread == nullptr || thread->attr == nullptr || thread->host_thread_id == 0) {
++		return;
++	}
++	const int nice = on ? Bc5GuestNice(thread->attr->guest_priority) : 0;
++	int       rc   = 0;
++	if (nice != 0 || why[0] == 's') { // a Setprio may also return a thread to 0
++		rc = SDL_LinuxSetThreadPriority(static_cast<Sint64>(thread->host_thread_id), nice);
++	}
++	if (trace) {
++		std::fprintf(stderr, "bc5 thread: %s %s guest priority %d policy %d -> nice %d%s\n", why, thread->name.c_str(),
++		             thread->attr->guest_priority, thread->attr->policy, nice, rc == 0 ? "" : " (refused)");
++	}
++}
++#endif
++
+ static void* RunThread(void* arg) {
+ 	auto* thread = static_cast<Pthread>(arg);
+ 	void* ret    = nullptr;
+@@ -3396,6 +3497,20 @@ static void* RunThread(void* arg) {
  	os_thread_id = GetHostThreadId();
  #endif
  	thread->host_thread_id = os_thread_id;
@@ -5613,11 +5673,22 @@ index 5f87e6b..20a9e4c 100644
 +		std::snprintf(name, sizeof(name), "guest-%d", g_unnamed.fetch_add(1) + 1);
 +		pthread_setname_np(pthread_self(), name);
 +	}
++	Bc5ApplyGuestPriority(thread, "start");
 +#endif
  
  	LOGF("\tPthread run begin: %s, id = %d, os_thread_id = %" PRIu64 ", entry = 0x%016" PRIx64
  	     ", arg = 0x%016" PRIx64 ", stack_addr = 0x%016" PRIx64 ", stack_size = %" PRIu64 "\n",
-@@ -3791,6 +3859,10 @@ int KYTY_SYSV_ABI PthreadRename(Pthread thread, const char* name) {
+@@ -3695,6 +3810,9 @@ int KYTY_SYSV_ABI PthreadSetprio(Pthread thread, int prio) {
+ #endif
+ 
+ 	thread->attr->guest_priority = prio;
++#if KYTY_PLATFORM == KYTY_PLATFORM_LINUX
++	Bc5ApplyGuestPriority(thread, "setprio");
++#endif
+ 	LOGF("\t PthreadSetprio: %d, %d\n", thread->unique_id, prio);
+ 	return OK;
+ }
+@@ -3791,6 +3909,10 @@ int KYTY_SYSV_ABI PthreadRename(Pthread thread, const char* name) {
  	}
  
  	thread->name = std::string(name);
@@ -5628,7 +5699,7 @@ index 5f87e6b..20a9e4c 100644
  
  	return OK;
  }
-@@ -3850,6 +3922,7 @@ int KYTY_SYSV_ABI KernelClockGettime(KernelClockid clock_id, KernelTimespec* tp)
+@@ -3850,6 +3972,7 @@ int KYTY_SYSV_ABI KernelClockGettime(KernelClockid clock_id, KernelTimespec* tp)
  
  	int special_error = OK;
  	if (KernelClockGettimeSpecial(clock_id, tp, &special_error)) {
@@ -5636,7 +5707,7 @@ index 5f87e6b..20a9e4c 100644
  		return special_error;
  	}
  
-@@ -3867,6 +3940,7 @@ int KYTY_SYSV_ABI KernelClockGettime(KernelClockid clock_id, KernelTimespec* tp)
+@@ -3867,6 +3990,7 @@ int KYTY_SYSV_ABI KernelClockGettime(KernelClockid clock_id, KernelTimespec* tp)
  	tp->tv_nsec = t.tv_nsec;
  
  	if (result == 0) {
@@ -5644,7 +5715,7 @@ index 5f87e6b..20a9e4c 100644
  		return OK;
  	}
  	return KERNEL_ERROR_EINVAL;
-@@ -3994,7 +4068,7 @@ uint64_t KYTY_SYSV_ABI KernelGetTscFrequency() {
+@@ -3994,7 +4118,7 @@ uint64_t KYTY_SYSV_ABI KernelGetTscFrequency() {
  }
  
  uint64_t KYTY_SYSV_ABI KernelReadTsc() {
@@ -6575,10 +6646,10 @@ index e82b93e..6cf1b61 100644
  
  } // namespace Libs::Audio::Ajm
 diff --git a/src/libs/audio.cpp b/src/libs/audio.cpp
-index fe4b332..b7ede00 100644
+index fe4b332..9b54694 100644
 --- a/src/libs/audio.cpp
 +++ b/src/libs/audio.cpp
-@@ -10,16 +10,22 @@
+@@ -10,16 +10,25 @@
  #include "kernel/pthread.h"
  #include "kernel/semaphore.h"
  #include "libs/audio_internal.h"
@@ -6598,10 +6669,13 @@ index fe4b332..b7ede00 100644
 +#include <mutex>
 +#include <map>
 +#include <cmath>
++#if KYTY_PLATFORM == KYTY_PLATFORM_LINUX
++#include <dirent.h> // BC5 (experiment 0180): Bc5RaiseAudioClientThreads
++#endif
  
  namespace Libs::Audio {
  
-@@ -107,8 +113,28 @@ private:
+@@ -107,8 +116,28 @@ private:
  
  		SDL_AudioDeviceID audio_device = 0;
  		SDL_AudioSpec     audio_spec   = {};
@@ -6630,7 +6704,7 @@ index fe4b332..b7ede00 100644
  	struct PortIn {
  		bool     used            = false;
  		uint32_t type            = 0;
-@@ -132,6 +158,7 @@ private:
+@@ -132,6 +161,7 @@ private:
  	static const void*     PrepareOutputBuffer(const PortOut& port, const void* data,
  	                                           std::vector<uint8_t>* buffer);
  	static bool            QueueSdlAudio(PortOut* port, const void* data, bool blocking);
@@ -6638,7 +6712,7 @@ index fe4b332..b7ede00 100644
  };
  
  static Audio* g_audio = nullptr;
-@@ -236,20 +263,51 @@ bool Audio::OpenSdlDevice(PortOut* port) {
+@@ -236,20 +266,51 @@ bool Audio::OpenSdlDevice(PortOut* port) {
  	desired.samples  = static_cast<Uint16>(port->samples_num);
  	desired.callback = nullptr;
  
@@ -6694,7 +6768,7 @@ index fe4b332..b7ede00 100644
  	return true;
  }
  
-@@ -326,16 +384,183 @@ const void* Audio::PrepareOutputBuffer(const PortOut& port, const void* data,
+@@ -326,16 +387,183 @@ const void* Audio::PrepareOutputBuffer(const PortOut& port, const void* data,
  	return buffer->data();
  }
  
@@ -6879,7 +6953,7 @@ index fe4b332..b7ede00 100644
  
  	std::vector<uint8_t> convert_buffer;
  	const void*          queue_data = prepared_data;
-@@ -343,7 +568,7 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -343,7 +571,7 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  
  	SDL_AudioCVT cvt {};
  	const int    cvt_result =
@@ -6888,7 +6962,7 @@ index fe4b332..b7ede00 100644
  	                      static_cast<int>(port->freq), port->audio_spec.format,
  	                      port->audio_spec.channels, port->audio_spec.freq);
  
-@@ -368,6 +593,46 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -368,6 +596,46 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  		queue_size = static_cast<uint32_t>(cvt.len_cvt);
  	}
  
@@ -6935,10 +7009,25 @@ index fe4b332..b7ede00 100644
  	if (blocking) {
  		// More aggressive buffer management to prevent audio issues
  		// during heavy GPU load (common in gameplay vs cutscene)
-@@ -380,16 +645,32 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -378,18 +646,45 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+ 		                   : 2u;
+ 		const auto min_queued_size = queue_size * std::clamp(buffers, 2u, 8u); // Smaller max
  		const auto wait_start      = LibKernel::KernelGetProcessTime();
- 		// Timeout faster to avoid blocking the game thread
- 		const uint64_t timeout_us = 100000; // 100ms max wait
+-		// Timeout faster to avoid blocking the game thread
+-		const uint64_t timeout_us = 100000; // 100ms max wait
++		// BC5 (experiment 0180): the console's output call blocks until the hardware has room and never
++		// drops what it was given. Here a wait over 100 ms cleared the queue (~42 ms of sound): in the
++		// second title's opening a hiccup of the sound server's side then became an audible jump
++		// (runs 0180: 1-3 clears in half the runs, at the scene loads), while the title's own audio
++		// clock, which the cutscene's picture follows, had counted that sound as played. Held instead,
++		// the title's clock waits with the device and the picture with it: nothing is skipped. The
++		// queue is cleared only after KYTY_BC5_AUDIO_HOLD_MS (default 1000) without progress, a device
++		// that has stopped. The title's audio thread is the one held, not its game thread.
++		static const uint64_t timeout_us = [] {
++			const char* e = std::getenv("KYTY_BC5_AUDIO_HOLD_MS");
++			const long  v = e != nullptr ? std::strtol(e, nullptr, 10) : 1000;
++			return static_cast<uint64_t>(v > 0 ? v : 1000) * 1000u;
++		}();
 +		{
 +			const auto q = SDL_GetQueuedAudioSize(port->audio_device);
 +			port->tr_queued_min = std::min<uint32_t>(port->tr_queued_min, q);
@@ -6968,7 +7057,61 @@ index fe4b332..b7ede00 100644
  	if (SDL_QueueAudio(port->audio_device, queue_data, queue_size) < 0) {
  		LOGF("AudioOut: SDL_QueueAudio failed: %s\n", SDL_GetError());
  		return false;
-@@ -428,7 +709,7 @@ Audio::Id Audio::AudioOutOpen(int type, uint32_t samples_num, uint32_t freq, For
+@@ -398,7 +693,53 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+ 	return true;
+ }
+ 
++#if KYTY_PLATFORM == KYTY_PLATFORM_LINUX
++// BC5 (experiment 0180): SDL's PulseAudio backend moves the sound to the server on its own thread,
++// "PulseMainloop", which ran at nice 0 beside ~60 busy game threads while SDL's audio threads have
++// nice -15. When it waited for a CPU the server ran dry (a gap) and the host's queue backed up
++// until the 100-ms limit below cleared it (a jump): the cutscene's sound slowed and sped up. It
++// gets the same -15 (SDL_LinuxSetThreadPriority: setpriority, else RealtimeKit1), once a port is
++// open. KYTY_BC5_AUDIO_PRIORITY=0 leaves it alone.
++static void Bc5RaiseAudioClientThreads() {
++	static std::atomic<bool> done {false};
++	const char*              e = std::getenv("KYTY_BC5_AUDIO_PRIORITY");
++	if ((e != nullptr && std::strcmp(e, "0") == 0) || done.load()) {
++		return;
++	}
++	DIR* d = opendir("/proc/self/task");
++	if (d == nullptr) {
++		return;
++	}
++	bool found = false;
++	while (const dirent* de = readdir(d)) {
++		if (de->d_name[0] < '0' || de->d_name[0] > '9') continue;
++		char path[64];
++		std::snprintf(path, sizeof(path), "/proc/self/task/%s/comm", de->d_name);
++		char  comm[32] = {};
++		FILE* f        = std::fopen(path, "r");
++		if (f == nullptr) continue;
++		const bool got = std::fgets(comm, sizeof(comm), f) != nullptr;
++		std::fclose(f);
++		if (got && std::strncmp(comm, "PulseMainloop", 13) == 0) {
++			const long tid = std::strtol(de->d_name, nullptr, 10);
++			const int  rc  = SDL_LinuxSetThreadPriority(tid, -15);
++			std::fprintf(stderr, "AudioOut: PulseMainloop thread %ld at nice -15%s\n", tid, rc == 0 ? "" : " refused");
++			found = true;
++		}
++	}
++	closedir(d);
++	if (found) {
++		done.store(true); // a port opened before SDL's backend made the thread looks again next time
++	}
++}
++#endif
++
+ Audio::Id Audio::AudioOutOpen(int type, uint32_t samples_num, uint32_t freq, Format format) {
++#if KYTY_PLATFORM == KYTY_PLATFORM_LINUX
++	struct Raise {
++		~Raise() { Bc5RaiseAudioClientThreads(); } // after the device is open (end of this call)
++	} raise;
++#endif
+ 	Common::LockGuard lock(m_mutex);
+ 
+ 	for (int id = 0; id < OUT_PORTS_MAX; id++) {
+@@ -428,7 +769,7 @@ Audio::Id Audio::AudioOutOpen(int type, uint32_t samples_num, uint32_t freq, For
  				port.volume[i] = 32768;
  			}
  
@@ -6977,7 +7120,7 @@ index fe4b332..b7ede00 100644
  				// KytyPlus diagnostic: OpenSdlDevice() may fail (no host audio device,
  				// unsupported sample rate/format, or SDL init failure). The return is
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
-@@ -568,6 +849,45 @@ uint32_t Audio::AudioOutOutputs(OutputParam* params, uint32_t num, bool blocking
+@@ -568,6 +909,45 @@ uint32_t Audio::AudioOutOutputs(OutputParam* params, uint32_t num, bool blocking
  		m_out_ports[params[i].handle.GetId()].last_output_time = LibKernel::KernelGetProcessTime();
  	}
  
@@ -20276,7 +20419,7 @@ index 343045e..db295f0 100644
  		        info->access_violation_vaddr)) {
  			return true;
 diff --git a/src/main.cpp b/src/main.cpp
-index c44d32f..254b9ff 100644
+index c44d32f..603c752 100644
 --- a/src/main.cpp
 +++ b/src/main.cpp
 @@ -16,6 +16,7 @@
@@ -20334,7 +20477,7 @@ index c44d32f..254b9ff 100644
  		} else if (arg == "--keymap") {
  			const auto split = value.find('=');
  			if (split == std::string::npos || split == 0 || split + 1 == value.size()) {
-@@ -356,10 +376,41 @@ static bool ParseArgs(int argc, char* argv[], RunOptions& options, bool& show_he
+@@ -356,10 +376,42 @@ static bool ParseArgs(int argc, char* argv[], RunOptions& options, bool& show_he
  		}
  	}
  
@@ -20366,7 +20509,8 @@ index c44d32f..254b9ff 100644
 +	    "KYTY_BC5_APR_CALLERS", "KYTY_BC5_AUDIO_DUMP", "KYTY_BC5_AUDIO_TRACE", "KYTY_BC5_FLIP_TIMING",
 +	    "KYTY_BC5_FPS_COUNTER", "KYTY_BC5_INPUT_RECORD", "KYTY_BC5_INPUT_TRACE", "KYTY_BC5_JSON_TRACE",
 +	    "KYTY_BC5_LOG_WAITS", "KYTY_BC5_MAP_STATS", "KYTY_BC5_MEASURE", "KYTY_BC5_MOTION_TRACE",
-+	    "KYTY_BC5_RANGE_WATCH", "KYTY_BC5_SAVE_TRACE", "KYTY_BC5_VIDEOOUT_TRACE", "KYTY_BC5_VMA_TRACE"};
++	    "KYTY_BC5_RANGE_WATCH", "KYTY_BC5_SAVE_TRACE", "KYTY_BC5_VIDEOOUT_TRACE", "KYTY_BC5_VMA_TRACE",
++	    "KYTY_BC5_THREAD_TRACE"};
 +	for (const char* name: kDiagnostic) {
 +		unsetenv(name);
 +	}
@@ -20377,7 +20521,7 @@ index c44d32f..254b9ff 100644
  int main(int argc, char* argv[]) {
  	auto& slist = *SubsystemsList::Instance();
  
-@@ -474,7 +525,7 @@ int main(int argc, char* argv[]) {
+@@ -474,7 +526,7 @@ int main(int argc, char* argv[]) {
  	// shadPS4; only PS5 (Prospero) titles reach the native Run() path. This
  	// must happen BEFORE Run() so no PS5 Vulkan/memory subsystems are
  	// initialized for a PS4 title (and vice versa).

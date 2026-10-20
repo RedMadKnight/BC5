@@ -1,0 +1,72 @@
+bc5 thread: setprio MainThread guest priority 300 policy 1 -> nice 0
+bc5 thread: start Job Lo 0 guest priority 600 policy 1 -> nice 0
+bc5 thread: start Job Lo 1 guest priority 600 policy 1 -> nice 0
+bc5 thread: start Job Lo 2 guest priority 600 policy 1 -> nice 0
+bc5 thread: start Job Lo 3 guest priority 600 policy 1 -> nice 0
+bc5 thread: start Job Lo 4 guest priority 600 policy 1 -> nice 0
+bc5 thread: start Job Hi 0 guest priority 500 policy 1 -> nice 0
+bc5 thread: start Job Hi 1 guest priority 500 policy 1 -> nice 0
+bc5 thread: start Job Hi 2 guest priority 500 policy 1 -> nice 0
+bc5 thread: start Job Hi 3 guest priority 500 policy 1 -> nice 0
+bc5 thread: start Job Hi 4 guest priority 500 policy 1 -> nice 0
+bc5 thread: start Job Bk 0 guest priority 750 policy 1 -> nice 0
+bc5 thread: start Job Bk 1 guest priority 750 policy 1 -> nice 0
+bc5 thread: start Job Bk 2 guest priority 750 policy 1 -> nice 0
+bc5 thread: start Job Bk 3 guest priority 750 policy 1 -> nice 0
+bc5 thread: start Job Bk 4 guest priority 750 policy 1 -> nice 0
+bc5 thread: start Archive Asset IO guest priority 600 policy 1 -> nice 0
+bc5 thread: start Archive Loose IO guest priority 600 policy 1 -> nice 0
+bc5 thread: start Archive Resolve IO guest priority 600 policy 1 -> nice 0
+bc5 thread: start Render Thread guest priority 300 policy 1 -> nice 0
+bc5 thread: start Havok Solve guest priority 700 policy 3 -> nice 0
+bc5 thread: start Havok Solve guest priority 700 policy 3 -> nice 0
+bc5 thread: start Havok Solve guest priority 700 policy 3 -> nice 0
+bc5 thread: start Havok Solve guest priority 700 policy 3 -> nice 0
+bc5 thread: start Havok Solve guest priority 700 policy 3 -> nice 0
+bc5 thread: setprio Havok Solve guest priority 450 policy 3 -> nice 0
+bc5 thread: setprio Havok Solve guest priority 450 policy 3 -> nice 0
+bc5 thread: setprio Havok Solve guest priority 450 policy 3 -> nice 0
+bc5 thread: setprio Havok Solve guest priority 450 policy 3 -> nice 0
+bc5 thread: setprio Havok Solve guest priority 450 policy 3 -> nice 0
+bc5 thread: start Havok Queries and Cloth guest priority 700 policy 3 -> nice 0
+bc5 thread: start Havok Queries and Cloth guest priority 700 policy 3 -> nice 0
+bc5 thread: start Havok Queries and Cloth guest priority 700 policy 3 -> nice 0
+bc5 thread: start Havok Queries and Cloth guest priority 700 policy 3 -> nice 0
+bc5 thread: start Havok Queries and Cloth guest priority 700 policy 3 -> nice 0
+bc5 thread: setprio Havok Queries and Cloth guest priority 550 policy 3 -> nice 0
+bc5 thread: setprio Havok Queries and Cloth guest priority 550 policy 3 -> nice 0
+bc5 thread: setprio Havok Queries and Cloth guest priority 550 policy 3 -> nice 0
+bc5 thread: setprio Havok Queries and Cloth guest priority 550 policy 3 -> nice 0
+bc5 thread: setprio Havok Queries and Cloth guest priority 550 policy 3 -> nice 0
+bc5 thread: start AK::IOThread guest priority 700 policy 1 -> nice 0
+bc5 thread: start AK::JobWrkr-AcmQueue guest priority 256 policy 1 -> nice 0
+bc5 thread: start AK::BankMgr guest priority 600 policy 1 -> nice 0
+bc5 thread: start AK::Suspended guest priority 450 policy 1 -> nice 0
+bc5 thread: start AK::AudioMgr guest priority 450 policy 1 -> nice 0
+bc5 thread: start Coherent Thread guest priority 600 policy 1 -> nice 0
+bc5 thread: start Coherent Resource Worker Thread guest priority 650 policy 1 -> nice 0
+bc5 thread: start Coherent Layout Worker Thread guest priority 600 policy 1 -> nice 0
+bc5 thread: start UXAnalytics::UploadThread guest priority 650 policy 1 -> nice 0
+bc5 thread: start EntitlementSysPPR::QueryThread guest priority 650 policy 1 -> nice 0
+bc5 thread: start File Video Stream guest priority 650 policy 1 -> nice 0
+bc5 thread: start File Video Stream guest priority 650 policy 1 -> nice 0
+bc5 thread: start File Video Stream guest priority 650 policy 1 -> nice 0
+bc5 thread: start File Video Stream guest priority 650 policy 1 -> nice 0
+bc5 thread: start File Video Stream guest priority 650 policy 1 -> nice 0
+bc5 thread: start Save Thread guest priority 650 policy 1 -> nice 0
+bc5 thread: start User UDS Thread guest priority 650 policy 1 -> nice 0
+bc5 thread: start User Trophy Thread guest priority 650 policy 1 -> nice 0
+bc5 thread: start AK::AudioOutThread guest priority 256 policy 1 -> nice 0
+bc5 thread: start Bink Snd guest priority 700 policy 1 -> nice 0
+bc5 thread: start BinkAsy0 guest priority 700 policy 1 -> nice 0
+bc5 thread: setprio BinkAsy0 guest priority 500 policy 3 -> nice 0
+bc5 thread: setprio BinkAsy1 guest priority 500 policy 1 -> nice 0
+bc5 thread: setprio Bink Snd guest priority 450 policy 3 -> nice 0
+bc5 thread: start BinkAsy1 guest priority 700 policy 1 -> nice 0
+bc5 thread: start Unknown Animset guest priority 650 policy 1 -> nice 0
+bc5 thread: start Unknown Animset guest priority 650 policy 1 -> nice 0
+bc5 thread: start Unknown Animset guest priority 650 policy 1 -> nice 0
+bc5 thread: start Unknown Animset guest priority 650 policy 1 -> nice 0
+bc5 thread: start Unknown Animset guest priority 650 policy 1 -> nice 0
+bc5 thread: start Unknown Animset guest priority 650 policy 1 -> nice 0
+bc5 thread: start Unknown Animset guest priority 650 policy 1 -> nice 0

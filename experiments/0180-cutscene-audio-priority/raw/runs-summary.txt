@@ -1,0 +1,22 @@
+BC5 experiment 0180, 2026-10-20: the second title's opening (New Game, slot 3), normal build, t 150-300 s.
+"off" = a second of the main audio port with a push rate under 0.98 or a queue clear; (rate/clears).
+
+live1 (by hand, hold 100 ms, no priorities)  off: 168(0.88/1) 201(0.91/0) 202(0.92/0) 233(0.96/0) 235(0.83/1)
+-- hold 100 ms (the old drop) --
+opA   no priorities                3 of 150 off... 4 s: 230(0.90/0) 233(0.94/0) 235(0.90/0) 236(0.54/1); 38.8 flips/s, 11 s gap>150 ms, longest 617 ms
+opB   PulseMainloop -15            0 s;                                                38.8 -> 37.8 flips/s, longest 412 ms
+opC   PulseMainloop + guest prio   0 s;                                                38.4 flips/s, longest 457 ms
+opC2  PulseMainloop + guest prio   3 s: 235(0.96/0) 236(0.86/1) 238(0.69/1);           37.3 flips/s, longest 402 ms
+opA2  no priorities                0 s;                                                38.4 flips/s, longest 424 ms
+opS1  + guest prio, sampler        0 s;                                                37.8 flips/s, longest 453 ms
+opS2  + guest prio, sampler        0 s;                                                39.1 flips/s, longest 1002 ms
+opS3  + guest prio, sampler        5 s: 174(0.88/1) 175(0.76/1) 232(0.93/1) 233(0.98/0) 234(0.90/0); 36.0 flips/s, longest 570 ms
+opS4  + guest prio, sampler        0 s;                                                38.5 flips/s, longest 611 ms
+opS5  + guest prio, sampler        0 s;                                                37.1 flips/s, longest 407 ms
+opD1  + guest prio, device 1024    3 s: 235(0.97/0) 236(0.79/1) 237(0.80/1); pipewire errors 0 (stream and headset), quantum 256; 38.1 flips/s
+=> with the 100-ms drop: 5 of 12 runs with off seconds, 9 clears in all.
+-- hold 1000 ms (this experiment), priorities on --
+opH1  0 s, 0 clears;                38.1 flips/s, longest 676 ms
+opH2  0 s, 0 clears;                38.7 flips/s, longest 442 ms
+opH3  0 s, 0 clears;                41.0 flips/s, longest 403 ms
+opH4  1 s: 250(0.93/0), 0 clears;   37.9 flips/s, longest 451 ms

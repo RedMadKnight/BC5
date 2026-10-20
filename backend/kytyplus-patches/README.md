@@ -166,6 +166,15 @@ and the queue's depth (experiment 0162); `KYTY_BC5_AUDIO_DUMP=<dir>` writes the 
 port's PCM before and after the SDL conversion as raw files (experiment 0166, `raw2wav.py` there);
 `KYTY_BC5_VIDEOOUT_TRACE=1` prints the flip rate and event registrations and, once a second, the
 flips by mode and the status polls (experiment 0162).
+Experiment 0180: the output call holds the title's audio thread until the device has room and
+drops the queue only after `KYTY_BC5_AUDIO_HOLD_MS` (default 1000) without progress, a stopped
+device. Before, it dropped after 100 ms, which turned a short stall of the sound server's side into
+an audible jump; the console's output call never drops. SDL's `PulseMainloop` thread gets nice −15,
+the level SDL gives its own audio threads (`KYTY_BC5_AUDIO_PRIORITY=0` leaves it). On Linux the
+guest's thread priorities are applied: up to 299 → nice −15 (the second title's audio output and
+decode threads), 733 and above → nice +5, the rest 0. This goes through
+`SDL_LinuxSetThreadPriority` (setpriority, else RealtimeKit1). `KYTY_BC5_GUEST_PRIORITY=0` leaves
+every thread at 0, and `KYTY_BC5_THREAD_TRACE=1` prints each thread's priority and the nice it got.
 `KYTY_BC5_SAVEDATA_DIR=<dir>` puts the save data memory file (`<title>/sce_sdmemory/memory.dat`)
 under that directory instead of `_SaveData` in the working directory, so that runs started in
 different directories share one save.
