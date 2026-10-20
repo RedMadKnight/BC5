@@ -2232,7 +2232,7 @@ index 0000000..c245d62
 +
 +#endif // KYTY_GRAPHICS_PRESENTATION_SETTINGS_OVERLAY_H_
 diff --git a/src/graphics/presentation/videoOut.cpp b/src/graphics/presentation/videoOut.cpp
-index f980320..99c5951 100644
+index f980320..378aba6 100644
 --- a/src/graphics/presentation/videoOut.cpp
 +++ b/src/graphics/presentation/videoOut.cpp
 @@ -1,3 +1,9 @@
@@ -2279,7 +2279,7 @@ index f980320..99c5951 100644
  static int RegisterVideoOutEvent(int handle, EventQueue::KernelEqueue eq, VideoOutEventKind kind,
                                   void* udata) {
  	uint64_t generation = 0;
-@@ -471,11 +490,53 @@ static int DeleteVideoOutEvent(int handle, EventQueue::KernelEqueue eq, VideoOut
+@@ -471,11 +490,61 @@ static int DeleteVideoOutEvent(int handle, EventQueue::KernelEqueue eq, VideoOut
  	return result == LibKernel::KERNEL_ERROR_ENOENT ? OK : result;
  }
  
@@ -2292,6 +2292,9 @@ index f980320..99c5951 100644
 +	return on;
 +}
 +static std::atomic<uint32_t> g_bc5_vo_flips[4], g_bc5_vo_status, g_bc5_vo_pending, g_bc5_vo_waitvb, g_bc5_vo_vbstatus;
++// Experiment 0184: what the title read last from GetVblankStatus and GetFlipStatus (count and process
++// time), to print how fast those counters advance against the process clock.
++static std::atomic<uint64_t> g_bc5_vo_vb_count, g_bc5_vo_vb_ptime, g_bc5_vo_fl_count, g_bc5_vo_fl_ptime;
 +static void Bc5VideoOutTraceTick() {
 +	if (!Bc5VideoOutTraceOn()) {
 +		return;
@@ -2305,9 +2308,14 @@ index f980320..99c5951 100644
 +	if (now - last < 1000000) {
 +		return;
 +	}
-+	std::fprintf(stderr, "videoout trace: t %.3f s: flips mode0 %u mode1 %u mode2 %u mode3 %u, GetFlipStatus %u, IsFlipPending %u, WaitVblank %u, GetVblankStatus %u in %.3f s\n",
++	static uint64_t last_vb = 0, last_vb_t = 0, last_fl = 0, last_fl_t = 0;
++	const uint64_t  vb = g_bc5_vo_vb_count.load(), vb_t = g_bc5_vo_vb_ptime.load(), fl = g_bc5_vo_fl_count.load(), fl_t = g_bc5_vo_fl_ptime.load();
++	std::fprintf(stderr, "videoout trace: t %.3f s: flips mode0 %u mode1 %u mode2 %u mode3 %u, GetFlipStatus %u, IsFlipPending %u, WaitVblank %u, GetVblankStatus %u in %.3f s; "
++	                     "vblank count +%" PRIu64 " over %.3f s of its time, flip count +%" PRIu64 " over %.3f s\n",
 +	             static_cast<double>(now) / 1e6, g_bc5_vo_flips[0].exchange(0), g_bc5_vo_flips[1].exchange(0), g_bc5_vo_flips[2].exchange(0), g_bc5_vo_flips[3].exchange(0),
-+	             g_bc5_vo_status.exchange(0), g_bc5_vo_pending.exchange(0), g_bc5_vo_waitvb.exchange(0), g_bc5_vo_vbstatus.exchange(0), static_cast<double>(now - last) / 1e6);
++	             g_bc5_vo_status.exchange(0), g_bc5_vo_pending.exchange(0), g_bc5_vo_waitvb.exchange(0), g_bc5_vo_vbstatus.exchange(0), static_cast<double>(now - last) / 1e6,
++	             vb - last_vb, static_cast<double>(vb_t - last_vb_t) / 1e6, fl - last_fl, static_cast<double>(fl_t - last_fl_t) / 1e6);
++	last_vb = vb; last_vb_t = vb_t; last_fl = fl; last_fl_t = fl_t;
 +	std::fflush(stderr);
 +	last = now;
 +}
@@ -2334,7 +2342,7 @@ index f980320..99c5951 100644
  
  	return interval <= 1 || (cfg.vblank_status.count % static_cast<uint64_t>(interval)) == 0;
  }
-@@ -781,6 +842,7 @@ void VideoOutDriver::Impl::VblankEnd() {
+@@ -781,6 +850,7 @@ void VideoOutDriver::Impl::VblankEnd() {
  }
  
  void VideoOutDriver::Impl::PresentThread(std::stop_token token) {
@@ -2342,7 +2350,7 @@ index f980320..99c5951 100644
  	const auto frequency = Common::Timer::QueryPerformanceFrequency();
  	EXIT_IF(frequency == 0);
  
-@@ -934,7 +996,18 @@ void FlipQueue::Cancel(VideoOutConfig& cfg) {
+@@ -934,7 +1004,18 @@ void FlipQueue::Cancel(VideoOutConfig& cfg) {
  	cfg.flip_status.gcQueueNum     = 0;
  }
  
@@ -2361,7 +2369,7 @@ index f980320..99c5951 100644
  	VideoOutConfig* cfg        = nullptr;
  	uint64_t        generation = 0;
  	int             index      = 0;
-@@ -1012,7 +1085,29 @@ void FlipQueue::Prepare(uint64_t request_id, Graphics::CommandBuffer& buffer) {
+@@ -1012,7 +1093,29 @@ void FlipQueue::Prepare(uint64_t request_id, Graphics::CommandBuffer& buffer) {
  		frame = &m_presenter.PrepareBlankFrame(width, height, index == VIDEO_OUT_BUFFER_INDEX_BLACK,
  		                                       &buffer);
  	} else {
@@ -2391,7 +2399,7 @@ index f980320..99c5951 100644
  	}
  
  	Common::LockGuard lock(m_mutex);
-@@ -1033,6 +1128,20 @@ void FlipQueue::Prepare(uint64_t request_id, Graphics::CommandBuffer& buffer) {
+@@ -1033,6 +1136,20 @@ void FlipQueue::Prepare(uint64_t request_id, Graphics::CommandBuffer& buffer) {
  		EXIT("video-out request changed while recording, id=%" PRIu64 "\n", request_id);
  	}
  	prepared->frame = frame;
@@ -2412,7 +2420,7 @@ index f980320..99c5951 100644
  }
  
  void FlipQueue::Complete(uint64_t request_id) {
-@@ -1046,6 +1155,7 @@ void FlipQueue::Complete(uint64_t request_id) {
+@@ -1046,6 +1163,7 @@ void FlipQueue::Complete(uint64_t request_id) {
  		}
  		request->state = RequestState::Ready;
  		m_submit_cond_var.Signal();
@@ -2420,7 +2428,7 @@ index f980320..99c5951 100644
  		m_mutex.Unlock();
  		return;
  	}
-@@ -1087,6 +1197,26 @@ void FlipQueue::Wait(VideoOutConfig& cfg, int index) {
+@@ -1087,6 +1205,26 @@ void FlipQueue::Wait(VideoOutConfig& cfg, int index) {
  	}
  }
  
@@ -2447,7 +2455,7 @@ index f980320..99c5951 100644
  bool FlipQueue::Flip(uint32_t micros) {
  	KYTY_PROFILER_BLOCK("FlipQueue::Flip");
  
-@@ -1240,6 +1370,10 @@ KYTY_SYSV_ABI int VideoOutSetFlipRate(int handle, int rate) {
+@@ -1240,6 +1378,10 @@ KYTY_SYSV_ABI int VideoOutSetFlipRate(int handle, int rate) {
  
  	Common::LockGuard lock(ctx->mutex);
  	ctx->flip_rate = rate;
@@ -2458,7 +2466,7 @@ index f980320..99c5951 100644
  
  	return OK;
  }
-@@ -1251,6 +1385,7 @@ KYTY_SYSV_ABI int VideoOutDeleteFlipEvent(EventQueue::KernelEqueue eq, int handl
+@@ -1251,6 +1393,7 @@ KYTY_SYSV_ABI int VideoOutDeleteFlipEvent(EventQueue::KernelEqueue eq, int handl
  
  KYTY_SYSV_ABI int VideoOutAddFlipEvent(EventQueue::KernelEqueue eq, int handle, void* udata) {
  	PRINT_NAME();
@@ -2466,7 +2474,7 @@ index f980320..99c5951 100644
  	return RegisterVideoOutEvent(handle, eq, VideoOutEventKind::Flip, udata);
  }
  
-@@ -1267,12 +1402,14 @@ KYTY_SYSV_ABI int VideoOutDeletePreVblankStartEvent(EventQueue::KernelEqueue eq,
+@@ -1267,12 +1410,14 @@ KYTY_SYSV_ABI int VideoOutDeletePreVblankStartEvent(EventQueue::KernelEqueue eq,
  KYTY_SYSV_ABI int VideoOutAddVblankEvent(LibKernel::EventQueue::KernelEqueue eq, int handle,
                                           void* udata) {
  	PRINT_NAME();
@@ -2481,7 +2489,7 @@ index f980320..99c5951 100644
  	return RegisterVideoOutEvent(handle, eq, VideoOutEventKind::PreVblankStart, udata);
  }
  
-@@ -1450,8 +1587,43 @@ KYTY_SYSV_ABI int VideoOutUnregisterBuffers(int handle, int set_index) {
+@@ -1450,8 +1595,43 @@ KYTY_SYSV_ABI int VideoOutUnregisterBuffers(int handle, int set_index) {
  	return OK;
  }
  
@@ -2525,7 +2533,7 @@ index f980320..99c5951 100644
  
  	uint64_t  request_id = 0;
  	const int result     = ReserveFlipRequest(DriverState(), handle, index, flip_mode, flip_arg,
-@@ -1462,6 +1634,7 @@ KYTY_SYSV_ABI int VideoOutSubmitFlip(int handle, int index, int flip_mode, int64
+@@ -1462,6 +1642,7 @@ KYTY_SYSV_ABI int VideoOutSubmitFlip(int handle, int index, int flip_mode, int64
  	if (result != OK) {
  		return result;
  	}
@@ -2533,7 +2541,7 @@ index f980320..99c5951 100644
  	g_video_out_driver->SubmitFlipPreparation(request_id);
  
  	return OK;
-@@ -1497,6 +1670,14 @@ void VideoOutDriver::WaitForSubmitSlot() {
+@@ -1497,6 +1678,14 @@ void VideoOutDriver::WaitForSubmitSlot() {
  	m_impl->GetFlipQueue().WaitForSubmitSlot();
  }
  
@@ -2548,7 +2556,7 @@ index f980320..99c5951 100644
  void VideoOutDriver::WaitFlipDone(int handle, int index) {
  	auto* ctx = m_impl->Get(handle);
  	EXIT_IF(ctx == nullptr);
-@@ -1505,8 +1686,45 @@ void VideoOutDriver::WaitFlipDone(int handle, int index) {
+@@ -1505,8 +1694,45 @@ void VideoOutDriver::WaitFlipDone(int handle, int index) {
  	m_impl->GetFlipQueue().Wait(*ctx, index);
  }
  
@@ -2596,7 +2604,18 @@ index f980320..99c5951 100644
  
  	if (status == nullptr) {
  		return VIDEO_OUT_ERROR_INVALID_ADDRESS;
-@@ -1536,6 +1754,7 @@ KYTY_SYSV_ABI int VideoOutGetFlipStatus(int handle, VideoOutFlipStatus* status)
+@@ -1518,6 +1744,10 @@ KYTY_SYSV_ABI int VideoOutGetFlipStatus(int handle, VideoOutFlipStatus* status)
+ 	}
+ 
+ 	DriverState().GetFlipQueue().GetFlipStatus(*ctx, *status);
++	if (Bc5VideoOutTraceOn()) {
++		g_bc5_vo_fl_count.store(status->count);
++		g_bc5_vo_fl_ptime.store(status->processTime);
++	}
+ 
+ 	LOGF("\t count = %" PRIu64 "\n"
+ 	     "\t processTime = %" PRIu64 "\n"
+@@ -1536,6 +1766,7 @@ KYTY_SYSV_ABI int VideoOutGetFlipStatus(int handle, VideoOutFlipStatus* status)
  
  KYTY_SYSV_ABI int VideoOutIsFlipPending(int handle) {
  	PRINT_NAME();
@@ -2604,7 +2623,7 @@ index f980320..99c5951 100644
  
  	auto* ctx = DriverState().Get(handle);
  	if (ctx == nullptr) {
-@@ -1552,6 +1771,7 @@ KYTY_SYSV_ABI int VideoOutIsFlipPending(int handle) {
+@@ -1552,6 +1783,7 @@ KYTY_SYSV_ABI int VideoOutIsFlipPending(int handle) {
  
  KYTY_SYSV_ABI int VideoOutGetVblankStatus(int handle, VideoOutVblankStatus* status) {
  	PRINT_NAME();
@@ -2612,7 +2631,18 @@ index f980320..99c5951 100644
  
  	if (status == nullptr) {
  		return VIDEO_OUT_ERROR_INVALID_ADDRESS;
-@@ -1632,6 +1852,10 @@ KYTY_SYSV_ABI int VideoOutGetEventCount(const EventQueue::KernelEvent* ev) {
+@@ -1565,6 +1797,10 @@ KYTY_SYSV_ABI int VideoOutGetVblankStatus(int handle, VideoOutVblankStatus* stat
+ 	ctx->mutex.Lock();
+ 	*status = ctx->vblank_status;
+ 	ctx->mutex.Unlock();
++	if (Bc5VideoOutTraceOn()) {
++		g_bc5_vo_vb_count.store(status->count);
++		g_bc5_vo_vb_ptime.store(status->processTime);
++	}
+ 
+ 	LOGF("\t count = %" PRIu64 "\n"
+ 	     "\t processTime = %" PRIu64 "\n"
+@@ -1632,6 +1868,10 @@ KYTY_SYSV_ABI int VideoOutGetEventCount(const EventQueue::KernelEvent* ev) {
  
  KYTY_SYSV_ABI int VideoOutWaitVblank(int handle) {
  	PRINT_NAME();
