@@ -182,6 +182,9 @@ SDL's PipeWire threads (`SDLAudioP<n>`) get nice −15 like its PulseAudio ones.
 `PIPEWIRE_PROPS` defaults to `{ channelmix.normalize = true }`, so the downmix of the title's 7.1 to a
 stereo device cannot clip. `KYTY_BC5_AUDIO_DUMP_FROM=<s>` and `KYTY_BC5_AUDIO_DUMP_SECONDS=<s>` place
 the audio dump on a cutscene.
+Experiment 0182: while the window is paused (the clocks of experiment 0166 stand still) the title's
+output thread waits in `QueueSdlAudio` with its SDL device paused (`KernelClocksPaused()`), so the
+title's audio clock cannot run ahead of its frozen game.
 `KYTY_BC5_SAVEDATA_DIR=<dir>` puts the save data memory file (`<title>/sce_sdmemory/memory.dat`)
 under that directory instead of `_SaveData` in the working directory, so that runs started in
 different directories share one save.

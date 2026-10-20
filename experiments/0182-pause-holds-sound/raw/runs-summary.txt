@@ -1,0 +1,17 @@
+BC5 experiment 0182, 2026-10-20. Normal build unless noted; saves restored around every run.
+
+opPause1 (no chains): paused at 225.558 s, resumed at 225.558 s (15 s of wall time); the audio second
+  spanning it: 96 calls, 1.024 s of sound in 1.010 s; t 150-300: 0 slow seconds, 0 clears; 41.7 flips/s,
+  lowest second 6, 9 s with a gap over 150 ms, longest 467 ms; PipeWire stream errors 9, headset 0.
+opPause2 (chains, the new default): paused at 225.526 s, resumed at 225.526 s; that second 1.024 s of
+  sound in 1.011 s; t 150-300: 0 slow seconds, 0 clears; 47.9 flips/s, lowest second 18, 5 s with a gap
+  over 150 ms, longest 285 ms; PipeWire errors 0/0.
+lnC (lean build, chains, start screen 90 s): alive at 86 s, SDL audio driver pipewire, 78 threads.
+Maintainer's chains session 14:47-14:54 (journal play-20261020-1447): flips/s per 10 s
+  0:22 10:30 20:30 30:19 40:43 50:48 60:39 70:47 80:51 90:49 100:49 110:50 120:52 130:51 140:51 150:50
+  160:40 170:38 180:48 190:49 200:34 210:44 220:35 230:30 240:32 ... 400:41; frames over 250 ms:
+  266 (337 ms), 319 (1083 ms, 1048 outside the host), 372 (3753 ms, 3741 outside), 384 (608), 385 (287).
+clicks.py, 60 s of the opening (dump second 0 = process t 150 s = recording ~152 s):
+  title's own sound (dump c4)  415 clicks, worst dump seconds 56 (51), 55 (43)
+  lossless recording c4        549 clicks, worst 207 (51), 208 (50)
+  lossless recording f1 (lean) 457 clicks, worst 200 (69), 201 (25)

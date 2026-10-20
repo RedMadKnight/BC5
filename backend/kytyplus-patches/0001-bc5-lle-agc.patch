@@ -5505,7 +5505,7 @@ index 9ea25b0..b922b68 100644
  			EXIT_IF(!AddMappedUnlocked(vaddr, size, MappingType::Private));
  			return true;
 diff --git a/src/kernel/pthread.cpp b/src/kernel/pthread.cpp
-index 5f87e6b..e6f5ccf 100644
+index 5f87e6b..7b61a15 100644
 --- a/src/kernel/pthread.cpp
 +++ b/src/kernel/pthread.cpp
 @@ -1,3 +1,4 @@
@@ -5521,7 +5521,7 @@ index 5f87e6b..e6f5ccf 100644
  #endif
  
  #if KYTY_PLATFORM != KYTY_PLATFORM_WINDOWS
-@@ -180,9 +182,61 @@ static uint64_t KernelGetInitialTsc() {
+@@ -180,9 +182,64 @@ static uint64_t KernelGetInitialTsc() {
  	return initial_tsc;
  }
  
@@ -5548,6 +5548,9 @@ index 5f87e6b..e6f5ccf 100644
 +		g_pause_tsc_total.fetch_add(now > start ? now - start : 0, std::memory_order_acq_rel);
 +		g_pause_tsc_start.store(0, std::memory_order_release);
 +	}
++}
++bool KernelClocksPaused() {
++	return g_pause_tsc_start.load(std::memory_order_acquire) != 0;
 +}
 +static uint64_t KernelPausedNs() {
 +	const auto frequency = KernelGetTscFrequencyNative();
@@ -5584,7 +5587,7 @@ index 5f87e6b..e6f5ccf 100644
  	return current_tsc >= initial_tsc ? current_tsc - initial_tsc : 0;
  }
  
-@@ -1303,6 +1357,7 @@ static bool NativeClockGettime(KernelClockid clock_id, KernelTimespec* tp) {
+@@ -1303,6 +1360,7 @@ static bool NativeClockGettime(KernelClockid clock_id, KernelTimespec* tp) {
  
  	tp->tv_sec  = native_time.tv_sec;
  	tp->tv_nsec = native_time.tv_nsec;
@@ -5592,7 +5595,7 @@ index 5f87e6b..e6f5ccf 100644
  	return true;
  }
  
-@@ -3238,9 +3293,10 @@ int KYTY_SYSV_ABI PthreadCondWait(PthreadCond* cond, PthreadMutex* mutex) {
+@@ -3238,9 +3296,10 @@ int KYTY_SYSV_ABI PthreadCondWait(PthreadCond* cond, PthreadMutex* mutex) {
  		if (cond_elapsed >= 10 &&
  		    std::chrono::steady_clock::now() - cond_wait_logged > std::chrono::seconds(1)) {
  			cond_wait_logged = std::chrono::steady_clock::now();
@@ -5605,7 +5608,7 @@ index 5f87e6b..e6f5ccf 100644
  		}
  	}
  	CondRemoveWaiter(cond_value, thread);
-@@ -3381,6 +3437,51 @@ static void CleanupThread(void* arg) {
+@@ -3381,6 +3440,51 @@ static void CleanupThread(void* arg) {
  	thread->almost_done = true;
  }
  
@@ -5657,7 +5660,7 @@ index 5f87e6b..e6f5ccf 100644
  static void* RunThread(void* arg) {
  	auto* thread = static_cast<Pthread>(arg);
  	void* ret    = nullptr;
-@@ -3396,6 +3497,20 @@ static void* RunThread(void* arg) {
+@@ -3396,6 +3500,20 @@ static void* RunThread(void* arg) {
  	os_thread_id = GetHostThreadId();
  #endif
  	thread->host_thread_id = os_thread_id;
@@ -5678,7 +5681,7 @@ index 5f87e6b..e6f5ccf 100644
  
  	LOGF("\tPthread run begin: %s, id = %d, os_thread_id = %" PRIu64 ", entry = 0x%016" PRIx64
  	     ", arg = 0x%016" PRIx64 ", stack_addr = 0x%016" PRIx64 ", stack_size = %" PRIu64 "\n",
-@@ -3695,6 +3810,9 @@ int KYTY_SYSV_ABI PthreadSetprio(Pthread thread, int prio) {
+@@ -3695,6 +3813,9 @@ int KYTY_SYSV_ABI PthreadSetprio(Pthread thread, int prio) {
  #endif
  
  	thread->attr->guest_priority = prio;
@@ -5688,7 +5691,7 @@ index 5f87e6b..e6f5ccf 100644
  	LOGF("\t PthreadSetprio: %d, %d\n", thread->unique_id, prio);
  	return OK;
  }
-@@ -3791,6 +3909,10 @@ int KYTY_SYSV_ABI PthreadRename(Pthread thread, const char* name) {
+@@ -3791,6 +3912,10 @@ int KYTY_SYSV_ABI PthreadRename(Pthread thread, const char* name) {
  	}
  
  	thread->name = std::string(name);
@@ -5699,7 +5702,7 @@ index 5f87e6b..e6f5ccf 100644
  
  	return OK;
  }
-@@ -3850,6 +3972,7 @@ int KYTY_SYSV_ABI KernelClockGettime(KernelClockid clock_id, KernelTimespec* tp)
+@@ -3850,6 +3975,7 @@ int KYTY_SYSV_ABI KernelClockGettime(KernelClockid clock_id, KernelTimespec* tp)
  
  	int special_error = OK;
  	if (KernelClockGettimeSpecial(clock_id, tp, &special_error)) {
@@ -5707,7 +5710,7 @@ index 5f87e6b..e6f5ccf 100644
  		return special_error;
  	}
  
-@@ -3867,6 +3990,7 @@ int KYTY_SYSV_ABI KernelClockGettime(KernelClockid clock_id, KernelTimespec* tp)
+@@ -3867,6 +3993,7 @@ int KYTY_SYSV_ABI KernelClockGettime(KernelClockid clock_id, KernelTimespec* tp)
  	tp->tv_nsec = t.tv_nsec;
  
  	if (result == 0) {
@@ -5715,7 +5718,7 @@ index 5f87e6b..e6f5ccf 100644
  		return OK;
  	}
  	return KERNEL_ERROR_EINVAL;
-@@ -3994,7 +4118,7 @@ uint64_t KYTY_SYSV_ABI KernelGetTscFrequency() {
+@@ -3994,7 +4121,7 @@ uint64_t KYTY_SYSV_ABI KernelGetTscFrequency() {
  }
  
  uint64_t KYTY_SYSV_ABI KernelReadTsc() {
@@ -5725,16 +5728,18 @@ index 5f87e6b..e6f5ccf 100644
  
  uint64_t KYTY_SYSV_ABI KernelGetProcessTime() {
 diff --git a/src/kernel/pthread.h b/src/kernel/pthread.h
-index 3b39581..9b90ca3 100644
+index 3b39581..58c75e4 100644
 --- a/src/kernel/pthread.h
 +++ b/src/kernel/pthread.h
-@@ -201,6 +201,9 @@ uint64_t KYTY_SYSV_ABI KernelReadTsc();
+@@ -201,6 +201,11 @@ uint64_t KYTY_SYSV_ABI KernelReadTsc();
  uint64_t KYTY_SYSV_ABI KernelGetProcessTime();
  uint64_t KYTY_SYSV_ABI KernelGetProcessTimeCounter();
  uint64_t KYTY_SYSV_ABI KernelGetProcessTimeCounterFrequency();
 +// BC5 (experiment 0166): the window's pause stops the title's clocks (process time, TSC, the
 +// monotonic clocks) while it lasts; wall time goes on.
 +void KernelPauseClocks(bool on);
++// BC5 (experiment 0182): whether the window's pause holds the clocks now (the audio output waits).
++bool KernelClocksPaused();
  
  } // namespace LibKernel
  
@@ -6646,7 +6651,7 @@ index e82b93e..6cf1b61 100644
  
  } // namespace Libs::Audio::Ajm
 diff --git a/src/libs/audio.cpp b/src/libs/audio.cpp
-index fe4b332..acdca33 100644
+index fe4b332..4ba5da0 100644
 --- a/src/libs/audio.cpp
 +++ b/src/libs/audio.cpp
 @@ -10,16 +10,27 @@
@@ -6808,7 +6813,7 @@ index fe4b332..acdca33 100644
  	return true;
  }
  
-@@ -326,16 +416,195 @@ const void* Audio::PrepareOutputBuffer(const PortOut& port, const void* data,
+@@ -326,16 +416,211 @@ const void* Audio::PrepareOutputBuffer(const PortOut& port, const void* data,
  	return buffer->data();
  }
  
@@ -6870,6 +6875,22 @@ index fe4b332..acdca33 100644
 +	if (port->type == AUDIO_OUT_PORT_TYPE_VIBRATION && data != nullptr && PadRumbleFallbackEnabled() &&
 +	    (port->audio_device == 0 || SDL_GetAudioDeviceStatus(port->audio_device) != SDL_AUDIO_PLAYING)) {
 +		PadRumbleFromVibrationFrames(*port, data);
++	}
++
++	// BC5 (experiment 0182): the window's pause stops the title's clocks (experiment 0166) but its
++	// sound went on: the device kept asking, the title's audio engine kept mixing, and its audio
++	// clock, which the cutscenes' picture follows, ran ahead of the frozen game by the length of the
++	// pause; after Resume the picture raced to catch up ("terrible lags of picture and sound after
++	// unpausing"). On the console the whole title stops. The title's output thread now waits here
++	// while paused, with its device paused (what is queued, at most ~40 ms, plays before it stops),
++	// and both go on at Resume. The controller's ports are written by the same thread after the main
++	// one and are not held themselves.
++	if (port->pad_route == 0 && port->audio_device != 0 && LibKernel::KernelClocksPaused()) {
++		SDL_PauseAudioDevice(port->audio_device, 1);
++		while (LibKernel::KernelClocksPaused()) {
++			Common::Thread::SleepMicro(5000);
++		}
++		SDL_PauseAudioDevice(port->audio_device, 0);
 +	}
 +
  	if (port->audio_device == 0 || data == nullptr) {
@@ -7005,7 +7026,7 @@ index fe4b332..acdca33 100644
  
  	std::vector<uint8_t> convert_buffer;
  	const void*          queue_data = prepared_data;
-@@ -343,7 +612,7 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -343,7 +628,7 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  
  	SDL_AudioCVT cvt {};
  	const int    cvt_result =
@@ -7014,7 +7035,7 @@ index fe4b332..acdca33 100644
  	                      static_cast<int>(port->freq), port->audio_spec.format,
  	                      port->audio_spec.channels, port->audio_spec.freq);
  
-@@ -368,6 +637,46 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -368,6 +653,46 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  		queue_size = static_cast<uint32_t>(cvt.len_cvt);
  	}
  
@@ -7061,7 +7082,7 @@ index fe4b332..acdca33 100644
  	if (blocking) {
  		// More aggressive buffer management to prevent audio issues
  		// during heavy GPU load (common in gameplay vs cutscene)
-@@ -378,18 +687,45 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -378,18 +703,45 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  		                   : 2u;
  		const auto min_queued_size = queue_size * std::clamp(buffers, 2u, 8u); // Smaller max
  		const auto wait_start      = LibKernel::KernelGetProcessTime();
@@ -7109,7 +7130,7 @@ index fe4b332..acdca33 100644
  	if (SDL_QueueAudio(port->audio_device, queue_data, queue_size) < 0) {
  		LOGF("AudioOut: SDL_QueueAudio failed: %s\n", SDL_GetError());
  		return false;
-@@ -398,7 +734,56 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -398,7 +750,56 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  	return true;
  }
  
@@ -7166,7 +7187,7 @@ index fe4b332..acdca33 100644
  	Common::LockGuard lock(m_mutex);
  
  	for (int id = 0; id < OUT_PORTS_MAX; id++) {
-@@ -428,7 +813,7 @@ Audio::Id Audio::AudioOutOpen(int type, uint32_t samples_num, uint32_t freq, For
+@@ -428,7 +829,7 @@ Audio::Id Audio::AudioOutOpen(int type, uint32_t samples_num, uint32_t freq, For
  				port.volume[i] = 32768;
  			}
  
@@ -7175,7 +7196,7 @@ index fe4b332..acdca33 100644
  				// KytyPlus diagnostic: OpenSdlDevice() may fail (no host audio device,
  				// unsupported sample rate/format, or SDL init failure). The return is
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
-@@ -568,6 +953,45 @@ uint32_t Audio::AudioOutOutputs(OutputParam* params, uint32_t num, bool blocking
+@@ -568,6 +969,45 @@ uint32_t Audio::AudioOutOutputs(OutputParam* params, uint32_t num, bool blocking
  		m_out_ports[params[i].handle.GetId()].last_output_time = LibKernel::KernelGetProcessTime();
  	}
  
