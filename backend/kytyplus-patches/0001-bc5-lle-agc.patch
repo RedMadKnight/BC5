@@ -2232,7 +2232,7 @@ index 0000000..c245d62
 +
 +#endif // KYTY_GRAPHICS_PRESENTATION_SETTINGS_OVERLAY_H_
 diff --git a/src/graphics/presentation/videoOut.cpp b/src/graphics/presentation/videoOut.cpp
-index f980320..cc504c1 100644
+index f980320..99c5951 100644
 --- a/src/graphics/presentation/videoOut.cpp
 +++ b/src/graphics/presentation/videoOut.cpp
 @@ -1,3 +1,9 @@
@@ -2279,7 +2279,7 @@ index f980320..cc504c1 100644
  static int RegisterVideoOutEvent(int handle, EventQueue::KernelEqueue eq, VideoOutEventKind kind,
                                   void* udata) {
  	uint64_t generation = 0;
-@@ -471,6 +490,35 @@ static int DeleteVideoOutEvent(int handle, EventQueue::KernelEqueue eq, VideoOut
+@@ -471,11 +490,53 @@ static int DeleteVideoOutEvent(int handle, EventQueue::KernelEqueue eq, VideoOut
  	return result == LibKernel::KERNEL_ERROR_ENOENT ? OK : result;
  }
  
@@ -2312,10 +2312,29 @@ index f980320..cc504c1 100644
 +	last = now;
 +}
 +
++// BC5 (experiment 0183): KYTY_BC5_MIN_FLIP_RATE=<0..2> is the least flip rate in force whatever
++// the title sets (1 = a flip every second vblank, at most 30 a second with 60-Hz vblanks). The
++// second title advances its cutscenes by a fixed 1/30 s per presented frame; at ~48 frames a
++// second its cutscenes (picture and the sounds that follow them) ran 1.6 times too fast.
++static int Bc5MinFlipRate() {
++	static const int v = [] {
++		const char* e = std::getenv("KYTY_BC5_MIN_FLIP_RATE");
++		const int   r = e != nullptr ? std::atoi(e) : 0;
++		return r < 0 ? 0 : (r > 2 ? 2 : r);
++	}();
++	return v;
++}
++
  static bool IsFlipDueLocked(const VideoOutConfig& cfg, uint64_t generation) {
  	if (!cfg.opened || cfg.closing || cfg.generation != generation) {
  		return false;
-@@ -781,6 +829,7 @@ void VideoOutDriver::Impl::VblankEnd() {
+ 	}
+-	const int interval = cfg.flip_rate + 1;
++	const int interval = std::max(cfg.flip_rate, Bc5MinFlipRate()) + 1;
+ 
+ 	return interval <= 1 || (cfg.vblank_status.count % static_cast<uint64_t>(interval)) == 0;
+ }
+@@ -781,6 +842,7 @@ void VideoOutDriver::Impl::VblankEnd() {
  }
  
  void VideoOutDriver::Impl::PresentThread(std::stop_token token) {
@@ -2323,7 +2342,7 @@ index f980320..cc504c1 100644
  	const auto frequency = Common::Timer::QueryPerformanceFrequency();
  	EXIT_IF(frequency == 0);
  
-@@ -934,7 +983,18 @@ void FlipQueue::Cancel(VideoOutConfig& cfg) {
+@@ -934,7 +996,18 @@ void FlipQueue::Cancel(VideoOutConfig& cfg) {
  	cfg.flip_status.gcQueueNum     = 0;
  }
  
@@ -2342,7 +2361,7 @@ index f980320..cc504c1 100644
  	VideoOutConfig* cfg        = nullptr;
  	uint64_t        generation = 0;
  	int             index      = 0;
-@@ -1012,7 +1072,29 @@ void FlipQueue::Prepare(uint64_t request_id, Graphics::CommandBuffer& buffer) {
+@@ -1012,7 +1085,29 @@ void FlipQueue::Prepare(uint64_t request_id, Graphics::CommandBuffer& buffer) {
  		frame = &m_presenter.PrepareBlankFrame(width, height, index == VIDEO_OUT_BUFFER_INDEX_BLACK,
  		                                       &buffer);
  	} else {
@@ -2372,7 +2391,7 @@ index f980320..cc504c1 100644
  	}
  
  	Common::LockGuard lock(m_mutex);
-@@ -1033,6 +1115,20 @@ void FlipQueue::Prepare(uint64_t request_id, Graphics::CommandBuffer& buffer) {
+@@ -1033,6 +1128,20 @@ void FlipQueue::Prepare(uint64_t request_id, Graphics::CommandBuffer& buffer) {
  		EXIT("video-out request changed while recording, id=%" PRIu64 "\n", request_id);
  	}
  	prepared->frame = frame;
@@ -2393,7 +2412,7 @@ index f980320..cc504c1 100644
  }
  
  void FlipQueue::Complete(uint64_t request_id) {
-@@ -1046,6 +1142,7 @@ void FlipQueue::Complete(uint64_t request_id) {
+@@ -1046,6 +1155,7 @@ void FlipQueue::Complete(uint64_t request_id) {
  		}
  		request->state = RequestState::Ready;
  		m_submit_cond_var.Signal();
@@ -2401,7 +2420,7 @@ index f980320..cc504c1 100644
  		m_mutex.Unlock();
  		return;
  	}
-@@ -1087,6 +1184,26 @@ void FlipQueue::Wait(VideoOutConfig& cfg, int index) {
+@@ -1087,6 +1197,26 @@ void FlipQueue::Wait(VideoOutConfig& cfg, int index) {
  	}
  }
  
@@ -2428,7 +2447,7 @@ index f980320..cc504c1 100644
  bool FlipQueue::Flip(uint32_t micros) {
  	KYTY_PROFILER_BLOCK("FlipQueue::Flip");
  
-@@ -1240,6 +1357,10 @@ KYTY_SYSV_ABI int VideoOutSetFlipRate(int handle, int rate) {
+@@ -1240,6 +1370,10 @@ KYTY_SYSV_ABI int VideoOutSetFlipRate(int handle, int rate) {
  
  	Common::LockGuard lock(ctx->mutex);
  	ctx->flip_rate = rate;
@@ -2439,7 +2458,7 @@ index f980320..cc504c1 100644
  
  	return OK;
  }
-@@ -1251,6 +1372,7 @@ KYTY_SYSV_ABI int VideoOutDeleteFlipEvent(EventQueue::KernelEqueue eq, int handl
+@@ -1251,6 +1385,7 @@ KYTY_SYSV_ABI int VideoOutDeleteFlipEvent(EventQueue::KernelEqueue eq, int handl
  
  KYTY_SYSV_ABI int VideoOutAddFlipEvent(EventQueue::KernelEqueue eq, int handle, void* udata) {
  	PRINT_NAME();
@@ -2447,7 +2466,7 @@ index f980320..cc504c1 100644
  	return RegisterVideoOutEvent(handle, eq, VideoOutEventKind::Flip, udata);
  }
  
-@@ -1267,12 +1389,14 @@ KYTY_SYSV_ABI int VideoOutDeletePreVblankStartEvent(EventQueue::KernelEqueue eq,
+@@ -1267,12 +1402,14 @@ KYTY_SYSV_ABI int VideoOutDeletePreVblankStartEvent(EventQueue::KernelEqueue eq,
  KYTY_SYSV_ABI int VideoOutAddVblankEvent(LibKernel::EventQueue::KernelEqueue eq, int handle,
                                           void* udata) {
  	PRINT_NAME();
@@ -2462,7 +2481,7 @@ index f980320..cc504c1 100644
  	return RegisterVideoOutEvent(handle, eq, VideoOutEventKind::PreVblankStart, udata);
  }
  
-@@ -1450,8 +1574,43 @@ KYTY_SYSV_ABI int VideoOutUnregisterBuffers(int handle, int set_index) {
+@@ -1450,8 +1587,43 @@ KYTY_SYSV_ABI int VideoOutUnregisterBuffers(int handle, int set_index) {
  	return OK;
  }
  
@@ -2506,7 +2525,7 @@ index f980320..cc504c1 100644
  
  	uint64_t  request_id = 0;
  	const int result     = ReserveFlipRequest(DriverState(), handle, index, flip_mode, flip_arg,
-@@ -1462,6 +1621,7 @@ KYTY_SYSV_ABI int VideoOutSubmitFlip(int handle, int index, int flip_mode, int64
+@@ -1462,6 +1634,7 @@ KYTY_SYSV_ABI int VideoOutSubmitFlip(int handle, int index, int flip_mode, int64
  	if (result != OK) {
  		return result;
  	}
@@ -2514,7 +2533,7 @@ index f980320..cc504c1 100644
  	g_video_out_driver->SubmitFlipPreparation(request_id);
  
  	return OK;
-@@ -1497,6 +1657,14 @@ void VideoOutDriver::WaitForSubmitSlot() {
+@@ -1497,6 +1670,14 @@ void VideoOutDriver::WaitForSubmitSlot() {
  	m_impl->GetFlipQueue().WaitForSubmitSlot();
  }
  
@@ -2529,7 +2548,7 @@ index f980320..cc504c1 100644
  void VideoOutDriver::WaitFlipDone(int handle, int index) {
  	auto* ctx = m_impl->Get(handle);
  	EXIT_IF(ctx == nullptr);
-@@ -1505,8 +1673,45 @@ void VideoOutDriver::WaitFlipDone(int handle, int index) {
+@@ -1505,8 +1686,45 @@ void VideoOutDriver::WaitFlipDone(int handle, int index) {
  	m_impl->GetFlipQueue().Wait(*ctx, index);
  }
  
@@ -2577,7 +2596,7 @@ index f980320..cc504c1 100644
  
  	if (status == nullptr) {
  		return VIDEO_OUT_ERROR_INVALID_ADDRESS;
-@@ -1536,6 +1741,7 @@ KYTY_SYSV_ABI int VideoOutGetFlipStatus(int handle, VideoOutFlipStatus* status)
+@@ -1536,6 +1754,7 @@ KYTY_SYSV_ABI int VideoOutGetFlipStatus(int handle, VideoOutFlipStatus* status)
  
  KYTY_SYSV_ABI int VideoOutIsFlipPending(int handle) {
  	PRINT_NAME();
@@ -2585,7 +2604,7 @@ index f980320..cc504c1 100644
  
  	auto* ctx = DriverState().Get(handle);
  	if (ctx == nullptr) {
-@@ -1552,6 +1758,7 @@ KYTY_SYSV_ABI int VideoOutIsFlipPending(int handle) {
+@@ -1552,6 +1771,7 @@ KYTY_SYSV_ABI int VideoOutIsFlipPending(int handle) {
  
  KYTY_SYSV_ABI int VideoOutGetVblankStatus(int handle, VideoOutVblankStatus* status) {
  	PRINT_NAME();
@@ -2593,7 +2612,7 @@ index f980320..cc504c1 100644
  
  	if (status == nullptr) {
  		return VIDEO_OUT_ERROR_INVALID_ADDRESS;
-@@ -1632,6 +1839,10 @@ KYTY_SYSV_ABI int VideoOutGetEventCount(const EventQueue::KernelEvent* ev) {
+@@ -1632,6 +1852,10 @@ KYTY_SYSV_ABI int VideoOutGetEventCount(const EventQueue::KernelEvent* ev) {
  
  KYTY_SYSV_ABI int VideoOutWaitVblank(int handle) {
  	PRINT_NAME();
@@ -5812,10 +5831,20 @@ index 6c48267..4f3b34a 100644
  	LOGF("\t value0 = 0x%016" PRIx64 "\n"
  	     "\t value1 = 0x%016" PRIx64 "\n"
 diff --git a/src/libs/ajm.cpp b/src/libs/ajm.cpp
-index 89473ad..be91543 100644
+index 89473ad..876317d 100644
 --- a/src/libs/ajm.cpp
 +++ b/src/libs/ajm.cpp
-@@ -9,7 +9,9 @@
+@@ -1,15 +1,19 @@
++#include <map>
+ #include "common/assert.h"
+ #include "common/common.h"
+ #include "common/logging/log.h"
+ #include "libs/audio.h"
+ #include "libs/errno.h"
+ #include "libs/libs.h"
++#include "kernel/pthread.h" // BC5 (experiment 0183): KernelGetProcessTime for the AJM dump
+ 
+ #include <algorithm>
  #include <atomic>
  #include <cerrno>
  #include <cstdint>
@@ -5825,7 +5854,7 @@ index 89473ad..be91543 100644
  #include <cstring>
  #include <limits>
  #include <memory>
-@@ -183,7 +185,6 @@ constexpr uint64_t AJM_INSTANCE_FLAG_FORMAT_MASK      = 0x7u;
+@@ -183,7 +187,6 @@ constexpr uint64_t AJM_INSTANCE_FLAG_FORMAT_MASK      = 0x7u;
  constexpr uint64_t AJM_INSTANCE_FLAG_MAX_CHANNEL_MASK = 0x7fu;
  constexpr uint64_t AJM_INSTANCE_FLAG_CODEC_OFFSET     = 32u;
  constexpr uint32_t AJM_DEC_OPUS_MAX_CHANNELS_FOR_10CH = 10;
@@ -5833,7 +5862,7 @@ index 89473ad..be91543 100644
  
  static std::atomic_uint32_t g_ajm_next_instance {1};
  static std::atomic_uint32_t g_ajm_next_batch {1};
-@@ -313,6 +314,7 @@ protected:
+@@ -313,6 +316,7 @@ protected:
  #include "libs/ajm/aac_decoder.h"
  #include "libs/ajm/atrac9_decoder.h"
  #include "libs/ajm/mp3_decoder.h"
@@ -5841,7 +5870,7 @@ index 89473ad..be91543 100644
  
  namespace Libs::Audio::Ajm {
  
-@@ -332,6 +334,9 @@ int KYTY_SYSV_ABI AjmDecAt9ParseConfigData(const void*              config_data,
+@@ -332,6 +336,9 @@ int KYTY_SYSV_ABI AjmDecAt9ParseConfigData(const void*              config_data,
  
  	uint8_t config[ATRAC9_CONFIG_DATA_SIZE] {};
  	std::memcpy(config, config_data, sizeof(config));
@@ -5851,7 +5880,7 @@ index 89473ad..be91543 100644
  	Atrac9CodecInfo codec_info {};
  	const int       init_result = Atrac9InitDecoder(handle, config);
  	const int       info_result =
-@@ -354,134 +359,6 @@ int KYTY_SYSV_ABI AjmDecAt9ParseConfigData(const void*              config_data,
+@@ -354,134 +361,6 @@ int KYTY_SYSV_ABI AjmDecAt9ParseConfigData(const void*              config_data,
  	return OK;
  }
  
@@ -5986,7 +6015,7 @@ index 89473ad..be91543 100644
  struct AjmInstanceState {
  	uint32_t                    context = 0;
  	uint32_t                    codec   = 0;
-@@ -1065,6 +942,18 @@ int KYTY_SYSV_ABI AjmBatchJobInitialize(AjmBatchInfo* info, uint32_t instance,
+@@ -1065,6 +944,18 @@ int KYTY_SYSV_ABI AjmBatchJobInitialize(AjmBatchInfo* info, uint32_t instance,
  	const auto decode_result =
  	    AjmInitializeInstance(instance, codec_parameters, codec_parameters_size);
  	AjmWriteResult(result, AJM_SIDEBAND_RESULT_SIZE, decode_result);
@@ -6005,7 +6034,7 @@ index 89473ad..be91543 100644
  
  	LOGF("\t instance = 0x%08" PRIx32 ", codec_parameters = 0x%016" PRIx64 ", size = 0x%016" PRIx64
  	     "\n",
-@@ -1091,6 +980,14 @@ int KYTY_SYSV_ABI AjmBatchJobClearContext(AjmBatchInfo* info, uint32_t instance,
+@@ -1091,6 +982,14 @@ int KYTY_SYSV_ABI AjmBatchJobClearContext(AjmBatchInfo* info, uint32_t instance,
  	}
  
  	AjmWriteResult(result, AJM_SIDEBAND_RESULT_SIZE, decode_result);
@@ -6020,10 +6049,44 @@ index 89473ad..be91543 100644
  	LOGF("\t instance = 0x%08" PRIx32 "\n", instance);
  	return AjmAppendJob(info, AJM_JOB_CONTROL_SIZE, "clear-context");
  }
-@@ -1142,6 +1039,36 @@ int KYTY_SYSV_ABI AjmBatchJobDecodeSplit(AjmBatchInfo* info, uint32_t instance,
+@@ -1142,6 +1041,70 @@ int KYTY_SYSV_ABI AjmBatchJobDecodeSplit(AjmBatchInfo* info, uint32_t instance,
  	AjmWriteStreamResult(
  	    result, AJM_SIDEBAND_RESULT_SIZE + AJM_SIDEBAND_STREAM_SIZE + AJM_SIDEBAND_MFRAME_SIZE,
  	    decode_result, true);
++	// BC5 (experiment 0183): KYTY_BC5_AJM_DUMP=<dir> writes what each split decode job hands the
++	// title, per instance, as raw PCM (<dir>/ajm-<instance>.raw, the bytes written, in order) and one
++	// index line per job (<dir>/ajm-index.txt: process time, instance, bytes written, frames, the
++	// decoder's sample count), to compare a decoded voice with the title's own mix.
++	{
++		static const char* dump_dir = BC5_DIAG_ENV("KYTY_BC5_AJM_DUMP");
++		if (dump_dir != nullptr && decode_result.output_written > 0 && output_buffers != nullptr) {
++			static std::mutex                   dump_mutex;
++			static std::map<uint32_t, FILE*>    files;
++			static FILE*                        index = nullptr;
++			std::lock_guard<std::mutex>         lk(dump_mutex);
++			if (index == nullptr) {
++				char path[512];
++				std::snprintf(path, sizeof(path), "%s/ajm-index.txt", dump_dir);
++				index = std::fopen(path, "w");
++			}
++			FILE*& f = files[instance];
++			if (f == nullptr) {
++				char path[512];
++				std::snprintf(path, sizeof(path), "%s/ajm-%05x.raw", dump_dir, instance);
++				f = std::fopen(path, "wb");
++			}
++			size_t left = decode_result.output_written;
++			for (size_t i = 0; i < output_buffers_num && left > 0 && f != nullptr; i++) {
++				const size_t n = std::min(left, static_cast<size_t>(output_buffers[i].size));
++				if (output_buffers[i].address != nullptr) std::fwrite(output_buffers[i].address, 1, n, f);
++				left -= n;
++			}
++			if (index != nullptr) {
++				std::fprintf(index, "%.6f %05x %zu %u %" PRIu64 "\n", static_cast<double>(LibKernel::KernelGetProcessTime()) / 1e6, instance,
++				             static_cast<size_t>(decode_result.output_written), decode_result.frames, decode_result.total_decoded_samples);
++			}
++		}
++	}
 +	// BC5 (experiment 0154): KYTY_BC5_AJM_TRACE=1 journals every split decode job on stderr: the
 +	// second title's cinematic voice stops being decoded after ~4.95 s (F198).
 +	{
@@ -6057,7 +6120,7 @@ index 89473ad..be91543 100644
  
  	LOGF("\t instance = 0x%08" PRIx32 ", input_buffers = 0x%016" PRIx64
  	     ", input_num = 0x%016" PRIx64 ", output_buffers = 0x%016" PRIx64
-@@ -1213,6 +1140,15 @@ int KYTY_SYSV_ABI AjmBatchJobSetGaplessDecode(AjmBatchInfo* info, uint32_t insta
+@@ -1213,6 +1176,15 @@ int KYTY_SYSV_ABI AjmBatchJobSetGaplessDecode(AjmBatchInfo* info, uint32_t insta
  	AjmWriteResult(result, AJM_SIDEBAND_RESULT_SIZE, decode_result);
  	LOGF("\t instance = 0x%08" PRIx32 ", gapless_decode = 0x%016" PRIx64 ", reset = %d\n", instance,
  	     reinterpret_cast<uint64_t>(gapless_decode), reset);
@@ -6073,7 +6136,7 @@ index 89473ad..be91543 100644
  	return AjmAppendJob(info, AJM_JOB_CONTROL_SIZE, "set-gapless");
  }
  
-@@ -1230,6 +1166,16 @@ int KYTY_SYSV_ABI AjmBatchJobGetGaplessDecode(AjmBatchInfo* info, uint32_t insta
+@@ -1230,6 +1202,16 @@ int KYTY_SYSV_ABI AjmBatchJobGetGaplessDecode(AjmBatchInfo* info, uint32_t insta
  		*gapless      = gapless_decode;
  	}
  
@@ -6090,7 +6153,7 @@ index 89473ad..be91543 100644
  	LOGF("\t instance = 0x%08" PRIx32 "\n", instance);
  	return AjmAppendJob(info, AJM_JOB_RUN_SIZE, "get-gapless");
  }
-@@ -1294,6 +1240,15 @@ int KYTY_SYSV_ABI AjmBatchJobControl(AjmBatchInfo* info, uint32_t instance, uint
+@@ -1294,6 +1276,15 @@ int KYTY_SYSV_ABI AjmBatchJobControl(AjmBatchInfo* info, uint32_t instance, uint
  	const auto       decode_result = AjmControlInstance(instance, flags, sideband_input,
  	                                                    sideband_input_size, &decoder, &gapless);
  	AjmWriteSideband(flags, sideband_output, sideband_output_size, decoder, gapless, decode_result);
@@ -20495,7 +20558,7 @@ index 343045e..db295f0 100644
  		        info->access_violation_vaddr)) {
  			return true;
 diff --git a/src/main.cpp b/src/main.cpp
-index c44d32f..41e5587 100644
+index c44d32f..c6a4257 100644
 --- a/src/main.cpp
 +++ b/src/main.cpp
 @@ -16,6 +16,7 @@
@@ -20586,7 +20649,7 @@ index c44d32f..41e5587 100644
 +	    "KYTY_BC5_FPS_COUNTER", "KYTY_BC5_INPUT_RECORD", "KYTY_BC5_INPUT_TRACE", "KYTY_BC5_JSON_TRACE",
 +	    "KYTY_BC5_LOG_WAITS", "KYTY_BC5_MAP_STATS", "KYTY_BC5_MEASURE", "KYTY_BC5_MOTION_TRACE",
 +	    "KYTY_BC5_RANGE_WATCH", "KYTY_BC5_SAVE_TRACE", "KYTY_BC5_VIDEOOUT_TRACE", "KYTY_BC5_VMA_TRACE",
-+	    "KYTY_BC5_THREAD_TRACE", "KYTY_BC5_AUDIO_DUMP_FROM", "KYTY_BC5_AUDIO_DUMP_SECONDS"};
++	    "KYTY_BC5_THREAD_TRACE", "KYTY_BC5_AUDIO_DUMP_FROM", "KYTY_BC5_AUDIO_DUMP_SECONDS", "KYTY_BC5_AJM_DUMP"};
 +	for (const char* name: kDiagnostic) {
 +		unsetenv(name);
 +	}
