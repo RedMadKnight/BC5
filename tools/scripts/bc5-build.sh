@@ -153,7 +153,7 @@ cat > "$INNER" <<INNER_EOF
 set -euo pipefail
 say() { printf '[bc5-build %s] %s\n' "\$(date +%H:%M:%S)" "\$*"; }
 # The package list of README "How to start", 2 (the KytyPlus and BC5 build dependencies).
-PKGS="git cmake pkg-config cargo fuse3 libfuse3-dev libdrm-dev clang lld ninja-build glslang-tools libasound2-dev libdbus-1-dev libgl1-mesa-dev libpulse-dev libpipewire-0.3-dev libpipewire-0.3-modules pipewire-bin libudev-dev libwayland-dev libx11-dev libxcursor-dev libxext-dev libxfixes-dev libxi-dev libxkbcommon-dev libxrandr-dev libxss-dev wayland-protocols libedit-dev libevdev-dev libjack-dev libopenal-dev libpng-dev libsdl2-dev libsndio-dev libssl-dev libvulkan-dev zlib1g-dev"
+PKGS="git cmake pkg-config cargo fuse3 libfuse3-dev libdrm-dev clang lld ninja-build glslang-tools libasound2-dev libdbus-1-dev libgl1-mesa-dev libpulse-dev libpipewire-0.3-dev libpipewire-0.3-modules pipewire-bin libudev-dev libwayland-dev libx11-dev libxcursor-dev libxext-dev libxfixes-dev libxi-dev libxkbcommon-dev libxrandr-dev libxss-dev wayland-protocols libedit-dev libevdev-dev libjack-dev libopenal-dev libpng-dev libsdl2-dev libsndio-dev libssl-dev libvulkan-dev zlib1g-dev mangohud"
 say "apt packages (no-op when installed)"
 if ! sudo apt-get install --no-install-recommends --yes \$PKGS > "$WORK/bc5-build-apt.log" 2>&1; then
   say "apt-get install failed (no network?); continuing with what is installed, see $WORK/bc5-build-apt.log"
