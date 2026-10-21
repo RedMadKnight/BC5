@@ -1,0 +1,7 @@
+{
+    "rate_control": "CRF",
+    "crf": 22,
+    "preset": "veryfast",
+    "profile": "high",
+    "keyint_sec": 2
+}
