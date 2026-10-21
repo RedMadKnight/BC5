@@ -193,13 +193,20 @@ Also from this comparison:
   `native/graphics_queue_ps5.c:2262-2350`, `runtime_graphics_ps5.c:66-69`). Do: a host-allocated
   default ring (≥ 256 KiB) and offchip buffer from the first graphics buffer on, plus
   `GetTFRing`/`GetHsOffchipParam`.
+  *Exp 0189 (F248):* the second title's driver runs LLE and sets its own ring through `/dev/gc`
+  (ioctl 0x80108128), which the host dropped; programming that ring removes the address-0 reads.
+  A host default ring is moot for it (switch `BC5_DIRECT_TF_DEFAULT`, off).
 - **VGT_HS_OFFCHIP_PARAM from the wrong argument (CROSS-CHECK, possibly a bug).** Our prefix writes
   `SetHsOffchipParam`'s first value into 0xc24f. In ps5-vulkan the first argument is 0 and the second
   is the buffering in 32-KiB blocks minus one (`native/tess_offchip_lease.h:27-44`), and the register
   is `(workgroups − 1)` in bits 0–9 with the granularity in bits 10–11 (`runtime_graphics_ps5.c:774-784`).
   If exp 0160's `[bc5-tess] SetHsOffchipParam` lines show value0 = 0, we program a buffering of one
   workgroup. Inference, TODO(verify) on the box logs.
-- **GE_PC_ALLOC (uconfig 0x25f) belongs to the system (DO DIFFERENTLY, likely).** ps5-vulkan
+  *Exp 0189 (F248):* no such lines exist for the second title (its driver is LLE); its one offchip
+  datum is ioctl 0x8004812a = 0x1ff, and 0x1ff, 0x5f and the GPU's own value behave alike.
+- **GE_PC_ALLOC (uconfig 0x25f) belongs to the system (DO DIFFERENTLY, likely).** *Exp 0189 (F248):
+  wrong offset and not system state: `GE_PC_ALLOC` is uconfig 0x260 (0x25f is `GE_STEREO_CNTL`),
+  and the second title writes it (0) itself in nearly every buffer; forcing 0x1ff changes nothing.* ps5-vulkan
   (`runtime_graphics_ps5.c:791-809`): AGC pipelines do not carry it, so NGG draws run on what the
   platform left there; RADV's formula with `pc_lines = 1024` for gfx1013
   (`runtime_graphics_compiler.c:1037-1055`). Our patch only journals it. Add it to the preamble.

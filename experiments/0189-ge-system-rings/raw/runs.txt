@@ -1,0 +1,130 @@
+== R0: BC5_GC_IOCTL_TRACE=1 BC5_DIRECT_REG_CENSUS=1
+kernel: 360 page-fault records, 16 pages, client GE2 (0x3) x83
+kernel: 0 ring timeouts, 0 ring resets
+journal: 0 fence timeouts
+flips per 10 s: 0:215 10:293 20:296 30:172 40:457 50:505 60:498 70:499 80:479 90:478 100:363 110:175 120:211 130:280 140:291 150:294 160:293 170:292 180:294 190:296 200:294 210:296 220:293 230:295 240:294 250:293 260:295 270:294 280:292 290:254 
+
+== R1: BC5_GC_IOCTL_TRACE=1 BC5_DIRECT_REG_CENSUS=1 BC5_DIRECT_GC_TF_RING=1
+kernel: 0 page-fault records, 0 pages
+kernel: 1 ring timeouts, 1 ring resets
+journal: 0 fence timeouts
+flips per 10 s: 0:215 10:293 20:294 30:176 40:435 50:490 60:486 70:500 80:470 90:475 100:354 110:177 120:33 
+bc5-direct: /dev/gc TF ring 0x1120000000 size 0x3fff8 (programmed, BC5_DIRECT_GC_TF_RING=1)
+bc5-direct: /dev/gc HS offchip 0x1ff
+tf ring: base 0x1120000000 size 0x3fff8 offchip 0x0 0x0 0x0 -> VGT_HS_OFFCHIP_PARAM untouched, not 0x0, the title's /dev/gc ring (1 prefixes)
+
+== R2: BC5_GC_IOCTL_TRACE=1 BC5_DIRECT_REG_CENSUS=1 BC5_DIRECT_GC_TF_RING=1 BC5_DIRECT_GC_HS_OFFCHIP=1
+kernel: 0 page-fault records, 0 pages
+kernel: 1 ring timeouts, 1 ring resets
+journal: 0 fence timeouts
+flips per 10 s: 0:215 10:294 20:296 30:178 40:445 50:476 60:483 70:488 80:460 90:464 100:360 110:175 120:23 
+bc5-direct: /dev/gc TF ring 0x1120000000 size 0x3fff8 (programmed, BC5_DIRECT_GC_TF_RING=1)
+bc5-direct: /dev/gc HS offchip 0x1ff (programmed, BC5_DIRECT_GC_HS_OFFCHIP=1)
+tf ring: base 0x1120000000 size 0x3fff8 offchip 0x0 0x0 0x0 -> VGT_HS_OFFCHIP_PARAM 0x1ff, the title's /dev/gc ring (1 prefixes)
+
+== R3: BC5_DIRECT_GC_TF_RING=1 BC5_DIRECT_SHADER_DUMP=/home/kjaniszewski/bc5-data/captures/exp0189-shaders
+kernel: 0 page-fault records, 0 pages
+kernel: 1 ring timeouts, 1 ring resets
+journal: 1 fence timeouts
+submit #128405 dcb 30989 dwords: pass 2297 rewrite 320 drop 551 unmapped 3 cc 3 mappings 17122 ... FAILED rc 0 TIMEOUT 2007.80 ms
+flips per 10 s: 0:220 10:292 20:296 30:181 40:416 50:452 60:455 70:455 80:432 90:437 100:346 110:175 120:22 
+bc5-direct: /dev/gc TF ring 0x1120000000 size 0x3fff8 (programmed, BC5_DIRECT_GC_TF_RING=1)
+bc5-direct: /dev/gc HS offchip 0x1ff
+tf ring: base 0x1120000000 size 0x3fff8 offchip 0x0 0x0 0x0 -> VGT_HS_OFFCHIP_PARAM untouched, not 0x0, the title's /dev/gc ring (1 prefixes)
+timeout probe: TF ring 0x1120000000 +0x3fff8: 59520 non-zero dwords (dword 0..61890), from the first: [0x1120000000] 3f9d5a27 3f9bbc6c 3f9b3c60 3f9cd618 3f9bbc6c 3f9b3c60 3f9b3c60 3f99aa85 3f992b1c 3f
+
+== R4: BC5_DIRECT_GC_TF_RING=1
+kernel: 0 page-fault records, 0 pages
+kernel: 1 ring timeouts, 1 ring resets
+journal: 1 fence timeouts
+submit #140205 dcb 29659 dwords: pass 2199 rewrite 316 drop 541 unmapped 3 cc 3 mappings 17108 ... FAILED rc 0 TIMEOUT 2043.03 ms
+flips per 10 s: 0:216 10:294 20:298 30:185 40:467 50:498 60:489 70:483 80:469 90:474 100:365 110:174 120:21 
+bc5-direct: /dev/gc TF ring 0x1120000000 size 0x3fff8 (programmed, BC5_DIRECT_GC_TF_RING=1)
+bc5-direct: /dev/gc HS offchip 0x1ff
+tf ring: base 0x1120000000 size 0x3fff8 offchip 0x0 0x0 0x0 -> VGT_HS_OFFCHIP_PARAM untouched, not 0x0, the title's /dev/gc ring (1 prefixes)
+timeout probe: TF ring 0x1120000000 +0x3fff8: 59520 non-zero dwords (dword 0..63162), from the first: [0x1120000000] 3f951a4d 3f93b9bc 40000000 3f9471dc 3f93b9bc 3f951a4d 3ffe0228 3ff9b746 3ff8d631 3f
+
+== R5: BC5_DIRECT_GC_TF_RING=1 BC5_DIRECT_UCONFIG_FORCE=260:1ff
+kernel: 0 page-fault records, 0 pages
+kernel: 2 ring timeouts, 2 ring resets
+journal: 2 fence timeouts
+submit #110194 dcb 31405 dwords: pass 2781 rewrite 316 drop 541 unmapped 3 cc 3 mappings 17090 ... FAILED rc 0 TIMEOUT 2033.12 ms
+submit #110242 dcb 14681 dwords: pass 1296 rewrite 165 drop 261 unmapped 0 cc 0 mappings 17095 ... FAILED rc 0 TIMEOUT 2038.98 ms
+flips per 10 s: 0:216 10:294 20:298 30:179 40:335 50:351 60:356 70:357 80:340 90:342 100:307 110:169 
+bc5-direct: /dev/gc TF ring 0x1120000000 size 0x3fff8 (programmed, BC5_DIRECT_GC_TF_RING=1)
+bc5-direct: /dev/gc HS offchip 0x1ff
+tf ring: base 0x1120000000 size 0x3fff8 offchip 0x0 0x0 0x0 -> VGT_HS_OFFCHIP_PARAM untouched, not 0x0, the title's /dev/gc ring (1 prefixes)
+timeout probe: TF ring 0x1120000000 +0x3fff8: 59520 non-zero dwords (dword 0..61890), from the first: [0x1120000000] 3f9d5a50 3f9bbc94 3f9b3c88 3f9cd640 3f9bbc94 3f9b3c88 3f9b3c88 3f99aaad 3f992b43 3f
+
+== R6: BC5_DIRECT_GC_TF_RING=1 BC5_DIRECT_UCONFIG_FORCE=24f:5f
+kernel: 0 page-fault records, 0 pages
+kernel: 2 ring timeouts, 2 ring resets
+journal: 2 fence timeouts
+submit #110383 dcb 31580 dwords: pass 2796 rewrite 320 drop 549 unmapped 3 cc 3 mappings 17083 ... FAILED rc 0 TIMEOUT 2062.10 ms
+submit #110427 dcb 14477 dwords: pass 1293 rewrite 163 drop 256 unmapped 0 cc 0 mappings 17090 ... FAILED rc 0 TIMEOUT 2022.03 ms
+flips per 10 s: 0:216 10:295 20:296 30:189 40:340 50:351 60:354 70:346 80:334 90:342 100:307 110:174 120:6 
+bc5-direct: /dev/gc TF ring 0x1120000000 size 0x3fff8 (programmed, BC5_DIRECT_GC_TF_RING=1)
+bc5-direct: /dev/gc HS offchip 0x1ff
+tf ring: base 0x1120000000 size 0x3fff8 offchip 0x0 0x0 0x0 -> VGT_HS_OFFCHIP_PARAM untouched, not 0x0, the title's /dev/gc ring (1 prefixes)
+timeout probe: TF ring 0x1120000000 +0x3fff8: 59520 non-zero dwords (dword 0..63162), from the first: [0x1120000000] 3f951aa0 3f93ba0e 40000000 3f947230 3f93ba0e 3f951aa0 3ffe02e8 3ff9b7fe 3ff8d6ec 3f
+wave dump at a 0.7-s journal stall: dumped 18:36:30
+
+== R7: BC5_DIRECT_GC_TF_RING=1 BC5_DIRECT_REG_CENSUS=1 BC5_DIRECT_SKIP_PGM=11d049aa00,11d04a6000,909974400,11d04bb900
+kernel: 0 page-fault records, 0 pages
+kernel: 0 ring timeouts, 0 ring resets
+journal: 0 fence timeouts
+flips per 10 s: 0:214 10:295 20:295 30:194 40:453 50:499 60:499 70:500 80:462 90:476 100:365 110:178 120:228 130:278 140:259 150:280 160:290 170:289 180:291 190:285 200:291 210:293 220:284 230:288 240:290 250:289 260:291 270:286 280:288 290:255 
+bc5-direct: /dev/gc TF ring 0x1120000000 size 0x3fff8 (programmed, BC5_DIRECT_GC_TF_RING=1)
+bc5-direct: /dev/gc HS offchip 0x1ff
+tf ring: base 0x1120000000 size 0x3fff8 offchip 0x0 0x0 0x0 -> VGT_HS_OFFCHIP_PARAM untouched, not 0x0, the title's /dev/gc ring (1 prefixes)
+wave dump at a 0.7-s journal stall: no stall seen
+
+== R8: BC5_DIRECT_GC_TF_RING=1 BC5_DIRECT_GC_HS_OFFCHIP=1 BC5_DIRECT_REG_CENSUS=1 BC5_DIRECT_SKIP_PGM=11d049aa00,11d04a6000,909974400,11d04bb900
+kernel: 0 page-fault records, 0 pages
+kernel: 0 ring timeouts, 0 ring resets
+journal: 0 fence timeouts
+flips per 10 s: 0:214 10:292 20:294 30:191 40:439 50:488 60:494 70:492 80:448 90:473 100:360 110:173 120:219 130:276 140:290 150:286 160:289 170:289 180:293 190:291 200:285 210:289 220:290 230:292 240:291 250:292 260:292 270:287 280:292 290:259 
+bc5-direct: /dev/gc TF ring 0x1120000000 size 0x3fff8 (programmed, BC5_DIRECT_GC_TF_RING=1)
+bc5-direct: /dev/gc HS offchip 0x1ff (programmed, BC5_DIRECT_GC_HS_OFFCHIP=1)
+tf ring: base 0x1120000000 size 0x3fff8 offchip 0x0 0x0 0x0 -> VGT_HS_OFFCHIP_PARAM 0x1ff, the title's /dev/gc ring (1 prefixes)
+wave dump at a 0.7-s journal stall: no stall seen
+
+== S1: BC5_DIRECT_GC_TF_RING=1 BC5_DIRECT_SKIP_PGM=11d049aa00,11d04a6000,11d04bb900
+kernel: 0 page-fault records, 0 pages
+kernel: 2 ring timeouts, 2 ring resets
+journal: 2 fence timeouts
+submit #147171 dcb 15365 dwords: pass 1289 rewrite 214 drop 317 unmapped 0 cc 0 mappings 17608 ... FAILED rc 0 TIMEOUT 2061.84 ms
+submit #147206 dcb 12515 dwords: pass 1025 rewrite 190 drop 274 unmapped 0 cc 0 mappings 17532 ... FAILED rc 0 TIMEOUT 2001.84 ms
+flips per 10 s: 0:218 10:296 20:297 30:189 40:461 50:499 60:494 70:501 80:471 90:474 100:353 110:169 120:201 140:1 
+bc5-direct: /dev/gc TF ring 0x1120000000 size 0x3fff8 (programmed, BC5_DIRECT_GC_TF_RING=1)
+bc5-direct: /dev/gc HS offchip 0x1ff
+tf ring: base 0x1120000000 size 0x3fff8 offchip 0x0 0x0 0x0 -> VGT_HS_OFFCHIP_PARAM untouched, not 0x0, the title's /dev/gc ring (1 prefixes)
+timeout probe: TF ring 0x1120000000 +0x3fff8: 65322 non-zero dwords (dword 0..65496), from the first: [0x1120000000] 411d6ef6 411c3969 412acf74 412c64fa 411c3969 411d6ef6 412acf74 4127cee8 41385ad9 41
+wave dump at a 0.7-s journal stall: dumped 19:46:46
+
+== S2: BC5_DIRECT_GC_TF_RING=1 BC5_DIRECT_SKIP_PGM=11d04a6000,909974400,11d04bb900
+kernel: 0 page-fault records, 0 pages
+kernel: 2 ring timeouts, 2 ring resets
+journal: 2 fence timeouts
+submit #20734 acb 1704 dwords: pass 199 rewrite 55 drop 36 unmapped 0 cc 0 mappings 13045 ... FAILED rc 0 TIMEOUT 2056.34 ms
+submit #20735 dcb 2114 dwords: pass 148 rewrite 15 drop 26 unmapped 0 cc 0 mappings 13045 ... FAILED rc 0 TIMEOUT 2055.79 ms
+flips per 10 s: 0:218 10:293 20:298 30:158 
+bc5-direct: /dev/gc TF ring 0x1120000000 size 0x3fff8 (programmed, BC5_DIRECT_GC_TF_RING=1)
+bc5-direct: /dev/gc HS offchip 0x1ff
+tf ring: base 0x1120000000 size 0x3fff8 offchip 0x0 0x0 0x0 -> VGT_HS_OFFCHIP_PARAM untouched, not 0x0, the title's /dev/gc ring (1 prefixes)
+timeout probe: TF ring 0x1120000000 +0x3fff8: 0 non-zero dwords (dword 4294967295..0), from the first: [0x1120000000] 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 00000000 0
+wave dump at a 0.7-s journal stall: dumped 19:49:40
+
+== S3: BC5_DIRECT_GC_TF_RING=1 BC5_DIRECT_SKIP_PGM=11d049aa00,909974400,11d04bb900
+kernel: 0 page-fault records, 0 pages
+kernel: 2 ring timeouts, 2 ring resets
+journal: 2 fence timeouts
+submit #147418 acb 8831 dwords: pass 1563 rewrite 15 drop 4 unmapped 0 cc 0 mappings 17584 ... FAILED rc 0 TIMEOUT 2032.39 ms
+submit #147414 dcb 4897 dwords: pass 423 rewrite 36 drop 40 unmapped 0 cc 0 mappings 17584 ... FAILED rc 0 TIMEOUT 2034.15 ms
+flips per 10 s: 0:212 10:294 20:298 30:203 40:481 50:499 60:496 70:502 80:476 90:476 100:364 110:177 120:186 140:1 
+bc5-direct: /dev/gc TF ring 0x1120000000 size 0x3fff8 (programmed, BC5_DIRECT_GC_TF_RING=1)
+bc5-direct: /dev/gc HS offchip 0x1ff
+tf ring: base 0x1120000000 size 0x3fff8 offchip 0x0 0x0 0x0 -> VGT_HS_OFFCHIP_PARAM untouched, not 0x0, the title's /dev/gc ring (1 prefixes)
+timeout probe: TF ring 0x1120000000 +0x3fff8: 65304 non-zero dwords (dword 0..65346), from the first: [0x1120000000] 4018d24f 40800000 4017abf8 401619b9 401619b9 4017abf8 4017abf8 40800000 40166ae6 40
+wave dump at a 0.7-s journal stall: dumped 19:53:33
+
