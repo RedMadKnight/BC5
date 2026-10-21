@@ -1,0 +1,28 @@
+######## O1 kytyplus-build/src/kyty_emulator.0158-pre
+saves as in save-backup-0180-0953
+saves as in save-backup-0180-0953
+O1 stopped at 190 s; journal /home/kjaniszewski/bc5-data/captures/play-20261020-2212/gc/direct.log
+bc5-direct: shared map at 0x0+0x200000: -22
+bc5-direct: shared map at 0x0+0x200000: -22
+bc5-direct: shared map at 0x0+0x200000: -22
+clock voice passes (start-end s, speed):
+20-30 0.99x 30-45 0.67x 45-57 0.88x 57-67 1.00x 67-77 1.00x 77-87 1.00x 87-95 1.17x 95-102 1.47x 102-109 1.49x 109-115 1.51x 115-122 1.53x 122-128 1.54x 128-135 1.57x 135-141 1.58x 153-160 1.44x 160-166 1.59x 166-173 1.53x 173-179 1.62x 179-185 1.68x 
+flips per 10 s (direct journal frame profile):
+0:144 10:285 20:296 30:152 40:203 50:408 60:427 70:420 80:393 90:409 100:416 110:415 120:412 130:412 140:244 150:322 160:344 170:363 180:305 
+######## O2 kytyplus-build/src/kyty_emulator.0159-pre
+saves as in save-backup-0180-0953
+saves as in save-backup-0180-0953
+O2 stopped at 190 s; journal /home/kjaniszewski/bc5-data/captures/play-20261020-2216/gc/direct.log
+bc5-direct: shared map at 0x0+0x200000: -22
+bc5-direct: shared map at 0x0+0x200000: -22
+bc5-direct: shared map at 0x0+0x200000: -22
+clock voice passes (start-end s, speed):
+20-30 0.99x 30-45 0.67x 45-56 0.90x 56-66 1.00x 66-76 1.00x 76-86 0.98x 86-96 0.99x 96-106 1.00x 106-115 1.17x 115-122 1.47x 122-129 1.50x 129-135 1.51x 135-142 1.50x 153-160 1.43x 160-166 1.52x 166-173 1.55x 173-179 1.59x 179-185 1.64x 
+flips per 10 s (direct journal frame profile):
+0:139 10:288 20:296 30:152 40:196 50:397 60:402 70:389 80:377 90:414 100:410 110:407 120:418 130:414 140:258 150:340 160:349 170:391 180:332 
+######## O3 current build, no cap
+saves as in save-backup-0180-0953
+Read from remote host 192.168.10.66: Connection reset by peer
+client_loop: send disconnect: Connection reset by peer
+
+[exited with code 255]
