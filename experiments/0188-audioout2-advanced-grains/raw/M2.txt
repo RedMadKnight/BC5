@@ -1,0 +1,52 @@
+[4/5] Linking CXX executable src/kyty_emulator
+-rwxr-xr-x. 1 kjaniszewski kjaniszewski 165513040 15:21:20 kytyplus-build/src/kyty_emulator
+######## M2 traces
+saves as in save-backup-0180-0953
+saves as in save-backup-0180-0953
+clock voice passes:
+19-29 0.98x 29-39 0.97x 39-50 0.94x 50-60 1.00x 60-70 1.00x 70-80 1.00x 80-90 1.00x 90-100 1.00x 100-110 1.00x 121-134 0.78x 134-144 1.00x 144-154 1.00x 154-164 1.00x 164-174 1.00x 174-184 1.00x 184-1
+93 1.10x 193-201 1.33x 201-208 1.33x 208-215 1.36x 215-223 1.38x 223-230 1.38x 230-237 1.39x 237-244 1.39x 244-251 1.43x 251-258 1.43x 258-265 1.45x 265-272 1.47x 272-278 1.50x 278-285 1.49x 285-292 1
+.51x 292-298 1.52x 298-305 1.56x 305-311 1.59x 311-317 1.62x 317-323 1.64x 323-329 1.67x 329-335 1.88x 335-339 2.39x 339-343 2.61x 343-346 2.62x 346-350 2.62x 350-354 2.64x 354-358 2.65x 358-362 2.65x
+ 362-365 2.65x 365-369 2.62x 369-373 2.66x 373-377 2.65x 377-442 0.15x 
+equeue trace (every 20th):
+equeue trace: 0 waits with events, 0 events, 0 level repeats (last filter 0 ident 0x0 udata 0x0)
+equeue trace: 0 waits with events, 0 events, 0 level repeats (last filter 0 ident 0x0 udata 0x0)
+equeue trace: 1 waits with events, 1 events, 0 level repeats (last filter 0 ident 0x0 udata 0x0)
+equeue trace: 0 waits with events, 0 events, 0 level repeats (last filter 0 ident 0x0 udata 0x0)
+equeue trace: 0 waits with events, 0 events, 0 level repeats (last filter 0 ident 0x0 udata 0x0)
+equeue trace: 1 waits with events, 1 events, 0 level repeats (last filter 0 ident 0x0 udata 0x0)
+equeue trace: 73 waits with events, 73 events, 0 level repeats (last filter 0 ident 0x0 udata 0x0)
+equeue trace: 3 waits with events, 3 events, 0 level repeats (last filter 0 ident 0x0 udata 0x0)
+equeue trace: 1 waits with events, 1 events, 0 level repeats (last filter 0 ident 0x0 udata 0x0)
+equeue trace: 1 waits with events, 1 events, 0 level repeats (last filter 0 ident 0x0 udata 0x0)
+equeue trace: 1 waits with events, 1 events, 0 level repeats (last filter 0 ident 0x0 udata 0x0)
+equeue trace: 3 waits with events, 3 events, 0 level repeats (last filter 0 ident 0x0 udata 0x0)
+equeue trace: 0 waits with events, 0 events, 0 level repeats (last filter 0 ident 0x0 udata 0x0)
+equeue trace: 3 waits with events, 3 events, 0 level repeats (last filter 0 ident 0x0 udata 0x0)
+equeue trace: 4 waits with events, 4 events, 0 level repeats (last filter 0 ident 0x0 udata 0x0)
+equeue trace: 0 waits with events, 0 events, 0 level repeats (last filter 0 ident 0x0 udata 0x0)
+equeue trace: 1 waits with events, 1 events, 0 level repeats (last filter 0 ident 0x0 udata 0x0)
+equeue trace: 1 waits with events, 1 events, 0 level repeats (last filter 0 ident 0x0 udata 0x0)
+equeue trace: 4 waits with events, 4 events, 0 level repeats (last filter 0 ident 0x0 udata 0x0)
+equeue trace: 0 waits with events, 0 events, 0 level repeats (last filter 0 ident 0x0 udata 0x0)
+equeue trace: 0 waits with events, 0 events, 0 level repeats (last filter 0 ident 0x0 udata 0x0)
+equeue trace: 0 waits with events, 0 events, 0 level repeats (last filter 0 ident 0x0 udata 0x0)
+equeue trace: 2 waits with events, 2 events, 0 level repeats (last filter 0 ident 0x0 udata 0x0)
+equeue trace: 0 waits with events, 0 events, 0 level repeats (last filter 0 ident 0x0 udata 0x0)
+equeue totals:
+1005 waits 1005 events 0 level repeats
+audio2 trace (first 5, then every 60th):
+audio2 trace: t 5.195 s: context create 2, port create 2, advance 120, push 120, get queue level 131 (level sum 263, max 4), port set attributes 109
+audio2 trace: t 6.198 s: context create 0, port create 0, advance 188, push 188, get queue level 197 (level sum 600, max 4), port set attributes 188
+audio2 trace: t 7.201 s: context create 0, port create 0, advance 194, push 194, get queue level 208 (level sum 599, max 4), port set attributes 187
+audio2 trace: t 8.203 s: context create 0, port create 0, advance 189, push 189, get queue level 196 (level sum 593, max 4), port set attributes 189
+audio2 trace: t 9.207 s: context create 0, port create 0, advance 255, push 255, get queue level 320 (level sum 731, max 4), port set attributes 188
+audio2 trace: t 64.477 s: context create 0, port create 0, advance 94, push 94, get queue level 666 (level sum 1264, max 4), port set attributes 94
+audio2 trace: t 124.636 s: context create 0, port create 0, advance 15, push 93, get queue level 399 (level sum 618, max 4), port set attributes 16
+audio2 trace: t 184.798 s: context create 0, port create 0, advance 94, push 94, get queue level 645 (level sum 1062, max 4), port set attributes 94
+audio2 trace: t 244.937 s: context create 0, port create 0, advance 137, push 94, get queue level 777 (level sum 1534, max 3), port set attributes 136
+audio2 trace: t 305.098 s: context create 0, port create 0, advance 147, push 94, get queue level 807 (level sum 1520, max 3), port set attributes 147
+audio2 trace: t 365.227 s: context create 0, port create 0, advance 249, push 94, get queue level 1110 (level sum 1702, max 2), port set attributes 249
+audio2 trace: t 425.406 s: context create 0, port create 0, advance 13, push 94, get queue level 402 (level sum 600, max 4), port set attributes 13
+
+[exited with code 0]

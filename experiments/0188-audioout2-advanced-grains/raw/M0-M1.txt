@@ -1,0 +1,70 @@
+######## M0 KYTY_BC5_VIDEOOUT_COALESCE=0
+saves as in save-backup-0180-0953
+saves as in save-backup-0180-0953
+clock voice passes:
+18-28 0.99x 28-38 0.96x 38-49 0.94x 49-59 0.99x 59-69 1.00x 69-79 1.00x 79-90 0.95x 90-100 0.96x 100-111 0.95x 122-134 0.80x 134-144 1.00x 144-154 1.00x 154-164 1.00x 164-174 1.00x 174-182 1.21x 182-1
+90 1.33x 190-197 1.35x 197-205 1.36x 205-212 1.37x 212-219 1.39x 219-226 1.40x 226-233 1.42x 233-240 1.43x 240-247 1.44x 247-254 1.46x 254-261 1.47x 261-267 1.49x 267-274 1.49x 274-281 1.52x 281-287 1
+.53x 287-294 1.59x 294-300 1.61x 300-306 1.63x 306-312 1.65x 312-318 1.69x 318-323 2.01x 323-327 2.51x 327-331 2.62x 331-334 2.63x 334-338 2.64x 338-342 2.64x 342-346 2.67x 346-349 2.66x 349-353 2.67x
+ 353-357 2.68x 357-361 2.70x 361-364 2.67x 364-368 2.72x 368-372 2.71x 372-375 2.72x 375-379 2.72x 379-383 2.71x 383-386 2.73x 386-390 2.74x 390-394 2.75x 394-397 2.78x 397-401 2.77x 401-404 2.79x 404
+-408 2.78x 408-412 2.80x 412-415 2.81x 415-419 2.80x 419-422 2.85x 422-426 2.82x 426-429 2.85x 429-433 2.91x 433-436 2.91x 436-440 2.95x 440-443 2.97x 443-446 2.96x 446-450 2.99x 450-453 2.98x 453-456
+ 2.98x 456-462 1.73x 462-469 1.36x 469-477 1.37x 477-484 1.39x 484-491 1.40x 491-498 1.41x 498-505 1.43x 505-512 1.44x 512-519 1.44x 519-526 1.47x 526-532 1.51x 532-539 1.50x 539-546 1.50x 546-552 1.5
+4x 552-559 1.56x 559-565 1.57x 565-571 1.63x 571-577 1.66x 577-583 1.67x 583-588 1.87x 588-593 2.42x 593-596 2.59x 596-600 2.66x 
+vo events (every 30th line):
+vo events: t 4.779 s: 28 flip triggers, 26 while unread (queued), pending max 26, delivered counts none, GetEventCount 0 calls (sum 0), GetEventData 0 calls
+vo events: t 35.312 s: 12 flip triggers, 12 while unread (queued), pending max 880, delivered counts none, GetEventCount 0 calls (sum 0), GetEventData 0 calls
+vo events: t 66.046 s: 31 flip triggers, 31 while unread (queued), pending max 1691, delivered counts none, GetEventCount 0 calls (sum 0), GetEventData 0 calls
+vo events: t 96.547 s: 31 flip triggers, 31 while unread (queued), pending max 2606, delivered counts none, GetEventCount 0 calls (sum 0), GetEventData 0 calls
+vo events: t 127.314 s: 18 flip triggers, 18 while unread (queued), pending max 3330, delivered counts none, GetEventCount 0 calls (sum 0), GetEventData 0 calls
+vo events: t 157.814 s: 29 flip triggers, 29 while unread (queued), pending max 4173, delivered counts none, GetEventCount 0 calls (sum 0), GetEventData 0 calls
+vo events: t 188.381 s: 28 flip triggers, 28 while unread (queued), pending max 5052, delivered counts none, GetEventCount 0 calls (sum 0), GetEventData 0 calls
+vo events: t 219.015 s: 30 flip triggers, 30 while unread (queued), pending max 5931, delivered counts none, GetEventCount 0 calls (sum 0), GetEventData 0 calls
+vo events: t 249.715 s: 29 flip triggers, 29 while unread (queued), pending max 6805, delivered counts none, GetEventCount 0 calls (sum 0), GetEventData 0 calls
+vo events: t 280.316 s: 29 flip triggers, 29 while unread (queued), pending max 7679, delivered counts none, GetEventCount 0 calls (sum 0), GetEventData 0 calls
+vo events: t 310.783 s: 30 flip triggers, 30 while unread (queued), pending max 8550, delivered counts none, GetEventCount 0 calls (sum 0), GetEventData 0 calls
+vo events: t 341.350 s: 29 flip triggers, 29 while unread (queued), pending max 9428, delivered counts none, GetEventCount 0 calls (sum 0), GetEventData 0 calls
+vo events: t 371.851 s: 29 flip triggers, 29 while unread (queued), pending max 10307, delivered counts none, GetEventCount 0 calls (sum 0), GetEventData 0 calls
+vo events: t 402.418 s: 30 flip triggers, 30 while unread (queued), pending max 11184, delivered counts none, GetEventCount 0 calls (sum 0), GetEventData 0 calls
+vo events: t 432.985 s: 29 flip triggers, 29 while unread (queued), pending max 12062, delivered counts none, GetEventCount 0 calls (sum 0), GetEventData 0 calls
+vo events: t 463.552 s: 29 flip triggers, 29 while unread (queued), pending max 12936, delivered counts none, GetEventCount 0 calls (sum 0), GetEventData 0 calls
+vo events: t 494.119 s: 29 flip triggers, 29 while unread (queued), pending max 13813, delivered counts none, GetEventCount 0 calls (sum 0), GetEventData 0 calls
+vo events: t 524.620 s: 28 flip triggers, 28 while unread (queued), pending max 14687, delivered counts none, GetEventCount 0 calls (sum 0), GetEventData 0 calls
+vo events: t 555.187 s: 30 flip triggers, 30 while unread (queued), pending max 15568, delivered counts none, GetEventCount 0 calls (sum 0), GetEventData 0 calls
+vo events: t 585.754 s: 29 flip triggers, 29 while unread (queued), pending max 16447, delivered counts none, GetEventCount 0 calls (sum 0), GetEventData 0 calls
+vo events totals:
+triggers 16855, while unread 16853, GetEventCount calls 0, GetEventData calls 0
+######## M1 KYTY_BC5_VIDEOOUT_COALESCE=1
+saves as in save-backup-0180-0953
+saves as in save-backup-0180-0953
+clock voice passes:
+19-29 0.99x 29-39 0.96x 39-50 0.95x 50-60 0.99x 60-70 1.00x 70-80 1.00x 80-88 1.19x 88-95 1.35x 95-103 1.37x 103-110 1.35x 116-118 4.65x 118-121 3.96x 121-123 3.88x 123-131 1.32x 131-138 1.38x 138-145
+ 1.42x 145-152 1.42x 152-159 1.45x 159-166 1.46x 166-173 1.48x 173-230 0.17x 230-255 0.41x 255-265 1.00x 265-275 1.00x 275-283 1.22x 283-291 1.30x 291-298 1.34x 298-306 1.35x 306-313 1.36x 313-320 1.3
+8x 320-327 1.39x 327-334 1.41x 334-342 1.41x 342-349 1.42x 349-355 1.45x 355-362 1.47x 362-369 1.47x 369-376 1.52x 376-382 1.52x 382-389 1.53x 389-395 1.54x 395-401 1.59x 401-408 1.63x 408-414 1.63x 4
+14-420 1.71x 420-424 2.16x 424-428 2.55x 428-432 2.63x 432-436 2.61x 436-440 2.65x 440-443 2.63x 443-447 2.65x 447-451 2.63x 451-455 2.64x 455-458 2.66x 458-462 2.65x 462-466 2.65x 466-470 2.65x 470-4
+73 2.70x 473-477 2.69x 477-481 2.65x 481-485 2.73x 485-488 2.73x 488-492 2.71x 492-496 2.69x 496-499 2.72x 499-503 2.72x 503-507 2.75x 507-510 2.77x 510-514 2.79x 514-517 2.82x 517-521 2.79x 521-524 2
+.83x 524-528 2.85x 528-531 2.89x 531-535 2.86x 535-538 2.94x 538-542 2.93x 542-545 2.90x 545-548 2.98x 548-552 2.96x 552-555 2.95x 555-559 3.00x 559-562 2.95x 562-565 2.95x 565-569 2.96x 569-572 2.97x
+ 572-575 2.98x 575-579 2.96x 579-582 2.98x 582-586 2.96x 586-589 2.95x 589-592 2.93x 592-596 2.98x 596-599 2.96x 
+vo events (every 30th line):
+vo events: t 4.959 s: 28 flip triggers, 26 while unread (merged), pending max 0, delivered counts none, GetEventCount 0 calls (sum 0), GetEventData 0 calls
+vo events: t 35.626 s: 12 flip triggers, 12 while unread (merged), pending max 0, delivered counts none, GetEventCount 0 calls (sum 0), GetEventData 0 calls
+vo events: t 66.227 s: 31 flip triggers, 31 while unread (merged), pending max 0, delivered counts none, GetEventCount 0 calls (sum 0), GetEventData 0 calls
+vo events: t 96.860 s: 30 flip triggers, 30 while unread (merged), pending max 0, delivered counts none, GetEventCount 0 calls (sum 0), GetEventData 0 calls
+vo events: t 127.761 s: 19 flip triggers, 19 while unread (merged), pending max 0, delivered counts none, GetEventCount 0 calls (sum 0), GetEventData 0 calls
+vo events: t 158.361 s: 28 flip triggers, 28 while unread (merged), pending max 0, delivered counts none, GetEventCount 0 calls (sum 0), GetEventData 0 calls
+vo events: t 188.962 s: 29 flip triggers, 29 while unread (merged), pending max 0, delivered counts none, GetEventCount 0 calls (sum 0), GetEventData 0 calls
+vo events: t 219.695 s: 25 flip triggers, 25 while unread (merged), pending max 0, delivered counts none, GetEventCount 0 calls (sum 0), GetEventData 0 calls
+vo events: t 250.296 s: 28 flip triggers, 28 while unread (merged), pending max 0, delivered counts none, GetEventCount 0 calls (sum 0), GetEventData 0 calls
+vo events: t 280.830 s: 27 flip triggers, 27 while unread (merged), pending max 0, delivered counts none, GetEventCount 0 calls (sum 0), GetEventData 0 calls
+vo events: t 311.464 s: 27 flip triggers, 27 while unread (merged), pending max 0, delivered counts none, GetEventCount 0 calls (sum 0), GetEventData 0 calls
+vo events: t 342.031 s: 28 flip triggers, 28 while unread (merged), pending max 0, delivered counts none, GetEventCount 0 calls (sum 0), GetEventData 0 calls
+vo events: t 372.565 s: 28 flip triggers, 28 while unread (merged), pending max 0, delivered counts none, GetEventCount 0 calls (sum 0), GetEventData 0 calls
+vo events: t 403.199 s: 28 flip triggers, 28 while unread (merged), pending max 0, delivered counts none, GetEventCount 0 calls (sum 0), GetEventData 0 calls
+vo events: t 433.766 s: 29 flip triggers, 29 while unread (merged), pending max 0, delivered counts none, GetEventCount 0 calls (sum 0), GetEventData 0 calls
+vo events: t 464.366 s: 28 flip triggers, 28 while unread (merged), pending max 0, delivered counts none, GetEventCount 0 calls (sum 0), GetEventData 0 calls
+vo events: t 494.900 s: 28 flip triggers, 28 while unread (merged), pending max 0, delivered counts none, GetEventCount 0 calls (sum 0), GetEventData 0 calls
+vo events: t 525.667 s: 30 flip triggers, 30 while unread (merged), pending max 0, delivered counts none, GetEventCount 0 calls (sum 0), GetEventData 0 calls
+vo events: t 556.168 s: 27 flip triggers, 27 while unread (merged), pending max 0, delivered counts none, GetEventCount 0 calls (sum 0), GetEventData 0 calls
+vo events: t 586.901 s: 28 flip triggers, 28 while unread (merged), pending max 0, delivered counts none, GetEventCount 0 calls (sum 0), GetEventData 0 calls
+vo events totals:
+triggers 16429, while unread 16427, GetEventCount calls 0, GetEventData calls 0
+
+[exited with code 0]

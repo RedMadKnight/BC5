@@ -2232,7 +2232,7 @@ index 0000000..c245d62
 +
 +#endif // KYTY_GRAPHICS_PRESENTATION_SETTINGS_OVERLAY_H_
 diff --git a/src/graphics/presentation/videoOut.cpp b/src/graphics/presentation/videoOut.cpp
-index f980320..b982450 100644
+index f980320..42f0e48 100644
 --- a/src/graphics/presentation/videoOut.cpp
 +++ b/src/graphics/presentation/videoOut.cpp
 @@ -1,3 +1,9 @@
@@ -2263,7 +2263,101 @@ index f980320..b982450 100644
  
  private:
  	enum class RequestState { Reserved, Recording, Ready, Presenting };
-@@ -379,6 +389,15 @@ static void DeleteVideoOutEvents(const VideoOutEventQueues& queues, VideoOutEven
+@@ -290,6 +300,56 @@ static VideoOutEventQueues& VideoOutEventQueuesFor(VideoOutEventState& state,
+ 	return state.flip;
+ }
+ 
++// BC5 (experiment 0188): KYTY_BC5_VIDEOOUT_COALESCE (on by default, =0 off) keeps one VideoOut event per (ident, filter),
++// as FreeBSD's kqueue does and as shadPS4 (src/core/libraries/kernel/equeue.h TriggerDisplay), fpPS4
++// (kernel/ps4_queue.pas), the original Kyty (src/Kernel/EventQueue.cpp) and RPCSX's kernel
++// (kernel/orbis/src/event.cpp) implement it: a trigger that comes while the event is still unread
++// updates it in place (count + 1, the latest time and payload). Without it a copy is queued per
++// trigger and the title gets one event per flip with counts 1, 2, 2... (F246,
++// docs/ports/related-projects-review.md section 2). KYTY_BC5_VIDEOOUT_EVENT_TRACE=1 (diagnostic)
++// prints once a second how the flip events reached the title.
++static bool Bc5VideoOutCoalesce() {
++	static const bool on = [] {
++		const char* e = std::getenv("KYTY_BC5_VIDEOOUT_COALESCE"); // on unless =0 (experiment 0188)
++		return e == nullptr || std::atoi(e) != 0;
++	}();
++	return on;
++}
++static std::atomic<uint32_t> g_bc5_ev_triggers {0}, g_bc5_ev_unread {0}, g_bc5_ev_pending_max {0};
++static std::atomic<uint32_t> g_bc5_ev_getcount {0}, g_bc5_ev_getcount_sum {0}, g_bc5_ev_getdata {0};
++static std::atomic<uint32_t> g_bc5_ev_delivered[16];
++static void Bc5VideoOutEventTraceTick() {
++	static const bool on = BC5_DIAG_ENV("KYTY_BC5_VIDEOOUT_EVENT_TRACE") != nullptr;
++	if (!on) {
++		return;
++	}
++	static std::atomic<uint64_t> last {0};
++	const uint64_t               now = LibKernel::KernelGetProcessTime();
++	uint64_t                     l   = last.load();
++	if (l == 0) {
++		last.compare_exchange_strong(l, now);
++		return;
++	}
++	if (now - l < 1000000 || !last.compare_exchange_strong(l, now)) {
++		return;
++	}
++	char hist[256];
++	int  o = 0;
++	hist[0] = 0;
++	for (int i = 0; i < 16; i++) {
++		const uint32_t v = g_bc5_ev_delivered[i].exchange(0);
++		if (v != 0 && o < static_cast<int>(sizeof(hist)) - 16) {
++			o += std::snprintf(hist + o, sizeof(hist) - o, " %d:%u", i, v);
++		}
++	}
++	std::fprintf(stderr,
++	             "vo events: t %.3f s: %u flip triggers, %u while unread (%s), pending max %u, delivered counts%s, "
++	             "GetEventCount %u calls (sum %u), GetEventData %u calls\n",
++	             static_cast<double>(now) / 1e6, g_bc5_ev_triggers.exchange(0), g_bc5_ev_unread.exchange(0),
++	             Bc5VideoOutCoalesce() ? "merged" : "queued", g_bc5_ev_pending_max.exchange(0), hist[0] != 0 ? hist : " none",
++	             g_bc5_ev_getcount.exchange(0), g_bc5_ev_getcount_sum.exchange(0), g_bc5_ev_getdata.exchange(0));
++}
++
+ static intptr_t MakeVideoOutEventData(intptr_t current_data, void* trigger_data) {
+ 	const uint64_t old_data = static_cast<uint64_t>(current_data);
+ 	uint64_t       counter  = (old_data >> 12u) & 0xfu;
+@@ -306,6 +366,9 @@ static intptr_t MakeVideoOutEventData(intptr_t current_data, void* trigger_data)
+ 
+ static void ResetVideoOutEvent(EventQueue::KernelEqueueEvent* event) {
+ 	EXIT_IF(event == nullptr);
++	if (event->event.ident == VIDEO_OUT_EVENT_FLIP && event->triggered) {
++		g_bc5_ev_delivered[(static_cast<uint64_t>(event->event.data) >> 12u) & 0xfu]++; // experiment 0188
++	}
+ 	event->triggered    = false;
+ 	event->event.fflags = 0;
+ 	event->event.data   = 0;
+@@ -318,8 +381,26 @@ static void TriggerVideoOutEvent(EventQueue::KernelEqueueEvent* event, void* tri
+ 	triggered_event.fflags =
+ 	    triggered_event.fflags < 0xfu ? triggered_event.fflags + 1u : triggered_event.fflags;
+ 	triggered_event.data = MakeVideoOutEventData(triggered_event.data, trigger_data);
++	const bool flip = event->event.ident == VIDEO_OUT_EVENT_FLIP; // experiment 0188
++	if (flip) {
++		g_bc5_ev_triggers++;
++		Bc5VideoOutEventTraceTick();
++	}
+ 	if (event->triggered) {
++		if (flip) {
++			g_bc5_ev_unread++;
++		}
++		if (Bc5VideoOutCoalesce()) {
++			event->event = triggered_event; // experiment 0188: one event, updated in place
++			return;
++		}
+ 		event->pending_events.push_back(triggered_event);
++		if (flip) {
++			const auto n = static_cast<uint32_t>(event->pending_events.size());
++			uint32_t   m = g_bc5_ev_pending_max.load();
++			while (n > m && !g_bc5_ev_pending_max.compare_exchange_weak(m, n)) {
++			}
++		}
+ 		return;
+ 	}
+ 	event->event     = triggered_event;
+@@ -379,6 +460,15 @@ static void DeleteVideoOutEvents(const VideoOutEventQueues& queues, VideoOutEven
  	}
  }
  
@@ -2279,7 +2373,7 @@ index f980320..b982450 100644
  static int RegisterVideoOutEvent(int handle, EventQueue::KernelEqueue eq, VideoOutEventKind kind,
                                   void* udata) {
  	uint64_t generation = 0;
-@@ -471,11 +490,61 @@ static int DeleteVideoOutEvent(int handle, EventQueue::KernelEqueue eq, VideoOut
+@@ -471,11 +561,61 @@ static int DeleteVideoOutEvent(int handle, EventQueue::KernelEqueue eq, VideoOut
  	return result == LibKernel::KERNEL_ERROR_ENOENT ? OK : result;
  }
  
@@ -2342,7 +2436,7 @@ index f980320..b982450 100644
  
  	return interval <= 1 || (cfg.vblank_status.count % static_cast<uint64_t>(interval)) == 0;
  }
-@@ -781,6 +850,7 @@ void VideoOutDriver::Impl::VblankEnd() {
+@@ -781,6 +921,7 @@ void VideoOutDriver::Impl::VblankEnd() {
  }
  
  void VideoOutDriver::Impl::PresentThread(std::stop_token token) {
@@ -2350,7 +2444,7 @@ index f980320..b982450 100644
  	const auto frequency = Common::Timer::QueryPerformanceFrequency();
  	EXIT_IF(frequency == 0);
  
-@@ -934,7 +1004,18 @@ void FlipQueue::Cancel(VideoOutConfig& cfg) {
+@@ -934,7 +1075,18 @@ void FlipQueue::Cancel(VideoOutConfig& cfg) {
  	cfg.flip_status.gcQueueNum     = 0;
  }
  
@@ -2369,7 +2463,7 @@ index f980320..b982450 100644
  	VideoOutConfig* cfg        = nullptr;
  	uint64_t        generation = 0;
  	int             index      = 0;
-@@ -1012,7 +1093,29 @@ void FlipQueue::Prepare(uint64_t request_id, Graphics::CommandBuffer& buffer) {
+@@ -1012,7 +1164,29 @@ void FlipQueue::Prepare(uint64_t request_id, Graphics::CommandBuffer& buffer) {
  		frame = &m_presenter.PrepareBlankFrame(width, height, index == VIDEO_OUT_BUFFER_INDEX_BLACK,
  		                                       &buffer);
  	} else {
@@ -2399,7 +2493,7 @@ index f980320..b982450 100644
  	}
  
  	Common::LockGuard lock(m_mutex);
-@@ -1033,6 +1136,20 @@ void FlipQueue::Prepare(uint64_t request_id, Graphics::CommandBuffer& buffer) {
+@@ -1033,6 +1207,20 @@ void FlipQueue::Prepare(uint64_t request_id, Graphics::CommandBuffer& buffer) {
  		EXIT("video-out request changed while recording, id=%" PRIu64 "\n", request_id);
  	}
  	prepared->frame = frame;
@@ -2420,7 +2514,7 @@ index f980320..b982450 100644
  }
  
  void FlipQueue::Complete(uint64_t request_id) {
-@@ -1046,6 +1163,7 @@ void FlipQueue::Complete(uint64_t request_id) {
+@@ -1046,6 +1234,7 @@ void FlipQueue::Complete(uint64_t request_id) {
  		}
  		request->state = RequestState::Ready;
  		m_submit_cond_var.Signal();
@@ -2428,7 +2522,7 @@ index f980320..b982450 100644
  		m_mutex.Unlock();
  		return;
  	}
-@@ -1087,6 +1205,26 @@ void FlipQueue::Wait(VideoOutConfig& cfg, int index) {
+@@ -1087,6 +1276,26 @@ void FlipQueue::Wait(VideoOutConfig& cfg, int index) {
  	}
  }
  
@@ -2455,7 +2549,7 @@ index f980320..b982450 100644
  bool FlipQueue::Flip(uint32_t micros) {
  	KYTY_PROFILER_BLOCK("FlipQueue::Flip");
  
-@@ -1240,6 +1378,10 @@ KYTY_SYSV_ABI int VideoOutSetFlipRate(int handle, int rate) {
+@@ -1240,6 +1449,10 @@ KYTY_SYSV_ABI int VideoOutSetFlipRate(int handle, int rate) {
  
  	Common::LockGuard lock(ctx->mutex);
  	ctx->flip_rate = rate;
@@ -2466,7 +2560,7 @@ index f980320..b982450 100644
  
  	return OK;
  }
-@@ -1251,6 +1393,7 @@ KYTY_SYSV_ABI int VideoOutDeleteFlipEvent(EventQueue::KernelEqueue eq, int handl
+@@ -1251,6 +1464,7 @@ KYTY_SYSV_ABI int VideoOutDeleteFlipEvent(EventQueue::KernelEqueue eq, int handl
  
  KYTY_SYSV_ABI int VideoOutAddFlipEvent(EventQueue::KernelEqueue eq, int handle, void* udata) {
  	PRINT_NAME();
@@ -2474,7 +2568,7 @@ index f980320..b982450 100644
  	return RegisterVideoOutEvent(handle, eq, VideoOutEventKind::Flip, udata);
  }
  
-@@ -1267,12 +1410,14 @@ KYTY_SYSV_ABI int VideoOutDeletePreVblankStartEvent(EventQueue::KernelEqueue eq,
+@@ -1267,12 +1481,14 @@ KYTY_SYSV_ABI int VideoOutDeletePreVblankStartEvent(EventQueue::KernelEqueue eq,
  KYTY_SYSV_ABI int VideoOutAddVblankEvent(LibKernel::EventQueue::KernelEqueue eq, int handle,
                                           void* udata) {
  	PRINT_NAME();
@@ -2489,7 +2583,7 @@ index f980320..b982450 100644
  	return RegisterVideoOutEvent(handle, eq, VideoOutEventKind::PreVblankStart, udata);
  }
  
-@@ -1450,8 +1595,43 @@ KYTY_SYSV_ABI int VideoOutUnregisterBuffers(int handle, int set_index) {
+@@ -1450,8 +1666,43 @@ KYTY_SYSV_ABI int VideoOutUnregisterBuffers(int handle, int set_index) {
  	return OK;
  }
  
@@ -2533,7 +2627,7 @@ index f980320..b982450 100644
  
  	uint64_t  request_id = 0;
  	const int result     = ReserveFlipRequest(DriverState(), handle, index, flip_mode, flip_arg,
-@@ -1462,6 +1642,7 @@ KYTY_SYSV_ABI int VideoOutSubmitFlip(int handle, int index, int flip_mode, int64
+@@ -1462,6 +1713,7 @@ KYTY_SYSV_ABI int VideoOutSubmitFlip(int handle, int index, int flip_mode, int64
  	if (result != OK) {
  		return result;
  	}
@@ -2541,7 +2635,7 @@ index f980320..b982450 100644
  	g_video_out_driver->SubmitFlipPreparation(request_id);
  
  	return OK;
-@@ -1497,6 +1678,14 @@ void VideoOutDriver::WaitForSubmitSlot() {
+@@ -1497,6 +1749,14 @@ void VideoOutDriver::WaitForSubmitSlot() {
  	m_impl->GetFlipQueue().WaitForSubmitSlot();
  }
  
@@ -2556,7 +2650,7 @@ index f980320..b982450 100644
  void VideoOutDriver::WaitFlipDone(int handle, int index) {
  	auto* ctx = m_impl->Get(handle);
  	EXIT_IF(ctx == nullptr);
-@@ -1505,8 +1694,45 @@ void VideoOutDriver::WaitFlipDone(int handle, int index) {
+@@ -1505,8 +1765,45 @@ void VideoOutDriver::WaitFlipDone(int handle, int index) {
  	m_impl->GetFlipQueue().Wait(*ctx, index);
  }
  
@@ -2604,7 +2698,7 @@ index f980320..b982450 100644
  
  	if (status == nullptr) {
  		return VIDEO_OUT_ERROR_INVALID_ADDRESS;
-@@ -1518,6 +1744,20 @@ KYTY_SYSV_ABI int VideoOutGetFlipStatus(int handle, VideoOutFlipStatus* status)
+@@ -1518,6 +1815,20 @@ KYTY_SYSV_ABI int VideoOutGetFlipStatus(int handle, VideoOutFlipStatus* status)
  	}
  
  	DriverState().GetFlipQueue().GetFlipStatus(*ctx, *status);
@@ -2625,7 +2719,7 @@ index f980320..b982450 100644
  
  	LOGF("\t count = %" PRIu64 "\n"
  	     "\t processTime = %" PRIu64 "\n"
-@@ -1536,6 +1776,7 @@ KYTY_SYSV_ABI int VideoOutGetFlipStatus(int handle, VideoOutFlipStatus* status)
+@@ -1536,6 +1847,7 @@ KYTY_SYSV_ABI int VideoOutGetFlipStatus(int handle, VideoOutFlipStatus* status)
  
  KYTY_SYSV_ABI int VideoOutIsFlipPending(int handle) {
  	PRINT_NAME();
@@ -2633,7 +2727,7 @@ index f980320..b982450 100644
  
  	auto* ctx = DriverState().Get(handle);
  	if (ctx == nullptr) {
-@@ -1552,6 +1793,7 @@ KYTY_SYSV_ABI int VideoOutIsFlipPending(int handle) {
+@@ -1552,6 +1864,7 @@ KYTY_SYSV_ABI int VideoOutIsFlipPending(int handle) {
  
  KYTY_SYSV_ABI int VideoOutGetVblankStatus(int handle, VideoOutVblankStatus* status) {
  	PRINT_NAME();
@@ -2641,7 +2735,7 @@ index f980320..b982450 100644
  
  	if (status == nullptr) {
  		return VIDEO_OUT_ERROR_INVALID_ADDRESS;
-@@ -1565,6 +1807,17 @@ KYTY_SYSV_ABI int VideoOutGetVblankStatus(int handle, VideoOutVblankStatus* stat
+@@ -1565,6 +1878,17 @@ KYTY_SYSV_ABI int VideoOutGetVblankStatus(int handle, VideoOutVblankStatus* stat
  	ctx->mutex.Lock();
  	*status = ctx->vblank_status;
  	ctx->mutex.Unlock();
@@ -2659,7 +2753,28 @@ index f980320..b982450 100644
  
  	LOGF("\t count = %" PRIu64 "\n"
  	     "\t processTime = %" PRIu64 "\n"
-@@ -1632,6 +1885,10 @@ KYTY_SYSV_ABI int VideoOutGetEventCount(const EventQueue::KernelEvent* ev) {
+@@ -1612,6 +1936,9 @@ KYTY_SYSV_ABI int VideoOutGetEventData(const EventQueue::KernelEvent* ev, int64_
+ 	}
+ 
+ 	*data = static_cast<int64_t>(event_data);
++	if (ev->ident == VIDEO_OUT_EVENT_FLIP) {
++		g_bc5_ev_getdata++; // experiment 0188
++	}
+ 
+ 	return OK;
+ }
+@@ -1627,11 +1954,20 @@ KYTY_SYSV_ABI int VideoOutGetEventCount(const EventQueue::KernelEvent* ev) {
+ 		return VIDEO_OUT_ERROR_INVALID_EVENT;
+ 	}
+ 
+-	return static_cast<int>((static_cast<uint64_t>(ev->data) >> 12u) & 0xfu);
++	const int bc5_count = static_cast<int>((static_cast<uint64_t>(ev->data) >> 12u) & 0xfu);
++	if (ev->ident == VIDEO_OUT_EVENT_FLIP) { // experiment 0188
++		g_bc5_ev_getcount++;
++		g_bc5_ev_getcount_sum += static_cast<uint32_t>(bc5_count);
++	}
++	return bc5_count;
+ }
  
  KYTY_SYSV_ABI int VideoOutWaitVblank(int handle) {
  	PRINT_NAME();
@@ -4410,10 +4525,12 @@ index c729a98..271e401 100644
  #if defined(__APPLE__)
  	// AppKit traps on title changes off the main thread; fire-and-forget keeps present pacing.
 diff --git a/src/kernel/eventQueue.cpp b/src/kernel/eventQueue.cpp
-index 14561b0..f9fe0d7 100644
+index 14561b0..6565053 100644
 --- a/src/kernel/eventQueue.cpp
 +++ b/src/kernel/eventQueue.cpp
-@@ -1,8 +1,12 @@
+@@ -1,8 +1,14 @@
++#include <atomic>
++#include <chrono>
 +#include <cinttypes>
 +#include <cstdio>
  #include "kernel/eventQueue.h"
@@ -4426,7 +4543,7 @@ index 14561b0..f9fe0d7 100644
  #include "common/stringUtils.h"
  #include "common/threads.h"
  #include "common/timer.h"
-@@ -17,6 +21,10 @@
+@@ -17,8 +23,49 @@
  #include <unordered_map>
  #include <vector>
  
@@ -4436,8 +4553,91 @@ index 14561b0..f9fe0d7 100644
 +
  namespace Libs::LibKernel::EventQueue {
  
++// BC5 (experiment 0188): KYTY_BC5_EQUEUE_TRACE=1 (diagnostic) prints once a second, over all queues:
++// the waits that returned events, the events returned, and the "level repeats" -- the same event copied
++// into further slots of one wait because it stays triggered (no EV_CLEAR, no reset function), by filter
++// and ident of the last one seen.
++static std::atomic<uint32_t> g_bc5_eq_waits {0}, g_bc5_eq_events {0}, g_bc5_eq_repeats {0};
++static std::atomic<int64_t>  g_bc5_eq_rep_filter {0};
++static std::atomic<uint64_t> g_bc5_eq_rep_ident {0}, g_bc5_eq_rep_udata {0};
++static void Bc5EqueueTraceTick() {
++	static const bool on = BC5_DIAG_ENV("KYTY_BC5_EQUEUE_TRACE") != nullptr;
++	if (!on) {
++		return;
++	}
++	static std::atomic<uint64_t> last {0};
++	const auto                   now = std::chrono::duration_cast<std::chrono::microseconds>(
++                         std::chrono::steady_clock::now().time_since_epoch())
++                         .count();
++	uint64_t l = last.load();
++	if (l == 0) {
++		last.compare_exchange_strong(l, static_cast<uint64_t>(now));
++		return;
++	}
++	if (static_cast<uint64_t>(now) - l < 1000000 || !last.compare_exchange_strong(l, static_cast<uint64_t>(now))) {
++		return;
++	}
++	std::fprintf(stderr, "equeue trace: %u waits with events, %u events, %u level repeats (last filter %d ident 0x%" PRIx64 " udata 0x%" PRIx64 ")\n",
++	             g_bc5_eq_waits.exchange(0), g_bc5_eq_events.exchange(0), g_bc5_eq_repeats.exchange(0),
++	             static_cast<int>(g_bc5_eq_rep_filter.load()), g_bc5_eq_rep_ident.load(), g_bc5_eq_rep_udata.load());
++}
++
++static bool Bc5LevelEventOnce() { // experiment 0188
++	static const bool on = [] {
++		const char* e = std::getenv("KYTY_BC5_EQUEUE_LEVEL_ONCE");
++		return e != nullptr && std::atoi(e) != 0;
++	}();
++	return on;
++}
++
  LIB_NAME("libkernel", "libkernel");
-@@ -255,6 +263,27 @@ static void UserEventTriggerFunc(KernelEqueueEvent* event, void* trigger_data) {
+ 
+ constexpr uint16_t EV_ADD     = 0x01;
+@@ -102,8 +149,17 @@ int KernelEqueuePrivate::GetTriggeredEvents(KernelEvent* ev, int num) {
+ 	for (auto it = m_events.begin(); it != m_events.end();) {
+ 		auto& event = *it;
+ 		bool  erase = false;
++		int   bc5_n      = 0; // experiment 0188
++		bool  bc5_popped = false;
+ 		while (event.triggered) {
+-			ev[ret++] = event.event;
++			if (bc5_n++ > 0 && !bc5_popped) {
++				g_bc5_eq_repeats++;
++				g_bc5_eq_rep_filter = event.event.filter;
++				g_bc5_eq_rep_ident  = static_cast<uint64_t>(event.event.ident);
++				g_bc5_eq_rep_udata  = reinterpret_cast<uint64_t>(event.event.udata);
++			}
++			bc5_popped = false;
++			ev[ret++]  = event.event;
+ 			if ((event.event.flags & EV_ONESHOT) != 0) {
+ 				erase = true;
+ 				break;
+@@ -121,6 +177,12 @@ int KernelEqueuePrivate::GetTriggeredEvents(KernelEvent* ev, int num) {
+ 				event.event = event.pending_events.front();
+ 				event.pending_events.pop_front();
+ 				event.triggered = true;
++				bc5_popped      = true;
++			} else if (Bc5LevelEventOnce()) {
++				// BC5 (experiment 0188): a level event (no EV_CLEAR, no reset function) stays triggered and is
++				// delivered again by the next wait, not copied into every slot of this one (KytyPlus 3eee96a,
++				// src/kernel/eventQueue.cpp, GPL-2.0). KYTY_BC5_EQUEUE_LEVEL_ONCE=1.
++				break;
+ 			}
+ 
+ 			if (ret >= num) {
+@@ -133,6 +195,11 @@ int KernelEqueuePrivate::GetTriggeredEvents(KernelEvent* ev, int num) {
+ 		}
+ 	}
+ 
++	if (ret > 0) { // experiment 0188
++		g_bc5_eq_waits++;
++		g_bc5_eq_events += static_cast<uint32_t>(ret);
++	}
++	Bc5EqueueTraceTick();
+ 	return ret;
+ }
+ 
+@@ -255,6 +322,27 @@ static void UserEventTriggerFunc(KernelEqueueEvent* event, void* trigger_data) {
  	event->event.udata = trigger_data;
  }
  
@@ -4465,7 +4665,7 @@ index 14561b0..f9fe0d7 100644
  static void AmprEventTriggerFunc(KernelEqueueEvent* event, void* trigger_data) {
  	EXIT_IF(event == nullptr);
  	auto triggered_event = event->event;
-@@ -396,12 +425,17 @@ int KYTY_SYSV_ABI KernelWaitEqueue(KernelEqueue eq, KernelEvent* ev, int num, in
+@@ -396,12 +484,17 @@ int KYTY_SYSV_ABI KernelWaitEqueue(KernelEqueue eq, KernelEvent* ev, int num, in
  		return KERNEL_ERROR_EFAULT;
  	}
  
@@ -4483,7 +4683,7 @@ index 14561b0..f9fe0d7 100644
  	LOGF("\tEqueue wait: %s, caller = 0x%016" PRIx64 ", eq = 0x%016" PRIx64 ", ev = 0x%016" PRIx64
  	     ", num = %d, timo = %s, thread_id = %d\n",
  	     owner->GetName().c_str(), reinterpret_cast<uint64_t>(__builtin_return_address(0)),
-@@ -429,6 +463,7 @@ int KYTY_SYSV_ABI KernelWaitEqueue(KernelEqueue eq, KernelEvent* ev, int num, in
+@@ -429,6 +522,7 @@ int KYTY_SYSV_ABI KernelWaitEqueue(KernelEqueue eq, KernelEvent* ev, int num, in
  		return KERNEL_ERROR_ETIMEDOUT;
  	}
  
@@ -4491,7 +4691,7 @@ index 14561b0..f9fe0d7 100644
  	LOGF("\tEqueue wait received %u events: ident = 0x%016" PRIx64
  	     ", filter = %d, flags = 0x%04" PRIx16 ", fflags = 0x%08" PRIx32 ", data = 0x%016" PRIx64
  	     ", udata = 0x%016" PRIx64 "\n",
-@@ -547,10 +582,14 @@ int KYTY_SYSV_ABI KernelAddAmprEvent(KernelEqueue eq, int id, void* udata) {
+@@ -547,10 +641,14 @@ int KYTY_SYSV_ABI KernelAddAmprEvent(KernelEqueue eq, int id, void* udata) {
  	LOGF("\t AMPR event add: eq = 0x%016" PRIx64 ", id = %d, udata = 0x%016" PRIx64 "\n",
  	     static_cast<uint64_t>(eq), id, reinterpret_cast<uint64_t>(udata));
  
@@ -4507,7 +4707,7 @@ index 14561b0..f9fe0d7 100644
  		event.event.flags         = EV_ADD | EV_CLEAR;
  		event.event.fflags        = 0;
  		event.event.data          = 0;
-@@ -578,7 +617,7 @@ int KYTY_SYSV_ABI KernelDeleteAmprEvent(KernelEqueue eq, int id) {
+@@ -578,7 +676,7 @@ int KYTY_SYSV_ABI KernelDeleteAmprEvent(KernelEqueue eq, int id) {
  	LOGF("\t AMPR event delete: eq = 0x%016" PRIx64 ", id = %d\n", static_cast<uint64_t>(eq), id);
  
  	if (eq != KERNEL_EQUEUE_INVALID) {
@@ -6761,7 +6961,7 @@ index e82b93e..6cf1b61 100644
  
  } // namespace Libs::Audio::Ajm
 diff --git a/src/libs/audio.cpp b/src/libs/audio.cpp
-index fe4b332..4ba5da0 100644
+index fe4b332..fd5b48a 100644
 --- a/src/libs/audio.cpp
 +++ b/src/libs/audio.cpp
 @@ -10,16 +10,27 @@
@@ -6792,7 +6992,15 @@ index fe4b332..4ba5da0 100644
  
  namespace Libs::Audio {
  
-@@ -107,8 +118,28 @@ private:
+@@ -83,6 +94,7 @@ public:
+ 	bool     AudioOutClose(Id handle);
+ 	bool     AudioOutValid(Id handle);
+ 	bool     AudioOutHasDevice(Id handle);
++	uint32_t AudioOutQueuedFrames(Id handle); // BC5 (experiment 0188)
+ 	bool     AudioOutSetVolume(Id handle, uint32_t bitflag, const int* volume);
+ 	uint32_t AudioOutOutputs(OutputParam* params, uint32_t num, bool blocking = true);
+ 	bool     AudioOutGetStatus(Id handle, int* type, int* channels_num);
+@@ -107,8 +119,28 @@ private:
  
  		SDL_AudioDeviceID audio_device = 0;
  		SDL_AudioSpec     audio_spec   = {};
@@ -6821,7 +7029,7 @@ index fe4b332..4ba5da0 100644
  	struct PortIn {
  		bool     used            = false;
  		uint32_t type            = 0;
-@@ -132,6 +163,7 @@ private:
+@@ -132,6 +164,7 @@ private:
  	static const void*     PrepareOutputBuffer(const PortOut& port, const void* data,
  	                                           std::vector<uint8_t>* buffer);
  	static bool            QueueSdlAudio(PortOut* port, const void* data, bool blocking);
@@ -6829,7 +7037,18 @@ index fe4b332..4ba5da0 100644
  };
  
  static Audio* g_audio = nullptr;
-@@ -224,10 +256,37 @@ SDL_AudioFormat Audio::SdlFormat(Format format) {
+@@ -157,6 +190,10 @@ bool AudioOutHasDevice(int handle) {
+ 	return g_audio != nullptr && handle > 0 && g_audio->AudioOutHasDevice(Audio::Id(handle));
+ }
+ 
++uint32_t AudioOutQueuedFrames(int handle) { // BC5 (experiment 0188)
++	return g_audio != nullptr && handle > 0 ? g_audio->AudioOutQueuedFrames(Audio::Id(handle)) : 0;
++}
++
+ uint32_t AudioOutOutputs(const OutputParam* params, uint32_t num, bool blocking) {
+ 	if (g_audio == nullptr || params == nullptr || num == 0) {
+ 		return 0;
+@@ -224,10 +261,37 @@ SDL_AudioFormat Audio::SdlFormat(Format format) {
  bool Audio::OpenSdlDevice(PortOut* port) {
  	EXIT_IF(port == nullptr);
  
@@ -6867,7 +7086,7 @@ index fe4b332..4ba5da0 100644
  
  	SDL_AudioSpec desired {};
  	desired.freq     = static_cast<int>(port->freq);
-@@ -236,20 +295,51 @@ bool Audio::OpenSdlDevice(PortOut* port) {
+@@ -236,20 +300,51 @@ bool Audio::OpenSdlDevice(PortOut* port) {
  	desired.samples  = static_cast<Uint16>(port->samples_num);
  	desired.callback = nullptr;
  
@@ -6923,7 +7142,7 @@ index fe4b332..4ba5da0 100644
  	return true;
  }
  
-@@ -326,16 +416,211 @@ const void* Audio::PrepareOutputBuffer(const PortOut& port, const void* data,
+@@ -326,16 +421,211 @@ const void* Audio::PrepareOutputBuffer(const PortOut& port, const void* data,
  	return buffer->data();
  }
  
@@ -7136,7 +7355,7 @@ index fe4b332..4ba5da0 100644
  
  	std::vector<uint8_t> convert_buffer;
  	const void*          queue_data = prepared_data;
-@@ -343,7 +628,7 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -343,7 +633,7 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  
  	SDL_AudioCVT cvt {};
  	const int    cvt_result =
@@ -7145,7 +7364,7 @@ index fe4b332..4ba5da0 100644
  	                      static_cast<int>(port->freq), port->audio_spec.format,
  	                      port->audio_spec.channels, port->audio_spec.freq);
  
-@@ -368,6 +653,46 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -368,6 +658,46 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  		queue_size = static_cast<uint32_t>(cvt.len_cvt);
  	}
  
@@ -7192,7 +7411,7 @@ index fe4b332..4ba5da0 100644
  	if (blocking) {
  		// More aggressive buffer management to prevent audio issues
  		// during heavy GPU load (common in gameplay vs cutscene)
-@@ -378,18 +703,45 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -378,18 +708,45 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  		                   : 2u;
  		const auto min_queued_size = queue_size * std::clamp(buffers, 2u, 8u); // Smaller max
  		const auto wait_start      = LibKernel::KernelGetProcessTime();
@@ -7240,7 +7459,7 @@ index fe4b332..4ba5da0 100644
  	if (SDL_QueueAudio(port->audio_device, queue_data, queue_size) < 0) {
  		LOGF("AudioOut: SDL_QueueAudio failed: %s\n", SDL_GetError());
  		return false;
-@@ -398,7 +750,56 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -398,7 +755,56 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  	return true;
  }
  
@@ -7297,7 +7516,7 @@ index fe4b332..4ba5da0 100644
  	Common::LockGuard lock(m_mutex);
  
  	for (int id = 0; id < OUT_PORTS_MAX; id++) {
-@@ -428,7 +829,7 @@ Audio::Id Audio::AudioOutOpen(int type, uint32_t samples_num, uint32_t freq, For
+@@ -428,7 +834,7 @@ Audio::Id Audio::AudioOutOpen(int type, uint32_t samples_num, uint32_t freq, For
  				port.volume[i] = 32768;
  			}
  
@@ -7306,7 +7525,27 @@ index fe4b332..4ba5da0 100644
  				// KytyPlus diagnostic: OpenSdlDevice() may fail (no host audio device,
  				// unsupported sample rate/format, or SDL init failure). The return is
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
-@@ -568,6 +969,45 @@ uint32_t Audio::AudioOutOutputs(OutputParam* params, uint32_t num, bool blocking
+@@ -478,6 +884,19 @@ bool Audio::AudioOutHasDevice(Id handle) {
+ 	        m_out_ports[handle.GetId()].used && m_out_ports[handle.GetId()].audio_device != 0);
+ }
+ 
++// BC5 (experiment 0188): the frames handed to the port's SDL device and not yet played (0 without one).
++uint32_t Audio::AudioOutQueuedFrames(Id handle) {
++	Common::LockGuard lock(m_mutex);
++
++	if (handle.GetId() < 0 || handle.GetId() >= OUT_PORTS_MAX || !m_out_ports[handle.GetId()].used ||
++	    m_out_ports[handle.GetId()].audio_device == 0) {
++		return 0;
++	}
++	const auto&    port        = m_out_ports[handle.GetId()];
++	const uint32_t frame_bytes = static_cast<uint32_t>(port.audio_spec.channels) * (SDL_AUDIO_BITSIZE(port.audio_spec.format) / 8u);
++	return frame_bytes != 0 ? SDL_GetQueuedAudioSize(port.audio_device) / frame_bytes : 0;
++}
++
+ bool Audio::AudioOutGetStatus(Id handle, int* type, int* channels_num) {
+ 	Common::LockGuard lock(m_mutex);
+ 
+@@ -568,6 +987,45 @@ uint32_t Audio::AudioOutOutputs(OutputParam* params, uint32_t num, bool blocking
  		m_out_ports[params[i].handle.GetId()].last_output_time = LibKernel::KernelGetProcessTime();
  	}
  
@@ -7352,6 +7591,18 @@ index fe4b332..4ba5da0 100644
  	return first_port.samples_num;
  }
  
+diff --git a/src/libs/audio_internal.h b/src/libs/audio_internal.h
+index 82be73c..f090fcb 100644
+--- a/src/libs/audio_internal.h
++++ b/src/libs/audio_internal.h
+@@ -27,6 +27,7 @@ static constexpr int OUT_PORTS_MAX = 32;
+ int      AudioOutOpen(int type, uint32_t samples_num, uint32_t freq, Format format);
+ void     AudioOutClose(int handle);
+ bool     AudioOutHasDevice(int handle);
++uint32_t AudioOutQueuedFrames(int handle); // BC5 (experiment 0188)
+ uint32_t AudioOutOutputs(const OutputParam* params, uint32_t num, bool blocking = true);
+ 
+ } // namespace Libs::Audio::AudioInternal
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
 index 0000000..65d6f1f
@@ -18321,10 +18572,56 @@ index 6c36a4e..4c8ad53 100644
  }
  
 diff --git a/src/libs/libAudio2.cpp b/src/libs/libAudio2.cpp
-index 312870a..1978337 100644
+index 312870a..748f6b0 100644
 --- a/src/libs/libAudio2.cpp
 +++ b/src/libs/libAudio2.cpp
-@@ -189,6 +189,7 @@ struct AudioOut2PortStateEntry {
+@@ -11,7 +11,9 @@
+ #include <algorithm>
+ #include <array>
+ #include <atomic>
++#include <cstdio>
+ #include <cstring>
++#include <deque>
+ #include <vector>
+ 
+ namespace Libs::Audio {
+@@ -176,8 +178,35 @@ struct AudioOut2ContextState {
+ 	uint32_t               queued      = 0;
+ 	uint32_t               num_grains  = 512;
+ 	uint64_t               last_update = 0;
++	// BC5 (experiment 0188): grains the title advanced (rendered) and has not pushed yet, each a copy of
++	// its ports' PCM at the advance, oldest first; see Bc5Audio2Advanced().
++	struct Bc5Captured {
++		int                  audio_handle = 0;
++		uint32_t             data_format  = 0;
++		uint32_t             frames       = 0;
++		std::vector<uint8_t> pcm;
++	};
++	bool                                  advanced_mode = false;
++	std::deque<std::vector<Bc5Captured>>  advanced;
+ };
+ 
++// BC5 (experiment 0188): the AudioOut2 grain model of AnyPS5 (github.com/boykopovar/AnyPS5 27c88a8,
++// core/libs/prx/libSceAudioOut/src/AudioOut2Context.cpp sceAudioOut2ContextAdvance / Push /
++// GetQueueLevel and src/AudioOut2Port.cpp AudioOut2CaptureGrain, GPL-2.0; rewritten here). Advance
++// copies each port's PCM into a grain, Push plays the oldest copied grain, and the queue level counts
++// the grains advanced and not yet pushed. The second title's Wwise sink renders as many grains as the
++// level leaves free and pushes on another thread (AnyPS5 docs/dev/debt/libSceAudioOut.md); with the
++// pushed grains alone counted, it advanced up to 2.65 grains for every grain played and its music and
++// timeline ran that much fast (experiment 0188, run M2). On by default; KYTY_BC5_AUDIO2_ADVANCED=0 restores the old model.
++static bool Bc5Audio2Advanced() {
++	static const bool on = [] {
++		const char* e = std::getenv("KYTY_BC5_AUDIO2_ADVANCED"); // on unless =0 (experiment 0188, runs M5, O6, A1)
++		return e == nullptr || std::atoi(e) != 0;
++	}();
++	return on;
++}
++static constexpr size_t BC5_AUDIO2_ADVANCED_MAX = 64; // grains kept at most (oldest dropped beyond)
++
+ struct AudioOut2PortStateEntry {
+ 	bool                   used          = false;
+ 	AudioOut2PortHandle    handle        = 0;
+@@ -189,6 +218,7 @@ struct AudioOut2PortStateEntry {
  	AudioInternal::Format  audio_format  = AudioInternal::Format::Unknown;
  	int                    audio_handle  = 0;
  	const void*            pcm_data      = nullptr;
@@ -18332,7 +18629,7 @@ index 312870a..1978337 100644
  };
  
  struct AudioOut2SpeakerArrayState {
-@@ -248,10 +249,40 @@ static uint8_t audioout2_data_format_channels(uint32_t data_format) {
+@@ -248,10 +278,40 @@ static uint8_t audioout2_data_format_channels(uint32_t data_format) {
  	return static_cast<uint8_t>(channels == 0 ? 2u : std::min(channels, 16u));
  }
  
@@ -18373,7 +18670,7 @@ index 312870a..1978337 100644
  
  	switch (data_type) {
  		case 0:
-@@ -352,10 +383,14 @@ static void audioout2_queue_context_audio(AudioOut2ContextHandle ctx, bool block
+@@ -352,10 +412,14 @@ static void audioout2_queue_context_audio(AudioOut2ContextHandle ctx, bool block
  	params.reserve(AudioInternal::OUT_PORTS_MAX);
  
  	g_audioout2_port_mutex.Lock();
@@ -18390,6 +18687,214 @@ index 312870a..1978337 100644
  		}
  	}
  	g_audioout2_port_mutex.Unlock();
+@@ -411,8 +475,35 @@ int KYTY_SYSV_ABI AudioOut2ContextQueryMemory(const AudioOut2ContextParam* param
+ 	return OK;
+ }
+ 
++// BC5 (experiment 0188): KYTY_BC5_AUDIO2_TRACE=1 (diagnostic) prints once a second how often the title
++// calls the AudioOut2 context and port functions, and the queue level it was told (sum and max).
++static std::atomic<uint32_t> g_bc5_a2[6];
++static std::atomic<uint32_t> g_bc5_a2_level_sum {0}, g_bc5_a2_level_max {0};
++static void Bc5Audio2Count(int which) {
++	static const bool on = BC5_DIAG_ENV("KYTY_BC5_AUDIO2_TRACE") != nullptr;
++	if (!on) {
++		return;
++	}
++	g_bc5_a2[which]++;
++	static std::atomic<uint64_t> last {0};
++	const uint64_t               now = LibKernel::KernelGetProcessTime();
++	uint64_t                     l   = last.load();
++	if (l == 0) {
++		last.compare_exchange_strong(l, now);
++		return;
++	}
++	if (now - l < 1000000 || !last.compare_exchange_strong(l, now)) {
++		return;
++	}
++	std::fprintf(stderr, "audio2 trace: t %.3f s: context create %u, port create %u, advance %u, push %u, get queue level %u (level sum %u, max %u), port set attributes %u\n",
++	             static_cast<double>(now) / 1e6, g_bc5_a2[0].exchange(0), g_bc5_a2[1].exchange(0), g_bc5_a2[2].exchange(0),
++	             g_bc5_a2[3].exchange(0), g_bc5_a2[4].exchange(0), g_bc5_a2_level_sum.exchange(0), g_bc5_a2_level_max.exchange(0),
++	             g_bc5_a2[5].exchange(0));
++}
++
+ int KYTY_SYSV_ABI AudioOut2ContextCreate(const AudioOut2ContextParam* params, void* buffer,
+                                          size_t buffer_size, AudioOut2ContextHandle* ctx) {
++	Bc5Audio2Count(0); // experiment 0188
+ 	PRINT_NAME();
+ 
+ 	EXIT_NOT_IMPLEMENTED(params == nullptr);
+@@ -491,18 +582,80 @@ int KYTY_SYSV_ABI AudioOut2ContextSetAttributes(AudioOut2ContextHandle    ctx,
+ }
+ 
+ int KYTY_SYSV_ABI AudioOut2ContextAdvance(AudioOut2ContextHandle ctx) {
++	Bc5Audio2Count(2); // experiment 0188
++	std::vector<AudioOut2ContextState::Bc5Captured> grain;
++	if (Bc5Audio2Advanced()) {
++		g_audioout2_port_mutex.Lock();
++		for (const auto& port: g_audioout2_ports) {
++			if (!port.used || port.context != ctx || port.audio_handle <= 0 || port.pcm_data == nullptr) {
++				continue;
++			}
++			const uint32_t channels    = audioout2_data_format_channels(port.data_format);
++			const uint32_t sample_size = (port.data_format & 0x7fu) == 0 ? 4u : 2u;
++			AudioOut2ContextState::Bc5Captured c;
++			c.audio_handle = port.audio_handle;
++			c.data_format  = port.data_format;
++			c.frames       = port.samples_num;
++			c.pcm.resize(static_cast<size_t>(port.samples_num) * channels * sample_size);
++			std::memcpy(c.pcm.data(), port.pcm_data, c.pcm.size());
++			grain.push_back(std::move(c));
++		}
++		g_audioout2_port_mutex.Unlock();
++	}
+ 	g_audioout2_context_mutex.Lock();
+ 	if (auto* state = audioout2_find_context_locked(ctx); state != nullptr) {
+ 		audioout2_update_context_locked(state);
++		if (Bc5Audio2Advanced()) {
++			state->advanced_mode = true;
++			state->advanced.push_back(std::move(grain));
++			while (state->advanced.size() > BC5_AUDIO2_ADVANCED_MAX) {
++				state->advanced.pop_front();
++			}
++		}
+ 	}
+ 	g_audioout2_context_mutex.Unlock();
+ 
+ 	return OK;
+ }
+ 
++// BC5 (experiment 0188): one advanced grain to the device, the copies made at the advance.
++static void audioout2_output_grain(const std::vector<AudioOut2ContextState::Bc5Captured>& grain, bool blocking) {
++	std::vector<AudioInternal::OutputParam> params;
++	std::vector<std::vector<float>>         downmix(grain.size());
++	for (size_t i = 0; i < grain.size() && params.size() < AudioInternal::OUT_PORTS_MAX; i++) {
++		const auto& c    = grain[i];
++		const void* data = c.pcm.data();
++		if (audioout2_is_float12(c.data_format)) {
++			data = audioout2_downmix_12_to_8(downmix[i], c.pcm.data(), c.frames);
++		}
++		params.push_back(AudioInternal::OutputParam {c.audio_handle, data});
++	}
++	if (!params.empty()) {
++		(void)AudioInternal::AudioOutOutputs(params.data(), static_cast<uint32_t>(params.size()), blocking);
++	}
++}
++
+ int KYTY_SYSV_ABI AudioOut2ContextPush(AudioOut2ContextHandle ctx, uint32_t blocking) {
++	Bc5Audio2Count(3); // experiment 0188
+ 	uint32_t sleep_micros = audioout2_grain_micros(512);
+ 
++	// BC5 (experiment 0188): in the advanced model a blocking push waits (up to 200 ms) for a grain the
++	// title advanced, as AnyPS5 does; after that it plays the ports' current PCM as before.
++	if (Bc5Audio2Advanced() && blocking != 0) {
++		for (int waited = 0; waited < 400; waited++) {
++			bool ready = true;
++			g_audioout2_context_mutex.Lock();
++			if (auto* state = audioout2_find_context_locked(ctx); state != nullptr) {
++				ready = !state->advanced_mode || !state->advanced.empty();
++			}
++			g_audioout2_context_mutex.Unlock();
++			if (ready) {
++				break;
++			}
++			Common::Thread::SleepMicro(500);
++		}
++	}
++
+ 	for (;;) {
+ 		// Only a synchronous submission carrying PCM to a real device can rely on the SDL queue for
+ 		// pacing. Async pushes must retain queue-depth backpressure, and a handle without PCM (or a
+@@ -521,6 +674,13 @@ int KYTY_SYSV_ABI AudioOut2ContextPush(AudioOut2ContextHandle ctx, uint32_t bloc
+ 				if (state->queued < state->queue_depth) {
+ 					state->queued++;
+ 				}
++				if (state->advanced_mode && !state->advanced.empty()) { // experiment 0188
++					auto grain = std::move(state->advanced.front());
++					state->advanced.pop_front();
++					g_audioout2_context_mutex.Unlock();
++					audioout2_output_grain(grain, blocking != 0);
++					return OK;
++				}
+ 				g_audioout2_context_mutex.Unlock();
+ 				audioout2_queue_context_audio(ctx, blocking != 0);
+ 				return OK;
+@@ -536,8 +696,29 @@ int KYTY_SYSV_ABI AudioOut2ContextPush(AudioOut2ContextHandle ctx, uint32_t bloc
+ 	}
+ }
+ 
++// BC5 (experiment 0188): the audio handle of a context's port that has an SDL device (0 if none).
++static int audioout2_context_device_handle(AudioOut2ContextHandle ctx) {
++	int handle = 0;
++	g_audioout2_port_mutex.Lock();
++	for (const auto& port: g_audioout2_ports) {
++		if (port.used && port.context == ctx && port.audio_handle > 0 && AudioInternal::AudioOutHasDevice(port.audio_handle)) {
++			handle = port.audio_handle;
++			break;
++		}
++	}
++	g_audioout2_port_mutex.Unlock();
++	return handle;
++}
++
+ int KYTY_SYSV_ABI AudioOut2ContextGetQueueLevel(AudioOut2ContextHandle ctx, uint32_t* queue_level,
+                                                 uint32_t* available_queues) {
++	Bc5Audio2Count(4); // experiment 0188
++	// BC5 (experiment 0188): in the advanced model, a context that plays on a device counts the grains
++	// its device has not played yet (SDL's queue, rounded up), not a timer, so the title renders exactly
++	// as fast as the device plays (the timer lost time whenever the queue ran empty: 75-93 grains a
++	// second instead of 93.75 in run M3).
++	const int      bc5_device = Bc5Audio2Advanced() ? audioout2_context_device_handle(ctx) : 0;
++	const uint32_t bc5_frames = bc5_device > 0 ? AudioInternal::AudioOutQueuedFrames(bc5_device) : 0;
+ 	if (queue_level != nullptr) {
+ 		*queue_level = 0;
+ 	}
+@@ -548,12 +729,27 @@ int KYTY_SYSV_ABI AudioOut2ContextGetQueueLevel(AudioOut2ContextHandle ctx, uint
+ 	g_audioout2_context_mutex.Lock();
+ 	if (auto* state = audioout2_find_context_locked(ctx); state != nullptr) {
+ 		audioout2_update_context_locked(state);
++		// BC5 (experiment 0188): the advanced and not yet pushed grains count as queued (advanced model).
++		const uint32_t grain  = state->num_grains == 0 ? 512u : state->num_grains;
++		// The first grains in the device are its own latency, not the queue (AnyPS5 counts the unplayed grains
++		// beyond a 40-ms cushion): KYTY_BC5_AUDIO2_CUSHION grains, default 2. Counting all of them left the
++		// device short 2.6 % of the time (run M4).
++		static const uint32_t cushion = [] {
++			const char* e = std::getenv("KYTY_BC5_AUDIO2_CUSHION");
++			return e != nullptr ? static_cast<uint32_t>(std::atoi(e)) : 2u;
++		}();
++		const uint32_t device_grains = (bc5_frames + grain - 1) / grain;
++		const uint32_t unplayed      = (state->advanced_mode && bc5_device > 0) ? (device_grains > cushion ? device_grains - cushion : 0u) : state->queued;
++		const uint32_t level  = std::min<uint32_t>(
++		    state->queue_depth, unplayed + static_cast<uint32_t>(state->advanced_mode ? state->advanced.size() : 0));
+ 		if (queue_level != nullptr) {
+-			*queue_level = state->queued;
++			*queue_level = level;
++			g_bc5_a2_level_sum += level; // experiment 0188
++			for (uint32_t m = g_bc5_a2_level_max.load(); level > m && !g_bc5_a2_level_max.compare_exchange_weak(m, level);) {
++			}
+ 		}
+ 		if (available_queues != nullptr) {
+-			*available_queues =
+-			    (state->queued < state->queue_depth ? state->queue_depth - state->queued : 0);
++			*available_queues = state->queue_depth - level;
+ 		}
+ 	}
+ 	g_audioout2_context_mutex.Unlock();
+@@ -563,6 +759,7 @@ int KYTY_SYSV_ABI AudioOut2ContextGetQueueLevel(AudioOut2ContextHandle ctx, uint
+ 
+ int KYTY_SYSV_ABI AudioOut2PortCreate(AudioOut2ContextHandle ctx, const AudioOut2PortParam* params,
+                                       AudioOut2PortHandle* port) {
++	Bc5Audio2Count(1); // experiment 0188
+ 	EXIT_NOT_IMPLEMENTED(params == nullptr);
+ 	EXIT_NOT_IMPLEMENTED(port == nullptr);
+ 
+@@ -666,6 +863,7 @@ int KYTY_SYSV_ABI AudioOut2PortDestroy(AudioOut2PortHandle port) {
+ 
+ int KYTY_SYSV_ABI AudioOut2PortSetAttributes(AudioOut2PortHandle       port,
+                                              const AudioOut2Attribute* attributes, uint32_t num) {
++	Bc5Audio2Count(5); // experiment 0188
+ 	EXIT_NOT_IMPLEMENTED(num != 0 && attributes == nullptr);
+ 
+ 	const void* pcm_data = nullptr;
 diff --git a/src/libs/libInvitationDialog.cpp b/src/libs/libInvitationDialog.cpp
 index aeaa823..9a20ce1 100644
 --- a/src/libs/libInvitationDialog.cpp
@@ -20605,7 +21110,7 @@ index 343045e..db295f0 100644
  		        info->access_violation_vaddr)) {
  			return true;
 diff --git a/src/main.cpp b/src/main.cpp
-index c44d32f..8862aa7 100644
+index c44d32f..27ed1e0 100644
 --- a/src/main.cpp
 +++ b/src/main.cpp
 @@ -16,6 +16,7 @@
@@ -20696,7 +21201,7 @@ index c44d32f..8862aa7 100644
 +	    "KYTY_BC5_FPS_COUNTER", "KYTY_BC5_INPUT_RECORD", "KYTY_BC5_INPUT_TRACE", "KYTY_BC5_JSON_TRACE",
 +	    "KYTY_BC5_LOG_WAITS", "KYTY_BC5_MAP_STATS", "KYTY_BC5_MEASURE", "KYTY_BC5_MOTION_TRACE",
 +	    "KYTY_BC5_RANGE_WATCH", "KYTY_BC5_SAVE_TRACE", "KYTY_BC5_VIDEOOUT_TRACE", "KYTY_BC5_VMA_TRACE",
-+	    "KYTY_BC5_THREAD_TRACE", "KYTY_BC5_AUDIO_DUMP_FROM", "KYTY_BC5_AUDIO_DUMP_SECONDS", "KYTY_BC5_AJM_DUMP", "KYTY_BC5_FLIP_STATUS_TRACE"};
++	    "KYTY_BC5_THREAD_TRACE", "KYTY_BC5_AUDIO_DUMP_FROM", "KYTY_BC5_AUDIO_DUMP_SECONDS", "KYTY_BC5_AJM_DUMP", "KYTY_BC5_FLIP_STATUS_TRACE", "KYTY_BC5_VIDEOOUT_EVENT_TRACE", "KYTY_BC5_EQUEUE_TRACE", "KYTY_BC5_AUDIO2_TRACE"};
 +	for (const char* name: kDiagnostic) {
 +		unsetenv(name);
 +	}

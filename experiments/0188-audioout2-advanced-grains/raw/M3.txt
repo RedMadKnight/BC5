@@ -1,0 +1,46 @@
+######## M3 KYTY_BC5_AUDIO2_ADVANCED=1
+saves as in save-backup-0180-0953
+saves as in save-backup-0180-0953
+clock voice passes:
+19-29 0.98x 29-39 0.96x 39-50 0.95x 50-60 0.97x 60-70 0.98x 70-80 0.98x 80-91 0.92x 91-102 0.96x 102-112 0.94x 125-138 0.77x 138-149 0.95x 149-159 0.97x 159-169 0.95x 169-180 0.95x 180-191 0.93x 191-2
+01 0.94x 201-212 0.93x 212-223 0.94x 223-233 0.96x 233-243 0.97x 243-254 0.90x 254-266 0.88x 266-276 0.97x 276-287 0.94x 287-297 0.94x 297-308 0.94x 308-320 0.86x 320-331 0.87x 331-342 0.95x 342-352 0
+.95x 352-362 0.97x 362-373 0.97x 373-384 0.87x 384-396 0.87x 396-407 0.86x 407-420 0.79x 420-431 0.90x 431-442 0.89x 442-453 0.96x 453-464 0.93x 464-474 0.94x 474-485 0.95x 485-495 0.95x 495-506 0.91x
+ 506-517 0.94x 517-527 0.96x 527-538 0.92x 538-548 0.95x 548-559 0.94x 559-570 0.94x 570-580 0.95x 580-591 0.94x 
+audio2 trace (first 5, then every 30th):
+audio2 trace: t 5.088 s: context create 2, port create 2, advance 90, push 90, get queue level 95 (level sum 186, max 4), port set attributes 83
+audio2 trace: t 6.091 s: context create 0, port create 0, advance 188, push 188, get queue level 197 (level sum 598, max 4), port set attributes 188
+audio2 trace: t 7.095 s: context create 0, port create 0, advance 193, push 193, get queue level 207 (level sum 609, max 4), port set attributes 188
+audio2 trace: t 8.098 s: context create 0, port create 0, advance 188, push 188, get queue level 197 (level sum 600, max 4), port set attributes 188
+audio2 trace: t 9.101 s: context create 0, port create 0, advance 257, push 257, get queue level 318 (level sum 731, max 4), port set attributes 188
+audio2 trace: t 34.194 s: context create 0, port create 2, advance 115, push 115, get queue level 568 (level sum 787, max 4), port set attributes 23
+audio2 trace: t 64.561 s: context create 0, port create 0, advance 93, push 93, get queue level 542 (level sum 814, max 4), port set attributes 93
+audio2 trace: t 95.069 s: context create 0, port create 0, advance 90, push 90, get queue level 511 (level sum 739, max 4), port set attributes 90
+audio2 trace: t 125.510 s: context create 0, port create 0, advance 84, push 84, get queue level 430 (level sum 610, max 4), port set attributes 83
+audio2 trace: t 156.326 s: context create 0, port create 0, advance 92, push 92, get queue level 462 (level sum 687, max 4), port set attributes 92
+audio2 trace: t 186.626 s: context create 0, port create 0, advance 83, push 83, get queue level 397 (level sum 568, max 4), port set attributes 84
+audio2 trace: t 216.792 s: context create 0, port create 0, advance 88, push 88, get queue level 440 (level sum 657, max 4), port set attributes 87
+audio2 trace: t 246.960 s: context create 0, port create 0, advance 90, push 90, get queue level 448 (level sum 674, max 4), port set attributes 90
+audio2 trace: t 277.691 s: context create 0, port create 0, advance 83, push 83, get queue level 413 (level sum 612, max 4), port set attributes 82
+audio2 trace: t 307.992 s: context create 0, port create 0, advance 89, push 89, get queue level 447 (level sum 666, max 4), port set attributes 89
+audio2 trace: t 338.927 s: context create 0, port create 0, advance 84, push 84, get queue level 418 (level sum 618, max 4), port set attributes 84
+audio2 trace: t 369.162 s: context create 0, port create 0, advance 93, push 93, get queue level 476 (level sum 718, max 4), port set attributes 94
+audio2 trace: t 400.390 s: context create 0, port create 0, advance 93, push 93, get queue level 494 (level sum 736, max 4), port set attributes 93
+audio2 trace: t 431.126 s: context create 0, port create 0, advance 50, push 50, get queue level 248 (level sum 371, max 4), port set attributes 50
+audio2 trace: t 461.566 s: context create 0, port create 0, advance 91, push 91, get queue level 460 (level sum 682, max 4), port set attributes 92
+audio2 trace: t 491.975 s: context create 0, port create 0, advance 90, push 90, get queue level 456 (level sum 682, max 4), port set attributes 90
+audio2 trace: t 522.167 s: context create 0, port create 0, advance 89, push 89, get queue level 455 (level sum 676, max 4), port set attributes 89
+audio2 trace: t 552.431 s: context create 0, port create 0, advance 93, push 93, get queue level 499 (level sum 746, max 4), port set attributes 93
+audio2 trace: t 582.631 s: context create 0, port create 0, advance 88, push 88, get queue level 466 (level sum 704, max 4), port set attributes 89
+audio trace main port (every 60th):
+audio trace: t 40.622 s port 0 type 0 8 ch 48000 Hz: 1 calls, 512 frames = 0.011 s of sound in 7.850 s (rate 0.001), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 101.564 s port 0 type 0 8 ch 48000 Hz: 92 calls, 47104 frames = 0.981 s of sound in 1.023 s (rate 0.960), held 0.1 ms, 0 clears, sdl queued 0-49152 bytes (0-32 ms), device playing
+audio trace: t 162.423 s port 0 type 0 8 ch 48000 Hz: 91 calls, 46592 frames = 0.971 s of sound in 1.029 s (rate 0.943), held 0.1 ms, 0 clears, sdl queued 0-49152 bytes (0-32 ms), device playing
+audio trace: t 223.093 s port 0 type 0 8 ch 48000 Hz: 91 calls, 46592 frames = 0.971 s of sound in 1.000 s (rate 0.970), held 0.1 ms, 0 clears, sdl queued 0-49152 bytes (0-32 ms), device playing
+audio trace: t 283.763 s port 0 type 0 8 ch 48000 Hz: 88 calls, 45056 frames = 0.939 s of sound in 1.004 s (rate 0.935), held 0.1 ms, 0 clears, sdl queued 0-49152 bytes (0-32 ms), device playing
+audio trace: t 345.094 s port 0 type 0 8 ch 48000 Hz: 89 calls, 45568 frames = 0.949 s of sound in 1.000 s (rate 0.949), held 0.1 ms, 0 clears, sdl queued 0-49152 bytes (0-32 ms), device playing
+audio trace: t 406.496 s port 0 type 0 8 ch 48000 Hz: 93 calls, 47616 frames = 0.992 s of sound in 1.002 s (rate 0.990), held 0.1 ms, 0 clears, sdl queued 0-49152 bytes (0-32 ms), device playing
+audio trace: t 467.660 s port 0 type 0 8 ch 48000 Hz: 89 calls, 45568 frames = 0.949 s of sound in 1.029 s (rate 0.922), held 0.2 ms, 0 clears, sdl queued 0-49152 bytes (0-32 ms), device playing
+audio trace: t 528.400 s port 0 type 0 8 ch 48000 Hz: 45 calls, 23040 frames = 0.480 s of sound in 1.001 s (rate 0.480), held 0.1 ms, 0 clears, sdl queued 0-49152 bytes (0-32 ms), device playing
+audio trace: t 589.001 s port 0 type 0 8 ch 48000 Hz: 88 calls, 45056 frames = 0.939 s of sound in 1.001 s (rate 0.938), held 0.1 ms, 0 clears, sdl queued 0-49152 bytes (0-32 ms), device playing
+
+[exited with code 0]

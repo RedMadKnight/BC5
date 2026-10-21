@@ -1,5 +1,7 @@
 # Analogous projects: what BC5's host can take, and what it should do differently
 
+*Outcome (2026-10-21, experiment 0188, F247): §2's flip-event lead did not explain the clock (the title never reads the event; coalescing is now the default anyway); §4's AudioOut2 grain model did — ported from AnyPS5, it fixed the speed-ups.*
+
 *Written 2026-10-21. Review only; no code was copied in this pass. Asked by the maintainer: "review
 all analogous projects, not only the latest changes: what can we copy, or implement differently to
 avoid some of our errors, keeping in mind our simplified architecture and what it gives us for free."*

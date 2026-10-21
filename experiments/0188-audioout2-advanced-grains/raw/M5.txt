@@ -1,0 +1,84 @@
+[2/3] Linking CXX executable src/kyty_emulator
+-rwxr-xr-x. 1 kjaniszewski kjaniszewski 165644400 15:55:53 kytyplus-build/src/kyty_emulator
+######## M5 KYTY_BC5_AUDIO2_ADVANCED=1, cushion 2
+saves as in save-backup-0180-0953
+saves as in save-backup-0180-0953
+window | advances | pushes | advances/pushes | clock voice | mean queue level told
+   0 s | 1320 | 1317 | 1.00 |   -   | 2.08
+  10 s | 2821 | 2821 | 1.00 | 1.00x | 2.13
+  20 s | 2822 | 2822 | 1.00 | 1.00x | 2.13
+  30 s | 1702 | 1703 | 1.00 | 1.01x | 1.80
+  40 s |  946 |  947 | 1.00 | 1.00x | 1.88
+  50 s |  940 |  939 | 1.00 | 1.00x | 1.90
+  60 s |  940 |  940 | 1.00 | 1.00x | 1.90
+  70 s |  940 |  941 | 1.00 | 1.00x | 1.90
+  80 s |  940 |  940 | 1.00 | 1.00x | 1.90
+  90 s |  940 |  940 | 1.00 | 1.00x | 1.90
+ 100 s |  940 |  940 | 1.00 | 1.00x | 1.91
+ 110 s |  940 |  940 | 1.00 |   -   | 1.70
+ 120 s |  940 |  940 | 1.00 | 1.00x | 1.83
+ 130 s |  940 |  940 | 1.00 | 1.00x | 1.92
+ 140 s |  940 |  940 | 1.00 | 1.00x | 1.91
+ 150 s |  940 |  940 | 1.00 | 1.00x | 1.91
+ 160 s |  940 |  940 | 1.00 | 1.00x | 1.91
+ 170 s |  940 |  940 | 1.00 | 1.00x | 1.91
+ 180 s |  940 |  940 | 1.00 | 1.00x | 1.91
+ 190 s |  940 |  940 | 1.00 | 1.00x | 1.92
+ 200 s |  940 |  940 | 1.00 | 1.00x | 1.91
+ 210 s |  940 |  940 | 1.00 | 1.00x | 1.91
+ 220 s |  940 |  939 | 1.00 | 1.00x | 1.92
+ 230 s |  940 |  941 | 1.00 | 1.00x | 1.92
+ 240 s |  940 |  940 | 1.00 | 1.00x | 1.91
+ 250 s |  940 |  940 | 1.00 | 1.00x | 1.91
+ 260 s |  940 |  940 | 1.00 | 1.00x | 1.92
+ 270 s |  940 |  939 | 1.00 | 1.00x | 1.91
+ 280 s |  940 |  941 | 1.00 | 1.00x | 1.91
+ 290 s |  846 |  846 | 1.00 | 1.00x | 1.91
+ 300 s |  940 |  940 | 1.00 | 1.00x | 1.91
+ 310 s |  940 |  940 | 1.00 | 1.00x | 1.91
+ 320 s |  940 |  940 | 1.00 | 1.00x | 1.91
+ 330 s |  940 |  940 | 1.00 | 1.00x | 1.92
+ 340 s |  940 |  940 | 1.00 | 1.00x | 1.91
+ 350 s |  940 |  940 | 1.00 | 1.00x | 1.91
+ 360 s |  940 |  940 | 1.00 | 1.00x | 1.92
+ 370 s |  940 |  940 | 1.00 | 1.00x | 1.91
+ 380 s |  940 |  940 | 1.00 | 1.00x | 1.91
+ 390 s |  940 |  940 | 1.00 | 1.00x | 1.91
+ 400 s |  940 |  940 | 1.00 | 1.00x | 1.91
+ 410 s |  940 |  940 | 1.00 | 1.00x | 1.91
+ 420 s |  940 |  940 | 1.00 | 1.00x | 1.92
+ 430 s |  940 |  940 | 1.00 | 1.00x | 1.91
+ 440 s |  940 |  940 | 1.00 | 1.00x | 1.91
+ 450 s |  940 |  940 | 1.00 | 1.00x | 1.91
+ 460 s |  940 |  939 | 1.00 | 1.00x | 1.91
+ 470 s |  940 |  941 | 1.00 | 1.00x | 1.91
+ 480 s |  940 |  940 | 1.00 | 1.00x | 1.91
+ 490 s |  940 |  940 | 1.00 | 1.00x | 1.91
+ 500 s |  940 |  940 | 1.00 | 1.00x | 1.91
+ 510 s |  940 |  939 | 1.00 | 1.00x | 1.91
+ 520 s |  940 |  941 | 1.00 | 1.00x | 1.91
+ 530 s |  940 |  940 | 1.00 | 1.00x | 1.91
+ 540 s |  940 |  940 | 1.00 | 1.00x | 1.91
+ 550 s |  940 |  940 | 1.00 | 1.00x | 1.91
+ 560 s |  940 |  940 | 1.00 | 1.00x | 1.91
+ 570 s |  940 |  940 | 1.00 | 1.00x | 1.91
+ 580 s |  940 |  940 | 1.00 | 1.00x | 1.91
+ 590 s |  940 |  940 | 1.00 | 1.00x | 1.91
+main port rate summary:
+539 s from t 60, mean rate 1.0000, 0 s under 0.98, 0 s over 1.02
+audio trace: t 40.134 s port 0 type 0 8 ch 48000 Hz: 1 calls, 512 frames = 0.011 s of sound in 7.293 s (rate 0.001), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 80.246 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 0.999), held 1000.8 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+audio trace: t 120.353 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 999.5 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+audio trace: t 160.459 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 998.9 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+audio trace: t 200.567 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 999.1 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+audio trace: t 240.674 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 999.2 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+audio trace: t 280.781 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 999.1 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+audio trace: t 320.888 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 998.9 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+audio trace: t 360.995 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 999.3 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+audio trace: t 401.102 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 999.1 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+audio trace: t 441.209 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 998.7 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+audio trace: t 481.316 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 999.4 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+audio trace: t 521.423 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 999.0 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+audio trace: t 561.530 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 998.8 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+
+[exited with code 0]

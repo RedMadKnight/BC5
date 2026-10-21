@@ -1,0 +1,91 @@
+[3/4] Linking CXX executable src/kyty_emulator
+-rwxr-xr-x. 1 kjaniszewski kjaniszewski 165643344 15:44:38 kytyplus-build/src/kyty_emulator
+######## M4 KYTY_BC5_AUDIO2_ADVANCED=1, device-based level
+saves as in save-backup-0180-0953
+saves as in save-backup-0180-0953
+window | advances | pushes | advances/pushes | clock voice | mean queue level told
+   0 s | 1310 | 1307 | 1.00 |   -   | 2.17
+  10 s | 2820 | 2821 | 1.00 | 1.00x | 2.13
+  20 s | 2821 | 2820 | 1.00 | 1.00x | 2.13
+  30 s | 1714 | 1714 | 1.00 | 0.97x | 1.82
+  40 s |  931 |  934 | 1.00 | 1.00x | 1.58
+  50 s |  944 |  944 | 1.00 | 1.00x | 1.57
+  60 s |  942 |  942 | 1.00 | 1.00x | 1.58
+  70 s |  949 |  949 | 1.00 | 0.96x | 1.56
+  80 s |  835 |  835 | 1.00 | 0.99x | 1.53
+  90 s |  948 |  948 | 1.00 | 0.98x | 1.55
+ 100 s |  926 |  926 | 1.00 | 0.98x | 1.53
+ 110 s |  928 |  928 | 1.00 |   -   | 1.56
+ 120 s |  885 |  885 | 1.00 | 0.94x | 1.52
+ 130 s |  916 |  916 | 1.00 | 0.97x | 1.48
+ 140 s |  908 |  908 | 1.00 | 0.97x | 1.49
+ 150 s |  920 |  920 | 1.00 | 0.98x | 1.50
+ 160 s |  921 |  921 | 1.00 | 0.98x | 1.50
+ 170 s |  925 |  925 | 1.00 | 0.98x | 1.50
+ 180 s |  924 |  924 | 1.00 | 0.98x | 1.49
+ 190 s |  932 |  932 | 1.00 | 0.98x | 1.49
+ 200 s |  922 |  922 | 1.00 | 0.98x | 1.50
+ 210 s |  927 |  927 | 1.00 | 0.98x | 1.51
+ 220 s |  842 |  842 | 1.00 | 0.99x | 1.50
+ 230 s |  928 |  928 | 1.00 | 0.98x | 1.50
+ 240 s |  925 |  925 | 1.00 | 0.98x | 1.49
+ 250 s |  927 |  927 | 1.00 | 0.98x | 1.51
+ 260 s |  925 |  925 | 1.00 | 0.98x | 1.49
+ 270 s |  924 |  924 | 1.00 | 0.98x | 1.49
+ 280 s |  920 |  920 | 1.00 | 0.97x | 1.50
+ 290 s |  924 |  924 | 1.00 | 0.99x | 1.51
+ 300 s |  942 |  942 | 1.00 | 0.98x | 1.51
+ 310 s |  927 |  927 | 1.00 | 0.98x | 1.50
+ 320 s |  926 |  926 | 1.00 | 0.98x | 1.49
+ 330 s |  924 |  924 | 1.00 | 0.99x | 1.50
+ 340 s |  928 |  928 | 1.00 | 0.99x | 1.49
+ 350 s |  931 |  931 | 1.00 | 0.98x | 1.51
+ 360 s |  830 |  830 | 1.00 | 0.98x | 1.49
+ 370 s |  925 |  925 | 1.00 | 0.98x | 1.50
+ 380 s |  921 |  921 | 1.00 | 0.98x | 1.50
+ 390 s |  926 |  926 | 1.00 | 0.99x | 1.50
+ 400 s |  933 |  933 | 1.00 | 0.99x | 1.50
+ 410 s |  932 |  932 | 1.00 | 0.98x | 1.50
+ 420 s |  931 |  931 | 1.00 | 0.99x | 1.50
+ 430 s |  925 |  925 | 1.00 | 0.98x | 1.49
+ 440 s |  923 |  923 | 1.00 | 0.97x | 1.50
+ 450 s |  920 |  920 | 1.00 | 0.98x | 1.49
+ 460 s |  915 |  915 | 1.00 | 0.97x | 1.49
+ 470 s |  897 |  897 | 1.00 | 0.95x | 1.50
+ 480 s |  926 |  926 | 1.00 | 0.99x | 1.50
+ 490 s |  925 |  925 | 1.00 | 0.98x | 1.50
+ 500 s |  828 |  828 | 1.00 | 0.96x | 1.50
+ 510 s |  907 |  907 | 1.00 | 0.97x | 1.50
+ 520 s |  928 |  928 | 1.00 | 0.98x | 1.51
+ 530 s |  928 |  928 | 1.00 | 0.98x | 1.50
+ 540 s |  922 |  922 | 1.00 | 0.97x | 1.49
+ 550 s |  921 |  921 | 1.00 | 0.99x | 1.51
+ 560 s |  893 |  893 | 1.00 | 0.86x | 1.50
+ 570 s |  842 |  842 | 1.00 | 0.91x | 1.49
+ 580 s |  867 |  867 | 1.00 | 0.98x | 1.49
+ 590 s |  829 |  829 | 1.00 | 0.98x | 1.49
+ 600 s |   89 |   89 | 1.00 |   -   | 1.49
+audio trace main port (every 30th):
+audio trace: t 39.885 s port 0 type 0 8 ch 48000 Hz: 1 calls, 512 frames = 0.011 s of sound in 7.108 s (rate 0.002), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 70.406 s port 0 type 0 8 ch 48000 Hz: 96 calls, 49152 frames = 1.024 s of sound in 1.024 s (rate 1.000), held 0.7 ms, 0 clears, sdl queued 0-65536 bytes (0-42 ms), device playing
+audio trace: t 100.912 s port 0 type 0 8 ch 48000 Hz: 93 calls, 47616 frames = 0.992 s of sound in 1.003 s (rate 0.989), held 8.3 ms, 0 clears, sdl queued 0-65536 bytes (0-42 ms), device playing
+audio trace: t 131.304 s port 0 type 0 8 ch 48000 Hz: 95 calls, 48640 frames = 1.013 s of sound in 1.017 s (rate 0.997), held 0.1 ms, 0 clears, sdl queued 0-49152 bytes (0-32 ms), device playing
+audio trace: t 161.539 s port 0 type 0 8 ch 48000 Hz: 96 calls, 49152 frames = 1.024 s of sound in 1.001 s (rate 1.023), held 0.0 ms, 0 clears, sdl queued 0-49152 bytes (0-32 ms), device playing
+audio trace: t 191.803 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.021 s (rate 0.982), held 0.1 ms, 0 clears, sdl queued 0-49152 bytes (0-32 ms), device playing
+audio trace: t 222.034 s port 0 type 0 8 ch 48000 Hz: 97 calls, 49664 frames = 1.035 s of sound in 1.026 s (rate 1.008), held 0.1 ms, 0 clears, sdl queued 0-49152 bytes (0-32 ms), device playing
+audio trace: t 252.371 s port 0 type 0 8 ch 48000 Hz: 90 calls, 46080 frames = 0.960 s of sound in 1.000 s (rate 0.960), held 0.1 ms, 0 clears, sdl queued 0-49152 bytes (0-32 ms), device playing
+audio trace: t 282.669 s port 0 type 0 8 ch 48000 Hz: 95 calls, 48640 frames = 1.013 s of sound in 1.000 s (rate 1.013), held 0.1 ms, 0 clears, sdl queued 0-49152 bytes (0-32 ms), device playing
+audio trace: t 312.908 s port 0 type 0 8 ch 48000 Hz: 93 calls, 47616 frames = 0.992 s of sound in 1.000 s (rate 0.992), held 4.0 ms, 0 clears, sdl queued 0-65536 bytes (0-42 ms), device playing
+audio trace: t 343.170 s port 0 type 0 8 ch 48000 Hz: 93 calls, 47616 frames = 0.992 s of sound in 1.031 s (rate 0.962), held 0.1 ms, 0 clears, sdl queued 0-49152 bytes (0-32 ms), device playing
+audio trace: t 373.369 s port 0 type 0 8 ch 48000 Hz: 90 calls, 46080 frames = 0.960 s of sound in 1.000 s (rate 0.960), held 0.1 ms, 0 clears, sdl queued 0-49152 bytes (0-32 ms), device playing
+audio trace: t 403.672 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.001 s (rate 1.002), held 0.1 ms, 0 clears, sdl queued 0-49152 bytes (0-32 ms), device playing
+audio trace: t 433.955 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.001 s (rate 1.002), held 0.0 ms, 0 clears, sdl queued 0-49152 bytes (0-32 ms), device playing
+audio trace: t 464.274 s port 0 type 0 8 ch 48000 Hz: 93 calls, 47616 frames = 0.992 s of sound in 1.000 s (rate 0.992), held 0.0 ms, 0 clears, sdl queued 0-49152 bytes (0-32 ms), device playing
+audio trace: t 494.577 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.001 s (rate 1.002), held 0.1 ms, 0 clears, sdl queued 0-49152 bytes (0-32 ms), device playing
+audio trace: t 524.872 s port 0 type 0 8 ch 48000 Hz: 91 calls, 46592 frames = 0.971 s of sound in 1.030 s (rate 0.943), held 0.1 ms, 0 clears, sdl queued 0-49152 bytes (0-32 ms), device playing
+audio trace: t 555.042 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.001 s (rate 1.002), held 0.1 ms, 0 clears, sdl queued 0-49152 bytes (0-32 ms), device playing
+audio trace: t 585.945 s port 0 type 0 8 ch 48000 Hz: 92 calls, 47104 frames = 0.981 s of sound in 1.005 s (rate 0.977), held 0.1 ms, 0 clears, sdl queued 0-49152 bytes (0-32 ms), device playing
+main port rate summary:
+555 s, mean rate 0.9736, 224 s under 0.98, 8 s over 1.02
+
+[exited with code 0]

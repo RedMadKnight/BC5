@@ -1,0 +1,54 @@
+== A0: defaults
+ASTRO BOT audio t20-100: 0 of 80 port-seconds off, 0 clears:
+ASTRO BOT frames t40-100: 58.1 flips/s
+AudioOut2: 9115 advances, 9115 pushes (ratio 1.000)
+flip events: 0 triggers, 0 while unread, 0 seconds with deliveries, GetEventCount calls 0
+== A1: KYTY_BC5_AUDIO2_ADVANCED=1 KYTY_BC5_VIDEOOUT_COALESCE=1
+ASTRO BOT audio t20-100: 0 of 81 port-seconds off, 0 clears:
+ASTRO BOT frames t40-100: 58.4 flips/s
+AudioOut2: 9210 advances, 9210 pushes (ratio 1.000)
+flip events: 0 triggers, 0 while unread, 0 seconds with deliveries, GetEventCount calls 0
+######## O6 opening, no cap, advanced
+saves as in save-backup-0180-0953
+saves as in save-backup-0180-0953
+O6 stopped at 300 s; journal /home/kjaniszewski/bc5-data/captures/play-20261021-1609/gc/direct.log
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+clock voice passes (start-end s, speed):
+18-28 1.00x 28-38 1.00x 38-48 1.00x 48-58 1.00x 58-68 1.00x 68-78 1.00x 78-88 1.00x 88-98 1.00x 98-108 1.00x 108-118 1.00x 118-128 1.00x 128-138 1.00x 156-166 1.00x 166-176 1.00x 176-186 1.00x 186-196 1.00x 196-206 1.00x 206-216 1.00x 216-226 1.00x 226-236 1.00x 236-246 1.00x 246-256 1.00x 256-266 1.00x 266-276 1.00x 276-286 1.00x 286-296 1.00x 
+flips per 10 s (direct journal frame profile):
+0:209 10:293 20:294 30:180 40:456 50:497 60:496 70:495 80:477 90:474 100:471 110:480 120:476 130:476 140:370 150:444 160:491 170:488 180:477 190:500 200:518 210:495 220:515 230:503 240:398 250:340 260:478 270:483 280:484 290:435 
+window | advances | pushes | advances/pushes | clock voice | mean queue level told
+   0 s | 1603 | 1600 | 1.00 |   -   | 2.08
+  10 s | 2817 | 2817 | 1.00 | 1.00x | 2.13
+  20 s | 2819 | 2819 | 1.00 | 1.00x | 2.13
+  30 s | 1522 | 1522 | 1.00 | 1.00x | 1.79
+  40 s |  945 |  947 | 1.00 | 1.00x | 1.86
+  50 s |  940 |  940 | 1.00 | 1.00x | 1.86
+  60 s |  940 |  940 | 1.00 | 1.00x | 1.86
+  70 s |  846 |  846 | 1.00 | 1.00x | 1.86
+  80 s |  940 |  940 | 1.00 | 1.00x | 1.86
+  90 s |  940 |  940 | 1.00 | 1.00x | 1.86
+ 100 s |  940 |  939 | 1.00 | 1.00x | 1.87
+ 110 s |  940 |  941 | 1.00 | 1.00x | 1.87
+ 120 s |  940 |  940 | 1.00 | 1.00x | 1.86
+ 130 s |  940 |  940 | 1.00 | 1.00x | 1.86
+ 140 s |  940 |  940 | 1.00 |   -   | 1.85
+ 150 s |  931 |  931 | 1.00 | 1.00x | 1.86
+ 160 s |  940 |  940 | 1.00 | 1.00x | 1.86
+ 170 s |  940 |  940 | 1.00 | 1.00x | 1.86
+ 180 s |  940 |  940 | 1.00 | 1.00x | 1.86
+ 190 s |  940 |  940 | 1.00 | 1.00x | 1.86
+ 200 s |  940 |  940 | 1.00 | 1.00x | 1.85
+ 210 s |  940 |  940 | 1.00 | 1.00x | 1.86
+ 220 s |  940 |  939 | 1.00 | 1.00x | 1.85
+ 230 s |  940 |  941 | 1.00 | 1.00x | 1.86
+ 240 s |  940 |  940 | 1.00 | 1.00x | 1.88
+ 250 s |  940 |  940 | 1.00 | 1.00x | 1.89
+ 260 s |  940 |  940 | 1.00 | 1.00x | 1.87
+ 270 s |  940 |  940 | 1.00 | 1.00x | 1.86
+ 280 s |  940 |  940 | 1.00 | 1.00x | 1.86
+ 290 s |  940 |  940 | 1.00 | 1.00x | 1.86
+
+[exited with code 0]
