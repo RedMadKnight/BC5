@@ -1,0 +1,32 @@
+#1 give-up t 6.3637: dcb 1153 dwords at 590 on B 0x12004b4838; flip 1.139 ms later; A = 0x12004b47c8: no acb seen held back on A in the 50 ms before
+    jobs done: #1926 acb 2657 @+0.861 ms cq1, #1927 dcb 1325 @+3.785 ms cq0
+#2 give-up t 6.4539: dcb 1153 dwords at 590 on B 0x12004b4838; flip 3.228 ms later; A = 0x12004b47c8: no acb seen held back on A in the 50 ms before
+    jobs done: #1945 acb 2657 @+0.806 ms cq1
+#3 give-up t 13.6735: dcb 1153 dwords at 590 on B 0x12004b4838; flip 0.630 ms later; A = 0x12004b47c8: no acb seen held back on A in the 50 ms before
+    jobs done: #5371 acb 66 @-0.592 ms cq1, #5373 dcb 1325 @+0.039 ms cq0, #5372 acb 2881 @+0.286 ms cq1, #5374 acb 943 @+1.104 ms cq1, #5376 acb 82 @+1.283 ms cq1, #5377 acb 140 @+1.299 ms cq1
+    last completion before the flip: #5371 acb (-0.592 ms); lowest dcb number completed after the give-up: 5373 -> the writer ran before the next dcb was submitted
+#4 give-up t 61.6164: dcb 7048 dwords at 5907 on B 0x12004b3c38; flip 13.218 ms later; A = 0x12004b3bc8: no acb seen held back on A in the 50 ms before
+    jobs done: #54814 dcb 2426 @-0.120 ms cq0, #54813 acb 2110 @+1.612 ms cq1, #54815 acb 28 @+1.685 ms cq1, #54816 acb 2 @+1.791 ms cq1, #54817 acb 4 @+2.081 ms cq1, #54818 acb 7447 @+2.327 ms cq1, #54819 acb 28 @+2.369 ms cq1, #54820 acb 2 @+2.375 ms cq1, #54823 acb 4 @+2.383 ms cq1
+    last completion before the flip: #54814 dcb (-0.120 ms); lowest dcb number completed after the give-up: 54814 -> -
+#5 give-up t 64.8731: dcb 922 dwords at 291 on B 0x12004b5438; flip 1.250 ms later; A = 0x12004b53c8: acb 309 dwords at 0x11e0e20050 held back on A at t 64.864 (its wait at 28, value 0x9076d6d8c)
+    jobs done: #60155 acb 825 @+0.066 ms cq1, #60156 dcb 2612 @+0.286 ms cq0, #60158 dcb 260 @+0.576 ms cq0, #60157 acb 1917 @+1.916 ms cq1, #60159 acb 21938 @+3.583 ms cq1, #60162 acb 84 @+3.643 ms cq1, #60160 dcb 2858 @+3.650 ms cq0, #60163 acb 140 @+3.652 ms cq1
+#6 give-up t 93.2340: dcb 860 dwords at 311 on B 0x12004b5438; flip 27.955 ms later; A = 0x12004b53c8: acb 319 dwords at 0x11e0e80050 held back on A at t 93.222 (its wait at 28, value 0x9076d6d8c)
+    jobs done: #97983 acb 865 @-0.027 ms cq1, #97984 dcb 2811 @-0.004 ms cq0, #97986 dcb 250 @+0.018 ms cq0, #97989 dcb 3829 @+2.515 ms cq0, #97985 acb 2352 @+2.556 ms cq1, #97987 acb 2 @+2.598 ms cq1, #97988 acb 10122 @+3.751 ms cq1, #97992 acb 84 @+3.780 ms cq1, #97993 acb 140 @+3.787 ms cq1, #97990 dcb 14104 @+4.105 ms cq0
+    last completion before the flip: #97984 dcb (-0.004 ms); lowest dcb number completed after the give-up: 97984 -> -
+#7 give-up t 100.3788: dcb 14606 dwords at 8089 on B 0x12004b4c38; flip 14.268 ms later; A = 0x12004b4bc8: acb 1397 dwords at 0x11e0f60050 held back on A at t 100.369 (its wait at 28, value 0x9076d6d8c)
+    jobs done: #107054 acb 1393 @-0.015 ms cq1, #107056 acb 4086 @+1.944 ms cq1, #107058 acb 2 @+1.973 ms cq1, #107059 acb 893 @+2.935 ms cq1, #107060 acb 740 @+3.753 ms cq1, #107061 acb 311 @+3.829 ms cq1, #107055 dcb 40432 @+4.076 ms cq0, #107057 dcb 311 @+4.101 ms cq0, #107062 acb 713 @+4.260 ms cq1, #107064 dcb 2811 @+4.904 ms cq0
+    last completion before the flip: #107054 acb (-0.015 ms); lowest dcb number completed after the give-up: 107055 -> the writer ran before the next dcb was submitted
+#8 give-up t 119.9461: dcb 860 dwords at 311 on B 0x12004b5438; flip 16.247 ms later; A = 0x12004b53c8: acb 319 dwords at 0x11e0f00050 held back on A at t 119.934 (its wait at 28, value 0x9076d6d8c)
+    jobs done: #136792 acb 865 @+0.176 ms cq1, #136793 dcb 2811 @+0.447 ms cq0, #136795 dcb 250 @+0.714 ms cq0, #136794 acb 2352 @+1.737 ms cq1, #136796 acb 10034 @+2.442 ms cq1, #136799 acb 84 @+4.361 ms cq1, #136800 acb 140 @+4.452 ms cq1
+#9 give-up t 250.1343: dcb 860 dwords at 311 on B 0x12004b5438; flip 11.799 ms later; A = 0x12004b53c8: no acb seen held back on A in the 50 ms before
+    jobs done: #252471 acb 835 @-0.033 ms cq1, #252472 dcb 2801 @-0.032 ms cq0, #252474 dcb 250 @+0.019 ms cq0, #252477 dcb 2833 @+4.026 ms cq0
+    last completion before the flip: #252472 dcb (-0.032 ms); lowest dcb number completed after the give-up: 252472 -> -
+#10 give-up t 264.5770: dcb 860 dwords at 311 on B 0x12004b5438; flip 13.330 ms later; A = 0x12004b53c8: no acb seen held back on A in the 50 ms before
+    jobs done: #264417 acb 4 @-2.082 ms cq1, #264418 dcb 1689 @-1.626 ms cq0, #264420 dcb 2381 @-0.442 ms cq0, #264425 dcb 1814 @+4.651 ms cq0
+    last completion before the flip: #264420 dcb (-0.442 ms); lowest dcb number completed after the give-up: 264418 -> -
+#11 give-up t 413.8072: dcb 11501 dwords at 9664 on B 0x12004b3c38; flip 11.133 ms later; A = 0x12004b3bc8: no acb seen held back on A in the 50 ms before
+    jobs done: #380277 acb 5508 @+0.574 ms cq1
+#12 give-up t 459.2091: dcb 11501 dwords at 9664 on B 0x12004b3c38; flip 10.876 ms later; A = 0x12004b3bc8: no acb seen held back on A in the 50 ms before
+    jobs done: #413070 dcb 5708 @+1.065 ms cq0, #413069 acb 5508 @+1.083 ms cq1, #413071 acb 28 @+1.128 ms cq1, #413072 acb 2 @+1.135 ms cq1, #413073 acb 4680 @+1.467 ms cq1, #413074 acb 28 @+1.487 ms cq1, #413075 acb 2 @+1.490 ms cq1, #413078 acb 4 @+4.740 ms cq1
+#13 give-up t 522.7908: dcb 11501 dwords at 9664 on B 0x12004b3c38; flip 16.890 ms later; A = 0x12004b3bc8: no acb seen held back on A in the 50 ms before
+    jobs done: #466002 dcb 5708 @+0.833 ms cq0, #466001 acb 5544 @+1.196 ms cq1, #466003 acb 28 @+1.237 ms cq1, #466004 acb 2 @+1.242 ms cq1, #466005 acb 4692 @+1.547 ms cq1, #466006 acb 28 @+1.605 ms cq1, #466007 acb 2 @+1.617 ms cq1, #466010 acb 4 @+2.981 ms cq1

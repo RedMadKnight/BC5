@@ -1,0 +1,28 @@
+# 13 give-ups traced, 13 ended (13 satisfied), 8 served waits of 4 ms or more, 255 job completions journaled
+
+# every give-up: the wait, when its label was satisfied, the jobs in flight then, the next completion after it
+#  id  t(give)    label          value at give-up    waited  satisfied after  total ms  in flight (give-up -> flip)  next done ms  (job)  changes
+   1     6.364  0x12004b4838   0x907616589         16.58         1.139 ms     17.72  cq0 0 cq1 0 -> cq0 0 cq1 1         0.861  #1926 acb 2657  0x907616589->0x0 at +1.139 ms (cq0 0 cq1 1)
+   2     6.454  0x12004b4838   0x907616589         18.10         3.228 ms     21.33  cq0 0 cq1 0 -> cq0 0 cq1 1         0.806  #1945 acb 2657  0x907616589->0x0 at +3.228 ms (cq0 0 cq1 1)
+   3    13.673  0x12004b4838   0x907616589          8.31         0.630 ms      8.94  cq0 0 cq1 0 -> cq0 0 cq1 1         0.039  #5373 dcb 1325  0x907616589->0x0 at +0.630 ms (cq0 0 cq1 1)
+   4    61.616  0x12004b3c38   0x907616589          8.70        13.218 ms     21.91  cq0 0 cq1 0 -> cq0 6 cq1 18         1.612  #54813 acb 2110  0x907616589->0x0 at +13.218 ms (cq0 6 cq1 18)
+   5    64.873  0x12004b5438   0x907616589          8.14         1.250 ms      9.39  cq0 0 cq1 0 -> cq0 0 cq1 1         0.066  #60155 acb 825  0x907616589->0x0 at +1.250 ms (cq0 0 cq1 1)
+   6    93.234  0x12004b5438   0x907616589          8.76        27.955 ms     36.71  cq0 0 cq1 0 -> cq0 4 cq1 5         0.018  #97986 dcb 250  0x907616589->0x0 at +27.955 ms (cq0 4 cq1 5)
+   7   100.379  0x12004b4c38   0x907616589          8.61        14.268 ms     22.88  cq0 0 cq1 0 -> cq0 0 cq1 0         1.944  #107056 acb 4086  0x907616589->0x0 at +14.268 ms (cq0 0 cq1 0)
+   8   119.946  0x12004b5438   0x907616589          8.39        16.247 ms     24.63  cq0 0 cq1 0 -> cq0 0 cq1 1         0.176  #136792 acb 865  0x907616589->0x0 at +16.247 ms (cq0 0 cq1 1)
+   9   250.134  0x12004b5438   0x907616589         10.52        11.799 ms     22.32  cq0 0 cq1 0 -> cq0 1 cq1 3         0.019  #252474 dcb 250  0x907616589->0x0 at +11.799 ms (cq0 1 cq1 3)
+  10   264.577  0x12004b5438   0x907616589          8.23        13.330 ms     21.56  cq0 0 cq1 0 -> cq0 0 cq1 5         4.651  #264425 dcb 1814  0x907616589->0x0 at +13.330 ms (cq0 0 cq1 5)
+  11   413.807  0x12004b3c38   0x907616589          8.79        11.133 ms     19.92  cq0 0 cq1 0 -> cq0 0 cq1 0         0.574  #380277 acb 5508  0x907616589->0x0 at +11.133 ms (cq0 0 cq1 1)
+  12   459.209  0x12004b3c38   0x907616589          8.99        10.876 ms     19.87  cq0 0 cq1 0 -> cq0 0 cq1 1         1.065  #413070 dcb 5708  0x907616589->0x0 at +10.876 ms (cq0 0 cq1 1)
+  13   522.791  0x12004b3c38   0x907616589          8.63        16.890 ms     25.52  cq0 0 cq1 0 -> cq0 0 cq1 1         0.833  #466002 dcb 5708  0x907616589->0x0 at +16.890 ms (cq0 0 cq1 1)
+
+# the next job completion after the flip, ms (within 20 ms of a give-up flip, 5 ms of a served wait)
+given up  flips 13: 2 with no job in flight on either queue; 5 with a completion within 0.5 ms after; next completion n 13, p10 0.019 / p50 0.806 / p90 1.944
+served    flips 8: 0 with no job in flight on either queue; 1 with a completion within 0.5 ms after; next completion n 8, p10 0.600 / p50 0.851 / p90 1.518
+baseline  (evenly spread moments while completions were journaled): next completion n 414, p10 0.155 / p50 1.135 / p90 4.092; within 0.5 ms: 27.5 %
+
+# per label (given up and served together): flips, with none in flight, with a completion within 0.5 ms after
+  0x12004b3c38       7     1     0   next completion n 7, p10 0.600 / p50 1.019 / p90 1.518
+  0x12004b4838       6     0     1   next completion n 6, p10 0.775 / p50 0.812 / p90 0.861
+  0x12004b5438       6     0     4   next completion n 6, p10 0.019 / p50 0.176 / p90 4.651
+  0x12004b4c38       2     1     1   next completion n 2, p10 0.222 / p50 1.944 / p90 1.944

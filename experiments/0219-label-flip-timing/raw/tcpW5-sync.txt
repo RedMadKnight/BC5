@@ -1,0 +1,39 @@
+#1 give-up t 6.3637 on 0x12004b4838, flip t 6.3648: 0 jobs done in [give-up - 1 ms, flip + 1 ms], 0 of them inline (not queued)
+#2 give-up t 6.4539 on 0x12004b4838, flip t 6.4571: 1 jobs done in [give-up - 1 ms, flip + 1 ms], 0 of them inline (not queued)
+    #1945 done t 6.458  queued: acb 2657 dwords cq1  fence 1.10 ms
+#3 give-up t 13.6735 on 0x12004b4838, flip t 13.6741: 6 jobs done in [give-up - 1 ms, flip + 1 ms], 0 of them inline (not queued)
+    #5371 done t 13.674  queued: acb 66 dwords cq1  fence 0.03 ms
+    #5372 done t 13.674  queued: acb 2881 dwords cq1  fence 0.58 ms
+    #5373 done t 13.674  queued: dcb 1325 dwords cq0  fence 0.01 ms
+    #5374 done t 13.675  queued: acb 943 dwords cq1  fence 0.90 ms
+    #5376 done t 13.675  queued: acb 82 dwords cq1  fence 0.06 ms
+    #5377 done t 13.675  queued: acb 140 dwords cq1  fence 0.09 ms
+#4 give-up t 61.6164 on 0x12004b3c38, flip t 61.6296: 1 jobs done in [give-up - 1 ms, flip + 1 ms], 0 of them inline (not queued)
+    #54814 done t 61.629  queued: dcb 2426 dwords cq0  fence 7.64 ms
+#5 give-up t 64.8731 on 0x12004b5438, flip t 64.8743: 3 jobs done in [give-up - 1 ms, flip + 1 ms], 0 of them inline (not queued)
+    #60155 done t 64.874  queued: acb 825 dwords cq1  fence 0.42 ms
+    #60156 done t 64.875  queued: dcb 2612 dwords cq0  fence 0.30 ms
+    #60158 done t 64.875  queued: dcb 260 dwords cq0  fence 0.02 ms
+#6 give-up t 93.2340 on 0x12004b5438, flip t 93.2619: 3 jobs done in [give-up - 1 ms, flip + 1 ms], 0 of them inline (not queued)
+    #97983 done t 93.262  queued: acb 865 dwords cq1  fence 18.56 ms
+    #97984 done t 93.262  queued: dcb 2811 dwords cq0  fence 18.28 ms
+    #97986 done t 93.262  queued: dcb 250 dwords cq0  fence 18.01 ms
+#7 give-up t 100.3788 on 0x12004b4c38, flip t 100.3930: 1 jobs done in [give-up - 1 ms, flip + 1 ms], 0 of them inline (not queued)
+    #107054 done t 100.393  queued: acb 1393 dwords cq1  fence 0.20 ms
+#8 give-up t 119.9461 on 0x12004b5438, flip t 119.9623: 3 jobs done in [give-up - 1 ms, flip + 1 ms], 0 of them inline (not queued)
+    #136792 done t 119.963  queued: acb 865 dwords cq1  fence 0.48 ms
+    #136793 done t 119.963  queued: dcb 2811 dwords cq0  fence 0.27 ms
+    #136795 done t 119.963  queued: dcb 250 dwords cq0  fence 0.02 ms
+#9 give-up t 250.1343 on 0x12004b5438, flip t 250.1461: 3 jobs done in [give-up - 1 ms, flip + 1 ms], 0 of them inline (not queued)
+    #252471 done t 250.146  queued: acb 835 dwords cq1  fence 1.25 ms
+    #252472 done t 250.146  queued: dcb 2801 dwords cq0  fence 1.04 ms
+    #252474 done t 250.146  queued: dcb 250 dwords cq0  fence 0.80 ms
+#10 give-up t 264.5770 on 0x12004b5438, flip t 264.5903: 3 jobs done in [give-up - 1 ms, flip + 1 ms], 0 of them inline (not queued)
+    #264417 done t 264.588  queued: acb 4 dwords cq1  fence 0.03 ms
+    #264418 done t 264.589  queued: dcb 1689 dwords cq0  fence 0.27 ms
+    #264420 done t 264.590  queued: dcb 2381 dwords cq0  fence 0.58 ms
+#11 give-up t 413.8072 on 0x12004b3c38, flip t 413.8183: 0 jobs done in [give-up - 1 ms, flip + 1 ms], 0 of them inline (not queued)
+#12 give-up t 459.2091 on 0x12004b3c38, flip t 459.2199: 0 jobs done in [give-up - 1 ms, flip + 1 ms], 0 of them inline (not queued)
+#13 give-up t 522.7908 on 0x12004b3c38, flip t 522.8077: 1 jobs done in [give-up - 1 ms, flip + 1 ms], 0 of them inline (not queued)
+    #466002 done t 522.808  queued: dcb 5708 dwords cq0  fence 0.57 ms
+# 0 inline jobs in all the windows
