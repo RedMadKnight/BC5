@@ -1,0 +1,174 @@
+queue 0: a 1 b 0 c 0 d 1 ring 0xf01148000-0xf0114c000
+queue 1: a 1 b 0 c 1 d 2 ring 0xf01150000-0xf01154000
+queue 2: a 1 b 0 c 2 d 3 ring 0xf01158000-0xf0115c000
+queue 3: a 1 b 0 c 3 d 4 ring 0xf01160000-0xf01164000
+queue 4: a 1 b 0 c 4 d 5 ring 0xf01168000-0xf0116c000
+queue 5: a 1 b 0 c 5 d 6 ring 0xf01170000-0xf01174000
+queue 6: a 1 b 0 c 6 d 7 ring 0xf01178000-0xf0117c000
+queue 7: a 1 b 0 c 7 d 8 ring 0xf01180000-0xf01184000
+queue 8: a 1 b 1 c 0 d 9 ring 0xf01188000-0xf0118c000
+queue 9: a 1 b 1 c 1 d 10 ring 0xf01190000-0xf01194000
+queue 10: a 1 b 1 c 2 d 11 ring 0xf01198000-0xf0119c000
+queue 11: a 1 b 1 c 3 d 12 ring 0xf011a0000-0xf011a4000
+queue 12: a 1 b 1 c 4 d 13 ring 0xf011a8000-0xf011ac000
+queue 13: a 1 b 1 c 5 d 14 ring 0xf011b0000-0xf011b4000
+queue 14: a 1 b 1 c 6 d 15 ring 0xf011b8000-0xf011bc000
+queue 15: a 1 b 1 c 7 d 16 ring 0xf011c0000-0xf011c4000
+queue 16: a 1 b 2 c 0 d 17 ring 0xf011c8000-0xf011cc000
+queue 17: a 1 b 2 c 1 d 18 ring 0xf011d0000-0xf011d4000
+queue 18: a 1 b 2 c 2 d 19 ring 0xf011d8000-0xf011dc000
+queue 19: a 1 b 2 c 3 d 20 ring 0xf011e0000-0xf011e4000
+queue 20: a 1 b 2 c 4 d 21 ring 0xf011e8000-0xf011ec000
+queue 21: a 1 b 2 c 5 d 22 ring 0xf011f0000-0xf011f4000
+queue 22: a 1 b 2 c 6 d 23 ring 0xf011f8000-0xf011fc000
+queue 23: a 1 b 2 c 7 d 24 ring 0xf01200000-0xf01204000
+queue 24: a 1 b 3 c 0 d 25 ring 0xf01208000-0xf0120c000
+queue 25: a 1 b 3 c 1 d 26 ring 0xf01210000-0xf01214000
+queue 26: a 1 b 3 c 2 d 27 ring 0xf01218000-0xf0121c000
+queue 27: a 1 b 3 c 3 d 28 ring 0xf01220000-0xf01224000
+queue 28: a 1 b 3 c 4 d 29 ring 0xf01228000-0xf0122c000
+queue 29: a 1 b 3 c 5 d 30 ring 0xf01230000-0xf01234000
+queue 30: a 1 b 3 c 6 d 31 ring 0xf01238000-0xf0123c000
+queue 31: a 1 b 3 c 7 d 32 ring 0xf01240000-0xf01244000
+queue 32: a 2 b 0 c 0 d 33 ring 0xf01248000-0xf0124c000
+queue 33: a 2 b 0 c 1 d 34 ring 0xf01250000-0xf01254000
+queue 34: a 2 b 0 c 2 d 35 ring 0xf01258000-0xf0125c000
+queue 35: a 2 b 0 c 3 d 36 ring 0xf01260000-0xf01264000
+queue 36: a 2 b 0 c 4 d 37 ring 0xf01268000-0xf0126c000
+queue 37: a 2 b 0 c 5 d 38 ring 0xf01270000-0xf01274000
+queue 38: a 2 b 0 c 6 d 39 ring 0xf01278000-0xf0127c000
+queue 39: a 2 b 0 c 7 d 40 ring 0xf01280000-0xf01284000
+queue 40: a 2 b 1 c 0 d 41 ring 0xf01288000-0xf0128c000
+queue 41: a 2 b 1 c 1 d 42 ring 0xf01290000-0xf01294000
+queue 42: a 2 b 1 c 2 d 43 ring 0xf01298000-0xf0129c000
+queue 43: a 2 b 1 c 3 d 44 ring 0xf012a0000-0xf012a4000
+queue 44: a 2 b 1 c 4 d 45 ring 0xf012a8000-0xf012ac000
+queue 45: a 2 b 1 c 5 d 46 ring 0xf012b0000-0xf012b4000
+queue 46: a 2 b 1 c 6 d 47 ring 0xf012b8000-0xf012bc000
+queue 47: a 2 b 1 c 7 d 48 ring 0xf012c0000-0xf012c4000
+queue 48: a 2 b 2 c 0 d 49 ring 0xf012c8000-0xf012cc000
+queue 49: a 2 b 2 c 1 d 50 ring 0xf012d0000-0xf012d4000
+queue 50: a 2 b 2 c 2 d 51 ring 0xf012d8000-0xf012dc000
+queue 51: a 2 b 2 c 3 d 52 ring 0xf012e0000-0xf012e4000
+queue 52: a 2 b 2 c 4 d 53 ring 0xf012e8000-0xf012ec000
+queue 53: a 2 b 2 c 5 d 54 ring 0xf012f0000-0xf012f4000
+queue 54: a 2 b 2 c 6 d 55 ring 0xf012f8000-0xf012fc000
+queue 55: a 2 b 2 c 7 d 56 ring 0xf01300000-0xf01304000
+flip trace: served dcb 1153 dwords at 590 on 0x12004b4838 after 13.753 ms, t 7.828080 s; in flight cq0 0 cq1 1; 4 jobs done during the wait, the last 4.205 ms before its end (#2607 acb 134 dwords, cq1); compute queue blocked on 0x0
+flip trace: job #2608 acb 2657 dwords done at t 7.828915 s (cq1); in flight cq0 0 cq1 0
+flip trace: served dcb 1153 dwords at 590 on 0x12004b4838 after 16.510 ms, t 7.868263 s; in flight cq0 0 cq1 1; 4 jobs done during the wait, the last 5.079 ms before its end (#2618 acb 2 dwords, cq1); compute queue blocked on 0x0
+flip trace: job #2619 acb 2657 dwords done at t 7.869111 s (cq1); in flight cq0 0 cq1 0
+flip trace: served dcb 1153 dwords at 590 on 0x12004b4838 after 14.741 ms, t 7.909752 s; in flight cq0 0 cq1 1; 3 jobs done during the wait, the last 5.387 ms before its end (#2627 dcb 1859 dwords, cq0); compute queue blocked on 0x0
+flip trace: job #2628 acb 2657 dwords done at t 7.910541 s (cq1); in flight cq0 0 cq1 0
+flip trace: served dcb 1153 dwords at 590 on 0x12004b4838 after 18.883 ms, t 7.954156 s; in flight cq0 0 cq1 1; 4 jobs done during the wait, the last 5.448 ms before its end (#2636 acb 152 dwords, cq1); compute queue blocked on 0x0
+flip trace: job #2637 acb 2657 dwords done at t 7.955063 s (cq1); in flight cq0 0 cq1 0
+flip trace: served dcb 1153 dwords at 590 on 0x12004b4838 after 21.681 ms, t 8.002977 s; in flight cq0 0 cq1 1; 4 jobs done during the wait, the last 4.041 ms before its end (#2645 acb 152 dwords, cq1); compute queue blocked on 0x0
+flip trace: job #2646 acb 2657 dwords done at t 8.003927 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #2648 acb 82 dwords done at t 8.004137 s (cq1); in flight cq0 1 cq1 1
+flip trace: job #2649 acb 140 dwords done at t 8.004162 s (cq1); in flight cq0 1 cq1 0
+flip trace: job #2647 dcb 7714 dwords done at t 8.006082 s (cq0); in flight cq0 0 cq1 0
+flip trace: served dcb 1153 dwords at 590 on 0x12004b4838 after 12.897 ms, t 22.904671 s; in flight cq0 0 cq1 0; 3 jobs done during the wait, the last 0.076 ms before its end (#9662 acb 2523 dwords, cq1); compute queue blocked on 0x0
+flip trace: job #9664 dcb 1325 dwords done at t 22.907285 s (cq0); in flight cq0 0 cq1 1
+flip trace: job #9663 acb 1391 dwords done at t 22.908275 s (cq1); in flight cq0 1 cq1 2
+flip trace: job #9666 acb 82 dwords done at t 22.908323 s (cq1); in flight cq0 1 cq1 1
+flip trace: job #9667 acb 140 dwords done at t 22.908391 s (cq1); in flight cq0 1 cq1 0
+flip trace: served dcb 1153 dwords at 646 on 0x12004b5438 after 32.457 ms, t 25.885220 s; in flight cq0 0 cq1 1; 5 jobs done during the wait, the last 0.844 ms before its end (#11107 dcb 1325 dwords, cq0); compute queue blocked on 0x0
+flip trace: job #11108 acb 1367 dwords done at t 25.885875 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #11110 acb 82 dwords done at t 25.886733 s (cq1); in flight cq0 1 cq1 0
+flip trace: job #11111 acb 140 dwords done at t 25.886844 s (cq1); in flight cq0 1 cq1 0
+flip trace: job #11109 dcb 7658 dwords done at t 25.888638 s (cq0); in flight cq0 0 cq1 0
+flip trace: served dcb 922 dwords at 291 on 0x12004b5438 after 30.870 ms, t 45.639264 s; in flight cq0 0 cq1 2; 3 jobs done during the wait, the last 24.749 ms before its end (#30505 dcb 291 dwords, cq0); compute queue blocked on 0x0
+flip trace: job #30508 acb 1917 dwords done at t 45.640503 s (cq1); in flight cq0 1 cq1 0
+flip trace: job #30510 acb 28 dwords done at t 45.640551 s (cq1); in flight cq0 1 cq1 1
+flip trace: job #30511 acb 2 dwords done at t 45.640566 s (cq1); in flight cq0 1 cq1 0
+flip trace: job #30509 dcb 2612 dwords done at t 45.640762 s (cq0); in flight cq0 0 cq1 0
+flip trace: job #30512 dcb 1849 dwords done at t 45.642554 s (cq0); in flight cq0 1 cq1 1
+flip trace: job #30513 dcb 6147 dwords done at t 45.643764 s (cq0); in flight cq0 1 cq1 3
+flip trace: served dcb 7048 dwords at 5907 on 0x12004b3c38 after 13.284 ms, t 58.427644 s; in flight cq0 0 cq1 1; 3 jobs done during the wait, the last 0.362 ms before its end (#50214 acb 66 dwords, cq1); compute queue blocked on 0x0
+flip trace: job #50218 dcb 2426 dwords done at t 58.429175 s (cq0); in flight cq0 0 cq1 4
+flip trace: job #50215 acb 2110 dwords done at t 58.429267 s (cq1); in flight cq0 0 cq1 3
+flip trace: job #50216 acb 28 dwords done at t 58.429567 s (cq1); in flight cq0 0 cq1 2
+flip trace: job #50217 acb 2 dwords done at t 58.429573 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #50219 acb 4 dwords done at t 58.429584 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #50220 acb 7447 dwords done at t 58.430056 s (cq1); in flight cq0 0 cq1 2
+flip trace: job #50221 acb 28 dwords done at t 58.430084 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #50222 acb 2 dwords done at t 58.430089 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #50225 acb 4 dwords done at t 58.431583 s (cq1); in flight cq0 2 cq1 0
+flip trace: served dcb 7048 dwords at 5907 on 0x12004b3c38 after 13.079 ms, t 58.963158 s; in flight cq0 0 cq1 1; 3 jobs done during the wait, the last 0.423 ms before its end (#51005 acb 66 dwords, cq1); compute queue blocked on 0x0
+flip trace: job #51009 dcb 2426 dwords done at t 58.964439 s (cq0); in flight cq0 0 cq1 4
+flip trace: job #51006 acb 2110 dwords done at t 58.964856 s (cq1); in flight cq0 0 cq1 3
+flip trace: job #51007 acb 28 dwords done at t 58.964892 s (cq1); in flight cq0 0 cq1 3
+flip trace: job #51008 acb 2 dwords done at t 58.964897 s (cq1); in flight cq0 0 cq1 2
+flip trace: job #51010 acb 4 dwords done at t 58.964905 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #51011 acb 7447 dwords done at t 58.965337 s (cq1); in flight cq0 0 cq1 2
+flip trace: job #51012 acb 28 dwords done at t 58.965391 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #51013 acb 2 dwords done at t 58.965399 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #51016 acb 4 dwords done at t 58.966428 s (cq1); in flight cq0 2 cq1 0
+flip trace: served dcb 7048 dwords at 5907 on 0x12004b3c38 after 8.905 ms, t 64.589566 s; in flight cq0 0 cq1 1; 4 jobs done during the wait, the last 0.192 ms before its end (#59888 acb 322 dwords, cq1); compute queue blocked on 0x0
+flip trace: job #59892 dcb 2426 dwords done at t 64.590817 s (cq0); in flight cq0 0 cq1 4
+flip trace: job #59889 acb 1788 dwords done at t 64.591123 s (cq1); in flight cq0 0 cq1 4
+flip trace: job #59890 acb 28 dwords done at t 64.591143 s (cq1); in flight cq0 0 cq1 3
+flip trace: job #59891 acb 2 dwords done at t 64.591148 s (cq1); in flight cq0 0 cq1 2
+flip trace: job #59893 acb 4 dwords done at t 64.591153 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #59894 acb 7447 dwords done at t 64.591624 s (cq1); in flight cq0 0 cq1 2
+flip trace: job #59895 acb 28 dwords done at t 64.591647 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #59896 acb 2 dwords done at t 64.591651 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #59898 acb 4 dwords done at t 64.592345 s (cq1); in flight cq0 1 cq1 0
+flip trace: served dcb 860 dwords at 311 on 0x12004b5438 after 12.183 ms, t 101.073157 s; in flight cq0 0 cq1 1; 4 jobs done during the wait, the last 0.017 ms before its end (#107186 acb 845 dwords, cq1); compute queue blocked on 0x0
+flip trace: job #107187 acb 2342 dwords done at t 101.074498 s (cq1); in flight cq0 1 cq1 2
+flip trace: job #107189 acb 28 dwords done at t 101.074546 s (cq1); in flight cq0 1 cq1 2
+flip trace: job #107190 acb 2 dwords done at t 101.074551 s (cq1); in flight cq0 1 cq1 1
+flip trace: job #107191 acb 4 dwords done at t 101.074559 s (cq1); in flight cq0 1 cq1 0
+flip trace: job #107188 dcb 2811 dwords done at t 101.074608 s (cq0); in flight cq0 0 cq1 0
+flip trace: job #107192 acb 9644 dwords done at t 101.075688 s (cq1); in flight cq0 1 cq1 0
+flip trace: job #107195 acb 84 dwords done at t 101.076398 s (cq1); in flight cq0 2 cq1 1
+flip trace: job #107196 acb 140 dwords done at t 101.076408 s (cq1); in flight cq0 2 cq1 0
+flip trace: served dcb 3092 dwords at 379 on 0x12004b3c38 after 4.927 ms, t 101.954659 s; in flight cq0 0 cq1 1; 3 jobs done during the wait, the last 3.886 ms before its end (#108440 dcb 1648 dwords, cq0); compute queue blocked on 0x0
+flip trace: job #108441 acb 7828 dwords done at t 101.955583 s (cq1); in flight cq0 0 cq1 0
+flip trace: served dcb 3092 dwords at 379 on 0x12004b3c38 after 46.361 ms, t 106.419159 s; in flight cq0 0 cq1 2; 3 jobs done during the wait, the last 25.779 ms before its end (#114311 dcb 1648 dwords, cq0); compute queue blocked on 0x0
+flip trace: job #114316 dcb 6669 dwords done at t 106.421211 s (cq0); in flight cq0 0 cq1 8
+flip trace: served dcb 860 dwords at 311 on 0x12004b5438 after 12.984 ms, t 108.463582 s; in flight cq0 2 cq1 4; 23 jobs done during the wait, the last 0.030 ms before its end (#117076 acb 865 dwords, cq1); compute queue blocked on 0x0
+flip trace: job #117077 acb 740 dwords done at t 108.464502 s (cq1); in flight cq0 2 cq1 3
+flip trace: job #117078 acb 311 dwords done at t 108.464628 s (cq1); in flight cq0 3 cq1 3
+flip trace: job #117073 dcb 48511 dwords done at t 108.464704 s (cq0); in flight cq0 2 cq1 4
+flip trace: job #117074 dcb 311 dwords done at t 108.464713 s (cq0); in flight cq0 1 cq1 4
+flip trace: job #117079 acb 713 dwords done at t 108.464901 s (cq1); in flight cq0 1 cq1 3
+flip trace: job #117081 dcb 2811 dwords done at t 108.465444 s (cq0); in flight cq0 0 cq1 5
+flip trace: job #117080 acb 588 dwords done at t 108.465483 s (cq1); in flight cq0 0 cq1 4
+flip trace: job #117082 acb 28 dwords done at t 108.465530 s (cq1); in flight cq0 0 cq1 3
+flip trace: job #117083 acb 2 dwords done at t 108.465535 s (cq1); in flight cq0 0 cq1 2
+flip trace: job #117084 acb 4 dwords done at t 108.465541 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #117085 acb 6901 dwords done at t 108.466001 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #117088 acb 84 dwords done at t 108.467842 s (cq1); in flight cq0 2 cq1 0
+flip trace: job #117089 acb 140 dwords done at t 108.467924 s (cq1); in flight cq0 2 cq1 0
+flip trace: served dcb 3092 dwords at 379 on 0x12004b3c38 after 39.862 ms, t 111.452056 s; in flight cq0 0 cq1 2; 4 jobs done during the wait, the last 39.130 ms before its end (#121571 dcb 1648 dwords, cq0); compute queue blocked on 0x0
+flip trace: job #121572 acb 6738 dwords done at t 111.454328 s (cq1); in flight cq0 1 cq1 5
+flip trace: job #121576 dcb 6669 dwords done at t 111.454421 s (cq0); in flight cq0 0 cq1 5
+flip trace: job #121573 acb 1391 dwords done at t 111.454497 s (cq1); in flight cq0 0 cq1 4
+flip trace: job #121574 acb 28 dwords done at t 111.454513 s (cq1); in flight cq0 0 cq1 3
+flip trace: job #121575 acb 2 dwords done at t 111.454520 s (cq1); in flight cq0 0 cq1 2
+flip trace: job #121577 acb 4 dwords done at t 111.454526 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #121578 acb 4064 dwords done at t 111.454811 s (cq1); in flight cq0 0 cq1 2
+flip trace: job #121579 acb 28 dwords done at t 111.454838 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #121580 acb 2 dwords done at t 111.454844 s (cq1); in flight cq0 0 cq1 0
+flip trace: served dcb 14596 dwords at 8089 on 0x12004b4c38 after 18.241 ms, t 136.088369 s; in flight cq0 0 cq1 1; 8 jobs done during the wait, the last 6.201 ms before its end (#158944 acb 4 dwords, cq1); compute queue blocked on 0x0
+flip trace: job #158945 acb 5487 dwords done at t 136.088590 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #158946 acb 28 dwords done at t 136.089027 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #158947 acb 2 dwords done at t 136.089132 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #158950 acb 4 dwords done at t 136.091300 s (cq1); in flight cq0 2 cq1 0
+flip trace: job #158951 acb 865 dwords done at t 136.092873 s (cq1); in flight cq0 3 cq1 7
+flip trace: served dcb 3092 dwords at 379 on 0x12004b3c38 after 5.159 ms, t 136.583373 s; in flight cq0 0 cq1 1; 3 jobs done during the wait, the last 4.601 ms before its end (#159421 dcb 1648 dwords, cq0); compute queue blocked on 0x0
+flip trace: job #159422 acb 6735 dwords done at t 136.587199 s (cq1); in flight cq0 0 cq1 0
+flip trace: served dcb 3092 dwords at 379 on 0x12004b3c38 after 21.321 ms, t 136.825084 s; in flight cq0 0 cq1 1; 4 jobs done during the wait, the last 1.211 ms before its end (#159665 acb 20 dwords, cq1); compute queue blocked on 0x0
+flip trace: job #159669 dcb 6669 dwords done at t 136.827035 s (cq0); in flight cq0 0 cq1 5
+flip trace: job #159666 acb 8150 dwords done at t 136.829305 s (cq1); in flight cq0 0 cq1 6
+flip trace: served dcb 10055 dwords at 8223 on 0x12004b3c38 after 30.329 ms, t 466.145162 s; in flight cq0 0 cq1 1; 4 jobs done during the wait, the last 0.610 ms before its end (#456462 acb 66 dwords, cq1); compute queue blocked on 0x0
+flip trace: job #456463 acb 5482 dwords done at t 466.145808 s (cq1); in flight cq0 0 cq1 2
+flip trace: served dcb 10055 dwords at 8223 on 0x12004b3c38 after 29.643 ms, t 517.560627 s; in flight cq0 0 cq1 1; 2 jobs done during the wait, the last 16.343 ms before its end (#502784 dcb 9492 dwords, cq0); compute queue blocked on 0x0
+flip trace: job #502785 acb 5548 dwords done at t 517.561364 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #502786 acb 28 dwords done at t 517.561414 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #502787 acb 2 dwords done at t 517.561419 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #502789 acb 4 dwords done at t 517.563360 s (cq1); in flight cq0 1 cq1 0
+flip trace: job #502791 acb 4678 dwords done at t 517.564398 s (cq1); in flight cq0 2 cq1 5
+flip trace: served dcb 10055 dwords at 8223 on 0x12004b3c38 after 68.690 ms, t 529.249465 s; in flight cq0 0 cq1 1; 2 jobs done during the wait, the last 66.230 ms before its end (#513395 dcb 9492 dwords, cq0); compute queue blocked on 0x0
+flip trace: job #513396 acb 5548 dwords done at t 529.250094 s (cq1); in flight cq0 0 cq1 0
