@@ -1,0 +1,164 @@
+journal 368128274 bytes
+flat aperture lines: 6; skip pgm lines: 3; TIMEOUT: 0; timeout: fault: 0
+flat aperture: program 0x11d049aa00: 6 stack pushes (2 s_brev_b32) now address the host's LDS/private apertures
+flat aperture: program 0x11d040e200: 6 stack pushes (1 s_brev_b32) now address the host's LDS/private apertures
+flat aperture: program 0x11d0488a00: 6 stack pushes (2 s_brev_b32) now address the host's LDS/private apertures
+flat aperture: program 0x11d04a6000: 6 stack pushes (2 s_brev_b32) now address the host's LDS/private apertures
+flat aperture: program 0x11d04bb900: 6 stack pushes (2 s_brev_b32) now address the host's LDS/private apertures
+flat aperture: program 0x11d040c900: 6 stack pushes (1 s_brev_b32) now address the host's LDS/private apertures
+      1   skip pgm 0x909974400: dcb dispatch op 16 at 104435 dropped (4097 so far)
+      1   skip pgm 0x909974400: dcb dispatch op 16 at 25774 dropped (1 so far)
+      1   skip pgm 0x909974400: dcb dispatch op 16 at 67300 dropped (8193 so far)
+fence waits > 300 ms:
+timing: #51452 done at t 60.512 s, 704.3 ms after the sync and hints; device: prepare 0.01 list 0.01 cs 0.02 fence 704.27 ms, 63 BOs (short list)
+timing: #113169 done at t 109.187 s, 2271.5 ms after the sync and hints; device: prepare 0.01 list 0.02 cs 0.04 fence 2271.39 ms, 62 BOs (short list)
+timing: #212478 done at t 185.825 s, 669.1 ms after the sync and hints; device: prepare 0.04 list 0.00 cs 0.18 fence 668.80 ms, 175 BOs
+timing: #335885 done at t 256.580 s, 707.7 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.03 fence 707.61 ms, 62 BOs (short list)
+timing: #335886 done at t 256.581 s, 707.9 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.02 fence 707.87 ms, 61 BOs (short list)
+timing: #398835 done at t 290.950 s, 821.9 ms after the sync and hints; device: prepare 0.06 list 0.00 cs 0.11 fence 821.71 ms, 176 BOs
+timing: #398833 done at t 290.951 s, 822.7 ms after the sync and hints; device: prepare 0.01 list 0.02 cs 0.06 fence 822.58 ms, 62 BOs (short list)
+timing: #398834 done at t 290.951 s, 822.6 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.02 fence 822.55 ms, 61 BOs (short list)
+timing: #398836 done at t 290.951 s, 822.2 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.06 fence 822.12 ms, 61 BOs (short list)
+timing: #398837 done at t 290.951 s, 822.1 ms after the sync and hints; device: prepare 0.07 list 0.00 cs 0.13 fence 821.83 ms, 176 BOs
+timing: #439900 done at t 323.095 s, 444.4 ms after the sync and hints; device: prepare 0.02 list 0.00 cs 0.08 fence 444.30 ms, 175 BOs
+timing: #439901 done at t 323.095 s, 444.1 ms after the sync and hints; device: prepare 0.01 list 0.02 cs 0.05 fence 444.05 ms, 62 BOs (short list)
+timing: #439903 done at t 323.095 s, 443.7 ms after the sync and hints; device: prepare 0.00 list 0.02 cs 0.04 fence 443.67 ms, 61 BOs (short list)
+timing: #439904 done at t 323.095 s, 443.4 ms after the sync and hints; device: prepare 0.00 list 0.02 cs 0.06 fence 443.30 ms, 61 BOs (short list)
+timing: #439905 done at t 323.095 s, 443.3 ms after the sync and hints; device: prepare 0.13 list 0.00 cs 0.29 fence 442.71 ms, 175 BOs
+timing: #584552 done at t 429.447 s, 422.6 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.03 fence 422.51 ms, 61 BOs (short list)
+timing: #584554 done at t 429.447 s, 420.3 ms after the sync and hints; device: prepare 0.01 list 0.02 cs 0.08 fence 420.16 ms, 61 BOs (short list)
+timing: #608926 done at t 449.038 s, 451.1 ms after the sync and hints; device: prepare 0.02 list 0.00 cs 0.08 fence 450.95 ms, 172 BOs
+timing: #608923 done at t 449.038 s, 451.5 ms after the sync and hints; device: prepare 0.02 list 0.03 cs 0.06 fence 451.39 ms, 64 BOs (short list)
+timing: #608927 done at t 449.038 s, 450.9 ms after the sync and hints; device: prepare 0.01 list 0.00 cs 0.09 fence 450.84 ms, 172 BOs
+timing: #608928 done at t 449.038 s, 450.8 ms after the sync and hints; device: prepare 0.02 list 0.00 cs 0.06 fence 450.73 ms, 172 BOs
+timing: #608929 done at t 449.038 s, 450.7 ms after the sync and hints; device: prepare 0.01 list 0.00 cs 0.09 fence 450.61 ms, 172 BOs
+timing: #651920 done at t 484.990 s, 1084.0 ms after the sync and hints; device: prepare 0.01 list 0.00 cs 0.08 fence 1083.91 ms, 170 BOs
+timing: #651922 done at t 484.990 s, 1084.1 ms after the sync and hints; device: prepare 0.00 list 0.03 cs 0.11 fence 1083.94 ms, 61 BOs (short list)
+timing: #651921 done at t 484.990 s, 1084.4 ms after the sync and hints; device: prepare 0.03 list 0.04 cs 0.09 fence 1084.17 ms, 64 BOs (short list)
+timing: #651923 done at t 484.990 s, 1083.9 ms after the sync and hints; device: prepare 0.03 list 0.00 cs 0.18 fence 1083.71 ms, 170 BOs
+timing: #651926 done at t 484.991 s, 1083.4 ms after the sync and hints; device: prepare 0.06 list 0.00 cs 0.21 fence 1083.05 ms, 170 BOs
+timing: #651924 done at t 484.991 s, 1083.7 ms after the sync and hints; device: prepare 0.03 list 0.00 cs 0.09 fence 1083.55 ms, 170 BOs
+timing: #651925 done at t 484.991 s, 1083.5 ms after the sync and hints; device: prepare 0.03 list 0.00 cs 0.09 fence 1083.40 ms, 170 BOs
+timing: #651927 done at t 484.991 s, 1083.1 ms after the sync and hints; device: prepare 0.01 list 0.03 cs 0.45 fence 1082.57 ms, 62 BOs (short list)
+timing: #651928 done at t 484.991 s, 1082.5 ms after the sync and hints; device: prepare 0.01 list 0.03 cs 0.06 fence 1082.42 ms, 61 BOs (short list)
+timing: #863487 done at t 633.962 s, 351.8 ms after the sync and hints; device: prepare 0.02 list 0.02 cs 0.07 fence 351.67 ms, 64 BOs (short list)
+timing: #880733 done at t 651.067 s, 310.4 ms after the sync and hints; device: prepare 0.01 list 0.04 cs 0.09 fence 310.23 ms, 62 BOs (short list)
+timing: #898635 done at t 668.980 s, 1033.7 ms after the sync and hints; device: prepare 0.02 list 0.00 cs 0.07 fence 1033.62 ms, 170 BOs
+timing: #898639 done at t 668.980 s, 1031.4 ms after the sync and hints; device: prepare 0.26 list 0.00 cs 0.22 fence 1030.78 ms, 170 BOs
+timing: #898640 done at t 668.980 s, 1030.2 ms after the sync and hints; device: prepare 0.20 list 0.00 cs 0.27 fence 1029.60 ms, 170 BOs
+timing: #898636 done at t 668.980 s, 1033.4 ms after the sync and hints; device: prepare 0.01 list 0.03 cs 0.05 fence 1033.26 ms, 61 BOs (short list)
+timing: #898637 done at t 668.980 s, 1033.2 ms after the sync and hints; device: prepare 0.33 list 0.00 cs 0.16 fence 1032.38 ms, 170 BOs
+timing: #898641 done at t 668.980 s, 1029.7 ms after the sync and hints; device: prepare 0.01 list 0.02 cs 0.04 fence 1029.58 ms, 63 BOs (short list)
+timing: #898642 done at t 668.980 s, 1029.6 ms after the sync and hints; device: prepare 0.01 list 0.01 cs 0.02 fence 1029.53 ms, 63 BOs (short list)
+timing: #942067 done at t 704.884 s, 655.6 ms after the sync and hints; device: prepare 0.02 list 0.00 cs 0.05 fence 655.54 ms, 170 BOs
+timing: #942068 done at t 704.884 s, 655.4 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.03 fence 655.37 ms, 62 BOs (short list)
+timing: #942069 done at t 704.884 s, 655.4 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.02 fence 655.34 ms, 61 BOs (short list)
+timing: #942071 done at t 704.884 s, 654.6 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.06 fence 654.48 ms, 61 BOs (short list)
+timing: #942072 done at t 704.884 s, 654.5 ms after the sync and hints; device: prepare 0.07 list 0.00 cs 0.12 fence 654.20 ms, 170 BOs
+timing: #1025838 done at t 762.256 s, 424.1 ms after the sync and hints; device: prepare 0.07 list 0.00 cs 0.33 fence 423.56 ms, 172 BOs
+timing: #1025841 done at t 762.268 s, 434.6 ms after the sync and hints; device: prepare 0.07 list 0.00 cs 0.23 fence 434.23 ms, 172 BOs
+timing: #1025842 done at t 762.268 s, 433.6 ms after the sync and hints; device: prepare 0.31 list 0.00 cs 0.14 fence 433.01 ms, 172 BOs
+timing: #1025828 done at t 762.256 s, 426.7 ms after the sync and hints; device: prepare 0.02 list 0.00 cs 0.07 fence 426.62 ms, 172 BOs
+timing: #1025830 done at t 762.299 s, 468.4 ms after the sync and hints; device: prepare 0.01 list 0.01 cs 0.03 fence 468.34 ms, 62 BOs (short list)
+timing: #1025831 done at t 762.299 s, 468.3 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.03 fence 468.30 ms, 61 BOs (short list)
+timing: #1025832 done at t 762.299 s, 468.0 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.04 fence 467.96 ms, 61 BOs (short list)
+timing: #1025833 done at t 762.299 s, 468.0 ms after the sync and hints; device: prepare 0.02 list 0.00 cs 0.14 fence 467.78 ms, 172 BOs
+timing: #1025834 done at t 762.299 s, 467.8 ms after the sync and hints; device: prepare 0.01 list 0.00 cs 0.14 fence 467.61 ms, 172 BOs
+timing: #1025835 done at t 762.299 s, 467.6 ms after the sync and hints; device: prepare 0.02 list 0.00 cs 0.07 fence 467.48 ms, 172 BOs
+timing: #1025836 done at t 762.299 s, 467.1 ms after the sync and hints; device: prepare 0.01 list 0.03 cs 0.05 fence 467.02 ms, 62 BOs (short list)
+timing: #1025837 done at t 762.299 s, 467.0 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.03 fence 466.96 ms, 61 BOs (short list)
+timing: #1025839 done at t 762.299 s, 466.2 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.04 fence 466.11 ms, 61 BOs (short list)
+timing: #1025840 done at t 762.299 s, 466.1 ms after the sync and hints; device: prepare 0.19 list 0.00 cs 0.14 fence 465.42 ms, 172 BOs
+timing: #1025843 done at t 762.299 s, 463.2 ms after the sync and hints; device: prepare 0.01 list 0.02 cs 0.03 fence 463.14 ms, 63 BOs (short list)
+timing: #1025844 done at t 762.299 s, 463.1 ms after the sync and hints; device: prepare 0.01 list 0.01 cs 0.03 fence 463.09 ms, 63 BOs (short list)
+timing: #1048479 done at t 779.094 s, 580.8 ms after the sync and hints; device: prepare 0.13 list 0.00 cs 0.27 fence 580.34 ms, 175 BOs
+timing: #1110739 done at t 832.939 s, 681.2 ms after the sync and hints; device: prepare 0.01 list 0.00 cs 0.08 fence 681.12 ms, 170 BOs
+timing: #1110737 done at t 832.939 s, 681.8 ms after the sync and hints; device: prepare 0.07 list 0.00 cs 0.28 fence 681.41 ms, 170 BOs
+timing: #1110740 done at t 832.939 s, 681.1 ms after the sync and hints; device: prepare 0.02 list 0.00 cs 0.09 fence 681.01 ms, 170 BOs
+timing: #1110741 done at t 832.939 s, 680.7 ms after the sync and hints; device: prepare 0.07 list 0.00 cs 0.20 fence 680.41 ms, 170 BOs
+timing: #1110744 done at t 832.939 s, 679.8 ms after the sync and hints; device: prepare 0.05 list 0.00 cs 0.18 fence 679.53 ms, 170 BOs
+timing: #1110742 done at t 832.939 s, 680.4 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.03 fence 680.37 ms, 61 BOs (short list)
+timing: #1110743 done at t 832.939 s, 680.4 ms after the sync and hints; device: prepare 0.08 list 0.00 cs 0.09 fence 680.11 ms, 170 BOs
+timing: #1132878 done at t 851.866 s, 376.5 ms after the sync and hints; device: prepare 0.00 list 0.02 cs 0.07 fence 376.42 ms, 61 BOs (short list)
+timing: #1132879 done at t 851.866 s, 376.5 ms after the sync and hints; device: prepare 0.02 list 0.00 cs 0.12 fence 376.34 ms, 170 BOs
+timing: #1221627 done at t 929.929 s, 419.0 ms after the sync and hints; device: prepare 0.02 list 0.00 cs 0.15 fence 418.54 ms, 170 BOs
+timing: #1221628 done at t 929.929 s, 418.3 ms after the sync and hints; device: prepare 0.01 list 0.03 cs 0.08 fence 418.18 ms, 62 BOs (short list)
+timing: #1221629 done at t 929.929 s, 418.2 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.03 fence 418.11 ms, 61 BOs (short list)
+timing: #1221681 done at t 930.748 s, 458.4 ms after the sync and hints; device: prepare 0.00 list 0.02 cs 0.06 fence 458.28 ms, 61 BOs (short list)
+timing: #1221682 done at t 930.748 s, 458.3 ms after the sync and hints; device: prepare 0.01 list 0.00 cs 0.15 fence 458.12 ms, 170 BOs
+timing: #1221683 done at t 930.748 s, 458.1 ms after the sync and hints; device: prepare 0.01 list 0.00 cs 0.07 fence 458.01 ms, 170 BOs
+timing: #1221684 done at t 930.748 s, 458.0 ms after the sync and hints; device: prepare 0.22 list 0.00 cs 0.12 fence 457.40 ms, 170 BOs
+timing: #1221680 done at t 930.748 s, 459.2 ms after the sync and hints; device: prepare 0.02 list 0.02 cs 0.05 fence 459.06 ms, 64 BOs (short list)
+timing: #1221685 done at t 930.748 s, 457.7 ms after the sync and hints; device: prepare 0.07 list 0.00 cs 0.10 fence 457.49 ms, 170 BOs
+learned regions:
+emulator log tail:
+fps counter: t 1093.618 s: 55 flips in 1.017 s, longest gap 42.2 ms, gaps over 40 ms 1, over 70 ms 0
+== 2026-10-22 21:16:33 exit 0
+
+long fence waits grouped by journal time (the longest per 0.1 s):
+  t 60.5: 704 ms
+  t 109.2: 2271 ms
+  t 185.8: 669 ms
+  t 256.6: 708 ms
+  t 290.9: 822 ms
+  t 291.0: 823 ms
+  t 323.1: 444 ms
+  t 429.4: 423 ms
+  t 449.0: 451 ms
+  t 485.0: 1084 ms
+  t 634.0: 352 ms
+  t 651.1: 310 ms
+  t 669.0: 1034 ms
+  t 704.9: 656 ms
+  t 762.3: 468 ms
+  t 779.1: 580 ms
+  t 832.9: 681 ms
+  t 851.9: 376 ms
+  t 929.9: 419 ms
+  t 930.7: 459 ms
+
+flip gaps > 400 ms:
+  t 60.6 gap 797 ms
+  t 109.2 gap 2320 ms
+  t 121.9 gap 1293 ms
+  t 148.5 gap 633 ms
+  t 152.0 gap 646 ms
+  t 185.9 gap 866 ms
+  t 256.6 gap 934 ms
+  t 291.0 gap 880 ms
+  t 308.2 gap 2240 ms
+  t 323.1 gap 465 ms
+  t 335.0 gap 863 ms
+  t 411.5 gap 2807 ms
+  t 429.5 gap 548 ms
+  t 449.1 gap 505 ms
+  t 485.0 gap 1134 ms
+  t 527.7 gap 435 ms
+  t 531.1 gap 521 ms
+  t 540.1 gap 2142 ms
+  t 624.5 gap 405 ms
+  t 629.3 gap 428 ms
+  t 651.1 gap 408 ms
+  t 652.2 gap 900 ms
+  t 669.0 gap 1049 ms
+  t 677.7 gap 723 ms
+  t 704.9 gap 754 ms
+  t 746.6 gap 741 ms
+  t 762.3 gap 636 ms
+  t 777.7 gap 452 ms
+  t 779.1 gap 740 ms
+  t 826.9 gap 856 ms
+  t 833.0 gap 732 ms
+  t 838.0 gap 437 ms
+  t 842.0 gap 475 ms
+  t 846.6 gap 481 ms
+  t 851.9 gap 422 ms
+  t 861.5 gap 417 ms
+  t 890.7 gap 929 ms
+  t 922.9 gap 461 ms
+  t 924.8 gap 419 ms
+  t 930.2 gap 743 ms
+  t 930.8 gap 515 ms
+  t 1062.2 gap 1370 ms
+
+box: emulator exit 0 at 21:16:33 (journal t 1093 s); boot ac5dab11 up since 16:37:49 before and after; stop.sh at 21:20:02
