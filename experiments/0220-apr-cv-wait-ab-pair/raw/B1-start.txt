@@ -1,0 +1,16 @@
+2026-10-22 21:47:25
+arm test, binary /home/kjaniszewski/bc5-work/exp0216/kyty_emulator 2026-10-22 20:33:44 md5 35fa8d5264e9675c58810a501f9ca32c, 300 s, saves /home/kjaniszewski/bc5-work/exp0196/saves-before-152617, live saves kept in /home/kjaniszewski/bc5-work/exp0196/saves-before-214725-085015336-2133218
+KYTY_BC5_APR_READAHEAD in the environment: unset
+play-pkg.sh md5 7952a9009748f89998b892f75f04ba1e, 2026-10-22 21:33:11; its lines:
+48:# BC5_DIRECT_MEC_SKIP_PGM=909939900, which bc5-pkg.env can set again with GPU_CHECK unset).
+70:# gameplay (run 735). A run script may set BC5_DIRECT_SKIP_PGM itself.
+78:# (BC5_DIRECT_FLAT_APERTURE=1, F249-F251), the sparse AMM pages are backed (BC5_DIRECT_AMM_PRT=1, F257,
+81:# BC5_DIRECT_FLAT_APERTURE=0 BC5_DIRECT_AMM_PRT=0 and the old skip list
+83:# The emulator turns PRT on whenever BC5_DIRECT_AMM_PRT is set at all (patch 0001 tests presence only),
+85:export BC5_DIRECT_FLAT_APERTURE=${BC5_DIRECT_FLAT_APERTURE:-1}
+86:if [ "${BC5_DIRECT_AMM_PRT-1}" = 0 ]; then unset BC5_DIRECT_AMM_PRT; else export BC5_DIRECT_AMM_PRT=${BC5_DIRECT_AMM_PRT:-1}; fi
+87:export BC5_DIRECT_SKIP_PGM=${BC5_DIRECT_SKIP_PGM:-909974400}
+before: Mem: total 15192 used 1514 free 13267 avail 13678; Swap: total 7595 used 663 free 6932 avail ; 
+before: PSI mem avg10=0.00 avg10=0.00 io avg10=0.69 avg10=0.69 
+before: gtt 161505280 bytes; largest: plasmashell 133 MiB, systemd-journal 52 MiB, kwin_wayland 43 MiB, tailscaled 25 MiB, 
+emulator pid 2133527: /home/kjaniszewski/bc5-work/exp0216/kyty_emulator --game /home/kjaniszewski/bc5-data/mnt/pkg-play --printf-direction Sil

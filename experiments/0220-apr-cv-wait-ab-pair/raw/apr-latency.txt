@@ -1,0 +1,4 @@
+== A1: 0220-apr-cv-wait-ab-pair/raw/A1-apr-journal.txt
+   prio 1:  599 finished, submit->finish median    57.0 ms, p95  1413.0 ms, max  3503.0 ms; read-ahead lines 485
+== B1: 0220-apr-cv-wait-ab-pair/raw/B1-apr-journal.txt
+   prio 1:  536 finished, submit->finish median    20.0 ms, p95   499.0 ms, max   643.0 ms; read-ahead lines 443
