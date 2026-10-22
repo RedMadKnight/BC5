@@ -1,0 +1,40 @@
+paź 22 14:50:45 bazzite kernel: x86/amd: Previous system reset reason [0x40000400]: a parity error occurred
+paź 22 14:51:35 bazzite kernel: x86/amd: Previous system reset reason [0x40080400]: software wrote 0x6 to reset control register 0xCF9
+paź 22 14:51:35 bazzite kernel: x86/amd: Previous system reset reason [0x40080400]: a parity error occurred
+paź 22 13:43:08.398858 bazzite kernel: amdgpu 0000:01:00.0: [drm] *ERROR* Unsupported screen format RA24 little-endian (0x34324152)
+paź 22 13:43:08.409857 bazzite kernel: amdgpu 0000:01:00.0: [drm] *ERROR* Unsupported screen format RA24 little-endian (0x34324152)
+paź 22 13:43:08.420889 bazzite kernel: amdgpu 0000:01:00.0: [drm] *ERROR* Unsupported screen format RA24 little-endian (0x34324152)
+
+        20 14:30:57 .
+         4 14:30:56 ..
+ 394370492 14:50:13 direct.log
+50640:submit #1530444 dcb 6732 dwords at 0x7fa6d02fda30: pass 508 rewrite 69 drop 92 unmapped 0 cc 0 mappings 24509 ... FAILED rc 0 TIMEOUT 2027.78 ms
+50642:submit #1530453 acb 855 dwords at 0x7fa72821c460: pass 117 rewrite 20 drop 10 unmapped 0 cc 0 mappings 24509 ... FAILED rc 0 TIMEOUT 2022.87 ms
+===
+frame profile: t 1153.394 s, 40.5 ms since the last flip; game thread inside the host 5.5 ms (sync 0.1, hints 0.3, prepare 1.9, list 0.2, cs 1.5, fence 0.0, cap 0.0, label waits 1.4, event waits 0.0), at the flip 4.2, outside 30.8; GPU busy 10.1 ms in 10 jobs 
+frame profile: t 1153.427 s, 32.7 ms since the last flip; game thread inside the host 6.0 ms (sync 0.2, hints 0.3, prepare 1.5, list 0.3, cs 1.8, fence 0.0, cap 0.0, label waits 1.9, event waits 0.0), at the flip 3.9, outside 22.9; GPU busy 9.6 ms in 9 jobs (+
+timing: t 1153.458 s acb 855 dwords: sync 0.0 ms, hints 0.0 ms q0
+timing: t 1153.459 s acb 743 dwords: sync 0.0 ms, hints 0.0 ms q0
+timing: t 1153.459 s after that wait (dcb 820 dwords)
+timing: t 1153.459 s acb 311 dwords: sync 0.0 ms, hints 0.0 ms q0
+timing: t 1153.459 s acb 716 dwords: sync 0.0 ms, hints 0.0 ms q0
+timing: t 1153.459 s acb 429 dwords: sync 0.0 ms, hints 0.0 ms q0
+timing: t 1153.459 s after that wait (dcb 2424 dwords)
+timing: t 1153.459 s dcb 2801 dwords: sync 0.0 ms, hints 0.0 ms q-1
+timing: t 1153.459 s acb 28 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+timing: t 1153.460 s acb 2 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+acb rest 28..20940 of 20940 dwords: state prefix of 4 dwords replayed first
+timing: t 1153.460 s dcb 2440 dwords: sync 0.0 ms, hints 0.0 ms q-1
+timing: t 1153.460 s acb 4 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+timing: t 1153.460 s after that wait (dcb 5782 dwords)
+timing: t 1153.460 s after that wait (dcb 5782 dwords)
+timing: t 1153.460 s acb 20930 dwords: sync 0.0 ms, hints 0.0 ms q0
+timing: t 1153.461 s dcb 6983 dwords: sync 0.0 ms, hints 0.0 ms q-1
+timing: t 1153.462 s after that wait (dcb 40 dwords)
+timing: t 1153.462 s dcb 7250 dwords: sync 0.0 ms, hints 0.0 ms q-1
+timing: t 1153.462 s acb 84 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+timing: t 1153.462 s acb 140 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q8
+submit #1530444 dcb 6732 dwords at 0x7fa6d02fda30: pass 508 rewrite 69 drop 92 unmapped 0 cc 0 mappings 24509 ... FAILED rc 0 TIMEOUT 2027.78 ms
+timing: #1530444 done at t 1155.481 s, 2028.1 ms after the sync and hints; device: prepare 0.12 list 0.09 cs 0.20 fence 2027.58 ms, 181 BOs
+submit #1530453 acb 855 dwords at 0x7fa72821c460: pass 117 rewrite 20 drop 10 unmapped 0 cc 0 mappings 24509 ... FAILED rc 0 TIMEOUT 2022.87 ms
+timing: #1530453 done at t 1155.481 s, 2023.0 ms after the sync and hints; device: prepare 0.02 list 0.00 cs 0.16 fence 2022.70 ms, 181 BOs

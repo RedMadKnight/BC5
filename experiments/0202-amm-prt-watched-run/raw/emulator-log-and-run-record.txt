@@ -1,0 +1,5 @@
+ 1085053 14:50:04 /home/kjaniszewski/bc5-work/play-pkg-last.log
+37:bc5-direct: PRT window 0x8000000000+0x1000000000: 0
+39:bc5-direct: /dev/gc TF ring 0x1120000000 size 0x3fff8 (programmed, BC5_DIRECT_GC_TF_RING=1)
+2026-10-22 14:30:19 start, kernel log lines before: 1362
+2026-10-22 14:53:01 ended by a machine-down at 14:50:13 (two ring timeouts, no fault; GFX reset failed, MODE1 reset; next boot: parity error)

@@ -1,0 +1,37 @@
+paź 22 14:30:45.470860 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 14:32:50.472860 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 14:34:55.471852 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 14:37:00.471858 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 14:39:05.480949 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 14:41:10.471854 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 14:43:15.474861 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 14:45:20.472041 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 14:47:25.471847 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 14:49:30.471864 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 14:50:13.588845 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State
+paź 22 14:50:13.779944 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State Completed
+paź 22 14:50:13.780154 bazzite kernel: amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+paź 22 14:50:13.780825 bazzite kernel: amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+paź 22 14:50:13.781077 bazzite kernel: amdgpu 0000:01:00.0: ring comp_1.2.0 timeout, signaled seq=1436641, emitted seq=1436643
+paź 22 14:50:13.781253 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 394632 thread bc5-ring pid 394655
+paź 22 14:50:13.781426 bazzite kernel: amdgpu 0000:01:00.0: Starting comp_1.2.0 ring reset
+paź 22 14:50:13.781582 bazzite kernel: amdgpu 0000:01:00.0: Ring comp_1.2.0 reset succeeded
+paź 22 14:50:13.781743 bazzite kernel: amdgpu 0000:01:00.0: [drm] device wedged, but no recovery needed
+paź 22 14:50:13.781926 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State
+paź 22 14:50:13.782080 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State Completed
+paź 22 14:50:13.782229 bazzite kernel: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=2000847, emitted seq=2000849
+paź 22 14:50:13.782398 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 394632 thread bc5-ring pid 394655
+paź 22 14:50:13.782552 bazzite kernel: amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+paź 22 14:50:13.782705 bazzite kernel: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset failed
+paź 22 14:50:13.782874 bazzite kernel: amdgpu 0000:01:00.0: GPU reset begin!. Source:  1
+paź 22 14:50:17.780845 bazzite kernel: amdgpu 0000:01:00.0: failed to suspend display audio
+paź 22 14:50:17.902846 bazzite kernel: amdgpu 0000:01:00.0: MODE1 reset
+paź 22 14:50:17.903485 bazzite kernel: amdgpu 0000:01:00.0: GPU mode1 reset
+paź 22 14:50:17.903941 bazzite kernel: amdgpu 0000:01:00.0: GPU psp mode1 reset
+paź 22 14:50:17.904377 bazzite kernel: amdgpu 0000:01:00.0: GPU reset succeeded, trying to resume
+paź 22 14:50:17.904842 bazzite kernel: amdgpu 0000:01:00.0: [drm] PCIE GART of 512M enabled (table at 0x000000F41FE00000).
+paź 22 14:50:17.905310 bazzite kernel: amdgpu 0000:01:00.0: VRAM is lost due to GPU reset!
+paź 22 14:50:17.905789 bazzite kernel: amdgpu 0000:01:00.0: PSP is resuming...
+paź 22 14:50:17.923840 bazzite kernel: amdgpu 0000:01:00.0: reserve 0x400000 from 0xf41f800000 for PSP TMR
+Read from remote host 100.88.23.35: Connection reset by peer
+client_loop: send disconnect: Connection reset by peer

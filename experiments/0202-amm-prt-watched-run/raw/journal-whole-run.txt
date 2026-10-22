@@ -1,0 +1,54 @@
+247:learned 0x8002000000: window 0x8002000000+0x6000000, direct memory +60.0 MiB
+1294:learned 0x8002000000: window 0x8002000000+0x6000000, direct memory +24.0 MiB
+3454:learned 0x8002000000: window 0x8002000000+0x6000000, direct memory +2.0 MiB
+43550:scratch: window 0x8002000000+0x6000000, 24.3 MiB of holes get a zero buffer
+43725:scratch: window 0x8002000000+0x6000000, 17.1 MiB of holes get a zero buffer
+43828:scratch: window 0x8002000000+0x6000000, 0.3 MiB of holes get a zero buffer
+45862:learned 0x81c6000000: window 0x81c6000000+0x6000000, direct memory +8.0 MiB
+45863:learned 0x81b6000000: window 0x81b6000000+0x6000000, direct memory +16.0 MiB
+45864:learned 0x81c2000000: window 0x81c2000000+0x6000000, direct memory +38.0 MiB
+55375:scratch: window 0x81c6000000+0x6000000, 0.2 MiB of holes get a zero buffer
+55376:scratch: window 0x81b6000000+0x6000000, 1.9 MiB of holes get a zero buffer
+55377:scratch: window 0x81c2000000+0x6000000, 0.1 MiB of holes get a zero buffer
+55436:scratch: window 0x81c6000000+0x6000000, 0.0 MiB of holes get a zero buffer
+55476:learned 0x81c6000000: window 0x81c6000000+0x6000000, direct memory +4.0 MiB
+55477:learned 0x81b6000000: window 0x81b6000000+0x6000000, direct memory +6.0 MiB
+55478:scratch: window 0x81b6000000+0x6000000, 0.8 MiB of holes get a zero buffer
+55722:learned 0x81b6000000: window 0x81b6000000+0x6000000, direct memory +4.0 MiB
+55747:scratch: window 0x81c6000000+0x6000000, 0.0 MiB of holes get a zero buffer
+55948:scratch: window 0x81c6000000+0x6000000, 0.0 MiB of holes get a zero buffer
+55949:scratch: window 0x81b6000000+0x6000000, 0.0 MiB of holes get a zero buffer
+56613:learned 0x81c6000000: window 0x81c6000000+0x6000000, direct memory +2.0 MiB
+56831:scratch: window 0x81c6000000+0x6000000, 0.0 MiB of holes get a zero buffer
+56846:learned 0x820a000000: window 0x820a000000+0x6000000, direct memory +6.0 MiB
+56847:scratch: window 0x81c6000000+0x6000000, 0.1 MiB of holes get a zero buffer
+56907:scratch: window 0x81c6000000+0x6000000, 0.1 MiB of holes get a zero buffer
+56923:scratch: window 0x81c6000000+0x6000000, 0.0 MiB of holes get a zero buffer
+56924:scratch: window 0x81b6000000+0x6000000, 0.1 MiB of holes get a zero buffer
+57261:learned 0x81c6000000: window 0x81c6000000+0x6000000, direct memory +2.0 MiB
+57262:scratch: window 0x81b6000000+0x6000000, 0.0 MiB of holes get a zero buffer
+57749:scratch: window 0x820a000000+0x6000000, 0.5 MiB of holes get a zero buffer
+58528:learned 0x820a000000: window 0x820a000000+0x6000000, direct memory +2.0 MiB
+58529:scratch: window 0x81b6000000+0x6000000, 0.0 MiB of holes get a zero buffer
+58530:scratch: window 0x820a000000+0x6000000, 0.1 MiB of holes get a zero buffer
+58798:scratch: window 0x81b6000000+0x6000000, 1.0 MiB of holes get a zero buffer
+58819:scratch: window 0x81b6000000+0x6000000, 0.1 MiB of holes get a zero buffer
+58838:scratch: window 0x81c6000000+0x6000000, 0.5 MiB of holes get a zero buffer
+58839:scratch: window 0x81b6000000+0x6000000, 0.0 MiB of holes get a zero buffer
+58868:scratch: window 0x81c6000000+0x6000000, 0.1 MiB of holes get a zero buffer
+58869:scratch: window 0x81b6000000+0x6000000, 0.1 MiB of holes get a zero buffer
+58870:scratch: window 0x81c2000000+0x6000000, 0.1 MiB of holes get a zero buffer
+===
+45318
+260.372 1526.0
+667.202 2676.2
+687.173 1212.7
+725.355 1446.3
+TIMEOUT            2
+^timeout: fault    0
+^learned: fault    0
+^aliases: fault    0
+^reopen            0
+scratch: window    813
+4053760:submit #1530444 dcb 6732 dwords at 0x7fa6d02fda30: pass 508 rewrite 69 drop 92 unmapped 0 cc 0 mappings 24509 ... FAILED rc 0 TIMEOUT 2027.78 ms
+4053762:submit #1530453 acb 855 dwords at 0x7fa72821c460: pass 117 rewrite 20 drop 10 unmapped 0 cc 0 mappings 24509 ... FAILED rc 0 TIMEOUT 2022.87 ms
