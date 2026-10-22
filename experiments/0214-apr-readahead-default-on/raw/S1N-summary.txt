@@ -1,0 +1,4 @@
+S1N summary: reader threads 12, readahead lines 463, in-order copies 512, sequence decreases 0, crash lines 0, kernel lines 0
+  bc5-apr-q* CPU 3.6 s in 288 s (1.24 % of one core)
+  bc5-apr-r* CPU 12.4 s in 288 s (4.32 % of one core)
+  VmRSS min 13, max 4234, last 1798 MiB

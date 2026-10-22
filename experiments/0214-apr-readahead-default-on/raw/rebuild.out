@@ -1,0 +1,13 @@
+patch_0214 is already in the tree; the pre-patch libAmpr.cpp is src/libAmpr.before-0214.cpp
+== 20:02:58 before:
+c0d1b2090c479696df840856f755c9c9  /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator
+25432e07101a89c9c2c72797d7ba1e32  /home/kjaniszewski/bc5-work/kytyplus-build-lean/src/kyty_emulator
+387bc07c44b51026049e67089e08b96f  src/libs/libAmpr.cpp
+== 20:03:15 kytyplus-build: build rc 0 after 16 s, 1 units compiled: src/CMakeFiles/kyty_emulator.dir/libs/libAmpr.cpp.o 
+== 20:03:27 kytyplus-build-lean: build rc 0 after 12 s, 1 units compiled: src/CMakeFiles/kyty_emulator.dir/libs/libAmpr.cpp.o 
+== 20:03:29 after (synced):
+9d43e945bb79a543224937099d6c45a1  /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator
+7eac6f359848d05f841af995d1b1b4c1  /home/kjaniszewski/bc5-work/kytyplus-build-lean/src/kyty_emulator
+387bc07c44b51026049e67089e08b96f  src/libs/libAmpr.cpp
+20:03:27 /home/kjaniszewski/bc5-work/kytyplus-build-lean/src/kyty_emulator
+20:03:14 /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator
