@@ -1,0 +1,67 @@
+tcpW1   frames over 250 ms:   7; more than half the frame is: label waits 0, outside the host 5, GPU busy 1
+tcpW1b  frames over 250 ms:  16; more than half the frame is: label waits 0, outside the host 16, GPU busy 1
+tcpW2   frames over 250 ms:  11; more than half the frame is: label waits 0, outside the host 9, GPU busy 1
+tcpW2b  frames over 250 ms:  10; more than half the frame is: label waits 0, outside the host 7, GPU busy 1
+tcpW3   frames over 250 ms:  60; more than half the frame is: label waits 1, outside the host 58, GPU busy 1
+
+# tcpW3, every frame over 250 ms: t, ms since last flip, inside host, label waits, outside, GPU busy
+t    42.1     252  in    34  lw    19  out   215  gpu    19
+t   104.8    2364  in    66  lw     0  out  2297  gpu    28
+t   138.8     592  in     9  lw     3  out   579  gpu   580
+t   157.9     907  in    46  lw     2  out   818  gpu   149
+t   158.2     294  in   256  lw     1  out    32  gpu    88
+t   158.6     365  in     7  lw     1  out   350  gpu    16
+t   162.7     269  in   255  lw   243  out     7  gpu    20
+t   170.0     638  in    50  lw    26  out   565  gpu    27
+t   200.3     314  in     5  lw     1  out   292  gpu    37
+t   206.0     599  in    10  lw     3  out   571  gpu    28
+t   207.4     535  in    28  lw     2  out   484  gpu    16
+t   208.5     560  in    38  lw     3  out   489  gpu    20
+t   227.2    1061  in    33  lw     2  out   997  gpu    25
+t   228.9     564  in     6  lw     2  out   539  gpu    38
+t   229.9     601  in    25  lw     2  out   554  gpu    24
+t   230.9     553  in    28  lw     2  out   500  gpu    24
+t   231.8     622  in     8  lw     2  out   596  gpu    36
+t   233.4     554  in    25  lw     2  out   507  gpu    23
+t   237.2     917  in    27  lw     2  out   866  gpu    16
+t   241.8     285  in    26  lw     0  out   234  gpu    25
+t   268.6    1073  in    32  lw     2  out  1012  gpu    22
+t   270.8    1078  in    31  lw     1  out  1017  gpu    23
+t   275.9     557  in    33  lw     2  out   494  gpu    24
+t   278.8     736  in    27  lw     1  out   683  gpu    23
+t   280.2     315  in     5  lw     2  out   291  gpu    39
+t   285.4     299  in     7  lw     3  out   274  gpu    29
+t   286.6     533  in     6  lw     2  out   507  gpu    31
+t   288.2     353  in    30  lw     2  out   296  gpu    22
+t   288.9     281  in     7  lw     2  out   255  gpu    39
+t   291.3    1011  in    27  lw     2  out   960  gpu    23
+t   295.8     265  in     6  lw     2  out   240  gpu    39
+t   313.2     554  in    31  lw     2  out   495  gpu    23
+t   314.0     532  in     6  lw     0  out   507  gpu    36
+t   315.5     561  in    31  lw     0  out   503  gpu    24
+t   318.6     403  in    86  lw    62  out   295  gpu    22
+t   319.6     565  in    26  lw     1  out   502  gpu    55
+t   321.5     300  in    26  lw     2  out   237  gpu    52
+t   322.4     543  in    31  lw     1  out   482  gpu    23
+t   323.6     558  in    29  lw     1  out   501  gpu    23
+t   334.1     748  in    29  lw     2  out   681  gpu    55
+t   336.2     498  in     8  lw     2  out   472  gpu    98
+t   338.0     536  in     8  lw     3  out   508  gpu    39
+t   338.5     370  in    27  lw     2  out   319  gpu    24
+t   340.3     544  in     6  lw     2  out   518  gpu    39
+t   342.4     543  in    30  lw     2  out   485  gpu    23
+t   343.2     533  in     6  lw     1  out   509  gpu    38
+t   345.6     554  in    32  lw     2  out   495  gpu    24
+t   353.3     262  in     7  lw     3  out   236  gpu    32
+t   353.9     502  in    60  lw    32  out   405  gpu    54
+t   359.1     387  in    27  lw     3  out   338  gpu    23
+t   426.2     282  in     8  lw     3  out   254  gpu    39
+t   426.8     541  in    27  lw     1  out   488  gpu    23
+t   433.8     547  in     7  lw     1  out   521  gpu    36
+t   435.9     531  in     8  lw     2  out   504  gpu    26
+t   438.2     560  in    34  lw     3  out   495  gpu    22
+t   439.7     555  in    29  lw     0  out   498  gpu    23
+t   441.7     555  in    30  lw     4  out   499  gpu    22
+t   449.5     552  in    28  lw     1  out   497  gpu    24
+t   455.7     554  in    29  lw     0  out   497  gpu    24
+t   461.4     560  in    30  lw     1  out   501  gpu    23

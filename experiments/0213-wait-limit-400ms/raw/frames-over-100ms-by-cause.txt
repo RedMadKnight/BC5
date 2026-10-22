@@ -1,0 +1,6 @@
+# frames over 100 ms per run, by what fills more than half of the frame; plus the sum of label-wait ms in them
+tcpW1      8 ms:  44 frames >100 ms: label waits  0, outside host  37, GPU busy  0, mixed  7; label-wait time in them 208 ms
+tcpW1b     8 ms:  63 frames >100 ms: label waits  1, outside host  53, GPU busy  1, mixed  8; label-wait time in them 192 ms
+tcpW2    100 ms: 121 frames >100 ms: label waits  3, outside host 107, GPU busy  1, mixed 10; label-wait time in them 692 ms
+tcpW2b   100 ms:  70 frames >100 ms: label waits  1, outside host  56, GPU busy  3, mixed 10; label-wait time in them 281 ms
+tcpW3    400 ms: 111 frames >100 ms: label waits  1, outside host 100, GPU busy  1, mixed  9; label-wait time in them 604 ms
