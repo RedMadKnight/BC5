@@ -1,0 +1,4 @@
+S2L summary: reader threads 12, readahead lines 0, in-order copies 0, sequence decreases 0, crash lines 0, kernel lines 0
+  bc5-apr-q* CPU 2.4 s in 133 s (1.84 % of one core)
+  bc5-apr-r* CPU 6.4 s in 133 s (4.81 % of one core)
+  VmRSS min 41, max 5020, last 5020 MiB

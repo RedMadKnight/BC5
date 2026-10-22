@@ -1,0 +1,55 @@
+== S2N: 0222-apr-cv-wait-integration/raw/S2N-cpu.txt
+   29 samples, 28 intervals, 287 s
+   readers 6.64 s (2.32 % of one core), workers 2.17 s (0.76 %) over 287 s
+   quiet intervals (workers < 10 ms): 14; readers' CPU per 10 s: min 1.88, median 11.26, max 14.28 ms (0.113 % of one core at the median)
+   quiet intervals: readers' wake-ups per second (all readers): min 20.6, median 147.0, max 180.0
+   all intervals: readers' wake-ups per second: mean 1034.8, max 3981.5
+   t(s)   dt  readers  readers ms  workers ms  reader wake-ups
+      10 10.2       12      395.92      133.34            13537
+      20 10.2       12        1.91        0.27              209
+      31 10.2       12      602.35      133.39            22067
+      41 10.2       12      609.89      265.66            27471
+      51 10.2       12        5.76        2.70              666
+      61 10.2       12        4.37        1.97              614
+      71 10.2       12        5.24        3.29              675
+      82 10.2       12      364.30       54.61            18174
+      92 10.2       12     1042.33      258.49            38351
+     102 10.2       16      521.34      157.89            18918
+     112 10.2       16      749.54      250.77            40771
+     123 10.3       16      562.43      275.18            18578
+     133 10.5       16      420.84      155.35            15688
+     143 10.3       16      420.57      153.27            17097
+     154 10.3       16      238.56       72.28            12290
+     164 10.2       16      246.08       90.05            13134
+     174 10.2       16      295.66      108.06            21501
+     184 10.2       16       28.49       10.20             1688
+     195 10.2       16       14.59        6.07             1840
+     205 10.2       16       13.70        4.30             1628
+     215 10.2       16       13.13        4.32             1601
+     225 10.2       16       11.13        4.07             1436
+     235 10.2       16       12.60        3.39             1428
+     246 10.2       16       11.52        3.27             1551
+     256 10.2       16       13.40        3.39             1614
+     266 10.2       16        9.89        4.20             1235
+     276 10.2       16       11.32        3.36             1504
+     287 10.2       16       11.99        5.71             1544
+== S2L: 0222-apr-cv-wait-integration/raw/S2L-cpu.txt
+   14 samples, 13 intervals, 133 s
+   readers 6.39 s (4.81 % of one core), workers 2.44 s (1.84 %) over 133 s
+   quiet intervals (workers < 10 ms): 4; readers' CPU per 10 s: min 4.83, median 6.83, max 7.19 ms (0.068 % of one core at the median)
+   quiet intervals: readers' wake-ups per second (all readers): min 43.2, median 70.3, max 78.9
+   all intervals: readers' wake-ups per second: mean 1575.0, max 4560.8
+   t(s)   dt  readers  readers ms  workers ms  reader wake-ups
+      10 10.2       12      571.81      245.77            18208
+      20 10.2       12        4.91        0.83              439
+      31 10.2       12      717.64      209.24            35320
+      41 10.2       12      490.48      236.60            12583
+      51 10.2       12        7.35        2.06              695
+      61 10.2       12        6.02        1.91              718
+      71 10.2       12        6.96        2.23              804
+      82 10.2       12      411.68       52.54            19415
+      92 10.2       12     1226.60      329.35            46657
+     102 10.2       12      699.14      246.24            32185
+     112 10.3       12     1381.98      779.73            15817
+     123 10.3       12      400.51      168.80            12554
+     133 10.2       12      468.34      165.14            13832

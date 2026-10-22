@@ -1,0 +1,5 @@
+S2N  /home/kjaniszewski/bc5-data/captures/play-20261022-2211/gc/direct.log
+     all      :  11267 flips in  297.3 s =  37.9/s, mean  26.4 ms, >100 ms   34, >250 ms   8, >1 s  1, max  1157.6 ms, GPU busy >1 s  0
+     t >= 100 :   7955 flips in  199.6 s =  39.9/s, mean  25.1 ms, >100 ms   19, >250 ms   6, >1 s  1, max  1157.6 ms, GPU busy >1 s  0
+     lines    : TIMEOUT 0, fault 0, reopen 0, given up 11
+       first given up: cpu-wait WAIT_REG_MEM64 at 590 on 0x12004b4838: GIVEN UP after 17.1 ms

@@ -1,0 +1,6 @@
+# clock voice's APR queue (priority 1): submit -> finish per run, from each run's APR journal (lat0216.py's pairing)
+S1N  n 501, over 0.25 s 145, over 0.5 s 90, over 1 s 55
+A1   n 599, over 0.25 s 159, over 0.5 s 117, over 1 s 51
+S1   n 570, over 0.25 s 68, over 0.5 s 42, over 1 s 13
+B1   n 536, over 0.25 s 78, over 0.5 s 26, over 1 s 0
+S2N  n 540, over 0.25 s 145, over 0.5 s 96, over 1 s 35

@@ -1,0 +1,18 @@
+== 22:10:58 before:
+9d43e945bb79a543224937099d6c45a1  /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator
+7eac6f359848d05f841af995d1b1b4c1  /home/kjaniszewski/bc5-work/kytyplus-build-lean/src/kyty_emulator
+387bc07c44b51026049e67089e08b96f  src/libs/libAmpr.cpp
+== 22:11:14 kytyplus-build: build rc 0 after 15 s, 1 units compiled: src/CMakeFiles/kyty_emulator.dir/libs/libAmpr.cpp.o 
+/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: warning: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations]
+/home/kjaniszewski/src/KytyPlus/src/libs/libAmpr.cpp:1909:143: warning: data argument not used by format string [-Wformat-extra-args]
+/home/kjaniszewski/src/KytyPlus/src/libs/libAmpr.cpp:2018:50: warning: data argument not used by format string [-Wformat-extra-args]
+== 22:11:26 kytyplus-build-lean: build rc 0 after 12 s, 1 units compiled: src/CMakeFiles/kyty_emulator.dir/libs/libAmpr.cpp.o 
+/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: warning: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations]
+/home/kjaniszewski/src/KytyPlus/src/libs/libAmpr.cpp:1909:143: warning: data argument not used by format string [-Wformat-extra-args]
+/home/kjaniszewski/src/KytyPlus/src/libs/libAmpr.cpp:2018:50: warning: data argument not used by format string [-Wformat-extra-args]
+== 22:11:28 after (synced):
+7a37a56026a15d64383f223580585701  /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator
+a3456df98bbe57e1e2399836946f3be4  /home/kjaniszewski/bc5-work/kytyplus-build-lean/src/kyty_emulator
+eaef1da19412bd0c888bdc94681efa91  src/libs/libAmpr.cpp
+22:11:26 /home/kjaniszewski/bc5-work/kytyplus-build-lean/src/kyty_emulator
+22:11:14 /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator
