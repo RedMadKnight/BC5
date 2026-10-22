@@ -1,0 +1,96 @@
+# 8 give-ups; breakpoints armed on 0x12004b37c8 (from t 7.118), 0x12004b4fc8 (from t 7.119), 0x12004b53c8 (from t 7.118), 0x12004b77c8 (from t 7.128)
+#1 t 7.101 0x12004b4838 (dcb 1153 at 590) waited 16.08 ms; B flips +44.713 ms; in flight at the give-up cq0 0 cq1 0; 1 candidates
+      candidate 0x12004b37c8 held back 20.154 ms before, value 0x0, breakpoints
+      0x12004b37c8 0x0 -> 0x9076d6d8c at +26.886 ms (before B), in flight cq0 0 cq1 0: CPU: Render Thread (the waiter)
+      0x12004b37c8 0x9076d6d8c -> 0x0 at +30.709 ms (before B), in flight cq0 1 cq1 0: no CPU write: GPU
+#2 t 125.315 0x12004b3c38 (dcb 3092 at 379) waited 9.29 ms; B flips +1.757 ms; in flight at the give-up cq0 0 cq1 1; 4 candidates
+      candidate 0x12004b37c8 held back 8.723 ms before, value 0x0, breakpoints
+      candidate 0x12004b77c8 held back 21.781 ms before, value 0x0, breakpoints
+      candidate 0x12004b53c8 held back 22.911 ms before, value 0x0, breakpoints
+      candidate 0x12004b4bc8 held back 26.055 ms before, value 0x0
+      between watches: 0x12004b37c8 written 1897 time(s) by Render Thread (the thread that gave up)
+      between watches: 0x12004b37c8 written 1 time(s) by bc5-cq0
+      between watches: 0x12004b53c8 written 1929 time(s) by Render Thread (the thread that gave up)
+      between watches: 0x12004b4fc8 written 1930 time(s) by Render Thread (the thread that gave up)
+      between watches: 0x12004b77c8 written 1200 time(s) by Render Thread (the thread that gave up)
+#3 t 126.846 0x12004b4c38 (dcb 12093 at 5875) waited 8.52 ms; B flips +13.488 ms; in flight at the give-up cq0 0 cq1 0; 6 candidates
+      candidate 0x12004b4bc8 held back 8.625 ms before, value 0x0
+      candidate 0x12004b37c8 held back 11.052 ms before, value 0x0, breakpoints
+      candidate 0x12004b77c8 held back 24.339 ms before, value 0x0, breakpoints
+      candidate 0x12004b53c8 held back 28.002 ms before, value 0x0, breakpoints
+      candidate 0x12004b4fc8 held back 32.318 ms before, value 0x0, breakpoints
+      candidate 0x12004b5fc8 held back 49.226 ms before, value 0x0
+      0x12004b53c8 0x0 -> 0x9076d6d8c at +1.149 ms (before B), in flight cq0 0 cq1 0: unknown (no breakpoints)
+      0x12004b5fc8 0x0 -> 0x9076d6d8c at +1.321 ms (before B), in flight cq0 0 cq1 0: unknown (no breakpoints)
+      between watches: 0x12004b37c8 written 63 time(s) by Render Thread (the thread that gave up)
+      between watches: 0x12004b53c8 written 64 time(s) by Render Thread (the thread that gave up)
+      between watches: 0x12004b53c8 written 1 time(s) by bc5-cq0
+      between watches: 0x12004b4fc8 written 63 time(s) by Render Thread (the thread that gave up)
+      between watches: 0x12004b77c8 written 63 time(s) by Render Thread (the thread that gave up)
+#4 t 133.840 0x12004b5438 (dcb 860 at 311) waited 8.46 ms; B flips +never ms; in flight at the give-up cq0 2 cq1 0; 5 candidates
+      candidate 0x12004b53c8 held back 8.632 ms before, value 0x0, breakpoints
+      candidate 0x12004b4fc8 held back 12.925 ms before, value 0x0, breakpoints
+      candidate 0x12004b4bc8 held back 14.456 ms before, value 0x0
+      candidate 0x12004b37c8 held back 14.734 ms before, value 0x0, breakpoints
+      candidate 0x12004b77c8 held back 33.178 ms before, value 0x0, breakpoints
+      0x12004b77c8 0x0 -> 0x9076d6d8c at +21.341 ms (before B), in flight cq0 1 cq1 2: CPU: Render Thread (the waiter)
+      0x12004b77c8 0x9076d6d8c -> 0x0 at +33.708 ms (before B), in flight cq0 4 cq1 8: no CPU write: GPU
+      between watches: 0x12004b37c8 written 253 time(s) by Render Thread (the thread that gave up)
+      between watches: 0x12004b37c8 written 1 time(s) by bc5-cq0
+      between watches: 0x12004b53c8 written 253 time(s) by Render Thread (the thread that gave up)
+      between watches: 0x12004b53c8 written 1 time(s) by bc5-cq0
+      between watches: 0x12004b4fc8 written 253 time(s) by Render Thread (the thread that gave up)
+      between watches: 0x12004b77c8 written 253 time(s) by Render Thread (the thread that gave up)
+#5 t 139.485 0x12004b5438 (dcb 860 at 311) waited 28.66 ms; B flips +6.348 ms; in flight at the give-up cq0 0 cq1 0; 2 candidates
+      candidate 0x12004b53c8 held back 28.745 ms before, value 0x0, breakpoints
+      candidate 0x12004b4fc8 held back 48.064 ms before, value 0x0, breakpoints
+      between watches: 0x12004b37c8 written 216 time(s) by Render Thread (the thread that gave up)
+      between watches: 0x12004b37c8 written 1 time(s) by bc5-cq0
+      between watches: 0x12004b53c8 written 216 time(s) by Render Thread (the thread that gave up)
+      between watches: 0x12004b4fc8 written 216 time(s) by Render Thread (the thread that gave up)
+      between watches: 0x12004b77c8 written 216 time(s) by Render Thread (the thread that gave up)
+#6 t 217.358 0x12004b3c38 (dcb 11652 at 9815) waited 8.93 ms; B flips +50.590 ms; in flight at the give-up cq0 0 cq1 0; 3 candidates
+      candidate 0x12004b37c8 held back 9.064 ms before, value 0x0, breakpoints
+      candidate 0x12004b57c8 held back 38.009 ms before, value 0x0
+      candidate 0x12004b4fc8 held back 39.723 ms before, value 0x9076d6d8c, breakpoints
+      0x12004b4fc8 0x9076d6d8c -> 0x0 at +50.590 ms (before B), in flight cq0 2 cq1 6: no CPU write: GPU
+      between watches: 0x12004b37c8 written 2156 time(s) by Render Thread (the thread that gave up)
+      between watches: 0x12004b37c8 written 10 time(s) by bc5-cq0
+      between watches: 0x12004b53c8 written 2156 time(s) by Render Thread (the thread that gave up)
+      between watches: 0x12004b53c8 written 1 time(s) by bc5-cq0
+      between watches: 0x12004b4fc8 written 2156 time(s) by Render Thread (the thread that gave up)
+      between watches: 0x12004b4fc8 written 4 time(s) by bc5-cq0
+      between watches: 0x12004b77c8 written 2156 time(s) by Render Thread (the thread that gave up)
+#7 t 262.324 0x12004b3c38 (dcb 11652 at 9815) waited 8.89 ms; B flips +15.840 ms; in flight at the give-up cq0 0 cq1 0; 4 candidates
+      candidate 0x12004b37c8 held back 12.025 ms before, value 0x0, breakpoints
+      candidate 0x12004b77c8 held back 37.423 ms before, value 0x0, breakpoints
+      candidate 0x12004b53c8 held back 38.546 ms before, value 0x0, breakpoints
+      candidate 0x12004b4fc8 held back 40.312 ms before, value 0x9076d6d8c, breakpoints
+      between watches: 0x12004b37c8 written 1276 time(s) by Render Thread (the thread that gave up)
+      between watches: 0x12004b37c8 written 3 time(s) by bc5-cq0
+      between watches: 0x12004b53c8 written 1275 time(s) by Render Thread (the thread that gave up)
+      between watches: 0x12004b4fc8 written 1276 time(s) by Render Thread (the thread that gave up)
+      between watches: 0x12004b77c8 written 1275 time(s) by Render Thread (the thread that gave up)
+#8 t 282.709 0x12004b3c38 (dcb 11652 at 9815) waited 9.01 ms; B flips +13.626 ms; in flight at the give-up cq0 0 cq1 0; 4 candidates
+      candidate 0x12004b37c8 held back 9.060 ms before, value 0x0, breakpoints
+      candidate 0x12004b77c8 held back 36.690 ms before, value 0x0, breakpoints
+      candidate 0x12004b53c8 held back 38.822 ms before, value 0x0, breakpoints
+      candidate 0x12004b4fc8 held back 41.009 ms before, value 0x9076d6d8c, breakpoints
+      between watches: 0x12004b37c8 written 584 time(s) by Render Thread (the thread that gave up)
+      between watches: 0x12004b37c8 written 1 time(s) by bc5-cq0
+      between watches: 0x12004b53c8 written 584 time(s) by Render Thread (the thread that gave up)
+      between watches: 0x12004b4fc8 written 584 time(s) by Render Thread (the thread that gave up)
+      between watches: 0x12004b4fc8 written 1 time(s) by bc5-cq0
+      between watches: 0x12004b77c8 written 584 time(s) by Render Thread (the thread that gave up)
+
+# candidate changes after the give-up: (before/after B, kind, writer) -> count; between watches: (label, thread) -> writes
+  before B / other change / CPU                                          2
+  before B / other change / unknown (no breakpoints)                     2
+  before B / release (-> 0) / no CPU write: GPU                          3
+  between watches / 0x12004b37c8 / Render Thread                         6445
+  between watches / 0x12004b37c8 / bc5-cq0                               17
+  between watches / 0x12004b4fc8 / Render Thread                         6478
+  between watches / 0x12004b4fc8 / bc5-cq0                               5
+  between watches / 0x12004b53c8 / Render Thread                         6477
+  between watches / 0x12004b53c8 / bc5-cq0                               3
+  between watches / 0x12004b77c8 / Render Thread                         5747
