@@ -1,0 +1,19 @@
+lock released
+/home/kjaniszewski/bc5-data/captures/play-20261022-2027/gc
+/home/kjaniszewski/bc5-data/captures/play-20261022-2027/
+/home/kjaniszewski/bc5-data/captures/play-20261022-2014/
+R11D journal /home/kjaniszewski/bc5-data/captures/play-20261022-2027/gc/direct.log
+R11A-frozen(t>=170): 2828 flips over 109 s (t 170-279), 26.0 flips/s mean; per 20 s: min 23.0 median 26.9 max 28.5
+  flip gaps: >0.1 s 36, >0.4 s 12, >2 s 0, longest 558 ms
+  GPU busy per frame: median 27.2 ms, p90 29.7, max 65.5; outside-host per frame: >0.1 s 31, >1 s 0, max 523 ms
+  timeline (window start t: flips/s | GPU busy ms/s | outside ms/s | inside ms/s):
+R11A-all: 7627 flips over 276 s (t 2-279), 27.6 flips/s mean; per 20 s: min 14.2 median 27.1 max 41.7
+  flip gaps: >0.1 s 74, >0.4 s 15, >2 s 0, longest 753 ms
+  GPU busy per frame: median 23.7 ms, p90 28.8, max 128.8; outside-host per frame: >0.1 s 50, >1 s 0, max 699 ms
+R11D-frozen(t>=215): 1814 flips over 65 s (t 215-280), 28.0 flips/s mean; per 20 s: min 26.4 median 28.7 max 28.8
+  flip gaps: >0.1 s 12, >0.4 s 2, >2 s 0, longest 465 ms
+  GPU busy per frame: median 27.9 ms, p90 30.0, max 70.1; outside-host per frame: >0.1 s 4, >1 s 0, max 441 ms
+  timeline (window start t: flips/s | GPU busy ms/s | outside ms/s | inside ms/s):
+R11D-all: 8275 flips over 277 s (t 2-280), 29.8 flips/s mean; per 20 s: min 13.5 median 28.8 max 42.4
+  flip gaps: >0.1 s 74, >0.4 s 6, >2 s 0, longest 1749 ms
+  GPU busy per frame: median 15.3 ms, p90 28.7, max 308.0; outside-host per frame: >0.1 s 36, >1 s 2, max 1715 ms

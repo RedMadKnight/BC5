@@ -1,0 +1,53 @@
+boot ac5dab11
+== R11C journal /home/kjaniszewski/bc5-data/captures/play-20261022-1915/gc/direct.log
+191640-slot 191750-game 191806-ts00 191941-ts12 
+R11C: 9620 flips over 275 s (t 2-278), 34.9 flips/s mean; per 20 s: min 13.3 median 41.1 max 49.2
+  flip gaps: >0.1 s 35, >0.4 s 4, >2 s 1, longest 3188 ms
+  GPU busy per frame: median 13.2 ms, p90 17.1, max 1905.3; outside-host per frame: >0.1 s 21, >1 s 2, max 3119 ms
+  timeline (window start t: flips/s | GPU busy ms/s | outside ms/s | inside ms/s):
+      2: 29.1| 661| 287|120     22: 22.2| 446| 538|124     42: 14.5| 149| 857|129     62: 36.1| 517| 535|231
+     82: 49.2| 732| 371|281    102: 49.2| 726| 382|280    122: 47.5| 695| 392|269    142: 13.3| 160| 792|168
+    162: 22.7| 359| 695|219    182: 41.1| 458| 576|283    202: 42.0| 479| 569|290    222: 41.5| 429| 563|305
+    242: 41.3| 463| 558|304    262: 40.6| 417| 556|312
+
+== R11A journal /home/kjaniszewski/bc5-data/captures/play-20261022-1921/gc/direct.log
+192248-slot 192356-game 192416-ts00 192521-ts12 
+R11A: 7627 flips over 276 s (t 2-279), 27.6 flips/s mean; per 20 s: min 14.2 median 27.1 max 41.7
+  flip gaps: >0.1 s 74, >0.4 s 15, >2 s 0, longest 753 ms
+  GPU busy per frame: median 23.7 ms, p90 28.8, max 128.8; outside-host per frame: >0.1 s 50, >1 s 0, max 699 ms
+  timeline (window start t: flips/s | GPU busy ms/s | outside ms/s | inside ms/s):
+      2: 27.8| 628| 327|116     22: 22.6| 455| 509|128     42: 41.7| 632| 436|271     62: 29.4| 422| 627|205
+     82: 14.2| 162| 756|197    102: 27.9| 393| 594|286    122: 40.6| 605| 458|319    142: 25.9| 685| 366|193
+    162: 25.3| 700| 371|149    182: 23.9| 664| 400|144    202: 25.9| 714| 352|156    222: 28.0| 757| 304|183
+    242: 27.1| 738| 325|168    262: 25.9| 714| 352|148
+
+== R11B journal /home/kjaniszewski/bc5-data/captures/play-20261022-1926/gc/direct.log
+192750-slot 192906-game 192922-ts00 
+R11B: 2946 flips over 130 s (t 2-133), 22.6 flips/s mean; per 20 s: min 6.0 median 25.2 max 42.6
+  flip gaps: >0.1 s 26, >0.4 s 2, >2 s 1, longest 26619 ms
+  GPU busy per frame: median 15.4 ms, p90 25.0, max 26611.5; outside-host per frame: >0.1 s 12, >1 s 0, max 563 ms
+  timeline (window start t: flips/s | GPU busy ms/s | outside ms/s | inside ms/s):
+      2: 28.9| 656| 288|123     22: 21.5| 431| 559|123     42: 34.6| 502| 538|231     62: 42.6| 661| 439|257
+     82: 13.7| 158| 778|173    102:  6.0|  81|  93| 62    122:  0.1|2570|   1|  1
+
+reads done 20:27:12; R11D start
+== R11D (BC5_0194_INPUT_CONFIG=/home/kjaniszewski/bc5-work/exp0194/input-0194.cfg BC5_EMU=/home/kjaniszewski/bc5-work/exp0194/kyty_emulator BC5_EMU=/home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator BC5_DIRECT_AMM_PRT=1) 20:31:54
+203041-ts00.png: patch  10.3 %
+203048-ts01.png: patch  12.1 %
+203053-ts02.png: patch   9.6 %
+203058-ts03.png: patch   9.6 %
+203103-ts04.png: patch   9.6 %
+203108-ts05.png: patch   8.9 %
+203113-ts06.png: patch   8.9 %
+203119-ts07.png: patch   8.9 %
+203124-ts08.png: patch   8.8 %
+203129-ts09.png: patch   9.0 %
+203134-ts10.png: patch   8.6 %
+203140-ts11.png: patch   7.9 %
+203146-ts12.png: patch  12.0 %
+fps counter: t 281.518 s: 29 flips in 1.000 s, longest gap 49.8 ms, gaps over 40 ms 2, ove
+== R11D journal /direct.log
+202821-slot 203001-game 203041-ts00 203146-ts12 
+grep: /direct.log: No such file or directory
+R11D no frame profile lines
+lock now: second-title-why-the-bvh exp 0211 | bench R11D | start 20:27 | until ~20:33
