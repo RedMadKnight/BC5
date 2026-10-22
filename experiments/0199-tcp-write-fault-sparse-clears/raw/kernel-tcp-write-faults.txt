@@ -1,0 +1,112 @@
+== boot -4
+paź 20 15:08:09.935383 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:7 pasid:212)
+paź 20 15:08:09.936107 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x0000008518598000 from client 0x1b (UTCL2)
+paź 20 15:08:09.936343 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00741051
+paź 20 15:08:09.937996 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:7 pasid:212)
+paź 20 15:08:09.938427 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x000000851859c000 from client 0x1b (UTCL2)
+paź 20 15:08:09.938652 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00741051
+paź 20 15:08:09.940200 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:7 pasid:212)
+paź 20 15:08:09.940620 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x0000008518598000 from client 0x1b (UTCL2)
+paź 20 15:08:09.940847 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00741051
+paź 20 15:08:09.942457 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:7 pasid:212)
+paź 20 15:08:09.942819 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x000000851859a000 from client 0x1b (UTCL2)
+paź 20 15:08:09.942995 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00741051
+paź 20 15:08:09.944034 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:7 pasid:212)
+paź 20 15:08:09.944332 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x000000851859d000 from client 0x1b (UTCL2)
+paź 20 15:08:09.944481 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00741051
+paź 20 15:08:09.945486 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:7 pasid:212)
+paź 20 15:08:09.945780 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x000000851859f000 from client 0x1b (UTCL2)
+paź 20 15:08:09.945945 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00741051
+paź 20 15:08:09.947008 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:7 pasid:212)
+paź 20 15:08:09.947312 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x000000851859b000 from client 0x1b (UTCL2)
+paź 20 15:08:09.947462 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00741051
+paź 20 15:08:09.948533 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:7 pasid:212)
+paź 20 15:08:09.948821 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x0000008518598000 from client 0x1b (UTCL2)
+paź 20 15:08:09.948984 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00741051
+paź 20 15:08:09.950008 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:7 pasid:212)
+paź 20 15:08:09.950317 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x000000851859d000 from client 0x1b (UTCL2)
+paź 20 15:08:09.950461 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00741051
+paź 20 15:08:09.951530 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:7 pasid:212)
+paź 20 15:08:09.951832 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x0000008518599000 from client 0x1b (UTCL2)
+paź 20 15:08:09.951995 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00741051
+== boot -2
+paź 22 10:28:15.830542 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:5 pasid:124)
+paź 22 10:28:15.832513 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x00000084a6885000 from client 0x1b (UTCL2)
+paź 22 10:28:15.833133 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00541051
+paź 22 10:28:15.835184 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:5 pasid:124)
+paź 22 10:28:15.835764 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x00000084a6881000 from client 0x1b (UTCL2)
+paź 22 10:28:15.836021 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00541051
+paź 22 10:28:15.837606 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:5 pasid:124)
+paź 22 10:28:15.838256 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x00000084a6884000 from client 0x1b (UTCL2)
+paź 22 10:28:15.838427 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00541051
+paź 22 10:28:15.848437 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:5 pasid:124)
+paź 22 10:28:15.848775 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x00000084a6885000 from client 0x1b (UTCL2)
+paź 22 10:28:15.849019 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:5 pasid:124)
+paź 22 10:28:15.849394 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x00000084a6883000 from client 0x1b (UTCL2)
+paź 22 10:28:15.849686 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:5 pasid:124)
+paź 22 10:28:15.850013 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x00000084a68a6000 from client 0x1b (UTCL2)
+paź 22 10:28:15.850167 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:5 pasid:124)
+paź 22 10:28:15.850464 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x00000084a6880000 from client 0x1b (UTCL2)
+paź 22 10:28:15.850627 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:5 pasid:124)
+paź 22 10:28:15.850939 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x00000084a6886000 from client 0x1b (UTCL2)
+paź 22 10:28:15.852587 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:5 pasid:124)
+paź 22 10:28:15.853416 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x00000084a68a9000 from client 0x1b (UTCL2)
+paź 22 10:28:15.853606 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:5 pasid:124)
+paź 22 10:28:15.853977 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x00000084a6899000 from client 0x1b (UTCL2)
+paź 22 10:28:17.886349 bazzite kernel: amdgpu 0000:01:00.0: ring comp_1.1.0 timeout, signaled seq=525906, emitted seq=525908
+paź 22 10:51:03.186516 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:5 pasid:134)
+paź 22 10:51:03.187629 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x000000820c37f000 from client 0x1b (UTCL2)
+paź 22 10:51:03.187821 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00541051
+paź 22 10:51:03.188960 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:5 pasid:134)
+paź 22 10:51:03.189355 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x000000820c37d000 from client 0x1b (UTCL2)
+paź 22 10:51:03.189517 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00541051
+paź 22 10:51:03.190580 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:5 pasid:134)
+paź 22 10:51:03.190883 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x000000820c37f000 from client 0x1b (UTCL2)
+paź 22 10:51:03.191049 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00541051
+paź 22 10:51:03.231561 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:5 pasid:134)
+paź 22 10:51:03.231877 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x000000820c37e000 from client 0x1b (UTCL2)
+paź 22 10:51:03.232039 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00541051
+paź 22 10:51:03.233143 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:5 pasid:134)
+paź 22 10:51:03.233466 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x000000820c37c000 from client 0x1b (UTCL2)
+paź 22 10:51:03.233635 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00541051
+paź 22 10:51:03.234687 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:5 pasid:134)
+paź 22 10:51:03.234978 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x000000820c37d000 from client 0x1b (UTCL2)
+paź 22 10:51:03.235128 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00541051
+paź 22 10:51:03.236207 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:5 pasid:134)
+paź 22 10:51:03.236511 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x000000820c380000 from client 0x1b (UTCL2)
+paź 22 10:51:03.236671 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00541051
+paź 22 10:51:03.237713 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:5 pasid:134)
+paź 22 10:51:03.238000 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x000000820c380000 from client 0x1b (UTCL2)
+paź 22 10:51:03.238147 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00541051
+paź 22 10:51:03.239365 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:5 pasid:134)
+paź 22 10:51:03.239672 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x000000820c387000 from client 0x1b (UTCL2)
+paź 22 10:51:03.239819 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00541051
+paź 22 10:51:03.240891 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:5 pasid:134)
+paź 22 10:51:03.241189 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x000000820c382000 from client 0x1b (UTCL2)
+paź 22 10:51:03.241346 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00541051
+paź 22 12:01:34.583598 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:6 pasid:159)
+paź 22 12:01:34.651245 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x00000083fdaa1000 from client 0x1b (UTCL2)
+paź 22 12:01:34.651471 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00641051
+paź 22 12:01:34.688520 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:6 pasid:159)
+paź 22 12:01:34.699049 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x00000083fdaa0000 from client 0x1b (UTCL2)
+paź 22 12:01:34.699549 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00641051
+paź 22 12:01:34.700999 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:6 pasid:159)
+paź 22 12:01:34.701321 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x00000083fdaa4000 from client 0x1b (UTCL2)
+paź 22 12:01:34.701491 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:6 pasid:159)
+paź 22 12:01:34.701824 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x00000083fdaa0000 from client 0x1b (UTCL2)
+paź 22 12:01:34.705100 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:6 pasid:159)
+paź 22 12:01:34.705613 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x00000083fdaae000 from client 0x1b (UTCL2)
+paź 22 12:01:34.705812 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:6 pasid:159)
+paź 22 12:01:34.706155 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x00000083fdaa6000 from client 0x1b (UTCL2)
+paź 22 12:01:34.706339 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:6 pasid:159)
+paź 22 12:01:34.706845 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x00000083fdaa3000 from client 0x1b (UTCL2)
+paź 22 12:01:34.707077 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:6 pasid:159)
+paź 22 12:01:34.707649 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x00000083fdaa9000 from client 0x1b (UTCL2)
+paź 22 12:01:34.707866 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:6 pasid:159)
+paź 22 12:01:34.708225 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x00000083fdaaf000 from client 0x1b (UTCL2)
+paź 22 12:01:34.708410 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:6 pasid:159)
+paź 22 12:01:34.708772 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x00000083fdaac000 from client 0x1b (UTCL2)
+paź 22 12:01:36.414281 bazzite kernel: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=2931338, emitted seq=2931340
+paź 22 12:47:04.129742 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:6 pasid:173)
+paź 22 12:47:04.177447 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x0000001765833000 from client 0x1b (UTCL2)
+paź 22 12:47:04.198214 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00641050

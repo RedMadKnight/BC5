@@ -1,0 +1,45 @@
+== play-20261020-1503
+2984567:submit #1370416 dcb 4451 dwords at 0x7fb3f0599e60: pass 265 rewrite 151 drop 126 unmapped 0 cc 0 mappings 21462 ... FAILED rc 0 TIMEOUT 2012.15 ms
+2984569:submit #1370439 acb 1480 dwords at 0x11e0e80050: pass 199 rewrite 21 drop 14 unmapped 0 cc 0 mappings 21462 ... FAILED rc 0 TIMEOUT 2010.16 ms
+2984578:cpu-wait WAIT_REG_MEM64 at 28 on 0x12004b53c8: TIMEOUT after 0.0 ms
+2984640:timeout: fault 0x851859a000 status 0x00741051
+2984732:learned: fault 0x851859a000 -> region 0x8516000000+0x6000000 (saved)
+2984733:reopen: ok
+2984770:learned 0x8516000000: window 0x8516000000+0x6000000, direct memory +14.0 MiB
+2984815:scratch: window 0x8516000000+0x6000000, 0.2 MiB of holes get a zero buffer
+2984697:timeout probe:   state before op 15 at 2785: (program in force) cs 0000000011d02888
+2984698:timeout probe: op 15 at 2785: 00007000 00000001 00000001 00000041 base1 0x0 index_base 0x121000a700 ran
+== play-20261022-1026
+179779:submit #70598 acb 1465 dwords at 0x7f0ecc0e3720: pass 150 rewrite 17 drop 4 unmapped 0 cc 0 mappings 21419 ... FAILED rc 0 TIMEOUT 2049.38 ms
+179781:submit #70590 dcb 1820 dwords at 0x7f0e80238ad0: pass 185 rewrite 64 drop 72 unmapped 1 cc 3 mappings 21419 ... FAILED rc 0 TIMEOUT 2053.19 ms
+179911:timeout: fault 0x84a6884000 status 0x00541051
+179941:learned: fault 0x84a6884000 -> region 0x84a2000000+0x6000000 (saved)
+179942:reopen: ok
+180073:submit #70619 dcb 2821 dwords at 0x7f0e80232a20: pass 276 rewrite 26 drop 17 unmapped 0 cc 0 mappings 21334 ... FAILED rc 0 TIMEOUT 3530.47 ms
+179968:learned 0x84a2000000: window 0x84a2000000+0x6000000, direct memory +2.0 MiB
+180013:scratch: window 0x84a2000000+0x6000000, 0.3 MiB of holes get a zero buffer
+179937:timeout probe:   state before op 15 at 1648: (program in force) cs 0000000011d0288a
+179938:timeout probe: op 15 at 1648: 00000180 00000001 00000001 00000041 base1 0x0 index_base 0x0 ran
+== play-20261022-1049
+180438:submit #70261 acb 322 dwords at 0x7ef8f028f540: pass 32 rewrite 17 drop 4 unmapped 0 cc 0 mappings 13201 ... FAILED rc 0 TIMEOUT 2058.46 ms
+180440:submit #70258 dcb 9701 dwords at 0x7ef8a048af90: pass 917 rewrite 98 drop 270 unmapped 0 cc 0 mappings 13201 ... FAILED rc 0 TIMEOUT 2059.52 ms
+181093:timeout: fault 0x820c3a6000 status 0x00541050
+181100:learned: fault 0x820c3a6000 -> region 0x820a000000+0x6000000 (saved)
+181104:reopen: ok
+181117:learned 0x820a000000: window 0x820a000000+0x6000000, direct memory +4.0 MiB
+181160:scratch: window 0x820a000000+0x6000000, 0.5 MiB of holes get a zero buffer
+180486:timeout probe:   state before op 15 at 962: (program in force) cs 0000000011d0288a
+180487:timeout probe: op 15 at 962: 00000b00 00000001 00000001 00000041 base1 0x0 index_base 0x0 ran
+== play-20261022-1200
+200412:submit #71747 acb 1082 dwords at 0x7f9c20630530: pass 114 rewrite 19 drop 8 unmapped 0 cc 0 mappings 21386 ... FAILED rc 0 TIMEOUT 2056.52 ms
+200414:submit #71744 dcb 25968 dwords at 0x7f9bc8136c10: pass 2284 rewrite 227 drop 333 unmapped 0 cc 0 mappings 21386 ... FAILED rc 0 TIMEOUT 2057.52 ms
+200478:timeout: fault 0x83fdaa0000 status 0x00641051
+200520:timeout probe:   state before op 15 at 1128: (program in force) cs 0000000011d0288a
+200521:timeout probe: op 15 at 1128: 00000180 00000001 00000001 00000041 base1 0x0 index_base 0x0 ran
+== play-20261022-1244
+423513:submit #169737 acb 891 dwords at 0x7f630816e560: pass 119 rewrite 22 drop 11 unmapped 0 cc 0 mappings 21053 ... FAILED rc 0 TIMEOUT 2014.72 ms
+423515:submit #169733 dcb 19968 dwords at 0x7f62b8bbe7d0: pass 2730 rewrite 196 drop 105 unmapped 0 cc 0 mappings 21053 ... FAILED rc 0 TIMEOUT 2025.16 ms
+423542:timeout: fault 0x1765833000 status 0x00641050
+424967:learned: fault 0x1765833000 -> region 0x1762000000+0x6000000 (saved)
+427190:reopen: ok
+427285:scratch: window 0x1762000000+0x6000000, 96.0 MiB of holes get a zero buffer

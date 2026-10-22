@@ -1,0 +1,16 @@
+== play-20261022-1244/gc/ib-timeout-00169733-dcb-19968.bin
+packets 3035, hits 0
+First-Use markers: 0
+      1 RayTracingUpdate
+      1 Ray Tracing Update
+      1 LandscapeMeshRender
+      1 LandscapeMeshImpostor
+      1 GBuffer Landscape
+== play-20261022-1244/gc/ib-timeout-00169737-acb-891.bin
+packets 152, hits 0
+First-Use markers: 0
+      1 Lighting Prep
+      1 CopyResource
+      1 ClearUnorderedAccessView
+== env of run L7
+BC5_DIRECT_DMA_SNAPSHOT=0 BC5_0194_INPUT_CONFIG=/home/kjaniszewski/bc5-work/exp0194/input-0194.cfg BC5_EMU=/home/kjaniszewski/bc5-work/exp0194/kyty_emulator
