@@ -1,0 +1,24 @@
+# Experiment 0205, the APR readahead A/B part 1 (2026-10-22 17:22-17:32, granted by the top session: A1 and B1 only).
+# ab0205.sh A1:A B1:B (raw/ab-part1.txt). Binary for both: the cutscene session's ~/bc5-work/exp0203/kyty_emulator
+# (17:03:20, md5 8af7e8ed..., the shared build plus KYTY_BC5_APR_READAHEAD, off by default). PAGES=1 over four ranges:
+# the two pixel-stage textures at X2's addresses and the two vertex-stage maps (0x8001810000 8 MiB, 0x8001010000 2 MiB).
+A1 (arm A, switch off) 17:22:55-17:27: slot shot 17:24:05, game 17:25:13, frozen view 17:25:36-17:26:41.
+  Patch share: 9.7 10.4 7.1 7.7 11.0 12.9 12.3 9.4 14.8 7.9 6.3 9.3 7.3 % (lighter than X5's 18-23.5 % and tcpW1's
+  23-31 %: the run-to-run spread). Kernel: nothing new.
+  Tiles (raw/A1-pages.txt, raw/A1-ana.txt):
+  - 0x8492504000, 8 MiB: 504 holes, 8 data from 17:24:37; X5 had 28 data tiles there. With fewer patches here, X2's
+    address for the 2048x2048 texture probably does not hold across runs (the journal was off in X5 and A1).
+  - 0x80907c4000, 2 MiB: 102 data, 26 holes, as in X5.
+  - 0x8001810000 (8 MiB) and 0x8001010000 (2 MiB), the water's vertex-stage maps: mapped at 17:23:02 (title start,
+    the same addresses and sizes as in X3), all zero from then to the end, through the frozen view.
+    "AMM" is in the launcher's BC5_DIRECT_EAGER_NAMES, so every chunk of an AMM view is imported into the GPU as the
+    same memfd pages (ADR 0006): the CPU view is the GPU's. So the GPU did not write non-zero data there in this run.
+    Whether that is wrong is open: a water simulation map that is zero in calm water would look the same.
+  - No tile changed state in the frozen view, in any range.
+B1 (arm B, KYTY_BC5_APR_READAHEAD=4) 17:27:47: the emulator crashed on the host at 16 s (17:28:05, exit 65), before the
+  title screen (raw/B1-crash.txt): access violation writing 0x807ce04020 (in the AMM window) from a libc copy, size
+  0xc000 (r12, r14), stack frames [5] 0x562150e2c2b3 and [6] 0x562150e2bc03 in the binary. Reading: a readahead
+  thread ran a package read before the map command that creates its destination. No patch-share result for B.
+  The cutscene session's O3 on the same binary (17:30:55) "ended by itself at 17 s", probably the same crash.
+  B1's lock went with its emulator while bench0205.sh kept stepping (input to its own dead run, screenshots); it was
+  stopped at 17:31:30. bench0205.sh now stops at once when its emulator is gone, and ab0205.sh stops on that.

@@ -1,0 +1,29 @@
+# Experiment 0205, the readahead A/B part 2 (2026-10-22 18:25-18:45, granted 18:23 by the top session; part2.sh, which
+# would have run S2b afterwards, was stopped at 18:41 when the maintainer came to the box; ab0205.sh finished B3).
+# Binary for both arms: the cutscene session's v2 (~/bc5-work/exp0203/kyty_emulator, 17:54:07, md5 f374ef26...).
+# Arm A: switch off; arm B: KYTY_BC5_APR_READAHEAD=4. Box: boot ac5dab11, 120 amdgpu lines before and after, no
+# fault or timeout. Files: raw/ab-part2.txt (scores), raw/{B2,A2,A3,B3}-pages.txt, raw/part2-ana.txt.
+Patch share per frozen-view shot (13 per run), each run's view checked on its ts00 shot:
+  B2 18:25  14.4 26.8 13.0 0.8 0.8 0.8 0.8 0.8 0.6 0.7 0.5 0.8 0.8   lake view; a checkerboard in ts00 (checked), then clean
+  A2 18:30  1.3 x12, 1.2                                               lake view, clean (checked)
+  A3 18:35  1.3 x11, 1.0, 1.4                                          lake view, clean (checked)
+  B3 18:40  8.6 8.4 8.6 8.6 8.2 8.7 8.6 8.7 8.6 8.6 8.6 7.8 8.5        NOT the bench view: the camera moves landed at another
+                                                                       angle, down the cliff edge; the water there looks clean;
+                                                                       the 8 % is wet bluish rock inside the metric's window
+With part 1 (raw/A1-B1.txt, raw/B1b-S2.txt), valid views only; "clean" = a shot at 2 % or less:
+  arm A (off): A1 9.7 % (0 of 13 clean), A2 1.3 % (13), A3 1.3 % (13)      -> 26 of 39 shots clean
+  arm B (on):  B1b 5.5 % (9 of 13), B2 4.7 % (10 of 13); B3 no score      -> 19 of 26 shots clean
+Verdict of the A/B: no effect of KYTY_BC5_APR_READAHEAD on the patchwork. Both arms have wholly clean runs and runs with
+patches; the spread between runs is far larger than any difference between the arms. The read-ahead is not a water fix.
+(Patches that come and go within seconds in the frozen view were seen in B1b and B2 only; with 2-3 runs per arm that is
+not a difference.)
+The 8 MiB range at X2's address of the BC4 texture (0x8492504000) per run, res0205.py on the last tile map before the
+emulator's exit (raw/part2-ana.txt and the pages files):
+  A2, A3 (clean): the 2048x2048 BC4 texture's whole chain resident: mip 0 500 / 512 of 512 blocks, mips 1-4 all blocks.
+  X5 (patchy 18-23 %): mips 4 and 3 resident, mip 2 half, mips 1 and 0 nothing.
+  A1 (patchy), B1b, B2, B3: a few scattered blocks only (8, 16, 63, 4 blocks): the texture was probably elsewhere.
+So in the two clean runs whose texture sat at X2's address it was fully resident, and in the patchy one at that address
+its two finest mips were missing. A lead for "flat cell = a page of this texture that the title did not stream", not
+established: the address was not re-read in these runs (no journal), and the runs where it moved say nothing.
+The AMM pool the title gives (AmmGiveDirectMemory, the AMM trace's "give direct memory") is the same in every logged run:
+0xbda00000 bytes at 0x99200000 in tcpW1, X3 and S2. The pool size is not what varies between clean and patchy runs.

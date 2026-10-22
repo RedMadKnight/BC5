@@ -1,0 +1,24 @@
+# Experiment 0205: the TCP session's run tcpW1 (exp 0204's question, not a water run), scored with the water metric.
+# 2026-10-22 16:52-17:03, bench0201.sh tcpW1 600: the shared build (~/bc5-work/kytyplus-build/src/kyty_emulator) with
+# BC5_DIRECT_WAIT_TRACE=1 and KYTY_BC5_AMM_TRACE=1, the lake save's private copy (reset to saves-lake-1153), the
+# normal launcher otherwise. Kernel: 0 fault lines, 0 ring timeout/reset lines; journal 0 fence timeouts.
+Frozen view (the bench's view, checked on ts00: the near lake from the cliff, heavy rectangles of flat surface),
+patch0197.py on the 13 shots 16:55:23..16:56:27:
+  27.1 28.2 29.0 25.5 27.8 25.8 30.8 29.8 29.7 28.4 23.2 27.6 27.4 %
+So the shared build, not only the exp 0194/0197 diagnostic builds, shows the patchwork, at the high end of the
+calibration (L5-L10: 18-25 %). The run's AMM trace covers the frozen view (its emulator log, copied by the TCP
+session into ~/bc5-work/exp0206).
+
+The run's AMM trace (its play log, kept by the TCP session as ~/bc5-work/exp0206/tcpW1-play-pkg.log), by amm0205.py
+(raw/tcpW1-amm.txt):
+- Streaming per 10 s: the title start (16:52:49, 1,323 maps, 10,621 reads), the load (16:54:09-16:54:39, 7,295 maps,
+  335 unmaps, 25,203 reads), the camera move into the frozen view (16:55:09-16:55:19, 285 maps, 60 unmaps, 485 reads).
+  From 16:55:29 to the end, through the whole frozen view at 23-31 %: 0 maps, 0 unmaps, 2-3 reads per 10 s.
+- Every automatic map with prot 0x90 (the streamed, GPU-read pages) still live at the end, 9,289 maps / 1,962.6 MiB,
+  is fully covered by package reads logged after it. No streamed page was left unfilled, and none was re-mapped
+  without a new read. (The GPU-only maps, prot 0x30/0x32, get no reads, as expected; 45 prot-0x92 maps are partly
+  covered.) A first count by timestamp found 441 "unread" maps: an artefact of trace lines from the parallel APR
+  workers that lose their "mono" prefix, hence the count by line order.
+- Every map, unmap and read in the trace returned 0.
+Reading: in a heavily patched frozen view the title requests nothing; the host served everything it had asked for.
+So the missing surface is in tiles the title never requested (or requested and released before the frozen view).

@@ -1,0 +1,19 @@
+# Experiment 0205: the TCP session's four runs on the lake bench (exps 0206-0208), scored for the water. They are the
+# BC5_DIRECT_DCB_WAIT_MS A/B the top session proposed (8 ms default against 100 ms), already run on the shared build
+# with BC5_DIRECT_WAIT_TRACE=1: the give-up counts are from exp 0208 raw/four-runs.txt, the patch shares from each run's
+# bench output on the box (~/bc5-work/exp0206/tcpW1-bench.out, exp0207/tcpW2-bench.out, exp0208/tcpW1b-, tcpW2b-bench.out),
+# the views checked on ts00 (and tcpW1b's ts11) copied off the box to the laptop's scratchpad (not kept).
+run     wait limit  given-up waits (on 3c38)  frozen-view patch share per shot                                 mean
+tcpW1   8 ms        17 (6)                    27.1 28.2 29.0 25.5 27.8 25.8 30.8 29.8 29.7 28.4 23.2 27.6 27.4  27.7 %
+tcpW1b  8 ms        12 (8)                    29.0 24.2 27.1 22.3 26.3 29.3 26.2 26.7 24.2 30.3 20.2  1.3  7.0  22.6 %
+tcpW2   100 ms       1 (1)                    25.9 27.2 25.8 28.8 31.9 28.0 27.3 24.3 24.5 23.1 24.8 24.5 28.4  26.5 %
+tcpW2b  100 ms       0 (0)                    23.9 22.8 21.3 21.9 22.6 20.1 22.7 22.3 24.5 19.8 23.6 20.2 20.5  22.0 %
+Views: tcpW1, tcpW1b and tcpW2 the bench view, heavily patched on ts00. tcpW2b another angle (along the shore, a car at
+the right edge), its lake heavily patched too. tcpW1b's ts11 (17:46:29) is the bench view with a clean lake: the whole
+patchwork gone for one shot, partly back in ts12 (7 %).
+Reading:
+- The steady patchwork does not need given-up waits: tcpW2b had none in its whole 600-s run and its lake was patched
+  in every shot; tcpW2 had one. So the give-up race (F263-F265) is not what makes the steady patches.
+- Flashes go both ways: patchy to clean (tcpW1b ts11) as well as clean to patchy (B1b, B2, raw/B1b-S2.txt, part2.txt).
+  Whether the flashes fall near given-up waits is open: it needs the give-up times of tcpW1b (journal
+  play-20261022-1742), B1b (1811) and B2 (1825), read after the maintainer's play.

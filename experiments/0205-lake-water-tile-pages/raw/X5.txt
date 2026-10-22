@@ -1,0 +1,33 @@
+# Experiment 0205, run X5 (2026-10-22 17:07-17:12, granted by the top session): bench0205.sh X5 with PAGES=1, the
+# exp 0194 build (bench default), launcher defaults plus BC5_DIRECT_DRAW_JOURNAL_PS=11d01ff900. Private lake-save copy.
+# Files: X5-bench.txt (bench output: patch shares, fps), X5-pages.txt (pg0205.py, every 5 s), X5-ana.txt (ana0205.py).
+Run: title 17:07, slot shot 17:08:17, game shot 17:09:26, frozen view 17:09:52-17:10:58 (13 shots), end 17:11:58.
+Box: boot ac5dab11 before and after; dmesg 1348 -> 1350 lines, both IPv6 (no amdgpu, fault or timeout line).
+The shader journal did not run: BC5_DIRECT_DRAW_JOURNAL_PS only filters, it needs BC5_DIRECT_DRAW_JOURNAL (X2 had
+=150:4 with _EVERY=15). So this run's texture addresses were not re-read; the sampler used X2's (0x8492504000 and
+0x80907c4000; X3, another run, had its AMM maps at the same addresses, and here 0x8492504000's range was mapped
+during the load and right before the frozen view).
+
+Patch share in the frozen view: 23.0 18.6 20.2 21.2 18.1 21.8 23.5 21.5 18.5 22.9 19.6 20.2 20.3 % (no growth; the
+spread is the shot-to-shot noise of a patchy view, rain and sparkle).
+
+Tiles (16 KiB each; '.' hole, 'z' mapped zero, 'd' mapped data):
+  0x8492504000, 8 MiB (the 2048x2048 pixel-stage texture):
+    17:07:10-17:08:35  512 holes (title, slot list, load)
+    17:08:40           21 tiles mapped, all zero; 17:08:55 the same 21 hold data (filled within 15 s)
+    17:09:45           +7 tiles at the range's start mapped with data: 484 holes, 28 data
+    17:09:45-17:11:55  unchanged: 484 holes, 0 zero, 28 data, no re-map, through the whole frozen view
+  0x80907c4000, 2 MiB (the 512x512 pixel-stage texture and what lies after it):
+    17:07:20           93 data (already at the title); 17:07:55 94; 17:09:10 102 data, 26 holes; then unchanged
+Mapped tiles come mostly in runs of three (48 KiB, the 0xc000 automatic maps of exp 0201 X3); the 7 at the start appeared in one sample.
+
+Reading:
+- In the frozen view nothing changes on the CPU side: no tile is mapped, unmapped, zeroed or re-mapped while the
+  patch share stays at 18-23.5 %. There is no tile mapped but still zero when the shots are taken.
+- The 2048x2048 texture's 8 MiB are 94.5 % holes: the title streams only 28 tiles of it, and keeps them.
+- So the flat cells are not tiles whose data is late (every mapped tile held data within 15 s of its map), nor
+  re-maps. They are either cells whose tiles are holes (never requested, or not resident by the title's own
+  choice), or present data the GPU does not see (stale caches; unlikely over a 66-s frozen view of a frame that
+  moves far more than the 4-MiB L2 through its caches, TODO(verify)).
+- Which texture cells a flat screen cell samples is not known: the format (dword1 [28:20] = 0xaf) and the swizzle
+  mode (dword3 [24:20] = 0x05) are not decoded here, TODO(verify) against a public gfx10 format table.

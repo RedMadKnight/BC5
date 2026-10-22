@@ -1,0 +1,25 @@
+# Experiment 0205: the water's image descriptors (exp 0201 raw/X1-X2.txt, run X2) decoded.
+# Field layout and formats: Mesa src/amd/registers/gfx10-rsrc.json @ 0866ae7 (the box's sparse checkout ~/src/mesa):
+#   SQ_IMG_RSRC_WORD1: BASE_ADDRESS_HI [0,7], MIN_LOD [8,19], FORMAT [20,28], WIDTH_LO [30,31]
+#   SQ_IMG_RSRC_WORD3: ..., BASE_LEVEL [12,15], LAST_LEVEL [16,19], SW_MODE [20,24], BC_SWIZZLE [25,27], TYPE [28,31]
+#   enum GFX10_FORMAT: 13 = GFX10_FORMAT_16_FLOAT, 71 = GFX10_FORMAT_16_16_16_16_FLOAT, 175 = GFX10_FORMAT_BC4_UNORM
+# SW_MODE is the addrlib swizzle mode (Mesa src/amd/common/ac_descriptors.c @ 0866ae7 writes
+# S_00A00C_SW_MODE(surf->u.gfx9.swizzle_mode)); the addrlib enum is not in the sparse checkout, so its names below are
+# TODO(verify). TYPE 9 / 13: TODO(verify) against a public SQ_RSRC_IMG table (2D / 2D array as commonly listed).
+stage  base           size       FORMAT                 levels  SW_MODE  TYPE  bytes of level 0
+PS     0x8492504000   2048x2048  175 BC4_UNORM          8       5        9     2 MiB (0.5 B/texel); chain ~2.7 MiB
+PS     0x80907c4000   512x512    13  16_FLOAT           7       5        9     512 KiB; chain ~683 KiB
+VS/ES  0x8001810000   2048x2048  13  16_FLOAT           1       27       13    8 MiB = the whole automatic map (0x800000)
+VS/ES  0x8001010000   512x512    71  16_16_16_16_FLOAT  1       27       13    2 MiB = the whole automatic map (0x200000)
+GS     0x113cb40000   3328x1872  13  16_FLOAT           1       27       9     a screen-size target in the heap
+(levels = LAST_LEVEL - BASE_LEVEL + 1 from dword3; the VS/ES pair's dword3 d1b00324 has LAST_LEVEL 0.)
+Reading:
+- The pixel stage samples two streamed single-channel maps (BC4 and half float). The exp 0201/0205 samplers used an
+  8 MiB / 2 MiB window, wider than the textures (2.7 MiB / 0.7 MiB with their chains).
+- The vertex stage samples a 2048x2048 half-float map and a 512x512 RGBA half-float map whose sizes are exactly
+  their automatic maps (GPU-only, prot 0x30, mapped at the title start). In A1 both were all zero from the title to
+  the end, on the pages the GPU itself uses (AMM views are imported eagerly, ADR 0006).
+- A lead, TODO(verify): a missing writer for those two maps. A water or ripple simulation at rest would still write
+  its rest state, and for an RGBA16F map of normals or flow that is typically non-zero, so all zero from the title
+  to the end leans toward a GPU pass whose output never lands there rather than calm water. Not established: the
+  maps' meaning is not known, and no writer has been looked for in a journal of descriptor tables.

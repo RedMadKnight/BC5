@@ -1,0 +1,40 @@
+(1) samples: wall range hole zero data err | changes
+  17:22:57 0x8492504000  512    0    0 0 | to. 0 toz 0 tod 0 remap 0
+  17:22:57 0x80907c4000  128    0    0 0 | to. 0 toz 0 tod 0 remap 0
+  17:22:57 0x8001810000  512    0    0 0 | to. 0 toz 0 tod 0 remap 0
+  17:22:57 0x8001010000  128    0    0 0 | to. 0 toz 0 tod 0 remap 0
+  17:23:02 0x8001810000    0  512    0 0 | to. 0 toz 512 tod 0 remap 0
+  17:23:02 0x8001010000    0  128    0 0 | to. 0 toz 128 tod 0 remap 0
+  17:23:07 0x80907c4000   35   93    0 0 | to. 0 toz 93 tod 0 remap 0
+  17:23:12 0x80907c4000   35    0   93 0 | to. 0 toz 0 tod 93 remap 0
+  17:23:47 0x80907c4000   34    0   94 0 | to. 0 toz 0 tod 1 remap 0
+  17:24:32 0x8492504000  504    4    4 0 | to. 0 toz 4 tod 4 remap 0
+  17:24:37 0x8492504000  504    0    8 0 | to. 0 toz 0 tod 4 remap 0
+  17:25:02 0x80907c4000   26    0  102 0 | to. 0 toz 0 tod 8 remap 0
+(2) shots: name patch | nearest sample per range (hole zero data)
+  ts00   9.7 % | 0x8001010000 0 128 0  0x8001810000 0 512 0  0x80907c4000 26 0 102  0x8492504000 504 0 8
+  ts01  10.4 % | 0x8001010000 0 128 0  0x8001810000 0 512 0  0x80907c4000 26 0 102  0x8492504000 504 0 8
+  ts02   7.1 % | 0x8001010000 0 128 0  0x8001810000 0 512 0  0x80907c4000 26 0 102  0x8492504000 504 0 8
+  ts03   7.7 % | 0x8001010000 0 128 0  0x8001810000 0 512 0  0x80907c4000 26 0 102  0x8492504000 504 0 8
+  ts04  11.0 % | 0x8001010000 0 128 0  0x8001810000 0 512 0  0x80907c4000 26 0 102  0x8492504000 504 0 8
+  ts05  12.9 % | 0x8001010000 0 128 0  0x8001810000 0 512 0  0x80907c4000 26 0 102  0x8492504000 504 0 8
+  ts06  12.3 % | 0x8001010000 0 128 0  0x8001810000 0 512 0  0x80907c4000 26 0 102  0x8492504000 504 0 8
+  ts07   9.4 % | 0x8001010000 0 128 0  0x8001810000 0 512 0  0x80907c4000 26 0 102  0x8492504000 504 0 8
+  ts08  14.8 % | 0x8001010000 0 128 0  0x8001810000 0 512 0  0x80907c4000 26 0 102  0x8492504000 504 0 8
+  ts09   7.9 % | 0x8001010000 0 128 0  0x8001810000 0 512 0  0x80907c4000 26 0 102  0x8492504000 504 0 8
+  ts10   6.3 % | 0x8001010000 0 128 0  0x8001810000 0 512 0  0x80907c4000 26 0 102  0x8492504000 504 0 8
+  ts11   9.3 % | 0x8001010000 0 128 0  0x8001810000 0 512 0  0x80907c4000 26 0 102  0x8492504000 504 0 8
+  ts12   7.3 % | 0x8001010000 0 128 0  0x8001810000 0 512 0  0x80907c4000 26 0 102  0x8492504000 504 0 8
+(3) tile maps in the frozen view (from 62706 s of the day)
+  0x8001010000: 0 tiles differ between 62727 and 62847 s {}
+    62727 zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
+    62847 zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
+  0x8001810000: 0 tiles differ between 62727 and 62847 s {}
+    62727 zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
+    62847 zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
+  0x80907c4000: 0 tiles differ between 62727 and 62847 s {}
+    62727 ddddddddddddddddddddddddddddddddddddddddddd...d.ddd...d..dd..dddddd..dddddddddd.ddddddddddd.ddddddddddddddd...d...ddddd...d..ddd
+    62847 ddddddddddddddddddddddddddddddddddddddddddd...d.ddd...d..dd..dddddd..dddddddddd.ddddddddddd.ddddddddddddddd...d...ddddd...d..ddd
+  0x8492504000: 0 tiles differ between 62727 and 62847 s {}
+    62727 .........................................................................................dd......................................................................................................................................................................................................................................................................................................................................................dddddd.........................................................................
+    62847 .........................................................................................dd......................................................................................................................................................................................................................................................................................................................................................dddddd.........................................................................

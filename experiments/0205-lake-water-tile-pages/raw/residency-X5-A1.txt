@@ -1,0 +1,43 @@
+# Experiment 0205: res0205.py on X5's and A1's last tile maps (pg0205.py), the water's pixel-stage textures at X2's addresses.
+# '#' a 4-KiB block with data, 'z' mapped but zero, '.' a hole; rows are block rows of the mip, top to bottom.
+
+== X5
+selftest ok
+texture 0x8492504000 2048x2048 8 levels sw 5: block 4096 B = 32x16 elements, tail from mip 5, 2797568 bytes
+mip 0 (512x512 elements) at +0xab000: 0 of 512 blocks with data, 0 mapped zero
+mip 1 (256x256 elements) at +0x2b000: 0 of 128 blocks with data, 0 mapped zero
+mip 2 (128x128 elements) at +0xb000: 17 of 32 blocks with data, 0 mapped zero
+  ####
+  ####
+  ####
+  ####
+  #...
+mip 3 (64x64 elements) at +0x3000: 8 of 8 blocks with data, 0 mapped zero
+  ##
+  ##
+  ##
+  ##
+mip 4 (32x32 elements) at +0x1000: 2 of 2 blocks with data, 0 mapped zero
+  #
+  #
+texture 0x80907c4000 512x512 7 levels sw 5: block 4096 B = 64x32 elements, tail from mip 4, 700416 bytes
+mip 0 (512x512 elements) at +0x2b000: 128 of 128 blocks with data, 0 mapped zero
+mip 1 (256x256 elements) at +0xb000: 32 of 32 blocks with data, 0 mapped zero
+mip 2 (128x128 elements) at +0x3000: 8 of 8 blocks with data, 0 mapped zero
+mip 3 (64x64 elements) at +0x1000: 2 of 2 blocks with data, 0 mapped zero
+
+== A1
+selftest ok
+texture 0x8492504000 2048x2048 8 levels sw 5: block 4096 B = 32x16 elements, tail from mip 5, 2797568 bytes
+mip 0 (512x512 elements) at +0xab000: 8 of 512 blocks with data, 0 mapped zero
+  .........#######
+  #...............
+mip 1 (256x256 elements) at +0x2b000: 0 of 128 blocks with data, 0 mapped zero
+mip 2 (128x128 elements) at +0xb000: 0 of 32 blocks with data, 0 mapped zero
+mip 3 (64x64 elements) at +0x3000: 0 of 8 blocks with data, 0 mapped zero
+mip 4 (32x32 elements) at +0x1000: 0 of 2 blocks with data, 0 mapped zero
+texture 0x80907c4000 512x512 7 levels sw 5: block 4096 B = 64x32 elements, tail from mip 4, 700416 bytes
+mip 0 (512x512 elements) at +0x2b000: 128 of 128 blocks with data, 0 mapped zero
+mip 1 (256x256 elements) at +0xb000: 32 of 32 blocks with data, 0 mapped zero
+mip 2 (128x128 elements) at +0x3000: 8 of 8 blocks with data, 0 mapped zero
+mip 3 (64x64 elements) at +0x1000: 2 of 2 blocks with data, 0 mapped zero

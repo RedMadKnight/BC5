@@ -1,0 +1,18 @@
+# Experiment 0205: do the patchwork's flashes (switches within seconds in a frozen view) follow given-up game-thread
+# waits (F263-F265)? The give-up times were extracted by the TCP session from the runs' direct journals (every give-up
+# is journalled as "cpu-wait WAIT_REG_MEM[64] at <dw> on 0x<label>: GIVEN UP after <x> ms", with or without
+# WAIT_TRACE), wall clock about +-2 s: experiment 0209 raw/giveups-wall-tcpW1b-B1b-B2.txt.
+# Shot times and patch shares: raw/B1b-bench.txt, raw/ab-part2.txt (B2), raw/tcp-runs-water.txt (tcpW1b).
+run     switch in the frozen view                       give-up within 5 s before the switch
+B1b     clean 18:15:43 -> patchy 18:15:48 (10.6 %)      yes: 18:15:41 on 0x12004b3c38 (2-7 s before)
+B1b     patchy 18:15:58 -> clean 18:16:04               none (no give-up after 18:15:41)
+B1b     clean 18:16:09 -> patchy 18:16:14 (12.9 %)      none
+B1b     patchy 18:16:14 -> clean 18:16:19               none
+B2      patchy from the first shot, 18:28:47 (14.4 %)   one at 18:28:47 on 0x12004b3c38, coincident (the onset itself is
+                                                        before the first shot; 18:28:34 and 18:28:37 also had give-ups)
+B2      patchy 18:29:03 -> clean 18:29:08               none (next give-up 18:29:58)
+tcpW1b  patchy 17:46:23 -> clean 17:46:29 (1.3 %)       none (none between 17:45:11 and 17:46:42)
+Reading: one clear onset of three follows a give-up, and B2's first patched shot coincides with one; none of the
+four ends of a patched spell has a give-up near it. The give-ups do not explain the flashes; at most a weak link to some
+onsets. With tcpW2b (no give-up in 600 s, patched in every shot, raw/tcp-runs-water.txt) they do not explain the steady
+patchwork either.

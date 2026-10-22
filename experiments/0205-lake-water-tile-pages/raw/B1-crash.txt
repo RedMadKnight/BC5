@@ -1,0 +1,32 @@
+BC5_EMU=/home/kjaniszewski/bc5-work/exp0194/kyty_emulator
+BC5_EMU=/home/kjaniszewski/bc5-work/exp0203/kyty_emulator
+KYTY_BC5_APR_READAHEAD=4
+174:=== HOST EXCEPTION REGISTER DUMP ===
+175-exception_address=0x0x7fa85dd7fbb7
+176-native_code=0x0xb
+177-access_violation_vaddr=0x0x807ce04020
+178-rax=0x0x807ce04000 rbx=0x0x7fa3e1ff8328 rcx=0x0x807ce04000 rdx=0x0x807ce0ff80
+179-rsi=0x0x7fa3c400b890 rdi=0x0x807ce04020 rbp=0x0x7fa3e1ff82f0 rsp=0x0x7fa3e1ff8018
+180-r8 =0x0x0 r9 =0x0x0 r10=0x0x0 r11=0x0x7fa3e1ffb6c0
+181-r12=0x0xc000 r13=0x0x7fa3c400b7f0 r14=0x0xc000 r15=0x0x7fa3e1ff8028
+182-AJM codec=1, name=ATRAC9 decoder
+183---- Build ---
+184-Source build f266548
+185---- Stack Trace ---
+186-[0] 00005621510658fe
+187-[1] 000056215102f4dd
+188-[2] 0000562151072e8b
+189-[3] 00007fa85dc2dcb0
+190-[4] 00007fa85dd7fbb7
+191-[5] 0000562150e2c2b3
+192-[6] 0000562150e2bc03
+193-[7] 00007fa85df2cef9
+194-[8] 00007fa85dc8bdfa
+195-[9] 00007fa85dd1f5cc
+196---- Error ---
+197-Access violation: Write [000000807ce04020] 
+198- in /home/kjaniszewski/src/KytyPlus/src/loader/runtimeLinker.cpp:1111
+199-== 2026-10-22 17:28:05 exit 65
+== B1 (BC5_0194_INPUT_CONFIG=/home/kjaniszewski/bc5-work/exp0194/input-0194.cfg BC5_EMU=/home/kjaniszewski/bc5-work/exp0194/kyty_emulator BC5_EMU=/home/kjaniszewski/bc5-work/exp0203/kyty_emulator KYTY_BC5_APR_READAHEAD=4): ended by itself at 16 s; journal /home/kjaniszewski/bc5-data/captures/play-20261022-1727/gc
+kernel: 0 fault lines, 0 ring timeout/reset lines
+journal: 0 fence timeouts; 17382 lines

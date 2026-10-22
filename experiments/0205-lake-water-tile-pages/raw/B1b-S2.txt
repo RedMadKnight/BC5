@@ -1,0 +1,31 @@
+# Experiment 0205, runs B1b and S2 (2026-10-22 18:11-18:22, granted by the top session, b1b-s2.sh, one lock each).
+# Box: boot ac5dab11 throughout; no amdgpu, fault or timeout line in dmesg from 18:11 to 18:22.
+B1b: the readahead A/B's arm B again, on the cutscene session's v2 binary (~/bc5-work/exp0203/kyty_emulator, built
+  17:54:07, md5 f374ef26...; its readers copy into host memory only, the in-order worker writes the guest), with
+  KYTY_BC5_APR_READAHEAD=4. 18:11:55-18:16:44 (raw/ab-B1b.txt, raw/B1b-bench.txt, raw/B1b-pages.txt).
+  - 12 reader threads at 18:13:00: bc5-apr-r1-0..3, bc5-apr-r3-0..3, bc5-apr-r5-0..3. No crash.
+  - The lake view (ts00 checked: the near lake from the cliff). Patch share in the frozen view, 18:15:05-18:16:19:
+      1.0 1.0 0.9 1.0 1.0 1.0 10.6 25.4 13.8 1.0 1.0 12.9 1.1 %
+    ts00-ts05 and ts09, ts10, ts12 are a clean lake (the clean level of exp 0197's calibration, 0.6-1.1 %). ts07 is a full
+    regular checkerboard over the near lake (checked); ts06, ts08 and ts11 partial. So with the camera and the scene
+    frozen, the checkerboard appears and goes again within about 5 s.
+  - Sampled tiles (ana0205.py, raw/B1b-S2-ana.txt): no tile of the four ranges changed state during the frozen view
+    (0x8492504000: 506 holes, 6 data; 0x80907c4000: 26 holes, 102 data; both vertex-stage maps all zero), while the
+    patch share went from 1 % to 25 % and back. The flashes are not a change of what is mapped or filled.
+  - Against A1 (same binary, switch off, 17:22): 6.3-14.8 % in every shot, never clean. One run per arm: a lead that
+    the faster reads leave the lake clean most of the time, not established (run-to-run spread: X5 18-23.5 %, tcpW1
+    23-31 %, exp 0197 D1 0.6-0.9 % with the defaults).
+S2: the plan's step 2 (s2-0205.sh: exp 0194 build, the water shaders' journal, KYTY_BC5_AMM_TRACE=2), 18:16:46-18:21.
+  - No result for the residency question: the tag S2 collided with exp 0194's run directory r-S2 (its 11:08 run,
+    which never reached the lake). run-0194b.sh reused it; its stale input.cmd.done (a count left from 11:08, probably) let the bench's
+    first wait pass at once, the slot keys went in too early ("step timed out" at the slot list), and the game loaded
+    an outpost, not the lake (ts00 checked; patch share 0.0 %).
+  - Lost on the box: exp 0194's r-S2/emu.log, env.txt, input.cmd, input.cmd.done, journal-dir.txt, launcher.out and
+    dmesg.txt of 11:08 were overwritten by S2's (its wj.txt and shots t050-t180 remain). exp 0194's committed write-up
+    does not use them (S1-S4 "replayed the 10:11 pad recording ... no lake").
+  - bench0205.sh now refuses a tag whose exp0194/r-<tag> exists; the rerun is S2b (s2-0205.sh).
+  - What S2 does show: KYTY_BC5_AMM_TRACE=2 works (raw/B1b-S2-ana.txt: 17 AMM library functions called, e.g.
+    62,256 AprCommandBufferReadFile, 14,508 AmmCommandBufferMap, 4,285 AmmCommandBufferUnmap, 1 AmmGetVirtualAddressRanges,
+    1 AmmGiveDirectMemory). AmmGetUsageStatsData and AmmSetPageTablePoolOccupancyNotificationThreshold were not called
+    once in the 4.5 min (title, load, an outpost area with streaming). So the title does not drive its streaming
+    through those two (raw/review-3b.txt), at least in this session; the lake area itself is not covered.

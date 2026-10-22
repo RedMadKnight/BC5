@@ -1,0 +1,59 @@
+(1) samples: wall range hole zero data err | changes
+  18:11:57 0x8492504000  512    0    0 0 | to. 0 toz 0 tod 0 remap 0
+  18:11:57 0x80907c4000  128    0    0 0 | to. 0 toz 0 tod 0 remap 0
+  18:11:57 0x8001810000  512    0    0 0 | to. 0 toz 0 tod 0 remap 0
+  18:11:57 0x8001010000  128    0    0 0 | to. 0 toz 0 tod 0 remap 0
+  18:12:02 0x8001810000    0  512    0 0 | to. 0 toz 512 tod 0 remap 0
+  18:12:02 0x8001010000    0  128    0 0 | to. 0 toz 128 tod 0 remap 0
+  18:12:07 0x80907c4000   35   93    0 0 | to. 0 toz 93 tod 0 remap 0
+  18:12:12 0x80907c4000   35    0   93 0 | to. 0 toz 0 tod 93 remap 0
+  18:12:42 0x80907c4000   34    0   94 0 | to. 0 toz 0 tod 1 remap 0
+  18:13:22 0x8492504000  506    2    4 0 | to. 0 toz 2 tod 4 remap 0
+  18:13:27 0x8492504000  506    0    6 0 | to. 0 toz 0 tod 2 remap 0
+  18:13:52 0x80907c4000   26    0  102 0 | to. 0 toz 0 tod 8 remap 0
+(2) shots: name patch | nearest sample per range (hole zero data)
+  ts00   1.0 % | 0x8001010000 0 128 0  0x8001810000 0 512 0  0x80907c4000 26 0 102  0x8492504000 506 0 6
+  ts01   1.0 % | 0x8001010000 0 128 0  0x8001810000 0 512 0  0x80907c4000 26 0 102  0x8492504000 506 0 6
+  ts02   0.9 % | 0x8001010000 0 128 0  0x8001810000 0 512 0  0x80907c4000 26 0 102  0x8492504000 506 0 6
+  ts03   1.0 % | 0x8001010000 0 128 0  0x8001810000 0 512 0  0x80907c4000 26 0 102  0x8492504000 506 0 6
+  ts04   1.0 % | 0x8001010000 0 128 0  0x8001810000 0 512 0  0x80907c4000 26 0 102  0x8492504000 506 0 6
+  ts05   1.0 % | 0x8001010000 0 128 0  0x8001810000 0 512 0  0x80907c4000 26 0 102  0x8492504000 506 0 6
+  ts06  10.6 % | 0x8001010000 0 128 0  0x8001810000 0 512 0  0x80907c4000 26 0 102  0x8492504000 506 0 6
+  ts07  25.4 % | 0x8001010000 0 128 0  0x8001810000 0 512 0  0x80907c4000 26 0 102  0x8492504000 506 0 6
+  ts08  13.8 % | 0x8001010000 0 128 0  0x8001810000 0 512 0  0x80907c4000 26 0 102  0x8492504000 506 0 6
+  ts09   1.0 % | 0x8001010000 0 128 0  0x8001810000 0 512 0  0x80907c4000 26 0 102  0x8492504000 506 0 6
+  ts10   1.0 % | 0x8001010000 0 128 0  0x8001810000 0 512 0  0x80907c4000 26 0 102  0x8492504000 506 0 6
+  ts11  12.9 % | 0x8001010000 0 128 0  0x8001810000 0 512 0  0x80907c4000 26 0 102  0x8492504000 506 0 6
+  ts12   1.1 % | 0x8001010000 0 128 0  0x8001810000 0 512 0  0x80907c4000 26 0 102  0x8492504000 506 0 6
+(3) tile maps in the frozen view (from 65675 s of the day)
+  0x8001010000: 0 tiles differ between 65697 and 65787 s {}
+    65697 zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
+    65787 zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
+  0x8001810000: 0 tiles differ between 65697 and 65787 s {}
+    65697 zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
+    65787 zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz
+  0x80907c4000: 0 tiles differ between 65697 and 65787 s {}
+    65697 ddddddddddddddddddddddddddddddddddddddddddd...d.ddd...d..dd..dddddd..dddddddddd.ddddddddddd.ddddddddddddddd...d...ddddd...d..ddd
+    65787 ddddddddddddddddddddddddddddddddddddddddddd...d.ddd...d..dd..dddddd..dddddddddd.ddddddddddd.ddddddddddddddd...d...ddddd...d..ddd
+  0x8492504000: 0 tiles differ between 65697 and 65787 s {}
+    65697 .........................dd......................................................................................dd.....................................................................................d...........................................................................................................................................................................d...........................................................................................................................................
+    65787 .........................dd......................................................................................dd.....................................................................................d...........................................................................................................................................................................d...........................................................................................................................................
+
+== S2 calls per function (S2-play-pkg.log, KYTY_BC5_AMM_TRACE=2)
+ 162205 amm trace: call CommandBufferGetCurrentOffset
+  97005 amm trace: call CommandBufferGetSize
+  62256 amm trace: call AprCommandBufferReadFile
+  26885 amm trace: call CommandBufferWriteAddress
+  14508 amm trace: call AmmCommandBufferMap
+   7791 amm trace: call CommandBufferReset
+   7791 amm trace: call CommandBufferGetNumCommands
+   4847 amm trace: call SubmitCommandBuffer
+   4285 amm trace: call AmmCommandBufferUnmap
+   2944 amm trace: call CommandBufferGetBufferBaseAddress
+   2944 amm trace: call AmmSubmitCommandBuffer
+   2304 amm trace: call CommandBufferSetBuffer
+   1940 amm trace: call CommandBufferWriteKernelEventQueue
+   1687 amm trace: call CommandBufferWaitOnAddress
+    110 amm trace: call ResolveFilepathsToIds
+      1 amm trace: call AmmGiveDirectMemory
+      1 amm trace: call AmmGetVirtualAddressRanges

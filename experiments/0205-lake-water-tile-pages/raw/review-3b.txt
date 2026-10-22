@@ -1,0 +1,25 @@
+# Experiment 0205, plan step 3(b): what the host answers when the title asks about its AMM memory.
+# The review was done by the cutscene session (owner of the APR/AMM host code, exp 0203), read-only from the box's
+# ~/src/KytyPlus (f266548 + patch 0001), src/libs/libAmpr.cpp and src/kernel/memory.cpp (box line numbers), and sent
+# to the water session on 2026-10-22 ~17:50. The water session checked items 1 and 2 in ~/bc5-work/kyty-union
+# src/libs/libAmpr.cpp (the shared build's source).
+AMM side (libAmpr.cpp):
+1. AmmGetUsageStatsData (NID KqiWXLgCVe0): a constant answer: num_page_table_pool_entries 512, allocated entries and
+   high watermark 0, ring_idle_flags 0x7, whatever is mapped. The title always sees an empty page-table pool and idle
+   rings. (Checked: the function fills only size_in_bytes, num_page_table_pool_entries = 512, ring_idle_flags = 0x7.)
+2. AmmSetPageTablePoolOccupancyNotificationThreshold (touqMEt6qXQ): a stub that returns OK and never notifies.
+   (Checked: the body is PRINT_NAME(); return OK;.)
+3. AmmGetVirtualAddressRanges (wkQR9+xTFKY): the constant window (AMM start, start + AMM_VA_SIZE, multimap = the
+   upper half).
+4. Command-buffer bookkeeping (AmmWaitCommandBufferCompletion, CommandBufferGet*), the Measure* functions (fixed record
+   sizes), APR file metadata (GetFileStat, GetFileSize, ResolveFilepaths*).
+Kernel side (memory.cpp):
+- KernelVirtualQuery (rVjRvHJ0X6c) and KernelQueryMemoryProtection (WFcfL2lzido) answer from g_virtual_ranges, EACCES
+  for no range; VirtualQuery sets is_gpu_prt from IsInPrtAperture. TODO(verify): whether AMM-window maps are entered
+  into g_virtual_ranges; if not, a VirtualQuery on a mapped tile's address answers EACCES.
+- KernelGetPageTableStats (tZ2yplY8MBY): available = total - entries in g_virtual_ranges.
+- Direct/flexible memory sizes and pool stats: from the host's own bookkeeping.
+Reading (both sessions): 1 and 2 are where the host answers unlike a console under load. A streamer that keeps its own
+budget and waits for the occupancy notification before evicting and re-streaming would stop requesting tiles once its
+budget is full, and nothing would wake it, which fits a frozen view in which the title asks for nothing. Not shown:
+whether the title calls 1 or 2 at all. KYTY_BC5_AMM_TRACE=2 logs every AMM call (PRINT_NAME, libAmpr.cpp:41-50).

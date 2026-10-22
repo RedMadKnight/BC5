@@ -1,0 +1,30 @@
+# Experiment 0205, run S2b (plan step 2; 2026-10-22 19:02:26-19:07, granted by the top session after the maintainer's play).
+# s2-0205.sh: bench0205.sh S2b on the exp 0194 build, the water shaders' journal (BC5_DIRECT_DRAW_JOURNAL=150:4,
+# _EVERY=15, _PS=11d01d7100,11d01ff900), KYTY_BC5_AMM_TRACE=2, PAGES=1 over the four ranges. Private lake-save copy.
+# Box: boot ac5dab11 before and after, 120 amdgpu lines before and after, no fault or timeout.
+# Files: raw/S2b-run.txt, raw/S2b-bench.txt, raw/S2b-desc.txt (desc0205.py on the run's journal play-20261022-1902),
+# raw/S2b-pages.txt and raw/S2b-ana.txt (pg0205/ana0205), raw/S2b-residency-bc4.txt (res0205.py on the AMM trace).
+# The 32-MB play log stays on the box (~/bc5-work/exp0205/S2b-play-pkg.log).
+View: the lake from the cliff, but Photo Mode's camera menu stayed open over the left half of the frame (the "hide UI" key
+did not take under the heavy trace). The water visible right of the menu is heavily patched in ts00, ts02, ts03 (checked).
+Patch share 17.3-25.7 % in all 13 shots; the number includes menu pixels inside the metric's window, so it is not
+comparable with the other runs, but the lake is patched throughout.
+This run's descriptors (raw/S2b-desc.txt): the pixel stage's 2048x2048 BC4 texture at 0x8495c84000 (X2: 0x8492504000;
+it moves between runs), the 512x512 16_FLOAT one at 0x80907c4000 and both vertex-stage maps at their usual addresses.
+The BC4 texture in the AMM trace: one automatic map of 0x2ac000 bytes (the whole 2,797,568-byte chain) at +88.9 s
+after the first trace line, filled by one package read of 0x2ac000 bytes at +93.4 s (about 19:04:00), never unmapped.
+res0205.py on the trace's end state: every block of every mip with data (raw/S2b-residency-bc4.txt). The 512x512
+texture: the same, fully resident. So both pixel-stage textures were fully resident for more than a minute before
+and through the patched frozen view (19:05:06-19:06:32). The BC4 texture is not streamed tile by tile at all here:
+it is loaded whole.
+The vertex-stage maps (0x8001810000, 0x8001010000): all zero from 19:02:32 to the end, as in the clean runs A2 and A3
+and every other sampled run (raw/part2-ana.txt). They do not separate clean runs from patched ones.
+AMM calls: AmmGetUsageStatsData 0, AmmSetPageTablePoolOccupancyNotificationThreshold 0 (raw/S2b-run.txt), on a lake run.
+Reading:
+- The patchwork is not missing pages of the water's pixel-stage textures: in a patched run both were whole. The
+  "streamed tile by tile" reading of exp 0201 X3 was about other resources near X2's address; X5's partial pattern at
+  that address and A2/A3's full one were probably other data or the texture loaded whole there.
+- Not the two AMM stubs (never called), not the vertex-stage maps (zero in clean and patched runs alike).
+- Open inputs of the water's draws: the buffer at 0x11e0007aa0 (V#: stride 32, 25,534 records), which both stages of
+  PS 0x11d01ff900 read, the per-draw pointers next to it (0x11e04cc964, changing per draw), and 0x11d01d7100's three
+  buffers. Whether any is GPU-written per frame is not known.

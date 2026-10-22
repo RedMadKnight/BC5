@@ -1,0 +1,61 @@
+== B2
+(1) samples: wall range hole zero data err | changes
+  18:25:49 0x8492504000  512    0    0 0 | to. 0 toz 0 tod 0 remap 0
+  18:25:49 0x80907c4000  128    0    0 0 | to. 0 toz 0 tod 0 remap 0
+  18:25:49 0x8001810000  512    0    0 0 | to. 0 toz 0 tod 0 remap 0
+  18:25:49 0x8001010000  128    0    0 0 | to. 0 toz 0 tod 0 remap 0
+  18:25:54 0x8001810000    0  512    0 0 | to. 0 toz 512 tod 0 remap 0
+  18:25:54 0x8001010000    0  128    0 0 | to. 0 toz 128 tod 0 remap 0
+  18:25:59 0x80907c4000   35    0   93 0 | to. 0 toz 0 tod 93 remap 0
+  18:26:34 0x80907c4000   34    0   94 0 | to. 0 toz 0 tod 1 remap 0
+  18:27:19 0x8492504000  261    1  250 0 | to. 0 toz 1 tod 250 remap 0
+  18:27:24 0x8492504000  261    0  251 0 | to. 0 toz 0 tod 1 remap 3
+  18:27:34 0x80907c4000   26    0  102 0 | to. 0 toz 0 tod 8 remap 0
+(2) shots: name patch | nearest sample per range (hole zero data)
+== A2
+(1) samples: wall range hole zero data err | changes
+  18:30:33 0x8492504000  512    0    0 0 | to. 0 toz 0 tod 0 remap 0
+  18:30:33 0x80907c4000  128    0    0 0 | to. 0 toz 0 tod 0 remap 0
+  18:30:33 0x8001810000  512    0    0 0 | to. 0 toz 0 tod 0 remap 0
+  18:30:33 0x8001010000  128    0    0 0 | to. 0 toz 0 tod 0 remap 0
+  18:30:38 0x8001810000    0  512    0 0 | to. 0 toz 512 tod 0 remap 0
+  18:30:38 0x8001010000    0  128    0 0 | to. 0 toz 128 tod 0 remap 0
+  18:30:48 0x80907c4000   35    0   93 0 | to. 0 toz 0 tod 93 remap 0
+  18:31:23 0x80907c4000   34    0   94 0 | to. 0 toz 0 tod 1 remap 0
+  18:31:58 0x8492504000    3  178  331 0 | to. 0 toz 178 tod 331 remap 0
+  18:32:03 0x8492504000    3    1  508 0 | to. 0 toz 0 tod 177 remap 0
+  18:32:13 0x80907c4000   26    8   94 0 | to. 0 toz 8 tod 0 remap 0
+  18:32:18 0x80907c4000   26    0  102 0 | to. 0 toz 0 tod 8 remap 0
+  18:35:13 0x8492504000  512    0    0 0 | to. 509 toz 0 tod 0 remap 0
+  18:35:13 0x80907c4000  128    0    0 0 | to. 102 toz 0 tod 0 remap 0
+  18:35:13 0x8001810000  512    0    0 0 | to. 512 toz 0 tod 0 remap 0
+== A3
+(1) samples: wall range hole zero data err | changes
+  18:35:24 0x8492504000  512    0    0 0 | to. 0 toz 0 tod 0 remap 0
+  18:35:24 0x80907c4000  128    0    0 0 | to. 0 toz 0 tod 0 remap 0
+  18:35:24 0x8001810000  512    0    0 0 | to. 0 toz 0 tod 0 remap 0
+  18:35:24 0x8001010000  128    0    0 0 | to. 0 toz 0 tod 0 remap 0
+  18:35:29 0x8001810000    0  512    0 0 | to. 0 toz 512 tod 0 remap 0
+  18:35:29 0x8001010000    0  128    0 0 | to. 0 toz 128 tod 0 remap 0
+  18:35:34 0x80907c4000   35    0   93 0 | to. 0 toz 0 tod 93 remap 0
+  18:36:09 0x80907c4000   34    0   94 0 | to. 0 toz 0 tod 1 remap 0
+  18:36:54 0x8492504000  331  177    4 0 | to. 0 toz 177 tod 4 remap 0
+  18:36:59 0x8492504000  331    0  181 0 | to. 0 toz 0 tod 177 remap 0
+  18:37:04 0x8492504000  260    0  252 0 | to. 0 toz 0 tod 71 remap 0
+  18:37:09 0x8492504000    4    0  508 0 | to. 0 toz 0 tod 256 remap 0
+  18:37:09 0x80907c4000   26    0  102 0 | to. 0 toz 0 tod 8 remap 0
+(2) shots: name patch | nearest sample per range (hole zero data)
+== B3
+(1) samples: wall range hole zero data err | changes
+  18:40:13 0x8492504000  512    0    0 0 | to. 0 toz 0 tod 0 remap 0
+  18:40:13 0x80907c4000  128    0    0 0 | to. 0 toz 0 tod 0 remap 0
+  18:40:13 0x8001810000  512    0    0 0 | to. 0 toz 0 tod 0 remap 0
+  18:40:13 0x8001010000  128    0    0 0 | to. 0 toz 0 tod 0 remap 0
+  18:40:18 0x8001810000    0  512    0 0 | to. 0 toz 512 tod 0 remap 0
+  18:40:18 0x8001010000    0  128    0 0 | to. 0 toz 128 tod 0 remap 0
+  18:40:23 0x80907c4000   35   93    0 0 | to. 0 toz 93 tod 0 remap 0
+  18:40:28 0x80907c4000   35    0   93 0 | to. 0 toz 0 tod 93 remap 0
+  18:40:58 0x80907c4000   34    0   94 0 | to. 0 toz 0 tod 1 remap 0
+  18:41:43 0x8492504000  509    0    3 0 | to. 0 toz 0 tod 3 remap 0
+  18:41:58 0x80907c4000   26    0  102 0 | to. 0 toz 0 tod 8 remap 0
+(2) shots: name patch | nearest sample per range (hole zero data)
