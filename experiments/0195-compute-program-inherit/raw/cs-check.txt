@@ -1,0 +1,5 @@
+one-off 328 dwords: cs_inherit_at = 32
+prefixed dump 2889 dwords: cs_inherit_at = -1 (expect -1: its prefix writes COMPUTE_PGM_LO)
+tracked program 0x11d039cd00; compute prefix 58 dwords: [SET_SH_REG 0x204 x6] [SET_SH_REG 0x20c x2] [SET_SH_REG 0x212 x2] [SET_SH_REG 0x215 x6] [SET_SH_REG 0x224 x5] [SET_SH_REG 0x22a x1] [SET_SH_REG 0x240 x16] [SET_SH_REG 0x27d x1] [SET_SH_REG 0x280 x1]
+compute registers reproduced: 40, differences: 0
+rc 0

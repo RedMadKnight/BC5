@@ -1,0 +1,108 @@
+# session play-20261022-1136 (BC5_DIRECT_CS_PREFIX=1, exp 0195 binary, launcher skips kept), 11:36:10-11:53:33
+# flips per 30-s window from the fps counter (play-pkg-last.log), longest gap in the window (ms)
+0 29.0 97
+30 35.6 340
+60 50.2 44
+90 50.0 85
+120 49.7 79
+150 49.5 88
+180 49.3 83
+210 40.0 166
+240 30.0 406
+270 34.1 4361
+300 37.4 864
+330 35.8 79
+360 36.9 5043
+390 40.0 329
+420 38.6 9010
+450 44.4 73
+480 46.8 63
+510 45.4 100
+540 42.9 114
+570 45.4 96
+600 46.7 78
+630 46.9 97
+660 45.7 88
+690 45.9 108
+720 47.5 74
+750 46.8 197
+780 48.3 102
+810 44.3 341
+840 41.5 99
+870 41.2 120
+900 41.1 102
+930 39.2 468
+960 34.4 1506
+990 41.9 123
+1020 43.8 141
+# frames over 250 ms in the journal (t, ms since the last flip)
+33.406 340.2
+258.838 406.5
+279.130 4123.4
+280.720 1590.4
+281.136 416.2
+282.537 355.4
+284.715 511
+287.203 559
+289.728 2485.6
+320.012 864.4
+325.890 386.6
+362.337 5042.7
+363.926 255.7
+371.828 458
+378.252 1209.7
+389.089 321.6
+413.921 329.4
+429.046 9009.6
+430.321 1274.9
+444.913 1523.7
+831.812 341
+932.337 467.8
+959.366 1505.8
+978.957 382.5
+# the long ones in full
+frame profile: t 279.130 s, 4123.4 ms since the last flip; game thread inside the host 233.2 ms (sync 30.6, hints 0.5, prepare 2.0, list 0.2, cs 4.6, fence 0.0, cap 0.0, label waits 195.3, event waits 0.0), at the flip 2.8, outside 3887.4; GPU busy 3522.4 ms in 10 jobs (+29 from the ring thread); 
+frame profile: t 280.720 s, 1590.4 ms since the last flip; game thread inside the host 117.4 ms (sync 112.3, hints 0.4, prepare 1.8, list 0.1, cs 2.1, fence 0.0, cap 0.0, label waits 0.7, event waits 0.0), at the flip 6.5, outside 1466.6; GPU busy 12.2 ms in 11 jobs (+24 from the ring thread); 
+frame profile: t 289.728 s, 2485.6 ms since the last flip; game thread inside the host 46.8 ms (sync 35.0, hints 0.5, prepare 2.0, list 0.2, cs 8.0, fence 0.0, cap 0.0, label waits 1.2, event waits 0.0), at the flip 21.2, outside 2417.6; GPU busy 2431.2 ms in 11 jobs (+26 from the ring thread); 
+frame profile: t 362.337 s, 5042.7 ms since the last flip; game thread inside the host 9986.7 ms (sync 0.1, hints 0.3, prepare 1.7, list 0.2, cs 1.3, fence 0.0, cap 0.0, label waits 9983.1, event waits 0.0), at the flip 15.4, outside -4959.3; GPU busy 23.9 ms in 11 jobs (+23 from the ring thread); 
+frame profile: t 378.252 s, 1209.7 ms since the last flip; game thread inside the host 33.4 ms (sync 24.2, hints 4.1, prepare 1.7, list 0.1, cs 2.3, fence 0.0, cap 0.0, label waits 0.9, event waits 0.0), at the flip 13.0, outside 1163.2; GPU busy 1168.7 ms in 9 jobs (+23 from the ring thread); 
+frame profile: t 429.046 s, 9009.6 ms since the last flip; game thread inside the host 5.0 ms (sync 0.1, hints 0.3, prepare 1.6, list 0.0, cs 1.6, fence 0.0, cap 0.0, label waits 1.4, event waits 0.0), at the flip 6.2, outside 8998.4; GPU busy 8971.6 ms in 10 jobs (+24 from the ring thread); 
+frame profile: t 430.321 s, 1274.9 ms since the last flip; game thread inside the host 48.2 ms (sync 33.8, hints 4.0, prepare 1.6, list 0.1, cs 1.2, fence 0.0, cap 5.9, label waits 1.5, event waits 0.0), at the flip 11.9, outside 1214.9; GPU busy 25.8 ms in 11 jobs (+26 from the ring thread); 
+frame profile: t 444.913 s, 1523.7 ms since the last flip; game thread inside the host 28.1 ms (sync 22.3, hints 0.3, prepare 1.5, list 0.0, cs 2.0, fence 0.0, cap 0.0, label waits 2.0, event waits 0.0), at the flip 7.9, outside 1487.7; GPU busy 24.2 ms in 10 jobs (+25 from the ring thread); 
+frame profile: t 959.366 s, 1505.8 ms since the last flip; game thread inside the host 31.9 ms (sync 25.0, hints 0.5, prepare 2.6, list 0.2, cs 2.3, fence 0.0, cap 0.0, label waits 1.4, event waits 0.0), at the flip 3.5, outside 1470.4; GPU busy 1478.2 ms in 12 jobs (+25 from the ring thread); 
+# jobs with a fence over 1 s
+timing: #387460 done at t 278.528 s, 3495.8 ms after the sync and hints; device: prepare 0.03 list 0.02 cs 0.06 fence 3495.68 ms, 67 BOs (short list)
+timing: #387457 done at t 278.528 s, 3497.5 ms after the sync and hints; device: prepare 0.05 list 0.02 cs 0.04 fence 3497.37 ms, 62 BOs (short list)
+timing: #387469 done at t 278.528 s, 3494.2 ms after the sync and hints; device: prepare 0.10 list 0.00 cs 0.17 fence 3493.93 ms, 179 BOs
+timing: #387474 done at t 278.528 s, 3493.0 ms after the sync and hints; device: prepare 0.08 list 0.00 cs 0.26 fence 3492.59 ms, 179 BOs
+timing: #387459 done at t 278.528 s, 3496.0 ms after the sync and hints; device: prepare 0.01 list 0.02 cs 0.08 fence 3495.88 ms, 62 BOs (short list)
+timing: #387461 done at t 278.528 s, 3495.7 ms after the sync and hints; device: prepare 0.01 list 0.02 cs 0.08 fence 3495.62 ms, 62 BOs (short list)
+timing: #387462 done at t 278.528 s, 3495.3 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.03 fence 3495.29 ms, 61 BOs (short list)
+timing: #387463 done at t 278.528 s, 3495.3 ms after the sync and hints; device: prepare 0.02 list 0.00 cs 0.18 fence 3495.06 ms, 179 BOs
+timing: #387464 done at t 278.528 s, 3495.1 ms after the sync and hints; device: prepare 0.01 list 0.00 cs 0.07 fence 3494.96 ms, 179 BOs
+timing: #387465 done at t 278.528 s, 3494.9 ms after the sync and hints; device: prepare 0.03 list 0.00 cs 0.07 fence 3494.83 ms, 179 BOs
+timing: #387466 done at t 278.528 s, 3494.8 ms after the sync and hints; device: prepare 0.01 list 0.00 cs 0.07 fence 3494.73 ms, 179 BOs
+timing: #387467 done at t 278.528 s, 3494.7 ms after the sync and hints; device: prepare 0.01 list 0.00 cs 0.07 fence 3494.63 ms, 179 BOs
+timing: #387468 done at t 278.528 s, 3494.6 ms after the sync and hints; device: prepare 0.03 list 0.00 cs 0.08 fence 3494.49 ms, 179 BOs
+timing: #387470 done at t 278.529 s, 3494.1 ms after the sync and hints; device: prepare 0.00 list 0.02 cs 0.07 fence 3494.01 ms, 62 BOs (short list)
+timing: #387471 done at t 278.529 s, 3494.0 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.03 fence 3493.96 ms, 61 BOs (short list)
+timing: #387472 done at t 278.529 s, 3493.7 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.04 fence 3493.67 ms, 61 BOs (short list)
+timing: #387473 done at t 278.529 s, 3493.6 ms after the sync and hints; device: prepare 0.13 list 0.00 cs 0.15 fence 3493.25 ms, 179 BOs
+timing: #387475 done at t 278.529 s, 3492.0 ms after the sync and hints; device: prepare 0.01 list 0.05 cs 0.07 fence 3491.91 ms, 62 BOs (short list)
+timing: #394742 done at t 289.653 s, 2402.4 ms after the sync and hints; device: prepare 0.08 list 0.00 cs 0.15 fence 2402.13 ms, 173 BOs
+timing: #501406 done at t 378.205 s, 1151.0 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.04 fence 1150.92 ms, 61 BOs (short list)
+timing: #501407 done at t 378.205 s, 1150.7 ms after the sync and hints; device: prepare 0.01 list 0.03 cs 0.07 fence 1150.55 ms, 61 BOs (short list)
+timing: #501408 done at t 378.205 s, 1151.0 ms after the sync and hints; device: prepare 0.02 list 0.00 cs 0.27 fence 1150.66 ms, 169 BOs
+timing: #501410 done at t 378.205 s, 1150.0 ms after the sync and hints; device: prepare 0.06 list 0.00 cs 0.31 fence 1149.56 ms, 169 BOs
+timing: #501411 done at t 378.205 s, 1149.2 ms after the sync and hints; device: prepare 0.01 list 0.06 cs 0.12 fence 1149.02 ms, 61 BOs (short list)
+timing: #501412 done at t 378.205 s, 1149.0 ms after the sync and hints; device: prepare 0.33 list 0.00 cs 0.28 fence 1148.08 ms, 169 BOs
+timing: #558762 done at t 429.002 s, 8960.5 ms after the sync and hints; device: prepare 0.07 list 0.00 cs 0.14 fence 8960.26 ms, 170 BOs
+timing: #558764 done at t 429.003 s, 8960.4 ms after the sync and hints; device: prepare 0.03 list 0.00 cs 0.08 fence 8960.27 ms, 170 BOs
+timing: #558765 done at t 429.003 s, 8960.1 ms after the sync and hints; device: prepare 0.01 list 0.03 cs 0.07 fence 8959.95 ms, 62 BOs (short list)
+timing: #558766 done at t 429.003 s, 8960.0 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.02 fence 8959.92 ms, 61 BOs (short list)
+timing: #1360163 done at t 959.333 s, 1457.5 ms after the sync and hints; device: prepare 0.02 list 0.00 cs 0.06 fence 1457.44 ms, 169 BOs
+timing: #1360159 done at t 959.333 s, 1458.3 ms after the sync and hints; device: prepare 0.02 list 0.02 cs 0.07 fence 1458.14 ms, 64 BOs (short list)
+timing: #1360164 done at t 959.333 s, 1457.6 ms after the sync and hints; device: prepare 0.01 list 0.00 cs 0.08 fence 1457.52 ms, 169 BOs
+timing: #1360165 done at t 959.333 s, 1457.5 ms after the sync and hints; device: prepare 0.02 list 0.00 cs 0.08 fence 1457.42 ms, 169 BOs
+timing: #1360161 done at t 959.333 s, 1458.1 ms after the sync and hints; device: prepare 0.01 list 0.01 cs 0.06 fence 1457.98 ms, 64 BOs (short list)
+# TIMEOUT lines: 0; kernel amdgpu lines after the start (dmesg line 1695): 0

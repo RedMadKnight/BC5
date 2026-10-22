@@ -1,0 +1,8 @@
+Back-to-back dumps of one stall (1 s apart) and of successive stalls (16 s apart, new waves after a ring reset): wcmp.py
+bc5-hang-173412.txt bc5-hang-173413.txt waves 10 10 common 10 same PC 10 same SGPRs 10 same VGPRs 10
+bc5-hang-175717.txt bc5-hang-175718.txt waves 16 16 common 16 same PC 16 same SGPRs 16 same VGPRs 16
+bc5-hang-181122.txt bc5-hang-181123.txt waves 13 13 common 13 same PC 13 same SGPRs 13 same VGPRs 13
+bc5-hang-183207.txt bc5-hang-183208.txt waves 49 49 common 49 same PC 49 same SGPRs 49 same VGPRs 49
+bc5-hang-200756.txt bc5-hang-200757.txt waves 33 33 common 33 same PC 33 same SGPRs 33 same VGPRs 33
+bc5-hang-153744.txt bc5-hang-153800.txt waves 336 336 common 336 same PC 198 same SGPRs 0 same VGPRs 0
+bc5-hang-155444.txt bc5-hang-155500.txt waves 336 336 common 336 same PC 169 same SGPRs 0 same VGPRs 0

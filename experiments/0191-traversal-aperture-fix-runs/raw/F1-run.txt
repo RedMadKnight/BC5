@@ -1,0 +1,24 @@
+saves as in save-backup-0180-0953
+saves as in save-backup-0180-0953
+== F1 (BC5_DIRECT_FLAT_APERTURE=1 BC5_DIRECT_GC_TF_RING=1 BC5_DIRECT_SKIP_PGM=909974400): stopped at 300 s; journal /home/kjaniszewski/bc5-data/captures/play-20261021-2346/gc/direct.log
+kernel: 0 fault records in 0 5-s windows
+kernel: 0 ring timeout/reset lines
+journal: 0 fence timeouts
+0:223 10:291 20:295 30:171 40:397 50:488 60:496 70:491 80:449 90:470 100:349 110:171 120:198 130:263 140:285 150:282 160:276 170:290 180:288 190:260 200:263 210:290 220:285 230:287 240:278 250:284 260:258 270:221 280:250 290:224 
+bc5-direct: /dev/gc TF ring 0x1120000000 size 0x3fff8 (programmed, BC5_DIRECT_GC_TF_RING=1)
+bc5-direct: /dev/gc HS offchip 0x1ff
+tf ring: base 0x1120000000 size 0x3fff8 offchip 0x0 0x0 0x0 -> VGT_HS_OFFCHIP_PARAM untouched, not 0x0, the title's /dev/gc ring (1 prefixes)
+tf ring: base 0x1120000000 size 0x3fff8 offchip 0x0 0x0 0x0 -> VGT_HS_OFFCHIP_PARAM untouched, not 0x0, the title's /dev/gc ring (65537 prefixes)
+tf ring: base 0x1120000000 size 0x3fff8 offchip 0x0 0x0 0x0 -> VGT_HS_OFFCHIP_PARAM untouched, not 0x0, the title's /dev/gc ring (131073 prefixes)
+ioctl codes traced: 0
+census reports: 
+      1   skip pgm 0x909974400: dcb dispatch op 16 at 25779 dropped 
+      1 flat aperture: program 0x11d040c900: 6 stack pushes (1 s_brev_b32) now address the host's LDS/private apertures
+      1 flat aperture: program 0x11d040e200: 6 stack pushes (1 s_brev_b32) now address the host's LDS/private apertures
+      1 flat aperture: program 0x11d0488a00: 6 stack pushes (2 s_brev_b32) now address the host's LDS/private apertures
+      1 flat aperture: program 0x11d049aa00: 6 stack pushes (2 s_brev_b32) now address the host's LDS/private apertures
+      1 flat aperture: program 0x11d04a6000: 6 stack pushes (2 s_brev_b32) now address the host's LDS/private apertures
+      1 flat aperture: program 0x11d04bb900: 6 stack pushes (2 s_brev_b32) now address the host's LDS/private apertures
+journal lines: 796873; flat aperture lines: 6
+stall-waves.sh (armed 115-295 s): no stall seen
+kernel log lines in the run window: 3, none from amdgpu

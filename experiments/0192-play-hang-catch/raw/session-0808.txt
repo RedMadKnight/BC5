@@ -1,0 +1,64 @@
+Session play-20261022-0808 (the maintainer, the same shortcut; catch-1 armed)
+journal lines: 1259485
+flat aperture: program 0x11d049aa00: 6 stack pushes (2 s_brev_b32) now address the host's LDS/private apertures
+flat aperture: program 0x11d040e200: 6 stack pushes (1 s_brev_b32) now address the host's LDS/private apertures
+flat aperture: program 0x11d0488a00: 6 stack pushes (2 s_brev_b32) now address the host's LDS/private apertures
+flat aperture: program 0x11d04bb900: 6 stack pushes (2 s_brev_b32) now address the host's LDS/private apertures
+flat aperture: program 0x11d040c900: 6 stack pushes (1 s_brev_b32) now address the host's LDS/private apertures
+flat aperture: program 0x11d04a6000: 6 stack pushes (2 s_brev_b32) now address the host's LDS/private apertures
+fence waits over 300 ms:
+timing: #164350 done at t 157.110 s, 348.8 ms after the sync and hints; device: prepare 0.01 list 0.00 cs 0.05 fence 348.73 ms, 176 BOs
+timing: #164347 done at t 157.110 s, 349.3 ms after the sync and hints; device: prepare 0.02 list 0.03 cs 0.08 fence 349.16 ms, 64 BOs (short list)
+timing: #164351 done at t 157.110 s, 348.8 ms after the sync and hints; device: prepare 0.01 list 0.00 cs 0.05 fence 348.72 ms, 176 BOs
+timing: #164353 done at t 157.110 s, 348.6 ms after the sync and hints; device: prepare 0.07 list 0.00 cs 0.22 fence 348.23 ms, 176 BOs
+timing: #164352 done at t 157.110 s, 348.8 ms after the sync and hints; device: prepare 0.02 list 0.00 cs 0.06 fence 348.66 ms, 176 BOs
+timing: #164358 done at t 157.110 s, 347.1 ms after the sync and hints; device: prepare 0.09 list 0.00 cs 0.31 fence 346.61 ms, 176 BOs
+timing: #164354 done at t 157.110 s, 348.3 ms after the sync and hints; device: prepare 0.01 list 0.02 cs 0.06 fence 348.21 ms, 62 BOs (short list)
+timing: #164355 done at t 157.110 s, 348.2 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.02 fence 348.17 ms, 61 BOs (short list)
+timing: #164356 done at t 157.110 s, 347.9 ms after the sync and hints; device: prepare 0.00 list 0.02 cs 0.04 fence 347.81 ms, 61 BOs (short list)
+timing: #164357 done at t 157.110 s, 347.8 ms after the sync and hints; device: prepare 0.19 list 0.00 cs 0.20 fence 347.19 ms, 176 BOs
+timing: #203223 done at t 198.314 s, 651.6 ms after the sync and hints; device: prepare 0.18 list 0.00 cs 0.29 fence 650.94 ms, 178 BOs
+timing: #379781 done at t 354.147 s, 378.3 ms after the sync and hints; device: prepare 0.26 list 0.00 cs 0.11 fence 377.86 ms, 178 BOs
+timing: #379782 done at t 354.147 s, 377.7 ms after the sync and hints; device: prepare 0.04 list 0.00 cs 0.06 fence 377.63 ms, 178 BOs
+timing: #379783 done at t 354.147 s, 377.7 ms after the sync and hints; device: prepare 0.01 list 0.02 cs 0.03 fence 377.61 ms, 63 BOs (short list)
+timing: #379784 done at t 354.147 s, 377.6 ms after the sync and hints; device: prepare 0.01 list 0.01 cs 0.02 fence 377.57 ms, 63 BOs (short list)
+timing: #382673 done at t 357.505 s, 527.5 ms after the sync and hints; device: prepare 0.23 list 0.00 cs 0.26 fence 526.90 ms, 178 BOs
+timing: #382674 done at t 357.507 s, 529.1 ms after the sync and hints; device: prepare 0.01 list 0.02 cs 0.03 fence 529.08 ms, 62 BOs (short list)
+timing: #382675 done at t 357.507 s, 529.1 ms after the sync and hints; device: prepare 0.02 list 0.00 cs 0.07 fence 528.97 ms, 178 BOs
+timing: #383070 done at t 359.723 s, 1225.3 ms after the sync and hints; device: prepare 0.26 list 0.00 cs 0.38 fence 1224.53 ms, 178 BOs
+timing: #476912 done at t 470.044 s, 2041.4 ms after the sync and hints; device: prepare 0.02 list 0.09 cs 0.19 fence 2040.82 ms, 176 BOs
+timing: #476914 done at t 482.326 s, 14322.7 ms after the sync and hints; device: prepare 0.10 list 0.00 cs 0.11 fence 14322.38 ms, 176 BOs
+submit #476912 dcb 328 dwords at 0x7f5944326790: pass 9 rewrite 23 drop 13 unmapped 2 cc 0 mappings 19433 ... FAILED rc 0 TIMEOUT 2041.01 ms
+journal growth gaps over 0.4 s:
+  t 3.47 gap 0.42 s
+  t 5.60 gap 0.53 s
+  t 163.27 gap 0.63 s
+  t 197.66 gap 0.65 s
+  t 202.34 gap 0.57 s
+  t 206.88 gap 0.66 s
+  t 252.68 gap 0.47 s
+  t 335.60 gap 1.15 s
+  t 345.99 gap 7.14 s
+  t 356.98 gap 0.53 s
+  t 356.98 gap 0.53 s
+  t 358.50 gap 1.23 s
+  t 360.73 gap 0.71 s
+  t 391.90 gap 0.41 s
+  t 392.47 gap 0.48 s
+  t 393.41 gap 0.63 s
+  t 397.76 gap 0.60 s
+  t 402.66 gap 0.66 s
+  t 405.05 gap 0.53 s
+  t 406.53 gap 0.44 s
+  t 409.86 gap 0.43 s
+  t 412.04 gap 0.59 s
+  t 413.00 gap 0.44 s
+  t 420.24 gap 0.65 s
+  t 422.71 gap 0.88 s
+  t 429.48 gap 0.99 s
+  t 436.64 gap 0.74 s
+  t 439.12 gap 0.65 s
+  t 468.00 gap 14.32 s
+the 1.22-s job: the dcb submitted just before #383070 done:
+timing: #383070 done at t 359.723 s, 1225.3 ms after the sync and hints; device: prepare 0.26 list 0.00 cs 0.38 fence 1224.53 ms, 178 BOs
+end: Initialized: Audio

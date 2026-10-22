@@ -1,0 +1,12 @@
+Per-lane state of the halted waves (wsum2.py): current node, the second dword of the last link record, stack pointer (packed hi16; base 0xff84, 4 bytes per entry).
+== R6, 0x11d04bb900 (v16 v17 v128 v129, active s37, link V# s[52:55])
+PCs: {'0x1a34': 70, '0x1aa0': 3, '0x1a94': 2, '0x1a88': 4, '0x1a98': 1}
+lane states over all waves: [('cur 35 sec ffffffff sp ff88', 1447)]
+link V#s: [('10011200 00080012 0000007c', 80)]
+== S3, 0x11d04a6000 (v16 v17 v39 v38, active s31)
+PCs: {'0x1d50': 40, '0x1cf4': 24, '0x1cfc': 91, '0x1d58': 3, '0x1d68': 10, '0x1d60': 4, '0x1318': 22, '0x1d54': 3, '0x1d70': 5, '0x12ec': 3, '0x1d5c': 13, '0x1d6c': 1, '0x130c': 1, '0x1d88': 2, '0x1304': 3, '0x1310': 2, '0x1d84': 1}
+lane states over all waves: [('cur 35 sec ffffffff sp ff98', 6617)]
+== S1, 0x11d040e200 (v4 v5 v9 v8, active s31, link V# s[32:35])
+PCs: {'0x1480': 3, '0x1434': 3, '0x147c': 3, '0x129c': 2, '0x1420': 2, '0x1298': 4, '0x1240': 3, '0x123c': 1, '0x11d8': 4, '0x1250': 2}
+lane states over all waves: [('cur 17f5 sec 3d2b8598 sp ff90', 1), ('cur 1805 sec 3d2d6290 sp ff94', 1), ('cur 1cf5 sec 3d1da16f sp ff90', 1), ('cur ffffffff sec 3d1f0772 sp ff90', 1), ('cur 1cf5 sec 3d1cd15e sp ff90', 1), ('cur 1cf5 sec 3d1d82bd sp ff90', 1), ('cur 1cf5 sec 3d1f3bfb sp ff90', 1), ('cur 45 sec 3d1ced01 sp ff94', 1), ('cur 16d5 sec 3d1ec84e sp ff94', 1), ('cur a5 sec 3d260cf9 sp ff94', 1), ('cur a5 sec 3d26cccb sp ff94', 1), ('cur 75 sec 3d2670d7 sp ff90', 1)]
+link V#s: [('2ed9a900 00080012 00006de0', 6), ('5b002f00 00080012 00005fa8', 5), ('115f8e00 00080012 0000020e', 3), ('11573c00 00080012 0000020e', 3), ('10d5ef00 00080012 00000274', 2), ('10d1d400 00080012 00000274', 1)]

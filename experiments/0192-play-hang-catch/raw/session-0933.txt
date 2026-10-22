@@ -1,0 +1,10 @@
+Session play-20261022-0933 (the maintainer, shortcut "BC5 emulator (refleksy + dziennik)": + BC5_DIRECT_DISPATCH_JOURNAL=1; catch-4 armed)
+journal: 3621224728 bytes, 10025105 dispatch lines, 0 fence timeouts; kernel page-fault lines this boot: 2 (2 at arming)
+fence waits over 300 ms:
+timing: #116757 done at t 138.628 s, 377.2 ms after the sync and hints; device: prepare 0.02 list 0.05 cs 0.13 fence 376.97 ms, 62 BOs (short list)
+flips more than 2 s apart (frame profile):
+frame profile: t 82.378 s, 7878.8 ms since the last flip; game thread inside the host 21.2 ms (sync 1.2, hints 0.6, prepare 3.9, list 0.4, cs 11.0, fence 0.0, cap 0.0, label waits 4.2, event waits 0.0), at the flip 4.5, outside 7853.1; GPU busy 52.7 ms in 21 jobs (+47 from the ring thread); soft-CP passes 1.1 ms in 106; prepare 
+frame profile: t 161.688 s, 8515.3 ms since the last flip; game thread inside the host 166.3 ms (sync 32.5, hints 0.5, prepare 3.8, list 0.2, cs 3.1, fence 0.0, cap 0.0, label waits 126.2, event waits 0.0), at the flip 4.9, outside 8344.1; GPU busy 20.2 ms in 14 jobs (+23 from the ring thread); soft-CP passes 1.4 ms in 62; prepa
+frame profile: t 218.627 s, 12303.1 ms since the last flip; game thread inside the host 28.4 ms (sync 22.8, hints 0.3, prepare 1.6, list 0.0, cs 1.5, fence 0.0, cap 0.0, label waits 2.2, event waits 0.0), at the flip 6.1, outside 12268.6; GPU busy 19.9 ms in 9 jobs (+27 from the ring thread); soft-CP passes 0.9 ms in 54; prepare
+the emulator log during the 12.3-s stall: audio trace every second t 206.5-219.6 (rate 1.000), fps counter: 34 flips in the second to 207.645, then "1 flips in 12.303 s"
+catch-4: 09:32:10 armed (skip 10 s, max 10800 s, still 500 ms, kernel page-fault lines at arming: 2);09:33:12 journal /home/kjaniszewski/bc5-data/captures/play-20261022-0933/gc/direct.log;09:42:17 stopped by hand (dedicated session over);

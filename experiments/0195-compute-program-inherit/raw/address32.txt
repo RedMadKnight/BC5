@@ -1,0 +1,3 @@
+amdgpu_device_initialize rc 0 (drm 3.64); address32_hi rc 0 = 0xffff8000
+COMPUTE_PGM_HI as Mesa writes it: S_00B834_DATA(0xffff8000 >> 8) = 0x80
+window start: 0xffff800000000000; +0x5000 seen by the GPU (48 bits): 0x800000005000

@@ -1,0 +1,9 @@
+Live apertures read by the traversals themselves: src_private_base.hi | (src_shared_base.hi >> 16), packed by the
+program into a VGPR lane (0x11d04bb900: v94 lane 1; 0x11d04a6000: v94 lane 2; 0x11d049aa00: v91 lane 2).
+amdgpu gfx10 graphics VMIDs: private 0x1000000000000000, LDS 0x2000000000000000 -> 0x10002000.
+The console constants the stack push uses: private 0x70000000, LDS 0x80000000 (high dwords).
+R6 (exp 0189)                   80 waves: packed apertures {'10002000': 80}
+S3 (exp 0189)                  228 waves: packed apertures {'10002000': 228}
+bc5-hang-150040 (2026-10-16)   336 waves: packed apertures {'10002000': 336}
+bc5-hang-223016 (2026-10-16)   336 waves: packed apertures {'10002000': 336}
+R6, lane 0/1 of v1 (the last value pushed) and v[2:3] (its FLAT address, lane 1): {('00000380', '00000004', '80000000'): 43, ('00000000', '00000000', '00000000'): 34, ('00000380', '00000000', '00000000'): 2}

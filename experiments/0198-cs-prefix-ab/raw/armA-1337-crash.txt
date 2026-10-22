@@ -1,0 +1,44 @@
+# arm A (BC5_DIRECT_CS_PREFIX=journal, exp 0195 binary, skips kept), play-20261022-1337, emulator started 13:37:04
+# journal t range: 0..251.381 s; cs prefix lines: 64 (journal only)
+# frames over 250 ms:
+34.302/299.3 79.104/283.4 91.889/504 118.185/534.2 123.399/251.3 135.050/464 183.214/1709 217.770/4011.9 234.748/278.1 
+# the end of the journal (timing done lines and packet lines left out):
+learned apply: 10.0 ms (release 0.2, mappings 0.4 of 19540, windows 6.7, fill 1.0, guards 1.7); views rebuilt 3 times
+timing: t 251.280 s acb 18 dwords: sync (lazy) 3.1 ms, hints 10.1 ms q8
+direct: 17496 views; +0 BOs (88, 11376.0 MiB pinned); maps +33 -0 (17538)
+learned apply: 9.0 ms (release 0.1, mappings 0.4 of 19573, windows 6.2, fill 0.9, guards 1.4); views rebuilt 3 times
+timing: t 251.294 s dcb 15180 dwords: sync 5.8 ms, hints 9.2 ms q-1
+direct: 17541 views; +0 BOs (88, 11376.0 MiB pinned); maps +45 -0 (17583)
+learned apply: 11.4 ms (release 0.3, mappings 0.5 of 19618, windows 7.7, fill 1.0, guards 2.0); views rebuilt 3 times
+timing: t 251.309 s acb 100 dwords: sync (lazy) 4.9 ms, hints 11.6 ms q0
+direct: 17584 views; +0 BOs (88, 11376.0 MiB pinned); maps +43 -0 (17626)
+learned apply: 9.6 ms (release 0.2, mappings 0.4 of 19661, windows 6.3, fill 1.4, guards 1.3); views rebuilt 3 times
+timing: t 251.326 s dcb 1687 dwords: sync (lazy) 5.0 ms, hints 9.7 ms q-1
+two rings: dcb 1499 dwords waits at 418 on 0x12004b3c38: NOT served after 4.01 ms, head split off (12504 waits: 12504 split, 11486 kept for the GPU, 976 satisfied, 42 lost)
+direct: 17626 views; +0 BOs (88, 11376.0 MiB pinned); maps +42 -0 (17668)
+  wait detail: function 3, value 0x907616589, reference 0x0, mask 0xffffffffffffffff
+cpu-wait WAIT_REG_MEM64 at 418 on 0x12004b3c38: GIVEN UP after 39.9 ms
+timing: t 251.349 s after that wait (dcb 1499 dwords)
+direct: 17657 views; +0 BOs (88, 11376.0 MiB pinned); maps +31 -0 (17699)
+learned 0x842e000000: window 0x842e000000+0x6000000, direct memory +12.0 MiB
+learned apply: 13.8 ms (release 0.2, mappings 0.4 of 19734, windows 10.6, fill 0.9, guards 1.7); views rebuilt 4 times
+timing: t 251.341 s acb 936 dwords: sync 6.7 ms, hints 13.9 ms q0
+direct: 17684 views; +0 BOs (88, 11376.0 MiB pinned); maps +27 -0 (17726)
+direct: 17710 views; +0 BOs (88, 11376.0 MiB pinned); maps +26 -0 (17752)
+learned 0x842e000000: window 0x842e000000+0x6000000, direct memory +4.0 MiB
+learned apply: 12.3 ms (release 0.1, mappings 0.3 of 19787, windows 9.4, fill 1.0, guards 1.5); views rebuilt 4 times
+timing: t 251.362 s dcb 5245 dwords: sync 5.7 ms, hints 12.5 ms q-1
+submit #315050 dcb 5245 dwords at 0x7f27e0540e30: pass 327 rewrite 67 drop 81 unmapped 0 cc 0 mappings 19787 ... FAILED rc 0 TIMEOUT 2001.38 ms
+direct merge: 0 BOs became 0 (88 BOs now), 0 mappings moved, 3 runs deferred by the mapping budget
+direct: 17735 views; +0 BOs (88, 11376.0 MiB pinned); maps +25 -0 (17777)
+timeout probe: dcb 5245 dwords dumped to /home/kjaniszewski/bc5-data/captures/play-20261022-1337/gc/ib-timeout-00315050-dcb-5245.bin
+learned apply: 6.6 ms (release 0.1, mappings 0.4 of 19812, windows 5.5, fill 0.6, guards 0.1); views rebuilt 1 times
+timing: t 251.381 s acb 28 dwords: sync (lazy) 2193.4 ms, hints 6.6 ms q0
+submit #315051 acb 28 dwords at 0x7f283405db00: pass 0 rewrite 0 drop 0 unmapped 0 cc 0 mappings 19812 ... FAILED rc -1 0.00 ms
+# kernel log of that boot (journalctl -b -2 -k): last amdgpu line
+paź 22 12:47:06.187252 bazzite kernel: amdgpu 0000:01:00.0: [drm] device wedged, but no recovery needed
+# last line of that boot (journalctl -b -2):
+paź 22 13:40:45.460518 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+# next boot (journalctl -b -1 -k):
+paź 22 13:41:50 bazzite kernel: x86/amd: Previous system reset reason [0x40000400]: a parity error occurred
+# ib-timeout-00315050-dcb-5245.bin: not on disk after the reset

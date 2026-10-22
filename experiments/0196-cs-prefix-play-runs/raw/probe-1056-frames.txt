@@ -1,0 +1,57 @@
+# session play-20261022-1056 (probe, BC5_DIRECT_CS_PREFIX=journal): flips per 20-s window (t from the journal), from the timing flip lines
+0 25.65
+20 23.9
+40 36.45
+60 34.5
+80 43.2
+100 28.85
+120 28.25
+140 35.05
+160 39.25
+180 39.7
+200 43.2
+220 36
+240 37.6
+260 41.6
+280 31.9
+300 27.3
+320 42.2
+340 26.75
+360 34.4
+380 38.7
+400 34.35
+420 38.2
+440 43.2
+460 27.65
+# frame gaps over 250 ms (t, ms since the last flip)
+59.665 281.1
+62.371 305.9
+64.003 439
+67.883 266.8
+99.964 289
+101.384 334.2
+135.111 582
+253.805 266.4
+281.688 410.5
+282.432 743.6
+297.574 588.2
+298.366 569.9
+298.976 609.6
+299.867 890.9
+300.685 818.6
+317.836 4399.9
+346.727 6080.2
+349.417 301.8
+361.322 679.6
+377.443 1620.6
+383.498 860.3
+403.492 307.6
+405.014 370.8
+409.892 714
+435.459 1475
+# the four longest, in full
+frame profile: t 317.836 s, 4399.9 ms since the last flip; game thread inside the host 29.9 ms (sync 23.6, hints 0.3, prepare 1.8, list 0.1, cs 2.6, fence 0.0, cap 0.0, label waits 1.4, event waits 0.0), at the flip 4.3, outside 4365.8; GPU busy 25.7 ms in 11 jobs (+25 from the ring thread); soft-CP passes 0.7 ms in 55; prepare 
+frame profile: t 346.727 s, 6080.2 ms since the last flip; game thread inside the host 47.1 ms (sync 29.8, hints 4.0, prepare 1.6, list 0.2, cs 2.6, fence 0.0, cap 7.3, label waits 1.7, event waits 0.0), at the flip 6.6, outside 6026.4; GPU busy 25.0 ms in 11 jobs (+25 from the ring thread); soft-CP passes 0.6 ms in 50; prepare 
+frame profile: t 377.443 s, 1620.6 ms since the last flip; game thread inside the host 28.8 ms (sync 0.1, hints 0.3, prepare 1.6, list 0.1, cs 1.5, fence 0.0, cap 0.0, label waits 25.2, event waits 0.0), at the flip 4.0, outside 1587.9; GPU busy 1588.0 ms in 9 jobs (+20 from the ring thread); soft-CP passes 0.4 ms in 51; prepare
+frame profile: t 435.459 s, 1475.0 ms since the last flip; game thread inside the host 5.9 ms (sync 0.2, hints 0.3, prepare 1.6, list 0.1, cs 2.2, fence 0.0, cap 0.0, label waits 1.5, event waits 0.0), at the flip 1.7, outside 1467.5; GPU busy 17.1 ms in 10 jobs (+23 from the ring thread); soft-CP passes 0.5 ms in 53; prepare = 
+# timeouts: 0; journal t range: 0.000..473.398 s; last line cut: short list)timing: #551301 done at t 473.398 s, 4.1 ms afte

@@ -1,0 +1,189 @@
+--- a/src/libs/bc5LleAgc.cpp
++++ b/src/libs/bc5LleAgc.cpp
+@@ -2169,6 +2169,16 @@
+ 	if (!aliases_on()) return;
+ 	const uint64_t t = fault_addr >> 40u, low = fault_addr & ((1ull << 40u) - 1);
+ 	if (t == 0 || t == 0x10 || low == 0) return; // 0x10: the device's own scratch at 16 TiB
++	// Experiment 0195: a fault whose low 40 bits name no guest memory is not a tagged guest address. Session 0808's
++	// SQC fault at 0x800000005000 was another process's program address left in COMPUTE_PGM_LO/HI (Mesa's 32-bit
++	// shader window: address32_hi 0xffff8000 on the box, COMPUTE_PGM_HI 0x80), and the alias learned for it (0x80
++	// over 0x0+0x6000000) mapped guest 0-96 MiB under the byte for every later run. BC5_DIRECT_ALIAS_LEARN_UNMAPPED=1
++	// learns such faults as before.
++	static const bool learn_unmapped = std::getenv("BC5_DIRECT_ALIAS_LEARN_UNMAPPED") != nullptr;
++	if (!learn_unmapped && g_dev && !covered_sorted(*g_dev->sorted_mappings(), low & ~0xfffull, 4)) {
++		journal("aliases: fault 0x%" PRIx64 ": no guest memory at 0x%" PRIx64 ", not learned\n", fault_addr, low);
++		return;
++	}
+ 	const uint64_t lo = (low & ~0x3ffffffull) > 0x2000000ull ? (low & ~0x3ffffffull) - 0x2000000ull : 0;
+ 	const uint64_t n  = 0x6000000ull;
+ 	{
+@@ -3604,6 +3614,96 @@
+ static bool prefix_all() {
+ 	return prefix_mode() != 0;
+ }
++// Experiment 0195: the second title sometimes ends a graphics buffer between a compute program's binding
++// (a LOAD_SH_REG_INDEX table of ten (offset, value) pairs: COMPUTE_PGM_LO/HI, RSRC1/2, ...) and its dispatches,
++// and starts the next buffer with them (three 2x1x1 DISPATCH_DIRECTs of 0x11d039cd00 after nothing but user
++// data): it relies on the queue keeping the program registers, as the console's graphics queue does. On the
++// BC-250's one GFX ring other processes' jobs run in between, and Mesa writes COMPUTE_PGM_HI once per IB
++// (address32_hi >> 8 = 0x80: src/amd/common/ac_cmdbuf.c:64 @ 0866ae7) and COMPUTE_PGM_LO per dispatch
++// (radeonsi si_compute.c:401, RADV radv_cmd_buffer.c:3264); such a buffer draws nothing, gets no prefix
++// (BC5_DIRECT_PREFIX_ALL = draws) and ran from a desktop process's shader address, 0x800000005000 (session 0808:
++// SQC instruction-fetch fault, ring reset). BC5_DIRECT_CS_PREFIX=1: in front of a graphics buffer that gets no
++// other prefix and dispatches before it sets COMPUTE_PGM_LO, the graphics queue's tracked compute registers (SH
++// 0x204-0x3ff from bc5::full_state, Mesa gfx10 register JSON: COMPUTE_START_X 0x204 .. COMPUTE_DISPATCH_TUNNEL
++// 0x27d and past it; the values the draw prefix already replays), one SET_SH_REG per run, in the same chain
++// segment; =journal only journals such buffers with the program the queue's state names (a probe). Off by
++// default (D16).
++static int cs_prefix_mode() {
++	static const int v = [] {
++		const char* e = std::getenv("BC5_DIRECT_CS_PREFIX");
++		if (e == nullptr || *e == 0 || std::strcmp(e, "0") == 0) return 0;
++		return std::strcmp(e, "journal") == 0 ? 2 : 1;
++	}();
++	return v;
++}
++// The offset of the first DISPATCH_DIRECT / DISPATCH_INDIRECT (Mesa sid.h 0x15 / 0x16) of ib that comes before
++// anything that may set COMPUTE_PGM_LO (SH 0x20c): SET_SH_REG(_INDEX) 0x76 / 0x9b over it, LOAD_SH_REG 0x5f with a
++// range over it, LOAD_SH_REG_INDEX 0x63 whose table names it (pairs, DATA_FORMAT bit 31) or covers it, or one whose
++// table cannot be read, and INDIRECT_BUFFER 0x3f (not followed); -1 when there is none.
++static int cs_inherit_at(const uint32_t* ib, uint32_t num_dwords, const std::vector<bc5::direct::Mapping>& maps) {
++	constexpr uint32_t kPgmLo = 0x20cu;
++	for (uint32_t i = 0; i < num_dwords;) {
++		const uint32_t h = ib[i], type = h >> 30u;
++		uint32_t       len = 1;
++		if (type == 3 || type == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
++		if (i + len > num_dwords) break;
++		if (type == 3) {
++			const uint32_t  op = (h >> 8u) & 0xffu;
++			const uint32_t* p  = ib + i;
++			if (op == 0x15 || op == 0x16) return static_cast<int>(i);
++			if (op == 0x3f) return -1;
++			if ((op == 0x76 || op == 0x9b) && len >= 3 && kPgmLo - (p[1] & 0xffffu) < len - 2) return -1;
++			if (op == 0x5f && len >= 5) {
++				for (uint32_t k = 3; k + 1 < len; k += 2) {
++					if (kPgmLo - (p[k] & 0xffffu) < (p[k + 1] & 0x3fffu)) return -1;
++				}
++			}
++			if (op == 0x63 && len >= 5 && (p[4] & 0x3fffu) != 0) {
++				const uint64_t ta    = (p[1] & ~3u) | (static_cast<uint64_t>(p[2] & 0xffffu) << 32u);
++				const uint32_t tn    = p[4] & 0x3fffu;
++				const bool     pairs = (p[3] >> 31u) != 0;
++				if (!pairs) {
++					if (kPgmLo - (p[3] & 0xffffu) < tn) return -1;
++				} else {
++					if (ta == 0 || !covered_sorted(maps, ta, static_cast<uint64_t>(tn) * 8)) return -1;
++					const auto* t = reinterpret_cast<const volatile uint32_t*>(ta);
++					for (uint32_t k = 0; k < tn; k++) {
++						if ((t[2 * k] & 0xffffu) == kPgmLo) return -1;
++					}
++				}
++			}
++		}
++		i += len;
++	}
++	return -1;
++}
++// The tracked compute registers (SH 0x204-0x3ff) as SET_SH_REG runs; *pgm = COMPUTE_PGM_LO/HI as an address.
++static std::vector<uint32_t> cs_prefix(const bc5::full_state::Tracker& t, uint64_t* pgm) {
++	std::vector<uint32_t> p, vals;
++	uint32_t              first = 0;
++	const auto flush = [&] {
++		if (vals.empty()) return;
++		p.push_back(0xC0007600u | (static_cast<uint32_t>(vals.size()) << 16u)); // SET_SH_REG, COUNT = body dwords - 1
++		p.push_back(first);
++		p.insert(p.end(), vals.begin(), vals.end());
++		vals.clear();
++	};
++	for (uint32_t o = 0x204u; o < 0x400u; o++) {
++		uint32_t v = 0;
++		if (!t.get(bc5::full_state::Sh, o, v)) {
++			flush();
++			continue;
++		}
++		if (vals.empty()) first = o;
++		vals.push_back(v);
++	}
++	flush();
++	uint32_t lo = 0, hi = 0;
++	t.get(bc5::full_state::Sh, 0x20cu, lo);
++	t.get(bc5::full_state::Sh, 0x20du, hi);
++	*pgm = (static_cast<uint64_t>(lo) | (static_cast<uint64_t>(hi & 0xffu) << 32u)) << 8u;
++	return p;
++}
+ static bool ib_has_draw(const uint32_t* ib, uint32_t num_dwords) {
+ 	for (uint32_t i = 0; i < num_dwords;) {
+ 		const uint32_t h = ib[i], type = h >> 30u;
+@@ -4037,6 +4137,27 @@
+ 		full_prefix = prefix_mode() == 3 ? sx_prefix(t_fs_before) : prefix_of(t_fs_before);
+ 		full_used   = !full_prefix.empty();
+ 	}
++	bool cs_used = false; // experiment 0195: the compute prefix stands in front where prefix_all() would let the full one
++	if (!full_used && cs_prefix_mode() != 0 && std::strcmp(kind, "dcb") == 0 && g_stage != Stage::MapOnly && g_dev) {
++		const int at = cs_inherit_at(ib, num_dwords, *g_dev->sorted_mappings());
++		if (at >= 0) {
++			uint64_t                     pgm = 0;
++			std::vector<uint32_t>        cs  = cs_prefix(t_fs_before, &pgm);
++			static std::atomic<uint64_t> n_cs {0};
++			const uint64_t               k = n_cs++;
++			if (k < 64 || (k & 0x3ffu) == 0) {
++				uint32_t r1 = 0, r2 = 0;
++				t_fs_before.get(bc5::full_state::Sh, 0x212u, r1);
++				t_fs_before.get(bc5::full_state::Sh, 0x213u, r2);
++				journal("cs prefix (exp 0195): t %.3f s dcb %u dwords dispatches at %d before it sets a program; the queue's program 0x%010" PRIx64 " rsrc1 %08x rsrc2 %08x, %zu dwords of compute state%s (%" PRIu64 " such buffers)\n",
++				        timing_now(), num_dwords, at, pgm, r1, r2, cs.size(), cs_prefix_mode() == 1 ? " in front" : ", journal only", k + 1);
++			}
++			if (cs_prefix_mode() == 1 && !cs.empty()) {
++				full_prefix.swap(cs);
++				full_used = cs_used = true;
++			}
++		}
++	}
+ 	// Experiment 0118: a piece goes to the GPU as one job with its full-state prefix in front. As two
+ 	// jobs (prefix, then the piece) the ring thread could submit between them, and ASTRO BOT's colour,
+ 	// depth and program addresses then came out tagged 0x80 in bits 47:40 (CB/DB and SQC faults, two
+@@ -4293,7 +4414,7 @@
+ 					if (two_rings && !wait_satisfied(p, op == 0x93)) {
+ 						bool split = false;
+ 						if (pieces_full() && dry_here && i > start) {
+-							if ((start > 0 || prefix_all()) && !full_prefix.empty()) submit_prefixed(full_prefix, ib + start, i - start, false);
++							if ((start > 0 || prefix_all() || cs_used) && !full_prefix.empty()) submit_prefixed(full_prefix, ib + start, i - start, false);
+ 							else submit_one(ib + start, i - start, kind, from_header && start == 0);
+ 							chain_flush(1); // ADR 0010: the head goes before the wait is polled
+ 							full_prefix = prefix_of(*dry);
+@@ -4385,7 +4506,7 @@
+ 						}
+ 					}
+ 					if (!ok && pieces_full() && dry_here && on_game_thread() && i > start && g_stage != Stage::MapOnly && (!g_dev || !g_dev->wedged())) {
+-						if ((start > 0 || prefix_all()) && !full_prefix.empty()) submit_prefixed(full_prefix, ib + start, i - start, false);
++						if ((start > 0 || prefix_all() || cs_used) && !full_prefix.empty()) submit_prefixed(full_prefix, ib + start, i - start, false);
+ 						else submit_one(ib + start, i - start, kind, from_header && start == 0);
+ 						chain_flush(1); // ADR 0010
+ 						full_prefix = prefix_of(*dry);
+@@ -4423,7 +4544,7 @@
+ 		}
+ 		i += len;
+ 	}
+-	if ((start > 0 || prefix_all()) && full_used && !full_prefix.empty()) {
++	if ((start > 0 || prefix_all() || cs_used) && full_used && !full_prefix.empty()) {
+ 		submit_prefixed(full_prefix, ib + start, num_dwords - start, false);
+ 		return;
+ 	}
+@@ -4810,7 +4931,7 @@
+ 	}();
+ 	static const bool rt_dump = BC5_DIAG_ENV("BC5_DIRECT_RT_DUMP") != nullptr;
+ 	if (rt_dump && std::strcmp(kind, "dcb") == 0 && g_dev) bc5_rt_dump_once(g_dev->sorted_mappings());
+-	if (!pieces_dry() && !pieces_full() && draw_journal.second == 0 && !prefix_all()) return;
++	if (!pieces_dry() && !pieces_full() && draw_journal.second == 0 && !prefix_all() && cs_prefix_mode() == 0) return; // exp 0195: the compute prefix needs the tracker too
+ 	// Experiment 0157: BC5_DIRECT_DRAW_JOURNAL_ACB=1 takes the compute-queue buffers through the journal too
+ 	// (as "dcb" below; their packets set SH registers only, so the shared tracker is not disturbed).
+ 	static const bool journal_acb_env = BC5_DIAG_ENV("BC5_DIRECT_DRAW_JOURNAL_ACB") != nullptr;
+@@ -5325,7 +5446,7 @@
+ 				}
+ 			});
+ 		}
+-		if (t_fs_valid || prefix_all()) t_fs_before = tracker;
++		if (t_fs_valid || prefix_all() || cs_prefix_mode() != 0) t_fs_before = tracker;
+ 		if (!waits.empty()) with_waits++;
+ 	}
+ 	tracker.apply(span, read, st);

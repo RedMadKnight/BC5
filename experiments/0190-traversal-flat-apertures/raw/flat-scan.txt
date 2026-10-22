@@ -1,0 +1,15 @@
+380 programs dumped in exp 0189 (~/bc5-data/captures/exp0189-shaders), disassembled with disoff.sh: those with FLAT (not global_/scratch_) memory instructions
+11d040e200: 6 flat_store_dword, 6 v_med3_u32 with literal 0x70000000, 1 aperture reads
+11d0488a00: 6 flat_store_dword, 6 v_med3_u32 with literal 0x70000000, 0 aperture reads
+11d049aa00: 6 flat_store_dword, 6 v_med3_u32 with literal 0x70000000, 2 aperture reads
+11d04a6000: 6 flat_store_dword, 6 v_med3_u32 with literal 0x70000000, 2 aperture reads
+11d04bb900: 6 flat_store_dword, 6 v_med3_u32 with literal 0x70000000, 2 aperture reads
+
+aptest.py (the patch_0190 matcher) on the six traversal variants (0x11d040c900 from ~/bc5-data/captures/shaders-0159):
+11d049aa00.bin sites 6 s_brev 2 0x1358 0x1384 0x13b0 0x2e70 0x2e9c 0x2ec8
+11d04a6000.bin sites 6 s_brev 2 0x1350 0x137c 0x13a8 0x2e5c 0x2e88 0x2eb4
+11d040e200.bin sites 6 s_brev 1 0x1168 0x1194 0x11c0 0x134c 0x1378 0x13a4
+11d04bb900.bin sites 6 s_brev 2 0x1088 0x10b4 0x10e0 0x2b7c 0x2ba8 0x2bd4
+11d0488a00.bin sites 6 s_brev 2 0x18a4 0x18d0 0x18fc 0x3404 0x3430 0x345c
+11d040c900.bin sites 6 s_brev 1 0xd80 0xdac 0xdd8 0xf68 0xf94 0xfc0
+programs of the 380 with a match: 11d040e200.bin 11d0488a00.bin 11d049aa00.bin 11d04a6000.bin 11d04bb900.bin 

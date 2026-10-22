@@ -1,0 +1,48 @@
+# arm B (BC5_DIRECT_CS_PREFIX=1, exp 0195 binary, skips kept): /home/kjaniszewski/bc5-data/captures/play-20261022-1345/gc/direct.log, emulator 13:45-13:56:46 (closed by the host at the maintainers request), journal t 0..676.594 s
+# prefixed (logged, first 64 then every 1024th): 64; TIMEOUT: 0; kernel amdgpu fault or timeout lines since the boot of 13:42: 0 (the one "fault" match is the boot line "TMZ feature disabled as experimental (default)")
+# flips per 30-s window (fps counter) and the longest gap (ms)
+0 28.9 211
+30 21.3 209
+60 31.6 1131
+90 38.6 1923
+120 38.7 646
+150 36.1 3273
+180 42.7 230
+210 41.6 1387
+240 47.4 103
+270 48.9 104
+300 45.4 171
+330 44.7 84
+360 46.7 124
+390 46.4 103
+420 47.1 123
+450 44.4 1388
+480 30.2 531
+510 33.4 1514
+540 35.2 230
+570 37.9 276
+600 36.4 995
+630 37.9 10003
+660 39.1 376
+# frames over 1 s (journal)
+frame profile: t 86.543 s, 1130.6 ms since the last flip; game thread inside the host 1122.2 ms (sync 62.5, hints 33.0, prepare 1.9, list 0.1, cs 1.7, fence 0.0, cap 0.0, label waits 1022.9, event waits 0.0), at the flip 7.4, outside 1.0; GPU busy 33.7 ms in 12 jobs (+19 from the ring thread); 
+frame profile: t 95.776 s, 1621.1 ms since the last flip; game thread inside the host 25.5 ms (sync 0.2, hints 0.3, prepare 1.9, list 0.1, cs 2.1, fence 0.0, cap 0.0, label waits 20.8, event waits 0.0), at the flip 2.8, outside 1592.9; GPU busy 1594.2 ms in 11 jobs (+24 from the ring thread); 
+frame profile: t 109.824 s, 1922.8 ms since the last flip; game thread inside the host 6.8 ms (sync 0.2, hints 0.3, prepare 1.8, list 0.1, cs 2.2, fence 0.0, cap 0.0, label waits 2.3, event waits 0.0), at the flip 1906.9, outside 9.1; GPU busy 1916.1 ms in 12 jobs (+21 from the ring thread); 
+frame profile: t 165.155 s, 3296.4 ms since the last flip; game thread inside the host 26.7 ms (sync 21.7, hints 0.3, prepare 1.6, list 0.1, cs 1.5, fence 0.0, cap 0.0, label waits 1.6, event waits 0.0), at the flip 8.4, outside 3261.3; GPU busy 17.2 ms in 10 jobs (+27 from the ring thread); 
+frame profile: t 167.831 s, 1809.7 ms since the last flip; game thread inside the host 24.9 ms (sync 20.0, hints 0.3, prepare 1.8, list 0.0, cs 1.8, fence 0.0, cap 0.0, label waits 1.0, event waits 0.0), at the flip 26.0, outside 1758.8; GPU busy 13.8 ms in 11 jobs (+24 from the ring thread); 
+frame profile: t 173.288 s, 1048.5 ms since the last flip; game thread inside the host 25.2 ms (sync 19.8, hints 0.3, prepare 1.6, list 0.0, cs 1.8, fence 0.0, cap 0.0, label waits 1.6, event waits 0.0), at the flip 26.0, outside 997.3; GPU busy 13.3 ms in 9 jobs (+23 from the ring thread); 
+frame profile: t 208.506 s, 1410.0 ms since the last flip; game thread inside the host 28.7 ms (sync 22.9, hints 0.3, prepare 1.9, list 0.1, cs 1.7, fence 0.0, cap 0.0, label waits 1.8, event waits 0.0), at the flip 5.5, outside 1375.8; GPU busy 14.2 ms in 10 jobs (+28 from the ring thread); 
+frame profile: t 471.191 s, 1387.5 ms since the last flip; game thread inside the host 4.8 ms (sync 0.1, hints 0.3, prepare 1.5, list 0.0, cs 1.2, fence 0.0, cap 0.0, label waits 1.6, event waits 0.0), at the flip 7.4, outside 1375.3; GPU busy 1359.7 ms in 10 jobs (+24 from the ring thread); 
+frame profile: t 531.880 s, 1513.9 ms since the last flip; game thread inside the host 34.8 ms (sync 28.3, hints 0.4, prepare 2.4, list 0.1, cs 2.2, fence 0.0, cap 0.0, label waits 1.2, event waits 0.0), at the flip 4.2, outside 1474.9; GPU busy 1329.6 ms in 12 jobs (+22 from the ring thread); 
+frame profile: t 629.753 s, 10002.8 ms since the last flip; game thread inside the host 129.9 ms (sync 25.7, hints 0.4, prepare 26.0, list 0.0, cs 76.3, fence 0.0, cap 0.0, label waits 1.4, event waits 0.0), at the flip 125.0, outside 9747.9; GPU busy 14.9 ms in 12 jobs (+24 from the ring thread); 
+# memory at 13:51-13:56 (this session): available ~880-907 MB of 15192, swap used ~0.8-1.0 GB, compact_stall 1061 at 13:50 -> 18558 at 13:52 (about 255/s); disk reads ~720 MB/s at 13:52, of which another session s grep over all play-*/gc/direct.log ~115 MB/s and journalctl ~55 MB/s at 13:53 (the game and bc5-mount 0-8 MB/s)
+frame profile: t 86.543 s, 1130.6 ms since the last flip; in 1122.2 ms at flip 7.4, outside 1.0; GPU busy 33.7 ms in 12 jobs (+19 from the ring thread); 
+frame profile: t 95.776 s, 1621.1 ms since the last flip; in 25.5 ms at flip 2.8, outside 1592.9; GPU busy 1594.2 ms in 11 jobs (+24 from the ring thread); 
+frame profile: t 109.824 s, 1922.8 ms since the last flip; in 6.8 ms at flip 1906.9, outside 9.1; GPU busy 1916.1 ms in 12 jobs (+21 from the ring thread); 
+frame profile: t 165.155 s, 3296.4 ms since the last flip; in 26.7 ms at flip 8.4, outside 3261.3; GPU busy 17.2 ms in 10 jobs (+27 from the ring thread); 
+frame profile: t 167.831 s, 1809.7 ms since the last flip; in 24.9 ms at flip 26.0, outside 1758.8; GPU busy 13.8 ms in 11 jobs (+24 from the ring thread); 
+frame profile: t 173.288 s, 1048.5 ms since the last flip; in 25.2 ms at flip 26.0, outside 997.3; GPU busy 13.3 ms in 9 jobs (+23 from the ring thread); 
+frame profile: t 208.506 s, 1410.0 ms since the last flip; in 28.7 ms at flip 5.5, outside 1375.8; GPU busy 14.2 ms in 10 jobs (+28 from the ring thread); 
+frame profile: t 471.191 s, 1387.5 ms since the last flip; in 4.8 ms at flip 7.4, outside 1375.3; GPU busy 1359.7 ms in 10 jobs (+24 from the ring thread); 
+frame profile: t 531.880 s, 1513.9 ms since the last flip; in 34.8 ms at flip 4.2, outside 1474.9; GPU busy 1329.6 ms in 12 jobs (+22 from the ring thread); 
+frame profile: t 629.753 s, 10002.8 ms since the last flip; in 129.9 ms at flip 125.0, outside 9747.9; GPU busy 14.9 ms in 12 jobs (+24 from the ring thread); 

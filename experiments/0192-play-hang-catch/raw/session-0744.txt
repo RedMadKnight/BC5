@@ -1,0 +1,20 @@
+Session play-20261022-0744 (the maintainer, shortcut "BC5 emulator (refleksy)": BC5_DIRECT_FLAT_APERTURE=1 BC5_DIRECT_SKIP_PGM=1)
+journal lines: 929474
+flat aperture: program 0x11d049aa00: 6 stack pushes (2 s_brev_b32) now address the host's LDS/private apertures
+flat aperture: program 0x11d040e200: 6 stack pushes (1 s_brev_b32) now address the host's LDS/private apertures
+flat aperture: program 0x11d0488a00: 6 stack pushes (2 s_brev_b32) now address the host's LDS/private apertures
+flat aperture: program 0x11d04bb900: 6 stack pushes (2 s_brev_b32) now address the host's LDS/private apertures
+flat aperture: program 0x11d040c900: 6 stack pushes (1 s_brev_b32) now address the host's LDS/private apertures
+fence waits over 300 ms:
+timing: #354803 done at t 289.529 s, 2000.4 ms after the sync and hints; device: prepare 0.02 list 0.00 cs 0.31 fence 1999.94 ms, 174 BOs
+timing: #354798 done at t 289.529 s, 2006.3 ms after the sync and hints; device: prepare 0.34 list 0.00 cs 0.32 fence 2005.33 ms, 174 BOs
+submit #354803 acb 865 dwords at 0x7f42784a6110: pass 119 rewrite 20 drop 10 unmapped 0 cc 0 mappings 18348 ... FAILED rc 0 TIMEOUT 2000.24 ms
+submit #354798 dcb 22826 dwords at 0x7f42204d15a0: pass 1815 rewrite 101 drop 183 unmapped 0 cc 0 mappings 18348 ... FAILED rc 0 TIMEOUT 2005.65 ms
+journal growth gaps over 0.5 s:
+  t 1.6 gap 1.05 s
+kernel log of that boot (journalctl -b -2 -k), GPU lines from 07:30:
+paź 22 07:49:43.083078 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State
+paź 22 07:49:43.117554 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State Completed
+paź 22 07:49:43.122960 bazzite kernel: amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+next boot (journalctl -b -1 -k): paź 22 07:50:24 bazzite kernel: x86/amd: Previous system reset reason [0x40000400]: a parity error occurred
+current boot: [    0.867113] x86/amd: Previous system reset reason [0x40080400]: software wrote 0x6 to reset control register 0xCF9 [    0.867116] x86/amd: Previous system reset reason [0x40080400]: a parity error occurred 

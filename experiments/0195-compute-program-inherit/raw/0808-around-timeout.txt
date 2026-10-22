@@ -1,0 +1,43 @@
+timing: #476900 done at t 467.983 s, 5.0 ms after the sync and hints; device: prepare 0.02 list 0.00 cs 0.14 fence 4.87 ms, 176 BOs
+timing: #476897 done at t 467.985 s, 8.5 ms after the sync and hints; device: prepare 0.75 list 0.00 cs 0.26 fence 7.11 ms, 176 BOs
+timing: #476898 done at t 467.985 s, 7.0 ms after the sync and hints; device: prepare 0.02 list 0.03 cs 0.06 fence 6.81 ms, 64 BOs (short list)
+timing: #476901 done at t 467.985 s, 7.0 ms after the sync and hints; device: prepare 0.01 list 0.00 cs 0.06 fence 6.91 ms, 176 BOs
+timing: #476902 done at t 467.986 s, 7.5 ms after the sync and hints; device: prepare 0.01 list 0.00 cs 0.05 fence 7.44 ms, 176 BOs
+timing: #476903 done at t 467.986 s, 7.4 ms after the sync and hints; device: prepare 0.02 list 0.00 cs 0.05 fence 7.37 ms, 176 BOs
+timing: t 467.986 s after that wait (dcb 40 dwords)
+timing: #476907 done at t 467.987 s, 7.6 ms after the sync and hints; device: prepare 0.11 list 0.00 cs 0.16 fence 7.25 ms, 176 BOs
+timing: #476904 done at t 467.989 s, 10.9 ms after the sync and hints; device: prepare 0.03 list 0.00 cs 0.05 fence 10.78 ms, 176 BOs
+timing: #476905 done at t 467.989 s, 10.6 ms after the sync and hints; device: prepare 0.01 list 0.02 cs 0.04 fence 10.52 ms, 62 BOs (short list)
+timing: #476906 done at t 467.989 s, 10.5 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.02 fence 10.49 ms, 61 BOs (short list)
+timing: #476908 done at t 467.989 s, 10.0 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.03 fence 9.92 ms, 61 BOs (short list)
+timing: #476909 done at t 467.990 s, 10.4 ms after the sync and hints; device: prepare 0.11 list 0.00 cs 0.11 fence 10.07 ms, 176 BOs
+timing: #476910 done at t 467.991 s, 10.6 ms after the sync and hints; device: prepare 0.09 list 0.00 cs 0.16 fence 10.25 ms, 176 BOs
+timing: #476911 done at t 467.994 s, 13.4 ms after the sync and hints; device: prepare 0.36 list 0.00 cs 0.25 fence 12.60 ms, 176 BOs
+direct: 17564 views; +0 BOs (103, 11624.0 MiB pinned); maps +1 -0 (17605)
+timing: t 467.984 s dcb 328 dwords: sync 15.3 ms, hints 3.5 ms q-1
+timing: t 468.003 s acb 68 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+timing: #476913 done at t 468.003 s, 0.2 ms after the sync and hints; device: prepare 0.06 list 0.03 cs 0.09 fence 0.02 ms, 63 BOs (short list)
+timing: t 468.003 s dcb 6012 dwords: sync 0.0 ms, hints 0.0 ms q-1
+timing: t 468.003 s acb 140 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q8
+timing: #476915 done at t 468.004 s, 0.1 ms after the sync and hints; device: prepare 0.01 list 0.01 cs 0.06 fence 0.01 ms, 63 BOs (short list)
+submit #476912 dcb 328 dwords at 0x7f5944326790: pass 9 rewrite 23 drop 13 unmapped 2 cc 0 mappings 19433 ... FAILED rc 0 TIMEOUT 2041.01 ms
+timing: #476912 done at t 470.044 s, 2041.4 ms after the sync and hints; device: prepare 0.02 list 0.09 cs 0.19 fence 2040.82 ms, 176 BOs
+timeout probe: dcb 328 dwords dumped to /home/kjaniszewski/bc5-data/captures/play-20261022-0808/gc/ib-timeout-00476912-dcb-328.bin
+timeout probe: TF ring 0x1120000000 +0x3fff8: 65532 non-zero dwords (dword 0..65532), from the first: [0x1120000000] 40bd8d38 40bbf97a 40c3b25c 40c57a6e 40bbf97a 40bd8d38 40c3b25c 40c16882 40c939e0 40cbcea7 40c16882 40c3b25c 40c939e0 40c624
+timeout probe:   state before op 15 at 32: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffff
+timeout probe: op 15 at 32: 00000002 00000001 00000001 00000041 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 51: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffff
+timeout probe: op 15 at 51: 00000002 00000001 00000001 00000041 base1 0x0 index_base 0x0 ran
+timeout probe:   state before op 15 at 70: stages ffffffff subgrp ffffffff onchip ffffffff payload ffffffff | prim ffffffff itype ffffffff ninst ffffffff ge_cntl ffffffff stereo ffffffff pc_alloc ffffffff | gs ffffffffffffffff es ffffffffff
+timeout probe: op 15 at 70: 00000002 00000001 00000001 00000041 base1 0x0 index_base 0x0 ran
+timeout: fault 0x800000005000 status 0x005012b1
+aliases: fault 0x800000005000 -> byte 0x80 over 0x0+0x6000000 (saved)
+reopen: ok
+submit #476914 dcb 6012 dwords at 0x7f59441e4990: pass 528 rewrite 52 drop 98 unmapped 0 cc 0 mappings 19433 ... FAILED rc -125 14322.49 ms
+timing: #476914 done at t 482.326 s, 14322.7 ms after the sync and hints; device: prepare 0.10 list 0.00 cs 0.11 fence 14322.38 ms, 176 BOs
+soft-cp: dcb 1820 dwords at 0x11e0d30050 replayed in full after a failed submission
+frame profile: t 482.327 s, 14361.5 ms since the last flip; game thread inside the host 24.0 ms (sync 15.4, hints 3.8, prepare 2.0, list 0.1, cs 2.1, fence 0.0, cap 0.0, label waits 0.6, event waits 0.0), at the flip 14340.8, outside -3.4; 
+timing: t 482.327 s flip 1/0, VideoOutSubmitFlip took 0.0 ms
+tracked context: 0:00000000 1:11000100 2:00000000 3:00000000 4:00000000 5:112bea00 6:00000000 7:086f0eff 8:00000000 9:00000000 a:00000000 b:00000000 c:00000000 d:02d00500 e:00000002 f:00000000 10:a0000183 11:20000181 12:1129ec00 13:112bf400
+piece check: 5049 graphics buffers, 1766 with waits; tracked config 0 context 921 sh 177 uconfig 60; tables 23928816 unreadable 3, nested 0 unreadable 0, clears 393227 pushes 0 pops 0; 198 ms
+pieces full: 164 splits made, the wait then satisfied 0, not satisfied 0

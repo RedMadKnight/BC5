@@ -1,0 +1,17 @@
+saves as in save-backup-0180-0953
+saves as in save-backup-0180-0953
+== B0 (defaults): stopped at 262 s; journal /home/kjaniszewski/bc5-data/captures/play-20261021-2358/gc/direct.log
+kernel: 0 fault records in 0 5-s windows
+kernel: 0 ring timeout/reset lines
+journal: 0 fence timeouts
+0:219 10:295 20:296 30:183 40:448 50:486 60:491 70:473 80:450 90:471 100:356 110:166 120:236 130:289 140:292 150:289 160:291 170:294 180:292 190:292 200:290 210:295 220:294 230:292 240:288 250:293 260:59 
+bc5-direct: /dev/gc TF ring 0x1120000000 size 0x3fff8 (programmed, BC5_DIRECT_GC_TF_RING=1)
+bc5-direct: /dev/gc HS offchip 0x1ff
+tf ring: base 0x1120000000 size 0x3fff8 offchip 0x0 0x0 0x0 -> VGT_HS_OFFCHIP_PARAM untouched, not 0x0, the title's /dev/gc ring (1 prefixes)
+tf ring: base 0x1120000000 size 0x3fff8 offchip 0x0 0x0 0x0 -> VGT_HS_OFFCHIP_PARAM untouched, not 0x0, the title's /dev/gc ring (65537 prefixes)
+journal: flat aperture lines 0; skip pgm lines (sampled 1 in 4096):
+      1   skip pgm 0x11d049aa00: dcb dispatch op 16
+      1   skip pgm 0x11d04a6000: dcb dispatch op 16
+      1   skip pgm 0x11d04bb900: dcb dispatch op 15
+      2   skip pgm 0x909974400: dcb dispatch op 16
+kernel log lines in the run window: 2, amdgpu: 0

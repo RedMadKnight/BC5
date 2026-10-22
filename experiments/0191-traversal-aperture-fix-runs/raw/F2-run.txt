@@ -1,0 +1,23 @@
+saves as in save-backup-0180-0953
+saves as in save-backup-0180-0953
+== F2 (BC5_DIRECT_FLAT_APERTURE=1 BC5_DIRECT_GC_TF_RING=1 BC5_DIRECT_SKIP_PGM=1): stopped at 300 s; journal /home/kjaniszewski/bc5-data/captures/play-20261021-2352/gc/direct.log
+kernel: 0 fault records in 0 5-s windows
+kernel: 0 ring timeout/reset lines
+journal: 0 fence timeouts
+0:216 10:295 20:295 30:191 40:443 50:500 60:493 70:496 80:468 90:471 100:354 110:169 120:217 130:284 140:295 150:291 160:288 170:294 180:297 190:292 200:290 210:295 220:293 230:294 240:295 250:294 260:294 270:295 280:296 290:254 
+bc5-direct: /dev/gc TF ring 0x1120000000 size 0x3fff8 (programmed, BC5_DIRECT_GC_TF_RING=1)
+bc5-direct: /dev/gc HS offchip 0x1ff
+tf ring: base 0x1120000000 size 0x3fff8 offchip 0x0 0x0 0x0 -> VGT_HS_OFFCHIP_PARAM untouched, not 0x0, the title's /dev/gc ring (1 prefixes)
+tf ring: base 0x1120000000 size 0x3fff8 offchip 0x0 0x0 0x0 -> VGT_HS_OFFCHIP_PARAM untouched, not 0x0, the title's /dev/gc ring (65537 prefixes)
+tf ring: base 0x1120000000 size 0x3fff8 offchip 0x0 0x0 0x0 -> VGT_HS_OFFCHIP_PARAM untouched, not 0x0, the title's /dev/gc ring (131073 prefixes)
+ioctl codes traced: 0
+census reports: 
+      1 flat aperture: program 0x11d040c900: 6 stack pushes (1 s_brev_b32) now address the host's LDS/private apertures
+      1 flat aperture: program 0x11d040e200: 6 stack pushes (1 s_brev_b32) now address the host's LDS/private apertures
+      1 flat aperture: program 0x11d0488a00: 6 stack pushes (2 s_brev_b32) now address the host's LDS/private apertures
+      1 flat aperture: program 0x11d049aa00: 6 stack pushes (2 s_brev_b32) now address the host's LDS/private apertures
+      1 flat aperture: program 0x11d04a6000: 6 stack pushes (2 s_brev_b32) now address the host's LDS/private apertures
+      1 flat aperture: program 0x11d04bb900: 6 stack pushes (2 s_brev_b32) now address the host's LDS/private apertures
+journal lines: 826122; flat aperture lines: 6
+stall-waves.sh (armed 115-295 s): no stall seen
+kernel log lines in the run window: 2, none from amdgpu; journal 'skip pgm' lines: 0
