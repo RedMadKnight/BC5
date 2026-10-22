@@ -1,0 +1,75 @@
+== tcpW1b: journal last frame t 599.468 s, file last write 17:52:42 (epoch 1792684362)
+# tcpW1b: 12 given-up waits (journal t at the end of the wait, label, dword, waited ms, buffer)
+    7.952  0x12004b4838  at   590    16.0 ms  dcb 1153 dwords  wall 17:42:50
+    8.015  0x12004b4838  at   590    29.8 ms  dcb 1153 dwords  wall 17:42:50
+  105.136  0x12004b3c38  at   379     9.5 ms  dcb 3092 dwords  wall 17:44:27
+  144.383  0x12004b3c38  at   379    19.1 ms  dcb 3092 dwords  wall 17:45:06
+  144.724  0x12004b5438  at   311    10.1 ms  dcb 860 dwords  wall 17:45:07
+  148.487  0x12004b5438  at   311    22.2 ms  dcb 850 dwords  wall 17:45:11
+  148.901  0x12004b3c38  at   379    11.6 ms  dcb 3092 dwords  wall 17:45:11
+  240.219  0x12004b3c38  at 10109     9.2 ms  dcb 11941 dwords  wall 17:46:42
+  395.239  0x12004b3c38  at 10109    31.8 ms  dcb 11941 dwords  wall 17:49:17
+  454.432  0x12004b3c38  at 10109    10.0 ms  dcb 11941 dwords  wall 17:50:16
+  469.882  0x12004b3c38  at 10109     8.9 ms  dcb 11941 dwords  wall 17:50:32
+  529.199  0x12004b3c38  at 10109    24.1 ms  dcb 11941 dwords  wall 17:51:31
+== B1b: journal last frame t 278.154 s, file last write 18:16:38 (epoch 1792685798)
+# B1b: 27 given-up waits (journal t at the end of the wait, label, dword, waited ms, buffer)
+    5.615  0x12004b4838  at   590     8.4 ms  dcb 1153 dwords  wall 18:12:05
+    6.729  0x12004b4838  at   590    16.8 ms  dcb 1153 dwords  wall 18:12:06
+    6.785  0x12004b4838  at   590    17.8 ms  dcb 1153 dwords  wall 18:12:06
+   45.811  0x12004b5438  at   291     8.4 ms  dcb 922 dwords  wall 18:12:45
+   47.687  0x12004b5438  at   291     8.4 ms  dcb 922 dwords  wall 18:12:47
+   60.795  0x12004b3c38  at  5907     8.7 ms  dcb 7048 dwords  wall 18:13:00
+   72.216  0x12004b5438  at   291     9.1 ms  dcb 922 dwords  wall 18:13:12
+   95.272  0x12004b5438  at   311   169.1 ms  dcb 860 dwords  wall 18:13:35
+   97.356  0x12004b5438  at   311     8.2 ms  dcb 860 dwords  wall 18:13:37
+  100.493  0x12004b5438  at   311     8.4 ms  dcb 860 dwords  wall 18:13:40
+  105.592  0x12004b5438  at   311     8.7 ms  dcb 860 dwords  wall 18:13:45
+  117.865  0x12004b5438  at   311     8.7 ms  dcb 860 dwords  wall 18:13:57
+  118.776  0x12004b5438  at   311     8.7 ms  dcb 860 dwords  wall 18:13:58
+  127.631  0x12004b4c38  at  8089    13.5 ms  dcb 14596 dwords  wall 18:14:07
+  128.297  0x12004b5438  at   311     8.3 ms  dcb 860 dwords  wall 18:14:08
+  135.303  0x12004b5438  at   311     8.4 ms  dcb 860 dwords  wall 18:14:15
+  140.444  0x12004b4c38  at  8089     8.6 ms  dcb 14596 dwords  wall 18:14:20
+  144.311  0x12004b5438  at   311     8.9 ms  dcb 860 dwords  wall 18:14:24
+  147.038  0x12004b5438  at   311     8.4 ms  dcb 860 dwords  wall 18:14:26
+  147.501  0x12004b5438  at   311     8.3 ms  dcb 860 dwords  wall 18:14:27
+  154.262  0x12004b4c38  at  8089     8.7 ms  dcb 14596 dwords  wall 18:14:34
+  158.666  0x12004b5438  at   311     8.5 ms  dcb 860 dwords  wall 18:14:38
+  160.670  0x12004b5438  at   311     9.0 ms  dcb 860 dwords  wall 18:14:40
+  171.807  0x12004b4c38  at  8089    25.1 ms  dcb 14596 dwords  wall 18:14:51
+  177.760  0x12004b5438  at   311     8.3 ms  dcb 860 dwords  wall 18:14:57
+  179.775  0x12004b5438  at   311     8.3 ms  dcb 860 dwords  wall 18:14:59
+  221.900  0x12004b3c38  at 11078     9.0 ms  dcb 12915 dwords  wall 18:15:41
+== B2: journal last frame t 276.455 s, file last write 18:30:28 (epoch 1792686628)
+# B2: 30 given-up waits (journal t at the end of the wait, label, dword, waited ms, buffer)
+    5.692  0x12004b4838  at   590    15.6 ms  dcb 1153 dwords  wall 18:25:57
+    5.737  0x12004b4838  at   590    16.0 ms  dcb 1153 dwords  wall 18:25:57
+    5.781  0x12004b4838  at   590    17.1 ms  dcb 1153 dwords  wall 18:25:57
+    5.832  0x12004b4838  at   590    18.3 ms  dcb 1153 dwords  wall 18:25:57
+   41.094  0x12004b5438  at   291     8.2 ms  dcb 922 dwords  wall 18:26:32
+   44.372  0x12004b5438  at   291     8.3 ms  dcb 922 dwords  wall 18:26:35
+   51.048  0x12004b3c38  at  5907     8.7 ms  dcb 7048 dwords  wall 18:26:42
+   57.435  0x12004b5438  at   291     8.3 ms  dcb 922 dwords  wall 18:26:48
+   65.415  0x12004b5438  at   291     9.3 ms  dcb 922 dwords  wall 18:26:56
+   67.552  0x12004b5438  at   291     8.2 ms  dcb 922 dwords  wall 18:26:59
+   96.687  0x12004b5438  at   311     8.5 ms  dcb 860 dwords  wall 18:27:28
+  107.484  0x12004b4c38  at  8089     8.7 ms  dcb 14606 dwords  wall 18:27:39
+  111.688  0x12004b5438  at   311    98.6 ms  dcb 860 dwords  wall 18:27:43
+  114.063  0x12004b5438  at   311     8.4 ms  dcb 860 dwords  wall 18:27:45
+  114.855  0x12004b5438  at   311    51.1 ms  dcb 860 dwords  wall 18:27:46
+  119.066  0x12004b5438  at   311     8.2 ms  dcb 860 dwords  wall 18:27:50
+  129.147  0x12004b5438  at   311     8.6 ms  dcb 860 dwords  wall 18:28:00
+  136.183  0x12004b5438  at   311     8.4 ms  dcb 860 dwords  wall 18:28:07
+  143.219  0x12004b5438  at   311     8.3 ms  dcb 860 dwords  wall 18:28:14
+  148.207  0x12004b5438  at   311     8.5 ms  dcb 860 dwords  wall 18:28:19
+  151.136  0x12004b3c38  at   379    19.6 ms  dcb 3092 dwords  wall 18:28:22
+  152.213  0x12004b5438  at   311     8.6 ms  dcb 860 dwords  wall 18:28:23
+  159.219  0x12004b5438  at   311     8.3 ms  dcb 860 dwords  wall 18:28:30
+  162.881  0x12004b3c38  at   379    11.1 ms  dcb 3092 dwords  wall 18:28:34
+  164.227  0x12004b5438  at   311     8.3 ms  dcb 860 dwords  wall 18:28:35
+  166.200  0x12004b5438  at   311    27.2 ms  dcb 860 dwords  wall 18:28:37
+  166.269  0x12004b5438  at   311    21.9 ms  dcb 860 dwords  wall 18:28:37
+  175.998  0x12004b3c38  at 12908     8.8 ms  dcb 13583 dwords  wall 18:28:47
+  246.850  0x12004b3c38  at 12908     9.0 ms  dcb 13583 dwords  wall 18:29:58
+  258.671  0x12004b5438  at   311     8.5 ms  dcb 860 dwords  wall 18:30:10
