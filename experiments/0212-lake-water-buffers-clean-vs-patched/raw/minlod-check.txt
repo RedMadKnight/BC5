@@ -1,0 +1,19 @@
+# Experiment 0212: two offline checks on the texture table's MIN_LOD (asked by the top session after the C4 event).
+1. Does anything in our path rewrite the title's image descriptors?
+   backend/kytyplus-patches/0001-bc5-lle-agc.patch (this repo) reads T#s only for journal lines (e.g. experiments
+   0099/0104, "draw journal layer ... index ... -> <descriptor>"); no write to a descriptor was found (grep for T#,
+   image descriptor, SQ_IMG, BASE_LEVEL, LAST_LEVEL, swizzle mode, MIN_LOD). The direct path hands the GPU the guest's
+   own pages (ADR 0006), so the table the GPU reads is the title's, byte for byte.
+2. Does gfx10 (and the BC-250's GFX1013) honour a T#'s MIN_LOD?
+   Mesa @ ab2374a (laptop sparse clone refs/mesa_mesa, src/amd/common and src/amd/vulkan added for this):
+   - src/amd/common/ac_descriptors.c:551-558: for gfx_level < GFX11 the view's min_lod goes into WORD1 MIN_LOD as
+     util_unsigned_fixed(CLAMP(min_lod, 0, 15), 8), i.e. unsigned 4.8 fixed point (GFX11 moves it to WORD5/6).
+   - src/amd/vulkan/radv_physical_device.c:886 and :1349-1350: RADV exposes VK_EXT_image_view_min_lod (minLod = true)
+     unconditionally, and src/amd/common/ac_gpu_info.c has no GFX1013 exception for it.
+   So RADV implements the Vulkan min-LOD clamp on every gfx10 part, the BC-250's included, through this field: the
+   hardware is expected to clamp sampling to MIN_LOD. TODO(verify) on the chip (a sampled-mip test), since a GFX1013
+   quirk would not necessarily be in Mesa.
+   This also confirms tab0212.py's reading of WORD1 [8,19] as 4.8 fixed point (MIN_LOD 1.00 = 0x100).
+Reading: the title streams textures by lowering each T#'s MIN_LOD as finer mips arrive. If the GPU clamps as RADV
+assumes, a texture whose MIN_LOD stays high is sampled coarse (blurred), not empty. Whether that coarse sampling is what
+the water's flat cells are depends on which table entries the water samples, not yet known.

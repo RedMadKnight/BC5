@@ -1,0 +1,17 @@
+shader      stage slot kind    draws  descriptor
+11d01d7100  gs       0 buffer       1  0x1122694f00 stride 16 records 40 (640 bytes) fmt 77
+11d01d7100  gs       0 buffer       1  0x11226c90b0 stride 16 records 40 (640 bytes) fmt 77
+11d01d7100  ps       0 buffer       1  0x1122694f00 stride 16 records 40 (640 bytes) fmt 77
+11d01d7100  ps       0 buffer       1  0x11226c90b0 stride 16 records 40 (640 bytes) fmt 77
+11d01d7100  ps       1 buffer       1  0x1122690930 stride 16 records 77 (1232 bytes) fmt 77
+11d01d7100  ps       1 buffer       1  0x11226c4ae0 stride 16 records 77 (1232 bytes) fmt 77
+11d01d7100  ps       2 buffer       1  0x1123778c00 stride 16 records 168 (2688 bytes) fmt 77
+11d01d7100  ps       2 buffer       1  0x112379f780 stride 16 records 168 (2688 bytes) fmt 77
+11d01ff900  gs       0 image        8  0x8001810000 2048x2048 fmt 13 levels 1 sw 27
+11d01ff900  gs       2 image        8  0x8001010000 512x512 fmt 71 levels 1 sw 27
+11d01ff900  gs       4 image        8  0x113cb40000 3072x1728 fmt 13 levels 1 sw 27
+11d01ff900  gs       6 buffer       8  0x11e0007aa0 stride 32 records 25506 (816192 bytes) fmt 5
+11d01ff900  ps       0 image        8  0x8490fa4000 2048x2048 fmt 175 levels 8 sw 5
+11d01ff900  ps       2 image        8  0x80907c4000 512x512 fmt 13 levels 7 sw 5
+11d01ff900  ps       4 image        8  0x11d0078000 4x4 fmt 56 levels 1 sw 5
+11d01ff900  ps       6 buffer       8  0x11e0007aa0 stride 32 records 25506 (816192 bytes) fmt 5

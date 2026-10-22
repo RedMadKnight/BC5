@@ -1,0 +1,36 @@
+# Experiment 0212, runs C1-C4 (2026-10-22 19:41:35-20:00:52, granted by the top session; ab0212.sh C1:x C2:s C3:x C4:s).
+# x = the cutscene session's exp 0203 binary (17:54:07, read-ahead switch off), s = the shared build (10:22).
+# Every run: the exp 0194 bench (private lake-save copy), the water shaders' journal (150:4, every 15 s, PS 11d01ff900 and
+# 11d01d7100), DUMPS=1 (mem0212.py: CRC-32 per 4-KiB page every second, dumps before every frozen-view shot).
+# Box: boot ac5dab11, 187 amdgpu lines before and after (the two at 19:28 were the traversal session's R11B), no fault or
+# timeout. Files: raw/ab.txt (scores), raw/C*-desc.txt (desc0212.py), raw/C*-hash.txt (mem0212.py hash), raw/tables.txt
+# (tab0212.py). The dumps themselves are the title's memory and stay on the box (~/bc5-work/exp0194/r-C*/dumps).
+# Views checked on shots copied off the box at 20:13 (scratchpad only): C1 the bench view, a checkerboard by the shore;
+# C2 and C3 a wider angle over the lake, heavily patched; C4 ts01 the bench view with a checkerboard by the shore and
+# ts02 the same view with a clean lake: the switch is the water's, not the camera's.
+Patch share in the frozen view:
+  C1 x  19:44:10-19:45:22  13.7 11.9 20.4 25.5 21.5 29.0 22.1 27.8 26.2 21.3 22.1 28.0 23.6
+  C2 s  19:48:58-19:50:02  23.1 25.4 22.9 24.7 25.4 22.4 27.2 24.8 24.5 24.9 26.9 24.5 24.7
+  C3 x  19:53:48-19:54:52  29.8 26.2 27.5 27.7 27.4 26.4 25.8 23.6 25.2 24.7 23.6 27.3 25.4
+  C4 s  19:58:39-19:59:44   4.6  9.7  1.0  1.0  1.0  1.1  1.0  1.0  1.0  1.0  1.0  1.0  1.0   (clean from 19:58:50)
+The binary confound of exp 0205 (4 of 6 runs on x mostly clean, 0 of 6 on the others) does not hold: both x runs were
+patched, one s run went clean.
+The "per-cell buffer" 0x11e0007aa0 (V# in the water's GS user data, slot 6; stride 32, fmt 5):
+- Records per run (desc0212.py): C1 25,524, C2 25,506, C3 25,560, C4 25,516 (exp 0201 X2: 25,534). The dumps cover
+  0xc7780 bytes = 25,532 records.
+- Its records are gfx10 image descriptors (T#, 8 dwords; tab0212.py): about 22,900 decode as images, about 9,400
+  distinct texture bases, mostly in the AMM window, MIN_LOD 0-6 (read as 4.8 fixed point, TODO(verify)). A bindless
+  table of the scene's streamed textures, with a per-texture detail clamp.
+- During the frozen view (raw/C*-hash.txt): in C1, C2 and C3 the table's last change is in the view's first second
+  (the camera move); after that, no page changes through the patched view; the 13 dumps of each run are identical.
+  In C4 two more changes, at 19:58:41 and 19:58:45: ten records = five textures (pairs of descriptors), each with
+  MIN_LOD lowered by one (one finer mip allowed): 0x8344d78000 and 0x84c8148000 (2048x2048 fmt 181, 4.0 -> 3.0),
+  0x846e084000 (2048x2048 fmt 175, 1.0 -> 0.0), 0x84ba2b8000 (1024x4096 fmt 182) and 0x84bad78000 (1024x4096 fmt 177)
+  (1.0 -> 0.0). None of them is the water's own BC4 texture (C4: 0x8493244000). C4's lake was clean from the next
+  shot on (19:58:50).
+- Across runs: textures sit at different AMM addresses in each run; only 2,083 bases are in all four tables, and their
+  21 differences in MIN_LOD or LAST_LEVEL show no clean-against-patched pattern (raw/tables.txt).
+Reading: the table only moves while the title streams; in a frozen view it is static, patched or not. The one run that
+turned clean did so within 5-9 s of the title lowering five textures' detail clamps, the only table change in any
+frozen view. One event: a lead that the patchwork ends when the streamer finishes some last mips, not established, and
+it does not say which texture the water needs.
