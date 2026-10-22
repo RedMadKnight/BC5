@@ -1,0 +1,18 @@
+# Experiment 0197, runs on the exp 0194 bench (2026-10-22 13:57–14:29). Patch share = patch0197.py on the
+# frozen-view screenshots (fraction of pixels in x 300..1900, y 400..680 with luma > 47 and blue-red > 38).
+# Binary: Z1/D1 the exp 0194 diagnostic build (12:04:59); P1/P2/T2/T3/R1 the exp 0197 build (edit0197.py).
+
+Z1  13:57  KYTY_BC5_AMM_ZERO_AUTO=1, journal windows        v1 14:00:10  0.8 %   v2 14:00:21  7.2 %  (a checkerboard
+           region appeared in the middle within 11 s; camera static in Photo Mode)
+D1  14:01  launcher defaults, journal windows                ts00..ts12 (14:04:23..14:05:25, every ~5 s):
+           0.9 0.9 0.8 0.9 0.9 0.8 0.9 0.9 0.9 0.9 0.6 0.9 0.9 %  (clean for 60 s)
+P1  14:08  BC5_DIRECT_DROP_PS=11d29e9f00,11d521da00,11d373f400 (L4's addresses)  0.8 % / 0.8 %; no draw dropped
+P2  14:14  same, with the PS tracking extended (0x9b, 0x5f, flat 0x63)            1.8 % / 1.8 %; no draw dropped
+T2  14:19  title screen, BC5_DIRECT_DROP_PS_TRACE=1: 72 distinct PS at draws (op 24 x34, 2d x28, 2c x4, 35 x4,
+           27, 38); the draw journal's 12 PS of its 20 buffers are all among them (tracking agrees)
+T3  14:21  title screen, BC5_DIRECT_DROP_PS=11d1d10f00,11d1e02b00: "drop ps 0x11d1d10f00: dcb draw op 24 at 2810
+           dropped (1 so far)" ... 8193 so far (the drop path works)
+R1  14:24  BC5_DIRECT_DROP_PS_FILE (live list), journal windows every 10 s, 1500 s planned: ts00 14:26:24 0.9 %,
+           ts12 14:27:46 2.9 %. Real pad input arrived during the run (route-record.txt: left stick); the shot at
+           14:27:46 shows windowed gameplay, and the game was closed normally at 14:29:28 (exit 0). The live drop
+           of 0x11d4b0df00 (14:29:39) came after the game had closed: not tested. The box then went to exp 0199's watched run (BC5_DIRECT_AMM_PRT=1, the maintainer playing).

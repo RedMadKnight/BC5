@@ -1,0 +1,16 @@
+# Experiment 0197, run R1: draws in the journal windows after 14:26:30 that do not go to the G-buffer (rt0
+# 0x113f230000; 190 G-buffer shader/op combinations not listed), by pixel shader, target and packet, with the sum
+# of the first indirect argument (meshlets for 0x24/0x2c, index count for 0x38). ps0197.py; keys are not stable
+# across frames here (buffer sizes vary), so the sums are over all distinct (size, offset) keys.
+ps 11d01b9f00 rt0 0000000000 op 24: 250 draws, meshlets 257072
+ps 11d4b0df00 rt0 113d770000 op 38: 24 draws, meshlets 194688      <- water candidate (HDR target, indexed multi-draw)
+ps 11d3ebde00 rt0 116da40000 op 38: 11 draws, meshlets 154200
+ps 11d01ba000 rt0 0000000000 op 24: 285 draws, meshlets 104521
+ps 11d1e59a00 rt0 112c7b0000 op 24: 115 draws, meshlets 88386
+ps 11d1e70d00 rt0 113cb40000 op 24: 115 draws, meshlets 88386
+ps 11d38d1d00 rt0 0000000000 op 2c: 234 draws, meshlets 32114
+ps 11d0ec1000 rt0 113d770000 op 24: 21 draws, meshlets 5400
+ps 11d2ca1f00 rt0 113d770000 op 2c: 19 draws, meshlets 4260
+ps 11d0eb2100 rt0 113d770000 op 24: 14 draws, meshlets 3534
+ps 11d4c02500 rt0 113d770000 op 24: 73 draws, meshlets 1494
+ps 11d0edf900 rt0 113d770000 op 24: 33 draws, meshlets 1308

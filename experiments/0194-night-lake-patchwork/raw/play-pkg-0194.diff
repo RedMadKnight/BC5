@@ -1,0 +1,14 @@
+35a36
+> [ -n "${BC5_0194_INPUT_CONFIG:-}" ] && export KYTY_BC5_INPUT_CONFIG=$BC5_0194_INPUT_CONFIG  # exp 0194: keyboard layout off for scripted runs
+44c45
+< export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/_SaveData-pkg-play
+---
+> export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/exp0194/wd/_SaveData-pkg-play  # exp 0194: private copy
+63c64
+< export BC5_DIRECT_DMA_SNAPSHOT=4096
+---
+> export BC5_DIRECT_DMA_SNAPSHOT=${BC5_DIRECT_DMA_SNAPSHOT:-4096}  # exp 0194: overridable
+145c146
+< cd ~/bc5-work
+---
+> cd ~/bc5-work/exp0194/wd  # exp 0194: its own _SaveData (a copy of the lake save), the rest symlinked

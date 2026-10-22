@@ -1,0 +1,11 @@
+# Experiment 0197: pixel-shader addresses of the same G-buffer materials in two runs (draw journal, frozen lake
+# view). A block of shaders moves by 0xd00 between runs, others stay; a drop list by address is per run.
+exp 0194 L4 (12:21)   exp 0197 D1 (14:04)   delta
+11d29e9f00            11d29e9200            -0xd00
+11d373f400            11d373e700            -0xd00
+11d521da00            11d521cd00            -0xd00
+11d4d53400            11d4d52700            -0xd00
+11d3e72a00            11d3e71d00            -0xd00
+11d1d74b00            11d1d74b00            0
+11d1d88300            11d1d88300            0
+11d1dd3800            11d1dd3800            0

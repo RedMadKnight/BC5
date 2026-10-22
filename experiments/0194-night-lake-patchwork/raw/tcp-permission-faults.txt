@@ -1,0 +1,29 @@
+# TCP (shader) write-permission faults seen during experiment 0194 (kernel log excerpts). Run W2 (uptime stamps), the maintainer's 12:00 session and run L7.
+== W2
+[10796.560546] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:5 pasid:134)
+[10796.560557] amdgpu 0000:01:00.0:   in page starting at address 0x000000820c37f000 from client 0x1b (UTCL2)
+[10796.560561] amdgpu 0000:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+[10796.560566] amdgpu 0000:01:00.0: 	 PERMISSION_FAULTS: 0x5
+[10796.560568] amdgpu 0000:01:00.0: 	 RW: 0x1
+[10796.560572] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:5 pasid:134)
+[10796.560575] amdgpu 0000:01:00.0:   in page starting at address 0x000000820c37d000 from client 0x1b (UTCL2)
+[10796.560578] amdgpu 0000:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+[10796.560581] amdgpu 0000:01:00.0: 	 PERMISSION_FAULTS: 0x5
+[10796.560584] amdgpu 0000:01:00.0: 	 RW: 0x1
+[10796.560587] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:5 pasid:134)
+[10796.560591] amdgpu 0000:01:00.0:   in page starting at address 0x000000820c37f000 from client 0x1b (UTCL2)
+== the maintainer's session 12:00 (woda 0194 shortcut; kernel log of 12:01:34), then run L7 (12:47:04)
+[czw paź 22 12:01:34 2026] amdgpu 0000:01:00.0:   in page starting at address 0x00000083fdaa1000 from client 0x1b (UTCL2)
+[czw paź 22 12:01:34 2026] amdgpu 0000:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+[czw paź 22 12:01:34 2026] amdgpu 0000:01:00.0: 	 PERMISSION_FAULTS: 0x5
+[czw paź 22 12:01:34 2026] amdgpu 0000:01:00.0: 	 RW: 0x1
+[czw paź 22 12:01:34 2026] amdgpu 0000:01:00.0:   in page starting at address 0x00000083fdaa0000 from client 0x1b (UTCL2)
+[czw paź 22 12:01:34 2026] amdgpu 0000:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+[czw paź 22 12:01:34 2026] amdgpu 0000:01:00.0: 	 PERMISSION_FAULTS: 0x5
+[czw paź 22 12:01:34 2026] amdgpu 0000:01:00.0: 	 RW: 0x1
+[czw paź 22 12:47:04 2026] amdgpu 0000:01:00.0:   in page starting at address 0x0000001765833000 from client 0x1b (UTCL2)
+[czw paź 22 12:47:04 2026] amdgpu 0000:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+[czw paź 22 12:47:04 2026] amdgpu 0000:01:00.0: 	 PERMISSION_FAULTS: 0x5
+[czw paź 22 12:47:04 2026] amdgpu 0000:01:00.0: 	 RW: 0x1
+[czw paź 22 12:47:06 2026] amdgpu 0000:01:00.0: ring comp_1.1.0 timeout, signaled seq=3522883, emitted seq=3522885
+[czw paź 22 12:47:06 2026] amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=5061815, emitted seq=5061817

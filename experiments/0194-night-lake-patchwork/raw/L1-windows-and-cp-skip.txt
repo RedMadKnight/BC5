@@ -1,0 +1,12 @@
+buf      0 t   85.016 11:58:58 shot -:    41 draws,    0 indirect, max count 0, max inst 0, 0 zero, 0 over the CP limits
+buf     40 t   93.194 11:59:06 shot -:    48 draws,    0 indirect, max count 0, max inst 0, 0 zero, 0 over the CP limits
+buf     80 t  101.228 11:59:14 shot -:   353 draws,  123 indirect, max count 87529, max inst 1, 11 zero, 0 over the CP limits
+buf    120 t  109.285 11:59:23 shot -:    33 draws,    0 indirect, max count 0, max inst 0, 0 zero, 0 over the CP limits
+buf    160 t  117.358 11:59:31 shot -:    94 draws,    0 indirect, max count 0, max inst 0, 0 zero, 0 over the CP limits
+buf    200 t  125.408 11:59:39 shot -:   866 draws,  408 indirect, max count 20850, max inst 1, 9 zero, 0 over the CP limits
+buf    240 t  133.450 11:59:47 shot -:   680 draws,  313 indirect, max count 129792, max inst 1, 17 zero, 0 over the CP limits
+buf    280 t  141.484 11:59:55 shot -:   898 draws,  537 indirect, max count 116832, max inst 894, 15 zero, 1 over the CP limits
+
+draw journal args buf 297 at 7160: op 24 base1 11935d3900 +0x5c0 single count 1 (dw4 00000000, count addr 0000000000 = -1) stride 16 | max count 414 max inst 894, 0 zero, 1 over the CP limits cp-skip | [19e 37e 446 44a]
+draw journal buf 297 (7976 dwords) at 7160: c0032400 000005c0 00000280 00000280 00000002 | rt0 113f230000 2560x1440 info 00040710 mask 000fffff | vp 2560x-1440 at 0,1440 | ps 11d1d74b00 es 11d0134500 gs 0000000000 cs 11d0375600
+draw journal mrt buf 297 at 7160: 0:113f230000 1:1140a90000 2:11422f0000 3:11453b0000 4:1148470000 | ps 11d1d74b00

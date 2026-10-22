@@ -1,0 +1,8 @@
+== play-20261022-1225
+gpu check: 12401364 dispatches checked by the CP, 44897 without a base, 0 NOP-ed (a COND_EXEC range too long)
+chains: 500734 submitted, 2197959 segments (162742 single, 404083 with cond_exec), 1294309652 dwords; closed by: end 215132 wait 186237 ring/class 0 cond_exec 0 size 0 drain 14649 acb-head 49886 other 0 observe 0 hold-wd 17778 hold-end 17052
+== play-20261022-1237
+gpu check: 10240427 dispatches checked by the CP, 51675 without a base, 0 NOP-ed (a COND_EXEC range too long)
+== play-20261022-1250
+gpu check: 9712394 dispatches checked by the CP, 25397 without a base, 0 NOP-ed (a COND_EXEC range too long)
+chains: 353074 submitted, 1550813 segments (115025 single, 279234 with cond_exec), 1060263328 dwords; closed by: end 147719 wait 137430 ring/class 0 cond_exec 0 size 0 drain 10293 acb-head 34944 other 0 observe 0 hold-wd 13285 hold-end 9403
