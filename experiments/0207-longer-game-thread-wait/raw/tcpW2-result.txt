@@ -1,0 +1,11 @@
+== tcpW2 (play-20261022-1712, BC5_DIRECT_DCB_WAIT_MS=100)
+TIMEOUT        0
+^timeout: fault 0
+GIVEN UP       1
+two rings      93
+frames 17144, mean 34.6 ms; over 50 ms 1075, over 100 ms 123, over 250 ms 12, over 1 s 2; last t 595.9 s
+given up by label:
+      1 0x12004b3c38: 100.1
+label waits on 0x12004b3c38 traced: 6201
+cpu-wait satisfied lines (if any):
+0
