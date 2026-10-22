@@ -1,0 +1,15 @@
+# O2 APR journal: line kinds
+   3094 run
+   1594 record-write
+    808 finish
+    765 submit
+    752 record-event
+    675 record-read
+# submit priorities
+    765 prio 1
+# sequence writes to 0x90adf7fe0 in run order
+799 writes, 0 decreases
+# failures
+0
+# the clock voice entry +0x7c69535a: records and runs (journal t, t0 = mono 260.735)
+record-read@14.0 run@14.0 record-read@23.9 run@23.9 record-read@33.9 run@33.9 record-read@43.9 run@43.9 record-read@53.9 run@54.0 record-read@63.9 run@63.9 record-read@73.9 run@73.9 record-read@83.9 run@83.9 record-read@87.5 run@87.5 record-read@97.4 run@97.5 record-read@107.4 run@107.5 record-read@117.4 run@117.5 record-read@127.7 run@127.8 record-read@138.0 run@138.4 record-read@148.0 run@148.2 record-read@158.0 run@160.9 record-read@168.0 run@168.0 record-read@181.8 run@182.7 record-read@191.9 run@191.9 record-read@201.9 run@201.9 record-read@211.9 run@211.9 record-read@221.8 run@221.8 record-read@231.9 run@231.9 record-read@241.9 run@241.9 record-read@251.9 run@251.9 record-read@261.9 run@261.9 record-read@272.1 run@272.1 record-read@282.1 run@282.1 record-read@292.2 run@292.2 record-read@302.2 run@302.2 record-read@312.2 run@312.2 record-read@322.2 run@322.2 run@332.2 run@342.2 record-read@352.5 run@352.5 record-read@362.5 run@362.5 record-read@372.5 run@372.5 record-read@382.5 run@382.5 record-read@392.5 run@392.5 record-read@402.5 run@402.7 record-read@412.7 run@412.7 record-read@422.6 run@422.6 record-read@432.9 run@432.9 record-read@442.9 run@442.9 record-read@453.2 run@453.2 record-read@463.9 run@463.9 record-read@473.9 run@473.9 record-read@484.0 run@484.0 record-read@494.0 run@494.0 record-read@504.0 run@504.0 record-read@514.0 run@514.0 record-read@524.0 run@524.0 record-read@534.0 run@534.0 record-read@544.1 run@544.1 record-read@554.1 run@554.1 record-read@564.1 run@564.1 record-read@574.3 run@574.3 record-read@584.3 run@584.3 record-read@594.3 run@594.3 

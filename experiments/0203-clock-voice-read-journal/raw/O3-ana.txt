@@ -1,0 +1,66 @@
+# windows of 20 s on journal time
+# player event: 2.0 scan new none (clock 0.000..0.000, main-player candidates: none; by vtable: none)
+# player event: 22.6 scan new none (clock 4.493..4.573, main-player candidates: none; by vtable: none)
+# player event: 43.1 scan new 10705b90c0 (clock 5.033..5.133, main-player candidates: 0x10705b90c0/909261b30; by vtable: none)
+# player event: 63.7 scan new none (clock 5.653..5.773, main-player candidates: 0x10705b90c0/909261b30; by vtable: 0x10705b90c0/909261b30)
+# player event: 84.3 scan new none (clock 6.293..6.413, main-player candidates: 0x10705b90c0/909261b30; by vtable: 0x10705b90c0/909261b30)
+# player event: 87.5 10705b90c0 lost
+# player event: 105.0 scan new none (clock 6.633..6.713, main-player candidates: none; by vtable: none)
+# player event: 125.6 scan new 10709bae80 (clock 6.453..6.553, main-player candidates: 0x10709bae80/909261b30; by vtable: 0x10709bae80/909261b30)
+# player event: 146.1 scan new none (clock 6.453..6.533, main-player candidates: 0x10709bae80/909261b30; by vtable: 0x10709bae80/909261b30)
+# player event: 167.5 scan new none (clock 7.553..7.653, main-player candidates: none; by vtable: 0x10709bae80/909261b30)
+# player event: 179.8 10709bae80 lost
+# player event: 187.0 scan new none (clock 5.993..6.093, main-player candidates: none; by vtable: none)
+# player event: 207.6 scan new none (clock 6.593..6.693, main-player candidates: none; by vtable: none)
+# player event: 228.3 scan new none (clock 7.153..7.233, main-player candidates: none; by vtable: none)
+# player event: 248.9 scan new none (clock 7.713..7.813, main-player candidates: none; by vtable: none)
+# player event: 269.5 scan new none (clock 8.393..8.493, main-player candidates: none; by vtable: none)
+# player event: 290.1 scan new none (clock 9.053..9.153, main-player candidates: none; by vtable: none)
+# player event: 310.6 scan new none (clock 9.553..9.613, main-player candidates: none; by vtable: none)
+# player event: 331.2 scan new none (clock 0.053..0.153, main-player candidates: none; by vtable: none)
+# player event: 351.9 scan new none (clock 0.773..0.873, main-player candidates: none; by vtable: none)
+# player event: 372.4 scan new none (clock 1.373..1.473, main-player candidates: none; by vtable: none)
+# player event: 392.9 scan new none (clock 1.853..1.953, main-player candidates: none; by vtable: none)
+# player event: 413.4 scan new none (clock 2.413..2.493, main-player candidates: none; by vtable: none)
+# player event: 434.1 scan new none (clock 3.013..3.093, main-player candidates: none; by vtable: none)
+# player event: 454.7 scan new none (clock 3.793..3.853, main-player candidates: none; by vtable: none)
+# player event: 475.4 scan new none (clock 4.333..4.413, main-player candidates: none; by vtable: none)
+# player event: 496.0 scan new none (clock 4.973..5.073, main-player candidates: none; by vtable: none)
+# player event: 516.7 scan new none (clock 5.653..5.753, main-player candidates: none; by vtable: none)
+# player event: 537.2 scan new none (clock 6.213..6.333, main-player candidates: none; by vtable: none)
+# player event: 557.9 scan new none (clock 6.893..6.953, main-player candidates: none; by vtable: none)
+# player event: 578.4 scan new none (clock 7.433..7.493, main-player candidates: none; by vtable: none)
+# player event: 598.8 scan new none (clock 7.853..7.953, main-player candidates: none; by vtable: none)
+# player 10705b90c0 t 43.2-87.5, debt -0.016..+0.067, rate 1.000..1.000
+# player 10709bae80 t 125.6-179.8, debt -0.377..+1.069, rate 0.976..1.000
+t      clock  clip   debt  rate  div   n/path voice  a/p    fps   | cstall/s majf/s memfull iofull availMB wrap vid ajm# | game-main run/wait/D  AudioMgr run/wait/D  IOThread run/wait/D  apr run/wait/D
+     0 0.64    -      -     -   1.00 0    -    1.00  28.4 |     0   126   0.58  10.47   3468 10.000      1      2 |  1850/  14/ 2    196/   1/ 0      8/   0/ 0      3/   0/ 1
+    20 1.00    -      -     -   1.00 0    -    1.00  25.0 |     0    30   0.09  12.64   2567 10.000      1      3 |  4820/  26/ 1    471/  12/ 0     16/   5/ 0    302/ 113/28
+    40 1.00  1.00  +0.00 1.00 1.00 1S   -    1.00  43.5 |     0    66   0.33   2.51   1995 10.000      1      3 |  9629/  74/ 0   1976/  32/ 0     18/  14/ 0    115/  50/ 5
+    60 1.00  1.00  +0.00 1.00 1.00 1S   -    1.00  50.1 |     0    17   0.05   0.51   1977 10.000      1      3 |  8491/  49/ 0   1872/  25/ 0     16/   7/ 0      6/   5/ 0
+    80 0.98    -    +0.00 1.00 1.00 1m   -    1.00  30.9 |     2    12   1.65  25.36   1935 10.000     2e     10 | 10030/  48/ 1   1350/  14/ 0     17/  10/ 0    391/  77/40
+   100 0.73    -      -     -   1.00 0    -    1.00  22.6 |     0     7   0.85  49.02   1694 10.000     2e    138 |  8058/  40/ 0   4335/  26/ 0     51/  25/ 0    623/ 397/229
+   120 0.94  0.94  +0.09 1.00 1.00 1S   -    1.00  35.1 |     3   262   9.82  25.64    835 10.000     2e    280 | 11110/ 115/ 0   8550/  93/ 5     51/  63/ 0    637/ 701/71
+   140 0.99  0.98  +0.03 0.99 1.00 1S   -    1.00  42.9 |     1   812   8.81  13.31    488 10.000     2e    341 |  9992/ 122/ 0   7333/ 110/ 0     29/  45/ 0    652/ 481/11
+   160 0.96  0.92  +0.07 nan 1.00 1m   -    1.00  35.5 |     0  7252  13.07  12.78    470 10.000     2e    509 | 11266/ 160/ 0   8713/ 123/ 2     53/  98/ 0    494/ 784/21
+   180 0.99    -      -     -   0.23 0    -    1.00  39.2 |     0  6197   3.56   4.17    345 10.000     2e    538 |  9444/ 109/ 0   4453/ 304/ 0     28/  92/ 0    133/1437/13
+   200 1.00    -      -     -   0.20 0    -    1.00  42.7 |     0   425   1.22   1.28    353 10.000     2e    542 |  9221/  56/ 0   3366/ 210/ 0     20/  44/ 0     12/  23/ 0
+   220 1.00    -      -     -   0.20 0    -    1.00  42.9 |     0   207   0.13   0.14    398 10.000     2e    545 |  9660/  51/ 0   3281/ 168/ 0     19/  38/ 0      7/   8/ 0
+   240 1.00    -      -     -   0.20 0    -    1.00  43.4 |     0   199   0.10   0.10    398 10.000     2e    548 |  9260/  33/ 0   3046/ 176/ 0     19/  27/ 0      8/   8/ 1
+   260 1.00    -      -     -   0.20 0    -    1.00  43.3 |     0   346   0.07   0.01    397 10.000     2e    552 |  9727/  43/ 0   3262/ 179/ 0     19/  33/ 0     10/  16/ 0
+   280 1.00    -      -     -   0.20 0    -    1.00  43.3 |     0   169   0.72   0.15    507 10.000     2e    555 |  9232/  32/ 0   3100/ 176/ 0     19/  35/ 0      9/   8/ 1
+   300 1.00    -      -     -   0.20 0    -    1.00  43.3 |     0   127   0.67   0.12    494 10.000     2e    558 |  9686/  61/ 1   3357/ 160/ 0     19/  39/ 0      5/   3/ 0
+   320 1.00    -      -     -   0.20 0    -    1.00  43.4 |     0    82   0.17   0.01    553 10.000     2e    564 |  9184/  75/ 1   3058/ 166/ 0     18/  32/ 0      7/   7/ 0
+   340 1.00    -      -     -   0.20 0    -    1.00  43.3 |     0    17   0.02   0.00    540 10.000     2e    567 |  9262/  68/ 1   3202/ 180/ 0     18/  39/ 0      5/   5/ 0
+   360 1.00    -      -     -   0.20 0    -    1.00  43.2 |     0   145   0.00   0.29    512 10.000     2e    571 |  9774/  40/ 0   3295/ 193/ 0     20/  50/ 0      8/   8/ 0
+   380 1.00    -      -     -   0.20 0    -    1.00  43.5 |     0    91   1.33   0.04    529 10.000     2e    574 |  9143/  41/ 0   3090/ 163/ 0     18/  45/ 0      7/   3/ 1
+   400 1.00    -      -     -   0.20 0    -    1.00  42.8 |     0   157   0.14   0.00    589 10.000     2e    577 |  9737/  46/ 0   3401/ 175/ 0     20/  38/ 0      5/   5/ 1
+   420 1.00    -      -     -   0.20 0    -    1.00  42.9 |     0    10   0.14   0.00    591 10.000     2e    580 |  9318/  58/ 0   3066/ 198/ 0     18/  41/ 0      6/  13/ 0
+   440 1.00    -      -     -   0.20 0    -    1.00  43.3 |     0     7   1.32   0.00    575 10.000     2e    586 |  9796/  33/ 0   3235/ 160/ 0     19/  41/ 0      6/   8/ 0
+   460 1.00    -      -     -   0.20 0    -    1.00  43.6 |     0   203   0.40   0.00    569 10.000     2e    590 |  9265/  48/ 0   3056/ 166/ 1     18/  38/ 0      6/   9/ 1
+   480 1.00    -      -     -   0.20 0    -    1.00  43.6 |     0    36   0.09   0.36    511 10.000     2e    590 |  9249/  49/ 0   3179/ 154/ 0     18/  27/ 0      7/   3/ 0
+   500 1.00    -      -     -   0.20 0    -    1.00  44.0 |     0     4   0.03   0.03    572 10.000     2e    596 |  9684/  44/ 0   3307/ 141/ 0     19/  32/ 0      6/   1/ 0
+   520 1.00    -      -     -   0.20 0    -    1.00  43.9 |     0    30   0.18   0.00    548 10.000     2e    599 |  9104/  62/ 0   3030/ 109/ 0     18/  27/ 0      6/   1/ 0
+   540 1.00    -      -     -   0.20 0    -    1.00  43.8 |     0   104   0.01   0.00    597 10.000     2e    602 |  9719/  48/ 0   3304/ 167/ 0     19/  31/ 0      7/   5/ 0
+   560 1.00    -      -     -   0.20 0    -    1.00  43.8 |     0    18   0.00   0.00    577 10.000     2e    606 |  9231/  31/ 1   3119/ 146/ 0     18/  34/ 0      6/   5/ 0
+   580 nan    -      -     -   nan 0    -    1.00  43.2 |     0   115   0.14   0.62  10499   nan      -      - |  9097/  46/ 0   3108/ 175/ 0     18/  35/ 0      6/   1/ 0

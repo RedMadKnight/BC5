@@ -1,0 +1,16 @@
+# O3 (2026-10-22 17:58-18:08 box time, KYTY_BC5_APR_READAHEAD=4, v2 binary 17:54:07), scored against the criteria
+# set before the run (README result 4). Journal time, t0 = mono 4831.502. Computed on the box from O3-amm.txt,
+# O3-apr-journal.txt and O3-sample.txt (the scoring script is the inline one of the session log; the numbers are
+# reproduced here as printed).
+(1a) q1 submit->finished t 120-200: n 829, median 0.02 s, p95 0.42 s, max 379.16 s
+     O2 (switch off): n 794, median 0.15 s, p95 3.40 s, max 398.10 s  (the max of both is a FIFO pairing artefact of reused command buffers)
+(1b) clock-voice record->run: n 48, max delay 0.34 s; delays > 0.5 s: none   (O2: one of 2.9 s at t 158.0)
+(2)  failures 0, sequence writes to 0x90adf7fe0: 975, decreases 0, read-ahead reads into host memory 626; 0 TIMEOUT lines, 0 kernel lines
+(3)  clock time lost in t 100-250: 7.9 s   (O2: about 4 s)
+     5-s windows under 0.95x: 110:0.91 115:0.00 120:0.91 125:0.88 175:0.92 180:0.94
+     t 115-120.4: game-main ran 0.7-0.9 ms a second (asleep), one 5.6-s gap between flips; the frame profile at t 120.240 s:
+     "5646.1 ms since the last flip; game thread inside the host 5.3 ms ... outside 5636.3; GPU busy 5614.8 ms in 10 jobs"
+     (O3-long-frames.txt). The clock voice's entry was read on time around it (records 107.5, 117.8 s, each run within
+     0.3 s, O3-clock-voice.txt); memory was calm (MemAvailable 1.6-1.9 GB, PSI memory full 0.4-1.9 %, under 50 major
+     faults a second). So 5.6 s of the 7.9 s is one GPU stretch with game-main (the clock's writer) waiting, not the
+     clock voice; the rest is about 2.3 s in small dips.

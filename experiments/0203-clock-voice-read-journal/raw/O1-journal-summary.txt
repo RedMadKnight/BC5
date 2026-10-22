@@ -1,0 +1,25 @@
+# O1 APR journal (KYTY_BC5_APR_FILE_JOURNAL=7cd713df): line kinds
+   3303 run
+   1625 record-write
+    916 record-read
+    810 finish
+    793 submit
+    760 record-event
+# submit priorities
+    793 prio 1
+# run-order writes of the completion sequence to 0x90adf7fe0
+810 writes, 0 decreases
+# failures
+0
+# one clock-voice read buffer, recorded to finished
+apr journal (exp 0203): mono 4211.955 record-read cb 0x0000001001308028 file 0x7cd713df +0x7c69535a size 0x16a83 -> 0x00000013164ff000 = 0x00000000 caller 0x0000000903c7c1ba
+apr journal (exp 0203): mono 4211.955 record-event cb 0x0000001001308028 eq 0x0000000000000001 id 1 data 0x4000000000000002 -> ok
+apr journal (exp 0203): mono 4211.955 record-write cb 0x0000001001308028 addr 0x000000090adf7fe0 value 0x4000000000000002 -> ok
+apr journal (exp 0203): mono 4211.955 record-write cb 0x0000001001308028 addr 0x0000001001310008 value 0x3 -> ok
+apr journal (exp 0203): mono 4211.955 submit cb 0x0000001001308028 prio 1 (queue 1, 0 ahead) sub 0 result 0x0000000000000000: 1 reads, 2 writes, 0 waits, 1 events, 0 maps
+apr journal (exp 0203): mono 4211.955 run cb 0x0000001001308028 read file 0x7cd713df +0x7c69535a size 0x16a83 = 0x00000000, 0x16a83 bytes
+apr journal (exp 0203): mono 4211.955 run cb 0x0000001001308028 event eq 0x0000000000000001 id 1 data 0x4000000000000002 = 0x00000000
+apr journal (exp 0203): mono 4211.955 run cb 0x0000001001308028 write addr 0x000000090adf7fe0 value 0x4000000000000002 -> ok
+apr journal (exp 0203): mono 4211.955 run cb 0x0000001001308028 write addr 0x0000001001310008 value 0x3 -> ok
+# the clock voice entry +0x7c69535a: records and runs (journal t)
+record-read@7.2 run@7.2 record-read@17.1 run@17.1 record-read@27.1 run@27.1 record-read@37.1 run@37.1 record-read@47.0 run@47.1 record-read@57.0 run@57.0 run@67.0 record-read@77.0 run@77.0 record-read@87.0 run@87.0 record-read@97.0 run@97.0 record-read@107.0 run@107.0 record-read@117.0 run@117.0 record-read@127.0 run@127.0 record-read@137.0 run@137.0 record-read@142.8 run@142.8 record-read@152.7 run@152.7 record-read@162.7 run@162.7 record-read@172.7 run@172.7 record-read@182.7 run@182.7 record-read@192.7 run@192.7 record-read@202.7 run@202.7 record-read@212.7 run@212.7 record-read@222.7 run@222.7 record-read@232.7 run@232.7 record-read@242.7 run@242.7 record-read@252.7 run@252.7 record-read@262.7 run@262.7 record-read@272.7 run@272.7 run@282.7 run@292.7 record-read@302.7 run@302.7 record-read@312.7 run@312.8 run@322.7 run@332.7 run@342.7 record-read@352.6 run@352.6 record-read@362.6 run@362.6 record-read@382.6 run@382.6 record-read@392.6 run@392.6 record-read@402.6 run@402.6 run@412.6 record-read@422.6 run@422.6 run@432.6 record-read@442.6 run@442.6 record-read@452.6 run@452.6 record-read@462.6 run@462.6 run@472.6 run@482.6 run@492.6 record-read@502.6 run@502.6 record-read@512.6 run@512.6 record-read@522.6 run@522.6 run@532.6 run@542.5 record-read@552.5 run@552.5 record-read@562.5 run@562.5 record-read@572.5 run@572.5 record-read@582.5 run@582.5 run@592.5 

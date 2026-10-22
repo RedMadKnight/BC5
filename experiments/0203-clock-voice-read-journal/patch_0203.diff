@@ -1,0 +1,511 @@
+--- a/src/libs/libAmpr.cpp
++++ b/src/libs/libAmpr.cpp
+@@ -16,6 +16,7 @@
+ #include <pthread.h>
+ #include <chrono>
+ #include <condition_variable>
++#include <cstdarg> // BC5 (experiment 0203): AprJournal
+ #include <thread>
+ #include <deque>
+ #include <cinttypes>
+@@ -86,6 +87,56 @@
+ 		                              file_id, size, file_offset, ra, ra1);
+ 	}
+ }
++// BC5 (experiment 0203): KYTY_BC5_APR_FILE_JOURNAL=<file id>[,<file id>...] (hex) journals on stderr what
++// becomes of the APR reads of those files: each ReadFile record (command buffer, offset, size, destination,
++// result, caller), the completion commands recorded into the same buffer (address writes, address waits,
++// kernel events), the buffer's submit (priority, submission id, queue depth), each of its commands as it runs,
++// and its finish. With the switch set, every ReadFile record and every submit that fails is journaled too,
++// whatever the file (the first 200, then every 1000th). The second title's cutscene clock voice is file
++// 0x7cd713df (exp 0200), whose next loop's read stopped coming in a cutscene. Off by default. Lines start with
++// "apr journal (exp 0203): mono <CLOCK_MONOTONIC s>".
++static const std::vector<uint32_t>& AprJournalFiles() {
++	static const std::vector<uint32_t> files = [] {
++		std::vector<uint32_t> v;
++		const char*           e = BC5_DIAG_ENV("KYTY_BC5_APR_FILE_JOURNAL");
++		for (const char* p = e; p != nullptr && *p != '\0';) {
++			char*      end = nullptr;
++			const auto id  = std::strtoul(p, &end, 16);
++			if (end == p) {
++				break;
++			}
++			v.push_back(static_cast<uint32_t>(id));
++			p = (*end == ',') ? end + 1 : end;
++		}
++		return v;
++	}();
++	return files;
++}
++static bool AprJournalOn() {
++	return !AprJournalFiles().empty();
++}
++static bool AprJournalFile(uint32_t file_id) {
++	const auto& v = AprJournalFiles();
++	return std::find(v.begin(), v.end(), file_id) != v.end();
++}
++static void AprJournal(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
++static void AprJournal(const char* fmt, ...) {
++	timespec ts {};
++	clock_gettime(CLOCK_MONOTONIC, &ts);
++	char    line[512];
++	va_list args;
++	va_start(args, fmt);
++	std::vsnprintf(line, sizeof(line), fmt, args);
++	va_end(args);
++	std::fprintf(stderr, "apr journal (exp 0203): mono %.3f %s\n",
++	             static_cast<double>(ts.tv_sec) + static_cast<double>(ts.tv_nsec) / 1e9, line);
++}
++// Failures of any file: the first 200, then every 1000th.
++static bool AprJournalFailureDue() {
++	static std::atomic<uint64_t> n {0};
++	const auto                   k = ++n;
++	return k <= 200 || k % 1000 == 0;
++}
+ #undef PRINT_NAME
+ // NOLINTNEXTLINE(cppcoreguidelines-macro-usage)
+ #define PRINT_NAME()                                                                               \
+@@ -988,6 +1039,7 @@
+ 	std::vector<WriteAddressCommand> write_address_commands;
+ 	std::vector<AmmMapCommand>       amm_map_commands;
+ 	std::vector<WaitAddressCommand>  wait_address_commands;
++	bool                             bc5_journal                = false; // BC5 (experiment 0203): a journaled read
+ 	bool                             gather_scatter_valid       = false;
+ 	uint32_t                         gather_scatter_file_id     = 0;
+ 	uint64_t                         gather_scatter_destination = 0;
+@@ -1050,6 +1102,12 @@
+ }
+ 
+ static void EraseCommandBufferStateLocked(uint64_t command_buffer) {
++	if (const auto found = g_command_buffers.find(command_buffer); // BC5 (experiment 0203)
++	    found != g_command_buffers.end() && found->second.bc5_journal) {
++		AprJournal("erase cb 0x%016" PRIx64 " (%zu reads, %zu writes, %zu waits, %zu events recorded)", command_buffer,
++		           found->second.read_file_commands.size(), found->second.write_address_commands.size(),
++		           found->second.wait_address_commands.size(), found->second.kernel_event_commands.size());
++	}
+ 	g_command_buffers.erase(command_buffer);
+ 	for (auto it = g_command_buffer_aliases.begin(); it != g_command_buffer_aliases.end();) {
+ 		if (it->first == command_buffer || it->second == command_buffer) {
+@@ -1382,6 +1440,9 @@
+ 	            static_cast<size_t>(record_size));
+ 	std::memcpy(reinterpret_cast<void*>(state.buffer + record_offset), &opcode, sizeof(opcode));
+ 	state.read_file_commands.push_back({record_offset, file_id, destination, size, file_offset});
++	if (AprJournalFile(file_id)) {
++		state.bc5_journal = true; // BC5 (experiment 0203)
++	}
+ 	if (!CommitCommandBufferRecord(command_buffer, &state, record_size)) {
+ 		return false;
+ 	}
+@@ -1420,7 +1481,12 @@
+ 	std::memcpy(reinterpret_cast<void*>(state.buffer + record_offset), record.data(),
+ 	            record.size());
+ 	state.kernel_event_commands.push_back({record_offset, eq, id, data});
+-	return CommitCommandBufferRecord(command_buffer, &state, KERNEL_EVENT_RECORD_SIZE);
++	const bool ok = CommitCommandBufferRecord(command_buffer, &state, KERNEL_EVENT_RECORD_SIZE);
++	if (state.bc5_journal) { // BC5 (experiment 0203)
++		AprJournal("record-event cb 0x%016" PRIx64 " eq 0x%016" PRIx64 " id %d data 0x%016" PRIx64 " -> %s", command_buffer,
++		           eq, id, data, ok ? "ok" : "FAILED");
++	}
++	return ok;
+ }
+ 
+ static bool AppendWriteAddressRecord(uint64_t command_buffer, uint64_t address, uint64_t value,
+@@ -1440,7 +1506,12 @@
+ 	std::memset(reinterpret_cast<void*>(state.buffer + record_offset), 0,
+ 	            static_cast<size_t>(record_size));
+ 	state.write_address_commands.push_back({record_offset, address, value});
+-	return CommitCommandBufferRecord(command_buffer, &state, record_size);
++	const bool ok = CommitCommandBufferRecord(command_buffer, &state, record_size);
++	if (state.bc5_journal) { // BC5 (experiment 0203)
++		AprJournal("record-write cb 0x%016" PRIx64 " addr 0x%016" PRIx64 " value 0x%" PRIx64 " -> %s", command_buffer,
++		           address, value, ok ? "ok" : "FAILED");
++	}
++	return ok;
+ }
+ 
+ static bool AppendWaitAddressRecord(uint64_t command_buffer, uint64_t address, uint64_t value,
+@@ -1460,7 +1531,12 @@
+ 	std::memset(reinterpret_cast<void*>(state.buffer + record_offset), 0,
+ 	            static_cast<size_t>(record_size));
+ 	state.wait_address_commands.push_back({record_offset, address, value, op});
+-	return CommitCommandBufferRecord(command_buffer, &state, record_size);
++	const bool ok = CommitCommandBufferRecord(command_buffer, &state, record_size);
++	if (state.bc5_journal) { // BC5 (experiment 0203)
++		AprJournal("record-wait cb 0x%016" PRIx64 " addr 0x%016" PRIx64 " value 0x%" PRIx64 " op %u -> %s", command_buffer,
++		           address, value, static_cast<unsigned>(op), ok ? "ok" : "FAILED");
++	}
++	return ok;
+ }
+ 
+ static bool ValidateAmmMapArgs(uint64_t va, uint64_t size) {
+@@ -1733,6 +1809,12 @@
+ 	size_t                      next          = 0;
+ 	uint32_t                    submission_id = 0; // BC5 (experiment 0156): completion bookkeeping
+ 	uint64_t                    result_ptr    = 0;
++	// BC5 (experiment 0203): KYTY_BC5_APR_READAHEAD, under g_apr_queue_mutex. 0 untouched, 1 a reader reads its
++	// file ranges into host memory, 2 done (ra_data and ra_rc per read command, in read_file_commands order),
++	// 4 the worker runs it the usual way.
++	int                               ra_state = 0;
++	std::vector<std::vector<uint8_t>> ra_data;
++	std::vector<int32_t>              ra_rc;
+ };
+ 
+ static std::recursive_mutex        g_apr_queue_mutex;
+@@ -1818,6 +1900,10 @@
+ 			}
+ 			uint64_t bytes_read = 0;
+ 			results[k]          = ReadHostFileToGuest(host_path, command.file_offset, command.destination, command.size, &bytes_read);
++			if (state.bc5_journal && AprJournalFile(command.file_id)) { // BC5 (experiment 0203)
++				AprJournal("run read file 0x%08" PRIx32 " +0x%" PRIx64 " size 0x%" PRIx64 " = 0x%08x, 0x%" PRIx64 " bytes (parallel)",
++				           command.file_id, command.file_offset, command.size, static_cast<unsigned>(results[k]), bytes_read);
++			}
+ 			if (AmmTrace()) {
+ 				AmmTraceStamp(), std::fprintf(stderr, "amm trace: read file 0x%08" PRIx32 " +0x%" PRIx64 " size 0x%" PRIx64 " -> 0x%016" PRIx64 " = 0x%08x (parallel)\n",
+ 				                              command.file_id, command.file_offset, command.size, command.destination, static_cast<unsigned>(results[k]), bytes_read, bytes_read >= 8 ? *reinterpret_cast<const uint64_t*>(command.destination) : 0);
+@@ -1846,14 +1932,29 @@
+ // when a WaitOnAddress is not met yet (*next then names it), true when the buffer is done.
+ static bool RunOrderedAprCommands(uint64_t command_buffer, const CommandBufferState& state,
+                                   const std::vector<OrderedCommand>& ordered, size_t* next,
+-                                  int32_t* execution_result, uint32_t* error_offset) {
++                                  int32_t* execution_result, uint32_t* error_offset,
++                                  const std::vector<std::vector<uint8_t>>* ra_data = nullptr,
++                                  const std::vector<int32_t>*              ra_rc   = nullptr) {
+ 	(void)command_buffer;
++	// BC5 (experiment 0203): with ra_data (KYTY_BC5_APR_READAHEAD) the file ranges were read into host memory
++	// ahead of time; each read copies its data into the guest here, at its turn, instead of reading the file.
++	const bool prefetched = ra_data != nullptr && ra_rc != nullptr && ra_data->size() == state.read_file_commands.size() &&
++	                        ra_rc->size() == state.read_file_commands.size();
+ 	for (size_t pos = *next; pos < ordered.size(); pos++) {
+ 		const auto& entry = ordered[pos];
+ 		switch (entry.kind) {
+ 			case CommandKind::WaitAddress: {
+ 				const auto& command = state.wait_address_commands[entry.index];
+ 				if (!AprWaitSatisfied(command)) {
++					if (state.bc5_journal) { // BC5 (experiment 0203): once per (buffer, command) on this thread
++						static thread_local std::pair<uint64_t, size_t> last {0, SIZE_MAX};
++						if (last != std::make_pair(command_buffer, pos)) {
++							last = {command_buffer, pos};
++							AprJournal("run cb 0x%016" PRIx64 " wait at command %zu of %zu: addr 0x%016" PRIx64 " value 0x%" PRIx64
++							           " op %u not met", command_buffer, pos, ordered.size(), command.address, command.value,
++							           static_cast<unsigned>(command.op));
++						}
++					}
+ 					*next = pos;
+ 					return false;
+ 				}
+@@ -1861,7 +1962,7 @@
+ 			case CommandKind::ReadFile: {
+ 				// BC5 (experiment 0112): KYTY_BC5_APR_PARALLEL=<n> runs a run of consecutive reads on
+ 				// n threads; the commands after the run (events, address writes) still follow it.
+-				if (const size_t run_end = AprParallelReadRun(state, ordered, pos); run_end > pos + 1) {
++				if (const size_t run_end = AprParallelReadRun(state, ordered, pos); !prefetched && run_end > pos + 1) {
+ 					if (!RunAprReadsInParallel(state, ordered, pos, run_end, execution_result, error_offset)) {
+ 						*next = ordered.size();
+ 						return true;
+@@ -1885,8 +1986,26 @@
+ 					AmmTraceStamp(), std::fprintf(stderr, "amm trace: read into the AMM window: file 0x%08" PRIx32 " size 0x%" PRIx64 " -> 0x%016" PRIx64 "\n",
+ 					             command.file_id, command.size, command.destination);
+ 				}
+-				auto result = ReadHostFileToGuest(host_path, command.file_offset,
+-				                                  command.destination, command.size, &bytes_read);
++				int result = OK;
++				if (prefetched) { // BC5 (experiment 0203): the read-ahead data goes into the guest at this read's turn
++					result = (*ra_rc)[entry.index];
++					if (result == OK && command.size != 0) {
++						const auto& data = (*ra_data)[entry.index];
++						if (!AprShared::IsValidGuestRange(command.destination, command.size, true)) {
++							result = LibKernel::KERNEL_ERROR_EFAULT;
++						} else if (!data.empty()) {
++							std::memcpy(reinterpret_cast<void*>(command.destination), data.data(), data.size());
++							bytes_read = data.size();
++						}
++					}
++				} else {
++					result = ReadHostFileToGuest(host_path, command.file_offset, command.destination, command.size, &bytes_read);
++				}
++				if (state.bc5_journal && AprJournalFile(command.file_id)) { // BC5 (experiment 0203)
++					AprJournal("run cb 0x%016" PRIx64 " read file 0x%08" PRIx32 " +0x%" PRIx64 " size 0x%" PRIx64 " = 0x%08x, 0x%" PRIx64
++					           " bytes", command_buffer, command.file_id, command.file_offset, command.size,
++					           static_cast<unsigned>(result), bytes_read);
++				}
+ 				// BC5 (experiment 0036): a short read leaves stale bytes in the guest buffer; AnyPS5
+ 				// treats it as an error (Apr.cpp _readFile). Trace it.
+ 				if (result == OK && bytes_read != command.size) {
+@@ -1913,6 +2032,10 @@
+ 				const auto  eq      = static_cast<LibKernel::EventQueue::KernelEqueue>(command.eq);
+ 				auto        result  = LibKernel::EventQueue::KernelTriggerAmprEvent(
+ 				    eq, command.id, reinterpret_cast<void*>(command.data));
++				if (state.bc5_journal || (result != OK && AprJournalOn() && AprJournalFailureDue())) { // BC5 (experiment 0203)
++					AprJournal("run cb 0x%016" PRIx64 " event eq 0x%016" PRIx64 " id %d data 0x%016" PRIx64 " = 0x%08x", command_buffer,
++					           command.eq, command.id, command.data, static_cast<unsigned>(result));
++				}
+ 				if (result != OK) {
+ 					LOGF("\tAPR submit event failed: eq=0x%016" PRIx64 ", id=%" PRId32
+ 					     ", result=0x%08" PRIx32 "\n",
+@@ -1925,7 +2048,12 @@
+ 			} break;
+ 			case CommandKind::WriteAddress: {
+ 				const auto& command = state.write_address_commands[entry.index];
+-				if (!AprShared::WriteGuest(command.address, command.value)) {
++				const bool  written = AprShared::WriteGuest(command.address, command.value);
++				if (state.bc5_journal || (!written && AprJournalOn() && AprJournalFailureDue())) { // BC5 (experiment 0203)
++					AprJournal("run cb 0x%016" PRIx64 " write addr 0x%016" PRIx64 " value 0x%" PRIx64 " -> %s", command_buffer,
++					           command.address, command.value, written ? "ok" : "FAILED");
++				}
++				if (!written) {
+ 					LOGF("\tAMPR submit write-address failed: address=0x%016" PRIx64
+ 					     " value=0x%016" PRIx64 "\n",
+ 					     command.address, command.value);
+@@ -1985,6 +2113,10 @@
+ // BC5 (experiment 0156): a submission's result, once it has run, for the title's WaitCommandBuffer
+ // and its result buffer.
+ static void FinishAprSubmission(const ParkedAprBuffer& b, int32_t result, uint32_t offset) {
++	if (b.state.bc5_journal) { // BC5 (experiment 0203)
++		AprJournal("finish cb 0x%016" PRIx64 " sub %u = 0x%08x at 0x%x", b.command_buffer, b.submission_id,
++		           static_cast<unsigned>(result), offset);
++	}
+ 	if (b.submission_id != 0) {
+ 		AprShared::SetSubmissionResult(b.submission_id, result, offset);
+ 	}
+@@ -2027,6 +2159,129 @@
+ static std::condition_variable_any                g_apr_queue_cv;
+ static std::array<std::once_flag, APR_PRIORITIES> g_apr_worker_once;
+ 
++// BC5 (experiment 0203): KYTY_BC5_APR_READAHEAD=<n> (1-16; off by default) gives each priority's queue n reader
++// threads beside its worker. In the second title's cutscene bursts (80-125 submissions a second) one serial worker
++// per priority fell 3-16 s behind, and the cutscene clock voice's next read came late or never (exps 0200, 0203).
++// A reader takes a queued buffer from the first 64 and reads its file ranges into host memory ahead of time. The
++// worker still takes the buffers in order and runs every command at its turn; at a read it copies the host data
++// into the guest (after the same range check) instead of reading the file. Guest memory is therefore written in
++// the original order (maps, waits, reads, events and the title's completion sequence all keep it); only the file
++// I/O goes ahead. The first version wrote into the guest from the readers and faulted on AMM pages an earlier
++// buffer had not mapped yet. KYTY_BC5_APR_READAHEAD_MIB (default 32) caps the host memory held for read-ahead data.
++static size_t AprReadahead() {
++	static const size_t n = [] {
++		const char* e = std::getenv("KYTY_BC5_APR_READAHEAD");
++		const long  v = e != nullptr ? std::strtol(e, nullptr, 10) : 0;
++		return v > 0 ? static_cast<size_t>(std::min<long>(v, 16)) : size_t {0};
++	}();
++	return n;
++}
++
++static uint64_t AprReadaheadCap() {
++	static const uint64_t cap = [] {
++		const char* e = std::getenv("KYTY_BC5_APR_READAHEAD_MIB");
++		const long  v = e != nullptr ? std::strtol(e, nullptr, 10) : 32;
++		return static_cast<uint64_t>(std::max<long>(v, 1)) << 20u;
++	}();
++	return cap;
++}
++
++static uint64_t g_apr_ra_bytes = 0; // read-ahead data held, under g_apr_queue_mutex
++
++static uint64_t AprReadBytes(const ParkedAprBuffer& b) {
++	uint64_t n = 0;
++	for (const auto& c: b.state.read_file_commands) {
++		n += c.size;
++	}
++	return n;
++}
++
++// Reads [file_offset, file_offset + size) of the host file into *out, as ReadHostFileToGuest would read it
++// (nothing past the end of the file; OK with no data at or past the end), without touching guest memory.
++static int ReadHostFileToHost(const std::string& host_path, uint64_t file_offset, uint64_t size, std::vector<uint8_t>* out) {
++	out->clear();
++	if (size == 0) {
++		return OK;
++	}
++	Common::File file;
++	if (!file.Open(host_path, Common::File::Mode::Read)) {
++		return LibKernel::KERNEL_ERROR_ENOENT;
++	}
++	const auto file_size = file.Size();
++	if (file_offset >= file_size) {
++		file.Close();
++		return OK;
++	}
++	if (!file.Seek(file_offset)) {
++		file.Close();
++		return LibKernel::KERNEL_ERROR_EINVAL;
++	}
++	const auto readable = std::min<uint64_t>(size, file_size - file_offset);
++	out->resize(static_cast<size_t>(readable));
++	uint64_t done = 0;
++	while (done < readable) {
++		const auto request = static_cast<uint32_t>(std::min<uint64_t>(APR_HOST_READ_CHUNK_SIZE, readable - done));
++		uint32_t   read    = 0;
++		file.Read(out->data() + done, request, &read);
++		if (read == 0) {
++			break;
++		}
++		done += read;
++	}
++	out->resize(static_cast<size_t>(done));
++	file.Close();
++	return OK;
++}
++
++static void AprReaderThread(size_t qi, size_t k) {
++	char name[16];
++	std::snprintf(name, sizeof(name), "bc5-apr-r%zu-%zu", qi, k);
++	pthread_setname_np(pthread_self(), name);
++	std::unique_lock<std::recursive_mutex> lock(g_apr_queue_mutex);
++	auto&                                  queue = g_apr_parked[qi];
++	for (;;) {
++		ParkedAprBuffer* pick   = nullptr;
++		const size_t     window = std::min<size_t>(queue.size(), 64);
++		for (size_t i = 0; i < window && pick == nullptr; i++) {
++			auto& b = queue[i];
++			if (b.ra_state != 0 || b.next != 0 || b.state.read_file_commands.empty()) {
++				continue;
++			}
++			const auto bytes = AprReadBytes(b);
++			if (g_apr_ra_bytes + bytes > AprReadaheadCap()) {
++				continue;
++			}
++			pick = &b;
++			g_apr_ra_bytes += bytes;
++		}
++		if (pick == nullptr) {
++			g_apr_queue_cv.wait_for(lock, std::chrono::milliseconds(5));
++			continue;
++		}
++		pick->ra_state = 1; // the worker leaves it in the queue until it is 2, so the reference stays valid
++		lock.unlock();
++		const auto&                       reads = pick->state.read_file_commands;
++		std::vector<std::vector<uint8_t>> data(reads.size());
++		std::vector<int32_t>              rc(reads.size(), OK);
++		for (size_t r = 0; r < reads.size(); r++) {
++			std::string host_path;
++			rc[r] = AprShared::TryGetHostPath(reads[r].file_id, &host_path)
++			            ? ReadHostFileToHost(host_path, reads[r].file_offset, reads[r].size, &data[r])
++			            : LibKernel::KERNEL_ERROR_ENOENT;
++			if (pick->state.bc5_journal && AprJournalFile(reads[r].file_id)) { // KYTY_BC5_APR_FILE_JOURNAL
++				AprJournal("readahead cb 0x%016" PRIx64 " read file 0x%08" PRIx32 " +0x%" PRIx64 " size 0x%" PRIx64 " = 0x%08x, 0x%zx bytes into host memory",
++				           pick->command_buffer, reads[r].file_id, reads[r].file_offset, reads[r].size,
++				           static_cast<unsigned>(rc[r]), data[r].size());
++			}
++		}
++		lock.lock();
++		pick->ra_data  = std::move(data);
++		pick->ra_rc    = std::move(rc);
++		pick->ra_state = 2;
++		g_apr_queue_cv.notify_all();
++	}
++}
++
+ static void AprWorkerThread(size_t qi) {
+ 	char name[16];
+ 	std::snprintf(name, sizeof(name), "bc5-apr-q%zu", qi);
+@@ -2042,8 +2297,18 @@
+ 		ParkedAprBuffer& front  = queue.front();
+ 		int32_t          result = OK;
+ 		uint32_t         offset = 0;
++		if (AprReadahead() > 0) { // BC5 (experiment 0203): KYTY_BC5_APR_READAHEAD
++			while (front.ra_state == 1) {
++				g_apr_queue_cv.wait_for(lock, std::chrono::microseconds(200));
++			}
++			if (front.ra_state == 0) {
++				front.ra_state = 4;
++			}
++		}
++		const bool prefetched = front.ra_state == 2;
+ 		lock.unlock();
+-		const bool done = RunOrderedAprCommands(front.command_buffer, front.state, front.ordered, &front.next, &result, &offset);
++		const bool done = RunOrderedAprCommands(front.command_buffer, front.state, front.ordered, &front.next, &result, &offset,
++		                                        prefetched ? &front.ra_data : nullptr, prefetched ? &front.ra_rc : nullptr);
+ 		lock.lock();
+ 		if (!done) {
+ 			g_apr_queue_cv.wait_for(lock, std::chrono::microseconds(500));
+@@ -2054,7 +2319,13 @@
+ 			AmmTraceStamp(), std::fprintf(stderr, "amm trace: submission 0x%016" PRIx64 " finished on worker %zu = 0x%08x\n", front.command_buffer, qi,
+ 			                              static_cast<unsigned>(result));
+ 		}
++		if (prefetched) {
++			g_apr_ra_bytes -= std::min(g_apr_ra_bytes, AprReadBytes(front));
++		}
+ 		queue.pop_front();
++		if (AprReadahead() > 0) {
++			g_apr_queue_cv.notify_all(); // the freed read-ahead budget may let a reader go on
++		}
+ 	}
+ }
+ 
+@@ -2087,6 +2358,10 @@
+ 		if (AmmTrace()) {
+ 			AmmTraceStamp(), std::fprintf(stderr, "amm trace: submit 0x%016" PRIx64 " with no recorded state\n", command_buffer);
+ 		}
++		if (AprJournalOn() && AprJournalFailureDue()) { // BC5 (experiment 0203)
++			AprJournal("submit cb 0x%016" PRIx64 " prio %u sub %u FAILED: no recorded state", command_buffer, priority,
++			           submission_id);
++		}
+ 		return LibKernel::KERNEL_ERROR_EFAULT;
+ 	}
+ 	if (AmmTrace()) {
+@@ -2134,10 +2409,22 @@
+ 	const size_t qi = AprQueueIndex(priority);
+ 	std::scoped_lock queue_lock(g_apr_queue_mutex);
+ 	auto& queue = g_apr_parked[qi];
++	if (state.bc5_journal) { // BC5 (experiment 0203)
++		AprJournal("submit cb 0x%016" PRIx64 " prio %u (queue %zu, %zu ahead) sub %u result 0x%016" PRIx64
++		           ": %zu reads, %zu writes, %zu waits, %zu events, %zu maps",
++		           command_buffer, priority, qi, queue.size(), submission_id, result_ptr, state.read_file_commands.size(),
++		           state.write_address_commands.size(), state.wait_address_commands.size(),
++		           state.kernel_event_commands.size(), state.amm_map_commands.size());
++	}
+ 	if (AprAsync() && !amm_only) {
+ 		// Experiment 0156: queued for the priority's worker; the submit returns at once.
+ 		queue.push_back({command_buffer, state, ordered, 0, submission_id, result_ptr});
+-		std::call_once(g_apr_worker_once[qi], [qi] { std::thread(AprWorkerThread, qi).detach(); });
++		std::call_once(g_apr_worker_once[qi], [qi] {
++			std::thread(AprWorkerThread, qi).detach();
++			for (size_t k = 0; k < AprReadahead(); k++) { // BC5 (experiment 0203): KYTY_BC5_APR_READAHEAD
++				std::thread(AprReaderThread, qi, k).detach();
++			}
++		});
+ 		g_apr_queue_cv.notify_all();
+ 		return OK;
+ 	}
+@@ -2160,6 +2447,10 @@
+ 	} else if (submission_id != 0) {
+ 		AprShared::SetSubmissionResult(submission_id, *execution_result, *error_offset);
+ 	}
++	if (state.bc5_journal && next >= ordered.size()) { // BC5 (experiment 0203)
++		AprJournal("finish cb 0x%016" PRIx64 " sub %u = 0x%08x at 0x%x (on the submitting thread)", command_buffer,
++		           submission_id, static_cast<unsigned>(*execution_result), *error_offset);
++	}
+ 	if (amm_only) {
+ 		if (AprAsync()) {
+ 			g_apr_queue_cv.notify_all(); // the maps may satisfy a worker's wait
+@@ -2416,15 +2707,25 @@
+ 	}
+ 
+ 	const auto destination_addr = reinterpret_cast<uint64_t>(destination);
++	int        rc               = OK;
+ 	if (command_buffer == nullptr || !IsValidAprReadRange(destination_addr, size) ||
+ 	    !IsValidAprFileOffset(file_offset)) {
+-		return LibKernel::KERNEL_ERROR_EINVAL;
++		rc = LibKernel::KERNEL_ERROR_EINVAL;
++	} else {
++		const auto append_ok = AppendReadFileRecord(reinterpret_cast<uint64_t>(command_buffer), 0x17,
++		                                            file_id, destination_addr, size, file_offset,
++		                                            AprReadFileRecordSize(file_offset));
++		rc = append_ok ? OK : LibKernel::KERNEL_ERROR_EFAULT;
++	}
++	// BC5 (experiment 0203): KYTY_BC5_APR_FILE_JOURNAL.
++	if (AprJournalOn() && (AprJournalFile(file_id) || (rc != OK && AprJournalFailureDue()))) {
++		const auto ra0 = reinterpret_cast<uint64_t>(__builtin_return_address(0));
++		AprJournal("record-read cb 0x%016" PRIx64 " file 0x%08" PRIx32 " +0x%" PRIx64 " size 0x%" PRIx64 " -> 0x%016" PRIx64
++		           " = 0x%08x caller 0x%016" PRIx64,
++		           reinterpret_cast<uint64_t>(command_buffer), file_id, file_offset, size, destination_addr,
++		           static_cast<unsigned>(rc), AprCallerUp(ra0, __builtin_frame_address(0)));
+ 	}
+-
+-	const auto append_ok = AppendReadFileRecord(reinterpret_cast<uint64_t>(command_buffer), 0x17,
+-	                                            file_id, destination_addr, size, file_offset,
+-	                                            AprReadFileRecordSize(file_offset));
+-	return append_ok ? OK : LibKernel::KERNEL_ERROR_EFAULT;
++	return rc;
+ }
+ 
+ static uint64_t AlignUp4(uint64_t value) {

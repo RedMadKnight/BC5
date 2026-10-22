@@ -1,0 +1,7 @@
++ /usr/bin/clang++ -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCOR
+/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: warning: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdepreca
+/home/kjaniszewski/bc5-work/exp0203/src/libAmpr.cpp:1903:143: warning: data argument not used by format string [-Wformat-extra-args]
+/home/kjaniszewski/bc5-work/exp0203/src/libAmpr.cpp:1993:50: warning: data argument not used by format string [-Wformat-extra-args]
++ /usr/bin/clang++ -fno-rtti -fno-exceptions -fcolor-diagnostics -finput-charset=UTF-8 -fexec-charset=UTF-8 -g -fno-strict-aliasing -fno-omit-frame-pointer -Wal
+a75b89b9fc2a90d2d5290dc2edbed6ec  kyty_emulator
+ae678ac673c6fd09172579a5372769c0  src/libAmpr.cpp

@@ -1,0 +1,2 @@
+# 2026-10-22 18:09: S0 end and O3 start called ab-restore.sh in the same second (17:58:17), so O3 kept the live saves inside saves-before-175817/PPSA03671 and restored S0's run saves at its end.
+# Fixed at 18:09:16: ab-restore.sh ~/bc5-work/exp0196/saves-before-175408 (== the 16:42 and 17:30 copies); diff -rq identical; the wrong state is kept in saves-before-180916.
