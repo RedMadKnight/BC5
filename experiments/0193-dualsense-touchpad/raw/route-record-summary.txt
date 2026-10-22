@@ -1,0 +1,29 @@
+# ~/bc5-work/route-record.txt (KYTY_BC5_INPUT_RECORD) as of 2026-10-22 10:00: the session that started at 09:56:12 (shared build of 2026-10-21 23:46:14); it overwrote the 09:33 session's recording.
+# The 09:33 session's file, read at about 09:45 by this experiment, had: square 181, l1 108, triangle 86, r1 45, circle 14, l3 13, cross 11, right 1, down 1 presses; touchpad 0.
+# Button lines of the 09:56 session by kind:
+    179 release square
+    179 hold square
+     85 release l1
+     85 hold l1
+     62 release triangle
+     62 hold triangle
+      5 release cross
+      5 hold cross
+      4 release l3
+      4 hold l3
+      3 release r1
+      3 hold r1
+      2 release circle
+      2 hold circle
+      1 release down
+      1 hold down
+# touchpad lines: 0
+# ~/bc5-work/input.cfg (unchanged by this experiment):
+# BC5 input configuration, written by the settings overlay (F2). Hand edits are fine;
+# the grammar and the names are in backend/kytyplus-patches/input.example.cfg.
+RenderScale.PPSA03671=1.00
+RenderScale.UNKNOWN=1.70
+RenderScale.PPSA21567=1.70
+Cross=X
+R2=Keypad 9
+# launch environment (play-pkg-last.log header): SDL_JOYSTICK_DISABLE_UDEV=1

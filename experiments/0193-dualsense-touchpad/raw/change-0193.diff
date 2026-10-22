@@ -1,0 +1,214 @@
+--- /home/kjaniszewski/bc5-work/exp0193/orig/controller.cpp	2026-10-19 21:17:13.976461331 +0200
++++ src/libs/controller.cpp	2026-10-22 09:55:22.821207639 +0200
+@@ -60,8 +60,18 @@
+ 	float    accel[3]                              = {0.0f, 0.0f, 0.0f}; // BC5: G
+ 	float    gyro[3]                               = {0.0f, 0.0f, 0.0f}; // BC5: rad/s
+ 	float    orient[4]                             = {0.0f, 0.0f, 0.0f, 1.0f}; // BC5: x, y, z, w
++	// BC5 (experiment 0193): the touch points the guest is given (touch_num 0: none).
++	uint8_t  touch_num                             = 0;
++	uint16_t touch_x[2]                            = {0, 0};
++	uint16_t touch_y[2]                            = {0, 0};
++	uint8_t  touch_id[2]                           = {0, 0};
+ };
+ 
++// The touchpad resolution this host reports in scePadGetControllerInformation; touch positions
++// are given to the guest in it. TODO(verify) against a console.
++static constexpr int PAD_TOUCH_RESOLUTION_X = 1920;
++static constexpr int PAD_TOUCH_RESOLUTION_Y = 943;
++
+ // Local-multiplayer: one GameController owns up to PAD_MAX_CONTROLLERS player
+ // slots. Each slot keeps an independent input stream + history, so a guest that
+ // opens pad handle N reads only the pad bound to slot N-1.
+@@ -79,6 +89,7 @@
+ 	void Button(int id, uint32_t button, bool down);
+ 	void Axis(int id, Axis axis, int value);
+ 	void Motion(int id, bool gyro, const float* xyz);
++	void Touch(int id, int finger, bool down, float x, float y);
+ 	void ResetOrientation(int index);
+ 	void ResetInputState();
+ 	void GetConnectionInfo(bool* flag, int* count);
+@@ -105,6 +116,13 @@
+ 		float                                 orient[4] = {0.0f, 0.0f, 0.0f, 1.0f};
+ 		std::chrono::steady_clock::time_point gyro_time;
+ 		bool                                  gyro_seen = false;
++		// BC5 (experiment 0193): the two fingers on the touchpad, the latest sample like the motion
++		// above; a finger's id changes with each new contact.
++		bool     finger_down[2] = {false, false};
++		uint16_t finger_x[2]    = {0, 0};
++		uint16_t finger_y[2]    = {0, 0};
++		uint8_t  finger_id[2]   = {0, 0};
++		uint8_t  last_finger_id = 0;
+ 	};
+ 	void ApplyMotion(int index, ControllerState* state) const {
+ 		const auto& s = m_slots[static_cast<size_t>(index)];
+@@ -116,6 +134,19 @@
+ 			state->orient[k] = s.orient[k];
+ 		}
+ 	}
++	void ApplyTouch(int index, ControllerState* state) const {
++		const auto& s   = m_slots[static_cast<size_t>(index)];
++		state->touch_num = 0;
++		for (int f = 0; f < 2; f++) {
++			if (!s.finger_down[f]) {
++				continue;
++			}
++			const int n      = state->touch_num++;
++			state->touch_x[n]  = s.finger_x[f];
++			state->touch_y[n]  = s.finger_y[f];
++			state->touch_id[n] = s.finger_id[f];
++		}
++	}
+ 
+ 	void EnsureSlot(int index);
+ 	int  OwnerSlot(int id) const;
+@@ -272,6 +303,19 @@
+ 	data->angular_velocity_z     = state.gyro[2];
+ 	data->touch_data_touch0_id   = 1;
+ 	data->touch_data_touch1_id   = 2;
++	// BC5 (experiment 0193): the touch points, when KYTY_BC5_PAD_TOUCH=1 forwards them (without it
++	// none, and the ids above as upstream had them).
++	if (state.touch_num > 0) {
++		data->touch_data_touch_num = state.touch_num;
++		data->touch_data_touch0_x  = state.touch_x[0];
++		data->touch_data_touch0_y  = state.touch_y[0];
++		data->touch_data_touch0_id = state.touch_id[0];
++		if (state.touch_num > 1) {
++			data->touch_data_touch1_x  = state.touch_x[1];
++			data->touch_data_touch1_y  = state.touch_y[1];
++			data->touch_data_touch1_id = state.touch_id[1];
++		}
++	}
+ 	data->connected              = connected;
+ 	data->timestamp              = state.time;
+ 	data->connected_count        = pad_connected_count_to_u8(connected_count);
+@@ -657,6 +701,12 @@
+ 	}
+ }
+ 
++void ControllerTouch(int id, int finger, bool down, float x, float y) {
++	if (g_controller != nullptr) {
++		g_controller->Touch(id, finger, down, x, y);
++	}
++}
++
+ void ControllerGetTriggers(int* l2, int* r2) {
+ 	if (g_controller == nullptr) {
+ 		*l2 = 0;
+@@ -954,6 +1004,41 @@
+ 	}
+ }
+ 
++void GameController::Touch(int id, int finger, bool down, float x, float y) {
++	Common::LockGuard lock(m_mutex);
++
++	if (finger < 0 || finger > 1) {
++		return;
++	}
++	int slot = OwnerSlot(id);
++	if (slot == -1) {
++		slot = FallbackSlot();
++	}
++	EnsureSlot(slot);
++	auto&      s     = m_slots[static_cast<size_t>(slot)];
++	const auto scale = [](float v, int size) {
++		const int p = static_cast<int>(v * static_cast<float>(size) + 0.5f);
++		return static_cast<uint16_t>(p < 0 ? 0 : (p >= size ? size - 1 : p));
++	};
++	const bool contact = down && !s.finger_down[finger];
++	if (contact) {
++		// TODO(verify) how the console numbers contacts; here 1..127, a new one per contact.
++		s.last_finger_id   = static_cast<uint8_t>(s.last_finger_id % 127 + 1);
++		s.finger_id[finger] = s.last_finger_id;
++	}
++	const bool lift        = !down && s.finger_down[finger];
++	s.finger_down[finger] = down;
++	s.finger_x[finger]    = scale(x, PAD_TOUCH_RESOLUTION_X);
++	s.finger_y[finger]    = scale(y, PAD_TOUCH_RESOLUTION_Y);
++
++	static const bool trace_env = BC5_DIAG_ENV("KYTY_BC5_INPUT_TRACE") != nullptr;
++	if (trace_env && ::Log::Bc5LoggingOn() && (contact || lift)) {
++		std::fprintf(stderr, "input trace: t=%.3f touch finger %d %s at %u,%u id %u -> slot %d\n", InputTraceSeconds(), finger,
++		             contact ? "down" : "up", s.finger_x[finger], s.finger_y[finger], s.finger_id[finger], slot);
++		std::fflush(stderr);
++	}
++}
++
+ void GameController::ResetOrientation(int index) {
+ 	Common::LockGuard lock(m_mutex);
+ 
+@@ -1012,6 +1097,7 @@
+ 	*count = PresentCount();
+ 	*state = GetLastState(index);
+ 	ApplyMotion(index, state);
++	ApplyTouch(index, state);
+ 
+ 	static const bool trace_env = BC5_DIAG_ENV("KYTY_BC5_INPUT_TRACE") != nullptr;
+ 	const bool trace = trace_env && ::Log::Bc5LoggingOn();
+@@ -1077,6 +1163,7 @@
+ 				s.obtained[state_index] = true;
+ 				states[ret_num]         = s.states[state_index];
+ 				ApplyMotion(index, &states[ret_num]);
++				ApplyTouch(index, &states[ret_num]);
+ 				ret_num++;
+ 			}
+ 		}
+@@ -1216,8 +1303,8 @@
+ 	std::memset(info, 0, sizeof(*info));
+ 
+ 	info->touch_pixel_density   = 44.86f;
+-	info->touch_resolution_x    = 1920;
+-	info->touch_resolution_y    = 943;
++	info->touch_resolution_x    = PAD_TOUCH_RESOLUTION_X;
++	info->touch_resolution_y    = PAD_TOUCH_RESOLUTION_Y;
+ 	info->stick_dead_zone_left  = controller_get_axis(-32768, 32767, 8000) - 128;
+ 	info->stick_dead_zone_right = controller_get_axis(-32768, 32767, 8000) - 128;
+ 	info->connection_type       = 0;
+--- /home/kjaniszewski/bc5-work/exp0193/orig/controller.h	2026-10-19 10:13:39.503953314 +0200
++++ src/libs/controller.h	2026-10-22 09:55:22.820834636 +0200
+@@ -83,6 +83,10 @@
+ // BC5: the pad's motion sensors. Acceleration in G (gravity included), angular velocity in
+ // rad/s, in the pad's own axes as SDL reports them (x to the right, y up, z towards the player).
+ void ControllerMotion(int id, bool gyro, const float* xyz);
++// BC5 (experiment 0193): a finger on the pad's touchpad (SDL's controller touchpad events: finger
++// 0 or 1, x and y 0..1 from the left and the top). window.cpp forwards them only with
++// KYTY_BC5_PAD_TOUCH=1; without it the pad data carries no touch points, as before.
++void ControllerTouch(int id, int finger, bool down, float x, float y);
+ void ControllerResetInputState();
+ // BC5: the analog triggers (0..255) of pad slot 0 as the game reads them, for the trigger-effect state.
+ void ControllerGetTriggers(int* l2, int* r2);
+--- /home/kjaniszewski/bc5-work/exp0193/orig/window.cpp	2026-10-19 21:17:13.845710171 +0200
++++ src/graphics/presentation/window/window.cpp	2026-10-22 09:55:22.820207640 +0200
+@@ -94,6 +94,11 @@
+ 		case SDL_CONTROLLER_BUTTON_DPAD_DOWN: return Controller::PAD_BUTTON_DOWN;
+ 		case SDL_CONTROLLER_BUTTON_DPAD_LEFT: return Controller::PAD_BUTTON_LEFT;
+ 		case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: return Controller::PAD_BUTTON_RIGHT;
++		// BC5 (experiment 0193): the DualSense's touchpad click is a button of its own in SDL's HIDAPI
++		// driver (SDL_hidapi_ps5.c, joystick button 15, "touchpad:b15" in the generated mapping);
++		// only BACK (the Create button) was mapped to the touchpad bit, so a press on the touchpad
++		// itself never reached the game. "Pad:touchpad=none" in the input configuration drops it.
++		case SDL_CONTROLLER_BUTTON_TOUCHPAD: return Controller::PAD_BUTTON_TOUCH_PAD;
+ 		default: return 0;
+ 	}
+ }
+@@ -738,6 +743,21 @@
+ 			}
+ 			break;
+ 		}
++
++		case SDL_CONTROLLERTOUCHPADDOWN:
++		case SDL_CONTROLLERTOUCHPADMOTION:
++		case SDL_CONTROLLERTOUCHPADUP: { // BC5 (experiment 0193): fingers on the pad's touchpad
++			static const bool touch = [] {
++				const char* e = std::getenv("KYTY_BC5_PAD_TOUCH");
++				return e != nullptr && std::atoi(e) == 1;
++			}();
++			if (touch && event->ctouchpad.touchpad == 0) {
++				Controller::ControllerTouch(event->ctouchpad.which, event->ctouchpad.finger,
++				                            event->ctouchpad.type != SDL_CONTROLLERTOUCHPADUP,
++				                            event->ctouchpad.x, event->ctouchpad.y);
++			}
++			break;
++		}
+ 
+ 		case SDL_CONTROLLERAXISMOTION: {
+ 			EventController c {};

@@ -1,0 +1,22 @@
+== launch env
+SDL 2.33.0, SDL_JOYSTICK_DISABLE_UDEV=1 SDL_JOYSTICK_HIDAPI=(unset)
+1 joystick(s)
+[0] "DualSense Wireless Controller" path /dev/hidraw2 guid 030057564c050000e60c000000016800 driver HIDAPI gamecontroller 1
+    type 7, mapping: 030057564c050000e60c000000016800,*,a:b0,b:b1,back:b4,dpdown:b12,dpleft:b13,dpright:b14,dpup:b11,guide:b5,leftshoulder:b9,leftstick:b7,lefttrigger:a4,leftx:a0,lefty:a1,rightshoulder:b10,rightstick:b8,righttrigger:a5,rightx:a2,righty:a3,start:b6,x:b2,y:b3,touchpad:b15,misc1:b16,crc:5657,platform:Linux
+    has button back     ( 4): 1
+    has button guide    ( 5): 1
+    has button start    ( 6): 1
+    has button misc1    (15): 1
+    has button touchpad (20): 1
+    touchpads 1 (fingers on the first: 2), accel 1 gyro 1, raw buttons 17
+== launch env, HIDAPI off
+SDL 2.33.0, SDL_JOYSTICK_DISABLE_UDEV=1 SDL_JOYSTICK_HIDAPI=0
+1 joystick(s)
+[0] "Sony Interactive Entertainment DualSense Wireless Controller" path /dev/input/event5 guid 0300fd574c050000e60c000011810000 driver evdev (linux joystick) gamecontroller 1
+    type 7, mapping: 0300fd574c050000e60c000011810000,PS5 Controller,a:b0,b:b1,back:b8,dpdown:h0.4,dpleft:h0.8,dpright:h0.2,dpup:h0.1,guide:b10,leftshoulder:b4,leftstick:b11,lefttrigger:a2,leftx:a0,lefty:a1,rightshoulder:b5,rightstick:b12,righttrigger:a5,rightx:a3,righty:a4,start:b9,x:b3,y:b2,platform:Linux
+    has button back     ( 4): 1
+    has button guide    ( 5): 1
+    has button start    ( 6): 1
+    has button misc1    (15): 0
+    has button touchpad (20): 0
+    touchpads 0 (fingers on the first: 0), accel 1 gyro 1, raw buttons 13

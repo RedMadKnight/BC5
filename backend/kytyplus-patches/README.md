@@ -192,6 +192,11 @@ Pad: the orientation in the pad data is derived from the gyroscope and the accel
 (`KYTY_BC5_MOTION_TRACE=1` logs acceleration, angular velocity and orientation once a second);
 `KYTY_BC5_TRIGGER_DEADZONE=<0..254>` reads trigger values up to that as released, for a pad
 whose trigger does not rest at 0.
+Experiment 0193: the DualSense's touchpad click, a button of its own under SDL's HIDAPI driver,
+reaches the game as the touchpad button. Before, only Create (SDL's `back`) did.
+`KYTY_BC5_PAD_TOUCH=1` also gives the game the touch points: up to two fingers, positions in the
+1920 × 943 the host reports, and a new id per contact. It is off by default, and without it the pad
+data has no touch points, as before.
 Input configuration (`hostInput.cpp`, `window.cpp`, `main.cpp`): `--input-config <file>` or
 `KYTY_BC5_INPUT_CONFIG=<file>` reads one statement per line, `#` comments: `<Control>=<Input>`
 binds a DualSense control (Cross … TouchPad, LeftStickUp …) to a key (SDL's key names), a

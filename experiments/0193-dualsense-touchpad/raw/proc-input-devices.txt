@@ -1,0 +1,10 @@
+N: Name="Sony Interactive Entertainment DualSense Wireless Controller"
+H: Handlers=event5 js0 
+B: KEY=7fdb000000000000 0 0 0 0
+N: Name="Sony Interactive Entertainment DualSense Wireless Controller Motion Sensors"
+H: Handlers=event6 js1 
+N: Name="Sony Interactive Entertainment DualSense Wireless Controller Touchpad"
+H: Handlers=mouse1 event7 
+B: KEY=2420 10000 0 0 0 0
+N: Name="Sony Interactive Entertainment DualSense Wireless Controller Headset Jack"
+H: Handlers=event8 Headphone Jack Headset Mic Jack 

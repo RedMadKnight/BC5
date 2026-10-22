@@ -4193,7 +4193,7 @@ index 845bfe3..c5d4861 100644
  		{
  			const auto present_end = std::chrono::steady_clock::now();
 diff --git a/src/graphics/presentation/window/window.cpp b/src/graphics/presentation/window/window.cpp
-index c729a98..271e401 100644
+index c729a98..2f3e5fb 100644
 --- a/src/graphics/presentation/window/window.cpp
 +++ b/src/graphics/presentation/window/window.cpp
 @@ -31,7 +31,9 @@
@@ -4225,7 +4225,19 @@ index c729a98..271e401 100644
  
  namespace Libs::Graphics {
  
-@@ -193,6 +198,7 @@ constexpr uint32_t KYTY_SDL_BUTTON_X2MASK = SDL_BUTTON_X2MASK; // NOLINT(hicpp-s
+@@ -89,6 +94,11 @@ static uint32_t ControllerButtonToPadButton(int button) {
+ 		case SDL_CONTROLLER_BUTTON_DPAD_DOWN: return Controller::PAD_BUTTON_DOWN;
+ 		case SDL_CONTROLLER_BUTTON_DPAD_LEFT: return Controller::PAD_BUTTON_LEFT;
+ 		case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: return Controller::PAD_BUTTON_RIGHT;
++		// BC5 (experiment 0193): the DualSense's touchpad click is a button of its own in SDL's HIDAPI
++		// driver (SDL_hidapi_ps5.c, joystick button 15, "touchpad:b15" in the generated mapping);
++		// only BACK (the Create button) was mapped to the touchpad bit, so a press on the touchpad
++		// itself never reached the game. "Pad:touchpad=none" in the input configuration drops it.
++		case SDL_CONTROLLER_BUTTON_TOUCHPAD: return Controller::PAD_BUTTON_TOUCH_PAD;
+ 		default: return 0;
+ 	}
+ }
+@@ -193,6 +203,7 @@ constexpr uint32_t KYTY_SDL_BUTTON_X2MASK = SDL_BUTTON_X2MASK; // NOLINT(hicpp-s
  namespace {
  
  std::unique_ptr<WindowContext> g_window;
@@ -4233,7 +4245,7 @@ index c729a98..271e401 100644
  
  } // namespace
  
-@@ -201,10 +207,23 @@ constexpr uint32_t    KYTY_SDL_WINDOW_FLAGS =
+@@ -201,10 +212,23 @@ constexpr uint32_t    KYTY_SDL_WINDOW_FLAGS =
      (static_cast<uint32_t>(SDL_WINDOW_HIDDEN) | static_cast<uint32_t>(SDL_WINDOW_VULKAN));
  constexpr int KYTY_SDL_WINDOWPOS_CENTERED = SDL_WINDOWPOS_CENTERED; /*NOLINT(hicpp-signed-bitwise)*/
  
@@ -4258,7 +4270,7 @@ index c729a98..271e401 100644
  }
  
  static void GameEventQuit(WindowLoopState& game) {
-@@ -231,10 +250,28 @@ static void GameEventKeyboard(WindowLoopState& game, const EventKeyboard& key) {
+@@ -231,10 +255,28 @@ static void GameEventKeyboard(WindowLoopState& game, const EventKeyboard& key) {
  	if (key.down) {
  		switch (key.key_code) {
  			case SDLK_ESCAPE: game.need_exit = true; break;
@@ -4270,8 +4282,7 @@ index c729a98..271e401 100644
 +				}
 +				break;
 +			case SDLK_F2: // BC5: the settings overlay
- 				if (!key.repeat) {
--					RenderDocRequestCapture();
++				if (!key.repeat) {
 +					SettingsOverlayToggle();
 +				}
 +				break;
@@ -4281,7 +4292,8 @@ index c729a98..271e401 100644
 +				}
 +				break;
 +			case SDLK_F1: // BC5 (ADR 0011): the menu bar; RenderDoc's capture only with --rd
-+				if (!key.repeat) {
+ 				if (!key.repeat) {
+-					RenderDocRequestCapture();
 +					if (Config::RenderDocEnabled()) {
 +						RenderDocRequestCapture();
 +					} else {
@@ -4290,7 +4302,7 @@ index c729a98..271e401 100644
  				}
  				break;
  			default: break;
-@@ -245,6 +282,12 @@ static void GameEventKeyboard(WindowLoopState& game, const EventKeyboard& key) {
+@@ -245,6 +287,12 @@ static void GameEventKeyboard(WindowLoopState& game, const EventKeyboard& key) {
  
  	if ((key.down || key.up) && !key.repeat) {
  		HostInputKey(key.key_code, key.down);
@@ -4303,7 +4315,7 @@ index c729a98..271e401 100644
  	}
  }
  
-@@ -328,12 +371,24 @@ static void GameEventController([[maybe_unused]] const EventController& f) {
+@@ -328,12 +376,24 @@ static void GameEventController([[maybe_unused]] const EventController& f) {
  			if (joy != nullptr) {
  				LOGF("Controller opened as raw joystick: %s\n",
  				     SDL_JoystickName(joy));
@@ -4329,7 +4341,7 @@ index c729a98..271e401 100644
  	}
  
  	if (f.removed) {
-@@ -343,19 +398,38 @@ static void GameEventController([[maybe_unused]] const EventController& f) {
+@@ -343,19 +403,38 @@ static void GameEventController([[maybe_unused]] const EventController& f) {
  
  	if (f.down || f.up) {
  		const auto button = ControllerButtonToPadButton(f.button);
@@ -4370,7 +4382,7 @@ index c729a98..271e401 100644
  	}
  }
  
-@@ -366,7 +440,11 @@ static void GameEventLowMemory() {
+@@ -366,7 +445,11 @@ static void GameEventLowMemory() {
  static void GameEventWillEnterBackground(WindowLoopState& game) {
  	LOGF("Event: will_enter_background\n");
  
@@ -4383,7 +4395,7 @@ index c729a98..271e401 100644
  }
  
  static void GameEventDidEnterBackground() {
-@@ -380,7 +458,11 @@ static void GameEventWillEnterForeground() {
+@@ -380,7 +463,11 @@ static void GameEventWillEnterForeground() {
  static void GameEventDidEnterForeground(WindowLoopState& game) {
  	LOGF("Event: did_enter_foreground\n");
  
@@ -4396,7 +4408,7 @@ index c729a98..271e401 100644
  }
  
  void WindowContext::Resize(uint32_t new_width, uint32_t new_height) {
-@@ -486,9 +568,20 @@ void WindowContext::ProcessDisplayEvent(const SDL_DisplayEvent& display) {
+@@ -486,9 +573,20 @@ void WindowContext::ProcessDisplayEvent(const SDL_DisplayEvent& display) {
  }
  
  void WindowContext::ProcessEvent(double time_s) {
@@ -4417,7 +4429,7 @@ index c729a98..271e401 100644
  	if (ProcessImeInput(*event)) {
  		return;
  	}
-@@ -635,6 +728,17 @@ void WindowContext::ProcessEvent(double time_s) {
+@@ -635,6 +733,32 @@ void WindowContext::ProcessEvent(double time_s) {
  			break;
  		}
  
@@ -4432,10 +4444,25 @@ index c729a98..271e401 100644
 +			break;
 +		}
 +
++		case SDL_CONTROLLERTOUCHPADDOWN:
++		case SDL_CONTROLLERTOUCHPADMOTION:
++		case SDL_CONTROLLERTOUCHPADUP: { // BC5 (experiment 0193): fingers on the pad's touchpad
++			static const bool touch = [] {
++				const char* e = std::getenv("KYTY_BC5_PAD_TOUCH");
++				return e != nullptr && std::atoi(e) == 1;
++			}();
++			if (touch && event->ctouchpad.touchpad == 0) {
++				Controller::ControllerTouch(event->ctouchpad.which, event->ctouchpad.finger,
++				                            event->ctouchpad.type != SDL_CONTROLLERTOUCHPADUP,
++				                            event->ctouchpad.x, event->ctouchpad.y);
++			}
++			break;
++		}
++
  		case SDL_CONTROLLERAXISMOTION: {
  			EventController c {};
  
-@@ -717,6 +821,11 @@ void WindowContext::ProcessEvent(double time_s) {
+@@ -717,6 +841,11 @@ void WindowContext::ProcessEvent(double time_s) {
  			    SDL_CONTROLLER_AXIS_TRIGGERLEFT,
  			    SDL_CONTROLLER_AXIS_TRIGGERRIGHT,
  			};
@@ -4447,7 +4474,7 @@ index c729a98..271e401 100644
  			EventController c {};
  			c.id         = event->jaxis.which;
  			c.axis_id    = (event->jaxis.axis < 6) ? axis_map[event->jaxis.axis]
-@@ -730,6 +839,9 @@ void WindowContext::ProcessEvent(double time_s) {
+@@ -730,6 +859,9 @@ void WindowContext::ProcessEvent(double time_s) {
  
  		case SDL_JOYBUTTONDOWN:
  		case SDL_JOYBUTTONUP: {
@@ -4457,7 +4484,7 @@ index c729a98..271e401 100644
  			EventController c {};
  			c.id    = event->jbutton.which;
  			c.button = event->jbutton.button;
-@@ -743,17 +855,30 @@ void WindowContext::ProcessEvent(double time_s) {
+@@ -743,17 +875,30 @@ void WindowContext::ProcessEvent(double time_s) {
  		}
  
  		case SDL_JOYDEVICEADDED: {
@@ -4490,7 +4517,7 @@ index c729a98..271e401 100644
  			auto* joy = SDL_JoystickFromInstanceID(event->jdevice.which);
  			if (joy != nullptr) {
  				SDL_JoystickClose(joy);
-@@ -856,11 +981,13 @@ static void WindowCreate(WindowContext& context) {
+@@ -856,11 +1001,13 @@ static void WindowCreate(WindowContext& context) {
  
  	LOGF("WindowCreate(): width = %d, height = %d\n", width, height);
  
@@ -4505,7 +4532,7 @@ index c729a98..271e401 100644
  		SDL_Rect usable{};
  		if (SDL_GetDisplayUsableBounds(0, &usable) == 0 && usable.w > 0 && usable.h > 0) {
  			constexpr int margin_x = 48;
-@@ -886,7 +1013,7 @@ static void WindowCreate(WindowContext& context) {
+@@ -886,7 +1033,7 @@ static void WindowCreate(WindowContext& context) {
  	}
  
  	uint32_t window_flags = KYTY_SDL_WINDOW_FLAGS;
@@ -4514,7 +4541,7 @@ index c729a98..271e401 100644
  		window_flags |= static_cast<uint32_t>(SDL_WINDOW_FULLSCREEN_DESKTOP);
  	} else {
  		// Windowed: allow the user to resize; keep the normal frame decorations.
-@@ -909,7 +1036,8 @@ static void WindowCreate(WindowContext& context) {
+@@ -909,7 +1056,8 @@ static void WindowCreate(WindowContext& context) {
  		EXIT("%s\n", SDL_GetError());
  	}
  
@@ -4524,7 +4551,7 @@ index c729a98..271e401 100644
  }
  
  Presenter& WindowInit(uint32_t width, uint32_t height) {
-@@ -941,6 +1069,41 @@ void WindowShutdown() {
+@@ -941,6 +1089,41 @@ void WindowShutdown() {
  	}
  }
  
@@ -4566,7 +4593,7 @@ index c729a98..271e401 100644
  static int WindowIconRead(void* user, char* data, int size) {
  	auto*    src        = static_cast<Common::File*>(user);
  	uint32_t bytes_read = 0;
-@@ -1043,6 +1206,12 @@ void WindowContext::UpdateTitle() {
+@@ -1043,6 +1226,12 @@ void WindowContext::UpdateTitle() {
  	const auto frequency = Common::Timer::QueryPerformanceFrequency();
  	frame_num++;
  	fps_frames++;
@@ -4579,7 +4606,7 @@ index c729a98..271e401 100644
  	if (now - fps_start >= frequency) {
  		current_fps = static_cast<double>(fps_frames) * static_cast<double>(frequency) /
  		              static_cast<double>(now - fps_start);
-@@ -1051,10 +1220,10 @@ void WindowContext::UpdateTitle() {
+@@ -1051,10 +1240,10 @@ void WindowContext::UpdateTitle() {
  	}
  
  	auto fps = fmt::format(
@@ -16623,7 +16650,7 @@ index 0000000..5b7462d
 +
 +} // namespace Libs
 diff --git a/src/libs/controller.cpp b/src/libs/controller.cpp
-index 55718eb..57593d8 100644
+index 55718eb..a2befc5 100644
 --- a/src/libs/controller.cpp
 +++ b/src/libs/controller.cpp
 @@ -1,4 +1,9 @@
@@ -16654,17 +16681,29 @@ index 55718eb..57593d8 100644
  
  namespace Libs::Controller {
  
-@@ -45,6 +57,9 @@ struct ControllerState {
+@@ -45,8 +57,21 @@ struct ControllerState {
  	uint64_t time                                  = 0;
  	uint32_t buttons                               = 0;
  	int      axes[static_cast<int>(Axis::AxisMax)] = {128, 128, 128, 128, 0, 0};
 +	float    accel[3]                              = {0.0f, 0.0f, 0.0f}; // BC5: G
 +	float    gyro[3]                               = {0.0f, 0.0f, 0.0f}; // BC5: rad/s
 +	float    orient[4]                             = {0.0f, 0.0f, 0.0f, 1.0f}; // BC5: x, y, z, w
++	// BC5 (experiment 0193): the touch points the guest is given (touch_num 0: none).
++	uint8_t  touch_num                             = 0;
++	uint16_t touch_x[2]                            = {0, 0};
++	uint16_t touch_y[2]                            = {0, 0};
++	uint8_t  touch_id[2]                           = {0, 0};
  };
  
++// The touchpad resolution this host reports in scePadGetControllerInformation; touch positions
++// are given to the guest in it. TODO(verify) against a console.
++static constexpr int PAD_TOUCH_RESOLUTION_X = 1920;
++static constexpr int PAD_TOUCH_RESOLUTION_Y = 943;
++
  // Local-multiplayer: one GameController owns up to PAD_MAX_CONTROLLERS player
-@@ -59,8 +74,12 @@ public:
+ // slots. Each slot keeps an independent input stream + history, so a guest that
+ // opens pad handle N reads only the pad bound to slot N-1.
+@@ -59,8 +84,13 @@ public:
  
  	void Connect(int id);
  	void Disconnect(int id);
@@ -16673,11 +16712,12 @@ index 55718eb..57593d8 100644
  	void Button(int id, uint32_t button, bool down);
  	void Axis(int id, Axis axis, int value);
 +	void Motion(int id, bool gyro, const float* xyz);
++	void Touch(int id, int finger, bool down, float x, float y);
 +	void ResetOrientation(int index);
  	void ResetInputState();
  	void GetConnectionInfo(bool* flag, int* count);
  	void ReadState(ControllerState* state, bool* flag, int* count);
-@@ -78,7 +97,25 @@ private:
+@@ -78,7 +108,45 @@ private:
  		bool            obtained[STATES_MAX] = {};
  		uint32_t        states_num          = 0;
  		uint32_t        first_state         = 0;
@@ -16689,6 +16729,13 @@ index 55718eb..57593d8 100644
 +		float                                 orient[4] = {0.0f, 0.0f, 0.0f, 1.0f};
 +		std::chrono::steady_clock::time_point gyro_time;
 +		bool                                  gyro_seen = false;
++		// BC5 (experiment 0193): the two fingers on the touchpad, the latest sample like the motion
++		// above; a finger's id changes with each new contact.
++		bool     finger_down[2] = {false, false};
++		uint16_t finger_x[2]    = {0, 0};
++		uint16_t finger_y[2]    = {0, 0};
++		uint8_t  finger_id[2]   = {0, 0};
++		uint8_t  last_finger_id = 0;
  	};
 +	void ApplyMotion(int index, ControllerState* state) const {
 +		const auto& s = m_slots[static_cast<size_t>(index)];
@@ -16700,10 +16747,23 @@ index 55718eb..57593d8 100644
 +			state->orient[k] = s.orient[k];
 +		}
 +	}
++	void ApplyTouch(int index, ControllerState* state) const {
++		const auto& s   = m_slots[static_cast<size_t>(index)];
++		state->touch_num = 0;
++		for (int f = 0; f < 2; f++) {
++			if (!s.finger_down[f]) {
++				continue;
++			}
++			const int n      = state->touch_num++;
++			state->touch_x[n]  = s.finger_x[f];
++			state->touch_y[n]  = s.finger_y[f];
++			state->touch_id[n] = s.finger_id[f];
++		}
++	}
  
  	void EnsureSlot(int index);
  	int  OwnerSlot(int id) const;
-@@ -94,6 +131,34 @@ private:
+@@ -94,6 +162,34 @@ private:
  	std::vector<SlotState> m_slots;
  };
  static GameController* g_controller = nullptr;
@@ -16738,7 +16798,7 @@ index 55718eb..57593d8 100644
  // Native DualSense driver instance (spec-accurate, hardware-unvalidated).
  // Owned by the Controller subsystem; opened on subsystem init if a device is
  // present, polled on an internal thread, and closed on subsystem destroy.
-@@ -180,7 +245,31 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
+@@ -180,20 +276,225 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
  	data->right_stick_y          = state.axes[static_cast<int>(Axis::RightY)];
  	data->analog_buttons_l2      = state.axes[static_cast<int>(Axis::TriggerLeft)];
  	data->analog_buttons_r2      = state.axes[static_cast<int>(Axis::TriggerRight)];
@@ -16770,8 +16830,22 @@ index 55718eb..57593d8 100644
 +	data->angular_velocity_z     = state.gyro[2];
  	data->touch_data_touch0_id   = 1;
  	data->touch_data_touch1_id   = 2;
++	// BC5 (experiment 0193): the touch points, when KYTY_BC5_PAD_TOUCH=1 forwards them (without it
++	// none, and the ids above as upstream had them).
++	if (state.touch_num > 0) {
++		data->touch_data_touch_num = state.touch_num;
++		data->touch_data_touch0_x  = state.touch_x[0];
++		data->touch_data_touch0_y  = state.touch_y[0];
++		data->touch_data_touch0_id = state.touch_id[0];
++		if (state.touch_num > 1) {
++			data->touch_data_touch1_x  = state.touch_x[1];
++			data->touch_data_touch1_y  = state.touch_y[1];
++			data->touch_data_touch1_id = state.touch_id[1];
++		}
++	}
  	data->connected              = connected;
-@@ -189,11 +278,179 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
+ 	data->timestamp              = state.time;
+ 	data->connected_count        = pad_connected_count_to_u8(connected_count);
  	data->device_unique_data_len = 0;
  }
  
@@ -16951,7 +17025,7 @@ index 55718eb..57593d8 100644
  
  	// The native DualSense HID driver is opt-in and off by default. SDL already
  	// handles every standard pad (including a DualSense); this unvalidated driver is
-@@ -258,16 +515,162 @@ void ControllerDisconnect(int id) {
+@@ -258,16 +559,168 @@ void ControllerDisconnect(int id) {
  	g_controller->Disconnect(id);
  }
  
@@ -17097,6 +17171,12 @@ index 55718eb..57593d8 100644
 +	}
 +}
 +
++void ControllerTouch(int id, int finger, bool down, float x, float y) {
++	if (g_controller != nullptr) {
++		g_controller->Touch(id, finger, down, x, y);
++	}
++}
++
 +void ControllerGetTriggers(int* l2, int* r2) {
 +	if (g_controller == nullptr) {
 +		*l2 = 0;
@@ -17114,7 +17194,7 @@ index 55718eb..57593d8 100644
  void ControllerResetInputState() {
  	EXIT_IF(g_controller == nullptr);
  	g_controller->ResetInputState();
-@@ -284,6 +687,11 @@ void GameController::EnsureSlot(int index) {
+@@ -284,6 +737,11 @@ void GameController::EnsureSlot(int index) {
  	}
  }
  
@@ -17126,7 +17206,7 @@ index 55718eb..57593d8 100644
  int GameController::OwnerSlot(int id) const {
  	for (int i = 0; i < PAD_MAX_CONTROLLERS; i++) {
  		if (m_ids[i] == id) {
-@@ -395,6 +803,12 @@ void GameController::Button(int id, uint32_t button, bool down) {
+@@ -395,6 +853,12 @@ void GameController::Button(int id, uint32_t button, bool down) {
  	if (slot == -1) {
  		slot = FallbackSlot();
  	}
@@ -17139,7 +17219,7 @@ index 55718eb..57593d8 100644
  
  	auto state = GetLastState(slot);
  	state.time = LibKernel::KernelGetProcessTime();
-@@ -415,6 +829,14 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
+@@ -415,6 +879,14 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
  	if (slot == -1) {
  		slot = FallbackSlot();
  	}
@@ -17154,7 +17234,7 @@ index 55718eb..57593d8 100644
  
  	auto state = GetLastState(slot);
  	state.time = LibKernel::KernelGetProcessTime();
-@@ -422,8 +844,28 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
+@@ -422,8 +894,28 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
  	const int axis_id = static_cast<int>(axis);
  	EXIT_IF(axis_id < 0 || axis_id >= static_cast<int>(Controller::Axis::AxisMax));
  
@@ -17183,7 +17263,7 @@ index 55718eb..57593d8 100644
  	if (axis == Controller::Axis::TriggerLeft) {
  		if (value > 0) {
  			state.buttons |= PAD_BUTTON_L2;
-@@ -443,6 +885,87 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
+@@ -443,6 +935,122 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
  	AddState(slot, state);
  }
  
@@ -17256,6 +17336,41 @@ index 55718eb..57593d8 100644
 +	}
 +}
 +
++void GameController::Touch(int id, int finger, bool down, float x, float y) {
++	Common::LockGuard lock(m_mutex);
++
++	if (finger < 0 || finger > 1) {
++		return;
++	}
++	int slot = OwnerSlot(id);
++	if (slot == -1) {
++		slot = FallbackSlot();
++	}
++	EnsureSlot(slot);
++	auto&      s     = m_slots[static_cast<size_t>(slot)];
++	const auto scale = [](float v, int size) {
++		const int p = static_cast<int>(v * static_cast<float>(size) + 0.5f);
++		return static_cast<uint16_t>(p < 0 ? 0 : (p >= size ? size - 1 : p));
++	};
++	const bool contact = down && !s.finger_down[finger];
++	if (contact) {
++		// TODO(verify) how the console numbers contacts; here 1..127, a new one per contact.
++		s.last_finger_id   = static_cast<uint8_t>(s.last_finger_id % 127 + 1);
++		s.finger_id[finger] = s.last_finger_id;
++	}
++	const bool lift        = !down && s.finger_down[finger];
++	s.finger_down[finger] = down;
++	s.finger_x[finger]    = scale(x, PAD_TOUCH_RESOLUTION_X);
++	s.finger_y[finger]    = scale(y, PAD_TOUCH_RESOLUTION_Y);
++
++	static const bool trace_env = BC5_DIAG_ENV("KYTY_BC5_INPUT_TRACE") != nullptr;
++	if (trace_env && ::Log::Bc5LoggingOn() && (contact || lift)) {
++		std::fprintf(stderr, "input trace: t=%.3f touch finger %d %s at %u,%u id %u -> slot %d\n", InputTraceSeconds(), finger,
++		             contact ? "down" : "up", s.finger_x[finger], s.finger_y[finger], s.finger_id[finger], slot);
++		std::fflush(stderr);
++	}
++}
++
 +void GameController::ResetOrientation(int index) {
 +	Common::LockGuard lock(m_mutex);
 +
@@ -17271,11 +17386,12 @@ index 55718eb..57593d8 100644
  void GameController::ResetInputState() {
  	Common::LockGuard lock(m_mutex);
  
-@@ -488,6 +1011,14 @@ int GameController::ReadStateForSlot(int index, ControllerState* state, bool* fl
+@@ -488,6 +1096,15 @@ int GameController::ReadStateForSlot(int index, ControllerState* state, bool* fl
  	*flag  = SlotConnected(index);
  	*count = PresentCount();
  	*state = GetLastState(index);
 +	ApplyMotion(index, state);
++	ApplyTouch(index, state);
 +
 +	static const bool trace_env = BC5_DIAG_ENV("KYTY_BC5_INPUT_TRACE") != nullptr;
 +	const bool trace = trace_env && ::Log::Bc5LoggingOn();
@@ -17286,7 +17402,7 @@ index 55718eb..57593d8 100644
  
  	return 0;
  }
-@@ -515,7 +1046,28 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
+@@ -515,7 +1132,28 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
  	int ret_num = 0;
  
  	auto& s = m_slots[index];
@@ -17315,13 +17431,14 @@ index 55718eb..57593d8 100644
  		for (uint32_t i = 0; i < s.states_num; i++) {
  			if (ret_num >= states_num) {
  				break;
-@@ -523,11 +1075,21 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
+@@ -523,11 +1161,22 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
  			auto state_index = (s.first_state + i) % STATES_MAX;
  			if (!s.obtained[state_index]) {
  				s.obtained[state_index] = true;
 -				states[ret_num++]       = s.states[state_index];
 +				states[ret_num]         = s.states[state_index];
 +				ApplyMotion(index, &states[ret_num]);
++				ApplyTouch(index, &states[ret_num]);
 +				ret_num++;
  			}
  		}
@@ -17338,7 +17455,7 @@ index 55718eb..57593d8 100644
  	return ret_num;
  }
  int KYTY_SYSV_ABI PadInit() {
-@@ -625,6 +1187,9 @@ int KYTY_SYSV_ABI PadResetOrientation(int handle) {
+@@ -625,6 +1274,9 @@ int KYTY_SYSV_ABI PadResetOrientation(int handle) {
  	if (ControllerIndexFromHandle(handle) < 0) {
  		return PAD_ERROR_INVALID_HANDLE;
  	}
@@ -17348,7 +17465,18 @@ index 55718eb..57593d8 100644
  
  	return OK;
  }
-@@ -682,6 +1247,10 @@ int KYTY_SYSV_ABI PadReadState(int handle, PadData* data) {
+@@ -651,8 +1303,8 @@ int KYTY_SYSV_ABI PadGetControllerInformation(int handle, PadControllerInformati
+ 	std::memset(info, 0, sizeof(*info));
+ 
+ 	info->touch_pixel_density   = 44.86f;
+-	info->touch_resolution_x    = 1920;
+-	info->touch_resolution_y    = 943;
++	info->touch_resolution_x    = PAD_TOUCH_RESOLUTION_X;
++	info->touch_resolution_y    = PAD_TOUCH_RESOLUTION_Y;
+ 	info->stick_dead_zone_left  = controller_get_axis(-32768, 32767, 8000) - 128;
+ 	info->stick_dead_zone_right = controller_get_axis(-32768, 32767, 8000) - 128;
+ 	info->connection_type       = 0;
+@@ -682,6 +1334,10 @@ int KYTY_SYSV_ABI PadReadState(int handle, PadData* data) {
  	g_controller->ReadStateForSlot(ControllerIndexFromHandle(handle), &state, &connected,
  	                               &connected_count);
  
@@ -17359,7 +17487,7 @@ index 55718eb..57593d8 100644
  	pad_fill_data(data, state, connected, connected_count);
  
  	return OK;
-@@ -718,6 +1287,10 @@ int KYTY_SYSV_ABI PadRead(int handle, PadData* data, int num) {
+@@ -718,6 +1374,10 @@ int KYTY_SYSV_ABI PadRead(int handle, PadData* data, int num) {
  	}
  
  	for (int i = 0; i < ret_num; i++) {
@@ -17370,7 +17498,7 @@ index 55718eb..57593d8 100644
  		pad_fill_data(&data[i], states[i], connected, connected_count);
  	}
  
-@@ -738,14 +1311,10 @@ int KYTY_SYSV_ABI PadSetVibration(int handle, const PadVibrationParam* param) {
+@@ -738,14 +1398,10 @@ int KYTY_SYSV_ABI PadSetVibration(int handle, const PadVibrationParam* param) {
  	     "\t small_motor = %d\n",
  	     static_cast<int>(param->large_motor), static_cast<int>(param->small_motor));
  
@@ -17390,7 +17518,7 @@ index 55718eb..57593d8 100644
  	return OK;
  }
 diff --git a/src/libs/controller.h b/src/libs/controller.h
-index 3c0684f..fe73665 100644
+index 3c0684f..a98ac11 100644
 --- a/src/libs/controller.h
 +++ b/src/libs/controller.h
 @@ -9,14 +9,14 @@ namespace Libs::Controller {
@@ -17416,7 +17544,7 @@ index 3c0684f..fe73665 100644
  constexpr int PAD_HANDLE_BASE     = 1;
  
  constexpr uint32_t PAD_BUTTON_L3        = 0x00000002;
-@@ -64,21 +64,36 @@ inline int controller_get_axis(int min, int max, int value) {
+@@ -64,21 +64,40 @@ inline int controller_get_axis(int min, int max, int value) {
  	return (v < 0 ? 0 : (v > 255 ? 255 : v));
  }
  
@@ -17449,6 +17577,10 @@ index 3c0684f..fe73665 100644
 +// BC5: the pad's motion sensors. Acceleration in G (gravity included), angular velocity in
 +// rad/s, in the pad's own axes as SDL reports them (x to the right, y up, z towards the player).
 +void ControllerMotion(int id, bool gyro, const float* xyz);
++// BC5 (experiment 0193): a finger on the pad's touchpad (SDL's controller touchpad events: finger
++// 0 or 1, x and y 0..1 from the left and the top). window.cpp forwards them only with
++// KYTY_BC5_PAD_TOUCH=1; without it the pad data carries no touch points, as before.
++void ControllerTouch(int id, int finger, bool down, float x, float y);
  void ControllerResetInputState();
 +// BC5: the analog triggers (0..255) of pad slot 0 as the game reads them, for the trigger-effect state.
 +void ControllerGetTriggers(int* l2, int* r2);
