@@ -1,0 +1,27 @@
+# Experiment 0217: census of the title's programs that write memory, from the 345 private disassembly listings in
+# ~/bc5-data/priv (2026-10-22 20:25, read-only slot granted by the top session; only these counts left the box).
+# Run as census0217.sh does (the same grep, run inline that time). Also: the listings of the night lake's water programs.
+Water programs (exp 0201 raw/X1-X2.txt):
+  PS 0x11d01d7100 (full-screen G-buffer pass): 119 listing lines, no store or atomic, 4 "exp mrt"
+  ES 0x11d00bdf00 (its vertex stage):          48 lines, no store or atomic, 1 "exp pos", 1 "exp prim"
+  PS 0x11d01ff900, ES 0x11d0148800 (the water mesh draw): no listing in ~/bc5-data/priv; not checked
+Programs that store or use atomics: 211 of 345. Mnemonic: number of programs using it
+  109 image_store, 44 buffer_store_dword, 34 buffer_store_dwordx4, 17 buffer_store_dwordx2, 16 buffer_store_format_xyzw,
+  16 buffer_store_format_x, 13 buffer_atomic_add, 9 buffer_store_dwordx3, 6 buffer_atomic_or, 4 image_atomic_umin,
+  4 image_atomic_or, 3 buffer_atomic_sub, 2 flat_store_dword, 2 buffer_atomic_or_x2, 1 image_atomic_and (and others
+  below the top 15, e.g. buffer_atomic_fmax/fmin/swap)
+Programs with atomics (first 20, sorted by address): 0x090985c800, 0x090986ea00, 0x0909939900, 0x090996a000, 0x090996cc00,
+  0x0909974400 (the BVH compaction, F232), 0x090997a500, 0x11d01b8d00 (image_atomic_and), 0x11d01b8f00, 0x11d01b9000,
+  0x11d01b9100 (image_atomic_or), 0x11d031fb00, 0x11d036b400, 0x11d036ed00 (buffer_atomic_or + image_store), 0x11d0370c00
+  (image_atomic_or), 0x11d0375600, 0x11d03a2000, 0x11d03ae300, 0x11d03ae600, 0x11d03afc00 (buffer_atomic_add ...)
+  -- all without "exp mrt": compute programs.
+Pixel-type programs (with "exp mrt") that also store or use atomics:
+  0x11d01b8400  1 exp mrt, image_store x2
+  0x11d0c13700  1 exp mrt, image_atomic_umin x1, image_store x8
+  0x11d0d6c400  1 exp mrt, image_atomic_umin x1, image_store x8
+  0x11d3269600  1 exp mrt, image_atomic_umin x1, image_store x8
+  0x11d3269800  1 exp mrt, image_atomic_umin x1, image_store x8
+Reading: four pixel programs combine a render-target export with an atomic minimum into an image, the usual shape of a
+texture streamer's GPU feedback (each pixel records the finest mip it wanted; the CPU reads the minimum back later),
+TODO(verify) against their descriptors and the CPU side. Whether these four draw at the lake, what image they write,
+and whether the title's CPU reads it, is not known yet.

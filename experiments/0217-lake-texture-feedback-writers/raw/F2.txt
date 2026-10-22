@@ -1,0 +1,22 @@
+# Experiment 0217, run F2 (2026-10-22 21:35:42-21:40:52, granted by the top session; run0217.sh F2, the lake repeat).
+# As F1 (raw/F1.txt), with the code read of PS 0x11d01ff900 widened to 64 KiB. The bench's launcher copy
+# (~/bc5-work/exp0194/play-pkg-0194.sh) is self-contained: it does not source play-pkg.sh (whose defaults changed this
+# evening), sets neither BC5_DIRECT_FLAT_APERTURE nor BC5_DIRECT_AMM_PRT, keeps the old skip list, and its optional
+# ~/bc5-work/bc5-pkg.env does not exist: the old settings, comparable with exps 0205 and 0212.
+# Box: boot ac5dab11, 187 amdgpu lines before and after, no fault or timeout. The journal was decoded under a short lock
+# (21:40:54-21:41:18; the run's own decode lost the journal-path race again).
+Save and view (checked): game shot = the "Parry" prompt by the outpost (the lake save); ts06 the lake from the cliff,
+a wider angle, heavily patched.
+Patch share in the frozen view, 21:38:16-21:39:18:
+  33.0 33.7 37.1 39.7 39.3 39.4 43.8 42.9 41.0 41.1 41.4 37.3 41.2 %   (growing over the first 30 s)
+Code (read live into ~/bc5-data/priv/exp0217, prog0212.py, counts only):
+  PS 0x11d01ff900 (the water mesh draw): 2,911 instructions to s_endpgm; no store, no atomic; exports: 5 x mrt
+  ES 0x11d0148800: 489 instructions to s_endpgm; no store, no atomic; exports: 1 pos, 1 prim, 6 param
+Draws in the journalled windows (draw journal, _PS = the four candidates and the water's two draws):
+  PS 0x11d01ff900: 72 draws; PS 0x11d01d7100: present (its ring-allocated buffers, as in exp 0212);
+  PS 0x11d0c13700, 0x11d0d6c400, 0x11d3269600, 0x11d3269800: no draw at the lake.
+  Descriptors of 0x11d01ff900 (desc0212.py): GS images 0x8001810000 (2048x2048 fmt 13), 0x8001010000 (512x512 fmt 71),
+  0x113cb40000 (screen-size, fmt 13, dynamic resolution); PS images 0x8494054000 (2048x2048 BC4, 8 levels; this run's
+  address), 0x80907c4000 (512x512 fmt 13), 0x11d0078000 (4x4); and in BOTH stages, slot 6, the bindless texture table
+  0x11e0007aa0 (stride 32, 25,524 records this run).
+  cp-skip lines: 0 (the journal covers only these six shaders: inconclusive for other passes).

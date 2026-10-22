@@ -1,0 +1,18 @@
+# Experiment 0217, run F1 (2026-10-22 20:39:41-20:44:33, granted by the top session; run0217.sh F1).
+# exp 0212's bench0212.sh on the exp 0194 build, the draw journal on PS 11d0c13700, 11d0d6c400, 11d3269600, 11d3269800,
+# 11d01ff900, 11d01d7100 (150:4, every 15 s), DUMPS=1; at the first frozen-view shot the code of PS 0x11d01ff900 and
+# ES 0x11d0148800 (16 KiB each) read from the emulator's memory into ~/bc5-data/priv/exp0217 (private, mode 700).
+# Box: boot ac5dab11, 187 amdgpu lines before and after, no fault or timeout. The journal was decoded afterwards under a
+# short lock (20:44:46-20:45:16; the run's own decode lost the same journal-path race as in exp 0212).
+NOT THE LAKE: the game loaded slot 2's town, not the lake save (ts04 checked: the town at night from a rooftop; ts00 a
+near-black 10-KB frame). Patch share 0.0-3.6 % means nothing here. So nothing in this run speaks about the lake.
+What still holds (scene-independent):
+- The code read: PS 0x11d01ff900 (the water mesh draw): 2,900 instructions decoded in 16 KiB, no store, no atomic, no
+  export, and no s_endpgm: the program is longer than the window, so it is only partly checked. ES 0x11d0148800: 489
+  instructions to s_endpgm, no store or atomic; exports 1 pos, 1 prim, 6 param.
+- In the town, of the six journalled pixel shaders only 0x11d01d7100 (21 draws) and 0x11d0d6c400 (11 draws) drew.
+  0x11d0d6c400 (one of the four "image_atomic_umin + image_store" candidates of the census) reads three screen-size
+  images, 1664x936 (the dynamic resolution of the moment): 0x113b2e0000 fmt 5 sw 24, 0x113f230000 fmt 22 and
+  0x1140a90000 fmt 29 (the G-buffer targets of exp 0201 X1), plus small 16-byte buffers. A screen-space pass over the
+  G-buffer; its atomic target is not among these inline descriptors (not decoded).
+- cp-skip lines in this PS-filtered journal: 0 (inconclusive; only the six shaders' draws are journalled).
