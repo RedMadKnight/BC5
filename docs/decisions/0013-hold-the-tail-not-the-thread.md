@@ -176,3 +176,28 @@ Each step goes to the next only after the previous one is recorded as passed.
   title's thread's normal path.
 - `BC5_DIRECT_SPEC_WAIT_MS` (exp 0135) stays off. This is the safe form that F228 sketched and
   that exp 0135's verdict asked for: no guessed write, and no GPU wait on an absent writer.
+
+*Amended 2026-10-23 (experiment 0226): how the first test build does it.*
+- It uses ADR 0010 §B's held chain (`BC5_DIRECT_CHAIN=2`, in the play settings) rather than a hold
+  queue of its own. The title's thread still walks, filters and tracks every buffer at hand-over,
+  as today. Only the chain's submission waits. This replaces decision points 3 and 4's holder that
+  processes items, and with it the thread-context risk: no thread-local walk state has to move.
+- At a wait of decision 1, after the head has gone (ADR 0008's split and its `chain_flush(1)`), the
+  wait is kept for the GPU (`t_keep_waits`) and a condition is put on the thread's chain slot. The
+  title's thread goes on. Later buffers join the same open chain.
+- `chain_submit()` passes a held chain only when every condition is met: the label satisfied, or its
+  writer on a ring (`ring_will_satisfy`).
+  - Owner flushes and the observe points (`drain()` at the flip, `chain_observe()`, `wait_jobs()`)
+    wait for that, bounded.
+  - The chain watchdog (why 9) and the new holder thread `bc5-hold` (why 11) do not wait. The holder
+    polls every ~20 µs and submits.
+- Past `BC5_DIRECT_HOLD_TAIL_MS` (100) the kept wait is removed from its segment's keep list: today's
+  give-up (point 6). If it cannot be removed yet (a segment the owner has not appended), it stays
+  held, so no wait reaches the GPU without its writer.
+- While a chain is held, a later wait on a label the held chain writes is kept without a condition.
+  The labels are collected from the appended segments, as `acb_ready` scans them.
+- Point 5 needs no code: label writes are registered at submission (`register_label_writes` in the
+  submit path) already.
+- Not in this build: the ring consumer (point 10).
+- Smoke run tcpH1 (300 s): clean. 14,291 holds, released after 0.91 ms on average; one give-up at the
+  bound. Frames are to be settled by the A/B.
