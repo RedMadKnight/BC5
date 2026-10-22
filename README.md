@@ -1,37 +1,63 @@
 # BC5
 
-**Run PlayStation 5 games on the AMD BC-250.**
+**A PlayStation 5 emulator for the AMD BC-250, on Linux.**
 
-BC5 is a user-space host for PS5 titles on the AMD BC-250 under Linux. The BC-250 is a mining board built around the same APU family as the PS5: a Zen 2 CPU, a `gfx1013` GPU and 16 GB of unified GDDR6 (F1, F13). Three parts make it work:
+The BC-250 is a small board AMD made for cryptocurrency mining. Its chip has the same building blocks as the PS5's: an 8-core Zen 2 CPU, a GPU that runs the same shader code as the console's (`gfx1013`, "Cyan Skillfish"), and 16 GB of fast GDDR6 memory that both share. BC5 uses that likeness to run PS5 games on it.
 
-- **[KytyPlus](https://github.com/Coder787-source/KytyPlus)** (GPL-2.0), the emulator BC5 is built on: it loads the game's own code and provides the loader, the kernel, audio and input.
-- **A direct GPU path**, this repository's `backend/`: the BC-250's GPU is the same shader target as the console's (F1, F63), so the game's own command buffers and its native RDNA shaders go to the GPU through Linux's `amdgpu` driver, filtered for its command processor but not translated to Vulkan (ADR 0005, ADR 0006, F37).
-- **System libraries written independently.** Every PS5 system library a title calls is a stand-in written in the host from public symbol names and the title's own calls, following KytyPlus's model. BC5 uses no PS5 firmware and no system-software dump, and never will (ADR 0012, HANDOFF D18). The repository contains no Sony material.
+PC emulators have to translate a console's graphics for a different GPU. BC5 does not: the game's own graphics commands and shaders go straight to the BC-250's GPU. The rest of the console (system libraries, files, sound, controller) is rewritten inside the emulator. No PS5 firmware is needed. The flip side: BC5 runs on the BC-250 only. The games' shaders use instructions that no graphics card you can buy for a PC has in this combination.
 
-Two tools come with it: `bc5-mount` reads PS5 game dumps and packages as a read-only directory, and `bc5-agc` decodes GPU command streams.
+<sub>Sources: [HANDOFF](docs/HANDOFF.md) F1, F13, F63, D13 and [ADR 0012](docs/decisions/0012-no-firmware-hle-host.md).</sub>
 
-> **Status: research / alpha.** One game, ASTRO BOT, is fully playable in the maintainer's judgement (F85). A second title runs from its package through its menus, saves, loads and opening into gameplay (F207, F212), and since 2026-10-21 plays smoothly with its sound at the right speed, pause and resume included, in the maintainer's judgement (F247). BC5 is built and tuned for the BC-250 alone (F63). You need your own console and your own game dumps (see [Legal](#legal)).
+### What it can do today
 
-## Status
+- **ASTRO BOT is fully playable**, at about 60 fps in its first level, with the DualSense's motion, haptics and adaptive triggers, and with saves.
+- **A second title (not named here) plays** from its menus through the opening into gameplay, with sound, saves and pause, and with its ray-traced reflections switched on. It ran at about 37 fps through an 18-minute session; the maintainer's verdict: "fully playable, minimal stutter".
+- **Any other game is untested.** A game that needs a system library BC5 has not rewritten yet stops there.
 
-Every number below has its experiment under [`experiments/`](experiments/) and its finding (F1, F2, …) in [`docs/HANDOFF.md`](docs/HANDOFF.md) §2. All of it was measured on one BC-250 with the maintainer's own copies of the games, as of 2026-10-19.
+### How you start it
 
-| Game | Read from | State | Frame rate |
-| --- | --- | --- | --- |
-| ASTRO BOT | `.ffpfsc` dump, through `bc5-mount` | **Playable.** Intro, menus, every level the maintainer has played; controller with motion, haptics and adaptive triggers; saves (F52–F60, F78–F80, F85). The 3D resolution is chosen live from the settings menu (F101, F102) | first level 59–60 fps at 3328×1872, 57 at native 4K (F100); a later level 46.5 (F126); the water level 40–51 (F64, F137) |
-| A second title (not named here) | PS5 debug package (`.pkg`), through `bc5-mount` | **Menus, saves, load, the opening, gameplay.** Intro and menus with sound and complete text (F165, F168, F172, F204); settings and save slots kept between starts, dated, under the title's own ID, deletable (F189–F194, F205); *Continue* loads a save to gameplay (F212); New Game plays its opening through to gameplay (F199, F206, F207); sound and game speed correct at its full frame rate, pause and resume (F240, F247). Known gaps: its ray-traced reflections are off — four variants of the reflection traversal and the BVH compaction that feeds them are skipped, because the traversal loops forever on the per-frame trees (F173, F234, F248); the geometry engine's reads at address 0 were its tessellation-factor ring, now programmed from the title's own call (F248); its ATRAC9 voices are silent (F200); the AnyPS5 ports of 2026-10-19 are not yet verified on the box (F214–F217) | intro 29 fps, the title's own limit (F168); menus 41–50 (F168, F204); gameplay a variable 30–42 against the 60 it asks for, because the render thread spends three quarters of its time in the host's per-submission path (F210); submission chains across the game thread's ioctls on by default (F218, F240); with no frame cap since F247: menus ~43, the opening 44–52, night gameplay ~29 flips/s (GPU-bound) |
-| Any other game | | Untested. A title that calls a system library the host has no stand-in for stops there | |
+On the maintainer's box a desktop shortcut, *BC5 emulator*, opens the emulator window. *File › Open* picks a game dump or a game package; a launcher script mounts it read-only and starts the game. Two more shortcuts start the same thing in other modes: *lean* has all measuring compiled out and is for playing, *MangoHud* adds an on-screen overlay for recordings.
 
-Latest (2026-10-19):
+### What is still broken
 
-- **No firmware, by decision** (ADR 0012): the project will not take the RPCSX road of booting the console's system modules; every system library is written in the host. The last two Sony modules still loaded from a game dump's `fakelib/`, `libSceAgc` and `libSceAgcDriver`, are to be replaced by an independently written driver (HANDOFF Q14).
-- The second title's opening and gameplay: the hang 90 s in was the host leaking the AMM automatic pool (F206, fixed) and the geometry engine reading its tessellation factors from address 0, because the host had not programmed the ring the title hands to `/dev/gc` (F207, F208, F248; fixed); the ray-traced reflections stay skipped, their traversal loops (F234, F248). Its sped-up, crackling sound and drifting timeline were the host's AudioOut2 queue level, which did not count the grains its Wwise sink had rendered and not yet pushed (F247, fixed); submission chains, first per ioctl (F213) and then across the game thread's ioctls (ADR 0010 §A/§B, experiment 0165), take the night scene from 33 to 45 flips/s and the kernel submissions from 4,463 to 1,658 a second; on by default for this title since 2026-10-20 (F218, F240). The menu artefact was GPU state inherited from the desktop's work on the same ring; a register-state prefix removes it (F204).
-- Four library behaviours ported from AnyPS5 (GPL-2.0): rumble without an audio sink, NpManager callbacks, NpTrophy2 exports, SaveData search (F214–F217; [`docs/ports/anyps5-review.md`](docs/ports/anyps5-review.md)).
-- A build-from-scratch script (`tools/scripts/bc5-build.sh`) and, in progress in another session, an emulator window with a menu bar (ADR 0011, experiment 0164).
+Patches of the water are missing on the second title's night lake. About once an hour of play the machine goes down and reboots. In some cutscenes the characters move in slow motion while effects run at normal speed. Some of the second title's audio streams, in a format no public decoder reads, play as silence. All of these are under investigation; see [Known issues](#known-issues).
 
-![The emulator window on the BC-250: ASTRO BOT's opening card, rendered through the direct path](docs/images/g3-first-screen.png)
+### Legal, in short
 
-*2026-10-01, experiment 0016, run 79: the first recognisable frame through the direct path. These screenshots are the only game output in this repository.*
+BC5 is a hobby research project and is against piracy. You play games you own, dumped on your own PS5. This repository contains no Sony material (no firmware, keys, system software or game files) and links to none. Full text: [Legal](#legal).
+
+## Status in numbers
+
+As of 2026-10-22, measured on one BC-250 with the maintainer's own copies of the games. Every number is a finding (F1 … F283) in [`docs/HANDOFF.md`](docs/HANDOFF.md) §2, backed by an experiment under [`experiments/`](experiments/). A "flip" is one frame the game presented.
+
+| | ASTRO BOT | Second title |
+| --- | --- | --- |
+| State | Fully playable (F85) | Plays through menus, saves, New Game and Continue into gameplay (F207, F212); sound and game speed right, pause and resume (F240, F247); with reflections on, "fully playable, minimal stutter" in the maintainer's words (F277) |
+| Frame rate | First level 59–60 fps at 3328×1872, 57 at native 4K (F100, F101); a later level 46.5 (F126); the water level 43.4 (F137) | 18-minute play with reflections on: 37.5 flips/s, against 39.4 with them off (F277); 300-s scripted route 37.9–38.6 (F280, F281); opening 44–52 (F247); the night jungle 28–29, GPU-bound (F244, F248). The game asks for 60 (F210) |
+| Picture | 3D resolution chosen live in the F2 menu: 4K, ~1872p, ~1368p or 1080p (F101) | Paces itself by GPU time: keep the F2 resolution at 4K (scale 1.0); a higher scale halves its frame rate (F237) |
+| Controller | Motion, haptics, adaptive triggers (F52–F60, F78–F80) | Touchpad press mapped (F252) |
+
+**On by default** (in both builds, normal and lean):
+
+| What | Effect | Source |
+| --- | --- | --- |
+| Ray-traced reflections, second title (since 2026-10-22) | Six reflection-traversal variants run, their stack addresses fixed for Linux's memory apertures; the BVH compaction pass that feeds them is still skipped, as it halves the frame rate and faulted. Reflections reach the image; whether they are complete is not shown | F249, F250, F268, F275, F277 |
+| APR read-ahead (since 2026-10-22) | Streamed reads come back sooner: the cutscene read queue's 95th percentile from 3.4 s to 0.42 s; its reader threads sleep when idle (7–11 ms of CPU per 10 s instead of 160–208) | F273, F281 |
+| Submission chains, second title | Fewer kernel submissions (4,463 → 1,658 a second) and the night scene from 33 to 45 flips/s when measured | F218, F240 |
+| Audio grain model and display-event coalescing | The second title's sound and timeline at real speed (1.00× for 10 minutes), no 30-fps cap needed | F246, F247 |
+| Tessellation-factor ring, second title | The night scene's tessellated draws are drawn; the geometry engine's reads at address 0 are gone | F248 |
+
+**The research so far:** 283 findings (F1–F283) in `docs/HANDOFF.md`, 222 experiments (0001–0223) in `experiments/`, 12 architecture decision records in `docs/decisions/`.
+
+### Known issues
+
+| Issue | What is known | Findings |
+| --- | --- | --- |
+| Patchwork water on the second title's night lake | Rectangles of the water show the lake bed in some runs. Not a missing input from the host: the textures are resident. In the one run whose lake turned clean, that came just after the game lowered detail clamps in its texture table; what drives those clamps is open | F255, F269, F272, F278 |
+| Machine-downs (about one an hour of play) | Two GPU rings time out with no fault, the graphics ring's reset fails, the kernel resets the whole GPU and the box reboots. Three of four followed a game-thread wait the host gave up on; the wait is for GPU work not yet submitted. Under investigation | F260, F262, F264, F279, F282, F283 |
+| Cutscene slow motion | Characters crawl while hair and effects run on. Their clock is a silent looping voice that stops when its next streamed read comes late; the read-ahead removes the host queue's share, whether that ends it is not shown | F254, F256, F259, F267, F273 |
+| Silent ATRAC9 streams, second title | Every one uses channel configuration 7, which no public decoder knows; played as silence. Whether they are sound or haptic tracks is open | F200, Q17 |
+| Library ports from AnyPS5 | Rumble without an audio sink, NpManager, NpTrophy2, SaveData search: ported, not yet verified on the box | F214–F217, Q16 |
 
 ## How it works
 
@@ -49,92 +75,108 @@ flowchart TD
     L --> AU
 ```
 
-The host hands the console-format command stream to BC5's backend at the `/dev/gc` boundary (F12, F18, F19). The backend filters it for `amdgpu`, dropping or rewriting the packets the BC-250's command processor must not run (ADR 0005, F27); supplies what the console's command processor does and `amdgpu`'s does not — the context-state stack, cross-queue label hand-overs, waits for CP DMA (F34–F42); maps the game's memory 1:1 into the GPU's address space as dma-bufs of the host's own backing files (ADR 0006, F40, F55); and submits with jobs in flight on the GFX ring, with the title's asynchronous compute on the BC-250's compute rings (ADR 0009, F178, F181), cross-queue waits left to the GPU where a job already on the ring will satisfy them (F109, F117) and graphics pieces behind a full-state prefix for the rest (ADR 0008, F137, F170).
+BC5 has three parts:
 
-What BC5 is not:
+- **The host**, [KytyPlus](https://github.com/Coder787-source/KytyPlus) (GPL-2.0) with this repository's patch ([`backend/kytyplus-patches/`](backend/kytyplus-patches/)). It loads the game's own code and provides the loader, the kernel, audio, input and every system library the game calls, each written from public symbol names and the game's own calls (HLE). No firmware or system-software dump is used, ever (ADR 0012, D18). The one exception, to be replaced by a driver written in the host: the game's own copies of a few library modules from its dump's `fakelib/`, chiefly the graphics pair `libSceAgc` / `libSceAgcDriver` that builds the console-format command stream (D11, Q14).
+- **The direct GPU path**, [`backend/`](backend/). The host hands the command stream over at the `/dev/gc` boundary (F12, F18, F19). The backend filters it for `amdgpu`, dropping or rewriting the packets the BC-250's command processor must not run (ADR 0005, F27). It supplies what the console's command processor does and `amdgpu`'s does not: the context-state stack, cross-queue label hand-overs, CP DMA waits (F34–F42). It maps the game's memory 1:1 into the GPU's address space as dma-bufs (ADR 0006, F40, F55). It submits with jobs in flight on the GFX ring and the game's asynchronous compute on the compute rings (ADR 0009, F178, F181), chained into fewer kernel submissions (ADR 0010, F218). Shaders are the game's native RDNA binaries; nothing is translated.
+- **The tools**, [`tools/`](tools/) (Rust): `bc5-mount` reads PS5 game dumps (`.ffpfsc`) and packages (`.pkg`) as a read-only directory over FUSE; `bc5-agc` decodes GPU command streams.
 
-- **Not a firmware boot, and not a system-software emulator.** The PS5 boot chain cannot run on a BC-250, and BC5 loads no system-software dump either way (ADR 0012). Everything is user space on a normal Linux kernel.
-- **Not a new emulator.** BC5 extends KytyPlus with the GPU path, the patch set in [`backend/kytyplus-patches/`](backend/kytyplus-patches/) and the tools.
-- **Not a PC emulator.** The games' shaders use instructions no GPU you can buy has in this combination; the untranslated path needs the console's own silicon, which the BC-250 carries (F63).
-- **Not a piracy tool.** See [Legal](#legal).
+What BC5 is not: a firmware boot (the PS5 boot chain cannot run on a BC-250, and BC5 loads no system software either way); a new emulator (it extends KytyPlus); a PC emulator (F63); a piracy tool.
+
+![The emulator window on the BC-250: ASTRO BOT's opening card, rendered through the direct path](docs/images/g3-first-screen.png)
+
+*2026-10-01, experiment 0016, run 79: the first frame through the direct path (F37).*
 
 ## Build
 
-Requirements: an AMD BC-250 with the community core and CU unlocks (8C/16T, 40 CU) and the dynamic VRAM split in BIOS (HANDOFF D8, D13); Linux with a Mesa/RADV that knows gfx1013 (the dev box runs Bazzite with a KDE Wayland session); `ttm.pages_limit` raised on the kernel command line so `amdgpu`'s GTT domain holds the game's memory (D12: 13 GiB for a 16 GB board); the `udmabuf` device (ADR 0006); a DualSense on USB. Everything is built inside an Ubuntu 26.04 distrobox so the host system stays untouched (`CLAUDE.md`, "Machine context").
+Requirements:
 
-One script does the rest, idempotently: it clones or fast-forwards this repository into `~/src/bc5`, clones KytyPlus at `f266548` into `~/src/KytyPlus` and applies the patch, then builds the backend library and `kyty_emulator` inside the `ubuntu` container. A re-run only redoes what changed; local changes in either checkout are saved to a diff file, never dropped.
+- An AMD BC-250 with the community CPU and GPU unlocks (8 cores / 16 threads, 40 CUs; F14, D13) and the dynamic VRAM split in BIOS (D8).
+- Linux with a Mesa/RADV that knows `gfx1013`; the dev box runs Bazzite with a KDE Wayland session (F13).
+- `ttm.pages_limit` raised on the kernel command line so `amdgpu`'s GTT holds the game's memory (D12: 13 GiB on a 16 GB board), and the `udmabuf` device (ADR 0006).
+- A DualSense on USB.
+
+Everything builds inside an Ubuntu 26.04 distrobox named `ubuntu`, so the host system stays untouched. One idempotent script clones or fast-forwards this repository into `~/src/bc5`, clones KytyPlus at `f266548` into `~/src/KytyPlus` and applies the patch, then builds the backend and `kyty_emulator`:
 
 ```bash
 bash ~/src/bc5/tools/scripts/bc5-build.sh
 ```
 
-The emulator is `~/bc5-work/kytyplus-build/src/kyty_emulator`; the previous one is kept as `kyty_emulator.prev`. `BC5_BUILD_MOUNT=1` also builds `bc5-mount`; `BC5_BUILD_KEEP_KYTY=1` builds the KytyPlus tree as it is. The script's header lists every knob, and [`tools/scripts/bc5-build.sh`](tools/scripts/bc5-build.sh) is the reference for the exact CMake flags.
+It builds a normal emulator (`~/bc5-work/kytyplus-build/src/kyty_emulator`, the previous one kept as `.prev`) and a lean one (`~/bc5-work/kytyplus-build-lean`, `-DKYTY_BC5_LEAN=ON`: every trace, journal and profiler compiled out; F236). Local changes in either checkout are saved to a diff file, never dropped. `BC5_BUILD_MOUNT=1` also builds `bc5-mount`; `BC5_BUILD_KEEP_KYTY=1` builds the KytyPlus tree as it is. The script's header lists every knob.
 
 ## Run
 
-Games are started from launcher scripts on the dev box, one per title kind, behind desktop shortcuts: `play-astro.sh` for a `.ffpfsc` dump and `play-pkg.sh` for a PS5 package. A launcher mounts the image read-only with `bc5-mount`, exports the shared settings of `bc5-run.env` plus the title's own switches (HANDOFF D15), and runs the emulator; the title's own switches are the ones the experiments established, every one described in [`backend/kytyplus-patches/README.md`](backend/kytyplus-patches/README.md). The last committed copies of `play-pkg.sh`, `play-astro.sh` and `play-any.sh` are in [`experiments/0177-lean-build/`](experiments/0177-lean-build/).
+> **Direct mode sends raw command buffers to the GPU. A bad one can hang the display or reset the machine (F25, F27, F28). Save your work before every run.**
 
-**Direct mode sends raw command buffers to the GPU: a bad one can hang the display or reset the machine (F25, F27, F28). Save your work before every run.** Set `BC5_DIRECT_STAGE=maponly` once to see that the build, the mount and the mapping work without a submission, then `all`.
+Games start from launcher scripts on the dev box, one per kind of image: `play-astro.sh` for a `.ffpfsc` dump, `play-pkg.sh` for a package. `play-any.sh` (the *BC5 emulator* shortcut) runs the empty window and hands the chosen image to the right one. A launcher mounts the image with `bc5-mount`, exports the shared settings of `bc5-run.env` plus the title's own switches (D15), and runs the emulator. `BC5_LEAN=1` makes them start the lean build. Committed snapshots: [`experiments/0177-lean-build/`](experiments/0177-lean-build/) (all three) and [`experiments/0188-audioout2-advanced-grains/`](experiments/0188-audioout2-advanced-grains/) (`play-pkg.sh`); the live copies on the box carry the values in the table below.
 
-Today the host still loads two Sony modules from your own game dump, `libSceAgc.sprx` and `libSceAgcDriver.sprx` (a `.ffpfsc` dump has them in `fakelib/`; a package has none, so they come from another of your dumps), through `SHADPS4_SYSMODULES_PACK_DIR`. That is game-dump content, not firmware, and it is being phased out in favour of a driver written in the host (ADR 0012, HANDOFF Q14).
+- **The window** (ADR 0011, D17): `kyty_emulator --menu` opens it with no game. The menu bar has *File* (open image or package, recent, close session, quit), *Emulation* (pause/resume, restart, settings, fullscreen, logging on/off) and *Help*. During play F1 or the pad's PS button shows and hides it. The host never mounts anything itself: it exits with code 76 (open), 77 (close) or 75 (restart) and the launcher acts on it.
+- **F2** opens the settings menu: control bindings, ASTRO BOT's 3D resolution, saved to the input file (D14, F101). `KYTY_BC5_INPUT_CONFIG=<file>` names that file; [`input.example.cfg`](backend/kytyplus-patches/input.example.cfg) lists the names.
+- **Recording:** `BC5_MANGOHUD=1` (the *MangoHud* shortcut) shows MangoHud's hardware figures and the emulator's own count of the game's frame rate (`KYTY_BC5_OSD_FPS=1`). MangoHud's own fps is meaningless here: the window presents at every vblank. An OBS profile for software encoding is in `tools/scripts/obs-bc5/`.
+- **If it does not work:** out-of-memory submissions mean the GTT limit is not raised or another program holds GPU memory (F44); input dropping out for seconds is the controller's USB link (F61, F77); a picture that freezes for a few seconds and comes back is a timed-out submission and a reopened device (F74).
 
-**An emulator window with a menu bar** is being finished in another session (ADR 0011, experiment 0164); the lines below are that session's and describe the state on `main`.
+### Key switches
 
-**The window has a menu bar** (ADR 0011, experiment 0164): *File* (Open game image..., Open package (.pkg)..., Recent, Close session, Quit), *Emulation* (Pause/Resume, Restart, Settings..., Fullscreen) and *Help* (About). `kyty_emulator --menu` opens the window with no game and a launcher page; during play F1 or the pad's PS button shows and hides the bar (the game gets no input while it is up). It is drawn into the game's frame, so it works fullscreen, with the mouse, the keyboard and the pad (d-pad or left stick, Cross, Circle, Square jumps to the bar). The host never mounts anything: *Open* writes the chosen path to `$KYTY_BC5_MENU_DIR/choice.txt` and exits with code 76, *Close session* exits with 77, *Restart* with 75, and a launcher script does the rest. On the dev box that is `~/bc5-work/play-any.sh` (the *BC5 emulator* desktop entry, [`experiments/0164-window-menu/play-any.sh`](experiments/0164-window-menu/play-any.sh)): it runs the empty window with the settings above, hands a `.pkg` to `play-pkg.sh` and a `.ffpfsc` to `play-astro.sh` — the mount, the system-module pack and the title's own switches stay in those scripts — and comes back to the empty window on 77.
+Environment variables; the launchers set the title's values. The full list, with the experiment behind each, is in [`backend/kytyplus-patches/README.md`](backend/kytyplus-patches/README.md).
 
-*Emulation > Logging: on/off* is the session's logging switch: off, the host writes nothing — not the direct path's journal and dumps (`BC5_GC_DUMP_DIR`, `BC5_DIRECT_TIMING`, `BC5_DIRECT_FRAME_PROFILE`), not `LOGF` or the guest's printf, none of the stderr traces (`KYTY_BC5_*_TRACE`, `BC5_DIRECT_*_TRACE`), not the drop tally or the dispatch journal. It is one atomic flag every writer checks first, toggled live from the menu; `BC5_LOGGING=0` in the environment (the settings file, say) starts a session with it off. The journal itself costs nothing visible (experiment 0162: 42.1 against 41.3 fps), so the switch is for the traces and for peace of mind.
+| Variable | Default | What it does | Source |
+| --- | --- | --- | --- |
+| `BC5_GC_MODE` | `soft` | `direct` sends the game's command buffers to the GPU (hard rule 5); `soft` submits nothing | patch README, ADR 0005 |
+| `BC5_DIRECT_STAGE` | `preamble` | Staged bring-up: `maponly` maps without submitting, `all` runs everything | patch README |
+| `BC5_DIRECT_CHAIN` | off; `2` in `play-pkg.sh` | Submission chains across the game thread's ioctls | ADR 0010, F218 |
+| `BC5_DIRECT_FLAT_APERTURE` | off; `1` in `play-pkg.sh` | Fixes the reflection traversal's stack addresses, which assume the console's memory apertures | F249, F250, F277 |
+| `BC5_DIRECT_SKIP_PGM` | none; `909974400` in `play-pkg.sh` | Drops the dispatches of the listed shader programs (the BVH compaction) | F268, F277 |
+| `BC5_DIRECT_AMM_PRT` | unset; `1` in `play-pkg.sh` | Maps the AMM pages the game never backs as partially resident, so its stray writes are dropped as on the console; set at all, even to `0`, it is on | F257, F260, F277 |
+| `BC5_DIRECT_DCB_WAIT_MS` | `8` | How long the game thread waits on a GPU label before giving up on it | F263, F270, F271 |
+| `KYTY_BC5_APR_READAHEAD` | `4` | APR read-ahead reader threads per priority queue; `0` turns it off | F273 |
+| `KYTY_BC5_AUDIO2_ADVANCED`, `KYTY_BC5_VIDEOOUT_COALESCE` | on | Audio grain model and display-event coalescing; `0` turns them off | F246, F247 |
+| `KYTY_BC5_MIN_FLIP_RATE` | off | `1` caps the second title at 30 fps | F242, F247 |
+| `BC5_LOGGING` | on | `0` starts the session with every trace and journal off | F227, exp 0162 |
+| `SHADPS4_SYSMODULES_PACK_DIR` | none | Directory of the game's own library modules loaded LLE (being phased out) | F17, Q14 |
 
-**A lean build** (experiment 0177) sits next to the normal one: `bc5-build.sh` also builds `~/bc5-work/kytyplus-build-lean` with `-DKYTY_BC5_LEAN=ON`, the same emulator with every trace, journal, dump, counter, profiler zone and recorder compiled out and the diagnostic variables removed from the environment at start. The *BC5 emulator (lean)* desktop entry runs `play-any.sh` with `BC5_LEAN=1`; the launchers then start the lean binary, set none of the measurements, start no sampler, and log to `play-*-lean-last.log`. It cannot report a frame rate: play with it, measure with the normal build. The launchers with this switch are in [`experiments/0177-lean-build/`](experiments/0177-lean-build/).
-
-In the game window, F2 opens a settings menu that binds controls, picks the 3D resolution for ASTRO BOT and saves to the input file (HANDOFF D14, F101). Leave that resolution at its first step (4K UHD, scale 1.0) for other titles: the second title paces its frames by the same GPU time and runs at half rate at the "1440p class" step (F237). `KYTY_BC5_INPUT_CONFIG=<file>` names that file; [`backend/kytyplus-patches/input.example.cfg`](backend/kytyplus-patches/input.example.cfg) lists the names.
-
-For recordings, `BC5_MANGOHUD=1` (or the "BC5 emulator (MangoHud)" desktop shortcut on the dev box) shows MangoHud's hardware figures top left — CPU and GPU load, temperatures and power, CPU clock, VRAM and RAM, configured by `tools/scripts/mangohud-bc5.conf` — and the emulator's own counter of the title's frame rate top right (`KYTY_BC5_OSD_FPS=1`). MangoHud's fps is left out: the emulator presents its window at every vblank, so it would show ~60 whatever the title's rate; its GPU clock reading is wrong on the BC-250. MangoHud has to be installed in the `ubuntu` container (`bc5-build.sh` does). The BC-250 has no working VA-API video encoder, so a recorder on the box encodes in software: an OBS Studio profile for that is in `tools/scripts/obs-bc5/`.
-
-If it does not work: submissions failing with out-of-memory in the journal mean the GTT limit is not raised or another program holds GPU memory (F44); input that drops out for seconds is the controller's USB link (F61, F77); a picture that freezes for a few seconds and comes back is a submission that timed out and a device the host reopened (F74); a machine reset is the risk named above.
-
-## Layout
+## Repository layout
 
 ```
-README.md            this file, the public summary
+README.md            this file
 CLAUDE.md            standing instructions and the hard rules
 docs/
-  HANDOFF.md         research state: findings F1–F218 with sources, open questions, decisions
+  HANDOFF.md         research state: findings F1–F283 with sources, open questions, decisions
   PHASES.md          the gated roadmap (phases 0a–3 passed; 0b and 4 retired by ADR 0012)
-  console-vs-host.md what the console does, what the host does instead, and where it can do it the console's way
-  formats/           derived format notes: ffpfsc, ps5pkg, agc, ajm-opus
+  console-vs-host.md what the console does, what the host does instead
   decisions/         ADRs 0001–0012, one decision each
-  ports/             reviews of projects whose code can be ported (AnyPS5)
+  formats/           derived format notes: ffpfsc, ps5pkg, agc, ajm-opus
+  ports/             reviews of projects whose code can be ported (AnyPS5, others)
+  images/            two milestone screenshots
 tools/
-  bc5-mount/         Rust: .ffpfsc and .pkg as a read-only directory (FUSE), fixtures, tests
+  bc5-mount/         Rust: .ffpfsc and .pkg as a read-only directory (FUSE)
   bc5-agc/           Rust: PM4/AGC command-stream decoder and report
-  scripts/           bc5-build.sh
-backend/             C++20: the direct path (bc5::direct::Device: policy filter, state trackers,
-                     dma-buf mappings, submission); kytyplus-patches/ the patch against KytyPlus
-experiments/         one directory per experiment, 0001–0165: question, setup, result, verdict,
-                     raw logs; never edited after the verdict, a new one is added instead
+  scripts/           bc5-build.sh, astro-route.sh, MangoHud and OBS setups
+  third_party/       vendored oozextract (MIT)
+backend/             C++20: the direct path (policy filter, state trackers, dma-buf mappings,
+                     submission); kytyplus-patches/ the patch against KytyPlus
+experiments/         one directory per experiment, 0001–0223
 ```
+
+## How the research is run
+
+- **One question, one experiment.** Each `experiments/NNNN-name/` has a README with Question, Setup, Result and Verdict, plus its scripts and raw logs. Once the verdict is written the directory is never edited; a later experiment corrects it instead.
+- **[`docs/HANDOFF.md`](docs/HANDOFF.md) is the working memory.** §2 lists every finding (F-number, claim, source, confidence); a finding that turns out wrong is marked corrected and points to the one that replaces it. §3 holds the open questions (Q-numbers) with their plans, §4 the architecture, §6 related projects, §7 the decisions (D-numbers).
+- **Decisions with lasting weight get an ADR** in [`docs/decisions/`](docs/decisions/); [0012](docs/decisions/0012-no-firmware-hle-host.md) is the no-firmware decision.
+- **Further reading:** [`docs/PHASES.md`](docs/PHASES.md) (the roadmap and its gates), [`docs/console-vs-host.md`](docs/console-vs-host.md) (what the host still does differently from the console), [`docs/formats/`](docs/formats/) (container and stream formats), [`docs/ports/`](docs/ports/) (what can be ported from related projects).
 
 ## Hard rules
 
 From [`CLAUDE.md`](CLAUDE.md); they bind every contributor and every tool run against this repository.
 
 1. **No Sony material in the repo, ever**: no firmware, system modules, keys, SDK headers, `.self`/`.prx` from a console, game dumps, containers of real games, decrypted binaries, or links to any of these. Test data is synthetic or open-source homebrew.
-2. **Never download, search for or link to game dumps, torrents, warez or "backports".** The project is explicitly anti-piracy; reference public research code only.
+2. **Never download, search for or link to game dumps, torrents, warez or "backports".** Reference public research code only.
 3. **The leaked PS5 boot ROM keys are off-limits.**
 4. **Hardware facts cite a source**: a public repo file, a public AMD document, or an experiment under `experiments/`. Anything unsourced is a `TODO(verify)`, not a fact.
 5. **Raw GPU submission can hang the machine.** Everything that submits is behind an explicit switch, default off, and never runs in CI or tests.
 
-## Where to read next
-
-- [`docs/HANDOFF.md`](docs/HANDOFF.md): the findings (§2), the open questions with their plans (§3), the architecture (§4), related projects (§6) and the decisions (§7).
-- [`docs/console-vs-host.md`](docs/console-vs-host.md): the inventory of what the host still does differently from the console, ordered by what it costs the player (experiment 0162).
-- [`docs/PHASES.md`](docs/PHASES.md): the roadmap with its gates and the recorded deviations.
-- [`docs/decisions/`](docs/decisions/): why things are the way they are, one ADR each; [0012](docs/decisions/0012-no-firmware-hle-host.md) for the no-firmware decision.
-- [`experiments/`](experiments/): the evidence, one directory per question.
-
 ## Contributing
 
-Talk before coding: open an issue describing the experiment you want to run and what result would settle it. Each experiment has its own directory with notes, scripts and raw results, so the next person starts from facts rather than memory. Register names, packet layouts and findings must cite a public source or an experiment in this repository.
+Talk before coding: open an issue describing the experiment you want to run and what result would settle it. Register names, packet layouts and findings must cite a public source or an experiment in this repository.
 
 ## Legal
 
