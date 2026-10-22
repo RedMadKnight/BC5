@@ -1,0 +1,29 @@
+== play-20261022-1430
+1139.701 s: cpu-wait WAIT_REG_MEM64 at 213 on 0x12004b5438: GIVEN UP after 8.5 ms
+1139.790 s: cpu-wait WAIT_REG_MEM64 at 9137 on 0x12004b7838: GIVEN UP after 43.3 ms
+1149.165 s: cpu-wait WAIT_REG_MEM64 at 418 on 0x12004b3c38: GIVEN UP after 8.5 ms
+1153.433 s: cpu-wait WAIT_REG_MEM64 at 418 on 0x12004b3c38: GIVEN UP after 9.5 ms
+1153.462 s: submit #1530444 dcb 6732 dwords at 0x7fa6d02fda30: pass 508 rewrite 69 drop 92 unmapped 0 cc 0 mappings 24509 
+1153.462 s: submit #1530453 acb 855 dwords at 0x7fa72821c460: pass 117 rewrite 20 drop 10 unmapped 0 cc 0 mappings 24509 .
+== play-20261022-1337
+247.375 s: two rings: dcb 850 dwords waits at 311 on 0x12004b5438: kept for the GPU after 0.08 ms, head split off (12289 waits: 12289 split, 11288 kept for the GPU, 961 sa
+247.865 s: two rings: dcb 2717 dwords waits at 379 on 0x12004b3c38: NOT served after 4.02 ms, head split off (12318 waits: 12318 split, 11316 kept for the GPU, 961 satisfi
+247.865 s: cpu-wait WAIT_REG_MEM64 at 379 on 0x12004b3c38: GIVEN UP after 23.1 ms
+251.326 s: two rings: dcb 1499 dwords waits at 418 on 0x12004b3c38: NOT served after 4.01 ms, head split off (12504 waits: 12504 split, 11486 kept for the GPU, 976 satisfi
+251.326 s: cpu-wait WAIT_REG_MEM64 at 418 on 0x12004b3c38: GIVEN UP after 39.9 ms
+251.362 s: submit #315050 dcb 5245 dwords at 0x7f27e0540e30: pass 327 rewrite 67 drop 81 unmapped 0 cc 0 mappings 19787 .
+== play-20261022-0744
+272.298 s: cpu-wait WAIT_REG_MEM64 at 213 on 0x12004b5438: GIVEN UP after 8.4 ms
+273.296 s: cpu-wait WAIT_REG_MEM64 at 213 on 0x12004b5438: GIVEN UP after 8.3 ms
+277.320 s: cpu-wait WAIT_REG_MEM64 at 213 on 0x12004b5438: GIVEN UP after 8.5 ms
+281.327 s: cpu-wait WAIT_REG_MEM64 at 213 on 0x12004b5438: GIVEN UP after 9.3 ms
+287.538 s: submit #354803 acb 865 dwords at 0x7f42784a6110: pass 119 rewrite 20 drop 10 unmapped 0 cc 0 mappings 18348 ..
+287.538 s: submit #354798 dcb 22826 dwords at 0x7f42204d15a0: pass 1815 rewrite 101 drop 183 unmapped 0 cc 0 mappings 183
+(emulator running: light read only)
+== play-20261022-0955
+1266:submit #394 acb 943 dwords at 0x7f36e40fe500: pass 116 rewrite 32 drop 12 unmapped 0 cc 0 mappings 1909 ... FAILED rc 0 TIMEOUT 2023.40 ms
+1268:submit #395 dcb 4754 dwords at 0x7f36880368f0: pass 191 rewrite 134 drop 134 unmapped 0 cc 0 mappings 1909 ... FAILED rc 0 TIMEOUT 2020.82 ms
+1299:timeout: fault 0x0 status 0x00000000
+2.396 s: two rings: dcb 1477 dwords waits at 904 on 0x12004b4838: kept for the GPU after 0.22 ms, head split off (1 waits: 1 split, 1 kept for the GP
+3.060 s: submit #394 acb 943 dwords at 0x7f36e40fe500: pass 116 rewrite 32 drop 12 unmapped 0 cc 0 mappings 1
+== play-20261022-0956

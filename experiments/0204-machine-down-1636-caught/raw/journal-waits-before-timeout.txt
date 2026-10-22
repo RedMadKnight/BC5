@@ -1,0 +1,32 @@
+9070:chains: 62581 submitted, 281257 segments (20100 single, 52633 with cond_exec), 211324540 dwords; closed by: end 24051 wait 24453 ring/class 0 cond_exec 0 size 0 drain 2237 acb-head 6421 other 0 observe 0 hold-wd 3698 hold-end
+11334:two rings: dcb 2260 dwords waits at 418 on 0x12004b3c38: NOT served after 4.06 ms, head split off (3548 waits: 3548 split, 3264 kept for the GPU, 268 satisfied, 16 lost)
+11336:  wait detail: function 3, value 0x907616589, reference 0x0, mask 0xffffffffffffffff
+11337:cpu-wait WAIT_REG_MEM64 at 418 on 0x12004b3c38: GIVEN UP after 9.6 ms
+22031:two rings: dcb 2260 dwords waits at 418 on 0x12004b3c38: NOT served after 4.06 ms, head split off (3736 waits: 3736 split, 3443 kept for the GPU, 276 satisfied, 17 lost)
+22039:  wait detail: function 3, value 0x907616589, reference 0x0, mask 0xffffffffffffffff
+22040:cpu-wait WAIT_REG_MEM64 at 418 on 0x12004b3c38: GIVEN UP after 8.4 ms
+24167:chains: 68487 submitted, 305377 segments (22181 single, 57115 with cond_exec), 234509834 dwords; closed by: end 26072 wait 27170 ring/class 0 cond_exec 0 size 0 drain 2401 acb-head 7072 other 0 observe 0 hold-wd 3908 hold-en
+25819:two rings: dcb 2260 dwords waits at 418 on 0x12004b3c38: NOT served after 4.04 ms, head split off (3803 waits: 3803 split, 3505 kept for the GPU, 280 satisfied, 18 lost)
+25820:  wait detail: function 3, value 0x907616589, reference 0x0, mask 0xffffffffffffffff
+25821:cpu-wait WAIT_REG_MEM64 at 418 on 0x12004b3c38: GIVEN UP after 10.4 ms
+26193:acb head: 100 of 1965 dwords go ahead of the wait at 100 on 0x12004b37c8
+30146:two rings: dcb 2260 dwords waits at 418 on 0x12004b3c38: NOT served after 4.05 ms, head split off (3885 waits: 3885 split, 3581 kept for the GPU, 285 satisfied, 19 lost)
+30147:  wait detail: function 3, value 0x907616589, reference 0x0, mask 0xffffffffffffffff
+30148:cpu-wait WAIT_REG_MEM64 at 418 on 0x12004b3c38: GIVEN UP after 10.2 ms
+===
+26
+12
+124.629 s: cpu-wait WAIT_REG_MEM64 at 311 on 0x12004b5438: GIVEN UP after 8.3 ms
+137.519 s: two rings: dcb 2260 dwords waits at 418 on 0x12004b3c38: NOT served after 4.05 ms, head split off (3382 waits: 3382 split, 3110 kept for the GPU, 258 
+144.460 s: two rings: dcb 2260 dwords waits at 418 on 0x12004b3c38: NOT served after 4.03 ms, head split off (3440 waits: 3440 split, 3163 kept for the GPU, 262 
+144.460 s: cpu-wait WAIT_REG_MEM64 at 418 on 0x12004b3c38: GIVEN UP after 10.6 ms
+158.828 s: two rings: dcb 2260 dwords waits at 418 on 0x12004b3c38: NOT served after 4.06 ms, head split off (3548 waits: 3548 split, 3264 kept for the GPU, 268 
+158.828 s: cpu-wait WAIT_REG_MEM64 at 418 on 0x12004b3c38: GIVEN UP after 9.6 ms
+162.640 s: two rings: dcb 2260 dwords waits at 418 on 0x12004b3c38: NOT served after 4.06 ms, head split off (3736 waits: 3736 split, 3443 kept for the GPU, 276 
+162.644 s: cpu-wait WAIT_REG_MEM64 at 418 on 0x12004b3c38: GIVEN UP after 8.4 ms
+164.257 s: two rings: dcb 2260 dwords waits at 418 on 0x12004b3c38: NOT served after 4.04 ms, head split off (3803 waits: 3803 split, 3505 kept for the GPU, 280 
+164.257 s: cpu-wait WAIT_REG_MEM64 at 418 on 0x12004b3c38: GIVEN UP after 10.4 ms
+166.012 s: two rings: dcb 2260 dwords waits at 418 on 0x12004b3c38: NOT served after 4.05 ms, head split off (3885 waits: 3885 split, 3581 kept for the GPU, 285 
+166.012 s: cpu-wait WAIT_REG_MEM64 at 418 on 0x12004b3c38: GIVEN UP after 10.2 ms
+166.083 s: submit #70816 dcb 7899 dwords at 0x7fb7581fcf90: pass 690 rewrite 68 drop 91 unmapped 0 cc 0 mappings 21857 ... FAILED r
+166.083 s: submit #70826 acb 875 dwords at 0x7fb7a8161420: pass 121 rewrite 20 drop 10 unmapped 0 cc 0 mappings 21857 ... FAILED rc

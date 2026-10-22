@@ -1,0 +1,56 @@
+# watch start 2026-10-22 15:31:14, until 20:30
+# 2026-10-22 15:31:16 boot 5329b991-4134-476a-8b3a-1ea56ecb67c7 up 2381.47 s
+paź 22 15:33:15.467642 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 15:35:20.467654 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 15:37:25.467666 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 15:39:30.468650 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 15:41:35.468654 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 15:43:40.468650 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 15:45:45.468653 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 15:47:50.468650 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 15:49:55.469657 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 15:52:00.468654 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 15:54:05.480645 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 15:56:10.473650 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 15:58:15.469662 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 16:00:20.470663 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 16:02:25.469734 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 16:04:30.469653 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 16:06:35.470650 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 16:08:40.470664 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 16:10:45.473651 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 16:12:50.473661 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 16:14:55.474647 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 16:17:00.474769 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 16:19:05.474645 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 16:21:10.474648 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 16:23:15.476657 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 16:25:20.476650 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 16:27:25.475686 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 16:29:30.475656 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 16:31:35.477655 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 16:33:40.475651 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 16:35:45.476664 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 22 16:36:24.491659 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State
+paź 22 16:36:24.492831 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State Completed
+paź 22 16:36:24.493163 bazzite kernel: amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+paź 22 16:36:24.493473 bazzite kernel: amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+paź 22 16:36:24.493743 bazzite kernel: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=1953599, emitted seq=1953601
+paź 22 16:36:24.493984 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 584972 thread bc5-ring pid 585013
+paź 22 16:36:24.494249 bazzite kernel: amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+paź 22 16:36:24.681640 bazzite kernel: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset failed
+paź 22 16:36:24.682242 bazzite kernel: amdgpu 0000:01:00.0: GPU reset begin!. Source:  1
+paź 22 16:36:28.682648 bazzite kernel: amdgpu 0000:01:00.0: failed to suspend display audio
+paź 22 16:36:28.795654 bazzite kernel: amdgpu 0000:01:00.0: MODE1 reset
+paź 22 16:36:28.796325 bazzite kernel: amdgpu 0000:01:00.0: GPU mode1 reset
+paź 22 16:36:28.796844 bazzite kernel: amdgpu 0000:01:00.0: GPU psp mode1 reset
+paź 22 16:36:28.797338 bazzite kernel: amdgpu 0000:01:00.0: GPU reset succeeded, trying to resume
+paź 22 16:36:28.797939 bazzite kernel: amdgpu 0000:01:00.0: [drm] PCIE GART of 512M enabled (table at 0x000000F41FE00000).
+paź 22 16:36:28.798436 bazzite kernel: amdgpu 0000:01:00.0: VRAM is lost due to GPU reset!
+paź 22 16:36:28.798946 bazzite kernel: amdgpu 0000:01:00.0: PSP is resuming...
+paź 22 16:36:28.815649 bazzite kernel: amdgpu 0000:01:00.0: reserve 0x400000 from 0xf41f800000 for PSP TMR
+Read from remote host 100.88.23.35: Connection reset by peer
+client_loop: send disconnect: Connection reset by peer
+# kernel stream ended 2026-10-22 16:36:57 (laptop clock)
+ssh: connect to host 100.88.23.35 port 22: Connection timed out
+# kernel stream ended 2026-10-22 16:37:28 (laptop clock)

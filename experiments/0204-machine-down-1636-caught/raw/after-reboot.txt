@@ -1,0 +1,55 @@
+== boots
+ -2 5329b9914134476a8b3a1ea56ecb67c7 Thu 2026-10-22 14:51:35 CEST Thu 2026-10-22 16:35:57 CEST
+ -1 e486b737886b455281c3fd2ec65f34d3 Thu 2026-10-22 16:37:03 CEST Thu 2026-10-22 16:37:30 CEST
+  0 ac5dab11b2a24a90a82c3ae646fe9eda Thu 2026-10-22 16:37:50 CEST Thu 2026-10-22 16:38:39 CEST
+== reset reason (this boot)
+paź 22 16:37:50 bazzite kernel: x86/amd: Previous system reset reason [0x40080400]: software wrote 0x6 to reset control register 0xCF9
+paź 22 16:37:50 bazzite kernel: x86/amd: Previous system reset reason [0x40080400]: a parity error occurred
+== previous boot: last amdgpu and last lines
+paź 22 16:37:24.997946 bazzite kernel: amdgpu 0000:01:00.0: [drm] *ERROR* Unsupported screen format RA24 little-endian (0x34324152)
+paź 22 16:37:25.005389 bazzite kernel: amdgpu 0000:01:00.0: [drm] *ERROR* Unsupported screen format RA24 little-endian (0x34324152)
+paź 22 16:37:25.022376 bazzite kernel: amdgpu 0000:01:00.0: [drm] *ERROR* Unsupported screen format RA24 little-endian (0x34324152)
+paź 22 16:37:25.042380 bazzite kernel: amdgpu 0000:01:00.0: [drm] *ERROR* Unsupported screen format RA24 little-endian (0x34324152)
+paź 22 16:37:30.968570 bazzite systemd[1]: Stopping systemd-journal-flush.service - Flush Journal to Persistent Storage...
+paź 22 16:37:30.975617 bazzite systemd[1]: sysroot-ostree-deploy-default-var.mount: Deactivated successfully.
+== devcoredump
+ls: nie ma dostępu do '/sys/class/drm/card1/device/devcoredump/': Nie ma takiego pliku ani katalogu
+== capture dir
+
+       20 16:33:36 .
+        4 16:33:34 ..
+ 18449651 16:36:24 direct.log
+== emulator log
+ 101099 16:35:57 /home/kjaniszewski/bc5-work/play-pkg-last.log
+== reset reason of boot -1 (first boot after the crash)
+paź 22 16:37:03 bazzite kernel: x86/amd: Previous system reset reason [0x40000400]: a parity error occurred
+== on-disk journal: counts
+TIMEOUT          2
+^timeout: fault  0
+^timeout probe   0
+^learned: fault  0
+^reopen          0
+== frame profiles over 1 s
+5.979 1662.8
+38.796 1713.0
+39.813 1016.3
+46.031 1512.8
+59.243 2644.2
+61.620 1709.1
+67.146 1142.7
+69.361 2092.0
+71.296 1555.3
+107.840 2023.1
+== last 12 non-probe lines
+timing: t 166.033 s dcb 952 dwords: sync 0.0 ms, hints 0.0 ms q-1
+timing: t 166.082 s after that wait (dcb 452 dwords)
+timing: t 166.082 s after that wait (dcb 452 dwords)
+timing: t 166.082 s dcb 12966 dwords: sync 0.0 ms, hints 0.0 ms q-1
+timing: t 166.083 s after that wait (dcb 40 dwords)
+timing: t 166.083 s dcb 7871 dwords: sync 0.0 ms, hints 0.0 ms q-1
+timing: t 166.083 s acb 68 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+timing: t 166.083 s acb 140 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q8
+submit #70816 dcb 7899 dwords at 0x7fb7581fcf90: pass 690 rewrite 68 drop 91 unmapped 0 cc 0 mappings 21857 ... FAILED rc 0 TIMEOUT 2025.65 ms
+timing: #70816 done at t 168.051 s, 2026.0 ms after the sync and hints; device: prepare 0.13 list 0.05 cs 0.10 fence 2025.55 ms, 132 BOs
+submit #70826 acb 875 dwords at 0x7fb7a8161420: pass 121 rewrite 20 drop 10 unmapped 0 cc 0 mappings 21857 ... FAILED rc 0 TIMEOUT 2020.47 ms
+timing: #70826 done at t 168.051 s, 2020.6 ms after the sync and hints; device: prepare 0.03 list 0.00 cs 0.11 fence 2020.37 ms, 132 BOs
