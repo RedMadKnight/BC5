@@ -1,0 +1,53 @@
+== counts (journal play-20261022-1652)
+TIMEOUT                                                        0
+^timeout: fault                                                0
+wait trace:                                                    40000
+wait trace: .* on 0x12004b3c38                                 6697
+wait trace: .* on 0x12004b3c38: .*no pending write             6697
+GIVEN UP                                                       17
+WAIT_REG_MEM64 at [0-9]* on 0x12004b3c38: GIVEN UP             6
+two rings                                                      80
+== AMM trace (emulator log)
+write-address lines: 19139; naming 4b3c38: 0; any 0x12004b3 target: 0
+  12611 addr 0x000000090adf7f98
+    963 addr 0x000000090adf7fb0
+    662 addr 0x000000090adf7ff8
+    532 addr 0x000000090adf7fc8
+    384 addr 0x000000090adf7fe0
+      4 addr 0x0000001001428908
+      4 addr 0x0000001001428900
+      4 addr 0x00000010014288f8
+== the six give-ups on the label, with the lines before
+timing: #55343 done at t 61.199 s, 1.4 ms after the sync and hints; device: prepare 0.12 list 0.00 cs 0.11 fence 1.11 ms, 162 BOs
+two rings: dcb 7048 dwords waits at 5907 on 0x12004b3c38: NOT served after 4.02 ms, head split off (3636 waits: 3636 split, 3267 kept for the GPU, 360 satisfied, 9 lost)
+  wait detail: function 3, value 0x907616589, reference 0x0, mask 0xffffffffffffffff
+cpu-wait WAIT_REG_MEM64 at 5907 on 0x12004b3c38: GIVEN UP after 8.6 ms
+--
+direct: 11432 views; +0 BOs (86, 9664.0 MiB pinned); maps +0 -1 (11467)
+two rings: dcb 6996 dwords waits at 5855 on 0x12004b3c38: NOT served after 4.03 ms, head split off (4843 waits: 4843 split, 4337 kept for the GPU, 496 satisfied, 10 lost)
+  wait detail: function 3, value 0x907616589, reference 0x0, mask 0xffffffffffffffff
+cpu-wait WAIT_REG_MEM64 at 5855 on 0x12004b3c38: GIVEN UP after 13.9 ms
+--
+timing: #127103 done at t 113.270 s, 1.1 ms after the sync and hints; device: prepare 0.04 list 0.03 cs 0.07 fence 0.91 ms, 67 BOs (short list)
+two rings: dcb 3092 dwords waits at 379 on 0x12004b3c38: NOT served after 4.05 ms, head split off (6020 waits: 6020 split, 5430 kept for the GPU, 577 satisfied, 13 lost)
+  wait detail: function 3, value 0x907616589, reference 0x0, mask 0xffffffffffffffff
+cpu-wait WAIT_REG_MEM64 at 379 on 0x12004b3c38: GIVEN UP after 8.5 ms
+--
+direct: 18949 views; +0 BOs (96, 10430.0 MiB pinned); maps +2 -0 (18992)
+two rings: dcb 3092 dwords waits at 379 on 0x12004b3c38: NOT served after 4.02 ms, head split off (7690 waits: 7690 split, 7032 kept for the GPU, 643 satisfied, 15 lost)
+  wait detail: function 3, value 0x907616589, reference 0x0, mask 0xffffffffffffffff
+cpu-wait WAIT_REG_MEM64 at 379 on 0x12004b3c38: GIVEN UP after 10.4 ms
+--
+timing: t 145.201 s after that wait (acb 1480 dwords)
+timing: t 145.201 s acb 1498 dwords: sync 0.0 ms, hints 0.0 ms q0
+  wait detail: function 3, value 0x907616589, reference 0x0, mask 0xffffffffffffffff
+cpu-wait WAIT_REG_MEM64 at 379 on 0x12004b3c38: GIVEN UP after 8.5 ms
+--
+timing: #410624 done at t 414.212 s, 10.6 ms after the sync and hints; device: prepare 0.20 list 0.09 cs 0.20 fence 6.53 ms, 165 BOs
+direct: 19208 views; +0 BOs (92, 10774.0 MiB pinned); maps +0 -3 (19248)
+  wait detail: function 3, value 0x907616589, reference 0x0, mask 0xffffffffffffffff
+cpu-wait WAIT_REG_MEM64 at 8994 on 0x12004b3c38: GIVEN UP after 26.4 ms
+== sample wait-trace lines
+wait trace: t 40.137 s dcb 14387 dwords at 10132 (ring -1) on 0x12004b3c38: function 3 reference 0x0 value 0x907616589; no pending write
+wait trace: t 40.265 s dcb 11056 dwords at 9915 (ring -1) on 0x12004b3c38: function 3 reference 0x0 value 0x907616589; no pending write
+wait trace: t 40.296 s dcb 9040 dwords at 7899 (ring -1) on 0x12004b3c38: function 3 reference 0x0 value 0x907616589; no pending write
