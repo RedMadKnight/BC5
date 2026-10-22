@@ -1,0 +1,38 @@
+journal 156258720 bytes
+flat aperture lines: 6; skip pgm lines: 0; TIMEOUT: 0; timeout: fault: 0
+fence waits > 300 ms:
+timing: #114199 done at t 106.047 s, 1579.2 ms after the sync and hints; device: prepare 0.01 list 0.01 cs 0.03 fence 1579.16 ms, 63 BOs (short list)
+timing: #131947 done at t 123.023 s, 886.4 ms after the sync and hints; device: prepare 0.02 list 0.04 cs 0.11 fence 886.21 ms, 62 BOs (short list)
+timing: #131948 done at t 123.023 s, 885.9 ms after the sync and hints; device: prepare 0.02 list 0.05 cs 0.10 fence 885.72 ms, 62 BOs (short list)
+timing: #159787 done at t 155.768 s, 4227.7 ms after the sync and hints; device: prepare 0.01 list 0.04 cs 0.09 fence 4227.52 ms, 62 BOs (short list)
+timing: #159788 done at t 155.768 s, 4227.5 ms after the sync and hints; device: prepare 0.07 list 0.00 cs 0.19 fence 4227.17 ms, 179 BOs
+timing: #210509 done at t 214.144 s, 396.5 ms after the sync and hints; device: prepare 0.01 list 0.04 cs 0.09 fence 396.31 ms, 62 BOs (short list)
+timing: #210510 done at t 214.144 s, 396.3 ms after the sync and hints; device: prepare 0.01 list 0.01 cs 0.03 fence 396.27 ms, 61 BOs (short list)
+timing: #237660 done at t 266.340 s, 372.0 ms after the sync and hints; device: prepare 0.01 list 0.03 cs 0.05 fence 371.85 ms, 63 BOs (short list)
+timing: #237659 done at t 266.375 s, 416.3 ms after the sync and hints; device: prepare 0.13 list 0.00 cs 0.26 fence 407.48 ms, 163 BOs
+timing: #254055 done at t 302.636 s, 537.2 ms after the sync and hints; device: prepare 0.05 list 0.00 cs 0.35 fence 536.69 ms, 163 BOs
+timing: #254056 done at t 302.636 s, 536.4 ms after the sync and hints; device: prepare 0.02 list 0.06 cs 0.13 fence 536.18 ms, 62 BOs (short list)
+timing: #256160 done at t 306.125 s, 505.5 ms after the sync and hints; device: prepare 0.03 list 0.00 cs 0.09 fence 505.36 ms, 163 BOs
+flip gaps > 400 ms:
+  t 83.0 gap 627 ms
+  t 86.1 gap 1236 ms
+  t 101.2 gap 1388 ms
+  t 103.7 gap 1815 ms
+  t 106.1 gap 1652 ms
+  t 119.3 gap 1238 ms
+  t 123.1 gap 970 ms
+  t 124.9 gap 784 ms
+  t 140.8 gap 444 ms
+  t 143.9 gap 1502 ms
+  t 155.8 gap 4303 ms
+  t 162.5 gap 1278 ms
+  t 177.1 gap 515 ms
+  t 214.2 gap 428 ms
+  t 217.4 gap 431 ms
+  t 227.7 gap 1156 ms
+  t 242.6 gap 5474 ms
+  t 243.9 gap 623 ms
+  t 245.7 gap 470 ms
+  t 257.8 gap 550 ms
+fps per minute (mean flips/s):
+ 0:29.6 1:15.0 2:31.9 3:21.6 4:15.0 5:13.1 6:10.0 7:13.1 8:24.6 9:31.8 10:26.4 11:16.7 12:19.8 13:21.0 14:28.3 
