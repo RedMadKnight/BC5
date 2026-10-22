@@ -1,0 +1,199 @@
+--- src/bc5LleAgc.v3.cpp
++++ src/bc5LleAgc.v4.cpp
+@@ -903,10 +903,75 @@
+ // compute event idents. Polled at 1 kHz; the driver never tells us about a doorbell write.
+ static const bool g_direct_rings = std::getenv("BC5_GC_MODE") != nullptr && std::strcmp(std::getenv("BC5_GC_MODE"), "direct") == 0 && std::getenv("BC5_DIRECT_RINGS") != nullptr;
+ 
++// Experiment 0224 (BC5_DIRECT_DOORBELL_TRACE=1, off by default; journal only): when the title writes a queue's
++// doorbell, and when the consumer below takes the entries and its submit of them returns. A thread of its own
++// ("bc5-dbw") reads every registered queue's write pointer every ~50 us; it and the consumer record their events
++// in a ring, which the flip trace (experiment 0221) journals around each given-up wait.
++namespace dbt0224 {
++struct Ev {
++	uint64_t ns    = 0;
++	int      queue = 0;
++	int      type  = 0; // 0 the write pointer changed (a, b: old, new); 1 the consumer takes b dwords at a; 2 its submit of them returned; 3 the queue is deferred (b dwords pending at a)
++	uint32_t a = 0, b = 0;
++};
++static std::mutex ev_mutex;
++static Ev         ev_ring[16384];
++static uint64_t   ev_count = 0;
++static bool on() {
++	static const bool e = BC5_DIAG_ENV("BC5_DIRECT_DOORBELL_TRACE") != nullptr;
++	return e;
++}
++static void record(int queue, int type, uint32_t a, uint32_t b) {
++	if (!on()) return;
++	const uint64_t  ns = now_ns();
++	std::lock_guard lk(ev_mutex);
++	ev_ring[ev_count % 16384] = {ns, queue, type, a, b};
++	ev_count++;
++}
++static void watcher() {
++	pthread_setname_np(pthread_self(), "bc5-dbw");
++	std::vector<QueueReg> qs;
++	std::vector<uint64_t> last;
++	for (uint64_t pass = 0;; pass++) {
++		if ((pass % 1000) == 0) { // the registered queues, every ~50 ms
++			std::lock_guard lock(g_mutex);
++			qs = g_queues;
++		}
++		if (last.size() < qs.size()) last.resize(qs.size(), ~0ull);
++		for (size_t i = 0; i < qs.size(); i++) {
++			const auto& q = qs[i];
++			if (q.doorbell_page == 0) continue;
++			const uint64_t w = reinterpret_cast<const volatile uint64_t*>(q.doorbell_page)[q.d == 0 ? 0 : q.d - 1];
++			if (w == last[i]) continue;
++			if (last[i] != ~0ull) record(static_cast<int>(i), 0, static_cast<uint32_t>(last[i]), static_cast<uint32_t>(w));
++			last[i] = w;
++		}
++		std::this_thread::sleep_for(std::chrono::microseconds(50));
++	}
++}
++static void start() {
++	if (!on()) return;
++	static std::once_flag once;
++	std::call_once(once, [] { std::thread(watcher).detach(); });
++}
++// The events in [from, to] (now_ns), oldest first; at most the ring's last 16384.
++static std::vector<Ev> between(uint64_t from, uint64_t to) {
++	std::vector<Ev> out;
++	std::lock_guard lk(ev_mutex);
++	const uint64_t first = ev_count > 16384 ? ev_count - 16384 : 0;
++	for (uint64_t k = first; k < ev_count; k++) {
++		const Ev& e = ev_ring[k % 16384];
++		if (e.ns >= from && e.ns <= to) out.push_back(e);
++	}
++	return out;
++}
++} // namespace dbt0224
++
+ static void queue_consumer_thread() {
+ 	pthread_setname_np(pthread_self(), "bc5-ring"); // BC5: host threads named for per-thread CPU views (F81)
+ 	pthread_setname_np(pthread_self(), "bc5-ring"); // BC5: host threads named for per-thread CPU views (F81)
+ 	Direct::set_source(1);
++	dbt0224::start(); // experiment 0224
+ 	struct State {
+ 		QueueReg reg;
+ 		uint64_t rptr           = 0;
+@@ -983,7 +1048,7 @@
+ 					take             = ready_len;
+ 					s.deferred_since = 0;
+ 				} else if (!ready) {
+-					if (s.deferred_since == 0) s.deferred_since = now;
++					if (s.deferred_since == 0) { s.deferred_since = now; dbt0224::record(t_queue_idx, 3, r, pending); } // experiment 0224
+ 					if (now - s.deferred_since >= 1'000'000'000ull && now - s.deferred_report >= 1'000'000'000ull) {
+ 						s.deferred_report = now;
+ 						const auto& u = Direct::t_unready;
+@@ -1007,6 +1072,7 @@
+ 			const uint32_t w_take = (r + take) % n;
+ 			// Direct mode: the ring slice [r, w_take) is itself a valid IB of INDIRECT_BUFFER packets;
+ 			// a slice that wraps is submitted in two parts.
++			dbt0224::record(t_queue_idx, 1, r, take); // experiment 0224
+ 			Direct::chain_begin(); // ADR 0010: the slice's buffers as one submission
+ 			if (w_take > r) {
+ 				Direct::submit(ring + r, w_take - r, "ring", false);
+@@ -1015,6 +1081,7 @@
+ 				if (w_take != 0) Direct::submit(ring, w_take, "ring", false);
+ 			}
+ 			Direct::chain_end();
++			dbt0224::record(t_queue_idx, 2, r, take); // experiment 0224
+ 			{
+ 				auto marks = std::move(t_gpu_done);
+ 				t_gpu_done.clear();
+@@ -1187,6 +1254,8 @@
+                             const std::vector<uint64_t>& written);
+ namespace flip0221 {
+ static void held(uint64_t label); // experiment 0221 v3: acb_ready()'s not-ready branch
++static void waited(uint64_t a); // experiment 0224: wait_satisfied()
++static void ts_write(uint64_t a, uint64_t old_v, uint64_t new_v, uint64_t n, const char* kind, double k); // experiment 0224
+ }
+ static Stage                                g_stage = Stage::Off;
+ static uint32_t                             g_cu_mask = 0xffffffffu;
+@@ -2830,6 +2899,7 @@
+ 	const uint64_t a        = (p[2] & ~3u) | (static_cast<uint64_t>(p[3] & 0xffffu) << 32u);
+ 	if (a == 0) return true;
+ 	label_watch(a);
++	flip0221::waited(a); // experiment 0224
+ 	if (is64) {
+ 		const uint64_t v = *reinterpret_cast<const volatile uint64_t*>(a);
+ 		const uint64_t ref = p[4] | (static_cast<uint64_t>(p[5]) << 32u), mask = p[6] | (static_cast<uint64_t>(p[7]) << 32u);
+@@ -5939,6 +6009,50 @@
+ static uint64_t value64(uint64_t a) {
+ 	return a == 0 ? 0 : *reinterpret_cast<const volatile uint64_t*>(a & ~7ull);
+ }
++// Experiment 0224: the labels the waits have looked at (wait_satisfied()), with the last poll and its thread, so a
++// timestamp rewrite that lands on one can be named. Lock-free, never cleared; 512 slots.
++struct Waited {
++	std::atomic<uint64_t> label {0}, ns {0};
++	std::atomic<int>      who {0}; // 1 the game thread, 2 another thread (the ring consumer)
++};
++static Waited waited_tab[512];
++static void waited(uint64_t a) {
++	if (!env()) return;
++	a &= ~7ull;
++	const size_t h = static_cast<size_t>(((a >> 3u) * 0x9E3779B97F4A7C15ull) >> 55u);
++	for (size_t k = 0; k < 16; k++) {
++		Waited&  w   = waited_tab[(h + k) & 511u];
++		uint64_t cur = w.label.load(std::memory_order_relaxed);
++		if (cur == 0 && w.label.compare_exchange_strong(cur, a)) cur = a;
++		if (cur != a) continue;
++		w.ns.store(SoftCp::now_ns(), std::memory_order_relaxed);
++		w.who.store(on_game_thread() ? 1 : 2, std::memory_order_relaxed);
++		return;
++	}
++}
++static const Waited* waited_find(uint64_t a) {
++	a &= ~7ull;
++	const size_t h = static_cast<size_t>(((a >> 3u) * 0x9E3779B97F4A7C15ull) >> 55u);
++	for (size_t k = 0; k < 16; k++) {
++		const Waited& w = waited_tab[(h + k) & 511u];
++		const uint64_t cur = w.label.load(std::memory_order_relaxed);
++		if (cur == a) return &w;
++		if (cur == 0) return nullptr;
++	}
++	return nullptr;
++}
++static void ts_write(uint64_t a, uint64_t old_v, uint64_t new_v, uint64_t n, const char* kind, double k) {
++	if (!on()) return;
++	const Waited* w   = waited_find(a);
++	const bool    fix = std::find(wp_fixed().begin(), wp_fixed().end(), a & ~7ull) != wp_fixed().end();
++	if (w == nullptr && !fix) return;
++	const uint64_t now  = SoftCp::now_ns();
++	const uint64_t last = w != nullptr ? w->ns.load(std::memory_order_relaxed) : 0;
++	const uint64_t cur  = value64(a);
++	journal("ts trace: job #%" PRIu64 " %s rewrote the timestamp at 0x%" PRIx64 " at t %.6f s: 0x%" PRIx64 " -> 0x%" PRIx64 " (scale %.9f), value just after 0x%" PRIx64 "; a wait label%s, last polled %.3f ms before by %s\n",
++			n, kind != nullptr ? kind : "", a, t_of(now), old_v, new_v, k, cur, fix ? " (one of the fixed compute labels)" : "",
++			last != 0 && now >= last ? static_cast<double>(now - last) / 1e6 : -1.0, w == nullptr ? "-" : (w->who.load() == 1 ? "the game thread" : "another thread (the ring consumer)"));
++}
+ static Last last_before(uint64_t t, uint64_t from) {
+ 	Last l;
+ 	std::lock_guard lk(mutex);
+@@ -6146,6 +6260,16 @@
+ 						it.id, it.a, sat ? "satisfied" : "NOT satisfied within 2 s", static_cast<double>(now - it.t_give) / 1e6, static_cast<double>(now - it.t_wait0) / 1e6, t_of(now),
+ 						in_flight[0].load(), in_flight[1].load(), it.q0_at_give, it.q1_at_give, l.between, l.ago_ms, l.n, l.kind, l.dwords, l.queue, v, changes[k], it.c, c);
+ 				for (auto& wl: wp_labels) wp_read(wl, it, "compute", "at the end", now);
++				{ // experiment 0224: the doorbell and ring-consumer events around this give-up
++					const auto evs = SoftCp::dbt0224::between(it.t_give - 50'000'000ull, now);
++					for (const auto& e: evs) {
++						const double rel = (static_cast<double>(e.ns) - static_cast<double>(it.t_give)) / 1e6;
++						if (e.type == 0) journal("doorbell trace: #%" PRIu64 " queue %d write pointer %u -> %u at t %.6f s (%+.3f ms from the give-up)\n", it.id, e.queue, e.a, e.b, t_of(e.ns), rel);
++						else if (e.type == 1) journal("doorbell trace: #%" PRIu64 " queue %d consumer takes %u dwords at %u at t %.6f s (%+.3f ms from the give-up)\n", it.id, e.queue, e.b, e.a, t_of(e.ns), rel);
++						else if (e.type == 2) journal("doorbell trace: #%" PRIu64 " queue %d consumer's submit of %u dwords at %u returned at t %.6f s (%+.3f ms from the give-up)\n", it.id, e.queue, e.b, e.a, t_of(e.ns), rel);
++						else journal("doorbell trace: #%" PRIu64 " queue %d deferred, %u dwords pending at %u, at t %.6f s (%+.3f ms from the give-up)\n", it.id, e.queue, e.b, e.a, t_of(e.ns), rel);
++					}
++				}
+ 				linger(now + 20'000'000ull);
+ 				active.erase(active.begin() + static_cast<std::ptrdiff_t>(k));
+ 				last_v.erase(last_v.begin() + static_cast<std::ptrdiff_t>(k));
+@@ -6350,7 +6474,9 @@
+ 				const double k = ts_scale();
+ 				for (const uint64_t a: j.ts_addrs) {
+ 					auto* v = reinterpret_cast<volatile uint64_t*>(a);
+-					*v      = static_cast<uint64_t>(static_cast<double>(*v) * k);
++					const uint64_t old_v = *v; // experiment 0224: read once, as the line it replaces did
++					*v                   = static_cast<uint64_t>(static_cast<double>(old_v) * k);
++					flip0221::ts_write(a, old_v, static_cast<uint64_t>(static_cast<double>(old_v) * k), j.n, j.kind, k); // experiment 0224
+ 				}
+ 			}
+ 			if (!r.ok) {

@@ -1,0 +1,1305 @@
+queue 0: a 1 b 0 c 0 d 1 ring 0xf01148000-0xf0114c000
+queue 1: a 1 b 0 c 1 d 2 ring 0xf01150000-0xf01154000
+queue 2: a 1 b 0 c 2 d 3 ring 0xf01158000-0xf0115c000
+queue 3: a 1 b 0 c 3 d 4 ring 0xf01160000-0xf01164000
+queue 4: a 1 b 0 c 4 d 5 ring 0xf01168000-0xf0116c000
+queue 5: a 1 b 0 c 5 d 6 ring 0xf01170000-0xf01174000
+queue 6: a 1 b 0 c 6 d 7 ring 0xf01178000-0xf0117c000
+queue 7: a 1 b 0 c 7 d 8 ring 0xf01180000-0xf01184000
+queue 8: a 1 b 1 c 0 d 9 ring 0xf01188000-0xf0118c000
+queue 9: a 1 b 1 c 1 d 10 ring 0xf01190000-0xf01194000
+queue 10: a 1 b 1 c 2 d 11 ring 0xf01198000-0xf0119c000
+queue 11: a 1 b 1 c 3 d 12 ring 0xf011a0000-0xf011a4000
+queue 12: a 1 b 1 c 4 d 13 ring 0xf011a8000-0xf011ac000
+queue 13: a 1 b 1 c 5 d 14 ring 0xf011b0000-0xf011b4000
+queue 14: a 1 b 1 c 6 d 15 ring 0xf011b8000-0xf011bc000
+queue 15: a 1 b 1 c 7 d 16 ring 0xf011c0000-0xf011c4000
+queue 16: a 1 b 2 c 0 d 17 ring 0xf011c8000-0xf011cc000
+queue 17: a 1 b 2 c 1 d 18 ring 0xf011d0000-0xf011d4000
+queue 18: a 1 b 2 c 2 d 19 ring 0xf011d8000-0xf011dc000
+queue 19: a 1 b 2 c 3 d 20 ring 0xf011e0000-0xf011e4000
+queue 20: a 1 b 2 c 4 d 21 ring 0xf011e8000-0xf011ec000
+queue 21: a 1 b 2 c 5 d 22 ring 0xf011f0000-0xf011f4000
+queue 22: a 1 b 2 c 6 d 23 ring 0xf011f8000-0xf011fc000
+queue 23: a 1 b 2 c 7 d 24 ring 0xf01200000-0xf01204000
+queue 24: a 1 b 3 c 0 d 25 ring 0xf01208000-0xf0120c000
+queue 25: a 1 b 3 c 1 d 26 ring 0xf01210000-0xf01214000
+queue 26: a 1 b 3 c 2 d 27 ring 0xf01218000-0xf0121c000
+queue 27: a 1 b 3 c 3 d 28 ring 0xf01220000-0xf01224000
+queue 28: a 1 b 3 c 4 d 29 ring 0xf01228000-0xf0122c000
+queue 29: a 1 b 3 c 5 d 30 ring 0xf01230000-0xf01234000
+queue 30: a 1 b 3 c 6 d 31 ring 0xf01238000-0xf0123c000
+queue 31: a 1 b 3 c 7 d 32 ring 0xf01240000-0xf01244000
+queue 32: a 2 b 0 c 0 d 33 ring 0xf01248000-0xf0124c000
+queue 33: a 2 b 0 c 1 d 34 ring 0xf01250000-0xf01254000
+queue 34: a 2 b 0 c 2 d 35 ring 0xf01258000-0xf0125c000
+queue 35: a 2 b 0 c 3 d 36 ring 0xf01260000-0xf01264000
+queue 36: a 2 b 0 c 4 d 37 ring 0xf01268000-0xf0126c000
+queue 37: a 2 b 0 c 5 d 38 ring 0xf01270000-0xf01274000
+queue 38: a 2 b 0 c 6 d 39 ring 0xf01278000-0xf0127c000
+queue 39: a 2 b 0 c 7 d 40 ring 0xf01280000-0xf01284000
+queue 40: a 2 b 1 c 0 d 41 ring 0xf01288000-0xf0128c000
+queue 41: a 2 b 1 c 1 d 42 ring 0xf01290000-0xf01294000
+queue 42: a 2 b 1 c 2 d 43 ring 0xf01298000-0xf0129c000
+queue 43: a 2 b 1 c 3 d 44 ring 0xf012a0000-0xf012a4000
+queue 44: a 2 b 1 c 4 d 45 ring 0xf012a8000-0xf012ac000
+queue 45: a 2 b 1 c 5 d 46 ring 0xf012b0000-0xf012b4000
+queue 46: a 2 b 1 c 6 d 47 ring 0xf012b8000-0xf012bc000
+queue 47: a 2 b 1 c 7 d 48 ring 0xf012c0000-0xf012c4000
+queue 48: a 2 b 2 c 0 d 49 ring 0xf012c8000-0xf012cc000
+queue 49: a 2 b 2 c 1 d 50 ring 0xf012d0000-0xf012d4000
+queue 50: a 2 b 2 c 2 d 51 ring 0xf012d8000-0xf012dc000
+queue 51: a 2 b 2 c 3 d 52 ring 0xf012e0000-0xf012e4000
+queue 52: a 2 b 2 c 4 d 53 ring 0xf012e8000-0xf012ec000
+queue 53: a 2 b 2 c 5 d 54 ring 0xf012f0000-0xf012f4000
+queue 54: a 2 b 2 c 6 d 55 ring 0xf012f8000-0xf012fc000
+queue 55: a 2 b 2 c 7 d 56 ring 0xf01300000-0xf01304000
+  wait detail: function 3, value 0x907616589, reference 0x0, mask 0xffffffffffffffff
+cpu-wait WAIT_REG_MEM64 at 590 on 0x12004b4838: GIVEN UP after 15.0 ms
+flip trace: #1 given up: dcb 1153 dwords at 590 on 0x12004b4838 (game thread 1) after 14.996 ms, t 7.126625 s; value 0x907616589; in flight cq0 0 cq1 1; the last job done 4.942 ms before (#2286 acb 134 dwords, cq1)
+flip trace: #1 compute candidate 0x12004b37c8: held back 18.522 ms before the give-up, value 0x0; it has write breakpoints
+flip trace: #1 compute queue not held back (g_unready_label 0); the waiting buffer writes 29 label(s)
+flip trace: job #2287 acb 2657 dwords done at t 7.127574 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #2288 dcb 7714 dwords done at t 7.133268 s (cq0); in flight cq0 0 cq1 0
+flip trace: job #2289 acb 82 dwords done at t 7.135332 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #2290 acb 158 dwords done at t 7.137618 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #2291 dcb 706 dwords done at t 7.141730 s (cq0); in flight cq0 0 cq1 0
+flip trace: #1 write breakpoints on the compute label 0x12004b37c8: 92 armed, 0 failed (errno 0), in 18.566 ms, armed 18.665 ms after the give-up; value then 0x0; 92 new
+flip trace: job #2292 acb 18 dwords done at t 7.145295 s (cq1); in flight cq0 0 cq1 0
+flip trace: #1 write breakpoints on the compute label 0x12004b53c8: 92 armed, 0 failed (errno 0), in 0.431 ms, armed 19.101 ms after the give-up; value then 0x0; 92 new
+flip trace: #1 write breakpoints on the compute label 0x12004b4fc8: 92 armed, 0 failed (errno 0), in 0.375 ms, armed 19.478 ms after the give-up; value then 0x0; 92 new
+flip trace: job #2293 acb 132 dwords done at t 7.151359 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #2294 dcb 7838 dwords done at t 7.156610 s (cq0); in flight cq0 0 cq1 0
+flip trace: #1 write breakpoints on the compute label 0x12004b77c8: 92 armed, 0 failed (errno 0), in 11.259 ms, armed 30.739 ms after the give-up; value then 0x0; 92 new
+flip trace: #1 breakpoints: given-up label none; compute label 4 fixed label(s)
+flip trace: job #2295 acb 100 dwords done at t 7.160114 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #2296 acb 2 dwords done at t 7.163828 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #2297 dcb 1859 dwords done at t 7.168501 s (cq0); in flight cq0 0 cq1 0
+flip trace: #1 0x12004b4838: 0x907616589 -> 0x0 at t 7.173285 s, 46.660 ms after the give-up; in flight cq0 0 cq1 1
+flip trace: #1 0x12004b4838 satisfied 46.660 ms after the give-up (61.656 ms after the wait began), t 7.173285 s; in flight cq0 0 cq1 1 (at the give-up 0 1); 11 jobs done since the give-up, the last 4.784 ms before (#2297 dcb 1859 dwords, cq0); value 0x0, 1 changes; compute label 0x0 now 0x0
+flip trace: served dcb 1153 dwords at 590 on 0x12004b4838 after 17.407 ms, t 7.173317 s; in flight cq0 0 cq1 1; 4 jobs done during the wait, the last 4.816 ms before its end (#2297 dcb 1859 dwords, cq0); compute queue blocked on 0x0
+flip trace: #1 CPU write to the compute label 0x12004b37c8: thread 2436689 (Render Thread) = the thread that gave up, 1 write(s), seen at the end at t 7.173285 s, 46.660 ms after the give-up
+flip trace: #1 CPU write to the compute label 0x12004b53c8: thread 2436689 (Render Thread) = the thread that gave up, 1 write(s), seen at the end at t 7.173285 s, 46.660 ms after the give-up
+flip trace: #1 CPU write to the compute label 0x12004b4fc8: thread 2436689 (Render Thread) = the thread that gave up, 1 write(s), seen at the end at t 7.173285 s, 46.660 ms after the give-up
+doorbell trace: #1 queue 0 write pointer 3280 -> 3288 at t 7.094538 s (-32.087 ms from the give-up)
+doorbell trace: #1 queue 8 write pointer 3368 -> 3376 at t 7.094538 s (-32.086 ms from the give-up)
+doorbell trace: #1 queue 0 consumer takes 8 dwords at 3280 at t 7.094687 s (-31.938 ms from the give-up)
+doorbell trace: #1 queue 0 write pointer 3288 -> 3304 at t 7.096918 s (-29.707 ms from the give-up)
+doorbell trace: #1 queue 0 write pointer 3304 -> 3320 at t 7.097851 s (-28.774 ms from the give-up)
+doorbell trace: #1 queue 0 write pointer 3320 -> 3368 at t 7.097917 s (-28.708 ms from the give-up)
+doorbell trace: #1 queue 0 write pointer 3368 -> 3400 at t 7.098022 s (-28.603 ms from the give-up)
+doorbell trace: #1 queue 0 write pointer 3400 -> 3416 at t 7.098330 s (-28.295 ms from the give-up)
+doorbell trace: #1 queue 0 write pointer 3416 -> 3432 at t 7.098434 s (-28.191 ms from the give-up)
+doorbell trace: #1 queue 0 write pointer 3432 -> 3448 at t 7.098536 s (-28.088 ms from the give-up)
+doorbell trace: #1 queue 0 consumer's submit of 8 dwords at 3280 returned at t 7.101341 s (-25.284 ms from the give-up)
+doorbell trace: #1 queue 8 consumer takes 8 dwords at 3368 at t 7.101346 s (-25.279 ms from the give-up)
+doorbell trace: #1 queue 8 consumer's submit of 8 dwords at 3368 returned at t 7.107837 s (-18.788 ms from the give-up)
+doorbell trace: #1 queue 0 consumer takes 20 dwords at 3288 at t 7.114641 s (-11.984 ms from the give-up)
+doorbell trace: #1 queue 0 consumer's submit of 20 dwords at 3288 returned at t 7.121669 s (-4.956 ms from the give-up)
+doorbell trace: #1 queue 0 consumer takes 140 dwords at 3308 at t 7.121934 s (-4.691 ms from the give-up)
+doorbell trace: #1 queue 0 consumer's submit of 140 dwords at 3308 returned at t 7.126481 s (-0.144 ms from the give-up)
+doorbell trace: #1 queue 0 write pointer 3448 -> 3464 at t 7.127428 s (+0.803 ms from the give-up)
+doorbell trace: #1 queue 8 write pointer 3376 -> 3392 at t 7.127429 s (+0.804 ms from the give-up)
+doorbell trace: #1 queue 0 consumer takes 16 dwords at 3448 at t 7.127501 s (+0.876 ms from the give-up)
+doorbell trace: #1 queue 0 write pointer 3464 -> 3472 at t 7.134644 s (+8.019 ms from the give-up)
+doorbell trace: #1 queue 8 write pointer 3392 -> 3400 at t 7.134644 s (+8.020 ms from the give-up)
+doorbell trace: #1 queue 0 consumer's submit of 16 dwords at 3448 returned at t 7.135312 s (+8.687 ms from the give-up)
+doorbell trace: #1 queue 8 consumer takes 24 dwords at 3376 at t 7.135318 s (+8.693 ms from the give-up)
+doorbell trace: #1 queue 8 consumer's submit of 24 dwords at 3376 returned at t 7.137601 s (+10.976 ms from the give-up)
+doorbell trace: #1 queue 0 consumer takes 8 dwords at 3464 at t 7.137874 s (+11.249 ms from the give-up)
+doorbell trace: #1 queue 0 consumer's submit of 8 dwords at 3464 returned at t 7.145281 s (+18.656 ms from the give-up)
+doorbell trace: #1 queue 0 consumer takes 16 dwords at 3472 at t 7.147334 s (+20.709 ms from the give-up)
+doorbell trace: #1 queue 0 write pointer 3472 -> 3488 at t 7.147338 s (+20.713 ms from the give-up)
+doorbell trace: #1 queue 0 write pointer 3488 -> 3504 at t 7.147442 s (+20.818 ms from the give-up)
+doorbell trace: #1 queue 0 write pointer 3504 -> 3568 at t 7.147547 s (+20.922 ms from the give-up)
+doorbell trace: #1 queue 0 write pointer 3568 -> 3584 at t 7.147651 s (+21.026 ms from the give-up)
+doorbell trace: #1 queue 0 write pointer 3584 -> 3616 at t 7.147755 s (+21.130 ms from the give-up)
+doorbell trace: #1 queue 0 write pointer 3616 -> 3632 at t 7.147859 s (+21.234 ms from the give-up)
+doorbell trace: #1 queue 0 consumer's submit of 16 dwords at 3472 returned at t 7.151340 s (+24.715 ms from the give-up)
+doorbell trace: #1 queue 0 consumer takes 4 dwords at 3488 at t 7.160105 s (+33.480 ms from the give-up)
+doorbell trace: #1 queue 0 consumer's submit of 4 dwords at 3488 returned at t 7.163821 s (+37.196 ms from the give-up)
+doorbell trace: #1 queue 0 consumer takes 140 dwords at 3492 at t 7.164061 s (+37.436 ms from the give-up)
+doorbell trace: #1 queue 0 consumer's submit of 140 dwords at 3492 returned at t 7.173099 s (+46.474 ms from the give-up)
+flip trace: job #2298 acb 2657 dwords done at t 7.174191 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #2299 dcb 7714 dwords done at t 7.181002 s (cq0); in flight cq0 0 cq1 0
+flip trace: job #2300 acb 82 dwords done at t 7.183364 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #2301 acb 158 dwords done at t 7.186311 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #2302 dcb 706 dwords done at t 7.190644 s (cq0); in flight cq0 0 cq1 0
+flip trace: served dcb 1153 dwords at 590 on 0x12004b4838 after 14.484 ms, t 7.214545 s; in flight cq0 0 cq1 1; 3 jobs done during the wait, the last 5.311 ms before its end (#2306 dcb 1859 dwords, cq0); compute queue blocked on 0x0
+flip trace: job #2307 acb 2657 dwords done at t 7.215486 s (cq1); in flight cq0 0 cq1 0
+flip trace: served dcb 1153 dwords at 590 on 0x12004b4838 after 16.061 ms, t 7.253445 s; in flight cq0 0 cq1 1; 3 jobs done during the wait, the last 6.011 ms before its end (#2313 dcb 1859 dwords, cq0); compute queue blocked on 0x0
+flip trace: job #2314 acb 2843 dwords done at t 7.254358 s (cq1); in flight cq0 0 cq1 0
+  wait detail: function 3, value 0x907616589, reference 0x0, mask 0xffffffffffffffff
+cpu-wait WAIT_REG_MEM64 at 590 on 0x12004b4838: GIVEN UP after 14.3 ms
+flip trace: #2 given up: dcb 1153 dwords at 590 on 0x12004b4838 (game thread 1) after 14.297 ms, t 17.335760 s; value 0x907616589; in flight cq0 0 cq1 0; the last job done 2.436 ms before (#7215 acb 66 dwords, cq1)
+flip trace: #2 compute candidate 0x12004b37c8: held back 14.397 ms before the give-up, value 0x0; it has write breakpoints
+flip trace: #2 compute queue not held back (g_unready_label 0); the waiting buffer writes 29 label(s)
+flip trace: #2 write breakpoints on the compute label 0x12004b37c8: 94 armed, 0 failed (errno 0), in 0.233 ms, armed 0.308 ms after the give-up; value then 0x0; 2 new
+flip trace: #2 CPU write to the compute label 0x12004b37c8: thread 2436689 (Render Thread) = the thread that gave up, 290 write(s), seen at the watch start (since the last read) at t 17.336070 s, 0.311 ms after the give-up
+flip trace: #2 write breakpoints on the compute label 0x12004b53c8: 94 armed, 0 failed (errno 0), in 0.111 ms, armed 0.612 ms after the give-up; value then 0x0; 2 new
+flip trace: #2 CPU write to the compute label 0x12004b53c8: thread 2436689 (Render Thread) = the thread that gave up, 296 write(s), seen at the watch start (since the last read) at t 17.336374 s, 0.614 ms after the give-up
+flip trace: #2 write breakpoints on the compute label 0x12004b4fc8: 94 armed, 0 failed (errno 0), in 0.071 ms, armed 0.822 ms after the give-up; value then 0x0; 2 new
+flip trace: #2 CPU write to the compute label 0x12004b4fc8: thread 2436689 (Render Thread) = the thread that gave up, 296 write(s), seen at the watch start (since the last read) at t 17.336583 s, 0.823 ms after the give-up
+flip trace: #2 write breakpoints on the compute label 0x12004b77c8: 94 armed, 0 failed (errno 0), in 0.041 ms, armed 0.973 ms after the give-up; value then 0x0; 2 new
+flip trace: #2 breakpoints: given-up label none; compute label 4 fixed label(s)
+flip trace: #2 0x12004b4838: 0x907616589 -> 0x0 at t 17.341286 s, 5.526 ms after the give-up; in flight cq0 0 cq1 1
+flip trace: #2 0x12004b4838 satisfied 5.526 ms after the give-up (19.823 ms after the wait began), t 17.341286 s; in flight cq0 0 cq1 1 (at the give-up 0 0); 0 jobs done since the give-up, the last 7.962 ms before (#7215 acb 66 dwords, cq1); value 0x0, 1 changes; compute label 0x0 now 0x0
+doorbell trace: #2 queue 0 consumer takes 140 dwords at 188 at t 17.288448 s (-47.312 ms from the give-up)
+doorbell trace: #2 queue 0 consumer's submit of 140 dwords at 188 returned at t 17.289147 s (-46.613 ms from the give-up)
+doorbell trace: #2 queue 0 consumer takes 16 dwords at 328 at t 17.296973 s (-38.787 ms from the give-up)
+doorbell trace: #2 queue 0 write pointer 328 -> 344 at t 17.297020 s (-38.740 ms from the give-up)
+doorbell trace: #2 queue 8 write pointer 2384 -> 2400 at t 17.297020 s (-38.740 ms from the give-up)
+doorbell trace: #2 queue 0 consumer's submit of 16 dwords at 328 returned at t 17.297481 s (-38.279 ms from the give-up)
+doorbell trace: #2 queue 8 consumer takes 16 dwords at 2384 at t 17.297484 s (-38.276 ms from the give-up)
+doorbell trace: #2 queue 8 consumer's submit of 16 dwords at 2384 returned at t 17.297532 s (-38.228 ms from the give-up)
+doorbell trace: #2 queue 0 consumer takes 8 dwords at 344 at t 17.316685 s (-19.075 ms from the give-up)
+doorbell trace: #2 queue 0 write pointer 344 -> 352 at t 17.316748 s (-19.012 ms from the give-up)
+doorbell trace: #2 queue 8 write pointer 2400 -> 2408 at t 17.316748 s (-19.012 ms from the give-up)
+doorbell trace: #2 queue 0 consumer's submit of 8 dwords at 344 returned at t 17.316831 s (-18.929 ms from the give-up)
+doorbell trace: #2 queue 8 consumer takes 8 dwords at 2400 at t 17.316834 s (-18.926 ms from the give-up)
+doorbell trace: #2 queue 8 consumer's submit of 8 dwords at 2400 returned at t 17.316885 s (-18.874 ms from the give-up)
+doorbell trace: #2 queue 0 consumer takes 16 dwords at 352 at t 17.317999 s (-17.760 ms from the give-up)
+doorbell trace: #2 queue 0 write pointer 352 -> 368 at t 17.318044 s (-17.716 ms from the give-up)
+doorbell trace: #2 queue 0 consumer's submit of 16 dwords at 352 returned at t 17.318333 s (-17.426 ms from the give-up)
+doorbell trace: #2 queue 0 write pointer 368 -> 384 at t 17.318504 s (-17.256 ms from the give-up)
+doorbell trace: #2 queue 0 write pointer 384 -> 448 at t 17.318637 s (-17.123 ms from the give-up)
+doorbell trace: #2 queue 0 write pointer 448 -> 464 at t 17.318744 s (-17.015 ms from the give-up)
+doorbell trace: #2 queue 0 consumer takes 4 dwords at 368 at t 17.318834 s (-16.926 ms from the give-up)
+doorbell trace: #2 queue 0 consumer's submit of 4 dwords at 368 returned at t 17.318884 s (-16.876 ms from the give-up)
+doorbell trace: #2 queue 0 write pointer 464 -> 480 at t 17.319026 s (-16.734 ms from the give-up)
+doorbell trace: #2 queue 0 write pointer 480 -> 512 at t 17.319137 s (-16.623 ms from the give-up)
+doorbell trace: #2 queue 0 deferred, 140 dwords pending at 372, at t 17.319150 s (-16.610 ms from the give-up)
+doorbell trace: #2 queue 0 consumer takes 140 dwords at 372 at t 17.321614 s (-14.146 ms from the give-up)
+doorbell trace: #2 queue 0 consumer's submit of 140 dwords at 372 returned at t 17.341017 s (+5.257 ms from the give-up)
+flip trace: job #7216 acb 3848 dwords done at t 17.342344 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #7217 dcb 1325 dwords done at t 17.346552 s (cq0); in flight cq0 0 cq1 0
+flip trace: job #7219 acb 82 dwords done at t 17.347775 s (cq1); in flight cq0 1 cq1 0
+flip trace: job #7220 acb 140 dwords done at t 17.347852 s (cq1); in flight cq0 1 cq1 0
+flip trace: job #7218 dcb 7658 dwords done at t 17.349606 s (cq0); in flight cq0 0 cq1 0
+flip trace: job #7221 acb 18 dwords done at t 17.351966 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #7222 acb 18 dwords done at t 17.352007 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #7223 dcb 706 dwords done at t 17.352456 s (cq0); in flight cq0 0 cq1 0
+flip trace: job #7224 acb 100 dwords done at t 17.352935 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #7225 acb 134 dwords done at t 17.352968 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #7227 acb 66 dwords done at t 17.354773 s (cq1); in flight cq0 1 cq1 0
+flip trace: job #7226 dcb 8081 dwords done at t 17.355215 s (cq0); in flight cq0 0 cq1 0
+flip trace: job #7228 dcb 1859 dwords done at t 17.355746 s (cq0); in flight cq0 0 cq1 1
+flip trace: job #7229 acb 2457 dwords done at t 17.355946 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #7231 dcb 1325 dwords done at t 17.356187 s (cq0); in flight cq0 0 cq1 1
+flip trace: job #7230 acb 1391 dwords done at t 17.357053 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #7232 dcb 4845 dwords done at t 17.358996 s (cq0); in flight cq0 0 cq1 0
+  wait detail: function 3, value 0x907616589, reference 0x0, mask 0xffffffffffffffff
+cpu-wait WAIT_REG_MEM64 at 291 on 0x12004b5438: GIVEN UP after 8.3 ms
+flip trace: #3 given up: dcb 922 dwords at 291 on 0x12004b5438 (game thread 1) after 8.342 ms, t 58.099558 s; value 0x907616589; in flight cq0 0 cq1 4; the last job done 2.148 ms before (#48121 dcb 291 dwords, cq0)
+flip trace: #3 compute candidate 0x12004b4fc8: held back 10.386 ms before the give-up, value 0x0; it has write breakpoints
+flip trace: #3 compute candidate 0x12004b37c8: held back 12.953 ms before the give-up, value 0x0; it has write breakpoints
+flip trace: #3 compute candidate 0x12004b53c8: held back 8.443 ms before the give-up, value 0x0; it has write breakpoints
+flip trace: #3 compute candidate 0x12004b77c8: held back 28.687 ms before the give-up, value 0x0; it has write breakpoints
+flip trace: #3 compute queue not held back (g_unready_label 0); the waiting buffer writes 14 label(s)
+flip trace: #3 write breakpoints on the compute label 0x12004b37c8: 100 armed, 0 failed (errno 0), in 0.490 ms, armed 0.520 ms after the give-up; value then 0x0; 6 new
+flip trace: #3 CPU write to the compute label 0x12004b37c8: thread 2436689 (Render Thread) = the thread that gave up, 904 write(s), seen at the watch start (since the last read) at t 58.100088 s, 0.530 ms after the give-up
+flip trace: #3 CPU write to the compute label 0x12004b37c8: thread 2436770 (bc5-cq0), 1 write(s), seen at the watch start (since the last read) at t 58.100088 s, 0.530 ms after the give-up
+flip trace: #3 write breakpoints on the compute label 0x12004b53c8: 100 armed, 0 failed (errno 0), in 0.087 ms, armed 0.763 ms after the give-up; value then 0x0; 6 new
+flip trace: #3 CPU write to the compute label 0x12004b53c8: thread 2436689 (Render Thread) = the thread that gave up, 922 write(s), seen at the watch start (since the last read) at t 58.100324 s, 0.766 ms after the give-up
+flip trace: #3 CPU write to the compute label 0x12004b53c8: thread 2436770 (bc5-cq0), 1 write(s), seen at the watch start (since the last read) at t 58.100324 s, 0.766 ms after the give-up
+flip trace: #3 write breakpoints on the compute label 0x12004b4fc8: 100 armed, 0 failed (errno 0), in 0.062 ms, armed 0.970 ms after the give-up; value then 0x0; 6 new
+flip trace: #3 CPU write to the compute label 0x12004b4fc8: thread 2436689 (Render Thread) = the thread that gave up, 922 write(s), seen at the watch start (since the last read) at t 58.100529 s, 0.971 ms after the give-up
+flip trace: #3 CPU write to the compute label 0x12004b4fc8: thread 2436770 (bc5-cq0), 1 write(s), seen at the watch start (since the last read) at t 58.100529 s, 0.971 ms after the give-up
+flip trace: #3 write breakpoints on the compute label 0x12004b77c8: 100 armed, 0 failed (errno 0), in 0.049 ms, armed 1.170 ms after the give-up; value then 0x9076d6d8c; 6 new
+flip trace: #3 CPU write to the compute label 0x12004b77c8: thread 2436689 (Render Thread) = the thread that gave up, 482 write(s), seen at the watch start (since the last read) at t 58.100730 s, 1.172 ms after the give-up
+flip trace: #3 breakpoints: given-up label none; compute label 4 fixed label(s)
+flip trace: #3 compute label 0x12004b77c8: 0x0 -> 0x9076d6d8c at t 58.100809 s, 1.251 ms after the give-up; in flight cq0 1 cq1 4
+flip trace: #3 no CPU write counted for that change of the compute label 0x12004b77c8 (a GPU write)
+flip trace: job #48123 acb 825 dwords done at t 58.103175 s (cq1); in flight cq0 3 cq1 7
+flip trace: job #48127 dcb 2612 dwords done at t 58.103190 s (cq0); in flight cq0 2 cq1 7
+flip trace: #3 0x12004b5438: 0x907616589 -> 0x0 at t 58.103224 s, 3.666 ms after the give-up; in flight cq0 2 cq1 7
+flip trace: #3 compute label 0x12004b77c8: 0x9076d6d8c -> 0x0 at t 58.103224 s, 3.666 ms after the give-up; in flight cq0 2 cq1 7
+flip trace: #3 no CPU write counted for that change of the compute label 0x12004b77c8 (a GPU write)
+flip trace: #3 0x12004b5438 satisfied 3.666 ms after the give-up (12.008 ms after the wait began), t 58.103224 s; in flight cq0 2 cq1 7 (at the give-up 0 4); 2 jobs done since the give-up, the last 0.034 ms before (#48127 dcb 2612 dwords, cq0); value 0x0, 1 changes; compute label 0x0 now 0x0
+doorbell trace: #3 queue 0 consumer's submit of 8 dwords at 3656 returned at t 58.053193 s (-46.365 ms from the give-up)
+doorbell trace: #3 queue 8 consumer takes 8 dwords at 2928 at t 58.053197 s (-46.361 ms from the give-up)
+doorbell trace: #3 queue 8 consumer's submit of 8 dwords at 2928 returned at t 58.064369 s (-35.189 ms from the give-up)
+doorbell trace: #3 queue 0 consumer takes 20 dwords at 3664 at t 58.065203 s (-34.355 ms from the give-up)
+doorbell trace: #3 queue 0 consumer's submit of 20 dwords at 3664 returned at t 58.065753 s (-33.805 ms from the give-up)
+doorbell trace: #3 queue 0 consumer takes 76 dwords at 3684 at t 58.066032 s (-33.526 ms from the give-up)
+doorbell trace: #3 queue 0 consumer's submit of 76 dwords at 3684 returned at t 58.066481 s (-33.077 ms from the give-up)
+doorbell trace: #3 queue 0 write pointer 3760 -> 3776 at t 58.066751 s (-32.807 ms from the give-up)
+doorbell trace: #3 queue 0 consumer takes 4 dwords at 3760 at t 58.066886 s (-32.672 ms from the give-up)
+doorbell trace: #3 queue 0 consumer's submit of 4 dwords at 3760 returned at t 58.066948 s (-32.609 ms from the give-up)
+doorbell trace: #3 queue 0 deferred, 12 dwords pending at 3764, at t 58.067227 s (-32.331 ms from the give-up)
+doorbell trace: #3 queue 0 consumer takes 12 dwords at 3764 at t 58.067499 s (-32.059 ms from the give-up)
+doorbell trace: #3 queue 0 write pointer 3776 -> 3808 at t 58.067750 s (-31.808 ms from the give-up)
+doorbell trace: #3 queue 0 write pointer 3808 -> 3824 at t 58.067854 s (-31.704 ms from the give-up)
+doorbell trace: #3 queue 0 consumer's submit of 12 dwords at 3764 returned at t 58.068205 s (-31.353 ms from the give-up)
+doorbell trace: #3 queue 0 write pointer 3824 -> 3840 at t 58.068228 s (-31.330 ms from the give-up)
+doorbell trace: #3 queue 0 consumer takes 4 dwords at 3776 at t 58.068569 s (-30.989 ms from the give-up)
+doorbell trace: #3 queue 0 consumer's submit of 4 dwords at 3776 returned at t 58.068623 s (-30.935 ms from the give-up)
+doorbell trace: #3 queue 0 write pointer 3840 -> 3872 at t 58.068750 s (-30.808 ms from the give-up)
+doorbell trace: #3 queue 0 deferred, 92 dwords pending at 3780, at t 58.068887 s (-30.671 ms from the give-up)
+doorbell trace: #3 queue 0 consumer takes 92 dwords at 3780 at t 58.069680 s (-29.878 ms from the give-up)
+doorbell trace: #3 queue 0 consumer's submit of 92 dwords at 3780 returned at t 58.070542 s (-29.016 ms from the give-up)
+doorbell trace: #3 queue 0 write pointer 3872 -> 3888 at t 58.070759 s (-28.799 ms from the give-up)
+doorbell trace: #3 queue 0 consumer takes 4 dwords at 3872 at t 58.071052 s (-28.506 ms from the give-up)
+doorbell trace: #3 queue 0 consumer's submit of 4 dwords at 3872 returned at t 58.071793 s (-27.765 ms from the give-up)
+doorbell trace: #3 queue 0 consumer takes 12 dwords at 3876 at t 58.072116 s (-27.442 ms from the give-up)
+doorbell trace: #3 queue 0 consumer's submit of 12 dwords at 3876 returned at t 58.073505 s (-26.053 ms from the give-up)
+doorbell trace: #3 queue 0 write pointer 3888 -> 3904 at t 58.075386 s (-24.172 ms from the give-up)
+doorbell trace: #3 queue 8 write pointer 2936 -> 2952 at t 58.075388 s (-24.170 ms from the give-up)
+doorbell trace: #3 queue 0 consumer takes 16 dwords at 3888 at t 58.075569 s (-23.989 ms from the give-up)
+doorbell trace: #3 queue 0 consumer's submit of 16 dwords at 3888 returned at t 58.075845 s (-23.713 ms from the give-up)
+doorbell trace: #3 queue 8 consumer takes 16 dwords at 2936 at t 58.075850 s (-23.708 ms from the give-up)
+doorbell trace: #3 queue 8 consumer's submit of 16 dwords at 2936 returned at t 58.075930 s (-23.628 ms from the give-up)
+doorbell trace: #3 queue 0 write pointer 3904 -> 3912 at t 58.083884 s (-15.674 ms from the give-up)
+doorbell trace: #3 queue 8 write pointer 2952 -> 2960 at t 58.083884 s (-15.674 ms from the give-up)
+doorbell trace: #3 queue 0 consumer takes 8 dwords at 3904 at t 58.083925 s (-15.633 ms from the give-up)
+doorbell trace: #3 queue 0 consumer's submit of 8 dwords at 3904 returned at t 58.084120 s (-15.438 ms from the give-up)
+doorbell trace: #3 queue 8 consumer takes 8 dwords at 2952 at t 58.084123 s (-15.435 ms from the give-up)
+doorbell trace: #3 queue 8 consumer's submit of 8 dwords at 2952 returned at t 58.084220 s (-15.338 ms from the give-up)
+doorbell trace: #3 queue 0 write pointer 3912 -> 3928 at t 58.084961 s (-14.597 ms from the give-up)
+doorbell trace: #3 queue 0 consumer takes 16 dwords at 3912 at t 58.084998 s (-14.560 ms from the give-up)
+doorbell trace: #3 queue 0 consumer's submit of 16 dwords at 3912 returned at t 58.085207 s (-14.351 ms from the give-up)
+doorbell trace: #3 queue 0 write pointer 3928 -> 3944 at t 58.085515 s (-14.043 ms from the give-up)
+doorbell trace: #3 queue 0 write pointer 3944 -> 3960 at t 58.085621 s (-13.937 ms from the give-up)
+doorbell trace: #3 queue 0 consumer takes 4 dwords at 3928 at t 58.085684 s (-13.874 ms from the give-up)
+doorbell trace: #3 queue 0 consumer's submit of 4 dwords at 3928 returned at t 58.085726 s (-13.832 ms from the give-up)
+doorbell trace: #3 queue 0 write pointer 3960 -> 3976 at t 58.085730 s (-13.828 ms from the give-up)
+doorbell trace: #3 queue 0 deferred, 44 dwords pending at 3932, at t 58.085989 s (-13.569 ms from the give-up)
+doorbell trace: #3 queue 0 write pointer 3976 -> 4008 at t 58.086135 s (-13.423 ms from the give-up)
+doorbell trace: #3 queue 0 consumer takes 76 dwords at 3932 at t 58.086882 s (-12.676 ms from the give-up)
+doorbell trace: #3 queue 0 consumer's submit of 76 dwords at 3932 returned at t 58.088236 s (-11.322 ms from the give-up)
+doorbell trace: #3 queue 0 write pointer 4008 -> 4024 at t 58.088552 s (-11.006 ms from the give-up)
+doorbell trace: #3 queue 0 consumer takes 4 dwords at 4008 at t 58.088861 s (-10.697 ms from the give-up)
+doorbell trace: #3 queue 0 consumer's submit of 4 dwords at 4008 returned at t 58.088901 s (-10.657 ms from the give-up)
+doorbell trace: #3 queue 0 deferred, 12 dwords pending at 4012, at t 58.089172 s (-10.386 ms from the give-up)
+doorbell trace: #3 queue 0 consumer takes 12 dwords at 4012 at t 58.089441 s (-10.117 ms from the give-up)
+doorbell trace: #3 queue 0 write pointer 4024 -> 4056 at t 58.089705 s (-9.853 ms from the give-up)
+doorbell trace: #3 queue 0 consumer's submit of 12 dwords at 4012 returned at t 58.089993 s (-9.565 ms from the give-up)
+doorbell trace: #3 queue 0 write pointer 4056 -> 4088 at t 58.090124 s (-9.434 ms from the give-up)
+doorbell trace: #3 queue 0 consumer takes 4 dwords at 4024 at t 58.090312 s (-9.246 ms from the give-up)
+doorbell trace: #3 queue 0 consumer's submit of 4 dwords at 4024 returned at t 58.090345 s (-9.213 ms from the give-up)
+doorbell trace: #3 queue 0 write pointer 4088 -> 8 at t 58.090439 s (-9.119 ms from the give-up)
+doorbell trace: #3 queue 0 write pointer 8 -> 24 at t 58.090544 s (-9.014 ms from the give-up)
+doorbell trace: #3 queue 0 deferred, 92 dwords pending at 4028, at t 58.090603 s (-8.955 ms from the give-up)
+doorbell trace: #3 queue 0 consumer takes 92 dwords at 4028 at t 58.091481 s (-8.077 ms from the give-up)
+doorbell trace: #3 queue 0 consumer's submit of 92 dwords at 4028 returned at t 58.095990 s (-3.568 ms from the give-up)
+doorbell trace: #3 queue 0 write pointer 24 -> 40 at t 58.100231 s (+0.673 ms from the give-up)
+doorbell trace: #3 queue 0 consumer takes 4 dwords at 24 at t 58.100847 s (+1.289 ms from the give-up)
+doorbell trace: #3 queue 0 consumer's submit of 4 dwords at 24 returned at t 58.100889 s (+1.331 ms from the give-up)
+doorbell trace: #3 queue 0 consumer takes 12 dwords at 28 at t 58.101176 s (+1.618 ms from the give-up)
+doorbell trace: #3 queue 0 consumer's submit of 12 dwords at 28 returned at t 58.102432 s (+2.874 ms from the give-up)
+flip trace: job #48124 acb 1051 dwords done at t 58.104115 s (cq1); in flight cq0 4 cq1 6
+flip trace: job #48125 acb 470 dwords done at t 58.104208 s (cq1); in flight cq0 4 cq1 7
+flip trace: job #48131 dcb 1849 dwords done at t 58.106013 s (cq0); in flight cq0 3 cq1 7
+flip trace: job #48126 acb 396 dwords done at t 58.106129 s (cq1); in flight cq0 3 cq1 6
+flip trace: job #48128 acb 28 dwords done at t 58.106182 s (cq1); in flight cq0 3 cq1 5
+flip trace: job #48129 acb 2 dwords done at t 58.106191 s (cq1); in flight cq0 3 cq1 4
+flip trace: job #48130 acb 4 dwords done at t 58.106290 s (cq1); in flight cq0 3 cq1 3
+flip trace: job #48133 dcb 6608 dwords done at t 58.107455 s (cq0); in flight cq0 2 cq1 3
+flip trace: job #48132 acb 21908 dwords done at t 58.108324 s (cq1); in flight cq0 2 cq1 2
+flip trace: job #48136 acb 84 dwords done at t 58.108408 s (cq1); in flight cq0 2 cq1 1
+flip trace: job #48137 acb 140 dwords done at t 58.108417 s (cq1); in flight cq0 2 cq1 0
+flip trace: job #48134 dcb 3742 dwords done at t 58.108942 s (cq0); in flight cq0 1 cq1 0
+flip trace: job #48135 dcb 2652 dwords done at t 58.109266 s (cq0); in flight cq0 0 cq1 0
+flip trace: job #48138 dcb 690 dwords done at t 58.112356 s (cq0); in flight cq0 0 cq1 0
+flip trace: job #48139 acb 18 dwords done at t 58.112736 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #48140 acb 18 dwords done at t 58.112762 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #48141 acb 132 dwords done at t 58.113118 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #48142 acb 100 dwords done at t 58.114227 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #48143 acb 2 dwords done at t 58.114245 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #48145 acb 66 dwords done at t 58.115245 s (cq1); in flight cq0 1 cq1 0
+flip trace: job #48144 dcb 8226 dwords done at t 58.115711 s (cq0); in flight cq0 0 cq1 0
+flip trace: job #48147 acb 322 dwords done at t 58.115959 s (cq1); in flight cq0 1 cq1 0
+flip trace: job #48146 dcb 7176 dwords done at t 58.117841 s (cq0); in flight cq0 1 cq1 4
+flip trace: job #48151 dcb 2426 dwords done at t 58.117930 s (cq0); in flight cq0 0 cq1 5
+flip trace: job #48148 acb 1788 dwords done at t 58.118242 s (cq1); in flight cq0 0 cq1 6
+flip trace: job #48149 acb 28 dwords done at t 58.118275 s (cq1); in flight cq0 0 cq1 5
+flip trace: job #48150 acb 2 dwords done at t 58.118282 s (cq1); in flight cq0 0 cq1 4
+flip trace: job #48152 acb 4 dwords done at t 58.118288 s (cq1); in flight cq0 0 cq1 3
+flip trace: job #48153 acb 7447 dwords done at t 58.118751 s (cq1); in flight cq0 0 cq1 2
+flip trace: job #48154 acb 28 dwords done at t 58.118784 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #48155 acb 2 dwords done at t 58.119588 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #48158 acb 4 dwords done at t 58.120017 s (cq1); in flight cq0 2 cq1 0
+flip trace: served dcb 7048 dwords at 5907 on 0x12004b3c38 after 11.246 ms, t 58.942809 s; in flight cq0 0 cq1 1; 3 jobs done during the wait, the last 0.330 ms before its end (#49432 acb 66 dwords, cq1); compute queue blocked on 0x0
+flip trace: job #49436 dcb 2426 dwords done at t 58.943942 s (cq0); in flight cq0 0 cq1 4
+flip trace: job #49433 acb 2110 dwords done at t 58.944418 s (cq1); in flight cq0 0 cq1 4
+flip trace: job #49434 acb 28 dwords done at t 58.944454 s (cq1); in flight cq0 0 cq1 3
+flip trace: job #49435 acb 2 dwords done at t 58.944460 s (cq1); in flight cq0 0 cq1 2
+flip trace: job #49437 acb 28 dwords done at t 58.944466 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #49438 acb 7453 dwords done at t 58.944983 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #49440 acb 4 dwords done at t 58.945144 s (cq1); in flight cq0 1 cq1 0
+  wait detail: function 3, value 0x907616589, reference 0x0, mask 0xffffffffffffffff
+cpu-wait WAIT_REG_MEM64 at 174 on 0x12004b3038: GIVEN UP after 35.0 ms
+flip trace: #4 given up: dcb 242 dwords at 174 on 0x12004b3038 (game thread 1) after 34.991 ms, t 99.750782 s; value 0x907616589; in flight cq0 0 cq1 0; the last job done 8.066 ms before (#110253 dcb 174 dwords, cq0)
+flip trace: #4 compute queue not held back (g_unready_label 0); the waiting buffer writes 8 label(s)
+flip trace: #4 CPU write to the compute label 0x12004b37c8: thread 2436689 (Render Thread) = the thread that gave up, 600 write(s), seen at the watch start (since the last read) at t 99.750965 s, 0.183 ms after the give-up
+flip trace: #4 CPU write to the compute label 0x12004b53c8: thread 2436689 (Render Thread) = the thread that gave up, 608 write(s), seen at the watch start (since the last read) at t 99.751461 s, 0.679 ms after the give-up
+flip trace: #4 CPU write to the compute label 0x12004b4fc8: thread 2436689 (Render Thread) = the thread that gave up, 608 write(s), seen at the watch start (since the last read) at t 99.751606 s, 0.823 ms after the give-up
+flip trace: #4 CPU write to the compute label 0x12004b77c8: thread 2436689 (Render Thread) = the thread that gave up, 603 write(s), seen at the watch start (since the last read) at t 99.751744 s, 0.961 ms after the give-up
+flip trace: #4 breakpoints: given-up label none; compute label 4 fixed label(s)
+flip trace: job #110254 acb 599 dwords done at t 99.754277 s (cq1); in flight cq0 0 cq1 0
+flip trace: #4 0x12004b3038: 0x907616589 -> 0x0 at t 99.754287 s, 3.505 ms after the give-up; in flight cq0 0 cq1 0
+flip trace: #4 0x12004b3038 satisfied 3.505 ms after the give-up (38.496 ms after the wait began), t 99.754287 s; in flight cq0 0 cq1 0 (at the give-up 0 0); 1 jobs done since the give-up, the last 0.010 ms before (#110254 acb 599 dwords, cq1); value 0x0, 1 changes; compute label 0x0 now 0x0
+doorbell trace: #4 queue 0 consumer's submit of 8 dwords at 3528 returned at t 99.700885 s (-49.897 ms from the give-up)
+doorbell trace: #4 queue 8 consumer takes 8 dwords at 824 at t 99.700889 s (-49.894 ms from the give-up)
+doorbell trace: #4 queue 8 consumer's submit of 8 dwords at 824 returned at t 99.728497 s (-22.286 ms from the give-up)
+doorbell trace: #4 queue 0 consumer takes 24 dwords at 3536 at t 99.728766 s (-22.016 ms from the give-up)
+doorbell trace: #4 queue 0 write pointer 3560 -> 3584 at t 99.751517 s (+0.734 ms from the give-up)
+doorbell trace: #4 queue 8 write pointer 832 -> 848 at t 99.751517 s (+0.735 ms from the give-up)
+doorbell trace: #4 queue 0 write pointer 3584 -> 3608 at t 99.751829 s (+1.047 ms from the give-up)
+doorbell trace: #4 queue 8 write pointer 848 -> 864 at t 99.751829 s (+1.047 ms from the give-up)
+doorbell trace: #4 queue 0 consumer's submit of 24 dwords at 3536 returned at t 99.752791 s (+2.008 ms from the give-up)
+doorbell trace: #4 queue 8 consumer takes 32 dwords at 832 at t 99.752796 s (+2.014 ms from the give-up)
+flip trace: job #110256 acb 208 dwords done at t 99.758154 s (cq1); in flight cq0 1 cq1 0
+flip trace: job #110257 acb 474 dwords done at t 99.758562 s (cq1); in flight cq0 1 cq1 1
+flip trace: job #110258 acb 68 dwords done at t 99.758577 s (cq1); in flight cq0 1 cq1 0
+flip trace: job #110259 acb 158 dwords done at t 99.758926 s (cq1); in flight cq0 1 cq1 1
+flip trace: job #110260 acb 68 dwords done at t 99.758932 s (cq1); in flight cq0 1 cq1 0
+flip trace: job #110255 dcb 31601 dwords done at t 99.759223 s (cq0); in flight cq0 0 cq1 1
+flip trace: job #110261 acb 158 dwords done at t 99.759234 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #110262 acb 68 dwords done at t 99.759310 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #110263 acb 158 dwords done at t 99.759654 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #110264 acb 68 dwords done at t 99.759667 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #110266 acb 544 dwords done at t 99.764327 s (cq1); in flight cq0 1 cq1 0
+flip trace: job #110267 acb 28 dwords done at t 99.764649 s (cq1); in flight cq0 1 cq1 1
+flip trace: job #110268 acb 2 dwords done at t 99.764655 s (cq1); in flight cq0 1 cq1 0
+flip trace: job #110265 dcb 41210 dwords done at t 99.765592 s (cq0); in flight cq0 0 cq1 0
+flip trace: job #110270 acb 4 dwords done at t 99.768287 s (cq1); in flight cq0 1 cq1 0
+flip trace: job #110269 dcb 82721 dwords done at t 99.769818 s (cq0); in flight cq0 0 cq1 0
+  wait detail: function 3, value 0x907616589, reference 0x0, mask 0xffffffffffffffff
+cpu-wait WAIT_REG_MEM64 at 379 on 0x12004b3c38: GIVEN UP after 8.7 ms
+flip trace: #5 given up: dcb 3092 dwords at 379 on 0x12004b3c38 (game thread 1) after 8.702 ms, t 102.447772 s; value 0x907616589; in flight cq0 0 cq1 0; the last job done 7.585 ms before (#113759 dcb 1648 dwords, cq0)
+flip trace: #5 compute candidate 0x12004b4fc8: held back 39.628 ms before the give-up, value 0x9076d6d8c; it has write breakpoints
+flip trace: #5 compute candidate 0x12004b37c8: held back 44.885 ms before the give-up, value 0x0; it has write breakpoints
+flip trace: #5 compute candidate 0x12004b53c8: held back 35.993 ms before the give-up, value 0x0; it has write breakpoints
+flip trace: #5 compute candidate 0x12004b77c8: held back 34.503 ms before the give-up, value 0x0; it has write breakpoints
+flip trace: #5 compute queue not held back (g_unready_label 0); the waiting buffer writes 21 label(s)
+flip trace: #5 write breakpoints on the compute label 0x12004b37c8: 107 armed, 0 failed (errno 0), in 0.309 ms, armed 0.337 ms after the give-up; value then 0x0; 7 new
+flip trace: #5 CPU write to the compute label 0x12004b37c8: thread 2436689 (Render Thread) = the thread that gave up, 104 write(s), seen at the watch start (since the last read) at t 102.448114 s, 0.341 ms after the give-up
+flip trace: #5 write breakpoints on the compute label 0x12004b53c8: 107 armed, 0 failed (errno 0), in 0.184 ms, armed 0.697 ms after the give-up; value then 0x0; 7 new
+flip trace: #5 CPU write to the compute label 0x12004b53c8: thread 2436689 (Render Thread) = the thread that gave up, 104 write(s), seen at the watch start (since the last read) at t 102.448475 s, 0.702 ms after the give-up
+flip trace: #5 CPU write to the compute label 0x12004b53c8: thread 2436770 (bc5-cq0), 1 write(s), seen at the watch start (since the last read) at t 102.448475 s, 0.702 ms after the give-up
+flip trace: #5 write breakpoints on the compute label 0x12004b4fc8: 107 armed, 0 failed (errno 0), in 0.164 ms, armed 1.036 ms after the give-up; value then 0x9076d6d8c; 7 new
+flip trace: #5 CPU write to the compute label 0x12004b4fc8: thread 2436689 (Render Thread) = the thread that gave up, 105 write(s), seen at the watch start (since the last read) at t 102.448812 s, 1.040 ms after the give-up
+flip trace: #5 CPU write to the compute label 0x12004b4fc8: thread 2436770 (bc5-cq0), 1 write(s), seen at the watch start (since the last read) at t 102.448812 s, 1.040 ms after the give-up
+flip trace: #5 write breakpoints on the compute label 0x12004b77c8: 107 armed, 0 failed (errno 0), in 0.160 ms, armed 1.341 ms after the give-up; value then 0x0; 7 new
+flip trace: #5 CPU write to the compute label 0x12004b77c8: thread 2436689 (Render Thread) = the thread that gave up, 104 write(s), seen at the watch start (since the last read) at t 102.449119 s, 1.347 ms after the give-up
+flip trace: #5 breakpoints: given-up label none; compute label 4 fixed label(s)
+flip trace: #5 compute label 0x12004b53c8: 0x0 -> 0x9076d6d8c at t 102.468399 s, 20.627 ms after the give-up; in flight cq0 2 cq1 5
+flip trace: #5 CPU write to the compute label 0x12004b53c8: thread 2436689 (Render Thread) = the thread that gave up, 1 write(s), seen at a change at t 102.468399 s, 20.627 ms after the give-up
+flip trace: #5 compute label 0x12004b77c8: 0x0 -> 0x9076d6d8c at t 102.472446 s, 24.674 ms after the give-up; in flight cq0 4 cq1 11
+flip trace: #5 CPU write to the compute label 0x12004b77c8: thread 2436689 (Render Thread) = the thread that gave up, 1 write(s), seen at a change at t 102.472446 s, 24.674 ms after the give-up
+flip trace: #5 compute label 0x12004b4fc8: 0x9076d6d8c -> 0x0 at t 102.475446 s, 27.674 ms after the give-up; in flight cq0 7 cq1 15
+flip trace: #5 no CPU write counted for that change of the compute label 0x12004b4fc8 (a GPU write)
+flip trace: #5 0x12004b3c38: 0x907616589 -> 0x0 at t 102.475656 s, 27.883 ms after the give-up; in flight cq0 7 cq1 15
+flip trace: #5 0x12004b3c38 satisfied 27.883 ms after the give-up (36.585 ms after the wait began), t 102.475656 s; in flight cq0 7 cq1 15 (at the give-up 0 0); 0 jobs done since the give-up, the last 35.469 ms before (#113759 dcb 1648 dwords, cq0); value 0x0, 1 changes; compute label 0x0 now 0x0
+flip trace: job #113762 dcb 6653 dwords done at t 102.475936 s (cq0); in flight cq0 6 cq1 15
+flip trace: job #113765 dcb 16 dwords done at t 102.476213 s (cq0); in flight cq0 6 cq1 15
+doorbell trace: #5 queue 0 consumer takes 8 dwords at 504 at t 102.401137 s (-46.635 ms from the give-up)
+doorbell trace: #5 queue 0 write pointer 504 -> 528 at t 102.401195 s (-46.577 ms from the give-up)
+doorbell trace: #5 queue 8 write pointer 3392 -> 3400 at t 102.401195 s (-46.577 ms from the give-up)
+doorbell trace: #5 queue 0 consumer's submit of 8 dwords at 504 returned at t 102.401371 s (-46.401 ms from the give-up)
+doorbell trace: #5 queue 8 consumer takes 8 dwords at 3392 at t 102.401374 s (-46.399 ms from the give-up)
+doorbell trace: #5 queue 8 consumer's submit of 8 dwords at 3392 returned at t 102.401429 s (-46.343 ms from the give-up)
+doorbell trace: #5 queue 0 consumer takes 16 dwords at 512 at t 102.401692 s (-46.080 ms from the give-up)
+doorbell trace: #5 queue 0 write pointer 528 -> 536 at t 102.402452 s (-45.320 ms from the give-up)
+doorbell trace: #5 queue 0 consumer's submit of 16 dwords at 512 returned at t 102.402565 s (-45.207 ms from the give-up)
+doorbell trace: #5 queue 0 write pointer 536 -> 552 at t 102.402870 s (-44.902 ms from the give-up)
+doorbell trace: #5 queue 0 consumer takes 12 dwords at 528 at t 102.403049 s (-44.723 ms from the give-up)
+doorbell trace: #5 queue 0 consumer's submit of 12 dwords at 528 returned at t 102.403108 s (-44.664 ms from the give-up)
+doorbell trace: #5 queue 0 write pointer 552 -> 568 at t 102.403291 s (-44.481 ms from the give-up)
+doorbell trace: #5 queue 0 write pointer 568 -> 584 at t 102.403399 s (-44.373 ms from the give-up)
+doorbell trace: #5 queue 0 write pointer 584 -> 632 at t 102.405607 s (-42.166 ms from the give-up)
+doorbell trace: #5 queue 0 consumer takes 92 dwords at 540 at t 102.405622 s (-42.150 ms from the give-up)
+doorbell trace: #5 queue 0 consumer's submit of 92 dwords at 540 returned at t 102.406775 s (-40.997 ms from the give-up)
+doorbell trace: #5 queue 0 write pointer 632 -> 648 at t 102.407042 s (-40.730 ms from the give-up)
+doorbell trace: #5 queue 0 consumer takes 4 dwords at 632 at t 102.407261 s (-40.511 ms from the give-up)
+doorbell trace: #5 queue 0 consumer's submit of 4 dwords at 632 returned at t 102.407329 s (-40.443 ms from the give-up)
+doorbell trace: #5 queue 0 deferred, 12 dwords pending at 636, at t 102.407607 s (-40.165 ms from the give-up)
+doorbell trace: #5 queue 0 consumer takes 12 dwords at 636 at t 102.408406 s (-39.366 ms from the give-up)
+doorbell trace: #5 queue 0 write pointer 648 -> 680 at t 102.408695 s (-39.078 ms from the give-up)
+doorbell trace: #5 queue 0 consumer's submit of 12 dwords at 636 returned at t 102.408992 s (-38.780 ms from the give-up)
+doorbell trace: #5 queue 0 write pointer 680 -> 696 at t 102.409216 s (-38.556 ms from the give-up)
+doorbell trace: #5 queue 0 write pointer 696 -> 712 at t 102.409325 s (-38.447 ms from the give-up)
+doorbell trace: #5 queue 0 consumer takes 4 dwords at 648 at t 102.409361 s (-38.412 ms from the give-up)
+doorbell trace: #5 queue 0 consumer's submit of 4 dwords at 648 returned at t 102.409445 s (-38.327 ms from the give-up)
+doorbell trace: #5 queue 0 deferred, 60 dwords pending at 652, at t 102.409717 s (-38.055 ms from the give-up)
+doorbell trace: #5 queue 0 write pointer 712 -> 728 at t 102.410030 s (-37.742 ms from the give-up)
+doorbell trace: #5 queue 0 write pointer 728 -> 760 at t 102.410137 s (-37.635 ms from the give-up)
+doorbell trace: #5 queue 0 consumer takes 108 dwords at 652 at t 102.412051 s (-35.721 ms from the give-up)
+doorbell trace: #5 queue 0 consumer's submit of 108 dwords at 652 returned at t 102.412971 s (-34.801 ms from the give-up)
+doorbell trace: #5 queue 0 write pointer 760 -> 776 at t 102.413137 s (-34.635 ms from the give-up)
+doorbell trace: #5 queue 0 consumer takes 4 dwords at 760 at t 102.413845 s (-33.927 ms from the give-up)
+doorbell trace: #5 queue 0 consumer's submit of 4 dwords at 760 returned at t 102.413898 s (-33.874 ms from the give-up)
+doorbell trace: #5 queue 0 consumer takes 12 dwords at 764 at t 102.414177 s (-33.595 ms from the give-up)
+doorbell trace: #5 queue 0 consumer's submit of 12 dwords at 764 returned at t 102.414824 s (-32.948 ms from the give-up)
+doorbell trace: #5 queue 0 write pointer 776 -> 792 at t 102.416890 s (-30.882 ms from the give-up)
+doorbell trace: #5 queue 8 write pointer 3400 -> 3416 at t 102.416890 s (-30.882 ms from the give-up)
+doorbell trace: #5 queue 0 consumer takes 16 dwords at 776 at t 102.416946 s (-30.826 ms from the give-up)
+doorbell trace: #5 queue 0 consumer's submit of 16 dwords at 776 returned at t 102.417724 s (-30.048 ms from the give-up)
+doorbell trace: #5 queue 8 consumer takes 16 dwords at 3400 at t 102.417732 s (-30.040 ms from the give-up)
+doorbell trace: #5 queue 8 consumer's submit of 16 dwords at 3400 returned at t 102.417888 s (-29.884 ms from the give-up)
+doorbell trace: #5 queue 0 write pointer 792 -> 800 at t 102.426292 s (-21.480 ms from the give-up)
+doorbell trace: #5 queue 8 write pointer 3416 -> 3424 at t 102.426292 s (-21.480 ms from the give-up)
+doorbell trace: #5 queue 0 consumer takes 24 dwords at 792 at t 102.426345 s (-21.427 ms from the give-up)
+doorbell trace: #5 queue 0 write pointer 800 -> 816 at t 102.426405 s (-21.368 ms from the give-up)
+doorbell trace: #5 queue 0 write pointer 816 -> 824 at t 102.426619 s (-21.154 ms from the give-up)
+doorbell trace: #5 queue 0 write pointer 824 -> 840 at t 102.426724 s (-21.048 ms from the give-up)
+doorbell trace: #5 queue 0 write pointer 840 -> 856 at t 102.426994 s (-20.778 ms from the give-up)
+doorbell trace: #5 queue 0 write pointer 856 -> 872 at t 102.427103 s (-20.669 ms from the give-up)
+doorbell trace: #5 queue 0 write pointer 872 -> 904 at t 102.427926 s (-19.846 ms from the give-up)
+doorbell trace: #5 queue 0 write pointer 904 -> 920 at t 102.430241 s (-17.531 ms from the give-up)
+doorbell trace: #5 queue 0 consumer's submit of 24 dwords at 792 returned at t 102.437800 s (-9.972 ms from the give-up)
+doorbell trace: #5 queue 8 consumer takes 8 dwords at 3416 at t 102.437805 s (-9.968 ms from the give-up)
+doorbell trace: #5 queue 8 consumer's submit of 8 dwords at 3416 returned at t 102.439945 s (-7.827 ms from the give-up)
+doorbell trace: #5 queue 0 consumer takes 104 dwords at 816 at t 102.440230 s (-7.543 ms from the give-up)
+doorbell trace: #5 queue 0 write pointer 920 -> 936 at t 102.448300 s (+0.528 ms from the give-up)
+doorbell trace: #5 queue 0 consumer's submit of 104 dwords at 816 returned at t 102.456893 s (+9.121 ms from the give-up)
+doorbell trace: #5 queue 0 consumer takes 4 dwords at 920 at t 102.467105 s (+19.333 ms from the give-up)
+doorbell trace: #5 queue 0 consumer's submit of 4 dwords at 920 returned at t 102.467158 s (+19.386 ms from the give-up)
+doorbell trace: #5 queue 0 consumer takes 12 dwords at 924 at t 102.467431 s (+19.658 ms from the give-up)
+doorbell trace: #5 queue 0 consumer's submit of 12 dwords at 924 returned at t 102.468060 s (+20.288 ms from the give-up)
+doorbell trace: #5 queue 0 write pointer 936 -> 968 at t 102.468671 s (+20.898 ms from the give-up)
+doorbell trace: #5 queue 0 consumer takes 4 dwords at 936 at t 102.468689 s (+20.917 ms from the give-up)
+doorbell trace: #5 queue 0 consumer's submit of 4 dwords at 936 returned at t 102.468738 s (+20.966 ms from the give-up)
+doorbell trace: #5 queue 0 write pointer 968 -> 1000 at t 102.468931 s (+21.159 ms from the give-up)
+doorbell trace: #5 queue 0 deferred, 60 dwords pending at 940, at t 102.469001 s (+21.228 ms from the give-up)
+doorbell trace: #5 queue 0 write pointer 1000 -> 1048 at t 102.469605 s (+21.833 ms from the give-up)
+doorbell trace: #5 queue 0 consumer takes 108 dwords at 940 at t 102.471522 s (+23.750 ms from the give-up)
+doorbell trace: #5 queue 0 write pointer 1048 -> 1064 at t 102.472628 s (+24.856 ms from the give-up)
+doorbell trace: #5 queue 0 consumer's submit of 108 dwords at 940 returned at t 102.472753 s (+24.980 ms from the give-up)
+doorbell trace: #5 queue 0 consumer takes 16 dwords at 1048 at t 102.473010 s (+25.238 ms from the give-up)
+doorbell trace: #5 queue 0 consumer's submit of 16 dwords at 1048 returned at t 102.473406 s (+25.634 ms from the give-up)
+doorbell trace: #5 queue 0 write pointer 1064 -> 1080 at t 102.475452 s (+27.680 ms from the give-up)
+doorbell trace: #5 queue 8 write pointer 3424 -> 3440 at t 102.475453 s (+27.681 ms from the give-up)
+flip trace: job #113761 acb 7885 dwords done at t 102.477779 s (cq1); in flight cq0 6 cq1 16
+flip trace: job #113763 acb 28 dwords done at t 102.477853 s (cq1); in flight cq0 6 cq1 15
+flip trace: job #113764 acb 2 dwords done at t 102.477862 s (cq1); in flight cq0 6 cq1 14
+flip trace: job #113766 acb 4 dwords done at t 102.477869 s (cq1); in flight cq0 6 cq1 13
+flip trace: job #113767 acb 3315 dwords done at t 102.477923 s (cq1); in flight cq0 6 cq1 12
+flip trace: job #113768 acb 28 dwords done at t 102.477944 s (cq1); in flight cq0 6 cq1 11
+flip trace: job #113769 acb 2 dwords done at t 102.478199 s (cq1); in flight cq0 6 cq1 10
+flip trace: job #113771 acb 4 dwords done at t 102.478210 s (cq1); in flight cq0 6 cq1 9
+flip trace: job #113773 acb 845 dwords done at t 102.479483 s (cq1); in flight cq0 6 cq1 8
+flip trace: job #113770 dcb 40444 dwords done at t 102.479891 s (cq0); in flight cq0 5 cq1 8
+flip trace: job #113772 dcb 311 dwords done at t 102.479926 s (cq0); in flight cq0 4 cq1 8
+flip trace: job #113774 acb 740 dwords done at t 102.480089 s (cq1); in flight cq0 4 cq1 7
+flip trace: job #113775 acb 311 dwords done at t 102.480166 s (cq1); in flight cq0 4 cq1 6
+flip trace: job #113778 dcb 2811 dwords done at t 102.480284 s (cq0); in flight cq0 3 cq1 6
+flip trace: job #113776 acb 703 dwords done at t 102.480328 s (cq1); in flight cq0 3 cq1 5
+flip trace: job #113781 dcb 2780 dwords done at t 102.481630 s (cq0); in flight cq0 2 cq1 5
+flip trace: job #113777 acb 588 dwords done at t 102.481871 s (cq1); in flight cq0 2 cq1 4
+flip trace: job #113779 acb 2 dwords done at t 102.481927 s (cq1); in flight cq0 2 cq1 3
+flip trace: job #113780 acb 6856 dwords done at t 102.482525 s (cq1); in flight cq0 2 cq1 2
+flip trace: job #113784 acb 84 dwords done at t 102.482583 s (cq1); in flight cq0 2 cq1 1
+flip trace: job #113785 acb 140 dwords done at t 102.482594 s (cq1); in flight cq0 2 cq1 0
+flip trace: job #113782 dcb 13845 dwords done at t 102.483249 s (cq0); in flight cq0 1 cq1 0
+flip trace: job #113783 dcb 10135 dwords done at t 102.484685 s (cq0); in flight cq0 0 cq1 0
+flip trace: job #113786 dcb 550 dwords done at t 102.487571 s (cq0); in flight cq0 0 cq1 0
+flip trace: job #113787 acb 589 dwords done at t 102.488549 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #113788 acb 18 dwords done at t 102.488570 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #113789 acb 100 dwords done at t 102.488762 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #113790 acb 20 dwords done at t 102.488821 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #113791 dcb 21867 dwords done at t 102.492339 s (cq0); in flight cq0 0 cq1 1
+flip trace: job #113792 acb 4125 dwords done at t 102.493081 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #113793 acb 28 dwords done at t 102.493142 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #113794 acb 2613 dwords done at t 102.493977 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #113796 acb 4 dwords done at t 102.495286 s (cq1); in flight cq0 1 cq1 0
+  wait detail: function 3, value 0x907616589, reference 0x0, mask 0xffffffffffffffff
+cpu-wait WAIT_REG_MEM64 at 379 on 0x12004b3c38: GIVEN UP after 814.5 ms
+flip trace: #6 given up: dcb 3092 dwords at 379 on 0x12004b3c38 (game thread 1) after 814.532 ms, t 103.716208 s; value 0x907616589; in flight cq0 0 cq1 0; the last job done 8.119 ms before (#114352 dcb 1648 dwords, cq0)
+flip trace: #6 compute queue not held back (g_unready_label 0); the waiting buffer writes 21 label(s)
+flip trace: #6 write breakpoints on the compute label 0x12004b37c8: 113 armed, 0 failed (errno 0), in 0.305 ms, armed 0.333 ms after the give-up; value then 0x0; 6 new
+flip trace: #6 CPU write to the compute label 0x12004b37c8: thread 2436689 (Render Thread) = the thread that gave up, 17 write(s), seen at the watch start (since the last read) at t 103.716546 s, 0.338 ms after the give-up
+flip trace: #6 write breakpoints on the compute label 0x12004b53c8: 112 armed, 0 failed (errno 0), in 0.104 ms, armed 0.624 ms after the give-up; value then 0x0; 5 new
+flip trace: #6 CPU write to the compute label 0x12004b53c8: thread 2436689 (Render Thread) = the thread that gave up, 16 write(s), seen at the watch start (since the last read) at t 103.716835 s, 0.627 ms after the give-up
+flip trace: #6 write breakpoints on the compute label 0x12004b4fc8: 112 armed, 0 failed (errno 0), in 0.085 ms, armed 0.826 ms after the give-up; value then 0x9076d6d8c; 5 new
+flip trace: #6 CPU write to the compute label 0x12004b4fc8: thread 2436689 (Render Thread) = the thread that gave up, 17 write(s), seen at the watch start (since the last read) at t 103.717037 s, 0.829 ms after the give-up
+flip trace: #6 write breakpoints on the compute label 0x12004b77c8: 111 armed, 0 failed (errno 0), in 0.053 ms, armed 0.993 ms after the give-up; value then 0x0; 4 new
+flip trace: #6 CPU write to the compute label 0x12004b77c8: thread 2436689 (Render Thread) = the thread that gave up, 16 write(s), seen at the watch start (since the last read) at t 103.717214 s, 1.006 ms after the give-up
+flip trace: #6 breakpoints: given-up label none; compute label 4 fixed label(s)
+flip trace: #6 0x12004b3c38: 0x907616589 -> 0x0 at t 103.736060 s, 19.852 ms after the give-up; in flight cq0 0 cq1 1
+flip trace: #6 0x12004b3c38 satisfied 19.852 ms after the give-up (834.383 ms after the wait began), t 103.736060 s; in flight cq0 0 cq1 1 (at the give-up 0 0); 0 jobs done since the give-up, the last 27.971 ms before (#114352 dcb 1648 dwords, cq0); value 0x0, 1 changes; compute label 0x0 now 0x0
+doorbell trace: #6 queue 8 consumer's submit of 8 dwords at 3824 returned at t 103.694947 s (-21.260 ms from the give-up)
+doorbell trace: #6 queue 0 consumer takes 120 dwords at 1600 at t 103.695239 s (-20.969 ms from the give-up)
+doorbell trace: #6 queue 0 consumer's submit of 120 dwords at 1600 returned at t 103.718606 s (+2.398 ms from the give-up)
+flip trace: job #114353 acb 8456 dwords done at t 103.737947 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #114354 dcb 3998 dwords done at t 103.739755 s (cq0); in flight cq0 0 cq1 0
+flip trace: job #114355 acb 3345 dwords done at t 103.740712 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #114356 acb 28 dwords done at t 103.741353 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #114357 acb 2 dwords done at t 103.741400 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #114359 acb 4 dwords done at t 103.744260 s (cq1); in flight cq0 1 cq1 0
+flip trace: job #114361 acb 845 dwords done at t 103.746689 s (cq1); in flight cq0 3 cq1 7
+flip trace: job #114358 dcb 43166 dwords done at t 103.747208 s (cq0); in flight cq0 2 cq1 7
+flip trace: job #114360 dcb 311 dwords done at t 103.747245 s (cq0); in flight cq0 1 cq1 8
+flip trace: job #114362 acb 740 dwords done at t 103.747340 s (cq1); in flight cq0 1 cq1 7
+flip trace: job #114363 acb 311 dwords done at t 103.747420 s (cq1); in flight cq0 1 cq1 6
+flip trace: job #114366 dcb 2811 dwords done at t 103.747786 s (cq0); in flight cq0 0 cq1 6
+flip trace: job #114364 acb 703 dwords done at t 103.747804 s (cq1); in flight cq0 1 cq1 5
+flip trace: job #114371 dcb 2780 dwords done at t 103.749179 s (cq0); in flight cq0 1 cq1 5
+flip trace: job #114365 acb 588 dwords done at t 103.749192 s (cq1); in flight cq0 1 cq1 4
+flip trace: job #114367 acb 28 dwords done at t 103.749248 s (cq1); in flight cq0 1 cq1 3
+flip trace: job #114368 acb 2 dwords done at t 103.749254 s (cq1); in flight cq0 1 cq1 2
+flip trace: job #114369 acb 4 dwords done at t 103.749264 s (cq1); in flight cq0 1 cq1 1
+flip trace: job #114370 acb 7569 dwords done at t 103.750168 s (cq1); in flight cq0 2 cq1 1
+flip trace: job #114374 acb 84 dwords done at t 103.750232 s (cq1); in flight cq0 2 cq1 1
+flip trace: job #114375 acb 140 dwords done at t 103.750241 s (cq1); in flight cq0 2 cq1 0
+flip trace: job #114372 dcb 13845 dwords done at t 103.750648 s (cq0); in flight cq0 1 cq1 0
+flip trace: job #114373 dcb 10135 dwords done at t 103.752151 s (cq0); in flight cq0 0 cq1 0
+flip trace: job #114376 dcb 550 dwords done at t 103.755013 s (cq0); in flight cq0 0 cq1 0
+  wait detail: function 3, value 0x907616589, reference 0x0, mask 0xffffffffffffffff
+cpu-wait WAIT_REG_MEM64 at 311 on 0x12004b5438: GIVEN UP after 8.3 ms
+flip trace: #7 given up: dcb 860 dwords at 311 on 0x12004b5438 (game thread 1) after 8.350 ms, t 108.790794 s; value 0x907616589; in flight cq0 6 cq1 18; the last job done 38.644 ms before (#121479 dcb 16093 dwords, cq0)
+flip trace: #7 compute candidate 0x12004b4fc8: held back 11.532 ms before the give-up, value 0x9076d6d8c; it has write breakpoints
+flip trace: #7 compute candidate 0x12004b53c8: held back 8.398 ms before the give-up, value 0x9076d6d8c; it has write breakpoints
+flip trace: #7 compute candidate 0x12004b77c8: held back 46.465 ms before the give-up, value 0x0; it has write breakpoints
+flip trace: #7 compute candidate 0x12004b4bc8: held back 12.231 ms before the give-up, value 0x9076d6d8c
+flip trace: #7 compute queue not held back (g_unready_label 0); the waiting buffer writes 16 label(s)
+flip trace: job #121483 dcb 5161 dwords done at t 108.790929 s (cq0); in flight cq0 5 cq1 18
+flip trace: #7 CPU write to the compute label 0x12004b37c8: thread 2436689 (Render Thread) = the thread that gave up, 201 write(s), seen at the watch start (since the last read) at t 108.790991 s, 0.197 ms after the give-up
+flip trace: job #121482 acb 607 dwords done at t 108.791181 s (cq1); in flight cq0 5 cq1 17
+flip trace: job #121484 acb 18 dwords done at t 108.791210 s (cq1); in flight cq0 5 cq1 17
+flip trace: #7 CPU write to the compute label 0x12004b53c8: thread 2436689 (Render Thread) = the thread that gave up, 202 write(s), seen at the watch start (since the last read) at t 108.791182 s, 0.387 ms after the give-up
+flip trace: #7 CPU write to the compute label 0x12004b53c8: thread 2436770 (bc5-cq0), 1 write(s), seen at the watch start (since the last read) at t 108.791182 s, 0.387 ms after the give-up
+flip trace: job #121486 acb 2 dwords done at t 108.791289 s (cq1); in flight cq0 5 cq1 17
+flip trace: job #121487 acb 1565 dwords done at t 108.791300 s (cq1); in flight cq0 5 cq1 16
+flip trace: #7 CPU write to the compute label 0x12004b4fc8: thread 2436689 (Render Thread) = the thread that gave up, 201 write(s), seen at the watch start (since the last read) at t 108.791323 s, 0.529 ms after the give-up
+flip trace: job #121488 acb 510 dwords done at t 108.791360 s (cq1); in flight cq0 5 cq1 16
+flip trace: #7 CPU write to the compute label 0x12004b77c8: thread 2436689 (Render Thread) = the thread that gave up, 202 write(s), seen at the watch start (since the last read) at t 108.791440 s, 0.645 ms after the give-up
+flip trace: #7 breakpoints: given-up label none; compute label 4 fixed label(s)
+flip trace: #7 compute label 0x12004b77c8: 0x0 -> 0x9076d6d8c at t 108.791527 s, 0.733 ms after the give-up; in flight cq0 5 cq1 17
+flip trace: #7 no CPU write counted for that change of the compute label 0x12004b77c8 (a GPU write)
+flip trace: job #121485 dcb 15527 dwords done at t 108.792005 s (cq0); in flight cq0 5 cq1 18
+flip trace: #7 compute label 0x12004b4bc8: 0x9076d6d8c -> 0x0 at t 108.792067 s, 1.273 ms after the give-up; in flight cq0 5 cq1 18
+flip trace: job #121492 dcb 3721 dwords done at t 108.792140 s (cq0); in flight cq0 4 cq1 19
+flip trace: #7 compute label 0x12004b4fc8: 0x9076d6d8c -> 0x0 at t 108.792731 s, 1.937 ms after the give-up; in flight cq0 4 cq1 20
+flip trace: #7 no CPU write counted for that change of the compute label 0x12004b4fc8 (a GPU write)
+flip trace: job #121498 dcb 7048 dwords done at t 108.792819 s (cq0); in flight cq0 3 cq1 20
+flip trace: job #121489 acb 2084 dwords done at t 108.793296 s (cq1); in flight cq0 4 cq1 19
+flip trace: job #121490 acb 28 dwords done at t 108.793341 s (cq1); in flight cq0 4 cq1 18
+flip trace: job #121491 acb 2 dwords done at t 108.793347 s (cq1); in flight cq0 4 cq1 17
+flip trace: job #121493 acb 2101 dwords done at t 108.793520 s (cq1); in flight cq0 4 cq1 16
+flip trace: job #121494 acb 507 dwords done at t 108.794663 s (cq1); in flight cq0 4 cq1 15
+flip trace: job #121495 acb 28 dwords done at t 108.794714 s (cq1); in flight cq0 5 cq1 14
+flip trace: job #121496 acb 4 dwords done at t 108.794723 s (cq1); in flight cq0 5 cq1 13
+flip trace: job #121497 acb 1389 dwords done at t 108.794731 s (cq1); in flight cq0 5 cq1 12
+flip trace: job #121499 acb 4 dwords done at t 108.794819 s (cq1); in flight cq0 5 cq1 11
+flip trace: job #121500 acb 4064 dwords done at t 108.794831 s (cq1); in flight cq0 5 cq1 10
+flip trace: job #121501 acb 28 dwords done at t 108.794855 s (cq1); in flight cq0 5 cq1 9
+flip trace: job #121502 acb 2 dwords done at t 108.794862 s (cq1); in flight cq0 5 cq1 8
+flip trace: job #121505 acb 4 dwords done at t 108.794868 s (cq1); in flight cq0 5 cq1 7
+flip trace: #7 compute label 0x12004b53c8: 0x9076d6d8c -> 0x0 at t 108.796144 s, 5.350 ms after the give-up; in flight cq0 5 cq1 7
+flip trace: #7 no CPU write counted for that change of the compute label 0x12004b53c8 (a GPU write)
+flip trace: #7 0x12004b5438: 0x907616589 -> 0x0 at t 108.796459 s, 5.664 ms after the give-up; in flight cq0 6 cq1 7
+flip trace: #7 0x12004b5438 satisfied 5.664 ms after the give-up (14.014 ms after the wait began), t 108.796459 s; in flight cq0 6 cq1 7 (at the give-up 6 18); 22 jobs done since the give-up, the last 1.590 ms before (#121505 acb 4 dwords, cq1); value 0x0, 1 changes; compute label 0x0 now 0x0
+flip trace: job #121506 acb 865 dwords done at t 108.796479 s (cq1); in flight cq0 6 cq1 6
+doorbell trace: #7 queue 0 write pointer 2056 -> 2104 at t 108.741210 s (-49.585 ms from the give-up)
+doorbell trace: #7 queue 0 consumer takes 108 dwords at 1996 at t 108.743140 s (-47.654 ms from the give-up)
+doorbell trace: #7 queue 0 consumer's submit of 108 dwords at 1996 returned at t 108.744051 s (-46.744 ms from the give-up)
+doorbell trace: #7 queue 0 write pointer 2104 -> 2120 at t 108.744237 s (-46.557 ms from the give-up)
+doorbell trace: #7 queue 0 consumer takes 4 dwords at 2104 at t 108.744493 s (-46.302 ms from the give-up)
+doorbell trace: #7 queue 0 consumer's submit of 4 dwords at 2104 returned at t 108.744531 s (-46.263 ms from the give-up)
+doorbell trace: #7 queue 0 consumer takes 12 dwords at 2108 at t 108.744801 s (-45.994 ms from the give-up)
+doorbell trace: #7 queue 0 consumer's submit of 12 dwords at 2108 returned at t 108.745225 s (-45.569 ms from the give-up)
+doorbell trace: #7 queue 0 consumer takes 16 dwords at 2120 at t 108.747280 s (-43.515 ms from the give-up)
+doorbell trace: #7 queue 0 write pointer 2120 -> 2136 at t 108.747336 s (-43.458 ms from the give-up)
+doorbell trace: #7 queue 8 write pointer 440 -> 456 at t 108.747337 s (-43.458 ms from the give-up)
+doorbell trace: #7 queue 0 consumer's submit of 16 dwords at 2120 returned at t 108.747949 s (-42.845 ms from the give-up)
+doorbell trace: #7 queue 8 consumer takes 16 dwords at 440 at t 108.747953 s (-42.842 ms from the give-up)
+doorbell trace: #7 queue 8 consumer's submit of 16 dwords at 440 returned at t 108.748005 s (-42.789 ms from the give-up)
+doorbell trace: #7 queue 0 write pointer 2136 -> 2144 at t 108.754459 s (-36.335 ms from the give-up)
+doorbell trace: #7 queue 8 write pointer 456 -> 464 at t 108.754459 s (-36.335 ms from the give-up)
+doorbell trace: #7 queue 0 write pointer 2144 -> 2160 at t 108.754571 s (-36.224 ms from the give-up)
+doorbell trace: #7 queue 0 consumer takes 32 dwords at 2136 at t 108.754663 s (-36.131 ms from the give-up)
+doorbell trace: #7 queue 0 write pointer 2160 -> 2168 at t 108.754678 s (-36.117 ms from the give-up)
+doorbell trace: #7 queue 0 write pointer 2168 -> 2184 at t 108.754862 s (-35.933 ms from the give-up)
+doorbell trace: #7 queue 0 write pointer 2184 -> 2200 at t 108.755139 s (-35.655 ms from the give-up)
+doorbell trace: #7 queue 0 write pointer 2200 -> 2216 at t 108.755246 s (-35.549 ms from the give-up)
+doorbell trace: #7 queue 0 consumer's submit of 32 dwords at 2136 returned at t 108.776702 s (-14.092 ms from the give-up)
+doorbell trace: #7 queue 8 consumer takes 8 dwords at 456 at t 108.776706 s (-14.089 ms from the give-up)
+doorbell trace: #7 queue 8 consumer's submit of 8 dwords at 456 returned at t 108.777378 s (-13.416 ms from the give-up)
+doorbell trace: #7 queue 0 consumer takes 48 dwords at 2168 at t 108.777647 s (-13.147 ms from the give-up)
+doorbell trace: #7 queue 0 write pointer 2216 -> 2232 at t 108.778227 s (-12.567 ms from the give-up)
+doorbell trace: #7 queue 0 consumer's submit of 48 dwords at 2168 returned at t 108.778294 s (-12.500 ms from the give-up)
+doorbell trace: #7 queue 0 write pointer 2232 -> 2248 at t 108.778332 s (-12.463 ms from the give-up)
+doorbell trace: #7 queue 0 write pointer 2248 -> 2264 at t 108.778539 s (-12.255 ms from the give-up)
+doorbell trace: #7 queue 0 consumer takes 36 dwords at 2216 at t 108.778607 s (-12.187 ms from the give-up)
+doorbell trace: #7 queue 0 consumer's submit of 36 dwords at 2216 returned at t 108.778991 s (-11.803 ms from the give-up)
+doorbell trace: #7 queue 0 write pointer 2264 -> 2280 at t 108.779023 s (-11.771 ms from the give-up)
+doorbell trace: #7 queue 0 consumer takes 16 dwords at 2252 at t 108.779306 s (-11.488 ms from the give-up)
+doorbell trace: #7 queue 0 consumer's submit of 16 dwords at 2252 returned at t 108.779429 s (-11.366 ms from the give-up)
+doorbell trace: #7 queue 0 consumer takes 12 dwords at 2268 at t 108.779693 s (-11.102 ms from the give-up)
+doorbell trace: #7 queue 0 consumer's submit of 12 dwords at 2268 returned at t 108.779901 s (-10.893 ms from the give-up)
+doorbell trace: #7 queue 0 write pointer 2280 -> 2296 at t 108.780228 s (-10.567 ms from the give-up)
+doorbell trace: #7 queue 0 write pointer 2296 -> 2312 at t 108.780332 s (-10.462 ms from the give-up)
+doorbell trace: #7 queue 0 write pointer 2312 -> 2344 at t 108.780439 s (-10.356 ms from the give-up)
+doorbell trace: #7 queue 0 consumer takes 4 dwords at 2280 at t 108.780564 s (-10.231 ms from the give-up)
+doorbell trace: #7 queue 0 consumer's submit of 4 dwords at 2280 returned at t 108.780597 s (-10.197 ms from the give-up)
+doorbell trace: #7 queue 0 deferred, 60 dwords pending at 2284, at t 108.780857 s (-9.937 ms from the give-up)
+doorbell trace: #7 queue 0 write pointer 2344 -> 2392 at t 108.781021 s (-9.774 ms from the give-up)
+doorbell trace: #7 queue 0 consumer takes 108 dwords at 2284 at t 108.782667 s (-8.127 ms from the give-up)
+doorbell trace: #7 queue 0 write pointer 2392 -> 2408 at t 108.791439 s (+0.644 ms from the give-up)
+doorbell trace: #7 queue 0 consumer's submit of 108 dwords at 2284 returned at t 108.791577 s (+0.783 ms from the give-up)
+doorbell trace: #7 queue 0 consumer takes 16 dwords at 2392 at t 108.791848 s (+1.053 ms from the give-up)
+doorbell trace: #7 queue 0 consumer's submit of 16 dwords at 2392 returned at t 108.792553 s (+1.759 ms from the give-up)
+doorbell trace: #7 queue 0 write pointer 2408 -> 2424 at t 108.795554 s (+4.759 ms from the give-up)
+doorbell trace: #7 queue 8 write pointer 464 -> 480 at t 108.795554 s (+4.760 ms from the give-up)
+doorbell trace: #7 queue 0 consumer takes 16 dwords at 2408 at t 108.795682 s (+4.888 ms from the give-up)
+flip trace: job #121507 acb 740 dwords done at t 108.797284 s (cq1); in flight cq0 6 cq1 7
+flip trace: job #121508 acb 311 dwords done at t 108.797363 s (cq1); in flight cq0 6 cq1 6
+flip trace: job #121503 dcb 48301 dwords done at t 108.797593 s (cq0); in flight cq0 5 cq1 6
+flip trace: job #121504 dcb 311 dwords done at t 108.797600 s (cq0); in flight cq0 4 cq1 6
+flip trace: job #121509 acb 713 dwords done at t 108.797792 s (cq1); in flight cq0 4 cq1 5
+flip trace: job #121511 dcb 2811 dwords done at t 108.797903 s (cq0); in flight cq0 3 cq1 5
+flip trace: job #121514 dcb 2810 dwords done at t 108.799447 s (cq0); in flight cq0 2 cq1 5
+flip trace: job #121510 acb 588 dwords done at t 108.799615 s (cq1); in flight cq0 2 cq1 4
+flip trace: job #121512 acb 2 dwords done at t 108.799673 s (cq1); in flight cq0 2 cq1 3
+flip trace: job #121513 acb 8989 dwords done at t 108.800437 s (cq1); in flight cq0 2 cq1 2
+flip trace: job #121517 acb 84 dwords done at t 108.800490 s (cq1); in flight cq0 2 cq1 1
+flip trace: job #121518 acb 140 dwords done at t 108.800496 s (cq1); in flight cq0 2 cq1 0
+flip trace: job #121515 dcb 14016 dwords done at t 108.801096 s (cq0); in flight cq0 1 cq1 0
+flip trace: job #121516 dcb 16307 dwords done at t 108.802792 s (cq0); in flight cq0 0 cq1 0
+flip trace: job #121519 acb 18 dwords done at t 108.806144 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #121520 acb 18 dwords done at t 108.806168 s (cq1); in flight cq0 1 cq1 0
+flip trace: job #121521 dcb 1634 dwords done at t 108.806535 s (cq0); in flight cq0 0 cq1 1
+flip trace: job #121522 acb 571 dwords done at t 108.806923 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #121523 acb 100 dwords done at t 108.806980 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #121524 acb 20 dwords done at t 108.806993 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #121526 acb 66 dwords done at t 108.809518 s (cq1); in flight cq0 1 cq1 0
+flip trace: job #121525 dcb 22775 dwords done at t 108.810532 s (cq0); in flight cq0 1 cq1 4
+flip trace: job #121527 dcb 1648 dwords done at t 108.810542 s (cq0); in flight cq0 0 cq1 4
+flip trace: job #121532 dcb 6669 dwords done at t 108.811567 s (cq0); in flight cq0 0 cq1 8
+flip trace: job #121528 acb 6669 dwords done at t 108.812398 s (cq1); in flight cq0 0 cq1 7
+flip trace: job #121529 acb 1415 dwords done at t 108.812559 s (cq1); in flight cq0 0 cq1 6
+flip trace: job #121530 acb 28 dwords done at t 108.812617 s (cq1); in flight cq0 0 cq1 5
+flip trace: job #121531 acb 2 dwords done at t 108.812623 s (cq1); in flight cq0 0 cq1 4
+flip trace: job #121533 acb 4 dwords done at t 108.812630 s (cq1); in flight cq0 0 cq1 3
+flip trace: job #121534 acb 4064 dwords done at t 108.812879 s (cq1); in flight cq0 0 cq1 2
+flip trace: job #121535 acb 28 dwords done at t 108.812903 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #121536 acb 2 dwords done at t 108.812908 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #121539 acb 4 dwords done at t 108.815078 s (cq1); in flight cq0 2 cq1 0
+  wait detail: function 3, value 0x907616589, reference 0x0, mask 0xffffffffffffffff
+cpu-wait WAIT_REG_MEM64 at 311 on 0x12004b5438: GIVEN UP after 9.2 ms
+flip trace: #8 given up: dcb 860 dwords at 311 on 0x12004b5438 (game thread 1) after 9.171 ms, t 122.138546 s; value 0x907616589; in flight cq0 2 cq1 16; the last job done 0.870 ms before (#140365 acb 2101 dwords, cq1)
+flip trace: #8 compute candidate 0x12004b4fc8: held back 13.412 ms before the give-up, value 0x0; it has write breakpoints
+flip trace: #8 compute candidate 0x12004b53c8: held back 9.362 ms before the give-up, value 0x9076d6d8c; it has write breakpoints
+flip trace: #8 compute candidate 0x12004b4bc8: held back 15.313 ms before the give-up, value 0x0
+flip trace: #8 compute queue not held back (g_unready_label 0); the waiting buffer writes 16 label(s)
+flip trace: job #140366 acb 505 dwords done at t 122.138615 s (cq1); in flight cq0 2 cq1 15
+flip trace: job #140368 acb 28 dwords done at t 122.138659 s (cq1); in flight cq0 2 cq1 14
+flip trace: job #140369 acb 2 dwords done at t 122.138667 s (cq1); in flight cq0 2 cq1 13
+flip trace: job #140370 acb 28 dwords done at t 122.138675 s (cq1); in flight cq0 2 cq1 12
+flip trace: job #140371 acb 4 dwords done at t 122.138680 s (cq1); in flight cq0 2 cq1 11
+flip trace: job #140372 acb 1389 dwords done at t 122.138773 s (cq1); in flight cq0 2 cq1 10
+flip trace: job #140374 acb 4 dwords done at t 122.138789 s (cq1); in flight cq0 2 cq1 9
+flip trace: #8 CPU write to the compute label 0x12004b37c8: thread 2436689 (Render Thread) = the thread that gave up, 532 write(s), seen at the watch start (since the last read) at t 122.138826 s, 0.280 ms after the give-up
+flip trace: job #140375 acb 4064 dwords done at t 122.139303 s (cq1); in flight cq0 2 cq1 9
+flip trace: #8 CPU write to the compute label 0x12004b37c8: thread 2436770 (bc5-cq0), 1 write(s), seen at the watch start (since the last read) at t 122.138826 s, 0.280 ms after the give-up
+flip trace: job #140376 acb 28 dwords done at t 122.139485 s (cq1); in flight cq0 2 cq1 9
+flip trace: job #140377 acb 2 dwords done at t 122.139502 s (cq1); in flight cq0 2 cq1 8
+flip trace: job #140380 acb 4 dwords done at t 122.139561 s (cq1); in flight cq0 2 cq1 7
+flip trace: #8 CPU write to the compute label 0x12004b53c8: thread 2436689 (Render Thread) = the thread that gave up, 532 write(s), seen at the watch start (since the last read) at t 122.139652 s, 1.106 ms after the give-up
+flip trace: #8 CPU write to the compute label 0x12004b4fc8: thread 2436689 (Render Thread) = the thread that gave up, 532 write(s), seen at the watch start (since the last read) at t 122.139941 s, 1.394 ms after the give-up
+flip trace: #8 CPU write to the compute label 0x12004b77c8: thread 2436689 (Render Thread) = the thread that gave up, 532 write(s), seen at the watch start (since the last read) at t 122.140158 s, 1.611 ms after the give-up
+flip trace: #8 breakpoints: given-up label none; compute label 4 fixed label(s)
+flip trace: #8 compute label 0x12004b53c8: 0x9076d6d8c -> 0x0 at t 122.140472 s, 1.926 ms after the give-up; in flight cq0 3 cq1 8
+flip trace: #8 no CPU write counted for that change of the compute label 0x12004b53c8 (a GPU write)
+flip trace: #8 0x12004b5438: 0x907616589 -> 0x0 at t 122.140813 s, 2.267 ms after the give-up; in flight cq0 3 cq1 8
+flip trace: #8 0x12004b5438 satisfied 2.267 ms after the give-up (11.438 ms after the wait began), t 122.140813 s; in flight cq0 3 cq1 8 (at the give-up 2 16); 11 jobs done since the give-up, the last 1.252 ms before (#140380 acb 4 dwords, cq1); value 0x0, 1 changes; compute label 0x0 now 0x0
+flip trace: job #140381 acb 865 dwords done at t 122.140813 s (cq1); in flight cq0 3 cq1 8
+doorbell trace: #8 queue 0 consumer's submit of 24 dwords at 3800 returned at t 122.120488 s (-18.059 ms from the give-up)
+doorbell trace: #8 queue 8 consumer takes 8 dwords at 936 at t 122.120492 s (-18.055 ms from the give-up)
+doorbell trace: #8 queue 8 consumer's submit of 8 dwords at 936 returned at t 122.121266 s (-17.280 ms from the give-up)
+doorbell trace: #8 queue 0 write pointer 3832 -> 3848 at t 122.121418 s (-17.128 ms from the give-up)
+doorbell trace: #8 queue 0 consumer takes 24 dwords at 3824 at t 122.121530 s (-17.016 ms from the give-up)
+doorbell trace: #8 queue 0 write pointer 3848 -> 3864 at t 122.121734 s (-16.812 ms from the give-up)
+doorbell trace: #8 queue 0 consumer's submit of 24 dwords at 3824 returned at t 122.121760 s (-16.787 ms from the give-up)
+doorbell trace: #8 queue 0 write pointer 3864 -> 3880 at t 122.121839 s (-16.707 ms from the give-up)
+doorbell trace: #8 queue 0 consumer takes 32 dwords at 3848 at t 122.122026 s (-16.520 ms from the give-up)
+doorbell trace: #8 queue 0 consumer's submit of 32 dwords at 3848 returned at t 122.122374 s (-16.172 ms from the give-up)
+doorbell trace: #8 queue 0 consumer takes 32 dwords at 3880 at t 122.122641 s (-15.905 ms from the give-up)
+doorbell trace: #8 queue 0 write pointer 3880 -> 3912 at t 122.122672 s (-15.874 ms from the give-up)
+doorbell trace: #8 queue 0 consumer's submit of 32 dwords at 3880 returned at t 122.122967 s (-15.579 ms from the give-up)
+doorbell trace: #8 queue 0 write pointer 3912 -> 3928 at t 122.122991 s (-15.555 ms from the give-up)
+doorbell trace: #8 queue 0 consumer takes 4 dwords at 3912 at t 122.124013 s (-14.533 ms from the give-up)
+doorbell trace: #8 queue 0 consumer's submit of 4 dwords at 3912 returned at t 122.124059 s (-14.487 ms from the give-up)
+doorbell trace: #8 queue 0 write pointer 3928 -> 3944 at t 122.124234 s (-14.312 ms from the give-up)
+doorbell trace: #8 queue 0 consumer takes 16 dwords at 3916 at t 122.124401 s (-14.146 ms from the give-up)
+doorbell trace: #8 queue 0 consumer's submit of 16 dwords at 3916 returned at t 122.124604 s (-13.942 ms from the give-up)
+doorbell trace: #8 queue 0 deferred, 12 dwords pending at 3932, at t 122.124871 s (-13.675 ms from the give-up)
+doorbell trace: #8 queue 0 consumer takes 12 dwords at 3932 at t 122.125396 s (-13.150 ms from the give-up)
+doorbell trace: #8 queue 0 consumer's submit of 12 dwords at 3932 returned at t 122.125732 s (-12.814 ms from the give-up)
+doorbell trace: #8 queue 0 write pointer 3944 -> 3952 at t 122.126046 s (-12.501 ms from the give-up)
+doorbell trace: #8 queue 0 write pointer 3952 -> 3976 at t 122.126150 s (-12.396 ms from the give-up)
+doorbell trace: #8 queue 0 consumer takes 4 dwords at 3944 at t 122.126320 s (-12.226 ms from the give-up)
+doorbell trace: #8 queue 0 consumer's submit of 4 dwords at 3944 returned at t 122.126357 s (-12.189 ms from the give-up)
+doorbell trace: #8 queue 0 write pointer 3976 -> 4008 at t 122.126466 s (-12.081 ms from the give-up)
+doorbell trace: #8 queue 0 deferred, 60 dwords pending at 3948, at t 122.126619 s (-11.927 ms from the give-up)
+doorbell trace: #8 queue 0 write pointer 4008 -> 4056 at t 122.127299 s (-11.247 ms from the give-up)
+doorbell trace: #8 queue 0 consumer takes 108 dwords at 3948 at t 122.129464 s (-9.083 ms from the give-up)
+doorbell trace: #8 queue 0 consumer's submit of 108 dwords at 3948 returned at t 122.135537 s (-3.010 ms from the give-up)
+doorbell trace: #8 queue 0 write pointer 4056 -> 4072 at t 122.139222 s (+0.676 ms from the give-up)
+doorbell trace: #8 queue 0 consumer takes 4 dwords at 4056 at t 122.139307 s (+0.761 ms from the give-up)
+doorbell trace: #8 queue 0 consumer's submit of 4 dwords at 4056 returned at t 122.139481 s (+0.934 ms from the give-up)
+doorbell trace: #8 queue 0 deferred, 12 dwords pending at 4060, at t 122.139733 s (+1.187 ms from the give-up)
+doorbell trace: #8 queue 0 consumer takes 12 dwords at 4060 at t 122.140007 s (+1.461 ms from the give-up)
+doorbell trace: #8 queue 0 consumer's submit of 12 dwords at 4060 returned at t 122.140744 s (+2.197 ms from the give-up)
+flip trace: job #140382 acb 740 dwords done at t 122.141731 s (cq1); in flight cq0 3 cq1 7
+flip trace: job #140383 acb 311 dwords done at t 122.141746 s (cq1); in flight cq0 4 cq1 6
+flip trace: job #140378 dcb 48301 dwords done at t 122.141975 s (cq0); in flight cq0 3 cq1 6
+flip trace: job #140379 dcb 311 dwords done at t 122.142012 s (cq0); in flight cq0 2 cq1 6
+flip trace: job #140384 acb 713 dwords done at t 122.142173 s (cq1); in flight cq0 2 cq1 5
+flip trace: job #140388 dcb 2811 dwords done at t 122.142673 s (cq0); in flight cq0 1 cq1 5
+flip trace: job #140385 acb 588 dwords done at t 122.143345 s (cq1); in flight cq0 1 cq1 4
+flip trace: job #140386 acb 28 dwords done at t 122.143387 s (cq1); in flight cq0 2 cq1 3
+flip trace: job #140387 acb 2 dwords done at t 122.143442 s (cq1); in flight cq0 2 cq1 2
+flip trace: job #140389 acb 4 dwords done at t 122.143447 s (cq1); in flight cq0 2 cq1 1
+flip trace: job #140391 dcb 2810 dwords done at t 122.144094 s (cq0); in flight cq0 1 cq1 1
+flip trace: job #140390 acb 8973 dwords done at t 122.144397 s (cq1); in flight cq0 1 cq1 0
+flip trace: job #140394 acb 84 dwords done at t 122.145413 s (cq1); in flight cq0 2 cq1 0
+flip trace: job #140395 acb 140 dwords done at t 122.145485 s (cq1); in flight cq0 2 cq1 0
+flip trace: job #140392 dcb 14021 dwords done at t 122.145634 s (cq0); in flight cq0 1 cq1 0
+flip trace: job #140393 dcb 16307 dwords done at t 122.147377 s (cq0); in flight cq0 0 cq1 0
+flip trace: job #140396 dcb 690 dwords done at t 122.150921 s (cq0); in flight cq0 0 cq1 0
+flip trace: job #140397 acb 100 dwords done at t 122.151880 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #140398 acb 609 dwords done at t 122.152928 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #140399 acb 18 dwords done at t 122.152970 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #140401 acb 66 dwords done at t 122.154564 s (cq1); in flight cq0 1 cq1 0
+flip trace: job #140400 dcb 23672 dwords done at t 122.155597 s (cq0); in flight cq0 1 cq1 2
+flip trace: job #140403 dcb 16 dwords done at t 122.155831 s (cq0); in flight cq0 0 cq1 3
+flip trace: job #140408 dcb 7048 dwords done at t 122.157468 s (cq0); in flight cq0 0 cq1 7
+flip trace: job #140402 acb 6667 dwords done at t 122.158021 s (cq1); in flight cq0 0 cq1 7
+flip trace: job #140404 acb 2 dwords done at t 122.158157 s (cq1); in flight cq0 0 cq1 7
+flip trace: job #140405 acb 1415 dwords done at t 122.158167 s (cq1); in flight cq0 0 cq1 6
+flip trace: job #140406 acb 28 dwords done at t 122.158180 s (cq1); in flight cq0 0 cq1 5
+flip trace: job #140407 acb 2 dwords done at t 122.158186 s (cq1); in flight cq0 0 cq1 4
+flip trace: job #140409 acb 4 dwords done at t 122.158196 s (cq1); in flight cq0 0 cq1 3
+flip trace: job #140410 acb 4052 dwords done at t 122.158419 s (cq1); in flight cq0 0 cq1 2
+flip trace: job #140411 acb 28 dwords done at t 122.158447 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #140412 acb 2 dwords done at t 122.158453 s (cq1); in flight cq0 0 cq1 0
+flip trace: served dcb 3092 dwords at 379 on 0x12004b3c38 after 21.509 ms, t 129.860021 s; in flight cq0 0 cq1 1; 4 jobs done during the wait, the last 0.710 ms before its end (#152230 acb 66 dwords, cq1); compute queue blocked on 0x0
+flip trace: job #152234 dcb 6669 dwords done at t 129.862086 s (cq0); in flight cq0 0 cq1 7
+flip trace: job #152231 acb 8084 dwords done at t 129.863480 s (cq1); in flight cq0 0 cq1 6
+flip trace: job #152232 acb 28 dwords done at t 129.863585 s (cq1); in flight cq0 0 cq1 5
+flip trace: job #152233 acb 2 dwords done at t 129.863593 s (cq1); in flight cq0 0 cq1 4
+flip trace: job #152235 acb 4 dwords done at t 129.863600 s (cq1); in flight cq0 0 cq1 3
+flip trace: job #152236 acb 4064 dwords done at t 129.863832 s (cq1); in flight cq0 0 cq1 2
+flip trace: job #152237 acb 28 dwords done at t 129.863904 s (cq1); in flight cq0 0 cq1 1
+flip trace: served dcb 2794 dwords at 362 on 0x12004b6038 after 50.045 ms, t 139.866458 s; in flight cq0 0 cq1 1; 3 jobs done during the wait, the last 7.595 ms before its end (#165475 dcb 362 dwords, cq0); compute queue blocked on 0x0
+flip trace: job #165476 acb 1285 dwords done at t 139.867159 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #165477 acb 8846 dwords done at t 139.867771 s (cq1); in flight cq0 0 cq1 0
+flip trace: served dcb 860 dwords at 311 on 0x12004b5438 after 5.436 ms, t 246.832637 s; in flight cq0 0 cq1 1; 4 jobs done during the wait, the last 0.930 ms before its end (#258970 acb 4684 dwords, cq1); compute queue blocked on 0x0
+flip trace: job #258973 dcb 2801 dwords done at t 246.834451 s (cq0); in flight cq0 0 cq1 4
+flip trace: job #258971 acb 3025 dwords done at t 246.836284 s (cq1); in flight cq0 0 cq1 4
+  wait detail: function 3, value 0x907616589, reference 0x0, mask 0xffffffffffffffff
+cpu-wait WAIT_REG_MEM64 at 311 on 0x12004b5438: GIVEN UP after 8.3 ms
+flip trace: #9 given up: dcb 860 dwords at 311 on 0x12004b5438 (game thread 1) after 8.312 ms, t 312.216449 s; value 0x907616589; in flight cq0 0 cq1 0; the last job done 2.101 ms before (#317019 dcb 311 dwords, cq0)
+flip trace: #9 compute candidate 0x12004b4fc8: held back 8.468 ms before the give-up, value 0x0; it has write breakpoints
+flip trace: #9 compute candidate 0x12004b57c8: held back 49.428 ms before the give-up, value 0x0
+flip trace: #9 compute candidate 0x12004b37c8: held back 13.739 ms before the give-up, value 0x0; it has write breakpoints
+flip trace: #9 compute queue not held back (g_unready_label 0); the waiting buffer writes 16 label(s)
+flip trace: job #317020 acb 4 dwords done at t 312.235323 s (cq1); in flight cq0 3 cq1 6
+flip trace: job #317021 dcb 1689 dwords done at t 312.236808 s (cq0); in flight cq0 3 cq1 6
+flip trace: job #317022 acb 7727 dwords done at t 312.255088 s (cq1); in flight cq0 3 cq1 5
+flip trace: job #317023 dcb 2381 dwords done at t 312.255111 s (cq0); in flight cq0 2 cq1 5
+flip trace: job #317027 dcb 1814 dwords done at t 312.255119 s (cq0); in flight cq0 1 cq1 5
+flip trace: job #317028 dcb 13154 dwords done at t 312.255125 s (cq0); in flight cq0 0 cq1 5
+flip trace: job #317024 acb 28 dwords done at t 312.255171 s (cq1); in flight cq0 0 cq1 4
+flip trace: job #317025 acb 2 dwords done at t 312.255179 s (cq1); in flight cq0 0 cq1 3
+flip trace: job #317026 acb 9022 dwords done at t 312.255185 s (cq1); in flight cq0 0 cq1 2
+flip trace: job #317029 acb 84 dwords done at t 312.255314 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #317030 acb 140 dwords done at t 312.255323 s (cq1); in flight cq0 0 cq1 0
+flip trace: #9 CPU write to the compute label 0x12004b37c8: thread 2436689 (Render Thread) = the thread that gave up, 5513 write(s), seen at the watch start (since the last read) at t 312.255283 s, 38.834 ms after the give-up
+flip trace: #9 CPU write to the compute label 0x12004b37c8: thread 2436770 (bc5-cq0), 10 write(s), seen at the watch start (since the last read) at t 312.255283 s, 38.834 ms after the give-up
+flip trace: #9 CPU write to the compute label 0x12004b53c8: thread 2436689 (Render Thread) = the thread that gave up, 5513 write(s), seen at the watch start (since the last read) at t 312.255923 s, 39.474 ms after the give-up
+flip trace: #9 CPU write to the compute label 0x12004b53c8: thread 2436770 (bc5-cq0), 3 write(s), seen at the watch start (since the last read) at t 312.255923 s, 39.474 ms after the give-up
+flip trace: #9 CPU write to the compute label 0x12004b4fc8: thread 2436689 (Render Thread) = the thread that gave up, 5513 write(s), seen at the watch start (since the last read) at t 312.256094 s, 39.645 ms after the give-up
+flip trace: #9 CPU write to the compute label 0x12004b4fc8: thread 2436770 (bc5-cq0), 5 write(s), seen at the watch start (since the last read) at t 312.256094 s, 39.645 ms after the give-up
+flip trace: #9 CPU write to the compute label 0x12004b77c8: thread 2436689 (Render Thread) = the thread that gave up, 5513 write(s), seen at the watch start (since the last read) at t 312.256279 s, 39.830 ms after the give-up
+flip trace: #9 breakpoints: given-up label none; compute label 4 fixed label(s)
+flip trace: #9 0x12004b5438: 0x907616589 -> 0x0 at t 312.256384 s, 39.935 ms after the give-up; in flight cq0 0 cq1 0
+flip trace: #9 0x12004b5438 satisfied 39.935 ms after the give-up (48.247 ms after the wait began), t 312.256384 s; in flight cq0 0 cq1 0 (at the give-up 0 0); 11 jobs done since the give-up, the last 1.060 ms before (#317030 acb 140 dwords, cq1); value 0x0, 1 changes; compute label 0x0 now 0x0
+doorbell trace: #9 queue 0 consumer takes 4 dwords at 888 at t 312.166454 s (-49.994 ms from the give-up)
+doorbell trace: #9 queue 0 consumer's submit of 4 dwords at 888 returned at t 312.166499 s (-49.950 ms from the give-up)
+doorbell trace: #9 queue 0 deferred, 76 dwords pending at 892, at t 312.166762 s (-49.687 ms from the give-up)
+doorbell trace: #9 queue 0 consumer takes 76 dwords at 892 at t 312.167291 s (-49.158 ms from the give-up)
+doorbell trace: #9 queue 0 write pointer 968 -> 984 at t 312.167541 s (-48.908 ms from the give-up)
+doorbell trace: #9 queue 0 consumer's submit of 76 dwords at 892 returned at t 312.168096 s (-48.353 ms from the give-up)
+doorbell trace: #9 queue 0 consumer takes 16 dwords at 968 at t 312.168371 s (-48.078 ms from the give-up)
+doorbell trace: #9 queue 0 consumer's submit of 16 dwords at 968 returned at t 312.168923 s (-47.526 ms from the give-up)
+doorbell trace: #9 queue 0 write pointer 984 -> 1000 at t 312.182230 s (-34.219 ms from the give-up)
+doorbell trace: #9 queue 8 write pointer 2160 -> 2176 at t 312.182230 s (-34.219 ms from the give-up)
+doorbell trace: #9 queue 0 consumer takes 16 dwords at 984 at t 312.182435 s (-34.014 ms from the give-up)
+doorbell trace: #9 queue 0 consumer's submit of 16 dwords at 984 returned at t 312.182771 s (-33.678 ms from the give-up)
+doorbell trace: #9 queue 8 consumer takes 16 dwords at 2160 at t 312.182775 s (-33.674 ms from the give-up)
+doorbell trace: #9 queue 8 consumer's submit of 16 dwords at 2160 returned at t 312.182861 s (-33.588 ms from the give-up)
+doorbell trace: #9 queue 0 write pointer 1000 -> 1008 at t 312.200918 s (-15.531 ms from the give-up)
+doorbell trace: #9 queue 8 write pointer 2176 -> 2184 at t 312.200918 s (-15.530 ms from the give-up)
+doorbell trace: #9 queue 0 consumer takes 8 dwords at 1000 at t 312.200924 s (-15.525 ms from the give-up)
+doorbell trace: #9 queue 0 write pointer 1008 -> 1024 at t 312.201026 s (-15.423 ms from the give-up)
+doorbell trace: #9 queue 0 consumer's submit of 8 dwords at 1000 returned at t 312.201174 s (-15.275 ms from the give-up)
+doorbell trace: #9 queue 8 consumer takes 8 dwords at 2176 at t 312.201177 s (-15.272 ms from the give-up)
+doorbell trace: #9 queue 8 consumer's submit of 8 dwords at 2176 returned at t 312.201253 s (-15.196 ms from the give-up)
+doorbell trace: #9 queue 0 write pointer 1024 -> 1032 at t 312.201341 s (-15.108 ms from the give-up)
+doorbell trace: #9 queue 0 write pointer 1032 -> 1048 at t 312.201445 s (-15.004 ms from the give-up)
+doorbell trace: #9 queue 0 consumer takes 28 dwords at 1008 at t 312.201663 s (-14.786 ms from the give-up)
+doorbell trace: #9 queue 0 consumer's submit of 28 dwords at 1008 returned at t 312.201898 s (-14.550 ms from the give-up)
+doorbell trace: #9 queue 0 deferred, 12 dwords pending at 1036, at t 312.202172 s (-14.276 ms from the give-up)
+doorbell trace: #9 queue 0 consumer takes 12 dwords at 1036 at t 312.202939 s (-13.510 ms from the give-up)
+doorbell trace: #9 queue 0 write pointer 1048 -> 1064 at t 312.203204 s (-13.245 ms from the give-up)
+doorbell trace: #9 queue 0 write pointer 1064 -> 1080 at t 312.203310 s (-13.139 ms from the give-up)
+doorbell trace: #9 queue 0 consumer's submit of 12 dwords at 1036 returned at t 312.203335 s (-13.114 ms from the give-up)
+doorbell trace: #9 queue 0 write pointer 1080 -> 1112 at t 312.203826 s (-12.623 ms from the give-up)
+doorbell trace: #9 queue 0 consumer takes 64 dwords at 1048 at t 312.203894 s (-12.555 ms from the give-up)
+doorbell trace: #9 queue 0 consumer's submit of 64 dwords at 1048 returned at t 312.204554 s (-11.895 ms from the give-up)
+doorbell trace: #9 queue 0 write pointer 1112 -> 1128 at t 312.205438 s (-11.010 ms from the give-up)
+doorbell trace: #9 queue 0 consumer takes 4 dwords at 1112 at t 312.205802 s (-10.647 ms from the give-up)
+doorbell trace: #9 queue 0 consumer's submit of 4 dwords at 1112 returned at t 312.205885 s (-10.564 ms from the give-up)
+doorbell trace: #9 queue 0 deferred, 12 dwords pending at 1116, at t 312.206141 s (-10.308 ms from the give-up)
+doorbell trace: #9 queue 0 write pointer 1128 -> 1160 at t 312.206231 s (-10.218 ms from the give-up)
+doorbell trace: #9 queue 0 write pointer 1160 -> 1192 at t 312.206401 s (-10.048 ms from the give-up)
+doorbell trace: #9 queue 0 write pointer 1192 -> 1208 at t 312.206714 s (-9.734 ms from the give-up)
+doorbell trace: #9 queue 0 write pointer 1208 -> 1240 at t 312.206819 s (-9.630 ms from the give-up)
+doorbell trace: #9 queue 0 consumer takes 124 dwords at 1116 at t 312.208267 s (-8.182 ms from the give-up)
+doorbell trace: #9 queue 0 consumer's submit of 124 dwords at 1116 returned at t 312.236885 s (+20.436 ms from the give-up)
+doorbell trace: #9 queue 0 write pointer 1240 -> 1256 at t 312.237217 s (+20.768 ms from the give-up)
+doorbell trace: #9 queue 0 consumer takes 4 dwords at 1240 at t 312.237758 s (+21.309 ms from the give-up)
+doorbell trace: #9 queue 0 consumer's submit of 4 dwords at 1240 returned at t 312.237801 s (+21.352 ms from the give-up)
+doorbell trace: #9 queue 0 consumer takes 12 dwords at 1244 at t 312.238074 s (+21.626 ms from the give-up)
+doorbell trace: #9 queue 0 consumer's submit of 12 dwords at 1244 returned at t 312.238574 s (+22.125 ms from the give-up)
+doorbell trace: #9 queue 0 write pointer 1256 -> 1272 at t 312.239488 s (+23.040 ms from the give-up)
+doorbell trace: #9 queue 8 write pointer 2184 -> 2200 at t 312.239489 s (+23.040 ms from the give-up)
+doorbell trace: #9 queue 0 consumer takes 16 dwords at 1256 at t 312.239603 s (+23.154 ms from the give-up)
+doorbell trace: #9 queue 0 consumer's submit of 16 dwords at 1256 returned at t 312.240256 s (+23.807 ms from the give-up)
+doorbell trace: #9 queue 8 consumer takes 16 dwords at 2184 at t 312.240259 s (+23.810 ms from the give-up)
+doorbell trace: #9 queue 8 consumer's submit of 16 dwords at 2184 returned at t 312.240312 s (+23.863 ms from the give-up)
+flip trace: job #317031 acb 589 dwords done at t 312.259022 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #317032 acb 18 dwords done at t 312.259085 s (cq1); in flight cq0 1 cq1 0
+flip trace: job #317033 dcb 2387 dwords done at t 312.259278 s (cq0); in flight cq0 0 cq1 1
+flip trace: job #317034 acb 18 dwords done at t 312.259302 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #317035 acb 100 dwords done at t 312.259945 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #317036 acb 2 dwords done at t 312.259975 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #317037 dcb 5580 dwords done at t 312.261601 s (cq0); in flight cq0 0 cq1 0
+flip trace: job #317038 dcb 11297 dwords done at t 312.264374 s (cq0); in flight cq0 1 cq1 5
+flip trace: job #317039 acb 5508 dwords done at t 312.264586 s (cq1); in flight cq0 1 cq1 4
+flip trace: job #317040 acb 28 dwords done at t 312.264705 s (cq1); in flight cq0 1 cq1 4
+flip trace: job #317041 acb 2 dwords done at t 312.264713 s (cq1); in flight cq0 1 cq1 3
+flip trace: job #317043 acb 4 dwords done at t 312.264723 s (cq1); in flight cq0 1 cq1 2
+flip trace: job #317042 dcb 5788 dwords done at t 312.265268 s (cq0); in flight cq0 0 cq1 3
+flip trace: job #317044 acb 4694 dwords done at t 312.265418 s (cq1); in flight cq0 0 cq1 2
+flip trace: job #317045 acb 28 dwords done at t 312.265440 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #317046 acb 2 dwords done at t 312.265446 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #317049 acb 4 dwords done at t 312.266717 s (cq1); in flight cq0 2 cq1 0
+flip trace: job #317047 dcb 17115 dwords done at t 312.270505 s (cq0); in flight cq0 3 cq1 9
+flip trace: job #317048 dcb 311 dwords done at t 312.270618 s (cq0); in flight cq0 2 cq1 9
+flip trace: job #317050 acb 835 dwords done at t 312.270690 s (cq1); in flight cq0 2 cq1 8
+flip trace: job #317055 dcb 2801 dwords done at t 312.272382 s (cq0); in flight cq0 1 cq1 8
+flip trace: job #317051 acb 750 dwords done at t 312.272698 s (cq1); in flight cq0 2 cq1 7
+flip trace: job #317052 acb 311 dwords done at t 312.272879 s (cq1); in flight cq0 2 cq1 6
+flip trace: job #317053 acb 460 dwords done at t 312.273493 s (cq1); in flight cq0 2 cq1 5
+flip trace: job #317060 dcb 1814 dwords done at t 312.275796 s (cq0); in flight cq0 1 cq1 5
+  wait detail: function 3, value 0x907616589, reference 0x0, mask 0xffffffffffffffff
+cpu-wait WAIT_REG_MEM64 at 311 on 0x12004b5438: GIVEN UP after 8.5 ms
+flip trace: #10 given up: dcb 860 dwords at 311 on 0x12004b5438 (game thread 1) after 8.472 ms, t 338.204238 s; value 0x907616589; in flight cq0 0 cq1 0; the last job done 2.787 ms before (#339785 acb 4 dwords, cq1)
+flip trace: #10 compute candidate 0x12004b4fc8: held back 8.682 ms before the give-up, value 0x0; it has write breakpoints
+flip trace: #10 compute candidate 0x12004b37c8: held back 15.307 ms before the give-up, value 0x0; it has write breakpoints
+flip trace: #10 compute candidate 0x12004b53c8: held back 42.103 ms before the give-up, value 0x0; it has write breakpoints
+flip trace: #10 compute candidate 0x12004b77c8: held back 39.956 ms before the give-up, value 0x0; it has write breakpoints
+flip trace: #10 compute queue not held back (g_unready_label 0); the waiting buffer writes 16 label(s)
+flip trace: #10 CPU write to the compute label 0x12004b37c8: thread 2436689 (Render Thread) = the thread that gave up, 734 write(s), seen at the watch start (since the last read) at t 338.204551 s, 0.312 ms after the give-up
+flip trace: #10 CPU write to the compute label 0x12004b37c8: thread 2436770 (bc5-cq0), 1 write(s), seen at the watch start (since the last read) at t 338.204551 s, 0.312 ms after the give-up
+flip trace: #10 CPU write to the compute label 0x12004b53c8: thread 2436689 (Render Thread) = the thread that gave up, 734 write(s), seen at the watch start (since the last read) at t 338.204740 s, 0.502 ms after the give-up
+flip trace: #10 CPU write to the compute label 0x12004b4fc8: thread 2436689 (Render Thread) = the thread that gave up, 734 write(s), seen at the watch start (since the last read) at t 338.204855 s, 0.617 ms after the give-up
+flip trace: #10 CPU write to the compute label 0x12004b77c8: thread 2436689 (Render Thread) = the thread that gave up, 733 write(s), seen at the watch start (since the last read) at t 338.204971 s, 0.732 ms after the give-up
+flip trace: #10 breakpoints: given-up label none; compute label 4 fixed label(s)
+flip trace: #10 compute label 0x12004b77c8: 0x0 -> 0x9076d6d8c at t 338.222363 s, 18.125 ms after the give-up; in flight cq0 1 cq1 1
+flip trace: #10 CPU write to the compute label 0x12004b77c8: thread 2436689 (Render Thread) = the thread that gave up, 1 write(s), seen at a change at t 338.222363 s, 18.125 ms after the give-up
+flip trace: job #339787 dcb 1689 dwords done at t 338.224088 s (cq0); in flight cq0 0 cq1 1
+flip trace: #10 0x12004b5438: 0x907616589 -> 0x0 at t 338.224881 s, 20.643 ms after the give-up; in flight cq0 0 cq1 1
+flip trace: #10 0x12004b5438 satisfied 20.643 ms after the give-up (29.115 ms after the wait began), t 338.224881 s; in flight cq0 0 cq1 1 (at the give-up 0 0); 1 jobs done since the give-up, the last 0.793 ms before (#339787 dcb 1689 dwords, cq0); value 0x0, 1 changes; compute label 0x0 now 0x0
+doorbell trace: #10 queue 0 consumer takes 28 dwords at 3776 at t 338.155000 s (-49.238 ms from the give-up)
+doorbell trace: #10 queue 0 consumer's submit of 28 dwords at 3776 returned at t 338.155711 s (-48.527 ms from the give-up)
+doorbell trace: #10 queue 0 deferred, 12 dwords pending at 3804, at t 338.155988 s (-48.251 ms from the give-up)
+doorbell trace: #10 queue 0 write pointer 3816 -> 3832 at t 338.156620 s (-47.618 ms from the give-up)
+doorbell trace: #10 queue 0 write pointer 3832 -> 3848 at t 338.156736 s (-47.502 ms from the give-up)
+doorbell trace: #10 queue 0 write pointer 3848 -> 3880 at t 338.157416 s (-46.823 ms from the give-up)
+doorbell trace: #10 queue 0 consumer takes 76 dwords at 3804 at t 338.158296 s (-45.942 ms from the give-up)
+doorbell trace: #10 queue 0 consumer's submit of 76 dwords at 3804 returned at t 338.159383 s (-44.856 ms from the give-up)
+doorbell trace: #10 queue 0 write pointer 3880 -> 3896 at t 338.159648 s (-44.591 ms from the give-up)
+doorbell trace: #10 queue 0 consumer takes 4 dwords at 3880 at t 338.159770 s (-44.468 ms from the give-up)
+doorbell trace: #10 queue 0 consumer's submit of 4 dwords at 3880 returned at t 338.159816 s (-44.423 ms from the give-up)
+doorbell trace: #10 queue 0 deferred, 12 dwords pending at 3884, at t 338.160083 s (-44.155 ms from the give-up)
+doorbell trace: #10 queue 0 consumer takes 12 dwords at 3884 at t 338.160347 s (-43.892 ms from the give-up)
+doorbell trace: #10 queue 0 consumer's submit of 12 dwords at 3884 returned at t 338.160804 s (-43.434 ms from the give-up)
+doorbell trace: #10 queue 0 write pointer 3896 -> 3928 at t 338.160920 s (-43.318 ms from the give-up)
+doorbell trace: #10 queue 0 write pointer 3928 -> 3960 at t 338.161142 s (-43.097 ms from the give-up)
+doorbell trace: #10 queue 0 consumer takes 4 dwords at 3896 at t 338.161305 s (-42.933 ms from the give-up)
+doorbell trace: #10 queue 0 consumer's submit of 4 dwords at 3896 returned at t 338.161395 s (-42.843 ms from the give-up)
+doorbell trace: #10 queue 0 write pointer 3960 -> 3976 at t 338.161472 s (-42.766 ms from the give-up)
+doorbell trace: #10 queue 0 write pointer 3976 -> 4008 at t 338.161580 s (-42.659 ms from the give-up)
+doorbell trace: #10 queue 0 deferred, 108 dwords pending at 3900, at t 338.161618 s (-42.621 ms from the give-up)
+doorbell trace: #10 queue 0 consumer takes 108 dwords at 3900 at t 338.162430 s (-41.808 ms from the give-up)
+doorbell trace: #10 queue 0 consumer's submit of 108 dwords at 3900 returned at t 338.163999 s (-40.240 ms from the give-up)
+doorbell trace: #10 queue 0 write pointer 4008 -> 4024 at t 338.164200 s (-40.039 ms from the give-up)
+doorbell trace: #10 queue 0 consumer takes 4 dwords at 4008 at t 338.164883 s (-39.355 ms from the give-up)
+doorbell trace: #10 queue 0 consumer's submit of 4 dwords at 4008 returned at t 338.164939 s (-39.299 ms from the give-up)
+doorbell trace: #10 queue 0 consumer takes 12 dwords at 4012 at t 338.165225 s (-39.014 ms from the give-up)
+doorbell trace: #10 queue 0 consumer's submit of 12 dwords at 4012 returned at t 338.165883 s (-38.356 ms from the give-up)
+doorbell trace: #10 queue 0 write pointer 4024 -> 4040 at t 338.166719 s (-37.519 ms from the give-up)
+doorbell trace: #10 queue 8 write pointer 3392 -> 3408 at t 338.166720 s (-37.519 ms from the give-up)
+doorbell trace: #10 queue 0 consumer takes 16 dwords at 4024 at t 338.166911 s (-37.327 ms from the give-up)
+doorbell trace: #10 queue 0 consumer's submit of 16 dwords at 4024 returned at t 338.167533 s (-36.706 ms from the give-up)
+doorbell trace: #10 queue 8 consumer takes 16 dwords at 3392 at t 338.167535 s (-36.704 ms from the give-up)
+doorbell trace: #10 queue 8 consumer's submit of 16 dwords at 3392 returned at t 338.167579 s (-36.660 ms from the give-up)
+doorbell trace: #10 queue 0 write pointer 4040 -> 4048 at t 338.188398 s (-15.840 ms from the give-up)
+doorbell trace: #10 queue 8 write pointer 3408 -> 3416 at t 338.188399 s (-15.839 ms from the give-up)
+doorbell trace: #10 queue 0 consumer takes 8 dwords at 4040 at t 338.188442 s (-15.796 ms from the give-up)
+doorbell trace: #10 queue 0 write pointer 4048 -> 4064 at t 338.188504 s (-15.734 ms from the give-up)
+doorbell trace: #10 queue 0 write pointer 4064 -> 4072 at t 338.188611 s (-15.627 ms from the give-up)
+doorbell trace: #10 queue 0 consumer's submit of 8 dwords at 4040 returned at t 338.188643 s (-15.596 ms from the give-up)
+doorbell trace: #10 queue 8 consumer takes 8 dwords at 3408 at t 338.188647 s (-15.591 ms from the give-up)
+doorbell trace: #10 queue 8 consumer's submit of 8 dwords at 3408 returned at t 338.188701 s (-15.538 ms from the give-up)
+doorbell trace: #10 queue 0 write pointer 4072 -> 4088 at t 338.188918 s (-15.320 ms from the give-up)
+doorbell trace: #10 queue 0 write pointer 4088 -> 24 at t 338.189138 s (-15.101 ms from the give-up)
+doorbell trace: #10 queue 0 write pointer 24 -> 56 at t 338.189882 s (-14.356 ms from the give-up)
+doorbell trace: #10 queue 0 consumer takes 28 dwords at 4048 at t 338.189956 s (-14.282 ms from the give-up)
+doorbell trace: #10 queue 0 consumer's submit of 28 dwords at 4048 returned at t 338.190308 s (-13.930 ms from the give-up)
+doorbell trace: #10 queue 0 consumer takes 76 dwords at 4076 at t 338.190646 s (-13.593 ms from the give-up)
+doorbell trace: #10 queue 0 consumer's submit of 76 dwords at 4076 returned at t 338.191997 s (-12.241 ms from the give-up)
+doorbell trace: #10 queue 0 write pointer 56 -> 72 at t 338.193173 s (-11.065 ms from the give-up)
+doorbell trace: #10 queue 0 consumer takes 4 dwords at 56 at t 338.193569 s (-10.669 ms from the give-up)
+doorbell trace: #10 queue 0 consumer's submit of 4 dwords at 56 returned at t 338.193639 s (-10.599 ms from the give-up)
+doorbell trace: #10 queue 0 deferred, 12 dwords pending at 60, at t 338.193924 s (-10.314 ms from the give-up)
+doorbell trace: #10 queue 0 write pointer 72 -> 104 at t 338.194030 s (-10.209 ms from the give-up)
+doorbell trace: #10 queue 0 write pointer 104 -> 136 at t 338.194240 s (-9.998 ms from the give-up)
+doorbell trace: #10 queue 0 write pointer 136 -> 184 at t 338.194659 s (-9.579 ms from the give-up)
+doorbell trace: #10 queue 0 consumer takes 124 dwords at 60 at t 338.195846 s (-8.393 ms from the give-up)
+doorbell trace: #10 queue 0 consumer's submit of 124 dwords at 60 returned at t 338.221745 s (+17.507 ms from the give-up)
+doorbell trace: #10 queue 0 write pointer 184 -> 200 at t 338.222499 s (+18.261 ms from the give-up)
+flip trace: job #339789 dcb 2381 dwords done at t 338.225648 s (cq0); in flight cq0 0 cq1 3
+flip trace: job #339792 dcb 1814 dwords done at t 338.227742 s (cq0); in flight cq0 0 cq1 4
+flip trace: job #339786 acb 7703 dwords done at t 338.227962 s (cq1); in flight cq0 1 cq1 5
+flip trace: job #339788 acb 28 dwords done at t 338.228021 s (cq1); in flight cq0 1 cq1 4
+flip trace: job #339790 acb 2 dwords done at t 338.228027 s (cq1); in flight cq0 1 cq1 3
+flip trace: job #339791 acb 9028 dwords done at t 338.228787 s (cq1); in flight cq0 1 cq1 2
+flip trace: job #339794 acb 84 dwords done at t 338.228813 s (cq1); in flight cq0 1 cq1 1
+flip trace: job #339795 acb 140 dwords done at t 338.228817 s (cq1); in flight cq0 1 cq1 0
+flip trace: job #339793 dcb 13154 dwords done at t 338.233637 s (cq0); in flight cq0 0 cq1 0
+flip trace: job #339796 acb 589 dwords done at t 338.238193 s (cq1); in flight cq0 1 cq1 1
+flip trace: job #339798 dcb 1654 dwords done at t 338.238377 s (cq0); in flight cq0 0 cq1 2
+flip trace: job #339797 acb 18 dwords done at t 338.238382 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #339799 acb 18 dwords done at t 338.238394 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #339800 acb 100 dwords done at t 338.238801 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #339801 acb 2 dwords done at t 338.238935 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #339802 dcb 6008 dwords done at t 338.240709 s (cq0); in flight cq0 0 cq1 0
+flip trace: job #339803 acb 5508 dwords done at t 338.241980 s (cq1); in flight cq0 1 cq1 0
+flip trace: job #339805 acb 28 dwords done at t 338.242304 s (cq1); in flight cq0 1 cq1 1
+flip trace: job #339806 acb 2 dwords done at t 338.242311 s (cq1); in flight cq0 1 cq1 0
+flip trace: job #339804 dcb 11210 dwords done at t 338.242982 s (cq0); in flight cq0 0 cq1 0
+flip trace: job #339809 acb 4 dwords done at t 338.244296 s (cq1); in flight cq0 2 cq1 0
+  wait detail: function 3, value 0x907616589, reference 0x0, mask 0xffffffffffffffff
+cpu-wait WAIT_REG_MEM64 at 10028 on 0x12004b3c38: GIVEN UP after 9.0 ms
+flip trace: #11 given up: dcb 11860 dwords at 10028 on 0x12004b3c38 (game thread 1) after 8.985 ms, t 364.899133 s; value 0x907616589; in flight cq0 0 cq1 0; the last job done 6.397 ms before (#363267 dcb 11297 dwords, cq0)
+flip trace: #11 compute candidate 0x12004b4fc8: held back 39.005 ms before the give-up, value 0x9076d6d8c; it has write breakpoints
+flip trace: #11 compute candidate 0x12004b37c8: held back 9.068 ms before the give-up, value 0x0; it has write breakpoints
+flip trace: #11 compute candidate 0x12004b77c8: held back 37.304 ms before the give-up, value 0x0; it has write breakpoints
+flip trace: #11 compute queue not held back (g_unready_label 0); the waiting buffer writes 159 label(s)
+flip trace: #11 CPU write to the compute label 0x12004b37c8: thread 2436689 (Render Thread) = the thread that gave up, 757 write(s), seen at the watch start (since the last read) at t 364.899311 s, 0.178 ms after the give-up
+flip trace: #11 CPU write to the compute label 0x12004b37c8: thread 2436770 (bc5-cq0), 2 write(s), seen at the watch start (since the last read) at t 364.899311 s, 0.178 ms after the give-up
+flip trace: #11 CPU write to the compute label 0x12004b53c8: thread 2436689 (Render Thread) = the thread that gave up, 756 write(s), seen at the watch start (since the last read) at t 364.899518 s, 0.385 ms after the give-up
+flip trace: #11 CPU write to the compute label 0x12004b4fc8: thread 2436689 (Render Thread) = the thread that gave up, 757 write(s), seen at the watch start (since the last read) at t 364.899674 s, 0.541 ms after the give-up
+flip trace: #11 CPU write to the compute label 0x12004b77c8: thread 2436689 (Render Thread) = the thread that gave up, 756 write(s), seen at the watch start (since the last read) at t 364.899871 s, 0.738 ms after the give-up
+flip trace: #11 breakpoints: given-up label none; compute label 4 fixed label(s)
+flip trace: #11 0x12004b3c38: 0x907616589 -> 0x0 at t 364.913224 s, 14.092 ms after the give-up; in flight cq0 0 cq1 1
+flip trace: #11 0x12004b3c38 satisfied 14.092 ms after the give-up (23.077 ms after the wait began), t 364.913224 s; in flight cq0 0 cq1 1 (at the give-up 0 0); 0 jobs done since the give-up, the last 20.489 ms before (#363267 dcb 11297 dwords, cq0); value 0x0, 1 changes; compute label 0x0 now 0x0
+doorbell trace: #11 queue 0 write pointer 776 -> 784 at t 364.852075 s (-47.058 ms from the give-up)
+doorbell trace: #11 queue 8 write pointer 1072 -> 1080 at t 364.852075 s (-47.058 ms from the give-up)
+doorbell trace: #11 queue 0 write pointer 784 -> 800 at t 364.852182 s (-46.951 ms from the give-up)
+doorbell trace: #11 queue 0 consumer takes 24 dwords at 776 at t 364.852189 s (-46.944 ms from the give-up)
+doorbell trace: #11 queue 0 write pointer 800 -> 808 at t 364.852286 s (-46.846 ms from the give-up)
+doorbell trace: #11 queue 0 consumer's submit of 24 dwords at 776 returned at t 364.852648 s (-46.485 ms from the give-up)
+doorbell trace: #11 queue 8 consumer takes 8 dwords at 1072 at t 364.852653 s (-46.480 ms from the give-up)
+flip trace: job #363268 acb 5508 dwords done at t 364.913881 s (cq1); in flight cq0 0 cq1 0
+doorbell trace: #11 queue 8 consumer's submit of 8 dwords at 1072 returned at t 364.852774 s (-46.359 ms from the give-up)
+doorbell trace: #11 queue 0 consumer takes 8 dwords at 800 at t 364.853047 s (-46.086 ms from the give-up)
+doorbell trace: #11 queue 0 consumer's submit of 8 dwords at 800 returned at t 364.853939 s (-45.194 ms from the give-up)
+doorbell trace: #11 queue 0 write pointer 808 -> 824 at t 364.854191 s (-44.942 ms from the give-up)
+doorbell trace: #11 queue 0 consumer takes 4 dwords at 808 at t 364.854405 s (-44.727 ms from the give-up)
+doorbell trace: #11 queue 0 consumer's submit of 4 dwords at 808 returned at t 364.854480 s (-44.652 ms from the give-up)
+doorbell trace: #11 queue 0 write pointer 824 -> 840 at t 364.854731 s (-44.402 ms from the give-up)
+doorbell trace: #11 queue 0 write pointer 840 -> 856 at t 364.854924 s (-44.209 ms from the give-up)
+doorbell trace: #11 queue 0 deferred, 44 dwords pending at 812, at t 364.855317 s (-43.815 ms from the give-up)
+doorbell trace: #11 queue 0 write pointer 856 -> 888 at t 364.855774 s (-43.359 ms from the give-up)
+doorbell trace: #11 queue 0 consumer takes 76 dwords at 812 at t 364.856373 s (-42.759 ms from the give-up)
+doorbell trace: #11 queue 0 consumer's submit of 76 dwords at 812 returned at t 364.856724 s (-42.408 ms from the give-up)
+doorbell trace: #11 queue 0 write pointer 888 -> 904 at t 364.857869 s (-41.264 ms from the give-up)
+doorbell trace: #11 queue 0 consumer takes 4 dwords at 888 at t 364.858230 s (-40.903 ms from the give-up)
+doorbell trace: #11 queue 0 consumer's submit of 4 dwords at 888 returned at t 364.858280 s (-40.853 ms from the give-up)
+doorbell trace: #11 queue 0 deferred, 12 dwords pending at 892, at t 364.858545 s (-40.588 ms from the give-up)
+doorbell trace: #11 queue 0 write pointer 904 -> 936 at t 364.858598 s (-40.535 ms from the give-up)
+doorbell trace: #11 queue 0 write pointer 936 -> 952 at t 364.858704 s (-40.429 ms from the give-up)
+doorbell trace: #11 queue 0 write pointer 952 -> 968 at t 364.858808 s (-40.325 ms from the give-up)
+doorbell trace: #11 queue 0 write pointer 968 -> 984 at t 364.859016 s (-40.116 ms from the give-up)
+doorbell trace: #11 queue 0 write pointer 984 -> 1016 at t 364.859121 s (-40.012 ms from the give-up)
+doorbell trace: #11 queue 0 consumer takes 124 dwords at 892 at t 364.860405 s (-38.727 ms from the give-up)
+doorbell trace: #11 queue 0 consumer's submit of 124 dwords at 892 returned at t 364.861555 s (-37.577 ms from the give-up)
+doorbell trace: #11 queue 0 write pointer 1016 -> 1032 at t 364.861761 s (-37.372 ms from the give-up)
+doorbell trace: #11 queue 0 consumer takes 4 dwords at 1016 at t 364.862287 s (-36.846 ms from the give-up)
+doorbell trace: #11 queue 0 consumer's submit of 4 dwords at 1016 returned at t 364.862327 s (-36.806 ms from the give-up)
+doorbell trace: #11 queue 0 consumer takes 12 dwords at 1020 at t 364.862599 s (-36.533 ms from the give-up)
+doorbell trace: #11 queue 0 consumer's submit of 12 dwords at 1020 returned at t 364.863206 s (-35.927 ms from the give-up)
+doorbell trace: #11 queue 0 write pointer 1032 -> 1048 at t 364.865690 s (-33.443 ms from the give-up)
+doorbell trace: #11 queue 8 write pointer 1080 -> 1096 at t 364.865691 s (-33.442 ms from the give-up)
+doorbell trace: #11 queue 0 consumer takes 16 dwords at 1032 at t 364.865787 s (-33.346 ms from the give-up)
+doorbell trace: #11 queue 0 consumer's submit of 16 dwords at 1032 returned at t 364.866823 s (-32.310 ms from the give-up)
+doorbell trace: #11 queue 8 consumer takes 16 dwords at 1080 at t 364.866827 s (-32.306 ms from the give-up)
+doorbell trace: #11 queue 8 consumer's submit of 16 dwords at 1080 returned at t 364.866880 s (-32.253 ms from the give-up)
+doorbell trace: #11 queue 0 write pointer 1048 -> 1056 at t 364.885749 s (-13.384 ms from the give-up)
+doorbell trace: #11 queue 8 write pointer 1096 -> 1104 at t 364.885749 s (-13.384 ms from the give-up)
+doorbell trace: #11 queue 0 write pointer 1056 -> 1072 at t 364.885876 s (-13.257 ms from the give-up)
+doorbell trace: #11 queue 0 consumer takes 24 dwords at 1048 at t 364.886012 s (-13.120 ms from the give-up)
+doorbell trace: #11 queue 0 write pointer 1072 -> 1080 at t 364.886116 s (-13.017 ms from the give-up)
+doorbell trace: #11 queue 0 consumer's submit of 24 dwords at 1048 returned at t 364.887041 s (-12.092 ms from the give-up)
+doorbell trace: #11 queue 8 consumer takes 8 dwords at 1096 at t 364.887045 s (-12.088 ms from the give-up)
+doorbell trace: #11 queue 8 consumer's submit of 8 dwords at 1096 returned at t 364.887219 s (-11.914 ms from the give-up)
+doorbell trace: #11 queue 0 consumer takes 8 dwords at 1072 at t 364.887481 s (-11.652 ms from the give-up)
+doorbell trace: #11 queue 0 consumer's submit of 8 dwords at 1072 returned at t 364.888014 s (-11.119 ms from the give-up)
+doorbell trace: #11 queue 0 write pointer 1080 -> 1096 at t 364.888295 s (-10.838 ms from the give-up)
+doorbell trace: #11 queue 0 consumer takes 4 dwords at 1080 at t 364.888367 s (-10.765 ms from the give-up)
+doorbell trace: #11 queue 0 consumer's submit of 4 dwords at 1080 returned at t 364.888422 s (-10.711 ms from the give-up)
+doorbell trace: #11 queue 0 deferred, 28 dwords pending at 1084, at t 364.888674 s (-10.459 ms from the give-up)
+doorbell trace: #11 queue 0 write pointer 1096 -> 1112 at t 364.888720 s (-10.413 ms from the give-up)
+doorbell trace: #11 queue 0 write pointer 1112 -> 1128 at t 364.888825 s (-10.308 ms from the give-up)
+doorbell trace: #11 queue 0 write pointer 1128 -> 1160 at t 364.889338 s (-9.795 ms from the give-up)
+doorbell trace: #11 queue 0 consumer takes 76 dwords at 1084 at t 364.890338 s (-8.795 ms from the give-up)
+doorbell trace: #11 queue 0 write pointer 1160 -> 1176 at t 364.899331 s (+0.199 ms from the give-up)
+doorbell trace: #11 queue 0 consumer's submit of 76 dwords at 1084 returned at t 364.913069 s (+13.935 ms from the give-up)
+flip trace: served dcb 11860 dwords at 10028 on 0x12004b3c38 after 42.697 ms, t 366.452230 s; in flight cq0 0 cq1 1; 2 jobs done during the wait, the last 0.585 ms before its end (#364502 dcb 11297 dwords, cq0); compute queue blocked on 0x0
+flip trace: job #364503 acb 5508 dwords done at t 366.452831 s (cq1); in flight cq0 0 cq1 2
+flip trace: job #364504 acb 28 dwords done at t 366.452873 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #364505 acb 2 dwords done at t 366.452878 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #364508 acb 4 dwords done at t 366.454971 s (cq1); in flight cq0 2 cq1 0
+flip trace: job #364509 acb 4690 dwords done at t 366.455720 s (cq1); in flight cq0 2 cq1 4
+flip trace: served dcb 860 dwords at 311 on 0x12004b5438 after 35.443 ms, t 377.238709 s; in flight cq0 0 cq1 1; 3 jobs done during the wait, the last 1.830 ms before its end (#374074 acb 4 dwords, cq1); compute queue blocked on 0x0
+flip trace: job #374076 dcb 2801 dwords done at t 377.241298 s (cq0); in flight cq0 1 cq1 5
+flip trace: job #374081 dcb 1814 dwords done at t 377.243698 s (cq0); in flight cq0 2 cq1 7
+  wait detail: function 3, value 0x907616589, reference 0x0, mask 0xffffffffffffffff
+cpu-wait WAIT_REG_MEM64 at 10028 on 0x12004b3c38: GIVEN UP after 8.9 ms
+flip trace: #12 given up: dcb 11860 dwords at 10028 on 0x12004b3c38 (game thread 1) after 8.892 ms, t 419.415988 s; value 0x907616589; in flight cq0 0 cq1 0; the last job done 6.464 ms before (#411386 dcb 11297 dwords, cq0)
+flip trace: #12 compute candidate 0x12004b4fc8: held back 39.093 ms before the give-up, value 0x9076d6d8c; it has write breakpoints
+flip trace: #12 compute candidate 0x12004b37c8: held back 8.947 ms before the give-up, value 0x0; it has write breakpoints
+flip trace: #12 compute candidate 0x12004b53c8: held back 36.917 ms before the give-up, value 0x0; it has write breakpoints
+flip trace: #12 compute candidate 0x12004b77c8: held back 35.562 ms before the give-up, value 0x0; it has write breakpoints
+flip trace: #12 compute queue not held back (g_unready_label 0); the waiting buffer writes 159 label(s)
+flip trace: #12 CPU write to the compute label 0x12004b37c8: thread 2436689 (Render Thread) = the thread that gave up, 1547 write(s), seen at the watch start (since the last read) at t 419.416197 s, 0.210 ms after the give-up
+flip trace: #12 CPU write to the compute label 0x12004b37c8: thread 2436770 (bc5-cq0), 3 write(s), seen at the watch start (since the last read) at t 419.416197 s, 0.210 ms after the give-up
+flip trace: #12 CPU write to the compute label 0x12004b53c8: thread 2436689 (Render Thread) = the thread that gave up, 1547 write(s), seen at the watch start (since the last read) at t 419.416687 s, 0.700 ms after the give-up
+flip trace: #12 CPU write to the compute label 0x12004b4fc8: thread 2436689 (Render Thread) = the thread that gave up, 1547 write(s), seen at the watch start (since the last read) at t 419.416807 s, 0.820 ms after the give-up
+flip trace: #12 CPU write to the compute label 0x12004b4fc8: thread 2436770 (bc5-cq0), 3 write(s), seen at the watch start (since the last read) at t 419.416807 s, 0.820 ms after the give-up
+flip trace: #12 CPU write to the compute label 0x12004b77c8: thread 2436689 (Render Thread) = the thread that gave up, 1547 write(s), seen at the watch start (since the last read) at t 419.416957 s, 0.969 ms after the give-up
+flip trace: #12 breakpoints: given-up label none; compute label 4 fixed label(s)
+flip trace: #12 0x12004b3c38: 0x907616589 -> 0x0 at t 419.431138 s, 15.150 ms after the give-up; in flight cq0 0 cq1 1
+flip trace: #12 0x12004b3c38 satisfied 15.150 ms after the give-up (24.042 ms after the wait began), t 419.431138 s; in flight cq0 0 cq1 1 (at the give-up 0 0); 0 jobs done since the give-up, the last 21.614 ms before (#411386 dcb 11297 dwords, cq0); value 0x0, 1 changes; compute label 0x0 now 0x0
+doorbell trace: #12 queue 0 write pointer 3768 -> 3776 at t 419.370398 s (-45.590 ms from the give-up)
+doorbell trace: #12 queue 8 write pointer 1336 -> 1344 at t 419.370399 s (-45.589 ms from the give-up)
+doorbell trace: #12 queue 0 consumer takes 24 dwords at 3768 at t 419.370451 s (-45.537 ms from the give-up)
+doorbell trace: #12 queue 0 write pointer 3776 -> 3792 at t 419.370506 s (-45.482 ms from the give-up)
+doorbell trace: #12 queue 0 consumer's submit of 24 dwords at 3768 returned at t 419.371053 s (-44.934 ms from the give-up)
+doorbell trace: #12 queue 8 consumer takes 8 dwords at 1336 at t 419.371069 s (-44.919 ms from the give-up)
+doorbell trace: #12 queue 0 write pointer 3792 -> 3800 at t 419.371850 s (-44.138 ms from the give-up)
+doorbell trace: #12 queue 0 write pointer 3800 -> 3816 at t 419.371925 s (-44.063 ms from the give-up)
+doorbell trace: #12 queue 8 consumer's submit of 8 dwords at 1336 returned at t 419.372132 s (-43.856 ms from the give-up)
+doorbell trace: #12 queue 0 write pointer 3816 -> 3832 at t 419.372356 s (-43.632 ms from the give-up)
+doorbell trace: #12 queue 0 write pointer 3832 -> 3848 at t 419.372463 s (-43.524 ms from the give-up)
+doorbell trace: #12 queue 0 consumer takes 12 dwords at 3792 at t 419.372567 s (-43.421 ms from the give-up)
+doorbell trace: #12 queue 0 consumer's submit of 12 dwords at 3792 returned at t 419.372642 s (-43.346 ms from the give-up)
+doorbell trace: #12 queue 0 deferred, 44 dwords pending at 3804, at t 419.372923 s (-43.065 ms from the give-up)
+doorbell trace: #12 queue 0 write pointer 3848 -> 3880 at t 419.373290 s (-42.698 ms from the give-up)
+doorbell trace: #12 queue 0 consumer takes 76 dwords at 3804 at t 419.374199 s (-41.789 ms from the give-up)
+doorbell trace: #12 queue 0 consumer's submit of 76 dwords at 3804 returned at t 419.375970 s (-40.017 ms from the give-up)
+doorbell trace: #12 queue 0 write pointer 3880 -> 3896 at t 419.376238 s (-39.750 ms from the give-up)
+doorbell trace: #12 queue 0 consumer takes 4 dwords at 3880 at t 419.376310 s (-39.678 ms from the give-up)
+doorbell trace: #12 queue 0 consumer's submit of 4 dwords at 3880 returned at t 419.376361 s (-39.627 ms from the give-up)
+doorbell trace: #12 queue 0 deferred, 12 dwords pending at 3884, at t 419.376628 s (-39.360 ms from the give-up)
+doorbell trace: #12 queue 0 consumer takes 12 dwords at 3884 at t 419.377159 s (-38.829 ms from the give-up)
+doorbell trace: #12 queue 0 write pointer 3896 -> 3928 at t 419.377496 s (-38.492 ms from the give-up)
+doorbell trace: #12 queue 0 consumer's submit of 12 dwords at 3884 returned at t 419.377624 s (-38.364 ms from the give-up)
+doorbell trace: #12 queue 0 write pointer 3928 -> 3960 at t 419.377816 s (-38.171 ms from the give-up)
+doorbell trace: #12 queue 0 consumer takes 4 dwords at 3896 at t 419.377992 s (-37.996 ms from the give-up)
+doorbell trace: #12 queue 0 consumer's submit of 4 dwords at 3896 returned at t 419.378038 s (-37.950 ms from the give-up)
+doorbell trace: #12 queue 0 write pointer 3960 -> 3976 at t 419.378131 s (-37.857 ms from the give-up)
+doorbell trace: #12 queue 0 write pointer 3976 -> 4008 at t 419.378235 s (-37.753 ms from the give-up)
+doorbell trace: #12 queue 0 deferred, 108 dwords pending at 3900, at t 419.378297 s (-37.691 ms from the give-up)
+doorbell trace: #12 queue 0 consumer takes 108 dwords at 3900 at t 419.379341 s (-36.647 ms from the give-up)
+doorbell trace: #12 queue 0 consumer's submit of 108 dwords at 3900 returned at t 419.380148 s (-35.840 ms from the give-up)
+doorbell trace: #12 queue 0 write pointer 4008 -> 4024 at t 419.380234 s (-35.754 ms from the give-up)
+doorbell trace: #12 queue 0 consumer takes 4 dwords at 4008 at t 419.380864 s (-35.124 ms from the give-up)
+doorbell trace: #12 queue 0 consumer's submit of 4 dwords at 4008 returned at t 419.380929 s (-35.058 ms from the give-up)
+doorbell trace: #12 queue 0 consumer takes 12 dwords at 4012 at t 419.381210 s (-34.778 ms from the give-up)
+doorbell trace: #12 queue 0 consumer's submit of 12 dwords at 4012 returned at t 419.381811 s (-34.176 ms from the give-up)
+doorbell trace: #12 queue 0 write pointer 4024 -> 4040 at t 419.382974 s (-33.014 ms from the give-up)
+doorbell trace: #12 queue 8 write pointer 1344 -> 1360 at t 419.382975 s (-33.013 ms from the give-up)
+doorbell trace: #12 queue 0 consumer takes 16 dwords at 4024 at t 419.383105 s (-32.883 ms from the give-up)
+doorbell trace: #12 queue 0 consumer's submit of 16 dwords at 4024 returned at t 419.383869 s (-32.118 ms from the give-up)
+doorbell trace: #12 queue 8 consumer takes 16 dwords at 1344 at t 419.383875 s (-32.113 ms from the give-up)
+doorbell trace: #12 queue 8 consumer's submit of 16 dwords at 1344 returned at t 419.383932 s (-32.056 ms from the give-up)
+doorbell trace: #12 queue 0 write pointer 4040 -> 4048 at t 419.403126 s (-12.862 ms from the give-up)
+doorbell trace: #12 queue 8 write pointer 1360 -> 1368 at t 419.403126 s (-12.862 ms from the give-up)
+doorbell trace: #12 queue 0 consumer takes 24 dwords at 4040 at t 419.403188 s (-12.800 ms from the give-up)
+doorbell trace: #12 queue 0 write pointer 4048 -> 4064 at t 419.403234 s (-12.754 ms from the give-up)
+doorbell trace: #12 queue 0 consumer's submit of 24 dwords at 4040 returned at t 419.403524 s (-12.464 ms from the give-up)
+doorbell trace: #12 queue 8 consumer takes 8 dwords at 1360 at t 419.403529 s (-12.459 ms from the give-up)
+doorbell trace: #12 queue 8 consumer's submit of 8 dwords at 1360 returned at t 419.403869 s (-12.119 ms from the give-up)
+doorbell trace: #12 queue 0 consumer takes 8 dwords at 4064 at t 419.404635 s (-11.353 ms from the give-up)
+doorbell trace: #12 queue 0 write pointer 4064 -> 4072 at t 419.404821 s (-11.167 ms from the give-up)
+doorbell trace: #12 queue 0 consumer's submit of 8 dwords at 4064 returned at t 419.404959 s (-11.028 ms from the give-up)
+doorbell trace: #12 queue 0 write pointer 4072 -> 4088 at t 419.405140 s (-10.848 ms from the give-up)
+doorbell trace: #12 queue 0 write pointer 4088 -> 8 at t 419.405338 s (-10.650 ms from the give-up)
+doorbell trace: #12 queue 0 consumer takes 4 dwords at 4072 at t 419.405377 s (-10.611 ms from the give-up)
+doorbell trace: #12 queue 0 consumer's submit of 4 dwords at 4072 returned at t 419.405429 s (-10.559 ms from the give-up)
+doorbell trace: #12 queue 0 write pointer 8 -> 24 at t 419.405446 s (-10.542 ms from the give-up)
+doorbell trace: #12 queue 0 deferred, 44 dwords pending at 4076, at t 419.405686 s (-10.302 ms from the give-up)
+doorbell trace: #12 queue 0 write pointer 24 -> 56 at t 419.406450 s (-9.538 ms from the give-up)
+doorbell trace: #12 queue 0 consumer takes 76 dwords at 4076 at t 419.407314 s (-8.674 ms from the give-up)
+doorbell trace: #12 queue 0 write pointer 56 -> 72 at t 419.416338 s (+0.350 ms from the give-up)
+doorbell trace: #12 queue 0 consumer's submit of 76 dwords at 4076 returned at t 419.430909 s (+14.922 ms from the give-up)
+flip trace: job #411387 acb 5508 dwords done at t 419.432093 s (cq1); in flight cq0 1 cq1 2
+flip trace: job #411389 acb 28 dwords done at t 419.432131 s (cq1); in flight cq0 1 cq1 1
+flip trace: job #411388 dcb 5788 dwords done at t 419.432158 s (cq0); in flight cq0 0 cq1 1
+flip trace: job #411390 acb 2 dwords done at t 419.432187 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #411391 acb 4692 dwords done at t 419.432823 s (cq1); in flight cq0 0 cq1 2
+flip trace: job #411392 acb 28 dwords done at t 419.432844 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #411393 acb 2 dwords done at t 419.432849 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #411395 acb 4 dwords done at t 419.434510 s (cq1); in flight cq0 1 cq1 0
+flip trace: job #411394 dcb 17115 dwords done at t 419.438277 s (cq0); in flight cq0 3 cq1 9
+flip trace: job #411396 dcb 311 dwords done at t 419.438290 s (cq0); in flight cq0 2 cq1 9
+flip trace: job #411397 acb 835 dwords done at t 419.438468 s (cq1); in flight cq0 2 cq1 8
+flip trace: job #411402 dcb 2801 dwords done at t 419.439462 s (cq0); in flight cq0 1 cq1 8
+flip trace: job #411398 acb 750 dwords done at t 419.439981 s (cq1); in flight cq0 2 cq1 9
+flip trace: job #411399 acb 311 dwords done at t 419.440168 s (cq1); in flight cq0 2 cq1 8
+flip trace: job #411400 acb 460 dwords done at t 419.440777 s (cq1); in flight cq0 2 cq1 7
+flip trace: job #411407 dcb 1814 dwords done at t 419.442873 s (cq0); in flight cq0 1 cq1 7
+flip trace: job #411401 acb 641 dwords done at t 419.444235 s (cq1); in flight cq0 1 cq1 6
+flip trace: job #411403 acb 28 dwords done at t 419.444274 s (cq1); in flight cq0 1 cq1 5
+flip trace: job #411404 acb 2 dwords done at t 419.444278 s (cq1); in flight cq0 1 cq1 4
+flip trace: job #411405 acb 4 dwords done at t 419.444284 s (cq1); in flight cq0 1 cq1 3
+flip trace: job #411406 acb 9012 dwords done at t 419.445278 s (cq1); in flight cq0 1 cq1 2
+flip trace: job #411409 acb 84 dwords done at t 419.445304 s (cq1); in flight cq0 1 cq1 1
+flip trace: job #411410 acb 140 dwords done at t 419.445311 s (cq1); in flight cq0 1 cq1 0
+  wait detail: function 3, value 0x907616589, reference 0x0, mask 0xffffffffffffffff
+cpu-wait WAIT_REG_MEM64 at 10028 on 0x12004b3c38: GIVEN UP after 8.9 ms
+flip trace: #13 given up: dcb 11860 dwords at 10028 on 0x12004b3c38 (game thread 1) after 8.888 ms, t 466.300239 s; value 0x907616589; in flight cq0 0 cq1 0; the last job done 6.219 ms before (#453276 dcb 11297 dwords, cq0)
+flip trace: #13 compute candidate 0x12004b4fc8: held back 38.047 ms before the give-up, value 0x9076d6d8c; it has write breakpoints
+flip trace: #13 compute candidate 0x12004b57c8: held back 36.704 ms before the give-up, value 0x0
+flip trace: #13 compute candidate 0x12004b37c8: held back 41.363 ms before the give-up, value 0x0; it has write breakpoints
+flip trace: #13 compute queue not held back (g_unready_label 0); the waiting buffer writes 159 label(s)
+flip trace: #13 CPU write to the compute label 0x12004b37c8: thread 2436689 (Render Thread) = the thread that gave up, 1336 write(s), seen at the watch start (since the last read) at t 466.300465 s, 0.227 ms after the give-up
+flip trace: #13 CPU write to the compute label 0x12004b37c8: thread 2436770 (bc5-cq0), 2 write(s), seen at the watch start (since the last read) at t 466.300465 s, 0.227 ms after the give-up
+flip trace: #13 CPU write to the compute label 0x12004b53c8: thread 2436689 (Render Thread) = the thread that gave up, 1336 write(s), seen at the watch start (since the last read) at t 466.301073 s, 0.834 ms after the give-up
+flip trace: #13 CPU write to the compute label 0x12004b53c8: thread 2436770 (bc5-cq0), 1 write(s), seen at the watch start (since the last read) at t 466.301073 s, 0.834 ms after the give-up
+flip trace: #13 CPU write to the compute label 0x12004b4fc8: thread 2436689 (Render Thread) = the thread that gave up, 1336 write(s), seen at the watch start (since the last read) at t 466.301351 s, 1.112 ms after the give-up
+flip trace: #13 CPU write to the compute label 0x12004b4fc8: thread 2436770 (bc5-cq0), 3 write(s), seen at the watch start (since the last read) at t 466.301351 s, 1.112 ms after the give-up
+flip trace: #13 CPU write to the compute label 0x12004b77c8: thread 2436689 (Render Thread) = the thread that gave up, 1336 write(s), seen at the watch start (since the last read) at t 466.301607 s, 1.368 ms after the give-up
+flip trace: #13 breakpoints: given-up label none; compute label 4 fixed label(s)
+flip trace: #13 0x12004b3c38: 0x907616589 -> 0x0 at t 466.320718 s, 20.479 ms after the give-up; in flight cq0 0 cq1 1
+flip trace: #13 0x12004b3c38 satisfied 20.479 ms after the give-up (29.367 ms after the wait began), t 466.320718 s; in flight cq0 0 cq1 1 (at the give-up 0 0); 0 jobs done since the give-up, the last 26.698 ms before (#453276 dcb 11297 dwords, cq0); value 0x0, 1 changes; compute label 0x0 now 0x0
+doorbell trace: #13 queue 0 write pointer 2616 -> 2624 at t 466.255832 s (-44.407 ms from the give-up)
+doorbell trace: #13 queue 8 write pointer 632 -> 640 at t 466.255832 s (-44.406 ms from the give-up)
+doorbell trace: #13 queue 0 write pointer 2624 -> 2640 at t 466.255923 s (-44.316 ms from the give-up)
+doorbell trace: #13 queue 0 consumer takes 24 dwords at 2616 at t 466.255930 s (-44.308 ms from the give-up)
+doorbell trace: #13 queue 0 consumer's submit of 24 dwords at 2616 returned at t 466.256272 s (-43.967 ms from the give-up)
+doorbell trace: #13 queue 8 consumer takes 8 dwords at 632 at t 466.256278 s (-43.961 ms from the give-up)
+doorbell trace: #13 queue 8 consumer's submit of 8 dwords at 632 returned at t 466.256449 s (-43.790 ms from the give-up)
+doorbell trace: #13 queue 0 write pointer 2640 -> 2648 at t 466.256562 s (-43.676 ms from the give-up)
+doorbell trace: #13 queue 0 consumer takes 8 dwords at 2640 at t 466.256798 s (-43.441 ms from the give-up)
+doorbell trace: #13 queue 0 consumer's submit of 8 dwords at 2640 returned at t 466.257759 s (-42.479 ms from the give-up)
+doorbell trace: #13 queue 0 write pointer 2648 -> 2664 at t 466.258204 s (-42.035 ms from the give-up)
+doorbell trace: #13 queue 0 write pointer 2664 -> 2680 at t 466.258443 s (-41.796 ms from the give-up)
+doorbell trace: #13 queue 0 consumer takes 4 dwords at 2648 at t 466.258523 s (-41.716 ms from the give-up)
+doorbell trace: #13 queue 0 write pointer 2680 -> 2696 at t 466.258548 s (-41.691 ms from the give-up)
+doorbell trace: #13 queue 0 consumer's submit of 4 dwords at 2648 returned at t 466.258603 s (-41.636 ms from the give-up)
+doorbell trace: #13 queue 0 deferred, 44 dwords pending at 2652, at t 466.258876 s (-41.362 ms from the give-up)
+doorbell trace: #13 queue 0 consumer takes 44 dwords at 2652 at t 466.259166 s (-41.073 ms from the give-up)
+doorbell trace: #13 queue 0 consumer's submit of 44 dwords at 2652 returned at t 466.259756 s (-40.483 ms from the give-up)
+doorbell trace: #13 queue 0 write pointer 2696 -> 2728 at t 466.259922 s (-40.316 ms from the give-up)
+doorbell trace: #13 queue 0 consumer takes 32 dwords at 2696 at t 466.260025 s (-40.214 ms from the give-up)
+doorbell trace: #13 queue 0 consumer's submit of 32 dwords at 2696 returned at t 466.260358 s (-39.880 ms from the give-up)
+doorbell trace: #13 queue 0 write pointer 2728 -> 2744 at t 466.260589 s (-39.649 ms from the give-up)
+doorbell trace: #13 queue 0 consumer takes 4 dwords at 2728 at t 466.260784 s (-39.455 ms from the give-up)
+doorbell trace: #13 queue 0 consumer's submit of 4 dwords at 2728 returned at t 466.260847 s (-39.392 ms from the give-up)
+doorbell trace: #13 queue 0 deferred, 12 dwords pending at 2732, at t 466.261124 s (-39.115 ms from the give-up)
+doorbell trace: #13 queue 0 consumer takes 12 dwords at 2732 at t 466.262455 s (-37.784 ms from the give-up)
+doorbell trace: #13 queue 0 write pointer 2744 -> 2776 at t 466.262545 s (-37.694 ms from the give-up)
+doorbell trace: #13 queue 0 write pointer 2776 -> 2792 at t 466.262754 s (-37.485 ms from the give-up)
+doorbell trace: #13 queue 0 consumer's submit of 12 dwords at 2732 returned at t 466.262806 s (-37.433 ms from the give-up)
+doorbell trace: #13 queue 0 write pointer 2792 -> 2808 at t 466.262858 s (-37.380 ms from the give-up)
+doorbell trace: #13 queue 0 consumer takes 36 dwords at 2744 at t 466.263139 s (-37.099 ms from the give-up)
+doorbell trace: #13 queue 0 write pointer 2808 -> 2824 at t 466.263229 s (-37.010 ms from the give-up)
+doorbell trace: #13 queue 0 consumer's submit of 36 dwords at 2744 returned at t 466.263273 s (-36.966 ms from the give-up)
+doorbell trace: #13 queue 0 write pointer 2824 -> 2856 at t 466.263334 s (-36.905 ms from the give-up)
+doorbell trace: #13 queue 0 deferred, 76 dwords pending at 2780, at t 466.263535 s (-36.704 ms from the give-up)
+doorbell trace: #13 queue 0 consumer takes 76 dwords at 2780 at t 466.263800 s (-36.439 ms from the give-up)
+doorbell trace: #13 queue 0 consumer's submit of 76 dwords at 2780 returned at t 466.264164 s (-36.075 ms from the give-up)
+doorbell trace: #13 queue 0 write pointer 2856 -> 2872 at t 466.264229 s (-36.010 ms from the give-up)
+doorbell trace: #13 queue 0 consumer takes 16 dwords at 2856 at t 466.264432 s (-35.806 ms from the give-up)
+doorbell trace: #13 queue 0 consumer's submit of 16 dwords at 2856 returned at t 466.264878 s (-35.361 ms from the give-up)
+doorbell trace: #13 queue 0 write pointer 2872 -> 2888 at t 466.266099 s (-34.140 ms from the give-up)
+doorbell trace: #13 queue 8 write pointer 640 -> 656 at t 466.266099 s (-34.139 ms from the give-up)
+doorbell trace: #13 queue 0 consumer takes 16 dwords at 2872 at t 466.266173 s (-34.066 ms from the give-up)
+doorbell trace: #13 queue 0 consumer's submit of 16 dwords at 2872 returned at t 466.267099 s (-33.139 ms from the give-up)
+doorbell trace: #13 queue 8 consumer takes 16 dwords at 640 at t 466.267107 s (-33.132 ms from the give-up)
+doorbell trace: #13 queue 8 consumer's submit of 16 dwords at 640 returned at t 466.267226 s (-33.013 ms from the give-up)
+doorbell trace: #13 queue 0 write pointer 2888 -> 2896 at t 466.287546 s (-12.693 ms from the give-up)
+doorbell trace: #13 queue 8 write pointer 656 -> 664 at t 466.287546 s (-12.692 ms from the give-up)
+doorbell trace: #13 queue 0 write pointer 2896 -> 2912 at t 466.287655 s (-12.584 ms from the give-up)
+doorbell trace: #13 queue 0 consumer takes 24 dwords at 2888 at t 466.287694 s (-12.545 ms from the give-up)
+doorbell trace: #13 queue 0 write pointer 2912 -> 2920 at t 466.287762 s (-12.476 ms from the give-up)
+doorbell trace: #13 queue 0 consumer's submit of 24 dwords at 2888 returned at t 466.288035 s (-12.204 ms from the give-up)
+doorbell trace: #13 queue 8 consumer takes 8 dwords at 656 at t 466.288038 s (-12.200 ms from the give-up)
+doorbell trace: #13 queue 8 consumer's submit of 8 dwords at 656 returned at t 466.288137 s (-12.102 ms from the give-up)
+doorbell trace: #13 queue 0 consumer takes 8 dwords at 2912 at t 466.288657 s (-11.581 ms from the give-up)
+doorbell trace: #13 queue 0 consumer's submit of 8 dwords at 2912 returned at t 466.289202 s (-11.037 ms from the give-up)
+doorbell trace: #13 queue 0 consumer takes 16 dwords at 2920 at t 466.289475 s (-10.763 ms from the give-up)
+doorbell trace: #13 queue 0 write pointer 2920 -> 2936 at t 466.289483 s (-10.756 ms from the give-up)
+doorbell trace: #13 queue 0 write pointer 2936 -> 2952 at t 466.289593 s (-10.645 ms from the give-up)
+doorbell trace: #13 queue 0 write pointer 2952 -> 2968 at t 466.289807 s (-10.431 ms from the give-up)
+doorbell trace: #13 queue 0 consumer's submit of 16 dwords at 2920 returned at t 466.289856 s (-10.383 ms from the give-up)
+doorbell trace: #13 queue 0 write pointer 2968 -> 3000 at t 466.290518 s (-9.720 ms from the give-up)
+doorbell trace: #13 queue 0 consumer takes 64 dwords at 2936 at t 466.292252 s (-7.987 ms from the give-up)
+doorbell trace: #13 queue 0 write pointer 3000 -> 3016 at t 466.300552 s (+0.313 ms from the give-up)
+doorbell trace: #13 queue 0 consumer's submit of 64 dwords at 2936 returned at t 466.320608 s (+20.369 ms from the give-up)
+flip trace: job #453278 dcb 5788 dwords done at t 466.321723 s (cq0); in flight cq0 0 cq1 3
+flip trace: job #453277 acb 3979 dwords done at t 466.322094 s (cq1); in flight cq0 0 cq1 2
+flip trace: job #453279 acb 28 dwords done at t 466.322164 s (cq1); in flight cq0 0 cq1 2
+flip trace: job #453280 acb 2 dwords done at t 466.322171 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #453281 acb 4692 dwords done at t 466.322534 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #453282 acb 28 dwords done at t 466.322593 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #453283 acb 2 dwords done at t 466.322603 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #453286 acb 4 dwords done at t 466.324627 s (cq1); in flight cq0 2 cq1 0
+flip trace: job #453284 dcb 17115 dwords done at t 466.328353 s (cq0); in flight cq0 3 cq1 9
+flip trace: job #453287 acb 835 dwords done at t 466.328364 s (cq1); in flight cq0 3 cq1 8
+flip trace: job #453285 dcb 311 dwords done at t 466.328385 s (cq0); in flight cq0 2 cq1 8
+flip trace: job #453292 dcb 2801 dwords done at t 466.329047 s (cq0); in flight cq0 2 cq1 10
+flip trace: job #453288 acb 750 dwords done at t 466.329691 s (cq1); in flight cq0 2 cq1 9
+flip trace: job #453289 acb 311 dwords done at t 466.329862 s (cq1); in flight cq0 2 cq1 8
+flip trace: job #453290 acb 460 dwords done at t 466.330491 s (cq1); in flight cq0 2 cq1 7
+flip trace: job #453297 dcb 1814 dwords done at t 466.332639 s (cq0); in flight cq0 1 cq1 7
+flip trace: job #453291 acb 641 dwords done at t 466.333998 s (cq1); in flight cq0 1 cq1 6
+flip trace: job #453293 acb 28 dwords done at t 466.334062 s (cq1); in flight cq0 1 cq1 5
+flip trace: job #453294 acb 2 dwords done at t 466.334067 s (cq1); in flight cq0 1 cq1 4
+flip trace: job #453295 acb 4 dwords done at t 466.334073 s (cq1); in flight cq0 1 cq1 3
+flip trace: job #453296 acb 9012 dwords done at t 466.335022 s (cq1); in flight cq0 1 cq1 2
+flip trace: job #453299 acb 84 dwords done at t 466.335066 s (cq1); in flight cq0 1 cq1 1
+flip trace: job #453300 acb 140 dwords done at t 466.335075 s (cq1); in flight cq0 1 cq1 0
+flip trace: served dcb 860 dwords at 311 on 0x12004b5438 after 44.717 ms, t 500.138985 s; in flight cq0 0 cq1 1; 4 jobs done during the wait, the last 0.777 ms before its end (#483354 acb 4678 dwords, cq1); compute queue blocked on 0x0
+flip trace: job #483356 dcb 2801 dwords done at t 500.142003 s (cq0); in flight cq0 1 cq1 5
+flip trace: job #483355 acb 3025 dwords done at t 500.142021 s (cq1); in flight cq0 1 cq1 4
+flip trace: job #483357 acb 28 dwords done at t 500.142091 s (cq1); in flight cq0 1 cq1 3
+flip trace: job #483358 acb 2 dwords done at t 500.142097 s (cq1); in flight cq0 1 cq1 2
+flip trace: job #483359 acb 4 dwords done at t 500.142104 s (cq1); in flight cq0 1 cq1 1
+flip trace: job #483361 dcb 1814 dwords done at t 500.143649 s (cq0); in flight cq0 1 cq1 3
+flip trace: served dcb 11860 dwords at 10028 on 0x12004b3c38 after 5.580 ms, t 577.431774 s; in flight cq0 0 cq1 1; 4 jobs done during the wait, the last 3.083 ms before its end (#551976 dcb 11297 dwords, cq0); compute queue blocked on 0x0
+flip trace: job #551977 acb 5508 dwords done at t 577.432357 s (cq1); in flight cq0 0 cq1 2
+flip trace: job #551978 acb 28 dwords done at t 577.432395 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #551979 acb 2 dwords done at t 577.432399 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #551981 acb 4 dwords done at t 577.434534 s (cq1); in flight cq0 1 cq1 0
+flip trace: job #551983 acb 4690 dwords done at t 577.435459 s (cq1); in flight cq0 2 cq1 4

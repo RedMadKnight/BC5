@@ -1,0 +1,234 @@
+# queues: 0 (a=1, 4096 dwords), 1 (a=1, 4096 dwords), 2 (a=1, 4096 dwords), 3 (a=1, 4096 dwords), 4 (a=1, 4096 dwords), 5 (a=1, 4096 dwords), 6 (a=1, 4096 dwords), 7 (a=1, 4096 dwords), 8 (a=1, 4096 dwords), 9 (a=1, 4096 dwords), 10 (a=1, 4096 dwords), 11 (a=1, 4096 dwords), 12 (a=1, 4096 dwords), 13 (a=1, 4096 dwords), 14 (a=1, 4096 dwords), 15 (a=1, 4096 dwords), 16 (a=1, 4096 dwords), 17 (a=1, 4096 dwords), 18 (a=1, 4096 dwords), 19 (a=1, 4096 dwords), 20 (a=1, 4096 dwords), 21 (a=1, 4096 dwords), 22 (a=1, 4096 dwords), 23 (a=1, 4096 dwords), 24 (a=1, 4096 dwords), 25 (a=1, 4096 dwords), 26 (a=1, 4096 dwords), 27 (a=1, 4096 dwords), 28 (a=1, 4096 dwords), 29 (a=1, 4096 dwords), 30 (a=1, 4096 dwords), 31 (a=1, 4096 dwords), 32 (compute, 4096 dwords), 33 (compute, 4096 dwords), 34 (compute, 4096 dwords), 35 (compute, 4096 dwords), 36 (compute, 4096 dwords), 37 (compute, 4096 dwords), 38 (compute, 4096 dwords), 39 (compute, 4096 dwords), 40 (compute, 4096 dwords), 41 (compute, 4096 dwords), 42 (compute, 4096 dwords), 43 (compute, 4096 dwords), 44 (compute, 4096 dwords), 45 (compute, 4096 dwords), 46 (compute, 4096 dwords), 47 (compute, 4096 dwords), 48 (compute, 4096 dwords), 49 (compute, 4096 dwords), 50 (compute, 4096 dwords), 51 (compute, 4096 dwords), 52 (compute, 4096 dwords), 53 (compute, 4096 dwords), 54 (compute, 4096 dwords), 55 (compute, 4096 dwords)
+#1 t 7.127 0x12004b4838; in flight at the give-up cq0 0 cq1 1; B flips +46.660 ms; 39 doorbell events
+      queue 0 take 8 dwords at 3280: rung -32.087, taken -31.938, submit returned -25.284
+      queue 8 take 8 dwords at 3368: rung -32.086, taken -25.279, submit returned -18.788
+      queue 0 take 20 dwords at 3288: rung -29.707, taken -11.984, submit returned -4.956
+      queue 0 take 140 dwords at 3308: rung -28.774, taken -4.691, submit returned -0.144
+      queue 0 take 16 dwords at 3448: rung +0.803, taken +0.876, submit returned +8.687
+      queue 8 take 24 dwords at 3376: rung +0.804, taken +8.693, submit returned +10.976
+      queue 0 take 8 dwords at 3464: rung +8.019, taken +11.249, submit returned +18.656
+      queue 0 take 16 dwords at 3472: rung before the window (< -50 ms), taken +20.709, submit returned +24.715
+      queue 0 take 4 dwords at 3488: rung +20.818, taken +33.480, submit returned +37.196
+      queue 0 take 140 dwords at 3492: rung +20.818, taken +37.436, submit returned +46.474
+      -> the last take before the flip, queue 0: title rang late (rung +20.8 ms, taken +37.4 ms)
+#2 t 17.336 0x12004b4838; in flight at the give-up cq0 0 cq1 0; B flips +5.526 ms; 27 doorbell events
+      queue 0 take 140 dwords at 188: rung before the window (< -50 ms), taken -47.312, submit returned -46.613
+      queue 0 take 16 dwords at 328: rung before the window (< -50 ms), taken -38.787, submit returned -38.279
+      queue 8 take 16 dwords at 2384: rung -38.740, taken -38.276, submit returned -38.228
+      queue 0 take 8 dwords at 344: rung before the window (< -50 ms), taken -19.075, submit returned -18.929
+      queue 8 take 8 dwords at 2400: rung -19.012, taken -18.926, submit returned -18.874
+      queue 0 take 16 dwords at 352: rung before the window (< -50 ms), taken -17.760, submit returned -17.426
+      queue 0 take 4 dwords at 368: rung -17.256, taken -16.926, submit returned -16.876
+      queue 0 take 140 dwords at 372: rung -17.256, taken -14.146, submit returned +5.257
+      queue 0 deferred at -16.610 (140 dwords pending at 372)
+      -> the last take before the flip, queue 0: taken before the give-up (rung -17.3, taken -14.1 ms)
+#3 t 58.100 0x12004b5438; in flight at the give-up cq0 0 cq1 4; B flips +3.666 ms; 71 doorbell events
+      queue 8 take 8 dwords at 2928: rung before the window (< -50 ms), taken -46.361, submit returned -35.189
+      queue 0 take 20 dwords at 3664: rung before the window (< -50 ms), taken -34.355, submit returned -33.805
+      queue 0 take 76 dwords at 3684: rung before the window (< -50 ms), taken -33.526, submit returned -33.077
+      queue 0 take 4 dwords at 3760: rung -32.807, taken -32.672, submit returned -32.609
+      queue 0 take 12 dwords at 3764: rung -32.807, taken -32.059, submit returned -31.353
+      queue 0 take 4 dwords at 3776: rung -31.808, taken -30.989, submit returned -30.935
+      queue 0 take 92 dwords at 3780: rung -31.808, taken -29.878, submit returned -29.016
+      queue 0 take 4 dwords at 3872: rung -28.799, taken -28.506, submit returned -27.765
+      queue 0 take 12 dwords at 3876: rung -28.799, taken -27.442, submit returned -26.053
+      queue 0 take 16 dwords at 3888: rung -24.172, taken -23.989, submit returned -23.713
+      queue 8 take 16 dwords at 2936: rung -24.170, taken -23.708, submit returned -23.628
+      queue 0 take 8 dwords at 3904: rung -15.674, taken -15.633, submit returned -15.438
+      queue 8 take 8 dwords at 2952: rung -15.674, taken -15.435, submit returned -15.338
+      queue 0 take 16 dwords at 3912: rung -14.597, taken -14.560, submit returned -14.351
+      queue 0 take 4 dwords at 3928: rung -14.043, taken -13.874, submit returned -13.832
+      queue 0 take 76 dwords at 3932: rung -14.043, taken -12.676, submit returned -11.322
+      queue 0 take 4 dwords at 4008: rung -11.006, taken -10.697, submit returned -10.657
+      queue 0 take 12 dwords at 4012: rung -11.006, taken -10.117, submit returned -9.565
+      queue 0 take 4 dwords at 4024: rung -9.853, taken -9.246, submit returned -9.213
+      queue 0 take 92 dwords at 4028: rung -9.853, taken -8.077, submit returned -3.568
+      queue 0 take 4 dwords at 24: rung +0.673, taken +1.289, submit returned +1.331
+      queue 0 take 12 dwords at 28: rung +0.673, taken +1.618, submit returned +2.874
+      queue 0 deferred at -32.331 (12 dwords pending at 3764)
+      queue 0 deferred at -30.671 (92 dwords pending at 3780)
+      queue 0 deferred at -13.569 (44 dwords pending at 3932)
+      queue 0 deferred at -10.386 (12 dwords pending at 4012)
+      queue 0 deferred at -8.955 (92 dwords pending at 4028)
+      -> the last take before the flip, queue 0: title rang late (rung +0.7 ms, taken +1.6 ms)
+#4 t 99.751 0x12004b3038; in flight at the give-up cq0 0 cq1 0; B flips +3.505 ms; 10 doorbell events
+      queue 8 take 8 dwords at 824: rung before the window (< -50 ms), taken -49.894, submit returned -22.286
+      queue 0 take 24 dwords at 3536: rung before the window (< -50 ms), taken -22.016, submit returned +2.008
+      queue 8 take 32 dwords at 832: rung +0.735, taken +2.014, submit returned -
+      -> the last take before the flip, queue 8: title rang late (rung +0.7 ms, taken +2.0 ms)
+#5 t 102.448 0x12004b3c38; in flight at the give-up cq0 0 cq1 0; B flips +27.883 ms; 77 doorbell events
+      queue 0 take 8 dwords at 504: rung before the window (< -50 ms), taken -46.635, submit returned -46.401
+      queue 8 take 8 dwords at 3392: rung -46.577, taken -46.399, submit returned -46.343
+      queue 0 take 16 dwords at 512: rung -46.577, taken -46.080, submit returned -45.207
+      queue 0 take 12 dwords at 528: rung -45.320, taken -44.723, submit returned -44.664
+      queue 0 take 92 dwords at 540: rung -44.902, taken -42.150, submit returned -40.997
+      queue 0 take 4 dwords at 632: rung -40.730, taken -40.511, submit returned -40.443
+      queue 0 take 12 dwords at 636: rung -40.730, taken -39.366, submit returned -38.780
+      queue 0 take 4 dwords at 648: rung -39.078, taken -38.412, submit returned -38.327
+      queue 0 take 108 dwords at 652: rung -39.078, taken -35.721, submit returned -34.801
+      queue 0 take 4 dwords at 760: rung -34.635, taken -33.927, submit returned -33.874
+      queue 0 take 12 dwords at 764: rung -34.635, taken -33.595, submit returned -32.948
+      queue 0 take 16 dwords at 776: rung -30.882, taken -30.826, submit returned -30.048
+      queue 8 take 16 dwords at 3400: rung -30.882, taken -30.040, submit returned -29.884
+      queue 0 take 24 dwords at 792: rung -21.480, taken -21.427, submit returned -9.972
+      queue 8 take 8 dwords at 3416: rung -21.480, taken -9.968, submit returned -7.827
+      queue 0 take 104 dwords at 816: rung -21.154, taken -7.543, submit returned +9.121
+      queue 0 take 4 dwords at 920: rung +0.528, taken +19.333, submit returned +19.386
+      queue 0 take 12 dwords at 924: rung +0.528, taken +19.658, submit returned +20.288
+      queue 0 take 4 dwords at 936: rung +20.898, taken +20.917, submit returned +20.966
+      queue 0 take 108 dwords at 940: rung +20.898, taken +23.750, submit returned +24.980
+      queue 0 take 16 dwords at 1048: rung +24.856, taken +25.238, submit returned +25.634
+      queue 0 deferred at -40.165 (12 dwords pending at 636)
+      queue 0 deferred at -38.055 (60 dwords pending at 652)
+      queue 0 deferred at +21.228 (60 dwords pending at 940)
+      -> the last take before the flip, queue 0: title rang late (rung +24.9 ms, taken +25.2 ms)
+#6 t 103.716 0x12004b3c38; in flight at the give-up cq0 0 cq1 0; B flips +19.852 ms; 3 doorbell events
+      queue 0 take 120 dwords at 1600: rung before the window (< -50 ms), taken -20.969, submit returned +2.398
+      -> the last take before the flip, queue 0: consumer late (rung before the window, taken -21.0 ms)
+#7 t 108.791 0x12004b5438; in flight at the give-up cq0 6 cq1 18; B flips +5.664 ms; 52 doorbell events
+      queue 0 take 108 dwords at 1996: rung before the window (< -50 ms), taken -47.654, submit returned -46.744
+      queue 0 take 4 dwords at 2104: rung -46.557, taken -46.302, submit returned -46.263
+      queue 0 take 12 dwords at 2108: rung -46.557, taken -45.994, submit returned -45.569
+      queue 0 take 16 dwords at 2120: rung before the window (< -50 ms), taken -43.515, submit returned -42.845
+      queue 8 take 16 dwords at 440: rung -43.458, taken -42.842, submit returned -42.789
+      queue 0 take 32 dwords at 2136: rung -36.335, taken -36.131, submit returned -14.092
+      queue 8 take 8 dwords at 456: rung -36.335, taken -14.089, submit returned -13.416
+      queue 0 take 48 dwords at 2168: rung -35.933, taken -13.147, submit returned -12.500
+      queue 0 take 36 dwords at 2216: rung -12.567, taken -12.187, submit returned -11.803
+      queue 0 take 16 dwords at 2252: rung -12.255, taken -11.488, submit returned -11.366
+      queue 0 take 12 dwords at 2268: rung -11.771, taken -11.102, submit returned -10.893
+      queue 0 take 4 dwords at 2280: rung -10.567, taken -10.231, submit returned -10.197
+      queue 0 take 108 dwords at 2284: rung -10.567, taken -8.127, submit returned +0.783
+      queue 0 take 16 dwords at 2392: rung +0.644, taken +1.053, submit returned +1.759
+      queue 0 take 16 dwords at 2408: rung +4.759, taken +4.888, submit returned -
+      queue 0 deferred at -9.937 (60 dwords pending at 2284)
+      -> the last take before the flip, queue 0: title rang late (rung +4.8 ms, taken +4.9 ms)
+#8 t 122.139 0x12004b5438; in flight at the give-up cq0 2 cq1 16; B flips +2.267 ms; 37 doorbell events
+      queue 8 take 8 dwords at 936: rung before the window (< -50 ms), taken -18.055, submit returned -17.280
+      queue 0 take 24 dwords at 3824: rung before the window (< -50 ms), taken -17.016, submit returned -16.787
+      queue 0 take 32 dwords at 3848: rung -16.812, taken -16.520, submit returned -16.172
+      queue 0 take 32 dwords at 3880: rung before the window (< -50 ms), taken -15.905, submit returned -15.579
+      queue 0 take 4 dwords at 3912: rung -15.555, taken -14.533, submit returned -14.487
+      queue 0 take 16 dwords at 3916: rung -15.555, taken -14.146, submit returned -13.942
+      queue 0 take 12 dwords at 3932: rung -14.312, taken -13.150, submit returned -12.814
+      queue 0 take 4 dwords at 3944: rung -12.501, taken -12.226, submit returned -12.189
+      queue 0 take 108 dwords at 3948: rung -12.501, taken -9.083, submit returned -3.010
+      queue 0 take 4 dwords at 4056: rung +0.676, taken +0.761, submit returned +0.934
+      queue 0 take 12 dwords at 4060: rung +0.676, taken +1.461, submit returned +2.197
+      queue 0 deferred at -13.675 (12 dwords pending at 3932)
+      queue 0 deferred at -11.927 (60 dwords pending at 3948)
+      queue 0 deferred at +1.187 (12 dwords pending at 4060)
+      -> the last take before the flip, queue 0: title rang late (rung +0.7 ms, taken +1.5 ms)
+#9 t 312.216 0x12004b5438; in flight at the give-up cq0 0 cq1 0; B flips +39.935 ms; 54 doorbell events
+      queue 0 take 4 dwords at 888: rung before the window (< -50 ms), taken -49.994, submit returned -49.950
+      queue 0 take 76 dwords at 892: rung before the window (< -50 ms), taken -49.158, submit returned -48.353
+      queue 0 take 16 dwords at 968: rung -48.908, taken -48.078, submit returned -47.526
+      queue 0 take 16 dwords at 984: rung -34.219, taken -34.014, submit returned -33.678
+      queue 8 take 16 dwords at 2160: rung -34.219, taken -33.674, submit returned -33.588
+      queue 0 take 8 dwords at 1000: rung -15.531, taken -15.525, submit returned -15.275
+      queue 8 take 8 dwords at 2176: rung -15.530, taken -15.272, submit returned -15.196
+      queue 0 take 28 dwords at 1008: rung -15.423, taken -14.786, submit returned -14.550
+      queue 0 take 12 dwords at 1036: rung -15.004, taken -13.510, submit returned -13.114
+      queue 0 take 64 dwords at 1048: rung -13.245, taken -12.555, submit returned -11.895
+      queue 0 take 4 dwords at 1112: rung -11.010, taken -10.647, submit returned -10.564
+      queue 0 take 124 dwords at 1116: rung -11.010, taken -8.182, submit returned +20.436
+      queue 0 take 4 dwords at 1240: rung +20.768, taken +21.309, submit returned +21.352
+      queue 0 take 12 dwords at 1244: rung +20.768, taken +21.626, submit returned +22.125
+      queue 0 take 16 dwords at 1256: rung +23.040, taken +23.154, submit returned +23.807
+      queue 8 take 16 dwords at 2184: rung +23.040, taken +23.810, submit returned +23.863
+      queue 0 deferred at -49.687 (76 dwords pending at 892)
+      queue 0 deferred at -14.276 (12 dwords pending at 1036)
+      queue 0 deferred at -10.308 (12 dwords pending at 1116)
+      -> the last take before the flip, queue 8: title rang late (rung +23.0 ms, taken +23.8 ms)
+#10 t 338.204 0x12004b5438; in flight at the give-up cq0 0 cq1 0; B flips +20.643 ms; 59 doorbell events
+      queue 0 take 28 dwords at 3776: rung before the window (< -50 ms), taken -49.238, submit returned -48.527
+      queue 0 take 76 dwords at 3804: rung before the window (< -50 ms), taken -45.942, submit returned -44.856
+      queue 0 take 4 dwords at 3880: rung -44.591, taken -44.468, submit returned -44.423
+      queue 0 take 12 dwords at 3884: rung -44.591, taken -43.892, submit returned -43.434
+      queue 0 take 4 dwords at 3896: rung -43.318, taken -42.933, submit returned -42.843
+      queue 0 take 108 dwords at 3900: rung -43.318, taken -41.808, submit returned -40.240
+      queue 0 take 4 dwords at 4008: rung -40.039, taken -39.355, submit returned -39.299
+      queue 0 take 12 dwords at 4012: rung -40.039, taken -39.014, submit returned -38.356
+      queue 0 take 16 dwords at 4024: rung -37.519, taken -37.327, submit returned -36.706
+      queue 8 take 16 dwords at 3392: rung -37.519, taken -36.704, submit returned -36.660
+      queue 0 take 8 dwords at 4040: rung -15.840, taken -15.796, submit returned -15.596
+      queue 8 take 8 dwords at 3408: rung -15.839, taken -15.591, submit returned -15.538
+      queue 0 take 28 dwords at 4048: rung -15.734, taken -14.282, submit returned -13.930
+      queue 0 take 76 dwords at 4076: rung -15.320, taken -13.593, submit returned -12.241
+      queue 0 take 4 dwords at 56: rung -11.065, taken -10.669, submit returned -10.599
+      queue 0 take 124 dwords at 60: rung -11.065, taken -8.393, submit returned +17.507
+      queue 0 deferred at -48.251 (12 dwords pending at 3804)
+      queue 0 deferred at -44.155 (12 dwords pending at 3884)
+      queue 0 deferred at -42.621 (108 dwords pending at 3900)
+      queue 0 deferred at -10.314 (12 dwords pending at 60)
+      -> the last take before the flip, queue 0: taken before the give-up (rung -11.1, taken -8.4 ms)
+#11 t 364.899 0x12004b3c38; in flight at the give-up cq0 0 cq1 0; B flips +14.092 ms; 61 doorbell events
+      queue 0 take 24 dwords at 776: rung -47.058, taken -46.944, submit returned -46.485
+      queue 8 take 8 dwords at 1072: rung -47.058, taken -46.480, submit returned -46.359
+      queue 0 take 8 dwords at 800: rung -46.846, taken -46.086, submit returned -45.194
+      queue 0 take 4 dwords at 808: rung -44.942, taken -44.727, submit returned -44.652
+      queue 0 take 76 dwords at 812: rung -44.942, taken -42.759, submit returned -42.408
+      queue 0 take 4 dwords at 888: rung -41.264, taken -40.903, submit returned -40.853
+      queue 0 take 124 dwords at 892: rung -41.264, taken -38.727, submit returned -37.577
+      queue 0 take 4 dwords at 1016: rung -37.372, taken -36.846, submit returned -36.806
+      queue 0 take 12 dwords at 1020: rung -37.372, taken -36.533, submit returned -35.927
+      queue 0 take 16 dwords at 1032: rung -33.443, taken -33.346, submit returned -32.310
+      queue 8 take 16 dwords at 1080: rung -33.442, taken -32.306, submit returned -32.253
+      queue 0 take 24 dwords at 1048: rung -13.384, taken -13.120, submit returned -12.092
+      queue 8 take 8 dwords at 1096: rung -13.384, taken -12.088, submit returned -11.914
+      queue 0 take 8 dwords at 1072: rung -13.017, taken -11.652, submit returned -11.119
+      queue 0 take 4 dwords at 1080: rung -10.838, taken -10.765, submit returned -10.711
+      queue 0 take 76 dwords at 1084: rung -10.838, taken -8.795, submit returned +13.935
+      queue 0 deferred at -43.815 (44 dwords pending at 812)
+      queue 0 deferred at -40.588 (12 dwords pending at 892)
+      queue 0 deferred at -10.459 (28 dwords pending at 1084)
+      -> the last take before the flip, queue 0: taken before the give-up (rung -10.8, taken -8.8 ms)
+#12 t 419.416 0x12004b3c38; in flight at the give-up cq0 0 cq1 0; B flips +15.150 ms; 63 doorbell events
+      queue 0 take 24 dwords at 3768: rung -45.590, taken -45.537, submit returned -44.934
+      queue 8 take 8 dwords at 1336: rung -45.589, taken -44.919, submit returned -43.856
+      queue 0 take 12 dwords at 3792: rung -44.138, taken -43.421, submit returned -43.346
+      queue 0 take 76 dwords at 3804: rung -44.063, taken -41.789, submit returned -40.017
+      queue 0 take 4 dwords at 3880: rung -39.750, taken -39.678, submit returned -39.627
+      queue 0 take 12 dwords at 3884: rung -39.750, taken -38.829, submit returned -38.364
+      queue 0 take 4 dwords at 3896: rung -38.492, taken -37.996, submit returned -37.950
+      queue 0 take 108 dwords at 3900: rung -38.492, taken -36.647, submit returned -35.840
+      queue 0 take 4 dwords at 4008: rung -35.754, taken -35.124, submit returned -35.058
+      queue 0 take 12 dwords at 4012: rung -35.754, taken -34.778, submit returned -34.176
+      queue 0 take 16 dwords at 4024: rung -33.014, taken -32.883, submit returned -32.118
+      queue 8 take 16 dwords at 1344: rung -33.013, taken -32.113, submit returned -32.056
+      queue 0 take 24 dwords at 4040: rung -12.862, taken -12.800, submit returned -12.464
+      queue 8 take 8 dwords at 1360: rung -12.862, taken -12.459, submit returned -12.119
+      queue 0 take 8 dwords at 4064: rung before the window (< -50 ms), taken -11.353, submit returned -11.028
+      queue 0 take 4 dwords at 4072: rung -10.848, taken -10.611, submit returned -10.559
+      queue 0 take 76 dwords at 4076: rung -10.848, taken -8.674, submit returned +14.922
+      queue 0 deferred at -43.065 (44 dwords pending at 3804)
+      queue 0 deferred at -39.360 (12 dwords pending at 3884)
+      queue 0 deferred at -37.691 (108 dwords pending at 3900)
+      queue 0 deferred at -10.302 (44 dwords pending at 4076)
+      -> the last take before the flip, queue 0: taken before the give-up (rung -10.8, taken -8.7 ms)
+#13 t 466.300 0x12004b3c38; in flight at the give-up cq0 0 cq1 0; B flips +20.479 ms; 65 doorbell events
+      queue 0 take 24 dwords at 2616: rung -44.407, taken -44.308, submit returned -43.967
+      queue 8 take 8 dwords at 632: rung -44.406, taken -43.961, submit returned -43.790
+      queue 0 take 8 dwords at 2640: rung -43.676, taken -43.441, submit returned -42.479
+      queue 0 take 4 dwords at 2648: rung -42.035, taken -41.716, submit returned -41.636
+      queue 0 take 44 dwords at 2652: rung -42.035, taken -41.073, submit returned -40.483
+      queue 0 take 32 dwords at 2696: rung -40.316, taken -40.214, submit returned -39.880
+      queue 0 take 4 dwords at 2728: rung -39.649, taken -39.455, submit returned -39.392
+      queue 0 take 12 dwords at 2732: rung -39.649, taken -37.784, submit returned -37.433
+      queue 0 take 36 dwords at 2744: rung -37.694, taken -37.099, submit returned -36.966
+      queue 0 take 76 dwords at 2780: rung -37.485, taken -36.439, submit returned -36.075
+      queue 0 take 16 dwords at 2856: rung -36.010, taken -35.806, submit returned -35.361
+      queue 0 take 16 dwords at 2872: rung -34.140, taken -34.066, submit returned -33.139
+      queue 8 take 16 dwords at 640: rung -34.139, taken -33.132, submit returned -33.013
+      queue 0 take 24 dwords at 2888: rung -12.693, taken -12.545, submit returned -12.204
+      queue 8 take 8 dwords at 656: rung -12.692, taken -12.200, submit returned -12.102
+      queue 0 take 8 dwords at 2912: rung -12.476, taken -11.581, submit returned -11.037
+      queue 0 take 16 dwords at 2920: rung before the window (< -50 ms), taken -10.763, submit returned -10.383
+      queue 0 take 64 dwords at 2936: rung -10.645, taken -7.987, submit returned +20.369
+      queue 0 deferred at -41.362 (44 dwords pending at 2652)
+      queue 0 deferred at -39.115 (12 dwords pending at 2732)
+      queue 0 deferred at -36.704 (76 dwords pending at 2780)
+      -> the last take before the flip, queue 0: taken before the give-up (rung -10.6, taken -8.0 ms)
+
+# the last take before each flip: {'title rang late': 7, 'taken before the give-up': 5, 'consumer late': 1}
+# timestamp rewrites on wait labels: 0
