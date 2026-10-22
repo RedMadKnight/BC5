@@ -1,0 +1,16 @@
+# Experiment 0201, run X3 (2026-10-22 16:12-16:18): launcher defaults, BC5_DIRECT_DISPATCH_JOURNAL=1, KYTY_BC5_AMM_TRACE=1,
+# the exp 0197 build. The Photo Mode steps misfired under the heavy journal: the game stayed at the Parry prompt by the
+# outpost (the lake at the left edge of the frame). Journal 4.9 GB (deleted after the scan); AMM trace 109,030 lines.
+# x3scan.py output in X3-scan.txt; AMM trace lines around the water textures (first 400) in X3-amm-water.txt.
+- No dispatch (DISPATCH_DIRECT/INDIRECT, user data 0-15) held a water texture's descriptor dword0 inline: no compute pass
+  uses those textures through inline user-data descriptors in this view (tables in memory are not covered).
+- The pixel-stage textures are streamed: their address ranges are mapped by automatic AMM maps of 16-48 KiB
+  ("map auto va 0x...8492834000 size 0xc000 ... prot 0x90", "map auto va 0x...80907c4000 size 0xac000 ... prot 0x90")
+  and filled by package reads ("read file 0x05ad8d9f +0x928c3c size 0x4000 -> 0x...809087c000 ... (parallel)",
+  "read file 0x0ab1549c +0x502f4 size 0xc000 -> 0x...8492ae4000 ... (parallel)"). A sparse texture streamed tile by tile.
+- The vertex-stage textures are single automatic maps, GPU-only (prot 0x30), all zero at mapping:
+  "map auto va 0x...8001810000 size 0x800000 ... prot 0x30" (0 of 2048 pages non-zero) and 0x...8001010000 size 0x200000
+  (0 of 512): GPU-written targets, mapped once.
+Reading: a flat cell is a tile of the streamed normal/detail texture that the water samples as empty: never requested,
+read too late (the host runs APR reads in parallel, KYTY_BC5_APR_PARALLEL=8, exp 0112), or filled by the host's CPU copy
+while the GPU keeps stale zero lines cached. The last two would make patches come and go, as seen.

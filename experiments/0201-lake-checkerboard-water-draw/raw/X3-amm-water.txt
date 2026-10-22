@@ -1,0 +1,400 @@
+mono 4868.306 amm trace: window reserved at 0x0000008000000000 size 0x1000000000
+mono 4870.331 amm trace: map auto va 0x0000008000000000 size 0x40000 dmem 0x99200000 type 12 prot 0x30 -> 0x00000000
+mono 4870.332 amm trace: auto map content va 0x0000008000040000 size 0x100000: 0 of 256 pages non-zero
+mono 4870.332 amm trace: map auto va 0x0000008000040000 size 0x100000 dmem 0x99240000 type 12 prot 0x30 -> 0x00000000
+mono 4870.332 amm trace: map auto va 0x0000008000140000 size 0x10000 dmem 0x99340000 type 12 prot 0x30 -> 0x00000000
+mono 4870.332 amm trace: map auto va 0x0000008000150000 size 0x10000 dmem 0x99350000 type 12 prot 0x30 -> 0x00000000
+mono 4870.332 amm trace: map auto va 0x0000008000160000 size 0x10000 dmem 0x99360000 type 12 prot 0x30 -> 0x00000000
+mono 4870.332 amm trace: auto map content va 0x0000008000170000 size 0x100000: 0 of 256 pages non-zero
+mono 4870.332 amm trace: map auto va 0x0000008000170000 size 0x100000 dmem 0x99370000 type 12 prot 0x30 -> 0x00000000
+mono 4870.332 amm trace: map auto va 0x0000008000270000 size 0x10000 dmem 0x99470000 type 12 prot 0x30 -> 0x00000000
+mono 4870.332 amm trace: map auto va 0x000000800028c000 size 0x4000 dmem 0x99480000 type 12 prot 0x30 -> 0x00000000
+mono 4870.332 amm trace: map auto va 0x0000008000290000 size 0x30000 dmem 0x99484000 type 12 prot 0x30 -> 0x00000000
+mono 4870.332 amm trace: map auto va 0x00000080002c0000 size 0x30000 dmem 0x994b4000 type 12 prot 0x30 -> 0x00000000
+mono 4870.332 amm trace: map auto va 0x00000080002f0000 size 0x30000 dmem 0x994e4000 type 12 prot 0x30 -> 0x00000000
+mono 4870.332 amm trace: map auto va 0x0000008000320000 size 0x30000 dmem 0x99514000 type 12 prot 0x30 -> 0x00000000
+mono 4870.332 amm trace: map auto va 0x0000008000350000 size 0x30000 dmem 0x99544000 type 12 prot 0x30 -> 0x00000000
+mono 4870.332 amm trace: map auto va 0x0000008000380000 size 0x30000 dmem 0x99574000 type 12 prot 0x30 -> 0x00000000
+mono 4870.332 amm trace: map auto va 0x00000080003b0000 size 0x30000 dmem 0x995a4000 type 12 prot 0x30 -> 0x00000000
+mono 4870.332 amm trace: map auto va 0x00000080003e0000 size 0x30000 dmem 0x995d4000 type 12 prot 0x30 -> 0x00000000
+mono 4870.332 amm trace: map auto va 0x0000008000410000 size 0x30000 dmem 0x99604000 type 12 prot 0x30 -> 0x00000000
+mono 4870.332 amm trace: map auto va 0x0000008000440000 size 0x30000 dmem 0x99634000 type 12 prot 0x30 -> 0x00000000
+mono 4870.332 amm trace: map auto va 0x0000008000470000 size 0x30000 dmem 0x99664000 type 12 prot 0x30 -> 0x00000000
+mono 4870.332 amm trace: map auto va 0x00000080004a0000 size 0x30000 dmem 0x99694000 type 12 prot 0x30 -> 0x00000000
+mono 4870.332 amm trace: map auto va 0x00000080004d0000 size 0x30000 dmem 0x996c4000 type 12 prot 0x30 -> 0x00000000
+mono 4870.332 amm trace: map auto va 0x0000008000500000 size 0x30000 dmem 0x996f4000 type 12 prot 0x30 -> 0x00000000
+mono 4870.332 amm trace: map auto va 0x0000008000530000 size 0x30000 dmem 0x99724000 type 12 prot 0x30 -> 0x00000000
+mono 4870.332 amm trace: map auto va 0x0000008000560000 size 0x30000 dmem 0x99754000 type 12 prot 0x30 -> 0x00000000
+mono 4870.332 amm trace: map auto va 0x0000008000590000 size 0x30000 dmem 0x99784000 type 12 prot 0x30 -> 0x00000000
+mono 4870.332 amm trace: map auto va 0x00000080005c0000 size 0x30000 dmem 0x997b4000 type 12 prot 0x30 -> 0x00000000
+mono 4870.332 amm trace: map auto va 0x00000080005f0000 size 0x30000 dmem 0x997e4000 type 12 prot 0x30 -> 0x00000000
+mono 4870.332 amm trace: map auto va 0x0000008000620000 size 0x30000 dmem 0x99814000 type 12 prot 0x30 -> 0x00000000
+mono 4870.333 amm trace: map auto va 0x0000008000650000 size 0x30000 dmem 0x99844000 type 12 prot 0x30 -> 0x00000000
+mono 4870.333 amm trace: map auto va 0x0000008000680000 size 0x30000 dmem 0x99874000 type 12 prot 0x30 -> 0x00000000
+mono 4870.333 amm trace: map auto va 0x00000080006b0000 size 0x30000 dmem 0x998a4000 type 12 prot 0x30 -> 0x00000000
+mono 4870.333 amm trace: map auto va 0x00000080006e0000 size 0x30000 dmem 0x998d4000 type 12 prot 0x30 -> 0x00000000
+mono 4870.333 amm trace: map auto va 0x0000008000710000 size 0x30000 dmem 0x99904000 type 12 prot 0x30 -> 0x00000000
+mono 4870.333 amm trace: map auto va 0x0000008000740000 size 0x30000 dmem 0x99934000 type 12 prot 0x30 -> 0x00000000
+mono 4870.333 amm trace: map auto va 0x0000008000770000 size 0x30000 dmem 0x99964000 type 12 prot 0x30 -> 0x00000000
+mono 4870.333 amm trace: map auto va 0x00000080007a0000 size 0x30000 dmem 0x99994000 type 12 prot 0x30 -> 0x00000000
+mono 4870.333 amm trace: map auto va 0x00000080007d0000 size 0x30000 dmem 0x999c4000 type 12 prot 0x30 -> 0x00000000
+mono 4870.333 amm trace: map auto va 0x0000008000800000 size 0x30000 dmem 0x999f4000 type 12 prot 0x30 -> 0x00000000
+mono 4870.333 amm trace: map auto va 0x0000008000830000 size 0x30000 dmem 0x99a24000 type 12 prot 0x30 -> 0x00000000
+mono 4870.333 amm trace: map auto va 0x0000008000860000 size 0x30000 dmem 0x99a54000 type 12 prot 0x30 -> 0x00000000
+mono 4870.333 amm trace: map auto va 0x0000008000890000 size 0xb0000 dmem 0x99a84000 type 12 prot 0x30 -> 0x00000000
+mono 4870.333 amm trace: map auto va 0x0000008000940000 size 0xb0000 dmem 0x99b34000 type 12 prot 0x30 -> 0x00000000
+mono 4870.333 amm trace: map auto va 0x00000080009f0000 size 0xb0000 dmem 0x99be4000 type 12 prot 0x30 -> 0x00000000
+mono 4870.333 amm trace: map auto va 0x0000008000aa0000 size 0xb0000 dmem 0x99c94000 type 12 prot 0x30 -> 0x00000000
+mono 4870.333 amm trace: map auto va 0x0000008000b50000 size 0xb0000 dmem 0x99d44000 type 12 prot 0x30 -> 0x00000000
+mono 4870.333 amm trace: map auto va 0x0000008000c00000 size 0xb0000 dmem 0x99df4000 type 12 prot 0x30 -> 0x00000000
+mono 4870.333 amm trace: map auto va 0x0000008000cb0000 size 0xb0000 dmem 0x99ea4000 type 12 prot 0x30 -> 0x00000000
+mono 4870.333 amm trace: map auto va 0x0000008000d60000 size 0xb0000 dmem 0x99f54000 type 12 prot 0x30 -> 0x00000000
+mono 4870.334 amm trace: auto map content va 0x0000008000e10000 size 0x200000: 0 of 512 pages non-zero
+mono 4870.334 amm trace: map auto va 0x0000008000e10000 size 0x200000 dmem 0x9a004000 type 12 prot 0x30 -> 0x00000000
+mono 4870.335 amm trace: auto map content va 0x0000008001010000 size 0x200000: 0 of 512 pages non-zero
+mono 4870.335 amm trace: map auto va 0x0000008001010000 size 0x200000 dmem 0x9a204000 type 12 prot 0x30 -> 0x00000000
+mono 4870.335 amm trace: auto map content va 0x0000008001210000 size 0x200000: 0 of 512 pages non-zero
+mono 4870.335 amm trace: map auto va 0x0000008001210000 size 0x200000 dmem 0x9a404000 type 12 prot 0x30 -> 0x00000000
+mono 4870.336 amm trace: auto map content va 0x0000008001410000 size 0x200000: 0 of 512 pages non-zero
+mono 4870.336 amm trace: map auto va 0x0000008001410000 size 0x200000 dmem 0x9a604000 type 12 prot 0x30 -> 0x00000000
+mono 4870.337 amm trace: auto map content va 0x0000008001610000 size 0x200000: 0 of 512 pages non-zero
+mono 4870.337 amm trace: map auto va 0x0000008001610000 size 0x200000 dmem 0x9a804000 type 12 prot 0x30 -> 0x00000000
+mono 4870.340 amm trace: auto map content va 0x0000008001810000 size 0x800000: 0 of 2048 pages non-zero
+mono 4870.340 amm trace: map auto va 0x0000008001810000 size 0x800000 dmem 0x9aa04000 type 12 prot 0x30 -> 0x00000000
+mono 4873.684 amm trace: map auto va 0x00000080900c4000 size 0x4000 dmem 0xad5d8000 type 12 prot 0x90 -> 0x00000000
+mono 4875.099 amm trace: map auto va 0x000000809037c000 size 0x4000 dmem 0xad5dc000 type 12 prot 0x90 -> 0x00000000
+mono 4875.099 amm trace: map auto va 0x0000008090388000 size 0x8000 dmem 0xad5e0000 type 12 prot 0x90 -> 0x00000000
+mono 4875.100 amm trace: auto map content va 0x0000008090390000 size 0x200000: 0 of 512 pages non-zero
+mono 4875.100 amm trace: map auto va 0x0000008090390000 size 0x200000 dmem 0xad5e8000 type 12 prot 0x90 -> 0x00000000
+mono 4875.101 amm trace: auto map content va 0x0000008090590000 size 0x100000: 0 of 256 pages non-zero
+mono 4875.101 amm trace: map auto va 0x0000008090590000 size 0x100000 dmem 0xad7e8000 type 12 prot 0x90 -> 0x00000000
+mono 4875.101 amm trace: map auto va 0x000000809069c000 size 0x4000 dmem 0xad8e8000 type 12 prot 0x90 -> 0x00000000
+mono 4875.101 amm trace: map auto va 0x00000080906ac000 size 0x4000 dmem 0xad8ec000 type 12 prot 0x90 -> 0x00000000
+mono 4875.101 amm trace: map auto va 0x00000080906bc000 size 0x4000 dmem 0xad8f0000 type 12 prot 0x90 -> 0x00000000
+mono 4875.101 amm trace: map auto va 0x00000080906c0000 size 0x20000 dmem 0xad8f4000 type 12 prot 0x90 -> 0x00000000
+mono 4875.101 amm trace: map auto va 0x00000080906e8000 size 0x18000 dmem 0xad914000 type 12 prot 0x90 -> 0x00000000
+mono 4875.101 amm trace: map auto va 0x0000008090708000 size 0x18000 dmem 0xad92c000 type 12 prot 0x90 -> 0x00000000
+mono 4875.101 amm trace: map auto va 0x0000008090768000 size 0x58000 dmem 0xad944000 type 12 prot 0x90 -> 0x00000000
+mono 4875.101 amm trace: map auto va 0x00000080907c4000 size 0xac000 dmem 0xad99c000 type 12 prot 0x90 -> 0x00000000
+mono 4875.101 amm trace: map auto va 0x000000809087c000 size 0x4000 dmem 0xada48000 type 12 prot 0x90 -> 0x00000000
+mono 4875.101 amm trace: map auto va 0x0000008090884000 size 0xc000 dmem 0xada4c000 type 12 prot 0x90 -> 0x00000000
+mono 4875.101 amm trace: map auto va 0x000000809089c000 size 0x4000 dmem 0xada58000 type 12 prot 0x90 -> 0x00000000
+mono 4875.102 amm trace: map auto va 0x00000080908a8000 size 0x8000 dmem 0xada5c000 type 12 prot 0x90 -> 0x00000000
+mono 4875.102 amm trace: map auto va 0x00000080908b8000 size 0x18000 dmem 0xada64000 type 12 prot 0x90 -> 0x00000000
+mono 4875.102 amm trace: map auto va 0x00000080908d8000 size 0x18000 dmem 0xada7c000 type 12 prot 0x90 -> 0x00000000
+mono 4875.102 amm trace: map auto va 0x00000080908f0000 size 0x10000 dmem 0xada94000 type 12 prot 0x90 -> 0x00000000
+mono 4875.102 amm trace: map auto va 0x0000008090904000 size 0xc000 dmem 0xadaa4000 type 12 prot 0x90 -> 0x00000000
+mono 4875.102 amm trace: map auto va 0x0000008090934000 size 0xc000 dmem 0xadab0000 type 12 prot 0x90 -> 0x00000000
+mono 4875.102 amm trace: map auto va 0x0000008090940000 size 0x30000 dmem 0xadabc000 type 12 prot 0x90 -> 0x00000000
+mono 4875.102 amm trace: map auto va 0x000000809097c000 size 0x4000 dmem 0xadaec000 type 12 prot 0x90 -> 0x00000000
+mono 4875.102 amm trace: map auto va 0x000000809098c000 size 0x14000 dmem 0xadaf0000 type 12 prot 0x90 -> 0x00000000
+mono 4875.102 amm trace: map auto va 0x00000080909ac000 size 0x4000 dmem 0xadb04000 type 12 prot 0x90 -> 0x00000000
+mono 4875.102 amm trace: map auto va 0x00000080909b8000 size 0x8000 dmem 0xadb08000 type 12 prot 0x90 -> 0x00000000
+mono 4875.102 amm trace: map auto va 0x0000008090b18000 size 0xa8000 dmem 0xadb10000 type 12 prot 0x90 -> 0x00000000
+mono 4875.102 amm trace: map auto va 0x0000008090bc4000 size 0xc000 dmem 0xadbb8000 type 12 prot 0x90 -> 0x00000000
+mono 4875.102 amm trace: map auto va 0x0000008090e74000 size 0xc000 dmem 0xadbc4000 type 12 prot 0x90 -> 0x00000000
+mono 4875.102 amm trace: map auto va 0x0000008091124000 size 0xc000 dmem 0xadbd0000 type 12 prot 0x90 -> 0x00000000
+mono 4875.102 amm trace: map auto va 0x00000080913d8000 size 0x18000 dmem 0xadbdc000 type 12 prot 0x90 -> 0x00000000
+mono 4875.102 amm trace: map auto va 0x0000008091938000 size 0x18000 dmem 0xadbf4000 type 12 prot 0x90 -> 0x00000000
+mono 4875.102 amm trace: map auto va 0x0000008091e98000 size 0x18000 dmem 0xadc0c000 type 12 prot 0x90 -> 0x00000000
+mono 4875.102 amm trace: map auto va 0x00000080923f4000 size 0xc000 dmem 0xadc24000 type 12 prot 0x90 -> 0x00000000
+mono 4875.102 amm trace: map auto va 0x00000080924a8000 size 0x18000 dmem 0xadc30000 type 12 prot 0x90 -> 0x00000000
+mono 4875.102 amm trace: map auto va 0x0000008092a08000 size 0x8000 dmem 0xadc48000 type 12 prot 0x90 -> 0x00000000
+mono 4875.102 amm trace: map auto va 0x0000008092b68000 size 0x8000 dmem 0xadc50000 type 12 prot 0x90 -> 0x00000000
+mono 4875.102 amm trace: map auto va 0x0000008092bc4000 size 0xc000 dmem 0xadc58000 type 12 prot 0x90 -> 0x00000000
+mono 4875.102 amm trace: map auto va 0x0000008092e78000 size 0x8000 dmem 0xadc64000 type 12 prot 0x90 -> 0x00000000
+mono 4875.102 amm trace: map auto va 0x0000008092fd8000 size 0x8000 dmem 0xadc6c000 type 12 prot 0x90 -> 0x00000000
+mono 4875.103 amm trace: map auto va 0x0000008093034000 size 0xc000 dmem 0xadc74000 type 12 prot 0x90 -> 0x00000000
+mono 4875.103 amm trace: map auto va 0x00000080932e8000 size 0x18000 dmem 0xadc80000 type 12 prot 0x90 -> 0x00000000
+mono 4875.103 amm trace: map auto va 0x0000008093848000 size 0x8000 dmem 0xadc98000 type 12 prot 0x90 -> 0x00000000
+mono 4875.103 amm trace: map auto va 0x0000008093858000 size 0x8000 dmem 0xadca0000 type 12 prot 0x90 -> 0x00000000
+mono 4875.103 amm trace: map auto va 0x0000008093864000 size 0x1c000 dmem 0xadca8000 type 12 prot 0x90 -> 0x00000000
+mono 4875.103 amm trace: map auto va 0x0000008093884000 size 0xc000 dmem 0xadcc4000 type 12 prot 0x90 -> 0x00000000
+mono 4875.103 amm trace: map auto va 0x0000008093898000 size 0x8000 dmem 0xadcd0000 type 12 prot 0x90 -> 0x00000000
+mono 4875.103 amm trace: map auto va 0x00000080938a4000 size 0xc000 dmem 0xadcd8000 type 12 prot 0x90 -> 0x00000000
+mono 4875.103 amm trace: map auto va 0x00000080938b8000 size 0x8000 dmem 0xadce4000 type 12 prot 0x90 -> 0x00000000
+mono 4875.103 amm trace: map auto va 0x00000080938c4000 size 0xc000 dmem 0xadcec000 type 12 prot 0x90 -> 0x00000000
+mono 4875.106 amm trace: map auto va 0x00000080938d0000 size 0x10000 dmem 0xadcf8000 type 12 prot 0x90 -> 0x00000000
+mono 4875.106 amm trace: map auto va 0x00000080938ec000 size 0x14000 dmem 0xadd08000 type 12 prot 0x90 -> 0x00000000
+mono 4875.106 amm trace: map auto va 0x0000008093900000 size 0x20000 dmem 0xadd1c000 type 12 prot 0x90 -> 0x00000000
+mono 4875.106 amm trace: map auto va 0x0000008093920000 size 0x20000 dmem 0xadd3c000 type 12 prot 0x90 -> 0x00000000
+mono 4875.106 amm trace: map auto va 0x0000008093940000 size 0x40000 dmem 0xadd5c000 type 12 prot 0x90 -> 0x00000000
+mono 4875.106 amm trace: map auto va 0x0000008093980000 size 0x40000 dmem 0xadd9c000 type 12 prot 0x90 -> 0x00000000
+mono 4875.106 amm trace: map auto va 0x00000080939c0000 size 0x40000 dmem 0xadddc000 type 12 prot 0x90 -> 0x00000000
+mono 4875.106 amm trace: map auto va 0x0000008093a00000 size 0x40000 dmem 0xade1c000 type 12 prot 0x90 -> 0x00000000
+mono 4875.106 amm trace: map auto va 0x0000008093a40000 size 0x40000 dmem 0xade5c000 type 12 prot 0x90 -> 0x00000000
+mono 4875.106 amm trace: map auto va 0x0000008093a80000 size 0x40000 dmem 0xade9c000 type 12 prot 0x90 -> 0x00000000
+mono 4875.106 amm trace: map auto va 0x0000008093ac0000 size 0x40000 dmem 0xadedc000 type 12 prot 0x90 -> 0x00000000
+mono 4875.106 amm trace: map auto va 0x0000008093b00000 size 0x40000 dmem 0xadf1c000 type 12 prot 0x90 -> 0x00000000
+mono 4875.106 amm trace: map auto va 0x0000008093b40000 size 0x40000 dmem 0xadf5c000 type 12 prot 0x90 -> 0x00000000
+mono 4875.106 amm trace: map auto va 0x0000008093b80000 size 0x80000 dmem 0xadf9c000 type 12 prot 0x90 -> 0x00000000
+mono 4875.106 amm trace: map auto va 0x0000008093c00000 size 0x40000 dmem 0xae01c000 type 12 prot 0x90 -> 0x00000000
+mono 4875.106 amm trace: map auto va 0x0000008093c40000 size 0x40000 dmem 0xae05c000 type 12 prot 0x90 -> 0x00000000
+mono 4875.106 amm trace: map auto va 0x0000008093c80000 size 0x40000 dmem 0xae09c000 type 12 prot 0x90 -> 0x00000000
+mono 4875.106 amm trace: map auto va 0x0000008093cc0000 size 0x40000 dmem 0xae0dc000 type 12 prot 0x90 -> 0x00000000
+mono 4875.106 amm trace: map auto va 0x0000008093d00000 size 0x40000 dmem 0xae11c000 type 12 prot 0x90 -> 0x00000000
+mono 4875.106 amm trace: map auto va 0x0000008093d40000 size 0x40000 dmem 0xae15c000 type 12 prot 0x90 -> 0x00000000
+mono 4875.212 amm trace: map auto va 0x0000008093d80000 size 0x40000 dmem 0xae19c000 type 12 prot 0x90 -> 0x00000000
+mono 4875.212 amm trace: map auto va 0x0000008093dc0000 size 0x40000 dmem 0xae1dc000 type 12 prot 0x90 -> 0x00000000
+mono 4875.212 amm trace: map auto va 0x0000008093e00000 size 0x40000 dmem 0xae21c000 type 12 prot 0x90 -> 0x00000000
+mono 4875.212 amm trace: map auto va 0x0000008093e40000 size 0x40000 dmem 0xae25c000 type 12 prot 0x90 -> 0x00000000
+mono 4875.212 amm trace: map auto va 0x0000008093e80000 size 0x40000 dmem 0xae29c000 type 12 prot 0x90 -> 0x00000000
+mono 4875.212 amm trace: map auto va 0x0000008093ec0000 size 0x40000 dmem 0xae2dc000 type 12 prot 0x90 -> 0x00000000
+mono 4875.212 amm trace: map auto va 0x0000008093f00000 size 0x80000 dmem 0xae31c000 type 12 prot 0x90 -> 0x00000000
+mono 4875.212 amm trace: map auto va 0x0000008093f80000 size 0x40000 dmem 0xae39c000 type 12 prot 0x90 -> 0x00000000
+mono 4875.212 amm trace: map auto va 0x0000008093fc0000 size 0x40000 dmem 0xae3dc000 type 12 prot 0x90 -> 0x00000000
+mono 4875.212 amm trace: map auto va 0x0000008094000000 size 0x80000 dmem 0xae41c000 type 12 prot 0x90 -> 0x00000000
+mono 4875.212 amm trace: map auto va 0x0000008094080000 size 0x40000 dmem 0xae49c000 type 12 prot 0x90 -> 0x00000000
+mono 4875.212 amm trace: map auto va 0x00000080940c0000 size 0x40000 dmem 0xae4dc000 type 12 prot 0x90 -> 0x00000000
+mono 4875.212 amm trace: map auto va 0x0000008094100000 size 0x40000 dmem 0xae51c000 type 12 prot 0x90 -> 0x00000000
+mono 4875.212 amm trace: map auto va 0x0000008094140000 size 0x40000 dmem 0xae55c000 type 12 prot 0x90 -> 0x00000000
+mono 4875.212 amm trace: map auto va 0x000000809418c000 size 0x4000 dmem 0xae59c000 type 12 prot 0x90 -> 0x00000000
+mono 4875.212 amm trace: map auto va 0x0000008094190000 size 0x10000 dmem 0xae5a0000 type 12 prot 0x90 -> 0x00000000
+mono 4875.212 amm trace: map auto va 0x00000080941ac000 size 0x4000 dmem 0xae5b0000 type 12 prot 0x90 -> 0x00000000
+mono 4875.212 amm trace: map auto va 0x00000080941b0000 size 0x10000 dmem 0xae5b4000 type 12 prot 0x90 -> 0x00000000
+mono 4875.212 amm trace: map auto va 0x00000080941c0000 size 0x10000 dmem 0xae5c4000 type 12 prot 0x90 -> 0x00000000
+mono 4875.214 amm trace: map auto va 0x00000080941d0000 size 0x10000 dmem 0xae5d4000 type 12 prot 0x90 -> 0x00000000
+mono 4875.214 amm trace: map auto va 0x00000080941e0000 size 0x10000 dmem 0xae5e4000 type 12 prot 0x90 -> 0x00000000
+mono 4875.214 amm trace: map auto va 0x00000080941f0000 size 0x10000 dmem 0xae5f4000 type 12 prot 0x90 -> 0x00000000
+mono 4875.214 amm trace: map auto va 0x0000008094200000 size 0x10000 dmem 0xae604000 type 12 prot 0x90 -> 0x00000000
+mono 4875.214 amm trace: map auto va 0x0000008094210000 size 0x10000 dmem 0xae614000 type 12 prot 0x90 -> 0x00000000
+mono 4875.214 amm trace: map auto va 0x0000008094220000 size 0x10000 dmem 0xae624000 type 12 prot 0x90 -> 0x00000000
+mono 4875.214 amm trace: map auto va 0x0000008094230000 size 0x10000 dmem 0xae634000 type 12 prot 0x90 -> 0x00000000
+mono 4875.214 amm trace: map auto va 0x0000008094240000 size 0x10000 dmem 0xae644000 type 12 prot 0x90 -> 0x00000000
+mono 4875.214 amm trace: map auto va 0x0000008094250000 size 0x10000 dmem 0xae654000 type 12 prot 0x90 -> 0x00000000
+mono 4875.214 amm trace: map auto va 0x0000008094260000 size 0x10000 dmem 0xae664000 type 12 prot 0x90 -> 0x00000000
+mono 4875.214 amm trace: map auto va 0x0000008094270000 size 0x10000 dmem 0xae674000 type 12 prot 0x90 -> 0x00000000
+mono 4875.214 amm trace: map auto va 0x0000008094280000 size 0x10000 dmem 0xae684000 type 12 prot 0x90 -> 0x00000000
+mono 4875.214 amm trace: map auto va 0x0000008094290000 size 0x10000 dmem 0xae694000 type 12 prot 0x90 -> 0x00000000
+mono 4875.214 amm trace: map auto va 0x00000080942a0000 size 0x10000 dmem 0xae6a4000 type 12 prot 0x90 -> 0x00000000
+mono 4875.214 amm trace: map auto va 0x00000080942b0000 size 0x10000 dmem 0xae6b4000 type 12 prot 0x90 -> 0x00000000
+mono 4875.214 amm trace: map auto va 0x00000080942c0000 size 0x10000 dmem 0xae6c4000 type 12 prot 0x90 -> 0x00000000
+mono 4875.214 amm trace: map auto va 0x00000080942d0000 size 0x10000 dmem 0xae6d4000 type 12 prot 0x90 -> 0x00000000
+mono 4875.214 amm trace: map auto va 0x00000080942e0000 size 0x10000 dmem 0xae6e4000 type 12 prot 0x90 -> 0x00000000
+mono 4875.214 amm trace: map auto va 0x00000080942f0000 size 0x10000 dmem 0xae6f4000 type 12 prot 0x90 -> 0x00000000
+mono 4875.215 amm trace: map auto va 0x0000008094300000 size 0x10000 dmem 0xae704000 type 12 prot 0x90 -> 0x00000000
+mono 4875.215 amm trace: map auto va 0x0000008094310000 size 0x10000 dmem 0xae714000 type 12 prot 0x90 -> 0x00000000
+mono 4875.215 amm trace: map auto va 0x0000008094320000 size 0x10000 dmem 0xae724000 type 12 prot 0x90 -> 0x00000000
+mono 4875.215 amm trace: map auto va 0x0000008094330000 size 0x10000 dmem 0xae734000 type 12 prot 0x90 -> 0x00000000
+mono 4875.215 amm trace: map auto va 0x0000008094340000 size 0x10000 dmem 0xae744000 type 12 prot 0x90 -> 0x00000000
+mono 4875.215 amm trace: map auto va 0x0000008094350000 size 0x10000 dmem 0xae754000 type 12 prot 0x90 -> 0x00000000
+mono 4875.215 amm trace: map auto va 0x0000008094360000 size 0x10000 dmem 0xae764000 type 12 prot 0x90 -> 0x00000000
+mono 4875.215 amm trace: map auto va 0x0000008094370000 size 0x10000 dmem 0xae774000 type 12 prot 0x90 -> 0x00000000
+mono 4875.215 amm trace: map auto va 0x0000008094380000 size 0x10000 dmem 0xae784000 type 12 prot 0x90 -> 0x00000000
+mono 4875.215 amm trace: map auto va 0x0000008094390000 size 0x10000 dmem 0xae794000 type 12 prot 0x90 -> 0x00000000
+mono 4875.215 amm trace: map auto va 0x00000080943a0000 size 0x10000 dmem 0xae7a4000 type 12 prot 0x90 -> 0x00000000
+mono 4875.215 amm trace: map auto va 0x00000080943b0000 size 0x10000 dmem 0xae7b4000 type 12 prot 0x90 -> 0x00000000
+mono 4875.215 amm trace: map auto va 0x00000080943c0000 size 0x10000 dmem 0xae7c4000 type 12 prot 0x90 -> 0x00000000
+mono 4875.215 amm trace: map auto va 0x00000080943d0000 size 0x10000 dmem 0xae7d4000 type 12 prot 0x90 -> 0x00000000
+mono 4875.215 amm trace: map auto va 0x00000080943e0000 size 0x10000 dmem 0xae7e4000 type 12 prot 0x90 -> 0x00000000
+mono 4875.215 amm trace: map auto va 0x00000080943f0000 size 0x10000 dmem 0xae7f4000 type 12 prot 0x90 -> 0x00000000
+mono 4875.215 amm trace: map auto va 0x0000008094400000 size 0x10000 dmem 0xae804000 type 12 prot 0x90 -> 0x00000000
+mono 4875.246 amm trace: map auto va 0x0000008094410000 size 0x10000 dmem 0xae814000 type 12 prot 0x90 -> 0x00000000
+mono 4875.246 amm trace: map auto va 0x0000008094420000 size 0x10000 dmem 0xae824000 type 12 prot 0x90 -> 0x00000000
+mono 4875.246 amm trace: map auto va 0x0000008094430000 size 0x10000 dmem 0xae834000 type 12 prot 0x90 -> 0x00000000
+mono 4875.246 amm trace: map auto va 0x0000008094440000 size 0x10000 dmem 0xae844000 type 12 prot 0x90 -> 0x00000000
+mono 4875.246 amm trace: map auto va 0x0000008094450000 size 0x10000 dmem 0xae854000 type 12 prot 0x90 -> 0x00000000
+mono 4875.246 amm trace: map auto va 0x0000008094460000 size 0x10000 dmem 0xae864000 type 12 prot 0x90 -> 0x00000000
+mono 4875.615 amm trace: map auto va 0x0000008094470000 size 0x10000 dmem 0xae874000 type 12 prot 0x90 -> 0x00000000
+mono 4875.615 amm trace: map auto va 0x0000008094480000 size 0x10000 dmem 0xae884000 type 12 prot 0x90 -> 0x00000000
+mono 4875.615 amm trace: map auto va 0x0000008094490000 size 0x10000 dmem 0xae894000 type 12 prot 0x90 -> 0x00000000
+mono 4875.615 amm trace: map auto va 0x00000080944a0000 size 0x10000 dmem 0xae8a4000 type 12 prot 0x90 -> 0x00000000
+mono 4875.615 amm trace: map auto va 0x00000080944b0000 size 0x10000 dmem 0xae8b4000 type 12 prot 0x90 -> 0x00000000
+mono 4875.615 amm trace: map auto va 0x00000080944c0000 size 0x10000 dmem 0xae8c4000 type 12 prot 0x90 -> 0x00000000
+mono 4875.615 amm trace: map auto va 0x00000080944d0000 size 0x10000 dmem 0xae8d4000 type 12 prot 0x90 -> 0x00000000
+mono 4875.615 amm trace: map auto va 0x00000080944e0000 size 0x10000 dmem 0xae8e4000 type 12 prot 0x90 -> 0x00000000
+mono 4875.615 amm trace: map auto va 0x00000080944f0000 size 0x10000 dmem 0xae8f4000 type 12 prot 0x90 -> 0x00000000
+mono 4875.615 amm trace: map auto va 0x0000008094500000 size 0x10000 dmem 0xae904000 type 12 prot 0x90 -> 0x00000000
+mono 4875.615 amm trace: map auto va 0x0000008094510000 size 0x10000 dmem 0xae914000 type 12 prot 0x90 -> 0x00000000
+mono 4875.615 amm trace: map auto va 0x0000008094520000 size 0x10000 dmem 0xae924000 type 12 prot 0x90 -> 0x00000000
+mono 4875.616 amm trace: map auto va 0x0000008094530000 size 0x10000 dmem 0xae934000 type 12 prot 0x90 -> 0x00000000
+mono 4875.616 amm trace: map auto va 0x000000809454c000 size 0x4000 dmem 0xae944000 type 12 prot 0x90 -> 0x00000000
+mono 4875.616 amm trace: map auto va 0x000000809455c000 size 0x4000 dmem 0xae948000 type 12 prot 0x90 -> 0x00000000
+mono 4875.616 amm trace: map auto va 0x000000809456c000 size 0x4000 dmem 0xae94c000 type 12 prot 0x90 -> 0x00000000
+mono 4875.616 amm trace: map auto va 0x000000809457c000 size 0x4000 dmem 0xae950000 type 12 prot 0x90 -> 0x00000000
+mono 4875.616 amm trace: map auto va 0x000000809458c000 size 0x4000 dmem 0xae954000 type 12 prot 0x90 -> 0x00000000
+mono 4875.616 amm trace: map auto va 0x000000809459c000 size 0x4000 dmem 0xae958000 type 12 prot 0x90 -> 0x00000000
+mono 4875.616 amm trace: map auto va 0x00000080945ac000 size 0x4000 dmem 0xae95c000 type 12 prot 0x90 -> 0x00000000
+mono 4875.616 amm trace: map auto va 0x00000080945bc000 size 0x4000 dmem 0xae960000 type 12 prot 0x90 -> 0x00000000
+mono 4875.616 amm trace: map auto va 0x00000080945cc000 size 0x4000 dmem 0xae964000 type 12 prot 0x90 -> 0x00000000
+mono 4875.616 amm trace: map auto va 0x00000080945dc000 size 0x4000 dmem 0xae968000 type 12 prot 0x90 -> 0x00000000
+mono 4875.616 amm trace: map auto va 0x00000080945ec000 size 0x4000 dmem 0xae96c000 type 12 prot 0x90 -> 0x00000000
+mono 4875.616 amm trace: map auto va 0x00000080945fc000 size 0x4000 dmem 0xae970000 type 12 prot 0x90 -> 0x00000000
+mono 4875.616 amm trace: map auto va 0x000000809460c000 size 0x4000 dmem 0xae974000 type 12 prot 0x90 -> 0x00000000
+mono 4875.616 amm trace: map auto va 0x000000809461c000 size 0x4000 dmem 0xae978000 type 12 prot 0x90 -> 0x00000000
+mono 4875.616 amm trace: map auto va 0x000000809462c000 size 0x4000 dmem 0xae97c000 type 12 prot 0x90 -> 0x00000000
+mono 4875.616 amm trace: map auto va 0x000000809463c000 size 0x4000 dmem 0xae980000 type 12 prot 0x90 -> 0x00000000
+mono 4875.616 amm trace: map auto va 0x000000809464c000 size 0x4000 dmem 0xae984000 type 12 prot 0x90 -> 0x00000000
+mono 4875.616 amm trace: map auto va 0x000000809465c000 size 0x4000 dmem 0xae988000 type 12 prot 0x90 -> 0x00000000
+mono 4875.616 amm trace: map auto va 0x000000809466c000 size 0x4000 dmem 0xae98c000 type 12 prot 0x90 -> 0x00000000
+mono 4875.616 amm trace: map auto va 0x000000809467c000 size 0x4000 dmem 0xae990000 type 12 prot 0x90 -> 0x00000000
+mono 4875.617 amm trace: map auto va 0x000000809468c000 size 0x4000 dmem 0xae994000 type 12 prot 0x90 -> 0x00000000
+mono 4875.617 amm trace: map auto va 0x000000809469c000 size 0x4000 dmem 0xae998000 type 12 prot 0x90 -> 0x00000000
+mono 4875.617 amm trace: map auto va 0x00000080946ac000 size 0x4000 dmem 0xae99c000 type 12 prot 0x90 -> 0x00000000
+mono 4875.617 amm trace: map auto va 0x00000080946bc000 size 0x4000 dmem 0xae9a0000 type 12 prot 0x90 -> 0x00000000
+mono 4875.617 amm trace: map auto va 0x00000080946cc000 size 0x4000 dmem 0xae9a4000 type 12 prot 0x90 -> 0x00000000
+mono 4875.617 amm trace: map auto va 0x00000080946dc000 size 0x4000 dmem 0xae9a8000 type 12 prot 0x90 -> 0x00000000
+mono 4875.617 amm trace: map auto va 0x00000080946ec000 size 0x4000 dmem 0xae9ac000 type 12 prot 0x90 -> 0x00000000
+mono 4875.617 amm trace: map auto va 0x00000080946fc000 size 0x4000 dmem 0xae9b0000 type 12 prot 0x90 -> 0x00000000
+mono 4875.617 amm trace: map auto va 0x000000809470c000 size 0x4000 dmem 0xae9b4000 type 12 prot 0x90 -> 0x00000000
+mono 4875.617 amm trace: map auto va 0x000000809471c000 size 0x4000 dmem 0xae9b8000 type 12 prot 0x90 -> 0x00000000
+mono 4875.617 amm trace: map auto va 0x000000809472c000 size 0x4000 dmem 0xae9bc000 type 12 prot 0x90 -> 0x00000000
+mono 4875.617 amm trace: map auto va 0x000000809473c000 size 0x4000 dmem 0xae9c0000 type 12 prot 0x90 -> 0x00000000
+mono 4875.618 amm trace: map auto va 0x000000809474c000 size 0x4000 dmem 0xae9c4000 type 12 prot 0x90 -> 0x00000000
+mono 4875.784 amm trace: map auto va 0x000000809475c000 size 0x4000 dmem 0xae9c8000 type 12 prot 0x90 -> 0x00000000
+mono 4875.784 amm trace: map auto va 0x000000809476c000 size 0x4000 dmem 0xae9cc000 type 12 prot 0x90 -> 0x00000000
+mono 4875.785 amm trace: map auto va 0x000000809477c000 size 0x4000 dmem 0xae9d0000 type 12 prot 0x90 -> 0x00000000
+mono 4875.786 amm trace: map auto va 0x0000008094780000 size 0x40000 dmem 0xae9d4000 type 12 prot 0x90 -> 0x00000000
+mono 4875.797 amm trace: map auto va 0x00000080947c0000 size 0x10000 dmem 0xaea14000 type 12 prot 0x90 -> 0x00000000
+mono 4875.803 amm trace: map auto va 0x00000080947d0000 size 0x10000 dmem 0xaea24000 type 12 prot 0x90 -> 0x00000000
+mono 4875.803 amm trace: map auto va 0x00000080947e0000 size 0x90000 dmem 0xaea34000 type 12 prot 0x90 -> 0x00000000
+mono 4875.805 amm trace: map auto va 0x0000008094874000 size 0x8c000 dmem 0xaeac4000 type 12 prot 0x90 -> 0x00000000
+mono 4875.837 amm trace: map auto va 0x0000008094904000 size 0x8c000 dmem 0xaeb50000 type 12 prot 0x90 -> 0x00000000
+mono 4875.838 amm trace: map auto va 0x0000008094994000 size 0x8c000 dmem 0xaebdc000 type 12 prot 0x90 -> 0x00000000
+mono 4875.838 amm trace: map auto va 0x0000008094a24000 size 0x8c000 dmem 0xaec68000 type 12 prot 0x90 -> 0x00000000
+mono 4875.838 amm trace: map auto va 0x0000008094ab4000 size 0x8c000 dmem 0xaecf4000 type 12 prot 0x90 -> 0x00000000
+mono 4875.841 amm trace: map auto va 0x0000008094b44000 size 0x8c000 dmem 0xaed80000 type 12 prot 0x90 -> 0x00000000
+mono 4875.841 amm trace: map auto va 0x0000008094bd4000 size 0x8c000 dmem 0xaee0c000 type 12 prot 0x90 -> 0x00000000
+mono 4875.841 amm trace: map auto va 0x0000008094c64000 size 0x8c000 dmem 0xaee98000 type 12 prot 0x90 -> 0x00000000
+mono 4877.571 amm trace: read file 0x49f8c36b +0xb931c8 size 0x4000 -> 0x00000080900c4000 = 0x00000000 (parallel)
+mono 4877.723 amm trace: map auto va 0x0000008094cf4000 size 0x8000 dmem 0xaef24000 type 12 prot 0x90 -> 0x00000000
+mono 4877.723 amm trace: map auto va 0x0000008094d48000 size 0x8000 dmem 0xaef2c000 type 12 prot 0x90 -> 0x00000000
+mono 4877.723 amm trace: map auto va 0x0000008094da4000 size 0xc000 dmem 0xaef34000 type 12 prot 0x90 -> 0x00000000
+mono 4877.723 amm trace: map auto va 0x0000008094dd4000 size 0xc000 dmem 0xaef40000 type 12 prot 0x90 -> 0x00000000
+mono 4877.723 amm trace: map auto va 0x0000008094e04000 size 0xc000 dmem 0xaef4c000 type 12 prot 0x90 -> 0x00000000
+mono 4877.723 amm trace: map auto va 0x0000008094e38000 size 0x18000 dmem 0xaef58000 type 12 prot 0x90 -> 0x00000000
+mono 4877.723 amm trace: map auto va 0x000000809539c000 size 0x4000 dmem 0xaef70000 type 12 prot 0x90 -> 0x00000000
+mono 4877.723 amm trace: map auto va 0x00000080953a4000 size 0xc000 dmem 0xaef74000 type 12 prot 0x90 -> 0x00000000
+mono 4877.723 amm trace: map auto va 0x0000008095458000 size 0x18000 dmem 0xaef80000 type 12 prot 0x90 -> 0x00000000
+mono 4877.723 amm trace: map auto va 0x00000080954b4000 size 0xc000 dmem 0xaef98000 type 12 prot 0x90 -> 0x00000000
+mono 4877.723 amm trace: map auto va 0x0000008095764000 size 0xc000 dmem 0xaefa4000 type 12 prot 0x90 -> 0x00000000
+mono 4877.724 amm trace: map auto va 0x0000008095a14000 size 0xc000 dmem 0xaefb0000 type 12 prot 0x90 -> 0x00000000
+mono 4877.724 amm trace: map auto va 0x0000008095ac8000 size 0x18000 dmem 0xaefbc000 type 12 prot 0x90 -> 0x00000000
+mono 4877.724 amm trace: map auto va 0x0000008096028000 size 0x8000 dmem 0xaefd4000 type 12 prot 0x90 -> 0x00000000
+mono 4877.724 amm trace: map auto va 0x0000008096584000 size 0x4000 dmem 0xaefdc000 type 12 prot 0x90 -> 0x00000000
+mono 4877.724 amm trace: map auto va 0x0000008096834000 size 0x4000 dmem 0xaefe0000 type 12 prot 0x90 -> 0x00000000
+mono 4877.724 amm trace: map auto va 0x0000008096ae4000 size 0x4000 dmem 0xaefe4000 type 12 prot 0x90 -> 0x00000000
+mono 4877.724 amm trace: map auto va 0x0000008096d98000 size 0x8000 dmem 0xaefe8000 type 12 prot 0x90 -> 0x00000000
+mono 4877.724 amm trace: map auto va 0x00000080972f8000 size 0x8000 dmem 0xaeff0000 type 12 prot 0x90 -> 0x00000000
+mono 4877.724 amm trace: map auto va 0x0000008097454000 size 0x4000 dmem 0xaeff8000 type 12 prot 0x90 -> 0x00000000
+mono 4877.724 amm trace: map auto va 0x0000008097484000 size 0x4000 dmem 0xaeffc000 type 12 prot 0x90 -> 0x00000000
+mono 4877.724 amm trace: map auto va 0x0000008097498000 size 0x8000 dmem 0xaf000000 type 12 prot 0x90 -> 0x00000000
+mono 4877.724 amm trace: map auto va 0x00000080975f4000 size 0x4000 dmem 0xaf008000 type 12 prot 0x90 -> 0x00000000
+mono 4877.724 amm trace: map auto va 0x00000080976a4000 size 0x4000 dmem 0xaf00c000 type 12 prot 0x90 -> 0x00000000
+mono 4877.724 amm trace: map auto va 0x00000080976d4000 size 0x4000 dmem 0xaf010000 type 12 prot 0x90 -> 0x00000000
+mono 4877.724 amm trace: map auto va 0x0000008097708000 size 0x8000 dmem 0xaf014000 type 12 prot 0x90 -> 0x00000000
+mono 4877.724 amm trace: map auto va 0x0000008097868000 size 0x8000 dmem 0xaf01c000 type 12 prot 0x90 -> 0x00000000
+mono 4877.724 amm trace: map auto va 0x00000080978c4000 size 0x4000 dmem 0xaf024000 type 12 prot 0x90 -> 0x00000000
+mono 4877.724 amm trace: map auto va 0x0000008097974000 size 0xc000 dmem 0xaf028000 type 12 prot 0x90 -> 0x00000000
+mono 4877.725 amm trace: map auto va 0x0000008097a28000 size 0x8000 dmem 0xaf034000 type 12 prot 0x90 -> 0x00000000
+mono 4877.725 amm trace: map auto va 0x0000008097f88000 size 0x8000 dmem 0xaf03c000 type 12 prot 0x90 -> 0x00000000
+mono 4877.725 amm trace: map auto va 0x00000080984e8000 size 0x8000 dmem 0xaf044000 type 12 prot 0x90 -> 0x00000000
+mono 4877.725 amm trace: map auto va 0x0000008098a48000 size 0x18000 dmem 0xaf04c000 type 12 prot 0x90 -> 0x00000000
+mono 4877.725 amm trace: map auto va 0x0000008098fa4000 size 0x4000 dmem 0xaf064000 type 12 prot 0x90 -> 0x00000000
+mono 4877.725 amm trace: map auto va 0x0000008099254000 size 0x4000 dmem 0xaf068000 type 12 prot 0x90 -> 0x00000000
+mono 4877.725 amm trace: map auto va 0x0000008099504000 size 0x4000 dmem 0xaf06c000 type 12 prot 0x90 -> 0x00000000
+mono 4877.725 amm trace: map auto va 0x00000080997b4000 size 0xc000 dmem 0xaf070000 type 12 prot 0x90 -> 0x00000000
+mono 4877.725 amm trace: map auto va 0x0000008099a68000 size 0x8000 dmem 0xaf07c000 type 12 prot 0x90 -> 0x00000000
+mono 4877.725 amm trace: map auto va 0x0000008099ac8000 size 0x8000 dmem 0xaf084000 type 12 prot 0x90 -> 0x00000000
+mono 4877.725 amm trace: map auto va 0x0000008099b28000 size 0x8000 dmem 0xaf08c000 type 12 prot 0x90 -> 0x00000000
+mono 4877.725 amm trace: map auto va 0x0000008099b88000 size 0x18000 dmem 0xaf094000 type 12 prot 0x90 -> 0x00000000
+mono 4877.725 amm trace: map auto va 0x0000008099be4000 size 0x4000 dmem 0xaf0ac000 type 12 prot 0x90 -> 0x00000000
+mono 4877.725 amm trace: map auto va 0x0000008099e94000 size 0x4000 dmem 0xaf0b0000 type 12 prot 0x90 -> 0x00000000
+mono 4877.725 amm trace: map auto va 0x000000809a144000 size 0x4000 dmem 0xaf0b4000 type 12 prot 0x90 -> 0x00000000
+mono 4877.725 amm trace: map auto va 0x000000809a3f4000 size 0xc000 dmem 0xaf0b8000 type 12 prot 0x90 -> 0x00000000
+mono 4877.725 amm trace: map auto va 0x000000809a6a4000 size 0x4000 dmem 0xaf0c4000 type 12 prot 0x90 -> 0x00000000
+mono 4877.725 amm trace: map auto va 0x000000809a954000 size 0x4000 dmem 0xaf0c8000 type 12 prot 0x90 -> 0x00000000
+mono 4877.726 amm trace: map auto va 0x000000809ac04000 size 0x4000 dmem 0xaf0cc000 type 12 prot 0x90 -> 0x00000000
+mono 4877.726 amm trace: map auto va 0x000000809aeb4000 size 0xc000 dmem 0xaf0d0000 type 12 prot 0x90 -> 0x00000000
+mono 4877.759 amm trace: map auto va 0x000000809b168000 size 0x8000 dmem 0xaf0dc000 type 12 prot 0x90 -> 0x00000000
+mono 4877.759 amm trace: map auto va 0x000000809b6c8000 size 0x18000 dmem 0xaf0e4000 type 12 prot 0x90 -> 0x00000000
+mono 4877.759 amm trace: map auto va 0x000000809bc24000 size 0xc000 dmem 0xaf0fc000 type 12 prot 0x90 -> 0x00000000
+mono 4877.759 amm trace: map auto va 0x000000809bed8000 size 0x8000 dmem 0xaf108000 type 12 prot 0x90 -> 0x00000000
+mono 4877.759 amm trace: map auto va 0x000000809c438000 size 0x8000 dmem 0xaf110000 type 12 prot 0x90 -> 0x00000000
+mono 4877.759 amm trace: map auto va 0x000000809c998000 size 0x18000 dmem 0xaf118000 type 12 prot 0x90 -> 0x00000000
+mono 4877.759 amm trace: map auto va 0x000000809cef8000 size 0x8000 dmem 0xaf130000 type 12 prot 0x90 -> 0x00000000
+mono 4877.759 amm trace: map auto va 0x000000809d458000 size 0x8000 dmem 0xaf138000 type 12 prot 0x90 -> 0x00000000
+mono 4877.759 amm trace: map auto va 0x000000809d9b8000 size 0x8000 dmem 0xaf140000 type 12 prot 0x90 -> 0x00000000
+mono 4877.759 amm trace: map auto va 0x000000809df18000 size 0x18000 dmem 0xaf148000 type 12 prot 0x90 -> 0x00000000
+mono 4877.760 amm trace: map auto va 0x000000809e478000 size 0x8000 dmem 0xaf160000 type 12 prot 0x90 -> 0x00000000
+mono 4877.760 amm trace: map auto va 0x000000809e9d8000 size 0x8000 dmem 0xaf168000 type 12 prot 0x90 -> 0x00000000
+mono 4877.760 amm trace: map auto va 0x000000809ef38000 size 0x8000 dmem 0xaf170000 type 12 prot 0x90 -> 0x00000000
+mono 4877.760 amm trace: map auto va 0x000000809f498000 size 0x18000 dmem 0xaf178000 type 12 prot 0x90 -> 0x00000000
+mono 4877.760 amm trace: map auto va 0x000000809f9f4000 size 0x4000 dmem 0xaf190000 type 12 prot 0x90 -> 0x00000000
+mono 4877.760 amm trace: map auto va 0x000000809fca4000 size 0x4000 dmem 0xaf194000 type 12 prot 0x90 -> 0x00000000
+mono 4877.760 amm trace: map auto va 0x000000809ff54000 size 0x4000 dmem 0xaf198000 type 12 prot 0x90 -> 0x00000000
+mono 4877.799 amm trace: read file 0x05ad8d9f +0x1204a4 size 0x8000 -> 0x0000008090388000 = 0x00000000 (parallel)
+mono 4877.799 amm trace: read file 0x05ad8d9f +0x11c438 size 0x4000 -> 0x000000809037c000 = 0x00000000 (parallel)
+mono 4877.805 amm trace: read file 0x05ad8d9f +0x4846c0 size 0x4000 -> 0x00000080906ac000 = 0x00000000 (parallel)
+mono 4877.805 amm trace: read file 0x05ad8d9f +0x498804 size 0x4000 -> 0x00000080906bc000 = 0x00000000 (parallel)
+mono 4877.815 amm trace: read file 0x05ad8d9f +0x4c4948 size 0x18000 -> 0x00000080906e8000 = 0x00000000 (parallel)
+mono 4877.815 amm trace: read file 0x05ad8d9f +0x49c870 size 0x20000 -> 0x00000080906c0000 = 0x00000000 (parallel)
+mono 4877.815 amm trace: read file 0x05ad8d9f +0x4285e8 size 0x4000 -> 0x000000809069c000 = 0x00000000 (parallel)
+mono 4877.818 amm trace: read file 0x05ad8d9f +0x4dc9b4 size 0x18000 -> 0x0000008090708000 = 0x00000000 (parallel)
+mono 4877.827 amm trace: read file 0x05ad8d9f +0x578af8 size 0x58000 -> 0x0000008090768000 = 0x00000000 (parallel)
+mono 4877.828 amm trace: read file 0x05ad8d9f +0x32857c size 0x100000 -> 0x0000008090590000 = 0x00000000 (parallel)
+mono 4877.832 amm trace: read file 0x05ad8d9f +0x928c3c size 0x4000 -> 0x000000809087c000 = 0x00000000 (parallel)
+mono 4877.832 amm trace: read file 0x05ad8d9f +0x930d14 size 0xc000 -> 0x0000008090884000 = 0x00000000 (parallel)
+mono 4877.833 amm trace: read file 0x05ad8d9f +0x128510 size 0x200000 -> 0x0000008090390000 = 0x00000000 (parallel)
+mono 4877.833 amm trace: read file 0x05ad8d9f +0x5d0b64 size 0xac000 -> 0x00000080907c4000 = 0x00000000 (parallel)
+mono 4877.854 amm trace: read file 0x05ad8d9f +0x93cd80 size 0x4000 -> 0x000000809089c000 = 0x00000000 (parallel)
+mono 4877.854 amm trace: read file 0x05ad8d9f +0x940dec size 0x8000 -> 0x00000080908a8000 = 0x00000000 (parallel)
+mono 4877.854 amm trace: read file 0x05ad8d9f +0x94cec4 size 0x18000 -> 0x00000080908b8000 = 0x00000000 (parallel)
+mono 4877.869 amm trace: read file 0x05ad8d9f +0x964f30 size 0x18000 -> 0x00000080908d8000 = 0x00000000 (parallel)
+mono 4877.869 amm trace: read file 0x05ad8d9f +0x9e9290 size 0xc000 -> 0x0000008090904000 = 0x00000000 (parallel)
+mono 4877.869 amm trace: read file 0x05ad8d9f +0x9f52fc size 0xc000 -> 0x0000008090934000 = 0x00000000 (parallel)
+mono 4877.869 amm trace: read file 0x05ad8d9f +0x9d9224 size 0x10000 -> 0x00000080908f0000 = 0x00000000 (parallel)
+mono 4877.869 amm trace: read file 0x05ad8d9f +0xa01368 size 0x30000 -> 0x0000008090940000 = 0x00000000 (parallel)
+mono 4877.870 amm trace: read file 0x05ad8d9f +0xa313d4 size 0x4000 -> 0x000000809097c000 = 0x00000000 (parallel)
+mono 4877.870 amm trace: read file 0x05ad8d9f +0xa4d518 size 0x8000 -> 0x00000080909b8000 = 0x00000000 (parallel)
+mono 4877.870 amm trace: read file 0x05ad8d9f +0xa35440 size 0x14000 -> 0x000000809098c000 = 0x00000000 (parallel)
+amm trace: read file 0x05ad8d9f +0xa494ac size 0x4000 -> 0x00000080909ac000 = 0x00000000 (parallel)
+mono 4877.870 amm trace: read file 0x05ad8d9f +0xa595f0 size 0xa8000 -> 0x0000008090b18000 = 0x00000000 (parallel)
+mono 4877.875 amm trace: read file 0x0ab1549c +0x48a22c size 0x18000 -> 0x00000080913d8000 = 0x00000000 (parallel)
+mono 4877.876 amm trace: read file 0x0ab1549c +0x47e1c0 size 0xc000 -> 0x0000008091124000 = 0x00000000 (parallel)
+mono 4877.876 amm trace: read file 0x0ab1549c +0x4660e8 size 0xc000 -> 0x0000008090bc4000 = 0x00000000 (parallel)
+mono 4877.876 amm trace: read file 0x0ab1549c +0x472154 size 0xc000 -> 0x0000008090e74000 = 0x00000000 (parallel)
+mono 4877.906 amm trace: read file 0x0ab1549c +0xee6abc size 0xc000 -> 0x00000080923f4000 = 0x00000000 (parallel)
+mono 4877.910 amm trace: read file 0x0ab1549c +0xb78da0 size 0x18000 -> 0x0000008091938000 = 0x00000000 (parallel)
+mono 4877.910 amm trace: read file 0x0ab1549c +0xefeb94 size 0x18000 -> 0x00000080924a8000 = 0x00000000 (parallel)
+mono 4877.918 amm trace: read file 0x0ab1549c +0xd2de14 size 0x18000 -> 0x0000008091e98000 = 0x00000000 (parallel)
+mono 4877.919 amm trace: read file 0x48d44d42 +0x694674 size 0x8000 -> 0x0000008092a08000 = 0x00000000 (parallel)
+mono 4877.919 mono 4877.919 amm trace: read file 0x48d44d42 +0x6a474c size 0xc000 -> 0x0000008092bc4000 = 0x00000000 (parallel)
+mono 4877.919 amm trace: read file 0x48d44d42 +0x69c6e0 size 0x8000 -> 0x0000008092b68000 = 0x00000000 (parallel)
+mono 4877.942 amm trace: read file 0x48d44d42 +0x6b07b8 size 0x8000 -> 0x0000008092e78000 = 0x00000000 (parallel)
+mono 4877.942 amm trace: read file 0x48d44d42 +0x6b8824 size 0x8000 -> 0x0000008092fd8000 = 0x00000000 (parallel)
+mono 4877.942 amm trace: read file 0x48d44d42 +0x6c0890 size 0xc000 -> 0x0000008093034000 = 0x00000000 (parallel)
+mono 4877.979 amm trace: read file 0x12156531 +0x1309b4 size 0x18000 -> 0x00000080932e8000 = 0x00000000 (parallel)
+mono 4878.055 amm trace: read file 0x5be30ef0 +0x10144 size 0x8000 -> 0x0000008093858000 = 0x00000000 (parallel)
+mono 4878.055 amm trace: read file 0x5be30ef0 +0x80d8 size 0x8000 -> 0x0000008093848000 = 0x00000000 (parallel)
+mono 4878.055 amm trace: read file 0x5be30ef0 +0x3421c size 0xc000 -> 0x0000008093884000 = 0x00000000 (parallel)
+mono 4878.055 amm trace: read file 0x5be30ef0 +0x40288 size 0x8000 -> 0x0000008093898000 = 0x00000000 (parallel)
+mono 4878.055 mono 4878.055 amm trace: read file 0x5be30ef0 +0x54360 size 0x8000 -> 0x00000080938b8000 = 0x00000000 (parallel)
+mono 4878.055 amm trace: read file 0x5be30ef0 +0x482f4 size 0xc000 -> 0x00000080938a4000 = 0x00000000 (parallel)
+mono 4878.055 amm trace: read file 0x5be30ef0 +0x181b0 size 0x1c000 -> 0x0000008093864000 = 0x00000000 (parallel)
+mono 4878.056 amm trace: read file 0x5be30ef0 +0x5c3cc size 0xc000 -> 0x00000080938c4000 = 0x00000000 (parallel)
+mono 4878.093 amm trace: read file 0x5be30ef0 +0x4b76ef4 size 0x20000 -> 0x0000008093900000 = 0x00000000 (parallel)
+mono 4878.093 amm trace: read file 0x5be30ef0 +0x4b96f60 size 0x20000 -> 0x0000008093920000 = 0x00000000 (parallel)
+mono 4878.096 amm trace: read file 0x5be30ef0 +0x38a516c size 0x14000 -> 0x00000080938ec000 = 0x00000000 (parallel)
+mono 4878.110 amm trace: read file 0x5be30ef0 +0x5fc3fd4 size 0x40000 -> 0x0000008093940000 = 0x00000000 (parallel)
+mono 4878.112 amm trace: read file 0x5be30ef0 +0x6004040 size 0x40000 -> 0x0000008093980000 = 0x00000000 (parallel)
+mono 4878.113 amm trace: read file 0x5be30ef0 +0x60440ac size 0x40000 -> 0x00000080939c0000 = 0x00000000 (parallel)
+mono 4878.118 amm trace: read file 0x5be30ef0 +0x6bd584 size 0x10000 -> 0x00000080938d0000 = 0x00000000 (parallel)
+mono 4878.118 amm trace: read file 0x5be30ef0 +0x6084118 size 0x40000 -> 0x0000008093a00000 = 0x00000000 (parallel)
+mono 4878.138 amm trace: read file 0x5be30ef0 +0x61842c8 size 0x40000 -> 0x0000008093b00000 = 0x00000000 (parallel)
+mono 4878.138 amm trace: read file 0x5be30ef0 +0x614425c size 0x40000 -> 0x0000008093ac0000 = 0x00000000 (parallel)
+mono 4878.138 amm trace: read file 0x5be30ef0 +0x61c4334 size 0x40000 -> 0x0000008093b40000 = 0x00000000 (parallel)
+mono 4878.141 amm trace: read file 0x5be30ef0 +0x62043a0 size 0x80000 -> 0x0000008093b80000 = 0x00000000 (parallel)
+mono 4878.141 amm trace: read file 0x5be30ef0 +0x628440c size 0x40000 -> 0x0000008093c00000 = 0x00000000 (parallel)
+mono 4878.154 amm trace: read file 0x5be30ef0 +0x60c4184 size 0x40000 -> 0x0000008093a40000 = 0x00000000 (parallel)
+mono 4878.154 amm trace: read file 0x5be30ef0 +0x61041f0 size 0x40000 -> 0x0000008093a80000 = 0x00000000 (parallel)
+mono 4878.189 mono 4878.189 amm trace: read file 0x5be30ef0 +0x62c4478 size 0x40000 -> 0x0000008093c40000 = 0x00000000 (parallel)
+mono 4878.190 amm trace: read file 0x5be30ef0 +0x63044e4 size 0x40000 -> 0x0000008093c80000 = 0x00000000 (parallel)
+mono 4878.190 amm trace: read file 0x5be30ef0 +0x63845bc size 0x40000 -> 0x0000008093d00000 = 0x00000000 (parallel)
+mono 4878.190 amm trace: read file 0x5be30ef0 +0x63c4628 size 0x40000 -> 0x0000008093d40000 = 0x00000000 (parallel)
+mono 4878.190 amm trace: read file 0x5be30ef0 +0x6344550 size 0x40000 -> 0x0000008093cc0000 = 0x00000000 (parallel)
+mono 4878.190 amm trace: read file 0x5be30ef0 +0x6404694 size 0x40000 -> 0x0000008093d80000 = 0x00000000 (parallel)
+mono 4878.190 amm trace: read file 0x5be30ef0 +0x6444700 size 0x40000 -> 0x0000008093dc0000 = 0x00000000 (parallel)
+mono 4878.191 amm trace: read file 0x5be30ef0 +0x64c47d8 size 0x40000 -> 0x0000008093e00000 = 0x00000000 (parallel)
+mono 4878.191 amm trace: read file 0x5be30ef0 +0x65448b0 size 0x40000 -> 0x0000008093e80000 = 0x00000000 (parallel)
+mono 4878.191 amm trace: read file 0x5be30ef0 +0x6504844 size 0x40000 -> 0x0000008093e40000 = 0x00000000 (parallel)

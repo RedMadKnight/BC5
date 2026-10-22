@@ -1,0 +1,15 @@
+dispatches whose user data hold a water texture's descriptor dword0:
+AMM trace lines inside a texture window:
+  0x80907c4000: 178 x mono 4875.101 amm trace: map auto va 0x00000080907c4000 size 0xac000 dmem 0xad99c000 type 12 prot 0x90 -> 0x00000000
+  0x80907c4000: 164 x mono 4877.832 amm trace: read file 0x05ad8d9f +0x928c3c size 0x4000 -> 0x000000809087c000 = 0x00000000 (parallel)
+  0x8001810000: 81 x mono 4870.340 amm trace: map auto va 0x0000008001810000 size 0x800000 dmem 0x9aa04000 type 12 prot 0x30 -> 0x00000000
+  0x8492504000: 19 x mono 4960.488 amm trace: map auto va 0x0000008492834000 size 0xc000 dmem 0xdf45c000 type 12 prot 0x90 -> 0x00000000
+  0x8492504000: 18 x mono 4967.107 amm trace: read file 0x0ab1549c +0x502f4 size 0xc000 -> 0x0000008492ae4000 = 0x00000000 (parallel)
+  0x8001010000: 8 x mono 4870.335 amm trace: auto map content va 0x0000008001010000 size 0x200000: 0 of 512 pages non-zero
+  0x8001010000: 8 x mono 4870.335 amm trace: map auto va 0x0000008001010000 size 0x200000 dmem 0x9a204000 type 12 prot 0x30 -> 0x00000000
+  0x80907c4000: 7 x mono 4877.919 mono 4877.919 amm trace: read file 0x48d44d42 +0x6a474c size 0xc000 -> 0x0000008092bc4000 = 0x00000000 (parallel)
+  0x80907c4000: 5 x mono 4913.571 amm trace: auto map content va 0x0000008090a10000 size 0x100000: 0 of 256 pages non-zero
+  0x8001810000: 4 x mono 4870.340 amm trace: auto map content va 0x0000008001810000 size 0x800000: 0 of 2048 pages non-zero
+  0x80907c4000: 4 x amm trace: read file 0x05ad8d9f +0xa494ac size 0x4000 -> 0x00000080909ac000 = 0x00000000 (parallel)
+  0x80907c4000: 3 x mono 4878.325 mono 4878.325 mono 4878.325 amm trace: read file 0x5be30ef0 +0xc99e090 size 0x4000 -> 0x00000080946ac000 = 0x00000000 (parallel)
+  0x8492504000: 1 x mono 4967.309 mono 4967.309 amm trace: read file 0x0ab1549c +0x17cb64 size 0xc000 -> 0x00000084960a4000 = 0x00000000 (parallel)

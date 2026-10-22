@@ -1,0 +1,15 @@
+# Experiment 0201: the night lake under BC5_DIRECT_AMM_PRT=1, observed in exp 0199's watched run (2026-10-22 14:34-14:39).
+Observed (not my run): exp 0199's watched PRT run (BC5_DIRECT_AMM_PRT=1, learned windows as usual, shared build,
+session play-20261022-1430), the maintainer at the night lake's cliff, camera moved by hand. Screenshots
+~/bc5-work/exp0197/obs-prt/*.png (box only):
+  ~14:34      the maintainer: "the water tiles"
+  14:36:15/31 clean (the maintainer: "it stopped tiling")
+  14:37:14    clean
+  14:37:35    a checkerboard strip at the cliff foot
+  14:37:57    nearly clean, a few cells
+  14:38:18    a checkerboard over the near lake
+  14:38:40    heavy patchwork
+  14:39:01    patchwork
+  14:39:16    a regular checkerboard near the shore, larger rectangles farther out (the maintainer: "the tiles are back")
+So with PRT on, the patches come and go within tens of seconds in live play. The near-field pattern is every other
+cell, i.e. two interleaved tile sets, one of which loses its surface.

@@ -1,0 +1,37 @@
+# Experiment 0201, runs X1 and X2 (2026-10-22 15:42-16:01), the exp 0194 bench, the exp 0197 diagnostic build.
+
+X1 15:42  BC5_DIRECT_AMM_PRT=1 (PRT window 0x8000000000+0x1000000000: rc 0) and a learned file without the 9 AMM
+          windows (93 entries; none added during the run; no learned or zero-filled window in the AMM window in the
+          journal). Frozen view, 24 shots 15:45:06..15:47:04: patch share 6.6-21.7 %, mostly 17-22 %. Kernel: no page
+          fault, no timeout. -> the shared zero buffer in the AMM window is not the cause.
+          Live drops (BC5_DIRECT_DROP_PS_FILE) in the frozen view, X1's 74 G-buffer pixel shaders (rt0 0x113f230000):
+            1-37 dropped: the whole water surface gone, the lake bed with sunken trees and structures everywhere
+            38-74 dropped: unchanged (18.9 %)
+            singly 1-18: only 0x11d01d7100 and 0x11d01ff900 change the lake; each turns the whole near lake into the
+            flat light surface (no detailed cell left). The other 16 leave the patchwork as it was.
+          0x11d01d7100: DRAW_INDEX_AUTO, 3 vertices (c0012d00 00000003 00000002), a full-screen triangle into the five
+            G-buffer targets (0x113f230000, 0x1140a90000, 0x11422f0000, 0x11453b0000, 0x1148470000), ES 0x11d00bdf00.
+          0x11d01ff900: four DRAW_INDEX_2 of 256 indices each (c0042700 00000100 10012000 00000012 00000100 00000000:
+            index buffer 0x1210012000), into the G-buffer, ES 0x11d0148800. Lake-only (present with the lake in view).
+          Both addresses are the same in every run seen (title screen T2/T3, L4, D1, X1).
+X2 15:55  launcher defaults, BC5_DIRECT_DRAW_JOURNAL_PS=11d01d7100,11d01ff900 (user data and tables). Frozen view
+          15:58:09..15:58:47: patch share 15.4-21.0 %.
+          0x11d01ff900 PS user data, inline image descriptors (gfx10 T#: base = dword0 | dword1[7:0] << 32, x256;
+          width-1 = dword2[11:0] << 2 | dword1[31:30]; height-1 = dword2[27:14]; dword3 type 31:28, sw mode 24:20,
+          last level 19:16):
+            84925040 caf00000 01ffc1ff 90570324 -> 0x8492504000, 2048x2048, 8 levels      (AMM window)
+            80907c40 c0d00000 007fc07f 90560324 -> 0x80907c4000, 512x512, 7 levels        (AMM window)
+            11d00780 c3800000 0000c000 90500fac -> 0x11d0078000, 4x4
+            e0007aa0 00200011 000063be 00005204 -> buffer 0x11e0007aa0, stride 32, 25,534 records
+            e0c2bc7c 00000011 -> pointer 0x11e0c2bc7c
+          0x11d01ff900 GS/ES user data:
+            80018100 c0d00000 01ffc1ff d1b00324 -> 0x8001810000, 2048x2048                 (AMM window)
+            80010100 c4700000 007fc07f d1b00fac -> 0x8001010000, 512x512                   (AMM window)
+            113cb400 c0d00000 01d3c33f 91b00324 -> 0x113cb40000, 3328x1872 (a screen-size target)
+            buffer 0x11e0007aa0 as above; pointers 0x11e0c2befc, 0x11d0000000
+          0x11d01d7100 PS user data: buffers 0x1122630410 (stride 16, 40 records), 0x112262be40 (16, 77),
+            0x1123818e00 (16, 168); GS: 0x1122630410, pointers 0x11e0ace600, 0x11e0ace5fc.
+Reading: the water's vertex stage samples 2048^2 and 512^2 textures in the AMM window (a heightfield) and its pixel
+stage two more (normal or detail maps). With PRT on, unmapped AMM pages read 0; with it off they would fault, and the
+patchy default runs had no fault. Same picture both ways, so these pages are mapped and their contents are what is
+missing in the flat cells. The writer of those tiles is the next question.

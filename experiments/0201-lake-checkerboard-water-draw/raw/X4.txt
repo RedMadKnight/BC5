@@ -1,0 +1,17 @@
+# Experiment 0201, X4 (2026-10-22 16:20-16:37): the A/B on APR read ordering, KYTY_BC5_APR_PARALLEL=1 plus
+# KYTY_BC5_APR_SYNC=1 (one read at a time, on the submitting thread: the pre-exp-0112/0156 paths), launcher defaults
+# otherwise, the exp 0197 build, the exp 0194 bench (private save copy). Granted by the top session (box supervisor).
+X4a 16:22  The title accepted input later than with the defaults; the slot keys landed early and the game loaded
+           slot 2's town (Level 3), not the lake. Patch share 0-2.8 % = no lake in view: no result.
+X4b 16:27  SLOTWAIT 12 s: the title press at 60 s was still not taken ("slot" shot = the title screen), the later keys
+           went to the "Continue Game" menu and slot 2's town loaded again. No result.
+X4c 16:33  The title press moved to 110 s (interactive-110.cmd). The SSH connection was reset at about 16:35-16:36 and the
+           box did not answer at 16:37:06: a machine-down. Its BOX-LOCK was probably left on the box.
+           Caught by the TCP session's stream (exp 0204, raw/stream-kernel.txt and stream-journal.txt there): session
+           play-20261022-1633; at 16:36:24 dcb #70816 (7,899 dwords) and acb #70826 (875 dwords) time out after 2.0 s,
+           "timeout: fault 0x0 status 0x00000000" (no GPU fault line); the probe reported dumps
+           ib-timeout-00070816-dcb-7899.bin and -00070826-acb-875.bin, which are not on disk after the reboot. Kernel: 16:36:24.49 gfx_0.0.0 timeout (bc5-ring), "Ring gfx_0.0.0 reset failed",
+           16:36:28.80 MODE1 reset, "VRAM is lost". About 3 min into the run, about 60 s after the title press. No amdgpu
+           line between 15:31 and 16:36:24, so X4a and X4b were fault-free. The fault-less class of F256/F260.
+No water result from X4. With these switches the start is much slower (the old paths' cost, F203), and the bench's
+fixed waits do not fit it.
