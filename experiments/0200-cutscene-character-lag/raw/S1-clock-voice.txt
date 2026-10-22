@@ -1,0 +1,6 @@
+# S1: reads of the clock voice's stream entry (file 0x7cd713df +0x7c69535a, 0x16a83 bytes; the first read +0x7c695739), journal t s
+8.71 18.58 28.57 38.60 48.55 58.50 68.50 88.49 98.48 108.48 118.47 128.46 138.46 140.37 150.27 160.26 170.34 180.33 190.32 200.35 210.32 220.39 230.30 240.31 250.29 260.28 270.28 280.32 293.64 301.55 
+# the clock voice's pass boundaries (AJM instances 0x60001, 0x60009: total decoded samples reset), journal t s
+18.6 28.6 38.6 48.5 58.5 68.5 78.5 88.5 98.5 108.5 118.5 128.5 138.5 150.3 160.3 170.3 180.3 190.3 200.3 210.3 220.3 230.3 240.3 250.3 260.3 270.3 280.3 290.3 300.3 310.5
+# last decode job of 0x60009 and the clock's last change
+last job of 0x60009: t 320.44

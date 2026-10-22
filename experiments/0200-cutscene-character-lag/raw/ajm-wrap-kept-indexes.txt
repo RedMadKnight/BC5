@@ -1,0 +1,47 @@
+dump-L1/ajm-index.txt: 10749 instances with decode jobs over 772 s, slots up to 0x3ff3, 4 wrap(s) at 406 s (0x60000) at 407 s (0x6002f) at 407 s (0x60045) at 407 s (0x6005e)
+  clock voice 0x60001: first 8.4 s, last job 407.7 s, 9927 jobs, first empty job none
+  clock voice 0x60009: first 114.1 s, last job 149.7 s, 5617 jobs, first empty job none
+  clock voice 0x607b8: first 208.8 s, last job 780.3 s, 76904 jobs, first empty job none
+  clock voice 0x62ed5: first 348.4 s, last job 541.2 s, 6946 jobs, first empty job none
+dump-L2/ajm-index.txt: 301 instances with decode jobs over 771 s, slots up to 0x1ae, 0 wrap(s)
+  clock voice 0x60001: first 8.4 s, last job 114.0 s, 10328 jobs, first empty job none
+  clock voice 0x60009: first 114.1 s, last job 779.9 s, 86406 jobs, first empty job none
+dump-L4/ajm-index.txt: 219 instances with decode jobs over 412 s, slots up to 0x15c, 0 wrap(s)
+  clock voice 0x60001: first 7.7 s, last job 114.0 s, 9841 jobs, first empty job none
+  clock voice 0x60009: first 114.0 s, last job 420.2 s, 44940 jobs, first empty job none
+dump-L5/ajm-index.txt: 206 instances with decode jobs over 472 s, slots up to 0x154, 0 wrap(s)
+  clock voice 0x60001: first 8.5 s, last job 113.9 s, 9540 jobs, first empty job none
+  clock voice 0x60009: first 114.0 s, last job 480.7 s, 31659 jobs, first empty job none
+dump-L6/ajm-index.txt: 359 instances with decode jobs over 771 s, slots up to 0x1d8, 0 wrap(s)
+  clock voice 0x60001: first 8.4 s, last job 113.9 s, 11726 jobs, first empty job none
+  clock voice 0x60009: first 114.0 s, last job 779.8 s, 141083 jobs, first empty job none
+dump-L7/ajm-index.txt: 317 instances with decode jobs over 592 s, slots up to 0x1cc, 0 wrap(s)
+  clock voice 0x60001: first 8.6 s, last job 113.9 s, 9472 jobs, first empty job none
+  clock voice 0x60009: first 114.0 s, last job 600.5 s, 93048 jobs, first empty job none
+dump-L8/ajm-index.txt: 279 instances with decode jobs over 471 s, slots up to 0x197, 0 wrap(s)
+  clock voice 0x60001: first 9.4 s, last job 114.0 s, 11080 jobs, first empty job none
+  clock voice 0x60009: first 114.2 s, last job 480.0 s, 85815 jobs, first empty job none
+dump-M0/ajm-index.txt: 300 instances with decode jobs over 593 s, slots up to 0x1bd, 0 wrap(s)
+  clock voice 0x60001: first 7.6 s, last job 114.0 s, 9675 jobs, first empty job none
+  clock voice 0x60009: first 114.0 s, last job 600.6 s, 82565 jobs, first empty job none
+dump-M1/ajm-index.txt: 281 instances with decode jobs over 592 s, slots up to 0x188, 0 wrap(s)
+  clock voice 0x60001: first 8.3 s, last job 114.0 s, 10797 jobs, first empty job none
+  clock voice 0x60009: first 114.1 s, last job 600.8 s, 81044 jobs, first empty job none
+dump-M2/ajm-index.txt: 211 instances with decode jobs over 471 s, slots up to 0x150, 0 wrap(s)
+  clock voice 0x60001: first 8.5 s, last job 114.0 s, 9760 jobs, first empty job none
+  clock voice 0x60009: first 114.0 s, last job 479.9 s, 39307 jobs, first empty job none
+dump-M3/ajm-index.txt: 211 instances with decode jobs over 592 s, slots up to 0x160, 0 wrap(s)
+  clock voice 0x60001: first 8.4 s, last job 114.0 s, 9528 jobs, first empty job none
+  clock voice 0x60009: first 114.1 s, last job 600.3 s, 42079 jobs, first empty job none
+dump-M4/ajm-index.txt: 216 instances with decode jobs over 592 s, slots up to 0x162, 0 wrap(s)
+  clock voice 0x60001: first 8.4 s, last job 113.9 s, 9797 jobs, first empty job none
+  clock voice 0x60009: first 114.0 s, last job 600.5 s, 44385 jobs, first empty job none
+dump-M5/ajm-index.txt: 223 instances with decode jobs over 592 s, slots up to 0x165, 0 wrap(s)
+  clock voice 0x60001: first 8.3 s, last job 114.0 s, 9917 jobs, first empty job none
+  clock voice 0x60009: first 114.0 s, last job 600.0 s, 45558 jobs, first empty job none
+dump-M6/ajm-index.txt: 221 instances with decode jobs over 592 s, slots up to 0x16a, 0 wrap(s)
+  clock voice 0x60001: first 8.3 s, last job 114.0 s, 9914 jobs, first empty job none
+  clock voice 0x60009: first 114.0 s, last job 600.3 s, 45584 jobs, first empty job none
+dump-V1/ajm-index.txt: 3247 instances with decode jobs over 292 s, slots up to 0x1a0b, 0 wrap(s)
+  clock voice 0x60001: first 8.2 s, last job 114.0 s, 9922 jobs, first empty job none
+  clock voice 0x60009: first 114.0 s, last job 300.7 s, 17419 jobs, first empty job none
