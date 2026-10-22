@@ -1,0 +1,4 @@
+tcpW1   frames 17814 mean 33.5 >50 875 >100 44 >250 7 >1s 0 end 599 s; TIMEOUT 0 given-up 17 (on 3c38: 6)
+tcpW2   frames 17144 mean 34.6 >50 1075 >100 123 >250 12 >1s 2 end 596 s; TIMEOUT 0 given-up 1 (on 3c38: 1)
+tcpW2b  frames 17106 mean 34.9 >50 1143 >100 72 >250 10 >1s 0 end 599 s; TIMEOUT 0 given-up 0 (on 3c38: 0)
+tcpW1b  frames 17288 mean 34.6 >50 1166 >100 64 >250 16 >1s 0 end 599 s; TIMEOUT 0 given-up 12 (on 3c38: 8)
