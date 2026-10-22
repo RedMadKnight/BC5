@@ -1,0 +1,59 @@
+== 0214-apr-readahead-default-on/raw/S1N-cpu.txt
+   10 bc5-apr-q1:    9.5 bc5-apr-q3:    6.0 bc5-apr-q5:  219.2 bc5-apr-r1:   76.8 bc5-apr-r3:   74.0 bc5-apr-r5:  417.0
+   21 bc5-apr-q1:    0.7 bc5-apr-q3:    0.0 bc5-apr-q5:    0.1 bc5-apr-r1:   51.7 bc5-apr-r3:   50.5 bc5-apr-r5:   50.6
+   31 bc5-apr-q1:    6.1 bc5-apr-q3:    5.8 bc5-apr-q5:  135.4 bc5-apr-r1:   73.9 bc5-apr-r3:   70.9 bc5-apr-r5:  524.7
+   41 bc5-apr-q1:   28.5 bc5-apr-q3:   26.4 bc5-apr-q5:  172.5 bc5-apr-r1:   98.4 bc5-apr-r3:  142.1 bc5-apr-r5:  276.0
+   51 bc5-apr-q1:    3.7 bc5-apr-q3:  145.2 bc5-apr-q5:    2.4 bc5-apr-r1:   63.2 bc5-apr-r3:  307.3 bc5-apr-r5:   60.4
+   62 bc5-apr-q1:    1.9 bc5-apr-q3:    0.4 bc5-apr-q5:    0.4 bc5-apr-r1:   56.0 bc5-apr-r3:   53.6 bc5-apr-r5:   53.9
+   72 bc5-apr-q1:    2.4 bc5-apr-q3:    0.4 bc5-apr-q5:    0.4 bc5-apr-r1:   58.2 bc5-apr-r3:   53.0 bc5-apr-r5:   54.1
+   82 bc5-apr-q1:    7.4 bc5-apr-q3:    6.9 bc5-apr-q5:   65.8 bc5-apr-r1:   73.0 bc5-apr-r3:   72.3 bc5-apr-r5:  352.8
+   92 bc5-apr-q1:   13.7 bc5-apr-q3:   13.7 bc5-apr-q5:  361.5 bc5-apr-r1:   97.6 bc5-apr-r3:   97.0 bc5-apr-r5: 1087.5
+  102 bc5-apr-q1:    3.5 bc5-apr-q3:   15.2 bc5-apr-q5:  168.1 bc5-apr-r1:   60.1 bc5-apr-r3:   64.6 bc5-apr-r5:  369.7
+  113 bc5-apr-q1:   72.9 bc5-apr-q3:  158.1 bc5-apr-q5:  122.1 bc5-apr-r1:  122.1 bc5-apr-r3:  487.3 bc5-apr-r5:  238.3
+  123 bc5-apr-q1:   49.7 bc5-apr-q3:  224.0 bc5-apr-q5:   37.0 bc5-apr-r1:   92.2 bc5-apr-r3:  383.1 bc5-apr-r5:   86.8
+  134 bc5-apr-q1:   49.5 bc5-apr-q3:  253.4 bc5-apr-q5:    6.6 bc5-apr-r1:   89.8 bc5-apr-r3: 1532.7 bc5-apr-r5:   76.6
+  144 bc5-apr-q1:   21.3 bc5-apr-q3:  263.4 bc5-apr-q5:    7.5 bc5-apr-r1:   92.5 bc5-apr-r3:  515.0 bc5-apr-r5:   79.5
+  154 bc5-apr-q1:   69.1 bc5-apr-q3:  156.3 bc5-apr-q5:    6.9 bc5-apr-r1:   84.2 bc5-apr-r3:  216.5 bc5-apr-r5:   75.7
+  164 bc5-apr-q1:   89.1 bc5-apr-q3:  148.6 bc5-apr-q5:    4.1 bc5-apr-r1:  184.3 bc5-apr-r3:  801.6 bc5-apr-r5:   64.6
+  175 bc5-apr-q1:  109.9 bc5-apr-q3:  175.0 bc5-apr-q5:   26.0 bc5-apr-r1:  109.5 bc5-apr-r3:  201.1 bc5-apr-r5:   96.7
+  185 bc5-apr-q1:    4.1 bc5-apr-q3:   35.5 bc5-apr-q5:    1.1 bc5-apr-r1:   61.1 bc5-apr-r3:   90.6 bc5-apr-r5:   58.8
+  196 bc5-apr-q1:    3.9 bc5-apr-q3:    0.5 bc5-apr-q5:    0.6 bc5-apr-r1:   59.3 bc5-apr-r3:   54.7 bc5-apr-r5:   55.1
+  206 bc5-apr-q1:    2.8 bc5-apr-q3:    2.4 bc5-apr-q5:    0.7 bc5-apr-r1:   59.9 bc5-apr-r3:   58.9 bc5-apr-r5:   55.8
+  216 bc5-apr-q1:    4.1 bc5-apr-q3:    0.6 bc5-apr-q5:    0.6 bc5-apr-r1:   58.8 bc5-apr-r3:   55.7 bc5-apr-r5:   56.4
+  226 bc5-apr-q1:    3.4 bc5-apr-q3:    0.5 bc5-apr-q5:    0.5 bc5-apr-r1:   57.0 bc5-apr-r3:   53.2 bc5-apr-r5:   52.4
+  237 bc5-apr-q1:    3.6 bc5-apr-q3:    0.5 bc5-apr-q5:    0.5 bc5-apr-r1:   57.7 bc5-apr-r3:   54.1 bc5-apr-r5:   53.5
+  247 bc5-apr-q1:    1.6 bc5-apr-q3:    0.6 bc5-apr-q5:    0.6 bc5-apr-r1:   57.2 bc5-apr-r3:   54.4 bc5-apr-r5:   54.0
+  257 bc5-apr-q1:    2.2 bc5-apr-q3:    0.6 bc5-apr-q5:    0.5 bc5-apr-r1:   55.9 bc5-apr-r3:   53.3 bc5-apr-r5:   54.2
+  267 bc5-apr-q1:    2.8 bc5-apr-q3:    0.5 bc5-apr-q5:    0.5 bc5-apr-r1:   54.8 bc5-apr-r3:   52.2 bc5-apr-r5:   51.6
+  278 bc5-apr-q1:    2.8 bc5-apr-q3:    0.4 bc5-apr-q5:    0.4 bc5-apr-r1:   56.3 bc5-apr-r3:   52.0 bc5-apr-r5:   52.3
+  288 bc5-apr-q1:    1.9 bc5-apr-q3:    0.4 bc5-apr-q5:    0.4 bc5-apr-r1:   53.6 bc5-apr-r3:   51.8 bc5-apr-r5:   52.0
+total s: {'bc5-apr-q1': 0.57, 'bc5-apr-q3': 1.64, 'bc5-apr-q5': 1.34, 'bc5-apr-r1': 2.12, 'bc5-apr-r3': 5.75, 'bc5-apr-r5': 4.56}
+== 0216-apr-reader-cv-wait/raw/S1-cpu.txt
+   10 bc5-apr-q1:    5.6 bc5-apr-q3:    4.4 bc5-apr-q5:   80.8 bc5-apr-r1:   21.0 bc5-apr-r3:   17.5 bc5-apr-r5:  224.2
+   20 bc5-apr-q1:    0.1 bc5-apr-q3:    0.1 bc5-apr-q5:    0.1 bc5-apr-r1:    1.1 bc5-apr-r3:    0.7 bc5-apr-r5:    0.7
+   31 bc5-apr-q1:    7.8 bc5-apr-q3:    9.2 bc5-apr-q5:  176.3 bc5-apr-r1:   29.8 bc5-apr-r3:   37.1 bc5-apr-r5:  731.8
+   41 bc5-apr-q1:   19.8 bc5-apr-q3:   11.1 bc5-apr-q5:   88.6 bc5-apr-r1:   48.2 bc5-apr-r3:   68.5 bc5-apr-r5:  178.5
+   51 bc5-apr-q1:    2.1 bc5-apr-q3:   14.9 bc5-apr-q5:    0.7 bc5-apr-r1:    5.8 bc5-apr-r3:   24.4 bc5-apr-r5:    3.1
+   61 bc5-apr-q1:    2.1 bc5-apr-q3:   14.5 bc5-apr-q5:    0.6 bc5-apr-r1:    3.8 bc5-apr-r3:   34.8 bc5-apr-r5:    2.4
+   71 bc5-apr-q1:    3.7 bc5-apr-q3:  105.1 bc5-apr-q5:    1.8 bc5-apr-r1:    9.6 bc5-apr-r3:  236.2 bc5-apr-r5:    7.9
+   82 bc5-apr-q1:    3.1 bc5-apr-q3:    2.5 bc5-apr-q5:    4.3 bc5-apr-r1:   11.5 bc5-apr-r3:    9.9 bc5-apr-r5:   29.6
+   92 bc5-apr-q1:    2.7 bc5-apr-q3:    2.5 bc5-apr-q5:   40.6 bc5-apr-r1:   11.1 bc5-apr-r3:   11.1 bc5-apr-r5:  263.9
+  102 bc5-apr-q1:    1.1 bc5-apr-q3:    1.1 bc5-apr-q5:   15.0 bc5-apr-r1:    4.2 bc5-apr-r3:    4.2 bc5-apr-r5:  125.0
+  112 bc5-apr-q1:    1.4 bc5-apr-q3:    1.2 bc5-apr-q5:   15.3 bc5-apr-r1:    5.3 bc5-apr-r3:    4.9 bc5-apr-r5:  126.6
+  123 bc5-apr-q1:    7.3 bc5-apr-q3:    7.6 bc5-apr-q5:  164.3 bc5-apr-r1:   30.3 bc5-apr-r3:   30.2 bc5-apr-r5:  486.1
+  133 bc5-apr-q0:    7.1 bc5-apr-q1:    7.2 bc5-apr-q3:    7.0 bc5-apr-q5:  212.1 bc5-apr-r0:   28.7 bc5-apr-r1:   28.7 bc5-apr-r3:   29.0 bc5-apr-r5:  800.8
+  146 bc5-apr-q0:    0.6 bc5-apr-q1:    0.8 bc5-apr-q3:    0.6 bc5-apr-q5:   35.0 bc5-apr-r0:    2.6 bc5-apr-r1:    2.6 bc5-apr-r3:    2.6 bc5-apr-r5:   77.0
+  157 bc5-apr-q0:   12.6 bc5-apr-q1:   26.1 bc5-apr-q3:   57.5 bc5-apr-q5:  132.2 bc5-apr-r0:   50.7 bc5-apr-r1:   86.1 bc5-apr-r3:  273.6 bc5-apr-r5:  271.1
+  170 bc5-apr-q0:    5.1 bc5-apr-q1:   10.9 bc5-apr-q3:   37.2 bc5-apr-q5:   28.3 bc5-apr-r0:   19.4 bc5-apr-r1:   37.8 bc5-apr-r3:  180.9 bc5-apr-r5:   49.6
+  181 bc5-apr-q0:    9.8 bc5-apr-q1:   21.0 bc5-apr-q3:  282.5 bc5-apr-q5:    9.2 bc5-apr-r0:   39.1 bc5-apr-r1:   57.6 bc5-apr-r3:  733.4 bc5-apr-r5:   39.3
+  191 bc5-apr-q0:    6.0 bc5-apr-q1:   32.8 bc5-apr-q3:  210.7 bc5-apr-q5:    5.7 bc5-apr-r0:   23.2 bc5-apr-r1:  286.3 bc5-apr-r3: 2473.0 bc5-apr-r5:   23.0
+  202 bc5-apr-q0:   10.0 bc5-apr-q1:   69.1 bc5-apr-q3:  182.5 bc5-apr-q5:    9.9 bc5-apr-r0:   40.3 bc5-apr-r1:  107.7 bc5-apr-r3: 1392.1 bc5-apr-r5:   39.6
+  212 bc5-apr-q0:    6.1 bc5-apr-q1:   15.9 bc5-apr-q3:  171.0 bc5-apr-q5:    6.3 bc5-apr-r0:   25.5 bc5-apr-r1:   35.0 bc5-apr-r3:  814.5 bc5-apr-r5:   25.6
+  222 bc5-apr-q0:   14.5 bc5-apr-q1:   88.7 bc5-apr-q3:  180.7 bc5-apr-q5:   17.4 bc5-apr-r0:   59.6 bc5-apr-r1:  219.1 bc5-apr-r3:  789.8 bc5-apr-r5:  103.0
+  233 bc5-apr-q0:    3.6 bc5-apr-q1:   38.7 bc5-apr-q3:   77.7 bc5-apr-q5:   34.9 bc5-apr-r0:   14.3 bc5-apr-r1:  324.1 bc5-apr-r3:  745.1 bc5-apr-r5:  101.0
+  243 bc5-apr-q0:    0.6 bc5-apr-q1:    4.1 bc5-apr-q3:    0.6 bc5-apr-q5:    0.7 bc5-apr-r0:    2.7 bc5-apr-r1:    5.8 bc5-apr-r3:    2.7 bc5-apr-r5:    2.6
+  253 bc5-apr-q0:    0.5 bc5-apr-q1:    3.0 bc5-apr-q3:    0.5 bc5-apr-q5:    0.5 bc5-apr-r0:    2.4 bc5-apr-r1:    5.5 bc5-apr-r3:    2.3 bc5-apr-r5:    2.3
+  264 bc5-apr-q0:    0.6 bc5-apr-q1:    5.2 bc5-apr-q3:    0.7 bc5-apr-q5:    0.6 bc5-apr-r0:    2.8 bc5-apr-r1:    7.7 bc5-apr-r3:    2.9 bc5-apr-r5:    2.6
+  274 bc5-apr-q0:    0.7 bc5-apr-q1:    5.1 bc5-apr-q3:    2.1 bc5-apr-q5:    0.8 bc5-apr-r0:    3.5 bc5-apr-r1:    9.6 bc5-apr-r3:   20.1 bc5-apr-r5:    3.6
+  285 bc5-apr-q0:    0.4 bc5-apr-q1:    2.7 bc5-apr-q3:    0.5 bc5-apr-q5:    0.4 bc5-apr-r0:    2.2 bc5-apr-r1:    6.0 bc5-apr-r3:    2.0 bc5-apr-r5:    2.1
+total s: {'bc5-apr-q0': 0.08, 'bc5-apr-q1': 0.39, 'bc5-apr-q3': 1.39, 'bc5-apr-q5': 1.08, 'bc5-apr-r0': 0.32, 'bc5-apr-r1': 1.4, 'bc5-apr-r3': 7.94, 'bc5-apr-r5': 3.72}

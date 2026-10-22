@@ -1,0 +1,19 @@
+== 20:33:30 build
+== 20:33:44 build rc 0 after 14 s
+/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: warning: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations]
+/home/kjaniszewski/bc5-work/exp0216/src/libAmpr.cpp:1909:143: warning: data argument not used by format string [-Wformat-extra-args]
+/home/kjaniszewski/bc5-work/exp0216/src/libAmpr.cpp:2018:50: warning: data argument not used by format string [-Wformat-extra-args]
+35fa8d5264e9675c58810a501f9ca32c  kyty_emulator
+eaef1da19412bd0c888bdc94681efa91  src/libAmpr.cpp
+9d43e945bb79a543224937099d6c45a1  /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator
+== 20:33:45 smoke run S1
+restored /home/kjaniszewski/bc5-work/exp0196/saves-before-152617 into /home/kjaniszewski/bc5-work/_SaveData/PPSA03671 (previous saves in /home/kjaniszewski/bc5-work/exp0196/saves-before-203347-364070397-1692866)
+S1 stopped at 300 s
+restored /home/kjaniszewski/bc5-work/exp0196/saves-before-203347-364070397-1692866 into /home/kjaniszewski/bc5-work/_SaveData/PPSA03671 (previous saves in /home/kjaniszewski/bc5-work/exp0196/saves-before-203858-547569985-1735945)
+live saves back and identical to /home/kjaniszewski/bc5-work/exp0196/saves-before-203347-364070397-1692866
+S1 summary: reader threads 16, readahead lines 412, in-order copies 486, sequence decreases 0, crash lines 0, kernel lines 0
+  bc5-apr-q* CPU 2.9 s in 285 s (1.03 % of one core)
+  bc5-apr-r* CPU 13.4 s in 285 s (4.70 % of one core)
+  VmRSS min 12, max 3401, last 441 MiB
+== 20:38:58 BOX-LOCK released
+== 20:38:58 S1 PASSED
