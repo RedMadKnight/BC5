@@ -1,0 +1,174 @@
+flip trace: served dcb 1153 dwords at 590 on 0x12004b4838 after 11.667 ms, t 7.284147 s; in flight cq0 0 cq1 1; 3 jobs done during the wait, the last 4.429 ms before its end (#2477 dcb 1859 dwords, cq0); compute queue blocked on 0x0
+flip trace: job #2478 acb 2654 dwords done at t 7.284959 s (cq1); in flight cq0 0 cq1 0
+  wait detail: function 3, value 0x907616589, reference 0x0, mask 0xffffffffffffffff
+cpu-wait WAIT_REG_MEM64 at 590 on 0x12004b4838: GIVEN UP after 16.5 ms
+flip trace: #1 given up: dcb 1153 dwords at 590 on 0x12004b4838 (game thread 1) after 16.523 ms, t 7.328190 s; value 0x907616589; in flight cq0 0 cq1 0; the last job done 4.270 ms before (#2488 acb 2 dwords, cq1)
+flip trace: #1 compute candidate 0x12004b37c8: held back 21.082 ms before the give-up, value 0x0; it has write breakpoints
+flip trace: #1 compute queue not held back (g_unready_label 0); the waiting buffer writes 29 label(s)
+flip trace: job #2489 acb 2654 dwords done at t 7.330020 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #2490 dcb 1325 dwords done at t 7.334073 s (cq0); in flight cq0 0 cq1 0
+flip trace: job #2491 dcb 7658 dwords done at t 7.341381 s (cq0); in flight cq0 0 cq1 0
+flip trace: job #2492 acb 82 dwords done at t 7.343611 s (cq1); in flight cq0 0 cq1 0
+flip trace: #1 write breakpoints on the compute label 0x12004b37c8: 91 armed, 0 failed (errno 0), in 16.992 ms, armed 17.073 ms after the give-up; value then 0x0; 91 new
+flip trace: #1 write breakpoints on the compute label 0x12004b53c8: 91 armed, 0 failed (errno 0), in 0.540 ms, armed 17.681 ms after the give-up; value then 0x0; 91 new
+flip trace: #1 write breakpoints on the compute label 0x12004b4fc8: 91 armed, 0 failed (errno 0), in 0.670 ms, armed 18.356 ms after the give-up; value then 0x0; 91 new
+flip trace: job #2493 acb 158 dwords done at t 7.346760 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #2494 dcb 706 dwords done at t 7.351469 s (cq0); in flight cq0 0 cq1 0
+flip trace: job #2495 acb 18 dwords done at t 7.355667 s (cq1); in flight cq0 0 cq1 0
+flip trace: #1 write breakpoints on the compute label 0x12004b77c8: 91 armed, 0 failed (errno 0), in 9.962 ms, armed 28.327 ms after the give-up; value then 0x0; 91 new
+flip trace: #1 breakpoints: given-up label none; compute label 4 fixed label(s)
+flip trace: #1 compute label 0x12004b37c8: 0x0 -> 0x9076d6d8c at t 7.356524 s, 28.334 ms after the give-up; in flight cq0 0 cq1 0
+flip trace: #1 CPU write to the compute label 0x12004b37c8: thread 2343407 (Render Thread) = the thread that gave up, 1 write(s), seen at a change at t 7.356524 s, 28.334 ms after the give-up
+flip trace: #1 compute label 0x12004b37c8: 0x9076d6d8c -> 0x0 at t 7.361613 s, 33.423 ms after the give-up; in flight cq0 1 cq1 0
+flip trace: #1 no CPU write counted for that change of the compute label 0x12004b37c8 (a GPU write)
+flip trace: job #2496 dcb 7838 dwords done at t 7.362093 s (cq0); in flight cq0 0 cq1 0
+flip trace: job #2497 acb 100 dwords done at t 7.365857 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #2498 dcb 1859 dwords done at t 7.371795 s (cq0); in flight cq0 0 cq1 0
+flip trace: job #2499 acb 134 dwords done at t 7.376496 s (cq1); in flight cq0 0 cq1 0
+  wait detail: function 3, value 0x907616589, reference 0x0, mask 0xffffffffffffffff
+cpu-wait WAIT_REG_MEM64 at 590 on 0x12004b4838: GIVEN UP after 18.5 ms
+flip trace: #2 given up: dcb 1153 dwords at 590 on 0x12004b4838 (game thread 1) after 18.501 ms, t 7.379870 s; value 0x907616589; in flight cq0 0 cq1 0; the last job done 3.374 ms before (#2499 acb 134 dwords, cq1)
+flip trace: #2 compute candidate 0x12004b37c8: held back 23.965 ms before the give-up, value 0x0; it has write breakpoints
+flip trace: #2 compute queue not held back (g_unready_label 0); the waiting buffer writes 29 label(s)
+flip trace: #2 CPU write to the compute label 0x12004b53c8: thread 2343407 (Render Thread) = the thread that gave up, 1 write(s), seen at the watch start (since the last read) at t 7.380209 s, 0.338 ms after the give-up
+flip trace: #2 CPU write to the compute label 0x12004b4fc8: thread 2343407 (Render Thread) = the thread that gave up, 1 write(s), seen at the watch start (since the last read) at t 7.380335 s, 0.464 ms after the give-up
+flip trace: #2 breakpoints: given-up label none; compute label 4 fixed label(s)
+flip trace: #1 0x12004b4838: 0x907616589 -> 0x0 at t 7.382245 s, 54.055 ms after the give-up; in flight cq0 0 cq1 1
+flip trace: #1 0x12004b4838 satisfied 54.055 ms after the give-up (70.578 ms after the wait began), t 7.382245 s; in flight cq0 0 cq1 1 (at the give-up 0 0); 11 jobs done since the give-up, the last 5.749 ms before (#2499 acb 134 dwords, cq1); value 0x0, 1 changes; compute label 0x0 now 0x0
+flip trace: #2 0x12004b4838: 0x907616589 -> 0x0 at t 7.382599 s, 2.729 ms after the give-up; in flight cq0 0 cq1 1
+flip trace: #2 0x12004b4838 satisfied 2.729 ms after the give-up (21.230 ms after the wait began), t 7.382599 s; in flight cq0 0 cq1 1 (at the give-up 0 0); 0 jobs done since the give-up, the last 6.103 ms before (#2499 acb 134 dwords, cq1); value 0x0, 1 changes; compute label 0x0 now 0x0
+flip trace: job #2500 acb 2654 dwords done at t 7.383167 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #2501 dcb 1325 dwords done at t 7.387429 s (cq0); in flight cq0 0 cq1 0
+flip trace: job #2502 dcb 7658 dwords done at t 7.395592 s (cq0); in flight cq0 0 cq1 0
+flip trace: job #2503 acb 82 dwords done at t 7.398283 s (cq1); in flight cq0 0 cq1 0
+flip trace: served dcb 1153 dwords at 590 on 0x12004b4838 after 19.693 ms, t 7.436276 s; in flight cq0 0 cq1 1; 4 jobs done during the wait, the last 2.445 ms before its end (#2509 acb 152 dwords, cq1); compute queue blocked on 0x0
+flip trace: job #2510 acb 2654 dwords done at t 7.437396 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #2512 acb 82 dwords done at t 7.437577 s (cq1); in flight cq0 1 cq1 1
+flip trace: job #2513 acb 140 dwords done at t 7.437592 s (cq1); in flight cq0 1 cq1 0
+flip trace: job #2511 dcb 7714 dwords done at t 7.439486 s (cq0); in flight cq0 0 cq1 0
+  wait detail: function 3, value 0x907616589, reference 0x0, mask 0xffffffffffffffff
+cpu-wait WAIT_REG_MEM64 at 590 on 0x12004b4838: GIVEN UP after 18.4 ms
+flip trace: #3 given up: dcb 1153 dwords at 590 on 0x12004b4838 (game thread 1) after 18.414 ms, t 13.054388 s; value 0x907616589; in flight cq0 0 cq1 0; the last job done 6.409 ms before (#5311 dcb 1859 dwords, cq0)
+flip trace: #3 compute candidate 0x12004b37c8: held back 18.478 ms before the give-up, value 0x0; it has write breakpoints
+flip trace: #3 compute queue not held back (g_unready_label 0); the waiting buffer writes 29 label(s)
+flip trace: #3 write breakpoints on the compute label 0x12004b37c8: 98 armed, 0 failed (errno 0), in 0.274 ms, armed 0.293 ms after the give-up; value then 0x0; 7 new
+flip trace: #3 CPU write to the compute label 0x12004b37c8: thread 2343407 (Render Thread) = the thread that gave up, 160 write(s), seen at the watch start (since the last read) at t 13.054684 s, 0.296 ms after the give-up
+flip trace: #3 CPU write to the compute label 0x12004b37c8: thread 2343444 (bc5-cq0), 1 write(s), seen at the watch start (since the last read) at t 13.054684 s, 0.296 ms after the give-up
+flip trace: #3 write breakpoints on the compute label 0x12004b53c8: 98 armed, 0 failed (errno 0), in 0.094 ms, armed 0.561 ms after the give-up; value then 0x0; 7 new
+flip trace: #3 CPU write to the compute label 0x12004b53c8: thread 2343407 (Render Thread) = the thread that gave up, 166 write(s), seen at the watch start (since the last read) at t 13.054951 s, 0.563 ms after the give-up
+flip trace: #3 write breakpoints on the compute label 0x12004b4fc8: 98 armed, 0 failed (errno 0), in 0.061 ms, armed 0.700 ms after the give-up; value then 0x0; 7 new
+flip trace: #3 CPU write to the compute label 0x12004b4fc8: thread 2343407 (Render Thread) = the thread that gave up, 166 write(s), seen at the watch start (since the last read) at t 13.055089 s, 0.702 ms after the give-up
+flip trace: #3 write breakpoints on the compute label 0x12004b77c8: 98 armed, 0 failed (errno 0), in 0.059 ms, armed 0.829 ms after the give-up; value then 0x0; 7 new
+flip trace: #3 breakpoints: given-up label none; compute label 4 fixed label(s)
+flip trace: job #5313 dcb 1325 dwords done at t 13.057346 s (cq0); in flight cq0 0 cq1 1
+flip trace: job #5312 acb 1266 dwords done at t 13.059115 s (cq1); in flight cq0 1 cq1 1
+flip trace: #3 0x12004b4838: 0x907616589 -> 0x0 at t 13.059170 s, 4.782 ms after the give-up; in flight cq0 1 cq1 1
+flip trace: #3 0x12004b4838 satisfied 4.782 ms after the give-up (23.196 ms after the wait began), t 13.059170 s; in flight cq0 1 cq1 1 (at the give-up 0 0); 2 jobs done since the give-up, the last 0.055 ms before (#5312 acb 1266 dwords, cq1); value 0x0, 1 changes; compute label 0x0 now 0x0
+flip trace: job #5314 acb 1391 dwords done at t 13.060239 s (cq1); in flight cq0 2 cq1 2
+flip trace: job #5317 acb 82 dwords done at t 13.060290 s (cq1); in flight cq0 2 cq1 1
+flip trace: job #5315 dcb 1792 dwords done at t 13.060298 s (cq0); in flight cq0 1 cq1 1
+flip trace: job #5318 acb 140 dwords done at t 13.060299 s (cq1); in flight cq0 1 cq1 0
+flip trace: job #5316 dcb 5866 dwords done at t 13.062311 s (cq0); in flight cq0 0 cq1 0
+flip trace: job #5319 acb 18 dwords done at t 13.064199 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #5320 acb 18 dwords done at t 13.064282 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #5322 acb 100 dwords done at t 13.065286 s (cq1); in flight cq0 1 cq1 0
+flip trace: job #5323 acb 134 dwords done at t 13.065458 s (cq1); in flight cq0 1 cq1 0
+flip trace: job #5321 dcb 4726 dwords done at t 13.065475 s (cq0); in flight cq0 0 cq1 0
+flip trace: job #5324 acb 28 dwords done at t 13.065993 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #5325 acb 1266 dwords done at t 13.066628 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #5328 acb 4 dwords done at t 13.067058 s (cq1); in flight cq0 2 cq1 1
+flip trace: job #5326 dcb 3787 dwords done at t 13.067107 s (cq0); in flight cq0 1 cq1 1
+flip trace: job #5329 acb 396 dwords done at t 13.067628 s (cq1); in flight cq0 2 cq1 2
+flip trace: job #5327 dcb 1915 dwords done at t 13.068275 s (cq0); in flight cq0 1 cq1 2
+flip trace: job #5331 dcb 1325 dwords done at t 13.068282 s (cq0); in flight cq0 0 cq1 2
+flip trace: job #5330 acb 713 dwords done at t 13.068561 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #5332 acb 254 dwords done at t 13.068842 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #5333 dcb 4789 dwords done at t 13.070145 s (cq0); in flight cq0 0 cq1 0
+flip trace: job #5335 acb 82 dwords done at t 13.072256 s (cq1); in flight cq0 1 cq1 1
+flip trace: job #5336 acb 140 dwords done at t 13.072277 s (cq1); in flight cq0 1 cq1 0
+flip trace: served dcb 1153 dwords at 590 on 0x12004b4838 after 19.306 ms, t 18.478819 s; in flight cq0 0 cq1 1; 3 jobs done during the wait, the last 4.798 ms before its end (#7958 dcb 1859 dwords, cq0); compute queue blocked on 0x0
+flip trace: job #7959 acb 3914 dwords done at t 18.479862 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #7961 acb 82 dwords done at t 18.480077 s (cq1); in flight cq0 1 cq1 1
+flip trace: job #7962 acb 140 dwords done at t 18.480095 s (cq1); in flight cq0 1 cq1 0
+flip trace: job #7960 dcb 7714 dwords done at t 18.481948 s (cq0); in flight cq0 0 cq1 0
+flip trace: job #7963 acb 18 dwords done at t 18.483502 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #7964 acb 18 dwords done at t 18.483510 s (cq1); in flight cq0 0 cq1 0
+flip trace: served dcb 7048 dwords at 5907 on 0x12004b3c38 after 12.967 ms, t 51.722756 s; in flight cq0 0 cq1 1; 2 jobs done during the wait, the last 4.415 ms before its end (#39353 dcb 7176 dwords, cq0); compute queue blocked on 0x0
+flip trace: job #39357 dcb 2426 dwords done at t 51.724009 s (cq0); in flight cq0 0 cq1 4
+flip trace: job #39354 acb 2176 dwords done at t 51.724348 s (cq1); in flight cq0 0 cq1 3
+flip trace: job #39355 acb 28 dwords done at t 51.724378 s (cq1); in flight cq0 0 cq1 3
+flip trace: job #39356 acb 2 dwords done at t 51.724382 s (cq1); in flight cq0 0 cq1 2
+flip trace: job #39358 acb 4 dwords done at t 51.724386 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #39359 acb 7447 dwords done at t 51.724833 s (cq1); in flight cq0 0 cq1 2
+flip trace: job #39360 acb 28 dwords done at t 51.724856 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #39361 acb 2 dwords done at t 51.724861 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #39364 acb 4 dwords done at t 51.725977 s (cq1); in flight cq0 2 cq1 0
+flip trace: served dcb 7048 dwords at 5907 on 0x12004b3c38 after 12.850 ms, t 59.536587 s; in flight cq0 0 cq1 1; 2 jobs done during the wait, the last 4.090 ms before its end (#51293 dcb 7176 dwords, cq0); compute queue blocked on 0x0
+flip trace: job #51297 dcb 2426 dwords done at t 59.537934 s (cq0); in flight cq0 0 cq1 5
+flip trace: job #51294 acb 2176 dwords done at t 59.538183 s (cq1); in flight cq0 0 cq1 4
+flip trace: job #51295 acb 28 dwords done at t 59.538259 s (cq1); in flight cq0 0 cq1 4
+flip trace: job #51296 acb 2 dwords done at t 59.538297 s (cq1); in flight cq0 0 cq1 4
+flip trace: job #51298 acb 4 dwords done at t 59.538301 s (cq1); in flight cq0 0 cq1 3
+flip trace: job #51299 acb 7447 dwords done at t 59.539067 s (cq1); in flight cq0 0 cq1 2
+flip trace: job #51300 acb 28 dwords done at t 59.539095 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #51301 acb 2 dwords done at t 59.539099 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #51304 acb 4 dwords done at t 59.539414 s (cq1); in flight cq0 2 cq1 0
+flip trace: served dcb 7048 dwords at 5907 on 0x12004b3c38 after 13.891 ms, t 59.758346 s; in flight cq0 0 cq1 1; 3 jobs done during the wait, the last 4.218 ms before its end (#51635 dcb 7176 dwords, cq0); compute queue blocked on 0x0
+flip trace: job #51639 dcb 2426 dwords done at t 59.759584 s (cq0); in flight cq0 0 cq1 4
+flip trace: job #51636 acb 2110 dwords done at t 59.759943 s (cq1); in flight cq0 0 cq1 4
+flip trace: job #51637 acb 28 dwords done at t 59.760004 s (cq1); in flight cq0 0 cq1 3
+flip trace: job #51638 acb 2 dwords done at t 59.760009 s (cq1); in flight cq0 0 cq1 2
+flip trace: job #51640 acb 4 dwords done at t 59.760016 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #51641 acb 7447 dwords done at t 59.760457 s (cq1); in flight cq0 0 cq1 2
+flip trace: job #51642 acb 28 dwords done at t 59.760483 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #51643 acb 2 dwords done at t 59.760488 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #51645 acb 4 dwords done at t 59.761126 s (cq1); in flight cq0 1 cq1 0
+  wait detail: function 3, value 0x907616589, reference 0x0, mask 0xffffffffffffffff
+cpu-wait WAIT_REG_MEM64 at 291 on 0x12004b5438: GIVEN UP after 8.2 ms
+flip trace: #4 given up: dcb 922 dwords at 291 on 0x12004b5438 (game thread 1) after 8.191 ms, t 60.984663 s; value 0x907616589; in flight cq0 0 cq1 1; the last job done 2.037 ms before (#53575 dcb 291 dwords, cq0)
+flip trace: #4 compute candidate 0x12004b53c8: held back 8.246 ms before the give-up, value 0x0; it has write breakpoints
+flip trace: #4 compute candidate 0x12004b37c8: held back 11.741 ms before the give-up, value 0x0; it has write breakpoints
+flip trace: #4 compute candidate 0x12004b4fc8: held back 9.789 ms before the give-up, value 0x0; it has write breakpoints
+flip trace: #4 compute candidate 0x12004b77c8: held back 27.652 ms before the give-up, value 0x0; it has write breakpoints
+flip trace: #4 compute queue not held back (g_unready_label 0); the waiting buffer writes 14 label(s)
+flip trace: #4 write breakpoints on the compute label 0x12004b37c8: 104 armed, 0 failed (errno 0), in 0.482 ms, armed 0.516 ms after the give-up; value then 0x0; 6 new
+flip trace: #4 CPU write to the compute label 0x12004b37c8: thread 2343407 (Render Thread) = the thread that gave up, 1161 write(s), seen at the watch start (since the last read) at t 60.985183 s, 0.520 ms after the give-up
+flip trace: #4 write breakpoints on the compute label 0x12004b53c8: 104 armed, 0 failed (errno 0), in 0.099 ms, armed 0.792 ms after the give-up; value then 0x0; 6 new
+flip trace: #4 CPU write to the compute label 0x12004b53c8: thread 2343407 (Render Thread) = the thread that gave up, 1179 write(s), seen at the watch start (since the last read) at t 60.985457 s, 0.794 ms after the give-up
+flip trace: #4 write breakpoints on the compute label 0x12004b4fc8: 104 armed, 0 failed (errno 0), in 0.081 ms, armed 0.997 ms after the give-up; value then 0x0; 6 new
+flip trace: #4 CPU write to the compute label 0x12004b4fc8: thread 2343407 (Render Thread) = the thread that gave up, 1179 write(s), seen at the watch start (since the last read) at t 60.985661 s, 0.999 ms after the give-up
+flip trace: #4 write breakpoints on the compute label 0x12004b77c8: 104 armed, 0 failed (errno 0), in 0.077 ms, armed 1.201 ms after the give-up; value then 0x9076d6d8c; 6 new
+flip trace: job #53577 acb 825 dwords done at t 60.985887 s (cq1); in flight cq0 1 cq1 2
+flip trace: #4 CPU write to the compute label 0x12004b77c8: thread 2343407 (Render Thread) = the thread that gave up, 615 write(s), seen at the watch start (since the last read) at t 60.985865 s, 1.202 ms after the give-up
+flip trace: job #53579 dcb 2612 dwords done at t 60.985934 s (cq0); in flight cq0 0 cq1 3
+flip trace: #4 breakpoints: given-up label none; compute label 4 fixed label(s)
+flip trace: #4 0x12004b5438: 0x907616589 -> 0x0 at t 60.985986 s, 1.323 ms after the give-up; in flight cq0 0 cq1 3
+flip trace: #4 0x12004b5438 satisfied 1.323 ms after the give-up (9.514 ms after the wait began), t 60.985986 s; in flight cq0 0 cq1 3 (at the give-up 0 1); 2 jobs done since the give-up, the last 0.052 ms before (#53579 dcb 2612 dwords, cq0); value 0x0, 1 changes; compute label 0x0 now 0x0
+flip trace: job #53582 dcb 1849 dwords done at t 60.988688 s (cq0); in flight cq0 2 cq1 5
+flip trace: job #53578 acb 1917 dwords done at t 60.988770 s (cq1); in flight cq0 2 cq1 5
+flip trace: job #53580 acb 28 dwords done at t 60.988811 s (cq1); in flight cq0 2 cq1 4
+flip trace: job #53581 acb 2 dwords done at t 60.988815 s (cq1); in flight cq0 2 cq1 3
+flip trace: job #53584 dcb 6627 dwords done at t 60.990063 s (cq0); in flight cq0 1 cq1 3
+flip trace: job #53583 acb 21912 dwords done at t 60.990927 s (cq1); in flight cq0 1 cq1 2
+flip trace: job #53586 acb 84 dwords done at t 60.991037 s (cq1); in flight cq0 1 cq1 1
+flip trace: job #53587 acb 140 dwords done at t 60.991047 s (cq1); in flight cq0 1 cq1 0
+flip trace: job #53585 dcb 6394 dwords done at t 60.991879 s (cq0); in flight cq0 0 cq1 0
+flip trace: job #53588 dcb 706 dwords done at t 60.994796 s (cq0); in flight cq0 0 cq1 0
+flip trace: job #53589 acb 18 dwords done at t 60.995013 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #53590 acb 18 dwords done at t 60.995062 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #53591 acb 100 dwords done at t 60.995693 s (cq1); in flight cq0 0 cq1 1
+flip trace: job #53592 acb 134 dwords done at t 60.995703 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #53594 acb 66 dwords done at t 60.996919 s (cq1); in flight cq0 1 cq1 0
+flip trace: job #53593 dcb 8179 dwords done at t 60.997109 s (cq0); in flight cq0 0 cq1 1
+flip trace: job #53595 acb 322 dwords done at t 60.997141 s (cq1); in flight cq0 0 cq1 0
+flip trace: job #53596 dcb 7176 dwords done at t 60.999604 s (cq0); in flight cq0 1 cq1 4
+flip trace: job #53600 dcb 2426 dwords done at t 60.999672 s (cq0); in flight cq0 0 cq1 5
+flip trace: job #53597 acb 1788 dwords done at t 61.000463 s (cq1); in flight cq0 0 cq1 4
+flip trace: job #53598 acb 28 dwords done at t 61.000501 s (cq1); in flight cq0 0 cq1 3
+flip trace: job #53599 acb 2 dwords done at t 61.000527 s (cq1); in flight cq0 1 cq1 2
+flip trace: job #53601 acb 4 dwords done at t 61.000533 s (cq1); in flight cq0 1 cq1 1
+flip trace: job #53602 acb 7447 dwords done at t 61.000660 s (cq1); in flight cq0 1 cq1 0
+flip trace: job #53604 acb 28 dwords done at t 61.000724 s (cq1); in flight cq0 1 cq1 1
+flip trace: job #53605 acb 2 dwords done at t 61.000740 s (cq1); in flight cq0 1 cq1 0
+flip trace: job #53607 acb 4 dwords done at t 61.001140 s (cq1); in flight cq0 2 cq1 0
+flip trace: job #53608 acb 825 dwords done at t 61.005030 s (cq1); in flight cq0 4 cq1 7

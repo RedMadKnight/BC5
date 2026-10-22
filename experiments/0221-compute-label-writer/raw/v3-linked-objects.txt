@@ -1,0 +1,20 @@
+# exp 0221 v3: the shared objects linked into kyty_emulator-v3 (2026-10-22 22:20:29), after exp 0222 put patch_0216 (APR reader CV wait) into the tree
+-rw-r--r--. 1 kjaniszewski kjaniszewski   5788304 2026-10-21_23:46:10 /home/kjaniszewski/bc5-work/kytyplus-build/src/CMakeFiles/kyty_emulator.dir/libs/bc5LleAgc.cpp.o
+-rw-r--r--. 1 kjaniszewski kjaniszewski   3299760 2026-10-22_22:11:12 /home/kjaniszewski/bc5-work/kytyplus-build/src/CMakeFiles/kyty_emulator.dir/libs/libAmpr.cpp.o
+-rwxr-xr-x. 1 kjaniszewski kjaniszewski 165888304 2026-10-22_22:11:14 /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator
+d1b1ea2429a860889620ea615766f578  /home/kjaniszewski/bc5-work/kytyplus-build/src/CMakeFiles/kyty_emulator.dir/libs/libAmpr.cpp.o
+eaef1da19412bd0c888bdc94681efa91  /home/kjaniszewski/src/KytyPlus/src/libs/libAmpr.cpp
+b210fa8ebaf20872b0bb94824f9c8327  /home/kjaniszewski/src/KytyPlus/src/libs/bc5LleAgc.cpp
+f266548 Update COMPATIBILITY.md
+ M src/CMakeLists.txt
+ M src/common/emulatorConfig.cpp
+ M src/common/logging/log.cpp
+ M src/common/logging/log.h
+ M src/common/platform/sysLinuxFileIO.cpp
+ M src/common/platform/sysLinuxVirtual.cpp
+ M src/common/profiler.h
+ M src/common/threads.cpp
+ M src/emulator.cpp
+ M src/emulator.h
+ M src/graphics/guest_gpu/graphicsRun.cpp
+ M src/graphics/guest_gpu/pm4.h

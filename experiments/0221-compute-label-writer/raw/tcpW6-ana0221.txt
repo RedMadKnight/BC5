@@ -1,0 +1,60 @@
+# 13 give-ups
+#1 t 6.372 0x12004b4838 waited 16.59 ms, flip +17.917 ms (total 34.50); compute queue not held back; B flips +17.917, C flips +-
+      breakpoints: B armed now; C - (no compute label); armed on the given-up label +17.859 ms (91 threads, 0 failed, errno 0, 17.8 ms)
+      given-up label writer: unknown (breakpoints armed after the change)
+#2 t 6.418 0x12004b4838 waited 18.18 ms, flip +3.513 ms (total 21.70); compute queue not held back; B flips +3.513, C flips +-
+      breakpoints: B armed before this give-up; C - (no compute label)
+      given-up label writer: no CPU write: GPU
+      CPU write: given-up label by Render Thread (the thread that gave up), 1 write(s), seen at the watch start (since the last read) +0.020 ms
+#3 t 6.468 0x12004b4838 waited 17.96 ms, flip +2.066 ms (total 20.03); compute queue not held back; B flips +2.066, C flips +-
+      breakpoints: B armed before this give-up; C - (no compute label)
+      given-up label writer: no CPU write: GPU
+      CPU write: given-up label by Render Thread (the thread that gave up), 1 write(s), seen at the watch start (since the last read) +0.017 ms
+#4 t 63.912 0x12004b3c38 waited 604.03 ms, flip +5.702 ms (total 609.73); compute queue not held back; B flips +5.702, C flips +-
+      breakpoints: B armed now; C - (no compute label); armed on the given-up label +0.880 ms (91 threads, 0 failed, errno 0, 0.9 ms)
+      given-up label writer: no CPU write: GPU
+#5 t 108.524 0x12004b5438 waited 8.69 ms, flip +8.500 ms (total 17.19); compute queue not held back; B flips +8.500, C flips +-
+      breakpoints: B armed now; C - (no compute label); armed on the given-up label +8.487 ms (97 threads, 1 failed, errno 3, 8.5 ms)
+      given-up label writer: unknown (breakpoints armed after the change)
+#6 t 116.578 0x12004b5438 waited 8.60 ms, flip +39.636 ms (total 48.24); compute queue not held back; B flips +39.636, C flips +-
+      breakpoints: B armed before this give-up; C - (no compute label)
+      given-up label writer: no CPU write: GPU
+      CPU write: given-up label by Render Thread (the thread that gave up), 296 write(s), seen at the watch start (since the last read) +0.020 ms
+#7 t 128.822 0x12004b3c38 waited 9.45 ms, flip +14.877 ms (total 24.32); compute queue not held back; B flips +14.877, C flips +-
+      breakpoints: B armed before this give-up; C - (no compute label)
+      given-up label writer: no CPU write: GPU
+      CPU write: given-up label by Render Thread (the thread that gave up), 1554 write(s), seen at the watch start (since the last read) +0.089 ms
+#8 t 144.931 0x12004b5438 waited 10.67 ms, flip +3.497 ms (total 14.17); compute queue not held back; B flips +3.497, C flips +-
+      breakpoints: B armed before this give-up; C - (no compute label)
+      given-up label writer: no CPU write: GPU
+      CPU write: given-up label by Render Thread (the thread that gave up), 1149 write(s), seen at the watch start (since the last read) +0.065 ms
+#9 t 159.775 0x12004b3c38 waited 10.53 ms, flip +11.954 ms (total 22.49); compute queue not held back; B flips +11.954, C flips +-
+      breakpoints: B armed before this give-up; C - (no compute label)
+      given-up label writer: no CPU write: GPU
+      CPU write: given-up label by Render Thread (the thread that gave up), 1057 write(s), seen at the watch start (since the last read) +0.021 ms
+#10 t 178.716 0x12004b5438 waited 8.41 ms, flip +19.075 ms (total 27.49); compute queue not held back; B flips +19.075, C flips +-
+      breakpoints: B armed before this give-up; C - (no compute label)
+      given-up label writer: no CPU write: GPU
+      CPU write: given-up label by Render Thread (the thread that gave up), 937 write(s), seen at the watch start (since the last read) +0.022 ms
+#11 t 458.829 0x12004b3c38 waited 8.87 ms, flip +46.600 ms (total 55.47); compute queue not held back; B flips +46.600, C flips +-
+      breakpoints: B armed before this give-up; C - (no compute label)
+      given-up label writer: no CPU write: GPU
+      CPU write: given-up label by Render Thread (the thread that gave up), 8454 write(s), seen at the watch start (since the last read) +40.499 ms
+#12 t 470.816 0x12004b3c38 waited 29.07 ms, flip +14.983 ms (total 44.06); compute queue not held back; B flips +14.983, C flips +-
+      breakpoints: B armed before this give-up; C - (no compute label)
+      given-up label writer: no CPU write: GPU
+      CPU write: given-up label by Render Thread (the thread that gave up), 339 write(s), seen at the watch start (since the last read) +0.059 ms
+#13 t 532.695 0x12004b3c38 waited 9.05 ms, flip +41.538 ms (total 50.59); compute queue not held back; B flips +41.538, C flips +-
+      breakpoints: B armed before this give-up; C - (no compute label)
+      given-up label writer: no CPU write: GPU
+      CPU write: given-up label by Render Thread (the thread that gave up), 1767 write(s), seen at the watch start (since the last read) +0.021 ms
+
+# totals
+  compute queue not held back                        13
+# writers at the flip (label, finding): count
+  given-up no CPU write: GPU                                            11
+  given-up unknown (breakpoints armed after the change)                 2
+# other CPU writes, between watches (label, thread): writes
+  given-up Render Thread                  15555
+
+# served game-thread waits of 4 ms or more: 7; compute queue at their end: {'not blocked': 7}

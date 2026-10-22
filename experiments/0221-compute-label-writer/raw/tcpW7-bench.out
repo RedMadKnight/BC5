@@ -1,0 +1,17 @@
+step timed out: press options\nwait 1300\npress down\nwait 400\npress down\nwait 400\npress down\nwait 400\npress down\nwait 600\npress cross\nwait 3000\npress triangle\nwait 1500\n
+step timed out: stick r 0 128 1600\nwait 300\ntrigger r2 255 1500\nwait 300\nstick r 128 255 350\nwait 900\n
+== tcpW7 (BC5_0194_INPUT_CONFIG=/home/kjaniszewski/bc5-work/exp0194/input-0194.cfg BC5_EMU=/home/kjaniszewski/bc5-work/exp0194/kyty_emulator BC5_EMU=/home/kjaniszewski/bc5-work/exp0221/kyty_emulator-v3 BC5_DIRECT_FLAT_APERTURE=0 BC5_DIRECT_SKIP_PGM=11d049aa00,11d04a6000,909974400,11d04bb900 BC5_DIRECT_WAIT_TRACE=1 BC5_DIRECT_FLIP_TRACE=1 BC5_DIRECT_FLIP_TRACE_WP=1 BC5_DIRECT_FLIP_TRACE_WP_LABELS=0x12004b37c8,0x12004b53c8,0x12004b4fc8,0x12004b77c8) 22:26:40
+222537-ts00.png: patch  14.1 %
+222541-ts01.png: patch  14.1 %
+222546-ts02.png: patch  14.1 %
+222551-ts03.png: patch  14.1 %
+222556-ts04.png: patch  14.1 %
+222601-ts05.png: patch  14.1 %
+222606-ts06.png: patch  14.1 %
+222610-ts07.png: patch  14.1 %
+222615-ts08.png: patch  14.1 %
+222620-ts09.png: patch  14.1 %
+222625-ts10.png: patch  14.1 %
+222630-ts11.png: patch  14.1 %
+222635-ts12.png: patch  14.1 %
+fps counter: t 86.950 s: 15 flips in 1.021 s, longest gap 69.2 ms, gaps over 40 ms 15, ove
