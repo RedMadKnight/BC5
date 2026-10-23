@@ -1,0 +1,32 @@
+21:13:04 live saves checksum before: f6475842373bf369
+21:13:04 H1 start: /var/home 70 %, dmesg 2526 lines; journal switches: BC5_DIRECT_DRAW_JOURNAL=150:12 BC5_DIRECT_DRAW_JOURNAL_EVERY=15 BC5_DIRECT_DRAW_JOURNAL_PS=11d01d7100,11d1d88300,11d1dd6400,11d090d900,11d0a98300
+  211537-ts00.png: patch   1.0 %
+  211542-ts01.png: patch   0.9 %
+  211547-ts02.png: patch   1.0 %
+  211552-ts03.png: patch   1.0 %
+  211557-ts04.png: patch   1.0 %
+  211602-ts05.png: patch   1.0 %
+  211607-ts06.png: patch   3.0 %
+  211612-ts07.png: patch   4.4 %
+  211617-ts08.png: patch  11.0 %
+  211623-ts09.png: patch   7.2 %
+  211628-ts10.png: patch  11.2 %
+  211633-ts11.png: patch   9.7 %
+  211638-ts12.png: patch   7.5 %
+  211643-ts13.png: patch   9.2 %
+  211648-ts14.png: patch   5.5 %
+  211653-ts15.png: patch   1.0 %
+  211658-ts16.png: patch   1.0 %
+  211703-ts17.png: patch   1.0 %
+  211709-ts18.png: patch   1.0 %
+  211714-ts19.png: patch   0.7 %
+  211719-ts20.png: patch   1.0 %
+  211725-ts21.png: patch   1.0 %
+  211730-ts22.png: patch   1.0 %
+  211735-ts23.png: patch   0.9 %
+  211740-ts24.png: patch   1.0 %
+  211745-ts25.png: patch   1.0 %
+  journal: direct.log 89M, 126 draw-journal lines (28503 bytes), 0 find lines
+  written: run dir 78M, journal dir 89M, emu.log 12M
+21:19:18 live saves checksum after: f6475842373bf369; /var/home 70%
+21:19:18 done

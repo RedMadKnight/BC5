@@ -1,0 +1,49 @@
+# /home/kjaniszewski/bc5-data/priv/exp0248/H1: depth 0x1129ec0000 (64KB_Z_X) and G-buffer 0x113f230000 (64KB_R_X), 8 captures
+== cap1 at 21:15:39; next shot ts01 0.9 %; size 2560x1440 (G-buffer shear 1.87, next best 2688 at 15.59; depth shear 0.92); depth range 0..0.0186664
+   depth words outside 0..1 (compressed tiles?): 0.0000 of the image
+   G-buffer holes: 0.747 of the window; depth in holes (p10/p50/p90) 0.000506746 / 0.000654584 / 0.000838213; in the other window pixels 0.000585628 / 0.000739449 / 0.000849136
+   the window's most common depth 0.0004859 (0.001 of the window): in holes 0.001, in other pixels 0.000
+   against the shot's patch mask (0.009 of the window): most common depth in patch 0.000, other 0.001, phi -0.001; depth step at the mask edges x0.18
+   G-buffer holes against the mask: phi +0.055 (holes in patch 0.997, in other 0.745); depth in patch 0.000512603 / 0.000664396 / 0.00084375, other 0.000513343 / 0.000679066 / 0.000841188; words outside 0..1 in patch 0.000, other 0.000
+== cap2 at 21:15:54; next shot ts04 1.0 %; size 3072x1728 (G-buffer shear 0.89, next best 3200 at 12.82; depth shear 1.08); depth range 0..0.0186674
+   depth words outside 0..1 (compressed tiles?): 0.0000 of the image
+   G-buffer holes: 0.748 of the window; depth in holes (p10/p50/p90) 0.000506532 / 0.000654728 / 0.000838768; in the other window pixels 0.000586198 / 0.000727236 / 0.000839295
+   the window's most common depth 0.0004862 (0.001 of the window): in holes 0.001, in other pixels 0.000
+   against the shot's patch mask (0.010 of the window): most common depth in patch 0.001, other 0.001, phi +0.001; depth step at the mask edges x0.15
+   G-buffer holes against the mask: phi +0.056 (holes in patch 0.995, in other 0.746); depth in patch 0.000512827 / 0.000665337 / 0.000841753, other 0.000513741 / 0.000677287 / 0.00083898; words outside 0..1 in patch 0.000, other 0.000
+== cap3 at 21:16:09; next shot ts07 4.4 %; size 3328x1872 (G-buffer shear 1.19, next best 3200 at 9.25; depth shear 1.72); depth range -3.40282e+38..3.39167e+38
+   depth words outside 0..1 (compressed tiles?): 0.0622 of the image
+   G-buffer holes: 0.016 of the window; depth in holes (p10/p50/p90) 0 / 0 / 0; in the other window pixels 0.000492799 / 0.000656234 / 0.000840771
+   the window's most common depth 0 (0.059 of the window): in holes 0.986, in other pixels 0.044
+   against the shot's patch mask (0.044 of the window): most common depth in patch 0.351, other 0.045, phi +0.268; depth step at the mask edges x1.24
+   G-buffer holes against the mask: phi +0.570 (holes in patch 0.347, in other 0.001); depth in patch 0 / 0.000706896 / 0.000869612, other 0.00049204 / 0.000648532 / 0.000825414; words outside 0..1 in patch 0.007, other 0.031
+== cap4 at 21:16:24; next shot ts10 11.2 %; size 3328x1872 (G-buffer shear 1.64, next best 3200 at 9.71; depth shear 1.58); depth range -3.40282e+38..3.34893e+38
+   depth words outside 0..1 (compressed tiles?): 0.0798 of the image
+   G-buffer holes: 0.061 of the window; depth in holes (p10/p50/p90) 0.000663915 / 0.000789684 / 0.000855984; in the other window pixels 6.4955e-18 / 0.000625427 / 0.000827219
+   the window's most common depth 0 (0.103 of the window): in holes 0.010, in other pixels 0.109
+   against the shot's patch mask (0.112 of the window): most common depth in patch 0.019, other 0.113, phi -0.098; depth step at the mask edges x1.32
+   G-buffer holes against the mask: phi +0.700 (holes in patch 0.535, in other 0.002); depth in patch 0.000639375 / 0.00076836 / 0.000849664, other 2.51537e-29 / 0.000612737 / 0.000810519; words outside 0..1 in patch 0.001, other 0.035
+== cap5 at 21:16:39; next shot ts13 9.2 %; size 3328x1872 (G-buffer shear 9.15, next best 3200 at 21.14; depth shear 2.00); depth range -3.40282e+38..3.17971e+38
+   depth words outside 0..1 (compressed tiles?): 0.0293 of the image
+   G-buffer holes: 0.087 of the window; depth in holes (p10/p50/p90) 0.000670663 / 0.000786583 / 0.000855464; in the other window pixels 0 / 0.000619124 / 0.000806738
+   the window's most common depth 0 (0.097 of the window): in holes 0.006, in other pixels 0.105
+   against the shot's patch mask (0.092 of the window): most common depth in patch 0.865, other 0.019, phi +0.827; depth step at the mask edges x12.58
+   G-buffer holes against the mask: phi -0.064 (holes in patch 0.030, in other 0.093); depth in patch 0 / 0 / 0.000593364, other 0.000502669 / 0.000650635 / 0.000821411; words outside 0..1 in patch 0.000, other 0.000
+== cap6 at 21:16:55; next shot ts16 1.0 %; size 3328x1872 (G-buffer shear 8.22, next best 3200 at 12.69; depth shear 1.53); depth range -3.40282e+38..3.39882e+38
+   depth words outside 0..1 (compressed tiles?): 0.0823 of the image
+   G-buffer holes: 0.000 of the window; depth in holes (p10/p50/p90) -; in the other window pixels 0.000493132 / 0.000668173 / 0.000851286
+   the window's most common depth -0 (0.043 of the window): in holes nan, in other pixels 0.043
+   against the shot's patch mask (0.010 of the window): most common depth in patch 0.001, other 0.043, phi -0.020; depth step at the mask edges x0.00
+   G-buffer holes against the mask: phi +nan (holes in patch 0.000, in other 0.000); depth in patch 0.000511716 / 0.00066267 / 0.000839694, other 0.000493473 / 0.000663855 / 0.000840592; words outside 0..1 in patch 0.001, other 0.030
+== cap7 at 21:17:10; next shot ts19 0.7 %; size 3328x1872 (G-buffer shear 1.28, next best 3200 at 14.44; depth shear 1.36); depth range 0..0.0186657
+   depth words outside 0..1 (compressed tiles?): 0.0000 of the image
+   G-buffer holes: 0.748 of the window; depth in holes (p10/p50/p90) 0.000506437 / 0.000653897 / 0.000838288; in the other window pixels 0.000586145 / 0.000747217 / 0.000864659
+   the window's most common depth 0.0006827 (0.001 of the window): in holes 0.001, in other pixels 0.000
+   against the shot's patch mask (0.007 of the window): most common depth in patch 0.001, other 0.001, phi +0.000; depth step at the mask edges x0.15
+   G-buffer holes against the mask: phi +0.047 (holes in patch 0.999, in other 0.746); depth in patch 0.000515297 / 0.000668118 / 0.000850018, other 0.000513286 / 0.000681168 / 0.000848323; words outside 0..1 in patch 0.000, other 0.000
+== cap8 at 21:17:25; next shot ts21 1.0 %; size 3072x1728 (G-buffer shear 10.69, next best 3200 at 17.77; depth shear 1.15); depth range 0..0.0186645
+   depth words outside 0..1 (compressed tiles?): 0.0000 of the image
+   G-buffer holes: 0.238 of the window; depth in holes (p10/p50/p90) 0.000484328 / 0.00053062 / 0.000578342; in the other window pixels 0.00060378 / 0.000730947 / 0.000858559
+   the window's most common depth 0.0005215 (0.001 of the window): in holes 0.002, in other pixels 0.000
+   against the shot's patch mask (0.010 of the window): most common depth in patch 0.000, other 0.001, phi -0.002; depth step at the mask edges x0.13
+   G-buffer holes against the mask: phi +0.020 (holes in patch 0.323, in other 0.238); depth in patch 0.000513128 / 0.000667338 / 0.000847669, other 0.000513852 / 0.000681836 / 0.000848794; words outside 0..1 in patch 0.000, other 0.000
