@@ -1,0 +1,149 @@
+chains: mode 2, a game thread's chain is held across its ioctls for up to 2000 us (BC5_DIRECT_CHAIN_HOLD_US)
+two rings: dcb 1477 dwords waits at 904 on 0x12004b4838: kept for the GPU after 0.08 ms, head split off (1 waits: 1 split, 1 kept for the GPU, 0 satisfied, 0 lost)
+two rings: dcb 1153 dwords waits at 590 on 0x12004b4838: NOT served after 4.06 ms, head split off (216 waits: 216 split, 211 kept for the GPU, 4 satisfied, 1 lost)
+two rings: dcb 1153 dwords waits at 590 on 0x12004b4838: NOT served after 4.04 ms, head split off (217 waits: 217 split, 211 kept for the GPU, 4 satisfied, 2 lost)
+two rings: dcb 1153 dwords waits at 590 on 0x12004b4838: NOT served after 4.02 ms, head split off (218 waits: 218 split, 211 kept for the GPU, 4 satisfied, 3 lost)
+two rings: dcb 1153 dwords waits at 590 on 0x12004b4838: NOT served after 4.07 ms, head split off (219 waits: 219 split, 211 kept for the GPU, 4 satisfied, 4 lost)
+cpu-wait WAIT_REG_MEM64 at 590 on 0x12004b4838: GIVEN UP after 17.4 ms
+two rings: dcb 1153 dwords waits at 590 on 0x12004b4838: NOT served after 4.03 ms, head split off (221 waits: 221 split, 211 kept for the GPU, 5 satisfied, 5 lost)
+cpu-wait WAIT_REG_MEM64 at 590 on 0x12004b4838: GIVEN UP after 17.7 ms
+chains: 3738 submitted, 19639 segments (867 single, 3508 with cond_exec), 4889182 dwords; closed by: end 1568 wait 1290 ring/class 0 cond_exec 0 size 0 drain 215 acb-head 247 other 0 observe 0 hold-wd 287 hold-end 131
+two rings: dcb 1153 dwords waits at 590 on 0x12004b4838: NOT served after 4.05 ms, head split off (438 waits: 438 split, 414 kept for the GPU, 18 satisfied, 6 lost)
+two rings: dcb 1153 dwords waits at 590 on 0x12004b4838: NOT served after 4.05 ms, head split off (560 waits: 560 split, 532 kept for the GPU, 21 satisfied, 7 lost)
+cpu-wait WAIT_REG_MEM64 at 590 on 0x12004b4838: GIVEN UP after 13.5 ms
+two rings: dcb 1153 dwords waits at 590 on 0x12004b4838: NOT served after 4.01 ms, head split off (561 waits: 561 split, 532 kept for the GPU, 21 satisfied, 8 lost)
+cpu-wait WAIT_REG_MEM64 at 590 on 0x12004b4838: GIVEN UP after 10.4 ms
+chains: 8376 submitted, 45936 segments (2021 single, 8299 with cond_exec), 11619966 dwords; closed by: end 3542 wait 2827 ring/class 0 cond_exec 0 size 0 drain 501 acb-head 552 other 0 observe 0 hold-wd 665 hold-end 289
+two rings, time in the waits: kept for the GPU 178.9 ms in 971, satisfied on the CPU 0.0 ms in 45, not served 32.3 ms in 8
+two rings: dcb 1153 dwords waits at 590 on 0x12004b4838: kept for the GPU after 0.08 ms, head split off (1025 waits: 1025 split, 972 kept for the GPU, 45 satisfied, 8 lost)
+chains: 13089 submitted, 73227 segments (3226 single, 13309 with cond_exec), 18633161 dwords; closed by: end 5599 wait 4278 ring/class 0 cond_exec 0 size 0 drain 795 acb-head 867 other 0 observe 0 hold-wd 1089 hold-end 461
+chains: 25373 submitted, 152912 segments (3500 single, 30505 with cond_exec), 32177039 dwords; closed by: end 14932 wait 4605 ring/class 0 cond_exec 0 size 0 drain 920 acb-head 937 other 0 observe 0 hold-wd 3452 hold-end 527
+two rings: dcb 7048 dwords waits at 5907 on 0x12004b3c38: NOT served after 4.03 ms, head split off (1512 waits: 1512 split, 1440 kept for the GPU, 63 satisfied, 9 lost)
+cpu-wait WAIT_REG_MEM64 at 5907 on 0x12004b3c38: GIVEN UP after 8.8 ms
+two rings: dcb 922 dwords waits at 291 on 0x12004b5438: NOT served after 4.02 ms, head split off (2021 waits: 2021 split, 1859 kept for the GPU, 152 satisfied, 10 lost)
+cpu-wait WAIT_REG_MEM64 at 291 on 0x12004b5438: GIVEN UP after 8.2 ms
+two rings: dcb 7048 dwords waits at 5907 on 0x12004b3c38: NOT served after 4.03 ms, head split off (2040 waits: 2040 split, 1874 kept for the GPU, 155 satisfied, 11 lost)
+two rings, time in the waits: kept for the GPU 409.2 ms in 1881, satisfied on the CPU 7.9 ms in 156, not served 44.4 ms in 11
+two rings: dcb 4965 dwords waits at 4897 on 0x12004b7838: kept for the GPU after 0.00 ms, head split off (2049 waits: 2049 split, 1882 kept for the GPU, 156 satisfied, 11 lost)
+chains: 36724 submitted, 200493 segments (7080 single, 39333 with cond_exec), 59129234 dwords; closed by: end 19865 wait 8928 ring/class 0 cond_exec 0 size 0 drain 1261 acb-head 2023 other 0 observe 0 hold-wd 3960 hold-end 687
+two rings: dcb 922 dwords waits at 291 on 0x12004b5438: NOT served after 4.07 ms, head split off (2954 waits: 2954 split, 2613 kept for the GPU, 329 satisfied, 12 lost)
+cpu-wait WAIT_REG_MEM64 at 291 on 0x12004b5438: GIVEN UP after 8.4 ms
+two rings, time in the waits: kept for the GPU 669.6 ms in 2722, satisfied on the CPU 27.9 ms in 338, not served 48.5 ms in 12
+two rings: dcb 7048 dwords waits at 5907 on 0x12004b3c38: kept for the GPU after 0.35 ms, head split off (3073 waits: 3073 split, 2723 kept for the GPU, 338 satisfied, 12 lost)
+chains: 52717 submitted, 261146 segments (13140 single, 50050 with cond_exec), 100496291 dwords; closed by: end 25922 wait 16035 ring/class 0 cond_exec 0 size 0 drain 1747 acb-head 3853 other 0 observe 0 hold-wd 4197 hold-end 963
+two rings: dcb 7048 dwords waits at 5907 on 0x12004b3c38: NOT served after 4.00 ms, head split off (3490 waits: 3490 split, 3098 kept for the GPU, 379 satisfied, 13 lost)
+cpu-wait WAIT_REG_MEM64 at 5907 on 0x12004b3c38: GIVEN UP after 8.9 ms
+two rings, time in the waits: kept for the GPU 965.5 ms in 3639, satisfied on the CPU 52.5 ms in 444, not served 52.5 ms in 13
+two rings: dcb 4189 dwords waits at 4121 on 0x12004b7838: kept for the GPU after 0.00 ms, head split off (4097 waits: 4097 split, 3640 kept for the GPU, 444 satisfied, 13 lost)
+chains: 68683 submitted, 319805 segments (19403 single, 60397 with cond_exec), 142226352 dwords; closed by: end 31805 wait 23351 ring/class 0 cond_exec 0 size 0 drain 2217 acb-head 5646 other 0 observe 0 hold-wd 4453 hold-end 1211
+chains: 82953 submitted, 405070 segments (20559 single, 78559 with cond_exec), 162083924 dwords; closed by: end 41804 wait 24717 ring/class 0 cond_exec 0 size 0 drain 2376 acb-head 5983 other 0 observe 0 hold-wd 6794 hold-end 1279
+two rings: dcb 242 dwords waits at 174 on 0x12004b3038: NOT served after 4.07 ms, head split off (4453 waits: 4453 split, 3934 kept for the GPU, 505 satisfied, 14 lost)
+chains: 91890 submitted, 460497 segments (20971 single, 90568 with cond_exec), 176597107 dwords; closed by: end 48321 wait 25246 ring/class 0 cond_exec 0 size 0 drain 2486 acb-head 6115 other 0 observe 0 hold-wd 8350 hold-end 1372
+two rings: dcb 14160 dwords waits at 7653 on 0x12004b4c38: NOT served after 4.06 ms, head split off (4572 waits: 4572 split, 4040 kept for the GPU, 517 satisfied, 15 lost)
+two rings: dcb 3092 dwords waits at 379 on 0x12004b3c38: NOT served after 4.03 ms, head split off (4655 waits: 4655 split, 4120 kept for the GPU, 519 satisfied, 16 lost)
+cpu-wait WAIT_REG_MEM64 at 379 on 0x12004b3c38: GIVEN UP after 8.5 ms
+chains: 104150 submitted, 509733 segments (25578 single, 98901 with cond_exec), 225448470 dwords; closed by: end 52703 wait 30618 ring/class 0 cond_exec 0 size 0 drain 2833 acb-head 7542 other 0 observe 0 hold-wd 8705 hold-end 1749
+two rings, time in the waits: kept for the GPU 1240.0 ms in 4562, satisfied on the CPU 63.0 ms in 542, not served 64.6 ms in 16
+two rings: dcb 860 dwords waits at 311 on 0x12004b5438: kept for the GPU after 0.39 ms, head split off (5121 waits: 5121 split, 4563 kept for the GPU, 542 satisfied, 16 lost)
+chains: 119621 submitted, 571424 segments (31577 single, 109326 with cond_exec), 287578248 dwords; closed by: end 58289 wait 37514 ring/class 0 cond_exec 0 size 0 drain 3267 acb-head 9343 other 0 observe 0 hold-wd 9015 hold-end 2193
+two rings, time in the waits: kept for the GPU 1521.1 ms in 5547, satisfied on the CPU 63.5 ms in 581, not served 64.6 ms in 16
+two rings: dcb 14596 dwords waits at 8089 on 0x12004b4c38: kept for the GPU after 0.15 ms, head split off (6145 waits: 6145 split, 5548 kept for the GPU, 581 satisfied, 16 lost)
+chains: 135300 submitted, 634539 segments (37669 single, 120005 with cond_exec), 351298461 dwords; closed by: end 63975 wait 44658 ring/class 0 cond_exec 0 size 0 drain 3712 acb-head 11127 other 0 observe 0 hold-wd 9188 hold-end 2640
+two rings, time in the waits: kept for the GPU 1805.1 ms in 6531, satisfied on the CPU 65.4 ms in 621, not served 64.6 ms in 16
+two rings: dcb 860 dwords waits at 311 on 0x12004b5438: kept for the GPU after 0.42 ms, head split off (7169 waits: 7169 split, 6532 kept for the GPU, 621 satisfied, 16 lost)
+chains: 150902 submitted, 696979 segments (43733 single, 130558 with cond_exec), 414228886 dwords; closed by: end 69585 wait 51750 ring/class 0 cond_exec 0 size 0 drain 4152 acb-head 12917 other 0 observe 0 hold-wd 9419 hold-end 3079
+two rings: dcb 3092 dwords waits at 379 on 0x12004b3c38: NOT served after 4.04 ms, head split off (7877 waits: 7877 split, 7215 kept for the GPU, 645 satisfied, 17 lost)
+two rings: dcb 3092 dwords waits at 379 on 0x12004b3c38: NOT served after 4.01 ms, head split off (8008 waits: 8008 split, 7335 kept for the GPU, 655 satisfied, 18 lost)
+two rings, time in the waits: kept for the GPU 2079.1 ms in 7507, satisfied on the CPU 66.9 ms in 667, not served 72.7 ms in 18
+two rings: dcb 3092 dwords waits at 379 on 0x12004b3c38: satisfied after 0.00 ms, head split off (8193 waits: 8193 split, 7507 kept for the GPU, 668 satisfied, 18 lost)
+chains: 165796 submitted, 757165 segments (49489 single, 140742 with cond_exec), 474688052 dwords; closed by: end 75025 wait 58503 ring/class 0 cond_exec 0 size 0 drain 4577 acb-head 14596 other 0 observe 0 hold-wd 9601 hold-end 3494
+two rings: dcb 860 dwords waits at 311 on 0x12004b5438: NOT served after 4.04 ms, head split off (8284 waits: 8284 split, 7595 kept for the GPU, 670 satisfied, 19 lost)
+cpu-wait WAIT_REG_MEM64 at 311 on 0x12004b5438: GIVEN UP after 21.7 ms
+chains: 175072 submitted, 794174 segments (52972 single, 147043 with cond_exec), 512097837 dwords; closed by: end 78460 wait 62464 ring/class 0 cond_exec 0 size 0 drain 4838 acb-head 15662 other 0 observe 0 hold-wd 9824 hold-end 3824
+two rings: dcb 12669 dwords waits at 6719 on 0x12004b4c38: NOT served after 4.06 ms, head split off (8816 waits: 8816 split, 8098 kept for the GPU, 698 satisfied, 20 lost)
+two rings: dcb 860 dwords waits at 311 on 0x12004b5438: NOT served after 4.04 ms, head split off (8914 waits: 8914 split, 8187 kept for the GPU, 706 satisfied, 21 lost)
+chains: 184860 submitted, 833712 segments (56663 single, 153914 with cond_exec), 551638022 dwords; closed by: end 82072 wait 66595 ring/class 0 cond_exec 0 size 0 drain 5113 acb-head 16804 other 0 observe 0 hold-wd 10072 hold-end 4204
+two rings, time in the waits: kept for the GPU 2324.9 ms in 8471, satisfied on the CPU 69.9 ms in 724, not served 84.8 ms in 21
+two rings: dcb 12669 dwords waits at 6719 on 0x12004b4c38: kept for the GPU after 0.01 ms, head split off (9217 waits: 9217 split, 8472 kept for the GPU, 724 satisfied, 21 lost)
+chains: 194491 submitted, 872520 segments (60273 single, 160664 with cond_exec), 590428462 dwords; closed by: end 85650 wait 70683 ring/class 0 cond_exec 0 size 0 drain 5383 acb-head 17922 other 0 observe 0 hold-wd 10258 hold-end 4595
+chains: 204546 submitted, 913309 segments (64006 single, 167774 with cond_exec), 631251248 dwords; closed by: end 89397 wait 74957 ring/class 0 cond_exec 0 size 0 drain 5666 acb-head 19062 other 0 observe 0 hold-wd 10506 hold-end 4958
+chains: 214123 submitted, 952115 segments (67582 single, 174518 with cond_exec), 670042421 dwords; closed by: end 92953 wait 79000 ring/class 0 cond_exec 0 size 0 drain 5936 acb-head 20187 other 0 observe 0 hold-wd 10729 hold-end 5318
+two rings, time in the waits: kept for the GPU 2577.7 ms in 9454, satisfied on the CPU 72.1 ms in 765, not served 84.8 ms in 21
+two rings: dcb 860 dwords waits at 311 on 0x12004b5438: kept for the GPU after 0.08 ms, head split off (10241 waits: 10241 split, 9455 kept for the GPU, 765 satisfied, 21 lost)
+chains: 224287 submitted, 993239 segments (71428 single, 181664 with cond_exec), 711141363 dwords; closed by: end 96714 wait 83317 ring/class 0 cond_exec 0 size 0 drain 6222 acb-head 21378 other 0 observe 0 hold-wd 10938 hold-end 5718
+chains: 234208 submitted, 1033341 segments (75143 single, 188644 with cond_exec), 751219682 dwords; closed by: end 100391 wait 87515 ring/class 0 cond_exec 0 size 0 drain 6501 acb-head 22526 other 0 observe 0 hold-wd 11162 hold-end 6113
+two rings, time in the waits: kept for the GPU 2841.5 ms in 10422, satisfied on the CPU 73.9 ms in 821, not served 84.8 ms in 21
+two rings: dcb 12669 dwords waits at 6719 on 0x12004b4c38: kept for the GPU after 0.08 ms, head split off (11265 waits: 11265 split, 10423 kept for the GPU, 821 satisfied, 21 lost)
+chains: 244165 submitted, 1073981 segments (78866 single, 195725 with cond_exec), 791910410 dwords; closed by: end 104098 wait 91761 ring/class 0 cond_exec 0 size 0 drain 6784 acb-head 23669 other 0 observe 0 hold-wd 11354 hold-end 6499
+chains: 254430 submitted, 1114851 segments (82717 single, 202814 with cond_exec), 832685481 dwords; closed by: end 107872 wait 96002 ring/class 0 cond_exec 0 size 0 drain 7068 acb-head 24890 other 0 observe 0 hold-wd 11618 hold-end 6980
+chains: 264559 submitted, 1155188 segments (86499 single, 209826 with cond_exec), 872903779 dwords; closed by: end 111600 wait 100192 ring/class 0 cond_exec 0 size 0 drain 7348 acb-head 26079 other 0 observe 0 hold-wd 11902 hold-end 7438
+two rings, time in the waits: kept for the GPU 3073.4 ms in 11392, satisfied on the CPU 76.5 ms in 875, not served 84.8 ms in 21
+two rings: dcb 860 dwords waits at 311 on 0x12004b5438: kept for the GPU after 0.37 ms, head split off (12289 waits: 12289 split, 11393 kept for the GPU, 875 satisfied, 21 lost)
+chains: 274786 submitted, 1195698 segments (90352 single, 216859 with cond_exec), 913279968 dwords; closed by: end 115366 wait 104390 ring/class 0 cond_exec 0 size 0 drain 7629 acb-head 27296 other 0 observe 0 hold-wd 12170 hold-end 7935
+chains: 285046 submitted, 1237273 segments (94174 single, 224093 with cond_exec), 954863587 dwords; closed by: end 119162 wait 108724 ring/class 0 cond_exec 0 size 0 drain 7919 acb-head 28490 other 0 observe 0 hold-wd 12397 hold-end 8354
+two rings, time in the waits: kept for the GPU 3320.9 ms in 12359, satisfied on the CPU 79.9 ms in 932, not served 84.8 ms in 21
+two rings: dcb 12669 dwords waits at 6719 on 0x12004b4c38: kept for the GPU after 0.15 ms, head split off (13313 waits: 13313 split, 12360 kept for the GPU, 932 satisfied, 21 lost)
+chains: 294956 submitted, 1277979 segments (97796 single, 231193 with cond_exec), 995686144 dwords; closed by: end 122880 wait 112999 ring/class 0 cond_exec 0 size 0 drain 8203 acb-head 29601 other 0 observe 0 hold-wd 12575 hold-end 8698
+chains: 305042 submitted, 1319131 segments (101510 single, 238368 with cond_exec), 1036947081 dwords; closed by: end 126655 wait 117332 ring/class 0 cond_exec 0 size 0 drain 8490 acb-head 30729 other 0 observe 0 hold-wd 12764 hold-end 9072
+chains: 315255 submitted, 1360608 segments (105297 single, 245593 with cond_exec), 1078450299 dwords; closed by: end 130492 wait 121652 ring/class 0 cond_exec 0 size 0 drain 8779 acb-head 31900 other 0 observe 0 hold-wd 12964 hold-end 9468
+two rings, time in the waits: kept for the GPU 3583.4 ms in 13346, satisfied on the CPU 81.3 ms in 969, not served 84.8 ms in 21
+two rings: dcb 860 dwords waits at 311 on 0x12004b5438: kept for the GPU after 0.22 ms, head split off (14337 waits: 14337 split, 13347 kept for the GPU, 969 satisfied, 21 lost)
+chains: 325485 submitted, 1402143 segments (109090 single, 252825 with cond_exec), 1120019535 dwords; closed by: end 134317 wait 125996 ring/class 0 cond_exec 0 size 0 drain 9068 acb-head 33069 other 0 observe 0 hold-wd 13183 hold-end 9852
+chains: 335439 submitted, 1442962 segments (112745 single, 259943 with cond_exec), 1160941975 dwords; closed by: end 138027 wait 130288 ring/class 0 cond_exec 0 size 0 drain 9353 acb-head 34194 other 0 observe 0 hold-wd 13373 hold-end 10204
+two rings, time in the waits: kept for the GPU 3828.6 ms in 14326, satisfied on the CPU 82.3 ms in 1013, not served 84.8 ms in 21
+two rings: dcb 12669 dwords waits at 6719 on 0x12004b4c38: kept for the GPU after 0.01 ms, head split off (15361 waits: 15361 split, 14327 kept for the GPU, 1013 satisfied, 21 lost)
+chains: 345391 submitted, 1483679 segments (116410 single, 267043 with cond_exec), 1201756269 dwords; closed by: end 141750 wait 134561 ring/class 0 cond_exec 0 size 0 drain 9637 acb-head 35310 other 0 observe 0 hold-wd 13562 hold-end 10571
+two rings: dcb 3092 dwords waits at 379 on 0x12004b3c38: NOT served after 4.04 ms, head split off (15964 waits: 15964 split, 14908 kept for the GPU, 1034 satisfied, 22 lost)
+chains: 355369 submitted, 1524440 segments (120101 single, 274143 with cond_exec), 1242574607 dwords; closed by: end 145471 wait 138817 ring/class 0 cond_exec 0 size 0 drain 9921 acb-head 36449 other 0 observe 0 hold-wd 13778 hold-end 10933
+two rings: dcb 860 dwords waits at 311 on 0x12004b5438: NOT served after 4.07 ms, head split off (16283 waits: 16283 split, 15210 kept for the GPU, 1050 satisfied, 23 lost)
+two rings, time in the waits: kept for the GPU 4087.6 ms in 15309, satisfied on the CPU 83.5 ms in 1052, not served 92.9 ms in 23
+two rings: dcb 3092 dwords waits at 379 on 0x12004b3c38: kept for the GPU after 0.37 ms, head split off (16385 waits: 16385 split, 15310 kept for the GPU, 1052 satisfied, 23 lost)
+chains: 363844 submitted, 1559156 segments (123247 single, 280189 with cond_exec), 1277369903 dwords; closed by: end 148640 wait 142465 ring/class 0 cond_exec 0 size 0 drain 10163 acb-head 37416 other 0 observe 0 hold-wd 13925 hold-end 11235
+chains: 373511 submitted, 1598710 segments (126784 single, 287086 with cond_exec), 1316994466 dwords; closed by: end 152265 wait 146590 ring/class 0 cond_exec 0 size 0 drain 10438 acb-head 38501 other 0 observe 0 hold-wd 14134 hold-end 11583
+chains: 383214 submitted, 1638451 segments (130383 single, 294011 with cond_exec), 1356829230 dwords; closed by: end 155868 wait 150762 ring/class 0 cond_exec 0 size 0 drain 10715 acb-head 39602 other 0 observe 0 hold-wd 14312 hold-end 11955
+two rings, time in the waits: kept for the GPU 4339.8 ms in 16290, satisfied on the CPU 84.9 ms in 1095, not served 92.9 ms in 23
+two rings: dcb 860 dwords waits at 311 on 0x12004b5438: kept for the GPU after 0.02 ms, head split off (17409 waits: 17409 split, 16291 kept for the GPU, 1095 satisfied, 23 lost)
+two rings: dcb 860 dwords waits at 311 on 0x12004b5438: NOT served after 4.01 ms, head split off (17436 waits: 17436 split, 16317 kept for the GPU, 1095 satisfied, 24 lost)
+chains: 392904 submitted, 1678326 segments (133921 single, 300968 with cond_exec), 1396819882 dwords; closed by: end 159507 wait 154906 ring/class 0 cond_exec 0 size 0 drain 10994 acb-head 40698 other 0 observe 0 hold-wd 14482 hold-end 12317
+chains: 402152 submitted, 1716303 segments (137317 single, 307593 with cond_exec), 1434905596 dwords; closed by: end 162960 wait 158888 ring/class 0 cond_exec 0 size 0 drain 11259 acb-head 41737 other 0 observe 0 hold-wd 14664 hold-end 12644
+chains: 411625 submitted, 1754931 segments (140826 single, 314322 with cond_exec), 1473566460 dwords; closed by: end 166493 wait 162925 ring/class 0 cond_exec 0 size 0 drain 11528 acb-head 42823 other 0 observe 0 hold-wd 14848 hold-end 13008
+two rings, time in the waits: kept for the GPU 4586.6 ms in 17273, satisfied on the CPU 87.1 ms in 1135, not served 96.9 ms in 24
+two rings: dcb 860 dwords waits at 311 on 0x12004b5438: kept for the GPU after 0.08 ms, head split off (18433 waits: 18433 split, 17274 kept for the GPU, 1135 satisfied, 24 lost)
+chains: 421416 submitted, 1795188 segments (144374 single, 321350 with cond_exec), 1513963096 dwords; closed by: end 170197 wait 167118 ring/class 0 cond_exec 0 size 0 drain 11809 acb-head 43908 other 0 observe 0 hold-wd 15021 hold-end 13363
+two rings: dcb 860 dwords waits at 311 on 0x12004b5438: NOT served after 4.02 ms, head split off (19106 waits: 19106 split, 17917 kept for the GPU, 1164 satisfied, 25 lost)
+chains: 431555 submitted, 1836767 segments (148099 single, 328600 with cond_exec), 1555631214 dwords; closed by: end 173995 wait 171457 ring/class 0 cond_exec 0 size 0 drain 12099 acb-head 45065 other 0 observe 0 hold-wd 15199 hold-end 13740
+two rings, time in the waits: kept for the GPU 4841.8 ms in 18253, satisfied on the CPU 89.6 ms in 1178, not served 101.0 ms in 25
+two rings: dcb 3092 dwords waits at 379 on 0x12004b3c38: kept for the GPU after 0.23 ms, head split off (19457 waits: 19457 split, 18254 kept for the GPU, 1178 satisfied, 25 lost)
+chains: 441692 submitted, 1877829 segments (151873 single, 335745 with cond_exec), 1596710404 dwords; closed by: end 177759 wait 175765 ring/class 0 cond_exec 0 size 0 drain 12385 acb-head 46232 other 0 observe 0 hold-wd 15438 hold-end 14113
+chains: 451267 submitted, 1917125 segments (155374 single, 342593 with cond_exec), 1636113616 dwords; closed by: end 181346 wait 179887 ring/class 0 cond_exec 0 size 0 drain 12659 acb-head 47311 other 0 observe 0 hold-wd 15623 hold-end 14441
+two rings, time in the waits: kept for the GPU 5107.3 ms in 19238, satisfied on the CPU 93.3 ms in 1217, not served 101.0 ms in 25
+two rings: dcb 3092 dwords waits at 379 on 0x12004b3c38: kept for the GPU after 0.30 ms, head split off (20481 waits: 20481 split, 19239 kept for the GPU, 1217 satisfied, 25 lost)
+chains: 461093 submitted, 1957339 segments (158988 single, 349604 with cond_exec), 1676411143 dwords; closed by: end 185024 wait 184112 ring/class 0 cond_exec 0 size 0 drain 12939 acb-head 48412 other 0 observe 0 hold-wd 15832 hold-end 14774
+chains: 470972 submitted, 1997935 segments (162641 single, 356677 with cond_exec), 1717080358 dwords; closed by: end 188700 wait 188367 ring/class 0 cond_exec 0 size 0 drain 13222 acb-head 49540 other 0 observe 0 hold-wd 16014 hold-end 15129
+chains: 481134 submitted, 2039318 segments (166407 single, 363882 with cond_exec), 1758523230 dwords; closed by: end 192507 wait 192697 ring/class 0 cond_exec 0 size 0 drain 13510 acb-head 50714 other 0 observe 0 hold-wd 16207 hold-end 15499
+two rings, time in the waits: kept for the GPU 5354.7 ms in 20221, satisfied on the CPU 95.5 ms in 1258, not served 101.0 ms in 25
+two rings: dcb 860 dwords waits at 311 on 0x12004b5438: kept for the GPU after 0.16 ms, head split off (21505 waits: 21505 split, 20222 kept for the GPU, 1258 satisfied, 25 lost)
+chains: 491210 submitted, 2080667 segments (170123 single, 371092 with cond_exec), 1799978519 dwords; closed by: end 196277 wait 197029 ring/class 0 cond_exec 0 size 0 drain 13799 acb-head 51844 other 0 observe 0 hold-wd 16374 hold-end 15887
+chains: 501125 submitted, 2121245 segments (173794 single, 378166 with cond_exec), 1840637518 dwords; closed by: end 200002 wait 201253 ring/class 0 cond_exec 0 size 0 drain 14082 acb-head 52968 other 0 observe 0 hold-wd 16545 hold-end 16275
+two rings, time in the waits: kept for the GPU 5616.9 ms in 21198, satisfied on the CPU 99.2 ms in 1305, not served 101.0 ms in 25
+two rings: dcb 860 dwords waits at 311 on 0x12004b5438: kept for the GPU after 0.08 ms, head split off (22529 waits: 22529 split, 21199 kept for the GPU, 1305 satisfied, 25 lost)
+chains: 511261 submitted, 2162586 segments (177561 single, 385366 with cond_exec), 1882044835 dwords; closed by: end 203775 wait 205588 ring/class 0 cond_exec 0 size 0 drain 14370 acb-head 54129 other 0 observe 0 hold-wd 16742 hold-end 16657
+chains: 521401 submitted, 2203904 segments (181338 single, 392565 with cond_exec), 1923446761 dwords; closed by: end 207559 wait 209940 ring/class 0 cond_exec 0 size 0 drain 14658 acb-head 55270 other 0 observe 0 hold-wd 16953 hold-end 17021
+chains: 531139 submitted, 2243728 segments (184890 single, 399516 with cond_exec), 1963404513 dwords; closed by: end 211213 wait 214111 ring/class 0 cond_exec 0 size 0 drain 14936 acb-head 56351 other 0 observe 0 hold-wd 17156 hold-end 17372
+two rings, time in the waits: kept for the GPU 5877.0 ms in 22190, satisfied on the CPU 100.7 ms in 1337, not served 101.0 ms in 25
+two rings: dcb 860 dwords waits at 311 on 0x12004b5438: kept for the GPU after 0.59 ms, head split off (23553 waits: 23553 split, 22191 kept for the GPU, 1337 satisfied, 25 lost)
+chains: 540807 submitted, 2283174 segments (188459 single, 406392 with cond_exec), 2002917000 dwords; closed by: end 214832 wait 218228 ring/class 0 cond_exec 0 size 0 drain 15211 acb-head 57442 other 0 observe 0 hold-wd 17352 hold-end 17742
+chains: 550982 submitted, 2324773 segments (192229 single, 413642 with cond_exec), 2044623938 dwords; closed by: end 218619 wait 222619 ring/class 0 cond_exec 0 size 0 drain 15501 acb-head 58589 other 0 observe 0 hold-wd 17561 hold-end 18093
+two rings, time in the waits: kept for the GPU 6112.6 ms in 23185, satisfied on the CPU 101.3 ms in 1366, not served 101.0 ms in 25
+two rings: dcb 860 dwords waits at 311 on 0x12004b5438: kept for the GPU after 0.15 ms, head split off (24577 waits: 24577 split, 23186 kept for the GPU, 1366 satisfied, 25 lost)
+chains: 561070 submitted, 2366051 segments (195952 single, 420841 with cond_exec), 2086009860 dwords; closed by: end 222418 wait 226932 ring/class 0 cond_exec 0 size 0 drain 15789 acb-head 59721 other 0 observe 0 hold-wd 17717 hold-end 18493
+chains: 570664 submitted, 2405427 segments (199504 single, 427707 with cond_exec), 2125480771 dwords; closed by: end 225998 wait 231048 ring/class 0 cond_exec 0 size 0 drain 16063 acb-head 60812 other 0 observe 0 hold-wd 17897 hold-end 18846
+two rings, time in the waits: kept for the GPU 6368.1 ms in 24165, satisfied on the CPU 102.6 ms in 1410, not served 101.0 ms in 25
+two rings: dcb 860 dwords waits at 311 on 0x12004b5438: kept for the GPU after 0.01 ms, head split off (25601 waits: 25601 split, 24166 kept for the GPU, 1410 satisfied, 25 lost)
+chains: 580804 submitted, 2446928 segments (203244 single, 434935 with cond_exec), 2167068857 dwords; closed by: end 229781 wait 235402 ring/class 0 cond_exec 0 size 0 drain 16352 acb-head 61963 other 0 observe 0 hold-wd 18091 hold-end 19215
+chains: 590783 submitted, 2487547 segments (206961 single, 442016 with cond_exec), 2207771928 dwords; closed by: end 233494 wait 239689 ring/class 0 cond_exec 0 size 0 drain 16636 acb-head 63086 other 0 observe 0 hold-wd 18315 hold-end 19563
+chains: 601009 submitted, 2529464 segments (210683 single, 449324 with cond_exec), 2249795378 dwords; closed by: end 237322 wait 244093 ring/class 0 cond_exec 0 size 0 drain 16928 acb-head 64229 other 0 observe 0 hold-wd 18505 hold-end 19932
+two rings, time in the waits: kept for the GPU 6619.2 ms in 25148, satisfied on the CPU 103.8 ms in 1451, not served 101.0 ms in 25
+two rings: dcb 12669 dwords waits at 6719 on 0x12004b4c38: kept for the GPU after 0.08 ms, head split off (26625 waits: 26625 split, 25149 kept for the GPU, 1451 satisfied, 25 lost)
+chains: 611218 submitted, 2570980 segments (214482 single, 456557 with cond_exec), 2291392852 dwords; closed by: end 241129 wait 248466 ring/class 0 cond_exec 0 size 0 drain 17217 acb-head 65393 other 0 observe 0 hold-wd 18699 hold-end 20314
+two rings: dcb 860 dwords waits at 311 on 0x12004b5438: NOT served after 4.06 ms, head split off (27269 waits: 27269 split, 25763 kept for the GPU, 1480 satisfied, 26 lost)

@@ -1,0 +1,87 @@
+chains: mode 2, a game thread's chain is held across its ioctls for up to 2000 us (BC5_DIRECT_CHAIN_HOLD_US)
+hold tail: the game thread's chain is held on 0x12004b4838 at t 2.280634 s (1 so far)
+hold tail: the game thread's chain is held on 0x12004b5438 at t 2.280776 s (2 so far)
+hold tail: the game thread's chain is held on 0x12004b5838 at t 2.280826 s (3 so far)
+hold tail: the game thread's chain is held on 0x12004b5c38 at t 2.281019 s (4 so far)
+hold tail: the game thread's chain is held on 0x12004b5438 at t 2.300103 s (5 so far)
+hold tail: the game thread's chain is held on 0x12004b5838 at t 2.300134 s (6 so far)
+hold tail: the game thread's chain is held on 0x12004b5c38 at t 2.300196 s (7 so far)
+two rings: dcb 1153 dwords waits at 590 on 0x12004b4838: kept for the GPU after 0.00 ms, head split off (1 waits: 1 split, 1 kept for the GPU, 0 satisfied, 0 lost)
+hold tail: the game thread's chain is held on 0x12004b5438 at t 2.369153 s (8 so far)
+hold tail: the game thread's chain is held on 0x12004b5838 at t 2.369201 s (9 so far)
+hold tail: the game thread's chain is held on 0x12004b5c38 at t 2.369284 s (10 so far)
+hold tail: the game thread's chain is held on 0x12004b4838 at t 2.492959 s (11 so far)
+hold tail: the game thread's chain is held on 0x12004b5438 at t 2.493025 s (12 so far)
+hold tail: the game thread's chain is held on 0x12004b5838 at t 2.493083 s (13 so far)
+hold tail: the game thread's chain is held on 0x12004b5c38 at t 2.493126 s (14 so far)
+hold tail: the game thread's chain is held on 0x12004b5438 at t 2.780615 s (15 so far)
+hold tail: the game thread's chain is held on 0x12004b5838 at t 2.780651 s (16 so far)
+hold tail: the game thread's chain is held on 0x12004b5c38 at t 2.780727 s (17 so far)
+hold tail: the game thread's chain is held on 0x12004b5838 at t 2.855016 s (18 so far)
+hold tail: the game thread's chain is held on 0x12004b5c38 at t 2.855047 s (19 so far)
+hold tail: the game thread's chain is held on 0x12004b4838 at t 2.887382 s (20 so far)
+chains: 2616 submitted, 13348 segments (571 single, 2390 with cond_exec), 3254769 dwords; closed by: end 1095 wait 834 ring/class 0 cond_exec 0 size 0 drain 145 acb-head 193 other 0 observe 0 hold-wd 168 hold-end 93
+hold tail: 424 holds; released with the writer on a ring 402, satisfied 21, GIVEN UP 0; held 0.49 ms on average, 2.83 ms at most; 0 waits kept inside held chains (their label written by the chain)
+chains: 7532 submitted, 39068 segments (1587 single, 7006 with cond_exec), 9458664 dwords; closed by: end 3124 wait 2420 ring/class 0 cond_exec 0 size 0 drain 431 acb-head 545 other 0 observe 0 hold-wd 436 hold-end 301
+hold tail: 1357 holds; released with the writer on a ring 1267, satisfied 89, GIVEN UP 0; held 0.65 ms on average, 19.19 ms at most; 0 waits kept inside held chains (their label written by the chain)
+chains: 12376 submitted, 66336 segments (2621 single, 12038 with cond_exec), 16286728 dwords; closed by: end 5186 wait 3852 ring/class 0 cond_exec 0 size 0 drain 722 acb-head 873 other 0 observe 0 hold-wd 794 hold-end 494
+hold tail: 2271 holds; released with the writer on a ring 2104, satisfied 167, GIVEN UP 0; held 0.70 ms on average, 19.19 ms at most; 0 waits kept inside held chains (their label written by the chain)
+chains: 21875 submitted, 126279 segments (3222 single, 24598 with cond_exec), 27414729 dwords; closed by: end 11690 wait 4663 ring/class 0 cond_exec 0 size 0 drain 915 acb-head 1063 other 0 observe 0 hold-wd 2386 hold-end 586
+hold tail: 2810 holds; released with the writer on a ring 2584, satisfied 226, GIVEN UP 0; held 0.71 ms on average, 19.19 ms at most; 0 waits kept inside held chains (their label written by the chain)
+chains: 34031 submitted, 207192 segments (3222 single, 42240 with cond_exec), 40679227 dwords; closed by: end 21216 wait 4676 ring/class 0 cond_exec 0 size 0 drain 999 acb-head 1063 other 0 observe 0 hold-wd 4898 hold-end 607
+hold tail: 2810 holds; released with the writer on a ring 2584, satisfied 226, GIVEN UP 0; held 0.71 ms on average, 19.19 ms at most; 0 waits kept inside held chains (their label written by the chain)
+chains: 46972 submitted, 259945 segments (7231 single, 52000 with cond_exec), 74172473 dwords; closed by: end 26296 wait 9924 ring/class 0 cond_exec 0 size 0 drain 1381 acb-head 2071 other 0 observe 0 hold-wd 5365 hold-end 787
+hold tail: 3495 holds; released with the writer on a ring 3185, satisfied 309, GIVEN UP 0; held 0.77 ms on average, 19.19 ms at most; 0 waits kept inside held chains (their label written by the chain)
+chains: 60743 submitted, 312029 segments (12144 single, 61300 with cond_exec), 111779424 dwords; closed by: end 31089 wait 16085 ring/class 0 cond_exec 0 size 0 drain 1795 acb-head 3310 other 0 observe 0 hold-wd 5554 hold-end 1041
+hold tail: 4327 holds; released with the writer on a ring 3902, satisfied 424, GIVEN UP 0; held 0.81 ms on average, 34.56 ms at most; 0 waits kept inside held chains (their label written by the chain)
+chains: 74581 submitted, 393344 segments (13433 single, 78523 with cond_exec), 132645364 dwords; closed by: end 40444 wait 17676 ring/class 0 cond_exec 0 size 0 drain 1961 acb-head 3639 other 0 observe 0 hold-wd 7653 hold-end 1148
+hold tail: 4533 holds; released with the writer on a ring 4070, satisfied 463, GIVEN UP 0; held 0.81 ms on average, 34.56 ms at most; 0 waits kept inside held chains (their label written by the chain)
+chains: 88888 submitted, 488581 segments (13434 single, 99320 with cond_exec), 148370690 dwords; closed by: end 51704 wait 17720 ring/class 0 cond_exec 0 size 0 drain 2029 acb-head 3639 other 0 observe 0 hold-wd 10567 hold-end 1169
+hold tail: 4533 holds; released with the writer on a ring 4070, satisfied 463, GIVEN UP 0; held 0.81 ms on average, 34.56 ms at most; 0 waits kept inside held chains (their label written by the chain)
+chains: 101814 submitted, 560890 segments (15199 single, 114504 with cond_exec), 178439332 dwords; closed by: end 59532 wait 20120 ring/class 0 cond_exec 0 size 0 drain 2257 acb-head 4135 other 0 observe 0 hold-wd 12122 hold-end 1366
+hold tail: 4795 holds; released with the writer on a ring 4317, satisfied 478, GIVEN UP 0; held 0.82 ms on average, 34.56 ms at most; 0 waits kept inside held chains (their label written by the chain)
+chains: 116087 submitted, 619945 segments (20046 single, 124638 with cond_exec), 235893462 dwords; closed by: end 64413 wait 26558 ring/class 0 cond_exec 0 size 0 drain 2680 acb-head 5384 other 0 observe 0 hold-wd 12284 hold-end 1806
+hold tail: 5512 holds; released with the writer on a ring 4979, satisfied 533, GIVEN UP 0; held 0.84 ms on average, 34.56 ms at most; 0 waits kept inside held chains (their label written by the chain)
+two rings, time in the waits: kept for the GPU 0.6 ms in 839, satisfied on the CPU 0.0 ms in 185, not served 0.0 ms in 0
+two rings: dcb 3092 dwords waits at 379 on 0x12004b3c38: satisfied after 0.00 ms, head split off (1025 waits: 1025 split, 839 kept for the GPU, 186 satisfied, 0 lost)
+chains: 130638 submitted, 679271 segments (25061 single, 134815 with cond_exec), 296612580 dwords; closed by: end 69404 wait 33098 ring/class 0 cond_exec 0 size 0 drain 3104 acb-head 6666 other 0 observe 0 hold-wd 12470 hold-end 2282
+hold tail: 6212 holds; released with the writer on a ring 5624, satisfied 587, GIVEN UP 0; held 0.85 ms on average, 34.56 ms at most; 0 waits kept inside held chains (their label written by the chain)
+chains: 145805 submitted, 739810 segments (30417 single, 145135 with cond_exec), 358091865 dwords; closed by: end 74651 wait 39616 ring/class 0 cond_exec 0 size 0 drain 3534 acb-head 8188 other 0 observe 0 hold-wd 12837 hold-end 2779
+hold tail: 6825 holds; released with the writer on a ring 6191, satisfied 633, GIVEN UP 0; held 0.86 ms on average, 34.56 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: the wait on 0x12004b3c38 GIVEN UP after 100.0 ms: its kept wait dropped, the chain goes
+chains: 160335 submitted, 799571 segments (35389 single, 155387 with cond_exec), 419030927 dwords; closed by: end 79687 wait 46129 ring/class 0 cond_exec 0 size 0 drain 3961 acb-head 9462 other 0 observe 0 hold-wd 13005 hold-end 3237
+hold tail: 7518 holds; released with the writer on a ring 6836, satisfied 680, GIVEN UP 1; held 0.88 ms on average, 100.02 ms at most; 0 waits kept inside held chains (their label written by the chain)
+chains: 168277 submitted, 832096 segments (38111 single, 160982 with cond_exec), 450546121 dwords; closed by: end 82495 wait 49588 ring/class 0 cond_exec 0 size 0 drain 4195 acb-head 10188 other 0 observe 0 hold-wd 13168 hold-end 3488
+hold tail: 7852 holds; released with the writer on a ring 7160, satisfied 690, GIVEN UP 1; held 0.90 ms on average, 100.02 ms at most; 0 waits kept inside held chains (their label written by the chain)
+chains: 176934 submitted, 868038 segments (41065 single, 167284 with cond_exec), 478556530 dwords; closed by: end 85605 wait 53438 ring/class 0 cond_exec 0 size 0 drain 4468 acb-head 10919 other 0 observe 0 hold-wd 13315 hold-end 3730
+hold tail: 8278 holds; released with the writer on a ring 7577, satisfied 699, GIVEN UP 1; held 0.90 ms on average, 100.02 ms at most; 0 waits kept inside held chains (their label written by the chain)
+chains: 185736 submitted, 904998 segments (44058 single, 173767 with cond_exec), 507355219 dwords; closed by: end 88784 wait 57332 ring/class 0 cond_exec 0 size 0 drain 4749 acb-head 11650 other 0 observe 0 hold-wd 13455 hold-end 3998
+hold tail: 8743 holds; released with the writer on a ring 8041, satisfied 700, GIVEN UP 1; held 0.90 ms on average, 100.02 ms at most; 0 waits kept inside held chains (their label written by the chain)
+chains: 194245 submitted, 940462 segments (46955 single, 179980 with cond_exec), 535020230 dwords; closed by: end 91837 wait 61085 ring/class 0 cond_exec 0 size 0 drain 5019 acb-head 12373 other 0 observe 0 hold-wd 13610 hold-end 4252
+hold tail: 9185 holds; released with the writer on a ring 8474, satisfied 709, GIVEN UP 1; held 0.90 ms on average, 100.02 ms at most; 0 waits kept inside held chains (their label written by the chain)
+chains: 203050 submitted, 977020 segments (49989 single, 186384 with cond_exec), 563450108 dwords; closed by: end 94995 wait 64955 ring/class 0 cond_exec 0 size 0 drain 5297 acb-head 13133 other 0 observe 0 hold-wd 13767 hold-end 4516
+hold tail: 9641 holds; released with the writer on a ring 8925, satisfied 715, GIVEN UP 1; held 0.90 ms on average, 100.02 ms at most; 0 waits kept inside held chains (their label written by the chain)
+two rings, time in the waits: kept for the GPU 1.3 ms in 1509, satisfied on the CPU 0.1 ms in 539, not served 0.0 ms in 0
+two rings: dcb 11724 dwords waits at 9897 on 0x12004b3c38: satisfied after 0.00 ms, head split off (2049 waits: 2049 split, 1509 kept for the GPU, 540 satisfied, 0 lost)
+chains: 211406 submitted, 1012619 segments (52814 single, 192774 with cond_exec), 589879309 dwords; closed by: end 97994 wait 68651 ring/class 0 cond_exec 0 size 0 drain 5565 acb-head 13835 other 0 observe 0 hold-wd 13914 hold-end 4759
+hold tail: 10109 holds; released with the writer on a ring 9387, satisfied 719, GIVEN UP 1; held 0.90 ms on average, 100.02 ms at most; 0 waits kept inside held chains (their label written by the chain)
+chains: 220126 submitted, 1049973 segments (55760 single, 199512 with cond_exec), 618331277 dwords; closed by: end 101164 wait 72486 ring/class 0 cond_exec 0 size 0 drain 5845 acb-head 14558 other 0 observe 0 hold-wd 14067 hold-end 5038
+hold tail: 10554 holds; released with the writer on a ring 9826, satisfied 726, GIVEN UP 1; held 0.90 ms on average, 100.02 ms at most; 0 waits kept inside held chains (their label written by the chain)
+chains: 228821 submitted, 1086788 segments (58740 single, 206142 with cond_exec), 646347750 dwords; closed by: end 104306 wait 76327 ring/class 0 cond_exec 0 size 0 drain 6122 acb-head 15299 other 0 observe 0 hold-wd 14204 hold-end 5313
+hold tail: 10985 holds; released with the writer on a ring 10251, satisfied 732, GIVEN UP 1; held 0.90 ms on average, 100.02 ms at most; 0 waits kept inside held chains (their label written by the chain)
+chains: 237777 submitted, 1124433 segments (61813 single, 212915 with cond_exec), 674957162 dwords; closed by: end 107535 wait 80218 ring/class 0 cond_exec 0 size 0 drain 6403 acb-head 16079 other 0 observe 0 hold-wd 14388 hold-end 5579
+hold tail: 11460 holds; released with the writer on a ring 10713, satisfied 745, GIVEN UP 1; held 0.91 ms on average, 100.02 ms at most; 0 waits kept inside held chains (their label written by the chain)
+chains: 246878 submitted, 1162531 segments (64980 single, 219750 with cond_exec), 703903326 dwords; closed by: end 110796 wait 84137 ring/class 0 cond_exec 0 size 0 drain 6688 acb-head 16893 other 0 observe 0 hold-wd 14581 hold-end 5886
+hold tail: 11948 holds; released with the writer on a ring 11185, satisfied 762, GIVEN UP 1; held 0.91 ms on average, 100.02 ms at most; 0 waits kept inside held chains (their label written by the chain)
+chains: 255765 submitted, 1199958 segments (68046 single, 226476 with cond_exec), 732307666 dwords; closed by: end 113995 wait 87960 ring/class 0 cond_exec 0 size 0 drain 6967 acb-head 17687 other 0 observe 0 hold-wd 14776 hold-end 6197
+hold tail: 12394 holds; released with the writer on a ring 11618, satisfied 774, GIVEN UP 1; held 0.92 ms on average, 100.02 ms at most; 0 waits kept inside held chains (their label written by the chain)
+two rings, time in the waits: kept for the GPU 2.6 ms in 2163, satisfied on the CPU 0.2 ms in 909, not served 0.0 ms in 0
+two rings: dcb 860 dwords waits at 311 on 0x12004b5438: kept for the GPU after 0.00 ms, head split off (3073 waits: 3073 split, 2164 kept for the GPU, 909 satisfied, 0 lost)
+chains: 264802 submitted, 1237984 segments (71173 single, 233313 with cond_exec), 761231379 dwords; closed by: end 117241 wait 91909 ring/class 0 cond_exec 0 size 0 drain 7252 acb-head 18469 other 0 observe 0 hold-wd 14941 hold-end 6504
+hold tail: 12852 holds; released with the writer on a ring 12065, satisfied 785, GIVEN UP 1; held 0.92 ms on average, 100.02 ms at most; 0 waits kept inside held chains (their label written by the chain)
+chains: 273808 submitted, 1276550 segments (74182 single, 240277 with cond_exec), 790619990 dwords; closed by: end 120530 wait 95874 ring/class 0 cond_exec 0 size 0 drain 7542 acb-head 19204 other 0 observe 0 hold-wd 15060 hold-end 6800
+hold tail: 13330 holds; released with the writer on a ring 12540, satisfied 788, GIVEN UP 1; held 0.92 ms on average, 100.02 ms at most; 0 waits kept inside held chains (their label written by the chain)
+chains: 282824 submitted, 1314618 segments (77261 single, 247133 with cond_exec), 819622621 dwords; closed by: end 123778 wait 99867 ring/class 0 cond_exec 0 size 0 drain 7828 acb-head 19963 other 0 observe 0 hold-wd 15220 hold-end 7056
+hold tail: 13811 holds; released with the writer on a ring 13012, satisfied 797, GIVEN UP 1; held 0.92 ms on average, 100.02 ms at most; 0 waits kept inside held chains (their label written by the chain)
+chains: 291851 submitted, 1353066 segments (80324 single, 254063 with cond_exec), 848934105 dwords; closed by: end 127043 wait 103880 ring/class 0 cond_exec 0 size 0 drain 8116 acb-head 20710 other 0 observe 0 hold-wd 15351 hold-end 7341
+hold tail: 14291 holds; released with the writer on a ring 13479, satisfied 810, GIVEN UP 1; held 0.91 ms on average, 100.02 ms at most; 0 waits kept inside held chains (their label written by the chain)

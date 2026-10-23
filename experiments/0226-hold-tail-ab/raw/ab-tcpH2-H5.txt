@@ -1,0 +1,15 @@
+# window t 150-590 s
+run      arm  cpu-given not-served hold-given timeouts |  seconds  flips/s >100ms >250ms | holds (writer/satisfied/given up; mean/max ms)
+tcpH2    A           10         26          0        0 |      430     28.1     44     11 | -
+tcpH3    B            0          0          0        0 |      432     29.3     10      0 | 31383 (29375/2007/0; 1.05/58.7)
+tcpH4    A           18         30          0        0 |      430     28.2     36     20 | -
+tcpH5    B            0          0          0        0 |      432     28.9     12      2 | 32476 (30043/2432/0; 1.10/314.6)
+
+# frame profile (journal), means per frame in ms: frame, game thread inside the host, of it label waits, at the flip, outside; frames over 100 ms
+tcpH2    A    12337 frames:   35.6   6.35   1.17  16.56  12.65; over 100 ms 49
+tcpH3    B    12889 frames:   34.1   4.28   0.50  19.91   9.90; over 100 ms 10
+tcpH4    A    12414 frames:   35.4   5.75   1.51  19.05  10.57; over 100 ms 37
+tcpH5    B    12706 frames:   34.6   4.91   0.58  19.29  10.37; over 100 ms 13
+
+arm A, 2 runs: give-ups 14.0 (cpu 14.0, hold 0.0), flips/s 28.17, seconds with a gap over 100 ms 40.0, over 250 ms 15.5, fence timeouts 0
+arm B, 2 runs: give-ups 0.0 (cpu 0.0, hold 0.0), flips/s 29.11, seconds with a gap over 100 ms 11.0, over 250 ms 1.0, fence timeouts 0
