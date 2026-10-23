@@ -1,0 +1,13 @@
+# /home/kjaniszewski/bc5-work/exp0194/r-N3: 26 shots classed (clean 4, patched 22), 52 samples
+  clean: ts02 ts03 ts04 ts05
+  patched: ts00 ts01 ts06 ts07 ts08 ts09 ts10 ts11 ts12 ts20 ts21 ts22 ts23 ts24 ts25 ts26 ts27 ts28 ts29 ts30 ts31 ts32
+  per sample, dwords equal to the most common value: ts00/c0000:23% ts00/2b000:5% ts01/c0000:74% ts01/2b000:22% ts02/c0000:12% ts02/2b000:73% ts03/c0000:23% ts03/2b000:84% ts04/c0000:3% ts04/2b000:14% ts05/c0000:15% ts05/2b000:23% ts06/c0000:7% ts06/2b000:23% ts07/c0000:22% ts07/2b000:23% ts08/c0000:8% ts08/2b000:14% ts09/c0000:23% ts09/2b000:6% ts10/c0000:84% ts10/2b000:12% ts11/c0000:73% ts11/2b000:73% ts12/c0000:23% ts12/2b000:80% ts20/c0000:23% ts20/2b000:80% ts21/c0000:73% ts21/2b000:7% ts22/c0000:80% ts22/2b000:23% ts23/c0000:80% ts23/2b000:84% ts24/c0000:5% ts24/2b000:15% ts25/c0000:73% ts25/2b000:80% ts26/c0000:12% ts26/2b000:15% ts27/c0000:15% ts27/2b000:8% ts28/c0000:4% ts28/2b000:15% ts29/c0000:59% ts29/2b000:10% ts30/c0000:12% ts30/2b000:67% ts31/c0000:84% ts31/2b000:24% ts32/c0000:23% ts32/2b000:23%
+  dwords: varying 776
+  varying in draw 0 gs: dwords 0-33
+  varying in draw 0 ps: dwords 0-159
+  varying in draw 1 gs: dwords 0-33
+  varying in draw 1 ps: dwords 0-159
+  varying in draw 2 gs: dwords 0-33
+  varying in draw 2 ps: dwords 0-159
+  varying in draw 3 gs: dwords 0-33
+  varying in draw 3 ps: dwords 0-159

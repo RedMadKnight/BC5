@@ -1,0 +1,10 @@
+# /home/kjaniszewski/bc5-work/exp0194/r-G3: 13 shots classed (clean 5, patched 8), 26 samples
+  clean: ts05 ts06 ts07 ts09 ts10
+  patched: ts00 ts01 ts02 ts03 ts04 ts08 ts11 ts12
+  per sample, dwords equal to the most common value: ts00/c0000:12% ts00/2b000:6% ts01/c0000:6% ts01/2b000:6% ts02/c0000:8% ts02/2b000:85% ts03/c0000:8% ts03/2b000:6% ts04/c0000:93% ts04/2b000:83% ts05/c0000:93% ts05/2b000:83% ts06/c0000:30% ts06/2b000:30% ts07/c0000:14% ts07/2b000:6% ts08/c0000:12% ts08/2b000:93% ts09/c0000:14% ts09/2b000:30% ts10/c0000:27% ts10/2b000:93% ts11/c0000:83% ts11/2b000:85% ts12/c0000:8% ts12/2b000:8%
+  MINSIM 50: kept ts02/2b000(p) ts04/c0000(p) ts04/2b000(p) ts05/c0000(c) ts05/2b000(c) ts08/2b000(p) ts10/2b000(c) ts11/c0000(p) ts11/2b000(p)
+  dwords: constant 680, varying 96
+  varying in draw 0 ps: dwords 111-154
+  varying in draw 1 ps: dwords 85-92
+  varying in draw 2 ps: dwords 0-30
+  varying in draw 3 gs: dwords 21-33

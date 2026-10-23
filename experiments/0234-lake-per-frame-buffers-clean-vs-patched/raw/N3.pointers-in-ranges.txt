@@ -1,0 +1,20 @@
+ud lines per shader/stage: {('11d01ff900', 'ps'): 112, ('11d01ff900', 'gs'): 112, ('11d01d7100', 'ps'): 28, ('11d01d7100', 'gs'): 28}
+  11d01d7100 gs dword 4 -> 0x11e04c0000 + 0xe600: 1 draws
+  11d01d7100 gs dword 6 -> 0x11e04c0000 + 0xe5fc: 1 draws
+  11d01ff900 gs dword 28 -> 0x11e04c0000 + 0xbebc: 1 draws
+  11d01ff900 gs dword 28 -> 0x11e04c0000 + 0xc1c4: 1 draws
+  11d01ff900 gs dword 28 -> 0x11e04c0000 + 0xc4cc: 1 draws
+  11d01ff900 gs dword 28 -> 0x11e04c0000 + 0xc7d4: 1 draws
+  11d01ff900 gs dword 28 -> 0x11e0c2b000 + 0x11c4: 1 draws
+  11d01ff900 gs dword 28 -> 0x11e0c2b000 + 0x14cc: 1 draws
+  11d01ff900 gs dword 28 -> 0x11e0c2b000 + 0x17d4: 1 draws
+  11d01ff900 gs dword 28 -> 0x11e0c2b000 + 0xebc: 1 draws
+  11d01ff900 ps dword 28 -> 0x11e04c0000 + 0xbc3c: 1 draws
+  11d01ff900 ps dword 28 -> 0x11e04c0000 + 0xbf44: 1 draws
+  11d01ff900 ps dword 28 -> 0x11e04c0000 + 0xc24c: 1 draws
+  11d01ff900 ps dword 28 -> 0x11e04c0000 + 0xc554: 1 draws
+  11d01ff900 ps dword 28 -> 0x11e0c2b000 + 0x124c: 1 draws
+  11d01ff900 ps dword 28 -> 0x11e0c2b000 + 0x1554: 1 draws
+  11d01ff900 ps dword 28 -> 0x11e0c2b000 + 0xc3c: 1 draws
+  11d01ff900 ps dword 28 -> 0x11e0c2b000 + 0xf44: 1 draws
+ud lines per shader/stage: {('11d01ff900', 'ps'): 112, ('11d01ff900', 'gs'): 112, ('11d01d7100', 'ps'): 28, ('11d01d7100', 'gs'): 28}
