@@ -1,0 +1,128 @@
+# /home/kjaniszewski/bc5-data/captures/play-20261023-1953/gc/direct.log: 336 matched draws; journal time 150.1..346.8; wall = mtime 19:59:04 - (last t 359.1 - t)
+== window at t 150.1 (wall 19:55:35): 24 draws
+  frame 4979: water-fs(sub 3, buf 0 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 4, buf 1 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 9, buf 2 at 1801, rt0 113f230000 3328x1872) x4
+  frame 4980: water-fs(sub 3, buf 3 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 4, buf 4 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 9, buf 5 at 1801, rt0 113f230000 3328x1872) x4
+  frame 4981: water-fs(sub 3, buf 6 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 4, buf 7 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 9, buf 8 at 1801, rt0 113f230000 3328x1872) x4
+  frame 4982: water-fs(sub 3, buf 9 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 4, buf 10 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 9, buf 11 at 1801, rt0 113f230000 3328x1872) x4
+  water-main in frame 4979 sub 9: after this frame's writer; last writer before it: frame 4979
+  water-main in frame 4980 sub 9: after this frame's writer; last writer before it: frame 4980
+  water-main in frame 4981 sub 9: after this frame's writer; last writer before it: frame 4981
+  water-main in frame 4982 sub 9: after this frame's writer; last writer before it: frame 4982
+== window at t 165.2 (wall 19:55:50): 24 draws
+  frame 5413: water-fs(sub 3, buf 12 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 4, buf 13 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 9, buf 14 at 1801, rt0 113f230000 3328x1872) x4
+  frame 5414: water-fs(sub 3, buf 15 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 4, buf 16 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 9, buf 17 at 1801, rt0 113f230000 3328x1872) x4
+  frame 5415: water-fs(sub 3, buf 18 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 4, buf 19 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 9, buf 20 at 1801, rt0 113f230000 3328x1872) x4
+  frame 5416: water-fs(sub 3, buf 21 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 4, buf 22 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 8, buf 23 at 1801, rt0 113f230000 3328x1872) x4
+  water-main in frame 5413 sub 9: after this frame's writer; last writer before it: frame 5413
+  water-main in frame 5414 sub 9: after this frame's writer; last writer before it: frame 5414
+  water-main in frame 5415 sub 9: after this frame's writer; last writer before it: frame 5415
+  water-main in frame 5416 sub 8: after this frame's writer; last writer before it: frame 5416
+== window at t 180.3 (wall 19:56:06): 24 draws
+  frame 5851: water-fs(sub 3, buf 24 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 4, buf 25 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 9, buf 26 at 1801, rt0 113f230000 3328x1872) x4
+  frame 5852: water-fs(sub 3, buf 27 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 4, buf 28 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 9, buf 29 at 1801, rt0 113f230000 3328x1872) x4
+  frame 5853: water-fs(sub 3, buf 30 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 4, buf 31 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 9, buf 32 at 1801, rt0 113f230000 3328x1872) x4
+  frame 5854: water-fs(sub 2, buf 33 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 4, buf 34 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 8, buf 35 at 1801, rt0 113f230000 3328x1872) x4
+  water-main in frame 5851 sub 9: after this frame's writer; last writer before it: frame 5851
+  water-main in frame 5852 sub 9: after this frame's writer; last writer before it: frame 5852
+  water-main in frame 5853 sub 9: after this frame's writer; last writer before it: frame 5853
+  water-main in frame 5854 sub 8: after this frame's writer; last writer before it: frame 5854
+== window at t 195.4 (wall 19:56:21): 24 draws
+  frame 6291: water-fs(sub 3, buf 36 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 4, buf 37 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 11, buf 38 at 1801, rt0 113f230000 3328x1872) x4
+  frame 6292: water-fs(sub 3, buf 39 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 4, buf 40 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 10, buf 41 at 1801, rt0 113f230000 3328x1872) x4
+  frame 6293: water-fs(sub 3, buf 42 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 4, buf 43 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 9, buf 44 at 1801, rt0 113f230000 3328x1872) x4
+  frame 6294: water-fs(sub 3, buf 45 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 5, buf 46 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 12, buf 47 at 1801, rt0 113f230000 3328x1872) x4
+  water-main in frame 6291 sub 11: after this frame's writer; last writer before it: frame 6291
+  water-main in frame 6292 sub 10: after this frame's writer; last writer before it: frame 6292
+  water-main in frame 6293 sub 9: after this frame's writer; last writer before it: frame 6293
+  water-main in frame 6294 sub 12: after this frame's writer; last writer before it: frame 6294
+== window at t 210.6 (wall 19:56:36): 24 draws
+  frame 6729: water-fs(sub 3, buf 48 at 222, rt0 113f230000 3072x1728) -> WRITER(sub 4, buf 49 at 2688, rt0 113cb40000 3072x1728) -> water-main(sub 9, buf 50 at 1801, rt0 113f230000 3072x1728) x4
+  frame 6730: water-fs(sub 3, buf 51 at 222, rt0 113f230000 3072x1728) -> WRITER(sub 4, buf 52 at 2688, rt0 113cb40000 3072x1728) -> water-main(sub 9, buf 53 at 1801, rt0 113f230000 3072x1728) x4
+  frame 6731: water-fs(sub 2, buf 54 at 222, rt0 113f230000 3072x1728) -> WRITER(sub 3, buf 55 at 2688, rt0 113cb40000 3072x1728) -> water-main(sub 9, buf 56 at 1801, rt0 113f230000 3072x1728) x4
+  frame 6732: water-fs(sub 3, buf 57 at 222, rt0 113f230000 3072x1728) -> WRITER(sub 4, buf 58 at 2688, rt0 113cb40000 3072x1728) -> water-main(sub 10, buf 59 at 1801, rt0 113f230000 3072x1728) x4
+  water-main in frame 6729 sub 9: after this frame's writer; last writer before it: frame 6729
+  water-main in frame 6730 sub 9: after this frame's writer; last writer before it: frame 6730
+  water-main in frame 6731 sub 9: after this frame's writer; last writer before it: frame 6731
+  water-main in frame 6732 sub 10: after this frame's writer; last writer before it: frame 6732
+== window at t 225.7 (wall 19:56:51): 24 draws
+  frame 7166: water-fs(sub 3, buf 60 at 222, rt0 113f230000 3072x1728) -> WRITER(sub 4, buf 61 at 2688, rt0 113cb40000 3072x1728) -> water-main(sub 9, buf 62 at 1801, rt0 113f230000 3072x1728) x4
+  frame 7167: water-fs(sub 3, buf 63 at 222, rt0 113f230000 3072x1728) -> WRITER(sub 4, buf 64 at 2688, rt0 113cb40000 3072x1728) -> water-main(sub 10, buf 65 at 1801, rt0 113f230000 3072x1728) x4
+  frame 7168: water-fs(sub 3, buf 66 at 222, rt0 113f230000 3072x1728) -> WRITER(sub 4, buf 67 at 2688, rt0 113cb40000 3072x1728) -> water-main(sub 10, buf 68 at 1801, rt0 113f230000 3072x1728) x4
+  frame 7169: water-fs(sub 3, buf 69 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 4, buf 70 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 9, buf 71 at 1801, rt0 113f230000 3328x1872) x4
+  water-main in frame 7166 sub 9: after this frame's writer; last writer before it: frame 7166
+  water-main in frame 7167 sub 10: after this frame's writer; last writer before it: frame 7167
+  water-main in frame 7168 sub 10: after this frame's writer; last writer before it: frame 7168
+  water-main in frame 7169 sub 9: after this frame's writer; last writer before it: frame 7169
+== window at t 240.8 (wall 19:57:06): 24 draws
+  frame 7605: water-fs(sub 3, buf 72 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 4, buf 73 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 10, buf 74 at 1801, rt0 113f230000 3328x1872) x4
+  frame 7606: water-fs(sub 3, buf 75 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 5, buf 76 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 10, buf 77 at 1801, rt0 113f230000 3328x1872) x4
+  frame 7607: water-fs(sub 3, buf 78 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 4, buf 79 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 10, buf 80 at 1801, rt0 113f230000 3328x1872) x4
+  frame 7608: water-fs(sub 3, buf 81 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 4, buf 82 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 9, buf 83 at 1801, rt0 113f230000 3328x1872) x4
+  water-main in frame 7605 sub 10: after this frame's writer; last writer before it: frame 7605
+  water-main in frame 7606 sub 10: after this frame's writer; last writer before it: frame 7606
+  water-main in frame 7607 sub 10: after this frame's writer; last writer before it: frame 7607
+  water-main in frame 7608 sub 9: after this frame's writer; last writer before it: frame 7608
+== window at t 255.9 (wall 19:57:21): 24 draws
+  frame 8046: water-fs(sub 3, buf 84 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 4, buf 85 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 9, buf 86 at 1801, rt0 113f230000 3328x1872) x4
+  frame 8047: water-fs(sub 3, buf 87 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 5, buf 88 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 10, buf 89 at 1801, rt0 113f230000 3328x1872) x4
+  frame 8048: water-fs(sub 3, buf 90 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 5, buf 91 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 10, buf 92 at 1801, rt0 113f230000 3328x1872) x4
+  frame 8049: water-fs(sub 3, buf 93 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 4, buf 94 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 10, buf 95 at 1801, rt0 113f230000 3328x1872) x4
+  water-main in frame 8046 sub 9: after this frame's writer; last writer before it: frame 8046
+  water-main in frame 8047 sub 10: after this frame's writer; last writer before it: frame 8047
+  water-main in frame 8048 sub 10: after this frame's writer; last writer before it: frame 8048
+  water-main in frame 8049 sub 10: after this frame's writer; last writer before it: frame 8049
+== window at t 271.1 (wall 19:57:36): 24 draws
+  frame 8477: water-fs(sub 3, buf 96 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 4, buf 97 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 9, buf 98 at 1801, rt0 113f230000 3328x1872) x4
+  frame 8478: water-fs(sub 3, buf 99 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 4, buf 100 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 10, buf 101 at 1801, rt0 113f230000 3328x1872) x4
+  frame 8479: water-fs(sub 2, buf 102 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 3, buf 103 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 7, buf 104 at 1801, rt0 113f230000 3328x1872) x4
+  frame 8480: water-fs(sub 3, buf 105 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 5, buf 106 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 10, buf 107 at 1801, rt0 113f230000 3328x1872) x4
+  water-main in frame 8477 sub 9: after this frame's writer; last writer before it: frame 8477
+  water-main in frame 8478 sub 10: after this frame's writer; last writer before it: frame 8478
+  water-main in frame 8479 sub 7: after this frame's writer; last writer before it: frame 8479
+  water-main in frame 8480 sub 10: after this frame's writer; last writer before it: frame 8480
+== window at t 286.2 (wall 19:57:51): 24 draws
+  frame 8916: water-fs(sub 3, buf 108 at 222, rt0 113f230000 3072x1728) -> WRITER(sub 4, buf 109 at 2688, rt0 113cb40000 3072x1728) -> water-main(sub 9, buf 110 at 1801, rt0 113f230000 3072x1728) x4
+  frame 8917: water-fs(sub 3, buf 111 at 222, rt0 113f230000 3072x1728) -> WRITER(sub 5, buf 112 at 2688, rt0 113cb40000 3072x1728) -> water-main(sub 10, buf 113 at 1801, rt0 113f230000 3072x1728) x4
+  frame 8918: water-fs(sub 3, buf 114 at 222, rt0 113f230000 3072x1728) -> WRITER(sub 5, buf 115 at 2688, rt0 113cb40000 3072x1728) -> water-main(sub 10, buf 116 at 1801, rt0 113f230000 3072x1728) x4
+  frame 8919: water-fs(sub 3, buf 117 at 222, rt0 113f230000 3072x1728) -> WRITER(sub 5, buf 118 at 2688, rt0 113cb40000 3072x1728) -> water-main(sub 10, buf 119 at 1801, rt0 113f230000 3072x1728) x4
+  water-main in frame 8916 sub 9: after this frame's writer; last writer before it: frame 8916
+  water-main in frame 8917 sub 10: after this frame's writer; last writer before it: frame 8917
+  water-main in frame 8918 sub 10: after this frame's writer; last writer before it: frame 8918
+  water-main in frame 8919 sub 10: after this frame's writer; last writer before it: frame 8919
+== window at t 301.3 (wall 19:58:07): 24 draws
+  frame 9356: water-fs(sub 4, buf 120 at 222, rt0 113f230000 3072x1728) -> WRITER(sub 5, buf 121 at 2688, rt0 113cb40000 3072x1728) -> water-main(sub 10, buf 122 at 1801, rt0 113f230000 3072x1728) x4
+  frame 9357: water-fs(sub 3, buf 123 at 222, rt0 113f230000 3072x1728) -> WRITER(sub 5, buf 124 at 2688, rt0 113cb40000 3072x1728) -> water-main(sub 10, buf 125 at 1801, rt0 113f230000 3072x1728) x4
+  frame 9358: water-fs(sub 3, buf 126 at 222, rt0 113f230000 3072x1728) -> WRITER(sub 4, buf 127 at 2688, rt0 113cb40000 3072x1728) -> water-main(sub 8, buf 128 at 1801, rt0 113f230000 3072x1728) x4
+  frame 9359: water-fs(sub 3, buf 129 at 222, rt0 113f230000 3072x1728) -> WRITER(sub 5, buf 130 at 2688, rt0 113cb40000 3072x1728) -> water-main(sub 10, buf 131 at 1801, rt0 113f230000 3072x1728) x4
+  water-main in frame 9356 sub 10: after this frame's writer; last writer before it: frame 9356
+  water-main in frame 9357 sub 10: after this frame's writer; last writer before it: frame 9357
+  water-main in frame 9358 sub 8: after this frame's writer; last writer before it: frame 9358
+  water-main in frame 9359 sub 10: after this frame's writer; last writer before it: frame 9359
+== window at t 316.4 (wall 19:58:22): 24 draws
+  frame 9796: water-fs(sub 3, buf 132 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 4, buf 133 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 9, buf 134 at 1801, rt0 113f230000 3328x1872) x4
+  frame 9797: water-fs(sub 2, buf 135 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 3, buf 136 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 7, buf 137 at 1801, rt0 113f230000 3328x1872) x4
+  frame 9798: water-fs(sub 2, buf 138 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 3, buf 139 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 8, buf 140 at 1801, rt0 113f230000 3328x1872) x4
+  frame 9799: water-fs(sub 3, buf 141 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 4, buf 142 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 9, buf 143 at 1801, rt0 113f230000 3328x1872) x4
+  water-main in frame 9796 sub 9: after this frame's writer; last writer before it: frame 9796
+  water-main in frame 9797 sub 7: after this frame's writer; last writer before it: frame 9797
+  water-main in frame 9798 sub 8: after this frame's writer; last writer before it: frame 9798
+  water-main in frame 9799 sub 9: after this frame's writer; last writer before it: frame 9799
+== window at t 331.6 (wall 19:58:37): 24 draws
+  frame 10240: water-fs(sub 3, buf 144 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 4, buf 145 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 11, buf 146 at 1801, rt0 113f230000 3328x1872) x4
+  frame 10241: water-fs(sub 3, buf 147 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 4, buf 148 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 9, buf 149 at 1801, rt0 113f230000 3328x1872) x4
+  frame 10242: water-fs(sub 3, buf 150 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 5, buf 151 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 11, buf 152 at 1801, rt0 113f230000 3328x1872) x4
+  frame 10243: water-fs(sub 3, buf 153 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 4, buf 154 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 8, buf 155 at 1801, rt0 113f230000 3328x1872) x4
+  water-main in frame 10240 sub 11: after this frame's writer; last writer before it: frame 10240
+  water-main in frame 10241 sub 9: after this frame's writer; last writer before it: frame 10241
+  water-main in frame 10242 sub 11: after this frame's writer; last writer before it: frame 10242
+  water-main in frame 10243 sub 8: after this frame's writer; last writer before it: frame 10243
+== window at t 346.7 (wall 19:58:52): 24 draws
+  frame 10684: water-fs(sub 3, buf 156 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 5, buf 157 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 10, buf 158 at 1801, rt0 113f230000 3328x1872) x4
+  frame 10685: water-fs(sub 3, buf 159 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 5, buf 160 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 10, buf 161 at 1801, rt0 113f230000 3328x1872) x4
+  frame 10686: water-fs(sub 3, buf 162 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 4, buf 163 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 9, buf 164 at 1801, rt0 113f230000 3328x1872) x4
+  frame 10687: water-fs(sub 3, buf 165 at 222, rt0 113f230000 3328x1872) -> WRITER(sub 4, buf 166 at 2688, rt0 113cb40000 3328x1872) -> water-main(sub 9, buf 167 at 1801, rt0 113f230000 3328x1872) x4
+  water-main in frame 10684 sub 10: after this frame's writer; last writer before it: frame 10684
+  water-main in frame 10685 sub 10: after this frame's writer; last writer before it: frame 10685
+  water-main in frame 10686 sub 9: after this frame's writer; last writer before it: frame 10686
+  water-main in frame 10687 sub 9: after this frame's writer; last writer before it: frame 10687
+# water-main groups: after this frame's writer 56

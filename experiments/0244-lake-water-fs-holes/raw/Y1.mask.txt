@@ -1,0 +1,21 @@
+# exp 0244 Y1: the image the full-screen water draw loads (T# from its constant buffer at offset 0x6e0: base 0x8090390000, 128x128, format 1 = 8_UNORM, type 13 = 2D array, sw 5), read three times (256 KiB each) during the frozen view after ts25
+mask1 at 19:58:02 after 195742-ts25.png
+mask2 at 19:58:05 after 195742-ts25.png
+mask3 at 19:58:08 after 195742-ts25.png
+48e3ce6b 48e3ce6b 48e3ce6b (md5 prefixes of the three reads)
+slice  0 (16 KiB): each of the 256 byte values exactly 64 times; mean 127.5
+slice  1 (16 KiB): each of the 256 byte values exactly 64 times; mean 127.5
+slice  2 (16 KiB): each of the 256 byte values exactly 64 times; mean 127.5
+slice  3 (16 KiB): each of the 256 byte values exactly 64 times; mean 127.5
+slice  4 (16 KiB): each of the 256 byte values exactly 64 times; mean 127.5
+slice  5 (16 KiB): each of the 256 byte values exactly 64 times; mean 127.5
+slice  6 (16 KiB): each of the 256 byte values exactly 64 times; mean 127.5
+slice  7 (16 KiB): each of the 256 byte values exactly 64 times; mean 127.5
+slice  8 (16 KiB): each of the 256 byte values exactly 64 times; mean 127.5
+slice  9 (16 KiB): each of the 256 byte values exactly 64 times; mean 127.5
+slice 10 (16 KiB): each of the 256 byte values exactly 64 times; mean 127.5
+slice 11 (16 KiB): each of the 256 byte values exactly 64 times; mean 127.5
+slice 12 (16 KiB): each of the 256 byte values exactly 64 times; mean 127.5
+slice 13 (16 KiB): each of the 256 byte values exactly 64 times; mean 127.5
+slice 14 (16 KiB): each of the 256 byte values exactly 64 times; mean 127.5
+slice 15 (16 KiB): each of the 256 byte values exactly 64 times; mean 127.5

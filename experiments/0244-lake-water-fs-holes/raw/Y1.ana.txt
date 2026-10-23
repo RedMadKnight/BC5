@@ -1,0 +1,24 @@
+== cap1 at 19:55:37; next shot 195541 (ts01) patch 28.5 %
+  ud8+0x6e0: table 0x1123ac7500 (head matches the journal): T# base 0x8090390000 128x128 fmt 1 levels 1 sw 5 type 13; not read (format 1, type 13)
+  gbuffer: 0x113f230000 3328x1872 fmt 22 sw 27 md5 73327be2; width by shear 3328x1872 (2.15)
+    mode 10000 (0.568 of the window): in patch 0.972, other 0.406, phi +0.515; edge step x8.22
+== cap2 at 19:55:57; next shot 195601 (ts05) patch 19.7 %
+  ud8+0x6e0: table 0x1123877600 (head differs from the journal (42 of 64 dwords)): T# base 0x8090390000 128x128 fmt 1 levels 1 sw 5 type 13; not read (format 1, type 13)
+  gbuffer: 0x113f230000 3328x1872 fmt 22 sw 27 md5 a0857e86 (changed since the last capture); width by shear 3328x1872 (4.48)
+    mode 10000 (0.370 of the window): in patch 0.932, other 0.233, phi +0.575; edge step x10.75
+== cap3 at 19:56:17; next shot 195621 (ts09) patch 0.9 %
+  ud8+0x6e0: table 0x1123abcd00 (head matches the journal): T# base 0x8090390000 128x128 fmt 1 levels 1 sw 5 type 13; not read (format 1, type 13)
+  gbuffer: 0x113f230000 3328x1872 fmt 22 sw 27 md5 24c50b93 (changed since the last capture); width by shear 3328x1872 (4.05)
+    mode 10000 (0.703 of the window): in patch 0.980, other 0.700, phi +0.058; edge step x0.40
+== cap4 at 19:56:38; next shot 195642 (ts13) patch 1.3 %
+  ud8+0x6e0: table 0x112379f780 (head matches the journal): T# base 0x8090390000 128x128 fmt 1 levels 1 sw 5 type 13; not read (format 1, type 13)
+  gbuffer: 0x113f230000 3328x1872 fmt 22 sw 27 md5 adcc87fe (changed since the last capture); width by shear 3328x1872 (0.99)
+    mode 10000 (0.104 of the window): in patch 0.058, other 0.104, phi -0.017; edge step x0.63
+== cap5 at 19:56:58; next shot 195702 (ts17) patch 18.4 %
+  ud8+0x6e0: table 0x11239c3700 (head matches the journal): T# base 0x8090390000 128x128 fmt 1 levels 1 sw 5 type 13; not read (format 1, type 13)
+  gbuffer: 0x113f230000 3328x1872 fmt 22 sw 27 md5 78783c98 (changed since the last capture); width by shear 3328x1872 (5.32)
+    mode 10000 (0.487 of the window): in patch 0.229, other 0.546, phi -0.245; edge step x12.68
+== cap6 at 19:57:18; next shot 195722 (ts21) patch 24.6 %
+  ud8+0x6e0: table 0x1123835180 (head differs from the journal (42 of 64 dwords)): T# base 0x8090390000 128x128 fmt 1 levels 1 sw 5 type 13; not read (format 1, type 13)
+  gbuffer: 0x113f230000 3328x1872 fmt 22 sw 27 md5 fbbfafa8 (changed since the last capture); width by shear 3328x1872 (8.59)
+    mode 10000 (0.122 of the window): in patch 0.452, other 0.014, phi +0.577; edge step x11.77
