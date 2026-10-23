@@ -1,8 +1,6 @@
 # ADR 0013 — At a cross-queue wait, hold the buffer's tail, not the submitting thread
 
-**Status:** proposed (2026-10-22). Nothing of it is built; it would be behind `BC5_DIRECT_HOLD_TAIL=1`,
-off by default. The maintainer decides on the A/B after reading this. Hard rule 5 applies: nothing
-changes without the direct path's own switches.
+**Status:** accepted and on by default (2026-10-24). Proposed 2026-10-22; built behind `BC5_DIRECT_HOLD_TAIL=1` for exp 0226, whose A/B passed (F312: given-up waits 14 → 0 a run, long frame gaps to about a quarter, +3 % flips/s, no fault in 4 × 600 s). Integrated into both shared builds with the maintainer's approval; `BC5_DIRECT_HOLD_TAIL=0` restores the give-up. The hold acts only with chains (`BC5_DIRECT_CHAIN=2`), a compute ring and cross-ring waits on the game thread's buffers. Point 10 (the ring consumer) remains open.
 
 ## Context
 
