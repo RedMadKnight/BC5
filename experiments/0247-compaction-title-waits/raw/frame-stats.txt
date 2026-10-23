@@ -1,0 +1,64 @@
+E47A1 t40-100: 2178 flips over 60 s (t 40-100), 36.3 flips/s mean; per 10 s: min 15.2 median 42.5 max 48.5
+  flip gaps: >0.1 s 20, >0.4 s 0, >2 s 0, longest 377 ms
+  GPU busy per frame: median 14.9 ms, p90 15.8, max 82.9; outside-host per frame: >0.1 s 12, >1 s 0, max 267 ms
+E47A1 t100-170: 2979 flips over 70 s (t 100-170), 42.6 flips/s mean; per 10 s: min 42.2 median 42.8 max 43.3
+  flip gaps: >0.1 s 1, >0.4 s 0, >2 s 0, longest 106 ms
+  GPU busy per frame: median 14.8 ms, p90 16.2, max 67.8; outside-host per frame: >0.1 s 0, >1 s 0, max 77 ms
+E47A1 t180-240: 1558 flips over 60 s (t 180-240), 26.0 flips/s mean; per 10 s: min 19.9 median 26.9 max 28.2
+  flip gaps: >0.1 s 19, >0.4 s 6, >2 s 0, longest 680 ms
+  GPU busy per frame: median 27.1 ms, p90 29.9, max 100.2; outside-host per frame: >0.1 s 12, >1 s 0, max 654 ms
+E47A1 t240-290: 1391 flips over 50 s (t 240-290), 27.8 flips/s mean; per 10 s: min 27.6 median 28.4 max 28.4
+  flip gaps: >0.1 s 5, >0.4 s 1, >2 s 0, longest 548 ms
+  GPU busy per frame: median 26.5 ms, p90 29.5, max 56.3; outside-host per frame: >0.1 s 3, >1 s 0, max 523 ms
+E47A1 whole: 9595 flips over 297 s (t 2-299), 32.3 flips/s mean; per 20 s: min 22.8 median 29.3 max 47.9
+  flip gaps: >0.1 s 56, >0.4 s 8, >2 s 0, longest 680 ms
+  GPU busy per frame: median 16.0 ms, p90 28.1, max 100.2; outside-host per frame: >0.1 s 34, >1 s 0, max 654 ms
+
+E47A2 t40-100: 2164 flips over 60 s (t 40-100), 36.1 flips/s mean; per 10 s: min 19.1 median 42.8 max 48.0
+  flip gaps: >0.1 s 20, >0.4 s 0, >2 s 0, longest 323 ms
+  GPU busy per frame: median 14.9 ms, p90 15.9, max 74.3; outside-host per frame: >0.1 s 9, >1 s 0, max 289 ms
+E47A2 t100-170: 2969 flips over 70 s (t 100-170), 42.4 flips/s mean; per 10 s: min 42.4 median 43.0 max 43.7
+  flip gaps: >0.1 s 1, >0.4 s 0, >2 s 0, longest 289 ms
+  GPU busy per frame: median 14.9 ms, p90 16.3, max 88.8; outside-host per frame: >0.1 s 1, >1 s 0, max 180 ms
+E47A2 t180-240: 1728 flips over 60 s (t 180-240), 28.8 flips/s mean; per 10 s: min 28.6 median 28.9 max 29.1
+  flip gaps: >0.1 s 8, >0.4 s 0, >2 s 0, longest 319 ms
+  GPU busy per frame: median 27.5 ms, p90 29.7, max 62.9; outside-host per frame: >0.1 s 3, >1 s 0, max 297 ms
+E47A2 t240-290: 1459 flips over 50 s (t 240-290), 29.2 flips/s mean; per 10 s: min 29.0 median 29.2 max 29.3
+  flip gaps: >0.1 s 0, >0.4 s 0, >2 s 0, longest 84 ms
+  GPU busy per frame: median 27.0 ms, p90 29.4, max 39.7; outside-host per frame: >0.1 s 0, >1 s 0, max 62 ms
+E47A2 whole: 9822 flips over 297 s (t 2-299), 33.1 flips/s mean; per 20 s: min 23.1 median 29.5 max 47.5
+  flip gaps: >0.1 s 35, >0.4 s 0, >2 s 0, longest 373 ms
+  GPU busy per frame: median 16.4 ms, p90 28.5, max 109.5; outside-host per frame: >0.1 s 17, >1 s 0, max 297 ms
+
+E47B1 t40-100: 1975 flips over 60 s (t 40-100), 33.0 flips/s mean; per 10 s: min 14.2 median 44.2 max 48.3
+  flip gaps: >0.1 s 15, >0.4 s 0, >2 s 0, longest 235 ms
+  GPU busy per frame: median 15.0 ms, p90 16.3, max 76.2; outside-host per frame: >0.1 s 3, >1 s 0, max 225 ms
+E47B1 t100-170: 2650 flips over 70 s (t 100-170), 37.9 flips/s mean; per 10 s: min 21.1 median 41.0 max 42.5
+  flip gaps: >0.1 s 6, >0.4 s 0, >2 s 0, longest 243 ms
+  GPU busy per frame: median 15.0 ms, p90 16.8, max 143.1; outside-host per frame: >0.1 s 3, >1 s 0, max 214 ms
+E47B1 t180-240: 1730 flips over 60 s (t 180-240), 28.9 flips/s mean; per 10 s: min 28.6 median 28.8 max 29.2
+  flip gaps: >0.1 s 7, >0.4 s 0, >2 s 0, longest 144 ms
+  GPU busy per frame: median 27.1 ms, p90 29.6, max 58.1; outside-host per frame: >0.1 s 0, >1 s 0, max 98 ms
+E47B1 t240-290: 1460 flips over 50 s (t 240-290), 29.2 flips/s mean; per 10 s: min 29.1 median 29.1 max 29.3
+  flip gaps: >0.1 s 0, >0.4 s 0, >2 s 0, longest 83 ms
+  GPU busy per frame: median 27.0 ms, p90 29.4, max 52.6; outside-host per frame: >0.1 s 0, >1 s 0, max 58 ms
+E47B1 whole: 9344 flips over 297 s (t 2-299), 31.5 flips/s mean; per 20 s: min 14.2 median 29.2 max 48.0
+  flip gaps: >0.1 s 38, >0.4 s 0, >2 s 0, longest 322 ms
+  GPU busy per frame: median 17.5 ms, p90 28.5, max 143.1; outside-host per frame: >0.1 s 9, >1 s 0, max 225 ms
+
+E47B2 t40-100: 2177 flips over 60 s (t 40-100), 36.3 flips/s mean; per 10 s: min 18.4 median 41.1 max 47.9
+  flip gaps: >0.1 s 22, >0.4 s 0, >2 s 0, longest 293 ms
+  GPU busy per frame: median 15.1 ms, p90 16.5, max 75.5; outside-host per frame: >0.1 s 10, >1 s 0, max 218 ms
+E47B2 t100-170: 2926 flips over 70 s (t 100-170), 41.8 flips/s mean; per 10 s: min 41.9 median 42.4 max 42.7
+  flip gaps: >0.1 s 1, >0.4 s 0, >2 s 0, longest 188 ms
+  GPU busy per frame: median 15.3 ms, p90 16.8, max 55.3; outside-host per frame: >0.1 s 1, >1 s 0, max 127 ms
+E47B2 t180-240: 1726 flips over 60 s (t 180-240), 28.8 flips/s mean; per 10 s: min 28.4 median 28.8 max 28.9
+  flip gaps: >0.1 s 9, >0.4 s 0, >2 s 0, longest 322 ms
+  GPU busy per frame: median 27.4 ms, p90 29.7, max 60.4; outside-host per frame: >0.1 s 1, >1 s 0, max 299 ms
+E47B2 t240-290: 1464 flips over 50 s (t 240-290), 29.3 flips/s mean; per 10 s: min 29.0 median 29.2 max 29.4
+  flip gaps: >0.1 s 0, >0.4 s 0, >2 s 0, longest 97 ms
+  GPU busy per frame: median 27.2 ms, p90 29.5, max 57.7; outside-host per frame: >0.1 s 0, >1 s 0, max 72 ms
+E47B2 whole: 9789 flips over 296 s (t 2-299), 33.0 flips/s mean; per 20 s: min 22.8 median 29.3 max 47.1
+  flip gaps: >0.1 s 38, >0.4 s 0, >2 s 0, longest 322 ms
+  GPU busy per frame: median 17.0 ms, p90 28.7, max 75.5; outside-host per frame: >0.1 s 15, >1 s 0, max 299 ms
+
