@@ -1,0 +1,176 @@
+--- /home/kjaniszewski/bc5-work/exp0243/before/atrac9_decoder.h	2026-10-23 19:24:59.785411236 +0200
++++ src/libs/ajm/atrac9_decoder.h	2026-10-23 19:25:00.413591595 +0200
+@@ -15,7 +15,11 @@
+ 
+ extern "C" {
+ #include "libatrac9.h"
++// BC5 (experiment 0243, F300): vgmstream's ATRAC9 decoder (3rdparty/vgmstream-atrac9, ISC) decodes the
++// vibration channel configurations 6 and 7, which LibAtrac9 does not know.
++#include "atrac9_dec.h"
+ }
++#include <cstdlib>
+ 
+ namespace Libs::Audio::Ajm {
+ 
+@@ -60,6 +64,9 @@
+ 		if (m_handle != nullptr) {
+ 			Atrac9ReleaseHandle(m_handle);
+ 		}
++		if (m_vib != nullptr) {
++			atrac9_free(m_vib);
++		}
+ 	}
+ 
+ 	AjmDecodeResult Initialize(const void* codec_parameters,
+@@ -287,17 +294,28 @@
+ 		uint8_t init_config[ATRAC9_CONFIG_DATA_SIZE];
+ 		std::memcpy(init_config, m_config_data, ATRAC9_CONFIG_DATA_SIZE);
+ 		// BC5 (experiment 0154): the vibration layouts' frames are not the mono/dual-mono bitstream
+-		// LibAtrac9 decodes (two low-band blocks per frame; every frame fails to unpack). Until the
+-		// layout is implemented, these instances decode to silence of the right length: the voice
+-		// stays alive, which the second title's cinematic clock depends on (its sync source is the
+-		// haptic track of the opening), and the haptics are simply not produced.
++		// LibAtrac9 decodes (two low-band blocks per frame; every frame fails to unpack). LibAtrac9
++		// still describes the stream (same channels, frame and superframe sizes), and the voice must
++		// stay alive either way: the second title's cinematic clock syncs to the opening's haptic
++		// track. BC5 (experiment 0243, F300): vgmstream's decoder decodes these frames; they are the
++		// DualSense's haptic tracks (energy below 1 kHz, exp 0241). KYTY_BC5_AT9_VIBRATION=0 restores
++		// the old silence of the right length.
+ 		m_vibration = ((init_config[1] >> 1u) & 7u) >= 6u;
++		if (m_vib != nullptr) {
++			atrac9_free(m_vib);
++			m_vib = nullptr;
++		}
+ 		if (m_vibration) {
+ 			init_config[1] = static_cast<uint8_t>(init_config[1] - (6u << 1u));
++			if (VibrationDecodeEnabled()) {
++				m_vib = atrac9_init(m_config_data);
++			}
+ 			static std::atomic_bool noted {false};
+ 			if (!noted.exchange(true)) {
+-				std::fprintf(stderr, "bc5 ajm: ATRAC9 vibration layout %u decoded as silence (haptics not produced)\n",
+-				             static_cast<unsigned>((m_config_data[1] >> 1u) & 7u));
++				std::fprintf(stderr, "bc5 ajm: ATRAC9 vibration layout %u %s\n",
++				             static_cast<unsigned>((m_config_data[1] >> 1u) & 7u),
++				             m_vib != nullptr ? "decoded by vgmstream (haptics)"
++				                              : "decoded as silence (haptics not produced)");
+ 			}
+ 		}
+ 		const int init_ret = Atrac9InitDecoder(m_handle, init_config);
+@@ -319,6 +337,21 @@
+ 			return false;
+ 		}
+ 
++		if (m_vib != nullptr) {
++			atrac9_info_t vib_info {};
++			if (atrac9_get_info(m_vib, &vib_info) == 0 && vib_info.channels > 0 &&
++			    vib_info.channels * vib_info.frame_samples <= ATRAC9_MAX_FRAME_SAMPLES * 2) {
++				m_codec_info.channels           = vib_info.channels;
++				m_codec_info.samplingRate       = vib_info.sample_rate;
++				m_codec_info.superframeSize     = vib_info.superframe_size;
++				m_codec_info.framesInSuperframe = vib_info.frames_per_superframe;
++				m_codec_info.frameSamples       = vib_info.frame_samples;
++			} else {
++				atrac9_free(m_vib);
++				m_vib = nullptr;
++			}
++		}
++
+ 		m_is_initialized          = true;
+ 		m_num_frames              = 0;
+ 		m_total_decoded_samples   = 0;
+@@ -336,6 +369,9 @@
+ 	}
+ 
+ 	int DecodeFrame(const uint8_t* input, int* bytes_used) {
++		if (m_vibration && m_vib != nullptr) {
++			return DecodeVibrationFrame(input, bytes_used);
++		}
+ 		if (m_vibration) {
+ 			// BC5 (experiment 0154): a frame of silence; the input is consumed frame by frame.
+ 			std::fill(m_pcm_buffer.begin(), m_pcm_buffer.end(), 0);
+@@ -362,6 +398,46 @@
+ 		return -1;
+ 	}
+ 
++	// BC5 (experiment 0243): one vibration frame through vgmstream. Callers guarantee the rest of the current
++	// superframe is in the input (GetMinimumInputSize), so that is the frame's bound. Returns 0 on success like
++	// LibAtrac9's Atrac9Decode, else a nonzero code.
++	static bool VibrationDecodeEnabled() {
++		static const bool on = [] {
++			const char* v = std::getenv("KYTY_BC5_AT9_VIBRATION");
++			return v == nullptr || std::strcmp(v, "0") != 0;
++		}();
++		return on;
++	}
++
++	int DecodeVibrationFrame(const uint8_t* input, int* bytes_used) {
++		const int src_size = static_cast<int>(m_superframe_bytes_remain);
++		int       samples  = -1;
++		switch (m_sample_encoding) {
++			case AjmSampleEncoding::S16:
++				samples = atrac9_decode_pcm16(m_vib, input, src_size,
++				                              reinterpret_cast<int16_t*>(m_pcm_buffer.data()), bytes_used);
++				break;
++			case AjmSampleEncoding::Float:
++				samples = atrac9_decode_float(m_vib, input, src_size,
++				                              reinterpret_cast<float*>(m_pcm_buffer.data()), bytes_used);
++				break;
++			case AjmSampleEncoding::S32: {
++				float tmp[ATRAC9_MAX_FRAME_SAMPLES * 2];
++				samples = atrac9_decode_float(m_vib, input, src_size, tmp, bytes_used);
++				const size_t n = (samples > 0 ? static_cast<size_t>(samples) * m_codec_info.channels : 0);
++				auto* dst = reinterpret_cast<int32_t*>(m_pcm_buffer.data());
++				for (size_t i = 0; i < n; i++) {
++					dst[i] = static_cast<int32_t>(std::clamp(static_cast<double>(tmp[i]) * 2147483647.0,
++					                                         -2147483648.0, 2147483647.0));
++				}
++				break;
++			}
++			default:
++				EXIT("unsupported AJM PCM sample encoding %u\n", static_cast<uint32_t>(m_sample_encoding));
++		}
++		return (samples > 0 ? 0 : (samples < 0 ? samples : -1));
++	}
++
+ 	uint64_t CopyDecodedFrame(uint8_t* output, size_t output_size, size_t* output_written,
+ 	                          AjmGaplessState* gapless) {
+ 		EXIT_IF(output_written == nullptr);
+@@ -554,6 +630,7 @@
+ 	bool                 m_has_config        = false;
+ 	bool                 m_vibration         = false;
+ 	void*                m_handle            = nullptr;
++	atrac9_handle_t*     m_vib               = nullptr;
+ 	uint8_t              m_config_data[ATRAC9_CONFIG_DATA_SIZE] {};
+ 	uint32_t             m_superframe_bytes_remain = 0;
+ 	uint32_t             m_num_frames              = 0;
+--- /home/kjaniszewski/bc5-work/exp0243/before/3rdparty-CMakeLists.txt	2026-10-23 19:24:59.786411235 +0200
++++ 3rdparty/CMakeLists.txt	2026-10-23 19:25:00.412908842 +0200
+@@ -124,6 +124,16 @@
+ 
+ file(GLOB LIBATRAC9_SOURCES LibAtrac9/C/src/*.c)
+ add_library(LibAtrac9 STATIC ${LIBATRAC9_SOURCES})
++# BC5 (experiment 0243, F300): vgmstream's ATRAC9 decoder (ISC, vgmstream-atrac9/COPYING) for the vibration
++# channel configurations 6 and 7, which LibAtrac9 lacks.
++add_library(VgmstreamAtrac9 STATIC vgmstream-atrac9/src/coding/libs/atrac9_dec.c
++            vgmstream-atrac9/src/coding/libs/atrac9_internal.c)
++target_include_directories(VgmstreamAtrac9 PUBLIC vgmstream-atrac9/src/coding/libs)
++if (MSVC)
++	target_compile_options(VgmstreamAtrac9 PRIVATE /W0)
++else()
++	target_compile_options(VgmstreamAtrac9 PRIVATE -w)
++endif()
+ target_include_directories(LibAtrac9 PUBLIC LibAtrac9/C/src)
+ if(MSVC)
+ 	target_compile_options(LibAtrac9 PRIVATE /W0)
+--- /home/kjaniszewski/bc5-work/exp0243/before/src-CMakeLists.txt	2026-10-23 19:24:59.787411234 +0200
++++ src/CMakeLists.txt	2026-10-23 19:25:00.413290864 +0200
+@@ -369,7 +369,7 @@
+ 	set_source_files_properties(${kyty_emulator_src} PROPERTIES COMPILE_FLAGS "/EHsc -Wno-pragma-pack -Wno-deprecated-declarations -D_TIMESPEC_DEFINED")
+ endif()
+ 
+-set(kyty_emulator_link_libraries common Vulkan::Headers spirv-tools-opt spirv-tools SDL2-static imgui xxhash FFmpeg::ffmpeg fmt::fmt nlohmann_json::nlohmann_json LibAtrac9 kyty_git_version Zydis::Zydis xbyak::xbyak)
++set(kyty_emulator_link_libraries common Vulkan::Headers spirv-tools-opt spirv-tools SDL2-static imgui xxhash FFmpeg::ffmpeg fmt::fmt nlohmann_json::nlohmann_json LibAtrac9 VgmstreamAtrac9 kyty_git_version Zydis::Zydis xbyak::xbyak)
+ 
+ # zlib is required by rpfArchiveReader on all platforms. The vendored static
+ # archive (ZLIB::ZLIBSTATIC) is always built by 3rdparty/CMakeLists.txt, so

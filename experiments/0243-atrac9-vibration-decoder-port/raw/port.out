@@ -1,0 +1,68 @@
+== 19:24:59 backups
+ddded8525713  /home/kjaniszewski/bc5-work/exp0243/before/3rdparty-CMakeLists.txt
+65f35c24a60e  /home/kjaniszewski/bc5-work/exp0243/before/atrac9_decoder.h
+1fc8ae07b8b4  /home/kjaniszewski/bc5-work/exp0243/before/kyty_emulator.lean
+2780a9a624cb  /home/kjaniszewski/bc5-work/exp0243/before/kyty_emulator.normal
+c8a4f8646a54  /home/kjaniszewski/bc5-work/exp0243/before/src-CMakeLists.txt
+== vendor
+/home/kjaniszewski/src/KytyPlus/3rdparty/vgmstream-atrac9/COPYING
+/home/kjaniszewski/src/KytyPlus/3rdparty/vgmstream-atrac9/README.BC5
+/home/kjaniszewski/src/KytyPlus/3rdparty/vgmstream-atrac9/src/coding/libs/atrac9_dec.c
+/home/kjaniszewski/src/KytyPlus/3rdparty/vgmstream-atrac9/src/coding/libs/atrac9_dec.h
+/home/kjaniszewski/src/KytyPlus/3rdparty/vgmstream-atrac9/src/coding/libs/atrac9_internal.c
+/home/kjaniszewski/src/KytyPlus/3rdparty/vgmstream-atrac9/src/coding/libs/atrac9_internal_data.h
+/home/kjaniszewski/src/KytyPlus/3rdparty/vgmstream-atrac9/src/coding/libs/atrac9_internal.h
+/home/kjaniszewski/src/KytyPlus/3rdparty/vgmstream-atrac9/src/util/bitstream_msb.h
+== edit
+edited 3rdparty/CMakeLists.txt
+edited src/CMakeLists.txt
+edited src/libs/ajm/atrac9_decoder.h
+== 19:25:00 build normal
+      |              ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: note: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here
+  262 |     class _GLIBCXX17_DEPRECATED wstring_convert
+      |           ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+      |                                  ^
+1 warning generated.
+[197/201] Building CXX object src/CMakeFiles/kyty_emulator.dir/loader/runtimeLinker.cpp.o
+In file included from /home/kjaniszewski/src/KytyPlus/src/loader/runtimeLinker.cpp:3:
+In file included from /home/kjaniszewski/src/KytyPlus/src/loader/runtimeLinker.h:6:
+/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: warning: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations]
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
+      |              ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: note: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here
+  262 |     class _GLIBCXX17_DEPRECATED wstring_convert
+      |           ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+      |                                  ^
+/home/kjaniszewski/src/KytyPlus/src/loader/runtimeLinker.cpp:838:3: warning: non-void lambda does not return a value in all control paths [-Wreturn-type]
+  838 |                 }();
+      |                 ^
+2 warnings generated.
+[198/201] Linking CXX executable src/kyty_emulator
+rc 0
+== 19:28:07 build lean
+In file included from /home/kjaniszewski/src/KytyPlus/src/loader/runtimeLinker.h:6:
+/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: warning: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations]
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
+      |              ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: note: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here
+  262 |     class _GLIBCXX17_DEPRECATED wstring_convert
+      |           ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+      |                                  ^
+/home/kjaniszewski/src/KytyPlus/src/loader/runtimeLinker.cpp:838:3: warning: non-void lambda does not return a value in all control paths [-Wreturn-type]
+  838 |                 }();
+      |                 ^
+2 warnings generated.
+[198/201] Linking CXX executable src/kyty_emulator
+rc 0
+-rwxr-xr-x. 1 kjaniszewski kjaniszewski 164843216 19:31:09 /home/kjaniszewski/bc5-work/kytyplus-build-lean/src/kyty_emulator
+-rwxr-xr-x. 1 kjaniszewski kjaniszewski 166076384 19:28:07 /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator
+1
+1
+== 19:31:09 done

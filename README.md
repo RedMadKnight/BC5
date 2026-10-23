@@ -20,7 +20,7 @@ On the maintainer's box a desktop shortcut, *BC5 emulator*, opens the emulator w
 
 ### What is still broken
 
-Patches of the water are missing on the second title's night lake. About once an hour of play the machine goes down and reboots. In some cutscenes the characters move in slow motion while effects run at normal speed. Some of the second title's audio streams, in a format no public decoder reads, play as silence. All of these are under investigation; see [Known issues](#known-issues).
+Patches of the water are missing on the second title's night lake. About once an hour of play the machine goes down and reboots. In some cutscenes the characters move in slow motion while effects run at normal speed. The second title's DualSense haptic tracks are decoded since 2026-10-23, but nobody has felt them on the pad yet. All of these are under investigation; see [Known issues](#known-issues).
 
 ### Legal, in short
 
@@ -56,7 +56,7 @@ As of 2026-10-22, measured on one BC-250 with the maintainer's own copies of the
 | Patchwork water on the second title's night lake | Rectangles of the water show the lake bed in some runs. Not a missing input from the host: the textures are resident, and the game's texture detail clamps do not decide it. The same view goes clean and patched again from frame to frame with an unchanged texture table; the cause is open | F255, F269, F272, F278, F292 |
 | Machine-downs (about one an hour of play) | Two GPU rings time out with no fault, the graphics ring's reset fails, the kernel resets the whole GPU and the box reboots. Three of four followed a game-thread wait the host gave up on; the wait is for GPU work not yet submitted. Under investigation | F260, F262, F264, F279, F282, F283 |
 | Cutscene slow motion | Characters crawl while hair and effects run on. Their clock is a silent looping voice that stops when its next streamed read comes late; the read-ahead removes the host queue's share, whether that ends it is not shown | F254, F256, F259, F267, F273 |
-| Silent ATRAC9 streams, second title | Every one uses channel configuration 7, which no public decoder knows; played as silence. Whether they are sound or haptic tracks is open | F200, Q17 |
+| DualSense haptics, second title | Its ATRAC9 streams in channel configurations 6 and 7 are the pad's haptic tracks (all their energy below 1 kHz), not sound. Since 2026-10-23 vgmstream's decoder decodes them instead of silence (`KYTY_BC5_AT9_VIBRATION=0` restores the silence). Whether they reach the pad's actuators as intended is not yet checked at the pad | F200, F300, F301 |
 | Library ports from AnyPS5 | Rumble without an audio sink, NpManager, NpTrophy2, SaveData search: ported, not yet verified on the box | F214–F217, Q16 |
 
 ## How it works
@@ -126,6 +126,7 @@ Environment variables; the launchers set the title's values. The full list, with
 | `BC5_DIRECT_DCB_WAIT_MS` | `8` | How long the game thread waits on a GPU label before giving up on it | F263, F270, F271 |
 | `KYTY_BC5_APR_READAHEAD` | `4` | APR read-ahead reader threads per priority queue; `0` turns it off | F273 |
 | `KYTY_BC5_AUDIO2_ADVANCED`, `KYTY_BC5_VIDEOOUT_COALESCE` | on | Audio grain model and display-event coalescing; `0` turns them off | F246, F247 |
+| `KYTY_BC5_AT9_VIBRATION` | on | Decodes ATRAC9's vibration configurations 6–7 (the second title's haptic tracks) with vgmstream's decoder; `0` plays them as silence | F300, F301 |
 | `KYTY_BC5_MIN_FLIP_RATE` | off | `1` caps the second title at 30 fps | F242, F247 |
 | `BC5_LOGGING` | on | `0` starts the session with every trace and journal off | F227, exp 0162 |
 | `SHADPS4_SYSMODULES_PACK_DIR` | none | Directory of the game's own library modules loaded LLE (being phased out) | F17, Q14 |
@@ -187,6 +188,6 @@ PlayStation, PS5 and DualSense are trademarks of Sony Interactive Entertainment.
 
 ## License and credits
 
-GPL-2.0, matching KytyPlus, so that the patches and the backend can go upstream without relicensing. Files that originate elsewhere keep their own licence and say so in their header (the vendored `oozextract`, MIT; Mesa's register tables, MIT; the AnyPS5 ports, GPL-2.0).
+GPL-2.0, matching KytyPlus, so that the patches and the backend can go upstream without relicensing. Files that originate elsewhere keep their own licence and say so in their header (the vendored `oozextract`, MIT; Mesa's register tables, MIT; the AnyPS5 ports, GPL-2.0; vgmstream's ATRAC9 decoder in patch 0001, ISC, with its `COPYING`).
 
-BC5 stands on [KytyPlus](https://github.com/Coder787-source/KytyPlus) and the Kyty line it comes from, on [AnyPS5](https://github.com/boykopovar/AnyPS5)'s libraries, on Mesa's register tables and libdrm's tests, on `oozextract`, and on the BC-250 community's documentation of the board's unlocks.
+BC5 stands on [KytyPlus](https://github.com/Coder787-source/KytyPlus) and the Kyty line it comes from, on [AnyPS5](https://github.com/boykopovar/AnyPS5)'s libraries, on Mesa's register tables and libdrm's tests, on `oozextract`, on [vgmstream](https://github.com/vgmstream/vgmstream)'s ATRAC9 decoder, and on the BC-250 community's documentation of the board's unlocks.
