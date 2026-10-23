@@ -1,0 +1,26 @@
+# exp 0233: the texture table dumps (0x11e0007aa0, 0xc7780 bytes, taken before each frozen-view shot) grouped by md5
+# (first 8 hex digits), and the per-second CRC samples of the two other dumped ranges. Run on the box 2026-10-23 13:51.
+# ts00-ts12: first series (5 s apart); ts20-ts32: after the camera nudge.
+== N1
+  c571aef0: ts00 ts01 ts02 ts03 ts04 ts05 ts06 ts07 ts08 ts09 ts10 ts11 ts12
+  7105e7ce: ts20 ts21 ts22 ts23 ts24 ts25 ts26 ts27 ts28 ts29 ts30 ts31 ts32
+== N2
+  9fad3ec7: ts00
+  d64e406f: ts01 ts02 ts03 ts04 ts05 ts06 ts07 ts08 ts09 ts10 ts11 ts12 ts20 ts21 ts22 ts23 ts24 ts25 ts26 ts27 ts28 ts29 ts30 ts31 ts32
+== N3
+  9cf8aa30: ts00 ts01 ts02 ts03 ts04 ts05 ts06 ts07 ts08 ts09 ts10 ts11 ts12
+  1948533f: ts20 ts21 ts22 ts23 ts24 ts25 ts26 ts27 ts28 ts29 ts30 ts31 ts32
+== N4
+  4bc1ec49: ts00 ts01 ts02 ts03 ts04 ts05 ts06 ts07 ts08 ts09 ts10 ts11 ts12
+  c5ff9f62: ts20 ts21 ts22 ts23 ts24 ts25 ts26 ts27 ts28 ts29 ts30 ts31 ts32
+
+N3 table, hash.txt samples 13:17:28-13:18:37 (first shot +1 s to the nudge): 70 samples, 0 with a changed page.
+(N3 shots: ts00-01 patched 22-23 %, ts02-05 clean 0.8-1.0 %, ts06-12 patched 16-26 %.)
+
+Other dumped ranges (hash.txt, one sample per second, ~362 per run): samples with at least one changed page
+  run  0x11e04c0000 (32 pages)  0x11e0c2b000 (2 pages)
+  N1   357                      278
+  N2   356                      277
+  N3   356                      275
+  N4   356                      286
+Both change nearly every second in every run (per-frame data), so "changed or not" can't separate clean from patched.

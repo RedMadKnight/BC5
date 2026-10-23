@@ -1,0 +1,46 @@
+# /home/kjaniszewski/bc5-work/exp0194/r-N4: first frozen-view shot nudge 13:24:53 = mono 47936.2; 73158 AMM events; 362 table samples
+(1) AMM events per 5 s (s relative to the first shot): t maps unmaps reads read_MiB
+    -60     0     0     1      0.1
+    -55     0     0     2      0.2
+    -50     0     0     1      0.1
+    -45     0     0     1      0.1
+    -40     0     0     2      0.2
+    -35     0     0     1      0.1
+    -30     0     0     2      0.2
+    -25     0     0     2      0.2
+    -20     0     0     1      0.1
+    -15     0     0     2      0.2
+    -10     0     0     1      0.1
+     -5     2     0     3      0.7
+     +0     0     0     1      0.1
+     +5     0     0     2      0.2
+    +10     0     0     1      0.1
+    +15     0     0     1      0.1
+    +20     0     0     1      0.1
+    +25     0     0     1      0.1
+    +30     0     0     2      0.2
+    +35     0     0     1      0.1
+    +40     0     0     1      0.1
+    +45     0     0     2      0.2
+    +50     0     0     1      0.1
+    +55     0     0     1      0.1
+    +60     0     0     1      0.1
+    +65     0     0     1      0.1
+    +70     0     0     2      0.2
+    +75     0     0     1      0.1
+    +80     0     0     1      0.1
+    +85     0     0     1      0.1
+    +90     0     0     2      0.2
+    +95     0     0     1      0.1
+   +100     0     0     1      0.1
+   +105     0     0     2      0.2
+   +110     0     0     1      0.1
+   +115     0     0     1      0.1
+   +120     0     0     2      0.2
+   +125     0     0     1      0.1
+(2) table changes from 60 s before the first shot, with the AMM events of the 10 s before each
+  13:24:53 (+0 s): 1 pages changed (83) | AMM in the 10 s before: 2 maps, 0 unmaps, 4 reads
+  13:24:54 (+1 s): 1 pages changed (83) | AMM in the 10 s before: 2 maps, 0 unmaps, 4 reads
+(3) textures whose MIN_LOD/LAST_LEVEL differ between ts12.11e0007aa0.bin and ts32.11e0007aa0.bin
+  0x80c12d8000 2048x2048 fmt 182: [(4.0, 8)] -> [(2.0, 8)]; AMM events touching its first w*h bytes: 13 ['-187.8s read 0x18000', '-185.1s unmap 0x18000', '-152.8s map 0x8000', '-152.3s read 0x8000', '-0.1s map 0x50000', '-0.1s read 0x50000']
+  0x80c22f8000 2048x2048 fmt 177: [(3.0, 8)] -> [(2.0, 8)]; AMM events touching its first w*h bytes: 19 ['-185.1s unmap 0x18000', '-185.1s unmap 0x18000', '-152.8s map 0x18000', '-152.3s read 0x18000', '-0.1s map 0x40000', '-0.1s read 0x40000']

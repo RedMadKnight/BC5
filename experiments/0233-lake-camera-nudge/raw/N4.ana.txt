@@ -1,0 +1,76 @@
+# /home/kjaniszewski/bc5-work/exp0194/r-N4: first frozen-view shot 13:23:40 = mono 47863.2; 73158 AMM events; 362 table samples
+(1) AMM events per 5 s (s relative to the first shot): t maps unmaps reads read_MiB
+    -60     0     0    56      7.6
+    -55    12     0    19     19.3
+    -50     0     0    13      1.2
+    -45     0     0     8      0.6
+    -40     0     0     5      0.5
+    -35     4     0    12      7.3
+    -30     0     0     7      0.6
+    -25     0     0    12      1.1
+    -20     0     0     5      0.4
+    -15    31    51   122     20.8
+    -10   142    12   232    174.8
+     -5   175     0   191    307.7
+     +0     0     0     1      0.1
+     +5     0     0     1      0.1
+    +10     0     0     2      0.2
+    +15     0     0     1      0.1
+    +20     0     0     1      0.1
+    +25     0     0     2      0.2
+    +30     0     0     1      0.1
+    +35     0     0     1      0.1
+    +40     0     0     1      0.1
+    +45     0     0     3      0.4
+    +50     0     0     1      0.1
+    +55     0     0     2      0.2
+    +60     0     0     1      0.1
+    +65     0     0     1      0.1
+    +70     2     0     4      0.8
+    +75     0     0     1      0.1
+    +80     0     0     1      0.1
+    +85     0     0     1      0.1
+    +90     0     0     2      0.2
+    +95     0     0     1      0.1
+   +100     0     0     1      0.1
+   +105     0     0     1      0.1
+   +110     0     0     1      0.1
+   +115     0     0     2      0.2
+   +120     0     0     1      0.1
+   +125     0     0     1      0.1
+   +130     0     0     2      0.2
+   +135     0     0     1      0.1
+   +140     0     0     1      0.1
+   +145     0     0     1      0.1
+   +150     0     0     1      0.1
+   +155     0     0     2      0.2
+   +160     0     0     1      0.1
+   +165     0     0     1      0.1
+   +170     0     0     2      0.2
+   +175     0     0     1      0.1
+   +180     0     0     1      0.1
+   +185     0     0     2      0.2
+   +190     0     0     1      0.1
+   +195     0     0     1      0.1
+   +200     0     0     1      0.1
+(2) table changes from 60 s before the first shot, with the AMM events of the 10 s before each
+  13:22:41 (-59 s): 24 pages changed (56 73 81 82 83 84 86 97) | AMM in the 10 s before: 1462 maps, 337 unmaps, 5937 reads
+  13:22:49 (-51 s): 6 pages changed (110 132 151 154 179 186) | AMM in the 10 s before: 214 maps, 0 unmaps, 272 reads
+  13:22:50 (-50 s): 2 pages changed (154 186) | AMM in the 10 s before: 12 maps, 0 unmaps, 104 reads
+  13:23:09 (-31 s): 3 pages changed (60 81 140) | AMM in the 10 s before: 4 maps, 0 unmaps, 16 reads
+  13:23:26 (-14 s): 3 pages changed (191 196 198) | AMM in the 10 s before: 2 maps, 0 unmaps, 18 reads
+  13:23:27 (-13 s): 4 pages changed (191 192 198 199) | AMM in the 10 s before: 22 maps, 33 unmaps, 108 reads
+  13:23:28 (-12 s): 3 pages changed (191 192 198) | AMM in the 10 s before: 23 maps, 51 unmaps, 110 reads
+  13:23:30 (-10 s): 3 pages changed (191 192 198) | AMM in the 10 s before: 29 maps, 51 unmaps, 127 reads
+  13:23:31 (-9 s): 21 pages changed (56 73 81 82 85 97 103 115) | AMM in the 10 s before: 121 maps, 57 unmaps, 263 reads
+  13:23:32 (-8 s): 12 pages changed (97 110 115 131 136 137 152 153) | AMM in the 10 s before: 146 maps, 63 unmaps, 332 reads
+  13:23:33 (-7 s): 10 pages changed (56 63 73 97 102 104 110 146) | AMM in the 10 s before: 173 maps, 63 unmaps, 357 reads
+  13:23:36 (-4 s): 21 pages changed (63 66 80 81 82 86 90 110) | AMM in the 10 s before: 279 maps, 63 unmaps, 429 reads
+  13:23:37 (-3 s): 26 pages changed (56 61 81 82 83 84 86 87) | AMM in the 10 s before: 298 maps, 30 unmaps, 419 reads
+  13:23:39 (-1 s): 4 pages changed (81 83 149 150) | AMM in the 10 s before: 318 maps, 12 unmaps, 435 reads
+  13:23:40 (+0 s): 3 pages changed (81 150 186) | AMM in the 10 s before: 317 maps, 12 unmaps, 423 reads
+  13:24:53 (+73 s): 1 pages changed (83) | AMM in the 10 s before: 2 maps, 0 unmaps, 4 reads
+  13:24:54 (+74 s): 1 pages changed (83) | AMM in the 10 s before: 2 maps, 0 unmaps, 4 reads
+(3) textures whose MIN_LOD/LAST_LEVEL differ between ts00.11e0007aa0.bin and ts32.11e0007aa0.bin
+  0x80c12d8000 2048x2048 fmt 182: [(4.0, 8)] -> [(2.0, 8)]; AMM events touching its first w*h bytes: 13 ['-114.8s read 0x18000', '-112.0s unmap 0x18000', '-79.8s map 0x8000', '-79.3s read 0x8000', '+72.9s map 0x50000', '+73.0s read 0x50000']
+  0x80c22f8000 2048x2048 fmt 177: [(3.0, 8)] -> [(2.0, 8)]; AMM events touching its first w*h bytes: 19 ['-112.0s unmap 0x18000', '-112.0s unmap 0x18000', '-79.8s map 0x18000', '-79.3s read 0x18000', '+72.9s map 0x40000', '+73.0s read 0x40000']
