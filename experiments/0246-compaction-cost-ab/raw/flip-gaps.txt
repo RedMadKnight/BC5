@@ -1,0 +1,20 @@
+Flip gaps over 300 ms per arm (journal t, gap, game thread outside the host in that frame)
+== E46A
+  t 83.8 gap 310 ms outside 291.4;
+  t 189.4 gap 344 ms outside 270.6;
+== E46C
+  t 90.8 gap 970 ms outside 846.7;
+== E46B
+  t 77.4 gap 315 ms outside 237.5;
+  t 83.9 gap 350 ms outside 300.2;
+  t 91.6 gap 338 ms outside 311.7;
+  t 92.1 gap 439 ms outside 423.8;
+  t 193.8 gap 331 ms outside 270.7;
+  t 200.8 gap 468 ms outside 420.1;
+  t 204.8 gap 806 ms outside 745.8;
+  t 207.9 gap 802 ms outside 775.3;
+  t 222.1 gap 904 ms outside 851.4;
+  t 224.2 gap 943 ms outside 882.6;
+  t 238.6 gap 448 ms outside 422.2;
+  t 240.1 gap 555 ms outside 494.3;
+  t 244.1 gap 493 ms outside 433.0;

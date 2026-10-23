@@ -1,0 +1,12 @@
+R11B (exp 0211, nothing skipped): the timed-out graphics buffer #118195 (31,651 dwords, t 106.0 s), as the host's timeout
+probe dumped it, listed by ibdisp.py (dispatches with the user data SET_SH_REG leaves; programs come from
+LOAD_SH_REG_INDEX tables and are not resolved). The dump itself stays on the box.
+dispatches: 810
+families along the buffer (family, count, first offset): o 119 @1648; C 56 @24104; Z 56 @24728; C 392 @25297; N 187 @29011;
+  o = other frame work; C = compaction family (ud0/1 = 0x11/0x12, ud2 mode, ud3 BASE_A lo, ud4-5 constant block, ud6 BASE_B lo,
+      ud10-11 = ASCII 'PSR_BVHL', ud12 = 0xa: the signature of 0x909974400 and its helpers, exp 0160); Z = the same with ud0 = 0;
+  N = consumers (ud8-9 0x11d039d400, ud10-11 and ud14-15 0x12c3ba9a50, ud12-13 0x11d039d800: the function pointers of exp 0160)
+C: 448 dispatches, ops {'15': 112, '16': 336}, dims [(None, 336), ((1, 1, 1), 56), ((2, 1, 1), 44), ((3, 1, 1), 6), ((4, 1, 1), 5)], BASE_B (0x12:ud6) 0x1270b70400-0x1270c67000
+Z: 56 dispatches, ops {'15': 56}, dims [((2, 1, 1), 44), ((3, 1, 1), 6), ((4, 1, 1), 5), ((5, 1, 1), 1)], BASE_B (0x12:ud6) 0x1270b70400-0x1270c67000
+N: 187 dispatches, ops {'16': 187}, dims [(None, 187)], BASE_B (0x12:ud6) 0x1270b70400-0x1270c67000
+user-data pointers within 64 MiB of the faulted pages 0x1208a73000-0x1208a7c000: none
