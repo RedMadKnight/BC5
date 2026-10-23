@@ -1,0 +1,38 @@
+# /home/kjaniszewski/bc5-data/priv/exp0235/ts00.img.gs4.bin: width by block-row shear at pipes 2^4 (16:9 sizes): 2304 17.98, 2560 15.97, 2816 13.09, 3072 0.94, 3328 13.13, 3584 16.02
+# /home/kjaniszewski/bc5-data/priv/exp0235/ts00.img.gs4.bin: 6389760 values; candidates (pipes log2, size): roughness = mean |step| of log(1+depth), x plus y
+  pipes 2^0 2816x1584: 0.2518
+  pipes 2^1 2816x1584: 0.1928
+  pipes 2^2 2816x1584: 0.1931
+  pipes 2^3 2816x1584: 0.1946
+  pipes 2^4 2816x1584: 0.1201
+  pipes 2^5 2816x1584: 0.2149
+  pipes 2^6 2816x1584: 0.2041
+  pipes 2^0 3072x1728: 0.2098
+  pipes 2^1 3072x1728: 0.1596
+  pipes 2^2 3072x1728: 0.1598
+  pipes 2^3 3072x1728: 0.1614
+  pipes 2^4 3072x1728: 0.0944
+  pipes 2^5 3072x1728: 0.1786
+  pipes 2^6 3072x1728: 0.1708
+  pipes 2^0 3328x1872: 0.1817
+  pipes 2^1 3328x1872: 0.1393
+  pipes 2^2 3328x1872: 0.1394
+  pipes 2^3 3328x1872: 0.1407
+  pipes 2^4 3328x1872: 0.0864
+  pipes 2^5 3328x1872: 0.1557
+  pipes 2^6 3328x1872: 0.1493
+  pipes 2^0 2560x1440: 0.3001
+  pipes 2^1 2560x1440: 0.2292
+  pipes 2^2 2560x1440: 0.2295
+  pipes 2^3 2560x1440: 0.2317
+  pipes 2^4 2560x1440: 0.1429
+  pipes 2^5 2560x1440: 0.2546
+  pipes 2^6 2560x1440: 0.2398
+best: pipes 2^4 at 3328x1872 (roughness 0.0864; next 0.0944 at pipes 2^4 3072x1728)
+compared at: pipes 2^4 3072x1728 (given)
+depth range 5.141..1.001e+04, zero share 0.000; rows with depth >= 9000 (far) top/bottom quarter: 0.20 / 0.00
+screenshot 142555-ts00.png: patch share in the window 0.243
+  as stored: high-pass of log depth: patch +0.0989, other -0.0232, correlation with the mask +0.042; x-step at mask edges 0.2337 vs window 0.0580 (11420 edge pixels)
+  as stored: far value (>= 9000) in patch pixels 0.508, in other window pixels 0.235; phi(far, patch) +0.255; patch pixels that are far 0.508 of all far 0.410
+  flipped: high-pass of log depth: patch +0.0081, other +0.0051, correlation with the mask +0.001; x-step at mask edges 0.0612 vs window 0.0580 (11420 edge pixels)
+  flipped: far value (>= 9000) in patch pixels 0.373, in other window pixels 0.277; phi(far, patch) +0.090; patch pixels that are far 0.373 of all far 0.302

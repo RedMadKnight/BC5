@@ -1,0 +1,10 @@
+# I3 journal: colour targets of the journalled water draws (rt0 | ps), and the host hint naming 0x113cb40000
+     64 rt0 113f230000 3328x1872 | ps 11d01ff900
+     24 rt0 113f230000 3072x1728 | ps 11d01ff900
+     20 rt0 113f230000 2816x1584 | ps 11d01ff900
+     16 rt0 113f230000 3328x1872 | ps 11d01d7100
+      6 rt0 113f230000 3072x1728 | ps 11d01d7100
+      5 rt0 113f230000 2816x1584 | ps 11d01d7100
+      4 rt0 113f230000 2560x1440 | ps 11d01ff900
+      1 rt0 113f230000 2560x1440 | ps 11d01d7100
+hint CB0 0x113cb40000: window 0x113ab40000+0x4000000, direct memory +4.0 MiB
