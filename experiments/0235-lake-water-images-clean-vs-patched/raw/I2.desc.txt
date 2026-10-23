@@ -1,0 +1,10 @@
+shader      stage slot kind    draws  descriptor
+11d01ff900  gs       0 image      112  0x8001810000 2048x2048 fmt 13 levels 1 sw 27
+11d01ff900  gs       2 image      112  0x8001010000 512x512 fmt 71 levels 1 sw 27
+11d01ff900  gs       4 image        8  0x113cb40000 2816x1584 fmt 13 levels 1 sw 27
+11d01ff900  gs       4 image      104  0x113cb40000 3328x1872 fmt 13 levels 1 sw 27
+11d01ff900  gs       6 buffer     112  0x11e0007aa0 stride 32 records 25520 (816640 bytes) fmt 5
+11d01ff900  ps       0 image      112  0x8492374000 2048x2048 fmt 175 levels 8 sw 5
+11d01ff900  ps       2 image      112  0x80907c4000 512x512 fmt 13 levels 7 sw 5
+11d01ff900  ps       4 image      112  0x11d0078000 4x4 fmt 56 levels 1 sw 5
+11d01ff900  ps       6 buffer     112  0x11e0007aa0 stride 32 records 25520 (816640 bytes) fmt 5
