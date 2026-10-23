@@ -1,0 +1,8 @@
+[Unit]
+Description=BC5: compress capture journals older than two days (zstd)
+
+[Service]
+Type=oneshot
+ExecStart=%h/bc5-work/compress-old-captures.sh
+Nice=19
+IOSchedulingClass=idle
