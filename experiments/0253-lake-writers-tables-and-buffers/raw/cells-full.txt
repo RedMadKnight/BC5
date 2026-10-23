@@ -1,0 +1,27 @@
+# cells per frame and distinct cells, per run and window state (writer draws with <= 16 records)
+  W251a clean     40 frames: 81.0 cells/frame (median), 108 distinct, 78 in every frame; distinct by writer 11d090d900 5, 11d0a98300 7, 11d1d88300 65, 11d1dd6400 31
+  W251a mixed     39 frames: 81 cells/frame (median), 104 distinct, 0 in every frame; distinct by writer 11d090d900 5, 11d0a98300 7, 11d1d88300 61, 11d1dd6400 31
+  W251a patched    4 frames: 81.0 cells/frame (median), 86 distinct, 79 in every frame; distinct by writer 11d090d900 5, 11d0a98300 7, 11d1d88300 43, 11d1dd6400 31
+  W251b mixed     47 frames: 57 cells/frame (median), 58 distinct, 0 in every frame; distinct by writer 11d090d900 3, 11d0a98300 8, 11d1d88300 32, 11d1dd6400 15
+  W251b patched   78 frames: 57.0 cells/frame (median), 58 distinct, 56 in every frame; distinct by writer 11d090d900 3, 11d0a98300 8, 11d1d88300 32, 11d1dd6400 15
+# cells in every frame of A and in no frame of B (A -> B)
+  W251a clean    -> W251a mixed      0 of  78 (-)
+  W251a clean    -> W251a patched    0 of  78 (-)
+  W251a clean    -> W251b mixed     78 of  78 (11d090d900 5, 11d0a98300 7, 11d1d88300 35, 11d1dd6400 31)
+  W251a clean    -> W251b patched   78 of  78 (11d090d900 5, 11d0a98300 7, 11d1d88300 35, 11d1dd6400 31)
+  W251a mixed    -> W251a clean      0 of   0 (-)
+  W251a mixed    -> W251a patched    0 of   0 (-)
+  W251a mixed    -> W251b mixed      0 of   0 (-)
+  W251a mixed    -> W251b patched    0 of   0 (-)
+  W251a patched  -> W251a clean      0 of  79 (-)
+  W251a patched  -> W251a mixed      0 of  79 (-)
+  W251a patched  -> W251b mixed     79 of  79 (11d090d900 5, 11d0a98300 7, 11d1d88300 36, 11d1dd6400 31)
+  W251a patched  -> W251b patched   79 of  79 (11d090d900 5, 11d0a98300 7, 11d1d88300 36, 11d1dd6400 31)
+  W251b mixed    -> W251a clean      0 of   0 (-)
+  W251b mixed    -> W251a mixed      0 of   0 (-)
+  W251b mixed    -> W251a patched    0 of   0 (-)
+  W251b mixed    -> W251b patched    0 of   0 (-)
+  W251b patched  -> W251a clean     56 of  56 (11d090d900 3, 11d0a98300 7, 11d1d88300 31, 11d1dd6400 15)
+  W251b patched  -> W251a mixed     56 of  56 (11d090d900 3, 11d0a98300 7, 11d1d88300 31, 11d1dd6400 15)
+  W251b patched  -> W251a patched   56 of  56 (11d090d900 3, 11d0a98300 7, 11d1d88300 31, 11d1dd6400 15)
+  W251b patched  -> W251b mixed      0 of  56 (-)

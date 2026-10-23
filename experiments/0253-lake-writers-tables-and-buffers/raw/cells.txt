@@ -1,0 +1,38 @@
+# cells per frame and distinct cells, per run and window state (writer draws with <= 16 records)
+  H1 mixed         5 frames: 29 cells/frame (median), 29 distinct, 29 in every frame; distinct by writer 11d090d900 4, 11d0a98300 2, 11d1d88300 9, 11d1dd6400 14
+  W251a clean     40 frames: 33.0 cells/frame (median), 59 distinct, 31 in every frame; distinct by writer 11d090d900 4, 11d0a98300 2, 11d1d88300 37, 11d1dd6400 16
+  W251a mixed     39 frames: 33 cells/frame (median), 55 distinct, 0 in every frame; distinct by writer 11d090d900 4, 11d0a98300 2, 11d1d88300 33, 11d1dd6400 16
+  W251a patched    4 frames: 33.0 cells/frame (median), 38 distinct, 32 in every frame; distinct by writer 11d090d900 4, 11d0a98300 2, 11d1d88300 16, 11d1dd6400 16
+  W251b mixed     47 frames: 26 cells/frame (median), 26 distinct, 0 in every frame; distinct by writer 11d090d900 3, 11d0a98300 2, 11d1d88300 9, 11d1dd6400 12
+  W251b patched   78 frames: 26.0 cells/frame (median), 26 distinct, 26 in every frame; distinct by writer 11d090d900 3, 11d0a98300 2, 11d1d88300 9, 11d1dd6400 12
+# cells in every frame of A and in no frame of B (A -> B)
+  H1 mixed       -> W251a clean     29 of  29 (11d090d900 4, 11d0a98300 2, 11d1d88300 9, 11d1dd6400 14)
+  H1 mixed       -> W251a mixed     29 of  29 (11d090d900 4, 11d0a98300 2, 11d1d88300 9, 11d1dd6400 14)
+  H1 mixed       -> W251a patched   29 of  29 (11d090d900 4, 11d0a98300 2, 11d1d88300 9, 11d1dd6400 14)
+  H1 mixed       -> W251b mixed     29 of  29 (11d090d900 4, 11d0a98300 2, 11d1d88300 9, 11d1dd6400 14)
+  H1 mixed       -> W251b patched   29 of  29 (11d090d900 4, 11d0a98300 2, 11d1d88300 9, 11d1dd6400 14)
+  W251a clean    -> H1 mixed        31 of  31 (11d090d900 4, 11d0a98300 2, 11d1d88300 9, 11d1dd6400 16)
+  W251a clean    -> W251a mixed      0 of  31 (-)
+  W251a clean    -> W251a patched    0 of  31 (-)
+  W251a clean    -> W251b mixed     31 of  31 (11d090d900 4, 11d0a98300 2, 11d1d88300 9, 11d1dd6400 16)
+  W251a clean    -> W251b patched   31 of  31 (11d090d900 4, 11d0a98300 2, 11d1d88300 9, 11d1dd6400 16)
+  W251a mixed    -> H1 mixed         0 of   0 (-)
+  W251a mixed    -> W251a clean      0 of   0 (-)
+  W251a mixed    -> W251a patched    0 of   0 (-)
+  W251a mixed    -> W251b mixed      0 of   0 (-)
+  W251a mixed    -> W251b patched    0 of   0 (-)
+  W251a patched  -> H1 mixed        32 of  32 (11d090d900 4, 11d0a98300 2, 11d1d88300 10, 11d1dd6400 16)
+  W251a patched  -> W251a clean      0 of  32 (-)
+  W251a patched  -> W251a mixed      0 of  32 (-)
+  W251a patched  -> W251b mixed     32 of  32 (11d090d900 4, 11d0a98300 2, 11d1d88300 10, 11d1dd6400 16)
+  W251a patched  -> W251b patched   32 of  32 (11d090d900 4, 11d0a98300 2, 11d1d88300 10, 11d1dd6400 16)
+  W251b mixed    -> H1 mixed         0 of   0 (-)
+  W251b mixed    -> W251a clean      0 of   0 (-)
+  W251b mixed    -> W251a mixed      0 of   0 (-)
+  W251b mixed    -> W251a patched    0 of   0 (-)
+  W251b mixed    -> W251b patched    0 of   0 (-)
+  W251b patched  -> H1 mixed        26 of  26 (11d090d900 3, 11d0a98300 2, 11d1d88300 9, 11d1dd6400 12)
+  W251b patched  -> W251a clean     26 of  26 (11d090d900 3, 11d0a98300 2, 11d1d88300 9, 11d1dd6400 12)
+  W251b patched  -> W251a mixed     26 of  26 (11d090d900 3, 11d0a98300 2, 11d1d88300 9, 11d1dd6400 12)
+  W251b patched  -> W251a patched   26 of  26 (11d090d900 3, 11d0a98300 2, 11d1d88300 9, 11d1dd6400 12)
+  W251b patched  -> W251b mixed      0 of  26 (-)

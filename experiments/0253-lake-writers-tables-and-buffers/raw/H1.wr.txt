@@ -1,0 +1,923 @@
+# /home/kjaniszewski/bc5-data/captures/play-20261023-2113/gc/direct.log: 120 writer draws (unknown 120)
+== ps 11d1d88300: 60 draws (unknown 60)
+  (1) gs user data: 0:<60 values> 1:00100011 2:<9 values> 3:00005204 4:<6 values> 5:00100011 6:00000028 7:0004dfac 8:<6 values> 9:00100011 10:0000004d 11:0004dfac 12:<60 values> 13:00100011 14:00000001 15:0004dfac 16:<6 values> 17:00100011 18:000000a8 19:0004dfac 21:00100011 22:0000000c 23:0004dfac 24:<6 values> 25:00100011 26:000000a8 27:0004dfac
+  (1) ps user data: 0:11d007d0 1:c3800000 2:0000c000 3:90500fac 5:00700000 8:11d007d0 9:c3800000 10:0000c000 11:90500fac 13:00700000 16:<60 values> 17:00100011 18:<9 values> 19:00005204 20:e0007aa0 21:00200011 22:000063d4 23:00005204 24:e0001a00 25:00100011 26:00000038 27:00005204 28:<60 values> 29:00000011 30:000000a8 31:0004dfac
+  (2) table gs ud0: 60 draws, 60 distinct addresses
+      dword  5: buffer 0x170000039d stride 0 records 93924 fmt 2 (1 draws)
+      dword  5: buffer 0x1e000003a6 stride 0 records 93998 fmt 2 (1 draws)
+      dword  5: buffer 0x860000037c stride 0 records 24016 fmt 2 (1 draws)
+      dword  6: buffer 0x1c0005000e stride 0 records 8256 fmt 8 (1 draws)
+      dword  9: buffer 0x8000000380 stride 0 records 24016 fmt 2 (1 draws)
+      dword 13: buffer 0x850000037f stride 0 records 24016 fmt 2 (1 draws)
+      dword 21: buffer 0x850000037f stride 0 records 24016 fmt 2 (1 draws)
+      dword 25: buffer 0x8000000380 stride 0 records 24016 fmt 2 (1 draws)
+      dword 29: buffer 0x850000037f stride 0 records 24016 fmt 2 (1 draws)
+      dword 33: buffer 0x8000000380 stride 0 records 24016 fmt 2 (1 draws)
+      dword 37: buffer 0x4400000000 stride 0 records 32 fmt 2 (1 draws)
+      dword 37: buffer 0x7600000000 stride 0 records 33 fmt 2 (1 draws)
+      dword 41: buffer 0x8000000380 stride 0 records 24016 fmt 2 (1 draws)
+      dword 45: buffer 0x180000039f stride 0 records 611940 fmt 2 (1 draws)
+      dword 45: buffer 0x20000003a8 stride 0 records 612025 fmt 2 (1 draws)
+      dword 46: buffer 0x1c000d000e stride 0 records 8272 fmt 20 (1 draws)
+      dword 53: buffer 0x20000003a9 stride 0 records 93949 fmt 2 (1 draws)
+      dword 53: buffer 0x24000003bb stride 0 records 612025 fmt 2 (1 draws)
+      dword 54: buffer 0x1c0019000e stride 0 records 8272 fmt 22 (1 draws)
+      other dwords: 1 constant, 17 varying (1 2 3 4 17 18 19 20 50 51 52 58 59 60 61 62 63)
+    (3) dword  1: unknown 10 distinct; float 6.07645e-36..4.78758e-07; int 83966804..889226238
+    (3) dword  2: unknown 7 distinct; float 6.47272e-32..1.93308e-29; int 195562134..264505765
+    (3) dword  3: unknown 3 distinct; float 4.20721e-38..9.48201e-38; int 23400448..33624064
+    (3) dword  4: unknown 2 distinct; float 1.4013e-45..1.15915e-41; int 1..8272
+    (3) dword 17: unknown 10 distinct; float 6.07645e-36..3.06404e-05; int 83966804..939557847
+    (3) dword 18: unknown 9 distinct; float 6.93489e-32..1.46468e-19; int 196348475..539814749
+    (3) dword 19: unknown 4 distinct; float 1.39647e-38..5.62263e-38; int 9965568..26808320
+    (3) dword 20: unknown 3 distinct; float 1.4013e-45..1.15915e-41; int 1..8272
+    (3) dword 50: unknown 7 distinct; float 4.39192e-32..8.48211e-30; int 191105702..254544286
+    (3) dword 51: unknown 4 distinct; float 1.39647e-38..9.48201e-38; int 9965568..33624064
+    (3) dword 52: unknown 2 distinct; float 1.4013e-45..1.15915e-41; int 1..8272
+    (3) dword 58: unknown 10 distinct; float -32.5009..1.93308e-29; int 178806784..3254911204
+    (3) dword 59: unknown 8 distinct; float 4.2039e-45..1; int 3..2147450879
+    (3) dword 60: unknown 2 distinct; float 1.4013e-45..1.15915e-41; int 1..8272
+    (3) dword 61: unknown 13 distinct; float 1.27658e-42..3.01362e-08; int 911..855732003
+    (3) dword 62: unknown 12 distinct; float 3.92364e-44..1.77531e-29; int 28..263457194
+    (3) dword 63: unknown 9 distinct; float 5.60519e-45..5.62263e-38; int 4..26808320
+  (2) table gs ud4: 60 draws, 6 distinct addresses
+      dword  0: image 0x5fbf0f313700 5217x15697 fmt 300 (60 draws)
+      dword 48: image 0x5fbf0f313700 5217x15697 fmt 300 (60 draws)
+      other dwords: 36 constant, 12 varying (16 17 20 21 24 25 32 33 36 37 40 41)
+    (3) dword 16: unknown 6 distinct; float -0.775993..-0.775511; int 3209070566..3209078646
+    (3) dword 17: unknown 6 distinct; float 0.670758..0.671614; int 1059829452..1059843816
+    (3) dword 20: unknown 6 distinct; float -0.000140226..6.16797e-05; int 933778027..3105032625
+    (3) dword 21: unknown 6 distinct; float 2.32898..2.32934; int 1075121677..1075123183
+    (3) dword 24: unknown 6 distinct; float 1.14969..1.15001; int 1066608867..1066611593
+    (3) dword 25: unknown 6 distinct; float 0.452611..0.453188; int 1055374487..1055393872
+    (3) dword 32: unknown 6 distinct; float -0.775993..-0.775511; int 3209070566..3209078646
+    (3) dword 33: unknown 6 distinct; float 0.670758..0.671614; int 1059829452..1059843816
+    (3) dword 36: unknown 6 distinct; float -0.000140226..6.16797e-05; int 933778027..3105032625
+    (3) dword 37: unknown 6 distinct; float 2.32898..2.32934; int 1075121677..1075123183
+    (3) dword 40: unknown 6 distinct; float 1.14969..1.15001; int 1066608867..1066611593
+    (3) dword 41: unknown 6 distinct; float 0.452611..0.453188; int 1055374487..1055393872
+  (2) table gs ud8: 60 draws, 6 distinct addresses
+      other dwords: 57 constant, 7 varying (7 8 9 20 21 22 23)
+    (3) dword  7: unknown 6 distinct; float 1.43031e-41..1.43101e-41; int 10207..10212
+    (3) dword  8: unknown 2 distinct; float 256..416; int 1132462080..1137704960
+    (3) dword  9: unknown 2 distinct; float 144..234; int 1125122048..1131020288
+    (3) dword 20: unknown 2 distinct; float 128..208; int 1124073472..1129316352
+    (3) dword 21: unknown 2 distinct; float 72..117; int 1116733440..1122631680
+    (3) dword 22: unknown 2 distinct; float 0.00480769..0.0078125; int 1000180185..1006632959
+    (3) dword 23: unknown 2 distinct; float 0.00854701..0.0138889; int 1007421633..1013157432
+  (2) table gs ud12: 60 draws, 60 distinct addresses
+      dword  1: buffer 0x170000039d stride 0 records 93924 fmt 2 (1 draws)
+      dword  1: buffer 0x1e000003a6 stride 0 records 93998 fmt 2 (1 draws)
+      dword  1: buffer 0x8000000380 stride 0 records 24016 fmt 2 (1 draws)
+      dword  1: buffer 0x860000037c stride 0 records 24016 fmt 2 (1 draws)
+      dword  2: buffer 0x1c0005000e stride 0 records 8256 fmt 8 (1 draws)
+      dword  9: buffer 0x850000037f stride 0 records 24016 fmt 2 (1 draws)
+      dword 17: buffer 0x850000037f stride 0 records 24016 fmt 2 (1 draws)
+      dword 21: buffer 0x8000000380 stride 0 records 24016 fmt 2 (1 draws)
+      dword 25: buffer 0x850000037f stride 0 records 24016 fmt 2 (1 draws)
+      dword 29: buffer 0x8000000380 stride 0 records 24016 fmt 2 (1 draws)
+      dword 33: buffer 0x4400000000 stride 0 records 32 fmt 2 (1 draws)
+      dword 33: buffer 0x7600000000 stride 0 records 33 fmt 2 (1 draws)
+      dword 37: buffer 0x8000000380 stride 0 records 24016 fmt 2 (1 draws)
+      dword 41: buffer 0x180000039f stride 0 records 611940 fmt 2 (1 draws)
+      dword 41: buffer 0x20000003a8 stride 0 records 612025 fmt 2 (1 draws)
+      dword 42: buffer 0x1c000d000e stride 0 records 8272 fmt 20 (1 draws)
+      dword 49: buffer 0x20000003a9 stride 0 records 93949 fmt 2 (1 draws)
+      dword 49: buffer 0x24000003bb stride 0 records 612025 fmt 2 (1 draws)
+      dword 50: buffer 0x1c0019000e stride 0 records 8272 fmt 22 (1 draws)
+      dword 57: buffer 0x1c0000038f stride 0 records 611985 fmt 2 (1 draws)
+      dword 58: buffer 0x4400003bc5 stride 5 records 8272 fmt 19 (1 draws)
+      other dwords: 1 constant, 15 varying (6 7 8 13 14 15 16 46 47 48 54 55 56 62 63)
+    (3) dword  6: unknown 9 distinct; float 6.93489e-32..2.24864e-29; int 196348475..266603033
+    (3) dword  7: unknown 5 distinct; float 1.39647e-38..5.62263e-38; int 9965568..26808320
+    (3) dword  8: unknown 3 distinct; float 1.4013e-45..1.15915e-41; int 1..8272
+    (3) dword 13: unknown 10 distinct; float 6.07645e-36..3.06404e-05; int 83966804..939557851
+    (3) dword 14: unknown 10 distinct; float 6.93489e-32..3.79781e-15; int 196348475..663278740
+    (3) dword 15: unknown 6 distinct; float 1.39647e-38..5.62263e-38; int 9965568..26808320
+    (3) dword 16: unknown 3 distinct; float 1.4013e-45..1.15915e-41; int 1..8272
+    (3) dword 46: unknown 7 distinct; float 4.39192e-32..1.26258e-29; int 191105702..260049513
+    (3) dword 47: unknown 5 distinct; float 1.39647e-38..9.48201e-38; int 9965568..33624064
+    (3) dword 48: unknown 2 distinct; float 1.4013e-45..1.15915e-41; int 1..8272
+    (3) dword 54: unknown 7 distinct; float 4.39192e-32..1.93308e-29; int 191105702..264505765
+    (3) dword 55: unknown 5 distinct; float 1.39647e-38..5.62263e-38; int 9965568..26808320
+    (3) dword 56: unknown 2 distinct; float 1.4013e-45..1.15915e-41; int 1..8272
+    (3) dword 62: unknown 11 distinct; float -32.5009..8.48211e-30; int 178806784..3254911204
+    (3) dword 63: unknown 7 distinct; float 4.2039e-45..1; int 3..2147450879
+  (2) table gs ud16: 60 draws, 6 distinct addresses
+      dword  0: image 0x11d0886000 128x64 fmt 22 (60 draws)
+      dword  8: image 0x11d088e000 64x32 fmt 22 (60 draws)
+      dword 16: image 0x11d0890000 32x16 fmt 22 (60 draws)
+      dword 24: image 0x11d0891000 16x8 fmt 22 (60 draws)
+      dword 32: image 0x11d0892000 8x4 fmt 22 (60 draws)
+      dword 40: image 0x1162e60000 256x256 fmt 20 (60 draws)
+      dword 48: image 0x848a4fc000 1024x1024 fmt 179 (60 draws)
+      dword 56: image 0x119975c000 256x256 fmt 179 (60 draws)
+      other dwords: 0 constant, 0 varying (-)
+  (2) table gs ud24: 60 draws, 6 distinct addresses
+      dword  0: image 0x11d0886000 128x64 fmt 22 (60 draws)
+      dword  8: image 0x11d088e000 64x32 fmt 22 (60 draws)
+      dword 16: image 0x11d0890000 32x16 fmt 22 (60 draws)
+      dword 24: image 0x11d0891000 16x8 fmt 22 (60 draws)
+      dword 32: image 0x11d0892000 8x4 fmt 22 (60 draws)
+      dword 40: image 0x1162e60000 256x256 fmt 20 (60 draws)
+      dword 48: image 0x848a4fc000 1024x1024 fmt 179 (60 draws)
+      dword 56: image 0x119975c000 256x256 fmt 179 (60 draws)
+      other dwords: 0 constant, 0 varying (-)
+  (2) table ps ud16: 60 draws, 60 distinct addresses
+      dword  5: buffer 0x170000039d stride 0 records 93924 fmt 2 (1 draws)
+      dword  5: buffer 0x1e000003a6 stride 0 records 93998 fmt 2 (1 draws)
+      dword  5: buffer 0x860000037c stride 0 records 24016 fmt 2 (1 draws)
+      dword  6: buffer 0x1c0005000e stride 0 records 8256 fmt 8 (1 draws)
+      dword  9: buffer 0x8000000380 stride 0 records 24016 fmt 2 (1 draws)
+      dword 13: buffer 0x850000037f stride 0 records 24016 fmt 2 (1 draws)
+      dword 21: buffer 0x850000037f stride 0 records 24016 fmt 2 (1 draws)
+      dword 25: buffer 0x8000000380 stride 0 records 24016 fmt 2 (1 draws)
+      dword 29: buffer 0x850000037f stride 0 records 24016 fmt 2 (1 draws)
+      dword 33: buffer 0x8000000380 stride 0 records 24016 fmt 2 (1 draws)
+      dword 37: buffer 0x4400000000 stride 0 records 32 fmt 2 (1 draws)
+      dword 37: buffer 0x7600000000 stride 0 records 33 fmt 2 (1 draws)
+      dword 41: buffer 0x8000000380 stride 0 records 24016 fmt 2 (1 draws)
+      dword 45: buffer 0x180000039f stride 0 records 611940 fmt 2 (1 draws)
+      dword 45: buffer 0x20000003a8 stride 0 records 612025 fmt 2 (1 draws)
+      dword 46: buffer 0x1c000d000e stride 0 records 8272 fmt 20 (1 draws)
+      dword 53: buffer 0x20000003a9 stride 0 records 93949 fmt 2 (1 draws)
+      dword 53: buffer 0x24000003bb stride 0 records 612025 fmt 2 (1 draws)
+      dword 54: buffer 0x1c0019000e stride 0 records 8272 fmt 22 (1 draws)
+      other dwords: 1 constant, 17 varying (1 2 3 4 17 18 19 20 50 51 52 58 59 60 61 62 63)
+    (3) dword  1: unknown 10 distinct; float 6.07645e-36..4.78758e-07; int 83966804..889226238
+    (3) dword  2: unknown 7 distinct; float 6.47272e-32..1.93308e-29; int 195562134..264505765
+    (3) dword  3: unknown 3 distinct; float 4.20721e-38..9.48201e-38; int 23400448..33624064
+    (3) dword  4: unknown 2 distinct; float 1.4013e-45..1.15915e-41; int 1..8272
+    (3) dword 17: unknown 10 distinct; float 6.07645e-36..3.06404e-05; int 83966804..939557847
+    (3) dword 18: unknown 9 distinct; float 6.93489e-32..1.46468e-19; int 196348475..539814749
+    (3) dword 19: unknown 4 distinct; float 1.39647e-38..5.62263e-38; int 9965568..26808320
+    (3) dword 20: unknown 3 distinct; float 1.4013e-45..1.15915e-41; int 1..8272
+    (3) dword 50: unknown 7 distinct; float 4.39192e-32..8.48211e-30; int 191105702..254544286
+    (3) dword 51: unknown 4 distinct; float 1.39647e-38..9.48201e-38; int 9965568..33624064
+    (3) dword 52: unknown 2 distinct; float 1.4013e-45..1.15915e-41; int 1..8272
+    (3) dword 58: unknown 10 distinct; float -32.5009..1.93308e-29; int 178806784..3254911204
+    (3) dword 59: unknown 8 distinct; float 4.2039e-45..1; int 3..2147450879
+    (3) dword 60: unknown 2 distinct; float 1.4013e-45..1.15915e-41; int 1..8272
+    (3) dword 61: unknown 13 distinct; float 1.27658e-42..3.01362e-08; int 911..855732003
+    (3) dword 62: unknown 12 distinct; float 3.92364e-44..1.77531e-29; int 28..263457194
+    (3) dword 63: unknown 9 distinct; float 5.60519e-45..5.62263e-38; int 4..26808320
+  (2) table ps ud20: 60 draws, 1 distinct addresses
+      dword  0: image 0x1125f00000 3840x2160 fmt 50 (60 draws)
+      dword  8: image 0x1125f00000 3840x2160 fmt 50 (60 draws)
+      dword 16: image 0x1125f00000 2560x1440 fmt 50 (60 draws)
+      dword 24: image 0x1125f00000 2560x1440 fmt 50 (60 draws)
+      dword 32: image 0x1127ee0000 3840x2160 fmt 50 (60 draws)
+      dword 40: image 0x1127ee0000 3840x2160 fmt 50 (60 draws)
+      dword 48: image 0x1127ee0000 2560x1440 fmt 50 (60 draws)
+      dword 56: image 0x1127ee0000 2560x1440 fmt 50 (60 draws)
+      other dwords: 0 constant, 0 varying (-)
+  (2) table ps ud24: 60 draws, 1 distinct addresses
+      other dwords: 64 constant, 0 varying (-)
+  (2) table ps ud28: 60 draws, 60 distinct addresses
+      dword  0: buffer 0x1122498bd0 stride 16 records 40 fmt 77 (10 draws)
+      dword  0: buffer 0x11224cb9b0 stride 16 records 40 fmt 77 (10 draws)
+      dword  0: buffer 0x11224ff630 stride 16 records 40 fmt 77 (10 draws)
+      dword  0: buffer 0x1122532b60 stride 16 records 40 fmt 77 (10 draws)
+      dword  0: buffer 0x1122565940 stride 16 records 40 fmt 77 (10 draws)
+      dword  0: buffer 0x1122598720 stride 16 records 40 fmt 77 (10 draws)
+      dword  4: buffer 0x1122497800 stride 16 records 77 fmt 77 (10 draws)
+      dword  4: buffer 0x11224ca5e0 stride 16 records 77 fmt 77 (10 draws)
+      dword  4: buffer 0x11224fe260 stride 16 records 77 fmt 77 (10 draws)
+      dword  4: buffer 0x1122531790 stride 16 records 77 fmt 77 (10 draws)
+      dword  4: buffer 0x1122564570 stride 16 records 77 fmt 77 (10 draws)
+      dword  4: buffer 0x1122597350 stride 16 records 77 fmt 77 (10 draws)
+      dword  8: buffer 0x1123713b00 stride 16 records 168 fmt 77 (10 draws)
+      dword  8: buffer 0x1123a58680 stride 16 records 168 fmt 77 (10 draws)
+      dword  8: buffer 0x1123a7dd00 stride 16 records 168 fmt 77 (10 draws)
+      dword  8: buffer 0x1123aa3380 stride 16 records 168 fmt 77 (10 draws)
+      dword  8: buffer 0x1123ac8a00 stride 16 records 168 fmt 77 (10 draws)
+      dword  8: buffer 0x1123aee080 stride 16 records 168 fmt 77 (10 draws)
+      dword 12: buffer 0x1122498bd0 stride 16 records 40 fmt 77 (5 draws)
+      dword 12: buffer 0x11224cb9b0 stride 16 records 40 fmt 77 (5 draws)
+      dword 12: buffer 0x11224ff630 stride 16 records 40 fmt 77 (4 draws)
+      dword 12: buffer 0x1122532b60 stride 16 records 40 fmt 77 (5 draws)
+      dword 12: buffer 0x1122565940 stride 16 records 40 fmt 77 (5 draws)
+      dword 12: buffer 0x1122598720 stride 16 records 40 fmt 77 (4 draws)
+      dword 16: buffer 0x1122497800 stride 16 records 77 fmt 77 (5 draws)
+      dword 16: buffer 0x11224ca5e0 stride 16 records 77 fmt 77 (5 draws)
+      dword 16: buffer 0x11224fe260 stride 16 records 77 fmt 77 (4 draws)
+      dword 16: buffer 0x1122531790 stride 16 records 77 fmt 77 (5 draws)
+      dword 16: buffer 0x1122564570 stride 16 records 77 fmt 77 (5 draws)
+      dword 16: buffer 0x1122597350 stride 16 records 77 fmt 77 (4 draws)
+      dword 20: buffer 0x1123713b00 stride 16 records 168 fmt 77 (4 draws)
+      dword 20: buffer 0x1123a58680 stride 16 records 168 fmt 77 (5 draws)
+      dword 20: buffer 0x1123a7dd00 stride 16 records 168 fmt 77 (5 draws)
+      dword 20: buffer 0x1123aa3380 stride 16 records 168 fmt 77 (4 draws)
+      dword 20: buffer 0x1123ac8a00 stride 16 records 168 fmt 77 (5 draws)
+      dword 20: buffer 0x1123aee080 stride 16 records 168 fmt 77 (5 draws)
+      dword 22: buffer 0x3c0000000b stride 0 records 200 fmt 1 (6 draws)
+      dword 24: buffer 0x1122498bd0 stride 16 records 40 fmt 77 (2 draws)
+      dword 24: buffer 0x11224cb9b0 stride 16 records 40 fmt 77 (2 draws)
+      dword 24: buffer 0x11224ff630 stride 16 records 40 fmt 77 (1 draws)
+      dword 24: buffer 0x1122532b60 stride 16 records 40 fmt 77 (2 draws)
+      dword 24: buffer 0x1122565940 stride 16 records 40 fmt 77 (2 draws)
+      dword 24: buffer 0x1122598720 stride 16 records 40 fmt 77 (1 draws)
+      dword 28: buffer 0x1122497800 stride 16 records 77 fmt 77 (2 draws)
+      dword 28: buffer 0x11224ca5e0 stride 16 records 77 fmt 77 (2 draws)
+      dword 28: buffer 0x11224fe260 stride 16 records 77 fmt 77 (1 draws)
+      dword 28: buffer 0x1122531790 stride 16 records 77 fmt 77 (2 draws)
+      dword 28: buffer 0x1122564570 stride 16 records 77 fmt 77 (2 draws)
+      dword 28: buffer 0x1122597350 stride 16 records 77 fmt 77 (1 draws)
+      dword 32: buffer 0x1123713b00 stride 16 records 168 fmt 77 (1 draws)
+      dword 32: buffer 0x1123a58680 stride 16 records 168 fmt 77 (2 draws)
+      dword 32: buffer 0x1123a7dd00 stride 16 records 168 fmt 77 (2 draws)
+      dword 32: buffer 0x1123aa3380 stride 16 records 168 fmt 77 (1 draws)
+      dword 32: buffer 0x1123ac8a00 stride 16 records 168 fmt 77 (2 draws)
+      dword 32: buffer 0x1123aee080 stride 16 records 168 fmt 77 (2 draws)
+      dword 34: buffer 0x2a0000008b stride 9 records 8 fmt 29 (6 draws)
+      dword 34: buffer 0x3c0000000b stride 0 records 200 fmt 1 (4 draws)
+      dword 36: buffer 0x1122565940 stride 16 records 40 fmt 77 (1 draws)
+      dword 40: buffer 0x1122564570 stride 16 records 77 fmt 77 (1 draws)
+      dword 40: image 0x500000000600 25x1 fmt 16 (6 draws)
+      dword 44: buffer 0x1123aee080 stride 16 records 168 fmt 77 (1 draws)
+      dword 46: buffer 0x2a0000008b stride 9 records 8 fmt 29 (4 draws)
+      dword 46: buffer 0x3c0000000b stride 0 records 200 fmt 1 (3 draws)
+      dword 58: buffer 0x2a0000008b stride 9 records 8 fmt 29 (9 draws)
+      dword 58: buffer 0x3c0000000b stride 0 records 200 fmt 1 (4 draws)
+      other dwords: 0 constant, 10 varying (50 51 52 53 54 55 56 57 62 63)
+    (3) dword 50: unknown 9 distinct; float 1.26117e-44..6.78228e-43; int 9..484
+    (3) dword 51: unknown 7 distinct; float 0..4.33681e-19; int 0..553648128
+    (3) dword 52: unknown 9 distinct; float 8.40779e-45..1.09862e-42; int 6..784
+    (3) dword 53: unknown 8 distinct; float 0..9.01387e+15; int 0..1509955648
+    (3) dword 54: unknown 10 distinct; float 8.40779e-45..1.02855e-42; int 6..734
+    (3) dword 55: unknown 10 distinct; float -245445..4.33681e-19; int 6..3362763066
+    (3) dword 56: unknown 10 distinct; float 1.4013e-44..7.24471e-43; int 10..517
+    (3) dword 57: unknown 10 distinct; float 4.2039e-45..4.33681e-19; int 3..553648128
+    (3) dword 62: unknown 10 distinct; float 1.26117e-44..1.03136e-42; int 9..736
+    (3) dword 63: unknown 8 distinct; float 0..4.33681e-19; int 0..553648128
+== ps 11d1dd6400: 42 draws (unknown 42)
+  (1) gs user data: 0:<42 values> 1:00100011 2:<12 values> 3:00005204 4:<6 values> 5:00100011 6:00000028 7:0004dfac 8:<6 values> 9:00100011 10:0000004d 11:0004dfac 12:<42 values> 13:00100011 14:00000001 15:0004dfac 16:<6 values> 17:00100011 18:000000a8 19:0004dfac 21:00100011 22:0000000c 23:0004dfac 24:<6 values> 25:00100011 26:000000a8 27:0004dfac
+  (1) ps user data: 0:11d007d0 1:c3800000 2:0000c000 3:90500fac 5:00700000 8:11d007d0 9:c3800000 10:0000c000 11:90500fac 13:00700000 16:<42 values> 17:00100011 18:<12 values> 19:00005204 20:e0007aa0 21:00200011 22:000063d4 23:00005204 24:e0001a00 25:00100011 26:00000038 27:00005204 28:<42 values> 29:00000011 30:000000a8 31:0004dfac
+  (2) table gs ud0: 42 draws, 42 distinct addresses
+      dword  5: buffer 0x850000037f stride 0 records 24016 fmt 2 (1 draws)
+      dword 17: buffer 0x8000000380 stride 0 records 24016 fmt 2 (1 draws)
+      dword 29: buffer 0x4400000000 stride 0 records 32 fmt 2 (1 draws)
+      dword 29: buffer 0x7600000000 stride 0 records 33 fmt 2 (1 draws)
+      dword 37: buffer 0x180000039f stride 0 records 611940 fmt 2 (1 draws)
+      dword 37: buffer 0x20000003a8 stride 0 records 612025 fmt 2 (1 draws)
+      dword 38: buffer 0x1c000d000e stride 0 records 8272 fmt 20 (1 draws)
+      dword 45: buffer 0x20000003a9 stride 0 records 93949 fmt 2 (1 draws)
+      dword 45: buffer 0x24000003bb stride 0 records 612025 fmt 2 (1 draws)
+      dword 46: buffer 0x1c0019000e stride 0 records 8272 fmt 22 (1 draws)
+      dword 53: buffer 0x1c0000038f stride 0 records 611985 fmt 2 (1 draws)
+      dword 54: buffer 0x4400003bc5 stride 5 records 8272 fmt 19 (1 draws)
+      other dwords: 0 constant, 37 varying (0 1 2 3 4 9 10 11 12 13 14 15 16 21 22 23 24 25 26 27 28 33 34 35 36 42 43 44 50 51 52 58 59 60 61 62 63)
+    (3) dword  0: unknown 2 distinct; float 1.15691e-41..1.15915e-41; int 8256..8272
+    (3) dword  1: unknown 7 distinct; float 3.98847e-31..3.06404e-05; int 218197737..939557847
+    (3) dword  2: unknown 6 distinct; float 8.32162e-32..2.24864e-29; int 198707877..266603033
+    (3) dword  3: unknown 5 distinct; float 1.39647e-38..4.20721e-38; int 9965568..23400448
+    (3) dword  4: unknown 3 distinct; float 1.4013e-45..1.15915e-41; int 1..8272
+    (3) dword  9: unknown 7 distinct; float 6.61266e-33..3.06404e-05; int 168384239..939557851
+    (3) dword 10: unknown 7 distinct; float 8.48211e-30..3.79781e-15; int 254544286..663278740
+    (3) dword 11: unknown 5 distinct; float 1.87402e-38..4.20721e-38; int 13373440..23400448
+    (3) dword 12: unknown 3 distinct; float 1.4013e-45..1.15915e-41; int 1..8272
+    (3) dword 13: unknown 10 distinct; float 1.25977e-42..3.06404e-05; int 899..939557851
+    (3) dword 14: unknown 12 distinct; float 6.31299e-30..3.79774e-15; int 251661031..2147450879
+    (3) dword 15: unknown 6 distinct; float 5.73972e-42..4.20721e-38; int 4096..2147450879
+    (3) dword 16: unknown 3 distinct; float 1.4013e-45..1.15915e-41; int 1..8272
+    (3) dword 21: unknown 7 distinct; float 2.8401e-23..3.27441e-05; int 436819637..940136121
+    (3) dword 22: unknown 6 distinct; float 4.39192e-32..1.45752e-19; int 191105702..539759323
+    (3) dword 23: unknown 5 distinct; float 9.55663e-39..5.62263e-38; int 6819840..26808320
+    (3) dword 24: unknown 2 distinct; float 1.4013e-45..1.15915e-41; int 1..8272
+    (3) dword 25: unknown 13 distinct; float 1.26117e-42..3.06408e-05; int 900..939557973
+    (3) dword 26: unknown 16 distinct; float 4.34403e-44..131.295; int 31..1124289404
+    (3) dword 27: unknown 12 distinct; float -18..5.62263e-38; int 0..3247439872
+    (3) dword 28: unknown 2 distinct; float 0..1.15915e-41; int 0..8272
+    (3) dword 33: unknown 7 distinct; float 1.62214e-27..7.71565e-06; int 318801107..922841718
+    (3) dword 34: unknown 6 distinct; float 4.39192e-32..3.23507e-29; int 191105702..270797225
+    (3) dword 35: unknown 5 distinct; float 1.39647e-38..5.62263e-38; int 9965568..26808320
+    (3) dword 36: unknown 2 distinct; float 1.4013e-45..1.15915e-41; int 1..8272
+    (3) dword 42: unknown 6 distinct; float 4.39192e-32..1.77531e-29; int 191105702..263457194
+    (3) dword 43: unknown 5 distinct; float 1.39647e-38..9.48201e-38; int 9965568..33624064
+    (3) dword 44: unknown 2 distinct; float 1.4013e-45..1.15915e-41; int 1..8272
+    (3) dword 50: unknown 5 distinct; float 4.39192e-32..1.93308e-29; int 191105702..264505765
+    (3) dword 51: unknown 5 distinct; float 1.39647e-38..5.62263e-38; int 9965568..26808320
+    (3) dword 52: unknown 2 distinct; float 1.4013e-45..1.15915e-41; int 1..8272
+    (3) dword 58: unknown 6 distinct; float 4.39192e-32..1.77531e-29; int 191105702..263457194
+    (3) dword 59: unknown 3 distinct; float 1.39647e-38..5.62263e-38; int 9965568..26808320
+    (3) dword 60: unknown 2 distinct; float 1.4013e-45..1.15915e-41; int 1..8272
+    (3) dword 61: unknown 10 distinct; float 1.27798e-42..3.27441e-05; int 912..940136121
+    (3) dword 62: unknown 10 distinct; float 5.60519e-45..8.48211e-30; int 4..254544286
+    (3) dword 63: unknown 9 distinct; float 3.64338e-44..5.62263e-38; int 26..26808320
+  (2) table gs ud4: 42 draws, 6 distinct addresses
+      dword  0: image 0x5fbf0f313700 5217x15697 fmt 300 (42 draws)
+      dword 48: image 0x5fbf0f313700 5217x15697 fmt 300 (42 draws)
+      other dwords: 36 constant, 12 varying (16 17 20 21 24 25 32 33 36 37 40 41)
+    (3) dword 16: unknown 6 distinct; float -0.775993..-0.775511; int 3209070566..3209078646
+    (3) dword 17: unknown 6 distinct; float 0.670758..0.671614; int 1059829452..1059843816
+    (3) dword 20: unknown 6 distinct; float -0.000140226..6.16797e-05; int 933778027..3105032625
+    (3) dword 21: unknown 6 distinct; float 2.32898..2.32934; int 1075121677..1075123183
+    (3) dword 24: unknown 6 distinct; float 1.14969..1.15001; int 1066608867..1066611593
+    (3) dword 25: unknown 6 distinct; float 0.452611..0.453188; int 1055374487..1055393872
+    (3) dword 32: unknown 6 distinct; float -0.775993..-0.775511; int 3209070566..3209078646
+    (3) dword 33: unknown 6 distinct; float 0.670758..0.671614; int 1059829452..1059843816
+    (3) dword 36: unknown 6 distinct; float -0.000140226..6.16797e-05; int 933778027..3105032625
+    (3) dword 37: unknown 6 distinct; float 2.32898..2.32934; int 1075121677..1075123183
+    (3) dword 40: unknown 6 distinct; float 1.14969..1.15001; int 1066608867..1066611593
+    (3) dword 41: unknown 6 distinct; float 0.452611..0.453188; int 1055374487..1055393872
+  (2) table gs ud8: 42 draws, 6 distinct addresses
+      other dwords: 57 constant, 7 varying (7 8 9 20 21 22 23)
+    (3) dword  7: unknown 6 distinct; float 1.43031e-41..1.43101e-41; int 10207..10212
+    (3) dword  8: unknown 2 distinct; float 256..416; int 1132462080..1137704960
+    (3) dword  9: unknown 2 distinct; float 144..234; int 1125122048..1131020288
+    (3) dword 20: unknown 2 distinct; float 128..208; int 1124073472..1129316352
+    (3) dword 21: unknown 2 distinct; float 72..117; int 1116733440..1122631680
+    (3) dword 22: unknown 2 distinct; float 0.00480769..0.0078125; int 1000180185..1006632959
+    (3) dword 23: unknown 2 distinct; float 0.00854701..0.0138889; int 1007421633..1013157432
+  (2) table gs ud12: 42 draws, 42 distinct addresses
+      dword  1: buffer 0x850000037f stride 0 records 24016 fmt 2 (1 draws)
+      dword  2: buffer 0x1d0030000e stride 0 records 8272 fmt 8 (1 draws)
+      dword  2: buffer 0x1f00030008 stride 0 records 8272 fmt 8 (1 draws)
+      dword  5: buffer 0x4400000000 stride 0 records 32 fmt 2 (1 draws)
+      dword  5: buffer 0x7600000000 stride 0 records 33 fmt 2 (1 draws)
+      dword  9: buffer 0x170000039d stride 0 records 93924 fmt 2 (1 draws)
+      dword  9: buffer 0x1e000003a6 stride 0 records 93998 fmt 2 (1 draws)
+      dword 10: buffer 0x1c0005000e stride 0 records 8256 fmt 8 (1 draws)
+      dword 13: buffer 0x180000039f stride 0 records 611940 fmt 2 (1 draws)
+      dword 13: buffer 0x20000003a8 stride 0 records 612025 fmt 2 (1 draws)
+      dword 13: buffer 0x8000000380 stride 0 records 24016 fmt 2 (1 draws)
+      dword 14: buffer 0x1c000d000e stride 0 records 8272 fmt 20 (1 draws)
+      dword 21: buffer 0x20000003a9 stride 0 records 93949 fmt 2 (1 draws)
+      dword 21: buffer 0x24000003bb stride 0 records 612025 fmt 2 (1 draws)
+      dword 22: buffer 0x1c0019000e stride 0 records 8272 fmt 22 (1 draws)
+      dword 29: buffer 0x1c0000038f stride 0 records 611985 fmt 2 (1 draws)
+      dword 30: buffer 0x4400003bc5 stride 5 records 8272 fmt 19 (1 draws)
+      dword 37: buffer 0x1c000003a2 stride 0 records 611968 fmt 2 (1 draws)
+      dword 38: buffer 0x1a00010008 stride 0 records 8272 fmt 22 (1 draws)
+      dword 38: buffer 0x2500000004 stride 0 records 8272 fmt 22 (1 draws)
+      dword 41: buffer 0x4400000000 stride 0 records 32 fmt 2 (1 draws)
+      dword 41: buffer 0x7600000000 stride 0 records 33 fmt 2 (1 draws)
+      dword 46: buffer 0x2200000001 stride 0 records 8272 fmt 22 (1 draws)
+      dword 46: buffer 0x2700020004 stride 0 records 8272 fmt 22 (1 draws)
+      dword 49: buffer 0x180000039f stride 0 records 611940 fmt 2 (1 draws)
+      dword 49: buffer 0x20000003a8 stride 0 records 612025 fmt 2 (1 draws)
+      dword 50: buffer 0x1c000d000e stride 0 records 8272 fmt 20 (1 draws)
+      dword 57: buffer 0x1c000003a4 stride 0 records 611987 fmt 2 (1 draws)
+      dword 57: buffer 0x20000003a9 stride 0 records 93949 fmt 2 (1 draws)
+      dword 57: buffer 0x24000003bb stride 0 records 612025 fmt 2 (1 draws)
+      dword 58: buffer 0x1a00050008 stride 0 records 8272 fmt 22 (1 draws)
+      dword 58: buffer 0x1c0019000e stride 0 records 8272 fmt 22 (1 draws)
+      dword 58: buffer 0x2600030004 stride 0 records 8272 fmt 22 (1 draws)
+      other dwords: 1 constant, 15 varying (18 19 20 26 27 28 34 35 36 45 54 55 56 62 63)
+    (3) dword 18: unknown 12 distinct; float 6.93489e-32..3.80028e-15; int 196348483..2147450879
+    (3) dword 19: unknown 6 distinct; float 5.73972e-42..9.48201e-38; int 4096..2147450879
+    (3) dword 20: unknown 3 distinct; float 1.4013e-45..1.15915e-41; int 1..8272
+    (3) dword 26: unknown 6 distinct; float 6.93485e-32..1.93308e-29; int 196348412..264505765
+    (3) dword 27: unknown 4 distinct; float 1.94749e-38..5.62263e-38; int 13897728..26808320
+    (3) dword 28: unknown 3 distinct; float 1.4013e-45..1.15915e-41; int 1..8272
+    (3) dword 34: unknown 12 distinct; float 9.46157e-42..1.45752e-19; int 6752..539759323
+    (3) dword 35: unknown 5 distinct; float 0..5.62263e-38; int 0..26808320
+    (3) dword 36: unknown 2 distinct; float 1.4013e-45..1.15915e-41; int 1..8272
+    (3) dword 45: unknown 10 distinct; float 1.27939e-42..0.0316001; int 913..1023504143
+    (3) dword 54: unknown 6 distinct; float 4.39192e-32..1.93308e-29; int 191105702..264505765
+    (3) dword 55: unknown 5 distinct; float 1.39647e-38..9.48201e-38; int 9965568..33624064
+    (3) dword 56: unknown 2 distinct; float 1.4013e-45..1.15915e-41; int 1..8272
+    (3) dword 62: unknown 7 distinct; float 6.93491e-32..1.93308e-29; int 196348507..264505765
+    (3) dword 63: unknown 4 distinct; float 2.35214e-38..5.62263e-38; int 16781312..26808320
+  (2) table gs ud16: 42 draws, 6 distinct addresses
+      dword  0: image 0x11d0886000 128x64 fmt 22 (42 draws)
+      dword  8: image 0x11d088e000 64x32 fmt 22 (42 draws)
+      dword 16: image 0x11d0890000 32x16 fmt 22 (42 draws)
+      dword 24: image 0x11d0891000 16x8 fmt 22 (42 draws)
+      dword 32: image 0x11d0892000 8x4 fmt 22 (42 draws)
+      dword 40: image 0x1162e60000 256x256 fmt 20 (42 draws)
+      dword 48: image 0x848a4fc000 1024x1024 fmt 179 (42 draws)
+      dword 56: image 0x119975c000 256x256 fmt 179 (42 draws)
+      other dwords: 0 constant, 0 varying (-)
+  (2) table gs ud24: 42 draws, 6 distinct addresses
+      dword  0: image 0x11d0886000 128x64 fmt 22 (42 draws)
+      dword  8: image 0x11d088e000 64x32 fmt 22 (42 draws)
+      dword 16: image 0x11d0890000 32x16 fmt 22 (42 draws)
+      dword 24: image 0x11d0891000 16x8 fmt 22 (42 draws)
+      dword 32: image 0x11d0892000 8x4 fmt 22 (42 draws)
+      dword 40: image 0x1162e60000 256x256 fmt 20 (42 draws)
+      dword 48: image 0x848a4fc000 1024x1024 fmt 179 (42 draws)
+      dword 56: image 0x119975c000 256x256 fmt 179 (42 draws)
+      other dwords: 0 constant, 0 varying (-)
+  (2) table ps ud16: 42 draws, 42 distinct addresses
+      dword  5: buffer 0x850000037f stride 0 records 24016 fmt 2 (1 draws)
+      dword 17: buffer 0x8000000380 stride 0 records 24016 fmt 2 (1 draws)
+      dword 29: buffer 0x4400000000 stride 0 records 32 fmt 2 (1 draws)
+      dword 29: buffer 0x7600000000 stride 0 records 33 fmt 2 (1 draws)
+      dword 37: buffer 0x180000039f stride 0 records 611940 fmt 2 (1 draws)
+      dword 37: buffer 0x20000003a8 stride 0 records 612025 fmt 2 (1 draws)
+      dword 38: buffer 0x1c000d000e stride 0 records 8272 fmt 20 (1 draws)
+      dword 45: buffer 0x20000003a9 stride 0 records 93949 fmt 2 (1 draws)
+      dword 45: buffer 0x24000003bb stride 0 records 612025 fmt 2 (1 draws)
+      dword 46: buffer 0x1c0019000e stride 0 records 8272 fmt 22 (1 draws)
+      dword 53: buffer 0x1c0000038f stride 0 records 611985 fmt 2 (1 draws)
+      dword 54: buffer 0x4400003bc5 stride 5 records 8272 fmt 19 (1 draws)
+      other dwords: 0 constant, 37 varying (0 1 2 3 4 9 10 11 12 13 14 15 16 21 22 23 24 25 26 27 28 33 34 35 36 42 43 44 50 51 52 58 59 60 61 62 63)
+    (3) dword  0: unknown 2 distinct; float 1.15691e-41..1.15915e-41; int 8256..8272
+    (3) dword  1: unknown 7 distinct; float 3.98847e-31..3.06404e-05; int 218197737..939557847
+    (3) dword  2: unknown 6 distinct; float 8.32162e-32..2.24864e-29; int 198707877..266603033
+    (3) dword  3: unknown 5 distinct; float 1.39647e-38..4.20721e-38; int 9965568..23400448
+    (3) dword  4: unknown 3 distinct; float 1.4013e-45..1.15915e-41; int 1..8272
+    (3) dword  9: unknown 7 distinct; float 6.61266e-33..3.06404e-05; int 168384239..939557851
+    (3) dword 10: unknown 7 distinct; float 8.48211e-30..3.79781e-15; int 254544286..663278740
+    (3) dword 11: unknown 5 distinct; float 1.87402e-38..4.20721e-38; int 13373440..23400448
+    (3) dword 12: unknown 3 distinct; float 1.4013e-45..1.15915e-41; int 1..8272
+    (3) dword 13: unknown 10 distinct; float 1.25977e-42..3.06404e-05; int 899..939557851
+    (3) dword 14: unknown 12 distinct; float 6.31299e-30..3.79774e-15; int 251661031..2147450879
+    (3) dword 15: unknown 6 distinct; float 5.73972e-42..4.20721e-38; int 4096..2147450879
+    (3) dword 16: unknown 3 distinct; float 1.4013e-45..1.15915e-41; int 1..8272
+    (3) dword 21: unknown 7 distinct; float 2.8401e-23..3.27441e-05; int 436819637..940136121
+    (3) dword 22: unknown 6 distinct; float 4.39192e-32..1.45752e-19; int 191105702..539759323
+    (3) dword 23: unknown 5 distinct; float 9.55663e-39..5.62263e-38; int 6819840..26808320
+    (3) dword 24: unknown 2 distinct; float 1.4013e-45..1.15915e-41; int 1..8272
+    (3) dword 25: unknown 13 distinct; float 1.26117e-42..3.06408e-05; int 900..939557973
+    (3) dword 26: unknown 16 distinct; float 4.34403e-44..131.295; int 31..1124289404
+    (3) dword 27: unknown 12 distinct; float -18..5.62263e-38; int 0..3247439872
+    (3) dword 28: unknown 2 distinct; float 0..1.15915e-41; int 0..8272
+    (3) dword 33: unknown 7 distinct; float 1.62214e-27..7.71565e-06; int 318801107..922841718
+    (3) dword 34: unknown 6 distinct; float 4.39192e-32..3.23507e-29; int 191105702..270797225
+    (3) dword 35: unknown 5 distinct; float 1.39647e-38..5.62263e-38; int 9965568..26808320
+    (3) dword 36: unknown 2 distinct; float 1.4013e-45..1.15915e-41; int 1..8272
+    (3) dword 42: unknown 6 distinct; float 4.39192e-32..1.77531e-29; int 191105702..263457194
+    (3) dword 43: unknown 5 distinct; float 1.39647e-38..9.48201e-38; int 9965568..33624064
+    (3) dword 44: unknown 2 distinct; float 1.4013e-45..1.15915e-41; int 1..8272
+    (3) dword 50: unknown 5 distinct; float 4.39192e-32..1.93308e-29; int 191105702..264505765
+    (3) dword 51: unknown 5 distinct; float 1.39647e-38..5.62263e-38; int 9965568..26808320
+    (3) dword 52: unknown 2 distinct; float 1.4013e-45..1.15915e-41; int 1..8272
+    (3) dword 58: unknown 6 distinct; float 4.39192e-32..1.77531e-29; int 191105702..263457194
+    (3) dword 59: unknown 3 distinct; float 1.39647e-38..5.62263e-38; int 9965568..26808320
+    (3) dword 60: unknown 2 distinct; float 1.4013e-45..1.15915e-41; int 1..8272
+    (3) dword 61: unknown 10 distinct; float 1.27798e-42..3.27441e-05; int 912..940136121
+    (3) dword 62: unknown 10 distinct; float 5.60519e-45..8.48211e-30; int 4..254544286
+    (3) dword 63: unknown 9 distinct; float 3.64338e-44..5.62263e-38; int 26..26808320
+  (2) table ps ud20: 42 draws, 1 distinct addresses
+      dword  0: image 0x1125f00000 3840x2160 fmt 50 (42 draws)
+      dword  8: image 0x1125f00000 3840x2160 fmt 50 (42 draws)
+      dword 16: image 0x1125f00000 2560x1440 fmt 50 (42 draws)
+      dword 24: image 0x1125f00000 2560x1440 fmt 50 (42 draws)
+      dword 32: image 0x1127ee0000 3840x2160 fmt 50 (42 draws)
+      dword 40: image 0x1127ee0000 3840x2160 fmt 50 (42 draws)
+      dword 48: image 0x1127ee0000 2560x1440 fmt 50 (42 draws)
+      dword 56: image 0x1127ee0000 2560x1440 fmt 50 (42 draws)
+      other dwords: 0 constant, 0 varying (-)
+  (2) table ps ud24: 42 draws, 1 distinct addresses
+      other dwords: 64 constant, 0 varying (-)
+  (2) table ps ud28: 42 draws, 42 distinct addresses
+      dword  0: buffer 0x1122498bd0 stride 16 records 40 fmt 77 (7 draws)
+      dword  0: buffer 0x11224cb9b0 stride 16 records 40 fmt 77 (7 draws)
+      dword  0: buffer 0x11224ff630 stride 16 records 40 fmt 77 (7 draws)
+      dword  0: buffer 0x1122532b60 stride 16 records 40 fmt 77 (7 draws)
+      dword  0: buffer 0x1122565940 stride 16 records 40 fmt 77 (7 draws)
+      dword  0: buffer 0x1122598720 stride 16 records 40 fmt 77 (7 draws)
+      dword  4: buffer 0x1122497800 stride 16 records 77 fmt 77 (7 draws)
+      dword  4: buffer 0x11224ca5e0 stride 16 records 77 fmt 77 (7 draws)
+      dword  4: buffer 0x11224fe260 stride 16 records 77 fmt 77 (7 draws)
+      dword  4: buffer 0x1122531790 stride 16 records 77 fmt 77 (7 draws)
+      dword  4: buffer 0x1122564570 stride 16 records 77 fmt 77 (7 draws)
+      dword  4: buffer 0x1122597350 stride 16 records 77 fmt 77 (7 draws)
+      dword  8: buffer 0x1123713b00 stride 16 records 168 fmt 77 (7 draws)
+      dword  8: buffer 0x1123a58680 stride 16 records 168 fmt 77 (7 draws)
+      dword  8: buffer 0x1123a7dd00 stride 16 records 168 fmt 77 (7 draws)
+      dword  8: buffer 0x1123aa3380 stride 16 records 168 fmt 77 (7 draws)
+      dword  8: buffer 0x1123ac8a00 stride 16 records 168 fmt 77 (7 draws)
+      dword  8: buffer 0x1123aee080 stride 16 records 168 fmt 77 (7 draws)
+      dword 12: buffer 0x1122498bd0 stride 16 records 40 fmt 77 (5 draws)
+      dword 12: buffer 0x11224cb9b0 stride 16 records 40 fmt 77 (5 draws)
+      dword 12: buffer 0x11224ff630 stride 16 records 40 fmt 77 (7 draws)
+      dword 12: buffer 0x1122532b60 stride 16 records 40 fmt 77 (5 draws)
+      dword 12: buffer 0x1122565940 stride 16 records 40 fmt 77 (6 draws)
+      dword 12: buffer 0x1122598720 stride 16 records 40 fmt 77 (7 draws)
+      dword 16: buffer 0x1122497800 stride 16 records 77 fmt 77 (5 draws)
+      dword 16: buffer 0x11224ca5e0 stride 16 records 77 fmt 77 (5 draws)
+      dword 16: buffer 0x11224fe260 stride 16 records 77 fmt 77 (7 draws)
+      dword 16: buffer 0x1122531790 stride 16 records 77 fmt 77 (5 draws)
+      dword 16: buffer 0x1122564570 stride 16 records 77 fmt 77 (6 draws)
+      dword 16: buffer 0x1122597350 stride 16 records 77 fmt 77 (7 draws)
+      dword 20: buffer 0x1123713b00 stride 16 records 168 fmt 77 (7 draws)
+      dword 20: buffer 0x1123a58680 stride 16 records 168 fmt 77 (5 draws)
+      dword 20: buffer 0x1123a7dd00 stride 16 records 168 fmt 77 (5 draws)
+      dword 20: buffer 0x1123aa3380 stride 16 records 168 fmt 77 (7 draws)
+      dword 20: buffer 0x1123ac8a00 stride 16 records 168 fmt 77 (5 draws)
+      dword 20: buffer 0x1123aee080 stride 16 records 168 fmt 77 (6 draws)
+      dword 22: buffer 0x2a0000008b stride 9 records 8 fmt 29 (3 draws)
+      dword 24: buffer 0x1122498bd0 stride 16 records 40 fmt 77 (3 draws)
+      dword 24: buffer 0x11224cb9b0 stride 16 records 40 fmt 77 (3 draws)
+      dword 24: buffer 0x11224ff630 stride 16 records 40 fmt 77 (4 draws)
+      dword 24: buffer 0x1122532b60 stride 16 records 40 fmt 77 (3 draws)
+      dword 24: buffer 0x1122565940 stride 16 records 40 fmt 77 (3 draws)
+      dword 24: buffer 0x1122598720 stride 16 records 40 fmt 77 (4 draws)
+      dword 28: buffer 0x1122497800 stride 16 records 77 fmt 77 (3 draws)
+      dword 28: buffer 0x11224ca5e0 stride 16 records 77 fmt 77 (3 draws)
+      dword 28: buffer 0x11224fe260 stride 16 records 77 fmt 77 (4 draws)
+      dword 28: buffer 0x1122531790 stride 16 records 77 fmt 77 (3 draws)
+      dword 28: buffer 0x1122564570 stride 16 records 77 fmt 77 (3 draws)
+      dword 28: buffer 0x1122597350 stride 16 records 77 fmt 77 (4 draws)
+      dword 32: buffer 0x1123713b00 stride 16 records 168 fmt 77 (4 draws)
+      dword 32: buffer 0x1123a58680 stride 16 records 168 fmt 77 (3 draws)
+      dword 32: buffer 0x1123a7dd00 stride 16 records 168 fmt 77 (3 draws)
+      dword 32: buffer 0x1123aa3380 stride 16 records 168 fmt 77 (4 draws)
+      dword 32: buffer 0x1123ac8a00 stride 16 records 168 fmt 77 (3 draws)
+      dword 32: buffer 0x1123aee080 stride 16 records 168 fmt 77 (3 draws)
+      dword 34: buffer 0x3c0000000b stride 0 records 200 fmt 1 (5 draws)
+      dword 36: buffer 0x1122498bd0 stride 16 records 40 fmt 77 (2 draws)
+      dword 36: buffer 0x11224cb9b0 stride 16 records 40 fmt 77 (2 draws)
+      dword 36: buffer 0x11224ff630 stride 16 records 40 fmt 77 (2 draws)
+      dword 36: buffer 0x1122532b60 stride 16 records 40 fmt 77 (2 draws)
+      dword 36: buffer 0x1122565940 stride 16 records 40 fmt 77 (1 draws)
+      dword 36: buffer 0x1122598720 stride 16 records 40 fmt 77 (2 draws)
+      dword 40: buffer 0x1122497800 stride 16 records 77 fmt 77 (2 draws)
+      dword 40: buffer 0x11224ca5e0 stride 16 records 77 fmt 77 (2 draws)
+      dword 40: buffer 0x11224fe260 stride 16 records 77 fmt 77 (2 draws)
+      dword 40: buffer 0x1122531790 stride 16 records 77 fmt 77 (2 draws)
+      dword 40: buffer 0x1122564570 stride 16 records 77 fmt 77 (1 draws)
+      dword 40: buffer 0x1122597350 stride 16 records 77 fmt 77 (2 draws)
+      dword 44: buffer 0x1123713b00 stride 16 records 168 fmt 77 (2 draws)
+      dword 44: buffer 0x1123a58680 stride 16 records 168 fmt 77 (2 draws)
+      dword 44: buffer 0x1123a7dd00 stride 16 records 168 fmt 77 (2 draws)
+      dword 44: buffer 0x1123aa3380 stride 16 records 168 fmt 77 (2 draws)
+      dword 44: buffer 0x1123ac8a00 stride 16 records 168 fmt 77 (2 draws)
+      dword 44: buffer 0x1123aee080 stride 16 records 168 fmt 77 (1 draws)
+      dword 46: buffer 0x2a0000008b stride 9 records 8 fmt 29 (2 draws)
+      dword 46: buffer 0x2a0000008b stride 9 records 8 fmt 41 (3 draws)
+      dword 46: buffer 0x3c0000000b stride 0 records 200 fmt 1 (1 draws)
+      dword 48: buffer 0x1122498bd0 stride 16 records 40 fmt 77 (1 draws)
+      dword 48: buffer 0x11224cb9b0 stride 16 records 40 fmt 77 (1 draws)
+      dword 48: buffer 0x1122532b60 stride 16 records 40 fmt 77 (1 draws)
+      dword 52: buffer 0x1122497800 stride 16 records 77 fmt 77 (1 draws)
+      dword 52: buffer 0x11224ca5e0 stride 16 records 77 fmt 77 (1 draws)
+      dword 52: buffer 0x1122531790 stride 16 records 77 fmt 77 (1 draws)
+      dword 56: buffer 0x1123a58680 stride 16 records 168 fmt 77 (1 draws)
+      dword 56: buffer 0x1123a7dd00 stride 16 records 168 fmt 77 (1 draws)
+      dword 56: buffer 0x1123ac8a00 stride 16 records 168 fmt 77 (1 draws)
+      dword 58: buffer 0x2a0000008b stride 9 records 8 fmt 29 (1 draws)
+      dword 58: buffer 0x380000000b stride 0 records 200 fmt 1 (3 draws)
+      dword 58: buffer 0x3c0000000b stride 0 records 200 fmt 1 (3 draws)
+      other dwords: 0 constant, 2 varying (62 63)
+    (3) dword 62: unknown 8 distinct; float 1.26117e-44..6.34788e-43; int 9..453
+    (3) dword 63: unknown 7 distinct; float 0..2.66247e-44; int 0..19
+== ps 11d090d900: 12 draws (unknown 12)
+  (1) gs user data: 0:<12 values> 1:00100011 2:<2 values> 3:00005204 4:<6 values> 5:00100011 6:00000028 7:0004dfac 8:<6 values> 9:00100011 10:0000004d 11:0004dfac 12:<12 values> 13:00100011 14:00000001 15:0004dfac 16:<6 values> 17:00100011 18:000000a8 19:0004dfac 21:00100011 22:0000000c 23:0004dfac 24:<6 values> 25:00100011 26:000000a8 27:0004dfac
+  (1) ps user data: 0:11d007d0 1:c3800000 2:0000c000 3:90500fac 5:00700000 8:11d007d0 9:c3800000 10:0000c000 11:90500fac 13:00700000 16:<12 values> 17:00100011 18:<2 values> 19:00005204 20:<6 values> 21:00100011 22:00000028 23:0004dfac 24:<6 values> 25:00100011 26:0000004d 27:0004dfac 28:<6 values> 29:00100011 30:000000a8 31:0004dfac
+  (2) table gs ud0: 12 draws, 12 distinct addresses
+      dword  8: image 0x760000204000 2693x324 fmt 496 (6 draws)
+      other dwords: 25 constant, 31 varying (0 1 2 3 4 5 6 7 16 17 18 19 20 21 22 23 25 26 27 28 29 30 31 33 37 41 45 49 53 57 61)
+    (3) dword  0: unknown 2 distinct; float 1.15691e-41..1.15915e-41; int 8256..8272
+    (3) dword  1: unknown 2 distinct; float 6.85228e-21..0.000123372; int 503410580..956390781
+    (3) dword  2: unknown 2 distinct; float 9.40014e-32..4.11707e-29; int 200542884..273728161
+    (3) dword  3: unknown 2 distinct; float 1.18762e-36..0.00781631; int 63574016..1006637056
+    (3) dword  4: unknown 2 distinct; float 1.4013e-45..1.15691e-41; int 1..8256
+    (3) dword  5: unknown 6 distinct; float 1.23875e-42..2.43308e-35; int 884..100752741
+    (3) dword  6: unknown 7 distinct; float 0..0.98139; int 0..1065040990
+    (3) dword  7: unknown 7 distinct; float 0..5.63225e+14; int 0..1476399104
+    (3) dword 16: unknown 2 distinct; float 1.15691e-41..1.15915e-41; int 8256..8272
+    (3) dword 17: unknown 3 distinct; float 6.45759e-36..1.1633e-19; int 84498043..537482884
+    (3) dword 18: unknown 2 distinct; float 9.40014e-32..5.03004e-30; int 200542884..248253158
+    (3) dword 19: unknown 2 distinct; float 9.48201e-38..1.18762e-36; int 33624064..63574016
+    (3) dword 20: unknown 2 distinct; float 1.4013e-45..1.15691e-41; int 1..8256
+    (3) dword 21: unknown 7 distinct; float 1.23875e-42..1.73346e-27; int 884..319379110
+    (3) dword 22: unknown 7 distinct; float 0..0.98139; int 0..1065040990
+    (3) dword 23: unknown 7 distinct; float 0..147.944; int 0..1125380539
+    (3) dword 25: unknown 4 distinct; float 6.45759e-36..1.17718e-10; int 84498043..788623033
+    (3) dword 26: unknown 2 distinct; float 5.03004e-30..6.90474e-15; int 248253158..670614770
+    (3) dword 27: unknown 2 distinct; float 9.55663e-39..9.48201e-38; int 6819840..33624064
+    (3) dword 28: unknown 2 distinct; float 1.4013e-45..1.15691e-41; int 1..8256
+    (3) dword 29: unknown 6 distinct; float 1.26257e-42..4.76487e-16; int 901..638146193
+    (3) dword 30: unknown 4 distinct; float 0..0.528347; int 0..1057440184
+    (3) dword 31: unknown 3 distinct; float 0..9.48201e-38; int 0..33624064
+    (3) dword 33: unknown 4 distinct; float 6.45759e-36..7.99413e-09; int 84498043..839472782
+    (3) dword 37: unknown 4 distinct; float 4.33363e-28..7.80679e-12; int 302601882..755586727
+    (3) dword 41: unknown 4 distinct; float 1.1633e-19..0.536478; int 537482866..1057576603
+    (3) dword 45: unknown 4 distinct; float 1.73346e-27..0.000523902; int 319379110..973690488
+    (3) dword 49: unknown 4 distinct; float 4.33363e-28..0.536478; int 302601879..1057576603
+    (3) dword 53: unknown 4 distinct; float 2.90826e-20..0.000523902; int 520705704..973690488
+    (3) dword 57: unknown 4 distinct; float 4.33363e-28..0.536478; int 302601879..1057576603
+    (3) dword 61: unknown 4 distinct; float 2.58305e-35..0.000523902; int 101275305..973690488
+  (2) table gs ud4: 12 draws, 6 distinct addresses
+      dword  0: image 0x5fbf0f313700 5217x15697 fmt 300 (12 draws)
+      dword 48: image 0x5fbf0f313700 5217x15697 fmt 300 (12 draws)
+      other dwords: 36 constant, 12 varying (16 17 20 21 24 25 32 33 36 37 40 41)
+    (3) dword 16: unknown 6 distinct; float -0.775993..-0.775511; int 3209070566..3209078646
+    (3) dword 17: unknown 6 distinct; float 0.670758..0.671614; int 1059829452..1059843816
+    (3) dword 20: unknown 6 distinct; float -0.000140226..6.16797e-05; int 933778027..3105032625
+    (3) dword 21: unknown 6 distinct; float 2.32898..2.32934; int 1075121677..1075123183
+    (3) dword 24: unknown 6 distinct; float 1.14969..1.15001; int 1066608867..1066611593
+    (3) dword 25: unknown 6 distinct; float 0.452611..0.453188; int 1055374487..1055393872
+    (3) dword 32: unknown 6 distinct; float -0.775993..-0.775511; int 3209070566..3209078646
+    (3) dword 33: unknown 6 distinct; float 0.670758..0.671614; int 1059829452..1059843816
+    (3) dword 36: unknown 6 distinct; float -0.000140226..6.16797e-05; int 933778027..3105032625
+    (3) dword 37: unknown 6 distinct; float 2.32898..2.32934; int 1075121677..1075123183
+    (3) dword 40: unknown 6 distinct; float 1.14969..1.15001; int 1066608867..1066611593
+    (3) dword 41: unknown 6 distinct; float 0.452611..0.453188; int 1055374487..1055393872
+  (2) table gs ud8: 12 draws, 6 distinct addresses
+      other dwords: 57 constant, 7 varying (7 8 9 20 21 22 23)
+    (3) dword  7: unknown 6 distinct; float 1.43031e-41..1.43101e-41; int 10207..10212
+    (3) dword  8: unknown 2 distinct; float 256..416; int 1132462080..1137704960
+    (3) dword  9: unknown 2 distinct; float 144..234; int 1125122048..1131020288
+    (3) dword 20: unknown 2 distinct; float 128..208; int 1124073472..1129316352
+    (3) dword 21: unknown 2 distinct; float 72..117; int 1116733440..1122631680
+    (3) dword 22: unknown 2 distinct; float 0.00480769..0.0078125; int 1000180185..1006632959
+    (3) dword 23: unknown 2 distinct; float 0.00854701..0.0138889; int 1007421633..1013157432
+  (2) table gs ud12: 12 draws, 12 distinct addresses
+      other dwords: 35 constant, 29 varying (1 2 3 4 5 6 7 8 9 10 11 13 14 15 16 17 18 19 21 25 29 33 37 41 45 49 53 57 61)
+    (3) dword  1: unknown 10 distinct; float 1.23735e-42..1.299e-42; int 883..927
+    (3) dword  2: unknown 12 distinct; float -0.363424..0.98139; int 0..3199865523
+    (3) dword  3: unknown 11 distinct; float 0..296.245; int 0..4294967295
+    (3) dword  4: unknown 2 distinct; float 1.15691e-41..1.15915e-41; int 8256..8272
+    (3) dword  5: unknown 3 distinct; float 6.45759e-36..1.17718e-10; int 84498043..788623033
+    (3) dword  6: unknown 3 distinct; float 9.40014e-32..6.90474e-15; int 200542884..670614770
+    (3) dword  7: unknown 3 distinct; float 9.55663e-39..1.18762e-36; int 6819840..63574016
+    (3) dword  8: unknown 2 distinct; float 1.4013e-45..1.15691e-41; int 1..8256
+    (3) dword  9: unknown 9 distinct; float 1.23875e-42..4.33363e-28; int 884..302601882
+    (3) dword 10: unknown 9 distinct; float 0..0.98139; int 0..1065040990
+    (3) dword 11: unknown 8 distinct; float 0..147.944; int 0..1125380539
+    (3) dword 13: unknown 3 distinct; float 6.45759e-36..1.17718e-10; int 84498043..788623033
+    (3) dword 14: unknown 2 distinct; float 5.03004e-30..6.90474e-15; int 248253158..670614770
+    (3) dword 15: unknown 2 distinct; float 9.55663e-39..9.48201e-38; int 6819840..33624064
+    (3) dword 16: unknown 2 distinct; float 1.4013e-45..1.15691e-41; int 1..8256
+    (3) dword 17: unknown 5 distinct; float 1.26257e-42..1.73346e-27; int 901..319379110
+    (3) dword 18: unknown 4 distinct; float 0..0.528347; int 0..1057440184
+    (3) dword 19: unknown 3 distinct; float 0..9.48201e-38; int 0..33624064
+    (3) dword 21: unknown 3 distinct; float 6.45759e-36..1.1633e-19; int 84498043..537482884
+    (3) dword 25: unknown 3 distinct; float 4.33363e-28..4.76487e-16; int 302601882..638146193
+    (3) dword 29: unknown 3 distinct; float 1.1633e-19..7.99413e-09; int 537482866..839472782
+    (3) dword 33: unknown 3 distinct; float 1.73346e-27..7.80679e-12; int 319379110..755586727
+    (3) dword 37: unknown 3 distinct; float 1.1633e-19..0.536478; int 537482866..1057576603
+    (3) dword 41: unknown 3 distinct; float 4.76487e-16..0.000523902; int 638146193..973690488
+    (3) dword 45: unknown 3 distinct; float 4.33363e-28..0.536478; int 302601879..1057576603
+    (3) dword 49: unknown 3 distinct; float 2.90826e-20..0.000523902; int 520705704..973690488
+    (3) dword 53: unknown 3 distinct; float 4.33363e-28..0.536478; int 302601879..1057576603
+    (3) dword 57: unknown 3 distinct; float 2.58305e-35..0.000523902; int 101275305..973690488
+    (3) dword 61: unknown 3 distinct; float 4.33363e-28..3.27439e-05; int 302601879..940136072
+  (2) table gs ud16: 12 draws, 6 distinct addresses
+      dword  0: image 0x11d0886000 128x64 fmt 22 (12 draws)
+      dword  8: image 0x11d088e000 64x32 fmt 22 (12 draws)
+      dword 16: image 0x11d0890000 32x16 fmt 22 (12 draws)
+      dword 24: image 0x11d0891000 16x8 fmt 22 (12 draws)
+      dword 32: image 0x11d0892000 8x4 fmt 22 (12 draws)
+      dword 40: image 0x1162e60000 256x256 fmt 20 (12 draws)
+      dword 48: image 0x848a4fc000 1024x1024 fmt 179 (12 draws)
+      dword 56: image 0x119975c000 256x256 fmt 179 (12 draws)
+      other dwords: 0 constant, 0 varying (-)
+  (2) table gs ud24: 12 draws, 6 distinct addresses
+      dword  0: image 0x11d0886000 128x64 fmt 22 (12 draws)
+      dword  8: image 0x11d088e000 64x32 fmt 22 (12 draws)
+      dword 16: image 0x11d0890000 32x16 fmt 22 (12 draws)
+      dword 24: image 0x11d0891000 16x8 fmt 22 (12 draws)
+      dword 32: image 0x11d0892000 8x4 fmt 22 (12 draws)
+      dword 40: image 0x1162e60000 256x256 fmt 20 (12 draws)
+      dword 48: image 0x848a4fc000 1024x1024 fmt 179 (12 draws)
+      dword 56: image 0x119975c000 256x256 fmt 179 (12 draws)
+      other dwords: 0 constant, 0 varying (-)
+  (2) table ps ud15: 1 draws, 1 distinct addresses
+      other dwords: 64 constant, 0 varying (-)
+  (2) table ps ud16: 12 draws, 12 distinct addresses
+      dword  8: image 0x760000204000 2693x324 fmt 496 (6 draws)
+      other dwords: 25 constant, 31 varying (0 1 2 3 4 5 6 7 16 17 18 19 20 21 22 23 25 26 27 28 29 30 31 33 37 41 45 49 53 57 61)
+    (3) dword  0: unknown 2 distinct; float 1.15691e-41..1.15915e-41; int 8256..8272
+    (3) dword  1: unknown 2 distinct; float 6.85228e-21..0.000123372; int 503410580..956390781
+    (3) dword  2: unknown 2 distinct; float 9.40014e-32..4.11707e-29; int 200542884..273728161
+    (3) dword  3: unknown 2 distinct; float 1.18762e-36..0.00781631; int 63574016..1006637056
+    (3) dword  4: unknown 2 distinct; float 1.4013e-45..1.15691e-41; int 1..8256
+    (3) dword  5: unknown 6 distinct; float 1.23875e-42..2.43308e-35; int 884..100752741
+    (3) dword  6: unknown 7 distinct; float 0..0.98139; int 0..1065040990
+    (3) dword  7: unknown 7 distinct; float 0..5.63225e+14; int 0..1476399104
+    (3) dword 16: unknown 2 distinct; float 1.15691e-41..1.15915e-41; int 8256..8272
+    (3) dword 17: unknown 3 distinct; float 6.45759e-36..1.1633e-19; int 84498043..537482884
+    (3) dword 18: unknown 2 distinct; float 9.40014e-32..5.03004e-30; int 200542884..248253158
+    (3) dword 19: unknown 2 distinct; float 9.48201e-38..1.18762e-36; int 33624064..63574016
+    (3) dword 20: unknown 2 distinct; float 1.4013e-45..1.15691e-41; int 1..8256
+    (3) dword 21: unknown 7 distinct; float 1.23875e-42..1.73346e-27; int 884..319379110
+    (3) dword 22: unknown 7 distinct; float 0..0.98139; int 0..1065040990
+    (3) dword 23: unknown 7 distinct; float 0..147.944; int 0..1125380539
+    (3) dword 25: unknown 4 distinct; float 6.45759e-36..1.17718e-10; int 84498043..788623033
+    (3) dword 26: unknown 2 distinct; float 5.03004e-30..6.90474e-15; int 248253158..670614770
+    (3) dword 27: unknown 2 distinct; float 9.55663e-39..9.48201e-38; int 6819840..33624064
+    (3) dword 28: unknown 2 distinct; float 1.4013e-45..1.15691e-41; int 1..8256
+    (3) dword 29: unknown 6 distinct; float 1.26257e-42..4.76487e-16; int 901..638146193
+    (3) dword 30: unknown 4 distinct; float 0..0.528347; int 0..1057440184
+    (3) dword 31: unknown 3 distinct; float 0..9.48201e-38; int 0..33624064
+    (3) dword 33: unknown 4 distinct; float 6.45759e-36..7.99413e-09; int 84498043..839472782
+    (3) dword 37: unknown 4 distinct; float 4.33363e-28..7.80679e-12; int 302601882..755586727
+    (3) dword 41: unknown 4 distinct; float 1.1633e-19..0.536478; int 537482866..1057576603
+    (3) dword 45: unknown 4 distinct; float 1.73346e-27..0.000523902; int 319379110..973690488
+    (3) dword 49: unknown 4 distinct; float 4.33363e-28..0.536478; int 302601879..1057576603
+    (3) dword 53: unknown 4 distinct; float 2.90826e-20..0.000523902; int 520705704..973690488
+    (3) dword 57: unknown 4 distinct; float 4.33363e-28..0.536478; int 302601879..1057576603
+    (3) dword 61: unknown 4 distinct; float 2.58305e-35..0.000523902; int 101275305..973690488
+  (2) table ps ud20: 12 draws, 6 distinct addresses
+      dword  0: image 0x5fbf0f313700 5217x15697 fmt 300 (12 draws)
+      dword 48: image 0x5fbf0f313700 5217x15697 fmt 300 (12 draws)
+      other dwords: 36 constant, 12 varying (16 17 20 21 24 25 32 33 36 37 40 41)
+    (3) dword 16: unknown 6 distinct; float -0.775993..-0.775511; int 3209070566..3209078646
+    (3) dword 17: unknown 6 distinct; float 0.670758..0.671614; int 1059829452..1059843816
+    (3) dword 20: unknown 6 distinct; float -0.000140226..6.16797e-05; int 933778027..3105032625
+    (3) dword 21: unknown 6 distinct; float 2.32898..2.32934; int 1075121677..1075123183
+    (3) dword 24: unknown 6 distinct; float 1.14969..1.15001; int 1066608867..1066611593
+    (3) dword 25: unknown 6 distinct; float 0.452611..0.453188; int 1055374487..1055393872
+    (3) dword 32: unknown 6 distinct; float -0.775993..-0.775511; int 3209070566..3209078646
+    (3) dword 33: unknown 6 distinct; float 0.670758..0.671614; int 1059829452..1059843816
+    (3) dword 36: unknown 6 distinct; float -0.000140226..6.16797e-05; int 933778027..3105032625
+    (3) dword 37: unknown 6 distinct; float 2.32898..2.32934; int 1075121677..1075123183
+    (3) dword 40: unknown 6 distinct; float 1.14969..1.15001; int 1066608867..1066611593
+    (3) dword 41: unknown 6 distinct; float 0.452611..0.453188; int 1055374487..1055393872
+  (2) table ps ud24: 12 draws, 6 distinct addresses
+      other dwords: 57 constant, 7 varying (7 8 9 20 21 22 23)
+    (3) dword  7: unknown 6 distinct; float 1.43031e-41..1.43101e-41; int 10207..10212
+    (3) dword  8: unknown 2 distinct; float 256..416; int 1132462080..1137704960
+    (3) dword  9: unknown 2 distinct; float 144..234; int 1125122048..1131020288
+    (3) dword 20: unknown 2 distinct; float 128..208; int 1124073472..1129316352
+    (3) dword 21: unknown 2 distinct; float 72..117; int 1116733440..1122631680
+    (3) dword 22: unknown 2 distinct; float 0.00480769..0.0078125; int 1000180185..1006632959
+    (3) dword 23: unknown 2 distinct; float 0.00854701..0.0138889; int 1007421633..1013157432
+  (2) table ps ud28: 12 draws, 6 distinct addresses
+      dword  0: image 0x11d0886000 128x64 fmt 22 (12 draws)
+      dword  8: image 0x11d088e000 64x32 fmt 22 (12 draws)
+      dword 16: image 0x11d0890000 32x16 fmt 22 (12 draws)
+      dword 24: image 0x11d0891000 16x8 fmt 22 (12 draws)
+      dword 32: image 0x11d0892000 8x4 fmt 22 (12 draws)
+      dword 40: image 0x1162e60000 256x256 fmt 20 (12 draws)
+      dword 48: image 0x848a4fc000 1024x1024 fmt 179 (12 draws)
+      dword 56: image 0x119975c000 256x256 fmt 179 (12 draws)
+      other dwords: 0 constant, 0 varying (-)
+== ps 11d0a98300: 6 draws (unknown 6)
+  (1) gs user data: 0:<6 values> 1:00100011 2:00000008 3:00005204 4:<6 values> 5:00100011 6:00000028 7:0004dfac 8:<6 values> 9:00100011 10:0000004d 11:0004dfac 12:<6 values> 13:00100011 14:00000001 15:0004dfac 16:<6 values> 17:00100011 18:000000a8 19:0004dfac 21:00100011 22:0000000c 23:0004dfac 24:<6 values> 25:00100011 26:000000a8 27:0004dfac
+  (1) ps user data: 0:11d007d0 1:c3800000 2:0000c000 3:90500fac 5:00700000 8:11d007d0 9:c3800000 10:0000c000 11:90500fac 13:00700000 16:<6 values> 17:00100011 18:00000008 19:00005204 20:e0007aa0 21:00200011 22:000063d4 23:00005204 24:e0001a00 25:00100011 26:00000038 27:00005204 28:<6 values> 29:00000011 30:000000a8 31:0004dfac
+  (2) table gs ud0: 6 draws, 6 distinct addresses
+      other dwords: 48 constant, 16 varying (16 17 20 21 33 34 35 49 50 51 57 58 59 61 62 63)
+    (3) dword 16: unknown 2 distinct; float 1.15691e-41..1.15915e-41; int 8256..8272
+    (3) dword 17: unknown 2 distinct; float 6.84264e-21..7.17502e-15; int 503398653..671170800
+    (3) dword 20: unknown 2 distinct; float 1.15691e-41..1.15915e-41; int 8256..8272
+    (3) dword 21: unknown 2 distinct; float 6.84264e-21..7.17502e-15; int 503398653..671170800
+    (3) dword 33: unknown 5 distinct; float 1.23595e-42..1.2962e-42; int 882..925
+    (3) dword 34: unknown 6 distinct; float -0.18362..0.828935; int 0..3191604980
+    (3) dword 35: unknown 4 distinct; float -0..1.83673e-39; int 0..2147483648
+    (3) dword 49: unknown 5 distinct; float 1.23735e-42..1.2976e-42; int 883..926
+    (3) dword 50: unknown 6 distinct; float -0.363424..0.368717; int 6572..3199865523
+    (3) dword 51: unknown 6 distinct; float 0..296.245; int 0..4294967295
+    (3) dword 57: unknown 5 distinct; float 1.23875e-42..1.299e-42; int 884..927
+    (3) dword 58: unknown 6 distinct; float 0..0.98139; int 0..1065040990
+    (3) dword 59: unknown 6 distinct; float 0..147.944; int 0..1125380539
+    (3) dword 61: unknown 2 distinct; float 6.45759e-36..1.17718e-10; int 84498043..788623033
+    (3) dword 62: unknown 2 distinct; float 5.03004e-30..6.90474e-15; int 248253158..670614770
+    (3) dword 63: unknown 2 distinct; float 9.55663e-39..9.48201e-38; int 6819840..33624064
+  (2) table gs ud4: 6 draws, 6 distinct addresses
+      dword  0: image 0x5fbf0f313700 5217x15697 fmt 300 (6 draws)
+      dword 48: image 0x5fbf0f313700 5217x15697 fmt 300 (6 draws)
+      other dwords: 36 constant, 12 varying (16 17 20 21 24 25 32 33 36 37 40 41)
+    (3) dword 16: unknown 6 distinct; float -0.775993..-0.775511; int 3209070566..3209078646
+    (3) dword 17: unknown 6 distinct; float 0.670758..0.671614; int 1059829452..1059843816
+    (3) dword 20: unknown 6 distinct; float -0.000140226..6.16797e-05; int 933778027..3105032625
+    (3) dword 21: unknown 6 distinct; float 2.32898..2.32934; int 1075121677..1075123183
+    (3) dword 24: unknown 6 distinct; float 1.14969..1.15001; int 1066608867..1066611593
+    (3) dword 25: unknown 6 distinct; float 0.452611..0.453188; int 1055374487..1055393872
+    (3) dword 32: unknown 6 distinct; float -0.775993..-0.775511; int 3209070566..3209078646
+    (3) dword 33: unknown 6 distinct; float 0.670758..0.671614; int 1059829452..1059843816
+    (3) dword 36: unknown 6 distinct; float -0.000140226..6.16797e-05; int 933778027..3105032625
+    (3) dword 37: unknown 6 distinct; float 2.32898..2.32934; int 1075121677..1075123183
+    (3) dword 40: unknown 6 distinct; float 1.14969..1.15001; int 1066608867..1066611593
+    (3) dword 41: unknown 6 distinct; float 0.452611..0.453188; int 1055374487..1055393872
+  (2) table gs ud8: 6 draws, 6 distinct addresses
+      other dwords: 57 constant, 7 varying (7 8 9 20 21 22 23)
+    (3) dword  7: unknown 6 distinct; float 1.43031e-41..1.43101e-41; int 10207..10212
+    (3) dword  8: unknown 2 distinct; float 256..416; int 1132462080..1137704960
+    (3) dword  9: unknown 2 distinct; float 144..234; int 1125122048..1131020288
+    (3) dword 20: unknown 2 distinct; float 128..208; int 1124073472..1129316352
+    (3) dword 21: unknown 2 distinct; float 72..117; int 1116733440..1122631680
+    (3) dword 22: unknown 2 distinct; float 0.00480769..0.0078125; int 1000180185..1006632959
+    (3) dword 23: unknown 2 distinct; float 0.00854701..0.0138889; int 1007421633..1013157432
+  (2) table gs ud12: 6 draws, 6 distinct addresses
+      other dwords: 41 constant, 23 varying (1 2 3 17 18 19 25 26 27 29 30 31 32 33 34 35 37 41 45 49 53 57 61)
+    (3) dword  1: unknown 5 distinct; float 1.23595e-42..1.2962e-42; int 882..925
+    (3) dword  2: unknown 6 distinct; float -0.18362..0.828935; int 0..3191604980
+    (3) dword  3: unknown 4 distinct; float -0..1.83673e-39; int 0..2147483648
+    (3) dword 17: unknown 5 distinct; float 1.23735e-42..1.2976e-42; int 883..926
+    (3) dword 18: unknown 6 distinct; float -0.363424..0.368717; int 6572..3199865523
+    (3) dword 19: unknown 6 distinct; float 0..296.245; int 0..4294967295
+    (3) dword 25: unknown 5 distinct; float 1.23875e-42..1.299e-42; int 884..927
+    (3) dword 26: unknown 6 distinct; float 0..0.98139; int 0..1065040990
+    (3) dword 27: unknown 6 distinct; float 0..147.944; int 0..1125380539
+    (3) dword 29: unknown 2 distinct; float 6.45759e-36..1.17718e-10; int 84498043..788623033
+    (3) dword 30: unknown 2 distinct; float 5.03004e-30..6.90474e-15; int 248253158..670614770
+    (3) dword 31: unknown 2 distinct; float 9.55663e-39..9.48201e-38; int 6819840..33624064
+    (3) dword 32: unknown 2 distinct; float 1.4013e-45..1.15691e-41; int 1..8256
+    (3) dword 33: unknown 4 distinct; float 1.26257e-42..4.33363e-28; int 901..302601882
+    (3) dword 34: unknown 4 distinct; float 0..0.528347; int 0..1057440184
+    (3) dword 35: unknown 3 distinct; float 0..9.48201e-38; int 0..33624064
+    (3) dword 37: unknown 2 distinct; float 6.45759e-36..1.1633e-19; int 84498043..537482884
+    (3) dword 41: unknown 2 distinct; float 4.33363e-28..1.73346e-27; int 302601882..319379110
+    (3) dword 45: unknown 2 distinct; float 1.1633e-19..1.1633e-19; int 537482866..537482884
+    (3) dword 49: unknown 2 distinct; float 1.73346e-27..4.76487e-16; int 319379110..638146193
+    (3) dword 53: unknown 2 distinct; float 1.1633e-19..7.99413e-09; int 537482866..839472782
+    (3) dword 57: unknown 2 distinct; float 4.76487e-16..7.80679e-12; int 638146193..755586727
+    (3) dword 61: unknown 2 distinct; float 7.99413e-09..0.536478; int 839472782..1057576603
+  (2) table gs ud16: 6 draws, 6 distinct addresses
+      dword  0: image 0x11d0886000 128x64 fmt 22 (6 draws)
+      dword  8: image 0x11d088e000 64x32 fmt 22 (6 draws)
+      dword 16: image 0x11d0890000 32x16 fmt 22 (6 draws)
+      dword 24: image 0x11d0891000 16x8 fmt 22 (6 draws)
+      dword 32: image 0x11d0892000 8x4 fmt 22 (6 draws)
+      dword 40: image 0x1162e60000 256x256 fmt 20 (6 draws)
+      dword 48: image 0x848a4fc000 1024x1024 fmt 179 (6 draws)
+      dword 56: image 0x119975c000 256x256 fmt 179 (6 draws)
+      other dwords: 0 constant, 0 varying (-)
+  (2) table gs ud24: 6 draws, 6 distinct addresses
+      dword  0: image 0x11d0886000 128x64 fmt 22 (6 draws)
+      dword  8: image 0x11d088e000 64x32 fmt 22 (6 draws)
+      dword 16: image 0x11d0890000 32x16 fmt 22 (6 draws)
+      dword 24: image 0x11d0891000 16x8 fmt 22 (6 draws)
+      dword 32: image 0x11d0892000 8x4 fmt 22 (6 draws)
+      dword 40: image 0x1162e60000 256x256 fmt 20 (6 draws)
+      dword 48: image 0x848a4fc000 1024x1024 fmt 179 (6 draws)
+      dword 56: image 0x119975c000 256x256 fmt 179 (6 draws)
+      other dwords: 0 constant, 0 varying (-)
+  (2) table ps ud16: 6 draws, 6 distinct addresses
+      other dwords: 48 constant, 16 varying (16 17 20 21 33 34 35 49 50 51 57 58 59 61 62 63)
+    (3) dword 16: unknown 2 distinct; float 1.15691e-41..1.15915e-41; int 8256..8272
+    (3) dword 17: unknown 2 distinct; float 6.84264e-21..7.17502e-15; int 503398653..671170800
+    (3) dword 20: unknown 2 distinct; float 1.15691e-41..1.15915e-41; int 8256..8272
+    (3) dword 21: unknown 2 distinct; float 6.84264e-21..7.17502e-15; int 503398653..671170800
+    (3) dword 33: unknown 5 distinct; float 1.23595e-42..1.2962e-42; int 882..925
+    (3) dword 34: unknown 6 distinct; float -0.18362..0.828935; int 0..3191604980
+    (3) dword 35: unknown 4 distinct; float -0..1.83673e-39; int 0..2147483648
+    (3) dword 49: unknown 5 distinct; float 1.23735e-42..1.2976e-42; int 883..926
+    (3) dword 50: unknown 6 distinct; float -0.363424..0.368717; int 6572..3199865523
+    (3) dword 51: unknown 6 distinct; float 0..296.245; int 0..4294967295
+    (3) dword 57: unknown 5 distinct; float 1.23875e-42..1.299e-42; int 884..927
+    (3) dword 58: unknown 6 distinct; float 0..0.98139; int 0..1065040990
+    (3) dword 59: unknown 6 distinct; float 0..147.944; int 0..1125380539
+    (3) dword 61: unknown 2 distinct; float 6.45759e-36..1.17718e-10; int 84498043..788623033
+    (3) dword 62: unknown 2 distinct; float 5.03004e-30..6.90474e-15; int 248253158..670614770
+    (3) dword 63: unknown 2 distinct; float 9.55663e-39..9.48201e-38; int 6819840..33624064
+  (2) table ps ud20: 6 draws, 1 distinct addresses
+      dword  0: image 0x1125f00000 3840x2160 fmt 50 (6 draws)
+      dword  8: image 0x1125f00000 3840x2160 fmt 50 (6 draws)
+      dword 16: image 0x1125f00000 2560x1440 fmt 50 (6 draws)
+      dword 24: image 0x1125f00000 2560x1440 fmt 50 (6 draws)
+      dword 32: image 0x1127ee0000 3840x2160 fmt 50 (6 draws)
+      dword 40: image 0x1127ee0000 3840x2160 fmt 50 (6 draws)
+      dword 48: image 0x1127ee0000 2560x1440 fmt 50 (6 draws)
+      dword 56: image 0x1127ee0000 2560x1440 fmt 50 (6 draws)
+      other dwords: 0 constant, 0 varying (-)
+  (2) table ps ud24: 6 draws, 1 distinct addresses
+      other dwords: 64 constant, 0 varying (-)
+  (2) table ps ud28: 6 draws, 6 distinct addresses
+      dword  0: buffer 0x1122498bd0 stride 16 records 40 fmt 77 (1 draws)
+      dword  0: buffer 0x11224cb9b0 stride 16 records 40 fmt 77 (1 draws)
+      dword  0: buffer 0x11224ff630 stride 16 records 40 fmt 77 (1 draws)
+      dword  0: buffer 0x1122532b60 stride 16 records 40 fmt 77 (1 draws)
+      dword  0: buffer 0x1122565940 stride 16 records 40 fmt 77 (1 draws)
+      dword  0: buffer 0x1122598720 stride 16 records 40 fmt 77 (1 draws)
+      dword  4: buffer 0x1122497800 stride 16 records 77 fmt 77 (1 draws)
+      dword  4: buffer 0x11224ca5e0 stride 16 records 77 fmt 77 (1 draws)
+      dword  4: buffer 0x11224fe260 stride 16 records 77 fmt 77 (1 draws)
+      dword  4: buffer 0x1122531790 stride 16 records 77 fmt 77 (1 draws)
+      dword  4: buffer 0x1122564570 stride 16 records 77 fmt 77 (1 draws)
+      dword  4: buffer 0x1122597350 stride 16 records 77 fmt 77 (1 draws)
+      dword  8: buffer 0x1123713b00 stride 16 records 168 fmt 77 (1 draws)
+      dword  8: buffer 0x1123a58680 stride 16 records 168 fmt 77 (1 draws)
+      dword  8: buffer 0x1123a7dd00 stride 16 records 168 fmt 77 (1 draws)
+      dword  8: buffer 0x1123aa3380 stride 16 records 168 fmt 77 (1 draws)
+      dword  8: buffer 0x1123ac8a00 stride 16 records 168 fmt 77 (1 draws)
+      dword  8: buffer 0x1123aee080 stride 16 records 168 fmt 77 (1 draws)
+      dword 22: buffer 0x2a0000008b stride 9 records 8 fmt 10 (3 draws)
+      dword 34: buffer 0x3c0000000b stride 0 records 200 fmt 1 (3 draws)
+      dword 46: buffer 0x2a0000008b stride 9 records 8 fmt 9 (3 draws)
+      other dwords: 2 constant, 38 varying (12 13 14 16 17 18 19 20 21 26 27 28 29 30 31 32 33 38 39 40 41 42 43 44 45 50 52 53 54 55 56 57 58 59 60 61 62 63)
+    (3) dword 12: unknown 2 distinct; float 2.8026e-43..1.03416e-42; int 200..738
+    (3) dword 13: unknown 2 distinct; float 0..3.28285e-28; int 0..298849093
+    (3) dword 14: unknown 2 distinct; float 2.81661e-43..1.03556e-42; int 201..739
+    (3) dword 16: unknown 2 distinct; float 1.79366e-43..1.10282e-42; int 128..787
+    (3) dword 17: unknown 2 distinct; float 3.44383e-41..9.01387e+15; int 24576..1509955648
+    (3) dword 18: unknown 2 distinct; float 1.79366e-43..3.79752e-43; int 128..271
+    (3) dword 19: unknown 3 distinct; float 1.13047e-20..1664; int 508922426..1154482176
+    (3) dword 20: unknown 2 distinct; float 1.93379e-43..3.82554e-43; int 138..273
+    (3) dword 21: unknown 3 distinct; float -936..1.26372e-37; int 36438597..3295281152
+    (3) dword 26: unknown 2 distinct; float 1.26117e-44..3.83956e-43; int 9..274
+    (3) dword 27: unknown 3 distinct; float 0..936; int 0..1147797504
+    (3) dword 28: unknown 2 distinct; float 8.40779e-45..3.86758e-43; int 6..276
+    (3) dword 29: unknown 2 distinct; float 0..4.33753e-19; int 0..553649520
+    (3) dword 30: unknown 2 distinct; float 8.40779e-45..2.07392e-43; int 6..148
+    (3) dword 31: unknown 2 distinct; float -0..94.2214; int 1119646046..2147483648
+    (3) dword 32: unknown 2 distinct; float 1.4013e-44..2.08793e-43; int 10..149
+    (3) dword 33: unknown 3 distinct; float 1.26369e-37..1.5652e-34; int 36438339..122686720
+    (3) dword 38: unknown 2 distinct; float 2.81661e-43..7.25873e-43; int 201..518
+    (3) dword 39: unknown 2 distinct; float 0..1.52321e-42; int 0..1087
+    (3) dword 40: unknown 2 distinct; float 1.79366e-43..1.06779e-42; int 128..762
+    (3) dword 41: unknown 3 distinct; float 33.9658..9.01387e+15; int 1107811581..1509955648
+    (3) dword 42: unknown 2 distinct; float 1.79366e-43..1.06919e-42; int 128..763
+    (3) dword 43: unknown 2 distinct; float 1.13047e-20..1; int 508922426..1065353216
+    (3) dword 44: unknown 2 distinct; float 1.93379e-43..1.07059e-42; int 138..764
+    (3) dword 45: unknown 3 distinct; float 1.26372e-37..31; int 36438597..1106771966
+    (3) dword 50: unknown 2 distinct; float 1.26117e-44..1.68156e-44; int 9..12
+    (3) dword 52: unknown 2 distinct; float 8.40779e-45..1.82169e-44; int 6..13
+    (3) dword 53: unknown 3 distinct; float 3.01e-36..4.33734e-19; int 75499520..553649152
+    (3) dword 54: unknown 2 distinct; float 8.40779e-45..5.61921e-43; int 6..401
+    (3) dword 55: unknown 2 distinct; float 1.47977e-42..4.32663e+27; int 1056..1834987125
+    (3) dword 56: unknown 2 distinct; float 1.4013e-44..5.63322e-43; int 10..402
+    (3) dword 57: unknown 2 distinct; float 1.48117e-42..1.2637e-37; int 1057..36438403
+    (3) dword 58: unknown 2 distinct; float 1.54143e-44..5.64723e-43; int 11..403
+    (3) dword 59: unknown 2 distinct; float 2.8026e-45..3.85186e-34; int 2..134217728
+    (3) dword 60: unknown 2 distinct; float 2.8026e-43..5.66125e-43; int 200..404
+    (3) dword 61: unknown 2 distinct; float 4.2039e-45..3.28285e-28; int 3..298849093
+    (3) dword 62: unknown 2 distinct; float 2.81661e-43..5.67526e-43; int 201..405
+    (3) dword 63: unknown 2 distinct; float 0..5.60519e-45; int 0..4

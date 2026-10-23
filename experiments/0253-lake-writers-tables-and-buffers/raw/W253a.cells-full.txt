@@ -1,0 +1,11 @@
+# cells per frame and distinct cells, per run and window state (writer draws with <= 16 records)
+  W253a clean     48 frames: 35.0 cells/frame (median), 35 distinct, 0 in every frame; distinct by writer 11d090d900 2, 11d0a98300 8, 11d1d88300 19, 11d1dd6400 6
+  W253a mixed     59 frames: 35 cells/frame (median), 35 distinct, 0 in every frame; distinct by writer 11d090d900 2, 11d0a98300 8, 11d1d88300 19, 11d1dd6400 6
+  W253a patched   18 frames: 35.0 cells/frame (median), 35 distinct, 35 in every frame; distinct by writer 11d090d900 2, 11d0a98300 8, 11d1d88300 19, 11d1dd6400 6
+# cells in every frame of A and in no frame of B (A -> B)
+  W253a clean    -> W253a mixed      0 of   0 (-)
+  W253a clean    -> W253a patched    0 of   0 (-)
+  W253a mixed    -> W253a clean      0 of   0 (-)
+  W253a mixed    -> W253a patched    0 of   0 (-)
+  W253a patched  -> W253a clean      0 of  35 (-)
+  W253a patched  -> W253a mixed      0 of  35 (-)
