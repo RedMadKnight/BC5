@@ -1,0 +1,69 @@
+# /home/kjaniszewski/bc5-data/captures/play-20261023-2023/gc/direct.log: 1422 journalled entries with a bake-db line, 794 on depth buffer 1129ec0000; 348 dispatches
+(A) distinct descriptions of the depth buffer:
+   616 x depth 3328x1872 | htile 112b720000 | FORMAT 3 NUM_SAMPLES 0 SW_MODE 24 MAXMIP 0 DECOMPRESS_ON_N_ZPLANES 0 ALLOW_EXPCLEAR 0 READ_SIZE 0 TILE_SURFACE_ENABLE 1 ZRANGE_PRECISION 1 | view 0 | render_control 0 | override 0 | clear z 0
+         t 165.049..165.095; rt0 113f230000 3328x1872 (420), 113d770000 3328x1872 (196); ps 11d29e9600 (82), 11d3519b00 (58), 11d4c02300 (48), 11d373e600 (34), 11d1d88300 (26), 11d1d74b00 (26)
+     6 x depth 3328x1872 | htile 112b720000 | FORMAT 3 NUM_SAMPLES 0 SW_MODE 24 MAXMIP 0 DECOMPRESS_ON_N_ZPLANES 0 ALLOW_EXPCLEAR 0 READ_SIZE 0 TILE_SURFACE_ENABLE 1 ZRANGE_PRECISION 1 | view 0 | render_control STENCIL_COMPRESS_DISABLE=1,DEPTH_COMPRESS_DISABLE=1 | override 0 | clear z 0
+         t 165.061..165.097; rt0 114c6c0000 3840x2160 (4), 113f230000 3328x1872 (2); ps 11d01e1700 (4), 11d0208400 (2)
+     8 x depth 3840x2160 | htile 112bea0000 | FORMAT 3 NUM_SAMPLES 0 SW_MODE 24 MAXMIP 0 DECOMPRESS_ON_N_ZPLANES 0 ALLOW_EXPCLEAR 0 READ_SIZE 0 TILE_SURFACE_ENABLE 1 ZRANGE_PRECISION 1 | view 0 | render_control 0 | override 0 | clear z 0
+         t 165.062..165.097; rt0 114c6c0000 3840x2160 (8); ps 11d3157800 (4), 11d01e1700 (4)
+   164 x depth 3072x1728 | htile 112b3c0000 | FORMAT 3 NUM_SAMPLES 0 SW_MODE 24 MAXMIP 0 DECOMPRESS_ON_N_ZPLANES 0 ALLOW_EXPCLEAR 0 READ_SIZE 0 TILE_SURFACE_ENABLE 1 ZRANGE_PRECISION 1 | view 0 | render_control 0 | override 0 | clear z 0
+         t 165.115..165.118; rt0 113f230000 3072x1728 (164); ps 11d29e9600 (38), 11d373e600 (17), 11d1d88300 (12), 11d1d74b00 (12), 11d1dd6400 (7), 11d1dd3800 (7)
+(B) in journal order (runs of one description and colour-target size):
+  t 165.049..165.061  217 x rt0 3328x1872 | depth 3328x1872 htile 112b720000
+  t 165.061..165.061    1 x rt0 3328x1872 | depth 3328x1872 htile 112b720000
+  t 165.061..165.062   91 x rt0 3328x1872 | depth 3328x1872 htile 112b720000
+  t 165.062..165.064    3 x rt0 3840x2160 | depth 3840x2160 htile 112bea0000
+  t 165.064..165.064    2 x rt0 3840x2160 | depth 3328x1872 htile 112b720000
+  t 165.064..165.064    1 x rt0 3840x2160 | depth 3840x2160 htile 112bea0000
+  t 165.082..165.094  217 x rt0 3328x1872 | depth 3328x1872 htile 112b720000
+  t 165.094..165.094    1 x rt0 3328x1872 | depth 3328x1872 htile 112b720000
+  t 165.094..165.095   91 x rt0 3328x1872 | depth 3328x1872 htile 112b720000
+  t 165.095..165.097    3 x rt0 3840x2160 | depth 3840x2160 htile 112bea0000
+  t 165.097..165.097    2 x rt0 3840x2160 | depth 3328x1872 htile 112b720000
+  t 165.097..165.097    1 x rt0 3840x2160 | depth 3840x2160 htile 112bea0000
+  t 165.115..165.118  164 x rt0 3072x1728 | depth 3072x1728 htile 112b3c0000
+(C) before each first depth write into the buffer (window start, or after a full-screen water draw):
+  first depth write at t 165.049 buf 17 at 1661 (ps 11d017ee00, rt0 3328x1872); the entries before it:
+    t 165.049 buf 17 at 363: dispatch cs 11d0288800 | z 0000000000 | render_control 0
+    t 165.049 buf 17 at 427: draw op 2d ps 11d01b9100 rt0 11a8af0000 256x256 | z 0000000000 | render_control 0
+    t 165.049 buf 17 at 456: draw op 2d ps 11d01b9100 rt0 11a8af0000 256x256 | z 0000000000 | render_control 0
+    t 165.049 buf 17 at 485: draw op 2d ps 11d01b9100 rt0 11a8af0000 256x256 | z 0000000000 | render_control 0
+    t 165.049 buf 17 at 514: draw op 2d ps 11d01b9100 rt0 11a8af0000 256x256 | z 0000000000 | render_control 0
+    t 165.049 buf 17 at 935: dispatch cs 11d0376b00 | z 0000000000 | render_control 0
+    t 165.049 buf 17 at 954: dispatch cs 11d0376b00 | z 0000000000 | render_control 0
+    t 165.049 buf 17 at 1100: dispatch cs 11d04f0c00 | z 0000000000 | render_control 0
+    t 165.049 buf 17 at 1156: dispatch cs 11d0375600 | z 0000000000 | render_control 0
+    t 165.049 buf 17 at 1320: dispatch cs 11d0288a00 | z 1129ec0000 | render_control 0
+  first depth write at t 165.054 buf 24 at 513 (ps 11d1cf4600, rt0 3328x1872); the entries before it:
+    t 165.053 buf 22 at 1201: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 165.053 buf 22 at 1231: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 165.053 buf 22 at 1261: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 165.053 buf 22 at 1286: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 165.053 buf 22 at 1316: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 165.053 buf 22 at 1372: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 165.053 buf 22 at 1418: dispatch cs 11d0423100 | z 0000000000 | render_control 0
+    t 165.053 buf 22 at 1448: dispatch cs 11d042b700 | z 0000000000 | render_control 0
+    t 165.053 buf 22 at 1504: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 165.053 buf 22 at 1548: dispatch cs 11d0287900 | z 0000000000 | render_control 0
+  first depth write at t 165.087 buf 72 at 513 (ps 11d1cf4600, rt0 3328x1872); the entries before it:
+    t 165.086 buf 70 at 1201: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 165.086 buf 70 at 1231: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 165.086 buf 70 at 1261: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 165.086 buf 70 at 1286: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 165.086 buf 70 at 1316: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 165.086 buf 70 at 1372: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 165.086 buf 70 at 1418: dispatch cs 11d0423100 | z 0000000000 | render_control 0
+    t 165.086 buf 70 at 1448: dispatch cs 11d042b700 | z 0000000000 | render_control 0
+    t 165.086 buf 70 at 1504: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 165.086 buf 70 at 1548: dispatch cs 11d0287900 | z 0000000000 | render_control 0
+  HTILE base 112b3c0000 (register form 112b3c00): 2 non-bake journal lines hold it
+    hint DB_HTILE 0x112b3c0000: window 0x11293c0000+0x4000000, direct memory +0.0 MiB
+    tracked context: 0:00000000 1:11000100 2:00000000 3:00000000 4:00000000 5:112b3c00 6:00000000 7:06bf0bff 8:00000000 9:00000000 a:00000000 b:00000000 c
+  HTILE base 112b720000 (register form 112b7200): 1 non-bake journal lines hold it
+    hint DB_HTILE 0x112b720000: window 0x1129720000+0x4000000, direct memory +0.0 MiB
+  HTILE base 112bea0000 (register form 112bea00): 21 non-bake journal lines hold it
+    hint DB_HTILE 0x112bea0000: window 0x1129ea0000+0x4000000, direct memory +0.0 MiB
+    tracked context: 0:00000000 1:11000100 2:00000000 3:00000000 4:00000000 5:112bea00 6:00000000 7:086f0eff 8:00000000 9:00000000 a:00000000 b:00000000 c
+    tracked context: 0:00000000 1:11000100 2:00000000 3:00000000 4:00000000 5:112bea00 6:00000000 7:086f0eff 8:00000000 9:00000000 a:00000000 b:00000000 c
+    tracked context: 0:00000000 1:11000100 2:00000000 3:00000000 4:00000000 5:112bea00 6:00000000 7:086f0eff 8:00000000 9:00000000 a:00000000 b:00000000 c
+    tracked context: 0:00000000 1:11000100 2:00000000 3:00000000 4:00000000 5:112bea00 6:00000000 7:086f0eff 8:00000000 9:00000000 a:00000000 b:00000000 c

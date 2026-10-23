@@ -1,0 +1,17 @@
+# 0240-lake-depth-loop-order/raw/Q1.jr.txt against 0240-lake-depth-loop-order/raw/Q1.bench.txt: 14 windows
+  t 150.0   wall 19:07:26  prev ts00  1.0 %  next ts01  1.0 % | 3328x1872 3328x1872 3328x1872 3328x1872
+  t 165.1   wall 19:07:42  prev ts03  1.0 %  next ts04  1.0 % | 3072x1728 3072x1728 3072x1728 3072x1728
+  t 180.3   wall 19:07:57  prev ts06  1.0 %  next ts07  1.0 % | 2816x1584 2816x1584 2816x1584 2816x1584 3072x1728
+  t 195.4   wall 19:08:12  prev ts09  1.0 %  next ts10  1.0 % | 3072x1728 3072x1728 3072x1728 3072x1728
+  t 210.6   wall 19:08:27  prev ts12  0.9 %  next ts13  3.5 % | 3072x1728 3072x1728 3072x1728 3072x1728
+  t 225.7   wall 19:08:42  prev ts15  7.5 %  next ts16  0.9 % | 2816x1584 2816x1584 2816x1584 2816x1584
+  t 240.8   wall 19:08:57  prev ts18 23.0 %  next ts19 24.0 % | 3072x1728 3072x1728 3072x1728 3072x1728
+  t 255.9   wall 19:09:12  prev ts21  7.5 %  next ts22 19.1 % | 2304x1296 2304x1296 2560x1440 2560x1440
+  t 271.0   wall 19:09:28  prev ts24 20.4 %  next ts25 20.4 % | 3328x1872 3328x1872 3328x1872 3328x1872 3328x1872
+  t 286.2   wall 19:09:43  prev ts25 20.4 %  next -       | 3328x1872 3328x1872 3328x1872 3328x1872 3328x1872
+  t 301.3   wall 19:09:58  prev ts25 20.4 %  next -       | 3328x1872 3328x1872 3328x1872 3328x1872
+  t 316.4   wall 19:10:13  prev ts25 20.4 %  next -       | 2560x1440 2560x1440 2560x1440 2560x1440
+  t 331.6   wall 19:10:28  prev ts25 20.4 %  next -       | 3328x1872 3328x1872 3328x1872 3328x1872
+  t 346.7   wall 19:10:43  prev ts25 20.4 %  next -       | 3328x1872 3328x1872 3328x1872 3328x1872
+# 0248-lake-depth-buffer-holes/raw/H1.jr.txt against 0248-lake-depth-buffer-holes/raw/H1.bench.txt: 1 windows
+  t 150.0   wall 21:15:37  prev ts00  1.0 %  next ts00  1.0 % | 3328x1872 3328x1872 3328x1872 2048x1152 2048x1152 2048x1152
