@@ -11,7 +11,8 @@ PC emulators have to translate a console's graphics for a different GPU. BC5 doe
 ### What it can do today
 
 - **ASTRO BOT is fully playable**, at about 60 fps in its first level, with the DualSense's motion, haptics and adaptive triggers, and with saves.
-- **Marvel's Wolverine plays** (called "the second title" in the findings and below) from its menus through the opening into gameplay, with sound, saves and pause, and with its ray-traced reflections switched on. It ran at about 37 fps through an 18-minute session; the maintainer's verdict: "fully playable, minimal stutter".
+- **Marvel's Wolverine plays** (called "the second title" in the findings and below) from its menus through the opening into gameplay, with sound, saves and pause, with its ray-traced reflections switched on and, since 2026-10-23, with the DualSense's haptics. It ran at about 37 fps through an 18-minute session; the maintainer's verdict: "fully playable, minimal stutter".
+- **Loading is quick again:** ASTRO BOT reaches its first logo about 12 s after a cold start (it was 33–50 s while the dev box's drive was nearly full).
 - **Any other game is untested.** A game that needs a system library BC5 has not rewritten yet stops there.
 
 ### How you start it
@@ -20,7 +21,7 @@ On the maintainer's box a desktop shortcut, *BC5 emulator*, opens the emulator w
 
 ### What is still broken
 
-Patches of the water are missing on the second title's night lake. About once an hour of play the machine goes down and reboots. In some cutscenes the characters moved in slow motion while effects ran at normal speed; one re-check on today's defaults showed none. The second title's DualSense haptic tracks are decoded since 2026-10-23, but nobody has felt them on the pad yet. All of these are under investigation; see [Known issues](#known-issues).
+Patches of the water are missing on the second title's night lake. Now and then a GPU fault freezes the picture (the sound keeps playing) or takes the machine down; the most frequent trigger, a wait the host gave up on, is removed since 2026-10-24, the rarer stray GPU writes are not. Some cutscenes used to play the characters in slow motion; a re-check on the current defaults showed none. The ray-traced reflections still skip one pass, so they may be incomplete. See [Known issues](#known-issues).
 
 ### Legal, in short
 
@@ -28,35 +29,38 @@ BC5 is a hobby research project and is against piracy. You play games you own, d
 
 ## Status in numbers
 
-As of 2026-10-22, measured on one BC-250 with the maintainer's own copies of the games. Every number is a finding (F1 … F283) in [`docs/HANDOFF.md`](docs/HANDOFF.md) §2, backed by an experiment under [`experiments/`](experiments/). A "flip" is one frame the game presented.
+As of 2026-10-24, measured on one BC-250 with the maintainer's own copies of the games. Every number is a finding (F1 … F312) in [`docs/HANDOFF.md`](docs/HANDOFF.md) §2, backed by an experiment under [`experiments/`](experiments/). A "flip" is one frame the game presented.
 
 | | ASTRO BOT | Marvel's Wolverine (second title) |
 | --- | --- | --- |
 | State | Fully playable (F85) | Plays through menus, saves, New Game and Continue into gameplay (F207, F212); sound and game speed right, pause and resume (F240, F247); with reflections on, "fully playable, minimal stutter" in the maintainer's words (F277) |
 | Frame rate | First level 59–60 fps at 3328×1872, 57 at native 4K (F100, F101); a later level 46.5 (F126); the water level 43.4 (F137) | 18-minute play with reflections on: 37.5 flips/s, against 39.4 with them off (F277); 300-s scripted route 37.9–38.6 (F280, F281); opening 44–52 (F247); the night jungle 28–29, GPU-bound (F244, F248). The game asks for 60 (F210) |
 | Picture | 3D resolution chosen live in the F2 menu: 4K, ~1872p, ~1368p or 1080p (F101) | Paces itself by GPU time: keep the F2 resolution at 4K (scale 1.0); a higher scale halves its frame rate (F237) |
-| Controller | Motion, haptics, adaptive triggers (F52–F60, F78–F80) | Touchpad press mapped (F252) |
+| Loading | Cold start to the first logo ~12 s (F287); startup reads are no longer bound by the disk (F289) | Logo load ends at 13–15 s, Continue into gameplay 37–41 s (F287) |
+| Controller | Motion, haptics, adaptive triggers (F52–F60, F78–F80) | Haptics (its ATRAC9 vibration tracks, F300, F301), touchpad press (F252) |
 
 **On by default** (in both builds, normal and lean):
 
 | What | Effect | Source |
 | --- | --- | --- |
-| Ray-traced reflections, second title (since 2026-10-22) | Six reflection-traversal variants run, their stack addresses fixed for Linux's memory apertures; the BVH compaction pass that feeds them is still skipped, as it halves the frame rate and faulted. Reflections reach the image; whether they are complete is not shown | F249, F250, F268, F275, F277 |
-| APR read-ahead (since 2026-10-22) | Streamed reads come back sooner: the cutscene read queue's 95th percentile from 3.4 s to 0.42 s; its reader threads sleep when idle (7–11 ms of CPU per 10 s instead of 160–208) | F273, F281 |
+| Ray-traced reflections, second title (since 2026-10-22) | Six reflection-traversal variants run, their stack addresses fixed for Linux's memory apertures. The BVH compaction pass that feeds them is still skipped: it once halved the frame rate in play, though on the bench it is a load-time burst with no per-frame GPU cost and seven runs with it on stayed clean, so a play test with it on is next. Reflections reach the image; whether they are complete is not shown | F249, F250, F268, F275, F277, F304, F306 |
+| Held tail (since 2026-10-24) | When a game-thread wait would time out, the host holds the rest of the submission instead of giving up on it (ADR 0013): given-up waits 14 → 0 a run, long frame gaps to about a quarter, +3 % frames | F284, F312 |
+| Tiler scratch pool (since 2026-10-23) | The display buffer's per-flip detile reuses pooled scratch buffers instead of allocating a new one every frame, which stalled the host's GPU thread for 0.3–0.7 s under memory pressure | F308, F311 |
+| DualSense haptics, second title (since 2026-10-23) | Its ATRAC9 streams in channel configurations 6 and 7 are the pad's haptic tracks, decoded with vgmstream's decoder instead of played as silence; confirmed at the pad | F300, F301 |
+| APR read-ahead (since 2026-10-22, fixed 2026-10-23) | Streamed reads come back sooner: the cutscene read queue's 95th percentile from 3.4 s to 0.42 s; its reader threads sleep when idle (7–11 ms of CPU per 10 s instead of 160–208); large buffers and parallel runs stay with the queue's workers | F273, F281, F287, F288 |
 | Submission chains, second title | Fewer kernel submissions (4,463 → 1,658 a second) and the night scene from 33 to 45 flips/s when measured | F218, F240 |
 | Audio grain model and display-event coalescing | The second title's sound and timeline at real speed (1.00× for 10 minutes), no 30-fps cap needed | F246, F247 |
 | Tessellation-factor ring, second title | The night scene's tessellated draws are drawn; the geometry engine's reads at address 0 are gone | F248 |
 
-**The research so far:** 283 findings (F1–F283) in `docs/HANDOFF.md`, 222 experiments (0001–0223) in `experiments/`, 12 architecture decision records in `docs/decisions/`.
+**The research so far:** 312 findings (F1–F312) in `docs/HANDOFF.md`, about 250 experiments (0001–0252) in `experiments/`, 14 architecture decision records in `docs/decisions/`.
 
 ### Known issues
 
 | Issue | What is known | Findings |
 | --- | --- | --- |
-| Patchwork water on the second title's night lake | Rectangles of the water show the lake bed in some runs. Not a missing input from the host: the textures are resident, and the game's texture detail clamps do not decide it. The same view goes clean and patched again from frame to frame with an unchanged texture table; the cause is open | F255, F269, F272, F278, F292 |
-| Machine-downs (about one an hour of play) | Two GPU rings time out with no fault, the graphics ring's reset fails, the kernel resets the whole GPU and the box reboots. Three of four followed a game-thread wait the host gave up on; the wait is for GPU work not yet submitted. Under investigation | F260, F262, F264, F279, F282, F283 |
-| Cutscene slow motion | Characters crawl while hair and effects run on. Their clock is a silent looping voice that stops when its next streamed read comes late. With the fixed read-ahead and the freed drive (2026-10-23) the cutscene that lagged on the scripted route plays at 1.00× in one run; whether it is gone everywhere is not shown | F254, F256, F259, F267, F273, F288, F302 |
-| DualSense haptics, second title | Its ATRAC9 streams in channel configurations 6 and 7 are the pad's haptic tracks (all their energy below 1 kHz), not sound. Since 2026-10-23 vgmstream's decoder decodes them instead of silence (`KYTY_BC5_AT9_VIBRATION=0` restores the silence). Whether they reach the pad's actuators as intended is not yet checked at the pad | F200, F300, F301 |
+| Patchwork water on the second title's night lake | Cells of the water show the lake bed in some runs, switching on and off over seconds. The cells are holes in the frame's depth buffer: the water's full-screen pass is depth-tested behind ~130 GPU-driven depth writers and fails where one of them left a nearer depth. Ruled out: the textures and their detail clamps, the HTILE metadata, the render-size changes and any packet the host filters. Open: which writer leaves those cells | F255, F292, F296–F299, F303, F305, F307, F309, F310 |
+| Freezes and machine-downs | Two kinds. (1) Two GPU rings time out with no fault after a game-thread wait the host gave up on; the host's synchronous wait held the very thread that would have submitted the awaited work (F284). The held tail removes these give-ups (on by default since 2026-10-24, F312). (2) A shader writes into heap the game never backed; the GPU faults, the rings reset and the picture freezes while the sound plays on (seen 2026-10-23). The host then learns that window and backs it next time (F257); where the shader's address comes from is open | F257, F260, F262, F279, F282–F284, F312 |
+| Cutscene slow motion | Characters crawled while hair and effects ran on; their clock is a silent looping voice that stops when its next streamed read comes late. With the fixed read-ahead and the freed drive the cutscene that lagged on the scripted route plays at 1.00× (one run, 2026-10-23); whether it is gone everywhere is not shown | F254, F256, F259, F267, F273, F288, F302 |
 | Library ports from AnyPS5 | Rumble without an audio sink, NpManager, NpTrophy2, SaveData search: ported, not yet verified on the box | F214–F217, Q16 |
 
 ## How it works
@@ -124,6 +128,8 @@ Environment variables; the launchers set the title's values. The full list, with
 | `BC5_DIRECT_SKIP_PGM` | none; `909974400` in `play-pkg.sh` | Drops the dispatches of the listed shader programs (the BVH compaction) | F268, F277 |
 | `BC5_DIRECT_AMM_PRT` | unset; `1` in `play-pkg.sh` | Maps the AMM pages the game never backs as partially resident, so its stray writes are dropped as on the console; set at all, even to `0`, it is on | F257, F260, F277 |
 | `BC5_DIRECT_DCB_WAIT_MS` | `8` | How long the game thread waits on a GPU label before giving up on it | F263, F270, F271 |
+| `BC5_DIRECT_HOLD_TAIL` | on | Holds the rest of a submission instead of giving up on a game-thread wait (ADR 0013); `0` restores the give-up | F284, F312 |
+| `KYTY_BC5_TILER_POOL` | on | Reuses the display detile's scratch buffers; `0` allocates one per flip as before | F308, F311 |
 | `KYTY_BC5_APR_READAHEAD` | `4` | APR read-ahead reader threads per priority queue; `0` turns it off | F273 |
 | `KYTY_BC5_AUDIO2_ADVANCED`, `KYTY_BC5_VIDEOOUT_COALESCE` | on | Audio grain model and display-event coalescing; `0` turns them off | F246, F247 |
 | `KYTY_BC5_AT9_VIBRATION` | on | Decodes ATRAC9's vibration configurations 6–7 (the second title's haptic tracks) with vgmstream's decoder; `0` plays them as silence | F300, F301 |
@@ -137,13 +143,12 @@ Environment variables; the launchers set the title's values. The full list, with
 README.md            this file
 CLAUDE.md            standing instructions and the hard rules
 docs/
-  HANDOFF.md         research state: findings F1–F283 with sources, open questions, decisions
+  HANDOFF.md         research state: findings F1–F312 with sources, open questions, decisions
   PHASES.md          the gated roadmap (phases 0a–3 passed; 0b and 4 retired by ADR 0012)
   console-vs-host.md what the console does, what the host does instead
-  decisions/         ADRs 0001–0012, one decision each
+  decisions/         ADRs 0001–0014, one decision each
   formats/           derived format notes: ffpfsc, ps5pkg, agc, ajm-opus
   ports/             reviews of projects whose code can be ported (AnyPS5, others)
-  images/            two milestone screenshots
 tools/
   bc5-mount/         Rust: .ffpfsc and .pkg as a read-only directory (FUSE)
   bc5-agc/           Rust: PM4/AGC command-stream decoder and report
@@ -151,7 +156,7 @@ tools/
   third_party/       vendored oozextract (MIT)
 backend/             C++20: the direct path (policy filter, state trackers, dma-buf mappings,
                      submission); kytyplus-patches/ the patch against KytyPlus
-experiments/         one directory per experiment, 0001–0223
+experiments/         one directory per experiment, 0001–0252
 ```
 
 ## How the research is run
