@@ -1,0 +1,9 @@
+2026-10-23 09:11:46
+title astro, arm NOCAP (BC5_RUN_ENV=/home/kjaniszewski/bc5-work/exp0227/bc5-run-nocapture.env), 150 s, launcher /home/kjaniszewski/bc5-work/exp0227/play-astro-0227.sh md5 dfa212c3e8d7dc3826a69b83e0d5f259
+launcher read-ahead line: 55:# KYTY_BC5_APR_PARALLEL's 8-way runs. KYTY_BC5_APR_READAHEAD=4 turns it back on. 56:export KYTY_BC5_APR_READAHEAD=${KYTY_BC5_APR_READAHEAD:-0} 
+binary /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator md5 7a37a56026a15d64383f223580585701
+boot 31c1a6ac, up since 2026-10-23 00:05:57
+before: Mem: used 1426 free 12090 avail 13766; Swap: used 579 free 7016 avail ; 
+box start uptime 32749.46 avail_mib 13766 swapfree_mib 7016 pswpin 838954 pswpout 1900303 pgmajfault 942395 compact_stall 11820 compact_fail 11065  psi_mem_full_us 24120765 psi_io_full_us 384353576
+launch at uptime 32749.47; emulator pid 390058 started at uptime 32755.85: /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator --game /home/kjaniszewski/bc5-data/mnt/
+environ: KYTY_BC5_APR_READAHEAD=0 PLAY_CAPTURE=0 BC5_DIRECT_CHAIN=2 

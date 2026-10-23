@@ -1,0 +1,70 @@
+== 2026-10-23 08:35:37 emulator 2026-10-22 10:22:48
+BC5_GC_MODE=direct
+BC5_DIRECT_STAGE=all
+BC5_DIRECT_RINGS=1
+BC5_DIRECT_REOPEN=1
+BC5_DIRECT_GDS_KIB=64
+BC5_DIRECT_OA=16
+BC5_DIRECT_GWS=64
+BC5_DIRECT_GDS_ALL=1
+BC5_DIRECT_GDS_SHADOW=1
+BC5_DIRECT_JOURNAL=min
+BC5_DIRECT_ASYNC=1
+BC5_DIRECT_LAZY_NAMES=orbis_user_malloc
+BC5_DIRECT_EAGER_NAMES=GpuGarlicMemory,GpuOnionMemory
+KYTY_BC5_ALL_RW=1
+KYTY_BC5_DMABUF=1
+KYTY_BC5_CACHE_MIB=96,16,16,16
+KYTY_BC5_VMA_BLOCK_MIB=16
+KYTY_GUEST_MEMORY_MB=13824
+SDL_JOYSTICK_DISABLE_UDEV=1
+SDL_VIDEODRIVER=wayland
+SHADPS4_SYSMODULES_PACK_DIR=/home/kjaniszewski/bc5-data/mnt/PPSA21567/fakelib
+PLAY_ARGS=
+KYTY_BC5_INPUT_CONFIG=/home/kjaniszewski/bc5-work/input.cfg
+BC5_DIRECT_RING_ASYNC=1
+BC5_DIRECT_FLIP_DEFER=1
+BC5_DIRECT_MAX_IN_FLIGHT=24
+BC5_DIRECT_RING_ORDER_WAITS=1
+KYTY_BC5_INPUT_RECORD=/home/kjaniszewski/bc5-work/route-record.txt
+PLAY_CAPTURE=1
+BC5_DIRECT_PIECES_DRY=1
+BC5_DIRECT_PIECES_FULL=1
+bc5-direct: GDS BO 64 KiB: ok (0)
+bc5-direct: OA BO 16: ok (0)
+bc5-direct: GDS shadow 64 KiB at 0x100004000000: ok (0)
+bc5-direct: GWS BO 64: ok (0)
+bc5 system param 1 -> 1
+bc5 clock: journal t 0 = monotonic 30581.183 s
+AudioOut: SDL audio driver pipewire
+AudioOut: SDLAudioP0 thread 173970 at nice -15
+AudioOut: SDLAudioP0 thread 173974 at nice -15
+AudioOut: SDLAudioP56 thread 174036 at nice -15
+AudioOut: SDLAudioP56 thread 174050 at nice -15
+fps counter: t 3.420 s: 56 flips in 1.000 s, longest gap 89.1 ms, gaps over 40 ms 2, over 70 ms 2
+fps counter: t 4.437 s: 61 flips in 1.016 s, longest gap 17.3 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 5.437 s: 60 flips in 1.000 s, longest gap 17.0 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 6.437 s: 60 flips in 1.000 s, longest gap 17.1 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 7.437 s: 60 flips in 1.000 s, longest gap 17.1 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 8.437 s: 60 flips in 1.000 s, longest gap 17.1 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 9.437 s: 60 flips in 1.000 s, longest gap 23.3 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 10.453 s: 61 flips in 1.016 s, longest gap 18.4 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 11.465 s: 53 flips in 1.012 s, longest gap 159.3 ms, gaps over 40 ms 1, over 70 ms 1
+fps counter: t 12.470 s: 62 flips in 1.005 s, longest gap 17.0 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 13.487 s: 61 flips in 1.017 s, longest gap 23.9 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 14.487 s: 60 flips in 1.000 s, longest gap 30.5 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 15.503 s: 61 flips in 1.016 s, longest gap 21.4 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 16.504 s: 60 flips in 1.000 s, longest gap 17.2 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 17.520 s: 61 flips in 1.017 s, longest gap 17.2 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 18.520 s: 60 flips in 1.000 s, longest gap 31.4 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 19.537 s: 61 flips in 1.017 s, longest gap 17.1 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 20.554 s: 61 flips in 1.016 s, longest gap 17.4 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 21.554 s: 60 flips in 1.000 s, longest gap 17.6 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 22.570 s: 61 flips in 1.017 s, longest gap 17.0 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 23.570 s: 60 flips in 1.000 s, longest gap 16.9 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 24.587 s: 61 flips in 1.017 s, longest gap 17.0 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 25.587 s: 60 flips in 1.000 s, longest gap 17.5 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 26.587 s: 60 flips in 1.000 s, longest gap 17.0 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 27.588 s: 60 flips in 1.000 s, longest gap 17.2 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 28.589 s: 60 flips in 1.002 s, longest gap 17.8 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 29.723 s: 49 flips in 1.134 s, longest gap 303.6 ms, gaps over 40 ms 1, over 70 ms 1

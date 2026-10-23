@@ -1,0 +1,26 @@
+== 08:43:09 run AP1-OLD
+route saves from /home/kjaniszewski/bc5-work/save-backup-astro in /home/kjaniszewski/bc5-work/_SaveData/PPSA21564 (live saves kept in /home/kjaniszewski/bc5-work/exp0227/astro-live-AP1-OLD)
+AP1-OLD stopped at 150 s
+live saves back and identical to /home/kjaniszewski/bc5-work/exp0227/astro-live-AP1-OLD
+AP1-OLD: crash lines 0, kernel lines 0, read 11809 MiB (rchar)
+AP1-OLD box: avail 13573 -> 3211 MiB; compact_stall +6 (fail +5), pswpin +6420, pswpout +192320, majfault +6858; PSI full mem 1.0 s, io 15.0 s
+== 08:46:05 run AP2-CUR
+route saves from /home/kjaniszewski/bc5-work/save-backup-astro in /home/kjaniszewski/bc5-work/_SaveData/PPSA21564 (live saves kept in /home/kjaniszewski/bc5-work/exp0227/astro-live-AP2-CUR)
+AP2-CUR stopped at 150 s
+live saves back and identical to /home/kjaniszewski/bc5-work/exp0227/astro-live-AP2-CUR
+AP2-CUR: crash lines 0, kernel lines 0, read 11652 MiB (rchar)
+AP2-CUR box: avail 13784 -> 1751 MiB; compact_stall +6 (fail +5), pswpin +672, pswpout +230, majfault +1178; PSI full mem 1.0 s, io 7.5 s
+== 08:49:05 run AP3-OLD
+route saves from /home/kjaniszewski/bc5-work/save-backup-astro in /home/kjaniszewski/bc5-work/_SaveData/PPSA21564 (live saves kept in /home/kjaniszewski/bc5-work/exp0227/astro-live-AP3-OLD)
+AP3-OLD stopped at 150 s
+live saves back and identical to /home/kjaniszewski/bc5-work/exp0227/astro-live-AP3-OLD
+AP3-OLD: crash lines 0, kernel lines 0, read 11436 MiB (rchar)
+AP3-OLD box: avail 13763 -> 2027 MiB; compact_stall +0 (fail +0), pswpin +151, pswpout +0, majfault +504; PSI full mem 0.7 s, io 21.6 s
+== 08:52:06 run AP4-CUR
+route saves from /home/kjaniszewski/bc5-work/save-backup-astro in /home/kjaniszewski/bc5-work/_SaveData/PPSA21564 (live saves kept in /home/kjaniszewski/bc5-work/exp0227/astro-live-AP4-CUR)
+AP4-CUR stopped at 150 s
+live saves back and identical to /home/kjaniszewski/bc5-work/exp0227/astro-live-AP4-CUR
+AP4-CUR: crash lines 0, kernel lines 0, read 11887 MiB (rchar)
+AP4-CUR box: avail 13812 -> 1814 MiB; compact_stall +0 (fail +0), pswpin +7111, pswpout +83, majfault +7563; PSI full mem 0.2 s, io 14.1 s
+== 08:55:10 BOX-LOCK released
+== 08:55:10 chain astro done

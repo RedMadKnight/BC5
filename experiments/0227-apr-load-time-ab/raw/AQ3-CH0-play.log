@@ -1,0 +1,189 @@
+== 2026-10-23 09:14:54 emulator 2026-10-22 22:11:14
+BC5_GC_MODE=direct
+BC5_DIRECT_STAGE=all
+BC5_DIRECT_RINGS=1
+BC5_DIRECT_REOPEN=1
+BC5_DIRECT_GDS_KIB=64
+BC5_DIRECT_OA=16
+BC5_DIRECT_GWS=64
+BC5_DIRECT_GDS_ALL=1
+BC5_DIRECT_GDS_SHADOW=1
+BC5_DIRECT_JOURNAL=min
+BC5_DIRECT_ASYNC=1
+BC5_DIRECT_LAZY_NAMES=orbis_user_malloc
+BC5_DIRECT_EAGER_NAMES=GpuGarlicMemory,GpuOnionMemory
+KYTY_BC5_ALL_RW=1
+KYTY_BC5_DMABUF=1
+KYTY_BC5_CACHE_MIB=96,16,16,16
+KYTY_BC5_VMA_BLOCK_MIB=16
+KYTY_GUEST_MEMORY_MB=13824
+SDL_JOYSTICK_DISABLE_UDEV=1
+SDL_VIDEODRIVER=wayland
+SHADPS4_SYSMODULES_PACK_DIR=/home/kjaniszewski/bc5-data/mnt/PPSA21567/fakelib
+PLAY_ARGS=
+KYTY_BC5_INPUT_CONFIG=/home/kjaniszewski/bc5-work/input.cfg
+BC5_DIRECT_RING_ASYNC=1
+BC5_DIRECT_FLIP_DEFER=1
+BC5_DIRECT_MAX_IN_FLIGHT=24
+BC5_DIRECT_RING_ORDER_WAITS=1
+KYTY_BC5_INPUT_RECORD=/home/kjaniszewski/bc5-work/route-record.txt
+PLAY_CAPTURE=1
+BC5_DIRECT_PIECES_DRY=1
+BC5_DIRECT_PIECES_FULL=1
+bc5-direct: GDS BO 64 KiB: ok (0)
+bc5-direct: OA BO 16: ok (0)
+bc5-direct: GDS shadow 64 KiB at 0x100004000000: ok (0)
+bc5-direct: GWS BO 64: ok (0)
+bc5 system param 1 -> 1
+bc5 clock: journal t 0 = monotonic 32938.621 s
+AudioOut: SDL audio driver pipewire
+AudioOut: SDLAudioP0 thread 423395 at nice -15
+AudioOut: SDLAudioP0 thread 423399 at nice -15
+AudioOut: SDLAudioP56 thread 423546 at nice -15
+AudioOut: SDLAudioP56 thread 423561 at nice -15
+fps counter: t 4.324 s: 53 flips in 1.004 s, longest gap 112.8 ms, gaps over 40 ms 3, over 70 ms 3
+fps counter: t 5.334 s: 61 flips in 1.010 s, longest gap 18.5 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 6.350 s: 61 flips in 1.016 s, longest gap 19.5 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 7.353 s: 43 flips in 1.003 s, longest gap 197.0 ms, gaps over 40 ms 2, over 70 ms 2
+fps counter: t 8.367 s: 62 flips in 1.014 s, longest gap 18.8 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 9.384 s: 51 flips in 1.017 s, longest gap 212.4 ms, gaps over 40 ms 1, over 70 ms 1
+fps counter: t 10.385 s: 60 flips in 1.000 s, longest gap 17.7 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 11.386 s: 53 flips in 1.002 s, longest gap 164.9 ms, gaps over 40 ms 1, over 70 ms 1
+fps counter: t 12.386 s: 60 flips in 1.000 s, longest gap 19.6 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 13.393 s: 52 flips in 1.007 s, longest gap 179.8 ms, gaps over 40 ms 1, over 70 ms 1
+fps counter: t 14.401 s: 61 flips in 1.008 s, longest gap 20.2 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 15.418 s: 61 flips in 1.018 s, longest gap 34.8 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 16.468 s: 6 flips in 1.050 s, longest gap 967.3 ms, gaps over 40 ms 1, over 70 ms 1
+fps counter: t 17.470 s: 62 flips in 1.002 s, longest gap 31.9 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 18.484 s: 61 flips in 1.014 s, longest gap 19.2 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 19.484 s: 52 flips in 1.001 s, longest gap 180.4 ms, gaps over 40 ms 1, over 70 ms 1
+fps counter: t 20.501 s: 61 flips in 1.017 s, longest gap 28.9 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 21.502 s: 50 flips in 1.001 s, longest gap 222.0 ms, gaps over 40 ms 1, over 70 ms 1
+fps counter: t 22.504 s: 60 flips in 1.002 s, longest gap 21.8 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 23.603 s: 56 flips in 1.100 s, longest gap 182.1 ms, gaps over 40 ms 1, over 70 ms 1
+fps counter: t 24.616 s: 62 flips in 1.012 s, longest gap 30.3 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 25.618 s: 44 flips in 1.002 s, longest gap 327.7 ms, gaps over 40 ms 1, over 70 ms 1
+fps counter: t 26.628 s: 54 flips in 1.010 s, longest gap 144.1 ms, gaps over 40 ms 1, over 70 ms 1
+fps counter: t 27.634 s: 61 flips in 1.007 s, longest gap 18.0 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 28.651 s: 56 flips in 1.016 s, longest gap 126.7 ms, gaps over 40 ms 1, over 70 ms 1
+fps counter: t 29.651 s: 54 flips in 1.000 s, longest gap 149.6 ms, gaps over 40 ms 1, over 70 ms 1
+fps counter: t 30.652 s: 54 flips in 1.001 s, longest gap 150.8 ms, gaps over 40 ms 1, over 70 ms 1
+fps counter: t 31.668 s: 61 flips in 1.015 s, longest gap 43.0 ms, gaps over 40 ms 1, over 70 ms 0
+fps counter: t 32.672 s: 54 flips in 1.004 s, longest gap 150.1 ms, gaps over 40 ms 1, over 70 ms 1
+fps counter: t 33.684 s: 61 flips in 1.012 s, longest gap 17.7 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 34.743 s: 55 flips in 1.059 s, longest gap 158.8 ms, gaps over 40 ms 1, over 70 ms 1
+fps counter: t 35.753 s: 62 flips in 1.010 s, longest gap 18.8 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 36.779 s: 53 flips in 1.026 s, longest gap 161.7 ms, gaps over 40 ms 1, over 70 ms 1
+fps counter: t 37.785 s: 56 flips in 1.006 s, longest gap 144.0 ms, gaps over 40 ms 1, over 70 ms 1
+fps counter: t 38.794 s: 53 flips in 1.008 s, longest gap 143.5 ms, gaps over 40 ms 1, over 70 ms 1
+fps counter: t 39.801 s: 54 flips in 1.007 s, longest gap 172.8 ms, gaps over 40 ms 1, over 70 ms 1
+fps counter: t 40.817 s: 53 flips in 1.016 s, longest gap 142.6 ms, gaps over 40 ms 1, over 70 ms 1
+fps counter: t 41.823 s: 60 flips in 1.006 s, longest gap 18.9 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 42.825 s: 45 flips in 1.002 s, longest gap 286.8 ms, gaps over 40 ms 1, over 70 ms 1
+fps counter: t 43.841 s: 50 flips in 1.016 s, longest gap 180.8 ms, gaps over 40 ms 1, over 70 ms 1
+fps counter: t 44.855 s: 58 flips in 1.015 s, longest gap 20.7 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 45.869 s: 54 flips in 1.014 s, longest gap 39.9 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 46.875 s: 48 flips in 1.006 s, longest gap 137.4 ms, gaps over 40 ms 1, over 70 ms 1
+fps counter: t 47.884 s: 51 flips in 1.009 s, longest gap 41.6 ms, gaps over 40 ms 1, over 70 ms 0
+fps counter: t 48.885 s: 42 flips in 1.000 s, longest gap 190.8 ms, gaps over 40 ms 1, over 70 ms 1
+fps counter: t 50.551 s: 30 flips in 1.666 s, longest gap 1067.4 ms, gaps over 40 ms 1, over 70 ms 1
+fps counter: t 51.555 s: 49 flips in 1.004 s, longest gap 46.0 ms, gaps over 40 ms 1, over 70 ms 0
+fps counter: t 52.568 s: 54 flips in 1.013 s, longest gap 36.0 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 53.571 s: 51 flips in 1.003 s, longest gap 122.8 ms, gaps over 40 ms 1, over 70 ms 1
+fps counter: t 54.584 s: 53 flips in 1.013 s, longest gap 108.7 ms, gaps over 40 ms 1, over 70 ms 1
+fps counter: t 55.585 s: 55 flips in 1.000 s, longest gap 46.1 ms, gaps over 40 ms 1, over 70 ms 0
+fps counter: t 56.595 s: 58 flips in 1.011 s, longest gap 39.3 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 57.599 s: 57 flips in 1.004 s, longest gap 33.6 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 58.611 s: 60 flips in 1.012 s, longest gap 17.9 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 59.614 s: 60 flips in 1.003 s, longest gap 18.1 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 60.630 s: 61 flips in 1.016 s, longest gap 38.5 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 61.644 s: 61 flips in 1.014 s, longest gap 17.7 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 62.646 s: 60 flips in 1.002 s, longest gap 18.7 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 63.647 s: 60 flips in 1.001 s, longest gap 18.4 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 64.649 s: 60 flips in 1.003 s, longest gap 18.6 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 65.650 s: 60 flips in 1.001 s, longest gap 17.7 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 66.664 s: 61 flips in 1.014 s, longest gap 18.3 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 67.679 s: 61 flips in 1.015 s, longest gap 18.0 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 68.686 s: 60 flips in 1.007 s, longest gap 18.0 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 69.699 s: 61 flips in 1.014 s, longest gap 17.5 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 70.712 s: 60 flips in 1.013 s, longest gap 18.2 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 71.723 s: 58 flips in 1.011 s, longest gap 18.6 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 72.730 s: 59 flips in 1.006 s, longest gap 17.8 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 73.733 s: 60 flips in 1.003 s, longest gap 18.0 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 74.737 s: 60 flips in 1.004 s, longest gap 18.0 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 75.737 s: 60 flips in 1.001 s, longest gap 17.7 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 76.750 s: 60 flips in 1.013 s, longest gap 18.4 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 77.752 s: 60 flips in 1.002 s, longest gap 18.1 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 78.759 s: 61 flips in 1.007 s, longest gap 17.6 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 79.771 s: 62 flips in 1.011 s, longest gap 17.4 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 80.786 s: 61 flips in 1.015 s, longest gap 17.0 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 81.799 s: 59 flips in 1.013 s, longest gap 46.1 ms, gaps over 40 ms 1, over 70 ms 0
+fps counter: t 82.813 s: 62 flips in 1.014 s, longest gap 18.1 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 83.819 s: 61 flips in 1.006 s, longest gap 18.1 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 84.827 s: 60 flips in 1.007 s, longest gap 18.9 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 85.832 s: 59 flips in 1.006 s, longest gap 18.6 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 86.847 s: 62 flips in 1.014 s, longest gap 17.8 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 87.862 s: 61 flips in 1.016 s, longest gap 18.0 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 88.870 s: 61 flips in 1.008 s, longest gap 17.4 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 89.886 s: 61 flips in 1.016 s, longest gap 17.7 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 90.889 s: 60 flips in 1.002 s, longest gap 18.0 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 91.903 s: 61 flips in 1.014 s, longest gap 17.8 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 92.920 s: 61 flips in 1.017 s, longest gap 17.7 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 93.936 s: 61 flips in 1.017 s, longest gap 17.8 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 94.953 s: 61 flips in 1.017 s, longest gap 17.8 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 95.969 s: 61 flips in 1.016 s, longest gap 17.6 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 96.970 s: 60 flips in 1.000 s, longest gap 17.8 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 97.970 s: 60 flips in 1.000 s, longest gap 17.9 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 98.986 s: 61 flips in 1.016 s, longest gap 18.0 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 99.986 s: 60 flips in 1.000 s, longest gap 17.4 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 101.003 s: 61 flips in 1.017 s, longest gap 17.8 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 102.005 s: 60 flips in 1.002 s, longest gap 18.7 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 103.008 s: 60 flips in 1.003 s, longest gap 18.1 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 104.008 s: 59 flips in 1.001 s, longest gap 18.1 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 105.012 s: 61 flips in 1.004 s, longest gap 17.5 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 106.022 s: 61 flips in 1.009 s, longest gap 17.6 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 107.024 s: 60 flips in 1.002 s, longest gap 17.9 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 108.035 s: 59 flips in 1.011 s, longest gap 18.3 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 109.050 s: 58 flips in 1.015 s, longest gap 18.9 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 110.059 s: 61 flips in 1.009 s, longest gap 17.6 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 111.061 s: 61 flips in 1.002 s, longest gap 17.8 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 112.070 s: 61 flips in 1.009 s, longest gap 17.5 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 113.080 s: 58 flips in 1.010 s, longest gap 59.4 ms, gaps over 40 ms 1, over 70 ms 0
+fps counter: t 114.083 s: 61 flips in 1.003 s, longest gap 17.5 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 115.086 s: 61 flips in 1.004 s, longest gap 17.6 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 116.087 s: 60 flips in 1.001 s, longest gap 17.7 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 117.097 s: 59 flips in 1.010 s, longest gap 18.3 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 118.109 s: 60 flips in 1.012 s, longest gap 17.9 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 119.111 s: 61 flips in 1.002 s, longest gap 17.2 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 120.122 s: 61 flips in 1.011 s, longest gap 18.6 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 121.129 s: 61 flips in 1.007 s, longest gap 17.7 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 122.140 s: 61 flips in 1.011 s, longest gap 18.1 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 123.153 s: 61 flips in 1.013 s, longest gap 17.9 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 124.170 s: 61 flips in 1.017 s, longest gap 17.8 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 125.170 s: 60 flips in 1.000 s, longest gap 18.0 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 126.187 s: 61 flips in 1.017 s, longest gap 17.9 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 127.203 s: 61 flips in 1.017 s, longest gap 18.0 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 128.220 s: 61 flips in 1.017 s, longest gap 17.8 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 129.220 s: 60 flips in 1.000 s, longest gap 17.8 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 130.237 s: 61 flips in 1.017 s, longest gap 17.6 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 131.237 s: 60 flips in 1.000 s, longest gap 17.3 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 132.237 s: 60 flips in 1.000 s, longest gap 18.0 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 133.253 s: 61 flips in 1.016 s, longest gap 17.6 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 134.253 s: 60 flips in 1.000 s, longest gap 18.2 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 135.270 s: 61 flips in 1.017 s, longest gap 17.1 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 136.287 s: 61 flips in 1.017 s, longest gap 18.1 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 137.289 s: 60 flips in 1.002 s, longest gap 17.7 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 138.291 s: 59 flips in 1.002 s, longest gap 18.6 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 139.292 s: 59 flips in 1.001 s, longest gap 18.5 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 140.296 s: 60 flips in 1.003 s, longest gap 18.8 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 141.299 s: 61 flips in 1.003 s, longest gap 18.0 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 142.304 s: 61 flips in 1.005 s, longest gap 17.8 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 143.310 s: 57 flips in 1.007 s, longest gap 67.9 ms, gaps over 40 ms 1, over 70 ms 0
+fps counter: t 144.318 s: 60 flips in 1.008 s, longest gap 18.7 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 145.329 s: 61 flips in 1.012 s, longest gap 17.8 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 146.338 s: 59 flips in 1.008 s, longest gap 18.3 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 147.351 s: 60 flips in 1.013 s, longest gap 17.7 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 148.353 s: 60 flips in 1.003 s, longest gap 18.7 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 149.363 s: 61 flips in 1.010 s, longest gap 17.8 ms, gaps over 40 ms 0, over 70 ms 0
+fps counter: t 150.372 s: 60 flips in 1.008 s, longest gap 17.8 ms, gaps over 40 ms 0, over 70 ms 0
+== 2026-10-23 09:17:25 exit 0

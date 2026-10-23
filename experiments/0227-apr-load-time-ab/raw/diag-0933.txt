@@ -1,0 +1,37 @@
+== 2026-10-23 09:33:40 boot 31c1a6ac, up since 2026-10-23 00:05:57
+== NVMe: model 'Fanxiang S501Q 512GB', firmware VC406624, PCI /sys/devices/pci0000:00/0000:00:15.0/0000:03:00.0
+   link 5.0 GT/s PCIe x2 (max 8.0 GT/s PCIe x4)
+   scheduler none mq-deadline [kyber] bfq , read_ahead_kb 128
+Smartctl open device: /dev/nvme0 failed: Permission denied
+/dev/nvme0: Permission denied
+[1mUsage: nvme smart-log <device> [OPTIONS][0m
+
+Retrieve SMART log for the given device (or optionally a namespace) in either
+decoded format (default) or binary.
+
+[1mOptions:[0m
+  [  --verbose, -v ]                    --- Increase output verbosity
+  [  --output-format=<FMT>, -o <FMT> ]  --- Output format: normal|json|binary
+  [  --namespace-id=<NUM>, -n <NUM> ]   --- (optional) desired namespace
+  [  --raw-binary, -b ]                 --- output in binary format
+  [  --human-readable, -H ]             --- show info in readable format
+  [  --timeout=<NUM>, -t <NUM> ]        --- timeout value, in milliseconds
+  [  --dry-run ]                        --- show command instead of sending
+  [  --no-retries ]                     --- disable retry logic on errors
+                                            
+  [  --output-format-version=<NUM> ]    --- output format version: 1|2
+/dev/nvme0n1p3  475G  437G   31G  94% /var/home
+== O_DIRECT reads of the ASTRO image (47.5 GB), 1 GiB each
+   at  0 GiB: skopiowane 1073741824 bajtów (1,1 GB, 1,0 GiB), 1,97488 s, 544 MB/s
+   at 12 GiB: skopiowane 1073741824 bajtów (1,1 GB, 1,0 GiB), 1,78891 s, 600 MB/s
+   at 30 GiB: skopiowane 1073741824 bajtów (1,1 GB, 1,0 GiB), 1,84777 s, 581 MB/s
+   at 12 GiB: skopiowane 1073741824 bajtów (1,1 GB, 1,0 GiB), 1,723 s, 623 MB/s
+== fresh 2-GiB file: write (urandom, fsync), drop the page cache, read back O_DIRECT
+skopiowane 2147483648 bajtów (2,1 GB, 2,0 GiB), 148 s, 14,5 MB/s
+   page cache dropped
+   at 0 GiB: skopiowane 1073741824 bajtów (1,1 GB, 1,0 GiB), 1,73968 s, 617 MB/s
+   at 1 GiB: skopiowane 1073741824 bajtów (1,1 GB, 1,0 GiB), 1,91973 s, 559 MB/s
+   filefrag: 2 extents found
+   test file deleted
+/dev/nvme0n1p3  475G  439G   29G  94% /var/home
+== 09:36:19 done

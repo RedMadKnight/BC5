@@ -1,0 +1,8 @@
+== 08:35:31 run AM1-OLD
+route saves from /home/kjaniszewski/bc5-work/save-backup-astro in /home/kjaniszewski/bc5-work/_SaveData/PPSA21564 (live saves kept in /home/kjaniszewski/bc5-work/exp0227/astro-live-AM1-OLD)
+AM1-OLD no emulator started
+live saves back and identical to /home/kjaniszewski/bc5-work/exp0227/astro-live-AM1-OLD
+awk: fatalny błąd: nie można otworzyć pliku `/home/kjaniszewski/bc5-work/exp0227/raw/AM1-OLD-io.txt' do czytania: Nie ma takiego pliku ani katalogu
+AM1-OLD: crash lines 0, kernel lines 0, read  MiB (rchar)
+AM1-OLD box: avail 13400 -> 5322 MiB; compact_stall +0 (fail +0), pswpin +19, pswpout +354, majfault +195; PSI full mem 0.0 s, io 3.1 s
+== 08:36:25 run AM2-CUR

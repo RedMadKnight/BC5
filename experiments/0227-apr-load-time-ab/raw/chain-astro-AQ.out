@@ -1,0 +1,38 @@
+== 09:08:50 run AQ1-CUR
+route saves from /home/kjaniszewski/bc5-work/save-backup-astro in /home/kjaniszewski/bc5-work/_SaveData/PPSA21564 (live saves kept in /home/kjaniszewski/bc5-work/exp0227/astro-live-AQ1-CUR)
+AQ1-CUR stopped at 150 s
+live saves back and identical to /home/kjaniszewski/bc5-work/exp0227/astro-live-AQ1-CUR
+AQ1-CUR: crash lines 0, kernel lines 0, read 11149 MiB (rchar)
+AQ1-CUR box: avail 13717 -> 2423 MiB; compact_stall +8 (fail +6), pswpin +1121, pswpout +663, majfault +1776; PSI full mem 1.3 s, io 22.4 s
+== 09:11:46 run AQ2-NOCAP
+route saves from /home/kjaniszewski/bc5-work/save-backup-astro in /home/kjaniszewski/bc5-work/_SaveData/PPSA21564 (live saves kept in /home/kjaniszewski/bc5-work/exp0227/astro-live-AQ2-NOCAP)
+AQ2-NOCAP stopped at 150 s
+live saves back and identical to /home/kjaniszewski/bc5-work/exp0227/astro-live-AQ2-NOCAP
+AQ2-NOCAP: crash lines 0, kernel lines 0, read 6068 MiB (rchar)
+AQ2-NOCAP box: avail 13766 -> 3444 MiB; compact_stall +2 (fail +2), pswpin +138, pswpout +54, majfault +952; PSI full mem 1.1 s, io 14.9 s
+== 09:14:48 run AQ3-CH0
+route saves from /home/kjaniszewski/bc5-work/save-backup-astro in /home/kjaniszewski/bc5-work/_SaveData/PPSA21564 (live saves kept in /home/kjaniszewski/bc5-work/exp0227/astro-live-AQ3-CH0)
+AQ3-CH0 stopped at 150 s
+live saves back and identical to /home/kjaniszewski/bc5-work/exp0227/astro-live-AQ3-CH0
+AQ3-CH0: crash lines 0, kernel lines 0, read 6066 MiB (rchar)
+AQ3-CH0 box: avail 13751 -> 3477 MiB; compact_stall +2 (fail +1), pswpin +193, pswpout +7, majfault +419; PSI full mem 0.2 s, io 7.8 s
+== 09:17:49 run AQ4-CH0
+route saves from /home/kjaniszewski/bc5-work/save-backup-astro in /home/kjaniszewski/bc5-work/_SaveData/PPSA21564 (live saves kept in /home/kjaniszewski/bc5-work/exp0227/astro-live-AQ4-CH0)
+AQ4-CH0 stopped at 150 s
+live saves back and identical to /home/kjaniszewski/bc5-work/exp0227/astro-live-AQ4-CH0
+AQ4-CH0: crash lines 0, kernel lines 0, read 11772 MiB (rchar)
+AQ4-CH0 box: avail 13755 -> 1969 MiB; compact_stall +0 (fail +0), pswpin +42, pswpout +33, majfault +324; PSI full mem 0.5 s, io 22.7 s
+== 09:20:52 run AQ5-NOCAP
+route saves from /home/kjaniszewski/bc5-work/save-backup-astro in /home/kjaniszewski/bc5-work/_SaveData/PPSA21564 (live saves kept in /home/kjaniszewski/bc5-work/exp0227/astro-live-AQ5-NOCAP)
+AQ5-NOCAP stopped at 150 s
+live saves back and identical to /home/kjaniszewski/bc5-work/exp0227/astro-live-AQ5-NOCAP
+AQ5-NOCAP: crash lines 0, kernel lines 0, read 12042 MiB (rchar)
+AQ5-NOCAP box: avail 13745 -> 1804 MiB; compact_stall +2 (fail +1), pswpin +66, pswpout +1043, majfault +1104; PSI full mem 0.9 s, io 16.4 s
+== 09:23:51 run AQ6-CUR
+route saves from /home/kjaniszewski/bc5-work/save-backup-astro in /home/kjaniszewski/bc5-work/_SaveData/PPSA21564 (live saves kept in /home/kjaniszewski/bc5-work/exp0227/astro-live-AQ6-CUR)
+AQ6-CUR stopped at 150 s
+live saves back and identical to /home/kjaniszewski/bc5-work/exp0227/astro-live-AQ6-CUR
+AQ6-CUR: crash lines 0, kernel lines 0, read 6018 MiB (rchar)
+AQ6-CUR box: avail 13749 -> 3499 MiB; compact_stall +0 (fail +0), pswpin +129, pswpout +36, majfault +639; PSI full mem 0.9 s, io 10.3 s
+== 09:26:54 BOX-LOCK released
+== 09:26:54 chain astro done

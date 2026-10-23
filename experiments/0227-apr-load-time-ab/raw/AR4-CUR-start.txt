@@ -1,0 +1,9 @@
+2026-10-23 09:46:29
+title astro, arm CUR (), 150 s, launcher /home/kjaniszewski/bc5-work/exp0227/play-astro-0227.sh md5 dfa212c3e8d7dc3826a69b83e0d5f259
+launcher read-ahead line: 55:# KYTY_BC5_APR_PARALLEL's 8-way runs. KYTY_BC5_APR_READAHEAD=4 turns it back on. 56:export KYTY_BC5_APR_READAHEAD=${KYTY_BC5_APR_READAHEAD:-0} 
+binary /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator md5 7a37a56026a15d64383f223580585701
+boot 31c1a6ac, up since 2026-10-23 00:05:57
+before: Mem: used 1416 free 12053 avail 13776; Swap: used 582 free 7013 avail ; 
+box start uptime 34832.19 avail_mib 13776 swapfree_mib 7013 pswpin 840424 pswpout 1902052 pgmajfault 950635 compact_stall 11831 compact_fail 11073  psi_mem_full_us 30255142 psi_io_full_us 669025028
+launch at uptime 34832.21; emulator pid 675182 started at uptime 34835.91: /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator --game /home/kjaniszewski/bc5-data/mnt/
+environ: BC5_GC_DUMP_DIR=/home/kjaniszewski/bc5-data/captures/play-20261023-0946/gc KYTY_BC5_APR_READAHEAD=0 PLAY_CAPTURE=1 BC5_DIRECT_CHAIN=2 

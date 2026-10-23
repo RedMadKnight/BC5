@@ -1,0 +1,8 @@
+2026-10-23 08:35:32
+title astro, arm OLD (KYTY_BC5_APR_READAHEAD=0 BC5_EMU=/home/kjaniszewski/bc5-work/exp0214/kyty_emulator.before-0214), 150 s, launcher /home/kjaniszewski/bc5-work/exp0227/play-astro-0227.sh md5 4a0513374e41dc3ae3b43ab08c4cbcf2
+launcher read-ahead line: 55:# KYTY_BC5_APR_PARALLEL's 8-way runs. KYTY_BC5_APR_READAHEAD=4 turns it back on. 56:export KYTY_BC5_APR_READAHEAD=${KYTY_BC5_APR_READAHEAD:-0} 
+binary /home/kjaniszewski/bc5-work/exp0214/kyty_emulator.before-0214 md5 c0d1b2090c479696df840856f755c9c9
+boot 31c1a6ac, up since 2026-10-23 00:05:57
+before: Mem: used 1792 free 11311 avail 13400; Swap: used 90 free 7505 avail ; 
+box start uptime 30576.14 avail_mib 13400 swapfree_mib 7505 pswpin 30525 pswpout 127843 pgmajfault 47207 compact_stall 4 compact_fail 4  psi_mem_full_us 5284562 psi_io_full_us 254988769
+launch at uptime 30576.16; emulator pid none started at uptime 0.13: /usr/lib/systemd/systemd --switched-root --system --deserialize=54 rhgb
