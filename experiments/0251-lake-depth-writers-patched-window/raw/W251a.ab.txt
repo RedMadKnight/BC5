@@ -1,0 +1,33 @@
+21:56:22 live saves checksum before: f6475842373bf369
+21:56:22 W251a start: /var/home 70 %, dmesg 2547 lines; journal switches: BC5_DIRECT_DRAW_JOURNAL=150:12 BC5_DIRECT_DRAW_JOURNAL_EVERY=10 BC5_DIRECT_DRAW_JOURNAL_PS=11d01d7100,11d1d88300,11d1dd6400,11d090d900,11d0a98300 BC5_DIRECT_DRAW_JOURNAL_FIND=112b7200,112b3c00,112a7c00,112bea00,2b720000,2b3c0000,2a7c0000,2bea0000
+  215855-ts00.png: patch   0.8 %
+  215900-ts01.png: patch   0.9 %
+  215905-ts02.png: patch   0.8 %
+  215910-ts03.png: patch   0.9 %
+  215915-ts04.png: patch   0.8 %
+  215920-ts05.png: patch   0.9 %
+  215925-ts06.png: patch   0.7 %
+  215930-ts07.png: patch   0.9 %
+  215935-ts08.png: patch   0.7 %
+  215940-ts09.png: patch   1.0 %
+  215945-ts10.png: patch   0.7 %
+  215950-ts11.png: patch   0.9 %
+  215955-ts12.png: patch   0.6 %
+  220000-ts13.png: patch   8.1 %
+  220006-ts14.png: patch   5.8 %
+  220011-ts15.png: patch   9.1 %
+  220016-ts16.png: patch   2.9 %
+  220021-ts17.png: patch   0.9 %
+  220026-ts18.png: patch  13.6 %
+  220031-ts19.png: patch   0.8 %
+  220037-ts20.png: patch   0.9 %
+  220042-ts21.png: patch   0.7 %
+  220047-ts22.png: patch   0.8 %
+  220052-ts23.png: patch   0.9 %
+  220057-ts24.png: patch   0.7 %
+  220102-ts25.png: patch   0.8 %
+  journal: direct.log 120M, 2016 draw-journal lines (459767 bytes), 360 find lines
+  depth pool: 0 dma_data and 0 write_data lines into the depth memory, 360 find lines, 362 windows
+  written: run dir 78M, journal dir 120M, emu.log 12M
+22:02:41 live saves checksum after: f6475842373bf369; /var/home 70%
+22:02:42 done

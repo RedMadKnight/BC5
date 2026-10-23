@@ -1,0 +1,110 @@
+# /home/kjaniszewski/bc5-data/captures/play-20261023-2156/gc/direct.log: 84 frames with a full-screen water draw in the journal windows
+  window t 150.0 wall 21:58:55 prev ts00 0.8 % next ts00 0.8 % -> clean
+    t 150.011 3072x fills 3072(5760)
+    t 150.046 3072x fills 3840(640) 3072(5760)
+    t 150.083 2816x fills 3840(640)   <- no fill of its own size since the previous frame
+    t 150.121 2816x fills 3840(640)   <- no fill of its own size since the previous frame
+  window t 160.1 wall 21:59:05 prev ts02 0.8 % next ts02 0.8 % -> clean
+    t 160.145 3072x fills 3072(5760)
+    t 160.183 3072x fills 3840(640) 3072(5760)
+    t 160.221 3072x fills 3840(640) 3072(5760)
+    t 160.257 2560x fills 3840(640)   <- no fill of its own size since the previous frame
+  window t 170.3 wall 21:59:15 prev ts04 0.8 % next ts04 0.8 % -> clean
+    t 170.282 3072x fills 3072(5760)
+    t 170.317 3072x fills 3840(640) 3072(5760)
+    t 170.352 3072x fills 3840(640) 3072(5760)
+    t 170.389 2816x fills 3840(640)   <- no fill of its own size since the previous frame
+  window t 180.4 wall 21:59:25 prev ts06 0.7 % next ts06 0.7 % -> clean
+    t 180.414 3072x fills 3072(5760)
+    t 180.477 3072x fills 3840(640) 3072(5760)
+    t 180.514 3072x fills 3840(640) 3072(5760)
+    t 180.553 2048x fills 3840(640) 2048(2752)
+  window t 190.6 wall 21:59:35 prev ts08 0.7 % next ts08 0.7 % -> clean
+    t 190.571 3072x fills 3072(5760)
+    t 190.613 3072x fills 3840(640) 3072(5760)
+    t 190.655 3072x fills 3840(640) 3072(5760)
+    t 190.697 2304x fills 3840(640)   <- no fill of its own size since the previous frame
+  window t 200.7 wall 21:59:45 prev ts10 0.7 % next ts10 0.7 % -> clean
+    t 200.720 3072x fills 3072(5760)
+    t 200.761 3072x fills 3840(640) 3072(5760)
+    t 200.803 3072x fills 3840(640) 3072(5760)
+    t 200.844 2304x fills 3840(640)   <- no fill of its own size since the previous frame
+  window t 210.8 wall 21:59:56 prev ts12 0.6 % next ts13 8.1 % -> mixed
+    t 210.889 3328x fills 3840(640) 3328(7168)
+    t 210.938 3328x fills 3840(640) 3328(7168)
+    t 210.985 3328x fills 3840(640) 3328(7168)
+    t 211.030 2304x fills 3840(640)   <- no fill of its own size since the previous frame
+  window t 221.1 wall 22:00:06 prev ts14 5.8 % next ts14 5.8 % -> mixed
+    t 221.070 3072x fills 3072(5760)
+    t 221.115 3072x fills 3840(640) 3072(5760)
+    t 221.161 2304x fills 3840(640)   <- no fill of its own size since the previous frame
+    t 221.200 2304x fills 3840(640)   <- no fill of its own size since the previous frame
+  window t 231.2 wall 22:00:16 prev ts16 2.9 % next ts16 2.9 % -> clean
+    t 231.253 2816x fills 3840(640)
+    t 231.301 2816x fills 3840(640)   <- no fill of its own size since the previous frame
+    t 231.352 2560x fills 3840(640)   <- no fill of its own size since the previous frame
+    t 231.395 2560x fills 3840(640)   <- no fill of its own size since the previous frame
+  window t 241.4 wall 22:00:26 prev ts18 13.6 % next ts18 13.6 % -> patched
+    t 241.425 3072x fills 3072(5760)
+    t 241.464 3072x fills 3840(640) 3072(5760)
+    t 241.511 3072x fills 3840(640) 3072(5760)
+    t 241.557 2304x fills 3840(640)   <- no fill of its own size since the previous frame
+  window t 251.6 wall 22:00:36 prev ts19 0.8 % next ts20 0.9 % -> clean
+    t 251.611 3072x fills 3840(640) 3072(5760)
+    t 251.659 3072x fills 3840(640) 3072(5760)
+    t 251.708 2816x fills 3840(640)   <- no fill of its own size since the previous frame
+    t 251.773 2816x fills 3840(640)   <- no fill of its own size since the previous frame
+  window t 261.8 wall 22:00:47 prev ts22 0.8 % next ts22 0.8 % -> clean
+    t 261.809 3072x fills 3072(5760)
+    t 261.854 3072x fills 3840(640) 3072(5760)
+    t 261.904 3072x fills 3840(640) 3072(5760)
+    t 261.947 2048x fills 3840(640) 2048(2752)
+  window t 272.0 wall 22:00:57 prev ts24 0.7 % next ts24 0.7 % -> clean
+    t 272.002 3072x fills 3072(5760)
+    t 272.057 3072x fills 3840(640) 3072(5760)
+    t 272.103 3072x fills 3840(640) 3072(5760)
+    t 272.151 2048x fills 3840(640) 2048(2752)
+  window t 282.2 wall 22:01:07 prev ts25 0.8 % next None -> mixed
+    t 282.211 3072x fills 3072(5760)
+    t 282.266 3072x fills 3840(640) 3072(5760)
+    t 282.330 3072x fills 3840(640) 3072(5760)
+    t 282.390 2048x fills 3840(640) 2048(2752)
+  window t 292.4 wall 22:01:17 prev ts25 0.8 % next None -> mixed
+    t 292.432 3072x fills 3072(5760)
+    t 292.480 3072x fills 3840(640) 3072(5760)
+    t 292.544 3072x fills 3840(640) 3072(5760)
+    t 292.603 2048x fills 3840(640) 2048(2752)
+  window t 302.6 wall 22:01:27 prev ts25 0.8 % next None -> mixed
+    t 302.671 3072x fills 3840(640) 3072(5760)
+    t 302.729 3072x fills 3840(640) 3072(5760)
+    t 302.794 3072x fills 3840(640) 3072(5760)
+    t 302.856 2048x fills 3840(640) 2048(2752)
+  window t 312.9 wall 22:01:38 prev ts25 0.8 % next None -> mixed
+    t 312.880 2048x fills -
+    t 312.933 2048x fills 3840(640) 2048(2752)
+    t 312.985 2048x fills 3840(640) 2048(2752)
+    t 313.039 2048x fills 3840(640) 2048(2752)
+  window t 323.1 wall 22:01:48 prev ts25 0.8 % next None -> mixed
+    t 323.123 3072x fills 3840(640) 2048(2752) 3072(5760)
+    t 323.193 3072x fills 3840(640) 3072(5760)
+    t 323.259 3072x fills 3840(640) 3072(5760)
+    t 323.331 2048x fills 3840(640) 2048(2752)
+  window t 333.4 wall 22:01:58 prev ts25 0.8 % next None -> mixed
+    t 333.384 2816x fills -
+    t 333.470 2816x fills 3840(640)   <- no fill of its own size since the previous frame
+    t 333.532 2816x fills 3840(640)   <- no fill of its own size since the previous frame
+    t 333.616 2048x fills 3840(640) 2048(2752)
+  window t 343.6 wall 22:02:08 prev ts25 0.8 % next None -> mixed
+    t 343.672 3072x fills 3072(5760)
+    t 343.730 3072x fills 3840(640) 3072(5760)
+    t 343.774 3072x fills 3840(640) 3072(5760)
+    t 343.830 2048x fills 3840(640) 2048(2752)
+  window t 353.8 wall 22:02:19 prev ts25 0.8 % next None -> mixed
+    t 353.842 3072x fills -
+    t 353.935 3072x fills 3840(640) 3072(5760)
+    t 353.995 2816x fills 3840(640)   <- no fill of its own size since the previous frame
+    t 354.061 2816x fills 3840(640)   <- no fill of its own size since the previous frame
+per window state:
+  clean: frames 40, no own fill 11, own fill 19, same 30, size 2048 3, size 2304 2, size 2560 3, size 2816 7, size 3072 25, switch 10
+  mixed: frames 40, no own fill 7, own fill 23, same 31, size 2048 10, size 2304 3, size 2816 5, size 3072 19, size 3328 3, switch 9
+  patched: frames 4, no own fill 1, own fill 2, same 3, size 2304 1, size 3072 3, switch 1

@@ -1,0 +1,1468 @@
+# /home/kjaniszewski/bc5-data/captures/play-20261023-2207/gc/direct.log: 2394 journalled entries with a bake-db line, 2394 on depth buffer 1129ec0000; 0 dispatches
+(A) distinct descriptions of the depth buffer:
+   437 x depth 2560x1440 | htile 112adc0000 | FORMAT 3 NUM_SAMPLES 0 SW_MODE 24 MAXMIP 0 DECOMPRESS_ON_N_ZPLANES 0 ALLOW_EXPCLEAR 0 READ_SIZE 0 TILE_SURFACE_ENABLE 1 ZRANGE_PRECISION 1 | view 0 | render_control 0 | override 0 | clear z 0
+         t 150.015..344.703; rt0 113f230000 2560x1440 (437); ps 11d1d88300 (230), 11d1dd6400 (138), 11d0a98300 (23), 11d090d900 (23), 11d01d7100 (23)
+   913 x depth 3328x1872 | htile 112b720000 | FORMAT 3 NUM_SAMPLES 0 SW_MODE 24 MAXMIP 0 DECOMPRESS_ON_N_ZPLANES 0 ALLOW_EXPCLEAR 0 READ_SIZE 0 TILE_SURFACE_ENABLE 1 ZRANGE_PRECISION 1 | view 0 | render_control 0 | override 0 | clear z 0
+         t 160.198..354.873; rt0 113f230000 3328x1872 (913); ps 11d1d88300 (480), 11d1dd6400 (288), 11d01d7100 (49), 11d0a98300 (48), 11d090d900 (48)
+   247 x depth 3072x1728 | htile 112b3c0000 | FORMAT 3 NUM_SAMPLES 0 SW_MODE 24 MAXMIP 0 DECOMPRESS_ON_N_ZPLANES 0 ALLOW_EXPCLEAR 0 READ_SIZE 0 TILE_SURFACE_ENABLE 1 ZRANGE_PRECISION 1 | view 0 | render_control 0 | override 0 | clear z 0
+         t 160.268..344.601; rt0 113f230000 3072x1728 (247); ps 11d1d88300 (130), 11d1dd6400 (78), 11d0a98300 (13), 11d090d900 (13), 11d01d7100 (13)
+   417 x depth 2048x1152 | htile 112a7c0000 | FORMAT 3 NUM_SAMPLES 0 SW_MODE 24 MAXMIP 0 DECOMPRESS_ON_N_ZPLANES 0 ALLOW_EXPCLEAR 0 READ_SIZE 0 TILE_SURFACE_ENABLE 1 ZRANGE_PRECISION 1 | view 0 | render_control 0 | override 0 | clear z 0
+         t 180.777..354.980; rt0 113f230000 2048x1152 (417); ps 11d1d88300 (220), 11d1dd6400 (132), 11d0a98300 (22), 11d090d900 (22), 11d01d7100 (21)
+   247 x depth 2816x1584 | htile 112b0a0000 | FORMAT 3 NUM_SAMPLES 0 SW_MODE 24 MAXMIP 0 DECOMPRESS_ON_N_ZPLANES 0 ALLOW_EXPCLEAR 0 READ_SIZE 0 TILE_SURFACE_ENABLE 1 ZRANGE_PRECISION 1 | view 0 | render_control 0 | override 0 | clear z 0
+         t 190.979..324.184; rt0 113f230000 2816x1584 (247); ps 11d1d88300 (130), 11d1dd6400 (78), 11d0a98300 (13), 11d090d900 (13), 11d01d7100 (13)
+   133 x depth 2304x1296 | htile 112ab20000 | FORMAT 3 NUM_SAMPLES 0 SW_MODE 24 MAXMIP 0 DECOMPRESS_ON_N_ZPLANES 0 ALLOW_EXPCLEAR 0 READ_SIZE 0 TILE_SURFACE_ENABLE 1 ZRANGE_PRECISION 1 | view 0 | render_control 0 | override 0 | clear z 0
+         t 231.939..344.740; rt0 113f230000 2304x1296 (133); ps 11d1d88300 (70), 11d1dd6400 (42), 11d0a98300 (7), 11d090d900 (7), 11d01d7100 (7)
+(B) in journal order (runs of one description and colour-target size):
+  t 150.015..150.191  114 x rt0 2560x1440 | depth 2560x1440 htile 112adc0000
+  t 160.198..160.242   38 x rt0 3328x1872 | depth 3328x1872 htile 112b720000
+  t 160.268..160.377   76 x rt0 3072x1728 | depth 3072x1728 htile 112b3c0000
+  t 170.395..170.492   57 x rt0 3328x1872 | depth 3328x1872 htile 112b720000
+  t 170.522..170.602   57 x rt0 2560x1440 | depth 2560x1440 htile 112adc0000
+  t 180.640..180.750   57 x rt0 3328x1872 | depth 3328x1872 htile 112b720000
+  t 180.777..180.853   57 x rt0 2048x1152 | depth 2048x1152 htile 112a7c0000
+  t 190.865..190.951   57 x rt0 3328x1872 | depth 3328x1872 htile 112b720000
+  t 190.979..191.021   38 x rt0 2816x1584 | depth 2816x1584 htile 112b0a0000
+  t 191.044..191.057   19 x rt0 2560x1440 | depth 2560x1440 htile 112adc0000
+  t 201.082..201.169   57 x rt0 3328x1872 | depth 3328x1872 htile 112b720000
+  t 201.198..201.247   38 x rt0 2816x1584 | depth 2816x1584 htile 112b0a0000
+  t 201.268..201.279   19 x rt0 2560x1440 | depth 2560x1440 htile 112adc0000
+  t 211.300..211.391   57 x rt0 3328x1872 | depth 3328x1872 htile 112b720000
+  t 211.419..211.466   38 x rt0 2816x1584 | depth 2816x1584 htile 112b0a0000
+  t 211.495..211.506   19 x rt0 2560x1440 | depth 2560x1440 htile 112adc0000
+  t 221.516..221.603   57 x rt0 3328x1872 | depth 3328x1872 htile 112b720000
+  t 221.633..221.680   38 x rt0 3072x1728 | depth 3072x1728 htile 112b3c0000
+  t 221.707..221.720   19 x rt0 2816x1584 | depth 2816x1584 htile 112b0a0000
+  t 231.749..231.840   57 x rt0 3328x1872 | depth 3328x1872 htile 112b720000
+  t 231.869..231.916   38 x rt0 2560x1440 | depth 2560x1440 htile 112adc0000
+  t 231.939..231.949   19 x rt0 2304x1296 | depth 2304x1296 htile 112ab20000
+  t 241.967..242.066   57 x rt0 3328x1872 | depth 3328x1872 htile 112b720000
+  t 242.095..242.141   38 x rt0 2304x1296 | depth 2304x1296 htile 112ab20000
+  t 242.180..242.193   19 x rt0 2048x1152 | depth 2048x1152 htile 112a7c0000
+  t 252.218..252.306   57 x rt0 3328x1872 | depth 3328x1872 htile 112b720000
+  t 252.336..252.416   57 x rt0 2560x1440 | depth 2560x1440 htile 112adc0000
+  t 262.428..262.499   38 x rt0 3328x1872 | depth 3328x1872 htile 112b720000
+  t 262.527..262.579   38 x rt0 3072x1728 | depth 3072x1728 htile 112b3c0000
+  t 262.606..262.660   38 x rt0 2816x1584 | depth 2816x1584 htile 112b0a0000
+  t 272.701..272.797   57 x rt0 3328x1872 | depth 3328x1872 htile 112b720000
+  t 272.826..272.914   57 x rt0 2048x1152 | depth 2048x1152 htile 112a7c0000
+  t 282.929..283.030   57 x rt0 3328x1872 | depth 3328x1872 htile 112b720000
+  t 283.057..283.133   38 x rt0 2560x1440 | depth 2560x1440 htile 112adc0000
+  t 283.155..293.228   57 x rt0 2304x1296 | depth 2304x1296 htile 112ab20000
+  t 293.250..293.383   76 x rt0 2048x1152 | depth 2048x1152 htile 112a7c0000
+  t 303.414..303.482   38 x rt0 3328x1872 | depth 3328x1872 htile 112b720000
+  t 303.512..303.651   76 x rt0 2048x1152 | depth 2048x1152 htile 112a7c0000
+  t 313.668..313.727   38 x rt0 3328x1872 | depth 3328x1872 htile 112b720000
+  t 313.758..313.824   38 x rt0 2816x1584 | depth 2816x1584 htile 112b0a0000
+  t 313.848..313.907   38 x rt0 2560x1440 | depth 2560x1440 htile 112adc0000
+  t 323.932..324.002   38 x rt0 3328x1872 | depth 3328x1872 htile 112b720000
+  t 324.030..324.096   38 x rt0 3072x1728 | depth 3072x1728 htile 112b3c0000
+  t 324.120..324.184   38 x rt0 2816x1584 | depth 2816x1584 htile 112b0a0000
+  t 334.204..334.303   39 x rt0 3328x1872 | depth 3328x1872 htile 112b720000
+  t 334.330..334.464   75 x rt0 2048x1152 | depth 2048x1152 htile 112a7c0000
+  t 344.501..344.601   57 x rt0 3072x1728 | depth 3072x1728 htile 112b3c0000
+  t 344.645..344.703   38 x rt0 2560x1440 | depth 2560x1440 htile 112adc0000
+  t 344.727..344.740   19 x rt0 2304x1296 | depth 2304x1296 htile 112ab20000
+  t 354.769..354.873   57 x rt0 3328x1872 | depth 3328x1872 htile 112b720000
+  t 354.898..354.980   57 x rt0 2048x1152 | depth 2048x1152 htile 112a7c0000
+(C) before each first depth write into the buffer (window start, or after a full-screen water draw):
+  first depth write at t 150.015 buf 0 at 5794 (ps 11d0a98300, rt0 2560x1440); the entries before it:
+  first depth write at t 150.052 buf 2 at 5794 (ps 11d0a98300, rt0 2560x1440); the entries before it:
+    t 150.015 buf 0 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.015 buf 0 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.015 buf 0 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.015 buf 0 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.015 buf 0 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.015 buf 0 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.015 buf 0 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.015 buf 0 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.015 buf 0 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.019 buf 1 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2560x1440 | z 1129ec0000 | render_control 0
+  first depth write at t 150.085 buf 4 at 5685 (ps 11d0a98300, rt0 2560x1440); the entries before it:
+    t 150.052 buf 2 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.052 buf 2 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.052 buf 2 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.052 buf 2 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.052 buf 2 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.052 buf 2 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.052 buf 2 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.052 buf 2 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.052 buf 2 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.056 buf 3 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2560x1440 | z 1129ec0000 | render_control 0
+  first depth write at t 150.119 buf 6 at 5794 (ps 11d0a98300, rt0 2560x1440); the entries before it:
+    t 150.085 buf 4 at 7014: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.085 buf 4 at 7098: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.085 buf 4 at 7177: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.085 buf 4 at 7241: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.085 buf 4 at 7320: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.085 buf 4 at 7399: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.085 buf 4 at 7478: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.085 buf 4 at 7557: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.085 buf 4 at 7636: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.091 buf 5 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2560x1440 | z 1129ec0000 | render_control 0
+  first depth write at t 150.147 buf 8 at 5794 (ps 11d0a98300, rt0 2560x1440); the entries before it:
+    t 150.119 buf 6 at 6957: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.119 buf 6 at 7036: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.119 buf 6 at 7120: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.119 buf 6 at 7184: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.119 buf 6 at 7263: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.119 buf 6 at 7342: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.119 buf 6 at 7421: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.119 buf 6 at 7500: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.119 buf 6 at 7579: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.124 buf 7 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2560x1440 | z 1129ec0000 | render_control 0
+  first depth write at t 150.183 buf 10 at 5685 (ps 11d0a98300, rt0 2560x1440); the entries before it:
+    t 150.147 buf 8 at 6957: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.147 buf 8 at 7036: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.147 buf 8 at 7120: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.147 buf 8 at 7184: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.147 buf 8 at 7263: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.147 buf 8 at 7342: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.147 buf 8 at 7421: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.147 buf 8 at 7500: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.147 buf 8 at 7579: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.156 buf 9 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2560x1440 | z 1129ec0000 | render_control 0
+  first depth write at t 160.198 buf 12 at 5794 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 150.183 buf 10 at 7014: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.183 buf 10 at 7098: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.183 buf 10 at 7177: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.183 buf 10 at 7241: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.183 buf 10 at 7320: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.183 buf 10 at 7399: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.183 buf 10 at 7478: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.183 buf 10 at 7557: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.183 buf 10 at 7636: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 150.191 buf 11 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2560x1440 | z 1129ec0000 | render_control 0
+  first depth write at t 160.236 buf 14 at 5794 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 160.198 buf 12 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 160.198 buf 12 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 160.198 buf 12 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 160.198 buf 12 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 160.198 buf 12 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 160.198 buf 12 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 160.198 buf 12 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 160.198 buf 12 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 160.198 buf 12 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 160.206 buf 13 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 160.268 buf 16 at 5794 (ps 11d0a98300, rt0 3072x1728); the entries before it:
+    t 160.236 buf 14 at 6957: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 160.236 buf 14 at 7036: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 160.236 buf 14 at 7120: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 160.236 buf 14 at 7184: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 160.236 buf 14 at 7263: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 160.236 buf 14 at 7342: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 160.236 buf 14 at 7421: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 160.236 buf 14 at 7500: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 160.236 buf 14 at 7579: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 160.242 buf 15 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 160.302 buf 18 at 5772 (ps 11d0a98300, rt0 3072x1728); the entries before it:
+    t 160.268 buf 16 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 160.268 buf 16 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 160.268 buf 16 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 160.268 buf 16 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 160.268 buf 16 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 160.268 buf 16 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 160.268 buf 16 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 160.268 buf 16 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 160.268 buf 16 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 160.276 buf 17 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3072x1728 | z 1129ec0000 | render_control 0
+  first depth write at t 160.335 buf 20 at 5794 (ps 11d0a98300, rt0 3072x1728); the entries before it:
+    t 160.302 buf 18 at 6945: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 160.302 buf 18 at 7029: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 160.302 buf 18 at 7108: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 160.302 buf 18 at 7172: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 160.302 buf 18 at 7251: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 160.302 buf 18 at 7330: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 160.302 buf 18 at 7409: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 160.302 buf 18 at 7488: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 160.302 buf 18 at 7567: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 160.309 buf 19 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3072x1728 | z 1129ec0000 | render_control 0
+  first depth write at t 160.372 buf 22 at 5794 (ps 11d0a98300, rt0 3072x1728); the entries before it:
+    t 160.335 buf 20 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 160.335 buf 20 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 160.335 buf 20 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 160.335 buf 20 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 160.335 buf 20 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 160.335 buf 20 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 160.335 buf 20 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 160.335 buf 20 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 160.335 buf 20 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 160.344 buf 21 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3072x1728 | z 1129ec0000 | render_control 0
+  first depth write at t 170.395 buf 24 at 5685 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 160.372 buf 22 at 6957: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 160.372 buf 22 at 7036: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 160.372 buf 22 at 7120: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 160.372 buf 22 at 7184: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 160.372 buf 22 at 7263: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 160.372 buf 22 at 7342: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 160.372 buf 22 at 7421: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 160.372 buf 22 at 7500: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 160.372 buf 22 at 7579: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 160.377 buf 23 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3072x1728 | z 1129ec0000 | render_control 0
+  first depth write at t 170.447 buf 26 at 5794 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 170.395 buf 24 at 7014: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 170.395 buf 24 at 7098: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 170.395 buf 24 at 7177: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 170.395 buf 24 at 7241: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 170.395 buf 24 at 7320: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 170.395 buf 24 at 7399: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 170.395 buf 24 at 7478: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 170.395 buf 24 at 7557: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 170.395 buf 24 at 7636: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 170.419 buf 25 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 170.486 buf 28 at 5794 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 170.447 buf 26 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 170.447 buf 26 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 170.447 buf 26 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 170.447 buf 26 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 170.447 buf 26 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 170.447 buf 26 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 170.447 buf 26 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 170.447 buf 26 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 170.447 buf 26 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 170.457 buf 27 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 170.522 buf 30 at 5794 (ps 11d0a98300, rt0 2560x1440); the entries before it:
+    t 170.486 buf 28 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 170.486 buf 28 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 170.486 buf 28 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 170.486 buf 28 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 170.486 buf 28 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 170.486 buf 28 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 170.486 buf 28 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 170.486 buf 28 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 170.486 buf 28 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 170.492 buf 29 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 170.562 buf 32 at 5794 (ps 11d0a98300, rt0 2560x1440); the entries before it:
+    t 170.522 buf 30 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 170.522 buf 30 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 170.522 buf 30 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 170.522 buf 30 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 170.522 buf 30 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 170.522 buf 30 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 170.522 buf 30 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 170.522 buf 30 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 170.522 buf 30 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 170.529 buf 31 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2560x1440 | z 1129ec0000 | render_control 0
+  first depth write at t 170.593 buf 34 at 5685 (ps 11d0a98300, rt0 2560x1440); the entries before it:
+    t 170.562 buf 32 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 170.562 buf 32 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 170.562 buf 32 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 170.562 buf 32 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 170.562 buf 32 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 170.562 buf 32 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 170.562 buf 32 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 170.562 buf 32 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 170.562 buf 32 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 170.569 buf 33 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2560x1440 | z 1129ec0000 | render_control 0
+  first depth write at t 180.640 buf 36 at 5794 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 170.593 buf 34 at 7014: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 170.593 buf 34 at 7098: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 170.593 buf 34 at 7177: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 170.593 buf 34 at 7241: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 170.593 buf 34 at 7320: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 170.593 buf 34 at 7399: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 170.593 buf 34 at 7478: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 170.593 buf 34 at 7557: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 170.593 buf 34 at 7636: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 170.602 buf 35 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2560x1440 | z 1129ec0000 | render_control 0
+  first depth write at t 180.671 buf 38 at 5685 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 180.640 buf 36 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 180.640 buf 36 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 180.640 buf 36 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 180.640 buf 36 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 180.640 buf 36 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 180.640 buf 36 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 180.640 buf 36 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 180.640 buf 36 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 180.640 buf 36 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 180.648 buf 37 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 180.741 buf 40 at 5794 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 180.671 buf 38 at 7014: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 180.671 buf 38 at 7098: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 180.671 buf 38 at 7177: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 180.671 buf 38 at 7241: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 180.671 buf 38 at 7320: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 180.671 buf 38 at 7399: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 180.671 buf 38 at 7478: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 180.671 buf 38 at 7557: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 180.671 buf 38 at 7636: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 180.702 buf 39 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 180.777 buf 42 at 5794 (ps 11d0a98300, rt0 2048x1152); the entries before it:
+    t 180.741 buf 40 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 180.741 buf 40 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 180.741 buf 40 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 180.741 buf 40 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 180.741 buf 40 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 180.741 buf 40 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 180.741 buf 40 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 180.741 buf 40 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 180.741 buf 40 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 180.750 buf 41 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 180.810 buf 44 at 5685 (ps 11d0a98300, rt0 2048x1152); the entries before it:
+    t 180.777 buf 42 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 180.777 buf 42 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 180.777 buf 42 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 180.777 buf 42 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 180.777 buf 42 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 180.777 buf 42 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 180.777 buf 42 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 180.777 buf 42 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 180.777 buf 42 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 180.786 buf 43 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2048x1152 | z 1129ec0000 | render_control 0
+  first depth write at t 180.845 buf 46 at 5794 (ps 11d0a98300, rt0 2048x1152); the entries before it:
+    t 180.810 buf 44 at 6858: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 180.810 buf 44 at 6937: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 180.810 buf 44 at 7016: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 180.810 buf 44 at 7080: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 180.810 buf 44 at 7164: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 180.810 buf 44 at 7243: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 180.810 buf 44 at 7322: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 180.810 buf 44 at 7401: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 180.810 buf 44 at 7480: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 180.818 buf 45 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2048x1152 | z 1129ec0000 | render_control 0
+  first depth write at t 190.865 buf 48 at 5794 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 180.845 buf 46 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 180.845 buf 46 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 180.845 buf 46 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 180.845 buf 46 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 180.845 buf 46 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 180.845 buf 46 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 180.845 buf 46 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 180.845 buf 46 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 180.845 buf 46 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 180.853 buf 47 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2048x1152 | z 1129ec0000 | render_control 0
+  first depth write at t 190.902 buf 50 at 5685 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 190.865 buf 48 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 190.865 buf 48 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 190.865 buf 48 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 190.865 buf 48 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 190.865 buf 48 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 190.865 buf 48 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 190.865 buf 48 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 190.865 buf 48 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 190.865 buf 48 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 190.875 buf 49 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 190.940 buf 52 at 5794 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 190.902 buf 50 at 7014: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 190.902 buf 50 at 7098: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 190.902 buf 50 at 7177: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 190.902 buf 50 at 7241: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 190.902 buf 50 at 7320: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 190.902 buf 50 at 7399: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 190.902 buf 50 at 7478: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 190.902 buf 50 at 7557: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 190.902 buf 50 at 7636: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 190.912 buf 51 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 190.979 buf 54 at 5794 (ps 11d0a98300, rt0 2816x1584); the entries before it:
+    t 190.940 buf 52 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 190.940 buf 52 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 190.940 buf 52 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 190.940 buf 52 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 190.940 buf 52 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 190.940 buf 52 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 190.940 buf 52 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 190.940 buf 52 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 190.940 buf 52 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 190.951 buf 53 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 191.012 buf 56 at 5794 (ps 11d0a98300, rt0 2816x1584); the entries before it:
+    t 190.979 buf 54 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 190.979 buf 54 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 190.979 buf 54 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 190.979 buf 54 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 190.979 buf 54 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 190.979 buf 54 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 190.979 buf 54 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 190.979 buf 54 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 190.979 buf 54 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 190.990 buf 55 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2816x1584 | z 1129ec0000 | render_control 0
+  first depth write at t 191.044 buf 58 at 5794 (ps 11d0a98300, rt0 2560x1440); the entries before it:
+    t 191.012 buf 56 at 6957: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 191.012 buf 56 at 7036: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 191.012 buf 56 at 7120: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 191.012 buf 56 at 7184: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 191.012 buf 56 at 7263: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 191.012 buf 56 at 7342: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 191.012 buf 56 at 7421: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 191.012 buf 56 at 7500: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 191.012 buf 56 at 7579: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 191.021 buf 57 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2816x1584 | z 1129ec0000 | render_control 0
+  first depth write at t 201.082 buf 60 at 5685 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 191.044 buf 58 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 191.044 buf 58 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 191.044 buf 58 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 191.044 buf 58 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 191.044 buf 58 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 191.044 buf 58 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 191.044 buf 58 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 191.044 buf 58 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 191.044 buf 58 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 191.057 buf 59 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2560x1440 | z 1129ec0000 | render_control 0
+  first depth write at t 201.120 buf 62 at 5794 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 201.082 buf 60 at 7014: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 201.082 buf 60 at 7098: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 201.082 buf 60 at 7177: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 201.082 buf 60 at 7241: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 201.082 buf 60 at 7320: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 201.082 buf 60 at 7399: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 201.082 buf 60 at 7478: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 201.082 buf 60 at 7557: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 201.082 buf 60 at 7636: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 201.093 buf 61 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 201.159 buf 64 at 5794 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 201.120 buf 62 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 201.120 buf 62 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 201.120 buf 62 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 201.120 buf 62 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 201.120 buf 62 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 201.120 buf 62 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 201.120 buf 62 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 201.120 buf 62 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 201.120 buf 62 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 201.130 buf 63 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 201.198 buf 66 at 5794 (ps 11d0a98300, rt0 2816x1584); the entries before it:
+    t 201.159 buf 64 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 201.159 buf 64 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 201.159 buf 64 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 201.159 buf 64 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 201.159 buf 64 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 201.159 buf 64 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 201.159 buf 64 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 201.159 buf 64 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 201.159 buf 64 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 201.169 buf 65 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 201.236 buf 68 at 5794 (ps 11d0a98300, rt0 2816x1584); the entries before it:
+    t 201.198 buf 66 at 6957: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 201.198 buf 66 at 7036: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 201.198 buf 66 at 7120: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 201.198 buf 66 at 7184: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 201.198 buf 66 at 7263: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 201.198 buf 66 at 7342: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 201.198 buf 66 at 7421: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 201.198 buf 66 at 7500: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 201.198 buf 66 at 7579: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 201.212 buf 67 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2816x1584 | z 1129ec0000 | render_control 0
+  first depth write at t 201.268 buf 70 at 5772 (ps 11d0a98300, rt0 2560x1440); the entries before it:
+    t 201.236 buf 68 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 201.236 buf 68 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 201.236 buf 68 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 201.236 buf 68 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 201.236 buf 68 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 201.236 buf 68 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 201.236 buf 68 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 201.236 buf 68 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 201.236 buf 68 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 201.247 buf 69 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2816x1584 | z 1129ec0000 | render_control 0
+  first depth write at t 211.300 buf 72 at 5794 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 201.268 buf 70 at 7106: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 201.268 buf 70 at 7185: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 201.268 buf 70 at 7264: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 201.268 buf 70 at 7328: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 201.268 buf 70 at 7407: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 201.268 buf 70 at 7486: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 201.268 buf 70 at 7565: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 201.268 buf 70 at 7644: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 201.268 buf 70 at 7723: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 201.279 buf 71 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2560x1440 | z 1129ec0000 | render_control 0
+  first depth write at t 211.339 buf 74 at 5794 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 211.300 buf 72 at 6957: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 211.300 buf 72 at 7036: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 211.300 buf 72 at 7120: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 211.300 buf 72 at 7184: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 211.300 buf 72 at 7263: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 211.300 buf 72 at 7342: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 211.300 buf 72 at 7421: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 211.300 buf 72 at 7500: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 211.300 buf 72 at 7579: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 211.310 buf 73 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 211.380 buf 76 at 5794 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 211.339 buf 74 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 211.339 buf 74 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 211.339 buf 74 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 211.339 buf 74 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 211.339 buf 74 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 211.339 buf 74 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 211.339 buf 74 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 211.339 buf 74 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 211.339 buf 74 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 211.352 buf 75 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 211.419 buf 78 at 5794 (ps 11d0a98300, rt0 2816x1584); the entries before it:
+    t 211.380 buf 76 at 6957: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 211.380 buf 76 at 7036: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 211.380 buf 76 at 7120: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 211.380 buf 76 at 7184: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 211.380 buf 76 at 7263: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 211.380 buf 76 at 7342: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 211.380 buf 76 at 7421: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 211.380 buf 76 at 7500: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 211.380 buf 76 at 7579: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 211.391 buf 77 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 211.454 buf 80 at 5685 (ps 11d0a98300, rt0 2816x1584); the entries before it:
+    t 211.419 buf 78 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 211.419 buf 78 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 211.419 buf 78 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 211.419 buf 78 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 211.419 buf 78 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 211.419 buf 78 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 211.419 buf 78 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 211.419 buf 78 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 211.419 buf 78 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 211.431 buf 79 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2816x1584 | z 1129ec0000 | render_control 0
+  first depth write at t 211.495 buf 82 at 5794 (ps 11d0a98300, rt0 2560x1440); the entries before it:
+    t 211.454 buf 80 at 7014: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 211.454 buf 80 at 7098: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 211.454 buf 80 at 7177: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 211.454 buf 80 at 7241: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 211.454 buf 80 at 7320: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 211.454 buf 80 at 7399: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 211.454 buf 80 at 7478: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 211.454 buf 80 at 7557: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 211.454 buf 80 at 7636: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 211.466 buf 81 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2816x1584 | z 1129ec0000 | render_control 0
+  first depth write at t 221.516 buf 84 at 5685 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 211.495 buf 82 at 6957: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 211.495 buf 82 at 7036: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 211.495 buf 82 at 7120: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 211.495 buf 82 at 7184: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 211.495 buf 82 at 7263: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 211.495 buf 82 at 7342: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 211.495 buf 82 at 7421: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 211.495 buf 82 at 7500: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 211.495 buf 82 at 7579: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 211.506 buf 83 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2560x1440 | z 1129ec0000 | render_control 0
+  first depth write at t 221.550 buf 86 at 5794 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 221.516 buf 84 at 7014: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 221.516 buf 84 at 7098: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 221.516 buf 84 at 7177: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 221.516 buf 84 at 7241: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 221.516 buf 84 at 7320: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 221.516 buf 84 at 7399: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 221.516 buf 84 at 7478: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 221.516 buf 84 at 7557: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 221.516 buf 84 at 7636: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 221.525 buf 85 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 221.588 buf 88 at 5794 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 221.550 buf 86 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 221.550 buf 86 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 221.550 buf 86 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 221.550 buf 86 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 221.550 buf 86 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 221.550 buf 86 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 221.550 buf 86 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 221.550 buf 86 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 221.550 buf 86 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 221.562 buf 87 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 221.633 buf 90 at 5794 (ps 11d0a98300, rt0 3072x1728); the entries before it:
+    t 221.588 buf 88 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 221.588 buf 88 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 221.588 buf 88 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 221.588 buf 88 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 221.588 buf 88 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 221.588 buf 88 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 221.588 buf 88 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 221.588 buf 88 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 221.588 buf 88 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 221.603 buf 89 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 221.667 buf 92 at 5794 (ps 11d0a98300, rt0 3072x1728); the entries before it:
+    t 221.633 buf 90 at 6957: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 221.633 buf 90 at 7036: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 221.633 buf 90 at 7120: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 221.633 buf 90 at 7184: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 221.633 buf 90 at 7263: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 221.633 buf 90 at 7342: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 221.633 buf 90 at 7421: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 221.633 buf 90 at 7500: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 221.633 buf 90 at 7579: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 221.642 buf 91 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3072x1728 | z 1129ec0000 | render_control 0
+  first depth write at t 221.707 buf 94 at 5772 (ps 11d0a98300, rt0 2816x1584); the entries before it:
+    t 221.667 buf 92 at 6957: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 221.667 buf 92 at 7036: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 221.667 buf 92 at 7120: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 221.667 buf 92 at 7184: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 221.667 buf 92 at 7263: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 221.667 buf 92 at 7342: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 221.667 buf 92 at 7421: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 221.667 buf 92 at 7500: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 221.667 buf 92 at 7579: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 221.680 buf 93 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3072x1728 | z 1129ec0000 | render_control 0
+  first depth write at t 231.749 buf 96 at 5794 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 221.707 buf 94 at 6945: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 221.707 buf 94 at 7029: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 221.707 buf 94 at 7108: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 221.707 buf 94 at 7172: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 221.707 buf 94 at 7251: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 221.707 buf 94 at 7330: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 221.707 buf 94 at 7409: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 221.707 buf 94 at 7488: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 221.707 buf 94 at 7567: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 221.720 buf 95 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2816x1584 | z 1129ec0000 | render_control 0
+  first depth write at t 231.786 buf 98 at 5685 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 231.749 buf 96 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 231.749 buf 96 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 231.749 buf 96 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 231.749 buf 96 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 231.749 buf 96 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 231.749 buf 96 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 231.749 buf 96 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 231.749 buf 96 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 231.749 buf 96 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 231.761 buf 97 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 231.828 buf 100 at 5794 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 231.786 buf 98 at 7014: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 231.786 buf 98 at 7098: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 231.786 buf 98 at 7177: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 231.786 buf 98 at 7241: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 231.786 buf 98 at 7320: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 231.786 buf 98 at 7399: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 231.786 buf 98 at 7478: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 231.786 buf 98 at 7557: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 231.786 buf 98 at 7636: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 231.801 buf 99 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 231.869 buf 102 at 5794 (ps 11d0a98300, rt0 2560x1440); the entries before it:
+    t 231.828 buf 100 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 231.828 buf 100 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 231.828 buf 100 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 231.828 buf 100 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 231.828 buf 100 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 231.828 buf 100 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 231.828 buf 100 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 231.828 buf 100 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 231.828 buf 100 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 231.840 buf 101 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 231.902 buf 104 at 5794 (ps 11d0a98300, rt0 2560x1440); the entries before it:
+    t 231.869 buf 102 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 231.869 buf 102 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 231.869 buf 102 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 231.869 buf 102 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 231.869 buf 102 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 231.869 buf 102 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 231.869 buf 102 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 231.869 buf 102 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 231.869 buf 102 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 231.882 buf 103 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2560x1440 | z 1129ec0000 | render_control 0
+  first depth write at t 231.939 buf 106 at 5794 (ps 11d0a98300, rt0 2304x1296); the entries before it:
+    t 231.902 buf 104 at 6957: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 231.902 buf 104 at 7036: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 231.902 buf 104 at 7120: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 231.902 buf 104 at 7184: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 231.902 buf 104 at 7263: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 231.902 buf 104 at 7342: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 231.902 buf 104 at 7421: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 231.902 buf 104 at 7500: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 231.902 buf 104 at 7579: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 231.916 buf 105 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2560x1440 | z 1129ec0000 | render_control 0
+  first depth write at t 241.967 buf 108 at 5772 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 231.939 buf 106 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 231.939 buf 106 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 231.939 buf 106 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 231.939 buf 106 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 231.939 buf 106 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 231.939 buf 106 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 231.939 buf 106 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 231.939 buf 106 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 231.939 buf 106 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 231.949 buf 107 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2304x1296 | z 1129ec0000 | render_control 0
+  first depth write at t 242.011 buf 110 at 5794 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 241.967 buf 108 at 6945: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 241.967 buf 108 at 7029: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 241.967 buf 108 at 7108: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 241.967 buf 108 at 7172: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 241.967 buf 108 at 7251: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 241.967 buf 108 at 7330: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 241.967 buf 108 at 7409: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 241.967 buf 108 at 7488: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 241.967 buf 108 at 7567: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 241.980 buf 109 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 242.055 buf 112 at 5794 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 242.011 buf 110 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 242.011 buf 110 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 242.011 buf 110 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 242.011 buf 110 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 242.011 buf 110 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 242.011 buf 110 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 242.011 buf 110 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 242.011 buf 110 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 242.011 buf 110 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 242.024 buf 111 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 242.095 buf 114 at 5685 (ps 11d0a98300, rt0 2304x1296); the entries before it:
+    t 242.055 buf 112 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 242.055 buf 112 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 242.055 buf 112 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 242.055 buf 112 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 242.055 buf 112 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 242.055 buf 112 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 242.055 buf 112 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 242.055 buf 112 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 242.055 buf 112 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 242.066 buf 113 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 242.128 buf 116 at 5794 (ps 11d0a98300, rt0 2304x1296); the entries before it:
+    t 242.095 buf 114 at 7014: draw op 24 ps 11d1d88300 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 242.095 buf 114 at 7098: draw op 24 ps 11d1dd6400 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 242.095 buf 114 at 7177: draw op 24 ps 11d1d88300 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 242.095 buf 114 at 7241: draw op 24 ps 11d1d88300 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 242.095 buf 114 at 7320: draw op 24 ps 11d1dd6400 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 242.095 buf 114 at 7399: draw op 24 ps 11d1d88300 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 242.095 buf 114 at 7478: draw op 24 ps 11d1dd6400 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 242.095 buf 114 at 7557: draw op 24 ps 11d1d88300 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 242.095 buf 114 at 7636: draw op 24 ps 11d1dd6400 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 242.108 buf 115 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2304x1296 | z 1129ec0000 | render_control 0
+  first depth write at t 242.180 buf 118 at 5794 (ps 11d0a98300, rt0 2048x1152); the entries before it:
+    t 242.128 buf 116 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 242.128 buf 116 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 242.128 buf 116 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 242.128 buf 116 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 242.128 buf 116 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 242.128 buf 116 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 242.128 buf 116 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 242.128 buf 116 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 242.128 buf 116 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 242.141 buf 117 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2304x1296 | z 1129ec0000 | render_control 0
+  first depth write at t 252.218 buf 120 at 5685 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 242.180 buf 118 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 242.180 buf 118 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 242.180 buf 118 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 242.180 buf 118 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 242.180 buf 118 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 242.180 buf 118 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 242.180 buf 118 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 242.180 buf 118 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 242.180 buf 118 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 242.193 buf 119 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2048x1152 | z 1129ec0000 | render_control 0
+  first depth write at t 252.252 buf 122 at 5794 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 252.218 buf 120 at 7014: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 252.218 buf 120 at 7098: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 252.218 buf 120 at 7177: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 252.218 buf 120 at 7241: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 252.218 buf 120 at 7320: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 252.218 buf 120 at 7399: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 252.218 buf 120 at 7478: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 252.218 buf 120 at 7557: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 252.218 buf 120 at 7636: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 252.225 buf 121 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 252.295 buf 124 at 5794 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 252.252 buf 122 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 252.252 buf 122 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 252.252 buf 122 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 252.252 buf 122 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 252.252 buf 122 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 252.252 buf 122 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 252.252 buf 122 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 252.252 buf 122 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 252.252 buf 122 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 252.268 buf 123 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 252.336 buf 126 at 5794 (ps 11d0a98300, rt0 2560x1440); the entries before it:
+    t 252.295 buf 124 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 252.295 buf 124 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 252.295 buf 124 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 252.295 buf 124 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 252.295 buf 124 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 252.295 buf 124 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 252.295 buf 124 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 252.295 buf 124 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 252.295 buf 124 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 252.306 buf 125 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 252.368 buf 128 at 5794 (ps 11d0a98300, rt0 2560x1440); the entries before it:
+    t 252.336 buf 126 at 6957: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 252.336 buf 126 at 7036: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 252.336 buf 126 at 7120: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 252.336 buf 126 at 7184: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 252.336 buf 126 at 7263: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 252.336 buf 126 at 7342: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 252.336 buf 126 at 7421: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 252.336 buf 126 at 7500: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 252.336 buf 126 at 7579: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 252.346 buf 127 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2560x1440 | z 1129ec0000 | render_control 0
+  first depth write at t 252.403 buf 130 at 5685 (ps 11d0a98300, rt0 2560x1440); the entries before it:
+    t 252.368 buf 128 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 252.368 buf 128 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 252.368 buf 128 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 252.368 buf 128 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 252.368 buf 128 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 252.368 buf 128 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 252.368 buf 128 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 252.368 buf 128 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 252.368 buf 128 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 252.383 buf 129 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2560x1440 | z 1129ec0000 | render_control 0
+  first depth write at t 262.428 buf 132 at 5794 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 252.403 buf 130 at 7014: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 252.403 buf 130 at 7098: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 252.403 buf 130 at 7177: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 252.403 buf 130 at 7241: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 252.403 buf 130 at 7320: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 252.403 buf 130 at 7399: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 252.403 buf 130 at 7478: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 252.403 buf 130 at 7557: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 252.403 buf 130 at 7636: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 252.416 buf 131 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2560x1440 | z 1129ec0000 | render_control 0
+  first depth write at t 262.481 buf 134 at 5794 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 262.428 buf 132 at 6957: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 262.428 buf 132 at 7036: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 262.428 buf 132 at 7120: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 262.428 buf 132 at 7184: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 262.428 buf 132 at 7263: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 262.428 buf 132 at 7342: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 262.428 buf 132 at 7421: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 262.428 buf 132 at 7500: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 262.428 buf 132 at 7579: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 262.454 buf 133 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 262.527 buf 136 at 5794 (ps 11d0a98300, rt0 3072x1728); the entries before it:
+    t 262.481 buf 134 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 262.481 buf 134 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 262.481 buf 134 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 262.481 buf 134 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 262.481 buf 134 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 262.481 buf 134 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 262.481 buf 134 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 262.481 buf 134 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 262.481 buf 134 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 262.499 buf 135 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 262.567 buf 138 at 5794 (ps 11d0a98300, rt0 3072x1728); the entries before it:
+    t 262.527 buf 136 at 6957: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 262.527 buf 136 at 7036: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 262.527 buf 136 at 7120: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 262.527 buf 136 at 7184: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 262.527 buf 136 at 7263: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 262.527 buf 136 at 7342: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 262.527 buf 136 at 7421: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 262.527 buf 136 at 7500: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 262.527 buf 136 at 7579: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 262.541 buf 137 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3072x1728 | z 1129ec0000 | render_control 0
+  first depth write at t 262.606 buf 140 at 5772 (ps 11d0a98300, rt0 2816x1584); the entries before it:
+    t 262.567 buf 138 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 262.567 buf 138 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 262.567 buf 138 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 262.567 buf 138 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 262.567 buf 138 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 262.567 buf 138 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 262.567 buf 138 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 262.567 buf 138 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 262.567 buf 138 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 262.579 buf 139 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3072x1728 | z 1129ec0000 | render_control 0
+  first depth write at t 262.644 buf 142 at 5794 (ps 11d0a98300, rt0 2816x1584); the entries before it:
+    t 262.606 buf 140 at 6945: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 262.606 buf 140 at 7029: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 262.606 buf 140 at 7108: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 262.606 buf 140 at 7172: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 262.606 buf 140 at 7251: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 262.606 buf 140 at 7330: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 262.606 buf 140 at 7409: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 262.606 buf 140 at 7488: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 262.606 buf 140 at 7567: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 262.616 buf 141 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2816x1584 | z 1129ec0000 | render_control 0
+  first depth write at t 272.701 buf 144 at 5794 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 262.644 buf 142 at 6957: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 262.644 buf 142 at 7036: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 262.644 buf 142 at 7120: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 262.644 buf 142 at 7184: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 262.644 buf 142 at 7263: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 262.644 buf 142 at 7342: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 262.644 buf 142 at 7421: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 262.644 buf 142 at 7500: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 262.644 buf 142 at 7579: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 262.660 buf 143 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2816x1584 | z 1129ec0000 | render_control 0
+  first depth write at t 272.741 buf 146 at 5794 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 272.701 buf 144 at 6957: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 272.701 buf 144 at 7036: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 272.701 buf 144 at 7120: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 272.701 buf 144 at 7184: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 272.701 buf 144 at 7263: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 272.701 buf 144 at 7342: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 272.701 buf 144 at 7421: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 272.701 buf 144 at 7500: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 272.701 buf 144 at 7579: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 272.715 buf 145 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 272.785 buf 148 at 5772 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 272.741 buf 146 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 272.741 buf 146 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 272.741 buf 146 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 272.741 buf 146 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 272.741 buf 146 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 272.741 buf 146 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 272.741 buf 146 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 272.741 buf 146 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 272.741 buf 146 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 272.758 buf 147 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 272.826 buf 150 at 5794 (ps 11d0a98300, rt0 2048x1152); the entries before it:
+    t 272.785 buf 148 at 6945: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 272.785 buf 148 at 7029: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 272.785 buf 148 at 7108: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 272.785 buf 148 at 7172: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 272.785 buf 148 at 7251: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 272.785 buf 148 at 7330: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 272.785 buf 148 at 7409: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 272.785 buf 148 at 7488: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 272.785 buf 148 at 7567: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 272.797 buf 149 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 272.861 buf 152 at 5794 (ps 11d0a98300, rt0 2048x1152); the entries before it:
+    t 272.826 buf 150 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 272.826 buf 150 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 272.826 buf 150 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 272.826 buf 150 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 272.826 buf 150 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 272.826 buf 150 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 272.826 buf 150 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 272.826 buf 150 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 272.826 buf 150 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 272.843 buf 151 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2048x1152 | z 1129ec0000 | render_control 0
+  first depth write at t 272.898 buf 154 at 5685 (ps 11d0a98300, rt0 2048x1152); the entries before it:
+    t 272.861 buf 152 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 272.861 buf 152 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 272.861 buf 152 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 272.861 buf 152 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 272.861 buf 152 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 272.861 buf 152 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 272.861 buf 152 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 272.861 buf 152 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 272.861 buf 152 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 272.879 buf 153 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2048x1152 | z 1129ec0000 | render_control 0
+  first depth write at t 282.929 buf 156 at 5794 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 272.898 buf 154 at 7014: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 272.898 buf 154 at 7098: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 272.898 buf 154 at 7177: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 272.898 buf 154 at 7241: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 272.898 buf 154 at 7320: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 272.898 buf 154 at 7399: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 272.898 buf 154 at 7478: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 272.898 buf 154 at 7557: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 272.898 buf 154 at 7636: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 272.914 buf 155 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2048x1152 | z 1129ec0000 | render_control 0
+  first depth write at t 282.968 buf 158 at 5794 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 282.929 buf 156 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 282.929 buf 156 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 282.929 buf 156 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 282.929 buf 156 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 282.929 buf 156 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 282.929 buf 156 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 282.929 buf 156 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 282.929 buf 156 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 282.929 buf 156 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 282.940 buf 157 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 283.011 buf 160 at 5772 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 282.968 buf 158 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 282.968 buf 158 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 282.968 buf 158 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 282.968 buf 158 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 282.968 buf 158 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 282.968 buf 158 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 282.968 buf 158 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 282.968 buf 158 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 282.968 buf 158 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 282.984 buf 159 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 283.057 buf 162 at 5794 (ps 11d0a98300, rt0 2560x1440); the entries before it:
+    t 283.011 buf 160 at 6945: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 283.011 buf 160 at 7029: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 283.011 buf 160 at 7108: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 283.011 buf 160 at 7172: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 283.011 buf 160 at 7251: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 283.011 buf 160 at 7330: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 283.011 buf 160 at 7409: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 283.011 buf 160 at 7488: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 283.011 buf 160 at 7567: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 283.030 buf 161 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 283.116 buf 164 at 5794 (ps 11d0a98300, rt0 2560x1440); the entries before it:
+    t 283.057 buf 162 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 283.057 buf 162 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 283.057 buf 162 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 283.057 buf 162 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 283.057 buf 162 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 283.057 buf 162 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 283.057 buf 162 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 283.057 buf 162 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 283.057 buf 162 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 283.093 buf 163 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2560x1440 | z 1129ec0000 | render_control 0
+  first depth write at t 283.155 buf 166 at 5685 (ps 11d0a98300, rt0 2304x1296); the entries before it:
+    t 283.116 buf 164 at 6957: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 283.116 buf 164 at 7036: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 283.116 buf 164 at 7120: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 283.116 buf 164 at 7184: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 283.116 buf 164 at 7263: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 283.116 buf 164 at 7342: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 283.116 buf 164 at 7421: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 283.116 buf 164 at 7500: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 283.116 buf 164 at 7579: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 283.133 buf 165 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2560x1440 | z 1129ec0000 | render_control 0
+  first depth write at t 293.182 buf 168 at 5794 (ps 11d0a98300, rt0 2304x1296); the entries before it:
+    t 283.155 buf 166 at 7014: draw op 24 ps 11d1d88300 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 283.155 buf 166 at 7098: draw op 24 ps 11d1dd6400 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 283.155 buf 166 at 7177: draw op 24 ps 11d1d88300 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 283.155 buf 166 at 7241: draw op 24 ps 11d1d88300 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 283.155 buf 166 at 7320: draw op 24 ps 11d1dd6400 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 283.155 buf 166 at 7399: draw op 24 ps 11d1d88300 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 283.155 buf 166 at 7478: draw op 24 ps 11d1dd6400 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 283.155 buf 166 at 7557: draw op 24 ps 11d1d88300 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 283.155 buf 166 at 7636: draw op 24 ps 11d1dd6400 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 283.166 buf 167 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2304x1296 | z 1129ec0000 | render_control 0
+  first depth write at t 293.217 buf 170 at 5794 (ps 11d0a98300, rt0 2304x1296); the entries before it:
+    t 293.182 buf 168 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 293.182 buf 168 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 293.182 buf 168 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 293.182 buf 168 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 293.182 buf 168 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 293.182 buf 168 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 293.182 buf 168 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 293.182 buf 168 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 293.182 buf 168 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 293.194 buf 169 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2304x1296 | z 1129ec0000 | render_control 0
+  first depth write at t 293.250 buf 172 at 5685 (ps 11d0a98300, rt0 2048x1152); the entries before it:
+    t 293.217 buf 170 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 293.217 buf 170 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 293.217 buf 170 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 293.217 buf 170 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 293.217 buf 170 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 293.217 buf 170 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 293.217 buf 170 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 293.217 buf 170 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 293.217 buf 170 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 293.228 buf 171 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2304x1296 | z 1129ec0000 | render_control 0
+  first depth write at t 293.283 buf 174 at 5794 (ps 11d0a98300, rt0 2048x1152); the entries before it:
+    t 293.250 buf 172 at 7014: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 293.250 buf 172 at 7098: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 293.250 buf 172 at 7177: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 293.250 buf 172 at 7241: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 293.250 buf 172 at 7320: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 293.250 buf 172 at 7399: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 293.250 buf 172 at 7478: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 293.250 buf 172 at 7557: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 293.250 buf 172 at 7636: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 293.264 buf 173 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2048x1152 | z 1129ec0000 | render_control 0
+  first depth write at t 293.320 buf 176 at 5794 (ps 11d0a98300, rt0 2048x1152); the entries before it:
+    t 293.283 buf 174 at 6957: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 293.283 buf 174 at 7036: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 293.283 buf 174 at 7120: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 293.283 buf 174 at 7184: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 293.283 buf 174 at 7263: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 293.283 buf 174 at 7342: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 293.283 buf 174 at 7421: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 293.283 buf 174 at 7500: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 293.283 buf 174 at 7579: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 293.301 buf 175 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2048x1152 | z 1129ec0000 | render_control 0
+  first depth write at t 293.361 buf 178 at 5685 (ps 11d0a98300, rt0 2048x1152); the entries before it:
+    t 293.320 buf 176 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 293.320 buf 176 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 293.320 buf 176 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 293.320 buf 176 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 293.320 buf 176 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 293.320 buf 176 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 293.320 buf 176 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 293.320 buf 176 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 293.320 buf 176 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 293.331 buf 177 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2048x1152 | z 1129ec0000 | render_control 0
+  first depth write at t 303.414 buf 180 at 5772 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 293.361 buf 178 at 7014: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 293.361 buf 178 at 7098: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 293.361 buf 178 at 7177: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 293.361 buf 178 at 7241: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 293.361 buf 178 at 7320: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 293.361 buf 178 at 7399: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 293.361 buf 178 at 7478: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 293.361 buf 178 at 7557: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 293.361 buf 178 at 7636: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 293.383 buf 179 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2048x1152 | z 1129ec0000 | render_control 0
+  first depth write at t 303.463 buf 182 at 5794 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 303.414 buf 180 at 6945: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 303.414 buf 180 at 7029: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 303.414 buf 180 at 7108: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 303.414 buf 180 at 7172: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 303.414 buf 180 at 7251: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 303.414 buf 180 at 7330: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 303.414 buf 180 at 7409: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 303.414 buf 180 at 7488: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 303.414 buf 180 at 7567: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 303.433 buf 181 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 303.512 buf 184 at 5794 (ps 11d0a98300, rt0 2048x1152); the entries before it:
+    t 303.463 buf 182 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 303.463 buf 182 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 303.463 buf 182 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 303.463 buf 182 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 303.463 buf 182 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 303.463 buf 182 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 303.463 buf 182 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 303.463 buf 182 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 303.463 buf 182 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 303.482 buf 183 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 303.547 buf 186 at 5685 (ps 11d0a98300, rt0 2048x1152); the entries before it:
+    t 303.512 buf 184 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 303.512 buf 184 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 303.512 buf 184 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 303.512 buf 184 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 303.512 buf 184 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 303.512 buf 184 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 303.512 buf 184 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 303.512 buf 184 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 303.512 buf 184 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 303.526 buf 185 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2048x1152 | z 1129ec0000 | render_control 0
+  first depth write at t 303.592 buf 188 at 5794 (ps 11d0a98300, rt0 2048x1152); the entries before it:
+    t 303.547 buf 186 at 7014: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 303.547 buf 186 at 7098: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 303.547 buf 186 at 7177: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 303.547 buf 186 at 7241: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 303.547 buf 186 at 7320: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 303.547 buf 186 at 7399: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 303.547 buf 186 at 7478: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 303.547 buf 186 at 7557: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 303.547 buf 186 at 7636: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 303.567 buf 187 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2048x1152 | z 1129ec0000 | render_control 0
+  first depth write at t 303.632 buf 190 at 5794 (ps 11d0a98300, rt0 2048x1152); the entries before it:
+    t 303.592 buf 188 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 303.592 buf 188 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 303.592 buf 188 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 303.592 buf 188 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 303.592 buf 188 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 303.592 buf 188 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 303.592 buf 188 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 303.592 buf 188 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 303.592 buf 188 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 303.612 buf 189 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2048x1152 | z 1129ec0000 | render_control 0
+  first depth write at t 313.668 buf 192 at 5772 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 303.632 buf 190 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 303.632 buf 190 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 303.632 buf 190 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 303.632 buf 190 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 303.632 buf 190 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 303.632 buf 190 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 303.632 buf 190 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 303.632 buf 190 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 303.632 buf 190 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 303.651 buf 191 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2048x1152 | z 1129ec0000 | render_control 0
+  first depth write at t 313.717 buf 194 at 5794 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 313.668 buf 192 at 6945: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 313.668 buf 192 at 7029: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 313.668 buf 192 at 7108: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 313.668 buf 192 at 7172: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 313.668 buf 192 at 7251: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 313.668 buf 192 at 7330: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 313.668 buf 192 at 7409: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 313.668 buf 192 at 7488: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 313.668 buf 192 at 7567: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 313.686 buf 193 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 313.758 buf 196 at 5794 (ps 11d0a98300, rt0 2816x1584); the entries before it:
+    t 313.717 buf 194 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 313.717 buf 194 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 313.717 buf 194 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 313.717 buf 194 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 313.717 buf 194 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 313.717 buf 194 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 313.717 buf 194 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 313.717 buf 194 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 313.717 buf 194 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 313.727 buf 195 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 313.807 buf 198 at 5685 (ps 11d0a98300, rt0 2816x1584); the entries before it:
+    t 313.758 buf 196 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 313.758 buf 196 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 313.758 buf 196 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 313.758 buf 196 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 313.758 buf 196 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 313.758 buf 196 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 313.758 buf 196 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 313.758 buf 196 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 313.758 buf 196 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 313.780 buf 197 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2816x1584 | z 1129ec0000 | render_control 0
+  first depth write at t 313.848 buf 200 at 5794 (ps 11d0a98300, rt0 2560x1440); the entries before it:
+    t 313.807 buf 198 at 7014: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 313.807 buf 198 at 7098: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 313.807 buf 198 at 7177: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 313.807 buf 198 at 7241: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 313.807 buf 198 at 7320: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 313.807 buf 198 at 7399: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 313.807 buf 198 at 7478: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 313.807 buf 198 at 7557: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 313.807 buf 198 at 7636: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 313.824 buf 199 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2816x1584 | z 1129ec0000 | render_control 0
+  first depth write at t 313.893 buf 202 at 5794 (ps 11d0a98300, rt0 2560x1440); the entries before it:
+    t 313.848 buf 200 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 313.848 buf 200 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 313.848 buf 200 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 313.848 buf 200 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 313.848 buf 200 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 313.848 buf 200 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 313.848 buf 200 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 313.848 buf 200 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 313.848 buf 200 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 313.869 buf 201 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2560x1440 | z 1129ec0000 | render_control 0
+  first depth write at t 323.932 buf 204 at 5685 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 313.893 buf 202 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 313.893 buf 202 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 313.893 buf 202 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 313.893 buf 202 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 313.893 buf 202 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 313.893 buf 202 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 313.893 buf 202 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 313.893 buf 202 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 313.893 buf 202 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 313.907 buf 203 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2560x1440 | z 1129ec0000 | render_control 0
+  first depth write at t 323.981 buf 206 at 5794 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 323.932 buf 204 at 7014: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 323.932 buf 204 at 7098: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 323.932 buf 204 at 7177: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 323.932 buf 204 at 7241: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 323.932 buf 204 at 7320: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 323.932 buf 204 at 7399: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 323.932 buf 204 at 7478: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 323.932 buf 204 at 7557: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 323.932 buf 204 at 7636: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 323.952 buf 205 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 324.030 buf 208 at 5794 (ps 11d0a98300, rt0 3072x1728); the entries before it:
+    t 323.981 buf 206 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 323.981 buf 206 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 323.981 buf 206 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 323.981 buf 206 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 323.981 buf 206 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 323.981 buf 206 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 323.981 buf 206 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 323.981 buf 206 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 323.981 buf 206 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 324.002 buf 207 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 324.075 buf 210 at 5794 (ps 11d0a98300, rt0 3072x1728); the entries before it:
+    t 324.030 buf 208 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 324.030 buf 208 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 324.030 buf 208 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 324.030 buf 208 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 324.030 buf 208 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 324.030 buf 208 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 324.030 buf 208 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 324.030 buf 208 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 324.030 buf 208 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 324.049 buf 209 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3072x1728 | z 1129ec0000 | render_control 0
+  first depth write at t 324.120 buf 212 at 5794 (ps 11d0a98300, rt0 2816x1584); the entries before it:
+    t 324.075 buf 210 at 6957: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 324.075 buf 210 at 7036: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 324.075 buf 210 at 7120: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 324.075 buf 210 at 7184: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 324.075 buf 210 at 7263: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 324.075 buf 210 at 7342: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 324.075 buf 210 at 7421: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 324.075 buf 210 at 7500: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 324.075 buf 210 at 7579: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 324.096 buf 211 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3072x1728 | z 1129ec0000 | render_control 0
+  first depth write at t 324.165 buf 214 at 5772 (ps 11d0a98300, rt0 2816x1584); the entries before it:
+    t 324.120 buf 212 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 324.120 buf 212 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 324.120 buf 212 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 324.120 buf 212 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 324.120 buf 212 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 324.120 buf 212 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 324.120 buf 212 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 324.120 buf 212 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 324.120 buf 212 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 324.140 buf 213 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2816x1584 | z 1129ec0000 | render_control 0
+  first depth write at t 334.235 buf 217 at 5794 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 324.165 buf 214 at 7185: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 324.165 buf 214 at 7264: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 324.165 buf 214 at 7328: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 324.165 buf 214 at 7407: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 324.165 buf 214 at 7486: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 324.165 buf 214 at 7565: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 324.165 buf 214 at 7644: draw op 24 ps 11d1d88300 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 324.165 buf 214 at 7723: draw op 24 ps 11d1dd6400 rt0 113f230000 2816x1584 | z 1129ec0000 write | render_control 0
+    t 324.184 buf 215 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2816x1584 | z 1129ec0000 | render_control 0
+    t 334.204 buf 216 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 334.285 buf 219 at 5772 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 334.235 buf 217 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 334.235 buf 217 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 334.235 buf 217 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 334.235 buf 217 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 334.235 buf 217 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 334.235 buf 217 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 334.235 buf 217 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 334.235 buf 217 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 334.235 buf 217 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 334.253 buf 218 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 334.330 buf 221 at 5794 (ps 11d0a98300, rt0 2048x1152); the entries before it:
+    t 334.285 buf 219 at 6945: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 334.285 buf 219 at 7029: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 334.285 buf 219 at 7108: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 334.285 buf 219 at 7172: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 334.285 buf 219 at 7251: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 334.285 buf 219 at 7330: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 334.285 buf 219 at 7409: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 334.285 buf 219 at 7488: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 334.285 buf 219 at 7567: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 334.303 buf 220 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 334.375 buf 223 at 5794 (ps 11d0a98300, rt0 2048x1152); the entries before it:
+    t 334.330 buf 221 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 334.330 buf 221 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 334.330 buf 221 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 334.330 buf 221 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 334.330 buf 221 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 334.330 buf 221 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 334.330 buf 221 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 334.330 buf 221 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 334.330 buf 221 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 334.354 buf 222 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2048x1152 | z 1129ec0000 | render_control 0
+  first depth write at t 334.421 buf 225 at 5685 (ps 11d0a98300, rt0 2048x1152); the entries before it:
+    t 334.375 buf 223 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 334.375 buf 223 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 334.375 buf 223 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 334.375 buf 223 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 334.375 buf 223 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 334.375 buf 223 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 334.375 buf 223 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 334.375 buf 223 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 334.375 buf 223 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 334.398 buf 224 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2048x1152 | z 1129ec0000 | render_control 0
+  first depth write at t 334.464 buf 227 at 5794 (ps 11d0a98300, rt0 2048x1152); the entries before it:
+    t 334.421 buf 225 at 7014: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 334.421 buf 225 at 7098: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 334.421 buf 225 at 7177: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 334.421 buf 225 at 7241: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 334.421 buf 225 at 7320: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 334.421 buf 225 at 7399: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 334.421 buf 225 at 7478: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 334.421 buf 225 at 7557: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 334.421 buf 225 at 7636: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 334.444 buf 226 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2048x1152 | z 1129ec0000 | render_control 0
+  first depth write at t 344.541 buf 230 at 5685 (ps 11d0a98300, rt0 3072x1728); the entries before it:
+    t 344.501 buf 228 at 6957: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 344.501 buf 228 at 7036: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 344.501 buf 228 at 7120: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 344.501 buf 228 at 7184: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 344.501 buf 228 at 7263: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 344.501 buf 228 at 7342: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 344.501 buf 228 at 7421: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 344.501 buf 228 at 7500: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 344.501 buf 228 at 7579: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 344.515 buf 229 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3072x1728 | z 1129ec0000 | render_control 0
+  first depth write at t 344.584 buf 232 at 5794 (ps 11d0a98300, rt0 3072x1728); the entries before it:
+    t 344.541 buf 230 at 7014: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 344.541 buf 230 at 7098: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 344.541 buf 230 at 7177: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 344.541 buf 230 at 7241: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 344.541 buf 230 at 7320: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 344.541 buf 230 at 7399: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 344.541 buf 230 at 7478: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 344.541 buf 230 at 7557: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 344.541 buf 230 at 7636: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 344.555 buf 231 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3072x1728 | z 1129ec0000 | render_control 0
+  first depth write at t 344.645 buf 234 at 5794 (ps 11d0a98300, rt0 2560x1440); the entries before it:
+    t 344.584 buf 232 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 344.584 buf 232 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 344.584 buf 232 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 344.584 buf 232 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 344.584 buf 232 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 344.584 buf 232 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 344.584 buf 232 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 344.584 buf 232 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 344.584 buf 232 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 3072x1728 | z 1129ec0000 write | render_control 0
+    t 344.601 buf 233 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3072x1728 | z 1129ec0000 | render_control 0
+  first depth write at t 344.683 buf 236 at 5794 (ps 11d0a98300, rt0 2560x1440); the entries before it:
+    t 344.645 buf 234 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 344.645 buf 234 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 344.645 buf 234 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 344.645 buf 234 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 344.645 buf 234 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 344.645 buf 234 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 344.645 buf 234 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 344.645 buf 234 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 344.645 buf 234 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 344.660 buf 235 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2560x1440 | z 1129ec0000 | render_control 0
+  first depth write at t 344.727 buf 238 at 5794 (ps 11d0a98300, rt0 2304x1296); the entries before it:
+    t 344.683 buf 236 at 6957: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 344.683 buf 236 at 7036: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 344.683 buf 236 at 7120: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 344.683 buf 236 at 7184: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 344.683 buf 236 at 7263: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 344.683 buf 236 at 7342: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 344.683 buf 236 at 7421: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 344.683 buf 236 at 7500: draw op 24 ps 11d1d88300 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 344.683 buf 236 at 7579: draw op 24 ps 11d1dd6400 rt0 113f230000 2560x1440 | z 1129ec0000 write | render_control 0
+    t 344.703 buf 237 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2560x1440 | z 1129ec0000 | render_control 0
+  first depth write at t 354.769 buf 240 at 5794 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 344.727 buf 238 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 344.727 buf 238 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 344.727 buf 238 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 344.727 buf 238 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 344.727 buf 238 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 344.727 buf 238 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 344.727 buf 238 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 344.727 buf 238 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 344.727 buf 238 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 2304x1296 | z 1129ec0000 write | render_control 0
+    t 344.740 buf 239 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2304x1296 | z 1129ec0000 | render_control 0
+  first depth write at t 354.812 buf 242 at 5772 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 354.769 buf 240 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 354.769 buf 240 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 354.769 buf 240 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 354.769 buf 240 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 354.769 buf 240 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 354.769 buf 240 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 354.769 buf 240 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 354.769 buf 240 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 354.769 buf 240 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 354.784 buf 241 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 354.859 buf 244 at 5794 (ps 11d0a98300, rt0 3328x1872); the entries before it:
+    t 354.812 buf 242 at 6945: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 354.812 buf 242 at 7029: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 354.812 buf 242 at 7108: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 354.812 buf 242 at 7172: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 354.812 buf 242 at 7251: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 354.812 buf 242 at 7330: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 354.812 buf 242 at 7409: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 354.812 buf 242 at 7488: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 354.812 buf 242 at 7567: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 354.831 buf 243 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 354.898 buf 246 at 5794 (ps 11d0a98300, rt0 2048x1152); the entries before it:
+    t 354.859 buf 244 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 354.859 buf 244 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 354.859 buf 244 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 354.859 buf 244 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 354.859 buf 244 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 354.859 buf 244 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 354.859 buf 244 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 354.859 buf 244 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 354.859 buf 244 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 3328x1872 | z 1129ec0000 write | render_control 0
+    t 354.873 buf 245 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 3328x1872 | z 1129ec0000 | render_control 0
+  first depth write at t 354.938 buf 248 at 5685 (ps 11d0a98300, rt0 2048x1152); the entries before it:
+    t 354.898 buf 246 at 7138: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 354.898 buf 246 at 7217: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 354.898 buf 246 at 7296: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 354.898 buf 246 at 7360: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 354.898 buf 246 at 7439: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 354.898 buf 246 at 7518: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 354.898 buf 246 at 7597: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 354.898 buf 246 at 7676: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 354.898 buf 246 at 7755: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 354.919 buf 247 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2048x1152 | z 1129ec0000 | render_control 0
+  first depth write at t 354.968 buf 250 at 5794 (ps 11d0a98300, rt0 2048x1152); the entries before it:
+    t 354.938 buf 248 at 7014: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 354.938 buf 248 at 7098: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 354.938 buf 248 at 7177: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 354.938 buf 248 at 7241: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 354.938 buf 248 at 7320: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 354.938 buf 248 at 7399: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 354.938 buf 248 at 7478: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 354.938 buf 248 at 7557: draw op 24 ps 11d1d88300 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 354.938 buf 248 at 7636: draw op 24 ps 11d1dd6400 rt0 113f230000 2048x1152 | z 1129ec0000 write | render_control 0
+    t 354.949 buf 249 at 222: draw op 2d ps 11d01d7100 rt0 113f230000 2048x1152 | z 1129ec0000 | render_control 0
+  HTILE base 112a7c0000 (register form 112a7c00): 110 non-bake journal lines hold it
+    hint DB_HTILE 0x112a7c0000: window 0x11287c0000+0x4000000, direct memory +0.0 MiB
+    load table buf 42 at 452: op 9f dw1 e082e400 dw3 80000000 pairs x49 at 11e082e400: 345:11453b00 348:00000000 349:0005042c 34a:00000000 34b:00000048 34
+    load table buf 42 at 605: op 9f dw1 e082e108 dw3 80000000 pairs x91 at 11e082e108: 10:a0000183 11:20000181 12:1129ec00 13:112a7f00 14:1129ec00 15:112a
+    load table buf 42 at 1341: op 9f dw1 e082d7c0 dw3 80000000 pairs x98 at 11e082d7c0: 10:a0000183 11:20000181 12:1129ec00 13:112a7f00 14:1129ec00 15:112
+    load table buf 42 at 9931: op 9f dw1 e0822c00 dw3 80000000 pairs x128 at 11e0822c00: 336:11422f00 339:00000000 33a:0005042c 33b:00000000 33c:00000048 
+  HTILE base 112ab20000 (register form 112ab200): 36 non-bake journal lines hold it
+    hint DB_HTILE 0x112ab20000: window 0x1128b20000+0x4000000, direct memory +0.0 MiB
+    load table buf 106 at 452: op 9f dw1 e022e400 dw3 80000000 pairs x49 at 11e022e400: 345:11453b00 348:00000000 349:0005042c 34a:00000000 34b:00000048 3
+    load table buf 106 at 605: op 9f dw1 e022e108 dw3 80000000 pairs x91 at 11e022e108: 10:a0000183 11:20000181 12:1129ec00 13:112ab700 14:1129ec00 15:112
+    load table buf 106 at 1341: op 9f dw1 e022d7c0 dw3 80000000 pairs x98 at 11e022d7c0: 10:a0000183 11:20000181 12:1129ec00 13:112ab700 14:1129ec00 15:11
+    load table buf 106 at 9931: op 9f dw1 e0222c00 dw3 80000000 pairs x128 at 11e0222c00: 336:11422f00 339:00000000 33a:0005042c 33b:00000000 33c:00000048
+  HTILE base 112adc0000 (register form 112adc00): 122 non-bake journal lines hold it
+    hint DB_HTILE 0x112adc0000: window 0x1128dc0000+0x4000000, direct memory +0.0 MiB
+    tracked context: 0:00000000 1:11000100 2:00000000 3:00000000 4:00000000 5:112adc00 6:00000000 7:059f09ff 8:00000000 9:00000000 a:00000000 b:00000000 c
+    tracked context: 0:00000000 1:11000100 2:00000000 3:00000000 4:00000000 5:112adc00 6:00000000 7:059f09ff 8:00000000 9:00000000 a:00000000 b:00000000 c
+    tracked context: 0:00000000 1:11000100 2:00000000 3:00000000 4:00000000 5:112adc00 6:00000000 7:059f09ff 8:00000000 9:00000000 a:00000000 b:00000000 c
+    tracked context: 0:00000000 1:11000100 2:00000000 3:00000000 4:00000000 5:112adc00 6:00000000 7:059f09ff 8:00000000 9:00000000 a:00000000 b:00000000 c
+  HTILE base 112b0a0000 (register form 112b0a00): 67 non-bake journal lines hold it
+    hint DB_HTILE 0x112b0a0000: window 0x11290a0000+0x4000000, direct memory +0.0 MiB
+    load table buf 54 at 452: op 9f dw1 e0c0e400 dw3 80000000 pairs x49 at 11e0c0e400: 345:11453b00 348:00000000 349:0005042c 34a:00000000 34b:00000048 34
+    load table buf 54 at 605: op 9f dw1 e0c0e108 dw3 80000000 pairs x91 at 11e0c0e108: 10:a0000183 11:20000181 12:1129ec00 13:112b1000 14:1129ec00 15:112b
+    load table buf 54 at 1341: op 9f dw1 e0c0d7c0 dw3 80000000 pairs x98 at 11e0c0d7c0: 10:a0000183 11:20000181 12:1129ec00 13:112b1000 14:1129ec00 15:112
+    load table buf 54 at 9931: op 9f dw1 e0c02c00 dw3 80000000 pairs x128 at 11e0c02c00: 336:11422f00 339:00000000 33a:0005042c 33b:00000000 33c:00000048 
+  HTILE base 112b3c0000 (register form 112b3c00): 66 non-bake journal lines hold it
+    hint DB_HTILE 0x112b3c0000: window 0x11293c0000+0x4000000, direct memory +0.0 MiB
+    load table buf 16 at 452: op 9f dw1 e088e400 dw3 80000000 pairs x49 at 11e088e400: 345:11453b00 348:00000000 349:0005042c 34a:00000000 34b:00000048 34
+    load table buf 16 at 605: op 9f dw1 e088e108 dw3 80000000 pairs x91 at 11e088e108: 10:a0000183 11:20000181 12:1129ec00 13:112b4200 14:1129ec00 15:112b
+    load table buf 16 at 1341: op 9f dw1 e088d7c0 dw3 80000000 pairs x98 at 11e088d7c0: 10:a0000183 11:20000181 12:1129ec00 13:112b4200 14:1129ec00 15:112
+    load table buf 16 at 9931: op 9f dw1 e0882c00 dw3 80000000 pairs x128 at 11e0882c00: 336:11422f00 339:00000000 33a:0005042c 33b:00000000 33c:00000048 
+  HTILE base 112b720000 (register form 112b7200): 243 non-bake journal lines hold it
+    hint DB_HTILE 0x112b720000: window 0x1129720000+0x4000000, direct memory +0.0 MiB
+    load table buf 12 at 452: op 9f dw1 e0a4e400 dw3 80000000 pairs x49 at 11e0a4e400: 345:11453b00 348:00000000 349:0005042c 34a:00000000 34b:00000048 34
+    load table buf 12 at 605: op 9f dw1 e0a4e108 dw3 80000000 pairs x91 at 11e0a4e108: 10:a0000183 11:20000181 12:1129ec00 13:112b7a00 14:1129ec00 15:112b
+    load table buf 12 at 1341: op 9f dw1 e0a4d7c0 dw3 80000000 pairs x98 at 11e0a4d7c0: 10:a0000183 11:20000181 12:1129ec00 13:112b7a00 14:1129ec00 15:112
+    load table buf 12 at 9931: op 9f dw1 e0a42c00 dw3 80000000 pairs x128 at 11e0a42c00: 336:11422f00 339:00000000 33a:0005042c 33b:00000000 33c:00000048 
