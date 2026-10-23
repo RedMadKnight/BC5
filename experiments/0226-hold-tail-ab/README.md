@@ -127,11 +127,26 @@ tcpH5 B, 600 s each. The relinked binary (md5 2205598e), the maintainer reachabl
     the flip rises by 1.8 ms, the held work now going to the GPU there, but less than what it saves.
 - **No faults, ring timeouts or resets** in 4 × 600 s plus the smoke run, with no wait left to the
   GPU without its writer.
-- **Open before integration:**
-  - The bound is checked only while the owner is outside `Direct::submit`: 314.6 ms once, in a load.
-    That would want either a check in the owner's own path or a note that the bound applies to the
-    holder only.
-  - The ring consumer (ADR 0013 point 10) is not done.
-  - Two runs per arm, at one bench and with the old launcher values. The maintainer's own play with
-    the current defaults (`play0226.sh`) is the next check.
-  - Integration follows his policy, behind the switch, then as a default after his play.
+- **The 314.6-ms hold is benign.**
+  - The bound lives in `hold_release()`. The holder skips an owner inside `Direct::submit` (ADR 0010
+    §B.3), and owner and observer flushes return early while the chain has no segments yet. So in a
+    load with long submits the check can slip.
+  - But only to the next flip: `drain()`'s owner flush ignores `in_submit` and waits for the bound.
+    A hold cannot outlive its frame or stay unreleased, and it never holds the title's thread.
+  - An optional improvement for later is to have the owner release on leaving each
+    `Direct::submit`.
+- **Not done:** the ring consumer (ADR 0013 point 10). And the A/B was two runs per arm, at one bench,
+  with the old launcher values.
+
+**Integration** (the maintainer's yes, 2026-10-23, in the box supervisor's session: "jest moja
+zgoda"; the supervisor applies it).
+- `patch0226i.py` makes `integration_0226.diff` (also `~/bc5-work/exp0226/integration/`: the full
+  file, md5 a0018272, and the diff), against the tree's `bc5LleAgc.cpp` (md5 b210fa8e).
+- It is the tested code with the default flipped: the hold is on unless `BC5_DIRECT_HOLD_TAIL=0`.
+  Against the A/B's source only two comments and `hold_on()` differ.
+- Where it acts: only with `BC5_DIRECT_CHAIN=2`, a compute ring (`BC5_DIRECT_COMPUTE_RING` ≥ 0) and
+  `BC5_DIRECT_CROSS_RING_WAITS=all`, on the game thread's graphics buffers.
+  - The second title's `play-pkg.sh` has all three, which is what was tested.
+  - ASTRO BOT's default `play-astro.sh` (`bc5-run.env`) sets no compute ring, so the hold is inactive
+    there.
+  - `play-astro-compute.sh` does set the compute ring, so the hold acts there. That is untested.

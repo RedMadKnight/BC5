@@ -1,5 +1,5 @@
---- src/bc5LleAgc.before-0226.cpp	2026-10-22 23:19:52.288582972 +0200
-+++ src/bc5LleAgc.hold.cpp	2026-10-22 23:24:38.618294712 +0200
+--- src/bc5LleAgc.before-0226.cpp
++++ src/bc5LleAgc.hold.cpp
 @@ -3214,6 +3214,14 @@
  	uint32_t        n;
  	const char*     kind;
