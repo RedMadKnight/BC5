@@ -1,0 +1,24 @@
+# exp 0240: manual reads of the G-buffer target 0x113f230000 (32_FLOAT, 64KB_R_X), extent 3328x1872 = 25,559,040 bytes, through /proc/<pid>/mem (mem0212.py dump) during run Q1
+dump gb1 at 19:07:34.941
+done 19:07:35.029
+dump gb2 at 19:09:28.684 after 190927-ts24.png
+dump gb3 at 19:09:30.457 after 190927-ts24.png
+dump gb4 at 19:09:32.207 after 190927-ts24.png
+## gb1
+# /home/kjaniszewski/bc5-data/priv/exp0240/gb1.113f230000.bin: 6389760 floats; width by block-row shear: 3328x1872 (8.09; next 3072 28.72); finite 1.0000, range 5.30211..10000
+  window: 448000 pixels, 143677 distinct values; most common: 10000 (0.675), 181.09 (0.000), 176.451 (0.000), 180.037 (0.000), 171.428 (0.000)
+  screenshot 190738-ts03.png: patch share 0.010; most common value 10000 in patch 0.897, other 0.673, phi +0.047; step at the mask edges / window x0.38
+## gb2
+# /home/kjaniszewski/bc5-data/priv/exp0240/gb2.113f230000.bin: 6389760 floats; width by block-row shear: 3328x1872 (5.55; next 3072 18.68); finite 1.0000, range 5.30486..10000
+  window: 448000 pixels, 285604 distinct values; most common: 10000 (0.339), 175.623 (0.000), 175.141 (0.000), 160.516 (0.000), 159.91 (0.000)
+  screenshot 190932-ts25.png: patch share 0.204; most common value 10000 in patch 0.820, other 0.216, phi +0.514; step at the mask edges / window x9.64
+## gb3
+# /home/kjaniszewski/bc5-data/priv/exp0240/gb3.113f230000.bin: 6389760 floats; width by block-row shear: 3328x1872 (1.74; next 3072 16.55); finite 1.0000, range 5.30211..10000
+  window: 448000 pixels, 329537 distinct values; most common: 10000 (0.238), 120.357 (0.000), 160.491 (0.000), 120.486 (0.000), 117.185 (0.000)
+  screenshot 190932-ts25.png: patch share 0.204; most common value 10000 in patch 0.732, other 0.111, phi +0.588; step at the mask edges / window x9.15
+## gb4
+# /home/kjaniszewski/bc5-data/priv/exp0240/gb4.113f230000.bin: 6389760 floats; width by block-row shear: 3328x1872 (1.57; next 3072 26.77); finite 1.0000, range 5.30521..10000
+  window: 448000 pixels, 143806 distinct values; most common: 10000 (0.675), 146.909 (0.000), 178.04 (0.000), 177.397 (0.000), 166.428 (0.000)
+  screenshot 190932-ts25.png: patch share 0.204; most common value 10000 in patch 0.994, other 0.593, phi +0.345; step at the mask edges / window x2.31
+## gb3 against ts24 (the shot before it)
+  screenshot 190927-ts24.png: patch share 0.204; most common value 10000 in patch 0.908, other 0.066, phi +0.797; step at the mask edges / window x11.98
