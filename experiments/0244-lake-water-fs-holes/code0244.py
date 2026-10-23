@@ -88,8 +88,9 @@ for i, (mn, ops) in enumerate(lines):
         skel.append(mn)
         continue
     if mn == "exp" and ops:
-        counts["exp " + ops[0]] += 1
-        skel.append("exp %s%s" % (ops[0], " done" if "done" in " ".join(ops) else ""))
+        tgt = ops[0].split()[0]  # the export target only (mrtN, posN, prim, null): no register operands leave the box
+        counts["exp " + tgt] += 1
+        skel.append("exp %s%s" % (tgt, " done" if "done" in " ".join(ops) else ""))
         continue
     if mn.startswith("s_") and ops:
         for r in sregs(ops[0]):

@@ -1,13 +1,13 @@
 # /home/kjaniszewski/bc5-data/priv/11d00bdf00.dis: user SGPRs from s8
-(1) counts: exec writes 2, exp pos0 v0 1, exp prim v0 1, instructions 48, s_buffer_load 1, s_endpgm 1
+(1) counts: exec writes 2, exp pos0 1, exp prim 1, instructions 48, s_buffer_load 1, s_endpgm 1
 (2) memory reads by resource origin (udK+0xOFF: the descriptor loaded from the table the user-data pair K points at):
     1 x buffer_load_format_xy              ud4+?                              
 (3) skeleton (descriptor loads, memory reads, exec writes, branches, exports), repeats folded:
   s_lshr_b64
-  exp prim v0 done
+  exp prim done
   s_lshr_b64
   s_load_dword ud6+?
   s_load_dwordx4 ud4+?
   buffer_load_format_xy T#/V# ud4+?
-  exp pos0 v0 done
+  exp pos0 done
   s_endpgm

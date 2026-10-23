@@ -1,11 +1,11 @@
 # /home/kjaniszewski/bc5-data/priv/11d01d7100.dis: user SGPRs from s0
-(1) counts: exp mrt0 v0 1, exp mrt1 v3 1, exp mrt2 v2 1, exp mrt3 v1 1, instructions 119, s_buffer_load 11, s_endpgm 1
+(1) counts: exp mrt0 1, exp mrt1 1, exp mrt2 1, exp mrt3 1, instructions 119, s_buffer_load 11, s_endpgm 1
 (2) memory reads by resource origin (udK+0xOFF: the descriptor loaded from the table the user-data pair K points at):
     1 x image_load                         cbuf(ud8)+0x6e0                    
 (3) skeleton (descriptor loads, memory reads, exec writes, branches, exports), repeats folded:
   image_load T#/V# cbuf(ud8)+0x6e0
-  exp mrt0 v0
-  exp mrt1 v3
-  exp mrt2 v2
-  exp mrt3 v1 done
+  exp mrt0
+  exp mrt1
+  exp mrt2
+  exp mrt3 done
   s_endpgm
