@@ -1,0 +1,50 @@
+== 11:56:37 run PA1-BASE
+route saves from /home/kjaniszewski/bc5-work/save-backup-astro in /home/kjaniszewski/bc5-work/_SaveData/PPSA21564 (live saves kept in /home/kjaniszewski/bc5-work/exp0230/astro-live-PA1-BASE)
+PA1-BASE stopped at 160 s
+live saves back and identical to /home/kjaniszewski/bc5-work/exp0230/astro-live-PA1-BASE
+PA1-BASE: crash lines 0, kernel lines 0, read 12023 MiB (rchar)
+PA1-BASE box: avail 13707 -> 1564 MiB; compact_stall +13 (fail +11), pswpin +3658, pswpout +1738, majfault +5969; PSI full mem 0.8 s, io 7.2 s
+== 11:59:49 run PA2-PRE
+route saves from /home/kjaniszewski/bc5-work/save-backup-astro in /home/kjaniszewski/bc5-work/_SaveData/PPSA21564 (live saves kept in /home/kjaniszewski/bc5-work/exp0230/astro-live-PA2-PRE)
+PA2-PRE stopped at 160 s
+live saves back and identical to /home/kjaniszewski/bc5-work/exp0230/astro-live-PA2-PRE
+PA2-PRE: crash lines 0, kernel lines 0, read 12137 MiB (rchar)
+PA2-PRE box: avail 13745 -> 1571 MiB; compact_stall +12 (fail +9), pswpin +155, pswpout +191, majfault +1554; PSI full mem 0.6 s, io 4.6 s
+== 12:02:58 run PA3-PRE
+route saves from /home/kjaniszewski/bc5-work/save-backup-astro in /home/kjaniszewski/bc5-work/_SaveData/PPSA21564 (live saves kept in /home/kjaniszewski/bc5-work/exp0230/astro-live-PA3-PRE)
+PA3-PRE stopped at 160 s
+live saves back and identical to /home/kjaniszewski/bc5-work/exp0230/astro-live-PA3-PRE
+PA3-PRE: crash lines 0, kernel lines 0, read 12406 MiB (rchar)
+PA3-PRE box: avail 13694 -> 1643 MiB; compact_stall +24 (fail +11), pswpin +157, pswpout +48, majfault +1601; PSI full mem 1.0 s, io 5.2 s
+== 12:06:08 run PA4-BASE
+route saves from /home/kjaniszewski/bc5-work/save-backup-astro in /home/kjaniszewski/bc5-work/_SaveData/PPSA21564 (live saves kept in /home/kjaniszewski/bc5-work/exp0230/astro-live-PA4-BASE)
+PA4-BASE stopped at 160 s
+live saves back and identical to /home/kjaniszewski/bc5-work/exp0230/astro-live-PA4-BASE
+PA4-BASE: crash lines 0, kernel lines 0, read 11862 MiB (rchar)
+PA4-BASE box: avail 13747 -> 1623 MiB; compact_stall +4 (fail +4), pswpin +422, pswpout +1275, majfault +3289; PSI full mem 0.6 s, io 3.7 s
+== 12:09:16 run PA5-BASEW
+route saves from /home/kjaniszewski/bc5-work/save-backup-astro in /home/kjaniszewski/bc5-work/_SaveData/PPSA21564 (live saves kept in /home/kjaniszewski/bc5-work/exp0230/astro-live-PA5-BASEW)
+PA5-BASEW stopped at 160 s
+live saves back and identical to /home/kjaniszewski/bc5-work/exp0230/astro-live-PA5-BASEW
+PA5-BASEW: crash lines 0, kernel lines 0, read 11985 MiB (rchar)
+PA5-BASEW box: avail 13750 -> 1674 MiB; compact_stall +22 (fail +19), pswpin +446, pswpout +1247, majfault +2330; PSI full mem 0.8 s, io 3.0 s
+== 12:12:23 run PA6-PREW
+route saves from /home/kjaniszewski/bc5-work/save-backup-astro in /home/kjaniszewski/bc5-work/_SaveData/PPSA21564 (live saves kept in /home/kjaniszewski/bc5-work/exp0230/astro-live-PA6-PREW)
+PA6-PREW stopped at 160 s
+live saves back and identical to /home/kjaniszewski/bc5-work/exp0230/astro-live-PA6-PREW
+PA6-PREW: crash lines 0, kernel lines 0, read 12242 MiB (rchar)
+PA6-PREW box: avail 13753 -> 1747 MiB; compact_stall +28 (fail +23), pswpin +461, pswpout +935, majfault +1417; PSI full mem 1.2 s, io 3.4 s
+== 12:15:32 run PA7-PREW
+route saves from /home/kjaniszewski/bc5-work/save-backup-astro in /home/kjaniszewski/bc5-work/_SaveData/PPSA21564 (live saves kept in /home/kjaniszewski/bc5-work/exp0230/astro-live-PA7-PREW)
+PA7-PREW stopped at 160 s
+live saves back and identical to /home/kjaniszewski/bc5-work/exp0230/astro-live-PA7-PREW
+PA7-PREW: crash lines 0, kernel lines 0, read 11824 MiB (rchar)
+PA7-PREW box: avail 13759 -> 1713 MiB; compact_stall +12 (fail +12), pswpin +996, pswpout +2095, majfault +2285; PSI full mem 1.0 s, io 3.2 s
+== 12:18:39 run PA8-BASEW
+route saves from /home/kjaniszewski/bc5-work/save-backup-astro in /home/kjaniszewski/bc5-work/_SaveData/PPSA21564 (live saves kept in /home/kjaniszewski/bc5-work/exp0230/astro-live-PA8-BASEW)
+PA8-BASEW stopped at 160 s
+live saves back and identical to /home/kjaniszewski/bc5-work/exp0230/astro-live-PA8-BASEW
+PA8-BASEW: crash lines 0, kernel lines 0, read 12001 MiB (rchar)
+PA8-BASEW box: avail 13761 -> 1682 MiB; compact_stall +9 (fail +7), pswpin +451, pswpout +1373, majfault +2438; PSI full mem 1.2 s, io 3.0 s
+== 12:21:47 BOX-LOCK released
+== 12:21:47 chain astro done

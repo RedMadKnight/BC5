@@ -118,19 +118,32 @@ impl ReadAt for Vec<u8> {
 }
 
 /// A file opened for positional reads. The length is captured at open time;
-/// containers are immutable while mounted.
+/// containers are immutable while mounted. Its reads go to the
+/// `BC5_MOUNT_TRACE` trace when that is set (ADR 0014), unless it was opened
+/// with [`FileSource::open_untraced`].
 #[derive(Debug)]
 pub struct FileSource {
     file: File,
     len: u64,
+    traced: bool,
 }
 
 impl FileSource {
     /// Opens `path` read-only.
     pub fn open(path: impl AsRef<Path>) -> io::Result<Self> {
+        Self::open_with(path, true)
+    }
+
+    /// Opens `path` read-only, its reads left out of the `BC5_MOUNT_TRACE`
+    /// trace (the preload's own reads, ADR 0014).
+    pub fn open_untraced(path: impl AsRef<Path>) -> io::Result<Self> {
+        Self::open_with(path, false)
+    }
+
+    fn open_with(path: impl AsRef<Path>, traced: bool) -> io::Result<Self> {
         let file = File::open(path)?;
         let len = file.metadata()?.len();
-        Ok(Self { file, len })
+        Ok(Self { file, len, traced })
     }
 }
 
@@ -142,13 +155,21 @@ impl ReadAt for FileSource {
     #[cfg(unix)]
     fn read_at(&self, offset: u64, buf: &mut [u8]) -> io::Result<usize> {
         use std::os::unix::fs::FileExt;
-        self.file.read_at(buf, offset)
+        let n = self.file.read_at(buf, offset)?;
+        if self.traced {
+            crate::preload::trace(offset, n as u64);
+        }
+        Ok(n)
     }
 
     #[cfg(windows)]
     fn read_at(&self, offset: u64, buf: &mut [u8]) -> io::Result<usize> {
         use std::os::windows::fs::FileExt;
-        self.file.seek_read(buf, offset)
+        let n = self.file.seek_read(buf, offset)?;
+        if self.traced {
+            crate::preload::trace(offset, n as u64);
+        }
+        Ok(n)
     }
 }
 

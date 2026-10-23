@@ -334,6 +334,9 @@ fn cat(path: &PathBuf, file: &str) -> anyhow::Result<()> {
 
 #[cfg(all(feature = "fuse", target_os = "linux"))]
 fn mount(path: &PathBuf, mountpoint: &Path, allow_other: bool) -> anyhow::Result<()> {
+    // ADR 0014: with BC5_MOUNT_PRELOAD set, the traced startup ranges are read
+    // into the page cache in the background while the mount comes up.
+    bc5_mount::preload::start_from_env(path);
     let r = match open(path)? {
         Opened::Ffpfsc(c) => bc5_mount::fuse::mount(*c, "ffpfsc", mountpoint, allow_other),
         Opened::Pkg(p) => bc5_mount::fuse::mount(*p, "pkg", mountpoint, allow_other),

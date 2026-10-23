@@ -1,0 +1,11 @@
+2026-10-23 12:06:08
+title astro, arm BASE (), 160 s, launcher /home/kjaniszewski/bc5-work/exp0230/play-astro-0230.sh md5 ae478d80c67af2d21e2ebb8b613f9e5a
+launcher read-ahead line: 56:# KYTY_BC5_APR_READAHEAD=0 turns it off. 57:export KYTY_BC5_APR_READAHEAD=${KYTY_BC5_APR_READAHEAD:-4} 
+binary /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator md5 2780a9a624cba8c6d115cc78e95967a2
+boot 31c1a6ac, up since 2026-10-23 00:05:57
+before: Mem: used 1445 free 11758 avail 13747; Swap: used 609 free 6986 avail ; 
+box start uptime 43211.34 avail_mib 13747 swapfree_mib 6986 pswpin 1436686 pswpout 2945209 pgmajfault 1622672 compact_stall 18294 compact_fail 15948  psi_mem_full_us 87536697 psi_io_full_us 1254428796
+page cache dropped at uptime 43211.72; buff/cache 278 MiB, avail 13865 MiB
+drive probe: skopiowane 268435456 bajtów (268 MB, 256 MiB), 0,418047 s, 642 MB/s; read_ahead_kb 1024
+launch at uptime 43212.20; emulator pid 1840494 started at uptime 43214.83: /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator --game /home/kjaniszewski/bc5-data/mnt/
+environ: BC5_GC_DUMP_DIR=/home/kjaniszewski/bc5-data/captures/play-20261023-1206/gc KYTY_BC5_APR_READAHEAD=4 PLAY_CAPTURE=1 BC5_DIRECT_CHAIN=2 

@@ -1,0 +1,141 @@
+warning: unused variable: `e`
+   --> third_party/oozextract/src/ooz/error.rs:153:17
+    |
+153 |             Err(e) => Err(ErrorBuilder {
+    |                 ^ help: if this is intentional, prefix it with an underscore: `_e`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+warning: `oozextract` (lib) generated 1 warning (run `cargo fix --lib -p oozextract` to apply 1 suggestion)
+   Compiling bc5-mount v0.1.0 (/home/kjaniszewski/bc5-work/exp0230/tools/bc5-mount)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 6.24s
+     Running unittests src/lib.rs (/home/kjaniszewski/bc5-work/exp0230/target/debug/deps/bc5_mount-a51f0c914f592544)
+
+running 67 tests
+test cache::tests::a_get_refreshes_the_order ... ok
+test cache::tests::cache_size_from_the_default ... ok
+test cache::tests::keeps_recent_blocks_and_evicts_old_ones ... ok
+test cache::tests::prefetch_decodes_missing_blocks_and_skips_cached_ones ... ok
+test container::tests::json_extraction_handles_escapes_and_absence ... ok
+test exfat::tests::boot_sector_round_trip ... ok
+test exfat::tests::checksums_match_known_vectors ... ok
+test fixture::pfsc_writer::tests::length_mismatch_is_an_error ... ok
+test io::tests::le_accessors_never_panic ... ok
+test io::tests::slice_reads_are_bounded ... ok
+test io::tests::window_clamps_to_its_range ... ok
+test pfs::tests::dirents_round_trip_and_reject_garbage ... ok
+test fixture::exfat_writer::tests::empty_volume_parses ... ok
+test fixture::tests::content_is_deterministic_and_random_access ... ok
+test fixture::pfsc_writer::tests::empty_stream ... ok
+test pfs::tests::fpt_hash_matches_experiment_0001 ... ok
+test pfs::tests::inode_round_trip ... ok
+test fixture::tests::presets_resolve_and_list_files ... ok
+test pfs::tests::superblock_rejects_bad_fields ... ok
+test pfs::tests::superblock_round_trip_and_markers ... ok
+test fixture::exfat_writer::tests::lookup_is_case_insensitive ... ok
+test fixture::pfsc_writer::tests::corrupted_block_is_rejected_not_panicked ... ok
+test pfs::tests::image_checks_length_and_extents ... ok
+test pfsc::tests::header_round_trip_and_validation ... ok
+test pfsc::tests::header_sizes_follow_the_formula ... ok
+test pfs::tests::inode_encode_parse_is_identity ... ok
+test pkg::cnt::tests::missing_or_foreign_is_empty_and_bad_is_an_error ... ok
+test pkg::cnt::tests::roundtrip_through_build ... ok
+test pkg::diskcache::tests::a_corrupted_block_is_dropped ... ok
+test pkg::diskcache::tests::stores_and_reads_back_across_opens ... ok
+test pkg::diskcache::tests::writing_stops_at_the_limit_and_a_new_layout_starts_afresh ... ok
+test pkg::kraken::tests::garbage_is_an_error_not_a_panic ... ok
+test pfsc::tests::header_parse_never_panics ... ok
+test pfs::tests::superblock_parse_never_panics ... ok
+test pkg::kraken::tests::stored_entropy_chunk_decodes ... ok
+test pkg::kraken::tests::two_entropy_chunks_decode ... ok
+test pkg::naps::tests::blocks_follow_file_boundaries_and_run_bases ... ok
+test pkg::naps::tests::data_record_round_trips ... ok
+test pkg::naps::tests::encoded_layout_parses_back ... ok
+test pkg::naps::tests::header_round_trips ... ok
+test pkg::naps::tests::run_base_round_trips ... ok
+test pkg::tests::param_json_carries_both_ids ... ok
+test pkg::kraken::tests::stored_chunk_inside_a_block_decodes ... ok
+test pkg::tests::title_id_from_a_content_id ... ok
+test preload::tests::parse_skips_blank_comment_and_malformed_lines ... ok
+test preload::tests::plan_clamps_to_the_image_and_drops_ranges_past_it ... ok
+test preload::tests::plan_keeps_far_ranges_apart_and_orders_by_first_use ... ok
+test preload::tests::plan_merges_overlaps_and_small_gaps ... ok
+test preload::tests::plan_splits_long_ranges ... ok
+test preload::tests::tracer_lines_parse_back ... ok
+test preload::tests::preload_reads_every_chunk_completely ... ok
+test preload::tests::tracer_writes_inside_the_window_only ... ok
+test stats::tests::counts_repeats_only_once_enabled ... ok
+test pkg::kraken::tests::single_symbol_huffman_chunk_decodes ... ok
+test pfs::tests::inode_parse_never_panics ... ok
+test pfs::tests::dirents_parse_never_panics ... ok
+test fixture::pfsc_writer::tests::raw_and_compressed_blocks_round_trip ... ok
+test exfat::tests::boot_sector_parse_never_panics ... ok
+test fixture::exfat_writer::tests::files_round_trip_through_the_reader ... ok
+test pfsc::tests::open_never_panics_on_garbage ... ok
+test cache::tests::concurrent_readers_of_one_block_decode_it_once ... ok
+test exfat::tests::open_never_panics_on_garbage ... ok
+test pfsc::tests::concurrent_reads_of_one_block_inflate_it_once ... ok
+test cache::tests::a_panicking_decode_releases_its_waiters ... ok
+test cache::tests::failures_reach_the_waiters_and_are_not_cached ... ok
+test cache::tests::a_slow_decode_does_not_delay_another_block ... ok
+test pfsc::tests::a_slow_block_does_not_delay_other_blocks_or_decode_ahead ... ok
+
+test result: ok. 67 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.54s
+
+     Running unittests src/bin/bc5-fixture.rs (/home/kjaniszewski/bc5-work/exp0230/target/debug/deps/bc5_fixture-162a72b0acb0d123)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/main.rs (/home/kjaniszewski/bc5-work/exp0230/target/debug/deps/bc5_mount-e24474fff8416b8a)
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/pkg_roundtrip.rs (/home/kjaniszewski/bc5-work/exp0230/target/debug/deps/pkg_roundtrip-8b00114aa0d7a8c2)
+
+running 15 tests
+test empty ... ok
+test corruption_is_reported_not_panicked ... ok
+test container_files_under_sce_sys ... ok
+test lookups_are_case_insensitive_and_paths_work ... ok
+test random_reads_match_spec ... ok
+test block_kinds_follow_the_content ... ok
+test case ... ok
+test one_small ... ok
+test param_json_synthesised_from_the_content_id ... ok
+test deep ... ok
+test contiguous ... ok
+test spanning ... ok
+test disk_cache_serves_a_second_open ... ok
+test mixed_compress ... ok
+test wide ... ok
+
+test result: ok. 15 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.11s
+
+     Running tests/roundtrip.rs (/home/kjaniszewski/bc5-work/exp0230/target/debug/deps/roundtrip-2c4bbd1854fd68de)
+
+running 11 tests
+test sparse_1g ... ignored, 1 GiB fixture, ~1 min in release; run with --ignored
+test empty ... ok
+test one_small ... ok
+test random_reads_match_spec ... ok
+test case ... ok
+test deep ... ok
+test contiguous ... ok
+test spanning ... ok
+test mixed_compress ... ok
+test corruption_is_reported_not_panicked ... ok
+test wide ... ok
+
+test result: ok. 10 passed; 0 failed; 1 ignored; 0 measured; 0 filtered out; finished in 1.68s
+
+   Doc-tests bc5_mount
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+== test rc 0

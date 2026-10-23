@@ -1,0 +1,8 @@
+== 11:48:41 run TA1-MTRACE
+route saves from /home/kjaniszewski/bc5-work/save-backup-astro in /home/kjaniszewski/bc5-work/_SaveData/PPSA21564 (live saves kept in /home/kjaniszewski/bc5-work/exp0230/astro-live-TA1-MTRACE)
+TA1-MTRACE stopped at 100 s
+live saves back and identical to /home/kjaniszewski/bc5-work/exp0230/astro-live-TA1-MTRACE
+TA1-MTRACE: crash lines 0, kernel lines 0, read 12165 MiB (rchar)
+TA1-MTRACE box: avail 13760 -> 1905 MiB; compact_stall +0 (fail +0), pswpin +240, pswpout +369, majfault +1321; PSI full mem 0.1 s, io 3.2 s
+== 11:50:50 BOX-LOCK released
+== 11:50:50 chain astro done

@@ -1,0 +1,9 @@
+== 11:51:05 run TP1-MTRACE
+restored /home/kjaniszewski/bc5-work/exp0196/saves-before-152617 into /home/kjaniszewski/bc5-work/_SaveData/PPSA03671 (previous saves in /home/kjaniszewski/bc5-work/exp0196/saves-before-115107-333857869-1672708)
+TP1-MTRACE stopped at 150 s
+restored /home/kjaniszewski/bc5-work/exp0196/saves-before-115107-333857869-1672708 into /home/kjaniszewski/bc5-work/_SaveData/PPSA03671 (previous saves in /home/kjaniszewski/bc5-work/exp0196/saves-before-115349-923607653-1712425)
+live saves back and identical to /home/kjaniszewski/bc5-work/exp0196/saves-before-115107-333857869-1672708
+TP1-MTRACE: crash lines 0, kernel lines 0, read 8945 MiB (rchar)
+TP1-MTRACE box: avail 13774 -> 1041 MiB; compact_stall +1527 (fail +1305), pswpin +248510, pswpout +327196, majfault +259863; PSI full mem 7.0 s, io 18.6 s
+== 11:54:05 BOX-LOCK released
+== 11:54:05 chain pkg done

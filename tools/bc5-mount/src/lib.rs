@@ -11,6 +11,8 @@
 //! * [`pkg`] — a PS5 package: outer PFS, naps layout, Kraken blocks, inner image
 //!   (`docs/formats/ps5pkg.md`).
 //! * [`tree`] — the read-only file tree both formats expose to the CLI and FUSE.
+//! * [`preload`] — trace a title's startup reads of the image, preload them at
+//!   mount time (ADR 0014).
 //! * [`fixture`] — writes synthetic containers for tests (never real dumps).
 //! * `fuse` — the FUSE glue (Linux, feature `fuse`).
 //!
@@ -25,6 +27,7 @@ pub mod io;
 pub mod pfs;
 pub mod pfsc;
 pub mod pkg;
+pub mod preload;
 pub mod stats;
 pub mod tree;
 pub mod verify;
