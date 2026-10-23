@@ -1,0 +1,8 @@
+# build0245.py log (warnings and the link step; the first attempt failed on a response file in the compile database, fixed with ninja -t compdb -x)
+patched: /home/kjaniszewski/src/KytyPlus/src/libs/bc5LleAgc.cpp -> /home/kjaniszewski/bc5-work/exp0245/src/bc5LleAgc.db.cpp (+14 lines)
+/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: warning: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations]
+/home/kjaniszewski/bc5-work/exp0245/src/bc5LleAgc.db.cpp:2323:122: warning: format specifies type 'unsigned long' but the argument has type 'unsigned long long' [-Wformat]
+/home/kjaniszewski/bc5-work/exp0245/src/bc5LleAgc.db.cpp:73:15: warning: unused variable 'OK' [-Wunused-const-variable]
+/home/kjaniszewski/bc5-work/exp0245/src/bc5LleAgc.db.cpp:366:20: warning: unused variable 'IT_DMA_DATA' [-Wunused-const-variable]
+4 warnings generated.
+built /home/kjaniszewski/bc5-work/exp0245/kyty_emulator
