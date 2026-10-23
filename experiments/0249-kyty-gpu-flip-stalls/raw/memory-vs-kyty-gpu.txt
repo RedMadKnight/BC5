@@ -1,0 +1,18 @@
+Memory pressure in the 0.1-s sampler periods where kyty-gpu ran > 50 ms, against all periods of the run (hoststate 'v' lines:
+d_compact_stall, d_pgmajfault, d_allocstall per period; PSI memory 'full' stall per period; MemAvailable).
+E47A1 (exp 0247)  busy:   58 periods: compact_stall 0.4, majflt 1, allocstall 0.0, PSI mem full 36.0 ms, avail 1245 MB
+E47A1 (exp 0247)  all : 2682 periods: compact_stall 0.3, majflt 3, allocstall 0.1, PSI mem full 8.4 ms, avail 1976 MB
+E47A2 (exp 0247)  busy: none
+E47A2 (exp 0247)  all : 2680 periods: compact_stall 0.2, majflt 1, allocstall 0.3, PSI mem full 2.9 ms, avail 1836 MB
+E47B1 (exp 0247)  busy: none
+E47B1 (exp 0247)  all : 2682 periods: compact_stall 0.0, majflt 1, allocstall 0.1, PSI mem full 2.9 ms, avail 1935 MB
+E47B2 (exp 0247)  busy: none
+E47B2 (exp 0247)  all : 2684 periods: compact_stall 0.0, majflt 1, allocstall 0.1, PSI mem full 1.4 ms, avail 1834 MB
+E47S (exp 0247)  busy: none
+E47S (exp 0247)  all : 2689 periods: compact_stall 0.1, majflt 1, allocstall 3.7, PSI mem full 2.8 ms, avail 1818 MB
+E49R1  busy: none
+E49R1  all : 2692 periods: compact_stall 0.3, majflt 2, allocstall 2.0, PSI mem full 3.5 ms, avail 1770 MB
+E49R2  busy:   14 periods: compact_stall 0.8, majflt 2, allocstall 0.0, PSI mem full 33.0 ms, avail 1573 MB
+E49R2  all : 2678 periods: compact_stall 0.3, majflt 3, allocstall 5.6, PSI mem full 9.1 ms, avail 1910 MB
+E49R3  busy:    6 periods: compact_stall 0.8, majflt 6, allocstall 0.0, PSI mem full 15.7 ms, avail 1306 MB
+E49R3  all : 2685 periods: compact_stall 0.4, majflt 4, allocstall 0.5, PSI mem full 10.3 ms, avail 1942 MB

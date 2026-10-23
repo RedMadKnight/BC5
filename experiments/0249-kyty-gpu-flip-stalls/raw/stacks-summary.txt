@@ -1,0 +1,100 @@
+eu-stack samples of exp 0249 (stackwatch0249.py), frame names only: raw addresses of host libraries are dropped, frames in the title's code shown as <title code>.
+== stacks-E49R1.txt: 0 samples
+== stacks-E49R2.txt: 2 samples
+== sample 1 mono 77640.083 (t+288.9 s), kyty-gpu ran 263 ms of the last 300; tids {'kyty_emulator': 3727610, 'kyty-thread': 3727611, 'kyty_em:disk$0': 3727701, 'kyty-cmdsched': 3727703, 'kyty-present': 3727705, 'kyty-gpu': 3727706, 'game-main': 3727722, 'bc5-ring': 3727726, 'Render Thread': 3727745, 'bc5-fliplabel': 3727826}
+  [kyty-cmdsched]
+    Libs::Graphics::CommandScheduler::PriorityOperationsThread(std::stop_token)
+    std::thread::_State_impl<std::thread::_Invoker<std::tuple<Libs::Graphics::CommandScheduler::CommandScheduler(Libs::Graphics::RenderContext&, Libs::Graphics::GraphicContext&)::$_0, std::stop_token> > >::_M_run()
+  [kyty-present]
+    SleepHighResolutionNanos(unsigned long)
+    Libs::VideoOut::VideoOutDriver::Impl::PresentThread(std::stop_token)
+    std::thread::_State_impl<std::thread::_Invoker<std::tuple<Libs::VideoOut::VideoOutDriver::Impl::Impl(unsigned int, unsigned int, Libs::Graphics::Presenter&)::{lambda(std::stop_token)#1}, std::stop_token> > >::_M_run()
+  [kyty-gpu]
+    VmaAllocator_T::AllocateVulkanMemory(VkMemoryAllocateInfo const*, VkDeviceMemory_T**)
+    VmaAllocator_T::AllocateDedicatedMemoryPage(VmaPool_T*, unsigned long, VmaSuballocationType, unsigned int, VkMemoryAllocateInfo const&, bool, bool, bool, void*, VmaAllocation_T**)
+    VmaAllocator_T::AllocateDedicatedMemory(VmaPool_T*, unsigned long, VmaSuballocationType, VmaDedicatedAllocationList&, unsigned int, bool, bool, bool, bool, void*, float, VkBuffer_T*, VkImage_T*, VmaBufferImageUsage, unsigned long, VmaAllocation_T**, void const*)
+    VmaAllocator_T::AllocateMemoryOfType(VmaPool_T*, unsigned long, unsigned long, bool, VkBuffer_T*, VkImage_T*, VmaBufferImageUsage, void*, VmaAllocationCreateInfo const&, unsigned int, VmaSuballocationType, VmaDedicatedAllocationList&, VmaBlockVector&, unsigned long, VmaAllocation_T**)
+    VmaAllocator_T::AllocateMemory(VkMemoryRequirements, bool, bool, VkBuffer_T*, VkImage_T*, VmaBufferImageUsage, void*, VmaAllocationCreateInfo const&, VmaSuballocationType, unsigned long, VmaAllocation_T**)
+    VmaAllocator_T::CreateBuffer(VkBufferCreateInfo const*, VmaAllocationCreateInfo const*, void*, VkBuffer_T**, VmaAllocation_T**, VmaAllocationInfo*)
+    vmaCreateBuffer
+    Libs::Graphics::TileManager::AllocateScratch(unsigned long)
+    Libs::Graphics::TileManager::Detile(vk::Buffer, unsigned long, unsigned long, unsigned long, std::span<Libs::Graphics::GpuTileInfo const, 18446744073709551615ul>)
+    Libs::Graphics::TextureCache::UploadImage(Libs::Graphics::Image&, Libs::Graphics::TextureCache::ImageDesc const&, Libs::Graphics::Buffer&, unsigned long)
+    Libs::Graphics::TextureCache::InitializeImage(Libs::Graphics::ImageId, Libs::Graphics::TextureCache::ImageDesc const&)
+    Libs::Graphics::TextureCache::UpdateImage(Libs::Graphics::ImageId)
+    Libs::Graphics::Presenter::PrepareFrame(Libs::Graphics::CommandBuffer&, Libs::Graphics::ImageInfo const&)
+    Libs::VideoOut::FlipQueue::Prepare(unsigned long, Libs::Graphics::CommandBuffer&)
+    Libs::Graphics::CommandProcessor::PrepareCpuFlip(unsigned long)
+  [game-main]
+    Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+    <title code>
+    <title code>
+    <title code>
+    Libs::Fiber::FiberStartTrampoline()
+  [bc5-ring]
+    Libs::Bc5Gc::Direct::submit_now(unsigned int const*, unsigned int, char const*, bool, int, Libs::Bc5Gc::Direct::Chain const*)
+    Libs::Bc5Gc::Direct::chain_submit(Libs::Bc5Gc::Direct::ChainSlot&, int, bool)
+    Libs::Bc5Gc::SoftCp::queue_consumer_thread()
+  [Render Thread]
+    Libs::Bc5Gc::Direct::submit_now(unsigned int const*, unsigned int, char const*, bool, int, Libs::Bc5Gc::Direct::Chain const*)
+    Libs::Bc5Gc::Direct::chain_submit(Libs::Bc5Gc::Direct::ChainSlot&, int, bool)
+    Libs::Bc5Gc::Direct::submit_split(unsigned int const*, unsigned int, char const*, bool)
+    Libs::Bc5Gc::Direct::submit(unsigned int const*, unsigned int, char const*, bool)
+    Libs::Bc5Gc::submit_raw(unsigned int const*, unsigned int, char const*)
+    Libs::Bc5LleKernel::Ioctl(int, unsigned long, void*)
+    <title code>
+    <title code>
+    <title code>
+    <title code>
+    <title code>
+    <title code>
+    <title code>
+    <title code>
+    Libs::LibKernel::RunThread(void*)
+  [bc5-fliplabel]
+    std::thread::_State_impl<std::thread::_Invoker<std::tuple<Libs::Bc5LleVideoOut::SubmitEopFlip(int, int, int, long, void*)::$_1::operator()() const::{lambda()#1}> > >::_M_run()
+== sample 2 mono 77644.634 (t+293.4 s), kyty-gpu ran 275 ms of the last 300; tids {'kyty_emulator': 3727610, 'kyty-thread': 3727611, 'kyty_em:disk$0': 3727701, 'kyty-cmdsched': 3727703, 'kyty-present': 3727705, 'kyty-gpu': 3727706, 'game-main': 3727722, 'bc5-ring': 3727726, 'Render Thread': 3727745, 'bc5-fliplabel': 3727826}
+  [kyty-cmdsched]
+    Libs::Graphics::CommandScheduler::PriorityOperationsThread(std::stop_token)
+    std::thread::_State_impl<std::thread::_Invoker<std::tuple<Libs::Graphics::CommandScheduler::CommandScheduler(Libs::Graphics::RenderContext&, Libs::Graphics::GraphicContext&)::$_0, std::stop_token> > >::_M_run()
+  [kyty-present]
+    SleepHighResolutionNanos(unsigned long)
+    Libs::VideoOut::VideoOutDriver::Impl::PresentThread(std::stop_token)
+    std::thread::_State_impl<std::thread::_Invoker<std::tuple<Libs::VideoOut::VideoOutDriver::Impl::Impl(unsigned int, unsigned int, Libs::Graphics::Presenter&)::{lambda(std::stop_token)#1}, std::stop_token> > >::_M_run()
+  [kyty-gpu]
+    VmaAllocator_T::AllocateVulkanMemory(VkMemoryAllocateInfo const*, VkDeviceMemory_T**)
+    VmaAllocator_T::AllocateDedicatedMemoryPage(VmaPool_T*, unsigned long, VmaSuballocationType, unsigned int, VkMemoryAllocateInfo const&, bool, bool, bool, void*, VmaAllocation_T**)
+    VmaAllocator_T::AllocateDedicatedMemory(VmaPool_T*, unsigned long, VmaSuballocationType, VmaDedicatedAllocationList&, unsigned int, bool, bool, bool, bool, void*, float, VkBuffer_T*, VkImage_T*, VmaBufferImageUsage, unsigned long, VmaAllocation_T**, void const*)
+    VmaAllocator_T::AllocateMemoryOfType(VmaPool_T*, unsigned long, unsigned long, bool, VkBuffer_T*, VkImage_T*, VmaBufferImageUsage, void*, VmaAllocationCreateInfo const&, unsigned int, VmaSuballocationType, VmaDedicatedAllocationList&, VmaBlockVector&, unsigned long, VmaAllocation_T**)
+    VmaAllocator_T::AllocateMemory(VkMemoryRequirements, bool, bool, VkBuffer_T*, VkImage_T*, VmaBufferImageUsage, void*, VmaAllocationCreateInfo const&, VmaSuballocationType, unsigned long, VmaAllocation_T**)
+    VmaAllocator_T::CreateBuffer(VkBufferCreateInfo const*, VmaAllocationCreateInfo const*, void*, VkBuffer_T**, VmaAllocation_T**, VmaAllocationInfo*)
+    vmaCreateBuffer
+    Libs::Graphics::TileManager::AllocateScratch(unsigned long)
+    Libs::Graphics::TileManager::Detile(vk::Buffer, unsigned long, unsigned long, unsigned long, std::span<Libs::Graphics::GpuTileInfo const, 18446744073709551615ul>)
+    Libs::Graphics::TextureCache::UploadImage(Libs::Graphics::Image&, Libs::Graphics::TextureCache::ImageDesc const&, Libs::Graphics::Buffer&, unsigned long)
+    Libs::Graphics::TextureCache::InitializeImage(Libs::Graphics::ImageId, Libs::Graphics::TextureCache::ImageDesc const&)
+    Libs::Graphics::TextureCache::UpdateImage(Libs::Graphics::ImageId)
+    Libs::Graphics::Presenter::PrepareFrame(Libs::Graphics::CommandBuffer&, Libs::Graphics::ImageInfo const&)
+    Libs::VideoOut::FlipQueue::Prepare(unsigned long, Libs::Graphics::CommandBuffer&)
+    Libs::Graphics::CommandProcessor::PrepareCpuFlip(unsigned long)
+  [game-main]
+    Libs::LibKernel::PthreadCondTimedwait(Libs::LibKernel::PthreadCondPrivate**, Libs::LibKernel::PthreadMutexPrivate**, unsigned int)
+    <title code>
+    <title code>
+    <title code>
+    Libs::Fiber::FiberStartTrampoline()
+  [bc5-ring]
+    Libs::Bc5Gc::SoftCp::queue_consumer_thread()
+  [Render Thread]
+    Libs::Bc5LleVideoOut::SubmitEopFlip(int, int, int, long, void*)
+    <title code>
+    <title code>
+    <title code>
+    <title code>
+    <title code>
+    <title code>
+    Libs::LibKernel::RunThread(void*)
+  [bc5-fliplabel]
+    std::thread::_State_impl<std::thread::_Invoker<std::tuple<Libs::Bc5LleVideoOut::SubmitEopFlip(int, int, int, long, void*)::$_1::operator()() const::{lambda()#1}> > >::_M_run()
+    mono 77653.768, 2 samples
+== stacks-E49R3.txt: 0 samples
