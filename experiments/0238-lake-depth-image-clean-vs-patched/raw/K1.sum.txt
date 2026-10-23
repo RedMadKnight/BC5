@@ -1,0 +1,140 @@
+# /home/kjaniszewski/bc5-work/exp0194/r-K1: 26 shots (clean 7, patched 19)
+ts00 patched  25.8 %  # journal t 150.085, polled 0.1 s
+   ps0 84902a4000 2048x2048 md5 f3821943 | all: flat 0.001 zero 0.001 | mip 0: flat 0.000 zero 0.000
+   ps2 80907c4000 512x512 md5 5db21f55 | zero 0.002 nonfinite 0.0000 negative 0.000 | min 0 med 0.8745 max 1.003 mean 0.8752 | single-value 4-KiB blocks 0 of 171
+   ps4 11d0078000 4x4 md5 7f7e97ed | distinct 4-byte values 2
+   gs4 113cb40000 3328x1872 md5 98bc8305 | zero 0.025 nonfinite 0.0000 negative 0.000 | min 0 med 103.8 max 1.001e+04 mean 1623 | single-value 64-KiB blocks 0 of 195
+ts01 patched  28.6 %  # journal t 150.085, polled 0.1 s
+   ps0 84902a4000 2048x2048 md5 f3821943 | all: flat 0.001 zero 0.001 | mip 0: flat 0.000 zero 0.000
+   ps2 80907c4000 512x512 md5 5db21f55 | zero 0.002 nonfinite 0.0000 negative 0.000 | min 0 med 0.8745 max 1.003 mean 0.8752 | single-value 4-KiB blocks 0 of 171
+   ps4 11d0078000 4x4 md5 7f7e97ed | distinct 4-byte values 2
+   gs4 113cb40000 3328x1872 md5 8c92977c | zero 0.025 nonfinite 0.0000 negative 0.000 | min 0 med 216.1 max 1.001e+04 mean 2925 | single-value 64-KiB blocks 27 of 195
+ts02 patched  28.5 %  # journal t 150.085, polled 0.1 s
+   ps0 84902a4000 2048x2048 md5 f3821943 | all: flat 0.001 zero 0.001 | mip 0: flat 0.000 zero 0.000
+   ps2 80907c4000 512x512 md5 5db21f55 | zero 0.002 nonfinite 0.0000 negative 0.000 | min 0 med 0.8745 max 1.003 mean 0.8752 | single-value 4-KiB blocks 0 of 171
+   ps4 11d0078000 4x4 md5 7f7e97ed | distinct 4-byte values 2
+   gs4 113cb40000 3328x1872 md5 557c27e4 | zero 0.025 nonfinite 0.0000 negative 0.000 | min 0 med 156.9 max 1.001e+04 mean 2151 | single-value 64-KiB blocks 0 of 195
+ts03 patched  28.7 %  # journal t 165.164, polled 0.1 s
+   ps0 84902a4000 2048x2048 md5 f3821943 | all: flat 0.001 zero 0.001 | mip 0: flat 0.000 zero 0.000
+   ps2 80907c4000 512x512 md5 5db21f55 | zero 0.002 nonfinite 0.0000 negative 0.000 | min 0 med 0.8745 max 1.003 mean 0.8752 | single-value 4-KiB blocks 0 of 171
+   ps4 11d0078000 4x4 md5 7f7e97ed | distinct 4-byte values 2
+   gs4 113cb40000 3328x1872 md5 6cfd5f0f | zero 0.025 nonfinite 0.0000 negative 0.000 | min 0 med 11.27 max 1.001e+04 mean 2631 | single-value 64-KiB blocks 26 of 195
+ts04 patched  28.2 %  # journal t 165.164, polled 0.1 s
+   ps0 84902a4000 2048x2048 md5 f3821943 | all: flat 0.001 zero 0.001 | mip 0: flat 0.000 zero 0.000
+   ps2 80907c4000 512x512 md5 5db21f55 | zero 0.002 nonfinite 0.0000 negative 0.000 | min 0 med 0.8745 max 1.003 mean 0.8752 | single-value 4-KiB blocks 0 of 171
+   ps4 11d0078000 4x4 md5 7f7e97ed | distinct 4-byte values 2
+   gs4 113cb40000 3328x1872 md5 75afac41 | zero 0.025 nonfinite 0.0000 negative 0.000 | min 0 med 156.1 max 1.001e+04 mean 2149 | single-value 64-KiB blocks 0 of 195
+ts05 patched  26.7 %  # journal t 165.164, polled 0.1 s
+   ps0 84902a4000 2048x2048 md5 f3821943 | all: flat 0.001 zero 0.001 | mip 0: flat 0.000 zero 0.000
+   ps2 80907c4000 512x512 md5 5db21f55 | zero 0.002 nonfinite 0.0000 negative 0.000 | min 0 med 0.8745 max 1.003 mean 0.8752 | single-value 4-KiB blocks 0 of 171
+   ps4 11d0078000 4x4 md5 7f7e97ed | distinct 4-byte values 2
+   gs4 113cb40000 3328x1872 md5 d9eb577f | zero 0.025 nonfinite 0.0000 negative 0.000 | min 0 med 104.4 max 1.001e+04 mean 1662 | single-value 64-KiB blocks 0 of 195
+ts06 patched  24.2 %  # journal t 180.212, polled 0.1 s
+   ps0 84902a4000 2048x2048 md5 f3821943 | all: flat 0.001 zero 0.001 | mip 0: flat 0.000 zero 0.000
+   ps2 80907c4000 512x512 md5 5db21f55 | zero 0.002 nonfinite 0.0000 negative 0.000 | min 0 med 0.8745 max 1.003 mean 0.8752 | single-value 4-KiB blocks 0 of 171
+   ps4 11d0078000 4x4 md5 7f7e97ed | distinct 4-byte values 2
+   gs4 113cb40000 3328x1872 md5 51db2af0 | zero 0.025 nonfinite 0.0000 negative 0.000 | min 0 med 156.2 max 1.001e+04 mean 2104 | single-value 64-KiB blocks 0 of 195
+ts07 patched  30.0 %  # journal t 180.212, polled 0.1 s
+   ps0 84902a4000 2048x2048 md5 f3821943 | all: flat 0.001 zero 0.001 | mip 0: flat 0.000 zero 0.000
+   ps2 80907c4000 512x512 md5 5db21f55 | zero 0.002 nonfinite 0.0000 negative 0.000 | min 0 med 0.8745 max 1.003 mean 0.8752 | single-value 4-KiB blocks 0 of 171
+   ps4 11d0078000 4x4 md5 7f7e97ed | distinct 4-byte values 2
+   gs4 113cb40000 3328x1872 md5 db82c860 | zero 0.025 nonfinite 0.0000 negative 0.000 | min 0 med 152.4 max 1.001e+04 mean 2060 | single-value 64-KiB blocks 3 of 195
+ts08 patched  21.5 %  # journal t 180.212, polled 0.1 s
+   ps0 84902a4000 2048x2048 md5 f3821943 | all: flat 0.001 zero 0.001 | mip 0: flat 0.000 zero 0.000
+   ps2 80907c4000 512x512 md5 5db21f55 | zero 0.002 nonfinite 0.0000 negative 0.000 | min 0 med 0.8745 max 1.003 mean 0.8752 | single-value 4-KiB blocks 0 of 171
+   ps4 11d0078000 4x4 md5 7f7e97ed | distinct 4-byte values 2
+   gs4 113cb40000 3328x1872 md5 c7dfaac9 | zero 0.025 nonfinite 0.0000 negative 0.000 | min 0 med 151.2 max 1.001e+04 mean 1653 | single-value 64-KiB blocks 0 of 195
+ts09 patched  26.4 %  # journal t 195.274, polled 0.1 s
+   ps0 84902a4000 2048x2048 md5 f3821943 | all: flat 0.001 zero 0.001 | mip 0: flat 0.000 zero 0.000
+   ps2 80907c4000 512x512 md5 5db21f55 | zero 0.002 nonfinite 0.0000 negative 0.000 | min 0 med 0.8745 max 1.003 mean 0.8752 | single-value 4-KiB blocks 0 of 171
+   ps4 11d0078000 4x4 md5 7f7e97ed | distinct 4-byte values 2
+   gs4 113cb40000 3072x1728 md5 585003ea | zero 0.025 nonfinite 0.0000 negative 0.000 | min 0 med 116.8 max 1.001e+04 mean 1243 | single-value 64-KiB blocks 0 of 195
+ts10 patched  29.8 %  # journal t 195.274, polled 0.1 s
+   ps0 84902a4000 2048x2048 md5 f3821943 | all: flat 0.001 zero 0.001 | mip 0: flat 0.000 zero 0.000
+   ps2 80907c4000 512x512 md5 5db21f55 | zero 0.002 nonfinite 0.0000 negative 0.000 | min 0 med 0.8745 max 1.003 mean 0.8752 | single-value 4-KiB blocks 0 of 171
+   ps4 11d0078000 4x4 md5 7f7e97ed | distinct 4-byte values 2
+   gs4 113cb40000 3072x1728 md5 dce60f95 | zero 0.025 nonfinite 0.0000 negative 0.000 | min 0 med 642.5 max 1.001e+04 mean 3642 | single-value 64-KiB blocks 43 of 195
+ts11 patched  19.6 %  # journal t 195.274, polled 0.1 s
+   ps0 84902a4000 2048x2048 md5 f3821943 | all: flat 0.001 zero 0.001 | mip 0: flat 0.000 zero 0.000
+   ps2 80907c4000 512x512 md5 5db21f55 | zero 0.002 nonfinite 0.0000 negative 0.000 | min 0 med 0.8745 max 1.003 mean 0.8752 | single-value 4-KiB blocks 0 of 171
+   ps4 11d0078000 4x4 md5 7f7e97ed | distinct 4-byte values 2
+   gs4 113cb40000 3072x1728 md5 b3011da2 | zero 0.025 nonfinite 0.0000 negative 0.000 | min 0 med 149.1 max 1.001e+04 mean 985.9 | single-value 64-KiB blocks 0 of 195
+ts12 patched  23.1 %  # journal t 210.325, polled 0.1 s
+   ps0 84902a4000 2048x2048 md5 f3821943 | all: flat 0.001 zero 0.001 | mip 0: flat 0.000 zero 0.000
+   ps2 80907c4000 512x512 md5 5db21f55 | zero 0.002 nonfinite 0.0000 negative 0.000 | min 0 med 0.8745 max 1.003 mean 0.8752 | single-value 4-KiB blocks 0 of 171
+   ps4 11d0078000 4x4 md5 7f7e97ed | distinct 4-byte values 2
+   gs4 113cb40000 3328x1872 md5 62cff6fc | zero 0.025 nonfinite 0.0000 negative 0.000 | min 0 med 153.8 max 1.001e+04 mean 1206 | single-value 64-KiB blocks 0 of 195
+ts13 patched  26.2 %  # journal t 210.325, polled 0.1 s
+   ps0 84902a4000 2048x2048 md5 f3821943 | all: flat 0.001 zero 0.001 | mip 0: flat 0.000 zero 0.000
+   ps2 80907c4000 512x512 md5 5db21f55 | zero 0.002 nonfinite 0.0000 negative 0.000 | min 0 med 0.8745 max 1.003 mean 0.8752 | single-value 4-KiB blocks 0 of 171
+   ps4 11d0078000 4x4 md5 7f7e97ed | distinct 4-byte values 2
+   gs4 113cb40000 3328x1872 md5 75e94d71 | zero 0.025 nonfinite 0.0000 negative 0.000 | min 0 med 640 max 1.001e+04 mean 3669 | single-value 64-KiB blocks 43 of 195
+ts14 patched  30.4 %  # journal t 210.325, polled 0.1 s
+   ps0 84902a4000 2048x2048 md5 f3821943 | all: flat 0.001 zero 0.001 | mip 0: flat 0.000 zero 0.000
+   ps2 80907c4000 512x512 md5 5db21f55 | zero 0.002 nonfinite 0.0000 negative 0.000 | min 0 med 0.8745 max 1.003 mean 0.8752 | single-value 4-KiB blocks 0 of 171
+   ps4 11d0078000 4x4 md5 7f7e97ed | distinct 4-byte values 2
+   gs4 113cb40000 3328x1872 md5 b4a6fd03 | zero 0.025 nonfinite 0.0000 negative 0.000 | min 0 med 192.5 max 1.001e+04 mean 2230 | single-value 64-KiB blocks 19 of 195
+ts15 patched  25.3 %  # journal t 225.392, polled 0.1 s
+   ps0 84902a4000 2048x2048 md5 f3821943 | all: flat 0.001 zero 0.001 | mip 0: flat 0.000 zero 0.000
+   ps2 80907c4000 512x512 md5 5db21f55 | zero 0.002 nonfinite 0.0000 negative 0.000 | min 0 med 0.8745 max 1.003 mean 0.8752 | single-value 4-KiB blocks 0 of 171
+   ps4 11d0078000 4x4 md5 7f7e97ed | distinct 4-byte values 2
+   gs4 113cb40000 3328x1872 md5 a7e23cdd | zero 0.025 nonfinite 0.0000 negative 0.000 | min 0 med 642.5 max 1.001e+04 mean 3670 | single-value 64-KiB blocks 44 of 195
+ts16 patched   8.1 %  # journal t 225.392, polled 0.1 s
+   ps0 84902a4000 2048x2048 md5 f3821943 | all: flat 0.001 zero 0.001 | mip 0: flat 0.000 zero 0.000
+   ps2 80907c4000 512x512 md5 5db21f55 | zero 0.002 nonfinite 0.0000 negative 0.000 | min 0 med 0.8745 max 1.003 mean 0.8752 | single-value 4-KiB blocks 0 of 171
+   ps4 11d0078000 4x4 md5 7f7e97ed | distinct 4-byte values 2
+   gs4 113cb40000 3328x1872 md5 0e6355a8 | zero 0.025 nonfinite 0.0000 negative 0.000 | min 0 med 216.1 max 1.001e+04 mean 3460 | single-value 64-KiB blocks 41 of 195
+ts17 patched  11.7 %  # journal t 225.392, polled 0.1 s
+   ps0 84902a4000 2048x2048 md5 f3821943 | all: flat 0.001 zero 0.001 | mip 0: flat 0.000 zero 0.000
+   ps2 80907c4000 512x512 md5 5db21f55 | zero 0.002 nonfinite 0.0000 negative 0.000 | min 0 med 0.8745 max 1.003 mean 0.8752 | single-value 4-KiB blocks 0 of 171
+   ps4 11d0078000 4x4 md5 7f7e97ed | distinct 4-byte values 2
+   gs4 113cb40000 3328x1872 md5 cab75183 | zero 0.025 nonfinite 0.0000 negative 0.000 | min 0 med 642 max 1.001e+04 mean 3670 | single-value 64-KiB blocks 43 of 195
+ts18 patched  15.7 %  # journal t 240.459, polled 0.1 s
+   ps0 84902a4000 2048x2048 md5 f3821943 | all: flat 0.001 zero 0.001 | mip 0: flat 0.000 zero 0.000
+   ps2 80907c4000 512x512 md5 5db21f55 | zero 0.002 nonfinite 0.0000 negative 0.000 | min 0 med 0.8745 max 1.003 mean 0.8752 | single-value 4-KiB blocks 0 of 171
+   ps4 11d0078000 4x4 md5 7f7e97ed | distinct 4-byte values 2
+   gs4 113cb40000 3328x1872 md5 e8aa01b3 | zero 0.025 nonfinite 0.0000 negative 0.000 | min 0 med 307.8 max 1.001e+04 mean 3539 | single-value 64-KiB blocks 42 of 195
+ts19 clean     1.6 %  # journal t 240.459, polled 0.1 s
+   ps0 84902a4000 2048x2048 md5 f3821943 | all: flat 0.001 zero 0.001 | mip 0: flat 0.000 zero 0.000
+   ps2 80907c4000 512x512 md5 5db21f55 | zero 0.002 nonfinite 0.0000 negative 0.000 | min 0 med 0.8745 max 1.003 mean 0.8752 | single-value 4-KiB blocks 0 of 171
+   ps4 11d0078000 4x4 md5 7f7e97ed | distinct 4-byte values 2
+   gs4 113cb40000 3328x1872 md5 454e4c1f | zero 0.025 nonfinite 0.0000 negative 0.000 | min 0 med 140.2 max 1.001e+04 mean 3127 | single-value 64-KiB blocks 35 of 195
+ts20 clean     1.0 %  # journal t 240.459, polled 0.1 s
+   ps0 84902a4000 2048x2048 md5 f3821943 | all: flat 0.001 zero 0.001 | mip 0: flat 0.000 zero 0.000
+   ps2 80907c4000 512x512 md5 5db21f55 | zero 0.002 nonfinite 0.0000 negative 0.000 | min 0 med 0.8745 max 1.003 mean 0.8752 | single-value 4-KiB blocks 0 of 171
+   ps4 11d0078000 4x4 md5 7f7e97ed | distinct 4-byte values 2
+   gs4 113cb40000 3328x1872 md5 b8f3ef83 | zero 0.025 nonfinite 0.0000 negative 0.000 | min 0 med 132.5 max 1.001e+04 mean 467.9 | single-value 64-KiB blocks 0 of 195
+ts21 clean     1.2 %  # journal t 255.505, polled 0.1 s
+   ps0 84902a4000 2048x2048 md5 f3821943 | all: flat 0.001 zero 0.001 | mip 0: flat 0.000 zero 0.000
+   ps2 80907c4000 512x512 md5 5db21f55 | zero 0.002 nonfinite 0.0000 negative 0.000 | min 0 med 0.8745 max 1.003 mean 0.8752 | single-value 4-KiB blocks 0 of 171
+   ps4 11d0078000 4x4 md5 7f7e97ed | distinct 4-byte values 2
+   gs4 113cb40000 3328x1872 md5 7d330943 | zero 0.025 nonfinite 0.0000 negative 0.000 | min 0 med 226.2 max 1.001e+04 mean 2393 | single-value 64-KiB blocks 31 of 195
+ts22 clean     1.0 %  # journal t 255.505, polled 0.1 s
+   ps0 84902a4000 2048x2048 md5 f3821943 | all: flat 0.001 zero 0.001 | mip 0: flat 0.000 zero 0.000
+   ps2 80907c4000 512x512 md5 5db21f55 | zero 0.002 nonfinite 0.0000 negative 0.000 | min 0 med 0.8745 max 1.003 mean 0.8752 | single-value 4-KiB blocks 0 of 171
+   ps4 11d0078000 4x4 md5 7f7e97ed | distinct 4-byte values 2
+   gs4 113cb40000 3328x1872 md5 e29b0976 | zero 0.025 nonfinite 0.0000 negative 0.000 | min 0 med 109.9 max 1.001e+04 mean 398.3 | single-value 64-KiB blocks 0 of 195
+ts23 clean     1.0 %  # journal t 270.539, polled 0.1 s
+   ps0 84902a4000 2048x2048 md5 f3821943 | all: flat 0.001 zero 0.001 | mip 0: flat 0.000 zero 0.000
+   ps2 80907c4000 512x512 md5 5db21f55 | zero 0.002 nonfinite 0.0000 negative 0.000 | min 0 med 0.8745 max 1.003 mean 0.8752 | single-value 4-KiB blocks 0 of 171
+   ps4 11d0078000 4x4 md5 7f7e97ed | distinct 4-byte values 2
+   gs4 113cb40000 3328x1872 md5 b9523641 | zero 0.025 nonfinite 0.0000 negative 0.000 | min 0 med 132.5 max 1.001e+04 mean 467.9 | single-value 64-KiB blocks 0 of 195
+ts24 clean     1.0 %  # journal t 270.539, polled 0.1 s
+   ps0 84902a4000 2048x2048 md5 f3821943 | all: flat 0.001 zero 0.001 | mip 0: flat 0.000 zero 0.000
+   ps2 80907c4000 512x512 md5 5db21f55 | zero 0.002 nonfinite 0.0000 negative 0.000 | min 0 med 0.8745 max 1.003 mean 0.8752 | single-value 4-KiB blocks 0 of 171
+   ps4 11d0078000 4x4 md5 7f7e97ed | distinct 4-byte values 2
+   gs4 113cb40000 3328x1872 md5 60892960 | zero 0.025 nonfinite 0.0000 negative 0.000 | min 0 med 109.9 max 1.001e+04 mean 1831 | single-value 64-KiB blocks 14 of 195
+ts25 clean     1.0 %  # journal t 270.539, polled 0.1 s
+   ps0 84902a4000 2048x2048 md5 f3821943 | all: flat 0.001 zero 0.001 | mip 0: flat 0.000 zero 0.000
+   ps2 80907c4000 512x512 md5 5db21f55 | zero 0.002 nonfinite 0.0000 negative 0.000 | min 0 med 0.8745 max 1.003 mean 0.8752 | single-value 4-KiB blocks 0 of 171
+   ps4 11d0078000 4x4 md5 7f7e97ed | distinct 4-byte values 2
+   gs4 113cb40000 3328x1872 md5 0dabdfae | zero 0.025 nonfinite 0.0000 negative 0.000 | min 0 med 132.4 max 1.001e+04 mean 467.1 | single-value 64-KiB blocks 0 of 195
+# per image across shots: pages changed from the previous shot; pages separating clean from patched
+  ps0: 683 pages; changed ts01:0 ts02:0 ts03:0 ts04:0 ts05:0 ts06:0 ts07:0 ts08:0 ts09:0 ts10:0 ts11:0 ts12:0 ts13:0 ts14:0 ts15:0 ts16:0 ts17:0 ts18:0 ts19:0 ts20:0 ts21:0 ts22:0 ts23:0 ts24:0 ts25:0
+  ps0: separating pages 0
+  ps2: 171 pages; changed ts01:0 ts02:0 ts03:0 ts04:0 ts05:0 ts06:0 ts07:0 ts08:0 ts09:0 ts10:0 ts11:0 ts12:0 ts13:0 ts14:0 ts15:0 ts16:0 ts17:0 ts18:0 ts19:0 ts20:0 ts21:0 ts22:0 ts23:0 ts24:0 ts25:0
+  ps2: separating pages 0
+  ps4: 1 pages; changed ts01:0 ts02:0 ts03:0 ts04:0 ts05:0 ts06:0 ts07:0 ts08:0 ts09:0 ts10:0 ts11:0 ts12:0 ts13:0 ts14:0 ts15:0 ts16:0 ts17:0 ts18:0 ts19:0 ts20:0 ts21:0 ts22:0 ts23:0 ts24:0 ts25:0
+  ps4: separating pages 0
+  gs4: 3120 pages; changed ts01:3041 ts02:3016 ts03:3039 ts04:3037 ts05:2267 ts06:3049 ts07:3036 ts08:3036 ts09:3040 ts10:3034 ts11:2271 ts12:1742 ts13:3004 ts14:1778 ts15:2665 ts16:2217 ts17:2217 ts18:2205 ts19:2764 ts20:3041 ts21:2358 ts22:2714 ts23:3041 ts24:3041 ts25:3041
+  gs4: separating pages 0

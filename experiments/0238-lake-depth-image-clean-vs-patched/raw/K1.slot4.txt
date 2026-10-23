@@ -1,0 +1,30 @@
+# /home/kjaniszewski/bc5-work/exp0194/r-K1: per shot: class, patch %, width (block-row shear; next best), far share in the window, far share in patch / other pixels, phi(far, patch), step at mask edges / window step
+ts00 patched  25.8 %  3328x1872 (12.36; 2304 16.67)  far 0.323  in patch 0.465 other 0.273  phi +0.180  edge step x3.32
+ts01 patched  28.6 %  3328x1872 (3.14; 3072 15.47)  far 0.668  in patch 0.916 other 0.569  phi +0.333  edge step x4.02
+ts02 patched  28.5 %  3328x1872 (1.09; 3072 14.25)  far 0.386  in patch 0.607 other 0.299  phi +0.285  edge step x4.19
+ts03 patched  28.7 %  2816x1584 (0.98; 3072 22.44)  far 0.720  in patch 0.987 other 0.612  phi +0.378  edge step x3.63
+ts04 patched  28.2 %  3328x1872 (1.06; 3072 13.91)  far 0.378  in patch 0.573 other 0.302  phi +0.251  edge step x4.26
+ts05 patched  26.7 %  3328x1872 (15.40; 3072 22.63)  far 0.315  in patch 0.431 other 0.273  phi +0.151  edge step x3.11
+ts06 patched  24.2 %  3328x1872 (1.10; 3072 17.41)  far 0.377  in patch 0.763 other 0.254  phi +0.450  edge step x6.56
+ts07 patched  30.0 %  3328x1872 (3.79; 3072 19.71)  far 0.296  in patch 0.664 other 0.138  phi +0.528  edge step x6.68
+ts08 patched  21.5 %  3328x1872 (1.13; 3072 20.25)  far 0.328  in patch 0.779 other 0.204  phi +0.503  edge step x6.59
+ts09 patched  26.4 %  3072x1728 (1.15; 2816 21.00)  far 0.346  in patch 0.055 other 0.451  phi -0.367  edge step x8.47
+ts10 patched  29.8 %  3328x1872 (2.59; 3072 27.43)  far 0.720  in patch 0.991 other 0.605  phi +0.393  edge step x3.49
+ts11 patched  19.6 %  3328x1872 (1.10; 3072 17.52)  far 0.196  in patch 0.830 other 0.041  phi +0.789  edge step x12.02
+ts12 patched  23.1 %  3328x1872 (1.09; 3072 18.30)  far 0.282  in patch 0.066 other 0.347  phi -0.264  edge step x10.87
+ts13 patched  26.2 %  3328x1872 (1.15; 3072 27.17)  far 0.719  in patch 0.989 other 0.624  phi +0.357  edge step x4.07
+ts14 patched  30.4 %  3328x1872 (3.04; 3072 20.04)  far 0.600  in patch 0.676 other 0.567  phi +0.103  edge step x8.76
+ts15 patched  25.3 %  3328x1872 (1.10; 3072 27.14)  far 0.720  in patch 0.989 other 0.629  phi +0.348  edge step x1.29
+ts16 patched   8.1 %  3328x1872 (4.87; 3072 24.92)  far 0.696  in patch 0.920 other 0.677  phi +0.144  edge step x3.28
+ts17 patched  11.7 %  3328x1872 (1.15; 3072 27.16)  far 0.720  in patch 0.979 other 0.685  phi +0.210  edge step x1.87
+ts18 patched  15.7 %  3328x1872 (5.67; 3072 28.06)  far 0.701  in patch 0.982 other 0.649  phi +0.265  edge step x4.39
+ts19 clean     1.6 %  3072x1728 (1.21; 3328 28.05)  far 0.719  in patch 0.961 other 0.715  phi +0.069  edge step x1.87
+ts20 clean     1.0 %  3328x1872 (1.09; 3072 8.27)  far 0.000  in patch 0.000 other 0.000  phi +nan  edge step x1.86
+ts21 clean     1.2 %  3328x1872 (12.09; 3072 31.31)  far 0.720  in patch 0.812 other 0.719  phi +0.023  edge step x1.20
+ts22 clean     1.0 %  3072x1728 (1.02; 2816 8.45)  far 0.000  in patch 0.000 other 0.000  phi +nan  edge step x3.15
+ts23 clean     1.0 %  3328x1872 (1.12; 3072 8.25)  far 0.000  in patch 0.000 other 0.000  phi +nan  edge step x2.22
+ts24 clean     1.0 %  3072x1728 (11.10; 2816 26.33)  far 0.094  in patch 0.002 other 0.095  phi -0.032  edge step x0.70
+ts25 clean     1.0 %  3328x1872 (1.09; 3072 8.28)  far 0.000  in patch 0.000 other 0.000  phi +nan  edge step x3.19
+# class means: shots, patch %, far share in the window, far in patch / other, phi, edge step ratio
+  clean    7 shots  patch   1.1 %  far 0.219  in patch 0.254 other 0.218  phi +0.020  edge step x2.03
+  patched 19 shots  patch  24.1 %  far 0.500  in patch 0.719 other 0.432  phi +0.265  edge step x5.31

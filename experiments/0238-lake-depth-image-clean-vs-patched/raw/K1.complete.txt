@@ -1,0 +1,29 @@
+# K1, per shot: class, patch %, width, block-row shear, single-valued 64-KiB blocks (img0235.py), far share in the window, far in patch / other, phi, edge step; complete = shear <= 1.3 and no single-valued block
+ts00 patched  25.8 %  3328  shear 12.36  single   0  far 0.323  in patch 0.465 other 0.273  phi +0.180  edge x 3.32  mixed or mid-frame
+ts01 patched  28.6 %  3328  shear  3.14  single  27  far 0.668  in patch 0.916 other 0.569  phi +0.333  edge x 4.02  mixed or mid-frame
+ts02 patched  28.5 %  3328  shear  1.09  single   0  far 0.386  in patch 0.607 other 0.299  phi +0.285  edge x 4.19  complete
+ts03 patched  28.7 %  2816  shear  0.98  single  26  far 0.720  in patch 0.987 other 0.612  phi +0.378  edge x 3.63  mixed or mid-frame
+ts04 patched  28.2 %  3328  shear  1.06  single   0  far 0.378  in patch 0.573 other 0.302  phi +0.251  edge x 4.26  complete
+ts05 patched  26.7 %  3328  shear 15.40  single   0  far 0.315  in patch 0.431 other 0.273  phi +0.151  edge x 3.11  mixed or mid-frame
+ts06 patched  24.2 %  3328  shear  1.10  single   0  far 0.377  in patch 0.763 other 0.254  phi +0.450  edge x 6.56  complete
+ts07 patched  30.0 %  3328  shear  3.79  single   3  far 0.296  in patch 0.664 other 0.138  phi +0.528  edge x 6.68  mixed or mid-frame
+ts08 patched  21.5 %  3328  shear  1.13  single   0  far 0.328  in patch 0.779 other 0.204  phi +0.503  edge x 6.59  complete
+ts09 patched  26.4 %  3072  shear  1.15  single   0  far 0.346  in patch 0.055 other 0.451  phi -0.367  edge x 8.47  complete
+ts10 patched  29.8 %  3328  shear  2.59  single  43  far 0.720  in patch 0.991 other 0.605  phi +0.393  edge x 3.49  mixed or mid-frame
+ts11 patched  19.6 %  3328  shear  1.10  single   0  far 0.196  in patch 0.830 other 0.041  phi +0.789  edge x12.02  complete
+ts12 patched  23.1 %  3328  shear  1.09  single   0  far 0.282  in patch 0.066 other 0.347  phi -0.264  edge x10.87  complete
+ts13 patched  26.2 %  3328  shear  1.15  single  43  far 0.719  in patch 0.989 other 0.624  phi +0.357  edge x 4.07  mixed or mid-frame
+ts14 patched  30.4 %  3328  shear  3.04  single  19  far 0.600  in patch 0.676 other 0.567  phi +0.103  edge x 8.76  mixed or mid-frame
+ts15 patched  25.3 %  3328  shear  1.10  single  44  far 0.720  in patch 0.989 other 0.629  phi +0.348  edge x 1.29  mixed or mid-frame
+ts16 patched   8.1 %  3328  shear  4.87  single  41  far 0.696  in patch 0.920 other 0.677  phi +0.144  edge x 3.28  mixed or mid-frame
+ts17 patched  11.7 %  3328  shear  1.15  single  43  far 0.720  in patch 0.979 other 0.685  phi +0.210  edge x 1.87  mixed or mid-frame
+ts18 patched  15.7 %  3328  shear  5.67  single  42  far 0.701  in patch 0.982 other 0.649  phi +0.265  edge x 4.39  mixed or mid-frame
+ts19 clean     1.6 %  3072  shear  1.21  single  35  far 0.719  in patch 0.961 other 0.715  phi +0.069  edge x 1.87  mixed or mid-frame
+ts20 clean     1.0 %  3328  shear  1.09  single   0  far 0.000  in patch 0.000 other 0.000  phi   +nan  edge x 1.86  complete
+ts21 clean     1.2 %  3328  shear 12.09  single  31  far 0.720  in patch 0.812 other 0.719  phi +0.023  edge x 1.20  mixed or mid-frame
+ts22 clean     1.0 %  3072  shear  1.02  single   0  far 0.000  in patch 0.000 other 0.000  phi   +nan  edge x 3.15  complete
+ts23 clean     1.0 %  3328  shear  1.12  single   0  far 0.000  in patch 0.000 other 0.000  phi   +nan  edge x 2.22  complete
+ts24 clean     1.0 %  3072  shear 11.10  single  14  far 0.094  in patch 0.002 other 0.095  phi -0.032  edge x 0.70  mixed or mid-frame
+ts25 clean     1.0 %  3328  shear  1.09  single   0  far 0.000  in patch 0.000 other 0.000  phi   +nan  edge x 3.19  complete
+complete clean    4 of  7 shots: far share in the window mean 0.000 (min 0.000, max 0.000), edge step mean x2.60
+complete patched  7 of 19 shots: far share in the window mean 0.328 (min 0.196, max 0.386), edge step mean x7.57
