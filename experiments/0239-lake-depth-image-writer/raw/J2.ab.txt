@@ -1,0 +1,7 @@
+18:56:36 live saves checksum before: f6475842373bf369
+18:56:36 J2 start: /var/home 69 %, dmesg 2460 lines; journal switches: BC5_DIRECT_DRAW_JOURNAL=150:8 BC5_DIRECT_DRAW_JOURNAL_EVERY=15 BC5_DIRECT_DRAW_JOURNAL_PS=11d0160b00,11d015f100,11d01ff900,11d01d7100 BC5_DIRECT_DRAW_JOURNAL_FIND=113cb400
+  == J2: the emulator ended early, at 18:59:30; bench stopped
+  journal: direct.log 54M, 27 draw-journal lines (5505 bytes), 148 find lines
+  written: run dir 28M, journal dir 54M, emu.log 12M
+18:59:39 live saves checksum after: f6475842373bf369; /var/home 69%
+18:59:39 done

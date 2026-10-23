@@ -1,0 +1,14 @@
+## run J1
+# 2026-10-23 18:48:23 boot 31c1a6ac-fa3d-4b0c-83e4-40940bd853b9
+paź 23 18:48:40.618745 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 23 18:50:45.618746 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 23 18:52:50.618746 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 23 18:54:55.619750 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 23 18:57:00.618749 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 23 18:59:05.618751 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 23 19:01:10.619753 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+## run J2 (two streams were open; the second is the one the run was watched with)
+# 2026-10-23 18:56:32 boot 31c1a6ac-fa3d-4b0c-83e4-40940bd853b9
+paź 23 18:57:00.618749 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 23 18:59:05.618751 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 23 19:01:10.619753 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!

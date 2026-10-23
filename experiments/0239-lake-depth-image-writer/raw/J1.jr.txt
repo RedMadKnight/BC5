@@ -1,0 +1,151 @@
+# /home/kjaniszewski/bc5-data/captures/play-20261023-1848/gc/direct.log: 190 journal lines in 5 graphics buffers, t 164.999..165.003; target 113cb40000
+(1) by opcode: 0x24 114, DRAW_INDEX_AUTO 42, DISPATCH_DIRECT 18, DRAW_INDEX_OFFSET_2 7, DRAW_INDEX_MULTI_AUTO 5, DRAW_INDEX_2 4
+(2) passes in journal order: 135 runs
+  #0    t 164.999 buf 0   at 292       1 x 0x24 x1                            rt0 113f230000 3072x1728 mask 000fffff | ps 11d4d3eb00 es 11d00cde00 gs 0000000000
+  #1    t 164.999 buf 0   at 384       1 x 0x24 x1                            rt0 113f230000 3072x1728 mask 000fffff | ps 11d4d53400 es 11d00cde00 gs 0000000000
+  #2    t 164.999 buf 0   at 481       1 x 0x24 x1                            rt0 113f230000 3072x1728 mask 000fffff | ps 11d4d3eb00 es 11d00cde00 gs 0000000000
+  #3    t 164.999 buf 0   at 573       1 x 0x24 x1                            rt0 113f230000 3072x1728 mask 000fffff | ps 11d4d53400 es 11d00cde00 gs 0000000000
+  #4    t 164.999 buf 0   at 665       1 x 0x24 x1                            rt0 113f230000 3072x1728 mask 000fffff | ps 11d4d3eb00 es 11d00cde00 gs 0000000000
+  #5    t 164.999 buf 0   at 762       1 x 0x24 x1                            rt0 113f230000 3072x1728 mask 000fffff | ps 11d4d53400 es 11d00cde00 gs 0000000000
+  #6    t 164.999 buf 0   at 854       1 x 0x24 x1                            rt0 113f230000 3072x1728 mask 000fffff | ps 11d4d3eb00 es 11d00cde00 gs 0000000000
+  #7    t 164.999 buf 0   at 951       1 x 0x24 x1                            rt0 113f230000 3072x1728 mask 000fffff | ps 11d4d53400 es 11d00cde00 gs 0000000000
+  #8    t 164.999 buf 0   at 1043      1 x 0x24 x1                            rt0 113f230000 3072x1728 mask 000fffff | ps 11d4d3eb00 es 11d00cde00 gs 0000000000
+  #9    t 164.999 buf 0   at 1135      1 x 0x24 x1                            rt0 113f230000 3072x1728 mask 000fffff | ps 11d4d53400 es 11d00cde00 gs 0000000000
+  #10   t 164.999 buf 0   at 1237      1 x 0x24 x1                            rt0 113f230000 3072x1728 mask 000fffff | ps 11d4d3eb00 es 11d00cde00 gs 0000000000
+  #11   t 164.999 buf 0   at 1329      1 x 0x24 x1                            rt0 113f230000 3072x1728 mask 000fffff | ps 11d4d53400 es 11d00cde00 gs 0000000000
+  #12   t 164.999 buf 0   at 1426      1 x 0x24 x1                            rt0 113f230000 3072x1728 mask 000fffff | ps 11d3e5e200 es 11d00cde00 gs 0000000000
+  #13   t 164.999 buf 0   at 1518      1 x 0x24 x1                            rt0 113f230000 3072x1728 mask 000fffff | ps 11d3e72a00 es 11d00cde00 gs 0000000000
+  #14   t 164.999 buf 0   at 1610      1 x 0x24 x1                            rt0 113f230000 3072x1728 mask 000fffff | ps 11d4d3eb00 es 11d00cde00 gs 0000000000
+  #15   t 164.999 buf 0   at 1707      1 x 0x24 x1                            rt0 113f230000 3072x1728 mask 000fffff | ps 11d4d53400 es 11d00cde00 gs 0000000000
+  #16   t 164.999 buf 0   at 1831      1 x 0x24 x1                            rt0 113f230000 3072x1728 mask 000fffff | ps 11d018ab00 es 11d00cbd00 gs 0000000000
+  #17   t 165.001 buf 2   at 222       1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 3072x1728 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+  #18   t 165.001 buf 2   at 384       1 x DRAW_INDEX_AUTO x1                 rt0 11cb2c0000 384x216 mask 0000000f | ps 11d01d5f00 es 11d00be800 gs 0000000000
+  #19   t 165.001 buf 2   at 513       1 x DISPATCH_DIRECT x1                 dispatch cs 11d03ab400
+  #20   t 165.001 buf 2   at 556       1 x DISPATCH_DIRECT x1                 dispatch cs 11d0287b00
+  #21   t 165.001 buf 2   at 970       1 x 0x24 x1                            rt0 113f230000 3072x1728 mask 000fffff | ps 11d42f2200 es 11d0134500 gs 0000000000
+  #22   t 165.001 buf 2   at 1141      1 x DISPATCH_DIRECT x1                 dispatch cs 11d0423100
+  #23   t 165.001 buf 2   at 1171      1 x DISPATCH_DIRECT x1                 dispatch cs 11d042b700
+  #24   t 165.001 buf 2   at 1201      1 x DISPATCH_DIRECT x1                 dispatch cs 11d042ba00
+  #25   t 165.001 buf 2   at 1231      1 x DISPATCH_DIRECT x1                 dispatch cs 11d042b100
+  #26   t 165.001 buf 2   at 1261      2 x DISPATCH_DIRECT x2                 dispatch cs 11d042ba00
+  #27   t 165.001 buf 2   at 1316      1 x DISPATCH_DIRECT x1                 dispatch cs 11d042b100
+  #28   t 165.001 buf 2   at 1372      1 x DISPATCH_DIRECT x1                 dispatch cs 11d0415c00
+  #29   t 165.001 buf 2   at 1418      1 x DISPATCH_DIRECT x1                 dispatch cs 11d0423100
+  #30   t 165.001 buf 2   at 1448      1 x DISPATCH_DIRECT x1                 dispatch cs 11d042b700
+  #31   t 165.001 buf 2   at 1504      1 x DISPATCH_DIRECT x1                 dispatch cs 11d0415c00
+  #32   t 165.001 buf 2   at 1548      1 x DISPATCH_DIRECT x1                 dispatch cs 11d0287900
+  #33   t 165.001 buf 4   at 513       1 x 0x24 x1                            rt0 113f230000 3072x1728 mask 00000000 | ps 11d1cf4600 es 11d1cee300 gs 0000000000
+  #34   t 165.001 buf 4   at 597       1 x 0x24 x1                            rt0 113f230000 3072x1728 mask 00000000 | ps 11d1e2f300 es 11d0134500 gs 0000000000
+  #35   t 165.001 buf 4   at 709       1 x 0x24 x1                            rt0 113f230000 3072x1728 mask 000fffff | ps 11d1cead00 es 11d1cee300 gs 0000000000
+  #36   t 165.001 buf 4   at 787       1 x 0x24 x1                            rt0 113f230000 3072x1728 mask 000fffff | ps 11d29e9f00 es 11d0134500 gs 0000000000
+  #37   t 165.001 buf 4   at 860       1 x 0x24 x1                            rt0 113f230000 3072x1728 mask 000fffff | ps 11d1d10f00 es 11d0134500 gs 0000000000
+  #38   t 165.001 buf 4   at 937       1 x 0x24 x1                            rt0 113f230000 3072x1728 mask 000fffff | ps 11d1e2b900 es 11d0134500 gs 0000000000
+  #39   t 165.001 buf 4   at 1010      1 x 0x24 x1                            rt0 113f230000 3072x1728 mask 000fffff | ps 11d1d96400 es 11d0134500 gs 0000000000
+  #40   t 165.001 buf 4   at 1083      1 x 0x24 x1                            rt0 113f230000 3072x1728 mask 000fffff | ps 11d3357800 es 11d0134500 gs 0000000000
+  #41   t 165.001 buf 4   at 1156      2 x 0x24 x2                            rt0 113f230000 3072x1728 mask 000fffff | ps 11d29e9f00 es 11d0134500 gs 0000000000
+  #42   t 165.001 buf 4   at 1291      1 x 0x24 x1                            rt0 113f230000 3072x1728 mask 000fffff | ps 11d1e2b900 es 11d0134500 gs 0000000000
+  #43   t 165.001 buf 4   at 1369      1 x 0x24 x1                            rt0 113f230000 3072x1728 mask 000fffff | ps 11d29e9f00 es 11d0134500 gs 0000000000
+  #44   t 165.001 buf 4   at 1480      2 x 0x24 x2                            rt0 113f230000 3072x1728 mask 00000000 | ps 11d29c9300 es 11d0134500 gs 0000000000
+  #45   t 165.001 buf 4   at 1623      1 x 0x24 x1                            rt0 113f230000 3072x1728 mask 00000000 | ps 11d1dd6400 es 11d0134500 gs 0000000000
+  #46   t 165.001 buf 4   at 1702      1 x 0x24 x1                            rt0 113f230000 3072x1728 mask 00000000 | ps 11d1d88300 es 11d0134500 gs 0000000000
+  #47   t 165.001 buf 4   at 1810      2 x 0x24 x2                            rt0 113f230000 3072x1728 mask 000fffff | ps 11d29c5200 es 11d0134500 gs 0000000000
+  #48   t 165.001 buf 4   at 1949      1 x 0x24 x1                            rt0 113f230000 3072x1728 mask 000fffff | ps 11d1dd3800 es 11d0134500 gs 0000000000
+  #49   t 165.001 buf 4   at 2026      4 x 0x24 x4                            rt0 113f230000 3072x1728 mask 000fffff | ps 11d521da00 es 11d0134500 gs 0000000000
+  #50   t 165.001 buf 4   at 2285      1 x 0x24 x1                            rt0 113f230000 3072x1728 mask 000fffff | ps 11d5242c00 es 11d0134500 gs 0000000000
+  #51   t 165.001 buf 4   at 2358      1 x 0x24 x1                            rt0 113f230000 3072x1728 mask 000fffff | ps 11d5265c00 es 11d0134500 gs 0000000000
+  #52   t 165.001 buf 4   at 2435      1 x 0x24 x1                            rt0 113f230000 3072x1728 mask 000fffff | ps 11d533ed00 es 11d0134500 gs 0000000000
+  #53   t 165.001 buf 4   at 2508      1 x 0x24 x1                            rt0 113f230000 3072x1728 mask 000fffff | ps 11d5242c00 es 11d0134500 gs 0000000000
+  #54   t 165.001 buf 4   at 2585      2 x 0x24 x2                            rt0 113f230000 3072x1728 mask 000fffff | ps 11d521da00 es 11d0134500 gs 0000000000
+  #55   t 165.001 buf 4   at 2724      1 x 0x24 x1                            rt0 113f230000 3072x1728 mask 000fffff | ps 11d1d74b00 es 11d0134500 gs 0000000000
+  #56   t 165.001 buf 4   at 2973      1 x DISPATCH_DIRECT x1                 dispatch cs 11d0288a00
+  #57   t 165.001 buf 4   at 3553      1 x DRAW_INDEX_OFFSET_2 x1             rt0 113f230000 3072x1728 mask 00000000 | ps 11d1de7400 es 11d0134500 gs 0000000000
+  #58   t 165.001 buf 4   at 3648      1 x DRAW_INDEX_OFFSET_2 x1             rt0 113f230000 3072x1728 mask 00000000 | ps 11d528ea00 es 11d0134500 gs 0000000000
+  #59   t 165.001 buf 4   at 3743      1 x DRAW_INDEX_MULTI_AUTO x1           rt0 113f230000 3072x1728 mask 00000000 | ps 11d1c3ca00 es 11d012ca00 gs 0000000000
+  #60   t 165.001 buf 4   at 3835      1 x DRAW_INDEX_MULTI_AUTO x1           rt0 113f230000 3072x1728 mask 00000000 | ps 11d2fdbe00 es 11d012ca00 gs 0000000000
+  #61   t 165.001 buf 4   at 3927      1 x DRAW_INDEX_MULTI_AUTO x1           rt0 113f230000 3072x1728 mask 00000000 | ps 11d1de7400 es 11d012ca00 gs 0000000000
+  #62   t 165.001 buf 4   at 4019      1 x DRAW_INDEX_MULTI_AUTO x1           rt0 113f230000 3072x1728 mask 00000000 | ps 11d1c3ca00 es 11d012ca00 gs 0000000000
+  #63   t 165.001 buf 4   at 4111      1 x DRAW_INDEX_MULTI_AUTO x1           rt0 113f230000 3072x1728 mask 00000000 | ps 11d3c52f00 es 11d012ca00 gs 0000000000
+  #64   t 165.001 buf 4   at 4785      1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 3072x1728 mask 00000000 | ps 11d3c52f00 es 11d00bd000 gs 0000000000
+  #65   t 165.001 buf 4   at 4891      2 x 0x24 x2                            rt0 113f230000 3072x1728 mask 00000000 | ps 11d018be00 es 11d00d0500 gs 0000000000
+  #66   t 165.001 buf 4   at 5029      3 x 0x24 x3                            rt0 113f230000 3072x1728 mask 00000000 | ps 11d01b9f00 es 11d00f8500 gs 0000000000
+  #67   t 165.001 buf 4   at 5189      1 x 0x24 x1                            rt0 113f230000 3072x1728 mask 00000000 | ps 11d01ba700 es 11d00f8d00 gs 0000000000
+  #68   t 165.001 buf 4   at 5255      3 x 0x24 x3                            rt0 113f230000 3072x1728 mask 00000000 | ps 11d01ba000 es 11d00f8d00 gs 0000000000
+  #69   t 165.001 buf 4   at 5422      1 x 0x24 x1                            rt0 113f230000 3072x1728 mask 00000000 | ps 11d01ba300 es 11d00f8d00 gs 0000000000
+  #70   t 165.001 buf 4   at 5531      1 x DRAW_INDEX_OFFSET_2 x1             rt0 113f230000 3072x1728 mask 00000000 | ps 11d1432b00 es 11d0134500 gs 0000000000
+  #71   t 165.001 buf 4   at 5720      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 3072x1728 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+  #72   t 165.001 buf 4   at 5931      1 x DRAW_INDEX_AUTO x1                 rt0 113a7a0000 1536x864 mask 000000ff | ps 11d015f100 es 11d00be800 gs 0000000000
+  #73   t 165.001 buf 4   at 5985      1 x DRAW_INDEX_AUTO x1                 rt0 113ab20000 768x432 mask 0000000f | ps 11d015f600 es 11d00be800 gs 0000000000
+  #74   t 165.001 buf 4   at 6024      1 x DISPATCH_DIRECT x1                 dispatch cs 11d0322e00
+  #75   t 165.001 buf 6   at 360       1 x DRAW_INDEX_AUTO x1                 rt0 0000000000 1x1 mask 00000000 | ps 11d01b8400 es 11d00be800 gs 0000000000
+  #76   t 165.001 buf 6   at 472       1 x DISPATCH_DIRECT x1                 dispatch cs 11d0372300
+  #77   t 165.001 buf 6   at 498       1 x DISPATCH_DIRECT x1                 dispatch cs 11d04cc300
+  #78   t 165.001 buf 6   at 681       8 x DRAW_INDEX_AUTO x8                 rt0 0000000000 1x1 mask 00000000 | ps 11d01b8f00 es 11d00d6f00 gs 0000000000
+  #79   t 165.001 buf 6   at 1007      8 x DRAW_INDEX_AUTO x8                 rt0 0000000000 1x1 mask 00000000 | ps 11d01b8d00 es 11d00d6f00 gs 0000000000
+  #80   t 165.001 buf 10  at 200       1 x DRAW_INDEX_AUTO x1                 rt0 0000000000 1x1 mask 00000000 | ps 11d01b8d00 es 11d00bd000 gs 0000000000
+  #81   t 165.001 buf 10  at 345       1 x 0x24 x1                            rt0 0000000000 1x1 mask 00000000 | ps 11d01b9f00 es 11d00f8500 gs 0000000000
+  #82   t 165.001 buf 10  at 438       2 x 0x24 x2                            rt0 0000000000 1x1 mask 00000000 | ps 11d01ba000 es 11d00f8d00 gs 0000000000
+  #83   t 165.001 buf 10  at 557       1 x DRAW_INDEX_AUTO x1                 rt0 0000000000 1x1 mask 00000000 | ps 11d01ba000 es 11d00bd000 gs 0000000000
+  #84   t 165.001 buf 10  at 630       2 x 0x24 x2                            rt0 0000000000 1x1 mask 00000000 | ps 11d01b9f00 es 11d00f8500 gs 0000000000
+  #85   t 165.003 buf 10  at 761       2 x 0x24 x2                            rt0 0000000000 1x1 mask 00000000 | ps 11d01ba000 es 11d00f8d00 gs 0000000000
+  #86   t 165.003 buf 10  at 916       1 x DRAW_INDEX_OFFSET_2 x1             rt0 0000000000 1x1 mask 00000000 | ps 11d1432b00 es 11d0134500 gs 0000000000
+  #87   t 165.003 buf 10  at 987       1 x DRAW_INDEX_AUTO x1                 rt0 0000000000 1x1 mask 00000000 | ps 11d1432b00 es 11d00bd000 gs 0000000000
+  #88   t 165.003 buf 10  at 1065      1 x 0x24 x1                            rt0 0000000000 1x1 mask 00000000 | ps 11d01b9f00 es 11d00f8500 gs 0000000000
+  #89   t 165.003 buf 10  at 1158      2 x 0x24 x2                            rt0 0000000000 1x1 mask 00000000 | ps 11d01ba000 es 11d00f8d00 gs 0000000000
+  #90   t 165.003 buf 10  at 1277      1 x DRAW_INDEX_AUTO x1                 rt0 0000000000 1x1 mask 00000000 | ps 11d01ba000 es 11d00bd000 gs 0000000000
+  #91   t 165.003 buf 10  at 1355      1 x 0x24 x1                            rt0 0000000000 1x1 mask 00000000 | ps 11d01b9f00 es 11d00f8500 gs 0000000000
+  #92   t 165.003 buf 10  at 1449      1 x 0x24 x1                            rt0 0000000000 1x1 mask 00000000 | ps 11d01ba700 es 11d00f8d00 gs 0000000000
+  #93   t 165.003 buf 10  at 1510      2 x 0x24 x2                            rt0 0000000000 1x1 mask 00000000 | ps 11d01ba000 es 11d00f8d00 gs 0000000000
+  #94   t 165.003 buf 10  at 1626      1 x 0x24 x1                            rt0 0000000000 1x1 mask 00000000 | ps 11d01ba300 es 11d00f8d00 gs 0000000000
+  #95   t 165.003 buf 10  at 1689      1 x DRAW_INDEX_AUTO x1                 rt0 0000000000 1x1 mask 00000000 | ps 11d01ba300 es 11d00bd000 gs 0000000000
+  #96   t 165.003 buf 10  at 1767      2 x 0x24 x2                            rt0 0000000000 1x1 mask 00000000 | ps 11d01b9f00 es 11d00f8500 gs 0000000000
+  #97   t 165.003 buf 10  at 1889      1 x 0x24 x1                            rt0 0000000000 1x1 mask 00000000 | ps 11d01ba700 es 11d00f8d00 gs 0000000000
+  #98   t 165.003 buf 10  at 1955      2 x 0x24 x2                            rt0 0000000000 1x1 mask 00000000 | ps 11d01ba000 es 11d00f8d00 gs 0000000000
+  #99   t 165.003 buf 10  at 2071      1 x 0x24 x1                            rt0 0000000000 1x1 mask 00000000 | ps 11d01ba300 es 11d00f8d00 gs 0000000000
+  #100  t 165.003 buf 10  at 2139      1 x DRAW_INDEX_AUTO x1                 rt0 0000000000 1x1 mask 00000000 | ps 11d01ba300 es 11d00bd000 gs 0000000000
+  #101  t 165.003 buf 10  at 2212      1 x 0x24 x1                            rt0 0000000000 1x1 mask 00000000 | ps 11d01b9f00 es 11d00f8500 gs 0000000000
+  #102  t 165.003 buf 10  at 2310      1 x 0x24 x1                            rt0 0000000000 1x1 mask 00000000 | ps 11d01ba000 es 11d00f8d00 gs 0000000000
+  #103  t 165.003 buf 10  at 2373      1 x DRAW_INDEX_AUTO x1                 rt0 0000000000 1x1 mask 00000000 | ps 11d01ba000 es 11d00bd000 gs 0000000000
+  #104  t 165.003 buf 10  at 2451      3 x 0x24 x3                            rt0 0000000000 1x1 mask 00000000 | ps 11d01b9f00 es 11d00f8500 gs 0000000000
+  #105  t 165.003 buf 10  at 2606      1 x 0x24 x1                            rt0 0000000000 1x1 mask 00000000 | ps 11d01ba700 es 11d00f8d00 gs 0000000000
+  #106  t 165.003 buf 10  at 2667      3 x 0x24 x3                            rt0 0000000000 1x1 mask 00000000 | ps 11d01ba000 es 11d00f8d00 gs 0000000000
+  #107  t 165.003 buf 10  at 2834      1 x 0x24 x1                            rt0 0000000000 1x1 mask 00000000 | ps 11d01ba300 es 11d00f8d00 gs 0000000000
+  #108  t 165.003 buf 10  at 2950      1 x DRAW_INDEX_OFFSET_2 x1             rt0 0000000000 1x1 mask 00000000 | ps 11d1cc4200 es 11d1cee300 gs 0000000000
+  #109  t 165.003 buf 10  at 3030      1 x DRAW_INDEX_OFFSET_2 x1             rt0 0000000000 1x1 mask 00000000 | ps 11d1432b00 es 11d0134500 gs 0000000000
+  #110  t 165.003 buf 10  at 3101      1 x DRAW_INDEX_AUTO x1                 rt0 0000000000 1x1 mask 00000000 | ps 11d1432b00 es 11d00bd000 gs 0000000000
+  #111  t 165.003 buf 10  at 3179      3 x 0x24 x3                            rt0 0000000000 1x1 mask 00000000 | ps 11d01b9f00 es 11d00f8500 gs 0000000000
+  #112  t 165.003 buf 10  at 3334      1 x 0x24 x1                            rt0 0000000000 1x1 mask 00000000 | ps 11d01ba700 es 11d00f8d00 gs 0000000000
+  #113  t 165.003 buf 10  at 3400      2 x 0x24 x2                            rt0 0000000000 1x1 mask 00000000 | ps 11d01ba000 es 11d00f8d00 gs 0000000000
+  #114  t 165.003 buf 10  at 3521      1 x 0x24 x1                            rt0 0000000000 1x1 mask 00000000 | ps 11d01ba300 es 11d00f8d00 gs 0000000000
+  #115  t 165.003 buf 10  at 3589      1 x DRAW_INDEX_AUTO x1                 rt0 0000000000 1x1 mask 00000000 | ps 11d01ba300 es 11d00bd000 gs 0000000000
+  #116  t 165.003 buf 10  at 3662      2 x 0x24 x2                            rt0 0000000000 1x1 mask 00000000 | ps 11d01b9f00 es 11d00f8500 gs 0000000000
+  #117  t 165.003 buf 10  at 3788      2 x 0x24 x2                            rt0 0000000000 1x1 mask 00000000 | ps 11d01ba000 es 11d00f8d00 gs 0000000000
+  #118  t 165.003 buf 10  at 3907      1 x DRAW_INDEX_AUTO x1                 rt0 0000000000 1x1 mask 00000000 | ps 11d01ba000 es 11d00bd000 gs 0000000000
+  #119  t 165.003 buf 10  at 3980      1 x 0x24 x1                            rt0 0000000000 1x1 mask 00000000 | ps 11d01b9f00 es 11d00f8500 gs 0000000000
+  #120  t 165.003 buf 10  at 4078      2 x 0x24 x2                            rt0 0000000000 1x1 mask 00000000 | ps 11d01ba000 es 11d00f8d00 gs 0000000000
+  #121  t 165.003 buf 10  at 4192      1 x DRAW_INDEX_AUTO x1                 rt0 0000000000 1x1 mask 00000000 | ps 11d01ba000 es 11d00bd000 gs 0000000000
+  #122  t 165.003 buf 10  at 4270      1 x 0x24 x1                            rt0 0000000000 1x1 mask 00000000 | ps 11d01b9f00 es 11d00f8500 gs 0000000000
+  #123  t 165.003 buf 10  at 4363      2 x 0x24 x2                            rt0 0000000000 1x1 mask 00000000 | ps 11d01ba000 es 11d00f8d00 gs 0000000000
+  #124  t 165.003 buf 10  at 4482      7 x DRAW_INDEX_AUTO x7                 rt0 0000000000 1x1 mask 00000000 | ps 11d01ba000 es 11d00bd000 gs 0000000000
+  #125  t 165.003 buf 10  at 4748      2 x 0x24 x2                            rt0 0000000000 1x1 mask 00000000 | ps 11d01ba000 es 11d00f8500 gs 0000000000
+  #126  t 165.003 buf 10  at 4879      2 x 0x24 x2                            rt0 0000000000 1x1 mask 00000000 | ps 11d01ba000 es 11d00f8d00 gs 0000000000
+  #127  t 165.003 buf 10  at 5051      1 x DRAW_INDEX_OFFSET_2 x1             rt0 0000000000 1x1 mask 00000000 | ps 11d1cc4200 es 11d1cee300 gs 0000000000
+  #128  t 165.003 buf 10  at 5127      1 x DRAW_INDEX_AUTO x1                 rt0 0000000000 1x1 mask 00000000 | ps 11d1cc4200 es 11d00bd000 gs 0000000000
+  #129  t 165.003 buf 10  at 5200      2 x 0x24 x2                            rt0 0000000000 1x1 mask 00000000 | ps 11d1cc4200 es 11d00f8500 gs 0000000000
+  #130  t 165.003 buf 10  at 5326      2 x 0x24 x2                            rt0 0000000000 1x1 mask 00000000 | ps 11d01ba000 es 11d00f8d00 gs 0000000000
+  #131  t 165.003 buf 10  at 5710      1 x DRAW_INDEX_2 x1                    rt0 81f8cfc000 8x8 mask 0000000f | ps 11d331d300 es 11d0125d00 gs 0000000000
+  #132  t 165.003 buf 10  at 5798      1 x DRAW_INDEX_2 x1                    rt0 84c69ec000 8x8 mask 0000000f | ps 11d331d300 es 11d0125d00 gs 0000000000
+  #133  t 165.003 buf 10  at 5881      1 x DRAW_INDEX_2 x1                    rt0 84c69dc000 8x8 mask 0000000f | ps 11d331d300 es 11d0125d00 gs 0000000000
+  #134  t 165.003 buf 10  at 5964      1 x DRAW_INDEX_2 x1                    rt0 84c6a2c000 8x8 mask 0000000f | ps 11d331d300 es 11d0125d00 gs 0000000000
+(3) runs into 113cb40000: #71; water runs: #17
+  around #71:
+    #67   t 165.001 buf 4   at 5189      1 x 0x24 x1                            rt0 113f230000 3072x1728 mask 00000000 | ps 11d01ba700 es 11d00f8d00 gs 0000000000
+    #68   t 165.001 buf 4   at 5255      3 x 0x24 x3                            rt0 113f230000 3072x1728 mask 00000000 | ps 11d01ba000 es 11d00f8d00 gs 0000000000
+    #69   t 165.001 buf 4   at 5422      1 x 0x24 x1                            rt0 113f230000 3072x1728 mask 00000000 | ps 11d01ba300 es 11d00f8d00 gs 0000000000
+    #70   t 165.001 buf 4   at 5531      1 x DRAW_INDEX_OFFSET_2 x1             rt0 113f230000 3072x1728 mask 00000000 | ps 11d1432b00 es 11d0134500 gs 0000000000
+    #71   t 165.001 buf 4   at 5720      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 3072x1728 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+    #72   t 165.001 buf 4   at 5931      1 x DRAW_INDEX_AUTO x1                 rt0 113a7a0000 1536x864 mask 000000ff | ps 11d015f100 es 11d00be800 gs 0000000000
+    #73   t 165.001 buf 4   at 5985      1 x DRAW_INDEX_AUTO x1                 rt0 113ab20000 768x432 mask 0000000f | ps 11d015f600 es 11d00be800 gs 0000000000
+    #74   t 165.001 buf 4   at 6024      1 x DISPATCH_DIRECT x1                 dispatch cs 11d0322e00
+    #75   t 165.001 buf 6   at 360       1 x DRAW_INDEX_AUTO x1                 rt0 0000000000 1x1 mask 00000000 | ps 11d01b8400 es 11d00be800 gs 0000000000
+(4) find hits: 1
+     1 x draw ps ud0 direct | rt0 113a7a0000 | ps 11d015f100 cs 11d0288a00

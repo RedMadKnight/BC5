@@ -1,0 +1,165 @@
+# /home/kjaniszewski/bc5-data/captures/play-20261023-1856/gc/direct.log: 27 journal lines in 16 graphics buffers, t 153.245..168.385; target 113cb40000
+(1) by opcode: DRAW_INDEX_AUTO 27
+(2) passes in journal order: 27 runs
+  #0    t 153.245 buf 0   at 4575      1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 512x512 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+  #1    t 153.245 buf 0   at 6026      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 512x512 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+  #2    t 153.247 buf 1   at 5633      1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 512x512 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+  #3    t 153.247 buf 1   at 7099      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 512x512 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+  #4    t 153.249 buf 2   at 2759      1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 512x512 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+  #5    t 153.249 buf 2   at 4210      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 512x512 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+  #6    t 153.251 buf 3   at 2176      1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 512x512 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+  #7    t 153.251 buf 3   at 3632      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 512x512 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+  #8    t 153.253 buf 4   at 2176      1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 512x512 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+  #9    t 153.253 buf 4   at 3632      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 512x512 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+  #10   t 153.258 buf 5   at 2571      1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 512x512 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+  #11   t 153.258 buf 5   at 4022      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 512x512 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+  #12   t 153.282 buf 6   at 222       1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 1664x936 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+  #13   t 153.284 buf 7   at 7735      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 1664x936 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+  #14   t 153.284 buf 7   at 7946      1 x DRAW_INDEX_AUTO x1                 rt0 113a7a0000 832x468 mask 000000ff | ps 11d015f100 es 11d00be800 gs 0000000000
+  #15   t 168.301 buf 8   at 222       1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 1664x936 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+  #16   t 168.303 buf 9   at 8882      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 1664x936 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+  #17   t 168.303 buf 9   at 9093      1 x DRAW_INDEX_AUTO x1                 rt0 113a7a0000 832x468 mask 000000ff | ps 11d015f100 es 11d00be800 gs 0000000000
+  #18   t 168.326 buf 10  at 222       1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 1664x936 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+  #19   t 168.330 buf 11  at 8659      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 1664x936 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+  #20   t 168.330 buf 11  at 8870      1 x DRAW_INDEX_AUTO x1                 rt0 113a7a0000 832x468 mask 000000ff | ps 11d015f100 es 11d00be800 gs 0000000000
+  #21   t 168.353 buf 12  at 222       1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 1664x936 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+  #22   t 168.356 buf 13  at 9129      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 1664x936 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+  #23   t 168.356 buf 13  at 9340      1 x DRAW_INDEX_AUTO x1                 rt0 113a7a0000 832x468 mask 000000ff | ps 11d015f100 es 11d00be800 gs 0000000000
+  #24   t 168.383 buf 14  at 222       1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 1664x936 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+  #25   t 168.385 buf 15  at 8693      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 1664x936 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+  #26   t 168.385 buf 15  at 8904      1 x DRAW_INDEX_AUTO x1                 rt0 113a7a0000 832x468 mask 000000ff | ps 11d015f100 es 11d00be800 gs 0000000000
+(3) runs into 113cb40000: #1 #3 #5 #7 #9 #11 #13 #16 #19 #22 #25; water runs: #0 #2 #4 #6 #8 #10 #12 #15 #18 #21 #24
+  around #1:
+    #0    t 153.245 buf 0   at 4575      1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 512x512 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+    #1    t 153.245 buf 0   at 6026      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 512x512 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+    #2    t 153.247 buf 1   at 5633      1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 512x512 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+    #3    t 153.247 buf 1   at 7099      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 512x512 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+    #4    t 153.249 buf 2   at 2759      1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 512x512 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+    #5    t 153.249 buf 2   at 4210      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 512x512 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+  around #3:
+    #0    t 153.245 buf 0   at 4575      1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 512x512 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+    #1    t 153.245 buf 0   at 6026      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 512x512 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+    #2    t 153.247 buf 1   at 5633      1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 512x512 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+    #3    t 153.247 buf 1   at 7099      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 512x512 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+    #4    t 153.249 buf 2   at 2759      1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 512x512 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+    #5    t 153.249 buf 2   at 4210      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 512x512 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+    #6    t 153.251 buf 3   at 2176      1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 512x512 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+    #7    t 153.251 buf 3   at 3632      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 512x512 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+  around #5:
+    #1    t 153.245 buf 0   at 6026      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 512x512 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+    #2    t 153.247 buf 1   at 5633      1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 512x512 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+    #3    t 153.247 buf 1   at 7099      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 512x512 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+    #4    t 153.249 buf 2   at 2759      1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 512x512 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+    #5    t 153.249 buf 2   at 4210      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 512x512 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+    #6    t 153.251 buf 3   at 2176      1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 512x512 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+    #7    t 153.251 buf 3   at 3632      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 512x512 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+    #8    t 153.253 buf 4   at 2176      1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 512x512 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+    #9    t 153.253 buf 4   at 3632      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 512x512 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+  around #7:
+    #3    t 153.247 buf 1   at 7099      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 512x512 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+    #4    t 153.249 buf 2   at 2759      1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 512x512 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+    #5    t 153.249 buf 2   at 4210      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 512x512 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+    #6    t 153.251 buf 3   at 2176      1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 512x512 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+    #7    t 153.251 buf 3   at 3632      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 512x512 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+    #8    t 153.253 buf 4   at 2176      1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 512x512 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+    #9    t 153.253 buf 4   at 3632      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 512x512 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+    #10   t 153.258 buf 5   at 2571      1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 512x512 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+    #11   t 153.258 buf 5   at 4022      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 512x512 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+  around #9:
+    #5    t 153.249 buf 2   at 4210      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 512x512 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+    #6    t 153.251 buf 3   at 2176      1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 512x512 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+    #7    t 153.251 buf 3   at 3632      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 512x512 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+    #8    t 153.253 buf 4   at 2176      1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 512x512 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+    #9    t 153.253 buf 4   at 3632      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 512x512 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+    #10   t 153.258 buf 5   at 2571      1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 512x512 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+    #11   t 153.258 buf 5   at 4022      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 512x512 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+    #12   t 153.282 buf 6   at 222       1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 1664x936 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+    #13   t 153.284 buf 7   at 7735      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 1664x936 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+  around #11:
+    #7    t 153.251 buf 3   at 3632      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 512x512 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+    #8    t 153.253 buf 4   at 2176      1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 512x512 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+    #9    t 153.253 buf 4   at 3632      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 512x512 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+    #10   t 153.258 buf 5   at 2571      1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 512x512 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+    #11   t 153.258 buf 5   at 4022      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 512x512 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+    #12   t 153.282 buf 6   at 222       1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 1664x936 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+    #13   t 153.284 buf 7   at 7735      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 1664x936 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+    #14   t 153.284 buf 7   at 7946      1 x DRAW_INDEX_AUTO x1                 rt0 113a7a0000 832x468 mask 000000ff | ps 11d015f100 es 11d00be800 gs 0000000000
+    #15   t 168.301 buf 8   at 222       1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 1664x936 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+  around #13:
+    #9    t 153.253 buf 4   at 3632      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 512x512 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+    #10   t 153.258 buf 5   at 2571      1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 512x512 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+    #11   t 153.258 buf 5   at 4022      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 512x512 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+    #12   t 153.282 buf 6   at 222       1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 1664x936 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+    #13   t 153.284 buf 7   at 7735      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 1664x936 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+    #14   t 153.284 buf 7   at 7946      1 x DRAW_INDEX_AUTO x1                 rt0 113a7a0000 832x468 mask 000000ff | ps 11d015f100 es 11d00be800 gs 0000000000
+    #15   t 168.301 buf 8   at 222       1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 1664x936 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+    #16   t 168.303 buf 9   at 8882      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 1664x936 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+    #17   t 168.303 buf 9   at 9093      1 x DRAW_INDEX_AUTO x1                 rt0 113a7a0000 832x468 mask 000000ff | ps 11d015f100 es 11d00be800 gs 0000000000
+  around #16:
+    #12   t 153.282 buf 6   at 222       1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 1664x936 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+    #13   t 153.284 buf 7   at 7735      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 1664x936 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+    #14   t 153.284 buf 7   at 7946      1 x DRAW_INDEX_AUTO x1                 rt0 113a7a0000 832x468 mask 000000ff | ps 11d015f100 es 11d00be800 gs 0000000000
+    #15   t 168.301 buf 8   at 222       1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 1664x936 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+    #16   t 168.303 buf 9   at 8882      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 1664x936 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+    #17   t 168.303 buf 9   at 9093      1 x DRAW_INDEX_AUTO x1                 rt0 113a7a0000 832x468 mask 000000ff | ps 11d015f100 es 11d00be800 gs 0000000000
+    #18   t 168.326 buf 10  at 222       1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 1664x936 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+    #19   t 168.330 buf 11  at 8659      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 1664x936 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+    #20   t 168.330 buf 11  at 8870      1 x DRAW_INDEX_AUTO x1                 rt0 113a7a0000 832x468 mask 000000ff | ps 11d015f100 es 11d00be800 gs 0000000000
+  around #19:
+    #15   t 168.301 buf 8   at 222       1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 1664x936 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+    #16   t 168.303 buf 9   at 8882      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 1664x936 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+    #17   t 168.303 buf 9   at 9093      1 x DRAW_INDEX_AUTO x1                 rt0 113a7a0000 832x468 mask 000000ff | ps 11d015f100 es 11d00be800 gs 0000000000
+    #18   t 168.326 buf 10  at 222       1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 1664x936 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+    #19   t 168.330 buf 11  at 8659      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 1664x936 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+    #20   t 168.330 buf 11  at 8870      1 x DRAW_INDEX_AUTO x1                 rt0 113a7a0000 832x468 mask 000000ff | ps 11d015f100 es 11d00be800 gs 0000000000
+    #21   t 168.353 buf 12  at 222       1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 1664x936 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+    #22   t 168.356 buf 13  at 9129      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 1664x936 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+    #23   t 168.356 buf 13  at 9340      1 x DRAW_INDEX_AUTO x1                 rt0 113a7a0000 832x468 mask 000000ff | ps 11d015f100 es 11d00be800 gs 0000000000
+  around #22:
+    #18   t 168.326 buf 10  at 222       1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 1664x936 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+    #19   t 168.330 buf 11  at 8659      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 1664x936 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+    #20   t 168.330 buf 11  at 8870      1 x DRAW_INDEX_AUTO x1                 rt0 113a7a0000 832x468 mask 000000ff | ps 11d015f100 es 11d00be800 gs 0000000000
+    #21   t 168.353 buf 12  at 222       1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 1664x936 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+    #22   t 168.356 buf 13  at 9129      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 1664x936 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+    #23   t 168.356 buf 13  at 9340      1 x DRAW_INDEX_AUTO x1                 rt0 113a7a0000 832x468 mask 000000ff | ps 11d015f100 es 11d00be800 gs 0000000000
+    #24   t 168.383 buf 14  at 222       1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 1664x936 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+    #25   t 168.385 buf 15  at 8693      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 1664x936 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+    #26   t 168.385 buf 15  at 8904      1 x DRAW_INDEX_AUTO x1                 rt0 113a7a0000 832x468 mask 000000ff | ps 11d015f100 es 11d00be800 gs 0000000000
+  around #25:
+    #21   t 168.353 buf 12  at 222       1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 1664x936 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+    #22   t 168.356 buf 13  at 9129      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 1664x936 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+    #23   t 168.356 buf 13  at 9340      1 x DRAW_INDEX_AUTO x1                 rt0 113a7a0000 832x468 mask 000000ff | ps 11d015f100 es 11d00be800 gs 0000000000
+    #24   t 168.383 buf 14  at 222       1 x DRAW_INDEX_AUTO x1                 rt0 113f230000 1664x936 mask 000fffff | ps 11d01d7100 es 11d00bdf00 gs 0000000000 <== water
+    #25   t 168.385 buf 15  at 8693      1 x DRAW_INDEX_AUTO x1                 rt0 113cb40000 1664x936 mask 0000000f | ps 11d0160b00 es 11d00be800 gs 0000000000 <== TARGET
+    #26   t 168.385 buf 15  at 8904      1 x DRAW_INDEX_AUTO x1                 rt0 113a7a0000 832x468 mask 000000ff | ps 11d015f100 es 11d00be800 gs 0000000000
+(4) find hits: 148
+    54 x draw ps ud28 table | rt0 1163060000 | ps 11d1c3f800 cs 11d0288a00
+     9 x dispatch cs ud12 table | rt0 0000000000 | ps 0000000000 cs 11d0323900
+     9 x dispatch cs ud12 table | rt0 0000000000 | ps 0000000000 cs 11d0287400
+     9 x dispatch cs ud12 table | rt0 116da40000 | ps 0000000000 cs 11d0288800
+     4 x dispatch cs ud12 table | rt0 113cb40000 | ps 11d5145500 cs 11d0288a00
+     4 x dispatch cs ud12 table | rt0 113cb40000 | ps 11d01b9000 cs 11d0288a00
+     4 x draw ps ud0 direct | rt0 113a7a0000 | ps 11d015f100 cs 0000000000
+     3 x dispatch cs ud0 direct | rt0 0000000000 | ps 0000000000 cs 11d021d400
+     3 x dispatch cs ud12 table | rt0 0000000000 | ps 0000000000 cs 11d0371800
+     3 x dispatch cs ud12 table | rt0 0000000000 | ps 0000000000 cs 11d0226700
+     3 x dispatch cs ud12 table | rt0 0000000000 | ps 0000000000 cs 11d03e4400
+     3 x dispatch cs ud12 table | rt0 113d770000 | ps 11d0ea9100 cs 11d03fc400
+     3 x dispatch cs ud12 table | rt0 113d770000 | ps 11d0ea9100 cs 11d03fce00
+     3 x dispatch cs ud12 table | rt0 113d770000 | ps 11d0ea9100 cs 11d03fc100
+     3 x dispatch cs ud0 direct | rt0 113d770000 | ps 11d36d9c00 cs 11d03f5c00
+     3 x dispatch cs ud0 direct | rt0 113d770000 | ps 11d36d9c00 cs 11d03f5600
+     3 x dispatch cs ud12 table | rt0 113d770000 | ps 11d36d9c00 cs 11d03f5e00
+     3 x dispatch cs ud12 table | rt0 113d770000 | ps 11d36d9c00 cs 11d040c900
+     3 x dispatch cs ud12 table | rt0 114c6c0000 | ps 0000000000 cs 11d03f7900
+     3 x dispatch cs ud12 table | rt0 114c6c0000 | ps 0000000000 cs 11d03f8800
+     3 x dispatch cs ud12 table | rt0 114c6c0000 | ps 0000000000 cs 11d039c700
+     2 x dispatch cs ud12 table | rt0 115ae70000 | ps 11d5145500 cs 11d04fc200
+     2 x dispatch cs ud12 table | rt0 115ae70000 | ps 11d090cf00 cs 11d0288a00
+     2 x dispatch cs ud12 table | rt0 115ae70000 | ps 11d01b9000 cs 11d04fc200
+     2 x dispatch cs ud12 table | rt0 115ae70000 | ps 11d01b9000 cs 11d0288a00
+     1 x dispatch cs ud12 table | rt0 115ae70000 | ps 11d5145500 cs 11d0288800
+     1 x dispatch cs ud12 table | rt0 115ae70000 | ps 11d01b9000 cs 11d0288800
+     1 x draw ps ud28 table | rt0 113f230000 | ps 11d01d3000 cs 11d03a2000
+     1 x draw ps ud28 table | rt0 113cb40000 | ps 11d1c3f800 cs 11d03a2000
+     1 x draw ps ud0 direct | rt0 113a7a0000 | ps 11d015f100 cs 11d036b100
