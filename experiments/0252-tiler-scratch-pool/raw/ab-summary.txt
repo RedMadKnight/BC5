@@ -1,0 +1,39 @@
+Per run: flips, flip gaps over 0.3 s, the tiler counter's last line (KYTY_BC5_TILER_POOL; E52O1 ran the first build, without the counter), kyty-gpu CPU from the /proc sampler (mean per 0.1 s, periods over 50 ms), and PSI memory full / MemAvailable averaged over the run.
+E52O1: 9830 flips; 0 gaps > 0.3 s; tiler: no counter in this build; kyty-gpu 11.0 ms per 0.1 s, 0 periods over 50 ms; PSI memory full 4.4 ms per 0.1 s, MemAvailable 1863 MB
+E52N1: 9832 flips; 1 gaps > 0.3 s; tiler: 9216 requests, 3 new buffers (96.0 MiB), pool on, 9213 reused, 2 free; kyty-gpu 10.1 ms per 0.1 s, 0 periods over 50 ms; PSI memory full 3.1 ms per 0.1 s, MemAvailable 1779 MB
+E52O2: 9689 flips; 5 gaps > 0.3 s; tiler: 9216 requests, 9216 new buffers (200018.0 MiB), pool off, 0 reused, 0 free; kyty-gpu 12.2 ms per 0.1 s, 9 periods over 50 ms; PSI memory full 5.5 ms per 0.1 s, MemAvailable 1829 MB
+E52N2: 11770 flips; 3 gaps > 0.3 s; tiler: 11264 requests, 3 new buffers (96.0 MiB), pool on, 11261 reused, 2 free; kyty-gpu 8.9 ms per 0.1 s, 0 periods over 50 ms; PSI memory full 0.8 ms per 0.1 s, MemAvailable 2394 MB
+
+Counter lines per run:
+== E52N1
+bc5 tiler scratch: 1024 requests, 3 new buffers (96.0 MiB), pool on, 1021 reused, 2 free
+bc5 tiler scratch: 2048 requests, 3 new buffers (96.0 MiB), pool on, 2045 reused, 2 free
+bc5 tiler scratch: 3072 requests, 3 new buffers (96.0 MiB), pool on, 3069 reused, 2 free
+bc5 tiler scratch: 4096 requests, 3 new buffers (96.0 MiB), pool on, 4093 reused, 2 free
+bc5 tiler scratch: 5120 requests, 3 new buffers (96.0 MiB), pool on, 5117 reused, 2 free
+bc5 tiler scratch: 6144 requests, 3 new buffers (96.0 MiB), pool on, 6141 reused, 2 free
+bc5 tiler scratch: 7168 requests, 3 new buffers (96.0 MiB), pool on, 7165 reused, 2 free
+bc5 tiler scratch: 8192 requests, 3 new buffers (96.0 MiB), pool on, 8189 reused, 2 free
+bc5 tiler scratch: 9216 requests, 3 new buffers (96.0 MiB), pool on, 9213 reused, 2 free
+== E52O2
+bc5 tiler scratch: 1024 requests, 1024 new buffers (29675.4 MiB), pool off, 0 reused, 0 free
+bc5 tiler scratch: 2048 requests, 2048 new buffers (44075.4 MiB), pool off, 0 reused, 0 free
+bc5 tiler scratch: 3072 requests, 3072 new buffers (58475.4 MiB), pool off, 0 reused, 0 free
+bc5 tiler scratch: 4096 requests, 4096 new buffers (72875.4 MiB), pool off, 0 reused, 0 free
+bc5 tiler scratch: 5120 requests, 5120 new buffers (87275.4 MiB), pool off, 0 reused, 0 free
+bc5 tiler scratch: 6144 requests, 6144 new buffers (102818.0 MiB), pool off, 0 reused, 0 free
+bc5 tiler scratch: 7168 requests, 7168 new buffers (135218.0 MiB), pool off, 0 reused, 0 free
+bc5 tiler scratch: 8192 requests, 8192 new buffers (167618.0 MiB), pool off, 0 reused, 0 free
+bc5 tiler scratch: 9216 requests, 9216 new buffers (200018.0 MiB), pool off, 0 reused, 0 free
+== E52N2
+bc5 tiler scratch: 1024 requests, 3 new buffers (96.0 MiB), pool on, 1021 reused, 2 free
+bc5 tiler scratch: 2048 requests, 3 new buffers (96.0 MiB), pool on, 2045 reused, 2 free
+bc5 tiler scratch: 3072 requests, 3 new buffers (96.0 MiB), pool on, 3069 reused, 2 free
+bc5 tiler scratch: 4096 requests, 3 new buffers (96.0 MiB), pool on, 4093 reused, 2 free
+bc5 tiler scratch: 5120 requests, 3 new buffers (96.0 MiB), pool on, 5117 reused, 2 free
+bc5 tiler scratch: 6144 requests, 3 new buffers (96.0 MiB), pool on, 6141 reused, 2 free
+bc5 tiler scratch: 7168 requests, 3 new buffers (96.0 MiB), pool on, 7165 reused, 2 free
+bc5 tiler scratch: 8192 requests, 3 new buffers (96.0 MiB), pool on, 8189 reused, 2 free
+bc5 tiler scratch: 9216 requests, 3 new buffers (96.0 MiB), pool on, 9213 reused, 2 free
+bc5 tiler scratch: 10240 requests, 3 new buffers (96.0 MiB), pool on, 10237 reused, 2 free
+bc5 tiler scratch: 11264 requests, 3 new buffers (96.0 MiB), pool on, 11261 reused, 2 free

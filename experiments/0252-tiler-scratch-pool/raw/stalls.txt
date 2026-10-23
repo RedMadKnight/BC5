@@ -1,0 +1,115 @@
+E52O1: 9830 flips, 0 gaps over 300 ms; bc5 clock 79834.081
+baseline window t 180-300:
+  all (120.00 s)
+    game-main       45855 ms CPU ( 382 ms/s); states R 2361 S 3597 D   2
+    Render_Thread   45667 ms CPU ( 381 ms/s); states R 2443 S 3510 D   7
+    bc5-ring        17940 ms CPU ( 150 ms/s); states R 1137 S 4819 D   4
+    AK::IOThread      109 ms CPU (   1 ms/s); states R  11 S 5949 D   0
+    kyty-gpu        13427 ms CPU ( 112 ms/s); states R 686 S 5274 D   0
+    busiest title threads: game-main 45855, Render_Thread 45668, Job_Bk_3 12646, Job_Bk_1 12503, Job_Bk_2 12275, Job_Bk_0 12048
+    traced label waits 0 (labels -); 'after that wait' lines 39998; AMM trace: -
+
+E52N1: 9832 flips, 1 gaps over 300 ms; bc5 clock 80213.993
+  gap t 83.6-83.9, 304 ms, outside 252 ms (0.30 s)
+    game-main         120 ms CPU ( 394 ms/s); states R   6 S  11 D   0
+    Render_Thread     297 ms CPU ( 976 ms/s); states R  15 S   2 D   0
+    bc5-ring           68 ms CPU ( 224 ms/s); states R   4 S  13 D   0
+    AK::IOThread        0 ms CPU (   1 ms/s); states R   0 S  17 D   0
+    kyty-gpu           12 ms CPU (  41 ms/s); states R   2 S  15 D   0
+    busiest title threads: Render_Thread 297, Archive_Asset_I 206, game-main 120, Archive_Resolve 7, AK::AudioMgr 5, AK::AudioOutThr 3
+    traced label waits 0 (labels -); 'after that wait' lines 1; AMM trace: -
+baseline window t 180-300:
+  all (120.00 s)
+    game-main       42719 ms CPU ( 356 ms/s); states R 2206 S 3755 D   1
+    Render_Thread   40441 ms CPU ( 337 ms/s); states R 2162 S 3794 D   6
+    bc5-ring        18752 ms CPU ( 156 ms/s); states R 1072 S 4883 D   7
+    AK::IOThread      111 ms CPU (   1 ms/s); states R  16 S 5946 D   0
+    kyty-gpu        12684 ms CPU ( 106 ms/s); states R 634 S 5328 D   0
+    busiest title threads: game-main 42717, Render_Thread 40442, Job_Bk_2 13013, Job_Bk_0 12786, Job_Bk_1 12631, Job_Bk_3 12571
+    traced label waits 0 (labels -); 'after that wait' lines 40237; AMM trace: -
+
+E52O2: 9689 flips, 5 gaps over 300 ms; bc5 clock 80586.873
+  gap t 73.4-73.7, 303 ms, outside 293 ms (0.30 s)
+    game-main          44 ms CPU ( 146 ms/s); states R   4 S   4 D   0
+    Render_Thread     226 ms CPU ( 747 ms/s); states R   8 S   0 D   0
+    bc5-ring           16 ms CPU (  53 ms/s); states R   0 S   8 D   0
+    AK::IOThread        0 ms CPU (   0 ms/s); states R   0 S   8 D   0
+    kyty-gpu            2 ms CPU (   8 ms/s); states R   0 S   8 D   0
+    busiest title threads: Render_Thread 227, game-main 44, AK::AudioMgr 15, Job_Lo_0 9, Job_Lo_1 9, Job_Lo_3 9
+    traced label waits 0 (labels -); 'after that wait' lines 23; AMM trace: -
+  gap t 83.7-84.0, 304 ms, outside 198 ms (0.30 s)
+    game-main         172 ms CPU ( 567 ms/s); states R   9 S   2 D   0
+    Render_Thread     211 ms CPU ( 695 ms/s); states R  11 S   0 D   0
+    bc5-ring           15 ms CPU (  50 ms/s); states R   1 S  10 D   0
+    AK::IOThread        0 ms CPU (   1 ms/s); states R   0 S  11 D   0
+    kyty-gpu            4 ms CPU (  13 ms/s); states R   0 S  11 D   0
+    busiest title threads: Render_Thread 211, game-main 173, AK::BankMgr 60, Job_Hi_3 17, Job_Hi_2 17, Job_Hi_4 14
+    traced label waits 0 (labels -); 'after that wait' lines 21; AMM trace: -
+  gap t 85.9-86.3, 306 ms, outside 175 ms (0.31 s)
+    game-main         274 ms CPU ( 893 ms/s); states R  13 S   4 D   0
+    Render_Thread     210 ms CPU ( 687 ms/s); states R  12 S   5 D   0
+    bc5-ring           96 ms CPU ( 315 ms/s); states R   5 S  12 D   0
+    AK::IOThread        3 ms CPU (  10 ms/s); states R   0 S  17 D   0
+    kyty-gpu            9 ms CPU (  29 ms/s); states R   0 S  17 D   0
+    busiest title threads: game-main 274, Render_Thread 210, AK::AudioMgr 54, Coherent_Thread 26, Job_Lo_0 12, Job_Lo_2 12
+    traced label waits 0 (labels -); 'after that wait' lines 31; AMM trace: -
+  gap t 169.6-170.0, 384 ms, outside 317 ms (0.38 s)
+    game-main         356 ms CPU ( 927 ms/s); states R  18 S   4 D   0
+    Render_Thread     141 ms CPU ( 368 ms/s); states R   9 S  13 D   0
+    bc5-ring           63 ms CPU ( 165 ms/s); states R   1 S  10 D  11
+    AK::IOThread        1 ms CPU (   2 ms/s); states R   0 S  22 D   0
+    kyty-gpu           17 ms CPU (  44 ms/s); states R   2 S  20 D   0
+    busiest title threads: game-main 356, Render_Thread 142, Coherent_Thread 72, AK::AudioMgr 43, Job_Hi_3 12, Job_Bk_4 8
+    traced label waits 0 (labels -); 'after that wait' lines 17; AMM trace: -
+  gap t 190.9-191.4, 499 ms, outside 471 ms (0.50 s)
+    game-main          35 ms CPU (  70 ms/s); states R   2 S  26 D   0
+    Render_Thread     502 ms CPU (1006 ms/s); states R  25 S   3 D   0
+    bc5-ring           19 ms CPU (  38 ms/s); states R   2 S  26 D   0
+    AK::IOThread        0 ms CPU (   1 ms/s); states R   0 S  28 D   0
+    kyty-gpu          482 ms CPU ( 965 ms/s); states R  24 S   4 D   0
+    busiest title threads: Render_Thread 502, game-main 35, AK::AudioMgr 27, Job_Bk_0 15, Job_Bk_4 15, Job_Bk_3 15
+    traced label waits 0 (labels -); 'after that wait' lines 13; AMM trace: -
+baseline window t 180-300:
+  all (120.00 s)
+    game-main       45265 ms CPU ( 377 ms/s); states R 2387 S 3570 D   1
+    Render_Thread   49040 ms CPU ( 409 ms/s); states R 2670 S 3285 D   3
+    bc5-ring        18445 ms CPU ( 154 ms/s); states R 1138 S 4814 D   6
+    AK::IOThread      112 ms CPU (   1 ms/s); states R  23 S 5935 D   0
+    kyty-gpu        16201 ms CPU ( 135 ms/s); states R 829 S 5129 D   0
+    busiest title threads: Render_Thread 49042, game-main 45265, Job_Bk_2 11572, Job_Bk_4 11307, Job_Bk_0 11279, Job_Bk_1 11191
+    traced label waits 0 (labels -); 'after that wait' lines 39259; AMM trace: -
+
+E52N2: 11770 flips, 3 gaps over 300 ms; bc5 clock 80953.987
+  gap t 5.4-5.8, 446 ms, outside 434 ms (0.45 s)
+    game-main           4 ms CPU (  10 ms/s); states R   0 S  23 D   0
+    Render_Thread     397 ms CPU ( 891 ms/s); states R  20 S   3 D   0
+    bc5-ring            8 ms CPU (  18 ms/s); states R   1 S  22 D   0
+    kyty-gpu           14 ms CPU (  31 ms/s); states R   1 S  22 D   0
+    busiest title threads: Render_Thread 397, Archive_Resolve 12, game-main 4, Job_Lo_3 1, Job_Lo_2 0, Job_Lo_4 0
+    traced label waits 0 (labels -); 'after that wait' lines 1; AMM trace: -
+  gap t 38.6-38.9, 308 ms, outside 66 ms (0.31 s)
+    game-main          62 ms CPU ( 201 ms/s); states R   2 S  14 D   0
+    Render_Thread     133 ms CPU ( 432 ms/s); states R   6 S  10 D   0
+    bc5-ring          188 ms CPU ( 612 ms/s); states R   9 S   7 D   0
+    AK::IOThread        0 ms CPU (   1 ms/s); states R   0 S  16 D   0
+    kyty-gpu           14 ms CPU (  46 ms/s); states R   1 S  15 D   0
+    busiest title threads: Archive_Asset_I 146, Render_Thread 133, game-main 62, Archive_Resolve 7, AK::AudioMgr 4, Job_Lo_3 1
+    traced label waits 0 (labels -); 'after that wait' lines 2; AMM trace: -
+  gap t 240.5-240.9, 319 ms, outside 305 ms (0.32 s)
+    game-main          51 ms CPU ( 159 ms/s); states R   3 S  14 D   0
+    Render_Thread      65 ms CPU ( 205 ms/s); states R   4 S  13 D   0
+    bc5-ring           24 ms CPU (  75 ms/s); states R   0 S  17 D   0
+    AK::IOThread        3 ms CPU (   8 ms/s); states R   0 S  17 D   0
+    kyty-gpu            7 ms CPU (  22 ms/s); states R   0 S  17 D   0
+    busiest title threads: AK::AudioMgr 217, Render_Thread 64, game-main 50, Job_Hi_2 22, Job_Hi_0 22, Job_Hi_3 21
+    traced label waits 0 (labels -); 'after that wait' lines 19; AMM trace: -
+baseline window t 180-300:
+  all (120.00 s)
+    game-main       68236 ms CPU ( 569 ms/s); states R 3425 S 2530 D   2
+    Render_Thread   84535 ms CPU ( 704 ms/s); states R 4299 S 1652 D   6
+    bc5-ring        27480 ms CPU ( 229 ms/s); states R 1576 S 4379 D   2
+    AK::IOThread      678 ms CPU (   6 ms/s); states R  51 S 5906 D   0
+    kyty-gpu         9024 ms CPU (  75 ms/s); states R 483 S 5474 D   0
+    busiest title threads: Render_Thread 84536, game-main 68238, AK::AudioMgr 66422, Job_Hi_1 15820, Job_Hi_3 15430, Job_Hi_2 15406
+    traced label waits 0 (labels -); 'after that wait' lines 75236; AMM trace: -
+
