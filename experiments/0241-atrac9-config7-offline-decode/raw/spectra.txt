@@ -1,0 +1,25 @@
+== (a) streams with failed frames: a twin with the same sample count in wem_*?
+0474_soundbank_1c235de.at9raw fe7e03f0 samples 10253 data 1408: twin(s) 0309_wem_1_35598aa4.at9raw clean
+0515_soundbank_1c3c25e.at9raw fe7c01f0 samples 747463 data 46784: twin(s) 0100_wem_0_352a34ae.at9raw clean
+0544_soundbank_1c5971e.at9raw fe7c01f0 samples 718548 data 44928: twin(s) 0204_wem_1_10136bb.at9raw clean
+0576_soundbank_1c794be.at9raw fe7e03f0 samples 6929 data 1024: twin(s) 0337_wem_1_4691ab6c.at9raw clean
+0582_soundbank_1c7ce7e.at9raw fe7e03f0 samples 503552 data 62976: twin(s) 0350_wem_1_4d23311c.at9raw clean
+0597_soundbank_1c93e3e.at9raw fe7c01f0 samples 26029 data 1664: twin(s) 0413_wem_1_72c7ccab.at9raw clean
+0598_soundbank_1c9477e.at9raw fe7c01f0 samples 692524 data 43328: twin(s) 0416_wem_1_74363366.at9raw clean
+0629_soundbank_207fed5.at9raw fe7e03f0 samples 21743 data 2816: twin(s) 0111_wem_0_3c28889c.at9raw clean, 0372_wem_1_5e8daffb.at9raw clean
+0723_soundbank_8f3e2b3.at9raw fe7e03f0 samples 21743 data 2816: twin(s) 0111_wem_0_3c28889c.at9raw clean, 0372_wem_1_5e8daffb.at9raw clean
+0732_soundbank_8f6fc62.at9raw fe7e03f0 samples 21743 data 2816: twin(s) 0111_wem_0_3c28889c.at9raw clean, 0372_wem_1_5e8daffb.at9raw clean
+0734_soundbank_8f70fa2.at9raw fe7e03f0 samples 21743 data 2816: twin(s) 0111_wem_0_3c28889c.at9raw clean, 0372_wem_1_5e8daffb.at9raw clean
+0738_soundbank_8f7711d.at9raw fe7e03f0 samples 21743 data 2816: twin(s) 0111_wem_0_3c28889c.at9raw clean, 0372_wem_1_5e8daffb.at9raw clean
+0757_soundbank_9b725de.at9raw fe7e03f0 samples 53902 data 6784: twin(s) 0160_wem_0_5affab6c.at9raw clean
+0764_soundbank_9d9b66e.at9raw fe7e03f0 samples 573700 data 71808: twin(s) 0008_wem_0_5431778.at9raw clean
+0865_soundbank_bddfde2.at9raw fe7e03f0 samples 25200 data 3200: twin(s) 0254_wem_1_1ada57af.at9raw clean
+0872_soundbank_c1caa5f.at9raw fe7e03f0 samples 521216 data 65280: twin(s) 0371_wem_1_5d855955.at9raw clean
+0883_soundbank_c59fcbd.at9raw fe7e03f0 samples 25200 data 3200: twin(s) 0254_wem_1_1ada57af.at9raw clean
+0885_soundbank_c5d79d2.at9raw fe7e03f0 samples 25200 data 3200: twin(s) 0254_wem_1_1ada57af.at9raw clean
+0886_soundbank_54e61.at9raw fe7e03f0 samples 494912 data 61952: twin(s) 1077_wem_1_1afa4f54.at9raw clean
+0896_soundbank_13a8b68.at9raw fe7e03f0 samples 33833 data 4352: twin(s) 1162_wem_1_3dbb9519.at9raw clean
+== (b) spectra
+fe7a17e0: 8 streams; energy below 100 Hz 36.0%, below 300 Hz 48.7%, below 1 kHz 78.2% (medians; min below 1 kHz 5.2%); spectral centroid median 683 Hz (p10 135, p90 1705)
+fe7c01f0: 25 streams; energy below 100 Hz 34.4%, below 300 Hz 85.0%, below 1 kHz 100.0% (medians; min below 1 kHz 100.0%); spectral centroid median 192 Hz (p10 106, p90 382)
+fe7e03f0: 25 streams; energy below 100 Hz 72.4%, below 300 Hz 96.2%, below 1 kHz 100.0% (medians; min below 1 kHz 99.9%); spectral centroid median 98 Hz (p10 49, p90 263); L/R correlation median 1.00 (min -0.02)
