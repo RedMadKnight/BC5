@@ -1,0 +1,54 @@
+# r-G1: first frozen-view shot 12:43:47 = mono 45470.0; 73727 AMM events; 281 table samples
+(1) AMM events per 5 s (s relative to the first shot): t maps unmaps reads read_MiB
+    -60   327     0   353    357.8
+    -55     0     0     7      0.7
+    -50     0     0     7      0.6
+    -45     0     0    12      1.1
+    -40     0     0    11      1.0
+    -35     0     0     7      0.7
+    -30     0     0     6      0.6
+    -25     0     0     7      0.5
+    -20     0     0    11      1.1
+    -15   109    57   203    104.9
+    -10   113     6   177    158.5
+     -5   116     0   156    256.6
+     +0     0     0     1      0.1
+     +5     0     0     1      0.1
+    +10     0     0     1      0.1
+    +15     0     0     2      0.2
+    +20     0     0     1      0.1
+    +25     0     0     1      0.1
+    +30     0     0     1      0.1
+    +35     0     0     2      0.2
+    +40     0     0     1      0.1
+    +45     0     0     1      0.1
+    +50     0     0     1      0.1
+    +55     0     0     2      0.2
+    +60     0     0     1      0.1
+    +65     0     0     1      0.1
+    +70     0     0     2      0.2
+    +75     0     0     1      0.1
+    +80     0     0     1      0.1
+    +85     0     0     2      0.2
+    +90     0     0     1      0.1
+    +95     0     0     1      0.1
+   +105     0     0     2      0.2
+   +110     0     0     1      0.1
+   +115     0     0     2      0.2
+   +120     0     0     1      0.1
+(2) table changes from 60 s before the first shot, with the AMM events of the 10 s before each
+  12:42:48 (-59 s): 26 pages changed (56 60 61 68 73 74 77 79) | AMM in the 10 s before: 1595 maps, 334 unmaps, 8803 reads
+  12:42:49 (-58 s): 45 pages changed (56 57 60 61 63 64 65 68) | AMM in the 10 s before: 1784 maps, 334 unmaps, 7547 reads
+  12:42:50 (-57 s): 28 pages changed (56 65 73 74 81 82 83 84) | AMM in the 10 s before: 1457 maps, 334 unmaps, 6827 reads
+  12:43:33 (-14 s): 6 pages changed (191 192 194 196 198 199) | AMM in the 10 s before: 5 maps, 33 unmaps, 31 reads
+  12:43:34 (-13 s): 1 pages changed (191) | AMM in the 10 s before: 23 maps, 51 unmaps, 115 reads
+  12:43:37 (-10 s): 27 pages changed (56 60 73 74 81 82 85 97) | AMM in the 10 s before: 109 maps, 57 unmaps, 214 reads
+  12:43:38 (-9 s): 13 pages changed (97 103 110 115 131 136 137 152) | AMM in the 10 s before: 152 maps, 57 unmaps, 340 reads
+  12:43:39 (-8 s): 2 pages changed (198 199) | AMM in the 10 s before: 152 maps, 63 unmaps, 345 reads
+  12:43:40 (-7 s): 9 pages changed (56 63 73 97 104 110 147 189) | AMM in the 10 s before: 175 maps, 63 unmaps, 360 reads
+  12:43:42 (-5 s): 8 pages changed (63 66 80 82 118 149 150 171) | AMM in the 10 s before: 222 maps, 63 unmaps, 380 reads
+  12:43:43 (-4 s): 29 pages changed (56 61 80 81 82 86 87 90) | AMM in the 10 s before: 293 maps, 30 unmaps, 473 reads
+  12:43:44 (-3 s): 4 pages changed (122 148 150 186) | AMM in the 10 s before: 285 maps, 12 unmaps, 404 reads
+  12:43:45 (-2 s): 1 pages changed (149) | AMM in the 10 s before: 292 maps, 12 unmaps, 411 reads
+  12:43:46 (-1 s): 4 pages changed (83 84 148 150) | AMM in the 10 s before: 315 maps, 12 unmaps, 436 reads
+(3) textures whose MIN_LOD/LAST_LEVEL differ between ts00.11e0007aa0.bin and ts12.11e0007aa0.bin

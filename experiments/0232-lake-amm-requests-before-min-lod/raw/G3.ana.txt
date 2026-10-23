@@ -1,0 +1,61 @@
+# r-G3: first frozen-view shot 12:53:26 = mono 46049.0; 73211 AMM events; 282 table samples
+(1) AMM events per 5 s (s relative to the first shot): t maps unmaps reads read_MiB
+    -60     0     0    32      3.6
+    -55     0     0     5      0.5
+    -50     0     0    15      1.3
+    -45     0     0     7      0.6
+    -40     0     0     6      0.6
+    -35     0     0     6      0.5
+    -30     0     0     8      0.8
+    -25     0     0     6      0.3
+    -20     0     0     9      0.9
+    -15   127    57   199    111.0
+    -10   120     6   218    221.6
+     -5    78     0   107    138.9
+     +0     8     0    10      2.9
+     +5     0     0     1      0.1
+    +10     0     0     1      0.1
+    +15     0     0     1      0.1
+    +20     0     0     1      0.1
+    +25     0     0     1      0.1
+    +30     0     0     2      0.2
+    +35     0     0     1      0.1
+    +40     0     0     1      0.1
+    +45     0     0     2      0.2
+    +50     0     0     1      0.1
+    +55     0     0     1      0.1
+    +60     0     0     1      0.1
+    +65     0     0     1      0.1
+    +70     0     0     2      0.2
+    +75     0     0     1      0.1
+    +80     0     0     1      0.1
+    +85     0     0     2      0.2
+    +90     0     0     1      0.1
+    +95     0     0     2      0.2
+   +100     0     0     1      0.1
+   +105     0     0     1      0.1
+   +110     0     0     1      0.1
+   +115     0     0     2      0.2
+   +120     0     0     1      0.1
+   +125     0     0     1      0.1
+(2) table changes from 60 s before the first shot, with the AMM events of the 10 s before each
+  12:52:27 (-59 s): 26 pages changed (56 73 81 82 83 84 87 90) | AMM in the 10 s before: 1791 maps, 337 unmaps, 7624 reads
+  12:53:12 (-14 s): 17 pages changed (60 82 110 132 133 140 149 151) | AMM in the 10 s before: 25 maps, 33 unmaps, 51 reads
+  12:53:13 (-13 s): 2 pages changed (187 191) | AMM in the 10 s before: 43 maps, 51 unmaps, 132 reads
+  12:53:16 (-10 s): 15 pages changed (56 81 82 97 115 116 118 119) | AMM in the 10 s before: 127 maps, 57 unmaps, 208 reads
+  12:53:17 (-9 s): 15 pages changed (56 73 85 97 103 116 119 122) | AMM in the 10 s before: 141 maps, 63 unmaps, 327 reads
+  12:53:18 (-8 s): 17 pages changed (56 63 73 97 102 105 110 115) | AMM in the 10 s before: 193 maps, 63 unmaps, 378 reads
+  12:53:21 (-5 s): 9 pages changed (63 66 82 90 148 149 150 171) | AMM in the 10 s before: 247 maps, 63 unmaps, 417 reads
+  12:53:22 (-4 s): 13 pages changed (82 83 84 120 122 133 140 148) | AMM in the 10 s before: 270 maps, 30 unmaps, 450 reads
+  12:53:23 (-3 s): 6 pages changed (82 83 84 122 149 186) | AMM in the 10 s before: 262 maps, 12 unmaps, 381 reads
+  12:53:25 (-1 s): 8 pages changed (65 81 82 83 123 150 172 179) | AMM in the 10 s before: 282 maps, 12 unmaps, 404 reads
+  12:53:27 (+1 s): 3 pages changed (82 83 150) | AMM in the 10 s before: 192 maps, 0 unmaps, 208 reads
+(3) textures whose MIN_LOD/LAST_LEVEL differ between ts00.11e0007aa0.bin and ts12.11e0007aa0.bin
+  0x80ae444000 1024x2048 fmt 182: [(4.0, 7)] -> [(3.0, 7)]; AMM events touching its first w*h bytes: 10 ['-117.9s read 0x8000', '-78.1s unmap 0x8000', '-77.7s map 0x4000', '-77.3s read 0x4000', '+0.7s map 0x8000', '+0.8s read 0x8000']
+  0x80ae6f4000 1024x2048 fmt 182: [(4.0, 7)] -> [(3.0, 7)]; AMM events touching its first w*h bytes: 4 ['-77.7s map 0x4000', '-77.3s read 0x4000', '+0.7s map 0x8000', '+0.8s read 0x8000']
+  0x80ae9a4000 1024x2048 fmt 181: [(4.0, 7)] -> [(3.0, 7)]; AMM events touching its first w*h bytes: 10 ['-117.9s read 0x18000', '-78.1s unmap 0x18000', '-77.7s map 0x4000', '-77.3s read 0x4000', '+0.7s map 0x8000', '+0.8s read 0x8000']
+  0x80bfd58000 2048x2048 fmt 182: [(4.0, 8)] -> [(3.0, 8)]; AMM events touching its first w*h bytes: 10 ['-116.1s read 0x1558000', '-78.0s unmap 0x1558000', '-77.7s map 0x8000', '-77.2s read 0x8000', '+0.7s map 0x10000', '+0.8s read 0x10000']
+  0x83bed84000 2048x2048 fmt 170: [(2.0, 8)] -> [(1.0, 8)]; AMM events touching its first w*h bytes: 12 ['-4.1s read 0x20000', '-4.1s read 0x20000', '+0.7s map 0x80000', '+0.7s map 0x80000', '+0.7s read 0x80000', '+0.7s read 0x80000']
+  0x83bf034000 2048x2048 fmt 170: [(2.0, 8)] -> [(1.0, 8)]; AMM events touching its first w*h bytes: 12 ['-4.1s read 0x20000', '-4.1s read 0x20000', '+0.7s map 0x80000', '+0.7s map 0x80000', '+0.7s read 0x80000', '+0.7s read 0x80000']
+  0x83bf2e4000 2048x2048 fmt 169: [(2.0, 8)] -> [(1.0, 8)]; AMM events touching its first w*h bytes: 12 ['-4.1s read 0x20000', '-4.1s read 0x40000', '+0.7s map 0x80000', '+0.7s map 0x100000', '+0.7s read 0x80000', '+0.7s read 0x100000']
+  0x83bf598000 2048x2048 fmt 177: [(2.0, 8)] -> [(1.0, 8)]; AMM events touching its first w*h bytes: 6 ['-72.8s map 0x18000', '-70.5s read 0x18000', '-4.1s map 0x40000', '-4.1s read 0x40000', '+0.7s map 0x100000', '+0.7s read 0x100000']
