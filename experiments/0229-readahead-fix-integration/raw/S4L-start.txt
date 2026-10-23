@@ -1,0 +1,11 @@
+2026-10-23 11:35:48
+binary /home/kjaniszewski/bc5-work/kytyplus-build-lean/src/kyty_emulator 2026-10-23 11:30:31 md5 1fc8ae07b8b4e97753f60c569390f6e3, lean 1, 150 s, saves /home/kjaniszewski/bc5-work/exp0196/saves-before-152617, live saves kept in /home/kjaniszewski/bc5-work/exp0196/saves-before-113548-578362866-1575736
+KYTY_BC5_APR_READAHEAD=4, set by this script (the launchers default to 0 until the top session sets them back)
+play-pkg.sh md5 ead6b35bce315dc5bf8a4b31a87dcd78, 2026-10-22 23:59:13; its lines:
+78:# (BC5_DIRECT_FLAT_APERTURE=1, F249-F251), the sparse AMM pages are backed (BC5_DIRECT_AMM_PRT=1, F257,
+81:# BC5_DIRECT_FLAT_APERTURE=0 BC5_DIRECT_AMM_PRT=0 and the old skip list
+85:export BC5_DIRECT_FLAT_APERTURE=${BC5_DIRECT_FLAT_APERTURE:-1}
+86:if [ "${BC5_DIRECT_AMM_PRT-1}" = 0 ]; then unset BC5_DIRECT_AMM_PRT; else export BC5_DIRECT_AMM_PRT=${BC5_DIRECT_AMM_PRT:-1}; fi
+87:export BC5_DIRECT_SKIP_PGM=${BC5_DIRECT_SKIP_PGM:-909974400}
+before: Mem: total 15192 used 1614 free 12615 avail 13577; Swap: total 7595 used 611 free 6984 avail ; 
+emulator pid 1576027: /home/kjaniszewski/bc5-work/kytyplus-build-lean/src/kyty_emulator --game /home/kjaniszewski/bc5-data/mnt/pkg-play --prin

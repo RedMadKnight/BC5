@@ -17911,7 +17911,7 @@ index 5b0fc93..5b78760 100644
  	LOGF("\t target = %d\n"
  	     "\t msg    = 0x%016" PRIx64 "\n",
 diff --git a/src/libs/libAmpr.cpp b/src/libs/libAmpr.cpp
-index 073361d..07d2502 100644
+index 073361d..8873cc8 100644
 --- a/src/libs/libAmpr.cpp
 +++ b/src/libs/libAmpr.cpp
 @@ -1,3 +1,5 @@
@@ -18607,7 +18607,7 @@ index 073361d..07d2502 100644
 +	uint64_t                    result_ptr    = 0;
 +	// BC5 (experiment 0203): KYTY_BC5_APR_READAHEAD, under g_apr_queue_mutex. 0 untouched, 1 a reader reads its
 +	// file ranges into host memory, 2 done (ra_data and ra_rc per read command, in read_file_commands order),
-+	// 4 the worker runs it the usual way.
++	// 4 the worker runs it the usual way (also set by a reader for a buffer it leaves to the worker, experiment 0227).
 +	int                               ra_state = 0;
 +	std::vector<std::vector<uint8_t>> ra_data;
 +	std::vector<int32_t>              ra_rc;
@@ -18909,7 +18909,7 @@ index 073361d..07d2502 100644
  				if (result != OK) {
  					LOGF("\tAMM submit command failed: kind=%u va=0x%016" PRIx64
  					     " dmem=0x%016" PRIx64 " size=0x%016" PRIx64 " type=%" PRId32
-@@ -1552,12 +2098,374 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+@@ -1552,12 +2098,413 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
  					     static_cast<uint32_t>(result));
  					*execution_result = result;
  					*error_offset     = static_cast<uint32_t>(command.record_offset);
@@ -19005,6 +19005,24 @@ index 073361d..07d2502 100644
 +	return cap;
 +}
 +
++// BC5 (experiment 0227): with the read-ahead on, level loads took much longer in both titles (the maintainer,
++// 2026-10-22). The readers took the large loading buffers and read them at the same time as each other and the worker,
++// often from one archive. bc5-mount decodes ahead only for a file read in order (its per-file stream: a read starting
++// within 1 MiB of where the file's last read ended; tools/bc5-mount/src/fuse.rs), so it likely decoded every block on
++// demand (TODO(verify): exp 0227's load-time A/B). And a buffer the worker reads on KYTY_BC5_APR_PARALLEL threads
++// (exp 0112) was read serially by one reader. Now a reader leaves to the worker
++// a buffer whose reads total more than KYTY_BC5_APR_READAHEAD_MAX_KIB (default 1024; 0 = no limit), and any buffer the
++// worker would read in parallel. Large loads run as before exp 0203; small streaming reads, such as the cutscene clock
++// voice's (about 90 KiB), keep the read-ahead.
++static uint64_t AprReadaheadMaxBuffer() {
++	static const uint64_t max = [] {
++		const char* e = std::getenv("KYTY_BC5_APR_READAHEAD_MAX_KIB");
++		const long  v = e != nullptr ? std::strtol(e, nullptr, 10) : 1024;
++		return v > 0 ? static_cast<uint64_t>(v) << 10u : uint64_t {0};
++	}();
++	return max;
++}
++
 +static uint64_t g_apr_ra_bytes = 0; // read-ahead data held, under g_apr_queue_mutex
 +
 +static uint64_t AprReadBytes(const ParkedAprBuffer& b) {
@@ -19013,6 +19031,19 @@ index 073361d..07d2502 100644
 +		n += c.size;
 +	}
 +	return n;
++}
++
++// BC5 (experiment 0227): true when the worker would read part of b on KYTY_BC5_APR_PARALLEL threads.
++static bool AprWorkerReadsInParallel(const ParkedAprBuffer& b) {
++	if (AprParallelReads() == 0) {
++		return false;
++	}
++	for (size_t pos = 0; pos < b.ordered.size(); pos++) {
++		if (b.ordered[pos].kind == CommandKind::ReadFile && AprParallelReadRun(b.state, b.ordered, pos) > pos + 1) {
++			return true;
++		}
++	}
++	return false;
 +}
 +
 +// Reads [file_offset, file_offset + size) of the host file into *out, as ReadHostFileToGuest would read it
@@ -19067,6 +19098,14 @@ index 073361d..07d2502 100644
 +				continue;
 +			}
 +			const auto bytes = AprReadBytes(b);
++			if ((AprReadaheadMaxBuffer() != 0 && bytes > AprReadaheadMaxBuffer()) || AprWorkerReadsInParallel(b)) {
++				b.ra_state = 4; // experiment 0227: left to the worker, which runs it the usual way
++				if (b.state.bc5_journal) {
++					AprJournal("readahead cb 0x%016" PRIx64 " left to the worker: 0x%" PRIx64 " bytes in %zu reads", b.command_buffer,
++					           bytes, b.state.read_file_commands.size());
++				}
++				continue;
++			}
 +			if (g_apr_ra_bytes + bytes > AprReadaheadCap()) {
 +				continue;
 +			}
@@ -19285,7 +19324,7 @@ index 073361d..07d2502 100644
  	return OK;
  }
  
-@@ -1678,13 +2586,50 @@ static int KYTY_SYSV_ABI CommandBufferDestructor(void* command_buffer) {
+@@ -1678,13 +2625,50 @@ static int KYTY_SYSV_ABI CommandBufferDestructor(void* command_buffer) {
  	return OK;
  }
  
@@ -19337,7 +19376,7 @@ index 073361d..07d2502 100644
  	const auto command_buffer_addr = reinterpret_cast<uint64_t>(command_buffer);
  	if (!ValidateCommandBufferHeader(command_buffer_addr)) {
  		return LibKernel::KERNEL_ERROR_EFAULT;
-@@ -1765,17 +2710,30 @@ static int KYTY_SYSV_ABI AprCommandBufferReadFile(void*    command_buffer, uint6
+@@ -1765,17 +2749,30 @@ static int KYTY_SYSV_ABI AprCommandBufferReadFile(void*    command_buffer, uint6
                                                    uint32_t file_id, void* destination,
                                                    uint64_t size, uint64_t file_offset) {
  	PRINT_NAME();
@@ -19374,7 +19413,7 @@ index 073361d..07d2502 100644
  }
  
  static uint64_t AlignUp4(uint64_t value) {
-@@ -2111,16 +3069,31 @@ static int KYTY_SYSV_ABI CommandBufferPopMarker(void* command_buffer) {
+@@ -2111,16 +3108,31 @@ static int KYTY_SYSV_ABI CommandBufferPopMarker(void* command_buffer) {
  	return AppendNoOpCommand(command_buffer, sizeof(uint32_t));
  }
  
@@ -19411,7 +19450,7 @@ index 073361d..07d2502 100644
  
  	return AppendNoOpCommand(command_buffer, 0x20);
  }
-@@ -2139,6 +3112,10 @@ static int AppendWriteAddressCommand(void* command_buffer, volatile uint64_t* ad
+@@ -2139,6 +3151,10 @@ static int AppendWriteAddressCommand(void* command_buffer, volatile uint64_t* ad
  static int KYTY_SYSV_ABI CommandBufferWriteAddress(void* command_buffer, volatile uint64_t* address,
                                                     uint64_t value, uint32_t) {
  	PRINT_NAME();
@@ -19422,7 +19461,7 @@ index 073361d..07d2502 100644
  
  	return AppendWriteAddressCommand(command_buffer, address, value);
  }
-@@ -2314,15 +3291,27 @@ static int KYTY_SYSV_ABI AprCommandBufferResetGatherScatterState(void* command_b
+@@ -2314,15 +3330,27 @@ static int KYTY_SYSV_ABI AprCommandBufferResetGatherScatterState(void* command_b
  	return OK;
  }
  
@@ -19452,7 +19491,7 @@ index 073361d..07d2502 100644
  		return LibKernel::KERNEL_ERROR_EFAULT;
  	}
  
-@@ -2333,7 +3322,7 @@ static int KYTY_SYSV_ABI AprCommandBufferMapBegin(void* command_buffer, uint64_t
+@@ -2333,7 +3361,7 @@ static int KYTY_SYSV_ABI AprCommandBufferMapBegin(void* command_buffer, uint64_t
  
  static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, uint64_t va,
                                                          uint64_t dmem_offset, uint64_t size,
@@ -19461,7 +19500,7 @@ index 073361d..07d2502 100644
  	PRINT_NAME();
  
  	if (command_buffer == nullptr || !ValidateAmmMapArgs(va, size) ||
-@@ -2341,7 +3330,15 @@ static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, ui
+@@ -2341,7 +3369,15 @@ static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, ui
  		return LibKernel::KERNEL_ERROR_EINVAL;
  	}
  
@@ -19478,7 +19517,7 @@ index 073361d..07d2502 100644
  		return LibKernel::KERNEL_ERROR_EFAULT;
  	}
  
-@@ -2504,38 +3501,60 @@ static int KYTY_SYSV_ABI AmmGiveDirectMemory(int64_t search_start, int64_t searc
+@@ -2504,38 +3540,60 @@ static int KYTY_SYSV_ABI AmmGiveDirectMemory(int64_t search_start, int64_t searc
  	}
  
  	*dmem_offset = allocated;
@@ -19551,7 +19590,7 @@ index 073361d..07d2502 100644
  	}
  }
  
-@@ -2589,11 +3608,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetId(void* command_buffer_bas
+@@ -2589,11 +3647,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetId(void* command_buffer_bas
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
  	auto     submit_result =
@@ -19564,7 +19603,7 @@ index 073361d..07d2502 100644
  
  	if (!AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
  		return LibKernel::KERNEL_ERROR_EFAULT;
-@@ -2618,11 +3636,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetResult(void* command_buffer
+@@ -2618,11 +3675,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetResult(void* command_buffer
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
  	auto     submit_result =
