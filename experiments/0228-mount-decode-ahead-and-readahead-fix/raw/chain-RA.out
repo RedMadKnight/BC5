@@ -1,0 +1,20 @@
+== 11:02:31 run BR1-COLD
+route saves from /home/kjaniszewski/bc5-work/save-backup-astro in /home/kjaniszewski/bc5-work/_SaveData/PPSA21564 (live saves kept in /home/kjaniszewski/bc5-work/exp0228/astro-live-BR1-COLD)
+BR1-COLD stopped at 100 s
+live saves back and identical to /home/kjaniszewski/bc5-work/exp0228/astro-live-BR1-COLD
+BR1-COLD: crash lines 0, kernel lines 0, read 11865 MiB (rchar)
+BR1-COLD box: avail 13774 -> 1984 MiB; compact_stall +0 (fail +0), pswpin +119, pswpout +60, majfault +1219; PSI full mem 0.1 s, io 3.2 s
+== 11:04:39 run BR2-COLD
+route saves from /home/kjaniszewski/bc5-work/save-backup-astro in /home/kjaniszewski/bc5-work/_SaveData/PPSA21564 (live saves kept in /home/kjaniszewski/bc5-work/exp0228/astro-live-BR2-COLD)
+BR2-COLD stopped at 100 s
+live saves back and identical to /home/kjaniszewski/bc5-work/exp0228/astro-live-BR2-COLD
+BR2-COLD: crash lines 0, kernel lines 0, read 11954 MiB (rchar)
+BR2-COLD box: avail 13772 -> 1895 MiB; compact_stall +1 (fail +1), pswpin +95, pswpout +295, majfault +1296; PSI full mem 0.1 s, io 3.1 s
+== 11:06:47 run BR3-COLD
+route saves from /home/kjaniszewski/bc5-work/save-backup-astro in /home/kjaniszewski/bc5-work/_SaveData/PPSA21564 (live saves kept in /home/kjaniszewski/bc5-work/exp0228/astro-live-BR3-COLD)
+BR3-COLD stopped at 100 s
+live saves back and identical to /home/kjaniszewski/bc5-work/exp0228/astro-live-BR3-COLD
+BR3-COLD: crash lines 0, kernel lines 0, read 11953 MiB (rchar)
+BR3-COLD box: avail 13740 -> 1957 MiB; compact_stall +3 (fail +2), pswpin +170, pswpout +33, majfault +1334; PSI full mem 0.4 s, io 3.1 s
+== 11:08:55 BOX-LOCK released
+== 11:08:55 chain astro done

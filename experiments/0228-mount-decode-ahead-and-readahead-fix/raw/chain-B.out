@@ -1,0 +1,73 @@
+== 10:32:41 build
+/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: warning: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations]
+/home/kjaniszewski/bc5-work/exp0228/src/libAmpr.cpp:1909:143: warning: data argument not used by format string [-Wformat-extra-args]
+/home/kjaniszewski/bc5-work/exp0228/src/libAmpr.cpp:2018:50: warning: data argument not used by format string [-Wformat-extra-args]
+== 10:32:54 build rc 0
+0eb4a575b5b87fe74cc6924dc188c647  /home/kjaniszewski/bc5-work/exp0228/kyty_emulator
+5f2ec30b97ca45d3c575cb00c577aae5  /home/kjaniszewski/bc5-work/exp0228/src/libAmpr.cpp
+7a37a56026a15d64383f223580585701  /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator
+== 10:32:55 run BP1-RA0
+restored /home/kjaniszewski/bc5-work/exp0196/saves-before-152617 into /home/kjaniszewski/bc5-work/_SaveData/PPSA03671 (previous saves in /home/kjaniszewski/bc5-work/exp0196/saves-before-103257-672469053-1060576)
+BP1-RA0 stopped at 150 s
+restored /home/kjaniszewski/bc5-work/exp0196/saves-before-103257-672469053-1060576 into /home/kjaniszewski/bc5-work/_SaveData/PPSA03671 (previous saves in /home/kjaniszewski/bc5-work/exp0196/saves-before-103538-583915760-1101780)
+live saves back and identical to /home/kjaniszewski/bc5-work/exp0196/saves-before-103257-672469053-1060576
+BP1-RA0: crash lines 0, kernel lines 0, read 8658 MiB (rchar)
+BP1-RA0 box: avail 13671 -> 733 MiB; compact_stall +10 (fail +9), pswpin +28033, pswpout +60355, majfault +31380; PSI full mem 1.8 s, io 21.2 s
+== 10:35:53 run BP2-RA4
+restored /home/kjaniszewski/bc5-work/exp0196/saves-before-152617 into /home/kjaniszewski/bc5-work/_SaveData/PPSA03671 (previous saves in /home/kjaniszewski/bc5-work/exp0196/saves-before-103555-825875107-1101916)
+BP2-RA4 stopped at 150 s
+restored /home/kjaniszewski/bc5-work/exp0196/saves-before-103555-825875107-1101916 into /home/kjaniszewski/bc5-work/_SaveData/PPSA03671 (previous saves in /home/kjaniszewski/bc5-work/exp0196/saves-before-103836-745173985-1131983)
+live saves back and identical to /home/kjaniszewski/bc5-work/exp0196/saves-before-103555-825875107-1101916
+BP2-RA4: crash lines 0, kernel lines 0, read 8791 MiB (rchar)
+BP2-RA4 box: avail 13674 -> 470 MiB; compact_stall +17 (fail +14), pswpin +2470, pswpout +5309, majfault +3842; PSI full mem 1.5 s, io 18.5 s
+== 10:38:51 run BP3-FIX
+restored /home/kjaniszewski/bc5-work/exp0196/saves-before-152617 into /home/kjaniszewski/bc5-work/_SaveData/PPSA03671 (previous saves in /home/kjaniszewski/bc5-work/exp0196/saves-before-103853-981428421-1132121)
+BP3-FIX stopped at 150 s
+restored /home/kjaniszewski/bc5-work/exp0196/saves-before-103853-981428421-1132121 into /home/kjaniszewski/bc5-work/_SaveData/PPSA03671 (previous saves in /home/kjaniszewski/bc5-work/exp0196/saves-before-104135-366828619-1172111)
+live saves back and identical to /home/kjaniszewski/bc5-work/exp0196/saves-before-103853-981428421-1132121
+BP3-FIX: crash lines 0, kernel lines 0, read 8674 MiB (rchar)
+BP3-FIX box: avail 13696 -> 1042 MiB; compact_stall +1703 (fail +1553), pswpin +64061, pswpout +132350, majfault +70066; PSI full mem 6.6 s, io 20.1 s
+== 10:41:50 run BP4-FIX
+restored /home/kjaniszewski/bc5-work/exp0196/saves-before-152617 into /home/kjaniszewski/bc5-work/_SaveData/PPSA03671 (previous saves in /home/kjaniszewski/bc5-work/exp0196/saves-before-104152-605339302-1172371)
+BP4-FIX stopped at 150 s
+restored /home/kjaniszewski/bc5-work/exp0196/saves-before-104152-605339302-1172371 into /home/kjaniszewski/bc5-work/_SaveData/PPSA03671 (previous saves in /home/kjaniszewski/bc5-work/exp0196/saves-before-104433-488214429-1213168)
+live saves back and identical to /home/kjaniszewski/bc5-work/exp0196/saves-before-104152-605339302-1172371
+BP4-FIX: crash lines 0, kernel lines 0, read 8779 MiB (rchar)
+BP4-FIX box: avail 13727 -> 849 MiB; compact_stall +391 (fail +241), pswpin +21962, pswpout +41912, majfault +25144; PSI full mem 4.6 s, io 18.4 s
+== 10:44:48 run BP5-RA4
+restored /home/kjaniszewski/bc5-work/exp0196/saves-before-152617 into /home/kjaniszewski/bc5-work/_SaveData/PPSA03671 (previous saves in /home/kjaniszewski/bc5-work/exp0196/saves-before-104450-722851465-1213431)
+BP5-RA4 stopped at 150 s
+restored /home/kjaniszewski/bc5-work/exp0196/saves-before-104450-722851465-1213431 into /home/kjaniszewski/bc5-work/_SaveData/PPSA03671 (previous saves in /home/kjaniszewski/bc5-work/exp0196/saves-before-104731-619476273-1243244)
+live saves back and identical to /home/kjaniszewski/bc5-work/exp0196/saves-before-104450-722851465-1213431
+BP5-RA4: crash lines 0, kernel lines 0, read 8636 MiB (rchar)
+BP5-RA4 box: avail 13695 -> 507 MiB; compact_stall +227 (fail +176), pswpin +953, pswpout +6236, majfault +2341; PSI full mem 3.7 s, io 18.5 s
+== 10:47:46 run BP6-RA0
+restored /home/kjaniszewski/bc5-work/exp0196/saves-before-152617 into /home/kjaniszewski/bc5-work/_SaveData/PPSA03671 (previous saves in /home/kjaniszewski/bc5-work/exp0196/saves-before-104748-859425228-1243380)
+BP6-RA0 stopped at 150 s
+restored /home/kjaniszewski/bc5-work/exp0196/saves-before-104748-859425228-1243380 into /home/kjaniszewski/bc5-work/_SaveData/PPSA03671 (previous saves in /home/kjaniszewski/bc5-work/exp0196/saves-before-105029-673083072-1284959)
+live saves back and identical to /home/kjaniszewski/bc5-work/exp0196/saves-before-104748-859425228-1243380
+BP6-RA0: crash lines 0, kernel lines 0, read 8805 MiB (rchar)
+BP6-RA0 box: avail 13692 -> 645 MiB; compact_stall +26 (fail +13), pswpin +1862, pswpout +2303, majfault +2795; PSI full mem 1.4 s, io 17.0 s
+== 10:50:44 run BP7-RA0C
+restored /home/kjaniszewski/bc5-work/exp0196/saves-before-152617 into /home/kjaniszewski/bc5-work/_SaveData/PPSA03671 (previous saves in /home/kjaniszewski/bc5-work/exp0196/saves-before-105046-907411058-1285034)
+BP7-RA0C stopped at 150 s
+restored /home/kjaniszewski/bc5-work/exp0196/saves-before-105046-907411058-1285034 into /home/kjaniszewski/bc5-work/_SaveData/PPSA03671 (previous saves in /home/kjaniszewski/bc5-work/exp0196/saves-before-105329-836630075-1325641)
+live saves back and identical to /home/kjaniszewski/bc5-work/exp0196/saves-before-105046-907411058-1285034
+BP7-RA0C: crash lines 0, kernel lines 0, read 8791 MiB (rchar)
+BP7-RA0C box: avail 13686 -> 1052 MiB; compact_stall +1238 (fail +860), pswpin +148778, pswpout +229626, majfault +158418; PSI full mem 6.7 s, io 18.2 s
+== 10:53:44 run BP8-RA4C
+restored /home/kjaniszewski/bc5-work/exp0196/saves-before-152617 into /home/kjaniszewski/bc5-work/_SaveData/PPSA03671 (previous saves in /home/kjaniszewski/bc5-work/exp0196/saves-before-105347-076044159-1325902)
+BP8-RA4C stopped at 150 s
+restored /home/kjaniszewski/bc5-work/exp0196/saves-before-105347-076044159-1325902 into /home/kjaniszewski/bc5-work/_SaveData/PPSA03671 (previous saves in /home/kjaniszewski/bc5-work/exp0196/saves-before-105629-376830455-1355660)
+live saves back and identical to /home/kjaniszewski/bc5-work/exp0196/saves-before-105347-076044159-1325902
+BP8-RA4C: crash lines 0, kernel lines 0, read 8719 MiB (rchar)
+BP8-RA4C box: avail 13721 -> 471 MiB; compact_stall +102 (fail +42), pswpin +6180, pswpout +2914, majfault +8171; PSI full mem 3.6 s, io 18.3 s
+== 10:56:44 run BP9-FIXC
+restored /home/kjaniszewski/bc5-work/exp0196/saves-before-152617 into /home/kjaniszewski/bc5-work/_SaveData/PPSA03671 (previous saves in /home/kjaniszewski/bc5-work/exp0196/saves-before-105646-613124346-1355918)
+BP9-FIXC stopped at 150 s
+restored /home/kjaniszewski/bc5-work/exp0196/saves-before-105646-613124346-1355918 into /home/kjaniszewski/bc5-work/_SaveData/PPSA03671 (previous saves in /home/kjaniszewski/bc5-work/exp0196/saves-before-105929-188967845-1397044)
+live saves back and identical to /home/kjaniszewski/bc5-work/exp0196/saves-before-105646-613124346-1355918
+BP9-FIXC: crash lines 0, kernel lines 0, read 8754 MiB (rchar)
+BP9-FIXC box: avail 13696 -> 729 MiB; compact_stall +145 (fail +93), pswpin +919, pswpout +27, majfault +2334; PSI full mem 3.1 s, io 17.5 s
+== 10:59:44 BOX-LOCK released
+== 10:59:44 chain pkg done

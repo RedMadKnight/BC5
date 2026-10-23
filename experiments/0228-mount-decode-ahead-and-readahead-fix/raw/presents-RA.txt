@@ -1,0 +1,6 @@
+B03-DA32C read_ahead_kb  128 probe         -; emulator start  2.9 s; presents 13.4-14.5; intro 18.4-19.6
+B04-COLD  read_ahead_kb  128 probe         -; emulator start  2.9 s; presents 12.2-13.3; intro 17.6-18.5
+BC1-COLD  read_ahead_kb  128 probe  443 MB/s; emulator start  2.6 s; presents 11.5-12.6; intro 17.6-18.6
+BR1-COLD  read_ahead_kb 1024 probe  626 MB/s; emulator start  3.0 s; presents 11.8-13.0; intro 16.9-18.0
+BR2-COLD  read_ahead_kb 1024 probe  637 MB/s; emulator start  2.7 s; presents 11.5-12.7; intro 17.6-18.8
+BR3-COLD  read_ahead_kb 1024 probe  620 MB/s; emulator start  2.7 s; presents 11.6-12.7; intro 16.7-17.9

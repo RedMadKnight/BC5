@@ -1,0 +1,10 @@
+2026-10-23 10:38:54
+title pkg, arm FIX (KYTY_BC5_APR_READAHEAD=4 BC5_EMU=/home/kjaniszewski/bc5-work/exp0228/kyty_emulator), 150 s, launcher /home/kjaniszewski/bc5-work/play-pkg.sh md5 ead6b35bce315dc5bf8a4b31a87dcd78
+launcher read-ahead line: 94:# KYTY_BC5_APR_PARALLEL's 8-way runs. KYTY_BC5_APR_READAHEAD=4 turns it back on. 95:export KYTY_BC5_APR_READAHEAD=${KYTY_BC5_APR_READAHEAD:-0} 
+binary /home/kjaniszewski/bc5-work/exp0228/kyty_emulator md5 0eb4a575b5b87fe74cc6924dc188c647
+boot 31c1a6ac, up since 2026-10-23 00:05:57
+before: Mem: used 1496 free 13269 avail 13696; Swap: used 600 free 6995 avail ; 
+box start uptime 37976.70 avail_mib 13696 swapfree_mib 6995 pswpin 874472 pswpout 1970669 pgmajfault 1001156 compact_stall 12170 compact_fail 11167  psi_mem_full_us 39610009 psi_io_full_us 1001010683
+drive probe: skopiowane 268435456 bajtów (268 MB, 256 MiB), 0,476653 s, 563 MB/s
+launch at uptime 37977.20; emulator pid 1132435 started at uptime 37978.16: /home/kjaniszewski/bc5-work/exp0228/kyty_emulator --game /home/kjaniszewski/bc5-data/mnt/pkg-play --
+environ: BC5_GC_DUMP_DIR=/home/kjaniszewski/bc5-data/captures/play-20261023-1038/gc KYTY_BC5_APR_READAHEAD=4 PLAY_CAPTURE=1 BC5_DIRECT_CHAIN=2 KYTY_BC5_APR_PARALLEL=8 

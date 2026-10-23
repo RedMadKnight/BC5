@@ -1,0 +1,45 @@
+BP1-RA0 /home/kjaniszewski/bc5-data/captures/play-20261023-1032/gc/direct.log
+     all      :   5154 flips in  146.2 s =  35.3/s, mean  28.4 ms, >100 ms   48, >250 ms   5, >1 s  0, max   747.5 ms, GPU busy >1 s  0
+     t >= 100 :   1896 flips in   48.5 s =  39.1/s, mean  25.6 ms, >100 ms   15, >250 ms   3, >1 s  0, max   747.5 ms, GPU busy >1 s  0
+     lines    : TIMEOUT 0, fault 0, reopen 0, given up 9
+       first given up: cpu-wait WAIT_REG_MEM64 at 590 on 0x12004b4838: GIVEN UP after 16.8 ms
+BP2-RA4 /home/kjaniszewski/bc5-data/captures/play-20261023-1035/gc/direct.log
+     all      :   5184 flips in  145.3 s =  35.7/s, mean  28.0 ms, >100 ms   47, >250 ms   6, >1 s  0, max   337.3 ms, GPU busy >1 s  0
+     t >= 100 :   1915 flips in   47.6 s =  40.2/s, mean  24.9 ms, >100 ms   13, >250 ms   2, >1 s  0, max   315.3 ms, GPU busy >1 s  0
+     lines    : TIMEOUT 0, fault 0, reopen 0, given up 8
+       first given up: cpu-wait WAIT_REG_MEM64 at 590 on 0x12004b4838: GIVEN UP after 16.5 ms
+BP3-FIX /home/kjaniszewski/bc5-data/captures/play-20261023-1038/gc/direct.log
+     all      :   4902 flips in  145.5 s =  33.7/s, mean  29.7 ms, >100 ms   57, >250 ms   5, >1 s  0, max   367.2 ms, GPU busy >1 s  0
+     t >= 100 :   1632 flips in   47.6 s =  34.3/s, mean  29.4 ms, >100 ms   17, >250 ms   2, >1 s  0, max   335.0 ms, GPU busy >1 s  0
+     lines    : TIMEOUT 0, fault 0, reopen 0, given up 12
+       first given up: cpu-wait WAIT_REG_MEM64 at 590 on 0x12004b4838: GIVEN UP after 17.4 ms
+BP4-FIX /home/kjaniszewski/bc5-data/captures/play-20261023-1041/gc/direct.log
+     all      :   5082 flips in  145.3 s =  35.0/s, mean  28.6 ms, >100 ms   55, >250 ms   3, >1 s  0, max   965.8 ms, GPU busy >1 s  0
+     t >= 100 :   1818 flips in   47.6 s =  38.2/s, mean  26.2 ms, >100 ms   16, >250 ms   1, >1 s  0, max   715.4 ms, GPU busy >1 s  0
+     lines    : TIMEOUT 0, fault 0, reopen 0, given up 11
+       first given up: cpu-wait WAIT_REG_MEM64 at 590 on 0x12004b4838: GIVEN UP after 16.4 ms
+BP5-RA4 /home/kjaniszewski/bc5-data/captures/play-20261023-1044/gc/direct.log
+     all      :   5145 flips in  145.6 s =  35.3/s, mean  28.3 ms, >100 ms   42, >250 ms   4, >1 s  0, max   472.2 ms, GPU busy >1 s  0
+     t >= 100 :   1803 flips in   47.9 s =  37.7/s, mean  26.6 ms, >100 ms   14, >250 ms   1, >1 s  0, max   423.3 ms, GPU busy >1 s  0
+     lines    : TIMEOUT 0, fault 0, reopen 0, given up 7
+       first given up: cpu-wait WAIT_REG_MEM64 at 590 on 0x12004b4838: GIVEN UP after 16.1 ms
+BP6-RA0 /home/kjaniszewski/bc5-data/captures/play-20261023-1047/gc/direct.log
+     all      :   5217 flips in  145.3 s =  35.9/s, mean  27.9 ms, >100 ms   44, >250 ms   3, >1 s  0, max   353.8 ms, GPU busy >1 s  0
+     t >= 100 :   1949 flips in   47.7 s =  40.9/s, mean  24.5 ms, >100 ms   10, >250 ms   0, >1 s  0, max   185.9 ms, GPU busy >1 s  0
+     lines    : TIMEOUT 0, fault 0, reopen 0, given up 9
+       first given up: cpu-wait WAIT_REG_MEM64 at 590 on 0x12004b4838: GIVEN UP after 15.6 ms
+BP7-RA0C /home/kjaniszewski/bc5-data/captures/play-20261023-1050/gc/direct.log
+     all      :   4951 flips in  145.8 s =  34.0/s, mean  29.5 ms, >100 ms   57, >250 ms   5, >1 s  0, max   635.1 ms, GPU busy >1 s  0
+     t >= 100 :   1697 flips in   48.0 s =  35.3/s, mean  28.4 ms, >100 ms   17, >250 ms   1, >1 s  0, max   635.1 ms, GPU busy >1 s  0
+     lines    : TIMEOUT 0, fault 0, reopen 0, given up 12
+       first given up: cpu-wait WAIT_REG_MEM64 at 590 on 0x12004b4838: GIVEN UP after 16.2 ms
+BP8-RA4C /home/kjaniszewski/bc5-data/captures/play-20261023-1053/gc/direct.log
+     all      :   5159 flips in  145.4 s =  35.5/s, mean  28.2 ms, >100 ms   44, >250 ms   2, >1 s  0, max   311.8 ms, GPU busy >1 s  0
+     t >= 100 :   1866 flips in   47.6 s =  39.2/s, mean  25.6 ms, >100 ms   13, >250 ms   1, >1 s  0, max   260.4 ms, GPU busy >1 s  0
+     lines    : TIMEOUT 0, fault 0, reopen 0, given up 10
+       first given up: cpu-wait WAIT_REG_MEM64 at 590 on 0x12004b4838: GIVEN UP after 16.8 ms
+BP9-FIXC /home/kjaniszewski/bc5-data/captures/play-20261023-1056/gc/direct.log
+     all      :   5187 flips in  146.1 s =  35.5/s, mean  28.2 ms, >100 ms   52, >250 ms   5, >1 s  0, max   424.9 ms, GPU busy >1 s  0
+     t >= 100 :   1913 flips in   48.3 s =  39.6/s, mean  25.3 ms, >100 ms   11, >250 ms   0, >1 s  0, max   193.6 ms, GPU busy >1 s  0
+     lines    : TIMEOUT 0, fault 0, reopen 0, given up 10
+       first given up: cpu-wait WAIT_REG_MEM64 at 590 on 0x12004b4838: GIVEN UP after 18.0 ms
