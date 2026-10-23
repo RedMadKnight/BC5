@@ -1,0 +1,5 @@
+/home/kjaniszewski/bc5-data/captures/play-20261023-1939/gc/direct.log
+  all      :  24616 flips in  596.8 s =  41.2/s, mean  24.2 ms, >100 ms   33, >250 ms   2, >1 s  0, max   344.4 ms, GPU busy >1 s  0
+  t >= 100 :  21269 flips in  499.8 s =  42.6/s, mean  23.5 ms, >100 ms   17, >250 ms   1, >1 s  0, max   344.4 ms, GPU busy >1 s  0
+  lines    : TIMEOUT 0, fault 0, reopen 0, given up 15
+  given up by label: 0x12004b3c38 6, 0x12004b4838 4, 0x12004b5438 4, 0x12004b4c38 1

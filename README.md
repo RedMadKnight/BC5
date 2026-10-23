@@ -20,7 +20,7 @@ On the maintainer's box a desktop shortcut, *BC5 emulator*, opens the emulator w
 
 ### What is still broken
 
-Patches of the water are missing on the second title's night lake. About once an hour of play the machine goes down and reboots. In some cutscenes the characters move in slow motion while effects run at normal speed. The second title's DualSense haptic tracks are decoded since 2026-10-23, but nobody has felt them on the pad yet. All of these are under investigation; see [Known issues](#known-issues).
+Patches of the water are missing on the second title's night lake. About once an hour of play the machine goes down and reboots. In some cutscenes the characters moved in slow motion while effects ran at normal speed; one re-check on today's defaults showed none. The second title's DualSense haptic tracks are decoded since 2026-10-23, but nobody has felt them on the pad yet. All of these are under investigation; see [Known issues](#known-issues).
 
 ### Legal, in short
 
@@ -55,7 +55,7 @@ As of 2026-10-22, measured on one BC-250 with the maintainer's own copies of the
 | --- | --- | --- |
 | Patchwork water on the second title's night lake | Rectangles of the water show the lake bed in some runs. Not a missing input from the host: the textures are resident, and the game's texture detail clamps do not decide it. The same view goes clean and patched again from frame to frame with an unchanged texture table; the cause is open | F255, F269, F272, F278, F292 |
 | Machine-downs (about one an hour of play) | Two GPU rings time out with no fault, the graphics ring's reset fails, the kernel resets the whole GPU and the box reboots. Three of four followed a game-thread wait the host gave up on; the wait is for GPU work not yet submitted. Under investigation | F260, F262, F264, F279, F282, F283 |
-| Cutscene slow motion | Characters crawl while hair and effects run on. Their clock is a silent looping voice that stops when its next streamed read comes late; the read-ahead removes the host queue's share, whether that ends it is not shown | F254, F256, F259, F267, F273 |
+| Cutscene slow motion | Characters crawl while hair and effects run on. Their clock is a silent looping voice that stops when its next streamed read comes late. With the fixed read-ahead and the freed drive (2026-10-23) the cutscene that lagged on the scripted route plays at 1.00× in one run; whether it is gone everywhere is not shown | F254, F256, F259, F267, F273, F288, F302 |
 | DualSense haptics, second title | Its ATRAC9 streams in channel configurations 6 and 7 are the pad's haptic tracks (all their energy below 1 kHz), not sound. Since 2026-10-23 vgmstream's decoder decodes them instead of silence (`KYTY_BC5_AT9_VIBRATION=0` restores the silence). Whether they reach the pad's actuators as intended is not yet checked at the pad | F200, F300, F301 |
 | Library ports from AnyPS5 | Rumble without an audio sink, NpManager, NpTrophy2, SaveData search: ported, not yet verified on the box | F214–F217, Q16 |
 

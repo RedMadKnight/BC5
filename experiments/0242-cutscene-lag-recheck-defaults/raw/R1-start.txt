@@ -1,0 +1,14 @@
+2026-10-23 19:39:54
+binary /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator 2026-10-23 19:28:07 md5 48a8f3acd8cb6b8e3f62a8350da33bd8, 600 s, saves /home/kjaniszewski/bc5-work/exp0196/saves-before-152617, live saves kept in /home/kjaniszewski/bc5-work/exp0196/saves-before-193954-858061618-2905557
+boot 31c1a6ac; KYTY_BC5_APR_READAHEAD in the environment: unset
+play-pkg.sh md5 714b6663010e35e10a99af34e18a6ff4, 2026-10-23 11:41:49; its switch lines:
+60:export KYTY_BC5_APR_PARALLEL=8 BC5_MOUNT_DISK_CACHE=$HOME/bc5-data/cache/bc5-mount
+78:# (BC5_DIRECT_FLAT_APERTURE=1, F249-F251), the sparse AMM pages are backed (BC5_DIRECT_AMM_PRT=1, F257,
+81:# BC5_DIRECT_FLAT_APERTURE=0 BC5_DIRECT_AMM_PRT=0 and the old skip list
+85:export BC5_DIRECT_FLAT_APERTURE=${BC5_DIRECT_FLAT_APERTURE:-1}
+86:if [ "${BC5_DIRECT_AMM_PRT-1}" = 0 ]; then unset BC5_DIRECT_AMM_PRT; else export BC5_DIRECT_AMM_PRT=${BC5_DIRECT_AMM_PRT:-1}; fi
+87:export BC5_DIRECT_SKIP_PGM=${BC5_DIRECT_SKIP_PGM:-909974400}
+95:# KYTY_BC5_APR_READAHEAD=0 turns it off.
+96:export KYTY_BC5_APR_READAHEAD=${KYTY_BC5_APR_READAHEAD:-4}
+before: Mem: total 15192 used 1368 free 1278 avail 13823; Swap: total 7595 used 609 free 6986 avail ; 
+emulator pid 2905853: kyty_emulator   /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator --game /home/kjaniszewski/bc5-data/mnt/pkg-
