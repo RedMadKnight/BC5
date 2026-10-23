@@ -1,0 +1,164 @@
+# exp 0256 log check, 2026-10-24 00:21:51, host bazzite
+## binary
+-rwxr-xr-x. 1 kjaniszewski kjaniszewski 166388640 2026-10-24_00:13 kytyplus-build/src/kyty_emulator
+-rwxr-xr-x. 1 kjaniszewski kjaniszewski 163970952 2026-10-19_09:06 kytyplus-build/src/kyty_emulator.prev
+port strings in kyty_emulator: 3
+port markers in ~/src/KytyPlus: 3 audio.cpp, 2 libSaveData.cpp, 2 network.cpp, 2 libNet.cpp
+## launcher env
+KYTY_BC5_APR_PARALLEL=8 KYTY_BC5_AUDIO_TRACE=1 KYTY_BC5_FPS_COUNTER=1 KYTY_BC5_MEASURE=1 KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/_SaveData-pkg-play KYTY_BC5_SAVE_TRACE=1 
+## logs
+=== play-pkg-last.log: 12191721 bytes, mtime 2026-10-24 00:10, first line: == 2026-10-24 00:04:30 emulator 2026-10-23 22:06:42
+  lines total 110813; PRINT_NAME-style lines (lib::module::func()) 0
+  savedata(any case) 0; 'save trace:' 0; DirNameSearch 0; Mount3 0
+  NpManager/sceNp/NpCheck/NpRegister 0; 'state callback' 0; 'signed out' 0
+  trophy(any case) 0; the three NIDs 0
+  unresolved/stubbed import lines 0
+  pad audio: 'AudioOut:' 5; 'vibration port' 0; DualSense 0; rumble(any case) 0; 'controller audio device' 0
+  samples:
+    AudioOut: SDL audio driver pipewire
+    AudioOut: SDLAudioP0 thread 337343 at nice -15
+    AudioOut: SDLAudioP0 thread 337806 at nice -15
+    AudioOut: SDLAudioP56 thread 343829 at nice -15
+    AudioOut: SDLAudioP56 thread 343850 at nice -15
+=== exp0242/raw/R1-play-pkg.log: 1671572 bytes, mtime 2026-10-23 19:49, first line: == 2026-10-23 19:39:55 emulator 2026-10-23 19:28:07
+  lines total 13647; PRINT_NAME-style lines (lib::module::func()) 0
+  savedata(any case) 0; 'save trace:' 0; DirNameSearch 0; Mount3 0
+  NpManager/sceNp/NpCheck/NpRegister 0; 'state callback' 0; 'signed out' 0
+  trophy(any case) 0; the three NIDs 0
+  unresolved/stubbed import lines 0
+  pad audio: 'AudioOut:' 5; 'vibration port' 0; DualSense 0; rumble(any case) 0; 'controller audio device' 0
+  samples:
+    AudioOut: SDL audio driver pipewire
+    AudioOut: SDLAudioP0 thread 2906212 at nice -15
+    AudioOut: SDLAudioP0 thread 2906615 at nice -15
+    AudioOut: SDLAudioP56 thread 2912276 at nice -15
+    AudioOut: SDLAudioP56 thread 2912287 at nice -15
+=== exp0194/r-tcpH2/emu.log: 321148 bytes, mtime 2026-10-23 23:27, first line: == 2026-10-23 23:17:11 emulator 2026-10-23 12:29:35
+  lines total 2633; PRINT_NAME-style lines (lib::module::func()) 0
+  savedata(any case) 0; 'save trace:' 0; DirNameSearch 0; Mount3 0
+  NpManager/sceNp/NpCheck/NpRegister 0; 'state callback' 0; 'signed out' 0
+  trophy(any case) 0; the three NIDs 0
+  unresolved/stubbed import lines 0
+  pad audio: 'AudioOut:' 5; 'vibration port' 0; DualSense 0; rumble(any case) 0; 'controller audio device' 0
+  samples:
+    AudioOut: SDL audio driver pipewire
+    AudioOut: SDLAudioP0 thread 7085 at nice -15
+    AudioOut: SDLAudioP0 thread 7121 at nice -15
+    AudioOut: SDLAudioP56 thread 12860 at nice -15
+    AudioOut: SDLAudioP56 thread 12868 at nice -15
+=== exp0194/r-tcpH3/emu.log: 322640 bytes, mtime 2026-10-23 23:37, first line: == 2026-10-23 23:27:43 emulator 2026-10-23 12:29:35
+  lines total 2653; PRINT_NAME-style lines (lib::module::func()) 0
+  savedata(any case) 0; 'save trace:' 0; DirNameSearch 0; Mount3 0
+  NpManager/sceNp/NpCheck/NpRegister 0; 'state callback' 0; 'signed out' 0
+  trophy(any case) 0; the three NIDs 0
+  unresolved/stubbed import lines 0
+  pad audio: 'AudioOut:' 5; 'vibration port' 0; DualSense 0; rumble(any case) 0; 'controller audio device' 0
+  samples:
+    AudioOut: SDL audio driver pipewire
+    AudioOut: SDLAudioP0 thread 83776 at nice -15
+    AudioOut: SDLAudioP0 thread 84187 at nice -15
+    AudioOut: SDLAudioP56 thread 89812 at nice -15
+    AudioOut: SDLAudioP56 thread 89832 at nice -15
+=== exp0194/r-tcpH4/emu.log: 320221 bytes, mtime 2026-10-23 23:48, first line: == 2026-10-23 23:38:13 emulator 2026-10-23 12:29:35
+  lines total 2600; PRINT_NAME-style lines (lib::module::func()) 0
+  savedata(any case) 0; 'save trace:' 0; DirNameSearch 0; Mount3 0
+  NpManager/sceNp/NpCheck/NpRegister 0; 'state callback' 0; 'signed out' 0
+  trophy(any case) 0; the three NIDs 0
+  unresolved/stubbed import lines 0
+  pad audio: 'AudioOut:' 5; 'vibration port' 0; DualSense 0; rumble(any case) 0; 'controller audio device' 0
+  samples:
+    AudioOut: SDL audio driver pipewire
+    AudioOut: SDLAudioP0 thread 167576 at nice -15
+    AudioOut: SDLAudioP0 thread 168051 at nice -15
+    AudioOut: SDLAudioP56 thread 173693 at nice -15
+    AudioOut: SDLAudioP56 thread 173697 at nice -15
+=== exp0194/r-tcpH5/emu.log: 321852 bytes, mtime 2026-10-23 23:58, first line: == 2026-10-23 23:48:41 emulator 2026-10-23 12:29:35
+  lines total 2625; PRINT_NAME-style lines (lib::module::func()) 0
+  savedata(any case) 0; 'save trace:' 0; DirNameSearch 0; Mount3 0
+  NpManager/sceNp/NpCheck/NpRegister 0; 'state callback' 0; 'signed out' 0
+  trophy(any case) 0; the three NIDs 0
+  unresolved/stubbed import lines 0
+  pad audio: 'AudioOut:' 5; 'vibration port' 0; DualSense 0; rumble(any case) 0; 'controller audio device' 0
+  samples:
+    AudioOut: SDL audio driver pipewire
+    AudioOut: SDLAudioP0 thread 249683 at nice -15
+    AudioOut: SDLAudioP0 thread 250086 at nice -15
+    AudioOut: SDLAudioP56 thread 255853 at nice -15
+    AudioOut: SDLAudioP56 thread 255857 at nice -15
+=== exp0194/r-W253a/emu.log: 12191691 bytes, mtime 2026-10-24 00:10, first line: == 2026-10-24 00:04:30 emulator 2026-10-23 22:06:42
+  lines total 110812; PRINT_NAME-style lines (lib::module::func()) 0
+  savedata(any case) 0; 'save trace:' 0; DirNameSearch 0; Mount3 0
+  NpManager/sceNp/NpCheck/NpRegister 0; 'state callback' 0; 'signed out' 0
+  trophy(any case) 0; the three NIDs 0
+  unresolved/stubbed import lines 0
+  pad audio: 'AudioOut:' 5; 'vibration port' 0; DualSense 0; rumble(any case) 0; 'controller audio device' 0
+  samples:
+    AudioOut: SDL audio driver pipewire
+    AudioOut: SDLAudioP0 thread 337343 at nice -15
+    AudioOut: SDLAudioP0 thread 337806 at nice -15
+    AudioOut: SDLAudioP56 thread 343829 at nice -15
+    AudioOut: SDLAudioP56 thread 343850 at nice -15
+=== play-last.log: 2122 bytes, mtime 2026-10-24 00:21, first line: == 2026-10-24 00:18:29 emulator 2026-10-24 00:13:18
+  lines total 52; PRINT_NAME-style lines (lib::module::func()) 0
+  savedata(any case) 0; 'save trace:' 0; DirNameSearch 0; Mount3 0
+  NpManager/sceNp/NpCheck/NpRegister 0; 'state callback' 0; 'signed out' 0
+  trophy(any case) 0; the three NIDs 0
+  unresolved/stubbed import lines 0
+  pad audio: 'AudioOut:' 5; 'vibration port' 0; DualSense 0; rumble(any case) 0; 'controller audio device' 0
+  samples:
+    AudioOut: SDL audio driver pipewire
+    AudioOut: SDLAudioP0 thread 440624 at nice -15
+    AudioOut: SDLAudioP0 thread 440628 at nice -15
+    AudioOut: SDLAudioP56 thread 440662 at nice -15
+    AudioOut: SDLAudioP56 thread 440677 at nice -15 refused
+## save-data directories on disk
+=== _SaveData-pkg-play
+2026-10-12 06:47 0 _SaveData-pkg-play
+=== _SaveData
+2026-10-01 21:09 24 _SaveData/PPSA03671
+2026-10-01 21:09 24 _SaveData/PPSA21564
+2026-10-23 08:27 20 _SaveData/PPSA03671/sce_sdmemory
+2026-10-24 00:19 20 _SaveData/PPSA21564/sce_sdmemory
+2026-10-24 00:21 36 _SaveData
+## done 00:21:53
+
+# part 2, 00:23:18
+## where KYTY_BC5_SAVE_TRACE is set
+play-pkg-log.sh:86:# export KYTY_BC5_SAVE_TRACE=1
+play-pkg-quiet.sh:78:export BC5_GC_DUMP_DIR=$HOME/bc5-data/captures/play-$(date +%Y%m%d-%H%M)/gc BC5_LOGGING=0  # play-pkg-quiet.sh (exp 0172): no journal, the logging switch off
+play-pkg-quiet.sh:80:# export KYTY_BC5_SAVE_TRACE=1
+## KYTY vars in bc5-run.env / bc5-pkg.env
+KYTY_BC5_ALL_RW=1 KYTY_BC5_CACHE_MIB=96,16,16,16 KYTY_BC5_DMABUF=1 KYTY_BC5_INPUT_CONFIG=/home/kjaniszewski/bc5-work/input.cfg KYTY_BC5_INPUT_RECORD=/home/kjaniszewski/bc5-work/route-record.txt KYTY_BC5_VMA_BLOCK_MIB=16 KYTY_GUEST_MEMORY_MB=13824 
+## how play-pkg-log.sh runs the emulator (lines with EMU or LOG after the header echo)
+85:[ "${BC5_CPU_SAMPLER:-0}" = 1 ] && ( ~/bc5-work/cpu-sampler.sh 0 7200 ~/bc5-work/cpu-last.txt < /dev/null > /dev/null 2>&1 & )
+94:~/bc5-work/pad-volume.sh >> "$LOG" 2>&1 || true; ~/bc5-work/pad-volume.sh --watch $$ >> "$LOG" 2>&1 &  # F94: the pad ALSA volume resets on every replug
+100:  "$BM" mount "$PKG" "$M" > ~/bc5-work/play-pkg-mount.log 2>&1 &
+109:  echo "== $(date '+%F %T') emulator $(stat -c '%y' "$EMU" | cut -c1-19)"
+112:} > "$LOG"
+118:  "$EMU" --game "$M" --printf-direction File --printf-output-file "$BC5_GC_DUMP_DIR/../guest-printf.txt" --shader-log-direction Silent --command-buffer-dump false $PLAY_ARGS >> "$LOG" 2>&1
+121:  echo "== $(date '+%F %T') restart requested from the F2 menu" >> "$LOG"
+123:echo "== $(date '+%F %T') exit $RC" >> "$LOG"
+## how run-astro-kytyplus.sh logs
+11:mountpoint -q "$M" || { "$BM" mount "$C" "$M" > "$CAP/bc5-mount.log" 2>&1 & MP=$!; trap "fusermount3 -u \"$M\" 2>/dev/null; wait $MP 2>/dev/null" EXIT; }
+15:~/bc5-work/pad-volume.sh >/dev/null 2>&1 || true
+19:timeout --signal=INT --kill-after=15 "$RUN" ~/bc5-work/kytyplus-build/src/kyty_emulator --game "$M" \
+23:  "$@" > "$CAP/kyty.log" 2>&1 &
+28:  distrobox-host-exec spectacle -b -n -f -o "$CAP/shots/t${t}.png" >/dev/null 2>&1 || true
+## pad audio ports in the audio trace (type 4 speaker, type 10 vibration; '(pad)' = routed to the controller device)
+=== play-pkg-last.log: type-10 lines 301, of them '(pad)' 301; type-4 lines 0, '(pad)' 0; 'reopened' 0; 'opened SDL device' 0
+    audio trace: t 60.148 s port 2 type 10 2 ch 48000 Hz (pad): 4 calls, 2048 frames = 0.043 s of sound in 1.003 s (rate 0.043), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+    audio trace: t 61.151 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+    ports opened (distinct type/ch): audio trace: port 0 type 0 8 ch 48000 Hz;audio trace: port 1 type 0 8 ch 48000 Hz;audio trace: port 2 type 10 2 ch 48000 Hz (pad);
+=== exp0242/raw/R1-play-pkg.log: type-10 lines 515, of them '(pad)' 515; type-4 lines 0, '(pad)' 0; 'reopened' 0; 'opened SDL device' 0
+    audio trace: t 85.199 s port 2 type 10 2 ch 48000 Hz (pad): 8 calls, 4096 frames = 0.085 s of sound in 1.003 s (rate 0.085), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+    audio trace: t 86.201 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+    ports opened (distinct type/ch): audio trace: port 0 type 0 8 ch 48000 Hz;audio trace: port 1 type 0 8 ch 48000 Hz;audio trace: port 2 type 10 2 ch 48000 Hz (pad);
+=== play-last.log: type-10 lines 0, of them '(pad)' 0; type-4 lines 0, '(pad)' 0; 'reopened' 0; 'opened SDL device' 0
+    ports opened (distinct type/ch): 
+=== exp0194/r-W253a/emu.log: type-10 lines 301, of them '(pad)' 301; type-4 lines 0, '(pad)' 0; 'reopened' 0; 'opened SDL device' 0
+    audio trace: t 60.148 s port 2 type 10 2 ch 48000 Hz (pad): 4 calls, 2048 frames = 0.043 s of sound in 1.003 s (rate 0.043), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+    audio trace: t 61.151 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+    ports opened (distinct type/ch): audio trace: port 0 type 0 8 ch 48000 Hz;audio trace: port 1 type 0 8 ch 48000 Hz;audio trace: port 2 type 10 2 ch 48000 Hz (pad);
+## pad devices seen (SDL/udev lines)
+      2 SDL_JOYSTICK_DISABLE_UDEV=1
+## done part 2 00:23:18
