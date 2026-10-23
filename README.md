@@ -11,7 +11,7 @@ PC emulators have to translate a console's graphics for a different GPU. BC5 doe
 ### What it can do today
 
 - **ASTRO BOT is fully playable**, at about 60 fps in its first level, with the DualSense's motion, haptics and adaptive triggers, and with saves.
-- **A second title (not named here) plays** from its menus through the opening into gameplay, with sound, saves and pause, and with its ray-traced reflections switched on. It ran at about 37 fps through an 18-minute session; the maintainer's verdict: "fully playable, minimal stutter".
+- **Marvel's Wolverine plays** (called "the second title" in the findings and below) from its menus through the opening into gameplay, with sound, saves and pause, and with its ray-traced reflections switched on. It ran at about 37 fps through an 18-minute session; the maintainer's verdict: "fully playable, minimal stutter".
 - **Any other game is untested.** A game that needs a system library BC5 has not rewritten yet stops there.
 
 ### How you start it
@@ -30,7 +30,7 @@ BC5 is a hobby research project and is against piracy. You play games you own, d
 
 As of 2026-10-22, measured on one BC-250 with the maintainer's own copies of the games. Every number is a finding (F1 … F283) in [`docs/HANDOFF.md`](docs/HANDOFF.md) §2, backed by an experiment under [`experiments/`](experiments/). A "flip" is one frame the game presented.
 
-| | ASTRO BOT | Second title |
+| | ASTRO BOT | Marvel's Wolverine (second title) |
 | --- | --- | --- |
 | State | Fully playable (F85) | Plays through menus, saves, New Game and Continue into gameplay (F207, F212); sound and game speed right, pause and resume (F240, F247); with reflections on, "fully playable, minimal stutter" in the maintainer's words (F277) |
 | Frame rate | First level 59–60 fps at 3328×1872, 57 at native 4K (F100, F101); a later level 46.5 (F126); the water level 43.4 (F137) | 18-minute play with reflections on: 37.5 flips/s, against 39.4 with them off (F277); 300-s scripted route 37.9–38.6 (F280, F281); opening 44–52 (F247); the night jungle 28–29, GPU-bound (F244, F248). The game asks for 60 (F210) |
@@ -53,7 +53,7 @@ As of 2026-10-22, measured on one BC-250 with the maintainer's own copies of the
 
 | Issue | What is known | Findings |
 | --- | --- | --- |
-| Patchwork water on the second title's night lake | Rectangles of the water show the lake bed in some runs. Not a missing input from the host: the textures are resident. In the one run whose lake turned clean, that came just after the game lowered detail clamps in its texture table; what drives those clamps is open | F255, F269, F272, F278 |
+| Patchwork water on the second title's night lake | Rectangles of the water show the lake bed in some runs. Not a missing input from the host: the textures are resident, and the game's texture detail clamps do not decide it. The same view goes clean and patched again from frame to frame with an unchanged texture table; the cause is open | F255, F269, F272, F278, F292 |
 | Machine-downs (about one an hour of play) | Two GPU rings time out with no fault, the graphics ring's reset fails, the kernel resets the whole GPU and the box reboots. Three of four followed a game-thread wait the host gave up on; the wait is for GPU work not yet submitted. Under investigation | F260, F262, F264, F279, F282, F283 |
 | Cutscene slow motion | Characters crawl while hair and effects run on. Their clock is a silent looping voice that stops when its next streamed read comes late; the read-ahead removes the host queue's share, whether that ends it is not shown | F254, F256, F259, F267, F273 |
 | Silent ATRAC9 streams, second title | Every one uses channel configuration 7, which no public decoder knows; played as silence. Whether they are sound or haptic tracks is open | F200, Q17 |
@@ -82,10 +82,6 @@ BC5 has three parts:
 - **The tools**, [`tools/`](tools/) (Rust): `bc5-mount` reads PS5 game dumps (`.ffpfsc`) and packages (`.pkg`) as a read-only directory over FUSE; `bc5-agc` decodes GPU command streams.
 
 What BC5 is not: a firmware boot (the PS5 boot chain cannot run on a BC-250, and BC5 loads no system software either way); a new emulator (it extends KytyPlus); a PC emulator (F63); a piracy tool.
-
-![The emulator window on the BC-250: ASTRO BOT's opening card, rendered through the direct path](docs/images/g3-first-screen.png)
-
-*2026-10-01, experiment 0016, run 79: the first frame through the direct path (F37).*
 
 ## Build
 
@@ -187,7 +183,7 @@ This is an interoperability research project and takes an explicit stance agains
 - **No firmware, no keys.** BC5 needs no PS5 firmware or system software and loads none (ADR 0012); it does not decrypt retail packages. The leaked PS5 boot ROM keys are neither needed nor welcome here.
 - **No warranty.** Raw GPU submission can hang or reset the machine and, in principle, damage hardware. You use this software at your own risk.
 
-PlayStation and PS5 are trademarks of Sony Interactive Entertainment. BC5 is not affiliated with or endorsed by Sony or AMD.
+PlayStation, PS5 and DualSense are trademarks of Sony Interactive Entertainment. ASTRO BOT and Marvel's Wolverine, and all other game titles and trademarks mentioned here, are the property of their respective owners. Game titles are named only to say which games BC5 has been tested with; this repository contains no logos, cover art, screenshots or other content from them. BC5 is not affiliated with, sponsored or endorsed by Sony Interactive Entertainment, Team ASOBI, Insomniac Games, Marvel or AMD.
 
 ## License and credits
 
