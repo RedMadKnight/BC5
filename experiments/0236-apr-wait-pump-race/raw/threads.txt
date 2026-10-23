@@ -1,0 +1,9 @@
+0214-apr-readahead-default-on/raw/S1L-cpu.txt samples=245 bc5-apr-wait=0 workers=[ bc5-apr-q0 bc5-apr-q1 bc5-apr-q3 bc5-apr-q5 ] span=139s
+0214-apr-readahead-default-on/raw/S1N-cpu.txt samples=435 bc5-apr-wait=0 workers=[ bc5-apr-q1 bc5-apr-q3 bc5-apr-q5 ] span=288s
+0216-apr-reader-cv-wait/raw/S1-cpu.txt samples=507 bc5-apr-wait=0 workers=[ bc5-apr-q0 bc5-apr-q1 bc5-apr-q3 bc5-apr-q5 ] span=285s
+0220-apr-cv-wait-ab-pair/raw/A1-cpu.txt samples=537 bc5-apr-wait=0 workers=[ bc5-apr-q0 bc5-apr-q1 bc5-apr-q3 bc5-apr-q5 ] span=287s
+0220-apr-cv-wait-ab-pair/raw/B1-cpu.txt samples=430 bc5-apr-wait=0 workers=[ bc5-apr-q1 bc5-apr-q3 bc5-apr-q5 ] span=287s
+0222-apr-cv-wait-integration/raw/S2L-cpu.txt samples=210 bc5-apr-wait=0 workers=[ bc5-apr-q1 bc5-apr-q3 bc5-apr-q5 ] span=133s
+0222-apr-cv-wait-integration/raw/S2N-cpu.txt samples=535 bc5-apr-wait=0 workers=[ bc5-apr-q0 bc5-apr-q1 bc5-apr-q3 bc5-apr-q5 ] span=287s
+0229-readahead-fix-integration/raw/S4L-cpu.txt samples=210 bc5-apr-wait=0 workers=[ bc5-apr-q1 bc5-apr-q3 bc5-apr-q5 ] span=133s
+0229-readahead-fix-integration/raw/S4N-cpu.txt samples=435 bc5-apr-wait=0 workers=[ bc5-apr-q1 bc5-apr-q3 bc5-apr-q5 ] span=286s

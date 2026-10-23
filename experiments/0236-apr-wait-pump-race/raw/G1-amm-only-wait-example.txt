@@ -1,0 +1,15 @@
+# exp 0194 bench run G1 (exp 0232), ~/bc5-work/exp0194/r-G1/emu.log, KYTY_BC5_AMM_TRACE=1: an AMM-only submission
+# that carries a WaitOnAddress. Selected trace lines (grep for the two command-buffer objects and the buffer address).
+# The title records on the command-buffer object (cb 0x100152c450 / 0x100152c468) and submits the AMM buffer by its
+# buffer address (va 0x100145a000 / 0x100145b000); the host resolves that through g_command_buffer_aliases.
+# cb 0x100152c468: write-address counter := 0x...7da, then wait-on-address counter >= 0x...7da (op 4): the wait is
+# met by the buffer's own earlier write when the host runs it in record order.
+mono 45318.704 amm trace: set-buffer cb 0x000000100152c450 va 0x000000100145a000 len 0x1000 a3 0x7efe8c9a4560 a4 0x0 a5 0x7efe8c000038
+mono 45318.704 amm trace: set-buffer cb 0x000000100152c468 va 0x000000100145b000 len 0x1000 a3 0x7efe8c9a4920 a4 0x0 a5 0x7efe8c000038
+mono 45340.869 amm trace: write-address cb 0x000000100152c450 addr 0x0000001001530170 value 0x3
+mono 45340.869 amm trace: write-address cb 0x000000100152c468 addr 0x000000090adf7f98 value 0x20000000000007da
+mono 45340.869 amm trace: wait-on-address cb 0x000000100152c468 addr 0x000000090adf7f98 value 0x20000000000007da a3 4 a4 0 (now 0x20000000000007d9)
+mono 45340.869 amm trace: write-address cb 0x000000100152c468 addr 0x0000001001530178 value 0x3
+mono 45340.869 amm trace: submit 0x000000100145a000: 0 reads, 126 maps
+mono 45396.531 amm trace: submit 0x000000100145a000: 0 reads, 7 maps
+mono 45396.539 amm trace: write-address cb 0x000000100152c468 addr 0x000000090adf7f98 value 0x2000000000001f32

@@ -1,0 +1,37 @@
+== exp0194/r-G1/emu.log: 108434 trace lines, mono 45318.7-45593.3 (275 s)
+   submissions: reads 2478, reads+wait 473, amm 539, amm+wait 0, amm+wait unmet at record 0, other 913, other+wait 0
+   wait-on-address lines 589, left unpaired 68
+   host lines: "waits at command" 0, "resumed submission" 0, "queued behind a waiting one" 0, "finished on worker" 3391
+== exp0194/r-G2/emu.log: 108993 trace lines, mono 45608.8-45885.8 (277 s)
+   submissions: reads 2507, reads+wait 494, amm 566, amm+wait 0, amm+wait unmet at record 0, other 923, other+wait 0
+   wait-on-address lines 607, left unpaired 70
+   host lines: "waits at command" 0, "resumed submission" 0, "queued behind a waiting one" 0, "finished on worker" 3430
+== exp0194/r-G3/emu.log: 108236 trace lines, mono 45898.7-46177.6 (279 s)
+   submissions: reads 2479, reads+wait 479, amm 533, amm+wait 0, amm+wait unmet at record 0, other 846, other+wait 0
+   wait-on-address lines 592, left unpaired 71
+   host lines: "waits at command" 0, "resumed submission" 0, "queued behind a waiting one" 0, "finished on worker" 3325
+== exp0194/r-N1/emu.log: 108587 trace lines, mono 46597.1-46955.9 (359 s)
+   submissions: reads 2508, reads+wait 477, amm 552, amm+wait 0, amm+wait unmet at record 0, other 884, other+wait 0
+   wait-on-address lines 590, left unpaired 69
+   host lines: "waits at command" 0, "resumed submission" 0, "queued behind a waiting one" 0, "finished on worker" 3392
+== exp0194/r-N2/emu.log: 108984 trace lines, mono 46969.2-47326.3 (357 s)
+   submissions: reads 2521, reads+wait 479, amm 536, amm+wait 0, amm+wait unmet at record 0, other 919, other+wait 0
+   wait-on-address lines 594, left unpaired 70
+   host lines: "waits at command" 0, "resumed submission" 0, "queued behind a waiting one" 0, "finished on worker" 3440
+== exp0194/r-N3/emu.log: 108814 trace lines, mono 47340.7-47697.1 (356 s)
+   submissions: reads 2544, reads+wait 474, amm 534, amm+wait 0, amm+wait unmet at record 0, other 895, other+wait 0
+   wait-on-address lines 588, left unpaired 70
+   host lines: "waits at command" 0, "resumed submission" 0, "queued behind a waiting one" 0, "finished on worker" 3439
+== exp0194/r-N4/emu.log: 108355 trace lines, mono 47710.9-48065.1 (354 s)
+   submissions: reads 2504, reads+wait 483, amm 542, amm+wait 0, amm+wait unmet at record 0, other 806, other+wait 0
+   wait-on-address lines 597, left unpaired 70
+   host lines: "waits at command" 0, "resumed submission" 0, "queued behind a waiting one" 0, "finished on worker" 3310
+== exp0206/tcpW1-play-pkg.log: 108790 trace lines, mono 904.1-1499.8 (596 s)
+   submissions: reads 2531, reads+wait 458, amm 537, amm+wait 0, amm+wait unmet at record 0, other 919, other+wait 0
+   wait-on-address lines 570, left unpaired 67
+   host lines: "waits at command" 0, "resumed submission" 0, "queued behind a waiting one" 0, "finished on worker" 3450
+== exp0200/raw/S1-amm.txt: 116376 trace lines, mono 1359.4-2078.6 (719 s)
+   submissions: reads 10420, reads+wait 0, amm 2134, amm+wait 0, amm+wait unmet at record 0, other 8524, other+wait 0
+   wait-on-address lines 0, left unpaired 0
+   host lines: "waits at command" 0, "resumed submission" 0, "queued behind a waiting one" 0, "finished on worker" 18908
+   folded counts: auto 2365, give 1, map 18338, read 261, set-buffer 2304, trigger 14, unmap 7040, wait-on-address 2307, window 1, write-address 57364

@@ -1,0 +1,208 @@
+# KytyPlus src/libs/libAmpr.cpp (GPL-2.0), the box's tree at 2026-10-23 14:29, md5 5f2ec30b97ca45d3c575cb00c577aae5
+# (exp 0229's integrated version, blob 8873cc8). Excerpt with line numbers: the pump, the reader, the worker,
+# the wait thread and the tail of ExecuteAprCommandBuffer.
+
+## lines 2124-2145
+ 2124  		(void)AprShared::WriteResult(reinterpret_cast<void*>(b.result_ptr), result, offset);
+ 2125  	}
+ 2126  }
+ 2127  
+ 2128  static void PumpParkedAprBuffersLocked() {
+ 2129  	for (auto& queue: g_apr_parked) {
+ 2130  		while (!queue.empty()) {
+ 2131  			auto&    front  = queue.front();
+ 2132  			int32_t  result = OK;
+ 2133  			uint32_t offset = 0;
+ 2134  			if (!RunOrderedAprCommands(front.command_buffer, front.state, front.ordered, &front.next, &result,
+ 2135  			                           &offset)) {
+ 2136  				break;
+ 2137  			}
+ 2138  			FinishAprSubmission(front, result, offset);
+ 2139  			if (AmmTrace()) {
+ 2140  				AmmTraceStamp(), std::fprintf(stderr, "amm trace: resumed submission 0x%016" PRIx64 " finished\n", front.command_buffer);
+ 2141  			}
+ 2142  			queue.pop_front();
+ 2143  		}
+ 2144  	}
+ 2145  }
+
+## lines 2270-2391
+ 2270  static void AprReaderThread(size_t qi, size_t k) {
+ 2271  	char name[16];
+ 2272  	std::snprintf(name, sizeof(name), "bc5-apr-r%zu-%zu", qi, k);
+ 2273  	pthread_setname_np(pthread_self(), name);
+ 2274  	std::unique_lock<std::recursive_mutex> lock(g_apr_queue_mutex);
+ 2275  	auto&                                  queue = g_apr_parked[qi];
+ 2276  	for (;;) {
+ 2277  		ParkedAprBuffer* pick   = nullptr;
+ 2278  		const size_t     window = std::min<size_t>(queue.size(), 64);
+ 2279  		for (size_t i = 0; i < window && pick == nullptr; i++) {
+ 2280  			auto& b = queue[i];
+ 2281  			if (b.ra_state != 0 || b.next != 0 || b.state.read_file_commands.empty()) {
+ 2282  				continue;
+ 2283  			}
+ 2284  			const auto bytes = AprReadBytes(b);
+ 2285  			if ((AprReadaheadMaxBuffer() != 0 && bytes > AprReadaheadMaxBuffer()) || AprWorkerReadsInParallel(b)) {
+ 2286  				b.ra_state = 4; // experiment 0227: left to the worker, which runs it the usual way
+ 2287  				if (b.state.bc5_journal) {
+ 2288  					AprJournal("readahead cb 0x%016" PRIx64 " left to the worker: 0x%" PRIx64 " bytes in %zu reads", b.command_buffer,
+ 2289  					           bytes, b.state.read_file_commands.size());
+ 2290  				}
+ 2291  				continue;
+ 2292  			}
+ 2293  			if (g_apr_ra_bytes + bytes > AprReadaheadCap()) {
+ 2294  				continue;
+ 2295  			}
+ 2296  			pick = &b;
+ 2297  			g_apr_ra_bytes += bytes;
+ 2298  		}
+ 2299  		if (pick == nullptr) {
+ 2300  			// BC5 (experiment 0216): sleep until notified. Every change that can make a buffer pickable notifies
+ 2301  			// under g_apr_queue_mutex: a submit, and the worker's pop_front, which frees read-ahead budget and
+ 2302  			// moves the window. The 5-ms poll it replaces cost the idle readers about 1.6 % of one core (exp 0214).
+ 2303  			// The 1-s limit is a safety net: the wait thread's pump (StartAprWaitThread) pops without a notify.
+ 2304  			g_apr_queue_cv.wait_for(lock, std::chrono::seconds(1));
+ 2305  			continue;
+ 2306  		}
+ 2307  		pick->ra_state = 1; // the worker leaves it in the queue until it is 2, so the reference stays valid
+ 2308  		lock.unlock();
+ 2309  		const auto&                       reads = pick->state.read_file_commands;
+ 2310  		std::vector<std::vector<uint8_t>> data(reads.size());
+ 2311  		std::vector<int32_t>              rc(reads.size(), OK);
+ 2312  		for (size_t r = 0; r < reads.size(); r++) {
+ 2313  			std::string host_path;
+ 2314  			rc[r] = AprShared::TryGetHostPath(reads[r].file_id, &host_path)
+ 2315  			            ? ReadHostFileToHost(host_path, reads[r].file_offset, reads[r].size, &data[r])
+ 2316  			            : LibKernel::KERNEL_ERROR_ENOENT;
+ 2317  			if (pick->state.bc5_journal && AprJournalFile(reads[r].file_id)) { // KYTY_BC5_APR_FILE_JOURNAL
+ 2318  				AprJournal("readahead cb 0x%016" PRIx64 " read file 0x%08" PRIx32 " +0x%" PRIx64 " size 0x%" PRIx64 " = 0x%08x, 0x%zx bytes into host memory",
+ 2319  				           pick->command_buffer, reads[r].file_id, reads[r].file_offset, reads[r].size,
+ 2320  				           static_cast<unsigned>(rc[r]), data[r].size());
+ 2321  			}
+ 2322  		}
+ 2323  		lock.lock();
+ 2324  		pick->ra_data  = std::move(data);
+ 2325  		pick->ra_rc    = std::move(rc);
+ 2326  		pick->ra_state = 2;
+ 2327  		g_apr_queue_cv.notify_all();
+ 2328  	}
+ 2329  }
+ 2330  
+ 2331  static void AprWorkerThread(size_t qi) {
+ 2332  	char name[16];
+ 2333  	std::snprintf(name, sizeof(name), "bc5-apr-q%zu", qi);
+ 2334  	pthread_setname_np(pthread_self(), name);
+ 2335  	std::unique_lock<std::recursive_mutex> lock(g_apr_queue_mutex);
+ 2336  	auto&                                  queue = g_apr_parked[qi];
+ 2337  	for (;;) {
+ 2338  		while (queue.empty()) {
+ 2339  			g_apr_queue_cv.wait(lock);
+ 2340  		}
+ 2341  		// Only this thread pops this queue, and a deque's push_back keeps references valid, so the
+ 2342  		// front can run with the queue unlocked and submitters never wait for a batch.
+ 2343  		ParkedAprBuffer& front  = queue.front();
+ 2344  		int32_t          result = OK;
+ 2345  		uint32_t         offset = 0;
+ 2346  		if (AprReadahead() > 0) { // BC5 (experiment 0203): KYTY_BC5_APR_READAHEAD
+ 2347  			while (front.ra_state == 1) {
+ 2348  				// exp 0216: the reader sets 2 and notifies under the lock; the 50-ms limit is only a safety net
+ 2349  				g_apr_queue_cv.wait_for(lock, std::chrono::milliseconds(50));
+ 2350  			}
+ 2351  			if (front.ra_state == 0) {
+ 2352  				front.ra_state = 4;
+ 2353  			}
+ 2354  		}
+ 2355  		const bool prefetched = front.ra_state == 2;
+ 2356  		lock.unlock();
+ 2357  		const bool done = RunOrderedAprCommands(front.command_buffer, front.state, front.ordered, &front.next, &result, &offset,
+ 2358  		                                        prefetched ? &front.ra_data : nullptr, prefetched ? &front.ra_rc : nullptr);
+ 2359  		lock.lock();
+ 2360  		if (!done) {
+ 2361  			g_apr_queue_cv.wait_for(lock, std::chrono::microseconds(500));
+ 2362  			continue;
+ 2363  		}
+ 2364  		FinishAprSubmission(front, result, offset);
+ 2365  		if (AmmTrace()) {
+ 2366  			AmmTraceStamp(), std::fprintf(stderr, "amm trace: submission 0x%016" PRIx64 " finished on worker %zu = 0x%08x\n", front.command_buffer, qi,
+ 2367  			                              static_cast<unsigned>(result));
+ 2368  		}
+ 2369  		if (prefetched) {
+ 2370  			g_apr_ra_bytes -= std::min(g_apr_ra_bytes, AprReadBytes(front));
+ 2371  		}
+ 2372  		queue.pop_front();
+ 2373  		if (AprReadahead() > 0) {
+ 2374  			g_apr_queue_cv.notify_all(); // the freed read-ahead budget may let a reader go on
+ 2375  		}
+ 2376  	}
+ 2377  }
+ 2378  
+ 2379  static void StartAprWaitThread() {
+ 2380  	static std::once_flag once;
+ 2381  	std::call_once(once, [] {
+ 2382  		std::thread([] {
+ 2383  			pthread_setname_np(pthread_self(), "bc5-apr-wait");
+ 2384  			for (;;) {
+ 2385  				std::this_thread::sleep_for(std::chrono::microseconds(500));
+ 2386  				std::scoped_lock lock(g_apr_queue_mutex);
+ 2387  				PumpParkedAprBuffersLocked();
+ 2388  			}
+ 2389  		}).detach();
+ 2390  	});
+ 2391  }
+
+## lines 2455-2509
+ 2455  	const bool amm_only = !state.amm_map_commands.empty() && state.read_file_commands.empty();
+ 2456  	const size_t qi = AprQueueIndex(priority);
+ 2457  	std::scoped_lock queue_lock(g_apr_queue_mutex);
+ 2458  	auto& queue = g_apr_parked[qi];
+ 2459  	if (state.bc5_journal) { // BC5 (experiment 0203)
+ 2460  		AprJournal("submit cb 0x%016" PRIx64 " prio %u (queue %zu, %zu ahead) sub %u result 0x%016" PRIx64
+ 2461  		           ": %zu reads, %zu writes, %zu waits, %zu events, %zu maps",
+ 2462  		           command_buffer, priority, qi, queue.size(), submission_id, result_ptr, state.read_file_commands.size(),
+ 2463  		           state.write_address_commands.size(), state.wait_address_commands.size(),
+ 2464  		           state.kernel_event_commands.size(), state.amm_map_commands.size());
+ 2465  	}
+ 2466  	if (AprAsync() && !amm_only) {
+ 2467  		// Experiment 0156: queued for the priority's worker; the submit returns at once.
+ 2468  		queue.push_back({command_buffer, state, ordered, 0, submission_id, result_ptr});
+ 2469  		std::call_once(g_apr_worker_once[qi], [qi] {
+ 2470  			std::thread(AprWorkerThread, qi).detach();
+ 2471  			for (size_t k = 0; k < AprReadahead(); k++) { // BC5 (experiment 0203): KYTY_BC5_APR_READAHEAD
+ 2472  				std::thread(AprReaderThread, qi, k).detach();
+ 2473  			}
+ 2474  		});
+ 2475  		g_apr_queue_cv.notify_all();
+ 2476  		return OK;
+ 2477  	}
+ 2478  	if (!amm_only && !queue.empty()) {
+ 2479  		queue.push_back({command_buffer, state, ordered, 0, submission_id, result_ptr});
+ 2480  		if (AmmTrace()) {
+ 2481  			AmmTraceStamp(), std::fprintf(stderr, "amm trace: submission 0x%016" PRIx64 " queued behind a waiting one\n", command_buffer);
+ 2482  		}
+ 2483  		PumpParkedAprBuffersLocked();
+ 2484  		return OK;
+ 2485  	}
+ 2486  	size_t next = 0;
+ 2487  	if (!RunOrderedAprCommands(command_buffer, state, ordered, &next, execution_result, error_offset)) {
+ 2488  		queue.push_back({command_buffer, state, ordered, next, submission_id, result_ptr});
+ 2489  		StartAprWaitThread();
+ 2490  		if (AmmTrace()) {
+ 2491  			AmmTraceStamp(), std::fprintf(stderr, "amm trace: submission 0x%016" PRIx64 " waits at command %zu of %zu\n", command_buffer, next,
+ 2492  			             ordered.size());
+ 2493  		}
+ 2494  	} else if (submission_id != 0) {
+ 2495  		AprShared::SetSubmissionResult(submission_id, *execution_result, *error_offset);
+ 2496  	}
+ 2497  	if (state.bc5_journal && next >= ordered.size()) { // BC5 (experiment 0203)
+ 2498  		AprJournal("finish cb 0x%016" PRIx64 " sub %u = 0x%08x at 0x%x (on the submitting thread)", command_buffer,
+ 2499  		           submission_id, static_cast<unsigned>(*execution_result), *error_offset);
+ 2500  	}
+ 2501  	if (amm_only) {
+ 2502  		if (AprAsync()) {
+ 2503  			g_apr_queue_cv.notify_all(); // the maps may satisfy a worker's wait
+ 2504  		} else {
+ 2505  			PumpParkedAprBuffersLocked();
+ 2506  		}
+ 2507  	}
+ 2508  	return OK;
+ 2509  }

@@ -1,0 +1,27 @@
+== exp0194/r-G1/emu.log: 108434 trace lines
+   submissions: reads 2478, reads+wait 473, amm 539, amm+wait 0, amm+wait unmet at record 0, other 913
+   host lines: "waits at command" 0, "resumed submission" 0, "queued behind a waiting one" 0, "finished on worker" 3391
+== exp0194/r-G2/emu.log: 108989 trace lines
+   submissions: reads 2507, reads+wait 494, amm 566, amm+wait 0, amm+wait unmet at record 0, other 923
+   host lines: "waits at command" 0, "resumed submission" 0, "queued behind a waiting one" 0, "finished on worker" 3430
+== exp0194/r-G3/emu.log: 108236 trace lines
+   submissions: reads 2479, reads+wait 479, amm 533, amm+wait 0, amm+wait unmet at record 0, other 846
+   host lines: "waits at command" 0, "resumed submission" 0, "queued behind a waiting one" 0, "finished on worker" 3325
+== exp0194/r-N1/emu.log: 108585 trace lines
+   submissions: reads 2508, reads+wait 477, amm 552, amm+wait 0, amm+wait unmet at record 0, other 884
+   host lines: "waits at command" 0, "resumed submission" 0, "queued behind a waiting one" 0, "finished on worker" 3392
+== exp0194/r-N2/emu.log: 108984 trace lines
+   submissions: reads 2521, reads+wait 479, amm 536, amm+wait 0, amm+wait unmet at record 0, other 919
+   host lines: "waits at command" 0, "resumed submission" 0, "queued behind a waiting one" 0, "finished on worker" 3440
+== exp0194/r-N3/emu.log: 108810 trace lines
+   submissions: reads 2544, reads+wait 474, amm 534, amm+wait 0, amm+wait unmet at record 0, other 895
+   host lines: "waits at command" 0, "resumed submission" 0, "queued behind a waiting one" 0, "finished on worker" 3439
+== exp0194/r-N4/emu.log: 108354 trace lines
+   submissions: reads 2504, reads+wait 483, amm 542, amm+wait 0, amm+wait unmet at record 0, other 806
+   host lines: "waits at command" 0, "resumed submission" 0, "queued behind a waiting one" 0, "finished on worker" 3310
+== exp0206/tcpW1-play-pkg.log: 108788 trace lines
+   submissions: reads 2531, reads+wait 458, amm 537, amm+wait 0, amm+wait unmet at record 0, other 919
+   host lines: "waits at command" 0, "resumed submission" 0, "queued behind a waiting one" 0, "finished on worker" 3450
+== exp0200/raw/S1-amm.txt: 0 trace lines
+   submissions: reads 0, reads+wait 0, amm 0, amm+wait 0, amm+wait unmet at record 0, other 0
+   host lines: "waits at command" 0, "resumed submission" 0, "queued behind a waiting one" 0, "finished on worker" 0

@@ -1,0 +1,48 @@
+== exp0194/r-G1/emu.log: wait-on-address lines 589, buffers still holding waits at the end 0
+   reads     submissions by their waits: no wait 2005, self 0, now 0, open 473
+   amm-only  submissions by their waits: no wait 471, self 68, now 0, open 0
+   other     submissions by their waits: no wait 913, self 0, now 0, open 0
+   host lines: "waits at command" 0, "resumed submission" 0
+   writes to waited address 0x000000090adf7f98 by submission kind: reads 0, amm-only 12626, other 0
+== exp0194/r-G2/emu.log: wait-on-address lines 607, buffers still holding waits at the end 0
+   reads     submissions by their waits: no wait 2013, self 0, now 0, open 494
+   amm-only  submissions by their waits: no wait 496, self 70, now 0, open 0
+   other     submissions by their waits: no wait 923, self 0, now 0, open 0
+   host lines: "waits at command" 0, "resumed submission" 0
+   writes to waited address 0x000000090adf7f98 by submission kind: reads 0, amm-only 12689, other 0
+== exp0194/r-G3/emu.log: wait-on-address lines 592, buffers still holding waits at the end 0
+   reads     submissions by their waits: no wait 2000, self 0, now 0, open 479
+   amm-only  submissions by their waits: no wait 462, self 71, now 0, open 0
+   other     submissions by their waits: no wait 846, self 0, now 0, open 0
+   host lines: "waits at command" 0, "resumed submission" 0
+   writes to waited address 0x000000090adf7f98 by submission kind: reads 0, amm-only 12628, other 0
+== exp0194/r-N1/emu.log: wait-on-address lines 590, buffers still holding waits at the end 0
+   reads     submissions by their waits: no wait 2031, self 0, now 0, open 477
+   amm-only  submissions by their waits: no wait 483, self 69, now 0, open 0
+   other     submissions by their waits: no wait 884, self 0, now 0, open 0
+   host lines: "waits at command" 0, "resumed submission" 0
+   writes to waited address 0x000000090adf7f98 by submission kind: reads 0, amm-only 12631, other 0
+== exp0194/r-N2/emu.log: wait-on-address lines 594, buffers still holding waits at the end 0
+   reads     submissions by their waits: no wait 2042, self 0, now 0, open 479
+   amm-only  submissions by their waits: no wait 466, self 70, now 0, open 0
+   other     submissions by their waits: no wait 919, self 0, now 0, open 0
+   host lines: "waits at command" 0, "resumed submission" 0
+   writes to waited address 0x000000090adf7f98 by submission kind: reads 0, amm-only 12684, other 0
+== exp0194/r-N3/emu.log: wait-on-address lines 588, buffers still holding waits at the end 0
+   reads     submissions by their waits: no wait 2070, self 0, now 0, open 474
+   amm-only  submissions by their waits: no wait 464, self 70, now 0, open 0
+   other     submissions by their waits: no wait 895, self 0, now 0, open 0
+   host lines: "waits at command" 0, "resumed submission" 0
+   writes to waited address 0x000000090adf7f98 by submission kind: reads 0, amm-only 12640, other 0
+== exp0194/r-N4/emu.log: wait-on-address lines 597, buffers still holding waits at the end 0
+   reads     submissions by their waits: no wait 2021, self 0, now 0, open 483
+   amm-only  submissions by their waits: no wait 472, self 70, now 0, open 0
+   other     submissions by their waits: no wait 806, self 0, now 0, open 0
+   host lines: "waits at command" 0, "resumed submission" 0
+   writes to waited address 0x000000090adf7f98 by submission kind: reads 0, amm-only 12660, other 0
+== exp0206/tcpW1-play-pkg.log: wait-on-address lines 570, buffers still holding waits at the end 0
+   reads     submissions by their waits: no wait 2073, self 0, now 0, open 458
+   amm-only  submissions by their waits: no wait 470, self 67, now 0, open 0
+   other     submissions by their waits: no wait 919, self 0, now 0, open 0
+   host lines: "waits at command" 0, "resumed submission" 0
+   writes to waited address 0x000000090adf7f98 by submission kind: reads 0, amm-only 12611, other 0
