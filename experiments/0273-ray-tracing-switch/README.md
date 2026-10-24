@@ -110,8 +110,9 @@ stated number of times; the script refuses otherwise) and writes `patch_0273.dif
 - Test plan (the box, the maintainer reachable for (c)):
   - (a) RT on = unchanged: `play-pkg.sh` with the private binary, the second title's route of exp 0264
     (`route.sh` with `BC5_EMU=~/bc5-work/exp0273/kyty_emulator`), no `KYTY_BC5_RT`: the journal has no
-    "ray tracing off" line, the "ray tracing: program … uses image_bvh" lines name the traversal
-    variants as they are first dispatched, frame times and the stall comparison as the shared binary's
+    "ray tracing" line at all — with the switch on the detection block is never entered (it sits behind
+    `!g_rt_on`), so no program is scanned and no program memory is read; the "ray tracing: program …"
+    lines appear only once the switch is off, at each program.s first dispatch from then on. Frame times and the stall comparison as the shared binary's
     (exp 0264's arm A as the reference).
   - (b) the live switch: the maintainer's play of the second title; Emulation › Ray tracing off, then
     on: the reflections vanish and return at the next frame, `host menu: ray tracing off (saved to …)`
@@ -122,3 +123,12 @@ stated number of times; the script refuses otherwise) and writes `patch_0273.dif
     F332 class stop? Any hang with the switch off is then outside the ray-tracing work.
 
 **Verdict.** Pending the build and the runs.
+
+**Test (b), first attempt (the maintainer, 18:51–18:52:55, `~/bc5-work/exp0273/play-rt.sh`, binary 91349485):**
+ended early — the picture froze in-game at about 1.5 min with the sound going on, after a TCP
+read-permission fault and gfx/compute ring resets (the TCP session's class, its exp 0275). The switch was
+never toggled (no "host menu: ray tracing" line). The journal's 0 "ray tracing" lines are the expected
+state with the switch on (above): nothing of 0273 ran on that session's GPU work. With RT on the diff
+touches nothing on the GPU path: the filter's block is gated by `!g_rt_on`, `ApplyPendingRayTracing()` at
+the flip is one atomic exchange with no pending value, and the rest is the menu item and the
+configuration parser.
