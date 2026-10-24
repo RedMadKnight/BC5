@@ -1,0 +1,4 @@
+uname: 7.2.9-ogc3.1.fc44.x86_64
+lockup_timeout parameter: []
+lockup_timeout:GPU lockup timeout in ms (default: 2000. 0: keep default value. negative: infinity timeout), format: [single value for all] or [GFX,Compute,SDMA,Video]. (string)
+boot: 9f3e0da8

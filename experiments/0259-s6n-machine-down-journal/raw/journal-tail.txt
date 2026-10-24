@@ -1,0 +1,145 @@
+submit #163904 acb 4117 dwords at 0x7f1d5023b4a0: pass 452 rewrite 87 drop 48 unmapped 0 cc 0 mappings 21652 ... OK rc 0 1.03 ms
+timing: #163904 done at t 140.056 s, 1.2 ms after the sync and hints; device: prepare 0.05 list 0.00 cs 0.31 fence 0.72 ms, 169 BOs
+timing: #163905 done at t 140.056 s, 0.5 ms after the sync and hints; device: prepare 0.01 list 0.04 cs 0.10 fence 0.28 ms, 62 BOs (short list)
+timing: #163906 done at t 140.056 s, 0.3 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.04 fence 0.20 ms, 61 BOs (short list)
+timing: t 140.057 s after that wait (dcb 7692 dwords)
+timing: t 140.057 s dcb 15302 dwords: sync 0.0 ms, hints 0.1 ms q-1
+timing: t 140.058 s dcb 6490 dwords: sync 0.0 ms, hints 0.0 ms q-1
+acb rest 28..593 of 593 dwords: state prefix of 4 dwords replayed first
+timing: t 140.059 s acb 4 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+timing: t 140.059 s after that wait (acb 565 dwords)
+timing: #163909 done at t 140.059 s, 0.4 ms after the sync and hints; device: prepare 0.01 list 0.09 cs 0.20 fence 0.04 ms, 61 BOs (short list)
+timing: t 140.059 s after that wait (acb 4405 dwords)
+timing: t 140.059 s acb 5008 dwords: sync 0.0 ms, hints 0.0 ms q0
+timing: #163907 done at t 140.059 s, 2.4 ms after the sync and hints; device: prepare 0.29 list 0.00 cs 0.35 fence 1.59 ms, 169 BOs
+timing: t 140.060 s dcb 11368 dwords: sync 0.0 ms, hints 0.0 ms q-1
+timing: t 140.061 s acb 28 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+timing: #163910 done at t 140.061 s, 1.8 ms after the sync and hints; device: prepare 0.09 list 0.00 cs 0.23 fence 1.41 ms, 169 BOs
+timing: #163908 done at t 140.061 s, 2.8 ms after the sync and hints; device: prepare 0.12 list 0.00 cs 0.27 fence 2.38 ms, 169 BOs
+timing: t 140.061 s acb 2 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+timing: #163912 done at t 140.061 s, 0.3 ms after the sync and hints; device: prepare 0.03 list 0.05 cs 0.14 fence 0.08 ms, 62 BOs (short list)
+timing: #163913 done at t 140.061 s, 0.2 ms after the sync and hints; device: prepare 0.01 list 0.02 cs 0.05 fence 0.01 ms, 61 BOs (short list)
+timing: t 140.061 s acb 28 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+acb rest 28..329 of 329 dwords: state prefix of 4 dwords replayed first
+timing: t 140.061 s acb 4 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+timing: t 140.061 s acb 875 dwords: sync 0.0 ms, hints 0.0 ms q0
+timing: #163914 done at t 140.062 s, 0.5 ms after the sync and hints; device: prepare 0.01 list 0.02 cs 0.06 fence 0.44 ms, 62 BOs (short list)
+timing: #163915 done at t 140.062 s, 0.4 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.03 fence 0.39 ms, 61 BOs (short list)
+timing: #163911 done at t 140.062 s, 2.3 ms after the sync and hints; device: prepare 0.26 list 0.00 cs 0.40 fence 1.53 ms, 169 BOs
+timing: t 140.062 s dcb 11565 dwords: sync 0.0 ms, hints 0.1 ms q-1
+timing: #163916 done at t 140.063 s, 1.6 ms after the sync and hints; device: prepare 0.02 list 0.00 cs 0.27 fence 1.25 ms, 169 BOs
+acb rest 28..730 of 730 dwords: state prefix of 4 dwords replayed first
+timing: t 140.063 s after that wait (acb 702 dwords)
+timing: t 140.063 s after that wait (acb 291 dwords)
+timing: t 140.063 s acb 1037 dwords: sync 0.0 ms, hints 0.0 ms q0
+timing: #163917 done at t 140.064 s, 1.7 ms after the sync and hints; device: prepare 0.33 list 0.00 cs 0.32 fence 0.80 ms, 169 BOs
+timing: t 140.064 s after that wait (acb 693 dwords)
+timing: t 140.064 s after that wait (dcb 820 dwords)
+timing: t 140.064 s after that wait (dcb 820 dwords)
+timing: t 140.064 s acb 711 dwords: sync 0.0 ms, hints 0.0 ms q0
+timing: #163918 done at t 140.064 s, 1.1 ms after the sync and hints; device: prepare 0.04 list 0.00 cs 0.41 fence 0.62 ms, 169 BOs
+timing: t 140.065 s acb 28 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+timing: t 140.065 s acb 2 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+timing: #163919 done at t 140.065 s, 0.7 ms after the sync and hints; device: prepare 0.04 list 0.00 cs 0.25 fence 0.39 ms, 169 BOs
+timing: #163920 done at t 140.065 s, 0.1 ms after the sync and hints; device: prepare 0.01 list 0.02 cs 0.04 fence 0.06 ms, 62 BOs (short list)
+timing: #163921 done at t 140.065 s, 0.1 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.02 fence 0.01 ms, 61 BOs (short list)
+timing: t 140.065 s after that wait (dcb 2216 dwords)
+timing: t 140.065 s after that wait (dcb 2216 dwords)
+timing: t 140.065 s after that wait (dcb 2216 dwords)
+timing: t 140.065 s after that wait (dcb 2216 dwords)
+timing: t 140.065 s dcb 4287 dwords: sync 0.0 ms, hints 0.0 ms q-1
+acb rest 28..368 of 368 dwords: state prefix of 4 dwords replayed first
+timing: t 140.066 s after that wait (acb 340 dwords)
+timing: t 140.066 s dcb 1683 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q-1
+timing: t 140.066 s acb 364 dwords: sync 0.0 ms, hints 0.0 ms q0
+timing: t 140.066 s after that wait (acb 11525 dwords)
+timing: t 140.066 s after that wait (dcb 10621 dwords)
+timing: t 140.066 s after that wait (dcb 10621 dwords)
+timing: t 140.066 s acb 11543 dwords: sync 0.0 ms, hints 0.0 ms q0
+timing: t 140.067 s dcb 14458 dwords: sync 0.0 ms, hints 0.1 ms q-1
+timing: t 140.067 s after that wait (dcb 40 dwords)
+timing: #163922 done at t 140.068 s, 2.5 ms after the sync and hints; device: prepare 0.13 list 0.00 cs 0.24 fence 2.06 ms, 169 BOs
+timing: #163924 done at t 140.068 s, 1.8 ms after the sync and hints; device: prepare 0.02 list 0.00 cs 0.22 fence 1.55 ms, 169 BOs
+timing: #163923 done at t 140.068 s, 2.0 ms after the sync and hints; device: prepare 0.04 list 0.02 cs 0.05 fence 1.84 ms, 64 BOs (short list)
+timing: t 140.068 s acb 84 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+timing: t 140.068 s dcb 2710 dwords: sync 0.0 ms, hints 0.0 ms q-1
+timing: t 140.068 s acb 140 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q8
+timing: #163925 done at t 140.068 s, 2.2 ms after the sync and hints; device: prepare 0.19 list 0.00 cs 0.20 fence 1.60 ms, 169 BOs
+timing: #163927 done at t 140.068 s, 0.7 ms after the sync and hints; device: prepare 0.01 list 0.02 cs 0.03 fence 0.61 ms, 63 BOs (short list)
+timing: #163929 done at t 140.069 s, 0.1 ms after the sync and hints; device: prepare 0.01 list 0.01 cs 0.06 fence 0.02 ms, 63 BOs (short list)
+timing: #163926 done at t 140.071 s, 4.0 ms after the sync and hints; device: prepare 0.34 list 0.00 cs 0.27 fence 3.24 ms, 169 BOs
+timing: #163928 done at t 140.071 s, 3.4 ms after the sync and hints; device: prepare 0.07 list 0.00 cs 0.33 fence 2.97 ms, 169 BOs
+frame profile: t 140.071 s, 21.7 ms since the last flip; game thread inside the host 5.0 ms (sync 0.2, hints 0.3, prepare 1.7, list 0.1, cs 2.7, fence 0.0, cap 0.0, label waits 0.0, event waits 0.0), at the flip 4.4, outside 12.4; GPU busy 13.2 ms in 10 jobs (+23 from the ring thread); soft-CP passes 0.4 ms in 53; prepare = filter 0.8 + tracker 0.2 + cu 0.0 + nested 0.5 + copy 0.1
+timing: t 140.071 s flip 1/1, VideoOutSubmitFlip took 0.0 ms
+tracked context: 0:00000000 1:11000100 2:00000000 3:00000000 4:00000000 5:112adc00 6:00000000 7:059f09ff 8:00000000 9:00000000 a:00000000 b:00000000 c:00000000 d:01d40340 e:00000002 f:00000000 10:a0000183 11:20000181 12:1129ec00 13:112ae100 14:1129ec00 15:112ae100 16:00000000 17:00000000 18:00000000 19:00000000 1a:00000000 1b:00000000 1c:00000000 1d:00000000 1e:00000000 1f:00000000 20:00000000 21:00000000 22:00000000 23:00000000 24:00000000 25:00000000 26:00000000 27:00000000 28:00000000 29:00000000 2a:00000000 2b:00000000 2c:00000000 2d:00000000 2e:00000000 2f:00000000 30:00000000 31:00000000
+piece check: 23825 graphics buffers, 6768 with waits; tracked config 0 context 921 sh 177 uconfig 60; tables 4834254 unreadable 0, nested 0 unreadable 0, clears 153254 pushes 0 pops 0; 956 ms
+pieces full: 897 splits made, the wait then satisfied 0, not satisfied 0
+pieces dry: 4069 splits in 2129 buffers, prefix mean 1260 dwords, build 265.2 ms in all, max 0.69 ms; the waits then: 3138 kept for the GPU, 27 served on the CPU, 0 given up or broken
+chains: 163931 submitted, 753584 segments (42496 single, 142479 with cond_exec), 392688180 dwords; closed by: end 73096 wait 56154 ring/class 0 cond_exec 0 size 0 drain 4790 acb-head 12034 other 0 observe 0 hold-wd 8707 hold-end 3169
+timing: t 140.074 s dcb 690 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q-1
+timing: #163930 done at t 140.074 s, 0.3 ms after the sync and hints; device: prepare 0.04 list 0.06 cs 0.12 fence 0.04 ms, 64 BOs (short list)
+timing: t 140.076 s acb 100 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+timing: t 140.076 s acb 152 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+timing: t 140.076 s acb 18 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q8
+timing: t 140.076 s dcb 12675 dwords: sync 0.0 ms, hints 0.0 ms q-1
+timing: #163931 done at t 140.077 s, 1.4 ms after the sync and hints; device: prepare 0.01 list 0.07 cs 0.12 fence 1.13 ms, 62 BOs (short list)
+timing: t 140.077 s dcb 1687 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q-1
+acb rest 100..422 of 422 dwords: state prefix of 66 dwords replayed first
+timing: t 140.077 s after that wait (acb 322 dwords)
+timing: t 140.077 s after that wait (acb 428 dwords)
+timing: t 140.077 s after that wait (acb 1515 dwords)
+timing: t 140.077 s after that wait (acb 1201 dwords)
+timing: t 140.077 s after that wait (acb 487 dwords)
+timing: #163932 done at t 140.077 s, 1.6 ms after the sync and hints; device: prepare 0.01 list 0.01 cs 0.04 fence 1.56 ms, 63 BOs (short list)
+timing: t 140.077 s acb 4119 dwords: sync 0.0 ms, hints 0.0 ms q0
+timing: #163933 done at t 140.077 s, 1.6 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.03 fence 1.52 ms, 62 BOs (short list)
+timing: t 140.078 s after that wait (acb 593 dwords)
+timing: t 140.078 s acb 611 dwords: sync 0.0 ms, hints 0.0 ms q0
+timing: #163934 done at t 140.078 s, 1.9 ms after the sync and hints; device: prepare 0.28 list 0.00 cs 0.32 fence 1.08 ms, 169 BOs
+timing: #163935 done at t 140.078 s, 1.1 ms after the sync and hints; device: prepare 0.05 list 0.06 cs 0.12 fence 0.80 ms, 67 BOs (short list)
+timing: #163936 done at t 140.079 s, 1.2 ms after the sync and hints; device: prepare 0.08 list 0.00 cs 0.34 fence 0.73 ms, 169 BOs
+timing: #163937 done at t 140.079 s, 0.7 ms after the sync and hints; device: prepare 0.02 list 0.00 cs 0.13 fence 0.54 ms, 169 BOs
+timing: t 140.079 s after that wait (acb 5258 dwords)
+timing: t 140.079 s acb 5278 dwords: sync 0.0 ms, hints 0.0 ms q0
+timing: t 140.079 s after that wait (dcb 7692 dwords)
+timing: t 140.079 s after that wait (dcb 7692 dwords)
+timing: t 140.079 s dcb 4065 dwords: sync 0.0 ms, hints 0.0 ms q-1
+timing: t 140.080 s acb 28 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+timing: t 140.081 s acb 2 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+timing: #163939 done at t 140.081 s, 1.4 ms after the sync and hints; device: prepare 0.11 list 0.00 cs 0.31 fence 0.76 ms, 169 BOs
+timing: t 140.081 s dcb 23231 dwords: sync 0.0 ms, hints 0.1 ms q-1
+acb rest 28..329 of 329 dwords: state prefix of 4 dwords replayed first
+timing: t 140.082 s acb 4 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+timing: t 140.082 s acb 873 dwords: sync 0.0 ms, hints 0.0 ms q0
+timing: t 140.083 s acb 28 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+timing: t 140.083 s acb 2 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+timing: t 140.083 s acb 750 dwords: sync 0.0 ms, hints 0.0 ms q0
+timing: t 140.083 s dcb 7906 dwords: sync 0.0 ms, hints 0.1 ms q-1
+acb rest 28..291 of 291 dwords: state prefix of 4 dwords replayed first
+timing: t 140.084 s acb 4 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+timing: t 140.085 s acb 283 dwords: sync 0.0 ms, hints 0.0 ms q0
+timing: t 140.085 s acb 713 dwords: sync 0.0 ms, hints 0.0 ms q0
+timing: t 140.085 s acb 386 dwords: sync 0.0 ms, hints 0.0 ms q0
+timing: t 140.085 s after that wait (dcb 2216 dwords)
+timing: #163942 done at t 140.086 s, 4.6 ms after the sync and hints; device: prepare 0.42 list 0.00 cs 0.27 fence 3.74 ms, 169 BOs
+timing: t 140.086 s dcb 1813 dwords: sync 0.0 ms, hints 0.0 ms q-1
+timing: #163948 done at t 140.086 s, 2.5 ms after the sync and hints; device: prepare 0.24 list 0.00 cs 0.37 fence 1.75 ms, 169 BOs
+timing: t 140.086 s acb 28 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+timing: t 140.086 s acb 2 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+acb rest 28..8030 of 8030 dwords: state prefix of 4 dwords replayed first
+timing: t 140.086 s acb 4 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+timing: t 140.086 s acb 8020 dwords: sync 0.0 ms, hints 0.0 ms q0
+timing: t 140.087 s dcb 2232 dwords: sync 0.0 ms, hints 0.0 ms q-1
+timing: t 140.087 s after that wait (dcb 9946 dwords)
+timing: t 140.087 s after that wait (dcb 9946 dwords)
+timing: t 140.088 s dcb 14197 dwords: sync 0.0 ms, hints 0.0 ms q-1
+flip label 0x7f20fb459000 still set at the wait: cleared
+timing: t 140.088 s after that wait (dcb 40 dwords)
+timing: t 140.088 s dcb 2710 dwords: sync 0.0 ms, hints 0.0 ms q-1
+timing: t 140.089 s acb 84 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+timing: t 140.089 s acb 140 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q8
+hold tail: 9129 holds; released with the writer on a ring 8285, satisfied 843, GIVEN UP 1; held 0.89 ms on average, 216.96 ms at most; 0 waits kept inside held chains (their label written by the chain)
+submit #163953 dcb 1813 dwords at 0x7f1cf82a8740: pass 254 rewrite 38 drop 29 unmapped 0 cc 0 mappings 21652 ... FAILED rc 0 TIMEOUT 2040.06 ms
+timing: #163953 done at t 142.126 s, 2040.3 ms after the sync and hints; device: prepare 0.07 list 0.00 cs 0.20 fence 2039.87 ms, 169 BOs
+submit #163938 acb 5278 dwords at 0x7f1d500ec640: pass 883 rewrite 17 drop 6 unmapped 0 cc 0 mappings 21652 ... FAILED rc 0 TIMEOUT 2046.60 ms
+timing: #163938 done at t 142.126 s, 2046.9 ms after the sync and hints; device: prepare 0.10 list 0.00 cs 0.23 fence 2046.37 ms, 169 BOs
