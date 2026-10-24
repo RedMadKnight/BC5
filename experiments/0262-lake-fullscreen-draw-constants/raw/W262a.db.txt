@@ -1,0 +1,490 @@
+# /home/kjaniszewski/bc5-data/captures/play-20261024-1518/gc/direct.log: 240 draws with depth/stencil lines; target pixel shader 11d01d7100
+(1) the target's depth/stencil state:
+   87 x Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 | raw depth_control/stencil_control/refmask/shader_control/render_control 007007e2/00000000/00000000/00000810/00000000
+   44 x Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 | raw depth_control/stencil_control/refmask/shader_control/render_control 007007e2/00000000/00000000/00000810/00000000
+   34 x Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ae10000/112ae10000 fmt 1 sw 24 | raw depth_control/stencil_control/refmask/shader_control/render_control 007007e2/00000000/00000000/00000810/00000000
+   32 x Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b100000/112b100000 fmt 1 sw 24 | raw depth_control/stencil_control/refmask/shader_control/render_control 007007e2/00000000/00000000/00000810/00000000
+   26 x Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ab70000/112ab70000 fmt 1 sw 24 | raw depth_control/stencil_control/refmask/shader_control/render_control 007007e2/00000000/00000000/00000810/00000000
+   17 x Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b7a0000/112b7a0000 fmt 1 sw 24 | raw depth_control/stencil_control/refmask/shader_control/render_control 007007e2/00000000/00000000/00000810/00000000
+(2) passes in journal order:
+  #0    t 150.061 buf 0   at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #1    t 150.112 buf 1   at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #2    t 150.165 buf 2   at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #3    t 150.233 buf 3   at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #4    t 150.286 buf 4   at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #5    t 150.329 buf 5   at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #6    t 150.363 buf 6   at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #7    t 150.397 buf 7   at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #8    t 150.447 buf 8   at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #9    t 150.481 buf 9   at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #10   t 150.513 buf 10  at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #11   t 150.562 buf 11  at 222      1 x rt0 113f230000 2304x1296 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ab70000/112ab70000 fmt 1 sw 24 <== TARGET
+  #12   t 160.574 buf 12  at 222      1 x rt0 113f230000 3328x1872 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b7a0000/112b7a0000 fmt 1 sw 24 <== TARGET
+  #13   t 160.613 buf 13  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #14   t 160.647 buf 14  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #15   t 160.697 buf 15  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #16   t 160.746 buf 16  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #17   t 160.814 buf 17  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #18   t 160.863 buf 18  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #19   t 160.898 buf 19  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #20   t 160.947 buf 20  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #21   t 160.997 buf 21  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #22   t 161.063 buf 22  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #23   t 161.113 buf 23  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #24   t 171.133 buf 24  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #25   t 171.194 buf 25  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #26   t 171.242 buf 26  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #27   t 171.281 buf 27  at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #28   t 171.314 buf 28  at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #29   t 171.362 buf 29  at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #30   t 171.397 buf 30  at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #31   t 171.448 buf 31  at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #32   t 171.496 buf 32  at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #33   t 171.529 buf 33  at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #34   t 171.579 buf 34  at 222      1 x rt0 113f230000 2304x1296 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ab70000/112ab70000 fmt 1 sw 24 <== TARGET
+  #35   t 171.630 buf 35  at 222      1 x rt0 113f230000 2304x1296 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ab70000/112ab70000 fmt 1 sw 24 <== TARGET
+  #36   t 181.689 buf 36  at 222      1 x rt0 113f230000 2304x1296 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ab70000/112ab70000 fmt 1 sw 24 <== TARGET
+  #37   t 181.723 buf 37  at 222      1 x rt0 113f230000 2560x1440 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ae10000/112ae10000 fmt 1 sw 24 <== TARGET
+  #38   t 181.763 buf 38  at 222      1 x rt0 113f230000 2560x1440 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ae10000/112ae10000 fmt 1 sw 24 <== TARGET
+  #39   t 181.798 buf 39  at 222      1 x rt0 113f230000 2560x1440 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ae10000/112ae10000 fmt 1 sw 24 <== TARGET
+  #40   t 181.853 buf 40  at 222      1 x rt0 113f230000 2560x1440 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ae10000/112ae10000 fmt 1 sw 24 <== TARGET
+  #41   t 181.904 buf 41  at 222      1 x rt0 113f230000 2560x1440 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ae10000/112ae10000 fmt 1 sw 24 <== TARGET
+  #42   t 181.948 buf 42  at 222      1 x rt0 113f230000 2304x1296 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ab70000/112ab70000 fmt 1 sw 24 <== TARGET
+  #43   t 181.981 buf 43  at 222      1 x rt0 113f230000 2304x1296 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ab70000/112ab70000 fmt 1 sw 24 <== TARGET
+  #44   t 182.027 buf 44  at 222      1 x rt0 113f230000 2304x1296 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ab70000/112ab70000 fmt 1 sw 24 <== TARGET
+  #45   t 182.063 buf 45  at 222      1 x rt0 113f230000 2304x1296 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ab70000/112ab70000 fmt 1 sw 24 <== TARGET
+  #46   t 182.097 buf 46  at 222      1 x rt0 113f230000 2304x1296 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ab70000/112ab70000 fmt 1 sw 24 <== TARGET
+  #47   t 182.131 buf 47  at 222      1 x rt0 113f230000 2304x1296 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ab70000/112ab70000 fmt 1 sw 24 <== TARGET
+  #48   t 192.149 buf 48  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #49   t 192.194 buf 49  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #50   t 192.246 buf 50  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #51   t 192.294 buf 51  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #52   t 192.346 buf 52  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #53   t 192.426 buf 53  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #54   t 192.483 buf 54  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #55   t 192.520 buf 55  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #56   t 192.564 buf 56  at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #57   t 192.600 buf 57  at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #58   t 192.647 buf 58  at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #59   t 192.680 buf 59  at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #60   t 202.711 buf 60  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #61   t 202.742 buf 61  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #62   t 202.784 buf 62  at 222      1 x rt0 113f230000 2816x1584 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b100000/112b100000 fmt 1 sw 24 <== TARGET
+  #63   t 202.830 buf 63  at 222      1 x rt0 113f230000 2816x1584 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b100000/112b100000 fmt 1 sw 24 <== TARGET
+  #64   t 202.864 buf 64  at 222      1 x rt0 113f230000 2816x1584 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b100000/112b100000 fmt 1 sw 24 <== TARGET
+  #65   t 202.912 buf 65  at 222      1 x rt0 113f230000 2816x1584 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b100000/112b100000 fmt 1 sw 24 <== TARGET
+  #66   t 202.947 buf 66  at 222      1 x rt0 113f230000 2816x1584 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b100000/112b100000 fmt 1 sw 24 <== TARGET
+  #67   t 202.997 buf 67  at 222      1 x rt0 113f230000 2816x1584 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b100000/112b100000 fmt 1 sw 24 <== TARGET
+  #68   t 203.032 buf 68  at 222      1 x rt0 113f230000 2816x1584 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b100000/112b100000 fmt 1 sw 24 <== TARGET
+  #69   t 203.105 buf 69  at 222      1 x rt0 113f230000 2816x1584 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b100000/112b100000 fmt 1 sw 24 <== TARGET
+  #70   t 203.140 buf 70  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #71   t 203.180 buf 71  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #72   t 213.246 buf 72  at 222      1 x rt0 113f230000 2560x1440 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ae10000/112ae10000 fmt 1 sw 24 <== TARGET
+  #73   t 213.281 buf 73  at 222      1 x rt0 113f230000 2560x1440 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ae10000/112ae10000 fmt 1 sw 24 <== TARGET
+  #74   t 213.331 buf 74  at 222      1 x rt0 113f230000 2816x1584 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b100000/112b100000 fmt 1 sw 24 <== TARGET
+  #75   t 213.388 buf 75  at 222      1 x rt0 113f230000 2816x1584 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b100000/112b100000 fmt 1 sw 24 <== TARGET
+  #76   t 213.423 buf 76  at 222      1 x rt0 113f230000 2816x1584 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b100000/112b100000 fmt 1 sw 24 <== TARGET
+  #77   t 213.464 buf 77  at 222      1 x rt0 113f230000 2560x1440 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ae10000/112ae10000 fmt 1 sw 24 <== TARGET
+  #78   t 213.513 buf 78  at 222      1 x rt0 113f230000 2560x1440 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ae10000/112ae10000 fmt 1 sw 24 <== TARGET
+  #79   t 213.563 buf 79  at 222      1 x rt0 113f230000 2560x1440 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ae10000/112ae10000 fmt 1 sw 24 <== TARGET
+  #80   t 213.598 buf 80  at 222      1 x rt0 113f230000 2560x1440 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ae10000/112ae10000 fmt 1 sw 24 <== TARGET
+  #81   t 213.633 buf 81  at 222      1 x rt0 113f230000 2560x1440 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ae10000/112ae10000 fmt 1 sw 24 <== TARGET
+  #82   t 213.663 buf 82  at 222      1 x rt0 113f230000 2560x1440 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ae10000/112ae10000 fmt 1 sw 24 <== TARGET
+  #83   t 213.698 buf 83  at 222      1 x rt0 113f230000 2560x1440 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ae10000/112ae10000 fmt 1 sw 24 <== TARGET
+  #84   t 223.715 buf 84  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #85   t 223.761 buf 85  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #86   t 223.796 buf 86  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #87   t 223.848 buf 87  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #88   t 223.884 buf 88  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #89   t 223.930 buf 89  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #90   t 223.979 buf 90  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #91   t 224.013 buf 91  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #92   t 224.068 buf 92  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #93   t 224.103 buf 93  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #94   t 224.149 buf 94  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #95   t 224.182 buf 95  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #96   t 234.228 buf 96  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #97   t 234.263 buf 97  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #98   t 234.312 buf 98  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #99   t 234.363 buf 99  at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #100  t 234.398 buf 100 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #101  t 234.467 buf 101 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #102  t 234.504 buf 102 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #103  t 234.547 buf 103 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #104  t 234.597 buf 104 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #105  t 234.631 buf 105 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #106  t 234.680 buf 106 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #107  t 234.729 buf 107 at 222      1 x rt0 113f230000 2816x1584 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b100000/112b100000 fmt 1 sw 24 <== TARGET
+  #108  t 244.765 buf 108 at 222      1 x rt0 113f230000 2304x1296 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ab70000/112ab70000 fmt 1 sw 24 <== TARGET
+  #109  t 244.797 buf 109 at 222      1 x rt0 113f230000 2304x1296 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ab70000/112ab70000 fmt 1 sw 24 <== TARGET
+  #110  t 244.831 buf 110 at 222      1 x rt0 113f230000 2304x1296 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ab70000/112ab70000 fmt 1 sw 24 <== TARGET
+  #111  t 244.880 buf 111 at 222      1 x rt0 113f230000 2304x1296 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ab70000/112ab70000 fmt 1 sw 24 <== TARGET
+  #112  t 244.914 buf 112 at 222      1 x rt0 113f230000 2304x1296 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ab70000/112ab70000 fmt 1 sw 24 <== TARGET
+  #113  t 244.947 buf 113 at 222      1 x rt0 113f230000 2304x1296 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ab70000/112ab70000 fmt 1 sw 24 <== TARGET
+  #114  t 244.982 buf 114 at 222      1 x rt0 113f230000 2304x1296 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ab70000/112ab70000 fmt 1 sw 24 <== TARGET
+  #115  t 245.028 buf 115 at 222      1 x rt0 113f230000 2560x1440 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ae10000/112ae10000 fmt 1 sw 24 <== TARGET
+  #116  t 245.065 buf 116 at 222      1 x rt0 113f230000 2560x1440 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ae10000/112ae10000 fmt 1 sw 24 <== TARGET
+  #117  t 245.097 buf 117 at 222      1 x rt0 113f230000 2560x1440 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ae10000/112ae10000 fmt 1 sw 24 <== TARGET
+  #118  t 245.130 buf 118 at 222      1 x rt0 113f230000 2560x1440 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ae10000/112ae10000 fmt 1 sw 24 <== TARGET
+  #119  t 245.166 buf 119 at 222      1 x rt0 113f230000 2560x1440 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ae10000/112ae10000 fmt 1 sw 24 <== TARGET
+  #120  t 255.198 buf 120 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #121  t 255.232 buf 121 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #122  t 255.264 buf 122 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #123  t 255.298 buf 123 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #124  t 255.332 buf 124 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #125  t 255.365 buf 125 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #126  t 255.397 buf 126 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #127  t 255.452 buf 127 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #128  t 255.485 buf 128 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #129  t 255.531 buf 129 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #130  t 255.582 buf 130 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #131  t 255.615 buf 131 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #132  t 265.698 buf 132 at 222      1 x rt0 113f230000 3328x1872 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b7a0000/112b7a0000 fmt 1 sw 24 <== TARGET
+  #133  t 265.747 buf 133 at 222      1 x rt0 113f230000 3328x1872 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b7a0000/112b7a0000 fmt 1 sw 24 <== TARGET
+  #134  t 265.781 buf 134 at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #135  t 265.833 buf 135 at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #136  t 265.866 buf 136 at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #137  t 265.898 buf 137 at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #138  t 265.941 buf 138 at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #139  t 265.966 buf 139 at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #140  t 266.011 buf 140 at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #141  t 266.062 buf 141 at 222      1 x rt0 113f230000 2304x1296 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ab70000/112ab70000 fmt 1 sw 24 <== TARGET
+  #142  t 266.097 buf 142 at 222      1 x rt0 113f230000 2304x1296 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ab70000/112ab70000 fmt 1 sw 24 <== TARGET
+  #143  t 266.145 buf 143 at 222      1 x rt0 113f230000 2304x1296 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ab70000/112ab70000 fmt 1 sw 24 <== TARGET
+  #144  t 276.166 buf 144 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #145  t 276.240 buf 145 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #146  t 276.285 buf 146 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #147  t 276.331 buf 147 at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #148  t 276.365 buf 148 at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #149  t 276.398 buf 149 at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #150  t 276.431 buf 150 at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #151  t 276.465 buf 151 at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #152  t 276.499 buf 152 at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #153  t 276.534 buf 153 at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #154  t 276.580 buf 154 at 222      1 x rt0 113f230000 2304x1296 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ab70000/112ab70000 fmt 1 sw 24 <== TARGET
+  #155  t 276.622 buf 155 at 222      1 x rt0 113f230000 2304x1296 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ab70000/112ab70000 fmt 1 sw 24 <== TARGET
+  #156  t 286.670 buf 156 at 222      1 x rt0 113f230000 2560x1440 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ae10000/112ae10000 fmt 1 sw 24 <== TARGET
+  #157  t 286.703 buf 157 at 222      1 x rt0 113f230000 2560x1440 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ae10000/112ae10000 fmt 1 sw 24 <== TARGET
+  #158  t 286.747 buf 158 at 222      1 x rt0 113f230000 2560x1440 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ae10000/112ae10000 fmt 1 sw 24 <== TARGET
+  #159  t 286.797 buf 159 at 222      1 x rt0 113f230000 2560x1440 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ae10000/112ae10000 fmt 1 sw 24 <== TARGET
+  #160  t 286.831 buf 160 at 222      1 x rt0 113f230000 2560x1440 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ae10000/112ae10000 fmt 1 sw 24 <== TARGET
+  #161  t 286.881 buf 161 at 222      1 x rt0 113f230000 2560x1440 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ae10000/112ae10000 fmt 1 sw 24 <== TARGET
+  #162  t 286.913 buf 162 at 222      1 x rt0 113f230000 2560x1440 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ae10000/112ae10000 fmt 1 sw 24 <== TARGET
+  #163  t 286.947 buf 163 at 222      1 x rt0 113f230000 2560x1440 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ae10000/112ae10000 fmt 1 sw 24 <== TARGET
+  #164  t 286.982 buf 164 at 222      1 x rt0 113f230000 2816x1584 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b100000/112b100000 fmt 1 sw 24 <== TARGET
+  #165  t 287.029 buf 165 at 222      1 x rt0 113f230000 2816x1584 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b100000/112b100000 fmt 1 sw 24 <== TARGET
+  #166  t 287.064 buf 166 at 222      1 x rt0 113f230000 2816x1584 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b100000/112b100000 fmt 1 sw 24 <== TARGET
+  #167  t 287.097 buf 167 at 222      1 x rt0 113f230000 2816x1584 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b100000/112b100000 fmt 1 sw 24 <== TARGET
+  #168  t 297.114 buf 168 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #169  t 297.146 buf 169 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #170  t 297.197 buf 170 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #171  t 297.231 buf 171 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #172  t 297.284 buf 172 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #173  t 297.317 buf 173 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #174  t 297.364 buf 174 at 222      1 x rt0 113f230000 2816x1584 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b100000/112b100000 fmt 1 sw 24 <== TARGET
+  #175  t 297.414 buf 175 at 222      1 x rt0 113f230000 2816x1584 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b100000/112b100000 fmt 1 sw 24 <== TARGET
+  #176  t 297.449 buf 176 at 222      1 x rt0 113f230000 2816x1584 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b100000/112b100000 fmt 1 sw 24 <== TARGET
+  #177  t 297.481 buf 177 at 222      1 x rt0 113f230000 2816x1584 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b100000/112b100000 fmt 1 sw 24 <== TARGET
+  #178  t 297.531 buf 178 at 222      1 x rt0 113f230000 2816x1584 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b100000/112b100000 fmt 1 sw 24 <== TARGET
+  #179  t 297.584 buf 179 at 222      1 x rt0 113f230000 2816x1584 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b100000/112b100000 fmt 1 sw 24 <== TARGET
+  #180  t 307.640 buf 180 at 222      1 x rt0 113f230000 3328x1872 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b7a0000/112b7a0000 fmt 1 sw 24 <== TARGET
+  #181  t 307.676 buf 181 at 222      1 x rt0 113f230000 3328x1872 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b7a0000/112b7a0000 fmt 1 sw 24 <== TARGET
+  #182  t 307.714 buf 182 at 222      1 x rt0 113f230000 3328x1872 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b7a0000/112b7a0000 fmt 1 sw 24 <== TARGET
+  #183  t 307.763 buf 183 at 222      1 x rt0 113f230000 3328x1872 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b7a0000/112b7a0000 fmt 1 sw 24 <== TARGET
+  #184  t 307.798 buf 184 at 222      1 x rt0 113f230000 3328x1872 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b7a0000/112b7a0000 fmt 1 sw 24 <== TARGET
+  #185  t 307.846 buf 185 at 222      1 x rt0 113f230000 3328x1872 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b7a0000/112b7a0000 fmt 1 sw 24 <== TARGET
+  #186  t 307.881 buf 186 at 222      1 x rt0 113f230000 3328x1872 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b7a0000/112b7a0000 fmt 1 sw 24 <== TARGET
+  #187  t 307.929 buf 187 at 222      1 x rt0 113f230000 3328x1872 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b7a0000/112b7a0000 fmt 1 sw 24 <== TARGET
+  #188  t 307.979 buf 188 at 222      1 x rt0 113f230000 3328x1872 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b7a0000/112b7a0000 fmt 1 sw 24 <== TARGET
+  #189  t 308.030 buf 189 at 222      1 x rt0 113f230000 3328x1872 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b7a0000/112b7a0000 fmt 1 sw 24 <== TARGET
+  #190  t 308.082 buf 190 at 222      1 x rt0 113f230000 3328x1872 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b7a0000/112b7a0000 fmt 1 sw 24 <== TARGET
+  #191  t 308.116 buf 191 at 222      1 x rt0 113f230000 3328x1872 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b7a0000/112b7a0000 fmt 1 sw 24 <== TARGET
+  #192  t 318.174 buf 192 at 222      1 x rt0 113f230000 3328x1872 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b7a0000/112b7a0000 fmt 1 sw 24 <== TARGET
+  #193  t 318.211 buf 193 at 222      1 x rt0 113f230000 3328x1872 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b7a0000/112b7a0000 fmt 1 sw 24 <== TARGET
+  #194  t 318.248 buf 194 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #195  t 318.281 buf 195 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #196  t 318.315 buf 196 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #197  t 318.349 buf 197 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #198  t 318.382 buf 198 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #199  t 318.416 buf 199 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #200  t 318.465 buf 200 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #201  t 318.499 buf 201 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #202  t 318.546 buf 202 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #203  t 318.581 buf 203 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #204  t 328.593 buf 204 at 222      1 x rt0 113f230000 2816x1584 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b100000/112b100000 fmt 1 sw 24 <== TARGET
+  #205  t 328.632 buf 205 at 222      1 x rt0 113f230000 2816x1584 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b100000/112b100000 fmt 1 sw 24 <== TARGET
+  #206  t 328.665 buf 206 at 222      1 x rt0 113f230000 2560x1440 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ae10000/112ae10000 fmt 1 sw 24 <== TARGET
+  #207  t 328.715 buf 207 at 222      1 x rt0 113f230000 2560x1440 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ae10000/112ae10000 fmt 1 sw 24 <== TARGET
+  #208  t 328.750 buf 208 at 222      1 x rt0 113f230000 2560x1440 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ae10000/112ae10000 fmt 1 sw 24 <== TARGET
+  #209  t 328.783 buf 209 at 222      1 x rt0 113f230000 2560x1440 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ae10000/112ae10000 fmt 1 sw 24 <== TARGET
+  #210  t 328.815 buf 210 at 222      1 x rt0 113f230000 2560x1440 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ae10000/112ae10000 fmt 1 sw 24 <== TARGET
+  #211  t 328.852 buf 211 at 222      1 x rt0 113f230000 2560x1440 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ae10000/112ae10000 fmt 1 sw 24 <== TARGET
+  #212  t 328.885 buf 212 at 222      1 x rt0 113f230000 2560x1440 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ae10000/112ae10000 fmt 1 sw 24 <== TARGET
+  #213  t 328.932 buf 213 at 222      1 x rt0 113f230000 2816x1584 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b100000/112b100000 fmt 1 sw 24 <== TARGET
+  #214  t 328.965 buf 214 at 222      1 x rt0 113f230000 2816x1584 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b100000/112b100000 fmt 1 sw 24 <== TARGET
+  #215  t 328.998 buf 215 at 222      1 x rt0 113f230000 2816x1584 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b100000/112b100000 fmt 1 sw 24 <== TARGET
+  #216  t 339.032 buf 216 at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #217  t 339.080 buf 217 at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #218  t 339.113 buf 218 at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #219  t 339.149 buf 219 at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #220  t 339.182 buf 220 at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #221  t 339.216 buf 221 at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #222  t 339.249 buf 222 at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #223  t 339.282 buf 223 at 222      1 x rt0 113f230000 2048x1152 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112a7f0000/112a7f0000 fmt 1 sw 24 <== TARGET
+  #224  t 339.315 buf 224 at 222      1 x rt0 113f230000 2304x1296 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ab70000/112ab70000 fmt 1 sw 24 <== TARGET
+  #225  t 339.349 buf 225 at 222      1 x rt0 113f230000 2304x1296 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ab70000/112ab70000 fmt 1 sw 24 <== TARGET
+  #226  t 339.393 buf 226 at 222      1 x rt0 113f230000 2304x1296 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ab70000/112ab70000 fmt 1 sw 24 <== TARGET
+  #227  t 339.432 buf 227 at 222      1 x rt0 113f230000 2304x1296 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112ab70000/112ab70000 fmt 1 sw 24 <== TARGET
+  #228  t 349.461 buf 228 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #229  t 349.514 buf 229 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #230  t 349.546 buf 230 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #231  t 349.581 buf 231 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #232  t 349.634 buf 232 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #233  t 349.696 buf 233 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #234  t 349.726 buf 234 at 222      1 x rt0 113f230000 3072x1728 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b420000/112b420000 fmt 1 sw 24 <== TARGET
+  #235  t 349.763 buf 235 at 222      1 x rt0 113f230000 2816x1584 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b100000/112b100000 fmt 1 sw 24 <== TARGET
+  #236  t 349.799 buf 236 at 222      1 x rt0 113f230000 2816x1584 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b100000/112b100000 fmt 1 sw 24 <== TARGET
+  #237  t 349.833 buf 237 at 222      1 x rt0 113f230000 2816x1584 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b100000/112b100000 fmt 1 sw 24 <== TARGET
+  #238  t 349.885 buf 238 at 222      1 x rt0 113f230000 2816x1584 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b100000/112b100000 fmt 1 sw 24 <== TARGET
+  #239  t 349.931 buf 239 at 222      1 x rt0 113f230000 2816x1584 mask 000fffff ps 11d01d7100 | Z on GEQUAL, stencil off, kill 0 z_export 0 | z 1129ec0000/1129ec0000 fmt 3 sw 24, stencil 112b100000/112b100000 fmt 1 sw 24 <== TARGET
+(3) depth/stencil writers before each target draw, into the buffers the target tests:
+  target at t 150.061 buf 0 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 150.112 buf 1 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 150.165 buf 2 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 150.233 buf 3 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 150.286 buf 4 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 150.329 buf 5 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 150.363 buf 6 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 150.397 buf 7 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 150.447 buf 8 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 150.481 buf 9 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 150.513 buf 10 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 150.562 buf 11 at 222 (z 1129ec0000, stencil 112ab70000): no depth/stencil writer in the 50 ms before
+  target at t 160.574 buf 12 at 222 (z 1129ec0000, stencil 112b7a0000): no depth/stencil writer in the 50 ms before
+  target at t 160.613 buf 13 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 160.647 buf 14 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 160.697 buf 15 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 160.746 buf 16 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 160.814 buf 17 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 160.863 buf 18 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 160.898 buf 19 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 160.947 buf 20 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 160.997 buf 21 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 161.063 buf 22 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 161.113 buf 23 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 171.133 buf 24 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 171.194 buf 25 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 171.242 buf 26 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 171.281 buf 27 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 171.314 buf 28 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 171.362 buf 29 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 171.397 buf 30 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 171.448 buf 31 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 171.496 buf 32 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 171.529 buf 33 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 171.579 buf 34 at 222 (z 1129ec0000, stencil 112ab70000): no depth/stencil writer in the 50 ms before
+  target at t 171.630 buf 35 at 222 (z 1129ec0000, stencil 112ab70000): no depth/stencil writer in the 50 ms before
+  target at t 181.689 buf 36 at 222 (z 1129ec0000, stencil 112ab70000): no depth/stencil writer in the 50 ms before
+  target at t 181.723 buf 37 at 222 (z 1129ec0000, stencil 112ae10000): no depth/stencil writer in the 50 ms before
+  target at t 181.763 buf 38 at 222 (z 1129ec0000, stencil 112ae10000): no depth/stencil writer in the 50 ms before
+  target at t 181.798 buf 39 at 222 (z 1129ec0000, stencil 112ae10000): no depth/stencil writer in the 50 ms before
+  target at t 181.853 buf 40 at 222 (z 1129ec0000, stencil 112ae10000): no depth/stencil writer in the 50 ms before
+  target at t 181.904 buf 41 at 222 (z 1129ec0000, stencil 112ae10000): no depth/stencil writer in the 50 ms before
+  target at t 181.948 buf 42 at 222 (z 1129ec0000, stencil 112ab70000): no depth/stencil writer in the 50 ms before
+  target at t 181.981 buf 43 at 222 (z 1129ec0000, stencil 112ab70000): no depth/stencil writer in the 50 ms before
+  target at t 182.027 buf 44 at 222 (z 1129ec0000, stencil 112ab70000): no depth/stencil writer in the 50 ms before
+  target at t 182.063 buf 45 at 222 (z 1129ec0000, stencil 112ab70000): no depth/stencil writer in the 50 ms before
+  target at t 182.097 buf 46 at 222 (z 1129ec0000, stencil 112ab70000): no depth/stencil writer in the 50 ms before
+  target at t 182.131 buf 47 at 222 (z 1129ec0000, stencil 112ab70000): no depth/stencil writer in the 50 ms before
+  target at t 192.149 buf 48 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 192.194 buf 49 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 192.246 buf 50 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 192.294 buf 51 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 192.346 buf 52 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 192.426 buf 53 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 192.483 buf 54 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 192.520 buf 55 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 192.564 buf 56 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 192.600 buf 57 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 192.647 buf 58 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 192.680 buf 59 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 202.711 buf 60 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 202.742 buf 61 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 202.784 buf 62 at 222 (z 1129ec0000, stencil 112b100000): no depth/stencil writer in the 50 ms before
+  target at t 202.830 buf 63 at 222 (z 1129ec0000, stencil 112b100000): no depth/stencil writer in the 50 ms before
+  target at t 202.864 buf 64 at 222 (z 1129ec0000, stencil 112b100000): no depth/stencil writer in the 50 ms before
+  target at t 202.912 buf 65 at 222 (z 1129ec0000, stencil 112b100000): no depth/stencil writer in the 50 ms before
+  target at t 202.947 buf 66 at 222 (z 1129ec0000, stencil 112b100000): no depth/stencil writer in the 50 ms before
+  target at t 202.997 buf 67 at 222 (z 1129ec0000, stencil 112b100000): no depth/stencil writer in the 50 ms before
+  target at t 203.032 buf 68 at 222 (z 1129ec0000, stencil 112b100000): no depth/stencil writer in the 50 ms before
+  target at t 203.105 buf 69 at 222 (z 1129ec0000, stencil 112b100000): no depth/stencil writer in the 50 ms before
+  target at t 203.140 buf 70 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 203.180 buf 71 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 213.246 buf 72 at 222 (z 1129ec0000, stencil 112ae10000): no depth/stencil writer in the 50 ms before
+  target at t 213.281 buf 73 at 222 (z 1129ec0000, stencil 112ae10000): no depth/stencil writer in the 50 ms before
+  target at t 213.331 buf 74 at 222 (z 1129ec0000, stencil 112b100000): no depth/stencil writer in the 50 ms before
+  target at t 213.388 buf 75 at 222 (z 1129ec0000, stencil 112b100000): no depth/stencil writer in the 50 ms before
+  target at t 213.423 buf 76 at 222 (z 1129ec0000, stencil 112b100000): no depth/stencil writer in the 50 ms before
+  target at t 213.464 buf 77 at 222 (z 1129ec0000, stencil 112ae10000): no depth/stencil writer in the 50 ms before
+  target at t 213.513 buf 78 at 222 (z 1129ec0000, stencil 112ae10000): no depth/stencil writer in the 50 ms before
+  target at t 213.563 buf 79 at 222 (z 1129ec0000, stencil 112ae10000): no depth/stencil writer in the 50 ms before
+  target at t 213.598 buf 80 at 222 (z 1129ec0000, stencil 112ae10000): no depth/stencil writer in the 50 ms before
+  target at t 213.633 buf 81 at 222 (z 1129ec0000, stencil 112ae10000): no depth/stencil writer in the 50 ms before
+  target at t 213.663 buf 82 at 222 (z 1129ec0000, stencil 112ae10000): no depth/stencil writer in the 50 ms before
+  target at t 213.698 buf 83 at 222 (z 1129ec0000, stencil 112ae10000): no depth/stencil writer in the 50 ms before
+  target at t 223.715 buf 84 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 223.761 buf 85 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 223.796 buf 86 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 223.848 buf 87 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 223.884 buf 88 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 223.930 buf 89 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 223.979 buf 90 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 224.013 buf 91 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 224.068 buf 92 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 224.103 buf 93 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 224.149 buf 94 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 224.182 buf 95 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 234.228 buf 96 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 234.263 buf 97 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 234.312 buf 98 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 234.363 buf 99 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 234.398 buf 100 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 234.467 buf 101 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 234.504 buf 102 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 234.547 buf 103 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 234.597 buf 104 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 234.631 buf 105 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 234.680 buf 106 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 234.729 buf 107 at 222 (z 1129ec0000, stencil 112b100000): no depth/stencil writer in the 50 ms before
+  target at t 244.765 buf 108 at 222 (z 1129ec0000, stencil 112ab70000): no depth/stencil writer in the 50 ms before
+  target at t 244.797 buf 109 at 222 (z 1129ec0000, stencil 112ab70000): no depth/stencil writer in the 50 ms before
+  target at t 244.831 buf 110 at 222 (z 1129ec0000, stencil 112ab70000): no depth/stencil writer in the 50 ms before
+  target at t 244.880 buf 111 at 222 (z 1129ec0000, stencil 112ab70000): no depth/stencil writer in the 50 ms before
+  target at t 244.914 buf 112 at 222 (z 1129ec0000, stencil 112ab70000): no depth/stencil writer in the 50 ms before
+  target at t 244.947 buf 113 at 222 (z 1129ec0000, stencil 112ab70000): no depth/stencil writer in the 50 ms before
+  target at t 244.982 buf 114 at 222 (z 1129ec0000, stencil 112ab70000): no depth/stencil writer in the 50 ms before
+  target at t 245.028 buf 115 at 222 (z 1129ec0000, stencil 112ae10000): no depth/stencil writer in the 50 ms before
+  target at t 245.065 buf 116 at 222 (z 1129ec0000, stencil 112ae10000): no depth/stencil writer in the 50 ms before
+  target at t 245.097 buf 117 at 222 (z 1129ec0000, stencil 112ae10000): no depth/stencil writer in the 50 ms before
+  target at t 245.130 buf 118 at 222 (z 1129ec0000, stencil 112ae10000): no depth/stencil writer in the 50 ms before
+  target at t 245.166 buf 119 at 222 (z 1129ec0000, stencil 112ae10000): no depth/stencil writer in the 50 ms before
+  target at t 255.198 buf 120 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 255.232 buf 121 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 255.264 buf 122 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 255.298 buf 123 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 255.332 buf 124 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 255.365 buf 125 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 255.397 buf 126 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 255.452 buf 127 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 255.485 buf 128 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 255.531 buf 129 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 255.582 buf 130 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 255.615 buf 131 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 265.698 buf 132 at 222 (z 1129ec0000, stencil 112b7a0000): no depth/stencil writer in the 50 ms before
+  target at t 265.747 buf 133 at 222 (z 1129ec0000, stencil 112b7a0000): no depth/stencil writer in the 50 ms before
+  target at t 265.781 buf 134 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 265.833 buf 135 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 265.866 buf 136 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 265.898 buf 137 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 265.941 buf 138 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 265.966 buf 139 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 266.011 buf 140 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 266.062 buf 141 at 222 (z 1129ec0000, stencil 112ab70000): no depth/stencil writer in the 50 ms before
+  target at t 266.097 buf 142 at 222 (z 1129ec0000, stencil 112ab70000): no depth/stencil writer in the 50 ms before
+  target at t 266.145 buf 143 at 222 (z 1129ec0000, stencil 112ab70000): no depth/stencil writer in the 50 ms before
+  target at t 276.166 buf 144 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 276.240 buf 145 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 276.285 buf 146 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 276.331 buf 147 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 276.365 buf 148 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 276.398 buf 149 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 276.431 buf 150 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 276.465 buf 151 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 276.499 buf 152 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 276.534 buf 153 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 276.580 buf 154 at 222 (z 1129ec0000, stencil 112ab70000): no depth/stencil writer in the 50 ms before
+  target at t 276.622 buf 155 at 222 (z 1129ec0000, stencil 112ab70000): no depth/stencil writer in the 50 ms before
+  target at t 286.670 buf 156 at 222 (z 1129ec0000, stencil 112ae10000): no depth/stencil writer in the 50 ms before
+  target at t 286.703 buf 157 at 222 (z 1129ec0000, stencil 112ae10000): no depth/stencil writer in the 50 ms before
+  target at t 286.747 buf 158 at 222 (z 1129ec0000, stencil 112ae10000): no depth/stencil writer in the 50 ms before
+  target at t 286.797 buf 159 at 222 (z 1129ec0000, stencil 112ae10000): no depth/stencil writer in the 50 ms before
+  target at t 286.831 buf 160 at 222 (z 1129ec0000, stencil 112ae10000): no depth/stencil writer in the 50 ms before
+  target at t 286.881 buf 161 at 222 (z 1129ec0000, stencil 112ae10000): no depth/stencil writer in the 50 ms before
+  target at t 286.913 buf 162 at 222 (z 1129ec0000, stencil 112ae10000): no depth/stencil writer in the 50 ms before
+  target at t 286.947 buf 163 at 222 (z 1129ec0000, stencil 112ae10000): no depth/stencil writer in the 50 ms before
+  target at t 286.982 buf 164 at 222 (z 1129ec0000, stencil 112b100000): no depth/stencil writer in the 50 ms before
+  target at t 287.029 buf 165 at 222 (z 1129ec0000, stencil 112b100000): no depth/stencil writer in the 50 ms before
+  target at t 287.064 buf 166 at 222 (z 1129ec0000, stencil 112b100000): no depth/stencil writer in the 50 ms before
+  target at t 287.097 buf 167 at 222 (z 1129ec0000, stencil 112b100000): no depth/stencil writer in the 50 ms before
+  target at t 297.114 buf 168 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 297.146 buf 169 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 297.197 buf 170 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 297.231 buf 171 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 297.284 buf 172 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 297.317 buf 173 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 297.364 buf 174 at 222 (z 1129ec0000, stencil 112b100000): no depth/stencil writer in the 50 ms before
+  target at t 297.414 buf 175 at 222 (z 1129ec0000, stencil 112b100000): no depth/stencil writer in the 50 ms before
+  target at t 297.449 buf 176 at 222 (z 1129ec0000, stencil 112b100000): no depth/stencil writer in the 50 ms before
+  target at t 297.481 buf 177 at 222 (z 1129ec0000, stencil 112b100000): no depth/stencil writer in the 50 ms before
+  target at t 297.531 buf 178 at 222 (z 1129ec0000, stencil 112b100000): no depth/stencil writer in the 50 ms before
+  target at t 297.584 buf 179 at 222 (z 1129ec0000, stencil 112b100000): no depth/stencil writer in the 50 ms before
+  target at t 307.640 buf 180 at 222 (z 1129ec0000, stencil 112b7a0000): no depth/stencil writer in the 50 ms before
+  target at t 307.676 buf 181 at 222 (z 1129ec0000, stencil 112b7a0000): no depth/stencil writer in the 50 ms before
+  target at t 307.714 buf 182 at 222 (z 1129ec0000, stencil 112b7a0000): no depth/stencil writer in the 50 ms before
+  target at t 307.763 buf 183 at 222 (z 1129ec0000, stencil 112b7a0000): no depth/stencil writer in the 50 ms before
+  target at t 307.798 buf 184 at 222 (z 1129ec0000, stencil 112b7a0000): no depth/stencil writer in the 50 ms before
+  target at t 307.846 buf 185 at 222 (z 1129ec0000, stencil 112b7a0000): no depth/stencil writer in the 50 ms before
+  target at t 307.881 buf 186 at 222 (z 1129ec0000, stencil 112b7a0000): no depth/stencil writer in the 50 ms before
+  target at t 307.929 buf 187 at 222 (z 1129ec0000, stencil 112b7a0000): no depth/stencil writer in the 50 ms before
+  target at t 307.979 buf 188 at 222 (z 1129ec0000, stencil 112b7a0000): no depth/stencil writer in the 50 ms before
+  target at t 308.030 buf 189 at 222 (z 1129ec0000, stencil 112b7a0000): no depth/stencil writer in the 50 ms before
+  target at t 308.082 buf 190 at 222 (z 1129ec0000, stencil 112b7a0000): no depth/stencil writer in the 50 ms before
+  target at t 308.116 buf 191 at 222 (z 1129ec0000, stencil 112b7a0000): no depth/stencil writer in the 50 ms before
+  target at t 318.174 buf 192 at 222 (z 1129ec0000, stencil 112b7a0000): no depth/stencil writer in the 50 ms before
+  target at t 318.211 buf 193 at 222 (z 1129ec0000, stencil 112b7a0000): no depth/stencil writer in the 50 ms before
+  target at t 318.248 buf 194 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 318.281 buf 195 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 318.315 buf 196 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 318.349 buf 197 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 318.382 buf 198 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 318.416 buf 199 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 318.465 buf 200 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 318.499 buf 201 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 318.546 buf 202 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 318.581 buf 203 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 328.593 buf 204 at 222 (z 1129ec0000, stencil 112b100000): no depth/stencil writer in the 50 ms before
+  target at t 328.632 buf 205 at 222 (z 1129ec0000, stencil 112b100000): no depth/stencil writer in the 50 ms before
+  target at t 328.665 buf 206 at 222 (z 1129ec0000, stencil 112ae10000): no depth/stencil writer in the 50 ms before
+  target at t 328.715 buf 207 at 222 (z 1129ec0000, stencil 112ae10000): no depth/stencil writer in the 50 ms before
+  target at t 328.750 buf 208 at 222 (z 1129ec0000, stencil 112ae10000): no depth/stencil writer in the 50 ms before
+  target at t 328.783 buf 209 at 222 (z 1129ec0000, stencil 112ae10000): no depth/stencil writer in the 50 ms before
+  target at t 328.815 buf 210 at 222 (z 1129ec0000, stencil 112ae10000): no depth/stencil writer in the 50 ms before
+  target at t 328.852 buf 211 at 222 (z 1129ec0000, stencil 112ae10000): no depth/stencil writer in the 50 ms before
+  target at t 328.885 buf 212 at 222 (z 1129ec0000, stencil 112ae10000): no depth/stencil writer in the 50 ms before
+  target at t 328.932 buf 213 at 222 (z 1129ec0000, stencil 112b100000): no depth/stencil writer in the 50 ms before
+  target at t 328.965 buf 214 at 222 (z 1129ec0000, stencil 112b100000): no depth/stencil writer in the 50 ms before
+  target at t 328.998 buf 215 at 222 (z 1129ec0000, stencil 112b100000): no depth/stencil writer in the 50 ms before
+  target at t 339.032 buf 216 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 339.080 buf 217 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 339.113 buf 218 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 339.149 buf 219 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 339.182 buf 220 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 339.216 buf 221 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 339.249 buf 222 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 339.282 buf 223 at 222 (z 1129ec0000, stencil 112a7f0000): no depth/stencil writer in the 50 ms before
+  target at t 339.315 buf 224 at 222 (z 1129ec0000, stencil 112ab70000): no depth/stencil writer in the 50 ms before
+  target at t 339.349 buf 225 at 222 (z 1129ec0000, stencil 112ab70000): no depth/stencil writer in the 50 ms before
+  target at t 339.393 buf 226 at 222 (z 1129ec0000, stencil 112ab70000): no depth/stencil writer in the 50 ms before
+  target at t 339.432 buf 227 at 222 (z 1129ec0000, stencil 112ab70000): no depth/stencil writer in the 50 ms before
+  target at t 349.461 buf 228 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 349.514 buf 229 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 349.546 buf 230 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 349.581 buf 231 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 349.634 buf 232 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 349.696 buf 233 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 349.726 buf 234 at 222 (z 1129ec0000, stencil 112b420000): no depth/stencil writer in the 50 ms before
+  target at t 349.763 buf 235 at 222 (z 1129ec0000, stencil 112b100000): no depth/stencil writer in the 50 ms before
+  target at t 349.799 buf 236 at 222 (z 1129ec0000, stencil 112b100000): no depth/stencil writer in the 50 ms before
+  target at t 349.833 buf 237 at 222 (z 1129ec0000, stencil 112b100000): no depth/stencil writer in the 50 ms before
+  target at t 349.885 buf 238 at 222 (z 1129ec0000, stencil 112b100000): no depth/stencil writer in the 50 ms before
+  target at t 349.931 buf 239 at 222 (z 1129ec0000, stencil 112b100000): no depth/stencil writer in the 50 ms before
