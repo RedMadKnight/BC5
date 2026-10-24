@@ -1,0 +1,1147 @@
+journal /home/kjaniszewski/bc5-data/captures/play-20261024-2357/gc/direct.log from 23:57:59
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+breadcrumbs (exp 0277): level 1, 1048576 slots at 0x7efc8c7fc000 (device 0)
+breadcrumbs (exp 0277): 39 inserted, 0 a second; of 0 that followed the previous line, 0 reached and 0 done
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+hold tail: 772 holds; released with the writer on a ring 736, satisfied 35, GIVEN UP 0; held 0.92 ms on average, 23.06 ms at most; 0 waits kept inside held chains (their label written by the chain)
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+breadcrumbs (exp 0277): 16128 inserted, 1606 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+hold tail: 1796 holds; released with the writer on a ring 1694, satisfied 101, GIVEN UP 0; held 0.83 ms on average, 23.06 ms at most; 0 waits kept inside held chains (their label written by the chain)
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+breadcrumbs (exp 0277): 40559 inserted, 2443 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 2812 holds; released with the writer on a ring 2647, satisfied 164, GIVEN UP 0; held 0.82 ms on average, 23.06 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 65132 inserted, 2454 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 3032 holds; released with the writer on a ring 2855, satisfied 177, GIVEN UP 0; held 0.81 ms on average, 23.06 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 81970 inserted, 1683 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+cs prefix (exp 0195): t 42.940 s dcb 5839 dwords dispatches at 8 before it sets a program; the queue's program 0x0909974c00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (1 such buffers)
+hold tail: 3591 holds; released with the writer on a ring 3356, satisfied 234, GIVEN UP 0; held 0.87 ms on average, 23.06 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 168078 inserted, 8609 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 4465 holds; released with the writer on a ring 4163, satisfied 301, GIVEN UP 0; held 0.91 ms on average, 23.06 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 280187 inserted, 11206 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 5378 holds; released with the writer on a ring 5003, satisfied 374, GIVEN UP 0; held 0.94 ms on average, 23.06 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 391363 inserted, 11117 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 6239 holds; released with the writer on a ring 5806, satisfied 433, GIVEN UP 0; held 0.96 ms on average, 23.06 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 506196 inserted, 11483 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 6896 holds; released with the writer on a ring 6394, satisfied 502, GIVEN UP 0; held 0.98 ms on average, 23.06 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 575585 inserted, 6939 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 6896 holds; released with the writer on a ring 6394, satisfied 502, GIVEN UP 0; held 0.98 ms on average, 23.06 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 591154 inserted, 1557 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+cs prefix (exp 0195): t 104.178 s dcb 26159 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973900 rsrc1 402c0041 rsrc2 0000008c, 58 dwords of compute state in front (2 such buffers)
+cs prefix (exp 0195): t 104.257 s dcb 19895 dwords dispatches at 13 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (3 such buffers)
+cs prefix (exp 0195): t 104.257 s dcb 29307 dwords dispatches at 27 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (4 such buffers)
+cs prefix (exp 0195): t 104.257 s dcb 32643 dwords dispatches at 14 before it sets a program; the queue's program 0x0909972c00 rsrc1 402c0145 rsrc2 0000001a, 58 dwords of compute state in front (5 such buffers)
+cs prefix (exp 0195): t 104.268 s dcb 32642 dwords dispatches at 8 before it sets a program; the queue's program 0x0909974c00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (6 such buffers)
+cs prefix (exp 0195): t 104.268 s dcb 32641 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973b00 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (7 such buffers)
+cs prefix (exp 0195): t 104.269 s dcb 32642 dwords dispatches at 14 before it sets a program; the queue's program 0x0909974400 rsrc1 402c00c3 rsrc2 0000008e, 58 dwords of compute state in front (8 such buffers)
+cs prefix (exp 0195): t 104.269 s dcb 32640 dwords dispatches at 18 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (9 such buffers)
+cs prefix (exp 0195): t 104.269 s dcb 24529 dwords dispatches at 8 before it sets a program; the queue's program 0x0909974c00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (10 such buffers)
+cs prefix (exp 0195): t 104.410 s dcb 19904 dwords dispatches at 27 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (11 such buffers)
+cs prefix (exp 0195): t 104.418 s dcb 32363 dwords dispatches at 13 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (12 such buffers)
+cs prefix (exp 0195): t 104.418 s dcb 32639 dwords dispatches at 8 before it sets a program; the queue's program 0x0909972c00 rsrc1 402c0145 rsrc2 0000001a, 58 dwords of compute state in front (13 such buffers)
+cs prefix (exp 0195): t 104.418 s dcb 32643 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973700 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (14 such buffers)
+cs prefix (exp 0195): t 104.418 s dcb 32641 dwords dispatches at 14 before it sets a program; the queue's program 0x0909974c00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (15 such buffers)
+cs prefix (exp 0195): t 104.419 s dcb 32642 dwords dispatches at 14 before it sets a program; the queue's program 0x0909973900 rsrc1 402c0041 rsrc2 0000008c, 58 dwords of compute state in front (16 such buffers)
+cs prefix (exp 0195): t 104.419 s dcb 32642 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973b00 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (17 such buffers)
+cs prefix (exp 0195): t 104.419 s dcb 32633 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973f00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (18 such buffers)
+cs prefix (exp 0195): t 104.419 s dcb 32637 dwords dispatches at 22 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (19 such buffers)
+cs prefix (exp 0195): t 104.420 s dcb 32640 dwords dispatches at 22 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (20 such buffers)
+cs prefix (exp 0195): t 104.807 s dcb 32640 dwords dispatches at 22 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (21 such buffers)
+cs prefix (exp 0195): t 104.807 s dcb 17112 dwords dispatches at 16 before it sets a program; the queue's program 0x090997a500 rsrc1 402c0186 rsrc2 00008098, 58 dwords of compute state in front (22 such buffers)
+cs prefix (exp 0195): t 104.908 s dcb 19904 dwords dispatches at 27 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (23 such buffers)
+cs prefix (exp 0195): t 104.910 s dcb 32642 dwords dispatches at 8 before it sets a program; the queue's program 0x090985f200 rsrc1 402c0040 rsrc2 00000010, 58 dwords of compute state in front (24 such buffers)
+cs prefix (exp 0195): t 104.910 s dcb 32643 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973700 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (25 such buffers)
+cs prefix (exp 0195): t 104.948 s dcb 32638 dwords dispatches at 14 before it sets a program; the queue's program 0x0909973900 rsrc1 402c0041 rsrc2 0000008c, 58 dwords of compute state in front (26 such buffers)
+cs prefix (exp 0195): t 104.949 s dcb 32643 dwords dispatches at 14 before it sets a program; the queue's program 0x0909973f00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (27 such buffers)
+cs prefix (exp 0195): t 104.949 s dcb 32638 dwords dispatches at 8 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (28 such buffers)
+cs prefix (exp 0195): t 104.949 s dcb 11690 dwords dispatches at 14 before it sets a program; the queue's program 0x0909972c00 rsrc1 402c0145 rsrc2 0000001a, 58 dwords of compute state in front (29 such buffers)
+cs prefix (exp 0195): t 106.061 s dcb 79 dwords dispatches at 34 before it sets a program; the queue's program 0x11d0322e00 rsrc1 402c00c4 rsrc2 0000099c, 58 dwords of compute state in front (30 such buffers)
+cs prefix (exp 0195): t 106.082 s dcb 79 dwords dispatches at 34 before it sets a program; the queue's program 0x11d0322e00 rsrc1 402c00c4 rsrc2 0000099c, 58 dwords of compute state in front (31 such buffers)
+hold tail: 7170 holds; released with the writer on a ring 6651, satisfied 518, GIVEN UP 0; held 1.00 ms on average, 23.06 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 761380 inserted, 17021 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+cs prefix (exp 0195): t 113.876 s dcb 8518 dwords dispatches at 18 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (32 such buffers)
+hold tail: 7889 holds; released with the writer on a ring 7331, satisfied 557, GIVEN UP 0; held 1.03 ms on average, 50.17 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 1049770 inserted, 28839 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 8723 holds; released with the writer on a ring 8120, satisfied 602, GIVEN UP 0; held 1.03 ms on average, 50.17 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 1315710 inserted, 26588 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+cs prefix (exp 0195): t 139.371 s dcb 31120 dwords dispatches at 27 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (33 such buffers)
+hold tail: 9380 holds; released with the writer on a ring 8727, satisfied 652, GIVEN UP 0; held 1.05 ms on average, 50.17 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 1539011 inserted, 22318 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 9847 holds; released with the writer on a ring 9155, satisfied 691, GIVEN UP 0; held 1.07 ms on average, 72.90 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 1732117 inserted, 19303 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+cs prefix (exp 0195): t 152.428 s dcb 274 dwords dispatches at 13 before it sets a program; the queue's program 0x11d039cd00 rsrc1 402c0043 rsrc2 00000098, 58 dwords of compute state in front (34 such buffers)
+hold tail: 10445 holds; released with the writer on a ring 9709, satisfied 735, GIVEN UP 0; held 1.08 ms on average, 72.90 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 1937095 inserted, 20485 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 10932 holds; released with the writer on a ring 10181, satisfied 750, GIVEN UP 0; held 1.08 ms on average, 72.90 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 2155971 inserted, 21885 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 11515 holds; released with the writer on a ring 10752, satisfied 762, GIVEN UP 0; held 1.08 ms on average, 72.90 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 2380692 inserted, 22472 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+journal /home/kjaniszewski/bc5-data/captures/play-20261025-0001/gc/direct.log from 00:01:55
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+breadcrumbs (exp 0277): level 1, 1048576 slots at 0x7f3638ffd000 (device 0)
+breadcrumbs (exp 0277): 74 inserted, 0 a second; of 0 that followed the previous line, 0 reached and 0 done
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+hold tail: 757 holds; released with the writer on a ring 711, satisfied 45, GIVEN UP 0; held 0.96 ms on average, 19.86 ms at most; 0 waits kept inside held chains (their label written by the chain)
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+breadcrumbs (exp 0277): 16001 inserted, 1589 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+hold tail: 1805 holds; released with the writer on a ring 1682, satisfied 123, GIVEN UP 0; held 0.84 ms on average, 23.26 ms at most; 0 waits kept inside held chains (their label written by the chain)
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+breadcrumbs (exp 0277): 40627 inserted, 2455 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 2798 holds; released with the writer on a ring 2586, satisfied 211, GIVEN UP 0; held 0.83 ms on average, 23.26 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 65574 inserted, 2493 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 3005 holds; released with the writer on a ring 2784, satisfied 221, GIVEN UP 0; held 0.82 ms on average, 23.26 ms at most; 0 waits kept inside held chains (their label written by the chain)
+cs prefix (exp 0195): t 41.406 s dcb 5839 dwords dispatches at 8 before it sets a program; the queue's program 0x0909974c00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (1 such buffers)
+breadcrumbs (exp 0277): 83828 inserted, 1824 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 3690 holds; released with the writer on a ring 3416, satisfied 273, GIVEN UP 0; held 0.88 ms on average, 23.26 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 185563 inserted, 10167 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 4599 holds; released with the writer on a ring 4251, satisfied 347, GIVEN UP 0; held 0.91 ms on average, 23.26 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 298100 inserted, 11253 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 5473 holds; released with the writer on a ring 5074, satisfied 398, GIVEN UP 0; held 0.94 ms on average, 23.26 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 410772 inserted, 11267 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 6354 holds; released with the writer on a ring 5897, satisfied 456, GIVEN UP 0; held 0.95 ms on average, 23.26 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 524397 inserted, 11358 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 7030 holds; released with the writer on a ring 6520, satisfied 510, GIVEN UP 0; held 0.97 ms on average, 23.26 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 594919 inserted, 7052 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 7030 holds; released with the writer on a ring 6520, satisfied 510, GIVEN UP 0; held 0.97 ms on average, 23.26 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 613133 inserted, 1821 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+cs prefix (exp 0195): t 103.509 s dcb 32641 dwords dispatches at 13 before it sets a program; the queue's program 0x0909973700 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (2 such buffers)
+cs prefix (exp 0195): t 103.509 s dcb 32642 dwords dispatches at 8 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (3 such buffers)
+cs prefix (exp 0195): t 103.510 s dcb 7654 dwords dispatches at 8 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (4 such buffers)
+cs prefix (exp 0195): t 103.618 s dcb 27193 dwords dispatches at 13 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (5 such buffers)
+cs prefix (exp 0195): t 103.618 s dcb 32643 dwords dispatches at 13 before it sets a program; the queue's program 0x0909973700 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (6 such buffers)
+cs prefix (exp 0195): t 103.618 s dcb 32630 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973b00 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (7 such buffers)
+cs prefix (exp 0195): t 103.619 s dcb 32638 dwords dispatches at 22 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (8 such buffers)
+cs prefix (exp 0195): t 103.686 s dcb 32634 dwords dispatches at 14 before it sets a program; the queue's program 0x0909972c00 rsrc1 402c0145 rsrc2 0000001a, 58 dwords of compute state in front (9 such buffers)
+cs prefix (exp 0195): t 103.686 s dcb 2893 dwords dispatches at 18 before it sets a program; the queue's program 0x090997a500 rsrc1 402c0186 rsrc2 00008098, 58 dwords of compute state in front (10 such buffers)
+cs prefix (exp 0195): t 103.718 s dcb 19904 dwords dispatches at 27 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (11 such buffers)
+cs prefix (exp 0195): t 103.720 s dcb 28110 dwords dispatches at 13 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (12 such buffers)
+cs prefix (exp 0195): t 103.721 s dcb 32641 dwords dispatches at 8 before it sets a program; the queue's program 0x090985f200 rsrc1 402c0040 rsrc2 00000010, 58 dwords of compute state in front (13 such buffers)
+cs prefix (exp 0195): t 103.727 s dcb 32642 dwords dispatches at 8 before it sets a program; the queue's program 0x0909972c00 rsrc1 402c0145 rsrc2 0000001a, 58 dwords of compute state in front (14 such buffers)
+cs prefix (exp 0195): t 103.728 s dcb 32642 dwords dispatches at 8 before it sets a program; the queue's program 0x0909974c00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (15 such buffers)
+cs prefix (exp 0195): t 103.728 s dcb 32639 dwords dispatches at 8 before it sets a program; the queue's program 0x0909974200 rsrc1 402c0040 rsrc2 0000008e, 58 dwords of compute state in front (16 such buffers)
+cs prefix (exp 0195): t 103.728 s dcb 32641 dwords dispatches at 14 before it sets a program; the queue's program 0x0909973900 rsrc1 402c0041 rsrc2 0000008c, 58 dwords of compute state in front (17 such buffers)
+cs prefix (exp 0195): t 103.728 s dcb 32643 dwords dispatches at 14 before it sets a program; the queue's program 0x0909973d00 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (18 such buffers)
+cs prefix (exp 0195): t 103.729 s dcb 32635 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973f00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (19 such buffers)
+cs prefix (exp 0195): t 103.729 s dcb 32638 dwords dispatches at 22 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (20 such buffers)
+cs prefix (exp 0195): t 103.729 s dcb 32637 dwords dispatches at 18 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (21 such buffers)
+cs prefix (exp 0195): t 103.729 s dcb 32641 dwords dispatches at 18 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (22 such buffers)
+cs prefix (exp 0195): t 104.064 s dcb 20388 dwords dispatches at 8 before it sets a program; the queue's program 0x090997a500 rsrc1 402c0186 rsrc2 00008098, 58 dwords of compute state in front (23 such buffers)
+cs prefix (exp 0195): t 104.121 s dcb 19904 dwords dispatches at 27 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (24 such buffers)
+cs prefix (exp 0195): t 104.121 s dcb 32640 dwords dispatches at 17 before it sets a program; the queue's program 0x090985f200 rsrc1 402c0040 rsrc2 00000010, 58 dwords of compute state in front (25 such buffers)
+cs prefix (exp 0195): t 104.122 s dcb 32641 dwords dispatches at 13 before it sets a program; the queue's program 0x0909973700 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (26 such buffers)
+cs prefix (exp 0195): t 104.123 s dcb 32638 dwords dispatches at 14 before it sets a program; the queue's program 0x0909973900 rsrc1 402c0041 rsrc2 0000008c, 58 dwords of compute state in front (27 such buffers)
+cs prefix (exp 0195): t 104.123 s dcb 32639 dwords dispatches at 14 before it sets a program; the queue's program 0x0909973f00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (28 such buffers)
+cs prefix (exp 0195): t 104.123 s dcb 32643 dwords dispatches at 18 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (29 such buffers)
+cs prefix (exp 0195): t 104.233 s dcb 13500 dwords dispatches at 8 before it sets a program; the queue's program 0x0909972c00 rsrc1 402c0145 rsrc2 0000001a, 58 dwords of compute state in front (30 such buffers)
+cs prefix (exp 0195): t 105.444 s dcb 5881 dwords dispatches at 18 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (31 such buffers)
+hold tail: 7331 holds; released with the writer on a ring 6798, satisfied 533, GIVEN UP 0; held 0.99 ms on average, 47.36 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 790272 inserted, 17709 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+cs prefix (exp 0195): t 113.987 s dcb 8528 dwords dispatches at 22 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (32 such buffers)
+hold tail: 8005 holds; released with the writer on a ring 7419, satisfied 585, GIVEN UP 0; held 1.02 ms on average, 48.33 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 1050154 inserted, 25986 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 8816 holds; released with the writer on a ring 8185, satisfied 631, GIVEN UP 0; held 1.02 ms on average, 48.33 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 1308863 inserted, 25863 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+cs prefix (exp 0195): t 139.397 s dcb 31116 dwords dispatches at 27 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (33 such buffers)
+hold tail: 9568 holds; released with the writer on a ring 8899, satisfied 668, GIVEN UP 0; held 1.03 ms on average, 48.33 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 1544476 inserted, 23529 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 10170 holds; released with the writer on a ring 9460, satisfied 709, GIVEN UP 0; held 1.04 ms on average, 48.33 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 1771791 inserted, 22725 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+cs prefix (exp 0195): t 152.477 s dcb 274 dwords dispatches at 13 before it sets a program; the queue's program 0x11d039cd00 rsrc1 402c0043 rsrc2 00000098, 58 dwords of compute state in front (34 such buffers)
+hold tail: 10779 holds; released with the writer on a ring 10036, satisfied 742, GIVEN UP 0; held 1.05 ms on average, 48.33 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 1977756 inserted, 20596 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 11324 holds; released with the writer on a ring 10563, satisfied 761, GIVEN UP 0; held 1.07 ms on average, 48.36 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 2197730 inserted, 21994 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 11961 holds; released with the writer on a ring 11155, satisfied 805, GIVEN UP 0; held 1.06 ms on average, 48.36 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 2426992 inserted, 22907 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 12641 holds; released with the writer on a ring 11803, satisfied 837, GIVEN UP 0; held 1.06 ms on average, 48.36 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 2662718 inserted, 23568 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 13274 holds; released with the writer on a ring 12398, satisfied 875, GIVEN UP 0; held 1.06 ms on average, 77.25 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 2891247 inserted, 22853 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 13851 holds; released with the writer on a ring 12949, satisfied 901, GIVEN UP 0; held 1.06 ms on average, 77.25 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 3117395 inserted, 22613 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 14456 holds; released with the writer on a ring 13531, satisfied 924, GIVEN UP 0; held 1.06 ms on average, 77.25 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 3343905 inserted, 22651 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 15034 holds; released with the writer on a ring 14084, satisfied 949, GIVEN UP 0; held 1.06 ms on average, 77.25 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 3568266 inserted, 22423 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 15600 holds; released with the writer on a ring 14624, satisfied 975, GIVEN UP 0; held 1.06 ms on average, 77.25 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 3791917 inserted, 22364 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 16187 holds; released with the writer on a ring 15194, satisfied 993, GIVEN UP 0; held 1.06 ms on average, 77.25 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 4016143 inserted, 22422 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 16778 holds; released with the writer on a ring 15761, satisfied 1016, GIVEN UP 0; held 1.06 ms on average, 77.25 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 4240247 inserted, 22410 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 17352 holds; released with the writer on a ring 16309, satisfied 1042, GIVEN UP 0; held 1.06 ms on average, 77.25 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 4467284 inserted, 22691 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 17958 holds; released with the writer on a ring 16889, satisfied 1068, GIVEN UP 0; held 1.06 ms on average, 77.25 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 4692417 inserted, 22509 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 18525 holds; released with the writer on a ring 17432, satisfied 1092, GIVEN UP 0; held 1.06 ms on average, 77.25 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 4916775 inserted, 22433 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 19108 holds; released with the writer on a ring 17986, satisfied 1121, GIVEN UP 0; held 1.06 ms on average, 77.25 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 5144200 inserted, 22741 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 19689 holds; released with the writer on a ring 18534, satisfied 1154, GIVEN UP 0; held 1.06 ms on average, 77.25 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 5369872 inserted, 22566 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 20275 holds; released with the writer on a ring 19091, satisfied 1183, GIVEN UP 0; held 1.06 ms on average, 77.25 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 5595349 inserted, 22547 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 20844 holds; released with the writer on a ring 19631, satisfied 1212, GIVEN UP 0; held 1.06 ms on average, 77.25 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 5816899 inserted, 22145 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 21451 holds; released with the writer on a ring 20206, satisfied 1244, GIVEN UP 0; held 1.06 ms on average, 77.25 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 6042224 inserted, 22531 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 22095 holds; released with the writer on a ring 20815, satisfied 1279, GIVEN UP 0; held 1.06 ms on average, 77.25 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 6274130 inserted, 23186 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 22656 holds; released with the writer on a ring 21354, satisfied 1301, GIVEN UP 0; held 1.05 ms on average, 77.25 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 6498849 inserted, 22471 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 23292 holds; released with the writer on a ring 21966, satisfied 1325, GIVEN UP 0; held 1.05 ms on average, 77.25 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 6728940 inserted, 23008 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 23849 holds; released with the writer on a ring 22498, satisfied 1350, GIVEN UP 0; held 1.05 ms on average, 77.25 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 6953862 inserted, 22481 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 24424 holds; released with the writer on a ring 23045, satisfied 1378, GIVEN UP 0; held 1.05 ms on average, 77.25 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 7176209 inserted, 22234 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 25010 holds; released with the writer on a ring 23609, satisfied 1400, GIVEN UP 0; held 1.05 ms on average, 77.25 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 7403121 inserted, 22691 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 25630 holds; released with the writer on a ring 24198, satisfied 1431, GIVEN UP 0; held 1.05 ms on average, 77.25 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 7630691 inserted, 22752 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 26205 holds; released with the writer on a ring 24751, satisfied 1453, GIVEN UP 0; held 1.05 ms on average, 77.25 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 7855047 inserted, 22368 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 26758 holds; released with the writer on a ring 25273, satisfied 1484, GIVEN UP 0; held 1.05 ms on average, 77.25 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 8078562 inserted, 22348 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 27301 holds; released with the writer on a ring 25794, satisfied 1506, GIVEN UP 0; held 1.05 ms on average, 77.25 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 8299628 inserted, 22094 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 27872 holds; released with the writer on a ring 26342, satisfied 1529, GIVEN UP 0; held 1.05 ms on average, 77.25 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 8522601 inserted, 22297 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 28488 holds; released with the writer on a ring 26926, satisfied 1561, GIVEN UP 0; held 1.05 ms on average, 77.25 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 8752437 inserted, 22969 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 29063 holds; released with the writer on a ring 27472, satisfied 1590, GIVEN UP 0; held 1.05 ms on average, 77.25 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 8976477 inserted, 22402 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 29706 holds; released with the writer on a ring 28096, satisfied 1609, GIVEN UP 0; held 1.05 ms on average, 77.25 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 9211268 inserted, 23467 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 30422 holds; released with the writer on a ring 28765, satisfied 1656, GIVEN UP 0; held 1.05 ms on average, 77.25 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 9449761 inserted, 23834 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 30990 holds; released with the writer on a ring 29306, satisfied 1683, GIVEN UP 0; held 1.05 ms on average, 77.25 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 9677241 inserted, 22738 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 31689 holds; released with the writer on a ring 29975, satisfied 1713, GIVEN UP 0; held 1.04 ms on average, 77.25 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 9916295 inserted, 23902 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 32329 holds; released with the writer on a ring 30601, satisfied 1727, GIVEN UP 0; held 1.04 ms on average, 77.25 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 10147067 inserted, 23072 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 32919 holds; released with the writer on a ring 31166, satisfied 1752, GIVEN UP 0; held 1.04 ms on average, 77.25 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 10371320 inserted, 22424 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 33617 holds; released with the writer on a ring 31828, satisfied 1788, GIVEN UP 0; held 1.04 ms on average, 77.25 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 10610875 inserted, 23950 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 34307 holds; released with the writer on a ring 32490, satisfied 1816, GIVEN UP 0; held 1.04 ms on average, 77.25 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 10849402 inserted, 23823 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 34970 holds; released with the writer on a ring 33115, satisfied 1854, GIVEN UP 0; held 1.04 ms on average, 77.25 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 11087162 inserted, 23774 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 35546 holds; released with the writer on a ring 33653, satisfied 1892, GIVEN UP 0; held 1.04 ms on average, 77.25 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 11310711 inserted, 22354 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 36174 holds; released with the writer on a ring 34257, satisfied 1916, GIVEN UP 0; held 1.04 ms on average, 77.25 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 11540482 inserted, 22973 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 36750 holds; released with the writer on a ring 34805, satisfied 1944, GIVEN UP 0; held 1.04 ms on average, 77.25 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 11762421 inserted, 22193 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+journal /home/kjaniszewski/bc5-data/captures/play-20261025-0012/gc/direct.log from 00:12:13
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+breadcrumbs (exp 0277): level 1, 1048576 slots at 0x7f67f1fff000 (device 0)
+breadcrumbs (exp 0277): 74 inserted, 0 a second; of 0 that followed the previous line, 0 reached and 0 done
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+hold tail: 717 holds; released with the writer on a ring 647, satisfied 69, GIVEN UP 0; held 0.74 ms on average, 14.31 ms at most; 0 waits kept inside held chains (their label written by the chain)
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+breadcrumbs (exp 0277): 14131 inserted, 1403 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+hold tail: 1714 holds; released with the writer on a ring 1569, satisfied 145, GIVEN UP 0; held 0.88 ms on average, 21.12 ms at most; 0 waits kept inside held chains (their label written by the chain)
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+breadcrumbs (exp 0277): 37546 inserted, 2341 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 2796 holds; released with the writer on a ring 2555, satisfied 240, GIVEN UP 0; held 0.84 ms on average, 21.12 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 62088 inserted, 2454 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 3026 holds; released with the writer on a ring 2769, satisfied 257, GIVEN UP 0; held 0.84 ms on average, 21.12 ms at most; 0 waits kept inside held chains (their label written by the chain)
+cs prefix (exp 0195): t 40.954 s dcb 5839 dwords dispatches at 8 before it sets a program; the queue's program 0x0909974c00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (1 such buffers)
+breadcrumbs (exp 0277): 84216 inserted, 2213 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 3735 holds; released with the writer on a ring 3402, satisfied 332, GIVEN UP 0; held 0.92 ms on average, 38.56 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 183533 inserted, 9931 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 4633 holds; released with the writer on a ring 4219, satisfied 413, GIVEN UP 0; held 0.94 ms on average, 38.56 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 294942 inserted, 11140 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 5476 holds; released with the writer on a ring 5005, satisfied 470, GIVEN UP 0; held 0.94 ms on average, 38.56 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 408625 inserted, 11368 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 6327 holds; released with the writer on a ring 5777, satisfied 549, GIVEN UP 0; held 0.95 ms on average, 38.56 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 519933 inserted, 11130 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 6921 holds; released with the writer on a ring 6330, satisfied 591, GIVEN UP 0; held 0.97 ms on average, 38.56 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 581163 inserted, 6122 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 6921 holds; released with the writer on a ring 6330, satisfied 591, GIVEN UP 0; held 0.97 ms on average, 38.56 ms at most; 0 waits kept inside held chains (their label written by the chain)
+cs prefix (exp 0195): t 100.981 s dcb 26658 dwords dispatches at 8 before it sets a program; the queue's program 0x0909974200 rsrc1 402c0040 rsrc2 0000008e, 58 dwords of compute state in front (2 such buffers)
+cs prefix (exp 0195): t 101.093 s dcb 23852 dwords dispatches at 13 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (3 such buffers)
+cs prefix (exp 0195): t 101.093 s dcb 32641 dwords dispatches at 8 before it sets a program; the queue's program 0x090985f200 rsrc1 402c0040 rsrc2 00000010, 58 dwords of compute state in front (4 such buffers)
+cs prefix (exp 0195): t 101.093 s dcb 32639 dwords dispatches at 14 before it sets a program; the queue's program 0x0909974c00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (5 such buffers)
+cs prefix (exp 0195): t 101.138 s dcb 32637 dwords dispatches at 14 before it sets a program; the queue's program 0x0909973d00 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (6 such buffers)
+cs prefix (exp 0195): t 101.139 s dcb 32640 dwords dispatches at 18 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (7 such buffers)
+cs prefix (exp 0195): t 101.139 s dcb 28574 dwords dispatches at 8 before it sets a program; the queue's program 0x090985f200 rsrc1 402c0040 rsrc2 00000010, 58 dwords of compute state in front (8 such buffers)
+cs prefix (exp 0195): t 101.229 s dcb 19904 dwords dispatches at 27 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (9 such buffers)
+cs prefix (exp 0195): t 101.231 s dcb 31753 dwords dispatches at 13 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (10 such buffers)
+cs prefix (exp 0195): t 101.231 s dcb 32639 dwords dispatches at 17 before it sets a program; the queue's program 0x090985f200 rsrc1 402c0040 rsrc2 00000010, 58 dwords of compute state in front (11 such buffers)
+cs prefix (exp 0195): t 101.237 s dcb 32639 dwords dispatches at 13 before it sets a program; the queue's program 0x0909973700 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (12 such buffers)
+cs prefix (exp 0195): t 101.238 s dcb 32643 dwords dispatches at 8 before it sets a program; the queue's program 0x0909974c00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (13 such buffers)
+cs prefix (exp 0195): t 101.238 s dcb 32642 dwords dispatches at 14 before it sets a program; the queue's program 0x0909973900 rsrc1 402c0041 rsrc2 0000008c, 58 dwords of compute state in front (14 such buffers)
+cs prefix (exp 0195): t 101.238 s dcb 32642 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973b00 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (15 such buffers)
+cs prefix (exp 0195): t 101.238 s dcb 32636 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973f00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (16 such buffers)
+cs prefix (exp 0195): t 101.239 s dcb 32641 dwords dispatches at 18 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (17 such buffers)
+cs prefix (exp 0195): t 101.239 s dcb 32637 dwords dispatches at 22 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (18 such buffers)
+cs prefix (exp 0195): t 101.239 s dcb 32643 dwords dispatches at 22 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (19 such buffers)
+cs prefix (exp 0195): t 101.239 s dcb 23337 dwords dispatches at 16 before it sets a program; the queue's program 0x090997a500 rsrc1 402c0186 rsrc2 00008098, 58 dwords of compute state in front (20 such buffers)
+breadcrumbs (exp 0277): 633842 inserted, 5261 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+cs prefix (exp 0195): t 101.613 s dcb 19904 dwords dispatches at 27 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (21 such buffers)
+cs prefix (exp 0195): t 101.613 s dcb 32638 dwords dispatches at 8 before it sets a program; the queue's program 0x090985f200 rsrc1 402c0040 rsrc2 00000010, 58 dwords of compute state in front (22 such buffers)
+cs prefix (exp 0195): t 101.614 s dcb 32641 dwords dispatches at 14 before it sets a program; the queue's program 0x0909974c00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (23 such buffers)
+cs prefix (exp 0195): t 101.615 s dcb 32640 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973d00 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (24 such buffers)
+cs prefix (exp 0195): t 101.679 s dcb 32643 dwords dispatches at 18 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (25 such buffers)
+cs prefix (exp 0195): t 101.679 s dcb 21650 dwords dispatches at 16 before it sets a program; the queue's program 0x090997a500 rsrc1 402c0186 rsrc2 00008098, 58 dwords of compute state in front (26 such buffers)
+cs prefix (exp 0195): t 101.709 s dcb 29599 dwords dispatches at 27 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (27 such buffers)
+cs prefix (exp 0195): t 101.709 s dcb 32643 dwords dispatches at 14 before it sets a program; the queue's program 0x0909973b00 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (28 such buffers)
+cs prefix (exp 0195): t 101.709 s dcb 6971 dwords dispatches at 14 before it sets a program; the queue's program 0x0909973b00 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (29 such buffers)
+hold tail: 7472 holds; released with the writer on a ring 6807, satisfied 664, GIVEN UP 0; held 0.99 ms on average, 38.56 ms at most; 0 waits kept inside held chains (their label written by the chain)
+cs prefix (exp 0195): t 110.482 s dcb 8524 dwords dispatches at 22 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (30 such buffers)
+breadcrumbs (exp 0277): 852445 inserted, 21858 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 8255 holds; released with the writer on a ring 7510, satisfied 745, GIVEN UP 0; held 1.01 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 1151918 inserted, 29946 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 9045 holds; released with the writer on a ring 8272, satisfied 772, GIVEN UP 0; held 1.01 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 1404987 inserted, 25290 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+cs prefix (exp 0195): t 135.971 s dcb 31126 dwords dispatches at 27 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (31 such buffers)
+hold tail: 9700 holds; released with the writer on a ring 8844, satisfied 855, GIVEN UP 0; held 1.02 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 1610973 inserted, 20553 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+cs prefix (exp 0195): t 149.056 s dcb 274 dwords dispatches at 13 before it sets a program; the queue's program 0x11d039cd00 rsrc1 402c0043 rsrc2 00000098, 58 dwords of compute state in front (32 such buffers)
+cs prefix (exp 0195): t 149.110 s dcb 298 dwords dispatches at 18 before it sets a program; the queue's program 0x11d039cd00 rsrc1 402c0043 rsrc2 00000098, 58 dwords of compute state in front (33 such buffers)
+hold tail: 10328 holds; released with the writer on a ring 9428, satisfied 899, GIVEN UP 0; held 1.05 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 1838499 inserted, 22741 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 10879 holds; released with the writer on a ring 9923, satisfied 955, GIVEN UP 0; held 1.07 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 2046142 inserted, 20764 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 11437 holds; released with the writer on a ring 10451, satisfied 985, GIVEN UP 0; held 1.07 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 2267981 inserted, 22184 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 11978 holds; released with the writer on a ring 10968, satisfied 1009, GIVEN UP 0; held 1.06 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 2492305 inserted, 22426 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 12662 holds; released with the writer on a ring 11608, satisfied 1053, GIVEN UP 0; held 1.06 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 2727461 inserted, 23502 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 13360 holds; released with the writer on a ring 12248, satisfied 1111, GIVEN UP 0; held 1.05 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 2958625 inserted, 23112 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 13883 holds; released with the writer on a ring 12756, satisfied 1126, GIVEN UP 0; held 1.05 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 3175813 inserted, 21692 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 14489 holds; released with the writer on a ring 13320, satisfied 1168, GIVEN UP 0; held 1.05 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 3406020 inserted, 22996 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 15193 holds; released with the writer on a ring 13957, satisfied 1235, GIVEN UP 0; held 1.05 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 3641574 inserted, 23555 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 15887 holds; released with the writer on a ring 14598, satisfied 1288, GIVEN UP 0; held 1.04 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 3876894 inserted, 23528 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 16489 holds; released with the writer on a ring 15158, satisfied 1330, GIVEN UP 0; held 1.05 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 4102706 inserted, 22577 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 17061 holds; released with the writer on a ring 15693, satisfied 1367, GIVEN UP 0; held 1.05 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 4324126 inserted, 22139 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 17716 holds; released with the writer on a ring 16312, satisfied 1403, GIVEN UP 0; held 1.04 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 4554932 inserted, 23079 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 18385 holds; released with the writer on a ring 16923, satisfied 1461, GIVEN UP 0; held 1.04 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 4790444 inserted, 23548 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 19075 holds; released with the writer on a ring 17565, satisfied 1509, GIVEN UP 0; held 1.04 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 5025514 inserted, 23506 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 19718 holds; released with the writer on a ring 18168, satisfied 1549, GIVEN UP 0; held 1.04 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 5249939 inserted, 22437 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 20403 holds; released with the writer on a ring 18798, satisfied 1604, GIVEN UP 0; held 1.04 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 5484544 inserted, 23459 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 21051 holds; released with the writer on a ring 19391, satisfied 1659, GIVEN UP 0; held 1.04 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 5711958 inserted, 22738 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 21586 holds; released with the writer on a ring 19908, satisfied 1677, GIVEN UP 0; held 1.04 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 5927361 inserted, 21539 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 22112 holds; released with the writer on a ring 20419, satisfied 1692, GIVEN UP 0; held 1.04 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 6145502 inserted, 21808 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 22666 holds; released with the writer on a ring 20949, satisfied 1716, GIVEN UP 0; held 1.04 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 6363438 inserted, 21792 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 23314 holds; released with the writer on a ring 21528, satisfied 1785, GIVEN UP 0; held 1.04 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 6592777 inserted, 22932 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 24003 holds; released with the writer on a ring 22165, satisfied 1837, GIVEN UP 0; held 1.04 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 6827882 inserted, 23492 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 24678 holds; released with the writer on a ring 22786, satisfied 1891, GIVEN UP 0; held 1.04 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 7060328 inserted, 23239 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 25256 holds; released with the writer on a ring 23335, satisfied 1920, GIVEN UP 0; held 1.05 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 7283928 inserted, 22359 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 25881 holds; released with the writer on a ring 23908, satisfied 1972, GIVEN UP 0; held 1.04 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 7510634 inserted, 22668 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 26426 holds; released with the writer on a ring 24423, satisfied 2002, GIVEN UP 0; held 1.04 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 7726449 inserted, 21580 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 27090 holds; released with the writer on a ring 25036, satisfied 2053, GIVEN UP 0; held 1.05 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 7958558 inserted, 23208 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 27778 holds; released with the writer on a ring 25656, satisfied 2121, GIVEN UP 0; held 1.04 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 8193555 inserted, 23497 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 28467 holds; released with the writer on a ring 26289, satisfied 2177, GIVEN UP 0; held 1.04 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 8428880 inserted, 23532 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 29055 holds; released with the writer on a ring 26830, satisfied 2224, GIVEN UP 0; held 1.04 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 8651941 inserted, 22297 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 29634 holds; released with the writer on a ring 27378, satisfied 2255, GIVEN UP 0; held 1.04 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 8870655 inserted, 21871 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 30215 holds; released with the writer on a ring 27913, satisfied 2301, GIVEN UP 0; held 1.04 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 9096113 inserted, 22546 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 30720 holds; released with the writer on a ring 28405, satisfied 2314, GIVEN UP 0; held 1.04 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 9311806 inserted, 21551 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 31262 holds; released with the writer on a ring 28914, satisfied 2347, GIVEN UP 0; held 1.05 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 9528700 inserted, 21689 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 31788 holds; released with the writer on a ring 29419, satisfied 2368, GIVEN UP 0; held 1.05 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 9743682 inserted, 21495 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 32340 holds; released with the writer on a ring 29946, satisfied 2393, GIVEN UP 0; held 1.05 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 9961181 inserted, 21748 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 32936 holds; released with the writer on a ring 30516, satisfied 2419, GIVEN UP 0; held 1.04 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 10185378 inserted, 22407 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 33635 holds; released with the writer on a ring 31158, satisfied 2476, GIVEN UP 0; held 1.04 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 10420521 inserted, 23514 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 34310 holds; released with the writer on a ring 31767, satisfied 2542, GIVEN UP 0; held 1.04 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 10655532 inserted, 23498 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 35000 holds; released with the writer on a ring 32388, satisfied 2611, GIVEN UP 0; held 1.04 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 10886440 inserted, 23087 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 35569 holds; released with the writer on a ring 32904, satisfied 2664, GIVEN UP 0; held 1.04 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 11113894 inserted, 22742 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 36285 holds; released with the writer on a ring 33549, satisfied 2735, GIVEN UP 0; held 1.04 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 11347433 inserted, 23351 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 36818 holds; released with the writer on a ring 34067, satisfied 2750, GIVEN UP 0; held 1.04 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 11562207 inserted, 21477 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 37426 holds; released with the writer on a ring 34643, satisfied 2782, GIVEN UP 0; held 1.04 ms on average, 47.60 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 11786393 inserted, 22399 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+journal /home/kjaniszewski/bc5-data/captures/play-20261025-0022/gc/direct.log from 00:22:25
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+breadcrumbs (exp 0277): level 1, 1048576 slots at 0x7f16b87fc000 (device 0)
+breadcrumbs (exp 0277): 74 inserted, 0 a second; of 0 that followed the previous line, 0 reached and 0 done
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+hold tail: 727 holds; released with the writer on a ring 681, satisfied 45, GIVEN UP 0; held 0.98 ms on average, 21.32 ms at most; 0 waits kept inside held chains (their label written by the chain)
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+breadcrumbs (exp 0277): 16380 inserted, 1631 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+hold tail: 1754 holds; released with the writer on a ring 1624, satisfied 130, GIVEN UP 0; held 0.87 ms on average, 21.32 ms at most; 0 waits kept inside held chains (their label written by the chain)
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+breadcrumbs (exp 0277): 40851 inserted, 2446 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+hold tail: 2724 holds; released with the writer on a ring 2517, satisfied 206, GIVEN UP 0; held 0.83 ms on average, 21.32 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 65478 inserted, 2458 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 2936 holds; released with the writer on a ring 2713, satisfied 223, GIVEN UP 0; held 0.83 ms on average, 21.32 ms at most; 0 waits kept inside held chains (their label written by the chain)
+cs prefix (exp 0195): t 41.054 s dcb 5839 dwords dispatches at 8 before it sets a program; the queue's program 0x0909974c00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (1 such buffers)
+breadcrumbs (exp 0277): 86652 inserted, 2116 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 3636 holds; released with the writer on a ring 3344, satisfied 291, GIVEN UP 0; held 0.88 ms on average, 21.32 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 187542 inserted, 10087 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 4497 holds; released with the writer on a ring 4118, satisfied 378, GIVEN UP 0; held 0.88 ms on average, 21.32 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 301661 inserted, 11411 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 5347 holds; released with the writer on a ring 4899, satisfied 447, GIVEN UP 0; held 0.89 ms on average, 21.32 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 412056 inserted, 11039 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 6186 holds; released with the writer on a ring 5674, satisfied 511, GIVEN UP 0; held 0.90 ms on average, 21.32 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 525839 inserted, 11378 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 6844 holds; released with the writer on a ring 6275, satisfied 569, GIVEN UP 0; held 0.92 ms on average, 21.32 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 595630 inserted, 6977 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 6844 holds; released with the writer on a ring 6275, satisfied 569, GIVEN UP 0; held 0.92 ms on average, 21.32 ms at most; 0 waits kept inside held chains (their label written by the chain)
+cs prefix (exp 0195): t 101.045 s dcb 32638 dwords dispatches at 14 before it sets a program; the queue's program 0x0909973f00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (2 such buffers)
+cs prefix (exp 0195): t 101.046 s dcb 14869 dwords dispatches at 14 before it sets a program; the queue's program 0x0909973f00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (3 such buffers)
+cs prefix (exp 0195): t 101.145 s dcb 24151 dwords dispatches at 13 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (4 such buffers)
+cs prefix (exp 0195): t 101.145 s dcb 32643 dwords dispatches at 17 before it sets a program; the queue's program 0x090985f200 rsrc1 402c0040 rsrc2 00000010, 58 dwords of compute state in front (5 such buffers)
+cs prefix (exp 0195): t 101.153 s dcb 32643 dwords dispatches at 14 before it sets a program; the queue's program 0x0909974200 rsrc1 402c0040 rsrc2 0000008e, 58 dwords of compute state in front (6 such buffers)
+cs prefix (exp 0195): t 101.153 s dcb 32640 dwords dispatches at 14 before it sets a program; the queue's program 0x0909973f00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (7 such buffers)
+cs prefix (exp 0195): t 101.153 s dcb 32639 dwords dispatches at 22 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (8 such buffers)
+cs prefix (exp 0195): t 101.154 s dcb 26831 dwords dispatches at 14 before it sets a program; the queue's program 0x0909974200 rsrc1 402c0040 rsrc2 0000008e, 58 dwords of compute state in front (9 such buffers)
+cs prefix (exp 0195): t 101.262 s dcb 19904 dwords dispatches at 27 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (10 such buffers)
+cs prefix (exp 0195): t 101.265 s dcb 32638 dwords dispatches at 17 before it sets a program; the queue's program 0x090985f200 rsrc1 402c0040 rsrc2 00000010, 58 dwords of compute state in front (11 such buffers)
+cs prefix (exp 0195): t 101.265 s dcb 32643 dwords dispatches at 14 before it sets a program; the queue's program 0x0909972c00 rsrc1 402c0145 rsrc2 0000001a, 58 dwords of compute state in front (12 such buffers)
+cs prefix (exp 0195): t 101.265 s dcb 32642 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973700 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (13 such buffers)
+cs prefix (exp 0195): t 101.267 s dcb 32642 dwords dispatches at 14 before it sets a program; the queue's program 0x0909974200 rsrc1 402c0040 rsrc2 0000008e, 58 dwords of compute state in front (14 such buffers)
+cs prefix (exp 0195): t 101.321 s dcb 32641 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973900 rsrc1 402c0041 rsrc2 0000008c, 58 dwords of compute state in front (15 such buffers)
+cs prefix (exp 0195): t 101.321 s dcb 32642 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973d00 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (16 such buffers)
+cs prefix (exp 0195): t 101.322 s dcb 32642 dwords dispatches at 8 before it sets a program; the queue's program 0x0909974400 rsrc1 402c00c3 rsrc2 0000008e, 58 dwords of compute state in front (17 such buffers)
+cs prefix (exp 0195): t 101.322 s dcb 32639 dwords dispatches at 8 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (18 such buffers)
+cs prefix (exp 0195): t 101.322 s dcb 32643 dwords dispatches at 22 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (19 such buffers)
+cs prefix (exp 0195): t 101.322 s dcb 32642 dwords dispatches at 8 before it sets a program; the queue's program 0x090997a500 rsrc1 402c0186 rsrc2 00008098, 58 dwords of compute state in front (20 such buffers)
+cs prefix (exp 0195): t 101.322 s dcb 8893 dwords dispatches at 14 before it sets a program; the queue's program 0x0909973d00 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (21 such buffers)
+cs prefix (exp 0195): t 101.584 s dcb 19904 dwords dispatches at 27 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (22 such buffers)
+cs prefix (exp 0195): t 101.585 s dcb 32640 dwords dispatches at 8 before it sets a program; the queue's program 0x0909972c00 rsrc1 402c0145 rsrc2 0000001a, 58 dwords of compute state in front (23 such buffers)
+cs prefix (exp 0195): t 101.585 s dcb 32642 dwords dispatches at 8 before it sets a program; the queue's program 0x0909974c00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (24 such buffers)
+cs prefix (exp 0195): t 101.585 s dcb 32642 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973b00 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (25 such buffers)
+cs prefix (exp 0195): t 101.586 s dcb 32643 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973f00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (26 such buffers)
+cs prefix (exp 0195): t 101.586 s dcb 32641 dwords dispatches at 18 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (27 such buffers)
+cs prefix (exp 0195): t 101.751 s dcb 23711 dwords dispatches at 8 before it sets a program; the queue's program 0x090997a500 rsrc1 402c0186 rsrc2 00008098, 58 dwords of compute state in front (28 such buffers)
+breadcrumbs (exp 0277): 659961 inserted, 6346 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+cs prefix (exp 0195): t 102.955 s dcb 2191 dwords dispatches at 8 before it sets a program; the queue's program 0x0909974400 rsrc1 402c00c3 rsrc2 0000008e, 58 dwords of compute state in front (29 such buffers)
+hold tail: 7421 holds; released with the writer on a ring 6764, satisfied 656, GIVEN UP 0; held 0.95 ms on average, 31.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+cs prefix (exp 0195): t 111.139 s dcb 8526 dwords dispatches at 22 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (30 such buffers)
+breadcrumbs (exp 0277): 867740 inserted, 20743 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 8195 holds; released with the writer on a ring 7428, satisfied 766, GIVEN UP 0; held 0.96 ms on average, 31.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 1163598 inserted, 29503 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 8994 holds; released with the writer on a ring 8180, satisfied 813, GIVEN UP 0; held 0.97 ms on average, 31.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 1414543 inserted, 25079 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+cs prefix (exp 0195): t 136.678 s dcb 31124 dwords dispatches at 27 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (31 such buffers)
+hold tail: 9692 holds; released with the writer on a ring 8780, satisfied 911, GIVEN UP 0; held 0.98 ms on average, 31.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 1632128 inserted, 21758 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+cs prefix (exp 0195): t 149.702 s dcb 288 dwords dispatches at 27 before it sets a program; the queue's program 0x11d039cd00 rsrc1 402c0043 rsrc2 00000098, 58 dwords of compute state in front (32 such buffers)
+cs prefix (exp 0195): t 149.723 s dcb 274 dwords dispatches at 13 before it sets a program; the queue's program 0x11d039cd00 rsrc1 402c0043 rsrc2 00000098, 58 dwords of compute state in front (33 such buffers)
+cs prefix (exp 0195): t 149.742 s dcb 312 dwords dispatches at 32 before it sets a program; the queue's program 0x11d039cd00 rsrc1 402c0043 rsrc2 00000098, 58 dwords of compute state in front (34 such buffers)
+hold tail: 10301 holds; released with the writer on a ring 9362, satisfied 938, GIVEN UP 0; held 0.99 ms on average, 35.30 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 1872540 inserted, 24022 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 10955 holds; released with the writer on a ring 9979, satisfied 975, GIVEN UP 0; held 1.01 ms on average, 39.06 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 2096693 inserted, 22412 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 11666 holds; released with the writer on a ring 10625, satisfied 1040, GIVEN UP 0; held 1.01 ms on average, 39.06 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 2333853 inserted, 23715 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 12372 holds; released with the writer on a ring 11239, satisfied 1132, GIVEN UP 0; held 1.01 ms on average, 39.06 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 2568899 inserted, 23501 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 13077 holds; released with the writer on a ring 11861, satisfied 1215, GIVEN UP 0; held 1.01 ms on average, 39.06 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 2806586 inserted, 23752 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 13766 holds; released with the writer on a ring 12473, satisfied 1292, GIVEN UP 0; held 1.01 ms on average, 39.06 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 3044078 inserted, 23743 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 14479 holds; released with the writer on a ring 13112, satisfied 1366, GIVEN UP 0; held 1.00 ms on average, 39.06 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 3279754 inserted, 23540 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 15150 holds; released with the writer on a ring 13722, satisfied 1427, GIVEN UP 0; held 1.01 ms on average, 48.15 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 3505713 inserted, 22595 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 15759 holds; released with the writer on a ring 14299, satisfied 1459, GIVEN UP 0; held 1.01 ms on average, 48.15 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 3724119 inserted, 21829 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 16352 holds; released with the writer on a ring 14850, satisfied 1501, GIVEN UP 0; held 1.01 ms on average, 48.15 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 3949112 inserted, 22486 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 16905 holds; released with the writer on a ring 15378, satisfied 1526, GIVEN UP 0; held 1.01 ms on average, 48.15 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 4166929 inserted, 21766 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 17514 holds; released with the writer on a ring 15944, satisfied 1570, GIVEN UP 0; held 1.01 ms on average, 48.15 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 4392437 inserted, 22550 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 18072 holds; released with the writer on a ring 16471, satisfied 1601, GIVEN UP 0; held 1.01 ms on average, 48.15 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 4610317 inserted, 21780 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 18631 holds; released with the writer on a ring 17008, satisfied 1622, GIVEN UP 0; held 1.01 ms on average, 48.15 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 4833542 inserted, 22319 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 19189 holds; released with the writer on a ring 17549, satisfied 1639, GIVEN UP 0; held 1.01 ms on average, 48.15 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 5050958 inserted, 21741 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 19702 holds; released with the writer on a ring 18049, satisfied 1653, GIVEN UP 0; held 1.02 ms on average, 48.15 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 5268733 inserted, 21776 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 20241 holds; released with the writer on a ring 18566, satisfied 1674, GIVEN UP 0; held 1.02 ms on average, 48.15 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 5488805 inserted, 22003 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 20781 holds; released with the writer on a ring 19087, satisfied 1693, GIVEN UP 0; held 1.02 ms on average, 48.15 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 5708777 inserted, 21986 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 21341 holds; released with the writer on a ring 19612, satisfied 1729, GIVEN UP 0; held 1.02 ms on average, 48.15 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 5931057 inserted, 22221 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 21915 holds; released with the writer on a ring 20160, satisfied 1754, GIVEN UP 0; held 1.02 ms on average, 48.15 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 6153263 inserted, 22220 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 22472 holds; released with the writer on a ring 20684, satisfied 1788, GIVEN UP 0; held 1.02 ms on average, 48.15 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 6374382 inserted, 22097 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 23001 holds; released with the writer on a ring 21193, satisfied 1807, GIVEN UP 0; held 1.02 ms on average, 48.15 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 6592197 inserted, 21780 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 23593 holds; released with the writer on a ring 21756, satisfied 1836, GIVEN UP 0; held 1.02 ms on average, 48.15 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 6819876 inserted, 22766 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 24119 holds; released with the writer on a ring 22259, satisfied 1860, GIVEN UP 0; held 1.02 ms on average, 48.15 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 7036896 inserted, 21701 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 24666 holds; released with the writer on a ring 22775, satisfied 1890, GIVEN UP 0; held 1.01 ms on average, 48.15 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 7255972 inserted, 21905 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 25196 holds; released with the writer on a ring 23275, satisfied 1920, GIVEN UP 0; held 1.02 ms on average, 48.15 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 7474892 inserted, 21892 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 25772 holds; released with the writer on a ring 23824, satisfied 1947, GIVEN UP 0; held 1.02 ms on average, 48.15 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 7697185 inserted, 22229 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 26319 holds; released with the writer on a ring 24346, satisfied 1973, GIVEN UP 0; held 1.02 ms on average, 48.15 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 7915638 inserted, 21831 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 26843 holds; released with the writer on a ring 24839, satisfied 2003, GIVEN UP 0; held 1.02 ms on average, 53.34 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 8134310 inserted, 21865 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 27378 holds; released with the writer on a ring 25352, satisfied 2025, GIVEN UP 0; held 1.02 ms on average, 53.34 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 8351283 inserted, 21681 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 27951 holds; released with the writer on a ring 25897, satisfied 2054, GIVEN UP 0; held 1.02 ms on average, 53.34 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 8573539 inserted, 22166 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 28451 holds; released with the writer on a ring 26373, satisfied 2077, GIVEN UP 0; held 1.02 ms on average, 53.34 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 8792275 inserted, 21872 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 28985 holds; released with the writer on a ring 26879, satisfied 2106, GIVEN UP 0; held 1.02 ms on average, 53.34 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 9010185 inserted, 21790 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 29540 holds; released with the writer on a ring 27410, satisfied 2129, GIVEN UP 0; held 1.02 ms on average, 53.34 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 9228510 inserted, 21832 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 30103 holds; released with the writer on a ring 27947, satisfied 2155, GIVEN UP 0; held 1.03 ms on average, 53.34 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 9446841 inserted, 21830 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 30661 holds; released with the writer on a ring 28476, satisfied 2184, GIVEN UP 0; held 1.03 ms on average, 53.34 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 9663712 inserted, 21681 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 31199 holds; released with the writer on a ring 28993, satisfied 2205, GIVEN UP 0; held 1.03 ms on average, 53.34 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 9882120 inserted, 21837 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 31761 holds; released with the writer on a ring 29520, satisfied 2240, GIVEN UP 0; held 1.03 ms on average, 53.34 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 10103200 inserted, 22095 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 32343 holds; released with the writer on a ring 30075, satisfied 2267, GIVEN UP 0; held 1.03 ms on average, 53.34 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 10324736 inserted, 22151 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 32881 holds; released with the writer on a ring 30591, satisfied 2289, GIVEN UP 0; held 1.03 ms on average, 53.34 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 10544775 inserted, 22002 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 33406 holds; released with the writer on a ring 31093, satisfied 2312, GIVEN UP 0; held 1.03 ms on average, 53.34 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 10760388 inserted, 21561 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 33964 holds; released with the writer on a ring 31616, satisfied 2347, GIVEN UP 0; held 1.03 ms on average, 53.34 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 10978845 inserted, 21842 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 34500 holds; released with the writer on a ring 32131, satisfied 2369, GIVEN UP 0; held 1.03 ms on average, 53.34 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 11198358 inserted, 21949 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 35033 holds; released with the writer on a ring 32641, satisfied 2391, GIVEN UP 0; held 1.03 ms on average, 53.34 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 11415378 inserted, 21700 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 35565 holds; released with the writer on a ring 33143, satisfied 2421, GIVEN UP 0; held 1.03 ms on average, 53.34 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 11631856 inserted, 21635 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+journal /home/kjaniszewski/bc5-data/captures/play-20261025-0032/gc/direct.log from 00:32:40
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+breadcrumbs (exp 0277): level 1, 1048576 slots at 0x7fb77c7fc000 (device 0)
+breadcrumbs (exp 0277): 74 inserted, 0 a second; of 0 that followed the previous line, 0 reached and 0 done
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+hold tail: 781 holds; released with the writer on a ring 749, satisfied 31, GIVEN UP 0; held 1.03 ms on average, 22.49 ms at most; 0 waits kept inside held chains (their label written by the chain)
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+breadcrumbs (exp 0277): 16493 inserted, 1641 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+hold tail: 1733 holds; released with the writer on a ring 1608, satisfied 125, GIVEN UP 0; held 0.94 ms on average, 22.49 ms at most; 0 waits kept inside held chains (their label written by the chain)
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+breadcrumbs (exp 0277): 41019 inserted, 2450 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 2775 holds; released with the writer on a ring 2572, satisfied 202, GIVEN UP 0; held 0.89 ms on average, 22.49 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 65739 inserted, 2466 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 3024 holds; released with the writer on a ring 2800, satisfied 224, GIVEN UP 0; held 0.88 ms on average, 22.49 ms at most; 0 waits kept inside held chains (their label written by the chain)
+cs prefix (exp 0195): t 41.148 s dcb 5834 dwords dispatches at 14 before it sets a program; the queue's program 0x0909974c00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (1 such buffers)
+breadcrumbs (exp 0277): 86647 inserted, 2090 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 3708 holds; released with the writer on a ring 3438, satisfied 269, GIVEN UP 0; held 0.92 ms on average, 22.49 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 187633 inserted, 10097 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 4551 holds; released with the writer on a ring 4217, satisfied 333, GIVEN UP 0; held 0.93 ms on average, 22.49 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 301126 inserted, 11349 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 5393 holds; released with the writer on a ring 4998, satisfied 394, GIVEN UP 0; held 0.94 ms on average, 22.49 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 411849 inserted, 11072 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 6178 holds; released with the writer on a ring 5726, satisfied 451, GIVEN UP 0; held 0.95 ms on average, 22.49 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 525083 inserted, 11321 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 6796 holds; released with the writer on a ring 6303, satisfied 493, GIVEN UP 0; held 0.96 ms on average, 22.49 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 595587 inserted, 7050 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 6796 holds; released with the writer on a ring 6303, satisfied 493, GIVEN UP 0; held 0.96 ms on average, 22.49 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 613377 inserted, 1779 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+cs prefix (exp 0195): t 102.226 s dcb 32643 dwords dispatches at 8 before it sets a program; the queue's program 0x0909972c00 rsrc1 402c0145 rsrc2 0000001a, 58 dwords of compute state in front (2 such buffers)
+cs prefix (exp 0195): t 102.227 s dcb 1615 dwords dispatches at 16 before it sets a program; the queue's program 0x090997a500 rsrc1 402c0186 rsrc2 00008098, 58 dwords of compute state in front (3 such buffers)
+cs prefix (exp 0195): t 102.330 s dcb 23519 dwords dispatches at 13 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (4 such buffers)
+cs prefix (exp 0195): t 102.331 s dcb 32640 dwords dispatches at 17 before it sets a program; the queue's program 0x090985f200 rsrc1 402c0040 rsrc2 00000010, 58 dwords of compute state in front (5 such buffers)
+cs prefix (exp 0195): t 102.331 s dcb 32639 dwords dispatches at 14 before it sets a program; the queue's program 0x0909974c00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (6 such buffers)
+cs prefix (exp 0195): t 102.331 s dcb 32642 dwords dispatches at 14 before it sets a program; the queue's program 0x0909973d00 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (7 such buffers)
+cs prefix (exp 0195): t 102.331 s dcb 32636 dwords dispatches at 18 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (8 such buffers)
+cs prefix (exp 0195): t 102.332 s dcb 32636 dwords dispatches at 17 before it sets a program; the queue's program 0x090985f200 rsrc1 402c0040 rsrc2 00000010, 58 dwords of compute state in front (9 such buffers)
+cs prefix (exp 0195): t 102.499 s dcb 19904 dwords dispatches at 27 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (10 such buffers)
+cs prefix (exp 0195): t 102.502 s dcb 32070 dwords dispatches at 13 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (11 such buffers)
+cs prefix (exp 0195): t 102.506 s dcb 32639 dwords dispatches at 8 before it sets a program; the queue's program 0x0909972c00 rsrc1 402c0145 rsrc2 0000001a, 58 dwords of compute state in front (12 such buffers)
+cs prefix (exp 0195): t 102.507 s dcb 32642 dwords dispatches at 13 before it sets a program; the queue's program 0x0909973700 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (13 such buffers)
+cs prefix (exp 0195): t 102.507 s dcb 32643 dwords dispatches at 14 before it sets a program; the queue's program 0x0909974c00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (14 such buffers)
+cs prefix (exp 0195): t 102.507 s dcb 32641 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973900 rsrc1 402c0041 rsrc2 0000008c, 58 dwords of compute state in front (15 such buffers)
+cs prefix (exp 0195): t 102.507 s dcb 32640 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973d00 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (16 such buffers)
+cs prefix (exp 0195): t 102.508 s dcb 32632 dwords dispatches at 14 before it sets a program; the queue's program 0x0909973f00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (17 such buffers)
+cs prefix (exp 0195): t 102.508 s dcb 32637 dwords dispatches at 22 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (18 such buffers)
+cs prefix (exp 0195): t 102.508 s dcb 32632 dwords dispatches at 22 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (19 such buffers)
+cs prefix (exp 0195): t 102.508 s dcb 32638 dwords dispatches at 22 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (20 such buffers)
+cs prefix (exp 0195): t 102.840 s dcb 19471 dwords dispatches at 16 before it sets a program; the queue's program 0x090997a500 rsrc1 402c0186 rsrc2 00008098, 58 dwords of compute state in front (21 such buffers)
+cs prefix (exp 0195): t 102.886 s dcb 19904 dwords dispatches at 27 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (22 such buffers)
+cs prefix (exp 0195): t 102.887 s dcb 32643 dwords dispatches at 8 before it sets a program; the queue's program 0x0909972c00 rsrc1 402c0145 rsrc2 0000001a, 58 dwords of compute state in front (23 such buffers)
+cs prefix (exp 0195): t 102.887 s dcb 32641 dwords dispatches at 8 before it sets a program; the queue's program 0x0909974c00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (24 such buffers)
+cs prefix (exp 0195): t 102.888 s dcb 32641 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973900 rsrc1 402c0041 rsrc2 0000008c, 58 dwords of compute state in front (25 such buffers)
+cs prefix (exp 0195): t 102.888 s dcb 32643 dwords dispatches at 14 before it sets a program; the queue's program 0x0909973f00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (26 such buffers)
+cs prefix (exp 0195): t 102.888 s dcb 32636 dwords dispatches at 22 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (27 such buffers)
+cs prefix (exp 0195): t 102.888 s dcb 23465 dwords dispatches at 16 before it sets a program; the queue's program 0x090997a500 rsrc1 402c0186 rsrc2 00008098, 58 dwords of compute state in front (28 such buffers)
+cs prefix (exp 0195): t 103.669 s dcb 1495 dwords dispatches at 18 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (29 such buffers)
+hold tail: 7217 holds; released with the writer on a ring 6636, satisfied 580, GIVEN UP 0; held 0.99 ms on average, 22.89 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 831056 inserted, 21767 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+cs prefix (exp 0195): t 111.936 s dcb 8530 dwords dispatches at 22 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (30 such buffers)
+hold tail: 7970 holds; released with the writer on a ring 7206, satisfied 763, GIVEN UP 0; held 1.01 ms on average, 24.33 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 1122744 inserted, 29167 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 8716 holds; released with the writer on a ring 7891, satisfied 824, GIVEN UP 0; held 1.02 ms on average, 24.33 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 1360340 inserted, 23758 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+cs prefix (exp 0195): t 137.485 s dcb 31122 dwords dispatches at 27 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (31 such buffers)
+hold tail: 9322 holds; released with the writer on a ring 8395, satisfied 926, GIVEN UP 0; held 1.03 ms on average, 24.33 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 1567854 inserted, 20750 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 9790 holds; released with the writer on a ring 8816, satisfied 973, GIVEN UP 0; held 1.07 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+cs prefix (exp 0195): t 150.581 s dcb 288 dwords dispatches at 27 before it sets a program; the queue's program 0x11d039cd00 rsrc1 402c0043 rsrc2 00000098, 58 dwords of compute state in front (32 such buffers)
+cs prefix (exp 0195): t 150.646 s dcb 312 dwords dispatches at 32 before it sets a program; the queue's program 0x11d039cd00 rsrc1 402c0043 rsrc2 00000098, 58 dwords of compute state in front (33 such buffers)
+breadcrumbs (exp 0277): 1783805 inserted, 21585 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 10331 holds; released with the writer on a ring 9270, satisfied 1061, GIVEN UP 0; held 1.09 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 1976390 inserted, 19258 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 10854 holds; released with the writer on a ring 9770, satisfied 1083, GIVEN UP 0; held 1.09 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 2195142 inserted, 21874 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 11386 holds; released with the writer on a ring 10272, satisfied 1113, GIVEN UP 0; held 1.09 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 2416705 inserted, 22155 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 12058 holds; released with the writer on a ring 10878, satisfied 1180, GIVEN UP 0; held 1.09 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 2647073 inserted, 23037 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 12615 holds; released with the writer on a ring 11396, satisfied 1218, GIVEN UP 0; held 1.09 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 2868085 inserted, 22100 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 13235 holds; released with the writer on a ring 11973, satisfied 1261, GIVEN UP 0; held 1.08 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 3098856 inserted, 23077 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 13894 holds; released with the writer on a ring 12593, satisfied 1300, GIVEN UP 0; held 1.08 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 3333883 inserted, 23492 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 14572 holds; released with the writer on a ring 13191, satisfied 1380, GIVEN UP 0; held 1.08 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 3569781 inserted, 23583 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 15153 holds; released with the writer on a ring 13733, satisfied 1419, GIVEN UP 0; held 1.08 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 3790552 inserted, 22076 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 15684 holds; released with the writer on a ring 14231, satisfied 1452, GIVEN UP 0; held 1.08 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 4008383 inserted, 21783 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 16332 holds; released with the writer on a ring 14823, satisfied 1508, GIVEN UP 0; held 1.08 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 4243643 inserted, 23526 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 16986 holds; released with the writer on a ring 15413, satisfied 1572, GIVEN UP 0; held 1.08 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 4478031 inserted, 23425 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 17628 holds; released with the writer on a ring 15997, satisfied 1630, GIVEN UP 0; held 1.08 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 4714797 inserted, 23674 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 18228 holds; released with the writer on a ring 16551, satisfied 1676, GIVEN UP 0; held 1.08 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 4941155 inserted, 22635 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 18807 holds; released with the writer on a ring 17092, satisfied 1714, GIVEN UP 0; held 1.08 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 5164626 inserted, 22347 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 19344 holds; released with the writer on a ring 17599, satisfied 1745, GIVEN UP 0; held 1.07 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 5383314 inserted, 21867 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 19990 holds; released with the writer on a ring 18203, satisfied 1786, GIVEN UP 0; held 1.07 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 5616516 inserted, 23317 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 20646 holds; released with the writer on a ring 18814, satisfied 1831, GIVEN UP 0; held 1.07 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 5852381 inserted, 23582 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 21312 holds; released with the writer on a ring 19416, satisfied 1895, GIVEN UP 0; held 1.06 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 6088416 inserted, 23599 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 21934 holds; released with the writer on a ring 19993, satisfied 1940, GIVEN UP 0; held 1.06 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 6316000 inserted, 22751 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 22623 holds; released with the writer on a ring 20609, satisfied 2013, GIVEN UP 0; held 1.06 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 6552256 inserted, 23625 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 23286 holds; released with the writer on a ring 21208, satisfied 2077, GIVEN UP 0; held 1.06 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 6787123 inserted, 23484 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 23975 holds; released with the writer on a ring 21834, satisfied 2140, GIVEN UP 0; held 1.05 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 7023362 inserted, 23622 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 24568 holds; released with the writer on a ring 22385, satisfied 2182, GIVEN UP 0; held 1.05 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 7249343 inserted, 22597 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 25235 holds; released with the writer on a ring 22999, satisfied 2235, GIVEN UP 0; held 1.05 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 7482645 inserted, 23326 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 25758 holds; released with the writer on a ring 23496, satisfied 2261, GIVEN UP 0; held 1.05 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 7704793 inserted, 22210 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 26420 holds; released with the writer on a ring 24095, satisfied 2324, GIVEN UP 0; held 1.05 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 7938417 inserted, 23362 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 27109 holds; released with the writer on a ring 24721, satisfied 2387, GIVEN UP 0; held 1.05 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 8175810 inserted, 23739 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 27799 holds; released with the writer on a ring 25343, satisfied 2455, GIVEN UP 0; held 1.05 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 8410962 inserted, 23514 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 28380 holds; released with the writer on a ring 25877, satisfied 2502, GIVEN UP 0; held 1.05 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 8635910 inserted, 22495 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 29025 holds; released with the writer on a ring 26460, satisfied 2564, GIVEN UP 0; held 1.05 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 8862074 inserted, 22612 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 29578 holds; released with the writer on a ring 26986, satisfied 2591, GIVEN UP 0; held 1.05 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 9082071 inserted, 21995 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 30119 holds; released with the writer on a ring 27498, satisfied 2620, GIVEN UP 0; held 1.05 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 9301275 inserted, 21919 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 30648 holds; released with the writer on a ring 28006, satisfied 2641, GIVEN UP 0; held 1.05 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 9520827 inserted, 21934 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 31234 holds; released with the writer on a ring 28564, satisfied 2669, GIVEN UP 0; held 1.05 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 9742987 inserted, 22216 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 31797 holds; released with the writer on a ring 29104, satisfied 2692, GIVEN UP 0; held 1.05 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 9962671 inserted, 21968 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 32488 holds; released with the writer on a ring 29734, satisfied 2753, GIVEN UP 0; held 1.05 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 10199312 inserted, 23662 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 33193 holds; released with the writer on a ring 30373, satisfied 2819, GIVEN UP 0; held 1.05 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 10435152 inserted, 23572 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 33882 holds; released with the writer on a ring 31012, satisfied 2869, GIVEN UP 0; held 1.04 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 10671591 inserted, 23639 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 34432 holds; released with the writer on a ring 31535, satisfied 2896, GIVEN UP 0; held 1.05 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 10893170 inserted, 22157 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 35043 holds; released with the writer on a ring 32092, satisfied 2950, GIVEN UP 0; held 1.05 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 11124559 inserted, 23137 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 35723 holds; released with the writer on a ring 32688, satisfied 3034, GIVEN UP 0; held 1.04 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 11358306 inserted, 23374 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 36331 holds; released with the writer on a ring 33258, satisfied 3073, GIVEN UP 0; held 1.04 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 11581448 inserted, 22312 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 36984 holds; released with the writer on a ring 33848, satisfied 3135, GIVEN UP 0; held 1.04 ms on average, 98.98 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 11812485 inserted, 23103 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+journal /home/kjaniszewski/bc5-data/captures/play-20261025-0042/gc/direct.log from 00:42:56
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+breadcrumbs (exp 0277): level 1, 1048576 slots at 0x7f62c5fff000 (device 0)
+breadcrumbs (exp 0277): 74 inserted, 0 a second; of 0 that followed the previous line, 0 reached and 0 done
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+hold tail: 730 holds; released with the writer on a ring 697, satisfied 32, GIVEN UP 0; held 1.02 ms on average, 23.52 ms at most; 0 waits kept inside held chains (their label written by the chain)
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+breadcrumbs (exp 0277): 16158 inserted, 1608 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+hold tail: 1729 holds; released with the writer on a ring 1633, satisfied 95, GIVEN UP 0; held 0.90 ms on average, 23.52 ms at most; 0 waits kept inside held chains (their label written by the chain)
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+breadcrumbs (exp 0277): 40634 inserted, 2446 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 2758 holds; released with the writer on a ring 2596, satisfied 161, GIVEN UP 0; held 0.84 ms on average, 23.52 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 65257 inserted, 2459 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 2967 holds; released with the writer on a ring 2790, satisfied 177, GIVEN UP 0; held 0.83 ms on average, 23.52 ms at most; 0 waits kept inside held chains (their label written by the chain)
+cs prefix (exp 0195): t 40.737 s dcb 5839 dwords dispatches at 8 before it sets a program; the queue's program 0x0909974c00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (1 such buffers)
+breadcrumbs (exp 0277): 87951 inserted, 2269 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 3705 holds; released with the writer on a ring 3477, satisfied 227, GIVEN UP 0; held 0.89 ms on average, 27.94 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 191290 inserted, 10333 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 4557 holds; released with the writer on a ring 4278, satisfied 278, GIVEN UP 0; held 0.92 ms on average, 27.94 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 303611 inserted, 11228 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 5405 holds; released with the writer on a ring 5056, satisfied 348, GIVEN UP 0; held 0.95 ms on average, 60.00 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 415762 inserted, 11214 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 6251 holds; released with the writer on a ring 5825, satisfied 425, GIVEN UP 0; held 0.96 ms on average, 60.00 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 528403 inserted, 11264 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 6864 holds; released with the writer on a ring 6377, satisfied 487, GIVEN UP 0; held 0.99 ms on average, 60.00 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 594854 inserted, 6643 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 6864 holds; released with the writer on a ring 6377, satisfied 487, GIVEN UP 0; held 0.99 ms on average, 60.00 ms at most; 0 waits kept inside held chains (their label written by the chain)
+cs prefix (exp 0195): t 101.348 s dcb 25102 dwords dispatches at 14 before it sets a program; the queue's program 0x0909973900 rsrc1 402c0041 rsrc2 0000008c, 58 dwords of compute state in front (2 such buffers)
+cs prefix (exp 0195): t 101.472 s dcb 19895 dwords dispatches at 13 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (3 such buffers)
+cs prefix (exp 0195): t 101.472 s dcb 29299 dwords dispatches at 27 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (4 such buffers)
+cs prefix (exp 0195): t 101.473 s dcb 32639 dwords dispatches at 14 before it sets a program; the queue's program 0x0909972c00 rsrc1 402c0145 rsrc2 0000001a, 58 dwords of compute state in front (5 such buffers)
+cs prefix (exp 0195): t 101.473 s dcb 32643 dwords dispatches at 14 before it sets a program; the queue's program 0x0909974c00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (6 such buffers)
+cs prefix (exp 0195): t 101.536 s dcb 32638 dwords dispatches at 14 before it sets a program; the queue's program 0x0909973b00 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (7 such buffers)
+cs prefix (exp 0195): t 101.537 s dcb 32643 dwords dispatches at 14 before it sets a program; the queue's program 0x0909974400 rsrc1 402c00c3 rsrc2 0000008e, 58 dwords of compute state in front (8 such buffers)
+cs prefix (exp 0195): t 101.537 s dcb 32641 dwords dispatches at 8 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (9 such buffers)
+cs prefix (exp 0195): t 101.537 s dcb 24693 dwords dispatches at 14 before it sets a program; the queue's program 0x0909974c00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (10 such buffers)
+breadcrumbs (exp 0277): 628603 inserted, 3374 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+cs prefix (exp 0195): t 101.652 s dcb 19904 dwords dispatches at 27 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (11 such buffers)
+cs prefix (exp 0195): t 101.653 s dcb 24161 dwords dispatches at 13 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (12 such buffers)
+cs prefix (exp 0195): t 101.656 s dcb 32643 dwords dispatches at 17 before it sets a program; the queue's program 0x090985f200 rsrc1 402c0040 rsrc2 00000010, 58 dwords of compute state in front (13 such buffers)
+cs prefix (exp 0195): t 101.661 s dcb 32643 dwords dispatches at 8 before it sets a program; the queue's program 0x0909972c00 rsrc1 402c0145 rsrc2 0000001a, 58 dwords of compute state in front (14 such buffers)
+cs prefix (exp 0195): t 101.661 s dcb 32643 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973700 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (15 such buffers)
+cs prefix (exp 0195): t 101.661 s dcb 32643 dwords dispatches at 8 before it sets a program; the queue's program 0x0909974c00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (16 such buffers)
+cs prefix (exp 0195): t 101.662 s dcb 32639 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973900 rsrc1 402c0041 rsrc2 0000008c, 58 dwords of compute state in front (17 such buffers)
+cs prefix (exp 0195): t 101.662 s dcb 32642 dwords dispatches at 14 before it sets a program; the queue's program 0x0909973b00 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (18 such buffers)
+cs prefix (exp 0195): t 101.662 s dcb 32642 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973d00 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (19 such buffers)
+cs prefix (exp 0195): t 101.663 s dcb 32640 dwords dispatches at 8 before it sets a program; the queue's program 0x0909974400 rsrc1 402c00c3 rsrc2 0000008e, 58 dwords of compute state in front (20 such buffers)
+cs prefix (exp 0195): t 101.663 s dcb 32630 dwords dispatches at 18 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (21 such buffers)
+cs prefix (exp 0195): t 101.663 s dcb 32634 dwords dispatches at 22 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (22 such buffers)
+cs prefix (exp 0195): t 102.101 s dcb 32641 dwords dispatches at 18 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (23 such buffers)
+cs prefix (exp 0195): t 102.101 s dcb 18980 dwords dispatches at 8 before it sets a program; the queue's program 0x090997a500 rsrc1 402c0186 rsrc2 00008098, 58 dwords of compute state in front (24 such buffers)
+cs prefix (exp 0195): t 102.167 s dcb 19904 dwords dispatches at 27 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (25 such buffers)
+cs prefix (exp 0195): t 102.168 s dcb 32641 dwords dispatches at 8 before it sets a program; the queue's program 0x0909974c00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (26 such buffers)
+cs prefix (exp 0195): t 102.168 s dcb 32631 dwords dispatches at 14 before it sets a program; the queue's program 0x0909973d00 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (27 such buffers)
+cs prefix (exp 0195): t 102.169 s dcb 29875 dwords dispatches at 22 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (28 such buffers)
+cs prefix (exp 0195): t 103.127 s dcb 3261 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973900 rsrc1 402c0041 rsrc2 0000008c, 58 dwords of compute state in front (29 such buffers)
+hold tail: 7375 holds; released with the writer on a ring 6788, satisfied 586, GIVEN UP 0; held 1.01 ms on average, 60.00 ms at most; 0 waits kept inside held chains (their label written by the chain)
+cs prefix (exp 0195): t 111.370 s dcb 8944 dwords dispatches at 18 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (30 such buffers)
+breadcrumbs (exp 0277): 851700 inserted, 22308 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 8145 holds; released with the writer on a ring 7396, satisfied 748, GIVEN UP 0; held 1.03 ms on average, 60.00 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 1155313 inserted, 30354 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 8889 holds; released with the writer on a ring 8076, satisfied 812, GIVEN UP 0; held 1.03 ms on average, 60.00 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 1394170 inserted, 23885 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+cs prefix (exp 0195): t 137.277 s dcb 31289 dwords dispatches at 27 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (31 such buffers)
+hold tail: 9488 holds; released with the writer on a ring 8566, satisfied 921, GIVEN UP 0; held 1.05 ms on average, 60.00 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 1592977 inserted, 19880 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+cs prefix (exp 0195): t 149.896 s dcb 274 dwords dispatches at 13 before it sets a program; the queue's program 0x11d039cd00 rsrc1 402c0043 rsrc2 00000098, 58 dwords of compute state in front (32 such buffers)
+cs prefix (exp 0195): t 149.918 s dcb 288 dwords dispatches at 27 before it sets a program; the queue's program 0x11d039cd00 rsrc1 402c0043 rsrc2 00000098, 58 dwords of compute state in front (33 such buffers)
+cs prefix (exp 0195): t 149.988 s dcb 288 dwords dispatches at 27 before it sets a program; the queue's program 0x11d039cd00 rsrc1 402c0043 rsrc2 00000098, 58 dwords of compute state in front (34 such buffers)
+cs prefix (exp 0195): t 150.010 s dcb 312 dwords dispatches at 32 before it sets a program; the queue's program 0x11d039cd00 rsrc1 402c0043 rsrc2 00000098, 58 dwords of compute state in front (35 such buffers)
+hold tail: 10030 holds; released with the writer on a ring 9033, satisfied 996, GIVEN UP 0; held 1.07 ms on average, 60.00 ms at most; 0 waits kept inside held chains (their label written by the chain)
+cs prefix (exp 0195): t 151.117 s dcb 79 dwords dispatches at 34 before it sets a program; the queue's program 0x11d0322e00 rsrc1 402c00c4 rsrc2 0000099c, 58 dwords of compute state in front (36 such buffers)
+breadcrumbs (exp 0277): 1825437 inserted, 23194 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 10496 holds; released with the writer on a ring 9380, satisfied 1115, GIVEN UP 0; held 1.11 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 2009671 inserted, 18422 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 11091 holds; released with the writer on a ring 9961, satisfied 1129, GIVEN UP 0; held 1.11 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 2230430 inserted, 22073 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 11672 holds; released with the writer on a ring 10524, satisfied 1147, GIVEN UP 0; held 1.11 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 2450797 inserted, 22034 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 12285 holds; released with the writer on a ring 11115, satisfied 1169, GIVEN UP 0; held 1.10 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 2675206 inserted, 22437 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 12912 holds; released with the writer on a ring 11729, satisfied 1182, GIVEN UP 0; held 1.10 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 2903213 inserted, 22795 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 13611 holds; released with the writer on a ring 12401, satisfied 1209, GIVEN UP 0; held 1.09 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 3138604 inserted, 23539 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 14272 holds; released with the writer on a ring 13047, satisfied 1224, GIVEN UP 0; held 1.08 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 3364706 inserted, 22606 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 14858 holds; released with the writer on a ring 13614, satisfied 1243, GIVEN UP 0; held 1.09 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 3585068 inserted, 22031 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 15506 holds; released with the writer on a ring 14241, satisfied 1264, GIVEN UP 0; held 1.08 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 3815798 inserted, 23060 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 16191 holds; released with the writer on a ring 14894, satisfied 1296, GIVEN UP 0; held 1.08 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 4050378 inserted, 23449 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 16905 holds; released with the writer on a ring 15589, satisfied 1315, GIVEN UP 0; held 1.07 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 4280021 inserted, 22949 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 17513 holds; released with the writer on a ring 16177, satisfied 1335, GIVEN UP 0; held 1.07 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 4507235 inserted, 22721 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 18250 holds; released with the writer on a ring 16896, satisfied 1353, GIVEN UP 0; held 1.06 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 4741831 inserted, 23459 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 18836 holds; released with the writer on a ring 17464, satisfied 1371, GIVEN UP 0; held 1.06 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 4965551 inserted, 22368 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 19523 holds; released with the writer on a ring 18130, satisfied 1392, GIVEN UP 0; held 1.06 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 5198510 inserted, 23296 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 20243 holds; released with the writer on a ring 18821, satisfied 1421, GIVEN UP 0; held 1.06 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 5434051 inserted, 23554 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 20909 holds; released with the writer on a ring 19465, satisfied 1443, GIVEN UP 0; held 1.05 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 5663964 inserted, 22986 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 21555 holds; released with the writer on a ring 20097, satisfied 1457, GIVEN UP 0; held 1.05 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 5893305 inserted, 22932 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 22220 holds; released with the writer on a ring 20736, satisfied 1483, GIVEN UP 0; held 1.05 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 6127637 inserted, 23426 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 22907 holds; released with the writer on a ring 21400, satisfied 1506, GIVEN UP 0; held 1.05 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 6362124 inserted, 23447 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 23606 holds; released with the writer on a ring 22083, satisfied 1522, GIVEN UP 0; held 1.04 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 6598675 inserted, 23654 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 24277 holds; released with the writer on a ring 22734, satisfied 1542, GIVEN UP 0; held 1.04 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 6827233 inserted, 22856 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 24992 holds; released with the writer on a ring 23430, satisfied 1561, GIVEN UP 0; held 1.04 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 7063066 inserted, 23581 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 25689 holds; released with the writer on a ring 24103, satisfied 1585, GIVEN UP 0; held 1.04 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 7297157 inserted, 23396 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 26396 holds; released with the writer on a ring 24781, satisfied 1614, GIVEN UP 0; held 1.04 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 7528750 inserted, 23158 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 27085 holds; released with the writer on a ring 25449, satisfied 1635, GIVEN UP 0; held 1.03 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 7762983 inserted, 23422 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 27738 holds; released with the writer on a ring 26085, satisfied 1652, GIVEN UP 0; held 1.03 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 7992095 inserted, 22908 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 28436 holds; released with the writer on a ring 26761, satisfied 1674, GIVEN UP 0; held 1.03 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 8226655 inserted, 23452 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 29155 holds; released with the writer on a ring 27445, satisfied 1709, GIVEN UP 0; held 1.02 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 8459960 inserted, 23328 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 29866 holds; released with the writer on a ring 28131, satisfied 1734, GIVEN UP 0; held 1.02 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 8696672 inserted, 23669 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 30545 holds; released with the writer on a ring 28795, satisfied 1749, GIVEN UP 0; held 1.02 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 8925462 inserted, 22875 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 31237 holds; released with the writer on a ring 29468, satisfied 1768, GIVEN UP 0; held 1.02 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 9159731 inserted, 23426 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 31946 holds; released with the writer on a ring 30163, satisfied 1782, GIVEN UP 0; held 1.02 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 9394544 inserted, 23466 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 32638 holds; released with the writer on a ring 30822, satisfied 1815, GIVEN UP 0; held 1.02 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 9625677 inserted, 23113 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 33255 holds; released with the writer on a ring 31430, satisfied 1824, GIVEN UP 0; held 1.02 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 9852172 inserted, 22649 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 33830 holds; released with the writer on a ring 31982, satisfied 1847, GIVEN UP 0; held 1.02 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 10073704 inserted, 22150 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 34452 holds; released with the writer on a ring 32583, satisfied 1868, GIVEN UP 0; held 1.02 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 10301981 inserted, 22827 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 35073 holds; released with the writer on a ring 33178, satisfied 1894, GIVEN UP 0; held 1.02 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 10526743 inserted, 22474 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 35749 holds; released with the writer on a ring 33831, satisfied 1917, GIVEN UP 0; held 1.02 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 10757788 inserted, 23104 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 36384 holds; released with the writer on a ring 34439, satisfied 1944, GIVEN UP 0; held 1.02 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 10982498 inserted, 22456 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 37079 holds; released with the writer on a ring 35111, satisfied 1967, GIVEN UP 0; held 1.02 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 11215337 inserted, 23283 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 37796 holds; released with the writer on a ring 35805, satisfied 1990, GIVEN UP 0; held 1.02 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 11451410 inserted, 23605 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 38496 holds; released with the writer on a ring 36472, satisfied 2023, GIVEN UP 0; held 1.02 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 11686167 inserted, 23458 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 39139 holds; released with the writer on a ring 37095, satisfied 2043, GIVEN UP 0; held 1.02 ms on average, 61.77 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 11915296 inserted, 22912 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+journal /home/kjaniszewski/bc5-data/captures/play-20261025-0053/gc/direct.log from 00:53:11
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+breadcrumbs (exp 0277): level 1, 1048576 slots at 0x7f2c11fff000 (device 0)
+breadcrumbs (exp 0277): 74 inserted, 0 a second; of 0 that followed the previous line, 0 reached and 0 done
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+hold tail: 747 holds; released with the writer on a ring 705, satisfied 41, GIVEN UP 0; held 1.01 ms on average, 20.96 ms at most; 0 waits kept inside held chains (their label written by the chain)
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+breadcrumbs (exp 0277): 16446 inserted, 1634 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+hold tail: 1789 holds; released with the writer on a ring 1671, satisfied 117, GIVEN UP 0; held 0.94 ms on average, 20.96 ms at most; 0 waits kept inside held chains (their label written by the chain)
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+breadcrumbs (exp 0277): 41021 inserted, 2457 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 2792 holds; released with the writer on a ring 2576, satisfied 215, GIVEN UP 0; held 0.89 ms on average, 20.96 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 65832 inserted, 2480 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 2991 holds; released with the writer on a ring 2763, satisfied 228, GIVEN UP 0; held 0.89 ms on average, 20.96 ms at most; 0 waits kept inside held chains (their label written by the chain)
+cs prefix (exp 0195): t 41.189 s dcb 5834 dwords dispatches at 14 before it sets a program; the queue's program 0x0909974c00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (1 such buffers)
+breadcrumbs (exp 0277): 85505 inserted, 1967 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 3674 holds; released with the writer on a ring 3375, satisfied 298, GIVEN UP 0; held 0.96 ms on average, 20.96 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 182867 inserted, 9732 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 4521 holds; released with the writer on a ring 4148, satisfied 373, GIVEN UP 0; held 0.97 ms on average, 20.96 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 296781 inserted, 11391 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 5360 holds; released with the writer on a ring 4923, satisfied 436, GIVEN UP 0; held 0.96 ms on average, 20.96 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 409894 inserted, 11311 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 6189 holds; released with the writer on a ring 5686, satisfied 502, GIVEN UP 0; held 0.97 ms on average, 20.96 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 523346 inserted, 11345 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 6861 holds; released with the writer on a ring 6306, satisfied 555, GIVEN UP 0; held 0.97 ms on average, 20.96 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 593120 inserted, 6976 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 6861 holds; released with the writer on a ring 6306, satisfied 555, GIVEN UP 0; held 0.97 ms on average, 20.96 ms at most; 0 waits kept inside held chains (their label written by the chain)
+cs prefix (exp 0195): t 101.171 s dcb 32641 dwords dispatches at 8 before it sets a program; the queue's program 0x090985f200 rsrc1 402c0040 rsrc2 00000010, 58 dwords of compute state in front (2 such buffers)
+cs prefix (exp 0195): t 101.173 s dcb 32638 dwords dispatches at 14 before it sets a program; the queue's program 0x0909973b00 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (3 such buffers)
+cs prefix (exp 0195): t 101.173 s dcb 32642 dwords dispatches at 18 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (4 such buffers)
+cs prefix (exp 0195): t 101.225 s dcb 6816 dwords dispatches at 18 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (5 such buffers)
+cs prefix (exp 0195): t 101.313 s dcb 26589 dwords dispatches at 13 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (6 such buffers)
+cs prefix (exp 0195): t 101.314 s dcb 32642 dwords dispatches at 8 before it sets a program; the queue's program 0x0909972c00 rsrc1 402c0145 rsrc2 0000001a, 58 dwords of compute state in front (7 such buffers)
+cs prefix (exp 0195): t 101.314 s dcb 32634 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973900 rsrc1 402c0041 rsrc2 0000008c, 58 dwords of compute state in front (8 such buffers)
+cs prefix (exp 0195): t 101.314 s dcb 32643 dwords dispatches at 18 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (9 such buffers)
+cs prefix (exp 0195): t 101.315 s dcb 32641 dwords dispatches at 18 before it sets a program; the queue's program 0x090997a500 rsrc1 402c0186 rsrc2 00008098, 58 dwords of compute state in front (10 such buffers)
+cs prefix (exp 0195): t 101.418 s dcb 9361 dwords dispatches at 8 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (11 such buffers)
+cs prefix (exp 0195): t 101.458 s dcb 19904 dwords dispatches at 27 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (12 such buffers)
+cs prefix (exp 0195): t 101.463 s dcb 32643 dwords dispatches at 17 before it sets a program; the queue's program 0x090985f200 rsrc1 402c0040 rsrc2 00000010, 58 dwords of compute state in front (13 such buffers)
+cs prefix (exp 0195): t 101.463 s dcb 32640 dwords dispatches at 14 before it sets a program; the queue's program 0x0909972c00 rsrc1 402c0145 rsrc2 0000001a, 58 dwords of compute state in front (14 such buffers)
+cs prefix (exp 0195): t 101.464 s dcb 32642 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973700 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (15 such buffers)
+cs prefix (exp 0195): t 101.464 s dcb 32639 dwords dispatches at 8 before it sets a program; the queue's program 0x0909974200 rsrc1 402c0040 rsrc2 0000008e, 58 dwords of compute state in front (16 such buffers)
+cs prefix (exp 0195): t 101.464 s dcb 32641 dwords dispatches at 14 before it sets a program; the queue's program 0x0909973900 rsrc1 402c0041 rsrc2 0000008c, 58 dwords of compute state in front (17 such buffers)
+cs prefix (exp 0195): t 101.464 s dcb 32642 dwords dispatches at 14 before it sets a program; the queue's program 0x0909973d00 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (18 such buffers)
+cs prefix (exp 0195): t 101.465 s dcb 32642 dwords dispatches at 14 before it sets a program; the queue's program 0x0909974400 rsrc1 402c00c3 rsrc2 0000008e, 58 dwords of compute state in front (19 such buffers)
+cs prefix (exp 0195): t 101.465 s dcb 32635 dwords dispatches at 8 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (20 such buffers)
+cs prefix (exp 0195): t 101.465 s dcb 32642 dwords dispatches at 18 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (21 such buffers)
+cs prefix (exp 0195): t 101.465 s dcb 32643 dwords dispatches at 8 before it sets a program; the queue's program 0x090997a500 rsrc1 402c0186 rsrc2 00008098, 58 dwords of compute state in front (22 such buffers)
+cs prefix (exp 0195): t 101.466 s dcb 1877 dwords dispatches at 8 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (23 such buffers)
+breadcrumbs (exp 0277): 647522 inserted, 5346 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+cs prefix (exp 0195): t 101.823 s dcb 19904 dwords dispatches at 27 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (24 such buffers)
+cs prefix (exp 0195): t 101.824 s dcb 32643 dwords dispatches at 17 before it sets a program; the queue's program 0x090985f200 rsrc1 402c0040 rsrc2 00000010, 58 dwords of compute state in front (25 such buffers)
+cs prefix (exp 0195): t 101.824 s dcb 32639 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973700 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (26 such buffers)
+cs prefix (exp 0195): t 101.825 s dcb 32643 dwords dispatches at 14 before it sets a program; the queue's program 0x0909974200 rsrc1 402c0040 rsrc2 0000008e, 58 dwords of compute state in front (27 such buffers)
+cs prefix (exp 0195): t 101.825 s dcb 32641 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973d00 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (28 such buffers)
+cs prefix (exp 0195): t 101.825 s dcb 32641 dwords dispatches at 18 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (29 such buffers)
+cs prefix (exp 0195): t 101.940 s dcb 27297 dwords dispatches at 8 before it sets a program; the queue's program 0x090997a500 rsrc1 402c0186 rsrc2 00008098, 58 dwords of compute state in front (30 such buffers)
+cs prefix (exp 0195): t 103.970 s dcb 79 dwords dispatches at 34 before it sets a program; the queue's program 0x11d0322e00 rsrc1 402c00c4 rsrc2 0000099c, 58 dwords of compute state in front (31 such buffers)
+hold tail: 7393 holds; released with the writer on a ring 6787, satisfied 605, GIVEN UP 0; held 0.99 ms on average, 30.27 ms at most; 0 waits kept inside held chains (their label written by the chain)
+cs prefix (exp 0195): t 111.117 s dcb 8326 dwords dispatches at 18 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (32 such buffers)
+breadcrumbs (exp 0277): 864707 inserted, 21716 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 8199 holds; released with the writer on a ring 7511, satisfied 687, GIVEN UP 0; held 1.00 ms on average, 30.27 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 1160986 inserted, 29443 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 8973 holds; released with the writer on a ring 8253, satisfied 719, GIVEN UP 0; held 1.00 ms on average, 30.27 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 1409173 inserted, 24818 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+cs prefix (exp 0195): t 136.360 s dcb 317 dwords dispatches at 18 before it sets a program; the queue's program 0x11d039cd00 rsrc1 402c0043 rsrc2 00000098, 58 dwords of compute state in front (33 such buffers)
+cs prefix (exp 0195): t 136.570 s dcb 31122 dwords dispatches at 27 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (34 such buffers)
+hold tail: 9611 holds; released with the writer on a ring 8802, satisfied 808, GIVEN UP 0; held 1.02 ms on average, 32.37 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 1612361 inserted, 20263 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+cs prefix (exp 0195): t 149.611 s dcb 288 dwords dispatches at 27 before it sets a program; the queue's program 0x11d039cd00 rsrc1 402c0043 rsrc2 00000098, 58 dwords of compute state in front (35 such buffers)
+cs prefix (exp 0195): t 149.632 s dcb 274 dwords dispatches at 13 before it sets a program; the queue's program 0x11d039cd00 rsrc1 402c0043 rsrc2 00000098, 58 dwords of compute state in front (36 such buffers)
+cs prefix (exp 0195): t 149.690 s dcb 312 dwords dispatches at 32 before it sets a program; the queue's program 0x11d039cd00 rsrc1 402c0043 rsrc2 00000098, 58 dwords of compute state in front (37 such buffers)
+cs prefix (exp 0195): t 149.709 s dcb 288 dwords dispatches at 27 before it sets a program; the queue's program 0x11d039cd00 rsrc1 402c0043 rsrc2 00000098, 58 dwords of compute state in front (38 such buffers)
+hold tail: 10149 holds; released with the writer on a ring 9308, satisfied 840, GIVEN UP 0; held 1.03 ms on average, 32.37 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 1845314 inserted, 23292 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 10763 holds; released with the writer on a ring 9870, satisfied 892, GIVEN UP 0; held 1.06 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 2057744 inserted, 21240 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 11281 holds; released with the writer on a ring 10375, satisfied 905, GIVEN UP 0; held 1.05 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 2274532 inserted, 21664 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 11813 holds; released with the writer on a ring 10889, satisfied 923, GIVEN UP 0; held 1.05 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 2491968 inserted, 21713 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 12340 holds; released with the writer on a ring 11405, satisfied 934, GIVEN UP 0; held 1.05 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 2709126 inserted, 21714 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 12859 holds; released with the writer on a ring 11900, satisfied 958, GIVEN UP 0; held 1.05 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 2923419 inserted, 21398 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 13392 holds; released with the writer on a ring 12414, satisfied 977, GIVEN UP 0; held 1.05 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 3147398 inserted, 22398 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 14029 holds; released with the writer on a ring 13018, satisfied 1010, GIVEN UP 0; held 1.05 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 3374446 inserted, 22704 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 14540 holds; released with the writer on a ring 13501, satisfied 1038, GIVEN UP 0; held 1.05 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 3590908 inserted, 21645 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 15089 holds; released with the writer on a ring 14028, satisfied 1060, GIVEN UP 0; held 1.05 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 3809644 inserted, 21863 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 15603 holds; released with the writer on a ring 14519, satisfied 1084, GIVEN UP 0; held 1.05 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 4027175 inserted, 21745 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 16295 holds; released with the writer on a ring 15153, satisfied 1141, GIVEN UP 0; held 1.05 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 4262714 inserted, 23553 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 17007 holds; released with the writer on a ring 15816, satisfied 1190, GIVEN UP 0; held 1.05 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 4499142 inserted, 23637 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 17656 holds; released with the writer on a ring 16409, satisfied 1246, GIVEN UP 0; held 1.04 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 4728655 inserted, 22948 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 18207 holds; released with the writer on a ring 16947, satisfied 1259, GIVEN UP 0; held 1.04 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 4945815 inserted, 21707 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 18798 holds; released with the writer on a ring 17510, satisfied 1287, GIVEN UP 0; held 1.04 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 5171480 inserted, 22566 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 19415 holds; released with the writer on a ring 18098, satisfied 1316, GIVEN UP 0; held 1.04 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 5391239 inserted, 21975 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 19915 holds; released with the writer on a ring 18578, satisfied 1336, GIVEN UP 0; held 1.04 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 5604495 inserted, 21323 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 20417 holds; released with the writer on a ring 19069, satisfied 1348, GIVEN UP 0; held 1.04 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 5820454 inserted, 21593 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 21057 holds; released with the writer on a ring 19658, satisfied 1398, GIVEN UP 0; held 1.04 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 6056200 inserted, 23566 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 21722 holds; released with the writer on a ring 20275, satisfied 1446, GIVEN UP 0; held 1.04 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 6292995 inserted, 23646 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 22372 holds; released with the writer on a ring 20853, satisfied 1518, GIVEN UP 0; held 1.04 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 6525397 inserted, 23238 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 22906 holds; released with the writer on a ring 21353, satisfied 1552, GIVEN UP 0; held 1.04 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 6745754 inserted, 22016 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 23570 holds; released with the writer on a ring 21968, satisfied 1601, GIVEN UP 0; held 1.04 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 6980749 inserted, 23498 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 24240 holds; released with the writer on a ring 22597, satisfied 1642, GIVEN UP 0; held 1.03 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 7213704 inserted, 23291 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 24924 holds; released with the writer on a ring 23220, satisfied 1703, GIVEN UP 0; held 1.03 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 7444069 inserted, 23032 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 25448 holds; released with the writer on a ring 23730, satisfied 1717, GIVEN UP 0; held 1.03 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 7658346 inserted, 21421 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 25969 holds; released with the writer on a ring 24239, satisfied 1729, GIVEN UP 0; held 1.04 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 7873702 inserted, 21532 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 26479 holds; released with the writer on a ring 24724, satisfied 1754, GIVEN UP 0; held 1.04 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 8086929 inserted, 21320 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 27052 holds; released with the writer on a ring 25263, satisfied 1788, GIVEN UP 0; held 1.04 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 8309974 inserted, 22304 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 27741 holds; released with the writer on a ring 25895, satisfied 1845, GIVEN UP 0; held 1.04 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 8545143 inserted, 23515 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 28397 holds; released with the writer on a ring 26500, satisfied 1896, GIVEN UP 0; held 1.04 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 8778659 inserted, 23350 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 29088 holds; released with the writer on a ring 27146, satisfied 1941, GIVEN UP 0; held 1.03 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 9008687 inserted, 23002 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 29694 holds; released with the writer on a ring 27721, satisfied 1972, GIVEN UP 0; held 1.03 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 9236123 inserted, 22742 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 30376 holds; released with the writer on a ring 28340, satisfied 2035, GIVEN UP 0; held 1.03 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 9471292 inserted, 23515 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 31041 holds; released with the writer on a ring 28955, satisfied 2085, GIVEN UP 0; held 1.03 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 9705333 inserted, 23402 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 31684 holds; released with the writer on a ring 29552, satisfied 2131, GIVEN UP 0; held 1.03 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 9931261 inserted, 22590 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 32332 holds; released with the writer on a ring 30169, satisfied 2162, GIVEN UP 0; held 1.03 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 10162099 inserted, 23068 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 33030 holds; released with the writer on a ring 30817, satisfied 2212, GIVEN UP 0; held 1.03 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 10396145 inserted, 23401 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 33570 holds; released with the writer on a ring 31334, satisfied 2235, GIVEN UP 0; held 1.03 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 10615656 inserted, 21950 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 34073 holds; released with the writer on a ring 31817, satisfied 2255, GIVEN UP 0; held 1.03 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 10829651 inserted, 21385 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 34678 holds; released with the writer on a ring 32391, satisfied 2286, GIVEN UP 0; held 1.03 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 11059867 inserted, 23021 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 35333 holds; released with the writer on a ring 33001, satisfied 2331, GIVEN UP 0; held 1.03 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 11293790 inserted, 23391 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 36034 holds; released with the writer on a ring 33656, satisfied 2377, GIVEN UP 0; held 1.03 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 11528497 inserted, 23470 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
+hold tail: 36663 holds; released with the writer on a ring 34237, satisfied 2425, GIVEN UP 0; held 1.03 ms on average, 57.69 ms at most; 0 waits kept inside held chains (their label written by the chain)
+breadcrumbs (exp 0277): 11752074 inserted, 22357 a second; of 4096 that followed the previous line, 4096 reached and 4096 done
