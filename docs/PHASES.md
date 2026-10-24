@@ -2,6 +2,21 @@
 
 Each phase ends with a gate: an experiment whose recorded result decides whether the next phase starts. A gate is "passed" only when an `experiments/NNNN-*/README.md` says so with evidence. No dates.
 
+## Where the roadmap stands (2026-10-24)
+
+| Phase | Gate | State |
+| --- | --- | --- |
+| 0a — `bc5-mount` | G0a | **Passed** (experiment 0002) |
+| 0b — RPCSX baseline | G0b | **Retired** by D18 / ADR 0012 (no firmware boot); tasks 1–2 done (0003, 0006) |
+| 1b — track B, Sony's `libSceAgc` in KytyPlus | G1b | **Passed** (0011, 0012) |
+| 1 — AGC decoder and tap | G1 | Not recorded as a gate; its substance was shown on track B (0011: Sony's frames decode with zero unknown opcodes); the RPCSX tap is retired by D18 |
+| 2 — native shaders | G2 | **Passed** (0013, 0014) |
+| 3 — direct submission | G3 | **Passed** (0016) |
+| 4 — integration into RPCSX | G4 | **Retired** by D18; its aim, a game through the native path, was reached on track B instead (F85: ASTRO BOT fully playable) |
+| 5 — play: both titles on the direct path | G5 (proposed) | **Current** |
+
+Since D18 there is one road: the KytyPlus host with every system library written in the host, BC5's direct GPU path behind `/dev/gc`, and the work driven by the maintainer's play (phase 5).
+
 ## Phase 0a — Input: `bc5-mount`
 
 Goal: one canonical input for everything downstream. A read-only FUSE mount that exposes a `.ffpfsc` container as a plain `app0` directory.
@@ -13,7 +28,7 @@ Tasks
 4. FUSE layer with `fuser`: `bc5-mount mount <container> <mountpoint>`. Read-only. `bc5-mount verify <container>` walks the tree and prints SHA-256 per file without FUSE; `ls` and `cat` work everywhere.
 5. `bc5-mount inspect <container>`: prints superblock, compression ratio, file count, title metadata from `sce_sys/param.json` if present.
 
-Gate G0a: mounting a synthetic container yields a file tree and per-file SHA-256 identical to the source directory; `cargo test` passes; throughput ≥ 300 MB/s sequential read on the dev box (record the number).
+Gate G0a: mounting a synthetic container yields a file tree and per-file SHA-256 identical to the source directory; `cargo test` passes; throughput ≥ 300 MB/s sequential read on the dev box (record the number). *Passed, experiment 0002 (≥ 1.4 GB/s sequential read through the mount; MkPFS accepts every generated container).*
 
 Needs: any Linux with FUSE. No BC-250, no game.
 
@@ -25,7 +40,7 @@ Tasks
 3. Boot PS5 VSH / safe mode through the stock Vulkan backend. Record FPS, `RADV_DEBUG` logs, any hangs.
 4. Report results on the RPCSX Discord (human does this) — establish contact before any PR.
 
-Gate G0b: VSH boots on the BC-250 through stock RPCSX; baseline numbers recorded.
+Gate G0b: VSH boots on the BC-250 through stock RPCSX; baseline numbers recorded. *Retired 2026-10-19 by D18 / ADR 0012: the project does not boot PS5 firmware or system software. Tasks 1–2 were done (experiments 0003 and 0006: RPCSX builds unmodified in the `ubuntu` distrobox); task 3 never ran; RPCSX stays a reference for the AGC/GPU side only.*
 
 ## Phase 1b — Track B: Sony's `libSceAgc` in an HLE host (D11)
 
@@ -49,7 +64,7 @@ Tasks
 3. Tap in RPCSX (C++): dump every submitted DCB/CCB to files, gated by an env var. Kept as a small patch under `backend/rpcsx-patches/` until upstreamed.
 4. Count mask-register writes (Q3) and unknown register offsets (Q4).
 
-Gate G1: a full VSH frame (track A) or a full ASTRO BOT frame from track B decodes with zero unknown opcodes; unknown register offsets are listed with counts.
+Gate G1: a full VSH frame (track A) or a full ASTRO BOT frame from track B decodes with zero unknown opcodes; unknown register offsets are listed with counts. *Not recorded as passed. Track B showed its substance in experiments 0011–0012 (Sony-built DCBs captured at `/dev/gc` decode with `bc5-agc` with zero unknown opcodes; whole frames captured through the soft CP); task 3 (the RPCSX tap) is retired by D18.*
 
 ## Phase 2 — Native shaders
 
@@ -77,9 +92,24 @@ Tasks
 2. First 2D title from Kyty's compatibility list, using the maintainer's own dump via `bc5-mount`.
 3. Fallback path: packets the backend cannot handle go through the stock Vulkan backend (per-packet or per-frame switch).
 
-Gate G4: a game reaches its menu through the native path; deviations from the Vulkan path listed.
+Gate G4: a game reaches its menu through the native path; deviations from the Vulkan path listed. *Retired 2026-10-19 by D18 together with RPCSX integration. Its aim was reached on track B: ASTRO BOT is fully playable through the direct path (F85), and the second title plays from its menus into gameplay (F207, F212, F277).*
+
+## Phase 5 — Play: both titles on the direct path (current)
+
+The maintainer plays ASTRO BOT and the second title on the shared builds (normal and lean, `~/bc5-work/kytyplus-build[-lean]`). What he sees in play becomes an experiment; a fix is a diff in its experiment directory, built privately, tested in play or on the bench, and integrated into both shared builds only with his yes (the procedure is in `PROMPT.md`). The top session owns the box and commits; the standing policy is that a speed-up with no regression goes into use even when the root cause is not found.
+
+Done in this phase (selection; details in `docs/HANDOFF.md` and `README.md`): ASTRO BOT fully playable with motion, haptics and adaptive triggers (F85); the second title from menus into gameplay with sound, saves, pause and ray-traced reflections (F207–F277); DualSense haptics from its ATRAC9 tracks (F301); loading and stall fixes (APR read-ahead, tiler pool, held tail; F287–F312); SaveData sidecars (F319); DualShock 4 rumble and pad speaker (F330); a live Ray tracing switch (F343); timeout probe, dispatch grids and saved GPU coredumps for hang analysis (F317, F334, CLAUDE.md).
+
+Open, in the order they matter for play:
+1. **Hangs and machine-downs of the second title.** Every hang caught on 2026-10-24 stood in the title's BVH build work, with the other ring waiting (F332, F336, F339); stray TCP writes also occur with that work dropped (F338). Next: the breadcrumb build (experiments 0277/0281) to name the hung dispatch; a long RT-off session.
+2. **The night lake's patchwork** (F305–F342): holes where no depth was written, switching between two fixed pixel sets; not cleared by RT off (F341).
+3. **Reflections incomplete**: the BVH compaction 0x909974400 stays skipped (F207, F268, F325).
+4. **The host's library code is behind upstream**: KytyPlus has 328 library commits since `f266548` (`docs/ports/upstream-sync-review.md`); two ports are in experiment 0276.
+5. **The backend archive** the shared builds link (Q19).
+
+Gate G5 (proposed, for the maintainer to confirm): the second title plays a 60-minute session on the default shared build with no GPU hang, fault or machine-down, recorded in an experiment with the kernel stream.
 
 ## Later
 
-- I/O layer: prefetch/cache to hide SSD/Kraken assumptions (Q5).
-- Audio/input polish inherited from RPCSX.
+- I/O layer: prefetch/cache to hide SSD/Kraken assumptions (Q5); `bc5-mount`'s startup preload (ADR 0014) and the APR read-ahead (F273) cover the loading paths measured so far.
+- Rebasing patch 0001 onto upstream KytyPlus (55 of its 83 files conflict with upstream HEAD).
