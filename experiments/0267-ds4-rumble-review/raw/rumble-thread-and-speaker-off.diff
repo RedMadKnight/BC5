@@ -1,0 +1,188 @@
+diff --git a/src/libs/audio.cpp b/src/libs/audio.cpp
+index fd5b48a9..ac2f6877 100644
+--- a/src/libs/audio.cpp
++++ b/src/libs/audio.cpp
+@@ -123,6 +123,10 @@ private:
+ 		// 2 = the controller's haptic actuators (its channels 3-4). The DualSense is a 4-channel
+ 		// USB audio device, and the game's vibration is an audio stream to those actuators.
+ 		int pad_route = 0;
++		// BC5 (experiment 0267, after exp 0268): a pad-speaker port on the default sink, because the pad has
++		// no audio device (a DualShock 4), queues without ever holding the title's audio thread, like the
++		// pad-routed ports; exp 0268 saw that wait cost the main mix 0.36 s at t 149-150 s of the 16:05 play.
++		bool pad_nb = false;
+ 		// BC5: when the controller's device last had to be reopened (ms), see QueueSdlAudio.
+ 		uint64_t pad_retry_ms = 0;
+ 		// BC5 (audio pacing, KYTY_BC5_AUDIO_TRACE=1): what the port did since the last trace line.
+@@ -309,10 +313,23 @@ bool Audio::OpenSdlDevice(PortOut* port) {
+ 	port->pad_route      = 0;
+ 	// KYTY_BC5_PAD_SPEAKER=main: the pad-speaker ports stay on the default output (the game sends
+ 	// some effects to the controller's speaker, as on the console); the haptics still go to the pad.
++	// KYTY_BC5_PAD_SPEAKER=off (experiment 0267): a pad-speaker port with no controller audio device
++	// stays silent instead of playing on the default output (a DualShock 4 has no such device, and
++	// the maintainer heard the pad's effects from the TV after a replug).
+ 	static const bool speaker_on_main = [] {
+ 		const char* e = std::getenv("KYTY_BC5_PAD_SPEAKER");
+ 		return e != nullptr && std::strcmp(e, "main") == 0;
+ 	}();
++	static const bool speaker_off = [] {
++		const char* e = std::getenv("KYTY_BC5_PAD_SPEAKER");
++		return e != nullptr && std::strcmp(e, "off") == 0;
++	}();
++	// KYTY_BC5_PAD_SPEAKER=main-blocking: the pad-speaker port on the default sink as a blocking port, as
++	// before experiment 0267 (the A/B arm of exp 0268's hold).
++	static const bool speaker_blocking = [] {
++		const char* e = std::getenv("KYTY_BC5_PAD_SPEAKER");
++		return e != nullptr && std::strcmp(e, "main-blocking") == 0;
++	}();
+ 	if (std::getenv("KYTY_BC5_NO_PAD_AUDIO") == nullptr &&
+ 	    ((port->type == AUDIO_OUT_PORT_TYPE_PADSPK && !speaker_on_main) || port->type == AUDIO_OUT_PORT_TYPE_VIBRATION)) {
+ 		const char* want = std::getenv("KYTY_BC5_PAD_AUDIO_DEVICE") != nullptr ? std::getenv("KYTY_BC5_PAD_AUDIO_DEVICE") : "DualSense";
+@@ -324,6 +341,9 @@ bool Audio::OpenSdlDevice(PortOut* port) {
+ 		if (pad_name != nullptr) {
+ 			desired.channels = PAD_STREAM_CHANNELS;
+ 			port->pad_route  = port->type == AUDIO_OUT_PORT_TYPE_VIBRATION ? 2 : 1;
++		} else if (port->type == AUDIO_OUT_PORT_TYPE_PADSPK && speaker_off) {
++			LOGF("AudioOut: no controller audio device for the pad speaker port; KYTY_BC5_PAD_SPEAKER=off keeps it silent\n");
++			return false;
+ 		} else if (port->type == AUDIO_OUT_PORT_TYPE_VIBRATION) {
+ 			LOGF("AudioOut: no controller audio device for the vibration port; it stays silent\n");
+ 			return false;
+@@ -342,6 +362,7 @@ bool Audio::OpenSdlDevice(PortOut* port) {
+ 
+ 	port->audio_spec = obtained;
+ 	SDL_PauseAudioDevice(port->audio_device, 0);
++	port->pad_nb = port->type == AUDIO_OUT_PORT_TYPE_PADSPK && pad_name == nullptr && !speaker_blocking;
+ 
+ 	LOGF("AudioOut: opened SDL device (%d Hz, %u ch, format 0x%04x) for port type %d, %d ch%s%s\n", obtained.freq,
+ 	     obtained.channels, obtained.format, port->type, port->channels_num, pad_name != nullptr ? " on " : "", pad_name != nullptr ? pad_name : "");
+@@ -698,6 +719,16 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+ 		blocking = false;
+ 	}
+ 
++	// BC5 (experiment 0267, after exp 0268): the pad-speaker port on the default sink: a full queue is
++	// cleared, never waited for, so the title's audio thread (which also writes the main port in lockstep)
++	// is not held by it.
++	if (port->pad_nb) {
++		if (SDL_GetQueuedAudioSize(port->audio_device) > queue_size * 8) {
++			SDL_ClearQueuedAudio(port->audio_device);
++		}
++		blocking = false;
++	}
++
+ 	if (blocking) {
+ 		// More aggressive buffer management to prevent audio issues
+ 		// during heavy GPU load (common in gameplay vs cutscene)
+diff --git a/src/libs/controller.cpp b/src/libs/controller.cpp
+index a2befc5a..9688dafe 100644
+--- a/src/libs/controller.cpp
++++ b/src/libs/controller.cpp
+@@ -20,6 +20,7 @@
+ 
+ #include <cmath>
+ #include <thread>
++#include <condition_variable>
+ #include <chrono>
+ #include <string>
+ #include <cstdlib>
+@@ -566,7 +567,28 @@ void ControllerDisconnect(int id) {
+ // TODO(verify): which actuator the console drives for each byte of scePadSetVibration; the
+ // large/small naming here follows dualsense.h and AnyPS5 (large = the vibration stream's left
+ // channel), neither of which was checked against a console.
+-void ControllerRumble(uint8_t large, uint8_t small, uint32_t duration_ms) {
++// BC5 (experiment 0267): the write to the pad happens on a thread of its own. SDL_JoystickRumble
++// takes the joystick lock, which the window thread holds while it scans /dev/input on a hotplug,
++// and then does an ioctl and a write on the device; called from the title's pad thread
++// (scePadSetVibration) or its audio thread (the vibration-port fallback), that could hold them
++// for the length of a scan. The latest value wins; nothing waits.
++namespace {
++struct RumbleOutput {
++	std::mutex              mutex;
++	std::condition_variable cv;
++	uint8_t                 large = 0, small = 0;
++	uint32_t                duration_ms = 0;
++	uint64_t                seq         = 0;
++};
++RumbleOutput& RumbleOut() {
++	static RumbleOutput r;
++	return r;
++}
++
++// The write itself. A pad window.cpp opened as a raw joystick (no game-controller mapping, as can
++// happen after a replug) has no SDL_GameController, so the joystick API is the fallback; a failure
++// is logged once per pad instance (KYTY_BC5_INPUT_TRACE=1 logs every change too).
++void RumbleWrite(uint8_t large, uint8_t small, uint32_t duration_ms) {
+ 	auto* ds = static_cast<Libs::DualSense::DualSenseDriver*>(DualSenseDriverInstance());
+ 	if (ds != nullptr && ds->IsOpen()) {
+ 		Libs::DualSense::VibrationParam v;
+@@ -581,12 +603,67 @@ void ControllerRumble(uint8_t large, uint8_t small, uint32_t duration_ms) {
+ 	if (id < 0) {
+ 		return;
+ 	}
+-	SDL_GameController* pad = SDL_GameControllerFromInstanceID(id);
+-	if (pad != nullptr) {
+-		SDL_GameControllerRumble(pad, static_cast<Uint16>(static_cast<unsigned>(large) * 257u),
+-		                         static_cast<Uint16>(static_cast<unsigned>(small) * 257u), duration_ms);
++	const auto  lo  = static_cast<Uint16>(static_cast<unsigned>(large) * 257u);
++	const auto  hi  = static_cast<Uint16>(static_cast<unsigned>(small) * 257u);
++	int         rc  = -1;
++	const char* via = "none";
++	if (SDL_GameController* pad = SDL_GameControllerFromInstanceID(id); pad != nullptr) {
++		rc  = SDL_GameControllerRumble(pad, lo, hi, duration_ms);
++		via = "game controller";
++	} else if (SDL_Joystick* joy = SDL_JoystickFromInstanceID(id); joy != nullptr) {
++		rc  = SDL_JoystickRumble(joy, lo, hi, duration_ms);
++		via = "raw joystick";
++	}
++	static const bool trace     = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
++	static int        failed_id = -1;
++	if (rc != 0 && failed_id != id) {
++		failed_id = id;
++		LOGF("rumble: pad instance %d via %s: %s\n", id, via,
++		     std::strcmp(via, "none") == 0 ? "no SDL device for this instance id" : SDL_GetError());
++	} else if (rc == 0 && failed_id == id) {
++		failed_id = -1;
++	}
++	if (trace) {
++		std::fprintf(stderr, "input trace: rumble %u/%u for %u ms via %s -> %d\n", large, small, duration_ms, via, rc);
++	}
++}
++
++void RumbleThread() {
++	auto&    out  = RumbleOut();
++	uint64_t seen = 0;
++	for (;;) {
++		uint8_t  large       = 0;
++		uint8_t  small       = 0;
++		uint32_t duration_ms = 0;
++		{
++			std::unique_lock<std::mutex> lock(out.mutex);
++			out.cv.wait(lock, [&] { return out.seq != seen; });
++			seen        = out.seq;
++			large       = out.large;
++			small       = out.small;
++			duration_ms = out.duration_ms;
++		}
++		RumbleWrite(large, small, duration_ms);
+ 	}
+ }
++} // namespace
++
++void ControllerRumble(uint8_t large, uint8_t small, uint32_t duration_ms) {
++	static const bool started = [] {
++		std::thread(RumbleThread).detach();
++		return true;
++	}();
++	(void)started;
++	auto& out = RumbleOut();
++	{
++		std::lock_guard<std::mutex> lock(out.mutex);
++		out.large       = large;
++		out.small       = small;
++		out.duration_ms = duration_ms;
++		out.seq++;
++	}
++	out.cv.notify_one();
++}
+ 
+ // Ported from AnyPS5 core/libs/prx/libScePad/src/PadState.cpp @ 7f596df (GPL-2.0):
+ // PadSubmitAudioHaptics keeps the maximum of the values submitted and PadFetchOutput releases

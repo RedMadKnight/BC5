@@ -1,0 +1,135 @@
+# exp 0267: extracts of the maintainer play logs of 2026-10-24 (copies in ~/bc5-work/play-review-20261024), read-only
+## second-normal-1601.log (== 2026-10-24 16:05:44 emulator 2026-10-24 15:26:37)
+### audio ports seen (count of 1-s trace lines)
+    125 audio trace: port 0 type 0 8 ch 48000 Hz
+     28 audio trace: port 1 type 0 8 ch 48000 Hz
+     84 audio trace: port 1 type 4 1 ch 48000 Hz
+### port 1 lines around its change of type (last type-0, first type-4)
+audio trace: t 31.654 s port 1 type 0 8 ch 48000 Hz: 188 calls, 48128 frames = 1.003 s of sound in 1.004 s (rate 0.999), held 0.1 ms, 0 clears, sdl queued 20480-20480 bytes (26-26 ms), device playing
+audio trace: t 32.657 s port 1 type 0 8 ch 48000 Hz: 188 calls, 48128 frames = 1.003 s of sound in 1.004 s (rate 0.999), held 0.1 ms, 0 clears, sdl queued 20480-20480 bytes (26-26 ms), device playing
+audio trace: t 82.874 s port 1 type 4 1 ch 48000 Hz: 49 calls, 25088 frames = 0.523 s of sound in 1.003 s (rate 0.521), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 83.876 s port 1 type 4 1 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.1 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 84.879 s port 1 type 4 1 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.1 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+### held ms > 1 on any port
+audio trace: t 42.766 s port 0 type 0 8 ch 48000 Hz: 98 calls, 50176 frames = 1.045 s of sound in 1.005 s (rate 1.040), held 1000.4 ms, 0 clears, sdl queued 16384-65536 bytes (10-42 ms), device playin
+audio trace: t 43.769 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 1000.3 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+audio trace: t 44.772 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 1000.1 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+audio trace: t 45.775 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 1000.3 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+audio trace: t 46.777 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 1000.2 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+audio trace: t 47.780 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 1000.3 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+audio trace: t 48.783 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 1000.5 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+audio trace: t 49.785 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 1000.4 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+audio trace: t 50.788 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 1000.3 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+audio trace: t 51.791 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 1000.6 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+audio trace: t 52.793 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 1000.4 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+audio trace: t 53.796 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 1000.3 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+audio trace: t 54.799 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 1000.3 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+audio trace: t 55.801 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 1000.6 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+audio trace: t 56.804 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 999.9 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+audio trace: t 57.807 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 1000.6 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+audio trace: t 58.809 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 1000.3 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+audio trace: t 59.812 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.000), held 1000.1 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+audio trace: t 60.816 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.004 s (rate 0.999), held 1001.5 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playin
+audio trace: t 61.817 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.002 s (rate 1.001), held 999.2 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+### fps counter lines with a gap over 70 ms
+fps counter: t 4.751 s: 28 flips in 1.024 s, longest gap 91.7 ms, gaps over 40 ms 3, over 70 ms 2
+fps counter: t 6.772 s: 28 flips in 1.006 s, longest gap 80.8 ms, gaps over 40 ms 3, over 70 ms 1
+fps counter: t 8.814 s: 24 flips in 1.019 s, longest gap 130.4 ms, gaps over 40 ms 6, over 70 ms 2
+fps counter: t 10.846 s: 28 flips in 1.012 s, longest gap 104.1 ms, gaps over 40 ms 3, over 70 ms 1
+fps counter: t 34.275 s: 22 flips in 1.061 s, longest gap 71.3 ms, gaps over 40 ms 11, over 70 ms 1
+fps counter: t 35.283 s: 12 flips in 1.008 s, longest gap 268.9 ms, gaps over 40 ms 11, over 70 ms 2
+fps counter: t 38.353 s: 15 flips in 1.024 s, longest gap 72.1 ms, gaps over 40 ms 15, over 70 ms 1
+fps counter: t 39.378 s: 14 flips in 1.025 s, longest gap 89.9 ms, gaps over 40 ms 14, over 70 ms 7
+fps counter: t 40.409 s: 14 flips in 1.031 s, longest gap 101.7 ms, gaps over 40 ms 14, over 70 ms 9
+fps counter: t 41.419 s: 14 flips in 1.010 s, longest gap 82.6 ms, gaps over 40 ms 14, over 70 ms 11
+fps counter: t 42.444 s: 14 flips in 1.026 s, longest gap 133.8 ms, gaps over 40 ms 14, over 70 ms 7
+fps counter: t 43.470 s: 35 flips in 1.025 s, longest gap 71.7 ms, gaps over 40 ms 3, over 70 ms 1
+fps counter: t 46.484 s: 45 flips in 1.008 s, longest gap 73.0 ms, gaps over 40 ms 2, over 70 ms 1
+fps counter: t 69.701 s: 31 flips in 1.000 s, longest gap 105.0 ms, gaps over 40 ms 7, over 70 ms 6
+fps counter: t 70.757 s: 15 flips in 1.056 s, longest gap 134.2 ms, gaps over 40 ms 15, over 70 ms 1
+fps counter: t 71.787 s: 15 flips in 1.030 s, longest gap 81.3 ms, gaps over 40 ms 15, over 70 ms 1
+fps counter: t 72.816 s: 15 flips in 1.029 s, longest gap 72.8 ms, gaps over 40 ms 15, over 70 ms 2
+fps counter: t 73.843 s: 14 flips in 1.028 s, longest gap 113.7 ms, gaps over 40 ms 14, over 70 ms 4
+fps counter: t 75.900 s: 15 flips in 1.035 s, longest gap 84.8 ms, gaps over 40 ms 15, over 70 ms 1
+fps counter: t 76.943 s: 14 flips in 1.044 s, longest gap 97.2 ms, gaps over 40 ms 14, over 70 ms 4
+fps counter: t 77.981 s: 14 flips in 1.037 s, longest gap 138.4 ms, gaps over 40 ms 14, over 70 ms 5
+fps counter: t 79.017 s: 15 flips in 1.036 s, longest gap 73.6 ms, gaps over 40 ms 15, over 70 ms 4
+fps counter: t 80.051 s: 13 flips in 1.034 s, longest gap 197.6 ms, gaps over 40 ms 13, over 70 ms 3
+fps counter: t 81.194 s: 15 flips in 1.143 s, longest gap 157.1 ms, gaps over 40 ms 14, over 70 ms 10
+fps counter: t 83.225 s: 31 flips in 1.016 s, longest gap 117.5 ms, gaps over 40 ms 4, over 70 ms 2
+fps counter: t 84.396 s: 45 flips in 1.171 s, longest gap 189.1 ms, gaps over 40 ms 5, over 70 ms 2
+fps counter: t 85.400 s: 6 flips in 1.004 s, longest gap 175.1 ms, gaps over 40 ms 6, over 70 ms 6
+fps counter: t 86.446 s: 36 flips in 1.046 s, longest gap 146.5 ms, gaps over 40 ms 8, over 70 ms 1
+fps counter: t 88.454 s: 23 flips in 1.001 s, longest gap 174.0 ms, gaps over 40 ms 6, over 70 ms 4
+fps counter: t 90.471 s: 46 flips in 1.000 s, longest gap 97.0 ms, gaps over 40 ms 2, over 70 ms 2
+fps counter: t 91.477 s: 36 flips in 1.006 s, longest gap 73.0 ms, gaps over 40 ms 5, over 70 ms 1
+fps counter: t 92.499 s: 36 flips in 1.022 s, longest gap 85.9 ms, gaps over 40 ms 6, over 70 ms 4
+fps counter: t 95.537 s: 32 flips in 1.012 s, longest gap 72.3 ms, gaps over 40 ms 6, over 70 ms 1
+fps counter: t 99.583 s: 45 flips in 1.014 s, longest gap 137.2 ms, gaps over 40 ms 1, over 70 ms 1
+fps counter: t 114.717 s: 42 flips in 1.011 s, longest gap 74.7 ms, gaps over 40 ms 4, over 70 ms 1
+fps counter: t 117.138 s: 15 flips in 1.416 s, longest gap 1004.0 ms, gaps over 40 ms 2, over 70 ms 2
+fps counter: t 122.175 s: 22 flips in 1.001 s, longest gap 426.9 ms, gaps over 40 ms 3, over 70 ms 2
+fps counter: t 123.178 s: 37 flips in 1.003 s, longest gap 72.3 ms, gaps over 40 ms 5, over 70 ms 1
+fps counter: t 126.290 s: 49 flips in 1.098 s, longest gap 132.2 ms, gaps over 40 ms 4, over 70 ms 2
+fps counter: t 127.315 s: 8 flips in 1.024 s, longest gap 238.4 ms, gaps over 40 ms 8, over 70 ms 6
+fps counter: t 128.353 s: 8 flips in 1.038 s, longest gap 208.1 ms, gaps over 40 ms 7, over 70 ms 7
+fps counter: t 129.621 s: 20 flips in 1.268 s, longest gap 327.3 ms, gaps over 40 ms 7, over 70 ms 5
+fps counter: t 130.621 s: 25 flips in 1.000 s, longest gap 101.5 ms, gaps over 40 ms 8, over 70 ms 2
+fps counter: t 132.641 s: 38 flips in 1.018 s, longest gap 115.4 ms, gaps over 40 ms 4, over 70 ms 1
+fps counter: t 133.662 s: 22 flips in 1.021 s, longest gap 207.2 ms, gaps over 40 ms 7, over 70 ms 2
+fps counter: t 136.671 s: 34 flips in 1.005 s, longest gap 83.3 ms, gaps over 40 ms 3, over 70 ms 1
+fps counter: t 138.742 s: 25 flips in 1.036 s, longest gap 87.2 ms, gaps over 40 ms 11, over 70 ms 1
+fps counter: t 139.756 s: 14 flips in 1.014 s, longest gap 219.7 ms, gaps over 40 ms 9, over 70 ms 6
+fps counter: t 141.796 s: 30 flips in 1.016 s, longest gap 113.6 ms, gaps over 40 ms 5, over 70 ms 1
+fps counter: t 143.937 s: 22 flips in 1.124 s, longest gap 463.7 ms, gaps over 40 ms 5, over 70 ms 2
+fps counter: t 145.140 s: 7 flips in 1.203 s, longest gap 815.9 ms, gaps over 40 ms 6, over 70 ms 2
+fps counter: t 146.142 s: 12 flips in 1.002 s, longest gap 209.2 ms, gaps over 40 ms 11, over 70 ms 6
+fps counter: t 147.222 s: 23 flips in 1.080 s, longest gap 98.2 ms, gaps over 40 ms 14, over 70 ms 3
+fps counter: t 148.473 s: 19 flips in 1.251 s, longest gap 298.7 ms, gaps over 40 ms 9, over 70 ms 2
+fps counter: t 149.493 s: 23 flips in 1.020 s, longest gap 117.0 ms, gaps over 40 ms 13, over 70 ms 2
+fps counter: t 150.507 s: 22 flips in 1.014 s, longest gap 292.9 ms, gaps over 40 ms 6, over 70 ms 1
+fps counter: t 151.589 s: 30 flips in 1.082 s, longest gap 88.9 ms, gaps over 40 ms 8, over 70 ms 2
+fps counter: t 152.615 s: 27 flips in 1.026 s, longest gap 147.3 ms, gaps over 40 ms 7, over 70 ms 1
+fps counter: t 153.629 s: 29 flips in 1.014 s, longest gap 194.0 ms, gaps over 40 ms 4, over 70 ms 2
+fps counter: t 155.706 s: 2 flips in 1.070 s, longest gap 697.3 ms, gaps over 40 ms 2, over 70 ms 2
+fps counter: t 156.886 s: 7 flips in 1.180 s, longest gap 664.1 ms, gaps over 40 ms 4, over 70 ms 3
+fps counter: t 157.889 s: 21 flips in 1.003 s, longest gap 160.2 ms, gaps over 40 ms 12, over 70 ms 1
+fps counter: t 158.979 s: 29 flips in 1.090 s, longest gap 103.6 ms, gaps over 40 ms 10, over 70 ms 2
+fps counter: t 159.987 s: 28 flips in 1.008 s, longest gap 109.0 ms, gaps over 40 ms 6, over 70 ms 1
+fps counter: t 162.050 s: 23 flips in 1.033 s, longest gap 187.9 ms, gaps over 40 ms 8, over 70 ms 3
+fps counter: t 163.052 s: 18 flips in 1.001 s, longest gap 198.2 ms, gaps over 40 ms 6, over 70 ms 2
+fps counter: t 164.079 s: 23 flips in 1.027 s, longest gap 241.6 ms, gaps over 40 ms 7, over 70 ms 2
+fps counter: t 165.164 s: 15 flips in 1.085 s, longest gap 290.8 ms, gaps over 40 ms 5, over 70 ms 5
+fps counter: t 166.285 s: 13 flips in 1.121 s, longest gap 307.4 ms, gaps over 40 ms 5, over 70 ms 4
+## second-lean-1611.log: 1495 lines, no audio/fps traces (lean build); tail:
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+== 2026-10-24 16:11:34 exit 0
+## astro-normal.log: 50 lines, no traces
+### port 0 lines with rate below 0.97 or above 1.03, or clears > 0 (stall or catch-up signatures)
+audio trace: t 41.761 s port 0 type 0 8 ch 48000 Hz: 1 calls, 512 frames = 0.011 s of sound in 9.103 s (rate 0.001), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), devi
+audio trace: t 42.766 s port 0 type 0 8 ch 48000 Hz: 98 calls, 50176 frames = 1.045 s of sound in 1.005 s (rate 1.040), held 1000.4 ms, 0 clears, sdl queued 16384-65536 bytes 
+audio trace: t 131.002 s port 0 type 0 8 ch 48000 Hz: 88 calls, 45056 frames = 0.939 s of sound in 1.003 s (rate 0.936), held 866.5 ms, 0 clears, sdl queued 0-65536 bytes (0-4
+audio trace: t 134.010 s port 0 type 0 8 ch 48000 Hz: 89 calls, 45568 frames = 0.949 s of sound in 1.003 s (rate 0.947), held 964.9 ms, 0 clears, sdl queued 49152-65536 bytes 
+audio trace: t 149.095 s port 0 type 0 8 ch 48000 Hz: 82 calls, 41984 frames = 0.875 s of sound in 1.048 s (rate 0.835), held 180.2 ms, 0 clears, sdl queued 0-65536 bytes (0-4
+audio trace: t 150.102 s port 0 type 0 8 ch 48000 Hz: 77 calls, 39424 frames = 0.821 s of sound in 1.007 s (rate 0.816), held 0.1 ms, 0 clears, sdl queued 0-49152 bytes (0-32 
+audio trace: t 152.126 s port 0 type 0 8 ch 48000 Hz: 87 calls, 44544 frames = 0.928 s of sound in 1.017 s (rate 0.912), held 1002.3 ms, 0 clears, sdl queued 65536-65536 bytes
+audio trace: t 154.138 s port 0 type 0 8 ch 48000 Hz: 86 calls, 44032 frames = 0.917 s of sound in 1.003 s (rate 0.915), held 743.9 ms, 0 clears, sdl queued 0-65536 bytes (0-4
+audio trace: t 156.304 s port 0 type 0 8 ch 48000 Hz: 21 calls, 10752 frames = 0.224 s of sound in 1.163 s (rate 0.193), held 121.9 ms, 0 clears, sdl queued 0-65536 bytes (0-4
+audio trace: t 160.314 s port 0 type 0 8 ch 48000 Hz: 91 calls, 46592 frames = 0.971 s of sound in 1.003 s (rate 0.968), held 940.6 ms, 0 clears, sdl queued 32768-65536 bytes 
+audio trace: t 163.323 s port 0 type 0 8 ch 48000 Hz: 73 calls, 37376 frames = 0.779 s of sound in 1.003 s (rate 0.776), held 573.1 ms, 0 clears, sdl queued 0-65536 bytes (0-4
+audio trace: t 165.329 s port 0 type 0 8 ch 48000 Hz: 87 calls, 44544 frames = 0.928 s of sound in 1.001 s (rate 0.927), held 783.3 ms, 0 clears, sdl queued 0-65536 bytes (0-4
+### count of port-0 lines: 125; first port-0 line t:  41.761 s 
+### held < 900 ms on port 0 (a second where the audio thread was not pacing)
+audio trace: t 41.761 s port 0 type 0 8 ch 48000 Hz: 1 calls, 512 frames = 0.011 s of sound in 9.103 s (rate 0.001), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), devi
+audio trace: t 131.002 s port 0 type 0 8 ch 48000 Hz: 88 calls, 45056 frames = 0.939 s of sound in 1.003 s (rate 0.936), held 866.5 ms, 0 clears, sdl queued 0-65536 bytes (0-4
+audio trace: t 139.024 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 0.999), held 862.1 ms, 0 clears, sdl queued 16384-65536 bytes 
+audio trace: t 146.042 s port 0 type 0 8 ch 48000 Hz: 93 calls, 47616 frames = 0.992 s of sound in 1.001 s (rate 0.991), held 805.4 ms, 0 clears, sdl queued 0-65536 bytes (0-4
+audio trace: t 148.048 s port 0 type 0 8 ch 48000 Hz: 93 calls, 47616 frames = 0.992 s of sound in 1.003 s (rate 0.989), held 889.4 ms, 0 clears, sdl queued 0-65536 bytes (0-4
+audio trace: t 149.095 s port 0 type 0 8 ch 48000 Hz: 82 calls, 41984 frames = 0.875 s of sound in 1.048 s (rate 0.835), held 180.2 ms, 0 clears, sdl queued 0-65536 bytes (0-4
+audio trace: t 150.102 s port 0 type 0 8 ch 48000 Hz: 77 calls, 39424 frames = 0.821 s of sound in 1.007 s (rate 0.816), held 0.1 ms, 0 clears, sdl queued 0-49152 bytes (0-32 
+audio trace: t 154.138 s port 0 type 0 8 ch 48000 Hz: 86 calls, 44032 frames = 0.917 s of sound in 1.003 s (rate 0.915), held 743.9 ms, 0 clears, sdl queued 0-65536 bytes (0-4
+audio trace: t 156.304 s port 0 type 0 8 ch 48000 Hz: 21 calls, 10752 frames = 0.224 s of sound in 1.163 s (rate 0.193), held 121.9 ms, 0 clears, sdl queued 0-65536 bytes (0-4
+audio trace: t 163.323 s port 0 type 0 8 ch 48000 Hz: 73 calls, 37376 frames = 0.779 s of sound in 1.003 s (rate 0.776), held 573.1 ms, 0 clears, sdl queued 0-65536 bytes (0-4
+audio trace: t 165.329 s port 0 type 0 8 ch 48000 Hz: 87 calls, 44544 frames = 0.928 s of sound in 1.001 s (rate 0.927), held 783.3 ms, 0 clears, sdl queued 0-65536 bytes (0-4
