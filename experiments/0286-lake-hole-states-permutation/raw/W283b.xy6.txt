@@ -1,0 +1,133 @@
+# /home/kjaniszewski/bc5-data/captures/play-20261024-2224/gc/direct.log: 190 frames (19 partial first frames), median 69 writer draws, frame interval median 94.0 ms
+# L = 60 ms given
+# labelled frames: X 15 (6 partial), Y 6 (1 partial); frames with both: 8
+# the candidate writers' draws per frame: state (X/Y; '.' no label; '*' partial first frame), size, the number of draws of each candidate shader (11d29ea100, 11d1d88300, 11d1dd6400, 11d29c4500, 11d373f600) and of all writers, and the order of the candidates' draws
+  w51 #10 *X 3328: 0 9 5 1 0 | all 63 | order BBBBCBCBBCBCBCD
+  w51 #11 . 3328: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w51 #12 Y 3072: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w51 #13 . 3072: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w51 #14 Y 2816: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w51 #15 . 2816: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w51 #16 X 2560: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w51 #17 . 2560: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w51 #18 Y 2304: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w51 #19 . 2304: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w71 #20 *. 3328: 0 9 5 1 0 | all 63 | order BBBBCBCBBCBCBCD
+  w71 #21 X 3328: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w71 #22 . 3072: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w71 #23 . 3072: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w71 #24 . 2816: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w71 #25 . 2816: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w71 #26 . 2560: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w71 #27 . 2560: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w71 #28 . 2304: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w71 #29 . 2304: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w133 #40 *Y 3328: 0 9 5 1 0 | all 63 | order BBBBCBCBBCBCBCD
+  w133 #41 X 3328: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w133 #42 . 3328: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w133 #43 . 2048: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w133 #44 . 2048: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w133 #45 . 2048: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w133 #46 . 2048: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w133 #47 X 2048: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w133 #48 Y 2048: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w133 #49 . 2048: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w170 #50 *X 3328: 0 9 5 1 0 | all 63 | order BBBBCBCBBCBCBCD
+  w170 #51 . 3328: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w170 #52 X 3072: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w170 #53 X 3072: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w170 #54 X 3072: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w170 #55 . 3072: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w170 #56 . 3072: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w170 #57 . 3072: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w170 #58 . 3072: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w170 #59 . 3072: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w190 #60 *X 3072: 0 9 5 1 0 | all 63 | order BBBBCBCBBCBCBCD
+  w190 #61 . 2048: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w190 #62 . 2048: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w190 #63 . 2048: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w190 #64 . 2048: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w190 #65 . 2048: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w190 #66 . 2048: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w190 #67 . 2048: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w190 #68 . 2048: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w190 #69 . 2048: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w210 #70 *X 3328: 0 9 5 1 0 | all 63 | order BBBBCBCBBCBCBCD
+  w210 #71 . 3328: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w210 #72 Y 3328: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w210 #73 . 2048: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w210 #74 . 2048: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w210 #75 . 2048: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w210 #76 . 2048: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w210 #77 . 2048: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w210 #78 . 2048: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w210 #79 . 2048: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w230 #80 *X 3328: 0 9 5 1 0 | all 63 | order BBBBCBCBBCBCBCD
+  w230 #81 X 3328: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w230 #82 . 3328: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w230 #83 . 3328: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w230 #84 . 3328: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w230 #85 . 3328: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w230 #86 . 3328: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w230 #87 . 3328: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w230 #88 . 3328: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w230 #89 . 3328: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w250 #90 *X 2048: 0 9 5 1 0 | all 63 | order BBBBCBCBBCBCBCD
+  w250 #91 X 2048: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w250 #92 . 2048: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w250 #93 . 2048: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w250 #94 . 2048: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w250 #95 . 2048: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w250 #96 . 2048: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w250 #97 . 2048: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w250 #98 . 2048: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+  w250 #99 . 2048: 0 9 5 5 0 | all 69 | order DDDDBBBBCBCBBCBCBCD
+# draws per whole labelled frame: shader: X frames' counts | Y frames' counts
+  11d29ea100: X 0 0 0 0 0 0 0 0 0 | Y 0 0 0 0 0
+  11d1d88300: X 9 9 9 9 9 9 9 9 9 | Y 9 9 9 9 9
+  11d1dd6400: X 5 5 5 5 5 5 5 5 5 | Y 5 5 5 5 5
+  11d29c4500: X 5 5 5 5 5 5 5 5 5 | Y 5 5 5 5 5
+  11d373f600: X 0 0 0 0 0 0 0 0 0 | Y 0 0 0 0 0
+  all: X 69 69 69 69 69 69 69 69 69 | Y 69 69 69 69 69
+# permutation test: exact separators (and the tables or scalar keys they lie in) for the real labels, against 100 free shuffles of the labels and every rotation of the labels along the frames' time order (which keeps runs of one state together)
+  offset -1: 9 X / 5 Y frames, 7205 varying keys; real: 180 separators in 4 tables | shuffles: median 0.0, max 158, share >= real 0.00 (tables 0.08) | rotations: median 0, max 4, share >= real 0.00 (tables 0.08)
+  offset +0: 15 X / 6 Y frames, 7217 varying keys; real: 0 separators in 0 tables | shuffles: median 0.0, max 107, share >= real 1.00 (tables 1.00) | rotations: median 0.0, max 20, share >= real 1.00 (tables 1.00)
+  offset +1: 15 X / 6 Y frames, 7248 varying keys; real: 0 separators in 0 tables | shuffles: median 0.0, max 24, share >= real 1.00 (tables 1.00) | rotations: median 0.0, max 0, share >= real 1.00 (tables 1.00)
+# the separators listed in /home/kjaniszewski/bc5-work/exp0285/W283a.xy5.txt, in this run (value letters per state; '-' absent)
+  11d1d88300@-2 table gs0 dword 27 | -1: constant or absent | +0: constant or absent | +1: constant or absent
+  11d1d88300@-2 table gs12 dword 3 | -1: X ccdegccei Y abdfh | +0: X adfehjeej+gf++g Y bcegig | +1: X adedfhcijg+++dc Y bcdcg+
+  11d1d88300@-2 table ps16 dword 27 | -1: constant or absent | +0: constant or absent | +1: constant or absent
+  11d1dd6400@-3 table gs12 dword 31 | -1: constant or absent | +0: constant or absent | +1: constant or absent
+  11d29ea100@-3 table gs0 dword 31 | -1: constant or absent | +0: constant or absent | +1: constant or absent
+  11d29ea100@-3 table gs12 dword 27 | -1: constant or absent | +0: constant or absent | +1: constant or absent
+  11d29ea100@-3 table ps0 dword 31 | -1: constant or absent | +0: constant or absent | +1: constant or absent
+  11d29ea100@-4 table gs0 dword 39 | -1: constant or absent | +0: constant or absent | +1: constant or absent
+  11d29ea100@-4 table gs0 dword 7 | -1: constant or absent | +0: constant or absent | +1: constant or absent
+  11d29ea100@-4 table gs12 dword 3 | -1: constant or absent | +0: constant or absent | +1: constant or absent
+  11d29ea100@-4 table gs12 dword 35 | -1: constant or absent | +0: constant or absent | +1: constant or absent
+  11d29ea100@-4 table ps0 dword 39 | -1: constant or absent | +0: constant or absent | +1: constant or absent
+  11d29ea100@-4 table ps0 dword 7 | -1: constant or absent | +0: constant or absent | +1: constant or absent
+  11d29ea100@-5 table gs0 dword 15 | -1: constant or absent | +0: constant or absent | +1: constant or absent
+  11d29ea100@-5 table gs0 dword 47 | -1: constant or absent | +0: constant or absent | +1: constant or absent
+  11d29ea100@-5 table gs12 dword 11 | -1: constant or absent | +0: constant or absent | +1: constant or absent
+  11d29ea100@-5 table gs12 dword 43 | -1: constant or absent | +0: constant or absent | +1: constant or absent
+  11d29ea100@-5 table ps0 dword 15 | -1: constant or absent | +0: constant or absent | +1: constant or absent
+  11d29ea100@-5 table ps0 dword 47 | -1: constant or absent | +0: constant or absent | +1: constant or absent
+  11d29ea100@-6 table gs0 dword 27 | -1: constant or absent | +0: constant or absent | +1: constant or absent
+  11d29ea100@-6 table gs0 dword 55 | -1: constant or absent | +0: constant or absent | +1: constant or absent
+  11d29ea100@-6 table gs12 dword 3 | -1: constant or absent | +0: constant or absent | +1: constant or absent
+  11d29ea100@-6 table gs12 dword 31 | -1: constant or absent | +0: constant or absent | +1: constant or absent
+  11d29ea100@-6 table gs12 dword 63 | -1: constant or absent | +0: constant or absent | +1: constant or absent
+  11d29ea100@-6 table ps0 dword 27 | -1: constant or absent | +0: constant or absent | +1: constant or absent
+  11d29ea100@-6 table ps0 dword 55 | -1: constant or absent | +0: constant or absent | +1: constant or absent
+  11d29ea100@-7 table gs0 dword 55 | -1: constant or absent | +0: constant or absent | +1: constant or absent
+  11d29ea100@-7 table gs12 dword 31 | -1: constant or absent | +0: constant or absent | +1: constant or absent
+  11d29ea100@-7 table gs12 dword 59 | -1: constant or absent | +0: constant or absent | +1: constant or absent
+  11d29ea100@-7 table ps0 dword 55 | -1: constant or absent | +0: constant or absent | +1: constant or absent
+  11d29ea100@-8 table gs12 dword 59 | -1: constant or absent | +0: constant or absent | +1: constant or absent
+  11d373f600@-17 table ps0 dword 11 | -1: constant or absent | +0: constant or absent | +1: constant or absent
+  11d373f600@-18 table gs0 dword 7 | -1: constant or absent | +0: constant or absent | +1: constant or absent
+  11d373f600@-18 table gs12 dword 3 | -1: constant or absent | +0: constant or absent | +1: constant or absent
+  11d373f600@-18 table ps0 dword 11 | -1: constant or absent | +0: constant or absent | +1: constant or absent
+  11d373f600@-19 table gs0 dword 11 | -1: constant or absent | +0: constant or absent | +1: constant or absent
+  11d373f600@-19 table ps0 dword 11 | -1: constant or absent | +0: constant or absent | +1: constant or absent

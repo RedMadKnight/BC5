@@ -1,0 +1,96 @@
+# /home/kjaniszewski/bc5-data/captures/play-20261024-2210/gc/direct.log: 190 frames (19 partial first frames), median 95 writer draws, frame interval median 44.0 ms
+# L = 45 ms given
+# labelled frames: X 5 (3 partial), Y 8 (0 partial); frames with both: 1
+# the candidate writers' draws per frame: state (X/Y; '.' no label; '*' partial first frame), size, the number of draws of each candidate shader (11d29ea100, 11d1d88300, 11d1dd6400, 11d29c4500, 11d373f600) and of all writers, and the order of the candidates' draws
+  w157 #70 *X 2304: 38 12 7 0 19 | all 86 | order 76 draws
+  w157 #71 X 2304: 41 13 7 0 16 | all 92 | order 77 draws
+  w157 #72 . 2304: 41 13 7 0 19 | all 95 | order 80 draws
+  w157 #73 . 2304: 41 13 7 0 16 | all 91 | order 77 draws
+  w157 #74 . 2304: 41 13 7 0 16 | all 92 | order 77 draws
+  w157 #75 . 2304: 41 13 7 0 16 | all 92 | order 77 draws
+  w157 #76 . 2304: 41 13 7 0 19 | all 95 | order 80 draws
+  w157 #77 . 2304: 41 13 7 0 16 | all 91 | order 77 draws
+  w157 #78 . 2304: 41 13 7 0 16 | all 91 | order 77 draws
+  w157 #79 . 2304: 41 13 7 0 16 | all 92 | order 77 draws
+  w177 #80 *. 2304: 38 12 7 0 19 | all 86 | order 76 draws
+  w177 #81 X 2304: 41 13 7 0 16 | all 91 | order 77 draws
+  w177 #82 Y 2304: 41 13 7 0 16 | all 92 | order 77 draws
+  w177 #83 . 2304: 41 13 7 0 16 | all 92 | order 77 draws
+  w177 #84 . 2304: 41 13 7 0 19 | all 95 | order 80 draws
+  w177 #85 . 2304: 41 13 7 0 16 | all 91 | order 77 draws
+  w177 #86 . 2304: 41 13 7 0 16 | all 91 | order 77 draws
+  w177 #87 . 2304: 41 13 7 0 19 | all 95 | order 80 draws
+  w177 #88 . 2304: 41 13 7 0 19 | all 95 | order 80 draws
+  w177 #89 . 2304: 41 13 7 0 16 | all 91 | order 77 draws
+  w197 #90 *X 3072: 38 12 7 0 19 | all 86 | order 76 draws
+  w197 #91 . 3072: 41 13 7 0 19 | all 95 | order 80 draws
+  w197 #92 . 3072: 41 13 7 0 16 | all 92 | order 77 draws
+  w197 #93 . 3072: 41 13 7 0 16 | all 92 | order 77 draws
+  w197 #94 . 3072: 41 13 7 0 16 | all 92 | order 77 draws
+  w197 #95 . 3072: 41 13 7 0 19 | all 95 | order 80 draws
+  w197 #96 . 3072: 41 13 7 0 19 | all 95 | order 80 draws
+  w197 #97 . 3072: 41 13 7 0 16 | all 92 | order 77 draws
+  w197 #98 . 3072: 41 13 7 0 19 | all 95 | order 80 draws
+  w197 #99 . 3072: 41 13 7 0 19 | all 95 | order 80 draws
+  w230 #100 *X 3072: 38 12 7 0 19 | all 86 | order 76 draws
+  w230 #101 Y 3072: 41 13 7 0 19 | all 94 | order 80 draws
+  w230 #102 Y 3072: 41 13 7 0 16 | all 92 | order 77 draws
+  w230 #103 Y 2304: 41 13 7 0 19 | all 95 | order 80 draws
+  w230 #104 Y 2304: 41 13 7 0 16 | all 92 | order 77 draws
+  w230 #105 . 2048: 41 13 7 0 19 | all 95 | order 80 draws
+  w230 #106 Y 2048: 41 13 7 0 19 | all 95 | order 80 draws
+  w230 #107 Y 2048: 41 13 7 0 16 | all 92 | order 77 draws
+  w230 #108 Y 2048: 41 13 7 0 19 | all 95 | order 80 draws
+  w230 #109 . 2048: 41 13 7 0 16 | all 91 | order 77 draws
+# draws per whole labelled frame: shader: X frames' counts | Y frames' counts
+  11d29ea100: X 41 41 | Y 41 41 41 41 41 41 41 41
+  11d1d88300: X 13 13 | Y 13 13 13 13 13 13 13 13
+  11d1dd6400: X 7 7 | Y 7 7 7 7 7 7 7 7
+  11d29c4500: X 0 0 | Y 0 0 0 0 0 0 0 0
+  11d373f600: X 16 16 | Y 16 16 16 16 19 19 19 19
+  all: X 91 92 | Y 92 92 92 92 94 95 95 95
+# permutation test: exact separators (and the tables or scalar keys they lie in) for the real labels, against 100 free shuffles of the labels and every rotation of the labels along the frames' time order (which keeps runs of one state together)
+  offset -1: 2 X and 8 Y frames, too few
+  offset +0: 5 X / 8 Y frames, 11260 varying keys; real: 31 separators in 20 tables | shuffles: median 0.0, max 105, share >= real 0.09 (tables 0.06) | rotations: median 0.0, max 105, share >= real 0.17 (tables 0.08)
+  offset +1: 5 X / 8 Y frames, 11247 varying keys; real: 6 separators in 6 tables | shuffles: median 0.0, max 760, share >= real 0.18 (tables 0.16) | rotations: median 0.0, max 34, share >= real 0.25 (tables 0.17)
+# the separators listed in /home/kjaniszewski/bc5-work/exp0285/W283b.xy5.txt, in this run (value letters per state; '-' absent)
+  11d29c4500@-2 table ps20 dword 10 | +0: constant or absent | +1: constant or absent
+  11d29c4500@-2 table ps20 dword 11 | +0: constant or absent | +1: constant or absent
+  11d29c4500@-2 table ps20 dword 14 | +0: constant or absent | +1: constant or absent
+  11d29c4500@-2 table ps20 dword 15 | +0: constant or absent | +1: constant or absent
+  11d29c4500@-2 table ps20 dword 16 | +0: constant or absent | +1: constant or absent
+  11d29c4500@-2 table ps20 dword 17 | +0: constant or absent | +1: constant or absent
+  11d29c4500@-2 table ps20 dword 18 | +0: constant or absent | +1: constant or absent
+  11d29c4500@-2 table ps20 dword 2 | +0: constant or absent | +1: constant or absent
+  11d29c4500@-2 table ps20 dword 20 | +0: constant or absent | +1: constant or absent
+  11d29c4500@-2 table ps20 dword 21 | +0: constant or absent | +1: constant or absent
+  11d29c4500@-2 table ps20 dword 22 | +0: constant or absent | +1: constant or absent
+  11d29c4500@-2 table ps20 dword 23 | +0: constant or absent | +1: constant or absent
+  11d29c4500@-2 table ps20 dword 24 | +0: constant or absent | +1: constant or absent
+  11d29c4500@-2 table ps20 dword 25 | +0: constant or absent | +1: constant or absent
+  11d29c4500@-2 table ps20 dword 26 | +0: constant or absent | +1: constant or absent
+  11d29c4500@-2 table ps20 dword 27 | +0: constant or absent | +1: constant or absent
+  11d29c4500@-2 table ps20 dword 28 | +0: constant or absent | +1: constant or absent
+  11d29c4500@-2 table ps20 dword 29 | +0: constant or absent | +1: constant or absent
+  11d29c4500@-2 table ps20 dword 30 | +0: constant or absent | +1: constant or absent
+  11d29c4500@-2 table ps20 dword 32 | +0: constant or absent | +1: constant or absent
+  11d29c4500@-2 table ps20 dword 34 | +0: constant or absent | +1: constant or absent
+  11d29c4500@-2 table ps20 dword 36 | +0: constant or absent | +1: constant or absent
+  11d29c4500@-2 table ps20 dword 37 | +0: constant or absent | +1: constant or absent
+  11d29c4500@-2 table ps20 dword 38 | +0: constant or absent | +1: constant or absent
+  11d29c4500@-2 table ps20 dword 39 | +0: constant or absent | +1: constant or absent
+  11d29c4500@-2 table ps20 dword 40 | +0: constant or absent | +1: constant or absent
+  11d29c4500@-2 table ps20 dword 42 | +0: constant or absent | +1: constant or absent
+  11d29c4500@-2 table ps20 dword 44 | +0: constant or absent | +1: constant or absent
+  11d29c4500@-2 table ps20 dword 45 | +0: constant or absent | +1: constant or absent
+  11d29c4500@-2 table ps20 dword 46 | +0: constant or absent | +1: constant or absent
+  11d29c4500@-2 table ps20 dword 48 | +0: constant or absent | +1: constant or absent
+  11d29c4500@-2 table ps20 dword 49 | +0: constant or absent | +1: constant or absent
+  11d29c4500@-2 table ps20 dword 50 | +0: constant or absent | +1: constant or absent
+  11d29c4500@-2 table ps20 dword 52 | +0: constant or absent | +1: constant or absent
+  11d29c4500@-2 table ps20 dword 53 | +0: constant or absent | +1: constant or absent
+  11d29c4500@-2 table ps20 dword 54 | +0: constant or absent | +1: constant or absent
+  11d29c4500@-2 table ps20 dword 55 | +0: constant or absent | +1: constant or absent
+  11d29c4500@-2 table ps20 dword 56 | +0: constant or absent | +1: constant or absent
+  11d29c4500@-2 table ps20 dword 58 | +0: constant or absent | +1: constant or absent
+  11d29c4500@-2 table ps20 dword 6 | +0: constant or absent | +1: constant or absent
