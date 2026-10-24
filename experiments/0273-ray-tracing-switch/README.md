@@ -90,6 +90,10 @@ stated number of times; the script refuses otherwise) and writes `patch_0273.dif
   image_bvh…"), and only their dispatches; no draw, no DMA, no other dispatch is touched. Whether a
   non-RT pass shares those programs. buffers is not known here: the journal.s list of marked programs
   per run is the thing to check before using the switch as the lake.s A/B.
+- Not covered (the supervisor.s call, 2026-10-24): draws whose pixel shaders carry `image_bvh` — the switch
+  drops dispatches only; dropping RT draws is a later step. `BC5_DIRECT_SKIP_PGM` stays as it is until the
+  detection has proven itself in play; the two traversal variants 0x11d040e200 / 0x11d040c900 stay off
+  every list (F234, F249).
 - Not in this diff: the F332 proposal of a compute-ring refusal for `DISPATCH_INDIRECT`
   (`backend/src/policy.cpp`, the exp 0160 note) — kept apart on the top session's instruction.
 
@@ -98,7 +102,7 @@ stated number of times; the script refuses otherwise) and writes `patch_0273.dif
   `hostMenu.cpp`; 1, 1, 1, 1, 1, 2 in `hostInput.cpp`).
 - Built on the box 2026-10-24 18:35:05–18:35:44 on the top session.s GO (`run0273.sh build`, lock taken and
   released): the shared tree.s `bc5LleAgc.cpp` was a2a2c2df (daca24cc + exp 0272.s probe v2, integrated
-  18:33), the dry run applied all 11 anchors without a reject, and `~/bc5-work/exp0273/kyty_emulator`
+  18:33), the window files were hostMenu.cpp c2e68685 (2026-10-19 10:13) and hostInput.cpp c5eb3ce2 (2026-10-19 21:17), unchanged since 6401842; the dry run applied all 11 anchors without a reject, and `~/bc5-work/exp0273/kyty_emulator`
   (md5 91349485, 166,535,224 bytes) is the shared normal binary 9f74965d (unchanged before and after) plus
   `patch_0273.diff` (131 added lines; `raw/patch_0273.diff`, `raw/build.out`). Four warnings, none from
   this diff: the 0160 zero-page journal line (`-Wformat`, `pa + 0x10000ull` against `PRIx64`) and two
