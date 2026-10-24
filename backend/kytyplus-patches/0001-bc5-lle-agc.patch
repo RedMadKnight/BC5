@@ -11634,7 +11634,7 @@ index e82b93e..6cf1b61 100644
  
  } // namespace Libs::Audio::Ajm
 diff --git a/src/libs/audio.cpp b/src/libs/audio.cpp
-index fe4b332..ac2f687 100644
+index fe4b332..ce714dd 100644
 --- a/src/libs/audio.cpp
 +++ b/src/libs/audio.cpp
 @@ -10,16 +10,27 @@
@@ -11725,7 +11725,41 @@ index fe4b332..ac2f687 100644
  uint32_t AudioOutOutputs(const OutputParam* params, uint32_t num, bool blocking) {
  	if (g_audio == nullptr || params == nullptr || num == 0) {
  		return 0;
-@@ -224,10 +265,37 @@ SDL_AudioFormat Audio::SdlFormat(Format format) {
+@@ -221,13 +262,71 @@ SDL_AudioFormat Audio::SdlFormat(Format format) {
+ 	return FormatIsFloat(format) ? AUDIO_F32SYS : AUDIO_S16SYS;
+ }
+ 
++// BC5 (haptics, F69): the controller's own audio output, or nullptr. The first SDL output device
++// whose name contains KYTY_BC5_PAD_AUDIO_DEVICE (default "DualSense"). With the default, a device
++// named "Wireless Controller" is accepted too when it has the DualSense's four channels: on Linux
++// (PipeWire/ALSA) the controller's USB audio device carries Sony's USB product string instead of
++// "DualSense" (ported from KytyPlus c885da0a "haptics: recognize 'Wireless Controller' audio
++// endpoint on Linux", src/libs/dualSenseHaptics.cpp, GPL-2.0; the channel check is theirs too).
++static const char* Bc5FindPadAudioDevice() {
++	const char* env  = std::getenv("KYTY_BC5_PAD_AUDIO_DEVICE");
++	const char* want = env != nullptr ? env : "DualSense";
++	const int   n    = SDL_GetNumAudioDevices(0);
++	for (int i = 0; i < n; i++) {
++		const char* name = SDL_GetAudioDeviceName(i, 0);
++		if (name == nullptr) {
++			continue;
++		}
++		if (std::strstr(name, want) != nullptr) {
++			return name;
++		}
++#if SDL_VERSION_ATLEAST(2, 0, 16)
++		if (env == nullptr && std::strstr(name, "Wireless Controller") != nullptr) {
++			SDL_AudioSpec spec {};
++			// The device itself has four channels (F69); PAD_STREAM_CHANNELS is what we open on it.
++			if (SDL_GetAudioDeviceSpec(i, 0, &spec) == 0 && spec.channels == 4) {
++				return name;
++			}
++		}
++#endif
++	}
++	return nullptr;
++}
++
  bool Audio::OpenSdlDevice(PortOut* port) {
  	EXIT_IF(port == nullptr);
  
@@ -11763,7 +11797,7 @@ index fe4b332..ac2f687 100644
  
  	SDL_AudioSpec desired {};
  	desired.freq     = static_cast<int>(port->freq);
-@@ -236,20 +304,68 @@ bool Audio::OpenSdlDevice(PortOut* port) {
+@@ -236,20 +335,63 @@ bool Audio::OpenSdlDevice(PortOut* port) {
  	desired.samples  = static_cast<Uint16>(port->samples_num);
  	desired.callback = nullptr;
  
@@ -11795,12 +11829,7 @@ index fe4b332..ac2f687 100644
 +	}();
 +	if (std::getenv("KYTY_BC5_NO_PAD_AUDIO") == nullptr &&
 +	    ((port->type == AUDIO_OUT_PORT_TYPE_PADSPK && !speaker_on_main) || port->type == AUDIO_OUT_PORT_TYPE_VIBRATION)) {
-+		const char* want = std::getenv("KYTY_BC5_PAD_AUDIO_DEVICE") != nullptr ? std::getenv("KYTY_BC5_PAD_AUDIO_DEVICE") : "DualSense";
-+		const int   n    = SDL_GetNumAudioDevices(0);
-+		for (int i = 0; i < n && pad_name == nullptr; i++) {
-+			const char* name = SDL_GetAudioDeviceName(i, 0);
-+			if (name != nullptr && std::strstr(name, want) != nullptr) pad_name = name;
-+		}
++		pad_name = Bc5FindPadAudioDevice();
 +		if (pad_name != nullptr) {
 +			desired.channels = PAD_STREAM_CHANNELS;
 +			port->pad_route  = port->type == AUDIO_OUT_PORT_TYPE_VIBRATION ? 2 : 1;
@@ -11836,7 +11865,7 @@ index fe4b332..ac2f687 100644
  	return true;
  }
  
-@@ -326,16 +442,211 @@ const void* Audio::PrepareOutputBuffer(const PortOut& port, const void* data,
+@@ -326,16 +468,211 @@ const void* Audio::PrepareOutputBuffer(const PortOut& port, const void* data,
  	return buffer->data();
  }
  
@@ -12049,7 +12078,7 @@ index fe4b332..ac2f687 100644
  
  	std::vector<uint8_t> convert_buffer;
  	const void*          queue_data = prepared_data;
-@@ -343,7 +654,7 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -343,7 +680,7 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  
  	SDL_AudioCVT cvt {};
  	const int    cvt_result =
@@ -12058,7 +12087,7 @@ index fe4b332..ac2f687 100644
  	                      static_cast<int>(port->freq), port->audio_spec.format,
  	                      port->audio_spec.channels, port->audio_spec.freq);
  
-@@ -368,6 +679,56 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -368,6 +705,50 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  		queue_size = static_cast<uint32_t>(cvt.len_cvt);
  	}
  
@@ -12076,13 +12105,7 @@ index fe4b332..ac2f687 100644
 +				return false;
 +			}
 +			port->pad_retry_ms = now_ms;
-+			const char* want   = std::getenv("KYTY_BC5_PAD_AUDIO_DEVICE") != nullptr ? std::getenv("KYTY_BC5_PAD_AUDIO_DEVICE") : "DualSense";
-+			const char* name   = nullptr;
-+			const int   n      = SDL_GetNumAudioDevices(0);
-+			for (int i = 0; i < n && name == nullptr; i++) {
-+				const char* d = SDL_GetAudioDeviceName(i, 0);
-+				if (d != nullptr && std::strstr(d, want) != nullptr) name = d;
-+			}
++			const char* name   = Bc5FindPadAudioDevice();
 +			if (name == nullptr) {
 +				return false;
 +			}
@@ -12115,7 +12138,7 @@ index fe4b332..ac2f687 100644
  	if (blocking) {
  		// More aggressive buffer management to prevent audio issues
  		// during heavy GPU load (common in gameplay vs cutscene)
-@@ -378,18 +739,45 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -378,18 +759,45 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  		                   : 2u;
  		const auto min_queued_size = queue_size * std::clamp(buffers, 2u, 8u); // Smaller max
  		const auto wait_start      = LibKernel::KernelGetProcessTime();
@@ -12163,7 +12186,7 @@ index fe4b332..ac2f687 100644
  	if (SDL_QueueAudio(port->audio_device, queue_data, queue_size) < 0) {
  		LOGF("AudioOut: SDL_QueueAudio failed: %s\n", SDL_GetError());
  		return false;
-@@ -398,7 +786,56 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -398,7 +806,56 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  	return true;
  }
  
@@ -12220,7 +12243,7 @@ index fe4b332..ac2f687 100644
  	Common::LockGuard lock(m_mutex);
  
  	for (int id = 0; id < OUT_PORTS_MAX; id++) {
-@@ -428,7 +865,7 @@ Audio::Id Audio::AudioOutOpen(int type, uint32_t samples_num, uint32_t freq, For
+@@ -428,7 +885,7 @@ Audio::Id Audio::AudioOutOpen(int type, uint32_t samples_num, uint32_t freq, For
  				port.volume[i] = 32768;
  			}
  
@@ -12229,7 +12252,7 @@ index fe4b332..ac2f687 100644
  				// KytyPlus diagnostic: OpenSdlDevice() may fail (no host audio device,
  				// unsupported sample rate/format, or SDL init failure). The return is
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
-@@ -478,6 +915,19 @@ bool Audio::AudioOutHasDevice(Id handle) {
+@@ -478,6 +935,19 @@ bool Audio::AudioOutHasDevice(Id handle) {
  	        m_out_ports[handle.GetId()].used && m_out_ports[handle.GetId()].audio_device != 0);
  }
  
@@ -12249,7 +12272,7 @@ index fe4b332..ac2f687 100644
  bool Audio::AudioOutGetStatus(Id handle, int* type, int* channels_num) {
  	Common::LockGuard lock(m_mutex);
  
-@@ -568,6 +1018,45 @@ uint32_t Audio::AudioOutOutputs(OutputParam* params, uint32_t num, bool blocking
+@@ -568,6 +1038,45 @@ uint32_t Audio::AudioOutOutputs(OutputParam* params, uint32_t num, bool blocking
  		m_out_ports[params[i].handle.GetId()].last_output_time = LibKernel::KernelGetProcessTime();
  	}
  
@@ -23019,7 +23042,7 @@ index 5b0fc93..5b78760 100644
  	LOGF("\t target = %d\n"
  	     "\t msg    = 0x%016" PRIx64 "\n",
 diff --git a/src/libs/libAmpr.cpp b/src/libs/libAmpr.cpp
-index 073361d..8873cc8 100644
+index 073361d..8fe2d40 100644
 --- a/src/libs/libAmpr.cpp
 +++ b/src/libs/libAmpr.cpp
 @@ -1,3 +1,5 @@
@@ -23383,7 +23406,24 @@ index 073361d..8873cc8 100644
  	g_command_buffers.erase(command_buffer);
  	for (auto it = g_command_buffer_aliases.begin(); it != g_command_buffer_aliases.end();) {
  		if (it->first == command_buffer || it->second == command_buffer) {
-@@ -1151,6 +1334,7 @@ static bool WriteCommandBufferPointers(uint64_t command_buffer, uint64_t buffer,
+@@ -1078,6 +1261,16 @@ static uint64_t AprReadFileRecordSize(uint64_t file_offset) {
+ 	return (file_offset >> 32u) != 0 ? READ_FILE_RECORD_SIZE_EXT : READ_FILE_RECORD_SIZE;
+ }
+ 
++// Ported from KytyPlus 41beda43 "ampr: fix APR completion loss in 768-byte read batches"
++// (github.com/Coder787-source/KytyPlus, src/libs/libAmpr.cpp, GPL-2.0): a WriteAddress or
++// WriteAddressOnCompletion record is 8, 12 or 16 bytes by the value it writes, not a fixed 0x20;
++// a title that measures its records and packs them (768-byte read batches there) otherwise
++// loses the completion write that follows. The counter and time-counter variants stay at 0x20.
++// TODO(verify): the record sizes against a title's own measured layout on the box.
++static uint64_t WriteAddressRecordSize(uint64_t value) {
++	return value <= 3 ? 8 : value < (uint64_t {1} << 34) ? 12 : 16;
++}
++
+ static uint64_t AprReadGatherRecordSize(uint64_t file_offset) {
+ 	return file_offset > 0x3ffffu ? READ_GATHER_RECORD_SIZE_EXT : READ_GATHER_RECORD_SIZE;
+ }
+@@ -1151,6 +1344,7 @@ static bool WriteCommandBufferPointers(uint64_t command_buffer, uint64_t buffer,
  	state.kernel_event_commands.clear();
  	state.write_address_commands.clear();
  	state.amm_map_commands.clear();
@@ -23391,7 +23431,7 @@ index 073361d..8873cc8 100644
  	state.gather_scatter_valid       = false;
  	state.gather_scatter_file_id     = 0;
  	state.gather_scatter_destination = 0;
-@@ -1256,6 +1440,9 @@ static bool AppendReadFileRecord(uint64_t command_buffer, uint8_t opcode, uint32
+@@ -1256,6 +1450,9 @@ static bool AppendReadFileRecord(uint64_t command_buffer, uint8_t opcode, uint32
  	            static_cast<size_t>(record_size));
  	std::memcpy(reinterpret_cast<void*>(state.buffer + record_offset), &opcode, sizeof(opcode));
  	state.read_file_commands.push_back({record_offset, file_id, destination, size, file_offset});
@@ -23401,7 +23441,7 @@ index 073361d..8873cc8 100644
  	if (!CommitCommandBufferRecord(command_buffer, &state, record_size)) {
  		return false;
  	}
-@@ -1294,7 +1481,12 @@ static bool AppendKernelEventRecord(uint64_t command_buffer, uint64_t eq, int32_
+@@ -1294,7 +1491,12 @@ static bool AppendKernelEventRecord(uint64_t command_buffer, uint64_t eq, int32_
  	std::memcpy(reinterpret_cast<void*>(state.buffer + record_offset), record.data(),
  	            record.size());
  	state.kernel_event_commands.push_back({record_offset, eq, id, data});
@@ -23415,7 +23455,7 @@ index 073361d..8873cc8 100644
  }
  
  static bool AppendWriteAddressRecord(uint64_t command_buffer, uint64_t address, uint64_t value,
-@@ -1314,7 +1506,37 @@ static bool AppendWriteAddressRecord(uint64_t command_buffer, uint64_t address,
+@@ -1314,7 +1516,37 @@ static bool AppendWriteAddressRecord(uint64_t command_buffer, uint64_t address,
  	std::memset(reinterpret_cast<void*>(state.buffer + record_offset), 0,
  	            static_cast<size_t>(record_size));
  	state.write_address_commands.push_back({record_offset, address, value});
@@ -23454,7 +23494,7 @@ index 073361d..8873cc8 100644
  }
  
  static bool ValidateAmmMapArgs(uint64_t va, uint64_t size) {
-@@ -1358,26 +1580,112 @@ static int NormalizeAmmProtection(int prot) {
+@@ -1358,26 +1590,112 @@ static int NormalizeAmmProtection(int prot) {
  	return normalized;
  }
  
@@ -23575,7 +23615,7 @@ index 073361d..8873cc8 100644
  		return false;
  	}
  
-@@ -1385,6 +1693,8 @@ static bool AllocateAmmAutoDirectMemory(uint64_t size, int memory_type, uint64_t
+@@ -1385,6 +1703,8 @@ static bool AllocateAmmAutoDirectMemory(uint64_t size, int memory_type, uint64_t
  	return true;
  }
  
@@ -23584,7 +23624,7 @@ index 073361d..8873cc8 100644
  static int ExecuteAmmMapCommand(const CommandBufferState::AmmMapCommand& command) {
  	if (!ValidateAmmMapArgs(command.va, command.size)) {
  		return LibKernel::KERNEL_ERROR_EINVAL;
-@@ -1397,9 +1707,59 @@ static int ExecuteAmmMapCommand(const CommandBufferState::AmmMapCommand& command
+@@ -1397,9 +1717,59 @@ static int ExecuteAmmMapCommand(const CommandBufferState::AmmMapCommand& command
  	}
  
  	void* addr = reinterpret_cast<void*>(command.va);
@@ -23646,7 +23686,7 @@ index 073361d..8873cc8 100644
  }
  
  static bool AppendAmmMapRecord(uint64_t                                 command_buffer,
-@@ -1425,68 +1785,191 @@ static bool AppendAmmMapRecord(uint64_t                                 command_
+@@ -1425,68 +1795,191 @@ static bool AppendAmmMapRecord(uint64_t                                 command_
  
  static int ReadHostFileToGuest(const std::string& host_path, uint64_t file_offset,
                                 uint64_t destination, uint64_t size, uint64_t* bytes_read);
@@ -23890,7 +23930,7 @@ index 073361d..8873cc8 100644
  				const auto& command = state.read_file_commands[entry.index];
  				std::string host_path;
  				if (!AprShared::TryGetHostPath(command.file_id, &host_path)) {
-@@ -1494,55 +1977,118 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+@@ -1494,55 +1987,118 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
  					     command.file_id);
  					*execution_result = LibKernel::KERNEL_ERROR_ENOENT;
  					*error_offset     = static_cast<uint32_t>(command.record_offset);
@@ -24017,7 +24057,7 @@ index 073361d..8873cc8 100644
  				if (result != OK) {
  					LOGF("\tAMM submit command failed: kind=%u va=0x%016" PRIx64
  					     " dmem=0x%016" PRIx64 " size=0x%016" PRIx64 " type=%" PRId32
-@@ -1552,12 +2098,413 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+@@ -1552,12 +2108,413 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
  					     static_cast<uint32_t>(result));
  					*execution_result = result;
  					*error_offset     = static_cast<uint32_t>(command.record_offset);
@@ -24048,7 +24088,7 @@ index 073361d..8873cc8 100644
 +		(void)AprShared::WriteResult(reinterpret_cast<void*>(b.result_ptr), result, offset);
 +	}
 +}
- 
++
 +static void PumpParkedAprBuffersLocked() {
 +	for (auto& queue: g_apr_parked) {
 +		while (!queue.empty()) {
@@ -24067,7 +24107,7 @@ index 073361d..8873cc8 100644
 +		}
 +	}
 +}
-+
+ 
 +// BC5 (experiment 0156): the console's APR engine is asynchronous: a submit returns at once and the
 +// title learns of completion through the buffer's events, its address writes and WaitCommandBuffer.
 +// The host ran every submission's reads on the submitting title thread, and the parked ones on
@@ -24432,7 +24472,7 @@ index 073361d..8873cc8 100644
  	return OK;
  }
  
-@@ -1678,13 +2625,50 @@ static int KYTY_SYSV_ABI CommandBufferDestructor(void* command_buffer) {
+@@ -1678,13 +2635,50 @@ static int KYTY_SYSV_ABI CommandBufferDestructor(void* command_buffer) {
  	return OK;
  }
  
@@ -24484,7 +24524,7 @@ index 073361d..8873cc8 100644
  	const auto command_buffer_addr = reinterpret_cast<uint64_t>(command_buffer);
  	if (!ValidateCommandBufferHeader(command_buffer_addr)) {
  		return LibKernel::KERNEL_ERROR_EFAULT;
-@@ -1765,17 +2749,30 @@ static int KYTY_SYSV_ABI AprCommandBufferReadFile(void*    command_buffer, uint6
+@@ -1765,17 +2759,30 @@ static int KYTY_SYSV_ABI AprCommandBufferReadFile(void*    command_buffer, uint6
                                                    uint32_t file_id, void* destination,
                                                    uint64_t size, uint64_t file_offset) {
  	PRINT_NAME();
@@ -24521,7 +24561,22 @@ index 073361d..8873cc8 100644
  }
  
  static uint64_t AlignUp4(uint64_t value) {
-@@ -2111,16 +3108,31 @@ static int KYTY_SYSV_ABI CommandBufferPopMarker(void* command_buffer) {
+@@ -1811,11 +2818,11 @@ static uint64_t KYTY_SYSV_ABI MeasureCommandSizeFixed32(uint64_t, uint64_t, uint
+ 	return 0x20;
+ }
+ 
+-static uint64_t KYTY_SYSV_ABI MeasureCommandSizeWriteAddressOnCompletion(volatile uint64_t*,
+-                                                                         uint64_t) {
++// WriteAddress and WriteAddressOnCompletion measure (KytyPlus 41beda43, see WriteAddressRecordSize).
++static uint64_t KYTY_SYSV_ABI MeasureCommandSizeWriteAddress(volatile uint64_t*, uint64_t value) {
+ 	PRINT_NAME();
+ 
+-	return 0x20;
++	return WriteAddressRecordSize(value);
+ }
+ 
+ static uint64_t KYTY_SYSV_ABI
+@@ -2111,27 +3118,42 @@ static int KYTY_SYSV_ABI CommandBufferPopMarker(void* command_buffer) {
  	return AppendNoOpCommand(command_buffer, sizeof(uint32_t));
  }
  
@@ -24558,7 +24613,20 @@ index 073361d..8873cc8 100644
  
  	return AppendNoOpCommand(command_buffer, 0x20);
  }
-@@ -2139,6 +3151,10 @@ static int AppendWriteAddressCommand(void* command_buffer, volatile uint64_t* ad
+ 
+ static int AppendWriteAddressCommand(void* command_buffer, volatile uint64_t* address,
+-                                     uint64_t value) {
++                                     uint64_t value, uint64_t record_size) {
+ 	if (command_buffer == nullptr || address == nullptr) {
+ 		return LibKernel::KERNEL_ERROR_EINVAL;
+ 	}
+ 	return AppendWriteAddressRecord(reinterpret_cast<uint64_t>(command_buffer),
+-	                                reinterpret_cast<uint64_t>(address), value)
++	                                reinterpret_cast<uint64_t>(address), value, record_size)
+ 	           ? OK
+ 	           : LibKernel::KERNEL_ERROR_EBUSY;
+ }
+@@ -2139,8 +3161,12 @@ static int AppendWriteAddressCommand(void* command_buffer, volatile uint64_t* ad
  static int KYTY_SYSV_ABI CommandBufferWriteAddress(void* command_buffer, volatile uint64_t* address,
                                                     uint64_t value, uint32_t) {
  	PRINT_NAME();
@@ -24567,9 +24635,72 @@ index 073361d..8873cc8 100644
 +		             reinterpret_cast<uint64_t>(command_buffer), reinterpret_cast<uint64_t>(address), value);
 +	}
  
- 	return AppendWriteAddressCommand(command_buffer, address, value);
+-	return AppendWriteAddressCommand(command_buffer, address, value);
++	return AppendWriteAddressCommand(command_buffer, address, value, WriteAddressRecordSize(value));
  }
-@@ -2314,15 +3330,27 @@ static int KYTY_SYSV_ABI AprCommandBufferResetGatherScatterState(void* command_b
+ 
+ static int KYTY_SYSV_ABI CommandBufferWriteAddressOnCompletion(void*              command_buffer,
+@@ -2148,7 +3174,7 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddressOnCompletion(void*
+                                                                uint64_t           value) {
+ 	PRINT_NAME();
+ 
+-	return AppendWriteAddressCommand(command_buffer, address, value);
++	return AppendWriteAddressCommand(command_buffer, address, value, WriteAddressRecordSize(value));
+ }
+ 
+ static int KYTY_SYSV_ABI CommandBufferWriteCounter(void* command_buffer, uint8_t, uint8_t, uint64_t,
+@@ -2170,14 +3196,14 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddressFromTimeCounter(void*
+                                                                   uint32_t) {
+ 	PRINT_NAME();
+ 
+-	return AppendWriteAddressCommand(command_buffer, address, uint64_t {0});
++	return AppendWriteAddressCommand(command_buffer, address, uint64_t {0}, 0x20);
+ }
+ 
+ static int KYTY_SYSV_ABI CommandBufferWriteAddressFromTimeCounterOnCompletion(
+     void* command_buffer, volatile uint64_t* address) {
+ 	PRINT_NAME();
+ 
+-	return AppendWriteAddressCommand(command_buffer, address, uint64_t {0});
++	return AppendWriteAddressCommand(command_buffer, address, uint64_t {0}, 0x20);
+ }
+ 
+ static int KYTY_SYSV_ABI CommandBufferWriteAddressFromCounter(void*              command_buffer,
+@@ -2185,14 +3211,14 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddressFromCounter(void*
+                                                               uint32_t) {
+ 	PRINT_NAME();
+ 
+-	return AppendWriteAddressCommand(command_buffer, address, uint64_t {0});
++	return AppendWriteAddressCommand(command_buffer, address, uint64_t {0}, 0x20);
+ }
+ 
+ static int KYTY_SYSV_ABI CommandBufferWriteAddressFromCounterOnCompletion(
+     void* command_buffer, volatile uint64_t* address, uint8_t) {
+ 	PRINT_NAME();
+ 
+-	return AppendWriteAddressCommand(command_buffer, address, uint64_t {0});
++	return AppendWriteAddressCommand(command_buffer, address, uint64_t {0}, 0x20);
+ }
+ 
+ static int KYTY_SYSV_ABI CommandBufferWriteAddressFromCounterPair(void*              command_buffer,
+@@ -2200,14 +3226,14 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddressFromCounterPair(void*
+                                                                   uint8_t, uint32_t) {
+ 	PRINT_NAME();
+ 
+-	return AppendWriteAddressCommand(command_buffer, address, uint64_t {0});
++	return AppendWriteAddressCommand(command_buffer, address, uint64_t {0}, 0x20);
+ }
+ 
+ static int KYTY_SYSV_ABI CommandBufferWriteAddressFromCounterPairOnCompletion(
+     void* command_buffer, volatile uint64_t* address, uint8_t) {
+ 	PRINT_NAME();
+ 
+-	return AppendWriteAddressCommand(command_buffer, address, uint64_t {0});
++	return AppendWriteAddressCommand(command_buffer, address, uint64_t {0}, 0x20);
+ }
+ 
+ static int KYTY_SYSV_ABI AprCommandBufferReadFileGather(void*    command_buffer, uint64_t, uint64_t,
+@@ -2314,15 +3340,27 @@ static int KYTY_SYSV_ABI AprCommandBufferResetGatherScatterState(void* command_b
  	return OK;
  }
  
@@ -24599,7 +24730,7 @@ index 073361d..8873cc8 100644
  		return LibKernel::KERNEL_ERROR_EFAULT;
  	}
  
-@@ -2333,7 +3361,7 @@ static int KYTY_SYSV_ABI AprCommandBufferMapBegin(void* command_buffer, uint64_t
+@@ -2333,7 +3371,7 @@ static int KYTY_SYSV_ABI AprCommandBufferMapBegin(void* command_buffer, uint64_t
  
  static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, uint64_t va,
                                                          uint64_t dmem_offset, uint64_t size,
@@ -24608,7 +24739,7 @@ index 073361d..8873cc8 100644
  	PRINT_NAME();
  
  	if (command_buffer == nullptr || !ValidateAmmMapArgs(va, size) ||
-@@ -2341,7 +3369,15 @@ static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, ui
+@@ -2341,7 +3379,15 @@ static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, ui
  		return LibKernel::KERNEL_ERROR_EINVAL;
  	}
  
@@ -24625,7 +24756,7 @@ index 073361d..8873cc8 100644
  		return LibKernel::KERNEL_ERROR_EFAULT;
  	}
  
-@@ -2504,38 +3540,60 @@ static int KYTY_SYSV_ABI AmmGiveDirectMemory(int64_t search_start, int64_t searc
+@@ -2504,38 +3550,60 @@ static int KYTY_SYSV_ABI AmmGiveDirectMemory(int64_t search_start, int64_t searc
  	}
  
  	*dmem_offset = allocated;
@@ -24698,7 +24829,7 @@ index 073361d..8873cc8 100644
  	}
  }
  
-@@ -2589,11 +3647,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetId(void* command_buffer_bas
+@@ -2589,11 +3657,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetId(void* command_buffer_bas
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
  	auto     submit_result =
@@ -24711,7 +24842,7 @@ index 073361d..8873cc8 100644
  
  	if (!AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
  		return LibKernel::KERNEL_ERROR_EFAULT;
-@@ -2618,11 +3675,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetResult(void* command_buffer
+@@ -2618,11 +3685,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetResult(void* command_buffer
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
  	auto     submit_result =
@@ -24724,6 +24855,23 @@ index 073361d..8873cc8 100644
  
  	if (out_submission_id != nullptr &&
  	    !AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
+@@ -2685,14 +3751,14 @@ LIB_DEFINE(InitAmpr_1_Ampr) {
+ 	LIB_FUNC("vWU-odnS+fU", Ampr::MeasureCommandSizeReadFile);
+ 	LIB_FUNC("sSAUCCU1dv4", Ampr::MeasureCommandSizeWriteKernelEventQueue);
+ 	LIB_FUNC("Zi3dBUjgyXI", Ampr::MeasureCommandSizeWriteKernelEventQueue);
+-	LIB_FUNC("C+IEj+BsAFM", Ampr::MeasureCommandSizeWriteAddressOnCompletion);
++	LIB_FUNC("C+IEj+BsAFM", Ampr::MeasureCommandSizeWriteAddress);
+ 	LIB_FUNC("x7SQEXfeovg", Ampr::MeasureCommandSizeWriteAddressFromTimeCounterOnCompletion);
+ 	LIB_FUNC("32AcaTaBPSY", Ampr::MeasureCommandSizeWriteAddressFromCounterOnCompletion);
+ 	LIB_FUNC("vxC58+DRk-U", Ampr::MeasureCommandSizeWriteAddressFromCounterPairOnCompletion);
+ 	LIB_FUNC("4muPEJ-x5N8", Ampr::MeasureCommandSizeWriteCounterOnCompletion);
+ 	LIB_FUNC("0BMj1hgG+kE", Ampr::MeasureCommandSizeFixed32);
+ 	LIB_FUNC("ClnsFLLLcss", Ampr::MeasureCommandSizeFixed32);
+-	LIB_FUNC("4fgtGfXDrFc", Ampr::MeasureCommandSizeFixed32);
++	LIB_FUNC("4fgtGfXDrFc", Ampr::MeasureCommandSizeWriteAddress); // KytyPlus 41beda43
+ 	LIB_FUNC("gAtc79UTt5E", Ampr::MeasureCommandSizeFixed32);
+ 	LIB_FUNC("JYd9g9L+TmE", Ampr::MeasureCommandSizeFixed32);
+ 	LIB_FUNC("2Hw8gjMdwSY", Ampr::MeasureCommandSizeFixed32);
 diff --git a/src/libs/libAppContent.cpp b/src/libs/libAppContent.cpp
 index 6c36a4e..4c8ad53 100644
 --- a/src/libs/libAppContent.cpp
