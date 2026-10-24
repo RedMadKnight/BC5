@@ -1,0 +1,64 @@
+# /home/kjaniszewski/bc5-data/priv/exp0287/W287a: 147 argument records; 25 consecutive pairs of clear same-size depth reads
+  b01 z6-z7   73.4 ms: phi -0.272, kept 0.010 (depth 0 on 0.229), 44 records changed
+  b02 z1-z2   56.0 ms: phi +0.995, kept 0.996 (depth 0 on 0.231), 42 records changed
+  b02 z5-z6   14.7 ms: phi +1.000, kept 1.000 (depth 0 on 0.227), 0 records changed
+  b04 z2-z3   30.0 ms: phi +1.000, kept 1.000 (depth 0 on 0.231), 0 records changed
+  b05 z0-z1   30.1 ms: phi +1.000, kept 1.000 (depth 0 on 0.244), 0 records changed
+  b05 z3-z4   30.1 ms: phi +1.000, kept 1.000 (depth 0 on 0.269), 0 records changed
+  b05 z4-z5   29.9 ms: phi +1.000, kept 1.000 (depth 0 on 0.269), 0 records changed
+  b06 z1-z2   81.6 ms: phi +1.000, kept 1.000 (depth 0 on 0.268), 0 records changed
+  b07 z0-z1   30.1 ms: phi +1.000, kept 1.000 (depth 0 on 0.221), 0 records changed
+  b07 z3-z4   30.0 ms: phi +1.000, kept 1.000 (depth 0 on 0.205), 0 records changed
+  b07 z4-z5   30.0 ms: phi +1.000, kept 1.000 (depth 0 on 0.205), 0 records changed
+  b08 z1-z2   30.0 ms: phi +1.000, kept 1.000 (depth 0 on 0.199), 0 records changed
+  b08 z2-z3   30.0 ms: phi +1.000, kept 1.000 (depth 0 on 0.199), 0 records changed
+  b08 z3-z4   30.0 ms: phi +1.000, kept 1.000 (depth 0 on 0.199), 0 records changed
+  b08 z4-z5   30.0 ms: phi +1.000, kept 1.000 (depth 0 on 0.199), 0 records changed
+  b08 z5-z6   30.0 ms: phi +1.000, kept 1.000 (depth 0 on 0.199), 0 records changed
+  b08 z6-z7   30.0 ms: phi +1.000, kept 1.000 (depth 0 on 0.199), 0 records changed
+  b10 z0-z1   30.1 ms: phi +1.000, kept 1.000 (depth 0 on 0.257), 0 records changed
+  b10 z1-z2   30.0 ms: phi +1.000, kept 1.000 (depth 0 on 0.257), 0 records changed
+  b10 z2-z3   30.0 ms: phi +1.000, kept 1.000 (depth 0 on 0.257), 0 records changed
+  b10 z6-z7   30.0 ms: phi +1.000, kept 1.000 (depth 0 on 0.253), 0 records changed
+  b11 z0-z1   30.1 ms: phi +1.000, kept 1.000 (depth 0 on 0.276), 0 records changed
+  b11 z1-z2   30.0 ms: phi +1.000, kept 1.000 (depth 0 on 0.276), 0 records changed
+  b11 z2-z3   30.0 ms: phi +1.000, kept 1.000 (depth 0 on 0.276), 0 records changed
+  b11 z3-z4   30.0 ms: phi +1.000, kept 1.000 (depth 0 on 0.276), 0 records changed
+# holes changed (phi < 0.8): 1 pairs; holes stayed (phi >= 0.95): 24 pairs
+  records changed per pair: holes changed median 44, holes stayed median 0
+# per record: changed in holes-changed pairs | in holes-stayed pairs (the 20 with the largest difference)
+  11935d46a0: 1 of 1 | 0 of 24
+  11935d4560: 1 of 1 | 0 of 24
+  11935d4460: 1 of 1 | 0 of 24
+  11935d4040: 1 of 1 | 0 of 24
+  11935d3f40: 1 of 1 | 0 of 24
+  11935d3c00: 1 of 1 | 0 of 24
+  11935d3b60: 1 of 1 | 0 of 24
+  11934d3f60: 1 of 1 | 0 of 24
+  11934d3e40: 1 of 1 | 0 of 24
+  11935d4860: 1 of 1 | 1 of 24
+  11935d4820: 1 of 1 | 1 of 24
+  11935d47e0: 1 of 1 | 1 of 24
+  11935d4780: 1 of 1 | 1 of 24
+  11935d4740: 1 of 1 | 1 of 24
+  11935d46c0: 1 of 1 | 1 of 24
+  11935d45e0: 1 of 1 | 1 of 24
+  11935d45c0: 1 of 1 | 1 of 24
+  11935d45a0: 1 of 1 | 1 of 24
+  11935d4580: 1 of 1 | 1 of 24
+  11935d4540: 1 of 1 | 1 of 24
+# records that changed in every holes-changed pair and in no holes-stayed pair: 11935d46a0 11935d4560 11935d4460 11935d4040 11935d3f40 11935d3c00 11935d3b60 11934d3f60 11934d3e40
+# every consecutive pair: depth words changed (of the whole image) and argument records changed
+  b01: 3711136/29 3138940/10 5426432/35 4060004/37 4780627/29 4052575/40 3917271/45
+  b02: 2672403/0 5004808/43 2450021/35 5065889/45 4309753/0 0/0 2154192/45
+  b03: 726657/0 1376704/118 3326813/17 0/0 777618/0 3444405/109 0/0
+  b04: 813528/0 6045588/34 0/0 2086040/40 5036452/0 144965/0 1058593/0
+  b05: 0/0 2132971/43 4812868/0 0/0 0/0 5615687/38 6093845/34
+  b06: 4615573/0 0/0 5594033/38 4926856/47 4252385/0 69624/9 0/0
+  b07: 0/0 1681560/11 2940124/32 0/0 0/0 1444644/45 2584619/0
+  b08: 1086525/0 0/0 0/0 0/0 0/0 0/0 0/0
+  b09: 1465159/11 0/0 0/0 0/0 1080068/0 3920065/33 62216/12
+  b10: 0/0 0/0 0/0 2022960/35 1385308/0 3876760/0 0/0
+  b11: 0/0 0/0 0/0 0/0 2289005/36 85037/0 4464643/0
+  b12: 496646/0 62040/11 0/0 0/0 0/0 0/0 0/0
+  depth changed and arguments changed 31; depth changed only 19; arguments changed only 0; neither 34

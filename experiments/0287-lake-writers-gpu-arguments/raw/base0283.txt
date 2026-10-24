@@ -1,0 +1,23 @@
+# /home/kjaniszewski/bc5-data/captures/play-20261024-2210/gc/direct.log: 11 writer shaders with indirect draws; argument addresses 11934d3d80..1193ad3b20
+  ps 11d090d900: 380 draws; op 24; base1 11935d3900 x380; offsets 4 distinct, 0xb20..0xba0
+  ps 11d0a98300: 380 draws; op 24; base1 11935d3900 x380; offsets 4 distinct, 0xac0..0xb60
+  ps 11d1d33200: 190 draws; op 24; base1 11935d3900 x190; offsets 5 distinct, 0xb60..0xc00
+  ps 11d1d88300: 2470 draws; op 24; base1 11935d3900 x2280 1193ad3900 x190; offsets 25 distinct, 0x1c0..0xfa0
+  ps 11d1dd6400: 1330 draws; op 24; base1 11935d3900 x1330; offsets 19 distinct, 0xd00..0xfc0
+  ps 11d1e2f300: 543 draws; op 24; base1 11935d3900 x353 1193ad3900 x190; offsets 7 distinct, 0x40..0xc20
+  ps 11d28b1000: 190 draws; op 24; base1 11935d3900 x190; offsets 2 distinct, 0xae0..0xb40
+  ps 11d29c5400: 570 draws; op 24; base1 1193ad3900 x380 11935d3900 x190; offsets 7 distinct, 0x1e0..0xfe0
+  ps 11d29c9500: 570 draws; op 24; base1 1193ad3900 x380 11935d3900 x190; offsets 7 distinct, 0x180..0xd60
+  ps 11d29ea100: 7790 draws; op 24; base1 11935d3900 x7220 1193ad3900 x570; offsets 59 distinct, 0x100..0xcc0
+  ps 11d373f600: 3189 draws; op 24; base1 11934d3900 x3189; offsets 18 distinct, 0x480..0x6a0
+# /home/kjaniszewski/bc5-data/captures/play-20261024-2224/gc/direct.log: 10 writer shaders with indirect draws; argument addresses 11934d3b60..1193ad3980
+  ps 11d090d900: 190 draws; op 24; base1 11935d3900 x190; offsets 2 distinct, 0x760..0x780
+  ps 11d0a98300: 190 draws; op 24; base1 11935d3900 x190; offsets 2 distinct, 0x740..0x760
+  ps 11d1d33200: 190 draws; op 24; base1 11935d3900 x190; offsets 2 distinct, 0x780..0x7a0
+  ps 11d1d88300: 1710 draws; op 24; base1 11935d3900 x1710; offsets 14 distinct, 0x840..0x9e0
+  ps 11d1dd6400: 950 draws; op 24; base1 11935d3900 x950; offsets 10 distinct, 0x8c0..0xa00
+  ps 11d28b0100: 190 draws; op 24; base1 11935d3900 x190; offsets 2 distinct, 0x720..0x740
+  ps 11d29c4500: 570 draws; op 24; base1 1193ad3900 x380 11935d3900 x190; offsets 4 distinct, 0x40..0xa20
+  ps 11d29c8600: 570 draws; op 24; base1 1193ad3900 x380 11935d3900 x190; offsets 4 distinct, 0x0..0x840
+  ps 11d29e9200: 6080 draws; op 24; base1 11935d3900 x6080; offsets 39 distinct, 0x180..0x800
+  ps 11d373e700: 1900 draws; op 24; base1 11934d3900 x1900; offsets 10 distinct, 0x260..0x380
