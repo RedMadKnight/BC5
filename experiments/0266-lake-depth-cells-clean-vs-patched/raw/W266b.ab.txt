@@ -1,0 +1,33 @@
+17:09:24 live saves checksum before: 2f5d956c8f1b6ebd
+17:09:24 W266b start: /var/home 71 %, dmesg 1610 lines; journal switches: BC5_DIRECT_DRAW_JOURNAL=150:12 BC5_DIRECT_DRAW_JOURNAL_EVERY=10 BC5_DIRECT_DRAW_JOURNAL_PS=11d01d7100
+  171158-ts00.png: patch   1.0 %
+  171203-ts01.png: patch   0.9 %
+  171208-ts02.png: patch   1.0 %
+  171213-ts03.png: patch   1.0 %
+  171219-ts04.png: patch   1.0 %
+  171224-ts05.png: patch   1.0 %
+  171229-ts06.png: patch   0.9 %
+  171234-ts07.png: patch   1.0 %
+  171239-ts08.png: patch   1.0 %
+  171245-ts09.png: patch   1.0 %
+  171250-ts10.png: patch   0.8 %
+  171255-ts11.png: patch   1.0 %
+  171300-ts12.png: patch   0.9 %
+  171305-ts13.png: patch   1.0 %
+  171310-ts14.png: patch   0.9 %
+  171316-ts15.png: patch   1.0 %
+  171321-ts16.png: patch   1.0 %
+  171326-ts17.png: patch   1.0 %
+  171331-ts18.png: patch   1.0 %
+  171336-ts19.png: patch   1.0 %
+  171341-ts20.png: patch   1.0 %
+  171346-ts21.png: patch   1.0 %
+  171351-ts22.png: patch   1.0 %
+  171356-ts23.png: patch   1.0 %
+  171401-ts24.png: patch   1.0 %
+  171406-ts25.png: patch   0.8 %
+  journal: direct.log 94M, 252 draw-journal lines (52558 bytes), 0 find lines
+  depth pool: 0 dma_data and 0 write_data lines into the depth memory, 0 find lines, 425 windows
+  written: run dir 79M, journal dir 94M, emu.log 12M
+17:15:41 live saves checksum after: 2f5d956c8f1b6ebd; /var/home 72%
+17:15:41 done

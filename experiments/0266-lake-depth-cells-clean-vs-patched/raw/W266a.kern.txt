@@ -1,0 +1,54 @@
+# 2026-10-24 17:03:55 boot 9f3e0da8-aff0-4b35-8174-37643599a898
+paź 24 17:04:05.724572 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 24 17:05:28.821574 bazzite kernel: gmc_v10_0_process_interrupt: 84 callbacks suppressed
+paź 24 17:05:28.821787 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:7 pasid:165)
+paź 24 17:05:28.837472 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 1168257 thread Render Thread pid 1168354
+paź 24 17:05:28.837882 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x000000145e628000 from client 0x1b (UTCL2)
+paź 24 17:05:28.838103 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00741051
+paź 24 17:05:28.838287 bazzite kernel: amdgpu 0000:01:00.0:          Faulty UTCL2 client ID: TCP (0x8)
+paź 24 17:05:28.838484 bazzite kernel: amdgpu 0000:01:00.0:          MORE_FAULTS: 0x1
+paź 24 17:05:28.838722 bazzite kernel: amdgpu 0000:01:00.0:          WALKER_ERROR: 0x0
+paź 24 17:05:28.838910 bazzite kernel: amdgpu 0000:01:00.0:          PERMISSION_FAULTS: 0x5
+paź 24 17:05:28.839117 bazzite kernel: amdgpu 0000:01:00.0:          MAPPING_ERROR: 0x0
+paź 24 17:05:28.839359 bazzite kernel: amdgpu 0000:01:00.0:          RW: 0x1
+paź 24 17:05:28.839607 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:7 pasid:165)
+paź 24 17:05:28.839812 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 1168257 thread Render Thread pid 1168354
+paź 24 17:05:28.840026 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x000000145e62c000 from client 0x1b (UTCL2)
+paź 24 17:05:28.840228 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:7 pasid:165)
+paź 24 17:05:28.840471 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 1168257 thread Render Thread pid 1168354
+paź 24 17:05:28.840658 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x000000145e62b000 from client 0x1b (UTCL2)
+paź 24 17:05:28.840951 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:7 pasid:165)
+paź 24 17:05:28.841190 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 1168257 thread Render Thread pid 1168354
+paź 24 17:05:28.841359 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x000000145e629000 from client 0x1b (UTCL2)
+paź 24 17:05:28.845890 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:7 pasid:165)
+paź 24 17:05:28.846240 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 1168257 thread Render Thread pid 1168354
+paź 24 17:05:28.846419 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x000000145e62d000 from client 0x1b (UTCL2)
+paź 24 17:05:28.846685 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:7 pasid:165)
+paź 24 17:05:28.846880 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 1168257 thread Render Thread pid 1168354
+paź 24 17:05:28.847121 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x000000145e62a000 from client 0x1b (UTCL2)
+paź 24 17:05:30.827568 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State
+paź 24 17:05:30.829557 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State Completed
+paź 24 17:05:30.829839 bazzite kernel: amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+paź 24 17:05:30.830014 bazzite kernel: amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+paź 24 17:05:30.830181 bazzite kernel: amdgpu 0000:01:00.0: ring comp_1.1.0 timeout, signaled seq=2263596, emitted seq=2263598
+paź 24 17:05:30.830338 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 1168257 thread bc5-ring pid 1168335
+paź 24 17:05:30.830501 bazzite kernel: amdgpu 0000:01:00.0: Starting comp_1.1.0 ring reset
+paź 24 17:05:30.830759 bazzite kernel: amdgpu 0000:01:00.0: Ring comp_1.1.0 reset succeeded
+paź 24 17:05:30.830920 bazzite kernel: amdgpu 0000:01:00.0: [drm] device wedged, but no recovery needed
+paź 24 17:05:30.831084 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State
+paź 24 17:05:30.831248 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State Completed
+paź 24 17:05:30.831395 bazzite kernel: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=3485493, emitted seq=3485495
+paź 24 17:05:30.831578 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 1168257 thread bc5-ring pid 1168335
+paź 24 17:05:30.831737 bazzite kernel: amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+paź 24 17:05:30.831888 bazzite kernel: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded
+paź 24 17:05:30.832053 bazzite kernel: amdgpu 0000:01:00.0: [drm] device wedged, but no recovery needed
+paź 24 17:05:32.874572 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State
+paź 24 17:05:32.876557 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State Completed
+paź 24 17:05:32.876808 bazzite kernel: amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+paź 24 17:05:32.877007 bazzite kernel: amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+paź 24 17:05:32.877209 bazzite kernel: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=3485498, emitted seq=3485500
+paź 24 17:05:32.877441 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 1168257 thread bc5-ring pid 1168335
+paź 24 17:05:32.877626 bazzite kernel: amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+paź 24 17:05:32.877785 bazzite kernel: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded
+paź 24 17:05:32.877953 bazzite kernel: amdgpu 0000:01:00.0: [drm] device wedged, but no recovery needed
+paź 24 17:06:10.724560 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!

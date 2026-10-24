@@ -1,0 +1,13 @@
+17:03:57 live saves checksum before: 2f5d956c8f1b6ebd
+17:03:57 W266a start: /var/home 71 %, dmesg 1556 lines; journal switches: BC5_DIRECT_DRAW_JOURNAL=150:12 BC5_DIRECT_DRAW_JOURNAL_EVERY=10 BC5_DIRECT_DRAW_JOURNAL_PS=11d01d7100
+17:05:31 W266a: new kernel lines, stopping the run:
+[11566.749842] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:40 vmid:7 pasid:165)
+[11566.749853] amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00741051
+[11566.749854] amdgpu 0000:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+[11566.749855] amdgpu 0000:01:00.0: 	 MORE_FAULTS: 0x1
+[11566.749857] amdgpu 0000:01:00.0: 	 PERMISSION_FAULTS: 0x5
+  == W266a: the emulator ended early, at 17:05:34; bench stopped
+  journal: direct.log 23M, 0 draw-journal lines (0 bytes), 0 find lines
+  depth pool: 0 dma_data and 0 write_data lines into the depth memory, 0 find lines, 0 windows
+  written: run dir 17M, journal dir 24M, emu.log 11M
+17:05:44 live saves checksum after: 2f5d956c8f1b6ebd; /var/home 71%
