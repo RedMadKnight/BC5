@@ -11,7 +11,7 @@ PC emulators have to translate a console's graphics for a different GPU. BC5 doe
 ### What it can do today
 
 - **ASTRO BOT is fully playable**, at about 60 fps in its first level, with the DualSense's motion, haptics and adaptive triggers, and with saves.
-- **Marvel's Wolverine plays** (called "the second title" in the findings and below) from its menus through the opening into gameplay, with sound, saves and pause, with its ray-traced reflections switched on and, since 2026-10-23, with the DualSense's haptics. It ran at about 37 fps through an 18-minute session; the maintainer's verdict: "fully playable, minimal stutter".
+- **Marvel's Wolverine plays** (called "the second title" in the findings and below) from its menus through the opening into gameplay, with sound, saves and pause, with its ray-traced reflections switched on and, since 2026-10-23, with the DualSense's haptics (rumble with a DualShock 4). It ran at about 37 fps through an 18-minute session; the maintainer's verdict: "fully playable, minimal stutter". Ray tracing can be switched off live in the emulator's menu (since 2026-10-24): about 48 fps in a 10-minute session, without reflections.
 - **Loading is quick again:** ASTRO BOT reaches its first logo about 12 s after a cold start (it was 33–50 s while the dev box's drive was nearly full).
 - **Any other game is untested.** A game that needs a system library BC5 has not rewritten yet stops there.
 
@@ -21,7 +21,7 @@ On the maintainer's box a desktop shortcut, *BC5 emulator*, opens the emulator w
 
 ### What is still broken
 
-Patches of the water are missing on the second title's night lake. Now and then a GPU fault freezes the picture (the sound keeps playing) or takes the machine down; the most frequent trigger, a wait the host gave up on, is removed since 2026-10-24, the rarer stray GPU writes are not. Some cutscenes used to play the characters in slow motion; a re-check on the current defaults showed none. The ray-traced reflections still skip one pass, so they may be incomplete. See [Known issues](#known-issues).
+Patches of the water are missing on the second title's night lake. Now and then the second title's GPU work hangs, which freezes the picture (the sound keeps playing) or takes the machine down: every hang caught so far stood in the game's ray-tracing (BVH) build work, and stray GPU writes occur too; the wait the host used to give up on is no longer a trigger (since 2026-10-24). Some cutscenes used to play the characters in slow motion; a re-check on the current defaults showed none. The ray-traced reflections still skip one pass, so they may be incomplete. See [Known issues](#known-issues).
 
 ### Legal, in short
 
@@ -29,12 +29,12 @@ BC5 is a hobby research project and is against piracy. You play games you own, d
 
 ## Status in numbers
 
-As of 2026-10-24, measured on one BC-250 with the maintainer's own copies of the games. Every number is a finding (F1 … F312) in [`docs/HANDOFF.md`](docs/HANDOFF.md) §2, backed by an experiment under [`experiments/`](experiments/). A "flip" is one frame the game presented.
+As of 2026-10-24, measured on one BC-250 with the maintainer's own copies of the games. Every number is a finding (F1 … F343) in [`docs/HANDOFF.md`](docs/HANDOFF.md) §2, backed by an experiment under [`experiments/`](experiments/). A "flip" is one frame the game presented.
 
 | | ASTRO BOT | Marvel's Wolverine (second title) |
 | --- | --- | --- |
 | State | Fully playable (F85) | Plays through menus, saves, New Game and Continue into gameplay (F207, F212); sound and game speed right, pause and resume (F240, F247); with reflections on, "fully playable, minimal stutter" in the maintainer's words (F277) |
-| Frame rate | First level 59–60 fps at 3328×1872, 57 at native 4K (F100, F101); a later level 46.5 (F126); the water level 43.4 (F137) | 18-minute play with reflections on: 37.5 flips/s, against 39.4 with them off (F277); 300-s scripted route 37.9–38.6 (F280, F281); opening 44–52 (F247); the night jungle 28–29, GPU-bound (F244, F248). The game asks for 60 (F210) |
+| Frame rate | First level 59–60 fps at 3328×1872, 57 at native 4K (F100, F101); a later level 46.5 (F126); the water level 43.4 (F137) | 18-minute play with reflections on: 37.5 flips/s, against 39.4 with them off (F277); 300-s scripted route 37.9–38.6 (F280, F281); opening 44–52 (F247); the night jungle 28–29, GPU-bound (F244, F248); ray tracing off: median 47.9 flips/s in a 10-minute session (F338, another session, not an A/B). The game asks for 60 (F210) |
 | Picture | 3D resolution chosen live in the F2 menu: 4K, ~1872p, ~1368p or 1080p (F101) | Paces itself by GPU time: keep the F2 resolution at 4K (scale 1.0); a higher scale halves its frame rate (F237) |
 | Loading | Cold start to the first logo ~12 s (F287); startup reads are no longer bound by the disk (F289) | Logo load ends at 13–15 s, Continue into gameplay 37–41 s (F287) |
 | Controller | Motion, haptics, adaptive triggers (F52–F60, F78–F80); with a DualShock 4, rumble from the haptics (F214) | Haptics (its ATRAC9 vibration tracks, F300, F301), touchpad press (F252); with a DualShock 4, rumble from the same tracks, also after an unplug and replug (F329) |
@@ -43,9 +43,11 @@ As of 2026-10-24, measured on one BC-250 with the maintainer's own copies of the
 
 | What | Effect | Source |
 | --- | --- | --- |
-| Ray-traced reflections, second title (since 2026-10-22) | Six reflection-traversal variants run, their stack addresses fixed for Linux's memory apertures. The BVH compaction pass that feeds them is still skipped: it once halved the frame rate in play, though on the bench it is a load-time burst with no per-frame GPU cost and seven runs with it on stayed clean, so a play test with it on is next. Reflections reach the image; whether they are complete is not shown | F249, F250, F268, F275, F277, F304, F306 |
+| Ray-traced reflections, second title (since 2026-10-22) | Six reflection-traversal variants run, their stack addresses fixed for Linux's memory apertures. The BVH compaction pass that feeds them is still skipped: it once halved the frame rate in play; on today's build it costs about 3 % of the frames on the scripted route with no fault (F325), but the hangs caught on 2026-10-24 all stood in the BVH build work around it (F332–F339). Reflections reach the image; whether they are complete is not shown | F249, F250, F268, F275, F277, F304, F306, F325 |
 | Held tail (since 2026-10-24) | When a game-thread wait would time out, the host holds the rest of the submission instead of giving up on it (ADR 0013): given-up waits 14 → 0 a run, long frame gaps to about a quarter, +3 % frames | F284, F312 |
 | Tiler scratch pool (since 2026-10-23) | The display buffer's per-flip detile reuses pooled scratch buffers instead of allocating a new one every frame, which stalled the host's GPU thread for 0.3–0.7 s under memory pressure | F308, F311 |
+| Ray tracing switch (since 2026-10-24) | Emulation → Ray tracing in the window's menu, applied at the next frame and saved per title; on by default, so nothing changes until it is switched off; off drops the BVH build programs the launcher lists, and reflections go blank | F337, F338, F340, F343 |
+| SaveData sidecars (since 2026-10-24) | A save's `.param` and `.blocks` files sit next to its directory, as on the console, instead of inside it; deleting a save removes them | F319, F324 |
 | Pad rumble off the game's threads, DualShock 4 (since 2026-10-24) | The rumble write runs on its own thread, so the game's audio thread never waits on the pad; with a DualShock 4 (no audio device) the pad-speaker sound plays on the TV without holding that thread, which had held it 1.1 s in two seconds; a replugged pad opened as a raw joystick still rumbles | F326, F328, F329 |
 | DualSense haptics, second title (since 2026-10-23) | Its ATRAC9 streams in channel configurations 6 and 7 are the pad's haptic tracks, decoded with vgmstream's decoder instead of played as silence; confirmed at the pad | F300, F301 |
 | APR read-ahead (since 2026-10-22, fixed 2026-10-23) | Streamed reads come back sooner: the cutscene read queue's 95th percentile from 3.4 s to 0.42 s; its reader threads sleep when idle (7–11 ms of CPU per 10 s instead of 160–208); large buffers and parallel runs stay with the queue's workers | F273, F281, F287, F288 |
@@ -53,16 +55,16 @@ As of 2026-10-24, measured on one BC-250 with the maintainer's own copies of the
 | Audio grain model and display-event coalescing | The second title's sound and timeline at real speed (1.00× for 10 minutes), no 30-fps cap needed | F246, F247 |
 | Tessellation-factor ring, second title | The night scene's tessellated draws are drawn; the geometry engine's reads at address 0 are gone | F248 |
 
-**The research so far:** 329 findings (F1–F329) in `docs/HANDOFF.md`, about 270 experiments (0001–0270) in `experiments/`, 14 architecture decision records in `docs/decisions/`.
+**The research so far:** 343 findings (F1–F343) in `docs/HANDOFF.md`, about 280 experiments (0001–0283) in `experiments/`, 14 architecture decision records in `docs/decisions/`.
 
 ### Known issues
 
 | Issue | What is known | Findings |
 | --- | --- | --- |
-| Patchwork water on the second title's night lake | Cells of the water show the lake bed in some runs, switching on and off over seconds. The cells are holes in the frame's depth buffer: the water's full-screen pass is depth-tested behind ~130 GPU-driven depth writers and fails where one of them left a nearer depth. Ruled out: the textures and their detail clamps, the HTILE metadata, the render-size changes and any packet the host filters. Open: which writer leaves those cells | F255, F292, F296–F299, F303, F305, F307, F309, F310 |
-| Freezes and machine-downs | Two kinds. (1) Two GPU rings time out with no fault after a game-thread wait the host gave up on; the host's synchronous wait held the very thread that would have submitted the awaited work (F284). The held tail removes these give-ups (on by default since 2026-10-24, F312). (2) A shader writes into heap the game never backed; the GPU faults, the rings reset and the picture freezes while the sound plays on (seen 2026-10-23). The host then learns that window and backs it next time (F257); where the shader's address comes from is open | F257, F260, F262, F279, F282–F284, F312 |
+| Patchwork water on the second title's night lake | Cells of the water show the lake bed, in phases of seconds. The holes are pixels where nothing wrote depth in that frame (F333), and they switch between two fixed, disjoint sets of pixels within tens of milliseconds (F342). Every draw compared is issued identically in clean and patched frames, so the cause is in memory the draws read (F313, F320, F323). Ruled out: the textures and their detail clamps, the HTILE metadata, the render-size changes, any packet the host filters, and the BVH build work (ray tracing off does not clear it, F341). Open: what decides which set a frame misses | F255, F292, F296–F299, F303, F305, F307, F309, F310, F313, F333, F341, F342 |
+| Freezes and machine-downs | The give-up hangs are gone: a game-thread wait the host gave up on used to stall two rings (F284), and the held tail removes those give-ups (on by default since 2026-10-24, F312). What remains, all caught with the timeout probe and saved GPU coredumps on 2026-10-24: a dispatch of the second title's BVH build work that never finishes, with the other ring waiting behind it, sometimes taking the machine down (F332, F336, F339); and shaders that write into memory the game never backed (TCP permission faults; F257, F338), which occur even with the BVH build chain dropped. Next: breadcrumbs around every dispatch to name the one that hangs (experiments 0277, 0281), and a long session with ray tracing off | F257, F260, F284, F312, F322, F332, F336, F338, F339 |
 | Cutscene slow motion | Characters crawled while hair and effects ran on; their clock is a silent looping voice that stops when its next streamed read comes late. With the fixed read-ahead and the freed drive the cutscene that lagged on the scripted route plays at 1.00× (one run, 2026-10-23); whether it is gone everywhere is not shown | F254, F256, F259, F267, F273, F288, F302 |
-| Library ports from AnyPS5 | Rumble without an audio sink, NpManager, NpTrophy2, SaveData search: ported, not yet verified on the box | F214–F217, Q16 |
+| Library ports | From AnyPS5: rumble without an audio sink (verified with a DualShock 4, F329), SaveData search and delete (verified, F319, F324), NpManager and NpTrophy2 (not exercised yet). From upstream KytyPlus, which has 328 library commits since our base: two small fixes built privately (experiment 0276), not yet in the shared builds | F214–F217, F319, F324, F329, F335, Q16 |
 
 ## How it works
 
@@ -111,10 +113,10 @@ It builds a normal emulator (`~/bc5-work/kytyplus-build/src/kyty_emulator`, the 
 
 Games start from launcher scripts on the dev box, one per kind of image: `play-astro.sh` for a `.ffpfsc` dump, `play-pkg.sh` for a package. `play-any.sh` (the *BC5 emulator* shortcut) runs the empty window and hands the chosen image to the right one. A launcher mounts the image with `bc5-mount`, exports the shared settings of `bc5-run.env` plus the title's own switches (D15), and runs the emulator. `BC5_LEAN=1` makes them start the lean build. Committed snapshots: [`experiments/0177-lean-build/`](experiments/0177-lean-build/) (all three) and [`experiments/0188-audioout2-advanced-grains/`](experiments/0188-audioout2-advanced-grains/) (`play-pkg.sh`); the live copies on the box carry the values in the table below.
 
-- **The window** (ADR 0011, D17): `kyty_emulator --menu` opens it with no game. The menu bar has *File* (open image or package, recent, close session, quit), *Emulation* (pause/resume, restart, settings, fullscreen, logging on/off) and *Help*. During play F1 or the pad's PS button shows and hides it. The host never mounts anything itself: it exits with code 76 (open), 77 (close) or 75 (restart) and the launcher acts on it.
+- **The window** (ADR 0011, D17): `kyty_emulator --menu` opens it with no game. The menu bar has *File* (open image or package, recent, close session, quit), *Emulation* (pause/resume, restart, settings, fullscreen, logging on/off, ray tracing on/off) and *Help*. During play F1 or the pad's PS button shows and hides it. The host never mounts anything itself: it exits with code 76 (open), 77 (close) or 75 (restart) and the launcher acts on it.
 - **F2** opens the settings menu: control bindings, ASTRO BOT's 3D resolution, saved to the input file (D14, F101). `KYTY_BC5_INPUT_CONFIG=<file>` names that file; [`input.example.cfg`](backend/kytyplus-patches/input.example.cfg) lists the names.
 - **Recording:** `BC5_MANGOHUD=1` (the *MangoHud* shortcut) shows MangoHud's hardware figures and the emulator's own count of the game's frame rate (`KYTY_BC5_OSD_FPS=1`). MangoHud's own fps is meaningless here: the window presents at every vblank. An OBS profile for software encoding is in `tools/scripts/obs-bc5/`.
-- **If it does not work:** out-of-memory submissions mean the GTT limit is not raised or another program holds GPU memory (F44); input dropping out for seconds is the controller's USB link (F61, F77); a picture that freezes for a few seconds and comes back is a timed-out submission and a reopened device (F74).
+- **If it does not work:** out-of-memory submissions mean the GTT limit is not raised or another program holds GPU memory (F44); input dropping out for seconds is the controller's USB link (F61, F77); a picture that freezes for a few seconds and comes back is a timed-out submission and a reopened device (F74). After a GPU hang the dev box keeps the driver's coredump in `~/bc5-data/captures/devcoredump/` (a udev rule, see `CLAUDE.md`), and the journal's timeout probe names the stuck buffers.
 
 ### Key switches
 
@@ -134,7 +136,7 @@ Environment variables; the launchers set the title's values. The full list, with
 | `KYTY_BC5_TILER_POOL` | on | Reuses the display detile's scratch buffers; `0` allocates one per flip as before | F308, F311 |
 | `KYTY_BC5_APR_READAHEAD` | `4` | APR read-ahead reader threads per priority queue; `0` turns it off | F273 |
 | `KYTY_BC5_AUDIO2_ADVANCED`, `KYTY_BC5_VIDEOOUT_COALESCE` | on | Audio grain model and display-event coalescing; `0` turns them off | F246, F247 |
-| `KYTY_BC5_RT` | on | The Emulation → Ray tracing switch (F1 or the pad's PS button; saved per title): `0` starts with ray tracing off, which drops the BVH build programs listed in `KYTY_BC5_RT_BUILD_PGM` (set in `play-pkg.sh` for the second title); the ray-query passes keep running, so reflections go blank | F337, F338, F340, F343 |
+| `KYTY_BC5_RT` | on | The Emulation → Ray tracing switch (F1 or the pad's PS button; saved per title): `0` starts with ray tracing off, which drops the BVH build programs listed in `KYTY_BC5_RT_BUILD_PGM` (set in `play-pkg.sh` for the second title); the ray-query passes keep running, so reflections go blank. `KYTY_BC5_RT_DETECT=1` also drops every program that uses ray-intersection instructions (a diagnostic: it blanks the second title's menu, F337) | F337, F338, F340, F343 |
 | `KYTY_BC5_PAD_RUMBLE_FALLBACK` | on | With no controller audio device (a DualShock 4), turns the haptics stream into the pad's rumble; `0` turns that rumble off | F214, F329 |
 | `KYTY_BC5_PAD_SPEAKER` | unset | Where the pad-speaker sound goes when the pad has no audio device: unset or `main`, the TV without holding the game's audio thread; `off` silent; `main-blocking` the old blocking port | F326, F328 |
 | `KYTY_BC5_AT9_VIBRATION` | on | Decodes ATRAC9's vibration configurations 6–7 (the second title's haptic tracks) with vgmstream's decoder; `0` plays them as silence | F300, F301 |
@@ -148,8 +150,8 @@ Environment variables; the launchers set the title's values. The full list, with
 README.md            this file
 CLAUDE.md            standing instructions and the hard rules
 docs/
-  HANDOFF.md         research state: findings F1–F312 with sources, open questions, decisions
-  PHASES.md          the gated roadmap (phases 0a–3 passed; 0b and 4 retired by ADR 0012)
+  HANDOFF.md         research state: findings F1–F343 with sources, open questions, decisions
+  PHASES.md          the gated roadmap (G0a, G1b, G2, G3 passed; 0b and 4 retired by D18; phase 5, play, current)
   console-vs-host.md what the console does, what the host does instead
   decisions/         ADRs 0001–0014, one decision each
   formats/           derived format notes: ffpfsc, ps5pkg, agc, ajm-opus
@@ -161,7 +163,7 @@ tools/
   third_party/       vendored oozextract (MIT)
 backend/             C++20: the direct path (policy filter, state trackers, dma-buf mappings,
                      submission); kytyplus-patches/ the patch against KytyPlus
-experiments/         one directory per experiment, 0001–0252
+experiments/         one directory per experiment, 0001–0283
 ```
 
 ## How the research is run
