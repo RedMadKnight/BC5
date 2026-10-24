@@ -122,7 +122,6 @@ stated number of times; the script refuses otherwise) and writes `patch_0273.dif
   - (c) the S6N route with `KYTY_BC5_RT=0` (or the saved `off`), five runs: do the machine-downs of the
     F332 class stop? Any hang with the switch off is then outside the ray-tracing work.
 
-**Verdict.** Pending the build and the runs.
 
 **Test (b), first attempt (the maintainer, 18:51–18:52:55, `~/bc5-work/exp0273/play-rt.sh`, binary 91349485):**
 ended early — the picture froze in-game at about 1.5 min with the sound going on, after a TCP
@@ -132,3 +131,61 @@ state with the switch on (above): nothing of 0273 ran on that session's GPU work
 touches nothing on the GPU path: the filter's block is gated by `!g_rt_on`, `ApplyPendingRayTracing()` at
 the flip is one atomic exchange with no pending value, and the rest is the menu item and the
 configuration parser.
+
+**Test (b) as "RT off from the start" (the maintainer, 19:04–19:06, `play-rt.sh` with `KYTY_BC5_RT=0`
+in the process environment, binary 91349485, the build list as above; read offline from a read-only
+copy of `~/bc5-data/captures/play-20261024-1904/gc/direct.log`, the two `ib-timeout-*.bin` dumps,
+`~/bc5-work/exp0273/play-rtoff-1904.log` and `~/bc5-data/captures/devcoredump/20261024-190459-devcd2.txt`):**
+- **The menu had no picture.** The detection marked, in the menu's own graphics buffer at journal
+  t 2.08 s (23,286 dwords), three programs that carry `image_bvh64_intersect_ray` — 0x11d0323c00,
+  0x11d0323900, 0x11d023c300 — and dropped their dispatches (the first "ray tracing off" line; the
+  counter is shared, so their later drops are not journaled separately). The menu scene is lit by
+  ray queries, and with those dispatches gone its targets stay unwritten: a black menu while the
+  flips went on at 28–30 per second (fps counter, t 4.8–6.9 s). So a generic drop of every
+  ray-intersection consumer is wrong: those programs write what the title shows, not only
+  reflections.
+- **The GPU hung at t ≈ 42 s** (gfx timeout 19:04:59, reset succeeded; compute 19:05:01; no fault
+  line, but the coredump's fault registers still hold 18:52's `0x1334f81000`, F336). The probe's
+  dumps: the stuck graphics buffer #23408 (2,002 dwords) carries the "Ray Tracing Update" count
+  kernels and builders (all DROPPED by the build list, as intended), one dispatch of 0x11d04ddd00
+  (900 groups, ran), then the **title's own intra-buffer sync**: `WRITE_DATA` 0 to 0x11e0310a40,
+  `RELEASE_MEM` writing 1 there at end of pipe, `WAIT_REG_MEM` == 1 at offset 1640 — reached ("ran")
+  and **not met: the label reads 7** (64-bit 0x69edddb400000007). Everything behind it waits: the
+  buffer's later dispatch of 0x11d04d1000 (2,506 groups), and the compute chain #23415 (14,382
+  dwords, 1,336 dispatches of the chain, all dropped, 6 packets ran) at its first packet, a wait on
+  0x12004b77c8 == 0 that a later buffer writes. Nothing in this buffer writes 7 after the
+  `WRITE_DATA` 0; the value comes from a shader still running from earlier work or from a different
+  user of that word, which the dumps cannot show. The hang is therefore not a dropped dependency of
+  the kind feared (a consumer outside the list waiting for a dropped producer): the stuck packet is
+  the title's own end-of-pipe sync, and whether RT off caused it (the dropped dispatches change the
+  buffers' timing) or only exposed it (the wait class the TCP session tracks, F336/exp 0275) needs the
+  same test with the consumers running — the next build below. The journal's
+  "gpu check: 1 dispatches left to the CP that the host would have dropped" at line 64878 is the usual
+  F106 count (one absurd triple left to the CP's check), unrelated to the switch.
+- Also seen: with the switch off the detection scanned 131 programs in 60 s (every compute program
+  the title dispatched), found `image_bvh64_intersect_ray` in the three menu programs and
+  `image_bvh_intersect_ray` in 0x11d03b1000, 0x11d049aa00 and 0x11d040e200 (the traversal variants,
+  F113/F232/F234), and the build list dropped 4,097 dispatches by t ≈ 40 s.
+
+**Verdict.** The switch's mechanics work (the environment default, the journal lines, the drops), but
+"off" as first designed is wrong on one count and unproven on another: dropping every ray-intersection
+consumer blanks the title's menu, and the run hung on the title's own end-of-pipe sync with the
+consumers gone, cause or coincidence open. **Fix design (experiment 0278, `patch0278.py`, this script unchanged as the tested binary.s):**
+"off" drops the build list alone — the compaction and the "Ray Tracing Update" chain, exactly the
+programs F234/F332 tie to the hangs — and leaves every consumer running; the consumers then walk
+trees the build never filled, the state the title already runs in today with the compaction skipped
+(exp 0160 run 834: the traversal variants through 100 s of play with no hang). The generic
+detection stays as a diagnostic behind `KYTY_BC5_RT_DETECT=1`. Next (→ experiment 0278): the same test with that build;
+if the end-of-pipe wait hangs again with the consumers running, the cause is the dropped chain (a
+label or counter one of its kernels writes) and the list shrinks to the compaction; if not, the
+F336 class. The switch stays off by default for integration until that test passes; nothing is
+integrated.
+
+**Correction (same day, from the TCP session's reading of the probe):** the probe's "ran" mark is the
+backend's `executed_offsets` — the packet passed the filter rather than being NOP-ed — not the CP's
+progress. So above, "reached ("ran") and not met" overstates it: the wait at offset 1640 is not met
+(the label reads 7, not 1), but whether the CP stood at that wait or inside an earlier dispatch of the
+same buffer (0x11d04ddd00, 900 groups, the last one before the sync) the dumps cannot say. The fix
+design and the next test are unchanged; the breadcrumb capture the TCP session proposes (a
+`WRITE_DATA` of each dispatch's offset before it runs, in `backend/src/indirect_check.cpp`) would
+settle where the CP stops.
