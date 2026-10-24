@@ -127,6 +127,7 @@ Environment variables; the launchers set the title's values. The full list, with
 | `BC5_DIRECT_FLAT_APERTURE` | off; `1` in `play-pkg.sh` | Fixes the reflection traversal's stack addresses, which assume the console's memory apertures | F249, F250, F277 |
 | `BC5_DIRECT_SKIP_PGM` | none; `909974400` in `play-pkg.sh` | Drops the dispatches of the listed shader programs (the BVH compaction) | F268, F277 |
 | `BC5_DIRECT_AMM_PRT` | unset; `1` in `play-pkg.sh` | Maps the AMM pages the game never backs as partially resident, so its stray writes are dropped as on the console; set at all, even to `0`, it is on | F257, F260, F277 |
+| `BC5_DIRECT_CS_PREFIX` | off; `1` in `play-pkg.sh` | Replays the compute state in front of graphics buffers that dispatch before setting their own program (a foreign program left by another queue) | F253, F254, F266, F316 |
 | `BC5_DIRECT_DCB_WAIT_MS` | `8` | How long the game thread waits on a GPU label before giving up on it | F263, F270, F271 |
 | `BC5_DIRECT_HOLD_TAIL` | on | Holds the rest of a submission instead of giving up on a game-thread wait (ADR 0013); `0` restores the give-up | F284, F312 |
 | `KYTY_BC5_TILER_POOL` | on | Reuses the display detile's scratch buffers; `0` allocates one per flip as before | F308, F311 |
