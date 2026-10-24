@@ -1,0 +1,161 @@
+# /home/kjaniszewski/bc5-data/captures/play-20261024-1439/gc/direct.log: 126 full-screen water draws journalled
+== t 150.102 (wall 14:42:29, next shot ts01 14:42:35 41.2 %): 17 depth writers before it into 1129ec0000 (the reference):
+       1 x ps 11d29e9c00 mask 000fffff pkt c0032400 000001a0 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9c00 mask 000fffff pkt c0032400 000001c0 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9c00 mask 000fffff pkt c0032400 000001e0 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9c00 mask 000fffff pkt c0032400 00000200 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9c00 mask 000fffff pkt c0032400 00000220 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9c00 mask 000fffff pkt c0032400 00000240 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9c00 mask 000fffff pkt c0032400 00000260 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9c00 mask 000fffff pkt c0032400 00000280 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9c00 mask 000fffff pkt c0032400 000002a0 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9c00 mask 000fffff pkt c0032400 000002c0 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9c00 mask 000fffff pkt c0032400 000002e0 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9c00 mask 000fffff pkt c0032400 00000360 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9c00 mask 000fffff pkt c0032400 00000380 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9c00 mask 000fffff pkt c0032400 000003a0 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9c00 mask 000fffff pkt c0032400 000003e0 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9c00 mask 000fffff pkt c0032400 00000400 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9c00 mask 000fffff pkt c0032400 00000420 00000280 00000280 z 1129ec0000
+== t 150.137 (wall 14:42:29, next shot ts01 14:42:35 41.2 %): 17 depth writers; vs the reference +0 -0
+== t 150.183 (wall 14:42:29, next shot ts01 14:42:35 41.2 %): 17 depth writers; vs the reference +0 -0
+== t 150.217 (wall 14:42:29, next shot ts01 14:42:35 41.2 %): 17 depth writers; vs the reference +0 -0
+== t 150.266 (wall 14:42:29, next shot ts01 14:42:35 41.2 %): 17 depth writers; vs the reference +0 -0
+== t 150.299 (wall 14:42:29, next shot ts01 14:42:35 41.2 %): 17 depth writers; vs the reference +0 -0
+== t 160.333 (wall 14:42:39, next shot ts02 14:42:41 45.5 %): 17 depth writers; vs the reference +0 -0
+== t 160.384 (wall 14:42:39, next shot ts02 14:42:41 45.5 %): 17 depth writers; vs the reference +0 -0
+== t 160.419 (wall 14:42:39, next shot ts02 14:42:41 45.5 %): 17 depth writers; vs the reference +0 -0
+== t 160.466 (wall 14:42:39, next shot ts02 14:42:41 45.5 %): 17 depth writers; vs the reference +0 -0
+== t 160.499 (wall 14:42:39, next shot ts02 14:42:41 45.5 %): 17 depth writers; vs the reference +0 -0
+== t 160.549 (wall 14:42:39, next shot ts02 14:42:41 45.5 %): 17 depth writers; vs the reference +0 -0
+== t 170.604 (wall 14:42:49, next shot ts04 14:42:53 44.0 %): 17 depth writers; vs the reference +0 -0
+== t 170.661 (wall 14:42:49, next shot ts04 14:42:53 44.0 %): 17 depth writers; vs the reference +0 -0
+== t 170.792 (wall 14:42:49, next shot ts04 14:42:53 44.0 %): 17 depth writers; vs the reference +0 -0
+== t 170.833 (wall 14:42:49, next shot ts04 14:42:53 44.0 %): 17 depth writers; vs the reference +0 -0
+== t 170.890 (wall 14:42:49, next shot ts04 14:42:53 44.0 %): 17 depth writers; vs the reference +0 -0
+== t 170.938 (wall 14:42:49, next shot ts04 14:42:53 44.0 %): 17 depth writers; vs the reference +0 -0
+== t 180.971 (wall 14:42:59, next shot ts05 14:43:00 40.9 %): 17 depth writers; vs the reference +0 -0
+== t 181.003 (wall 14:42:59, next shot ts05 14:43:00 40.9 %): 17 depth writers; vs the reference +0 -0
+== t 181.054 (wall 14:43:00, next shot ts05 14:43:00 40.9 %): 17 depth writers; vs the reference +0 -0
+== t 181.084 (wall 14:43:00, next shot ts05 14:43:00 40.9 %): 17 depth writers; vs the reference +0 -0
+== t 181.119 (wall 14:43:00, next shot ts05 14:43:00 40.9 %): 17 depth writers; vs the reference +0 -0
+== t 181.170 (wall 14:43:00, next shot ts05 14:43:00 40.9 %): 17 depth writers; vs the reference +0 -0
+== t 191.231 (wall 14:43:10, next shot ts07 14:43:13 38.8 %): 17 depth writers; vs the reference +0 -0
+== t 191.265 (wall 14:43:10, next shot ts07 14:43:13 38.8 %): 17 depth writers; vs the reference +0 -0
+== t 191.302 (wall 14:43:10, next shot ts07 14:43:13 38.8 %): 17 depth writers; vs the reference +0 -0
+== t 191.338 (wall 14:43:10, next shot ts07 14:43:13 38.8 %): 17 depth writers; vs the reference +0 -0
+== t 191.375 (wall 14:43:10, next shot ts07 14:43:13 38.8 %): 17 depth writers; vs the reference +0 -0
+== t 191.408 (wall 14:43:10, next shot ts07 14:43:13 38.8 %): 17 depth writers; vs the reference +0 -0
+== t 201.437 (wall 14:43:20, next shot ts08 14:43:20 36.0 %): 17 depth writers; vs the reference +0 -0
+== t 201.472 (wall 14:43:20, next shot ts08 14:43:20 36.0 %): 17 depth writers; vs the reference +0 -0
+== t 201.520 (wall 14:43:20, next shot ts08 14:43:20 36.0 %): 17 depth writers; vs the reference +0 -0
+== t 201.557 (wall 14:43:20, next shot ts08 14:43:20 36.0 %): 17 depth writers; vs the reference +0 -0
+== t 201.593 (wall 14:43:20, next shot ts08 14:43:20 36.0 %): 17 depth writers; vs the reference +0 -0
+== t 201.631 (wall 14:43:20, next shot ts08 14:43:20 36.0 %): 17 depth writers; vs the reference +0 -0
+== t 211.644 (wall 14:43:30, next shot ts10 14:43:34 11.6 %): 17 depth writers; vs the reference +0 -0
+== t 211.687 (wall 14:43:30, next shot ts10 14:43:34 11.6 %): 17 depth writers; vs the reference +0 -0
+== t 211.719 (wall 14:43:30, next shot ts10 14:43:34 11.6 %): 17 depth writers; vs the reference +0 -0
+== t 211.767 (wall 14:43:30, next shot ts10 14:43:34 11.6 %): 17 depth writers; vs the reference +0 -0
+== t 211.820 (wall 14:43:30, next shot ts10 14:43:34 11.6 %): 17 depth writers; vs the reference +0 -0
+== t 211.855 (wall 14:43:30, next shot ts10 14:43:34 11.6 %): 17 depth writers; vs the reference +0 -0
+== t 221.905 (wall 14:43:40, next shot ts11 14:43:41 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 221.941 (wall 14:43:40, next shot ts11 14:43:41 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 221.989 (wall 14:43:40, next shot ts11 14:43:41 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 222.028 (wall 14:43:41, next shot ts11 14:43:41 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 222.085 (wall 14:43:41, next shot ts11 14:43:41 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 222.117 (wall 14:43:41, next shot ts11 14:43:41 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 232.139 (wall 14:43:51, next shot ts13 14:43:54 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 232.229 (wall 14:43:51, next shot ts13 14:43:54 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 232.287 (wall 14:43:51, next shot ts13 14:43:54 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 232.324 (wall 14:43:51, next shot ts13 14:43:54 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 232.366 (wall 14:43:51, next shot ts13 14:43:54 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 232.411 (wall 14:43:51, next shot ts13 14:43:54 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 242.454 (wall 14:44:01, next shot ts14 14:44:01 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 242.493 (wall 14:44:01, next shot ts14 14:44:01 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 242.540 (wall 14:44:01, next shot ts14 14:44:01 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 242.573 (wall 14:44:01, next shot ts14 14:44:01 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 242.606 (wall 14:44:01, next shot ts14 14:44:01 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 242.650 (wall 14:44:01, next shot ts14 14:44:01 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 252.678 (wall 14:44:11, next shot ts16 14:44:15 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 252.715 (wall 14:44:11, next shot ts16 14:44:15 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 252.754 (wall 14:44:11, next shot ts16 14:44:15 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 252.794 (wall 14:44:11, next shot ts16 14:44:15 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 252.830 (wall 14:44:11, next shot ts16 14:44:15 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 252.875 (wall 14:44:11, next shot ts16 14:44:15 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 262.913 (wall 14:44:21, next shot ts17 14:44:21 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 262.973 (wall 14:44:21, next shot ts17 14:44:21 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 263.016 (wall 14:44:22, next shot ts18 14:44:28 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 263.060 (wall 14:44:22, next shot ts18 14:44:28 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 263.100 (wall 14:44:22, next shot ts18 14:44:28 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 263.142 (wall 14:44:22, next shot ts18 14:44:28 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 273.174 (wall 14:44:32, next shot ts19 14:44:35 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 273.225 (wall 14:44:32, next shot ts19 14:44:35 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 273.265 (wall 14:44:32, next shot ts19 14:44:35 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 273.303 (wall 14:44:32, next shot ts19 14:44:35 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 273.345 (wall 14:44:32, next shot ts19 14:44:35 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 273.379 (wall 14:44:32, next shot ts19 14:44:35 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 283.406 (wall 14:44:42, next shot ts21 14:44:47 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 283.445 (wall 14:44:42, next shot ts21 14:44:47 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 283.484 (wall 14:44:42, next shot ts21 14:44:47 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 283.526 (wall 14:44:42, next shot ts21 14:44:47 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 283.558 (wall 14:44:42, next shot ts21 14:44:47 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 283.593 (wall 14:44:42, next shot ts21 14:44:47 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 293.659 (wall 14:44:52, next shot ts22 14:44:54 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 293.699 (wall 14:44:52, next shot ts22 14:44:54 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 293.739 (wall 14:44:52, next shot ts22 14:44:54 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 293.794 (wall 14:44:52, next shot ts22 14:44:54 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 293.826 (wall 14:44:52, next shot ts22 14:44:54 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 293.885 (wall 14:44:52, next shot ts22 14:44:54 1.8 %): 17 depth writers; vs the reference +0 -0
+== t 303.930 (wall 14:45:02, next shot ts23 14:45:02 1.7 %): 17 depth writers; vs the reference +0 -0
+== t 303.968 (wall 14:45:02, next shot ts23 14:45:02 1.7 %): 17 depth writers; vs the reference +0 -0
+== t 304.011 (wall 14:45:02, next shot ts23 14:45:02 1.7 %): 17 depth writers; vs the reference +0 -0
+== t 304.043 (wall 14:45:03, next shot ts24 14:45:09 1.5 %): 17 depth writers; vs the reference +0 -0
+== t 304.089 (wall 14:45:03, next shot ts24 14:45:09 1.5 %): 17 depth writers; vs the reference +0 -0
+== t 304.126 (wall 14:45:03, next shot ts24 14:45:09 1.5 %): 17 depth writers; vs the reference +0 -0
+== t 314.146 (wall 14:45:13, next shot ts25 14:45:16 1.7 %): 17 depth writers; vs the reference +0 -0
+== t 314.187 (wall 14:45:13, next shot ts25 14:45:16 1.7 %): 17 depth writers; vs the reference +0 -0
+== t 314.223 (wall 14:45:13, next shot ts25 14:45:16 1.7 %): 17 depth writers; vs the reference +0 -0
+== t 314.279 (wall 14:45:13, next shot ts25 14:45:16 1.7 %): 17 depth writers; vs the reference +0 -0
+== t 314.321 (wall 14:45:13, next shot ts25 14:45:16 1.7 %): 17 depth writers; vs the reference +0 -0
+== t 314.360 (wall 14:45:13, next shot ts25 14:45:16 1.7 %): 17 depth writers; vs the reference +0 -0
+== t 324.396 (wall 14:45:23, next shot -): 17 depth writers; vs the reference +0 -0
+== t 324.446 (wall 14:45:23, next shot -): 17 depth writers; vs the reference +0 -0
+== t 324.483 (wall 14:45:23, next shot -): 17 depth writers; vs the reference +0 -0
+== t 324.522 (wall 14:45:23, next shot -): 17 depth writers; vs the reference +0 -0
+== t 324.558 (wall 14:45:23, next shot -): 17 depth writers; vs the reference +0 -0
+== t 324.593 (wall 14:45:23, next shot -): 17 depth writers; vs the reference +0 -0
+== t 334.691 (wall 14:45:33, next shot -): 17 depth writers; vs the reference +0 -0
+== t 334.731 (wall 14:45:33, next shot -): 17 depth writers; vs the reference +0 -0
+== t 334.775 (wall 14:45:33, next shot -): 17 depth writers; vs the reference +0 -0
+== t 334.811 (wall 14:45:33, next shot -): 17 depth writers; vs the reference +0 -0
+== t 334.853 (wall 14:45:33, next shot -): 17 depth writers; vs the reference +0 -0
+== t 334.894 (wall 14:45:33, next shot -): 17 depth writers; vs the reference +0 -0
+== t 344.940 (wall 14:45:43, next shot -): 0 depth writers; vs the reference +0 -17
+     -  1 x ps 11d29e9c00 mask 000fffff pkt c0032400 000001a0 00000280 00000280
+     -  1 x ps 11d29e9c00 mask 000fffff pkt c0032400 000001c0 00000280 00000280
+     -  1 x ps 11d29e9c00 mask 000fffff pkt c0032400 000001e0 00000280 00000280
+     -  1 x ps 11d29e9c00 mask 000fffff pkt c0032400 00000200 00000280 00000280
+     -  1 x ps 11d29e9c00 mask 000fffff pkt c0032400 00000220 00000280 00000280
+     -  1 x ps 11d29e9c00 mask 000fffff pkt c0032400 00000240 00000280 00000280
+     -  1 x ps 11d29e9c00 mask 000fffff pkt c0032400 00000260 00000280 00000280
+     -  1 x ps 11d29e9c00 mask 000fffff pkt c0032400 00000280 00000280 00000280
+     -  1 x ps 11d29e9c00 mask 000fffff pkt c0032400 000002a0 00000280 00000280
+     -  1 x ps 11d29e9c00 mask 000fffff pkt c0032400 000002c0 00000280 00000280
+     -  1 x ps 11d29e9c00 mask 000fffff pkt c0032400 000002e0 00000280 00000280
+     -  1 x ps 11d29e9c00 mask 000fffff pkt c0032400 00000360 00000280 00000280
+     -  1 x ps 11d29e9c00 mask 000fffff pkt c0032400 00000380 00000280 00000280
+     -  1 x ps 11d29e9c00 mask 000fffff pkt c0032400 000003a0 00000280 00000280
+     -  1 x ps 11d29e9c00 mask 000fffff pkt c0032400 000003e0 00000280 00000280
+     -  1 x ps 11d29e9c00 mask 000fffff pkt c0032400 00000400 00000280 00000280
+     -  1 x ps 11d29e9c00 mask 000fffff pkt c0032400 00000420 00000280 00000280
+== t 344.983 (wall 14:45:43, next shot -): 17 depth writers; vs the reference +0 -0
+== t 345.032 (wall 14:45:44, next shot -): 17 depth writers; vs the reference +0 -0
+== t 345.090 (wall 14:45:44, next shot -): 17 depth writers; vs the reference +0 -0
+== t 345.133 (wall 14:45:44, next shot -): 17 depth writers; vs the reference +0 -0
+== t 345.174 (wall 14:45:44, next shot -): 17 depth writers; vs the reference +0 -0
+== t 355.312 (wall 14:45:54, next shot -): 17 depth writers; vs the reference +0 -0
+== t 355.359 (wall 14:45:54, next shot -): 17 depth writers; vs the reference +0 -0
+== t 355.425 (wall 14:45:54, next shot -): 17 depth writers; vs the reference +0 -0
+== t 355.471 (wall 14:45:54, next shot -): 17 depth writers; vs the reference +0 -0
+== t 355.514 (wall 14:45:54, next shot -): 17 depth writers; vs the reference +0 -0
+== t 355.552 (wall 14:45:54, next shot -): 17 depth writers; vs the reference +0 -0

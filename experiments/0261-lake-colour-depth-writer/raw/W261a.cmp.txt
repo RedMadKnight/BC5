@@ -1,0 +1,251 @@
+# /home/kjaniszewski/bc5-data/captures/play-20261024-1433/gc/direct.log: 126 full-screen water draws journalled
+== t 150.031 (wall 14:35:48, next shot ts00 14:35:48 23.0 %): 31 depth writers before it into 1129ec0000 (the reference):
+       1 x ps 11d29e9600 mask 000fffff pkt c0032400 000001e0 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000200 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000220 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000240 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000260 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000280 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9600 mask 000fffff pkt c0032400 000002a0 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9600 mask 000fffff pkt c0032400 000002c0 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9600 mask 000fffff pkt c0032400 000002e0 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000400 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000420 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000440 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000460 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000480 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9600 mask 000fffff pkt c0032400 000004a0 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9600 mask 000fffff pkt c0032400 000004e0 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000500 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000520 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000540 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000560 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9600 mask 000fffff pkt c0032400 000005a0 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9600 mask 000fffff pkt c0032400 000005c0 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9600 mask 000fffff pkt c0032400 000005e0 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000600 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000620 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000680 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9600 mask 000fffff pkt c0032400 000006a0 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9600 mask 000fffff pkt c0032400 000006c0 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000700 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000720 00000280 00000280 z 1129ec0000
+       1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000740 00000280 00000280 z 1129ec0000
+== t 150.065 (wall 14:35:48, next shot ts00 14:35:48 23.0 %): 31 depth writers; vs the reference +0 -0
+== t 150.095 (wall 14:35:48, next shot ts00 14:35:48 23.0 %): 31 depth writers; vs the reference +0 -0
+== t 150.127 (wall 14:35:48, next shot ts00 14:35:48 23.0 %): 31 depth writers; vs the reference +0 -0
+== t 150.161 (wall 14:35:48, next shot ts00 14:35:48 23.0 %): 31 depth writers; vs the reference +0 -0
+== t 150.195 (wall 14:35:48, next shot ts00 14:35:48 23.0 %): 31 depth writers; vs the reference +0 -0
+== t 160.231 (wall 14:35:58, next shot ts02 14:36:01 25.6 %): 31 depth writers; vs the reference +0 -0
+== t 160.270 (wall 14:35:58, next shot ts02 14:36:01 25.6 %): 31 depth writers; vs the reference +0 -0
+== t 160.306 (wall 14:35:58, next shot ts02 14:36:01 25.6 %): 31 depth writers; vs the reference +0 -0
+== t 160.347 (wall 14:35:58, next shot ts02 14:36:01 25.6 %): 31 depth writers; vs the reference +0 -0
+== t 160.383 (wall 14:35:58, next shot ts02 14:36:01 25.6 %): 31 depth writers; vs the reference +0 -0
+== t 160.416 (wall 14:35:58, next shot ts02 14:36:01 25.6 %): 31 depth writers; vs the reference +0 -0
+== t 170.444 (wall 14:36:08, next shot ts04 14:36:11 28.5 %): 31 depth writers; vs the reference +0 -0
+== t 170.481 (wall 14:36:08, next shot ts04 14:36:11 28.5 %): 31 depth writers; vs the reference +0 -0
+== t 170.519 (wall 14:36:08, next shot ts04 14:36:11 28.5 %): 31 depth writers; vs the reference +0 -0
+== t 170.556 (wall 14:36:08, next shot ts04 14:36:11 28.5 %): 31 depth writers; vs the reference +0 -0
+== t 170.592 (wall 14:36:08, next shot ts04 14:36:11 28.5 %): 31 depth writers; vs the reference +0 -0
+== t 170.627 (wall 14:36:08, next shot ts04 14:36:11 28.5 %): 31 depth writers; vs the reference +0 -0
+== t 180.629 (wall 14:36:18, next shot ts06 14:36:22 27.0 %): 0 depth writers; vs the reference +0 -31
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 000001e0 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000200 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000220 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000240 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000260 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000280 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 000002a0 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 000002c0 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 000002e0 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000400 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000420 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000440 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000460 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000480 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 000004a0 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 000004e0 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000500 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000520 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000540 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000560 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 000005a0 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 000005c0 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 000005e0 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000600 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000620 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000680 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 000006a0 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 000006c0 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000700 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000720 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000740 00000280 00000280
+== t 180.673 (wall 14:36:18, next shot ts06 14:36:22 27.0 %): 31 depth writers; vs the reference +0 -0
+== t 180.719 (wall 14:36:18, next shot ts06 14:36:22 27.0 %): 31 depth writers; vs the reference +0 -0
+== t 180.764 (wall 14:36:18, next shot ts06 14:36:22 27.0 %): 31 depth writers; vs the reference +0 -0
+== t 180.806 (wall 14:36:18, next shot ts06 14:36:22 27.0 %): 31 depth writers; vs the reference +0 -0
+== t 180.848 (wall 14:36:19, next shot ts06 14:36:22 27.0 %): 31 depth writers; vs the reference +0 -0
+== t 190.939 (wall 14:36:29, next shot ts08 14:36:33 29.2 %): 31 depth writers; vs the reference +0 -0
+== t 190.982 (wall 14:36:29, next shot ts08 14:36:33 29.2 %): 31 depth writers; vs the reference +0 -0
+== t 191.028 (wall 14:36:29, next shot ts08 14:36:33 29.2 %): 31 depth writers; vs the reference +0 -0
+== t 191.077 (wall 14:36:29, next shot ts08 14:36:33 29.2 %): 31 depth writers; vs the reference +0 -0
+== t 191.119 (wall 14:36:29, next shot ts08 14:36:33 29.2 %): 31 depth writers; vs the reference +0 -0
+== t 191.154 (wall 14:36:29, next shot ts08 14:36:33 29.2 %): 31 depth writers; vs the reference +0 -0
+== t 201.189 (wall 14:36:39, next shot ts10 14:36:43 24.1 %): 31 depth writers; vs the reference +0 -0
+== t 201.231 (wall 14:36:39, next shot ts10 14:36:43 24.1 %): 31 depth writers; vs the reference +0 -0
+== t 201.274 (wall 14:36:39, next shot ts10 14:36:43 24.1 %): 31 depth writers; vs the reference +0 -0
+== t 201.315 (wall 14:36:39, next shot ts10 14:36:43 24.1 %): 31 depth writers; vs the reference +0 -0
+== t 201.351 (wall 14:36:39, next shot ts10 14:36:43 24.1 %): 31 depth writers; vs the reference +0 -0
+== t 201.389 (wall 14:36:39, next shot ts10 14:36:43 24.1 %): 31 depth writers; vs the reference +0 -0
+== t 211.393 (wall 14:36:49, next shot ts11 14:36:49 25.3 %): 0 depth writers; vs the reference +0 -31
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 000001e0 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000200 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000220 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000240 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000260 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000280 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 000002a0 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 000002c0 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 000002e0 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000400 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000420 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000440 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000460 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000480 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 000004a0 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 000004e0 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000500 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000520 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000540 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000560 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 000005a0 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 000005c0 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 000005e0 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000600 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000620 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000680 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 000006a0 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 000006c0 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000700 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000720 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000740 00000280 00000280
+== t 211.440 (wall 14:36:49, next shot ts11 14:36:49 25.3 %): 31 depth writers; vs the reference +0 -0
+== t 211.479 (wall 14:36:49, next shot ts11 14:36:49 25.3 %): 31 depth writers; vs the reference +0 -0
+== t 211.524 (wall 14:36:49, next shot ts11 14:36:49 25.3 %): 31 depth writers; vs the reference +0 -0
+== t 211.573 (wall 14:36:49, next shot ts11 14:36:49 25.3 %): 31 depth writers; vs the reference +0 -0
+== t 211.616 (wall 14:36:49, next shot ts11 14:36:49 25.3 %): 31 depth writers; vs the reference +0 -0
+== t 221.693 (wall 14:36:59, next shot ts13 14:36:59 22.2 %): 31 depth writers; vs the reference +0 -0
+== t 221.746 (wall 14:36:59, next shot ts13 14:36:59 22.2 %): 31 depth writers; vs the reference +0 -0
+== t 221.797 (wall 14:36:59, next shot ts13 14:36:59 22.2 %): 31 depth writers; vs the reference +0 -0
+== t 221.856 (wall 14:37:00, next shot ts14 14:37:04 23.1 %): 31 depth writers; vs the reference +0 -0
+== t 221.907 (wall 14:37:00, next shot ts14 14:37:04 23.1 %): 31 depth writers; vs the reference +0 -0
+== t 221.956 (wall 14:37:00, next shot ts14 14:37:04 23.1 %): 31 depth writers; vs the reference +0 -0
+== t 232.010 (wall 14:37:10, next shot ts16 14:37:14 25.4 %): 31 depth writers; vs the reference +0 -0
+== t 232.060 (wall 14:37:10, next shot ts16 14:37:14 25.4 %): 31 depth writers; vs the reference +0 -0
+== t 232.112 (wall 14:37:10, next shot ts16 14:37:14 25.4 %): 31 depth writers; vs the reference +0 -0
+== t 232.160 (wall 14:37:10, next shot ts16 14:37:14 25.4 %): 31 depth writers; vs the reference +0 -0
+== t 232.204 (wall 14:37:10, next shot ts16 14:37:14 25.4 %): 31 depth writers; vs the reference +0 -0
+== t 232.247 (wall 14:37:10, next shot ts16 14:37:14 25.4 %): 31 depth writers; vs the reference +0 -0
+== t 242.275 (wall 14:37:20, next shot ts17 14:37:20 29.9 %): 31 depth writers; vs the reference +0 -0
+== t 242.322 (wall 14:37:20, next shot ts17 14:37:20 29.9 %): 31 depth writers; vs the reference +0 -0
+== t 242.389 (wall 14:37:20, next shot ts17 14:37:20 29.9 %): 31 depth writers; vs the reference +0 -0
+== t 242.436 (wall 14:37:20, next shot ts17 14:37:20 29.9 %): 31 depth writers; vs the reference +0 -0
+== t 242.478 (wall 14:37:20, next shot ts17 14:37:20 29.9 %): 31 depth writers; vs the reference +0 -0
+== t 242.522 (wall 14:37:20, next shot ts17 14:37:20 29.9 %): 31 depth writers; vs the reference +0 -0
+== t 252.562 (wall 14:37:30, next shot ts19 14:37:30 25.7 %): 31 depth writers; vs the reference +0 -0
+== t 252.614 (wall 14:37:30, next shot ts19 14:37:30 25.7 %): 31 depth writers; vs the reference +0 -0
+== t 252.655 (wall 14:37:30, next shot ts19 14:37:30 25.7 %): 31 depth writers; vs the reference +0 -0
+== t 252.707 (wall 14:37:30, next shot ts19 14:37:30 25.7 %): 31 depth writers; vs the reference +0 -0
+== t 252.740 (wall 14:37:30, next shot ts19 14:37:30 25.7 %): 31 depth writers; vs the reference +0 -0
+== t 252.811 (wall 14:37:30, next shot ts19 14:37:30 25.7 %): 31 depth writers; vs the reference +0 -0
+== t 262.870 (wall 14:37:41, next shot ts22 14:37:46 26.8 %): 31 depth writers; vs the reference +0 -0
+== t 262.929 (wall 14:37:41, next shot ts22 14:37:46 26.8 %): 31 depth writers; vs the reference +0 -0
+== t 263.007 (wall 14:37:41, next shot ts22 14:37:46 26.8 %): 31 depth writers; vs the reference +0 -0
+== t 263.098 (wall 14:37:41, next shot ts22 14:37:46 26.8 %): 31 depth writers; vs the reference +0 -0
+== t 263.160 (wall 14:37:41, next shot ts22 14:37:46 26.8 %): 31 depth writers; vs the reference +0 -0
+== t 263.225 (wall 14:37:41, next shot ts22 14:37:46 26.8 %): 31 depth writers; vs the reference +0 -0
+== t 273.247 (wall 14:37:51, next shot ts23 14:37:51 25.0 %): 0 depth writers; vs the reference +0 -31
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 000001e0 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000200 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000220 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000240 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000260 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000280 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 000002a0 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 000002c0 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 000002e0 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000400 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000420 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000440 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000460 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000480 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 000004a0 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 000004e0 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000500 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000520 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000540 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000560 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 000005a0 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 000005c0 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 000005e0 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000600 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000620 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000680 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 000006a0 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 000006c0 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000700 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000720 00000280 00000280
+     -  1 x ps 11d29e9600 mask 000fffff pkt c0032400 00000740 00000280 00000280
+== t 273.339 (wall 14:37:51, next shot ts23 14:37:51 25.0 %): 31 depth writers; vs the reference +0 -0
+== t 273.393 (wall 14:37:51, next shot ts23 14:37:51 25.0 %): 31 depth writers; vs the reference +0 -0
+== t 273.452 (wall 14:37:51, next shot ts23 14:37:51 25.0 %): 31 depth writers; vs the reference +0 -0
+== t 273.503 (wall 14:37:51, next shot ts23 14:37:51 25.0 %): 31 depth writers; vs the reference +0 -0
+== t 273.564 (wall 14:37:51, next shot ts23 14:37:51 25.0 %): 31 depth writers; vs the reference +0 -0
+== t 283.658 (wall 14:38:01, next shot ts25 14:38:01 21.3 %): 31 depth writers; vs the reference +0 -0
+== t 283.718 (wall 14:38:01, next shot ts25 14:38:01 21.3 %): 31 depth writers; vs the reference +0 -0
+== t 283.781 (wall 14:38:01, next shot ts25 14:38:01 21.3 %): 31 depth writers; vs the reference +0 -0
+== t 283.830 (wall 14:38:01, next shot ts25 14:38:01 21.3 %): 31 depth writers; vs the reference +0 -0
+== t 283.883 (wall 14:38:02, next shot -): 31 depth writers; vs the reference +0 -0
+== t 283.940 (wall 14:38:02, next shot -): 31 depth writers; vs the reference +0 -0
+== t 293.999 (wall 14:38:12, next shot -): 31 depth writers; vs the reference +0 -0
+== t 294.055 (wall 14:38:12, next shot -): 31 depth writers; vs the reference +0 -0
+== t 294.112 (wall 14:38:12, next shot -): 31 depth writers; vs the reference +0 -0
+== t 294.171 (wall 14:38:12, next shot -): 31 depth writers; vs the reference +0 -0
+== t 294.216 (wall 14:38:12, next shot -): 31 depth writers; vs the reference +0 -0
+== t 294.279 (wall 14:38:12, next shot -): 31 depth writers; vs the reference +0 -0
+== t 304.336 (wall 14:38:22, next shot -): 31 depth writers; vs the reference +0 -0
+== t 304.400 (wall 14:38:22, next shot -): 31 depth writers; vs the reference +0 -0
+== t 304.467 (wall 14:38:22, next shot -): 31 depth writers; vs the reference +0 -0
+== t 304.518 (wall 14:38:22, next shot -): 31 depth writers; vs the reference +0 -0
+== t 304.582 (wall 14:38:22, next shot -): 31 depth writers; vs the reference +0 -0
+== t 304.646 (wall 14:38:22, next shot -): 31 depth writers; vs the reference +0 -0
+== t 314.692 (wall 14:38:32, next shot -): 31 depth writers; vs the reference +0 -0
+== t 314.738 (wall 14:38:32, next shot -): 31 depth writers; vs the reference +0 -0
+== t 314.784 (wall 14:38:32, next shot -): 31 depth writers; vs the reference +0 -0
+== t 314.839 (wall 14:38:33, next shot -): 31 depth writers; vs the reference +0 -0
+== t 314.893 (wall 14:38:33, next shot -): 31 depth writers; vs the reference +0 -0
+== t 314.940 (wall 14:38:33, next shot -): 31 depth writers; vs the reference +0 -0
+== t 324.983 (wall 14:38:43, next shot -): 31 depth writers; vs the reference +0 -0
+== t 325.048 (wall 14:38:43, next shot -): 31 depth writers; vs the reference +0 -0
+== t 325.137 (wall 14:38:43, next shot -): 31 depth writers; vs the reference +0 -0
+== t 325.207 (wall 14:38:43, next shot -): 31 depth writers; vs the reference +0 -0
+== t 325.258 (wall 14:38:43, next shot -): 31 depth writers; vs the reference +0 -0
+== t 325.317 (wall 14:38:43, next shot -): 31 depth writers; vs the reference +0 -0
+== t 335.374 (wall 14:38:53, next shot -): 31 depth writers; vs the reference +0 -0
+== t 335.479 (wall 14:38:53, next shot -): 31 depth writers; vs the reference +0 -0
+== t 335.560 (wall 14:38:53, next shot -): 31 depth writers; vs the reference +0 -0
+== t 335.632 (wall 14:38:53, next shot -): 31 depth writers; vs the reference +0 -0
+== t 335.684 (wall 14:38:53, next shot -): 31 depth writers; vs the reference +0 -0
+== t 335.744 (wall 14:38:53, next shot -): 31 depth writers; vs the reference +0 -0
+== t 345.795 (wall 14:39:03, next shot -): 31 depth writers; vs the reference +0 -0
+== t 345.871 (wall 14:39:04, next shot -): 31 depth writers; vs the reference +0 -0
+== t 345.949 (wall 14:39:04, next shot -): 31 depth writers; vs the reference +0 -0
+== t 346.015 (wall 14:39:04, next shot -): 31 depth writers; vs the reference +0 -0
+== t 346.085 (wall 14:39:04, next shot -): 31 depth writers; vs the reference +0 -0
+== t 346.138 (wall 14:39:04, next shot -): 31 depth writers; vs the reference +0 -0
+== t 356.211 (wall 14:39:14, next shot -): 31 depth writers; vs the reference +0 -0
+== t 356.284 (wall 14:39:14, next shot -): 31 depth writers; vs the reference +0 -0
+== t 356.354 (wall 14:39:14, next shot -): 31 depth writers; vs the reference +0 -0
+== t 356.426 (wall 14:39:14, next shot -): 31 depth writers; vs the reference +0 -0
+== t 356.474 (wall 14:39:14, next shot -): 31 depth writers; vs the reference +0 -0
+== t 356.528 (wall 14:39:14, next shot -): 31 depth writers; vs the reference +0 -0

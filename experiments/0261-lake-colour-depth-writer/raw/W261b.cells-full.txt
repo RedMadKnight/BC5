@@ -1,0 +1,11 @@
+# cells per frame and distinct cells, per run and window state (writer draws with <= 16 records)
+  W261b clean     54 frames: 43.0 cells/frame (median), 43 distinct, 43 in every frame; distinct by writer 11d29e9c00 43
+  W261b mixed     29 frames: 43 cells/frame (median), 43 distinct, 0 in every frame; distinct by writer 11d29e9c00 43
+  W261b patched   42 frames: 43.0 cells/frame (median), 43 distinct, 43 in every frame; distinct by writer 11d29e9c00 43
+# cells in every frame of A and in no frame of B (A -> B)
+  W261b clean    -> W261b mixed      0 of  43 (-)
+  W261b clean    -> W261b patched    0 of  43 (-)
+  W261b mixed    -> W261b clean      0 of   0 (-)
+  W261b mixed    -> W261b patched    0 of   0 (-)
+  W261b patched  -> W261b clean      0 of  43 (-)
+  W261b patched  -> W261b mixed      0 of  43 (-)
