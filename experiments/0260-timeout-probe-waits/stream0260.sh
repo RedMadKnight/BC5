@@ -1,35 +1,38 @@
 #!/usr/bin/env bash
-# BC5 experiment 0260: run on the laptop before the catch run starts. Two passive streams from the box, as the box
-# supervisor arranged for this run (both only read; nothing on the box is started, stopped or written):
+# BC5 experiment 0260: run on the laptop before the catch run (catch0260.sh) starts. Two passive streams from the box, as
+# the box supervisor arranged for this run (both only read; nothing on the box is started, stopped or written):
 #   raw/kernel-stream.txt   the kernel log (journalctl -k -f), as exp 0254's kstream0254b.sh;
-#   raw/journal-stream.txt  from the first GPU journal created after this script starts (play-pkg.sh's
-#                           ~/bc5-data/captures/play-<time>/gc/direct.log), only the lines that matter after a machine-
-#                           down: the probe's, TIMEOUT, give-ups, unserved two-ring waits, the hold summaries, the
-#                           prefix's lines, faults. The full journal stays on the box (synced up to the probe's end).
-# Each ends by itself once the run is over (no "exp 0260" BOX-LOCK line and no emulator, after it has started) or after
-# 35 minutes. usage: stream0260.sh   (in the background; it returns when both streams end)
+#   raw/journal-stream.txt  each GPU journal created after this script starts (play-pkg.sh's
+#                           ~/bc5-data/captures/play-<time>/gc/direct.log; the newest is followed, the next run's replaces
+#                           it), only the lines that matter after a machine-down: the probe's, TIMEOUT, give-ups,
+#                           unserved two-ring waits, the hold summaries, the prefix's lines, faults. The full journal stays
+#                           on the box (synced up to the probe's end).
+# Each ends by itself once the chain is over (its "exp 0260 | catch run" BOX-LOCK line gone, after it was seen) or after
+# 45 minutes; journals are followed only while that line is there, so other sessions' runs are never read.
+# usage: stream0260.sh   (in the background; it returns when both streams end)
 out="$(cd "$(dirname "$0")" && pwd)/raw"
 mkdir -p "$out"
 SSH="ssh -o ServerAliveInterval=10 -o ServerAliveCountMax=6 bc250"
-# the box-side loop: wait until the run has started (lock line or emulator), then until it is over
-WATCH='end=$(( $(date +%s) + 2100 )); seen=0
-  while [ $(date +%s) -lt $end ]; do
-    if grep -q "exp 0260" ~/bc5-work/BOX-LOCK 2>/dev/null || pgrep -x kyty_emulator >/dev/null; then seen=1; elif [ $seen = 1 ]; then break; fi
+# shellcheck disable=SC2016
+LIVE='grep -q "^exp 0260 | catch run" ~/bc5-work/BOX-LOCK 2>/dev/null'  # only this chain's lock: other sessions' runs are not read
+$SSH "journalctl -k -f -o short-precise --since -1min & jp=\$!
+  end=\$(( \$(date +%s) + 2700 )); seen=0
+  while [ \$(date +%s) -lt \$end ]; do
+    if $LIVE; then seen=1; elif [ \$seen = 1 ]; then break; fi
     sleep 5
   done
-  sleep 20'
-$SSH "journalctl -k -f -o short-precise --since -1min & jp=\$!
-  $WATCH
-  kill \$jp" >> "$out/kernel-stream.txt" 2>&1 &
-$SSH "t0=\$(date +%s); d=
-  while [ -z \"\$d\" ] && [ \$(( \$(date +%s) - t0 )) -lt 2100 ]; do
-    d=\$(find ~/bc5-data/captures -maxdepth 2 -name gc -newermt @\$t0 2>/dev/null | head -1); [ -z \"\$d\" ] && sleep 2
+  sleep 20; kill \$jp" >> "$out/kernel-stream.txt" 2>&1 &
+$SSH "t0=\$(date +%s); end=\$(( t0 + 2700 )); seen=0; cur=; tp=
+  while [ \$(date +%s) -lt \$end ]; do
+    d=; $LIVE && d=\$(find ~/bc5-data/captures -maxdepth 2 -name gc -newermt @\$t0 2>/dev/null | sort | tail -1)
+    if [ -n \"\$d\" ] && [ \"\$d\" != \"\$cur\" ] && [ -e \"\$d/direct.log\" ]; then
+      [ -n \"\$tp\" ] && { pkill -P \$tp; kill \$tp 2>/dev/null; }
+      cur=\$d; echo \"journal \$cur/direct.log from \$(date +%T)\"
+      ( tail -n +1 -F \"\$cur/direct.log\" | grep --line-buffered -a -E 'timeout probe|TIMEOUT|GIVEN UP|NOT served|^hold tail: [0-9]+ holds|^cs prefix|fault|^aliases' ) & tp=\$!
+    fi
+    if $LIVE; then seen=1; elif [ \$seen = 1 ]; then break; fi
+    sleep 3
   done
-  [ -n \"\$d\" ] || { echo 'no new capture directory'; exit 0; }
-  echo \"journal \$d/direct.log\"
-  while [ ! -e \"\$d/direct.log\" ]; do sleep 1; done
-  ( tail -n +1 -F \"\$d/direct.log\" | grep --line-buffered -a -E 'timeout probe|TIMEOUT|GIVEN UP|NOT served|^hold tail: [0-9]+ holds|^cs prefix|fault|^aliases' ) & tp=\$!
-  $WATCH
-  pkill -P \$tp; kill \$tp 2>/dev/null; exit 0" >> "$out/journal-stream.txt" 2>&1 &
+  sleep 20; [ -n \"\$tp\" ] && { pkill -P \$tp; kill \$tp 2>/dev/null; }; exit 0" >> "$out/journal-stream.txt" 2>&1 &
 wait
 echo "streams ended $(date +%T)" >&2

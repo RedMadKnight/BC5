@@ -1,0 +1,14 @@
+1892:two rings, time in the waits: kept for the GPU 13441.5 ms in 38969, satisfied on the CPU 273.3 ms in 2934, not served 327.3 ms in 81
+1958:two rings: dcb 2119 dwords waits at 379 on 0x12004b3c38: kept for the GPU after 0.55 ms, head split off (41985 waits: 41985 split, 38970 kept for the GPU, 2934 satisfied, 81 lost)
+3012:ring order: acb 291 dwords keeps its wait at 28 on 0x12004b5bc8 for the GPU (292865 so far)
+10121:ring order: acb 7212 dwords keeps its wait at 28 on 0x12004b73c8 for the GPU (293889 so far)
+10496:acb head: 28 of 329 dwords go ahead of the wait at 28 on 0x12004b53c8
+18726:ring order: dcb 12645 dwords keeps its wait at 990 on 0x12004b6c38 for the GPU (294913 so far)
+21562:cpu-wait WAIT_REG_MEM64 at 380 on 0x12004b3c38: GIVEN UP after 19.4 ms
+25644:ring order: dcb 4386 dwords keeps its wait at 4318 on 0x12004b7838 for the GPU (295937 so far)
+27911:cpu-wait WAIT_REG_MEM64 at 311 on 0x12004b5438: GIVEN UP after 9.5 ms
+33289:ring order: acb 1445 dwords keeps its wait at 0 on 0x12004b37c8 for the GPU (296961 so far)
+40001:submit #767668 dcb 66622 dwords at 0x7fdc209c8d00: pass 8060 rewrite 561 drop 390 unmapped 3 cc 0 mappings 19883 ... FAILED rc 0 TIMEOUT 2047.83 ms
+40003:submit #767674 acb 865 dwords at 0x7fdc70070cf0: pass 119 rewrite 20 drop 10 unmapped 0 cc 0 mappings 19883 ... FAILED rc 0 TIMEOUT 2046.94 ms
+40005:timeout probe: acb 865 dwords dumped to /home/kjaniszewski/bc5-data/captures/play-20261023-2259/gc/ib-timeout-00767674-acb-865.bin
+40006:timeout probe: dcb 66622 dwords dumped to /home/kjaniszewski/bc5-data/captures/play-20261023-2259/gc/ib-timeout-00767668-dcb-66622.bin

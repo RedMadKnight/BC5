@@ -1,0 +1,338 @@
+journal /home/kjaniszewski/bc5-data/captures/play-20261024-1449/gc/direct.log from 14:49:21
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+hold tail: 765 holds; released with the writer on a ring 718, satisfied 46, GIVEN UP 0; held 0.93 ms on average, 22.56 ms at most; 0 waits kept inside held chains (their label written by the chain)
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+hold tail: 1702 holds; released with the writer on a ring 1547, satisfied 155, GIVEN UP 0; held 0.82 ms on average, 22.56 ms at most; 0 waits kept inside held chains (their label written by the chain)
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+hold tail: 2616 holds; released with the writer on a ring 2322, satisfied 293, GIVEN UP 0; held 0.78 ms on average, 22.56 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 2788 holds; released with the writer on a ring 2474, satisfied 314, GIVEN UP 0; held 0.78 ms on average, 22.56 ms at most; 0 waits kept inside held chains (their label written by the chain)
+cs prefix (exp 0195): t 42.734 s dcb 5839 dwords dispatches at 8 before it sets a program; the queue's program 0x0909974c00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (1 such buffers)
+hold tail: 3329 holds; released with the writer on a ring 2934, satisfied 394, GIVEN UP 0; held 0.81 ms on average, 22.56 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 4173 holds; released with the writer on a ring 3653, satisfied 519, GIVEN UP 0; held 0.83 ms on average, 22.56 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 4983 holds; released with the writer on a ring 4333, satisfied 650, GIVEN UP 0; held 0.83 ms on average, 22.56 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 5808 holds; released with the writer on a ring 5036, satisfied 771, GIVEN UP 0; held 0.85 ms on average, 62.89 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 6443 holds; released with the writer on a ring 5561, satisfied 882, GIVEN UP 0; held 0.87 ms on average, 62.89 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 6443 holds; released with the writer on a ring 5561, satisfied 882, GIVEN UP 0; held 0.87 ms on average, 62.89 ms at most; 0 waits kept inside held chains (their label written by the chain)
+cs prefix (exp 0195): t 102.183 s dcb 21255 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973b00 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (2 such buffers)
+cs prefix (exp 0195): t 102.255 s dcb 19895 dwords dispatches at 13 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (3 such buffers)
+cs prefix (exp 0195): t 102.257 s dcb 29643 dwords dispatches at 27 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (4 such buffers)
+cs prefix (exp 0195): t 102.260 s dcb 32638 dwords dispatches at 14 before it sets a program; the queue's program 0x0909972c00 rsrc1 402c0145 rsrc2 0000001a, 58 dwords of compute state in front (5 such buffers)
+cs prefix (exp 0195): t 102.260 s dcb 32643 dwords dispatches at 14 before it sets a program; the queue's program 0x0909974200 rsrc1 402c0040 rsrc2 0000008e, 58 dwords of compute state in front (6 such buffers)
+cs prefix (exp 0195): t 102.260 s dcb 32634 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973d00 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (7 such buffers)
+cs prefix (exp 0195): t 102.261 s dcb 32633 dwords dispatches at 18 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (8 such buffers)
+cs prefix (exp 0195): t 102.261 s dcb 32642 dwords dispatches at 22 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (9 such buffers)
+cs prefix (exp 0195): t 102.261 s dcb 20030 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973900 rsrc1 402c0041 rsrc2 0000008c, 58 dwords of compute state in front (10 such buffers)
+cs prefix (exp 0195): t 102.312 s dcb 19904 dwords dispatches at 27 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (11 such buffers)
+cs prefix (exp 0195): t 102.317 s dcb 32640 dwords dispatches at 8 before it sets a program; the queue's program 0x090985f200 rsrc1 402c0040 rsrc2 00000010, 58 dwords of compute state in front (12 such buffers)
+cs prefix (exp 0195): t 102.317 s dcb 32641 dwords dispatches at 14 before it sets a program; the queue's program 0x0909972c00 rsrc1 402c0145 rsrc2 0000001a, 58 dwords of compute state in front (13 such buffers)
+cs prefix (exp 0195): t 102.317 s dcb 32638 dwords dispatches at 8 before it sets a program; the queue's program 0x0909974c00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (14 such buffers)
+cs prefix (exp 0195): t 102.318 s dcb 32641 dwords dispatches at 14 before it sets a program; the queue's program 0x0909974200 rsrc1 402c0040 rsrc2 0000008e, 58 dwords of compute state in front (15 such buffers)
+cs prefix (exp 0195): t 102.318 s dcb 32642 dwords dispatches at 14 before it sets a program; the queue's program 0x0909973b00 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (16 such buffers)
+cs prefix (exp 0195): t 102.318 s dcb 32637 dwords dispatches at 14 before it sets a program; the queue's program 0x0909973f00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (17 such buffers)
+cs prefix (exp 0195): t 102.319 s dcb 32639 dwords dispatches at 22 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (18 such buffers)
+cs prefix (exp 0195): t 102.319 s dcb 32631 dwords dispatches at 18 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (19 such buffers)
+cs prefix (exp 0195): t 102.367 s dcb 32641 dwords dispatches at 22 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (20 such buffers)
+cs prefix (exp 0195): t 102.367 s dcb 10559 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973b00 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (21 such buffers)
+cs prefix (exp 0195): t 102.392 s dcb 19904 dwords dispatches at 27 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (22 such buffers)
+cs prefix (exp 0195): t 102.397 s dcb 32643 dwords dispatches at 8 before it sets a program; the queue's program 0x090985f200 rsrc1 402c0040 rsrc2 00000010, 58 dwords of compute state in front (23 such buffers)
+cs prefix (exp 0195): t 102.397 s dcb 32640 dwords dispatches at 14 before it sets a program; the queue's program 0x0909974c00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (24 such buffers)
+cs prefix (exp 0195): t 102.397 s dcb 32642 dwords dispatches at 14 before it sets a program; the queue's program 0x0909973d00 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (25 such buffers)
+cs prefix (exp 0195): t 102.398 s dcb 32634 dwords dispatches at 8 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (26 such buffers)
+cs prefix (exp 0195): t 102.398 s dcb 24740 dwords dispatches at 18 before it sets a program; the queue's program 0x090997a500 rsrc1 402c0186 rsrc2 00008098, 58 dwords of compute state in front (27 such buffers)
+cs prefix (exp 0195): t 102.438 s dcb 32075 dwords dispatches at 27 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (28 such buffers)
+cs prefix (exp 0195): t 102.438 s dcb 20456 dwords dispatches at 14 before it sets a program; the queue's program 0x0909973f00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (29 such buffers)
+hold tail: 6884 holds; released with the writer on a ring 5967, satisfied 916, GIVEN UP 0; held 0.91 ms on average, 62.89 ms at most; 0 waits kept inside held chains (their label written by the chain)
+cs prefix (exp 0195): t 111.147 s dcb 8940 dwords dispatches at 18 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (30 such buffers)
+hold tail: 7684 holds; released with the writer on a ring 6697, satisfied 986, GIVEN UP 0; held 0.91 ms on average, 62.89 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 8528 holds; released with the writer on a ring 7512, satisfied 1015, GIVEN UP 0; held 0.90 ms on average, 62.89 ms at most; 0 waits kept inside held chains (their label written by the chain)
+cs prefix (exp 0195): t 136.664 s dcb 269 dwords dispatches at 27 before it sets a program; the queue's program 0x11d039cd00 rsrc1 402c0043 rsrc2 00000098, 58 dwords of compute state in front (31 such buffers)
+cs prefix (exp 0195): t 136.757 s dcb 31299 dwords dispatches at 27 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (32 such buffers)
+hold tail: the wait on 0x12004b3c38 GIVEN UP after 382.5 ms: its kept wait dropped, the chain goes
+hold tail: 9102 holds; released with the writer on a ring 8013, satisfied 1087, GIVEN UP 1; held 0.96 ms on average, 382.50 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 9759 holds; released with the writer on a ring 8624, satisfied 1133, GIVEN UP 1; held 0.96 ms on average, 382.50 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 10387 holds; released with the writer on a ring 9215, satisfied 1170, GIVEN UP 1; held 0.98 ms on average, 382.50 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 11171 holds; released with the writer on a ring 9947, satisfied 1222, GIVEN UP 1; held 0.97 ms on average, 382.50 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 11971 holds; released with the writer on a ring 10694, satisfied 1275, GIVEN UP 1; held 0.97 ms on average, 382.50 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 12743 holds; released with the writer on a ring 11425, satisfied 1316, GIVEN UP 1; held 0.97 ms on average, 382.50 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 13517 holds; released with the writer on a ring 12152, satisfied 1363, GIVEN UP 1; held 0.96 ms on average, 382.50 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 14217 holds; released with the writer on a ring 12804, satisfied 1411, GIVEN UP 1; held 0.97 ms on average, 382.50 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 14923 holds; released with the writer on a ring 13472, satisfied 1449, GIVEN UP 1; held 0.96 ms on average, 382.50 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 15636 holds; released with the writer on a ring 14144, satisfied 1490, GIVEN UP 1; held 0.96 ms on average, 382.50 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 16369 holds; released with the writer on a ring 14834, satisfied 1533, GIVEN UP 1; held 0.96 ms on average, 382.50 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 17105 holds; released with the writer on a ring 15535, satisfied 1568, GIVEN UP 1; held 0.95 ms on average, 382.50 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 17857 holds; released with the writer on a ring 16238, satisfied 1617, GIVEN UP 1; held 0.95 ms on average, 382.50 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 18595 holds; released with the writer on a ring 16932, satisfied 1661, GIVEN UP 1; held 0.95 ms on average, 382.50 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 19324 holds; released with the writer on a ring 17613, satisfied 1709, GIVEN UP 1; held 0.95 ms on average, 382.50 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 20125 holds; released with the writer on a ring 18356, satisfied 1767, GIVEN UP 1; held 0.95 ms on average, 382.50 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 20857 holds; released with the writer on a ring 19044, satisfied 1812, GIVEN UP 1; held 0.95 ms on average, 382.50 ms at most; 0 waits kept inside held chains (their label written by the chain)
+journal /home/kjaniszewski/bc5-data/captures/play-20261024-1454/gc/direct.log from 14:54:39
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+hold tail: 756 holds; released with the writer on a ring 718, satisfied 37, GIVEN UP 0; held 0.93 ms on average, 19.93 ms at most; 0 waits kept inside held chains (their label written by the chain)
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+hold tail: 1681 holds; released with the writer on a ring 1540, satisfied 141, GIVEN UP 0; held 0.83 ms on average, 19.93 ms at most; 0 waits kept inside held chains (their label written by the chain)
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+hold tail: 2596 holds; released with the writer on a ring 2323, satisfied 272, GIVEN UP 0; held 0.78 ms on average, 19.93 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 2783 holds; released with the writer on a ring 2483, satisfied 300, GIVEN UP 0; held 0.77 ms on average, 19.93 ms at most; 0 waits kept inside held chains (their label written by the chain)
+cs prefix (exp 0195): t 40.425 s dcb 5839 dwords dispatches at 8 before it sets a program; the queue's program 0x0909974c00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (1 such buffers)
+hold tail: 3520 holds; released with the writer on a ring 3114, satisfied 405, GIVEN UP 0; held 0.81 ms on average, 37.07 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 4293 holds; released with the writer on a ring 3800, satisfied 492, GIVEN UP 0; held 0.81 ms on average, 37.07 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 5018 holds; released with the writer on a ring 4443, satisfied 574, GIVEN UP 0; held 0.81 ms on average, 37.07 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 5748 holds; released with the writer on a ring 5075, satisfied 672, GIVEN UP 0; held 0.81 ms on average, 37.07 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 6280 holds; released with the writer on a ring 5535, satisfied 745, GIVEN UP 0; held 0.83 ms on average, 37.07 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 6280 holds; released with the writer on a ring 5535, satisfied 745, GIVEN UP 0; held 0.83 ms on average, 37.07 ms at most; 0 waits kept inside held chains (their label written by the chain)
+cs prefix (exp 0195): t 101.522 s dcb 32641 dwords dispatches at 8 before it sets a program; the queue's program 0x090985f200 rsrc1 402c0040 rsrc2 00000010, 58 dwords of compute state in front (2 such buffers)
+cs prefix (exp 0195): t 101.522 s dcb 32641 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973900 rsrc1 402c0041 rsrc2 0000008c, 58 dwords of compute state in front (3 such buffers)
+cs prefix (exp 0195): t 101.523 s dcb 32639 dwords dispatches at 18 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (4 such buffers)
+cs prefix (exp 0195): t 101.523 s dcb 8592 dwords dispatches at 18 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (5 such buffers)
+cs prefix (exp 0195): t 101.601 s dcb 25053 dwords dispatches at 13 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (6 such buffers)
+cs prefix (exp 0195): t 101.602 s dcb 32642 dwords dispatches at 8 before it sets a program; the queue's program 0x0909972c00 rsrc1 402c0145 rsrc2 0000001a, 58 dwords of compute state in front (7 such buffers)
+cs prefix (exp 0195): t 101.605 s dcb 32642 dwords dispatches at 8 before it sets a program; the queue's program 0x0909974200 rsrc1 402c0040 rsrc2 0000008e, 58 dwords of compute state in front (8 such buffers)
+cs prefix (exp 0195): t 101.605 s dcb 32641 dwords dispatches at 14 before it sets a program; the queue's program 0x0909974400 rsrc1 402c00c3 rsrc2 0000008e, 58 dwords of compute state in front (9 such buffers)
+cs prefix (exp 0195): t 101.606 s dcb 32641 dwords dispatches at 8 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (10 such buffers)
+cs prefix (exp 0195): t 101.606 s dcb 23199 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973b00 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (11 such buffers)
+cs prefix (exp 0195): t 101.641 s dcb 19904 dwords dispatches at 27 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (12 such buffers)
+cs prefix (exp 0195): t 101.646 s dcb 32639 dwords dispatches at 17 before it sets a program; the queue's program 0x090985f200 rsrc1 402c0040 rsrc2 00000010, 58 dwords of compute state in front (13 such buffers)
+cs prefix (exp 0195): t 101.647 s dcb 32642 dwords dispatches at 8 before it sets a program; the queue's program 0x0909972c00 rsrc1 402c0145 rsrc2 0000001a, 58 dwords of compute state in front (14 such buffers)
+cs prefix (exp 0195): t 101.647 s dcb 32638 dwords dispatches at 8 before it sets a program; the queue's program 0x0909974c00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (15 such buffers)
+cs prefix (exp 0195): t 101.647 s dcb 32641 dwords dispatches at 14 before it sets a program; the queue's program 0x0909974200 rsrc1 402c0040 rsrc2 0000008e, 58 dwords of compute state in front (16 such buffers)
+cs prefix (exp 0195): t 101.648 s dcb 32642 dwords dispatches at 14 before it sets a program; the queue's program 0x0909973b00 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (17 such buffers)
+cs prefix (exp 0195): t 101.657 s dcb 32642 dwords dispatches at 14 before it sets a program; the queue's program 0x0909973f00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (18 such buffers)
+cs prefix (exp 0195): t 101.657 s dcb 32642 dwords dispatches at 8 before it sets a program; the queue's program 0x0909974400 rsrc1 402c00c3 rsrc2 0000008e, 58 dwords of compute state in front (19 such buffers)
+cs prefix (exp 0195): t 101.657 s dcb 32639 dwords dispatches at 8 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (20 such buffers)
+cs prefix (exp 0195): t 101.658 s dcb 32643 dwords dispatches at 22 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (21 such buffers)
+cs prefix (exp 0195): t 101.658 s dcb 19243 dwords dispatches at 16 before it sets a program; the queue's program 0x090997a500 rsrc1 402c0186 rsrc2 00008098, 58 dwords of compute state in front (22 such buffers)
+cs prefix (exp 0195): t 101.753 s dcb 19904 dwords dispatches at 27 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (23 such buffers)
+cs prefix (exp 0195): t 101.753 s dcb 32641 dwords dispatches at 8 before it sets a program; the queue's program 0x090985f200 rsrc1 402c0040 rsrc2 00000010, 58 dwords of compute state in front (24 such buffers)
+cs prefix (exp 0195): t 101.753 s dcb 32641 dwords dispatches at 13 before it sets a program; the queue's program 0x0909973700 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (25 such buffers)
+cs prefix (exp 0195): t 101.754 s dcb 32640 dwords dispatches at 8 before it sets a program; the queue's program 0x0909974200 rsrc1 402c0040 rsrc2 0000008e, 58 dwords of compute state in front (26 such buffers)
+cs prefix (exp 0195): t 101.754 s dcb 32639 dwords dispatches at 14 before it sets a program; the queue's program 0x0909973d00 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (27 such buffers)
+cs prefix (exp 0195): t 101.775 s dcb 32637 dwords dispatches at 18 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (28 such buffers)
+cs prefix (exp 0195): t 101.775 s dcb 26646 dwords dispatches at 16 before it sets a program; the queue's program 0x090997a500 rsrc1 402c0186 rsrc2 00008098, 58 dwords of compute state in front (29 such buffers)
+cs prefix (exp 0195): t 101.962 s dcb 5878 dwords dispatches at 18 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (30 such buffers)
+hold tail: 6715 holds; released with the writer on a ring 5941, satisfied 773, GIVEN UP 0; held 0.88 ms on average, 53.53 ms at most; 0 waits kept inside held chains (their label written by the chain)
+cs prefix (exp 0195): t 110.599 s dcb 8528 dwords dispatches at 22 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (31 such buffers)
+hold tail: 7420 holds; released with the writer on a ring 6570, satisfied 849, GIVEN UP 0; held 0.90 ms on average, 53.53 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 8239 holds; released with the writer on a ring 7369, satisfied 869, GIVEN UP 0; held 0.89 ms on average, 53.53 ms at most; 0 waits kept inside held chains (their label written by the chain)
+cs prefix (exp 0195): t 135.946 s dcb 307 dwords dispatches at 27 before it sets a program; the queue's program 0x11d039cd00 rsrc1 402c0043 rsrc2 00000098, 58 dwords of compute state in front (32 such buffers)
+cs prefix (exp 0195): t 136.040 s dcb 31124 dwords dispatches at 27 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (33 such buffers)
+hold tail: 8892 holds; released with the writer on a ring 7947, satisfied 944, GIVEN UP 0; held 0.90 ms on average, 53.53 ms at most; 0 waits kept inside held chains (their label written by the chain)
+cs prefix (exp 0195): t 149.087 s dcb 288 dwords dispatches at 27 before it sets a program; the queue's program 0x11d039cd00 rsrc1 402c0043 rsrc2 00000098, 58 dwords of compute state in front (34 such buffers)
+cs prefix (exp 0195): t 149.106 s dcb 274 dwords dispatches at 13 before it sets a program; the queue's program 0x11d039cd00 rsrc1 402c0043 rsrc2 00000098, 58 dwords of compute state in front (35 such buffers)
+cs prefix (exp 0195): t 149.125 s dcb 288 dwords dispatches at 27 before it sets a program; the queue's program 0x11d039cd00 rsrc1 402c0043 rsrc2 00000098, 58 dwords of compute state in front (36 such buffers)
+hold tail: 9508 holds; released with the writer on a ring 8513, satisfied 995, GIVEN UP 0; held 0.92 ms on average, 53.53 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: the wait on 0x12004b4c38 GIVEN UP after 100.3 ms: its kept wait dropped, the chain goes
+hold tail: the wait on 0x12004b3c38 GIVEN UP after 100.0 ms: its kept wait dropped, the chain goes
+hold tail: 10046 holds; released with the writer on a ring 8987, satisfied 1056, GIVEN UP 2; held 0.97 ms on average, 100.30 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 10734 holds; released with the writer on a ring 9648, satisfied 1083, GIVEN UP 2; held 0.96 ms on average, 100.30 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 11473 holds; released with the writer on a ring 10346, satisfied 1124, GIVEN UP 2; held 0.96 ms on average, 100.30 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 12224 holds; released with the writer on a ring 11049, satisfied 1172, GIVEN UP 2; held 0.96 ms on average, 100.30 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 12985 holds; released with the writer on a ring 11762, satisfied 1220, GIVEN UP 2; held 0.95 ms on average, 100.30 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 13755 holds; released with the writer on a ring 12488, satisfied 1264, GIVEN UP 2; held 0.94 ms on average, 100.30 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 14504 holds; released with the writer on a ring 13165, satisfied 1336, GIVEN UP 2; held 0.94 ms on average, 100.30 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 15285 holds; released with the writer on a ring 13895, satisfied 1387, GIVEN UP 2; held 0.94 ms on average, 100.30 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 16048 holds; released with the writer on a ring 14615, satisfied 1430, GIVEN UP 2; held 0.94 ms on average, 100.30 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 16751 holds; released with the writer on a ring 15274, satisfied 1474, GIVEN UP 2; held 0.93 ms on average, 100.30 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 17490 holds; released with the writer on a ring 15966, satisfied 1521, GIVEN UP 2; held 0.93 ms on average, 100.30 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 18230 holds; released with the writer on a ring 16662, satisfied 1565, GIVEN UP 2; held 0.93 ms on average, 100.30 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 18950 holds; released with the writer on a ring 17345, satisfied 1603, GIVEN UP 2; held 0.93 ms on average, 100.30 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 19693 holds; released with the writer on a ring 18032, satisfied 1658, GIVEN UP 2; held 0.93 ms on average, 100.30 ms at most; 0 waits kept inside held chains (their label written by the chain)
+journal /home/kjaniszewski/bc5-data/captures/play-20261024-1459/gc/direct.log from 14:59:54
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+hold tail: 706 holds; released with the writer on a ring 666, satisfied 39, GIVEN UP 0; held 0.96 ms on average, 26.49 ms at most; 0 waits kept inside held chains (their label written by the chain)
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+hold tail: 1688 holds; released with the writer on a ring 1535, satisfied 152, GIVEN UP 0; held 0.83 ms on average, 26.49 ms at most; 0 waits kept inside held chains (their label written by the chain)
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+hold tail: 2595 holds; released with the writer on a ring 2316, satisfied 278, GIVEN UP 0; held 0.79 ms on average, 26.49 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 2804 holds; released with the writer on a ring 2503, satisfied 301, GIVEN UP 0; held 0.78 ms on average, 26.49 ms at most; 0 waits kept inside held chains (their label written by the chain)
+cs prefix (exp 0195): t 41.447 s dcb 5839 dwords dispatches at 8 before it sets a program; the queue's program 0x0909974c00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (1 such buffers)
+hold tail: 3449 holds; released with the writer on a ring 3060, satisfied 388, GIVEN UP 0; held 0.85 ms on average, 26.49 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 4268 holds; released with the writer on a ring 3752, satisfied 515, GIVEN UP 0; held 0.85 ms on average, 26.49 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 5052 holds; released with the writer on a ring 4435, satisfied 616, GIVEN UP 0; held 0.84 ms on average, 26.49 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 5840 holds; released with the writer on a ring 5140, satisfied 699, GIVEN UP 0; held 0.84 ms on average, 26.49 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 6420 holds; released with the writer on a ring 5649, satisfied 771, GIVEN UP 0; held 0.86 ms on average, 34.19 ms at most; 0 waits kept inside held chains (their label written by the chain)
+cs prefix (exp 0195): t 99.894 s dcb 32641 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973d00 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (2 such buffers)
+cs prefix (exp 0195): t 99.894 s dcb 18683 dwords dispatches at 14 before it sets a program; the queue's program 0x0909973d00 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (3 such buffers)
+cs prefix (exp 0195): t 99.973 s dcb 26583 dwords dispatches at 13 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (4 such buffers)
+cs prefix (exp 0195): t 99.973 s dcb 32641 dwords dispatches at 14 before it sets a program; the queue's program 0x0909972c00 rsrc1 402c0145 rsrc2 0000001a, 58 dwords of compute state in front (5 such buffers)
+cs prefix (exp 0195): t 99.973 s dcb 32643 dwords dispatches at 14 before it sets a program; the queue's program 0x0909973900 rsrc1 402c0041 rsrc2 0000008c, 58 dwords of compute state in front (6 such buffers)
+cs prefix (exp 0195): t 99.985 s dcb 32641 dwords dispatches at 14 before it sets a program; the queue's program 0x0909974400 rsrc1 402c00c3 rsrc2 0000008e, 58 dwords of compute state in front (7 such buffers)
+cs prefix (exp 0195): t 99.985 s dcb 32643 dwords dispatches at 16 before it sets a program; the queue's program 0x090997a500 rsrc1 402c0186 rsrc2 00008098, 58 dwords of compute state in front (8 such buffers)
+cs prefix (exp 0195): t 99.985 s dcb 6609 dwords dispatches at 8 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (9 such buffers)
+cs prefix (exp 0195): t 100.030 s dcb 19904 dwords dispatches at 27 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (10 such buffers)
+cs prefix (exp 0195): t 100.032 s dcb 32379 dwords dispatches at 13 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (11 such buffers)
+cs prefix (exp 0195): t 100.032 s dcb 32639 dwords dispatches at 14 before it sets a program; the queue's program 0x0909972c00 rsrc1 402c0145 rsrc2 0000001a, 58 dwords of compute state in front (12 such buffers)
+cs prefix (exp 0195): t 100.033 s dcb 32641 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973700 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (13 such buffers)
+cs prefix (exp 0195): t 100.033 s dcb 32638 dwords dispatches at 8 before it sets a program; the queue's program 0x0909974c00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (14 such buffers)
+cs prefix (exp 0195): t 100.033 s dcb 32642 dwords dispatches at 14 before it sets a program; the queue's program 0x0909973900 rsrc1 402c0041 rsrc2 0000008c, 58 dwords of compute state in front (15 such buffers)
+cs prefix (exp 0195): t 100.035 s dcb 32642 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973b00 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (16 such buffers)
+cs prefix (exp 0195): t 100.040 s dcb 32643 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973f00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (17 such buffers)
+cs prefix (exp 0195): t 100.040 s dcb 32642 dwords dispatches at 22 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (18 such buffers)
+cs prefix (exp 0195): t 100.041 s dcb 32642 dwords dispatches at 8 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (19 such buffers)
+cs prefix (exp 0195): t 100.041 s dcb 32641 dwords dispatches at 22 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (20 such buffers)
+cs prefix (exp 0195): t 100.041 s dcb 17948 dwords dispatches at 16 before it sets a program; the queue's program 0x090997a500 rsrc1 402c0186 rsrc2 00008098, 58 dwords of compute state in front (21 such buffers)
+hold tail: 6429 holds; released with the writer on a ring 5657, satisfied 772, GIVEN UP 0; held 0.86 ms on average, 34.19 ms at most; 0 waits kept inside held chains (their label written by the chain)
+cs prefix (exp 0195): t 100.092 s dcb 19904 dwords dispatches at 27 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (22 such buffers)
+cs prefix (exp 0195): t 100.093 s dcb 32642 dwords dispatches at 8 before it sets a program; the queue's program 0x0909972c00 rsrc1 402c0145 rsrc2 0000001a, 58 dwords of compute state in front (23 such buffers)
+cs prefix (exp 0195): t 100.093 s dcb 32643 dwords dispatches at 8 before it sets a program; the queue's program 0x0909974c00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (24 such buffers)
+cs prefix (exp 0195): t 100.093 s dcb 32642 dwords dispatches at 14 before it sets a program; the queue's program 0x0909973b00 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (25 such buffers)
+cs prefix (exp 0195): t 100.094 s dcb 32641 dwords dispatches at 14 before it sets a program; the queue's program 0x0909973f00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (26 such buffers)
+cs prefix (exp 0195): t 100.119 s dcb 32636 dwords dispatches at 18 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (27 such buffers)
+cs prefix (exp 0195): t 100.120 s dcb 25249 dwords dispatches at 16 before it sets a program; the queue's program 0x090997a500 rsrc1 402c0186 rsrc2 00008098, 58 dwords of compute state in front (28 such buffers)
+cs prefix (exp 0195): t 109.033 s dcb 8524 dwords dispatches at 22 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (29 such buffers)
+hold tail: 7002 holds; released with the writer on a ring 6174, satisfied 827, GIVEN UP 0; held 0.92 ms on average, 86.21 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 7712 holds; released with the writer on a ring 6797, satisfied 915, GIVEN UP 0; held 0.92 ms on average, 86.21 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 8491 holds; released with the writer on a ring 7559, satisfied 931, GIVEN UP 0; held 0.92 ms on average, 86.21 ms at most; 0 waits kept inside held chains (their label written by the chain)
+cs prefix (exp 0195): t 134.568 s dcb 31116 dwords dispatches at 27 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (30 such buffers)
+hold tail: 9067 holds; released with the writer on a ring 8058, satisfied 1008, GIVEN UP 0; held 0.94 ms on average, 86.21 ms at most; 0 waits kept inside held chains (their label written by the chain)
+cs prefix (exp 0195): t 147.710 s dcb 288 dwords dispatches at 27 before it sets a program; the queue's program 0x11d039cd00 rsrc1 402c0043 rsrc2 00000098, 58 dwords of compute state in front (31 such buffers)
+hold tail: 9517 holds; released with the writer on a ring 8472, satisfied 1045, GIVEN UP 0; held 0.98 ms on average, 86.21 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 10194 holds; released with the writer on a ring 9091, satisfied 1102, GIVEN UP 0; held 0.99 ms on average, 86.21 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 10870 holds; released with the writer on a ring 9730, satisfied 1139, GIVEN UP 0; held 0.98 ms on average, 86.21 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 11601 holds; released with the writer on a ring 10422, satisfied 1178, GIVEN UP 0; held 0.98 ms on average, 86.21 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 12303 holds; released with the writer on a ring 11086, satisfied 1216, GIVEN UP 0; held 0.97 ms on average, 86.21 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 12963 holds; released with the writer on a ring 11702, satisfied 1260, GIVEN UP 0; held 0.96 ms on average, 86.21 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 13583 holds; released with the writer on a ring 12292, satisfied 1290, GIVEN UP 0; held 0.96 ms on average, 86.21 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 14246 holds; released with the writer on a ring 12916, satisfied 1329, GIVEN UP 0; held 0.96 ms on average, 86.21 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 14949 holds; released with the writer on a ring 13578, satisfied 1370, GIVEN UP 0; held 0.96 ms on average, 86.21 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 15640 holds; released with the writer on a ring 14230, satisfied 1410, GIVEN UP 0; held 0.96 ms on average, 86.21 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 16311 holds; released with the writer on a ring 14868, satisfied 1442, GIVEN UP 0; held 0.96 ms on average, 86.21 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 16999 holds; released with the writer on a ring 15512, satisfied 1486, GIVEN UP 0; held 0.95 ms on average, 86.21 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 17678 holds; released with the writer on a ring 16157, satisfied 1520, GIVEN UP 0; held 0.95 ms on average, 86.21 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 18354 holds; released with the writer on a ring 16787, satisfied 1566, GIVEN UP 0; held 0.95 ms on average, 86.21 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 19040 holds; released with the writer on a ring 17437, satisfied 1602, GIVEN UP 0; held 0.96 ms on average, 86.21 ms at most; 0 waits kept inside held chains (their label written by the chain)
+journal /home/kjaniszewski/bc5-data/captures/play-20261024-1505/gc/direct.log from 15:05:06
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+hold tail: 700 holds; released with the writer on a ring 649, satisfied 50, GIVEN UP 0; held 1.08 ms on average, 21.35 ms at most; 0 waits kept inside held chains (their label written by the chain)
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+hold tail: 1591 holds; released with the writer on a ring 1444, satisfied 146, GIVEN UP 0; held 0.93 ms on average, 39.50 ms at most; 0 waits kept inside held chains (their label written by the chain)
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+hold tail: 2491 holds; released with the writer on a ring 2207, satisfied 284, GIVEN UP 0; held 0.84 ms on average, 39.50 ms at most; 0 waits kept inside held chains (their label written by the chain)
+aliases: 5 windows, 192.0 MiB mapped again under their address bytes
+hold tail: 2692 holds; released with the writer on a ring 2389, satisfied 303, GIVEN UP 0; held 0.83 ms on average, 39.50 ms at most; 0 waits kept inside held chains (their label written by the chain)
+cs prefix (exp 0195): t 41.333 s dcb 5839 dwords dispatches at 8 before it sets a program; the queue's program 0x0909974c00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (1 such buffers)
+hold tail: 3343 holds; released with the writer on a ring 2931, satisfied 411, GIVEN UP 0; held 0.87 ms on average, 39.50 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 4148 holds; released with the writer on a ring 3606, satisfied 541, GIVEN UP 0; held 0.86 ms on average, 39.50 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 4986 holds; released with the writer on a ring 4340, satisfied 646, GIVEN UP 0; held 0.86 ms on average, 39.50 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 5795 holds; released with the writer on a ring 5024, satisfied 770, GIVEN UP 0; held 0.85 ms on average, 39.50 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 6366 holds; released with the writer on a ring 5514, satisfied 852, GIVEN UP 0; held 0.86 ms on average, 39.50 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 6366 holds; released with the writer on a ring 5514, satisfied 852, GIVEN UP 0; held 0.86 ms on average, 39.50 ms at most; 0 waits kept inside held chains (their label written by the chain)
+cs prefix (exp 0195): t 101.653 s dcb 32636 dwords dispatches at 17 before it sets a program; the queue's program 0x090985f200 rsrc1 402c0040 rsrc2 00000010, 58 dwords of compute state in front (2 such buffers)
+cs prefix (exp 0195): t 101.653 s dcb 4687 dwords dispatches at 22 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (3 such buffers)
+cs prefix (exp 0195): t 101.736 s dcb 19895 dwords dispatches at 13 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (4 such buffers)
+cs prefix (exp 0195): t 101.738 s dcb 30823 dwords dispatches at 27 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (5 such buffers)
+cs prefix (exp 0195): t 101.743 s dcb 32641 dwords dispatches at 8 before it sets a program; the queue's program 0x0909972c00 rsrc1 402c0145 rsrc2 0000001a, 58 dwords of compute state in front (6 such buffers)
+cs prefix (exp 0195): t 101.743 s dcb 32643 dwords dispatches at 14 before it sets a program; the queue's program 0x0909974200 rsrc1 402c0040 rsrc2 0000008e, 58 dwords of compute state in front (7 such buffers)
+cs prefix (exp 0195): t 101.743 s dcb 32631 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973d00 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (8 such buffers)
+cs prefix (exp 0195): t 101.743 s dcb 32640 dwords dispatches at 22 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (9 such buffers)
+cs prefix (exp 0195): t 101.744 s dcb 32641 dwords dispatches at 16 before it sets a program; the queue's program 0x090997a500 rsrc1 402c0186 rsrc2 00008098, 58 dwords of compute state in front (10 such buffers)
+cs prefix (exp 0195): t 101.744 s dcb 12353 dwords dispatches at 14 before it sets a program; the queue's program 0x0909974400 rsrc1 402c00c3 rsrc2 0000008e, 58 dwords of compute state in front (11 such buffers)
+cs prefix (exp 0195): t 101.792 s dcb 19904 dwords dispatches at 27 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (12 such buffers)
+cs prefix (exp 0195): t 101.794 s dcb 32642 dwords dispatches at 17 before it sets a program; the queue's program 0x090985f200 rsrc1 402c0040 rsrc2 00000010, 58 dwords of compute state in front (13 such buffers)
+cs prefix (exp 0195): t 101.797 s dcb 32639 dwords dispatches at 13 before it sets a program; the queue's program 0x0909973700 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (14 such buffers)
+cs prefix (exp 0195): t 101.797 s dcb 32642 dwords dispatches at 8 before it sets a program; the queue's program 0x0909974c00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (15 such buffers)
+cs prefix (exp 0195): t 101.798 s dcb 32641 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973900 rsrc1 402c0041 rsrc2 0000008c, 58 dwords of compute state in front (16 such buffers)
+cs prefix (exp 0195): t 101.798 s dcb 32642 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973d00 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (17 such buffers)
+cs prefix (exp 0195): t 101.798 s dcb 32634 dwords dispatches at 8 before it sets a program; the queue's program 0x0909974400 rsrc1 402c00c3 rsrc2 0000008e, 58 dwords of compute state in front (18 such buffers)
+cs prefix (exp 0195): t 101.799 s dcb 32637 dwords dispatches at 18 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (19 such buffers)
+cs prefix (exp 0195): t 101.799 s dcb 32636 dwords dispatches at 18 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (20 such buffers)
+cs prefix (exp 0195): t 101.799 s dcb 19088 dwords dispatches at 17 before it sets a program; the queue's program 0x090985f200 rsrc1 402c0040 rsrc2 00000010, 58 dwords of compute state in front (21 such buffers)
+cs prefix (exp 0195): t 101.866 s dcb 19904 dwords dispatches at 27 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (22 such buffers)
+cs prefix (exp 0195): t 101.868 s dcb 32643 dwords dispatches at 8 before it sets a program; the queue's program 0x090985f200 rsrc1 402c0040 rsrc2 00000010, 58 dwords of compute state in front (23 such buffers)
+cs prefix (exp 0195): t 101.868 s dcb 32643 dwords dispatches at 13 before it sets a program; the queue's program 0x0909973700 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (24 such buffers)
+cs prefix (exp 0195): t 101.874 s dcb 32641 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973900 rsrc1 402c0041 rsrc2 0000008c, 58 dwords of compute state in front (25 such buffers)
+cs prefix (exp 0195): t 101.874 s dcb 32641 dwords dispatches at 8 before it sets a program; the queue's program 0x0909973d00 rsrc1 402c0080 rsrc2 0000008e, 58 dwords of compute state in front (26 such buffers)
+cs prefix (exp 0195): t 101.874 s dcb 32635 dwords dispatches at 18 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (27 such buffers)
+cs prefix (exp 0195): t 101.875 s dcb 32636 dwords dispatches at 22 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (28 such buffers)
+cs prefix (exp 0195): t 101.875 s dcb 8912 dwords dispatches at 17 before it sets a program; the queue's program 0x090985f200 rsrc1 402c0040 rsrc2 00000010, 58 dwords of compute state in front (29 such buffers)
+hold tail: 6841 holds; released with the writer on a ring 5925, satisfied 915, GIVEN UP 0; held 0.90 ms on average, 39.50 ms at most; 0 waits kept inside held chains (their label written by the chain)
+cs prefix (exp 0195): t 110.680 s dcb 8530 dwords dispatches at 22 before it sets a program; the queue's program 0x0909977100 rsrc1 402c02ca rsrc2 000000a0, 58 dwords of compute state in front (30 such buffers)
+hold tail: 7610 holds; released with the writer on a ring 6621, satisfied 988, GIVEN UP 0; held 0.92 ms on average, 39.50 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 8347 holds; released with the writer on a ring 7341, satisfied 1005, GIVEN UP 0; held 0.93 ms on average, 39.50 ms at most; 0 waits kept inside held chains (their label written by the chain)
+cs prefix (exp 0195): t 136.243 s dcb 31118 dwords dispatches at 27 before it sets a program; the queue's program 0x11d0287900 rsrc1 402c0041 rsrc2 00000098, 58 dwords of compute state in front (31 such buffers)
+hold tail: 9042 holds; released with the writer on a ring 7979, satisfied 1062, GIVEN UP 0; held 0.95 ms on average, 39.50 ms at most; 0 waits kept inside held chains (their label written by the chain)
+cs prefix (exp 0195): t 149.292 s dcb 274 dwords dispatches at 13 before it sets a program; the queue's program 0x11d039cd00 rsrc1 402c0043 rsrc2 00000098, 58 dwords of compute state in front (32 such buffers)
+cs prefix (exp 0195): t 149.312 s dcb 288 dwords dispatches at 27 before it sets a program; the queue's program 0x11d039cd00 rsrc1 402c0043 rsrc2 00000098, 58 dwords of compute state in front (33 such buffers)
+cs prefix (exp 0195): t 149.361 s dcb 312 dwords dispatches at 32 before it sets a program; the queue's program 0x11d039cd00 rsrc1 402c0043 rsrc2 00000098, 58 dwords of compute state in front (34 such buffers)
+hold tail: 9630 holds; released with the writer on a ring 8541, satisfied 1088, GIVEN UP 0; held 0.97 ms on average, 39.50 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: the wait on 0x12004b3c38 GIVEN UP after 100.0 ms: its kept wait dropped, the chain goes
+hold tail: 10077 holds; released with the writer on a ring 8949, satisfied 1126, GIVEN UP 1; held 1.02 ms on average, 100.01 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 10799 holds; released with the writer on a ring 9618, satisfied 1180, GIVEN UP 1; held 1.01 ms on average, 100.01 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 11513 holds; released with the writer on a ring 10291, satisfied 1220, GIVEN UP 1; held 1.00 ms on average, 100.01 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 12230 holds; released with the writer on a ring 10968, satisfied 1260, GIVEN UP 1; held 1.00 ms on average, 100.01 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 12904 holds; released with the writer on a ring 11596, satisfied 1306, GIVEN UP 1; held 0.99 ms on average, 100.01 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 13611 holds; released with the writer on a ring 12258, satisfied 1351, GIVEN UP 1; held 0.99 ms on average, 100.01 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 14361 holds; released with the writer on a ring 12959, satisfied 1400, GIVEN UP 1; held 0.99 ms on average, 100.01 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 15049 holds; released with the writer on a ring 13605, satisfied 1442, GIVEN UP 1; held 0.99 ms on average, 100.01 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 15723 holds; released with the writer on a ring 14243, satisfied 1478, GIVEN UP 1; held 0.99 ms on average, 100.01 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 16390 holds; released with the writer on a ring 14873, satisfied 1515, GIVEN UP 1; held 0.99 ms on average, 100.01 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 17069 holds; released with the writer on a ring 15508, satisfied 1559, GIVEN UP 1; held 0.99 ms on average, 100.01 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 17771 holds; released with the writer on a ring 16161, satisfied 1608, GIVEN UP 1; held 0.99 ms on average, 100.01 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 18492 holds; released with the writer on a ring 16830, satisfied 1660, GIVEN UP 1; held 0.99 ms on average, 100.01 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 19214 holds; released with the writer on a ring 17512, satisfied 1700, GIVEN UP 1; held 0.99 ms on average, 100.01 ms at most; 0 waits kept inside held chains (their label written by the chain)

@@ -1,0 +1,15 @@
+2026-10-24 14:49:14 live saves 1a39860996fdac5c (want 1a39860996fdac5c)
+== 14:49:14 run K1
+K1: stopped at 300 s; crash lines 0, kernel lines 0, TIMEOUT lines 0, probe lines 0
+pass
+== 14:54:31 run K2
+K2: stopped at 300 s; crash lines 0, kernel lines 0, TIMEOUT lines 0, probe lines 0
+pass
+== 14:59:45 run K3
+K3: stopped at 300 s; crash lines 0, kernel lines 0, TIMEOUT lines 0, probe lines 0
+pass
+== 15:04:59 run K4
+K4: stopped at 300 s; crash lines 0, kernel lines 0, TIMEOUT lines 0, probe lines 0
+pass
+2026-10-24 15:10:13 live saves 1a39860996fdac5c (want 1a39860996fdac5c)
+BOX-LOCK released

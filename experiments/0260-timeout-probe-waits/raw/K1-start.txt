@@ -1,0 +1,6 @@
+2026-10-24 14:49:16
+run K1, 300 s, launcher /home/kjaniszewski/bc5-work/play-pkg.sh md5 3973c8ca, BC5_EMU /home/kjaniszewski/bc5-work/exp0260/kyty_emulator md5 9c55e29e
+boot 9f3e0da8, up since 2026-10-24 13:52:41
+box start uptime 3394.73 avail_mib 13347 swapfree_mib 6199 pswpin 340522 pswpout 1431492 pgmajfault 416574 compact_stall 15840 compact_fail 14896 
+emulator pid 266296 exe /home/kjaniszewski/bc5-work/exp0260/kyty_emulator
+environ: BC5_DIRECT_RING_ORDER_WAITS=1 BC5_DIRECT_CS_PREFIX=1 BC5_DIRECT_TIMEOUT_PROBE=1 BC5_DIRECT_CROSS_RING_WAITS=all PLAY_CAPTURE=1 BC5_DIRECT_CHAIN=2 BC5_DIRECT_COMPUTE_RING=0 

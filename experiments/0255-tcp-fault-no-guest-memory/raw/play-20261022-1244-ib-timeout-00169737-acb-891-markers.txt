@@ -1,0 +1,14 @@
+    67  push Lighting Prep
+   104    push ClearUnorderedAccessView
+   140      DISPATCH_DIRECT
+   145      pop  ClearUnorderedAccessView
+   226    DISPATCH_DIRECT
+   251    push CopyResource
+   278      pop  CopyResource
+   405    DISPATCH_DIRECT
+   458    DISPATCH_DIRECT
+   489    DISPATCH_DIRECT
+   560    DISPATCH_DIRECT
+   714    DISPATCH_DIRECT
+   777    DISPATCH_DIRECT
+   798    pop  Lighting Prep
