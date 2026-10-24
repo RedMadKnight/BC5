@@ -1,0 +1,37 @@
+# /home/kjaniszewski/bc5-data/captures/play-20261023-2032/gc/direct.log: 2 complete frames in the journal windows (frames split at PS 11d01d7100; depth buffer 1129ec0000)
+(1) per state
+  unknown    2 frames: writers/frame 117.5 (117..118); colour-mask-0 writers/frame 37.5 (37..38); sizes 2560x1440 2
+(2) per pixel shader: draws per frame and summed first indirect argument per frame, by state
+  11d017ee00 [colour 2; ops 24]: unknown 1.0 (1..1) draws, args -
+  11d018ab00 [colour 2; ops 24]: unknown 1.0 (1..1) draws, args -
+  11d01cb500 [colour 4; ops 24,38]: unknown 2.0 (2..2) draws, args -
+  11d090d900 [mask0 4; ops 24]: unknown 2.0 (2..2) draws, args -
+  11d0a98300 [mask0 4; ops 24]: unknown 2.0 (2..2) draws, args -
+  11d1d10f00 [colour 6; ops 24]: unknown 3.0 (3..3) draws, args -
+  11d1d33200 [mask0 2; ops 24]: unknown 1.0 (1..1) draws, args -
+  11d1d41600 [colour 4; ops 24]: unknown 2.0 (2..2) draws, args -
+  11d1d88300 [mask0 22; ops 24]: unknown 11.0 (11..11) draws, args -
+  11d1d96400 [colour 4; ops 24]: unknown 2.0 (2..2) draws, args -
+  11d1dd6400 [mask0 14; ops 24]: unknown 7.0 (7..7) draws, args -
+  11d1e16100 [colour 2; ops 24]: unknown 1.0 (1..1) draws, args -
+  11d1e2b900 [colour 6; ops 24]: unknown 3.0 (3..3) draws, args -
+  11d1e2f300 [mask0 1; ops 24]: unknown 0.5 (0..1) draws, args -
+  11d1e52500 [colour 2; ops 24]: unknown 1.0 (1..1) draws, args -
+  11d28b0200 [mask0 2; ops 24]: unknown 1.0 (1..1) draws, args -
+  11d29c8700 [mask0 2; ops 24]: unknown 1.0 (1..1) draws, args -
+  11d29e9300 [colour 64; ops 24]: unknown 32.0 (32..32) draws, args -
+  11d2a0b100 [colour 2; ops 24]: unknown 1.0 (1..1) draws, args -
+  11d2a2a200 [colour 4; ops 24]: unknown 2.0 (2..2) draws, args -
+  11d2b44200 [colour 4; ops 24]: unknown 2.0 (2..2) draws, args -
+  11d373e800 [mask0 24; ops 24]: unknown 12.0 (12..12) draws, args -
+  11d3d5ff00 [colour 2; ops 24]: unknown 1.0 (1..1) draws, args -
+  11d3e5d600 [colour 2; ops 24]: unknown 1.0 (1..1) draws, args -
+  11d3e71e00 [colour 2; ops 24]: unknown 1.0 (1..1) draws, args -
+  11d466af00 [colour 2; ops 24]: unknown 1.0 (1..1) draws, args -
+  11d4690800 [colour 8; ops 24]: unknown 4.0 (4..4) draws, args -
+  11d46a4000 [colour 4; ops 24]: unknown 2.0 (2..2) draws, args -
+  11d46b6600 [colour 4; ops 24]: unknown 2.0 (2..2) draws, args -
+  11d49a9200 [colour 2; ops 24]: unknown 1.0 (1..1) draws, args -
+  11d4d3df00 [colour 14; ops 24]: unknown 7.0 (7..7) draws, args -
+  11d4d52800 [colour 14; ops 24]: unknown 7.0 (7..7) draws, args -
+(3) shaders in one state's frames and never in another's

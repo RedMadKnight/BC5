@@ -1,0 +1,315 @@
+# /home/kjaniszewski/bc5-data/captures/play-20261024-1413/gc/direct.log: 8590 journalled entries with a bake-db line, 3939 on depth buffer 1129ec0000; 2034 dispatches
+(A) distinct descriptions of the depth buffer:
+   586 x depth 3072x1728 | htile 112b3c0000 | FORMAT 3 NUM_SAMPLES 0 SW_MODE 24 MAXMIP 0 DECOMPRESS_ON_N_ZPLANES 0 ALLOW_EXPCLEAR 0 READ_SIZE 0 TILE_SURFACE_ENABLE 1 ZRANGE_PRECISION 1 | view 0 | render_control 0 | override 0 | clear z 0
+         t 150.104..280.549; rt0 113f230000 3072x1728 (533), 113d770000 3072x1728 (51), 1163060000 1536x864 (2); ps 11d29ea100 (104), 11d373f100 (51), 11d1d74b00 (34), 11d1d88300 (32), 11d1dd6400 (21), 11d1dd3800 (21)
+  2685 x depth 3328x1872 | htile 112b720000 | FORMAT 3 NUM_SAMPLES 0 SW_MODE 24 MAXMIP 0 DECOMPRESS_ON_N_ZPLANES 0 ALLOW_EXPCLEAR 0 READ_SIZE 0 TILE_SURFACE_ENABLE 1 ZRANGE_PRECISION 1 | view 0 | render_control 0 | override 0 | clear z 0
+         t 160.178..350.906; rt0 113f230000 3328x1872 (2634), 113d770000 3328x1872 (51); ps 11d29ea100 (510), 11d373f100 (270), 11d1d88300 (165), 11d1d74b00 (165), 11d1dd6400 (105), 11d1dd3800 (105)
+   233 x depth 2304x1296 | htile 112ab20000 | FORMAT 3 NUM_SAMPLES 0 SW_MODE 24 MAXMIP 0 DECOMPRESS_ON_N_ZPLANES 0 ALLOW_EXPCLEAR 0 READ_SIZE 0 TILE_SURFACE_ENABLE 1 ZRANGE_PRECISION 1 | view 0 | render_control 0 | override 0 | clear z 0
+         t 240.432..240.444; rt0 113f230000 2304x1296 (182), 113d770000 2304x1296 (51); ps 11d29ea100 (34), 11d373f100 (18), 11d351a600 (16), 11d4c02e00 (12), 11d1d88300 (11), 11d1d74b00 (11)
+     1 x depth 2304x1296 | htile 112ab20000 | FORMAT 3 NUM_SAMPLES 0 SW_MODE 24 MAXMIP 0 DECOMPRESS_ON_N_ZPLANES 0 ALLOW_EXPCLEAR 0 READ_SIZE 0 TILE_SURFACE_ENABLE 1 ZRANGE_PRECISION 1 | view 0 | render_control STENCIL_COMPRESS_DISABLE=1,DEPTH_COMPRESS_DISABLE=1 | override 0 | clear z 0
+         t 240.444..240.444; rt0 113f230000 2304x1296 (1); ps 11d0208400 (1)
+    16 x depth 3840x2160 | htile 112bea0000 | FORMAT 3 NUM_SAMPLES 0 SW_MODE 24 MAXMIP 0 DECOMPRESS_ON_N_ZPLANES 0 ALLOW_EXPCLEAR 0 READ_SIZE 0 TILE_SURFACE_ENABLE 1 ZRANGE_PRECISION 1 | view 0 | render_control 0 | override 0 | clear z 0
+         t 240.444..320.830; rt0 114c6c0000 3840x2160 (16); ps 11d1c96200 (8), 0000000000 (8)
+   407 x depth 2816x1584 | htile 112b0a0000 | FORMAT 3 NUM_SAMPLES 0 SW_MODE 24 MAXMIP 0 DECOMPRESS_ON_N_ZPLANES 0 ALLOW_EXPCLEAR 0 READ_SIZE 0 TILE_SURFACE_ENABLE 1 ZRANGE_PRECISION 1 | view 0 | render_control 0 | override 0 | clear z 0
+         t 260.488..300.617; rt0 113f230000 2816x1584 (356), 113d770000 2816x1584 (51); ps 11d29ea100 (68), 11d373f100 (36), 11d1d88300 (22), 11d1d74b00 (22), 11d351a600 (16), 11d1dd6400 (14)
+     3 x depth 3072x1728 | htile 112b3c0000 | FORMAT 3 NUM_SAMPLES 0 SW_MODE 24 MAXMIP 0 DECOMPRESS_ON_N_ZPLANES 0 ALLOW_EXPCLEAR 0 READ_SIZE 0 TILE_SURFACE_ENABLE 1 ZRANGE_PRECISION 1 | view 0 | render_control STENCIL_COMPRESS_DISABLE=1,DEPTH_COMPRESS_DISABLE=1 | override 0 | clear z 0
+         t 280.549..280.551; rt0 114c6c0000 3840x2160 (2), 113f230000 3072x1728 (1); ps 0000000000 (2), 11d0208400 (1)
+     3 x depth 2816x1584 | htile 112b0a0000 | FORMAT 3 NUM_SAMPLES 0 SW_MODE 24 MAXMIP 0 DECOMPRESS_ON_N_ZPLANES 0 ALLOW_EXPCLEAR 0 READ_SIZE 0 TILE_SURFACE_ENABLE 1 ZRANGE_PRECISION 1 | view 0 | render_control STENCIL_COMPRESS_DISABLE=1,DEPTH_COMPRESS_DISABLE=1 | override 0 | clear z 0
+         t 300.617..300.620; rt0 114c6c0000 3840x2160 (2), 113f230000 2816x1584 (1); ps 0000000000 (2), 11d0208400 (1)
+     5 x depth 3328x1872 | htile 112b720000 | FORMAT 3 NUM_SAMPLES 0 SW_MODE 24 MAXMIP 0 DECOMPRESS_ON_N_ZPLANES 0 ALLOW_EXPCLEAR 0 READ_SIZE 0 TILE_SURFACE_ENABLE 1 ZRANGE_PRECISION 1 | view 0 | render_control STENCIL_COMPRESS_DISABLE=1,DEPTH_COMPRESS_DISABLE=1 | override 0 | clear z 0
+         t 310.776..320.830; rt0 114c6c0000 3840x2160 (4), 113f230000 3328x1872 (1); ps 0000000000 (4), 11d0208400 (1)
+(B) in journal order (runs of one description and colour-target size):
+  t 150.104..150.109  171 x rt0 3072x1728 | depth 3072x1728 htile 112b3c0000
+  t 150.109..150.109    2 x rt0 1536x864 | depth 3072x1728 htile 112b3c0000
+  t 150.109..150.109    6 x rt0 3072x1728 | depth 3072x1728 htile 112b3c0000
+  t 160.178..170.252  348 x rt0 3328x1872 | depth 3328x1872 htile 112b720000
+  t 180.268..180.274  172 x rt0 3072x1728 | depth 3072x1728 htile 112b3c0000
+  t 190.304..230.422  874 x rt0 3328x1872 | depth 3328x1872 htile 112b720000
+  t 240.432..240.444  187 x rt0 2304x1296 | depth 2304x1296 htile 112ab20000
+  t 240.444..240.444    1 x rt0 2304x1296 | depth 2304x1296 htile 112ab20000
+  t 240.444..240.444   46 x rt0 2304x1296 | depth 2304x1296 htile 112ab20000
+  t 240.444..240.444    2 x rt0 3840x2160 | depth 3840x2160 htile 112bea0000
+  t 250.449..250.453  174 x rt0 3328x1872 | depth 3328x1872 htile 112b720000
+  t 260.488..260.494  174 x rt0 2816x1584 | depth 2816x1584 htile 112b0a0000
+  t 270.521..270.527  174 x rt0 3328x1872 | depth 3328x1872 htile 112b720000
+  t 280.531..280.549  189 x rt0 3072x1728 | depth 3072x1728 htile 112b3c0000
+  t 280.549..280.549    1 x rt0 3072x1728 | depth 3072x1728 htile 112b3c0000
+  t 280.549..280.549   46 x rt0 3072x1728 | depth 3072x1728 htile 112b3c0000
+  t 280.549..280.551    3 x rt0 3840x2160 | depth 3840x2160 htile 112bea0000
+  t 280.551..280.551    2 x rt0 3840x2160 | depth 3072x1728 htile 112b3c0000
+  t 280.551..280.551    1 x rt0 3840x2160 | depth 3840x2160 htile 112bea0000
+  t 290.588..290.593  176 x rt0 3328x1872 | depth 3328x1872 htile 112b720000
+  t 300.602..300.617  187 x rt0 2816x1584 | depth 2816x1584 htile 112b0a0000
+  t 300.617..300.617    1 x rt0 2816x1584 | depth 2816x1584 htile 112b0a0000
+  t 300.617..300.617   46 x rt0 2816x1584 | depth 2816x1584 htile 112b0a0000
+  t 300.617..300.620    3 x rt0 3840x2160 | depth 3840x2160 htile 112bea0000
+  t 300.620..300.620    2 x rt0 3840x2160 | depth 2816x1584 htile 112b0a0000
+  t 300.620..310.776    2 x rt0 3840x2160 | depth 3840x2160 htile 112bea0000
+  t 310.776..310.776    2 x rt0 3840x2160 | depth 3328x1872 htile 112b720000
+  t 310.776..310.776    1 x rt0 3840x2160 | depth 3840x2160 htile 112bea0000
+  t 310.805..320.829  367 x rt0 3328x1872 | depth 3328x1872 htile 112b720000
+  t 320.829..320.829    1 x rt0 3328x1872 | depth 3328x1872 htile 112b720000
+  t 320.829..320.829   46 x rt0 3328x1872 | depth 3328x1872 htile 112b720000
+  t 320.829..320.830    3 x rt0 3840x2160 | depth 3840x2160 htile 112bea0000
+  t 320.830..320.830    2 x rt0 3840x2160 | depth 3328x1872 htile 112b720000
+  t 320.830..320.830    1 x rt0 3840x2160 | depth 3840x2160 htile 112bea0000
+  t 330.855..350.906  526 x rt0 3328x1872 | depth 3328x1872 htile 112b720000
+(C) before each first depth write into the buffer (window start, or after a full-screen water draw):
+  first depth write at t 150.104 buf 17 at 1661 (ps 11d017ee00, rt0 3072x1728); the entries before it:
+    t 150.104 buf 17 at 363: dispatch cs 11d0288800 | z 0000000000 | render_control 0
+    t 150.104 buf 17 at 427: draw op 2d ps 11d01b9100 rt0 11a8af0000 256x256 | z 0000000000 | render_control 0
+    t 150.104 buf 17 at 456: draw op 2d ps 11d01b9100 rt0 11a8af0000 256x256 | z 0000000000 | render_control 0
+    t 150.104 buf 17 at 485: draw op 2d ps 11d01b9100 rt0 11a8af0000 256x256 | z 0000000000 | render_control 0
+    t 150.104 buf 17 at 514: draw op 2d ps 11d01b9100 rt0 11a8af0000 256x256 | z 0000000000 | render_control 0
+    t 150.104 buf 17 at 935: dispatch cs 11d0376b00 | z 0000000000 | render_control 0
+    t 150.104 buf 17 at 954: dispatch cs 11d0376b00 | z 0000000000 | render_control 0
+    t 150.104 buf 17 at 1100: dispatch cs 11d04f0c00 | z 0000000000 | render_control 0
+    t 150.104 buf 17 at 1156: dispatch cs 11d0375600 | z 0000000000 | render_control 0
+    t 150.104 buf 17 at 1320: dispatch cs 11d0288a00 | z 1129ec0000 | render_control 0
+  first depth write at t 150.109 buf 23 at 513 (ps 11d1cf4600, rt0 3072x1728); the entries before it:
+    t 150.108 buf 21 at 1201: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 150.108 buf 21 at 1231: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 150.108 buf 21 at 1261: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 150.108 buf 21 at 1286: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 150.108 buf 21 at 1316: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 150.108 buf 21 at 1372: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 150.108 buf 21 at 1418: dispatch cs 11d0423100 | z 0000000000 | render_control 0
+    t 150.108 buf 21 at 1448: dispatch cs 11d042b700 | z 0000000000 | render_control 0
+    t 150.108 buf 21 at 1504: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 150.108 buf 21 at 1548: dispatch cs 11d0287900 | z 0000000000 | render_control 0
+  first depth write at t 160.184 buf 64 at 513 (ps 11d1cf4600, rt0 3328x1872); the entries before it:
+    t 160.183 buf 62 at 1201: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 160.183 buf 62 at 1231: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 160.183 buf 62 at 1261: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 160.183 buf 62 at 1286: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 160.183 buf 62 at 1316: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 160.183 buf 62 at 1372: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 160.183 buf 62 at 1418: dispatch cs 11d0423100 | z 0000000000 | render_control 0
+    t 160.183 buf 62 at 1448: dispatch cs 11d042b700 | z 0000000000 | render_control 0
+    t 160.183 buf 62 at 1504: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 160.183 buf 62 at 1548: dispatch cs 11d0287900 | z 0000000000 | render_control 0
+  first depth write at t 170.252 buf 104 at 513 (ps 11d1cf4600, rt0 3328x1872); the entries before it:
+    t 170.252 buf 102 at 1201: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 170.252 buf 102 at 1231: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 170.252 buf 102 at 1261: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 170.252 buf 102 at 1286: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 170.252 buf 102 at 1316: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 170.252 buf 102 at 1372: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 170.252 buf 102 at 1418: dispatch cs 11d0423100 | z 0000000000 | render_control 0
+    t 170.252 buf 102 at 1448: dispatch cs 11d042b700 | z 0000000000 | render_control 0
+    t 170.252 buf 102 at 1504: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 170.252 buf 102 at 1548: dispatch cs 11d0287900 | z 0000000000 | render_control 0
+  first depth write at t 180.274 buf 144 at 513 (ps 11d1cf4600, rt0 3072x1728); the entries before it:
+    t 180.274 buf 142 at 1201: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 180.274 buf 142 at 1231: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 180.274 buf 142 at 1261: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 180.274 buf 142 at 1286: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 180.274 buf 142 at 1316: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 180.274 buf 142 at 1372: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 180.274 buf 142 at 1418: dispatch cs 11d0423100 | z 0000000000 | render_control 0
+    t 180.274 buf 142 at 1448: dispatch cs 11d042b700 | z 0000000000 | render_control 0
+    t 180.274 buf 142 at 1504: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 180.274 buf 142 at 1548: dispatch cs 11d0287900 | z 0000000000 | render_control 0
+  first depth write at t 190.309 buf 184 at 513 (ps 11d1cf4600, rt0 3328x1872); the entries before it:
+    t 190.308 buf 182 at 1201: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 190.308 buf 182 at 1231: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 190.308 buf 182 at 1261: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 190.308 buf 182 at 1286: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 190.308 buf 182 at 1316: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 190.308 buf 182 at 1372: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 190.308 buf 182 at 1418: dispatch cs 11d0423100 | z 0000000000 | render_control 0
+    t 190.308 buf 182 at 1448: dispatch cs 11d042b700 | z 0000000000 | render_control 0
+    t 190.308 buf 182 at 1504: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 190.308 buf 182 at 1548: dispatch cs 11d0287900 | z 0000000000 | render_control 0
+  first depth write at t 200.342 buf 224 at 513 (ps 11d1cf4600, rt0 3328x1872); the entries before it:
+    t 200.342 buf 222 at 1201: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 200.342 buf 222 at 1231: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 200.342 buf 222 at 1261: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 200.342 buf 222 at 1286: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 200.342 buf 222 at 1316: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 200.342 buf 222 at 1372: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 200.342 buf 222 at 1418: dispatch cs 11d0423100 | z 0000000000 | render_control 0
+    t 200.342 buf 222 at 1448: dispatch cs 11d042b700 | z 0000000000 | render_control 0
+    t 200.342 buf 222 at 1504: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 200.342 buf 222 at 1548: dispatch cs 11d0287900 | z 0000000000 | render_control 0
+  first depth write at t 210.359 buf 264 at 513 (ps 11d1cf4600, rt0 3328x1872); the entries before it:
+    t 210.358 buf 262 at 1201: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 210.358 buf 262 at 1231: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 210.358 buf 262 at 1261: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 210.358 buf 262 at 1286: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 210.358 buf 262 at 1316: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 210.358 buf 262 at 1372: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 210.358 buf 262 at 1418: dispatch cs 11d0423100 | z 0000000000 | render_control 0
+    t 210.358 buf 262 at 1448: dispatch cs 11d042b700 | z 0000000000 | render_control 0
+    t 210.358 buf 262 at 1504: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 210.358 buf 262 at 1548: dispatch cs 11d0287900 | z 0000000000 | render_control 0
+  first depth write at t 220.395 buf 304 at 513 (ps 11d1cf4600, rt0 3328x1872); the entries before it:
+    t 220.393 buf 302 at 1201: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 220.393 buf 302 at 1231: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 220.393 buf 302 at 1261: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 220.393 buf 302 at 1286: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 220.393 buf 302 at 1316: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 220.393 buf 302 at 1372: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 220.393 buf 302 at 1418: dispatch cs 11d0423100 | z 0000000000 | render_control 0
+    t 220.393 buf 302 at 1448: dispatch cs 11d042b700 | z 0000000000 | render_control 0
+    t 220.393 buf 302 at 1504: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 220.393 buf 302 at 1548: dispatch cs 11d0287900 | z 0000000000 | render_control 0
+  first depth write at t 230.422 buf 344 at 513 (ps 11d1cf4600, rt0 3328x1872); the entries before it:
+    t 230.421 buf 342 at 1201: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 230.421 buf 342 at 1231: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 230.421 buf 342 at 1261: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 230.421 buf 342 at 1286: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 230.421 buf 342 at 1316: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 230.421 buf 342 at 1372: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 230.421 buf 342 at 1418: dispatch cs 11d0423100 | z 0000000000 | render_control 0
+    t 230.421 buf 342 at 1448: dispatch cs 11d042b700 | z 0000000000 | render_control 0
+    t 230.421 buf 342 at 1504: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 230.421 buf 342 at 1548: dispatch cs 11d0287900 | z 0000000000 | render_control 0
+  first depth write at t 240.438 buf 383 at 513 (ps 11d1cf4600, rt0 2304x1296); the entries before it:
+    t 240.437 buf 381 at 1201: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 240.437 buf 381 at 1231: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 240.437 buf 381 at 1261: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 240.437 buf 381 at 1286: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 240.437 buf 381 at 1316: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 240.437 buf 381 at 1372: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 240.437 buf 381 at 1418: dispatch cs 11d0423100 | z 0000000000 | render_control 0
+    t 240.437 buf 381 at 1448: dispatch cs 11d042b700 | z 0000000000 | render_control 0
+    t 240.437 buf 381 at 1504: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 240.437 buf 381 at 1548: dispatch cs 11d0287900 | z 0000000000 | render_control 0
+  first depth write at t 250.453 buf 424 at 513 (ps 11d1cf4600, rt0 3328x1872); the entries before it:
+    t 250.452 buf 422 at 1201: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 250.452 buf 422 at 1231: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 250.452 buf 422 at 1261: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 250.452 buf 422 at 1286: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 250.453 buf 422 at 1316: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 250.453 buf 422 at 1372: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 250.453 buf 422 at 1418: dispatch cs 11d0423100 | z 0000000000 | render_control 0
+    t 250.453 buf 422 at 1448: dispatch cs 11d042b700 | z 0000000000 | render_control 0
+    t 250.453 buf 422 at 1504: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 250.453 buf 422 at 1548: dispatch cs 11d0287900 | z 0000000000 | render_control 0
+  first depth write at t 260.494 buf 464 at 513 (ps 11d1cf4600, rt0 2816x1584); the entries before it:
+    t 260.494 buf 462 at 1201: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 260.494 buf 462 at 1231: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 260.494 buf 462 at 1261: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 260.494 buf 462 at 1286: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 260.494 buf 462 at 1316: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 260.494 buf 462 at 1372: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 260.494 buf 462 at 1418: dispatch cs 11d0423100 | z 0000000000 | render_control 0
+    t 260.494 buf 462 at 1448: dispatch cs 11d042b700 | z 0000000000 | render_control 0
+    t 260.494 buf 462 at 1504: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 260.494 buf 462 at 1548: dispatch cs 11d0287900 | z 0000000000 | render_control 0
+  first depth write at t 270.527 buf 504 at 513 (ps 11d1cf4600, rt0 3328x1872); the entries before it:
+    t 270.525 buf 502 at 1201: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 270.525 buf 502 at 1231: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 270.525 buf 502 at 1261: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 270.525 buf 502 at 1286: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 270.525 buf 502 at 1316: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 270.525 buf 502 at 1372: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 270.525 buf 502 at 1418: dispatch cs 11d0423100 | z 0000000000 | render_control 0
+    t 270.525 buf 502 at 1448: dispatch cs 11d042b700 | z 0000000000 | render_control 0
+    t 270.525 buf 502 at 1504: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 270.525 buf 502 at 1548: dispatch cs 11d0287900 | z 0000000000 | render_control 0
+  first depth write at t 280.540 buf 527 at 513 (ps 11d1cf4600, rt0 3072x1728); the entries before it:
+    t 280.540 buf 525 at 1201: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 280.540 buf 525 at 1231: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 280.540 buf 525 at 1261: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 280.540 buf 525 at 1286: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 280.540 buf 525 at 1316: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 280.540 buf 525 at 1372: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 280.540 buf 525 at 1418: dispatch cs 11d0423100 | z 0000000000 | render_control 0
+    t 280.540 buf 525 at 1448: dispatch cs 11d042b700 | z 0000000000 | render_control 0
+    t 280.540 buf 525 at 1504: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 280.540 buf 525 at 1548: dispatch cs 11d0287900 | z 0000000000 | render_control 0
+  first depth write at t 290.593 buf 584 at 513 (ps 11d1cf4600, rt0 3328x1872); the entries before it:
+    t 290.593 buf 582 at 1201: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 290.593 buf 582 at 1231: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 290.593 buf 582 at 1261: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 290.593 buf 582 at 1286: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 290.593 buf 582 at 1316: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 290.593 buf 582 at 1372: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 290.593 buf 582 at 1418: dispatch cs 11d0423100 | z 0000000000 | render_control 0
+    t 290.593 buf 582 at 1448: dispatch cs 11d042b700 | z 0000000000 | render_control 0
+    t 290.593 buf 582 at 1504: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 290.593 buf 582 at 1548: dispatch cs 11d0287900 | z 0000000000 | render_control 0
+  first depth write at t 300.608 buf 609 at 513 (ps 11d1cf4600, rt0 2816x1584); the entries before it:
+    t 300.608 buf 607 at 1201: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 300.608 buf 607 at 1231: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 300.608 buf 607 at 1261: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 300.608 buf 607 at 1286: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 300.608 buf 607 at 1316: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 300.608 buf 607 at 1372: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 300.608 buf 607 at 1418: dispatch cs 11d0423100 | z 0000000000 | render_control 0
+    t 300.608 buf 607 at 1448: dispatch cs 11d042b700 | z 0000000000 | render_control 0
+    t 300.608 buf 607 at 1504: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 300.608 buf 607 at 1548: dispatch cs 11d0287900 | z 0000000000 | render_control 0
+  first depth write at t 310.810 buf 669 at 513 (ps 11d1cf4600, rt0 3328x1872); the entries before it:
+    t 310.810 buf 667 at 1201: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 310.810 buf 667 at 1231: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 310.810 buf 667 at 1261: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 310.810 buf 667 at 1286: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 310.810 buf 667 at 1316: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 310.810 buf 667 at 1372: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 310.810 buf 667 at 1418: dispatch cs 11d0423100 | z 0000000000 | render_control 0
+    t 310.810 buf 667 at 1448: dispatch cs 11d042b700 | z 0000000000 | render_control 0
+    t 310.810 buf 667 at 1504: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 310.810 buf 667 at 1548: dispatch cs 11d0287900 | z 0000000000 | render_control 0
+  first depth write at t 320.823 buf 700 at 513 (ps 11d1cf4600, rt0 3328x1872); the entries before it:
+    t 320.823 buf 698 at 1201: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 320.823 buf 698 at 1231: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 320.823 buf 698 at 1261: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 320.823 buf 698 at 1286: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 320.823 buf 698 at 1316: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 320.823 buf 698 at 1372: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 320.823 buf 698 at 1418: dispatch cs 11d0423100 | z 0000000000 | render_control 0
+    t 320.823 buf 698 at 1448: dispatch cs 11d042b700 | z 0000000000 | render_control 0
+    t 320.823 buf 698 at 1504: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 320.823 buf 698 at 1548: dispatch cs 11d0287900 | z 0000000000 | render_control 0
+  first depth write at t 330.860 buf 747 at 513 (ps 11d1cf4600, rt0 3328x1872); the entries before it:
+    t 330.860 buf 745 at 1201: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 330.860 buf 745 at 1231: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 330.860 buf 745 at 1261: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 330.860 buf 745 at 1286: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 330.860 buf 745 at 1316: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 330.860 buf 745 at 1372: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 330.860 buf 745 at 1418: dispatch cs 11d0423100 | z 0000000000 | render_control 0
+    t 330.860 buf 745 at 1448: dispatch cs 11d042b700 | z 0000000000 | render_control 0
+    t 330.860 buf 745 at 1504: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 330.860 buf 745 at 1548: dispatch cs 11d0287900 | z 0000000000 | render_control 0
+  first depth write at t 340.888 buf 784 at 513 (ps 11d1cf4600, rt0 3328x1872); the entries before it:
+    t 340.888 buf 782 at 1201: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 340.888 buf 782 at 1231: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 340.888 buf 782 at 1261: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 340.888 buf 782 at 1286: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 340.888 buf 782 at 1316: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 340.888 buf 782 at 1372: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 340.888 buf 782 at 1418: dispatch cs 11d0423100 | z 0000000000 | render_control 0
+    t 340.888 buf 782 at 1448: dispatch cs 11d042b700 | z 0000000000 | render_control 0
+    t 340.888 buf 782 at 1504: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 340.888 buf 782 at 1548: dispatch cs 11d0287900 | z 0000000000 | render_control 0
+  first depth write at t 350.906 buf 824 at 513 (ps 11d1cf4600, rt0 3328x1872); the entries before it:
+    t 350.905 buf 822 at 1201: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 350.905 buf 822 at 1231: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 350.905 buf 822 at 1261: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 350.905 buf 822 at 1286: dispatch cs 11d042ba00 | z 0000000000 | render_control 0
+    t 350.905 buf 822 at 1316: dispatch cs 11d042b100 | z 0000000000 | render_control 0
+    t 350.905 buf 822 at 1372: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 350.905 buf 822 at 1418: dispatch cs 11d0423100 | z 0000000000 | render_control 0
+    t 350.905 buf 822 at 1448: dispatch cs 11d042b700 | z 0000000000 | render_control 0
+    t 350.905 buf 822 at 1504: dispatch cs 11d0415c00 | z 0000000000 | render_control 0
+    t 350.905 buf 822 at 1548: dispatch cs 11d0287900 | z 0000000000 | render_control 0
+  HTILE base 112ab20000 (register form 112ab200): 1 non-bake journal lines hold it
+    hint DB_HTILE 0x112ab20000: window 0x1128b20000+0x4000000, direct memory +0.0 MiB
+  HTILE base 112b0a0000 (register form 112b0a00): 1 non-bake journal lines hold it
+    hint DB_HTILE 0x112b0a0000: window 0x11290a0000+0x4000000, direct memory +0.0 MiB
+  HTILE base 112b3c0000 (register form 112b3c00): 1 non-bake journal lines hold it
+    hint DB_HTILE 0x112b3c0000: window 0x11293c0000+0x4000000, direct memory +0.0 MiB
+  HTILE base 112b720000 (register form 112b7200): 3 non-bake journal lines hold it
+    hint DB_HTILE 0x112b720000: window 0x1129720000+0x4000000, direct memory +0.0 MiB
+    tracked context: 0:00000000 1:11000100 2:00000000 3:00000000 4:00000000 5:112b7200 6:00000000 7:074f0cff 8:00000000 9:00000000 a:00000000 b:00000000 c
+    tracked context: 0:00000000 1:11000100 2:00000000 3:00000000 4:00000000 5:112b7200 6:00000000 7:074f0cff 8:00000000 9:00000000 a:00000000 b:00000000 c
+  HTILE base 112bea0000 (register form 112bea00): 17 non-bake journal lines hold it
+    hint DB_HTILE 0x112bea0000: window 0x1129ea0000+0x4000000, direct memory +0.0 MiB
+    tracked context: 0:00000000 1:11000100 2:00000000 3:00000000 4:00000000 5:112bea00 6:00000000 7:086f0eff 8:00000000 9:00000000 a:00000000 b:00000000 c
+    tracked context: 0:00000000 1:11000100 2:00000000 3:00000000 4:00000000 5:112bea00 6:00000000 7:086f0eff 8:00000000 9:00000000 a:00000000 b:00000000 c
+    tracked context: 0:00000000 1:11000100 2:00000000 3:00000000 4:00000000 5:112bea00 6:00000000 7:086f0eff 8:00000000 9:00000000 a:00000000 b:00000000 c
+    tracked context: 0:00000000 1:11000100 2:00000000 3:00000000 4:00000000 5:112bea00 6:00000000 7:086f0eff 8:00000000 9:00000000 a:00000000 b:00000000 c
