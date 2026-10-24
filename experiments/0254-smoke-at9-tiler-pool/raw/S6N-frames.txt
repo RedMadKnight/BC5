@@ -1,0 +1,6 @@
+S6N  /home/kjaniszewski/bc5-data/captures/play-20261024-0024/gc/direct.log
+     all      :   4945 flips in  137.6 s =  35.9/s, mean  27.8 ms, >100 ms   38, >250 ms   4, >1 s  0, max   298.3 ms, GPU busy >1 s  0
+     t >= 100 :   1532 flips in   40.0 s =  38.3/s, mean  26.2 ms, >100 ms   18, >250 ms   4, >1 s  0, max   298.3 ms, GPU busy >1 s  0
+     lines    : TIMEOUT 2, fault 0, reopen 0, given up 15
+       first given up: hold tail: 711 holds; released with the writer on a ring 672, satisfied 39, GIVEN UP 0; held 0.78 ms on average, 19.26 ms at most; 0 waits kept inside held chai
+       first TIMEOUT: submit #163953 dcb 1813 dwords at 0x7f1cf82a8740: pass 254 rewrite 38 drop 29 unmapped 0 cc 0 mappings 21652 ... FAILED rc 0 TIMEOUT 2040.06 ms

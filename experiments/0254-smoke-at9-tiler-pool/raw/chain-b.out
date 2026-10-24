@@ -1,0 +1,12 @@
+== 00:24:18 expected md5 normal 02ed5340, lean fb894c12; integration's last line: == 00:23:06 done
+S5A journal /home/kjaniszewski/bc5-data/captures/play-20261024-0014/gc/direct.log 2026-10-24 00:18:16.805842862 +0200 35466739 (counted by chain0254b.sh)
+S5A journal: cpu-wait GIVEN UP 19, two rings NOT served 0, hold tail GIVEN UP 0, TIMEOUT 0, hold lines 0, cs prefix lines 0, alias not-learned lines 0
+S5A journal last summary: none
+S5A journal first cs prefix: none
+S5A journal first alias not learned: none
+S5C journal /home/kjaniszewski/bc5-data/captures/play-20261024-0018/gc/direct.log 2026-10-24 00:20:59.407892457 +0200 27514194 (counted by chain0254b.sh)
+S5C journal: cpu-wait GIVEN UP 0, two rings NOT served 0, hold tail GIVEN UP 0, TIMEOUT 0, hold lines 224, cs prefix lines 0, alias not-learned lines 0
+S5C journal last summary: hold tail: 12348 holds; released with the writer on a ring 7142, satisfied 5205, GIVEN UP 0; held 2.39 ms on average, 30.55 ms at most; 0 waits kept inside held chains (their label written by the chain)
+S5C journal first cs prefix: none
+S5C journal first alias not learned: none
+== 00:24:19 smoke run S6N (pkgn, 300 s)

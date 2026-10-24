@@ -1,0 +1,8 @@
+2026-10-24 00:24:21
+title pkgn, 300 s, launcher /home/kjaniszewski/bc5-work/play-pkg.sh md5 3973c8ca1404db9bad75e4a7dd190de6 (2026-10-24 00:22), extra env ''
+binary /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator md5 02ed53409253c73f502aba5c2aecfe50 (2026-10-24 00:22), expected 02ed5340
+launcher's prefix line: 93:# graphics buffers that dispatch before setting their own program. BC5_DIRECT_CS_PREFIX=0 turns it off. 94:export BC5_DIRECT_CS_PREFIX=${BC5_DIRECT_CS_PREFIX:-1} 
+boot bac6c7e0, up since 2026-10-23 23:14:16
+box start uptime 4205.32 avail_mib 13413 swapfree_mib 6218 pswpin 226656 pswpout 1621364 pgmajfault 276809 compact_stall 7759 compact_fail 6388  psi_mem_full_us 110995243 psi_io_full_us 130697758
+emulator pid 474927: /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator --game /home/kjaniszewski/bc5-data/mnt/
+environ: BC5_DIRECT_CS_PREFIX=1 KYTY_BC5_APR_READAHEAD=4 BC5_DIRECT_CROSS_RING_WAITS=all PLAY_CAPTURE=1 BC5_DIRECT_CHAIN=2 BC5_DIRECT_COMPUTE_RING=0 

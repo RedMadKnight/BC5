@@ -1,0 +1,31 @@
+== 00:14:53 expected md5 normal bf9bebcb, lean 3e9d4009; integration's last line: == 00:13:41 done
+== 00:14:53 smoke run S5A (astro, 200 s)
+route saves from /home/kjaniszewski/bc5-work/save-backup-astro in /home/kjaniszewski/bc5-work/_SaveData/PPSA21564 (live saves kept in /home/kjaniszewski/bc5-work/exp0254/astro-live-S5A)
+S5A stopped at 200 s
+awk: linia poleceń:4:         END {printf "journal: cpu-wait GIVEN UP %d, two rings NOT served %d, hold tail GIVEN UP %d, TIMEOUT %d, hold lines %d
+awk: linia poleceń:4:                     ^ niezakończony łańcuch
+live saves back and identical to /home/kjaniszewski/bc5-work/exp0254/astro-live-S5A
+S5A: stopped at 200 s; binary md5 bf9bebcb (expected bf9bebcb); crash lines 0, kernel lines 0
+  tiler lines 11; last: 11264 requests, 3 new buffers (96.0 MiB), pool on, 11261 reused, 2 free
+  stderr hold tail lines 0
+  journal /home/kjaniszewski/bc5-data/captures/play-20261024-0014/gc/direct.log 2026-10-24 00:18:16.805842862 +0200 35466739
+  AT9 lines 0: ; CODEC_ERROR lines 0
+  box: avail 13343 -> 1765 MiB; compact_stall +40 (fail +16), pswpin +16008, pswpout +122021, majfault +18633; PSI full mem 1.1 s, io 3.1 s
+pass
+== 00:18:26 S5A PASSED
+== 00:18:26 smoke run S5C (astroc, 150 s)
+route saves from /home/kjaniszewski/bc5-work/save-backup-astro in /home/kjaniszewski/bc5-work/_SaveData/PPSA21564 (live saves kept in /home/kjaniszewski/bc5-work/exp0254/astro-live-S5C)
+S5C stopped at 150 s
+awk: linia poleceń:4:         END {printf "journal: cpu-wait GIVEN UP %d, two rings NOT served %d, hold tail GIVEN UP %d, TIMEOUT %d, hold lines %d
+awk: linia poleceń:4:                     ^ niezakończony łańcuch
+restored /home/kjaniszewski/bc5-work/exp0254/astro-live-S5C into /home/kjaniszewski/bc5-work/_SaveData/PPSA03671 (previous saves in /home/kjaniszewski/bc5-work/exp0196/saves-before-002108-610387381-471392)
+LIVE SAVES DIFFER from /home/kjaniszewski/bc5-work/exp0254/astro-live-S5C
+S5C: stopped at 150 s; binary md5 bf9bebcb (expected bf9bebcb); crash lines 0, kernel lines 0
+  tiler lines 8; last: 8192 requests, 3 new buffers (96.0 MiB), pool on, 8189 reused, 2 free
+  stderr hold tail lines 0
+  journal /home/kjaniszewski/bc5-data/captures/play-20261024-0018/gc/direct.log 2026-10-24 00:20:59.407892457 +0200 27514194
+  AT9 lines 0: ; CODEC_ERROR lines 0
+  box: avail 13365 -> 1326 MiB; compact_stall +3 (fail +3), pswpin +651, pswpout +7634, majfault +1225; PSI full mem 0.6 s, io 3.5 s
+FAIL: THE LIVE SAVES NEED CHECKING;
+== 00:21:08 S5C did not pass: stop
+== 00:21:08 BOX-LOCK released

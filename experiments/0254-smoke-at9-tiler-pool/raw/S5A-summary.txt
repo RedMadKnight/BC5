@@ -1,0 +1,6 @@
+S5A: stopped at 200 s; binary md5 bf9bebcb (expected bf9bebcb); crash lines 0, kernel lines 0
+  tiler lines 11; last: 11264 requests, 3 new buffers (96.0 MiB), pool on, 11261 reused, 2 free
+  stderr hold tail lines 0
+  journal /home/kjaniszewski/bc5-data/captures/play-20261024-0014/gc/direct.log 2026-10-24 00:18:16.805842862 +0200 35466739
+  AT9 lines 0: ; CODEC_ERROR lines 0
+  box: avail 13343 -> 1765 MiB; compact_stall +40 (fail +16), pswpin +16008, pswpout +122021, majfault +18633; PSI full mem 1.1 s, io 3.1 s

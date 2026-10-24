@@ -1,0 +1,13 @@
+route saves from /home/kjaniszewski/bc5-work/save-backup-astro in /home/kjaniszewski/bc5-work/_SaveData/PPSA21564 (live saves kept in /home/kjaniszewski/bc5-work/exp0254/astro-live-S5C)
+S5C stopped at 150 s
+awk: linia poleceń:4:         END {printf "journal: cpu-wait GIVEN UP %d, two rings NOT served %d, hold tail GIVEN UP %d, TIMEOUT %d, hold lines %d
+awk: linia poleceń:4:                     ^ niezakończony łańcuch
+restored /home/kjaniszewski/bc5-work/exp0254/astro-live-S5C into /home/kjaniszewski/bc5-work/_SaveData/PPSA03671 (previous saves in /home/kjaniszewski/bc5-work/exp0196/saves-before-002108-610387381-471392)
+LIVE SAVES DIFFER from /home/kjaniszewski/bc5-work/exp0254/astro-live-S5C
+S5C: stopped at 150 s; binary md5 bf9bebcb (expected bf9bebcb); crash lines 0, kernel lines 0
+  tiler lines 8; last: 8192 requests, 3 new buffers (96.0 MiB), pool on, 8189 reused, 2 free
+  stderr hold tail lines 0
+  journal /home/kjaniszewski/bc5-data/captures/play-20261024-0018/gc/direct.log 2026-10-24 00:20:59.407892457 +0200 27514194
+  AT9 lines 0: ; CODEC_ERROR lines 0
+  box: avail 13365 -> 1326 MiB; compact_stall +3 (fail +3), pswpin +651, pswpout +7634, majfault +1225; PSI full mem 0.6 s, io 3.5 s
+FAIL: THE LIVE SAVES NEED CHECKING;

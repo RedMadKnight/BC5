@@ -1,0 +1,7 @@
+2026-10-24 00:14:53
+title astro, 200 s, launcher /home/kjaniszewski/bc5-work/play-astro.sh md5 adfe34390f3e6efdfd3ff2c0baa091e9 (2026-10-23 11:41), extra env ''
+binary /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator md5 bf9bebcbe727209a21f0807f9bc19ea0 (2026-10-24 00:13), expected bf9bebcb
+boot bac6c7e0, up since 2026-10-23 23:14:16
+box start uptime 3637.23 avail_mib 13343 swapfree_mib 6231 pswpin 193299 pswpout 1491709 pgmajfault 238873 compact_stall 7716 compact_fail 6369  psi_mem_full_us 109235002 psi_io_full_us 119118820
+emulator pid 398117: /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator --game /home/kjaniszewski/bc5-data/mnt/
+environ: KYTY_BC5_APR_READAHEAD=4 PLAY_CAPTURE=1 BC5_DIRECT_CHAIN=2 

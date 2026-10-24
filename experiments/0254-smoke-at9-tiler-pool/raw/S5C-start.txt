@@ -1,0 +1,7 @@
+2026-10-24 00:18:26
+title astroc, 150 s, launcher /home/kjaniszewski/bc5-work/play-astro-compute.sh md5 4a816afdce2956c2d3ca51ef93cbd6da (2026-10-16 14:32), extra env ''
+binary /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator md5 bf9bebcbe727209a21f0807f9bc19ea0 (2026-10-24 00:13), expected bf9bebcb
+boot bac6c7e0, up since 2026-10-23 23:14:16
+box start uptime 3849.90 avail_mib 13365 swapfree_mib 6233 pswpin 224069 pswpout 1613730 pgmajfault 272345 compact_stall 7756 compact_fail 6385  psi_mem_full_us 110392569 psi_io_full_us 122553618
+emulator pid 440482: /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator --game /home/kjaniszewski/bc5-data/mnt/
+environ: KYTY_BC5_APR_READAHEAD=4 BC5_DIRECT_CROSS_RING_WAITS=all PLAY_CAPTURE=1 BC5_DIRECT_CHAIN=2 BC5_DIRECT_COMPUTE_RING=0 

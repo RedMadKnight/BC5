@@ -1,0 +1,25 @@
+paź 24 00:24:05.645957 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 24 00:25:04.754960 bazzite kernel: clocksource: Watchdog remote CPU 14 read timed out
+paź 24 00:26:10.645953 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 24 00:26:46.474952 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State
+paź 24 00:26:46.663870 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State Completed
+paź 24 00:26:46.664517 bazzite kernel: amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+paź 24 00:26:46.664965 bazzite kernel: amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+paź 24 00:26:46.665149 bazzite kernel: amdgpu 0000:01:00.0: ring comp_1.1.0 timeout, signaled seq=1049882, emitted seq=1049884
+paź 24 00:26:46.665320 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 474927 thread bc5-ring pid 474965
+paź 24 00:26:46.719119 bazzite kernel: amdgpu 0000:01:00.0: Starting comp_1.1.0 ring reset
+paź 24 00:26:46.719432 bazzite kernel: amdgpu 0000:01:00.0: Ring comp_1.1.0 reset failed
+paź 24 00:26:46.719654 bazzite kernel: amdgpu 0000:01:00.0: GPU reset begin!. Source:  1
+paź 24 00:26:50.665952 bazzite kernel: amdgpu 0000:01:00.0: failed to suspend display audio
+paź 24 00:26:50.786953 bazzite kernel: amdgpu 0000:01:00.0: MODE1 reset
+paź 24 00:26:50.787708 bazzite kernel: amdgpu 0000:01:00.0: GPU mode1 reset
+paź 24 00:26:50.788262 bazzite kernel: amdgpu 0000:01:00.0: GPU psp mode1 reset
+paź 24 00:26:50.788784 bazzite kernel: amdgpu 0000:01:00.0: GPU reset succeeded, trying to resume
+paź 24 00:26:50.789300 bazzite kernel: amdgpu 0000:01:00.0: [drm] PCIE GART of 512M enabled (table at 0x000000F41FE00000).
+paź 24 00:26:50.789788 bazzite kernel: amdgpu 0000:01:00.0: VRAM is lost due to GPU reset!
+paź 24 00:26:50.790302 bazzite kernel: amdgpu 0000:01:00.0: PSP is resuming...
+paź 24 00:26:50.807951 bazzite kernel: amdgpu 0000:01:00.0: reserve 0x400000 from 0xf41f800000 for PSP TMR
+paź 24 00:26:50.842951 bazzite kernel: amdgpu 0000:01:00.0: SMU is resuming...
+paź 24 00:26:50.843657 bazzite kernel: amdgpu 0000:01:00.0: SMU is resumed successfully!
+Read from remote host 100.88.23.35: Connection reset by peer
+client_loop: send disconnect: Connection reset by peer
