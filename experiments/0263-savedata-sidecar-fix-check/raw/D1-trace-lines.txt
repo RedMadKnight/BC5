@@ -1,0 +1,23 @@
+save trace: search[0] i38-null-prefs user_param 0 mtime 1792848457 blocks 16384 free 16383
+save trace: search[0] i38-slot1-settings-autosave user_param 0 mtime 1792848457 blocks 16384 free 16383
+save trace: search[0] i38-slot1-game-autosave user_param 0 mtime 1792848457 blocks 16384 free 16369
+save trace: search[0] i38-slot2-settings-autosave user_param 0 mtime 1792848457 blocks 16384 free 16383
+save trace: search[0] i38-slot2-game-snapshot-52266 user_param 0 mtime 1792848457 blocks 16384 free 16367
+save trace: search[1] i38-slot2-game-snapshot-16111 user_param 0 mtime 1792848457 blocks 16384 free 16367
+save trace: search[2] i38-slot2-game-autosave user_param 0 mtime 1792848457 blocks 16384 free 16366
+save trace: search[0] i38-slot3-settings-autosave user_param 0 mtime 1792848457 blocks 16384 free 16383
+save trace: search[0] i38-slot3-game-snapshot-52266 user_param 0 mtime 1792848457 blocks 16384 free 16367
+save trace: search[1] i38-slot3-game-manual-1 user_param 0 mtime 1792848457 blocks 16384 free 16368
+save trace: search[2] i38-slot3-game-autosave user_param 0 mtime 1792848457 blocks 16384 free 16367
+save trace: search[0] i38-slot3-game-snapshot-52266 user_param 0 mtime 1792848457 blocks 16384 free 16367
+save trace: search[1] i38-slot3-game-manual-1 user_param 0 mtime 1792848457 blocks 16384 free 16368
+save trace: search[2] i38-slot3-game-autosave user_param 0 mtime 1792848457 blocks 16384 free 16367
+save trace: SaveDataDelete _SaveData/PPSA03671/i38-slot3-game-snapshot-52266 exists 1
+save trace: SaveDataDelete removed 2 entries, error 0
+save trace: SaveDataDelete _SaveData/PPSA03671/i38-slot3-game-manual-1 exists 1
+save trace: SaveDataDelete removed 2 entries, error 0
+save trace: SaveDataDelete _SaveData/PPSA03671/i38-slot3-game-autosave exists 1
+save trace: SaveDataDelete removed 2 entries, error 0
+save trace: search[0] i38-slot3-settings-autosave user_param 0 mtime 1792848457 blocks 16384 free 16383
+save trace: SaveDataDelete _SaveData/PPSA03671/i38-slot3-settings-autosave exists 1
+save trace: SaveDataDelete removed 2 entries, error 0
