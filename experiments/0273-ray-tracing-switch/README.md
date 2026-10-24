@@ -96,7 +96,13 @@ stated number of times; the script refuses otherwise) and writes `patch_0273.dif
 **Result.** Prepared 2026-10-24 offline (the box queued: water 0271, then TCP's 0272 compile).
 - `verify0273.pl`: all 11 anchors match patch 0001 on main (counts 1, 1, 1 in `bc5LleAgc.cpp`; 1, 1 in
   `hostMenu.cpp`; 1, 1, 1, 1, 1, 2 in `hostInput.cpp`).
-- Not compiled yet: no compiler on the laptop. The build on the box waits for the top session's GO.
+- Built on the box 2026-10-24 18:35:05–18:35:44 on the top session.s GO (`run0273.sh build`, lock taken and
+  released): the shared tree.s `bc5LleAgc.cpp` was a2a2c2df (daca24cc + exp 0272.s probe v2, integrated
+  18:33), the dry run applied all 11 anchors without a reject, and `~/bc5-work/exp0273/kyty_emulator`
+  (md5 91349485, 166,535,224 bytes) is the shared normal binary 9f74965d (unchanged before and after) plus
+  `patch_0273.diff` (131 added lines; `raw/patch_0273.diff`, `raw/build.out`). Four warnings, none from
+  this diff: the 0160 zero-page journal line (`-Wformat`, `pa + 0x10000ull` against `PRIx64`) and two
+  unused constants. Not run: the tests below wait for the maintainer.
 - Test plan (the box, the maintainer reachable for (c)):
   - (a) RT on = unchanged: `play-pkg.sh` with the private binary, the second title's route of exp 0264
     (`route.sh` with `BC5_EMU=~/bc5-work/exp0273/kyty_emulator`), no `KYTY_BC5_RT`: the journal has no
