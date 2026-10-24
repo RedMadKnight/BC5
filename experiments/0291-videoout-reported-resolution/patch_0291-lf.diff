@@ -1,0 +1,99 @@
+--- a/src/graphics/presentation/videoOut.cpp
++++ b/src/graphics/presentation/videoOut.cpp
+@@ -1564,6 +1564,13 @@
+ 	     buffer_index_start, buffer_num, set_index, attribute->pixel_format, attribute->tiling_mode,
+ 	     attribute->aspect_ratio, attribute->width, attribute->height, attribute->pitch_in_pixel,
+ 	     attribute->option, category);
++	// BC5 (experiment 0291): the registered display buffers' size on stderr, once per registration (the LOGF above is
++	// silent in play), for the A/B of KYTY_BC5_VIDEOOUT_REPORT.
++	std::fprintf(stderr,
++	             "bc5 videoout: RegisterBuffers2 set %d, %d buffers from index %d: %ux%u, pitch %u, pixel format 0x%016" PRIx64
++	             ", tiling %u, category %d\n",
++	             set_index, buffer_num, buffer_index_start, attribute->width, attribute->height, attribute->pitch_in_pixel,
++	             attribute->pixel_format, attribute->tiling_mode, category);
+ 
+ 	if (option != nullptr) {
+ 		return VIDEO_OUT_ERROR_INVALID_OPTION;
+@@ -2009,6 +2016,29 @@
+ 	return OK;
+ }
+ 
++// BC5 (experiment 0291): KYTY_BC5_VIDEOOUT_REPORT sets the resolution field that VideoOutGetOutputStatus returns, for
++// an A/B of whether the second title chooses its display buffers or its render size from it. "2160p" or "4k" gives 2,
++// "1080p" gives 1, a number gives that value. Unset (the default) keeps the base's answer: 2 when the VideoOut size is
++// at least 3840 wide or 2160 high, else 1. That size is the --screen-width/--screen-height config (1280x720 unless
++// given), not the window's; --fullscreen alone leaves it, so the host answers 1 today.
++// TODO(verify) the field's encoding on the console (what 1 and 2 stand for).
++static int Bc5VideoOutReport() {
++	static const int v = [] {
++		const char* e = std::getenv("KYTY_BC5_VIDEOOUT_REPORT");
++		if (e == nullptr || *e == 0) {
++			return -1;
++		}
++		if (std::strcmp(e, "2160p") == 0 || std::strcmp(e, "4k") == 0 || std::strcmp(e, "4K") == 0) {
++			return 2;
++		}
++		if (std::strcmp(e, "1080p") == 0) {
++			return 1;
++		}
++		return static_cast<int>(std::strtol(e, nullptr, 10));
++	}();
++	return v;
++}
++
+ KYTY_SYSV_ABI int VideoOutGetOutputStatus(int handle, VideoOutOutputStatus* status) {
+ 	PRINT_NAME();
+ 
+@@ -2022,7 +2052,9 @@
+ 	}
+ 
+ 	ctx->mutex.Lock();
+-	status->resolution   = (ctx->width >= 3840 || ctx->height >= 2160 ? 2u : 1u);
++	const uint32_t base_resolution = (ctx->width >= 3840 || ctx->height >= 2160 ? 2u : 1u);
++	const uint32_t size_w = ctx->width, size_h = ctx->height;
++	status->resolution   = Bc5VideoOutReport() >= 0 ? static_cast<uint32_t>(Bc5VideoOutReport()) : base_resolution;
+ 	status->dynamicRange = 1;
+ 	status->refreshRate =
+ 	    (ctx->output_mode == VIDEO_OUT_OUTPUT_MODE_119_88HZ || Config::GetVblankFrequency() >= 119
+@@ -2034,6 +2066,19 @@
+ 	status->reserved[2] = 0;
+ 	ctx->mutex.Unlock();
+ 
++	// BC5 (experiment 0291): the first call, and the first call with another answer, as one stderr line each, so a run
++	// shows whether and how often the title asks.
++	static std::atomic<uint64_t> calls {0};
++	static std::atomic<int64_t>  last_told {-1};
++	const uint64_t               n = ++calls;
++	if (last_told.exchange(status->resolution) != static_cast<int64_t>(status->resolution)) {
++		std::fprintf(stderr,
++		             "bc5 videoout: GetOutputStatus call %" PRIu64 " (handle %d) -> resolution %u (base %u, KYTY_BC5_VIDEOOUT_REPORT %s), "
++		             "dynamic range %u, refresh rate %" PRIu64 ", VideoOut size %ux%u\n",
++		             n, handle, status->resolution, base_resolution, Bc5VideoOutReport() >= 0 ? "set" : "unset",
++		             status->dynamicRange, status->refreshRate, size_w, size_h);
++	}
++
+ 	return OK;
+ }
+ 
+@@ -2078,6 +2123,12 @@
+                                             const VideoOutOutputOptions* options,
+                                             void* reserved_ptr, uint64_t reserved) {
+ 	PRINT_NAME();
++	// BC5 (experiment 0291): the output modes the title asks about, its first 16 calls, on stderr (this host supports
++	// only VIDEO_OUT_OUTPUT_MODE_DEFAULT and _119_88HZ, see ValidateOutputConfig).
++	static std::atomic<int> bc5_supported_calls {0};
++	if (bc5_supported_calls.fetch_add(1) < 16) {
++		std::fprintf(stderr, "bc5 videoout: IsOutputSupported (handle %d) mode 0x%016" PRIx64 "\n", handle, mode);
++	}
+ 
+ 	LOGF("\t mode = 0x%016" PRIx64 "\n", mode);
+ 
+@@ -2097,6 +2148,8 @@
+                                           const VideoOutOutputOptions* options, void* reserved_ptr,
+                                           uint64_t reserved) {
+ 	PRINT_NAME();
++	// BC5 (experiment 0291): every output mode the title configures, on stderr.
++	std::fprintf(stderr, "bc5 videoout: ConfigureOutput (handle %d) mode 0x%016" PRIx64 "\n", handle, mode);
+ 
+ 	LOGF("\t mode = 0x%016" PRIx64 "\n", mode);
+ 
