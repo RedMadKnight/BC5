@@ -1,0 +1,11 @@
+  b01 z2->z4 (size 3328): holes phi -0.068 | r(Pk,Hk) +0.562 r(Pk,Hj) +0.541 r(Pj,Hk) +0.561 r(Pj,Hj) +0.541 | r(dP,dH) +0.005
+  b03 z4->z6 (size 3328): holes phi +0.346 | r(Pk,Hk) +0.641 r(Pk,Hj) +0.587 r(Pj,Hk) +0.641 r(Pj,Hj) +0.587 | r(dP,dH) +nan
+  b03 z6->z7 (size 3328): holes phi +0.422 | r(Pk,Hk) +0.587 r(Pk,Hj) +0.524 r(Pj,Hk) +0.588 r(Pj,Hj) +0.524 | r(dP,dH) -0.003
+  b04 z5->z7 (size 3328): holes phi +0.137 | r(Pk,Hk) +0.604 r(Pk,Hj) +0.539 r(Pj,Hk) +0.605 r(Pj,Hj) +0.539 | r(dP,dH) -0.003
+  b05 z3->z5 (size 2816): holes phi -0.151 | r(Pk,Hk) +0.459 r(Pk,Hj) +0.566 r(Pj,Hk) +0.459 r(Pj,Hj) +0.566 | r(dP,dH) +0.001
+  b05 z5->z7 (size 2816): holes phi +0.495 | r(Pk,Hk) +0.566 r(Pk,Hj) +0.539 r(Pj,Hk) +0.566 r(Pj,Hj) +0.539 | r(dP,dH) -0.004
+  b06 z1->z3 (size 3328): holes phi +0.289 | r(Pk,Hk) +0.640 r(Pk,Hj) +0.588 r(Pj,Hk) +0.641 r(Pj,Hj) +0.589 | r(dP,dH) -0.001
+  b06 z5->z7 (size 3328): holes phi +0.552 | r(Pk,Hk) +0.588 r(Pk,Hj) +0.637 r(Pj,Hk) +0.588 r(Pj,Hj) +0.637 | r(dP,dH) +nan
+  b12 z1->z2 (size 2560): holes phi -0.371 | r(Pk,Hk) +0.586 r(Pk,Hj) +0.600 r(Pj,Hk) +0.584 r(Pj,Hj) +0.598 | r(dP,dH) -0.001
+# /home/kjaniszewski/bc5-data/priv/exp0289/W289b: 9 hole switches (texels over the lake window: x 20..126, y 23..40 of 128 x 64)
+  medians: r(Pk,Hk) +0.587 r(Pk,Hj) +0.566 r(Pj,Hk) +0.588 r(Pj,Hj) +0.566 r(dP,dH) -0.001
