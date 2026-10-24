@@ -1,0 +1,340 @@
+# writers per frame: median 95; first writer draw to the full-screen draw: median 46.0 ms, 29.0..482.0
+# /home/kjaniszewski/bc5-data/captures/play-20261024-2210/gc/direct.log: 428 windows, 17982 journalled draws, 190 frames (171 whole)
+  frame intervals within windows: 171, median 44.0 ms, 9.0..509.0; the sizes change at 31 of 171 frame boundaries
+# lag L (ms): clear reads whose best size equals their frame's size, of the clear reads matched
+  L -250: 30 of 47
+  L -245: 30 of 47
+  L -240: 30 of 47
+  L -235: 30 of 47
+  L -230: 30 of 47
+  L -225: 31 of 47
+  L -220: 31 of 48
+  L -215: 31 of 48
+  L -210: 31 of 48
+  L -205: 31 of 48
+  L -200: 32 of 48
+  L -195: 32 of 48
+  L -190: 32 of 48
+  L -185: 32 of 48
+  L -180: 32 of 48
+  L -175: 32 of 48
+  L -170: 32 of 48
+  L -165: 32 of 48
+  L -160: 33 of 48
+  L -155: 33 of 48
+  L -150: 33 of 48
+  L -145: 33 of 48
+  L -140: 33 of 48
+  L -135: 33 of 48
+  L -130: 33 of 48
+  L -125: 34 of 48
+  L -120: 34 of 48
+  L -115: 35 of 48
+  L -110: 35 of 48
+  L -105: 35 of 48
+  L -100: 35 of 48
+  L  -95: 36 of 48
+  L  -90: 36 of 48
+  L  -85: 36 of 48
+  L  -80: 36 of 48
+  L  -75: 36 of 48
+  L  -70: 36 of 48
+  L  -65: 36 of 48
+  L  -60: 36 of 47
+  L  -55: 36 of 47
+  L  -50: 36 of 47
+  L  -45: 37 of 48
+  L  -40: 37 of 48
+  L  -35: 36 of 47
+  L  -30: 36 of 47
+  L  -25: 35 of 46
+  L  -20: 37 of 46
+  L  -15: 37 of 46
+  L  -10: 33 of 41
+  L   -5: 33 of 40
+  L    0: 32 of 39
+  L    5: 32 of 39
+  L   10: 31 of 38
+  L   15: 27 of 34
+  L   20: 28 of 33
+  L   25: 27 of 32
+  L   30: 28 of 33
+  L   35: 28 of 33
+  L   40: 26 of 31
+  L   45: 26 of 30
+  L   50: 25 of 29
+  L   55: 25 of 29
+  L   60: 24 of 29
+  L   65: 23 of 28
+  L   70: 23 of 27
+  L   75: 23 of 27
+  L   80: 23 of 27
+  L   85: 22 of 26
+  L   90: 20 of 24
+  L   95: 20 of 23
+  L  100: 18 of 22
+  L  105: 17 of 21
+  L  110: 17 of 21
+  L  115: 17 of 20
+  L  120: 17 of 19
+  L  125: 16 of 18
+  L  130: 16 of 18
+  L  135: 16 of 18
+  L  140: 16 of 18
+  L  145: 16 of 18
+  L  150: 15 of 18
+  L  155: 15 of 18
+  L  160: 14 of 17
+  L  165: 13 of 15
+  L  170: 13 of 15
+  L  175: 13 of 15
+  L  180: 13 of 15
+  L  185: 13 of 15
+  L  190: 12 of 14
+  L  195: 11 of 14
+  L  200: 11 of 13
+  L  205: 11 of 13
+  L  210: 11 of 13
+  L  215: 11 of 13
+  L  220: 10 of 13
+  L  225: 10 of 13
+  L  230: 10 of 13
+  L  235: 10 of 13
+  L  240: 9 of 12
+  L  245: 8 of 12
+  L  250: 8 of 12
+# L = 45 ms (26 of 30 matched clear reads agree; lags 45..45 ms agree as well)
+# reads: frame (window, index in run), time after the frame's start, frame size, best size, state
+  b01.z0  wall 1792872798.2679: no frame (outside the journal windows)
+  b01.z1  wall 1792872798.2930: no frame (outside the journal windows)
+  b01.z2  wall 1792872798.3179: frame w39 #10 +52.9 ms after its start, size 3072x1728, best 2304?, state m
+  b01.z3  wall 1792872798.3429: frame w39 #11 +58.9 ms after its start, size 3072x1728, best 3072?, state m
+  b01.z4  wall 1792872798.3679: frame w39 #11 +83.9 ms after its start, size 3072x1728, best 3072, state 0
+  b01.z5  wall 1792872798.4124: frame w39 #11 +128.4 ms after its start, size 3072x1728, best 3072, state 0
+  b01.z6  wall 1792872798.4556: frame w39 #12 +69.6 ms after its start, size 3072x1728, best 2304?, state 0
+  b01.z7  wall 1792872798.5229: frame w39 #13 +66.9 ms after its start, size 3072x1728, best 2048?, state 0
+  b02.z0  wall 1792872808.8964: no frame (outside the journal windows)
+  b02.z1  wall 1792872808.9214: no frame (outside the journal windows)
+  b02.z2  wall 1792872808.9464: no frame (outside the journal windows)
+  b02.z3  wall 1792872808.9790: frame w72 #20 +46.0 ms after its start, size 3072x1728, best 2304?, state m
+  b02.z4  wall 1792872809.0199: frame w72 #21 +47.9 ms after its start, size 3072x1728, best 3072, state 0
+  b02.z5  wall 1792872809.0535: frame w72 #21 +81.5 ms after its start, size 3072x1728, best 2304?, state m
+  b02.z6  wall 1792872809.0969: frame w72 #21 +124.9 ms after its start, size 3072x1728, best 2304?, state 0
+  b02.z7  wall 1792872809.2973: frame w72 #23 +148.3 ms after its start, size 2048x1152, best 2048, state 0
+  b03.z0  wall 1792872809.3686: frame w72 #24 +108.6 ms after its start, size 2048x1152, best 2048, state 0
+  b03.z1  wall 1792872809.3936: frame w72 #24 +133.6 ms after its start, size 2048x1152, best 2048, state 0
+  b03.z2  wall 1792872809.4186: frame w72 #25 +66.6 ms after its start, size 2048x1152, best 2816?, state 0
+  b03.z3  wall 1792872809.4436: frame w72 #25 +91.6 ms after its start, size 2048x1152, best 2048, state 0
+  b03.z4  wall 1792872809.4696: frame w72 #26 +47.6 ms after its start, size 2048x1152, best 2048, state 0
+  b03.z5  wall 1792872809.4936: frame w72 #26 +71.6 ms after its start, size 2048x1152, best 2816?, state 0
+  b03.z6  wall 1792872809.5186: frame w72 #26 +96.6 ms after its start, size 2048x1152, best 2304?, state 0
+  b03.z7  wall 1792872809.5436: frame w72 #27 +50.6 ms after its start, size 2048x1152, best 2304?, state 0
+  b04.z0  wall 1792872819.7945: no frame (outside the journal windows)
+  b04.z1  wall 1792872819.8196: no frame (outside the journal windows)
+  b04.z2  wall 1792872819.8446: frame w77 #30 +51.6 ms after its start, size 3072x1728, best 3072?, state m
+  b04.z3  wall 1792872819.8696: frame w77 #30 +76.6 ms after its start, size 3072x1728, best 3072?, state 0
+  b04.z4  wall 1792872819.8946: frame w77 #31 +62.6 ms after its start, size 3072x1728, best 3072?, state 0
+  b04.z5  wall 1792872819.9196: frame w77 #31 +87.6 ms after its start, size 3072x1728, best 2304?, state m
+  b04.z6  wall 1792872819.9558: frame w77 #31 +123.8 ms after its start, size 3072x1728, best 3072, state 0
+  b04.z7  wall 1792872819.9912: frame w77 #32 +77.2 ms after its start, size 3072x1728, best 3072?, state 0
+  b05.z0  wall 1792872830.7305: no frame (outside the journal windows)
+  b05.z1  wall 1792872830.7556: no frame (outside the journal windows)
+  b05.z2  wall 1792872830.7806: no frame (outside the journal windows)
+  b05.z3  wall 1792872830.8056: frame w97 #40 +63.6 ms after its start, size 3328x1872, best 3328?, state m
+  b05.z4  wall 1792872830.8306: frame w97 #40 +88.6 ms after its start, size 3328x1872, best 3328?, state 0
+  b05.z5  wall 1792872830.8556: frame w97 #41 +66.6 ms after its start, size 3328x1872, best 3328?, state 0
+  b05.z6  wall 1792872830.8978: frame w97 #41 +108.8 ms after its start, size 3328x1872, best 3328?, state 0
+  b05.z7  wall 1792872830.9438: frame w97 #42 +62.8 ms after its start, size 3328x1872, best 3328?, state 0
+  b06.z0  wall 1792872841.9378: no frame (outside the journal windows)
+  b06.z1  wall 1792872841.9629: no frame (outside the journal windows)
+  b06.z2  wall 1792872841.9879: no frame (outside the journal windows)
+  b06.z3  wall 1792872842.0129: frame w117 #50 +62.9 ms after its start, size 3072x1728, best 2304?, state m
+  b06.z4  wall 1792872842.0379: frame w117 #50 +87.9 ms after its start, size 3072x1728, best 3072?, state 0
+  b06.z5  wall 1792872842.1259: frame w117 #51 +120.9 ms after its start, size 3072x1728, best 3072?, state 0
+  b06.z6  wall 1792872842.1853: frame w117 #51 +180.3 ms after its start, size 3072x1728, best 3072, state 0
+  b06.z7  wall 1792872842.2371: frame w117 #52 +82.1 ms after its start, size 3072x1728, best 3072, state 0
+  b07.z0  wall 1792872853.7499: no frame (outside the journal windows)
+  b07.z1  wall 1792872853.7750: no frame (outside the journal windows)
+  b07.z2  wall 1792872853.8000: no frame (outside the journal windows)
+  b07.z3  wall 1792872853.8250: no frame (outside the journal windows)
+  b07.z4  wall 1792872853.8500: no frame (outside the journal windows)
+  b07.z5  wall 1792872853.8750: frame w137 #60 +64.0 ms after its start, size 3072x1728, best 3072, state Y
+  b07.z6  wall 1792872853.9008: frame w137 #60 +89.8 ms after its start, size 3072x1728, best 3072, state Y
+  b07.z7  wall 1792872853.9250: frame w137 #60 +114.0 ms after its start, size 3072x1728, best 2304?, state m
+  b08.z0  wall 1792872865.6712: no frame (outside the journal windows)
+  b08.z1  wall 1792872865.6962: no frame (outside the journal windows)
+  b08.z2  wall 1792872865.7212: no frame (outside the journal windows)
+  b08.z3  wall 1792872865.7462: frame w157 #70 +66.2 ms after its start, size 2304x1296, best 2048, state ?
+  b08.z4  wall 1792872865.7712: frame w157 #70 +91.2 ms after its start, size 2304x1296, best 2048, state ?
+  b08.z5  wall 1792872865.7962: frame w157 #70 +116.2 ms after its start, size 2304x1296, best 2048, state ?
+  b08.z6  wall 1792872865.8689: frame w157 #70 +188.9 ms after its start, size 2304x1296, best 2304, state X
+  b08.z7  wall 1792872865.9716: frame w157 #71 +137.6 ms after its start, size 2304x1296, best 2304, state X
+  b09.z0  wall 1792872877.9882: no frame (outside the journal windows)
+  b09.z1  wall 1792872878.1153: frame w177 #80 +113.3 ms after its start, size 2304x1296, best 2048, state ?
+  b09.z2  wall 1792872878.5278: frame w177 #81 +279.8 ms after its start, size 2304x1296, best 2304, state X
+  b09.z3  wall 1792872878.7139: frame w177 #82 +144.9 ms after its start, size 2304x1296, best 2304?, state Y
+  b09.z4  wall 1792872878.7438: frame w177 #82 +174.8 ms after its start, size 2304x1296, best 2304?, state Y
+  b09.z5  wall 1792872878.7570: frame w177 #82 +188.0 ms after its start, size 2304x1296, best 2304?, state Y
+  b09.z6  wall 1792872878.7733: frame w177 #82 +204.3 ms after its start, size 2304x1296, best 2304?, state Y
+  b09.z7  wall 1792872878.8180: frame w177 #82 +249.0 ms after its start, size 2304x1296, best 2304?, state Y
+  b10.z0  wall 1792872891.0461: no frame (outside the journal windows)
+  b10.z1  wall 1792872891.0711: no frame (outside the journal windows)
+  b10.z2  wall 1792872891.0961: no frame (outside the journal windows)
+  b10.z3  wall 1792872891.1211: frame w197 #90 +47.1 ms after its start, size 3072x1728, best 3072, state X
+  b10.z4  wall 1792872891.1461: frame w197 #90 +72.1 ms after its start, size 3072x1728, best 3072, state X
+  b10.z5  wall 1792872891.1711: frame w197 #90 +97.1 ms after its start, size 3072x1728, best 3072, state X
+  b10.z6  wall 1792872891.1961: frame w197 #90 +122.1 ms after its start, size 3072x1728, best 3072, state X
+  b10.z7  wall 1792872891.2301: frame w197 #90 +156.1 ms after its start, size 3072x1728, best 3072, state X
+  b11.z0  wall 1792872904.2975: no frame (outside the journal windows)
+  b11.z1  wall 1792872904.3225: no frame (outside the journal windows)
+  b11.z2  wall 1792872904.3475: no frame (outside the journal windows)
+  b11.z3  wall 1792872904.3725: frame w230 #100 +57.5 ms after its start, size 3072x1728, best 2304?, state X
+  b11.z4  wall 1792872904.3975: frame w230 #101 +59.5 ms after its start, size 3072x1728, best 3072, state Y
+  b11.z5  wall 1792872904.4225: frame w230 #102 +47.5 ms after its start, size 3072x1728, best 2304?, state Y
+  b11.z6  wall 1792872904.4760: frame w230 #103 +58.0 ms after its start, size 2304x1296, best 2304, state Y
+  b11.z7  wall 1792872904.5133: frame w230 #104 +51.3 ms after its start, size 2304x1296, best 2304, state Y
+  b12.z0  wall 1792872904.6190: frame w230 #106 +81.0 ms after its start, size 2048x1152, best 2816?, state Y
+  b12.z1  wall 1792872904.6534: frame w230 #107 +74.4 ms after its start, size 2048x1152, best 2304?, state Y
+  b12.z2  wall 1792872904.6913: frame w230 #108 +68.3 ms after its start, size 2048x1152, best 2048, state Y
+  b12.z3  wall 1792872904.7328: frame w230 #109 +60.8 ms after its start, size 2048x1152, best 2816?, state Y
+  b12.z4  wall 1792872904.7642: frame w230 #109 +92.2 ms after its start, size 2048x1152, best 2048, state X
+  b12.z5  wall 1792872904.8113: no frame (outside the journal windows)
+  b12.z6  wall 1792872904.8585: no frame (outside the journal windows)
+  b12.z7  wall 1792872904.8866: no frame (outside the journal windows)
+# frames by window (size:state; '.' no read matched; '*' partial first frame)
+  w19 t 150.024: *2560:. 2560:. 2304:. 2304:. 2048:. 2048:. 2048:. 2048:. 2048:. 2048:.
+  w39 t 160.498: *3072:m 3072:conflict 3072:0 3072:0 2048:. 2048:. 2048:. 2048:. 2048:. 2048:.
+  w72 t 171.182: *3072:m 3072:conflict 3072:. 2048:0 2048:0 2048:0 2048:0 2048:0 2048:. 2048:.
+  w77 t 182.047: *3072:conflict 3072:conflict 3072:0 2048:. 2048:. 2048:. 2048:. 2048:. 2048:. 2048:.
+  w97 t 193.000: *3328:conflict 3328:0 3328:0 2048:. 2048:. 2048:. 2048:. 2048:. 2048:. 2048:.
+  w117 t 204.218: *3072:conflict 3072:0 3072:0 3072:. 3072:. 3072:. 3072:. 3072:. 3072:. 3072:.
+  w137 t 216.137: *3072:conflict 3072:. 3072:. 3072:. 3072:. 3072:. 3072:. 3072:. 3072:. 3072:.
+  w157 t 228.037: *2304:X 2304:X 2304:. 2304:. 2304:. 2304:. 2304:. 2304:. 2304:. 2304:.
+  w177 t 240.428: *2304:? 2304:X 2304:Y 2304:. 2304:. 2304:. 2304:. 2304:. 2304:. 2304:.
+  w197 t 253.467: *3072:X 3072:. 3072:. 3072:. 3072:. 3072:. 3072:. 3072:. 3072:. 3072:.
+  w230 t 266.551: *3072:X 3072:Y 3072:Y 2304:Y 2304:Y 2048:. 2048:Y 2048:Y 2048:Y 2048:conflict
+  w250 t 276.971: *2304:. 2304:. 2304:. 2048:. 2048:. 2048:. 2048:. 2048:. 2048:. 2048:.
+  w270 t 287.304: *3328:. 3328:. 2560:. 2560:. 2304:. 2304:. 2304:. 2304:. 2048:. 2048:.
+  w301 t 297.678: *3328:. 3328:. 3072:. 3072:. 2816:. 2816:. 2560:. 2560:. 2304:. 2304:.
+  w327 t 308.138: *3328:. 3328:. 3072:. 3072:. 2816:. 2816:. 2560:. 2560:. 2304:. 2304:.
+  w346 t 318.512: *3072:. 3072:. 2816:. 2816:. 2560:. 2560:. 2304:. 2304:. 2048:. 2048:.
+  w366 t 328.927: *3328:. 3328:. 2048:. 2048:. 2048:. 2048:. 2048:. 2048:. 2048:. 2048:.
+  w407 t 339.321: *3072:. 3072:. 2816:. 2816:. 2560:. 2560:. 2304:. 2304:. 2048:. 2048:.
+  w427 t 349.671: *3072:. 3072:. 2816:. 2816:. 2560:. 2560:. 2560:. 2560:. 2560:. 2560:.
+# frame labels: 0 12, ? 1, X 5, Y 8, conflict 8, m 2
+# windows with X or Y reads: w157 w177 w197 w230
+  w157 frame starts (ms): *0 154 468 738 883 1057 1204 1464 1698 2003
+  w157 sizes and states:  2304:X 2304:X 2304:. 2304:. 2304:. 2304:. 2304:. 2304:. 2304:. 2304:.
+  w157 reads (ms from the first frame's start, state at the frame's size): b08.z3@66:? b08.z4@91:? b08.z5@116:? b08.z6@189:X b08.z7@292:X
+  w177 frame starts (ms): *0 246 567 920 1192 1529 1781 2052 2397 2747
+  w177 sizes and states:  2304:? 2304:X 2304:Y 2304:. 2304:. 2304:. 2304:. 2304:. 2304:. 2304:.
+  w177 reads (ms from the first frame's start, state at the frame's size): b09.z1@113:? b09.z2@526:X b09.z3@712:Y b09.z4@742:Y b09.z5@755:Y b09.z6@771:Y b09.z7@816:Y
+  w197 frame starts (ms): *0 196 407 686 1013 1355 1665 2174 2530 2919
+  w197 sizes and states:  3072:X 3072:. 3072:. 3072:. 3072:. 3072:. 3072:. 3072:. 3072:. 3072:.
+  w197 reads (ms from the first frame's start, state at the frame's size): b10.z3@47:X b10.z4@72:X b10.z5@97:X b10.z6@122:X b10.z7@156:X
+  w230 frame starts (ms): *0 23 60 103 147 183 223 264 308 357
+  w230 sizes and states:  3072:X 3072:Y 3072:Y 2304:Y 2304:Y 2048:. 2048:Y 2048:Y 2048:Y 2048:conflict
+  w230 reads (ms from the first frame's start, state at the frame's size): b11.z3@57:X b11.z4@82:Y b11.z5@107:Y b11.z6@161:Y b11.z7@198:Y b12.z0@304:Y b12.z1@338:Y b12.z2@376:Y b12.z3@418:Y b12.z4@449:X
+# scalar values that vary between these frames with at most 4 values, per frame (window by window)
+  11d090d900#0 db htile: aaaaaaaaaa | aaaaaaaaaa | bbbbbbbbbb | bbbaaccccc  (a=112ab20000; b=112b3c0000; c=112a7c0000)
+  11d090d900#0 pkt: ababbbabbb | abbbabbaab | aabbbaabaa | aababaabab  (a=c0032400 00000b80 00000280 00000280; b=c0032400 00000b20 00000280 00000280)
+  11d090d900#0 size: aaaaaaaaaa | aaaaaaaaaa | bbbbbbbbbb | bbbaaccccc  (a=2304x1296; b=3072x1728; c=2048x1152)
+  11d090d900#1 db htile: aaaaaaaaaa | aaaaaaaaaa | bbbbbbbbbb | bbbaaccccc  (a=112ab20000; b=112b3c0000; c=112a7c0000)
+  11d090d900#1 pkt: ababbbabbb | abbbabbaab | aabbbaabaa | aababaabab  (a=c0032400 00000ba0 00000280 00000280; b=c0032400 00000b40 00000280 00000280)
+  11d090d900#1 size: aaaaaaaaaa | aaaaaaaaaa | bbbbbbbbbb | bbbaaccccc  (a=2304x1296; b=3072x1728; c=2048x1152)
+  11d0a98300#0 db htile: aaaaaaaaaa | aaaaaaaaaa | bbbbbbbbbb | bbbaaccccc  (a=112ab20000; b=112b3c0000; c=112a7c0000)
+  11d0a98300#0 pkt: ababbbabbb | abbbabbaab | aabbbaabaa | aababaabab  (a=c0032400 00000b20 00000280 00000280; b=c0032400 00000ac0 00000280 00000280)
+  11d0a98300#0 size: aaaaaaaaaa | aaaaaaaaaa | bbbbbbbbbb | bbbaaccccc  (a=2304x1296; b=3072x1728; c=2048x1152)
+  11d0a98300#1 db htile: aaaaaaaaaa | aaaaaaaaaa | bbbbbbbbbb | bbbaaccccc  (a=112ab20000; b=112b3c0000; c=112a7c0000)
+  11d0a98300#1 pkt: ababbbabbb | abbbabbaab | aabbbaabaa | aababaabab  (a=c0032400 00000b60 00000280 00000280; b=c0032400 00000b00 00000280 00000280)
+  11d0a98300#1 size: aaaaaaaaaa | aaaaaaaaaa | bbbbbbbbbb | bbbaaccccc  (a=2304x1296; b=3072x1728; c=2048x1152)
+  11d1d33200#0 db htile: aaaaaaaaaa | aaaaaaaaaa | bbbbbbbbbb | bbbaaccccc  (a=112ab20000; b=112b3c0000; c=112a7c0000)
+  11d1d33200#0 size: aaaaaaaaaa | aaaaaaaaaa | bbbbbbbbbb | bbbaaccccc  (a=2304x1296; b=3072x1728; c=2048x1152)
+  11d1d88300#0 args: abbbbbbbbb | abbbbbbbbb | cbbbbbbbbb | abbbbbbbbb  (a=op 24 max 33 inst 1 zero 0 |[21 1 0 0]; b=op 24 max 15 inst 1 zero 0 |[f 1 0 0]; c=op 24 max 19 inst 1 zero 0 |[13 1 0 0])
+  11d1d88300#0 db htile: aaaaaaaaaa | aaaaaaaaaa | bbbbbbbbbb | bbbbaacccc  (a=112ab20000; b=112b3c0000; c=112a7c0000)
+  11d1d88300#0 pkt: abbbbbbbbb | abbbbbbbbb | abbbbbbbbb | abbbbbbbbb  (a=c0032400 00000d80 00000280 00000280; b=c0032400 000001c0 00000280 00000280)
+  11d1d88300#0 size: aaaaaaaaaa | aaaaaaaaaa | bbbbbbbbbb | bbbbaacccc  (a=2304x1296; b=3072x1728; c=2048x1152)
+  11d1d88300#1 db htile: aaaaaaaaaa | aaaaaaaaaa | bbbbbbbbbb | bbbaaccccc  (a=112ab20000; b=112b3c0000; c=112a7c0000)
+  11d1d88300#1 size: aaaaaaaaaa | aaaaaaaaaa | bbbbbbbbbb | bbbaaccccc  (a=2304x1296; b=3072x1728; c=2048x1152)
+  11d1d88300#10 db htile: aaaaaaaaaa | aaaaaaaaaa | bbbbbbbbbb | bbbaaccccc  (a=112ab20000; b=112b3c0000; c=112a7c0000)
+  11d1d88300#10 size: aaaaaaaaaa | aaaaaaaaaa | bbbbbbbbbb | bbbaaccccc  (a=2304x1296; b=3072x1728; c=2048x1152)
+  11d1d88300#11 db htile: aaaaaaaaaa | aaaaaaaaaa | bbbbbbbbbb | bbbaaccccc  (a=112ab20000; b=112b3c0000; c=112a7c0000)
+  11d1d88300#11 size: aaaaaaaaaa | aaaaaaaaaa | bbbbbbbbbb | bbbaaccccc  (a=2304x1296; b=3072x1728; c=2048x1152)
+  11d1d88300#12 compl: abbbbbbbbb | abbbbbbbbb | abbbbbbbbb | abbbbbbbbb  (a=absent; b=-)
+  11d1d88300#12 db depth_control: abbbbbbbbb | abbbbbbbbb | abbbbbbbbb | abbbbbbbbb  (a=absent; b=007007e6)
+  11d1d88300#12 db htile: abbbbbbbbb | abbbbbbbbb | accccccccc | accbbddddd  (a=absent; b=112ab20000; c=112b3c0000; d=112a7c0000)
+  11d1d88300#12 db render_control: abbbbbbbbb | abbbbbbbbb | abbbbbbbbb | abbbbbbbbb  (a=absent; b=00000000)
+  11d1d88300#12 db render_override: abbbbbbbbb | abbbbbbbbb | abbbbbbbbb | abbbbbbbbb  (a=absent; b=00000000)
+  11d1d88300#12 db shader_control: abbbbbbbbb | abbbbbbbbb | abbbbbbbbb | abbbbbbbbb  (a=absent; b=00000050)
+  11d1d88300#12 db stencil_info: abbbbbbbbb | abbbbbbbbb | abbbbbbbbb | abbbbbbbbb  (a=absent; b=20000181)
+  11d1d88300#12 db view: abbbbbbbbb | abbbbbbbbb | abbbbbbbbb | abbbbbbbbb  (a=absent; b=00000000)
+  11d1d88300#12 db z_info: abbbbbbbbb | abbbbbbbbb | abbbbbbbbb | abbbbbbbbb  (a=absent; b=a0000183)
+  11d1d88300#12 db z_read: abbbbbbbbb | abbbbbbbbb | abbbbbbbbb | abbbbbbbbb  (a=absent; b=1129ec0000)
+  11d1d88300#12 db z_write: abbbbbbbbb | abbbbbbbbb | abbbbbbbbb | abbbbbbbbb  (a=absent; b=1129ec0000)
+  11d1d88300#12 db2: abbbbbbbbb | abbbbbbbbb | abbbbbbbbb | abbbbbbbbb  (a=absent; b=00040000 00000000)
+  11d1d88300#12 size: abbbbbbbbb | abbbbbbbbb | accccccccc | accbbddddd  (a=absent; b=2304x1296; c=3072x1728; d=2048x1152)
+  11d1d88300#2 db htile: aaaaaaaaaa | aaaaaaaaaa | bbbbbbbbbb | bbbaaccccc  (a=112ab20000; b=112b3c0000; c=112a7c0000)
+  11d1d88300#2 size: aaaaaaaaaa | aaaaaaaaaa | bbbbbbbbbb | bbbaaccccc  (a=2304x1296; b=3072x1728; c=2048x1152)
+  11d1d88300#3 db htile: aaaaaaaaaa | aaaaaaaaaa | bbbbbbbbbb | bbbaaccccc  (a=112ab20000; b=112b3c0000; c=112a7c0000)
+# user-data and table dwords that vary between these frames with at most 4 values (letters only)
+  11d090d900#0 table gs0 dword 28: aaaaaaabba | aaaaabbaaa | aaaaaaaaaa | abaaaaaaaa
+  11d090d900#0 table gs0 dword 30: aaabaaacca | abaaaccaab | aaaaaaaaaa | acaaaadaab
+  11d090d900#0 table gs0 dword 31: aaabaaacca | abaaaccaab | aaaaaaaaaa | acaaaaaaab
+  11d090d900#0 table gs0 dword 32: abaaabaccb | aabbaccaaa | baabaaaaaa | abaabaaaaa
+  11d090d900#0 table gs0 dword 36: aaaaabacca | aabbaccaaa | baabaaaaaa | aaaaaacaaa
+  11d090d900#0 table gs0 dword 40: aaaaabaaaa | aabbaaaaaa | baabaaaaba | aaaaaacaaa
+  11d090d900#0 table gs0 dword 44: abbbababbb | bbbbabbbbb | bbababbacb | bbabbbcabb
+  11d090d900#0 table gs0 dword 48: abcbababbb | bbbbabbbcb | bcabacbacc | bbacbccbcb
+  11d090d900#0 table gs0 dword 52: abcbcbabbb | bbbbabbbcb | bccbccacbc | abccbcbbcb
+  11d090d900#0 table gs0 dword 56: aabacaaaaa | caaaaaacba | abcacbbcab | bacbabaaba
+  11d090d900#0 table gs0 dword 60: aabaaaaaaa | baaaaaabba | abaaabbaab | baababaaba
+  11d090d900#0 table gs0 dword 62: aabaaaaaaa | baaaaaabba | abaaabbaab | baababaaba
+  11d090d900#0 table gs12 dword 16: aaaaaaabba | aaaaabbaaa | aaaaaaaaaa | abaaaaaaaa
+  11d090d900#0 table gs12 dword 18: aaabaaacca | abaaaccaab | aaaaaaaaaa | acaaaadaab
+  11d090d900#0 table gs12 dword 19: aaabaaacca | abaaaccaab | aaaaaaaaaa | acaaaaaaab
+  11d090d900#0 table gs12 dword 20: abaaabaccb | aabbaccaaa | baabaaaaaa | abaabaaaaa
+  11d090d900#0 table gs12 dword 24: aaaaabacca | aabbaccaaa | baabaaaaaa | aaaaaacaaa
+  11d090d900#0 table gs12 dword 28: aaaaabaaaa | aabbaaaaaa | baabaaaaba | aaaaaacaaa
+  11d090d900#0 table gs12 dword 32: abbbababbb | bbbbabbbbb | bbababbacb | bbabbbcabb
+  11d090d900#0 table gs12 dword 36: abcbababbb | bbbbabbbcb | bcabacbacc | bbacbccbcb
+  11d090d900#0 table gs12 dword 40: abcbcbabbb | bbbbabbbcb | bccbccacbc | abccbcbbcb
+  11d090d900#0 table gs12 dword 44: aabacaaaaa | caaaaaacba | abcacbbcab | bacbabaaba
+  11d090d900#0 table gs12 dword 48: aabaaaaaaa | baaaaaabba | abaaabbaab | baababaaba
+  11d090d900#0 table gs12 dword 50: aabaaaaaaa | baaaaaabba | abaaabbaab | baababaaba
+  11d090d900#0 table gs12 dword 52: aabaaaaaaa | baaaaaabba | abaaacbaab | baababaaba
+  11d090d900#0 table gs12 dword 54: aabaaaaaaa | baaaaaabba | acaaadcaac | baababaaba
+  11d090d900#0 table gs12 dword 56: aabaaaaaaa | baaaaaabba | acaaaacaac | baacacaaca
+  11d090d900#0 table gs12 dword 60: aabaaaaaaa | caaaaaabca | aaaaaaaaaa | baaaaaaaaa
+  11d090d900#0 table gs8 dword 8: aaaaaaaaaa | aaaaaaaaaa | bbbbbbbbbb | bbbaaccccc
+  11d090d900#0 table gs8 dword 9: aaaaaaaaaa | aaaaaaaaaa | bbbbbbbbbb | bbbaaccccc
+  11d090d900#0 table gs8 dword 20: aaaaaaaaaa | aaaaaaaaaa | bbbbbbbbbb | bbbaaccccc
+  11d090d900#0 table gs8 dword 21: aaaaaaaaaa | aaaaaaaaaa | bbbbbbbbbb | bbbaaccccc
+  11d090d900#0 table gs8 dword 22: aaaaaaaaaa | aaaaaaaaaa | bbbbbbbbbb | bbbaaccccc
+  11d090d900#0 table gs8 dword 23: aaaaaaaaaa | aaaaaaaaaa | bbbbbbbbbb | bbbaaccccc
+  11d090d900#0 table ps16 dword 28: aaaaaaabba | aaaaabbaaa | aaaaaaaaaa | abaaaaaaaa
+  11d090d900#0 table ps16 dword 30: aaabaaacca | abaaaccaab | aaaaaaaaaa | acaaaadaab
+  11d090d900#0 table ps16 dword 31: aaabaaacca | abaaaccaab | aaaaaaaaaa | acaaaaaaab
+  11d090d900#0 table ps16 dword 32: abaaabaccb | aabbaccaaa | baabaaaaaa | abaabaaaaa
+  11d090d900#0 table ps16 dword 36: aaaaabacca | aabbaccaaa | baabaaaaaa | aaaaaacaaa
+  11d090d900#0 table ps16 dword 40: aaaaabaaaa | aabbaaaaaa | baabaaaaba | aaaaaacaaa
+  11d090d900#0 table ps16 dword 44: abbbababbb | bbbbabbbbb | bbababbacb | bbabbbcabb
+  11d090d900#0 table ps16 dword 48: abcbababbb | bbbbabbbcb | bcabacbacc | bbacbccbcb
+  11d090d900#0 table ps16 dword 52: abcbcbabbb | bbbbabbbcb | bccbccacbc | abccbcbbcb
+  11d090d900#0 table ps16 dword 56: aabacaaaaa | caaaaaacba | abcacbbcab | bacbabaaba
+  11d090d900#0 table ps16 dword 60: aabaaaaaaa | baaaaaabba | abaaabbaab | baababaaba
+  11d090d900#0 table ps16 dword 62: aabaaaaaaa | baaaaaabba | abaaabbaab | baababaaba
+  11d090d900#0 table ps24 dword 8: aaaaaaaaaa | aaaaaaaaaa | bbbbbbbbbb | bbbaaccccc
+  11d090d900#0 table ps24 dword 9: aaaaaaaaaa | aaaaaaaaaa | bbbbbbbbbb | bbbaaccccc
+  11d090d900#0 table ps24 dword 20: aaaaaaaaaa | aaaaaaaaaa | bbbbbbbbbb | bbbaaccccc
+  11d090d900#0 table ps24 dword 21: aaaaaaaaaa | aaaaaaaaaa | bbbbbbbbbb | bbbaaccccc
+  11d090d900#0 table ps24 dword 22: aaaaaaaaaa | aaaaaaaaaa | bbbbbbbbbb | bbbaaccccc
+  11d090d900#0 table ps24 dword 23: aaaaaaaaaa | aaaaaaaaaa | bbbbbbbbbb | bbbaaccccc
+  11d090d900#1 table gs0 dword 12: aaaaaaabba | aaaaabbaaa | aaaaaaaaaa | abaaaaaaaa
+  11d090d900#1 table gs0 dword 14: aaabaaacca | abaaaccaab | aaaaaaaaaa | acaaaadaab
+  11d090d900#1 table gs0 dword 15: aaabaaacca | abaaaccaab | aaaaaaaaaa | acaaaaaaab
+  11d090d900#1 table gs0 dword 16: abaaabaccb | aabbaccaaa | baabaaaaaa | abaabaaaaa
+  11d090d900#1 table gs0 dword 20: aaaaabacca | aabbaccaaa | baabaaaaaa | aaaaaacaaa
+  11d090d900#1 table gs0 dword 24: aaaaabaaaa | aabbaaaaaa | baabaaaaba | aaaaaacaaa
+  11d090d900#1 table gs0 dword 28: abbbababbb | bbbbabbbbb | bbababbacb | bbabbbcabb
+  11d090d900#1 table gs0 dword 32: abcbababbb | bbbbabbbcb | bcabacbacc | bbacbccbcb
+# X frames 2, Y frames 8 (whole frames only)

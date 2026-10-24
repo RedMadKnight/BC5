@@ -1,0 +1,115 @@
+# /home/kjaniszewski/bc5-data/priv/exp0283/W283b: 108 reads (47 clear depth reads with holes); cell mask from 26 patched shots, 0.235 of the lake window
+  family X: 28 clear reads (b02.z1 b02.z3 b02.z4 b03.z0 b03.z2 b03.z3 b03.z5 b03.z7 b04.z2 b04.z7 b05.z5 b06.z0 b06.z1 b06.z4 b07.z3 b07.z4 b07.z5 b08.z0 b08.z1 b08.z2 b08.z3 b08.z4 b08.z5 b08.z7 b09.z2 b09.z3 b10.z3 b10.z4), set 0.448 of the window, 0.750 of the cell mask
+  family Y: 1 clear reads (b12.z3), set 0.398 of the window, 0.689 of the cell mask
+  family F3: 1 clear reads (b12.z7), set 0.360 of the window, 0.625 of the cell mask
+  family F4: 12 clear reads (b01.z1 b01.z7 b02.z0 b04.z0 b04.z5 b05.z7 b06.z2 b06.z3 b06.z6 b10.z0 b10.z1 b10.z6), set 0.419 of the window, 0.381 of the cell mask
+  family F5: 5 clear reads (b07.z1 b07.z7 b09.z0 b09.z1 b09.z5), set 0.276 of the window, 0.254 of the cell mask
+  X and Y: 0.3123 of the window in both; X has 0.697 of its pixels in Y, Y 0.785 in X
+  b01.z0  wall 1792873630.8420 +   0.0 ms read 15.4: best 3328 (x1.03) unclear; share 0.318 cells 0.364 inX 0.432 inY 0.430
+  b01.z1  wall 1792873630.8720 +  30.1 ms read 13.4: best 3328 (x5.09); share 0.332 cells 0.290 inX 0.298 inY 0.351
+  b01.z2  wall 1792873630.9020 +  60.1 ms read  6.7: best 3328 (x1.11) unclear; share 0.321 cells 0.613 inX 0.925 inY 0.791
+  b01.z3  wall 1792873630.9321 +  90.1 ms read  7.8: best 2560 (x1.04) unclear; share 0.385 cells 0.362 inX 0.436 inY 0.376
+  b01.z4  wall 1792873630.9620 + 120.1 ms read  5.9: best 3072 (x1.00) unclear; share 0.268 cells 0.300 inX 0.378 inY 0.344
+  b01.z5  wall 1792873630.9920 + 150.1 ms read  7.4: best 3072 (x1.00) unclear; share 0.268 cells 0.300 inX 0.378 inY 0.344
+  b01.z6  wall 1792873631.0220 + 180.1 ms read  5.8: best 3072 (x1.00) unclear; share 0.268 cells 0.300 inX 0.378 inY 0.344
+  b01.z7  wall 1792873631.0652 + 223.2 ms read  5.7: best 3072 (x5.40); share 0.302 cells 0.273 inX 0.235 inY 0.410
+  b01.g   wall 1792873631.1113 + 269.3 ms read  6.4: best 3072 (x16.94); share 0.305 cells 0.278 inX 0.294 inY 0.398
+  b02.z0  wall 1792873631.1890 +   0.0 ms read  8.7: best 2816 (x6.90); share 0.303 cells 0.294 inX 0.290 inY 0.328
+  b02.z1  wall 1792873631.3086 + 119.7 ms read  6.8: best 2560 (x7.28); share 0.331 cells 0.598 inX 1.000 inY 0.768
+  b02.z2  wall 1792873631.4212 + 232.2 ms read  8.4: best 2048 (x1.08) unclear; share 0.372 cells 0.383 inX 0.392 inY 0.355
+  b02.z3  wall 1792873631.5113 + 322.3 ms read  7.0: best 2048 (x4.63); share 0.327 cells 0.620 inX 1.000 inY 0.756
+  b02.z4  wall 1792873631.6527 + 463.7 ms read  8.6: best 2048 (x4.79); share 0.325 cells 0.618 inX 1.000 inY 0.824
+  b02.z5  wall 1792873631.7401 + 551.2 ms read  7.6: best 2304 (x1.00) unclear; share 0.191 cells 0.209 inX 0.416 inY 0.348
+  b02.z6  wall 1792873631.8316 + 642.6 ms read  8.4: best 2048 (x1.05) unclear; share 0.296 cells 0.229 inX 0.329 inY 0.315
+  b02.z7  wall 1792873631.8939 + 704.9 ms read  8.8: best 2304 (x1.02) unclear; share 0.267 cells 0.187 inX 0.251 inY 0.223
+  b02.g   wall 1792873631.9630 + 774.1 ms read  6.9: best 2048 (x12.97); share 0.330 cells 0.296 inX 0.243 inY 0.319
+  b03.z0  wall 1792873641.4858 +   0.0 ms read  6.9: best 3328 (x9.36); share 0.338 cells 0.664 inX 1.000 inY 0.744
+  b03.z1  wall 1792873641.5159 +  30.1 ms read  8.0: best 2560 (x1.03) unclear; share 0.384 cells 0.320 inX 0.464 inY 0.361
+  b03.z2  wall 1792873641.5459 +  60.1 ms read  8.8: best 3328 (x10.22); share 0.379 cells 0.715 inX 1.000 inY 0.747
+  b03.z3  wall 1792873641.5814 +  95.6 ms read  6.9: best 3328 (x10.22); share 0.379 cells 0.715 inX 1.000 inY 0.747
+  b03.z4  wall 1792873641.6059 + 120.1 ms read  8.0: best 2560 (x1.03) unclear; share 0.357 cells 0.338 inX 0.510 inY 0.417
+  b03.z5  wall 1792873641.6446 + 158.8 ms read  8.2: best 3328 (x9.56); share 0.361 cells 0.674 inX 1.000 inY 0.797
+  b03.z6  wall 1792873641.6659 + 180.1 ms read  8.2: best 3072 (x1.00) unclear; share 0.339 cells 0.280 inX 0.433 inY 0.352
+  b03.z7  wall 1792873641.6972 + 211.4 ms read  7.5: best 3072 (x6.22); share 0.363 cells 0.665 inX 1.000 inY 0.700
+  b03.g   wall 1792873641.8715 + 385.7 ms read  8.3: best 2816 (x32.98); share 0.735 cells 0.991 inX 0.609 inY 0.541
+  b04.z0  wall 1792873652.1214 +   0.0 ms read  6.0: best 3328 (x9.16); share 0.323 cells 0.264 inX 0.162 inY 0.319
+  b04.z1  wall 1792873652.1515 +  30.1 ms read  8.7: best 2560 (x1.04) unclear; share 0.194 cells 0.198 inX 0.493 inY 0.448
+  b04.z2  wall 1792873652.1817 +  60.4 ms read  6.7: best 3328 (x9.55); share 0.372 cells 0.710 inX 1.000 inY 0.744
+  b04.z3  wall 1792873652.2357 + 114.3 ms read  6.2: best 2560 (x1.04) unclear; share 0.193 cells 0.213 inX 0.542 inY 0.476
+  b04.z4  wall 1792873652.2515 + 130.2 ms read  7.2: best 2560 (x1.04) unclear; share 0.193 cells 0.213 inX 0.542 inY 0.476
+  b04.z5  wall 1792873652.2714 + 150.1 ms read  6.5: best 3328 (x9.46); share 0.358 cells 0.268 inX 0.198 inY 0.325
+  b04.z6  wall 1792873652.3050 + 183.7 ms read  8.7: best 3072 (x1.01) unclear; share 0.247 cells 0.181 inX 0.354 inY 0.309
+  b04.z7  wall 1792873652.3624 + 241.1 ms read  8.2: best 3072 (x9.42); share 0.375 cells 0.723 inX 1.000 inY 0.748
+  b04.g   wall 1792873652.3806 + 259.3 ms read  8.3: best 3072 (x17.90); share 0.375 cells 0.723 inX 1.000 inY 0.748
+  b05.z0  wall 1792873662.7814 +   0.0 ms read  7.4: best 3328 (x1.02) unclear; share 0.339 cells 0.268 inX 0.161 inY 0.347
+  b05.z1  wall 1792873662.8115 +  30.1 ms read  6.1: best 2048 (x1.36) unclear; share 0.014 cells 0.006 inX 0.381 inY 0.363
+  b05.z2  wall 1792873662.8415 +  60.1 ms read  7.4: best 3328 (x1.13) unclear; share 0.339 cells 0.268 inX 0.161 inY 0.345
+  b05.z3  wall 1792873662.8715 +  90.1 ms read  8.8: best 2048 (x1.37) unclear; share 0.013 cells 0.004 inX 0.314 inY 0.555
+  b05.z4  wall 1792873662.9015 + 120.1 ms read  7.8: best 3328 (x1.02) unclear; share 0.335 cells 0.565 inX 0.919 inY 0.662
+  b05.z5  wall 1792873662.9315 + 150.1 ms read  9.0: best 3328 (x9.57); share 0.354 cells 0.710 inX 1.000 inY 0.739
+  b05.z6  wall 1792873662.9615 + 180.1 ms read  8.8: best 2560 (x1.07) unclear; share 0.178 cells 0.169 inX 0.527 inY 0.449
+  b05.z7  wall 1792873663.0066 + 225.1 ms read  9.3: best 3328 (x9.23); share 0.328 cells 0.265 inX 0.161 inY 0.354
+  b05.g   wall 1792873663.1677 + 386.2 ms read  6.2: best 2048 (x19.23); share 0.333 cells 0.266 inX 0.164 inY 0.351
+  b06.z0  wall 1792873663.3586 +   0.0 ms read  6.2: best 2048 (x6.79); share 0.358 cells 0.706 inX 1.000 inY 0.732
+  b06.z1  wall 1792873663.3886 +  30.1 ms read 14.2: best 2048 (x6.79); share 0.358 cells 0.706 inX 1.000 inY 0.732
+  b06.z2  wall 1792873663.4187 +  60.1 ms read 14.6: best 2048 (x8.52); share 0.332 cells 0.266 inX 0.158 inY 0.332
+  b06.z3  wall 1792873663.4486 +  90.1 ms read 12.5: best 2048 (x8.52); share 0.332 cells 0.266 inX 0.158 inY 0.332
+  b06.z4  wall 1792873663.4787 + 120.1 ms read 15.1: best 2048 (x5.96); share 0.325 cells 0.671 inX 1.000 inY 0.756
+  b06.z5  wall 1792873663.5087 + 150.1 ms read 15.5: best 2304 (x1.01) unclear; share 0.148 cells 0.156 inX 0.392 inY 0.331
+  b06.z6  wall 1792873663.5386 + 180.1 ms read 14.4: best 2048 (x8.68); share 0.328 cells 0.266 inX 0.162 inY 0.346
+  b06.z7  wall 1792873663.5686 + 210.1 ms read 14.8: best 2560 (x1.01) unclear; share 0.124 cells 0.141 inX 0.480 inY 0.464
+  b06.g   wall 1792873663.5835 + 224.9 ms read 12.7: best 2048 (x15.91); share 0.375 cells 0.723 inX 1.000 inY 0.746
+  b07.z0  wall 1792873673.4800 +   0.0 ms read  7.0: best 2560 (x1.04) unclear; share 0.033 cells 0.046 inX 0.417 inY 0.437
+  b07.z1  wall 1792873673.5101 +  30.1 ms read  7.3: best 3328 (x9.14); share 0.251 cells 0.213 inX 0.026 inY 0.340
+  b07.z2  wall 1792873673.5401 +  60.1 ms read  7.8: best 2560 (x1.04) unclear; share 0.034 cells 0.048 inX 0.430 inY 0.441
+  b07.z3  wall 1792873673.5701 +  90.1 ms read  6.3: best 3328 (x9.00); share 0.264 cells 0.507 inX 1.000 inY 0.703
+  b07.z4  wall 1792873673.6001 + 120.1 ms read  6.3: best 3328 (x9.00); share 0.264 cells 0.507 inX 1.000 inY 0.703
+  b07.z5  wall 1792873673.6301 + 150.1 ms read  6.3: best 3328 (x9.00); share 0.264 cells 0.507 inX 1.000 inY 0.703
+  b07.z6  wall 1792873673.6803 + 200.3 ms read  8.4: best 2560 (x1.03) unclear; share 0.034 cells 0.048 inX 0.429 inY 0.438
+  b07.z7  wall 1792873673.7194 + 239.4 ms read  7.5: best 3328 (x8.98); share 0.251 cells 0.213 inX 0.026 inY 0.339
+  b07.g   wall 1792873673.7364 + 256.4 ms read  7.4: best 3328 (x18.55); share 0.251 cells 0.213 inX 0.026 inY 0.339
+  b08.z0  wall 1792873673.7914 +   0.0 ms read  9.1: best 3072 (x9.62); share 0.264 cells 0.507 inX 1.000 inY 0.702
+  b08.z1  wall 1792873673.8214 +  30.1 ms read  6.8: best 3072 (x9.62); share 0.264 cells 0.507 inX 1.000 inY 0.702
+  b08.z2  wall 1792873673.8557 +  64.3 ms read  6.7: best 3072 (x9.62); share 0.264 cells 0.507 inX 1.000 inY 0.702
+  b08.z3  wall 1792873673.8943 + 103.0 ms read  9.1: best 3072 (x9.11); share 0.264 cells 0.507 inX 1.000 inY 0.705
+  b08.z4  wall 1792873673.9323 + 141.0 ms read  7.9: best 3072 (x9.11); share 0.264 cells 0.507 inX 1.000 inY 0.705
+  b08.z5  wall 1792873673.9673 + 176.0 ms read  7.9: best 3072 (x9.11); share 0.264 cells 0.507 inX 1.000 inY 0.705
+  b08.z6  wall 1792873674.0043 + 213.0 ms read  8.0: best 2304 (x1.04) unclear; share 0.026 cells 0.032 inX 0.367 inY 0.377
+  b08.z7  wall 1792873674.0397 + 248.3 ms read  8.2: best 3072 (x8.49); share 0.264 cells 0.506 inX 1.000 inY 0.706
+  b08.g   wall 1792873674.0867 + 295.4 ms read  6.7: best 3072 (x16.41); share 0.264 cells 0.506 inX 1.000 inY 0.706
+  b09.z0  wall 1792873684.4372 +   0.0 ms read  6.1: best 3072 (x8.04); share 0.259 cells 0.247 inX 0.048 inY 0.341
+  b09.z1  wall 1792873684.4672 +  30.1 ms read  6.4: best 3072 (x8.04); share 0.259 cells 0.247 inX 0.048 inY 0.341
+  b09.z2  wall 1792873684.4972 +  60.1 ms read  8.0: best 3072 (x9.40); share 0.297 cells 0.643 inX 1.000 inY 0.736
+  b09.z3  wall 1792873684.5272 +  90.1 ms read  6.5: best 3072 (x9.40); share 0.297 cells 0.643 inX 1.000 inY 0.736
+  b09.z4  wall 1792873684.5572 + 120.1 ms read  7.1: best 2560 (x1.01) unclear; share 0.169 cells 0.151 inX 0.333 inY 0.345
+  b09.z5  wall 1792873684.5872 + 150.1 ms read  6.1: best 2048 (x10.29); share 0.268 cells 0.249 inX 0.047 inY 0.335
+  b09.z6  wall 1792873684.6172 + 180.1 ms read  7.4: best 2560 (x1.01) unclear; share 0.126 cells 0.129 inX 0.480 inY 0.459
+  b09.z7  wall 1792873684.6472 + 210.1 ms read  6.3: best 2304 (x1.03) unclear; share 0.104 cells 0.021 inX 0.271 inY 0.091
+  b09.g   wall 1792873684.6806 + 243.5 ms read  6.7: best 2048 (x17.42); share 0.299 cells 0.643 inX 0.998 inY 0.740
+  b10.z0  wall 1792873695.2180 +   0.0 ms read  6.3: best 3328 (x9.51); share 0.351 cells 0.267 inX 0.194 inY 0.324
+  b10.z1  wall 1792873695.2481 +  30.1 ms read  6.4: best 3328 (x9.51); share 0.351 cells 0.267 inX 0.194 inY 0.324
+  b10.z2  wall 1792873695.2781 +  60.1 ms read  7.7: best 2560 (x1.03) unclear; share 0.236 cells 0.212 inX 0.439 inY 0.372
+  b10.z3  wall 1792873695.3081 +  90.1 ms read  6.4: best 3328 (x9.51); share 0.361 cells 0.718 inX 1.000 inY 0.768
+  b10.z4  wall 1792873695.3381 + 120.1 ms read  6.4: best 3328 (x9.51); share 0.361 cells 0.718 inX 1.000 inY 0.768
+  b10.z5  wall 1792873695.3681 + 150.1 ms read  7.5: best 3328 (x1.14) unclear; share 0.355 cells 0.268 inX 0.192 inY 0.321
+  b10.z6  wall 1792873695.4050 + 187.0 ms read  6.3: best 3328 (x9.91); share 0.355 cells 0.268 inX 0.192 inY 0.321
+  b10.z7  wall 1792873695.4281 + 210.1 ms read  7.9: best 2560 (x1.04) unclear; share 0.217 cells 0.188 inX 0.463 inY 0.377
+  b10.g   wall 1792873695.4636 + 245.6 ms read  6.3: best 3328 (x21.01); share 0.356 cells 0.268 inX 0.192 inY 0.319
+  b11.z0  wall 1792873706.0740 +   0.0 ms read  5.9: best 2048 (x1.36) unclear; share 0.200 cells 0.172 inX 0.420 inY 0.449
+  b11.z1  wall 1792873706.1040 +  30.1 ms read  5.8: best 2048 (x1.36) unclear; share 0.200 cells 0.172 inX 0.420 inY 0.449
+  b11.z2  wall 1792873706.1340 +  60.1 ms read  6.8: best 3328 (x1.02) unclear; share 0.392 cells 0.626 inX 0.728 inY 0.597
+  b11.z3  wall 1792873706.1640 +  90.1 ms read  5.8: best 2048 (x1.44) unclear; share 0.266 cells 0.183 inX 0.409 inY 0.364
+  b11.z4  wall 1792873706.1940 + 120.1 ms read  5.7: best 2048 (x1.44) unclear; share 0.266 cells 0.183 inX 0.409 inY 0.364
+  b11.z5  wall 1792873706.2240 + 150.1 ms read  6.0: best 2048 (x1.44) unclear; share 0.266 cells 0.183 inX 0.409 inY 0.364
+  b11.z6  wall 1792873706.2607 + 186.7 ms read  6.2: best 2048 (x1.44) unclear; share 0.266 cells 0.183 inX 0.409 inY 0.364
+  b11.z7  wall 1792873706.3014 + 227.5 ms read  6.2: best 2560 (x1.03) unclear; share 0.387 cells 0.285 inX 0.449 inY 0.346
+  b11.g   wall 1792873706.3454 + 271.4 ms read  6.5: best 3328 (x14.96); share 0.352 cells 0.639 inX 0.784 inY 0.622
+  b12.z0  wall 1792873717.2034 +   0.0 ms read  6.2: best 2048 (x1.07) unclear; share 0.370 cells 0.645 inX 0.767 inY 0.631
+  b12.z1  wall 1792873717.2335 +  30.1 ms read  6.2: best 2048 (x1.07) unclear; share 0.370 cells 0.645 inX 0.767 inY 0.631
+  b12.z2  wall 1792873717.2635 +  60.1 ms read  6.1: best 2048 (x1.07) unclear; share 0.370 cells 0.645 inX 0.767 inY 0.631
+  b12.z3  wall 1792873717.2935 +  90.1 ms read  7.7: best 2048 (x3.55); share 0.398 cells 0.689 inX 0.785 inY 1.000
+  b12.z4  wall 1792873717.3235 + 120.1 ms read  6.2: best 2048 (x1.02) unclear; share 0.398 cells 0.689 inX 0.785 inY 1.000
+  b12.z5  wall 1792873717.3535 + 150.1 ms read  6.2: best 2048 (x1.02) unclear; share 0.398 cells 0.689 inX 0.785 inY 1.000
+  b12.z6  wall 1792873717.3835 + 180.1 ms read  6.5: best 2560 (x1.01) unclear; share 0.138 cells 0.175 inX 0.491 inY 0.449
+  b12.z7  wall 1792873717.4135 + 210.1 ms read  8.3: best 2048 (x3.52); share 0.360 cells 0.625 inX 0.738 inY 0.593
+  b12.g   wall 1792873717.4272 + 223.8 ms read  6.3: best 2048 (x16.15); share 0.360 cells 0.625 inX 0.738 inY 0.593

@@ -1,0 +1,22 @@
+# raw/W283b.xy.txt: L = 60 ms; windows w51 w71 w133 w170 w190 w210 w250
+  w51: 0:a:3328:X 1:a:3328:m 2:a:3072:YYY 3:a:3072:. 4:a:2816:Y 5:b:2816:. 6:a:2560:X 7:a:2560:. 8:a:2304:Y 9:b:2304:?
+  w71: 0:a:3328:. 1:a:3328:XXX 2:a:3072:YX 3:a:3072:. 4:a:2816:. 5:a:2816:. 6:a:2560:. 7:a:2560:. 8:b:2304:. 9:b:2304:.
+  w133: 0:a:3328:Y 1:a:3328:XX 2:a:3328:XY 3:a:2048:. 4:b:2048:. 5:a:2048:. 6:a:2048:. 7:b:2048:XX 8:a:2048:YY 9:a:2048:XYYY
+  w170: 0:a:3328:X 1:a:3328:XXXY 2:a:3072:XX 3:a:3072:XX 4:a:3072:XXXX 5:a:3072:. 6:a:3072:. 7:a:3072:. 8:b:3072:. 9:b:3072:.
+  w190: 0:a:3072:X 1:b:2048:0Y 2:a:2048:YX 3:b:2048:. 4:a:2048:. 5:a:2048:. 6:b:2048:. 7:a:2048:. 8:a:2048:. 9:a:2048:.
+  w210: 0:a:3328:X 1:a:3328:XYY 2:a:3328:Y 3:a:2048:. 4:b:2048:. 5:a:2048:. 6:b:2048:. 7:a:2048:. 8:a:2048:. 9:b:2048:.
+  w250: 0:a:2048:XX 1:a:2048:XXX 2:a:2048:. 3:a:2048:. 4:b:2048:. 5:a:2048:. 6:a:2048:. 7:b:2048:. 8:a:2048:. 9:a:2048:.
+# runs of one state over consecutive frames (frames with X or Y reads only; a frame with both counts as a switch)
+  w51: 0X 2Y 4Y 6X 8Y
+  w71: 1X 2XY
+  w133: 0Y 1X 2XY 7X 8Y 9XY
+  w170: 0X 1XY 2X 3X 4X
+  w190: 0X 1Y 2XY
+  w210: 0X 1XY 2Y
+  w250: 0X 1X
+  consecutive labelled frames, by the number of frames between them: same state {1: 3, 2: 1}; switched {1: 3, 2: 3}
+# read class against the frame's argument slot (a/b), and against the previous frame's slot
+  X: this frame a 31 b 2 | previous frame a 25 b 2
+  Y: this frame a 18 b 1 | previous frame a 15 b 3
+# listed values against 13 X frames and 6 Y frames
+  100 values listed; 0 separate X from Y frames

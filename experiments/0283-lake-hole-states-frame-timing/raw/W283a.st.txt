@@ -1,0 +1,16 @@
+# raw/W283a.xy.txt: L = 45 ms; windows w157 w177 w197 w230
+  w157: 0:a:2304:???X 1:b:2304:X 2:a:2304:. 3:b:2304:. 4:b:2304:. 5:b:2304:. 6:a:2304:. 7:b:2304:. 8:b:2304:. 9:b:2304:.
+  w177: 0:a:2304:? 1:b:2304:X 2:b:2304:YYYYY 3:b:2304:. 4:a:2304:. 5:b:2304:. 6:b:2304:. 7:a:2304:. 8:a:2304:. 9:b:2304:.
+  w197: 0:a:3072:XXXXX 1:a:3072:. 2:b:3072:. 3:b:3072:. 4:b:3072:. 5:a:3072:. 6:a:3072:. 7:b:3072:. 8:a:3072:. 9:a:3072:.
+  w230: 0:a:3072:X 1:a:3072:Y 2:b:3072:Y 3:a:2304:Y 4:b:2304:Y 5:a:2048:. 6:a:2048:Y 7:b:2048:Y 8:a:2048:Y 9:b:2048:YX
+# runs of one state over consecutive frames (frames with X or Y reads only; a frame with both counts as a switch)
+  w157: 0X 1X
+  w177: 1X 2Y
+  w197: 0X
+  w230: 0X 1Y 2Y 3Y 4Y 6Y 7Y 8Y 9XY
+  consecutive labelled frames, by the number of frames between them: same state {1: 6, 2: 1}; switched {1: 2}
+# read class against the frame's argument slot (a/b), and against the previous frame's slot
+  X: this frame a 7 b 3 | previous frame a 3 b 0
+  Y: this frame a 4 b 9 | previous frame a 6 b 7
+# listed values against 4 X frames and 8 Y frames
+  100 values listed; 0 separate X from Y frames
