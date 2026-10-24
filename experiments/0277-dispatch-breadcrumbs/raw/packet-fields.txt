@@ -1,0 +1,11 @@
+mesa 0866ae7 2026-09-30 00:40:26 +0000
+98:#define PKT3_COPY_DATA                             0x40
+99:#define   COPY_DATA_SRC_SEL(x)                        ((x)&0xf)
+101:#define   COPY_DATA_SRC_MEM                           1 /* only valid as source */
+107:#define   COPY_DATA_DST_SEL(x)                        (((unsigned)(x)&0xf) << 8)
+112:#define   COPY_DATA_DST_MEM                           5
+113:#define   COPY_DATA_COUNT_SEL                         (1 << 16)
+114:#define   COPY_DATA_WR_CONFIRM                        (1 << 20)
+165:#define     EOP_DATA_SEL_VALUE_32BIT                  1
+176:#define PKT3_RELEASE_MEM                           0x49 /* GFX9+ [any ring] or GFX8 [compute ring only] */
+udmabuf size_limit_mb 1024
