@@ -1,0 +1,46 @@
+# /home/kjaniszewski/bc5-data/captures/play-20261024-2210/gc/direct.log: 190 frames (19 partial first frames), median 95 writer draws, frame interval median 44.0 ms
+# L = 45 ms given
+# labelled frames: X 5 (3 partial), Y 8 (0 partial); frames with both: 1
+== offset -1: the values of frame j + -1 against frame j's label: 2 X and 8 Y frames
+   too few frames of a state
+== offset +0: the values of frame j + 0 against frame j's label: 5 X and 8 Y frames
+   75912 keys (scalars and table/user-data dwords) compared, 11260 vary among these frames; 31 separate the states; 0 near separators
+   SEP 11d1d88300@-2 table gs0 dword 27 | X: aaaaa | Y: bccccccd
+   SEP 11d1d88300@-2 table gs12 dword 3 | X: aaaaa | Y: bccccccd
+   SEP 11d1d88300@-2 table ps16 dword 27 | X: aaaaa | Y: bccccccd
+   SEP 11d1dd6400@-3 table gs12 dword 31 | X: aaaaa | Y: bccccccd
+   SEP 11d29ea100@-3 table gs0 dword 31 | X: aaaab | Y: cdeeeeee
+   SEP 11d29ea100@-3 table gs12 dword 27 | X: aaaab | Y: cdeeeeee
+   SEP 11d29ea100@-3 table ps0 dword 31 | X: aaaab | Y: cdeeeeee
+   SEP 11d29ea100@-4 table gs0 dword 39 | X: aaaab | Y: cdeeeeee
+   SEP 11d29ea100@-4 table gs0 dword 7 | X: aaabc | Y: ddddddee
+   SEP 11d29ea100@-4 table gs12 dword 3 | X: aaabc | Y: ddddddee
+   SEP 11d29ea100@-4 table gs12 dword 35 | X: aaaab | Y: cdeeeeee
+   SEP 11d29ea100@-4 table ps0 dword 39 | X: aaaab | Y: cdeeeeee
+   SEP 11d29ea100@-4 table ps0 dword 7 | X: aaabc | Y: ddddddee
+   SEP 11d29ea100@-5 table gs0 dword 15 | X: aaabc | Y: ddddddee
+   SEP 11d29ea100@-5 table gs0 dword 47 | X: aaaab | Y: cdeeeeee
+   SEP 11d29ea100@-5 table gs12 dword 11 | X: aaabc | Y: ddddddee
+   SEP 11d29ea100@-5 table gs12 dword 43 | X: aaaab | Y: cdeeeeee
+   SEP 11d29ea100@-5 table ps0 dword 15 | X: aaabc | Y: ddddddee
+   SEP 11d29ea100@-5 table ps0 dword 47 | X: aaaab | Y: cdeeeeee
+   SEP 11d29ea100@-6 table gs0 dword 27 | X: aaabc | Y: ddddddde
+   SEP 11d29ea100@-6 table gs0 dword 55 | X: aaabc | Y: ddddddee
+   SEP 11d29ea100@-6 table gs12 dword 3 | X: aaabc | Y: ddddddde
+   SEP 11d29ea100@-6 table gs12 dword 31 | X: aaabc | Y: ddddddee
+   SEP 11d29ea100@-6 table gs12 dword 63 | X: aaaab | Y: cdeeeeee
+   SEP 11d29ea100@-6 table ps0 dword 27 | X: aaabc | Y: ddddddde
+   SEP 11d29ea100@-6 table ps0 dword 55 | X: aaabc | Y: ddddddee
+   SEP 11d29ea100@-7 table gs0 dword 55 | X: aaabc | Y: ddddddde
+   SEP 11d29ea100@-7 table gs12 dword 31 | X: aaabc | Y: ddddddde
+   SEP 11d29ea100@-7 table gs12 dword 59 | X: aaabc | Y: ddddddee
+   SEP 11d29ea100@-7 table ps0 dword 55 | X: aaabc | Y: ddddddde
+   SEP 11d29ea100@-8 table gs12 dword 59 | X: aaabc | Y: ddddddde
+== offset +1: the values of frame j + 1 against frame j's label: 5 X and 8 Y frames
+   75976 keys (scalars and table/user-data dwords) compared, 11247 vary among these frames; 6 separate the states; 0 near separators
+   SEP 11d373f600@-17 table ps0 dword 11 | X: aaa | Y: bbc
+   SEP 11d373f600@-18 table gs0 dword 7 | X: aaa | Y: bbc
+   SEP 11d373f600@-18 table gs12 dword 3 | X: aaa | Y: bbc
+   SEP 11d373f600@-18 table ps0 dword 11 | X: aaa | Y: bbc
+   SEP 11d373f600@-19 table gs0 dword 11 | X: aaa | Y: bbc
+   SEP 11d373f600@-19 table ps0 dword 11 | X: aaa | Y: bbc

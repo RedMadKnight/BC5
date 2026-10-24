@@ -1,0 +1,77 @@
+# /home/kjaniszewski/bc5-data/captures/play-20261024-2224/gc/direct.log: 190 frames (19 partial first frames), median 69 writer draws, frame interval median 94.0 ms
+# L = 60 ms given
+# labelled frames: X 15 (6 partial), Y 6 (1 partial); frames with both: 8
+== offset -1: the values of frame j + -1 against frame j's label: 9 X and 5 Y frames
+   56025 keys (scalars and table/user-data dwords) compared, 7205 vary among these frames; 180 separate the states; 28 near separators
+   SEP 11d29c4500@-2 table ps20 dword 10 | X: aaaaa | Y: bbbbc
+   SEP 11d29c4500@-2 table ps20 dword 11 | X: aaaaa | Y: bbbbc
+   SEP 11d29c4500@-2 table ps20 dword 14 | X: aaaaa | Y: bbbbc
+   SEP 11d29c4500@-2 table ps20 dword 15 | X: aaaaa | Y: bbbbb
+   SEP 11d29c4500@-2 table ps20 dword 16 | X: aaaaa | Y: bbbbc
+   SEP 11d29c4500@-2 table ps20 dword 17 | X: aaaaa | Y: bbbbc
+   SEP 11d29c4500@-2 table ps20 dword 18 | X: aaaaa | Y: bbbbc
+   SEP 11d29c4500@-2 table ps20 dword 2 | X: aaaab | Y: cccde
+   SEP 11d29c4500@-2 table ps20 dword 20 | X: aaaab | Y: ccccd
+   SEP 11d29c4500@-2 table ps20 dword 21 | X: aaaab | Y: ccccd
+   SEP 11d29c4500@-2 table ps20 dword 22 | X: aaaab | Y: ccccd
+   SEP 11d29c4500@-2 table ps20 dword 23 | X: aaaab | Y: ccccd
+   SEP 11d29c4500@-2 table ps20 dword 24 | X: aaaab | Y: cccde
+   SEP 11d29c4500@-2 table ps20 dword 25 | X: aaaab | Y: cccde
+   SEP 11d29c4500@-2 table ps20 dword 26 | X: aaaab | Y: cccde
+   SEP 11d29c4500@-2 table ps20 dword 27 | X: aaaab | Y: cccde
+   SEP 11d29c4500@-2 table ps20 dword 28 | X: aaaab | Y: cccde
+   SEP 11d29c4500@-2 table ps20 dword 29 | X: aaaab | Y: cccde
+   SEP 11d29c4500@-2 table ps20 dword 30 | X: aaaab | Y: cccde
+   SEP 11d29c4500@-2 table ps20 dword 32 | X: aaaab | Y: cccde
+   SEP 11d29c4500@-2 table ps20 dword 34 | X: aaaab | Y: cccde
+   SEP 11d29c4500@-2 table ps20 dword 36 | X: aaaab | Y: cccde
+   SEP 11d29c4500@-2 table ps20 dword 37 | X: aaaab | Y: cccde
+   SEP 11d29c4500@-2 table ps20 dword 38 | X: aaaab | Y: cccde
+   SEP 11d29c4500@-2 table ps20 dword 39 | X: aaaab | Y: ccccd
+   SEP 11d29c4500@-2 table ps20 dword 40 | X: aaaab | Y: cccde
+   SEP 11d29c4500@-2 table ps20 dword 42 | X: aaaab | Y: cccde
+   SEP 11d29c4500@-2 table ps20 dword 44 | X: aaaab | Y: cccde
+   SEP 11d29c4500@-2 table ps20 dword 45 | X: aaaab | Y: cccde
+   SEP 11d29c4500@-2 table ps20 dword 46 | X: aaaab | Y: cccde
+   SEP 11d29c4500@-2 table ps20 dword 48 | X: aaaab | Y: cccde
+   SEP 11d29c4500@-2 table ps20 dword 49 | X: aaaab | Y: cccde
+   SEP 11d29c4500@-2 table ps20 dword 50 | X: aaaab | Y: cccde
+   SEP 11d29c4500@-2 table ps20 dword 52 | X: aaaab | Y: cccde
+   SEP 11d29c4500@-2 table ps20 dword 53 | X: aaaab | Y: cccde
+   SEP 11d29c4500@-2 table ps20 dword 54 | X: aaaab | Y: cccde
+   SEP 11d29c4500@-2 table ps20 dword 55 | X: aaaab | Y: cccde
+   SEP 11d29c4500@-2 table ps20 dword 56 | X: aaaab | Y: cccde
+   SEP 11d29c4500@-2 table ps20 dword 58 | X: aaaab | Y: cccde
+   SEP 11d29c4500@-2 table ps20 dword 6 | X: aaaaa | Y: bbbcd
+   NEAR 0.90 11d29c4500@-2 table gs10 dword 58 | X: aaaaa | Y: abccd
+   NEAR 0.90 11d29c4500@-2 table gs8 dword 57 | X: aaaaa | Y: abccd
+   NEAR 0.90 11d29c4500@-2 table ps20 dword 33 | X: aaaab | Y: bbbcd
+   NEAR 0.90 11d29c4500@-2 table ps20 dword 35 | X: aaaab | Y: bbbcd
+   NEAR 0.90 11d29c4500@-2 table ps20 dword 41 | X: aaaab | Y: acccd
+   NEAR 0.90 11d29c4500@-2 table ps20 dword 51 | X: aaaab | Y: bbbcd
+   NEAR 0.90 11d29c4500@-2 table ps20 dword 57 | X: aaaab | Y: bcccd
+   NEAR 0.90 11d29c4500@-2 table ps20 dword 59 | X: aaaaa | Y: abbbc
+   NEAR 0.90 11d29c4500@-3 table gs10 dword 58 | X: aaaaa | Y: abccd
+   NEAR 0.90 11d29c4500@-3 table gs8 dword 57 | X: aaaaa | Y: abccd
+   NEAR 0.90 11d29c4500@-3 table ps20 dword 33 | X: aaaab | Y: bbbcd
+   NEAR 0.90 11d29c4500@-3 table ps20 dword 35 | X: aaaab | Y: bbbcd
+   NEAR 0.90 11d29c4500@-3 table ps20 dword 41 | X: aaaab | Y: acccd
+   NEAR 0.90 11d29c4500@-3 table ps20 dword 51 | X: aaaab | Y: bbbcd
+   NEAR 0.90 11d29c4500@-3 table ps20 dword 57 | X: aaaab | Y: bcccd
+   NEAR 0.90 11d29c4500@-3 table ps20 dword 59 | X: aaaaa | Y: abbbc
+   NEAR 0.90 11d29c4500@-4 table ps20 dword 33 | X: aaaab | Y: bbbcd
+   NEAR 0.90 11d29c4500@-4 table ps20 dword 35 | X: aaaab | Y: bbbcd
+   NEAR 0.90 11d29c4500@-4 table ps20 dword 41 | X: aaaab | Y: acccd
+   NEAR 0.90 11d29c4500@-4 table ps20 dword 51 | X: aaaab | Y: bbbcd
+   NEAR 0.90 11d29c4500@-4 table ps20 dword 57 | X: aaaab | Y: bcccd
+   NEAR 0.90 11d29c4500@-4 table ps20 dword 59 | X: aaaaa | Y: abbbc
+   NEAR 0.90 11d29c4500@-5 table ps20 dword 33 | X: aaaab | Y: bbbcd
+   NEAR 0.90 11d29c4500@-5 table ps20 dword 35 | X: aaaab | Y: bbbcd
+   NEAR 0.90 11d29c4500@-5 table ps20 dword 41 | X: aaaab | Y: acccd
+   NEAR 0.90 11d29c4500@-5 table ps20 dword 51 | X: aaaab | Y: bbbcd
+   NEAR 0.90 11d29c4500@-5 table ps20 dword 57 | X: aaaab | Y: bcccd
+   NEAR 0.90 11d29c4500@-5 table ps20 dword 59 | X: aaaaa | Y: abbbc
+== offset +0: the values of frame j + 0 against frame j's label: 15 X and 6 Y frames
+   56665 keys (scalars and table/user-data dwords) compared, 7217 vary among these frames; 0 separate the states; 0 near separators
+== offset +1: the values of frame j + 1 against frame j's label: 15 X and 6 Y frames
+   56665 keys (scalars and table/user-data dwords) compared, 7248 vary among these frames; 0 separate the states; 0 near separators
