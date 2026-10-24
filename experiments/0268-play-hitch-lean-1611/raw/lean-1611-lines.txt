@@ -1,0 +1,23 @@
+# exp 0268: the lean run's log (play-review-20261024/second-lean-1611.log) without its 1,439 'shared map at 0x0+...: -22' lines (also in exps 0214 and 0242's logs) and its environment lines
+bc5-direct: GDS BO 64 KiB: ok (0)
+bc5-direct: OA BO 16: ok (0)
+bc5-direct: GDS shadow 64 KiB at 0x100004000000: ok (0)
+bc5-direct: GWS BO 64: ok (0)
+bc5-direct: PRT window 0x8000000000+0x1000000000: 0
+bc5 system param 1 -> 1
+bc5-direct: /dev/gc TF ring 0x1120000000 size 0x3fff8 (programmed, BC5_DIRECT_GC_TF_RING=1)
+bc5-direct: /dev/gc HS offchip 0x1ff
+bc5 clock: journal t 0 = monotonic 8169.756 s
+bc5 system param 100 -> 0
+bc5 system param 208 -> 0
+bc5 system param 210 -> 0
+AudioOut: SDL audio driver pipewire
+AudioOut: SDLAudioP0 thread 945161 at nice -15
+AudioOut: SDLAudioP0 thread 945547 at nice -15
+AudioOut: SDLAudioP0 thread 950760 at nice -15
+bc5 system param 2 -> 1
+bc5 system param 3 -> 1
+bc5 ajm: ATRAC9 vibration layout 7 decoded by vgmstream (haptics)
+bc5 tiler scratch: 1024 requests, 3 new buffers (96.0 MiB), pool on, 1021 reused, 2 free
+bc5 tiler scratch: 2048 requests, 3 new buffers (96.0 MiB), pool on, 2045 reused, 2 free
+bc5 tiler scratch: 3072 requests, 3 new buffers (96.0 MiB), pool on, 3069 reused, 2 free

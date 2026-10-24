@@ -1,0 +1,61 @@
+# exp 0268, 2026-10-24 16:29: pactl list short sinks and /proc/asound/cards (read-only)
+55	alsa_output.usb-DisplayLink_ThinkPad_USB_3.0_Pro_Dock_SERIAL-02.analog-stereo	PipeWire	s16le 2 k 48000 Hz	IDLE
+15986	alsa_output.usb-Sony_Interactive_Entertainment_Wireless_Controller-00.analog-stereo	PipeWire	s16le 2 k 32000 Hz	IDLE
+ 0 [Controller     ]: USB-Audio - Wireless Controller
+                      Sony Interactive Entertainment Wireless Controller at usb-0000:00:10.0-2, full 
+ 1 [Generic        ]: HDA-Intel - HD-Audio Generic
+                      HD-Audio Generic at 0xfe880000 irq 50
+ 2 [Dock           ]: USB-Audio - ThinkPad USB 3.0 Pro Dock
+                      DisplayLink ThinkPad USB 3.0 Pro Dock at usb-0000:00:10.0-1.1, super speed
+# system and kernel journal 15:58-16:12: controller, audio-card and session events
+paź 24 15:58:25.289737 bazzite podman[868583]: 2026-10-24 15:58:25.28921006 +0200 CEST m=+25.873315060 container exec_died cb6100ac41bf8c253e2ff96249193e39ede4b059786051f12ef8012216c14459 (image=docke
+paź 24 16:01:48.522386 bazzite systemd[2187]: Started app-BC5\x20emulator@80dd9b34a3b2494d9422f29433011156.service - BC5 emulator.
+paź 24 16:01:49.039415 bazzite ds-inhibit[1104]: INFO: Inhibiting /dev/hidraw2
+paź 24 16:01:56.676094 bazzite ds-inhibit[1104]: INFO: Inhibiting /dev/hidraw2
+paź 24 16:01:58.272468 bazzite ds-inhibit[1104]: INFO: Inhibiting /dev/hidraw2
+paź 24 16:03:07.056581 bazzite kernel: usb 6-2: USB disconnect, device number 3
+paź 24 16:03:07.097693 bazzite ds-inhibit[1104]: INFO: Uninhibiting /dev/hidraw2
+paź 24 16:03:07.126847 bazzite wireplumber[2397]: spa.alsa: 0x5610c6c8dd68: poll fd error/hangup (card removed?), removing poll sources
+paź 24 16:03:07.318658 bazzite ds-inhibit[1104]: INFO: Uninhibiting /dev/hidraw2
+paź 24 16:03:43.251566 bazzite kernel: usb 6-2: new high-speed USB device number 5 using xhci_hcd
+paź 24 16:03:43.380581 bazzite kernel: usb 6-2: New USB device found, idVendor=054c, idProduct=0ce6, bcdDevice= 1.00
+paź 24 16:03:43.382599 bazzite kernel: usb 6-2: New USB device strings: Mfr=1, Product=2, SerialNumber=0
+paź 24 16:03:43.422032 bazzite kernel: usb 6-2: Product: DualSense Wireless Controller
+paź 24 16:03:43.422452 bazzite kernel: usb 6-2: Manufacturer: Sony Interactive Entertainment
+paź 24 16:03:43.466562 bazzite kernel: playstation 0003:054C:0CE6.0005: Registered DualSense controller hw_version=0x00000313 fw_version=0x0110002a
+paź 24 16:03:43.660965 bazzite ds-inhibit[1104]: INFO: Adding /dev/hidraw2 to watchlist
+paź 24 16:03:43.709206 bazzite ds-inhibit[1104]: INFO: Inhibiting /dev/hidraw2
+paź 24 16:03:46.774777 bazzite wireplumber[2397]: spa.alsa: 0x5610c6f29a18: poll fd error/hangup (card removed?), removing poll sources
+paź 24 16:03:46.775564 bazzite kernel: usb 6-2: USB disconnect, device number 5
+paź 24 16:03:46.828749 bazzite ds-inhibit[1104]: INFO: Uninhibiting /dev/hidraw2
+paź 24 16:03:47.021590 bazzite ds-inhibit[1104]: INFO: Uninhibiting /dev/hidraw2
+paź 24 16:03:51.070569 bazzite kernel: usb 6-2: new full-speed USB device number 6 using xhci_hcd
+paź 24 16:03:51.211566 bazzite kernel: usb 6-2: New USB device found, idVendor=054c, idProduct=09cc, bcdDevice= 1.00
+paź 24 16:03:51.229851 bazzite kernel: usb 6-2: New USB device strings: Mfr=1, Product=2, SerialNumber=0
+paź 24 16:03:51.231049 bazzite kernel: usb 6-2: Product: Wireless Controller
+paź 24 16:03:51.231267 bazzite kernel: usb 6-2: Manufacturer: Sony Interactive Entertainment
+paź 24 16:03:51.434801 bazzite kernel: playstation 0003:054C:09CC.0006: Registered DualShock4 controller hw_version=0x00006414 fw_version=0x00007008
+paź 24 16:03:51.622946 bazzite ds-inhibit[1104]: INFO: Adding /dev/hidraw2 to watchlist
+paź 24 16:03:51.665719 bazzite ds-inhibit[1104]: INFO: Uninhibiting /dev/hidraw2
+paź 24 16:03:51.907588 bazzite ds-inhibit[1104]: INFO: Inhibiting /dev/hidraw2
+paź 24 16:05:34.226702 bazzite ds-inhibit[1104]: INFO: Inhibiting /dev/hidraw2
+paź 24 16:05:35.416055 bazzite podman[870709]: 2026-10-24 16:05:35.414199349 +0200 CEST m=+226.755154093 container exec_died cb6100ac41bf8c253e2ff96249193e39ede4b059786051f12ef8012216c14459 (image=doc
+paź 24 16:05:38.603468 bazzite systemd[2187]: Started app-BC5\x20emulator@2dab1018c3944b6c98b66fadd813e866.service - BC5 emulator.
+paź 24 16:05:39.126506 bazzite ds-inhibit[1104]: INFO: Inhibiting /dev/hidraw2
+paź 24 16:05:42.852168 bazzite ds-inhibit[1104]: INFO: Inhibiting /dev/hidraw2
+paź 24 16:05:44.427614 bazzite ds-inhibit[1104]: INFO: Inhibiting /dev/hidraw2
+paź 24 16:08:30.928125 bazzite ds-inhibit[1104]: INFO: Inhibiting /dev/hidraw2
+paź 24 16:08:32.092738 bazzite podman[911570]: 2026-10-24 16:08:32.091170845 +0200 CEST m=+173.328068672 container exec_died cb6100ac41bf8c253e2ff96249193e39ede4b059786051f12ef8012216c14459 (image=doc
+paź 24 16:08:42.676021 bazzite ds-inhibit[1104]: INFO: Uninhibiting /dev/hidraw2
+paź 24 16:08:43.075859 bazzite steam[2940]: [2026-10-24 16:08:43] Shutdown
+paź 24 16:08:43.688009 bazzite systemd[2187]: app-steam@autostart.service: Consumed 4min 32.258s CPU time over 2h 15min 23.538s wall clock time, 4.3G memory peak, 861.8M memory swap peak.
+paź 24 16:08:44.496477 bazzite systemd[2187]: Started app-BC5\x20emulator\x20\x28lean\x29@b8552da44678447aafe957d29f5ef83d.service - BC5 emulator (lean).
+paź 24 16:08:45.177599 bazzite ds-inhibit[1104]: INFO: Uninhibiting /dev/hidraw2
+paź 24 16:08:48.384172 bazzite ds-inhibit[1104]: INFO: Uninhibiting /dev/hidraw2
+paź 24 16:08:49.955251 bazzite ds-inhibit[1104]: INFO: Uninhibiting /dev/hidraw2
+paź 24 16:11:33.255339 bazzite ds-inhibit[1104]: INFO: Uninhibiting /dev/hidraw2
+paź 24 16:11:34.264849 bazzite podman[944661]: 2026-10-24 16:11:34.263743921 +0200 CEST m=+169.569510146 container exec_died cb6100ac41bf8c253e2ff96249193e39ede4b059786051f12ef8012216c14459 (image=doc
+paź 24 16:11:37.425720 bazzite systemd[2187]: Started app-BC5\x20emulator@1ea0583bfb0b482cb9e038d3ab16289c.service - BC5 emulator.
+paź 24 16:11:38.066544 bazzite ds-inhibit[1104]: INFO: Uninhibiting /dev/hidraw2
+paź 24 16:11:40.294853 bazzite ds-inhibit[1104]: INFO: Uninhibiting /dev/hidraw2
+paź 24 16:11:42.902603 bazzite ds-inhibit[1104]: INFO: Uninhibiting /dev/hidraw2
