@@ -102,10 +102,21 @@ the compute ring was not recorded.
   at S6N's 2.8 M dwords/s.
 - Stream the GPU journal (`tail -F direct.log`) to the laptop with the kernel stream. The dumps on the box are lost in
   the reboot; F262's probe lines survived only in a stream.
-- The probe's executed offsets for both buffers then show:
-  - whether the compute buffer stopped at a WAIT_REG_MEM, and on which label, value and reference;
-  - or in a dispatch, and in which program;
-  - and what the graphics buffer was waiting for.
+- But the probe as it stands would not catch a stuck acb (pointed out by the compute session, checked in
+  `timeout_probe`):
+  - its dump (`ib-timeout-*.bin`) is written with `fopen`/`fwrite`/`fclose` and no fsync, so a machine-down loses it,
+    as in F260 and F262;
+  - its journal lines decode only draw packets and the state before them, so for a compute buffer the streamed
+    journal would hold the dump's name and little else.
+- It needs a small diagnostic change, under the same switch:
+  - fsync the dump;
+  - journal, as text, each WAIT_REG_MEM of the timed-out buffer (offset, label, function, reference, mask, the
+    label's value now and whether the host kept it for the GPU) and each dispatch's offset and program.
+
+  With the journal streamed, that shows whether the compute buffer waits, and on what, and what the graphics buffer
+  waits for. Where the CP stopped inside the buffer would still need the hung queue's read pointer: the kernel's
+  devcoredump (TODO(verify): whether gfx10's IP dump has the compute queue's IB read pointer, and whether a user can
+  read it without a new sudoers line).
 - A bisect by switch would need several machine-downs (power cycles) for one comparison; this class came once in
   137 s here and once in 1,155 s in F260.
 - Keep both switches as they are for that run, so that it reproduces S6N.
