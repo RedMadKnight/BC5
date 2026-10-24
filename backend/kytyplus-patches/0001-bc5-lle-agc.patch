@@ -11580,7 +11580,7 @@ index e82b93e..6cf1b61 100644
  
  } // namespace Libs::Audio::Ajm
 diff --git a/src/libs/audio.cpp b/src/libs/audio.cpp
-index fe4b332..fd5b48a 100644
+index fe4b332..ac2f687 100644
 --- a/src/libs/audio.cpp
 +++ b/src/libs/audio.cpp
 @@ -10,16 +10,27 @@
@@ -11619,7 +11619,7 @@ index fe4b332..fd5b48a 100644
  	bool     AudioOutSetVolume(Id handle, uint32_t bitflag, const int* volume);
  	uint32_t AudioOutOutputs(OutputParam* params, uint32_t num, bool blocking = true);
  	bool     AudioOutGetStatus(Id handle, int* type, int* channels_num);
-@@ -107,8 +119,28 @@ private:
+@@ -107,8 +119,32 @@ private:
  
  		SDL_AudioDeviceID audio_device = 0;
  		SDL_AudioSpec     audio_spec   = {};
@@ -11627,6 +11627,10 @@ index fe4b332..fd5b48a 100644
 +		// 2 = the controller's haptic actuators (its channels 3-4). The DualSense is a 4-channel
 +		// USB audio device, and the game's vibration is an audio stream to those actuators.
 +		int pad_route = 0;
++		// BC5 (experiment 0267, after exp 0268): a pad-speaker port on the default sink, because the pad has
++		// no audio device (a DualShock 4), queues without ever holding the title's audio thread, like the
++		// pad-routed ports; exp 0268 saw that wait cost the main mix 0.36 s at t 149-150 s of the 16:05 play.
++		bool pad_nb = false;
 +		// BC5: when the controller's device last had to be reopened (ms), see QueueSdlAudio.
 +		uint64_t pad_retry_ms = 0;
 +		// BC5 (audio pacing, KYTY_BC5_AUDIO_TRACE=1): what the port did since the last trace line.
@@ -11648,7 +11652,7 @@ index fe4b332..fd5b48a 100644
  	struct PortIn {
  		bool     used            = false;
  		uint32_t type            = 0;
-@@ -132,6 +164,7 @@ private:
+@@ -132,6 +168,7 @@ private:
  	static const void*     PrepareOutputBuffer(const PortOut& port, const void* data,
  	                                           std::vector<uint8_t>* buffer);
  	static bool            QueueSdlAudio(PortOut* port, const void* data, bool blocking);
@@ -11656,7 +11660,7 @@ index fe4b332..fd5b48a 100644
  };
  
  static Audio* g_audio = nullptr;
-@@ -157,6 +190,10 @@ bool AudioOutHasDevice(int handle) {
+@@ -157,6 +194,10 @@ bool AudioOutHasDevice(int handle) {
  	return g_audio != nullptr && handle > 0 && g_audio->AudioOutHasDevice(Audio::Id(handle));
  }
  
@@ -11667,7 +11671,7 @@ index fe4b332..fd5b48a 100644
  uint32_t AudioOutOutputs(const OutputParam* params, uint32_t num, bool blocking) {
  	if (g_audio == nullptr || params == nullptr || num == 0) {
  		return 0;
-@@ -224,10 +261,37 @@ SDL_AudioFormat Audio::SdlFormat(Format format) {
+@@ -224,10 +265,37 @@ SDL_AudioFormat Audio::SdlFormat(Format format) {
  bool Audio::OpenSdlDevice(PortOut* port) {
  	EXIT_IF(port == nullptr);
  
@@ -11705,7 +11709,7 @@ index fe4b332..fd5b48a 100644
  
  	SDL_AudioSpec desired {};
  	desired.freq     = static_cast<int>(port->freq);
-@@ -236,20 +300,51 @@ bool Audio::OpenSdlDevice(PortOut* port) {
+@@ -236,20 +304,68 @@ bool Audio::OpenSdlDevice(PortOut* port) {
  	desired.samples  = static_cast<Uint16>(port->samples_num);
  	desired.callback = nullptr;
  
@@ -11718,9 +11722,22 @@ index fe4b332..fd5b48a 100644
 +	port->pad_route      = 0;
 +	// KYTY_BC5_PAD_SPEAKER=main: the pad-speaker ports stay on the default output (the game sends
 +	// some effects to the controller's speaker, as on the console); the haptics still go to the pad.
++	// KYTY_BC5_PAD_SPEAKER=off (experiment 0267): a pad-speaker port with no controller audio device
++	// stays silent instead of playing on the default output (a DualShock 4 has no such device, and
++	// the maintainer heard the pad's effects from the TV after a replug).
 +	static const bool speaker_on_main = [] {
 +		const char* e = std::getenv("KYTY_BC5_PAD_SPEAKER");
 +		return e != nullptr && std::strcmp(e, "main") == 0;
++	}();
++	static const bool speaker_off = [] {
++		const char* e = std::getenv("KYTY_BC5_PAD_SPEAKER");
++		return e != nullptr && std::strcmp(e, "off") == 0;
++	}();
++	// KYTY_BC5_PAD_SPEAKER=main-blocking: the pad-speaker port on the default sink as a blocking port, as
++	// before experiment 0267 (the A/B arm of exp 0268's hold).
++	static const bool speaker_blocking = [] {
++		const char* e = std::getenv("KYTY_BC5_PAD_SPEAKER");
++		return e != nullptr && std::strcmp(e, "main-blocking") == 0;
 +	}();
 +	if (std::getenv("KYTY_BC5_NO_PAD_AUDIO") == nullptr &&
 +	    ((port->type == AUDIO_OUT_PORT_TYPE_PADSPK && !speaker_on_main) || port->type == AUDIO_OUT_PORT_TYPE_VIBRATION)) {
@@ -11733,6 +11750,9 @@ index fe4b332..fd5b48a 100644
 +		if (pad_name != nullptr) {
 +			desired.channels = PAD_STREAM_CHANNELS;
 +			port->pad_route  = port->type == AUDIO_OUT_PORT_TYPE_VIBRATION ? 2 : 1;
++		} else if (port->type == AUDIO_OUT_PORT_TYPE_PADSPK && speaker_off) {
++			LOGF("AudioOut: no controller audio device for the pad speaker port; KYTY_BC5_PAD_SPEAKER=off keeps it silent\n");
++			return false;
 +		} else if (port->type == AUDIO_OUT_PORT_TYPE_VIBRATION) {
 +			LOGF("AudioOut: no controller audio device for the vibration port; it stays silent\n");
 +			return false;
@@ -11753,6 +11773,7 @@ index fe4b332..fd5b48a 100644
  
  	port->audio_spec = obtained;
  	SDL_PauseAudioDevice(port->audio_device, 0);
++	port->pad_nb = port->type == AUDIO_OUT_PORT_TYPE_PADSPK && pad_name == nullptr && !speaker_blocking;
  
 -	LOGF("AudioOut: opened SDL device (%d Hz, %u ch, format 0x%04x)\n", obtained.freq,
 -	     obtained.channels, obtained.format);
@@ -11761,7 +11782,7 @@ index fe4b332..fd5b48a 100644
  	return true;
  }
  
-@@ -326,16 +421,211 @@ const void* Audio::PrepareOutputBuffer(const PortOut& port, const void* data,
+@@ -326,16 +442,211 @@ const void* Audio::PrepareOutputBuffer(const PortOut& port, const void* data,
  	return buffer->data();
  }
  
@@ -11974,7 +11995,7 @@ index fe4b332..fd5b48a 100644
  
  	std::vector<uint8_t> convert_buffer;
  	const void*          queue_data = prepared_data;
-@@ -343,7 +633,7 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -343,7 +654,7 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  
  	SDL_AudioCVT cvt {};
  	const int    cvt_result =
@@ -11983,7 +12004,7 @@ index fe4b332..fd5b48a 100644
  	                      static_cast<int>(port->freq), port->audio_spec.format,
  	                      port->audio_spec.channels, port->audio_spec.freq);
  
-@@ -368,6 +658,46 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -368,6 +679,56 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  		queue_size = static_cast<uint32_t>(cvt.len_cvt);
  	}
  
@@ -12027,10 +12048,20 @@ index fe4b332..fd5b48a 100644
 +		blocking = false;
 +	}
 +
++	// BC5 (experiment 0267, after exp 0268): the pad-speaker port on the default sink: a full queue is
++	// cleared, never waited for, so the title's audio thread (which also writes the main port in lockstep)
++	// is not held by it.
++	if (port->pad_nb) {
++		if (SDL_GetQueuedAudioSize(port->audio_device) > queue_size * 8) {
++			SDL_ClearQueuedAudio(port->audio_device);
++		}
++		blocking = false;
++	}
++
  	if (blocking) {
  		// More aggressive buffer management to prevent audio issues
  		// during heavy GPU load (common in gameplay vs cutscene)
-@@ -378,18 +708,45 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -378,18 +739,45 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  		                   : 2u;
  		const auto min_queued_size = queue_size * std::clamp(buffers, 2u, 8u); // Smaller max
  		const auto wait_start      = LibKernel::KernelGetProcessTime();
@@ -12078,7 +12109,7 @@ index fe4b332..fd5b48a 100644
  	if (SDL_QueueAudio(port->audio_device, queue_data, queue_size) < 0) {
  		LOGF("AudioOut: SDL_QueueAudio failed: %s\n", SDL_GetError());
  		return false;
-@@ -398,7 +755,56 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -398,7 +786,56 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  	return true;
  }
  
@@ -12135,7 +12166,7 @@ index fe4b332..fd5b48a 100644
  	Common::LockGuard lock(m_mutex);
  
  	for (int id = 0; id < OUT_PORTS_MAX; id++) {
-@@ -428,7 +834,7 @@ Audio::Id Audio::AudioOutOpen(int type, uint32_t samples_num, uint32_t freq, For
+@@ -428,7 +865,7 @@ Audio::Id Audio::AudioOutOpen(int type, uint32_t samples_num, uint32_t freq, For
  				port.volume[i] = 32768;
  			}
  
@@ -12144,7 +12175,7 @@ index fe4b332..fd5b48a 100644
  				// KytyPlus diagnostic: OpenSdlDevice() may fail (no host audio device,
  				// unsupported sample rate/format, or SDL init failure). The return is
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
-@@ -478,6 +884,19 @@ bool Audio::AudioOutHasDevice(Id handle) {
+@@ -478,6 +915,19 @@ bool Audio::AudioOutHasDevice(Id handle) {
  	        m_out_ports[handle.GetId()].used && m_out_ports[handle.GetId()].audio_device != 0);
  }
  
@@ -12164,7 +12195,7 @@ index fe4b332..fd5b48a 100644
  bool Audio::AudioOutGetStatus(Id handle, int* type, int* channels_num) {
  	Common::LockGuard lock(m_mutex);
  
-@@ -568,6 +987,45 @@ uint32_t Audio::AudioOutOutputs(OutputParam* params, uint32_t num, bool blocking
+@@ -568,6 +1018,45 @@ uint32_t Audio::AudioOutOutputs(OutputParam* params, uint32_t num, bool blocking
  		m_out_ports[params[i].handle.GetId()].last_output_time = LibKernel::KernelGetProcessTime();
  	}
  
@@ -21567,7 +21598,7 @@ index 0000000..c932da4
 +
 +} // namespace Libs
 diff --git a/src/libs/controller.cpp b/src/libs/controller.cpp
-index 55718eb..a2befc5 100644
+index 55718eb..9688daf 100644
 --- a/src/libs/controller.cpp
 +++ b/src/libs/controller.cpp
 @@ -1,4 +1,9 @@
@@ -21580,14 +21611,16 @@ index 55718eb..a2befc5 100644
  
  #include "common/assert.h"
  #include "common/common.h"
-@@ -11,10 +16,17 @@
+@@ -11,10 +16,18 @@
  #include "libs/errno.h"
  #include "libs/libs.h"
  #include "libs/padData.h"
+-
 +#include "graphics/presentation/window.h" // BC5 (experiment 0166)
- 
++
 +#include <cmath>
 +#include <thread>
++#include <condition_variable>
 +#include <chrono>
 +#include <string>
 +#include <cstdlib>
@@ -21598,7 +21631,7 @@ index 55718eb..a2befc5 100644
  
  namespace Libs::Controller {
  
-@@ -45,8 +57,21 @@ struct ControllerState {
+@@ -45,8 +58,21 @@ struct ControllerState {
  	uint64_t time                                  = 0;
  	uint32_t buttons                               = 0;
  	int      axes[static_cast<int>(Axis::AxisMax)] = {128, 128, 128, 128, 0, 0};
@@ -21620,7 +21653,7 @@ index 55718eb..a2befc5 100644
  // Local-multiplayer: one GameController owns up to PAD_MAX_CONTROLLERS player
  // slots. Each slot keeps an independent input stream + history, so a guest that
  // opens pad handle N reads only the pad bound to slot N-1.
-@@ -59,8 +84,13 @@ public:
+@@ -59,8 +85,13 @@ public:
  
  	void Connect(int id);
  	void Disconnect(int id);
@@ -21634,7 +21667,7 @@ index 55718eb..a2befc5 100644
  	void ResetInputState();
  	void GetConnectionInfo(bool* flag, int* count);
  	void ReadState(ControllerState* state, bool* flag, int* count);
-@@ -78,7 +108,45 @@ private:
+@@ -78,7 +109,45 @@ private:
  		bool            obtained[STATES_MAX] = {};
  		uint32_t        states_num          = 0;
  		uint32_t        first_state         = 0;
@@ -21680,7 +21713,7 @@ index 55718eb..a2befc5 100644
  
  	void EnsureSlot(int index);
  	int  OwnerSlot(int id) const;
-@@ -94,6 +162,34 @@ private:
+@@ -94,6 +163,34 @@ private:
  	std::vector<SlotState> m_slots;
  };
  static GameController* g_controller = nullptr;
@@ -21715,7 +21748,7 @@ index 55718eb..a2befc5 100644
  // Native DualSense driver instance (spec-accurate, hardware-unvalidated).
  // Owned by the Controller subsystem; opened on subsystem init if a device is
  // present, polled on an internal thread, and closed on subsystem destroy.
-@@ -180,20 +276,225 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
+@@ -180,20 +277,225 @@ static void pad_fill_data(PadData* data, const ControllerState& state, bool conn
  	data->right_stick_y          = state.axes[static_cast<int>(Axis::RightY)];
  	data->analog_buttons_l2      = state.axes[static_cast<int>(Axis::TriggerLeft)];
  	data->analog_buttons_r2      = state.axes[static_cast<int>(Axis::TriggerRight)];
@@ -21942,7 +21975,7 @@ index 55718eb..a2befc5 100644
  
  	// The native DualSense HID driver is opt-in and off by default. SDL already
  	// handles every standard pad (including a DualSense); this unvalidated driver is
-@@ -258,16 +559,168 @@ void ControllerDisconnect(int id) {
+@@ -258,16 +560,244 @@ void ControllerDisconnect(int id) {
  	g_controller->Disconnect(id);
  }
  
@@ -21953,7 +21986,28 @@ index 55718eb..a2befc5 100644
 +// TODO(verify): which actuator the console drives for each byte of scePadSetVibration; the
 +// large/small naming here follows dualsense.h and AnyPS5 (large = the vibration stream's left
 +// channel), neither of which was checked against a console.
-+void ControllerRumble(uint8_t large, uint8_t small, uint32_t duration_ms) {
++// BC5 (experiment 0267): the write to the pad happens on a thread of its own. SDL_JoystickRumble
++// takes the joystick lock, which the window thread holds while it scans /dev/input on a hotplug,
++// and then does an ioctl and a write on the device; called from the title's pad thread
++// (scePadSetVibration) or its audio thread (the vibration-port fallback), that could hold them
++// for the length of a scan. The latest value wins; nothing waits.
++namespace {
++struct RumbleOutput {
++	std::mutex              mutex;
++	std::condition_variable cv;
++	uint8_t                 large = 0, small = 0;
++	uint32_t                duration_ms = 0;
++	uint64_t                seq         = 0;
++};
++RumbleOutput& RumbleOut() {
++	static RumbleOutput r;
++	return r;
++}
++
++// The write itself. A pad window.cpp opened as a raw joystick (no game-controller mapping, as can
++// happen after a replug) has no SDL_GameController, so the joystick API is the fallback; a failure
++// is logged once per pad instance (KYTY_BC5_INPUT_TRACE=1 logs every change too).
++void RumbleWrite(uint8_t large, uint8_t small, uint32_t duration_ms) {
 +	auto* ds = static_cast<Libs::DualSense::DualSenseDriver*>(DualSenseDriverInstance());
 +	if (ds != nullptr && ds->IsOpen()) {
 +		Libs::DualSense::VibrationParam v;
@@ -21968,11 +22022,66 @@ index 55718eb..a2befc5 100644
 +	if (id < 0) {
 +		return;
 +	}
-+	SDL_GameController* pad = SDL_GameControllerFromInstanceID(id);
-+	if (pad != nullptr) {
-+		SDL_GameControllerRumble(pad, static_cast<Uint16>(static_cast<unsigned>(large) * 257u),
-+		                         static_cast<Uint16>(static_cast<unsigned>(small) * 257u), duration_ms);
++	const auto  lo  = static_cast<Uint16>(static_cast<unsigned>(large) * 257u);
++	const auto  hi  = static_cast<Uint16>(static_cast<unsigned>(small) * 257u);
++	int         rc  = -1;
++	const char* via = "none";
++	if (SDL_GameController* pad = SDL_GameControllerFromInstanceID(id); pad != nullptr) {
++		rc  = SDL_GameControllerRumble(pad, lo, hi, duration_ms);
++		via = "game controller";
++	} else if (SDL_Joystick* joy = SDL_JoystickFromInstanceID(id); joy != nullptr) {
++		rc  = SDL_JoystickRumble(joy, lo, hi, duration_ms);
++		via = "raw joystick";
 +	}
++	static const bool trace     = std::getenv("KYTY_BC5_INPUT_TRACE") != nullptr;
++	static int        failed_id = -1;
++	if (rc != 0 && failed_id != id) {
++		failed_id = id;
++		LOGF("rumble: pad instance %d via %s: %s\n", id, via,
++		     std::strcmp(via, "none") == 0 ? "no SDL device for this instance id" : SDL_GetError());
++	} else if (rc == 0 && failed_id == id) {
++		failed_id = -1;
++	}
++	if (trace) {
++		std::fprintf(stderr, "input trace: rumble %u/%u for %u ms via %s -> %d\n", large, small, duration_ms, via, rc);
++	}
++}
++
++void RumbleThread() {
++	auto&    out  = RumbleOut();
++	uint64_t seen = 0;
++	for (;;) {
++		uint8_t  large       = 0;
++		uint8_t  small       = 0;
++		uint32_t duration_ms = 0;
++		{
++			std::unique_lock<std::mutex> lock(out.mutex);
++			out.cv.wait(lock, [&] { return out.seq != seen; });
++			seen        = out.seq;
++			large       = out.large;
++			small       = out.small;
++			duration_ms = out.duration_ms;
++		}
++		RumbleWrite(large, small, duration_ms);
++	}
++}
++} // namespace
++
++void ControllerRumble(uint8_t large, uint8_t small, uint32_t duration_ms) {
++	static const bool started = [] {
++		std::thread(RumbleThread).detach();
++		return true;
++	}();
++	(void)started;
++	auto& out = RumbleOut();
++	{
++		std::lock_guard<std::mutex> lock(out.mutex);
++		out.large       = large;
++		out.small       = small;
++		out.duration_ms = duration_ms;
++		out.seq++;
++	}
++	out.cv.notify_one();
 +}
 +
 +// Ported from AnyPS5 core/libs/prx/libScePad/src/PadState.cpp @ 7f596df (GPL-2.0):
@@ -22111,7 +22220,7 @@ index 55718eb..a2befc5 100644
  void ControllerResetInputState() {
  	EXIT_IF(g_controller == nullptr);
  	g_controller->ResetInputState();
-@@ -284,6 +737,11 @@ void GameController::EnsureSlot(int index) {
+@@ -284,6 +814,11 @@ void GameController::EnsureSlot(int index) {
  	}
  }
  
@@ -22123,7 +22232,7 @@ index 55718eb..a2befc5 100644
  int GameController::OwnerSlot(int id) const {
  	for (int i = 0; i < PAD_MAX_CONTROLLERS; i++) {
  		if (m_ids[i] == id) {
-@@ -395,6 +853,12 @@ void GameController::Button(int id, uint32_t button, bool down) {
+@@ -395,6 +930,12 @@ void GameController::Button(int id, uint32_t button, bool down) {
  	if (slot == -1) {
  		slot = FallbackSlot();
  	}
@@ -22136,7 +22245,7 @@ index 55718eb..a2befc5 100644
  
  	auto state = GetLastState(slot);
  	state.time = LibKernel::KernelGetProcessTime();
-@@ -415,6 +879,14 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
+@@ -415,6 +956,14 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
  	if (slot == -1) {
  		slot = FallbackSlot();
  	}
@@ -22151,7 +22260,7 @@ index 55718eb..a2befc5 100644
  
  	auto state = GetLastState(slot);
  	state.time = LibKernel::KernelGetProcessTime();
-@@ -422,8 +894,28 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
+@@ -422,8 +971,28 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
  	const int axis_id = static_cast<int>(axis);
  	EXIT_IF(axis_id < 0 || axis_id >= static_cast<int>(Controller::Axis::AxisMax));
  
@@ -22180,7 +22289,7 @@ index 55718eb..a2befc5 100644
  	if (axis == Controller::Axis::TriggerLeft) {
  		if (value > 0) {
  			state.buttons |= PAD_BUTTON_L2;
-@@ -443,6 +935,122 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
+@@ -443,6 +1012,122 @@ void GameController::Axis(int id, Controller::Axis axis, int value) {
  	AddState(slot, state);
  }
  
@@ -22303,7 +22412,7 @@ index 55718eb..a2befc5 100644
  void GameController::ResetInputState() {
  	Common::LockGuard lock(m_mutex);
  
-@@ -488,6 +1096,15 @@ int GameController::ReadStateForSlot(int index, ControllerState* state, bool* fl
+@@ -488,6 +1173,15 @@ int GameController::ReadStateForSlot(int index, ControllerState* state, bool* fl
  	*flag  = SlotConnected(index);
  	*count = PresentCount();
  	*state = GetLastState(index);
@@ -22319,7 +22428,7 @@ index 55718eb..a2befc5 100644
  
  	return 0;
  }
-@@ -515,7 +1132,28 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
+@@ -515,7 +1209,28 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
  	int ret_num = 0;
  
  	auto& s = m_slots[index];
@@ -22348,7 +22457,7 @@ index 55718eb..a2befc5 100644
  		for (uint32_t i = 0; i < s.states_num; i++) {
  			if (ret_num >= states_num) {
  				break;
-@@ -523,11 +1161,22 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
+@@ -523,11 +1238,22 @@ int GameController::ReadStatesForSlot(int index, ControllerState* states, int st
  			auto state_index = (s.first_state + i) % STATES_MAX;
  			if (!s.obtained[state_index]) {
  				s.obtained[state_index] = true;
@@ -22372,7 +22481,7 @@ index 55718eb..a2befc5 100644
  	return ret_num;
  }
  int KYTY_SYSV_ABI PadInit() {
-@@ -625,6 +1274,9 @@ int KYTY_SYSV_ABI PadResetOrientation(int handle) {
+@@ -625,6 +1351,9 @@ int KYTY_SYSV_ABI PadResetOrientation(int handle) {
  	if (ControllerIndexFromHandle(handle) < 0) {
  		return PAD_ERROR_INVALID_HANDLE;
  	}
@@ -22382,7 +22491,7 @@ index 55718eb..a2befc5 100644
  
  	return OK;
  }
-@@ -651,8 +1303,8 @@ int KYTY_SYSV_ABI PadGetControllerInformation(int handle, PadControllerInformati
+@@ -651,8 +1380,8 @@ int KYTY_SYSV_ABI PadGetControllerInformation(int handle, PadControllerInformati
  	std::memset(info, 0, sizeof(*info));
  
  	info->touch_pixel_density   = 44.86f;
@@ -22393,7 +22502,7 @@ index 55718eb..a2befc5 100644
  	info->stick_dead_zone_left  = controller_get_axis(-32768, 32767, 8000) - 128;
  	info->stick_dead_zone_right = controller_get_axis(-32768, 32767, 8000) - 128;
  	info->connection_type       = 0;
-@@ -682,6 +1334,10 @@ int KYTY_SYSV_ABI PadReadState(int handle, PadData* data) {
+@@ -682,6 +1411,10 @@ int KYTY_SYSV_ABI PadReadState(int handle, PadData* data) {
  	g_controller->ReadStateForSlot(ControllerIndexFromHandle(handle), &state, &connected,
  	                               &connected_count);
  
@@ -22404,7 +22513,7 @@ index 55718eb..a2befc5 100644
  	pad_fill_data(data, state, connected, connected_count);
  
  	return OK;
-@@ -718,6 +1374,10 @@ int KYTY_SYSV_ABI PadRead(int handle, PadData* data, int num) {
+@@ -718,6 +1451,10 @@ int KYTY_SYSV_ABI PadRead(int handle, PadData* data, int num) {
  	}
  
  	for (int i = 0; i < ret_num; i++) {
@@ -22415,7 +22524,7 @@ index 55718eb..a2befc5 100644
  		pad_fill_data(&data[i], states[i], connected, connected_count);
  	}
  
-@@ -738,14 +1398,10 @@ int KYTY_SYSV_ABI PadSetVibration(int handle, const PadVibrationParam* param) {
+@@ -738,14 +1475,10 @@ int KYTY_SYSV_ABI PadSetVibration(int handle, const PadVibrationParam* param) {
  	     "\t small_motor = %d\n",
  	     static_cast<int>(param->large_motor), static_cast<int>(param->small_motor));
  
