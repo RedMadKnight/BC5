@@ -1,0 +1,105 @@
+== ib-timeout-00127637-acb-11383.bin: 11383 dwords; 1 waits, 18 label writes, 786 dispatches, 0 COND_EXEC/IB
+  wait op 93 at 4: label 0x12004b4fc8 function == reference 0x0 mask 0xffffffffffffffff me
+  write op 49 at 16: 0x1200006ee0 select 2 value 0x907616682 (packet 8 dwords)
+  write op 49 at 24: 0x1200006f00 select 2 value 0x0 (packet 8 dwords)
+  write op 49 at 44: 0x1200006ec0 select 2 value 0x9076d6b32 (packet 8 dwords)
+  write op 49 at 55: 0x1200006e80 select 2 value 0x9076d6b32 (packet 8 dwords)
+  write op 49 at 63: 0x1200006ea0 select 2 value 0x9076d6b32 (packet 8 dwords)
+  write op 37 at 9872: 0x118c5f0000 select 2 value 0x4c4856425f525350 (packet 68 dwords)
+  write op 37 at 9940: 0x1187283600 select 2 value 0x0 (packet 5 dwords)
+  write op 37 at 9945: 0x1187259520 select 2 value 0x7f8000007f800000 (packet 60 dwords)
+  write op 49 at 11290: 0x12004b5038 select 2 value 0x0 (packet 8 dwords)
+  write op 49 at 11298: 0x12004b50f0 select 3 value 0x0 (packet 8 dwords)
+  write op 49 at 11309: 0x1200006e80 select 2 value 0x90757511c (packet 8 dwords)
+  write op 49 at 11317: 0x1200006ea0 select 2 value 0x90757511c (packet 8 dwords)
+  write op 49 at 11325: 0x1200006ec0 select 2 value 0x90757511c (packet 8 dwords)
+  write op 49 at 11333: 0x12000021a0 select 2 value 0x4980 (packet 8 dwords)
+  write op 49 at 11341: 0x12000020a0 select 2 value 0x45cbe0 (packet 8 dwords)
+  write op 49 at 11357: 0x11e0f00018 select 2 value 0x1 (packet 8 dwords)
+  write op 49 at 11367: 0x11e1024040 select 2 value 0x11553 (packet 8 dwords)
+  write op 49 at 11375: 0x11e12518d0 select 2 value 0x0 (packet 8 dwords)
+  dispatch op 15 at 938: 2 x 1 x 1, program 0x909939400
+  dispatch op 15 at 956: 1 x 1 x 1, program 0x909939400
+  dispatch op 15 at 970: 1 x 1 x 1, program 0x909939400
+  dispatch op 15 at 984: 1 x 1 x 1, program 0x909939400
+  dispatch op 15 at 998: 1 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1012: 1 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1030: 3 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1044: 3 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1062: 2 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1080: 1 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1094: 1 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1112: 5 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1130: 2 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1144: 2 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1162: 1 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1180: 2 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1198: 5 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1216: 1 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1230: 1 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1248: 2 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1266: 1 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1280: 1 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1294: 1 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1308: 1 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1326: 3 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1340: 3 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1354: 3 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1372: 2 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1390: 3 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1408: 2 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1422: 2 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1440: 9 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1458: 2 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1476: 1 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1490: 1 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1504: 1 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1518: 1 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1536: 2 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1554: 1 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1572: 3 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1586: 3 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1604: 1 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1618: 1 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1632: 1 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1646: 1 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1660: 1 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1674: 1 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1688: 1 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1702: 1 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1716: 1 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1730: 1 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1748: 5 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1766: 6 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1784: 3 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1802: 1 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1816: 1 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1830: 1 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1844: 1 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1858: 1 x 1 x 1, program 0x909939400
+  dispatch op 15 at 1872: 1 x 1 x 1, program 0x909939400
+  ... 726 dispatches more
+== ib-timeout-00127648-dcb-1824.bin: 1824 dwords; 2 waits, 12 label writes, 7 dispatches, 0 COND_EXEC/IB
+  wait op 93 at 1269: label 0x12004b5438 function == reference 0x0 mask 0xffffffffffffffff pfp
+  wait op 93 at 1679: label 0x12004b5038 function == reference 0x0 mask 0xffffffffffffffff pfp
+  write op 49 at 1281: 0x1200006e40 select 2 value 0x907616682 (packet 8 dwords)
+  write op 49 at 1289: 0x1200006e60 select 2 value 0x0 (packet 8 dwords)
+  write op 49 at 1651: 0x12004b5280 select 3 value 0x0 (packet 8 dwords)
+  write op 49 at 1659: 0x1200006e40 select 2 value 0x9077da5f5 (packet 8 dwords)
+  write op 49 at 1667: 0x1200006e60 select 2 value 0x0 (packet 8 dwords)
+  write op 49 at 1691: 0x1200006e40 select 2 value 0x907616682 (packet 8 dwords)
+  write op 49 at 1699: 0x1200006e60 select 2 value 0x0 (packet 8 dwords)
+  write op 49 at 1776: 0x1200001de0 select 2 value 0x3cbe80 (packet 8 dwords)
+  write op 49 at 1784: 0x1200001ce0 select 2 value 0x8d1290 (packet 8 dwords)
+  write op 49 at 1800: 0x11e09b0018 select 2 value 0x1 (packet 8 dwords)
+  write op 49 at 1808: 0x11e0e14040 select 2 value 0x173fe (packet 8 dwords)
+  write op 49 at 1816: 0x11e1233fc8 select 2 value 0x0 (packet 8 dwords)
+  dispatch op 15 at 1328: 381 x 1 x 1, program from a LOAD_SH_REG_INDEX table (in memory)
+  dispatch op 15 at 1392: 1 x 1 x 1, program from a LOAD_SH_REG_INDEX table (in memory)
+  dispatch op 15 at 1478: 48 x 1 x 1, program from a LOAD_SH_REG_INDEX table (in memory)
+  dispatch op 15 at 1514: 381 x 1 x 1, program from a LOAD_SH_REG_INDEX table (in memory)
+  dispatch op 16 at 1586: indirect +0x0, program from a LOAD_SH_REG_INDEX table (in memory)
+  dispatch op 16 at 1628: indirect +0xc, program from a LOAD_SH_REG_INDEX table (in memory)
+  dispatch op 16 at 1773: indirect +0x0, program from a LOAD_SH_REG_INDEX table (in memory)
+== cross references
+  ib-timeout-00127648-dcb-1824.bin waits at 1679 on 0x12004b5038 (== 0x0): ib-timeout-00127637-acb-11383.bin writes it at 11290 (select 2 value 0x0, meets), after 1 of its own 1 waits

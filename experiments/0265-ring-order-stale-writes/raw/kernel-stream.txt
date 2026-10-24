@@ -1,0 +1,28 @@
+paź 24 17:45:45.727574 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 24 17:46:59.274567 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State
+paź 24 17:46:59.276557 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State Completed
+paź 24 17:46:59.276858 bazzite kernel: amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+paź 24 17:46:59.277043 bazzite kernel: amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+paź 24 17:46:59.277218 bazzite kernel: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=3712885, emitted seq=3712887
+paź 24 17:46:59.277428 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 1249658 thread bc5-chainwd pid 1249799
+paź 24 17:46:59.277621 bazzite kernel: amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+paź 24 17:46:59.277803 bazzite kernel: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded
+paź 24 17:46:59.277978 bazzite kernel: amdgpu 0000:01:00.0: [drm] device wedged, but no recovery needed
+paź 24 17:46:59.278171 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State
+paź 24 17:46:59.278343 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State Completed
+paź 24 17:46:59.503519 bazzite kernel: amdgpu 0000:01:00.0: ring comp_1.2.0 timeout, signaled seq=2439246, emitted seq=2439248
+paź 24 17:46:59.504037 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 1249658 thread bc5-chainwd pid 1249799
+paź 24 17:46:59.504194 bazzite kernel: amdgpu 0000:01:00.0: Starting comp_1.2.0 ring reset
+paź 24 17:46:59.504357 bazzite kernel: amdgpu 0000:01:00.0: Ring comp_1.2.0 reset failed
+paź 24 17:46:59.504530 bazzite kernel: amdgpu 0000:01:00.0: GPU reset begin!. Source:  1
+paź 24 17:47:03.466587 bazzite kernel: amdgpu 0000:01:00.0: failed to suspend display audio
+paź 24 17:47:03.574685 bazzite kernel: amdgpu 0000:01:00.0: MODE1 reset
+paź 24 17:47:03.575848 bazzite kernel: amdgpu 0000:01:00.0: GPU mode1 reset
+paź 24 17:47:03.577016 bazzite kernel: amdgpu 0000:01:00.0: GPU psp mode1 reset
+paź 24 17:47:03.578050 bazzite kernel: amdgpu 0000:01:00.0: GPU reset succeeded, trying to resume
+paź 24 17:47:03.579071 bazzite kernel: amdgpu 0000:01:00.0: [drm] PCIE GART of 512M enabled (table at 0x000000F41FE00000).
+paź 24 17:47:03.580077 bazzite kernel: amdgpu 0000:01:00.0: VRAM is lost due to GPU reset!
+paź 24 17:47:03.581062 bazzite kernel: amdgpu 0000:01:00.0: PSP is resuming...
+paź 24 17:47:03.595569 bazzite kernel: amdgpu 0000:01:00.0: reserve 0x400000 from 0xf41f800000 for PSP TMR
+Read from remote host <box>: Connection reset by peer
+client_loop: send disconnect: Connection reset by peer

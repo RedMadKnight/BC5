@@ -1,0 +1,100 @@
+--- a/src/libs/bc5LleAgc.cpp
++++ b/src/libs/bc5LleAgc.cpp
+@@ -3744,8 +3744,10 @@
+ 	uint64_t value;
+ 	uint64_t seq;
+ 	bool     is64;
+-	int      ring  = bc5::direct::kGfxRing;
+-	uint64_t order = 0;
++	int      ring      = bc5::direct::kGfxRing;
++	uint64_t order     = 0;
++	uint64_t before    = 0;     // experiment 0265: the label's value when the write was registered
++	bool     before_ok = false; // ... read (BC5_DIRECT_RING_ORDER_STALE set and the label mapped)
+ };
+ static std::mutex                          g_plw_mutex;
+ static std::vector<PendingLabelWrite>      g_plw;
+@@ -4068,6 +4070,34 @@
+ static std::atomic<uint64_t> g_dry_bufs {0}, g_dry_splits {0}, g_dry_prefix {0}, g_dry_ns {0}, g_dry_max_ns {0}, g_dry_kept {0}, g_dry_ok {0},
+     g_dry_failed {0};
+ 
++// Experiment 0265 (BC5_DIRECT_RING_ORDER_STALE=count|skip; off by default, D16): a pending write whose label has changed
++// since the write was registered, while the wait still does not hold, will not end the wait: its job has run and the
++// title has re-armed the label since (or re-armed it before the write ran). The ring order would keep the wait for the
++// GPU on it, and the wait then waits for a later writer (exp 0255, F322: the two-ring timeouts' hand-off labels).
++// count: journal it; skip: also do not count the write, so the wait is not kept for the GPU on it.
++static int ro_stale_mode() {
++	static const int v = [] {
++		const char* e = std::getenv("BC5_DIRECT_RING_ORDER_STALE");
++		if (e == nullptr) return 0;
++		if (std::strcmp(e, "skip") == 0) return 2;
++		return std::strcmp(e, "count") == 0 ? 1 : 0;
++	}();
++	return v;
++}
++static std::atomic<uint64_t> g_ro_checked {0}, g_ro_stale {0};
++// Caller holds g_plw_mutex; a: the waited label; ring: the waiting job's ring. True only when skip drops the write.
++static bool ro_stale(const PendingLabelWrite& w, uint64_t a, int ring) {
++	if (ro_stale_mode() == 0 || !w.before_ok) return false;
++	g_ro_checked++;
++	const uint64_t now = w.is64 ? *reinterpret_cast<const volatile uint64_t*>(a) : *reinterpret_cast<const volatile uint32_t*>(a);
++	if (now == w.before) return false;
++	const uint64_t n = ++g_ro_stale;
++	if (n <= 200 || (n & 0xffu) == 0)
++		journal("ring order: STALE pending write on 0x%" PRIx64 " (value 0x%" PRIx64 ", ring %d, seq %" PRIu64 "): the label was 0x%" PRIx64 " at registration, 0x%" PRIx64 " now; the wait (ring %d) %s (%" PRIu64 " stale of %" PRIu64 " checked)\n",
++		        a, w.value, w.ring, w.seq, w.before, now, ring, ro_stale_mode() == 2 ? "not kept for it" : "kept as before (count only)", n, g_ro_checked.load());
++	return ro_stale_mode() == 2;
++}
++
+ static void register_label_writes(const uint32_t* ib, uint32_t num_dwords, const std::vector<uint32_t>& executed, uint64_t seq, int ring) {
+ 	std::vector<PendingLabelWrite> found;
+ 	for (const uint32_t q: executed) {
+@@ -4096,6 +4126,14 @@
+ 		}
+ 	}
+ 	if (found.empty()) return;
++	if (ro_stale_mode() != 0 && g_dev) { // experiment 0265: each label as it is now, right after the submission
++		const auto pm = g_dev->sorted_mappings();
++		for (auto& w: found) {
++			if (!covered_sorted(*pm, w.label, w.is64 ? 8 : 4)) continue;
++			w.before    = w.is64 ? *reinterpret_cast<const volatile uint64_t*>(w.label) : *reinterpret_cast<const volatile uint32_t*>(w.label);
++			w.before_ok = true;
++		}
++	}
+ 	std::lock_guard lk(g_plw_mutex);
+ 	static uint64_t order = 0;
+ 	for (auto& w: found) {
+@@ -4234,21 +4272,24 @@
+ 	}
+ 	if (last == nullptr) return false;
+ 	if (last->ring != ring && !(cross_ring_waits() == 2 || (cross_ring_waits() == 1 && ring != bc5::direct::kGfxRing))) return false;
++	bool sat = false;
+ 	if (is64) {
+ 		if (!last->is64) return false;
+ 		const uint64_t ref = p[4] | (static_cast<uint64_t>(p[5]) << 32u), mask = p[6] | (static_cast<uint64_t>(p[7]) << 32u);
+ 		const uint64_t vm = last->value & mask, rm = ref & mask;
+ 		switch (function) {
+-			case 1: return vm < rm;
+-			case 2: return vm <= rm;
+-			case 3: return vm == rm;
+-			case 4: return vm != rm;
+-			case 5: return vm >= rm;
+-			case 6: return vm > rm;
+-			default: return false;
+-		}
+-	}
+-	return SoftCp::compare(function, static_cast<uint32_t>(last->value), p[5], p[4]);
++			case 1: sat = vm < rm; break;
++			case 2: sat = vm <= rm; break;
++			case 3: sat = vm == rm; break;
++			case 4: sat = vm != rm; break;
++			case 5: sat = vm >= rm; break;
++			case 6: sat = vm > rm; break;
++			default: sat = false; break;
++		}
++	} else {
++		sat = SoftCp::compare(function, static_cast<uint32_t>(last->value), p[5], p[4]);
++	}
++	return sat && !ro_stale(*last, a, ring); // experiment 0265
+ }
+ 
+ // Experiment 0160 (diagnostic): BC5_DIRECT_GE_PROBE=<min>:<max> — in every prefixed graphics buffer whose

@@ -1,0 +1,5 @@
+1574:ring order: dcb 1833 dwords keeps its wait at 372 on 0x12004b6038 for the GPU (20481 so far)
+4291:acb head: 100 of 402 dwords go ahead of the wait at 100 on 0x12004b37c8
+39646:two rings: dcb 242 dwords waits at 174 on 0x12004b3038: NOT served after 4.03 ms, head split off (4567 waits: 4567 split, 4097 kept for the GPU, 461 satisfied, 9 lost)
+40001:submit #85856 dcb 69274 dwords at 0x7f46381d2ef0: pass 7955 rewrite 746 drop 782 unmapped 0 cc 0 mappings 20716 ... FAILED rc 0 TIMEOUT 2005.35 ms
+40003:submit #85864 acb 675 dwords at 0x7f46941da4c0: pass 83 rewrite 21 drop 13 unmapped 0 cc 0 mappings 20716 ... FAILED rc 0 TIMEOUT 2002.98 ms

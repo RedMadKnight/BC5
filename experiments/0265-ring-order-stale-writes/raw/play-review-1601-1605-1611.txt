@@ -1,0 +1,56 @@
+Read-only passes over the maintainer's play journals of 2026-10-24 (~/bc5-data/captures/play-20261024-1601, -1605,
+-1611 /gc/direct.log; normal build ce2e5d7a, before exp 0260's integration), 17:02-17:05, under a tcp lock line, on the
+box supervisor's GO. Pass 1: frames over 100/250 ms (frame profile), hold summaries and give-ups, the old give-up and
+timeout signatures. Pass 2: the 8 worst frames' profile lines, and frames over 100 ms within 3 s after a hold give-up.
+(Pass 1's "longest hold" per summary was mis-parsed and printed only the first summary; the last summaries are right.)
+
+######## pass 1
+play-20261024-1601 (second title: cs prefix 11, alias lines 20)
+  frames 8519, over 100 ms 54, over 250 ms 9; hold give-ups 0, cpu-wait give-ups 0, NOT served 0, TIMEOUT 0
+  last: hold tail: 16673 holds; released with the writer on a ring 14867, satisfied 1806, GIVEN UP 0; held 0.99 ms on average, 79.99 ms at most
+  frames over 100 ms (first 40): 113.6@2.279 103.7@9.111 166.1@33.718 192.1@33.998 108.3@36.909 153.3@38.993 217.3@39.284
+    203.5@40.198 143.8@42.961 108.1@126.979 212.0@127.833 131.1@147.693 172.4@148.588 196.7@148.784 104.3@151.986
+    279.8@152.643 428.6@153.303 129.9@153.433 105.6@154.894 393.5@155.287 174.8@155.462 143.2@160.172 121.2@160.486
+    183.6@162.110 176.5@162.286 193.2@162.479 146.4@162.626 175.2@162.801 120.4@162.921 224.6@163.146 111.9@163.316
+    160.1@165.267 171.7@165.439 108.7@168.238 130.9@168.751 170.5@168.968 109.2@169.425 675.9@185.973 139.7@186.386
+    107.6@186.696
+play-20261024-1605 (second title: cs prefix 14, alias lines 20)
+  frames 5228, over 100 ms 83, over 250 ms 16; hold give-ups 2, cpu-wait give-ups 0, NOT served 0, TIMEOUT 0
+  t~131.554: hold tail: the wait on 0x12004b3c38 GIVEN UP after 155.3 ms: its kept wait dropped, the chain goes
+  t~142.413: hold tail: the wait on 0x12004b3c38 GIVEN UP after 408.0 ms: its kept wait dropped, the chain goes
+  last: hold tail: 9454 holds; released with the writer on a ring 8589, satisfied 863, GIVEN UP 2; held 1.09 ms on average, 408.03 ms at most
+  frames over 100 ms (first 40): 119.5@6.838 130.4@6.968 104.1@9.243 105.1@33.244 268.9@33.513 101.7@38.499 133.8@40.968
+    105.0@67.861 134.2@68.420 105.1@71.936 113.7@72.106 138.4@75.919 197.6@77.738 102.2@78.448 157.1@79.717 117.5@81.313
+    189.1@82.919 161.3@83.080 155.5@83.236 174.4@83.410 164.4@83.574 175.1@83.749 173.3@83.923 146.5@84.069 139.3@86.340
+    174.0@86.514 129.2@86.643 137.1@97.495 127.5@114.551 1004.0@115.660 123.8@119.993 426.9@120.420 132.2@124.695
+    117.5@124.813 175.5@125.081 165.3@125.246 152.9@125.399 238.4@125.638 208.2@126.069 159.0@126.228
+play-20261024-1611 (ASTRO BOT: no hold line, no prefix, no alias line)
+  frames 7610, over 100 ms 3, over 250 ms 1; hold give-ups 0, cpu-wait give-ups 389, NOT served 0, TIMEOUT 0
+  frames over 100 ms: 182.5@1.439 101.8@36.876 255.6@37.132
+
+######## pass 2: the 8 worst frames (ms since the last flip -> inside the host (main parts) / at the flip / outside the host; GPU busy)
+1601
+  t 207.407   806.3 -> inside 84.8 (sync 73.2, hints 10.5) / flip 80.0 / outside 641.6; GPU 5.0 ms in 3 jobs
+  t 185.973   675.9 -> inside 26.3 (sync 22.7) / flip 7.9 / outside 641.6; GPU 14.1 ms in 10 jobs
+  t 208.230   638.4 -> inside 41.6 (sync 36.2) / flip 41.6 / outside 555.2; GPU 1.7 ms in 3 jobs
+  t 211.466   492.7 -> inside 3.2 / flip 4.5 / outside 485.0; GPU 1.0 ms in 2 jobs
+  t 153.303   428.6 -> inside 111.8 (sync 66.9, hints 25.3, label waits 16.6) / flip 4.0 / outside 312.8; GPU 16.7 ms
+  t 155.287   393.5 -> inside 3.3 / flip 10.1 / outside 380.1; GPU 16.5 ms in 8 jobs
+  t 211.855   320.8 -> inside 27.3 (sync 25.7) / flip 0.8 / outside 292.7; GPU 246.4 ms in 4 jobs
+  t 152.643   279.8 -> inside 83.4 (sync 21.6, hints 47.8) / flip 6.3 / outside 190.1; GPU 27.1 ms in 18 jobs
+1605
+  t 115.660  1004.0 -> inside 37.2 (sync 26.1) / flip 7.0 / outside 959.8; GPU 21.9 ms in 8 jobs
+  t 143.656   810.4 -> inside 36.3 (sync 22.6) / flip 2.0 / outside 772.2; GPU 43.1 ms in 10 jobs
+  t 154.229   697.4 -> inside 238.8 (sync 185.8, prepare 49.1) / flip 3.0 / outside 455.6; GPU 489.8 ms in 12 jobs
+  t 154.893   664.1 -> inside 568.8 (sync 37.3, prepare 528.4) / flip 4.4 / outside 90.9; GPU 45.4 ms in 12 jobs
+  t 142.459   463.7 -> inside 358.6 (sync 300.9, hints 51.0) / flip 3.6 / outside 101.5; GPU 15.5 ms in 12 jobs
+  t 120.420   426.9 -> inside 368.2 (sync 360.4) / flip 6.8 / outside 51.9; GPU 370.2 ms in 8 jobs
+  t 153.531   372.2 -> inside 6.3 / flip 4.6 / outside 361.3; GPU 340.3 ms in 11 jobs
+  t 163.686   340.5 -> inside 80.7 (prepare 66.3) / flip 6.5 / outside 253.2; GPU 28.9 ms in 11 jobs
+1605, frames over 100 ms within 3 s after a hold give-up
+  give-up at t~131.554: t 131.571 207.3 -> inside 5.9 / flip 3.8 / outside 197.5
+  give-up at t~142.413: t 142.459 463.7 -> inside 358.6 (sync 300.9) / flip 3.6 / outside 101.5
+                        t 142.751 119.1 -> inside 81.7 (sync 65.6) / flip 3.7 / outside 33.7
+                        t 143.656 810.4 -> inside 36.3 / flip 2.0 / outside 772.2
+                        t 144.275 158.7 -> inside 12.7 (label waits 5.3) / flip 10.9 / outside 135.1
+                        t 144.484 209.2 -> inside 13.6 / flip 32.1 / outside 163.4
