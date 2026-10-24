@@ -1,0 +1,3 @@
+src/libAmpr.cpp:1919:143: warning: data argument not used by format string [-Wformat-extra-args]
+src/libAmpr.cpp:2028:50: warning: data argument not used by format string [-Wformat-extra-args]
+(2 distinct sites, 4 lines in build.out; both in the amm trace "read file" fprintf calls, outside the hunks of patch_0276.diff)

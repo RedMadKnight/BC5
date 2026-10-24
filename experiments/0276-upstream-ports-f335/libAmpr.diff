@@ -1,0 +1,137 @@
+diff --git a/src/libs/libAmpr.cpp b/src/libs/libAmpr.cpp
+index 8873cc85..8fe2d401 100644
+--- a/src/libs/libAmpr.cpp
++++ b/src/libs/libAmpr.cpp
+@@ -1261,6 +1261,16 @@ static uint64_t AprReadFileRecordSize(uint64_t file_offset) {
+ 	return (file_offset >> 32u) != 0 ? READ_FILE_RECORD_SIZE_EXT : READ_FILE_RECORD_SIZE;
+ }
+ 
++// Ported from KytyPlus 41beda43 "ampr: fix APR completion loss in 768-byte read batches"
++// (github.com/Coder787-source/KytyPlus, src/libs/libAmpr.cpp, GPL-2.0): a WriteAddress or
++// WriteAddressOnCompletion record is 8, 12 or 16 bytes by the value it writes, not a fixed 0x20;
++// a title that measures its records and packs them (768-byte read batches there) otherwise
++// loses the completion write that follows. The counter and time-counter variants stay at 0x20.
++// TODO(verify): the record sizes against a title's own measured layout on the box.
++static uint64_t WriteAddressRecordSize(uint64_t value) {
++	return value <= 3 ? 8 : value < (uint64_t {1} << 34) ? 12 : 16;
++}
++
+ static uint64_t AprReadGatherRecordSize(uint64_t file_offset) {
+ 	return file_offset > 0x3ffffu ? READ_GATHER_RECORD_SIZE_EXT : READ_GATHER_RECORD_SIZE;
+ }
+@@ -2808,11 +2818,11 @@ static uint64_t KYTY_SYSV_ABI MeasureCommandSizeFixed32(uint64_t, uint64_t, uint
+ 	return 0x20;
+ }
+ 
+-static uint64_t KYTY_SYSV_ABI MeasureCommandSizeWriteAddressOnCompletion(volatile uint64_t*,
+-                                                                         uint64_t) {
++// WriteAddress and WriteAddressOnCompletion measure (KytyPlus 41beda43, see WriteAddressRecordSize).
++static uint64_t KYTY_SYSV_ABI MeasureCommandSizeWriteAddress(volatile uint64_t*, uint64_t value) {
+ 	PRINT_NAME();
+ 
+-	return 0x20;
++	return WriteAddressRecordSize(value);
+ }
+ 
+ static uint64_t KYTY_SYSV_ABI
+@@ -3138,12 +3148,12 @@ static int KYTY_SYSV_ABI CommandBufferWaitOnCounter(void* command_buffer, uint8_
+ }
+ 
+ static int AppendWriteAddressCommand(void* command_buffer, volatile uint64_t* address,
+-                                     uint64_t value) {
++                                     uint64_t value, uint64_t record_size) {
+ 	if (command_buffer == nullptr || address == nullptr) {
+ 		return LibKernel::KERNEL_ERROR_EINVAL;
+ 	}
+ 	return AppendWriteAddressRecord(reinterpret_cast<uint64_t>(command_buffer),
+-	                                reinterpret_cast<uint64_t>(address), value)
++	                                reinterpret_cast<uint64_t>(address), value, record_size)
+ 	           ? OK
+ 	           : LibKernel::KERNEL_ERROR_EBUSY;
+ }
+@@ -3156,7 +3166,7 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddress(void* command_buffer, volatil
+ 		             reinterpret_cast<uint64_t>(command_buffer), reinterpret_cast<uint64_t>(address), value);
+ 	}
+ 
+-	return AppendWriteAddressCommand(command_buffer, address, value);
++	return AppendWriteAddressCommand(command_buffer, address, value, WriteAddressRecordSize(value));
+ }
+ 
+ static int KYTY_SYSV_ABI CommandBufferWriteAddressOnCompletion(void*              command_buffer,
+@@ -3164,7 +3174,7 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddressOnCompletion(void*
+                                                                uint64_t           value) {
+ 	PRINT_NAME();
+ 
+-	return AppendWriteAddressCommand(command_buffer, address, value);
++	return AppendWriteAddressCommand(command_buffer, address, value, WriteAddressRecordSize(value));
+ }
+ 
+ static int KYTY_SYSV_ABI CommandBufferWriteCounter(void* command_buffer, uint8_t, uint8_t, uint64_t,
+@@ -3186,14 +3196,14 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddressFromTimeCounter(void*
+                                                                   uint32_t) {
+ 	PRINT_NAME();
+ 
+-	return AppendWriteAddressCommand(command_buffer, address, uint64_t {0});
++	return AppendWriteAddressCommand(command_buffer, address, uint64_t {0}, 0x20);
+ }
+ 
+ static int KYTY_SYSV_ABI CommandBufferWriteAddressFromTimeCounterOnCompletion(
+     void* command_buffer, volatile uint64_t* address) {
+ 	PRINT_NAME();
+ 
+-	return AppendWriteAddressCommand(command_buffer, address, uint64_t {0});
++	return AppendWriteAddressCommand(command_buffer, address, uint64_t {0}, 0x20);
+ }
+ 
+ static int KYTY_SYSV_ABI CommandBufferWriteAddressFromCounter(void*              command_buffer,
+@@ -3201,14 +3211,14 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddressFromCounter(void*
+                                                               uint32_t) {
+ 	PRINT_NAME();
+ 
+-	return AppendWriteAddressCommand(command_buffer, address, uint64_t {0});
++	return AppendWriteAddressCommand(command_buffer, address, uint64_t {0}, 0x20);
+ }
+ 
+ static int KYTY_SYSV_ABI CommandBufferWriteAddressFromCounterOnCompletion(
+     void* command_buffer, volatile uint64_t* address, uint8_t) {
+ 	PRINT_NAME();
+ 
+-	return AppendWriteAddressCommand(command_buffer, address, uint64_t {0});
++	return AppendWriteAddressCommand(command_buffer, address, uint64_t {0}, 0x20);
+ }
+ 
+ static int KYTY_SYSV_ABI CommandBufferWriteAddressFromCounterPair(void*              command_buffer,
+@@ -3216,14 +3226,14 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddressFromCounterPair(void*
+                                                                   uint8_t, uint32_t) {
+ 	PRINT_NAME();
+ 
+-	return AppendWriteAddressCommand(command_buffer, address, uint64_t {0});
++	return AppendWriteAddressCommand(command_buffer, address, uint64_t {0}, 0x20);
+ }
+ 
+ static int KYTY_SYSV_ABI CommandBufferWriteAddressFromCounterPairOnCompletion(
+     void* command_buffer, volatile uint64_t* address, uint8_t) {
+ 	PRINT_NAME();
+ 
+-	return AppendWriteAddressCommand(command_buffer, address, uint64_t {0});
++	return AppendWriteAddressCommand(command_buffer, address, uint64_t {0}, 0x20);
+ }
+ 
+ static int KYTY_SYSV_ABI AprCommandBufferReadFileGather(void*    command_buffer, uint64_t, uint64_t,
+@@ -3741,14 +3751,14 @@ LIB_DEFINE(InitAmpr_1_Ampr) {
+ 	LIB_FUNC("vWU-odnS+fU", Ampr::MeasureCommandSizeReadFile);
+ 	LIB_FUNC("sSAUCCU1dv4", Ampr::MeasureCommandSizeWriteKernelEventQueue);
+ 	LIB_FUNC("Zi3dBUjgyXI", Ampr::MeasureCommandSizeWriteKernelEventQueue);
+-	LIB_FUNC("C+IEj+BsAFM", Ampr::MeasureCommandSizeWriteAddressOnCompletion);
++	LIB_FUNC("C+IEj+BsAFM", Ampr::MeasureCommandSizeWriteAddress);
+ 	LIB_FUNC("x7SQEXfeovg", Ampr::MeasureCommandSizeWriteAddressFromTimeCounterOnCompletion);
+ 	LIB_FUNC("32AcaTaBPSY", Ampr::MeasureCommandSizeWriteAddressFromCounterOnCompletion);
+ 	LIB_FUNC("vxC58+DRk-U", Ampr::MeasureCommandSizeWriteAddressFromCounterPairOnCompletion);
+ 	LIB_FUNC("4muPEJ-x5N8", Ampr::MeasureCommandSizeWriteCounterOnCompletion);
+ 	LIB_FUNC("0BMj1hgG+kE", Ampr::MeasureCommandSizeFixed32);
+ 	LIB_FUNC("ClnsFLLLcss", Ampr::MeasureCommandSizeFixed32);
+-	LIB_FUNC("4fgtGfXDrFc", Ampr::MeasureCommandSizeFixed32);
++	LIB_FUNC("4fgtGfXDrFc", Ampr::MeasureCommandSizeWriteAddress); // KytyPlus 41beda43
+ 	LIB_FUNC("gAtc79UTt5E", Ampr::MeasureCommandSizeFixed32);
+ 	LIB_FUNC("JYd9g9L+TmE", Ampr::MeasureCommandSizeFixed32);
+ 	LIB_FUNC("2Hw8gjMdwSY", Ampr::MeasureCommandSizeFixed32);

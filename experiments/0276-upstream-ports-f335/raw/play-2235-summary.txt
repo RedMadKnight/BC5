@@ -1,0 +1,25 @@
+Exp 0276 play test, 2026-10-24 22:35-23:04, private binary dd103996, the second title, RT on, ~29 min (1710 s of input trace).
+Source: ~/bc5-work/exp0276/play-2235.log on the box (21,904,108 bytes, 207,391 lines; not committed), read on the top session's GO.
+Maintainer: "Wszystko ok, przełączałem między pad PS4 i PS5 bez problemu i drgania były. Pod koniec rozgrywki było zdecydowanie mniej FPS."
+
+Rumble (input trace):
+  25,147 lines "input trace: rumble L/R for 100 ms via game controller -> 0", from line 448 (t ~40 s) to line 207347 (the end),
+  present in every 5,000-line block of the log; no "rumble:" failure line; no other rumble path ("via ..." variants: 1).
+  => the F214/F328 fallback (haptics stream -> SDL game-controller rumble, 100 ms writes) drove the rumble for the whole
+     session, with the DualShock 4 (connected at start) and after the switch to the DualSense alike.
+
+Audio ports (audio trace, KYTY_BC5_AUDIO_TRACE=1; 3,227 lines, all "device playing"):
+  port 1 type 0, 8 ch 48000 Hz   main output, 1,682 trace seconds
+  port 1 type 4, 1 ch 48000 Hz   pad-speaker port, 1,545 trace seconds, from t ~151 s (the pad switch, as F329's replug)
+  no type-10 (vibration) port in the trace, and no port with the pad stream's 6 channels
+  => no pad port was ever opened on a controller audio device in this run: the DualShock 4's sink ("Wireless Controller",
+     2 ch 32 kHz per sinks-2235.txt) did not match the new rule, as intended; the DualSense's device was not present when
+     the ports opened and ports are only re-routed on a device loss (audio.cpp pad_retry), so the "Wireless Controller"
+     match for the DualSense was not exercised here.
+
+APR / AMM:
+  no "amm trace" lines (KYTY_BC5_AMM_TRACE unset), no EBUSY, no error/fail/fatal lines in the log; 29 minutes of the
+  title's streaming through the APR engine with the new record sizes without a visible effect.
+
+Other lines at start: "bc5 ajm: ATRAC9 vibration layout 7 decoded by vgmstream (haptics)" (F301), "bc5-direct: shared map at 0x0+0x10000: -22" (known, F208).
+fps per minute (top session's digest): 24-41 flips/s, dips at minutes 13-14, 20 (15.9 avg, 26 s under 15), 23-24, 28; PSI memory full avg300 13.6 % at the end, zram 1.3 GB.

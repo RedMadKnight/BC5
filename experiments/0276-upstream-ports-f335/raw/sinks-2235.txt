@@ -1,0 +1,10 @@
+# 22:35:42 pactl list short sinks
+55	alsa_output.usb-DisplayLink_ThinkPad_USB_3.0_Pro_Dock_SERIAL-02.analog-stereo	PipeWire	s16le 2 k 48000 Hz	IDLE
+14496	alsa_output.usb-Sony_Interactive_Entertainment_Wireless_Controller-00.analog-stereo	PipeWire	s16le 2 k 32000 Hz	SUSPENDED
+# /proc/asound/cards
+ 0 [Controller     ]: USB-Audio - Wireless Controller
+                      Sony Interactive Entertainment Wireless Controller at usb-0000:00:10.0-2, full 
+ 1 [Dock           ]: USB-Audio - ThinkPad USB 3.0 Pro Dock
+                      DisplayLink ThinkPad USB 3.0 Pro Dock at usb-0000:00:10.0-1.1, super speed
+ 2 [Generic        ]: HDA-Intel - HD-Audio Generic
+                      HD-Audio Generic at 0xfe880000 irq 50

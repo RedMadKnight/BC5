@@ -1,0 +1,5 @@
+tree src/libs/audio.cpp md5 03b3af4e (expect 03b3af4e) 2026-10-24 17:06:41.900063089 +0200
+tree src/libs/libAmpr.cpp md5 5f2ec30b (expect 5f2ec30b) 2026-10-23 11:30:05.028099038 +0200
+shared binary 2026-10-24 22:06:22.358653099 +0200 166536664 md5 7947154c (expect 7947154c)
+patched: audio.cpp ee61d1d9 libAmpr.cpp 93bdfe77
+shared binary after: 7947154c (expect 7947154c)
