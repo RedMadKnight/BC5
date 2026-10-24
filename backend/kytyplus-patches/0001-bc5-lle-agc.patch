@@ -25858,7 +25858,7 @@ index fda2623..db5e40e 100644
  	return OK;
  }
 diff --git a/src/libs/libSaveData.cpp b/src/libs/libSaveData.cpp
-index 08aa121..e193d8b 100644
+index 08aa121..655395e 100644
 --- a/src/libs/libSaveData.cpp
 +++ b/src/libs/libSaveData.cpp
 @@ -13,13 +13,26 @@
@@ -25903,7 +25903,7 @@ index 08aa121..e193d8b 100644
  	while (*str != '\0' && *pattern != '\0') {
  		if (*pattern == '%') {
  			for (const char* s = str;; s++) {
-@@ -291,9 +311,139 @@ static bool dir_name_match(const char* str, const char* pattern) {
+@@ -291,9 +311,141 @@ static bool dir_name_match(const char* str, const char* pattern) {
  		str++;
  		pattern++;
  	}
@@ -25925,7 +25925,9 @@ index 08aa121..e193d8b 100644
 +static constexpr uint64_t SAVE_DATA_BLOCK_BYTES = 32768;
 +
 +static std::string save_data_title_root() {
-+	return Common::FixDirectorySlash(std::string(SAVE_DATA_DIR) + "/" + get_title_id());
++	// No trailing slash here: a sidecar path is this plus "/<dir>.blocks" (exp 0258, F319: FixDirectorySlash's
++	// trailing slash put the .blocks file inside the save directory and made the delete miss the .param).
++	return Common::FixFilenameSlash(std::string(SAVE_DATA_DIR) + "/" + get_title_id());
 +}
 +
 +static std::string save_data_blocks_path(const std::string& directory) {
@@ -26043,7 +26045,7 @@ index 08aa121..e193d8b 100644
  static int mount_save_data(int slot, std::string_view dir_name, const std::string& directory,
                             uint32_t status, SaveDataMountResult* result) {
  	const std::string mount_point = SaveDataMountSlots::MountPoint(static_cast<size_t>(slot));
-@@ -369,51 +519,85 @@ int KYTY_SYSV_ABI SaveDataDirNameSearch(const SaveDataDirNameSearchCond* cond,
+@@ -369,51 +521,85 @@ int KYTY_SYSV_ABI SaveDataDirNameSearch(const SaveDataDirNameSearchCond* cond,
  	std::memset(result->reserved, 0, sizeof(result->reserved));
  	result->pad2 = 0;
  
@@ -26157,15 +26159,15 @@ index 08aa121..e193d8b 100644
  		}
  	}
  
-@@ -481,9 +665,77 @@ int KYTY_SYSV_ABI SaveDataMount3(const SaveDataMount3* mount, SaveDataMountResul
+@@ -481,9 +667,77 @@ int KYTY_SYSV_ABI SaveDataMount3(const SaveDataMount3* mount, SaveDataMountResul
  		}
  	}
  
 +	// BC5 (blocks): the size the title asked for is kept with the save it created (AnyPS5 mount3);
 +	// a save from before this had no record and gets one from the first mount that names a size.
 +	if (mount->blocks != 0 &&
-+	    (created || !Common::File::IsFileExisting(save_data_blocks_path(Common::FixDirectorySlash(mount_dir))))) {
-+		save_data_keep_blocks(Common::FixDirectorySlash(mount_dir), mount->blocks);
++	    (created || !Common::File::IsFileExisting(save_data_blocks_path(Common::FixFilenameSlash(mount_dir))))) {
++		save_data_keep_blocks(Common::FixFilenameSlash(mount_dir), mount->blocks);
 +	}
 +
  	return mount_save_data(slot, dir_name, mount_dir, created ? 1u : 0u, mount_result);
@@ -26235,7 +26237,7 @@ index 08aa121..e193d8b 100644
  int KYTY_SYSV_ABI SaveDataSetupSaveDataMemory2(const SaveDataMemorySetup2* setup_param,
                                                 SaveDataMemorySetupResult*  result) {
  	PRINT_NAME();
-@@ -500,6 +752,8 @@ int KYTY_SYSV_ABI SaveDataSetupSaveDataMemory2(const SaveDataMemorySetup2* setup
+@@ -500,6 +754,8 @@ int KYTY_SYSV_ABI SaveDataSetupSaveDataMemory2(const SaveDataMemorySetup2* setup
  	     setup_param->option, setup_param->user_id, static_cast<uint64_t>(setup_param->memory_size),
  	     static_cast<uint64_t>(setup_param->icon_memory_size), setup_param->slot_id);
  
@@ -26244,7 +26246,7 @@ index 08aa121..e193d8b 100644
  	if (setup_param->memory_size > g_save_data_memory.size()) {
  		g_save_data_memory.resize(setup_param->memory_size);
  	}
-@@ -528,6 +782,8 @@ int KYTY_SYSV_ABI SaveDataGetSaveDataMemory2(SaveDataMemoryGet2* get_param) {
+@@ -528,6 +784,8 @@ int KYTY_SYSV_ABI SaveDataGetSaveDataMemory2(SaveDataMemoryGet2* get_param) {
  	     reinterpret_cast<uint64_t>(get_param->param), reinterpret_cast<uint64_t>(get_param->icon),
  	     get_param->slot_id);
  
@@ -26253,7 +26255,7 @@ index 08aa121..e193d8b 100644
  	if (get_param->data != nullptr) {
  		auto* data = get_param->data;
  		if (data->buf == nullptr || data->offset < 0) {
-@@ -567,6 +823,8 @@ int KYTY_SYSV_ABI SaveDataSetSaveDataMemory2(const SaveDataMemorySet2* set_param
+@@ -567,6 +825,8 @@ int KYTY_SYSV_ABI SaveDataSetSaveDataMemory2(const SaveDataMemorySet2* set_param
  	     reinterpret_cast<uint64_t>(set_param->param), reinterpret_cast<uint64_t>(set_param->icon),
  	     set_param->data_num, set_param->slot_id);
  
@@ -26262,7 +26264,7 @@ index 08aa121..e193d8b 100644
  	const uint32_t data_num = (set_param->data_num == 0 ? 1 : set_param->data_num);
  	if (set_param->data != nullptr) {
  		for (uint32_t i = 0; i < data_num; i++) {
-@@ -581,6 +839,7 @@ int KYTY_SYSV_ABI SaveDataSetSaveDataMemory2(const SaveDataMemorySet2* set_param
+@@ -581,6 +841,7 @@ int KYTY_SYSV_ABI SaveDataSetSaveDataMemory2(const SaveDataMemorySet2* set_param
  			}
  			std::memcpy(g_save_data_memory.data() + offset, data.buf, data.buf_size);
  		}
@@ -26270,7 +26272,7 @@ index 08aa121..e193d8b 100644
  	}
  
  	return OK;
-@@ -697,9 +956,26 @@ int KYTY_SYSV_ABI SaveDataDelete(const SaveDataDelete* del) {
+@@ -697,9 +958,26 @@ int KYTY_SYSV_ABI SaveDataDelete(const SaveDataDelete* del) {
  
  	std::string dir =
  	    std::string(SAVE_DATA_DIR) + "/" + get_title_id() + "/" + std::string(del->dir_name->data);
@@ -26294,12 +26296,12 @@ index 08aa121..e193d8b 100644
 +	}
 +	// BC5 (blocks): the save's sidecars go with it.
 +	std::error_code sidecar_ec;
-+	std::filesystem::remove(save_data_blocks_path(Common::FixDirectorySlash(dir)), sidecar_ec);
-+	std::filesystem::remove(save_data_param_path(Common::FixDirectorySlash(dir)), sidecar_ec);
++	std::filesystem::remove(save_data_blocks_path(Common::FixFilenameSlash(dir)), sidecar_ec);
++	std::filesystem::remove(save_data_param_path(Common::FixFilenameSlash(dir)), sidecar_ec);
  
  	return OK;
  }
-@@ -722,6 +998,19 @@ int KYTY_SYSV_ABI SaveDataGetParam(const SaveDataMountPoint* mount_point, uint32
+@@ -722,6 +1000,19 @@ int KYTY_SYSV_ABI SaveDataGetParam(const SaveDataMountPoint* mount_point, uint32
  			return SAVE_DATA_ERROR_PARAMETER;
  		}
  		std::memset(param_buf, 0, sizeof(SaveDataParam));
@@ -26319,7 +26321,7 @@ index 08aa121..e193d8b 100644
  		if (got_size != nullptr) {
  			*got_size = sizeof(SaveDataParam);
  		}
-@@ -777,6 +1066,16 @@ int KYTY_SYSV_ABI SaveDataSyncSaveDataMemory(const void* sync_param) {
+@@ -777,6 +1068,16 @@ int KYTY_SYSV_ABI SaveDataSyncSaveDataMemory(const void* sync_param) {
  
  int KYTY_SYSV_ABI SaveDataGetEventResult(const void* event_param, SaveDataEvent* event) {
  	PRINT_NAME();
@@ -26336,7 +26338,7 @@ index 08aa121..e193d8b 100644
  
  	LOGF("\t event_param = 0x%016" PRIx64 "\n"
  	     "\t event       = 0x%016" PRIx64 "\n",
-@@ -844,6 +1143,20 @@ int KYTY_SYSV_ABI SaveDataSetParam(const SaveDataMountPoint* mount_point, uint32
+@@ -844,6 +1145,20 @@ int KYTY_SYSV_ABI SaveDataSetParam(const SaveDataMountPoint* mount_point, uint32
  		     "\t detail     = %s\n"
  		     "\t user_param = %u\n",
  		     p->title, p->sub_title, p->detail, p->user_param);
@@ -26357,7 +26359,7 @@ index 08aa121..e193d8b 100644
  	} else {
  		LOGF("\t unsupported param_type, accepting as no-op\n");
  	}
-@@ -860,8 +1173,19 @@ int KYTY_SYSV_ABI SaveDataGetMountInfo(const SaveDataMountPoint* mount_point,
+@@ -860,8 +1175,19 @@ int KYTY_SYSV_ABI SaveDataGetMountInfo(const SaveDataMountPoint* mount_point,
  
  	*info = {};
  
@@ -26377,7 +26379,7 @@ index 08aa121..e193d8b 100644
  
  	return OK;
  }
-@@ -885,7 +1209,27 @@ namespace LibSaveDataNative {
+@@ -885,7 +1211,27 @@ namespace LibSaveDataNative {
  
  LIB_VERSION("SaveData_native", 1, "SaveData_native", 1, 1);
  
