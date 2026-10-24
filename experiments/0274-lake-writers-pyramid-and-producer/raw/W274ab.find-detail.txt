@@ -1,0 +1,54 @@
+# exp 0274: more of the _FIND summaries than W274a/W274b.find.txt keep. These lines were printed on the box from
+# W274a/W274b.pool.txt (the "draw journal find" lines of the runs' direct.log) and the W274a direct.log, 21:10-21:22,
+# and are copied here from the session's output; the pool files stay on the box.
+# Kinds are counted by (draw/dispatch, pixel or compute shader, user-data slot, direct value or table).
+# W274a: 2 dispatch kinds, 59 kinds, 2689 hits; W274b: 2 dispatch kinds, 69 kinds, 3097 hits (the .find.txt files).
+
+== W274a, the 25 most frequent kinds (hits, kind, shader, slot, how)
+473 draw ps 11d01ba000 ud12 table
+408 draw ps 11d29e9600 ud20 table
+155 draw ps 11d373e600 ud20 table
+132 draw ps 11d1d74b00 ud24 table
+99 draw ps 11d01b9f00 ud16 table
+88 draw ps 11d01ba300 ud16 table
+88 draw ps 11d01b9f00 ud12 table
+72 draw ps 11d01dbd00 ud16 table
+72 draw ps 11d1dd3800 ud24 table
+60 draw ps 11d01dac00 ud16 table
+56 draw ps 11d29c4900 ud24 table
+55 draw ps 11d01ba700 ud8 table
+55 draw ps 11d1432b00 ud16 table
+55 draw ps 11d1cc4200 ud20 table
+49 draw ps 11d1e2b900 ud24 table
+48 draw ps 11d01b9100 ud0 direct
+48 draw ps 11d4690600 ud24 table
+44 draw ps 11d331c500 ud24 table
+36 draw ps 11d1d10f00 ud20 table
+25 draw ps 11d46b6400 ud24 table
+24 draw ps 11d3ebdc00 ud20 table
+24 draw ps 11d1d41600 ud20 table
+24 draw ps 11d1d96400 ud20 table
+24 draw ps 11d46a3e00 ud24 table
+24 draw ps 11d2a2a500 ud20 table
+
+== W274a direct.log, the first two "find table" lines (cut at 120 columns): the pyramid's mip-0 and mip-1 image
+== descriptors (base 11d08860.., 11d088e0..); word 3 = 90500324
+find table 1123946c00: 11d08860 c1600000 000fc01f 90500324 00000000 00700000 00000000 00000000 11d088e0 c1600000 0007c00
+find table 1123947680: 11d08860 c1600000 000fc01f 90500324 00000000 00700000 00000000 00000000 11d088e0 c1600000 0007c00
+
+== the dispatch hits, sorted, first 6 per run (cs, slot, how, value, the dispatch packet's first 4 dwords)
+== W274a
+      1 cs 11d0288800 ud0 table e036f750 pkt c0031500 00001800 00000001 00000001
+      1 cs 11d0288800 ud0 table e048f750 pkt c0031500 00001800 00000001 00000001
+      1 cs 11d0288800 ud0 table e058f750 pkt c0031500 00001800 00000001 00000001
+      1 cs 11d0288800 ud0 table e05cf750 pkt c0031500 00001800 00000001 00000001
+      1 cs 11d0288800 ud0 table e062f750 pkt c0031500 00001800 00000001 00000001
+      1 cs 11d0288800 ud0 table e068f750 pkt c0031500 00001800 00000001 00000001
+== W274b
+      1 cs 11d0288800 ud0 table e040f750 pkt c0031500 00001800 00000001 00000001
+      1 cs 11d0288800 ud0 table e058f750 pkt c0031500 00001800 00000001 00000001
+      1 cs 11d0288800 ud0 table e064f750 pkt c0031500 00001800 00000001 00000001
+      1 cs 11d0288800 ud0 table e06cf750 pkt c0031500 00001800 00000001 00000001
+      1 cs 11d0288800 ud0 table e076f750 pkt c0031500 00001800 00000001 00000001
+      1 cs 11d0288800 ud0 table e08cf750 pkt c0031500 00001800 00000001 00000001
+# The second dispatch kind of each run sorts after these lines and was not printed.
