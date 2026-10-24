@@ -85,6 +85,11 @@ stated number of times; the script refuses otherwise) and writes `patch_0273.dif
   BOX-LOCK, no emulator run. Offline: `verify0273.pl` checks every anchor against patch 0001 on main
   (the committed tree); the box's shared tree is newer (exp 0260's integration), and the script checks
   again there.
+- For the water session (F333): the switch drops exactly the five listed programs plus whatever the
+  detection marks (each marked program is named in the journal as "ray tracing: program 0x… uses
+  image_bvh…"), and only their dispatches; no draw, no DMA, no other dispatch is touched. Whether a
+  non-RT pass shares those programs. buffers is not known here: the journal.s list of marked programs
+  per run is the thing to check before using the switch as the lake.s A/B.
 - Not in this diff: the F332 proposal of a compute-ring refusal for `DISPATCH_INDIRECT`
   (`backend/src/policy.cpp`, the exp 0160 note) — kept apart on the top session's instruction.
 
