@@ -1,0 +1,23 @@
++ /usr/bin/clang++ -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_BUILD -DZYDIS_STATIC_BUILD -D_LAR ...
+In file included from /home/kjaniszewski/bc5-work/exp0272/src/bc5LleAgc.v2.cpp:27:
+In file included from /home/kjaniszewski/src/KytyPlus/src/kernel/fileSystem.h:6:
+/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: warning: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations]
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t> convert;
+      |              ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: note: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here
+  262 |     class _GLIBCXX17_DEPRECATED wstring_convert
+      |           ^
+/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: note: expanded from macro '_GLIBCXX17_DEPRECATED'
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]]
+      |                                  ^
+/home/kjaniszewski/bc5-work/exp0272/src/bc5LleAgc.v2.cpp:2333:122: warning: format specifies type 'unsigned long' but the argument has type 'unsigned long long' [-Wformat]
+ 2333 |                                         if ((n_low++ & 0xffu) == 0) journal("scratch: zero page at 0x%" PRIx64 " refused, trying from 0x%" PRIx64 "\n", pa, pa + 0x10000ull);
+      |                                                                                                                                         ~~~~~~~~~           ^~~~~~~~~~~~~~~
+/home/kjaniszewski/bc5-work/exp0272/src/bc5LleAgc.v2.cpp:73:15: warning: unused variable 'OK' [-Wunused-const-variable]
+   73 | constexpr int OK = 0;
+      |               ^~
+/home/kjaniszewski/bc5-work/exp0272/src/bc5LleAgc.v2.cpp:366:20: warning: unused variable 'IT_DMA_DATA' [-Wunused-const-variable]
+  366 | constexpr uint32_t IT_DMA_DATA             = 0x50;
+      |                    ^~~~~~~~~~~
+4 warnings generated.
++ /usr/bin/clang++ -fno-rtti -fno-exceptions -fcolor-diagnostics -finput-charset=UTF-8 -fexec-charset=UTF-8 -g -fno-strict-aliasing -fno-omit-frame-pointer -Wall -fmessage-length=0 -fno-rtti -fno-except ...
