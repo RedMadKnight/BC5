@@ -1,0 +1,40 @@
+Per run (ab0264.sh): verdict, summary, the emulator's switches, the box's memory over the run, the play log's last tiler-pool line.
+== A1
+A1 (arm A): stopped at 300 s; crash lines 0, kernel lines 0, TIMEOUT lines 0, shots 4
+pass
+run A1, arm A ('launcher default'), 300 s, launcher /home/kjaniszewski/bc5-work/play-pkg.sh md5 3973c8ca, binary /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator md5 ce2e5d7a
+boot 9f3e0da8, up since 2026-10-24 13:52:41
+environ: BC5_DIRECT_CS_PREFIX=1 BC5_DIRECT_SKIP_PGM=909974400 BC5_DIRECT_AMM_PRT=1 PLAY_CAPTURE=1 BC5_DIRECT_GC_TF_RING=1 BC5_DIRECT_FLAT_APERTURE=1 
+box: avail 13323 -> 584 MiB; compact_stall +530, pswpin +418135, majfault +439280; PSI mem full 8.0 s
+bc5 tiler scratch: 11264 requests, 3 new buffers (96.0 MiB), pool on, 11261 reused, 2 free
+live saves back and identical to /home/kjaniszewski/bc5-work/exp0196/saves-before-153526-164837631-629108
+== B1
+B1 (arm B): stopped at 300 s; crash lines 0, kernel lines 0, TIMEOUT lines 0, shots 4
+pass
+run B1, arm B ('BC5_DIRECT_SKIP_PGM=1'), 300 s, launcher /home/kjaniszewski/bc5-work/play-pkg.sh md5 3973c8ca, binary /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator md5 ce2e5d7a
+boot 9f3e0da8, up since 2026-10-24 13:52:41
+environ: BC5_DIRECT_CS_PREFIX=1 BC5_DIRECT_SKIP_PGM=1 BC5_DIRECT_AMM_PRT=1 PLAY_CAPTURE=1 BC5_DIRECT_GC_TF_RING=1 BC5_DIRECT_FLAT_APERTURE=1 
+box: avail 13247 -> 603 MiB; compact_stall +897, pswpin +192968, majfault +210251; PSI mem full 9.1 s
+bc5 tiler scratch: 11264 requests, 3 new buffers (96.0 MiB), pool on, 11261 reused, 2 free
+live saves back and identical to /home/kjaniszewski/bc5-work/exp0196/saves-before-154039-153656164-688914
+== A2
+A2 (arm A): stopped at 300 s; crash lines 0, kernel lines 0, TIMEOUT lines 0, shots 4
+pass
+run A2, arm A ('launcher default'), 300 s, launcher /home/kjaniszewski/bc5-work/play-pkg.sh md5 3973c8ca, binary /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator md5 ce2e5d7a
+boot 9f3e0da8, up since 2026-10-24 13:52:41
+environ: BC5_DIRECT_CS_PREFIX=1 BC5_DIRECT_SKIP_PGM=909974400 BC5_DIRECT_AMM_PRT=1 PLAY_CAPTURE=1 BC5_DIRECT_GC_TF_RING=1 BC5_DIRECT_FLAT_APERTURE=1 
+box: avail 13316 -> 594 MiB; compact_stall +212, pswpin +156012, majfault +170624; PSI mem full 7.2 s
+bc5 tiler scratch: 11264 requests, 3 new buffers (96.0 MiB), pool on, 11261 reused, 2 free
+live saves back and identical to /home/kjaniszewski/bc5-work/exp0196/saves-before-154551-779514967-748133
+== B2
+B2 (arm B): stopped at 300 s; crash lines 0, kernel lines 0, TIMEOUT lines 0, shots 4
+pass
+run B2, arm B ('BC5_DIRECT_SKIP_PGM=1'), 300 s, launcher /home/kjaniszewski/bc5-work/play-pkg.sh md5 3973c8ca, binary /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator md5 ce2e5d7a
+boot 9f3e0da8, up since 2026-10-24 13:52:41
+environ: BC5_DIRECT_CS_PREFIX=1 BC5_DIRECT_SKIP_PGM=1 BC5_DIRECT_AMM_PRT=1 PLAY_CAPTURE=1 BC5_DIRECT_GC_TF_RING=1 BC5_DIRECT_FLAT_APERTURE=1 
+box: avail 13304 -> 611 MiB; compact_stall +107, pswpin +298522, majfault +318680; PSI mem full 6.0 s
+bc5 tiler scratch: 11264 requests, 3 new buffers (96.0 MiB), pool on, 11261 reused, 2 free
+live saves back and identical to /home/kjaniszewski/bc5-work/exp0196/saves-before-155104-586924272-808160
+
+2026-10-24 15:35:24 live saves db52cb5f327c3de5 (want db52cb5f327c3de5); shared binary md5 ce2e5d7a (2026-10-24 15:26)
+2026-10-24 15:56:14 live saves db52cb5f327c3de5 (want db52cb5f327c3de5)

@@ -1,0 +1,29 @@
+Skip-counter and first-dispatch lines per run, with the journal time of the last frame profile before them.
+== A1
+  t 41.873   skip pgm 0x909974400: dcb dispatch op 16 at 25779 dropped (1 so far)
+  t 41.873 flat aperture: program 0x11d049aa00: 6 stack pushes (2 s_brev_b32) now address the host's LDS/privat
+  t 41.873 flat aperture: program 0x11d040e200: 6 stack pushes (1 s_brev_b32) now address the host's LDS/privat
+  t 103.028 flat aperture: program 0x11d0488a00: 6 stack pushes (2 s_brev_b32) now address the host's LDS/privat
+  t 103.028 flat aperture: program 0x11d04bb900: 6 stack pushes (2 s_brev_b32) now address the host's LDS/privat
+  t 103.028 flat aperture: program 0x11d040c900: 6 stack pushes (1 s_brev_b32) now address the host's LDS/privat
+  t 103.248   skip pgm 0x909974400: dcb dispatch op 16 at 39523 dropped (4097 so far)
+== B1
+  t 40.628 flat aperture: program 0x11d049aa00: 6 stack pushes (2 s_brev_b32) now address the host's LDS/privat
+  t 40.628 flat aperture: program 0x11d040e200: 6 stack pushes (1 s_brev_b32) now address the host's LDS/privat
+  t 101.600 flat aperture: program 0x11d0488a00: 6 stack pushes (2 s_brev_b32) now address the host's LDS/privat
+  t 101.600 flat aperture: program 0x11d04bb900: 6 stack pushes (2 s_brev_b32) now address the host's LDS/privat
+  t 101.600 flat aperture: program 0x11d040c900: 6 stack pushes (1 s_brev_b32) now address the host's LDS/privat
+== A2
+  t 40.800   skip pgm 0x909974400: dcb dispatch op 16 at 25779 dropped (1 so far)
+  t 40.800 flat aperture: program 0x11d049aa00: 6 stack pushes (2 s_brev_b32) now address the host's LDS/privat
+  t 40.800 flat aperture: program 0x11d040e200: 6 stack pushes (1 s_brev_b32) now address the host's LDS/privat
+  t 101.404 flat aperture: program 0x11d0488a00: 6 stack pushes (2 s_brev_b32) now address the host's LDS/privat
+  t 101.404 flat aperture: program 0x11d04bb900: 6 stack pushes (2 s_brev_b32) now address the host's LDS/privat
+  t 101.404 flat aperture: program 0x11d040c900: 6 stack pushes (1 s_brev_b32) now address the host's LDS/privat
+  t 101.652   skip pgm 0x909974400: dcb dispatch op 16 at 120279 dropped (4097 so far)
+== B2
+  t 40.921 flat aperture: program 0x11d049aa00: 6 stack pushes (2 s_brev_b32) now address the host's LDS/privat
+  t 40.921 flat aperture: program 0x11d040e200: 6 stack pushes (1 s_brev_b32) now address the host's LDS/privat
+  t 101.306 flat aperture: program 0x11d0488a00: 6 stack pushes (2 s_brev_b32) now address the host's LDS/privat
+  t 101.306 flat aperture: program 0x11d04bb900: 6 stack pushes (2 s_brev_b32) now address the host's LDS/privat
+  t 101.306 flat aperture: program 0x11d040c900: 6 stack pushes (1 s_brev_b32) now address the host's LDS/privat
