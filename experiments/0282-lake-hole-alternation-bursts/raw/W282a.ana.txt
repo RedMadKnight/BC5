@@ -1,0 +1,288 @@
+# /home/kjaniszewski/bc5-data/priv/exp0282/W282a: 12 bursts; 25 patched shots give the cell mask: 0.126 of the lake window (56230 pixels)
+== b01 at 21:43:43 mixed
+   g   start  520.2 read   8.8 ms: size 3328x1872 (shear 0.88, next 3072 at 12.38); cleared 0.134 of the window
+   z0  start    0.0 read  15.7 ms: size 2304x1296 (shear 1.79, next 3072 at 1.80); depth 0 0.000 (cells 0.000, rest 0.000; bands 0.000 0.000 0.000 0.000); phi with G-buffer cleared +nan
+   z1  start   23.1 read  13.1 ms: size 3072x1728 (shear 1.11, next 2816 at 8.66); depth 0 0.094 (cells 0.611, rest 0.020; bands 0.031 0.098 0.067 0.182); phi with G-buffer cleared -0.120
+   z2  start  102.7 read   8.2 ms: size 3072x1728 (shear 2.34, next 3328 at 2.35); depth 0 0.100 (cells 0.055, rest 0.107; bands 0.029 0.074 0.171 0.128); phi with G-buffer cleared +0.835
+   z3  start  238.9 read   7.2 ms: size 2560x1440 (shear 1.31, next 2304 at 1.42); depth 0 0.053 (cells 0.119, rest 0.044; bands 0.047 0.057 0.031 0.076); phi with G-buffer cleared +0.037
+   z4  start  363.9 read   7.6 ms: size 2560x1440 (shear 1.32, next 2816 at 1.41); depth 0 0.045 (cells 0.076, rest 0.040; bands 0.047 0.055 0.030 0.047); phi with G-buffer cleared +0.038
+   z5  start  411.9 read   6.7 ms: size 3328x1872 (shear 0.80, next 3072 at 6.45); depth 0 0.128 (cells 0.073, rest 0.136; bands 0.065 0.120 0.201 0.127); phi with G-buffer cleared +0.973
+   pair z0-z1 lag   23.1 ms sizes 2304/3072: of z0's depth-0 pixels 0.000 are depth 0 in z1; phi +nan (bands +nan +nan +nan +nan)
+   pair z0-z2 lag  102.7 ms sizes 2304/3072: of z0's depth-0 pixels 0.000 are depth 0 in z2; phi +nan (bands +nan +nan +nan +nan)
+   pair z0-z3 lag  238.9 ms sizes 2304/2560: of z0's depth-0 pixels 0.000 are depth 0 in z3; phi +nan (bands +nan +nan +nan +nan)
+   pair z0-z4 lag  363.9 ms sizes 2304/2560: of z0's depth-0 pixels 0.000 are depth 0 in z4; phi +nan (bands +nan +nan +nan +nan)
+   pair z0-z5 lag  411.9 ms sizes 2304/3328: of z0's depth-0 pixels 0.000 are depth 0 in z5; phi +nan (bands +nan +nan +nan +nan)
+   pair z1-z2 lag   79.6 ms sizes 3072/3072: of z1's depth-0 pixels 0.007 are depth 0 in z2; phi -0.101 (bands -0.02 -0.09 -0.12 -0.17)
+   pair z1-z3 lag  215.8 ms sizes 3072/2560: of z1's depth-0 pixels 0.150 are depth 0 in z3; phi +0.135 (bands +0.06 +0.07 +0.05 +0.23)
+   pair z1-z4 lag  340.8 ms sizes 3072/2560: of z1's depth-0 pixels 0.088 are depth 0 in z4; phi +0.065 (bands +0.06 +0.08 +0.05 +0.07)
+   pair z1-z5 lag  388.8 ms sizes 3072/3328: of z1's depth-0 pixels 0.008 are depth 0 in z5; phi -0.116 (bands -0.04 -0.11 -0.13 -0.17)
+   pair z2-z3 lag  136.2 ms sizes 3072/2560: of z2's depth-0 pixels 0.084 are depth 0 in z3; phi +0.045 (bands +0.06 +0.05 +0.05 +0.05)
+   pair z2-z4 lag  261.2 ms sizes 3072/2560: of z2's depth-0 pixels 0.072 are depth 0 in z4; phi +0.043 (bands +0.06 +0.06 +0.04 +0.05)
+   pair z2-z5 lag  309.2 ms sizes 3072/3328: of z2's depth-0 pixels 0.982 are depth 0 in z5; phi +0.853 (bands +0.63 +0.75 +0.89 +0.98)
+   pair z3-z4 lag  125.0 ms sizes 2560/2560: of z3's depth-0 pixels 0.797 are depth 0 in z4; phi +0.859 (bands +0.97 +0.92 +0.88 +0.73)
+   pair z3-z5 lag  173.0 ms sizes 2560/3328: of z3's depth-0 pixels 0.171 are depth 0 in z5; phi +0.034 (bands +0.03 +0.04 +0.04 +0.05)
+   pair z4-z5 lag   48.0 ms sizes 2560/3328: of z4's depth-0 pixels 0.177 are depth 0 in z5; phi +0.035 (bands +0.03 +0.04 +0.03 +0.05)
+== b02 at 21:43:53 patched
+   g   start  385.4 read   6.2 ms: size 3072x1728 (shear 1.07, next 3328 at 25.72); cleared 0.623 of the window
+   z0  start    0.0 read  13.8 ms: size 3328x1872 (shear 2.33, next 3072 at 4.14); depth 0 0.236 (cells 0.107, rest 0.254; bands 0.179 0.243 0.342 0.179); phi with G-buffer cleared +0.431
+   z1  start   22.3 read  12.3 ms: size 3328x1872 (shear 1.30, next 3072 at 1.34); depth 0 0.248 (cells 0.107, rest 0.269; bands 0.227 0.242 0.342 0.179); phi with G-buffer cleared +0.436
+   z2  start   84.7 read   7.9 ms: size 2560x1440 (shear 1.21, next 2048 at 1.22); depth 0 0.055 (cells 0.047, rest 0.056; bands 0.025 0.020 0.152 0.027); phi with G-buffer cleared +0.116
+   z3  start  135.7 read   7.1 ms: size 2304x1296 (shear 1.28, next 2560 at 1.40); depth 0 0.031 (cells 0.045, rest 0.030; bands 0.033 0.042 0.027 0.023); phi with G-buffer cleared -0.028
+   z4  start  185.2 read   8.6 ms: size 3072x1728 (shear 2.33, next 3328 at 2.35); depth 0 0.253 (cells 0.862, rest 0.165; bands 0.195 0.271 0.228 0.318); phi with G-buffer cleared +0.452
+   z5  start  304.6 read   7.3 ms: size 2304x1296 (shear 1.31, next 3328 at 1.34); depth 0 0.032 (cells 0.047, rest 0.030; bands 0.033 0.043 0.028 0.023); phi with G-buffer cleared -0.027
+   pair z0-z1 lag   22.3 ms sizes 3328/3328: of z0's depth-0 pixels 0.993 are depth 0 in z1; phi +0.971 (bands +0.90 +0.99 +0.99 +0.99)
+   pair z0-z2 lag   84.7 ms sizes 3328/2560: of z0's depth-0 pixels 0.131 are depth 0 in z2; phi +0.186 (bands -0.07 -0.04 +0.34 +0.16)
+   pair z0-z3 lag  135.7 ms sizes 3328/2304: of z0's depth-0 pixels 0.034 are depth 0 in z3; phi +0.007 (bands +0.02 -0.01 -0.00 +0.03)
+   pair z0-z4 lag  185.2 ms sizes 3328/3072: of z0's depth-0 pixels 0.032 are depth 0 in z4; phi -0.282 (bands -0.07 -0.33 -0.38 -0.31)
+   pair z0-z5 lag  304.6 ms sizes 3328/2304: of z0's depth-0 pixels 0.034 are depth 0 in z5; phi +0.008 (bands +0.03 -0.02 -0.00 +0.03)
+   pair z1-z2 lag   62.4 ms sizes 3328/2560: of z1's depth-0 pixels 0.129 are depth 0 in z2; phi +0.185 (bands -0.06 -0.04 +0.34 +0.16)
+   pair z1-z3 lag  113.4 ms sizes 3328/2304: of z1's depth-0 pixels 0.034 are depth 0 in z3; phi +0.007 (bands +0.03 -0.02 -0.00 +0.03)
+   pair z1-z4 lag  162.9 ms sizes 3328/3072: of z1's depth-0 pixels 0.034 are depth 0 in z4; phi -0.289 (bands -0.07 -0.33 -0.38 -0.31)
+   pair z1-z5 lag  282.3 ms sizes 3328/2304: of z1's depth-0 pixels 0.034 are depth 0 in z5; phi +0.008 (bands +0.03 -0.02 -0.00 +0.03)
+   pair z2-z3 lag   51.0 ms sizes 2560/2304: of z2's depth-0 pixels 0.018 are depth 0 in z3; phi -0.018 (bands -0.03 +0.04 -0.03 -0.02)
+   pair z2-z4 lag  100.5 ms sizes 2560/3072: of z2's depth-0 pixels 0.182 are depth 0 in z4; phi -0.040 (bands -0.08 -0.09 -0.01 -0.00)
+   pair z2-z5 lag  219.9 ms sizes 2560/2304: of z2's depth-0 pixels 0.021 are depth 0 in z5; phi -0.015 (bands -0.03 +0.04 -0.03 -0.02)
+   pair z3-z4 lag   49.5 ms sizes 2304/3072: of z3's depth-0 pixels 0.294 are depth 0 in z4; phi +0.018 (bands +0.01 +0.02 -0.01 +0.06)
+   pair z3-z5 lag  168.9 ms sizes 2304/2304: of z3's depth-0 pixels 0.943 are depth 0 in z5; phi +0.940 (bands +0.96 +0.96 +0.92 +0.91)
+   pair z4-z5 lag  119.4 ms sizes 3072/2304: of z4's depth-0 pixels 0.037 are depth 0 in z5; phi +0.019 (bands +0.01 +0.02 -0.01 +0.06)
+== b03 at 21:44:02 patched
+   g   start  525.3 read   8.8 ms: size 3328x1872 (shear 5.56, next 3072 at 26.83); cleared 0.623 of the window
+   z0  start    0.0 read  16.8 ms: size 2560x1440 (shear 1.39, next 2816 at 1.66); depth 0 0.114 (cells 0.099, rest 0.116; bands 0.001 0.139 0.289 0.034); phi with G-buffer cleared +0.214
+   z1  start   24.9 read  14.5 ms: size 3328x1872 (shear 0.36, next 3072 at 7.02); depth 0 0.291 (cells 0.866, rest 0.208; bands 0.275 0.341 0.228 0.318); phi with G-buffer cleared +0.497
+   z2  start   63.1 read   8.0 ms: size 3328x1872 (shear 2.32, next 3072 at 7.06); depth 0 0.250 (cells 0.862, rest 0.162; bands 0.184 0.271 0.228 0.317); phi with G-buffer cleared +0.449
+   z3  start  156.8 read   8.2 ms: size 3328x1872 (shear 0.76, next 3072 at 6.96); depth 0 0.254 (cells 0.105, rest 0.275; bands 0.252 0.242 0.342 0.179); phi with G-buffer cleared +0.454
+   z4  start  234.2 read   8.1 ms: size 3328x1872 (shear 2.40, next 3072 at 6.97); depth 0 0.254 (cells 0.104, rest 0.275; bands 0.252 0.242 0.342 0.179); phi with G-buffer cleared +0.454
+   z5  start  340.3 read   7.7 ms: size 3328x1872 (shear 0.75, next 3072 at 7.02); depth 0 0.250 (cells 0.863, rest 0.162; bands 0.197 0.272 0.225 0.307); phi with G-buffer cleared +0.450
+   pair z0-z1 lag   24.9 ms sizes 2560/3328: of z0's depth-0 pixels 0.274 are depth 0 in z1; phi -0.015 (bands +0.05 +0.04 -0.03 -0.02)
+   pair z0-z2 lag   63.1 ms sizes 2560/3328: of z0's depth-0 pixels 0.272 are depth 0 in z2; phi +0.017 (bands +0.06 +0.10 -0.03 -0.02)
+   pair z0-z3 lag  156.8 ms sizes 2560/3328: of z0's depth-0 pixels 0.572 are depth 0 in z3; phi +0.259 (bands -0.01 +0.12 +0.46 +0.12)
+   pair z0-z4 lag  234.2 ms sizes 2560/3328: of z0's depth-0 pixels 0.572 are depth 0 in z4; phi +0.259 (bands -0.01 +0.12 +0.46 +0.12)
+   pair z0-z5 lag  340.3 ms sizes 2560/3328: of z0's depth-0 pixels 0.263 are depth 0 in z5; phi +0.010 (bands +0.06 +0.10 -0.04 -0.03)
+   pair z1-z2 lag   38.2 ms sizes 3328/3328: of z1's depth-0 pixels 0.851 are depth 0 in z2; phi +0.887 (bands +0.75 +0.83 +0.98 +0.99)
+   pair z1-z3 lag  131.9 ms sizes 3328/3328: of z1's depth-0 pixels 0.005 are depth 0 in z3; phi -0.365 (bands -0.35 -0.40 -0.38 -0.31)
+   pair z1-z4 lag  209.3 ms sizes 3328/3328: of z1's depth-0 pixels 0.007 are depth 0 in z4; phi -0.363 (bands -0.35 -0.40 -0.38 -0.31)
+   pair z1-z5 lag  315.4 ms sizes 3328/3328: of z1's depth-0 pixels 0.841 are depth 0 in z5; phi +0.872 (bands +0.71 +0.83 +0.98 +0.97)
+   pair z2-z3 lag   93.7 ms sizes 3328/3328: of z2's depth-0 pixels 0.004 are depth 0 in z3; phi -0.331 (bands -0.27 -0.34 -0.39 -0.31)
+   pair z2-z4 lag  171.1 ms sizes 3328/3328: of z2's depth-0 pixels 0.004 are depth 0 in z4; phi -0.332 (bands -0.27 -0.34 -0.39 -0.31)
+   pair z2-z5 lag  277.2 ms sizes 3328/3328: of z2's depth-0 pixels 0.987 are depth 0 in z5; phi +0.982 (bands +0.96 +1.00 +0.99 +0.98)
+   pair z3-z4 lag   77.4 ms sizes 3328/3328: of z3's depth-0 pixels 0.999 are depth 0 in z4; phi +0.998 (bands +1.00 +1.00 +1.00 +1.00)
+   pair z3-z5 lag  183.5 ms sizes 3328/3328: of z3's depth-0 pixels 0.004 are depth 0 in z5; phi -0.331 (bands -0.28 -0.34 -0.38 -0.31)
+   pair z4-z5 lag  106.1 ms sizes 3328/3328: of z4's depth-0 pixels 0.003 are depth 0 in z5; phi -0.332 (bands -0.28 -0.34 -0.38 -0.31)
+== b04 at 21:44:12 patched
+   g   start  221.1 read   7.7 ms: size 3072x1728 (shear 1.07, next 3328 at 16.64); cleared 0.309 of the window
+   z0  start    0.0 read  14.2 ms: size 3328x1872 (shear 0.78, next 3072 at 7.02); depth 0 0.295 (cells 0.867, rest 0.213; bands 0.291 0.341 0.228 0.319); phi with G-buffer cleared +0.675
+   z1  start   22.4 read  14.0 ms: size 3328x1872 (shear 1.24, next 3072 at 1.28); depth 0 0.343 (cells 0.870, rest 0.262; bands 0.323 0.384 0.278 0.389); phi with G-buffer cleared +0.609
+   z2  start   72.4 read   7.3 ms: size 3328x1872 (shear 0.76, next 3072 at 7.09); depth 0 0.305 (cells 0.113, rest 0.332; bands 0.353 0.322 0.365 0.179); phi with G-buffer cleared -0.090
+   z3  start  137.8 read   7.6 ms: size 2560x1440 (shear 1.32, next 2304 at 1.41); depth 0 0.183 (cells 0.167, rest 0.185; bands 0.053 0.215 0.333 0.138); phi with G-buffer cleared +0.002
+   z4  start  180.9 read   6.3 ms: size 2304x1296 (shear 1.25, next 2560 at 1.38); depth 0 0.073 (cells 0.118, rest 0.067; bands 0.034 0.042 0.050 0.165); phi with G-buffer cleared -0.022
+   z5  start  203.6 read   8.7 ms: size 2304x1296 (shear 1.34, next 2560 at 1.45); depth 0 0.172 (cells 0.294, rest 0.155; bands 0.064 0.133 0.331 0.164); phi with G-buffer cleared +0.026
+   pair z0-z1 lag   22.4 ms sizes 3328/3328: of z0's depth-0 pixels 1.000 are depth 0 in z1; phi +0.936 (bands +0.95 +0.95 +0.92 +0.92)
+   pair z0-z2 lag   72.4 ms sizes 3328/3328: of z0's depth-0 pixels 0.005 are depth 0 in z2; phi -0.421 (bands -0.47 -0.49 -0.41 -0.31)
+   pair z0-z3 lag  137.8 ms sizes 3328/2560: of z0's depth-0 pixels 0.161 are depth 0 in z3; phi -0.038 (bands -0.07 +0.04 -0.05 -0.06)
+   pair z0-z4 lag  180.9 ms sizes 3328/2304: of z0's depth-0 pixels 0.069 are depth 0 in z4; phi -0.010 (bands -0.04 -0.01 -0.06 +0.03)
+   pair z0-z5 lag  203.6 ms sizes 3328/2304: of z0's depth-0 pixels 0.190 are depth 0 in z5; phi +0.031 (bands -0.02 -0.02 +0.10 +0.11)
+   pair z1-z2 lag   50.0 ms sizes 3328/3328: of z1's depth-0 pixels 0.005 are depth 0 in z2; phi -0.494 (bands -0.51 -0.56 -0.49 -0.39)
+   pair z1-z3 lag  115.4 ms sizes 3328/2560: of z1's depth-0 pixels 0.157 are depth 0 in z3; phi -0.059 (bands -0.04 +0.01 -0.11 -0.07)
+   pair z1-z4 lag  158.5 ms sizes 3328/2304: of z1's depth-0 pixels 0.071 are depth 0 in z4; phi +0.000 (bands -0.03 -0.00 -0.04 +0.01)
+   pair z1-z5 lag  181.2 ms sizes 3328/2304: of z1's depth-0 pixels 0.183 are depth 0 in z5; phi +0.013 (bands -0.02 -0.03 +0.06 +0.09)
+   pair z2-z3 lag   65.4 ms sizes 3328/2560: of z2's depth-0 pixels 0.303 are depth 0 in z3; phi +0.207 (bands -0.03 +0.18 +0.46 +0.01)
+   pair z2-z4 lag  108.5 ms sizes 3328/2304: of z2's depth-0 pixels 0.050 are depth 0 in z4; phi -0.060 (bands -0.03 -0.05 -0.08 +0.03)
+   pair z2-z5 lag  131.2 ms sizes 3328/2304: of z2's depth-0 pixels 0.254 are depth 0 in z5; phi +0.145 (bands +0.04 +0.16 +0.26 +0.07)
+   pair z3-z4 lag   43.1 ms sizes 2560/2304: of z3's depth-0 pixels 0.038 are depth 0 in z4; phi -0.057 (bands +0.04 -0.04 -0.07 -0.09)
+   pair z3-z5 lag   65.8 ms sizes 2560/2304: of z3's depth-0 pixels 0.314 are depth 0 in z5; phi +0.177 (bands -0.01 +0.12 +0.17 +0.08)
+   pair z4-z5 lag   22.7 ms sizes 2304/2304: of z4's depth-0 pixels 0.437 are depth 0 in z5; phi +0.195 (bands +0.66 +0.50 +0.11 +0.01)
+== b05 at 21:44:21 patched
+   g   start 1011.6 read   6.8 ms: size 2304x1296 (shear 3.01, next 3328 at 17.22); cleared 0.239 of the window
+   z0  start    0.0 read  16.3 ms: size 2560x1440 (shear 1.50, next 2816 at 1.67); depth 0 0.150 (cells 0.170, rest 0.147; bands 0.115 0.200 0.178 0.109); phi with G-buffer cleared +0.072
+   z1  start  295.6 read  18.5 ms: size 2560x1440 (shear 1.25, next 3328 at 1.89); depth 0 0.131 (cells 0.087, rest 0.137; bands 0.070 0.150 0.257 0.046); phi with G-buffer cleared -0.036
+   z2  start  670.1 read   6.2 ms: size 2816x1584 (shear 1.12, next 3072 at 1.13); depth 0 0.476 (cells 0.666, rest 0.447; bands 0.119 0.175 0.538 0.993); phi with G-buffer cleared -0.034
+   z3  start  898.0 read   7.4 ms: size 2048x1152 (shear 1.22, next 3328 at 19.48); depth 0 0.283 (cells 0.112, rest 0.307; bands 0.300 0.310 0.342 0.179); phi with G-buffer cleared -0.315
+   z4  start  973.8 read   6.2 ms: size 3072x1728 (shear 1.24, next 2816 at 1.26); depth 0 0.452 (cells 0.806, rest 0.398; bands 0.069 0.532 0.520 0.699); phi with G-buffer cleared +0.045
+   z5  start  990.6 read   7.9 ms: size 2304x1296 (shear 0.91, next 2048 at 7.72); depth 0 0.261 (cells 0.097, rest 0.285; bands 0.325 0.296 0.314 0.110); phi with G-buffer cleared -0.255
+   pair z0-z1 lag  295.6 ms sizes 2560/2560: of z0's depth-0 pixels 0.003 are depth 0 in z1; phi -0.168 (bands -0.10 -0.22 -0.28 -0.07)
+   pair z0-z2 lag  670.1 ms sizes 2560/2816: of z0's depth-0 pixels 0.516 are depth 0 in z2; phi +0.030 (bands +0.00 +0.03 +0.20 +0.03)
+   pair z0-z3 lag  898.0 ms sizes 2560/2048: of z0's depth-0 pixels 0.290 are depth 0 in z3; phi +0.001 (bands -0.11 -0.01 +0.04 +0.02)
+   pair z0-z4 lag  973.8 ms sizes 2560/3072: of z0's depth-0 pixels 0.438 are depth 0 in z4; phi -0.002 (bands -0.03 +0.11 -0.06 -0.07)
+   pair z0-z5 lag  990.6 ms sizes 2560/2304: of z0's depth-0 pixels 0.266 are depth 0 in z5; phi -0.002 (bands -0.10 +0.00 +0.02 +0.04)
+   pair z1-z2 lag  374.5 ms sizes 2560/2816: of z1's depth-0 pixels 0.699 are depth 0 in z2; phi +0.180 (bands -0.05 +0.44 +0.44 +0.02)
+   pair z1-z3 lag  602.4 ms sizes 2560/2048: of z1's depth-0 pixels 0.595 are depth 0 in z3; phi +0.269 (bands +0.16 +0.16 +0.47 +0.05)
+   pair z1-z4 lag  678.2 ms sizes 2560/3072: of z1's depth-0 pixels 0.425 are depth 0 in z4; phi -0.021 (bands -0.04 +0.12 -0.14 -0.11)
+   pair z1-z5 lag  695.0 ms sizes 2560/2304: of z1's depth-0 pixels 0.548 are depth 0 in z5; phi +0.254 (bands +0.12 +0.17 +0.42 +0.10)
+   pair z2-z3 lag  227.9 ms sizes 2816/2048: of z2's depth-0 pixels 0.280 are depth 0 in z3; phi -0.016 (bands -0.13 -0.05 +0.33 +0.04)
+   pair z2-z4 lag  303.7 ms sizes 2816/3072: of z2's depth-0 pixels 0.608 are depth 0 in z4; phi +0.306 (bands -0.07 +0.17 -0.05 +0.06)
+   pair z2-z5 lag  320.5 ms sizes 2816/2304: of z2's depth-0 pixels 0.223 are depth 0 in z5; phi -0.087 (bands -0.14 -0.04 +0.28 +0.03)
+   pair z3-z4 lag   75.8 ms sizes 2048/3072: of z3's depth-0 pixels 0.479 are depth 0 in z4; phi +0.034 (bands +0.03 +0.01 +0.06 +0.14)
+   pair z3-z5 lag   92.6 ms sizes 2048/2304: of z3's depth-0 pixels 0.877 are depth 0 in z5; phi +0.881 (bands +0.87 +0.94 +0.93 +0.74)
+   pair z4-z5 lag   16.8 ms sizes 3072/2304: of z4's depth-0 pixels 0.259 are depth 0 in z5; phi -0.015 (bands +0.06 +0.02 +0.12 +0.03)
+== b06 at 21:44:32 patched
+   g   start  369.5 read   9.4 ms: size 3072x1728 (shear 1.17, next 3328 at 25.65); cleared 0.623 of the window
+   z0  start    0.0 read  15.8 ms: size 3072x1728 (shear 1.26, next 3328 at 1.26); depth 0 0.400 (cells 0.885, rest 0.325; bands 0.423 0.418 0.388 0.368); phi with G-buffer cleared +0.402
+   z1  start   64.7 read  17.5 ms: size 2304x1296 (shear 1.49, next 2560 at 1.65); depth 0 0.094 (cells 0.109, rest 0.092; bands 0.033 0.075 0.164 0.106); phi with G-buffer cleared +0.138
+   z2  start  161.2 read   7.8 ms: size 2304x1296 (shear 1.21, next 2048 at 1.37); depth 0 0.067 (cells 0.070, rest 0.066; bands 0.002 0.032 0.144 0.093); phi with G-buffer cleared +0.169
+   z3  start  211.6 read   8.6 ms: size 3072x1728 (shear 0.60, next 3328 at 0.61); depth 0 0.256 (cells 0.095, rest 0.279; bands 0.248 0.290 0.357 0.130); phi with G-buffer cleared +0.456
+   z4  start  263.4 read   9.5 ms: size 2304x1296 (shear 1.27, next 2560 at 1.38); depth 0 0.102 (cells 0.113, rest 0.101; bands 0.046 0.072 0.155 0.137); phi with G-buffer cleared +0.117
+   z5  start  319.4 read   9.1 ms: size 3072x1728 (shear 1.12, next 3328 at 8.10); depth 0 0.253 (cells 0.107, rest 0.275; bands 0.251 0.242 0.342 0.179); phi with G-buffer cleared +0.453
+   pair z0-z1 lag   64.7 ms sizes 3072/2304: of z0's depth-0 pixels 0.138 are depth 0 in z1; phi +0.119 (bands -0.03 +0.09 +0.16 +0.24)
+   pair z0-z2 lag  161.2 ms sizes 3072/2304: of z0's depth-0 pixels 0.106 are depth 0 in z2; phi +0.122 (bands -0.02 +0.13 +0.15 +0.20)
+   pair z0-z3 lag  211.6 ms sizes 3072/3072: of z0's depth-0 pixels 0.159 are depth 0 in z3; phi -0.194 (bands -0.05 -0.20 -0.33 -0.26)
+   pair z0-z4 lag  263.4 ms sizes 3072/2304: of z0's depth-0 pixels 0.141 are depth 0 in z4; phi +0.098 (bands -0.05 +0.10 +0.16 +0.17)
+   pair z0-z5 lag  319.4 ms sizes 3072/3072: of z0's depth-0 pixels 0.092 are depth 0 in z5; phi -0.313 (bands -0.06 -0.49 -0.42 -0.31)
+   pair z1-z2 lag   96.5 ms sizes 2304/2304: of z1's depth-0 pixels 0.705 are depth 0 in z2; phi +0.804 (bands +0.10 +0.63 +0.90 +0.90)
+   pair z1-z3 lag  146.9 ms sizes 2304/3072: of z1's depth-0 pixels 0.280 are depth 0 in z3; phi +0.016 (bands +0.01 -0.05 +0.03 +0.03)
+   pair z1-z4 lag  198.7 ms sizes 2304/2304: of z1's depth-0 pixels 0.939 are depth 0 in z4; phi +0.890 (bands +0.81 +0.95 +0.93 +0.83)
+   pair z1-z5 lag  254.7 ms sizes 2304/3072: of z1's depth-0 pixels 0.338 are depth 0 in z5; phi +0.063 (bands +0.01 -0.02 +0.08 +0.12)
+   pair z2-z3 lag   50.4 ms sizes 2304/3072: of z2's depth-0 pixels 0.299 are depth 0 in z3; phi +0.025 (bands -0.03 -0.03 +0.04 +0.02)
+   pair z2-z4 lag  102.2 ms sizes 2304/2304: of z2's depth-0 pixels 0.919 are depth 0 in z4; phi +0.735 (bands +0.05 +0.59 +0.87 +0.77)
+   pair z2-z5 lag  158.2 ms sizes 2304/3072: of z2's depth-0 pixels 0.375 are depth 0 in z5; phi +0.074 (bands -0.03 -0.01 +0.10 +0.12)
+   pair z3-z4 lag   51.8 ms sizes 3072/2304: of z3's depth-0 pixels 0.105 are depth 0 in z4; phi +0.005 (bands +0.04 -0.06 +0.03 -0.00)
+   pair z3-z5 lag  107.8 ms sizes 3072/3072: of z3's depth-0 pixels 0.899 are depth 0 in z5; phi +0.871 (bands +0.98 +0.73 +0.93 +0.83)
+   pair z4-z5 lag   56.0 ms sizes 2304/3072: of z4's depth-0 pixels 0.318 are depth 0 in z5; phi +0.050 (bands +0.04 -0.03 +0.09 +0.07)
+== b07 at 21:44:41 patched
+   g   start  365.6 read   6.6 ms: size 2816x1584 (shear 1.16, next 3072 at 17.59); cleared 0.191 of the window
+   z0  start    0.0 read  15.4 ms: size 2816x1584 (shear 1.83, next 3328 at 1.86); depth 0 0.052 (cells 0.095, rest 0.045; bands 0.000 0.000 0.056 0.150); phi with G-buffer cleared +0.062
+   z1  start   23.4 read  15.3 ms: size 2304x1296 (shear 0.07, next 2560 at 0.07); depth 0 0.000 (cells 0.000, rest 0.000; bands 0.000 0.000 0.000 0.000); phi with G-buffer cleared +nan
+   z2  start   44.8 read   8.4 ms: size 2560x1440 (shear 1.31, next 2816 at 1.41); depth 0 0.045 (cells 0.075, rest 0.041; bands 0.047 0.056 0.030 0.047); phi with G-buffer cleared +0.077
+   z3  start  118.5 read   7.5 ms: size 3072x1728 (shear 1.24, next 3328 at 1.24); depth 0 0.090 (cells 0.011, rest 0.103; bands 0.043 0.090 0.095 0.139); phi with G-buffer cleared -0.149
+   z4  start  201.3 read   8.4 ms: size 2048x1152 (shear 1.24, next 2304 at 1.28); depth 0 0.038 (cells 0.060, rest 0.035; bands 0.022 0.057 0.045 0.030); phi with G-buffer cleared +0.047
+   z5  start  327.7 read   8.0 ms: size 2816x1584 (shear 1.11, next 2560 at 8.49); depth 0 0.184 (cells 0.096, rest 0.197; bands 0.111 0.172 0.292 0.162); phi with G-buffer cleared -0.223
+   pair z0-z1 lag   23.4 ms sizes 2816/2304: of z0's depth-0 pixels 0.000 are depth 0 in z1; phi +nan (bands +nan +nan +nan +nan)
+   pair z0-z2 lag   44.8 ms sizes 2816/2560: of z0's depth-0 pixels 0.078 are depth 0 in z2; phi +0.036 (bands +nan +nan +0.06 +0.06)
+   pair z0-z3 lag  118.5 ms sizes 2816/3072: of z0's depth-0 pixels 0.070 are depth 0 in z3; phi -0.017 (bands +nan +nan -0.06 -0.06)
+   pair z0-z4 lag  201.3 ms sizes 2816/2048: of z0's depth-0 pixels 0.056 are depth 0 in z4; phi +0.021 (bands +nan +nan +0.00 +0.07)
+   pair z0-z5 lag  327.7 ms sizes 2816/2816: of z0's depth-0 pixels 0.635 are depth 0 in z5; phi +0.271 (bands +nan +nan +0.08 +0.62)
+   pair z1-z2 lag   21.4 ms sizes 2304/2560: of z1's depth-0 pixels 0.000 are depth 0 in z2; phi +nan (bands +nan +nan +nan +nan)
+   pair z1-z3 lag   95.1 ms sizes 2304/3072: of z1's depth-0 pixels 0.000 are depth 0 in z3; phi +nan (bands +nan +nan +nan +nan)
+   pair z1-z4 lag  177.9 ms sizes 2304/2048: of z1's depth-0 pixels 0.000 are depth 0 in z4; phi +nan (bands +nan +nan +nan +nan)
+   pair z1-z5 lag  304.3 ms sizes 2304/2816: of z1's depth-0 pixels 0.000 are depth 0 in z5; phi +nan (bands +nan +nan +nan +nan)
+   pair z2-z3 lag   73.7 ms sizes 2560/3072: of z2's depth-0 pixels 0.062 are depth 0 in z3; phi -0.022 (bands +0.04 -0.04 -0.02 -0.06)
+   pair z2-z4 lag  156.5 ms sizes 2560/2048: of z2's depth-0 pixels 0.067 are depth 0 in z4; phi +0.035 (bands +0.04 +0.04 +0.03 +0.04)
+   pair z2-z5 lag  282.9 ms sizes 2560/2816: of z2's depth-0 pixels 0.228 are depth 0 in z5; phi +0.026 (bands -0.01 +0.05 +0.02 +0.07)
+   pair z3-z4 lag   82.8 ms sizes 3072/2048: of z3's depth-0 pixels 0.053 are depth 0 in z4; phi +0.025 (bands +0.16 -0.03 +0.05 -0.01)
+   pair z3-z5 lag  209.2 ms sizes 3072/2816: of z3's depth-0 pixels 0.047 are depth 0 in z5; phi -0.118 (bands -0.08 -0.15 -0.22 -0.04)
+   pair z4-z5 lag  126.4 ms sizes 2048/2816: of z4's depth-0 pixels 0.223 are depth 0 in z5; phi +0.020 (bands -0.05 +0.03 -0.01 +0.08)
+== b08 at 21:44:51 patched
+   g   start  442.1 read   6.0 ms: size 2048x1152 (shear 1.22, next 3328 at 14.99); cleared 0.247 of the window
+   z0  start    0.0 read  14.9 ms: size 2304x1296 (shear 0.28, next 2560 at 0.29); depth 0 0.000 (cells 0.000, rest 0.000; bands 0.000 0.000 0.000 0.000); phi with G-buffer cleared +nan
+   z1  start   23.9 read  13.6 ms: size 3328x1872 (shear 1.23, next 3072 at 1.26); depth 0 0.287 (cells 0.864, rest 0.198; bands 0.192 0.290 0.278 0.399); phi with G-buffer cleared +0.898
+   z2  start   43.0 read   8.8 ms: size 3328x1872 (shear 2.22, next 3072 at 2.67); depth 0 0.240 (cells 0.860, rest 0.152; bands 0.165 0.251 0.228 0.318); phi with G-buffer cleared +0.972
+   z3  start  112.9 read   7.1 ms: size 2560x1440 (shear 1.29, next 2304 at 1.39); depth 0 0.044 (cells 0.071, rest 0.041; bands 0.047 0.056 0.029 0.045); phi with G-buffer cleared +0.039
+   z4  start  229.2 read   9.0 ms: size 2560x1440 (shear 1.29, next 2304 at 1.39); depth 0 0.045 (cells 0.075, rest 0.040; bands 0.047 0.055 0.030 0.047); phi with G-buffer cleared +0.043
+   z5  start  342.3 read   7.9 ms: size 2048x1152 (shear 1.28, next 2304 at 12.74); depth 0 0.217 (cells 0.103, rest 0.233; bands 0.130 0.237 0.322 0.179); phi with G-buffer cleared -0.295
+   pair z0-z1 lag   23.9 ms sizes 2304/3328: of z0's depth-0 pixels 0.000 are depth 0 in z1; phi +nan (bands +nan +nan +nan +nan)
+   pair z0-z2 lag   43.0 ms sizes 2304/3328: of z0's depth-0 pixels 0.000 are depth 0 in z2; phi +nan (bands +nan +nan +nan +nan)
+   pair z0-z3 lag  112.9 ms sizes 2304/2560: of z0's depth-0 pixels 0.000 are depth 0 in z3; phi +nan (bands +nan +nan +nan +nan)
+   pair z0-z4 lag  229.2 ms sizes 2304/2560: of z0's depth-0 pixels 0.000 are depth 0 in z4; phi +nan (bands +nan +nan +nan +nan)
+   pair z0-z5 lag  342.3 ms sizes 2304/2048: of z0's depth-0 pixels 0.000 are depth 0 in z5; phi +nan (bands +nan +nan +nan +nan)
+   pair z1-z2 lag   19.1 ms sizes 3328/3328: of z1's depth-0 pixels 0.893 are depth 0 in z2; phi +0.923 (bands +0.93 +0.93 +0.92 +0.91)
+   pair z1-z3 lag   89.0 ms sizes 3328/2560: of z1's depth-0 pixels 0.057 are depth 0 in z3; phi +0.036 (bands -0.03 +0.03 +0.01 +0.12)
+   pair z1-z4 lag  205.3 ms sizes 3328/2560: of z1's depth-0 pixels 0.059 are depth 0 in z4; phi +0.040 (bands -0.03 +0.03 +0.02 +0.12)
+   pair z1-z5 lag  318.4 ms sizes 3328/2048: of z1's depth-0 pixels 0.011 are depth 0 in z5; phi -0.329 (bands -0.18 -0.36 -0.44 -0.36)
+   pair z2-z3 lag   69.9 ms sizes 3328/2560: of z2's depth-0 pixels 0.057 are depth 0 in z3; phi +0.036 (bands -0.06 +0.03 +0.01 +0.14)
+   pair z2-z4 lag  186.2 ms sizes 3328/2560: of z2's depth-0 pixels 0.059 are depth 0 in z4; phi +0.040 (bands -0.06 +0.03 +0.02 +0.15)
+   pair z2-z5 lag  299.3 ms sizes 3328/2048: of z2's depth-0 pixels 0.007 are depth 0 in z5; phi -0.287 (bands -0.16 -0.31 -0.36 -0.31)
+   pair z3-z4 lag  116.3 ms sizes 2560/2560: of z3's depth-0 pixels 0.953 are depth 0 in z4; phi +0.953 (bands +0.99 +0.95 +0.90 +0.94)
+   pair z3-z5 lag  229.4 ms sizes 2560/2048: of z3's depth-0 pixels 0.240 are depth 0 in z5; phi +0.012 (bands -0.02 +0.03 -0.00 +0.06)
+   pair z4-z5 lag  113.1 ms sizes 2560/2048: of z4's depth-0 pixels 0.244 are depth 0 in z5; phi +0.014 (bands -0.02 +0.04 -0.00 +0.06)
+== b09 at 21:45:00 patched
+   g   start 1690.0 read   7.2 ms: size 3328x1872 (shear 2.05, next 3072 at 24.63); cleared 0.473 of the window
+   z0  start    0.0 read  15.0 ms: size 3328x1872 (shear 1.34, next 3072 at 1.37); depth 0 0.259 (cells 0.118, rest 0.281; bands 0.183 0.281 0.383 0.191); phi with G-buffer cleared -0.131
+   z1  start   22.6 read  15.7 ms: size 2560x1440 (shear 1.27, next 2048 at 1.37); depth 0 0.013 (cells 0.016, rest 0.013; bands 0.000 0.018 0.023 0.013); phi with G-buffer cleared -0.068
+   z2  start  110.4 read   8.4 ms: size 3328x1872 (shear 0.78, next 3072 at 6.78); depth 0 0.242 (cells 0.857, rest 0.154; bands 0.166 0.257 0.228 0.319); phi with G-buffer cleared +0.557
+   z3  start  475.3 read   6.7 ms: size 3328x1872 (shear 0.81, next 3072 at 6.77); depth 0 0.242 (cells 0.858, rest 0.154; bands 0.166 0.257 0.228 0.318); phi with G-buffer cleared +0.559
+   z4  start  929.3 read   8.2 ms: size 2560x1440 (shear 1.31, next 2304 at 1.40); depth 0 0.044 (cells 0.072, rest 0.040; bands 0.047 0.055 0.029 0.045); phi with G-buffer cleared +0.008
+   z5  start 1321.0 read   7.1 ms: size 2560x1440 (shear 1.33, next 2816 at 1.44); depth 0 0.046 (cells 0.075, rest 0.041; bands 0.047 0.057 0.031 0.047); phi with G-buffer cleared +0.008
+   pair z0-z1 lag   22.6 ms sizes 3328/2560: of z0's depth-0 pixels 0.012 are depth 0 in z1; phi -0.006 (bands +nan -0.05 -0.00 -0.00)
+   pair z0-z2 lag  110.4 ms sizes 3328/3328: of z0's depth-0 pixels 0.035 are depth 0 in z2; phi -0.306 (bands -0.21 -0.37 -0.45 -0.18)
+   pair z0-z3 lag  475.3 ms sizes 3328/3328: of z0's depth-0 pixels 0.036 are depth 0 in z3; phi -0.305 (bands -0.21 -0.37 -0.45 -0.18)
+   pair z0-z4 lag  929.3 ms sizes 3328/2560: of z0's depth-0 pixels 0.048 are depth 0 in z4; phi +0.009 (bands -0.01 +0.04 -0.01 +0.04)
+   pair z0-z5 lag 1321.0 ms sizes 3328/2560: of z0's depth-0 pixels 0.049 are depth 0 in z5; phi +0.008 (bands -0.01 +0.03 -0.01 +0.04)
+   pair z1-z2 lag   87.8 ms sizes 2560/3328: of z1's depth-0 pixels 0.201 are depth 0 in z2; phi -0.011 (bands +nan -0.08 -0.00 +0.03)
+   pair z1-z3 lag  452.7 ms sizes 2560/3328: of z1's depth-0 pixels 0.201 are depth 0 in z3; phi -0.011 (bands +nan -0.08 -0.00 +0.03)
+   pair z1-z4 lag  906.7 ms sizes 2560/2560: of z1's depth-0 pixels 0.692 are depth 0 in z4; phi +0.337 (bands +nan +0.23 +0.60 +0.44)
+   pair z1-z5 lag 1298.4 ms sizes 2560/2560: of z1's depth-0 pixels 0.750 are depth 0 in z5; phi +0.366 (bands +nan +0.27 +0.65 +0.43)
+   pair z2-z3 lag  364.9 ms sizes 3328/3328: of z2's depth-0 pixels 0.997 are depth 0 in z3; phi +0.996 (bands +1.00 +1.00 +1.00 +1.00)
+   pair z2-z4 lag  818.9 ms sizes 3328/2560: of z2's depth-0 pixels 0.058 are depth 0 in z4; phi +0.037 (bands -0.06 +0.04 +0.02 +0.14)
+   pair z2-z5 lag 1210.6 ms sizes 3328/2560: of z2's depth-0 pixels 0.060 are depth 0 in z5; phi +0.040 (bands -0.06 +0.03 +0.02 +0.15)
+   pair z3-z4 lag  454.0 ms sizes 3328/2560: of z3's depth-0 pixels 0.058 are depth 0 in z4; phi +0.037 (bands -0.06 +0.04 +0.02 +0.14)
+   pair z3-z5 lag  845.7 ms sizes 3328/2560: of z3's depth-0 pixels 0.060 are depth 0 in z5; phi +0.040 (bands -0.06 +0.03 +0.02 +0.15)
+   pair z4-z5 lag  391.7 ms sizes 2560/2560: of z4's depth-0 pixels 0.956 are depth 0 in z5; phi +0.946 (bands +0.98 +0.94 +0.90 +0.94)
+== b10 at 21:45:11 patched
+   g   start  509.7 read   6.2 ms: size 3072x1728 (shear 1.16, next 3328 at 16.03); cleared 0.219 of the window
+   z0  start    0.0 read  13.9 ms: size 3072x1728 (shear 1.10, next 3328 at 1.11); depth 0 0.164 (cells 0.566, rest 0.107; bands 0.072 0.203 0.187 0.201); phi with G-buffer cleared -0.035
+   z1  start   22.3 read  16.0 ms: size 2304x1296 (shear 1.45, next 2560 at 1.63); depth 0 0.032 (cells 0.046, rest 0.030; bands 0.034 0.044 0.028 0.023); phi with G-buffer cleared +0.010
+   z2  start   44.2 read   6.7 ms: size 3072x1728 (shear 1.06, next 2816 at 8.75); depth 0 0.136 (cells 0.818, rest 0.038; bands 0.052 0.166 0.121 0.206); phi with G-buffer cleared -0.207
+   z3  start  112.4 read   7.0 ms: size 3072x1728 (shear 1.16, next 2816 at 8.96); depth 0 0.162 (cells 0.085, rest 0.173; bands 0.066 0.125 0.292 0.164); phi with G-buffer cleared +0.821
+   z4  start  156.8 read   7.5 ms: size 2304x1296 (shear 1.45, next 2048 at 1.62); depth 0 0.008 (cells 0.011, rest 0.008; bands 0.002 0.002 0.016 0.014); phi with G-buffer cleared +0.021
+   z5  start  341.5 read   6.9 ms: size 2304x1296 (shear 0.23, next 2560 at 0.24); depth 0 0.000 (cells 0.000, rest 0.000; bands 0.000 0.000 0.000 0.000); phi with G-buffer cleared +nan
+   pair z0-z1 lag   22.3 ms sizes 3072/2304: of z0's depth-0 pixels 0.050 are depth 0 in z1; phi +0.046 (bands +0.07 +0.06 +0.02 +0.04)
+   pair z0-z2 lag   44.2 ms sizes 3072/3072: of z0's depth-0 pixels 0.505 are depth 0 in z2; phi +0.481 (bands +0.49 +0.62 +0.61 +0.23)
+   pair z0-z3 lag  112.4 ms sizes 3072/3072: of z0's depth-0 pixels 0.188 are depth 0 in z3; phi +0.016 (bands -0.07 -0.19 -0.23 +0.43)
+   pair z0-z4 lag  156.8 ms sizes 3072/2304: of z0's depth-0 pixels 0.011 are depth 0 in z4; phi +0.014 (bands +0.01 +0.00 -0.02 +0.04)
+   pair z0-z5 lag  341.5 ms sizes 3072/2304: of z0's depth-0 pixels 0.000 are depth 0 in z5; phi +nan (bands +nan +nan +nan +nan)
+   pair z1-z2 lag   21.9 ms sizes 2304/3072: of z1's depth-0 pixels 0.216 are depth 0 in z2; phi +0.048 (bands +0.07 +0.07 +0.02 +0.05)
+   pair z1-z3 lag   90.1 ms sizes 2304/3072: of z1's depth-0 pixels 0.229 are depth 0 in z3; phi +0.037 (bands +0.09 +0.05 +0.02 +0.04)
+   pair z1-z4 lag  134.5 ms sizes 2304/2304: of z1's depth-0 pixels 0.150 are depth 0 in z4; phi +0.299 (bands +0.11 +0.07 +0.44 +0.51)
+   pair z1-z5 lag  319.2 ms sizes 2304/2304: of z1's depth-0 pixels 0.000 are depth 0 in z5; phi +nan (bands +nan +nan +nan +nan)
+   pair z2-z3 lag   68.2 ms sizes 3072/3072: of z2's depth-0 pixels 0.009 are depth 0 in z3; phi -0.164 (bands -0.05 -0.16 -0.23 -0.21)
+   pair z2-z4 lag  112.6 ms sizes 3072/2304: of z2's depth-0 pixels 0.009 are depth 0 in z4; phi +0.005 (bands -0.01 -0.00 -0.03 +0.03)
+   pair z2-z5 lag  297.3 ms sizes 3072/2304: of z2's depth-0 pixels 0.000 are depth 0 in z5; phi +nan (bands +nan +nan +nan +nan)
+   pair z3-z4 lag   44.4 ms sizes 3072/2304: of z3's depth-0 pixels 0.016 are depth 0 in z4; phi +0.038 (bands -0.01 +0.01 +0.03 +0.03)
+   pair z3-z5 lag  229.1 ms sizes 3072/2304: of z3's depth-0 pixels 0.000 are depth 0 in z5; phi +nan (bands +nan +nan +nan +nan)
+   pair z4-z5 lag  184.7 ms sizes 2304/2304: of z4's depth-0 pixels 0.000 are depth 0 in z5; phi +nan (bands +nan +nan +nan +nan)
+== b11 at 21:45:21 patched
+   g   start 1214.2 read   8.1 ms: size 2048x1152 (shear 1.44, next 3328 at 16.40); cleared 0.146 of the window
+   z0  start    0.0 read  14.7 ms: size 3328x1872 (shear 0.77, next 3072 at 6.66); depth 0 0.150 (cells 0.822, rest 0.054; bands 0.068 0.166 0.122 0.245); phi with G-buffer cleared -0.160
+   z1  start   21.2 read  13.5 ms: size 2816x1584 (shear 1.85, next 3328 at 1.88); depth 0 0.042 (cells 0.090, rest 0.035; bands 0.000 0.000 0.050 0.118); phi with G-buffer cleared +0.293
+   z2  start   40.6 read   7.1 ms: size 3328x1872 (shear 1.27, next 3072 at 1.30); depth 0 0.175 (cells 0.186, rest 0.173; bands 0.102 0.123 0.292 0.163); phi with G-buffer cleared +0.632
+   z3  start   88.1 read   7.5 ms: size 2560x1440 (shear 1.30, next 2304 at 1.41); depth 0 0.043 (cells 0.066, rest 0.040; bands 0.047 0.056 0.027 0.042); phi with G-buffer cleared +0.037
+   z4  start  404.7 read   7.3 ms: size 3328x1872 (shear 1.28, next 3072 at 1.32); depth 0 0.177 (cells 0.103, rest 0.188; bands 0.099 0.150 0.292 0.163); phi with G-buffer cleared +0.862
+   z5  start  809.4 read   7.2 ms: size 3328x1872 (shear 0.81, next 3072 at 6.65); depth 0 0.177 (cells 0.091, rest 0.190; bands 0.082 0.171 0.292 0.164); phi with G-buffer cleared +0.876
+   pair z0-z1 lag   21.2 ms sizes 3328/2816: of z0's depth-0 pixels 0.075 are depth 0 in z1; phi +0.069 (bands +nan +nan +0.19 -0.03)
+   pair z0-z2 lag   40.6 ms sizes 3328/3328: of z0's depth-0 pixels 0.186 are depth 0 in z2; phi +0.013 (bands +0.59 +0.40 -0.23 -0.25)
+   pair z0-z3 lag   88.1 ms sizes 3328/2560: of z0's depth-0 pixels 0.075 are depth 0 in z3; phi +0.063 (bands +0.01 +0.09 +0.05 +0.09)
+   pair z0-z4 lag  404.7 ms sizes 3328/3328: of z0's depth-0 pixels 0.041 are depth 0 in z4; phi -0.150 (bands +0.20 -0.17 -0.23 -0.24)
+   pair z0-z5 lag  809.4 ms sizes 3328/3328: of z0's depth-0 pixels 0.000 are depth 0 in z5; phi -0.195 (bands -0.08 -0.20 -0.24 -0.25)
+   pair z1-z2 lag   19.4 ms sizes 2816/3328: of z1's depth-0 pixels 0.644 are depth 0 in z2; phi +0.268 (bands +nan +nan +0.05 +0.58)
+   pair z1-z3 lag   66.9 ms sizes 2816/2560: of z1's depth-0 pixels 0.066 are depth 0 in z3; phi +0.022 (bands +nan +nan +0.07 +0.03)
+   pair z1-z4 lag  383.5 ms sizes 2816/3328: of z1's depth-0 pixels 0.646 are depth 0 in z4; phi +0.259 (bands +nan +nan +0.05 +0.58)
+   pair z1-z5 lag  788.2 ms sizes 2816/3328: of z1's depth-0 pixels 0.643 are depth 0 in z5; phi +0.255 (bands +nan +nan +0.05 +0.58)
+   pair z2-z3 lag   47.5 ms sizes 3328/2560: of z2's depth-0 pixels 0.056 are depth 0 in z3; phi +0.031 (bands +0.03 +0.05 +0.02 +0.07)
+   pair z2-z4 lag  364.1 ms sizes 3328/3328: of z2's depth-0 pixels 0.804 are depth 0 in z4; phi +0.732 (bands +0.30 +0.19 +0.99 +0.99)
+   pair z2-z5 lag  768.8 ms sizes 3328/3328: of z2's depth-0 pixels 0.757 are depth 0 in z5; phi +0.669 (bands -0.09 +0.15 +1.00 +0.99)
+   pair z3-z4 lag  316.6 ms sizes 2560/3328: of z3's depth-0 pixels 0.237 are depth 0 in z4; phi +0.035 (bands +0.04 +0.04 +0.02 +0.07)
+   pair z3-z5 lag  721.3 ms sizes 2560/3328: of z3's depth-0 pixels 0.226 are depth 0 in z5; phi +0.029 (bands +0.01 +0.04 +0.02 +0.07)
+   pair z4-z5 lag  404.7 ms sizes 3328/3328: of z4's depth-0 pixels 0.942 are depth 0 in z5; phi +0.919 (bands +0.64 +0.90 +0.99 +0.99)
+== b12 at 21:45:33 patched
+   g   start  494.9 read   6.3 ms: size 3072x1728 (shear 1.19, next 3328 at 16.72); cleared 0.192 of the window
+   z0  start    0.0 read  17.6 ms: size 3328x1872 (shear 1.81, next 3072 at 1.81); depth 0 0.113 (cells 0.048, rest 0.122; bands 0.063 0.136 0.163 0.091); phi with G-buffer cleared -0.104
+   z1  start   85.3 read  13.3 ms: size 2304x1296 (shear 1.28, next 2560 at 1.38); depth 0 0.030 (cells 0.042, rest 0.029; bands 0.034 0.044 0.030 0.014); phi with G-buffer cleared +0.024
+   z2  start  151.1 read   7.5 ms: size 2304x1296 (shear 1.27, next 2560 at 1.38); depth 0 0.032 (cells 0.047, rest 0.030; bands 0.033 0.042 0.029 0.025); phi with G-buffer cleared +0.027
+   z3  start  171.4 read   8.8 ms: size 2304x1296 (shear 1.51, next 2560 at 1.72); depth 0 0.029 (cells 0.042, rest 0.028; bands 0.030 0.044 0.030 0.014); phi with G-buffer cleared +0.028
+   z4  start  286.8 read   7.0 ms: size 3072x1728 (shear 1.14, next 3328 at 1.14); depth 0 0.215 (cells 0.129, rest 0.228; bands 0.216 0.174 0.305 0.163); phi with G-buffer cleared +0.681
+   z5  start  409.9 read   6.2 ms: size 3072x1728 (shear 1.11, next 2816 at 9.01); depth 0 0.180 (cells 0.095, rest 0.192; bands 0.095 0.171 0.291 0.163); phi with G-buffer cleared +0.953
+   pair z0-z1 lag   85.3 ms sizes 3328/2304: of z0's depth-0 pixels 0.026 are depth 0 in z1; phi -0.009 (bands +0.06 +0.00 -0.06 -0.02)
+   pair z0-z2 lag  151.1 ms sizes 3328/2304: of z0's depth-0 pixels 0.026 are depth 0 in z2; phi -0.012 (bands +0.06 -0.00 -0.06 -0.03)
+   pair z0-z3 lag  171.4 ms sizes 3328/2304: of z0's depth-0 pixels 0.020 are depth 0 in z3; phi -0.020 (bands -0.00 -0.00 -0.07 -0.02)
+   pair z0-z4 lag  286.8 ms sizes 3328/3072: of z0's depth-0 pixels 0.102 are depth 0 in z4; phi -0.092 (bands -0.04 -0.05 -0.20 -0.06)
+   pair z0-z5 lag  409.9 ms sizes 3328/3072: of z0's depth-0 pixels 0.065 are depth 0 in z5; phi -0.099 (bands -0.04 -0.10 -0.21 -0.06)
+   pair z1-z2 lag   65.8 ms sizes 2304/2304: of z1's depth-0 pixels 0.900 are depth 0 in z2; phi +0.852 (bands +0.94 +0.93 +0.81 +0.61)
+   pair z1-z3 lag   86.1 ms sizes 2304/2304: of z1's depth-0 pixels 0.904 are depth 0 in z3; phi +0.921 (bands +0.89 +0.96 +0.93 +0.87)
+   pair z1-z4 lag  201.5 ms sizes 2304/3072: of z1's depth-0 pixels 0.260 are depth 0 in z4; phi +0.021 (bands -0.00 +0.03 +0.02 +0.02)
+   pair z1-z5 lag  324.6 ms sizes 2304/3072: of z1's depth-0 pixels 0.240 are depth 0 in z5; phi +0.030 (bands +0.07 +0.02 +0.03 +0.02)
+   pair z2-z3 lag   20.3 ms sizes 2304/2304: of z2's depth-0 pixels 0.781 are depth 0 in z3; phi +0.833 (bands +0.87 +0.94 +0.81 +0.60)
+   pair z2-z4 lag  135.7 ms sizes 2304/3072: of z2's depth-0 pixels 0.259 are depth 0 in z4; phi +0.021 (bands -0.00 +0.03 +0.02 +0.04)
+   pair z2-z5 lag  258.8 ms sizes 2304/3072: of z2's depth-0 pixels 0.244 are depth 0 in z5; phi +0.033 (bands +0.07 +0.02 +0.02 +0.04)
+   pair z3-z4 lag  115.4 ms sizes 2304/3072: of z3's depth-0 pixels 0.267 are depth 0 in z4; phi +0.023 (bands +0.01 +0.03 +0.02 +0.02)
+   pair z3-z5 lag  238.5 ms sizes 2304/3072: of z3's depth-0 pixels 0.249 are depth 0 in z5; phi +0.034 (bands +0.08 +0.02 +0.03 +0.02)
+   pair z4-z5 lag  123.1 ms sizes 3072/3072: of z4's depth-0 pixels 0.735 are depth 0 in z5; phi +0.710 (bands -0.16 +0.69 +0.97 +0.99)
+# pairs by state and lag (ms): number of pairs, median phi, range; same-size pairs only in brackets
+  mixed   lag  25..50     1 pairs, phi median +0.035, +0.035..+0.035 [0 same-size, median -]
+  mixed   lag  75..100    1 pairs, phi median -0.101, -0.101..-0.101 [1 same-size, median -0.101]
+  mixed   lag 100..150    2 pairs, phi median +0.452, +0.045..+0.859 [1 same-size, median +0.859]
+  mixed   lag 150..       6 pairs, phi median +0.054, -0.116..+0.853 [0 same-size, median -]
+  patched lag   0..25    12 pairs, phi median +0.132, -0.015..+0.971 [5 same-size, median +0.923]
+  patched lag  25..50     8 pairs, phi median +0.034, -0.057..+0.887 [3 same-size, median +0.481]
+  patched lag  50..75    16 pairs, phi median +0.024, -0.494..+0.852 [4 same-size, median -0.293]
+  patched lag  75..100   13 pairs, phi median +0.037, -0.331..+0.998 [4 same-size, median +0.862]
+  patched lag 100..150   24 pairs, phi median +0.015, -0.365..+0.953 [9 same-size, median +0.299]
+  patched lag 150..      77 pairs, phi median +0.026, -0.363..+0.996 [21 same-size, median +0.337]

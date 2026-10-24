@@ -1,0 +1,37 @@
+b01.z1 3072: depth 0 0.094 of 448000 window pixels
+b01.z5 3328: depth 0 0.128 of 448000 window pixels
+b03.z1 3328: depth 0 0.291 of 448000 window pixels
+b03.z2 3328: depth 0 0.250 of 448000 window pixels
+b03.z3 3328: depth 0 0.254 of 448000 window pixels
+b03.z5 3328: depth 0 0.250 of 448000 window pixels
+b04.z0 3328: depth 0 0.295 of 448000 window pixels
+b04.z2 3328: depth 0 0.305 of 448000 window pixels
+b05.z3 2048: depth 0 0.283 of 448000 window pixels
+b05.z5 2304: depth 0 0.261 of 448000 window pixels
+b06.z5 3072: depth 0 0.253 of 448000 window pixels
+b07.z5 2816: depth 0 0.184 of 448000 window pixels
+b08.z5 2048: depth 0 0.217 of 448000 window pixels
+b09.z2 3328: depth 0 0.242 of 448000 window pixels
+b09.z3 3328: depth 0 0.242 of 448000 window pixels
+b10.z2 3072: depth 0 0.136 of 448000 window pixels
+b10.z3 3072: depth 0 0.162 of 448000 window pixels
+b11.z0 3328: depth 0 0.150 of 448000 window pixels
+b11.z5 3328: depth 0 0.177 of 448000 window pixels
+b12.z5 3072: depth 0 0.180 of 448000 window pixels
+# groups (each read joins the first group whose first read it matches with phi >= 0.6)
+  group 0: b01.z1 b10.z2 b11.z0
+  group 1: b01.z5 b03.z3 b06.z5 b07.z5 b08.z5 b10.z3 b11.z5 b12.z5
+  group 2: b03.z1 b03.z2 b03.z5 b04.z0 b09.z2 b09.z3
+  group 3: b04.z2 b05.z3 b05.z5
+# phi between groups' first reads, and the share of pixels both have at depth 0 over each one's share
+  group 0 vs 1 (b01.z1, b01.z5): phi -0.116; both 0.008 of the first's, 0.006 of the second's; union 0.222 of the window
+  group 0 vs 2 (b01.z1, b03.z1): phi +0.500; both 0.994 of the first's, 0.323 of the second's; union 0.291 of the window
+  group 0 vs 3 (b01.z1, b04.z2): phi -0.210; both 0.005 of the first's, 0.002 of the second's; union 0.399 of the window
+  group 1 vs 2 (b01.z5, b03.z1): phi -0.243; both 0.003 of the first's, 0.001 of the second's; union 0.418 of the window
+  group 1 vs 3 (b01.z5, b04.z2): phi +0.573; both 0.993 of the first's, 0.417 of the second's; union 0.306 of the window
+  group 2 vs 3 (b03.z1, b04.z2): phi -0.420; both 0.002 of the first's, 0.002 of the second's; union 0.595 of the window
+# within each group: min and median phi against the group's first read
+  group 0: 3 reads, phi min +0.762, median +0.785
+  group 1: 8 reads, phi min +0.649, median +0.801
+  group 2: 6 reads, phi min +0.863, median +0.872
+  group 3: 3 reads, phi min +0.630, median +0.656

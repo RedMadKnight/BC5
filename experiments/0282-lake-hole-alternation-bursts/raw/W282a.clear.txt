@@ -1,0 +1,38 @@
+# reads: 72, clear (next >= 3.0 x best): 20
+# clear reads: burst read size depth-0 share, phi with the burst's G-buffer read (its size, clear?)
+  b01 z1 3072 depth-0 0.094 phi-G -0.120 (G 3328)
+  b01 z5 3328 depth-0 0.128 phi-G +0.973 (G 3328)
+  b03 z1 3328 depth-0 0.291 phi-G +0.497 (G 3328)
+  b03 z2 3328 depth-0 0.250 phi-G +0.449 (G 3328)
+  b03 z3 3328 depth-0 0.254 phi-G +0.454 (G 3328)
+  b03 z5 3328 depth-0 0.250 phi-G +0.450 (G 3328)
+  b04 z0 3328 depth-0 0.295 phi-G +0.675 (G 3072)
+  b04 z2 3328 depth-0 0.305 phi-G -0.090 (G 3072)
+  b05 z3 2048 depth-0 0.283 phi-G -0.315 (G 2304)
+  b05 z5 2304 depth-0 0.261 phi-G -0.255 (G 2304)
+  b06 z5 3072 depth-0 0.253 phi-G +0.453 (G 3072)
+  b07 z5 2816 depth-0 0.184 phi-G -0.223 (G 2816)
+  b08 z5 2048 depth-0 0.217 phi-G -0.295 (G 2048)
+  b09 z2 3328 depth-0 0.242 phi-G +0.557 (G 3328)
+  b09 z3 3328 depth-0 0.242 phi-G +0.559 (G 3328)
+  b10 z2 3072 depth-0 0.136 phi-G -0.207 (G 3072)
+  b10 z3 3072 depth-0 0.162 phi-G +0.821 (G 3072)
+  b11 z0 3328 depth-0 0.150 phi-G -0.160 (G 2048)
+  b11 z5 3328 depth-0 0.177 phi-G +0.876 (G 2048)
+  b12 z5 3072 depth-0 0.180 phi-G +0.953 (G 3072)
+# both clear, different sizes: 2 pairs, phi median +0.383, range -0.116..+0.881
+    b05 z3-z5 lag   92.6 ms 2048/2304 phi +0.881 kept 0.877
+    b01 z1-z5 lag  388.8 ms 3072/3328 phi -0.116 kept 0.008
+# both clear, same size: 10 pairs, phi median -0.179, range -0.421..+0.996
+    b03 z1-z2 lag   38.2 ms 3328/3328 phi +0.887 kept 0.851
+    b10 z2-z3 lag   68.2 ms 3072/3072 phi -0.164 kept 0.009
+    b04 z0-z2 lag   72.4 ms 3328/3328 phi -0.421 kept 0.005
+    b03 z2-z3 lag   93.7 ms 3328/3328 phi -0.331 kept 0.004
+    b03 z1-z3 lag  131.9 ms 3328/3328 phi -0.365 kept 0.005
+    b03 z3-z5 lag  183.5 ms 3328/3328 phi -0.331 kept 0.004
+    b03 z2-z5 lag  277.2 ms 3328/3328 phi +0.982 kept 0.987
+    b03 z1-z5 lag  315.4 ms 3328/3328 phi +0.872 kept 0.841
+    b09 z2-z3 lag  364.9 ms 3328/3328 phi +0.996 kept 0.997
+    b11 z0-z5 lag  809.4 ms 3328/3328 phi -0.195 kept 0.000
+# one or none clear, different sizes: 110 pairs, phi median +0.024, range -0.329..+0.853
+# one or none clear, same size: 38 pairs, phi median +0.575, range -0.494..+0.998
