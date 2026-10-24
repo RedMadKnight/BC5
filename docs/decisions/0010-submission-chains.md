@@ -1,6 +1,6 @@
 # ADR 0010 — A queue's consecutive buffers in one kernel submission
 
-**Status:** proposed (2026-10-19), measured in experiment 0163 (F213: the ring thread's buffers
+**Status:** accepted and in play (updated 2026-10-24): `BC5_DIRECT_CHAIN=2` is set in `play-pkg.sh` and `play-astro.sh` (F218, F220), with the held tail of ADR 0013 on top. Originally proposed (2026-10-19), measured in experiment 0163 (F213: the ring thread's buffers
 chain, the game thread's do not — one `dcb` per ioctl, each with `COND_EXEC`), extended the same
 day with §A (a `COND_EXEC` closes nothing any more) and §B (a chain across the game thread's
 ioctls), measured in experiment 0165. Off by default (`BC5_DIRECT_CHAIN=1`: the chains of one

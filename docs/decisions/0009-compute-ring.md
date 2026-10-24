@@ -1,6 +1,6 @@
 # ADR 0009 — The title's asynchronous compute buffers on a kernel compute ring
 
-**Status:** proposed (2026-10-15). Nothing of it is in the play settings. Each GPU step needs the
+**Status:** accepted and in play (updated 2026-10-24): the second title's `play-pkg.sh` runs its compute buffers on compute ring 0 (`BC5_DIRECT_COMPUTE_RING=0 BC5_DIRECT_CROSS_RING_WAITS=all`, with `BC5_DIRECT_RING_ORDER_WAITS=1` and `BC5_DIRECT_MEC_INDIRECT=1 BC5_DIRECT_GPU_CHECK=1 BC5_DIRECT_DMA_SYNC=1`); ASTRO BOT's `play-astro.sh` stays on one ring (`BC5_DIRECT_RINGS=1` in `bc5-run.env`), `play-astro-compute.sh` uses two (F181, F315). Originally proposed 2026-10-15, when nothing of it was in the play settings. Each GPU step needs the
 maintainer at the box.
 
 ## Context
