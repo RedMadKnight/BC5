@@ -1,0 +1,49 @@
+# /home/kjaniszewski/bc5-data/priv/exp0271/W271b: 20 reads; 14 patched shots give the cell mask: 0.234 of the lake window (104677 pixels)
+== cap01 at 18:20:43 patched size 3328x1872 (G-buffer shear 2.62, next 3072 at 21.51; depth shear 0.87) INCOMPLETE
+   cells: depth median 0.000776498, depth 0 0.044, G-buffer cleared 0.041 | rest: depth median 0.000658614, depth 0 0.366, G-buffer cleared 0.374 | edge step x1.78
+== cap02 at 18:20:50 patched size 3072x1728 (G-buffer shear 1.01, next 2816 at 19.28; depth shear 0.92)
+   cells: depth median 0.000775929, depth 0 0.042, G-buffer cleared 0.045 | rest: depth median 0.000640682, depth 0 0.400, G-buffer cleared 0.403 | edge step x2.12
+== cap03 at 18:20:58 patched size 3328x1872 (G-buffer shear 8.53, next 3072 at 34.28; depth shear 2.04) INCOMPLETE
+   cells: depth median 0, depth 0 0.906, G-buffer cleared 0.966 | rest: depth median 0.000744338, depth 0 0.130, G-buffer cleared 0.551 | edge step x2.10
+== cap04 at 18:21:05 patched size 3328x1872 (G-buffer shear 1.14, next 3072 at 20.16; depth shear 1.69)
+   cells: depth median 0.000771542, depth 0 0.046, G-buffer cleared 0.035 | rest: depth median 0.000605089, depth 0 0.409, G-buffer cleared 0.329 | edge step x1.39
+== cap05 at 18:21:13 patched size 3328x1872 (G-buffer shear 1.47, next 3072 at 20.81; depth shear 1.72)
+   cells: depth median 0.000772026, depth 0 0.050, G-buffer cleared 0.036 | rest: depth median 0.000588885, depth 0 0.437, G-buffer cleared 0.338 | edge step x1.19
+== cap06 at 18:21:20 patched size 3328x1872 (G-buffer shear 1.03, next 3072 at 20.52; depth shear 1.22)
+   cells: depth median 0.000775036, depth 0 0.039, G-buffer cleared 0.036 | rest: depth median 0.000660067, depth 0 0.314, G-buffer cleared 0.320 | edge step x1.87
+== cap07 at 18:21:27 patched size 3328x1872 (G-buffer shear 8.33, next 3072 at 27.83; depth shear 1.30) INCOMPLETE
+   cells: depth median 0, depth 0 0.909, G-buffer cleared 0.912 | rest: depth median 0.000733941, depth 0 0.101, G-buffer cleared 0.063 | edge step x1.15
+== cap08 at 18:21:34 patched size 3328x1872 (G-buffer shear 3.65, next 3072 at 28.95; depth shear 1.18) INCOMPLETE
+   cells: depth median 0.000775236, depth 0 0.038, G-buffer cleared 0.966 | rest: depth median 0.00067099, depth 0 0.319, G-buffer cleared 0.547 | edge step x1.93
+== cap09 at 18:21:42 mixed   size 3072x1728 (G-buffer shear 16.12, next 2816 at 34.90; depth shear 1.72) INCOMPLETE
+   cells: depth median 0.000654399, depth 0 0.092, G-buffer cleared 0.966 | rest: depth median 0.000662508, depth 0 0.043, G-buffer cleared 0.552 | edge step x1.17
+== cap10 at 18:21:49 mixed   size 3072x1728 (G-buffer shear 0.99, next 2816 at 8.09; depth shear 2.31)
+   cells: depth median 0.000782454, depth 0 0.001, G-buffer cleared 0.011 | rest: depth median 0.000786896, depth 0 0.013, G-buffer cleared 0.000 | edge step x0.40
+== cap11 at 18:21:56 patched size 3328x1872 (G-buffer shear 1.20, next 3072 at 13.31; depth shear 2.25)
+   cells: depth median 0.000781423, depth 0 0.006, G-buffer cleared 0.246 | rest: depth median 0.00076146, depth 0 0.071, G-buffer cleared 0.002 | edge step x0.90
+== cap12 at 18:22:03 mixed   size 3328x1872 (G-buffer shear 1.20, next 3072 at 9.18; depth shear 1.04)
+   cells: depth median 0.000783422, depth 0 0.000, G-buffer cleared 0.000 | rest: depth median 0.000783189, depth 0 0.000, G-buffer cleared 0.000 | edge step x0.58
+== cap13 at 18:22:11 clean   size 3072x1728 (G-buffer shear 1.01, next 3328 at 11.97; depth shear 1.37)
+   cells: depth median 0.000779221, depth 0 0.006, G-buffer cleared 0.000 | rest: depth median 0.000764713, depth 0 0.069, G-buffer cleared 0.000 | edge step x0.60
+== cap14 at 18:22:18 clean   size 3328x1872 (G-buffer shear 11.55, next 3072 at 33.43; depth shear 0.83) INCOMPLETE
+   cells: depth median 0.000783521, depth 0 0.000, G-buffer cleared 0.452 | rest: depth median 0.000806029, depth 0 0.000, G-buffer cleared 0.291 | edge step x0.59
+== cap15 at 18:22:25 clean   size 3328x1872 (G-buffer shear 1.19, next 3072 at 8.92; depth shear 0.60)
+   cells: depth median 0.000783521, depth 0 0.000, G-buffer cleared 0.000 | rest: depth median 0.000806029, depth 0 0.000, G-buffer cleared 0.000 | edge step x0.61
+== cap16 at 18:22:32 clean   size 3328x1872 (G-buffer shear 8.43, next 3072 at 33.40; depth shear 1.73) INCOMPLETE
+   cells: depth median 0.000779945, depth 0 0.004, G-buffer cleared 0.966 | rest: depth median 0.000778451, depth 0 0.032, G-buffer cleared 0.550 | edge step x0.99
+== cap17 at 18:22:39 clean   size 3072x1728 (G-buffer shear 0.90, next 3328 at 28.09; depth shear 0.99)
+   cells: depth median 0.000783038, depth 0 0.000, G-buffer cleared 0.966 | rest: depth median 0.00080602, depth 0 0.000, G-buffer cleared 0.550 | edge step x0.42
+== cap18 at 18:22:47 clean   size 3072x1728 (G-buffer shear 1.25, next 2816 at 7.64; depth shear 1.84)
+   cells: depth median 0.000783447, depth 0 0.000, G-buffer cleared 0.000 | rest: depth median 0.000806467, depth 0 0.000, G-buffer cleared 0.000 | edge step x0.59
+== cap19 at 18:22:54 mixed   size 2304x1296 (G-buffer shear 1.02, next 2560 at 7.55; depth shear 1.12)
+   cells: depth median 0.000783358, depth 0 0.000, G-buffer cleared 0.000 | rest: depth median 0.000805999, depth 0 0.000, G-buffer cleared 0.000 | edge step x0.60
+== cap20 at 18:23:01 mixed   size 3072x1728 (G-buffer shear 0.99, next 2816 at 7.41; depth shear 0.90)
+   cells: depth median 0.000783447, depth 0 0.000, G-buffer cleared 0.000 | rest: depth median 0.000806477, depth 0 0.000, G-buffer cleared 0.000 | edge step x0.60
+# complete reads by (size, state): medians over reads
+  2304 mixed    1 reads | cells: depth 0.000783358, depth-0 0.000, cleared 0.000 | rest: depth 0.000805999, depth-0 0.000, cleared 0.000 | edge x0.60
+  3072 clean    3 reads | cells: depth 0.000783038, depth-0 0.000, cleared 0.000 | rest: depth 0.00080602, depth-0 0.000, cleared 0.000 | edge x0.59
+  3072 mixed    2 reads | cells: depth 0.00078295, depth-0 0.000, cleared 0.006 | rest: depth 0.000796687, depth-0 0.006, cleared 0.000 | edge x0.50
+  3072 patched  1 reads | cells: depth 0.000775929, depth-0 0.042, cleared 0.045 | rest: depth 0.000640682, depth-0 0.400, cleared 0.403 | edge x2.12
+  3328 clean    1 reads | cells: depth 0.000783521, depth-0 0.000, cleared 0.000 | rest: depth 0.000806029, depth-0 0.000, cleared 0.000 | edge x0.61
+  3328 mixed    1 reads | cells: depth 0.000783422, depth-0 0.000, cleared 0.000 | rest: depth 0.000783189, depth-0 0.000, cleared 0.000 | edge x0.58
+  3328 patched  4 reads | cells: depth 0.000773531, depth-0 0.043, cleared 0.036 | rest: depth 0.000632578, depth-0 0.362, cleared 0.324 | edge x1.29

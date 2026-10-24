@@ -1,0 +1,10 @@
+/home/kjaniszewski/bc5-work/exp0271/coin0271.py:45: RuntimeWarning: invalid value encountered in cast
+  zr = np.frombuffer(open(os.path.join(cdir, cap + ".1129ec0000.bin"), "rb").read(), dtype="<f4").astype(np.float64)
+cap01 3328x1872: window pixels 448000; depth 0 0.312, G-buffer cleared 0.342, both 0.172; of the cleared pixels 0.502 have depth 0; phi +0.296
+cap02 3328x1872: window pixels 448000; depth 0 0.279, G-buffer cleared 0.311, both 0.147; of the cleared pixels 0.474 have depth 0; phi +0.291
+cap03 3328x1872: window pixels 445984; depth 0 0.303, G-buffer cleared 0.659, both 0.302; of the cleared pixels 0.458 have depth 0; phi +0.470
+cap04 3328x1872: window pixels 448000; depth 0 0.267, G-buffer cleared 0.656, both 0.267; of the cleared pixels 0.407 have depth 0; phi +0.437
+cap12 3328x1872: window pixels 414314; depth 0 0.312, G-buffer cleared 0.321, both 0.130; of the cleared pixels 0.406 have depth 0; phi +0.140
+cap13 3328x1872: window pixels 448000; depth 0 0.346, G-buffer cleared 0.311, both 0.176; of the cleared pixels 0.567 have depth 0; phi +0.311
+cap17 3328x1872: window pixels 435402; depth 0 0.367, G-buffer cleared 0.334, both 0.165; of the cleared pixels 0.494 have depth 0; phi +0.188
+cap20 3328x1872: window pixels 445300; depth 0 0.310, G-buffer cleared 0.321, both 0.183; of the cleared pixels 0.571 have depth 0; phi +0.388

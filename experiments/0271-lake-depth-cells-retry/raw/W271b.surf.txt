@@ -1,0 +1,69 @@
+# /home/kjaniszewski/bc5-data/captures/play-20261024-1818/gc/direct.log: 252 journalled entries with a bake-db line, 252 on depth buffer 1129ec0000; 0 dispatches
+(A) distinct descriptions of the depth buffer:
+    16 x depth 2816x1584 | htile 112b0a0000 | FORMAT 3 NUM_SAMPLES 0 SW_MODE 24 MAXMIP 0 DECOMPRESS_ON_N_ZPLANES 0 ALLOW_EXPCLEAR 0 READ_SIZE 0 TILE_SURFACE_ENABLE 1 ZRANGE_PRECISION 1 | view 0 | render_control 0 | override 0 | clear z 0
+         t 150.061..358.876; rt0 113f230000 2816x1584 (16); ps 11d01d7100 (16)
+    14 x depth 2560x1440 | htile 112adc0000 | FORMAT 3 NUM_SAMPLES 0 SW_MODE 24 MAXMIP 0 DECOMPRESS_ON_N_ZPLANES 0 ALLOW_EXPCLEAR 0 READ_SIZE 0 TILE_SURFACE_ENABLE 1 ZRANGE_PRECISION 1 | view 0 | render_control 0 | override 0 | clear z 0
+         t 150.135..358.691; rt0 113f230000 2560x1440 (14); ps 11d01d7100 (14)
+   121 x depth 3328x1872 | htile 112b720000 | FORMAT 3 NUM_SAMPLES 0 SW_MODE 24 MAXMIP 0 DECOMPRESS_ON_N_ZPLANES 0 ALLOW_EXPCLEAR 0 READ_SIZE 0 TILE_SURFACE_ENABLE 1 ZRANGE_PRECISION 1 | view 0 | render_control 0 | override 0 | clear z 0
+         t 160.471..348.189; rt0 113f230000 3328x1872 (121); ps 11d01d7100 (121)
+    88 x depth 3072x1728 | htile 112b3c0000 | FORMAT 3 NUM_SAMPLES 0 SW_MODE 24 MAXMIP 0 DECOMPRESS_ON_N_ZPLANES 0 ALLOW_EXPCLEAR 0 READ_SIZE 0 TILE_SURFACE_ENABLE 1 ZRANGE_PRECISION 1 | view 0 | render_control 0 | override 0 | clear z 0
+         t 191.639..337.801; rt0 113f230000 3072x1728 (88); ps 11d01d7100 (88)
+    11 x depth 2048x1152 | htile 112a7c0000 | FORMAT 3 NUM_SAMPLES 0 SW_MODE 24 MAXMIP 0 DECOMPRESS_ON_N_ZPLANES 0 ALLOW_EXPCLEAR 0 READ_SIZE 0 TILE_SURFACE_ENABLE 1 ZRANGE_PRECISION 1 | view 0 | render_control 0 | override 0 | clear z 0
+         t 233.484..264.919; rt0 113f230000 2048x1152 (11); ps 11d01d7100 (11)
+     2 x depth 2304x1296 | htile 112ab20000 | FORMAT 3 NUM_SAMPLES 0 SW_MODE 24 MAXMIP 0 DECOMPRESS_ON_N_ZPLANES 0 ALLOW_EXPCLEAR 0 READ_SIZE 0 TILE_SURFACE_ENABLE 1 ZRANGE_PRECISION 1 | view 0 | render_control 0 | override 0 | clear z 0
+         t 233.722..233.753; rt0 113f230000 2304x1296 (2); ps 11d01d7100 (2)
+(B) in journal order (runs of one description and colour-target size):
+  t 150.061..150.096    2 x rt0 2816x1584 | depth 2816x1584 htile 112b0a0000
+  t 150.135..150.352    7 x rt0 2560x1440 | depth 2560x1440 htile 112adc0000
+  t 150.384..150.453    3 x rt0 2816x1584 | depth 2816x1584 htile 112b0a0000
+  t 160.471..181.637   36 x rt0 3328x1872 | depth 3328x1872 htile 112b720000
+  t 191.639..192.006   12 x rt0 3072x1728 | depth 3072x1728 htile 112b3c0000
+  t 202.022..212.676   20 x rt0 3328x1872 | depth 3328x1872 htile 112b720000
+  t 212.706..223.205   16 x rt0 3072x1728 | depth 3072x1728 htile 112b3c0000
+  t 233.235..233.450    3 x rt0 3328x1872 | depth 3328x1872 htile 112b720000
+  t 233.484..233.687    7 x rt0 2048x1152 | depth 2048x1152 htile 112a7c0000
+  t 233.722..233.753    2 x rt0 2304x1296 | depth 2304x1296 htile 112ab20000
+  t 243.768..264.793   32 x rt0 3328x1872 | depth 3328x1872 htile 112b720000
+  t 264.825..264.919    4 x rt0 2048x1152 | depth 2048x1152 htile 112a7c0000
+  t 274.939..285.525   18 x rt0 3328x1872 | depth 3328x1872 htile 112b720000
+  t 285.557..327.374   54 x rt0 3072x1728 | depth 3072x1728 htile 112b3c0000
+  t 337.386..337.553    6 x rt0 2816x1584 | depth 2816x1584 htile 112b0a0000
+  t 337.587..337.801    6 x rt0 3072x1728 | depth 3072x1728 htile 112b3c0000
+  t 347.819..348.189   12 x rt0 3328x1872 | depth 3328x1872 htile 112b720000
+  t 358.223..358.691    7 x rt0 2560x1440 | depth 2560x1440 htile 112adc0000
+  t 358.726..358.876    5 x rt0 2816x1584 | depth 2816x1584 htile 112b0a0000
+(C) before each first depth write into the buffer (window start, or after a full-screen water draw):
+  HTILE base 112a7c0000 (register form 112a7c00): 12 non-bake journal lines hold it
+    hint DB_HTILE 0x112a7c0000: window 0x11287c0000+0x4000000, direct memory +0.0 MiB
+    load table buf 99 at 186: op 9f dw1 e0caec00 dw3 80000000 pairs x128 at 11e0caec00: 336:11422f00 339:00000000 33a:0005042c 33b:00000000 33c:00000048 3
+    load table buf 100 at 186: op 9f dw1 e0c8ec00 dw3 80000000 pairs x128 at 11e0c8ec00: 336:11422f00 339:00000000 33a:0005042c 33b:00000000 33c:00000048 
+    load table buf 101 at 186: op 9f dw1 e074ec00 dw3 80000000 pairs x128 at 11e074ec00: 336:11422f00 339:00000000 33a:0005042c 33b:00000000 33c:00000048 
+    load table buf 102 at 186: op 9f dw1 e0d0ec00 dw3 80000000 pairs x128 at 11e0d0ec00: 336:11422f00 339:00000000 33a:0005042c 33b:00000000 33c:00000048 
+  HTILE base 112ab20000 (register form 112ab200): 3 non-bake journal lines hold it
+    hint DB_HTILE 0x112ab20000: window 0x1128b20000+0x4000000, direct memory +0.0 MiB
+    load table buf 106 at 186: op 9f dw1 e03eec00 dw3 80000000 pairs x128 at 11e03eec00: 336:11422f00 339:00000000 33a:0005042c 33b:00000000 33c:00000048 
+    load table buf 107 at 186: op 9f dw1 e026ec00 dw3 80000000 pairs x128 at 11e026ec00: 336:11422f00 339:00000000 33a:0005042c 33b:00000000 33c:00000048 
+  HTILE base 112adc0000 (register form 112adc00): 21 non-bake journal lines hold it
+    hint DB_HTILE 0x112adc0000: window 0x1128dc0000+0x4000000, direct memory +0.0 MiB
+    tracked context: 0:00000000 1:11000100 2:00000000 3:00000000 4:00000000 5:112adc00 6:00000000 7:059f09ff 8:00000000 9:00000000 a:00000000 b:00000000 c
+    tracked context: 0:00000000 1:11000100 2:00000000 3:00000000 4:00000000 5:112adc00 6:00000000 7:059f09ff 8:00000000 9:00000000 a:00000000 b:00000000 c
+    tracked context: 0:00000000 1:11000100 2:00000000 3:00000000 4:00000000 5:112adc00 6:00000000 7:059f09ff 8:00000000 9:00000000 a:00000000 b:00000000 c
+    tracked context: 0:00000000 1:11000100 2:00000000 3:00000000 4:00000000 5:112adc00 6:00000000 7:059f09ff 8:00000000 9:00000000 a:00000000 b:00000000 c
+  HTILE base 112b0a0000 (register form 112b0a00): 18 non-bake journal lines hold it
+    hint DB_HTILE 0x112b0a0000: window 0x11290a0000+0x4000000, direct memory +0.0 MiB
+    tracked context: 0:00000000 1:11000100 2:00000000 3:00000000 4:00000000 5:112b0a00 6:00000000 7:062f0aff 8:00000000 9:00000000 a:00000000 b:00000000 c
+    load table buf 0 at 186: op 9f dw1 e0ccec00 dw3 80000000 pairs x128 at 11e0ccec00: 336:11422f00 339:00000000 33a:0005042c 33b:00000000 33c:00000048 33
+    load table buf 1 at 186: op 9f dw1 e06cec00 dw3 80000000 pairs x128 at 11e06cec00: 336:11422f00 339:00000000 33a:0005042c 33b:00000000 33c:00000048 33
+    load table buf 9 at 186: op 9f dw1 e04cec00 dw3 80000000 pairs x128 at 11e04cec00: 336:11422f00 339:00000000 33a:0005042c 33b:00000000 33c:00000048 33
+  HTILE base 112b3c0000 (register form 112b3c00): 89 non-bake journal lines hold it
+    hint DB_HTILE 0x112b3c0000: window 0x11293c0000+0x4000000, direct memory +0.0 MiB
+    load table buf 48 at 186: op 9f dw1 e022ec00 dw3 80000000 pairs x128 at 11e022ec00: 336:11422f00 339:00000000 33a:0005042c 33b:00000000 33c:00000048 3
+    load table buf 49 at 186: op 9f dw1 e048ec00 dw3 80000000 pairs x128 at 11e048ec00: 336:11422f00 339:00000000 33a:0005042c 33b:00000000 33c:00000048 3
+    load table buf 50 at 186: op 9f dw1 e08aec00 dw3 80000000 pairs x128 at 11e08aec00: 336:11422f00 339:00000000 33a:0005042c 33b:00000000 33c:00000048 3
+    load table buf 51 at 186: op 9f dw1 e04aec00 dw3 80000000 pairs x128 at 11e04aec00: 336:11422f00 339:00000000 33a:0005042c 33b:00000000 33c:00000048 3
+  HTILE base 112b720000 (register form 112b7200): 124 non-bake journal lines hold it
+    hint DB_HTILE 0x112b720000: window 0x1129720000+0x4000000, direct memory +0.0 MiB
+    load table buf 12 at 186: op 9f dw1 e0b2ec00 dw3 80000000 pairs x128 at 11e0b2ec00: 336:11422f00 339:00000000 33a:0005042c 33b:00000000 33c:00000048 3
+    load table buf 13 at 186: op 9f dw1 e02aec00 dw3 80000000 pairs x128 at 11e02aec00: 336:11422f00 339:00000000 33a:0005042c 33b:00000000 33c:00000048 3
+    load table buf 14 at 186: op 9f dw1 e03eec00 dw3 80000000 pairs x128 at 11e03eec00: 336:11422f00 339:00000000 33a:0005042c 33b:00000000 33c:00000048 3
+    load table buf 15 at 186: op 9f dw1 e0e0ec00 dw3 80000000 pairs x128 at 11e0e0ec00: 336:11422f00 339:00000000 33a:0005042c 33b:00000000 33c:00000048 3
