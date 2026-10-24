@@ -29,10 +29,12 @@ KEEP=$(echo "$OUT" | sed -n 's/.*(previous saves in \(.*\))$/\1/p')
 sudo -n dmesg 2> /dev/null | wc -l > "$R/$TAG-dmesg-before.txt"
 cp "$CMD" "$E/op-$TAG.cmd"
 REPORT_ENV=""; [ "$REPORT" != "-" ] && REPORT_ENV="KYTY_BC5_VIDEOOUT_REPORT=$REPORT"
-{ date '+%F %T'; echo "binary $BIN md5 $(md5sum "$BIN" | cut -c1-32), report ${REPORT_ENV:-unset}, $SECS s, saves $SAVES, live saves kept in $KEEP"
+# The top session (2026-10-25): RT off in both arms overnight, the same in both. EXTRA_ENV overrides it.
+EXTRA_ENV=${EXTRA_ENV-KYTY_BC5_RT=0}
+{ date '+%F %T'; echo "binary $BIN md5 $(md5sum "$BIN" | cut -c1-32), report ${REPORT_ENV:-unset}, extra env ${EXTRA_ENV:-none}, $SECS s, saves $SAVES, live saves kept in $KEEP"
   echo "boot $(cut -c1-8 /proc/sys/kernel/random/boot_id); play-pkg.sh md5 $(md5sum "$HOME/bc5-work/play-pkg.sh" | cut -c1-32)"
   echo "before: $(free -m | awk 'NR > 1 {printf "%s total %s used %s free %s avail %s; ", $1, $2, $3, $4, $7}')"; } > "$R/$TAG-start.txt"
-setsid nohup distrobox enter ubuntu -- env BC5_EMU="$BIN" KYTY_BC5_INPUT_CMD="$E/op-$TAG.cmd" $REPORT_ENV \
+setsid nohup distrobox enter ubuntu -- env BC5_EMU="$BIN" KYTY_BC5_INPUT_CMD="$E/op-$TAG.cmd" $EXTRA_ENV $REPORT_ENV \
   "$HOME/bc5-work/play-pkg.sh" < /dev/null > "$R/$TAG-launch.out" 2>&1 &
 EP=""
 for _ in $(seq 1 60); do EP=$(pgrep -o '^kyty_emulator') && break; sleep 1; done

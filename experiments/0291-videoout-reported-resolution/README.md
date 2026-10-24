@@ -80,6 +80,8 @@ session's item 2 on lowering GPU load, added at the maintainer's request.
 - Runs, one each, the same route and the launcher's defaults in both:
   - A: `-`, today's answer, 1;
   - B: `2160p`.
+  - Both arms run with RT off (`KYTY_BC5_RT=0`), at the top session's request for the overnight slot. `run0291.sh`
+    sets it by default; `EXTRA_ENV` overrides it.
 - Reading:
   - No "GetOutputStatus" or output-mode line in A: the title never asks, and no reported value can change its
     output. The 4K display pass stays; GPU savings must come from elsewhere (for this title not the timestamp
