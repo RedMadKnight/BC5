@@ -1,0 +1,29 @@
+# play-20261024-1611, frame profile per second, t 146-166 (frames, mean frame ms, game-thread label waits ms, GPU ring busy ms)
+146: 49 frames, mean 20.7 ms, label waits 5.8, GPU busy 16.5
+147: 48 frames, mean 20.7 ms, label waits 5.6, GPU busy 14.6
+148: 47 frames, mean 21.2 ms, label waits 5.9, GPU busy 14.8
+149: 48 frames, mean 20.9 ms, label waits 5.8, GPU busy 14.5
+150: 48 frames, mean 20.9 ms, label waits 6.1, GPU busy 15.0
+151: 47 frames, mean 21.2 ms, label waits 6.1, GPU busy 14.7
+152: 35 frames, mean 28.6 ms, label waits 11.9, GPU busy 14.9
+153: 27 frames, mean 36.9 ms, label waits 21.8, GPU busy 12.8
+154: 27 frames, mean 37.1 ms, label waits 21.7, GPU busy 13.2
+155: 27 frames, mean 36.9 ms, label waits 22.1, GPU busy 14.0
+156: 27 frames, mean 36.9 ms, label waits 22.1, GPU busy 14.2
+157: 27 frames, mean 37.2 ms, label waits 22.1, GPU busy 14.2
+158: 27 frames, mean 36.7 ms, label waits 22.1, GPU busy 14.4
+159: 28 frames, mean 36.1 ms, label waits 22.3, GPU busy 14.7
+160: 28 frames, mean 36.0 ms, label waits 22.3, GPU busy 14.7
+161: 27 frames, mean 35.9 ms, label waits 22.2, GPU busy 14.6
+162: 28 frames, mean 35.9 ms, label waits 22.3, GPU busy 14.7
+163: 28 frames, mean 36.3 ms, label waits 22.4, GPU busy 14.7
+164: 27 frames, mean 36.6 ms, label waits 22.4, GPU busy 14.6
+165: 27 frames, mean 36.9 ms, label waits 22.5, GPU busy 14.5
+166:  6 frames, mean 36.9 ms, label waits 22.5, GPU busy 14.5
+
+# give-ups t>=150: 373 in 491 frames, each 16.7-17.0 ms (8-ms limit before and after the head piece)
+# labels (dword offset, label, count): 19232 0x403678d40 14; 19232 0x403678cc0 14; 19232 0x403678d00 13; 19192 x3 26; 19268/19581 ... ; 115 on the flip labels 15
+# wait detail: value 0xff or reference-3 at every give-up; next compute submission 9.0 ms after a give-up (373/373)
+# pieces full, last 10 s: 207 splits made, the wait then satisfied 0, not satisfied 207
+# flip-wait end minus last GPU completion: 0.40 ms (t 60-100), 0.24 ms (t 100-150), 3.32 ms (t 150-167, the GPU queue empty)
+# next submission minus last GPU completion: 2.30 / 1.87 / 5.67 ms for the same windows
