@@ -1,5 +1,5 @@
 diff --git a/3rdparty/CMakeLists.txt b/3rdparty/CMakeLists.txt
-index 3809ce3b..e1eefffb 100644
+index 3809ce3..e1eefff 100644
 --- a/3rdparty/CMakeLists.txt
 +++ b/3rdparty/CMakeLists.txt
 @@ -124,6 +124,16 @@ endif()
@@ -21,7 +21,7 @@ index 3809ce3b..e1eefffb 100644
  	target_compile_options(LibAtrac9 PRIVATE /W0)
 diff --git a/3rdparty/vgmstream-atrac9/COPYING b/3rdparty/vgmstream-atrac9/COPYING
 new file mode 100644
-index 00000000..74c95daa
+index 0000000..033f42a
 --- /dev/null
 +++ b/3rdparty/vgmstream-atrac9/COPYING
 @@ -0,0 +1,23 @@
@@ -50,7 +50,7 @@ index 00000000..74c95daa
 +OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 diff --git a/3rdparty/vgmstream-atrac9/README.BC5 b/3rdparty/vgmstream-atrac9/README.BC5
 new file mode 100644
-index 00000000..7d20804b
+index 0000000..7d20804
 --- /dev/null
 +++ b/3rdparty/vgmstream-atrac9/README.BC5
 @@ -0,0 +1,6 @@
@@ -62,7 +62,7 @@ index 00000000..7d20804b
 +bitstream_msb.h resolves.
 diff --git a/3rdparty/vgmstream-atrac9/src/coding/libs/atrac9_dec.c b/3rdparty/vgmstream-atrac9/src/coding/libs/atrac9_dec.c
 new file mode 100644
-index 00000000..a4e22d42
+index 0000000..a4e22d4
 --- /dev/null
 +++ b/3rdparty/vgmstream-atrac9/src/coding/libs/atrac9_dec.c
 @@ -0,0 +1,555 @@
@@ -623,7 +623,7 @@ index 00000000..a4e22d42
 +}
 diff --git a/3rdparty/vgmstream-atrac9/src/coding/libs/atrac9_dec.h b/3rdparty/vgmstream-atrac9/src/coding/libs/atrac9_dec.h
 new file mode 100644
-index 00000000..0e6fce79
+index 0000000..0e6fce7
 --- /dev/null
 +++ b/3rdparty/vgmstream-atrac9/src/coding/libs/atrac9_dec.h
 @@ -0,0 +1,62 @@
@@ -691,7 +691,7 @@ index 00000000..0e6fce79
 +#endif
 diff --git a/3rdparty/vgmstream-atrac9/src/coding/libs/atrac9_internal.c b/3rdparty/vgmstream-atrac9/src/coding/libs/atrac9_internal.c
 new file mode 100644
-index 00000000..1550ba3d
+index 0000000..1550ba3
 --- /dev/null
 +++ b/3rdparty/vgmstream-atrac9/src/coding/libs/atrac9_internal.c
 @@ -0,0 +1,1393 @@
@@ -2090,7 +2090,7 @@ index 00000000..1550ba3d
 +}
 diff --git a/3rdparty/vgmstream-atrac9/src/coding/libs/atrac9_internal.h b/3rdparty/vgmstream-atrac9/src/coding/libs/atrac9_internal.h
 new file mode 100644
-index 00000000..fd20c8a3
+index 0000000..fd20c8a
 --- /dev/null
 +++ b/3rdparty/vgmstream-atrac9/src/coding/libs/atrac9_internal.h
 @@ -0,0 +1,122 @@
@@ -2218,7 +2218,7 @@ index 00000000..fd20c8a3
 +#endif
 diff --git a/3rdparty/vgmstream-atrac9/src/coding/libs/atrac9_internal_data.h b/3rdparty/vgmstream-atrac9/src/coding/libs/atrac9_internal_data.h
 new file mode 100644
-index 00000000..0adb32ae
+index 0000000..0adb32a
 --- /dev/null
 +++ b/3rdparty/vgmstream-atrac9/src/coding/libs/atrac9_internal_data.h
 @@ -0,0 +1,1719 @@
@@ -3943,7 +3943,7 @@ index 00000000..0adb32ae
 +#endif
 diff --git a/3rdparty/vgmstream-atrac9/src/util/bitstream_msb.h b/3rdparty/vgmstream-atrac9/src/util/bitstream_msb.h
 new file mode 100644
-index 00000000..b279eabc
+index 0000000..b279eab
 --- /dev/null
 +++ b/3rdparty/vgmstream-atrac9/src/util/bitstream_msb.h
 @@ -0,0 +1,215 @@
@@ -4163,7 +4163,7 @@ index 00000000..b279eabc
 +
 +#endif
 diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
-index db251072..c59b2b82 100644
+index db25107..c59b2b8 100644
 --- a/src/CMakeLists.txt
 +++ b/src/CMakeLists.txt
 @@ -168,6 +168,17 @@ if (CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 12.0.0)
@@ -4228,7 +4228,7 @@ index db251072..c59b2b82 100644
  # (fsrUpscaler.cpp #includes them and is GLOB-collected, so it needs an explicit edge).
  add_dependencies(kyty_emulator fsr_shaders)
 diff --git a/src/common/emulatorConfig.cpp b/src/common/emulatorConfig.cpp
-index 15a98b9d..0e3d63d9 100644
+index 15a98b9..0e3d63d 100644
 --- a/src/common/emulatorConfig.cpp
 +++ b/src/common/emulatorConfig.cpp
 @@ -114,7 +114,11 @@ bool GraphicsDebugDumpEnabled() {
@@ -4256,7 +4256,7 @@ index 15a98b9d..0e3d63d9 100644
  
  bool SpirvDebugPrintfEnabled() {
 diff --git a/src/common/logging/log.cpp b/src/common/logging/log.cpp
-index e4e24341..a0f6bbfa 100644
+index e4e2434..a0f6bbf 100644
 --- a/src/common/logging/log.cpp
 +++ b/src/common/logging/log.cpp
 @@ -6,6 +6,9 @@
@@ -4305,7 +4305,7 @@ index e4e24341..a0f6bbfa 100644
  }
  
 diff --git a/src/common/logging/log.h b/src/common/logging/log.h
-index 3ce29cf1..0df082cb 100644
+index 3ce29cf..0df082c 100644
 --- a/src/common/logging/log.h
 +++ b/src/common/logging/log.h
 @@ -1,6 +1,7 @@
@@ -4342,7 +4342,7 @@ index 3ce29cf1..0df082cb 100644
  void      Write(fmt::text_style style, std::string_view text);
  void      WriteFatal(std::string_view text);
 diff --git a/src/common/platform/sysLinuxFileIO.cpp b/src/common/platform/sysLinuxFileIO.cpp
-index 0a6ef8b0..97b2614c 100644
+index 0a6ef8b..97b2614 100644
 --- a/src/common/platform/sysLinuxFileIO.cpp
 +++ b/src/common/platform/sysLinuxFileIO.cpp
 @@ -53,7 +53,7 @@ struct sys_file_t {
@@ -4355,7 +4355,7 @@ index 0a6ef8b0..97b2614c 100644
  
  // Pass access-pattern hints to the host.
 diff --git a/src/common/platform/sysLinuxVirtual.cpp b/src/common/platform/sysLinuxVirtual.cpp
-index 7225e2e3..1ca144d9 100644
+index 7225e2e..1ca144d 100644
 --- a/src/common/platform/sysLinuxVirtual.cpp
 +++ b/src/common/platform/sysLinuxVirtual.cpp
 @@ -1,3 +1,4 @@
@@ -4375,7 +4375,7 @@ index 7225e2e3..1ca144d9 100644
  }
  
 diff --git a/src/common/profiler.h b/src/common/profiler.h
-index a84e308b..a13c65f4 100644
+index a84e308..a13c65f 100644
 --- a/src/common/profiler.h
 +++ b/src/common/profiler.h
 @@ -75,4 +75,17 @@ KYTY_SUBSYSTEM_DEFINE(Profiler);
@@ -4397,7 +4397,7 @@ index a84e308b..a13c65f4 100644
 +
  #endif /* KYTY_COMMON_PROFILER_H_ */
 diff --git a/src/common/threads.cpp b/src/common/threads.cpp
-index c0b4bbe8..18705941 100644
+index c0b4bbe..1870594 100644
 --- a/src/common/threads.cpp
 +++ b/src/common/threads.cpp
 @@ -1,3 +1,4 @@
@@ -4417,7 +4417,7 @@ index c0b4bbe8..18705941 100644
  		t->started   = true;
  		t->func(t->arg);
 diff --git a/src/emulator.cpp b/src/emulator.cpp
-index 1d2b7e15..84c37ac6 100644
+index 1d2b7e1..84c37ac 100644
 --- a/src/emulator.cpp
 +++ b/src/emulator.cpp
 @@ -1,3 +1,4 @@
@@ -4471,7 +4471,7 @@ index 1d2b7e15..84c37ac6 100644
  		EXIT("app0 directory is required\n");
  	}
 diff --git a/src/emulator.h b/src/emulator.h
-index 9ff761cb..faba0998 100644
+index 9ff761c..faba099 100644
 --- a/src/emulator.h
 +++ b/src/emulator.h
 @@ -14,6 +14,7 @@ struct RunOptions {
@@ -4483,7 +4483,7 @@ index 9ff761cb..faba0998 100644
  
  void Run(const RunOptions& options);
 diff --git a/src/graphics/guest_gpu/graphicsRun.cpp b/src/graphics/guest_gpu/graphicsRun.cpp
-index 2918b0d0..59ae0b6e 100644
+index 2918b0d..59ae0b6 100644
 --- a/src/graphics/guest_gpu/graphicsRun.cpp
 +++ b/src/graphics/guest_gpu/graphicsRun.cpp
 @@ -1,3 +1,4 @@
@@ -4511,7 +4511,7 @@ index 2918b0d0..59ae0b6e 100644
  		if (execution.m_suspended) {
  			if (execution.m_buffer_stack.size() > buffer_index + 1) {
 diff --git a/src/graphics/guest_gpu/pm4.h b/src/graphics/guest_gpu/pm4.h
-index 78fd86fd..462e774d 100644
+index 78fd86f..462e774 100644
 --- a/src/graphics/guest_gpu/pm4.h
 +++ b/src/graphics/guest_gpu/pm4.h
 @@ -15,7 +15,9 @@ class File;
@@ -4526,7 +4526,7 @@ index 78fd86fd..462e774d 100644
  namespace Libs::Graphics::Pm4 {
  
 diff --git a/src/graphics/host_gpu/renderer/cache/bufferCache.cpp b/src/graphics/host_gpu/renderer/cache/bufferCache.cpp
-index d429de1b..cf4e8287 100644
+index d429de1..cf4e828 100644
 --- a/src/graphics/host_gpu/renderer/cache/bufferCache.cpp
 +++ b/src/graphics/host_gpu/renderer/cache/bufferCache.cpp
 @@ -1,3 +1,5 @@
@@ -4618,7 +4618,7 @@ index d429de1b..cf4e8287 100644
  	const auto dirty                   = m_gpu_modified_ranges.Intersections(vaddr, size);
  	const bool has_dirty_buffer_source = !dirty.empty();
 diff --git a/src/graphics/host_gpu/renderer/cache/gpuResourceManager.cpp b/src/graphics/host_gpu/renderer/cache/gpuResourceManager.cpp
-index baa1bde3..90efc9f7 100644
+index baa1bde..90efc9f 100644
 --- a/src/graphics/host_gpu/renderer/cache/gpuResourceManager.cpp
 +++ b/src/graphics/host_gpu/renderer/cache/gpuResourceManager.cpp
 @@ -3,6 +3,9 @@
@@ -4649,7 +4649,7 @@ index baa1bde3..90efc9f7 100644
  			m_scheduler.FinishCurrent();
  			m_scheduler.WaitPriorityOperations(tick);
 diff --git a/src/graphics/host_gpu/renderer/cache/streamBuffer.cpp b/src/graphics/host_gpu/renderer/cache/streamBuffer.cpp
-index f6a0e222..7832ea8a 100644
+index f6a0e22..7832ea8 100644
 --- a/src/graphics/host_gpu/renderer/cache/streamBuffer.cpp
 +++ b/src/graphics/host_gpu/renderer/cache/streamBuffer.cpp
 @@ -6,6 +6,7 @@
@@ -4682,7 +4682,7 @@ index f6a0e222..7832ea8a 100644
  	}
  }
 diff --git a/src/graphics/host_gpu/renderer/commandScheduler.cpp b/src/graphics/host_gpu/renderer/commandScheduler.cpp
-index a30475f4..1496f231 100644
+index a30475f..1496f23 100644
 --- a/src/graphics/host_gpu/renderer/commandScheduler.cpp
 +++ b/src/graphics/host_gpu/renderer/commandScheduler.cpp
 @@ -1,3 +1,4 @@
@@ -4699,7 +4699,7 @@ index a30475f4..1496f231 100644
  		PendingOperation operation;
  		{
 diff --git a/src/graphics/host_gpu/renderer/image/tiler.cpp b/src/graphics/host_gpu/renderer/image/tiler.cpp
-index ec40f231..65776b04 100644
+index ec40f23..65776b0 100644
 --- a/src/graphics/host_gpu/renderer/image/tiler.cpp
 +++ b/src/graphics/host_gpu/renderer/image/tiler.cpp
 @@ -1,4 +1,5 @@
@@ -4912,7 +4912,7 @@ index ec40f231..65776b04 100644
  
  void TileManager::Prepare(bool tile, uint64_t tiled_capacity, uint64_t linear_capacity,
 diff --git a/src/graphics/host_gpu/renderer/pipeline/asyncPipelineCompiler.cpp b/src/graphics/host_gpu/renderer/pipeline/asyncPipelineCompiler.cpp
-index 8c19ba5e..85d0bcbc 100644
+index 8c19ba5..85d0bcb 100644
 --- a/src/graphics/host_gpu/renderer/pipeline/asyncPipelineCompiler.cpp
 +++ b/src/graphics/host_gpu/renderer/pipeline/asyncPipelineCompiler.cpp
 @@ -1,4 +1,5 @@
@@ -4935,7 +4935,7 @@ index 8c19ba5e..85d0bcbc 100644
  	LOGF("AsyncPipelineCompiler: started %zu worker threads\n", kWorkerCount);
  }
 diff --git a/src/graphics/host_gpu/vma.cpp b/src/graphics/host_gpu/vma.cpp
-index 14608a63..31bc9966 100644
+index 14608a6..31bc996 100644
 --- a/src/graphics/host_gpu/vma.cpp
 +++ b/src/graphics/host_gpu/vma.cpp
 @@ -25,6 +25,12 @@
@@ -5038,7 +5038,7 @@ index 14608a63..31bc9966 100644
  	image.image            = nullptr;
  	memory.memory          = nullptr;
 diff --git a/src/graphics/host_gpu/vma.h b/src/graphics/host_gpu/vma.h
-index a656b676..94a249ce 100644
+index a656b67..94a249c 100644
 --- a/src/graphics/host_gpu/vma.h
 +++ b/src/graphics/host_gpu/vma.h
 @@ -9,6 +9,8 @@ namespace Libs::Graphics {
@@ -5052,7 +5052,7 @@ index a656b676..94a249ce 100644
  
 diff --git a/src/graphics/presentation/hostMenu.cpp b/src/graphics/presentation/hostMenu.cpp
 new file mode 100644
-index 00000000..f3f86d98
+index 0000000..f3f86d9
 --- /dev/null
 +++ b/src/graphics/presentation/hostMenu.cpp
 @@ -0,0 +1,526 @@
@@ -5584,7 +5584,7 @@ index 00000000..f3f86d98
 +} // namespace Libs::Graphics
 diff --git a/src/graphics/presentation/hostMenu.h b/src/graphics/presentation/hostMenu.h
 new file mode 100644
-index 00000000..7b6926c6
+index 0000000..7b6926c
 --- /dev/null
 +++ b/src/graphics/presentation/hostMenu.h
 @@ -0,0 +1,27 @@
@@ -5617,7 +5617,7 @@ index 00000000..7b6926c6
 +#endif // KYTY_GRAPHICS_PRESENTATION_HOST_MENU_H_
 diff --git a/src/graphics/presentation/settingsOverlay.cpp b/src/graphics/presentation/settingsOverlay.cpp
 new file mode 100644
-index 00000000..e8775fd5
+index 0000000..e8775fd
 --- /dev/null
 +++ b/src/graphics/presentation/settingsOverlay.cpp
 @@ -0,0 +1,940 @@
@@ -6563,7 +6563,7 @@ index 00000000..e8775fd5
 +} // namespace Libs::Graphics
 diff --git a/src/graphics/presentation/settingsOverlay.h b/src/graphics/presentation/settingsOverlay.h
 new file mode 100644
-index 00000000..f987e1fc
+index 0000000..f987e1f
 --- /dev/null
 +++ b/src/graphics/presentation/settingsOverlay.h
 @@ -0,0 +1,56 @@
@@ -6624,7 +6624,7 @@ index 00000000..f987e1fc
 +
 +#endif // KYTY_GRAPHICS_PRESENTATION_SETTINGS_OVERLAY_H_
 diff --git a/src/graphics/presentation/videoOut.cpp b/src/graphics/presentation/videoOut.cpp
-index f9803207..e0ac58ba 100644
+index f980320..e0ac58b 100644
 --- a/src/graphics/presentation/videoOut.cpp
 +++ b/src/graphics/presentation/videoOut.cpp
 @@ -1,3 +1,9 @@
@@ -7211,7 +7211,7 @@ index f9803207..e0ac58ba 100644
  	auto* ctx = DriverState().Get(handle);
  	if (ctx == nullptr) {
 diff --git a/src/graphics/presentation/videoOut.h b/src/graphics/presentation/videoOut.h
-index 58f16c67..fbce0815 100644
+index 58f16c6..fbce081 100644
 --- a/src/graphics/presentation/videoOut.h
 +++ b/src/graphics/presentation/videoOut.h
 @@ -39,6 +39,7 @@ public:
@@ -7239,7 +7239,7 @@ index 58f16c67..fbce0815 100644
  KYTY_SYSV_ABI int VideoOutGetVblankStatus(int handle, VideoOutVblankStatus* status);
  KYTY_SYSV_ABI int VideoOutGetEventId(const LibKernel::EventQueue::KernelEvent* ev);
 diff --git a/src/graphics/presentation/window.h b/src/graphics/presentation/window.h
-index f70995aa..8bc9175b 100644
+index f70995a..8bc9175 100644
 --- a/src/graphics/presentation/window.h
 +++ b/src/graphics/presentation/window.h
 @@ -11,6 +11,13 @@ class Presenter;
@@ -7257,7 +7257,7 @@ index f70995aa..8bc9175b 100644
  } // namespace Libs::Graphics
  
 diff --git a/src/graphics/presentation/window/hostInput.cpp b/src/graphics/presentation/window/hostInput.cpp
-index edcfdaf9..ad82cd38 100644
+index edcfdaf..ad82cd3 100644
 --- a/src/graphics/presentation/window/hostInput.cpp
 +++ b/src/graphics/presentation/window/hostInput.cpp
 @@ -1,4 +1,6 @@
@@ -8316,7 +8316,7 @@ index edcfdaf9..ad82cd38 100644
 +
  } // namespace Libs::Graphics
 diff --git a/src/graphics/presentation/window/hostInput.h b/src/graphics/presentation/window/hostInput.h
-index c0ac585a..34a3616c 100644
+index c0ac585..34a3616 100644
 --- a/src/graphics/presentation/window/hostInput.h
 +++ b/src/graphics/presentation/window/hostInput.h
 @@ -2,6 +2,8 @@
@@ -8356,7 +8356,7 @@ index c0ac585a..34a3616c 100644
  } // namespace Libs::Graphics
  
 diff --git a/src/graphics/presentation/window/swapchain.cpp b/src/graphics/presentation/window/swapchain.cpp
-index 845bfe30..c5d4861d 100644
+index 845bfe3..c5d4861 100644
 --- a/src/graphics/presentation/window/swapchain.cpp
 +++ b/src/graphics/presentation/window/swapchain.cpp
 @@ -1,3 +1,4 @@
@@ -8550,7 +8550,7 @@ index 845bfe30..c5d4861d 100644
  		{
  			const auto present_end = std::chrono::steady_clock::now();
 diff --git a/src/graphics/presentation/window/window.cpp b/src/graphics/presentation/window/window.cpp
-index c729a980..2f3e5fba 100644
+index c729a98..2f3e5fb 100644
 --- a/src/graphics/presentation/window/window.cpp
 +++ b/src/graphics/presentation/window/window.cpp
 @@ -31,7 +31,9 @@
@@ -8977,7 +8977,7 @@ index c729a980..2f3e5fba 100644
  #if defined(__APPLE__)
  	// AppKit traps on title changes off the main thread; fire-and-forget keeps present pacing.
 diff --git a/src/kernel/eventQueue.cpp b/src/kernel/eventQueue.cpp
-index 14561b04..65650536 100644
+index 14561b0..6565053 100644
 --- a/src/kernel/eventQueue.cpp
 +++ b/src/kernel/eventQueue.cpp
 @@ -1,8 +1,14 @@
@@ -9169,7 +9169,7 @@ index 14561b04..65650536 100644
  
  	return OK;
 diff --git a/src/kernel/eventQueue.h b/src/kernel/eventQueue.h
-index 765d72fd..ea0cc554 100644
+index 765d72f..ea0cc55 100644
 --- a/src/kernel/eventQueue.h
 +++ b/src/kernel/eventQueue.h
 @@ -70,6 +70,8 @@ int KYTY_SYSV_ABI KernelWaitEqueue(KernelEqueue eq, KernelEvent* ev, int num, in
@@ -9182,7 +9182,7 @@ index 765d72fd..ea0cc554 100644
  int KYTY_SYSV_ABI KernelDeleteUserEvent(KernelEqueue eq, int id);
  int KYTY_SYSV_ABI KernelAddHRTimerEvent(KernelEqueue eq, int id, const KernelTimespec* ts,
 diff --git a/src/kernel/fileSystem.cpp b/src/kernel/fileSystem.cpp
-index 4034f52b..c78ce714 100644
+index 4034f52..c78ce71 100644
 --- a/src/kernel/fileSystem.cpp
 +++ b/src/kernel/fileSystem.cpp
 @@ -1,3 +1,4 @@
@@ -9369,7 +9369,7 @@ index 4034f52b..c78ce714 100644
 +
  } // namespace Libs::LibKernel::FileSystem
 diff --git a/src/kernel/fileSystem.h b/src/kernel/fileSystem.h
-index bc73d18b..252c6924 100644
+index bc73d18..252c692 100644
 --- a/src/kernel/fileSystem.h
 +++ b/src/kernel/fileSystem.h
 @@ -57,6 +57,9 @@ int KYTY_SYSV_ABI     KernelMkdir(const char* path, uint16_t mode);
@@ -9383,7 +9383,7 @@ index bc73d18b..252c6924 100644
  
  #endif /* EMULATOR_INCLUDE_EMULATOR_KERNEL_FILESYSTEM_H_ */
 diff --git a/src/kernel/memory.cpp b/src/kernel/memory.cpp
-index 02fc0fc7..615e1eee 100644
+index 02fc0fc..615e1ee 100644
 --- a/src/kernel/memory.cpp
 +++ b/src/kernel/memory.cpp
 @@ -1,3 +1,6 @@
@@ -9953,7 +9953,7 @@ index 02fc0fc7..615e1eee 100644
  
  int KYTY_SYSV_ABI KernelVirtualQuery(const void* addr, int flags, VirtualQueryInfo* info,
 diff --git a/src/kernel/memory.h b/src/kernel/memory.h
-index d1fc7f82..0eeb1cd0 100644
+index d1fc7f8..0eeb1cd 100644
 --- a/src/kernel/memory.h
 +++ b/src/kernel/memory.h
 @@ -1,6 +1,8 @@
@@ -9981,7 +9981,7 @@ index d1fc7f82..0eeb1cd0 100644
  void                   WriteBacking(uint64_t vaddr, const void* data, uint64_t size) noexcept;
  void                   InvalidateMemory(uint64_t vaddr, uint64_t size);
 diff --git a/src/kernel/memoryAddressSpace.inc b/src/kernel/memoryAddressSpace.inc
-index 9ea25b01..b922b689 100644
+index 9ea25b0..b922b68 100644
 --- a/src/kernel/memoryAddressSpace.inc
 +++ b/src/kernel/memoryAddressSpace.inc
 @@ -31,6 +31,24 @@ static bool CoalescePlaceholders(uint64_t vaddr, uint64_t size) {
@@ -10223,7 +10223,7 @@ index 9ea25b01..b922b689 100644
  			EXIT_IF(!AddMappedUnlocked(vaddr, size, MappingType::Private));
  			return true;
 diff --git a/src/kernel/pthread.cpp b/src/kernel/pthread.cpp
-index 5f87e6bf..7b61a152 100644
+index 5f87e6b..7b61a15 100644
 --- a/src/kernel/pthread.cpp
 +++ b/src/kernel/pthread.cpp
 @@ -1,3 +1,4 @@
@@ -10446,7 +10446,7 @@ index 5f87e6bf..7b61a152 100644
  
  uint64_t KYTY_SYSV_ABI KernelGetProcessTime() {
 diff --git a/src/kernel/pthread.h b/src/kernel/pthread.h
-index 3b39581c..58c75e43 100644
+index 3b39581..58c75e4 100644
 --- a/src/kernel/pthread.h
 +++ b/src/kernel/pthread.h
 @@ -201,6 +201,11 @@ uint64_t KYTY_SYSV_ABI KernelReadTsc();
@@ -10462,7 +10462,7 @@ index 3b39581c..58c75e43 100644
  } // namespace LibKernel
  
 diff --git a/src/kernel/semaphore.cpp b/src/kernel/semaphore.cpp
-index ed7c35bc..847f2506 100644
+index ed7c35b..847f250 100644
 --- a/src/kernel/semaphore.cpp
 +++ b/src/kernel/semaphore.cpp
 @@ -2,6 +2,8 @@
@@ -10486,7 +10486,7 @@ index ed7c35bc..847f2506 100644
  	}
  
 diff --git a/src/libs/agc.cpp b/src/libs/agc.cpp
-index 6c482675..445c3f23 100644
+index 6c48267..445c3f2 100644
 --- a/src/libs/agc.cpp
 +++ b/src/libs/agc.cpp
 @@ -28,6 +28,7 @@
@@ -10577,7 +10577,7 @@ index 6c482675..445c3f23 100644
  	PRINT_NAME();
  
 diff --git a/src/libs/agc.h b/src/libs/agc.h
-index 73e3ac90..b6beb82a 100644
+index 73e3ac9..b6beb82 100644
 --- a/src/libs/agc.h
 +++ b/src/libs/agc.h
 @@ -314,6 +314,8 @@ uint32_t KYTY_SYSV_ABI GraphicsDriverGetEqContextId(const LibKernel::EventQueue:
@@ -10590,7 +10590,7 @@ index 73e3ac90..b6beb82a 100644
  int KYTY_SYSV_ABI      GraphicsDriverUnknownU9ueyEhSkF4();
  
 diff --git a/src/libs/ajm.cpp b/src/libs/ajm.cpp
-index 89473ad6..876317db 100644
+index 89473ad..876317d 100644
 --- a/src/libs/ajm.cpp
 +++ b/src/libs/ajm.cpp
 @@ -1,15 +1,19 @@
@@ -10929,7 +10929,7 @@ index 89473ad6..876317db 100644
  	LOGF("\t instance = 0x%08" PRIx32 ", flags = 0x%016" PRIx64 ", input = 0x%016" PRIx64
  	     ", input_size = 0x%016" PRIx64 ", output = 0x%016" PRIx64 ", output_size = 0x%016" PRIx64
 diff --git a/src/libs/ajm/atrac9_decoder.h b/src/libs/ajm/atrac9_decoder.h
-index cb7587c5..526ee9a9 100644
+index cb7587c..526ee9a 100644
 --- a/src/libs/ajm/atrac9_decoder.h
 +++ b/src/libs/ajm/atrac9_decoder.h
 @@ -1,9 +1,11 @@
@@ -11108,7 +11108,7 @@ index cb7587c5..526ee9a9 100644
  	uint32_t             m_superframe_bytes_remain = 0;
  	uint32_t             m_num_frames              = 0;
 diff --git a/src/libs/ajm/opus_decoder.h b/src/libs/ajm/opus_decoder.h
-index e82b93e9..6cf1b611 100644
+index e82b93e..6cf1b61 100644
 --- a/src/libs/ajm/opus_decoder.h
 +++ b/src/libs/ajm/opus_decoder.h
 @@ -1,7 +1,6 @@
@@ -11580,7 +11580,7 @@ index e82b93e9..6cf1b611 100644
  
  } // namespace Libs::Audio::Ajm
 diff --git a/src/libs/audio.cpp b/src/libs/audio.cpp
-index fe4b332f..ce714dd6 100644
+index fe4b332..ac2f687 100644
 --- a/src/libs/audio.cpp
 +++ b/src/libs/audio.cpp
 @@ -10,16 +10,27 @@
@@ -11671,41 +11671,7 @@ index fe4b332f..ce714dd6 100644
  uint32_t AudioOutOutputs(const OutputParam* params, uint32_t num, bool blocking) {
  	if (g_audio == nullptr || params == nullptr || num == 0) {
  		return 0;
-@@ -221,13 +262,71 @@ SDL_AudioFormat Audio::SdlFormat(Format format) {
- 	return FormatIsFloat(format) ? AUDIO_F32SYS : AUDIO_S16SYS;
- }
- 
-+// BC5 (haptics, F69): the controller's own audio output, or nullptr. The first SDL output device
-+// whose name contains KYTY_BC5_PAD_AUDIO_DEVICE (default "DualSense"). With the default, a device
-+// named "Wireless Controller" is accepted too when it has the DualSense's four channels: on Linux
-+// (PipeWire/ALSA) the controller's USB audio device carries Sony's USB product string instead of
-+// "DualSense" (ported from KytyPlus c885da0a "haptics: recognize 'Wireless Controller' audio
-+// endpoint on Linux", src/libs/dualSenseHaptics.cpp, GPL-2.0; the channel check is theirs too).
-+static const char* Bc5FindPadAudioDevice() {
-+	const char* env  = std::getenv("KYTY_BC5_PAD_AUDIO_DEVICE");
-+	const char* want = env != nullptr ? env : "DualSense";
-+	const int   n    = SDL_GetNumAudioDevices(0);
-+	for (int i = 0; i < n; i++) {
-+		const char* name = SDL_GetAudioDeviceName(i, 0);
-+		if (name == nullptr) {
-+			continue;
-+		}
-+		if (std::strstr(name, want) != nullptr) {
-+			return name;
-+		}
-+#if SDL_VERSION_ATLEAST(2, 0, 16)
-+		if (env == nullptr && std::strstr(name, "Wireless Controller") != nullptr) {
-+			SDL_AudioSpec spec {};
-+			// The device itself has four channels (F69); PAD_STREAM_CHANNELS is what we open on it.
-+			if (SDL_GetAudioDeviceSpec(i, 0, &spec) == 0 && spec.channels == 4) {
-+				return name;
-+			}
-+		}
-+#endif
-+	}
-+	return nullptr;
-+}
-+
+@@ -224,10 +265,37 @@ SDL_AudioFormat Audio::SdlFormat(Format format) {
  bool Audio::OpenSdlDevice(PortOut* port) {
  	EXIT_IF(port == nullptr);
  
@@ -11743,7 +11709,7 @@ index fe4b332f..ce714dd6 100644
  
  	SDL_AudioSpec desired {};
  	desired.freq     = static_cast<int>(port->freq);
-@@ -236,20 +335,63 @@ bool Audio::OpenSdlDevice(PortOut* port) {
+@@ -236,20 +304,68 @@ bool Audio::OpenSdlDevice(PortOut* port) {
  	desired.samples  = static_cast<Uint16>(port->samples_num);
  	desired.callback = nullptr;
  
@@ -11775,7 +11741,12 @@ index fe4b332f..ce714dd6 100644
 +	}();
 +	if (std::getenv("KYTY_BC5_NO_PAD_AUDIO") == nullptr &&
 +	    ((port->type == AUDIO_OUT_PORT_TYPE_PADSPK && !speaker_on_main) || port->type == AUDIO_OUT_PORT_TYPE_VIBRATION)) {
-+		pad_name = Bc5FindPadAudioDevice();
++		const char* want = std::getenv("KYTY_BC5_PAD_AUDIO_DEVICE") != nullptr ? std::getenv("KYTY_BC5_PAD_AUDIO_DEVICE") : "DualSense";
++		const int   n    = SDL_GetNumAudioDevices(0);
++		for (int i = 0; i < n && pad_name == nullptr; i++) {
++			const char* name = SDL_GetAudioDeviceName(i, 0);
++			if (name != nullptr && std::strstr(name, want) != nullptr) pad_name = name;
++		}
 +		if (pad_name != nullptr) {
 +			desired.channels = PAD_STREAM_CHANNELS;
 +			port->pad_route  = port->type == AUDIO_OUT_PORT_TYPE_VIBRATION ? 2 : 1;
@@ -11811,7 +11782,7 @@ index fe4b332f..ce714dd6 100644
  	return true;
  }
  
-@@ -326,16 +468,211 @@ const void* Audio::PrepareOutputBuffer(const PortOut& port, const void* data,
+@@ -326,16 +442,211 @@ const void* Audio::PrepareOutputBuffer(const PortOut& port, const void* data,
  	return buffer->data();
  }
  
@@ -12024,7 +11995,7 @@ index fe4b332f..ce714dd6 100644
  
  	std::vector<uint8_t> convert_buffer;
  	const void*          queue_data = prepared_data;
-@@ -343,7 +680,7 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -343,7 +654,7 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  
  	SDL_AudioCVT cvt {};
  	const int    cvt_result =
@@ -12033,7 +12004,7 @@ index fe4b332f..ce714dd6 100644
  	                      static_cast<int>(port->freq), port->audio_spec.format,
  	                      port->audio_spec.channels, port->audio_spec.freq);
  
-@@ -368,6 +705,50 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -368,6 +679,56 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  		queue_size = static_cast<uint32_t>(cvt.len_cvt);
  	}
  
@@ -12051,7 +12022,13 @@ index fe4b332f..ce714dd6 100644
 +				return false;
 +			}
 +			port->pad_retry_ms = now_ms;
-+			const char* name   = Bc5FindPadAudioDevice();
++			const char* want   = std::getenv("KYTY_BC5_PAD_AUDIO_DEVICE") != nullptr ? std::getenv("KYTY_BC5_PAD_AUDIO_DEVICE") : "DualSense";
++			const char* name   = nullptr;
++			const int   n      = SDL_GetNumAudioDevices(0);
++			for (int i = 0; i < n && name == nullptr; i++) {
++				const char* d = SDL_GetAudioDeviceName(i, 0);
++				if (d != nullptr && std::strstr(d, want) != nullptr) name = d;
++			}
 +			if (name == nullptr) {
 +				return false;
 +			}
@@ -12084,7 +12061,7 @@ index fe4b332f..ce714dd6 100644
  	if (blocking) {
  		// More aggressive buffer management to prevent audio issues
  		// during heavy GPU load (common in gameplay vs cutscene)
-@@ -378,18 +759,45 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -378,18 +739,45 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  		                   : 2u;
  		const auto min_queued_size = queue_size * std::clamp(buffers, 2u, 8u); // Smaller max
  		const auto wait_start      = LibKernel::KernelGetProcessTime();
@@ -12132,7 +12109,7 @@ index fe4b332f..ce714dd6 100644
  	if (SDL_QueueAudio(port->audio_device, queue_data, queue_size) < 0) {
  		LOGF("AudioOut: SDL_QueueAudio failed: %s\n", SDL_GetError());
  		return false;
-@@ -398,7 +806,56 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+@@ -398,7 +786,56 @@ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
  	return true;
  }
  
@@ -12189,7 +12166,7 @@ index fe4b332f..ce714dd6 100644
  	Common::LockGuard lock(m_mutex);
  
  	for (int id = 0; id < OUT_PORTS_MAX; id++) {
-@@ -428,7 +885,7 @@ Audio::Id Audio::AudioOutOpen(int type, uint32_t samples_num, uint32_t freq, For
+@@ -428,7 +865,7 @@ Audio::Id Audio::AudioOutOpen(int type, uint32_t samples_num, uint32_t freq, For
  				port.volume[i] = 32768;
  			}
  
@@ -12198,7 +12175,7 @@ index fe4b332f..ce714dd6 100644
  				// KytyPlus diagnostic: OpenSdlDevice() may fail (no host audio device,
  				// unsupported sample rate/format, or SDL init failure). The return is
  				// otherwise ignored, which silently leaves audio_device == 0 and makes
-@@ -478,6 +935,19 @@ bool Audio::AudioOutHasDevice(Id handle) {
+@@ -478,6 +915,19 @@ bool Audio::AudioOutHasDevice(Id handle) {
  	        m_out_ports[handle.GetId()].used && m_out_ports[handle.GetId()].audio_device != 0);
  }
  
@@ -12218,7 +12195,7 @@ index fe4b332f..ce714dd6 100644
  bool Audio::AudioOutGetStatus(Id handle, int* type, int* channels_num) {
  	Common::LockGuard lock(m_mutex);
  
-@@ -568,6 +1038,45 @@ uint32_t Audio::AudioOutOutputs(OutputParam* params, uint32_t num, bool blocking
+@@ -568,6 +1018,45 @@ uint32_t Audio::AudioOutOutputs(OutputParam* params, uint32_t num, bool blocking
  		m_out_ports[params[i].handle.GetId()].last_output_time = LibKernel::KernelGetProcessTime();
  	}
  
@@ -12265,7 +12242,7 @@ index fe4b332f..ce714dd6 100644
  }
  
 diff --git a/src/libs/audio_internal.h b/src/libs/audio_internal.h
-index 82be73c7..f090fcbf 100644
+index 82be73c..f090fcb 100644
 --- a/src/libs/audio_internal.h
 +++ b/src/libs/audio_internal.h
 @@ -27,6 +27,7 @@ static constexpr int OUT_PORTS_MAX = 32;
@@ -12278,7 +12255,7 @@ index 82be73c7..f090fcbf 100644
  } // namespace Libs::Audio::AudioInternal
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 00000000..9bd159a6
+index 0000000..9bd159a
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
 @@ -0,0 +1,9362 @@
@@ -21645,7 +21622,7 @@ index 00000000..9bd159a6
 +
 +} // namespace Libs
 diff --git a/src/libs/controller.cpp b/src/libs/controller.cpp
-index 55718eba..9688dafe 100644
+index 55718eb..9688daf 100644
 --- a/src/libs/controller.cpp
 +++ b/src/libs/controller.cpp
 @@ -1,4 +1,9 @@
@@ -22591,7 +22568,7 @@ index 55718eba..9688dafe 100644
  	return OK;
  }
 diff --git a/src/libs/controller.h b/src/libs/controller.h
-index 3c0684f2..a98ac119 100644
+index 3c0684f..a98ac11 100644
 --- a/src/libs/controller.h
 +++ b/src/libs/controller.h
 @@ -9,14 +9,14 @@ namespace Libs::Controller {
@@ -22669,7 +22646,7 @@ index 3c0684f2..a98ac119 100644
  int KYTY_SYSV_ABI PadInit();
  int KYTY_SYSV_ABI PadOpen(int user_id, int type, int index, const void* param);
 diff --git a/src/libs/dialog.cpp b/src/libs/dialog.cpp
-index 5b0fc93c..5b787603 100644
+index 5b0fc93..5b78760 100644
 --- a/src/libs/dialog.cpp
 +++ b/src/libs/dialog.cpp
 @@ -6,8 +6,21 @@
@@ -22906,7 +22883,7 @@ index 5b0fc93c..5b787603 100644
  	LOGF("\t target = %d\n"
  	     "\t msg    = 0x%016" PRIx64 "\n",
 diff --git a/src/libs/libAmpr.cpp b/src/libs/libAmpr.cpp
-index 073361d4..8fe2d401 100644
+index 073361d..8873cc8 100644
 --- a/src/libs/libAmpr.cpp
 +++ b/src/libs/libAmpr.cpp
 @@ -1,3 +1,5 @@
@@ -23270,24 +23247,7 @@ index 073361d4..8fe2d401 100644
  	g_command_buffers.erase(command_buffer);
  	for (auto it = g_command_buffer_aliases.begin(); it != g_command_buffer_aliases.end();) {
  		if (it->first == command_buffer || it->second == command_buffer) {
-@@ -1078,6 +1261,16 @@ static uint64_t AprReadFileRecordSize(uint64_t file_offset) {
- 	return (file_offset >> 32u) != 0 ? READ_FILE_RECORD_SIZE_EXT : READ_FILE_RECORD_SIZE;
- }
- 
-+// Ported from KytyPlus 41beda43 "ampr: fix APR completion loss in 768-byte read batches"
-+// (github.com/Coder787-source/KytyPlus, src/libs/libAmpr.cpp, GPL-2.0): a WriteAddress or
-+// WriteAddressOnCompletion record is 8, 12 or 16 bytes by the value it writes, not a fixed 0x20;
-+// a title that measures its records and packs them (768-byte read batches there) otherwise
-+// loses the completion write that follows. The counter and time-counter variants stay at 0x20.
-+// TODO(verify): the record sizes against a title's own measured layout on the box.
-+static uint64_t WriteAddressRecordSize(uint64_t value) {
-+	return value <= 3 ? 8 : value < (uint64_t {1} << 34) ? 12 : 16;
-+}
-+
- static uint64_t AprReadGatherRecordSize(uint64_t file_offset) {
- 	return file_offset > 0x3ffffu ? READ_GATHER_RECORD_SIZE_EXT : READ_GATHER_RECORD_SIZE;
- }
-@@ -1151,6 +1344,7 @@ static bool WriteCommandBufferPointers(uint64_t command_buffer, uint64_t buffer,
+@@ -1151,6 +1334,7 @@ static bool WriteCommandBufferPointers(uint64_t command_buffer, uint64_t buffer,
  	state.kernel_event_commands.clear();
  	state.write_address_commands.clear();
  	state.amm_map_commands.clear();
@@ -23295,7 +23255,7 @@ index 073361d4..8fe2d401 100644
  	state.gather_scatter_valid       = false;
  	state.gather_scatter_file_id     = 0;
  	state.gather_scatter_destination = 0;
-@@ -1256,6 +1450,9 @@ static bool AppendReadFileRecord(uint64_t command_buffer, uint8_t opcode, uint32
+@@ -1256,6 +1440,9 @@ static bool AppendReadFileRecord(uint64_t command_buffer, uint8_t opcode, uint32
  	            static_cast<size_t>(record_size));
  	std::memcpy(reinterpret_cast<void*>(state.buffer + record_offset), &opcode, sizeof(opcode));
  	state.read_file_commands.push_back({record_offset, file_id, destination, size, file_offset});
@@ -23305,7 +23265,7 @@ index 073361d4..8fe2d401 100644
  	if (!CommitCommandBufferRecord(command_buffer, &state, record_size)) {
  		return false;
  	}
-@@ -1294,7 +1491,12 @@ static bool AppendKernelEventRecord(uint64_t command_buffer, uint64_t eq, int32_
+@@ -1294,7 +1481,12 @@ static bool AppendKernelEventRecord(uint64_t command_buffer, uint64_t eq, int32_
  	std::memcpy(reinterpret_cast<void*>(state.buffer + record_offset), record.data(),
  	            record.size());
  	state.kernel_event_commands.push_back({record_offset, eq, id, data});
@@ -23319,7 +23279,7 @@ index 073361d4..8fe2d401 100644
  }
  
  static bool AppendWriteAddressRecord(uint64_t command_buffer, uint64_t address, uint64_t value,
-@@ -1314,7 +1516,37 @@ static bool AppendWriteAddressRecord(uint64_t command_buffer, uint64_t address,
+@@ -1314,7 +1506,37 @@ static bool AppendWriteAddressRecord(uint64_t command_buffer, uint64_t address,
  	std::memset(reinterpret_cast<void*>(state.buffer + record_offset), 0,
  	            static_cast<size_t>(record_size));
  	state.write_address_commands.push_back({record_offset, address, value});
@@ -23358,7 +23318,7 @@ index 073361d4..8fe2d401 100644
  }
  
  static bool ValidateAmmMapArgs(uint64_t va, uint64_t size) {
-@@ -1358,26 +1590,112 @@ static int NormalizeAmmProtection(int prot) {
+@@ -1358,26 +1580,112 @@ static int NormalizeAmmProtection(int prot) {
  	return normalized;
  }
  
@@ -23479,7 +23439,7 @@ index 073361d4..8fe2d401 100644
  		return false;
  	}
  
-@@ -1385,6 +1703,8 @@ static bool AllocateAmmAutoDirectMemory(uint64_t size, int memory_type, uint64_t
+@@ -1385,6 +1693,8 @@ static bool AllocateAmmAutoDirectMemory(uint64_t size, int memory_type, uint64_t
  	return true;
  }
  
@@ -23488,7 +23448,7 @@ index 073361d4..8fe2d401 100644
  static int ExecuteAmmMapCommand(const CommandBufferState::AmmMapCommand& command) {
  	if (!ValidateAmmMapArgs(command.va, command.size)) {
  		return LibKernel::KERNEL_ERROR_EINVAL;
-@@ -1397,9 +1717,59 @@ static int ExecuteAmmMapCommand(const CommandBufferState::AmmMapCommand& command
+@@ -1397,9 +1707,59 @@ static int ExecuteAmmMapCommand(const CommandBufferState::AmmMapCommand& command
  	}
  
  	void* addr = reinterpret_cast<void*>(command.va);
@@ -23550,7 +23510,7 @@ index 073361d4..8fe2d401 100644
  }
  
  static bool AppendAmmMapRecord(uint64_t                                 command_buffer,
-@@ -1425,68 +1795,191 @@ static bool AppendAmmMapRecord(uint64_t                                 command_
+@@ -1425,68 +1785,191 @@ static bool AppendAmmMapRecord(uint64_t                                 command_
  
  static int ReadHostFileToGuest(const std::string& host_path, uint64_t file_offset,
                                 uint64_t destination, uint64_t size, uint64_t* bytes_read);
@@ -23794,7 +23754,7 @@ index 073361d4..8fe2d401 100644
  				const auto& command = state.read_file_commands[entry.index];
  				std::string host_path;
  				if (!AprShared::TryGetHostPath(command.file_id, &host_path)) {
-@@ -1494,55 +1987,118 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+@@ -1494,55 +1977,118 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
  					     command.file_id);
  					*execution_result = LibKernel::KERNEL_ERROR_ENOENT;
  					*error_offset     = static_cast<uint32_t>(command.record_offset);
@@ -23921,7 +23881,7 @@ index 073361d4..8fe2d401 100644
  				if (result != OK) {
  					LOGF("\tAMM submit command failed: kind=%u va=0x%016" PRIx64
  					     " dmem=0x%016" PRIx64 " size=0x%016" PRIx64 " type=%" PRId32
-@@ -1552,12 +2108,413 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
+@@ -1552,12 +2098,413 @@ static int ExecuteAprCommandBuffer(uint64_t command_buffer, int32_t* execution_r
  					     static_cast<uint32_t>(result));
  					*execution_result = result;
  					*error_offset     = static_cast<uint32_t>(command.record_offset);
@@ -23952,7 +23912,7 @@ index 073361d4..8fe2d401 100644
 +		(void)AprShared::WriteResult(reinterpret_cast<void*>(b.result_ptr), result, offset);
 +	}
 +}
-+
+ 
 +static void PumpParkedAprBuffersLocked() {
 +	for (auto& queue: g_apr_parked) {
 +		while (!queue.empty()) {
@@ -23971,7 +23931,7 @@ index 073361d4..8fe2d401 100644
 +		}
 +	}
 +}
- 
++
 +// BC5 (experiment 0156): the console's APR engine is asynchronous: a submit returns at once and the
 +// title learns of completion through the buffer's events, its address writes and WaitCommandBuffer.
 +// The host ran every submission's reads on the submitting title thread, and the parked ones on
@@ -24336,7 +24296,7 @@ index 073361d4..8fe2d401 100644
  	return OK;
  }
  
-@@ -1678,13 +2635,50 @@ static int KYTY_SYSV_ABI CommandBufferDestructor(void* command_buffer) {
+@@ -1678,13 +2625,50 @@ static int KYTY_SYSV_ABI CommandBufferDestructor(void* command_buffer) {
  	return OK;
  }
  
@@ -24388,7 +24348,7 @@ index 073361d4..8fe2d401 100644
  	const auto command_buffer_addr = reinterpret_cast<uint64_t>(command_buffer);
  	if (!ValidateCommandBufferHeader(command_buffer_addr)) {
  		return LibKernel::KERNEL_ERROR_EFAULT;
-@@ -1765,17 +2759,30 @@ static int KYTY_SYSV_ABI AprCommandBufferReadFile(void*    command_buffer, uint6
+@@ -1765,17 +2749,30 @@ static int KYTY_SYSV_ABI AprCommandBufferReadFile(void*    command_buffer, uint6
                                                    uint32_t file_id, void* destination,
                                                    uint64_t size, uint64_t file_offset) {
  	PRINT_NAME();
@@ -24425,22 +24385,7 @@ index 073361d4..8fe2d401 100644
  }
  
  static uint64_t AlignUp4(uint64_t value) {
-@@ -1811,11 +2818,11 @@ static uint64_t KYTY_SYSV_ABI MeasureCommandSizeFixed32(uint64_t, uint64_t, uint
- 	return 0x20;
- }
- 
--static uint64_t KYTY_SYSV_ABI MeasureCommandSizeWriteAddressOnCompletion(volatile uint64_t*,
--                                                                         uint64_t) {
-+// WriteAddress and WriteAddressOnCompletion measure (KytyPlus 41beda43, see WriteAddressRecordSize).
-+static uint64_t KYTY_SYSV_ABI MeasureCommandSizeWriteAddress(volatile uint64_t*, uint64_t value) {
- 	PRINT_NAME();
- 
--	return 0x20;
-+	return WriteAddressRecordSize(value);
- }
- 
- static uint64_t KYTY_SYSV_ABI
-@@ -2111,27 +3118,42 @@ static int KYTY_SYSV_ABI CommandBufferPopMarker(void* command_buffer) {
+@@ -2111,16 +3108,31 @@ static int KYTY_SYSV_ABI CommandBufferPopMarker(void* command_buffer) {
  	return AppendNoOpCommand(command_buffer, sizeof(uint32_t));
  }
  
@@ -24477,20 +24422,7 @@ index 073361d4..8fe2d401 100644
  
  	return AppendNoOpCommand(command_buffer, 0x20);
  }
- 
- static int AppendWriteAddressCommand(void* command_buffer, volatile uint64_t* address,
--                                     uint64_t value) {
-+                                     uint64_t value, uint64_t record_size) {
- 	if (command_buffer == nullptr || address == nullptr) {
- 		return LibKernel::KERNEL_ERROR_EINVAL;
- 	}
- 	return AppendWriteAddressRecord(reinterpret_cast<uint64_t>(command_buffer),
--	                                reinterpret_cast<uint64_t>(address), value)
-+	                                reinterpret_cast<uint64_t>(address), value, record_size)
- 	           ? OK
- 	           : LibKernel::KERNEL_ERROR_EBUSY;
- }
-@@ -2139,8 +3161,12 @@ static int AppendWriteAddressCommand(void* command_buffer, volatile uint64_t* ad
+@@ -2139,6 +3151,10 @@ static int AppendWriteAddressCommand(void* command_buffer, volatile uint64_t* ad
  static int KYTY_SYSV_ABI CommandBufferWriteAddress(void* command_buffer, volatile uint64_t* address,
                                                     uint64_t value, uint32_t) {
  	PRINT_NAME();
@@ -24499,72 +24431,9 @@ index 073361d4..8fe2d401 100644
 +		             reinterpret_cast<uint64_t>(command_buffer), reinterpret_cast<uint64_t>(address), value);
 +	}
  
--	return AppendWriteAddressCommand(command_buffer, address, value);
-+	return AppendWriteAddressCommand(command_buffer, address, value, WriteAddressRecordSize(value));
+ 	return AppendWriteAddressCommand(command_buffer, address, value);
  }
- 
- static int KYTY_SYSV_ABI CommandBufferWriteAddressOnCompletion(void*              command_buffer,
-@@ -2148,7 +3174,7 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddressOnCompletion(void*
-                                                                uint64_t           value) {
- 	PRINT_NAME();
- 
--	return AppendWriteAddressCommand(command_buffer, address, value);
-+	return AppendWriteAddressCommand(command_buffer, address, value, WriteAddressRecordSize(value));
- }
- 
- static int KYTY_SYSV_ABI CommandBufferWriteCounter(void* command_buffer, uint8_t, uint8_t, uint64_t,
-@@ -2170,14 +3196,14 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddressFromTimeCounter(void*
-                                                                   uint32_t) {
- 	PRINT_NAME();
- 
--	return AppendWriteAddressCommand(command_buffer, address, uint64_t {0});
-+	return AppendWriteAddressCommand(command_buffer, address, uint64_t {0}, 0x20);
- }
- 
- static int KYTY_SYSV_ABI CommandBufferWriteAddressFromTimeCounterOnCompletion(
-     void* command_buffer, volatile uint64_t* address) {
- 	PRINT_NAME();
- 
--	return AppendWriteAddressCommand(command_buffer, address, uint64_t {0});
-+	return AppendWriteAddressCommand(command_buffer, address, uint64_t {0}, 0x20);
- }
- 
- static int KYTY_SYSV_ABI CommandBufferWriteAddressFromCounter(void*              command_buffer,
-@@ -2185,14 +3211,14 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddressFromCounter(void*
-                                                               uint32_t) {
- 	PRINT_NAME();
- 
--	return AppendWriteAddressCommand(command_buffer, address, uint64_t {0});
-+	return AppendWriteAddressCommand(command_buffer, address, uint64_t {0}, 0x20);
- }
- 
- static int KYTY_SYSV_ABI CommandBufferWriteAddressFromCounterOnCompletion(
-     void* command_buffer, volatile uint64_t* address, uint8_t) {
- 	PRINT_NAME();
- 
--	return AppendWriteAddressCommand(command_buffer, address, uint64_t {0});
-+	return AppendWriteAddressCommand(command_buffer, address, uint64_t {0}, 0x20);
- }
- 
- static int KYTY_SYSV_ABI CommandBufferWriteAddressFromCounterPair(void*              command_buffer,
-@@ -2200,14 +3226,14 @@ static int KYTY_SYSV_ABI CommandBufferWriteAddressFromCounterPair(void*
-                                                                   uint8_t, uint32_t) {
- 	PRINT_NAME();
- 
--	return AppendWriteAddressCommand(command_buffer, address, uint64_t {0});
-+	return AppendWriteAddressCommand(command_buffer, address, uint64_t {0}, 0x20);
- }
- 
- static int KYTY_SYSV_ABI CommandBufferWriteAddressFromCounterPairOnCompletion(
-     void* command_buffer, volatile uint64_t* address, uint8_t) {
- 	PRINT_NAME();
- 
--	return AppendWriteAddressCommand(command_buffer, address, uint64_t {0});
-+	return AppendWriteAddressCommand(command_buffer, address, uint64_t {0}, 0x20);
- }
- 
- static int KYTY_SYSV_ABI AprCommandBufferReadFileGather(void*    command_buffer, uint64_t, uint64_t,
-@@ -2314,15 +3340,27 @@ static int KYTY_SYSV_ABI AprCommandBufferResetGatherScatterState(void* command_b
+@@ -2314,15 +3330,27 @@ static int KYTY_SYSV_ABI AprCommandBufferResetGatherScatterState(void* command_b
  	return OK;
  }
  
@@ -24594,7 +24463,7 @@ index 073361d4..8fe2d401 100644
  		return LibKernel::KERNEL_ERROR_EFAULT;
  	}
  
-@@ -2333,7 +3371,7 @@ static int KYTY_SYSV_ABI AprCommandBufferMapBegin(void* command_buffer, uint64_t
+@@ -2333,7 +3361,7 @@ static int KYTY_SYSV_ABI AprCommandBufferMapBegin(void* command_buffer, uint64_t
  
  static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, uint64_t va,
                                                          uint64_t dmem_offset, uint64_t size,
@@ -24603,7 +24472,7 @@ index 073361d4..8fe2d401 100644
  	PRINT_NAME();
  
  	if (command_buffer == nullptr || !ValidateAmmMapArgs(va, size) ||
-@@ -2341,7 +3379,15 @@ static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, ui
+@@ -2341,7 +3369,15 @@ static int KYTY_SYSV_ABI AprCommandBufferMapDirectBegin(void* command_buffer, ui
  		return LibKernel::KERNEL_ERROR_EINVAL;
  	}
  
@@ -24620,7 +24489,7 @@ index 073361d4..8fe2d401 100644
  		return LibKernel::KERNEL_ERROR_EFAULT;
  	}
  
-@@ -2504,38 +3550,60 @@ static int KYTY_SYSV_ABI AmmGiveDirectMemory(int64_t search_start, int64_t searc
+@@ -2504,38 +3540,60 @@ static int KYTY_SYSV_ABI AmmGiveDirectMemory(int64_t search_start, int64_t searc
  	}
  
  	*dmem_offset = allocated;
@@ -24693,7 +24562,7 @@ index 073361d4..8fe2d401 100644
  	}
  }
  
-@@ -2589,11 +3657,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetId(void* command_buffer_bas
+@@ -2589,11 +3647,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetId(void* command_buffer_bas
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
  	auto     submit_result =
@@ -24706,7 +24575,7 @@ index 073361d4..8fe2d401 100644
  
  	if (!AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
  		return LibKernel::KERNEL_ERROR_EFAULT;
-@@ -2618,11 +3685,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetResult(void* command_buffer
+@@ -2618,11 +3675,10 @@ static int KYTY_SYSV_ABI AmmSubmitCommandBufferAndGetResult(void* command_buffer
  	int32_t  execution_result = OK;
  	uint32_t error_offset     = 0;
  	auto     submit_result =
@@ -24719,25 +24588,8 @@ index 073361d4..8fe2d401 100644
  
  	if (out_submission_id != nullptr &&
  	    !AprShared::WriteGuest(reinterpret_cast<uint64_t>(out_submission_id), id)) {
-@@ -2685,14 +3751,14 @@ LIB_DEFINE(InitAmpr_1_Ampr) {
- 	LIB_FUNC("vWU-odnS+fU", Ampr::MeasureCommandSizeReadFile);
- 	LIB_FUNC("sSAUCCU1dv4", Ampr::MeasureCommandSizeWriteKernelEventQueue);
- 	LIB_FUNC("Zi3dBUjgyXI", Ampr::MeasureCommandSizeWriteKernelEventQueue);
--	LIB_FUNC("C+IEj+BsAFM", Ampr::MeasureCommandSizeWriteAddressOnCompletion);
-+	LIB_FUNC("C+IEj+BsAFM", Ampr::MeasureCommandSizeWriteAddress);
- 	LIB_FUNC("x7SQEXfeovg", Ampr::MeasureCommandSizeWriteAddressFromTimeCounterOnCompletion);
- 	LIB_FUNC("32AcaTaBPSY", Ampr::MeasureCommandSizeWriteAddressFromCounterOnCompletion);
- 	LIB_FUNC("vxC58+DRk-U", Ampr::MeasureCommandSizeWriteAddressFromCounterPairOnCompletion);
- 	LIB_FUNC("4muPEJ-x5N8", Ampr::MeasureCommandSizeWriteCounterOnCompletion);
- 	LIB_FUNC("0BMj1hgG+kE", Ampr::MeasureCommandSizeFixed32);
- 	LIB_FUNC("ClnsFLLLcss", Ampr::MeasureCommandSizeFixed32);
--	LIB_FUNC("4fgtGfXDrFc", Ampr::MeasureCommandSizeFixed32);
-+	LIB_FUNC("4fgtGfXDrFc", Ampr::MeasureCommandSizeWriteAddress); // KytyPlus 41beda43
- 	LIB_FUNC("gAtc79UTt5E", Ampr::MeasureCommandSizeFixed32);
- 	LIB_FUNC("JYd9g9L+TmE", Ampr::MeasureCommandSizeFixed32);
- 	LIB_FUNC("2Hw8gjMdwSY", Ampr::MeasureCommandSizeFixed32);
 diff --git a/src/libs/libAppContent.cpp b/src/libs/libAppContent.cpp
-index 6c36a4ea..4c8ad538 100644
+index 6c36a4e..4c8ad53 100644
 --- a/src/libs/libAppContent.cpp
 +++ b/src/libs/libAppContent.cpp
 @@ -6,6 +6,7 @@
@@ -24757,7 +24609,7 @@ index 6c36a4ea..4c8ad538 100644
  }
  
 diff --git a/src/libs/libAudio2.cpp b/src/libs/libAudio2.cpp
-index 312870af..748f6b0e 100644
+index 312870a..748f6b0 100644
 --- a/src/libs/libAudio2.cpp
 +++ b/src/libs/libAudio2.cpp
 @@ -11,7 +11,9 @@
@@ -25081,7 +24933,7 @@ index 312870af..748f6b0e 100644
  
  	const void* pcm_data = nullptr;
 diff --git a/src/libs/libGraphicsDriver.cpp b/src/libs/libGraphicsDriver.cpp
-index b67cfd52..0531e490 100644
+index b67cfd5..0531e49 100644
 --- a/src/libs/libGraphicsDriver.cpp
 +++ b/src/libs/libGraphicsDriver.cpp
 @@ -315,6 +315,8 @@ LIB_DEFINE(InitGraphicsDriver_1) {
@@ -25094,7 +24946,7 @@ index b67cfd52..0531e490 100644
  	LIB_FUNC("U9ueyEhSkF4", Gen5Driver::GraphicsDriverUnknownU9ueyEhSkF4);
  }
 diff --git a/src/libs/libInvitationDialog.cpp b/src/libs/libInvitationDialog.cpp
-index aeaa8231..9a20ce1b 100644
+index aeaa823..9a20ce1 100644
 --- a/src/libs/libInvitationDialog.cpp
 +++ b/src/libs/libInvitationDialog.cpp
 @@ -50,20 +50,24 @@ namespace LibInvitationDialog {
@@ -25232,7 +25084,7 @@ index aeaa8231..9a20ce1b 100644
  
  
 diff --git a/src/libs/libJson2.cpp b/src/libs/libJson2.cpp
-index 183cd855..d8a156c1 100644
+index 183cd85..d8a156c 100644
 --- a/src/libs/libJson2.cpp
 +++ b/src/libs/libJson2.cpp
 @@ -4,9 +4,12 @@
@@ -25743,7 +25595,7 @@ index 183cd855..d8a156c1 100644
  	LIB_FUNC("bAM9Qwofus0", LibJson2::JsonArrayBack);
  	LIB_FUNC("UeuWT+yNdCQ", LibJson2::JsonValueBoolCtor);
 diff --git a/src/libs/libKernel.cpp b/src/libs/libKernel.cpp
-index 51c3a0ed..ecd210f0 100644
+index 51c3a0e..ecd210f 100644
 --- a/src/libs/libKernel.cpp
 +++ b/src/libs/libKernel.cpp
 @@ -2458,47 +2458,41 @@ static void FiberSetContextValid(FiberObject* fiber, bool valid) {
@@ -25852,7 +25704,7 @@ index 51c3a0ed..ecd210f0 100644
  	InitLibKernel_1_Mem(s);
  	InitLibKernel_1_Equeue(s);
 diff --git a/src/libs/libNet.cpp b/src/libs/libNet.cpp
-index 1b9db8a1..de422356 100644
+index 1b9db8a..de42235 100644
 --- a/src/libs/libNet.cpp
 +++ b/src/libs/libNet.cpp
 @@ -1414,9 +1414,15 @@ LIB_DEFINE(InitNet_1_NpManager) {
@@ -25991,7 +25843,7 @@ index 1b9db8a1..de422356 100644
  
  } // namespace LibNpTrophy2
 diff --git a/src/libs/libNp.cpp b/src/libs/libNp.cpp
-index a0aee52e..7951249a 100644
+index a0aee52..7951249 100644
 --- a/src/libs/libNp.cpp
 +++ b/src/libs/libNp.cpp
 @@ -16,6 +16,12 @@ namespace Libs {
@@ -26008,7 +25860,7 @@ index a0aee52e..7951249a 100644
  
  namespace NpAuth {
 diff --git a/src/libs/libPad.cpp b/src/libs/libPad.cpp
-index 676ecb98..d8df0501 100644
+index 676ecb9..d8df050 100644
 --- a/src/libs/libPad.cpp
 +++ b/src/libs/libPad.cpp
 @@ -7,6 +7,8 @@
@@ -26133,7 +25985,7 @@ index 676ecb98..d8df0501 100644
  	// HONEST: spec-accurate interpretation of the PS5 ScePadTriggerEffect param
  	// forwarded to the driver. UNVALIDATED on hardware — the exact param layout
 diff --git a/src/libs/libRtc.cpp b/src/libs/libRtc.cpp
-index fda26230..db5e40e7 100644
+index fda2623..db5e40e 100644
 --- a/src/libs/libRtc.cpp
 +++ b/src/libs/libRtc.cpp
 @@ -1,4 +1,5 @@
@@ -26192,7 +26044,7 @@ index fda26230..db5e40e7 100644
  	return OK;
  }
 diff --git a/src/libs/libSaveData.cpp b/src/libs/libSaveData.cpp
-index 08aa121e..655395e7 100644
+index 08aa121..655395e 100644
 --- a/src/libs/libSaveData.cpp
 +++ b/src/libs/libSaveData.cpp
 @@ -13,13 +13,26 @@
@@ -26742,7 +26594,7 @@ index 08aa121e..655395e7 100644
  	LIB_FUNC("dyIhnXq-0SM", ::Libs::SaveData::SaveDataDirNameSearch);
  	LIB_FUNC("PHnuI4LhuRk", ::Libs::SaveData::SaveDataDirNameSearch);
 diff --git a/src/libs/libSystemService.cpp b/src/libs/libSystemService.cpp
-index cd205f6d..cc5a8b4b 100644
+index cd205f6..cc5a8b4 100644
 --- a/src/libs/libSystemService.cpp
 +++ b/src/libs/libSystemService.cpp
 @@ -1,3 +1,5 @@
@@ -26823,7 +26675,7 @@ index cd205f6d..cc5a8b4b 100644
  	return OK;
  }
 diff --git a/src/libs/libUserService.cpp b/src/libs/libUserService.cpp
-index 4fd67e0f..871bfd1b 100644
+index 4fd67e0..871bfd1 100644
 --- a/src/libs/libUserService.cpp
 +++ b/src/libs/libUserService.cpp
 @@ -10,6 +10,8 @@
@@ -26859,7 +26711,7 @@ index 4fd67e0f..871bfd1b 100644
  
  	return OK;
 diff --git a/src/libs/libWebBrowserDialog.cpp b/src/libs/libWebBrowserDialog.cpp
-index 2bb809fb..eb9002a0 100644
+index 2bb809f..eb9002a 100644
 --- a/src/libs/libWebBrowserDialog.cpp
 +++ b/src/libs/libWebBrowserDialog.cpp
 @@ -50,20 +50,24 @@ namespace LibWebBrowserDialog {
@@ -26963,7 +26815,7 @@ index 2bb809fb..eb9002a0 100644
  
  
 diff --git a/src/libs/libs.cpp b/src/libs/libs.cpp
-index 36e4dc85..eaa58d70 100644
+index 36e4dc8..eaa58d7 100644
 --- a/src/libs/libs.cpp
 +++ b/src/libs/libs.cpp
 @@ -73,6 +73,7 @@ LIB_DEFINE(InitSystemService_1);
@@ -26983,7 +26835,7 @@ index 36e4dc85..eaa58d70 100644
  
  namespace LibContentExport {
 diff --git a/src/libs/network.cpp b/src/libs/network.cpp
-index 7f812186..76a57813 100644
+index 7f81218..76a5781 100644
 --- a/src/libs/network.cpp
 +++ b/src/libs/network.cpp
 @@ -4215,9 +4215,70 @@ static int np_complete_signed_out_locked(NpRequest* request) {
@@ -27173,7 +27025,7 @@ index 7f812186..76a57813 100644
  }
  
 diff --git a/src/libs/network.h b/src/libs/network.h
-index a4e74eda..d40896b9 100644
+index a4e74ed..d40896b 100644
 --- a/src/libs/network.h
 +++ b/src/libs/network.h
 @@ -159,15 +159,25 @@ struct NpCreateAsyncRequestParameter;
@@ -27204,7 +27056,7 @@ index a4e74eda..d40896b9 100644
  int KYTY_SYSV_ABI  NpGetOnlineId(int user_id, NpOnlineId* online_id);
  int KYTY_SYSV_ABI  NpGetAccountIdA(int user_id, uint64_t* account_id);
 diff --git a/src/libs/saveDataMountSlots.h b/src/libs/saveDataMountSlots.h
-index 8be28cae..45a766e6 100644
+index 8be28ca..45a766e 100644
 --- a/src/libs/saveDataMountSlots.h
 +++ b/src/libs/saveDataMountSlots.h
 @@ -45,6 +45,12 @@ public:
@@ -27222,7 +27074,7 @@ index 8be28cae..45a766e6 100644
  	}
 diff --git a/src/libs/systemService.h b/src/libs/systemService.h
 new file mode 100644
-index 00000000..5d9456f5
+index 0000000..5d9456f
 --- /dev/null
 +++ b/src/libs/systemService.h
 @@ -0,0 +1,12 @@
@@ -27239,7 +27091,7 @@ index 00000000..5d9456f5
 +
 +#endif
 diff --git a/src/loader/runtimeLinker.cpp b/src/loader/runtimeLinker.cpp
-index 343045e9..db295f07 100644
+index 343045e..db295f0 100644
 --- a/src/loader/runtimeLinker.cpp
 +++ b/src/loader/runtimeLinker.cpp
 @@ -1,3 +1,5 @@
@@ -27310,7 +27162,7 @@ index 343045e9..db295f07 100644
  		        info->access_violation_vaddr)) {
  			return true;
 diff --git a/src/main.cpp b/src/main.cpp
-index c44d32f1..27ed1e07 100644
+index c44d32f..27ed1e0 100644
 --- a/src/main.cpp
 +++ b/src/main.cpp
 @@ -16,6 +16,7 @@

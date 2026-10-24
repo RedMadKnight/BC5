@@ -1,6 +1,6 @@
 # Upstream and related projects, second pass: what else BC5's host can take
 
-*Written 2026-10-24; the two S-sized ports of section 6 landed the same day as hunks in patch 0001 (F335). Follows `anyps5-review.md` (2026-10-19) and `related-projects-review.md` (2026-10-21) and does not repeat what they settled.*
+*Written 2026-10-24; the two S-sized ports of section 6 were written the same day as hunks for patch 0001 (F335, commit e7fbf9b) and taken back out until a private build, a test and the maintainer's yes. Follows `anyps5-review.md` (2026-10-19) and `related-projects-review.md` (2026-10-21) and does not repeat what they settled.*
 
 **Question asked:** do other projects hold libraries or fixes worth importing or adapting into the host?
 
