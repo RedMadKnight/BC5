@@ -1,0 +1,62 @@
+  1269          WAIT_REG_MEM64 
+  1297          EVENT_WRITE ev 7 
+  1299          EVENT_WRITE ev 16 
+  1301          EVENT_WRITE ev 44 
+  1330          WAIT_REG_MEM 
+  1340          ACQUIRE_MEM 
+  1348          ACQUIRE_MEM 
+  1356          EVENT_WRITE ev 7 
+  1358          ACQUIRE_MEM 
+  1434          draw op 24 
+  1492          draw op 24 
+  1570          draw op 24 
+  1643          draw op 24 ran
+  1759          draw op 24 ran
+  1863          draw op 24 ran
+  1936          draw op 24 ran
+  2009          draw op 24 ran
+  2082          draw op 24 ran
+  2140          draw op 24 ran
+  2198          draw op 24 ran
+  2271          draw op 24 ran
+  2344          draw op 24 ran
+  2422          draw op 24 ran
+  2495          draw op 24 ran
+  2654          draw op 24 ran
+  2751          draw op 24 ran
+  2843          draw op 24 ran
+  2935          draw op 24 ran
+  3032          draw op 24 ran
+  3124          draw op 24 ran
+  3221          draw op 24 ran
+  3313          draw op 24 ran
+  3437          draw op 24 ran
+  3541- 11261   194 x 0x11d0287900    direct  [ran/sane 194]
+ 11282          EVENT_WRITE ev 7 
+ 11284          ACQUIRE_MEM 
+ 11330- 11400     6 x 0x90985f200     direct  [ran/sane 6]
+ 11414- 20269   770 x ?               direct  [ran 770]
+ 20274          EVENT_WRITE ev 7 
+ 20276          ACQUIRE_MEM 
+ 20295- 22032   194 x 0x909974200     indirect  [ran/absurd 30, ran/sane 164]
+ 22046- 23477   160 x 0x909973900     indirect  [ran/sane 160]
+ 23480          ACQUIRE_MEM 
+ 23554          ACQUIRE_MEM 
+ 23568- 23865    34 x 0x909973900     indirect  [ran/absurd 30, ran/sane 4]
+ 23879- 25616   194 x 0x909973b00     indirect  [ran/absurd 30, ran/sane 164]
+ 25630- 27367   194 x 0x909973d00     indirect  [ran/absurd 30, ran/sane 164]
+ 27370          EVENT_WRITE ev 7 
+ 27372          ACQUIRE_MEM 
+ 27391- 29128   194 x 0x909973f00     indirect  [ran/absurd 30, ran/sane 164]
+ 29142- 30879   194 x 0x909974400     indirect  [DROPPED/absurd 30, DROPPED/sane 164]
+ 30882          EVENT_WRITE ev 7 
+ 30884          ACQUIRE_MEM 
+ 30912- 35402   287 x 0x909977100     indirect  [ran/absurd 51, ran/sane 236]
+ 35405          EVENT_WRITE ev 7 
+ 35407          ACQUIRE_MEM 
+ 35431- 37740   194 x 0x90997a500     indirect  [ran/sane 194]
+ 37743          EVENT_WRITE ev 7 
+ 37745          ACQUIRE_MEM 
+ 37756          EVENT_WRITE ev 7 
+ 37758          ACQUIRE_MEM 
+ 37798          ACQUIRE_MEM 

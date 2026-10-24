@@ -1,0 +1,80 @@
+# Selected lines of ~/bc5-data/captures/play-20261024-1947/gc/direct.log (line numbers in that file = this tail's + 2,179,999)
+2960:scratch: window 0x820a000000+0x6000000, 13.8 MiB of holes get a zero buffer
+3127:scratch: window 0x820a000000+0x6000000, 14.2 MiB of holes get a zero buffer
+23075:submit #841748 dcb 37814 dwords at 0x7f15e819f5f0: pass 5499 rewrite 418 drop 221 unmapped 0 cc 0 mappings 20147 ... FAILED rc 0 TIMEOUT 2009.56 ms
+23076:timing: #841748 done at t 607.316 s, 2011.7 ms after the sync and hints; device: prepare 1.45 list 0.09 cs 0.18 fence 2009.38 ms, 182 BOs
+23077:submit #841756 acb 865 dwords at 0x7f1640170d90: pass 119 rewrite 20 drop 10 unmapped 0 cc 0 mappings 20147 ... FAILED rc 0 TIMEOUT 2005.65 ms
+23078:timing: #841756 done at t 607.316 s, 2005.8 ms after the sync and hints; device: prepare 0.02 list 0.00 cs 0.14 fence 2005.52 ms, 182 BOs
+23084:timeout probe: wait op 93 at 0: label 0x12004b53c8 function 3 reference 0x0 mask 0xffffffffffffffff me; now 0x9076d6d8c (NOT met) ran
+23093:timeout probe: wait op 93 at 1269: label 0x12004b3c38 function 3 reference 0x0 mask 0xffffffffffffffff pfp; now 0x0 (met) ran
+23098:timeout probe: wait op 3c at 1330: label 0x11e04f06c8 function 3 reference 0x1 mask 0xffffffff me; now 0x1 (met) ran
+23167:timeout probe: acb #841756 865 dwords: 1 waits (1 kept for the GPU), 20 label writes, 8 dispatches (0 indirect; the largest grid 24336 groups, at 686)
+27033:timeout: fault 0x1474260000 status 0x00741051
+32721:timeout probe: dcb #841748 37814 dwords: 2 waits (2 kept for the GPU), 417 label writes, 2615 dispatches (1645 indirect; the largest grid 18311646466710649556 groups, at 21897)
+32722:learned: fault 0x1474260000 -> region 0x1472000000+0x6000000 (saved)
+32769:scratch: window 0x11ce000000+0x6000000, 32.0 MiB of holes get a zero buffer
+32770:scratch: window 0x1116000000+0x6000000, 96.0 MiB of holes get a zero buffer
+32771:scratch: window 0x8002000000+0x6000000, 11.6 MiB of holes get a zero buffer
+32772:scratch: window 0x81c6000000+0x6000000, 43.7 MiB of holes get a zero buffer
+32773:scratch: window 0x11de000000+0x6000000, 32.0 MiB of holes get a zero buffer
+32774:scratch: window 0x81b6000000+0x6000000, 14.8 MiB of holes get a zero buffer
+32775:scratch: window 0x81c2000000+0x6000000, 43.7 MiB of holes get a zero buffer
+32776:scratch: window 0x120e000000+0x6000000, 32.0 MiB of holes get a zero buffer
+32777:scratch: window 0x12b6000000+0x6000000, 16.0 MiB of holes get a zero buffer
+32778:scratch: window 0x7ffe000000+0x6000000, 32.0 MiB of holes get a zero buffer
+32779:scratch: window 0x11ca000000+0x6000000, 26.0 MiB of holes get a zero buffer
+32780:scratch: window 0x12ba000000+0x6000000, 64.0 MiB of holes get a zero buffer
+32781:scratch: window 0x12c2000000+0x6000000, 58.0 MiB of holes get a zero buffer
+32782:scratch: window 0x125652000000+0x6000000, 96.0 MiB of holes get a zero buffer
+32783:scratch: window 0x14852000000+0x6000000, 96.0 MiB of holes get a zero buffer
+32784:scratch: window 0x1452000000+0x6000000, 96.0 MiB of holes get a zero buffer
+32785:scratch: window 0xa125e000000+0x6000000, 96.0 MiB of holes get a zero buffer
+32786:scratch: window 0x5452000000+0x6000000, 96.0 MiB of holes get a zero buffer
+32787:scratch: window 0x20124e000000+0x6000000, 96.0 MiB of holes get a zero buffer
+32788:scratch: window 0x9167a000000+0x6000000, 96.0 MiB of holes get a zero buffer
+32789:scratch: window 0x213e4e000000+0x6000000, 96.0 MiB of holes get a zero buffer
+32790:scratch: window 0x7ffffe000000+0x2000000, 32.0 MiB of holes get a zero buffer
+32791:scratch: window 0x12c6000000+0x6000000, 64.0 MiB of holes get a zero buffer
+32792:scratch: window 0x48d292000000+0x6000000, 96.0 MiB of holes get a zero buffer
+32793:scratch: window 0x681292000000+0x6000000, 96.0 MiB of holes get a zero buffer
+32794:scratch: window 0x12ca000000+0x6000000, 64.0 MiB of holes get a zero buffer
+32795:scratch: window 0x6165a000000+0x6000000, 96.0 MiB of holes get a zero buffer
+32796:scratch: window 0xafc5e000000+0x6000000, 96.0 MiB of holes get a zero buffer
+32797:scratch: window 0x387a4e000000+0x6000000, 96.0 MiB of holes get a zero buffer
+32798:scratch: window 0x9576a000000+0x6000000, 96.0 MiB of holes get a zero buffer
+32799:scratch: window 0x71662a000000+0x6000000, 96.0 MiB of holes get a zero buffer
+32800:scratch: window 0x12da000000+0x6000000, 64.0 MiB of holes get a zero buffer
+32801:scratch: window 0x130a000000+0x6000000, 56.0 MiB of holes get a zero buffer
+32802:scratch: window 0x5125e000000+0x6000000, 96.0 MiB of holes get a zero buffer
+32803:scratch: window 0x4a1292000000+0x6000000, 96.0 MiB of holes get a zero buffer
+32804:scratch: window 0x189a66000000+0x6000000, 96.0 MiB of holes get a zero buffer
+32805:scratch: window 0x18552000000+0x6000000, 96.0 MiB of holes get a zero buffer
+32806:scratch: window 0x401292000000+0x6000000, 96.0 MiB of holes get a zero buffer
+32807:scratch: window 0x122252000000+0x6000000, 96.0 MiB of holes get a zero buffer
+32808:scratch: window 0x221292000000+0x6000000, 96.0 MiB of holes get a zero buffer
+32809:scratch: window 0x14c52000000+0x6000000, 96.0 MiB of holes get a zero buffer
+32810:scratch: window 0x34a52000000+0x6000000, 96.0 MiB of holes get a zero buffer
+32811:scratch: window 0x0+0x6000000, 95.9 MiB of holes get a zero buffer
+32812:scratch: window 0x842e000000+0x6000000, 9.0 MiB of holes get a zero buffer
+32813:scratch: window 0x8516000000+0x6000000, 16.4 MiB of holes get a zero buffer
+32814:scratch: window 0x84a2000000+0x6000000, 14.3 MiB of holes get a zero buffer
+32815:scratch: window 0x820a000000+0x6000000, 55.5 MiB of holes get a zero buffer
+32816:scratch: window 0x83fa000000+0x6000000, 10.7 MiB of holes get a zero buffer
+32817:scratch: window 0x1762000000+0x6000000, 96.0 MiB of holes get a zero buffer
+32818:scratch: window 0x1206000000+0x6000000, 96.0 MiB of holes get a zero buffer
+32819:scratch: window 0x2672000000+0x6000000, 96.0 MiB of holes get a zero buffer
+32820:scratch: window 0x145a000000+0x6000000, 96.0 MiB of holes get a zero buffer
+32821:scratch: window 0x1332000000+0x6000000, 96.0 MiB of holes get a zero buffer
+32822:scratch: window 0x1472000000+0x6000000, 96.0 MiB of holes get a zero buffer
+32823:scratch: window 0x1054800000+0x200000, 2.0 MiB of holes get a zero buffer
+32824:scratch: window 0x1063600000+0x200000, 2.0 MiB of holes get a zero buffer
+32825:scratch: window 0x1076800000+0x200000, 2.0 MiB of holes get a zero buffer
+32826:scratch: window 0x1082400000+0x200000, 2.0 MiB of holes get a zero buffer
+32827:scratch: window 0x11d6e00000+0x200000, 2.0 MiB of holes get a zero buffer
+32828:scratch: window 0x11f9e00000+0x200000, 2.0 MiB of holes get a zero buffer
+32829:scratch: window 0x1202400000+0x200000, 2.0 MiB of holes get a zero buffer
+# from the whole journal (keys grep): the GPU check's last summary and the last RT-off drop lines
+2186936:gpu check: 7638977 dispatches checked by the CP, 4142 without a base, 0 NOP-ed (a COND_EXEC range too long)
+2202229:  ray tracing off: acb dispatch op 16 at 2719 of 0x909939900 dropped (build list; 50483201 so far)
+2202518:  ray tracing off: acb dispatch op 16 at 8418 of 0x909939900 dropped (build list; 50487297 so far)
+2202887:  ray tracing off: acb dispatch op 15 at 6155 of 0x909939700 dropped (build list; 50491393 so far)

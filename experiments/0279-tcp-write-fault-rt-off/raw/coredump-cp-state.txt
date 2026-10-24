@@ -1,0 +1,127 @@
+# ~/bc5-data/captures/devcoredump/20261024-195730-devcd3.txt: registers only (no ring or IB contents)
+**** AMDGPU Device Coredump ****
+version: 1
+kernel: 7.2.9-ogc3.1.fc44.x86_64
+module: amdgpu
+time: 6668.297505947
+pasid: 113
+vmid: 7
+process_name: kyty_emulator TGID: 164396 thread: bc5-ring PID: 164496
+
+Ring timed out details
+IP Type: 1 Ring Name: comp_1.2.0
+
+[gfxhub] Page fault observed
+Faulty page starting at address: 0x0000001474260000
+Protection fault status register: 0x741051
+
+IP Dump
+IP: gfx_v10_0
+mmGRBM_STATUS                                      	 0xa04000a3
+mmGRBM_STATUS2                                     	 0x50000008
+mmGRBM_STATUS3                                     	 0x00000000
+mmCP_STALLED_STAT1                                 	 0x00000c00
+mmCP_STALLED_STAT2                                 	 0x00010000
+mmCP_CPC_STALLED_STAT1                             	 0x00000000
+mmCP_CPF_STALLED_STAT1                             	 0x00000003
+mmCP_BUSY_STAT                                     	 0x00424500
+mmCP_CPC_BUSY_STAT                                 	 0x00000000
+mmCP_CPF_BUSY_STAT                                 	 0xc0002006
+mmCP_CPC_BUSY_STAT2                                	 0x00000000
+mmCP_CPF_BUSY_STAT2                                	 0x00000000
+mmCP_CPF_STATUS                                    	 0xbc008263
+mmCP_GFX_ERROR                                     	 0x00000000
+mmCP_GFX_HPD_STATUS0                               	 0x01000108
+mmCP_RB_BASE                                       	 0x000024d0
+mmCP_RB_RPTR                                       	 0x00000439
+mmCP_RB_WPTR                                       	 0x04fbf600
+mmCP_RB0_BASE                                      	 0x000024d0
+mmCP_RB0_RPTR                                      	 0x00000439
+mmCP_RB0_WPTR                                      	 0x04fbf600
+mmCP_RB1_BASE                                      	 0xfedcbadf
+mmCP_RB1_RPTR                                      	 0x00000000
+mmCP_RB1_WPTR                                      	 0x00000000
+mmCP_RB2_BASE                                      	 0x00000000
+mmCP_RB2_WPTR                                      	 0x00000000
+mmCP_RB2_WPTR                                      	 0x00000000
+mmCP_CE_IB1_CMD_BUFSZ                              	 0x00000000
+mmCP_CE_IB2_CMD_BUFSZ                              	 0x00000000
+mmCP_IB1_CMD_BUFSZ                                 	 0x00019070
+mmCP_IB2_CMD_BUFSZ                                 	 0x000000a8
+mmCP_CE_IB1_BASE_LO                                	 0x00000000
+mmCP_CE_IB1_BASE_HI                                	 0x00000000
+mmCP_CE_IB1_BUFSZ                                  	 0x00000000
+mmCP_CE_IB2_BASE_LO                                	 0x00000000
+mmCP_CE_IB2_BASE_HI                                	 0x00000000
+mmCP_CE_IB2_BUFSZ                                  	 0x00000000
+mmCP_IB1_BASE_LO                                   	 0x00000000
+mmCP_IB1_BASE_HI                                   	 0x00001004
+mmCP_IB1_BUFSZ                                     	 0x0000b910
+mmCP_IB2_BASE_LO                                   	 0x00015000
+mmCP_IB2_BASE_HI                                   	 0x00008001
+mmCP_IB2_BUFSZ                                     	 0x00000000
+mmCPF_UTCL1_STATUS                                 	 0x00000000
+mmCPC_UTCL1_STATUS                                 	 0x00000000
+mmCPG_UTCL1_STATUS                                 	 0x00000000
+mmGDS_PROTECTION_FAULT                             	 0x00000000
+mmGDS_VM_PROTECTION_FAULT                          	 0x00000000
+mmIA_UTCL1_STATUS                                  	 0x00000000
+mmIA_UTCL1_STATUS_2                                	 0x00000000
+mmPA_CL_CNTL_STATUS                                	 0x00000000
+mmRLC_UTCL1_STATUS                                 	 0x00000000
+mmRMI_UTCL1_STATUS                                 	 0x00000000
+mmSQC_DCACHE_UTCL0_STATUS                          	 0x00000000
+mmSQC_ICACHE_UTCL0_STATUS                          	 0x00000000
+mmSQG_UTCL0_STATUS                                 	 0x00000000
+mmTCP_UTCL0_STATUS                                 	 0x00000001
+mmWD_UTCL1_STATUS                                  	 0x00000000
+mmGCVM_L2_PROTECTION_FAULT_CNTL                    	 0x3ffffffc
+mmGCVM_L2_PROTECTION_FAULT_STATUS                  	 0x00000000
+mmCP_DEBUG                                         	 0x00400000
+mmCP_MEC_CNTL                                      	 0x00000000
+mmCP_MES_CNTL                                      	 0x00000000
+mmCP_CE_INSTR_PNTR                                 	 0x00000553
+mmCP_MEC1_INSTR_PNTR                               	 0x00000447
+mmCP_MEC2_INSTR_PNTR                               	 0x00000491
+mmCP_MES_DEBUG_INTERRUPT_INSTR_PNTR                	 0x00000000
+mmCP_MES_INSTR_PNTR                                	 0x00000000
+mmCP_ME_INSTR_PNTR                                 	 0x00000681
+mmCP_PFP_INSTR_PNTR                                	 0x00000ea1
+mmCP_CPC_STATUS                                    	 0x00000000
+mmRLC_STAT                                         	 0x00000000
+mmRLC_SMU_COMMAND                                  	 0x00000013
+mmRLC_SMU_MESSAGE                                  	 0x00000000
+mmRLC_SMU_ARGUMENT_1                               	 0x024e51ae
+mmRLC_SMU_ARGUMENT_2                               	 0x00000000
+mmRLC_SMU_ARGUMENT_3                               	 0x0000024e
+mmRLC_SMU_ARGUMENT_4                               	 0x00000000
+mmSMU_RLC_RESPONSE                                 	 0x00000000
+mmRLC_SAFE_MODE                                    	 0x00000000
+mmRLC_SMU_SAFE_MODE                                	 0x00000000
+mmRLC_RLCS_GPM_STAT_2                              	 0x00000000
+mmRLC_SPP_STATUS                                   	 0x00000000
+mmRLC_RLCS_BOOTLOAD_STATUS                         	 0x00000000
+mmRLC_INT_STAT                                     	 0x00000000
+mmRLC_GPM_GENERAL_6                                	 0x00000000
+mmRLC_GPM_DEBUG_INST_A                             	 0x00000000
+mmRLC_GPM_DEBUG_INST_B                             	 0x00000000
+mmRLC_GPM_DEBUG_INST_ADDR                          	 0x00000000
+mmRLC_LX6_CORE_PDEBUG_INST                         	 0x00000000
+mmCP_MES_HEADER_DUMP                               	 0x00000000
+mmGRBM_STATUS_SE0                                  	 0x08000000
+mmGRBM_STATUS_SE1                                  	 0x08000000
+mmGRBM_STATUS_SE2                                  	 0x00000006
+mmGRBM_STATUS_SE3                                  	 0x00000006
+
+
+# compute queues with an IB, and each MEC pipe's header dump
+mec 0, pipe 1, queue 0 IB_BASE 0x00001023 0x00000000 IB_RPTR 0x00000008 IB_CONTROL 0x00300000 PQ_RPTR 0x00000200 PQ_WPTR_LO 0x0475c200
+mec 0, pipe 2, queue 0 IB_BASE 0x00001026 0x00000000 IB_RPTR 0x0000001c IB_CONTROL 0x8030011c PQ_RPTR 0x0000023d PQ_WPTR_LO 0x00000400
+mec 0, pipe 0 header dump: 0xc0060d30 0xc0000a00 0xc0000e00 0xc0000e00 0xc0000a00 0xc0ea1000 0xc0064900 0xc0001700
+mec 0, pipe 1 header dump: 0xc0060d10 0xc0000a00 0xc0000a00 0xc0000e00 0xc0000e00 0xc0f21000 0xc0064900 0xc0001700
+mec 0, pipe 2 header dump: 0xc0000b00 0xc0079300 0xc0000900 0xc0000e00 0xc0000b00 0xc0079300 0xc0000900 0xc0000e00
+mec 0, pipe 3 header dump: 0xc0060d30 0xc0000a00 0xc0000e00 0xc0000e00 0xc0000a00 0xc0ea1000 0xc0064900 0xc0001700
+mec 1, pipe 0 header dump: 0xc0000e00 0xc0000e00 0xc006a000 0xc0001700 0xc0000e00 0xdef0def0 0xdef1def1 0xdef2def2
+mec 1, pipe 1 header dump: 0xc0000e00 0xc0000e00 0xffff1000 0xffff1000 0xffff1000 0xffff1000 0xffff1000 0xffff1000
+mec 1, pipe 2 header dump: 0xdef0def0 0xdef1def1 0xdef2def2 0xdef3def3 0xdef4def4 0xdef5def5 0xdef6def6 0xdef7def7
+mec 1, pipe 3 header dump: 0xdef0def0 0xdef1def1 0xdef2def2 0xdef3def3 0xdef4def4 0xdef5def5 0xdef6def6 0xdef7def7
