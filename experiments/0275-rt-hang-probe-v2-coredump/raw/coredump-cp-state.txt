@@ -1,0 +1,129 @@
+# Selected register lines from ~/bc5-data/captures/devcoredump/20261024-185258-devcd1.txt (5,812,367 bytes, not committed):
+# the dump's header, the timed-out ring, the fault, the GFX CP state (after the gfx ring's reset), and the HQD state
+# of every compute queue with an IB (registers only; no ring or IB contents).
+**** AMDGPU Device Coredump ****
+version: 1
+kernel: 7.2.9-ogc3.1.fc44.x86_64
+module: amdgpu
+time: 2796.106286677
+pasid: 108
+vmid: 5
+process_name: kyty_emulator TGID: 127947 thread: bc5-ring PID: 127974
+
+Ring timed out details
+IP Type: 1 Ring Name: comp_1.1.0
+
+[gfxhub] Page fault observed
+Faulty page starting at address: 0x0000001334f81000
+Protection fault status register: 0x501031
+
+mmGRBM_STATUS                                      	 0xa0400028
+mmGRBM_STATUS2                                     	 0x50000008
+mmCP_STALLED_STAT1                                 	 0x00000c00
+mmCP_STALLED_STAT2                                 	 0x00018000
+mmCP_BUSY_STAT                                     	 0x00420000
+mmCP_CPF_STATUS                                    	 0xbc008263
+mmCP_RB_RPTR                                       	 0x0000060e
+mmCP_RB_WPTR                                       	 0x042a4800
+mmCP_IB1_BASE_LO                                   	 0x00000000
+mmCP_IB1_BASE_HI                                   	 0x00001016
+mmCP_IB1_BUFSZ                                     	 0x00001e50
+mmCP_MEC1_INSTR_PNTR                               	 0x00000447
+mmCP_MEC2_INSTR_PNTR                               	 0x00000491
+mmCP_CPC_STATUS                                    	 0x00000000
+mec 0, pipe 1, queue 0
+mmCP_HQD_VMID                                      	 0x00000500
+mmCP_HQD_PERSISTENT_STATE                          	 0x0be05301
+mmCP_HQD_PIPE_PRIORITY                             	 0x00000000
+mmCP_HQD_QUEUE_PRIORITY                            	 0x00000000
+mmCP_HQD_QUANTUM                                   	 0x80000111
+mmCP_HQD_PQ_BASE                                   	 0x00002510
+mmCP_HQD_PQ_BASE_HI                                	 0x00000000
+mmCP_HQD_PQ_RPTR                                   	 0x0000023d
+mmCP_HQD_PQ_WPTR_POLL_ADDR                         	 0x000011a0
+mmCP_HQD_PQ_WPTR_POLL_ADDR_HI                      	 0x00000000
+mmCP_HQD_PQ_DOORBELL_CONTROL                       	 0xe0000020
+mmCP_HQD_PQ_CONTROL                                	 0xd030090a
+mmCP_HQD_IB_BASE_ADDR                              	 0x00000000
+mmCP_HQD_IB_BASE_ADDR_HI                           	 0x00001021
+mmCP_HQD_IB_RPTR                                   	 0x0000001c
+mmCP_HQD_IB_CONTROL                                	 0x8030011c
+mmCP_HQD_DEQUEUE_REQUEST                           	 0x00000000
+mmCP_HQD_EOP_BASE_ADDR                             	 0x00002498
+mmCP_HQD_EOP_BASE_ADDR_HI                          	 0x00000000
+mmCP_HQD_EOP_CONTROL                               	 0x00000008
+mmCP_HQD_EOP_RPTR                                  	 0x40000028
+mmCP_HQD_EOP_WPTR                                  	 0x01ff8028
+mmCP_HQD_EOP_EVENTS                                	 0x00000000
+mmCP_HQD_CTX_SAVE_BASE_ADDR_LO                     	 0x00000000
+mmCP_HQD_CTX_SAVE_BASE_ADDR_HI                     	 0x00000000
+mmCP_HQD_CTX_SAVE_CONTROL                          	 0x00000000
+mmCP_HQD_CNTL_STACK_OFFSET                         	 0x00000000
+mmCP_HQD_CNTL_STACK_SIZE                           	 0x00000000
+mmCP_HQD_WG_STATE_OFFSET                           	 0x00000000
+mmCP_HQD_CTX_SAVE_SIZE                             	 0x00000000
+mmCP_HQD_GDS_RESOURCE_STATE                        	 0x00000000
+mmCP_HQD_ERROR                                     	 0x00000000
+mmCP_HQD_EOP_WPTR_MEM                              	 0x00000028
+mmCP_HQD_PQ_WPTR_LO                                	 0x00000400
+mmCP_HQD_PQ_WPTR_HI                                	 0x00000000
+mmCP_HQD_SUSPEND_CNTL_STACK_OFFSET                 	 0x00000000
+mmCP_HQD_SUSPEND_CNTL_STACK_DW_CNT                 	 0x00000000
+mmCP_HQD_SUSPEND_WG_STATE_OFFSET                   	 0x00000000
+mmCP_HQD_DEQUEUE_STATUS                            	 0x00000000
+mmCP_MEC_ME1_HEADER_DUMP                           	 0xc0000b00
+mmCP_MEC_ME1_HEADER_DUMP                           	 0xc0079300
+mmCP_MEC_ME1_HEADER_DUMP                           	 0xc0000900
+mmCP_MEC_ME1_HEADER_DUMP                           	 0xc0000e00
+mmCP_MEC_ME1_HEADER_DUMP                           	 0xc0000b00
+mmCP_MEC_ME1_HEADER_DUMP                           	 0xc0079300
+mmCP_MEC_ME1_HEADER_DUMP                           	 0xc0000900
+mmCP_MEC_ME1_HEADER_DUMP                           	 0xc0000e00
+mec 0, pipe 2, queue 0
+mmCP_HQD_VMID                                      	 0x00000500
+mmCP_HQD_PERSISTENT_STATE                          	 0x0be05301
+mmCP_HQD_PIPE_PRIORITY                             	 0x00000000
+mmCP_HQD_QUEUE_PRIORITY                            	 0x00000000
+mmCP_HQD_QUANTUM                                   	 0x00000111
+mmCP_HQD_PQ_BASE                                   	 0x00002530
+mmCP_HQD_PQ_BASE_HI                                	 0x00000000
+mmCP_HQD_PQ_RPTR                                   	 0x00000000
+mmCP_HQD_PQ_WPTR_POLL_ADDR                         	 0x00001240
+mmCP_HQD_PQ_WPTR_POLL_ADDR_HI                      	 0x00000000
+mmCP_HQD_PQ_DOORBELL_CONTROL                       	 0xe0000028
+mmCP_HQD_PQ_CONTROL                                	 0xd030890a
+mmCP_HQD_IB_BASE_ADDR                              	 0x00000000
+mmCP_HQD_IB_BASE_ADDR_HI                           	 0x00001036
+mmCP_HQD_IB_RPTR                                   	 0x00000008
+mmCP_HQD_IB_CONTROL                                	 0x00300000
+mmCP_HQD_DEQUEUE_REQUEST                           	 0x00000000
+mmCP_HQD_EOP_BASE_ADDR                             	 0x000024a0
+mmCP_HQD_EOP_BASE_ADDR_HI                          	 0x00000000
+mmCP_HQD_EOP_CONTROL                               	 0x00000008
+mmCP_HQD_EOP_RPTR                                  	 0x40000150
+mmCP_HQD_EOP_WPTR                                  	 0x01ff8150
+mmCP_HQD_EOP_EVENTS                                	 0x00000000
+mmCP_HQD_CTX_SAVE_BASE_ADDR_LO                     	 0x00000000
+mmCP_HQD_CTX_SAVE_BASE_ADDR_HI                     	 0x00000000
+mmCP_HQD_CTX_SAVE_CONTROL                          	 0x00000000
+mmCP_HQD_CNTL_STACK_OFFSET                         	 0x00000000
+mmCP_HQD_CNTL_STACK_SIZE                           	 0x00000000
+mmCP_HQD_WG_STATE_OFFSET                           	 0x00000000
+mmCP_HQD_CTX_SAVE_SIZE                             	 0x00000000
+mmCP_HQD_GDS_RESOURCE_STATE                        	 0x00000000
+mmCP_HQD_ERROR                                     	 0x00000000
+mmCP_HQD_EOP_WPTR_MEM                              	 0x00000150
+mmCP_HQD_PQ_WPTR_LO                                	 0x0456b000
+mmCP_HQD_PQ_WPTR_HI                                	 0x00000000
+mmCP_HQD_SUSPEND_CNTL_STACK_OFFSET                 	 0x00000000
+mmCP_HQD_SUSPEND_CNTL_STACK_DW_CNT                 	 0x00000000
+mmCP_HQD_SUSPEND_WG_STATE_OFFSET                   	 0x00000000
+mmCP_HQD_DEQUEUE_STATUS                            	 0x00000000
+mmCP_MEC_ME1_HEADER_DUMP                           	 0xc0060d10
+mmCP_MEC_ME1_HEADER_DUMP                           	 0xc0000a00
+mmCP_MEC_ME1_HEADER_DUMP                           	 0xc0000e00
+mmCP_MEC_ME1_HEADER_DUMP                           	 0xc0000e00
+mmCP_MEC_ME1_HEADER_DUMP                           	 0xc0000a00
+mmCP_MEC_ME1_HEADER_DUMP                           	 0xc0f21000
+mmCP_MEC_ME1_HEADER_DUMP                           	 0xc0064900
+mmCP_MEC_ME1_HEADER_DUMP                           	 0xc0001700

@@ -1,0 +1,12 @@
+# Derived from ~/bc5-data/captures/play-20261024-1851/gc/direct.log (18,565,980 bytes, copied by scp at 18:55; not committed)
+178226:submit #68408 acb 865 dwords at 0x7ff6e016b450: pass 119 rewrite 20 drop 10 unmapped 0 cc 0 mappings 13618 ... FAILED rc 0 TIMEOUT 2035.93 ms
+178228:submit #68401 dcb 27416 dwords at 0x7ff69017e970: pass 4009 rewrite 315 drop 159 unmapped 0 cc 0 mappings 13618 ... FAILED rc 0 TIMEOUT 2038.25 ms
+178230:timeout probe: dcb 27416 dwords dumped to /home/kjaniszewski/bc5-data/captures/play-20261024-1851/gc/ib-timeout-00068401-dcb-27416.bin
+178233:timeout probe: acb 865 dwords dumped to /home/kjaniszewski/bc5-data/captures/play-20261024-1851/gc/ib-timeout-00068408-acb-865.bin
+178237:timeout probe: wait op 93 at 1269: label 0x12004b3c38 function 3 reference 0x0 mask 0xffffffffffffffff pfp; now 0x0 (met) ran
+178242:timeout probe: wait op 3c at 1330: label 0x11e0610768 function 3 reference 0x1 mask 0xffffffff me; now 0x1 (met) ran
+178330:timeout probe: wait op 93 at 0: label 0x12004b53c8 function 3 reference 0x0 mask 0xffffffffffffffff me; now 0x9076d6d8c (NOT met) ran
+178433:timeout probe: acb #68408 865 dwords: 1 waits (1 kept for the GPU), 20 label writes, 8 dispatches (0 indirect; the largest grid 24336 groups, at 686)
+184037:timeout: fault 0x1334f81000 status 0x00501031
+184852:learned: fault 0x1334f81000 -> region 0x1332000000+0x6000000 (saved)
+185393:timeout probe: dcb #68401 27416 dwords: 2 waits (2 kept for the GPU), 314 label writes, 1915 dispatches (1180 indirect; the largest grid 18443451691370589390 groups, at 20098)

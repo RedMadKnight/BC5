@@ -1,0 +1,15 @@
+# Derived from the probe v2 lines of dcb #68401 (journal lines 178434-185393) and the dump ib-timeout-00068401-dcb-27416.bin
+# (not committed). Grid classes per program: sane = every count < 65536 and none 0; zero = some count 0; huge = some count >= 65536.
+op 15 0x11d0287900   {'sane': 135}                           
+op 15 0x90985f200    {'sane': 53}                            
+op 16 0x909974200    {'sane': 1, 'zero': 12, 'huge': 134}    first huge at dword 15088
+op 16 0x909973900    {'sane': 1, 'zero': 17, 'huge': 129}    first huge at dword 16416
+op 16 0x909973b00    {'sane': 1, 'zero': 17, 'huge': 129}    first huge at dword 17744
+op 16 0x909973d00    {'sane': 1, 'zero': 11, 'huge': 135}    first huge at dword 19072
+op 16 0x909973f00    {'sane': 1, 'zero': 17, 'huge': 129}    first huge at dword 20410
+op 16 0x909974400    {'sane': 1, 'zero': 12, 'huge': 134}    first huge at dword 21738
+op 16 0x909977100    {'sane': 1, 'huge': 132, 'zero': 18}    first huge at dword 23084
+op 16 0x90997a500    {'zero': 147}                           
+SET_BASE packets in the dcb: 12; COND_EXEC/SET_PREDICATION packets: 0
+Example pair (dwords 20002-20010): SET_SH_REG 0x243 = 4 values (two record pointers, 0x11, ...), then DISPATCH_INDIRECT c0011600 00053660 00000061
+(3-dword form: offset 0x53660 from the SET_BASE index 1 base; the probe read the arguments at that record pointer + 0x60).
