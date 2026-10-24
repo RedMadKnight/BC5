@@ -1,0 +1,83 @@
+## L1: 1390 log lines; input lines done: 13 of 13
+## F217 save data (save trace + SaveData name log)
+  SaveData calls by name: 
+  search: 0 calls; key/order/dir_names_num lines:
+  search hits (save trace):
+          1 save trace: search[0] i38-null-prefs user_param 0 mtime 1792662766 blocks 16384 free 16382
+          1 save trace: search[0] i38-slot1-game-autosave user_param 0 mtime 1792425762 blocks 16384 free 16368
+          1 save trace: search[0] i38-slot1-settings-autosave user_param 0 mtime 1792425762 blocks 16384 free 16382
+          1 save trace: search[0] i38-slot2-game-autosave user_param 0 mtime 1792658595 blocks 16384 free 16365
+          1 save trace: search[0] i38-slot2-settings-autosave user_param 0 mtime 1792658343 blocks 16384 free 16382
+          2 save trace: search[0] i38-slot3-game-autosave user_param 0 mtime 1792662766 blocks 16384 free 16366
+          2 save trace: search[0] i38-slot3-settings-autosave user_param 0 mtime 1792662243 blocks 16384 free 16382
+          1 save trace: search[1] i38-slot2-game-snapshot-16111 user_param 0 mtime 1792658127 blocks 16384 free 16366
+          2 save trace: search[1] i38-slot3-game-manual-1 user_param 0 mtime 1792662707 blocks 16384 free 16367
+          1 save trace: search[2] i38-slot2-game-snapshot-52266 user_param 0 mtime 1792475449 blocks 16384 free 16366
+          2 save trace: search[2] i38-slot3-game-snapshot-52266 user_param 0 mtime 1792659796 blocks 16384 free 16366
+  mount3 lines (blocks):
+  set/get param: SetParam 0, GetParam 0, mtime lines 0
+  delete: 0 calls;
+  dialog trace: 115 lines; mount info: 0
+  sidecars could not be kept: 0
+## F215 NpManager (LOGF lines of the port; the Np name log itself is silent in play mode)
+  register A/legacy: 0; callback_id lines: 0
+  any other Np line: 0
+## F216 NpTrophy2 / loader
+  unresolved or stubbed import lines: 0
+  trophy lines: 0; the three NIDs: 0
+## F214 pad audio
+  vibration port lines: 91, '(pad)': 91, 'device playing': 227, reopened: 0, 'stays silent': 0
+## sidecars (private copy)
+  --- private copy before the run (14:24:31)
+  drwxr-xr-x. 1 kjaniszewski kjaniszewski 1298 11:52:46 .
+  drwxr-xr-x. 1 kjaniszewski kjaniszewski   18 14:24:31 ..
+  drwxr-xr-x. 1 kjaniszewski kjaniszewski   34 10:22:29 i38-null-prefs
+  -rw-r--r--. 1 kjaniszewski kjaniszewski 1328 11:52:46 i38-null-prefs.param
+  drwxr-xr-x. 1 kjaniszewski kjaniszewski   32 18:00:58 i38-slot1-game-autosave
+  -rw-r--r--. 1 kjaniszewski kjaniszewski 1328 18:02:42 i38-slot1-game-autosave.param
+  -rw-r--r--. 1 kjaniszewski kjaniszewski 1328 13:26:43 i38-slot1-game-snapshot-52266.param
+  drwxr-xr-x. 1 kjaniszewski kjaniszewski   40 18:00:58 i38-slot1-settings-autosave
+  -rw-r--r--. 1 kjaniszewski kjaniszewski 1328 18:02:42 i38-slot1-settings-autosave.param
+  drwxr-xr-x. 1 kjaniszewski kjaniszewski   32 07:42:20 i38-slot2-game-autosave
+  -rw-r--r--. 1 kjaniszewski kjaniszewski 1328 10:43:15 i38-slot2-game-autosave.param
+  drwxr-xr-x. 1 kjaniszewski kjaniszewski   32 10:35:27 i38-slot2-game-snapshot-16111
+  -rw-r--r--. 1 kjaniszewski kjaniszewski 1328 10:35:27 i38-slot2-game-snapshot-16111.param
+  drwxr-xr-x. 1 kjaniszewski kjaniszewski   32 07:50:49 i38-slot2-game-snapshot-52266
+  -rw-r--r--. 1 kjaniszewski kjaniszewski 1328 07:50:49 i38-slot2-game-snapshot-52266.param
+  drwxr-xr-x. 1 kjaniszewski kjaniszewski   40 07:42:20 i38-slot2-settings-autosave
+  -rw-r--r--. 1 kjaniszewski kjaniszewski 1328 10:39:03 i38-slot2-settings-autosave.param
+  drwxr-xr-x. 1 kjaniszewski kjaniszewski   32 10:57:30 i38-slot3-game-autosave
+  -rw-r--r--. 1 kjaniszewski kjaniszewski 1328 11:52:46 i38-slot3-game-autosave.param
+  drwxr-xr-x. 1 kjaniszewski kjaniszewski   32 11:51:33 i38-slot3-game-manual-1
+  -rw-r--r--. 1 kjaniszewski kjaniszewski 1328 11:51:47 i38-slot3-game-manual-1.param
+  drwxr-xr-x. 1 kjaniszewski kjaniszewski   32 11:03:16 i38-slot3-game-snapshot-52266
+  -rw-r--r--. 1 kjaniszewski kjaniszewski 1328 11:03:16 i38-slot3-game-snapshot-52266.param
+  drwxr-xr-x. 1 kjaniszewski kjaniszewski   40 10:57:31 i38-slot3-settings-autosave
+  -rw-r--r--. 1 kjaniszewski kjaniszewski 1328 11:44:03 i38-slot3-settings-autosave.param
+  --- private copy after the run (14:27:10)
+  drwxr-xr-x. 1 kjaniszewski kjaniszewski 1298 11:52:46 .
+  drwxr-xr-x. 1 kjaniszewski kjaniszewski   18 14:24:31 ..
+  drwxr-xr-x. 1 kjaniszewski kjaniszewski   34 10:22:29 i38-null-prefs
+  -rw-r--r--. 1 kjaniszewski kjaniszewski 1328 11:52:46 i38-null-prefs.param
+  drwxr-xr-x. 1 kjaniszewski kjaniszewski   32 18:00:58 i38-slot1-game-autosave
+  -rw-r--r--. 1 kjaniszewski kjaniszewski 1328 18:02:42 i38-slot1-game-autosave.param
+  -rw-r--r--. 1 kjaniszewski kjaniszewski 1328 13:26:43 i38-slot1-game-snapshot-52266.param
+  drwxr-xr-x. 1 kjaniszewski kjaniszewski   40 18:00:58 i38-slot1-settings-autosave
+  -rw-r--r--. 1 kjaniszewski kjaniszewski 1328 18:02:42 i38-slot1-settings-autosave.param
+  drwxr-xr-x. 1 kjaniszewski kjaniszewski   32 07:42:20 i38-slot2-game-autosave
+  -rw-r--r--. 1 kjaniszewski kjaniszewski 1328 10:43:15 i38-slot2-game-autosave.param
+  drwxr-xr-x. 1 kjaniszewski kjaniszewski   32 10:35:27 i38-slot2-game-snapshot-16111
+  -rw-r--r--. 1 kjaniszewski kjaniszewski 1328 10:35:27 i38-slot2-game-snapshot-16111.param
+  drwxr-xr-x. 1 kjaniszewski kjaniszewski   32 07:50:49 i38-slot2-game-snapshot-52266
+  -rw-r--r--. 1 kjaniszewski kjaniszewski 1328 07:50:49 i38-slot2-game-snapshot-52266.param
+  drwxr-xr-x. 1 kjaniszewski kjaniszewski   40 07:42:20 i38-slot2-settings-autosave
+  -rw-r--r--. 1 kjaniszewski kjaniszewski 1328 10:39:03 i38-slot2-settings-autosave.param
+  drwxr-xr-x. 1 kjaniszewski kjaniszewski   32 10:57:30 i38-slot3-game-autosave
+  -rw-r--r--. 1 kjaniszewski kjaniszewski 1328 11:52:46 i38-slot3-game-autosave.param
+  drwxr-xr-x. 1 kjaniszewski kjaniszewski   32 11:51:33 i38-slot3-game-manual-1
+  -rw-r--r--. 1 kjaniszewski kjaniszewski 1328 11:51:47 i38-slot3-game-manual-1.param
+  drwxr-xr-x. 1 kjaniszewski kjaniszewski   32 11:03:16 i38-slot3-game-snapshot-52266
+  -rw-r--r--. 1 kjaniszewski kjaniszewski 1328 11:03:16 i38-slot3-game-snapshot-52266.param
+  drwxr-xr-x. 1 kjaniszewski kjaniszewski   40 10:57:31 i38-slot3-settings-autosave
+  -rw-r--r--. 1 kjaniszewski kjaniszewski 1328 11:44:03 i38-slot3-settings-autosave.param
+## shots: t062.png t070.png t080.png t095.png t110.png t140.png 
