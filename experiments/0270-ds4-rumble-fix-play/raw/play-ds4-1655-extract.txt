@@ -1,0 +1,111 @@
+# exp 0270: extracts of ~/bc5-work/exp0267/play-ds4-1655.log (the maintainer's DualShock 4 session 16:55-17:00 on the private binary 687eb84c; 35499 lines, 3.9 MB; the full log stays on the box)
+
+## header and tail
+== 2026-10-24 16:55:06 emulator 2026-10-24 16:54:18
+== 2026-10-24 17:00:40 exit 0
+
+## rumble writes (input trace: rumble L/S for D ms via PATH -> rc): count by D, PATH, rc
+   4516 100 ms via game controller -> 0
+zero-value writes: 212; 'rumble:' failure lines: 0
+first rumble write at the input-trace second: t=41.557
+## rumble writes per 10 s (input-trace clock)
+40 81;50 32;60 63;70 7;80 55;90 93;100 31;110 119;120 237;130 212;140 73;150 175;160 193;170 232;180 182;190 238;200 193;210 236;220 88;230 207;240 192;250 203;260 196;270 240;280 205;290 222;300 212;310 149;320 150;
+## gaps over 3 s between rumble writes
+gap 12.9 s: 53.1 -> 66.0
+gap 11.2 s: 70.0 -> 81.2
+gap 6.0 s: 82.2 -> 88.2
+gap 5.6 s: 94.8 -> 100.4
+gap 9.2 s: 101.6 -> 110.8
+gap 4.0 s: 113.0 -> 117.0
+gap 3.6 s: 140.3 -> 143.9
+gap 3.7 s: 145.4 -> 149.1
+gap 4.3 s: 225.8 -> 230.1
+
+## audio ports (count of 1-s trace lines)
+    290 audio trace: port 0 type 0 8 ch 48000 Hz
+     28 audio trace: port 1 type 0 8 ch 48000 Hz
+    178 audio trace: port 1 type 4 1 ch 48000 Hz
+## port 1: last type-0 line, first two type-4 lines, held/clears summary
+audio trace: t 32.853 s port 1 type 0 8 ch 48000 Hz: 188 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.1 ms, 0 clears, sdl queued 20480-20480 bytes (26-26 ms), device playing
+audio trace: t 155.535 s port 1 type 4 1 ch 48000 Hz: 39 calls, 19968 frames = 0.416 s of sound in 1.003 s (rate 0.415), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 156.538 s port 1 type 4 1 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+type-4 lines: 178; with held 0.0 ms: 178; with 0 clears: 178; max held: 0.0 ms
+
+## port 0: seconds with rate < 0.95 or held < 900 ms
+audio trace: t 43.234 s port 0 type 0 8 ch 48000 Hz: 1 calls, 512 frames = 0.011 s of sound in 10.381 s (rate 0.001), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 161.551 s port 0 type 0 8 ch 48000 Hz: 73 calls, 37376 frames = 0.779 s of sound in 1.003 s (rate 0.777), held 649.1 ms, 0 clears, sdl queued 0-65536 bytes (0-42 ms), device playing
+audio trace: t 234.747 s port 0 type 0 8 ch 48000 Hz: 89 calls, 45568 frames = 0.949 s of sound in 1.003 s (rate 0.947), held 808.3 ms, 0 clears, sdl queued 0-65536 bytes (0-42 ms), device playing
+audio trace: t 292.902 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 863.4 ms, 0 clears, sdl queued 16384-65536 bytes (10-42 ms), device playing
+
+## fps counter: seconds with a gap over 70 ms
+t=4.880 flips=28 longest=75.9 over70=2
+t=6.909 flips=28 longest=95.6 over70=1
+t=7.951 flips=29 longest=88.0 over70=1
+t=11.043 flips=28 longest=104.1 over70=1
+t=34.510 flips=21 longest=72.2 over70=1
+t=35.531 flips=12 longest=239.4 over70=3
+t=36.573 flips=16 longest=71.6 over70=1
+t=38.623 flips=15 longest=81.1 over70=1
+t=39.644 flips=15 longest=70.1 over70=1
+t=40.682 flips=14 longest=91.5 over70=8
+t=41.715 flips=14 longest=101.1 over70=7
+t=42.721 flips=14 longest=85.4 over70=8
+t=43.722 flips=14 longest=80.2 over70=8
+t=44.738 flips=33 longest=128.4 over70=3
+t=57.882 flips=28 longest=88.1 over70=3
+t=58.908 flips=14 longest=123.3 over70=6
+t=60.021 flips=15 longest=137.5 over70=10
+t=61.029 flips=33 longest=78.9 over70=5
+t=79.258 flips=48 longest=71.3 over70=1
+t=86.328 flips=41 longest=99.2 over70=1
+t=89.354 flips=48 longest=71.8 over70=1
+t=99.459 flips=35 longest=119.5 over70=2
+t=100.471 flips=39 longest=133.0 over70=2
+t=101.473 flips=27 longest=188.4 over70=3
+t=104.534 flips=36 longest=78.6 over70=2
+t=105.554 flips=11 longest=380.3 over70=4
+t=111.653 flips=36 longest=133.3 over70=1
+t=112.668 flips=35 longest=123.9 over70=2
+t=113.767 flips=14 longest=237.3 over70=6
+t=114.800 flips=25 longest=169.3 over70=4
+t=115.808 flips=34 longest=185.7 over70=2
+t=117.825 flips=41 longest=86.6 over70=1
+t=118.836 flips=41 longest=74.8 over70=1
+t=119.839 flips=28 longest=125.4 over70=2
+t=120.928 flips=34 longest=121.0 over70=3
+t=121.943 flips=47 longest=71.0 over70=1
+t=138.118 flips=38 longest=161.6 over70=1
+t=141.164 flips=38 longest=110.7 over70=1
+t=144.243 flips=32 longest=181.7 over70=4
+t=145.429 flips=11 longest=295.9 over70=7
+t=146.447 flips=19 longest=134.6 over70=6
+t=147.525 flips=32 longest=98.8 over70=3
+t=148.539 flips=39 longest=75.5 over70=1
+t=160.957 flips=27 longest=542.1 over70=1
+t=161.960 flips=22 longest=76.6 over70=4
+t=169.064 flips=34 longest=94.0 over70=1
+t=171.071 flips=26 longest=132.8 over70=1
+t=173.189 flips=34 longest=105.1 over70=1
+t=185.351 flips=34 longest=75.6 over70=1
+t=200.776 flips=28 longest=255.8 over70=2
+t=212.932 flips=30 longest=78.1 over70=1
+t=219.999 flips=33 longest=75.9 over70=1
+t=226.091 flips=33 longest=151.7 over70=1
+t=229.116 flips=45 longest=113.9 over70=1
+t=234.206 flips=14 longest=441.7 over70=3
+t=235.210 flips=30 longest=180.2 over70=2
+t=236.224 flips=18 longest=361.6 over70=2
+t=238.256 flips=31 longest=115.1 over70=2
+t=240.315 flips=33 longest=73.1 over70=1
+t=241.324 flips=31 longest=108.0 over70=1
+t=244.350 flips=36 longest=100.2 over70=1
+t=245.353 flips=38 longest=83.4 over70=1
+t=251.435 flips=37 longest=125.9 over70=1
+t=270.615 flips=36 longest=79.7 over70=1
+t=284.879 flips=33 longest=98.7 over70=1
+t=295.006 flips=36 longest=109.1 over70=1
+t=321.394 flips=44 longest=103.8 over70=1
+t=325.452 flips=41 longest=108.5 over70=1
+t=328.499 flips=37 longest=124.1 over70=2
+t=329.500 flips=45 longest=103.4 over70=1
+## flips per second after t 170: min 14 median 40 max 54 n 161
