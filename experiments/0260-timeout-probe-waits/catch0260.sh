@@ -18,7 +18,10 @@
 set -u
 RUNS=${1:-4}; SECS=${2:-300}
 E=$HOME/bc5-work/exp0260; R=$E/raw; W=$HOME/bc5-work; LOCK=$W/BOX-LOCK
-BIN=$E/kyty_emulator; WANT=9c55e29e; WANT_SAVES=1a39860996fdac5c
+BIN=$E/kyty_emulator; WANT=9c55e29e
+# The live saves' checksum: 1a39860996fdac5c for the run of 2026-10-24 14:49; db52cb5f327c3de5 since 15:19, when 17 stray
+# 3-byte .blocks sidecars (F319) were moved out of the save folders (~/bc5-work/exp0258/stray-blocks-backup-151948).
+WANT_SAVES=db52cb5f327c3de5
 SD=$W/_SaveData/PPSA03671; SAVES=$W/exp0196/saves-before-152617; LAUNCH=$W/play-pkg.sh; LOG=$W/play-pkg-last.log
 mkdir -p "$R"
 [ "$SECS" -le 600 ] && [ "$RUNS" -le 6 ] || { echo "at most 6 runs of 600 s"; exit 1; }

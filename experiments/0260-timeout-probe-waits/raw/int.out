@@ -1,0 +1,26 @@
+== 16:20:29 backups
+ce2e5d7a8187
+8e7707c5578f
+67859271bf3e
+daca24cca83f
+== 16:20:29 build kytyplus-build
+[1/3] Building CXX object src/CMakeFiles/kyty_emulator.dir/libs/bc5LleAgc.cpp.o
+In file included from /home/kjaniszewski/src/KytyPlus/src/libs/bc5LleAgc.cpp:27:
+/home/kjaniszewski/src/KytyPlus/src/libs/bc5LleAgc.cpp:2333:122: warning: format specifies type 'unsigned long' but the argument has type 'unsigned long long' [-Wformat]
+/home/kjaniszewski/src/KytyPlus/src/libs/bc5LleAgc.cpp:73:15: warning: unused variable 'OK' [-Wunused-const-variable]
+/home/kjaniszewski/src/KytyPlus/src/libs/bc5LleAgc.cpp:366:20: warning: unused variable 'IT_DMA_DATA' [-Wunused-const-variable]
+[2/3] Linking CXX executable src/kyty_emulator
+rc 0
+== 16:20:56 build kytyplus-build-lean
+/home/kjaniszewski/src/KytyPlus/src/libs/bc5LleAgc.cpp:4640:36: warning: unused variable 'ns_two_kept' [-Wunused-variable]
+/home/kjaniszewski/src/KytyPlus/src/libs/bc5LleAgc.cpp:4640:53: warning: unused variable 'ns_two_ok' [-Wunused-variable]
+/home/kjaniszewski/src/KytyPlus/src/libs/bc5LleAgc.cpp:4640:68: warning: unused variable 'ns_two_lost' [-Wunused-variable]
+/home/kjaniszewski/src/KytyPlus/src/libs/bc5LleAgc.cpp:73:15: warning: unused variable 'OK' [-Wunused-const-variable]
+/home/kjaniszewski/src/KytyPlus/src/libs/bc5LleAgc.cpp:366:20: warning: unused variable 'IT_DMA_DATA' [-Wunused-const-variable]
+[2/3] Linking CXX executable src/kyty_emulator
+rc 0
+8c63d974ae1c
+a828318afd97
+probe formats in the normal binary: 3
+patch 0001 58600c984174, 1302453 bytes
+== 16:21:18 done

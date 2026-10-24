@@ -112,3 +112,22 @@ F262, F316) shows the stuck packet in both buffers?
   - Put `patch0260.py`'s probe into the shared builds. It acts only after a fence timeout, and `play-pkg.sh` already
     sets the switch, so every play becomes a catch run.
   - The stuck pair's structure (exp 0255, F322) gives a concrete thing for the probe's lines to confirm or refute.
+
+**Integration** (the maintainer's yes, 2026-10-24, in the tcp session: "Zgoda na oba: (a) wprowadź zmianę sondy z exp
+0260 do obu wspólnych buildów (kopie zapasowe, przebudowa jednego pliku, nowa łatka 0001, md5 dla nadzorcy) …"; the box
+supervisor's GO after his play).
+- `int0260.sh`, 16:20:29–16:21:18, done as the supervisor's `int0258.sh` (`raw/int.out`):
+  - guards: no lock or emulator; the tree's `bc5LleAgc.cpp` 67859271; the probe file daca24cc; `git diff f266548` of
+    the tree equal to the committed patch 0001 (md5 caacbff8be0e);
+  - its own lock line; backups of the file and both binaries in `~/bc5-work/exp0260/integration/`;
+  - the file copied in, then `cmake --build … --target kyty_emulator -j8` at nice 10 for both builds.
+- Both builds: rc 0, with only warnings the file already had. Normal **ce2e5d7a → 8c63d974**, lean **8e7707c5 →
+  a828318a**. The normal binary carries the probe's three new journal formats.
+  - In the lean build the probe is compiled out: `BC5_DIAG_ENV` is a null pointer there, and the probe returns at its
+    first line.
+- Patch 0001 regenerated with the same `git diff f266548`: md5 58600c984174, 1,302,453 bytes. Its `bc5LleAgc.cpp`
+  section reproduces the integrated file exactly (md5 daca24cc, git blob c932da4 as in its index line), and nothing
+  else in it changed.
+- What it changes in play: nothing until a fence times out. `play-pkg.sh` already sets `BC5_DIRECT_TIMEOUT_PROBE=1` for
+  the normal build, so from now on every play of the second title records a stuck buffer's waits, writes and dispatches
+  and syncs them to disk.
