@@ -17,6 +17,21 @@ private binary carry the breadcrumbs on top of the switch, so that the next stop
   touch only `bc5LleAgc.cpp`.
 - **The tree is reproducible offline.** a2a2c2df plus `patch0278.py`'s three edits to `bc5LleAgc.cpp` gives exactly
   5bccbb80 (checked on the laptop, 2026-10-24 ~22:15). The two patches' edits commute: either order gives 55fa73a4.
+- **Correction to exp 0277's README.** It said no launcher sets `BC5_DIRECT_MEC_INDIRECT`, so exp 0038's rebuild had not
+  run in play. In fact `play-pkg.sh` line 49 sets `BC5_DIRECT_MEC_INDIRECT=1` (with `BC5_DIRECT_GPU_CHECK=1` and
+  `BC5_DIRECT_DMA_SYNC=1`; the box supervisor, 2026-10-24 ~23:05; F334's dated note).
+  - So the probe bug that 0277 fixes (the rebuilt IB read with the title's executed offsets) did occur in play. But the
+    rebuild fires only for compute-form (4-dword) DISPATCH_INDIRECT on the GFX ring: the scan fills `mec_hi` only when
+    `qring == kGfxRing`.
+  - Every hung buffer read so far has none, counted in the local dumps on 2026-10-24 (`raw/indirect-forms.txt`):
+    - dcb #68401: 1,180 GFX-form;
+    - acb #68408: none;
+    - dcb #841748: 1,645 GFX-form;
+    - acb #841756: none;
+    - dcb #23408: 3 GFX-form;
+    - acb #23415: 668 compute-form, but on compute ring 0 ("q0").
+  - So the probe read those buffers unrebuilt, and the ran/DROPPED marks behind F336 and F339 hold. F339's fetch
+    position never used them.
 - **The 19:57 kernel lines** (`raw/kernel-19572x.txt`, read on the box supervisor's GO, 20:10):
   - comp_1.2.0 dumped and timed out at 29.886; gfx_0.0.0 timed out at 29.888. So devcd3's GFX state predates the GFX
     reset.

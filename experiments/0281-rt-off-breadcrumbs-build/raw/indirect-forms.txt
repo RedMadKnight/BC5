@@ -1,0 +1,8 @@
+# DISPATCH_INDIRECT forms in the timed-out buffers of 2026-10-24 (the probe's ib-timeout dumps under ~/bc5-data/captures/play-*/gc/, not committed)
+ib-timeout-00068401-dcb-27416.bin     1180 GFX-form (3 dwords)     0 compute-form (4 dwords)
+ib-timeout-00068408-acb-865.bin          0 GFX-form (3 dwords)     0 compute-form (4 dwords)
+ib-timeout-00841748-dcb-37814.bin     1645 GFX-form (3 dwords)     0 compute-form (4 dwords)
+ib-timeout-00841756-acb-865.bin          0 GFX-form (3 dwords)     0 compute-form (4 dwords)
+ib-timeout-00023408-dcb-2002.bin         3 GFX-form (3 dwords)     0 compute-form (4 dwords)
+ib-timeout-00023415-acb-14382.bin        0 GFX-form (3 dwords)   668 compute-form (4 dwords)
+# acb #23415 ran on compute ring 0 ("q0" in its timing line); the scan fills mec_hi only for the GFX ring
