@@ -1,0 +1,34 @@
+# 2026-10-25 10:22:52 boot 68645b54-a027-4b1e-89a7-2f9fcb3c93e4
+paź 25 10:24:05.807757 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 25 10:26:10.806756 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 25 10:28:15.806763 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 25 10:30:20.806764 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 25 10:32:25.806764 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 25 10:34:30.807763 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 25 10:36:35.806759 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 25 10:37:14.394754 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State
+paź 25 10:37:14.396755 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State Completed
+paź 25 10:37:14.397103 bazzite kernel: amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+paź 25 10:37:14.397327 bazzite kernel: amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+paź 25 10:37:14.397524 bazzite kernel: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=2532860, emitted seq=2532862
+paź 25 10:37:14.397694 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 726030 thread bc5-chainwd pid 726088
+paź 25 10:37:14.397885 bazzite kernel: amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+paź 25 10:37:14.398048 bazzite kernel: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded
+paź 25 10:37:14.398199 bazzite kernel: amdgpu 0000:01:00.0: [drm] device wedged, but no recovery needed
+paź 25 10:38:40.807763 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 25 10:40:45.811910 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 25 10:42:50.814763 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 25 10:44:55.807759 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 25 10:45:48.877702 bazzite kernel: perf: interrupt took too long (2519 > 2500), lowering kernel.perf_event_max_sample_rate to 79000
+paź 25 10:47:00.808760 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 25 10:49:05.812774 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 25 10:51:10.811764 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 25 10:53:15.808776 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 25 10:55:20.809770 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 25 10:57:25.809867 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 25 10:59:30.812760 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 25 11:01:35.810763 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 25 11:03:40.810766 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 25 11:05:45.810755 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 25 11:07:50.810778 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 25 11:09:55.810778 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
