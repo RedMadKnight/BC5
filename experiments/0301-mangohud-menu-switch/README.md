@@ -162,3 +162,28 @@ shortcut go. Can the emulator load MangoHud itself and drive it at runtime? Does
   - This needs the maintainer's yes, and the top session integrates it (D19).
 - Open, the maintainer's call: whether MangoHud should move off the top-left corner (e.g. `position=bottom-left`) so
   that it does not cover the menu's dropdown or the title's own health bar.
+
+**Addendum (2026-10-25, after the integration, F367).**
+- The maintainer kept top-left. The top session integrated the switch into both shared builds (normal 226bcb82, lean
+  71ef2194) and the launchers, and moved the shortcut and `mangohud-bc5.conf` to `~/bc5-work/exp0301/integration/`.
+- **A leftover of T1.** T1's launcher never exited. The top session found `play-pkg-0301.sh` (pid 5144) and its
+  `bc5-mount` (744 MB) still alive at 12:47, holding `~/bc5-data/mnt/pkg-play` through the runs of 0300, 0302 and
+  0303, and unmounted it with `fusermount3` inside the distrobox. Then everything exited.
+- What is certain, from the launcher's code (`play-pkg-0301.sh` lines 152–161, the same as `play-pkg.sh`):
+  - A launcher starts its own `bc5-mount` only if the mount point is free, and its EXIT trap runs
+    `fusermount3 -u "$M" 2>/dev/null; wait "$MP"`.
+  - T1 was the only run that mounted: the box was fresh. T2, A1, B1, A2 and B2 found T1's mount alive, used it, and
+    their launchers exited at once.
+  - So T1's `fusermount3 -u` failed, its error went to `/dev/null`, and `wait` then waits forever for a `bc5-mount`
+    that is still mounted. The A/B therefore ran on T1's mount process; that is the same program, and the arms are
+    unaffected.
+- Why it failed is not shown. Its stderr was discarded, and the log that could say was overwritten by the next run.
+  TODO(verify): a hypothesis only. The kill (SIGTERM, then SIGKILL after 4 s) left the mount busy for a moment
+  after the emulator had been reaped, e.g. FUSE release requests still queued to a `bc5-mount` under memory
+  pressure, so the immediate unmount lost a race. Nothing points at MangoHud or ydotool, but T1 is a single case.
+- The shared launchers have the same EXIT trap. A launcher could hang the same way after any stop whose unmount
+  fails.
+  - A suggestion for the top session, not done here: retry `fusermount3 -u` a few times, fall back to
+    `fusermount3 -u -z`, log the failure instead of discarding it, and give up the `wait` after a timeout.
+  - For future private runs: check at each run's end that the launcher and its mount are gone, and give the
+    private launcher its own mount log. `play-pkg-0301.sh` still wrote the shared `~/bc5-work/play-pkg-mount.log`.
