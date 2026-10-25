@@ -1,0 +1,19 @@
+13c13
+< LOG=~/bc5-work/play-pkg-last.log
+---
+> LOG=~/bc5-work/exp0309/play-last.log
+35a36
+> [ -n "${BC5_0299_INPUT_CONFIG:-}" ] && export KYTY_BC5_INPUT_CONFIG=$BC5_0299_INPUT_CONFIG  # exp 0309: the bench input configuration
+44c45
+< export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/_SaveData-pkg-play
+---
+> export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/exp0299/wd/_SaveData-pkg-play  # exp 0309: private (exp 0299 wd)
+117c118,119
+< export BC5_DIRECT_COMPUTE_RING=0 BC5_DIRECT_CROSS_RING_WAITS=all
+---
+> [ "${BC5_0309_ONE_RING:-0}" = 1 ] || export BC5_DIRECT_COMPUTE_RING=0  # exp 0309: one ring (compute on the GFX ring) with BC5_0309_ONE_RING=1
+> export BC5_DIRECT_CROSS_RING_WAITS=all
+166c168
+< cd ~/bc5-work
+---
+> cd ~/bc5-work/exp0299/wd  # exp 0309: exp 0299 private working directory (its own _SaveData)

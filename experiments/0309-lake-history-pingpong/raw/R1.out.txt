@@ -1,0 +1,18 @@
+private save copy reset to saves-lake-1153
+== R1 (BC5_0309_ONE_RING=1) shots done 14:19:31
+kernel: 0 fault lines, 0 ring timeout/reset lines
+journal: 0 fence timeouts; 2129 ray-tracing-off lines; compute-ring lines (two rings: >= 1; one ring: 0): 0; skip lines:       2   skip pgm 0x909974400 
+141824-ts00.png: patch  15.8 %
+141830-ts01.png: patch  17.6 %
+141835-ts02.png: patch  11.1 %
+141840-ts03.png: patch  11.8 %
+141845-ts04.png: patch   0.9 %
+141850-ts05.png: patch   0.8 %
+141855-ts06.png: patch  20.0 %
+141900-ts07.png: patch   1.0 %
+141905-ts08.png: patch   0.9 %
+141910-ts09.png: patch   0.9 %
+141915-ts10.png: patch   0.9 %
+141920-ts11.png: patch   0.9 %
+141925-ts12.png: patch   0.8 %
+fps counter: t 253.941 s: 30 flips in 1.016 s, longest gap 50.0 ms, gaps over 40 ms 1, ove
