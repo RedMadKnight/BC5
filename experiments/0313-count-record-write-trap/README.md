@@ -94,7 +94,8 @@ line 488), which runs only for copies of more than 256 bytes and keeps no stack 
 region, as read in run 1. Struct ring: the first struct armed came back after 29 armings (`S2-table.txt`), i.e. the
 title cycles about 29 per-tree struct slots.
 
-**The caller attribution of 0313b is void — read it with care.** Every store line says
+**The caller attribution of 0313b is void — read it with care; run 1's reading (the title's worker threads) is the
+right one.** Every store line says
 `<- kyty_emulator+0x6a3123` (`Libs::LibAmpr::Ampr::AprReaderThread`), which is **not** a return address: `objdump`
 puts 0x6a3123 in the middle of `movzbl (%rsi),%eax` at 0x6a3122, with no call before it — a stale word on the stack.
 The drain printed only RSP words that map to a file-backed module and skipped `[anon]` ones; the memcpy is a leaf, so
