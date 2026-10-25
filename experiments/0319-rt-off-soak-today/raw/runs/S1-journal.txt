@@ -1,0 +1,5 @@
+journal /home/kjaniszewski/bc5-data/captures/play-20261025-1649/gc/direct.log 2026-10-25 16:59:22.506313626 +0100 210984871
+journal: cpu-wait GIVEN UP 0, two rings NOT served 0, hold tail GIVEN UP 0, TIMEOUT 0, hold lines 692, cs prefix lines 36, alias not-learned lines 0
+journal last summary: hold tail: 42398 holds; released with the writer on a ring 39518, satisfied 2879, GIVEN UP 0; held 0.90 ms on average, 61.01 ms at most; 0 waits kept inside held chains (their label written by the chain)
+journal first cs prefix: cs prefix (exp 0195): t 42.880 s dcb 5839 dwords dispatches at 8 before it sets a program; the queue's program 0x0909974c00 rsrc1 402c0080 rsrc2 0000008c, 58 dwords of compute state in front (1 such buffers)
+journal first alias not learned: none

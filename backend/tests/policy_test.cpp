@@ -3,6 +3,8 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <string_view>
+
 #include <vector>
 
 using namespace bc5;
@@ -504,8 +506,12 @@ TEST_CASE("compute_ring_refusal names what keeps an IB off a compute ring", "[po
     const std::vector<std::uint32_t> ok = {0xC0017602u, 0x204u, 0u,
                                            0xC0031502u, 4u, 1u, 1u, 0x41u}; // DISPATCH_DIRECT
     CHECK(policy::compute_ring_refusal(ok) == nullptr);
+    // Experiment 0290: the MEC form is refused too while the CP's argument check is unverified on
+    // a compute ring (F332); the message names the reason.
     const std::vector<std::uint32_t> mec_indirect = {0xC0021602u, 0x1000u, 0x12u, 0x8041u};
-    CHECK(policy::compute_ring_refusal(mec_indirect) == nullptr);
+    const char *why = policy::compute_ring_refusal(mec_indirect);
+    REQUIRE(why != nullptr);
+    CHECK(std::string_view(why).find("MEC check") != std::string_view::npos);
     const std::vector<std::uint32_t> gfx_indirect = {0xC0011602u, 0x40u, 0x41u};
     CHECK(policy::compute_ring_refusal(gfx_indirect) != nullptr);
     const std::vector<std::uint32_t> cc = {0xC0012800u, 0x80000000u, 0x80000000u};

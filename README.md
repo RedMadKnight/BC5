@@ -21,7 +21,7 @@ On the maintainer's box a desktop shortcut, *BC5 emulator*, opens the emulator w
 
 ### What is still broken
 
-Patches of the water are missing on the second title's night lake. Now and then the second title's GPU work hangs, which freezes the picture (the sound keeps playing) or takes the machine down: the hangs come from the game's ray-tracing work. Its shaders write through garbage pointers, and one such stray write was caught overwriting the game's own synchronisation word. With ray tracing off, a 63-minute test ran clean. The wait the host used to give up on is no longer a trigger (since 2026-10-24). Some cutscenes used to play the characters in slow motion; a re-check on the current defaults showed none. The ray-traced reflections still skip one pass, so they may be incomplete. In the second title's laboratory many surfaces come out washed-out white, with ray tracing on or off. See [Known issues](#known-issues).
+Patches of the water are missing on the second title's night lake. Now and then the second title's GPU work hangs, which freezes the picture (the sound keeps playing) or takes the machine down: the hangs come from the game's ray-tracing work. Its shaders write through garbage pointers, and one such stray write was caught overwriting the game's own synchronisation word. Since 2026-10-25 the cause of the hangs with the full BVH build is known: the host split that build over two GPU queues with nothing ordering them, where the console runs it on one in-order queue. On one queue it ran clean, at about 11 % fewer frames. Keeping two queues and making every graphics job wait for the compute queue also ran clean, at the same cost; making only the compute work wait did not. A cheaper ordering is the fix being worked on. With ray tracing off, a 63-minute test ran clean. The wait the host used to give up on is no longer a trigger (since 2026-10-24). Some cutscenes used to play the characters in slow motion; a re-check on the current defaults showed none. The ray-traced reflections still skip one pass, so they may be incomplete. In the second title's laboratory many surfaces come out washed-out white with ray tracing on (with it off, grey since 2026-10-25). See [Known issues](#known-issues).
 
 ### Legal, in short
 
@@ -29,7 +29,7 @@ BC5 is a hobby research project and is against piracy. You play games you own, d
 
 ## Status in numbers
 
-As of 2026-10-25, measured on one BC-250 with the maintainer's own copies of the games. Every number is a finding (F1 … F361) in [`docs/HANDOFF.md`](docs/HANDOFF.md) §2, backed by an experiment under [`experiments/`](experiments/). A "flip" is one frame the game presented.
+As of 2026-10-25, measured on one BC-250 with the maintainer's own copies of the games. Every number is a finding (F1 … F386) in [`docs/HANDOFF.md`](docs/HANDOFF.md) §2, backed by an experiment under [`experiments/`](experiments/). A "flip" is one frame the game presented.
 
 | | ASTRO BOT | Marvel's Wolverine (second title) |
 | --- | --- | --- |
@@ -43,7 +43,7 @@ As of 2026-10-25, measured on one BC-250 with the maintainer's own copies of the
 
 | What | Effect | Source |
 | --- | --- | --- |
-| Ray-traced reflections, second title (since 2026-10-22) | Six reflection-traversal variants run, their stack addresses fixed for Linux's memory apertures. The BVH compaction pass that feeds them is still skipped: it once halved the frame rate in play; on today's build it costs about 3 % of the frames on the scripted route with no fault (F325), but the hangs caught on 2026-10-24 all stood in the BVH build work around it (F332–F339). Reflections reach the image; whether they are complete is not shown | F249, F250, F268, F275, F277, F304, F306, F325 |
+| Ray-traced reflections, second title (since 2026-10-22) | Six reflection-traversal variants run, their stack addresses fixed for Linux's memory apertures. The BVH compaction pass that feeds them is still skipped: it once halved the frame rate in play; on today's build it costs about 3 % of the frames on the scripted route with no fault (F325), but the hangs caught on 2026-10-24 all stood in the BVH build work around it (F332–F339). With it on, the build hung within 2 minutes until all of it ran on one GPU ring (F384). Reflections reach the image; whether they are complete is not shown | F249, F250, F268, F275, F277, F304, F306, F325, F384 |
 | Held tail (since 2026-10-24) | When a game-thread wait would time out, the host holds the rest of the submission instead of giving up on it (ADR 0013): given-up waits 14 → 0 a run, long frame gaps to about a quarter, +3 % frames | F284, F312 |
 | Tiler scratch pool (since 2026-10-23) | The display buffer's per-flip detile reuses pooled scratch buffers instead of allocating a new one every frame, which stalled the host's GPU thread for 0.3–0.7 s under memory pressure | F308, F311 |
 | Ray tracing switch (since 2026-10-24) | Emulation → Ray tracing in the window's menu, applied at the next frame and saved per title; on by default, so nothing changes until it is switched off; off drops the BVH build programs the launcher lists and, since 2026-10-25, the reflection traversal that would walk the unbuilt trees (it whitened the second title's laboratory), so reflections go blank | F337, F338, F340, F343, F362 |
@@ -57,14 +57,14 @@ As of 2026-10-25, measured on one BC-250 with the maintainer's own copies of the
 | Audio grain model and display-event coalescing | The second title's sound and timeline at real speed (1.00× for 10 minutes), no 30-fps cap needed | F246, F247 |
 | Tessellation-factor ring, second title | The night scene's tessellated draws are drawn; the geometry engine's reads at address 0 are gone | F248 |
 
-**The research so far:** 361 findings (F1–F361) in `docs/HANDOFF.md`, 296 experiments (0001–0298) in `experiments/`, 14 architecture decision records in `docs/decisions/`.
+**The research so far:** 386 findings (F1–F386) in `docs/HANDOFF.md`, 320 experiments (0001–0322) in `experiments/`, 14 architecture decision records in `docs/decisions/`.
 
 ### Known issues
 
 | Issue | What is known | Findings |
 | --- | --- | --- |
 | Patchwork water on the second title's night lake | Cells of the water show the lake bed, in phases of seconds. The holes are pixels where nothing wrote depth in that frame (F333), and they switch between two fixed, disjoint sets of pixels within tens of milliseconds (F342). Every draw compared is issued identically in clean and patched frames, so the cause is in memory the draws read (F313, F320, F323). Ruled out: the textures and their detail clamps, the HTILE metadata, the render-size changes, any packet the host filters, and the BVH build work (ray tracing off does not clear it, F341). The writers' GPU-written indirect arguments change every frame and follow the render size, not the hole state (F357, F359). Open: what decides which set a frame misses | F255, F292, F296–F299, F303, F305, F307, F309, F310, F313, F333, F341, F342, F350, F352, F355, F357, F359 |
-| Freezes and machine-downs | The give-up hangs are gone: a game-thread wait the host gave up on used to stall two rings (F284), and the held tail removes those give-ups (on by default since 2026-10-24, F312). What remains, all caught with the timeout probe and saved GPU coredumps on 2026-10-24: a dispatch of the second title's BVH build work that never finishes, with the other ring waiting behind it, sometimes taking the machine down (F332, F336, F339); and shaders that write into memory the game never backed (TCP permission faults; F257, F338), which occur even with the BVH build chain dropped. Since then: with RT off, 63 minutes ran clean (F351). A backend policy that keeps indirect dispatches off the compute ring makes the machine-downs recoverable hangs six times out of six; it is not integrated and not a complete net, since one failed reset followed (F356, F358). Marks around every dispatch hide the hang, which points at a race between back-to-back ray-tracing dispatches (F358). One hang was the game's own sync wait whose label a stray store had overwritten with a float, which is why it left no fault (F360). Next: the writer of those labels (experiment 0297), and a sync after each ray-tracing dispatch as the fix candidate (experiment 0300) | F257, F260, F284, F312, F322, F332, F336, F338, F339, F351, F356, F358, F360 |
+| Freezes and machine-downs | The give-up hangs are gone: a game-thread wait the host gave up on used to stall two rings (F284), and the held tail removes those give-ups (on by default since 2026-10-24, F312). What remains, all caught with the timeout probe and saved GPU coredumps on 2026-10-24: a dispatch of the second title's BVH build work that never finishes, with the other ring waiting behind it, sometimes taking the machine down (F332, F336, F339); and shaders that write into memory the game never backed (TCP permission faults; F257, F338), which occur even with the BVH build chain dropped. Since then: with RT off, 63 minutes ran clean (F351). A backend policy that keeps indirect dispatches off the compute ring makes the machine-downs recoverable hangs six times out of six; it is not integrated and not a complete net, since one failed reset followed (F356, F358). Marks around every dispatch hide the hang, which points at a race between back-to-back ray-tracing dispatches (F358). One hang was the game's own sync wait whose label a stray store had overwritten with a float, which is why it left no fault (F360). On 2026-10-25 the mechanism of the BVH-build hang was found: the count pass ran on compute ring 0 and the leaf builder's indirect dispatches on the GFX ring, with nothing ordering them, so the leaf builder could read its dispatch count before the count pass had written it (F381). With every compute buffer on the GFX ring, two 10-minute runs with ray tracing and the compaction on were clean, against 11 of 11 hangs at about 2 minutes, at ~11 % fewer frames (F384). An ordering on two rings works too, if every GFX job, the game's own graphics buffers included, waits for the compute rings: 2 of 2 clean at the same cost; a wait for the compute buffers alone hung at 127 s (F385). Holding only the graphics buffers that carry compute work costs the same, since three quarters of them do (F386); the dcb-wide ordering is being integrated (experiment 0323). With ray tracing off, the day's setup ran an hour clean unattended (F382); in hand play the same day one box freeze with no kernel line and one host crash followed (experiment 0315), and the crash handler's diagnostics now reach the play log (F383) | F257, F260, F284, F312, F322, F332, F336, F338, F339, F351, F356, F358, F360, F381, F382, F383, F384, F385, F386 |
 | Cutscene slow motion | Characters crawled while hair and effects ran on; their clock is a silent looping voice that stops when its next streamed read comes late. With the fixed read-ahead and the freed drive the cutscene that lagged on the scripted route plays at 1.00× (one run, 2026-10-23); whether it is gone everywhere is not shown | F254, F256, F259, F267, F273, F288, F302 |
 | Library ports | From AnyPS5: rumble without an audio sink (verified with a DualShock 4, F329), SaveData search and delete (verified, F319, F324), NpManager and NpTrophy2 (not exercised yet). From upstream KytyPlus, which has 328 library commits since our base: two small fixes, in the shared builds since 2026-10-24 (F349) | F214–F217, F319, F324, F329, F335, F349, Q16 |
 | Washed-out white surfaces in the second title's laboratory | The floor, a cart and the glass came out over-lit, where the scene should be grey. The cause is the ray-traced reflection traversal (three programs). With ray tracing off it walks never-built trees; since 2026-10-25 "off" drops it too, and the lab is grey. With ray tracing on it is still white while the host skips the BVH compaction; with the compaction running the lab shows correct reflections at ~3 flips/s less (F370). Whether the compaction is safe on by default is being tested (experiment 0306) | F362, F366, F370 |
@@ -92,6 +92,30 @@ BC5 has three parts:
 - **The tools**, [`tools/`](tools/) (Rust): `bc5-mount` reads PS5 game dumps (`.ffpfsc`) and packages (`.pkg`) as a read-only directory over FUSE; `bc5-agc` decodes GPU command streams.
 
 What BC5 is not: a firmware boot (the PS5 boot chain cannot run on a BC-250, and BC5 loads no system software either way); a new emulator (it extends KytyPlus); a PC emulator (F63); a piracy tool.
+
+### Why one board, and not a Vulkan port
+
+BC5 is built for the BC-250 alone, on purpose.
+
+**What the closeness buys.** The board's chip is of the PS5's family. The games' shaders use instructions that, among GPUs you can buy, only the BC-250's `gfx1013` has (F63). So BC5 can hand the GPU the game's own command stream and its native shader binaries, with no shader translation:
+- no stutter while shaders are recompiled;
+- the shaders' exact behaviour, including their ray-tracing instructions;
+- one layer fewer between the game and the GPU, and so fewer places for a translation bug.
+
+Optimisations are made for this machine's CPU, CU layout, memory and storage (CLAUDE.md, "Target hardware").
+
+**What it costs.** The silicon is close to the console's, but its firmware and driver are not: the BC-250 runs AMD's GPU firmware and Linux's `amdgpu`, and BC5 uses no Sony firmware or system software (ADR 0012, D18). Whatever the console's firmware and OS do for a game, the direct path has to supply itself:
+- the context-state stack and the cross-queue label hand-overs (F34–F42);
+- the queue placement of the game's compute work (ADR 0009, F178);
+- the order of the second title's ray-tracing build, which the console gets from one in-order queue (F381).
+
+There are two further costs. BC5 runs on this board only, and a GPU hang can take the whole machine down, because no translating driver sits in between to catch it.
+
+**A Vulkan port would be a second backend, not a small step.** It would have to translate the console's command stream into Vulkan and recompile the RDNA shader binaries into SPIR-V, ray-tracing instructions included. That is the path PC emulators of the PS4 take. Two parts of BC5 would carry over:
+- the CPU side: the loader, every system library written in the host, `bc5-mount` and `bc5-agc`;
+- the findings about how the games use the GPU (`docs/HANDOFF.md`).
+
+Portability is not a goal of this project; running PS5 games on this board as faithfully and as fast as it allows is.
 
 ## Build
 
@@ -154,7 +178,7 @@ Environment variables; the launchers set the title's values. The full list, with
 README.md            this file
 CLAUDE.md            standing instructions and the hard rules
 docs/
-  HANDOFF.md         research state: findings F1–F361 with sources, open questions, decisions
+  HANDOFF.md         research state: findings F1–F386 with sources, open questions, decisions
   PHASES.md          the gated roadmap (G0a, G1b, G2, G3 passed; 0b and 4 retired by D18; phase 5, play, current)
   console-vs-host.md what the console does, what the host does instead
   decisions/         ADRs 0001–0014, one decision each
@@ -167,7 +191,7 @@ tools/
   third_party/       vendored oozextract (MIT)
 backend/             C++20: the direct path (policy filter, state trackers, dma-buf mappings,
                      submission); kytyplus-patches/ the patch against KytyPlus
-experiments/         one directory per experiment, 0001–0298
+experiments/         one directory per experiment, 0001–0322
 ```
 
 ## How the research is run

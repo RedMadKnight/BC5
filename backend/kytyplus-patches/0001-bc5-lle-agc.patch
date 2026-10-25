@@ -27738,7 +27738,7 @@ index 0000000..5d9456f
 +
 +#endif
 diff --git a/src/loader/runtimeLinker.cpp b/src/loader/runtimeLinker.cpp
-index 343045e..db295f0 100644
+index 343045e..68cd09d 100644
 --- a/src/loader/runtimeLinker.cpp
 +++ b/src/loader/runtimeLinker.cpp
 @@ -1,3 +1,5 @@
@@ -27747,7 +27747,15 @@ index 343045e..db295f0 100644
  #include "loader/runtimeLinker.h"
  
  #include "common/assert.h"
-@@ -325,7 +327,21 @@ static KYTY_SYSV_ABI uint64_t ResolveImportStubWithId(uint64_t record_id) {
+@@ -25,6 +27,7 @@
+ 
+ #include <algorithm>
+ #include <atomic>
++#include <cstdarg>
+ #include <cstdio>
+ #include <cstdlib>
+ #include <cstring>
+@@ -325,7 +328,21 @@ static KYTY_SYSV_ABI uint64_t ResolveImportStubWithId(uint64_t record_id) {
  	}
  
  	const auto log_index = g_unresolved_stub_call_log_count.fetch_add(1);
@@ -27770,7 +27778,39 @@ index 343045e..db295f0 100644
  		if (record_id < g_stubbed_imports.size()) {
  			const auto& record = g_stubbed_imports[record_id];
  			LOGF("Unresolved import stub called [%u]: patch_vaddr=0x%016" PRIx64
-@@ -820,10 +836,36 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
+@@ -797,6 +814,31 @@ static bool IsDumpableRange(uint64_t addr, uint64_t size) {
+ #endif
+ }
+ 
++// BC5 (experiment 0318): the crash diagnostics of KytyExceptionHandler go to stderr through RawLog,
++// whatever the printf direction (the launchers pass --printf-direction Silent, which drops every LOGF)
++// and the session's logging switch; before, a crash left only the register dump in the play log.
++// Text is gathered per line so a byte dump stays one line; vsnprintf into a fixed buffer, no allocation.
++#if defined(__GNUC__) || defined(__clang__)
++__attribute__((format(printf, 1, 2)))
++#endif
++static void Bc5CrashLog(const char* format, ...) {
++	static thread_local char   line[1024];
++	static thread_local size_t len = 0;
++	va_list                    args;
++	va_start(args, format);
++	const int n = std::vsnprintf(line + len, sizeof(line) - len, format, args);
++	va_end(args);
++	if (n > 0) {
++		len = std::min(len + static_cast<size_t>(n), sizeof(line) - 1);
++	}
++	if (len > 0 && (line[len - 1] == '\n' || len >= sizeof(line) - 64)) {
++		Common::HostException::RawLog log;
++		log.Append(line);
++		log.Flush();
++		len = 0;
++	}
++}
++
+ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exception_info) {
+ 	const auto* info = &exception_info;
+ 
+@@ -820,21 +862,48 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
  			EXIT("invalid access type for page fault at 0x%016" PRIx64 "\n",
  			     info->access_violation_vaddr);
  		}();
@@ -27808,6 +27848,194 @@ index 343045e..db295f0 100644
  		if (Libs::LibKernel::Memory::KernelHandleReservedRangeAccessViolation(
  		        info->access_violation_vaddr)) {
  			return true;
+ 		}
+ 	}
+ 
+-	LOGF("kyty_exception_handler: %016" PRIx64 "\n", info->exception_address);
++	Bc5CrashLog("kyty_exception_handler: %016" PRIx64 "\n", info->exception_address);
+ 
+ 	// Emit the raw register dump through the allocation-free, non-throwing sink.
+ 	// This runs inside the exception filter; LOGF/fmt::sprintf can allocate and
+ 	// throw, so a fault here would be a double-fault and lose the diagnostic.
++	// (BC5: the lines after it use Bc5CrashLog, which does not allocate either.)
+ 	// DumpExceptionInfo degrades instead of crashing.
+ 	Common::HostException::DumpExceptionInfo(*info);
+ #if KYTY_PLATFORM == KYTY_PLATFORM_WINDOWS
+@@ -845,14 +914,14 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
+ 	    owner_module != nullptr) {
+ 		char module_name[MAX_PATH] = {};
+ 		if (GetModuleFileNameA(owner_module, module_name, MAX_PATH) != 0) {
+-			LOGF("exception module: %s\n", module_name);
++			Bc5CrashLog("exception module: %s\n", module_name);
+ 		}
+ 	}
+ #else
+ 	Dl_info module_info {};
+ 	if (::dladdr(reinterpret_cast<void*>(info->exception_address), &module_info) != 0 &&
+ 	    module_info.dli_fname != nullptr) {
+-		LOGF("exception module: %s\n", module_info.dli_fname);
++		Bc5CrashLog("exception module: %s\n", module_info.dli_fname);
+ 	}
+ #endif
+ 	if (info->exception_address != 0) {
+@@ -868,53 +937,53 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
+ 			const auto dump_size =
+ 			    (dump_start + 64 <= region_end ? 64u
+ 			                                   : static_cast<uint32_t>(region_end - dump_start));
+-			LOGF("code-32:");
++			Bc5CrashLog("code-32:");
+ 			for (uint32_t i = 0; i < dump_size; i++) {
+-				LOGF(" %02" PRIx32, static_cast<uint32_t>(dump_ptr[i]));
++				Bc5CrashLog(" %02" PRIx32, static_cast<uint32_t>(dump_ptr[i]));
+ 			}
+-			LOGF("\n");
++			Bc5CrashLog("\n");
+ 		} else {
+-			LOGF("code-32: unavailable\n");
++			Bc5CrashLog("code-32: unavailable\n");
+ 		}
+ #else
+ 		const auto fault_addr = info->exception_address;
+ 		const auto dump_start = (fault_addr >= 32 ? fault_addr - 32 : fault_addr);
+ 		if (IsReadableRange(dump_start, 64)) {
+ 			auto* dump_ptr = reinterpret_cast<const uint8_t*>(dump_start);
+-			LOGF("code-32:");
++			Bc5CrashLog("code-32:");
+ 			for (uint32_t i = 0; i < 64; i++) {
+-				LOGF(" %02" PRIx32, static_cast<uint32_t>(dump_ptr[i]));
++				Bc5CrashLog(" %02" PRIx32, static_cast<uint32_t>(dump_ptr[i]));
+ 			}
+-			LOGF("\n");
++			Bc5CrashLog("\n");
+ 		} else {
+-			LOGF("code-32: unavailable\n");
++			Bc5CrashLog("code-32: unavailable\n");
+ 		}
+ #endif
+ 	} else {
+-		LOGF("code: unavailable\n");
++		Bc5CrashLog("code: unavailable\n");
+ 	}
+-	LOGF("exception: type=%s, av_type=%s, av_addr=%016" PRIx64 ", native_code=%08" PRIx32 "\n",
++	Bc5CrashLog("exception: type=%s, av_type=%s, av_addr=%016" PRIx64 ", native_code=%08" PRIx32 "\n",
+ 	     Common::EnumName(info->type).c_str(),
+ 	     Common::EnumName(info->access_violation_type).c_str(), info->access_violation_vaddr,
+ 	     info->native_code);
+-	LOGF("regs: rax=%016" PRIx64 " rbx=%016" PRIx64 " rcx=%016" PRIx64 " rdx=%016" PRIx64 "\n",
++	Bc5CrashLog("regs: rax=%016" PRIx64 " rbx=%016" PRIx64 " rcx=%016" PRIx64 " rdx=%016" PRIx64 "\n",
+ 	     info->rax, info->rbx, info->rcx, info->rdx);
+-	LOGF("regs: rsi=%016" PRIx64 " rdi=%016" PRIx64 " rbp=%016" PRIx64 " rsp=%016" PRIx64 "\n",
++	Bc5CrashLog("regs: rsi=%016" PRIx64 " rdi=%016" PRIx64 " rbp=%016" PRIx64 " rsp=%016" PRIx64 "\n",
+ 	     info->rsi, info->rdi, info->rbp, info->rsp);
+-	LOGF("regs: r8 =%016" PRIx64 " r9 =%016" PRIx64 " r10=%016" PRIx64 " r11=%016" PRIx64 "\n",
++	Bc5CrashLog("regs: r8 =%016" PRIx64 " r9 =%016" PRIx64 " r10=%016" PRIx64 " r11=%016" PRIx64 "\n",
+ 	     info->r8, info->r9, info->r10, info->r11);
+-	LOGF("regs: r12=%016" PRIx64 " r13=%016" PRIx64 " r14=%016" PRIx64 " r15=%016" PRIx64 "\n",
++	Bc5CrashLog("regs: r12=%016" PRIx64 " r13=%016" PRIx64 " r14=%016" PRIx64 " r15=%016" PRIx64 "\n",
+ 	     info->r12, info->r13, info->r14, info->r15);
+ 
+ 	if (IsReadableRange(info->rsp, 16u * sizeof(uint64_t))) {
+ 		auto* stack = reinterpret_cast<const uint64_t*>(info->rsp);
+-		LOGF("stack:");
++		Bc5CrashLog("stack:");
+ 		for (uint64_t i = 0; i < 16; i++) {
+-			LOGF(" [%02" PRIu64 "]=%016" PRIx64, i, stack[i]);
++			Bc5CrashLog(" [%02" PRIu64 "]=%016" PRIx64, i, stack[i]);
+ 		}
+-		LOGF("\n");
++		Bc5CrashLog("\n");
+ 	} else {
+-		LOGF("stack: unavailable\n");
++		Bc5CrashLog("stack: unavailable\n");
+ 	}
+ 
+ 	auto dump_guest_code = [](const char* name, uint64_t addr) {
+@@ -942,15 +1011,18 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
+ 		}
+ #endif
+ 
+-		LOGF("%s code: addr=%016" PRIx64 ", off=%016" PRIx64 ", module=%s:", name, addr,
++		Bc5CrashLog("%s code: addr=%016" PRIx64 ", off=%016" PRIx64 ", module=%s:", name, addr,
+ 		     addr - p->base_vaddr,
+ 		     Common::FilenameWithoutDirectory(Common::PathToGenericString(p->file_name)).c_str());
+ 		for (uint32_t i = 0; i < dump_size; i++) {
+-			LOGF(" %02" PRIx32, static_cast<uint32_t>(dump_ptr[i]));
++			Bc5CrashLog(" %02" PRIx32, static_cast<uint32_t>(dump_ptr[i]));
+ 		}
+-		LOGF("\n");
++		Bc5CrashLog("\n");
+ 	};
+ 
++	// BC5 (experiment 0318): the faulting instruction's own program and offset (eboot.bin+0x... for the
++	// title's code), with 16 bytes either side, so a crash names its site without /proc/<pid>/maps.
++	dump_guest_code("exception rip", info->exception_address);
+ 	dump_guest_code("guest rax[0]", info->rax);
+ 	dump_guest_code("guest rbx[0]", info->rbx);
+ 	dump_guest_code("guest rcx[0]", info->rcx);
+@@ -970,12 +1042,12 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
+ 			int   depth = 20;
+ 			SysStackWalkX86(info->rbp, info->rsp, stack, &depth);
+ 
+-			LOGF("Stack trace [thread = %d]:\n", Common::Thread::GetThreadIdUnique());
++			Bc5CrashLog("Stack trace [thread = %d]:\n", Common::Thread::GetThreadIdUnique());
+ 			for (int i = 0; i < depth; i++) {
+ 				auto  vaddr = reinterpret_cast<uint64_t>(stack[i]);
+ 				auto* p =
+ 				    Common::Singleton<Loader::RuntimeLinker>::Instance()->FindProgramByAddr(vaddr);
+-				LOGF("[%d] %016" PRIx64 ", off=%016" PRIx64 ", %s\n", i, vaddr,
++				Bc5CrashLog("[%d] %016" PRIx64 ", off=%016" PRIx64 ", %s\n", i, vaddr,
+ 				     (p == nullptr ? 0 : vaddr - p->base_vaddr),
+ 				     (p == nullptr ? "???"
+ 				                   : Common::FilenameWithoutDirectory(
+@@ -986,7 +1058,7 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
+ 
+ 		auto dump_guest_qwords = [](const char* name, uint64_t addr) {
+ 			if (addr == 0) {
+-				LOGF("%s = 0\n", name);
++				Bc5CrashLog("%s = 0\n", name);
+ 				return;
+ 			}
+ 
+@@ -994,18 +1066,18 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
+ 			MEMORY_BASIC_INFORMATION mbi {};
+ 			if (VirtualQuery(reinterpret_cast<const void*>(addr), &mbi, sizeof(mbi)) == 0 ||
+ 			    mbi.State != MEM_COMMIT || (mbi.Protect & (PAGE_NOACCESS | PAGE_GUARD)) != 0) {
+-				LOGF("%s = %016" PRIx64 " (unmapped)\n", name, addr);
++				Bc5CrashLog("%s = %016" PRIx64 " (unmapped)\n", name, addr);
+ 				return;
+ 			}
+ #endif
+ 
+ 			if (!IsReadableRange(addr, 8u * sizeof(uint64_t))) {
+-				LOGF("%s = %016" PRIx64 " (unmapped)\n", name, addr);
++				Bc5CrashLog("%s = %016" PRIx64 " (unmapped)\n", name, addr);
+ 				return;
+ 			}
+ 
+ 			auto* q = reinterpret_cast<const uint64_t*>(addr);
+-			LOGF("%s = %016" PRIx64 ": %016" PRIx64 " %016" PRIx64 " %016" PRIx64 " %016" PRIx64
++			Bc5CrashLog("%s = %016" PRIx64 ": %016" PRIx64 " %016" PRIx64 " %016" PRIx64 " %016" PRIx64
+ 			     " %016" PRIx64 " %016" PRIx64 " %016" PRIx64 " %016" PRIx64 "\n",
+ 			     name, addr, q[0], q[1], q[2], q[3], q[4], q[5], q[6], q[7]);
+ 		};
+@@ -1042,7 +1114,7 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
+ 		if (info->rsi > guest_max && info->rsi < 0x800000000ull) { leaked = "rsi"; leaked_val = info->rsi; }
+ 		if (info->rdi > guest_max && info->rdi < 0x800000000ull) { leaked = "rdi"; leaked_val = info->rdi; }
+ 		if (leaked != nullptr) {
+-			LOGF_COLOR(Log::Color::Red, "host-pointer leak in guest %s: 0x%016" PRIx64 "\n",
++			Bc5CrashLog("host-pointer leak in guest %s: 0x%016" PRIx64 "\n",
+ 			           leaked, leaked_val);
+ 		}
+ 	}
+@@ -1053,7 +1125,7 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
+ 		const size_t start     = g_stubbed_imports.size() - dump_count;
+ 		for (size_t i = 0; i < dump_count; ++i) {
+ 			const auto& record = g_stubbed_imports[start + i];
+-			LOGF("recent stubbed import: %s\n", record.name.c_str());
++			Bc5CrashLog("recent stubbed import: %s\n", record.name.c_str());
+ 		}
+ 	}
+ 
 diff --git a/src/loader/systemContent.cpp b/src/loader/systemContent.cpp
 index efa8b48..ecd42b1 100644
 --- a/src/loader/systemContent.cpp

@@ -1,0 +1,11 @@
+private input config /home/kjaniszewski/bc5-work/exp0320/input-rt.cfg: 9 lines, RayTracing.PPSA03671=on  (source /home/kjaniszewski/bc5-work/input.cfg, RayTracing.PPSA03671=off)
+skip list in the derived launcher: 37:export BC5_DIRECT_SKIP_PGM=0  # exp 0320: the compaction 909974400 runs;72:# gameplay (run 735). A run script may set BC5_DIRECT_SKIP_PGM itself.;89:export BC5_DIRECT_SKIP_PGM=0  # exp 0320: the compaction 909974400 runs (was: the default skip);
+launcher /home/kjaniszewski/bc5-work/exp0320/play-pkg-0320.sh (md5 d780cb0d) from /home/kjaniszewski/bc5-work/play-pkg.sh fde58cda + exp 0299's edits renamed; log /home/kjaniszewski/bc5-work/exp0320/play-last.log; diff /home/kjaniszewski/bc5-work/exp0320/raw/play-pkg-0320.diff
+working directory /home/kjaniszewski/bc5-work/exp0320/wd: 5151 entries, 5150 symlinks (layout of /home/kjaniszewski/bc5-work/exp0299/wd: 5151 entries); the title's saves /home/kjaniszewski/bc5-work/exp0320/wd/_SaveData/PPSA03671 (private); KYTY_BC5_SAVEDATA_DIR /home/kjaniszewski/bc5-work/exp0320/wd/_SaveData-pkg-play
+2026-10-25 18:02:10 live saves bb14b6dd35b644ff, snapshot /home/kjaniszewski/bc5-work/exp0320/saves-before-1802 (comparison only, nothing is restored into /home/kjaniszewski/bc5-work/_SaveData/PPSA03671)
+== 18:02:10 run S1
+S1: no emulator started; crash lines 0, kernel lines 0, TIMEOUT lines 0, probe lines 0, sync lines 0 (last: ), table lines 0, skip lines , compaction lines , devcoredumps 0
+FAIL: no emulator started;
+== 18:03:16 the chain stops after S1
+2026-10-25 18:03:16 live saves bb14b6dd35b644ff (want bb14b6dd35b644ff)
+BOX-LOCK released
