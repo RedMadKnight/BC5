@@ -1,0 +1,12 @@
+== 16:40:49 patch
+src/libs/bc5LleAgc.cpp: md5 5bccbb80 in
+src/libs/bc5LleAgc.cpp: 4 edits -> /home/kjaniszewski/bc5-work/exp0316/src/bc5LleAgc.cpp, md5 58256c13 out
+patch_0316.diff: 338 added lines
+== 16:40:50 compdb
+== 16:40:50 compile + link
+== 16:41:17 build rc 0
+warnings: 5
+-rwxr-xr-x. 1 kjaniszewski kjaniszewski 166705008 10-25 16:41 /home/kjaniszewski/bc5-work/exp0316/kyty_emulator
+md5 77db89c8
+patched source md5 58256c13; strings: write trap 4, refusal 1
+shared binary after: 226bcb82 (want e62a97c6); shared object after: c59ed582
