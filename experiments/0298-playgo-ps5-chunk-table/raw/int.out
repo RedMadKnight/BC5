@@ -1,0 +1,11 @@
+edited 18 functions traced
+tree files = the tested copies
+tree systemContent.cpp 7121c22c, libPlayGo.cpp 8b149c75
+== 10:03:58 build kytyplus-build
+kytyplus-build e62a97c6, trace strings 4
+== 10:04:11 build kytyplus-build-lean
+kytyplus-build-lean 753889c9, trace strings 4
+play-pkg.sh fde58cda
+play-pkg-log.sh 1efdd8dc
+play-pkg-quiet.sh 8e233fae
+== 10:04:23 done

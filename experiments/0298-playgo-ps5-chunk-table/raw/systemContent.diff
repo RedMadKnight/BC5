@@ -1,0 +1,32 @@
+--- /home/kjaniszewski/src/KytyPlus/src/loader/systemContent.cpp	2026-09-30 08:47:15.838837706 +0200
++++ /home/kjaniszewski/bc5-work/exp0298/src/systemContent.cpp	2026-10-25 09:32:14.214823203 +0100
+@@ -10,7 +10,9 @@
+ 
+ #include <algorithm>
+ #include <charconv>
++#include <cinttypes>
+ #include <cstdint>
++#include <cstdio>
+ #include <cstring>
+ #include <filesystem>
+ #include <nlohmann/json.hpp>
+@@ -363,7 +365,10 @@
+ 
+ 	m_f.Read(&magic1, 4);
+ 
+-	if (magic1 != 0x6f676c70) {
++	// BC5 experiment 0298: a PS5 package's table starts with "plgx" and keeps the chunk count at offset 10 as
++	// the PS4 "plgo" one does (the second title's: 100, matching its 100 "Chunk #N" labels).
++	if (magic1 != 0x6f676c70 && magic1 != 0x78676c70) {
++		std::fprintf(stderr, "bc5 playgo: %s: magic %08" PRIx32 ", not a chunk table\n", Common::PathToString(file_name).c_str(), magic1);
+ 		LOGF("invalid file: magic1 = %08" PRIx32 "\n", magic1);
+ 		return;
+ 	}
+@@ -372,6 +377,7 @@
+ 	m_f.Read(&m_chunks_num, 2);
+ 
+ 	m_opened = true;
++	std::fprintf(stderr, "bc5 playgo: %s: magic %08" PRIx32 ", %" PRIu16 " chunks\n", Common::PathToString(file_name).c_str(), magic1, m_chunks_num);
+ }
+ 
+ static bool ParseXmlUintAttr(std::string_view tag, std::string_view attr, uint32_t& value) {
