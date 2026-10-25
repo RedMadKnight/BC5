@@ -1,0 +1,34 @@
+== 22:25:13 patch
+src/kernel/syncOnAddress.h: md5 f5eacccf in
+src/kernel/syncOnAddress.h: 1 edits -> /home/kjaniszewski/bc5-work/exp0328/src/src/kernel/syncOnAddress.h, md5 b595887f out
+src/kernel/syncOnAddress.cpp: md5 5c7b2079 in
+src/kernel/syncOnAddress.cpp: 4 edits -> /home/kjaniszewski/bc5-work/exp0328/src/src/kernel/syncOnAddress.cpp, md5 bafb6902 out
+src/libs/libKernel.cpp: md5 625a2114 in
+src/libs/libKernel.cpp: 6 edits -> /home/kjaniszewski/bc5-work/exp0328/src/src/libs/libKernel.cpp, md5 e22db107 out
+src/kernel/fileSystem.h: md5 d630781c in
+src/kernel/fileSystem.h: 1 edits -> /home/kjaniszewski/bc5-work/exp0328/src/src/kernel/fileSystem.h, md5 9113982c out
+src/kernel/fileSystem.cpp: md5 643c030b in
+src/kernel/fileSystem.cpp: 2 edits -> /home/kjaniszewski/bc5-work/exp0328/src/src/kernel/fileSystem.cpp, md5 2ae82bb2 out
+src/libs/libC.cpp: md5 918ab25a in
+src/libs/libC.cpp: 4 edits -> /home/kjaniszewski/bc5-work/exp0328/src/src/libs/libC.cpp, md5 13b4200e out
+src/libs/libs.cpp: md5 dfbe5493 in
+src/libs/libs.cpp: 2 edits -> /home/kjaniszewski/bc5-work/exp0328/src/src/libs/libs.cpp, md5 78436ff5 out
+src/loader/runtimeLinker.cpp: md5 7b648776 in
+src/loader/runtimeLinker.cpp: 2 edits -> /home/kjaniszewski/bc5-work/exp0328/src/src/loader/runtimeLinker.cpp, md5 f294dfc2 out
+patch_0328.diff: 437 added lines
+== 22:25:13 compdb
+previous binary kept as /home/kjaniszewski/bc5-work/exp0328/kyty_emulator.fcb50e58
+== 22:25:14 compile + link + tests
+== 22:26:04 build rc 0
+95:== emulator linked
+129:== sync_on_address_tests exit 0
+221:clang++: error: linker command failed with exit code 1 (use -v to see invocation)
+222:== minimal link of np_cpp_web_api_tests failed; linking with every shared object but main's
+253:== np_cpp_web_api_tests exit 0
+warnings: 11
+SyncOnAddressTests: all checks passed
+NpCppWebApiTests: all checks passed
+-rwxr-xr-x. 1 kjaniszewski kjaniszewski 167513672 10-25 22:26 /home/kjaniszewski/bc5-work/exp0328/kyty_emulator
+md5 fcb50e58
+strings: NpCppWebApi lines 0, stub lines 1
+shared binary after: 5dd77a82 (want 5dd77a82)

@@ -1,0 +1,30 @@
+== 21:25:22 patch
+src/kernel/syncOnAddress.h: md5 f5eacccf in
+src/kernel/syncOnAddress.h: 1 edits -> /home/kjaniszewski/bc5-work/exp0327/src/src/kernel/syncOnAddress.h, md5 b595887f out
+src/kernel/syncOnAddress.cpp: md5 5c7b2079 in
+src/kernel/syncOnAddress.cpp: 4 edits -> /home/kjaniszewski/bc5-work/exp0327/src/src/kernel/syncOnAddress.cpp, md5 bafb6902 out
+src/libs/libKernel.cpp: md5 625a2114 in
+src/libs/libKernel.cpp: 6 edits -> /home/kjaniszewski/bc5-work/exp0327/src/src/libs/libKernel.cpp, md5 e22db107 out
+src/kernel/fileSystem.h: md5 d630781c in
+src/kernel/fileSystem.h: 1 edits -> /home/kjaniszewski/bc5-work/exp0327/src/src/kernel/fileSystem.h, md5 9113982c out
+src/kernel/fileSystem.cpp: md5 643c030b in
+src/kernel/fileSystem.cpp: 2 edits -> /home/kjaniszewski/bc5-work/exp0327/src/src/kernel/fileSystem.cpp, md5 2ae82bb2 out
+src/libs/libC.cpp: md5 918ab25a in
+src/libs/libC.cpp: 4 edits -> /home/kjaniszewski/bc5-work/exp0327/src/src/libs/libC.cpp, md5 13b4200e out
+src/loader/runtimeLinker.cpp: md5 7b648776 in
+src/loader/runtimeLinker.cpp: 2 edits -> /home/kjaniszewski/bc5-work/exp0327/src/src/loader/runtimeLinker.cpp, md5 f294dfc2 out
+patch_0327.diff: 433 added lines
+== 21:25:22 compdb
+== 21:25:23 compile + link + tests
+cp: '/home/kjaniszewski/bc5-work/exp0327/SyncOnAddressTests.cpp' i '/home/kjaniszewski/bc5-work/exp0327/SyncOnAddressTests.cpp' to ten sam plik
+== 21:26:04 build rc 0
+63:== emulator linked
+97:== tests exit 0
+warnings: 7
+SyncOnAddressTests: ok: wake all
+SyncOnAddressTests: ok: four 16-bit waiters all return 0 after the store and the wake
+SyncOnAddressTests: all checks passed
+-rwxr-xr-x. 1 kjaniszewski kjaniszewski 166645016 10-25 21:26 /home/kjaniszewski/bc5-work/exp0327/kyty_emulator
+md5 1f7169a9
+strings: the twelve NIDs' names in the binary: 2, stub lines 0
+shared binary after: 5dd77a82 (want 5dd77a82)

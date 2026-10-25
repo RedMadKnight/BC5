@@ -1,0 +1,23 @@
+2026-10-25 19:46:58 before: archive 549892e8, normal d02f4696, lean 759cd455, src/bc5 cc6a3bc
+  play-pkg.sh bb51caf2
+  play-pkg-log.sh d035bb95
+  play-pkg-quiet.sh 1d44e312
+== 19:46:58 backend archive
+archive now 825ae1d1
+== 19:47:03 backend tests (a separate build directory)
+55/55 Test #55: indirect_check: on a compute ring the MEC form is checked, without PFP_SYNC_ME .....................................   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 55
+
+Total Test time (real) =   0.21 sec
+== 19:47:34 relink the shared emulators
+== 19:48:21 launchers
+/home/kjaniszewski/bc5-work/play-pkg.sh: md5 bb51caf2 -> 7d14f7e5 (backup /home/kjaniszewski/bc5-work/exp0323/integration/play-pkg.sh.before-0323)
+/home/kjaniszewski/bc5-work/play-pkg-log.sh: md5 d035bb95 -> e1b361a1 (backup /home/kjaniszewski/bc5-work/exp0323/integration/play-pkg-log.sh.before-0323)
+/home/kjaniszewski/bc5-work/play-pkg-quiet.sh: md5 1d44e312 -> 2b23073d (backup /home/kjaniszewski/bc5-work/exp0323/integration/play-pkg-quiet.sh.before-0323)
+2026-10-25 19:48:21 after: archive 825ae1d1, normal 5dd77a82, lean 47e4a31a
+  play-pkg.sh 7d14f7e5
+  play-pkg-log.sh e1b361a1
+  play-pkg-quiet.sh 2b23073d
+== 19:48:21 done; undo: cp -p /home/kjaniszewski/bc5-work/exp0323/integration/libbc5_backend.a.before-0323 /home/kjaniszewski/bc5-work/backend-ubuntu/libbc5_backend.a; cp -p /home/kjaniszewski/bc5-work/exp0323/integration/kyty_emulator.before-0323 /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator; cp -p /home/kjaniszewski/bc5-work/exp0323/integration/kyty_emulator-lean.before-0323 /home/kjaniszewski/bc5-work/kytyplus-build-lean/src/kyty_emulator; cp -p /home/kjaniszewski/bc5-work/exp0323/integration/play-pkg*.before-0323 back to /home/kjaniszewski/bc5-work (names without the suffix)
+exit 0
