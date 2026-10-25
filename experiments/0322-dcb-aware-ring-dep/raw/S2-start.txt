@@ -1,0 +1,6 @@
+2026-10-25 19:23:16
+run S2, 600 s, launcher /home/kjaniszewski/bc5-work/exp0322/play-pkg-0322.sh md5 4a1d51b7 (from /home/kjaniszewski/bc5-work/play-pkg.sh bb51caf2), BC5_EMU /home/kjaniszewski/bc5-work/exp0322/kyty_emulator md5 2a5210db, input config /home/kjaniszewski/bc5-work/exp0322/input-rt.cfg, saves /home/kjaniszewski/bc5-work/exp0322/wd/_SaveData-pkg-play, table list default (the 0x11d03a family)
+boot 8071b391, up since 2026-10-25 16:07:33
+box start uptime 11743.03 avail_mib 13761 swapfree_mib 7051 pswpin 1036255 pswpout 1444549 pgmajfault 1122564 compact_stall 9592 compact_fail 7590 
+emulator pid 1590695 exe /home/kjaniszewski/bc5-work/exp0322/kyty_emulator cwd /home/kjaniszewski/bc5-work/exp0322/wd
+environ: KYTY_BC5_INPUT_CONFIG=/home/kjaniszewski/bc5-work/exp0322/input-rt.cfg KYTY_BC5_RT=1 BC5_DIRECT_MEC_INDIRECT=1 BC5_DIRECT_SKIP_PGM=0 BC5_DIRECT_TIMEOUT_PROBE=1 BC5_DIRECT_RING_DEPS_AWARE=1 KYTY_BC5_SAVEDATA_DIR=/home/kjaniszewski/bc5-work/exp0322/wd/_SaveData-pkg-play PLAY_CAPTURE=1 BC5_0322_INPUT_CONFIG=/home/kjaniszewski/bc5-work/exp0322/input-rt.cfg BC5_DIRECT_COMPUTE_RING=0 KYTY_BC5_RT_BUILD_PGM=909974400,909939400,909936c00,909939700,909939900,909974200,909973900,909973b00,909973d00,909973f00,11d049aa00,11d04a6000,11d04bb900 

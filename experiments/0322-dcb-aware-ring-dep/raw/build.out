@@ -1,0 +1,12 @@
+== 19:11:56 patch
+src/libs/bc5LleAgc.cpp: md5 5bccbb80 in
+src/libs/bc5LleAgc.cpp: 5 edits -> /home/kjaniszewski/bc5-work/exp0322/src/bc5LleAgc.cpp, md5 7d77cfe9 out
+patch_0322.diff: 55 added lines
+== 19:11:57 compdb
+== 19:11:57 compile + link
+== 19:12:23 build rc 0
+warnings: 4
+-rwxr-xr-x. 1 kjaniszewski kjaniszewski 166528768 10-25 19:12 /home/kjaniszewski/bc5-work/exp0322/kyty_emulator
+md5 2a5210db
+patched source md5 7d77cfe9; strings: ring deps 1, refusal 1
+shared binary after: d02f4696 (want e62a97c6); shared object after: c59ed582
