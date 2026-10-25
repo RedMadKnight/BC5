@@ -63,17 +63,20 @@ The hypothesis for step 2: the count pass's record index depends on a value the 
 filter can read the same inputs (the struct's +0x6c / +0x78 buffers at ud0:1) at dispatch time and predict the index.
 
 **Step 1 — the reading completed offline (14:30; `gcnfields.pl`, a field decoder of SOP1/SOP2/SOPC/SOPP/SMEM/VOP/MUBUF
-written for it, on the three dumps; no llvm-mc, so TODO(verify) the mnemonics — the register and offset structure does
-not depend on them).**
+written for it, on the three dumps; **verified 14:51 against exp 0160's `disf.sh` / llvm-mc on the box (read-only): the
+count pass's 62 lines match instruction for instruction — `v_lshl_add_u32 v7, v1, 1, 1`, the four `s_mov_b64`, the
+`buffer_load_dwordx4 … s[0:3]` / `buffer_store_dwordx4 v[0:3], v7, s[4:7] idxen` pair, `v_cmpx_eq_u32 0, v1`, the four
+`s_trap 1` asserts; the leaf builder's node V# too — `s_load_dwordx2 s[98:99], s[4:5], 0x78`, `s_add_u32 s96, s4, s88` /
+`s_addc_u32 s97, s5, s89`, `s_bitset1_b32 s97, 22`, the four stores through s[96:99] at v28 idxen).**
 
 - **The count pass 0x909939400** (63 instructions): thread 0 only (a `v_cmpx` on the thread index gates an assert block
   of four `s_trap`s on the struct's +0x18 bits 4/18/29 and +0xfc == 10); s[0:1] = ud0:1 = **the tree's struct**; the V#
-  s[20:23] = {struct + struct[0x50:0x54], stride 4, records struct[0x6c]} is a dword array `arr`; `v0 = arr[tid] −
-  arr[1 − tid]` for tid ≥ 1 and `v0 = arr[0] − struct[0x78]` for tid 0; **record index v7 = 2·tid + 1** → thread 0
+  s[20:23] = {struct + struct[0x50:0x54], stride 4, records struct[0x6c]} is a dword array `arr`; `v0 = arr[1 − tid] − arr[tid]` for tid ≥ 1 and `v0 = struct[0x78] − arr[0]` for tid 0
+  (llvm-mc 14:51: `v_sub_nc_u32 v0, v2, v0` and `v_sub_nc_u32 v0, vcc_lo, v0`; the first reading had the sign reversed); **record index v7 = 2·tid + 1** → thread 0
   writes **record 1**; it loads record v7 through the V# at ud2:5 = {struct + 0x100, stride 0x20, 2 records}, packs the
   sign bits of its four dwords into v3, and stores `{v0, 1, 1, v3}` through the same V# (ud6:9) at record v7 — so the
   argument block is **struct + 0x100**, record 1 = struct + 0x120 = the leaf builder's DISPATCH_INDIRECT arguments
-  (x = arr[0] − struct[0x78] groups, y = z = 1). The store is in range (record 1 of 2): the count pass does write the
+  (x = struct[0x78] − arr[0] groups — the records minus the leaf index base, y = z = 1). The store is in range (record 1 of 2): the count pass does write the
   arguments. (Exp 0306's acb dump: ud6:7 = `124ff200 00200012` = the same V# for struct 0x12124ff100.)
 - **The leaf builder 0x909936c00** (136 instructions): s[4:5] = ud4:5 = the struct; `arr` again as V# s[12:15] (base
   struct + struct[0x50:0x54], stride 4, records struct[0x6c]) read by `s_buffer_load_dword` at arr[ud8]; the input
@@ -153,3 +156,11 @@ triples at the GPU's read while the chain's structs are intact. Open: the writer
 per-frame position update racing a late GPU) is the only candidate left among the readers' sources; 0310c = 0310b with
 the three samples taken first and the journal flushed before the per-dispatch lines, one run; and the llvm-mc check of
 the decoder's readings (exp 0160's `disf.sh`, approved for the next slot).
+
+**0310c (the patch as committed, not yet run).** The CPU-writer test moved to the very top of the timeout probe, before
+the IB dump and every per-dispatch line: the last 24 distinct structs the filter saw, record 1 (struct + 0x120) read in
+three passes 50 ms apart — ~100 ms in all, the journal flushing each line — then the summary `N of M structs' record 1
+moved within 100 ms while the GPU is wedged`. A value that moves while the GPU is wedged has a CPU writer. llvm-mc
+(14:51) confirmed the node base as `s_lshl_b64 s[88:89], s[10:11], 6` with s10 = struct[0x7c]: the probe's extent
+arithmetic stands. One run on the 0306 chain when the slot comes (the hang at ~2 min expected; a crash ~2 s later
+cannot take the first 100 ms).
