@@ -1,0 +1,277 @@
+-- The CXX compiler identification is Clang 21.1.8
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/clang++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found PkgConfig: /usr/bin/pkg-config (found version "2.5.1")
+-- Checking for module 'libdrm_amdgpu'
+--   Found libdrm_amdgpu, version 2.4.131
+-- Checking for module 'libdrm'
+--   Found libdrm, version 2.4.131
+-- Performing Test HAVE_FLAG__ffile_prefix_map__home_kjaniszewski_bc5_work_exp0323_backend_tests__deps_catch2_src__
+-- Performing Test HAVE_FLAG__ffile_prefix_map__home_kjaniszewski_bc5_work_exp0323_backend_tests__deps_catch2_src__ - Success
+-- Configuring done (3.1s)
+-- Generating done (0.0s)
+CMake Warning:
+  Manually-specified variables were not used by the project:
+
+    CMAKE_C_COMPILER
+
+
+-- Build files have been written to: /home/kjaniszewski/bc5-work/exp0323/backend-tests
+[1/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/generators/catch_generator_exception.cpp.o
+[2/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/benchmark/detail/catch_stats.cpp.o
+[3/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/benchmark/detail/catch_run_for_at_least.cpp.o
+[4/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/benchmark/detail/catch_benchmark_function.cpp.o
+[5/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/benchmark/catch_chronometer.cpp.o
+[6/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/generators/catch_generators.cpp.o
+[7/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/benchmark/detail/catch_analyse.cpp.o
+[8/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_automake.cpp.o
+[9/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/generators/catch_generators_random.cpp.o
+[10/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_common_base.cpp.o
+[11/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_event_listener.cpp.o
+[12/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_compact.cpp.o
+[13/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_registrars.cpp.o
+[14/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_cumulative_base.cpp.o
+[15/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_console.cpp.o
+[16/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_helpers.cpp.o
+[17/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_junit.cpp.o
+[18/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_json.cpp.o
+[19/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_multi.cpp.o
+[20/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/interfaces/catch_interfaces_exception.cpp.o
+[21/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_streaming_base.cpp.o
+[22/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_sonarqube.cpp.o
+[23/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_tap.cpp.o
+[24/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_teamcity.cpp.o
+[25/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/interfaces/catch_interfaces_capture.cpp.o
+[26/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/interfaces/catch_interfaces_config.cpp.o
+[27/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/interfaces/catch_interfaces_generatortracker.cpp.o
+[28/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/interfaces/catch_interfaces_registry_hub.cpp.o
+[29/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/interfaces/catch_interfaces_testcase.cpp.o
+[30/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/interfaces/catch_interfaces_reporter_factory.cpp.o
+[31/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/reporters/catch_reporter_xml.cpp.o
+[32/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/catch_assertion_result.cpp.o
+[33/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/catch_tag_alias_autoregistrar.cpp.o
+[34/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/interfaces/catch_interfaces_reporter.cpp.o
+[35/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/catch_get_random_seed.cpp.o
+[36/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/catch_approx.cpp.o
+[37/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/catch_test_case_info.cpp.o
+[38/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/catch_message.cpp.o
+[39/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/catch_totals.cpp.o
+[40/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/catch_registry_hub.cpp.o
+[41/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/catch_config.cpp.o
+[42/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/catch_translate_exception.cpp.o
+[43/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/catch_version.cpp.o
+[44/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_case_insensitive_comparisons.cpp.o
+[45/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/catch_timer.cpp.o
+[46/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_context.cpp.o
+[47/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/catch_session.cpp.o
+[48/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/catch_test_spec.cpp.o
+[49/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/catch_tostring.cpp.o
+[50/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_assertion_handler.cpp.o
+[51/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_debug_console.cpp.o
+[52/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_errno_guard.cpp.o
+[53/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_debugger.cpp.o
+[54/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_enforce.cpp.o
+[55/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_floating_point_helpers.cpp.o
+[56/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_enum_values_registry.cpp.o
+[57/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_getenv.cpp.o
+[58/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_console_colour.cpp.o
+[59/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_exception_translator_registry.cpp.o
+[60/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_clara.cpp.o
+[61/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_leak_detector.cpp.o
+[62/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_jsonwriter.cpp.o
+[63/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_decomposer.cpp.o
+[64/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_istream.cpp.o
+[65/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_message_info.cpp.o
+[66/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_random_number_generator.cpp.o
+[67/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_polyfills.cpp.o
+[68/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_parse_numbers.cpp.o
+[69/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_output_redirect.cpp.o
+[70/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_fatal_condition_handler.cpp.o
+[71/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_lazy_expr.cpp.o
+[72/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_random_seed_generation.cpp.o
+[73/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_singletons.cpp.o
+[74/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_reusable_string_stream.cpp.o
+[75/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_commandline.cpp.o
+[76/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_startup_exception_registry.cpp.o
+[77/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_list.cpp.o
+[78/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_source_line_info.cpp.o
+[79/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_stdstreams.cpp.o
+[80/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_stringref.cpp.o
+[81/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_string_manip.cpp.o
+[82/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_reporter_registry.cpp.o
+[83/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_section.cpp.o
+[84/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_tag_alias_registry.cpp.o
+[85/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_reporter_spec_parser.cpp.o
+[86/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_test_case_info_hasher.cpp.o
+[87/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_uncaught_exceptions.cpp.o
+[88/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_run_context.cpp.o
+[89/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_test_failure_exception.cpp.o
+[90/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_test_registry.cpp.o
+[91/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_wildcard_pattern.cpp.o
+[92/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_test_case_tracker.cpp.o
+[93/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_test_spec_parser.cpp.o
+[94/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_xmlwriter.cpp.o
+[95/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_textflow.cpp.o
+[96/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/matchers/catch_matchers.cpp.o
+[97/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/internal/catch_test_case_registry_impl.cpp.o
+[98/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/matchers/catch_matchers_container_properties.cpp.o
+[99/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/matchers/catch_matchers_exception.cpp.o
+[100/140] Building CXX object CMakeFiles/bc5_backend.dir/src/version.cpp.o
+[101/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/matchers/catch_matchers_predicate.cpp.o
+[102/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/matchers/catch_matchers_floating_point.cpp.o
+[103/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/matchers/catch_matchers_quantifiers.cpp.o
+[104/140] Building CXX object CMakeFiles/bc5_backend.dir/src/dispatch_min.cpp.o
+[105/140] Building CXX object CMakeFiles/bc5_backend.dir/src/pm4.cpp.o
+[106/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/matchers/catch_matchers_templated.cpp.o
+[107/140] Building CXX object CMakeFiles/bc5_backend.dir/src/cu_tables.cpp.o
+[108/140] Building CXX object CMakeFiles/bc5_backend.dir/src/state_stack.cpp.o
+[109/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/matchers/internal/catch_matchers_impl.cpp.o
+[110/140] Building CXX object CMakeFiles/bc5_backend.dir/src/policy.cpp.o
+[111/140] Building CXX object CMakeFiles/bc5_backend.dir/src/indirect_check.cpp.o
+[112/140] Building CXX object CMakeFiles/bc5_backend.dir/src/full_state.cpp.o
+[113/140] Building CXX object CMakeFiles/piece-check.dir/experiments/piece-check/main.cpp.o
+[114/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2WithMain.dir/catch2/internal/catch_main.cpp.o
+[115/140] Building CXX object CMakeFiles/userptr-min.dir/experiments/userptr-min/main.cpp.o
+[116/140] Building CXX object CMakeFiles/direct-selftest.dir/experiments/direct-selftest/main.cpp.o
+[117/140] Building CXX object _deps/catch2-build/src/CMakeFiles/Catch2.dir/catch2/matchers/catch_matchers_string.cpp.o
+[118/140] Linking CXX static library _deps/catch2-build/src/libCatch2.a
+[119/140] Building CXX object CMakeFiles/dispatch-min.dir/experiments/dispatch-min/main.cpp.o
+[120/140] Building CXX object CMakeFiles/prepare-bench.dir/experiments/prepare-bench/main.cpp.o
+[121/140] Building CXX object CMakeFiles/bc5_backend_tests.dir/tests/placeholder_test.cpp.o
+[122/140] Building CXX object CMakeFiles/dmabuf-min.dir/experiments/dmabuf-min/main.cpp.o
+[123/140] Building CXX object CMakeFiles/bc5_backend.dir/src/direct.cpp.o
+[124/140] Linking CXX static library libbc5_backend.a
+[125/140] Linking CXX static library _deps/catch2-build/src/libCatch2Main.a
+[126/140] Linking CXX executable dispatch-min
+[127/140] Linking CXX executable userptr-min
+[128/140] Building CXX object CMakeFiles/bc5_backend_tests.dir/tests/pm4_test.cpp.o
+[129/140] Linking CXX executable piece-check
+[130/140] Linking CXX executable prepare-bench
+[131/140] Building CXX object CMakeFiles/bc5_backend_tests.dir/tests/state_stack_test.cpp.o
+[132/140] Linking CXX executable direct-selftest
+[133/140] Linking CXX executable dmabuf-min
+[134/140] Building CXX object CMakeFiles/draw-min.dir/experiments/draw-min/main.cpp.o
+[135/140] Linking CXX executable draw-min
+[136/140] Building CXX object CMakeFiles/bc5_backend_tests.dir/tests/cu_tables_test.cpp.o
+[137/140] Building CXX object CMakeFiles/bc5_backend_tests.dir/tests/full_state_test.cpp.o
+[138/140] Building CXX object CMakeFiles/bc5_backend_tests.dir/tests/policy_test.cpp.o
+[139/140] Building CXX object CMakeFiles/bc5_backend_tests.dir/tests/indirect_check_test.cpp.o
+[140/140] Linking CXX executable bc5_backend_tests
+Test project /home/kjaniszewski/bc5-work/exp0323/backend-tests
+      Start  1: version string is set
+ 1/55 Test  #1: version string is set ..............................................................................................   Passed    0.00 sec
+      Start  2: default build has no amdgpu path
+ 2/55 Test  #2: default build has no amdgpu path ...................................................................................   Passed    0.00 sec
+      Start  3: type-3 headers match the PM4 encoding
+ 3/55 Test  #3: type-3 headers match the PM4 encoding ..............................................................................   Passed    0.00 sec
+      Start  4: builder packets, SET_SH_REG and padding
+ 4/55 Test  #4: builder packets, SET_SH_REG and padding ............................................................................   Passed    0.00 sec
+      Start  5: memset IB reproduces the IGT gfx10 sequence
+ 5/55 Test  #5: memset IB reproduces the IGT gfx10 sequence ........................................................................   Passed    0.00 sec
+      Start  6: console dispatch parameters land in RSRC1/RSRC2 and V# word 3
+ 6/55 Test  #6: console dispatch parameters land in RSRC1/RSRC2 and V# word 3 ......................................................   Passed    0.00 sec
+      Start  7: memset IB rejects bad parameters
+ 7/55 Test  #7: memset IB rejects bad parameters ...................................................................................   Passed    0.00 sec
+      Start  8: the shader is the IGT gfx10 buffer-clear program
+ 8/55 Test  #8: the shader is the IGT gfx10 buffer-clear program ...................................................................   Passed    0.00 sec
+      Start  9: the shipped policy table parses and has the known entries
+ 9/55 Test  #9: the shipped policy table parses and has the known entries ..........................................................   Passed    0.00 sec
+      Start 10: SET_*_REG packets take the verdict of their registers
+10/55 Test #10: SET_*_REG packets take the verdict of their registers ..............................................................   Passed    0.00 sec
+      Start 11: filter NOPs dropped packets in place and rewrites masks and INT_SEL
+11/55 Test #11: filter NOPs dropped packets in place and rewrites masks and INT_SEL ................................................   Passed    0.00 sec
+      Start 12: gcr_clear clears GCR_CNTL bits of ACQUIRE_MEM only
+12/55 Test #12: gcr_clear clears GCR_CNTL bits of ACQUIRE_MEM only .................................................................   Passed    0.00 sec
+      Start 13: drop_draws NOPs draws and dispatches only
+13/55 Test #13: drop_draws NOPs draws and dispatches only ..........................................................................   Passed    0.00 sec
+      Start 14: CONTEXT_CONTROL is made safe, unmapped operands and extra opcodes are dropped
+14/55 Test #14: CONTEXT_CONTROL is made safe, unmapped operands and extra opcodes are dropped ......................................   Passed    0.00 sec
+      Start 15: filter NOPs a packet that runs past the end
+15/55 Test #15: filter NOPs a packet that runs past the end ........................................................................   Passed    0.00 sec
+      Start 16: WRITE_DATA to a register is dropped, to memory it passes
+16/55 Test #16: WRITE_DATA to a register is dropped, to memory it passes ...........................................................   Passed    0.00 sec
+      Start 17: CLEAR_STATE is rewritten to cmd 0
+17/55 Test #17: CLEAR_STATE is rewritten to cmd 0 ..................................................................................   Passed    0.00 sec
+      Start 18: waits pass only on labels written earlier in the same IB
+18/55 Test #18: waits pass only on labels written earlier in the same IB ...........................................................   Passed    0.00 sec
+      Start 19: RELEASE_MEM without data has no memory operand
+19/55 Test #19: RELEASE_MEM without data has no memory operand .....................................................................   Passed    0.00 sec
+      Start 20: GDS accesses through the CP are dropped unless allowed
+20/55 Test #20: GDS accesses through the CP are dropped unless allowed .............................................................   Passed    0.00 sec
+      Start 21: RELEASE_MEM CS_DONE without data becomes BOTTOM_OF_PIPE_TS
+21/55 Test #21: RELEASE_MEM CS_DONE without data becomes BOTTOM_OF_PIPE_TS .........................................................   Passed    0.00 sec
+      Start 22: GDS accesses are redirected to the shadow buffer when one is set
+22/55 Test #22: GDS accesses are redirected to the shadow buffer when one is set ...................................................   Passed    0.00 sec
+      Start 23: packets named by offset are dropped
+23/55 Test #23: packets named by offset are dropped ................................................................................   Passed    0.00 sec
+      Start 24: ORDERED_APPEND_ENBL can be forced on dispatches
+24/55 Test #24: ORDERED_APPEND_ENBL can be forced on dispatches ....................................................................   Passed    0.00 sec
+      Start 25: compute-queue DISPATCH_INDIRECT becomes the GFX form against the given base
+25/55 Test #25: compute-queue DISPATCH_INDIRECT becomes the GFX form against the given base ........................................   Passed    0.00 sec
+      Start 26: DMA_DATA memory operands follow the selectors, GDS offsets are not addresses
+26/55 Test #26: DMA_DATA memory operands follow the selectors, GDS offsets are not addresses .......................................   Passed    0.00 sec
+      Start 27: filter: dropped markers become pipeline-statistics samples on request
+27/55 Test #27: filter: dropped markers become pipeline-statistics samples on request ..............................................   Passed    0.00 sec
+      Start 28: indirect multi draws: the count address is an operand only when it is used
+28/55 Test #28: indirect multi draws: the count address is an operand only when it is used .........................................   Passed    0.00 sec
+      Start 29: keep_wait_offsets: a wait on a label an earlier job writes passes
+29/55 Test #29: keep_wait_offsets: a wait on a label an earlier job writes passes ..................................................   Passed    0.00 sec
+      Start 30: SET packet verdicts by span equal the register-by-register answer
+30/55 Test #30: SET packet verdicts by span equal the register-by-register answer ..................................................   Passed    0.02 sec
+      Start 31: policy: DMA_DATA sources can be replaced (experiment 0087)
+31/55 Test #31: policy: DMA_DATA sources can be replaced (experiment 0087) .........................................................   Passed    0.00 sec
+      Start 32: compute_ring: graphics-only packets are NOP-ed, compute packets pass
+32/55 Test #32: compute_ring: graphics-only packets are NOP-ed, compute packets pass ...............................................   Passed    0.00 sec
+      Start 33: compute_ring_refusal names what keeps an IB off a compute ring
+33/55 Test #33: compute_ring_refusal names what keeps an IB off a compute ring .....................................................   Passed    0.00 sec
+      Start 34: state stack: a pop restores the context registers of the matching push
+34/55 Test #34: state stack: a pop restores the context registers of the matching push .............................................   Passed    0.00 sec
+      Start 35: state stack: conditional and unmatched pops are left to the filter
+35/55 Test #35: state stack: conditional and unmatched pops are left to the filter .................................................   Passed    0.00 sec
+      Start 36: state stack: state carries over to the next IB, unreadable tables are counted
+36/55 Test #36: state stack: state carries over to the next IB, unreadable tables are counted ......................................   Passed    0.00 sec
+      Start 37: full state: registers accumulate across buffers, later sets win
+37/55 Test #37: full state: registers accumulate across buffers, later sets win ....................................................   Passed    0.00 sec
+      Start 38: full state: LOAD_*_REG tables are read through the reader
+38/55 Test #38: full state: LOAD_*_REG tables are read through the reader ..........................................................   Passed    0.00 sec
+      Start 39: full state: LOAD_*_REG_INDEX in pairs and in consecutive form
+39/55 Test #39: full state: LOAD_*_REG_INDEX in pairs and in consecutive form ......................................................   Passed    0.00 sec
+      Start 40: full state: CLEAR_STATE clears, pushes and pops the context registers
+40/55 Test #40: full state: CLEAR_STATE clears, pushes and pops the context registers ..............................................   Passed    0.00 sec
+      Start 41: full state: the prefix reproduces the tracked state on a fresh tracker
+41/55 Test #41: full state: the prefix reproduces the tracked state on a fresh tracker .............................................   Passed    0.00 sec
+      Start 42: full state: long register runs split into packets
+42/55 Test #42: full state: long register runs split into packets ..................................................................   Passed    0.01 sec
+      Start 43: full state: nested INDIRECT_BUFFERs are followed through the reader
+43/55 Test #43: full state: nested INDIRECT_BUFFERs are followed through the reader ................................................   Passed    0.00 sec
+      Start 44: full state: a split checked against the unsplit buffer
+44/55 Test #44: full state: a split checked against the unsplit buffer .............................................................   Passed    0.00 sec
+      Start 45: full state: for_each_draw sees the state before each draw
+45/55 Test #45: full state: for_each_draw sees the state before each draw ..........................................................   Passed    0.00 sec
+      Start 46: full state: for_each_draw follows nested buffers
+46/55 Test #46: full state: for_each_draw follows nested buffers ...................................................................   Passed    0.00 sec
+      Start 47: mask_cu_register: the CU-mask fields of the SH registers
+47/55 Test #47: mask_cu_register: the CU-mask fields of the SH registers ...........................................................   Passed    0.00 sec
+      Start 48: cu tables: a loaded CU mask is overridden right after the load
+48/55 Test #48: cu tables: a loaded CU mask is overridden right after the load .....................................................   Passed    0.00 sec
+      Start 49: cu tables: the register image, conditional loads, unreadable tables
+49/55 Test #49: cu tables: the register image, conditional loads, unreadable tables ................................................   Passed    0.00 sec
+      Start 50: indirect_check: a dispatch with a known base gets the CP check
+50/55 Test #50: indirect_check: a dispatch with a known base gets the CP check .....................................................   Passed    0.00 sec
+      Start 51: indirect_check: the caller's base, no base, and the IB's own COND_EXEC
+51/55 Test #51: indirect_check: the caller's base, no base, and the IB's own COND_EXEC .............................................   Passed    0.00 sec
+      Start 52: indirect_check: a COND_EXEC range whose grown count overflows drops only its own dispatches (ADR 0010 section A)
+52/55 Test #52: indirect_check: a COND_EXEC range whose grown count overflows drops only its own dispatches (ADR 0010 section A) ...   Passed    0.00 sec
+      Start 53: insert_before: packets inserted, COND_EXEC counts grown around them
+53/55 Test #53: insert_before: packets inserted, COND_EXEC counts grown around them ................................................   Passed    0.00 sec
+      Start 54: indirect_check: indirect draws get the check of their two counts
+54/55 Test #54: indirect_check: indirect draws get the check of their two counts ...................................................   Passed    0.00 sec
+      Start 55: indirect_check: on a compute ring the MEC form is checked, without PFP_SYNC_ME
+55/55 Test #55: indirect_check: on a compute ring the MEC form is checked, without PFP_SYNC_ME .....................................   Passed    0.00 sec
+
+100% tests passed, 0 tests failed out of 55
+
+Total Test time (real) =   0.21 sec

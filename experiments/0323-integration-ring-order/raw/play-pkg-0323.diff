@@ -1,0 +1,37 @@
+--- /home/kjaniszewski/bc5-work/play-pkg.sh	2026-10-25 19:48:21.373421479 +0100
++++ /home/kjaniszewski/bc5-work/exp0323/play-pkg-0323.sh	2026-10-25 20:21:51.835960084 +0100
+@@ -10,7 +10,7 @@
+ M=~/bc5-data/mnt/pkg-play
+ EMU=~/bc5-work/kytyplus-build/src/kyty_emulator
+ ENVF=${BC5_RUN_ENV:-$HOME/bc5-work/bc5-run.env}
+-LOG=~/bc5-work/play-pkg-last.log
++LOG=~/bc5-work/exp0323/play-last.log  # exp 0323: own log
+ # Experiment 0177: BC5_LEAN=1 (the "BC5 emulator (lean)" shortcut) runs the emulator built with
+ # KYTY_BC5_LEAN in ~/bc5-work/kytyplus-build-lean: no tracing, journal, counters, recorder or
+ # samplers, inside or outside; its own log file. The title scripts take the same switch.
+@@ -33,6 +33,7 @@
+   key=${line%%=*}; val=${line#*=}
+   if [ "$key" = PLAY_ARGS ]; then PLAY_ARGS=$val; else export "$key=$val"; fi
+ done < "$ENVF"
++[ -n "${BC5_0323_INPUT_CONFIG:-}" ] && export KYTY_BC5_INPUT_CONFIG=$BC5_0323_INPUT_CONFIG  # exp 0323: the private input configuration
+ PLAY_ARGS="$PLAY_ARGS --fullscreen"  # the maintainer: this title fullscreen, at the display's resolution (Full HD here)
+ unset BC5_GC_DUMP_DIR
+ [ "${BC5_LEAN:-0}" = 1 ] && unset KYTY_BC5_INPUT_RECORD PLAY_CAPTURE  # exp 0177: no input recorder
+@@ -41,7 +42,7 @@
+ # Experiment 0042: also the heaps the GPU reads or writes before the CPU touches them
+ export BC5_DIRECT_EAGER_NAMES="RenderGpuWcLarge,RenderGpuWcSmall,RenderGpuRwLarge,RenderGpuRwSmall,CommitIABufferAllocator,AMM,RenderAlloc,Physics,Decal Job Scheduler,VisualEffectInstanceHeap,DynamicHeap,DynamicHeap Small,ComponentHeap,ComponentHeap Small,MaterialHeap,DDLHeap,Physics query allocator"
+ export BC5_DIRECT_LEARNED=$HOME/bc5-work/direct-learned-pkg.txt
+-export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/_SaveData-pkg-play
++export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/exp0323/wd/_SaveData-pkg-play  # exp 0323: private
+ # Experiment 0039: the compute IBs indirect dispatches run (rewritten for the GFX ring).
+ # Experiment 0053: their arguments checked by the CP when it runs them, a CP DMA wait before a
+ # dispatch after an unsynced copy; with both the tree refit runs too (before: skipped,
+@@ -180,7 +181,7 @@
+   grep -v '^#' "$ENVF" | grep -v '^$'
+   [ -r "$PKG_ENV" ] && grep -v '^#' "$PKG_ENV" | grep -v '^$'
+ } > "$LOG"
+-cd ~/bc5-work
++cd ~/bc5-work/exp0323/wd  # exp 0323: the private working directory (its own _SaveData)
+ # Experiment 0047: exit code 75 is the F2 menu's "Restart game": start the emulator again, with
+ # the mount and the settings kept.
+ while :; do
