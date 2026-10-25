@@ -1,0 +1,11 @@
+private input config /home/kjaniszewski/bc5-work/exp0325/input-rt.cfg: 9 lines, RayTracing.PPSA03671=off  (source /home/kjaniszewski/bc5-work/input.cfg, RayTracing.PPSA03671=off)
+skip list in the derived launcher: 41:export BC5_DIRECT_SKIP_PGM=0  # exp 0325: the compaction 909974400 runs;76:# gameplay (run 735). A run script may set BC5_DIRECT_SKIP_PGM itself.;93:export BC5_DIRECT_SKIP_PGM=0  # exp 0325: the compaction 909974400 runs (was: the default skip);
+launcher /home/kjaniszewski/bc5-work/exp0325/play-pkg-0325.sh (md5 81eba2f1) from /home/kjaniszewski/bc5-work/play-pkg.sh fde58cda + exp 0299's edits renamed; log /home/kjaniszewski/bc5-work/exp0325/play-last.log; diff /home/kjaniszewski/bc5-work/exp0325/raw/play-pkg-0325.diff
+working directory /home/kjaniszewski/bc5-work/exp0325/wd: 5151 entries, 5150 symlinks (layout of /home/kjaniszewski/bc5-work/exp0299/wd: 5151 entries); the title's saves /home/kjaniszewski/bc5-work/exp0325/wd/_SaveData/PPSA03671 (private); KYTY_BC5_SAVEDATA_DIR /home/kjaniszewski/bc5-work/exp0325/wd/_SaveData-pkg-play
+2026-10-25 20:31:08 live saves bb14b6dd35b644ff, snapshot /home/kjaniszewski/bc5-work/exp0325/saves-before-2031 (comparison only, nothing is restored into /home/kjaniszewski/bc5-work/_SaveData/PPSA03671)
+== 20:31:08 run S1
+S1: recovered GFX-ring hang: kernel amdgpu line at 111 s, ring reset succeeded; crash lines 0, kernel lines 35, TIMEOUT lines 2, probe lines 2937, sync lines 0 (last: ), table lines 0, skip lines 0, compaction lines 3, devcoredumps 2
+HANG: recovered GFX-ring hang: kernel amdgpu line at 111 s, ring reset succeeded;
+== 20:33:33 S1 hung and the box recovered: the chain goes on
+2026-10-25 20:33:33 live saves bb14b6dd35b644ff (want bb14b6dd35b644ff)
+BOX-LOCK released
