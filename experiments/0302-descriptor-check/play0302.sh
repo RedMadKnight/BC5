@@ -10,18 +10,19 @@
 #     launcher: the BC5_0302_INPUT_CONFIG re-export after the bc5-run.env export loop (that loop exports
 #     KYTY_BC5_INPUT_CONFIG unconditionally), and its own log (exp0302/play-0302-play.log). NO private working directory,
 #     NO KYTY_BC5_SAVEDATA_DIR change: he plays on his saves;
-#   - ray tracing as his saved menu setting (RayTracing.PPSA03671=off since this morning) unless RT=on is given: then a
-#     private copy of his input configuration with that line set to =on is handed through BC5_0302_INPUT_CONFIG (his file
-#     is only read; the menu switch still works during play, saving into the private copy, not his);
+#   - ray tracing ON by default (the maintainer, 2026-10-25 ~12:55: "przygotuj prywatny launcher z binarką 0302 na moją sesję
+#     gry z RT włączonym"): a private copy of his input configuration with RayTracing.PPSA03671=on is handed through
+#     BC5_0302_INPUT_CONFIG (his file, where the menu saved =off this morning, is only read; the menu switch still works
+#     during play and saves into the private copy, not his); RT=off as the first argument plays with his saved setting;
 #   - BC5_EMU = the exp 0302 binary (checked against exp0302/binary.md5), BC5_DIRECT_TIMEOUT_PROBE=1; BC5_DIRECT_TABLE_PGM
 #     default (the 0x11d03a family); the journal goes where the launcher puts it (~/bc5-data/captures/play-<time>/gc/).
-# usage: play0302.sh [RT=on]   (on the box, from the KDE Wayland session as play-pkg.sh; or a desktop shortcut pointing here)
+# usage: play0302.sh [RT=off]   (on the box, from the KDE Wayland session as play-pkg.sh; or a desktop shortcut pointing here)
 set -u
 E=$HOME/bc5-work/exp0302; W=$HOME/bc5-work
-EXPECTED_MD5="fde58cda"   # play-pkg.sh versions this derivation was checked against (space-separated; add the MangoHud one)
+EXPECTED_MD5="fde58cda ac7a9a57 628b2714"   # play-pkg.sh versions this derivation is allowed on: fde58cda (noplaygo pack), ac7a9a57 (12:49, the MangoHud integration, F367), 628b2714 (13:03, the lab fix of exp 0304); the anchors are checked again at run time
 BIN=$E/kyty_emulator; WANT=$(cat "$E/binary.md5" 2>/dev/null)
 LAUNCH_SRC=$W/play-pkg.sh; L99=$W/exp0299/play-pkg-0299.sh
-RT=${1:-}
+RT=${1:-RT=on}
 m() { md5sum < "$1" | cut -c1-8; }
 [ -n "$WANT" ] && [ "$(m "$BIN")" = "$WANT" ] || { echo "the exp 0302 binary is not md5 $WANT: not started"; exit 1; }
 pgrep -x kyty_emulator > /dev/null && { echo "an emulator is running: not started"; exit 1; }
@@ -45,7 +46,7 @@ if [ ! -x "$LAUNCH" ]; then
 fi
 # ray tracing: his saved setting, or forced on through a private copy of his configuration
 CFG=""
-if [ "$RT" = "RT=on" ] || [ "$RT" = "on" ]; then
+if [ "$RT" != "RT=off" ] && [ "$RT" != "off" ]; then
   CFG=$E/input-rt-play.cfg
   { grep -v -i "^RayTracing\.PPSA03671=" "$W/input.cfg"; echo "RayTracing.PPSA03671=on"; } > "$CFG" || { echo "could not write $CFG"; exit 1; }
   echo "ray tracing forced on through $CFG (his $W/input.cfg is only read)"
