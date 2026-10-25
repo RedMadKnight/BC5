@@ -1,0 +1,25 @@
+--- /home/kjaniszewski/bc5-work/exp0288/src/bc5LleAgc.shared.cpp	2026-10-25 01:06:34.962486436 +0200
++++ /home/kjaniszewski/bc5-work/exp0288/src/bc5LleAgc.0288.cpp	2026-10-25 01:06:35.055427311 +0200
+@@ -1865,6 +1865,22 @@
+ 		S.reported = S.bytes;
+ 		if (breakdown) direct_breakdown_one(S, "growth", 0);
+ 	}
++	// Experiment 0288: BC5_DIRECT_BREAKDOWN_AT=<seconds> runs the breakdown once per memfd, at the first sync that
++	// many seconds after the memfd's first sync (the per-heap table near the end of a scripted run, one pass).
++	{
++		static const double at_s = BC5_DIAG_ENV("BC5_DIRECT_BREAKDOWN_AT") != nullptr ? std::strtod(BC5_DIAG_ENV("BC5_DIRECT_BREAKDOWN_AT"), nullptr) : -1.0;
++		if (at_s >= 0.0) {
++			static uint64_t first_ns[2] = {0, 0};
++			static bool     done[2]     = {false, false};
++			const int       k           = S.kind == 0 ? 0 : 1;
++			if (first_ns[k] == 0) first_ns[k] = now;
++			if (!done[k] && static_cast<double>(now - first_ns[k]) / 1e9 >= at_s) {
++				done[k] = true;
++				journal("%s breakdown at %.1f s after the first sync (BC5_DIRECT_BREAKDOWN_AT=%.0f)\n", S.label, static_cast<double>(now - first_ns[k]) / 1e9, at_s);
++				direct_breakdown_one(S, "at", 0);
++			}
++		}
++	}
+ }
+ 
+ static void direct_sync(bool force) {

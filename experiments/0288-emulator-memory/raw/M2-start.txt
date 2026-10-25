@@ -1,0 +1,7 @@
+2026-10-25 01:47:42
+run M2, arm M ('KYTY_BC5_RT=0 BC5_EMU=/home/kjaniszewski/bc5-work/exp0288/kyty_emulator BC5_DIRECT_BREAKDOWN_AT=240 BC5_DIRECT_BREAKDOWN_NODATA=1'), 300 s, breakdown at 240 s, launcher /home/kjaniszewski/bc5-work/play-pkg.sh md5 65d35963, binary /home/kjaniszewski/bc5-work/exp0288/kyty_emulator md5 08675be8
+boot 831e5915, up since 2026-10-24 18:06:21
+box start uptime 27680.58 avail_mib 12757 swapfree_mib 6908 pswpin 13970340 pswpout 14847199 pgmajfault 14577812 compact_stall 68031 compact_fail 61150  psi_mem_full_us 422693436
+mount start pid 144596 etimes 24208 rss_mib 799 swap_mib 145 arenas 0
+emulator pid 1932799 exe /home/kjaniszewski/bc5-work/exp0288/kyty_emulator
+environ: KYTY_GUEST_MEMORY_MB=13824 BC5_DIRECT_CS_PREFIX=1 KYTY_BC5_RT=0 BC5_EMU=/home/kjaniszewski/bc5-work/exp0288/kyty_emulator BC5_DIRECT_SKIP_PGM=909974400 BC5_DIRECT_EAGER_NAMES=RenderGpuWcLarge,RenderGpuWcSmall,RenderGpuRwLarge,RenderGpuRwSmall,CommitIABufferAllocator,AMM,RenderAlloc,Physics,Decal Job Scheduler,VisualEffectInstanceHeap,DynamicHeap,DynamicHeap Small,ComponentHeap,ComponentHeap Small,MaterialHeap,DDLHeap,Physics query allocator BC5_DIRECT_BREAKDOWN_AT=240 PLAY_CAPTURE=1 

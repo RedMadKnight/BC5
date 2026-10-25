@@ -1,0 +1,34 @@
+01:08:01 W289a binary: /home/kjaniszewski/bc5-work/exp0251/kyty_emulator md5 5227c025
+01:08:01 live saves checksum before: c0ee58b92c0cadc2
+01:08:01 W289a start: /var/home 58 %, dmesg 1775 lines; journal switches: BC5_DIRECT_DRAW_JOURNAL=150:30 BC5_DIRECT_DRAW_JOURNAL_EVERY=10 BC5_DIRECT_DRAW_JOURNAL_PS=11d01d7100,11d1d88,11d1dd6,11d090d,11d0a98,11d373,11d1e2f,11d28b,11d1d33,11d29c,11d29e
+  011033-ts00.png: patch  20.0 %
+  011039-ts01.png: patch  21.8 %
+  011044-ts02.png: patch  20.1 %
+  011049-ts03.png: patch  28.5 %
+  011054-ts04.png: patch  21.4 %
+  011100-ts05.png: patch  32.0 %
+  011105-ts06.png: patch  21.1 %
+  011110-ts07.png: patch  28.2 %
+  011116-ts08.png: patch  22.4 %
+  011121-ts09.png: patch  20.5 %
+  011126-ts10.png: patch  21.3 %
+  011131-ts11.png: patch  24.3 %
+  011136-ts12.png: patch  26.2 %
+  011142-ts13.png: patch  25.4 %
+  011147-ts14.png: patch  29.2 %
+  011152-ts15.png: patch  24.6 %
+  011157-ts16.png: patch  25.8 %
+  011202-ts17.png: patch  24.9 %
+  011207-ts18.png: patch  24.3 %
+  011212-ts19.png: patch  25.1 %
+  011217-ts20.png: patch  24.8 %
+  011223-ts21.png: patch  28.9 %
+  011228-ts22.png: patch  22.9 %
+  011233-ts23.png: patch  25.3 %
+  011238-ts24.png: patch  23.1 %
+  011243-ts25.png: patch  19.7 %
+  journal: direct.log 232M, 14644 draw-journal lines (3347902 bytes), 0 find lines
+  depth pool: 0 dma_data and 0 write_data lines into the depth memory, 0 find lines, 359 windows
+  written: run dir 80M, journal dir 232M, emu.log 12M
+01:14:25 live saves checksum after: c0ee58b92c0cadc2; /var/home 59%
+01:14:26 done

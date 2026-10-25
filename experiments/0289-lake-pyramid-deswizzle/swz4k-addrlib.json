@@ -1,0 +1,75 @@
+{
+ "source": "Mesa src/amd/addrlib/src/gfx10/gfx10SwizzlePattern.h (MIT, AMD); see README for the commit",
+ "mode": "GFX10_SW_4K_S_PATINFO",
+ "index": 2,
+ "elemLog2": 2,
+ "address_bits": 12,
+ "nibbles": [
+  2,
+  3,
+  0,
+  0
+ ],
+ "pattern": [
+  {
+   "x": 0,
+   "y": 0,
+   "z": 0
+  },
+  {
+   "x": 0,
+   "y": 0,
+   "z": 0
+  },
+  {
+   "x": 1,
+   "y": 0,
+   "z": 0
+  },
+  {
+   "x": 2,
+   "y": 0,
+   "z": 0
+  },
+  {
+   "x": 0,
+   "y": 1,
+   "z": 0
+  },
+  {
+   "x": 0,
+   "y": 2,
+   "z": 0
+  },
+  {
+   "x": 0,
+   "y": 4,
+   "z": 0
+  },
+  {
+   "x": 4,
+   "y": 0,
+   "z": 0
+  },
+  {
+   "x": 0,
+   "y": 8,
+   "z": 0
+  },
+  {
+   "x": 8,
+   "y": 0,
+   "z": 0
+  },
+  {
+   "x": 0,
+   "y": 16,
+   "z": 0
+  },
+  {
+   "x": 16,
+   "y": 0,
+   "z": 0
+  }
+ ]
+}

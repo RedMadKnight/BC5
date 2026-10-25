@@ -1,0 +1,114 @@
+# /home/kjaniszewski/bc5-data/priv/exp0289/W289b; candidates: addrlib morton_y
+# smoothness of mip 0 by candidate (median total variation over the pyramid reads; lower is smoother): addrlib 1.031, morton_y 2.070
+== candidate addrlib
+  b01 p0: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.028; mip1..4 medians 0.009598 0.01728 0.07785 0.3145
+  b01 p1: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.023; mip1..4 medians 0.009598 0.01659 0.07814 0.3146
+  b01 p2: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.023; mip1..4 medians 0.009598 0.01659 0.07814 0.3146
+  b01 p3: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.038; mip1..4 medians 0.00959 0.01728 0.07784 0.3145
+  b01 p4: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.038; mip1..4 medians 0.00959 0.01728 0.07784 0.3145
+  b01 p5: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.038; mip1..4 medians 0.00959 0.01728 0.07784 0.3145
+  b01 p6: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.027; mip1..4 medians 0.00959 0.01659 0.07786 0.3145
+  b01 p7: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.023; mip1..4 medians 0.009583 0.01655 0.07786 0.3144
+  b02 p0: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.025; mip1..4 medians 0.00959 0.01727 0.07781 0.3144
+  b02 p1: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.025; mip1..4 medians 0.00959 0.01727 0.07781 0.3144
+  b02 p2: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.025; mip1..4 medians 0.00959 0.01727 0.07781 0.3144
+  b02 p3: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.025; mip1..4 medians 0.00959 0.01727 0.07781 0.3144
+  b02 p4: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.031; mip1..4 medians 0.009598 0.01656 0.07813 0.3145
+  b02 p5: mip0 min 0.0002747 median 0.009018 max 0.5, 0 of 8192 texels 0, tv 1.041; mip1..4 medians 0.009598 0.0173 0.07791 0.3146
+  b02 p6: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.027; mip1..4 medians 0.009598 0.01728 0.07785 0.3145
+  b02 p7: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.027; mip1..4 medians 0.009598 0.01728 0.07785 0.3145
+  b03 p0: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.026; mip1..4 medians 0.00959 0.01727 0.07781 0.3144
+  b03 p1: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.029; mip1..4 medians 0.009598 0.01656 0.07813 0.3145
+  b03 p2: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.029; mip1..4 medians 0.009598 0.01656 0.07813 0.3145
+  b03 p3: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.029; mip1..4 medians 0.009598 0.01656 0.07813 0.3145
+  b03 p4: mip0 min 0.0002747 median 0.009018 max 0.5, 0 of 8192 texels 0, tv 1.035; mip1..4 medians 0.009598 0.0173 0.07791 0.3146
+  b03 p5: mip0 min 0.0002747 median 0.009018 max 0.5, 0 of 8192 texels 0, tv 1.035; mip1..4 medians 0.009598 0.0173 0.07791 0.3146
+  b03 p6: mip0 min 0.0002747 median 0.009018 max 0.5, 0 of 8192 texels 0, tv 1.035; mip1..4 medians 0.009598 0.0173 0.07791 0.3146
+  b03 p7: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.028; mip1..4 medians 0.009598 0.01728 0.07785 0.3145
+  b04 p0: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.018; mip1..4 medians 0.00959 0.01657 0.07799 0.3146
+  b04 p1: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.018; mip1..4 medians 0.00959 0.01657 0.07799 0.3146
+  b04 p2: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.018; mip1..4 medians 0.00959 0.01657 0.07799 0.3146
+  b04 p3: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.018; mip1..4 medians 0.00959 0.01657 0.07799 0.3146
+  b04 p4: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.018; mip1..4 medians 0.00959 0.01657 0.07799 0.3146
+  b04 p5: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.018; mip1..4 medians 0.00959 0.01657 0.07799 0.3146
+  b04 p6: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.025; mip1..4 medians 0.00959 0.01727 0.07781 0.3144
+  b04 p7: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.025; mip1..4 medians 0.00959 0.01727 0.07781 0.3144
+  b05 p0: mip0 min 0.0002747 median 0.008995 max 0.5, 0 of 8192 texels 0, tv 1.046; mip1..4 medians 0.009583 0.01654 0.07783 0.3144
+  b05 p1: mip0 min 0.0002747 median 0.008995 max 0.5, 0 of 8192 texels 0, tv 1.046; mip1..4 medians 0.009583 0.01654 0.07783 0.3144
+  b05 p2: mip0 min 0.0002747 median 0.008995 max 0.5, 0 of 8192 texels 0, tv 1.046; mip1..4 medians 0.009583 0.01654 0.07783 0.3144
+  b05 p3: mip0 min 0.0002747 median 0.008995 max 0.5, 0 of 8192 texels 0, tv 1.046; mip1..4 medians 0.009583 0.01654 0.07783 0.3144
+  b05 p4: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.036; mip1..4 medians 0.009575 0.0173 0.07781 0.3144
+  b05 p5: mip0 min 0.0002747 median 0.008988 max 0.5, 0 of 8192 texels 0, tv 1.034; mip1..4 medians 0.009575 0.01728 0.07777 0.3144
+  b05 p6: mip0 min 0.0002747 median 0.00898 max 0.5, 0 of 8192 texels 0, tv 1.036; mip1..4 medians 0.009575 0.01727 0.0777 0.3146
+  b05 p7: mip0 min 0.0002747 median 0.00898 max 0.5, 0 of 8192 texels 0, tv 1.036; mip1..4 medians 0.009575 0.01727 0.0777 0.3146
+  b06 p0: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.030; mip1..4 medians 0.009598 0.01728 0.07785 0.3145
+  b06 p1: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.030; mip1..4 medians 0.009598 0.01728 0.07785 0.3145
+  b06 p2: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.021; mip1..4 medians 0.009598 0.01659 0.07814 0.3146
+  b06 p3: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.021; mip1..4 medians 0.009598 0.01659 0.07814 0.3146
+  b06 p4: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.038; mip1..4 medians 0.00959 0.01728 0.07784 0.3145
+  b06 p5: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.038; mip1..4 medians 0.00959 0.01728 0.07784 0.3145
+  b06 p6: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.038; mip1..4 medians 0.00959 0.01728 0.07784 0.3145
+  b06 p7: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.038; mip1..4 medians 0.00959 0.01728 0.07784 0.3145
+  b07 p0: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.029; mip1..4 medians 0.00959 0.01656 0.07795 0.3144
+  b07 p1: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.029; mip1..4 medians 0.00959 0.01656 0.07795 0.3144
+  b07 p2: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.029; mip1..4 medians 0.00959 0.01656 0.07795 0.3144
+  b07 p3: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.029; mip1..4 medians 0.00959 0.01656 0.07795 0.3144
+  b07 p4: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.029; mip1..4 medians 0.00959 0.01656 0.07795 0.3144
+  b07 p5: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.029; mip1..4 medians 0.00959 0.01656 0.07795 0.3144
+  b07 p6: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.036; mip1..4 medians 0.00959 0.01729 0.07785 0.3145
+  b07 p7: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.036; mip1..4 medians 0.00959 0.01729 0.07785 0.3145
+  b08 p0: mip0 min 0.0002747 median 0.008988 max 0.5, 0 of 8192 texels 0, tv 1.030; mip1..4 medians 0.009583 0.01727 0.07776 0.3144
+  b08 p1: mip0 min 0.0002747 median 0.008988 max 0.5, 0 of 8192 texels 0, tv 1.030; mip1..4 medians 0.009583 0.01727 0.07776 0.3144
+  b08 p2: mip0 min 0.0002747 median 0.008988 max 0.5, 0 of 8192 texels 0, tv 1.030; mip1..4 medians 0.009583 0.01727 0.07776 0.3144
+  b08 p3: mip0 min 0.0002747 median 0.008988 max 0.5, 0 of 8192 texels 0, tv 1.030; mip1..4 medians 0.009583 0.01727 0.07776 0.3144
+  b08 p4: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.032; mip1..4 medians 0.00959 0.01656 0.07795 0.3144
+  b08 p5: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.032; mip1..4 medians 0.00959 0.01656 0.07795 0.3144
+  b08 p6: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.032; mip1..4 medians 0.00959 0.01656 0.07795 0.3144
+  b08 p7: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.032; mip1..4 medians 0.00959 0.01656 0.07795 0.3144
+  b09 p0: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.036; mip1..4 medians 0.00959 0.01729 0.07785 0.3145
+  b09 p1: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.036; mip1..4 medians 0.00959 0.01729 0.07785 0.3145
+  b09 p2: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.036; mip1..4 medians 0.00959 0.01729 0.07785 0.3145
+  b09 p3: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.036; mip1..4 medians 0.00959 0.01729 0.07785 0.3145
+  b09 p4: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.036; mip1..4 medians 0.00959 0.01729 0.07785 0.3145
+  b09 p5: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.036; mip1..4 medians 0.00959 0.01729 0.07785 0.3145
+  b09 p6: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.036; mip1..4 medians 0.00959 0.01729 0.07785 0.3145
+  b09 p7: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.036; mip1..4 medians 0.00959 0.01729 0.07785 0.3145
+  b10 p0: mip0 min 0.0002747 median 0.009018 max 0.5, 0 of 8192 texels 0, tv 1.032; mip1..4 medians 0.009598 0.0173 0.07791 0.3146
+  b10 p1: mip0 min 0.0002747 median 0.009018 max 0.5, 0 of 8192 texels 0, tv 1.032; mip1..4 medians 0.009598 0.0173 0.07791 0.3146
+  b10 p2: mip0 min 0.0002747 median 0.009018 max 0.5, 0 of 8192 texels 0, tv 1.032; mip1..4 medians 0.009598 0.0173 0.07791 0.3146
+  b10 p3: mip0 min 0.0002747 median 0.009018 max 0.5, 0 of 8192 texels 0, tv 1.032; mip1..4 medians 0.009598 0.0173 0.07791 0.3146
+  b10 p4: mip0 min 0.0002747 median 0.009018 max 0.5, 0 of 8192 texels 0, tv 1.032; mip1..4 medians 0.009598 0.0173 0.07791 0.3146
+  b10 p5: mip0 min 0.0002747 median 0.009018 max 0.5, 0 of 8192 texels 0, tv 1.032; mip1..4 medians 0.009598 0.0173 0.07791 0.3146
+  b10 p6: mip0 min 0.0002747 median 0.009018 max 0.5, 0 of 8192 texels 0, tv 1.032; mip1..4 medians 0.009598 0.0173 0.07791 0.3146
+  b10 p7: mip0 min 0.0002747 median 0.009018 max 0.5, 0 of 8192 texels 0, tv 1.032; mip1..4 medians 0.009598 0.0173 0.07791 0.3146
+  b11 p0: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.023; mip1..4 medians 0.009598 0.01659 0.07814 0.3146
+  b11 p1: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.023; mip1..4 medians 0.009598 0.01659 0.07814 0.3146
+  b11 p2: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.023; mip1..4 medians 0.009598 0.01659 0.07814 0.3146
+  b11 p3: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.023; mip1..4 medians 0.009598 0.01659 0.07814 0.3146
+  b11 p4: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.023; mip1..4 medians 0.009598 0.01659 0.07814 0.3146
+  b11 p5: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.023; mip1..4 medians 0.009598 0.01659 0.07814 0.3146
+  b11 p6: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.023; mip1..4 medians 0.009598 0.01659 0.07814 0.3146
+  b11 p7: mip0 min 0.0002747 median 0.009003 max 0.5, 0 of 8192 texels 0, tv 1.023; mip1..4 medians 0.009598 0.01659 0.07814 0.3146
+  b12 p0: mip0 min 0.0002747 median 0.008988 max 0.5, 0 of 8192 texels 0, tv 1.035; mip1..4 medians 0.00959 0.01725 0.07778 0.3145
+  b12 p1: mip0 min 0.0002747 median 0.00898 max 0.5, 0 of 8192 texels 0, tv 1.033; mip1..4 medians 0.009583 0.01656 0.07779 0.3144
+  b12 p2: mip0 min 0.0002747 median 0.008988 max 0.5, 0 of 8192 texels 0, tv 1.024; mip1..4 medians 0.00959 0.01655 0.07784 0.3146
+  b12 p3: mip0 min 0.0002747 median 0.008972 max 0.5, 0 of 8192 texels 0, tv 1.031; mip1..4 medians 0.009583 0.01723 0.07771 0.3144
+  b12 p4: mip0 min 0.0002747 median 0.00898 max 0.5, 0 of 8192 texels 0, tv 1.039; mip1..4 medians 0.009583 0.01654 0.07781 0.3144
+  b12 p5: mip0 min 0.0002747 median 0.008988 max 0.5, 0 of 8192 texels 0, tv 1.049; mip1..4 medians 0.009575 0.01727 0.07777 0.3145
+  b12 p6: mip0 min 0.0002747 median 0.008988 max 0.5, 0 of 8192 texels 0, tv 1.049; mip1..4 medians 0.009575 0.01727 0.07777 0.3145
+  b12 p7: mip0 min 0.0002747 median 0.008972 max 0.5, 0 of 8192 texels 0, tv 1.034; mip1..4 medians 0.009575 0.01725 0.07771 0.3143
+  mip 0 against the depth reads of its burst: median Pearson r over read pairs, by footprint, per-texel value and lag in reads (depth read index minus pyramid read index; negative = an earlier depth read)
+  stretch min  -7: -0.537 (8) | -6: -0.537 (15) | -5: -0.536 (22) | -4: -0.536 (30) | -3: -0.536 (38) | -2: -0.536 (44) | -1: -0.536 (48) | +0: -0.536 (55) | +1: -0.536 (47) | +2: -0.536 (40) | +3: -0.536 (33) | +4: -0.536 (25) | +5: -0.536 (17) | +6: -0.536 (11) | +7: -0.536 (7)
+  stretch max  -7: -0.571 (8) | -6: -0.571 (15) | -5: -0.570 (22) | -4: -0.570 (30) | -3: -0.570 (38) | -2: -0.570 (44) | -1: -0.570 (48) | +0: -0.570 (55) | +1: -0.570 (47) | +2: -0.570 (40) | +3: -0.570 (33) | +4: -0.571 (25) | +5: -0.570 (17) | +6: -0.570 (11) | +7: -0.570 (7)
+  stretch hole -7: +0.703 (8) | -6: +0.703 (15) | -5: +0.703 (22) | -4: +0.703 (30) | -3: +0.703 (38) | -2: +0.703 (44) | -1: +0.703 (48) | +0: +0.700 (55) | +1: +0.695 (47) | +2: +0.694 (40) | +3: +0.694 (33) | +4: +0.694 (25) | +5: +0.694 (17) | +6: +0.687 (11) | +7: +0.683 (7)
+  pow2    min  -7: -0.467 (8) | -6: -0.449 (15) | -5: -0.447 (22) | -4: -0.447 (30) | -3: -0.448 (38) | -2: -0.448 (44) | -1: -0.448 (48) | +0: -0.448 (55) | +1: -0.448 (47) | +2: -0.448 (40) | +3: -0.485 (33) | +4: -0.486 (25) | +5: -0.486 (17) | +6: -0.486 (11) | +7: -0.485 (7)
+  pow2    max  -7: -0.506 (8) | -6: -0.488 (15) | -5: -0.488 (22) | -4: -0.488 (30) | -3: -0.488 (38) | -2: -0.488 (44) | -1: -0.488 (48) | +0: -0.488 (55) | +1: -0.488 (47) | +2: -0.488 (40) | +3: -0.525 (33) | +4: -0.525 (25) | +5: -0.525 (17) | +6: -0.525 (11) | +7: -0.525 (7)
+  pow2    hole -7: +0.589 (8) | -6: +0.586 (15) | -5: +0.559 (22) | -4: +0.559 (30) | -3: +0.560 (38) | -2: +0.560 (44) | -1: +0.560 (48) | +0: +0.549 (55) | +1: +0.549 (47) | +2: +0.549 (40) | +3: +0.549 (33) | +4: +0.546 (25) | +5: +0.546 (17) | +6: +0.546 (11) | +7: +0.546 (7)
+== candidate morton_y
+  mip 0 against the depth reads of its burst: median Pearson r over read pairs, by footprint, per-texel value and lag in reads (depth read index minus pyramid read index; negative = an earlier depth read)
+  stretch min  -7: -0.524 (8) | -6: -0.524 (15) | -5: -0.523 (22) | -4: -0.523 (30) | -3: -0.523 (38) | -2: -0.523 (44) | -1: -0.523 (48) | +0: -0.523 (55) | +1: -0.523 (47) | +2: -0.523 (40) | +3: -0.523 (33) | +4: -0.523 (25) | +5: -0.523 (17) | +6: -0.523 (11) | +7: -0.522 (7)
+  stretch max  -7: -0.566 (8) | -6: -0.566 (15) | -5: -0.566 (22) | -4: -0.566 (30) | -3: -0.566 (38) | -2: -0.566 (44) | -1: -0.566 (48) | +0: -0.566 (55) | +1: -0.566 (47) | +2: -0.566 (40) | +3: -0.566 (33) | +4: -0.566 (25) | +5: -0.566 (17) | +6: -0.566 (11) | +7: -0.566 (7)
+  stretch hole -7: +0.666 (8) | -6: +0.667 (15) | -5: +0.666 (22) | -4: +0.666 (30) | -3: +0.667 (38) | -2: +0.667 (44) | -1: +0.667 (48) | +0: +0.662 (55) | +1: +0.662 (47) | +2: +0.662 (40) | +3: +0.661 (33) | +4: +0.661 (25) | +5: +0.661 (17) | +6: +0.648 (11) | +7: +0.641 (7)
+  pow2    min  -7: -0.465 (8) | -6: -0.447 (15) | -5: -0.446 (22) | -4: -0.446 (30) | -3: -0.447 (38) | -2: -0.447 (44) | -1: -0.447 (48) | +0: -0.447 (55) | +1: -0.447 (47) | +2: -0.447 (40) | +3: -0.483 (33) | +4: -0.483 (25) | +5: -0.483 (17) | +6: -0.483 (11) | +7: -0.482 (7)
+  pow2    max  -7: -0.504 (8) | -6: -0.486 (15) | -5: -0.486 (22) | -4: -0.486 (30) | -3: -0.487 (38) | -2: -0.487 (44) | -1: -0.487 (48) | +0: -0.487 (55) | +1: -0.487 (47) | +2: -0.487 (40) | +3: -0.523 (33) | +4: -0.523 (25) | +5: -0.523 (17) | +6: -0.522 (11) | +7: -0.522 (7)
+  pow2    hole -7: +0.586 (8) | -6: +0.584 (15) | -5: +0.558 (22) | -4: +0.558 (30) | -3: +0.558 (38) | -2: +0.558 (44) | -1: +0.558 (48) | +0: +0.548 (55) | +1: +0.548 (47) | +2: +0.547 (40) | +3: +0.548 (33) | +4: +0.546 (25) | +5: +0.543 (17) | +6: +0.542 (11) | +7: +0.542 (7)

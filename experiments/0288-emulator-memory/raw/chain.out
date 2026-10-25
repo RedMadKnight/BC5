@@ -1,0 +1,15 @@
+== 01:59:46 run N1 (arm N)
+mount before-remount pid 2011143 etimes 212 rss_mib 37 swap_mib 0 arenas 0
+mount after-remount pid 2013158 etimes 0 rss_mib 37 swap_mib 0 arenas 1
+2026-10-25 02:05:02 N1 live saves c0ee58b92c0cadc2 (were c0ee58b92c0cadc2)
+N1 (arm N): stopped at 300 s; crash lines 0, kernel lines 0, TIMEOUT lines 0; samples 30
+pass
+BOX-LOCK released
+== 02:05:02 run L1 (arm L)
+2026-10-25 02:05:03 L1 live saves c0ee58b92c0cadc2 (reference c0ee58b92c0cadc2); binary /home/kjaniszewski/bc5-work/kytyplus-build-lean/src/kyty_emulator md5 fa8d15f5 (2026-10-24 23:19)
+2026-10-25 02:10:14 L1 live saves c0ee58b92c0cadc2 (were c0ee58b92c0cadc2)
+L1 (arm L): stopped at 300 s; crash lines 0, kernel lines 0, TIMEOUT lines 0; samples 30
+pass
+BOX-LOCK released
+== 02:10:14 chain done
+BOX-LOCK released

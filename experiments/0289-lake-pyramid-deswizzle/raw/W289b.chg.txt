@@ -1,0 +1,86 @@
+# /home/kjaniszewski/bc5-data/priv/exp0289/W289b: 123 argument records; 32 consecutive pairs of clear same-size depth reads
+  b03 z6-z7  153.7 ms: phi +0.422, kept 0.519 (depth 0 on 0.259), 51 records changed
+  b04 z3-z4   30.0 ms: phi +1.000, kept 1.000 (depth 0 on 0.246), 0 records changed
+  b04 z4-z5   30.0 ms: phi +1.000, kept 1.000 (depth 0 on 0.246), 0 records changed
+  b05 z0-z1   30.1 ms: phi +1.000, kept 1.000 (depth 0 on 0.177), 0 records changed
+  b05 z1-z2   34.4 ms: phi +1.000, kept 1.000 (depth 0 on 0.177), 0 records changed
+  b05 z2-z3   43.1 ms: phi +1.000, kept 1.000 (depth 0 on 0.177), 0 records changed
+  b06 z0-z1   30.1 ms: phi +1.000, kept 1.000 (depth 0 on 0.289), 0 records changed
+  b06 z3-z4   29.9 ms: phi +1.000, kept 1.000 (depth 0 on 0.273), 0 records changed
+  b06 z4-z5   29.9 ms: phi +1.000, kept 1.000 (depth 0 on 0.273), 0 records changed
+  b07 z0-z1   30.1 ms: phi +1.000, kept 1.000 (depth 0 on 0.244), 0 records changed
+  b07 z1-z2   30.0 ms: phi +1.000, kept 1.000 (depth 0 on 0.244), 0 records changed
+  b07 z2-z3   30.0 ms: phi +1.000, kept 1.000 (depth 0 on 0.244), 0 records changed
+  b07 z3-z4   30.0 ms: phi +1.000, kept 1.000 (depth 0 on 0.244), 0 records changed
+  b07 z4-z5   30.0 ms: phi +1.000, kept 1.000 (depth 0 on 0.244), 0 records changed
+  b08 z0-z1   30.2 ms: phi +1.000, kept 1.000 (depth 0 on 0.274), 0 records changed
+  b08 z1-z2   29.9 ms: phi +1.000, kept 1.000 (depth 0 on 0.274), 0 records changed
+  b08 z2-z3   30.0 ms: phi +1.000, kept 1.000 (depth 0 on 0.274), 0 records changed
+  b08 z6-z7   29.9 ms: phi +1.000, kept 1.000 (depth 0 on 0.273), 0 records changed
+  b09 z0-z1   30.0 ms: phi +1.000, kept 1.000 (depth 0 on 0.278), 0 records changed
+  b09 z1-z2   30.0 ms: phi +1.000, kept 1.000 (depth 0 on 0.278), 0 records changed
+  b09 z2-z3   30.0 ms: phi +1.000, kept 1.000 (depth 0 on 0.278), 0 records changed
+  b09 z3-z4   30.0 ms: phi +1.000, kept 1.000 (depth 0 on 0.278), 0 records changed
+  b09 z4-z5   30.0 ms: phi +1.000, kept 1.000 (depth 0 on 0.278), 0 records changed
+  b09 z5-z6   30.1 ms: phi +1.000, kept 1.000 (depth 0 on 0.278), 0 records changed
+  b10 z1-z2   30.0 ms: phi +1.000, kept 1.000 (depth 0 on 0.255), 0 records changed
+  b10 z2-z3   30.0 ms: phi +1.000, kept 1.000 (depth 0 on 0.255), 0 records changed
+  b10 z3-z4   30.0 ms: phi +1.000, kept 1.000 (depth 0 on 0.255), 0 records changed
+  b10 z4-z5   30.0 ms: phi +1.000, kept 1.000 (depth 0 on 0.255), 0 records changed
+  b10 z5-z6   30.0 ms: phi +1.000, kept 1.000 (depth 0 on 0.255), 0 records changed
+  b10 z6-z7   30.1 ms: phi +1.000, kept 1.000 (depth 0 on 0.255), 0 records changed
+  b12 z1-z2   30.1 ms: phi -0.371, kept 0.023 (depth 0 on 0.280), 54 records changed
+  b12 z3-z4   30.1 ms: phi +0.947, kept 0.984 (depth 0 on 0.260), 88 records changed
+# holes changed (phi < 0.8): 2 pairs; holes stayed (phi >= 0.95): 29 pairs
+  records changed per pair: holes changed median 52, holes stayed median 0
+# per record: changed in holes-changed pairs | in holes-stayed pairs (the 20 with the largest difference)
+  11935d49a0: 2 of 2 | 0 of 29
+  11935d4980: 2 of 2 | 0 of 29
+  11935d4960: 2 of 2 | 0 of 29
+  11935d4940: 2 of 2 | 0 of 29
+  11935d4920: 2 of 2 | 0 of 29
+  11935d4900: 2 of 2 | 0 of 29
+  11935d48e0: 2 of 2 | 0 of 29
+  11935d48c0: 2 of 2 | 0 of 29
+  11935d48a0: 2 of 2 | 0 of 29
+  11935d4880: 2 of 2 | 0 of 29
+  11935d4860: 2 of 2 | 0 of 29
+  11935d4840: 2 of 2 | 0 of 29
+  11935d4820: 2 of 2 | 0 of 29
+  11935d4800: 2 of 2 | 0 of 29
+  11935d47e0: 2 of 2 | 0 of 29
+  11935d47c0: 2 of 2 | 0 of 29
+  11935d47a0: 2 of 2 | 0 of 29
+  11935d4780: 2 of 2 | 0 of 29
+  11935d4760: 2 of 2 | 0 of 29
+  11935d4740: 2 of 2 | 0 of 29
+# records that changed in every holes-changed pair and in no holes-stayed pair: 11935d49a0 11935d4980 11935d4960 11935d4940 11935d4920 11935d4900 11935d48e0 11935d48c0 11935d48a0 11935d4880 11935d4860 11935d4840 11935d4820 11935d4800 11935d47e0 11935d47c0 11935d47a0 11935d4780 11935d4760 11935d4740 11935d4720 11935d4700 11935d46e0 11935d46c0 11935d46a0 11935d4680 11935d4660 11935d4640 11935d4620 11935d4600 11935d45e0 11935d45c0 11935d45a0 11935d4580 11935d4560 11935d4540 11935d4520 11935d4500 11935d44e0 11935d4260 11935d3f20 11935d3ea0 11935d3c60 11934d3fc0
+# every consecutive pair: depth words changed (of the whole image) and argument records changed
+  b01: 5502294/27 358476/0 1047011/0 5808721/35 360111/0 5396989/59 1308231/5
+  b02: 779711/0 1589418/53 0/0 4736699/5 5500593/25 5353368/34 0/0
+  b03: 81912/5 0/0 0/0 5787389/46 2151302/37 4950390/0 5707154/51
+  b04: 2127039/28 4424627/0 747985/0 0/0 0/0 1927302/54 5139806/0
+  b05: 0/0 0/0 0/0 2049221/31 4081532/0 4631283/55 4668350/48
+  b06: 0/0 2143485/26 5042874/0 0/0 0/0 1807023/36 5082707/0
+  b07: 0/0 0/0 0/0 0/0 0/0 2282089/33 4335439/0
+  b08: 0/0 0/0 0/0 2237912/88 401679/0 4323671/0 0/0
+  b09: 0/0 0/0 0/0 0/0 0/0 0/0 2286109/57
+  b10: 3921778/0 0/0 0/0 0/0 0/0 0/0 0/0
+  b11: 0/0 0/0 0/0 0/0 0/0 2084811/25 0/0
+  b12: 4022002/58 3995952/54 3572405/89 2696198/88 1479594/90 2635325/0 2779763/50
+  depth changed and arguments changed 29; depth changed only 16; arguments changed only 0; neither 39
+# with the pyramid: depth words / argument records / pyramid words changed, per consecutive pair
+  b01: 5502294/27/5010 358476/0/0 1047011/0/2698 5808721/35/2322 360111/0/0 5396989/59/4465 1308231/5/1887
+  b02: 779711/0/0 1589418/53/2322 0/0/0 4736699/5/2954 5500593/25/4876 5353368/34/4268 0/0/0
+  b03: 81912/5/2968 0/0/0 0/0/0 5787389/46/4854 2151302/37/2322 4950390/0/0 5707154/51/4233
+  b04: 2127039/28/0 4424627/0/2322 747985/0/0 0/0/0 0/0/0 1927302/54/2800 5139806/0/2322
+  b05: 0/0/0 0/0/0 0/0/0 2049221/31/4962 4081532/0/2043 4631283/55/4480 4668350/48/2325
+  b06: 0/0/0 2143485/26/5008 5042874/0/0 0/0/2712 0/0/0 1807023/36/0 5082707/0/2322
+  b07: 0/0/0 0/0/0 0/0/0 0/0/0 0/0/0 2282089/33/4882 4335439/0/0
+  b08: 0/0/0 0/0/0 0/0/0 2237912/88/2991 401679/0/2324 4323671/0/0 0/0/0
+  b09: 0/0/0 0/0/0 0/0/0 0/0/0 0/0/0 0/0/0 2286109/57/2322
+  b10: 3921778/0/0 0/0/0 0/0/0 0/0/0 0/0/0 0/0/0 0/0/0
+  b11: 0/0/0 0/0/0 0/0/0 0/0/0 0/0/0 2084811/25/2322 0/0/0
+  b12: 4022002/58/4663 3995952/54/4423 3572405/89/5304 2696198/88/5292 1479594/90/5108 2635325/0/0 2779763/50/4527
+  flags (D depth, A arguments, P pyramid changed): DAP 27, DA- 2, D-P 6, D-- 10, --P 1, --- 38
+  with the pyramid of the pair before: DAP 11, DA- 14, D-P 11, D-- 3, --P 5, --- 28
