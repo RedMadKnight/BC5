@@ -1,0 +1,18 @@
+private save copy reset to saves-lake-1153
+== W2 (BC5_DIRECT_SKIP_PGM=11d049aa00,11d04a6000,909974400,11d04bb900) shots done 13:00:58
+kernel: 0 fault lines, 0 ring timeout/reset lines
+journal: 0 fence timeouts; 2842 ray-tracing-off lines; skip lines:       1   skip pgm 0x11d049aa00       1   skip pgm 0x11d04bb900       3   skip pgm 0x909974400 
+125952-ts00.png: patch   6.6 %
+125957-ts01.png: patch   0.7 %
+130002-ts02.png: patch   0.8 %
+130007-ts03.png: patch   0.7 %
+130012-ts04.png: patch   0.7 %
+130017-ts05.png: patch   2.4 %
+130022-ts06.png: patch   1.5 %
+130027-ts07.png: patch  12.6 %
+130032-ts08.png: patch  19.2 %
+130037-ts09.png: patch  18.7 %
+130042-ts10.png: patch  18.8 %
+130047-ts11.png: patch  18.9 %
+130053-ts12.png: patch  20.2 %
+fps counter: t 248.440 s: 30 flips in 1.017 s, longest gap 48.0 ms, gaps over 40 ms 1, ove
