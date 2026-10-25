@@ -36,4 +36,18 @@ Dry run on the copies:
 - the log targets are as intended in the three modes (normal; lean; lean + `BC5_LOGS=1`);
 - a second run is refused.
 
-**Result.** Pending: applied on the box after exp 0323's verification (it edits `play-pkg.sh` again).
+**Result (applied 2026-10-25 ~20:30, after exp 0323's verification; the box free; backups in
+`~/bc5-work/exp0324/integration/*.before-0324`).**
+- md5s, the same as the dry run's:
+  - `play-any.sh` d89ac237 → 4da8ce07;
+  - `play-pkg.sh` 7d14f7e5 → c0357628;
+  - `play-astro.sh` e78af6cd → 48238ccd;
+  - `compress-old-captures.sh` 9cecc62e → 069eafeb.
+- All four parse. Each launcher names its old log path only in the variable that holds it.
+- The desktop shortcut "BC5 emulator (RT, diagnostyka 0302)" (exp 0302's diagnostics build) was moved to
+  `~/bc5-work/trash-20261025/` (the maintainer's cleanup approval). "BC5 emulator" and "BC5 emulator (lean)" remain.
+- Not run with an emulator here: the edit changes only where the logs go. The lean start itself was checked by
+  exp 0323 just before.
+
+**Verdict.** With the lean shortcut nothing is logged. `BC5_LEAN=1 BC5_LOGS=1` (e.g. `distrobox enter ubuntu -- env
+BC5_LEAN=1 BC5_LOGS=1 ~/bc5-work/play-any.sh`) brings the lean logs back. The normal shortcut logs as before.
