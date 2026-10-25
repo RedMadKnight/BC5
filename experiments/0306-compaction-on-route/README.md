@@ -25,7 +25,7 @@ The maintainer approved RT-on testing today; the supervisor's GO 13:17 (the box 
 2-hour autonomous mandate.
 
 **Result (2026-10-25, binary 39440597, launcher 628b2714 derived, RT on, compaction ON; `raw/kernel-stream.txt`,
-`raw/journal-stream.txt` from the laptop; the box's `exp0306/raw/S*`).** Three false starts first, all stopped by the
+`raw/journal-stream.txt.gz` from the laptop; the box's `exp0306/raw/S*`).** Three false starts first, all stopped by the
 script's own checks with nothing run (`raw/s6n0306-attempt1..4.out` on the box): the md5 pin, a quoting slip, and exp
 0299's launcher diff no longer applying to 628b2714 — hence the four anchored edits.
 
