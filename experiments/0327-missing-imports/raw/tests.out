@@ -1,0 +1,30 @@
+SyncOnAddressTests: ok: wait32 rejects a null address
+SyncOnAddressTests: ok: wait64 rejects a null address
+SyncOnAddressTests: ok: wait8 rejects a null address
+SyncOnAddressTests: ok: wait16 rejects a null address
+SyncOnAddressTests: ok: wait32 rejects a misaligned address
+SyncOnAddressTests: ok: wait16 rejects a misaligned address
+SyncOnAddressTests: ok: wake rejects a null address
+SyncOnAddressTests: ok: wake rejects a negative count
+SyncOnAddressTests: ok: wake accepts a byte address (the console does)
+SyncOnAddressTests: ok: wait32 returns at once when the value differs
+SyncOnAddressTests: ok: wait64 returns at once when the value differs
+SyncOnAddressTests: ok: wait16 returns at once when the value differs
+SyncOnAddressTests: ok: wait8 returns at once when the value differs
+SyncOnAddressTests: ok: wait16 times out while the value holds
+SyncOnAddressTests: ok: wait8 times out while the value holds
+SyncOnAddressTests: ok: two 20-ms timeouts take about 40 ms
+SyncOnAddressTests: ok: wake after the store
+SyncOnAddressTests: ok: wait8: a waiter woken by a store and a wake returns 0 (rc 0)
+SyncOnAddressTests: ok: wake after the store
+SyncOnAddressTests: ok: wait16: a waiter woken by a store and a wake returns 0 (rc 0)
+SyncOnAddressTests: ok: wake after the store
+SyncOnAddressTests: ok: wait32: a waiter woken by a store and a wake returns 0 (rc 0)
+SyncOnAddressTests: ok: wake after the store
+SyncOnAddressTests: ok: wait64: a waiter woken by a store and a wake returns 0 (rc 0)
+SyncOnAddressTests: ok: wake on a byte address inside a word
+SyncOnAddressTests: ok: a byte waiter inside a word returns 0 after its byte changed
+SyncOnAddressTests: ok: the neighbouring bytes are untouched
+SyncOnAddressTests: ok: wake all
+SyncOnAddressTests: ok: four 16-bit waiters all return 0 after the store and the wake
+SyncOnAddressTests: all checks passed
