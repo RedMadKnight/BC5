@@ -1,0 +1,41 @@
+paź 25 11:18:15.811755 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 25 11:20:20.811759 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 25 11:22:25.815759 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 25 11:24:30.811772 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 25 11:26:35.813767 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 25 11:28:40.812758 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 25 11:30:45.812761 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 25 11:32:50.814756 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 25 11:33:49.641756 bazzite kernel: gmc_v10_0_process_interrupt: 86 callbacks suppressed
+paź 25 11:33:49.689199 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:6 pasid:67)
+paź 25 11:33:49.690277 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 1110233 thread bc5-ring pid 1110349
+paź 25 11:33:49.690543 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x0000b20407c00000 from client 0x1b (UTCL2)
+paź 25 11:33:49.690771 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00601430
+paź 25 11:33:49.691013 bazzite kernel: amdgpu 0000:01:00.0:          Faulty UTCL2 client ID: SQC (data) (0xa)
+paź 25 11:33:49.691182 bazzite kernel: amdgpu 0000:01:00.0:          MORE_FAULTS: 0x0
+paź 25 11:33:49.691360 bazzite kernel: amdgpu 0000:01:00.0:          WALKER_ERROR: 0x0
+paź 25 11:33:49.691590 bazzite kernel: amdgpu 0000:01:00.0:          PERMISSION_FAULTS: 0x3
+paź 25 11:33:49.691823 bazzite kernel: amdgpu 0000:01:00.0:          MAPPING_ERROR: 0x0
+paź 25 11:33:49.692042 bazzite kernel: amdgpu 0000:01:00.0:          RW: 0x0
+paź 25 11:33:51.641763 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State
+paź 25 11:33:51.830730 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State Completed
+paź 25 11:33:51.831136 bazzite kernel: amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+paź 25 11:33:51.831693 bazzite kernel: amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+paź 25 11:33:51.831935 bazzite kernel: amdgpu 0000:01:00.0: ring comp_1.1.0 timeout, signaled seq=2558172, emitted seq=2558174
+paź 25 11:33:51.832114 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 1110233 thread bc5-chainwd pid 1110385
+paź 25 11:33:51.832287 bazzite kernel: amdgpu 0000:01:00.0: Starting comp_1.1.0 ring reset
+paź 25 11:33:51.832449 bazzite kernel: amdgpu 0000:01:00.0: Ring comp_1.1.0 reset failed
+paź 25 11:33:51.832613 bazzite kernel: amdgpu 0000:01:00.0: GPU reset begin!. Source:  1
+paź 25 11:33:55.832773 bazzite kernel: amdgpu 0000:01:00.0: failed to suspend display audio
+paź 25 11:33:55.949771 bazzite kernel: amdgpu 0000:01:00.0: MODE1 reset
+paź 25 11:33:55.950478 bazzite kernel: amdgpu 0000:01:00.0: GPU mode1 reset
+paź 25 11:33:55.951013 bazzite kernel: amdgpu 0000:01:00.0: GPU psp mode1 reset
+paź 25 11:33:55.951461 bazzite kernel: amdgpu 0000:01:00.0: GPU reset succeeded, trying to resume
+paź 25 11:33:55.951926 bazzite kernel: amdgpu 0000:01:00.0: [drm] PCIE GART of 512M enabled (table at 0x000000F41FE00000).
+paź 25 11:33:55.952386 bazzite kernel: amdgpu 0000:01:00.0: VRAM is lost due to GPU reset!
+paź 25 11:33:55.952842 bazzite kernel: amdgpu 0000:01:00.0: PSP is resuming...
+paź 25 11:33:55.970764 bazzite kernel: amdgpu 0000:01:00.0: reserve 0x400000 from 0xf41f800000 for PSP TMR
+paź 25 11:33:56.005763 bazzite kernel: amdgpu 0000:01:00.0: SMU is resuming...
+paź 25 11:33:56.006417 bazzite kernel: amdgpu 0000:01:00.0: SMU is resumed successfully!
+Read from remote host 192.168.10.66: Connection reset by peer
+client_loop: send disconnect: Connection reset by peer

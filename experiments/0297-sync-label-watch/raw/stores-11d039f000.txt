@@ -1,0 +1,59 @@
+11d039f000.bin: program 3072 dwords (to s_code_end / s_endpgm+pad)
+00000c sload    s_load_dwordx4           sdata s16  base s[12:13] off 0x80
+000018 sload    s_buffer_load_dword      sdata s106 base s[16:19] (V#) off 0x4c
+000034 sload    s_load_dwordx4           sdata s20  base s[12:13] off 0x80
+000040 sload    s_buffer_load_dword      sdata s106 base s[20:23] (V#) off 0x48
+000050 sload    s_load_dwordx4           sdata s16  base s[12:13] off 0x90
+000058 sload    s_buffer_load_dword      sdata s15  base s[20:23] (V#) off 0x50
+00006c load     buffer_load_dwordx2      V# s[8:11] vaddr v19 idxen off 0x0 soff 0 vdata v5
+000074 load     buffer_load_dwordx3      V# s[0:3] vaddr v19 idxen off 0x0 soff 0 vdata v16
+00009c load     buffer_load_dwordx4      V# s[16:19] vaddr v31 idxen off 0x0 soff 0 vdata v1
+0000dc sload    s_load_dwordx4           sdata s0   base s[12:13] off 0x60
+0000f0 STORE    buffer_store_dwordx3     V# s[0:3] vaddr v19 idxen off 0x0 soff 0 vdata v16
+000104 sload    s_load_dwordx4           sdata s0   base s[12:13] off 0x40
+000110 sload    s_load_dwordx4           sdata s8   base s[12:13] off 0x50
+00011c load     buffer_load_dwordx2      V# s[4:7] vaddr v4 idxen off 0x0 soff 0 vdata v0
+000128 load     buffer_load_dwordx2      V# s[0:3] vaddr v4 idxen off 0x0 soff 0 vdata v2
+00013c STORE    buffer_store_dwordx2     V# s[0:3] vaddr v4 idxen off 0x0 soff 0 vdata v0
+000158 STORE    buffer_store_dwordx2     V# s[8:11] vaddr v4 idxen off 0x0 soff 0 vdata v0
+000188 sload    s_load_dwordx4           sdata s0   base s[12:13] off 0x40
+0001a0 load     buffer_load_dwordx2      V# s[4:7] vaddr v3 idxen off 0x0 soff 0 vdata v1
+0001ac load     buffer_load_dwordx2      V# s[0:3] vaddr v3 idxen off 0x0 soff 0 vdata v3
+0001dc sload    s_load_dwordx4           sdata s0   base s[12:13] off 0x30
+0001e8 load     buffer_load_dword        V# s[0:3] vaddr v7 idxen off 0x0 soff 0 vdata v1
+0001f0 load     buffer_load_dwordx4      V# s[0:3] vaddr v7 idxen off 0x1c soff 0 vdata v8
+0001f8 load     buffer_load_dword        V# s[0:3] vaddr v7 idxen off 0x3c soff 0 vdata v36
+000214 sload    s_load_dwordx4           sdata s16  base s[12:13] off 0x10
+000230 sload    s_load_dwordx4           sdata s8   base s[12:13] off 0x80
+00023c sload    s_buffer_load_dword      sdata s25  base s[8:11] (V#) off 0x30
+0002c8 load     buffer_load_format_xyzw  V# s[16:19] vaddr v4 idxen off 0x0 soff 0 vdata v12
+0002d0 load     buffer_load_format_xyzw  V# s[16:19] vaddr v2 idxen off 0x0 soff 0 vdata v5
+0002d8 load     buffer_load_format_xyzw  V# s[16:19] vaddr v1 idxen off 0x0 soff 0 vdata v1
+00048c sload    s_load_dwordx4           sdata s0   base s[12:13] off 0x20
+0004dc sload    s_load_dwordx4           sdata s8   base s[12:13] off 0x90
+0004f4 sload    s_load_dwordx4           sdata s16  base s[12:13] off 0x30
+0004fc sload    s_load_dwordx4           sdata s20  base s[12:13] off 0x0
+00054c load     buffer_load_format_xyz   V# s[0:3] vaddr v10 idxen off 0x0 soff 0 vdata v10
+000554 load     buffer_load_format_xyz   V# s[0:3] vaddr v9 idxen off 0x0 soff 0 vdata v7
+00055c load     buffer_load_format_xyz   V# s[0:3] vaddr v4 idxen off 0x0 soff 0 vdata v4
+0005ac load     buffer_load_dwordx4      V# s[8:11] vaddr v1 idxen off 0x0 soff 0 vdata v40
+00068c load     buffer_load_dword        V# s[16:19] vaddr v6 idxen off 0x0 soff 0 vdata v1
+00084c load     buffer_load_format_xyz   V# s[20:23] vaddr v5 idxen off 0x0 soff 0 vdata v5
+000854 load     buffer_load_format_xyz   V# s[20:23] vaddr v29 idxen off 0x0 soff 0 vdata v2
+00085c load     buffer_load_format_xyz   V# s[20:23] vaddr v1 idxen off 0x0 soff 0 vdata v42
+000dd0 load     buffer_load_dwordx2      V# s[4:7] vaddr v42 idxen off 0x0 soff 0 vdata v3
+000dd8 sload    s_load_dwordx4           sdata s0   base s[12:13] off 0x40
+000de4 load     buffer_load_dwordx2      V# s[0:3] vaddr v42 idxen off 0x0 soff 0 vdata v1
+000f90 sload    s_load_dwordx4           sdata s0   base s[12:13] off 0x50
+000fac sload    s_load_dwordx4           sdata s8   base s[12:13] off 0x40
+001070 STORE    buffer_store_dwordx2     V# s[8:11] vaddr v42 idxen off 0x0 soff 0 vdata v3
+001078 STORE    buffer_store_dwordx2     V# s[0:3] vaddr v42 idxen off 0x0 soff 0 vdata v1
+0010c0 load     buffer_load_dwordx2      V# s[4:7] vaddr v3 idxen off 0x0 soff 0 vdata v1
+001248 sload    s_load_dwordx4           sdata s0   base s[12:13] off 0x40
+001334 STORE    buffer_store_dwordx2     V# s[0:3] vaddr v3 idxen off 0x0 soff 0 vdata v1
+001348 sload    s_load_dwordx4           sdata s0   base s[12:13] off 0x60
+0013a4 load     buffer_load_dwordx3      V# s[0:3] vaddr v19 idxen off 0x0 soff 0 vdata v0
+001438 STORE    buffer_store_dwordx3     V# s[0:3] vaddr v19 idxen off 0x0 soff 0 vdata v16
+001444 sload    s_load_dwordx4           sdata s0   base s[12:13] off 0x70
+001450 STORE    buffer_store_dwordx3     V# s[0:3] vaddr v19 idxen off 0x0 soff 0 vdata v0
+001458 end      s_endpgm

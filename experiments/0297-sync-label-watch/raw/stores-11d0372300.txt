@@ -1,0 +1,7 @@
+11d0372300.bin: program 128 dwords (to s_code_end / s_endpgm+pad)
+000014 sload    s_buffer_load_dword      sdata s17  base s[8:11] (V#) off 0x0
+00001c sload    s_buffer_load_dwordx4    sdata s8   base s[12:15] (V#) off 0x220
+000038 sload    s_buffer_load_dword      sdata s106 base s[8:11] (V#) off 0x60 + s106
+000080 STORE    image_store*             T# s[0:7]
+0000a4 STORE    image_store*             T# s[0:7]
+0000ac end      s_endpgm

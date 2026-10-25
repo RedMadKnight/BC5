@@ -1,0 +1,3 @@
+11d03a3400.bin: program 64 dwords (to s_code_end / s_endpgm+pad)
+000010 STORE    buffer_store_dwordx4     V# s[0:3] vaddr v0 off 0x0 soff 0 vdata v0
+000018 end      s_endpgm

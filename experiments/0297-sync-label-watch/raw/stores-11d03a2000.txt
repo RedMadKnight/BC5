@@ -1,0 +1,34 @@
+11d03a2000.bin: program 1280 dwords (to s_code_end / s_endpgm+pad)
+00000c sload    s_load_dwordx4           sdata s16  base s[12:13] off 0x30
+000018 sload    s_buffer_load_dword      sdata s106 base s[16:19] (V#) off 0x4c
+000038 sload    s_load_dwordx4           sdata s16  base s[12:13] off 0x30
+000044 sload    s_buffer_load_dword      sdata s106 base s[16:19] (V#) off 0x50
+000074 sload    s_load_dwordx4           sdata s32  base s[12:13] off 0x30
+000080 sload    s_buffer_load_dwordx16   sdata s16  base s[32:35] (V#) off 0x160
+000088 sload    s_buffer_load_dwordx16   sdata s32  base s[32:35] (V#) off 0x120
+000108 sload    s_load_dwordx4           sdata s52  base s[12:13] off 0x30
+000114 sload    s_buffer_load_dword      sdata s106 base s[52:55] (V#) off 0x48
+000124 sload    s_buffer_load_dwordx4    sdata s48  base s[52:55] (V#) off 0x1c
+000134 sload    s_load_dwordx4           sdata s40  base s[12:13] off 0x40
+000140 sload    s_buffer_load_dwordx4    sdata s56  base s[40:43] (V#) off 0x660
+000148 load     buffer_load_dwordx3      V# s[0:3] vaddr v0 idxen off 0x0 soff 0 vdata v0
+000150 sload    s_load_dwordx4           sdata s44  base s[12:13] off 0x20
+00015c sload    s_buffer_load_dwordx8    sdata s32  base s[56:59] (V#) off 0x0 + s106
+000164 sload    s_buffer_load_dwordx16   sdata s16  base s[44:47] (V#) off 0x30
+00016c sload    s_buffer_load_dwordx4    sdata s0   base s[56:59] (V#) off 0x20 + s106
+0001a8 sload    s_buffer_load_dwordx2    sdata s64  base s[52:55] (V#) off 0x2c
+0001b0 sload    s_buffer_load_dwordx4    sdata s52  base s[44:47] (V#) off 0x1b0
+0001b8 sload    s_buffer_load_dwordx4    sdata s72  base s[44:47] (V#) off 0x70
+0001c0 sload    s_buffer_load_dwordx8    sdata s40  base s[40:43] (V#) off 0x920
+0001f0 load     buffer_load_dwordx2      V# s[4:7] vaddr v0 idxen off 0x0 soff 0 vdata v0
+0002b0 sload    s_buffer_load_dwordx4    sdata s60  base s[8:11] (V#) off 0x0
+000334 mimg     mimg_op47                T# s[40:47]
+000390 sload    s_load_dwordx4           sdata s0   base s[12:13] off 0x20
+00039c sload    s_buffer_load_dwordx2    sdata s106 base s[0:3] (V#) off 0x220
+0003f8 sload    s_load_dwordx4           sdata s0   base s[12:13] off 0x30
+000404 sload    s_buffer_load_dwordx2    sdata s106 base s[0:3] (V#) off 0x54
+000414 sload    s_load_dwordx4           sdata s4   base s[12:13] off 0x10
+000420 sload    s_load_dwordx4           sdata s12  base s[12:13] off 0x0
+000444 ATOMIC   mubuf_op32               V# s[4:7] vaddr v0 off 0x0 soff 0 vdata v1
+0004a4 STORE    buffer_store_dword       V# s[12:15] vaddr v1 idxen off 0x0 soff 0 vdata v0
+0004ac end      s_endpgm

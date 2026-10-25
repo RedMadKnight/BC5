@@ -1,0 +1,191 @@
+--- a/src/libs/bc5LleAgc.cpp (tree 5bccbb80)
++++ b/src/libs/bc5LleAgc.cpp (exp 0300: 23bccaa3)
+@@ -6137,6 +6137,64 @@
+ 						journal("timeout probe: dispatch op %02x at %u: program %s0x%" PRIx64 ", groups %s%s%s\n", op, q, pl == 0xffffffffu ? "not set in this buffer, " : "",
+ 						        (static_cast<uint64_t>(pl) | (static_cast<uint64_t>(ph & 0xffu) << 32u)) << 8u, grid, where, ex);
+ 					}
++					// Experiment 0297 step 2 (built with exp 0300): for a dispatch of a listed program (BC5_DIRECT_PROBE_TABLE_PGM,
++					// hex list; default the 0x11d03a family of F360), the resource table at user SGPRs 12-13 (COMPUTE_USER_DATA_12/13,
++					// SH 0x24c/0x24d, as this buffer or its LOAD tables set them; the programs read it as s[12:13], exp 0297 step 1):
++					// slots +0x00..+0x90 as V#s — gfx10 buffer resource: dword 0 base[31:0], dword 1 base[47:32] | stride[29:16],
++					// dword 2 num_records (in units of the stride when it is non-zero, else bytes), dword 3 the selects and format
++					// (LLVM AMDGPUUsage "Buffer Resource Descriptor", TODO(verify) the field positions against the gfx10 table) —
++					// then the V# chained from slot +0x80's buffer at +0x680 (0x11d03a4600's store descriptor), each extent against
++					// BC5_DIRECT_PROBE_LABEL=<hex> when set, and whether a base is unmapped. COMPUTE_PGM_RSRC2 (SH 0x213) gives the
++					// user SGPR count in bits 5:1 (Mesa gfx10 register JSON, TODO(verify)). Read-only; at most 96 tables a process.
++					{
++						static const std::set<uint64_t> probe_pgm = [] {
++							std::set<uint64_t> s;
++							if (const char* e = std::getenv("BC5_DIRECT_PROBE_TABLE_PGM"); e != nullptr) {
++								for (const char* p = e; *p != 0;) {
++									char*          end = nullptr;
++									const uint64_t v   = std::strtoull(p, &end, 16);
++									if (end == p) { p++; continue; }
++									s.insert(v);
++									p = end;
++								}
++							} else {
++								s = {0x11d03a2000ull, 0x11d03a3400ull, 0x11d03a3500ull, 0x11d03a4600ull, 0x11d039f000ull, 0x11d03a0700ull};
++							}
++							return s;
++						}();
++						static const uint64_t        probe_label = std::getenv("BC5_DIRECT_PROBE_LABEL") != nullptr ? std::strtoull(std::getenv("BC5_DIRECT_PROBE_LABEL"), nullptr, 16) : 0;
++						static std::atomic<uint32_t> n_tables {0};
++						const uint64_t               pg = (static_cast<uint64_t>(pl) | (static_cast<uint64_t>(ph & 0xffu) << 32u)) << 8u;
++						if (pl != 0xffffffffu && probe_pgm.count(pg) != 0 && n_tables++ < 96) {
++							const uint32_t u12 = g(st_sh, 0x24cu), u13 = g(st_sh, 0x24du), rsrc2 = g(st_sh, 0x213u);
++							const uint64_t tb  = (u12 == 0xffffffffu || u13 == 0xffffffffu) ? 0 : (static_cast<uint64_t>(u12) | (static_cast<uint64_t>(u13 & 0xffffu) << 32u));
++							journal("timeout probe: table (exp 0297): dispatch op %02x at %u of 0x%" PRIx64 ": user sgpr 12-13 %08x %08x -> table 0x%" PRIx64 " (%smapped), rsrc2 %08x (%u user sgprs)%s\n", op, q, pg, u12, u13, tb,
++							        tb != 0 && covered_sorted(*pm, tb, 0xa0) ? "" : "not ", rsrc2, rsrc2 == 0xffffffffu ? 0u : (rsrc2 >> 1u) & 0x1fu, probe_label != 0 ? "" : ", no BC5_DIRECT_PROBE_LABEL");
++							auto vsharp = [&](const char* what, uint64_t at) -> uint64_t {
++								if (!covered_sorted(*pm, at, 16)) {
++									journal("timeout probe: table (exp 0297): %s at 0x%" PRIx64 ": not mapped\n", what, at);
++									return 0;
++								}
++								const auto*    d  = reinterpret_cast<const volatile uint32_t*>(at);
++								const uint32_t d0 = d[0], d1 = d[1], d2 = d[2], d3 = d[3];
++								const uint64_t base   = d0 | (static_cast<uint64_t>(d1 & 0xffffu) << 32u);
++								const uint32_t stride = (d1 >> 16u) & 0x3fffu;
++								const uint64_t bytes  = stride != 0 ? static_cast<uint64_t>(d2) * stride : d2;
++								const bool     covers = probe_label != 0 && base <= probe_label && probe_label + 4 <= base + bytes;
++								journal("timeout probe: table (exp 0297): %s at 0x%" PRIx64 ": %08x %08x %08x %08x -> base 0x%" PRIx64 " stride %u records %u = %" PRIu64 " bytes [0x%" PRIx64 ", 0x%" PRIx64 ")%s%s\n", what, at, d0, d1, d2, d3,
++								        base, stride, d2, bytes, base, base + bytes, covers ? " COVERS THE LABEL" : "", base != 0 && !covered_sorted(*pm, base, 4) ? ", BASE NOT MAPPED" : "");
++								return base;
++							};
++							if (tb != 0) {
++								for (uint32_t s = 0; s <= 0x90u; s += 0x10u) {
++									char what[32];
++									std::snprintf(what, sizeof(what), "slot +0x%02x", s);
++									const uint64_t b = vsharp(what, tb + s);
++									if (s == 0x80u && b != 0) vsharp("slot +0x80 -> +0x680 (the store V#)", b + 0x680u);
++								}
++							}
++						}
++					}
+ 					n_disp++;
+ 				}
+ 				if (op == 0x11 || op == 0x26 || op == 0x13 || op == 0x2a || (op == 0x2e && len >= 3 && (sub_ib[q + 1] & 0xffffu) == 0x243u))
+@@ -7546,6 +7604,9 @@
+ 	// dword1 = offset, args {x, y, z}. TODO(verify) SET_BASE index 1 vs the console's usage.
+ 	bool                  mec_expand_ib = false; // experiment 0038: rebuild the IB with GFX-form dispatches
+ 	std::vector<uint32_t> mec_positions;         // offsets of its compute-form DISPATCH_INDIRECT
++	bool                  rt_sync_ib = false;     // experiment 0300: the IB has dispatches that get a sync packet behind them
++	std::vector<uint32_t> rt_sync_positions;     // experiment 0300: their offsets, ascending (the filter walks the IB once)
++	std::vector<uint32_t> probe_old_to_new;       // experiment 0277's probe fix, carried by 0300: the timeout probe reads the rebuilt IB, so its executed offsets go forward again
+ 	{
+ 		static const uint64_t max_count = std::getenv("BC5_DIRECT_INDIRECT_MAX") ? std::strtoull(std::getenv("BC5_DIRECT_INDIRECT_MAX"), nullptr, 10) : 4u << 20u;
+ 		const bool            survey    = journal_all();
+@@ -7903,6 +7964,18 @@
+ 					}
+ 				}
+ 			}
++			// Experiment 0300: a dispatch of a listed program (KYTY_BC5_RT_SYNC_PGM, a hex list as the other
++			// lists) gets a sync packet behind it in the rebuilt IB (with the rebuild below): EVENT_WRITE
++			// CS_PARTIAL_FLUSH by default, the data-less RELEASE_MEM BOTTOM_OF_PIPE_TS with KYTY_BC5_RT_SYNC=eop.
++			// A dispatch the host drops gets none. Without the list nothing changes.
++			{
++				static const std::set<uint64_t> rt_sync = pgm_list("KYTY_BC5_RT_SYNC_PGM");
++				if (!rt_sync.empty() && type == 3 && (op == 0x15 || op == 0x16) && rt_sync.count(pgm) != 0) {
++					rt_sync_positions.push_back(q);
++					static std::atomic<uint64_t> n_listed {0};
++					if ((n_listed++ & 0xfffu) == 0) journal("  rt sync (exp 0300): %s dispatch op %02x at %u of 0x%" PRIx64 " listed (%" PRIu64 " so far)\n", kind, op, q, pgm, n_listed.load());
++				}
++			}
+ 			if (type == 3 && (op == 0x2c || op == 0x38) && len >= 10 && ib[q + 5] > 65536u) { // experiment 0054
+ 				static std::atomic<uint64_t> n_multi {0};
+ 				if ((n_multi++ & 0xfffu) == 0) journal("  indirect multi draw op %02x at %u: draw count %u, DROPPED (%" PRIu64 " so far)\n", op, q, ib[q + 5], n_multi.load());
+@@ -7971,6 +8044,7 @@
+ 			std::memcpy(carried.ud, ud, sizeof(ud));
+ 		}
+ 		if (!mec_hi.empty() && mec_on) mec_expand_ib = true;
++		if (!rt_sync_positions.empty()) rt_sync_ib = true; // experiment 0300
+ 	}
+ 	// Experiment 0038, BC5_DIRECT_OPS_DUMP=<n>: the opcode sequence (offset:op[/event or
+ 	// control]) of the first n compute IBs of at least 1,000 dwords that hold a compute-form
+@@ -8114,19 +8188,24 @@
+ 	std::vector<uint32_t> mec_new_to_old;
+ 	const uint32_t*       sub_ib = ib;
+ 	uint32_t              sub_n  = num_dwords;
+-	if (mec_expand_ib) {
++	// Experiment 0300: the rebuild also carries the sync packets (rt_sync_positions). The compute-form conversion
++	// stays tied to mec_expand_ib (BC5_DIRECT_MEC_INDIRECT), so an IB rebuilt for the sync packets alone keeps its
++	// dispatches as they are, on either ring.
++	static const bool            rt_sync_eop = [] { const char* e = std::getenv("KYTY_BC5_RT_SYNC"); return e != nullptr && std::strcmp(e, "eop") == 0; }();
++	static std::atomic<uint64_t> rt_sync_n {0};
++	if (mec_expand_ib || rt_sync_ib) {
+ 		std::vector<uint32_t> old_to_new(num_dwords + 1, ~0u);
+ 		for (int attempt = 0; attempt < 64; attempt++) {
+ 			mec_ib.clear();
+ 			std::fill(old_to_new.begin(), old_to_new.end(), ~0u);
+-			mec_ib.reserve(num_dwords + 5 * mec_positions.size());
++			mec_ib.reserve(num_dwords + 5 * mec_positions.size() + 8 * rt_sync_positions.size()); // experiment 0300: + the sync packets
+ 			for (uint32_t q = 0; q < num_dwords;) {
+ 				const uint32_t h = ib[q];
+ 				uint32_t       len = 1;
+ 				if ((h >> 30u) == 3 || (h >> 30u) == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
+ 				if (q + len > num_dwords) len = num_dwords - q;
+ 				const bool dropped = std::find(opt.drop_offsets.begin(), opt.drop_offsets.end(), q) != opt.drop_offsets.end();
+-				const bool is_mec  = (h >> 30u) == 3 && ((h >> 8u) & 0xffu) == 0x16 && len == 4 && !dropped;
++				const bool is_mec  = mec_expand_ib && (h >> 30u) == 3 && ((h >> 8u) & 0xffu) == 0x16 && len == 4 && !dropped; // experiment 0300: mec_expand_ib &&
+ 				if (is_mec) {
+ 					const uint64_t a    = (ib[q + 1] & ~3ull) | (static_cast<uint64_t>(ib[q + 2] & 0xffffu) << 32u);
+ 					const uint64_t base = a & ~0xfffull;
+@@ -8138,6 +8217,13 @@
+ 					old_to_new[q] = static_cast<uint32_t>(mec_ib.size());
+ 					mec_ib.insert(mec_ib.end(), ib + q, ib + q + len);
+ 				}
++				if (rt_sync_ib && !dropped && std::binary_search(rt_sync_positions.begin(), rt_sync_positions.end(), q)) { // experiment 0300
++					if (rt_sync_eop) mec_ib.insert(mec_ib.end(), {0xC0064900u, 0x28u | (5u << 8u), 0u, 0u, 0u, 0u, 0u, 0u}); // RELEASE_MEM BOTTOM_OF_PIPE_TS, EVENT_INDEX 5, DATA_SEL 0, INT_SEL 0
++					else mec_ib.insert(mec_ib.end(), {0xC0004600u, 0x7u | (4u << 8u)});                                  // EVENT_WRITE CS_PARTIAL_FLUSH, EVENT_INDEX 4
++					if (attempt == 0 && (rt_sync_n++ & 0xfffu) == 0) {
++						journal("rt sync (exp 0300): %s %u dwords: %s behind the dispatch at %u (%" PRIu64 " inserted so far)\n", kind, num_dwords, rt_sync_eop ? "RELEASE_MEM BOTTOM_OF_PIPE_TS" : "CS_PARTIAL_FLUSH", q, rt_sync_n.load());
++					}
++				}
+ 				q += len;
+ 			}
+ 			old_to_new[num_dwords] = static_cast<uint32_t>(mec_ib.size());
+@@ -8186,6 +8272,7 @@
+ 			}
+ 			sub_ib = mec_ib.data();
+ 			sub_n  = static_cast<uint32_t>(mec_ib.size());
++			probe_old_to_new.swap(old_to_new); // experiment 0277's probe fix (exp 0300)
+ 		}
+ 	}
+ 	auto mec_back = [&mec_new_to_old](std::vector<uint32_t>& offsets) {
+@@ -8197,6 +8284,15 @@
+ 		}
+ 		offsets.swap(back);
+ 	};
++	auto probe_ran = [&probe_old_to_new](const std::vector<uint32_t>& offsets) { // experiment 0277's probe fix (exp 0300)
++		if (probe_old_to_new.empty()) return offsets;
++		std::vector<uint32_t> fwd;
++		fwd.reserve(offsets.size());
++		for (const uint32_t o: offsets) {
++			if (o < probe_old_to_new.size() && probe_old_to_new[o] != ~0u) fwd.push_back(probe_old_to_new[o]);
++		}
++		return fwd;
++	};
+ 	auto r = g_dev->submit(std::span<const uint32_t>(sub_ib, sub_n), opt, 2'000'000'000ull, with_gds, qring);
+ 	mec_back(r.executed_offsets);
+ 	if (qring != bc5::direct::kGfxRing && (g_comp_jobs++ & 0xffffu) == 0) {
+@@ -8292,7 +8388,10 @@
+ 		r.fence_ms     = fr.fence_ms;
+ 		r.submit_ms    = r.cs_ms + fr.fence_ms;
+ 	}
+-	if (r.timed_out) timeout_probe(sub_ib, sub_n, kind, g_submits.load(), &r.executed_offsets); // experiment 0160
++	if (r.timed_out) { // experiment 0160; experiment 0277's probe fix (exp 0300): the executed offsets in the rebuilt IB
++		const std::vector<uint32_t> ran_new = probe_ran(r.executed_offsets);
++		timeout_probe(sub_ib, sub_n, kind, g_submits.load(), &ran_new);
++	}
+ 	if (r.pending) { // BC5_DIRECT_ASYNC: the completion thread waits for it and journals the result
+ 		g_ok++;
+ 		chain_mark_executed(chain, ib, num_dwords, r.executed_offsets);
+@@ -8305,7 +8404,7 @@
+ 		it.job.kind       = kind;
+ 		it.job.num_dwords = num_dwords;
+ 		it.job.ib         = ib;
+-		if (BC5_DIAG_ENV("BC5_DIRECT_TIMEOUT_PROBE") != nullptr) { it.job.ib_copy.assign(sub_ib, sub_ib + sub_n); it.job.ran_copy = r.executed_offsets; } // experiment 0160
++		if (BC5_DIAG_ENV("BC5_DIRECT_TIMEOUT_PROBE") != nullptr) { it.job.ib_copy.assign(sub_ib, sub_ib + sub_n); it.job.ran_copy = probe_ran(r.executed_offsets); } // experiment 0160 (0277's probe fix, exp 0300: in the rebuilt IB)
+ 		it.job.ge_probe.swap(t_ge_probe); t_ge_probe.clear(); // experiment 0160
+ 		it.job.filter     = r.filter;
+ 		it.job.maps       = maps_p->size();
