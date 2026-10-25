@@ -1,0 +1,15 @@
+# 96 reads, 6 labelled (X 5, Y 1)
+  pages that change at all over the reads: 189 of 2048
+  pairs: 10 same-state, 5 X-Y; null of the top score (labels shuffled, 500): median 0.60, 95th percentile 1.00
+    page  301 (+0x12d000, 0x1193600900): score +0.60; differs in 0.40 of same-state pairs, 1.00 of X-Y pairs; 3 distinct contents
+    page    1 (+0x001000, 0x11934d4900): score +0.30; differs in 0.70 of same-state pairs, 1.00 of X-Y pairs; 10 distinct contents
+    page  258 (+0x102000, 0x11935d5900): score +0.30; differs in 0.70 of same-state pairs, 1.00 of X-Y pairs; 17 distinct contents
+    page    4 (+0x004000, 0x11934d7900): score +0.10; differs in 0.70 of same-state pairs, 0.80 of X-Y pairs; 8 distinct contents
+    page 1736 (+0x6c8000, 0x1193b9b900): score +0.10; differs in 0.90 of same-state pairs, 1.00 of X-Y pairs; 30 distinct contents
+    page    3 (+0x003000, 0x11934d6900): score +0.00; differs in 1.00 of same-state pairs, 1.00 of X-Y pairs; 83 distinct contents
+    page    6 (+0x006000, 0x11934d9900): score +0.00; differs in 1.00 of same-state pairs, 1.00 of X-Y pairs; 84 distinct contents
+    page    5 (+0x005000, 0x11934d8900): score +0.00; differs in 1.00 of same-state pairs, 1.00 of X-Y pairs; 65 distinct contents
+    page    7 (+0x007000, 0x11934da900): score +0.00; differs in 1.00 of same-state pairs, 1.00 of X-Y pairs; 79 distinct contents
+    page  256 (+0x100000, 0x11935d3900): score +0.00; differs in 1.00 of same-state pairs, 1.00 of X-Y pairs; 61 distinct contents
+    page  257 (+0x101000, 0x11935d4900): score +0.00; differs in 1.00 of same-state pairs, 1.00 of X-Y pairs; 84 distinct contents
+    page  259 (+0x103000, 0x11935d6900): score +0.00; differs in 1.00 of same-state pairs, 1.00 of X-Y pairs; 37 distinct contents

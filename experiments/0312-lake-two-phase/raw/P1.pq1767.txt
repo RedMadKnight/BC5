@@ -1,0 +1,12 @@
+# page 1767 (+0x6e7000, 0x1193bba900): 96 reads, 2 contents; reads per content {0: 65, 1: 31}
+  state 0: 19 clear reads; mean d +0.129, inX 0.666, inY 0.537, cells 0.463, share 0.285; reads b01.z1 b02.z3 b02.z6 b02.z7 b03.z5 b03.z6 b03.z7 b04.z1 b05.z6 b06.z3 b06.z4 b07.z6 b07.z7 b08.z1 b09.z2 b11.z7 b12.z0 b12.z1 b12.z2
+  state 1:  5 clear reads; mean d +0.118, inX 0.729, inY 0.612, cells 0.480, share 0.278; reads b04.z0 b06.z2 b10.z4 b10.z5 b11.z6
+  difference in mean d between states 0 and 1: 0.011; permutation p 0.891 (2000)
+  contents 0 and 1: 9 dwords only in 0, 9 only in 1; positions that differ (raw order) 11 of 1024
+    only in 0: low 16 bits 10..22, high 16 bits 1..1; first 0001000a 0001000b 0001000c 0001000d 0001000e 0001000f 00010010 00010011
+    only in 1: low 16 bits 1..26, high 16 bits 1..3; first 00010019 0001001a 00020001 00020002 00020003 00030004 00030005 00030006
+  content 0: low 16 bits 0..41230 (278 distinct), high 16 bits 0..45 (28 distinct), zeros 18
+  page 1765: 85 contents over the reads
+  page 1766: 82 contents over the reads
+  page 1768: 2 contents over the reads
+  page 1769: 1 contents over the reads
