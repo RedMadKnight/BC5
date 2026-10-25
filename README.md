@@ -29,7 +29,7 @@ BC5 is a hobby research project and is against piracy. You play games you own, d
 
 ## Status in numbers
 
-As of 2026-10-25, measured on one BC-250 with the maintainer's own copies of the games. Every number is a finding (F1 … F361) in [`docs/HANDOFF.md`](docs/HANDOFF.md) §2, backed by an experiment under [`experiments/`](experiments/). A "flip" is one frame the game presented.
+As of 2026-10-25, measured on one BC-250 with the maintainer's own copies of the games. Every number is a finding (F1 … F381) in [`docs/HANDOFF.md`](docs/HANDOFF.md) §2, backed by an experiment under [`experiments/`](experiments/). A "flip" is one frame the game presented.
 
 | | ASTRO BOT | Marvel's Wolverine (second title) |
 | --- | --- | --- |
@@ -57,7 +57,7 @@ As of 2026-10-25, measured on one BC-250 with the maintainer's own copies of the
 | Audio grain model and display-event coalescing | The second title's sound and timeline at real speed (1.00× for 10 minutes), no 30-fps cap needed | F246, F247 |
 | Tessellation-factor ring, second title | The night scene's tessellated draws are drawn; the geometry engine's reads at address 0 are gone | F248 |
 
-**The research so far:** 361 findings (F1–F361) in `docs/HANDOFF.md`, 296 experiments (0001–0298) in `experiments/`, 14 architecture decision records in `docs/decisions/`.
+**The research so far:** 381 findings (F1–F381) in `docs/HANDOFF.md`, 316 experiments (0001–0318) in `experiments/`, 14 architecture decision records in `docs/decisions/`.
 
 ### Known issues
 
@@ -92,6 +92,30 @@ BC5 has three parts:
 - **The tools**, [`tools/`](tools/) (Rust): `bc5-mount` reads PS5 game dumps (`.ffpfsc`) and packages (`.pkg`) as a read-only directory over FUSE; `bc5-agc` decodes GPU command streams.
 
 What BC5 is not: a firmware boot (the PS5 boot chain cannot run on a BC-250, and BC5 loads no system software either way); a new emulator (it extends KytyPlus); a PC emulator (F63); a piracy tool.
+
+### Why one board, and not a Vulkan port
+
+BC5 is built for the BC-250 alone, on purpose.
+
+**What the closeness buys.** The board's chip is of the PS5's family. The games' shaders use instructions that, among GPUs you can buy, only the BC-250's `gfx1013` has (F63). So BC5 can hand the GPU the game's own command stream and its native shader binaries, with no shader translation:
+- no stutter while shaders are recompiled;
+- the shaders' exact behaviour, including their ray-tracing instructions;
+- one layer fewer between the game and the GPU, and so fewer places for a translation bug.
+
+Optimisations are made for this machine's CPU, CU layout, memory and storage (CLAUDE.md, "Target hardware").
+
+**What it costs.** The silicon is close to the console's, but its firmware and driver are not: the BC-250 runs AMD's GPU firmware and Linux's `amdgpu`, and BC5 uses no Sony firmware or system software (ADR 0012, D18). Whatever the console's firmware and OS do for a game, the direct path has to supply itself:
+- the context-state stack and the cross-queue label hand-overs (F34–F42);
+- the queue placement of the game's compute work (ADR 0009, F178);
+- the order of the second title's ray-tracing build, which the console gets from one in-order queue (F381).
+
+There are two further costs. BC5 runs on this board only, and a GPU hang can take the whole machine down, because no translating driver sits in between to catch it.
+
+**A Vulkan port would be a second backend, not a small step.** It would have to translate the console's command stream into Vulkan and recompile the RDNA shader binaries into SPIR-V, ray-tracing instructions included. That is the path PC emulators of the PS4 take. Two parts of BC5 would carry over:
+- the CPU side: the loader, every system library written in the host, `bc5-mount` and `bc5-agc`;
+- the findings about how the games use the GPU (`docs/HANDOFF.md`).
+
+Portability is not a goal of this project; running PS5 games on this board as faithfully and as fast as it allows is.
 
 ## Build
 
@@ -154,7 +178,7 @@ Environment variables; the launchers set the title's values. The full list, with
 README.md            this file
 CLAUDE.md            standing instructions and the hard rules
 docs/
-  HANDOFF.md         research state: findings F1–F361 with sources, open questions, decisions
+  HANDOFF.md         research state: findings F1–F381 with sources, open questions, decisions
   PHASES.md          the gated roadmap (G0a, G1b, G2, G3 passed; 0b and 4 retired by D18; phase 5, play, current)
   console-vs-host.md what the console does, what the host does instead
   decisions/         ADRs 0001–0014, one decision each
@@ -167,7 +191,7 @@ tools/
   third_party/       vendored oozextract (MIT)
 backend/             C++20: the direct path (policy filter, state trackers, dma-buf mappings,
                      submission); kytyplus-patches/ the patch against KytyPlus
-experiments/         one directory per experiment, 0001–0298
+experiments/         one directory per experiment, 0001–0318
 ```
 
 ## How the research is run
