@@ -76,3 +76,21 @@ passes on compute ring 0 too. The fix candidate for the shared build is the dcb-
 one-ring flip rate, ~35/s against 40.6/s), or, as the next experiment, a dcb-aware one — the dependency for refused
 compute buffers and for dcbs that carry a dispatch (the filter already walks the opcodes; a flag set when it sees
 op 0x15/0x16), leaving draw-only dcbs free — measured by the same chain and the flips. Either needs a new ask.
+
+**Proposal — the dcb-aware dependency (a write-up, not a run; a new ask to the maintainer).** What 0321 showed: the
+dependency has to reach the title's graphics buffers that carry dispatches of the RT build, not only the compute buffers
+the refusal moved. The form: in `submit_now`, right before the submit call, a GFX-ring job takes the dependency on the
+compute rings' last jobs when it is (a) a compute buffer on the GFX ring (as patch0321 does) **or** (b) a dcb in which the
+filter saw a dispatch packet (op 0x15 `DISPATCH_DIRECT` or 0x16 `DISPATCH_INDIRECT`; the filter already walks every
+opcode of the buffer — one thread-local flag set in that walk, ~10 lines on patch0321). Draw-only dcbs, the bulk of the
+title's graphics submissions, keep running side by side with the compute rings. *Cost:* between the refined form's (no
+dcb waits; flips 305–342 per 10 s in the route's early windows, hang) and the dcb-wide form's (every dcb waits;
+296–327, clean, mean 35.4/s): the share of dcbs with dispatches sets it — the journal of any RT-on run gives that share
+offline (the descriptor check's "dcb dispatch" lines per submission against the `submit #… dcb` count: in 0314 S1's
+journal both can be counted before any box time is spent). *Measure:* the 0306 chain, 2 × 600 s, with a per-second line
+"N dcbs with dispatches and M refused buffers given the dependency", flips per 10-s window and the 600-s mean against
+0321's 35.4/s (dcb-wide), 0320's 36.0/s (one ring) and 0302's 40.6/s (two rings, no compaction); fdinfo for the two
+engines; clean 2 × 600 s = the candidate for the shared build at that cost. *Needs:* the private build (one unit + relink,
+~30 s, exp 0290's archive) and ~22 min of box time, after the maintainer's yes; the chain fixed to look for this binary's
+own marker line (the 180-s check that stopped S4) instead of exp 0302's descriptor lines. The interim safety for RT-on
+play, available today without a build, is `BC5_DIRECT_RING_DEPS=dcb` in the launcher at the one-ring cost.
