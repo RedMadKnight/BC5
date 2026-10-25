@@ -69,3 +69,22 @@ QueryMemorySize and Create, sceAcmBatchJobPriority); no `[bc5] NpCppWebApi: not 
 reached at the start, as expected. The maintainer's test on a shortcut of `~/bc5-work/exp0328/kyty_emulator` (a log per
 start) decides: his play to the crash moment, the log's stub-call lines, and the NpCppWebApi line if a response accessor
 is ever reached.
+
+**Addendum (2026-10-25 22:33–22:42, the maintainer's test on the shortcut "BC5 emulator (test 0328)", F392).**
+- The maintainer played from his saves, RT off, normal mode: binary fcb50e58 through `exp0328/play-pkg-0328.sh`, one
+  log per start (`~/bc5-work/exp0328/play-*.log`). The kernel log, the GPU journal and a memory sample once a minute
+  were recorded from the laptop (`streamplay0328.sh`, `sampleplay0328.sh`, `raw/maintainer-test/`). Saves:
+  f00fc16b3f853e34 before, 20bc4707f605524c after.
+- Two starts: 22:33:49–22:36:50 and 22:36:53–22:41:59, both **exit 0** (closed by the maintainer). No crash, no
+  kernel GPU line, no GPU timeout, no "[bc5] NpCppWebApi: not reachable" stop. The maintainer: "Gra przeszła dalej",
+  past the moment where exp 0326's two runs crashed on the shared build.
+- First calls of the remaining stubs: the six of the start check, and in the second run
+  `scePadGetAccessibilityControllerState` (zBsgF0q8DIM).
+- **Slowdowns.** The maintainer: "chwilowe spowolnienia. Obraz zwalniał a dźwięk był ok, a chwilę wcześniej było
+  odwrotnie". The memory sample shows the second run under memory pressure from ~22:39: MemAvailable 519, 484 and
+  520 MB, swap 547 → 796 MB, GTT 12,348–12,377 MiB (the first run peaked at 10,980 MiB), and the emulator's RSS
+  falling from 5,217 to 1,644 MB as pages went out. That is the memory limit of exp 0288, not a new fault.
+
+**Verdict of the addendum.** The crash of exp 0326 does not occur with the twelve implementations and the
+NpCppWebApi port (one test, two runs of 3 and 5 minutes). Which of the two removed it is not separated. The slowdowns
+are memory pressure.
