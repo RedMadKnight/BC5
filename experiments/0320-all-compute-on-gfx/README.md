@@ -88,3 +88,41 @@ family only, the other compute work staying on compute ring 0). Either one is a 
 `submit_now`'s dependency list, measured by this chain (2 × 600 s) and the flips. Whether the same split (two of the
 title's queues on two kernel rings, exp 0135) also made the machine-down of 2026-10-24 (F332, no refusal) stays open — see
 "What the history says" above; F332's kernel lines name two rings.
+
+**The journals (private data, outside the repo, not trimmed).** `~/bc5-data/captures/play-20261025-1804/gc/direct.log`
+(185,749,320 bytes, S1) and `~/bc5-data/captures/play-20261025-1814/gc/direct.log` (182,153,832 bytes, S2): exp 0302's
+descriptor check writes a line per dispatch with a table (675,841 and 663,553 "snapshots"); the false start's journal is
+`play-20261025-1802`. On the maintainer's cleanup list; nothing from them is needed in the repo beyond the counts above.
+
+**Proposal — the ordering fix (a write-up, not a run; the submission path needs the maintainer's yes before any build).**
+The hang needs the count-pass chain (compute ring 0) and the leaf-builder buffer (GFX, refused) to run unordered. Two ways
+to order them, both inside the host's submission path:
+
+- **(a) A cross-ring dependency for every buffer refused to the GFX ring: the GFX job waits for the compute ring's last
+  job submitted before it.** The backend already has the mechanism — `Device::set_ring_deps(mask)` (`backend/include/bc5/
+  direct.hpp`, exp 0129 / ADR 0009): bit 1 makes a GFX-ring job carry a CS dependency (`amdgpu_cs_request::dependencies`,
+  the fence of each compute ring's last job, `backend/src/direct.cpp`) — a kernel scheduler dependency, no CPU wait —
+  and `BC5_DIRECT_RING_DEPS=dcb` sets it from the environment. As it stands it applies to **every** GFX job (the title's
+  dcbs too), so it is a coarser ordering than needed: the dcbs would wait for the compute ring on every submission. *Cost:*
+  the GFX ring loses its overlap with the compute ring at every dcb — exp 0129 measured the two rings' overlap at +24–31 %
+  on the start screen; the route would lose some of that, likely less than 0320's one-ring placement, which also
+  serialises the compute work itself. *Measure:* the 0306 chain + `BC5_DIRECT_RING_DEPS=dcb`, 2 × 600 s, flips per 10-s
+  window and the 600-s mean against 0320's 36.0/s (one ring) and 0302's 40.6/s (two rings, no compaction); hang or none.
+  *Needs:* no build — an environment line in the derived launcher and an environ check; the proof is the journal's
+  `queued` order plus the absence of hangs. If it holds and the cost is acceptable, the refined form is one line in the
+  backend: apply the dependency only to **refused** buffers (`acb_ring()` returned GFX for an acb) and not to the title's
+  dcbs — a new mask bit or a per-submission flag through `submit_now`, which is the change that needs the yes.
+- **(b) Refusing the count-pass chains to the GFX ring as well.** `bc5::policy::compute_ring_refusal` (the backend
+  policy, a constexpr flag + a reason string) gains a reason for an acb holding a direct dispatch of 0x909939400 (or any of
+  `KYTY_BC5_RT_BUILD_PGM`'s family, the launcher's list) — the whole BVH build family on one ring in submission order,
+  the title's other compute work (the ring thread's remaining chains) staying on compute ring 0. *Cost:* the build family's
+  GPU time moves to GFX — in 0316's run A the count-pass chains were 1.19 M dispatches in 180 s, most of them at the load
+  burst; in steady state the family is a fraction of the compute ring's work, so the overlap lost is smaller than (a)'s;
+  but the chain buffers are large (thousands of dispatches each) and a GFX ring busy with them delays the draws. *Measure:*
+  the same chain and the same three numbers; and the refusal counter (`compute ring: … stays on the GFX ring (…; N so
+  far)`) with the new reason, to see what share moved. *Needs:* a backend change (the policy + its reason string, a
+  private archive as exp 0290's) and a relink (~30 s), i.e. the maintainer's yes; 2 × 600 s on the box.
+
+Order of trial: (a) first as the environment line (no build, one chain), because it answers "is an ordering enough" at
+once; then (b) or the refined (a) as the candidate for the shared build, chosen by the flips. Neither touches the title's
+data or the save path; both leave RT-off play as it is (the build family runs only with RT on).
