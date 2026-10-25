@@ -1,0 +1,29 @@
+== 2026-10-25 20:56:32 emulator 2026-10-25 17:56:50
+kyty_exception_handler: 0000000903d7eca0
+exception: type=AccessViolation, av_type=Read, av_addr=000000000000000c, native_code=0000000b
+regs: rax=00000000000016dc rbx=000000000000165c rcx=0000000000000080 rdx=0000000000000000
+regs: rsi=ffffffffffffc001 rdi=0000000000000000 rbp=00000010367fb810 rsp=00000010367fb690
+regs: r8 =0000001017b40e40 r9 =0000000000000001 r10=0000000000000000 r11=0000000000000000
+regs: r12=0000000000000505 r13=00000010baba46b0 r14=000000000000050a r15=00000010baba45b0
+Stack trace [thread = 5]:
+[0] 00000009046621ba, off=00000000046621ba, eboot.bin
+[1] 0000000903cca882, off=0000000003cca882, eboot.bin
+[2] 0000000903ccb1b8, off=0000000003ccb1b8, eboot.bin
+[3] 0000000901cc38f4, off=0000000001cc38f4, eboot.bin
+[4] 0000000903a5e5c9, off=0000000003a5e5c9, eboot.bin
+[5] 0000000903d75d6e, off=0000000003d75d6e, eboot.bin
+recent stubbed import: tB59hFLH3SA[LibcInternalExt_v1][LibcInternal_v1.1][Func]
+recent stubbed import: OQ-dzhlnM28[LibcInternalExt_v1][LibcInternal_v1.1][Func]
+recent stubbed import: hHlZQUnlxSM[libkernel_v1][libkernel_v1.1][Func]
+recent stubbed import: 0Cq8ipKr9n0[libkernel_v1][libkernel_v1.1][Func]
+recent stubbed import: WlyEA-sLDf0[libkernel_v1][libkernel_v1.1][Func]
+recent stubbed import: fgIsQ10xYVA[libkernel_v1][libkernel_v1.1][Func]
+recent stubbed import: XD3mDeybCnk[libkernel_v1][libkernel_v1.1][Func]
+recent stubbed import: adh--6nIqTk[libkernel_v1][libkernel_v1.1][Func]
+recent stubbed import: iPtZRWICjrM[libkernel_v1][libkernel_v1.1][Func]
+recent stubbed import: UtszJWHrDcA[libkernel_v1][libkernel_v1.1][Func]
+recent stubbed import: dFym5b41JLU[libkernel_v1][libkernel_v1.1][Func]
+recent stubbed import: XgVs4jRehcY[libkernel_v1][libkernel_v1.1][Func]
+Access violation: Read [000000000000000c] 
+ in /home/kjaniszewski/src/KytyPlus/src/loader/runtimeLinker.cpp:1141
+== 2026-10-25 21:00:34 exit 65
