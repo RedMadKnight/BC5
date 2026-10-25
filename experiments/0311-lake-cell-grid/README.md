@@ -47,6 +47,7 @@ Does a field of this grid follow the hole halves, a checkerboard whose phase cha
   - 20 frozen-view shots.
   - `grid0311.py` beside it (`raw/G1.grid.txt`): the grid bases came from the full-screen draw's tables, then 12
     bursts 14:53:18–14:54:13, each 8 × (grid A, grid B, depth) 30 ms apart.
+- **No shot was viewed:** the numbers decided it.
 - **Analysis, 14:55–14:58:** `rd0311.py` (`raw/G1.rd.txt`, `raw/G1.reads.json`) and `gan0311.py` (`raw/G1.gan.txt`).
   The reads (2.7 GB) were deleted at 14:59.
 - **Released 14:59:12** (BOX-QUEUE line 115).
@@ -64,7 +65,7 @@ Does a field of this grid follow the hole halves, a checkerboard whose phase cha
     grid written per frame);
   - the share of non-zero records stays at 0.650 (A) and 0.706 (B) in every read.
   - In b02 the hole state went Y (z0) … X (z5) → Y (z6) → X (z7), while grid A changed by 22, 0 and 21 bytes and grid
-    B by 21, 18 and 0 bytes between z4 and z7.
+    B by 0, 18 and 0 bytes between z4 and z7.
   - The bit-level comparison (2 X against 2 Y reads) finds 0 cells differing in every bit of both grids, and no bit
     with a parity contrast.
 
