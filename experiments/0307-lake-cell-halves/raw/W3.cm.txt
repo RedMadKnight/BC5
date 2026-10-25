@@ -1,0 +1,60 @@
+# /home/kjaniszewski/bc5-work/exp0307/r-W3/shots: 40 shots; lake window 1600x280
+  134109-ts00.png: patch share 0.186, family B
+  134113-ts01.png: patch share 0.244, family A
+  134114-ts02.png: patch share 0.247, family A
+  134115-ts03.png: patch share 0.250, family A
+  134116-ts04.png: patch share 0.265, family A
+  134117-ts05.png: patch share 0.212, family A
+  134118-ts06.png: patch share 0.205, family A
+  134119-ts07.png: patch share 0.190, family B
+  134120-ts08.png: patch share 0.182, family A
+  134121-ts09.png: patch share 0.193, family B
+  134122-ts10.png: patch share 0.184, family A
+  134124-ts11.png: patch share 0.173, family A
+  134125-ts12.png: patch share 0.154, family F4
+  134126-ts13.png: patch share 0.173, family A
+  134127-ts14.png: patch share 0.202, family A
+  134128-ts15.png: patch share 0.186, family B
+  134129-ts16.png: patch share 0.183, family A
+  134130-ts17.png: patch share 0.199, family A
+  134131-ts18.png: patch share 0.208, family A
+  134132-ts19.png: patch share 0.203, family A
+  134133-ts20.png: patch share 0.190, family B
+  134135-ts21.png: patch share 0.197, family A
+  134136-ts22.png: patch share 0.166, family F4
+  134137-ts23.png: patch share 0.183, family A
+  134138-ts24.png: patch share 0.029, family - (clean)
+  134139-ts25.png: patch share 0.161, family B
+  134140-ts26.png: patch share 0.192, family B
+  134142-ts27.png: patch share 0.140, family F3
+  134143-ts28.png: patch share 0.124, family F3
+  134144-ts29.png: patch share 0.032, family F5
+  134145-ts30.png: patch share 0.065, family F3
+  134146-ts31.png: patch share 0.075, family F4
+  134148-ts32.png: patch share 0.032, family F5
+  134149-ts33.png: patch share 0.017, family - (clean)
+  134150-ts34.png: patch share 0.007, family - (clean)
+  134151-ts35.png: patch share 0.009, family - (clean)
+  134152-ts36.png: patch share 0.085, family F3
+  134154-ts37.png: patch share 0.009, family - (clean)
+  134155-ts38.png: patch share 0.008, family - (clean)
+  134156-ts39.png: patch share 0.009, family - (clean)
+# families of patched shots (share >= 0.03), a shot joining the first family it matches with phi >= 0.6
+  A: 17 shots, mean share 0.207, union 0.297 of the window, phi with its first shot 0.68-0.89
+  B: 7 shots, mean share 0.186, union 0.252 of the window, phi with its first shot 0.60-0.69
+  F3: 4 shots, mean share 0.104, union 0.146 of the window, phi with its first shot 0.62-0.89
+  F4: 3 shots, mean share 0.132, union 0.171 of the window, phi with its first shot 0.64-0.94
+  F5: 2 shots, mean share 0.032, union 0.035 of the window, phi with its first shot 0.92-0.92
+# pairs of families: shared pixels (share of the smaller union), the null of two random masks of these shares, phi of the unions, union coverage
+  A-B: shared 0.223 of the smaller (random masks: ~0.297), phi -0.095, together 0.493 of the window
+  A-F3: shared 0.993 of the smaller (random masks: ~0.297), phi +0.630, together 0.299 of the window
+  A-F4: shared 0.193 of the smaller (random masks: ~0.297), phi -0.104, together 0.435 of the window
+  A-F5: shared 0.983 of the smaller (random masks: ~0.297), phi +0.284, together 0.298 of the window
+  B-F3: shared 0.156 of the smaller (random masks: ~0.252), phi -0.092, together 0.375 of the window
+  B-F4: shared 0.982 of the smaller (random masks: ~0.252), phi +0.764, together 0.255 of the window
+  B-F5: shared 0.307 of the smaller (random masks: ~0.252), phi +0.024, together 0.276 of the window
+  F3-F4: shared 0.137 of the smaller (random masks: ~0.171), phi -0.037, together 0.297 of the window
+  F3-F5: shared 0.970 of the smaller (random masks: ~0.146), phi +0.441, together 0.147 of the window
+  F4-F5: shared 0.293 of the smaller (random masks: ~0.171), phi +0.061, together 0.195 of the window
+# family sequence in time order (. clean): BAAAAAABABAAF4AABAAAABAF4A.BBF3F3F5F3F4F5...F3...
+  consecutive patched shots: same family 12, different 18

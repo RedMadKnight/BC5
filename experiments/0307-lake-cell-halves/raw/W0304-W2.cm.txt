@@ -1,0 +1,24 @@
+# /home/kjaniszewski/bc5-work/exp0304/r-W2/shots: 13 shots; lake window 1600x280
+  125952-ts00.png: patch share 0.066, family B
+  125957-ts01.png: patch share 0.007, family - (clean)
+  130002-ts02.png: patch share 0.008, family - (clean)
+  130007-ts03.png: patch share 0.007, family - (clean)
+  130012-ts04.png: patch share 0.007, family - (clean)
+  130017-ts05.png: patch share 0.024, family - (clean)
+  130022-ts06.png: patch share 0.015, family - (clean)
+  130027-ts07.png: patch share 0.126, family B
+  130032-ts08.png: patch share 0.192, family A
+  130037-ts09.png: patch share 0.187, family F3
+  130042-ts10.png: patch share 0.188, family A
+  130047-ts11.png: patch share 0.189, family F3
+  130053-ts12.png: patch share 0.202, family A
+# families of patched shots (share >= 0.03), a shot joining the first family it matches with phi >= 0.6
+  A: 3 shots, mean share 0.194, union 0.222 of the window, phi with its first shot 0.83-0.91
+  B: 2 shots, mean share 0.096, union 0.128 of the window, phi with its first shot 0.68-0.68
+  F3: 2 shots, mean share 0.188, union 0.201 of the window, phi with its first shot 0.92-0.92
+# pairs of families: shared pixels (share of the smaller union), the null of two random masks of these shares, phi of the unions, union coverage
+  A-B: shared 0.979 of the smaller (random masks: ~0.222), phi +0.698, together 0.225 of the window
+  A-F3: shared 0.134 of the smaller (random masks: ~0.222), phi -0.106, together 0.396 of the window
+  B-F3: shared 0.093 of the smaller (random masks: ~0.201), phi -0.103, together 0.317 of the window
+# family sequence in time order (. clean): B......BAF3AF3A
+  consecutive patched shots: same family 0, different 5
