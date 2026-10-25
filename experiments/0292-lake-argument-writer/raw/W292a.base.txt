@@ -1,0 +1,12 @@
+# /home/kjaniszewski/bc5-data/captures/play-20261025-0225/gc/direct.log: 11 writer shaders with indirect draws; argument addresses 11934d3d80..1193ad39e0
+  ps 11d090d900: 400 draws; op 24; base1 11935d3900 x400; offsets 5 distinct, 0x760..0x7e0
+  ps 11d0a98300: 200 draws; op 24; base1 11935d3900 x200; offsets 4 distinct, 0x740..0x7a0
+  ps 11d1d33200: 200 draws; op 24; base1 11935d3900 x200; offsets 4 distinct, 0x7c0..0x820
+  ps 11d1d88300: 2200 draws; op 24; base1 11935d3900 x2200; offsets 21 distinct, 0x8a0..0xb20
+  ps 11d1dd6400: 1400 draws; op 24; base1 11935d3900 x1400; offsets 19 distinct, 0x900..0xb40
+  ps 11d1e2f300: 130 draws; op 24; base1 11935d3900 x130; offsets 4 distinct, 0x7a0..0x800
+  ps 11d28b0b00: 200 draws; op 24; base1 11935d3900 x200; offsets 4 distinct, 0x720..0x780
+  ps 11d29c4f00: 600 draws; op 24; base1 1193ad3900 x400 11935d3900 x200; offsets 7 distinct, 0xa0..0xb60
+  ps 11d29c9000: 600 draws; op 24; base1 1193ad3900 x400 11935d3900 x200; offsets 7 distinct, 0x60..0x900
+  ps 11d29e9c00: 6770 draws; op 24; base1 11935d3900 x6770; offsets 44 distinct, 0x1a0..0x8a0
+  ps 11d373f100: 2185 draws; op 24; base1 11934d3900 x2185; offsets 11 distinct, 0x480..0x5c0
