@@ -1,0 +1,13 @@
+== 01:47:39 run M2 (arm M)
+2026-10-25 01:47:40 M2 live saves c0ee58b92c0cadc2 (reference c0ee58b92c0cadc2); binary /home/kjaniszewski/bc5-work/exp0288/kyty_emulator md5 08675be8 (2026-10-25 01:46)
+2026-10-25 01:52:52 M2 live saves c0ee58b92c0cadc2 (were c0ee58b92c0cadc2)
+M2 (arm M): stopped at 300 s, both breakdowns in the journal; crash lines 0, kernel lines 0, TIMEOUT lines 0; samples 30
+pass
+BOX-LOCK released
+== 01:52:52 run N1 (arm N)
+2026-10-25 01:52:52 N1 live saves c0ee58b92c0cadc2 (reference c0ee58b92c0cadc2); binary /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator md5 893f8ab4 (2026-10-24 23:19)
+mount before-remount pid 144596 etimes 24519 rss_mib 783 swap_mib 160 arenas 0
+the mount did not come up (see /home/kjaniszewski/bc5-work/exp0288/raw/N1-mount-arenas.log)
+== 01:54:13 the chain stops after N1
+== 01:54:13 chain done
+BOX-LOCK released

@@ -1,0 +1,7 @@
+mount before-remount pid 144596 etimes 22711 rss_mib 731 swap_mib 212 arenas 0
+mount before-remount pid 144596 etimes 24519 rss_mib 783 swap_mib 160 arenas 0
+mount before-remount pid 2011143 etimes 212 rss_mib 37 swap_mib 0 arenas 0
+mount after-remount pid 2013158 etimes 0 rss_mib 37 swap_mib 0 arenas 1
+mount before-unmount pid 2013158 etimes 312 rss_mib 695 swap_mib 56 arenas 1
+the launcher's normal mount is back
+mount after-normal-remount pid 2071254 etimes 0 rss_mib 38 swap_mib 0 arenas 0
