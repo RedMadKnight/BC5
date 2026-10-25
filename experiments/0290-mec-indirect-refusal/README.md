@@ -120,6 +120,21 @@ runs with no fault at all and the pair "BVH chain (now a GFX-ring job) + a graph
 data fault; the common factor is RT on at that point of the route, which exp 0281 (RT off, 6 × 600 s clean)
 removes. The private binary's cost in play was not measured (every run ended at ~2 min).
 
+**What the probe dumps name, and what they cannot.** In S2–S6 the host.s 2-s fence timeout came before the
+kernel.s reset, so the probe dumped the two timed-out jobs of each run (table above): in S3, S4 and S5 — the three
+runs without any fault — the pair is the same, the per-frame BVH build chain (0x909939400 / 0x909936c00 /
+0x909939700 / 0x909939900, ~4,300 dwords, a GFX-ring job because of the refusal) and a 29k-dword graphics buffer
+with 28 fast-launch point draws of the ES 0x11d0134500 family (F208.s draw); in S6 the chain and F208.s one-draw
+3,020-dword buffer; in S2 a 33k-dword graphics buffer of 57 fast-launch draws and 0x11d03a… dispatches plus a
+3,240-dword acb. The dumps say which *jobs* did not finish, not which packet the CP stood in: the probe.s "ran"
+marks are the filter.s (see 0273.s correction), the GFX ring was running host chain IBs whose segment-to-buffer map
+is not journaled, and the two coredumps of this chain (devcd5 for S2, devcd6 for the faultless S4) give the CP.s
+position inside such a chain IB (as S1.s devcd4 did) without naming the title.s packet. So the dispatch the ring
+stood in stays unnamed here; the faultless S4 coredump is the one to decode once the chain.s segment map or exp
+0277.s breadcrumbs are in a build. What the runs do say: with the refusal the hang of this route is a GFX-ring
+hang of RT-on work — the chain or the fast-launch draws in three runs, the second family.s stray writes in two —
+and it ends in a ring reset the kernel completes.
+
 **Verdict.** Passed for its question. Keeping every `DISPATCH_INDIRECT` off the compute ring until the CP's
 argument check is verified on the MEC turns this route's machine-down (F332: a compute-queue hang whose reset
 failed, MODE1, VRAM lost) into a GFX-ring hang the kernel recovers from, six times out of six, with the BVH
