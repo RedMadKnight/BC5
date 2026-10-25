@@ -1,0 +1,15 @@
+private input config /home/kjaniszewski/bc5-work/exp0321/input-rt.cfg: 9 lines, RayTracing.PPSA03671=on  (source /home/kjaniszewski/bc5-work/input.cfg, RayTracing.PPSA03671=off)
+skip list in the derived launcher: 37:export BC5_DIRECT_SKIP_PGM=0  # exp 0321: the compaction 909974400 runs;72:# gameplay (run 735). A run script may set BC5_DIRECT_SKIP_PGM itself.;89:export BC5_DIRECT_SKIP_PGM=0  # exp 0321: the compaction 909974400 runs (was: the default skip);
+launcher /home/kjaniszewski/bc5-work/exp0321/play-pkg-0321.sh (md5 cc55dfee) from /home/kjaniszewski/bc5-work/play-pkg.sh fde58cda + exp 0299's edits renamed; log /home/kjaniszewski/bc5-work/exp0321/play-last.log; diff /home/kjaniszewski/bc5-work/exp0321/raw/play-pkg-0321.diff
+working directory /home/kjaniszewski/bc5-work/exp0321/wd: 5151 entries, 5150 symlinks (layout of /home/kjaniszewski/bc5-work/exp0299/wd: 5151 entries); the title's saves /home/kjaniszewski/bc5-work/exp0321/wd/_SaveData/PPSA03671 (private); KYTY_BC5_SAVEDATA_DIR /home/kjaniszewski/bc5-work/exp0321/wd/_SaveData-pkg-play
+2026-10-25 18:56:57 live saves bb14b6dd35b644ff, snapshot /home/kjaniszewski/bc5-work/exp0321/saves-before-1856 (comparison only, nothing is restored into /home/kjaniszewski/bc5-work/_SaveData/PPSA03671)
+== 18:56:57 run S3
+S3: recovered GFX-ring hang: kernel amdgpu line at 127 s, ring reset succeeded; crash lines 0, kernel lines 9, TIMEOUT lines 2, probe lines 952, sync lines 0 (last: ), table lines 0, skip lines 0, compaction lines 1, devcoredumps 1
+HANG: recovered GFX-ring hang: kernel amdgpu line at 127 s, ring reset succeeded;
+== 18:59:38 S3 hung and the box recovered: the chain goes on
+== 18:59:38 run S4
+S4: no listed dispatch reached the GPU by 180 s (no descriptor line in /home/kjaniszewski/bc5-data/captures/play-20261025-1859/gc/direct.log): ray tracing is not on or the list does not match: run stopped; crash lines 0, kernel lines 0, TIMEOUT lines 0, probe lines 0, sync lines 0 (last: ), table lines 0, skip lines 0, compaction lines 2, devcoredumps 0
+FAIL: no listed dispatch reached the GPU by 180 s (no descriptor line in /home/kjaniszewski/bc5-data/captures/play-20261025-1859/gc/direct.log): ray tracing is not on or the list does not match: run stopped;
+== 19:02:50 the chain stops after S4
+2026-10-25 19:02:50 live saves bb14b6dd35b644ff (want bb14b6dd35b644ff)
+BOX-LOCK released
