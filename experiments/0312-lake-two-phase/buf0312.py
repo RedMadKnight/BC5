@@ -13,11 +13,14 @@
 # the depth reads are written at once. capa0287.py's file layout (bNN.times.txt, bNN.<name>.bin), so rd0312.py
 # (exp 0289's rd0289.py) labels the depth reads. Stops after N bursts, or when the run's BOX-LOCK line or its emulator
 # is gone. Reads go to <out dir> (mode 700; the title's data).
-# usage: buf0312.py <tag> <N bursts> <K reads> <period ms> <gap s> <out dir> [HOLD MiB]   (on the box, attended)
+# Run J1: with MIN_T, the first burst also waits until the emulator has run MIN_T s (/proc/<pid>/stat's start time), so
+# that every burst falls in the draw journal's window (BC5_DIRECT_DRAW_JOURNAL=<t>:<n>, t from the emulator's start).
+# usage: buf0312.py <tag> <N bursts> <K reads> <period ms> <gap s> <out dir> [HOLD MiB] [MIN_T s]   (on the box, attended)
 import glob, os, sys, time
 
 tag, n_bursts, k_reads, period, gap, out = sys.argv[1], int(sys.argv[2]), int(sys.argv[3]), float(sys.argv[4]) / 1000, float(sys.argv[5]), sys.argv[6]
 hold_kib = int(sys.argv[7]) * 1024 if len(sys.argv) > 7 else 1024 * 1024
+min_t = float(sys.argv[8]) if len(sys.argv) > 8 else 0.0
 home = os.path.expanduser("~")
 rdir = os.path.join(home, "bc5-work", "exp0312", "r-" + tag)
 lock = os.path.join(home, "bc5-work", "BOX-LOCK")
@@ -50,6 +53,14 @@ def emulators():
     return pids
 
 
+def age(pid):  # seconds since the process started
+    try:
+        st = open("/proc/%d/stat" % pid).read().rsplit(")", 1)[1].split()
+        return float(open("/proc/uptime").read().split()[0]) - int(st[19]) / os.sysconf("SC_CLK_TCK")
+    except (OSError, IndexError, ValueError):
+        return 0.0
+
+
 def mem_available_kib():
     for l in open("/proc/meminfo"):
         if l.startswith("MemAvailable:"):
@@ -71,9 +82,9 @@ while burst < n_bursts:
         say("%d emulators: stop" % len(pids))
         break
     if not frozen:
-        frozen = bool(glob.glob(os.path.join(rdir, "shots", "*-ts00.png")))
+        frozen = bool(glob.glob(os.path.join(rdir, "shots", "*-ts00.png"))) and age(pids[0]) >= min_t
         if frozen:
-            say("# frozen view: bursts begin")
+            say("# frozen view%s: bursts begin" % (", emulator at %.1f s" % age(pids[0]) if min_t else ""))
     if not frozen or time.time() - last < gap:
         time.sleep(0.05)
         continue

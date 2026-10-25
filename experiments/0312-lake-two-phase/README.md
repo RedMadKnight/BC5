@@ -129,3 +129,60 @@ off).
   - or decode page 1767's nine differing dwords as indices (16-bit pairs against the water's 256 × 256 grid, F376).
   - If neither page follows the halves, the depth pyramid's generation (a late phase reading last frame's pyramid)
     remains the other lead.
+
+## Run J1 (plan): P1 with every depth read sized by the draw journal
+
+**Question.** The same as P1's, with the labels repaired. Do pages 1767/1768 (and 1776), or any page with few contents,
+follow the X/Y hole state frame by frame, once every depth read is decoded at its frame's render size?
+
+**Plan** (the user's yes, 2026-10-25 ~20:40; a slot after the maintainer's play, on the top session's GO; RT off).
+- **The launcher:** today's `play-pkg.sh` (c0357628 after exps 0323/0324), re-derived with exp 0299's three edits
+  plus one: `MLOG` goes to `~/bc5-work/exp0312/play-pkg-mount.log`, a private launcher's own mount log. Expected: 5
+  lines added, 4 of them replacing originals.
+  - It keeps 0323's `BC5_DIRECT_RING_DEPS=dcb`, today's shared setup; P1 ran without it.
+  - With RT off the build family is dropped anyway, compaction included (F343). The run still passes P1's skip list
+    `BC5_DIRECT_SKIP_PGM=909974400`.
+  - The build: the normal shared build at the time; the config: P1's `input-0312.cfg` (RT off, MangoHud off).
+- **The journal:** `BC5_DIRECT_DRAW_JOURNAL=210:3000 BC5_DIRECT_DRAW_JOURNAL_PS=11d01d7100`, i.e. from the emulator's
+  210th second, up to 3,000 buffers with the full-screen water draw. Each one logs its draw line (`rt0 WxH`, `vp WxH`)
+  and its "bake draw" line (journal time and wall clock).
+  - Exp 0311's `150:30` journalled 30 frames from 150 s. P1's bursts ran at about 186–241 s, so that window would
+    have missed them.
+  - The start lies after the route's Photo Mode keys (at about 185 s in P1), so the journal's slowdown does not touch
+    the route.
+- **The bench:** `bench0312.sh` with `SERIES=24` (24 shots, 120 s of frozen view), `ab0312.sh` as for P1.
+- **The reads:** `buf0312.py J1 16 8 30 4 <dir> 1024 212`, i.e. 16 bursts of 8 × (culling buffers, depth) 30 ms
+  apart, 4 s between bursts. The new last argument holds the first burst until the emulator has run 212 s, inside
+  the journal's window.
+- **The analysis, new scripts:**
+  - `rdj0312.py` without a frames file (= `rd0312.py`) gives every read's best size and clear flag.
+  - `fr0312.py` turns the journal into frames (one per full-screen water draw: wall clock, `rt0` W, `vp` W). It
+    matches each read to its frame by the lag that makes the most clear reads agree with their frame's width (exp
+    0283's rule), for either field, and writes the sizes.
+    - Its `--selftest`, on the laptop: synthetic frames and reads 40 ms after their frame. It recovers `vp` at
+      +40 ms with agreement 1.00; the fixed `rt0` gets 0.16.
+  - `rdj0312.py` with the frames file builds the families from every frame-sized depth read (shear at the frame's
+    size ≤ 3, depth-0 share > 0.03) and labels each read at its frame's size, as exp 0283's `xy0283.py`: X, Y, both,
+    mixed, no holes, doubtful.
+  - `pqj0312.py`, the test, with the journal frame as the unit (reads 30 ms apart see a frame two or three times).
+    Per page, over the frames whose depth reads agree on X or Y and whose culling reads agree on the page:
+    - the state × content table and its chi-square, p by shuffling the frames' states;
+    - pages 1767/1768 and 1776, named in advance from P1, each with its own p;
+    - a scan of every page with 2–8 contents against the null of the scan's largest.
+    - Its `--selftest`, on the laptop: a page that follows the state in 90 % of 120 frames comes out at p 0.0005 and
+      on top of the scan; random pages at p ≈ 1.
+  - `mkj0312.py`: a synthetic capture (2 bursts, 8 frames alternating X/Y, page 1767 by state), for `rdj0312.py` and
+    `pqj0312.py` on the box before the run. Expected: two families, every read X or Y by its frame, page 1767 p ≈ 0.03
+    (1/35 is the smallest a 4/4 split allows), 1776 not.
+  - `pg0312.py` and `pk0312.py` on the J1 reads as for P1, for comparison.
+- **The reading:**
+  - A named page with p < 0.01, or a scanned page above the scan null's 95th percentile, holds a culling state that
+    follows the halves. Decoding its dwords comes next.
+  - If neither, and the labels this time are many (most frames X or Y), the culling buffers do not carry the hole
+    state, and the depth pyramid's generation is next.
+  - If the journal cannot size the reads (neither field agrees with the clear reads), J1 says so and stops there.
+- **Rules as for P1:** the lock line only into an empty BOX-LOCK, the live saves checked against the top session's
+  current reference (the maintainer plays before), the kernel stream, stop at the first reset.
+  - Reads and shots are deleted after the analysis, unviewed. The journal stays private in `~/bc5-data/captures`
+    (its size noted).
+- **About 30 minutes:** setup and the synthetic check ~6, the run ~7, the analysis ~10, the cleanup ~3.
