@@ -22,7 +22,8 @@ diff -u --label "a/$F" --label "b/$F" src/videoOut.base.cpp src/videoOut.cpp > p
 git -C "$K" apply --check "$E/patch_0291.diff" && echo "patch_0291.diff applies to the tree (not applied)" || { echo "patch_0291.diff does not apply: stop"; release; exit 1; }
 diff <(tr -d '\r' < patch_0291.diff | grep '^[-+][^-+]') <(grep '^[-+][^-+]' patch_0291-lf.diff) > /dev/null \
   && echo "its changed lines equal patch_0291-lf.diff's" || echo "WARNING: the changed lines differ from patch_0291-lf.diff"
-distrobox enter ubuntu -- sh -c 'cd ~/bc5-work/kytyplus-build && ninja -t compdb' > compdb.json 2> "$R/compdb.err"
+# -x expands ninja's response files (the first try at 02:12 failed on "@...videoOut.cpp.o.rsp"; exp 0193 used -x too)
+distrobox enter ubuntu -- sh -c 'cd ~/bc5-work/kytyplus-build && ninja -t compdb -x' > compdb.json 2> "$R/compdb.err"
 distrobox enter ubuntu -- python3 -I build0291.py compdb.json > "$R/build.txt" 2>&1
 RC=$?
 release

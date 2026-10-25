@@ -1,0 +1,5 @@
+2026-10-25 02:13:09
+binary /home/kjaniszewski/bc5-work/exp0291/bin/kyty_emulator md5 5c487284c08154c60c42332a08d39c3f, report unset, extra env KYTY_BC5_RT=0, 300 s, saves /home/kjaniszewski/bc5-work/exp0196/saves-before-152617, live saves kept in /home/kjaniszewski/bc5-work/exp0196/saves-before-021309-386849173-2131569
+boot 831e5915; play-pkg.sh md5 65d359635673b17c80aa7aaca92a4fce
+before: Mem: total 15192 used 2373 free 10618 avail 12818; Swap: total 7595 used 572 free 7023 avail ; 
+emulator pid 2131803: kyty_emulator   /home/kjaniszewski/bc5-work/exp0291/bin/kyty_emulator --game /home/kjaniszewski/bc5-data/mnt/pkg-play --

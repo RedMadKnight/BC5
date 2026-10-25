@@ -1,0 +1,13 @@
++ /usr/bin/clang++ @src/CMakeFiles/kyty_emulator.dir/graphics/presentation/videoOut.cpp.o.rsp -o /home/kjaniszewski/bc5-work/exp0291/obj/videoOut.cpp.o -c /home/kjaniszewski/bc5-work/exp0291/src/videoOu ...
+clang++: error: no such file or directory: '@src/CMakeFiles/kyty_emulator.dir/graphics/presentation/videoOut.cpp.o.rsp'
+Traceback (most recent call last):
+  File "/home/kjaniszewski/bc5-work/exp0291/build0291.py", line 45, in <module>
+    run(clean)
+    ~~~^^^^^^^
+  File "/home/kjaniszewski/bc5-work/exp0291/build0291.py", line 23, in run
+    subprocess.run(["nice", "-n", "19"] + argv, cwd=BUILD, check=True)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/lib/python3.14/subprocess.py", line 578, in run
+    raise CalledProcessError(retcode, process.args,
+                             output=stdout, stderr=stderr)
+subprocess.CalledProcessError: Command '['nice', '-n', '19', '/usr/bin/clang++', '@src/CMakeFiles/kyty_emulator.dir/graphics/presentation/videoOut.cpp.o.rsp', '-o', '/home/kjaniszewski/bc5-work/exp0291/obj/videoOut.cpp.o', '-c', '/home/kjaniszewski/bc5-work/exp0291/src/videoOut.cpp']' returned non-zero exit status 1.
