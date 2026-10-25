@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # BC5 experiment 0312 (exp 0311's bench0311.sh, 20 frozen-view shots 5 s apart; buf0312.py reads beside it): one run of the maintainer's lake save (a private
 # copy of ~/bc5-work/saves-lake-1153 in exp 0299's private working directory) through play-pkg-0312.sh (today's
-# play-pkg.sh ac7a9a57 with exp 0299's three edits, its log in exp0312: the RT reflection traversal runs unless
+# play-pkg.sh, bb51caf2 at the run, with exp 0299's three edits, its log in exp0312: the RT reflection traversal runs unless
 # BC5_DIRECT_SKIP_PGM says otherwise), with the input
 # configuration input-0312.cfg (exp 0194's keyboard-off file plus RayTracing.PPSA03671=off, as the maintainer's own
 # input.cfg). The lake bench's route (exp 0194 README; exp 0293's bench0293.sh): the first cross at 90 s (today's

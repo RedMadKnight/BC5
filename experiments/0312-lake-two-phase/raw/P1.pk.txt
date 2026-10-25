@@ -1,0 +1,11 @@
+# 24 clear depth reads with holes; d = inX - inY: min -0.24, median 0.05, max 0.40
+  pages whose content agrees for some pairs and not others: 43
+  null of the top score (d shuffled, 500): median 0.177, 95th percentile 0.198, 99th 0.199
+    page 1296 (+0x510000, 0x11939e3900): score +0.146; keys agree in 1 of 276 pairs; 23 distinct contents
+    page  312 (+0x138000, 0x119360b900): score +0.144; keys agree in 1 of 276 pairs; 23 distinct contents
+    page  323 (+0x143000, 0x1193616900): score +0.119; keys agree in 4 of 276 pairs; 20 distinct contents
+    page    5 (+0x005000, 0x11934d8900): score +0.109; keys agree in 1 of 276 pairs; 23 distinct contents
+    page 1767 (+0x6e7000, 0x1193bba900): score +0.061; keys agree in 181 of 276 pairs; 2 distinct contents
+    page 1768 (+0x6e8000, 0x1193bbb900): score +0.061; keys agree in 181 of 276 pairs; 2 distinct contents
+    page 1783 (+0x6f7000, 0x1193bca900): score +0.045; keys agree in 3 of 276 pairs; 21 distinct contents
+    page 1776 (+0x6f0000, 0x1193bc3900): score +0.032; keys agree in 141 of 276 pairs; 3 distinct contents
