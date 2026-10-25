@@ -1,0 +1,51 @@
+# /home/kjaniszewski/bc5-data/priv/exp0293/W293a: 95 argument records; 12 consecutive pairs of clear same-size depth reads
+  b03 z0-z1   30.1 ms: phi -0.492, kept 0.012 (depth 0 on 0.339), 22 records changed
+  b03 z3-z4   29.9 ms: phi +1.000, kept 1.000 (depth 0 on 0.320), 0 records changed
+  b05 z4-z5   30.0 ms: phi +1.000, kept 1.000 (depth 0 on 0.317), 0 records changed
+  b07 z6-z7   30.0 ms: phi +1.000, kept 1.000 (depth 0 on 0.364), 0 records changed
+  b08 z2-z3   30.0 ms: phi +1.000, kept 1.000 (depth 0 on 0.380), 0 records changed
+  b09 z3-z4   30.0 ms: phi +1.000, kept 1.000 (depth 0 on 0.303), 0 records changed
+  b10 z0-z1   30.1 ms: phi +1.000, kept 1.000 (depth 0 on 0.348), 0 records changed
+  b10 z1-z2   30.0 ms: phi +1.000, kept 1.000 (depth 0 on 0.348), 0 records changed
+  b11 z0-z1   30.1 ms: phi +1.000, kept 1.000 (depth 0 on 0.334), 0 records changed
+  b11 z1-z2   30.0 ms: phi +1.000, kept 1.000 (depth 0 on 0.334), 0 records changed
+  b12 z0-z1   30.1 ms: phi +1.000, kept 1.000 (depth 0 on 0.320), 0 records changed
+  b12 z1-z2   30.0 ms: phi +1.000, kept 1.000 (depth 0 on 0.320), 0 records changed
+# holes changed (phi < 0.8): 1 pairs; holes stayed (phi >= 0.95): 11 pairs
+  records changed per pair: holes changed median 22, holes stayed median 0
+# per record: changed in holes-changed pairs | in holes-stayed pairs (the 20 with the largest difference)
+  11935d43a0: 1 of 1 | 0 of 11
+  11935d4340: 1 of 1 | 0 of 11
+  11935d4220: 1 of 1 | 0 of 11
+  11935d4180: 1 of 1 | 0 of 11
+  11935d4160: 1 of 1 | 0 of 11
+  11935d4140: 1 of 1 | 0 of 11
+  11935d4120: 1 of 1 | 0 of 11
+  11935d40e0: 1 of 1 | 0 of 11
+  11935d40c0: 1 of 1 | 0 of 11
+  11935d40a0: 1 of 1 | 0 of 11
+  11935d4000: 1 of 1 | 0 of 11
+  11935d3ce0: 1 of 1 | 0 of 11
+  11935d3c80: 1 of 1 | 0 of 11
+  11935d3c60: 1 of 1 | 0 of 11
+  11935d3be0: 1 of 1 | 0 of 11
+  11935d3bc0: 1 of 1 | 0 of 11
+  11935d3ba0: 1 of 1 | 0 of 11
+  11935d3b60: 1 of 1 | 0 of 11
+  11935d3a00: 1 of 1 | 0 of 11
+  11934d3d60: 1 of 1 | 0 of 11
+# records that changed in every holes-changed pair and in no holes-stayed pair: 11935d43a0 11935d4340 11935d4220 11935d4180 11935d4160 11935d4140 11935d4120 11935d40e0 11935d40c0 11935d40a0 11935d4000 11935d3ce0 11935d3c80 11935d3c60 11935d3be0 11935d3bc0 11935d3ba0 11935d3b60 11935d3a00 11934d3d60 11934d3d00 11934d3ce0
+# every consecutive pair: depth words changed (of the whole image) and argument records changed
+  b01: 3839700/23 3186476/0 5565745/26 1897644/2 5558343/14 2113661/22 4754282/0
+  b02: 3792756/70 3681306/0 4330624/70 4202897/23 4561235/24 1880355/70 4515168/3
+  b03: 6185616/22 476568/0 6170634/22 0/0 809854/0 1553783/26 5297595/0
+  b04: 0/0 4224128/65 0/3 4345984/66 11233/4 0/0 0/0
+  b05: 1944505/70 3432051/4 0/0 4412210/66 0/0 2789308/69 581648/2
+  b06: 0/0 4347007/17 468731/0 1567449/0 4309692/70 586284/4 866622/21
+  b07: 1729747/0 1914512/27 4953024/4 0/0 1882692/23 4986529/0 0/0
+  b08: 879739/65 1958720/0 0/0 1081855/27 1757729/4 0/0 877313/21
+  b09: 0/0 1892224/12 5430259/0 0/0 3412539/25 2780168/4 0/0
+  b10: 0/0 0/0 2115935/25 4347670/2 0/0 0/0 1689761/66
+  b11: 0/0 0/0 1913541/25 4976376/4 0/0 0/0 2066582/23
+  b12: 0/0 0/0 1922943/25 5215748/2 0/0 0/0 0/0
+  depth changed and arguments changed 44; depth changed only 12; arguments changed only 1; neither 27
