@@ -1,0 +1,39 @@
+# /home/kjaniszewski/bc5-data/captures/play-20261025-0250/gc/direct.log: 384 windows, 190 full-screen draws, 1515 candidate-pass dispatch hits, 95 argument records; wall - t = 1792889439.134 s
+# per window: frame signatures, one letter per distinct tuple of group counts, per pass (11d0375600 / 11d0376b00 / 11d0415700 / 11d04f0c00 / 11d0288a00)
+  w28: abcbbdefgh | abbbbbbbbb | aaaaaaaaaa | abbbbbbbbb | abcccdddee
+  w48: ijkjkljkmm | abbbbbbbbb | aaaaaaaaaa | abbbbbbbbb | afggbbcccc
+  w68: nkojpqqlmr | abbbbbbbbb | aaaaaaaaaa | abbbbbbbbb | afggbbccdd
+  w88: stjulvoljo | abbbbbbbbb | aaaaaaaaaa | abbbbbbbbb | abcccccccc
+  w113: svomwxvymz | abbbbbbbbb | aaaaaaaaaa | abbbbbbbbb | abeeeeeeee
+  w133: stlzlmzlmw | abbbbbbbbb | aaaaaaaaaa | abbbbbbbbb | abeeeeeeee
+  w165: ioabmclmwx | abbbbbbbbb | aaaaaaaaaa | abbbbbbbbb | affeeeeeee
+  w185: dejovwxzlm | abbbbbbbbb | aaaaaaaaaa | abbbbbbbbb | affeeeeeee
+  w205: speaoexkjp | abbbbbbbbb | aaaaaaaaaa | abbbbbbbbb | aggggggggg
+  w206: ijoexkjbej | abbbbbbbbb | aaaaaaaaaa | abbbbbbbbb | afffffffff
+  w226: srukojkejo | abbbbbbbbb | aaaaaaaaaa | abbbbbbbbb | afffffffff
+  w246: fejkukoaxe | abbbbbbbbb | aaaaaaaaaa | abbbbbbbbb | afffffffff
+  w266: sjrejkexkj | abbbbbbbbb | aaaaaaaaaa | abbbbbbbbb | aggggggggg
+  w286: skexkabejk | abbbbbbbbb | aaaaaaaaaa | abbbbbbbbb | afffffffff
+  w305: sjpeqkexkj | abbbbbbbbb | aaaaaaaaaa | abbbbbbbbb | aggggggggg
+  w318: iapeaoexkj | abbbbbbbbb | aaaaaaaaaa | abbbbbbbbb | aggggggggg
+  w325: sreqkekkjp | abbbbbbbbb | aaaaaaaaaa | abbbbbbbbb | aggggggggg
+  w351: ijkemlmrpu | abbbbbbbbb | aaaaaaaaaa | abbbbbbbbb | affccddeee
+  w383: gkjklekmzl | abbbbbbbbb | aaaaaaaaaa | abbbbbbbbb | aggccddeee
+# frame period (ms) over 171 consecutive full-screen draws of one window: median 104.0, quartiles 54.0-182.0, range 32.0-373.0
+  11d0375600: a=938; a=104,1060; b=73,937; b=105,1061; c=73,938; c=104,1050; d=75,941; d=1060; e=83,1024; e=104,1058; f=86,1034; f=1061
+  11d0376b00: a=2; b=1,1,2
+  11d0415700: a=32
+  11d04f0c00: a=-; b=4
+  11d0288a00: a=-; b=5312; c=4160; d=3776; e=2752; f=7168; g=5760
+# consecutive argument reads matched to frames of one window (L 50 ms); 0 pairs had no frame
+  11d0375600: arguments changed and counts changed 0; arguments only 0; counts only 0; neither 0
+  11d0376b00: arguments changed and counts changed 0; arguments only 0; counts only 0; neither 0
+  11d0415700: arguments changed and counts changed 0; arguments only 0; counts only 0; neither 0
+  11d04f0c00: arguments changed and counts changed 0; arguments only 0; counts only 0; neither 0
+  11d0288a00: arguments changed and counts changed 0; arguments only 0; counts only 0; neither 0
+# arguments changed against a new frame between the two reads' frames, by lag L (ms)
+  L   0: changed with a new frame 0; changed within one frame 0; new frame, unchanged 0; neither 0
+  L  25: changed with a new frame 0; changed within one frame 0; new frame, unchanged 0; neither 0
+  L  50: changed with a new frame 0; changed within one frame 0; new frame, unchanged 0; neither 0
+  L  75: changed with a new frame 0; changed within one frame 0; new frame, unchanged 0; neither 0
+  L 100: changed with a new frame 0; changed within one frame 0; new frame, unchanged 0; neither 0

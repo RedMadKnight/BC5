@@ -1,0 +1,48 @@
+# /home/kjaniszewski/bc5-data/priv/exp0295/W295a: 44 argument records; 119 plateaus in 16 bursts
+# plateaus per burst: reads, family (? not clear, - clear without a family), * arguments changed inside, render size
+  b01: z0 ? 2304 | z1 F13 3328 | z2 ? 3328 | z3 ? 2304 | z4 ? 2560 | z5 Y 2560 | z6 ? 2560 | z7 ? 2048
+  b02: z0 ? 3328 | z1 ? 3328 | z2 F8 3328 | z3 ? 2304 | z4 ? 2048 | z5 F12 2560 | z6 ? 2560 | z7 ? 2048
+  b03: z0 ? 2304 | z1 ? 2304 | z2 F4 2048 | z3 F9 2048 | z4 F5 2048 | z5 F7 2304 | z6 F6 2304 | z7 F3 2304
+  b04: z0 F10 3328 | z1 ? 2304 | z2 ? 2304 | z3 ? 2304 | z4 ? 2304 | z5 F11 3328 | z6 ? 3328 | z7 ? 3328
+  b05: z0 F14 3328 | z1 ? 2304 | z2 F14 3328 | z3 ? 2304 | z4 X 3328 | z5 ? 2304 | z6 F14 3328 | z7 ? 3328
+  b06: z0 F14 3328 | z1 ? 2304 | z2 X 3328 | z3 ? 3328 | z4 ? 2304 | z5 X 3328 | z6 ? 3328 | z7 X 2048
+  b07: z0 ? 2304 | z1 F14 3328 | z2 ? 2304 | z3 F14 3328 | z4 ? 2304 | z5 X 3328 | z6 ? 2304 | z7 F15 3328
+  b08: z0 ? 3328 | z1 X 2048 | z2 ? 3328 | z3 X 2048 | z4 ? 3328 | z5 F15 2048 | z6 ? 3328 | z7 ? 3328
+  b09: z0-1 X 3328 | z2 ? 2304 | z3 F15 3328 | z4 ? 2304 | z5 F15 3328 | z6 ? 2304 | z7 ? 2304
+  b10: z0 ? 3328 | z1 X 2048 | z2 ? 2304 | z3 ? 3328 | z4 F15 2048 | z5 ? 3328 | z6 X 2048 | z7 ? 3328
+  b11: z0 - 3328 | z1 ? 2304 | z2-4 - 3328 | z5 - 3072 | z6 ? 3072 | z7 ? 2048
+  b12: z0 ? 2304 | z1 - 3328 | z2 ? 2304 | z3 ? 3328 | z4 - 3328 | z5 ? 2304 | z6-7 - 3328
+  b13: z0 - 2048 | z1 ? 3328 | z2 ? 3328 | z3 - 2048 | z4 ? 3328 | z5 - 2048 | z6 ? 2304 | z7 ? 3328
+  b14: z0 F15 3328 | z1 ? 2304 | z2 ? 2304 | z3-4 - 3328 | z5 ? 2304 | z6-7 - 3328
+  b15: z0 ? 2304 | z1 - 3328 | z2 ? 3328 | z3 ? 3328 | z4-5 - 2048 | z6 ? 3328 | z7 - 2048
+  b16: z0-1 - 2048 | z2 ? 3328 | z3 ? 3328 | z4 - 2048 | z5 ? 3328 | z6-7 - 2048
+  plateau lengths (reads): 1: 111, 2: 7, 3: 1; between the starts of consecutive plateaus of 2+ reads in a burst: median 180 ms, range 90-180 ms (2)
+  consecutive plateaus of 2+ reads in one burst: 2 pairs, arguments different in 2
+# all plateaus: 119 plateaus, 34 labelled (F10 1, F11 1, F12 1, F13 1, F14 6, F15 6, F3 1, F4 1, F5 1, F6 1, F7 1, F8 1, F9 1, X 10, Y 1)
+  argument records read in every labelled plateau 44, of them varying 11
+  equal varying records per pair: same family 0.540 (65 pairs), different families 0.531 (451 pairs); difference +0.009, permutation p 0.3883
+    same family: same render size 0.668 / +0.663 (34 pairs), different size 0.399 / +0.700 (31 pairs) [equal share / hole phi]
+    different families: same render size 0.687 / +0.086 (155 pairs), different size 0.449 / +0.097 (296 pairs) [equal share / hole phi]
+  Mantel: Spearman of hole phi with the share of equal varying records, 516 pairs: +0.035, permutation p 0.1619
+    drift check, Spearman with the time between the two plateaus: of the equal share -0.115, of the hole phi -0.115
+  per record, equal in same-family pairs minus in different-family pairs, the largest 10 (null of the largest: median 0.098, 95th percentile 0.233; p of the top 0.0575):
+    1193ad3940: +0.221 (equal in 39 of 65 same-family pairs, 171 of 451 different)
+    1193ad3a20: +0.221 (equal in 39 of 65 same-family pairs, 171 of 451 different)
+    11935d3dc0: +0.051 (equal in 15 of 65 same-family pairs, 81 of 451 different)
+    11934d3940: +0.041 (equal in 60 of 65 same-family pairs, 398 of 451 different)
+    11935d3ce0: +0.007 (equal in 15 of 65 same-family pairs, 101 of 451 different)
+    11934d3960: -0.016 (equal in 50 of 65 same-family pairs, 354 of 451 different)
+    11935d3e00: -0.056 (equal in 2 of 65 same-family pairs, 39 of 451 different)
+    1193ad39a0: -0.088 (equal in 46 of 65 same-family pairs, 359 of 451 different)
+    1193ad3a80: -0.088 (equal in 46 of 65 same-family pairs, 359 of 451 different)
+    1193ad39c0: -0.096 (equal in 37 of 65 same-family pairs, 300 of 451 different)
+  value against the plateau's depth-0 share, 11 varying record dwords over 34 plateaus; the largest |Spearman| 5 (null of the largest: median 0.293, 95th percentile 0.446; p of the top 0.0020):
+    1193ad3a20 dword 0: +0.591
+    1193ad3940 dword 0: +0.591
+    1193ad3aa0 dword 0: +0.389
+    1193ad39c0 dword 0: +0.389
+    1193ad3a80 dword 0: +0.307
+  each dword's sum over the varying records against the depth-0 share: dword 0 +0.191, dword 1 +0.000, dword 2 +0.000, dword 3 +0.000
+# plateaus of 2+ reads, arguments unchanged inside: 8 plateaus, 1 labelled (X 1)
+  argument records read in every labelled plateau 44, of them varying 0
+  too few pairs across bursts (0) or no varying record

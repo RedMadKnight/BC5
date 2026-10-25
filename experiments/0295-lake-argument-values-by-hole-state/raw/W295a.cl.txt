@@ -1,0 +1,17 @@
+# /home/kjaniszewski/bc5-data/priv/exp0295/W295a.plateaus.json: 51 labelled plateaus (clean 17, patched 34)
+  patched: bursts b01 b02 b03 b04 b05 b06 b07 b08 b09 b10 b14; render sizes 2048 10, 2304 3, 2560 2, 3328 19
+  clean: bursts b11 b12 b13 b14 b15 b16; render sizes 2048 8, 3072 1, 3328 8
+  records read in every labelled plateau 44, varying 11
+  equal varying records per pair: same label 0.542 (636 pairs), different labels 0.561 (576 pairs); difference -0.019, permutation p 0.7151
+    same label: same render size 0.675 (233 pairs), different size 0.465 (403 pairs)
+    different labels: same render size 0.662 (230 pairs), different size 0.494 (346 pairs)
+  per record dword, AUC patched against clean, 11 varying dwords; the largest |AUC - 0.5| 8 (null of the largest: median 0.106, 95th percentile 0.204; p of the top 0.0400):
+    11935d3e00 dword 0: AUC 0.711; distinct values patched 14, clean 9, shared 6
+    11935d3dc0 dword 0: AUC 0.659; distinct values patched 11, clean 8, shared 6
+    1193ad3940 dword 0: AUC 0.593; distinct values patched 5, clean 2, shared 2
+    1193ad3a20 dword 0: AUC 0.593; distinct values patched 5, clean 2, shared 2
+    11934d3960 dword 0: AUC 0.529; distinct values patched 4, clean 3, shared 3
+    1193ad39c0 dword 0: AUC 0.515; distinct values patched 2, clean 2, shared 2
+    1193ad3aa0 dword 0: AUC 0.515; distinct values patched 2, clean 2, shared 2
+    11935d3ce0 dword 0: AUC 0.506; distinct values patched 7, clean 6, shared 6
+  records with a value in clean frames that no patched frame has: 2 of 11; with a patched-only value: 6
