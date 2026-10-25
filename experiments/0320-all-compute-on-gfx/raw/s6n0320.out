@@ -1,0 +1,13 @@
+private input config /home/kjaniszewski/bc5-work/exp0320/input-rt.cfg: 8 lines, RayTracing.PPSA03671=on  (source /home/kjaniszewski/bc5-work/input.cfg, RayTracing.PPSA03671=off)
+skip list in the derived launcher: 37:export BC5_DIRECT_SKIP_PGM=0  # exp 0320: the compaction 909974400 runs;72:# gameplay (run 735). A run script may set BC5_DIRECT_SKIP_PGM itself.;89:export BC5_DIRECT_SKIP_PGM=0  # exp 0320: the compaction 909974400 runs (was: the default skip);
+launcher /home/kjaniszewski/bc5-work/exp0320/play-pkg-0320.sh (md5 d780cb0d) from /home/kjaniszewski/bc5-work/play-pkg.sh fde58cda + exp 0299's edits renamed; log /home/kjaniszewski/bc5-work/exp0320/play-last.log; diff /home/kjaniszewski/bc5-work/exp0320/raw/play-pkg-0320.diff
+working directory /home/kjaniszewski/bc5-work/exp0320/wd: 5151 entries, 5150 symlinks (layout of /home/kjaniszewski/bc5-work/exp0299/wd: 5151 entries); the title's saves /home/kjaniszewski/bc5-work/exp0320/wd/_SaveData/PPSA03671 (private); KYTY_BC5_SAVEDATA_DIR /home/kjaniszewski/bc5-work/exp0320/wd/_SaveData-pkg-play
+2026-10-25 18:04:34 live saves bb14b6dd35b644ff, snapshot /home/kjaniszewski/bc5-work/exp0320/saves-before-1804 (comparison only, nothing is restored into /home/kjaniszewski/bc5-work/_SaveData/PPSA03671)
+== 18:04:34 run S1
+S1: stopped at 600 s; crash lines 0, kernel lines 0, TIMEOUT lines 0, probe lines 0, sync lines 422 (last: descriptor (exp 0302): dcb dispatch op 15 at 10043 of 0x11d03a2000 before #700635: table 0x11e06e42b0 mapped, mapping #340 0x11e0000000+0xe14000 shared / +0x9c #340 0x11e0000000+0xe14000 shared (675841 snapshots)), table lines 0, skip lines 0, compaction lines 2, devcoredumps 0
+pass
+== 18:14:46 run S2
+S2: stopped at 600 s; crash lines 0, kernel lines 0, TIMEOUT lines 0, probe lines 0, sync lines 418 (last: descriptor (exp 0302): dcb dispatch op 15 at 11220 of 0x11d03a2000 before #687328: table 0x11e0d22bb0 mapped, mapping #340 0x11e0000000+0xe14000 shared / +0x9c #340 0x11e0000000+0xe14000 shared (663553 snapshots)), table lines 0, skip lines 0, compaction lines 0, devcoredumps 0
+pass
+2026-10-25 18:24:59 live saves bb14b6dd35b644ff (want bb14b6dd35b644ff)
+BOX-LOCK released
