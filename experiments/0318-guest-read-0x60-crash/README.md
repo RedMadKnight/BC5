@@ -94,3 +94,22 @@ configurations 6/7)?
   or the mapping of 0x9047bdfa3 to `eboot.bin`+offset from a running session's `/proc/<pid>/maps` (as experiment
   0313 did) and a disassembly of those bytes on the box. Neither the code bytes nor a disassembly go into this
   repository.
+
+**Addendum (2026-10-25, after the integration, F383).**
+- The maintainer's yes came after the soak (exp 0319): "Tak, wprowadź poprawkę logu wysypań do wspólnych buildów po
+  teście stabilności". The run of `int0318.sh` itself was approved in chat at 17:56.
+- `int0318.sh` (`raw/int.out`, 17:56–17:57):
+  - guards: no lock line, no emulator, the tree's `runtimeLinker.cpp` f4bf3213, normal 226bcb82, lean 71ef2194;
+  - the diff went in as an LF copy, `~/bc5-work/exp0318/patch0001-crashlog.lf.diff` (CRs stripped, md5 57c3efea).
+    The box's tree has LF lines, and `patch0001-crashlog.diff` here keeps CRLF content lines. `git apply --check`
+    passed first;
+  - tree `runtimeLinker.cpp` f4bf3213 → 7b648776; normal build 226bcb82 → d02f4696, lean 71ef2194 → 759cd455, rc 0,
+    both with the new "exception rip" string;
+  - the compiler's two warnings (`raw/build-normal.out`) are in code the diff does not touch: a deprecated
+    `wstring_convert` in `stringUtils.h`, and the access-type lambda's `-Wreturn-type`, the old line 838 moved down
+    by the 26 added lines;
+  - backups of the source and both binaries are in `~/bc5-work/exp0318/integration/`;
+  - the regenerated patch 0001 differs from main's only in `runtimeLinker.cpp` (85 files in both).
+- Not yet seen: the new lines at a real crash. The next crash of a shared build should put the exception module,
+  the code bytes, the registers, the guest stack trace and the last stubbed imports into the play log, with the
+  faulting rip as program file + offset.
