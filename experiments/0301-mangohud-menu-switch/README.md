@@ -76,9 +76,10 @@ shortcut go. Can the emulator load MangoHud itself and drive it at runtime? Does
   - Ray tracing off (`KYTY_BC5_RT=0`), with the input configuration from a copy of exp 0194's `input-0194.cfg`.
   - The maintainer's saves, `input.cfg` and `route-record.txt` are never used. Their checksum is printed before and
     after each run.
-- The live switch (T1, normal build): at t ≈ 150 s the menu is driven from ssh (exp 0164's `drive0164.sh` over
-  `ydotool`: F1, then clicks on Emulation and MangoHud) to on, off and on, with a screenshot after each. The
-  screenshots stay on the box, never in the repo.
+- The live switch (T1, normal build): at t ≈ 150 s the menu is driven from ssh to on, off and on, with a screenshot
+  after each. `drive0301.sh`, run on the laptop, calls exp 0164's `drive0164.sh` over `ydotool`: F1, then clicks on
+  Emulation and MangoHud. It checks the box's lock line first, and ydotoold runs only for T1. The screenshots stay on
+  the box, never in the repo.
   - Expected: the stderr lines `host menu: MangoHud on (saved to …)`, `… control socket @bc5-mangohud-<pid> connected`,
     `… MangoHud shown` / `hidden`.
   - Expected: `MangoHud.PPSA03671=on` in the private input configuration.
@@ -89,6 +90,75 @@ shortcut go. Can the emulator load MangoHud itself and drive it at runtime? Does
   frame-profile lines. Per run: VmRSS/VmHWM, threads, `libMangoHud.so` mapped, the socket, GTT in use and CPU time at
   fixed seconds (`samples.txt`).
 
-**Result.** (pending: the box queue has 0299 and 0300 first)
+**Result.** Box work 2026-10-25, each step on the top session's GO.
+- Build: 11:41:46–11:42:41, on a fresh boot after exp 0300's machine-down.
+- Runs: 11:43–12:15, kernel 7.2.9-ogc3.1, boot 664515e3.
+- Raw: `raw/r-<tag>/` (start, samples, end, menu lines, input configuration before and after, dmesg, frame-profile
+  lines), `raw/frame-stats.txt`, `raw/kernel-stream.txt`, `raw/journal-stream.txt`, `raw/raw/` (build inputs and
+  outputs, patched md5s), `raw/launch/launchers_0301.diff`. The screenshots stay on the box in
+  `~/bc5-work/exp0301/shots/`.
+- **Builds.** Both link cleanly:
+  - `exp0301/normal/kyty_emulator` ad7ba9f1 (166,597,640 bytes) and `exp0301/lean/kyty_emulator` 5366f3ee
+    (165,359,144 bytes). Both carry the three new strings.
+  - One warning each, not from the diff: KytyPlus's own `stringUtils.h` `wstring_convert` deprecation, reached
+    through `hostInput.cpp`'s includes.
+  - The patched files match the offline tree (cb35096f, 4b150329, 813dd1c9, 47f83afb). The shared builds stayed
+    e62a97c6 / 753889c9.
+- **Every run passed.** No amdgpu kernel line: dmesg and the laptop stream hold only IPv6 MLD notices and T1's
+  ydotoold input device. No TIMEOUT, no crash line. The live saves read 8289704a9338a118 before and after every run.
+- **T1, the live switch (normal build, 420 s).**
+  - From t 30 s with the switch off: `libMangoHud.so` is mapped, `@bc5-mangohud-<pid>` listens in `/proc/net/unix`,
+    and one MangoHud thread runs (`mangohud-amdgpu`).
+  - At t ≈ 146 s, `drive0301.sh` pressed F1, clicked Emulation (the dropdown lists the new **MangoHud** item,
+    unchecked) and clicked MangoHud, then pressed F1 again.
+  - The overlay appeared top-left with the BC5 layout: CPU and GPU load, temperatures, power, VRAM, RAM, the clock.
+    The title's own counter appeared top-right ("game 42.0 fps 23.8 ms").
+  - The log, in order: `host menu: MangoHud on (saved to …/exp0301/input-0301.cfg)`,
+    `host menu: MangoHud control socket @bc5-mangohud-5299 connected`, `host menu: MangoHud shown`.
+  - Off again from the menu (item checked): `MangoHud off (saved …)`, `MangoHud hidden`, and both overlays gone.
+    On again: `MangoHud on`, `shown`.
+  - After that, MangoHud's sampling thread (`mangohud-hwinfo`) ran too, and the socket had our client.
+    `input-after.cfg` ends with `MangoHud.PPSA03671=on`.
+- **T2, the saved switch (lean build, 200 s, `KEEPCFG=1`).** With that line in the configuration, MangoHud was shown
+  without any menu use: at t 30 s the sampling thread and the socket connection already exist, and a screenshot at
+  t ≈ 155 s shows both overlays. `MangoHud.PPSA03671=on` was applied by the lean build's input loader.
+- **The A/B: a hidden MangoHud costs nothing measurable.** From `raw/frame-stats.txt` (exp 0211's `frameprof.py`,
+  the journal's frame-profile lines) and `samples.txt`:
 
-**Verdict.** (pending)
+  | Run | Arm | t 100–300: flips/s, 20-s median, GPU ms per frame median / p90, gaps > 0.4 s | t 150–300: flips/s | RSS at t 30 s | CPU time over 300 s | MemAvailable / GTT at t 250 s |
+  |---|---|---|---|---|---|---|
+  | A1 | no layer | 40.9, 42.2, 12.7 / 14.6, 1 | 41.4 | 2,197 MiB | 1,248.3 s | 596 / 12,103 MiB |
+  | B1 | hidden | 42.0, 43.1, 14.0 / 15.8, 0 | 42.5 | 2,202 MiB | 1,253.6 s | 575 / 12,131 MiB |
+  | A2 | no layer | 41.6, 42.9, 13.7 / 15.5, 0 | 42.5 | 2,192 MiB | 1,253.8 s | 631 / 12,124 MiB |
+  | B2 | hidden | 41.3, 42.2, 13.7 / 15.6, 0 | 41.8 | 2,196 MiB | 1,248.2 s | 636 / 12,105 MiB |
+
+  - Means over t 100–300: A 41.25 and B 41.65 flips/s. The spread inside each arm (0.7 flips/s, 1.0 ms of GPU
+    median) is as large as the difference between them, and the CPU time is the same.
+  - The layer adds one thread, and at most about 5 MiB of RSS at t 30 s (B 2,202 / 2,196 against A 2,197 /
+    2,192 MiB). That is within run-to-run noise later in the run.
+  - A1's one long gap (2.8 s, ending at t 161.9 s) is a hold-tail give-up after 2,748 ms (`raw/journal-stream.txt`). It is
+    the host's existing behaviour and falls in the arm without MangoHud.
+  - Not an A/B, for information only: in T1 with MangoHud shown (t 290–415, menu closed, no screenshots) the title
+    ran 45.1 flips/s with no gap over 0.1 s. A visible overlay did not slow it below the A/B's level either.
+- **Seen on the way.**
+  - With the menu open, MangoHud's box (top-left) is drawn over the left part of the Emulation dropdown. The layer
+    draws last, at the present. The MangoHud item itself stays readable and clickable (T1).
+  - Every start now logs MangoHud's `XOpenDisplay failed to open display ':0'` once: its X11 key handling, which never
+    reached it from the container. It is harmless, and it was also printed before with `BC5_MANGOHUD=1`.
+
+**Verdict.**
+- MangoHud can be part of every build. Both builds load it themselves, hidden. Emulation › MangoHud shows and hides
+  it together with the title's frame-rate counter at the next present. The choice is saved per title as
+  `MangoHud.<TITLE_ID>=on|off`, and a saved "on" shows it from the start.
+- The runtime path is MangoHud's own control socket (`control=`, `:hud;`). `mangohudctl` drives mangoapp, not the
+  layer, and MangoHud's hotkeys do not reach it from the container.
+- Hidden, it costs no frame rate, no GPU time, no CPU time and no measurable memory on the second title's route with
+  ray tracing off (four interleaved 300-s runs). Off by default is therefore free.
+- This makes the separate shortcut and the launchers' `BC5_MANGOHUD=1` path redundant. The integration proposal:
+  - `patch_0301.diff` into both shared builds.
+  - `launchers_0301.diff` for play-pkg.sh and play-astro.sh.
+  - Move `~/Pulpit/BC5 emulator (MangoHud).desktop` and `~/bc5-work/mangohud-bc5.conf` to a backup.
+  - Drop `tools/scripts/mangohud-bc5.conf` from the repo, since the layout now lives in `hostMenu.cpp`.
+  - This needs the maintainer's yes, and the top session integrates it (D19).
+- Open, the maintainer's call: whether MangoHud should move off the top-left corner (e.g. `position=bottom-left`) so
+  that it does not cover the menu's dropdown or the title's own health bar.

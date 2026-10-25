@@ -1,0 +1,40 @@
+--- a/play-pkg.sh
++++ b/play-pkg.sh
+@@ -139,13 +139,10 @@
+   done < "$PKG_ENV"
+ fi
+ ~/bc5-work/pad-volume.sh >> "$LOG" 2>&1 || true; ~/bc5-work/pad-volume.sh --watch $$ >> "$LOG" 2>&1 &  # F94: the pad ALSA volume resets on every replug
+-# 2026-10-21 (the maintainer asked, for recordings): BC5_MANGOHUD=1 shows MangoHud's overlay (hardware:
+-# CPU/GPU load, clocks, temperatures, memory) configured by ~/bc5-work/mangohud-bc5.conf (repo:
+-# tools/scripts/mangohud-bc5.conf) and the title's own frame rate top right (KYTY_BC5_OSD_FPS=1 alone shows
+-# just that). MangoHud counts the window's presents (~60 a second), not the title's frames.
+-if [ "${BC5_MANGOHUD:-0}" = 1 ]; then
+-  export MANGOHUD=1 MANGOHUD_CONFIGFILE=${MANGOHUD_CONFIGFILE:-$HOME/bc5-work/mangohud-bc5.conf} KYTY_BC5_OSD_FPS=1
+-fi
++# Experiment 0301 (the maintainer asked, 2026-10-25): MangoHud is part of the emulator: it loads hidden and
++# Emulation > MangoHud shows its hardware figures and the title's frame rate (saved per title in the input
++# configuration). KYTY_BC5_MANGOHUD=0 keeps MangoHud out, =1 shows it from the start; KYTY_BC5_OSD_FPS=1 the
++# frame rate alone. The former BC5_MANGOHUD=1 switch and its shortcut are gone.
+ export XDG_RUNTIME_DIR=/run/user/$(id -u) WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-wayland-0} DISPLAY=${DISPLAY:-:0}
+ 
+ mkdir -p "$M" "$KYTY_BC5_SAVEDATA_DIR"
+--- a/play-astro.sh
++++ b/play-astro.sh
+@@ -54,13 +54,10 @@
+ # drive (F286), not read-ahead; the fix keeps loads equal and speeds the cutscene clock-voice reads.
+ # KYTY_BC5_APR_READAHEAD=0 turns it off.
+ export KYTY_BC5_APR_READAHEAD=${KYTY_BC5_APR_READAHEAD:-4}
+-# 2026-10-21 (the maintainer asked, for recordings): BC5_MANGOHUD=1 shows MangoHud's overlay (hardware:
+-# CPU/GPU load, clocks, temperatures, memory) configured by ~/bc5-work/mangohud-bc5.conf (repo:
+-# tools/scripts/mangohud-bc5.conf) and the title's own frame rate top right (KYTY_BC5_OSD_FPS=1 alone shows
+-# just that). MangoHud counts the window's presents (~60 a second), not the title's frames.
+-if [ "${BC5_MANGOHUD:-0}" = 1 ]; then
+-  export MANGOHUD=1 MANGOHUD_CONFIGFILE=${MANGOHUD_CONFIGFILE:-$HOME/bc5-work/mangohud-bc5.conf} KYTY_BC5_OSD_FPS=1
+-fi
++# Experiment 0301 (the maintainer asked, 2026-10-25): MangoHud is part of the emulator: it loads hidden and
++# Emulation > MangoHud shows its hardware figures and the title's frame rate (saved per title in the input
++# configuration). KYTY_BC5_MANGOHUD=0 keeps MangoHud out, =1 shows it from the start; KYTY_BC5_OSD_FPS=1 the
++# frame rate alone. The former BC5_MANGOHUD=1 switch and its shortcut are gone.
+ export XDG_RUNTIME_DIR=/run/user/$(id -u) WAYLAND_DISPLAY=${WAYLAND_DISPLAY:-wayland-0} DISPLAY=${DISPLAY:-:0}
+ 
+ mkdir -p "$M"

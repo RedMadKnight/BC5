@@ -1,0 +1,6 @@
+2026-10-25 12:10:39 run B2: normal binary ad7ba9f1, 300 s, switches: KYTY_BC5_RT=0 
+kernel 7.2.9-ogc3.1.fc44.x86_64, boot 664515e3, up since 2026-10-25 11:40:06, /var/home 60 %
+emulator pid 315766 exe /home/kjaniszewski/bc5-work/exp0301/normal/kyty_emulator md5 ad7ba9f1
+KYTY_BC5_INPUT_CONFIG=/home/kjaniszewski/bc5-work/exp0301/input-0301.cfg
+KYTY_BC5_RT=0
+KYTY_BC5_RT_BUILD_PGM=909974400,909939400,909936c00,909939700,909939900,909974200,909973900,909973b00,909973d00,909973f00

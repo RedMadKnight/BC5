@@ -1,0 +1,62 @@
+# exp 0301: exp 0211's frameprof.py over each run's frame-profile lines (journal t, 20-s windows)
+## t 100 300
+A1: 8130 flips over 199 s (t 100-299), 40.9 flips/s mean; per 20 s: min 36.9 median 42.2 max 43.0
+  flip gaps: >0.1 s 16, >0.4 s 1, >2 s 1, longest 2797 ms
+  GPU busy per frame: median 12.7 ms, p90 14.6, max 61.0; outside-host per frame: >0.1 s 10, >1 s 1, max 2786 ms
+  timeline (window start t: flips/s | GPU busy ms/s | outside ms/s | inside ms/s):
+    100: 37.7| 487| 521|259    120: 43.0| 546| 532|218    140: 36.9| 472| 549|212    160: 39.1| 522| 627|224
+    180: 42.3| 553| 535|255    200: 42.2| 555| 534|254    220: 42.6| 571| 529|254    240: 42.4| 566| 532|253
+    260: 41.1| 523| 537|258    280: 41.8| 553| 540|250
+B1: 8384 flips over 199 s (t 100-299), 42.0 flips/s mean; per 20 s: min 37.6 median 43.1 max 44.5
+  flip gaps: >0.1 s 17, >0.4 s 0, >2 s 0, longest 256 ms
+  GPU busy per frame: median 14.0 ms, p90 15.8, max 58.9; outside-host per frame: >0.1 s 8, >1 s 0, max 184 ms
+  timeline (window start t: flips/s | GPU busy ms/s | outside ms/s | inside ms/s):
+    100: 37.6| 470| 517|257    120: 44.5| 581| 517|209    140: 38.8| 502| 547|218    160: 40.9| 594| 521|248
+    180: 42.5| 620| 505|238    200: 43.3| 636| 500|233    220: 43.1| 627| 506|231    240: 43.1| 633| 500|228
+    260: 43.1| 623| 503|231    280: 43.4| 648| 499|227
+A2: 8269 flips over 199 s (t 100-299), 41.6 flips/s mean; per 20 s: min 36.3 median 42.9 max 43.8
+  flip gaps: >0.1 s 15, >0.4 s 0, >2 s 0, longest 327 ms
+  GPU busy per frame: median 13.7 ms, p90 15.5, max 88.8; outside-host per frame: >0.1 s 9, >1 s 0, max 218 ms
+  timeline (window start t: flips/s | GPU busy ms/s | outside ms/s | inside ms/s):
+    100: 36.3| 457| 545|245    120: 42.9| 549| 534|217    140: 37.0| 493| 571|220    160: 42.0| 581| 520|243
+    180: 41.0| 561| 528|250    200: 43.5| 620| 511|233    220: 43.4| 625| 507|237    240: 43.3| 618| 513|234
+    260: 43.8| 636| 507|232    280: 43.4| 616| 513|234
+B2: 8210 flips over 199 s (t 100-299), 41.3 flips/s mean; per 20 s: min 37.1 median 42.2 max 43.7
+  flip gaps: >0.1 s 17, >0.4 s 0, >2 s 0, longest 323 ms
+  GPU busy per frame: median 13.7 ms, p90 15.6, max 59.1; outside-host per frame: >0.1 s 12, >1 s 0, max 259 ms
+  timeline (window start t: flips/s | GPU busy ms/s | outside ms/s | inside ms/s):
+    100: 37.5| 473| 528|254    120: 43.5| 559| 525|214    140: 37.1| 480| 567|227    160: 41.0| 563| 522|254
+    180: 41.2| 585| 519|250    200: 42.5| 608| 512|246    220: 42.2| 602| 514|244    240: 42.4| 600| 515|243
+    260: 43.7| 630| 506|234    280: 42.4| 606| 513|247
+## t 150 300
+A1: 6158 flips over 149 s (t 150-299), 41.4 flips/s mean; per 20 s: min 37.2 median 42.0 max 42.9
+  flip gaps: >0.1 s 6, >0.4 s 1, >2 s 1, longest 2797 ms
+  GPU busy per frame: median 12.8 ms, p90 14.6, max 56.7; outside-host per frame: >0.1 s 4, >1 s 1, max 2786 ms
+  timeline (window start t: flips/s | GPU busy ms/s | outside ms/s | inside ms/s):
+    150: 37.2| 464| 620|205    170: 42.1| 560| 537|251    190: 42.0| 549| 532|259    210: 42.9| 574| 534|249
+    230: 42.6| 571| 525|255    250: 41.0| 528| 538|258    270: 41.1| 533| 541|257    290: 43.0| 575| 538|241
+B1: 6354 flips over 149 s (t 150-299), 42.5 flips/s mean; per 20 s: min 39.5 median 43.2 max 43.4
+  flip gaps: >0.1 s 5, >0.4 s 0, >2 s 0, longest 236 ms
+  GPU busy per frame: median 14.4 ms, p90 15.9, max 58.9; outside-host per frame: >0.1 s 2, >1 s 0, max 184 ms
+  timeline (window start t: flips/s | GPU busy ms/s | outside ms/s | inside ms/s):
+    150: 39.5| 518| 545|240    170: 41.5| 609| 514|247    190: 43.2| 630| 503|231    210: 43.1| 635| 502|232
+    230: 43.4| 633| 501|229    250: 43.2| 627| 500|227    270: 43.2| 635| 503|230    290: 43.4| 651| 495|228
+A2: 6323 flips over 149 s (t 150-299), 42.5 flips/s mean; per 20 s: min 39.2 median 43.2 max 44.0
+  flip gaps: >0.1 s 2, >0.4 s 0, >2 s 0, longest 292 ms
+  GPU busy per frame: median 14.0 ms, p90 15.5, max 88.8; outside-host per frame: >0.1 s 2, >1 s 0, max 218 ms
+  timeline (window start t: flips/s | GPU busy ms/s | outside ms/s | inside ms/s):
+    150: 39.2| 505| 555|242    170: 41.8| 579| 519|244    190: 42.5| 599| 520|238    210: 44.0| 628| 503|234
+    230: 43.2| 625| 510|236    250: 43.2| 618| 510|237    270: 43.3| 621| 512|234    290: 44.0| 624| 511|229
+B2: 6213 flips over 149 s (t 150-299), 41.8 flips/s mean; per 20 s: min 38.5 median 42.0 max 43.2
+  flip gaps: >0.1 s 5, >0.4 s 0, >2 s 0, longest 323 ms
+  GPU busy per frame: median 14.1 ms, p90 15.7, max 59.1; outside-host per frame: >0.1 s 3, >1 s 0, max 259 ms
+  timeline (window start t: flips/s | GPU busy ms/s | outside ms/s | inside ms/s):
+    150: 38.5| 498| 549|251    170: 41.4| 583| 520|248    190: 42.0| 595| 514|250    210: 41.9| 589| 515|250
+    230: 43.0| 623| 514|235    250: 42.5| 604| 513|242    270: 43.2| 617| 508|240    290: 42.2| 614| 513|252
+## T1 (normal; MangoHud hidden t 150-210, shown t 290-415 from the menu, approximate from the screenshots' clock)
+T1-hidden: 1773 flips over 60 s (t 150-210), 29.6 flips/s mean; per 20 s: min 29.4 median 29.7 max 30.1
+  flip gaps: >0.1 s 12, >0.4 s 2, >2 s 0, longest 548 ms
+  GPU busy per frame: median 13.9 ms, p90 16.3, max 103.6; outside-host per frame: >0.1 s 9, >1 s 0, max 533 ms
+T1-shown: 5642 flips over 125 s (t 290-415), 45.1 flips/s mean; per 20 s: min 43.9 median 45.4 max 45.5
+  flip gaps: >0.1 s 0, >0.4 s 0, >2 s 0, longest 93 ms
+  GPU busy per frame: median 13.7 ms, p90 15.1, max 76.8; outside-host per frame: >0.1 s 0, >1 s 0, max 73 ms

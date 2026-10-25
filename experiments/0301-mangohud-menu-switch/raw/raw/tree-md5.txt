@@ -1,0 +1,5 @@
+patched src/graphics/presentation/hostMenu.cpp cb35096f
+patched src/graphics/presentation/hostMenu.h 4b150329
+patched src/graphics/presentation/settingsOverlay.cpp 813dd1c9
+patched src/graphics/presentation/window/hostInput.cpp 47f83afb
+launchers: play-pkg.sh fde58cda, play-astro.sh adfe3439 -> proposal ac7a9a57 / 6b34d469

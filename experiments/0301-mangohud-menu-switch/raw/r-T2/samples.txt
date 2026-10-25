@@ -1,0 +1,4 @@
+t 30 s30: VmHWM: 2247064 kB VmRSS: 2247064 kB Threads: 98  mangohud_threads 2 [ 1 mangohud-amdgpu, 1 mangohud-hwinfo,] libMangoHud_mapped 5 socket 2 gtt_used_mib 8977 avail_mib 3899
+t 152 s150: VmHWM: 5602860 kB VmRSS: 2334296 kB Threads: 98  mangohud_threads 2 [ 1 mangohud-amdgpu, 1 mangohud-hwinfo,] libMangoHud_mapped 5 socket 2 gtt_used_mib 12131 avail_mib 602
+t 200 end: VmHWM: 5602860 kB VmRSS: 2601352 kB Threads: 98  mangohud_threads 2 [ 1 mangohud-amdgpu, 1 mangohud-hwinfo,] libMangoHud_mapped 5 socket 2 gtt_used_mib 12143 avail_mib 640
+cpu: utime+stime 859.9 s over 200 s
