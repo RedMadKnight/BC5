@@ -53,3 +53,24 @@ its own request later).
     ordinary per-frame double-buffered data.
   - What decides the half is still GPU-side. Irregular holding and the clean/patched variation between runs fit a
     timing race between a compute pass and the graphics writers better. Step B is to test that (on its own request).
+
+**Step B plan** (the top session's yes of ~14:08 CET; a slot after exp 0308's run 2; RT off; ~27 min).
+- **The question:** is the hole state a cross-ring timing race between the title's compute work and the lake's
+  graphics writers? Exp 0132 (F180) is the analogue: ASTRO BOT on two rings drew black blocks on its models, from a
+  graphics/compute cycle like the water's, until the rings were ordered.
+- **One ring, how:**
+  - `BC5_DIRECT_RINGS` is not the switch. Without it the title's compute queues are not run on the GPU at all; they
+    stay on the soft CP (patch 0001, `submit()`).
+  - The switch is `BC5_DIRECT_COMPUTE_RING`. Unset, the ring thread's compute buffers go to the GFX ring in submission
+    order, as before exp 0129 (ADR 0009). `play-pkg.sh` always exports it as 0.
+  - So `play-pkg-0309.sh` gets a fifth edit beside exp 0299's three: that export is skipped when
+    `BC5_0309_ONE_RING=1`. The diff is kept; the shared files are untouched.
+- **Proof per run:** the journal logs "compute ring N: … jobs so far" at a run's first compute-ring job. A one-ring run
+  must have none; a two-ring run has at least one. `bench0309.sh` prints that count.
+- **Runs** (exp 0307's lake bench, `bench0309.sh` with 13 frozen-view shots 5 s apart, the launcher's defaults
+  otherwise, RT off by `input-0309.cfg`): R1 one ring, C1 two rings (a same-session control), R2 one ring, R3 one ring.
+- **Reading:**
+  - if R1–R3 stay clean (patch share < 5 % in every shot) while C1 and today's two-ring runs (exp 0304's W1, exp
+    0307's W3) are patched, the patches are a cross-ring ordering race, and the fix lies in the water's
+    compute→graphics hand-off on two rings;
+  - if one-ring runs are patched too, the race is not across rings.
