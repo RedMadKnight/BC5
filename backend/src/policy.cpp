@@ -208,6 +208,11 @@ bool is_graphics_only(std::uint8_t opcode, std::uint32_t len) {
 
 namespace {
 
+// Experiment 0290: the indirect-argument check (bc5/indirect_check.hpp) is verified on the GFX ring
+// only (experiment 0052, direct-selftest --cp-check); flip once ADR 0009's ladder step 5 has run it
+// on a compute ring. While false, compute_ring_refusal() keeps every DISPATCH_INDIRECT off the MEC.
+constexpr bool kMecIndirectCheckVerified = false;
+
 const char *refusal_in(std::span<const std::uint32_t> ib,
                        const std::function<bool(std::uint64_t, std::uint64_t)> &mapped, int depth) {
     for (std::size_t i = 0; i < ib.size();) {
@@ -227,6 +232,13 @@ const char *refusal_in(std::span<const std::uint32_t> ib,
             if (op == 0x15 && len >= 5) init = ib[i + 4];
             if (op == 0x16 && len >= 4) init = ib[i + 3];
             if ((init & 0x2u) != 0 && (init & 0x20u) == 0) return "PARTIAL_TG_EN dispatch";
+            // Experiment 0290 (F332, F339): a DISPATCH_INDIRECT's group counts are checked by the CP
+            // only where that check is verified, the GFX ring (bc5/indirect_check.hpp, experiment
+            // 0052); on the MEC its COND_WRITE / COND_EXEC are unverified (ADR 0009, ladder step 5)
+            // and PFP_SYNC_ME is left out. A garbage triple there never ends, and the compute
+            // queue's reset failed (MODE1, the machine down; F332). Until the MEC check is verified
+            // such buffers stay on the GFX ring, where the check skips the absurd triples.
+            if (op == 0x16 && !kMecIndirectCheckVerified) return "indirect dispatch (MEC check unverified)";
             if ((op == 0x3f || op == 0x33) && len >= 4 && depth < 3 && mapped) {
                 const std::uint64_t a = (static_cast<std::uint64_t>(ib[i + 1]) & ~3ull) |
                                         (static_cast<std::uint64_t>(ib[i + 2] & 0xffu) << 32);

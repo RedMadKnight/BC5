@@ -211,7 +211,9 @@ bool is_graphics_only(std::uint8_t opcode, std::uint32_t len);
 // the gfx1013 MEC runs with workgroups missing (mesa#16054; COMPUTE_DISPATCH_INITIATOR bits 1 and
 // 5, Mesa src/amd/registers/gfx10.json, 0866ae7). INDIRECT_BUFFER targets are followed (up to
 // three levels) when `mapped` accepts their range; an unmapped target is not refused (the filter
-// NOPs the packet).
+// NOPs the packet). Experiment 0290: a DISPATCH_INDIRECT of either form is refused as well until
+// the CP's argument check (indirect_check) is verified on the MEC — on the GFX ring the check skips
+// a garbage triple, on a compute ring it ran unchecked and never ended (F332).
 const char *compute_ring_refusal(std::span<const std::uint32_t> ib,
                                  const std::function<bool(std::uint64_t, std::uint64_t)> &mapped = {});
 
