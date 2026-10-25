@@ -17,7 +17,7 @@ PC emulators have to translate a console's graphics for a different GPU. BC5 doe
 
 ### How you start it
 
-On the maintainer's box a desktop shortcut, *BC5 emulator*, opens the emulator window. *File › Open* picks a game dump or a game package; a launcher script mounts it read-only and starts the game. Two more shortcuts start the same thing in other modes: *lean* has all measuring compiled out and is for playing, *MangoHud* adds an on-screen overlay for recordings.
+On the maintainer's box a desktop shortcut, *BC5 emulator*, opens the emulator window. *File › Open* picks a game dump or a game package; a launcher script mounts it read-only and starts the game. One more shortcut, *lean*, starts the build with all measuring compiled out, for playing. Every build carries MangoHud's on-screen overlay for recordings, off until *Emulation › MangoHud* switches it on.
 
 ### What is still broken
 
@@ -116,9 +116,9 @@ It builds a normal emulator (`~/bc5-work/kytyplus-build/src/kyty_emulator`, the 
 
 Games start from launcher scripts on the dev box, one per kind of image: `play-astro.sh` for a `.ffpfsc` dump, `play-pkg.sh` for a package. `play-any.sh` (the *BC5 emulator* shortcut) runs the empty window and hands the chosen image to the right one. A launcher mounts the image with `bc5-mount`, exports the shared settings of `bc5-run.env` plus the title's own switches (D15), and runs the emulator. `BC5_LEAN=1` makes them start the lean build. Committed snapshots: [`experiments/0177-lean-build/`](experiments/0177-lean-build/) (all three) and [`experiments/0188-audioout2-advanced-grains/`](experiments/0188-audioout2-advanced-grains/) (`play-pkg.sh`); the live copies on the box carry the values in the table below.
 
-- **The window** (ADR 0011, D17): `kyty_emulator --menu` opens it with no game. The menu bar has *File* (open image or package, recent, close session, quit), *Emulation* (pause/resume, restart, settings, fullscreen, logging on/off, ray tracing on/off) and *Help*. During play F1 or the pad's PS button shows and hides it. The host never mounts anything itself: it exits with code 76 (open), 77 (close) or 75 (restart) and the launcher acts on it.
+- **The window** (ADR 0011, D17): `kyty_emulator --menu` opens it with no game. The menu bar has *File* (open image or package, recent, close session, quit), *Emulation* (pause/resume, restart, settings, fullscreen, logging on/off, ray tracing on/off, MangoHud on/off) and *Help*. During play F1 or the pad's PS button shows and hides it. The host never mounts anything itself: it exits with code 76 (open), 77 (close) or 75 (restart) and the launcher acts on it.
 - **F2** opens the settings menu: control bindings, ASTRO BOT's 3D resolution, saved to the input file (D14, F101). `KYTY_BC5_INPUT_CONFIG=<file>` names that file; [`input.example.cfg`](backend/kytyplus-patches/input.example.cfg) lists the names.
-- **Recording:** `BC5_MANGOHUD=1` (the *MangoHud* shortcut) shows MangoHud's hardware figures and the emulator's own count of the game's frame rate (`KYTY_BC5_OSD_FPS=1`). MangoHud's own fps is meaningless here: the window presents at every vblank. An OBS profile for software encoding is in `tools/scripts/obs-bc5/`.
+- **Recording:** *Emulation › MangoHud* (off by default, saved per title) shows MangoHud's hardware figures and the emulator's own count of the game's frame rate. Every build loads MangoHud hidden, which costs no frame time (experiment 0301). MangoHud's own fps is meaningless here: the window presents at every vblank. An OBS profile for software encoding is in `tools/scripts/obs-bc5/`.
 - **If it does not work:** out-of-memory submissions mean the GTT limit is not raised or another program holds GPU memory (F44); input dropping out for seconds is the controller's USB link (F61, F77); a picture that freezes for a few seconds and comes back is a timed-out submission and a reopened device (F74). After a GPU hang the dev box keeps the driver's coredump in `~/bc5-data/captures/devcoredump/` (a udev rule, see `CLAUDE.md`), and the journal's timeout probe names the stuck buffers.
 
 ### Key switches
@@ -140,6 +140,7 @@ Environment variables; the launchers set the title's values. The full list, with
 | `KYTY_BC5_APR_READAHEAD` | `4` | APR read-ahead reader threads per priority queue; `0` turns it off | F273 |
 | `KYTY_BC5_AUDIO2_ADVANCED`, `KYTY_BC5_VIDEOOUT_COALESCE` | on | Audio grain model and display-event coalescing; `0` turns them off | F246, F247 |
 | `KYTY_BC5_RT` | on | The Emulation → Ray tracing switch (F1 or the pad's PS button; saved per title): `0` starts with ray tracing off, which drops the BVH build programs listed in `KYTY_BC5_RT_BUILD_PGM` (set in `play-pkg.sh` for the second title); the ray-query passes keep running, so reflections go blank. `KYTY_BC5_RT_DETECT=1` also drops every program that uses ray-intersection instructions (a diagnostic: it blanks the second title's menu, F337) | F337, F338, F340, F343 |
+| `KYTY_BC5_MANGOHUD` | loaded, hidden | The Emulation → MangoHud switch (saved per title; off unless saved on): MangoHud's hardware figures top left and the title's frame rate top right. Every build loads MangoHud's Vulkan layer itself, hidden, and drives it through MangoHud's control socket. `0` keeps MangoHud out, `1` shows it from the start; `KYTY_BC5_OSD_FPS=1` shows the frame rate alone | experiment 0301 |
 | `KYTY_BC5_PAD_RUMBLE_FALLBACK` | on | With no controller audio device (a DualShock 4), turns the haptics stream into the pad's rumble; `0` turns that rumble off | F214, F329 |
 | `KYTY_BC5_PAD_SPEAKER` | unset | Where the pad-speaker sound goes when the pad has no audio device: unset or `main`, the TV without holding the game's audio thread; `off` silent; `main-blocking` the old blocking port | F326, F328 |
 | `KYTY_BC5_AT9_VIBRATION` | on | Decodes ATRAC9's vibration configurations 6–7 (the second title's haptic tracks) with vgmstream's decoder; `0` plays them as silence | F300, F301 |
@@ -162,7 +163,7 @@ docs/
 tools/
   bc5-mount/         Rust: .ffpfsc and .pkg as a read-only directory (FUSE)
   bc5-agc/           Rust: PM4/AGC command-stream decoder and report
-  scripts/           bc5-build.sh, astro-route.sh, MangoHud and OBS setups
+  scripts/           bc5-build.sh, astro-route.sh, the OBS setup, the box's autologin, bc5-power-cycle.py (a Tuya plug)
   third_party/       vendored oozextract (MIT)
 backend/             C++20: the direct path (policy filter, state trackers, dma-buf mappings,
                      submission); kytyplus-patches/ the patch against KytyPlus

@@ -5052,10 +5052,10 @@ index a656b67..94a249c 100644
  
 diff --git a/src/graphics/presentation/hostMenu.cpp b/src/graphics/presentation/hostMenu.cpp
 new file mode 100644
-index 0000000..8e49327
+index 0000000..6aaca92
 --- /dev/null
 +++ b/src/graphics/presentation/hostMenu.cpp
-@@ -0,0 +1,556 @@
+@@ -0,0 +1,683 @@
 +#include "graphics/presentation/hostMenu.h"
 +
 +#include "SDL.h"
@@ -5068,11 +5068,16 @@ index 0000000..8e49327
 +#include <algorithm>
 +#include <atomic>
 +#include <cctype>
++#include <cerrno>
++#include <cstddef>
 +#include <cstdio>
 +#include <cstdlib>
++#include <cstring>
 +#include <filesystem>
 +#include <fstream>
 +#include <string>
++#include <sys/socket.h>
++#include <sys/un.h>
 +#include <system_error>
 +#include <unistd.h>
 +#include <vector>
@@ -5095,6 +5100,57 @@ index 0000000..8e49327
 +
 +std::atomic<bool> g_visible {false};
 +std::atomic<bool> g_launcher {false};
++
++// Experiment 0301: MangoHud in every build. Its Vulkan layer is an implicit layer that the loader
++// enables for MANGOHUD=1 (MangoHud's mangohud.json.in, enable_environment), and the layer reads its
++// whole configuration from MANGOHUD_CONFIG when that is set (no file is read without read_cfg;
++// overlay_params.cpp parse_overlay_config, v0.8.2). The layout is the one of the former
++// tools/scripts/mangohud-bc5.conf: no fps or frame time, since the window presents at every vblank
++// whatever the title's rate (its own counter, KYTY_BC5_OSD_FPS, shows that), and no GPU clock,
++// which amdgpu's gpu_metrics does not report reliably on the BC-250. no_display starts it hidden;
++// control=<name> makes it listen on an abstract unix socket and toggle no_display for each ":hud;"
++// it reads (control.cpp parse_command), between two presents (vulkan.cpp snapshot_swapchain_frame).
++// While hidden it draws nothing and records nothing (render_swapchain_display, update_hud_info).
++constexpr const char* MANGOHUD_LAYOUT =
++    "legacy_layout=false,position=top-left,font_size=20,background_alpha=0.45,round_corners=6,"
++    "fps_sampling_period=500,cpu_stats,cpu_temp,cpu_mhz,cpu_power,gpu_name,gpu_stats,gpu_temp,gpu_power,vram,"
++    "ram,resolution,time,"
++    // MangoHud's keys (X11 only, they do not reach it from the container), away from F1, F2 and F11
++    "toggle_hud=Shift_R+F12,toggle_logging=Shift_L+F10,toggle_fps_limit=Shift_L+F9,reload_cfg=Shift_L+F4";
++
++std::atomic<bool> g_hud_on {false};    // what the switch says
++std::atomic<bool> g_hud_shown {false}; // what MangoHud was told (it starts hidden)
++std::atomic<bool> g_hud_lost {false};  // no MangoHud to talk to: the switch keeps the counter only
++int               g_hud_fd = -1;       // presenter thread
++char              g_hud_socket[64] = {}; // empty: the environment was the caller's, MangoHud is not ours to drive
++
++// Before main and before any Vulkan call: the loader and the layer read the environment at
++// vkCreateInstance.
++__attribute__((constructor)) void MangoHudEnvironment() {
++	const char* sw = std::getenv("KYTY_BC5_MANGOHUD");
++	if (sw != nullptr && std::strcmp(sw, "0") == 0) {
++		return;
++	}
++	if (sw != nullptr && std::strcmp(sw, "1") == 0) {
++		g_hud_on.store(true, std::memory_order_release);
++	}
++	if (std::getenv("MANGOHUD_CONFIG") != nullptr || std::getenv("MANGOHUD_CONFIGFILE") != nullptr) {
++		return; // a layout of the caller's own: MangoHud loads with it (MANGOHUD=1 is the caller's too), unswitched
++	}
++	std::snprintf(g_hud_socket, sizeof(g_hud_socket), "bc5-mangohud-%d", static_cast<int>(::getpid()));
++	const std::string config = std::string("no_display,control=") + g_hud_socket + "," + MANGOHUD_LAYOUT;
++	::setenv("MANGOHUD_CONFIG", config.c_str(), 1);
++	::setenv("MANGOHUD", "1", 0); // MANGOHUD=0 from the caller keeps the layer out
++}
++
++void MangoHudLost(const char* what, int error) {
++	g_hud_lost.store(true, std::memory_order_release);
++	if (g_hud_fd >= 0) {
++		::close(g_hud_fd);
++		g_hud_fd = -1;
++	}
++	std::fprintf(stderr, "host menu: MangoHud %s (%s): the switch shows the game's frame rate only\n", what, std::strerror(error));
++}
 +
 +const char* MenuDir() {
 +	static const char* dir = std::getenv("KYTY_BC5_MENU_DIR");
@@ -5275,6 +5331,24 @@ index 0000000..8e49327
 +	}
 +	std::fprintf(stderr, "host menu: open %s (exit %d)\n", path.c_str(), EXIT_CODE_OPEN);
 +	ExitWith(EXIT_CODE_OPEN);
++}
++
++// A per-title switch of the Emulation menu, <name>.<TITLE_ID>=on|off, saved into the input
++// configuration as the Video tab saves RenderScale.<TITLE_ID> (experiment 0273).
++void SaveTitleSwitch(const char* name, const char* label, bool on) {
++	const std::string        key   = std::string(name) + "." + HostInputTitleId();
++	std::vector<std::string> lines = HostInputStatements();
++	lines.erase(std::remove_if(lines.begin(), lines.end(),
++	                           [&](const std::string& l) { return l.size() > key.size() && l.compare(0, key.size(), key) == 0 && l[key.size()] == '='; }),
++	            lines.end());
++	lines.insert(lines.begin(), key + (on ? "=on" : "=off"));
++	const std::string path = HostInputConfigPath();
++	std::string       error;
++	if (path.empty() || !HostInputSave(path, lines, &error)) {
++		std::fprintf(stderr, "host menu: %s %s (not saved: %s)\n", label, on ? "on" : "off", path.empty() ? "no input configuration file" : error.c_str());
++	} else {
++		std::fprintf(stderr, "host menu: %s %s (saved to %s)\n", label, on ? "on" : "off", path.c_str());
++	}
 +}
 +
 +void CloseSession() {
@@ -5487,6 +5561,57 @@ index 0000000..8e49327
 +	return g_visible.load(std::memory_order_acquire);
 +}
 +
++void HostMenuMangoHudSet(bool on) {
++	g_hud_on.store(on, std::memory_order_release);
++}
++
++bool HostMenuMangoHudOn() noexcept {
++	return g_hud_on.load(std::memory_order_acquire);
++}
++
++bool HostMenuMangoHudPending() noexcept {
++	return g_hud_socket[0] != 0 && !g_hud_lost.load(std::memory_order_acquire) &&
++	       g_hud_on.load(std::memory_order_acquire) != g_hud_shown.load(std::memory_order_acquire);
++}
++
++void HostMenuMangoHudSync() {
++	if (!HostMenuMangoHudPending()) {
++		return;
++	}
++	if (g_hud_fd < 0) {
++		// The layer opened its socket at vkCreateInstance, long before the first present; a refused
++		// connection means the layer is not there (not installed, or MANGOHUD=0).
++		const int fd = ::socket(AF_UNIX, SOCK_STREAM | SOCK_NONBLOCK | SOCK_CLOEXEC, 0);
++		if (fd < 0) {
++			MangoHudLost("socket", errno);
++			return;
++		}
++		sockaddr_un addr {};
++		addr.sun_family  = AF_UNIX;
++		const size_t len = std::strlen(g_hud_socket);
++		std::memcpy(addr.sun_path + 1, g_hud_socket, len); // abstract name: a leading NUL, no file (mesa os_socket.c)
++		if (::connect(fd, reinterpret_cast<sockaddr*>(&addr), static_cast<socklen_t>(offsetof(sockaddr_un, sun_path) + 1 + len)) != 0) {
++			const int e = errno;
++			::close(fd);
++			MangoHudLost("is not loaded", e);
++			return;
++		}
++		g_hud_fd = fd;
++		std::fprintf(stderr, "host menu: MangoHud control socket @%s connected\n", g_hud_socket);
++	}
++	// MangoHud greets each client with its version lines and answers nothing else: drop them.
++	char buf[256];
++	while (::recv(g_hud_fd, buf, sizeof(buf), MSG_DONTWAIT) > 0) {
++	}
++	if (::send(g_hud_fd, ":hud;", 5, MSG_DONTWAIT | MSG_NOSIGNAL) != 5) {
++		MangoHudLost("control socket", errno);
++		return;
++	}
++	const bool shown = !g_hud_shown.load(std::memory_order_acquire);
++	g_hud_shown.store(shown, std::memory_order_release);
++	std::fprintf(stderr, "host menu: MangoHud %s\n", shown ? "shown" : "hidden");
++}
++
 +void HostMenuDraw(float width, float height, float scale) {
 +	if (!g_visible.load(std::memory_order_acquire)) {
 +		return;
@@ -5560,19 +5685,21 @@ index 0000000..8e49327
 +				if (ImGui::MenuItem("Ray tracing", nullptr, rt, !launcher)) {
 +					rt = !rt;
 +					Libs::Bc5Gc::Direct::SetRayTracing(rt);
-+					const std::string        key   = "RayTracing." + HostInputTitleId();
-+					std::vector<std::string> lines = HostInputStatements();
-+					lines.erase(std::remove_if(lines.begin(), lines.end(),
-+					                           [&](const std::string& l) { return l.size() > key.size() && l.compare(0, key.size(), key) == 0 && l[key.size()] == '='; }),
-+					            lines.end());
-+					lines.insert(lines.begin(), key + (rt ? "=on" : "=off"));
-+					const std::string path = HostInputConfigPath();
-+					std::string       error;
-+					if (path.empty() || !HostInputSave(path, lines, &error)) {
-+						std::fprintf(stderr, "host menu: ray tracing %s (not saved: %s)\n", rt ? "on" : "off", path.empty() ? "no input configuration file" : error.c_str());
-+					} else {
-+						std::fprintf(stderr, "host menu: ray tracing %s (saved to %s)\n", rt ? "on" : "off", path.c_str());
-+					}
++					SaveTitleSwitch("RayTracing", "ray tracing", rt);
++				}
++			}
++			// Experiment 0301: MangoHud's hardware figures and the title's frame rate (default off;
++			// KYTY_BC5_MANGOHUD=1 or the title's MangoHud.<TITLE_ID>=on starts it on). It shows or hides
++			// at the next present and is saved per title like the switch above.
++			{
++				bool hud = HostMenuMangoHudOn();
++				if (ImGui::MenuItem("MangoHud", nullptr, hud, !launcher)) {
++					hud = !hud;
++					HostMenuMangoHudSet(hud);
++					SaveTitleSwitch("MangoHud", "MangoHud", hud);
++				}
++				if (g_hud_lost.load(std::memory_order_acquire) && ImGui::IsItemHovered()) {
++					ImGui::SetTooltip("MangoHud is not loaded: only the game's frame rate is shown.");
 +				}
 +			}
 +			ImGui::EndMenu();
@@ -5614,10 +5741,10 @@ index 0000000..8e49327
 +} // namespace Libs::Graphics
 diff --git a/src/graphics/presentation/hostMenu.h b/src/graphics/presentation/hostMenu.h
 new file mode 100644
-index 0000000..7b6926c
+index 0000000..5a3fd52
 --- /dev/null
 +++ b/src/graphics/presentation/hostMenu.h
-@@ -0,0 +1,27 @@
+@@ -0,0 +1,38 @@
 +#ifndef KYTY_GRAPHICS_PRESENTATION_HOST_MENU_H_
 +#define KYTY_GRAPHICS_PRESENTATION_HOST_MENU_H_
 +
@@ -5642,15 +5769,26 @@ index 0000000..7b6926c
 +// Presenter thread, inside the settings overlay's ImGui frame. scale: the overlay's font scale.
 +void HostMenuDraw(float width, float height, float scale);
 +
++// Experiment 0301: every build loads MangoHud's Vulkan layer, hidden (no_display), with the BC5
++// layout and a control socket of its own; the Emulation menu's MangoHud switch shows and hides it
++// together with the title's own frame-rate counter. KYTY_BC5_MANGOHUD=0 keeps the layer out, =1
++// shows it from the start; the title's MangoHud.<TITLE_ID>=on|off in the input configuration wins.
++void HostMenuMangoHudSet(bool on);
++bool HostMenuMangoHudOn() noexcept;
++// Presenter thread, once a frame while the overlay pass runs: hands a change to MangoHud.
++void HostMenuMangoHudSync();
++// A change MangoHud has not been told yet: the overlay pass must run once more.
++bool HostMenuMangoHudPending() noexcept;
++
 +} // namespace Libs::Graphics
 +
 +#endif // KYTY_GRAPHICS_PRESENTATION_HOST_MENU_H_
 diff --git a/src/graphics/presentation/settingsOverlay.cpp b/src/graphics/presentation/settingsOverlay.cpp
 new file mode 100644
-index 0000000..e8775fd
+index 0000000..2284906
 --- /dev/null
 +++ b/src/graphics/presentation/settingsOverlay.cpp
-@@ -0,0 +1,940 @@
+@@ -0,0 +1,942 @@
 +#include "graphics/presentation/settingsOverlay.h"
 +
 +#include "SDL.h"
@@ -5913,14 +6051,15 @@ index 0000000..e8775fd
 +
 +// BC5 (2026-10-21, the maintainer's recordings): KYTY_BC5_OSD_FPS=1 draws the title's own frame rate
 +// (presented flips a second, videoOut.cpp Bc5OsdTitleFps) in the window's top-right corner, for
-+// recordings next to MangoHud's hardware figures (BC5_MANGOHUD=1 in the launchers sets it).
++// recordings next to MangoHud's hardware figures; since experiment 0301 the Emulation menu's
++// MangoHud switch shows it too.
 +extern "C" double Bc5OsdTitleFps(double* frame_ms);
 +static bool       Bc5OsdFps() {
 +    static const bool on = [] {
 +        const char* e = std::getenv("KYTY_BC5_OSD_FPS");
 +        return e != nullptr && std::atoi(e) != 0;
 +    }();
-+    return on;
++    return on || HostMenuMangoHudOn();
 +}
 +
 +void SettingsOverlayHostUiChanged() {
@@ -5953,7 +6092,7 @@ index 0000000..e8775fd
 +}
 +
 +bool SettingsOverlayOsd() noexcept { // BC5: the on-screen fps counter keeps the overlay pass running
-+	return Bc5OsdFps();
++	return Bc5OsdFps() || HostMenuMangoHudPending(); // experiment 0301: and a MangoHud change not handed over yet
 +}
 +
 +uint64_t SettingsOverlayRevision() noexcept {
@@ -6496,6 +6635,7 @@ index 0000000..e8775fd
 +	}
 +
 +	bool PrepareFrame(vk::Extent2D frame_extent, vk::Format format, uint32_t image_count) {
++		HostMenuMangoHudSync(); // experiment 0301: ahead of this present, in which MangoHud reads its socket
 +		if (!SettingsOverlayActive() && !WindowIsPaused() && !Bc5OsdFps()) { // experiment 0175: the pause banner draws too; BC5: the fps counter
 +			was_active = false;
 +			return false;
@@ -7287,17 +7427,18 @@ index f70995a..8bc9175 100644
  } // namespace Libs::Graphics
  
 diff --git a/src/graphics/presentation/window/hostInput.cpp b/src/graphics/presentation/window/hostInput.cpp
-index edcfdaf..e6cf215 100644
+index edcfdaf..f5fe2a3 100644
 --- a/src/graphics/presentation/window/hostInput.cpp
 +++ b/src/graphics/presentation/window/hostInput.cpp
-@@ -1,4 +1,6 @@
+@@ -1,4 +1,7 @@
 +#include <pthread.h>
  #include "graphics/presentation/window/hostInput.h"
++#include "graphics/presentation/hostMenu.h" // experiment 0301: the MangoHud switch is saved per title
 +#include "graphics/presentation/window.h"
  
  #include "SDL_gamecontroller.h"
  #include "SDL_keyboard.h"
-@@ -6,17 +8,72 @@
+@@ -6,17 +9,72 @@
  #include "SDL_mouse.h"
  #include "common/assert.h"
  #include "common/emulatorConfig.h"
@@ -7370,7 +7511,7 @@ index edcfdaf..e6cf215 100644
  namespace {
  
  struct ControlInfo {
-@@ -55,13 +112,68 @@ static constexpr std::array CONTROL_INFO = {
+@@ -55,13 +113,68 @@ static constexpr std::array CONTROL_INFO = {
  
  constexpr std::size_t INVALID_CONTROL = CONTROL_INFO.size();
  
@@ -7443,7 +7584,7 @@ index edcfdaf..e6cf215 100644
  std::size_t ControlFromName(std::string_view name) {
  	const auto info = std::find_if(CONTROL_INFO.begin(), CONTROL_INFO.end(),
  	                               [name](const auto& item) { return item.name == name; });
-@@ -74,6 +186,11 @@ const ControlInfo& Info(std::size_t control) {
+@@ -74,6 +187,11 @@ const ControlInfo& Info(std::size_t control) {
  }
  
  SDL_Keycode NormalizeKey(SDL_Keycode key) {
@@ -7455,7 +7596,7 @@ index edcfdaf..e6cf215 100644
  	switch (key) {
  		case SDLK_RSHIFT: return SDLK_LSHIFT;
  		case SDLK_RCTRL: return SDLK_LCTRL;
-@@ -83,110 +200,462 @@ SDL_Keycode NormalizeKey(SDL_Keycode key) {
+@@ -83,110 +201,484 @@ SDL_Keycode NormalizeKey(SDL_Keycode key) {
  	}
  }
  
@@ -7498,10 +7639,7 @@ index edcfdaf..e6cf215 100644
 +	});
 +	return button != MOUSE_NAMES.end() ? button->second : 0;
 +}
- 
--	const auto button = std::find_if(buttons.begin(), buttons.end(),
--	                                 [name](const auto& item) { return item.first == name; });
--	return button != buttons.end() ? button->second : 0;
++
 +std::string MouseButtonName(uint8_t button) {
 +	for (const auto& [name, id]: MOUSE_NAMES) {
 +		if (id == button) {
@@ -7509,12 +7647,11 @@ index edcfdaf..e6cf215 100644
 +		}
 +	}
 +	return "Mouse:?";
- }
++}
  
--int GamepadButtonFromName(std::string_view name) {
--	if (!name.starts_with("Pad:")) return -1;
--	return static_cast<int>(
--	    SDL_GameControllerGetButtonFromString(std::string(name.substr(4)).c_str()));
+-	const auto button = std::find_if(buttons.begin(), buttons.end(),
+-	                                 [name](const auto& item) { return item.first == name; });
+-	return button != buttons.end() ? button->second : 0;
 +// "Pad:<name>": a button, a trigger axis, or a stick axis with a direction.
 +bool PadSourceFromName(std::string_view name, Source* out) {
 +	if (!name.starts_with("Pad:")) {
@@ -7549,8 +7686,12 @@ index edcfdaf..e6cf215 100644
 +	out->pad_axis  = axis;
 +	out->axis_sign = sign;
 +	return true;
-+}
-+
+ }
+ 
+-int GamepadButtonFromName(std::string_view name) {
+-	if (!name.starts_with("Pad:")) return -1;
+-	return static_cast<int>(
+-	    SDL_GameControllerGetButtonFromString(std::string(name.substr(4)).c_str()));
 +bool SourceFromName(std::string_view name, Source* out) {
 +	*out = Source {};
 +	if (name.starts_with("Mouse:")) {
@@ -7567,8 +7708,13 @@ index edcfdaf..e6cf215 100644
 +	}
 +	out->kind = SourceKind::Key;
 +	return true;
-+}
-+
+ }
+ 
+-bool Conflicts(const Binding& first, const Binding& second) {
+-	return first.control == second.control ||
+-	       (first.key != SDLK_UNKNOWN && first.key == second.key) ||
+-	       (first.mouse_button != 0 && first.mouse_button == second.mouse_button) ||
+-	       (first.gamepad_button >= 0 && first.gamepad_button == second.gamepad_button);
 +std::string SourceToName(const Source& s) {
 +	switch (s.kind) {
 +		case SourceKind::Key: return SDL_GetKeyName(s.key);
@@ -7582,13 +7728,8 @@ index edcfdaf..e6cf215 100644
 +			       (s.axis_sign > 0 ? "+" : s.axis_sign < 0 ? "-" : "");
 +		default: return "none";
 +	}
- }
- 
--bool Conflicts(const Binding& first, const Binding& second) {
--	return first.control == second.control ||
--	       (first.key != SDLK_UNKNOWN && first.key == second.key) ||
--	       (first.mouse_button != 0 && first.mouse_button == second.mouse_button) ||
--	       (first.gamepad_button >= 0 && first.gamepad_button == second.gamepad_button);
++}
++
 +bool SameSource(const Source& a, const Source& b) {
 +	if (a.kind != b.kind) {
 +		return false;
@@ -7671,13 +7812,14 @@ index edcfdaf..e6cf215 100644
 +			char b[64];
 +			std::snprintf(b, sizeof(b), "RenderScale.%s=%.2f", HostInputTitleId().c_str(), m_render_scale);
 +			out.emplace_back(b);
- 		}
--		Add(binding);
++		}
 +		for (const auto& other: m_other_title_scales) out.push_back(other);
 +		if (m_ray_tracing >= 0) out.emplace_back("RayTracing." + HostInputTitleId() + (m_ray_tracing == 1 ? "=on" : "=off")); // experiment 0273
++		if (m_mangohud >= 0) out.emplace_back("MangoHud." + HostInputTitleId() + (m_mangohud == 1 ? "=on" : "=off")); // experiment 0301
 +		if (!m_default_keys) {
 +			out.emplace_back("DefaultKeys=off");
  		}
+-		Add(binding);
 +		for (int i = 0; i < 32; i++) {
 +			if (((m_disabled_buttons >> i) & 1u) != 0) {
 +				out.emplace_back(std::string("Pad:") +
@@ -7694,7 +7836,7 @@ index edcfdaf..e6cf215 100644
 +		}
 +		for (const auto& b: m_bindings) {
 +			out.emplace_back(std::string(Info(b.control).name) + "=" + SourceToName(b.source));
-+		}
+ 		}
 +		return out;
  	}
 +
@@ -7702,6 +7844,7 @@ index edcfdaf..e6cf215 100644
 +	[[nodiscard]] bool DefaultKeys() const { return m_default_keys; }
 +	[[nodiscard]] double RenderScale() const { return m_render_scale; }
 +	[[nodiscard]] int    RayTracing() const { return m_ray_tracing; } // experiment 0273: -1 not set, 0 off, 1 on
++	[[nodiscard]] int    MangoHud() const { return m_mangohud; } // experiment 0301: -1 not set, 0 off, 1 on
 +	[[nodiscard]] int    Fullscreen() const { return m_fullscreen; }
 +
 +	[[nodiscard]] bool PadButtonDisabled(int button) const {
@@ -7808,16 +7951,19 @@ index edcfdaf..e6cf215 100644
 +				m_fullscreen = 1;
 +			} else if (EqualNoCase(right, "off") || EqualNoCase(right, "false") || right == "0") {
 +				m_fullscreen = 0;
-+			} else {
+ 			} else {
+-				index++;
 +				return Fail(error, where + ": Fullscreen takes on or off, got: " + std::string(right));
-+			}
+ 			}
 +			return true;
 +		}
 +
 +		if (EqualNoCase(left, "RenderScale")) { // the old form, for every title: no longer applied
 +			LOGF_COLOR(Log::Color::Yellow, "Input config %s: RenderScale without a title is ignored; use RenderScale.<TITLE_ID>=<k>\n", where.c_str());
 +			return true;
-+		}
+ 		}
+-		EXIT_IF(m_size >= m_bindings.size());
+-		m_bindings[m_size++] = binding;
 +		if (left.size() > 12 && EqualNoCase(left.substr(0, 12), "RenderScale.")) { // experiment 0047, per title
 +			char*             end = nullptr;
 +			const std::string v(right);
@@ -7854,6 +8000,24 @@ index edcfdaf..e6cf215 100644
 +			return true;
 +		}
 +
++		if (left.size() > 9 && EqualNoCase(left.substr(0, 9), "MangoHud.")) { // experiment 0301, per title
++			int v = -1;
++			if (EqualNoCase(right, "on") || EqualNoCase(right, "true") || right == "1") {
++				v = 1;
++			} else if (EqualNoCase(right, "off") || EqualNoCase(right, "false") || right == "0") {
++				v = 0;
++			} else {
++				return Fail(error, where + ": MangoHud takes on or off, got: " + std::string(right));
++			}
++			const std::string id(left.substr(9));
++			if (EqualNoCase(id, HostInputTitleId())) {
++				m_mangohud = v;
++			} else {
++				m_other_title_scales.emplace_back("MangoHud." + id + (v == 1 ? "=on" : "=off")); // another title's line, kept
++			}
++			return true;
++		}
++
 +		if (EqualNoCase(left, "DefaultKeys")) {
 +			if (EqualNoCase(right, "on") || EqualNoCase(right, "true") || right == "1") {
 +				m_default_keys = true;
@@ -7872,10 +8036,9 @@ index edcfdaf..e6cf215 100644
 +			}
 +			if (source.kind == SourceKind::PadButton) {
 +				m_disabled_buttons |= 1u << source.pad_button;
- 			} else {
--				index++;
++			} else {
 +				m_disabled_axes |= 1u << source.pad_axis;
- 			}
++			}
 +			return true;
 +		}
 +
@@ -7893,9 +8056,7 @@ index edcfdaf..e6cf215 100644
 +		    (binding.source.key == SDLK_ESCAPE || binding.source.key == SDLK_SPACE ||
 +		     binding.source.key == SDLK_F1 || binding.source.key == SDLK_F2)) {
 +			return Fail(error, where + ": Escape, Space, F1 and F2 belong to the host: " + std::string(line));
- 		}
--		EXIT_IF(m_size >= m_bindings.size());
--		m_bindings[m_size++] = binding;
++		}
 +		// A later line replaces an earlier one with the same source or the same control.
 +		m_bindings.erase(std::remove_if(m_bindings.begin(), m_bindings.end(),
 +		                                [&](const auto& b) {
@@ -7917,6 +8078,7 @@ index edcfdaf..e6cf215 100644
 +	bool                 m_default_keys     = true;
 +	double               m_render_scale     = 0.0; // 0: not set (timestamps untouched)
 +	int                  m_ray_tracing      = -1;  // experiment 0273: -1 not set (the environment decides), 0 off, 1 on
++	int                  m_mangohud         = -1;  // experiment 0301: -1 not set (off, or KYTY_BC5_MANGOHUD=1), 0 off, 1 on
 +	std::vector<std::string> m_other_title_scales;   // RenderScale.<id> lines of other titles, kept
 +	int                  m_fullscreen       = -1;  // -1: not set (--fullscreen or windowed)
 +	bool                 m_custom           = false;
@@ -7971,6 +8133,7 @@ index edcfdaf..e6cf215 100644
 +		map->Log();
 +		if (map->RenderScale() > 0.0) Libs::Bc5Gc::Direct::SetTimestampScale(map->RenderScale());
 +	if (map->RayTracing() >= 0) Libs::Bc5Gc::Direct::SetRayTracing(map->RayTracing() == 1); // experiment 0273
++		if (map->MangoHud() >= 0) HostMenuMangoHudSet(map->MangoHud() == 1); // experiment 0301
 +		if (map->Fullscreen() >= 0) WindowSetFullscreen(map->Fullscreen() == 1);
 +		g_map = std::move(map);
 +	}
@@ -7984,7 +8147,7 @@ index edcfdaf..e6cf215 100644
  void SetButton(uint32_t button, bool down) {
  	if (button == Controller::PAD_BUTTON_L2) {
  		Controller::ControllerAxis(Controller::HOST_INPUT_CONTROLLER_ID,
-@@ -199,40 +668,17 @@ void SetButton(uint32_t button, bool down) {
+@@ -199,40 +691,17 @@ void SetButton(uint32_t button, bool down) {
  	}
  }
  
@@ -8031,7 +8194,7 @@ index edcfdaf..e6cf215 100644
  void SetControl(std::size_t control, bool down) {
  	if (control == INVALID_CONTROL) {
  		return;
-@@ -240,93 +686,277 @@ void SetControl(std::size_t control, bool down) {
+@@ -240,93 +709,278 @@ void SetControl(std::size_t control, bool down) {
  
  	const auto& info = Info(control);
  	if (info.button != 0) {
@@ -8123,7 +8286,7 @@ index edcfdaf..e6cf215 100644
 +		}
  	}
 +	return INVALID_CONTROL;
-+}
+ }
 +
 +// --- a key press shorter than a frame --------------------------------------------------------
 +//
@@ -8155,7 +8318,7 @@ index edcfdaf..e6cf215 100644
 +		return n < 0 ? 0 : (n > 1000 ? 1000 : n);
 +	}();
 +	return v;
- }
++}
 +
 +void ReleaseThread() {
 +	pthread_setname_np(pthread_self(), "bc5-keyhold");
@@ -8284,9 +8447,9 @@ index edcfdaf..e6cf215 100644
 +	if (map.Custom() && gamepad_axis >= 0) {
 +		map.UpdatePadAxis(gamepad_axis, value,
 +		                  [](std::size_t control, bool down) { SetControl(control, down); });
-+	}
-+}
-+
+ 	}
+ }
+ 
 +bool HostInputPadButtonDisabled(int gamepad_button) {
 +	std::lock_guard<std::mutex> lock(g_input_mutex);
 +	return Map().PadButtonDisabled(gamepad_button);
@@ -8331,6 +8494,7 @@ index edcfdaf..e6cf215 100644
 +	map->Log();
 +	if (map->RenderScale() > 0.0) Libs::Bc5Gc::Direct::SetTimestampScale(map->RenderScale());
 +	if (map->RayTracing() >= 0) Libs::Bc5Gc::Direct::SetRayTracing(map->RayTracing() == 1); // experiment 0273
++	if (map->MangoHud() >= 0) HostMenuMangoHudSet(map->MangoHud() == 1); // experiment 0301
 +	if (map->Fullscreen() >= 0) WindowSetFullscreen(map->Fullscreen() == 1);
 +	g_map = std::move(map);
 +	return true;
@@ -8357,7 +8521,7 @@ index edcfdaf..e6cf215 100644
 +			*error = "cannot replace " + path;
 +		}
 +		return false;
- 	}
++	}
 +	return true;
 +}
 +
@@ -8366,8 +8530,8 @@ index edcfdaf..e6cf215 100644
 +	Map();
 +	ReleaseAll();
 +	g_pending.clear();
- }
- 
++}
++
  } // namespace Libs::Graphics
 diff --git a/src/graphics/presentation/window/hostInput.h b/src/graphics/presentation/window/hostInput.h
 index c0ac585..34a3616 100644
