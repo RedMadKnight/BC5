@@ -164,3 +164,66 @@ moved within 100 ms while the GPU is wedged`. A value that moves while the GPU i
 (14:51) confirmed the node base as `s_lshl_b64 s[88:89], s[10:11], 6` with s10 = struct[0x7c]: the probe's extent
 arithmetic stands. One run on the 0306 chain when the slot comes (the hang at ~2 min expected; a crash ~2 s later
 cannot take the first 100 ms).
+
+**Prior art (2026-10-25 15:05–15:20, laptop only, public sources, nothing downloaded; at the maintainer's request —
+"czy ktoś gdzieś nie opisał i nie rozwiązał ich problemu").** Nothing found that describes or solves this hang (a PS5
+title's BVH build chain reading floats as DISPATCH_INDIRECT arguments on an emulator); the open emulators' trackers
+turned up no BVH / `image_bvh` / ray-tracing build threads in the searches. What the public code says about the shape of
+the problem:
+
+- **AMD GPURT** (the open-source ray-tracing library of AMD's DXR/Vulkan drivers, archived 2025-09:
+  https://github.com/GPUOpen-Drivers/gpurt): its build works as a GPU-driven task queue — `StateTaskQueueCounter {phase,
+  startPhaseIndex, endPhaseIndex, taskCounter, numTasksDone}`, "Build Stage Counters" with `COUNTER_REFIT_OFFSET 0x14`
+  and `COUNTER_EMITCOMPACTSIZE_OFFSET 0x24`, `ByteStrideScratchNode` = **64 bytes** (`src/shadersClean/common/ShaderDefs.hlsli`).
+  The 64-byte scratch node and the counter block with a refit and a compaction-size counter match the shapes this chain
+  shows (0x40-byte nodes, a struct with counters, a compaction with an atomic counter). In GPURT the GPU writes the
+  counters the next stage consumes — the CPU does not touch them between stages. That is the model our title's chain
+  seems to follow for the refit (sane counts) and to break for the leaf builder (a CPU-written record), which points at
+  the title's own frame logic for compacted trees rather than at the builder design.
+- **Mesa / RADV**: the BVH intermediate representation (https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/18769)
+  notes that building internal nodes "in a single dispatch" leaves unreferenced nodes that a compaction must remove, and
+  that doing it cleanly "would involve a task system like in AMD's gpurt"; the refactor
+  (https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/17028) and the batched-build shim
+  (https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/24587) describe the leaf / internal kernels and build
+  batching. RADV's build sources were not readable from the laptop (the gitlab raw path is bot-gated; the GitHub mirror's
+  `bvh/` paths have moved) — the box's sparse Mesa clone (`~/src/mesa`) is the place to read `build_interface.h` on a slot.
+- **RDNA 2 node format** (https://chipsandcheese.com/p/raytracing-on-amds-rdna-2-3-and-nvidias-turing-and-pascal): box
+  nodes hold four boxes, triangle nodes four triangles, traversal in the shader with the intersection in the texture
+  units — the format the title's `image_bvh_intersect_ray` consumers expect; no byte sizes given there.
+- **Indirect dispatch ordering**: the Vulkan tutorial on GPU-written dispatch parameters
+  (https://docs.vulkan.org/tutorial/latest/Advanced_Vulkan_Compute/07_GPU_Driven_Pipelines/02_indirect_dispatch.html)
+  states the barrier requirement between the writer and the indirect read that exp 0038's PFP_SYNC_ME implements on
+  our GFX form; firmware sensitivity of zero-count indirect commands on RDNA 2
+  (https://gitlab.freedesktop.org/mesa/mesa/-/merge_requests/20097, a task+mesh path) and an Intel zero-count hang
+  (https://bugs.freedesktop.org/show_bug.cgi?id=94100) are the nearest public "indirect arguments hang" reports —
+  neither is this case (our arguments are floats, not zero).
+
+Conclusion of the look-around: no prior solution; the GPURT counter model supports the reading that the chain's own
+GPU-written data is fine and a CPU-side per-frame write into the compacted tree's record is the anomaly (0310c tests
+it). Sources used: the links above.
+
+**0310c — S4 (binary 319c8136 = out 568c18e7; 15:02:22, compaction on, RT on, private wd; `raw/journal-stream-0310c.txt.gz`).**
+HANG at 117 s, both rings reset successfully, **no crash this time** (the emulator ran on; S4-crash.txt empty); live
+saves 8289704a9338a118; the chain (one run) released the lock by itself. **The sampling made it:** the first probe line
+of the hung buffer is the CPU-writer test, and **every sampled struct's record 1 stayed still across the three reads
+50 ms apart while the GPU was wedged** (e.g. `3f2b2a00 3da16000 bf0cde00` ×3 → still; the summary line "0 of N structs'
+record 1 moved within 100 ms").
+
+**Reading, carefully.** "Still" does not acquit the CPU: when the GPU wedges, the title's frame loop blocks on it (its
+flips, label waits and fences stop), so its per-frame writes stop too — a CPU writer that runs once per frame would also
+read "still" in that window. What the test does settle is that nothing writes record 1 asynchronously (no free-running
+CPU thread, no GPU writer that survived the wedge). So the remaining discriminator is **who writes struct + 0x120 while
+the frame loop runs**: a host-side write trap on that page — `mprotect` the page of the count records read-only from the
+host once the count pass's buffer is submitted and until its leaf builder's buffer is submitted; a CPU store into it
+faults, the handler logs the faulting thread, PC (the title's module and offset) and the value, unprotects and resumes;
+GPU writes bypass CPU page protection (the GPU writes through its own mapping of the memfd/userptr page), so a logged
+fault is a CPU writer by construction — or, offline, the store found by its address in the title's code. That is the
+next experiment (the supervisor's number); it runs on the same chain (the hang at ~2 min is not needed for it — the
+first frames after the structs are initialised suffice, so RT-off runs may do if the compaction runs there).
+
+**Verdict (0310, final).** The leaf builder's node buffer does not cover the argument block (127 of 127); the count
+pass writes record 1 of {struct + 0x100, stride 0x20, 2 records} = {struct[0x78] − arr[0], 1, 1}; at the GPU's read that
+record holds per-tree float triples that change frame to frame and keep still while the GPU is wedged; no GPU program
+of the chain or the compaction stores there; the title's CPU, writing once per frame, is the writer left — to be
+caught by a write trap. Prior art (above): no public description or fix; GPURT's counter model matches the chain's
+GPU-written data, not a CPU-written argument record.

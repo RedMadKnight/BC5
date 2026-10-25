@@ -71,6 +71,46 @@ static LeafSnap x0310_read(const std::vector<bc5::direct::Mapping>& maps, uint64
 }
 static void timeout_probe(const uint32_t* sub_ib, uint32_t sub_n, const char* kind, uint64_t n, const std::vector<uint32_t>* ran, const std::vector<GeProbeSlot>* gep = nullptr) {
 '''),
+        # 0310c: the CPU-writer test first — before the dump and every other probe line (0310b's per-dispatch sampling was
+        #   lost when the emulator crashed ~2 s after the hang): the last 24 distinct structs the filter saw, record 1 read in
+        #   three passes 50 ms apart (~100 ms in all); the journal flushes every line.
+        ('''	if (sub_ib == nullptr || sub_n == 0 || BC5_DIAG_ENV("BC5_DIRECT_TIMEOUT_PROBE") == nullptr || g_dump_dir.empty() || !g_dev) return;
+''', 1, '''	if (sub_ib == nullptr || sub_n == 0 || BC5_DIAG_ENV("BC5_DIRECT_TIMEOUT_PROBE") == nullptr || g_dump_dir.empty() || !g_dev) return;
+	{ // experiment 0310c: the GPU is wedged here, so a record 1 that still moves between reads 50 ms apart has a CPU writer
+		static std::atomic<uint32_t> n_once {0};
+		if (n_once++ < 4) {
+			std::vector<uint64_t> structs;
+			{
+				std::lock_guard<std::mutex> lk(g_x0310_m);
+				for (auto it = g_x0310.rbegin(); it != g_x0310.rend() && structs.size() < 24; ++it) {
+					if (std::find(structs.begin(), structs.end(), it->st) == structs.end()) structs.push_back(it->st);
+				}
+			}
+			const auto           maps0 = g_dev->sorted_mappings();
+			std::vector<uint32_t> a(structs.size() * 9, 0u);
+			std::vector<bool>     ok(structs.size(), false);
+			for (int k = 0; k < 3; k++) {
+				for (size_t i = 0; i < structs.size(); i++) {
+					if (k == 0) ok[i] = structs[i] != 0 && covered_sorted(*maps0, structs[i] + 0x120u, 12);
+					if (!ok[i]) continue;
+					const auto* h = reinterpret_cast<const volatile uint32_t*>(structs[i] + 0x120u);
+					a[i * 9 + k * 3] = h[0], a[i * 9 + k * 3 + 1] = h[1], a[i * 9 + k * 3 + 2] = h[2];
+				}
+				if (k < 2) { timespec sl {0, 50 * 1000 * 1000}; nanosleep(&sl, nullptr); }
+			}
+			uint32_t moving = 0;
+			for (size_t i = 0; i < structs.size(); i++) {
+				if (!ok[i]) continue;
+				const uint32_t* v = a.data() + i * 9;
+				const bool moves = v[0] != v[3] || v[1] != v[4] || v[2] != v[5] || v[3] != v[6] || v[4] != v[7] || v[5] != v[8];
+				if (moves) moving++;
+				journal("timeout probe: leaf (exp 0310c): record 1 of struct 0x%" PRIx64 " sampled 3x 50 ms apart while the GPU is wedged: %08x %08x %08x | %08x %08x %08x | %08x %08x %08x -> %s\\n", structs[i],
+				        v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8], moves ? "MOVES: A CPU WRITER" : "still");
+			}
+			journal("timeout probe: leaf (exp 0310c): %u of %zu structs' record 1 moved within 100 ms while the GPU is wedged%s\\n", moving, structs.size(), moving ? ": THE TITLE'S CPU WRITES THERE" : ": no CPU writer seen in this window");
+		}
+	}
+'''),
         ('''	std::vector<uint32_t> mec_positions;         // offsets of its compute-form DISPATCH_INDIRECT
 ''', 1, '''	std::vector<uint32_t> mec_positions;         // offsets of its compute-form DISPATCH_INDIRECT
 	std::vector<uint32_t> probe_old_to_new;       // experiment 0277's probe fix, carried by 0310: the timeout probe reads the rebuilt IB, so its executed offsets go forward again
@@ -175,19 +215,6 @@ static void timeout_probe(const uint32_t* sub_ib, uint32_t sub_n, const char* ki
 							        have ? (then.rec1[0] == now.rec1[0] && then.rec1[1] == now.rec1[1] && then.rec1[2] == now.rec1[2] ? ", record 1 unchanged" : ", record 1 CHANGED") : "");
 							if (have && (then.h7c != now.h7c || then.h78 != now.h78))
 								journal("timeout probe: leaf (exp 0310):   at filter time (before #%" PRIu64 ", %.3f s ago): [0x7c] %u [0x78] %u record 1 %08x %08x %08x\\n", then.submit, x0310_now() - then.t, then.h7c, then.h78, then.rec1[0], then.rec1[1], then.rec1[2]);
-							// 0310b: the GPU is wedged at this point, so a record 1 that still moves between two reads 50 ms apart has a CPU
-							// writer (the title's own thread) — three samples, the first 24 structs.
-							if (now.rec_ok && n_x <= 24) {
-								uint32_t a[3][3];
-								for (int k = 0; k < 3; k++) {
-									const auto* h = reinterpret_cast<const volatile uint32_t*>(st);
-									a[k][0] = h[0x48], a[k][1] = h[0x49], a[k][2] = h[0x4a];
-									if (k < 2) { timespec sl {0, 50 * 1000 * 1000}; nanosleep(&sl, nullptr); }
-								}
-								const bool moves = a[0][0] != a[1][0] || a[0][1] != a[1][1] || a[0][2] != a[1][2] || a[1][0] != a[2][0] || a[1][1] != a[2][1] || a[1][2] != a[2][2];
-								journal("timeout probe: leaf (exp 0310):   record 1 of struct 0x%" PRIx64 " sampled 3x 50 ms apart while the GPU is wedged: %08x %08x %08x | %08x %08x %08x | %08x %08x %08x -> %s\\n", st,
-								        a[0][0], a[0][1], a[0][2], a[1][0], a[1][1], a[1][2], a[2][0], a[2][1], a[2][2], moves ? "MOVES: A CPU WRITER" : "still");
-							}
 						}
 					}
 					n_disp++;

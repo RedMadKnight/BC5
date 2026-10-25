@@ -34,3 +34,21 @@ paź 25 14:39:01.015175 bazzite kernel: amdgpu 0000:01:00.0: Starting gfx_0.0.0 
 paź 25 14:39:01.015333 bazzite kernel: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded
 paź 25 14:39:01.015780 bazzite kernel: amdgpu 0000:01:00.0: [drm] device wedged, but no recovery needed
 paź 25 14:40:20.825755 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 25 15:01:10.825762 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 25 15:03:15.825750 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 25 15:04:17.106752 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State
+paź 25 15:04:17.107850 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State Completed
+paź 25 15:04:17.108139 bazzite kernel: amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+paź 25 15:04:17.108441 bazzite kernel: amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+paź 25 15:04:17.108716 bazzite kernel: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=4683188, emitted seq=4683190
+paź 25 15:04:17.109001 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 1505050 thread bc5-ring pid 1505126
+paź 25 15:04:17.109255 bazzite kernel: amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+paź 25 15:04:17.116906 bazzite kernel: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded
+paź 25 15:04:17.117248 bazzite kernel: amdgpu 0000:01:00.0: [drm] device wedged, but no recovery needed
+paź 25 15:04:17.117442 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State
+paź 25 15:04:17.117611 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State Completed
+paź 25 15:04:17.117799 bazzite kernel: amdgpu 0000:01:00.0: ring comp_1.2.0 timeout, signaled seq=2645696, emitted seq=2645698
+paź 25 15:04:17.118024 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 1505050 thread bc5-ring pid 1505126
+paź 25 15:04:17.118191 bazzite kernel: amdgpu 0000:01:00.0: Starting comp_1.2.0 ring reset
+paź 25 15:04:17.118352 bazzite kernel: amdgpu 0000:01:00.0: Ring comp_1.2.0 reset succeeded
+paź 25 15:04:17.118517 bazzite kernel: amdgpu 0000:01:00.0: [drm] device wedged, but no recovery needed

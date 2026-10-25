@@ -1,6 +1,6 @@
 --- a/src/libs/bc5LleAgc.cpp (tree 5bccbb80)
-+++ b/src/libs/bc5LleAgc.cpp (exp 0310b: 54608f55)
-@@ -5921,6 +5921,46 @@
++++ b/src/libs/bc5LleAgc.cpp (exp 0310c: 568c18e7)
+@@ -5921,8 +5921,82 @@
  // compute buffer then shows what it waits on even when the machine goes down (exp 0259: S6N's was not recorded).
  // Experiment 0272 (exp 0265, F332: a compute chain hung inside its dispatches): each dispatch's group counts, from the packet
  // or, for DISPATCH_INDIRECT, from memory as the GPU left it; every indirect one is journaled, with the largest grid.
@@ -46,8 +46,44 @@
 +}
  static void timeout_probe(const uint32_t* sub_ib, uint32_t sub_n, const char* kind, uint64_t n, const std::vector<uint32_t>* ran, const std::vector<GeProbeSlot>* gep = nullptr) {
  	if (sub_ib == nullptr || sub_n == 0 || BC5_DIAG_ENV("BC5_DIRECT_TIMEOUT_PROBE") == nullptr || g_dump_dir.empty() || !g_dev) return;
++	{ // experiment 0310c: the GPU is wedged here, so a record 1 that still moves between reads 50 ms apart has a CPU writer
++		static std::atomic<uint32_t> n_once {0};
++		if (n_once++ < 4) {
++			std::vector<uint64_t> structs;
++			{
++				std::lock_guard<std::mutex> lk(g_x0310_m);
++				for (auto it = g_x0310.rbegin(); it != g_x0310.rend() && structs.size() < 24; ++it) {
++					if (std::find(structs.begin(), structs.end(), it->st) == structs.end()) structs.push_back(it->st);
++				}
++			}
++			const auto           maps0 = g_dev->sorted_mappings();
++			std::vector<uint32_t> a(structs.size() * 9, 0u);
++			std::vector<bool>     ok(structs.size(), false);
++			for (int k = 0; k < 3; k++) {
++				for (size_t i = 0; i < structs.size(); i++) {
++					if (k == 0) ok[i] = structs[i] != 0 && covered_sorted(*maps0, structs[i] + 0x120u, 12);
++					if (!ok[i]) continue;
++					const auto* h = reinterpret_cast<const volatile uint32_t*>(structs[i] + 0x120u);
++					a[i * 9 + k * 3] = h[0], a[i * 9 + k * 3 + 1] = h[1], a[i * 9 + k * 3 + 2] = h[2];
++				}
++				if (k < 2) { timespec sl {0, 50 * 1000 * 1000}; nanosleep(&sl, nullptr); }
++			}
++			uint32_t moving = 0;
++			for (size_t i = 0; i < structs.size(); i++) {
++				if (!ok[i]) continue;
++				const uint32_t* v = a.data() + i * 9;
++				const bool moves = v[0] != v[3] || v[1] != v[4] || v[2] != v[5] || v[3] != v[6] || v[4] != v[7] || v[5] != v[8];
++				if (moves) moving++;
++				journal("timeout probe: leaf (exp 0310c): record 1 of struct 0x%" PRIx64 " sampled 3x 50 ms apart while the GPU is wedged: %08x %08x %08x | %08x %08x %08x | %08x %08x %08x -> %s\n", structs[i],
++				        v[0], v[1], v[2], v[3], v[4], v[5], v[6], v[7], v[8], moves ? "MOVES: A CPU WRITER" : "still");
++			}
++			journal("timeout probe: leaf (exp 0310c): %u of %zu structs' record 1 moved within 100 ms while the GPU is wedged%s\n", moving, structs.size(), moving ? ": THE TITLE'S CPU WRITES THERE" : ": no CPU writer seen in this window");
++		}
++	}
  	{
-@@ -6137,6 +6177,49 @@
+ 		char name[512];
+ 		std::snprintf(name, sizeof(name), "%s/ib-timeout-%08" PRIu64 "-%.8s-%u.bin", g_dump_dir.c_str(), n, kind, sub_n);
+@@ -6137,6 +6211,36 @@
  						journal("timeout probe: dispatch op %02x at %u: program %s0x%" PRIx64 ", groups %s%s%s\n", op, q, pl == 0xffffffffu ? "not set in this buffer, " : "",
  						        (static_cast<uint64_t>(pl) | (static_cast<uint64_t>(ph & 0xffu) << 32u)) << 8u, grid, where, ex);
  					}
@@ -79,25 +115,12 @@
 +							        have ? (then.rec1[0] == now.rec1[0] && then.rec1[1] == now.rec1[1] && then.rec1[2] == now.rec1[2] ? ", record 1 unchanged" : ", record 1 CHANGED") : "");
 +							if (have && (then.h7c != now.h7c || then.h78 != now.h78))
 +								journal("timeout probe: leaf (exp 0310):   at filter time (before #%" PRIu64 ", %.3f s ago): [0x7c] %u [0x78] %u record 1 %08x %08x %08x\n", then.submit, x0310_now() - then.t, then.h7c, then.h78, then.rec1[0], then.rec1[1], then.rec1[2]);
-+							// 0310b: the GPU is wedged at this point, so a record 1 that still moves between two reads 50 ms apart has a CPU
-+							// writer (the title's own thread) — three samples, the first 24 structs.
-+							if (now.rec_ok && n_x <= 24) {
-+								uint32_t a[3][3];
-+								for (int k = 0; k < 3; k++) {
-+									const auto* h = reinterpret_cast<const volatile uint32_t*>(st);
-+									a[k][0] = h[0x48], a[k][1] = h[0x49], a[k][2] = h[0x4a];
-+									if (k < 2) { timespec sl {0, 50 * 1000 * 1000}; nanosleep(&sl, nullptr); }
-+								}
-+								const bool moves = a[0][0] != a[1][0] || a[0][1] != a[1][1] || a[0][2] != a[1][2] || a[1][0] != a[2][0] || a[1][1] != a[2][1] || a[1][2] != a[2][2];
-+								journal("timeout probe: leaf (exp 0310):   record 1 of struct 0x%" PRIx64 " sampled 3x 50 ms apart while the GPU is wedged: %08x %08x %08x | %08x %08x %08x | %08x %08x %08x -> %s\n", st,
-+								        a[0][0], a[0][1], a[0][2], a[1][0], a[1][1], a[1][2], a[2][0], a[2][1], a[2][2], moves ? "MOVES: A CPU WRITER" : "still");
-+							}
 +						}
 +					}
  					n_disp++;
  				}
  				if (op == 0x11 || op == 0x26 || op == 0x13 || op == 0x2a || (op == 0x2e && len >= 3 && (sub_ib[q + 1] & 0xffffu) == 0x243u))
-@@ -7546,6 +7629,7 @@
+@@ -7546,6 +7650,7 @@
  	// dword1 = offset, args {x, y, z}. TODO(verify) SET_BASE index 1 vs the console's usage.
  	bool                  mec_expand_ib = false; // experiment 0038: rebuild the IB with GFX-form dispatches
  	std::vector<uint32_t> mec_positions;         // offsets of its compute-form DISPATCH_INDIRECT
@@ -105,7 +128,7 @@
  	{
  		static const uint64_t max_count = std::getenv("BC5_DIRECT_INDIRECT_MAX") ? std::strtoull(std::getenv("BC5_DIRECT_INDIRECT_MAX"), nullptr, 10) : 4u << 20u;
  		const bool            survey    = journal_all();
-@@ -7903,6 +7987,44 @@
+@@ -7903,6 +8008,44 @@
  					}
  				}
  			}
@@ -150,7 +173,7 @@
  			if (type == 3 && (op == 0x2c || op == 0x38) && len >= 10 && ib[q + 5] > 65536u) { // experiment 0054
  				static std::atomic<uint64_t> n_multi {0};
  				if ((n_multi++ & 0xfffu) == 0) journal("  indirect multi draw op %02x at %u: draw count %u, DROPPED (%" PRIu64 " so far)\n", op, q, ib[q + 5], n_multi.load());
-@@ -8186,6 +8308,7 @@
+@@ -8186,6 +8329,7 @@
  			}
  			sub_ib = mec_ib.data();
  			sub_n  = static_cast<uint32_t>(mec_ib.size());
@@ -158,7 +181,7 @@
  		}
  	}
  	auto mec_back = [&mec_new_to_old](std::vector<uint32_t>& offsets) {
-@@ -8197,6 +8320,15 @@
+@@ -8197,6 +8341,15 @@
  		}
  		offsets.swap(back);
  	};
@@ -174,7 +197,7 @@
  	auto r = g_dev->submit(std::span<const uint32_t>(sub_ib, sub_n), opt, 2'000'000'000ull, with_gds, qring);
  	mec_back(r.executed_offsets);
  	if (qring != bc5::direct::kGfxRing && (g_comp_jobs++ & 0xffffu) == 0) {
-@@ -8292,7 +8424,10 @@
+@@ -8292,7 +8445,10 @@
  		r.fence_ms     = fr.fence_ms;
  		r.submit_ms    = r.cs_ms + fr.fence_ms;
  	}
@@ -186,7 +209,7 @@
  	if (r.pending) { // BC5_DIRECT_ASYNC: the completion thread waits for it and journals the result
  		g_ok++;
  		chain_mark_executed(chain, ib, num_dwords, r.executed_offsets);
-@@ -8305,7 +8440,7 @@
+@@ -8305,7 +8461,7 @@
  		it.job.kind       = kind;
  		it.job.num_dwords = num_dwords;
  		it.job.ib         = ib;
