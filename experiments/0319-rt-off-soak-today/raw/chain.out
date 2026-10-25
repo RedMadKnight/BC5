@@ -1,0 +1,36 @@
+private input config /home/kjaniszewski/bc5-work/exp0319/input-rtoff.cfg: 9 lines, RayTracing.PPSA03671=off  (source /home/kjaniszewski/bc5-work/input.cfg, RayTracing.PPSA03671=off)
+launcher /home/kjaniszewski/bc5-work/exp0319/play-pkg-0319.sh (md5 b737bdc3) from /home/kjaniszewski/bc5-work/play-pkg.sh bb51caf2 + exp 0299's edits renamed; log /home/kjaniszewski/bc5-work/exp0319/play-last.log; diff /home/kjaniszewski/bc5-work/exp0319/raw/play-pkg-0319.diff
+working directory /home/kjaniszewski/bc5-work/exp0319/wd: 5151 entries, 5150 symlinks (layout of /home/kjaniszewski/bc5-work/exp0299/wd: 5151 entries); the title's saves /home/kjaniszewski/bc5-work/exp0319/wd/_SaveData/PPSA03671 (private); KYTY_BC5_SAVEDATA_DIR /home/kjaniszewski/bc5-work/exp0319/wd/_SaveData-pkg-play
+2026-10-25 16:49:21 live saves bb14b6dd35b644ff, snapshot /home/kjaniszewski/bc5-work/exp0319/saves-before-1649 (comparison only, nothing is restored into /home/kjaniszewski/bc5-work/_SaveData/PPSA03671)
+== 16:49:21 run S1
+awk: linia poleceń:1: BEGIN {printf "%.1f", s > 0 ? n / s : 0}
+awk: linia poleceń:1:                             ^ syntax error
+S1: stopped at 600 s after 600 s; launcher exit 0; crash lines 0, kernel lines 0, TIMEOUT lines 0, devcoredumps 0, RT-off drop lines 6546, flips 25017 over 596.8 s =  flips/s; first crash line: 
+pass
+== 16:59:34 run S2
+awk: linia poleceń:1: BEGIN {printf "%.1f", s > 0 ? n / s : 0}
+awk: linia poleceń:1:                             ^ syntax error
+S2: stopped at 600 s after 602 s; launcher exit 0; crash lines 0, kernel lines 0, TIMEOUT lines 0, devcoredumps 0, RT-off drop lines 6517, flips 24755 over 597.5 s =  flips/s; first crash line: 
+pass
+== 17:09:49 run S3
+awk: linia poleceń:1: BEGIN {printf "%.1f", s > 0 ? n / s : 0}
+awk: linia poleceń:1:                             ^ syntax error
+S3: stopped at 600 s after 601 s; launcher exit 0; crash lines 0, kernel lines 0, TIMEOUT lines 0, devcoredumps 0, RT-off drop lines 6531, flips 24871 over 596.4 s =  flips/s; first crash line: 
+pass
+== 17:20:03 run S4
+awk: linia poleceń:1: BEGIN {printf "%.1f", s > 0 ? n / s : 0}
+awk: linia poleceń:1:                             ^ syntax error
+S4: stopped at 600 s after 601 s; launcher exit 0; crash lines 0, kernel lines 0, TIMEOUT lines 0, devcoredumps 0, RT-off drop lines 6410, flips 24367 over 596.0 s =  flips/s; first crash line: 
+pass
+== 17:30:17 run S5
+awk: linia poleceń:1: BEGIN {printf "%.1f", s > 0 ? n / s : 0}
+awk: linia poleceń:1:                             ^ syntax error
+S5: stopped at 600 s after 600 s; launcher exit 0; crash lines 0, kernel lines 0, TIMEOUT lines 0, devcoredumps 0, RT-off drop lines 6557, flips 25026 over 595.8 s =  flips/s; first crash line: 
+pass
+== 17:40:30 run S6
+awk: linia poleceń:1: BEGIN {printf "%.1f", s > 0 ? n / s : 0}
+awk: linia poleceń:1:                             ^ syntax error
+S6: stopped at 600 s after 601 s; launcher exit 0; crash lines 0, kernel lines 0, TIMEOUT lines 0, devcoredumps 0, RT-off drop lines 6406, flips 24391 over 595.7 s =  flips/s; first crash line: 
+pass
+2026-10-25 17:50:44 live saves bb14b6dd35b644ff (want bb14b6dd35b644ff)
+BOX-LOCK released
