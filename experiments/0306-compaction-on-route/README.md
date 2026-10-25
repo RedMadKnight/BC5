@@ -56,3 +56,24 @@ and day gave 2 × 600 s clean (exp 0302, 12:27–12:47). Four runs are not stati
 DISPATCH_INDIRECT arguments read floats — its argument pointer, or the counter buffer the count pass writes, is wrong
 (the compaction rewrites the tree the chain works on); the two acb dumps hold the argument addresses. Flips/s with
 the compaction on vs off: to be read from the four journals on the box (pending the supervisor's slot).
+
+**Addendum — flips/s and the ring placement (read 13:46–13:49 on the supervisor's slot, nothing written).** Flip rate
+= the journal's `timing: t … flip` lines per 10-s window, the mean over the windows 40 s … end−10 s:
+
+| run | flips | mean | windows 50–90 s |
+|---|---|---|---|
+| 0302 S1 (compaction skipped) | 23,729 in 600 s | 40.6/s | 484 470 485 397 |
+| 0302 S2 (skipped) | 23,680 in 600 s | 40.5/s | 465 489 493 375 |
+| 0306 S1 (compaction on) | 3,444 in 137 s | — (hang at ~110 s) | 466 443 458 370 |
+| 0306 S2 (on) | 3,340 in 135 s | — (hang at ~110 s) | 456 467 446 354 |
+
+The route's profile is the same with the compaction on until the hang; its windows read ~4 % lower (≈ 1.5–2 flips/s
+on the route; exp 0305's lab figure was ~3), then 10, 0, 1 flips in the hang's windows. The compaction's cost on the
+route is small; the hang is the cost. Devcoredump copies: only one from this chain, `20261025-133330-devcd1.txt`
+(5.8 MB, S1's); S2's hang of 13:35:57 left none. **Ring placement:** the 0306 journals say `compute ring: a compute
+buffer of 1434 dwords stays on the GFX ring (indirect dispatch (MEC check unverified); 1025 so far)` — with exp
+0290's refusal every compute buffer that carries a DISPATCH_INDIRECT (the whole build chain) is kept on the GFX ring,
+and the compaction's dcb is on the GFX ring by nature; both sides run on one ring in submit order, so the cross-ring
+dependency is not the mechanism today, and exp 0308's submit numbers decide the order between the compaction's dcb
+and the chain's acb on that ring. The kernel's `comp_1.2.0 timeout` is the compute ring's direct-only buffers waiting
+behind the wedge.
