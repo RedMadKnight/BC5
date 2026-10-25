@@ -73,3 +73,57 @@ exp 0281's unit + exp 0290's archive, both strings present, nothing shared writt
    direct.log`), the coredump of 02:19:01 (`~/bc5-data/captures/devcoredump/`, if the fsync beat the reset), and
    whether a failed GFX reset after a compute-ring timeout is a pattern (F332's compute reset failed; here the gfx
    one did). Nothing of this experiment is integrated; the morning: the power-cycle, then those three reads.
+
+## Addendum — the three reads of S2 (2026-10-25 09:05, read-only, the supervisor's GO; copies on the laptop only)
+
+Sources, cited by path and never committed: `~/bc5-data/captures/play-20261025-0216/gc/direct.log` (32.5 MB, the
+run's journal), its probe dumps `ib-timeout-00129926-acb-4054.bin` and `ib-timeout-00129933-dcb-32374.bin`, and the
+coredump `~/bc5-data/captures/devcoredump/20261025-021901-devcd7.txt` (taken at the comp_1.1.0 timeout, 02:19:01.275;
+process kyty_emulator 2593180, thread bc5-ring; rings gfx_0.0.0, comp_1.1.0, kiq).
+
+**The GFX ring stood at the title's own sync wait, whose label had been overwritten with a float.** dcb #129933
+(31,414 title dwords, 32,374 rebuilt; 60 direct dispatches, 254 draws of five kinds, 32 waits): the breadcrumbs say
+60 reached, 60 done; of the 32 waits 31 are met and one is not — `WAIT_REG_MEM` at offset 31,298 (3 % before the
+buffer's end) on 0x11e0b975e0, function equal, reference 1, **"now 0x44069b70"**. It is the title's intra-buffer
+sync, the same three packets as in 0273's 19:04 hang (`WRITE_DATA` 0, `RELEASE_MEM` end-of-pipe writing 1, `WAIT` for
+1; there the label read 7): the label was 0 and then 1, and then something else wrote 0x44069b70 into it — a value
+that reads as the float 538.4, not a counter, not a fence. The 29 other such syncs in the buffer are met. So the
+GFX hang of S2 is a stray write into the title's own synchronisation word, by a shader writing float data through a
+garbage pointer — the mechanism F339 saw as page faults when the garbage address was unmapped, here landing in
+mapped memory and so **leaving no fault line**: this is how a hang of the "fault-less class" (F316, F332) is made.
+The buffer's dispatch programs are the 0x11d03a… family (0x11d03a3400 ×28, 0x11d03a2000 ×15, 0x11d04cc300 — the
+same family as 0290 S2's timed-out buffer).
+
+**The compute ring finished every dispatch and never signalled its fence.** acb #129926 (3,190 title dwords, 4,054
+rebuilt; 54 direct dispatches of 0x11d03a3400 ×28, 0x11d03a2000, 0x11d039f000, 0x11d03a4600 (the last six, at
+3,650–3,915), 0x11d03a3500, 0x11d03a0700): one wait at offset 0 (0x12004b4bc8 == 0, met), 54 breadcrumbs reached
+and done, the end-of-buffer `RELEASE_MEM`s at 3,931–3,994 with their values landed ("now" = the written value, or
+a later write's), and still the job's fence timed out ("signaled 5829414, emitted 5829416"). Two seconds before it,
+at 02:18:59.268, the kernel logged the one page fault of the run: client SQC (data), 0xb20407c00000, status
+0x00601430 — a scalar data load from a garbage address, which stalls or kills the wave that issued it. The same
+address faulted in exp 0290 S2 with the same dispatch family in flight. So the compute job's missing fence is a
+wave of this 0x11d03a… family stuck on its scalar fault; the breadcrumbs' "done" for every dispatch does not
+contradict it, since on a compute ring the done mark's BOTTOM_OF_PIPE_TS release is not shown to wait for the
+compute waves (exp 0277's TODO(verify)). The MEC's header dump holds the compute ring's last packets as
+`RELEASE_MEM`, a NOP and two small packets — the IB's tail, as the probe says.
+
+**The CP registers** (devcd7, at the compute timeout): `CP_IB1_BASE` 0x101800000000 with `CP_IB1_CMD_BUFSZ` 0x91e8
+(37,352 dwords) — the gfx ring's dump has that very IB (0x1018, 0x91e8 dwords), the chain IB that carried the dcb;
+`CP_IB1_BUFSZ` 0x6488 (25,736) left; `CP_STALLED_STAT2` 0x00218000, `CP_CPF_STATUS` 0xbc008263. Taken at face value
+the fetch position (11,616 of 37,352) lies before the dcb's unmet wait at ~31,300+prefix, while the breadcrumbs put
+the ME past every dispatch of the buffer — TODO(verify) what `CP_IB1_BUFSZ` counts at the moment of a dump
+(remaining to fetch, to execute, or a stale value after the ring reset's start); the breadcrumbs and the probe's
+"now" values are memory the GPU wrote and are taken as the ground truth here.
+
+**What this adds to the verdict.**
+- The route's ~2-minute failure with RT on is two things at once: a scalar data fault of the 0x11d03a… dispatch
+  family at 0xb20407c00000 (twice now, 0290 S2 and 0294 S2) that leaves the compute queue without its fence, and a
+  stray write that lands in the title's own sync label and leaves the GFX ring waiting forever — the fault-less hang.
+  Both are garbage pointers in the RT work; RT off (0280/0281) avoids both.
+- The breadcrumbs did their job on both rings: they cleared every dispatch and left the wait and the fence as the
+  only candidates, which the probe's "now" values then named. A dispatch-level mark cannot name a stray write;
+  the next tool is the label's writer — a watch on 0x11e0b975e0-class labels (the host knows them: it journals these
+  three-packet syncs) or, cheaper, the 0x11d03a… programs' store targets from their disassembly, since every hang
+  with a fault names that family.
+- Why the GFX reset failed this time and not in 0290's six is not in these reads (the compute queue had been
+  reset two milliseconds earlier; the kernel's order of the two resets is the one difference on record).
