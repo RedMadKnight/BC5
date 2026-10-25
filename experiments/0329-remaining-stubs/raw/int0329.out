@@ -1,0 +1,37 @@
+2026-10-25 23:42:29 before: normal 5dd77a82, lean 47e4a31a, tree f266548, 85 changed entries
+  src/kernel/syncOnAddress.h tree f5eacccf -> patched b595887f
+  src/kernel/syncOnAddress.cpp tree 5c7b2079 -> patched bafb6902
+  src/libs/libKernel.cpp tree 625a2114 -> patched 35b61eea
+  src/kernel/fileSystem.h tree d630781c -> patched e94f071d
+  src/kernel/fileSystem.cpp tree 9ad3e3be -> patched f1b5f528
+  src/libs/libC.cpp tree 918ab25a -> patched 501916a8
+  src/loader/runtimeLinker.cpp tree 7b648776 -> patched f294dfc2
+  src/libs/libs.cpp tree dfbe5493 -> patched 309aecf7
+  src/kernel/memory.h tree 020ba637 -> patched 8c25cc1f
+  src/kernel/memory.cpp tree 9a64b68c -> patched 11b1df22
+  src/libs/network.h tree 4fd5bce9 -> patched 90ab8c55
+  src/libs/network.cpp tree e66d920a -> patched 98d501f4
+  src/libs/libNet.cpp tree 3d59871f -> patched f7a26ceb
+  src/libs/libSaveData.cpp tree cafb1a54 -> patched d6e9c37f
+  src/libs/audio.h tree cd16d0b4 -> patched 32923201
+  src/libs/audio.cpp tree ee61d1d9 -> patched fa06c494
+  src/libs/libAudio.cpp tree 482a68c3 -> patched 45ca1ece
+  src/libs/controller.h tree c8ed128c -> patched 071f0851
+  src/libs/controller.cpp tree 4d2d4318 -> patched 40a0e7b6
+  src/libs/libPad.cpp tree ab6c4035 -> patched dbe268d7
+  src/graphics/presentation/videoOut.h tree 5eea43ba -> patched 6d34162d
+  src/graphics/presentation/videoOut.cpp tree 8c6dcd55 -> patched 332e88fc
+  src/libs/libVideoOut.cpp tree 7299248e -> patched 572eada2
+  libNpCppWebApi.cpp (new) 240c7201
+  libPngEnc.cpp (new) 2ba17051
+  libPlayGoDialog.cpp (new) 4894df9c
+  libNpCommerceDialog.cpp (new) c62b928a
+  libPlayerInvitationDialog.cpp (new) afdbb819
+== 23:42:30 files into the tree
+== 23:42:30 normal build
+== 23:43:42 lean build
+strings: normal stub lines 1 NpCppWebApi 0; lean stub lines 1 NpCppWebApi 0
+warnings: normal 89, lean 92; errors: /home/kjaniszewski/bc5-work/exp0329/integration/build-normal.out:0 /home/kjaniszewski/bc5-work/exp0329/integration/build-lean.out:0 
+candidate patch 0001: 58158 lines, md5 bbd860df, bc5LleAgc.cpp 5bccbb80
+2026-10-25 23:44:48 after: normal 4a146894, lean c28cdd3c, tree 96 changed entries
+== 23:44:48 done; undo: cp -p /home/kjaniszewski/bc5-work/exp0329/integration/kyty_emulator.before-0329 /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator; cp -p /home/kjaniszewski/bc5-work/exp0329/integration/kyty_emulator-lean.before-0329 /home/kjaniszewski/bc5-work/kytyplus-build-lean/src/kyty_emulator; for f in src/kernel/syncOnAddress.h src/kernel/syncOnAddress.cpp src/libs/libKernel.cpp src/kernel/fileSystem.h src/kernel/fileSystem.cpp src/libs/libC.cpp src/loader/runtimeLinker.cpp src/libs/libs.cpp src/kernel/memory.h src/kernel/memory.cpp src/libs/network.h src/libs/network.cpp src/libs/libNet.cpp src/libs/libSaveData.cpp src/libs/audio.h src/libs/audio.cpp src/libs/libAudio.cpp src/libs/controller.h src/libs/controller.cpp src/libs/libPad.cpp src/graphics/presentation/videoOut.h src/graphics/presentation/videoOut.cpp src/libs/libVideoOut.cpp; do cp -p /home/kjaniszewski/bc5-work/exp0329/integration/tree-before/$f /home/kjaniszewski/src/KytyPlus/$f; done; rm /home/kjaniszewski/src/KytyPlus/src/libs/{libNpCppWebApi.cpp,libPngEnc.cpp,libPlayGoDialog.cpp,libNpCommerceDialog.cpp,libPlayerInvitationDialog.cpp}
