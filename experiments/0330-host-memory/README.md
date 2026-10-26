@@ -241,3 +241,17 @@ emulator (test 0330: pamięć)" on his desktop, as exp 0328's test shortcut was.
 
   Which process reads those tens of GiB is not known. The mount log has no statistics.
 - His saves changed in the session (a24ec483cee31821), as play does.
+
+**Addendum (2026-10-26 10:24, the test shortcut's second form).** At the maintainer's choice ("a") after F395,
+`setup0330p.sh` changed the shortcut. The first form is kept in `~/bc5-work/exp0330/shortcut-1800/`.
+- **The scan times:** the import table and the zero scan come at 530/540 s instead of 1800/1810 s, before the ~642 s
+  freeze. That is one line of `play-pkg-0330t.sh`, now bf4f3da3 (`raw/play-pkg-0330t-v2.diff`).
+- **The sampler:** the shortcut now runs `test0330p.sh` on the host. It starts `sample0330p.sh` beside each session,
+  then the test launcher in the distrobox. The sampler is `sample0330.sh`'s 27 columns plus:
+  - the emulator's and bc5-mount's `read_bytes`/`rchar`;
+  - the NVMe's sectors read;
+  - VRAM in use.
+
+  It writes `exp0330/play/mem-<time>.txt` every 10 s, read only, and ends with the emulator.
+- **Tested first:** on stand-ins (33 columns; it ends with the process), and `/proc/<pid>/io` reads for the user's
+  processes on the box.
