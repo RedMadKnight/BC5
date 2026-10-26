@@ -60,5 +60,43 @@ shortcut-c)
   { echo "$(date '+%F %T') arm C set up"; echo "input.cfg $(md5 "$CFG_SRC") -> private $CFG $(md5 "$CFG")"; echo "launcher $LA 38cefa13 -> $(md5 "$LA")"; echo "wrapper $WR 04fbe2cf -> $(md5 "$WR")"; echo "binary $W/exp0332/kyty_emulator $(md5 "$W/exp0332/kyty_emulator")"; grep '^Name=' "$LNK"; } | tee "$R/shortcut-c.out"
   echo "undo: cat $B/test0330p.sh > $WR; cat $B/play-pkg-0330t.sh > $LA; cat \"$B/BC5 emulator (test 0330).desktop\" > \"$LNK\"" | tee -a "$R/shortcut-c.out"
   ;;
-*) echo "usage: run0334.sh shortcut-c"; exit 2 ;;
+shortcut-d)
+  # Arm D (the maintainer's "A", 18:39): from arm C's files, the compaction runs again (no SKIP_PGM) and every compute
+  # buffer goes to the GFX ring (BC5_DIRECT_COMPUTE_RING=-1 through a hook after the launcher's own
+  # "export BC5_DIRECT_COMPUTE_RING=0 ..."). RT stays on through the private input configuration. Backups in
+  # ~/bc5-work/exp0334/shortcut-before-d/; the undo to the state before arm C stays in shortcut-before/.
+  BD=$E/shortcut-before-d
+  OLD='exec /usr/bin/distrobox enter ubuntu -- /usr/bin/env BC5_EMU="$HOME/bc5-work/exp0332/kyty_emulator" BC5_DIRECT_SKIP_PGM=909974400 BC5_0334_INPUT_CONFIG="$HOME/bc5-work/exp0334/input-rton.cfg" "$E/play-pkg-0330t.sh"  # exp 0332: the extended crash dump; exp 0334 arm C: RT on, the BVH compaction skipped'
+  NEW='exec /usr/bin/distrobox enter ubuntu -- /usr/bin/env BC5_EMU="$HOME/bc5-work/exp0332/kyty_emulator" BC5_0334_COMPUTE_RING=-1 BC5_0334_INPUT_CONFIG="$HOME/bc5-work/exp0334/input-rton.cfg" "$E/play-pkg-0330t.sh"  # exp 0332: the extended crash dump; exp 0334 arm D: RT on, every compute buffer on the GFX ring'
+  ANCHOR='export BC5_DIRECT_COMPUTE_RING=0 BC5_DIRECT_CROSS_RING_WAITS=all'
+  HOOK='[ -n "${BC5_0334_COMPUTE_RING:-}" ] && export BC5_DIRECT_COMPUTE_RING=$BC5_0334_COMPUTE_RING  # exp 0334 arm D: -1 = every compute buffer on the GFX ring (F384)'
+  ps -eo args= | grep -qE '^(/[^ ]*/)?bash [^ ]*/(play-pkg[^ ]*|test0330p)\.sh( |$)' && { echo "a launcher runs: stop"; exit 1; }
+  [ "$(md5 "$WR")" = 594746eb ] || { echo "$WR is not arm C's 594746eb: stop"; exit 1; }
+  [ "$(md5 "$LA")" = 85438594 ] || { echo "$LA is not arm C's 85438594: stop"; exit 1; }
+  [ "$(grep -cxF -- "$OLD" "$WR")" = 1 ] || { echo "the wrapper's arm C exec line is not there once: stop"; exit 1; }
+  [ "$(grep -cxF -- "$ANCHOR" "$LA")" = 1 ] || { echo "the launcher's compute-ring line is not there once: stop"; exit 1; }
+  [ "$(grep -c 'BC5_DIRECT_COMPUTE_RING=' "$LA")" = 1 ] || { echo "the launcher sets BC5_DIRECT_COMPUTE_RING more than once: stop"; exit 1; }
+  grep -qx 'RayTracing.PPSA03671=on' "$CFG" || { echo "no private RT-on configuration $CFG: stop"; exit 1; }
+  [ -f "$LNK" ] && grep -q '^Name=BC5 emulator (test 0334 C: RT on, bez kompaktowania)$' "$LNK" || { echo "the shortcut is not arm C's: stop"; exit 1; }
+  [ -e "$BD" ] && { echo "$BD exists: stop"; exit 1; }
+  echo "cloud exp 0334 | the test shortcut to arm D (files only, no emulator) | start $(date +%H:%M) | until ~$(date -d +3min +%H:%M)" > "$LOCK"
+  trap 'grep -q "^cloud exp 0334 | the test shortcut" "$LOCK" 2> /dev/null && rm -f "$LOCK"' EXIT
+  mkdir -p "$BD" && cp -p "$WR" "$BD/test0330p.sh" && cp -p "$LA" "$BD/play-pkg-0330t.sh" && cp -p "$LNK" "$BD/BC5 emulator (test 0330).desktop" || exit 1
+  restore() { cat "$BD/test0330p.sh" > "$WR"; cat "$BD/play-pkg-0330t.sh" > "$LA"; cat "$BD/BC5 emulator (test 0330).desktop" > "$LNK"; echo "RESTORED"; exit 1; }
+  awk -v a="$ANCHOR" -v h="$HOOK" '{print} $0 == a {print h}' "$BD/play-pkg-0330t.sh" > "$LA.new" && cat "$LA.new" > "$LA" && rm -f "$LA.new" || restore
+  bash -n "$LA" || restore
+  diff -u "$BD/play-pkg-0330t.sh" "$LA" > "$R/play-pkg-0330t-0334d.diff"
+  [ "$(grep -c '^+[^+]' "$R/play-pkg-0330t-0334d.diff")" = 1 ] && [ "$(grep -c '^-[^-]' "$R/play-pkg-0330t-0334d.diff")" = 0 ] || restore
+  awk -v o="$OLD" -v n="$NEW" '$0 == o {print n; next} {print}' "$BD/test0330p.sh" > "$WR.new" && cat "$WR.new" > "$WR" && rm -f "$WR.new" || restore
+  bash -n "$WR" || restore
+  diff -u "$BD/test0330p.sh" "$WR" > "$R/test0330p-0334d.diff"
+  [ "$(grep -c '^+[^+]' "$R/test0330p-0334d.diff")" = 1 ] || restore
+  sed -e 's/^Name=BC5 emulator (test 0334 C: RT on, bez kompaktowania)$/Name=BC5 emulator (test 0334 D: RT on, jeden ring)/' \
+      -e 's#^Comment=.*#Comment=BC5 exp 0334 arm D: RT on (a private copy of input.cfg), every compute buffer on the GFX ring (BC5_DIRECT_COMPUTE_RING=-1), the compaction on; exp 0332'"'"'s binary with its crash dump; logs in ~/bc5-work/exp0330/play/#' \
+      "$BD/BC5 emulator (test 0330).desktop" > "$LNK.new" && cat "$LNK.new" > "$LNK" && rm -f "$LNK.new" || restore
+  grep -q '^Name=BC5 emulator (test 0334 D: RT on, jeden ring)$' "$LNK" || restore
+  { echo "$(date '+%F %T') arm D set up"; echo "launcher $LA 85438594 -> $(md5 "$LA")"; echo "wrapper $WR 594746eb -> $(md5 "$WR")"; echo "private configuration $CFG $(md5 "$CFG"); input.cfg $(md5 "$CFG_SRC")"; echo "binary $W/exp0332/kyty_emulator $(md5 "$W/exp0332/kyty_emulator")"; grep '^Name=' "$LNK"; } | tee "$R/shortcut-d.out"
+  echo "undo to arm C: cat $BD/test0330p.sh > $WR; cat $BD/play-pkg-0330t.sh > $LA; cat \"$BD/BC5 emulator (test 0330).desktop\" > \"$LNK\"; to before arm C: the same from $B" | tee -a "$R/shortcut-d.out"
+  ;;
+*) echo "usage: run0334.sh shortcut-c | shortcut-d"; exit 2 ;;
 esac

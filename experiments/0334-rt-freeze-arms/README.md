@@ -245,3 +245,39 @@ właściwego sterowania - gra się zawiesiła".
   private copy of the save he loaded at 17:57 would let D and its repeats run without his play. TODO(verify): whether
   the save before the cutscene is still in a slot.
 
+**Correction (2026-10-26 18:45).** Opcode 0x93 in devcd4's and devcd6's PFP history is not unknown:
+`tools/bc5-agc/regdb/extra-opcodes.tsv` names it `WAIT_REG_MEM64`. So the second timeout of each freeze is the CP in a
+64-bit label wait with idle shaders. That fits the dcb's wait on the label the reset-killed acb never wrote
+(0x12004b5038).
+
+**Aside: a freeze with RT off in his lean session (2026-10-26 18:35:44; `raw/lean-1835/`).**
+- **Before arm D, he played 18:08–18:36 on the lean shortcut.** That is the shared lean build c28cdd3c, with RT off in
+  his `input.cfg`.
+- **At 18:35:44 the GFX ring timed out, with a real page fault** (`kernel.txt`):
+  - `[gfxhub] page fault … in page starting at address 0x0000000000000000`;
+  - `Faulty UTCL2 client ID: SQC (inst) (0x9)`, RW 0, PERMISSION_FAULTS 0xb, vmid 6;
+  - the reset succeeded; the thread is `bc5-chainwd`.
+- **A shader fetched instructions at address 0:** its program address was 0, or its waves jumped there.
+- **devcd7** (`r0-registers-devcd7.txt`):
+  - the PFP's history is `ACQUIRE_MEM`, `EVENT_WRITE`, `DISPATCH_DIRECT` and four `SET_SH_REG`;
+  - the shaders are idle (SE0 0x6) and the CP is busy;
+  - the IB is 3,408 dwords, with 2,704 left to fetch.
+- **The lean build writes no journal,** so the buffer and the program are unknown. This is not F399's freeze, which
+  has waves busy and no fault. It is one event. The earlier program-counter faults are F109 and F251/F253.
+
+**Arm D, set up (2026-10-26 18:41; the maintainer's "A": his play with RT on and every compute buffer on the GFX ring).**
+- `run0334.sh shortcut-d` starts from arm C's files, with backups in `exp0334/shortcut-before-d/` (`raw/shortcut-d.out`,
+  `raw/*0334d.diff`).
+- **The wrapper** (594746eb → e6cc624c) drops `BC5_DIRECT_SKIP_PGM`, so the compaction runs as in his normal RT-on
+  setting, and passes `BC5_0334_COMPUTE_RING=-1`.
+- **The test launcher** (85438594 → 214bc7e6) gets one hook after its own `export BC5_DIRECT_COMPUTE_RING=0 …`.
+- **RT** stays on through `input-rton.cfg`. That copy differs from his current `input.cfg` (5ddb694d) only in the RT
+  line and in the other title's lines.
+- **The shortcut** is "BC5 emulator (test 0334 D: RT on, jeden ring)". The binary is exp 0332's acb1cfd7.
+- **Readings:**
+  - fdinfo shows no compute engine. The ring thread's journal has no `compute ring:` refusal lines, since no buffer
+    goes to a compute ring;
+  - TIMEOUT lines, kernel GPU lines and devcoredumps;
+  - flips per 10 s against arm C's (F384: one ring costs ~11 %);
+  - whether he passed a cutscene and the old spot.
+
