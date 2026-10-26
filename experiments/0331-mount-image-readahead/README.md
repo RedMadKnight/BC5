@@ -93,3 +93,7 @@ reached.
   tested; `BC5_MOUNT_READAHEAD=1` keeps the old readahead.
 - **Not run by the cloud session:** its permission classifier refused the change to the shared binary ("Modify Shared
   Resources"). The script is in `~/bc5-work/exp0331/int0331.sh` (cd407ec5) for the maintainer to run.
+
+**Addendum (2026-10-26 13:30, a correction).** The maintainer's two sessions here ran with **RT on**: his `input.cfg`
+has `RayTracing.PPSA03671=on` since 10-26 00:04, and the journals have no RT-off drop line. The readahead result (F398)
+does not depend on it, since both sides of the comparison are his RT-on play. The freeze (F399) came with RT on.

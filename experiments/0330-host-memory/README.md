@@ -304,3 +304,10 @@ Then he played on the test shortcut, 11:08:20–11:20:00. The evidence is in `ra
 - **His play's zero scan at 540 s** (`zeroscan.txt`): 3,436 MiB in all-zero 2 MiB chunks, against arm A's 3,672.
   RenderGpuWcLarge had 1,192 of 2,758 MiB and CommitIABufferAllocator 1,244 of 2,736. Free play touches some more of
   them, but ~2.4 GB of the two heaps is still untouched after nine minutes.
+
+**Addendum (2026-10-26 13:30, a correction).** The maintainer's sessions on the test shortcut (09:58, 10:49, 11:08) ran
+with **RT on**, not off as the addenda above and F395 say.
+- His `input.cfg` has had `RayTracing.PPSA03671=on` since 00:04:09 on 10-26. STATE's "RT off" predates that.
+- None of the session journals has an RT-off drop line.
+- The arms A–D ran RT off through their private configuration. So comparisons of his play with the bench mix free play
+  with ray tracing.
