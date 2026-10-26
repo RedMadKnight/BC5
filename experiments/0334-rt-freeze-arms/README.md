@@ -281,3 +281,49 @@ właściwego sterowania - gra się zawiesiła".
   - flips per 10 s against arm C's (F384: one ring costs ~11 %);
   - whether he passed a cutscene and the old spot.
 
+**Result (arm D, 2026-10-26 21:24–21:43; `raw/arm-d/`).** His words: "Gra była najpłynniejsza ze wszystkich i RT było
+poprawne. Niestety gra raz się zawiesiła i potrzebny był restart a za drugim razem położyło całą maszynę."
+- **The arm ran as set** (`one-ring-check.txt`):
+  - no `hold tail` line in either journal, against 545 in arm C's, so there was no cross-ring hold;
+  - every dcb's timing line names queue −1;
+  - RT was on (0 RT-off lines) and the compaction ran (0 skip lines).
+- **Session 1, 21:24:02–21:40:25 (16 minutes).**
+  - 37–47 flips/s from minute 1 to 13 (`flips-per-min-2124.txt`). It was his smoothest RT-on play so far, with
+    reflections that looked right.
+  - **No F399 freeze in 16 minutes,** where arm C froze at 255 s and A at 62–642 s.
+  - It ended in a stall of another kind (`session1-end.txt`):
+    - flips fell from 15/s to 3/s over t 955–958 s;
+    - then the title stopped flipping and the host stopped submitting (the journal's last submission is at
+      t 956.09 s);
+    - there was no TIMEOUT, no kernel GPU line and no devcoredump;
+    - he quit 25 s later (exit 0).
+  - Memory was not the cause: MemAvailable stayed at 0.44–0.57 GB and PSI "full" at ~0.01–0.08 s per 10 s at the end
+    (`mem-20261026-212401.txt`).
+  - It looks like a CPU-side wait in the title or the host, for example on a label that no job writes. Open.
+- **Session 2, 21:40:28 → the machine down at ~21:43:49.**
+  - At t ≈ 196 s the host timed out a dcb of 8,913 dwords and a 68-dword acb queued behind it (`timeout-2140.txt`).
+  - The box's journal stops at 21:42:50: the last minute was lost, as the runbook warns. devcd8 (21:43:49) was saved
+    and synced by the devcoredump service.
+  - Then came a 90-s boot that ended in a clean shutdown (21:44:22–21:45:52), and the current boot from 21:46:12
+    (`boots.txt`).
+- **Session 2's hang is F360's class, not F399's:**
+  - In the probe (`probe-2140.txt`), the dcb's three-packet syncs (`WRITE_DATA` 0, `RELEASE_MEM` end-of-pipe 1,
+    `WAIT_REG_MEM` == 1) are not met. The first label (0x11e09100d8, dword 1329) still reads 0.
+  - A later sync label, 0x11e0911090, holds **0x3f2ec8cebec5be5f**, two floats. That is a stray store over the
+    title's sync labels, as F360's float 538.4.
+  - devcd8 shows idle shaders (SE0/SE1 0x6) and the CP at PFP 0xea1 / ME 0x77a, after `WAIT_REG_MEM` (0x3c) in the
+    PFP history, so it is a label wait.
+  - devcd8's fault record (0x6012b1, address 0) is stale: it is 18:35's SQC fault (F405), the last one this boot
+    recorded.
+  - The acb wrote none of the dcb's wait labels, so this is not a one-ring deadlock.
+
+**Verdict (arm D).**
+- **One ring may remove F399's runaway BVH dispatch.** 16 minutes of RT-on play passed without it, and F384 says the
+  same on S6N. But n = 1.
+- **One ring does not make RT on safe.** F360's stray store over sync labels came within 4 minutes in the next session
+  and took the machine down after the hang. F360 traced both failure classes to garbage pointers in the RT work, and
+  RT off avoids both (F351, F400).
+- Session 1's end is a third, fault-free stall: no GPU timeout, no memory pressure. Open.
+- **For play, RT stays off.** RT on needs the stray store's writer found first, the next tool F360 named: a watch on
+  the title's sync labels, or the store targets of the 0x11d03a… programs. That is a new experiment.
+
