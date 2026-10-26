@@ -1,0 +1,18 @@
+== 2026-10-26 15:53:56 emulator 2026-10-26 15:49:23
+BC5_GC_MODE=direct
+BC5_DIRECT_STAGE=all
+...
+11310:== 2026-10-26 16:05:18 exit 0
+...
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+fps counter: t 680.626 s: 27 flips in 1.011 s, longest gap 123.1 ms, gaps over 40 ms 8, over 70 ms 1
+audio trace: t 680.658 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 998.4 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+audio trace: t 680.658 s port 1 type 4 1 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 680.658 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+fps counter: t 681.631 s: 46 flips in 1.006 s, longest gap 49.4 ms, gaps over 40 ms 1, over 70 ms 0
+== 2026-10-26 16:05:18 exit 0

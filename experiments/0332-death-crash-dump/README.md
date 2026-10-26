@@ -58,4 +58,26 @@ the title calls on death.
   (`raw/test0330p-0332.diff`). It renamed the shortcut "BC5 emulator (test 0332: crash przy śmierci)"
   (`raw/shortcut.out`). The undo is in `~/bc5-work/exp0332/shortcut-before/`.
 
-**Result.** Pending: the maintainer's play to the character's death.
+**Result (2026-10-26 16:15).** The maintainer played 15:53:56–16:05:18 on the test shortcut, with the 0332 binary
+(`raw/maintainer-test/`, the sampler's header names it) and RT off (2,841 RT-off drop lines in the journal).
+- **No crash.** His words: "nie udało się powtórzyć crash związanego ze śmiercią - być może było to przypadkowe
+  powiązanie, ginąłem teraz kilka razy w podobny sposób i nic się nie stało; przeszedłem dalej; wyłączyłem grę".
+  - The play log ends with `exit 0` at 681 s, when he left the title. It has no `Access violation` line and no frame
+    dump (`frame-dump-lines.txt`: 0; `play-log-ends.txt`).
+  - The journal has no TIMEOUT, learned-fault or reopen line. The kernel logged no GPU timeout or reset, and no
+    devcoredump was made.
+- **The session's memory** (`mem-20261026-155356.txt`, 11.4 minutes): MemAvailable after 3 minutes had a median of
+  436 MiB (min 270), GTT reached 12,518 MiB and swap held up to 991 MiB. The mount read NVMe/asked 1.01 at 103 MB/s,
+  with PSI "full" at 0.77 s per minute.
+- **The zero scan at 540 s** (`zeroscan.txt`): 3,594 MiB of the 11,488 MiB imported was in all-zero 2 MiB chunks:
+  1,294 in CommitIABufferAllocator and 1,278 in RenderGpuWcLarge. That is the fourth scan of this size (F394, F397,
+  F400).
+- **Frame rate** (`flips-per-min.txt`): 24–34 flips per second in each full minute.
+
+**Verdict.** **The crash does not come with every death.** Several deaths of the same kind passed with no crash, so
+15:06's crash at `eboot.bin+0x3ba1bdf` happened once, during a death. That fits F401's reading: garbage in a list
+that is normally filled correctly. The list's writer is still open, and no session has caught it.
+- The frame dump costs nothing until a crash happens, so the test shortcut stays on this binary. If the crash comes
+  again, its dump shows the list's address and contents (the Readings above).
+- Nothing waits on the maintainer here. The next step, a write trap on the list's page, needs the list's address,
+  so it waits for a second crash.
