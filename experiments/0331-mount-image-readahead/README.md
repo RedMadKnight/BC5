@@ -106,3 +106,21 @@ paste). The shared `~/bc5-work/bc5-tools-ubuntu/release/bc5-mount` is now 432777
 - **What follows:** every launcher that names the shared mount now runs with readahead off for the image and the disk
   cache, ASTRO BOT's too. The box's btrfs readahead stays at its default 4,096 KiB.
 - **The test shortcut's launcher** still names `exp0331/bc5-mount`, which is the same binary.
+
+**Addendum (2026-10-26 15:10, a 35-minute session with RT off, F400–F401).** The maintainer switched RT off in
+`input.cfg` (14:31:17) and played 14:31:09–15:06:24 on the test shortcut, which uses the integrated mount. Evidence is
+in `raw/maintainer-test-2/`.
+- **No GPU timeout in 35 minutes.**
+  - The journal has 19,558 RT-off drop lines and no TIMEOUT. There is no kernel GPU line and no devcoredump.
+  - The flips per minute (`flips-per-min.txt`) were 37–46/s for most of minutes 14–27, and 20–30/s elsewhere.
+- **The mount holds over a long session:** NVMe/asked 0.99, NVMe 91 MB/s, PSI "full" 0.41 s per minute (14.6 s in
+  all, 5.6 s of it in the last minutes).
+- **Memory:** MemAvailable after 3 min had a median of 388 MiB (min 274), and GTT grew from 12.19 to 12.51 GB. Swap
+  held ~0.75–0.99 GB, with 2.2 GB swapped out over the session.
+- **The zero scan at 540 s** (`zeroscan.txt`): 3,608 MiB in all-zero 2 MiB chunks, of which 1,360 in
+  CommitIABufferAllocator and 1,258 in RenderGpuWcLarge.
+- **The end.** His character died and the title crashed: `Access violation: Write [0x26]` at `eboot.bin+0x3ba1bdf`
+  (`and byte [r10+0x26], 0xfe` with r10 = 0), exit 65 (`crash-context.txt`). The crash dump's most recent stubbed
+  imports are four of the unnamed NpCppWebApi NIDs.
+- **The KDE session did not log out.** KDE's screen locker came up at 15:06:34, when the emulator left; kwin_wayland and
+  plasmashell ran on from 00:03. The kernel logged two `Unsupported screen format RA24` lines at that moment.

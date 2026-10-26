@@ -1,0 +1,66 @@
+=== HOST EXCEPTION REGISTER DUMP ===
+exception_address=0x0x903ba1bdf
+native_code=0x0xb
+access_violation_vaddr=0x0x26
+rax=0x0xcae rbx=0x0x90ae037e0 rcx=0x0x104363c608 rdx=0x0x0
+rsi=0x0xa1f801f rdi=0x0xe rbp=0x0x10367f3440 rsp=0x0x10367f33f0
+r8 =0x0x0 r9 =0x0x0 r10=0x0x0 r11=0x0x1020ee4100
+r12=0x0x260a0 r13=0x0x6646 r14=0x0x1028c508c0 r15=0x0x2064cd3
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+fps counter: t 2114.248 s: 42 flips in 1.118 s, longest gap 173.6 ms, gaps over 40 ms 2, over 70 ms 1
+code-32: 00 00 00 49 0f 44 d0 4b 8b 4c 23 10 47 3b 7c 23 18 4c 8d 14 f1 4d 0f 4d d0 45 85 ff 4d 0f 48 d0 41 80 62 26 fe 48 c7 44 f1 10 00 00 00 00 66 c7 44 f1 24 ff ff 43 80 4c 23 2a 01 8b 4c 13 18 39
+exception: type=AccessViolation, av_type=Write, av_addr=0000000000000026, native_code=0000000b
+regs: rax=0000000000000cae rbx=000000090ae037e0 rcx=000000104363c608 rdx=0000000000000000
+regs: rsi=000000000a1f801f rdi=000000000000000e rbp=00000010367f3440 rsp=00000010367f33f0
+regs: r8 =0000000000000000 r9 =0000000000000000 r10=0000000000000000 r11=0000001020ee4100
+regs: r12=00000000000260a0 r13=0000000000006646 r14=0000001028c508c0 r15=0000000002064cd3
+stack: [00]=000000090ae03840 [01]=000000090ae08842 [02]=0000001021183c20 [03]=0000001021183c30 [04]=0000000180561d10 [05]=000000090beb2400 [06]=00000010100c0000 [07]=0000000000006646 [08]=000000090ae037e0 [09]=0000000000005308 [10]=00000010367f3660 [11]=0000000903fa945c [12]=0000000000000000 [13]=0000000000000000 [14]=0000000000000000 [15]=0000000000000000
+exception rip code: addr=0000000903ba1bdf, off=0000000003ba1bdf, module=eboot.bin: 18 4c 8d 14 f1 4d 0f 4d d0 45 85 ff 4d 0f 48 d0 41 80 62 26 fe 48 c7 44 f1 10 00 00 00 00 66 c7
+guest rbx[0] code: addr=000000090ae037e0, off=000000000ae037e0, module=eboot.bin: cf 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 0e 21 21 10 00 00 00 08 0e 21 21 10 00 00 00
+stack[0] code: addr=000000090ae03840, off=000000000ae03840, module=eboot.bin: 63 0f 00 00 3f 00 00 00 00 10 21 21 10 00 00 00 01 00 02 00 03 00 04 00 05 00 06 00 07 00 08 00
+stack[1] code: addr=000000090ae08842, off=000000000ae08842, module=eboot.bin: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 3d 01 a1 00 a0 00 a3 00 a2 00 a5 00 a4 00 a7 00 a6 00
+stack[5] code: addr=000000090beb2400, off=000000000beb2400, module=eboot.bin: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 78 05 00 00 a0 05 00 00 40 06 00
+stack[8] code: addr=000000090ae037e0, off=000000000ae037e0, module=eboot.bin: cf 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 0e 21 21 10 00 00 00 08 0e 21 21 10 00 00 00
+stack[11] code: addr=0000000903fa945c, off=0000000003fa945c, module=eboot.bin: 00 00 00 00 4b 8b 34 fc 4c 89 f7 e8 74 86 bf ff 49 ff c7 4d 39 fd 75 ec 44 8b bd 88 fe ff ff 48
+Stack trace [thread = 5]:
+[0] 0000000903fa945c, off=0000000003fa945c, eboot.bin
+[1] 0000000903fa4452, off=0000000003fa4452, eboot.bin
+[2] 00000009048a7be9, off=00000000048a7be9, eboot.bin
+[3] 00000009048a32e1, off=00000000048a32e1, eboot.bin
+[4] 00000009048a0fdd, off=00000000048a0fdd, eboot.bin
+[5] 000000090224d4fa, off=000000000224d4fa, eboot.bin
+[6] 00000009049064c2, off=00000000049064c2, eboot.bin
+[7] 0000000900e1fbb1, off=0000000000e1fbb1, eboot.bin
+[8] 0000000903d75ba5, off=0000000003d75ba5, eboot.bin
+guest rbx = 000000090ae037e0: 0000001021210e00 0000001021210e08 0000001021210e10 000000fe00000f78 0000036400000f76 0000001021210e00 0000001021211000 0000001021211008
+guest rax = 0000000000000cae (unmapped)
+guest rcx = 000000104363c608: 0000000904bdef00 0000000000000000 0000000000000000 000000000010c8f6 ff06ffff00000000 0000000904bdef00 0000000000000000 0000000000000000
+guest rsi = 000000000a1f801f (unmapped)
+guest rdi = 000000000000000e (unmapped)
+guest r8  = 0
+guest r9  = 0
+guest r10 = 0
+guest r11 = 0000001020ee4100: 000000090b09a638 00000009075f4928 000000106077e010 0000000200000001 0000000000000000 0000000000000000 000000090b09a638 00000009075f4928
+guest r12 = 00000000000260a0 (unmapped)
+guest r13 = 0000000000006646 (unmapped)
+guest r14 = 0000001028c508c0: 00000010435edb00 0001217100350001 000000000000860a 0000ffff00010001 0000000000000000 0000000000000000 0000001017a4c130 0000000000000000
+guest r15 = 0000000002064cd3 (unmapped)
+recent stubbed import: sRn6qePT54Q[NpCppWebApi_v1][NpCppWebApi_v1.1][Func]
+recent stubbed import: -0Vv7HKZaBM[NpCppWebApi_v1][NpCppWebApi_v1.1][Func]
+recent stubbed import: fIzsqjyD5oY[NpCppWebApi_v1][NpCppWebApi_v1.1][Func]
+recent stubbed import: yl3T9brJay4[NpCppWebApi_v1][NpCppWebApi_v1.1][Func]
+recent stubbed import: eVU3cXIJz0w[NpCppWebApi_v1][NpCppWebApi_v1.1][Func]
+recent stubbed import: xjVhrq2KPJA[NpCppWebApi_v1][NpCppWebApi_v1.1][Func]
+recent stubbed import: XuVY56j7GM0[NpCppWebApi_v1][NpCppWebApi_v1.1][Func]
+recent stubbed import: BY1jyWLZrcA[NpCppWebApi_v1][NpCppWebApi_v1.1][Func]
+recent stubbed import: JiY4sfHkV34[NpCppWebApi_v1][NpCppWebApi_v1.1][Func]
+recent stubbed import: LbhH9NeB93I[NpCppWebApi_v1][NpCppWebApi_v1.1][Func]
+AJM codec=1, name=ATRAC9 decoder
+--- Build ---
+Source build f266548
+--- Stack Trace ---
+--- Error ---
+Access violation: Write [0000000000000026] 
+ in /home/kjaniszewski/src/KytyPlus/src/loader/runtimeLinker.cpp:1162
+== 2026-10-26 15:06:24 exit 65
