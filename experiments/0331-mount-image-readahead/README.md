@@ -97,3 +97,12 @@ reached.
 **Addendum (2026-10-26 13:30, a correction).** The maintainer's two sessions here ran with **RT on**: his `input.cfg`
 has `RayTracing.PPSA03671=on` since 10-26 00:04, and the journals have no RT-off drop line. The readahead result (F398)
 does not depend on it, since both sides of the comparison are his RT-on play. The freeze (F399) came with RT on.
+
+**Addendum (2026-10-26 14:30, integrated).** The maintainer ran `int0331.sh` himself on the box (`raw/int.out`, his
+paste). The shared `~/bc5-work/bc5-tools-ubuntu/release/bc5-mount` is now 43277724 (was 47739557).
+- **Checks:** the script's `inspect` of the package ran (11 lines). Its output stays on the box
+  (`exp0331/raw/int-inspect.txt`), because it names the title.
+- **Undo:** the backup is `exp0331/integration/bc5-mount.47739557`; the undo command is the last line of `raw/int.out`.
+- **What follows:** every launcher that names the shared mount now runs with readahead off for the image and the disk
+  cache, ASTRO BOT's too. The box's btrfs readahead stays at its default 4,096 KiB.
+- **The test shortcut's launcher** still names `exp0331/bc5-mount`, which is the same binary.
