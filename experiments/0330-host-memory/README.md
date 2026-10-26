@@ -210,3 +210,34 @@ emulator (test 0330: pamięć)" on his desktop, as exp 0328's test shortcut was.
 - **The question:** does the 2.8 GB of all-zero chunks in RenderGpuWcLarge and CommitIABufferAllocator stay zero after
   30 minutes of his play? The answer decides the narrower import.
 - **Undo:** `rm` of the shortcut and the copy (`raw/setup0330t.out`).
+
+**Addendum (2026-10-26 10:15, the maintainer's first session on the test shortcut, F395).** He played 09:58–10:09:36
+(~11.5 min, RT off) and reported a picture freeze near the end. The evidence is in `raw/maintainer-test/`.
+- **The freeze:**
+  - the kernel logged `ring gfx_0.0.0 timeout` at 10:08:45 (`kernel.txt`), and the reset succeeded. The box stayed up,
+    in the boot of 00:03;
+  - the devcoredump is `~/bc5-data/captures/devcoredump/20261026-100846-devcd1.txt`;
+  - in the journal, an acb/dcb pair timed out on the host after 2,030 ms, near t ≈ 642 s (`probe.txt`): #775996 (acb,
+    9,153 dwords) and #776001 (dcb, 2,908 dwords). The acb's first packet is the wait on 0x12004b4fc8 == 0, read as met;
+  - the last flip was at t 658.9 s; he closed the emulator at 10:09:36 (exit 0);
+  - the lazy list in force was arm C's (`journal-lines.txt`).
+- **His session ran under far heavier memory pressure than the bench** (`vmstat-delta.txt`, from arm C's last sample to
+  10:12):
+
+  | | his session (~11.5 min) | arms A–C (10 min each) |
+  |---|---|---|
+  | PSI memory "full" | 25.9 s | 3.1–5.8 s |
+  | file pages reclaimed | 44.5 M | 9.0–11.5 M |
+  | file pages refaulted | 5.5 M | 0.7–1.2 M |
+  | pages swapped out | 169 k | 1.2–80 k |
+  | major faults | 127 k | 0.9–59 k |
+
+  Free play streams far more than S6N's route.
+- **The zero scan did not run:** it was set for 1800 s.
+- **A lead for the thrash, not measured yet.** bc5-mount can hold the title's data three times:
+  1. the image's pages in the page cache (plain reads, no `O_DIRECT` or `fadvise` in `tools/bc5-mount/src`);
+  2. its decoded-block cache of 1,024 MiB (`pfsc.rs`, exp 0121, chosen when the game left 3.7 GB free);
+  3. the served files' pages, which stay cached (`FOPEN_KEEP_CACHE`, `fuse.rs:287`).
+
+  Which process reads those tens of GiB is not known. The mount log has no statistics.
+- His saves changed in the session (a24ec483cee31821), as play does.

@@ -1,0 +1,5 @@
+direct memory: memfd 4, 13824.0 MiB; chunks of 2 MiB, BOs up to 1024 MiB; GTT 271.3 of 13312.0 MiB in use; lazy names: orbis_user_malloc,Wwise,SoundAlloc,FileSystem,UIStringAlloc
+direct: 43 views; +10 BOs (10, 3898.0 MiB pinned); maps +32 -0 (32)
+private memory: memfd 5, 1048576.0 MiB; chunks of 2 MiB, BOs up to 1024 MiB; GTT 271.3 of 13312.0 MiB in use; lazy names: orbis_user_malloc,Wwise,SoundAlloc,FileSystem,UIStringAlloc
+hold tail: 31563 holds; released with the writer on a ring 29574, satisfied 1988, GIVEN UP 1; held 1.33 ms on average, 284.81 ms at most; 0 waits kept inside held chains (their label written by the chain)
+journal /home/kjaniszewski/bc5-data/captures/play-20261026-0958/gc/direct.log 2026-10-26 10:09:32.559772095 +0100 196566624; flips 20690, last timing: t 658.930 s flip 1/1, VideoOutSu
