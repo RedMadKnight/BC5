@@ -278,3 +278,29 @@ The sampler and the per-10-s flip counts are in `raw/maintainer-test-2/`.
 - **The levers this points at:**
   1. the btrfs readahead, a root setting, runtime and reversible;
   2. `POSIX_FADV_RANDOM` on the image in bc5-mount, which needs `libc` as a direct dependency.
+
+**Addendum (2026-10-26 11:24, the maintainer's third session: btrfs readahead 128 KiB, F397).** He set
+`/sys/class/bdi/btrfs-1/read_ahead_kb` from 4,096 to 128 as root. This is a runtime change: a reboot restores 4,096.
+Then he played on the test shortcut, 11:08:20–11:20:00. The evidence is in `raw/maintainer-test-3/`.
+- **The end was the title's known crash, not memory or the GPU.**
+  - `Access violation: Read [0xc]` at `eboot.bin+0x3d7eca0` at t ≈ 699 s, exit 65 (`crash-context.txt`). It is the
+    site of exp 0299's L1 crash and of exp 0326's.
+  - There was no GPU kernel line, no OOM line and no devcoredump.
+  - The crash dump's most recent stubbed imports are four of the ten unnamed NpCppWebApi NIDs. The title also calls
+    them at every start, so they are not shown to be related.
+- **The readahead change removed the over-read.**
+
+  | | session 2 (readahead 4,096 KiB, 194 s) | session 3 (128 KiB, 691 s) |
+  |---|---|---|
+  | NVMe read / bc5-mount asked | 1.78 | 1.07 |
+  | NVMe rate | 190 MB/s | 92 MB/s (the emulator read 90 MB/s, more than before) |
+  | PSI "full" per minute | 1.71 s | 0.29 s |
+  | file refaults per minute | 409 k | 119 k |
+  | flips/s | 12–32 | 30–38 in minutes 3–10 (22–31 while loading, 21–29 in the last two) |
+  | MemAvailable after 3 min, median (min) | 801 (796) MiB | 367 (255) MiB |
+  | GTT at most | 11.9 GB | 12.5 GB |
+
+  MemAvailable is lower because the pinned memory grew in the longer session.
+- **His play's zero scan at 540 s** (`zeroscan.txt`): 3,436 MiB in all-zero 2 MiB chunks, against arm A's 3,672.
+  RenderGpuWcLarge had 1,192 of 2,758 MiB and CommitIABufferAllocator 1,244 of 2,736. Free play touches some more of
+  them, but ~2.4 GB of the two heaps is still untouched after nine minutes.

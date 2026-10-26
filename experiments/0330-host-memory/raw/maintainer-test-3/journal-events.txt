@@ -1,0 +1,9 @@
+hold tail: 30798 holds; released with the writer on a ring 29298, satisfied 1498, GIVEN UP 2; held 1.16 ms on average, 100.06 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 31104 holds; released with the writer on a ring 29590, satisfied 1508, GIVEN UP 5; held 1.19 ms on average, 100.06 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 31624 holds; released with the writer on a ring 30097, satisfied 1522, GIVEN UP 5; held 1.19 ms on average, 100.06 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 32101 holds; released with the writer on a ring 30554, satisfied 1541, GIVEN UP 5; held 1.18 ms on average, 100.06 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 32596 holds; released with the writer on a ring 31018, satisfied 1572, GIVEN UP 5; held 1.19 ms on average, 100.06 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 33097 holds; released with the writer on a ring 31497, satisfied 1594, GIVEN UP 5; held 1.18 ms on average, 100.06 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 33596 holds; released with the writer on a ring 31987, satisfied 1603, GIVEN UP 5; held 1.18 ms on average, 100.06 ms at most; 0 waits kept inside held chains (their label written by the chain)
+hold tail: 34073 holds; released with the writer on a ring 32459, satisfied 1608, GIVEN UP 5; held 1.18 ms on average, 100.06 ms at most; 0 waits kept inside held chains (their label written by the chain)
+journal /home/kjaniszewski/bc5-data/captures/play-20261026-1108/gc/direct.log 2026-10-26 11:19:59.664087453 +0100 222227991; last timing: timing: t 697.237 s dcb 550 dwords: sync (lazy) 0.0 ms, hint
