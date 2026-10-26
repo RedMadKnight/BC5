@@ -178,7 +178,7 @@ się przedłuży" (BOX-QUEUE 180).
 - Each still needs the maintainer's yes, with RT on.
 - devcd5 is a separate lead: a GPU write fault on a compute ring in the night's machine-down.
 
-**Correction (2026-10-26 17:18, the kernel log of the night's boot).** The devcoredump's "Page fault observed" section
+**Correction (2026-10-26 17:12, the kernel log of the night's boot).** The devcoredump's "Page fault observed" section
 is the driver's last recorded fault, not the fault of the timeout it dumps. The kernel log of boot −2 (10-25 16:07 to
 10-26 00:01:52) shows where devcd5's fault came from:
 - the fault at 0xa8256950000 (status 0x00541051, `Faulty UTCL2 client ID: TCP (0x8)`, vmid 5, pasid 77) was logged at
