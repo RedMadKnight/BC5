@@ -124,3 +124,8 @@ in `raw/maintainer-test-2/`.
   imports are four of the unnamed NpCppWebApi NIDs.
 - **The KDE session did not log out.** KDE's screen locker came up at 15:06:34, when the emulator left; kwin_wayland and
   plasmashell ran on from 00:03. The kernel logged two `Unsupported screen format RA24` lines at that moment.
+
+**Addendum (2026-10-26 15:40, a correction to the addendum above).** The "most recent stubbed imports" in the crash
+dump are not calls. `runtimeLinker.cpp` prints the last stubs created at link time, and the ten unnamed NpCppWebApi NIDs
+are the only stubs left. Neither this session's log nor 11:08's has a `[bc5] stubbed import called` line, so the title
+never called them. The NpCppWebApi lead of F401 is dropped.
