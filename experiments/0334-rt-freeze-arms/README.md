@@ -117,4 +117,63 @@ the freeze at the spot?
 6. Arm E or arm F, chosen by C and D (one yes each).
 7. Any follow-up that needs a build (a product limit in the CP check, or a flush before the leaf builder).
 
-**Result.** Pending: the maintainer's yes for R0 and the arms.
+**Result (arm R0, 2026-10-26 17:00–17:09).** The arm ran in the maintainer's autonomous window. His words were
+"samodzielnie działaj i podejmuj decyzję przez ok. 1,5h", then "Jeszcze 30 minut beze mnie - może być dłużej jak ci
+się przedłuży" (BOX-QUEUE 180).
+- **What was read:** the five devcoredumps of 10-26, read on the box with awk and grep. Only register values and the
+  IB header lines (address and size) left it (`raw/r0-registers.txt`); no IB or ring contents.
+- **How it was decoded:** register fields with Mesa's `gfx10.json` and packet opcodes with `pm4-opcodes.tsv`. Both
+  are vendored in `tools/bc5-agc/regdb/`, from Mesa `fe554882`.
+
+| dump | time | ring timed out | host IB (CP_IB1) | IB1 left to fetch | VM fault |
+|---|---|---|---|---|---|
+| devcd1 | 10:08:46 | gfx_0.0.0 | 0x1015_00000000, 28,760 dw | 0 | none (address 0, status 0) |
+| devcd2 | 12:20:11 | gfx_0.0.0 | 0x100c_00000000, 27,592 dw | 1,544 | none |
+| devcd3 | 12:21:44 | gfx_0.0.0 | 0x1012_00000000, 5,736 dw | 680 | none |
+| devcd4 | 12:21:46 | gfx_0.0.0 | 0x1015_00000000, 3,008 dw | 608 | none |
+| devcd5 | 00:01:52 (the night) | comp_1.2.0 | 0x1020_00000000, 872 dw | 0 | write, 0xa8256950000, status 0x00541051 |
+
+- **The three first timeouts (devcd1–3) stop the CP in the same state.**
+  - The same PFP and ME microcode positions: `CP_PFP_INSTR_PNTR` 0xea0–0xea1 and `CP_ME_INSTR_PNTR` 0x77a–0x77b.
+  - The same eight-entry history in `CP_PFP_HEADER_DUMP`: `ACQUIRE_MEM`, `EVENT_WRITE`, `COND_WRITE` (twice),
+    `COND_EXEC`, `PFP_SYNC_ME`, `WRITE_DATA` and `DISPATCH_INDIRECT`. That is the host's GFX-form indirect dispatch with
+    its CP argument check (F106, F334).
+  - `CP_ME_HEADER_DUMP` ends in the same packets, `DISPATCH_INDIRECT` among them.
+  - The same busy units:
+    - `GRBM_STATUS` 0xa0407028: SPI_BUSY, TA_BUSY, CP_BUSY and GUI_ACTIVE, with CB and DB clean;
+    - `GRBM_STATUS_SE0` and `SE1` 0x0a000036 (devcd1) or 0x0a000016: SPI, TA, TCP and GL1CC busy;
+    - `GRBM_STATUS3`: GL2CC busy;
+    - `CP_CPF_STALLED_STAT1`: RING and INDR1 fetching data.
+  - **So shader waves were still running a compute dispatch the CP had issued through `DISPATCH_INDIRECT`,** and no
+    page fault was recorded. This is a dispatch that does not end within the 2-s fence wait. It is neither a CP wait
+    on a label nor a missing page.
+  - The IB1 counters (`IB1_BUFSZ` of `IB1_CMD_REQSZ`) put the CP's fetch in the last 0–12% of the host IB. That fits
+    the probe's reading of the BVH build's second half. TODO(verify): that `CP_IB1_BUFSZ` counts the dwords still to
+    fetch, and that fetch runs ahead of execution.
+- **The second timeout of the 12:21 freeze (devcd4, 2 s after the first reset) is a different state.**
+  - SPI and TA are idle, and SE0 shows only CB/DB clean. The CP and EA are busy.
+  - The PFP history holds `RELEASE_MEM`, the unknown opcode 0x93 and a type-3 `NOP` header 0xffff1000.
+  - So no waves ran: the CP waited. That fits a GFX-ring job waiting for a label the reset-killed acb never wrote
+    (F399's 0x12004b5038). TODO(verify) against that session's journal.
+- **This supports the design's dimension-product lead.**
+  - The CP check bounds each dimension (2^20, 2^10, 2^10; policy.hpp:110), not their product.
+  - A triple such as 818 × 820 × 819 (549 M workgroups) passes the check and can run far longer than the 2-s wait.
+    TODO(verify) for this program.
+  - The dumps cannot name the program or read its arguments: they hold no wave PCs or `COMPUTE_PGM_*`.
+- **New, about the night's machine-down (devcd5, RT off, the lean build):** the compute ring 1.2.0
+  timed out with a recorded gfxhub fault.
+  - The access was a write (RW = 1) at 0xa8256950000.
+  - The fault status was PERMISSION_FAULTS 0x5, MAPPING_ERROR 0, VMID 5 and CID 0x8, with MORE_FAULTS set.
+  - The address lies far above the direct-memory views (up to ~0x859b8a0000, exp 0330's breakdown). TODO(verify) what
+    is mapped there.
+  - The lean build wrote no journal, so the job is unknown. This is a GPU write fault, not only the memory shortage
+    the maintainer named.
+
+**Verdict (R0 only).**
+- F399's freeze is a compute dispatch that does not end, issued by a GFX-form `DISPATCH_INDIRECT` in the refused acb.
+  It is the same state in all three freezes, with no page fault.
+- The next arms stand as designed:
+  - C, skipping the compaction, tests the load-time cause;
+  - a product limit in the CP check (a build) tests the runaway grid directly.
+- Each still needs the maintainer's yes, with RT on.
+- devcd5 is a separate lead: a GPU write fault on a compute ring in the night's machine-down.
