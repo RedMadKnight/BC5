@@ -99,4 +99,38 @@ released?
 5. RT on, which is untested here: it uses ~120 MiB more of CommitIABufferAllocator.
 6. Box time: ~2 min for the build and ~45 min for S1 and R1.
 
+**Phase S, built and run (2026-10-26, in the maintainer's autonomous window).** His words: "samodzielnie działaj i
+podejmuj decyzję przez ok. 1,5h". The supervisor took phase S only: diagnostic, nothing released, RT off, private saves.
+Phase R and every other item in the list above still need his yes.
+- **`patch0333.py`** (9 edits on exp 0330's output 29664e3c; output f8732646) implements the two diagnostic switches of
+  the design. The release switches are not in it.
+  - `BC5_DIRECT_ZEROSCAN_AT` takes a list. Scans run one at a time; times that pass while one runs go to the next.
+  - `BC5_DIRECT_ZEROSCAN_MAP` writes the map and counts after each scan.
+  - The learned class comes from the chunks that `map_window` forces. Only `learned_apply` calls it, so `S.forced`
+    minus those chunks is the hint class.
+  - Checked offline:
+    - the new code compiles in a stand-in harness with g++ and clang (`-std=c++20 -Wall -Wextra -Wformat=2 -Wshadow
+      -Werror`);
+    - the harness ran three scans over a synthetic 32 MiB file (12 chunks, two views, two BOs);
+    - the classes, the counts, the left-zero numbers and the always-zero runs were all as worked out by hand.
+- **`run0333.sh build`** built `~/bc5-work/exp0333/kyty_emulator`, **9a0939b4**, in 28 s, with one unit compiled and
+  linked (`build0333.py`).
+  - It links the shared normal build's objects (4a146894) and exp 0332's `runtimeLinker.cpp.o`, so a crash in a run
+    also dumps the frame.
+  - Its 4 warnings are the ones in exp 0330's build, all in older code.
+- **`s6n0333.sh`** is arm S1, one run derived from exp 0330's `s6n0330.sh`:
+  - the S6N route (`o2-continue.cmd`) from exp 0196's route saves, in a private working directory with its own
+    `_SaveData`;
+  - RT off through a private input configuration;
+  - 1,200 s, with the breakdown at 230 s and the mapped scans at 240, 480, 720, 960 and 1,180 s;
+  - learned faults go to a private copy of the shared learned file (07fa5425, 108 windows);
+  - the live saves are compared only.
+
+  The launcher is `play-pkg.sh` (b10eac6d) with four lines changed (log, working directory, save directory, learned
+  file) and one hook added (the input configuration). Unlike exp 0330's run, the save directory is a new private one:
+  exp 0330's working directory linked it to the shared, empty `~/bc5-work/_SaveData-pkg-play`. That collision stopped
+  the first start at 16:23, at setup and before any emulator (BOX-QUEUE 177).
+- **`stream0333.sh`** keeps the kernel log and the journal's key lines in this session (`raw/kernel-stream.txt`,
+  `raw/journal-stream.txt`).
+
 **Result.** Pending.
