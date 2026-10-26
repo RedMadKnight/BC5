@@ -110,3 +110,7 @@ or the console's own error, the three dialogs and the PNG encoder as new librari
 the 10 NpCppWebApi NIDs no public source names. The integrated normal and lean builds boot and run the title; the
 maintainer's test on them decides the rest. Work stopped here on the maintainer's word (2026-10-25: the game handed
 over for testing, everything paused until he writes otherwise).
+
+**Addendum (2026-10-26, the maintainer's test of the integrated shared builds, F393).** The maintainer tested the
+shared builds normal 4a146894 and lean c28cdd3c on the regular shortcuts and reported: "testy poprawne". The
+integration of exps 0327–0329 stands.
