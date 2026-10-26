@@ -43,6 +43,9 @@ oozextract = { path = "../third_party/oozextract", default-features = false }
 # Without the `libfuse` feature fuser mounts through the fusermount3 binary and
 # needs no libfuse development headers at build time (only `fuse3` at run time).
 fuser = { version = "0.15", optional = true, default-features = false }
+# posix_fadvise for the image (io.rs, experiment 0331): the same nix and features
+# fuser already builds, so it adds no crate to the tree.
+nix = { version = "0.29", default-features = false, features = ["fs"] }
 
 [dev-dependencies]
 proptest = { version = "1", default-features = false, features = ["alloc"] }
