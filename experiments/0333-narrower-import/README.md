@@ -133,4 +133,43 @@ Phase R and every other item in the list above still need his yes.
 - **`stream0333.sh`** keeps the kernel log and the journal's key lines in this session (`raw/kernel-stream.txt`,
   `raw/journal-stream.txt`).
 
-**Result.** Pending.
+**Result (arm S1, 2026-10-26 16:24:41–16:45:01; `raw/`).**
+- **The run passed.**
+  - 1,200 s at 38.5 flips/s (median 39.5 per 10 s), with no crash line, kernel GPU line, TIMEOUT or devcoredump.
+  - The kernel stream (`raw/kernel-stream.txt`) has no amdgpu line.
+  - 11,263 RT-off drop lines.
+  - The private learned file is unchanged: no new fault.
+  - The live saves read 3496e40ff61ca57e before and after.
+  - 11,220 MiB pinned in 91 BOs.
+  - MemAvailable after 3 minutes had a median of 761 MiB (min 738), with GTT at most 11,906 MiB. This is the bench,
+    standing after Continue; his play holds ~0.4 GB.
+- **The zero map** (`raw/S1-zeromap.txt`, all five scans; `table0333.py`):
+
+  | heap | zero | unforced | learned | hint only | data | zero and unforced in all 5 scans |
+  |---|---|---|---|---|---|---|
+  | RenderGpuWcLarge (1,379 chunks) | 1,432–1,442 MiB | 302 | 932–934 | 196–206 | 1,316–1,326 | 302 MiB in 5 runs |
+  | CommitIABufferAllocator (1,368 chunks) | 1,382 | 436 | 946 | 0 | 1,354 | 436 MiB in 6 runs |
+
+  - **Stable from 240 s to 1,180 s.** CommitIABufferAllocator did not change one chunk.
+  - In RenderGpuWcLarge, 3–8 chunks a scan moved between zero and data. All of them were in the learned or hint
+    windows (classes `L` ↔ `l` and `H` ↔ `h`). No unforced chunk changed.
+  - **738 MiB is zero and unforced in every scan, nearly all in a few long runs:**
+    - RenderGpuWcLarge: 256 MiB at +2,450 MiB, near the heap's end, plus 24, 12, 8 and 2 MiB;
+    - CommitIABufferAllocator: 224 MiB at +2,240 MiB, 116 MiB at +748, then 32, 32, 28 and 4 MiB.
+  - **The learned windows hold most of the zero memory: 1,878 MiB of the two heaps' 2,814 MiB of zero.** Examples
+    are a 406 MiB zero run inside CommitIABufferAllocator's learned windows, and 96, 70 and 272 MiB runs.
+  - On this route the hint windows touch only RenderGpuWcLarge.
+
+**Verdict (phase S, arm S1).**
+- **On the bench route a narrowing that keeps today's protections can release at most ~0.74 GB,** not the ~1.8 GB
+  ceiling read offline. That ceiling assumed no learned window held zeros, but 1,878 of the two heaps' 3,190 MiB in learned
+  windows (59%) is zero.
+- **The first half of the gate S → R holds:** ≥ 500 MiB zero and unforced in S1 (738 MiB), and stable in S1.
+- **The second half needs S2,** in his free play, which moves through the world. Is the 738 MiB still zero there, and
+  does less than 64 MiB leave the zero set after 480 s? S2 needs his yes, because it changes the test shortcut and
+  plays on his saves.
+- **A larger lever is now visible:** the learned windows. Each is 96 MiB around one fault (`learned_add`), and on this
+  route 59% of their chunks in these heaps stay zero. A narrower learned window, for example 32 MiB
+  around the fault, is a separate question. It risks the 14-s freeze each time it misses, so it needs its own
+  experiment and his yes.
+- Nothing was released, and nothing shared changed: the binary, launcher, saves and learned file were all private.
