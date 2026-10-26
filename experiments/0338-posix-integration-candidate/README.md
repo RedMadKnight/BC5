@@ -58,9 +58,11 @@ testowy, potem Twoje „tak" na wymianę wspólnych binarek".*
   | `~/bc5-work/exp0338/lean/kyty_emulator` | the shared lean objects (c28cdd3c) | **d445c67e** |
 
   The warnings (9 and 12) are all in older code (`raw/build-normal.out`, `raw/build-lean.out`).
-- **Run N1** (`s6n0338.sh`, exp 0336's chain):
-  - the S6N route with RT off, 600 s, the normal candidate, `BC5_IMPORT_LOG`;
-  - a private working directory, `_SaveData` and learned file;
+- **Runs N1 and L1** (`s6n0338.sh`, exp 0336's chain), on the maintainer's "Najpierw prywatny build i przebieg testowy":
+  - the S6N route with RT off and `BC5_IMPORT_LOG`;
+  - N1: the normal candidate, 600 s; L1: the lean candidate, 240 s. The lean build keeps no GPU journal, so L1 has no
+    flips and no RT-off drop lines; its RT-off check is the configuration and `KYTY_BC5_RT=0`;
+  - a private working directory, `_SaveData` and learned file, each run starting from fresh route saves;
   - the live saves (5383c9deb3c38e9e) compared only;
   - the kernel stream in the session (`stream0338.sh`).
 - **`compare0338.py`** lists the imports whose path or implementation differs between exp 0336 R1's log and N1's.
@@ -70,3 +72,46 @@ testowy, potem Twoje „tak" na wymianę wspólnych binarek".*
   - It makes a diff from the tree's files and the private build's copies, which keeps CRLF. It runs `git apply --check`,
     then `git apply`, and checks that each file then equals the copy the private binaries were built from.
   - It builds both shared builds (`cmake --build … -j8`, nice 10) and writes the candidate patch 0001.
+
+**Result.**
+- **N1 (23:00:58–23:11:15) passes:**
+  - 600 s at **38.0 flips/s** (median 40.3 per 10 s); exp 0336 R1 ran 38.8 (41.4), and S6N runs since exp 0330 range
+    35.3–38.8;
+  - no crash line, kernel GPU line, TIMEOUT or devcoredump; the kernel stream holds only network notices;
+  - 5,721 RT-off drop lines; the private learned file unchanged;
+  - the live saves unchanged; the launcher and bc5-mount gone after it.
+- **L1 (23:12:46–23:16:58) passes:**
+  - 240 s with no crash line, kernel GPU line or devcoredump;
+  - GTT at 11.9 GiB at the end, as in every full start;
+  - the live saves unchanged; the launcher and bc5-mount gone after it.
+- **The imports** (`raw/N1-vs-R1-imports.txt`, `compare0338.py`): the same 1,935 imports from 7 programs.
+
+  | path | exp 0336 R1 | N1 | L1 |
+  |---|---|---|---|
+  | hle (exact host registration) | 880 | **896** | 896 |
+  | module | 897 | 897 | 897 |
+  | nid-fallback | 148 | **132** | 132 |
+  | unresolved (stub) | 10 | 10 | 10 |
+
+  24 imports changed:
+  - **The 16 libScePosix imports** (eboot.bin 4, libcohtml.Prospero.prx 12) now resolve exactly ("hle"), each to the
+    implementation in the Setup table. Before, they went through the NID fallback.
+  - **Five libkernel imports moved from sce functions to the posix entry points:**
+    - libc.prx's `pthread_rwlock_rdlock`, `_unlock` and `_wrlock`;
+    - libSceAgcDriver.sprx's `open` and `close`.
+  - **Three show only that exp 0336's counting entries are gone:** `sceKernelChmod`, `scePthreadRwlockTryrdlock` and
+    `scePthreadAttrGetschedparam`, the same sce function as before.
+  - L1's imports equal N1's, path for path.
+- `GetCompiledSdkVersion` gives 0x09000040 from the process parameter, as in exp 0336.
+
+**Verdict.**
+- **The candidate builds in both shared configurations and passes the bench route in both.**
+  - Every posix import of the title now resolves exactly to a posix implementation. The 132 remaining fallbacks are
+    library-name differences (F408).
+  - No behaviour on the route changed that the bench can see. The changes are in error paths (-1/errno instead of SCE
+    codes, `sched_yield`'s return value) and in `close` and `write` on sockets and the standard descriptors. The route
+    does not reach them.
+- **Not tested:** ASTRO BOT and the other launchers' titles. They use the same shared builds, so their posix imports
+  change the same way.
+- **Next:** the integration (`int0338.sh`: both shared builds, the candidate patch 0001), on the maintainer's yes (D19).
+  Exp 0337's language setting is not in this candidate.
