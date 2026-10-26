@@ -255,3 +255,26 @@ emulator (test 0330: pamięć)" on his desktop, as exp 0328's test shortcut was.
   It writes `exp0330/play/mem-<time>.txt` every 10 s, read only, and ends with the emulator.
 - **Tested first:** on stand-ins (33 columns; it ends with the process), and `/proc/<pid>/io` reads for the user's
   processes on the box.
+
+**Addendum (2026-10-26 10:55, the maintainer's second session on the test shortcut, F396).** He played 10:49:25–10:52:50
+and stopped on a big slowdown. There was no GPU kernel line and no devcoredump. The zero scan (540 s) was not reached.
+The sampler and the per-10-s flip counts are in `raw/maintainer-test-2/`.
+- **Who reads.** In 194 s:
+  - bc5-mount's `read_bytes` were 36,335 MiB; the NVMe read 36,719 MiB in all, at up to 340 MB/s per 10 s;
+  - bc5-mount itself asked for 20,424 MiB (`rchar`);
+  - the emulator read 12,727 MiB from the mount.
+
+  So the kernel fetched 78 % more of the image than bc5-mount asked for. bc5-mount in turn read 1.6 times what it
+  served.
+- **Why the kernel over-reads.** The image (`game.pkg`, 101.8 GB) lies on btrfs, whose bdi readahead is 4,096 KiB
+  (`/sys/class/bdi/btrfs-1/read_ahead_kb`; the NVMe's own is 128). bc5-mount reads it in tens of KiB through plain
+  `pread` (`io.rs`, no `fadvise`). Whatever readahead brings in and nobody reads goes through the page cache, in the
+  ~0.8 GB that is left.
+- **Memory:**
+  - MemAvailable 13.7 GB at the start, ~0.8 GB from 100 s, as GTT grew to 11.9 GB;
+  - file refaults up to ~200 k pages per 10 s;
+  - PSI "full" 5.5 s.
+- **Flips:** 12–21/s while loading (30–80 s), then 20–32/s, against ~36 on the bench.
+- **The levers this points at:**
+  1. the btrfs readahead, a root setting, runtime and reversible;
+  2. `POSIX_FADV_RANDOM` on the image in bc5-mount, which needs `libc` as a direct dependency.
