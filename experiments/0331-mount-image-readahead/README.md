@@ -83,3 +83,13 @@ reached.
   yes (D19). After that the box's readahead can stay at its default.
 - **The freeze these sessions met is not the mount's.** It is F395's, now reproducible from his save in about a minute
   (F399).
+
+**Addendum (2026-10-26 ~13:00, the integration).** On the maintainer's yes ("c"), `int0331.sh` installs the tested binary
+43277724 as the shared `~/bc5-work/bc5-tools-ubuntu/release/bc5-mount` (47739557).
+- **How it does it:** the guards, a lock line, a backup in `exp0331/integration/`, an atomic rename, then `--help` and
+  an `inspect` of the package in the distrobox, with a restore on any failure. It was tried on stand-ins, including
+  its restore path.
+- **Who it affects:** every launcher that names the shared mount, ASTRO BOT's `play-astro.sh` too. That one is not
+  tested; `BC5_MOUNT_READAHEAD=1` keeps the old readahead.
+- **Not run by the cloud session:** its permission classifier refused the change to the shared binary ("Modify Shared
+  Resources"). The script is in `~/bc5-work/exp0331/int0331.sh` (cd407ec5) for the maintainer to run.
