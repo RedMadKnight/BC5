@@ -42,4 +42,12 @@ touch the rest of the filesystem, and would survive a reboot.
   - flips/s;
   - MemAvailable.
 
-**Result.** Pending.
+**Built (2026-10-26 12:13).**
+- `build0331.sh` built bc5-mount in the distrobox (rustc 1.93.1, offline, 26 s; `raw/build.out`) into
+  `~/bc5-work/exp0331/bc5-mount`, 43277724. The shared one (47739557) was not touched.
+- The test launcher's `BM=` now names it: `play-pkg-0330t.sh` bf4f3da3 → 38cefa13 (`raw/play-pkg-0330t-bm.diff`).
+- **The advice is made.** Under `strace`, `bc5-mount inspect` on the image calls `fadvise64(3, 0, 0, POSIX_FADV_RANDOM) = 0`,
+  and makes no such call with `BC5_MOUNT_READAHEAD=1` (`raw/strace-fadvise.txt`).
+- Undo: `cat ~/bc5-work/exp0331/play-pkg-0330t.sh.before-0331 > ~/bc5-work/exp0330/play-pkg-0330t.sh`.
+
+**Result.** Pending: the maintainer's session (step 3).

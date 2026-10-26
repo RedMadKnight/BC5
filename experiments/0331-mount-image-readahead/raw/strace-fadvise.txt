@@ -1,0 +1,6 @@
+# strace in the ubuntu distrobox, 2026-10-26 ~12:15: the private bc5-mount (43277724) inspecting the image
+== BC5_MOUNT_READAHEAD=0
+fadvise64(3, 0, 0, POSIX_FADV_RANDOM)   = 0
++++ exited with 0 +++
+== BC5_MOUNT_READAHEAD=1
++++ exited with 0 +++
