@@ -109,3 +109,10 @@ przebieg w celu weryfikacji co gra naprawdę wywołuje".*
   `pthread_cond_destroy`, `pthread_yield`) need thin `POSIX_CALL` wrappers.
 - Every change to the shared builds is an integration (D19) on the maintainer's yes. The diagnostic import log can
   stay as an off-by-default switch.
+
+**Addendum (2026-10-26, exp 0338: two NID names corrected).**
+- `FXPWHNk8Of0` is `scePthreadAttrGetschedparam`, not posix `pthread_attr_getschedparam` (exp 0335's addendum). The
+  title's 4–7 calls at start are an sce call on the sce function, which is right. Of exp 0335's audited duplicates, the
+  title therefore calls none. It does call `GetCompiledSdkVersion`, which is not a duplicate.
+- `6XG4B33N09g`, given above as `pthread_yield`, is `sched_yield`. It went to the void `PthreadYield`, so the caller read
+  an undefined return value.

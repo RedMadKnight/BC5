@@ -108,3 +108,12 @@ registrations in many experiments, most recently 0327–0329 (the title's missin
   module, NID fallback or stub, and the implementation's `dbg_name`). One RT-off run would then show which of items
   1–5 and which dead-block NIDs the title really reaches. Every fix after that is an integration (D19) and needs the
   maintainer's yes.
+
+**Addendum (2026-10-26, exp 0338: two NID names corrected).** Item 3's list of "posix pthread NIDs under libkernel"
+named two NIDs wrongly. The tree's NID algorithm (`kernel_symbol_to_nid`, libKernel.cpp:156) gives:
+- `-quPa4SEJUw` is `scePthreadAttrGetstack` (posix `pthread_attr_getstack` is `vQm4fDEsWi8`);
+- `FXPWHNk8Of0` is `scePthreadAttrGetschedparam` (posix `pthread_attr_getschedparam` is `qlk9pSLsUmM`).
+
+So libkernel's sce registrations of these two are right. The wrong ones are the Posix block's (:2460 and :2435), which
+give these sce NIDs posix wrappers. Four posix NIDs sit under "libkernel" with sce functions: `pthread_self`,
+`pthread_attr_setstacksize`, `pthread_rwlock_wrlock` and `pthread_cond_signal`.
