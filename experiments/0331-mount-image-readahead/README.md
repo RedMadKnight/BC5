@@ -50,4 +50,36 @@ touch the rest of the filesystem, and would survive a reboot.
   and makes no such call with `BC5_MOUNT_READAHEAD=1` (`raw/strace-fadvise.txt`).
 - Undo: `cat ~/bc5-work/exp0331/play-pkg-0330t.sh.before-0331 > ~/bc5-work/exp0330/play-pkg-0330t.sh`.
 
-**Result.** Pending: the maintainer's session (step 3).
+**Result** (2026-10-26, the maintainer's two sessions on the test shortcut).
+- **Setup:**
+  - he first put the box's readahead back with `echo 4096 | sudo tee /sys/class/bdi/btrfs-1/read_ahead_kb`; it read
+    4096 afterwards;
+  - the sessions were 12:16:34–12:20:35 and 12:20:37–12:22:07;
+  - evidence in `raw/maintainer-test/`: both sampler files, the probe lines, the kernel lines and the devcoredump list.
+- **Both sessions froze at the same place in the game** (t ≈ 212 s and ≈ 62 s), and he closed the emulator (exit 0):
+  - gfx_0.0.0 timeouts at 12:20:11, 12:21:44 and 12:21:46, each reset succeeded;
+  - devcoredumps `20261026-122011-devcd2.txt`, `-122144-devcd3.txt`, `-122146-devcd4.txt`;
+  - the probe's waits are those of F395's freeze at 10:08, which ran on the shared mount, so the mount is not their
+    cause (F399).
+- **Mount and launcher:** none were left after the sessions, and nothing was mounted.
+
+| | the shared mount, readahead 4,096 (F396) | the shared mount, 128 (F397) | **0331's mount, 4,096** (S1 / S2) |
+|---|---|---|---|
+| session | 194 s | 691 s | 233 s / 81 s |
+| NVMe read / bc5-mount asked | 1.80 | 1.07 | **0.99 / 0.93** |
+| NVMe rate | 190 MB/s | 92 MB/s | 98 / 126 MB/s |
+| the emulator's reads | 66 MB/s | 92 MB/s | 67 / 85 MB/s |
+| PSI "full" per minute | 1.71 s | 0.29 s | 0.45 / 0.49 s |
+| file refaults per minute | 409 k | 119 k | 120 k / 226 k |
+
+The ratios are deltas over the session (`sample0330p.sh`). S2 is 81 s of mostly loading. The zero scan (540 s) was not
+reached.
+
+**Verdict.**
+- **The change holds F397's gain without the box's setting.** With the box's readahead at 4,096, bc5-mount read no more
+  from the NVMe than it asked for (0.93–0.99, against 1.80 with the shared mount). The memory stall per minute was a
+  quarter of F396's.
+- **Next:** integrate it into the shared mount (`~/bc5-work/bc5-tools-ubuntu/release/bc5-mount`) on the maintainer's
+  yes (D19). After that the box's readahead can stay at its default.
+- **The freeze these sessions met is not the mount's.** It is F395's, now reproducible from his save in about a minute
+  (F399).
