@@ -177,3 +177,15 @@ się przedłuży" (BOX-QUEUE 180).
   - a product limit in the CP check (a build) tests the runaway grid directly.
 - Each still needs the maintainer's yes, with RT on.
 - devcd5 is a separate lead: a GPU write fault on a compute ring in the night's machine-down.
+
+**Correction (2026-10-26 17:18, the kernel log of the night's boot).** The devcoredump's "Page fault observed" section
+is the driver's last recorded fault, not the fault of the timeout it dumps. The kernel log of boot −2 (10-25 16:07 to
+10-26 00:01:52) shows where devcd5's fault came from:
+- the fault at 0xa8256950000 (status 0x00541051, `Faulty UTCL2 client ID: TCP (0x8)`, vmid 5, pasid 77) was logged at
+  **10-25 20:56:06**, among eleven TCP faults of that evening's hang (10-25's devcd4);
+- the night's `ring comp_1.2.0 timeout` at 00:01:52 has no fault line.
+
+So the night's machine-down has **no recorded GPU fault**, and the R0 bullet "New, about the night's machine-down" and
+the last Verdict bullet are withdrawn. devcd1–4 stand as read: the kernel log of the current boot (from 10-26 00:03:16)
+has no page-fault line at all, so their empty fault record (address 0, status 0) means no fault in this boot.
+
