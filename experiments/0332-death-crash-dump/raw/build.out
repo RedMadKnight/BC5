@@ -1,0 +1,18 @@
++ /usr/bin/clang++ -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_BUILD -DZYDIS_STATIC_BUILD -D_LAR ...
+In file included from /home/kjaniszewski/bc5-work/exp0332/src/runtimeLinker.0332.cpp:3:
+In file included from /home/kjaniszewski/src/KytyPlus/src/loader/runtimeLinker.h:6:
+[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<[0;34mchar16_t[0m>, [0;34mchar16_t[0m> convert;[0m
+      | [0;1;32m             ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: [0m[0;1;36mnote: [0m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here[0m
+  262 |     [0;34mclass[0m _GLIBCXX17_DEPRECATED wstring_convert[0m
+      | [0;1;32m          ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: [0m[0;1;36mnote: [0mexpanded from macro '_GLIBCXX17_DEPRECATED'[0m
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]][0m
+      | [0;1;32m                                 ^
+[0m[1m/home/kjaniszewski/bc5-work/exp0332/src/runtimeLinker.0332.cpp:885:3: [0m[0;1;35mwarning: [0m[1mnon-void lambda does not return a value in all control paths [-Wreturn-type][0m
+  885 |                 }();[0m
+      | [0;1;32m                ^
+[0m2 warnings generated.
++ /usr/bin/clang++ -fno-rtti -fno-exceptions -fcolor-diagnostics -finput-charset=UTF-8 -fexec-charset=UTF-8 -g -fno-strict-aliasing -fno-omit-frame-pointer -Wall -fmessage-length=0 -fno-rtti -fno-except ...
+== 15:49:23 build rc 0
