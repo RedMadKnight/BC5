@@ -198,3 +198,15 @@ launcher's env-file loop, where arm C's hook was:
   run on copies, including its restore path.
 - **Undo:** `~/bc5-work/exp0330/integration/*.before-0330`; the command is the last line of `raw/int.out`.
 - **Not run:** the integrated launchers in play. The maintainer's play tests them.
+
+**Addendum (2026-10-26 09:07, the maintainer's test shortcut).** At his choice ("a"), `setup0330t.sh` set up "BC5
+emulator (test 0330: pamięć)" on his desktop, as exp 0328's test shortcut was.
+- **What it runs:** the private binary a86787f1 through `exp0330/play-pkg-0330t.sh` (73845711). That is today's
+  `play-pkg.sh` b10eac6d with the integrated lazy list, plus two changes (`raw/play-pkg-0330t.diff`):
+  - one log per start in `exp0330/play/`;
+  - after the lazy-list line, `BC5_DIRECT_BREAKDOWN_AT=1800 BC5_DIRECT_BREAKDOWN_NODATA=1 BC5_DIRECT_ZEROSCAN_AT=1810
+    BC5_DIRECT_JOURNAL_DONTNEED=1`.
+- **His session:** his own saves (b1cd637738395a19 at the setup) and his `input.cfg` (RT off).
+- **The question:** does the 2.8 GB of all-zero chunks in RenderGpuWcLarge and CommitIABufferAllocator stay zero after
+  30 minutes of his play? The answer decides the narrower import.
+- **Undo:** `rm` of the shortcut and the copy (`raw/setup0330t.out`).
