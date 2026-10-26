@@ -1,0 +1,7 @@
+2026-10-26 17:43:22 arm C set up
+input.cfg d2a3ecc9 -> private /home/kjaniszewski/bc5-work/exp0334/input-rton.cfg da1ca69d
+launcher /home/kjaniszewski/bc5-work/exp0330/play-pkg-0330t.sh 38cefa13 -> 85438594
+wrapper /home/kjaniszewski/bc5-work/exp0330/test0330p.sh 04fbe2cf -> 594746eb
+binary /home/kjaniszewski/bc5-work/exp0332/kyty_emulator acb1cfd7
+Name=BC5 emulator (test 0334 C: RT on, bez kompaktowania)
+undo: cat /home/kjaniszewski/bc5-work/exp0334/shortcut-before/test0330p.sh > /home/kjaniszewski/bc5-work/exp0330/test0330p.sh; cat /home/kjaniszewski/bc5-work/exp0334/shortcut-before/play-pkg-0330t.sh > /home/kjaniszewski/bc5-work/exp0330/play-pkg-0330t.sh; cat "/home/kjaniszewski/bc5-work/exp0334/shortcut-before/BC5 emulator (test 0330).desktop" > "/home/kjaniszewski/Pulpit/BC5 emulator (test 0330).desktop"

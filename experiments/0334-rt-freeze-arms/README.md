@@ -189,3 +189,23 @@ So the night's machine-down has **no recorded GPU fault**, and the R0 bullet "Ne
 the last Verdict bullet are withdrawn. devcd1–4 stand as read: the kernel log of the current boot (from 10-26 00:03:16)
 has no page-fault line at all, so their empty fault record (address 0, status 0) means no fault in this boot.
 
+**Arm C, set up (2026-10-26 17:43; the maintainer's choice "a": his play with RT on and the BVH compaction skipped).**
+- `run0334.sh shortcut-c` changed one line in each of three files, with backups in `~/bc5-work/exp0334/shortcut-before/`
+  (`raw/shortcut-c.out`, `raw/*.diff`):
+  - a private input configuration `exp0334/input-rton.cfg`: his `input.cfg` (d2a3ecc9, RT off, unchanged) with only
+    the title's RayTracing line set to on;
+  - one hook in the test launcher `exp0330/play-pkg-0330t.sh` (38cefa13 → 85438594), right after the env-file loop.
+    It is needed because `bc5-run.env` sets `KYTY_BC5_INPUT_CONFIG` to `input.cfg` there;
+  - the test shortcut's wrapper `exp0330/test0330p.sh` (04fbe2cf → 594746eb) passes `BC5_DIRECT_SKIP_PGM=909974400`.
+    The launcher takes it from the environment (`${BC5_DIRECT_SKIP_PGM:-0}`). The wrapper also passes the private
+    configuration.
+- The binary stays exp 0332's (acb1cfd7: exp 0330's host unit and the crash dump). The mount is exp 0331's (43277724,
+  the same as the shared one).
+- The shortcut is renamed "BC5 emulator (test 0334 C: RT on, bez kompaktowania)". His other shortcuts keep RT off.
+- **Readings after his play:**
+  - `skip pgm 0x909974400` lines in the journal, to confirm the skip;
+  - no `ray tracing off:` line, to confirm RT on;
+  - TIMEOUT lines, kernel GPU lines and devcoredumps;
+  - flips per minute; the sampler;
+  - whether he passed the freeze spot (his words).
+
