@@ -181,3 +181,20 @@ Readings:
 - **`KYTY_GUEST_MEMORY_MB` stays at 13,824.**
 - **The box's reclaim is a page-cache thrash.** That points the box's settings and bc5-mount's caching at the file
   side, not at swap.
+
+**Addendum (2026-10-26, after the integration, F394).** On the maintainer's yes ("Zaczynaj od A"), `int0330.sh` added
+arm C's four names to the lazy list of the second title's three launchers at 08:20. One line goes in after each
+launcher's env-file loop, where arm C's hook was:
+`export BC5_DIRECT_LAZY_NAMES="${BC5_DIRECT_LAZY_NAMES:+$BC5_DIRECT_LAZY_NAMES,}Wwise,SoundAlloc,FileSystem,UIStringAlloc"`.
+- **The launchers:**
+  - `play-pkg.sh` c0357628 → b10eac6d;
+  - `play-pkg-log.sh` e1b361a1 → 5080d2ce;
+  - `play-pkg-quiet.sh` 2b23073d → 48fa60ba.
+- **What stays as it was:** `bc5-run.env` keeps `orbis_user_malloc`, so ASTRO BOT's `play-astro.sh` is unchanged.
+- **Both shortcuts take it.** They reach `play-pkg.sh` through `play-any.sh`. The lean build reads the list with
+  `getenv` as the normal one does; the experiment ran the normal build's objects only.
+- **Checks:** each launcher parses, its diff is the one added line (`raw/int-*.diff`), and its first lines, sourced in
+  a subshell, give `orbis_user_malloc,Wwise,SoundAlloc,FileSystem,UIStringAlloc` (`raw/int.out`). The script was first
+  run on copies, including its restore path.
+- **Undo:** `~/bc5-work/exp0330/integration/*.before-0330`; the command is the last line of `raw/int.out`.
+- **Not run:** the integrated launchers in play. The maintainer's play tests them.

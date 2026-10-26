@@ -1,0 +1,10 @@
+--- /home/kjaniszewski/bc5-work/exp0330/integration/play-pkg-quiet.sh.before-0330	2026-10-25 19:48:21.373844241 +0100
++++ /home/kjaniszewski/bc5-work/play-pkg-quiet.sh	2026-10-26 08:20:06.200751390 +0100
+@@ -27,6 +27,7 @@
+   key=${line%%=*}; val=${line#*=}
+   if [ "$key" = PLAY_ARGS ]; then PLAY_ARGS=$val; else export "$key=$val"; fi
+ done < "$ENVF"
++export BC5_DIRECT_LAZY_NAMES="${BC5_DIRECT_LAZY_NAMES:+$BC5_DIRECT_LAZY_NAMES,}Wwise,SoundAlloc,FileSystem,UIStringAlloc"  # exp 0330 (F394): the four CPU-only heaps lazy, 242 MiB less pinned
+ PLAY_ARGS="$PLAY_ARGS --fullscreen"  # the maintainer: this title fullscreen, at the display's resolution (Full HD here)
+ unset BC5_GC_DUMP_DIR
+ # This title's settings (experiment 0036); the file below may override them.

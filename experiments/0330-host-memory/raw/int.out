@@ -1,0 +1,5 @@
+play-pkg.sh: c0357628 -> b10eac6d, the line after line 39, the list orbis_user_malloc,Wwise,SoundAlloc,FileSystem,UIStringAlloc
+play-pkg-log.sh: e1b361a1 -> 5080d2ce, the line after line 29, the list orbis_user_malloc,Wwise,SoundAlloc,FileSystem,UIStringAlloc
+play-pkg-quiet.sh: 2b23073d -> 48fa60ba, the line after line 29, the list orbis_user_malloc,Wwise,SoundAlloc,FileSystem,UIStringAlloc
+backups: play-pkg-log.sh.before-0330 play-pkg-quiet.sh.before-0330 play-pkg.sh.before-0330 
+undo: for f in play-pkg.sh play-pkg-log.sh play-pkg-quiet.sh; do cat /home/kjaniszewski/bc5-work/exp0330/integration/$f.before-0330 > /home/kjaniszewski/bc5-work/$f; done
