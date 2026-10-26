@@ -209,3 +209,39 @@ has no page-fault line at all, so their empty fault record (address 0, status 0)
   - flips per minute; the sampler;
   - whether he passed the freeze spot (his words).
 
+**Result (arm C, 2026-10-26 17:56:57–18:01:30; `raw/arm-c/`).** His words: "Po przejściu filmiku z ingame do
+właściwego sterowania - gra się zawiesiła".
+- **The arm ran as set:** RT was on (0 `ray tracing off:` lines) and the compaction was skipped (`skip pgm
+  0x909974400` lines: the first at the first dispatch, 4,097 to 8,192 skipped in all; it comes from a dcb).
+- **It froze anyway**, at journal t ≈ 255 s, right after an in-game cutscene handed control back. That is a different
+  place from F399's.
+  - Two `gfx_0.0.0` timeouts came 2 s apart (18:01:16 and 18:01:18), each recovered by a ring reset, the machine up.
+    The pattern matches 12:21:44/46.
+  - The host timed out an acb of 3,016 dwords and a dcb of 4,875 dwords (`probe.txt`).
+  - devcd5 and devcd6 of 18:01 are in `~/bc5-data/captures/devcoredump/`.
+  - He then left the title (exit 0 at 18:01:30). His saves are now 6a7e8c49efe0e44a.
+- **It is the same chain as F399's.** The acb ends with the write of 0x12004b5038 (it reads 0x907616589, as in F399),
+  and its dispatches are the second half's programs: 0x90992af00, 0x9098ea000, 0x909968e00, 0x909969d00, 0x90996cc00
+  and 0x9098eb200. The probe counts 147 dispatches, 81 of them indirect. Read at the timeout, the largest grid was
+  28,644 groups (33 × 28 × 31). So no huge triple was in memory then. What the CP read at dispatch time is unknown,
+  and the ran/DROPPED marks are void for a rebuilt acb (F334).
+- **The GPU state is R0's, register for register** (`r0-registers-armc.txt`):
+  - devcd5 has `GRBM_STATUS` 0xa0407028 and SE0/SE1 0x0a000016, so SPI, TA and TCP are busy;
+  - the PFP is at 0xea1 and the ME at 0x77b, with the same header history ending in `DISPATCH_INDIRECT`;
+  - the fetch is 208 dwords before the end of a 6,992-dword host IB, and there is no fault;
+  - devcd6 is devcd4's wait state (idle shaders, PFP 0x1397, ME 0x21).
+- MemAvailable after 3 minutes had a median of 623 MiB, with GTT at most 12,056 MiB. Flips were 37–44/s before the
+  freeze.
+
+**Verdict (arm C).**
+- **The BVH compaction is not the condition.** With it skipped, the freeze came in the first five minutes, in the same
+  chain and the same GPU state.
+- The freeze is not tied to one place in the game: any place where this RT update chain runs in some state can hit
+  it. It is the second half of the BVH build, issued as GFX-form indirect dispatches in a refused acb, with waves that
+  do not end.
+- By the design's rules the next arm is D (`BC5_DIRECT_COMPUTE_RING=-1`, the whole build on one ring). F1 then tests
+  the build's own data. Each needs the maintainer's yes, with RT on.
+- A scripted route may now reach a freeze, since this one came ~4 minutes after start and right after a cutscene. A
+  private copy of the save he loaded at 17:57 would let D and its repeats run without his play. TODO(verify): whether
+  the save before the cutscene is still in a slot.
+
