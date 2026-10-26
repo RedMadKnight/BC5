@@ -105,4 +105,79 @@ of it cost frame rate?
 
 Exp 0329 (bvh) also needs box time, so the runs go in one chain.
 
-**Result.** Pending.
+**Result** (2026-10-26, run by the cloud supervisor on the maintainer's GO: "Masz GO, decyzja A").
+- **Setup:**
+  - built 07:30: `exp0330/kyty_emulator` a86787f1 from the shared normal build 4a146894's objects; the patch output is
+    29664e3c as designed; 4 compiler warnings, none in the 0330 edits (`raw/build.out`);
+  - the chain ran 07:35–08:06 with `play-pkg.sh` c0357628, derived launcher 0608cd5e (`raw/play-pkg-0330.diff`);
+  - the box's settings are in `raw/box-settings.txt` (swappiness 60, zram 7.6 GB zstd);
+  - arm A's lazy list was `orbis_user_malloc`;
+  - the live saves read b1cd637738395a19 before and after every arm (`raw/s6n-saves.txt`). They differ from STATE's
+    20bc4707 because the maintainer played at 23:58 on 10-25.
+- **No GPU trouble:** the kernel stream (`raw/kernel-stream.txt`) holds no GPU line over the whole chain. The journal
+  stream holds no TIMEOUT and no fault.
+
+| arm | verdict | flips/s | pinned MiB | MemAvailable after 3 min, median (min) | swap used, start → end | pswpout | pgmajfault | pgsteal file / anon | refaults file / anon | PSI memory full |
+|---|---|---|---|---|---|---|---|---|---|---|
+| A | pass, 600 s | 36.8 | 11,474 | 675 (650) MiB | 504 → 627 MiB | 80,227 | 59,033 | 11.52 M / 90.4 k | 1.19 M / 57.6 k | 5.75 s |
+| B | pass, 600 s | 36.4 | 11,430 | 670 (634) MiB | 548 → 554 MiB | 2,954 | 3,334 | 9.35 M / 4.1 k | 708 k / 2.2 k | 3.13 s |
+| C | pass, 600 s | 36.2 | 11,232 | 720 (706) MiB | 553 → 557 MiB | 1,188 | 850 | 8.98 M / 1.4 k | 705 k / 302 | 3.26 s |
+| D | **did not start**: exit 65 at 6 s | — | (7,010 at the stop) | — | — | — | — | — | — | — |
+
+The counters are deltas over the run from `raw/<arm>-mem.txt`, in pages; PSI is the "full" time. Arm A's zero scan at
+550 s read 11,378 MiB in 2.3 s (`raw/A-zeroscan.txt`). The per-name import table is `raw/A-breakdown.txt` (no data walk).
+The heaps with the most all-zero memory:
+
+| heap | imported MiB | in all-zero 2 MiB chunks | in all-zero 4 KiB pages |
+|---|---|---|---|
+| RenderGpuWcLarge | 2,758 | 1,422 | 1,786 |
+| CommitIABufferAllocator | 2,736 | 1,376 | 1,489 |
+| DynamicHeap | 328 | 212 | 230 |
+| AMM | 2,276 | 184 | 340 |
+| Physics | 192 | 166 | 174 |
+| RenderGpuRwLarge | 414 | 76 | 129 |
+| InitAllocator | 412 | 2 | 150 |
+| total | 11,378 | 3,672 | 4,691 |
+
+B and C read the same within 12 MiB of all-zero chunks per heap (`raw/B-zeroscan.txt`, `raw/C-zeroscan.txt`). C's
+scan lacks the four lazy names.
+
+Readings:
+1. **The eager import pins 3.7 GB that is all zero after nine minutes of play.** That is a third of the 11.4 GB pinned.
+   2.8 GB of it lies in RenderGpuWcLarge and CommitIABufferAllocator, half of each heap in whole 2 MiB chunks.
+   - A page still zero then was most likely written by neither the CPU nor the GPU on this route.
+   - It does not show that a longer session or another place in the game leaves it untouched.
+2. **B's switch costs no frame rate** (36.4 against 36.8 flips/s). This chain does not show its effect on swap
+   traffic, because of the order:
+   - A ran first and pushed the cold system out to zram (swap 504 → 627 MiB);
+   - B and C started with that already swapped;
+   - C, without the switch, swapped as little as B (1,188 and 2,954 pages out).
+
+   A fair test alternates the arms after a warm-up run.
+3. **Reclaim takes file pages, not the title's anonymous ones.** In every arm 9–11.5 M file pages were stolen against
+   1.4–90 k anonymous ones. 0.7–1.2 M file pages, 2.7–4.5 GiB, were read again within ten minutes.
+   - The page cache thrashes: the files the title streams do not fit in the ~0.7 GB left. These are bc5-mount's
+     image and the files it serves.
+   - So `vm.swappiness` is not the lever. Whether the image's pages and the FUSE files' pages are cached twice is not
+     known: TODO(verify).
+4. **C's four CPU-only heaps lazy** (Wwise, SoundAlloc, FileSystem, UIStringAlloc) pinned 242 MiB less than A. There
+   was no learned fault, no TIMEOUT and no hang, and the frame rate was unchanged (36.2/s). MemAvailable's median rose
+   by only ~45 MiB. Where the rest went was not read; the page cache taking it is the likely reading.
+5. **D does not start.** With `KYTY_GUEST_MEMORY_MB=12288` the title stopped 3 s after its start:
+   `condition (g_tls_main_program == nullptr) is true in runtimeLinker.cpp:1470` (`raw/D-play.log`). So the title
+   does not size its pools smaller with less guest memory; the main program's load fails first. Why it fails was not
+   read further.
+
+**Verdict.**
+- **The memory to win is in the eager import, not in the box.** About 3.7 GB of the pinned 11.4 GB is untouched on
+  this route. The next experiment is a narrower import of RenderGpuWcLarge and CommitIABufferAllocator:
+  - first it checks over a longer session (the maintainer's play, the zero scan at the end) that the zero parts stay
+    zero;
+  - then it leaves them to the fault path with learning (F96's method).
+- **The four CPU-only names are a candidate for the launchers' lazy list:** −242 MiB pinned, no fault, same frame rate.
+  The integration is D19's: the maintainer's yes.
+- **`BC5_DIRECT_JOURNAL_DONTNEED=1` is harmless, but not shown to help.** It needs the alternating test before it is
+  proposed as a default.
+- **`KYTY_GUEST_MEMORY_MB` stays at 13,824.**
+- **The box's reclaim is a page-cache thrash.** That points the box's settings and bc5-mount's caching at the file
+  side, not at swap.

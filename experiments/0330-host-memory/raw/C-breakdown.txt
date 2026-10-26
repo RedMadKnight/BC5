@@ -1,0 +1,31 @@
+direct by name (at the set time): 88 BOs, 11232.0 MiB imported; BO list of the submit 0; GTT 11892.2 of 13312.0 MiB in use
+  (views under 1 MiB)          18654 views:    914.5 MiB reserved,      0.0 with data,    914.5 imported (data not read); at 0xfe0000000-0x8515690000
+  AMM                          663 views:   2213.6 MiB reserved,      0.0 with data,   2213.6 imported (data not read); at 0x8000040000-0x8516140000
+  Amm Ring                       1 views:      1.0 MiB reserved,      0.0 with data,      1.0 imported (data not read); at 0x100142c000-0x1001530000
+  AssetHeap Large                1 views:    816.0 MiB reserved,      0.0 with data,    314.0 imported (data not read); at 0x10d0000000-0x1103000000
+  AssetHeap Small                1 views:    350.0 MiB reserved,      0.0 with data,    214.0 imported (data not read); at 0x10b0000000-0x10c5e00000
+  CommitIABufferAllocator        1 views:   2736.0 MiB reserved,      0.0 with data,   2736.0 imported (data not read); at 0x1210000000-0x12bb000000
+  ComponentHeap                  1 views:    104.0 MiB reserved,      0.0 with data,    104.0 imported (data not read); at 0x1070000000-0x1076800000
+  ComponentHeap Small            1 views:     36.0 MiB reserved,      0.0 with data,     36.0 imported (data not read); at 0x1080000000-0x1082400000
+  DDLHeap                        1 views:     16.0 MiB reserved,      0.0 with data,     16.0 imported (data not read); at 0x1090000000-0x1091000000
+  Decal Job Scheduler            1 views:     12.0 MiB reserved,      0.0 with data,     12.0 imported (data not read); at 0x1001e00000-0x1002a00000
+  DynamicHeap                    1 views:    328.0 MiB reserved,      0.0 with data,    328.0 imported (data not read); at 0x1040000000-0x1054800000
+  DynamicHeap Small              1 views:     54.0 MiB reserved,      0.0 with data,     54.0 imported (data not read); at 0x1060000000-0x1063600000
+  FileSystem                     1 views:     52.0 MiB reserved,      0.0 with data,      0.0 imported (lazy); at 0x1110000000-0x1113400000
+  InitAllocator                  1 views:    652.0 MiB reserved,      0.0 with data,    412.0 imported (data not read); at 0x1010000000-0x1038c00000
+  Job thread scratch memory     15 views:     15.0 MiB reserved,      0.0 with data,     11.0 imported (data not read); at 0x1000204000-0x1001174000
+  MaterialHeap                   1 views:     20.0 MiB reserved,      0.0 with data,     20.0 imported (data not read); at 0x10a0000000-0x10a1400000
+  Physics                        1 views:    192.0 MiB reserved,      0.0 with data,    192.0 imported (data not read); at 0x12d0000000-0x12dc000000
+  Physics query allocator        1 views:      7.0 MiB reserved,      0.0 with data,      7.0 imported (data not read); at 0x1001534000-0x1001c28000
+  RenderAlloc                    1 views:     70.0 MiB reserved,      0.0 with data,     70.0 imported (data not read); at 0x12c0000000-0x12c4600000
+  RenderGpuRwLarge               4 views:    414.0 MiB reserved,      0.0 with data,    414.0 imported (data not read); at 0x11e0000000-0x11f9e00000
+  RenderGpuRwSmall               1 views:     36.0 MiB reserved,      0.0 with data,     36.0 imported (data not read); at 0x1200000000-0x1202400000
+  RenderGpuWcLarge               1 views:   2758.0 MiB reserved,      0.0 with data,   2758.0 imported (data not read); at 0x1120000000-0x11cc600000
+  RenderGpuWcSmall               1 views:    110.0 MiB reserved,      0.0 with data,    110.0 imported (data not read); at 0x11d0000000-0x11d6e00000
+  SceAgcDriver                   1 views:      1.8 MiB reserved,      0.0 with data,      1.8 imported (data not read); at 0xfe003a000-0xfe0200000
+  SoundAlloc                     1 views:      4.0 MiB reserved,      0.0 with data,      0.0 imported (lazy); at 0x1002a00000-0x1002e00000
+  UI                             1 views:      2.0 MiB reserved,      0.0 with data,      2.0 imported (data not read); at 0x1003000000-0x1003200000
+  UIStringAlloc                  1 views:      2.0 MiB reserved,      0.0 with data,      0.0 imported (lazy); at 0x1002e00000-0x1003000000
+  VisualEffectInstanceHeap       1 views:     24.0 MiB reserved,      0.0 with data,     24.0 imported (data not read); at 0x12e0000000-0x12e1800000
+  Wwise                          1 views:    220.0 MiB reserved,      0.0 with data,      0.0 imported (lazy); at 0x1310000000-0x131dc00000
+  total (views may alias)      19361 views:  12160.8 MiB reserved,      0.0 with data,  11000.8 imported
