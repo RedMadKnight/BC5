@@ -1,0 +1,57 @@
+# 3131 registrations: 1899 reached from Libs::InitAll (libs.cpp), 1232 in LIB_DEFINE blocks nothing calls; 303 added by patch 0001
+
+## dead blocks (never added to the symbol database)
+Libs::LibCamera::InitCamera_1                        src/libs/libCamera.cpp               [-]   76 NIDs (76 only here); libSceCamera
+Libs::CompanionHttpd::InitCompanionHttpd_1           src/libs/libCompanion.cpp            [-]   17 NIDs (17 only here); libSceCompanionHttpd
+Libs::CompanionUtil::InitCompanionUtil_1             src/libs/libCompanion.cpp            [-]    5 NIDs (5 only here); libSceCompanionUtil
+Libs::LibDiscMap::InitDiscMap_1                      src/libs/libDiscMap.cpp              [-]    5 NIDs (5 only here); libSceDiscMap
+Libs::LibGameLiveStreaming::InitGameLiveStreaming_1  src/libs/libGameLiveStreaming.cpp    [-]   45 NIDs (45 only here); libSceGameLiveStreaming
+Libs::LibGnmDriver::InitGnmDriver_1                  src/libs/libGnmDriver.cpp            [-]  251 NIDs (251 only here); libSceGnmDriver
+Libs::LibHmd::InitHmd_1                              src/libs/libHmd.cpp                  [-]  137 NIDs (137 only here); libSceHmd
+Libs::LibIme::InitIme_1                              src/libs/libIme.cpp                  [-]   48 NIDs (41 only here); libSceIme
+Libs::LibInvitationDialog::InitInvitationDialog_1    src/libs/libInvitationDialog.cpp     [M]    9 NIDs (9 only here); libSceInvitationDialog
+Libs::LibJpeg::InitJpeg_1                            src/libs/libJpeg.cpp                 [-]    4 NIDs (4 only here); libSceJpegEnc
+Libs::LibMove::InitMove_1                            src/libs/libMove.cpp                 [-]   11 NIDs (11 only here); libSceMove
+Libs::LibNgs2::InitNgs2_1                            src/libs/libNgs2.cpp                 [-]   40 NIDs (40 only here); libSceNgs2
+Libs::NpAuth::InitNpAuth_1                           src/libs/libNp.cpp                   [M]    5 NIDs (5 only here); libSceNpAuth
+Libs::NpCommon::InitNpCommon_1                       src/libs/libNp.cpp                   [M]   28 NIDs (28 only here); libSceNpCommon
+Libs::NpManager::InitNpManager_1                     src/libs/libNp.cpp                   [M]   27 NIDs (25 only here); libSceNpManager
+Libs::NpPartner::InitNpPartner_1                     src/libs/libNp.cpp                   [M]    4 NIDs (4 only here); libSceNpPartner001
+Libs::NpParty::InitNpParty_1                         src/libs/libNp.cpp                   [M]   26 NIDs (26 only here); libSceNpParty
+Libs::NpSnsFacebookDialog::InitNpSnsFacebookDialog_1 src/libs/libNp.cpp                   [M]    1 NIDs (1 only here); libSceNpSnsFacebookDialog
+Libs::NpTrophy::InitNpTrophy_1                       src/libs/libNp.cpp                   [M]   87 NIDs (87 only here); libSceNpTrophy
+Libs::NpTus::InitNpTus_1                             src/libs/libNp.cpp                   [M]  142 NIDs (142 only here); libSceNpTus
+Libs::RageEngine::InitRageEngine_1                   src/libs/libRageEngine.cpp           [-]   15 NIDs (15 only here); RageEngine
+Libs::LibRazorCpu::InitRazorCpu_1                    src/libs/libRazorCpu.cpp             [-]   34 NIDs (34 only here); libSceRazorCpu
+Libs::LibRemotePlay::InitRemotePlay_1                src/libs/libRemotePlay.cpp           [-]   39 NIDs (39 only here); libSceRemoteplay
+Libs::LibScreenShot::InitScreenShot_1                src/libs/libScreenShot.cpp           [-]   14 NIDs (14 only here); libSceScreenShot
+Libs::LibSharePlay::InitSharePlay_1                  src/libs/libSharePlay.cpp            [-]   22 NIDs (22 only here); libSceSharePlay
+Libs::LibUlobjmgr::InitUlobjmgr_1                    src/libs/libUlobjmgr.cpp             [-]    4 NIDs (4 only here); ulobjmgr
+Libs::LibUsbd::InitUsbd_1                            src/libs/libUsbd.cpp                 [-]   65 NIDs (65 only here); libSceUsbd
+Libs::LibVideoRecording::InitVideoRecording_1        src/libs/libVideoRecording.cpp       [-]    1 NIDs (1 only here); libSceVideoRecording
+Libs::LibVoice::InitVoice_1                          src/libs/libVoice.cpp                [-]   14 NIDs (14 only here); libSceVoice
+Libs::LibVrTracker::InitVrTracker_1                  src/libs/libVrTracker.cpp            [-]   39 NIDs (39 only here); libSceVrTracker
+Libs::LibWebBrowserDialog::InitWebBrowserDialog_1    src/libs/libWebBrowserDialog.cpp     [M]   12 NIDs (12 only here); libSceWebBrowserDialog
+Libs::LibZlib::InitZlib_1                            src/libs/libZlib.cpp                 [-]    5 NIDs (5 only here); libSceZlib
+
+## live NIDs registered more than once with different functions (order = SymbolDatabase::Add order)
+9BcDykPmo1I: #322 LibC::libc_error (src/libs/libC.cpp:957, upstream) | #993 LibKernel::get_error_addr (src/libs/libKernel.cpp:3704, upstream)
+EotR8a3ASf4: #755 LibKernel::PthreadSelf (src/libs/libKernel.cpp:3530, upstream) | #903 Posix::pthread_self (src/libs/libKernel.cpp:2410, upstream)
+-quPa4SEJUw: #783 LibKernel::PthreadAttrGetstack (src/libs/libKernel.cpp:3559, upstream) | #953 Posix::pthread_getstack (src/libs/libKernel.cpp:2460, upstream)
+2Q0z6rnBrTE: #791 LibKernel::PthreadAttrSetstacksize (src/libs/libKernel.cpp:3567, upstream) | #916 Posix::pthread_attr_setstacksize (src/libs/libKernel.cpp:2423, upstream)
+FXPWHNk8Of0: #799 LibKernel::PthreadAttrGetschedparam (src/libs/libKernel.cpp:3575, upstream) | #928 Posix::pthread_attr_getschedparam (src/libs/libKernel.cpp:2435, upstream)
+sIlRvQqsN2Y: #807 LibKernel::PthreadRwlockWrlock (src/libs/libKernel.cpp:3584, upstream) | #946 Posix::pthread_rwlock_wrlock (src/libs/libKernel.cpp:2453, upstream)
+2MOy+rUfuhQ: #823 LibKernel::PthreadCondSignal (src/libs/libKernel.cpp:3601, upstream) | #940 Posix::pthread_cond_signal (src/libs/libKernel.cpp:2447, upstream)
+
+## live NIDs registered more than once with the same function (aliases)
+45 NIDs
+
+## patch registrations with a same-named host implementation under another NID
+fgIsQ10xYVA FileSystem::KernelChmod (src/libs/libKernel.cpp:3419) <-> z0dtnPxYgtg chmod (src/libs/libKernel.cpp:3638, live)
+XD3mDeybCnk LibKernel::PthreadRwlockTryrdlock (src/libs/libKernel.cpp:3586) <-> SFxTMOfuCkE LibKernel::PthreadRwlockTryrdlock (src/libs/libKernel.cpp:2454, live)
+0wu33hunNdE sleep (src/libs/libKernel.cpp:2390) <-> -ZR+hG7aDHw LibKernel::KernelSleep (src/libs/libKernel.cpp:3691, live)
+juWbTNM+8hw fsync (src/libs/libKernel.cpp:2391) <-> fTx66l5iWIA LibKernel::KernelFsync (src/libs/libKernel.cpp:3701, live)
+c7ZnT7V1B98 LibKernel::rmdir (src/libs/libKernel.cpp:3695) <-> naInUjYt3so FileSystem::KernelRmdir (src/libs/libKernel.cpp:3426, live)
+dFym5b41JLU Posix::KernelSyncOnAddressWait8 (src/libs/libKernel.cpp:3749) <-> Hc4CaR6JBL0 Posix::KernelSyncOnAddressWait (src/libs/libKernel.cpp:3745, live); B2n8aDorSH4 Posix::KernelSyncOnAddressWait32 (src/libs/libKernel.cpp:3746, live); PZQhiiLXRFs Posix::KernelSyncOnAddressWait64 (src/libs/libKernel.cpp:3747, live)
+XgVs4jRehcY Posix::KernelSyncOnAddressWait16 (src/libs/libKernel.cpp:3750) <-> Hc4CaR6JBL0 Posix::KernelSyncOnAddressWait (src/libs/libKernel.cpp:3745, live); B2n8aDorSH4 Posix::KernelSyncOnAddressWait32 (src/libs/libKernel.cpp:3746, live); PZQhiiLXRFs Posix::KernelSyncOnAddressWait64 (src/libs/libKernel.cpp:3747, live)
+3Tcz5bNCfZQ NpGetAccountLanguage2 (src/libs/libNet.cpp:1480) <-> KZ1Mj9yEGYc NpManager::sceNpGetAccountLanguage (src/libs/libNp.cpp:386, dead)
