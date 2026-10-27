@@ -120,3 +120,90 @@ kernel log of the boot.
 hang, a reset or a machine-down, for the first time with ray tracing on. One 22-s host-side stall that recovered by
 itself is new with this configuration. Next: the integration into the shared builds (D19, the maintainer's yes),
 with the overlay's dead zone; the 22-s hold read from the journal excerpt.
+
+**The 22-s hold of 2026-10-27 11:16 (second game, t 864.9→886.9 s), read from the journal excerpt and the host's code
+(laptop only; the bvh session, main 9650af6).** The five GFX jobs were not held by the GPU, by a fence, by the ring-order
+dependencies or by the shadow labels: they were held in the host's completion queue of the game thread (`bc5-cq0`),
+behind the soft CP's replays of the buffers submitted just before them, and the game thread stood in `drain()` at the
+flip until that queue was empty.
+- *What the numbers mean.* The timing line's `fence` is `now − queued_ns` (the completion thread, patch 0001
+  `completion_thread`: `total_ms − j.cs_ms`), the time from the job's queueing to the moment its fence item was taken
+  off the queue — not the time inside `amdgpu_cs_query_fence_status`, which is bounded by `BC5_DIRECT_FENCE_TIMEOUT_MS`
+  (2,000 ms) and journals ` TIMEOUT` and wedges the device when it expires (`Device::finish`); no such line exists, so
+  the five fence waits themselves took under 2 s each (in all likelihood microseconds). `GPU busy 22050.7 ms` is the
+  union of the jobs' [queued, done) intervals (`frame_profile_done`), the same delay seen from the other side.
+  `at the flip 22037.9` is `drain()` at the EOP flip: `play-pkg.sh` unsets `BC5_DIRECT_FLIP_DEFER` (exp 0171, F68) so the
+  flip path calls `drain()`, which spins until `g_cq_items == 0` — every item of both completion queues, fences and
+  posts alike. `soft-CP passes 22009.5 ms in 469` is `frame_profile_post`: the wall time of the post items run by
+  `bc5-cq0` in that frame (only index 0 is counted), 469 of them; in the frames before, 73–750 posts took 0.1–1.2 ms
+  in all.
+- *The GPU had run the jobs at once.* On one ring (`COMPUTE_RING=-1`, `RING_DEPS=dcb` adds no dependency since
+  `last_seq_comp` stays 0: `Device::submit`) the hardware runs jobs in submission order, and the ring thread's jobs
+  #1197601–#1197622, submitted after #1197600 (and #1197621/#1197622 after #1197620), completed at 864.903–864.913 s
+  with sub-ms fences. So #1197600's fence was signalled by ~864.91 s, and what the completion thread of the game thread
+  did between taking #1197595's fence item (done 864.900 s) and #1197600's (886.909 s) is the hold: 22.0 s in the post
+  items queued between the two, i.e. the soft-CP replays (`chain_post_soft_locked` / `soft_posts_end` → `post()`) of the
+  game thread's buffers handed over around 864.80–864.90 s (its 7,332-dword DCB and the 40-dword wait buffers). Then
+  41 ms of posts between #1197600 and #1197605, and nothing between the last three. The frame after shows
+  `soft-CP passes 0.1 ms in 19` and a 36.6 ms sync; the fps counter goes from 13–15 flips/s before (gaps 70–264 ms,
+  "7 flips in 1.817 s, longest gap 1067 ms" at 866.264 s) to 42 after: the title crossed a transition during the hold.
+- *The one 2-s primitive a post can reach.* A post runs `SoftCp::submit` → `execute` over the title's own buffer with
+  the chain's marks (`t_gpu_done`): packets the GPU executed are skipped for their memory side effects, the rest are
+  executed by the host, and a `WAIT_REG_MEM[64]` on memory is **polled with a hard-coded 2,000,000,000 ns deadline**
+  (`SoftCp::wait_reg_mem`), then given up. Of the host's 2-s bounds (the fence, `wait_idle`, the synchronous submit, the
+  ring thread's `BC5_DIRECT_ACB_WAIT_MS`), it is the only one on a post's path; the hold tail's bound is 100 ms and the
+  game thread's DCB waits 8 ms. **22,009.5 ms = 11 × 2,000 ms + 9.5 ms**, the 9.5 ms being what ~460 ordinary posts
+  cost (0.02 ms each, as in the frames before). The alternative reading, 469 posts of ~47 ms each, has no 47-ms
+  bound anywhere in the host and no writer that could satisfy a poll every 47 ms with nothing being submitted.
+- *Why no line came.* The soft CP's timeout is an `LOGF_COLOR` line (`[bc5-cp] WAIT_REG_MEM on 0x… timed out`); the
+  launchers run the emulator with `--printf-direction Silent`, so `Log::IsSilent()` is true and every `LOGF` of the
+  session is dropped before it is formatted (the play log holds only `fprintf(stderr)` lines: `bc5-direct:`,
+  `fps counter`, `audio trace`, and the ten `[bc5] stubbed import` lines). Its counter `g_waits_timed_out` is printed by
+  another `LOGF`, and only when the journal is not `min`. `GIVEN UP` is the journal word for the game thread's CPU-served
+  waits (`cpu-wait`, 8 ms) and the hold tail (100 ms): the game thread spent 0.0 ms in label waits in that frame
+  (`label waits 0.0`, `inside the host 10.1 ms`), and with one ring the hold tail is never entered (`two_rings` needs
+  `compute_ring_env() >= 0`), so neither could have written anything. No journal line exists for a soft-CP poll.
+- *Which wait.* Not decidable from the excerpt (the journal has no line for it, and the box has no other record: the
+  LOGF stream was never written). The replay polls only a wait **without a mark**: a memory wait in a game-thread DCB is
+  either left to the GPU (its label written earlier in the IB; `executed_offsets_of` marks it executed) or served on the
+  CPU and marked `{0}` (`set_gpu_executed(p, len, {0})`, every exit of the wait block), and graphics buffers carry no
+  nested IBs (`piece check … nested 0`). So a polled wait means its mark did not reach the replay: the marks travel
+  through the chain slot (`s.marks`, filled by `ChainInSubmit::~ChainInSubmit` and `chain_submit`, posted and cleared by
+  `chain_post_soft_locked`), and `execute` treats an **empty** mark set as "nothing ran" and executes every packet
+  (`done = !t_gpu_done.empty() && …`); a replay after a failed submission journals `replayed in full`, a replay with
+  lost or empty marks journals nothing. Eleven polls fit one 7,332-dword DCB replayed without marks (its waits on labels
+  the GPU had written are satisfied at once; the ones on labels of work the title submits after the flip are not, and
+  with the game thread in `drain()` that work cannot come: each runs to the deadline). Why the title's sync pattern
+  changed at that moment is its own (the transition); why the marks were missing is the bug to find.
+- *The shadow labels cannot do this.* `executed_offsets_of` runs on `main_out` right after `policy::filter`, before the
+  tracker, the CU tables, the staircase and the shadow pass (`Device::submit`), so the marks index the title's original
+  buffer; the replay runs over that buffer, where the title's label is still written by the original writer (the copy is
+  an extra packet before it) and the wait still names the title's label; the 131 labels without a slot keep their
+  original GPU wait; the `COND_EXEC` growth is in the GPU's copy only. The soft CP never sees a slot. The product
+  staircase could at most refuse a dispatch whose shader writes a label a later packet waits on — such waits are served
+  on the CPU with the 8-ms give-up and journaled; none in the window.
+- *What released it.* The eleventh deadline: with the last poll given up the replays finished, `bc5-cq0` reached the
+  five fence items (long signalled), `drain()` saw the queues empty, the flip went at 886.950 s and the next frame was
+  ordinary. Nothing else changed: no kernel line, no reset, the ring thread idle throughout (the title's queues were not
+  fed because the title waits for the flip).
+- *Exposure.* `drain()` also waits for `bc5-cq1`'s items (the ring thread's posts, with `BC5_DIRECT_RING_ASYNC=1`), so a
+  compute buffer's replay waiting for the next frame's label would hold the flip the same way (run 110's shape); not
+  seen here (index 1 is not profiled; nothing of the ring thread was queued after 864.913 s). Before 0341 the RT-on plays
+  never reached a transition; the RT-off route has no such sync pattern (0 stalls in 0339's and 0341's 600 s).
+
+**Proposal (host, patch 0001; no GPU change; the bvh session can write it).**
+1. *Make it visible* (needed before any fix is judged): `SoftCp::wait_reg_mem` journals, through `Direct::journal`, every
+   poll that lasts over 50 ms and every timeout (label, function, reference, value, the buffer's kind, pointer and
+   offset, and whether `t_gpu_done` was empty), counts `soft-CP waits / timed out` in the frame profile, and
+   `completion_thread` journals any post over 100 ms with the buffer it replayed. One line per event, nothing per frame.
+2. *Bound the replay's wait.* The 2-s deadline is the standalone soft CP's (no GPU; ASTRO BOT, F20). In direct mode a
+   replay runs after the job's fence: a label still unwritten then can only come from work the title has not submitted,
+   and while `drain()` holds the game thread at the flip it never will. Give replays their own bound
+   (`BC5_DIRECT_SOFT_WAIT_MS`, 8 ms like the DCB waits, the deadline kept for the ring thread's own inline pass, source 1),
+   or do not poll at all in a replay whose marks are empty (the replay is then a full host execution of a buffer the GPU
+   already ran). Either turns a 22-s hold into ≤ 88 ms. Also possible, more invasive: `drain()` at the flip waiting for
+   `g_cq_fences == 0` instead of `g_cq_items == 0` (the flip needs the GPU done, not the bookkeeping) — it changes when
+   the frame's EOP events fire relative to the flip, so not first.
+3. *Find the missing marks* with 1's lines (which buffer, empty marks or a lost entry), then fix the bookkeeping.
+Nothing from the box can add to this now: the window's journal lines are all in the excerpt, and the soft CP's lines
+were never written. The next RT-on play with 1 in the build decides it.
