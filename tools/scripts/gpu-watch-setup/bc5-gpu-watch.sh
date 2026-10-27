@@ -12,6 +12,11 @@
 # kernel.panic_on_oops=1 and kernel.panic=10 (watchdog-setup) the box reboots 10 s later, and with efi-pstore on
 # (tools/scripts/pstore-setup) the panic writes the kernel log's tail, so the stall is on record.
 # A recovered hang (exp 0342 R2: "Ring gfx_0.0.0 reset succeeded") never reaches the deadline.
+# A ring reset that FAILS is acted on at once, with a 1-s sync instead of 5. On this APU the full reset that follows
+# (MODE1, about 4 s later) took the box down at 12:52 and 14:25 that day. At 14:25 nothing brought it back: the
+# watcher armed but the box was gone before its deadline, and the hardware watchdog did not reset it. The panic has
+# to come before MODE1 starts. Every ring reset in the box's journals either succeeded (880) or was followed by a
+# dead box (2).
 # usage: bc5-gpu-watch.sh            (the service)
 #        bc5-gpu-watch.sh --test     (reads kernel lines from stdin, prints what it would do, acts on nothing)
 set -u
@@ -19,10 +24,10 @@ GRACE=${BC5_GPU_WATCH_GRACE:-60}
 TEST=0; [ "${1:-}" = --test ] && TEST=1
 say() { if [ "$TEST" = 1 ]; then echo "bc5-gpu-watch: $*"; else echo "<4>bc5-gpu-watch: $*" > /dev/kmsg; fi; }
 deadline=0; armed_by=
-act() {
-  say "no reset end $GRACE s after [$armed_by]: syncing and crashing the kernel for a reboot (SysRq s, c)"
+act() {   # [sync seconds] [reason]
+  say "${2:-no reset end $GRACE s after [$armed_by]}: syncing and crashing the kernel for a reboot (SysRq s, c)"
   [ "$TEST" = 1 ] && { echo "WOULD REBOOT"; exit 0; }
-  echo s > /proc/sysrq-trigger; sleep 5
+  echo s > /proc/sysrq-trigger; sleep "${1:-5}"
   echo c > /proc/sysrq-trigger
   sleep 30; echo b > /proc/sysrq-trigger   # if the crash did not reboot (panic settings undone): reboot outright
 }
@@ -34,6 +39,8 @@ while :; do
       *amdgpu*"GPU reset("*") succeeded"* | *amdgpu*"Ring "*" reset succeeded"*)
         [ "$deadline" != 0 ] && say "disarmed: $line"
         deadline=0; armed_by= ;;
+      *amdgpu*"Ring "*" reset failed"*)
+        act 1 "a ring reset failed [$line]: crashing before the full reset" ;;
       *amdgpu*"GPU reset begin"* | *amdgpu*"ring "*" timeout"*)
         if [ "$deadline" = 0 ]; then deadline=$(( $(date +%s) + GRACE )); armed_by=$line; say "armed: $line"; fi ;;
     esac
