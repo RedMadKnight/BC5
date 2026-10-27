@@ -1,0 +1,6 @@
+### harness_0346 --window 1100000000 over 18:55's dcb #54518 (28,288 dw)
+harness: 0346's backend (host_indirect, per-type bases in the check)
+== <private-dumps>/play-20261027-1854/ib-timeout-00054518-dcb-28288.bin: 28288 dwords
+filter: passed 2263 rewritten 277 dropped 365 unsatisfiable-wait drops 2
+host_indirect: left non-zero 0, left never-set 0, rewritten 0, dropped no-candidate 0 unmapped 0 unreadable 0 insane 0; overflow NOPs 0; rewrite_verified ok; register out 0x0 (zeroed); window seen 0x1100000000
+check: checked 209 (staircase 0) unbased 0 NOP-ed 0 inserted 7315 -> 35603 dwords

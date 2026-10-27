@@ -1,0 +1,36 @@
+### harness_main --window 1100000000 over 19:22's dcb #168772 (9,779 dw) and acb #168773 (1,853 dw); summary lines, the first/last chain dispatch, and the dispatch that read page 0
+harness: main d0c2668's backend
+== <private-dumps>/play-20261027-1919/ib-timeout-00168772-dcb-9779.bin: 9779 dwords
+filter: passed 1455 rewritten 56 dropped 67 unsatisfiable-wait drops 0
+check: checked 0 (staircase 0) unbased 595 NOP-ed 0 inserted 1190 -> 10969 dwords
+== <private-dumps>/play-20261027-1919/ib-timeout-00168773-acb-1853.bin: 1853 dwords
+filter: passed 259 rewritten 23 dropped 15 unsatisfiable-wait drops 1
+check: checked 0 (staircase 0) unbased 0 NOP-ed 0 inserted 0 -> 1853 dwords
+  dispatch at 79: type gfx offset 0x9a920 -> by type 0x9a920, by one register 0x9a920; UNCHECKED
+  dispatch at 975: type gfx offset 0x60 -> by type 0x60, by one register 0x60; UNCHECKED
+  dispatch at 7864: type gfx offset 0xcd5c9380 -> by type 0xcd5c9380, by one register 0xcd5c9380; UNCHECKED
+
+### harness_0346 --window 1100000000 over 19:22's dcb #168772 (9,779 dw) and acb #168773 (1,853 dw); summary lines, the first/last chain dispatch, and the dispatch that read page 0
+harness: 0346's backend (host_indirect, per-type bases in the check)
+== <private-dumps>/play-20261027-1919/ib-timeout-00168772-dcb-9779.bin: 9779 dwords
+filter: passed 1455 rewritten 56 dropped 67 unsatisfiable-wait drops 0
+host_indirect: left non-zero 0, left never-set 595, rewritten 0, dropped no-candidate 0 unmapped 0 unreadable 0 insane 0; overflow NOPs 0; rewrite_verified ok; register out 0x0 (zeroed); window seen 0x1100000000
+check: checked 0 (staircase 0) unbased 595 NOP-ed 0 inserted 1190 -> 10969 dwords
+== <private-dumps>/play-20261027-1919/ib-timeout-00168773-acb-1853.bin: 1853 dwords
+filter: passed 259 rewritten 23 dropped 15 unsatisfiable-wait drops 1
+host_indirect: left non-zero 0, left never-set 0, rewritten 0, dropped no-candidate 0 unmapped 0 unreadable 0 insane 0; overflow NOPs 0; rewrite_verified ok; register out 0x0 (zeroed); window seen 0x0
+check: checked 0 (staircase 0) unbased 0 NOP-ed 0 inserted 0 -> 1853 dwords
+  dispatch at 79: type gfx offset 0x9a920 -> by type 0x9a920, by one register 0x9a920; UNCHECKED
+  dispatch at 975: type gfx offset 0x60 -> by type 0x60, by one register 0x60; UNCHECKED
+  dispatch at 7864: type gfx offset 0xcd5c9380 -> by type 0xcd5c9380, by one register 0xcd5c9380; UNCHECKED
+
+### harness_0346 --zeroed --window 1100000000 over 19:22's dcb #168772 (9,779 dw) and acb #168773 (1,853 dw); summary lines, the first/last chain dispatch, and the dispatch that read page 0
+harness: 0346's backend (host_indirect, per-type bases in the check)
+== <private-dumps>/play-20261027-1919/ib-timeout-00168772-dcb-9779.bin: 9779 dwords
+filter: passed 1455 rewritten 56 dropped 67 unsatisfiable-wait drops 0
+host_indirect: left non-zero 0, left never-set 0, rewritten 595, dropped no-candidate 0 unmapped 0 unreadable 0 insane 0; overflow NOPs 0; rewrite_verified ok; register out 0x0 (zeroed); window seen 0x1100000000
+check: checked 595 (staircase 595) unbased 0 NOP-ed 0 inserted 52360 -> 66899 dwords
+host_indirect: dispatch at 77 (gfx type, program 0x909973b00): REWRITE window 0x1100000000 + offset 0x9a920 -> 0x110009a920 page 0x110009a000
+host_indirect: dispatch at 811 (gfx type, program 0x909973b00): REWRITE window 0x1100000000 + offset 0x60 -> 0x1100000060 page 0x1100000000
+host_indirect: dispatch at 6674 (gfx type, program 0x909973b00): REWRITE window 0x1100000000 + offset 0xcd5c9380 -> 0x11cd5c9380 page 0x11cd5c9000
+
