@@ -36,6 +36,7 @@ say "watching the kernel log for amdgpu resets that do not finish (grace $GRACE 
 while :; do
   if IFS= read -r -t 5 -u 3 line; then
     case "$line" in
+      *bc5-gpu-watch:*) ;;   # its own kmsg lines quote the amdgpu line: matching them fed back (18:55, F420)
       *amdgpu*"GPU reset("*") succeeded"* | *amdgpu*"Ring "*" reset succeeded"*)
         [ "$deadline" != 0 ] && say "disarmed: $line"
         deadline=0; armed_by= ;;

@@ -1,0 +1,30 @@
+18:54:38 emu=535320 memavail=3920M swapused=482M gtt=8841M emu_rss=2176M mount_rss=716M mount_arena2=1 load=1.68 gpu_edge=+60.0°C cpu_tctl=+62.1°C
+18:55:38 emu=535320 memavail=1854M swapused=483M gtt=10786M emu_rss=4494M mount_rss=728M mount_arena2=1 load=6.30 gpu_edge=+54.0°C cpu_tctl=+68.0°C
+Read from remote host 100.88.23.35: Connection reset by peer
+client_loop: send disconnect: Connection reset by peer
+18:58:38 emu=3567 memavail=13300M swapused=0M gtt=68M emu_rss=13M mount_rss=38M mount_arena2=1 load=1.21 gpu_edge=+53.0°C cpu_tctl=+58.0°C
+18:59:38 emu=3567 memavail=1603M swapused=7M gtt=10761M emu_rss=3764M mount_rss=725M mount_arena2=1 load=8.65 gpu_edge=+60.0°C cpu_tctl=+71.0°C
+19:00:38 emu=3567 memavail=789M swapused=7M gtt=11487M emu_rss=5301M mount_rss=736M mount_arena2=1 load=8.92 gpu_edge=+71.0°C cpu_tctl=+76.1°C
+19:01:38 emu=3567 memavail=725M swapused=461M gtt=11898M emu_rss=3978M mount_rss=717M mount_arena2=1 load=8.48 gpu_edge=+72.0°C cpu_tctl=+75.9°C
+19:02:38 emu=45926 memavail=5313M swapused=279M gtt=5873M emu_rss=4263M mount_rss=1474M mount_arena2=0 load=6.52 gpu_edge=+58.0°C cpu_tctl=+65.8°C
+19:03:39 emu=45926 memavail=1314M swapused=306M gtt=9432M emu_rss=8334M mount_rss=1517M mount_arena2=0 load=4.46 gpu_edge=+75.0°C cpu_tctl=+78.5°C
+19:04:39 emu=45926 memavail=1042M swapused=317M gtt=9461M emu_rss=8545M mount_rss=1516M mount_arena2=0 load=3.94 gpu_edge=+77.0°C cpu_tctl=+78.8°C
+19:05:39 emu=45926 memavail=876M swapused=305M gtt=9461M emu_rss=8735M mount_rss=1516M mount_arena2=0 load=6.48 gpu_edge=+79.0°C cpu_tctl=+79.0°C
+19:06:39 emu=45926 memavail=565M swapused=1177M gtt=10223M emu_rss=6259M mount_rss=1316M mount_arena2=0 load=10.25 gpu_edge=+77.0°C cpu_tctl=+77.9°C
+19:07:39 emu=45926 memavail=318M swapused=1199M gtt=10223M emu_rss=6432M mount_rss=1317M mount_arena2=0 load=13.15 gpu_edge=+83.0°C cpu_tctl=+85.5°C
+19:08:39 emu=45926 memavail=305M swapused=1404M gtt=10223M emu_rss=6377M mount_rss=1316M mount_arena2=0 load=14.63 gpu_edge=+83.0°C cpu_tctl=+87.0°C
+19:09:39 emu=45926 memavail=311M swapused=1642M gtt=10223M emu_rss=6445M mount_rss=1215M mount_arena2=0 load=13.69 gpu_edge=+83.0°C cpu_tctl=+86.6°C
+19:10:40 emu=45926 memavail=515M swapused=2110M gtt=10231M emu_rss=6229M mount_rss=1191M mount_arena2=0 load=11.60 gpu_edge=+79.0°C cpu_tctl=+82.6°C
+19:11:40 emu=45926 memavail=329M swapused=2147M gtt=10235M emu_rss=7231M mount_rss=1217M mount_arena2=0 load=10.66 gpu_edge=+79.0°C cpu_tctl=+83.0°C
+19:12:40 emu=45926 memavail=659M swapused=2642M gtt=10235M emu_rss=6621M mount_rss=1213M mount_arena2=0 load=11.26 gpu_edge=+80.0°C cpu_tctl=+84.1°C
+19:13:40 emu=45926 memavail=555M swapused=2763M gtt=10235M emu_rss=6601M mount_rss=1211M mount_arena2=0 load=13.12 gpu_edge=+85.0°C cpu_tctl=+86.4°C
+19:14:40 emu=45926 memavail=538M swapused=2971M gtt=10235M emu_rss=6241M mount_rss=1201M mount_arena2=0 load=12.81 gpu_edge=+84.0°C cpu_tctl=+86.2°C
+19:15:40 emu=45926 memavail=462M swapused=3129M gtt=10235M emu_rss=5489M mount_rss=1179M mount_arena2=0 load=11.95 gpu_edge=+82.0°C cpu_tctl=+86.5°C
+19:16:40 emu=45926 memavail=505M swapused=3427M gtt=10235M emu_rss=5450M mount_rss=1157M mount_arena2=0 load=14.25 gpu_edge=+83.0°C cpu_tctl=+86.1°C
+19:17:40 emu=none memavail=13471M swapused=550M gtt=149M emu_rss=-M mount_rss=-M mount_arena2=- load=11.21 gpu_edge=+61.0°C cpu_tctl=+78.6°C
+19:18:41 emu=none memavail=11952M swapused=535M gtt=227M emu_rss=-M mount_rss=-M mount_arena2=- load=5.37 gpu_edge=+54.0°C cpu_tctl=+59.9°C
+19:19:41 emu=218988 memavail=2197M swapused=532M gtt=9200M emu_rss=2193M mount_rss=708M mount_arena2=1 load=4.61 gpu_edge=+62.0°C cpu_tctl=+62.6°C
+19:20:45 emu=218988 memavail=667M swapused=1438M gtt=11237M emu_rss=3757M mount_rss=710M mount_arena2=1 load=8.93 gpu_edge=+68.0°C cpu_tctl=+73.5°C
+19:21:45 emu=218988 memavail=495M swapused=2286M gtt=12028M emu_rss=1844M mount_rss=648M mount_arena2=1 load=11.00 gpu_edge=+73.0°C cpu_tctl=+77.6°C
+Read from remote host 100.88.23.35: Connection reset by peer
+client_loop: send disconnect: Connection reset by peer
