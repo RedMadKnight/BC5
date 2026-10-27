@@ -84,7 +84,7 @@ static void soft_wait_done(const uint32_t* p, bool is64, uint64_t a, uint32_t fu
 	const long long where = in ? static_cast<long long>(p - t_cur_buf) : -1;
 	Direct::journal("soft-cp wait: t %.3f s WAIT_REG_MEM%s on 0x%" PRIx64 " %s after %.1f ms (bound %" PRIu64 " ms): fn %u ref 0x%" PRIx64 " value 0x%" PRIx64 "; %s %u dwords at %p, packet at %p (offset %lld); marks %s\n",
 	                Direct::timing_now(), is64 ? "64" : "", a, timed_out ? "TIMED OUT" : "satisfied", static_cast<double>(held) / 1e6,
-	                (t_wait_bound_ns != 0 ? t_wait_bound_ns : 2'000'000'000ull) / 1'000'000ull, function, ref, value, t_cur_kind, t_cur_n,
+	                static_cast<uint64_t>((t_wait_bound_ns != 0 ? t_wait_bound_ns : 2'000'000'000ull) / 1'000'000ull), function, ref, value, t_cur_kind, t_cur_n,
 	                static_cast<const void*>(t_cur_buf), static_cast<const void*>(p), where, t_gpu_done.empty() ? "empty" : "set");
 }
 

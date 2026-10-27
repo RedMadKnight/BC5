@@ -64,3 +64,40 @@ decides the bound.
 **Result.** Pending.
 
 **Verdict.** Pending.
+
+**The anchors against main's patch 0001 (2026-10-27 17:25, before the box build).** The `src/libs/bc5LleAgc.cpp` that
+main d0c2668's patch 0001 (md5 12716e3b) creates — the `+` lines of its one hunk, 9,477 lines — has md5 cfeec2f8, the
+same as the box's shared tree `~/src/KytyPlus/src/libs/bc5LleAgc.cpp` (D19); `patch0343.pl` applied to a private copy
+of it: 12 edits on 12 unique anchors, 9 marks, 81 diff lines, no adjustment needed. The box side: `build0343.sh`
+(exp 0329's pattern: the unit copied into `~/bc5-work/exp0343/src`, patched there, compiled with the shared normal
+build's compdb command by `build0343.py`, the shared link command run with that object and exp 0346's private archive
+ad7c2cb0 — the third version + the lazy table, a98c8b2 — in place of the shared ones; nothing shared written) and
+`mk-s6n0343.pl` (exp 0346's `s6n0346.sh` with the experiment directory, both switches
+`BC5_DIRECT_HOST_INDIRECT=learn:1100000000 BC5_DIRECT_SOFT_WAIT_MS=8`, and a result block counting the journal's
+`soft-cp wait` / `slow post` lines and the frame profiles' `waits polled` counters).
+
+**Result — R1 on the box (2026-10-27 17:26–17:38, the supervisor's GO, the maintainer away).** Build ecbb95ce: the
+shared objects ddfb9456 with `bc5LleAgc.cpp.o` compiled from the patched private copy (e7cc2f60; 0 errors, 5 clang
+warnings: 4 pre-existing in the shared unit at lines 79, 397, 2405 and the deprecated `wstring_convert`, 1 in the
+soft-cp wait line — `unsigned long long` against `PRIu64`, the same size on x86_64; `patch0343.pl` casts it since
+1df1e99, the tested binary keeps it) + exp 0346's private archive ad7c2cb0. The S6N route, RT off, 600 s, one ring,
+both 0341 guards, `BC5_DIRECT_HOST_INDIRECT=learn:1100000000 BC5_DIRECT_SOFT_WAIT_MS=8` (both in the emulator's
+environ), the live saves compared only, the kernel log streamed (`raw/R1-kernel-stream.txt`: no amdgpu line).
+
+| run | result | flips | soft-cp wait lines | slow post lines | waits polled (21,816 frame profiles) | 0346 |
+|---|---|---|---|---|---|---|
+| R1 | **pass** (600 s; 0 crash, kernel, TIMEOUT, devcoredump lines; 5,440 RT-off drop lines) | 21,817 / 601.4 s = 36.3/s | 0 (0 timed out) | 0 | 0 polls, 0.0 ms, 0 timed out | 1,209,885 dispatches, all left, 0 rewritten / 0 dropped |
+
+Every soft-CP poll on this route was satisfied at the first look, so neither the lines nor the bound were exercised;
+the frame profile carries the new `waits polled` field (`prepare 1.39 / filter 0.51 ms` per frame, as cc0d24ce).
+The pass says the change costs nothing and breaks nothing with RT off; the questions need a hold of F415's class,
+which came only in long RT-on play.
+
+**The maintainer's shortcut.** "BC5 emulator (test 0343+0346)" on the box's desktop (`shortcut0343.sh`, derived from
+exp 0346's with `mktest0343.pl`): `kyty_emulator` ecbb95ce through `~/bc5-work/exp0343/play-pkg-0343t.sh` (md5
+fe109f09: the integrated launcher 5b469087 with both switches after the settings loop and a log per start in
+`~/bc5-work/exp0343/play/`; RT on from the shared `input.cfg` 30dd586e). "BC5 emulator (test 0346)" stays as it is.
+After a play: the journal's `soft-cp wait:` lines (label, function, reference, value, buffer, offset, marks) and
+`slow post:` lines, the `waits polled` field of the frame profiles, and the `experiment 0346 rewrite|drop` lines of the
+play log; a hold of F415's class should now last milliseconds and name its wait. No RT-on bench run was made for 0343
+(the supervisor: the 22-s hold came only in long play). Nothing shared changed.
