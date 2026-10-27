@@ -1,0 +1,16 @@
+Catch2 from /home/kjaniszewski/bc5-work/exp0323/backend-tests/_deps/catch2-src
+== 09:06:08 backend configure + build
+== 09:06:14 backend build rc 0; errors 0, warnings 0
+private archive 44ba4435 (shared 825ae1d1)
+== 09:06:14 backend tests
+Randomness seeded to: 990347952
+===============================================================================
+All tests passed (32340 assertions in 60 test cases)
+
+== tests rc 0
+== 09:06:14 compdb + relink
+previous binary kept as /home/kjaniszewski/bc5-work/exp0341/kyty_emulator.a1976905
+== 09:06:17 relink rc 0
+md5 b052d860 (shared 9382b1e9)
+strings: switches line 1, histogram 2, bo lines 2
+shared binary after: 9382b1e9 (want 9382b1e9); shared archive after: 825ae1d1 (want 825ae1d1)

@@ -1,0 +1,23 @@
+bc5-direct: experiment 0341 switches: product staircase 1 (x > 65536 with y or z > 1), args histogram 1, shadow labels 1, bo journal 1
+bc5-direct: experiment 0341 switches: product staircase 1 (x > 65536 with y or z > 1), args histogram 1, shadow labels 1, bo journal 1
+bo lines: 44641 (userptr map 0, unmap 0, shared map 32286, scratch 229)
+bc5-direct: bo alias map va 0xffff8011ce000000 size 0x200000
+bc5-direct: bo alias map va 0xffff8011ce200000 size 0x200000
+bc5-direct: bo alias map va 0xffff8011ce400000 size 0x200000
+bc5-direct: bo alias map va 0xffff8011ce600000 size 0x200000
+bc5-direct: bo alias map va 0xffff8011ce800000 size 0x200000
+bc5-direct: bo alias map va 0xffff8011cea00000 size 0x200000
+bc5-direct: bo alias map va 0xffff8011cec00000 size 0x200000
+bc5-direct: bo alias map va 0xffff8011cee00000 size 0x200000
+bc5-direct: bo alias map va 0xffff8011cf000000 size 0x200000
+bc5-direct: bo alias map va 0xffff8011cf200000 size 0x200000
+bc5-direct: bo alias map va 0xffff8011cf400000 size 0x200000
+bc5-direct: bo alias map va 0xffff8011cf600000 size 0x200000
+bc5-direct: bo alias map va 0xffff8011cf800000 size 0x200000
+bc5-direct: bo alias map va 0xffff8011cfa00000 size 0x200000
+bc5-direct: bo alias map va 0xffff8011cfc00000 size 0x200000
+bc5-direct: bo alias map va 0xffff8011cfe00000 size 0x200000
+bc5-direct: bo alias map va 0xffff8011d0000000 size 0x4000000
+bc5-direct: bo alias map va 0xffff800906000000 size 0x6000000
+bc5-direct: bo scratch slot va 0x100000000000 size 0x1000
+bc5-direct: bo scratch slot va 0x100100000000 size 0x4000

@@ -1,0 +1,10 @@
+bc5-direct: experiment 0341 switches: product staircase 1 (x > 65536 with y or z > 1), args histogram 1, shadow labels 1, bo journal 1
+bc5-direct: experiment 0341 periodic: shadow labels in 2000 jobs: 9960 labels, 19920 writes copied, 9960 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 12550 dispatches
+bc5-direct: experiment 0341 periodic: shadow labels in 4000 jobs: 21114 labels, 42228 writes copied, 21114 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 18892 dispatches
+bc5-direct: experiment 0341 periodic: shadow labels in 6000 jobs: 34145 labels, 68290 writes copied, 34145 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 28522 dispatches
+bc5-direct: experiment 0341 periodic: shadow labels in 8000 jobs: 47538 labels, 95076 writes copied, 47538 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 45208 dispatches
+bc5-direct: experiment 0341 periodic: shadow labels in 10000 jobs: 61068 labels, 122136 writes copied, 61068 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 62017 dispatches
+bc5-direct: experiment 0341 periodic: shadow labels in 12000 jobs: 74481 labels, 148962 writes copied, 74481 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 78723 dispatches
+bc5-direct: experiment 0341 periodic: shadow labels in 14000 jobs: 88392 labels, 176784 writes copied, 88392 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 89034 dispatches
+bc5-direct: experiment 0341 periodic: shadow labels in 16000 jobs: 102854 labels, 205708 writes copied, 102854 waits redirected, 16 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 99570 dispatches
+bc5-direct: experiment 0341 periodic: shadow labels in 18000 jobs: 127606 labels, 255212 writes copied, 127606 waits redirected, 16 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 124272 dispatches
