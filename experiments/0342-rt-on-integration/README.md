@@ -39,4 +39,29 @@ through a copy of the integrated launcher:
 Pass means 600 s with no crash, kernel or TIMEOUT line, and flips against R2 of exp 0341 (36.6/s). The
 maintainer's own play on the shortcuts follows.
 
-**Result.** (pending)
+**Result (2026-10-27).**
+- *Integration* (`raw/int0342.out`, 12:25–12:26, exit 0). The archive was rebuilt as 44ba4435 (0 warnings, `shadow_labels.cpp.o` in). Both builds recompiled two objects, `settingsOverlay.cpp` and `bc5LleAgc.cpp` (the latter includes the backend headers), and relinked.
+  - New shared builds: normal **ddfb9456** (was 9382b1e9), lean **03337c24** (was 1860613a). Both carry the 0341 switch line.
+  - Build warnings: normal 4, lean 7, all old ones in `bc5LleAgc.cpp`/`stringUtils.h`.
+  - `play-pkg.sh` is now 5b469087, with one line changed and one added (`raw/integration-play-pkg-0342.diff`). `input.cfg` is now 30dd586e: `RayTracing.PPSA03671=on` and `SystemLanguage=Polish` (`raw/integration-input-cfg-0342.diff`).
+  - Patch 0001: the tree's diff before the change was md5 3b7e88b8, equal to main's file, so main matched the old builds. The new diff is 12716e3b, 58,669 lines; it differs from main's only in the overlay hunk and is now on main.
+  - The undo is in `raw/int0342.out`.
+- *R1, RT off, 600 s:* **pass**. 36.4 flips/s (exp 0341 R2: 36.6); 0 crash, kernel or TIMEOUT lines; `drm-engine-gfx` only; 5,423 RT-off drop lines; live saves dc9d4f25fc2d41ca unchanged.
+- *R2, RT on, 600 s:* **HANG at ~106 s, the box recovered.**
+  - Kernel at 12:39:19: `ring gfx_0.0.0 timeout` (thread `bc5-ring`), `Ring gfx_0.0.0 reset succeeded`, `device wedged, but no recovery needed`. One devcoredump.
+  - The host timed out acb #76004 (2,380 dwords) and dcb #76005 (17,748) after 2.0 s; the timeout probe dumped both on the box. The title stopped presenting (2,453 flips in 124 s). Live saves unchanged.
+  - The dump (`raw/R2-devcd1-registers.txt`) is **F403's state, register for register**: GRBM_STATUS 0xa0407028, SE0/SE1 busy (0x0a000016), PFP 0xea1 / ME 0x77b, no fault.
+  - The PFP history is the host's GFX-form `DISPATCH_INDIRECT` with its CP check (`ACQUIRE_MEM`, `EVENT_WRITE`, `DISPATCH_INDIRECT`, `COND_EXEC`, `PFP_SYNC_ME`, `WRITE_DATA`), and the ME's has the `COND_WRITE`s.
+  - The IB was 6,584 dwords, 57 % fetched: the compute buffer with its inserted checks (2,380 + ~47 checked dispatches), run on the GFX ring.
+  - So the compute dispatch that does not end is still there with one ring and both guards on the S6N route. The route's RT-on point at ~110 s is F332's (two rings, 11/11 at 111–118 s).
+- *The staircase does not catch F403's triple* (code read, `backend/src/indirect_check.cpp:139–161`). It refuses only when (y > 1 or z > 1) **and** x > 2^16. In 818 × 820 × 819, x is 818, so it passes. F414's sentence "catching F403's runaway grids such as 818×820×819" is wrong as built.
+- *The runaway may not be a big grid at all.* F404 read the largest grid in memory at a timeout as 28,644 groups, so the likelier shape is a dispatch of ordinary size whose shader does not end. That is the BVH traversal's loop on a bad BVH, the open line of F207/F332, and no grid limit stops it.
+
+**Verdict.** The integration is in: one ring and the guards cost RT-off play nothing (R1), and the overlay fix is built. RT on is **not solved**:
+- the maintainer's 46-minute play did not hang (F415);
+- the bench route hangs at ~106 s in F403's state, and this time the ring reset recovered the box.
+
+`input.cfg` holds RT on as the maintainer asked; whether to keep it until the F403 class is fixed is his call. Next:
+- read acb #76004's dump on the box: which dispatch sits at the 57 % mark, its program, and its arguments at the timeout;
+- tell a huge grid from a looping shader;
+- correct F414.

@@ -109,6 +109,11 @@ struct FilterOptions {
     bool gpu_check_indirect = false;
     std::uint32_t gpu_check_max[3] = {1u << 20, 1u << 10, 1u << 10};
     std::uint32_t gpu_check_draw_max[2] = {1u << 22, 1024}; // experiment 0054: indirect draws
+    // Experiment 0341: the product staircase (bc5/indirect_check.hpp ProductLimit), the argument
+    // histogram and the shadow labels (bc5/shadow_labels.hpp) are switched on by the environment
+    // in Device::open (BC5_DIRECT_GPU_CHECK_PRODUCT, BC5_DIRECT_ARGS_HISTOGRAM,
+    // BC5_DIRECT_SHADOW_LABELS), not by fields here: this struct's layout is the host's ABI, and
+    // the experiment's emulator keeps the host's objects as they were compiled.
     bool drop_draws = false;             // staging (ADR 0005 §5c): NOP every draw and dispatch
     // CONTEXT_CONTROL as RADV/radeonsi emit it (0x80000000 0x80000000: update the enables, load
     // and shadow nothing). The console's 0x91018003/0x80018003 asks the CP to load and shadow

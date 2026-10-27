@@ -5785,10 +5785,10 @@ index 0000000..5a3fd52
 +#endif // KYTY_GRAPHICS_PRESENTATION_HOST_MENU_H_
 diff --git a/src/graphics/presentation/settingsOverlay.cpp b/src/graphics/presentation/settingsOverlay.cpp
 new file mode 100644
-index 0000000..0e709b6
+index 0000000..cee3db4
 --- /dev/null
 +++ b/src/graphics/presentation/settingsOverlay.cpp
-@@ -0,0 +1,1006 @@
+@@ -0,0 +1,1010 @@
 +#include "graphics/presentation/settingsOverlay.h"
 +
 +#include "SDL.h"
@@ -6343,13 +6343,17 @@ index 0000000..0e709b6
 +					break;
 +				}
 +				case InputKind::PadAxis: {
++					// Experiment 0342: the analog value goes through the dead zone too, 0 inside it and rescaled to 0..1
++					// beyond it (as imgui_impl_sdl2 maps an axis). ImGui scrolls the focused window by the left stick's
++					// analog value every frame, so the raw value of a resting stick's drift scrolled lists by itself.
 +					const float value = event.x / (event.x < 0.0f ? 32768.0f : 32767.0f);
++					const auto  past  = [](float v) { return v > 0.25f ? (v - 0.25f) / 0.75f : 0.0f; };
 +					if (event.id == SDL_CONTROLLER_AXIS_LEFTX) {
-+						io.AddKeyAnalogEvent(ImGuiKey_GamepadLStickLeft, value < -0.25f, std::max(-value, 0.0f));
-+						io.AddKeyAnalogEvent(ImGuiKey_GamepadLStickRight, value > 0.25f, std::max(value, 0.0f));
++						io.AddKeyAnalogEvent(ImGuiKey_GamepadLStickLeft, value < -0.25f, past(-value));
++						io.AddKeyAnalogEvent(ImGuiKey_GamepadLStickRight, value > 0.25f, past(value));
 +					} else if (event.id == SDL_CONTROLLER_AXIS_LEFTY) {
-+						io.AddKeyAnalogEvent(ImGuiKey_GamepadLStickUp, value < -0.25f, std::max(-value, 0.0f));
-+						io.AddKeyAnalogEvent(ImGuiKey_GamepadLStickDown, value > 0.25f, std::max(value, 0.0f));
++						io.AddKeyAnalogEvent(ImGuiKey_GamepadLStickUp, value < -0.25f, past(-value));
++						io.AddKeyAnalogEvent(ImGuiKey_GamepadLStickDown, value > 0.25f, past(value));
 +					}
 +					break;
 +				}

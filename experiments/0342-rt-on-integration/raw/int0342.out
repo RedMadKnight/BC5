@@ -1,0 +1,26 @@
+2026-10-27 12:25:36 before: normal 9382b1e9, lean 1860613a, archive 825ae1d1, /home/kjaniszewski/src/bc5 cc6a3bc, tree f266548 with 96 changed entries, its diff (patch 0001 as built) md5 3b7e88b8, src/graphics/presentation/settingsOverlay.cpp 454106a4, play-pkg.sh b10eac6d, input.cfg e6e1d9a7
+  backend/CMakeLists.txt 1a252599 -> e7d80fff
+  backend/include/bc5/indirect_check.hpp f3df1c74 -> 8a359bf6
+  backend/include/bc5/policy.hpp 2b079faf -> 2084cd6c
+  backend/include/bc5/shadow_labels.hpp new -> a8bf0059
+  backend/src/direct.cpp fec1f93f -> c802cc89
+  backend/src/indirect_check.cpp 0e3f1fce -> 282ee35e
+  backend/src/shadow_labels.cpp new -> 2cfbea8b
+  backend/tests/indirect_check_test.cpp 844aafc6 -> d3d63d86
+  backend/tests/shadow_labels_test.cpp new -> 06cf2eb2
+== 12:25:37 1. backend files into /home/kjaniszewski/src/bc5/backend
+== 12:25:37 2. the overlay's dead zone
+patched /home/kjaniszewski/src/KytyPlus/src/graphics/presentation/settingsOverlay.cpp: the left stick's analog value through the dead zone (366 bytes more)
+== 12:25:37 3a. the shared archive
+archive 44ba4435; 0 warnings; shadow_labels object: 1
+== 12:25:43 3b. normal build
+== 12:26:08 3c. lean build
+strings: normal 0341 switch lines 1, lean 1
+warnings: normal 4, lean 7; recompiled: normal 2, lean 2
+== 12:26:32 4. play-pkg.sh: one ring + the guards
+== 12:26:32 5. input.cfg: RT on + Polish
+== 12:26:32 6. the candidate patch 0001
+candidate patch 0001: 58669 lines, md5 12716e3b (before 3b7e88b8)
+2026-10-27 12:26:32 after: normal ddfb9456, lean 03337c24, archive 44ba4435, src/graphics/presentation/settingsOverlay.cpp af593492, play-pkg.sh 5b469087, input.cfg 30dd586e
+== 12:26:32 done; undo: cp -p /home/kjaniszewski/bc5-work/exp0342/integration/kyty_emulator.before-0342 /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator; cp -p /home/kjaniszewski/bc5-work/exp0342/integration/kyty_emulator-lean.before-0342 /home/kjaniszewski/bc5-work/kytyplus-build-lean/src/kyty_emulator; cp -p /home/kjaniszewski/bc5-work/exp0342/integration/libbc5_backend.a.before-0342 /home/kjaniszewski/bc5-work/backend-ubuntu/libbc5_backend.a; git -C /home/kjaniszewski/src/bc5 checkout -- backend; rm -f /home/kjaniszewski/src/bc5/backend/include/bc5/shadow_labels.hpp /home/kjaniszewski/src/bc5/backend/src/shadow_labels.cpp /home/kjaniszewski/src/bc5/backend/tests/shadow_labels_test.cpp; cp -p /home/kjaniszewski/bc5-work/exp0342/integration/tree-before/src/graphics/presentation/settingsOverlay.cpp /home/kjaniszewski/src/KytyPlus/src/graphics/presentation/settingsOverlay.cpp; cp -p /home/kjaniszewski/bc5-work/exp0342/integration/play-pkg.sh.before-0342 /home/kjaniszewski/bc5-work/play-pkg.sh; cp -p /home/kjaniszewski/bc5-work/exp0342/integration/input.cfg.before-0342 /home/kjaniszewski/bc5-work/input.cfg; then ninja bc5_backend, and kyty_emulator in both builds (or keep the restored binaries)
+int0342 exit 0

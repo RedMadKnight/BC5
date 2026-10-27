@@ -1,0 +1,4 @@
+bc5-direct: experiment 0341 switches: product staircase 1 (x > 65536 with y or z > 1), args histogram 0, shadow labels 1, bo journal 0
+bc5-direct: experiment 0341 periodic: shadow labels in 106000 jobs: 1452828 labels, 2905656 writes copied, 1452828 waits redirected, 10 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 1197718 dispatches
+bc5-direct: experiment 0341 switches: product staircase 1 (x > 65536 with y or z > 1), args histogram 0, shadow labels 1, bo journal 0
+bo lines: 0 (userptr map 0, unmap 0, shared map 0, scratch 0)
