@@ -1,0 +1,48 @@
+dump /home/kjaniszewski/bc5-data/captures/play-20261027-1237/gc/ib-timeout-00076004-acb-2605.bin: 2605 dwords (10420 bytes)
+packets 538 (type-3 538); opcodes: 10:2 11:45 15:40 16:45 37:4 42:45 46:47 49:17 50:8 58:49 76:231 79:4 93:1
+dispatches 85: direct 40, indirect compute-form 0, indirect gfx-form 45; INDIRECT_BUFFER packets 0; COND_EXEC 0
+shadow labels: 20 writers, 1 memory waits, 0 labels get a slot, 0 writer copies (0 dwords)
+inserts: 1 DMA syncs (7), 45 checks (88 per dispatch, 35 per draw), 0 compute-form dispatches dropped; DMA idle 7 at the end
+job IB computed: 2605 + 3967 inserted + 7 = 6579 dwords, padded 6584; the CS saw 6584 (EQUAL)
+fetch point: CS size 6584, CP_IB1_BUFSZ 2840 -> 3744 fetched (56.9 %) if BUFSZ is what is left, 2840 if BUFSZ is what was fetched
+left reading: job dword 3744 -> dump packet at 1427 (len 3, op 16), inside the inserts before it; the last dispatch at or before it is #49 of 85
+fetched reading: job dword 2840 -> dump packet at 881 (len 3, op 16), inside the inserts before it; the last dispatch at or before it is #38 of 85
+dispatches around the point (index: dump offset -> job offset, form, program, arguments):
+  #35: 833 -> 2600, gfx, program 0x909939900, offset 0x680 from the base
+  #36: 849 -> 2704, gfx, program 0x909939900, offset 0x80 from the base
+  #37: 865 -> 2808, gfx, program 0x909939900, offset 0xb80 from the base
+  #38: 881 -> 2912, gfx, program 0x909939900, offset 0x680 from the base <- fetched reading
+  #39: 897 -> 3016, gfx, program 0x909939900, offset 0x180 from the base
+  #40: 913 -> 3120, gfx, program 0x909939900, offset 0xc80 from the base
+  #41: 929 -> 3224, gfx, program 0x909939900, offset 0x780 from the base
+  #46: 1293 -> 3588, direct, program 0x90996a000, direct
+  #47: 1340 -> 3635, direct, program 0x90986e700, direct
+  #48: 1367 -> 3662, direct, program 0x90986df00, direct
+  #49: 1427 -> 3810, gfx, program 0x909873200, offset 0x520 from the base <- left reading
+  #50: 1472 -> 3855, direct, program 0x909971300, direct
+  #51: 1493 -> 3876, direct, program 0x909971300, direct
+  #52: 1513 -> 3896, direct, program 0x909971300, direct
+programs of the buffer (dispatches each):
+  0x909936c00: 18
+  0x909971300: 15
+  0x90992af00: 11
+  0x909939900: 8
+  0x909939700: 8
+  0x909939400: 8
+  0x9098eb200: 1
+  0x909969d00: 1
+  0x90985c800: 1
+  0x90985f200: 1
+  0x90986df00: 1
+  0x9098ea000: 1
+  0x90996a000: 1
+  0x909969100: 1
+  0x909968e00: 1
+  0x90986e700: 1
+  0x909859a00: 1
+  0x909875600: 1
+  0x90986ea00: 1
+  0x909927c00: 1
+  0x90986db00: 1
+  0x90996cc00: 1
+  0x909873200: 1

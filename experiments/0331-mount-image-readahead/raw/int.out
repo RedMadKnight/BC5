@@ -1,0 +1,4 @@
+# int0331.sh as the maintainer ran it in a terminal on the box, 2026-10-26 (his paste; the cloud session's permission classifier refused the shared-binary change)
+[kjaniszewski@bazzite ~]$ bash ~/bc5-work/exp0331/int0331.sh
+shared bc5-mount: 47739557 -> 43277724; inspect of the package: 11 lines
+undo: cp -p /home/kjaniszewski/bc5-work/exp0331/integration/bc5-mount.47739557 /home/kjaniszewski/bc5-work/bc5-tools-ubuntu/release/bc5-mount.undo && mv -f /home/kjaniszewski/bc5-work/bc5-tools-ubuntu/release/bc5-mount.undo /home/kjaniszewski/bc5-work/bc5-tools-ubuntu/release/bc5-mount

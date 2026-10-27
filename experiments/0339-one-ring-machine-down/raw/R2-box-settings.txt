@@ -1,0 +1,4 @@
+swappiness 60 vfs_cache_pressure 100 watermark_scale_factor 10 min_free_kbytes 67584 page-cluster 3
+zram0 disksize 7964983296 comp lzo-rle lzo lz4 lz4hc [zstd] deflate 842 ; MemTotal 15192 MiB; GTT total 13312 MiB
+kernel 7.2.9-ogc3.1.fc44.x86_64; launcher /home/kjaniszewski/bc5-work/play-pkg.sh md5 b10eac6d; shared normal 9382b1e9, lean 1860613a; private normal /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator md5 9382b1e9; shared bc5-mount 43277724
+learned file /home/kjaniszewski/bc5-work/direct-learned-pkg.txt md5 07fa5425, 108 windows

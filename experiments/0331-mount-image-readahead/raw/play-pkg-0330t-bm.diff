@@ -1,0 +1,11 @@
+--- /home/kjaniszewski/bc5-work/exp0331/play-pkg-0330t.sh.before-0331	2026-10-26 10:24:24.126869359 +0100
++++ /home/kjaniszewski/bc5-work/exp0330/play-pkg-0330t.sh	2026-10-26 12:13:50.712418814 +0100
+@@ -22,7 +22,7 @@
+ MLOG=~/bc5-work/play-pkg-mount.log
+ if [ "${BC5_LEAN:-0}" = 1 ] && [ "${BC5_LOGS:-0}" != 1 ]; then LOG=/dev/null MLOG=/dev/null; fi
+ [ -n "${BC5_EMU:-}" ] && EMU=$BC5_EMU  # exp 0177: another binary (A/B against an older build)
+-BM=~/bc5-work/bc5-tools-ubuntu/release/bc5-mount
++BM=~/bc5-work/exp0331/bc5-mount  # exp 0331: the private bc5-mount, readahead off for the image and its disk cache
+ 
+ say() { echo "$*"; command -v notify-send >/dev/null 2>&1 && notify-send "BC5" "$*" 2>/dev/null; }
+ 

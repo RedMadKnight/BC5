@@ -54,7 +54,7 @@ std::size_t packet_len(std::uint32_t h) {
 std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib_in, std::uint64_t base_in,
                                  const std::uint32_t (&max)[3], const std::uint32_t (&draw_max)[2],
                                  std::vector<std::size_t> &flag_refs, Stats &stats,
-                                 bool compute_ring) {
+                                 bool compute_ring, const ProductLimit *product) {
     // ADR 0010 section A: a COND_EXEC range whose grown count no longer fits has its own checked
     // packets NOP-ed (nothing of that range runs unchecked) and the pass runs again over the
     // rest; it used to give up on the whole IB, which in a chain is several buffers.
@@ -79,7 +79,7 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib_in, std::uint
     if (dispatches == 0)
         return {ib.begin(), ib.end()};
     std::vector<std::uint32_t> out;
-    out.reserve(ib.size() + dispatches * (kCheckDwords + 2));
+    out.reserve(ib.size() + dispatches * (kCheckDwords + (product != nullptr ? kProductDwords : 0) + 2));
     // The IB's own COND_EXECs skip a count of dwords: a check inserted inside one's range grows it.
     // new_at[i]: where the packet at offset i starts in out, its inserted check included.
     std::vector<std::size_t> new_at;
@@ -112,14 +112,21 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib_in, std::uint
                     compute_ring ? (static_cast<std::uint64_t>(ib[i + 1]) & ~3ull) |
                                        (static_cast<std::uint64_t>(ib[i + 2] & 0xffffu) << 32)
                                  : base + ib[i + 1];
-                const auto flag = [&out, &flag_refs] {
+                const auto flag_at = [&out, &flag_refs](std::uint32_t off) {
                     flag_refs.push_back(out.size());
-                    out.push_back(0); // lo, filled in by patch()
-                    out.push_back(0); // hi
+                    out.push_back(off); // lo: the offset of the word, patch() adds the flag's address
+                    out.push_back(0);   // hi
                 };
+                const auto flag = [&flag_at] { flag_at(0); };
+                const bool stair = product != nullptr && dims == 3 && !compute_ring;
                 out.insert(out.end(), {kWriteData, kWriteDataMem});
                 flag();
                 out.push_back(1);
+                if (stair) { // experiment 0341: flag2 = 0
+                    out.insert(out.end(), {kWriteData, kWriteDataMem});
+                    flag_at(8);
+                    out.push_back(0);
+                }
                 for (std::uint32_t k = 0; k < dims; ++k) {
                     const std::uint64_t a = args + 4 * k;
                     out.insert(out.end(), {kCondWrite, kGreater | kPollMem | kWriteMem,
@@ -129,10 +136,33 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib_in, std::uint
                     flag();
                     out.push_back(0);
                 }
+                if (stair) { // experiment 0341: the staircase
+                    for (std::uint32_t k = 1; k < 3; ++k) { // y, z > yz_min ? flag2 = 1
+                        const std::uint64_t a = args + 4 * k;
+                        out.insert(out.end(), {kCondWrite, kGreater | kPollMem | kWriteMem,
+                                               static_cast<std::uint32_t>(a) & ~3u,
+                                               static_cast<std::uint32_t>(a >> 32) & 0xffffu,
+                                               product->yz_min, 0xffffffffu});
+                        flag_at(8);
+                        out.push_back(1);
+                    }
+                    out.insert(out.end(), {kWriteData, kWriteDataMem | kWrConfirm});
+                    flag_at(12); // confirm2: the flag's address + 12
+                    out.push_back(0);
+                    out.insert(out.end(), {kPfpSyncMe, 0u});
+                    out.push_back(kCondExec); // flag2 != 0: the x check below runs
+                    flag_at(8);
+                    out.insert(out.end(), {0u, 9u});
+                    out.insert(out.end(), {kCondWrite, kGreater | kPollMem | kWriteMem, // x > x_limit ? flag = 0
+                                           static_cast<std::uint32_t>(args) & ~3u,
+                                           static_cast<std::uint32_t>(args >> 32) & 0xffffu,
+                                           product->x_limit, 0xffffffffu});
+                    flag();
+                    out.push_back(0);
+                    stats.product_checked++;
+                }
                 out.insert(out.end(), {kWriteData, kWriteDataMem | kWrConfirm});
-                flag_refs.push_back(out.size());
-                out.push_back(4); // the confirm word: the flag's address + 4 (patch() adds it)
-                out.push_back(0);
+                flag_at(4); // the confirm word: the flag's address + 4
                 out.push_back(0);
                 if (!compute_ring)
                     out.insert(out.end(), {kPfpSyncMe, 0u});
@@ -238,6 +268,10 @@ bool insert_before(std::vector<std::uint32_t> &ib, const std::vector<Insert> &in
         i += len;
     }
     new_at[ib.size()] = out.size();
+    while (next < inserts.size()) { // experiment 0341: inserts at the IB's end, after every range
+        out.insert(out.end(), inserts[next].words.begin(), inserts[next].words.end());
+        next++;
+    }
     for (const Cond &c : conds) {
         std::size_t e = c.old_end < ib.size() ? c.old_end : ib.size();
         while (new_at[e] == ~std::size_t{0})

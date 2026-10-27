@@ -1,0 +1,13 @@
+# /proc/vmstat and PSI on the box: the last sample of exp 0330's arm C (08:06:2x, uptime 28965.97) against a read at
+# 10:12 (uptime 36585.51). Between them the box ran only the maintainer's session on the test shortcut (09:58:00-10:09:36)
+# and a few setup scripts (no emulator), so the deltas are his session's to within the idle hours' noise.
+# counter          08:06 (C end)   10:12        delta
+pswpin             834216          947251       113035
+pswpout            2683570         2852201      168631
+pgmajfault         925591          1052508      126917
+pgsteal_file       50478712        94986509     44507797
+pgsteal_anon       2822253         3033513      211260
+refault_file       7660319         13136750     5476431
+refault_anon       870126          992185       122059
+psi_full_us        26363849        52280194     25916345   (25.9 s of "full" memory stall)
+swapfree_mib       7038            7032

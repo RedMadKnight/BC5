@@ -1,0 +1,6 @@
+126472:submit #48055 dcb 30221 dwords at 0x7f4580104cf0: pass 2883 rewrite 309 drop 365 unmapped 0 cc 0 mappings 16015 ... FAILED rc 0 TIMEOUT 2022.26 ms
+126474:submit #48056 acb 4 dwords at 0x7f45d0135580: pass 0 rewrite 0 drop 1 unmapped 0 cc 0 mappings 16015 ... FAILED rc 0 TIMEOUT 2021.63 ms
+126476:timeout probe: acb 4 dwords dumped to /home/kjaniszewski/bc5-data/captures/play-20261027-1251/gc/ib-timeout-00048056-acb-4.bin
+126478:timeout probe: acb #48056 4 dwords: 0 waits (0 kept for the GPU), 0 label writes, 0 dispatches (0 indirect; the largest grid 0 groups, at 0)
+126479:timeout probe: dcb 30221 dwords dumped to /home/kjaniszewski/bc5-data/captures/play-20261027-1251/gc/ib-timeout-00048055-dcb-30221.bin
+129365:timeout probe: dcb #48055 30221 dwords: 27 waits (25 kept for the GPU), 319 label writes, 466 dispatches (435 indirect; the largest grid 1792 groups, at 19119)

@@ -1,0 +1,7 @@
+2026-10-26 18:41:08 arm D set up
+launcher /home/kjaniszewski/bc5-work/exp0330/play-pkg-0330t.sh 85438594 -> 214bc7e6
+wrapper /home/kjaniszewski/bc5-work/exp0330/test0330p.sh 594746eb -> e6cc624c
+private configuration /home/kjaniszewski/bc5-work/exp0334/input-rton.cfg da1ca69d; input.cfg 5ddb694d
+binary /home/kjaniszewski/bc5-work/exp0332/kyty_emulator acb1cfd7
+Name=BC5 emulator (test 0334 D: RT on, jeden ring)
+undo to arm C: cat /home/kjaniszewski/bc5-work/exp0334/shortcut-before-d/test0330p.sh > /home/kjaniszewski/bc5-work/exp0330/test0330p.sh; cat /home/kjaniszewski/bc5-work/exp0334/shortcut-before-d/play-pkg-0330t.sh > /home/kjaniszewski/bc5-work/exp0330/play-pkg-0330t.sh; cat "/home/kjaniszewski/bc5-work/exp0334/shortcut-before-d/BC5 emulator (test 0330).desktop" > "/home/kjaniszewski/Pulpit/BC5 emulator (test 0330).desktop"; to before arm C: the same from /home/kjaniszewski/bc5-work/exp0334/shortcut-before

@@ -187,3 +187,92 @@ TEST_CASE("indirect_check: on a compute ring the MEC form is checked, without PF
     std::vector<std::size_t> refs2;
     CHECK(indirect_check::apply(gfx, 0, kMax, kDrawMax, refs2, st2, true) == gfx);
 }
+
+TEST_CASE("indirect_check: the product staircase (experiment 0341)", "[indirect_check]") {
+    // SET_BASE index 1 = 0x12_3456_7000, then DISPATCH_INDIRECT offset 0x40, initiator 0x41.
+    const std::vector<std::uint32_t> ib = {0xC0021100u,       1u,    0x34567000u, 0x12u,
+                                           kDispatchIndirect, 0x40u, 0x41u};
+    std::vector<std::size_t> refs;
+    indirect_check::Stats st;
+    const indirect_check::ProductLimit product{1u << 16, 1};
+    auto out = indirect_check::apply(ib, 0, kMax, kDrawMax, refs, st, false, &product);
+    REQUIRE(st.checked == 1);
+    CHECK(st.product_checked == 1);
+    REQUIRE(out.size() == ib.size() + indirect_check::kCheckDwords + indirect_check::kProductDwords);
+    REQUIRE(refs.size() == 12);
+    indirect_check::patch(out, refs, 0x1000'0000'2000ull);
+    std::size_t i = 4;
+    CHECK(out[i] == 0xC0033700u); // flag = 1
+    CHECK(out[i + 2] == 0x2000u);
+    CHECK(out[i + 4] == 1u);
+    i += 5;
+    CHECK(out[i] == 0xC0033700u); // flag2 = 0
+    CHECK(out[i + 2] == 0x2008u);
+    CHECK(out[i + 3] == 0x1000u);
+    CHECK(out[i + 4] == 0u);
+    i += 5;
+    for (std::uint32_t k = 0; k < 3; ++k, i += 9) { // the per-dimension checks
+        CHECK(out[i] == 0xC0074500u);
+        CHECK(out[i + 2] == 0x34567040u + 4 * k);
+        CHECK(out[i + 4] == kMax[k]);
+        CHECK(out[i + 6] == 0x2000u);
+        CHECK(out[i + 8] == 0u);
+    }
+    for (std::uint32_t k = 1; k < 3; ++k, i += 9) { // y, z > 1 ? flag2 = 1
+        CHECK(out[i] == 0xC0074500u);
+        CHECK(out[i + 1] == (6u | 0x10u | 0x100u));
+        CHECK(out[i + 2] == 0x34567040u + 4 * k);
+        CHECK(out[i + 3] == 0x12u);
+        CHECK(out[i + 4] == 1u);
+        CHECK(out[i + 6] == 0x2008u);
+        CHECK(out[i + 8] == 1u);
+    }
+    CHECK(out[i] == 0xC0033700u); // confirm2
+    CHECK(out[i + 1] == ((5u << 8) | (1u << 20)));
+    CHECK(out[i + 2] == 0x200cu);
+    i += 5;
+    CHECK(out[i] == 0xC0004200u); // PFP_SYNC_ME
+    i += 2;
+    CHECK(out[i] == 0xC0032200u); // COND_EXEC flag2 over the x check
+    CHECK(out[i + 1] == 0x2008u);
+    CHECK(out[i + 4] == 9u);
+    i += 5;
+    CHECK(out[i] == 0xC0074500u); // x > 2^16 ? flag = 0
+    CHECK(out[i + 2] == 0x34567040u);
+    CHECK(out[i + 4] == (1u << 16));
+    CHECK(out[i + 6] == 0x2000u);
+    CHECK(out[i + 8] == 0u);
+    i += 9;
+    CHECK(out[i] == 0xC0033700u); // the check's confirm
+    CHECK(out[i + 2] == 0x2004u);
+    i += 5;
+    CHECK(out[i] == 0xC0004200u);
+    i += 2;
+    CHECK(out[i] == 0xC0032200u); // COND_EXEC flag over the dispatch
+    CHECK(out[i + 1] == 0x2000u);
+    CHECK(out[i + 4] == 3u);
+    i += 5;
+    CHECK(out[i] == kDispatchIndirect);
+    // without the staircase nothing changes
+    std::vector<std::size_t> refs2;
+    indirect_check::Stats st2;
+    auto plain = indirect_check::apply(ib, 0, kMax, kDrawMax, refs2, st2);
+    CHECK(plain.size() == ib.size() + indirect_check::kCheckDwords);
+    CHECK(st2.product_checked == 0);
+    // an indirect draw gets no staircase
+    const std::vector<std::uint32_t> draw = {0xC0021100u, 1u, 0x1000u, 0x12u, 0xC0032400u, 0x20u, 0x4cu, 0x4du, 2u};
+    std::vector<std::size_t> refs3;
+    indirect_check::Stats st3;
+    auto d = indirect_check::apply(draw, 0, kMax, kDrawMax, refs3, st3, false, &product);
+    CHECK(d.size() == draw.size() + indirect_check::kDrawCheckDwords);
+    CHECK(st3.product_checked == 0);
+}
+
+TEST_CASE("insert_before: an insert at the IB's end is appended (experiment 0341)", "[indirect_check]") {
+    std::vector<std::uint32_t> ib = {0xC0032200u, 0x1000u, 0u, 0u, 2u, kNop, 0u};
+    const std::vector<std::uint32_t> tail = {kNop, 0u};
+    REQUIRE(indirect_check::insert_before(ib, {{7, tail}}));
+    REQUIRE(ib.size() == 9);
+    CHECK(ib[4] == 2u); // the range does not grow: the insert lies after it
+    CHECK(ib[7] == kNop);
+}

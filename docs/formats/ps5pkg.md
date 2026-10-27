@@ -184,7 +184,8 @@ and the icons live in the `\x7fCNT` container, not in the inner image.
 
 Reads: header, plaintext outer PFS, the layout, the inner tree; decodes each block once on
 demand into a 32 MiB cache (`BC5_MOUNT_CACHE_MIB`; experiments 0112, 0116); FUSE-mounts the
-inner tree. `inspect` prints the content ID
+inner tree. The image and the disk cache's data file are opened with the kernel's readahead
+off (`POSIX_FADV_RANDOM`; F396, experiment 0331; `BC5_MOUNT_READAHEAD=1` keeps it). `inspect` prints the content ID
 from the `\x7fCNT` when readable.
 
 The `\x7fCNT` container (section 6) is read for its named entries, which the mount shows under

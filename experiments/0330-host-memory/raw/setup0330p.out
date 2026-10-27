@@ -1,0 +1,3 @@
+the launcher's first 41 lines give: LAZY=orbis_user_malloc,Wwise,SoundAlloc,FileSystem,UIStringAlloc | BD=530 ND=1 ZS=540 DN=1
+launcher /home/kjaniszewski/bc5-work/exp0330/play-pkg-0330t.sh md5 bf4f3da3; wrapper /home/kjaniszewski/bc5-work/exp0330/test0330p.sh md5 7ce287ad; sampler /home/kjaniszewski/bc5-work/exp0330/sample0330p.sh md5 523563ba; shortcut md5 ccfaf57f
+undo: cat "/home/kjaniszewski/bc5-work/exp0330/shortcut-1800/play-pkg-0330t.sh" > "/home/kjaniszewski/bc5-work/exp0330/play-pkg-0330t.sh"; cat "/home/kjaniszewski/bc5-work/exp0330/shortcut-1800/BC5 emulator (test 0330).desktop" > "/home/kjaniszewski/Pulpit/BC5 emulator (test 0330).desktop"; rm "/home/kjaniszewski/bc5-work/exp0330/test0330p.sh"

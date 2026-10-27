@@ -1,0 +1,5 @@
+219318:submit #81041 dcb 98099 dwords at 0x7f27e830d500: pass 13691 rewrite 4 drop 4755 unmapped 0 cc 0 mappings 20812 ... FAILED rc 0 TIMEOUT 2061.07 ms
+219320:submit #81042 acb 1318 dwords at 0x7f28400d35f0: pass 180 rewrite 21 drop 13 unmapped 0 cc 0 mappings 20812 ... FAILED rc 0 TIMEOUT 2061.75 ms
+219412:timeout probe: acb #81042 1318 dwords: 1 waits (1 kept for the GPU), 21 label writes, 19 dispatches (0 indirect; the largest grid 92 groups, at 480)
+219413:timeout probe: dcb 98099 dwords dumped to /home/kjaniszewski/bc5-data/captures/play-20261027-1327/gc/ib-timeout-00081041-dcb-98099.bin
+249900:timeout probe: dcb #81041 98099 dwords: 0 waits (0 kept for the GPU), 4 label writes, 9186 dispatches (6499 indirect; the largest grid 17959069687466613312 groups, at 95906)

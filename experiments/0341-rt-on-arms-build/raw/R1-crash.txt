@@ -1,0 +1,17 @@
+kyty_exception_handler: 0000562b11df0f5b
+=== HOST EXCEPTION REGISTER DUMP ===
+exception_address=0x0x562b11df0f5b
+native_code=0x0xb
+access_violation_vaddr=0x0x0
+rax=0x0x1 rbx=0x0x0 rcx=0x0x8 rdx=0x0x2
+rsi=0x0x7f558c001ea0 rdi=0x0x562b1270c4f0 rbp=0x0x2 rsp=0x0x7f55b0b73960
+r8 =0x0xffffffa8 r9 =0x0x7f55b0b73dd0 r10=0x0x55 r11=0x0x562b1164195b
+r12=0x0x0 r13=0x0x7f558c001ea0 r14=0x0x39 r15=0x0xc00010
+exception module: /home/kjaniszewski/bc5-work/exp0341/kyty_emulator
+code-32: 80 00 00 00 00 48 8b 04 24 48 8b 88 a0 00 00 00 48 8b 80 a8 00 00 00 48 39 c1 74 5e 48 83 c1 08 39 59 f8 74 35 48 8d 51 fc 48 39 c2 74 4c 39 1a 74 2f 48 39 c1 74 43 39 19 74 23 48 8d 51 04 48
+--
+[10] 00007f5938d7c5cc
+--- Error ---
+Access violation: Read [0000000000000000] 
+ in /home/kjaniszewski/src/KytyPlus/src/loader/runtimeLinker.cpp:1165
+== 2026-10-27 08:52:18 exit 65

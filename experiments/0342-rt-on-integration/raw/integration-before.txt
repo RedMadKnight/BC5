@@ -1,0 +1,10 @@
+2026-10-27 12:25:36 before: normal 9382b1e9, lean 1860613a, archive 825ae1d1, /home/kjaniszewski/src/bc5 cc6a3bc, tree f266548 with 96 changed entries, its diff (patch 0001 as built) md5 3b7e88b8, src/graphics/presentation/settingsOverlay.cpp 454106a4, play-pkg.sh b10eac6d, input.cfg e6e1d9a7
+  backend/CMakeLists.txt 1a252599 -> e7d80fff
+  backend/include/bc5/indirect_check.hpp f3df1c74 -> 8a359bf6
+  backend/include/bc5/policy.hpp 2b079faf -> 2084cd6c
+  backend/include/bc5/shadow_labels.hpp new -> a8bf0059
+  backend/src/direct.cpp fec1f93f -> c802cc89
+  backend/src/indirect_check.cpp 0e3f1fce -> 282ee35e
+  backend/src/shadow_labels.cpp new -> 2cfbea8b
+  backend/tests/indirect_check_test.cpp 844aafc6 -> d3d63d86
+  backend/tests/shadow_labels_test.cpp new -> 06cf2eb2

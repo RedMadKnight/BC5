@@ -1,0 +1,18 @@
+Oct 26 18:01:16.748327 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State
+Oct 26 18:01:16.789790 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State Completed
+Oct 26 18:01:16.790082 bazzite kernel: amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+Oct 26 18:01:16.790251 bazzite kernel: amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+Oct 26 18:01:16.790414 bazzite kernel: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=8695587, emitted seq=8695589
+Oct 26 18:01:16.790583 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 2000332 thread bc5-ring pid 2000400
+Oct 26 18:01:16.790742 bazzite kernel: amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+Oct 26 18:01:16.790947 bazzite kernel: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded
+Oct 26 18:01:16.794814 bazzite kernel: amdgpu 0000:01:00.0: [drm] device wedged, but no recovery needed
+Oct 26 18:01:18.797324 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State
+Oct 26 18:01:18.798318 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State Completed
+Oct 26 18:01:18.799321 bazzite kernel: amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+Oct 26 18:01:18.799622 bazzite kernel: amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+Oct 26 18:01:18.799812 bazzite kernel: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=8695590, emitted seq=8695592
+Oct 26 18:01:18.799987 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 2000332 thread bc5-ring pid 2000400
+Oct 26 18:01:18.800156 bazzite kernel: amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+Oct 26 18:01:18.800348 bazzite kernel: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded
+Oct 26 18:01:18.800511 bazzite kernel: amdgpu 0000:01:00.0: [drm] device wedged, but no recovery needed

@@ -1,0 +1,47 @@
+--- /home/kjaniszewski/bc5-work/play-pkg.sh	2026-10-25 20:27:24.630036085 +0100
++++ /home/kjaniszewski/bc5-work/exp0329/play-pkg-0329.sh	2026-10-25 23:45:23.782057298 +0100
+@@ -10,7 +10,7 @@
+ M=~/bc5-data/mnt/pkg-play
+ EMU=~/bc5-work/kytyplus-build/src/kyty_emulator
+ ENVF=${BC5_RUN_ENV:-$HOME/bc5-work/bc5-run.env}
+-LOG=~/bc5-work/play-pkg-last.log
++LOG=~/bc5-work/exp0329/play-last.log  # exp 0329: own log
+ # Experiment 0177: BC5_LEAN=1 (the "BC5 emulator (lean)" shortcut) runs the emulator built with
+ # KYTY_BC5_LEAN in ~/bc5-work/kytyplus-build-lean: no tracing, journal, counters, recorder or
+ # samplers, inside or outside; its own log file. The title scripts take the same switch.
+@@ -37,6 +37,8 @@
+   key=${line%%=*}; val=${line#*=}
+   if [ "$key" = PLAY_ARGS ]; then PLAY_ARGS=$val; else export "$key=$val"; fi
+ done < "$ENVF"
++[ -n "${BC5_0329_INPUT_CONFIG:-}" ] && export KYTY_BC5_INPUT_CONFIG=$BC5_0329_INPUT_CONFIG  # exp 0329: the private input configuration
++export BC5_DIRECT_SKIP_PGM=0  # exp 0329: the compaction 909974400 runs
+ PLAY_ARGS="$PLAY_ARGS --fullscreen"  # the maintainer: this title fullscreen, at the display's resolution (Full HD here)
+ unset BC5_GC_DUMP_DIR
+ [ "${BC5_LEAN:-0}" = 1 ] && unset KYTY_BC5_INPUT_RECORD PLAY_CAPTURE  # exp 0177: no input recorder
+@@ -45,7 +47,7 @@
+ # Experiment 0042: also the heaps the GPU reads or writes before the CPU touches them
+ export BC5_DIRECT_EAGER_NAMES="RenderGpuWcLarge,RenderGpuWcSmall,RenderGpuRwLarge,RenderGpuRwSmall,CommitIABufferAllocator,AMM,RenderAlloc,Physics,Decal Job Scheduler,VisualEffectInstanceHeap,DynamicHeap,DynamicHeap Small,ComponentHeap,ComponentHeap Small,MaterialHeap,DDLHeap,Physics query allocator"
+ export BC5_DIRECT_LEARNED=$HOME/bc5-work/direct-learned-pkg.txt
+-export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/_SaveData-pkg-play
++export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/exp0329/wd/_SaveData-pkg-play  # exp 0329: private
+ # Experiment 0039: the compute IBs indirect dispatches run (rewritten for the GFX ring).
+ # Experiment 0053: their arguments checked by the CP when it runs them, a CP DMA wait before a
+ # dispatch after an unsynced copy; with both the tree refit runs too (before: skipped,
+@@ -88,7 +90,7 @@
+ # so =0 here unsets it.
+ export BC5_DIRECT_FLAT_APERTURE=${BC5_DIRECT_FLAT_APERTURE:-1}
+ if [ "${BC5_DIRECT_AMM_PRT-1}" = 0 ]; then unset BC5_DIRECT_AMM_PRT; else export BC5_DIRECT_AMM_PRT=${BC5_DIRECT_AMM_PRT:-1}; fi
+-export BC5_DIRECT_SKIP_PGM=${BC5_DIRECT_SKIP_PGM:-0}  # exp 0323: the compaction 909974400 runs with RT on (exp 0306+); 0 = nothing skipped
++export BC5_DIRECT_SKIP_PGM=0  # exp 0329: the compaction 909974400 runs (was: the default skip)
+ # Top session, 2026-10-24 (exp 0278/0280, F337-F340; the maintainer approved it): the BVH build work the Emulation >
+ # Ray tracing switch drops when it is off. The switch itself stays on unless the menu or KYTY_BC5_RT=0 says otherwise.
+ # 2026-10-25 (exp 0299, F362, the maintainer's yes): RT off also drops the reflection traversal 0x11d049aa00, 0x11d04a6000 and 0x11d04bb900, which with no BVH built whitens the lab.
+@@ -184,7 +186,7 @@
+   grep -v '^#' "$ENVF" | grep -v '^$'
+   [ -r "$PKG_ENV" ] && grep -v '^#' "$PKG_ENV" | grep -v '^$'
+ } > "$LOG"
+-cd ~/bc5-work
++cd ~/bc5-work/exp0329/wd  # exp 0329: the private working directory (its own _SaveData)
+ # Experiment 0047: exit code 75 is the F2 menu's "Restart game": start the emulator again, with
+ # the mount and the settings kept.
+ while :; do

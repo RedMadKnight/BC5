@@ -1,0 +1,35 @@
+acb rest 28..329 of 329 dwords: state prefix of 4 dwords replayed first
+timing: t 100.454 s acb 4 dwords: sync (lazy) 0.1 ms, hints 0.0 ms q0
+timing: t 100.454 s acb 786 dwords: sync 0.0 ms, hints 0.0 ms q0
+timing: t 100.454 s acb 790 dwords: sync 0.0 ms, hints 0.0 ms q0
+timing: t 100.454 s acb 309 dwords: sync 0.0 ms, hints 0.0 ms q0
+hint CB0 0x84ca70c000: window 0x84c8700000+0x4000000, direct memory +22.0 MiB
+hint CB0 0x84ca6ec000: window 0x84c86e0000+0x4000000, direct memory +0.0 MiB
+hint CB0 0x84ca71c000: window 0x84c8710000+0x4000000, direct memory +0.0 MiB
+hint CB0 0x84ca6fc000: window 0x84c86f0000+0x4000000, direct memory +0.0 MiB
+hint CB0 0x84c9f1c000: window 0x84c7f10000+0x4000000, direct memory +0.0 MiB
+hint CB0 0x84c9f0c000: window 0x84c7f00000+0x4000000, direct memory +0.0 MiB
+hint CB0 0x84c9f5c000: window 0x84c7f50000+0x4000000, direct memory +0.0 MiB
+timing: t 100.455 s dcb 4165 dwords: sync 0.0 ms, hints 0.5 ms q-1
+timing: t 100.456 s acb 28 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+timing: t 100.456 s acb 2 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+timing: t 100.456 s after that wait (dcb 3651 dwords)
+timing: t 100.456 s dcb 866 dwords: sync 0.0 ms, hints 0.0 ms q-1
+acb rest 28..410 of 410 dwords: state prefix of 4 dwords replayed first
+timing: t 100.456 s acb 4 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+timing: t 100.456 s acb 402 dwords: sync 0.0 ms, hints 0.0 ms q0
+timing: t 100.457 s after that wait (acb 4695 dwords)
+timing: t 100.457 s acb 5141 dwords: sync 0.0 ms, hints 0.0 ms q0
+timing: t 100.457 s dcb 3667 dwords: sync 0.0 ms, hints 0.0 ms q-1
+flat aperture: program 0x11d0488a00: 6 stack pushes (2 s_brev_b32) now address the host's LDS/private apertures
+hint CB0 0x11a5c90000: window 0x11a3c90000+0x4000000, direct memory +0.0 MiB
+hint CB0 0x1164d80000: window 0x1162d80000+0x4000000, direct memory +0.0 MiB
+hint CB0 0x11652c0000: window 0x11632c0000+0x4000000, direct memory +0.0 MiB
+timing: t 100.460 s dcb 20205 dwords: sync 0.0 ms, hints 0.1 ms q-1
+flat aperture: program 0x11d04bb900: 6 stack pushes (2 s_brev_b32) now address the host's LDS/private apertures
+flat aperture: program 0x11d040c900: 6 stack pushes (1 s_brev_b32) now address the host's LDS/private apertures
+submit #81041 dcb 98099 dwords at 0x7f27e830d500: pass 13691 rewrite 4 drop 4755 unmapped 0 cc 0 mappings 20812 ... FAILED rc 0 TIMEOUT 2061.07 ms
+timing: #81041 done at t 102.507 s, 2088.9 ms after the sync and hints; device: prepare 26.63 list 0.08 cs 0.16 fence 2060.91 ms, 164 BOs
+submit #81042 acb 1318 dwords at 0x7f28400d35f0: pass 180 rewrite 21 drop 13 unmapped 0 cc 0 mappings 20812 ... FAILED rc 0 TIMEOUT 2061.75 ms
+timing: #81042 done at t 102.508 s, 2061.8 ms after the sync and hints; device: prepare 0.04 list 0.00 cs 0.19 fence 2061.56 ms, 164 BOs
+timeout probe: acb 1318 dwords dumped to /home/kjaniszewski/bc5-data/captures/play-20261027-1327/gc/ib-timeout-00081042-acb-1318.bin

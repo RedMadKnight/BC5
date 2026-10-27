@@ -1,0 +1,383 @@
+--- a/src/libs/libKernel.cpp
++++ b/src/libs/libKernel.cpp
+@@ -50,6 +50,13 @@
+ #include <sys/resource.h> // experiment 0327: getrusage
+ #include <ucontext.h>
+ #endif
++
++// Experiment 0336: the diagnostic helpers (loader/runtimeLinker.cpp)
++namespace Loader {
++void     Bc5DiagCall(const char* what, std::atomic<uint64_t>* counter, int64_t value);
++void     Bc5DiagText(const char* line);
++uint64_t Bc5ProcParam();
++} // namespace Loader
+ 
+ namespace Libs {
+ 
+@@ -1935,6 +1942,8 @@
+ namespace Posix {
+ 
+ LIB_VERSION("Posix", 1, "libkernel", 1, 1);
++
++int KYTY_SYSV_ABI pthread_rwlock_tryrdlock(LibKernel::PthreadRwlock* rwlock); // experiment 0336: kernel/pthread.cpp
+ 
+ int KYTY_SYSV_ABI getpagesize() {
+ 	PRINT_NAME();
+@@ -2451,7 +2460,7 @@
+ 	LIB_FUNC("1471ajPzxh0", Posix::pthread_rwlock_destroy);
+ 	LIB_FUNC("ytQULN-nhL4", Posix::pthread_rwlock_init);
+ 	LIB_FUNC("sIlRvQqsN2Y", Posix::pthread_rwlock_wrlock);
+-	LIB_FUNC("SFxTMOfuCkE", LibKernel::PthreadRwlockTryrdlock);
++	LIB_FUNC("SFxTMOfuCkE", Posix::pthread_rwlock_tryrdlock); // experiment 0336: a posix wrapper; it was the sce function
+ 	LIB_FUNC("XhWHn6P5R7U", LibKernel::PthreadRwlockTrywrlock);
+ 	LIB_FUNC("mqULNdimTn0", Posix::pthread_key_create);
+ 	LIB_FUNC("6BpEZuDT7YI", Posix::pthread_key_delete);
+@@ -3191,10 +3200,14 @@
+ 
+ } // namespace Fiber
+ 
++// Experiment 0336 (exp 0335's audit): posix chmod changes the file through the tree's KernelChmod (exp 0327), -1/errno;
++// it returned OK and did nothing.
+ int chmod(const char* path, int mode) {
+ 	PRINT_NAME();
+ 
+-	return OK;
++	static std::atomic<uint64_t> calls {0};
++	Loader::Bc5DiagCall("posix chmod z0dtnPxYgtg", &calls, mode);
++	return POSIX_CALL(LibKernel::FileSystem::KernelChmod(path, static_cast<uint16_t>(mode)));
+ }
+ 
+ int KYTY_SYSV_ABI KernelAioInitializeImpl(void* param, int32_t size) {
+@@ -3404,6 +3417,29 @@
+ 	LIB_FUNC("Uxqkdta7wEg", Coredump::sceCoredumpSetUserDataType);    // experiment 0329
+ }
+ 
++// Experiment 0336 (exp 0335's audit): counting entries for the NIDs whose implementation the audit questioned. Each
++// calls the same function the NID had before and counts the call (Loader::Bc5DiagCall: journaled at 1, 2, 4, ... calls).
++static std::atomic<uint64_t> g_0336_counts[8];
++static const char* const      g_0336_names[8] = {
++    "sceKernelChmod fgIsQ10xYVA",
++    "scePthreadRwlockTryrdlock XD3mDeybCnk",
++    "libkernel pthread_self EotR8a3ASf4",
++    "libkernel pthread_attr_getstack -quPa4SEJUw",
++    "libkernel pthread_attr_setstacksize 2Q0z6rnBrTE",
++    "libkernel pthread_attr_getschedparam FXPWHNk8Of0",
++    "libkernel pthread_rwlock_wrlock sIlRvQqsN2Y",
++    "libkernel pthread_cond_signal 2MOy+rUfuhQ",
++};
++template <auto F, int K>
++struct Diag0336;
++template <typename R, typename... Args, R (*F)(Args...), int K>
++struct Diag0336<F, K> {
++	static R KYTY_SYSV_ABI call(Args... args) {
++		Loader::Bc5DiagCall(g_0336_names[K], &g_0336_counts[K], 0);
++		return F(args...);
++	}
++};
++
+ LIB_DEFINE(InitLibKernel_1_FS) {
+ 	LIB_FUNC("1G3lF1Gg1k8", FileSystem::KernelOpen);
+ 	LIB_FUNC("UK2Tl2DWUns", FileSystem::KernelClose);
+@@ -3416,7 +3452,7 @@
+ 	LIB_FUNC("AUXVxWeJU-A", FileSystem::KernelUnlink);
+ 	LIB_FUNC("52NcYU9+lEo", FileSystem::KernelRename);
+ 	LIB_FUNC("WlyEA-sLDf0", FileSystem::KernelTruncate); // experiment 0327
+-	LIB_FUNC("fgIsQ10xYVA", FileSystem::KernelChmod);    // experiment 0327
++	LIB_FUNC("fgIsQ10xYVA", (Diag0336<FileSystem::KernelChmod, 0>::call)); // experiment 0327; exp 0336 counts it
+ 	LIB_FUNC("UtszJWHrDcA", FileSystem::KernelFchmod);   // experiment 0327
+ 	LIB_FUNC("0Cq8ipKr9n0", FileSystem::KernelUtimes);   // experiment 0327
+ 	LIB_FUNC("taRWhTJFTgE", FileSystem::KernelGetdirentries);
+@@ -3527,7 +3563,7 @@
+ 	LIB_FUNC("1FGvU0i9saQ", LibKernel::PthreadMutexattrSetprotocol);
+ 
+ 	LIB_FUNC("aI+OeCz8xrQ", LibKernel::PthreadSelf);
+-	LIB_FUNC("EotR8a3ASf4", LibKernel::PthreadSelf);
++	LIB_FUNC("EotR8a3ASf4", (Diag0336<LibKernel::PthreadSelf, 2>::call)); // exp 0336 counts it
+ 	LIB_FUNC("6UgtwV+0zb4", LibKernel::PthreadCreate);
+ 	LIB_FUNC("3PtV6p3QNX4", LibKernel::PthreadEqual);
+ 	LIB_FUNC("onNY9Byn-W8", LibKernel::PthreadJoin);
+@@ -3556,7 +3592,7 @@
+ 	LIB_FUNC("8+s5BzZjxSg", LibKernel::PthreadAttrGetaffinity);
+ 	LIB_FUNC("nsYoNRywwNg", LibKernel::PthreadAttrInit);
+ 	LIB_FUNC("JaRMy+QcpeU", LibKernel::PthreadAttrGetdetachstate);
+-	LIB_FUNC("-quPa4SEJUw", LibKernel::PthreadAttrGetstack);
++	LIB_FUNC("-quPa4SEJUw", (Diag0336<LibKernel::PthreadAttrGetstack, 3>::call)); // exp 0336 counts it
+ 	LIB_FUNC("Ru36fiTtJzA", LibKernel::PthreadAttrGetstackaddr);
+ 	LIB_FUNC("-fA+7ZlGDQs", LibKernel::PthreadAttrGetstacksize);
+ 	LIB_FUNC("txHtngJ+eyc", LibKernel::PthreadAttrGetguardsize);
+@@ -3564,7 +3600,7 @@
+ 	LIB_FUNC("Bvn74vj6oLo", LibKernel::PthreadAttrSetstack);
+ 	LIB_FUNC("F+yfmduIBB8", LibKernel::PthreadAttrSetstackaddr);
+ 	LIB_FUNC("UTXzJbWhhTE", LibKernel::PthreadAttrSetstacksize);
+-	LIB_FUNC("2Q0z6rnBrTE", LibKernel::PthreadAttrSetstacksize);
++	LIB_FUNC("2Q0z6rnBrTE", (Diag0336<LibKernel::PthreadAttrSetstacksize, 4>::call)); // exp 0336 counts it
+ 	LIB_FUNC("-Wreprtu0Qs", LibKernel::PthreadAttrSetdetachstate);
+ 	LIB_FUNC("El+cQ20DynU", LibKernel::PthreadAttrSetguardsize);
+ 	LIB_FUNC("eXbUSpEaTsA", LibKernel::PthreadAttrSetinheritsched);
+@@ -3572,7 +3608,7 @@
+ 	LIB_FUNC("4+h9EzwKF4I", LibKernel::PthreadAttrSetschedpolicy);
+ 	LIB_FUNC("Dk6FC-TI+7Q", LibKernel::PthreadAttrSetsolosched);
+ 	LIB_FUNC("3qxgM4ezETA", LibKernel::PthreadAttrSetaffinity);
+-	LIB_FUNC("FXPWHNk8Of0", LibKernel::PthreadAttrGetschedparam);
++	LIB_FUNC("FXPWHNk8Of0", (Diag0336<LibKernel::PthreadAttrGetschedparam, 5>::call)); // exp 0336 counts it
+ 
+ 	LIB_FUNC("6ULAa0fq4jA", LibKernel::PthreadRwlockInit);
+ 	LIB_FUNC("BB+kb08Tl9A", LibKernel::PthreadRwlockDestroy);
+@@ -3581,9 +3617,9 @@
+ 	LIB_FUNC("+L98PIbGttk", LibKernel::PthreadRwlockUnlock);
+ 	LIB_FUNC("EgmLo6EWgso", LibKernel::PthreadRwlockUnlock);
+ 	LIB_FUNC("mqdNorrB+gI", LibKernel::PthreadRwlockWrlock);
+-	LIB_FUNC("sIlRvQqsN2Y", LibKernel::PthreadRwlockWrlock);
++	LIB_FUNC("sIlRvQqsN2Y", (Diag0336<LibKernel::PthreadRwlockWrlock, 6>::call)); // exp 0336 counts it
+ 	LIB_FUNC("bIHoZCTomsI", LibKernel::PthreadRwlockTrywrlock);
+-	LIB_FUNC("XD3mDeybCnk", LibKernel::PthreadRwlockTryrdlock);   // experiment 0327: scePthreadRwlockTryrdlock
++	LIB_FUNC("XD3mDeybCnk", (Diag0336<LibKernel::PthreadRwlockTryrdlock, 1>::call)); // experiment 0327: scePthreadRwlockTryrdlock; exp 0336 counts it
+ 	LIB_FUNC("iPtZRWICjrM", LibKernel::PthreadRwlockTimedrdlock); // experiment 0327
+ 	LIB_FUNC("adh--6nIqTk", LibKernel::PthreadRwlockTimedwrlock); // experiment 0327
+ 	LIB_FUNC("i2ifZ3fS2fo", LibKernel::PthreadRwlockattrDestroy);
+@@ -3598,7 +3634,7 @@
+ 	LIB_FUNC("WKAXJ4XBPQ4", LibKernel::PthreadCondWait);
+ 	LIB_FUNC("JGgj7Uvrl+A", LibKernel::PthreadCondBroadcast);
+ 	LIB_FUNC("kDh-NfxgMtE", LibKernel::PthreadCondSignal);
+-	LIB_FUNC("2MOy+rUfuhQ", LibKernel::PthreadCondSignal);
++	LIB_FUNC("2MOy+rUfuhQ", (Diag0336<LibKernel::PthreadCondSignal, 7>::call)); // exp 0336 counts it
+ 	LIB_FUNC("o69RpYO-Mu0", LibKernel::PthreadCondSignalto);
+ 	LIB_FUNC("BmMjYxmew1w", LibKernel::PthreadCondTimedwait);
+ 	LIB_FUNC("27bAgiJmOh0", Posix::pthread_cond_timedwait);
+--- a/src/kernel/pthread.cpp
++++ b/src/kernel/pthread.cpp
+@@ -64,6 +64,13 @@
+ #ifdef pthread_attr_getguardsize
+ #undef pthread_attr_getguardsize
+ #endif
++
++// Experiment 0336: the diagnostic helpers (loader/runtimeLinker.cpp)
++namespace Loader {
++void     Bc5DiagCall(const char* what, std::atomic<uint64_t>* counter, int64_t value);
++void     Bc5DiagText(const char* line);
++uint64_t Bc5ProcParam();
++} // namespace Loader
+ 
+ namespace Libs {
+ 
+@@ -2659,6 +2666,11 @@
+ int KYTY_SYSV_ABI PthreadRwlockTryrdlock(PthreadRwlock* rwlock) {
+ 	PRINT_NAME();
+ 
++	// Experiment 0336: a statically initialised lock is created on first use, as PthreadRwlockRdlock does; it stopped
++	// the emulator (EXIT_NOT_IMPLEMENTED) before.
++	rwlock = static_cast<PthreadRwlock*>(
++	    g_pthread_context->GetPthreadStaticObjects()->CreateObject(rwlock, PthreadStaticObject::Type::Rwlock));
++
+ 	if (rwlock == nullptr) {
+ 		return KERNEL_ERROR_EINVAL;
+ 	}
+@@ -2685,6 +2697,10 @@
+ 
+ int KYTY_SYSV_ABI PthreadRwlockTrywrlock(PthreadRwlock* rwlock) {
+ 	PRINT_NAME();
++
++	// Experiment 0336: a statically initialised lock is created on first use, as PthreadRwlockWrlock does.
++	rwlock = static_cast<PthreadRwlock*>(
++	    g_pthread_context->GetPthreadStaticObjects()->CreateObject(rwlock, PthreadStaticObject::Type::Rwlock));
+ 
+ 	if (rwlock == nullptr) {
+ 		return KERNEL_ERROR_EINVAL;
+@@ -4667,6 +4683,14 @@
+ 	return POSIX_PTHREAD_CALL(LibKernel::PthreadRwlockWrlock(rwlock));
+ }
+ 
++// Experiment 0336 (exp 0335's audit): posix pthread_rwlock_tryrdlock (SFxTMOfuCkE) returns errno numbers (EBUSY,
++// EINVAL) as the other posix wrappers do; the NID pointed at the sce function, which returns SCE codes.
++int KYTY_SYSV_ABI pthread_rwlock_tryrdlock(LibKernel::PthreadRwlock* rwlock) {
++	static std::atomic<uint64_t> calls {0};
++	Loader::Bc5DiagCall("posix pthread_rwlock_tryrdlock SFxTMOfuCkE", &calls, 0);
++	return POSIX_PTHREAD_CALL(LibKernel::PthreadRwlockTryrdlock(rwlock));
++}
++
+ int KYTY_SYSV_ABI pthread_rwlock_destroy(LibKernel::PthreadRwlock* rwlock) {
+ 	PRINT_NAME();
+ 
+--- a/src/libs/bc5LleAgc.cpp
++++ b/src/libs/bc5LleAgc.cpp
+@@ -65,6 +65,13 @@
+ #include <thread>
+ #include <tuple>
+ #include <vector>
++
++// Experiment 0336: the diagnostic helpers (loader/runtimeLinker.cpp)
++namespace Loader {
++void     Bc5DiagCall(const char* what, std::atomic<uint64_t>* counter, int64_t value);
++void     Bc5DiagText(const char* line);
++uint64_t Bc5ProcParam();
++} // namespace Loader
+ 
+ namespace Libs {
+ 
+@@ -9012,7 +9019,36 @@
+ 	if (version == nullptr) {
+ 		return LibKernel::KERNEL_ERROR_EINVAL;
+ 	}
+-	*version = 0x0A000000; // TODO(bc5): read from the eboot's process param
++	// Experiment 0336 (exp 0335's audit): the version comes from the program's process parameter, which the host serves
++	// (RuntimeLinker::GetProcParam). TODO(verify): the layout. A PS4 process parameter is {u64 size, u32 magic, u32 entry
++	// count, u64 sdk version}; a PS5 title's param.json writes sdkVersion as a u64 with the version in its high half
++	// ("0x0700000000000000", ps5rs crates/ps5-analysis/src/param_json.rs). So the high half of the u64 at +0x10 is taken,
++	// or its low half when the high one is 0, and only a value in [0x01000000, 0x20000000) is used; otherwise the old
++	// constant 0x0A000000. The header read is journaled once (BC5_IMPORT_LOG).
++	static const uint32_t v = [] {
++		uint32_t       out = 0x0A000000;
++		const uint64_t pp  = Loader::Bc5ProcParam();
++		uint64_t       size = 0, sdk = 0;
++		uint32_t       magic = 0, entries = 0;
++		if (pp != 0) {
++			std::memcpy(&size, reinterpret_cast<const void*>(pp), 8);
++			std::memcpy(&magic, reinterpret_cast<const void*>(pp + 8), 4);
++			std::memcpy(&entries, reinterpret_cast<const void*>(pp + 12), 4);
++			if (size >= 0x18) std::memcpy(&sdk, reinterpret_cast<const void*>(pp + 0x10), 8);
++		}
++		const auto hi   = static_cast<uint32_t>(sdk >> 32u);
++		const auto lo   = static_cast<uint32_t>(sdk);
++		const auto cand = hi != 0 ? hi : lo;
++		if (cand >= 0x01000000u && cand < 0x20000000u) out = cand;
++		char line[256];
++		std::snprintf(line, sizeof(line), "procparam at 0x%" PRIx64 ": size 0x%" PRIx64 " magic 0x%08" PRIx32 " entries %" PRIu32 " u64@0x10 0x%016" PRIx64 " -> compiled sdk version 0x%08" PRIx32 "%s",
++		              pp, size, magic, entries, sdk, out, out == 0x0A000000u ? " (the old constant)" : "");
++		Loader::Bc5DiagText(line);
++		return out;
++	}();
++	static std::atomic<uint64_t> calls {0};
++	Loader::Bc5DiagCall("sceKernelGetCompiledSdkVersion WB66evu8bsU", &calls, v);
++	*version = static_cast<int>(v);
+ 	return 0;
+ }
+ 
+--- a/src/loader/runtimeLinker.cpp
++++ b/src/loader/runtimeLinker.cpp
+@@ -27,6 +27,9 @@
+ 
+ #include <algorithm>
+ #include <atomic>
++#include <chrono> // experiment 0336
++#include <mutex>  // experiment 0336
++#include <set>    // experiment 0336
+ #include <cstdarg>
+ #include <cstdio>
+ #include <cstdlib>
+@@ -1824,6 +1827,65 @@
+ 	m_relocated = false;
+ }
+ 
++// Experiment 0336 (BC5_IMPORT_LOG=<file>, a diagnostic, off by default): the resolved imports, once per program and
++// name, and the call counts other files report. The file is opened once, line-buffered, for appending.
++static FILE* bc5_0336_log() {
++	static FILE* f = [] {
++		const char* p = std::getenv("BC5_IMPORT_LOG");
++		FILE*       x = p != nullptr && *p != 0 ? std::fopen(p, "a") : nullptr;
++		if (x != nullptr) {
++			std::setvbuf(x, nullptr, _IOLBF, 0);
++		}
++		return x;
++	}();
++	return f;
++}
++static double bc5_0336_now() {
++	static const auto t0 = std::chrono::steady_clock::now();
++	return std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
++}
++void Bc5DiagText(const char* line) {
++	if (FILE* f = bc5_0336_log(); f != nullptr) {
++		static std::mutex m;
++		std::lock_guard   lock(m);
++		std::fprintf(f, "%.3f %s\n", bc5_0336_now(), line);
++	}
++}
++void Bc5DiagCall(const char* what, std::atomic<uint64_t>* counter, int64_t value) {
++	const uint64_t n = counter->fetch_add(1, std::memory_order_relaxed) + 1;
++	if ((n & (n - 1)) != 0 || bc5_0336_log() == nullptr) {
++		return;
++	}
++	char line[256];
++	std::snprintf(line, sizeof(line), "call %s #%" PRIu64 " value %" PRId64, what, n, value);
++	Bc5DiagText(line);
++}
++uint64_t Bc5ProcParam() {
++	return Common::Singleton<RuntimeLinker>::Instance()->GetProcParam();
++}
++namespace {
++struct Bc5ImportNote {
++	const std::string&  name;
++	const Program*      program;
++	const SymbolRecord* out;
++	const char*         path = "unresolved";
++	std::string         lib  = "-";
++	std::string         mod  = "-";
++	~Bc5ImportNote() {
++		if (bc5_0336_log() == nullptr) {
++			return;
++		}
++		static std::set<std::string> seen; // RuntimeLinker::Resolve holds m_mutex
++		const std::string            file = program != nullptr ? program->file_name.filename().string() : "-";
++		if (!seen.insert(file + "\t" + name).second) {
++			return;
++		}
++		const std::string line = "import\t" + file + "\t" + name + "\t" + lib + "\t" + mod + "\t" + path + "\t" + out->name + "\t" + out->dbg_name + "\t" + (out->vaddr != 0 ? "bound" : "stub");
++		Bc5DiagText(line.c_str());
++	}
++};
++} // namespace
++
+ void RuntimeLinker::Resolve(const std::string& name, SymbolType type, Program* program,
+                             SymbolRecord* out_info, bool* bind_self) {
+ 	KYTY_PROFILER_FUNCTION();
+@@ -1832,6 +1894,8 @@
+ 
+ 	EXIT_IF(out_info == nullptr);
+ 
++	Bc5ImportNote bc5_note {name, program, out_info}; // experiment 0336
++
+ 	auto ids = Common::Split(name, '#');
+ 
+ 	if (bind_self != nullptr) {
+@@ -1841,6 +1905,8 @@
+ 	if (ids.size() == 3) {
+ 		const LibraryId* l = FindLibrary(*program, ids.at(1));
+ 		const ModuleId*  m = FindModule(*program, ids.at(2));
++		bc5_note.lib       = l != nullptr ? l->name : "?"; // experiment 0336
++		bc5_note.mod       = m != nullptr ? m->name : "?";
+ 
+ 		auto resolve_by_nid = [this, type](const std::string& nid, SymbolRecord* out) -> bool {
+ 			EXIT_IF(out == nullptr);
+@@ -1879,10 +1945,16 @@
+ 			if (m_symbols != nullptr) {
+ 				rec = m_symbols->Find(sr);
+ 			}
++			if (rec != nullptr) {
++				bc5_note.path = "hle"; // experiment 0336
++			}
+ 
+ 			if (rec == nullptr) {
+ 				if (auto* p = FindProgram(*m, *l); p != nullptr && p->export_symbols != nullptr) {
+ 					rec = p->export_symbols->Find(sr);
++					if (rec != nullptr) {
++						bc5_note.path = "module"; // experiment 0336
++					}
+ 					if (bind_self != nullptr) {
+ 						*bind_self = (p == program);
+ 					}
+@@ -1892,6 +1964,7 @@
+ 			if (rec == nullptr) {
+ 				if (resolve_by_nid(sr.name, out_info)) {
+ 					LOGF("PS5 NID fallback: %s -> %s\n", sr.name.c_str(), out_info->name.c_str());
++					bc5_note.path = "nid-fallback"; // experiment 0336
+ 					return;
+ 				}
+ 			}
+@@ -1908,6 +1981,7 @@
+ 			if (resolve_by_nid(ids.at(0), out_info)) {
+ 				LOGF("PS5 NID fallback: %s -> %s (missing lib/module metadata)\n",
+ 				     ids.at(0).c_str(), out_info->name.c_str());
++				bc5_note.path = "nid-fallback-no-metadata"; // experiment 0336
+ 				return;
+ 			}
+ 

@@ -1,0 +1,71 @@
+== 23:36:53 patch
+src/kernel/syncOnAddress.h: md5 f5eacccf in
+src/kernel/syncOnAddress.h: 1 edits -> /home/kjaniszewski/bc5-work/exp0329/src/src/kernel/syncOnAddress.h, md5 b595887f out
+src/kernel/syncOnAddress.cpp: md5 5c7b2079 in
+src/kernel/syncOnAddress.cpp: 4 edits -> /home/kjaniszewski/bc5-work/exp0329/src/src/kernel/syncOnAddress.cpp, md5 bafb6902 out
+src/libs/libKernel.cpp: md5 625a2114 in
+src/libs/libKernel.cpp: 15 edits -> /home/kjaniszewski/bc5-work/exp0329/src/src/libs/libKernel.cpp, md5 35b61eea out
+src/kernel/fileSystem.h: md5 d630781c in
+src/kernel/fileSystem.h: 2 edits -> /home/kjaniszewski/bc5-work/exp0329/src/src/kernel/fileSystem.h, md5 e94f071d out
+src/kernel/fileSystem.cpp: md5 643c030b in
+src/kernel/fileSystem.cpp: 5 edits -> /home/kjaniszewski/bc5-work/exp0329/src/src/kernel/fileSystem.cpp, md5 f1b5f528 out
+src/libs/libC.cpp: md5 918ab25a in
+src/libs/libC.cpp: 7 edits -> /home/kjaniszewski/bc5-work/exp0329/src/src/libs/libC.cpp, md5 501916a8 out
+src/libs/libs.cpp: md5 dfbe5493 in
+src/libs/libs.cpp: 2 edits -> /home/kjaniszewski/bc5-work/exp0329/src/src/libs/libs.cpp, md5 309aecf7 out
+src/kernel/memory.h: md5 020ba637 in
+src/kernel/memory.h: 1 edits -> /home/kjaniszewski/bc5-work/exp0329/src/src/kernel/memory.h, md5 8c25cc1f out
+src/kernel/memory.cpp: md5 812e27c6 in
+src/kernel/memory.cpp: 2 edits -> /home/kjaniszewski/bc5-work/exp0329/src/src/kernel/memory.cpp, md5 11b1df22 out
+src/libs/network.h: md5 4fd5bce9 in
+src/libs/network.h: 1 edits -> /home/kjaniszewski/bc5-work/exp0329/src/src/libs/network.h, md5 90ab8c55 out
+src/libs/network.cpp: md5 ba5f7573 in
+src/libs/network.cpp: 5 edits -> /home/kjaniszewski/bc5-work/exp0329/src/src/libs/network.cpp, md5 98d501f4 out
+src/libs/libNet.cpp: md5 3d59871f in
+src/libs/libNet.cpp: 11 edits -> /home/kjaniszewski/bc5-work/exp0329/src/src/libs/libNet.cpp, md5 f7a26ceb out
+src/libs/libSaveData.cpp: md5 2747ba2a in
+src/libs/libSaveData.cpp: 2 edits -> /home/kjaniszewski/bc5-work/exp0329/src/src/libs/libSaveData.cpp, md5 d6e9c37f out
+src/libs/audio.h: md5 cd16d0b4 in
+src/libs/audio.h: 1 edits -> /home/kjaniszewski/bc5-work/exp0329/src/src/libs/audio.h, md5 32923201 out
+src/libs/audio.cpp: md5 ee61d1d9 in
+src/libs/audio.cpp: 1 edits -> /home/kjaniszewski/bc5-work/exp0329/src/src/libs/audio.cpp, md5 fa06c494 out
+src/libs/libAudio.cpp: md5 482a68c3 in
+src/libs/libAudio.cpp: 1 edits -> /home/kjaniszewski/bc5-work/exp0329/src/src/libs/libAudio.cpp, md5 45ca1ece out
+src/libs/controller.h: md5 20b7b121 in
+src/libs/controller.h: 1 edits -> /home/kjaniszewski/bc5-work/exp0329/src/src/libs/controller.h, md5 071f0851 out
+src/libs/controller.cpp: md5 4e021865 in
+src/libs/controller.cpp: 1 edits -> /home/kjaniszewski/bc5-work/exp0329/src/src/libs/controller.cpp, md5 40a0e7b6 out
+src/libs/libPad.cpp: md5 ab6c4035 in
+src/libs/libPad.cpp: 1 edits -> /home/kjaniszewski/bc5-work/exp0329/src/src/libs/libPad.cpp, md5 dbe268d7 out
+src/graphics/presentation/videoOut.h: md5 5eea43ba in
+src/graphics/presentation/videoOut.h: 1 edits -> /home/kjaniszewski/bc5-work/exp0329/src/src/graphics/presentation/videoOut.h, md5 6d34162d out
+src/graphics/presentation/videoOut.cpp: md5 4a16dfeb in
+src/graphics/presentation/videoOut.cpp: 2 edits -> /home/kjaniszewski/bc5-work/exp0329/src/src/graphics/presentation/videoOut.cpp, md5 332e88fc out
+src/libs/libVideoOut.cpp: md5 7299248e in
+src/libs/libVideoOut.cpp: 1 edits -> /home/kjaniszewski/bc5-work/exp0329/src/src/libs/libVideoOut.cpp, md5 572eada2 out
+src/loader/runtimeLinker.cpp: md5 7b648776 in
+src/loader/runtimeLinker.cpp: 2 edits -> /home/kjaniszewski/bc5-work/exp0329/src/src/loader/runtimeLinker.cpp, md5 f294dfc2 out
+patch_0329.diff: 1269 added lines
+== 23:36:54 compdb
+== 23:36:54 compile + link + tests
+== 23:37:46 build rc 0
+321:== emulator linked
+355:== sync_on_address_tests exit 0
+447:clang++: error: linker command failed with exit code 1 (use -v to see invocation)
+448:== minimal link of np_cpp_web_api_tests failed; linking with every shared object but main's
+480:== np_cpp_web_api_tests exit 0
+581:clang++: error: linker command failed with exit code 1 (use -v to see invocation)
+582:== minimal link of png_enc_tests failed; linking with every shared object but main's
+592:== png_enc_tests exit 0
+698:clang++: error: linker command failed with exit code 1 (use -v to see invocation)
+699:== minimal link of dialogs_tests failed; linking with every shared object but main's
+707:== dialogs_tests exit 0
+warnings: 41
+SyncOnAddressTests: all checks passed
+NpCppWebApiTests: all checks passed
+PngEncTests: all checks passed
+DialogsTests: all checks passed
+-rwxr-xr-x. 1 kjaniszewski kjaniszewski 169413408 10-25 23:37 /home/kjaniszewski/bc5-work/exp0329/kyty_emulator
+md5 31482a75
+strings: NpCppWebApi lines 0, stub lines 1, mlock line 1
+shared binary after: 5dd77a82 (want 5dd77a82)

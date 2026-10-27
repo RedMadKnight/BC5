@@ -1,0 +1,49 @@
+# exp 0340: register values and short extracts of two devcoredumps on the box (read-only; the dumps stay on the box):
+# ~/bc5-data/captures/devcoredump/20261027-072841-devcd1.txt and 20261026-214349-devcd8.txt (kernel 7.2.9-ogc3.1, amdgpu).
+# Header dumps are listed as value x(count of lines); the IP dump repeats each CP_*_HEADER_DUMP register 8 times per read.
+
+== devcd1 (2026-10-27 07:28:41; uptime 34949.3 s; boot f3ef3a42 of 21:46:12; shared lean build 379a92b8, RT on, two rings)
+process_name: kyty_emulator TGID: 480131 thread: Render Thread PID: 480181   pasid: 36  vmid: 6
+Ring timed out details: IP Type: 0 Ring Name: gfx_0.0.0
+[gfxhub] Page fault observed: Faulty page starting at address: 0x00000d5200001000; Protection fault status register: 0x601031
+  (kernel, boot -3, 07:28:38.818750: "[gfxhub] page fault (src_id:0 ring:24 vmid:6 pasid:36)" — the journal's last line)
+IB #0 0x101100000000 10584 dw
+gfx_0.0.0: Rptr 0x11a Wptr 0x16b1bc00 RB mask 7ff; kiq_0.2.1.0: Rptr 0x2700 Wptr 0x2700
+GRBM_STATUS 0xa0403028  GRBM_STATUS2 0x50000008  GRBM_STATUS3 0x00000000
+GRBM_STATUS_SE0 0x08000006  SE1 0x08000006  SE2 0x00000006  SE3 0x00000006
+CP_STALLED_STAT1 0x00000c00  CP_STALLED_STAT2 0x00018000  CP_BUSY_STAT 0x00400000
+CP_CPF_STATUS 0xb4000263  CP_CPF_BUSY_STAT 0x00000006  CP_CPF_STALLED_STAT1 0x00000003
+CP_CPC_STATUS 0x00000000  CP_CPC_BUSY_STAT 0x00000000  CP_CPC_STALLED_STAT1 0x00000000
+CP_PFP_INSTR_PNTR 0x00000ea1  CP_ME_INSTR_PNTR 0x0000077a  CP_MEC1_INSTR_PNTR 0x00000447  CP_MEC2_INSTR_PNTR 0x00000491
+CP_IB1_BASE 0x101100000000  CP_IB1_CMD_BUFSZ 0x2958 (10584)  CP_IB1_BUFSZ 0x238 (568 dwords left: 95 % fetched)
+CP_IB2_BASE 0x800100015000  CP_IB2_CMD_BUFSZ 0xa8  CP_IB2_BUFSZ 0
+CP_RB_BASE 0x24d0  CP_RB_RPTR 0x20e  CP_RB_WPTR 0x16b1bc00
+CP_PFP_HEADER_DUMP: 0xc0065800 x8 (ACQUIRE_MEM), 0xc0004600 x8 (EVENT_WRITE), 0xc0074500 x16 (COND_WRITE x2), 0xc0032200 x8 (COND_EXEC),
+                    0xc0004200 x8 (PFP_SYNC_ME), 0xc0033700 x8 (WRITE_DATA), 0xc0011600 x8 (DISPATCH_INDIRECT)
+CP_ME_HEADER_DUMP:  0xc0074500 x24 (COND_WRITE x3), 0xc0033700 x16 (WRITE_DATA x2), 0xc0004200 x8, 0xc0004600 x8, 0xc0011600 x8
+CP_HQD (64 queues): IB_BASE_ADDR 0x700000 on 7 queues (HI 0x1020 / 0x1023 on one each), IB_RPTR 0x138 on one; PQ_WPTR_LO 0x0e5ca500 / 0x0e5ef100 on two
+GCVM_L2_PROTECTION_FAULT_STATUS (IP dump) 0x00000000; CNTL 0x3ffffffc
+
+== devcd8 (2026-10-26 21:43:49; uptime 78033.4 s; boot 98f7b5f9 of 00:03:16; exp 0334 arm D: RT on, one ring, binary acb1cfd7)
+process_name: kyty_emulator TGID: 2606705 thread: bc5-ring PID: 2606770   pasid: 67  vmid: 5
+Ring timed out details: IP Type: 0 Ring Name: gfx_0.0.0
+[gfxhub] Page fault observed: Faulty page starting at address: 0x0 ; Protection fault status register: 0x6012b1
+  (STALE: identical to the 18:35:44 fault of the same boot — "SQC (inst) (0x9), MORE_FAULTS 0x1, PERMISSION_FAULTS 0xb, RW 0x0",
+   F405 — and boot -5 has no fault line after 18:37; no kernel line at all between 21:39 and the journal's end 21:42:50)
+IB #0 0x100a00000000 8920 dw
+gfx_0.0.0: Rptr 0x0 Wptr 0x18761a00; kiq: Rptr 0x6200 Wptr 0x6200
+GRBM_STATUS 0xa0213028  GRBM_STATUS2 0x50000008  GRBM_STATUS3 0
+GRBM_STATUS_SE0..3 0x00000006 (idle)
+CP_STALLED_STAT1 0x00000c00  CP_STALLED_STAT2 0x00018000  CP_BUSY_STAT 0x00408400
+CP_CPF_STATUS 0x94000263  CP_CPF_BUSY_STAT 0x00000006  CP_CPF_STALLED_STAT1 0x00000003  CP_CPC_STATUS 0
+CP_PFP_INSTR_PNTR 0x00000ea1  CP_ME_INSTR_PNTR 0x0000077a  CP_MEC1_INSTR_PNTR 0x447  CP_MEC2_INSTR_PNTR 0x491
+CP_IB1_BASE 0x100a00000000  CP_IB1_CMD_BUFSZ 0x22d8 (8920)  CP_IB1_BUFSZ 0x1b78 (7032 left: 21 % fetched)
+CP_IB2_BASE 0x800100015000  CP_IB2_CMD_BUFSZ 0xa8  CP_IB2_BUFSZ 0
+CP_RB_RPTR 0x26  CP_RB_WPTR 0x18761a00
+CP_PFP_HEADER_DUMP: 0xffff1000 x40 (empty slots), 0xc0065800 x16 (ACQUIRE_MEM x2), 0xc0053c00 x8 (WAIT_REG_MEM)
+CP_ME_HEADER_DUMP:  0xc0065800 x8 (ACQUIRE_MEM), 0xc0004600 x8 (EVENT_WRITE), 0xc0005300 x8, 0xc0003800 x8, 0xc0000c00 x8, 0xc0017400 x8, 0xc0017900 x8 (SET_UCONFIG_REG), 0xc0028f00 x8
+CP_HQD: IB_BASE_ADDR 0x700000 on 7 queues (HI 0x1020 / 0x102e), IB_RPTR 0x18 and 0x90 on one each
+
+== references (exp 0334 raw): F403's devcd1-3 (10-26): PFP 0xea0-0xea1 / ME 0x77a-0x77b, GRBM_STATUS 0xa0407028, SE0/SE1 0x0a000016-36,
+   fault record address 0 status 0; devcd4 (after the reset): SEs idle, WAIT_REG_MEM64; lean devcd7 (18:35): GRBM_STATUS 0xa0003028,
+   SEs idle, fault 0x0 / 0x6012b1 fresh (kernel 18:35:44); devcd5 (00:01, comp_1.2.0): GRBM_STATUS 0xa2712028, SE0/1 0x0d000004, fault record stale.

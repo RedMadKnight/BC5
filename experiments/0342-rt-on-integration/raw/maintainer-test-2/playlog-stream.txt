@@ -1,0 +1,296 @@
+play log /home/kjaniszewski/bc5-work/play-pkg-last.log from 14:05:47
+== 2026-10-27 14:05:45 emulator 2026-10-27 12:26:08
+BC5_GC_MODE=direct
+BC5_DIRECT_STAGE=all
+BC5_DIRECT_RINGS=1
+BC5_DIRECT_REOPEN=1
+BC5_DIRECT_GDS_KIB=64
+BC5_DIRECT_OA=16
+BC5_DIRECT_GWS=64
+BC5_DIRECT_GDS_ALL=1
+BC5_DIRECT_GDS_SHADOW=1
+BC5_DIRECT_JOURNAL=min
+BC5_DIRECT_ASYNC=1
+BC5_DIRECT_LAZY_NAMES=orbis_user_malloc
+BC5_DIRECT_EAGER_NAMES=GpuGarlicMemory,GpuOnionMemory
+KYTY_BC5_ALL_RW=1
+KYTY_BC5_DMABUF=1
+KYTY_BC5_CACHE_MIB=96,16,16,16
+KYTY_BC5_VMA_BLOCK_MIB=16
+KYTY_GUEST_MEMORY_MB=13824
+SDL_JOYSTICK_DISABLE_UDEV=1
+SDL_VIDEODRIVER=wayland
+SHADPS4_SYSMODULES_PACK_DIR=/home/kjaniszewski/bc5-data/mnt/PPSA21567/fakelib
+PLAY_ARGS=
+KYTY_BC5_INPUT_CONFIG=/home/kjaniszewski/bc5-work/input.cfg
+BC5_DIRECT_RING_ASYNC=1
+BC5_DIRECT_FLIP_DEFER=1
+BC5_DIRECT_MAX_IN_FLIGHT=24
+BC5_DIRECT_RING_ORDER_WAITS=1
+KYTY_BC5_INPUT_RECORD=/home/kjaniszewski/bc5-work/route-record.txt
+PLAY_CAPTURE=1
+BC5_DIRECT_PIECES_DRY=1
+BC5_DIRECT_PIECES_FULL=1
+bc5 playgo: /home/kjaniszewski/bc5-data/mnt/pkg-play/sce_sys/playgo-chunk.dat: magic 78676c70, 100 chunks
+host menu: MangoHud control socket @bc5-mangohud-4740 connected
+host menu: MangoHud shown
+[bc5] stubbed import #0x0: sRn6qePT54Q[NpCppWebApi_v1][NpCppWebApi_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/pkg-play/eboot.bin)
+[bc5] stubbed import #0x1: -0Vv7HKZaBM[NpCppWebApi_v1][NpCppWebApi_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/pkg-play/eboot.bin)
+[bc5] stubbed import #0x2: fIzsqjyD5oY[NpCppWebApi_v1][NpCppWebApi_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/pkg-play/eboot.bin)
+[bc5] stubbed import #0x3: yl3T9brJay4[NpCppWebApi_v1][NpCppWebApi_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/pkg-play/eboot.bin)
+[bc5] stubbed import #0x4: eVU3cXIJz0w[NpCppWebApi_v1][NpCppWebApi_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/pkg-play/eboot.bin)
+[bc5] stubbed import #0x5: xjVhrq2KPJA[NpCppWebApi_v1][NpCppWebApi_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/pkg-play/eboot.bin)
+[bc5] stubbed import #0x6: XuVY56j7GM0[NpCppWebApi_v1][NpCppWebApi_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/pkg-play/eboot.bin)
+[bc5] stubbed import #0x7: BY1jyWLZrcA[NpCppWebApi_v1][NpCppWebApi_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/pkg-play/eboot.bin)
+[bc5] stubbed import #0x8: JiY4sfHkV34[NpCppWebApi_v1][NpCppWebApi_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/pkg-play/eboot.bin)
+[bc5] stubbed import #0x9: LbhH9NeB93I[NpCppWebApi_v1][NpCppWebApi_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/pkg-play/eboot.bin)
+bc5-direct: experiment 0341 switches: product staircase 1 (x > 65536 with y or z > 1), args histogram 0, shadow labels 1, bo journal 0
+bc5-direct: GDS BO 64 KiB: ok (0)
+bc5-direct: OA BO 16: ok (0)
+bc5-direct: GDS shadow 64 KiB at 0x100004000000: ok (0)
+bc5-direct: GWS BO 64: ok (0)
+bc5-direct: PRT window 0x8000000000+0x1000000000: 0
+bc5 system param 1 -> 16
+bc5 playgo: PlayGoInitialize
+bc5 playgo: PlayGoOpen
+bc5 playgo: PlayGoGetInstallChunkId
+bc5 playgo: PlayGoGetChunkId
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: GetLocus chunk 0: local fast
+bc5 playgo: GetLocus chunk 1: local fast
+bc5 playgo: GetLocus chunk 2: local fast
+bc5 playgo: GetLocus chunk 3: local fast
+bc5 playgo: GetLocus chunk 4: local fast
+bc5 playgo: GetLocus chunk 5: local fast
+bc5 playgo: GetLocus chunk 6: local fast
+bc5 playgo: GetLocus chunk 7: local fast
+bc5 playgo: GetLocus chunk 8: local fast
+bc5 playgo: GetLocus chunk 9: local fast
+bc5 playgo: GetLocus chunk 10: local fast
+bc5 playgo: GetLocus chunk 11: local fast
+bc5 playgo: GetLocus chunk 12: local fast
+bc5 playgo: GetLocus chunk 13: local fast
+bc5 playgo: GetLocus chunk 14: local fast
+bc5 playgo: GetLocus chunk 15: local fast
+bc5 playgo: GetLocus chunk 16: local fast
+bc5 playgo: GetLocus chunk 17: local fast
+bc5 playgo: GetLocus chunk 18: local fast
+bc5 playgo: GetLocus chunk 19: local fast
+bc5 playgo: GetLocus chunk 20: local fast
+bc5 playgo: GetLocus chunk 21: local fast
+bc5 playgo: GetLocus chunk 22: local fast
+bc5 playgo: GetLocus chunk 23: local fast
+bc5 playgo: GetLocus chunk 24: local fast
+bc5 playgo: GetLocus chunk 25: local fast
+bc5 playgo: GetLocus chunk 26: local fast
+bc5 playgo: GetLocus chunk 27: local fast
+bc5 playgo: GetLocus chunk 28: local fast
+bc5 playgo: GetLocus chunk 29: local fast
+bc5 playgo: GetLocus chunk 30: local fast
+bc5 playgo: GetLocus chunk 31: local fast
+bc5 playgo: PlayGoGetLanguageMask
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoPrefetch
+bc5-direct: /dev/gc TF ring 0x1120000000 size 0x3fff8 (programmed, BC5_DIRECT_GC_TF_RING=1)
+bc5-direct: /dev/gc HS offchip 0x1ff
+bc5 clock: journal t 0 = monotonic 467.502 s
+bc5-direct: shared map at 0x0+0x200000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5 system param 100 -> 0
+bc5 system param 208 -> 0
+bc5 system param 210 -> 0
+AudioOut: SDL audio driver pipewire
+AudioOut: SDLAudioP0 thread 5304 at nice -15
+fps counter: t 4.234 s: 29 flips in 1.032 s, longest gap 84.9 ms, gaps over 40 ms 3, over 70 ms 1
+AudioOut: SDLAudioP0 thread 5789 at nice -15
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+fps counter: t 5.235 s: 30 flips in 1.000 s, longest gap 35.4 ms, gaps over 40 ms 0, over 70 ms 0
+audio trace: t 5.392 s port 1 type 0 8 ch 48000 Hz: 193 calls, 49408 frames = 1.029 s of sound in 1.003 s (rate 1.026), held 0.1 ms, 0 clears, sdl queued 0-20480 bytes (0-26 ms), device playing
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+fps counter: t 6.264 s: 29 flips in 1.029 s, longest gap 92.7 ms, gaps over 40 ms 2, over 70 ms 1
+bc5-direct: shared map at 0x0+0x10000: -22
+audio trace: t 6.395 s port 1 type 0 8 ch 48000 Hz: 188 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.1 ms, 0 clears, sdl queued 20480-20480 bytes (26-26 ms), device playing
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+fps counter: t 7.296 s: 29 flips in 1.032 s, longest gap 47.9 ms, gaps over 40 ms 6, over 70 ms 0
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+audio trace: t 7.398 s port 1 type 0 8 ch 48000 Hz: 188 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 20480-20480 bytes (26-26 ms), device playing
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+fps counter: t 8.331 s: 29 flips in 1.035 s, longest gap 61.7 ms, gaps over 40 ms 4, over 70 ms 0
+audio trace: t 8.402 s port 1 type 0 8 ch 48000 Hz: 188 calls, 48128 frames = 1.003 s of sound in 1.004 s (rate 0.999), held 0.1 ms, 0 clears, sdl queued 20480-20480 bytes (26-26 ms), device playing
+bc5-direct: shared map at 0x0+0x10000: -22
+fps counter: t 9.333 s: 29 flips in 1.002 s, longest gap 46.3 ms, gaps over 40 ms 4, over 70 ms 0
+audio trace: t 9.404 s port 1 type 0 8 ch 48000 Hz: 188 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 20480-20480 bytes (26-26 ms), device playing
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+fps counter: t 10.349 s: 28 flips in 1.016 s, longest gap 102.5 ms, gaps over 40 ms 2, over 70 ms 1
+audio trace: t 10.407 s port 1 type 0 8 ch 48000 Hz: 188 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 20480-20480 bytes (26-26 ms), device playing
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+fps counter: t 11.349 s: 30 flips in 1.001 s, longest gap 40.0 ms, gaps over 40 ms 0, over 70 ms 0
+bc5-direct: shared map at 0x0+0x10000: -22
+audio trace: t 11.410 s port 1 type 0 8 ch 48000 Hz: 188 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.1 ms, 0 clears, sdl queued 20480-20480 bytes (26-26 ms), device playing
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+fps counter: t 12.351 s: 30 flips in 1.002 s, longest gap 36.2 ms, gaps over 40 ms 0, over 70 ms 0
+audio trace: t 12.413 s port 1 type 0 8 ch 48000 Hz: 188 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.1 ms, 0 clears, sdl queued 20480-20480 bytes (26-26 ms), device playing
+fps counter: t 13.382 s: 30 flips in 1.031 s, longest gap 59.0 ms, gaps over 40 ms 1, over 70 ms 0
+audio trace: t 13.417 s port 1 type 0 8 ch 48000 Hz: 188 calls, 48128 frames = 1.003 s of sound in 1.004 s (rate 0.999), held 0.0 ms, 0 clears, sdl queued 20480-20480 bytes (26-26 ms), device playing
+fps counter: t 14.399 s: 30 flips in 1.017 s, longest gap 40.4 ms, gaps over 40 ms 1, over 70 ms 0
+audio trace: t 14.422 s port 1 type 0 8 ch 48000 Hz: 189 calls, 48384 frames = 1.008 s of sound in 1.005 s (rate 1.003), held 0.1 ms, 0 clears, sdl queued 16384-20480 bytes (21-26 ms), device playing
+fps counter: t 15.412 s: 29 flips in 1.013 s, longest gap 59.0 ms, gaps over 40 ms 2, over 70 ms 0
+audio trace: t 15.425 s port 1 type 0 8 ch 48000 Hz: 188 calls, 48128 frames = 1.003 s of sound in 1.004 s (rate 0.999), held 0.1 ms, 0 clears, sdl queued 20480-20480 bytes (26-26 ms), device playing
+audio trace: t 16.429 s port 1 type 0 8 ch 48000 Hz: 188 calls, 48128 frames = 1.003 s of sound in 1.004 s (rate 0.999), held 0.1 ms, 0 clears, sdl queued 20480-20480 bytes (26-26 ms), device playing
+fps counter: t 16.431 s: 29 flips in 1.019 s, longest gap 59.2 ms, gaps over 40 ms 2, over 70 ms 0
+audio trace: t 17.439 s port 1 type 0 8 ch 48000 Hz: 189 calls, 48384 frames = 1.008 s of sound in 1.010 s (rate 0.998), held 0.1 ms, 0 clears, sdl queued 20480-20480 bytes (26-26 ms), device playing
+fps counter: t 17.449 s: 30 flips in 1.018 s, longest gap 38.6 ms, gaps over 40 ms 0, over 70 ms 0
+audio trace: t 18.444 s port 1 type 0 8 ch 48000 Hz: 189 calls, 48384 frames = 1.008 s of sound in 1.004 s (rate 1.004), held 0.1 ms, 0 clears, sdl queued 20480-20480 bytes (26-26 ms), device playing
+fps counter: t 18.465 s: 30 flips in 1.016 s, longest gap 40.6 ms, gaps over 40 ms 1, over 70 ms 0
+audio trace: t 19.447 s port 1 type 0 8 ch 48000 Hz: 188 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 0.999), held 0.1 ms, 0 clears, sdl queued 20480-20480 bytes (26-26 ms), device playing
+fps counter: t 19.482 s: 30 flips in 1.017 s, longest gap 40.8 ms, gaps over 40 ms 1, over 70 ms 0
+audio trace: t 20.451 s port 1 type 0 8 ch 48000 Hz: 188 calls, 48128 frames = 1.003 s of sound in 1.004 s (rate 0.999), held 0.1 ms, 0 clears, sdl queued 20480-20480 bytes (26-26 ms), device playing
+fps counter: t 20.499 s: 30 flips in 1.017 s, longest gap 40.8 ms, gaps over 40 ms 1, over 70 ms 0
+audio trace: t 21.454 s port 1 type 0 8 ch 48000 Hz: 188 calls, 48128 frames = 1.003 s of sound in 1.004 s (rate 0.999), held 0.1 ms, 0 clears, sdl queued 20480-20480 bytes (26-26 ms), device playing
+fps counter: t 21.515 s: 30 flips in 1.017 s, longest gap 39.2 ms, gaps over 40 ms 0, over 70 ms 0
+audio trace: t 22.458 s port 1 type 0 8 ch 48000 Hz: 188 calls, 48128 frames = 1.003 s of sound in 1.004 s (rate 0.999), held 0.1 ms, 0 clears, sdl queued 20480-20480 bytes (26-26 ms), device playing
+fps counter: t 22.532 s: 30 flips in 1.016 s, longest gap 40.8 ms, gaps over 40 ms 1, over 70 ms 0
+audio trace: t 23.461 s port 1 type 0 8 ch 48000 Hz: 189 calls, 48384 frames = 1.008 s of sound in 1.003 s (rate 1.005), held 0.1 ms, 0 clears, sdl queued 20480-20480 bytes (26-26 ms), device playing
+fps counter: t 23.549 s: 30 flips in 1.017 s, longest gap 40.3 ms, gaps over 40 ms 1, over 70 ms 0
+audio trace: t 24.464 s port 1 type 0 8 ch 48000 Hz: 188 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 0.999), held 0.1 ms, 0 clears, sdl queued 20480-20480 bytes (26-26 ms), device playing
+bc5-direct: experiment 0341 periodic: shadow labels in 2000 jobs: 9803 labels, 19606 writes copied, 9803 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 12122 dispatches
+fps counter: t 24.567 s: 30 flips in 1.018 s, longest gap 39.8 ms, gaps over 40 ms 0, over 70 ms 0
+audio trace: t 25.468 s port 1 type 0 8 ch 48000 Hz: 188 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 0.999), held 0.1 ms, 0 clears, sdl queued 20480-20480 bytes (26-26 ms), device playing
+fps counter: t 25.582 s: 30 flips in 1.015 s, longest gap 40.9 ms, gaps over 40 ms 1, over 70 ms 0
+audio trace: t 26.472 s port 1 type 0 8 ch 48000 Hz: 188 calls, 48128 frames = 1.003 s of sound in 1.004 s (rate 0.998), held 0.1 ms, 0 clears, sdl queued 20480-20480 bytes (26-26 ms), device playing
+fps counter: t 26.599 s: 30 flips in 1.017 s, longest gap 40.1 ms, gaps over 40 ms 1, over 70 ms 0
+audio trace: t 27.475 s port 1 type 0 8 ch 48000 Hz: 188 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 0.999), held 0.1 ms, 0 clears, sdl queued 20480-20480 bytes (26-26 ms), device playing
+fps counter: t 27.618 s: 30 flips in 1.020 s, longest gap 41.6 ms, gaps over 40 ms 2, over 70 ms 0
+audio trace: t 28.479 s port 1 type 0 8 ch 48000 Hz: 188 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 0.999), held 0.1 ms, 0 clears, sdl queued 20480-20480 bytes (26-26 ms), device playing
+fps counter: t 28.632 s: 30 flips in 1.014 s, longest gap 40.6 ms, gaps over 40 ms 1, over 70 ms 0
+audio trace: t 29.482 s port 1 type 0 8 ch 48000 Hz: 189 calls, 48384 frames = 1.008 s of sound in 1.004 s (rate 1.004), held 0.1 ms, 0 clears, sdl queued 20480-20480 bytes (26-26 ms), device playing
+fps counter: t 29.649 s: 30 flips in 1.017 s, longest gap 40.7 ms, gaps over 40 ms 1, over 70 ms 0
+== 2026-10-27 14:06:15 exit 0

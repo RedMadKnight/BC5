@@ -1,0 +1,6 @@
+2026-10-27 06:35:36 before: normal 4a146894, lean c28cdd3c, tree f266548, 96 changed entries
+  src/libs/libKernel.cpp tree 35b61eea (0 CR) -> patched 3bf94a61 (0 CR)
+  src/kernel/pthread.cpp tree d1ab5a05 (4758 CR) -> patched 46c7ac3a (4784 CR)
+  src/kernel/pthread.h tree f51b5ef1 (0 CR) -> patched 6b9e6414 (0 CR)
+  src/libs/bc5LleAgc.cpp tree 5bccbb80 (0 CR) -> patched cfeec2f8 (0 CR)
+  src/loader/runtimeLinker.cpp tree f294dfc2 (0 CR) -> patched e37ed5cd (0 CR)

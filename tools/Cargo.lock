@@ -47,6 +47,7 @@ dependencies = [
  "clap",
  "flate2",
  "fuser",
+ "nix",
  "num-traits",
  "oozextract",
  "proptest",

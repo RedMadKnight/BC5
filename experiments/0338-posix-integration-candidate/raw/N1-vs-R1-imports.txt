@@ -1,0 +1,30 @@
+before: 1935 imports; hle 880, module 897, nid-fallback 148, unresolved 10
+after: 1935 imports; hle 896, module 897, nid-fallback 132, unresolved 10
+only before: 0; only after: 0
+
+## changed (program, NID, requested library: path implementation -> path implementation)
+eboot.bin                Oy6IpwgtYOk  libScePosix  nid-fallback  Posix::lseek                             -> hle   Posix::lseek
+eboot.bin                QcteRwbsnV0  libScePosix  nid-fallback  LibKernel::KernelUsleep                  -> hle   LibKernel::KernelUsleep
+eboot.bin                RXXqi4CtF8w  libScePosix  nid-fallback  LibKernel::PthreadCondDestroy            -> hle   Posix::pthread_cond_destroy
+eboot.bin                bY-PO6JhzhQ  libScePosix  nid-fallback  FileSystem::KernelClose                  -> hle   LibKernel::close
+libcohtml.Prospero.prx   27bAgiJmOh0  libScePosix  nid-fallback  Posix::pthread_cond_timedwait            -> hle   Posix::pthread_cond_timedwait
+libcohtml.Prospero.prx   6XG4B33N09g  libScePosix  nid-fallback  LibKernel::PthreadYield                  -> hle   Posix::sched_yield
+libcohtml.Prospero.prx   EgmLo6EWgso  libScePosix  nid-fallback  LibKernel::PthreadRwlockUnlock           -> hle   Posix::pthread_rwlock_unlock
+libcohtml.Prospero.prx   FN4gaPmuFV8  libScePosix  nid-fallback  FileSystem::KernelWrite                  -> hle   LibKernel::write
+libcohtml.Prospero.prx   HoLVWNanBBc  libScePosix  nid-fallback  LibKernel::getpid                        -> hle   LibKernel::getpid
+libcohtml.Prospero.prx   Oy6IpwgtYOk  libScePosix  nid-fallback  Posix::lseek                             -> hle   Posix::lseek
+libcohtml.Prospero.prx   QcteRwbsnV0  libScePosix  nid-fallback  LibKernel::KernelUsleep                  -> hle   LibKernel::KernelUsleep
+libcohtml.Prospero.prx   RXXqi4CtF8w  libScePosix  nid-fallback  LibKernel::PthreadCondDestroy            -> hle   Posix::pthread_cond_destroy
+libcohtml.Prospero.prx   bY-PO6JhzhQ  libScePosix  nid-fallback  FileSystem::KernelClose                  -> hle   LibKernel::close
+libcohtml.Prospero.prx   iGjsr1WAtI0  libScePosix  nid-fallback  LibKernel::PthreadRwlockRdlock           -> hle   Posix::pthread_rwlock_rdlock
+libcohtml.Prospero.prx   mqQMh1zPPT8  libScePosix  nid-fallback  Posix::fstat                             -> hle   Posix::fstat
+libcohtml.Prospero.prx   wuCroIGjt2g  libScePosix  nid-fallback  FileSystem::KernelOpen                   -> hle   LibKernel::open
+eboot.bin                FXPWHNk8Of0  libkernel    hle           (Diag0336<LibKernel::PthreadAttrGetschedparam, 5>::call) -> hle   LibKernel::PthreadAttrGetschedparam
+libSceAgcDriver.sprx     bY-PO6JhzhQ  libkernel    hle           FileSystem::KernelClose                  -> hle   LibKernel::close
+libSceAgcDriver.sprx     wuCroIGjt2g  libkernel    hle           FileSystem::KernelOpen                   -> hle   LibKernel::open
+libc.prx                 EgmLo6EWgso  libkernel    hle           LibKernel::PthreadRwlockUnlock           -> hle   Posix::pthread_rwlock_unlock
+libc.prx                 XD3mDeybCnk  libkernel    hle           (Diag0336<LibKernel::PthreadRwlockTryrdlock, 1>::call) -> hle   LibKernel::PthreadRwlockTryrdlock
+libc.prx                 fgIsQ10xYVA  libkernel    hle           (Diag0336<FileSystem::KernelChmod, 0>::call) -> hle   FileSystem::KernelChmod
+libc.prx                 iGjsr1WAtI0  libkernel    hle           LibKernel::PthreadRwlockRdlock           -> hle   Posix::pthread_rwlock_rdlock
+libc.prx                 sIlRvQqsN2Y  libkernel    hle           (Diag0336<LibKernel::PthreadRwlockWrlock, 6>::call) -> hle   Posix::pthread_rwlock_wrlock
+24 changed

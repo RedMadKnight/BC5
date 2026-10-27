@@ -1,0 +1,11 @@
+--- /home/kjaniszewski/bc5-work/exp0330/shortcut-1800/play-pkg-0330t.sh	2026-10-26 09:07:30.417240717 +0100
++++ /home/kjaniszewski/bc5-work/exp0330/play-pkg-0330t.sh	2026-10-26 10:24:24.126869359 +0100
+@@ -38,7 +38,7 @@
+   if [ "$key" = PLAY_ARGS ]; then PLAY_ARGS=$val; else export "$key=$val"; fi
+ done < "$ENVF"
+ export BC5_DIRECT_LAZY_NAMES="${BC5_DIRECT_LAZY_NAMES:+$BC5_DIRECT_LAZY_NAMES,}Wwise,SoundAlloc,FileSystem,UIStringAlloc"  # exp 0330 (F394): the four CPU-only heaps lazy, 242 MiB less pinned
+-export BC5_DIRECT_BREAKDOWN_AT=1800 BC5_DIRECT_BREAKDOWN_NODATA=1 BC5_DIRECT_ZEROSCAN_AT=1810 BC5_DIRECT_JOURNAL_DONTNEED=1  # exp 0330 (the maintainer's test): the import table and the zero scan after 30 min, the journal out of the page cache
++export BC5_DIRECT_BREAKDOWN_AT=530 BC5_DIRECT_BREAKDOWN_NODATA=1 BC5_DIRECT_ZEROSCAN_AT=540 BC5_DIRECT_JOURNAL_DONTNEED=1  # exp 0330 (the maintainer's test, F395): the import table and the zero scan at 530/540 s, before the ~642 s freeze; the journal out of the page cache
+ PLAY_ARGS="$PLAY_ARGS --fullscreen"  # the maintainer: this title fullscreen, at the display's resolution (Full HD here)
+ unset BC5_GC_DUMP_DIR
+ [ "${BC5_LEAN:-0}" = 1 ] && unset KYTY_BC5_INPUT_RECORD PLAY_CAPTURE  # exp 0177: no input recorder

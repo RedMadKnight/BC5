@@ -111,6 +111,7 @@ impl DiskCache {
                 .open(dir.join(name))
         };
         let data = open(format!("{key}.data"))?;
+        crate::io::advise_readahead_off(&data); // read a block at a time, as the image (experiment 0331)
         let map = open(format!("{key}.map"))?;
         let map_len = blocks as u64 * 8;
         let data_len = blocks as u64 * block_bytes;

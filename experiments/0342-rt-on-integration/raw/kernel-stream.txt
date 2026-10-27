@@ -1,0 +1,21 @@
+paź 27 12:28:46.153615 bazzite kernel: perf: interrupt took too long (2501 > 2500), lowering kernel.perf_event_max_sample_rate to 79000
+paź 27 12:30:21.043772 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 27 12:32:26.042764 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 27 12:34:31.044772 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 27 12:36:36.044772 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 27 12:38:41.043780 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 27 12:39:19.147763 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State
+paź 27 12:39:19.149758 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State Completed
+paź 27 12:39:19.150115 bazzite kernel: amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+paź 27 12:39:19.150289 bazzite kernel: amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+paź 27 12:39:19.150451 bazzite kernel: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=7824067, emitted seq=7824069
+paź 27 12:39:19.150623 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 953983 thread bc5-ring pid 954088
+paź 27 12:39:19.150805 bazzite kernel: amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+paź 27 12:39:19.150967 bazzite kernel: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded
+paź 27 12:39:19.151156 bazzite kernel: amdgpu 0000:01:00.0: [drm] device wedged, but no recovery needed
+paź 27 12:40:46.043771 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 27 12:42:51.043769 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 27 12:44:56.048776 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 27 12:47:01.048781 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+Read from remote host 100.88.23.35: Connection reset by peer
+client_loop: send disconnect: Connection reset by peer

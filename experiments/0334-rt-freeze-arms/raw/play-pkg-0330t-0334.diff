@@ -1,0 +1,10 @@
+--- /home/kjaniszewski/bc5-work/exp0334/shortcut-before/play-pkg-0330t.sh	2026-10-26 12:13:50.712418814 +0100
++++ /home/kjaniszewski/bc5-work/exp0330/play-pkg-0330t.sh	2026-10-26 17:43:22.080245984 +0100
+@@ -37,6 +37,7 @@
+   key=${line%%=*}; val=${line#*=}
+   if [ "$key" = PLAY_ARGS ]; then PLAY_ARGS=$val; else export "$key=$val"; fi
+ done < "$ENVF"
++[ -n "${BC5_0334_INPUT_CONFIG:-}" ] && export KYTY_BC5_INPUT_CONFIG=$BC5_0334_INPUT_CONFIG  # exp 0334 arm C: the private input configuration (RT on)
+ export BC5_DIRECT_LAZY_NAMES="${BC5_DIRECT_LAZY_NAMES:+$BC5_DIRECT_LAZY_NAMES,}Wwise,SoundAlloc,FileSystem,UIStringAlloc"  # exp 0330 (F394): the four CPU-only heaps lazy, 242 MiB less pinned
+ export BC5_DIRECT_BREAKDOWN_AT=530 BC5_DIRECT_BREAKDOWN_NODATA=1 BC5_DIRECT_ZEROSCAN_AT=540 BC5_DIRECT_JOURNAL_DONTNEED=1  # exp 0330 (the maintainer's test, F395): the import table and the zero scan at 530/540 s, before the ~642 s freeze; the journal out of the page cache
+ PLAY_ARGS="$PLAY_ARGS --fullscreen"  # the maintainer: this title fullscreen, at the display's resolution (Full HD here)

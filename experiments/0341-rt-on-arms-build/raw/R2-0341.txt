@@ -1,0 +1,24 @@
+bc5-direct: experiment 0341 switches: product staircase 1 (x > 65536 with y or z > 1), args histogram 1, shadow labels 1, bo journal 1
+bc5-direct: args histogram (periodic): 500013 sampled, 1046 classes; the staircase (y or z > 1 with x > 65536) would refuse 99034, the per-dimension limits 117812; top x.y.z classes: 0.2^0.2^0:99928 2^31.2^31.2^31:74619 2^13.2^0.2^0:52247 2^0.2^0.2^0:44573 2^10.2^0.2^0:32581 2^7.2^0.2^0:26523 2^6.2^0.2^0:25433 2^8.2^0.2^0:24908 2^9.2^0.2^0:14980 2^12.2^0.2^0:13750 2^15.2^0.2^0:12176 2^31.2^6.2^31:10211 2^1.2^0.2^0:8518 2^11.2^0.2^0:7868 0.0.0:5542 2^13.2^31.2^31:4882 2^5.2^0.2^0:4070 2^4.2^0.2^0:3770 2^31.2^7.2^31:2981 2^3.2^0.2^0:2214 2^6.2^7.2^31:2112 2^31.2^5.2^31:1898 2^16.2^31.2^31:1845 2^15.2^31.2^31:1530
+bc5-direct: args histogram (periodic): 1000017 sampled, 1046 classes; the staircase (y or z > 1 with x > 65536) would refuse 239806, the per-dimension limits 267357; top x.y.z classes: 2^31.2^31.2^31:215391 0.2^0.2^0:205116 2^13.2^0.2^0:113119 2^10.2^0.2^0:76146 2^6.2^0.2^0:69445 2^0.2^0.2^0:61552 2^8.2^0.2^0:59996 2^7.2^0.2^0:52763 2^9.2^0.2^0:23904 2^12.2^0.2^0:23054 2^13.2^31.2^31:13645 2^15.2^0.2^0:12176 2^31.2^6.2^31:10211 2^1.2^0.2^0:8518 2^11.2^0.2^0:7868 0.0.0:5542 2^5.2^0.2^0:4070 2^4.2^0.2^0:4057 2^31.2^7.2^31:2981 2^3.2^0.2^0:2214 2^6.2^7.2^31:2112 2^31.2^5.2^31:1898 2^16.2^31.2^31:1845 2^15.2^31.2^31:1530
+bo lines: 62491 (userptr map 0, unmap 0, shared map 37010, scratch 316)
+bc5-direct: bo alias map va 0xffff8011ce000000 size 0x200000
+bc5-direct: bo alias map va 0xffff8011ce200000 size 0x200000
+bc5-direct: bo alias map va 0xffff8011ce400000 size 0x200000
+bc5-direct: bo alias map va 0xffff8011ce600000 size 0x200000
+bc5-direct: bo alias map va 0xffff8011ce800000 size 0x200000
+bc5-direct: bo alias map va 0xffff8011cea00000 size 0x200000
+bc5-direct: bo alias map va 0xffff8011cec00000 size 0x200000
+bc5-direct: bo alias map va 0xffff8011cee00000 size 0x200000
+bc5-direct: bo alias map va 0xffff8011cf000000 size 0x200000
+bc5-direct: bo alias map va 0xffff8011cf200000 size 0x200000
+bc5-direct: bo alias map va 0xffff8011cf400000 size 0x200000
+bc5-direct: bo alias map va 0xffff8011cf600000 size 0x200000
+bc5-direct: bo alias map va 0xffff8011cf800000 size 0x200000
+bc5-direct: bo alias map va 0xffff8011cfa00000 size 0x200000
+bc5-direct: bo alias map va 0xffff8011cfc00000 size 0x200000
+bc5-direct: bo alias map va 0xffff8011cfe00000 size 0x200000
+bc5-direct: bo alias map va 0xffff8011d0000000 size 0x4000000
+bc5-direct: bo alias map va 0xffff800906000000 size 0x6000000
+bc5-direct: bo scratch slot va 0x100000000000 size 0x1000
+bc5-direct: bo scratch slot va 0x100100000000 size 0x4000

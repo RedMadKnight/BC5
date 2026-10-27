@@ -105,4 +105,209 @@ of it cost frame rate?
 
 Exp 0329 (bvh) also needs box time, so the runs go in one chain.
 
-**Result.** Pending.
+**Result** (2026-10-26, run by the cloud supervisor on the maintainer's GO: "Masz GO, decyzja A").
+- **Setup:**
+  - built 07:30: `exp0330/kyty_emulator` a86787f1 from the shared normal build 4a146894's objects; the patch output is
+    29664e3c as designed; 4 compiler warnings, none in the 0330 edits (`raw/build.out`);
+  - the chain ran 07:35–08:06 with `play-pkg.sh` c0357628, derived launcher 0608cd5e (`raw/play-pkg-0330.diff`);
+  - the box's settings are in `raw/box-settings.txt` (swappiness 60, zram 7.6 GB zstd);
+  - arm A's lazy list was `orbis_user_malloc`;
+  - the live saves read b1cd637738395a19 before and after every arm (`raw/s6n-saves.txt`). They differ from STATE's
+    20bc4707 because the maintainer played at 23:58 on 10-25.
+- **No GPU trouble:** the kernel stream (`raw/kernel-stream.txt`) holds no GPU line over the whole chain. The journal
+  stream holds no TIMEOUT and no fault.
+
+| arm | verdict | flips/s | pinned MiB | MemAvailable after 3 min, median (min) | swap used, start → end | pswpout | pgmajfault | pgsteal file / anon | refaults file / anon | PSI memory full |
+|---|---|---|---|---|---|---|---|---|---|---|
+| A | pass, 600 s | 36.8 | 11,474 | 675 (650) MiB | 504 → 627 MiB | 80,227 | 59,033 | 11.52 M / 90.4 k | 1.19 M / 57.6 k | 5.75 s |
+| B | pass, 600 s | 36.4 | 11,430 | 670 (634) MiB | 548 → 554 MiB | 2,954 | 3,334 | 9.35 M / 4.1 k | 708 k / 2.2 k | 3.13 s |
+| C | pass, 600 s | 36.2 | 11,232 | 720 (706) MiB | 553 → 557 MiB | 1,188 | 850 | 8.98 M / 1.4 k | 705 k / 302 | 3.26 s |
+| D | **did not start**: exit 65 at 6 s | — | (7,010 at the stop) | — | — | — | — | — | — | — |
+
+The counters are deltas over the run from `raw/<arm>-mem.txt`, in pages; PSI is the "full" time. Arm A's zero scan at
+550 s read 11,378 MiB in 2.3 s (`raw/A-zeroscan.txt`). The per-name import table is `raw/A-breakdown.txt` (no data walk).
+The heaps with the most all-zero memory:
+
+| heap | imported MiB | in all-zero 2 MiB chunks | in all-zero 4 KiB pages |
+|---|---|---|---|
+| RenderGpuWcLarge | 2,758 | 1,422 | 1,786 |
+| CommitIABufferAllocator | 2,736 | 1,376 | 1,489 |
+| DynamicHeap | 328 | 212 | 230 |
+| AMM | 2,276 | 184 | 340 |
+| Physics | 192 | 166 | 174 |
+| RenderGpuRwLarge | 414 | 76 | 129 |
+| InitAllocator | 412 | 2 | 150 |
+| total | 11,378 | 3,672 | 4,691 |
+
+B and C read the same within 12 MiB of all-zero chunks per heap (`raw/B-zeroscan.txt`, `raw/C-zeroscan.txt`). C's
+scan lacks the four lazy names.
+
+Readings:
+1. **The eager import pins 3.7 GB that is all zero after nine minutes of play.** That is a third of the 11.4 GB pinned.
+   2.8 GB of it lies in RenderGpuWcLarge and CommitIABufferAllocator, half of each heap in whole 2 MiB chunks.
+   - A page still zero then was most likely written by neither the CPU nor the GPU on this route.
+   - It does not show that a longer session or another place in the game leaves it untouched.
+2. **B's switch costs no frame rate** (36.4 against 36.8 flips/s). This chain does not show its effect on swap
+   traffic, because of the order:
+   - A ran first and pushed the cold system out to zram (swap 504 → 627 MiB);
+   - B and C started with that already swapped;
+   - C, without the switch, swapped as little as B (1,188 and 2,954 pages out).
+
+   A fair test alternates the arms after a warm-up run.
+3. **Reclaim takes file pages, not the title's anonymous ones.** In every arm 9–11.5 M file pages were stolen against
+   1.4–90 k anonymous ones. 0.7–1.2 M file pages, 2.7–4.5 GiB, were read again within ten minutes.
+   - The page cache thrashes: the files the title streams do not fit in the ~0.7 GB left. These are bc5-mount's
+     image and the files it serves.
+   - So `vm.swappiness` is not the lever. Whether the image's pages and the FUSE files' pages are cached twice is not
+     known: TODO(verify).
+4. **C's four CPU-only heaps lazy** (Wwise, SoundAlloc, FileSystem, UIStringAlloc) pinned 242 MiB less than A. There
+   was no learned fault, no TIMEOUT and no hang, and the frame rate was unchanged (36.2/s). MemAvailable's median rose
+   by only ~45 MiB. Where the rest went was not read; the page cache taking it is the likely reading.
+5. **D does not start.** With `KYTY_GUEST_MEMORY_MB=12288` the title stopped 3 s after its start:
+   `condition (g_tls_main_program == nullptr) is true in runtimeLinker.cpp:1470` (`raw/D-play.log`). So the title
+   does not size its pools smaller with less guest memory; the main program's load fails first. Why it fails was not
+   read further.
+
+**Verdict.**
+- **The memory to win is in the eager import, not in the box.** About 3.7 GB of the pinned 11.4 GB is untouched on
+  this route. The next experiment is a narrower import of RenderGpuWcLarge and CommitIABufferAllocator:
+  - first it checks over a longer session (the maintainer's play, the zero scan at the end) that the zero parts stay
+    zero;
+  - then it leaves them to the fault path with learning (F96's method).
+- **The four CPU-only names are a candidate for the launchers' lazy list:** −242 MiB pinned, no fault, same frame rate.
+  The integration is D19's: the maintainer's yes.
+- **`BC5_DIRECT_JOURNAL_DONTNEED=1` is harmless, but not shown to help.** It needs the alternating test before it is
+  proposed as a default.
+- **`KYTY_GUEST_MEMORY_MB` stays at 13,824.**
+- **The box's reclaim is a page-cache thrash.** That points the box's settings and bc5-mount's caching at the file
+  side, not at swap.
+
+**Addendum (2026-10-26, after the integration, F394).** On the maintainer's yes ("Zaczynaj od A"), `int0330.sh` added
+arm C's four names to the lazy list of the second title's three launchers at 08:20. One line goes in after each
+launcher's env-file loop, where arm C's hook was:
+`export BC5_DIRECT_LAZY_NAMES="${BC5_DIRECT_LAZY_NAMES:+$BC5_DIRECT_LAZY_NAMES,}Wwise,SoundAlloc,FileSystem,UIStringAlloc"`.
+- **The launchers:**
+  - `play-pkg.sh` c0357628 → b10eac6d;
+  - `play-pkg-log.sh` e1b361a1 → 5080d2ce;
+  - `play-pkg-quiet.sh` 2b23073d → 48fa60ba.
+- **What stays as it was:** `bc5-run.env` keeps `orbis_user_malloc`, so ASTRO BOT's `play-astro.sh` is unchanged.
+- **Both shortcuts take it.** They reach `play-pkg.sh` through `play-any.sh`. The lean build reads the list with
+  `getenv` as the normal one does; the experiment ran the normal build's objects only.
+- **Checks:** each launcher parses, its diff is the one added line (`raw/int-*.diff`), and its first lines, sourced in
+  a subshell, give `orbis_user_malloc,Wwise,SoundAlloc,FileSystem,UIStringAlloc` (`raw/int.out`). The script was first
+  run on copies, including its restore path.
+- **Undo:** `~/bc5-work/exp0330/integration/*.before-0330`; the command is the last line of `raw/int.out`.
+- **Not run:** the integrated launchers in play. The maintainer's play tests them.
+
+**Addendum (2026-10-26 09:07, the maintainer's test shortcut).** At his choice ("a"), `setup0330t.sh` set up "BC5
+emulator (test 0330: pamięć)" on his desktop, as exp 0328's test shortcut was.
+- **What it runs:** the private binary a86787f1 through `exp0330/play-pkg-0330t.sh` (73845711). That is today's
+  `play-pkg.sh` b10eac6d with the integrated lazy list, plus two changes (`raw/play-pkg-0330t.diff`):
+  - one log per start in `exp0330/play/`;
+  - after the lazy-list line, `BC5_DIRECT_BREAKDOWN_AT=1800 BC5_DIRECT_BREAKDOWN_NODATA=1 BC5_DIRECT_ZEROSCAN_AT=1810
+    BC5_DIRECT_JOURNAL_DONTNEED=1`.
+- **His session:** his own saves (b1cd637738395a19 at the setup) and his `input.cfg` (RT off).
+- **The question:** does the 2.8 GB of all-zero chunks in RenderGpuWcLarge and CommitIABufferAllocator stay zero after
+  30 minutes of his play? The answer decides the narrower import.
+- **Undo:** `rm` of the shortcut and the copy (`raw/setup0330t.out`).
+
+**Addendum (2026-10-26 10:15, the maintainer's first session on the test shortcut, F395).** He played 09:58–10:09:36
+(~11.5 min, RT off) and reported a picture freeze near the end. The evidence is in `raw/maintainer-test/`.
+- **The freeze:**
+  - the kernel logged `ring gfx_0.0.0 timeout` at 10:08:45 (`kernel.txt`), and the reset succeeded. The box stayed up,
+    in the boot of 00:03;
+  - the devcoredump is `~/bc5-data/captures/devcoredump/20261026-100846-devcd1.txt`;
+  - in the journal, an acb/dcb pair timed out on the host after 2,030 ms, near t ≈ 642 s (`probe.txt`): #775996 (acb,
+    9,153 dwords) and #776001 (dcb, 2,908 dwords). The acb's first packet is the wait on 0x12004b4fc8 == 0, read as met;
+  - the last flip was at t 658.9 s; he closed the emulator at 10:09:36 (exit 0);
+  - the lazy list in force was arm C's (`journal-lines.txt`).
+- **His session ran under far heavier memory pressure than the bench** (`vmstat-delta.txt`, from arm C's last sample to
+  10:12):
+
+  | | his session (~11.5 min) | arms A–C (10 min each) |
+  |---|---|---|
+  | PSI memory "full" | 25.9 s | 3.1–5.8 s |
+  | file pages reclaimed | 44.5 M | 9.0–11.5 M |
+  | file pages refaulted | 5.5 M | 0.7–1.2 M |
+  | pages swapped out | 169 k | 1.2–80 k |
+  | major faults | 127 k | 0.9–59 k |
+
+  Free play streams far more than S6N's route.
+- **The zero scan did not run:** it was set for 1800 s.
+- **A lead for the thrash, not measured yet.** bc5-mount can hold the title's data three times:
+  1. the image's pages in the page cache (plain reads, no `O_DIRECT` or `fadvise` in `tools/bc5-mount/src`);
+  2. its decoded-block cache of 1,024 MiB (`pfsc.rs`, exp 0121, chosen when the game left 3.7 GB free);
+  3. the served files' pages, which stay cached (`FOPEN_KEEP_CACHE`, `fuse.rs:287`).
+
+  Which process reads those tens of GiB is not known. The mount log has no statistics.
+- His saves changed in the session (a24ec483cee31821), as play does.
+
+**Addendum (2026-10-26 10:24, the test shortcut's second form).** At the maintainer's choice ("a") after F395,
+`setup0330p.sh` changed the shortcut. The first form is kept in `~/bc5-work/exp0330/shortcut-1800/`.
+- **The scan times:** the import table and the zero scan come at 530/540 s instead of 1800/1810 s, before the ~642 s
+  freeze. That is one line of `play-pkg-0330t.sh`, now bf4f3da3 (`raw/play-pkg-0330t-v2.diff`).
+- **The sampler:** the shortcut now runs `test0330p.sh` on the host. It starts `sample0330p.sh` beside each session,
+  then the test launcher in the distrobox. The sampler is `sample0330.sh`'s 27 columns plus:
+  - the emulator's and bc5-mount's `read_bytes`/`rchar`;
+  - the NVMe's sectors read;
+  - VRAM in use.
+
+  It writes `exp0330/play/mem-<time>.txt` every 10 s, read only, and ends with the emulator.
+- **Tested first:** on stand-ins (33 columns; it ends with the process), and `/proc/<pid>/io` reads for the user's
+  processes on the box.
+
+**Addendum (2026-10-26 10:55, the maintainer's second session on the test shortcut, F396).** He played 10:49:25–10:52:50
+and stopped on a big slowdown. There was no GPU kernel line and no devcoredump. The zero scan (540 s) was not reached.
+The sampler and the per-10-s flip counts are in `raw/maintainer-test-2/`.
+- **Who reads.** In 194 s:
+  - bc5-mount's `read_bytes` were 36,335 MiB; the NVMe read 36,719 MiB in all, at up to 340 MB/s per 10 s;
+  - bc5-mount itself asked for 20,424 MiB (`rchar`);
+  - the emulator read 12,727 MiB from the mount.
+
+  So the kernel fetched 78 % more of the image than bc5-mount asked for. bc5-mount in turn read 1.6 times what it
+  served.
+- **Why the kernel over-reads.** The image (`game.pkg`, 101.8 GB) lies on btrfs, whose bdi readahead is 4,096 KiB
+  (`/sys/class/bdi/btrfs-1/read_ahead_kb`; the NVMe's own is 128). bc5-mount reads it in tens of KiB through plain
+  `pread` (`io.rs`, no `fadvise`). Whatever readahead brings in and nobody reads goes through the page cache, in the
+  ~0.8 GB that is left.
+- **Memory:**
+  - MemAvailable 13.7 GB at the start, ~0.8 GB from 100 s, as GTT grew to 11.9 GB;
+  - file refaults up to ~200 k pages per 10 s;
+  - PSI "full" 5.5 s.
+- **Flips:** 12–21/s while loading (30–80 s), then 20–32/s, against ~36 on the bench.
+- **The levers this points at:**
+  1. the btrfs readahead, a root setting, runtime and reversible;
+  2. `POSIX_FADV_RANDOM` on the image in bc5-mount, which needs `libc` as a direct dependency.
+
+**Addendum (2026-10-26 11:24, the maintainer's third session: btrfs readahead 128 KiB, F397).** He set
+`/sys/class/bdi/btrfs-1/read_ahead_kb` from 4,096 to 128 as root. This is a runtime change: a reboot restores 4,096.
+Then he played on the test shortcut, 11:08:20–11:20:00. The evidence is in `raw/maintainer-test-3/`.
+- **The end was the title's known crash, not memory or the GPU.**
+  - `Access violation: Read [0xc]` at `eboot.bin+0x3d7eca0` at t ≈ 699 s, exit 65 (`crash-context.txt`). It is the
+    site of exp 0299's L1 crash and of exp 0326's.
+  - There was no GPU kernel line, no OOM line and no devcoredump.
+  - The crash dump's most recent stubbed imports are four of the ten unnamed NpCppWebApi NIDs. The title also calls
+    them at every start, so they are not shown to be related.
+- **The readahead change removed the over-read.**
+
+  | | session 2 (readahead 4,096 KiB, 194 s) | session 3 (128 KiB, 691 s) |
+  |---|---|---|
+  | NVMe read / bc5-mount asked | 1.78 | 1.07 |
+  | NVMe rate | 190 MB/s | 92 MB/s (the emulator read 90 MB/s, more than before) |
+  | PSI "full" per minute | 1.71 s | 0.29 s |
+  | file refaults per minute | 409 k | 119 k |
+  | flips/s | 12–32 | 30–38 in minutes 3–10 (22–31 while loading, 21–29 in the last two) |
+  | MemAvailable after 3 min, median (min) | 801 (796) MiB | 367 (255) MiB |
+  | GTT at most | 11.9 GB | 12.5 GB |
+
+  MemAvailable is lower because the pinned memory grew in the longer session.
+- **His play's zero scan at 540 s** (`zeroscan.txt`): 3,436 MiB in all-zero 2 MiB chunks, against arm A's 3,672.
+  RenderGpuWcLarge had 1,192 of 2,758 MiB and CommitIABufferAllocator 1,244 of 2,736. Free play touches some more of
+  them, but ~2.4 GB of the two heaps is still untouched after nine minutes.
+
+**Addendum (2026-10-26 13:30, a correction).** The maintainer's sessions on the test shortcut (09:58, 10:49, 11:08) ran
+with **RT on**, not off as the addenda above and F395 say.
+- His `input.cfg` has had `RayTracing.PPSA03671=on` since 00:04:09 on 10-26. STATE's "RT off" predates that.
+- None of the session journals has an RT-off drop line.
+- The arms A–D ran RT off through their private configuration. So comparisons of his play with the bench mix free play
+  with ray tracing.

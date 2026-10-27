@@ -1,0 +1,13 @@
+# exp 0342 R2: register values of the devcoredump on the box (read-only; the dump stays there):
+# ~/bc5-data/captures/devcoredump/20261027-123919-devcd1.txt (kernel 7.2.9-ogc3.1; integrated shared normal ddfb9456, RT on, one ring, both 0341 guards)
+process_name: kyty_emulator TGID: 953983 thread: bc5-ring PID: 954088
+Ring timed out: gfx_0.0.0 (kernel: "ring gfx_0.0.0 timeout, signaled seq=7824067, emitted seq=7824069"; "Ring gfx_0.0.0 reset succeeded"; "device wedged, but no recovery needed")
+fault record: address 0x0, GCVM_L2_PROTECTION_FAULT_STATUS 0x00000000 (no fault)
+IB #0 0x100400000000 6584 dw; CP_IB1_CMD_BUFSZ 0x19b8 (6584), CP_IB1_BUFSZ 0xb18 (2840 left: 57 % fetched); CP_IB2_BASE_LO 0x15000 CMD_BUFSZ 0xa8 BUFSZ 0
+gfx_0.0.0: Rptr 0x300 Wptr 0x68a59d00 RB mask 7ff
+GRBM_STATUS 0xa0407028 (F403's devcd1-3 value)  GRBM_STATUS2 0x52000008
+GRBM_STATUS_SE0 0x0a000016  SE1 0x0a000016  SE2 0x00000006  SE3 0x00000006 (SE0/SE1 busy, as F403)
+CP_STALLED_STAT1 0x00000c00  CP_BUSY_STAT 0x00420000  CP_CPF_STATUS 0xb4000263
+CP_PFP_INSTR_PNTR 0x00000ea1  CP_ME_INSTR_PNTR 0x0000077b (F403's positions)
+CP_PFP_HEADER_DUMP (one period of the history): 0xc0065800 ACQUIRE_MEM, 0xc0004600 EVENT_WRITE, 0xc0011600 DISPATCH_INDIRECT, 0xc0032200 COND_EXEC, 0xc0004200 PFP_SYNC_ME, 0xc0033700 WRITE_DATA, 0xc0032200 COND_EXEC, 0xc0004200 PFP_SYNC_ME
+CP_ME_HEADER_DUMP (one period): 0xc0004600 EVENT_WRITE, 0xc0011600 DISPATCH_INDIRECT, 0xc0004200, 0xc0033700, 0xc0004200, 0xc0033700, 0xc0074500 x2 COND_WRITE

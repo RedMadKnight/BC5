@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 #include "bc5/direct.hpp"
 #include "bc5/indirect_check.hpp"
+#include "bc5/shadow_labels.hpp"
 
 #include <amdgpu.h>
 #include <amdgpu_drm.h>
@@ -18,6 +19,8 @@
 #include <cstdio>
 #include <cstring>
 #include <mutex>
+#include <cstdlib>
+#include <map>
 
 namespace bc5::direct {
 
@@ -108,6 +111,95 @@ struct Device::Impl {
     // Experiment 0027: the IB is assembled and scanned in this cached buffer and copied into the
     // scratch once; every read of the uncached scratch cost more than the walk itself.
     std::vector<std::uint32_t> image;
+    // Experiment 0341: the three experimental switches read from the environment in
+    // Device::open (the host's FilterOptions / OpenOptions fields win when set), the dispatch
+    // argument histogram (arm 1), the shadow-label sums (arm 2) and the summary at close.
+    bool env_product = false, env_histogram = false, env_shadow = false, bo_journal = false;
+    indirect_check::ProductLimit product;
+    std::map<std::uint32_t, std::uint64_t> hist; // key: the log2 classes of x, y, z, 8 bits each
+    std::uint64_t hist_n = 0, hist_printed = 0, hist_stair = 0, hist_dim = 0;
+    std::uint64_t shadow_jobs = 0, shadow_labels_sum = 0, shadow_writes_sum = 0, shadow_waits_sum = 0,
+                  shadow_overflow_sum = 0, shadow_failed_sum = 0, product_sum = 0;
+    static constexpr std::uint32_t kShadowSlots = 64; // per job: 512 bytes of the scratch
+    void bo_line(const char *what, std::uint64_t va, std::uint64_t size) const {
+        if (!bo_journal) return;
+        std::fprintf(stderr, "bc5-direct: bo %s va 0x%llx size 0x%llx\n", what,
+                     static_cast<unsigned long long>(va), static_cast<unsigned long long>(size));
+    }
+    static std::uint32_t log2_class(std::uint32_t v) {
+        if (v == 0) return 0xff;
+        std::uint32_t c = 0;
+        while (v > 1) { v >>= 1; c++; }
+        return c;
+    }
+    // The counts of every GFX-form DISPATCH_INDIRECT with a known base, read from the mapped
+    // argument memory as the host sees it now (stale for arguments the GPU writes later in the
+    // frame: a histogram, not a verdict).
+    void histogram(const std::vector<std::uint32_t> &ib, std::uint64_t base_in,
+                   const std::function<bool(std::uint64_t, std::uint64_t)> &mapped,
+                   const policy::FilterOptions &fopt) {
+        if (!mapped) return;
+        std::uint64_t base = base_in;
+        for (std::size_t i = 0; i < ib.size();) {
+            const std::uint32_t h = ib[i];
+            std::size_t len = 1;
+            if (h >> 30 == 3 || h >> 30 == 0) {
+                const std::uint32_t count = (h >> 16) & 0x3fff;
+                len = count == 0x3fff ? 1 : count + 2;
+            }
+            if (i + len > ib.size()) break;
+            const std::uint32_t op = (h >> 8) & 0xff;
+            if (h >> 30 == 3 && op == 0x11 && len >= 4 && (ib[i + 1] & 0xfu) == 1) {
+                base = (static_cast<std::uint64_t>(ib[i + 2]) & ~3ull) |
+                       (static_cast<std::uint64_t>(ib[i + 3] & 0xffffu) << 32);
+            }
+            if (h >> 30 == 3 && op == 0x16 && len == 3 && base != 0) {
+                const std::uint64_t a = base + ib[i + 1];
+                if (mapped(a, 12)) {
+                    std::uint32_t v[3];
+                    std::memcpy(v, reinterpret_cast<const void *>(a), sizeof(v));
+                    const std::uint32_t key = (log2_class(v[0]) << 16) | (log2_class(v[1]) << 8) | log2_class(v[2]);
+                    hist[key]++;
+                    hist_n++;
+                    if ((v[1] > product.yz_min || v[2] > product.yz_min) && v[0] > product.x_limit) hist_stair++;
+                    if (v[0] > fopt.gpu_check_max[0] || v[1] > fopt.gpu_check_max[1] || v[2] > fopt.gpu_check_max[2]) hist_dim++;
+                }
+            }
+            i += len;
+        }
+        if (hist_n - hist_printed >= 500000) hist_print("periodic");
+    }
+    void hist_print(const char *when) {
+        hist_printed = hist_n;
+        std::vector<std::pair<std::uint64_t, std::uint32_t>> top;
+        for (const auto &[k, n] : hist) top.emplace_back(n, k);
+        std::sort(top.begin(), top.end(), [](const auto &a, const auto &b) { return a.first > b.first; });
+        std::string line;
+        char buf[96];
+        for (std::size_t k = 0; k < top.size() && k < 24; ++k) {
+            auto cls = [](std::uint32_t c) -> std::string { return c == 0xff ? "0" : "2^" + std::to_string(c); };
+            const std::uint32_t key = top[k].second;
+            std::snprintf(buf, sizeof(buf), "%s%s.%s.%s:%llu", k ? " " : "", cls(key >> 16).c_str(),
+                          cls((key >> 8) & 0xff).c_str(), cls(key & 0xff).c_str(),
+                          static_cast<unsigned long long>(top[k].first));
+            line += buf;
+        }
+        std::fprintf(stderr,
+                     "bc5-direct: args histogram (%s): %llu sampled, %llu classes; the staircase (y or z > %u with x > %u) would refuse %llu, the per-dimension limits %llu; top x.y.z classes: %s\n",
+                     when, static_cast<unsigned long long>(hist_n), static_cast<unsigned long long>(hist.size()),
+                     product.yz_min, product.x_limit, static_cast<unsigned long long>(hist_stair),
+                     static_cast<unsigned long long>(hist_dim), line.c_str());
+    }
+    void summary(const char *when = "at close") { // also every 2000 shadowed jobs: a killed emulator never gets here
+        if (hist_n != 0 && when[0] == 'a') hist_print("close");
+        if (shadow_jobs != 0 || product_sum != 0 || shadow_failed_sum != 0)
+            std::fprintf(stderr,
+                         "bc5-direct: experiment 0341 %s: shadow labels in %llu jobs: %llu labels, %llu writes copied, %llu waits redirected, %llu labels without a slot, %llu IBs left alone (COND_EXEC); product staircase on %llu dispatches\n",
+                         when, static_cast<unsigned long long>(shadow_jobs), static_cast<unsigned long long>(shadow_labels_sum),
+                         static_cast<unsigned long long>(shadow_writes_sum), static_cast<unsigned long long>(shadow_waits_sum),
+                         static_cast<unsigned long long>(shadow_overflow_sum), static_cast<unsigned long long>(shadow_failed_sum),
+                         static_cast<unsigned long long>(product_sum));
+    }
     // Experiment 0064: the filtered main IB, kept between submissions so that its memory is not
     // allocated and zeroed again for every buffer (up to ~470 KB each, four of them a frame).
     std::vector<std::uint32_t> main_buf;
@@ -234,6 +326,7 @@ struct Device::Impl {
                 return 0;
             }
             s.size = kSnapRingBytes;
+            bo_line("snapshot ring", s.va, s.size); // experiment 0341
             list_gen++; // the BO list must name it
         }
         if (bytes > kSnapRingBytes / 4) {
@@ -338,6 +431,7 @@ struct Device::Impl {
         }
         if (amdgpu_bo_cpu_map(scratch.bo, &scratch.cpu) != 0) return false;
         scratch.size = size;
+        bo_line("scratch slot", scratch.va, size); // experiment 0341
         return true;
     }
 
@@ -356,6 +450,22 @@ std::unique_ptr<Device> Device::open(const std::string &node, const OpenOptions 
     std::unique_ptr<Device> d(new Device());
     d->impl_ = std::make_unique<Impl>();
     d->impl_->opts = opts;
+    // Experiment 0341: the experimental switches, read here until the host's option parsing
+    // carries them (each default off; the host's fields, when set, are kept).
+    d->impl_->bo_journal = std::getenv("BC5_DIRECT_BO_JOURNAL") != nullptr;
+    d->impl_->env_histogram = std::getenv("BC5_DIRECT_ARGS_HISTOGRAM") != nullptr;
+    d->impl_->env_shadow = std::getenv("BC5_DIRECT_SHADOW_LABELS") != nullptr;
+    if (const char *e = std::getenv("BC5_DIRECT_GPU_CHECK_PRODUCT"); e != nullptr && *e != 0) {
+        d->impl_->env_product = true; // "1", or "x_limit[:yz_min]"
+        char *end = nullptr;
+        const unsigned long x = std::strtoul(e, &end, 0);
+        if (end != e && x > 1) d->impl_->product.x_limit = static_cast<std::uint32_t>(x);
+        if (end != nullptr && *end == ':') d->impl_->product.yz_min = static_cast<std::uint32_t>(std::strtoul(end + 1, nullptr, 0));
+    }
+    if (d->impl_->bo_journal || d->impl_->env_histogram || d->impl_->env_shadow || d->impl_->env_product)
+        std::fprintf(stderr, "bc5-direct: experiment 0341 switches: product staircase %d (x > %u with y or z > %u), args histogram %d, shadow labels %d, bo journal %d\n",
+                     d->impl_->env_product ? 1 : 0, d->impl_->product.x_limit, d->impl_->product.yz_min,
+                     d->impl_->env_histogram ? 1 : 0, d->impl_->env_shadow ? 1 : 0, d->impl_->bo_journal ? 1 : 0);
     d->impl_->fd = ::open(node.c_str(), O_RDWR | O_CLOEXEC);
     if (d->impl_->fd < 0) {
         std::perror(node.c_str());
@@ -426,6 +536,7 @@ std::unique_ptr<Device> Device::open(const std::string &node, const OpenOptions 
 
 Device::~Device() {
     if (!impl_) return;
+    impl_->summary(); // experiment 0341
     if (impl_->full_list) amdgpu_bo_list_destroy(impl_->full_list);
     for (auto &u : impl_->userptrs) {
         amdgpu_bo_va_op(u.bo, 0, u.size, u.va, 0, AMDGPU_VA_OP_UNMAP);
@@ -519,6 +630,7 @@ bool Device::map_userptr(std::uint64_t cpu_va, std::uint64_t size, bool readonly
         amdgpu_bo_free(u.bo);
         return false;
     }
+    impl_->bo_line(readonly ? "userptr map (ro)" : "userptr map", cpu_va, size); // experiment 0341
     impl_->userptrs.push_back(u);
     impl_->list_gen++;
     return true;
@@ -529,6 +641,7 @@ bool Device::unmap_userptr(std::uint64_t cpu_va) {
     for (auto it = impl_->userptrs.begin(); it != impl_->userptrs.end(); ++it) {
         if (it->va == cpu_va) {
             impl_->drop_aliases_of(it->bo);
+            impl_->bo_line("userptr unmap", it->va, it->size); // experiment 0341
             impl_->va_unmap(it->bo, 0, it->size, it->va);
             amdgpu_bo_free(it->bo);
             impl_->userptrs.erase(it);
@@ -632,6 +745,10 @@ bool Device::map_shared(std::uint32_t id, std::uint64_t bo_offset, std::uint64_t
     const auto at = std::upper_bound(impl_->shared_maps.begin(), impl_->shared_maps.end(), gpu_va,
                                      [](std::uint64_t va, const SharedMap &m) { return va < m.va; });
     impl_->shared_maps.insert(at, SharedMap{gpu_va, size, bo_offset, id, b->bo});
+    if (impl_->bo_journal) // experiment 0341
+        std::fprintf(stderr, "bc5-direct: bo shared map va 0x%llx size 0x%llx id %u offset 0x%llx\n",
+                     static_cast<unsigned long long>(gpu_va), static_cast<unsigned long long>(size), id,
+                     static_cast<unsigned long long>(bo_offset));
     b->maps++;
     impl_->list_gen++;
     return true;
@@ -657,6 +774,7 @@ bool Device::unmap_shared(std::uint64_t gpu_va) {
     if (it == impl_->shared_maps.end() || it->va != gpu_va) return false;
     impl_->va_unmap(it->bo, it->bo_offset, it->size, it->va);
     if (SharedBo *b = impl_->shared_bo_locked(it->id); b != nullptr && b->maps != 0) b->maps--;
+    impl_->bo_line("shared unmap", it->va, it->size); // experiment 0341
     impl_->shared_maps.erase(it);
     impl_->list_gen++;
     return true;
@@ -682,6 +800,7 @@ std::uint64_t Device::map_alias(std::uint64_t src_va, std::uint64_t size, std::u
             return;
         }
         impl_->aliases.push_back({to, e - s, off, bo});
+        impl_->bo_line("alias map", to, e - s); // experiment 0341
         mapped += e - s;
     };
     for (const auto &u : impl_->userptrs) one(u.bo, u.va, u.size, 0, u.readonly);
@@ -893,6 +1012,20 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     if (opt.cu_mask != 0xffffffffu && opt.mapped) {
         main_out = cu_tables::apply(main_out, opt.cu_mask, opt.mapped, r.cu_tables);
     }
+    // Experiment 0341 (arm 2): host-owned shadow labels for the main IB's own syncs on the GFX
+    // ring; the slots lie after the flag area of the job's scratch and are patched in below.
+    std::uint32_t shadow_slots = 0;
+    if (impl_->env_shadow && !comp) {
+        shadow_labels::Stats sst;
+        const bool ok = shadow_labels::apply(main_out, Impl::kShadowSlots, sst);
+        shadow_slots = ok ? sst.labels : 0;
+        if (sst.labels != 0 && (++impl_->shadow_jobs % 2000) == 0) impl_->summary("periodic");
+        impl_->shadow_labels_sum += sst.labels;
+        impl_->shadow_writes_sum += sst.writes;
+        impl_->shadow_waits_sum += sst.waits;
+        impl_->shadow_overflow_sum += sst.overflow;
+        if (!ok) impl_->shadow_failed_sum++;
+    }
     r.prep_cu_ms = now_ms() - t_phase;
     t_phase = now_ms();
     // Experiment 0038: a compute IB's DISPATCH_INDIRECT, rewritten for the GFX ring
@@ -956,10 +1089,13 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     // DMA waits above: a COND_EXEC must skip exactly the dispatch). The flag lives in this job's
     // scratch, after the last piece; its address is filled in once the slot is known.
     std::vector<std::size_t> flag_refs;
+    if (impl_->env_histogram && !comp) impl_->histogram(main_out, opt.mec_indirect_base, opt.mapped, fopt); // experiment 0341
     if (opt.gpu_check_indirect) {
         indirect_check::Stats st;
         main_out = indirect_check::apply(main_out, opt.mec_indirect_base, opt.gpu_check_max,
-                                         opt.gpu_check_draw_max, flag_refs, st, comp);
+                                         opt.gpu_check_draw_max, flag_refs, st, comp,
+                                         impl_->env_product && !comp ? &impl_->product : nullptr); // experiment 0341
+        impl_->product_sum += st.product_checked;
         r.filter.gpu_checks += st.checked;
         r.filter.gpu_check_unbased += st.unbased;
         r.filter.gpu_check_skipped += st.conditional;
@@ -986,6 +1122,8 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     const Piece &last = pieces.back();
     const std::size_t flag_off = last.off + last.padded; // experiment 0052: 8 dwords
     std::size_t end_off = flag_off + (flag_refs.empty() ? 0 : 8);
+    const std::size_t shadow_off = end_off; // experiment 0341: two dwords per shadow slot
+    end_off += static_cast<std::size_t>(shadow_slots) * 2;
     std::size_t ts_dw = 0;
     if (opt.job_timestamps) { // experiment 0124: start and end, 8-byte aligned
         ts_dw = (end_off + 1) & ~std::size_t{1};
@@ -1003,6 +1141,10 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     if (!flag_refs.empty()) {
         indirect_check::patch(main_out, flag_refs, impl_->slots[impl_->cur].va + flag_off * 4);
         for (std::size_t i = 0; i < 8; ++i) dst[flag_off + i] = 0;
+    }
+    if (shadow_slots != 0) { // experiment 0341: the slots start as 0, as the title's labels do
+        shadow_labels::patch(main_out, impl_->slots[impl_->cur].va + shadow_off * 4);
+        for (std::size_t i = 0; i < static_cast<std::size_t>(shadow_slots) * 2; ++i) dst[shadow_off + i] = 0;
     }
     impl_->ts_off[impl_->cur] = static_cast<std::uint32_t>(ts_dw);
     if (opt.job_timestamps) {
@@ -1272,6 +1414,7 @@ void *Device::code_area() {
     }
     c.va = kCodeVa;
     c.size = kCodeBytes;
+    impl_->bo_line("code area", c.va, c.size); // experiment 0341
     impl_->list_gen++; // the BO lists must name it
     return c.cpu;
 }

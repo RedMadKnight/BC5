@@ -1,0 +1,11 @@
+Catch2 from /home/kjaniszewski/bc5-work/exp0323/backend-tests/_deps/catch2-src
+== 08:50:11 backend configure + build
+== 08:50:39 backend build rc 0; errors 0, warnings 0
+private archive 3aa02aab (shared 825ae1d1)
+== 08:50:39 backend tests
+===============================================================================
+test cases:    60 |    59 passed | 1 failed
+assertions: 32339 | 32338 passed | 1 failed
+
+== tests rc 42
+backend tests FAILED (rc 42): see /home/kjaniszewski/bc5-work/exp0341/raw/backend-tests.out; no emulator linked

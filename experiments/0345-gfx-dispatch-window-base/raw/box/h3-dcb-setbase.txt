@@ -1,0 +1,22 @@
+dispatch before any SET_BASE at 22636: header 0xc0011600 (gfx type), data offset 0x40, initiator 0x61
+dispatch before any SET_BASE at 22645: header 0xc0011600 (gfx type), data offset 0x3f40, initiator 0x61
+dispatch before any SET_BASE at 22654: header 0xc0011600 (gfx type), data offset 0x6040, initiator 0x61
+dispatch before any SET_BASE at 22663: header 0xc0011600 (gfx type), data offset 0x6940, initiator 0x61
+dispatch before any SET_BASE at 22672: header 0xc0011600 (gfx type), data offset 0x6d40, initiator 0x61
+dispatch before any SET_BASE at 22681: header 0xc0011600 (gfx type), data offset 0x7040, initiator 0x61
+dispatch before any SET_BASE at 22690: header 0xc0011600 (gfx type), data offset 0x7340, initiator 0x61
+dispatch before any SET_BASE at 22699: header 0xc0011600 (gfx type), data offset 0x7640, initiator 0x61
+dispatch before any SET_BASE at 22708: header 0xc0011600 (gfx type), data offset 0x7940, initiator 0x61
+dispatch before any SET_BASE at 22717: header 0xc0011600 (gfx type), data offset 0x7d40, initiator 0x61
+dispatch before any SET_BASE at 22726: header 0xc0011600 (gfx type), data offset 0x8140, initiator 0x61
+dispatch before any SET_BASE at 22735: header 0xc0011600 (gfx type), data offset 0x8540, initiator 0x61
+dispatch before any SET_BASE at 22744: header 0xc0011600 (gfx type), data offset 0x8840, initiator 0x61
+dispatch before any SET_BASE at 22753: header 0xc0011600 (gfx type), data offset 0x8b40, initiator 0x61
+dispatch before any SET_BASE at 22762: header 0xc0011600 (gfx type), data offset 0x8f40, initiator 0x61
+dispatch before any SET_BASE at 22771: header 0xc0011600 (gfx type), data offset 0x9340, initiator 0x61
+dispatch before any SET_BASE at 22780: header 0xc0011600 (gfx type), data offset 0x9640, initiator 0x61
+dispatch before any SET_BASE at 22789: header 0xc0011600 (gfx type), data offset 0x9a40, initiator 0x61
+dispatch before any SET_BASE at 22798: header 0xc0011600 (gfx type), data offset 0x9d40, initiator 0x61
+dispatch before any SET_BASE at 22807: header 0xc0011600 (gfx type), data offset 0xa140, initiator 0x61
+SET_BASE at 75652 header 0xc0021102 lo 0x8c7f6100 hi 0x11 (shader type compute: a host conversion)
+1 SET_BASE index-1 packets (first at 75652); 5009 GFX-form dispatches before the first

@@ -1,0 +1,11 @@
+dump /home/kjaniszewski/bc5-data/captures/play-20261027-1251/gc/ib-timeout-00048056-acb-4.bin: 4 dwords (16 bytes)
+packets 1 (type-3 1); opcodes: 79:1
+dispatches 0: direct 0, indirect compute-form 0, indirect gfx-form 0; INDIRECT_BUFFER packets 0; COND_EXEC 0
+shadow labels: 0 writers, 0 memory waits, 0 labels get a slot, 0 writer copies (0 dwords)
+inserts: 0 DMA syncs (7), 0 checks (88 per dispatch, 35 per draw), 0 compute-form dispatches dropped; DMA idle 7 at the end
+job IB computed: 4 + 0 inserted + 7 = 11 dwords, padded 16; the CS saw 16 (EQUAL)
+fetch point: CS size 16, CP_IB1_BUFSZ 0 -> 16 fetched (100.0 %) if BUFSZ is what is left, 0 if BUFSZ is what was fetched
+left reading: job dword 16 -> dump packet at 0 (len 4, op 79), past the last packet (the DMA idle or the padding); the last dispatch at or before it is #-1 of 0
+fetched reading: job dword 0 -> dump packet at 0 (len 4, op 79), inside the packet; the last dispatch at or before it is #-1 of 0
+dispatches around the point (index: dump offset -> job offset, form, program, arguments):
+programs of the buffer (dispatches each):

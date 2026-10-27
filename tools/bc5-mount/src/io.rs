@@ -120,7 +120,8 @@ impl ReadAt for Vec<u8> {
 /// A file opened for positional reads. The length is captured at open time;
 /// containers are immutable while mounted. Its reads go to the
 /// `BC5_MOUNT_TRACE` trace when that is set (ADR 0014), unless it was opened
-/// with [`FileSource::open_untraced`].
+/// with [`FileSource::open_untraced`]. The kernel's readahead is turned off for
+/// it, unless `BC5_MOUNT_READAHEAD=1` (`advise_readahead_off`).
 #[derive(Debug)]
 pub struct FileSource {
     file: File,
@@ -143,9 +144,40 @@ impl FileSource {
     fn open_with(path: impl AsRef<Path>, traced: bool) -> io::Result<Self> {
         let file = File::open(path)?;
         let len = file.metadata()?.len();
+        advise_readahead_off(&file);
         Ok(Self { file, len, traced })
     }
 }
+
+/// Turns the kernel's readahead off for `file` alone (`POSIX_FADV_RANDOM`),
+/// unless `BC5_MOUNT_READAHEAD=1` keeps it. The image and the disk cache's data
+/// file are read a block at a time, in pieces of tens of KiB, and on the dev
+/// box's btrfs (bdi readahead 4096 KiB) the readahead fetched 78 % more than
+/// was asked for, all of it through a page cache the game was short of (F396).
+/// With the box's readahead at 128 KiB the surplus fell to 7 % and the memory
+/// stall by five sixths (F397). This does the same for these files alone, with
+/// no root (experiment 0331). The advice is best effort: a failure leaves the
+/// readahead as it was.
+pub(crate) fn advise_readahead_off(file: &File) {
+    if std::env::var_os("BC5_MOUNT_READAHEAD").as_deref() != Some(std::ffi::OsStr::new("1")) {
+        advise_random(file);
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn advise_random(file: &File) {
+    use nix::fcntl::{posix_fadvise, PosixFadviseAdvice};
+    use std::os::unix::io::AsRawFd;
+    let _ = posix_fadvise(
+        file.as_raw_fd(),
+        0,
+        0,
+        PosixFadviseAdvice::POSIX_FADV_RANDOM,
+    );
+}
+
+#[cfg(not(target_os = "linux"))]
+fn advise_random(_file: &File) {}
 
 impl ReadAt for FileSource {
     fn len(&self) -> u64 {
@@ -288,5 +320,30 @@ mod tests {
         assert_eq!(le.u32(2), None);
         assert_eq!(le.u8(4), Some(2));
         assert_eq!(le.u64(usize::MAX), None);
+    }
+
+    #[test]
+    fn file_reads_are_unchanged_by_the_random_advice() {
+        let data: Vec<u8> = (0..300_000u32).map(|i| (i * 7 % 251) as u8).collect();
+        let path = std::env::temp_dir().join(format!("bc5-mount-io-{}.bin", std::process::id()));
+        std::fs::write(&path, &data).unwrap();
+        let f = FileSource::open(&path).unwrap();
+        assert_eq!(f.len(), data.len() as u64);
+        let mut buf = vec![0u8; 4096];
+        for off in [0u64, 65_536, 131_000, 295_000] {
+            let n = f.read_at(off, &mut buf).unwrap();
+            assert_eq!(&buf[..n], &data[off as usize..off as usize + n]);
+        }
+        // The advice again on a fresh descriptor, as the preload's own open does.
+        let g = File::open(&path).unwrap();
+        advise_random(&g);
+        assert_eq!(
+            FileSource::open_untraced(&path)
+                .unwrap()
+                .read_vec_at(131_000, 100)
+                .unwrap(),
+            &data[131_000..131_100]
+        );
+        std::fs::remove_file(&path).unwrap();
     }
 }

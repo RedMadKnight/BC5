@@ -1,0 +1,9 @@
+== 12:13:24 cargo build
+== 12:13:50 build rc 0
+warning: `oozextract` (lib) generated 1 warning (run `cargo fix --lib -p oozextract` to apply 1 suggestion)
+   Compiling bc5-mount v0.1.0 (/home/kjaniszewski/bc5-work/exp0331/src/tools/bc5-mount)
+    Finished `release` profile [optimized] target(s) in 25.73s
+private bc5-mount 43277724 (2210288 B); shared 47739557
+the private bc5-mount runs in the distrobox (--help)
+test launcher /home/kjaniszewski/bc5-work/exp0330/play-pkg-0330t.sh: bf4f3da3 -> 38cefa13 (BM -> /home/kjaniszewski/bc5-work/exp0331/bc5-mount)
+undo: cat /home/kjaniszewski/bc5-work/exp0331/play-pkg-0330t.sh.before-0331 > /home/kjaniszewski/bc5-work/exp0330/play-pkg-0330t.sh

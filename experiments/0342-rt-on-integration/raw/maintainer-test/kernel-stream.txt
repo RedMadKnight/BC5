@@ -1,0 +1,33 @@
+paź 27 12:51:11.049771 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 27 12:51:20.828954 bazzite kernel: evm: overlay not supported
+paź 27 12:52:29.788839 bazzite kernel: gmc_v10_0_process_interrupt: 86 callbacks suppressed
+paź 27 12:52:29.807706 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:6 pasid:25)
+paź 27 12:52:29.812523 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 3928 thread Render Thread pid 3996
+paź 27 12:52:29.812866 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x000000009bce4000 from client 0x1b (UTCL2)
+paź 27 12:52:29.819179 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00600830
+paź 27 12:52:29.819520 bazzite kernel: amdgpu 0000:01:00.0:          Faulty UTCL2 client ID: CPF (0x4)
+paź 27 12:52:29.819694 bazzite kernel: amdgpu 0000:01:00.0:          MORE_FAULTS: 0x0
+paź 27 12:52:29.819868 bazzite kernel: amdgpu 0000:01:00.0:          WALKER_ERROR: 0x0
+paź 27 12:52:29.820037 bazzite kernel: amdgpu 0000:01:00.0:          PERMISSION_FAULTS: 0x3
+paź 27 12:52:29.820204 bazzite kernel: amdgpu 0000:01:00.0:          MAPPING_ERROR: 0x0
+paź 27 12:52:29.820381 bazzite kernel: amdgpu 0000:01:00.0:          RW: 0x0
+paź 27 12:52:31.811771 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State
+paź 27 12:52:31.812756 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State Completed
+paź 27 12:52:31.999743 bazzite kernel: amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+paź 27 12:52:32.000506 bazzite kernel: amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+paź 27 12:52:32.001539 bazzite kernel: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=60758, emitted seq=60760
+paź 27 12:52:32.001844 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 3928 thread bc5-ring pid 3977
+paź 27 12:52:32.002014 bazzite kernel: amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+paź 27 12:52:32.002180 bazzite kernel: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset failed
+paź 27 12:52:32.002348 bazzite kernel: amdgpu 0000:01:00.0: GPU reset begin!. Source:  1
+paź 27 12:52:36.000760 bazzite kernel: amdgpu 0000:01:00.0: failed to suspend display audio
+paź 27 12:52:36.124765 bazzite kernel: amdgpu 0000:01:00.0: MODE1 reset
+paź 27 12:52:36.125466 bazzite kernel: amdgpu 0000:01:00.0: GPU mode1 reset
+paź 27 12:52:36.125962 bazzite kernel: amdgpu 0000:01:00.0: GPU psp mode1 reset
+paź 27 12:52:36.126436 bazzite kernel: amdgpu 0000:01:00.0: GPU reset succeeded, trying to resume
+paź 27 12:52:36.126897 bazzite kernel: amdgpu 0000:01:00.0: [drm] PCIE GART of 512M enabled (table at 0x000000F41FE00000).
+paź 27 12:52:36.127379 bazzite kernel: amdgpu 0000:01:00.0: VRAM is lost due to GPU reset!
+paź 27 12:52:36.127851 bazzite kernel: amdgpu 0000:01:00.0: PSP is resuming...
+paź 27 12:52:36.144764 bazzite kernel: amdgpu 0000:01:00.0: reserve 0x400000 from 0xf41f800000 for PSP TMR
+Read from remote host 100.88.23.35: Connection reset by peer
+client_loop: send disconnect: Connection reset by peer

@@ -1,0 +1,15 @@
+Catch2 from /home/kjaniszewski/bc5-work/exp0323/backend-tests/_deps/catch2-src
+== 08:51:40 backend configure + build
+== 08:51:45 backend build rc 0; errors 0, warnings 0
+private archive e9914d0c (shared 825ae1d1)
+== 08:51:45 backend tests
+Randomness seeded to: 173392067
+===============================================================================
+All tests passed (32340 assertions in 60 test cases)
+
+== tests rc 0
+== 08:51:45 compdb + relink
+== 08:51:48 relink rc 0
+md5 4fc189ad (shared 9382b1e9)
+strings: switches line 1, histogram 2, bo lines 2
+shared binary after: 9382b1e9 (want 9382b1e9); shared archive after: 825ae1d1 (want 825ae1d1)

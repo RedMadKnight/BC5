@@ -1,0 +1,13 @@
+fps counter: t 952.978 s: 15 flips in 1.025 s, longest gap 75.5 ms, gaps over 40 ms 15, over 70 ms 2
+fps counter: t 954.020 s: 15 flips in 1.042 s, longest gap 80.8 ms, gaps over 40 ms 15, over 70 ms 2
+fps counter: t 955.055 s: 15 flips in 1.035 s, longest gap 70.6 ms, gaps over 40 ms 15, over 70 ms 3
+fps counter: t 956.078 s: 13 flips in 1.023 s, longest gap 202.6 ms, gaps over 40 ms 13, over 70 ms 2
+fps counter: t 957.139 s: 7 flips in 1.061 s, longest gap 264.0 ms, gaps over 40 ms 7, over 70 ms 5
+fps counter: t 958.144 s: 3 flips in 1.005 s, longest gap 884.2 ms, gaps over 40 ms 2, over 70 ms 2
+1:== 2026-10-26 21:24:02 emulator 2026-10-26 15:49:23
+10622:== 2026-10-26 21:40:25 exit 0
+timing: t 956.088 s acb 140 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+timing: t 956.088 s acb 140 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q8
+timing: t 956.089 s dcb 7332 dwords: sync 0.0 ms, hints 0.0 ms q-1
+timing: t 956.090 s acb 18 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+timing: t 956.090 s acb 18 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q8

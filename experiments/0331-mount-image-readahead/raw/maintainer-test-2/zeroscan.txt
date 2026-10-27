@@ -1,0 +1,25 @@
+zero scan (exp 0330): direct memory, 11442.0 MiB of imported chunks read in 2.4 s: all-zero 2 MiB chunks and 4 KiB pages by name
+  (views under 1 MiB)             1204.0 MiB imported,      12.0 in all-zero chunks,      69.4 in all-zero pages; at 0xfe0000000-0x859b8a0000
+  AMM                             2170.0 MiB imported,     174.0 in all-zero chunks,     368.3 in all-zero pages; at 0x8000040000-0x8599830000
+  AssetHeap Large                  470.0 MiB imported,       0.0 in all-zero chunks,       8.3 in all-zero pages; at 0x10d0000000-0x1103000000
+  AssetHeap Small                  204.0 MiB imported,       0.0 in all-zero chunks,       2.7 in all-zero pages; at 0x10b0000000-0x10c5e00000
+  CommitIABufferAllocator         2736.0 MiB imported,    1360.0 in all-zero chunks,    1463.1 in all-zero pages; at 0x1210000000-0x12bb000000
+  ComponentHeap                    104.0 MiB imported,      76.0 in all-zero chunks,      81.9 in all-zero pages; at 0x1070000000-0x1076800000
+  ComponentHeap Small               36.0 MiB imported,      26.0 in all-zero chunks,      28.9 in all-zero pages; at 0x1080000000-0x1082400000
+  DDLHeap                           16.0 MiB imported,      12.0 in all-zero chunks,      14.8 in all-zero pages; at 0x1090000000-0x1091000000
+  Decal Job Scheduler               12.0 MiB imported,      10.0 in all-zero chunks,      11.9 in all-zero pages; at 0x1001e00000-0x1002a00000
+  DynamicHeap                      328.0 MiB imported,     202.0 in all-zero chunks,     221.7 in all-zero pages; at 0x1040000000-0x1054800000
+  DynamicHeap Small                 54.0 MiB imported,      26.0 in all-zero chunks,      28.1 in all-zero pages; at 0x1060000000-0x1063600000
+  InitAllocator                    462.0 MiB imported,       2.0 in all-zero chunks,     158.0 in all-zero pages; at 0x1010000000-0x1038c00000
+  Job thread scratch memory         12.0 MiB imported,       0.0 in all-zero chunks,       6.8 in all-zero pages; at 0x1000204000-0x1001174000
+  MaterialHeap                      20.0 MiB imported,      12.0 in all-zero chunks,      13.7 in all-zero pages; at 0x10a0000000-0x10a1400000
+  Physics                          192.0 MiB imported,     158.0 in all-zero chunks,     165.6 in all-zero pages; at 0x12d0000000-0x12dc000000
+  Physics query allocator            8.0 MiB imported,       2.0 in all-zero chunks,       5.1 in all-zero pages; at 0x1001534000-0x1001c28000
+  RenderAlloc                       70.0 MiB imported,       0.0 in all-zero chunks,       1.9 in all-zero pages; at 0x12c0000000-0x12c4600000
+  RenderGpuRwLarge                 414.0 MiB imported,     214.0 in all-zero chunks,     284.6 in all-zero pages; at 0x11e0000000-0x11f9e00000
+  RenderGpuRwSmall                  36.0 MiB imported,      18.0 in all-zero chunks,      20.6 in all-zero pages; at 0x1200000000-0x1202400000
+  RenderGpuWcLarge                2758.0 MiB imported,    1258.0 in all-zero chunks,    1646.6 in all-zero pages; at 0x1120000000-0x11cc600000
+  RenderGpuWcSmall                 110.0 MiB imported,      26.0 in all-zero chunks,      28.6 in all-zero pages; at 0x11d0000000-0x11d6e00000
+  UI                                 2.0 MiB imported,       0.0 in all-zero chunks,       2.0 in all-zero pages; at 0x1003000000-0x1003200000
+  VisualEffectInstanceHeap          24.0 MiB imported,      20.0 in all-zero chunks,      22.3 in all-zero pages; at 0x12e0000000-0x12e1800000
+  total                          11442.0 MiB imported,    3608.0 in all-zero chunks,    4654.9 in all-zero pages

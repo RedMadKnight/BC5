@@ -1,0 +1,8 @@
+bc5-direct: experiment 0345 switch: a GFX-form dispatch with base-1 0 gets the window learned from the title's SET_BASEs, until then 0x0 as its base (SET_BASE index 1), or a NOP when window + offset is not mapped
+bc5-direct: experiment 0341 switches: product staircase 1 (x > 65536 with y or z > 1), args histogram 0, shadow labels 1, bo journal 0
+bc5-direct: experiment 0341 periodic: shadow labels in 2000 jobs: 9835 labels, 19670 writes copied, 9835 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 12229 dispatches
+bc5-direct: experiment 0341 periodic: shadow labels in 4000 jobs: 21050 labels, 42100 writes copied, 21050 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 18765 dispatches
+bc5-direct: experiment 0341 periodic: shadow labels in 6000 jobs: 34186 labels, 68372 writes copied, 34186 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 29432 dispatches
+bc5-direct: experiment 0341 periodic: shadow labels in 8000 jobs: 47619 labels, 95238 writes copied, 47619 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 46168 dispatches
+bc5-direct: experiment 0341 periodic: shadow labels in 10000 jobs: 61161 labels, 122322 writes copied, 61161 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 62971 dispatches
+bc5-direct: experiment 0341 periodic: shadow labels in 12000 jobs: 74574 labels, 149148 writes copied, 74574 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 79689 dispatches

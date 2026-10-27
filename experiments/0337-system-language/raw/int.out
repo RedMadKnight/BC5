@@ -1,0 +1,17 @@
+2026-10-27 07:36:12 before: normal 21e8bd22, lean 379a92b8, tree f266548, 96 changed entries
+  src/graphics/presentation/window/hostInput.h tree a98cd358 (0 CR) -> patched 8fc3edb9 (0 CR)
+  src/graphics/presentation/window/hostInput.cpp tree 47f83afb (0 CR) -> patched a8317e02 (0 CR)
+  src/libs/libSystemService.cpp tree c67a08e6 (0 CR) -> patched 6c2a2925 (0 CR)
+  src/graphics/presentation/settingsOverlay.cpp tree 813dd1c9 (0 CR) -> patched 454106a4 (0 CR)
+== 07:36:13 git apply --check (251 lines, md5 7e63b030)
+== 07:36:13 normal build
+== 07:36:32 lean build
+strings: normal 17, lean 17
+warnings: normal 3, lean 3; errors: 0
+candidate patch 0001: 58665 lines, md5 3b7e88b8
+2026-10-27 07:36:52 after: normal 9382b1e9, lean 1860613a, tree 96 changed entries
+  src/graphics/presentation/window/hostInput.h 8fc3edb9
+  src/graphics/presentation/window/hostInput.cpp a8317e02
+  src/libs/libSystemService.cpp 6c2a2925
+  src/graphics/presentation/settingsOverlay.cpp 454106a4
+== 07:36:52 done; undo: cp -p /home/kjaniszewski/bc5-work/exp0337/integration/kyty_emulator.before-0337 /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator; cp -p /home/kjaniszewski/bc5-work/exp0337/integration/kyty_emulator-lean.before-0337 /home/kjaniszewski/bc5-work/kytyplus-build-lean/src/kyty_emulator; for f in src/graphics/presentation/window/hostInput.h src/graphics/presentation/window/hostInput.cpp src/libs/libSystemService.cpp src/graphics/presentation/settingsOverlay.cpp; do cp -p /home/kjaniszewski/bc5-work/exp0337/integration/tree-before/$f /home/kjaniszewski/src/KytyPlus/$f; done; then rebuild both

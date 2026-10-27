@@ -1,0 +1,3 @@
+swappiness 60 vfs_cache_pressure 100 watermark_scale_factor 10 min_free_kbytes 67584 page-cluster 3
+zram0 disksize 7964983296 comp lzo-rle lzo lz4 lz4hc [zstd] deflate 842 ; MemTotal 15192 MiB; GTT total 13312 MiB
+launcher /home/kjaniszewski/bc5-work/play-pkg.sh md5 c0357628; shared normal 4a146894; private /home/kjaniszewski/bc5-work/exp0330/kyty_emulator md5 a86787f1

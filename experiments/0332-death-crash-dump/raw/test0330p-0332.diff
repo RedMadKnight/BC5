@@ -1,0 +1,8 @@
+--- /home/kjaniszewski/bc5-work/exp0332/shortcut-before/test0330p.sh	2026-10-26 10:24:24.248869369 +0100
++++ /home/kjaniszewski/bc5-work/exp0330/test0330p.sh	2026-10-26 15:50:14.833259109 +0100
+@@ -4,4 +4,4 @@
+ E=$HOME/bc5-work/exp0330; T=$(date +%Y%m%d-%H%M%S)
+ mkdir -p "$E/play"
+ pgrep '^kyty_emulator' > /dev/null || setsid nohup "$E/sample0330p.sh" "$E/play/mem-$T.txt" 7200 < /dev/null > /dev/null 2>&1 &
+-exec /usr/bin/distrobox enter ubuntu -- /usr/bin/env BC5_EMU="$E/kyty_emulator" "$E/play-pkg-0330t.sh"
++exec /usr/bin/distrobox enter ubuntu -- /usr/bin/env BC5_EMU="$HOME/bc5-work/exp0332/kyty_emulator" "$E/play-pkg-0330t.sh"  # exp 0332: the extended crash dump

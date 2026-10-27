@@ -1,0 +1,10 @@
+swappiness 60 vfs_cache_pressure 100 watermark_scale_factor 10 min_free_kbytes 67584 page-cluster 3
+zram0 disksize 7964983296 comp lzo-rle lzo lz4 lz4hc [zstd] deflate 842 ; MemTotal 15192 MiB; GTT total 13312 MiB
+kernel 7.2.9-ogc3.1.fc44.x86_64; launcher /home/kjaniszewski/bc5-work/play-pkg.sh md5 b10eac6d; shared normal 4a146894, lean c28cdd3c; private normal /home/kjaniszewski/bc5-work/exp0338/kyty_emulator md5 8e5eea47; shared bc5-mount 43277724
+learned file /home/kjaniszewski/bc5-work/direct-learned-pkg.txt md5 07fa5425, 108 windows
+launcher /home/kjaniszewski/bc5-work/exp0338/play-pkg-0338.sh md5 d6f2b289 (/home/kjaniszewski/bc5-work/exp0338/raw/play-pkg-0338.diff); wd /home/kjaniszewski/bc5-work/exp0338/wd (5151 entries)
+2026-10-26 23:00:58 live saves 5383c9deb3c38e9e, snapshot /home/kjaniszewski/bc5-work/exp0338/saves-before-2300 (comparison only)
+N1: stopped at 600 s after 604 s; launcher exit 0; crash lines 0, kernel lines 0, TIMEOUT lines 0, devcoredumps 0, RT-off drop lines 5721, flips 22860 over 600.8 s = 38.0 flips/s; direct: 19474 views; +0 BOs (95, 11082.0 MiB pinned); maps +1 -2 (19510); imports 1935 (stubs 10), call lines 0, procparam 1; the private learned file is unchanged
+pass
+2026-10-26 23:11:15 live saves 5383c9deb3c38e9e (want 5383c9deb3c38e9e)
+BOX-LOCK released

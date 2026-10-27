@@ -1,0 +1,12 @@
+--- /home/kjaniszewski/bc5-work/exp0342/integration/play-pkg.sh.before-0342	2026-10-26 08:20:06.130751377 +0100
++++ /home/kjaniszewski/bc5-work/play-pkg.sh	2026-10-27 12:26:32.366081235 +0100
+@@ -119,7 +119,8 @@
+ export BC5_DIRECT_INDIRECT_DRAWS=multi BC5_DIRECT_ALIASES=1
+ # Experiment 0129 (maintainer said yes, 2026-10-16): the compute buffers on kernel compute ring 0,
+ # the GFX ring waiting on the GPU for the labels they write (start screen 32-34 -> 41-42 fps).
+-export BC5_DIRECT_COMPUTE_RING=0 BC5_DIRECT_CROSS_RING_WAITS=all
++export BC5_DIRECT_COMPUTE_RING=-1 BC5_DIRECT_CROSS_RING_WAITS=all  # exp 0342 (F412, F415): one ring - every compute buffer on the GFX ring (was 0)
++export BC5_DIRECT_GPU_CHECK_PRODUCT=1 BC5_DIRECT_SHADOW_LABELS=1  # exp 0342 (F414, F415): the RT-on guards - the product staircase in the CP check, host shadow labels
+ export BC5_DIRECT_RING_DEPS=dcb  # exp 0323 (F385): every GFX-ring job starts after the compute rings' last jobs - the BVH build's two-ring split hung 11/11 at ~2 min with RT on (exps 0320-0322); cost about the one-ring flip rate
+ # Experiment 0134 (2026-10-16): no ring dependencies; the black blocks of experiment 0132 were the
+ # compute heads dropping their waits on graphics (fixed in the host), not the order itself.

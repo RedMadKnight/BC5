@@ -1,0 +1,216 @@
+--- a/src/libs/bc5LleAgc.cpp
++++ b/src/libs/bc5LleAgc.cpp
+@@ -1629,17 +1629,52 @@
+ 	for (auto& S: g_d) direct_breakdown_one(S, why, list_bos);
+ }
+ 
++// Experiment 0333: the zero scan at several times, and the zero map's classes. The learned windows' chunks of direct
++// memory (map_window marks its direct_force calls) and the scan in flight; the forced set has the same writers.
++static std::set<uint64_t>   g_zs_learned;
++static thread_local bool    t_zs_learned = false;
++static std::atomic<bool>    g_zs_busy {false};
++static std::vector<double> zeroscan_times(const char* e) { // "240,480,720": the scan times, sorted
++	std::vector<double> v;
++	for (const char* c = e; c != nullptr;) {
++		char*        end = nullptr;
++		const double t   = std::strtod(c, &end);
++		if (end == c) break;
++		if (t >= 0.0) v.push_back(t);
++		if (*end != ',') break;
++		c = end + 1;
++	}
++	std::sort(v.begin(), v.end());
++	return v;
++}
++static std::vector<std::string> zeroscan_names(const char* e) {
++	std::vector<std::string> v;
++	std::string              cur;
++	for (const char* c = e; c != nullptr; c++) {
++		if (*c == ',' || *c == 0) {
++			if (!cur.empty()) v.push_back(cur);
++			cur.clear();
++			if (*c == 0) break;
++		} else {
++			cur.push_back(*c);
++		}
++	}
++	return v;
++}
+ // Experiment 0330 (BC5_DIRECT_ZEROSCAN_AT=<s>): once, a background thread (nice 19) reads every imported chunk of direct
+ // memory and counts, per heap name, the 2 MiB chunks and the 4 KiB pages that are all zero. Pinning allocates the pages,
+ // so what the GPU alone touched cannot be read from the pinned size (exp 0288); a page still all zero after minutes of
+ // play was most likely written by neither the CPU nor the GPU, so the counts bound what a narrower import could leave
+ // out. A chunk aliased by several views counts once, under the first view by address. Read only.
+-static void direct_zeroscan(const DState& S) {
++static void direct_zeroscan(const DState& S, unsigned scan) {
+ 	const int fd = dstate_fd(S);
+ 	if (fd < 0) return;
+ 	const auto            views_p = direct_views(S);
+ 	const std::vector<DBo> bos    = S.bos;
+-	std::thread([fd, views_p, bos] {
++	const std::set<uint64_t> forced = S.forced, learned = g_zs_learned; // experiment 0333: the zero map's classes, as of now
++	const double             t_at   = timing_now();
++	g_zs_busy                       = true;
++	std::thread([fd, views_p, bos, forced, learned, scan, t_at] {
+ 		setpriority(PRIO_PROCESS, static_cast<id_t>(gettid()), 19);
+ 		struct Row {
+ 			uint64_t imported = 0, zchunks = 0, zpages = 0, lo = ~0ull, hi = 0;
+@@ -1647,6 +1682,7 @@
+ 		std::map<std::string, Row> rows;
+ 		Row                        total;
+ 		std::set<uint64_t>         seen;
++		std::map<uint64_t, bool>   zero; // experiment 0333: every chunk read, all zero or not
+ 		std::vector<uint8_t>       buf(kDChunk);
+ 		const double               t0 = timing_now();
+ 		for (const auto& v: views_p->v) {
+@@ -1667,6 +1703,7 @@
+ 						for (uint32_t k = 0; k < 512 && z; k++) z = w[k] == 0;
+ 						if (z) zp++;
+ 					}
++					zero[c] = zp == kDChunk / 4096; // experiment 0333
+ 					for (Row* x: {&r, &total}) {
+ 						x->imported += kDChunk;
+ 						x->zpages += zp * 4096;
+@@ -1676,8 +1713,8 @@
+ 			}
+ 		}
+ 		const double mib = 1048576.0;
+-		journal("zero scan (exp 0330): direct memory, %.1f MiB of imported chunks read in %.1f s: all-zero 2 MiB chunks and 4 KiB pages by name\n", static_cast<double>(total.imported) / mib,
+-		        timing_now() - t0);
++		journal("zero scan (exp 0330): direct memory, %.1f MiB of imported chunks read in %.1f s: all-zero 2 MiB chunks and 4 KiB pages by name; scan %u at %.0f s (exp 0333)\n",
++		        static_cast<double>(total.imported) / mib, timing_now() - t0, scan, t_at);
+ 		for (const auto& [name, x]: rows) {
+ 			if (x.imported == 0) continue;
+ 			journal("  %-28s %9.1f MiB imported, %9.1f in all-zero chunks, %9.1f in all-zero pages; at 0x%" PRIx64 "-0x%" PRIx64 "\n", name.c_str(), static_cast<double>(x.imported) / mib,
+@@ -1685,6 +1722,87 @@
+ 		}
+ 		journal("  %-28s %9.1f MiB imported, %9.1f in all-zero chunks, %9.1f in all-zero pages\n", "total", static_cast<double>(total.imported) / mib, static_cast<double>(total.zchunks) / mib,
+ 		        static_cast<double>(total.zpages) / mib);
++		// Experiment 0333 (BC5_DIRECT_ZEROSCAN_MAP=<name>[,<name>...]): where these heaps' all-zero chunks lie, one character
++		// a 2 MiB chunk in address order (zero: '.' unforced, 'l' learned window, 'h' hint window only; data: '#', 'L', 'H';
++		// '-' not imported, '?' not read), what changed since the last scan, and what was zero and unforced in every scan
++		// so far, in runs of the file: the part a narrower import could leave out (exp 0333's design).
++		static const std::vector<std::string>            map_names = zeroscan_names(BC5_DIAG_ENV("BC5_DIRECT_ZEROSCAN_MAP"));
++		static std::map<std::string, std::set<uint64_t>> last_read, last_zero, always; // the scans run one at a time (g_zs_busy)
++		const auto in_bo = [&bos](uint64_t c) {
++			const auto it = std::upper_bound(bos.begin(), bos.end(), c, [](uint64_t o, const DBo& b) { return o < b.off; });
++			return it != bos.begin() && c < std::prev(it)->off + std::prev(it)->size;
++		};
++		for (const auto& name: map_names) {
++			std::string        chars;
++			std::set<uint64_t> read_now, zero_now, free_now;
++			uint64_t           zc[3] = {0, 0, 0}, dc = 0, nr = 0;
++			size_t             nviews = 0;
++			for (const auto& v: views_p->v) {
++				if (v.name != name) continue;
++				nviews++;
++				for (uint64_t c = v.off & ~(kDChunk - 1); c < v.off + v.size; c += kDChunk) {
++					const int  k  = learned.count(c) != 0 ? 1 : (forced.count(c) != 0 ? 2 : 0);
++					const auto it = zero.find(c);
++					if (it == zero.end()) {
++						const bool imp = in_bo(c);
++						chars += imp ? '?' : '-';
++						if (imp) nr++;
++						continue;
++					}
++					read_now.insert(c);
++					if (it->second) {
++						zero_now.insert(c);
++						if (k == 0) free_now.insert(c);
++						zc[k]++;
++						chars += ".lh"[k];
++					} else {
++						dc++;
++						chars += "#LH"[k];
++					}
++				}
++			}
++			if (nviews == 0) {
++				journal("zero map (exp 0333) scan %u at %.0f s, %s: no view of this name\n", scan, t_at, name.c_str());
++				continue;
++			}
++			const bool first = last_read.count(name) == 0;
++			size_t     left = 0, became = 0;
++			for (const uint64_t c: last_zero[name]) left += read_now.count(c) != 0 && zero_now.count(c) == 0 ? 1 : 0;
++			for (const uint64_t c: zero_now) became += last_read[name].count(c) != 0 && last_zero[name].count(c) == 0 ? 1 : 0;
++			std::set<uint64_t>& al = always[name];
++			if (first) {
++				al = free_now;
++			} else {
++				std::set<uint64_t> x;
++				std::set_intersection(al.begin(), al.end(), free_now.begin(), free_now.end(), std::inserter(x, x.begin()));
++				al.swap(x);
++			}
++			last_read[name] = read_now;
++			last_zero[name] = zero_now;
++			uint64_t   runs = 0, run = 0, largest = 0, big = 0, prev = 0;
++			const auto close_run = [&] {
++				if (run != 0) {
++					runs++;
++					largest = std::max(largest, run);
++					if (run >= 4) big += run;
++				}
++				run = 0;
++			};
++			for (const uint64_t c: al) {
++				if (run != 0 && c != prev + kDChunk) close_run();
++				run++;
++				prev = c;
++			}
++			close_run();
++			const double ch = static_cast<double>(kDChunk) / mib;
++			journal("zero map (exp 0333) scan %u at %.0f s, %s (%zu views, %zu chunks): zero %.0f MiB (unforced %.0f, learned %.0f, hint only %.0f), data %.0f, not read %.0f; "
++			        "since the last scan %zu chunks left the zero set and %zu became zero; zero and unforced in every scan so far %.0f MiB in %" PRIu64 " runs (the largest %.0f MiB; %.0f MiB in runs of 8 MiB or more)\n",
++			        scan, t_at, name.c_str(), nviews, chars.size(), static_cast<double>(zc[0] + zc[1] + zc[2]) * ch, static_cast<double>(zc[0]) * ch, static_cast<double>(zc[1]) * ch,
++			        static_cast<double>(zc[2]) * ch, static_cast<double>(dc) * ch, static_cast<double>(nr) * ch, first ? 0 : left, first ? 0 : became, static_cast<double>(al.size()) * ch, runs,
++			        static_cast<double>(largest) * ch, static_cast<double>(big) * ch);
++			for (size_t i = 0; i < chars.size(); i += 128) journal("zero map %u %-24s +%5zu MiB %s\n", scan, name.c_str(), i * 2, chars.substr(i, 128).c_str());
++		}
++		g_zs_busy = false;
+ 	}).detach();
+ }
+ static std::vector<std::pair<uint64_t, uint64_t>> g_scratch; // experiment 0037: zero-buffer pieces, va and size
+@@ -1953,12 +2071,19 @@
+ 	// journal time, for direct memory
+ 	if (S.kind == 0) {
+ 		static const double      at_bd = BC5_DIAG_ENV("BC5_DIRECT_BREAKDOWN_AT") != nullptr ? std::atof(BC5_DIAG_ENV("BC5_DIRECT_BREAKDOWN_AT")) : -1.0;
+-		static const double      at_zs = BC5_DIAG_ENV("BC5_DIRECT_ZEROSCAN_AT") != nullptr ? std::atof(BC5_DIAG_ENV("BC5_DIRECT_ZEROSCAN_AT")) : -1.0;
+-		static std::atomic<bool> done_bd {false}, done_zs {false};
+-		if (at_bd >= 0.0 || at_zs >= 0.0) {
++		static const std::vector<double> at_zs = zeroscan_times(BC5_DIAG_ENV("BC5_DIRECT_ZEROSCAN_AT")); // experiment 0333: a list
++		static std::atomic<bool>         done_bd {false};
++		static std::atomic<size_t>       next_zs {0};
++		if (at_bd >= 0.0 || next_zs.load() < at_zs.size()) {
+ 			const double t = timing_now();
+ 			if (at_bd >= 0.0 && t >= at_bd && !done_bd.exchange(true)) direct_breakdown_one(S, "at the set time", 0);
+-			if (at_zs >= 0.0 && t >= at_zs && !done_zs.exchange(true)) direct_zeroscan(S);
++			// Experiment 0333: one scan at a time; the times that passed while one ran are taken together by the next
++			size_t k = next_zs.load();
++			if (k < at_zs.size() && t >= at_zs[k] && !g_zs_busy.load()) {
++				size_t n = k + 1;
++				while (n < at_zs.size() && t >= at_zs[n]) n++;
++				if (next_zs.compare_exchange_strong(k, n)) direct_zeroscan(S, static_cast<unsigned>(k + 1));
++			}
+ 		}
+ 	}
+ }
+@@ -1998,6 +2123,7 @@
+ 			if (a >= b) continue;
+ 			for (uint64_t c = (v.off + (a - v.va)) & ~(kDChunk - 1); c < v.off + (b - v.va); c += kDChunk) {
+ 				if (S.forced.insert(c).second) here += kDChunk;
++				if (t_zs_learned && S.kind == 0) g_zs_learned.insert(c); // experiment 0333: the zero map's learned class
+ 			}
+ 		}
+ 		if (here != 0) direct_sync_one(S, true);
+@@ -2336,7 +2462,10 @@
+ }
+ 
+ static void map_window(uint64_t lo, uint64_t hi, std::vector<bc5::direct::Mapping>& have, const char* what, uint64_t addr) {
+-	if (const uint64_t asked = direct_force(lo, hi); asked != 0) {
++	t_zs_learned               = std::strcmp(what, "learned") == 0; // experiment 0333: a learned window's chunks, for the zero map
++	const uint64_t asked_0333 = direct_force(lo, hi);
++	t_zs_learned               = false;
++	if (const uint64_t asked = asked_0333; asked != 0) {
+ 		journal("%s 0x%" PRIx64 ": window 0x%" PRIx64 "+0x%" PRIx64 ", direct memory +%.1f MiB\n", what, addr, lo, hi - lo, static_cast<double>(asked) / 1048576.0);
+ 		have = g_dev->mappings();
+ 		std::sort(have.begin(), have.end(), [](const bc5::direct::Mapping& a, const bc5::direct::Mapping& b) { return a.va < b.va; });

@@ -1,0 +1,100 @@
+# exp 0336 R1: 1935 imports resolved (once per program and name), 5 call lines
+
+## per program and path
+eboot.bin                  hle            571
+eboot.bin                  module         322
+eboot.bin                  nid-fallback   28
+eboot.bin                  unresolved     10
+libRenoirCore.PS5.prx      hle            7
+libRenoirCore.PS5.prx      module         111
+libSceAgc.sprx             hle            53
+libSceAgc.sprx             module         29
+libSceAgc.sprx             nid-fallback   15
+libSceAgcDriver.sprx       hle            40
+libSceAgcDriver.sprx       nid-fallback   16
+libScePsml.sprx            hle            42
+libScePsml.sprx            module         229
+libScePsml.sprx            nid-fallback   69
+libc.prx                   hle            114
+libc.prx                   nid-fallback   8
+libcohtml.Prospero.prx     hle            53
+libcohtml.Prospero.prx     module         206
+libcohtml.Prospero.prx     nid-fallback   12
+
+## NID fallback: requested library/module -> resolved record's library (hle = a host registration, module = a loaded module's export)
+  81 libSceLibcInternal       libSceLibcInternal   -> libc_v1                        module
+  16 libScePosix              libkernel            -> libkernel_v1                   hle
+  14 libSceJson2              libSceJson           -> Json2_v1                       hle
+   7 libSceCoredump           libkernel            -> Coredump_v1                    hle
+   7 libSceLibcInternal       libSceLibcInternal   -> libc_v1                        hle
+   6 libkernel                libkernel            -> libkernel_v1                   module
+   5 libkernel                libkernel            -> Posix_v1                       hle
+   5 libSceShaderTranscode_minimal libSceShaderTranscode_minimal -> ShaderTranscode_minimal_v1     module
+   3 libSceLibcInternalExt    libSceLibcInternal   -> LibcInternal_v1                hle
+   2 libSceSsl                libSceSsl            -> Ssl_v1                         hle
+   1 libSceUserServicePlatformPrivacyWs1 libSceUserService    -> UserService_v1                 hle
+   1 libSceDbgThreadSanitizer_for_agc_driver libSceDbgThreadSanitizer -> DbgThreadSanitizer_for_agc_driver_v1 module
+
+## NID fallback from a posix library onto a libkernel registration, and the reverse (program, requested library, NID -> implementation)
+eboot.bin                  libScePosix    bY-PO6JhzhQ  -> FileSystem::KernelClose
+eboot.bin                  libScePosix    Oy6IpwgtYOk  -> Posix::lseek
+eboot.bin                  libScePosix    QcteRwbsnV0  -> LibKernel::KernelUsleep
+eboot.bin                  libScePosix    RXXqi4CtF8w  -> LibKernel::PthreadCondDestroy
+libcohtml.Prospero.prx     libScePosix    bY-PO6JhzhQ  -> FileSystem::KernelClose
+libcohtml.Prospero.prx     libScePosix    wuCroIGjt2g  -> FileSystem::KernelOpen
+libcohtml.Prospero.prx     libScePosix    FN4gaPmuFV8  -> FileSystem::KernelWrite
+libcohtml.Prospero.prx     libScePosix    Oy6IpwgtYOk  -> Posix::lseek
+libcohtml.Prospero.prx     libScePosix    mqQMh1zPPT8  -> Posix::fstat
+libcohtml.Prospero.prx     libScePosix    HoLVWNanBBc  -> LibKernel::getpid
+libcohtml.Prospero.prx     libScePosix    RXXqi4CtF8w  -> LibKernel::PthreadCondDestroy
+libcohtml.Prospero.prx     libScePosix    27bAgiJmOh0  -> Posix::pthread_cond_timedwait
+libcohtml.Prospero.prx     libScePosix    iGjsr1WAtI0  -> LibKernel::PthreadRwlockRdlock
+libcohtml.Prospero.prx     libScePosix    EgmLo6EWgso  -> LibKernel::PthreadRwlockUnlock
+libcohtml.Prospero.prx     libScePosix    6XG4B33N09g  -> LibKernel::PthreadYield
+libcohtml.Prospero.prx     libScePosix    QcteRwbsnV0  -> LibKernel::KernelUsleep
+libc.prx                   libkernel      NhpspxdjEKU  -> nanosleep
+libc.prx                   libkernel      cfwBSQyr5Ys  -> cfwBSQyr5Ys
+libc.prx                   libkernel      hHlZQUnlxSM  -> getrusage
+libc.prx                   libkernel      yS8U2TGCe1A  -> nanosleep
+libc.prx                   libkernel      E6ao34wPw+U  -> stat
+
+## the audited NIDs (exp 0335) the programs import
+eboot.bin                  libkernel      9BcDykPmo1I  hle    -> LibKernel::get_error_addr
+eboot.bin                  libScePosix    2MOy+rUfuhQ  hle    -> Posix::pthread_cond_signal
+eboot.bin                  libScePosix    EotR8a3ASf4  hle    -> Posix::pthread_self
+eboot.bin                  libkernel      FXPWHNk8Of0  hle    -> (Diag0336<LibKernel::PthreadAttrGetschedparam, 5>::call)
+libcohtml.Prospero.prx     libkernel      9BcDykPmo1I  hle    -> LibKernel::get_error_addr
+libcohtml.Prospero.prx     libScePosix    lLMT9vJAck0  hle    -> clock_gettime
+libcohtml.Prospero.prx     libScePosix    2Q0z6rnBrTE  hle    -> Posix::pthread_attr_setstacksize
+libcohtml.Prospero.prx     libScePosix    2MOy+rUfuhQ  hle    -> Posix::pthread_cond_signal
+libcohtml.Prospero.prx     libScePosix    SFxTMOfuCkE  hle    -> Posix::pthread_rwlock_tryrdlock
+libcohtml.Prospero.prx     libScePosix    sIlRvQqsN2Y  hle    -> Posix::pthread_rwlock_wrlock
+libcohtml.Prospero.prx     libScePosix    EotR8a3ASf4  hle    -> Posix::pthread_self
+libc.prx                   libkernel      9BcDykPmo1I  hle    -> LibKernel::get_error_addr
+libc.prx                   libkernel      sIlRvQqsN2Y  hle    -> (Diag0336<LibKernel::PthreadRwlockWrlock, 6>::call)
+libc.prx                   libkernel      lLMT9vJAck0  hle    -> LibKernel::clock_gettime
+libc.prx                   libkernel      fgIsQ10xYVA  hle    -> (Diag0336<FileSystem::KernelChmod, 0>::call)
+libc.prx                   libkernel      XD3mDeybCnk  hle    -> (Diag0336<LibKernel::PthreadRwlockTryrdlock, 1>::call)
+libSceAgc.sprx             libkernel      9BcDykPmo1I  hle    -> LibKernel::get_error_addr
+libSceAgcDriver.sprx       libkernel      9BcDykPmo1I  hle    -> LibKernel::get_error_addr
+libSceAgcDriver.sprx       libkernel      WB66evu8bsU  hle    -> GetCompiledSdkVersion
+
+## calls and other lines
+0.088 call sceKernelGetCompiledSdkVersion WB66evu8bsU #1 value 150995008
+0.096 call sceKernelGetCompiledSdkVersion WB66evu8bsU #2 value 150995008
+2.732 call libkernel pthread_attr_getschedparam FXPWHNk8Of0 #1 value 0
+2.738 call libkernel pthread_attr_getschedparam FXPWHNk8Of0 #2 value 0
+2.739 call libkernel pthread_attr_getschedparam FXPWHNk8Of0 #4 value 0
+0.088 procparam at 0x90981da98: size 0x60 magic 0x4942524f entries 5 u64@0x10 0x0900004011590001 -> compiled sdk version 0x09000040
+
+## unresolved (stubs)
+eboot.bin                  libSceNpCppWebApi      sRn6qePT54Q
+eboot.bin                  libSceNpCppWebApi      -0Vv7HKZaBM
+eboot.bin                  libSceNpCppWebApi      fIzsqjyD5oY
+eboot.bin                  libSceNpCppWebApi      yl3T9brJay4
+eboot.bin                  libSceNpCppWebApi      eVU3cXIJz0w
+eboot.bin                  libSceNpCppWebApi      xjVhrq2KPJA
+eboot.bin                  libSceNpCppWebApi      XuVY56j7GM0
+eboot.bin                  libSceNpCppWebApi      BY1jyWLZrcA
+eboot.bin                  libSceNpCppWebApi      JiY4sfHkV34
+eboot.bin                  libSceNpCppWebApi      LbhH9NeB93I

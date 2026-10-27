@@ -1,0 +1,21 @@
+Randomness seeded to: 704076918
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+bc5_backend_tests is a Catch2 v3.7.1 host application.
+Run with -? for options
+
+-------------------------------------------------------------------------------
+shadow_labels: the slot limit, an IB without waits, the COND_EXEC growth
+-------------------------------------------------------------------------------
+/home/kjaniszewski/bc5-work/exp0341/backend/tests/shadow_labels_test.cpp:94
+...............................................................................
+
+/home/kjaniszewski/bc5-work/exp0341/backend/tests/shadow_labels_test.cpp:121: FAILED:
+  CHECK( ib[4] == 16u )
+with expansion:
+  8 == 16
+
+===============================================================================
+test cases:    60 |    59 passed | 1 failed
+assertions: 32339 | 32338 passed | 1 failed
+

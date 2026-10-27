@@ -1,0 +1,71 @@
+audio trace: t 698.020 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+fps counter: t 698.280 s: 48 flips in 1.001 s, longest gap 51.3 ms, gaps over 40 ms 1, over 70 ms 0
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+audio trace: t 699.023 s port 0 type 0 8 ch 48000 Hz: 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 999.0 ms, 0 clears, sdl queued 65536-65536 bytes (42-42 ms), device playing
+audio trace: t 699.023 s port 1 type 4 1 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+audio trace: t 699.023 s port 2 type 10 2 ch 48000 Hz (pad): 94 calls, 48128 frames = 1.003 s of sound in 1.003 s (rate 1.000), held 0.0 ms, 0 clears, sdl queued 0-0 bytes (0-0 ms), device playing
+bc5-direct: shared map at 0x0+0x10000: -22
+kyty_exception_handler: 0000000903d7eca0
+=== HOST EXCEPTION REGISTER DUMP ===
+exception_address=0x0x903d7eca0
+native_code=0x0xb
+access_violation_vaddr=0x0xc
+rax=0x0x24d4 rbx=0x0x2406 rcx=0x0xce rdx=0x0x0
+rsi=0x0xffffffffffffc001 rdi=0x0x0 rbp=0x0x10367fb810 rsp=0x0x10367fb690
+r8 =0x0x1017af1e40 r9 =0x0x1 r10=0x0x0 r11=0x0x0
+r12=0x0x505 r13=0x0x10baa5f540 r14=0x0x50a r15=0x0x10baa5f440
+code-32: ff ff 48 8d 1c 00 8d 41 03 48 89 8d a8 fe ff ff 83 c1 06 85 c0 0f 49 c8 31 d2 c1 f9 02 8d 04 0b 8b 4f 0c 48 63 f0 48 89 8d b0 fe ff ff 31 c9 e8 9c 5e c8 ff 48 8b bd 28 ff ff ff 49 89 c3 4c 8b
+exception: type=AccessViolation, av_type=Read, av_addr=000000000000000c, native_code=0000000b
+regs: rax=00000000000024d4 rbx=0000000000002406 rcx=00000000000000ce rdx=0000000000000000
+regs: rsi=ffffffffffffc001 rdi=0000000000000000 rbp=00000010367fb810 rsp=00000010367fb690
+regs: r8 =0000001017af1e40 r9 =0000000000000001 r10=0000000000000000 r11=0000000000000000
+regs: r12=0000000000000505 r13=00000010baa5f540 r14=000000000000050a r15=00000010baa5f440
+stack: [00]=3800000038000000 [01]=3800000038000000 [02]=4241182242c52f92 [03]=0000001017af1ed8 [04]=0000000000001203 [05]=0000000000000335 [06]=bede260300000000 [07]=bf7994e1bf48261c [08]=0000000000000000 [09]=0000000000000000 [10]=00000010baa5f440 [11]=ffffffffffffc000 [12]=0000000100003fff [13]=0000001045288800 [14]=3d90000000000000 [15]=00000000bc000000
+exception rip code: addr=0000000903d7eca0, off=0000000003d7eca0, module=eboot.bin: 83 c1 06 85 c0 0f 49 c8 31 d2 c1 f9 02 8d 04 0b 8b 4f 0c 48 63 f0 48 89 8d b0 fe ff ff 31 c9 e8
+Stack trace [thread = 5]:
+[0] 00000009046621ba, off=00000000046621ba, eboot.bin
+[1] 0000000903cca882, off=0000000003cca882, eboot.bin
+[2] 0000000903ccb1b8, off=0000000003ccb1b8, eboot.bin
+[3] 0000000901cc38f4, off=0000000001cc38f4, eboot.bin
+[4] 0000000903a5e5c9, off=0000000003a5e5c9, eboot.bin
+[5] 0000000903d75d6e, off=0000000003d75d6e, eboot.bin
+guest rbx = 0000000000002406 (unmapped)
+guest rax = 00000000000024d4 (unmapped)
+guest rcx = 00000000000000ce (unmapped)
+guest rsi = ffffffffffffc001 (unmapped)
+guest rdi = 0
+guest r8  = 0000001017af1e40: 0000004608860104 8767a76d5d223865 00000010608b1a58 0010baa5f1000000 000000101784edc0 b3a118cea5192868 0000001011da6a70 00000010baa5f500
+guest r9  = 0000000000000001 (unmapped)
+guest r10 = 0
+guest r11 = 0
+guest r12 = 0000000000000505 (unmapped)
+guest r13 = 00000010baa5f540: 0000033500001203 00003350027ee300 0000097300000026 3800000000040000 40360fc400000000 00000000402d839d 0000000900000000 3e751271ffffffff
+guest r14 = 000000000000050a (unmapped)
+guest r15 = 00000010baa5f440: 0001000100010000 0001000300010002 0001000400010004 0001000400010004 0000000500000005 00000010baa5f4e8 0000000000000000 0000000000000000
+recent stubbed import: sRn6qePT54Q[NpCppWebApi_v1][NpCppWebApi_v1.1][Func]
+recent stubbed import: -0Vv7HKZaBM[NpCppWebApi_v1][NpCppWebApi_v1.1][Func]
+recent stubbed import: fIzsqjyD5oY[NpCppWebApi_v1][NpCppWebApi_v1.1][Func]
+recent stubbed import: yl3T9brJay4[NpCppWebApi_v1][NpCppWebApi_v1.1][Func]
+recent stubbed import: eVU3cXIJz0w[NpCppWebApi_v1][NpCppWebApi_v1.1][Func]
+recent stubbed import: xjVhrq2KPJA[NpCppWebApi_v1][NpCppWebApi_v1.1][Func]
+recent stubbed import: XuVY56j7GM0[NpCppWebApi_v1][NpCppWebApi_v1.1][Func]
+recent stubbed import: BY1jyWLZrcA[NpCppWebApi_v1][NpCppWebApi_v1.1][Func]
+recent stubbed import: JiY4sfHkV34[NpCppWebApi_v1][NpCppWebApi_v1.1][Func]
+recent stubbed import: LbhH9NeB93I[NpCppWebApi_v1][NpCppWebApi_v1.1][Func]
+AJM codec=1, name=ATRAC9 decoder
+--- Build ---
+Source build f266548
+--- Stack Trace ---
+--- Error ---
+Access violation: Read [000000000000000c] 
+ in /home/kjaniszewski/src/KytyPlus/src/loader/runtimeLinker.cpp:1162
+== 2026-10-26 11:20:00 exit 65

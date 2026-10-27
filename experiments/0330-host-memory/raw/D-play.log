@@ -1,0 +1,140 @@
+== 2026-10-26 08:06:16 emulator 2026-10-26 07:30:31
+BC5_GC_MODE=direct
+BC5_DIRECT_STAGE=all
+BC5_DIRECT_RINGS=1
+BC5_DIRECT_REOPEN=1
+BC5_DIRECT_GDS_KIB=64
+BC5_DIRECT_OA=16
+BC5_DIRECT_GWS=64
+BC5_DIRECT_GDS_ALL=1
+BC5_DIRECT_GDS_SHADOW=1
+BC5_DIRECT_JOURNAL=min
+BC5_DIRECT_ASYNC=1
+BC5_DIRECT_LAZY_NAMES=orbis_user_malloc
+BC5_DIRECT_EAGER_NAMES=GpuGarlicMemory,GpuOnionMemory
+KYTY_BC5_ALL_RW=1
+KYTY_BC5_DMABUF=1
+KYTY_BC5_CACHE_MIB=96,16,16,16
+KYTY_BC5_VMA_BLOCK_MIB=16
+KYTY_GUEST_MEMORY_MB=13824
+SDL_JOYSTICK_DISABLE_UDEV=1
+SDL_VIDEODRIVER=wayland
+SHADPS4_SYSMODULES_PACK_DIR=/home/kjaniszewski/bc5-data/mnt/PPSA21567/fakelib
+PLAY_ARGS=
+KYTY_BC5_INPUT_CONFIG=/home/kjaniszewski/bc5-work/input.cfg
+BC5_DIRECT_RING_ASYNC=1
+BC5_DIRECT_FLIP_DEFER=1
+BC5_DIRECT_MAX_IN_FLIGHT=24
+BC5_DIRECT_RING_ORDER_WAITS=1
+KYTY_BC5_INPUT_RECORD=/home/kjaniszewski/bc5-work/route-record.txt
+PLAY_CAPTURE=1
+BC5_DIRECT_PIECES_DRY=1
+BC5_DIRECT_PIECES_FULL=1
+bc5 playgo: /home/kjaniszewski/bc5-data/mnt/pkg-play/sce_sys/playgo-chunk.dat: magic 78676c70, 100 chunks
+host menu: MangoHud control socket @bc5-mangohud-816529 connected
+host menu: MangoHud shown
+Authorization required, but no authorization protocol specified
+
+[2026-10-26 08:06:18.265] [MANGOHUD] [error] [shared_x11.cpp:45] XOpenDisplay failed to open display ':0'
+[bc5] stubbed import #0x0: sRn6qePT54Q[NpCppWebApi_v1][NpCppWebApi_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/pkg-play/eboot.bin)
+[bc5] stubbed import #0x1: -0Vv7HKZaBM[NpCppWebApi_v1][NpCppWebApi_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/pkg-play/eboot.bin)
+[bc5] stubbed import #0x2: fIzsqjyD5oY[NpCppWebApi_v1][NpCppWebApi_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/pkg-play/eboot.bin)
+[bc5] stubbed import #0x3: yl3T9brJay4[NpCppWebApi_v1][NpCppWebApi_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/pkg-play/eboot.bin)
+[bc5] stubbed import #0x4: eVU3cXIJz0w[NpCppWebApi_v1][NpCppWebApi_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/pkg-play/eboot.bin)
+[bc5] stubbed import #0x5: xjVhrq2KPJA[NpCppWebApi_v1][NpCppWebApi_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/pkg-play/eboot.bin)
+[bc5] stubbed import #0x6: XuVY56j7GM0[NpCppWebApi_v1][NpCppWebApi_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/pkg-play/eboot.bin)
+[bc5] stubbed import #0x7: BY1jyWLZrcA[NpCppWebApi_v1][NpCppWebApi_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/pkg-play/eboot.bin)
+[bc5] stubbed import #0x8: JiY4sfHkV34[NpCppWebApi_v1][NpCppWebApi_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/pkg-play/eboot.bin)
+[bc5] stubbed import #0x9: LbhH9NeB93I[NpCppWebApi_v1][NpCppWebApi_v1.1][Func] (program /home/kjaniszewski/bc5-data/mnt/pkg-play/eboot.bin)
+bc5-direct: GDS BO 64 KiB: ok (0)
+bc5-direct: OA BO 16: ok (0)
+bc5-direct: GDS shadow 64 KiB at 0x100004000000: ok (0)
+bc5-direct: GWS BO 64: ok (0)
+bc5-direct: PRT window 0x8000000000+0x1000000000: 0
+bc5 system param 1 -> 1
+bc5 playgo: PlayGoInitialize
+bc5 playgo: PlayGoOpen
+bc5 playgo: PlayGoGetInstallChunkId
+bc5 playgo: PlayGoGetChunkId
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: GetLocus chunk 0: local fast
+bc5 playgo: GetLocus chunk 1: local fast
+bc5 playgo: GetLocus chunk 2: local fast
+bc5 playgo: GetLocus chunk 3: local fast
+bc5 playgo: GetLocus chunk 4: local fast
+bc5 playgo: GetLocus chunk 5: local fast
+bc5 playgo: GetLocus chunk 6: local fast
+bc5 playgo: GetLocus chunk 7: local fast
+bc5 playgo: GetLocus chunk 8: local fast
+bc5 playgo: GetLocus chunk 9: local fast
+bc5 playgo: GetLocus chunk 10: local fast
+bc5 playgo: GetLocus chunk 11: local fast
+bc5 playgo: GetLocus chunk 12: local fast
+bc5 playgo: GetLocus chunk 13: local fast
+bc5 playgo: GetLocus chunk 14: local fast
+bc5 playgo: GetLocus chunk 15: local fast
+bc5 playgo: GetLocus chunk 16: local fast
+bc5 playgo: GetLocus chunk 17: local fast
+bc5 playgo: GetLocus chunk 18: local fast
+bc5 playgo: GetLocus chunk 19: local fast
+bc5 playgo: GetLocus chunk 20: local fast
+bc5 playgo: GetLocus chunk 21: local fast
+bc5 playgo: GetLocus chunk 22: local fast
+bc5 playgo: GetLocus chunk 23: local fast
+bc5 playgo: GetLocus chunk 24: local fast
+bc5 playgo: GetLocus chunk 25: local fast
+bc5 playgo: GetLocus chunk 26: local fast
+bc5 playgo: GetLocus chunk 27: local fast
+bc5 playgo: GetLocus chunk 28: local fast
+bc5 playgo: GetLocus chunk 29: local fast
+bc5 playgo: GetLocus chunk 30: local fast
+bc5 playgo: GetLocus chunk 31: local fast
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoGetLocus
+bc5 playgo: PlayGoPrefetch
+bc5-direct: /dev/gc TF ring 0x1120000000 size 0x3fff8 (programmed, BC5_DIRECT_GC_TF_RING=1)
+bc5-direct: /dev/gc HS offchip 0x1ff
+bc5 clock: journal t 0 = monotonic 28983.599 s
+bc5-direct: shared map at 0x0+0x200000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+bc5-direct: shared map at 0x0+0x10000: -22
+--- Build ---
+Source build f266548
+--- Stack Trace ---
+--- Fatal Error ---
+Error: condition (g_tls_main_program == nullptr) is true in /home/kjaniszewski/src/KytyPlus/src/loader/runtimeLinker.cpp:1470
+--- Build ---
+Source build f266548
+--- Stack Trace ---
+--- Fatal Error ---
+Error: condition (g_tls_main_program == nullptr) is true in /home/kjaniszewski/src/KytyPlus/src/loader/runtimeLinker.cpp:1470
+== 2026-10-26 08:06:21 exit 65

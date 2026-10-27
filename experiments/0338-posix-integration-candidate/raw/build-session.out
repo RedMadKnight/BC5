@@ -1,0 +1,64 @@
+libs/libKernel.cpp: 14 edits, LF, md5 3bf94a6168d176d591730bac33dff5b1
+kernel/pthread.cpp: 5 edits, CRLF, md5 46c7ac3a8f3df8421240b4fdb916d81f
+kernel/pthread.h: 3 edits, LF, md5 6b9e64146683b1f5c4451f2a36496fb0
+libs/bc5LleAgc.cpp: 2 edits, LF, md5 cfeec2f8af78e1938d14e0258c109fc3
+loader/runtimeLinker.cpp: 8 edits, LF, md5 e37ed5cdaa04410d1d82972dca44d9f7
+== 22:57:40 normal compdb
+== 22:57:41 normal build
+== 22:58:39 normal build rc 0
+warnings: 9
+/home/kjaniszewski/bc5-work/exp0338/src/kernel/pthread.cpp:1315:13: warning: unused function 'sec_to_timeval' [-Wunused-function]
+ 1315 | static void sec_to_timeval(KernelTimeval* ts, double sec) {
+      |             ^~~~~~~~~~~~~~
+2 warnings generated.
+/home/kjaniszewski/bc5-work/exp0338/src/libs/bc5LleAgc.cpp:2363:122: warning: format specifies type 'unsigned long' but the argument has type 'unsigned long long' [-Wformat]
+ 2363 |                                         if ((n_low++ & 0xffu) == 0) journal("scratch: zero page at 0x%" PRIx64 " refused, trying from 0x%" PRIx64 "\n", pa, pa + 0x10000ull);
+      |                                                                                                                                         ~~~~~~~~~           ^~~~~~~~~~~~~~~
+/home/kjaniszewski/bc5-work/exp0338/src/libs/bc5LleAgc.cpp:79:15: warning: unused variable 'OK' [-Wunused-const-variable]
+   79 | constexpr int OK = 0;
+      |               ^~
+/home/kjaniszewski/bc5-work/exp0338/src/libs/bc5LleAgc.cpp:396:20: warning: unused variable 'IT_DMA_DATA' [-Wunused-const-variable]
+  396 | constexpr uint32_t IT_DMA_DATA             = 0x50;
+      |                    ^~~~~~~~~~~
+4 warnings generated.
+/home/kjaniszewski/bc5-work/exp0338/src/loader/runtimeLinker.cpp:888:3: warning: non-void lambda does not return a value in all control paths [-Wreturn-type]
+  888 |                 }();
+      |                 ^
+2 warnings generated.
+-rwxr-xr-x. 1 kjaniszewski kjaniszewski 169569608 10-26 22:58 /home/kjaniszewski/bc5-work/exp0338/kyty_emulator
+normal md5 8e5eea47
+strings: 3
+== 22:58:41 lean compdb
+== 22:58:41 lean build
+== 22:59:33 lean build rc 0
+warnings: 12
+/home/kjaniszewski/bc5-work/exp0338/src/kernel/pthread.cpp:1315:13: warning: unused function 'sec_to_timeval' [-Wunused-function]
+ 1315 | static void sec_to_timeval(KernelTimeval* ts, double sec) {
+      |             ^~~~~~~~~~~~~~
+2 warnings generated.
+/home/kjaniszewski/bc5-work/exp0338/src/libs/bc5LleAgc.cpp:2363:122: warning: format specifies type 'unsigned long' but the argument has type 'unsigned long long' [-Wformat]
+ 2363 |                                         if ((n_low++ & 0xffu) == 0) journal("scratch: zero page at 0x%" PRIx64 " refused, trying from 0x%" PRIx64 "\n", pa, pa + 0x10000ull);
+      |                                                                                                                                         ~~~~~~~~~           ^~~~~~~~~~~~~~~
+/home/kjaniszewski/bc5-work/exp0338/src/libs/bc5LleAgc.cpp:4670:36: warning: unused variable 'ns_two_kept' [-Wunused-variable]
+ 4670 |                                                 static std::atomic<uint64_t> ns_two_kept {0}, ns_two_ok {0}, ns_two_lost {0};
+      |                                                                              ^~~~~~~~~~~
+/home/kjaniszewski/bc5-work/exp0338/src/libs/bc5LleAgc.cpp:4670:53: warning: unused variable 'ns_two_ok' [-Wunused-variable]
+ 4670 |                                                 static std::atomic<uint64_t> ns_two_kept {0}, ns_two_ok {0}, ns_two_lost {0};
+      |                                                                                               ^~~~~~~~~
+/home/kjaniszewski/bc5-work/exp0338/src/libs/bc5LleAgc.cpp:4670:68: warning: unused variable 'ns_two_lost' [-Wunused-variable]
+ 4670 |                                                 static std::atomic<uint64_t> ns_two_kept {0}, ns_two_ok {0}, ns_two_lost {0};
+      |                                                                                                              ^~~~~~~~~~~
+/home/kjaniszewski/bc5-work/exp0338/src/libs/bc5LleAgc.cpp:79:15: warning: unused variable 'OK' [-Wunused-const-variable]
+   79 | constexpr int OK = 0;
+      |               ^~
+/home/kjaniszewski/bc5-work/exp0338/src/libs/bc5LleAgc.cpp:396:20: warning: unused variable 'IT_DMA_DATA' [-Wunused-const-variable]
+  396 | constexpr uint32_t IT_DMA_DATA             = 0x50;
+      |                    ^~~~~~~~~~~
+7 warnings generated.
+/home/kjaniszewski/bc5-work/exp0338/src/loader/runtimeLinker.cpp:888:3: warning: non-void lambda does not return a value in all control paths [-Wreturn-type]
+  888 |                 }();
+      |                 ^
+2 warnings generated.
+-rwxr-xr-x. 1 kjaniszewski kjaniszewski 168334248 10-26 22:59 /home/kjaniszewski/bc5-work/exp0338/lean/kyty_emulator
+lean md5 d445c67e
+strings: 3
