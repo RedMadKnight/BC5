@@ -1,0 +1,29 @@
+15:43:18 W1 live saves before: dc9d4f25fc2d41ca
+15:43:18 W1 start: binary ddfb9456, /var/home 60 %, dmesg 1412 lines; switches: 
+  private save copy reset to saves-lake-1153
+  == W1 (defaults) shots done 15:48:03
+  kernel: 0 fault lines, 0 ring timeout/reset lines
+  journal: 0 fence timeouts; 1883 ray-tracing-off lines; compute-ring lines (two rings: >= 1; one ring: 0): 0; skip lines: 
+  154622-ts00.png: patch  31.2 %
+  154628-ts01.png: patch  32.5 %
+  154633-ts02.png: patch  33.3 %
+  154638-ts03.png: patch  28.4 %
+  154643-ts04.png: patch  26.2 %
+  154648-ts05.png: patch  29.6 %
+  154653-ts06.png: patch  30.8 %
+  154658-ts07.png: patch  28.8 %
+  154703-ts08.png: patch  32.5 %
+  154708-ts09.png: patch  25.9 %
+  154713-ts10.png: patch  31.3 %
+  154718-ts11.png: patch  31.6 %
+  154723-ts12.png: patch  27.8 %
+  154728-ts13.png: patch  27.6 %
+  154733-ts14.png: patch  28.2 %
+  154738-ts15.png: patch  31.4 %
+  154743-ts16.png: patch  28.3 %
+  154748-ts17.png: patch  31.4 %
+  154753-ts18.png: patch  26.3 %
+  154758-ts19.png: patch  27.9 %
+  fps counter: t 284.029 s: 30 flips in 1.015 s, longest gap 48.1 ms, gaps over 40 ms 1, ove
+15:48:13 W1 live saves after: dc9d4f25fc2d41ca; /var/home 61%
+15:48:13 W1 done

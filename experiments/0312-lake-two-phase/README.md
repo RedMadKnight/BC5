@@ -186,3 +186,16 @@ follow the X/Y hole state frame by frame, once every depth read is decoded at it
   - Reads and shots are deleted after the analysis, unviewed. The journal stays private in `~/bc5-data/captures`
     (its size noted).
 - **About 30 minutes:** setup and the synthetic check ~6, the run ~7, the analysis ~10, the cleanup ~3.
+
+**Run J1: not run.** The design above (87a4ea3) was queued behind exps 0329 and 0330. On 2026-10-27 the top session
+asked for exp 0312 to be closed on main, after exp 0347 (F418) found the lake still patched on that day's shared
+build. J1 stays a ready design for the next lake slot: its scripts and their laptop self-tests are here, and nothing
+of J1 touched the box.
+- `fr0312.py`, `rdj0312.py`, `pqj0312.py` and `mkj0312.py` are new.
+- `buf0312.py` gained its last argument, MIN_T, after P1. Without it the script reads as it did in P1.
+- When J1 runs, the launcher copy must be derived from that day's `play-pkg.sh`, as exp 0347 did with 5b469087: one
+  ring, the 0341 guards, its own mount log.
+- A rerun is a new experiment, as the template says.
+
+**Status: finished.** P1's verdict stands (F387): inconclusive for the two-phase culling question. Pages 1767–1768
+are the lead.
