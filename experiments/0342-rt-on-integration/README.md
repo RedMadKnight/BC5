@@ -65,3 +65,16 @@ maintainer's own play on the shortcuts follows.
 - read acb #76004's dump on the box: which dispatch sits at the 57 % mark, its program, and its arguments at the timeout;
 - tell a huge grid from a looping shader;
 - correct F414.
+
+**The maintainer's RT-on play on the integrated build (2026-10-27 12:51–12:52; "Gram. Krótki przebieg 5 minut").**
+The play ran on the "BC5 emulator" shortcut: normal ddfb9456, RT on, live saves dc9d4f25fc2d41ca, pstore on. It went down 85 s into the game, right after the load. All data is in `raw/maintainer-test/`: the kernel, journal and play-log streams from the laptop, and `crash-1252-registers.txt`.
+- **12:52:29.** A gfxhub page fault: the CP's fetcher (CPF) read page 0x9bce4000 and hit a permission fault (vmid 6).
+- **12:52:32.** The GFX ring timed out (thread `bc5-ring`) and the ring reset **failed**.
+- **12:52:36.** MODE1 reset, "VRAM is lost", PSP resuming, and the kernel's last line. The hardware watchdog brought the box back at 12:53:07.
+- **pstore** has no record: the kernel hung, it did not panic.
+- **The host's timeout probe** journaled dcb #48055 (30,221 dwords; 466 dispatches, 435 of them indirect; largest grid 1,792 groups). It dumped that dcb and an **acb of 4 dwords** (#48056) on the box.
+- **The devcoredump is not F403's state.** The SEs are idle, and the CP stands 608 dwords into a 36,360-dword IB. Its PFP history is `SET_SH_REG`, `DISPATCH_INDIRECT`, `PFP_SYNC_ME`, with **no CP check** around the dispatch: the unbased path.
+
+Working reading: a dispatch whose arguments the filter could not place against a base was converted without the check, and the CPF read its arguments from a wrong address. The fault page 0x9bce4000 looks like the low dword of the real address, taken as an offset from base 0. This is not verified; the box read is exp 0344's.
+
+The live saves did not change.

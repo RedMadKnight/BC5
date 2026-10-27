@@ -1,0 +1,19 @@
+# exp 0342, the maintainer's RT-on play on the integrated shared build (normal ddfb9456), 2026-10-27 12:51:06 start, machine-down 12:52:36.
+# Register values of ~/bc5-data/captures/devcoredump/20261027-125232-devcd1.txt on the box (read-only; the dump stays there).
+kernel (laptop stream kernel-stream.txt): 12:52:29 [gfxhub] page fault (src_id:0 ring:24 vmid:6 pasid:25), Render Thread, page 0x000000009bce4000,
+  client 0x1b (UTCL2), GCVM_L2_PROTECTION_FAULT_STATUS 0x00600830: CPF (0x4), PERMISSION_FAULTS 0x3, RW 0 (a read), MORE_FAULTS 0;
+  12:52:32 ring gfx_0.0.0 timeout (signaled 60758, emitted 60760), thread bc5-ring; Ring gfx_0.0.0 reset FAILED; GPU reset begin;
+  12:52:36 MODE1 reset, "GPU reset succeeded, trying to resume", "VRAM is lost due to GPU reset!", "PSP is resuming...", last line 12:52:36.144.
+  Box back 12:53:07 (the SP5100 hardware watchdog, 30 s; no panic, so no pstore record); the box's own journal of that boot ends 12:52:00.
+host timeout probe (journal-stream.txt): dcb #48055 30221 dwords (27 waits, 25 kept for the GPU; 466 dispatches, 435 indirect; largest grid 1792 groups);
+  the IB dumps on the box: play-20261027-1251/gc/ib-timeout-00048055-dcb-30221.bin and ib-timeout-00048056-acb-4.bin (an acb of 4 dwords).
+devcd: process kyty_emulator, thread bc5-ring; fault page 0x9bce4000, protection fault status 0x600830
+IB #0 0x101700000000 36360 dw; CP_IB1_CMD_BUFSZ 0x8e08 (36360), CP_IB1_BUFSZ 0x8ba8 (35752 left: 608 dwords, 1.7 % fetched)
+CP_IB2_BASE 0x800100015000 CMD_BUFSZ 0xa8 BUFSZ 0
+gfx_0.0.0: Rptr 0x400 Wptr 0xd0de00
+GRBM_STATUS 0xa0003028  GRBM_STATUS2 0x50000008  GRBM_STATUS_SE0..3 0x00000006 (all idle)
+CP_STALLED_STAT1 0x00000c00  CP_BUSY_STAT 0x00020100  CP_CPF_STATUS 0x94000363
+CP_PFP_INSTR_PNTR 0x0  CP_ME_INSTR_PNTR 0x0
+CP_PFP_HEADER_DUMP (period): 0xc0004200 PFP_SYNC_ME, 0xc0067600 SET_SH_REG(7), 0xc0011600 DISPATCH_INDIRECT, 0xc0004200, 0xc0067600, 0xc0065800 ACQUIRE_MEM, 0xffff1000 x2 (empty)
+CP_ME_HEADER_DUMP (period): 0xc0011600 DISPATCH_INDIRECT, 0xc0004200, 0xc0067600, 0xc0065800, 0xc0000c00, 0xc0017600 SET_SH_REG, 0xc0107600 SET_SH_REG(17), 0xc0017600
+-> no CP-check packets (COND_WRITE / COND_EXEC) around the DISPATCH_INDIRECT: the unbased path (PFP_SYNC_ME only); the CPF read a page at 0x9bce4000.
