@@ -31,5 +31,5 @@ systemctl daemon-reload
 systemctl enable --now bc5-gpu-watch.service
 sleep 1
 systemctl --no-pager --lines=0 status bc5-gpu-watch.service | head -4
-echo "done. Its own lines go to the kernel log: journalctl -k -g bc5-gpu-watch"
-journalctl -k -b --no-pager -g bc5-gpu-watch | tail -2
+echo "done. Its own lines are in the kernel ring buffer: sudo dmesg | grep bc5-gpu-watch (journalctl -k does not show them)"
+dmesg | grep bc5-gpu-watch | tail -2
