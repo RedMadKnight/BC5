@@ -5785,10 +5785,10 @@ index 0000000..5a3fd52
 +#endif // KYTY_GRAPHICS_PRESENTATION_HOST_MENU_H_
 diff --git a/src/graphics/presentation/settingsOverlay.cpp b/src/graphics/presentation/settingsOverlay.cpp
 new file mode 100644
-index 0000000..2284906
+index 0000000..0e709b6
 --- /dev/null
 +++ b/src/graphics/presentation/settingsOverlay.cpp
-@@ -0,0 +1,942 @@
+@@ -0,0 +1,1006 @@
 +#include "graphics/presentation/settingsOverlay.h"
 +
 +#include "SDL.h"
@@ -6042,6 +6042,22 @@ index 0000000..2284906
 +		char b[64];
 +		std::snprintf(b, sizeof(b), "%s=%.2f", key.c_str(), k);
 +		lines.insert(lines.begin(), b);
++	}
++
++	// Experiment 0337: SystemLanguage=<name>, the console's system language (-1: no line).
++	[[nodiscard]] int SystemLanguage() const {
++		int v = -1;
++		for (const auto& l: lines) {
++			if (EqualNoCase(StatementLeft(l), "SystemLanguage")) v = HostInputLanguageFromName(std::string(StatementRight(l)));
++		}
++		return v;
++	}
++
++	void SetSystemLanguage(int language) {
++		lines.erase(std::remove_if(lines.begin(), lines.end(),
++		                           [&](const std::string& l) { return EqualNoCase(StatementLeft(l), "SystemLanguage"); }),
++		            lines.end());
++		lines.insert(lines.begin(), std::string("SystemLanguage=") + HostInputLanguageName(language));
 +	}
 +};
 +
@@ -6532,9 +6548,56 @@ index 0000000..2284906
 +				DrawVideo();
 +				ImGui::EndTabItem();
 +			}
++			if (ImGui::BeginTabItem("System")) { // experiment 0337
++				DrawSystem();
++				ImGui::EndTabItem();
++			}
 +			ImGui::EndTabBar();
 +		}
 +		ImGui::End();
++	}
++
++	// Experiment 0337: the console's system language, as the PS5's Settings > System > Language. The game reads it once,
++	// when it starts (SystemServiceParamGetInt, PARAM_ID_LANG), so a new choice applies from its next start: Save, then
++	// Restart game (Video tab). Without a SystemLanguage line the emulator's --console-language stays (English (United
++	// States) by default).
++	void DrawSystem() {
++		const int saved   = HostInputSystemLanguage();
++		const int chosen  = draft.SystemLanguage();
++		const int current = chosen >= 0 ? chosen : (saved >= 0 ? saved : 1);
++		ImGui::TextWrapped("System language, as on the console (Settings > System > Language). Games read it when they "
++		                   "start: Save, then Restart game (Video tab).");
++		if (ImGui::BeginCombo("Language", HostInputLanguageName(current))) {
++			for (int i = 0; i < HostInputLanguageCount(); i++) {
++				if (ImGui::Selectable(HostInputLanguageName(i), i == current)) {
++					draft.SetSystemLanguage(i);
++					dirty         = true;
++					system_status = std::string(HostInputLanguageName(i)) + ": Save, then Restart game (Video tab)";
++				}
++				if (i == current) {
++					ImGui::SetItemDefaultFocus();
++				}
++			}
++			ImGui::EndCombo();
++		}
++		ImGui::BeginDisabled(path.empty());
++		if (ImGui::Button("Save##system")) {
++			std::string error;
++			if (!HostInputSave(path, draft.lines, &error)) {
++				system_status = "not saved: " + error;
++			} else if (!HostInputApply(draft.lines, &error)) {
++				system_status = "saved, not applied: " + error;
++			} else {
++				system_status = "saved; the game uses it from its next start (Restart game, Video tab)";
++				dirty         = false;
++			}
++		}
++		ImGui::EndDisabled();
++		ImGui::SameLine();
++		if (ImGui::Button("Close##system")) {
++			SettingsOverlayToggle();
++		}
++		ImGui::TextUnformatted(system_status.c_str());
 +	}
 +
 +	// Experiment 0047: the title picks its 3D resolution itself, from the GPU time its timestamps
@@ -6706,6 +6769,7 @@ index 0000000..2284906
 +	std::string                           status;
 +	bool                                  dirty              = false;
 +	std::string                           video_status;
++	std::string                           system_status; // experiment 0337
 +	bool                                  restart_armed      = false;
 +	bool                                  was_active         = false;
 +	ImGuiContext*                         imgui_context      = nullptr;
@@ -10960,7 +11024,7 @@ index f70995a..8bc9175 100644
  } // namespace Libs::Graphics
  
 diff --git a/src/graphics/presentation/window/hostInput.cpp b/src/graphics/presentation/window/hostInput.cpp
-index edcfdaf..f5fe2a3 100644
+index edcfdaf..8a2ab46 100644
 --- a/src/graphics/presentation/window/hostInput.cpp
 +++ b/src/graphics/presentation/window/hostInput.cpp
 @@ -1,4 +1,7 @@
@@ -11129,7 +11193,7 @@ index edcfdaf..f5fe2a3 100644
  	switch (key) {
  		case SDLK_RSHIFT: return SDLK_LSHIFT;
  		case SDLK_RCTRL: return SDLK_LCTRL;
-@@ -83,110 +201,484 @@ SDL_Keycode NormalizeKey(SDL_Keycode key) {
+@@ -83,110 +201,533 @@ SDL_Keycode NormalizeKey(SDL_Keycode key) {
  	}
  }
  
@@ -11172,7 +11236,10 @@ index edcfdaf..f5fe2a3 100644
 +	});
 +	return button != MOUSE_NAMES.end() ? button->second : 0;
 +}
-+
+ 
+-	const auto button = std::find_if(buttons.begin(), buttons.end(),
+-	                                 [name](const auto& item) { return item.first == name; });
+-	return button != buttons.end() ? button->second : 0;
 +std::string MouseButtonName(uint8_t button) {
 +	for (const auto& [name, id]: MOUSE_NAMES) {
 +		if (id == button) {
@@ -11180,11 +11247,12 @@ index edcfdaf..f5fe2a3 100644
 +		}
 +	}
 +	return "Mouse:?";
-+}
+ }
  
--	const auto button = std::find_if(buttons.begin(), buttons.end(),
--	                                 [name](const auto& item) { return item.first == name; });
--	return button != buttons.end() ? button->second : 0;
+-int GamepadButtonFromName(std::string_view name) {
+-	if (!name.starts_with("Pad:")) return -1;
+-	return static_cast<int>(
+-	    SDL_GameControllerGetButtonFromString(std::string(name.substr(4)).c_str()));
 +// "Pad:<name>": a button, a trigger axis, or a stick axis with a direction.
 +bool PadSourceFromName(std::string_view name, Source* out) {
 +	if (!name.starts_with("Pad:")) {
@@ -11219,12 +11287,8 @@ index edcfdaf..f5fe2a3 100644
 +	out->pad_axis  = axis;
 +	out->axis_sign = sign;
 +	return true;
- }
- 
--int GamepadButtonFromName(std::string_view name) {
--	if (!name.starts_with("Pad:")) return -1;
--	return static_cast<int>(
--	    SDL_GameControllerGetButtonFromString(std::string(name.substr(4)).c_str()));
++}
++
 +bool SourceFromName(std::string_view name, Source* out) {
 +	*out = Source {};
 +	if (name.starts_with("Mouse:")) {
@@ -11241,13 +11305,8 @@ index edcfdaf..f5fe2a3 100644
 +	}
 +	out->kind = SourceKind::Key;
 +	return true;
- }
- 
--bool Conflicts(const Binding& first, const Binding& second) {
--	return first.control == second.control ||
--	       (first.key != SDLK_UNKNOWN && first.key == second.key) ||
--	       (first.mouse_button != 0 && first.mouse_button == second.mouse_button) ||
--	       (first.gamepad_button >= 0 && first.gamepad_button == second.gamepad_button);
++}
++
 +std::string SourceToName(const Source& s) {
 +	switch (s.kind) {
 +		case SourceKind::Key: return SDL_GetKeyName(s.key);
@@ -11274,6 +11333,48 @@ index edcfdaf..f5fe2a3 100644
 +		case SourceKind::PadAxis: return a.pad_axis == b.pad_axis && a.axis_sign == b.axis_sign;
 +		default: return false;
 +	}
+ }
+ 
+-bool Conflicts(const Binding& first, const Binding& second) {
+-	return first.control == second.control ||
+-	       (first.key != SDLK_UNKNOWN && first.key == second.key) ||
+-	       (first.mouse_button != 0 && first.mouse_button == second.mouse_button) ||
+-	       (first.gamepad_button >= 0 && first.gamepad_button == second.gamepad_button);
++// Experiment 0337: the system languages in SystemServiceParamGetInt's numbering (PARAM_ID_LANG), as KytyPlus's
++// launcher lists them (launcher/src/configurationEditDialog.cpp CONSOLE_LANGUAGE_NAMES at f266548;
++// Config::MAX_CONSOLE_LANGUAGE is 29).
++constexpr std::array<const char*, 30> LANGUAGE_NAMES = {
++    "Japanese",          "English (United States)", "French (France)",   "Spanish (Spain)",          "German",
++    "Italian",           "Dutch",                   "Portuguese (Portugal)", "Russian",              "Korean",
++    "Chinese (Traditional)", "Chinese (Simplified)", "Finnish",           "Swedish",                  "Danish",
++    "Norwegian",         "Polish",                  "Portuguese (Brazil)", "English (United Kingdom)", "Turkish",
++    "Spanish (Latin America)", "Arabic",            "French (Canada)",   "Czech",                    "Hungarian",
++    "Greek",             "Romanian",                "Thai",              "Vietnamese",               "Indonesian",
++};
++
++std::string LanguageKey(std::string_view s) { // letters and digits only, lower case
++	std::string k;
++	for (const char c: s) {
++		if (std::isalnum(static_cast<unsigned char>(c)) != 0) k.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
++	}
++	return k;
++}
++
++// A number 0..29, or a name compared on its letters and digits, any case ("Polish", "polish", "english-united-states");
++// -1 if neither.
++int LanguageFromName(std::string_view s) {
++	while (!s.empty() && std::isspace(static_cast<unsigned char>(s.front())) != 0) s.remove_prefix(1);
++	while (!s.empty() && std::isspace(static_cast<unsigned char>(s.back())) != 0) s.remove_suffix(1);
++	if (s.empty()) return -1;
++	if (std::all_of(s.begin(), s.end(), [](char c) { return std::isdigit(static_cast<unsigned char>(c)) != 0; })) {
++		const int n = s.size() <= 2 ? std::atoi(std::string(s).c_str()) : -1;
++		return n >= 0 && n < static_cast<int>(LANGUAGE_NAMES.size()) ? n : -1;
++	}
++	const std::string key = LanguageKey(s);
++	for (std::size_t i = 0; i < LANGUAGE_NAMES.size(); i++) {
++		if (LanguageKey(LANGUAGE_NAMES[i]) == key) return static_cast<int>(i);
++	}
++	return -1;
  }
  
  class InputMap {
@@ -11309,15 +11410,15 @@ index edcfdaf..f5fe2a3 100644
 +			} else {
 +				LOGF("Host input: %s = %s\n", std::string(Info(b.control).name).c_str(),
 +				     SourceToName(b.source).c_str());
-+			}
+ 			}
+-			if (binding.mouse_button == 0 && binding.gamepad_button < 0) {
+-				binding.key = NormalizeKey(SDL_GetKeyFromName(std::string(host_input).c_str()));
 +		}
 +		for (int i = 0; i < 32; i++) {
 +			if (((m_disabled_buttons >> i) & 1u) != 0) {
 +				LOGF("Host input: pad button %s disabled\n",
 +				     SDL_GameControllerGetStringForButton(static_cast<SDL_GameControllerButton>(i)));
- 			}
--			if (binding.mouse_button == 0 && binding.gamepad_button < 0) {
--				binding.key = NormalizeKey(SDL_GetKeyFromName(std::string(host_input).c_str()));
++			}
 +			if (((m_disabled_axes >> i) & 1u) != 0) {
 +				LOGF("Host input: pad axis %s disabled\n",
 +				     SDL_GameControllerGetStringForAxis(static_cast<SDL_GameControllerAxis>(i)));
@@ -11341,18 +11442,19 @@ index edcfdaf..f5fe2a3 100644
 +		if (m_fullscreen >= 0) {
 +			out.emplace_back(m_fullscreen == 1 ? "Fullscreen=on" : "Fullscreen=off");
 +		}
++		if (m_system_language >= 0) out.emplace_back(std::string("SystemLanguage=") + LANGUAGE_NAMES[m_system_language]); // experiment 0337
 +		if (m_render_scale > 0.0) {
 +			char b[64];
 +			std::snprintf(b, sizeof(b), "RenderScale.%s=%.2f", HostInputTitleId().c_str(), m_render_scale);
 +			out.emplace_back(b);
-+		}
+ 		}
+-		Add(binding);
 +		for (const auto& other: m_other_title_scales) out.push_back(other);
 +		if (m_ray_tracing >= 0) out.emplace_back("RayTracing." + HostInputTitleId() + (m_ray_tracing == 1 ? "=on" : "=off")); // experiment 0273
 +		if (m_mangohud >= 0) out.emplace_back("MangoHud." + HostInputTitleId() + (m_mangohud == 1 ? "=on" : "=off")); // experiment 0301
 +		if (!m_default_keys) {
 +			out.emplace_back("DefaultKeys=off");
- 		}
--		Add(binding);
++		}
 +		for (int i = 0; i < 32; i++) {
 +			if (((m_disabled_buttons >> i) & 1u) != 0) {
 +				out.emplace_back(std::string("Pad:") +
@@ -11366,10 +11468,10 @@ index edcfdaf..f5fe2a3 100644
 +				                 SDL_GameControllerGetStringForAxis(static_cast<SDL_GameControllerAxis>(i)) +
 +				                 "=none");
 +			}
-+		}
+ 		}
 +		for (const auto& b: m_bindings) {
 +			out.emplace_back(std::string(Info(b.control).name) + "=" + SourceToName(b.source));
- 		}
++		}
 +		return out;
  	}
 +
@@ -11379,6 +11481,7 @@ index edcfdaf..f5fe2a3 100644
 +	[[nodiscard]] int    RayTracing() const { return m_ray_tracing; } // experiment 0273: -1 not set, 0 off, 1 on
 +	[[nodiscard]] int    MangoHud() const { return m_mangohud; } // experiment 0301: -1 not set, 0 off, 1 on
 +	[[nodiscard]] int    Fullscreen() const { return m_fullscreen; }
++	[[nodiscard]] int    SystemLanguage() const { return m_system_language; } // experiment 0337: -1 not set
 +
 +	[[nodiscard]] bool PadButtonDisabled(int button) const {
 +		return button >= 0 && button < 32 && ((m_disabled_buttons >> button) & 1u) != 0;
@@ -11484,19 +11587,16 @@ index edcfdaf..f5fe2a3 100644
 +				m_fullscreen = 1;
 +			} else if (EqualNoCase(right, "off") || EqualNoCase(right, "false") || right == "0") {
 +				m_fullscreen = 0;
- 			} else {
--				index++;
++			} else {
 +				return Fail(error, where + ": Fullscreen takes on or off, got: " + std::string(right));
- 			}
++			}
 +			return true;
 +		}
 +
 +		if (EqualNoCase(left, "RenderScale")) { // the old form, for every title: no longer applied
 +			LOGF_COLOR(Log::Color::Yellow, "Input config %s: RenderScale without a title is ignored; use RenderScale.<TITLE_ID>=<k>\n", where.c_str());
 +			return true;
- 		}
--		EXIT_IF(m_size >= m_bindings.size());
--		m_bindings[m_size++] = binding;
++		}
 +		if (left.size() > 12 && EqualNoCase(left.substr(0, 12), "RenderScale.")) { // experiment 0047, per title
 +			char*             end = nullptr;
 +			const std::string v(right);
@@ -11539,15 +11639,27 @@ index edcfdaf..f5fe2a3 100644
 +				v = 1;
 +			} else if (EqualNoCase(right, "off") || EqualNoCase(right, "false") || right == "0") {
 +				v = 0;
-+			} else {
+ 			} else {
+-				index++;
 +				return Fail(error, where + ": MangoHud takes on or off, got: " + std::string(right));
-+			}
+ 			}
 +			const std::string id(left.substr(9));
 +			if (EqualNoCase(id, HostInputTitleId())) {
 +				m_mangohud = v;
 +			} else {
 +				m_other_title_scales.emplace_back("MangoHud." + id + (v == 1 ? "=on" : "=off")); // another title's line, kept
 +			}
++			return true;
+ 		}
+-		EXIT_IF(m_size >= m_bindings.size());
+-		m_bindings[m_size++] = binding;
++
++		if (EqualNoCase(left, "SystemLanguage")) { // experiment 0337: the console's system language
++			const int v = LanguageFromName(right);
++			if (v < 0) {
++				return Fail(error, where + ": SystemLanguage takes a language name or a number from 0 to 29, got: " + std::string(right));
++			}
++			m_system_language = v;
 +			return true;
 +		}
 +
@@ -11614,6 +11726,7 @@ index edcfdaf..f5fe2a3 100644
 +	int                  m_mangohud         = -1;  // experiment 0301: -1 not set (off, or KYTY_BC5_MANGOHUD=1), 0 off, 1 on
 +	std::vector<std::string> m_other_title_scales;   // RenderScale.<id> lines of other titles, kept
 +	int                  m_fullscreen       = -1;  // -1: not set (--fullscreen or windowed)
++	int                  m_system_language  = -1;  // experiment 0337: -1 not set (--console-language, English (United States) by default)
 +	bool                 m_custom           = false;
  };
  
@@ -11639,8 +11752,8 @@ index edcfdaf..f5fe2a3 100644
 +		lines.emplace_back(line, path + ":" + std::to_string(number));
 +	}
 +	return lines;
- }
- 
++}
++
 +// The map, built on first use from --keymap and the configuration file (a bad line is fatal
 +// there: a wrong binding at start-up is better found than played with). Caller holds g_input_mutex.
 +InputMap& Map() {
@@ -11671,8 +11784,8 @@ index edcfdaf..f5fe2a3 100644
 +		g_map = std::move(map);
 +	}
 +	return *g_map;
-+}
-+
+ }
+ 
 +// --- driving the pad slot ----------------------------------------------------------------------
 +
 +std::array<bool, CONTROL_INFO.size()> g_pressed {}; // button controls the host stream holds
@@ -11680,7 +11793,7 @@ index edcfdaf..f5fe2a3 100644
  void SetButton(uint32_t button, bool down) {
  	if (button == Controller::PAD_BUTTON_L2) {
  		Controller::ControllerAxis(Controller::HOST_INPUT_CONTROLLER_ID,
-@@ -199,40 +691,17 @@ void SetButton(uint32_t button, bool down) {
+@@ -199,40 +740,17 @@ void SetButton(uint32_t button, bool down) {
  	}
  }
  
@@ -11727,7 +11840,7 @@ index edcfdaf..f5fe2a3 100644
  void SetControl(std::size_t control, bool down) {
  	if (control == INVALID_CONTROL) {
  		return;
-@@ -240,93 +709,278 @@ void SetControl(std::size_t control, bool down) {
+@@ -240,93 +758,307 @@ void SetControl(std::size_t control, bool down) {
  
  	const auto& info = Info(control);
  	if (info.button != 0) {
@@ -11808,8 +11921,8 @@ index edcfdaf..f5fe2a3 100644
 +			g_axes[a] = {};
 +			SetStickAxis(static_cast<Controller::Axis>(a), false, false);
 +		}
-+	}
-+}
+ 	}
+ }
 +
 +std::size_t DefaultControlForKey(int key_code) {
 +	const auto key = NormalizeKey(static_cast<SDL_Keycode>(key_code));
@@ -11817,9 +11930,9 @@ index edcfdaf..f5fe2a3 100644
 +		if (d.key == key) {
 +			return ControlFromName(d.control);
 +		}
- 	}
++	}
 +	return INVALID_CONTROL;
- }
++}
 +
 +// --- a key press shorter than a frame --------------------------------------------------------
 +//
@@ -11928,7 +12041,7 @@ index edcfdaf..f5fe2a3 100644
 +		             SDL_GetKeyName(static_cast<SDL_Keycode>(key_code)), down ? "down" : "up",
 +		             control == INVALID_CONTROL ? "nothing" : std::string(Info(control).name).c_str(), origin);
 +		std::fflush(stderr);
- 	}
++	}
 +	if (control == INVALID_CONTROL) {
 +		return;
 +	}
@@ -11951,7 +12064,7 @@ index edcfdaf..f5fe2a3 100644
 +			std::fflush(stderr);
 +		}
 +		return;
-+	}
+ 	}
 +	SetControl(control, false);
  }
  
@@ -11980,9 +12093,9 @@ index edcfdaf..f5fe2a3 100644
 +	if (map.Custom() && gamepad_axis >= 0) {
 +		map.UpdatePadAxis(gamepad_axis, value,
 +		                  [](std::size_t control, bool down) { SetControl(control, down); });
- 	}
- }
- 
++	}
++}
++
 +bool HostInputPadButtonDisabled(int gamepad_button) {
 +	std::lock_guard<std::mutex> lock(g_input_mutex);
 +	return Map().PadButtonDisabled(gamepad_button);
@@ -11997,7 +12110,7 @@ index edcfdaf..f5fe2a3 100644
 +	std::vector<std::string> names;
 +	for (const auto& c: CONTROL_INFO) {
 +		names.emplace_back(c.name);
-+	}
+ 	}
 +	return names;
 +}
 +
@@ -12065,9 +12178,38 @@ index edcfdaf..f5fe2a3 100644
 +	g_pending.clear();
 +}
 +
++// Experiment 0337: the title may ask for the language before the window builds the map, so before it exists only the file
++// is read here, without the map's side effects (a bad line leaves -1 here; Map() reports it when it is built).
++int HostInputSystemLanguage() {
++	std::lock_guard<std::mutex> lock(g_input_mutex);
++	if (g_map != nullptr) {
++		return g_map->SystemLanguage();
++	}
++	const char* path = std::getenv("KYTY_BC5_INPUT_CONFIG");
++	if (path == nullptr || *path == 0) {
++		return -1;
++	}
++	std::string error;
++	const auto  lines = ReadConfigLines(path, &error);
++	InputMap    probe;
++	return error.empty() && probe.Load(lines, &error) ? probe.SystemLanguage() : -1;
++}
++
++int HostInputLanguageCount() {
++	return static_cast<int>(LANGUAGE_NAMES.size());
++}
++
++const char* HostInputLanguageName(int language) {
++	return language >= 0 && language < HostInputLanguageCount() ? LANGUAGE_NAMES[language] : "";
++}
++
++int HostInputLanguageFromName(const std::string& name) {
++	return LanguageFromName(name);
+ }
+ 
  } // namespace Libs::Graphics
 diff --git a/src/graphics/presentation/window/hostInput.h b/src/graphics/presentation/window/hostInput.h
-index c0ac585..34a3616 100644
+index c0ac585..6990cf3 100644
 --- a/src/graphics/presentation/window/hostInput.h
 +++ b/src/graphics/presentation/window/hostInput.h
 @@ -2,6 +2,8 @@
@@ -12079,7 +12221,7 @@ index c0ac585..34a3616 100644
  
  namespace Libs::Graphics {
  
-@@ -9,6 +11,26 @@ void HostInputInit();
+@@ -9,6 +11,33 @@ void HostInputInit();
  void HostInputKey(int key_code, bool down);
  void HostInputMouseButton(uint8_t mouse_button, bool down);
  void HostInputGamepadButton(int gamepad_button, bool down);
@@ -12103,6 +12245,13 @@ index c0ac585..34a3616 100644
 +bool HostInputSave(const std::string& path, const std::vector<std::string>& lines, std::string* error);
 +// Every control the keyboard/mouse/pad-source stream holds goes up (the overlay opening).
 +void HostInputReleaseAll();
++
++// Experiment 0337: the console's system language (PS5: Settings > System > Language), SystemLanguage=<name|number> in the
++// input configuration, in SystemServiceParamGetInt's numbering (PARAM_ID_LANG). -1: not set.
++int         HostInputSystemLanguage();
++int         HostInputLanguageCount();
++const char* HostInputLanguageName(int language);              // "" outside 0..count-1
++int         HostInputLanguageFromName(const std::string& name); // a number or a name, any case; -1 if neither
  
  } // namespace Libs::Graphics
  
@@ -48104,16 +48253,18 @@ index 08aa121..fe3d73b 100644
 +
 +} // namespace Libs
 diff --git a/src/libs/libSystemService.cpp b/src/libs/libSystemService.cpp
-index cd205f6..cc5a8b4 100644
+index cd205f6..1fe5cd3 100644
 --- a/src/libs/libSystemService.cpp
 +++ b/src/libs/libSystemService.cpp
-@@ -1,3 +1,5 @@
+@@ -1,14 +1,20 @@
 +#include <cstdio>
 +#include <set>
  #include "common/abi.h"
  #include "common/assert.h"
  #include "common/common.h"
-@@ -6,9 +8,12 @@
+ #include "common/emulatorConfig.h"
++#include "graphics/presentation/window/hostInput.h" // experiment 0337
+ #include "common/logging/log.h"
  #include "common/stringUtils.h"
  #include "libs/errno.h"
  #include "libs/libs.h"
@@ -48126,7 +48277,7 @@ index cd205f6..cc5a8b4 100644
  
  namespace Libs {
  
-@@ -63,6 +68,16 @@ struct SystemServiceStatus {
+@@ -63,6 +69,16 @@ struct SystemServiceStatus {
  	uint8_t reserved[127]              = {};
  };
  
@@ -48143,7 +48294,20 @@ index cd205f6..cc5a8b4 100644
  struct SystemServiceEvent {
  	int32_t event_type;
  	uint8_t data[8192];
-@@ -110,6 +125,13 @@ static int KYTY_SYSV_ABI SystemServiceParamGetInt(int param_id, int* value) {
+@@ -95,7 +111,11 @@ static int KYTY_SYSV_ABI SystemServiceParamGetInt(int param_id, int* value) {
+ 	int v = 0;
+ 
+ 	switch (param_id) {
+-		case PARAM_ID_LANG: v = static_cast<int>(Config::GetConsoleLanguage()); break;
++		case PARAM_ID_LANG: { // experiment 0337: the input configuration's SystemLanguage, else --console-language
++			const int system_language = Graphics::HostInputSystemLanguage();
++			v                         = system_language >= 0 ? system_language : static_cast<int>(Config::GetConsoleLanguage());
++			break;
++		}
+ 		case PARAM_ID_DATE_FORMAT: v = PARAM_DATE_FORMAT_DDMMYYYY; break;
+ 		case PARAM_ID_TIME_FORMAT: v = PARAM_TIME_FORMAT_24HOUR; break;
+ 		case PARAM_ID_TIME_ZONE: v = +180; break;
+@@ -110,6 +130,13 @@ static int KYTY_SYSV_ABI SystemServiceParamGetInt(int param_id, int* value) {
  	}
  
  	LOGF(" %d = %d\n", param_id, v);
@@ -48157,7 +48321,7 @@ index cd205f6..cc5a8b4 100644
  
  	*value = v;
  
-@@ -150,7 +172,14 @@ static int KYTY_SYSV_ABI SystemServiceReceiveEvent(SystemServiceEvent* event) {
+@@ -150,7 +177,14 @@ static int KYTY_SYSV_ABI SystemServiceReceiveEvent(SystemServiceEvent* event) {
  	event->event_type = -1;
  	std::memset(event->data, 0, sizeof(event->data));
  
@@ -48173,7 +48337,7 @@ index cd205f6..cc5a8b4 100644
  }
  
  static int KYTY_SYSV_ABI SystemServiceGetStatus(SystemServiceStatus* status) {
-@@ -161,6 +190,10 @@ static int KYTY_SYSV_ABI SystemServiceGetStatus(SystemServiceStatus* status) {
+@@ -161,6 +195,10 @@ static int KYTY_SYSV_ABI SystemServiceGetStatus(SystemServiceStatus* status) {
  	}
  
  	*status = SystemServiceStatus();

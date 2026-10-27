@@ -67,3 +67,26 @@ in that language? Does the title take it?
   rejects the unknown line and stops at start. The 0302 binary did the same with `MangoHud.…`.
 - After integration into both shared builds (D19, the maintainer's yes), the line is safe for every launcher that uses
   them. The test shortcut would then need a rebuilt private binary.
+
+**Addendum (2026-10-27, after the integration, F411).** On the maintainer's "Integracja języka. Wprowadzenie poprawek
+do wszystkich buildow" (BOX-QUEUE 209), `int0337.sh` ran at 07:36 (`raw/int.out`, `raw/integration/`). It used exp
+0338's steps.
+- **Guards:** the four tree files still had the md5s `patch0337.py` checks, since exp 0338 did not touch them. Both
+  shared binaries were at their post-0338 md5s, and the private build ea557b2c with its L1 pass was there.
+- **The diff** (251 lines) was made from the tree's files and the private build's copies. `git apply --check` and
+  `git apply` succeeded, and each file then equalled the copy ea557b2c was built from.
+- **Both shared builds were rebuilt.** The normal build compiled 5 units. There were no errors; the 3 warnings are in
+  older code.
+
+  | build | before | after |
+  |---|---|---|
+  | normal | 21e8bd22 (exp 0338) | **9382b1e9** |
+  | lean | 379a92b8 (exp 0338) | **1860613a** |
+- **Patch 0001 on main** is the tree's diff after the integration: md5 3b7e88b8, 96 files. Against main's previous copy,
+  only the four integrated files differ.
+- **The undo:** copy back the two binaries and four files from `~/bc5-work/exp0337/integration/`, then rebuild both.
+- **`SystemLanguage` is now safe in the shared `input.cfg`** for every launcher on the shared builds.
+  - It is not in the file yet: the language is the maintainer's choice, in the overlay's System tab, or as a line.
+  - The test shortcut runs exp 0332's private binary, without exps 0337 and 0338. It reads its own
+    `exp0334/input-rton.cfg` (`run0334.sh`), so a line in `input.cfg` does not reach it.
+- Not run yet: a session on the integrated builds.
