@@ -1,0 +1,5 @@
+203458:submit #76005 dcb 17748 dwords at 0x7fdde01bb9c0: pass 1773 rewrite 196 drop 271 unmapped 0 cc 0 mappings 20829 ... FAILED rc 0 TIMEOUT 2016.16 ms
+203460:submit #76004 acb 2380 dwords at 0x7fde38052ef0: pass 515 rewrite 17 drop 6 unmapped 0 cc 0 mappings 20829 ... FAILED rc 0 TIMEOUT 2018.48 ms
+203641:timeout probe: acb 2605 dwords dumped to /home/kjaniszewski/bc5-data/captures/play-20261027-1237/gc/ib-timeout-00076004-acb-2605.bin
+204361:timeout probe: acb #76004 2605 dwords: 1 waits (0 kept for the GPU), 20 label writes, 85 dispatches (45 indirect; the largest grid 18114686370935673472 g
+205159:timeout probe: dcb #76005 17748 dwords: 22 waits (21 kept for the GPU), 210 label writes, 41 dispatches (0 indirect; the largest grid 1792 groups, at 876

@@ -1,0 +1,14 @@
+2026-10-27 13:26:32 build0345.sh on the box (the laptop's ssh transcript; the full output is ~/bc5-work/exp0345/build0345.out):
+Catch2 from /home/kjaniszewski/bc5-work/exp0323/backend-tests/_deps/catch2-src
+== 13:26:32 backend configure + build
+== 13:27:01 backend build rc 0; errors 0, warnings 0
+private archive c65ed368 (shared 44ba4435)
+== 13:27:01 backend tests
+All tests passed (32408 assertions in 64 test cases)
+== tests rc 0
+== 13:27:02 compdb + relink
+== 13:27:04 relink rc 0
+md5 495f8795 (shared ddfb9456)
+strings: 0345 switch line 1, 0345 rebase line 1, 0341 switches line 1
+shared binary after: ddfb9456 (want ddfb9456); shared archive after: 44ba4435 (want 44ba4435)
+R1 (s6n0345.sh dc9d4f25fc2d41ca R1 600 off, started 13:27:34): the box went down at ~13:29 (the supervisor's reading: the journal stops 13:29:03, devcd1 13:29:21, no watchdog reset, reset by hand at 13:55); the script died with the box, no verdict files; the live saves dc9d4f25fc2d41ca unchanged. The test shortcut was NOT made.

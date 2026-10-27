@@ -1,0 +1,47 @@
+cu mask #76002: 34 SET_SH_REG rewritten; loads 0, overrides 0 (+0 dwords), conditional 0, unreadable 0
+acb rest 28..1278 of 1278 dwords: state prefix of 4 dwords replayed first
+timing: t 99.740 s after that wait (acb 1250 dwords)
+timing: t 99.740 s acb 1272 dwords: sync 0.0 ms, hints 0.0 ms q0
+timing: #76003 done at t 99.741 s, 0.9 ms after the sync and hints; device: prepare 0.43 list 0.00 cs 0.26 fence 0.18 ms, 161 BOs
+timing: t 99.741 s after that wait (acb 2360 dwords)
+timing: t 99.741 s acb 2380 dwords: sync 0.0 ms, hints 0.0 ms q0
+timing: t 99.741 s after that wait (dcb 7555 dwords)
+timing: t 99.742 s dcb 17748 dwords: sync 0.0 ms, hints 0.0 ms q-1
+timing: t 99.743 s acb 28 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+timing: t 99.743 s acb 2 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+timing: t 99.743 s acb 28 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+acb rest 28..329 of 329 dwords: state prefix of 4 dwords replayed first
+timing: t 99.743 s acb 4 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+timing: t 99.743 s acb 855 dwords: sync 0.0 ms, hints 0.0 ms q0
+timing: t 99.744 s dcb 37111 dwords: sync 18.5 ms, hints 0.1 ms q-1
+acb rest 28..740 of 740 dwords: state prefix of 4 dwords replayed first
+timing: t 99.764 s acb 4 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+timing: t 99.764 s acb 732 dwords: sync 0.0 ms, hints 0.0 ms q0
+timing: t 99.764 s acb 311 dwords: sync 0.0 ms, hints 0.0 ms q0
+timing: t 99.764 s acb 470 dwords: sync 0.0 ms, hints 0.0 ms q0
+timing: t 99.765 s after that wait (acb 1431 dwords)
+timing: t 99.765 s acb 1857 dwords: sync 0.0 ms, hints 0.0 ms q0
+timing: t 99.765 s after that wait (dcb 2764 dwords)
+timing: t 99.765 s dcb 1873 dwords: sync 0.0 ms, hints 0.0 ms q-1
+timing: t 99.765 s acb 2 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+timing: t 99.765 s acb 474 dwords: sync 0.0 ms, hints 0.0 ms q0
+timing: t 99.766 s dcb 2780 dwords: sync 0.0 ms, hints 0.0 ms q-1
+timing: t 99.767 s after that wait (dcb 40 dwords)
+hint CB1 0x115df30000: window 0x115bf30000+0x4000000, direct memory +0.0 MiB
+hint CB0 0x1162ea0000: window 0x1160ea0000+0x4000000, direct memory +0.0 MiB
+hint DB_Z_READ 0x113a260000: window 0x1138260000+0x4000000, direct memory +0.0 MiB
+hint CB0 0x11834f0000: window 0x11814f0000+0x4000000, direct memory +0.0 MiB
+hint CB0 0x11833f0000: window 0x11813f0000+0x4000000, direct memory +0.0 MiB
+hint CB0 0x1149cd0000: window 0x1147cd0000+0x4000000, direct memory +0.0 MiB
+timing: t 99.767 s dcb 20955 dwords: sync 0.0 ms, hints 0.1 ms q-1
+timing: t 99.768 s acb 68 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+timing: t 99.768 s acb 68 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q8
+submit #76005 dcb 17748 dwords at 0x7fdde01bb9c0: pass 1773 rewrite 196 drop 271 unmapped 0 cc 0 mappings 20829 ... FAILED rc 0 TIMEOUT 2016.16 ms
+timing: #76005 done at t 101.760 s, 2018.0 ms after the sync and hints; device: prepare 0.42 list 0.00 cs 0.24 fence 2015.92 ms, 161 BOs
+submit #76004 acb 2380 dwords at 0x7fde38052ef0: pass 515 rewrite 17 drop 6 unmapped 0 cc 0 mappings 20829 ... FAILED rc 0 TIMEOUT 2018.48 ms
+timing: #76004 done at t 101.760 s, 2019.0 ms after the sync and hints; device: prepare 0.10 list 0.00 cs 0.22 fence 2018.26 ms, 161 BOs
+timeout probe: dcb 17748 dwords dumped to /home/kjaniszewski/bc5-data/captures/play-20261027-1237/gc/ib-timeout-00076005-dcb-17748.bin
+timeout probe: TF ring 0x1120000000 +0x3fff8: 65154 non-zero dwords (dword 0..65196), from the first: [0x1120000000] 3fb0009b 3fb200a7 3fb129d4 3faf30ea 3faf30ea 3fb0009b 3fb129d4 3fb32d2a 3fb24b2a 3fb04f52 3fb04f52 3fb129d4 3fb24b2a 3fb45163 3fb36404 3fb165a8 3fb165a8 3fb24b2a 3fb36404 3fb56cae 3fb
+timeout probe: HS user data address 0x0 at 1062 not mapped
+timeout probe: HS user data address 0x0 at 3985 not mapped
+timeout probe: HS user data address 0x0 at 12825 not mapped

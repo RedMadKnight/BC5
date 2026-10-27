@@ -1,0 +1,27 @@
+timing: t 61.449 s acb 893 dwords: sync 0.0 ms, hints 0.0 ms q0
+timing: t 61.450 s acb 750 dwords: sync 0.0 ms, hints 0.0 ms q0
+timing: t 61.450 s acb 311 dwords: sync 0.0 ms, hints 0.0 ms q0
+timing: t 61.450 s acb 460 dwords: sync 0.0 ms, hints 0.0 ms q0
+timing: t 61.450 s acb 396 dwords: sync 0.0 ms, hints 0.0 ms q0
+timing: t 61.456 s dcb 291 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q-1
+piece: dcb 0..291 of 902 dwords went ahead of the wait at 291 on 0x12004b5438; the wait then not satisfied after 8.1 ms; rest behind a prefix of 1269 dwords
+  wait detail: function 3, value 0x907616589, reference 0x0, mask 0xffffffffffffffff
+cpu-wait WAIT_REG_MEM64 at 291 on 0x12004b5438: GIVEN UP after 16.3 ms
+timing: t 61.465 s after that wait (dcb 902 dwords)
+timing: t 61.465 s after that wait (dcb 2151 dwords)
+timing: t 61.465 s dcb 2592 dwords: sync 0.0 ms, hints 0.0 ms q-1
+timing: t 61.465 s acb 28 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+timing: t 61.465 s acb 2 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+acb rest 28..14322 of 14322 dwords: state prefix of 4 dwords replayed first
+timing: t 61.466 s acb 4 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+timing: t 61.466 s acb 14312 dwords: sync 0.0 ms, hints 0.0 ms q0
+timing: t 61.467 s dcb 2167 dwords: sync 0.0 ms, hints 0.0 ms q-1
+timing: t 61.467 s after that wait (dcb 9820 dwords)
+timing: t 61.467 s after that wait (dcb 9820 dwords)
+timing: t 61.468 s after that wait (dcb 40 dwords)
+timing: t 61.468 s dcb 16978 dwords: sync 0.0 ms, hints 0.0 ms q-1
+timing: t 61.468 s acb 84 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q0
+timing: t 61.469 s acb 140 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q8
+submit #48055 dcb 30221 dwords at 0x7f4580104cf0: pass 2883 rewrite 309 drop 365 unmapped 0 cc 0 mappings 16015 ... FAILED rc 0 TIMEOUT 2022.26 ms
+timing: #48055 done at t 63.470 s, 2023.4 ms after the sync and hints; device: prepare 0.64 list 0.09 cs 0.26 fence 2022.00 ms, 125 BOs
+submit #48056 acb 4 dwords at 0x7f45d0135580: pass 0 rewrite 0 drop 1 unmapped 0 cc 0 mappings 16015 ... FAILED rc 0 TIMEOUT 2021.63 ms

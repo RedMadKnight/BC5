@@ -1,0 +1,29 @@
+dump /home/kjaniszewski/bc5-data/captures/play-20261027-1251/gc/ib-timeout-00048055-dcb-30221.bin: 30221 dwords (120884 bytes)
+packets 3578 (type-3 3578); opcodes: 10:32 11:167 12:12 13:12 15:31 16:435 1e:7 22:7 24:141 26:17 27:3 28:5 2c:5 2d:21 2f:35 37:117 38:2 3c:25 46:212 49:292 50:3 58:196 63:141 64:122 69:40 76:900 79:352 7a:24 93:2 9f:220
+dispatches 466: direct 31, indirect compute-form 0, indirect gfx-form 435; INDIRECT_BUFFER packets 0; COND_EXEC 7
+shadow labels: 319 writers, 27 memory waits, 25 labels get a slot, 50 writer copies (325 dwords)
+inserts: 0 DMA syncs (7), 576 checks (88 per dispatch, 35 per draw), 0 compute-form dispatches dropped; DMA idle 7 at the end
+job IB computed: 30221 + 43540 inserted + 7 = 73768 dwords, padded 73768; the CS saw 36360 (DIFFERENT by -37408: a pass is not replayed here as it ran (tables, drops, the tracker))
+fetch point: CS size 36360, CP_IB1_BUFSZ 35752 -> 608 fetched (1.7 %) if BUFSZ is what is left, 35752 if BUFSZ is what was fetched
+left reading: job dword 608 -> dump packet at 129 (len 3, op 16), inside the inserts before it; the last dispatch at or before it is #5 of 466
+fetched reading: job dword 35752 -> dump packet at 4036 (len 3, op 16), inside the inserts before it; the last dispatch at or before it is #360 of 466
+dispatches around the point (index: dump offset -> job offset, form, program, arguments):
+  #2: 96 -> 360, gfx, program 0x90997a500, offset 0x9bce7280 from the base
+  #3: 107 -> 459, gfx, program 0x90997a500, offset 0x9bce8880 from the base
+  #4: 118 -> 558, gfx, program 0x90997a500, offset 0x9bce9f80 from the base
+  #5: 129 -> 657, gfx, program 0x90997a500, offset 0x9bceaf80 from the base <- left reading
+  #6: 140 -> 756, gfx, program 0x90997a500, offset 0x9bceca80 from the base
+  #7: 151 -> 855, gfx, program 0x90997a500, offset 0x9bcee780 from the base
+  #8: 162 -> 954, gfx, program 0x90997a500, offset 0x9bcef880 from the base
+  #357: 4003 -> 35507, gfx, program 0x90997a500, offset 0x9bdc6380 from the base
+  #358: 4014 -> 35606, gfx, program 0x90997a500, offset 0x9bdc6780 from the base
+  #359: 4025 -> 35705, gfx, program 0x90997a500, offset 0x9bdc7d80 from the base
+  #360: 4036 -> 35804, gfx, program 0x90997a500, offset 0x9bdc8180 from the base <- fetched reading
+  #361: 4047 -> 35903, gfx, program 0x90997a500, offset 0x9bdc9680 from the base
+  #362: 4058 -> 36002, gfx, program 0x90997a500, offset 0x9bdc9a80 from the base
+  #363: 4069 -> 36101, gfx, program 0x90997a500, offset 0x9bdc9e80 from the base
+programs of the buffer (dispatches each):
+  0x90997a500: 441
+  0x11d0287900: 23
+  0x11d0322e00: 1
+  0x11d0288a00: 1

@@ -1,0 +1,98 @@
+== 2026-10-27 13:00:34 exp 0344 probe; kernel 7.2.9-ogc3.1.fc44.x86_64; host bazzite
+dump: /home/kjaniszewski/bc5-data/captures/play-20261027-1237/gc/ib-timeout-00076004-acb-2605.bin 10420 bytes, 2026-10-27 12:39:19.154594573 +0100 md5 8b1b87ec
+journal: /home/kjaniszewski/bc5-data/captures/play-20261027-1237/gc/direct.log 20083924 bytes, 2026-10-27 12:39:44.221117621 +0100
+extract: /home/kjaniszewski/bc5-work/exp0342/raw/R2-probe.txt 324072 bytes, 1699 lines
+extract: /home/kjaniszewski/bc5-work/exp0342/raw/R2-play.log 75568 bytes, 995 lines
+ibmap0344.pl c40db705; CS size 6584, CP_IB1_BUFSZ 2840
+== 13:00:34 1. the dump's packets mapped to the job IB (ibmap0344.pl)
+rc 0
+dump /home/kjaniszewski/bc5-data/captures/play-20261027-1237/gc/ib-timeout-00076004-acb-2605.bin: 2605 dwords (10420 bytes)
+packets 538 (type-3 538); opcodes: 10:2 11:45 15:40 16:45 37:4 42:45 46:47 49:17 50:8 58:49 76:231 79:4 93:1
+dispatches 85: direct 40, indirect compute-form 0, indirect gfx-form 45; INDIRECT_BUFFER packets 0; COND_EXEC 0
+shadow labels: 20 writers, 1 memory waits, 0 labels get a slot, 0 writer copies (0 dwords)
+inserts: 1 DMA syncs (7), 45 checks (88 per dispatch, 35 per draw), 0 compute-form dispatches dropped; DMA idle 7 at the end
+job IB computed: 2605 + 3967 inserted + 7 = 6579 dwords, padded 6584; the CS saw 6584 (EQUAL)
+fetch point: CS size 6584, CP_IB1_BUFSZ 2840 -> 3744 fetched (56.9 %) if BUFSZ is what is left, 2840 if BUFSZ is what was fetched
+left reading: job dword 3744 -> dump packet at 1427 (len 3, op 16), inside the inserts before it; the last dispatch at or before it is #49 of 85
+fetched reading: job dword 2840 -> dump packet at 881 (len 3, op 16), inside the inserts before it; the last dispatch at or before it is #38 of 85
+dispatches around the point (index: dump offset -> job offset, form, program, arguments):
+  #35: 833 -> 2600, gfx, program 0x909939900, offset 0x680 from the base
+  #36: 849 -> 2704, gfx, program 0x909939900, offset 0x80 from the base
+  #37: 865 -> 2808, gfx, program 0x909939900, offset 0xb80 from the base
+  #38: 881 -> 2912, gfx, program 0x909939900, offset 0x680 from the base <- fetched reading
+== 13:00:34 2. the journal: acb #76004's timeout-probe section, and the 40 lines before its submit line
+203458:submit #76005 dcb 17748 dwords at 0x7fdde01bb9c0: pass 1773 rewrite 196 drop 271 unmapped 0 cc 0 mappings 20829 ... FAILED rc 0 TIMEOUT 2016.16 ms
+203460:submit #76004 acb 2380 dwords at 0x7fde38052ef0: pass 515 rewrite 17 drop 6 unmapped 0 cc 0 mappings 20829 ... FAILED rc 0 TIMEOUT 2018.48 ms
+203641:timeout probe: acb 2605 dwords dumped to /home/kjaniszewski/bc5-data/captures/play-20261027-1237/gc/ib-timeout-00076004-acb-2605.bin
+204361:timeout probe: acb #76004 2605 dwords: 1 waits (0 kept for the GPU), 20 label writes, 85 dispatches (45 indirect; the largest grid 18114686370935673472 g
+205159:timeout probe: dcb #76005 17748 dwords: 22 waits (21 kept for the GPU), 210 label writes, 41 dispatches (0 indirect; the largest grid 1792 groups, at 876
+acb probe section: lines 203641-204361 (721 lines): 104 dispatch lines, 4 wait lines, 64 write lines
+timeout probe: acb #76004 2605 dwords: 1 waits (0 kept for the GPU), 20 label writes, 85 dispatches (45 indirect; the largest grid 18114686370935673472 groups, at 1427)
+context before the submit line: 47 lines in raw/journal-before-submit.txt
+== 13:00:34 3. the candidate dispatches: the dump offsets ibmap names, looked up in the probe's lines (program, groups read at the timeout, arguments)
+14 candidate lines:
+timeout probe: dispatch op 16 at 833: program 0x909939900, groups 52 x 1 x 1 (arguments at 0x1212368680) DROPPED
+timeout probe: dispatch op 16 at 849: program 0x909939900, groups 49 x 1 x 1 (arguments at 0x12702c7080) DROPPED
+timeout probe: dispatch op 16 at 865: program 0x909939900, groups 49 x 1 x 1 (arguments at 0x1270308b80) DROPPED
+timeout probe: dispatch op 16 at 881: program 0x909939900, groups 49 x 1 x 1 (arguments at 0x127034a680) DROPPED
+timeout probe: dispatch op 16 at 897: program 0x909939900, groups 49 x 1 x 1 (arguments at 0x127038c180) DROPPED
+timeout probe: dispatch op 16 at 913: program 0x909939900, groups 49 x 1 x 1 (arguments at 0x12703cdc80) DROPPED
+timeout probe: dispatch op 16 at 929: program 0x909939900, groups 49 x 1 x 1 (arguments at 0x127040f780) DROPPED
+timeout probe: dispatch op 15 at 1293: program 0x90996a000, groups 45 x 1 x 1 DROPPED
+timeout probe: dispatch op 15 at 1340: program 0x90986e700, groups 11520 x 1 x 1 DROPPED
+timeout probe: dispatch op 15 at 1367: program 0x90986df00, groups 1 x 1 x 1 DROPPED
+timeout probe: dispatch op 16 at 1427: program 0x909873200, groups 6104 x 4294962046 x 4294959880 (arguments at 0x11871ed520) DROPPED
+timeout probe: dispatch op 15 at 1472: program 0x909971300, groups 128 x 1 x 1 DROPPED
+timeout probe: dispatch op 15 at 1493: program 0x909971300, groups 128 x 1 x 1 DROPPED
+timeout probe: dispatch op 15 at 1513: program 0x909971300, groups 128 x 1 x 1 DROPPED
+== 13:00:34 4. exp 0342's extracts
+R2-probe.txt dispatch lines: 126
+submit #76005 dcb 17748 dwords at 0x7fdde01bb9c0: pass 1773 rewrite 196 drop 271 unmapped 0 cc 0 mappings 20829 ... FAILED rc 0 TIMEOUT 2016.16 ms
+submit #76004 acb 2380 dwords at 0x7fde38052ef0: pass 515 rewrite 17 drop 6 unmapped 0 cc 0 mappings 20829 ... FAILED rc 0 TIMEOUT 2018.48 ms
+timeout probe: acb #76004 2605 dwords: 1 waits (0 kept for the GPU), 20 label writes, 85 dispatches (45 indirect; the largest grid 18114686370935673472 groups, at 1427)
+timeout probe: dcb #76005 17748 dwords: 22 waits (21 kept for the GPU), 210 label writes, 41 dispatches (0 indirect; the largest grid 1792 groups, at 8762)
+play log lines around the hang: 11 in raw/play-around-the-hang.txt
+== 13:00:34 5. the programs of the buffer and the fetch-point readings (from raw/ibmap.txt)
+fetch point: CS size 6584, CP_IB1_BUFSZ 2840 -> 3744 fetched (56.9 %) if BUFSZ is what is left, 2840 if BUFSZ is what was fetched
+left reading: job dword 3744 -> dump packet at 1427 (len 3, op 16), inside the inserts before it; the last dispatch at or before it is #49 of 85
+fetched reading: job dword 2840 -> dump packet at 881 (len 3, op 16), inside the inserts before it; the last dispatch at or before it is #38 of 85
+dispatches around the point (index: dump offset -> job offset, form, program, arguments):
+  #35: 833 -> 2600, gfx, program 0x909939900, offset 0x680 from the base
+  #36: 849 -> 2704, gfx, program 0x909939900, offset 0x80 from the base
+  #37: 865 -> 2808, gfx, program 0x909939900, offset 0xb80 from the base
+  #38: 881 -> 2912, gfx, program 0x909939900, offset 0x680 from the base <- fetched reading
+  #39: 897 -> 3016, gfx, program 0x909939900, offset 0x180 from the base
+  #40: 913 -> 3120, gfx, program 0x909939900, offset 0xc80 from the base
+  #41: 929 -> 3224, gfx, program 0x909939900, offset 0x780 from the base
+  #46: 1293 -> 3588, direct, program 0x90996a000, direct
+  #47: 1340 -> 3635, direct, program 0x90986e700, direct
+  #48: 1367 -> 3662, direct, program 0x90986df00, direct
+  #49: 1427 -> 3810, gfx, program 0x909873200, offset 0x520 from the base <- left reading
+  #50: 1472 -> 3855, direct, program 0x909971300, direct
+  #51: 1493 -> 3876, direct, program 0x909971300, direct
+  #52: 1513 -> 3896, direct, program 0x909971300, direct
+programs of the buffer (dispatches each):
+  0x909936c00: 18
+  0x909971300: 15
+  0x90992af00: 11
+  0x909939900: 8
+  0x909939700: 8
+  0x909939400: 8
+  0x9098eb200: 1
+  0x909969d00: 1
+  0x90985c800: 1
+  0x90985f200: 1
+  0x90986df00: 1
+  0x9098ea000: 1
+  0x90996a000: 1
+  0x909969100: 1
+  0x909968e00: 1
+  0x90986e700: 1
+  0x909859a00: 1
+  0x909875600: 1
+  0x90986ea00: 1
+  0x909927c00: 1
+  0x90986db00: 1
+  0x90996cc00: 1
+  0x909873200: 1
+== 13:00:34 done; raw text in /home/kjaniszewski/bc5-work/exp0344/raw (no buffer contents); lock released on exit

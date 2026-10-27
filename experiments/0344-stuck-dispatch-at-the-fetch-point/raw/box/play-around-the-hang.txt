@@ -1,0 +1,11 @@
+49:bc5-direct: experiment 0341 switches: product staircase 1 (x > 65536 with y or z > 1), args histogram 0, shadow labels 1, bo journal 0
+283:bc5-direct: experiment 0341 periodic: shadow labels in 2000 jobs: 9904 labels, 19808 writes copied, 9904 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 12455 dispatches
+345:bc5-direct: experiment 0341 periodic: shadow labels in 4000 jobs: 21020 labels, 42040 writes copied, 21020 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 18767 dispatches
+501:bc5-direct: experiment 0341 periodic: shadow labels in 6000 jobs: 34381 labels, 68762 writes copied, 34381 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 367382 dispatches
+525:bc5-direct: experiment 0341 periodic: shadow labels in 8000 jobs: 47778 labels, 95556 writes copied, 47778 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 826612 dispatches
+549:bc5-direct: experiment 0341 periodic: shadow labels in 10000 jobs: 61181 labels, 122362 writes copied, 61181 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 1285886 dispatches
+600:bc5-direct: experiment 0341 periodic: shadow labels in 12000 jobs: 74862 labels, 149724 writes copied, 74862 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 1746497 dispatches
+730:bc5-direct: experiment 0341 periodic: shadow labels in 14000 jobs: 88720 labels, 177440 writes copied, 88720 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 1824454 dispatches
+891:fps counter: t 100.383 s: 14 flips in 1.010 s, longest gap 97.5 ms, gaps over 40 ms 14, over 70 ms 7
+921:fps counter: t 101.398 s: 13 flips in 1.016 s, longest gap 170.1 ms, gaps over 40 ms 12, over 70 ms 9
+957:bc5-direct: experiment 0341 switches: product staircase 1 (x > 65536 with y or z > 1), args histogram 0, shadow labels 1, bo journal 0
