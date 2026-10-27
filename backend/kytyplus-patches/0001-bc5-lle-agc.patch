@@ -25079,7 +25079,7 @@ index 9ea25b0..b922b68 100644
  			EXIT_IF(!AddMappedUnlocked(vaddr, size, MappingType::Private));
  			return true;
 diff --git a/src/kernel/pthread.cpp b/src/kernel/pthread.cpp
-index 5f87e6b..7b61a15 100644
+index 5f87e6b..c2673cd 100644
 --- a/src/kernel/pthread.cpp
 +++ b/src/kernel/pthread.cpp
 @@ -1,3 +1,4 @@
@@ -25169,7 +25169,30 @@ index 5f87e6b..7b61a15 100644
  	return true;
  }
  
-@@ -3238,9 +3296,10 @@ int KYTY_SYSV_ABI PthreadCondWait(PthreadCond* cond, PthreadMutex* mutex) {
+@@ -2601,6 +2659,11 @@ int KYTY_SYSV_ABI PthreadRwlockTimedwrlock(PthreadRwlock* rwlock, KernelUseconds
+ int KYTY_SYSV_ABI PthreadRwlockTryrdlock(PthreadRwlock* rwlock) {
+ 	PRINT_NAME();
+ 
++	// Experiment 0336: a statically initialised lock is created on first use, as PthreadRwlockRdlock does; it stopped
++	// the emulator (EXIT_NOT_IMPLEMENTED) before.
++	rwlock = static_cast<PthreadRwlock*>(
++	    g_pthread_context->GetPthreadStaticObjects()->CreateObject(rwlock, PthreadStaticObject::Type::Rwlock));
++
+ 	if (rwlock == nullptr) {
+ 		return KERNEL_ERROR_EINVAL;
+ 	}
+@@ -2628,6 +2691,10 @@ int KYTY_SYSV_ABI PthreadRwlockTryrdlock(PthreadRwlock* rwlock) {
+ int KYTY_SYSV_ABI PthreadRwlockTrywrlock(PthreadRwlock* rwlock) {
+ 	PRINT_NAME();
+ 
++	// Experiment 0336: a statically initialised lock is created on first use, as PthreadRwlockWrlock does.
++	rwlock = static_cast<PthreadRwlock*>(
++	    g_pthread_context->GetPthreadStaticObjects()->CreateObject(rwlock, PthreadStaticObject::Type::Rwlock));
++
+ 	if (rwlock == nullptr) {
+ 		return KERNEL_ERROR_EINVAL;
+ 	}
+@@ -3238,9 +3305,10 @@ int KYTY_SYSV_ABI PthreadCondWait(PthreadCond* cond, PthreadMutex* mutex) {
  		if (cond_elapsed >= 10 &&
  		    std::chrono::steady_clock::now() - cond_wait_logged > std::chrono::seconds(1)) {
  			cond_wait_logged = std::chrono::steady_clock::now();
@@ -25182,7 +25205,7 @@ index 5f87e6b..7b61a15 100644
  		}
  	}
  	CondRemoveWaiter(cond_value, thread);
-@@ -3381,6 +3440,51 @@ static void CleanupThread(void* arg) {
+@@ -3381,6 +3449,51 @@ static void CleanupThread(void* arg) {
  	thread->almost_done = true;
  }
  
@@ -25234,7 +25257,7 @@ index 5f87e6b..7b61a15 100644
  static void* RunThread(void* arg) {
  	auto* thread = static_cast<Pthread>(arg);
  	void* ret    = nullptr;
-@@ -3396,6 +3500,20 @@ static void* RunThread(void* arg) {
+@@ -3396,6 +3509,20 @@ static void* RunThread(void* arg) {
  	os_thread_id = GetHostThreadId();
  #endif
  	thread->host_thread_id = os_thread_id;
@@ -25255,7 +25278,7 @@ index 5f87e6b..7b61a15 100644
  
  	LOGF("\tPthread run begin: %s, id = %d, os_thread_id = %" PRIu64 ", entry = 0x%016" PRIx64
  	     ", arg = 0x%016" PRIx64 ", stack_addr = 0x%016" PRIx64 ", stack_size = %" PRIu64 "\n",
-@@ -3695,6 +3813,9 @@ int KYTY_SYSV_ABI PthreadSetprio(Pthread thread, int prio) {
+@@ -3695,6 +3822,9 @@ int KYTY_SYSV_ABI PthreadSetprio(Pthread thread, int prio) {
  #endif
  
  	thread->attr->guest_priority = prio;
@@ -25265,7 +25288,7 @@ index 5f87e6b..7b61a15 100644
  	LOGF("\t PthreadSetprio: %d, %d\n", thread->unique_id, prio);
  	return OK;
  }
-@@ -3791,6 +3912,10 @@ int KYTY_SYSV_ABI PthreadRename(Pthread thread, const char* name) {
+@@ -3791,6 +3921,10 @@ int KYTY_SYSV_ABI PthreadRename(Pthread thread, const char* name) {
  	}
  
  	thread->name = std::string(name);
@@ -25276,7 +25299,7 @@ index 5f87e6b..7b61a15 100644
  
  	return OK;
  }
-@@ -3850,6 +3975,7 @@ int KYTY_SYSV_ABI KernelClockGettime(KernelClockid clock_id, KernelTimespec* tp)
+@@ -3850,6 +3984,7 @@ int KYTY_SYSV_ABI KernelClockGettime(KernelClockid clock_id, KernelTimespec* tp)
  
  	int special_error = OK;
  	if (KernelClockGettimeSpecial(clock_id, tp, &special_error)) {
@@ -25284,7 +25307,7 @@ index 5f87e6b..7b61a15 100644
  		return special_error;
  	}
  
-@@ -3867,6 +3993,7 @@ int KYTY_SYSV_ABI KernelClockGettime(KernelClockid clock_id, KernelTimespec* tp)
+@@ -3867,6 +4002,7 @@ int KYTY_SYSV_ABI KernelClockGettime(KernelClockid clock_id, KernelTimespec* tp)
  	tp->tv_nsec = t.tv_nsec;
  
  	if (result == 0) {
@@ -25292,7 +25315,7 @@ index 5f87e6b..7b61a15 100644
  		return OK;
  	}
  	return KERNEL_ERROR_EINVAL;
-@@ -3994,7 +4121,7 @@ uint64_t KYTY_SYSV_ABI KernelGetTscFrequency() {
+@@ -3994,7 +4130,7 @@ uint64_t KYTY_SYSV_ABI KernelGetTscFrequency() {
  }
  
  uint64_t KYTY_SYSV_ABI KernelReadTsc() {
@@ -25301,8 +25324,46 @@ index 5f87e6b..7b61a15 100644
  }
  
  uint64_t KYTY_SYSV_ABI KernelGetProcessTime() {
+@@ -4294,6 +4430,12 @@ void KYTY_SYSV_ABI pthread_yield() {
+ 	LibKernel::PthreadYield();
+ }
+ 
++// Experiment 0338: posix sched_yield returns 0; its NID pointed at the void PthreadYield.
++int KYTY_SYSV_ABI sched_yield() {
++	LibKernel::PthreadYield();
++	return 0;
++}
++
+ int KYTY_SYSV_ABI sched_get_priority_max(int policy) {
+ 	PRINT_NAME();
+ 
+@@ -4431,6 +4573,11 @@ int KYTY_SYSV_ABI pthread_cond_signal(LibKernel::PthreadCond* cond) {
+ 	return POSIX_PTHREAD_CALL(LibKernel::PthreadCondSignal(cond));
+ }
+ 
++// Experiment 0338: posix pthread_cond_destroy returns errno numbers; its NID pointed at the sce function.
++int KYTY_SYSV_ABI pthread_cond_destroy(LibKernel::PthreadCond* cond) {
++	return POSIX_PTHREAD_CALL(LibKernel::PthreadCondDestroy(cond));
++}
++
+ int KYTY_SYSV_ABI pthread_cond_init(LibKernel::PthreadCond*           cond,
+                                     const LibKernel::PthreadCondattr* attr) {
+ 	PRINT_NAME();
+@@ -4540,6 +4687,12 @@ int KYTY_SYSV_ABI pthread_rwlock_wrlock(LibKernel::PthreadRwlock* rwlock) {
+ 	return POSIX_PTHREAD_CALL(LibKernel::PthreadRwlockWrlock(rwlock));
+ }
+ 
++// Experiment 0336 (exp 0335's audit): posix pthread_rwlock_tryrdlock (SFxTMOfuCkE) returns errno numbers (EBUSY,
++// EINVAL) as the other posix wrappers do; the NID pointed at the sce function, which returns SCE codes.
++int KYTY_SYSV_ABI pthread_rwlock_tryrdlock(LibKernel::PthreadRwlock* rwlock) {
++	return POSIX_PTHREAD_CALL(LibKernel::PthreadRwlockTryrdlock(rwlock));
++}
++
+ int KYTY_SYSV_ABI pthread_rwlock_destroy(LibKernel::PthreadRwlock* rwlock) {
+ 	PRINT_NAME();
+ 
 diff --git a/src/kernel/pthread.h b/src/kernel/pthread.h
-index 3b39581..58c75e4 100644
+index 3b39581..6b35a70 100644
 --- a/src/kernel/pthread.h
 +++ b/src/kernel/pthread.h
 @@ -201,6 +201,11 @@ uint64_t KYTY_SYSV_ABI KernelReadTsc();
@@ -25317,6 +25378,30 @@ index 3b39581..58c75e4 100644
  
  } // namespace LibKernel
  
+@@ -223,6 +228,7 @@ int KYTY_SYSV_ABI                pthread_getschedparam(LibKernel::Pthread thread
+ int KYTY_SYSV_ABI                pthread_setschedparam(LibKernel::Pthread thread, int policy,
+                                                        const LibKernel::KernelSchedParam* param);
+ void KYTY_SYSV_ABI               pthread_yield();
++int KYTY_SYSV_ABI                sched_yield(); // experiment 0338
+ int KYTY_SYSV_ABI                sched_get_priority_max(int policy);
+ int KYTY_SYSV_ABI                sched_get_priority_min(int policy);
+ int KYTY_SYSV_ABI                pthread_join(LibKernel::Pthread thread, void** value);
+@@ -249,6 +255,7 @@ int KYTY_SYSV_ABI pthread_attr_setschedpolicy(LibKernel::PthreadAttr* attr, int
+ int KYTY_SYSV_ABI pthread_attr_setstacksize(LibKernel::PthreadAttr* attr, size_t stack_size);
+ int KYTY_SYSV_ABI pthread_cond_broadcast(LibKernel::PthreadCond* cond);
+ int KYTY_SYSV_ABI pthread_cond_signal(LibKernel::PthreadCond* cond);
++int KYTY_SYSV_ABI pthread_cond_destroy(LibKernel::PthreadCond* cond); // experiment 0338
+ int KYTY_SYSV_ABI pthread_cond_init(LibKernel::PthreadCond*           cond,
+                                     const LibKernel::PthreadCondattr* attr);
+ int KYTY_SYSV_ABI pthread_condattr_init(LibKernel::PthreadCondattr* attr);
+@@ -268,6 +275,7 @@ int KYTY_SYSV_ABI pthread_mutex_unlock(LibKernel::PthreadMutex* mutex);
+ int KYTY_SYSV_ABI pthread_rwlock_rdlock(LibKernel::PthreadRwlock* rwlock);
+ int KYTY_SYSV_ABI pthread_rwlock_unlock(LibKernel::PthreadRwlock* rwlock);
+ int KYTY_SYSV_ABI pthread_rwlock_wrlock(LibKernel::PthreadRwlock* rwlock);
++int KYTY_SYSV_ABI pthread_rwlock_tryrdlock(LibKernel::PthreadRwlock* rwlock); // experiment 0336
+ int KYTY_SYSV_ABI pthread_rwlock_destroy(LibKernel::PthreadRwlock* rwlock);
+ int KYTY_SYSV_ABI pthread_rwlock_init(LibKernel::PthreadRwlock*           rwlock,
+                                       const LibKernel::PthreadRwlockattr* attr);
 diff --git a/src/kernel/semaphore.cpp b/src/kernel/semaphore.cpp
 index ed7c35b..847f250 100644
 --- a/src/kernel/semaphore.cpp
@@ -27265,10 +27350,10 @@ index 82be73c..f090fcb 100644
  } // namespace Libs::Audio::AudioInternal
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..6891352
+index 0000000..3c3d4f1
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,9444 @@
+@@ -0,0 +1,9477 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -27336,6 +27421,12 @@ index 0000000..6891352
 +#include <thread>
 +#include <tuple>
 +#include <vector>
++
++// Experiment 0336: the import log's helpers (loader/runtimeLinker.cpp)
++namespace Loader {
++void     Bc5DiagText(const char* line);
++uint64_t Bc5ProcParam();
++} // namespace Loader
 +
 +namespace Libs {
 +
@@ -36283,7 +36374,34 @@ index 0000000..6891352
 +	if (version == nullptr) {
 +		return LibKernel::KERNEL_ERROR_EINVAL;
 +	}
-+	*version = 0x0A000000; // TODO(bc5): read from the eboot's process param
++	// Experiment 0336 (exp 0335's audit): the version comes from the program's process parameter, which the host serves
++	// (RuntimeLinker::GetProcParam). TODO(verify): the layout. A PS4 process parameter is {u64 size, u32 magic, u32 entry
++	// count, u64 sdk version}; a PS5 title's param.json writes sdkVersion as a u64 with the version in its high half
++	// ("0x0700000000000000", ps5rs crates/ps5-analysis/src/param_json.rs). So the high half of the u64 at +0x10 is taken,
++	// or its low half when the high one is 0, and only a value in [0x01000000, 0x20000000) is used; otherwise the old
++	// constant 0x0A000000. The header read is journaled once (BC5_IMPORT_LOG). The second title gives 0x09000040.
++	static const uint32_t v = [] {
++		uint32_t       out = 0x0A000000;
++		const uint64_t pp  = Loader::Bc5ProcParam();
++		uint64_t       size = 0, sdk = 0;
++		uint32_t       magic = 0, entries = 0;
++		if (pp != 0) {
++			std::memcpy(&size, reinterpret_cast<const void*>(pp), 8);
++			std::memcpy(&magic, reinterpret_cast<const void*>(pp + 8), 4);
++			std::memcpy(&entries, reinterpret_cast<const void*>(pp + 12), 4);
++			if (size >= 0x18) std::memcpy(&sdk, reinterpret_cast<const void*>(pp + 0x10), 8);
++		}
++		const auto hi   = static_cast<uint32_t>(sdk >> 32u);
++		const auto lo   = static_cast<uint32_t>(sdk);
++		const auto cand = hi != 0 ? hi : lo;
++		if (cand >= 0x01000000u && cand < 0x20000000u) out = cand;
++		char line[256];
++		std::snprintf(line, sizeof(line), "procparam at 0x%" PRIx64 ": size 0x%" PRIx64 " magic 0x%08" PRIx32 " entries %" PRIu32 " u64@0x10 0x%016" PRIx64 " -> compiled sdk version 0x%08" PRIx32 "%s",
++		              pp, size, magic, entries, sdk, out, out == 0x0A000000u ? " (the old constant)" : "");
++		Loader::Bc5DiagText(line);
++		return out;
++	}();
++	*version = static_cast<int>(v);
 +	return 0;
 +}
 +
@@ -42456,7 +42574,7 @@ index 183cd85..d8a156c 100644
  	LIB_FUNC("bAM9Qwofus0", LibJson2::JsonArrayBack);
  	LIB_FUNC("UeuWT+yNdCQ", LibJson2::JsonValueBoolCtor);
 diff --git a/src/libs/libKernel.cpp b/src/libs/libKernel.cpp
-index 51c3a0e..9eb237a 100644
+index 51c3a0e..61ea6a3 100644
 --- a/src/libs/libKernel.cpp
 +++ b/src/libs/libKernel.cpp
 @@ -25,6 +25,7 @@
@@ -42574,7 +42692,21 @@ index 51c3a0e..9eb237a 100644
  }
  
  static void KYTY_SYSV_ABI KernelSync() {
-@@ -2111,6 +2191,194 @@ int KYTY_SYSV_ABI KernelSyncOnAddressWake(volatile void* address, int32_t count)
+@@ -1378,7 +1458,12 @@ static void KYTY_SYSV_ABI KernelRtldSetApplicationHeapAPI(void* api[]) {
+ static int64_t KYTY_SYSV_ABI write(int d, const char* str, int64_t size) {
+ 	// PRINT_NAME();
+ 
+-	EXIT_NOT_IMPLEMENTED(d < 0);
++	// Experiment 0338: -1/EBADF, as close and read; it stopped the emulator (EXIT_NOT_IMPLEMENTED). The posix write NID
++	// now comes here; it went to KernelWrite, which returns EBADF.
++	if (d < 0) {
++		*Posix::GetErrorAddr() = Posix::POSIX_EBADF;
++		return -1;
++	}
+ 
+ 	if (Network::Net::IsSocket(d)) {
+ 		return Network::Net::Send(d, str, static_cast<uint64_t>(size), 0);
+@@ -2111,6 +2196,194 @@ int KYTY_SYSV_ABI KernelSyncOnAddressWake(volatile void* address, int32_t count)
  	return LibKernel::SyncOnAddress::Wake(address, count);
  }
  
@@ -42769,7 +42901,7 @@ index 51c3a0e..9eb237a 100644
  LIB_DEFINE(InitLibKernel_1_Posix) {
  	LIB_FUNC("k+AXqu2-eBc", getpagesize);
  	LIB_FUNC("lLMT9vJAck0", clock_gettime);
-@@ -2118,6 +2386,11 @@ LIB_DEFINE(InitLibKernel_1_Posix) {
+@@ -2118,6 +2391,11 @@ LIB_DEFINE(InitLibKernel_1_Posix) {
  	LIB_FUNC("n88vx3C5nW8", gettimeofday);
  	LIB_FUNC("NhpspxdjEKU", nanosleep);
  	LIB_FUNC("yS8U2TGCe1A", nanosleep);
@@ -42781,7 +42913,39 @@ index 51c3a0e..9eb237a 100644
  	LIB_FUNC("E6ao34wPw+U", stat);
  	LIB_FUNC("JGMio+21L4c", mkdir);
  	LIB_FUNC("ih4CD9-gghM", Posix::ftruncate);
-@@ -2239,6 +2512,91 @@ int KYTY_SYSV_ABI sceCoredumpUnregisterCoredumpHandler() {
+@@ -2178,7 +2456,7 @@ LIB_DEFINE(InitLibKernel_1_Posix) {
+ 	LIB_FUNC("1471ajPzxh0", Posix::pthread_rwlock_destroy);
+ 	LIB_FUNC("ytQULN-nhL4", Posix::pthread_rwlock_init);
+ 	LIB_FUNC("sIlRvQqsN2Y", Posix::pthread_rwlock_wrlock);
+-	LIB_FUNC("SFxTMOfuCkE", LibKernel::PthreadRwlockTryrdlock);
++	LIB_FUNC("SFxTMOfuCkE", Posix::pthread_rwlock_tryrdlock); // experiment 0336: it was the sce function
+ 	LIB_FUNC("XhWHn6P5R7U", LibKernel::PthreadRwlockTrywrlock);
+ 	LIB_FUNC("mqULNdimTn0", Posix::pthread_key_create);
+ 	LIB_FUNC("6BpEZuDT7YI", Posix::pthread_key_delete);
+@@ -2204,6 +2482,22 @@ LIB_DEFINE(InitLibKernel_1_Posix) {
+ 	LIB_FUNC("4n51s0zEf0c", Posix::inet_pton);
+ 	LIB_FUNC("5jRCs2axtr4", Posix::inet_ntop);
+ 	LIB_FUNC("cfwBSQyr5Ys", cfwBSQyr5Ys);
++
++	// Experiment 0338 (exps 0335, 0336): the posix NIDs the title imports from libScePosix. Without them here, the
++	// import reached libkernel's registration of the NID through the NID fallback, often an sce function (SCE codes
++	// instead of -1/errno).
++	LIB_FUNC("wuCroIGjt2g", LibKernel::open);
++	LIB_FUNC("bY-PO6JhzhQ", LibKernel::close);
++	LIB_FUNC("FN4gaPmuFV8", LibKernel::write);
++	LIB_FUNC("Oy6IpwgtYOk", Posix::lseek);
++	LIB_FUNC("mqQMh1zPPT8", Posix::fstat);
++	LIB_FUNC("HoLVWNanBBc", LibKernel::getpid);
++	LIB_FUNC("QcteRwbsnV0", LibKernel::KernelUsleep); // usleep: KernelUsleep returns 0 always
++	LIB_FUNC("6XG4B33N09g", Posix::sched_yield);
++	LIB_FUNC("RXXqi4CtF8w", Posix::pthread_cond_destroy);
++	LIB_FUNC("27bAgiJmOh0", Posix::pthread_cond_timedwait);
++	LIB_FUNC("iGjsr1WAtI0", Posix::pthread_rwlock_rdlock);
++	LIB_FUNC("EgmLo6EWgso", Posix::pthread_rwlock_unlock);
+ }
+ 
+ } // namespace Posix
+@@ -2239,6 +2533,91 @@ int KYTY_SYSV_ABI sceCoredumpUnregisterCoredumpHandler() {
  	return OK;
  }
  
@@ -42873,7 +43037,7 @@ index 51c3a0e..9eb237a 100644
  } // namespace Coredump
  
  namespace Fiber {
-@@ -2458,47 +2816,41 @@ static void FiberSetContextValid(FiberObject* fiber, bool valid) {
+@@ -2458,47 +2837,41 @@ static void FiberSetContextValid(FiberObject* fiber, bool valid) {
  }
  
  #if defined(__x86_64__) || defined(_M_X64)
@@ -42956,7 +43120,21 @@ index 51c3a0e..9eb237a 100644
  }
  #else
  static int FiberSaveContext(FiberCpuContext* ctx) {
-@@ -3045,6 +3397,11 @@ LIB_DEFINE(InitCoredump_1) {
+@@ -2839,10 +3212,12 @@ int32_t KYTY_SYSV_ABI FiberGetThreadFramePointerAddress(uint64_t* addr_frame_poi
+ 
+ } // namespace Fiber
+ 
++// Experiment 0336 (exp 0335's audit): posix chmod changes the file through the tree's KernelChmod (exp 0327), -1/errno;
++// it returned OK and did nothing.
+ int chmod(const char* path, int mode) {
+ 	PRINT_NAME();
+ 
+-	return OK;
++	return POSIX_CALL(LibKernel::FileSystem::KernelChmod(path, static_cast<uint16_t>(mode)));
+ }
+ 
+ int KYTY_SYSV_ABI KernelAioInitializeImpl(void* param, int32_t size) {
+@@ -3045,6 +3420,11 @@ LIB_DEFINE(InitCoredump_1) {
  
  	LIB_FUNC("8zLSfEfW5AU", Coredump::sceCoredumpRegisterCoredumpHandler);
  	LIB_FUNC("fFkhOgztiCA", Coredump::sceCoredumpUnregisterCoredumpHandler);
@@ -42968,7 +43146,7 @@ index 51c3a0e..9eb237a 100644
  }
  
  LIB_DEFINE(InitLibKernel_1_FS) {
-@@ -3058,6 +3415,10 @@ LIB_DEFINE(InitLibKernel_1_FS) {
+@@ -3058,6 +3438,10 @@ LIB_DEFINE(InitLibKernel_1_FS) {
  	LIB_FUNC("kBwCPsYX-m4", FileSystem::KernelFstat);
  	LIB_FUNC("AUXVxWeJU-A", FileSystem::KernelUnlink);
  	LIB_FUNC("52NcYU9+lEo", FileSystem::KernelRename);
@@ -42979,7 +43157,7 @@ index 51c3a0e..9eb237a 100644
  	LIB_FUNC("taRWhTJFTgE", FileSystem::KernelGetdirentries);
  	LIB_FUNC("oib76F-12fk", FileSystem::KernelLseek);
  	LIB_FUNC("j2AIqSqJP0w", FileSystem::KernelGetdents);
-@@ -3079,6 +3440,7 @@ LIB_DEFINE(InitLibKernel_1_Mem) {
+@@ -3079,6 +3463,7 @@ LIB_DEFINE(InitLibKernel_1_Mem) {
  	LIB_FUNC("rTXw65xmLIA", Memory::KernelAllocateDirectMemory);
  	LIB_FUNC("B+vc2AO2Zrc", Memory::KernelAllocateMainDirectMemory);
  	LIB_FUNC("rVjRvHJ0X6c", Memory::KernelVirtualQuery);
@@ -42987,9 +43165,36 @@ index 51c3a0e..9eb237a 100644
  	LIB_FUNC("yDBwVAolDgg", Memory::KernelIsStack);
  	LIB_FUNC("7oxv3PPCumo", Memory::KernelReserveVirtualRange);
  	LIB_FUNC("L-Q3LEjIbgA", Memory::KernelMapDirectMemory);
-@@ -3221,6 +3583,9 @@ LIB_DEFINE(InitLibKernel_1_Pthread) {
+@@ -3180,7 +3565,7 @@ LIB_DEFINE(InitLibKernel_1_Pthread) {
+ 	LIB_FUNC("1tKyG7RlMJo", LibKernel::PthreadGetprio);
+ 	LIB_FUNC("W0Hpm2X0uPE", LibKernel::PthreadSetprio);
+ 	LIB_FUNC("T72hz6ffq08", LibKernel::PthreadYield);
+-	LIB_FUNC("6XG4B33N09g", LibKernel::PthreadYield);
++	LIB_FUNC("6XG4B33N09g", Posix::sched_yield); // experiment 0338: the posix entry point
+ 	LIB_FUNC("CBNtXOoef-E", Posix::sched_get_priority_max);
+ 	LIB_FUNC("m0iS6jNsXds", Posix::sched_get_priority_min);
+ 	LIB_FUNC("EI-5-jlq2dE", LibKernel::PthreadGetthreadid);
+@@ -3202,7 +3587,7 @@ LIB_DEFINE(InitLibKernel_1_Pthread) {
+ 	LIB_FUNC("Bvn74vj6oLo", LibKernel::PthreadAttrSetstack);
+ 	LIB_FUNC("F+yfmduIBB8", LibKernel::PthreadAttrSetstackaddr);
+ 	LIB_FUNC("UTXzJbWhhTE", LibKernel::PthreadAttrSetstacksize);
+-	LIB_FUNC("2Q0z6rnBrTE", LibKernel::PthreadAttrSetstacksize);
++	LIB_FUNC("2Q0z6rnBrTE", Posix::pthread_attr_setstacksize); // experiment 0338: the posix entry point
+ 	LIB_FUNC("-Wreprtu0Qs", LibKernel::PthreadAttrSetdetachstate);
+ 	LIB_FUNC("El+cQ20DynU", LibKernel::PthreadAttrSetguardsize);
+ 	LIB_FUNC("eXbUSpEaTsA", LibKernel::PthreadAttrSetinheritsched);
+@@ -3215,12 +3600,15 @@ LIB_DEFINE(InitLibKernel_1_Pthread) {
+ 	LIB_FUNC("6ULAa0fq4jA", LibKernel::PthreadRwlockInit);
+ 	LIB_FUNC("BB+kb08Tl9A", LibKernel::PthreadRwlockDestroy);
+ 	LIB_FUNC("Ox9i0c7L5w0", LibKernel::PthreadRwlockRdlock);
+-	LIB_FUNC("iGjsr1WAtI0", LibKernel::PthreadRwlockRdlock);
++	LIB_FUNC("iGjsr1WAtI0", Posix::pthread_rwlock_rdlock); // experiment 0338: the posix entry point
+ 	LIB_FUNC("+L98PIbGttk", LibKernel::PthreadRwlockUnlock);
+-	LIB_FUNC("EgmLo6EWgso", LibKernel::PthreadRwlockUnlock);
++	LIB_FUNC("EgmLo6EWgso", Posix::pthread_rwlock_unlock); // experiment 0338: the posix entry point
  	LIB_FUNC("mqdNorrB+gI", LibKernel::PthreadRwlockWrlock);
- 	LIB_FUNC("sIlRvQqsN2Y", LibKernel::PthreadRwlockWrlock);
+-	LIB_FUNC("sIlRvQqsN2Y", LibKernel::PthreadRwlockWrlock);
++	LIB_FUNC("sIlRvQqsN2Y", Posix::pthread_rwlock_wrlock); // experiment 0338: the posix entry point
  	LIB_FUNC("bIHoZCTomsI", LibKernel::PthreadRwlockTrywrlock);
 +	LIB_FUNC("XD3mDeybCnk", LibKernel::PthreadRwlockTryrdlock);   // experiment 0327: scePthreadRwlockTryrdlock
 +	LIB_FUNC("iPtZRWICjrM", LibKernel::PthreadRwlockTimedrdlock); // experiment 0327
@@ -42997,7 +43202,34 @@ index 51c3a0e..9eb237a 100644
  	LIB_FUNC("i2ifZ3fS2fo", LibKernel::PthreadRwlockattrDestroy);
  	LIB_FUNC("yOfGg-I1ZII", LibKernel::PthreadRwlockattrInit);
  	LIB_FUNC("qsdmgXjqSgk", LibKernel::PthreadRwlockattrDestroy);
-@@ -3291,7 +3656,21 @@ static void AddLibkernelUnityFunc(Loader::SymbolDatabase* s, const char* nid, ui
+@@ -3229,11 +3617,11 @@ LIB_DEFINE(InitLibKernel_1_Pthread) {
+ 
+ 	LIB_FUNC("2Tb92quprl0", LibKernel::PthreadCondInit);
+ 	LIB_FUNC("g+PZd2hiacg", LibKernel::PthreadCondDestroy);
+-	LIB_FUNC("RXXqi4CtF8w", LibKernel::PthreadCondDestroy);
++	LIB_FUNC("RXXqi4CtF8w", Posix::pthread_cond_destroy); // experiment 0338: the posix entry point
+ 	LIB_FUNC("WKAXJ4XBPQ4", LibKernel::PthreadCondWait);
+ 	LIB_FUNC("JGgj7Uvrl+A", LibKernel::PthreadCondBroadcast);
+ 	LIB_FUNC("kDh-NfxgMtE", LibKernel::PthreadCondSignal);
+-	LIB_FUNC("2MOy+rUfuhQ", LibKernel::PthreadCondSignal);
++	LIB_FUNC("2MOy+rUfuhQ", Posix::pthread_cond_signal); // experiment 0338: the posix entry point
+ 	LIB_FUNC("o69RpYO-Mu0", LibKernel::PthreadCondSignalto);
+ 	LIB_FUNC("BmMjYxmew1w", LibKernel::PthreadCondTimedwait);
+ 	LIB_FUNC("27bAgiJmOh0", Posix::pthread_cond_timedwait);
+@@ -3273,9 +3661,9 @@ LIB_DEFINE(InitLibKernel_1_Pthread) {
+ 	LIB_FUNC("z0dtnPxYgtg", chmod);
+ 	LIB_FUNC("VAzswvTOCzI", FileSystem::KernelUnlink);
+ 	LIB_FUNC("JGMio+21L4c", Posix::mkdir);
+-	LIB_FUNC("wuCroIGjt2g", FileSystem::KernelOpen);
+-	LIB_FUNC("bY-PO6JhzhQ", FileSystem::KernelClose);
+-	LIB_FUNC("FN4gaPmuFV8", FileSystem::KernelWrite);
++	LIB_FUNC("wuCroIGjt2g", LibKernel::open); // experiment 0338: the posix entry point
++	LIB_FUNC("bY-PO6JhzhQ", LibKernel::close); // experiment 0338: the posix entry point
++	LIB_FUNC("FN4gaPmuFV8", LibKernel::write); // experiment 0338: the posix entry point
+ }
+ 
+ static void AddLibkernelUnityFunc(Loader::SymbolDatabase* s, const char* nid, uint64_t func,
+@@ -3291,7 +3679,21 @@ static void AddLibkernelUnityFunc(Loader::SymbolDatabase* s, const char* nid, ui
  	s->Add(sr, func, dbg_name);
  }
  
@@ -43019,7 +43251,7 @@ index 51c3a0e..9eb237a 100644
  	InitLibKernel_1_FS(s);
  	InitLibKernel_1_Mem(s);
  	InitLibKernel_1_Equeue(s);
-@@ -3312,6 +3691,9 @@ LIB_DEFINE(InitLibKernel_1) {
+@@ -3312,6 +3714,9 @@ LIB_DEFINE(InitLibKernel_1) {
  	LIB_FUNC("-ZR+hG7aDHw", LibKernel::KernelSleep);
  	LIB_FUNC("6c3rCVE-fTU", LibKernel::open);
  	LIB_FUNC("6xVpy0Fdq+I", LibKernel::sigprocmask);
@@ -43029,7 +43261,7 @@ index 51c3a0e..9eb237a 100644
  	LIB_FUNC("6Z83sYWFlA8", LibKernel::exit);
  	LIB_FUNC("8OnWXlgQlvo", LibKernel::KernelRtldThreadAtexitDecrement);
  	LIB_FUNC("959qrazPIrg", LibKernel::KernelGetProcParam);
-@@ -3364,6 +3746,8 @@ LIB_DEFINE(InitLibKernel_1) {
+@@ -3364,6 +3769,8 @@ LIB_DEFINE(InitLibKernel_1) {
  	LIB_FUNC("B2n8aDorSH4", Posix::KernelSyncOnAddressWait32);
  	LIB_FUNC("PZQhiiLXRFs", Posix::KernelSyncOnAddressWait64);
  	LIB_FUNC("q2y-wDIVWZA", Posix::KernelSyncOnAddressWake);
@@ -57684,7 +57916,7 @@ index 0000000..5d9456f
 +
 +#endif
 diff --git a/src/loader/runtimeLinker.cpp b/src/loader/runtimeLinker.cpp
-index 343045e..97c0b0f 100644
+index 343045e..2dd30e8 100644
 --- a/src/loader/runtimeLinker.cpp
 +++ b/src/loader/runtimeLinker.cpp
 @@ -1,3 +1,5 @@
@@ -57693,15 +57925,18 @@ index 343045e..97c0b0f 100644
  #include "loader/runtimeLinker.h"
  
  #include "common/assert.h"
-@@ -25,6 +27,7 @@
+@@ -25,6 +27,10 @@
  
  #include <algorithm>
  #include <atomic>
++#include <chrono> // experiment 0336
++#include <mutex>  // experiment 0336
++#include <set>    // experiment 0336
 +#include <cstdarg>
  #include <cstdio>
  #include <cstdlib>
  #include <cstring>
-@@ -296,6 +299,18 @@ static uint64_t RegisterStubbedImport(uint32_t index, const Program* program,
+@@ -296,6 +302,18 @@ static uint64_t RegisterStubbedImport(uint32_t index, const Program* program,
  	const auto record_id                     = g_stubbed_imports.size() - 1;
  	const auto thunk                         = AllocateUnresolvedImportThunk(record_id);
  	g_stubbed_imports[record_id].thunk_vaddr = thunk;
@@ -57720,7 +57955,7 @@ index 343045e..97c0b0f 100644
  	return thunk;
  }
  
-@@ -325,7 +340,30 @@ static KYTY_SYSV_ABI uint64_t ResolveImportStubWithId(uint64_t record_id) {
+@@ -325,7 +343,30 @@ static KYTY_SYSV_ABI uint64_t ResolveImportStubWithId(uint64_t record_id) {
  	}
  
  	const auto log_index = g_unresolved_stub_call_log_count.fetch_add(1);
@@ -57752,7 +57987,7 @@ index 343045e..97c0b0f 100644
  		if (record_id < g_stubbed_imports.size()) {
  			const auto& record = g_stubbed_imports[record_id];
  			LOGF("Unresolved import stub called [%u]: patch_vaddr=0x%016" PRIx64
-@@ -797,6 +835,31 @@ static bool IsDumpableRange(uint64_t addr, uint64_t size) {
+@@ -797,6 +838,31 @@ static bool IsDumpableRange(uint64_t addr, uint64_t size) {
  #endif
  }
  
@@ -57784,7 +58019,7 @@ index 343045e..97c0b0f 100644
  static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exception_info) {
  	const auto* info = &exception_info;
  
-@@ -820,21 +883,48 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
+@@ -820,21 +886,48 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
  			EXIT("invalid access type for page fault at 0x%016" PRIx64 "\n",
  			     info->access_violation_vaddr);
  		}();
@@ -57835,7 +58070,7 @@ index 343045e..97c0b0f 100644
  	// DumpExceptionInfo degrades instead of crashing.
  	Common::HostException::DumpExceptionInfo(*info);
  #if KYTY_PLATFORM == KYTY_PLATFORM_WINDOWS
-@@ -845,14 +935,14 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
+@@ -845,14 +938,14 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
  	    owner_module != nullptr) {
  		char module_name[MAX_PATH] = {};
  		if (GetModuleFileNameA(owner_module, module_name, MAX_PATH) != 0) {
@@ -57852,7 +58087,7 @@ index 343045e..97c0b0f 100644
  	}
  #endif
  	if (info->exception_address != 0) {
-@@ -868,53 +958,53 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
+@@ -868,53 +961,53 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
  			const auto dump_size =
  			    (dump_start + 64 <= region_end ? 64u
  			                                   : static_cast<uint32_t>(region_end - dump_start));
@@ -57924,7 +58159,7 @@ index 343045e..97c0b0f 100644
  	}
  
  	auto dump_guest_code = [](const char* name, uint64_t addr) {
-@@ -942,15 +1032,18 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
+@@ -942,15 +1035,18 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
  		}
  #endif
  
@@ -57946,7 +58181,7 @@ index 343045e..97c0b0f 100644
  	dump_guest_code("guest rax[0]", info->rax);
  	dump_guest_code("guest rbx[0]", info->rbx);
  	dump_guest_code("guest rcx[0]", info->rcx);
-@@ -970,12 +1063,12 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
+@@ -970,12 +1066,12 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
  			int   depth = 20;
  			SysStackWalkX86(info->rbp, info->rsp, stack, &depth);
  
@@ -57961,7 +58196,7 @@ index 343045e..97c0b0f 100644
  				     (p == nullptr ? 0 : vaddr - p->base_vaddr),
  				     (p == nullptr ? "???"
  				                   : Common::FilenameWithoutDirectory(
-@@ -986,7 +1079,7 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
+@@ -986,7 +1082,7 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
  
  		auto dump_guest_qwords = [](const char* name, uint64_t addr) {
  			if (addr == 0) {
@@ -57970,7 +58205,7 @@ index 343045e..97c0b0f 100644
  				return;
  			}
  
-@@ -994,18 +1087,18 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
+@@ -994,18 +1090,18 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
  			MEMORY_BASIC_INFORMATION mbi {};
  			if (VirtualQuery(reinterpret_cast<const void*>(addr), &mbi, sizeof(mbi)) == 0 ||
  			    mbi.State != MEM_COMMIT || (mbi.Protect & (PAGE_NOACCESS | PAGE_GUARD)) != 0) {
@@ -57992,7 +58227,7 @@ index 343045e..97c0b0f 100644
  			     " %016" PRIx64 " %016" PRIx64 " %016" PRIx64 " %016" PRIx64 "\n",
  			     name, addr, q[0], q[1], q[2], q[3], q[4], q[5], q[6], q[7]);
  		};
-@@ -1042,7 +1135,7 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
+@@ -1042,7 +1138,7 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
  		if (info->rsi > guest_max && info->rsi < 0x800000000ull) { leaked = "rsi"; leaked_val = info->rsi; }
  		if (info->rdi > guest_max && info->rdi < 0x800000000ull) { leaked = "rdi"; leaked_val = info->rdi; }
  		if (leaked != nullptr) {
@@ -58001,7 +58236,7 @@ index 343045e..97c0b0f 100644
  			           leaked, leaked_val);
  		}
  	}
-@@ -1053,7 +1146,7 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
+@@ -1053,7 +1149,7 @@ static bool KytyExceptionHandler(const Common::HostException::ExceptionInfo& exc
  		const size_t start     = g_stubbed_imports.size() - dump_count;
  		for (size_t i = 0; i < dump_count; ++i) {
  			const auto& record = g_stubbed_imports[start + i];
@@ -58009,6 +58244,114 @@ index 343045e..97c0b0f 100644
 +			Bc5CrashLog("recent stubbed import: %s\n", record.name.c_str());
  		}
  	}
+ 
+@@ -1731,6 +1827,56 @@ void RuntimeLinker::Clear() {
+ 	m_relocated = false;
+ }
+ 
++// Experiment 0336 (BC5_IMPORT_LOG=<file>, a diagnostic, off by default): the resolved imports, once per program and
++// name, and the lines other files report through Bc5DiagText. The file is opened once, line-buffered, for appending.
++static FILE* bc5_import_log() {
++	static FILE* f = [] {
++		const char* p = std::getenv("BC5_IMPORT_LOG");
++		FILE*       x = p != nullptr && *p != 0 ? std::fopen(p, "a") : nullptr;
++		if (x != nullptr) {
++			std::setvbuf(x, nullptr, _IOLBF, 0);
++		}
++		return x;
++	}();
++	return f;
++}
++static double bc5_import_now() {
++	static const auto t0 = std::chrono::steady_clock::now();
++	return std::chrono::duration<double>(std::chrono::steady_clock::now() - t0).count();
++}
++void Bc5DiagText(const char* line) {
++	if (FILE* f = bc5_import_log(); f != nullptr) {
++		static std::mutex m;
++		std::lock_guard   lock(m);
++		std::fprintf(f, "%.3f %s\n", bc5_import_now(), line);
++	}
++}
++uint64_t Bc5ProcParam() {
++	return Common::Singleton<RuntimeLinker>::Instance()->GetProcParam();
++}
++namespace {
++struct Bc5ImportNote {
++	const std::string&  name;
++	const Program*      program;
++	const SymbolRecord* out;
++	const char*         path = "unresolved";
++	std::string         lib  = "-";
++	std::string         mod  = "-";
++	~Bc5ImportNote() {
++		if (bc5_import_log() == nullptr) {
++			return;
++		}
++		static std::set<std::string> seen; // RuntimeLinker::Resolve holds m_mutex
++		const std::string            file = program != nullptr ? program->file_name.filename().string() : "-";
++		if (!seen.insert(file + "\t" + name).second) {
++			return;
++		}
++		const std::string line = "import\t" + file + "\t" + name + "\t" + lib + "\t" + mod + "\t" + path + "\t" + out->name + "\t" + out->dbg_name + "\t" + (out->vaddr != 0 ? "bound" : "stub");
++		Bc5DiagText(line.c_str());
++	}
++};
++} // namespace
++
+ void RuntimeLinker::Resolve(const std::string& name, SymbolType type, Program* program,
+                             SymbolRecord* out_info, bool* bind_self) {
+ 	KYTY_PROFILER_FUNCTION();
+@@ -1739,6 +1885,8 @@ void RuntimeLinker::Resolve(const std::string& name, SymbolType type, Program* p
+ 
+ 	EXIT_IF(out_info == nullptr);
+ 
++	Bc5ImportNote bc5_note {name, program, out_info}; // experiment 0336
++
+ 	auto ids = Common::Split(name, '#');
+ 
+ 	if (bind_self != nullptr) {
+@@ -1748,6 +1896,8 @@ void RuntimeLinker::Resolve(const std::string& name, SymbolType type, Program* p
+ 	if (ids.size() == 3) {
+ 		const LibraryId* l = FindLibrary(*program, ids.at(1));
+ 		const ModuleId*  m = FindModule(*program, ids.at(2));
++		bc5_note.lib       = l != nullptr ? l->name : "?"; // experiment 0336
++		bc5_note.mod       = m != nullptr ? m->name : "?";
+ 
+ 		auto resolve_by_nid = [this, type](const std::string& nid, SymbolRecord* out) -> bool {
+ 			EXIT_IF(out == nullptr);
+@@ -1786,10 +1936,16 @@ void RuntimeLinker::Resolve(const std::string& name, SymbolType type, Program* p
+ 			if (m_symbols != nullptr) {
+ 				rec = m_symbols->Find(sr);
+ 			}
++			if (rec != nullptr) {
++				bc5_note.path = "hle"; // experiment 0336
++			}
+ 
+ 			if (rec == nullptr) {
+ 				if (auto* p = FindProgram(*m, *l); p != nullptr && p->export_symbols != nullptr) {
+ 					rec = p->export_symbols->Find(sr);
++					if (rec != nullptr) {
++						bc5_note.path = "module"; // experiment 0336
++					}
+ 					if (bind_self != nullptr) {
+ 						*bind_self = (p == program);
+ 					}
+@@ -1799,6 +1955,7 @@ void RuntimeLinker::Resolve(const std::string& name, SymbolType type, Program* p
+ 			if (rec == nullptr) {
+ 				if (resolve_by_nid(sr.name, out_info)) {
+ 					LOGF("PS5 NID fallback: %s -> %s\n", sr.name.c_str(), out_info->name.c_str());
++					bc5_note.path = "nid-fallback"; // experiment 0336
+ 					return;
+ 				}
+ 			}
+@@ -1815,6 +1972,7 @@ void RuntimeLinker::Resolve(const std::string& name, SymbolType type, Program* p
+ 			if (resolve_by_nid(ids.at(0), out_info)) {
+ 				LOGF("PS5 NID fallback: %s -> %s (missing lib/module metadata)\n",
+ 				     ids.at(0).c_str(), out_info->name.c_str());
++				bc5_note.path = "nid-fallback-no-metadata"; // experiment 0336
+ 				return;
+ 			}
  
 diff --git a/src/loader/systemContent.cpp b/src/loader/systemContent.cpp
 index efa8b48..ecd42b1 100644

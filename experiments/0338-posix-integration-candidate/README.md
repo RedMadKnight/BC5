@@ -115,3 +115,24 @@ testowy, potem Twoje „tak" na wymianę wspólnych binarek".*
   change the same way.
 - **Next:** the integration (`int0338.sh`: both shared builds, the candidate patch 0001), on the maintainer's yes (D19).
   Exp 0337's language setting is not in this candidate.
+
+**Addendum (2026-10-27, after the integration, F410).** On the maintainer's "Tak" to running `int0338.sh` (BOX-QUEUE
+206), 06:35–06:38 (`raw/int.out`, `raw/integration/`):
+- **Guards:** the five tree files and both shared binaries had their expected md5s, and N1 and L1 had passed.
+- **The diff** (382 lines) was made from the tree's files and the private build's copies, so it kept
+  `kernel/pthread.cpp`'s CRLF (4,758 → 4,784 CRs). `git apply --check` and `git apply` succeeded, and each file then
+  equalled the copy the private binaries were built from.
+- **Both shared builds were rebuilt** (`cmake --build … -j8`, nice 10). The normal build compiled 44 units, the
+  `pthread.h` dependents among them. There were no errors; the warnings are in older code.
+
+  | build | before | after |
+  |---|---|---|
+  | normal (`kytyplus-build`) | 4a146894 | **21e8bd22** |
+  | lean (`kytyplus-build-lean`) | c28cdd3c | **379a92b8** |
+
+  These are not the private binaries' md5s: the shared builds recompiled every dependent unit, where the private
+  builds linked the shared objects.
+- **Patch 0001 on main** is the tree's diff against f266548 after the integration: 58,501 lines, md5 a20fcc2d, 96
+  files. Against main's previous copy, only the five integrated files differ.
+- **The undo:** copy back the two binaries and five files from `~/bc5-work/exp0338/integration/`, then rebuild both.
+- The launchers and the test shortcut are unchanged. Not run yet: a session on the integrated builds.
