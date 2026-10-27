@@ -71,3 +71,52 @@ shortcut with the switches (`BC5_DIRECT_GPU_CHECK_PRODUCT=1 BC5_DIRECT_SHADOW_LA
 journal as he likes; one ring), after his yes. Follow-ups: 128 shadow slots (one job in a thousand overflows 64);
 reading the flag words back after a job to count the CP's actual refusals; the switches into the host's option
 parsing at integration (the headers' comments say so).
+
+**The maintainer's RT-on play (2026-10-27, 10:37–11:23; his yes: "Tak, zagram na skrócie test 0341 z RT on").**
+The "BC5 emulator (test 0341)" shortcut: b052d860, `play-pkg-0341t.sh` (play-pkg.sh plus a log per start,
+`BC5_DIRECT_COMPUTE_RING=-1`, `BC5_DIRECT_GPU_CHECK_PRODUCT=1 BC5_DIRECT_SHADOW_LABELS=1`, and
+`KYTY_BC5_INPUT_CONFIG=~/bc5-work/exp0341/input-rton.cfg` exported after the settings loop), his own saves. He
+played before the laptop streams were started and before pstore was installed (still `pstore_disable=Y`, no reboot
+since 07:32), so what is known comes from the box afterwards: the three per-start logs
+(`raw/maintainer-test/play-*.log.gz`), the two GPU journals on the box (`~/bc5-data/captures/play-20261027-1037`,
+`-1101`, 379 and 428 MB; excerpts around the two stalls in `raw/maintainer-test/journal-*-stall-*.txt.gz`), the
+kernel log of the boot.
+- *Ray tracing was on.* A log's header lists `bc5-run.env` (with the shared `input.cfg`), not the environment the
+  launcher exported; the switch itself prints only when the flip changes it (`ray tracing off at the flip`), and no
+  log has that line, so the start state (on) and the private configuration (`RayTracing.PPSA03671=on`) agreed. The
+  work shows it: the product staircase ran on **43,056,776 checked dispatches in 1,421 s** (first game) and
+  **19,660,060 in ~1,310 s** (second), 30 k/s and 15 k/s, against R3's ~1 k/s with RT off: the BVH builders'
+  indirect dispatches.
+- *Three starts, two games, no machine-down.* 10:37:28 (1,421 s, exit 0), 11:01:47 (9 s, exit 0: a restart, no crash
+  line), 11:01:58 (~1,315 s, exit 0). **No amdgpu line in the kernel log** (only IPv6 MLD notices and a DualSense
+  reconnect at 10:59), no new devcoredump (the last is 07:28's devcd1), **0 `TIMEOUT` lines** in both journals; the
+  cpu-wait give-ups of 16–59 ms are the usual ones. Before 0341 the second title's plays hung on the GFX ring with RT on (F332 at
+  111–118 s on two rings, F404, F413's two machine-downs) and even with RT off (F399: three freezes on 10-26).
+- *The guards' counts.* Shadow labels: 3,107,558 labels in 298,000 jobs (first game) and 3,199,803 in 304,000
+  (second), ~10.5 a job (RT off: ~7), each written twice and waited on once; 119 and 131 labels found no slot, 0 IBs
+  left alone. Whether the staircase actually refused a grid is not counted (the flag words are not read back).
+- *Frame rate.* 31.7 and 39.1 flips/s on average over the fps counter's lines (RT off on one ring: 36.6–38.6).
+- *Two long stalls, both recovered.* (1) First game, t 528→563 s (~10:46:16–10:46:51): **34.4 s without a flip with
+  the game thread outside the host for 34.4 s** — the title's own CPU work (a load), GPU busy 29 ms. (2) Second game,
+  t 864.9→886.9 s (~11:16:23–11:16:45), the freeze the maintainer saw: the dcb #1197600 (6,866 dwords, submitted at
+  864.912 s) and the four GFX jobs after it **waited 22.0 s for their fences** (`fence 22007.37 ms`), the game thread
+  stood at the flip for 22.04 s, the frame profile counts **soft-CP passes 22,009.5 ms in 469**, the audio went on
+  (one trace line a second), and the journal wrote nothing else in those 22 s. With `lockup_timeout` at its 2,000 ms
+  default on 7.2.9 (F316), a GPU job running 22 s would have timed out and been reset; no kernel line
+  means the jobs were held before the hardware, on the host side (the soft CP or a dependency). Before 0341 none of
+  the 13 GPU journals of 10-25…10-27 has a frame longer than 4.1 s. Which wait held them is open.
+- *The language list.* He switched the system language to Polish in the F2 overlay (System tab, exp 0337; saved as
+  `SystemLanguage=Polish` into the private `input-rton.cfg` at 11:03) and the list kept running up while he chose.
+  The overlay feeds the left stick to ImGui as `AddKeyAnalogEvent(ImGuiKey_GamepadLStick*, down = |v| > 0.25,
+  analog = |v|)`: the down state has a dead zone, the analog value does not, and ImGui's gamepad navigation scrolls
+  the focused window by the left stick's analog magnitude every frame — any stick drift scrolls the list. The
+  imgui_impl_sdl2 backend maps the axis through its dead zone first (value 0 below 8000/32767). To fix at
+  integration.
+- *Temperatures.* He saw lower GPU and CPU temperatures than in earlier sessions; nothing was sampled (11:28 idle:
+  edge 52 °C, Tctl 54 °C). `sampleplay0341.sh` now also records `edge` and `Tctl` once a minute.
+- The live saves are now **dc9d4f25fc2d41ca** (his play; 88374d489b09ac70 before).
+
+**Verdict of the play.** RT on, one ring, the staircase and the shadow labels: 46 minutes in two games without a GPU
+hang, a reset or a machine-down, for the first time with ray tracing on. One 22-s host-side stall that recovered by
+itself is new with this configuration. Next: the integration into the shared builds (D19, the maintainer's yes),
+with the overlay's dead zone; the 22-s hold read from the journal excerpt.
