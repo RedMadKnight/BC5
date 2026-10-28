@@ -471,3 +471,326 @@ thread trap:   -    4.090 ms wait-ok        host id   7 JobLoaderSema           
 thread trap:   -    4.101 ms wait-begin     host id   8 JobLoaderSema           count 1 lat 0 us
 thread trap:   -    4.101 ms wait-immediate host id   8 JobLoaderSema           count 1 lat 0 us
 Access violation: Read [000000000000000c] 
+play log /home/kjaniszewski/bc5-work/exp0358/play/play-20261028-145046.log from 14:50:47
+bc5-direct: experiment 0346 switch: a GFX-form dispatch without a SET_BASE of its type in its IB is resolved by the host (the carried base, or the window 0x1100000000 until one is learned) and rewritten only to a page the host read, else NOP-ed; no CP read at an inferred address
+bc5-direct: experiment 0349: a job's IB over 983040 dwords is cut at aligned packet boundaries outside COND_EXEC ranges into up to 4 IBs of one submit (the kernel takes at most 0xfffff dwords per IB)
+bc5-direct: experiment 0341 switches: product staircase 1 (x > 65536 with y or z > 1), args histogram 0, shadow labels 1, bo journal 0
+bc5-direct: experiment 0341 periodic: shadow labels in 2000 jobs: 10070 labels, 20140 writes copied, 10070 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 12636 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 12636 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5-direct: experiment 0341 periodic: shadow labels in 4000 jobs: 21251 labels, 42502 writes copied, 21251 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 18897 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 18897 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5-direct: experiment 0341 periodic: shadow labels in 6000 jobs: 34798 labels, 69596 writes copied, 34798 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 36175 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 36175 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5-direct: experiment 0341 periodic: shadow labels in 8000 jobs: 52042 labels, 104084 writes copied, 52042 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 158855 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 158855 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5-direct: experiment 0341 periodic: shadow labels in 10000 jobs: 65888 labels, 131776 writes copied, 65888 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 158855 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 158855 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5-direct: experiment 0341 periodic: shadow labels in 12000 jobs: 87532 labels, 175064 writes copied, 87532 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 531693 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 540896 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+thread trap: faulting pthread "MainThread" guest id 1, host unique id 5, os thread 2256610
+thread trap: tls image_size 0x120 init_size 0x20 tcb_offset 0x120 blocks 46
+thread trap: image at tcb-0x110..-0x100: 074c02d5 00000009 ffffffff ffffffff
+thread trap: host id 35 guest id 31 "AK::IOThread": gen -1 index -1 jobid 0 ptr-0x98 000000000000001f
+thread trap: host id 37 guest id 33 "AK::BankMgr": gen -1 index -1 jobid 0 ptr-0x98 0000000000000021
+thread trap: host id 51 guest id 47 "User UDS Thread": gen -1 index -1 jobid 0 ptr-0x98 000000000000002f
+thread trap: host id 50 guest id 46 "Save Thread": gen -1 index -1 jobid 0 ptr-0x98 000000000000002e
+thread trap: host id 49 guest id 45 "File Video Stream": gen -1 index -1 jobid 0 ptr-0x98 000000000000002d
+thread trap: host id 48 guest id 44 "File Video Stream": gen -1 index -1 jobid 0 ptr-0x98 000000000000002c
+thread trap: host id 47 guest id 43 "File Video Stream": gen -1 index -1 jobid 0 ptr-0x98 000000000000002b
+thread trap: host id 46 guest id 42 "File Video Stream": gen -1 index -1 jobid 0 ptr-0x98 000000000000002a
+thread trap: host id 45 guest id 41 "File Video Stream": gen -1 index -1 jobid 0 ptr-0x98 0000000000000029
+thread trap: host id 44 guest id 40 "EntitlementSysPPR::QueryThread": gen -1 index -1 jobid 0 ptr-0x98 0000000000000028
+thread trap: host id 43 guest id 39 "UXAnalytics::UploadThread": gen -1 index -1 jobid 0 ptr-0x98 0000000000000027
+thread trap: host id 42 guest id 38 "Coherent Layout Worker Thread": gen -1 index -1 jobid 0 ptr-0x98 0000000000000026
+thread trap: host id 41 guest id 37 "Coherent Resource Worker Thread": gen -1 index -1 jobid 0 ptr-0x98 0000000000000025
+thread trap: host id 40 guest id 36 "Coherent Thread": gen -1 index -1 jobid 0 ptr-0x98 0000000000000024
+thread trap: host id 39 guest id 35 "AK::AudioMgr": gen -1 index -1 jobid 0 ptr-0x98 0000000000000023
+thread trap: host id 34 guest id 30 "Havok Queries and Cloth": gen -1 index -1 jobid 0 ptr-0x98 000000000000001e
+thread trap: host id 17 guest id 13 "Job Bk 1": gen 0 index 1 jobid 0 ptr-0x98 000000000000000d
+thread trap: host id 16 guest id 12 "Job Bk 0": gen 0 index 0 jobid 0 ptr-0x98 000000000000000c
+thread trap: host id 15 guest id 11 "Job Hi 4": gen 2 index 4 jobid 0 ptr-0x98 000000000000000b
+thread trap: host id 14 guest id 10 "Job Hi 3": gen 2 index 3 jobid 0 ptr-0x98 000000000000000a
+thread trap: host id 13 guest id 9 "Job Hi 2": gen 2 index 2 jobid 0 ptr-0x98 0000000000000009
+thread trap: host id 12 guest id 8 "Job Hi 1": gen 2 index 1 jobid 0 ptr-0x98 0000000000000008
+thread trap: host id 11 guest id 7 "Job Hi 0": gen 2 index 0 jobid 0 ptr-0x98 0000000000000007
+thread trap: host id 10 guest id 6 "Job Lo 4": gen 1 index 4 jobid 0 ptr-0x98 0000000000000006
+thread trap: host id 9 guest id 5 "Job Lo 3": gen 1 index 3 jobid 0 ptr-0x98 0000000000000005
+thread trap: host id 8 guest id 4 "Job Lo 2": gen 1 index 2 jobid 0 ptr-0x98 0000000000000004
+thread trap: host id 7 guest id 3 "Job Lo 1": gen 1 index 1 jobid 0 ptr-0x98 0000000000000003
+thread trap: host id 65 guest id 60 "Bink IO": gen -1 index -1 jobid 0 ptr-0x98 000000000000003c
+thread trap: host id 6 guest id 2 "Job Lo 0": gen 1 index 0 jobid 0 ptr-0x98 0000000000000002
+thread trap: host id 5 guest id -1 "?": gen -1 index -1 jobid 1 (owner) ptr-0x98 0000000000000001 <- faulting
+thread trap: host id 18 guest id 14 "Job Bk 2": gen 0 index 2 jobid 0 ptr-0x98 000000000000000e
+thread trap: host id 19 guest id 15 "Job Bk 3": gen 0 index 3 jobid 0 ptr-0x98 000000000000000f
+thread trap: host id 20 guest id 16 "Job Bk 4": gen 0 index 4 jobid 0 ptr-0x98 0000000000000010
+thread trap: host id 21 guest id 17 "Archive Asset IO": gen -1 index -1 jobid 0 ptr-0x98 0000000000000011
+thread trap: host id 22 guest id 18 "Archive Loose IO": gen -1 index -1 jobid 0 ptr-0x98 0000000000000012
+thread trap: host id 23 guest id 19 "Archive Resolve IO": gen -1 index -1 jobid 0 ptr-0x98 0000000000000013
+thread trap: host id 24 guest id 20 "Render Thread": gen -1 index -1 jobid 0 ptr-0x98 0000000000000014
+thread trap: host id 25 guest id 21 "Havok Solve": gen -1 index -1 jobid 0 ptr-0x98 0000000000000015
+thread trap: host id 26 guest id 22 "Havok Solve": gen -1 index -1 jobid 0 ptr-0x98 0000000000000016
+thread trap: host id 27 guest id 23 "Havok Solve": gen -1 index -1 jobid 0 ptr-0x98 0000000000000017
+thread trap: host id 28 guest id 24 "Havok Solve": gen -1 index -1 jobid 0 ptr-0x98 0000000000000018
+thread trap: host id 29 guest id 25 "Havok Solve": gen -1 index -1 jobid 0 ptr-0x98 0000000000000019
+thread trap: host id 30 guest id 26 "Havok Queries and Cloth": gen -1 index -1 jobid 0 ptr-0x98 000000000000001a
+thread trap: host id 31 guest id 27 "Havok Queries and Cloth": gen -1 index -1 jobid 0 ptr-0x98 000000000000001b
+thread trap: host id 32 guest id 28 "Havok Queries and Cloth": gen -1 index -1 jobid 0 ptr-0x98 000000000000001c
+thread trap: host id 33 guest id 29 "Havok Queries and Cloth": gen -1 index -1 jobid 0 ptr-0x98 000000000000001d
+thread trap:   entry 0 job 0: handle 00001e6c00000000 obj 0000001011836000: active 0 started 13 done 11 total 11 class 0000005f (owner-class) flags 0000000a fn +0x3b05130
+thread trap:   entry 0 job 1: handle 00001e6c00000004 obj 00000010118360c0: active 0 started 14 done 11 total 11 class 0000005f (owner-class) flags 0000000a fn +0x3b054a0
+thread trap:   entry 0 job 2: handle 00001e6c00000008 obj 0000001011836180: active 0 started 338 done 336 total 336 class 0000005f (owner-class) flags 0000000a fn +0x3b05760
+thread trap:   entry 0 job 3: handle 00001e6c0000000c obj 0000001011836240: active 1 started 428 done 423 total 1024 class 0000005f (owner-class) flags 0000000a fn +0x3b05a50
+thread trap:   entry 1 job 0: handle 00001e6c00000005 obj 00000010118040c0: active 0 started 772 done 768 total 768 class 0000005f (owner-class) flags 00000008 fn +0x3ccc520
+thread trap:   entry 1 job 1: handle 00001e6c00000009 obj 0000001011804180: active 0 started 2 done 1 total 1 class 0000007f (owner-class) flags 00000008 fn +0x4096b40
+thread trap:   entry 1 job 2: handle 00001e6c0000000d obj 0000001011804240: active 0 started 192 done 156 total 156 class 0000007f (owner-class) flags 00000008 fn +0x3f98bc0
+thread trap:   entry 1 job 3: handle 00001e6c00000015 obj 00000010118043c0: active 0 started 773 done 769 total 769 class 0000005f (owner-class) flags 00000008 fn +0x5d0ba60
+thread trap:   entry 1 job 4: handle 00001e6c00000019 obj 0000001011804480: active 0 started 773 done 769 total 769 class 0000005f (owner-class) flags 00000008 fn +0x5d0ba60
+thread trap:   entry 1 job 5: handle 00001e6c0000001d obj 0000001011804540: active 0 started 79 done 75 total 75 class 0000005f (owner-class) flags 00000008 fn +0x40ff1f0
+thread trap:   entry 1 job 6: handle 00001e6c00000021 obj 0000001011804600: active 0 started 3200 done 3067 total 3067 class 0000001f flags 00000008 fn +0x3ee5c70
+thread trap:   entry 1 job 7: handle 00001e6c00000029 obj 0000001011804780: active 0 started 259 done 256 total 256 class 0000005f (owner-class) flags 00000008 fn +0x5d0bd60
+thread trap:   entry 1 job 8: handle 00001e6c0000002d obj 0000001011804840: active 0 started 2 done 1 total 1 class 0000005f (owner-class) flags 00000008 fn +0x5d0bd60
+thread trap:   entry 1 job 9: handle 00001e6c00000031 obj 0000001011804900: active 0 started 10 done 7 total 7 class 0000007f (owner-class) flags 00000008 fn +0x3ad9bd0
+thread trap:   entry 1 job 10: handle 00001e6c00000035 obj 00000010118049c0: active 0 started 6 done 4 total 4 class 0000005f (owner-class) flags 00000008 fn +0x3ccc520
+thread trap:   entry 1 job 11: handle 00001e6c00000039 obj 0000001011804a80: active 0 started 6 done 5 total 5 class 0000005f (owner-class) flags 00000008 fn +0x143d000
+thread trap:   entry 1 job 12: handle 00001e6c00000041 obj 0000001011804c00: active 0 started 1 done 1 total 1 class 0000005f (owner-class) flags 00000008 fn +0x46b4760
+thread trap:   entry 1 job 13: handle 00001e6c00000045 obj 0000001011804cc0: active 0 started 4104 done 4096 total 4096 class 0000001f flags 00000008 fn +0x46b4db0
+thread trap:   entry 1 job 14: handle 00001e6c00000049 obj 0000001011804d80: active 0 started 4120 done 4112 total 4112 class 0000005f (owner-class) flags 00000008 fn +0x46b5330
+thread trap:   entry 1 job 15: handle 00001e6c00000051 obj 0000001011804f00: active 0 started 1 done 1 total 1 class 0000005f (owner-class) flags 00000008 fn +0x2551470
+thread trap:   entry 1 job 16: handle 00001e6c00000055 obj 0000001011804fc0: active 0 started 1 done 1 total 1 class 0000005f (owner-class) flags 00000008 fn +0x25515c0
+thread trap:   entry 1 job 17: handle 00001e6c00000065 obj 00000010118052c0: active 0 started 1 done 1 total 1 class 0000005f (owner-class) flags 00000008 fn +0x2551f40
+thread trap:   entry 1 job 18: handle 00001e6c00000069 obj 0000001011805380: active 0 started 1 done 1 total 1 class 0000005f (owner-class) flags 00000008 fn +0x2552320
+thread trap:   entry 1 job 19: handle 00001e6c0000006d obj 0000001011805440: active 0 started 874 done 858 total 858 class 0000005f (owner-class) flags 00000008 fn +0x2552660
+thread trap:   entry 2 job 0: handle 00001e6c00000002 obj 000000101181d000: active 0 started 99 done 95 total 95 class 0000003f flags 00000009 fn +0x3f11000
+thread trap:   entry 2 job 1: handle 00001e6c00000006 obj 000000101181d0c0: active 0 started 772 done 769 total 769 class 0000005f (owner-class) flags 00000009 fn +0x5d0ba60
+thread trap:   entry 2 job 2: handle 00001e6c0000000a obj 000000101181d180: active 0 started 23 done 19 total 19 class 0000005f (owner-class) flags 00000009 fn +0x3a7c660
+thread trap:   entry 2 job 3: handle 00001e6c0000000e obj 000000101181d240: active 0 started 8 done 4 total 4 class 0000005f (owner-class) flags 00000009 fn +0x4986850
+thread trap:   entry 2 job 4: handle 00001e6c00000012 obj 000000101181d300: active 0 started 3 done 2 total 2 class 0000005f (owner-class) flags 00000009 fn +0x11f5980
+thread trap:   entry 2 job 5: handle 00001e6c00000016 obj 000000101181d3c0: active 0 started 12 done 11 total 11 class 0000005f (owner-class) flags 00000009 fn +0x3ccc520
+thread trap:   entry 2 job 6: handle 00001e6c0000001a obj 000000101181d480: active 0 started 9 done 6 total 6 class 0000005f (owner-class) flags 00000009 fn +0x4920f30
+thread trap:   entry 2 job 7: handle 00001e6c0000001e obj 000000101181d540: active 0 started 50 done 47 total 47 class 0000007f (owner-class) flags 00000009 fn +0x3fad450
+thread trap:   entry 2 job 8: handle 00001e6c00000022 obj 000000101181d600: active 0 started 1 done 1 total 1 class 0000007f (owner-class) flags 00000009 fn +0x1bf5dd0
+thread trap:   entry 2 job 9: handle 00001e6c00000026 obj 000000101181d6c0: active 0 started 11 done 10 total 10 class 0000007f (owner-class) flags 00000009 fn +0x3faefa0
+thread trap:   entry 2 job 10: handle 00001e6c0000002e obj 000000101181d840: active 0 started 2 done 1 total 1 class 0000007f (owner-class) flags 00000009 fn +0x3faefa0
+thread trap:   entry 2 job 11: handle 00001e6c0000002a obj 000000101181d780: active 0 started 12 done 10 total 10 class 0000007f (owner-class) flags 00000009 fn +0x1cbcf70
+thread trap:   entry 2 job 12: handle 00001e6c00000032 obj 000000101181d900: active 0 started 1 done 1 total 1 class 0000005f (owner-class) flags 00000009 fn +0x2555010
+thread trap:   entry 2 job 13: handle 00001e6c00000036 obj 000000101181d9c0: active 0 started 1024 done 512 total 512 class 0000005f (owner-class) flags 00000009 fn +0x2555130
+thread trap:   entry 2 job 14: handle 00001e6c0000003a obj 000000101181da80: active 0 started 83 done 81 total 81 class 0000005f (owner-class) flags 00000009 fn +0x3ccc520
+thread trap:   entry 2 job 15: handle 00001e6c0000003e obj 000000101181db40: active 0 started 68 done 64 total 64 class 0000005f (owner-class) flags 00000009 fn +0x3a5d190
+thread trap:   entry 2 job 16: handle 00001e6c00000042 obj 000000101181dc00: active 0 started 654 done 651 total 651 class 0000007f (owner-class) flags 00000009 fn +0x1d43d10
+thread trap:   entry 2 job 17: handle 00001e6c00000046 obj 000000101181dcc0: active 0 started 8 done 6 total 6 class 0000005f (owner-class) flags 00000009 fn +0x3ccc520
+thread trap:   entry 2 job 18: handle 00001e6c0000004a obj 000000101181dd80: active 0 started 604 done 603 total 603 class 0000007f (owner-class) flags 00000009 fn +0x3fad450
+thread trap:   entry 2 job 19: handle 00001e6c00000052 obj 000000101181df00: active 0 started 604 done 603 total 603 class 0000007f (owner-class) flags 00000009 fn +0x3fad450
+thread trap:   entry 2 job 20: handle 00001e6c0000005a obj 000000101181e080: active 0 started 604 done 603 total 603 class 0000007f (owner-class) flags 00000009 fn +0x3fad450
+thread trap:   entry 2 job 21: handle 00001e6c00000062 obj 000000101181e200: active 0 started 604 done 603 total 603 class 0000007f (owner-class) flags 00000009 fn +0x3fad450
+thread trap:   entry 2 job 22: handle 00001e6c0000004e obj 000000101181de40: active 0 started 1 done 1 total 1 class 0000007f (owner-class) flags 00000009 fn +0x4661e50 <- the crash job's function
+thread trap:   entry 2 job 23: handle 00001e6c00000056 obj 000000101181dfc0: active 0 started 1 done 1 total 1 class 0000007f (owner-class) flags 00000009 fn +0x4661e50 <- the crash job's function
+thread trap:   entry 2 job 24: handle 00001e6c0000005e obj 000000101181e140: active 0 started 1 done 1 total 1 class 0000007f (owner-class) flags 00000009 fn +0x4661e50 <- the crash job's function
+thread trap:   entry 2 job 25: handle 00001e6c00000066 obj 000000101181e2c0: active 1 started 1 done 0 total 1 class 0000007f (owner-class) flags 00000009 fn +0x4661e50 <- the crash job's function
+thread trap:   entry 2 job 26: handle 00001e6c0000006a obj 000000101181e380: active 0 started 5 done 4 total 4 class 0000005f (owner-class) flags 00000009 fn +0x3a9c400
+thread trap:   entry 2 job 27: handle 00001e6c0000006e obj 000000101181e440: active 0 started 10 done 9 total 9 class 0000005f (owner-class) flags 00000009 fn +0x3a7c660
+thread trap:   entry 2 job 28: handle 00001e6c00000072 obj 000000101181e500: active 0 started 3 done 2 total 2 class 0000005f (owner-class) flags 00000009 fn +0x11f5980
+thread trap:   entry 2 job 29: handle 00001e6c00000076 obj 000000101181e5c0: active 0 started 12 done 11 total 11 class 0000005f (owner-class) flags 00000009 fn +0x3ccc520
+thread trap:   entry 2 job 30: handle 00001e6c0000007a obj 000000101181e680: active 0 started 3 done 2 total 2 class 0000005f (owner-class) flags 00000009 fn +0x4920f30
+thread trap: jobsys workers 5 special 5 owner-mask 00000040 special-mask 00000020 n1 6 n2 7 owner id 1 (ids issued 2) override arena 0000000000000000
+thread trap: entry 0: live 4/512 gen 7788 pending 4 (owner-class 4, runnable 1, null 0, bad 0) array 0000001011836000 list 000000101184e000
+thread trap: entry 1: live 28/512 gen 7788 pending 20 (owner-class 18, runnable 0, null 0, bad 0) array 0000001011804000 list 000000101181c000
+thread trap: entry 2: live 31/512 gen 7788 pending 31 (owner-class 30, runnable 0, null 0, bad 0) array 000000101181d000 list 0000001011835000
+thread trap: proc "Job Lo 0" host id 6 os 2256615: state S cpu 0.540 s (user 0.540) switches 131114 voluntary 1894 involuntary, in a wait on "JobLoaderSema" (for 1.626 ms)
+thread trap: proc "Job Lo 1" host id 7 os 2256616: state S cpu 0.520 s (user 0.520) switches 130049 voluntary 1780 involuntary, in a wait on "JobLoaderSema" (for 1.608 ms)
+thread trap: proc "Job Lo 2" host id 8 os 2256617: state S cpu 0.520 s (user 0.520) switches 130078 voluntary 1741 involuntary, in a wait on "JobLoaderSema" (for 1.922 ms)
+thread trap: proc "Job Lo 3" host id 9 os 2256618: state S cpu 0.500 s (user 0.500) switches 129915 voluntary 1860 involuntary, in a wait on "JobLoaderSema" (for 1.591 ms)
+thread trap: proc "Job Lo 4" host id 10 os 2256619: state S cpu 0.510 s (user 0.510) switches 130561 voluntary 1767 involuntary, in a wait on "JobLoaderSema" (for 1.599 ms)
+thread trap: proc "Job Hi 0" host id 11 os 2256620: state S cpu 0.520 s (user 0.520) switches 131374 voluntary 1637 involuntary, in a wait on "JobLoaderSema" (for 0.655 ms)
+thread trap: proc "Job Hi 1" host id 12 os 2256621: state S cpu 0.550 s (user 0.550) switches 131815 voluntary 1679 involuntary, in a wait on "JobLoaderSema" (for 0.221 ms)
+thread trap: proc "Job Hi 2" host id 13 os 2256622: state S cpu 0.520 s (user 0.520) switches 131919 voluntary 1628 involuntary, in a wait on "JobLoaderSema" (for 0.060 ms)
+thread trap: proc "Job Hi 3" host id 14 os 2256623: state S cpu 0.550 s (user 0.550) switches 131752 voluntary 1651 involuntary, in a wait on "JobLoaderSema" (for 0.046 ms)
+thread trap: proc "Job Hi 4" host id 15 os 2256624: state S cpu 0.580 s (user 0.580) switches 129494 voluntary 1601 involuntary, in a wait on "JobLoaderSema" (for 0.080 ms)
+thread trap: proc "Job Bk 0" host id 16 os 2256625: state R cpu 0.040 s (user 0.040) switches 30247 voluntary 964 involuntary (for 0.000 ms)
+thread trap: proc "Job Bk 1" host id 17 os 2256626: state R cpu 0.050 s (user 0.050) switches 30131 voluntary 944 involuntary (for 0.000 ms)
+thread trap: proc "Job Bk 2" host id 18 os 2256627: state R cpu 0.060 s (user 0.060) switches 30050 voluntary 965 involuntary (for 0.000 ms)
+thread trap: proc "Job Bk 3" host id 19 os 2256628: state R cpu 0.060 s (user 0.060) switches 30151 voluntary 996 involuntary (for 0.000 ms)
+thread trap: proc "Job Bk 4" host id 20 os 2256629: state R cpu 0.060 s (user 0.060) switches 30039 voluntary 877 involuntary (for 0.000 ms)
+thread trap: proc "Archive Asset IO" host id 21 os 2256630: state S cpu 0.170 s (user 0.170) switches 26621 voluntary 110 involuntary (for 0.000 ms)
+thread trap: proc "Archive Loose IO" host id 22 os 2256631: state R cpu 0.060 s (user 0.060) switches 8145 voluntary 269 involuntary (for 0.000 ms)
+thread trap: proc "Archive Resolve IO" host id 23 os 2256632: state S cpu 0.880 s (user 0.880) switches 466123 voluntary 127 involuntary (for 0.000 ms)
+thread trap: proc "Render Thread" host id 24 os 2256633: state S cpu 2.070 s (user 2.070) switches 271742 voluntary 1563 involuntary (for 0.000 ms)
+thread trap: proc "Havok Solve" host id 25 os 2256665: state S cpu 0.080 s (user 0.080) switches 16730 voluntary 99 involuntary, in a wait on "hkSemaphore" (for 57.737 ms)
+thread trap: proc "Havok Solve" host id 26 os 2256666: state S cpu 0.060 s (user 0.060) switches 18000 voluntary 85 involuntary, in a wait on "hkSemaphore" (for 57.800 ms)
+thread trap: proc "Havok Solve" host id 27 os 2256667: state S cpu 0.070 s (user 0.070) switches 19506 voluntary 249 involuntary, in a wait on "hkSemaphore" (for 57.564 ms)
+thread trap: proc "Havok Solve" host id 28 os 2256668: state S cpu 0.090 s (user 0.090) switches 28224 voluntary 612 involuntary, in a wait on "hkSemaphore" (for 57.627 ms)
+thread trap: proc "Havok Solve" host id 29 os 2256669: state S cpu 0.150 s (user 0.150) switches 22931 voluntary 715 involuntary, in a wait on "hkSemaphore" (for 57.602 ms)
+thread trap: proc "Havok Queries and Cloth" host id 30 os 2256670: state S cpu 0.060 s (user 0.060) switches 15502 voluntary 147 involuntary, in a wait on "hkSemaphore" (for 3.139 ms)
+thread trap: proc "Havok Queries and Cloth" host id 31 os 2256671: state S cpu 0.070 s (user 0.070) switches 15055 voluntary 179 involuntary, in a wait on "hkSemaphore" (for 3.096 ms)
+thread trap: proc "Havok Queries and Cloth" host id 32 os 2256672: state S cpu 0.060 s (user 0.060) switches 15509 voluntary 204 involuntary, in a wait on "hkSemaphore" (for 3.143 ms)
+thread trap: proc "Havok Queries and Cloth" host id 33 os 2256673: state S cpu 0.050 s (user 0.050) switches 16215 voluntary 217 involuntary, in a wait on "hkSemaphore" (for 3.108 ms)
+thread trap: proc "Havok Queries and Cloth" host id 34 os 2256674: state S cpu 0.070 s (user 0.070) switches 16021 voluntary 241 involuntary, in a wait on "hkSemaphore" (for 3.138 ms)
+thread trap: proc "AK::IOThread" host id 35 os 2256695: state S cpu 0.030 s (user 0.030) switches 7892 voluntary 15 involuntary (for 0.000 ms)
+thread trap: proc "AK::JobWrkr-AcmQueue" host id 36 os 2256696: state S cpu 0.020 s (user 0.020) switches 7083 voluntary 4 involuntary (for 0.000 ms)
+thread trap: proc "AK::BankMgr" host id 37 os 2256697: state S cpu 0.040 s (user 0.040) switches 7163 voluntary 23 involuntary (for 0.000 ms)
+thread trap: proc "AK::Suspended" host id 38 os 2256698: state S cpu 0.030 s (user 0.030) switches 7087 voluntary 5 involuntary (for 0.000 ms)
+thread trap: proc "AK::AudioMgr" host id 39 os 2256699: state R cpu 0.100 s (user 0.100) switches 14238 voluntary 559 involuntary (for 0.000 ms)
+thread trap: proc "Coherent Thread" host id 40 os 2256700: state S cpu 0.110 s (user 0.110) switches 13491 voluntary 663 involuntary (for 0.000 ms)
+thread trap: proc "Coherent Resource Worker Thread" host id 41 os 2256701: state S cpu 0.030 s (user 0.030) switches 8533 voluntary 69 involuntary (for 0.000 ms)
+thread trap: proc "Coherent Layout Worker Thread" host id 42 os 2256702: state S cpu 0.070 s (user 0.070) switches 14251 voluntary 192 involuntary (for 0.000 ms)
+thread trap: proc "UXAnalytics::UploadThread" host id 43 os 2256703: state S cpu 0.030 s (user 0.030) switches 7080 voluntary 8 involuntary (for 0.000 ms)
+thread trap: proc "EntitlementSysPPR::QueryThread" host id 44 os 2256704: state S cpu 0.020 s (user 0.020) switches 7084 voluntary 1 involuntary (for 0.000 ms)
+thread trap: proc "File Video Stream" host id 45 os 2256705: state S cpu 0.060 s (user 0.060) switches 16359 voluntary 11 involuntary (for 0.000 ms)
+thread trap: proc "File Video Stream" host id 46 os 2256706: state S cpu 0.010 s (user 0.010) switches 7081 voluntary 4 involuntary (for 0.000 ms)
+thread trap: proc "File Video Stream" host id 47 os 2256707: state S cpu 0.040 s (user 0.040) switches 7082 voluntary 3 involuntary (for 0.000 ms)
+thread trap: proc "File Video Stream" host id 48 os 2256708: state S cpu 0.030 s (user 0.030) switches 7080 voluntary 6 involuntary (for 0.000 ms)
+thread trap: proc "File Video Stream" host id 49 os 2256709: state S cpu 0.030 s (user 0.030) switches 7079 voluntary 3 involuntary (for 0.000 ms)
+thread trap: proc "Save Thread" host id 50 os 2256711: state S cpu 0.020 s (user 0.020) switches 7082 voluntary 3 involuntary (for 0.000 ms)
+thread trap: proc "User UDS Thread" host id 51 os 2256712: state S cpu 0.030 s (user 0.030) switches 7081 voluntary 4 involuntary (for 0.000 ms)
+thread trap: proc "User Trophy Thread" host id 52 os 2256713: state ? cpu 0.000 s (user 0.000) switches 0 voluntary 0 involuntary (for 0.000 ms)
+thread trap: proc "AK::AudioOutThread" host id 54 os 2256804: state S cpu 0.080 s (user 0.080) switches 54601 voluntary 44 involuntary (for 0.000 ms)
+thread trap: proc "Unknown Animset" host id 62 os 2266120: state ? cpu 0.000 s (user 0.000) switches 0 voluntary 0 involuntary (for 0.000 ms)
+thread trap: proc "Unknown Animset" host id 63 os 2266121: state ? cpu 0.000 s (user 0.000) switches 0 voluntary 0 involuntary (for 0.000 ms)
+thread trap: proc "Unknown Animset" host id 64 os 2266122: state ? cpu 0.000 s (user 0.000) switches 0 voluntary 0 involuntary (for 0.000 ms)
+thread trap: proc "Unknown Animset" host id 58 os 2260251: state ? cpu 0.000 s (user 0.000) switches 0 voluntary 0 involuntary (for 0.000 ms)
+thread trap: proc "Unknown Animset" host id 59 os 2260252: state ? cpu 0.000 s (user 0.000) switches 0 voluntary 0 involuntary (for 0.000 ms)
+thread trap: proc "Unknown Animset" host id 60 os 2260253: state ? cpu 0.000 s (user 0.000) switches 0 voluntary 0 involuntary (for 0.000 ms)
+thread trap: proc "Unknown Animset" host id 61 os 2260254: state ? cpu 0.000 s (user 0.000) switches 0 voluntary 0 involuntary (for 0.000 ms)
+thread trap: proc "Bink IO" host id 65 os 2272832: state S cpu 0.000 s (user 0.000) switches 1143 voluntary 1 involuntary (for 0.000 ms)
+thread trap: host thread "kyty_emulator" os 2256554: state S cpu 0.770 s (user 0.770) nice 0
+thread trap: host thread "kyty-thread" os 2256555: state S cpu 0.000 s (user 0.000) nice 5
+thread trap: host thread "kyty_em:disk$0" os 2256556: state S cpu 0.000 s (user 0.000) nice 19
+thread trap: host thread "kyty_em:disk$0" os 2256557: state S cpu 0.000 s (user 0.000) nice 19
+thread trap: host thread "mangohud-amdgpu" os 2256558: state S cpu 0.230 s (user 0.230) nice 5
+thread trap: host thread "kyty-cmdsched" os 2256569: state S cpu 0.000 s (user 0.000) nice 5
+thread trap: host thread "kyty-cmdsched" os 2256570: state S cpu 0.000 s (user 0.000) nice 5
+thread trap: host thread "kyty-present" os 2256574: state S cpu 0.680 s (user 0.680) nice 5
+thread trap: host thread "kyty-gpu" os 2256575: state S cpu 0.660 s (user 0.660) nice 5
+thread trap: host thread "kyty-present" os 2256576: state S cpu 0.020 s (user 0.020) nice 5
+thread trap: host thread "mangohud-hwinfo" os 2256604: state S cpu 0.020 s (user 0.020) nice 5
+thread trap: host thread "game-main" os 2256610: state R cpu 1.420 s (user 1.420) nice 0
+thread trap: host thread "HIDAPI Rumble" os 2256611: state S cpu 0.000 s (user 0.000) nice 5
+thread trap: host thread "bc5-ring" os 2256614: state R cpu 6.700 s (user 6.700) nice 5
+thread trap: host thread "bc5-chainwd" os 2256634: state S cpu 2.780 s (user 2.780) nice 5
+thread trap: host thread "bc5-cq1" os 2256663: state S cpu 0.430 s (user 0.430) nice 5
+thread trap: host thread "bc5-cq0" os 2256664: state S cpu 0.220 s (user 0.220) nice 5
+thread trap: host thread "bc5-apr-q5" os 2256714: state D cpu 1.280 s (user 1.280) nice 5
+thread trap: host thread "bc5-apr-r5-0" os 2256715: state S cpu 0.050 s (user 0.050) nice 5
+thread trap: host thread "bc5-apr-r5-1" os 2256716: state S cpu 0.050 s (user 0.050) nice 5
+thread trap: host thread "bc5-apr-r5-2" os 2256717: state S cpu 0.060 s (user 0.060) nice 5
+thread trap: host thread "bc5-apr-r5-3" os 2256718: state S cpu 0.060 s (user 0.060) nice 5
+thread trap: host thread "bc5-fliplabel" os 2256721: state S cpu 0.020 s (user 0.020) nice 5
+thread trap: host thread "module-rt" os 2256812: state S cpu 0.000 s (user 0.000) nice 5
+thread trap: host thread "SDLAudioHotplug" os 2256821: state S cpu 0.000 s (user 0.000) nice 5
+thread trap: host thread "module-rt" os 2256843: state S cpu 0.000 s (user 0.000) nice 5
+thread trap: host thread "module-rt" os 2256854: state S cpu 0.000 s (user 0.000) nice 5
+thread trap: host thread "SDLAudioP0" os 2256862: state S cpu 0.050 s (user 0.050) nice -15
+thread trap: host thread "bc5-apr-q3" os 2256885: state D cpu 0.690 s (user 0.690) nice 5
+thread trap: host thread "bc5-apr-r3-0" os 2256886: state S cpu 0.050 s (user 0.050) nice 5
+thread trap: host thread "bc5-apr-r3-1" os 2256887: state S cpu 0.060 s (user 0.060) nice 5
+thread trap: host thread "bc5-apr-r3-2" os 2256888: state S cpu 0.050 s (user 0.050) nice 5
+thread trap: host thread "bc5-apr-r3-3" os 2256889: state S cpu 0.060 s (user 0.060) nice 5
+thread trap: host thread "bc5-apr-q1" os 2258757: state S cpu 0.100 s (user 0.100) nice 5
+thread trap: host thread "bc5-apr-r1-0" os 2258758: state D cpu 0.060 s (user 0.060) nice 5
+thread trap: host thread "bc5-apr-r1-1" os 2258759: state S cpu 0.070 s (user 0.070) nice 5
+thread trap: host thread "bc5-apr-r1-2" os 2258760: state S cpu 0.060 s (user 0.060) nice 5
+thread trap: host thread "bc5-apr-r1-3" os 2258761: state S cpu 0.060 s (user 0.060) nice 5
+thread trap: host thread "module-rt" os 2262793: state S cpu 0.000 s (user 0.000) nice 5
+thread trap: host thread "module-rt" os 2262794: state S cpu 0.000 s (user 0.000) nice 5
+thread trap: host thread "SDLAudioP52" os 2262795: state S cpu 0.020 s (user 0.020) nice 5
+thread trap: host thread "module-rt" os 2262805: state S cpu 0.000 s (user 0.000) nice 5
+thread trap: host thread "module-rt" os 2262806: state S cpu 0.000 s (user 0.000) nice 5
+thread trap: host thread "SDLAudioP52" os 2262807: state S cpu 0.030 s (user 0.030) nice 5
+thread trap: host thread "bc5-apr-q3" os 2275714: state D cpu 0.000 s (user 0.000) nice 5
+thread trap: semaphore ring: 2860552 events in all, fix on, now 73462604 us; the newest first
+thread trap:   -    0.408 ms signal         host id  39 AkSemaphore             count 1 lat 0 us
+thread trap:   -    2.982 ms wait-begin     host id  14 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    2.983 ms wait-ok        host id  14 JobLoaderSema           count 1 lat 1386 us
+thread trap:   -    2.996 ms wait-begin     host id  13 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    2.998 ms wait-ok        host id  13 JobLoaderSema           count 1 lat 1387 us
+thread trap:   -    3.017 ms wait-begin     host id  15 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.158 ms wait-begin     host id  12 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.591 ms wait-begin     host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.592 ms wait-immediate host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.592 ms wait-immediate host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.592 ms wait-immediate host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.592 ms wait-immediate host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.593 ms wait-immediate host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.593 ms wait-immediate host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.593 ms wait-immediate host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.594 ms wait-immediate host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.594 ms wait-immediate host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.594 ms wait-immediate host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.595 ms wait-immediate host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.595 ms wait-immediate host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.595 ms wait-immediate host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.596 ms wait-immediate host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.596 ms wait-immediate host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.596 ms wait-immediate host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.597 ms wait-immediate host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.597 ms wait-immediate host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.597 ms wait-immediate host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.597 ms wait-immediate host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.598 ms wait-immediate host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.598 ms wait-immediate host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.598 ms wait-immediate host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.598 ms wait-immediate host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.599 ms wait-immediate host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.599 ms wait-immediate host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.599 ms wait-immediate host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.599 ms wait-immediate host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.600 ms wait-immediate host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.600 ms wait-immediate host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.600 ms wait-immediate host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.600 ms wait-immediate host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.601 ms wait-immediate host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.601 ms wait-immediate host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.601 ms wait-immediate host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.601 ms wait-immediate host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.602 ms wait-immediate host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.602 ms wait-immediate host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.602 ms wait-immediate host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.607 ms signal         host id  11 JobLoaderSema           count 2 lat 0 us
+thread trap:   -    3.613 ms signal         host id  11 JobLoaderSema           count 4 lat 0 us
+thread trap:   -    3.621 ms signal         host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.621 ms signal         host id  11 JobLoaderSema           count 4 lat 0 us
+thread trap:   -    3.622 ms signal         host id  11 JobLoaderSema           count 3 lat 0 us
+thread trap:   -    3.623 ms wait-ok        host id  11 JobLoaderSema           count 1 lat 836 us
+thread trap:   -    3.664 ms signal         host id   5 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.738 ms signal         host id   5 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.744 ms wait-ok        host id  12 JobLoaderSema           count 1 lat 718 us
+thread trap:   -    3.826 ms signal         host id   5 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    3.924 ms signal         host id   5 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    4.214 ms signal         host id  15 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    4.234 ms signal         host id  15 JobLoaderSema           count 4 lat 0 us
+thread trap:   -    4.235 ms signal         host id  15 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    4.265 ms signal         host id  15 JobLoaderSema           count 4 lat 0 us
+thread trap:   -    4.266 ms signal         host id  15 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    4.295 ms signal         host id  15 JobLoaderSema           count 4 lat 0 us
+thread trap:   -    4.296 ms signal         host id  15 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    4.362 ms signal         host id   5 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    4.367 ms signal         host id   5 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    4.367 ms signal         host id  15 JobLoaderSema           count 4 lat 0 us
+thread trap:   -    4.370 ms wait-ok        host id  15 JobLoaderSema           count 1 lat 8 us
+thread trap:   -    4.373 ms signal         host id   5 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    4.381 ms signal         host id   5 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    4.440 ms wait-begin     host id  14 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    4.441 ms wait-ok        host id  14 JobLoaderSema           count 1 lat 22 us
+thread trap:   -    4.446 ms wait-begin     host id  15 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    4.446 ms wait-ok        host id  15 JobLoaderSema           count 1 lat 10 us
+thread trap:   -    4.450 ms wait-begin     host id  13 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    4.455 ms signal         host id  13 JobLoaderSema           count 4 lat 0 us
+thread trap:   -    4.464 ms wait-ok        host id  13 JobLoaderSema           count 1 lat 8 us
+thread trap:   -    4.470 ms signal         host id   5 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    4.523 ms wait-begin     host id  15 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    4.527 ms wait-begin     host id   9 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    4.528 ms wait-ok        host id   9 JobLoaderSema           count 1 lat 347 us
+thread trap:   -    4.535 ms wait-begin     host id  10 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    4.537 ms wait-ok        host id  10 JobLoaderSema           count 1 lat 342 us
+thread trap:   -    4.541 ms wait-begin     host id  11 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    4.544 ms wait-begin     host id   7 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    4.545 ms wait-ok        host id   7 JobLoaderSema           count 1 lat 341 us
+thread trap:   -    4.556 ms wait-begin     host id  12 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    4.562 ms wait-begin     host id   6 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    4.564 ms wait-ok        host id   6 JobLoaderSema           count 1 lat 301 us
+thread trap:   -    4.569 ms wait-begin     host id  14 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    4.570 ms wait-ok        host id  14 JobLoaderSema           count 1 lat 380 us
+thread trap:   -    4.580 ms wait-begin     host id  13 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    4.581 ms wait-immediate host id  15 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    4.581 ms wait-immediate host id  15 JobLoaderSema           count 1 lat 0 us
+thread trap:   -    4.581 ms wait-immediate host id  15 JobLoaderSema           count 1 lat 0 us
+Access violation: Read [000000000000000c] 
