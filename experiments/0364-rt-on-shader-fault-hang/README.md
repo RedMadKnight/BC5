@@ -74,3 +74,76 @@ code in patch 0001 (the learned regions, the hints, the lazy names). Nothing of 
    should not, and the journal's hint lines name the regions. Behind `BC5_DIRECT_USER_DATA_HINTS=1`, off by default
    until measured; a Catch2 case for the pointer rule (offset + window, inside a view) in the backend.
 3. Not a candidate: importing `orbis_user_malloc` eagerly (F394's memory pressure: the title pins 9.8 GiB already).
+
+## The build and the runs (17:00–18:xx)
+
+**Build.** `raw/build0364.sh` (0359's pattern): the backend's Catch2 first (84 cases pass, the four `[user_data_hint]`
+among them), then `src/libs/bc5LleAgc.cpp` patched by `raw/patch0364.pl` in a private copy, compiled with the shared
+normal build's compdb command and relinked with the shared objects of 1000ad2a (exp 0361's integration) and the
+archive bb50b2e0 (header-only change). Three versions in the afternoon: v1 86f6c2f8 (the hint, "asked" = chunks
+marked), v2 cf3d1e53 (the window's views and its bytes not yet imported journaled, the 1 MiB threshold, a forced
+sync only when something is missing), v3 (16-byte-aligned candidates only; after the forced sync the hinted
+windows re-measured). Nothing shared written; the previous binaries kept beside the new one.
+
+**Runs.** `raw/s6n0364.sh` (exp 0358's S6N script under `~/bc5-work/exp0364/`: the S6N route save, RT on, the private
+working directory, a private copy of the learned list), `BC5_0364_RESET_LEARNED=1` dropping the 31 learned windows
+inside the title's 0x11 window from that copy (78 of 109 kept), so the runs meet those regions as a box without
+the accumulated list would; the kernel log streamed by the script; 600 s each; the live saves compared only.
+
+| run | build | hint | result |
+|---|---|---|---|
+| R1 17:26 | v1 86f6c2f8 | on | pass, 35.5 flips/s, no fault, no learned window; 62 regions asked (2,108 MiB marked) |
+| R2 17:49 | v2 cf3d1e53 | on | pass, 35.8 flips/s, no fault; 62 regions asked, 122 MiB of them not yet imported in 3 regions |
+| R3 18:01 | v2 cf3d1e53 | off (trap only) | pass, 35.0 flips/s, no fault, nothing learned |
+| R4 18:13 | v3 1336dbd4 | on | MACHINE-DOWN at t ≈ 122 s (F475): a GFX ring timeout without a fault, the reset failed, the watchdog rebooted the box 18:15 |
+
+- **F472 — the hint finds the F443 case before it happens: on the route a dispatch's user-data pointer landed in
+  the title's lazy `FileSystem` heap with 52 MiB of it not imported for the GPU, and the hint asked for it.** R2's
+  journal: `hint user data 0 0x11114b2000 (dispatch at 8084): window 0x110f4b0000+0x4000000, 1 views, lazy:
+  FileSystem, 52.0 MiB marked, 52.0 MiB not yet imported`. That pointer is the same user-data family as F467's
+  (register 0, the window's high dword 0x11), the region is the one F443 faulted in (0x1110e1d700 lies 25 MiB
+  above it, in the same heap), and the heap is one of the four F394 made lazy — so F468's open question is closed:
+  the title keeps GPU-written buffers in its `FileSystem` heap, the lazy policy does not import that heap, and a
+  first GPU write into a part of it no earlier fault has learned is the one-in-ten hang. Two more windows had
+  unimported bytes in R2 (66 MiB at the window's start from a false candidate 0x100011 — v3 rejects it: real
+  pointers are 16-byte aligned — and 4 MiB at 0x1102d00000); 59 of the 62 windows were already imported (normal
+  views) and the hint cost nothing there. Over 600 s: 709,120 IBs, 32.8 M dispatches, 168 M candidate dwords, 62
+  regions; the hint pass adds 0.8 ms per 128 submissions to the timing split (hints 2.17 ms against 1.36 ms in
+  0358 R1: ~6 µs per IB).
+- **F473 — the learned-region path did not cover F443 because the list grows one hang at a time and the title's
+  heap placement moves: 31 of the 109 learned windows are the title's 0x11 window, all learned at earlier hangs, and
+  F443's region lay below the lowest of them; a fresh box (or a title update that moves the heap) meets every
+  region again.** With the 31 windows dropped, three 600-s S6N runs (R1–R3) still passed — the event is rare on the
+  route (F443's one in ten), the regular sync's lag usually suffices, and the hint's imports in R1/R2 covered the
+  three windows that were missing. R3 (the hint off) had no fault to show the trap's view line; the trap stays in
+  for the next occurrence.
+
+- **F474 (corrected by R4) — the forced sync after a hint does import the marked chunks before the job: v3's check after
+  the sync reads "66.0 / 52.0 / 4.0 MiB were not imported, 0.0 MiB still are not" for the three windows that mattered,
+  in 0.0–0.1 ms each** (memfd chunks whose pages already exist import cheaply; v2's "0.0 ms" lines were real, and the
+  "+N BOs" journal line I looked for is printed by the mapping rebuild, not the import). So the hint is a real fix of
+  the import path: the region a dispatch's user data points into is imported before the dispatch runs, with the
+  title's own views — not a skip, not a NOP — and the lazy `FileSystem` view of F472 was imported that way in R4 too.
+- **F475 — R4 (v3 1336dbd4, hint on, the list reset) ended in a machine-down at t ≈ 122 s: a GFX ring timeout with no
+  fault (`timeout: fault 0x0 status 0`), the kernel's ring reset failed, the full GPU reset began, and
+  `bc5-gpu-watch` crashed and rebooted the box (18:15:05, up again 18:15:35).** The hung pair: dcb #103567 (10,842
+  dwords, 53 dispatches, 14 indirect, the largest grid 57,600 groups) and acb #103568, both timed out after 2,026 ms;
+  the probe's last ran dispatch at dword 10652 (program 0x11d03fe700, 320×180×1) carries in `COMPUTE_USER_DATA_0..3` a
+  V# whose base reads 0x117ffa00 and which the probe calls unmapped (a bare 32-bit value, TODO(verify) whether the
+  probe shows the descriptor's low dword only); the submit line counts `unmapped 2`. The devcoredump
+  `20261028-181505-devcd2.txt` (5.9 MB), the dumps `ib-timeout-00103567-dcb-10842.bin` / `…-00103568-acb-68.bin` in
+  `~/bc5-data/captures/play-20261028-1813/gc/` and four pstore records (`~/bc5-data/captures/pstore/`, the panic's
+  kernel log) are kept; nothing of them in the repo. This is F399/F403's class (a stuck dispatch, no page fault, the
+  ring reset failing), not F443's (the TCP fault). Whether the hint's forced syncs — a direct sync in the submission
+  path, 0.0–0.1 ms, three in the run's first 20 s, none within 100 s of the hang — had a part is open: R1–R3 ran the
+  same forced syncs (v1 after every hint, v2 after a missing one) 600 s each without a reset, and the three F399
+  freezes of 2026-10-26 had no hint at all. The run and every other session's run died with the reboot; the shared
+  builds and archive are intact (1000ad2a, bb50b2e0), the live saves were only read.
+
+**Verdict.** F443's hang is explained: a dispatch's output pointer into the title's lazy `FileSystem` heap, in a
+part of it no earlier fault had learned (F467–F468, F472–F473). The compute user-data hint (F474) imports such a
+region before the dispatch runs and is the fix candidate for the shared builds, behind `BC5_DIRECT_USER_DATA_HINTS=1`
+(the title's window from `BC5_DIRECT_HOST_INDIRECT`), with the fault-view trap beside it; three 600-s runs with the
+hint and the learned list reset passed, one ended in a machine-down of F403's class (F475) whose relation to the
+hint is not shown either way. No further box run from this session after the reset: the next step — R4's dumps read
+offline (the V# at dword 10652), and whether to repeat the runs with the hint on and off — is the top session's call.
