@@ -1,0 +1,30 @@
+1994658
+22:50:28 K3 live saves before: 41a5a36fffb4f8d4
+22:50:28 K3 start: binary 1000ad2a, /var/home 62 %, dmesg 1520 lines; switches: 
+  private save copy reset to saves-lake-1153
+  == K3 (defaults) shots done 22:55:22
+  kernel: 0 fault lines, 0 ring timeout/reset lines
+  journal: 0 fence timeouts; 0 ray-tracing-off lines; compute-ring lines (two rings: >= 1; one ring: 0): 0; skip lines: 
+  225333-ts00.png: patch   9.7 %
+  225338-ts01.png: patch   9.6 %
+  225343-ts02.png: patch   9.7 %
+  225348-ts03.png: patch   9.7 %
+  225353-ts04.png: patch   9.7 %
+  225358-ts05.png: patch   9.7 %
+  225403-ts06.png: patch   9.7 %
+  225409-ts07.png: patch   9.6 %
+  225416-ts08.png: patch   9.7 %
+  225422-ts09.png: patch   9.7 %
+  225427-ts10.png: patch   9.3 %
+  225432-ts11.png: patch   9.1 %
+  225437-ts12.png: patch   9.7 %
+  225443-ts13.png: patch  16.7 %
+  225448-ts14.png: patch   9.1 %
+  225454-ts15.png: patch   9.6 %
+  225500-ts16.png: patch   9.6 %
+  225506-ts17.png: patch   9.7 %
+  225511-ts18.png: patch   9.4 %
+  225517-ts19.png: patch   9.4 %
+  fps counter: t 291.113 s: 30 flips in 1.021 s, longest gap 48.1 ms, gaps over 40 ms 2, ove
+22:55:33 K3 live saves after: 41a5a36fffb4f8d4; /var/home 63%
+22:55:33 K3 done

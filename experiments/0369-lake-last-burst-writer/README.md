@@ -180,7 +180,7 @@ unchanged (`setup0369.sh`, `ab0369.sh`, `bench0369.sh`, `pl0369.py`: 0365 → 03
     each tile's block. The decompress replaces them. This fits F484's compressed depth. Whether these are the
     compressed tiles' data is a TODO(verify): no public source on the gfx10 compressed depth layout was checked.
 
-**Verdict, K2** (F486).
+**Verdict, K2** (written at 22:49; superseded by the K2 + K3 verdict below).
 - **(a) coverage against (b) metadata stays open.** K2 ran fault-free, RT on, on the same build, save copy, route and
   input configuration as K1. Even so, the lake's depth had no holes: the final zero share was 0.000, against K1's
   0.247.
@@ -191,3 +191,52 @@ unchanged (`setup0369.sh`, `ab0369.sh`, `bench0369.sh`, `pl0369.py`: 0365 → 03
     numbers.
   - Separately: what makes a run hole-free. H1 (9.7 %) and K2 (9.2 %) were both low; K1 (31 %) and exp 0355's W1
     (32 %) were high.
+
+**Run K3** (the top session's GO at ~22:50, after K2: "K3 approved… the lock must be released by 22:58"). This was K2
+again, unchanged: the same kit, launcher, input configuration, save copy and build 1000ad2a, RT on.
+- **Setup as run:**
+  - 22:50:12: guard, lock line, claim. Live saves 41a5a36fffb4f8d4.
+  - 22:50:28–22:55:33: `ab0369.sh K3 41a5a36fffb4f8d4 "" 330` with the poller beside it. The kernel stream showed three
+    IPv6 lines and nothing else (`raw/kernel-stream-K3.txt`). There were 0 fault, ring, fence or ray-tracing-off lines.
+  - 22:55:34: one laptop script (`post0369K3.sh`) did the rest. It ran `ana0369.sh K3` (allowed only before
+    22:57) and copied the summaries. It deleted the 372 snapshots (2.6 GB) and 22 shots unviewed, killed our
+    journalctl and released the lock at 22:56:08. Live saves were unchanged.
+  - **Change after seeing the data:** the hole-frame summary below was computed on the laptop from `raw/K3.tz.txt`.
+- **Result, K3** (`raw/K3.out`, `raw/K3.reads.txt`, `raw/K3.tz.txt`):
+  - **One short hole episode.**
+    - The shot patch was 9.1–9.7 % in 19 shots and 16.7 % in one (ts13).
+    - 183 of 186 finals had a clear size, all 2560, and 182 were used.
+    - 14 of them, in captures c14–c16, had holes in the lake window: 1.0–16.3 % (median 7.4 %). The other 168 had
+      none.
+  - **The holes are not whole 8×8 tiles.** Among the tiles with a hole, the mixed ones (some hole, some not) were
+    0.328–0.491 of them on the true tile grid (median 0.368). On the grid shifted by (4, 4) they were 0.331–0.480
+    (median 0.367). True minus shifted: median 0.002, at most 0.029.
+    - Tile-aligned holes give about 0 on the true grid and nearly 1 on the shifted one (the self-test: 0.000 / 0.991).
+    - Holes whose edges ignore the grid give equal shares (self-test cells: 0.821 / 0.823).
+  - **The hole tiles get no mid-frame writes.** There were 7 consecutive pairs with holes (previous final → this
+    frame's mid snapshot). In the tiles that are all hole in this final, 0.000 of the dwords changed. In the tiles
+    with no hole, 0.153–0.182 changed.
+    - The window as a whole changed by 0.152, the same as in the 123 hole-free pairs (0.152).
+    - 30.9 % of the changed dwords sit at offsets 0–7 of their 256-byte block, as in K2.
+  - **The bursts:** K3 had three bursts in 1,758 of 2,068 frames. Their median starts were +6.5, +8.4 and +18.7 ms;
+    the last ended at +19.8. That is H1's pattern; K2 mostly lacked the +8.4 ms one.
+
+**Verdict, K2 + K3** (F486).
+- **(a) coverage:** where a hole forms, no writer drew. Two measures agree, in K3's one hole episode (14 frames,
+  three captures, one run):
+  1. **Shape:** the holes' edges cross the 8×8 tile grid exactly as often as a grid shifted by half a tile. They are
+     not unions of whole tiles. A wrong HTILE state that decompress #2 reads, reading (b), works per tile and would
+     give whole-tile holes. The HTILE's 8×8 granularity is TODO(verify) against the gfx10 HTILE layout, e.g. Mesa's
+     `ac_surface.c`; F309 already treats the patches as distinct from 8×8 screen tiles.
+  2. **Writes:** before +9 ms the frame's compressed writes change 15–18 % of the dwords in drawn tiles and none in
+     the tiles that end as holes.
+- This joins F333 (no G-buffer write where the depth has a hole) and F309 (perspective water-plane cells).
+- **Limits:**
+  - **(b) is excluded only as whole tiles.** Metadata finer than a tile, or a writer that skips the hole tiles for a
+    metadata reason (say a culling input), is still open.
+  - **One episode.** K3's holes (median 7.4 %) were smaller than K1's (X 0.307, Y 0.319 of the window, exp 0365), and K2 had none.
+- **The run-to-run variation is real:** K1 31 % patch, K2 none, K3 one episode of 14 frames, all on the same setup.
+- **Next:**
+  - Q21 turns to why the writers skip the hole cells: the culling or occlusion input that decides coverage (F350's
+    pyramid).
+  - Separately: why some runs have far fewer holes than others.
