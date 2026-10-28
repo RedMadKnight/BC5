@@ -1,0 +1,121 @@
+######## Render
+window t 104-146 s: 42 meter lines; box busy 33 %
+per second (ms): title c 4153; title w 648; host c 541; host w 132; Hi c 657; Hi w 176; Lo c 379; Lo w 112; Bk c 1334; Bk w 33; game-main c 592; game-main w 6; game-main sys 17; Render c 434; Render w 17; Render sys 58; direct submits 244; direct ms (title-class threads) 150
+game-main: on a CPU 592, waiting 6, off a CPU 402 ms/s
+Render: on a CPU 434, waiting 17, off a CPU 549 ms/s
+sampler Bk         14070 samples: title 99.4 %, emulator  0.0 %, syscall  0.3 %, libraries  0.1 % (most often library -1x29,59x10,61x3)
+sampler Hi          6921 samples: title 87.4 %, emulator  2.4 %, syscall  7.2 %, libraries  3.2 % (most often library 59x42)
+sampler IO           240 samples: title  6.6 %, emulator 33.8 %, syscall 44.6 %, libraries 15.0 % (most often library 59x21,-1x11,61x8,63x2)
+sampler Lo          3997 samples: title 90.0 %, emulator  1.6 %, syscall  6.1 %, libraries  2.3 % (most often library 59x35,63x3,-1x3,61x1)
+sampler Render      4574 samples: title 36.8 %, emulator 36.0 %, syscall 14.2 %, libraries 12.7 % (most often library 59x42)
+sampler game-main   6242 samples: title 85.4 %, emulator 10.3 %, syscall  2.8 %, libraries  1.4 % (most often library 59x28,-1x14)
+host code of Render between the dumps at t 100 and 141 s (the top buckets only): 643 samples
+     177  27.5 %  bc5::full_state::Tracker::emit_prefix
+     138  21.5 %  Libs::Bc5Gc::Direct::submit_now
+      67  10.4 %  bc5::full_state::Tracker::apply_level
+      33   5.1 %  std::__detail::_Map_base<unsigned long, std::pair<unsigned long const, int>, std::allocator<std::pair<unsigned
+      33   5.1 %  bc5::direct::Device::submit
+      32   5.0 %  bc5::state_stack::Tracker::apply_in_place
+      23   3.6 %  bc5::indirect_check::insert_before
+      21   3.3 %  void std::vector<unsigned int, std::allocator<unsigned int> >::_M_range_insert<unsigned int const*>
+      20   3.1 %  Libs::Bc5Gc::Direct::chain_mark_executed
+      18   2.8 %  std::_Function_handler<unsigned int const* 
+      17   2.6 %  bc5::indirect_check::apply
+      16   2.5 %  std::_Function_handler<bool 
+      16   2.5 %  Libs::Bc5Gc::Direct::chain_append
+      10   1.6 %  bc5::shadow_labels::patch
+       8   1.2 %  bc5::host_indirect::resolve_indirect
+title code of Render between the dumps at t 100 and 141 s (the top buckets only): 323 samples
+     322  99.7 %  eboot.bin+0x3f37900
+       1   0.3 %  eboot.bin+0x3f01400
+######## game-main
+window t 104-146 s: 42 meter lines; box busy 33 %
+per second (ms): title c 4153; title w 648; host c 541; host w 132; Hi c 657; Hi w 176; Lo c 379; Lo w 112; Bk c 1334; Bk w 33; game-main c 592; game-main w 6; game-main sys 17; Render c 434; Render w 17; Render sys 58; direct submits 244; direct ms (title-class threads) 150
+game-main: on a CPU 592, waiting 6, off a CPU 402 ms/s
+Render: on a CPU 434, waiting 17, off a CPU 549 ms/s
+sampler Bk         14070 samples: title 99.4 %, emulator  0.0 %, syscall  0.3 %, libraries  0.1 % (most often library -1x29,59x10,61x3)
+sampler Hi          6921 samples: title 87.4 %, emulator  2.4 %, syscall  7.2 %, libraries  3.2 % (most often library 59x42)
+sampler IO           240 samples: title  6.6 %, emulator 33.8 %, syscall 44.6 %, libraries 15.0 % (most often library 59x21,-1x11,61x8,63x2)
+sampler Lo          3997 samples: title 90.0 %, emulator  1.6 %, syscall  6.1 %, libraries  2.3 % (most often library 59x35,-1x3,63x3,61x1)
+sampler Render      4574 samples: title 36.8 %, emulator 36.0 %, syscall 14.2 %, libraries 12.7 % (most often library 59x42)
+sampler game-main   6242 samples: title 85.4 %, emulator 10.3 %, syscall  2.8 %, libraries  1.4 % (most often library 59x28,-1x14)
+host code of game-main between the dumps at t 100 and 141 s (the top buckets only): 578 samples
+     305  52.8 %  Loader::TlsMainGetAddr
+     190  32.9 %  Libs::LibKernel::KernelGetProcessTimeCounter
+      27   4.7 %  Libs::LibKernel::Memory::KernelMapDirectMemory2
+      26   4.5 %  Libs::LibKernel::Memory::VirtualRanges::QuerySpan
+      17   2.9 %  Libs::LibKernel::Memory::KernelSetVirtualRangeName
+      11   1.9 %  Libs::LibKernel::Semaphore::KernelSignalSema
+       2   0.3 %  Libs::LibKernel::Memory::PhysicalMemory::Unmap
+title code of game-main between the dumps at t 100 and 141 s (the top buckets only): 2250 samples
+    1461  64.9 %  eboot.bin+0x3cca700
+     481  21.4 %  eboot.bin+0x3ccb600
+     308  13.7 %  eboot.bin+0x3f39100
+######## Hi
+window t 104-146 s: 42 meter lines; box busy 33 %
+per second (ms): title c 4153; title w 648; host c 541; host w 132; Hi c 657; Hi w 176; Lo c 379; Lo w 112; Bk c 1334; Bk w 33; game-main c 592; game-main w 6; game-main sys 17; Render c 434; Render w 17; Render sys 58; direct submits 244; direct ms (title-class threads) 150
+game-main: on a CPU 592, waiting 6, off a CPU 402 ms/s
+Render: on a CPU 434, waiting 17, off a CPU 549 ms/s
+sampler Bk         14070 samples: title 99.4 %, emulator  0.0 %, syscall  0.3 %, libraries  0.1 % (most often library -1x29,59x10,61x3)
+sampler Hi          6921 samples: title 87.4 %, emulator  2.4 %, syscall  7.2 %, libraries  3.2 % (most often library 59x42)
+sampler IO           240 samples: title  6.6 %, emulator 33.8 %, syscall 44.6 %, libraries 15.0 % (most often library 59x21,-1x11,61x8,63x2)
+sampler Lo          3997 samples: title 90.0 %, emulator  1.6 %, syscall  6.1 %, libraries  2.3 % (most often library 59x35,63x3,-1x3,61x1)
+sampler Render      4574 samples: title 36.8 %, emulator 36.0 %, syscall 14.2 %, libraries 12.7 % (most often library 59x42)
+sampler game-main   6242 samples: title 85.4 %, emulator 10.3 %, syscall  2.8 %, libraries  1.4 % (most often library 59x28,-1x14)
+host code of Hi between the dumps at t 100 and 141 s (the top buckets only): 36 samples
+      27  75.0 %  Libs::LibKernel::PthreadTakePendingSignal
+       9  25.0 %  Loader::TlsMainGetAddr
+title code of Hi between the dumps at t 100 and 141 s (the top buckets only): 891 samples
+     351  39.4 %  eboot.bin+0x3dc9400
+     312  35.0 %  eboot.bin+0x3dc9500
+     228  25.6 %  eboot.bin+0x3d64d00
+######## Bk
+window t 104-146 s: 42 meter lines; box busy 33 %
+per second (ms): title c 4153; title w 648; host c 541; host w 132; Hi c 657; Hi w 176; Lo c 379; Lo w 112; Bk c 1334; Bk w 33; game-main c 592; game-main w 6; game-main sys 17; Render c 434; Render w 17; Render sys 58; direct submits 244; direct ms (title-class threads) 150
+game-main: on a CPU 592, waiting 6, off a CPU 402 ms/s
+Render: on a CPU 434, waiting 17, off a CPU 549 ms/s
+sampler Bk         14070 samples: title 99.4 %, emulator  0.0 %, syscall  0.3 %, libraries  0.1 % (most often library -1x29,59x10,61x3)
+sampler Hi          6921 samples: title 87.4 %, emulator  2.4 %, syscall  7.2 %, libraries  3.2 % (most often library 59x42)
+sampler IO           240 samples: title  6.6 %, emulator 33.8 %, syscall 44.6 %, libraries 15.0 % (most often library 59x21,-1x11,61x8,63x2)
+sampler Lo          3997 samples: title 90.0 %, emulator  1.6 %, syscall  6.1 %, libraries  2.3 % (most often library 59x35,-1x3,63x3,61x1)
+sampler Render      4574 samples: title 36.8 %, emulator 36.0 %, syscall 14.2 %, libraries 12.7 % (most often library 59x42)
+sampler game-main   6242 samples: title 85.4 %, emulator 10.3 %, syscall  2.8 %, libraries  1.4 % (most often library 59x28,-1x14)
+host code of Bk between the dumps at t 100 and 141 s (the top buckets only): 0 samples
+title code of Bk between the dumps at t 100 and 141 s (the top buckets only): 13074 samples
+    1669  12.8 %  eboot.bin+0x39f6c00
+    1283   9.8 %  eboot.bin+0x39f6d00
+     904   6.9 %  eboot.bin+0x3afeb00
+     734   5.6 %  eboot.bin+0x3afde00
+     624   4.8 %  eboot.bin+0x39f6e00
+     599   4.6 %  eboot.bin+0x3afd700
+     568   4.3 %  eboot.bin+0x3afdd00
+     563   4.3 %  eboot.bin+0x3afd000
+     524   4.0 %  eboot.bin+0x3afd800
+     513   3.9 %  eboot.bin+0x3afda00
+     445   3.4 %  eboot.bin+0x3afe400
+     420   3.2 %  eboot.bin+0x3a96b00
+     419   3.2 %  eboot.bin+0x3b34500
+     403   3.1 %  eboot.bin+0x3afd900
+     370   2.8 %  eboot.bin+0x3afdf00
+######## M2f2 Render 104-113
+window t 104-113 s: 4 meter lines; box busy 36 %
+per second (ms): title c 3766; title w 631; host c 682; host w 161; Hi c 568; Hi w 160; Lo c 309; Lo w 120; Bk c 1170; Bk w 50; game-main c 660; game-main w 11; game-main sys 20; Render c 416; Render w 16; Render sys 55; direct submits 204; direct ms (title-class threads) 119
+game-main: on a CPU 660, waiting 11, off a CPU 329 ms/s
+Render: on a CPU 416, waiting 16, off a CPU 569 ms/s
+sampler Bk          1174 samples: title 99.3 %, emulator  0.0 %, syscall  0.2 %, libraries  0.0 % (most often library -1x2,59x2)
+sampler Hi           570 samples: title 91.0 %, emulator  2.5 %, syscall  5.0 %, libraries  1.3 % (most often library 59x2,-1x2)
+sampler IO            27 samples: title  3.8 %, emulator 25.9 %, syscall 59.1 %, libraries 11.0 % (most often library -1x2,59x2)
+sampler Lo           310 samples: title 85.3 %, emulator  1.6 %, syscall 10.7 %, libraries  2.1 % (most often library 59x4)
+sampler Render       416 samples: title 45.0 %, emulator 32.2 %, syscall 11.0 %, libraries 11.9 % (most often library 59x4)
+sampler game-main    661 samples: title 78.1 %, emulator 17.6 %, syscall  3.0 %, libraries  1.5 % (most often library 59x4)
+######## M2f3 Render 104-113
+window t 104-113 s: 5 meter lines; box busy 37 %
+per second (ms): title c 3759; title w 605; host c 671; host w 150; Hi c 552; Hi w 146; Lo c 298; Lo w 113; Bk c 1154; Bk w 53; game-main c 657; game-main w 8; game-main sys 20; Render c 415; Render w 18; Render sys 42; direct submits 196; direct ms (title-class threads) 133
+game-main: on a CPU 657, waiting 8, off a CPU 335 ms/s
+Render: on a CPU 415, waiting 18, off a CPU 567 ms/s
+sampler Bk          1445 samples: title 99.2 %, emulator  0.0 %, syscall  0.4 %, libraries  0.0 % (most often library -1x4,59x1)
+sampler Hi           692 samples: title 90.2 %, emulator  1.9 %, syscall  4.9 %, libraries  2.9 % (most often library 59x5)
+sampler IO            36 samples: title  8.2 %, emulator 47.1 %, syscall 33.4 %, libraries 11.2 % (most often library 59x3,-1x2)
+sampler Lo           374 samples: title 92.4 %, emulator  1.5 %, syscall  4.8 %, libraries  1.4 % (most often library 59x3,-1x2)
+sampler Render       520 samples: title 45.9 %, emulator 31.2 %, syscall 11.4 %, libraries 11.2 % (most often library 59x5)
+sampler game-main    824 samples: title 80.5 %, emulator 15.3 %, syscall  2.6 %, libraries  2.1 % (most often library 59x4,-1x1)
