@@ -1,0 +1,70 @@
+{
+"segments": 2245,
+"finds": 18115,
+"programs": [
+{
+"prog": "ps 11d4d01800 rt0 113d770000 ud28 table",
+"kind": "draw",
+"segments": 2245,
+"per_segment": 1,
+"position": 0.0,
+"dt_ms": null
+},
+{
+"prog": "cs 11d0288800 ud8 table",
+"kind": "dispatch",
+"segments": 51,
+"per_segment": 1,
+"position": 0.0,
+"dt_ms": 10.0
+},
+{
+"prog": "cs 11d02d0a00 ud12 table",
+"kind": "dispatch",
+"segments": 2245,
+"per_segment": 1,
+"position": 0.125,
+"dt_ms": 12.0
+},
+{
+"prog": "ps 11d020ce00 rt0 113d770000 ud28 table",
+"kind": "draw",
+"segments": 2245,
+"per_segment": 1,
+"position": 0.25,
+"dt_ms": null
+},
+{
+"prog": "ps 11d1d02d00 rt0 113d770000 ud28 table",
+"kind": "draw",
+"segments": 2245,
+"per_segment": 1,
+"position": 0.375,
+"dt_ms": null
+},
+{
+"prog": "cs 11d0404200 ud12 table",
+"kind": "dispatch",
+"segments": 2245,
+"per_segment": 1,
+"position": 0.5,
+"dt_ms": 12.0
+},
+{
+"prog": "cs 11d039cd00 ud12 table",
+"kind": "dispatch",
+"segments": 2245,
+"per_segment": 1,
+"position": 0.625,
+"dt_ms": 12.0
+},
+{
+"prog": "cs 11d0288800 ud0 table",
+"kind": "dispatch",
+"segments": 2245,
+"per_segment": 2,
+"position": 0.778,
+"dt_ms": 14.0
+}
+]
+}

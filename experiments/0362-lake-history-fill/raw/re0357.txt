@@ -1,0 +1,8 @@
+# exp 0357's labels: 118, of them clear 63; by state and clarity: {'0 clear': 44, '0 unclear': 25, 'A clear': 8, 'A unclear': 16, 'B clear': 11, 'B unclear': 14}
+$ python3 -I cyp0357.py events.txt b01.times.txt labels-clear.json 2000   (exp 0357's script, from its directory)
+# 1600 cycles cut at the pyramid's rebuild, 1600 with depth writes
+  cycle period: median 33.7 ms, quartiles 32.9 / 34.7; depth writes start 5.1 ms after the rebuild (median)
+  late cycles (culling records change > 1 ms after the depth writes began): 629 of 1600 (39 %); their first late change 1.8 ms after the start (median); records: before 0, at 95, late 122 (medians over late cycles)
+  full reads placed: 63 of 119; states {'0': 44, 'B': 11, 'A': 8}
+  holes vs none x late/on-time: holes: late 5 on-time 14  none: late 11 on-time 33; chi2 0.01, p 1.0000 (2000)
+  A vs B x late/on-time: A: late 1 on-time 7  B: late 4 on-time 7; chi2 1.36, p 0.3448 (2000)

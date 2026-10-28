@@ -1,0 +1,10 @@
+# 2246 full-screen water draws journalled, wall 1793202649.923-1793202728.859, t 210.0-289.0 s
+  frame interval: median 34.0 ms, quartiles 32.0 / 35.0 ms, max 759.0 ms
+  rt0 widths: 2048 x47, 2304 x344, 2560 x1853, 2816 x2
+  vp widths: 2048 x47, 2304 x344, 2560 x1853, 2816 x2
+  depth reads inside the journal's window: 212 of 212
+  field rt0: best lag  +10 ms, 28 of 79 matched clear reads at their frame's size (0.35); clear reads 79
+  field vp : best lag  +10 ms, 28 of 79 matched clear reads at their frame's size (0.35); clear reads 79
+  lag scan for rt0 (lag: matched, agreeing): -250:79/19 -225:79/21 -200:79/23 -175:79/24 -150:79/26 -125:79/26 -100:79/27 -75:79/27 -50:79/27 -25:79/27 +0:79/28 +25:79/27 +50:79/27 +75:79/27 +100:79/26 +125:79/25 +150:79/25 +175:79/25 +200:79/25 +225:79/23 +250:79/22
+  reads given a frame: 212 of 212 (212 depth), with a bench size: 212
+  frames with depth reads: 91; depth reads per frame: {1: 20, 2: 21, 3: 50}

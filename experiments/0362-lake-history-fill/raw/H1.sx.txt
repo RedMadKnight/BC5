@@ -1,0 +1,6 @@
+/home/kjaniszewski/bc5-work/exp0362/sx0362.py:61: RuntimeWarning: invalid value encountered in cast
+  raw = np.frombuffer(open(os.path.join(sdir, r["name"] + ".bin"), "rb").read(), dtype="<f4").astype(np.float64)
+flat         12 untorn: shear median at 2560 1.71, 2816 0.00, 3328 1.83, 3840 0.09; snapshots with 3840 < 0.5 x min(2560..3328): 0, 3328 < 0.5 x others: 0
+no-structure 12 untorn: shear median at 2560 1.14, 2816 1.06, 3328 1.23, 3840 0.97; snapshots with 3840 < 0.5 x min(2560..3328): 0, 3328 < 0.5 x others: 0
+final        12 untorn: shear median at 2560 0.85, 2816 6.54, 3328 5.66, 3840 4.95; snapshots with 3840 < 0.5 x min(2560..3328): 0, 3328 < 0.5 x others: 0
+boundaries inside the snapshot: {2560: 4, 2816: 3, 3328: 3, 3840: 2}
