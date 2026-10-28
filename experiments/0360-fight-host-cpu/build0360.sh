@@ -12,9 +12,9 @@ case "$VAR" in *[!a-z0-9]* | "") echo "the variant is lower-case letters and dig
 [ $# -ge 1 ] || { echo "at least one patch"; exit 1; }
 E=$HOME/bc5-work/exp0360; V=$E/$VAR; LOCK=$HOME/bc5-work/BOX-LOCK
 B=$HOME/bc5-work/kytyplus-build; ARCH=$HOME/bc5-work/backend-ubuntu/libbc5_backend.a
-EXPECT_ARCHIVE=${EXPECT_ARCHIVE:-bb50b2e0}; EXPECT_NORMAL=${EXPECT_NORMAL:-affa0c22}
+EXPECT_ARCHIVE=${EXPECT_ARCHIVE:-bb50b2e0}; EXPECT_NORMAL=${EXPECT_NORMAL:-1000ad2a}
 UNITS="src/libs/bc5LleAgc.cpp src/loader/runtimeLinker.cpp src/kernel/pthread.cpp"
-want_md5() { case "$1" in src/libs/bc5LleAgc.cpp) echo "${EXPECT_AGC:-e7cc2f60}" ;; src/loader/runtimeLinker.cpp) echo "${EXPECT_RTL:-e37ed5cd}" ;; src/kernel/pthread.cpp) echo "${EXPECT_PT:-46c7ac3a}" ;; esac; }
+want_md5() { case "$1" in src/libs/bc5LleAgc.cpp) echo "${EXPECT_AGC:-e7cc2f60}" ;; src/loader/runtimeLinker.cpp) echo "${EXPECT_RTL:-96e03695}" ;; src/kernel/pthread.cpp) echo "${EXPECT_PT:-46c7ac3a}" ;; esac; }
 HERE=$(cd "$(dirname "$0")" && pwd)
 TREE=$HOME/src/KytyPlus; SRC=$V/src
 pgrep '^kyty_emulator' > /dev/null && { echo "an emulator runs: stop"; exit 1; }

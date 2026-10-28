@@ -100,6 +100,8 @@ case "$SROOT" in "$E"/*) rm -rf "$SROOT/PPSA03671" ;; *) echo "refusing to clear
 cp -a "$SAVES" "$SROOT/PPSA03671" && diff -rq "$SAVES" "$SROOT/PPSA03671" > /dev/null || { echo "the route saves could not be put into $SROOT"; exit 1; }
 find "$SROOT/PPSA03671" -type f -exec touch -a -d '2020-01-01 00:00:00' {} +
 cp "${REPRO_CMD:-$W/exp0203/o2-continue.cmd}" "$E/in-$TAG.cmd"
+PHASE2=${REPRO_PHASE2:-}; P2LOAD=""; P2DONE=""   # exp 0360: the fight route's second part (see the loop)
+[ -z "$PHASE2" ] || [ -s "$PHASE2" ] || { echo "REPRO_PHASE2 $PHASE2 is empty or missing: not started"; exit 1; }
 N=$(sudo -n dmesg 2> /dev/null | wc -l)
 { date '+%F %T'; echo "arm $TAG, $SECS s, launcher $LAUNCH md5 $(md5sum < "$LAUNCH" | cut -c1-8), BC5_EMU $BIN md5 $WANT; env: ${ENVS[*]}"; echo "boot $(cut -c1-8 /proc/sys/kernel/random/boot_id), up since $(uptime -s)"; } > "$R/$TAG-start.txt"
 "$E30/sample0330.sh" "$R/$TAG-mem.txt" $((SECS + 60)) < /dev/null > /dev/null 2>&1 & SP=$!
@@ -140,7 +142,21 @@ while [ -z "$ENDED" ] && [ $(($(date +%s) - T0)) -lt "$SECS" ]; do
     else ENDED="HANG: kernel amdgpu line at $(($(date +%s) - T0 - 25)) s, no reset line"; fi
     break
   fi
-  sleep 5
+  # Exp 0360, the fight route (REPRO_PHASE2=<file>): the gameplay inputs are appended to the input script (the input
+  # thread tails it every 20 ms) once the journal shows the load after the menu (the last 5 flips slower than 55 ms)
+  # and then gameplay (25 flips in a row faster than 40 ms), from 88 s on; by 200 s without that they go anyway.
+  if [ -n "$PHASE2" ] && [ -z "$P2DONE" ] && [ $(($(date +%s) - T0)) -ge 88 ]; then
+    J2=$(ls -td ~/bc5-data/captures/play-*/gc 2> /dev/null | head -1)/direct.log
+    if [ -f "$J2" ] && [ "$(stat -c %Y "$J2")" -ge "$T0" ]; then
+      read -r P2SLOW P2FAST <<< "$(tail -c 400000 "$J2" | grep -a "^frame profile: t" | tail -25 | sed -n 's/^frame profile: t [0-9.]* s, \([0-9.]*\) ms since.*/\1/p' | awk '{v[NR] = $1} END {slow = NR >= 5; for (i = NR - 4; i <= NR && i >= 1; i++) if (v[i] <= 55) slow = 0; fast = NR >= 25; for (i = 1; i <= NR; i++) if (v[i] >= 40) fast = 0; print slow + 0, fast + 0}')"
+      [ "${P2SLOW:-0}" = 1 ] && [ -z "$P2LOAD" ] && P2LOAD=$(($(date +%s) - T0))
+      if { [ -n "$P2LOAD" ] && [ "${P2FAST:-0}" = 1 ]; } || [ $(($(date +%s) - T0)) -ge 200 ]; then
+        cat "$PHASE2" >> "$E/in-$TAG.cmd"; P2DONE=$(($(date +%s) - T0))
+        echo "phase 2 (the gameplay inputs, $(grep -c . "$PHASE2") lines of $PHASE2) appended at $P2DONE s; the load seen at ${P2LOAD:-never} s$([ "${P2FAST:-0}" = 1 ] || echo ', gameplay NOT seen: appended by the 200-s timeout')" | tee -a "$R/$TAG-start.txt"
+      fi
+    fi
+  fi
+  if [ -n "$PHASE2" ] && [ -z "$P2DONE" ] && [ $(($(date +%s) - T0)) -ge 85 ]; then sleep 1; else sleep 5; fi
 done
 DUR=$(($(date +%s) - T0))
 if [ -n "$EP" ] && [ -d "/proc/$EP" ]; then { echo "at $DUR s (end):"; cat /proc/$EP/fdinfo/* 2> /dev/null | grep -a "^drm-engine-\|^drm-client-id" | sort | uniq -c; } >> "$R/$TAG-fdinfo.txt"; fi
