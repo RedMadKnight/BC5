@@ -75,4 +75,47 @@ Results:
 
 **Result.**
 
+- **Build (18:32).** `FULL_STATE=full_state-0367.cpp build0367.sh pfx meter0360.pl prof0360.pl` → `pfx` 445e3eb4.
+  - The backend unit compiled with the archive's `-Werror` command without a diagnostic. The host unit has the tree's 4
+    warnings.
+  - The shared binary, the archive and `~/src/bc5`'s `full_state.cpp` were unchanged afterwards.
+  - `nm` shows C1's code in the binary: `emit_prefix` with its `$_1` (`add`) lambda, where `meter2` has the old
+    `$_0` (`flush`).
+  - The box was claimed at 18:32 (`~/bc5-work/exp0367/CLAIM.txt`, a BOX-QUEUE line).
+- **Ten runs, 18:33–19:15, RT on: all pass.** No kernel line (`raw/<tag>-kernel-stream.txt`), no devcoredump, no
+  TIMEOUT, live saves unchanged (41a5a36fffb4f8d4).
+
+  | route | `pfx` (C1) flips/s | `meter2` flips/s |
+  |---|---|---|
+  | S6N, 300 s | P1 34.7, P1b 33.5, P1c 33.3 — mean **33.8** | M2b 33.6, M2c 33.8, M2d 33.4 — mean **33.6** |
+  | the fight route, the job-arena fix on, 200 s | P1f 32.6 | M2fon 33.0 |
+
+  Exp 0360's earlier meter-build S6N runs gave 33.2–33.8.
+- **The render thread, in samples and CPU** (`split0366.pl` over the runs' meter lines, S6N t 180–296, the fight
+  t 104–196; `raw/*-meter.txt.gz`, `raw/nm-445e3eb4.txt.gz`):
+  - **`emit_prefix`:** P1, P1b, P1c 116 / 106 / 113 against M2b, M2c, M2d 522 / 608 / 532 (−80 %); fight 104 against
+    413 (−75 %). At 4 ms of CPU per sample that is ~15 ms/s of the render thread's CPU, as the harness's 4× predicts.
+  - **The render thread's CPU:** S6N 502 / 484 / 495 against 509 / 506 / 499 ms/s (−11 ms/s on average); fight 425
+    against 425.
+  - **Its title share** rises (S6N 36.5 → 38.2 %, fight 37.0 → 37.9 %). The time C1 frees goes partly into the title's
+    own wait at eboot.bin+0x3f37900, as candidate A's did on game-main (F470).
+- **F483 — C1, a byte-identical `emit_prefix` without the byte-by-byte scan, takes ~80 % of `emit_prefix` (~15 ms/s)
+  off the render thread's CPU but no measurable frame rate.**
+  - Its prefixes are identical over 3,027 trackers (4,064,039 dwords, zero differing packets; the harness built
+    against main's and C1's `full_state.cpp`).
+  - On the box it cuts `emit_prefix`'s samples by 75–82 % and the render thread's CPU by ~11 ms/s.
+  - Frame rate: S6N 33.8 against 33.6 flips/s over three pairs, inside both builds' spread; the fight route 32.6
+    against 33.0.
+  - The render thread waits for the title most of each frame (F482), so its own CPU is not what sets the frame.
+
 **Verdict.**
+- **No measurable frame-rate gain.** C1 does what it was designed for: identical prefixes, `emit_prefix` ~4× faster,
+  ~11–15 ms/s less render-thread CPU. The render thread spends that time waiting, so on S6N and on the fight route the
+  frame rate does not move.
+- **C1 is kept as a candidate for later** (`full_state-0367.cpp`, `full_state-0367.diff`). It carries no risk to the
+  stream (byte-identical) and frees ~1 % of a core. It is worth folding in the next time the backend is rebuilt for
+  another reason. It is not a reason to rebuild the shared builds on its own (D19).
+- **C2 (no tracker copy per DCB)** is proven equivalent but costs only ~6 µs per DCB. It is not built.
+- **What the direct path's remaining CPU is** (`submit_now`, `apply_level`, the filter, the CS ioctl): host time on a
+  thread that waits anyway. By F482 and this experiment, frame rate at the fight is set by the title's threads, not by
+  the direct path.
