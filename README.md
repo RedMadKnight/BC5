@@ -21,7 +21,7 @@ On the maintainer's box a desktop shortcut, *BC5 emulator*, opens the emulator w
 
 ### What is still broken
 
-Patches of the water are missing on the second title's night lake; they are still there on the 2026-10-27 build.
+Patches of the water are missing on the second title's night lake. They are still there on the 2026-10-28 build: of three test runs, one came out clean, one turned patched halfway and one was patched throughout.
 
 With ray tracing on, the second title used to hang, or take the machine down, a minute or two after loading. Each failure on 2026-10-27 followed one frame whose GPU command buffer had been grown by the host's safety checks past the kernel's size limit for one buffer. The kernel refused it, so that frame was lost, and the next frame read its arguments through a setting the lost one should have made. Since 2026-10-28 both builds cut such buffers into up to four pieces (experiments 0349, 0350). On the test build the maintainer played 18 minutes with ray tracing on at 39 frames a second with no hang. The shared build then passed the scripted route twice with ray tracing on, cutting the big frame each time. One of those runs fell to about 26 frames a second for its last five minutes, for a reason not yet found. With ray tracing off the game runs clean.
 
@@ -35,7 +35,7 @@ BC5 is a hobby research project and is against piracy. You play games you own, d
 
 ## Status in numbers
 
-As of 2026-10-28, measured on one BC-250 with the maintainer's own copies of the games. Every number is a finding (F1 … F434) in [`docs/HANDOFF.md`](docs/HANDOFF.md) §2, backed by an experiment under [`experiments/`](experiments/). A "flip" is one frame the game presented.
+As of 2026-10-28, measured on one BC-250 with the maintainer's own copies of the games. Every number is a finding (F1 … F435) in [`docs/HANDOFF.md`](docs/HANDOFF.md) §2, backed by an experiment under [`experiments/`](experiments/). A "flip" is one frame the game presented.
 
 | | ASTRO BOT | Marvel's Wolverine (second title) |
 | --- | --- | --- |
@@ -66,7 +66,7 @@ As of 2026-10-28, measured on one BC-250 with the maintainer's own copies of the
 | Audio grain model and display-event coalescing | The second title's sound and timeline at real speed (1.00× for 10 minutes), no 30-fps cap needed | F246, F247 |
 | Tessellation-factor ring, second title | The night scene's tessellated draws are drawn; the geometry engine's reads at address 0 are gone | F248 |
 
-**The research so far:** 434 findings (F1–F434) in `docs/HANDOFF.md`, 350 experiments (0001–0351) in `experiments/`, 14 architecture decision records in `docs/decisions/`.
+**The research so far:** 435 findings (F1–F435) in `docs/HANDOFF.md`, 351 experiments (0001–0353) in `experiments/`, 14 architecture decision records in `docs/decisions/`.
 
 ### Known issues
 
@@ -187,7 +187,7 @@ Environment variables; the launchers set the title's values. The full list, with
 README.md            this file
 CLAUDE.md            standing instructions and the hard rules
 docs/
-  HANDOFF.md         research state: findings F1–F434 with sources, open questions, decisions
+  HANDOFF.md         research state: findings F1–F435 with sources, open questions, decisions
   PHASES.md          the gated roadmap (G0a, G1b, G2, G3 passed; 0b and 4 retired by D18; phase 5, play, current)
   console-vs-host.md what the console does, what the host does instead
   decisions/         ADRs 0001–0014, one decision each
