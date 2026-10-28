@@ -1,0 +1,18 @@
+# 111 frames with a sized depth read; 299266 common valid pixels of 448000 in the lake window; hole share per frame: min 0.208, median 0.301, max 0.391
+  phi between frames: quartiles -0.234 / 0.061 / 0.545
+  leading split of the frames' masks: 59 and 52 frames; mean phi within 0.546 and 0.558, between -0.238 (eigenvalue share 0.48)
+  split by time (frames in order, A/B): AAABAABABAABAAAABAABBBBBBABAABBBAAAAABAAABABBBAAAAAABAAABBBBBBAABBABBABABAAABAAABBBBAABBBBABBAAAAAAABBBBABABBAB
+  pairs from different bursts: 5770; drift: Spearman of phi with time apart +0.004
+  pages with 2..8 contents over the frames: 10
+  page 1767: too few frames with a known content
+  page 1768: too few frames with a known content
+  page 1776 (named; 0x1193bc3900): 62 contents, 99 frames known; mean phi same minus different content -0.0216 (194 / 4389 pairs), p 0.7992 (1000)
+  scan null of the largest difference (contents shuffled, 1000): median +0.0188, 95th percentile +0.0463
+    page 1280 (0x11939d3900): difference +0.0239, 5 contents, pairs 3682 same / 1777 different
+    page 1335 (0x1193a0a900): difference +0.0024, 8 contents, pairs 3092 same / 2168 different
+    page 1703 (0x1193b7a900): difference -0.0006, 2 contents, pairs 2551 same / 2608 different
+    page 1332 (0x1193a07900): difference -0.0031, 8 contents, pairs 3888 same / 1472 different
+    page 1333 (0x1193a08900): difference -0.0031, 8 contents, pairs 3888 same / 1472 different
+    page 1653 (0x1193b48900): difference -0.0040, 8 contents, pairs 2621 same / 2637 different
+    page 1786 (0x1193bcd900): difference -0.0082, 7 contents, pairs 1763 same / 3012 different
+    page 1734 (0x1193b99900): difference -0.0087, 6 contents, pairs 918 same / 4143 different
