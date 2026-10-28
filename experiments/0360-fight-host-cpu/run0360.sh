@@ -144,15 +144,19 @@ while [ -z "$ENDED" ] && [ $(($(date +%s) - T0)) -lt "$SECS" ]; do
   fi
   # Exp 0360, the fight route (REPRO_PHASE2=<file>): the gameplay inputs are appended to the input script (the input
   # thread tails it every 20 ms) once the journal shows the load after the menu (the last 5 flips slower than 55 ms)
-  # and then gameplay (25 flips in a row faster than 40 ms), from 88 s on; by 200 s without that they go anyway.
+  # and then gameplay (of the last 25 flips at least 20 faster than 40 ms, the last 3 among them: gameplay at 43
+  # flips/s still has a 40-65 ms hitch every 15-25 flips, F1), from 88 s on; 30 s after the load without that, or by
+  # 200 s, they go anyway. Every poll is kept in raw/<tag>-phase2.txt.
   if [ -n "$PHASE2" ] && [ -z "$P2DONE" ] && [ $(($(date +%s) - T0)) -ge 88 ]; then
     J2=$(ls -td ~/bc5-data/captures/play-*/gc 2> /dev/null | head -1)/direct.log
     if [ -f "$J2" ] && [ "$(stat -c %Y "$J2")" -ge "$T0" ]; then
-      read -r P2SLOW P2FAST <<< "$(tail -c 400000 "$J2" | grep -a "^frame profile: t" | tail -25 | sed -n 's/^frame profile: t [0-9.]* s, \([0-9.]*\) ms since.*/\1/p' | awk '{v[NR] = $1} END {slow = NR >= 5; for (i = NR - 4; i <= NR && i >= 1; i++) if (v[i] <= 55) slow = 0; fast = NR >= 25; for (i = 1; i <= NR; i++) if (v[i] >= 40) fast = 0; print slow + 0, fast + 0}')"
+      P2IV=$(tail -c 400000 "$J2" | grep -a "^frame profile: t" | tail -25 | sed -n 's/^frame profile: t [0-9.]* s, \([0-9.]*\) ms since.*/\1/p' | tr '\n' ' ')
+      read -r P2SLOW P2FAST <<< "$(echo "$P2IV" | awk '{slow = NF >= 5; for (i = NF - 4; i <= NF && i >= 1; i++) if ($i <= 55) slow = 0; f = 0; for (i = 1; i <= NF; i++) if ($i < 40) f++; fast = NF >= 25 && f >= 20; for (i = NF - 2; i <= NF && i >= 1; i++) if ($i >= 40) fast = 0; print slow + 0, fast + 0}')"
+      echo "$(($(date +%s) - T0)) s: slow ${P2SLOW:-?} fast ${P2FAST:-?} load ${P2LOAD:-} | $P2IV" >> "$R/$TAG-phase2.txt"
       [ "${P2SLOW:-0}" = 1 ] && [ -z "$P2LOAD" ] && P2LOAD=$(($(date +%s) - T0))
-      if { [ -n "$P2LOAD" ] && [ "${P2FAST:-0}" = 1 ]; } || [ $(($(date +%s) - T0)) -ge 200 ]; then
+      if { [ -n "$P2LOAD" ] && [ "${P2FAST:-0}" = 1 ]; } || { [ -n "$P2LOAD" ] && [ $(($(date +%s) - T0 - P2LOAD)) -ge 30 ]; } || [ $(($(date +%s) - T0)) -ge 200 ]; then
         cat "$PHASE2" >> "$E/in-$TAG.cmd"; P2DONE=$(($(date +%s) - T0))
-        echo "phase 2 (the gameplay inputs, $(grep -c . "$PHASE2") lines of $PHASE2) appended at $P2DONE s; the load seen at ${P2LOAD:-never} s$([ "${P2FAST:-0}" = 1 ] || echo ', gameplay NOT seen: appended by the 200-s timeout')" | tee -a "$R/$TAG-start.txt"
+        echo "phase 2 (the gameplay inputs, $(grep -c . "$PHASE2") lines of $PHASE2) appended at $P2DONE s; the load seen at ${P2LOAD:-never} s$([ "${P2FAST:-0}" = 1 ] || echo ', gameplay NOT seen: appended by a timeout')" | tee -a "$R/$TAG-start.txt"
       fi
     fi
   fi
