@@ -62,3 +62,137 @@ thread trap: host id 31 guest id 27 "Havok Queries and Cloth": gen -1 index -1 p
 thread trap: host id 32 guest id 28 "Havok Queries and Cloth": gen -1 index -1 ptr-0x98 000000000000001c
 thread trap: host id 33 guest id 29 "Havok Queries and Cloth": gen -1 index -1 ptr-0x98 000000000000001d
 Access violation: Read [000000000000000c] 
+play log /home/kjaniszewski/bc5-work/exp0358/play/play-20261028-135335.log from 13:53:37
+bc5-direct: experiment 0346 switch: a GFX-form dispatch without a SET_BASE of its type in its IB is resolved by the host (the carried base, or the window 0x1100000000 until one is learned) and rewritten only to a page the host read, else NOP-ed; no CP read at an inferred address
+bc5-direct: experiment 0349: a job's IB over 983040 dwords is cut at aligned packet boundaries outside COND_EXEC ranges into up to 4 IBs of one submit (the kernel takes at most 0xfffff dwords per IB)
+bc5-direct: experiment 0341 switches: product staircase 1 (x > 65536 with y or z > 1), args histogram 0, shadow labels 1, bo journal 0
+bc5-direct: experiment 0341 periodic: shadow labels in 2000 jobs: 9639 labels, 19278 writes copied, 9639 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 11636 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 11637 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5-direct: experiment 0341 periodic: shadow labels in 4000 jobs: 20221 labels, 40442 writes copied, 20221 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 18773 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 18773 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5-direct: experiment 0341 periodic: shadow labels in 6000 jobs: 32191 labels, 64382 writes copied, 32191 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 18773 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 18773 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5-direct: experiment 0341 periodic: shadow labels in 8000 jobs: 44125 labels, 88250 writes copied, 44125 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 18773 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 18773 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5-direct: experiment 0341 periodic: shadow labels in 10000 jobs: 56107 labels, 112214 writes copied, 56107 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 18773 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 18773 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5-direct: experiment 0341 periodic: shadow labels in 12000 jobs: 68305 labels, 136610 writes copied, 68305 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 18773 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 18773 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5-direct: experiment 0341 periodic: shadow labels in 14000 jobs: 83659 labels, 167318 writes copied, 83659 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 18773 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 18773 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5-direct: experiment 0341 periodic: shadow labels in 16000 jobs: 103512 labels, 207024 writes copied, 103512 waits redirected, 2 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 173870 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 173870 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5-direct: experiment 0341 periodic: shadow labels in 18000 jobs: 117421 labels, 234842 writes copied, 117421 waits redirected, 2 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 173870 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 173870 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5-direct: experiment 0341 periodic: shadow labels in 20000 jobs: 132578 labels, 265156 writes copied, 132578 waits redirected, 2 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 173870 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 173870 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+thread trap: faulting pthread "MainThread" guest id 1, host unique id 5, os thread 2082289
+thread trap: tls image_size 0x120 init_size 0x20 tcb_offset 0x120 blocks 46
+thread trap: image at tcb-0x110..-0x100: 074c02d5 00000009 ffffffff ffffffff
+thread trap: host id 35 guest id 31 "AK::IOThread": gen -1 index -1 jobid 0 ptr-0x98 000000000000001f
+thread trap: host id 37 guest id 33 "AK::BankMgr": gen -1 index -1 jobid 0 ptr-0x98 0000000000000021
+thread trap: host id 51 guest id 47 "User UDS Thread": gen -1 index -1 jobid 0 ptr-0x98 000000000000002f
+thread trap: host id 50 guest id 46 "Save Thread": gen -1 index -1 jobid 0 ptr-0x98 000000000000002e
+thread trap: host id 49 guest id 45 "File Video Stream": gen -1 index -1 jobid 0 ptr-0x98 000000000000002d
+thread trap: host id 48 guest id 44 "File Video Stream": gen -1 index -1 jobid 0 ptr-0x98 000000000000002c
+thread trap: host id 47 guest id 43 "File Video Stream": gen -1 index -1 jobid 0 ptr-0x98 000000000000002b
+thread trap: host id 46 guest id 42 "File Video Stream": gen -1 index -1 jobid 0 ptr-0x98 000000000000002a
+thread trap: host id 45 guest id 41 "File Video Stream": gen -1 index -1 jobid 0 ptr-0x98 0000000000000029
+thread trap: host id 44 guest id 40 "EntitlementSysPPR::QueryThread": gen -1 index -1 jobid 0 ptr-0x98 0000000000000028
+thread trap: host id 43 guest id 39 "UXAnalytics::UploadThread": gen -1 index -1 jobid 0 ptr-0x98 0000000000000027
+thread trap: host id 42 guest id 38 "Coherent Layout Worker Thread": gen -1 index -1 jobid 0 ptr-0x98 0000000000000026
+thread trap: host id 41 guest id 37 "Coherent Resource Worker Thread": gen -1 index -1 jobid 0 ptr-0x98 0000000000000025
+thread trap: host id 40 guest id 36 "Coherent Thread": gen -1 index -1 jobid 0 ptr-0x98 0000000000000024
+thread trap: host id 39 guest id 35 "AK::AudioMgr": gen -1 index -1 jobid 0 ptr-0x98 0000000000000023
+thread trap: host id 34 guest id 30 "Havok Queries and Cloth": gen -1 index -1 jobid 0 ptr-0x98 000000000000001e
+thread trap: host id 17 guest id 13 "Job Bk 1": gen 0 index 1 jobid 0 ptr-0x98 000000000000000d
+thread trap: host id 16 guest id 12 "Job Bk 0": gen 0 index 0 jobid 0 ptr-0x98 000000000000000c
+thread trap: host id 15 guest id 11 "Job Hi 4": gen 2 index 4 jobid 0 ptr-0x98 000000000000000b
+thread trap: host id 14 guest id 10 "Job Hi 3": gen 2 index 3 jobid 0 ptr-0x98 000000000000000a
+thread trap: host id 13 guest id 9 "Job Hi 2": gen 2 index 2 jobid 0 ptr-0x98 0000000000000009
+thread trap: host id 12 guest id 8 "Job Hi 1": gen 2 index 1 jobid 0 ptr-0x98 0000000000000008
+thread trap: host id 11 guest id 7 "Job Hi 0": gen 2 index 0 jobid 0 ptr-0x98 0000000000000007
+thread trap: host id 10 guest id 6 "Job Lo 4": gen 1 index 4 jobid 0 ptr-0x98 0000000000000006
+thread trap: host id 9 guest id 5 "Job Lo 3": gen 1 index 3 jobid 0 ptr-0x98 0000000000000005
+thread trap: host id 8 guest id 4 "Job Lo 2": gen 1 index 2 jobid 0 ptr-0x98 0000000000000004
+thread trap: host id 7 guest id 3 "Job Lo 1": gen 1 index 1 jobid 0 ptr-0x98 0000000000000003
+thread trap: host id 65 guest id 60 "Bink IO": gen -1 index -1 jobid 0 ptr-0x98 000000000000003c
+thread trap: host id 6 guest id 2 "Job Lo 0": gen 1 index 0 jobid 0 ptr-0x98 0000000000000002
+thread trap: host id 5 guest id -1 "?": gen -1 index -1 jobid 1 (owner) ptr-0x98 0000000000000001 <- faulting
+thread trap: host id 18 guest id 14 "Job Bk 2": gen 0 index 2 jobid 0 ptr-0x98 000000000000000e
+thread trap: host id 19 guest id 15 "Job Bk 3": gen 0 index 3 jobid 0 ptr-0x98 000000000000000f
+thread trap: host id 20 guest id 16 "Job Bk 4": gen 0 index 4 jobid 0 ptr-0x98 0000000000000010
+thread trap: host id 21 guest id 17 "Archive Asset IO": gen -1 index -1 jobid 0 ptr-0x98 0000000000000011
+thread trap: host id 22 guest id 18 "Archive Loose IO": gen -1 index -1 jobid 0 ptr-0x98 0000000000000012
+thread trap: host id 23 guest id 19 "Archive Resolve IO": gen -1 index -1 jobid 0 ptr-0x98 0000000000000013
+thread trap: host id 24 guest id 20 "Render Thread": gen -1 index -1 jobid 0 ptr-0x98 0000000000000014
+thread trap: host id 25 guest id 21 "Havok Solve": gen -1 index -1 jobid 0 ptr-0x98 0000000000000015
+thread trap: host id 26 guest id 22 "Havok Solve": gen -1 index -1 jobid 0 ptr-0x98 0000000000000016
+thread trap: host id 27 guest id 23 "Havok Solve": gen -1 index -1 jobid 0 ptr-0x98 0000000000000017
+thread trap: host id 28 guest id 24 "Havok Solve": gen -1 index -1 jobid 0 ptr-0x98 0000000000000018
+thread trap: host id 29 guest id 25 "Havok Solve": gen -1 index -1 jobid 0 ptr-0x98 0000000000000019
+thread trap: host id 30 guest id 26 "Havok Queries and Cloth": gen -1 index -1 jobid 0 ptr-0x98 000000000000001a
+thread trap: host id 31 guest id 27 "Havok Queries and Cloth": gen -1 index -1 jobid 0 ptr-0x98 000000000000001b
+thread trap: host id 32 guest id 28 "Havok Queries and Cloth": gen -1 index -1 jobid 0 ptr-0x98 000000000000001c
+thread trap: host id 33 guest id 29 "Havok Queries and Cloth": gen -1 index -1 jobid 0 ptr-0x98 000000000000001d
+thread trap:   entry 0 job 0: handle 0000428000000000 obj 0000001011836000: active 0 started 24 done 19 total 19 class 0000005f (owner-class) flags 0000000a fn +0x3b05130
+thread trap:   entry 0 job 1: handle 0000428000000004 obj 00000010118360c0: active 0 started 24 done 19 total 19 class 0000005f (owner-class) flags 0000000a fn +0x3b054a0
+thread trap:   entry 0 job 2: handle 0000428000000008 obj 0000001011836180: active 0 started 315 done 311 total 311 class 0000005f (owner-class) flags 0000000a fn +0x3b05760
+thread trap:   entry 0 job 3: handle 000042800000000c obj 0000001011836240: active 1 started 815 done 810 total 1007 class 0000005f (owner-class) flags 0000000a fn +0x3b05a50
+thread trap:   entry 1 job 0: handle 0000428000000005 obj 00000010118040c0: active 0 started 773 done 768 total 768 class 0000005f (owner-class) flags 00000008 fn +0x3ccc520
+thread trap:   entry 1 job 1: handle 0000428000000009 obj 0000001011804180: active 0 started 21 done 16 total 16 class 0000007f (owner-class) flags 00000008 fn +0x3d05740
+thread trap:   entry 1 job 2: handle 000042800000000d obj 0000001011804240: active 0 started 1 done 1 total 1 class 0000007f (owner-class) flags 00000008 fn +0x4096b40
+thread trap:   entry 1 job 3: handle 0000428000000011 obj 0000001011804300: active 0 started 160 done 143 total 143 class 0000007f (owner-class) flags 00000008 fn +0x3f98bc0
+thread trap:   entry 1 job 4: handle 0000428000000019 obj 0000001011804480: active 0 started 772 done 769 total 769 class 0000005f (owner-class) flags 00000008 fn +0x5d0ba60
+thread trap:   entry 1 job 5: handle 0000428000000021 obj 0000001011804600: active 0 started 79 done 75 total 75 class 0000005f (owner-class) flags 00000008 fn +0x40ff1f0
+thread trap:   entry 1 job 6: handle 000042800000001d obj 0000001011804540: active 0 started 772 done 769 total 769 class 0000005f (owner-class) flags 00000008 fn +0x5d0ba60
+thread trap:   entry 1 job 7: handle 0000428000000025 obj 00000010118046c0: active 0 started 3136 done 3026 total 3026 class 0000001f flags 00000008 fn +0x3ee5c70
+thread trap:   entry 1 job 8: handle 000042800000002d obj 0000001011804840: active 0 started 258 done 256 total 256 class 0000005f (owner-class) flags 00000008 fn +0x5d0bd60
+thread trap:   entry 1 job 9: handle 0000428000000035 obj 00000010118049c0: active 0 started 10 done 7 total 7 class 0000007f (owner-class) flags 00000008 fn +0x3ad9bd0
+thread trap:   entry 1 job 10: handle 0000428000000031 obj 0000001011804900: active 0 started 2 done 1 total 1 class 0000005f (owner-class) flags 00000008 fn +0x5d0bd60
+thread trap:   entry 1 job 11: handle 0000428000000039 obj 0000001011804a80: active 0 started 6 done 4 total 4 class 0000005f (owner-class) flags 00000008 fn +0x3ccc520
+thread trap:   entry 1 job 12: handle 000042800000003d obj 0000001011804b40: active 0 started 6 done 5 total 5 class 0000005f (owner-class) flags 00000008 fn +0x143d000
+thread trap:   entry 1 job 13: handle 0000428000000045 obj 0000001011804cc0: active 0 started 1 done 1 total 1 class 0000005f (owner-class) flags 00000008 fn +0x46b4760
+thread trap:   entry 1 job 14: handle 0000428000000049 obj 0000001011804d80: active 0 started 4104 done 4096 total 4096 class 0000001f flags 00000008 fn +0x46b4db0
+thread trap:   entry 1 job 15: handle 000042800000004d obj 0000001011804e40: active 0 started 4120 done 4112 total 4112 class 0000005f (owner-class) flags 00000008 fn +0x46b5330
+thread trap:   entry 1 job 16: handle 0000428000000055 obj 0000001011804fc0: active 0 started 1 done 1 total 1 class 0000005f (owner-class) flags 00000008 fn +0x2551470
+thread trap:   entry 1 job 17: handle 0000428000000059 obj 0000001011805080: active 0 started 1 done 1 total 1 class 0000005f (owner-class) flags 00000008 fn +0x25515c0
+thread trap:   entry 1 job 18: handle 0000428000000069 obj 0000001011805380: active 0 started 1 done 1 total 1 class 0000005f (owner-class) flags 00000008 fn +0x2551f40
+thread trap:   entry 1 job 19: handle 000042800000006d obj 0000001011805440: active 0 started 1 done 1 total 1 class 0000005f (owner-class) flags 00000008 fn +0x2552320
+thread trap:   entry 1 job 20: handle 0000428000000071 obj 0000001011805500: active 0 started 874 done 858 total 858 class 0000005f (owner-class) flags 00000008 fn +0x2552660
+thread trap:   entry 2 job 0: handle 0000428000000002 obj 000000101181d000: active 0 started 98 done 93 total 93 class 0000003f flags 00000009 fn +0x3f11000
+thread trap:   entry 2 job 1: handle 0000428000000006 obj 000000101181d0c0: active 0 started 774 done 769 total 769 class 0000005f (owner-class) flags 00000009 fn +0x5d0ba60
+thread trap:   entry 2 job 2: handle 000042800000000a obj 000000101181d180: active 0 started 23 done 19 total 19 class 0000005f (owner-class) flags 00000009 fn +0x3a7c660
+thread trap:   entry 2 job 3: handle 000042800000000e obj 000000101181d240: active 0 started 5 done 4 total 4 class 0000005f (owner-class) flags 00000009 fn +0x4986850
+thread trap:   entry 2 job 4: handle 0000428000000012 obj 000000101181d300: active 0 started 3 done 2 total 2 class 0000005f (owner-class) flags 00000009 fn +0x11f5980
+thread trap:   entry 2 job 5: handle 0000428000000016 obj 000000101181d3c0: active 0 started 12 done 11 total 11 class 0000005f (owner-class) flags 00000009 fn +0x3ccc520
+thread trap:   entry 2 job 6: handle 000042800000001a obj 000000101181d480: active 0 started 8 done 6 total 6 class 0000005f (owner-class) flags 00000009 fn +0x4920f30
+thread trap:   entry 2 job 7: handle 000042800000001e obj 000000101181d540: active 0 started 48 done 46 total 46 class 0000007f (owner-class) flags 00000009 fn +0x3fad450
+thread trap:   entry 2 job 8: handle 0000428000000022 obj 000000101181d600: active 0 started 1 done 1 total 1 class 0000007f (owner-class) flags 00000009 fn +0x1bf5dd0
+thread trap:   entry 2 job 9: handle 0000428000000026 obj 000000101181d6c0: active 0 started 12 done 10 total 10 class 0000007f (owner-class) flags 00000009 fn +0x3faefa0
+thread trap:   entry 2 job 10: handle 000042800000002e obj 000000101181d840: active 0 started 2 done 1 total 1 class 0000007f (owner-class) flags 00000009 fn +0x3faefa0
+thread trap:   entry 2 job 11: handle 000042800000002a obj 000000101181d780: active 0 started 12 done 10 total 10 class 0000007f (owner-class) flags 00000009 fn +0x1cbcf70
+thread trap:   entry 2 job 12: handle 0000428000000032 obj 000000101181d900: active 0 started 1 done 1 total 1 class 0000005f (owner-class) flags 00000009 fn +0x2555010
+thread trap:   entry 2 job 13: handle 0000428000000036 obj 000000101181d9c0: active 0 started 1024 done 512 total 512 class 0000005f (owner-class) flags 00000009 fn +0x2555130
+thread trap:   entry 2 job 14: handle 000042800000003a obj 000000101181da80: active 0 started 84 done 82 total 82 class 0000005f (owner-class) flags 00000009 fn +0x3ccc520
+thread trap:   entry 2 job 15: handle 000042800000003e obj 000000101181db40: active 0 started 70 done 65 total 65 class 0000005f (owner-class) flags 00000009 fn +0x3a5d190
+thread trap:   entry 2 job 16: handle 0000428000000042 obj 000000101181dc00: active 0 started 655 done 651 total 651 class 0000007f (owner-class) flags 00000009 fn +0x1d43d10
+thread trap:   entry 2 job 17: handle 0000428000000046 obj 000000101181dcc0: active 0 started 9 done 5 total 5 class 0000005f (owner-class) flags 00000009 fn +0x3ccc520
+thread trap:   entry 2 job 18: handle 000042800000004a obj 000000101181dd80: active 0 started 591 done 589 total 589 class 0000007f (owner-class) flags 00000009 fn +0x3fad450
+thread trap:   entry 2 job 19: handle 0000428000000052 obj 000000101181df00: active 0 started 591 done 589 total 589 class 0000007f (owner-class) flags 00000009 fn +0x3fad450
+thread trap:   entry 2 job 20: handle 000042800000005a obj 000000101181e080: active 0 started 591 done 589 total 589 class 0000007f (owner-class) flags 00000009 fn +0x3fad450
+thread trap:   entry 2 job 21: handle 0000428000000062 obj 000000101181e200: active 0 started 591 done 589 total 589 class 0000007f (owner-class) flags 00000009 fn +0x3fad450
+thread trap:   entry 2 job 22: handle 000042800000004e obj 000000101181de40: active 0 started 1 done 1 total 1 class 0000007f (owner-class) flags 00000009 fn +0x4661e50 <- the crash job's function
+thread trap:   entry 2 job 23: handle 0000428000000056 obj 000000101181dfc0: active 0 started 1 done 1 total 1 class 0000007f (owner-class) flags 00000009 fn +0x4661e50 <- the crash job's function
+thread trap:   entry 2 job 24: handle 000042800000005e obj 000000101181e140: active 0 started 1 done 1 total 1 class 0000007f (owner-class) flags 00000009 fn +0x4661e50 <- the crash job's function
+thread trap:   entry 2 job 25: handle 0000428000000066 obj 000000101181e2c0: active 1 started 1 done 0 total 1 class 0000007f (owner-class) flags 00000009 fn +0x4661e50 <- the crash job's function
+thread trap:   entry 2 job 26: handle 000042800000006a obj 000000101181e380: active 0 started 5 done 4 total 4 class 0000005f (owner-class) flags 00000009 fn +0x3a9c400
+thread trap:   entry 2 job 27: handle 000042800000006e obj 000000101181e440: active 0 started 10 done 9 total 9 class 0000005f (owner-class) flags 00000009 fn +0x3a7c660
+thread trap:   entry 2 job 28: handle 0000428000000072 obj 000000101181e500: active 0 started 3 done 2 total 2 class 0000005f (owner-class) flags 00000009 fn +0x11f5980
+thread trap:   entry 2 job 29: handle 0000428000000076 obj 000000101181e5c0: active 0 started 12 done 11 total 11 class 0000005f (owner-class) flags 00000009 fn +0x3ccc520
+thread trap:   entry 2 job 30: handle 000042800000007a obj 000000101181e680: active 0 started 3 done 2 total 2 class 0000005f (owner-class) flags 00000009 fn +0x4920f30
+thread trap: jobsys workers 5 special 5 owner-mask 00000040 special-mask 00000020 n1 6 n2 7 owner id 1 (ids issued 2) override arena 0000000000000000
+thread trap: entry 0: live 4/512 gen 17024 pending 4 (owner-class 4, runnable 1, null 0, bad 0) array 0000001011836000 list 000000101184e000
+thread trap: entry 1: live 29/512 gen 17024 pending 21 (owner-class 19, runnable 0, null 0, bad 0) array 0000001011804000 list 000000101181c000
+thread trap: entry 2: live 31/512 gen 17024 pending 31 (owner-class 30, runnable 0, null 0, bad 0) array 000000101181d000 list 0000001011835000
+Access violation: Read [000000000000000c] 
