@@ -1,0 +1,17 @@
+bc5 flip surface: 3840x2160 pitch 3840 tile_mode 27 guest_format 50 size 33423360
+178
+submit-to-prepare mean 0.00 ms, prepare mean 0.00 ms (max of means 0.00), n 178
+lookup 0.01, invalidate 0.49, PrepareFrame 1.51 ms, n 178
+bc5 flip timing: submit to prepare 0.03 ms, prepare 4.96 ms (mean of 120)
+bc5 flip timing: submit to prepare 0.02 ms, prepare 1.74 ms (mean of 120)
+bc5 flip timing: submit to prepare 0.02 ms, prepare 1.87 ms (mean of 120)
+bc5 flip timing: submit to prepare 0.02 ms, prepare 1.73 ms (mean of 120)
+bc5 flip prepare parts: lookup 0.01 ms, invalidate 0.35 ms, PrepareFrame 1.38 ms (mean of 120)
+bc5 flip prepare parts: lookup 0.01 ms, invalidate 0.41 ms, PrepareFrame 1.45 ms (mean of 120)
+     16 bc5 PrepareFrame parts: frame acquire 0.03 ms, render lock 0.00 ms, ResolveSurface 1.29 ms (mean of 120)
+     11 bc5 PrepareFrame parts: frame acquire 0.03 ms, render lock 0.00 ms, ResolveSurface 1.28 ms (mean of 120)
+     10 bc5 PrepareFrame parts: frame acquire 0.03 ms, render lock 0.00 ms, ResolveSurface 1.27 ms (mean of 120)
+     10 bc5 PrepareFrame parts: frame acquire 0.03 ms, render lock 0.00 ms, ResolveSurface 1.26 ms (mean of 120)
+      9 bc5 PrepareFrame parts: frame acquire 0.03 ms, render lock 0.00 ms, ResolveSurface 1.37 ms (mean of 120)
+submit-to-prepare mean 0.03 ms; prepare mean 2.01 ms (window means 1.70..5.06), n 178 windows of 120 flips
+ResolveSurface mean 0.00 ms, n 178
