@@ -147,3 +147,37 @@ region before the dispatch runs and is the fix candidate for the shared builds, 
 hint and the learned list reset passed, one ended in a machine-down of F403's class (F475) whose relation to the
 hint is not shown either way. No further box run from this session after the reset: the next step — R4's dumps read
 offline (the V# at dword 10652), and whether to repeat the runs with the hint on and off — is the top session's call.
+
+## R4's dumps, read offline (18:4x)
+
+- **F476 — R4's machine-down is F403's class exactly, not F437's runaway grid and not a stuck V#, and the hint is not
+  in its state.** The devcoredump `20261028-181505-devcd2.txt`: `CP_PFP_INSTR_PNTR` 0xe9f and `CP_ME_INSTR_PNTR` 0x77a
+  (F403: 0xea0–0xea1 / 0x77a–0x77b), the PFP's last eight packet headers the host's GFX-form indirect dispatch with
+  its CP check (`ACQUIRE_MEM`, `EVENT_WRITE`, `DISPATCH_INDIRECT`, `COND_EXEC`, `PFP_SYNC_ME`, `WRITE_DATA`,
+  `COND_EXEC`, `PFP_SYNC_ME`) and the ME's two `COND_WRITE`s last — F403's shape to the packet; `GRBM_STATUS`
+  0xa0407028 with SE0/SE1 0x0a000016 (shaders busy in two SEs), no fresh fault (`timeout: fault 0x0`; the dump's
+  "page fault observed 0x1110e1d000" is the device's last record, 0356 R2's, repeated). Unlike F403 the CP had
+  fetched only ~1,920 of the host IB's 12,248 dwords (`CP_IB1_BUFSZ` 0x2858 of 0x2fd8), i.e. it stood near dword
+  1,500–1,900 of the dcb, between the indirect dispatch at 1470 and the ME wait at 1570 (`WAIT_REG_MEM` on
+  0x11e02104a0 == 1, now 0, "NOT met"). The probe's dispatches in that stretch are small: 2869×1×1 at 1289/1339/1369
+  (arguments 0x11d05df300), 3543×1×1 at 1470 (0x11d0571b00), all marked ran, the largest grid of the dcb 57,600
+  groups (320×180×1, a direct dispatch at 10652) — nothing like 818×820×819, and the product staircase was not the
+  limit here. The probe's "ud0-3 V# base 0x115a2400 … records 7651535 unmapped" lines are its reading of
+  `COMPUTE_USER_DATA_0..3` as a buffer descriptor for dispatches whose user data is not one (7.6 M records of 1,136
+  bytes is no buffer); a shader stuck on a bad descriptor would fault, and none did. So: waves busy, the CP inside
+  the host's own check sequence, no fault — the state the three freezes of 2026-10-26 (F399/F403, before any hint
+  existed) and F416's ~106-s bench hang (2026-10-27) showed; R4's came at t ≈ 122 s on the same route. The hint's
+  only actions were three forced syncs in the run's first 20 s (imports of 66 / 52 / 4 MiB, each verified imported);
+  an import adds mappings and changes no ordering, no label and no packet, and nothing of it is in the CP's state
+  100 s later. It cannot be excluded by a proof, only by the state, which shows the class the host had before it.
+  The pstore's four records hold the panic the gpu-watch raised after the kernel's "Ring gfx_0.0.0 reset failed"
+  (10:48's R2 reset succeeded; this one did not — the difference between a 2-s hang and a machine-down is the
+  kernel's reset, not the host).
+
+**Verdict (18:4x).** F443's hang is explained and the compute user-data hint imports its region before the dispatch
+(F472–F474). R4's machine-down (F475) is F403's class (F476): the CP inside the host's GFX-form indirect-dispatch
+check with waves busy and no fault, the class that predates the hint and that one ring, the guards and the cut did
+not remove; its cause is still open (HANDOFF Q20's family), and the host's own check sequence around
+`DISPATCH_INDIRECT` is where the CP stands every time. The hint stays off in the shared builds until the top session
+decides; a repeat of the S6N runs with the hint on and off would only re-measure a one-in-ten event. No box run
+from this session after the reset.
