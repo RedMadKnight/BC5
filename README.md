@@ -35,7 +35,7 @@ BC5 is a hobby research project and is against piracy. You play games you own, d
 
 ## Status in numbers
 
-As of 2026-10-28, measured on one BC-250 with the maintainer's own copies of the games. Every number is a finding (F1 … F457) in [`docs/HANDOFF.md`](docs/HANDOFF.md) §2, backed by an experiment under [`experiments/`](experiments/). A "flip" is one frame the game presented.
+As of 2026-10-28, measured on one BC-250 with the maintainer's own copies of the games. Every number is a finding (F1 … F469) in [`docs/HANDOFF.md`](docs/HANDOFF.md) §2, backed by an experiment under [`experiments/`](experiments/). A "flip" is one frame the game presented.
 
 | | ASTRO BOT | Marvel's Wolverine (second title) |
 | --- | --- | --- |
@@ -49,6 +49,7 @@ As of 2026-10-28, measured on one BC-250 with the maintainer's own copies of the
 
 | What | Effect | Source |
 | --- | --- | --- |
+| Job-arena fix, second title (since 2026-10-28, temporary) | A crash in one fight scene: the game's main thread, helping its job workers when the box's CPU cannot keep up, ran a job that needs a worker's data. A game-code workaround now gives the main thread that data, using the game's own mechanism for it. It is switchable under Emulation → Game fixes, and is to be removed once the emulator's CPU cost in that scene is cut | F444–F458 |
 | Frame command buffers cut under the kernel's limit (since 2026-10-28) | A frame whose command buffer the host's checks have grown past the kernel's 0xfffff-dword limit for one buffer is cut into up to four pieces of one submission, instead of being refused and lost. With ray tracing on, the second title's big frames grow five- to sixfold and reached that limit, which caused every hang and machine-down of 2026-10-27 | F421, F427, F431–F433 |
 | One GPU queue, second title (since 2026-10-27) | Every compute buffer runs on the graphics ring, in order with the graphics work, as on the console's one queue. That takes the compute ring, the machine-down path, out of play and costs no frames with ray tracing off | F384, F412, F416 |
 | Two guards for ray tracing on (since 2026-10-27) | A check that refuses runaway indirect-dispatch grids before the GPU runs them, and private label slots, so that a stray store over one of the game's sync words no longer holds a wait. With ray tracing off they cost no frames | F414, F415, F416 |
@@ -66,7 +67,7 @@ As of 2026-10-28, measured on one BC-250 with the maintainer's own copies of the
 | Audio grain model and display-event coalescing | The second title's sound and timeline at real speed (1.00× for 10 minutes), no 30-fps cap needed | F246, F247 |
 | Tessellation-factor ring, second title | The night scene's tessellated draws are drawn; the geometry engine's reads at address 0 are gone | F248 |
 
-**The research so far:** 457 findings (F1–F457) in `docs/HANDOFF.md`, 358 experiments (0001–0359) in `experiments/`, 14 architecture decision records in `docs/decisions/`.
+**The research so far:** 463 findings (F1–F458, F465–F469) in `docs/HANDOFF.md`, 362 experiments (0001–0364) in `experiments/`, 14 architecture decision records in `docs/decisions/`.
 
 ### Known issues
 
@@ -187,7 +188,7 @@ Environment variables; the launchers set the title's values. The full list, with
 README.md            this file
 CLAUDE.md            standing instructions and the hard rules
 docs/
-  HANDOFF.md         research state: findings F1–F457 with sources, open questions, decisions
+  HANDOFF.md         research state: findings F1–F469 with sources, open questions, decisions
   PHASES.md          the gated roadmap (G0a, G1b, G2, G3 passed; 0b and 4 retired by D18; phase 5, play, current)
   console-vs-host.md what the console does, what the host does instead
   decisions/         ADRs 0001–0014, one decision each

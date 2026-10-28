@@ -1,0 +1,18 @@
+# snapshot classes and their values (every 16th word):
+  flat          56 (torn 3): since 1.1-1.3 ms (median 1.1); zeros median 0.006 (0.000-0.144); commonest word (share): 00000000 0.01 x50, 00000000 0.00 x5, 00000000 0.14 x1
+  no-structure 129 (torn 68): since 1.1-16.5 ms (median 9.3); zeros median 0.069 (0.028-0.196); commonest word (share): 00000000 0.07 x122, 00000000 0.04 x2, 00000000 0.03 x1, 00000000 0.19 x1
+  final         24 (torn 0): since 1.1-22.4 ms (median 18.9); zeros median 0.000 (0.000-0.040); commonest word (share): 3990e4ab 0.00 x4, 39fd972d 0.00 x3, 40404040 0.08 x3, 3a0933c9 0.00 x2
+  clear-other    3 (torn 3): since 1.1-1.1 ms (median 1.1); zeros median 0.018 (0.000-0.142); commonest word (share): 00000000 0.02 x1, 00000000 0.14 x1, 3a11293f 0.00 x1
+# finals: 24 snapshots for 24 frames (c00.f0:s2@22/2560, c00.f3:s2@21/2560, c01.f1:s2@20/2560, c03.f1:s2@19/2048, c03.f2:s1@18/2048, c03.f4:s2@18/2048, c04.f0:s0@1/2560, c04.f1:s0@1/2560, c04.f2:s0@1/2560, c06.f1:s2@21/2560, c07.f1:s2@18/2304, c07.f3:s2@22/2304, c09.f1:s2@21/2304, c09.f2:s2@20/2304, c09.f3:s2@19/2304, c11.f3:s2@20/2560, c12.f-1:s0@1/2560, c15.f1:s2@21/2560, c16.f0:s0@1/2560, c16.f1:s0@1/2560, c16.f2:s0@1/2560, c16.f3:s0@1/2560, c17.f4:s2@19/2304, c19.f4:s2@20/2560)
+# window pixels valid in every final: 1.000; depth-0 share per final: 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000 0.000
+# finals in order: c00.f0:0 c00.f3:0 c01.f1:0 c03.f1:0(2048) c03.f2:0(2048) c03.f4:0(2048) c04.f0:0 c04.f1:0 c04.f2:0 c06.f1:0 c07.f1:0(2304) c07.f3:0(2304) c09.f1:0(2304) c09.f2:0(2304) c09.f3:0(2304) c11.f3:0 c12.f-1:0 c15.f1:0 c16.f0:0 c16.f1:0 c16.f2:0 c16.f3:0 c17.f4:0(2304) c19.f4:0
+# the same frame's final seen twice (s2 of g, then s0 of g+1):
+# consecutive frames' finals (g -> g+1):
+  c03.f1 0 -> f2 0: O eq 0.000 z0 0.00>0.00
+  c04.f0 0 -> f1 0: O eq 0.000 z0 0.00>0.00
+  c04.f1 0 -> f2 0: O eq 0.000 z0 0.00>0.00
+  c09.f1 0 -> f2 0: O eq 0.000 z0 0.00>0.00
+  c09.f2 0 -> f3 0: O eq 0.000 z0 0.00>0.00
+  c16.f0 0 -> f1 0: O eq 0.000 z0 0.00>0.00
+  c16.f1 0 -> f2 0: O eq 0.000 z0 0.00>0.00
+  c16.f2 0 -> f3 0: O eq 0.000 z0 0.00>0.00

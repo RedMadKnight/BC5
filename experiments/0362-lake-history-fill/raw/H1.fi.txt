@@ -1,0 +1,10 @@
+# 18115 find lines, 2246 full-screen water draws (segments)
+  segment length: median 34.0 ms; hits per segment: median 8, max 11
+  ps 11d4d01800 rt0 113d770000 ud28 table                        in 2245 of 2245 segments, x1    at 0.00
+  cs 11d0288800 ud8 table                                        in   51 of 2245 segments, x1    at 0.00, +10.0 ms after the full-screen draw
+  cs 11d02d0a00 ud12 table                                       in 2245 of 2245 segments, x1    at 0.12, +12.0 ms after the full-screen draw
+  ps 11d020ce00 rt0 113d770000 ud28 table                        in 2245 of 2245 segments, x1    at 0.25
+  ps 11d1d02d00 rt0 113d770000 ud28 table                        in 2245 of 2245 segments, x1    at 0.38
+  cs 11d0404200 ud12 table                                       in 2245 of 2245 segments, x1    at 0.50, +12.0 ms after the full-screen draw
+  cs 11d039cd00 ud12 table                                       in 2245 of 2245 segments, x1    at 0.62, +12.0 ms after the full-screen draw
+  cs 11d0288800 ud0 table                                        in 2245 of 2245 segments, x2    at 0.78, +14.0 ms after the full-screen draw
