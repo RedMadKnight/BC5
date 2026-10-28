@@ -184,3 +184,66 @@ against the code (offline; the lock held a `MAINTAINER PLAYING` line throughout,
 No fix is proposed yet: with F447 the host's TLS is cleared and the lever, if any, is in frame retirement timing,
 which v2's samples will show or rule out. Build and the maintainer's test wait for the top session's word; box runs only
 without a `MAINTAINER PLAYING` line in the lock, RT on.
+
+## Trap v2 and v3 (12:35–): the job system read right, the sampler's cost
+
+The lock was free from 12:34 (the maintainer done, the top session's word). Everything below is private under
+`~/bc5-work/exp0358/` (the shared tree, builds and archive only read); the previous binaries are kept beside the new
+one (`kyty_emulator.86ebf2bd`, `.c4a1f713`).
+
+- **Trap v2 (build c4a1f713, `raw/patch0358v2.pl`, `build0358v2.sh/.py`, three units: pthread.cpp, runtimeLinker.cpp,
+  bc5LleAgc.cpp).** Its smoke run (`repro0358.sh`, the Continue route from the private copy of the live saves, RT on,
+  200 s, 12:38, `raw-v2/` on the box): pass, 7007 flips over 198.6 s (35.3 flips/s; GPU busy 18.08 ms, host prepare
+  2.03 ms, 28.3 ms between flips, like 0358 R1's 37.2 flips/s), no crash, no kernel line, live saves unchanged. The
+  TLS block journal works: "MainThread" host id 5 at t 0.000 s, the 15 workers at 0.084–0.094 s, IO and render
+  threads from 0.213 s, 62 blocks in all. The per-second sampler costs 20–31 µs a sample (max 45 µs; nine reads
+  through `process_vm_readv`), i.e. nothing against a 28 ms frame; outside the sampled frame it is one `timing_now()`
+  and a compare per flip. But its pool reading was wrong: image+0x8e51418 is not a pointer (the samples show a
+  constant 7f05cf4daac2d682 there, "unreadable"; no instruction references that address — F448's "pool object at
+  0x8e51418" came from a misread register dump). What the sampler did read right: the special index 5, the override
+  arena 0 outside the override, and the three entries' live counts 21–47, 0–3, 11–84 of 512.
+- **F449 — the job system, read from the code (the handle decode at +0x3cca900, the owner's pick at +0x3cca600, the
+  init at +0x3cc9117–+0x3cc9223).** A job handle is (entry k = bits 0–1, index = bits 2–30, generation = bits
+  32–63) into three entries at image+0xb0636d0 + k·0x2f0 (+0x288 the objects array, 0xc0 bytes each; +0x290
+  capacity; +0x294 live; +0x2a0 the pending-handle list; +0x2ac pending count; +0x2e0 generation). A job object:
+  +0x20 active, +0x80 the block function, +0x88 class bits, +0x8c flags, +0x90 started, +0x94 done, +0x98 total; the
+  spin of F448 waits for done ≥ total with nothing active. The init takes the CPU count from an import (+0x5f20280;
+  7 here, as on the console: N = min(max(cpus, 7) − 2, 8) = 5 workers per entry, "Job Lo/Hi/Bk 0–4") and derives
+  the masks: workers = bits 0–4 (image+0xb06402c), the special index N = 5 (+0xb064020), the owner mask 2 << N = bit 6
+  (+0xb064038), "any thread" = workers | bit 5 | bit 6 (+0xb064040). Every thread gets a lazy id at tcb−0x90 (a
+  counter at image+0x9b75c38); image+0x9b75c3c holds the id of the thread that last called the setter
+  (+0x3984e8d, +0x39dd210, +0x39dd277): the **owner**. When a thread waits on a job (+0x3cca900): a non-owner spins;
+  the owner "helps" (+0x3ccb180 → +0x3cca600): it walks the entries' pending lists, takes a job with started <
+  total whose class intersects the owner mask, allocates its 1 MiB block from the owner arena image+0xb09bf10 (not
+  from a per-thread one), and runs the job's block function on itself. The override window (+0x3ccadc9–+0x3ccae5b)
+  is the other inline path: a stack arena in image+0xb064018, the index set to N, one block run, then arena 0 and
+  index −1 — the −1 is by design: the main thread is never a registered worker (F447).
+  **The crash job** is queued at +0x4663043 (function +0x4661e50, class = image+0xb064040 = any thread, so the owner
+  may take it) and, inside, looks its per-thread arena up itself (+0x466212d–+0x4662171: index == N → the override
+  arena; entry −1 → **null**; else the entry's slot) — on an unregistered owner outside the override that is null,
+  and +0x3d7eca0 dereferences it. So the fault is the owner (main) thread helping with a job that needs a worker's
+  arena. The title's code is the same on the console; what differs is how often the owner has to help at frame end
+  (the workers' throughput) and what is pending when it does — which is what trap v3 measures.
+- **Trap v3 (`raw/patch0358v3.pl`, `build0358v3.sh/.py`; v2's journal kept).** At the fault: the per-thread lines gain
+  the thread's job id and an "(owner)" mark; then the job system's globals (workers, special, masks, owner id, ids
+  issued, override arena) and, per entry, live/capacity, generation, pending with owner-class / runnable / null / bad
+  counts, and every pending job decoded (active, started, done, total, class, flags, function; the crash job's
+  function marked). The sampler, once a second at the flip: per entry live, pending, owner-class pending, runnable,
+  bad; the owner id and override arena; the cost.
+  **Build 1691b436 (12:59), smoke run 13:00 (as v2's: Continue route, private saves copy, RT on, 200 s, `raw-v3/`):**
+  pass, 7470 flips over 198.6 s (37.6 flips/s; GPU busy 18.16 ms, host prepare 1.95 ms, 26.6 ms between flips), no
+  crash, no kernel line, live saves unchanged. The sampler's cost: median 86 µs, p90 105 µs, max 217 µs, once a
+  second (12 reads plus one per live job, 14–84 jobs an entry) — at most 0.3 % of one frame per second, nothing the
+  fight's 15 flips/s would feel; between samples the per-flip cost is a `timing_now()` and a compare. What the
+  samples say on the route: "pending" ≈ "live" (the list at +0x2a0 holds every live job of the entry, not a backlog;
+  21→47, 0→3, 11→84 of 512 over the load), nearly all of them owner-class (class = any thread), and runnable
+  (started < total) 0 at every flip — at the flip no job has unstarted blocks, so the decisive print is the fault
+  print's list, not the sampler. The override arena stayed 0 at every flip; the owner id is 1 (MainThread's).
+  The v2 smoke's root `dmesg -w` stream (`raw-v2/smoke-kernel-stream.txt`) could not be ended without sudo and kept
+  writing through the v3 run (no amdgpu line in either).
+
+**The shortcut (13:04).** "BC5 emulator (test 0358)" now runs the trap v3 build 1691b436 (md5-checked against
+`binary.md5` and the shortcut script's `WANT_BIN`); the launcher (abfaab76, the 4-line diff: a log and a pad record
+per start in `~/bc5-work/exp0358/play/`) is unchanged, RT on from the shared input.cfg; the desktop file's Comment says
+v3. The previous builds are kept beside it (`kyty_emulator.86ebf2bd`, `.c4a1f713`). Nothing shared written, the game not
+started, the 0356 shortcut untouched.

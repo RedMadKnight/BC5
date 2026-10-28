@@ -28,7 +28,7 @@ cat > "$D" <<EOF
 Type=Application
 Version=1.0
 Name=BC5 emulator (test 0358)
-Comment=BC5 test 0358: the integrated build (one ring, the 0341 guards, exps 0343, 0346, 0349) plus the thread trap v2: a crash in the title prints the faulting thread, every thread's worker slots and the frame-block pool's state; a pool sample once a second (for the null-object crash at eboot.bin+0x3d7eca0); RT on; a log per start in ~/bc5-work/exp0358/play/
+Comment=BC5 test 0358: the integrated build (one ring, the 0341 guards, exps 0343, 0346, 0349) plus the thread trap v3: a crash in the title prints the faulting thread, every thread's worker slots and the job system's live jobs; a job-system sample once a second (for the null-object crash at eboot.bin+0x3d7eca0); RT on; a log per start in ~/bc5-work/exp0358/play/
 Exec=/usr/bin/distrobox enter ubuntu -- /usr/bin/env BC5_EMU=$BIN $OUT
 Icon=applications-games
 Terminal=false

@@ -34,7 +34,7 @@ for d in kernel loader libs; do for f in "$TREE"/src/$d/*.inc "$TREE"/src/$d/*.h
 perl "$HERE/patch0358.pl" "$SRC" > "$R/patch.out" 2>&1 && perl "$HERE/patch0358v2.pl" "$SRC" >> "$R/patch.out" 2>&1 || { echo "a patch failed:"; cat "$R/patch.out"; exit 1; }
 cat "$R/patch.out"
 for u in src/kernel/pthread.cpp src/loader/runtimeLinker.cpp src/libs/bc5LleAgc.cpp; do diff -u "$TREE/$u" "$SRC/$u" > "$R/$(basename "$u")-0358v2.diff"; echo "$u: $(grep -c '^[-+][^-+]' "$R/$(basename "$u")-0358v2.diff") lines changed, $(grep -c 'experiment 0358' "$SRC/$u") marks"; done
-grep -n 'tls block: t\|pool sample: t\|thread trap: base' "$SRC/src/loader/runtimeLinker.cpp" "$SRC/src/libs/bc5LleAgc.cpp" | cut -c1-120 | cat -A | grep -c '\\n"' | { read n; echo "C newline escapes intact in $n of 3 new format lines"; }
+grep -n 'tls block: t\|pool sample: t\|thread trap: base' "$SRC/src/loader/runtimeLinker.cpp" "$SRC/src/libs/bc5LleAgc.cpp"| cat -A | grep -c '\\n"' | { read n; echo "C newline escapes intact in $n of 3 new format lines"; }
 { echo "shared binary $(stat -c '%y %s' "$B/src/kyty_emulator") md5 $(m "$B/src/kyty_emulator"); shared archive $(m "$ARCH"); units pthread $(m "$TREE/src/kernel/pthread.cpp") runtimeLinker $(m "$TREE/src/loader/runtimeLinker.cpp") bc5LleAgc $(m "$TREE/src/libs/bc5LleAgc.cpp"); patch0358.pl $(m "$HERE/patch0358.pl") patch0358v2.pl $(m "$HERE/patch0358v2.pl")"; } > "$R/build-inputs.txt"; cat "$R/build-inputs.txt"
 echo "== $(date +%T) compdb"
 distrobox enter ubuntu -- sh -c "cd '$B' && ninja -t compdb -x" > "$E/compdb.json" 2> "$R/compdb.err" || { echo "compdb failed"; exit 1; }

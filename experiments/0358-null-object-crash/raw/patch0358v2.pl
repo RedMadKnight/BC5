@@ -78,8 +78,9 @@ patch($rtl,
 	"#include <execinfo.h>\n",
 	"#include <execinfo.h>\n#include <sys/uio.h> // BC5 (experiment 0358, trap v2)\n#include <unistd.h>\n",
 
-	"static void Bc5CrashLog(const char* format, ...) {\n",
-	$reader . "\nstatic void Bc5CrashLog(const char* format, ...) {\n",
+	# before the helper's comment block, not between its format attribute and the function
+	"// BC5 (experiment 0318): the crash diagnostics of KytyExceptionHandler go to stderr through RawLog,\n",
+	$reader . "\n// BC5 (experiment 0318): the crash diagnostics of KytyExceptionHandler go to stderr through RawLog,\n",
 
 	# (1) the block journal: after the image copy of a new block
 	"\t\tif (!program->tls.init_image.empty()) {\n\t\t\tstd::memcpy(tls.ptr, program->tls.init_image.data(), program->tls.init_image.size());\n",
