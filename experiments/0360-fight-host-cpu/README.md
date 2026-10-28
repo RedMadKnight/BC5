@@ -181,7 +181,28 @@ the fight needs a scripted route from before it. F446's replay had lost his path
     on.
   - Exp 0359's fix ON (F3) is the control. The fix OFF on the candidate builds is the test of the throughput work.
 
-**Setup.** (filled in as the work goes)
+**Setup.**
+- **Box:** kernel 7.2.9-ogc3.1.fc44; the shared builds before 16:04 normal affa0c22, after it normal 1000ad2a with
+  the job-arena fix (exp 0361); archive bb50b2e0; launcher `play-pkg.sh` 55531ab6; RT on (the shared `input.cfg`) in
+  every run.
+- **Private builds** (`build0360.sh`, exp 0358's compdb pattern: the changed host units in a private copy, compiled
+  with the shared normal build's commands, relinked with the shared objects and archive). Each is
+  `~/bc5-work/exp0360/<variant>/kyty_emulator`:
+  - `meter` a5c7affc (on affa0c22): `meter0360.pl` + `prof0360.pl`;
+  - `meter2` 5a00f0b8 (on 1000ad2a): the same with the sampler counting the guest memfd as title code;
+  - `cand` 6167956d (on 1000ad2a): `meter2` + `fasttls0360.pl` (A, `runtimeLinker.cpp` 96e03695) +
+    `onetsc0360.pl` (B, `pthread.cpp` 46c7ac3a).
+
+  The units' and the shared files' md5s were checked before and after each build.
+- **Runs:** `run0360.sh` (exp 0358's `repro0358.sh` via `mk-run0360.pl`):
+  - a private wd, the live saves compared only, the kernel log streamed to the laptop, a stop at the first amdgpu
+    line;
+  - the S6N route from `exp0196/saves-before-152617` with `o2-continue.cmd`;
+  - or the fight route of F464 (`REPRO_PHASE2`).
+
+  `go0360.sh` and `chain0360.sh` start the runs under the lock rules.
+- **Analysis on the laptop:** `fp0360.pl` (frame profiles), `meter0360-sum.pl` (the meter and sampler lines) and
+  `prof0360-sym.pl` (the host histogram against `nm -n -C` of the build, `raw/nm-*.txt.gz`).
 
 **Result.**
 
@@ -277,4 +298,72 @@ fight with exp 0359's patch off decides.
   ranking. F453/F454's "the Bk workers got only 0.05–0.06 CPU s" and "the Hi workers' CPU 0.5 s each" therefore do
   not show starvation. The state letters and the box's busy share are correct.
 
-**Verdict.**
+- **The candidate batch (17:01–17:49).** Fight runs: the F464 route, 150–200 s. S6N runs: 300 s. Every run had no
+  kernel line (`raw/<tag>-kernel-stream.txt`, IPv6 lines only), no devcoredump, and live saves unchanged
+  (41a5a36fffb4f8d4). The play log confirmed the fix state in each run.
+
+  | run | build | route | job-arena fix | result |
+  |---|---|---|---|---|
+  | F3 | shared 1000ad2a | fight | ON | pass, 200 s |
+  | F2, F2b, F2c | shared 1000ad2a | fight | OFF | crash at 113–116 s, 3 of 3 |
+  | M2f, M2f2, M2f3 | meter2 | fight | OFF | pass, crash at 114 s, crash at 115 s: 2 of 3 |
+  | C1f, C1f2, C1f3 | cand (A + B) | fight | OFF | crash at 113–116 s, 3 of 3 |
+  | M2 | meter2 | S6N | default (ON) | pass, 33.8 flips/s |
+  | C1 | cand (A + B) | S6N | default (ON) | pass, 33.7 flips/s |
+
+- **F470 — candidates A and B cut the host's per-call cost on the title's threads, but neither the frame rate nor the
+  fight's crash moves.**
+  - **A (fast TLS) works as designed.** `Loader::TlsMainGetAddr` vanishes from game-main's host samples (M2 2,537,
+    C1 0). game-main's emulator share falls from 14–15 % to 8 % of its samples, and its title share rises from
+    83–84 % to 90 % (S6N, t 180–300).
+  - **game-main still runs 500–506 ms of CPU a second in both builds.** The time A frees goes into the title's own
+    job-wait loop: the 256-byte bucket at eboot.bin+0x3cca700 (inside the owner's wait/help path +0x3cca600 …
+    +0x3cca900, F449) grows from 7,043 of 36,777 game-main samples (19 %) to 12,368 of 36,726 (34 %).
+  - **So game-main is not CPU-bound on the route.** It waits for its jobs, spinning, and a cheaper host call only
+    lengthens the spin.
+  - **B (one TSC read) saves nothing measurable:** the clock call is `KernelGetElapsedTsc` +
+    `KernelGetProcessTimeCounter`, 1,951 samples in C1 against 1,685 in M2. The cost is the `rdtsc` itself, not the
+    second read.
+  - **S6N:** 33.7 flips/s against 33.8.
+  - **The fight with the fix OFF:** cand crashed 3 of 3, as the shared build did. meter2's one pass was chance, 2 of
+    its 3 runs crashed.
+- **F471 — the scripted fight on the meter (M2f, t 100–145 s in 5-s windows, ~30 flips/s): the box is 28–43 % busy
+  and the title's threads wait ~20 µs per wake-up.** Per second:
+
+  | | CPU ms | run-queue wait ms |
+  |---|---|---|
+  | the title's threads | 3,900–4,400 | 530–850 (220–310 on the route) |
+  | the five Hi workers | 550–720 | 156–205 |
+  | the five Bk workers | 1,200–1,600 | — |
+  | game-main | 555–650 | 4–12 |
+  | AK::AudioMgr | 220–460 | — |
+  | the host's threads | 460–690 | 95–230 |
+
+  - No CPU is over 90 % in any 5-s window.
+  - The Hi workers' wait is ~26 % of their CPU time, but each worker sleeps and wakes ~1,750 times a second (the
+    voluntary switches in exp 0358's FIX=3 print). That is ~20 µs of run-queue wait per wake: wake-up latency, not a
+    box short of cores.
+  - The direct path on the title's threads takes 175–270 submits/s with sync + hints 20–47, prepare 46–78 and cs
+    32–49 ms/s.
+
+  This scripted fight runs at ~30 flips/s, not at the 14 of his fight's slow phase. It crashes 8–12 s into gameplay,
+  so the meter sees only the crash's lead-in.
+
+**Verdict.** **The host's CPU throughput is not what loses F454's race, and the job-arena fix (exp 0359) stays.**
+- **The breakdown (F461–F463, F471):**
+  - at the fight the render thread spends 12.5 ms of a 70-ms frame in the direct path, and the GPU 11.8;
+  - the box is 24–45 % busy, with no CPU saturated and the host's own threads at ~0.5 cores;
+  - on the title's threads the host's share is 8–15 % of game-main and 1–6 % of the workers, mostly two per-call
+    costs (the TLS trampoline and the TSC clock);
+  - game-main spends 19 % of its CPU spinning in its own job wait.
+- **Candidate A** removes the larger of those costs. Nothing that would matter to the race changes: game-main's CPU,
+  the frame rate, and above all the crash (3 of 3 with the fix off, as on the shared build).
+- **What decides F454** is the order of a few microseconds between the owner's push and its help scan (F454's ring).
+  Those microseconds do not depend on the host's per-frame CPU budget.
+- **Kept from this experiment:**
+  - F460 (the trap's CPU columns were kernel time) and the corrected meter, for anyone who measures threads next.
+  - The automated fight test (F464), which reproduces the crash 3 of 3 with the fix off and passes with it on. It is
+    the regression test for any future change to exp 0359's fix.
+- **Not built:** candidate C (a cheaper `emit_prefix`, ~14 ms/s of the Render Thread on the route). By F461 it is
+  off the fight's critical path. Its sketch stays in the design section.
+- **Neither candidate is proposed for the shared builds.**
