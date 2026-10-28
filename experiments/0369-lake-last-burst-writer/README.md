@@ -126,8 +126,8 @@ nothing was to be written on the box).
   - Under (a) the hole tiles' memory is untouched until decompress #2, and the drawn tiles' compressed writes sit at
     fixed offsets within each 256-byte tile.
 
-**Run K2 (prepared, not run; needs a slot after 22:45):** exp 0365's lake bench and poller unchanged (`setup0369.sh`,
-`ab0369.sh`, `bench0369.sh`, `pl0369.py`: 0365 → 0369), RT ON, one run.
+**Run K2 (prepared offline at 20:00, run at 22:39–22:44 in the top session's slot):** exp 0365's lake bench and poller
+unchanged (`setup0369.sh`, `ab0369.sh`, `bench0369.sh`, `pl0369.py`: 0365 → 0369), RT ON, one run.
 - **`tz0369.py`**, on frames with an untorn final at a clear size, at full render resolution in the lake window:
   - the share of 8×8 tiles that are all hole, no hole and mixed, on the true tile grid and on a grid shifted by
     (4, 4). Tile-aligned holes give few mixed tiles on the true grid and many on the shifted one; cell-shaped holes
@@ -136,3 +136,58 @@ nothing was to be written on the box).
     256-byte tile, and the changed share in tiles that are holes in this frame's final against drawn tiles.
 - **Stop rules:** the standing ones.
 - **Snapshots and shots** deleted after the analysis, unviewed.
+
+**Setup as run, K2** (2026-10-28, the top session's GO at 22:38, after the bvh soak released the box at 22:37):
+- **22:38:41:** guard (no emulator, empty BOX-LOCK), our lock line, `CLAIM.txt`, a BOX-QUEUE claim. Live saves
+  41a5a36fffb4f8d4.
+- **22:38:52:** the kit was copied and `setup0369.sh` was run (launcher `play-pkg-0369.sh`, `raw/play-pkg-0369.diff`,
+  identical to exp 0365's but for the number). The input configuration `raw/input-0369.cfg` is identical to K1's (RT
+  on). The build was the shared normal build 1000ad2a. The `tz0369.py --selftest` run on the box passed.
+- **22:39:07–22:44:23:** the kernel log was streamed to the laptop (`raw/kernel-stream.txt`: three IPv6 lines, nothing
+  else). `ab0369.sh K2 41a5a36fffb4f8d4 "" 330` ran with `pl0369.py K2 85 … 212 2.0 6` beside it. Save copy
+  `saves-lake-1153`, as K1. 0 fault, ring, fence or ray-tracing-off lines. Live saves unchanged after.
+- **22:44:29:** `ana0369.sh K2` (`raw/K2.bursts.txt`, `raw/K2.reads.txt`, `raw/K2.reads.json`, `raw/K2.tz.txt`).
+- **22:46:24:** the 408 snapshots (2.8 GB) and 22 shots were deleted unviewed. Our journalctl was killed, the lock line
+  removed and a BOX-QUEUE released line added. The journal (`~/bc5-data/captures/play-20261028-2239`) stays private.
+- **Change after seeing the data:** the K1 comparison below (zero shares and best widths from both reads files, and
+  the mean shot patch of the earlier `raw/*.ab.txt` lake runs) was added on the laptop.
+
+**Result, K2.**
+- **The lake had almost no holes in this run.**
+  - The bench's shot patch was 9.0–9.2 % in all 20 shots; K1 had 30–32 %. Over the earlier lake-bench runs the mean
+    patch ranged from 0.8 % to 32 % (exp 0362's H1: 9.7 %).
+  - Zero dwords in the final snapshots (after the last burst, 7 MiB at +0x300000): median 0.000, 197 of 204 at
+    ≤ 0.01. The other seven:
+    - four at 2048 with 0.031, all outside the lake window (`tz0369`: no hole pixel in it);
+    - three taken at the poller's cap before the last burst, with 0.070, the mid-frame level.
+  - K1: median 0.247, all 196 untorn finals above 0.17.
+  - Only 37 finals gave a clear size (2816: 33, 2048: 4), against K1's 193. sn0365's size test probably needs the
+    holes' edges, which were missing. `tz0369` found a hole share of 0.000 in the lake window of all 37.
+  - **So K2 cannot tell (a) from (b).** The mixed-tile test has no holes to test.
+- **What K2 did measure:**
+  - **The swizzle check:** in all 37, every aligned 8×8 tile of the lake window lies in one 256-byte block (1.000), as
+    the self-test expects for 64KB_Z_X at 32 bpp.
+  - **The bursts:** 1,903 of 2,228 frames had two bursts, starting at +6.4 and +18.1 ms (medians). The second ended at
+    +19.2 ms. H1 also had one at +8.3 ms.
+  - **The mid-frame writes**, in 28 consecutive pairs (previous final → this frame's mid snapshot, the lake window):
+    - 13.1 % of the dwords changed at 2816, and 17.0 % at 2048. The value was the same in every frame to 0.001.
+    - 34.5 % of the changed dwords sit at offsets 0–7 of their 256-byte block, 4.3 % at each, against about 1.2 % at
+      each other offset (uniform 1.6 %). If each changed tile changed either all 64 dwords or only the first 8, about
+      a quarter of the changed tiles were rewritten whole and three quarters only in their first 32 bytes.
+    - The mid snapshots held 7.0 % zero dwords (all 203 untorn, 0.069–0.197), where the previous finals had none, and
+      the finals had none again.
+  - So mid-frame the depth memory holds words that are not the final per-pixel depth, concentrated at the start of
+    each tile's block. The decompress replaces them. This fits F484's compressed depth. Whether these are the
+    compressed tiles' data is a TODO(verify): no public source on the gfx10 compressed depth layout was checked.
+
+**Verdict, K2** (F486).
+- **(a) coverage against (b) metadata stays open.** K2 ran fault-free, RT on, on the same build, save copy, route and
+  input configuration as K1. Even so, the lake's depth had no holes: the final zero share was 0.000, against K1's
+  0.247.
+- The run-to-run variation of the holes, already visible in the shot patch of earlier runs (0.8–32 %), is real in the
+  depth too. Nothing in the setup explains it.
+- **Next:**
+  - Repeat K2 until a run shows holes (shot patch ≥ 20 %). Check the patch in `K2.out` before trusting `tz0369`'s
+    numbers.
+  - Separately: what makes a run hole-free. H1 (9.7 %) and K2 (9.2 %) were both low; K1 (31 %) and exp 0355's W1
+    (32 %) were high.

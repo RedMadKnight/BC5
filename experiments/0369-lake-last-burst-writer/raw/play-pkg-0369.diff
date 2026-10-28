@@ -1,0 +1,18 @@
+13c13
+< LOG=~/bc5-work/play-pkg-last.log
+---
+> LOG=~/bc5-work/exp0369/play-last.log
+22c22
+< MLOG=~/bc5-work/play-pkg-mount.log
+---
+> MLOG=~/bc5-work/exp0369/play-pkg-mount.log  # exp 0369: its own mount log
+39a40
+> [ -n "${BC5_0299_INPUT_CONFIG:-}" ] && export KYTY_BC5_INPUT_CONFIG=$BC5_0299_INPUT_CONFIG  # exp 0369: the bench input configuration
+49c50
+< export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/_SaveData-pkg-play
+---
+> export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/exp0299/wd/_SaveData-pkg-play  # exp 0369: private (exp 0299 wd)
+190c191
+< cd ~/bc5-work
+---
+> cd ~/bc5-work/exp0299/wd  # exp 0369: exp 0299 private working directory (its own _SaveData)
