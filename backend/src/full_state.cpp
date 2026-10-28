@@ -2,7 +2,6 @@
 #include "bc5/full_state.hpp"
 
 #include <algorithm>
-#include <cstring>
 
 namespace bc5::full_state {
 
@@ -241,48 +240,27 @@ void Tracker::apply_level(std::span<const std::uint32_t> ib, const Reader &read,
 
 std::vector<std::uint32_t> Tracker::emit_prefix() const {
     std::vector<std::uint32_t> out;
-    // Experiment 0367: the output is reserved once (at most a header and an offset per register) and each run is
-    // written in place, its header patched when it closes; the flat arrays are scanned eight slots at a time, so
-    // the empty stretches cost one load per eight registers. The packets are the same, in the same order.
-    std::size_t regs = 0;
-    for (int s = 0; s < Spaces; ++s) regs += regs_[s].n;
-    out.reserve(16 + 3 * regs + 8 * (packets_.set_base.size() + 5));
     // CONTEXT_CONTROL with load and shadow enables 0x80000000, the form the policy forces.
     out.insert(out.end(), {0xC0012800u, 0x80000000u, 0x80000000u});
     out.insert(out.end(), {0xC0001200u, 0u}); // CLEAR_STATE cmd 0
     for (int s = 0; s < Spaces; ++s) {
         // Runs of consecutive registers, at most 0x3ffe values per packet.
         std::uint32_t first = 0;
-        std::size_t count = 0, head = 0; // the open run: its value count and its header's index in out
+        std::vector<std::uint32_t> values;
         const auto flush = [&] {
-            if (count == 0) return;
-            out[head] = 0xC0000000u | (static_cast<std::uint32_t>(count) << 16) | (static_cast<std::uint32_t>(kSetOp[s]) << 8);
-            count = 0;
+            if (values.empty()) return;
+            put_header(out, kSetOp[s], values.size() + 1);
+            out.push_back(first);
+            out.insert(out.end(), values.begin(), values.end());
+            values.clear();
         };
-        const auto add = [&](std::uint32_t off, std::uint32_t v) {
-            if (count == 0 || off != first + count || count >= 0x3fff - 1) {
+        regs_[s].for_each([&](std::uint32_t off, std::uint32_t v) {
+            if (values.empty() || off != first + values.size() || values.size() >= 0x3fff - 1) {
                 flush();
                 first = off;
-                head = out.size();
-                out.push_back(0); // the header, patched by flush
-                out.push_back(first);
             }
-            out.push_back(v);
-            count++;
-        };
-        const RegFile &r = regs_[s];
-        const std::size_t size = r.has.size();
-        std::size_t k = 0;
-        for (; k + 8 <= size; k += 8) {
-            std::uint64_t w = 0;
-            std::memcpy(&w, &r.has[k], sizeof(w));
-            if (w == 0) continue;
-            for (std::size_t j = k; j < k + 8; ++j)
-                if (r.has[j] != 0) add(static_cast<std::uint32_t>(j), r.value[j]);
-        }
-        for (; k < size; ++k)
-            if (r.has[k] != 0) add(static_cast<std::uint32_t>(k), r.value[k]);
-        for (const auto &[off, v] : r.overflow) add(off, v);
+            values.push_back(v);
+        });
         flush();
     }
     const auto put = [&out](std::uint8_t op, const std::vector<std::uint32_t> &b) {

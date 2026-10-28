@@ -35,7 +35,8 @@ On the S6N route (exp 0360 M2) the shares are the same. What the code does per s
 
 ## Candidates
 
-- **C1 — `emit_prefix` without the byte-by-byte scan** (`backend/src/full_state.cpp` only; no header, no layout
+- **C1 — `emit_prefix` without the byte-by-byte scan** (`full_state-0367.cpp`, a copy of `backend/src/full_state.cpp`
+  with the change, `full_state-0367.diff`; main's backend stays as the archive was built (D19); no header, no layout
   change). The flag bytes are read eight at a time and an empty word is skipped. Each run is written straight into an
   output reserved once, its header patched when it closes. Run boundaries, the 0x3ffe-value split and the order (flat
   slots ascending, then the overflow map) are those of the old code. Expected: most of `emit_prefix`'s 27.5 %, ~10 % of
