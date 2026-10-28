@@ -1,0 +1,9 @@
+R1: stopped at 600 s after 601 s; launcher exit 0; crash lines 0, kernel lines 0, TIMEOUT lines 0, compute-ring lines 0, fdinfo engines drm-engine-gfx , devcoredumps 0, RT-off drop lines 0, flips 21656 over 596.4 s = 36.3 flips/s; direct: 19397 views; +0 BOs (95, 11312.0 MiB pinned); maps +1 -2 (19431); imports  (stubs ), call lines , procparam ; the private learned file is unchanged
+pass
+2026-10-28 16:14:50 live saves 41a5a36fffb4f8d4 (want 41a5a36fffb4f8d4)
+BOX-LOCK released
+game fix (temporary, exp 0359): job-arena fix ON for PPSA03671 (not set, on for that title)
+game fix: job-arena fix APPLIED: site +0x3cca87b -> slot +0x3cca4c8 -> host hook 0x55aad0080260 (temporary; input.cfg JobArenaFix.PPSA03671=off turns it off)
+game fix: job-arena hook call 58000 (58000 wrapped), thread index -1 -> the window
+
+[exited with code 0]
