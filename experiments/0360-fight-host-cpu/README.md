@@ -133,6 +133,92 @@ play logs were read on the laptop and not committed: their fault prints carry ti
 
 **Result.**
 
+- **The meter build a5c7affc (15:49):** `build0360.sh meter meter0360.pl prof0360.pl`. It compiled in 28 s with
+  0 errors and the tree's own 4 warnings (lines 85, 403, 701, 2411; none in the new code). The shared binary, the
+  archive and the unit were unchanged afterwards.
+- **M1 (15:50–15:55), the S6N route, RT on, 300 s, `run0360.sh`, the meter build: pass.**
+  - 9,936 flips over 299 s = 33.2 flips/s, GPU busy 21.4 ms a frame, 30.1 ms between flips.
+  - No crash, no kernel line (`raw/M1-kernel-stream.txt`: two IPv6 lines only), no TIMEOUT, no devcoredump.
+  - Live saves unchanged (41a5a36fffb4f8d4, the maintainer's state after his 15:38 play).
+  - The first 300 s of the 11:33 S6N run on the shared units did 33.4 flips/s. So the meter and the sampler cost no
+    measurable frame rate.
+  - The meter thread itself takes a median 1.7 ms once a second (p90 2.1, max 8.3; `raw/M1-meter.txt.gz`).
+- **F462 — the S6N route on the meter: 26–29 % busy, the title's threads seldom wait for a core.** Means over
+  t 180–300 s (~39 flips/s), in CPU ms per second (on a CPU / runnable waiting; `meter0360-sum.pl raw/M1-meter.txt.gz 30`):
+
+  | | CPU | waiting |
+  |---|---|---|
+  | the title's threads | 3,230–3,320 | 220–310 |
+  | the host's threads | 460–480 | 74–90 |
+  | the five Hi workers | 620–650 | 66–88 |
+  | the five Lo workers | 540–570 | 59–69 |
+  | the five Bk workers | 800–845 | 14–31 |
+  | game-main | 495–505 | 0–4 |
+  | Render Thread | 500–515 | 10–12 |
+
+  - Per Hi worker that is 13–18 ms of run-queue wait a second.
+  - The package mount (`bc5-mount`, decompression) costs 0–1 ms/s once loaded, 150–600 ms/s while loading.
+  - The rest of the box (kernel threads, the compositor) takes 600–1,130 ms/s.
+  - Direct-path submit costs: on the title's threads ~250 submits/s, with sync + hints 30–45, prepare 94–103 and cs
+    44–50 ms/s; on bc5-ring ~1,000 submits/s, with 9–40, 35–38 and 75–80 ms/s.
+- **F463 — where the title's threads spend their host time on the route (the sampler, 4 ms of CPU per sample, M1).**
+  The rip classes per group, t 180–300 s (`raw/M1-meter.txt.gz` "cpu prof:"). "lib" here still includes the title's own
+  code (the M1 build counted the guest memfd, `memfd:KytyPrivateMemory`, as a library; fixed for later builds):
+
+  | group | emulator | kernel | lib + title |
+  |---|---|---|---|
+  | game-main | 14–15 % | 2 % | 83 % |
+  | Render Thread | 38–40 % | 12–13 % | 49 % |
+  | Hi workers | 1 % | 5–6 % | 92–94 % |
+  | Lo workers | 1 % | 2–3 % | 96–97 % |
+
+  The emulator-code samples resolved with `nm -n -C` of a5c7affc (`prof0360-sym.pl`, the last cumulative histogram,
+  17,239 samples):
+  - **game-main:** `Loader::TlsMainGetAddr` 54 % and `LibKernel::KernelGetProcessTimeCounter` 36 %, then the
+    memory map calls (`VirtualRanges::QuerySpan` 4 %, `KernelMapDirectMemory2` 3 %).
+  - **Render Thread:**
+    - `full_state::Tracker::emit_prefix` 27.5 %: the full-state prefix of every drawing buffer, a byte-by-byte
+      scan of 28,672 register slots.
+    - `Direct::submit_now` 19 %, `full_state::Tracker::apply_level` 13 %, `state_stack::Tracker::apply_in_place`
+      8 %, `direct::Device::submit` 5 %, and the rest of the direct path.
+  - **Hi/Lo workers:** `PthreadTakePendingSignal` and `TlsMainGetAddr`.
+
+  `TlsMainGetAddr` is the end of every patched `mov reg, fs:[0]` in the title's code. The trampoline in front of it
+  (`Jit::SafeCall`: nine pushes, `pushfq`/`popfq`, an indirect call) lives in guest memory, so its own samples are
+  in the title's share. `KernelGetProcessTimeCounter` reads the TSC twice per call (exp 0166's pause adjust reads
+  it again).
+
+## Design: candidates (2026-10-28, from F461–F463)
+
+F461 rules out the direct path and the GPU as the fight's limit, and the route's cores are not saturated (F462).
+What the host can still change on the threads of F454's race (the owner game-main and the Hi workers) is the host
+time inside their own calls. On the route that is 15 % of game-main and 1–6 % of the workers, plus the TLS
+trampoline counted in the title's share.
+
+- **A — the TLS fast path (`fasttls0360.pl`, `runtimeLinker.cpp`).**
+  - Seven stubs go into the free part of the handler page (handler_vaddr + 0x400 + reg × 32). Each does
+    `mov reg, fs:[D]`, `test reg, reg`, `jz slow`, `ret`, where D is the host thread_local `g_tls_cached_main_tcb`
+    relative to the thread pointer (the same in every thread: the executable's static TLS). The slow path jumps to
+    the existing stub, which fills the cache on a thread's first access.
+  - The patched call sites point at the new stubs. The flags and the return-address slot are clobbered as on the
+    existing path (SafeCall ends with `add rsp, 0x80`).
+  - Expected: each title TLS read drops from the trampoline plus a C++ call (tens of cycles, with `popfq`) to a few
+    cycles.
+  - The gain is the TlsMainGetAddr samples (~6 % of game-main's CPU on the route) plus the trampoline's, which the
+    fixed sampler's title histogram will show at handler_vaddr.
+  - It is on every title thread, the workers included. `BC5_0360_FAST_TLS=0` turns it off.
+- **B — one TSC read per clock call (`onetsc0360.pl`, `pthread.cpp`).** `KernelGetElapsedTsc` and `KernelReadTsc`
+  use one `rdtsc` for the value and the pause adjustment. Expected: half of `KernelGetProcessTimeCounter`'s ~4 % of
+  game-main. `BC5_0360_ONE_TSC=0` turns it off.
+- **C (designed, not built) — `emit_prefix` without the byte scan.** A bitmap of set registers walked with 64-bit
+  words, and the output reserved once. That is ~14 ms/s of the Render Thread on the route. It is left for later:
+  the Render Thread is not on the fight's critical path (F461).
+
+A and B change only host functions. The title's code and the job system are untouched, and both are on by default
+in the candidate build with a switch each. They are measured on the S6N route against the meter build: flips/s,
+game-main's and the Hi workers' CPU per frame, the sampler's shares. Then, if the route passes, the maintainer's
+fight with exp 0359's patch off decides.
+
 - **F460 — exp 0358's per-thread "cpu" figures are kernel time (stime), not CPU.** See the offline reading above:
   `bc5_proc_state` (trap v4/v5) prints `/proc/<tid>/stat` field 15 as "user" and fields 15 + 16 as "cpu". Every
   per-thread CPU figure is kernel time: the crash prints, the sampler's Hi columns, and the v5 thread tables'

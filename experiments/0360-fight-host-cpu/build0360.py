@@ -1,12 +1,11 @@
 # BC5 experiment 0360 (exp 0358's build0358v5.py for one unit): the shared normal build's compile command (ninja
 # compdb) for the PRIVATE patched copy of src/libs/bc5LleAgc.cpp into a private object, then the shared link command
 # with that object swapped in (the shared backend archive as it is). Nothing shared is written.
-# usage: build0360.py <compdb.json> <private src root> <private obj dir> <shared build dir> <output binary>
+# usage: build0360.py <compdb.json> <private src root> <private obj dir> <shared build dir> <output binary> [src/<unit>.cpp ...]
 import json, os, shlex, subprocess, sys
 db_path, src_root, out_dir, build, out_bin = sys.argv[1:6]
-UNITS = {
-    "src/CMakeFiles/kyty_emulator.dir/libs/bc5LleAgc.cpp.o": "src/libs/bc5LleAgc.cpp",
-}
+# the changed units, as paths under src/ (default: bc5LleAgc.cpp only)
+UNITS = {"src/CMakeFiles/kyty_emulator.dir/" + u[len("src/"):] + ".o": u for u in (sys.argv[6:] or ["src/libs/bc5LleAgc.cpp"])}
 def clean_compile(cmd):
     argv, clean, skip = shlex.split(cmd), [], 0
     for a in argv:

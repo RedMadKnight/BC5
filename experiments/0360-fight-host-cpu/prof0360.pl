@@ -62,7 +62,7 @@ namespace Prof0360 {
 #ifndef sigev_notify_thread_id
 #define sigev_notify_thread_id _sigev_un._tid
 #endif
-constexpr int kSlots = 64, kLibs = 40, kHash = 1 << 15, kGroups = 6;
+constexpr int kSlots = 64, kLibs = 64, kHash = 1 << 15, kGroups = 6;
 constexpr int kGuest = 0, kHost = 1, kSys = 2, kLib0 = 3, kCls = kLib0 + kLibs;
 static const char* const kGroupName[kGroups] = {"game-main", "Render", "Hi", "Lo", "Bk", "IO"};
 struct Range {
@@ -162,7 +162,8 @@ static void read_maps() {
 		if (char* nl = std::strchr(path, '\n')) *nl = 0;
 		const bool is_exe = exe[0] != 0 && std::strcmp(path, exe) == 0;
 		if (is_exe && lo < exe_base) exe_base = lo;
-		if (perms[2] != 'x' || path[0] == 0 || m->n >= 512) continue; // anonymous executable memory: the title's code
+		// anonymous executable memory and the guest's memfds (memfd:KytyPrivateMemory, M1): the title's code
+		if (perms[2] != 'x' || path[0] == 0 || std::strncmp(path, "memfd:", 6) == 0 || std::strncmp(path, "/memfd:", 7) == 0 || m->n >= 512) continue;
 		int lib = -1;
 		if (!is_exe) {
 			const char* b = std::strrchr(path, '/');
@@ -185,7 +186,7 @@ static void read_maps() {
 	m->exe_base = exe_base == ~0ull ? 0 : exe_base;
 	const Maps* old = g_maps.exchange(m, std::memory_order_acq_rel);
 	if (old == nullptr || old->nlibs != m->nlibs || old->n != m->n) {
-		char   names[1600] {};
+		char   names[2600] {};
 		size_t nl = 0;
 		for (int k = 0; k < m->nlibs && nl < sizeof(names) - 48; k++) nl += static_cast<size_t>(std::snprintf(names + nl, sizeof(names) - nl, " %d:%s", k, m->names[k]));
 		journal("cpu prof libs: exe %s base 0x%" PRIx64 ", %d executable ranges, libraries:%s\n", exe, m->exe_base, m->n, names);
