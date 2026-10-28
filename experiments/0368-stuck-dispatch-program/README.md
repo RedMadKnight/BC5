@@ -1,6 +1,7 @@
 # 0368 — F403's class: which program is resident and not ending?
 
-**Date.** 2026-10-28 (18:5x–19:xx). **Branch.** `exp/0300-rt-dispatch-sync`. **Box.** Offline so far; no run.
+**Date.** 2026-10-28 (18:5x–19:xx offline; the soak 19:45–22:35). **Branch.** `exp/0300-rt-dispatch-sync`. **Box.**
+The soak: 16 S6N RT-on runs on the shared normal build, under the lock, exclusive.
 
 **Question.** F403's class — a GFX ring timeout with no fault, waves busy, the CP inside the host's GFX-form
 indirect-dispatch check — is the one machine-down risk left with RT on (F476: one in ~25 S6N RT-on runs since the
@@ -57,3 +58,41 @@ dump at the next event: the bench's S6N RT-on runs and the maintainer's test sho
 traversal's loop (arm A, exp 0137's mechanism) or a refit/build program to skip and bisect (arm B). The risk is the
 class's own: the event ends the box either way; the dump adds nothing to it (umr halts the waves the kernel is about
 to reset) and is written before the reset.
+
+## The soak (19:45–22:35, the instrument armed)
+
+**Setup.** `raw/soak0368.sh 41a5a36fffb4f8d4 22:45 600` on the box (nohup, 19:45:53): repeated runs of `raw/s6n0368.sh`
+(exp 0364's S6N script pointed at the SHARED normal build `~/bc5-work/kytyplus-build/src/kyty_emulator` 1000ad2a, the
+job-arena fix on as shipped, the launcher `play-pkg.sh` 55531ab6 copied private with its own log), RT on, 600 s a run,
+`BC5_DIRECT_UMR_ON_TIMEOUT=1` in the emulator's environment (checked in `/proc/<pid>/environ` of S1 with
+`KYTY_BC5_SAVEDATA_DIR=~/bc5-work/exp0368/wd/_SaveData-pkg-play`), the live saves compared only (a snapshot before each
+run, the sum after), the kernel log streamed beside the runs (`raw/soak-kernel-stream.txt`, `sudo dmesg -w` under
+`timeout`), the box lock held by the loop for the whole soak with its expected end, 20 s between runs, the loop stopping
+at the first run without `pass`, at a run that did not start, or before a run that would end past 22:45. Logs on the
+box: `~/bc5-work/exp0368/raw/soak.log`, `S1.console`–`S16.console`; the captures
+`~/bc5-data/captures/play-20261028-1945` … `-2224` (the journal only, no dump in any).
+
+- **F493 — 16 runs, 16 passes, no event.** S1 19:45:53 … S16 ended 22:34:41; every run "stopped at 600 s after
+  600–601 s; launcher exit 0; crash lines 0, kernel lines 0, TIMEOUT lines 0, compute-ring lines 0, devcoredumps 0,
+  RT-off drop lines 0"; no `umr:` line in any journal and no `umr-waves-*.txt` written (the dump fires only on a stalled
+  wait); no devcoredump after R4's 18:15:05 one; the streamed kernel log has no amdgpu, timeout or reset line after
+  boot (127 post-boot lines, none GPU); the live saves 41a5a36fffb4f8d4 unchanged after each run. 160 min of S6N RT on
+  in one sitting, 341,112 flips in all.
+- **F494 — the rate is flat across the soak: 34.7–36.5 flips/s, mean 35.8.** Per run: 36.5, 36.2, 35.8, 35.7, 35.5,
+  36.1, 35.5, 36.3, 36.0, 35.1, 35.3, 35.8, 35.8, 35.9, 36.3, 34.7 (each over ~596 s). No drift with the run count:
+  the first eight average 35.95, the last eight 35.6; S16's 34.7 is the single low one. In line with exp 0367's S6N
+  33.6–33.8 on the same build with its probe and with exp 0364's R1–R3 (RT on, the hint build), so the umr switch costs
+  nothing while nothing stalls (its only code runs 0.9 s into a stalled wait).
+- **F495 — the soak does not contradict F476's rate, and it does not decide the arm.** At one event in ~25 runs, 16
+  event-free runs are the expected outcome about half the time (0.96^16 = 0.52); the class is not gone, it was not
+  reached tonight. The wave dump is still the step that names the program; the instrument stays as it is: the switch is
+  in the shared build, free at the rate (F494), and every S6N RT-on run and the maintainer's shortcut can carry
+  `BC5_DIRECT_UMR_ON_TIMEOUT=1` until the next event hands over `umr-waves-*.txt` (program, PCs, loop or not), which
+  then picks arm A (exp 0137's wave-side loop bound, if the traversal loops) or arm B (`BC5_DIRECT_SKIP_PGM`, if a
+  refit/build program is named).
+
+**Verdict (the soak).** No event in 16 S6N RT-on runs (160 min) on the shared build 1000ad2a with the wave dump armed;
+rates 34.7–36.5 flips/s, flat; the box, the live saves and the shared builds untouched by the soak. The arm stays
+unchosen until an event is caught with `BC5_DIRECT_UMR_ON_TIMEOUT=1` on; recommended: carry the switch in every
+second-title RT-on run from now on (a line in `bc5-run.env` or the launchers is the maintainer's call: nothing shared was
+changed here).
