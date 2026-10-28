@@ -1,0 +1,104 @@
+# /home/kjaniszewski/bc5-data/priv/exp0355/W1.find.lines: dispatch hits by compute shader and packet (first 4 dwords)
+  cs 11d0376b00 pkt c0031500 00000001 00000001 00000001: 4952
+  cs 11d04f0c00 pkt c0031500 00000005 00000001 00000001: 2476
+  cs 11d0376b00 pkt c0031500 00000002 00000001 00000001: 2476
+  cs 11d0415700 pkt c0031500 00000020 00000001 00000001: 2476
+  cs 11d0375600 pkt c0031500 0000007b 00000001 00000001: 2283
+  cs 11d0375600 pkt c0031500 00000438 00000001 00000001: 1437
+  cs 11d0288a00 pkt c0031500 000014c0 00000001 00000001: 1318
+  cs 11d0288a00 pkt c0031500 00001040 00000001 00000001: 1081
+  cs 11d0375600 pkt c0031500 00000437 00000001 00000001: 544
+  cs 11d0375600 pkt c0031500 0000043d 00000001 00000001: 188
+  cs 11d0375600 pkt c0031500 00000439 00000001 00000001: 144
+  cs 11d0375600 pkt c0031500 0000007a 00000001 00000001: 137
+  cs 11d0375600 pkt c0031500 00000436 00000001 00000001: 59
+  cs 11d0375600 pkt c0031500 00000077 00000001 00000001: 54
+  cs 11d0375600 pkt c0031500 00000434 00000001 00000001: 49
+  cs 11d0375600 pkt c0031500 0000043c 00000001 00000001: 46
+  cs 11d0288a00 pkt c0031500 00000ec0 00000001 00000001: 42
+  cs 11d0288a00 pkt c0031500 00000ac0 00000001 00000001: 35
+  cs 11d0375600 pkt c0031500 0000043b 00000001 00000001: 5
+  cs 11d042ba00 pkt c0031500 00000004 00000001 00000001: 3
+# buffer descriptors covering the argument ranges 11934d3900..11934d4900 11935d3900..11935d4900 11939d3900..11939d4900 1193ad3900..1193ad4900
+  cs 11d0288a00: table 11e0b6db08 dword 0: base 11934d3900 size 0x100000 stride 4 (x43)
+  cs 11d0288a00: table 11e0b6db08 dword 16: base 11934d3900 size 0x100000 stride 4 (x43)
+  cs 11d0288a00: table 11e0b4db08 dword 0: base 11934d3900 size 0x100000 stride 4 (x39)
+  cs 11d0288a00: table 11e0b4db08 dword 16: base 11934d3900 size 0x100000 stride 4 (x39)
+  cs 11d0288a00: table 11e098db08 dword 0: base 11934d3900 size 0x100000 stride 4 (x38)
+  cs 11d0288a00: table 11e098db08 dword 16: base 11934d3900 size 0x100000 stride 4 (x38)
+  cs 11d0288a00: table 11e06edb08 dword 0: base 11934d3900 size 0x100000 stride 4 (x38)
+  cs 11d0288a00: table 11e06edb08 dword 16: base 11934d3900 size 0x100000 stride 4 (x38)
+  cs 11d0288a00: table 11e03edb08 dword 0: base 11934d3900 size 0x100000 stride 4 (x36)
+  cs 11d0288a00: table 11e03edb08 dword 16: base 11934d3900 size 0x100000 stride 4 (x36)
+  cs 11d0288a00: table 11e084db08 dword 0: base 11934d3900 size 0x100000 stride 4 (x36)
+  cs 11d0288a00: table 11e084db08 dword 16: base 11934d3900 size 0x100000 stride 4 (x36)
+  cs 11d0288a00: table 11e04edb08 dword 0: base 11934d3900 size 0x100000 stride 4 (x36)
+  cs 11d0288a00: table 11e04edb08 dword 16: base 11934d3900 size 0x100000 stride 4 (x36)
+  cs 11d0288a00: table 11e078db08 dword 0: base 11934d3900 size 0x100000 stride 4 (x35)
+  cs 11d0288a00: table 11e078db08 dword 16: base 11934d3900 size 0x100000 stride 4 (x35)
+  cs 11d0288a00: table 11e02edb08 dword 0: base 11934d3900 size 0x100000 stride 4 (x35)
+  cs 11d0288a00: table 11e02edb08 dword 16: base 11934d3900 size 0x100000 stride 4 (x35)
+  cs 11d0288a00: table 11e09cdb08 dword 0: base 11934d3900 size 0x100000 stride 4 (x34)
+  cs 11d0288a00: table 11e09cdb08 dword 16: base 11934d3900 size 0x100000 stride 4 (x34)
+  cs 11d0375600: table 11e0b6db08 dword 0: base 11934d3900 size 0x100000 stride 4 (x43)
+  cs 11d0375600: table 11e0b6db08 dword 16: base 11934d3900 size 0x100000 stride 4 (x43)
+  cs 11d0375600: table 11e06edbc0 dword 0: base 11935d3900 size 0x400000 stride 4 (x40)
+  cs 11d0375600: table 11e0b4db08 dword 0: base 11934d3900 size 0x100000 stride 4 (x39)
+  cs 11d0375600: table 11e0b4db08 dword 16: base 11934d3900 size 0x100000 stride 4 (x39)
+  cs 11d0375600: table 11e098db08 dword 0: base 11934d3900 size 0x100000 stride 4 (x38)
+  cs 11d0375600: table 11e098db08 dword 16: base 11934d3900 size 0x100000 stride 4 (x38)
+  cs 11d0375600: table 11e06edb08 dword 0: base 11934d3900 size 0x100000 stride 4 (x38)
+  cs 11d0375600: table 11e06edb08 dword 16: base 11934d3900 size 0x100000 stride 4 (x38)
+  cs 11d0375600: table 11e0ccdbc0 dword 0: base 11935d3900 size 0x400000 stride 4 (x37)
+  cs 11d0375600: table 11e03edb08 dword 0: base 11934d3900 size 0x100000 stride 4 (x36)
+  cs 11d0375600: table 11e03edb08 dword 16: base 11934d3900 size 0x100000 stride 4 (x36)
+  cs 11d0375600: table 11e084db08 dword 0: base 11934d3900 size 0x100000 stride 4 (x36)
+  cs 11d0375600: table 11e084db08 dword 16: base 11934d3900 size 0x100000 stride 4 (x36)
+  cs 11d0375600: table 11e04edb08 dword 0: base 11934d3900 size 0x100000 stride 4 (x36)
+  cs 11d0375600: table 11e04edb08 dword 16: base 11934d3900 size 0x100000 stride 4 (x36)
+  cs 11d0375600: table 11e06adbc0 dword 0: base 11935d3900 size 0x400000 stride 4 (x35)
+  cs 11d0375600: table 11e078db08 dword 0: base 11934d3900 size 0x100000 stride 4 (x35)
+  cs 11d0375600: table 11e078db08 dword 16: base 11934d3900 size 0x100000 stride 4 (x35)
+  cs 11d0375600: table 11e0c6dbc0 dword 0: base 11935d3900 size 0x400000 stride 4 (x35)
+  cs 11d0376b00: user data 4: base 11934d3900 size 0x100000 stride 4 (x4952)
+  cs 11d0376b00: user data 4: base 11935d3900 size 0x400000 stride 4 (x2476)
+  cs 11d0415700: table 11e06edbc0 dword 0: base 11935d3900 size 0x400000 stride 4 (x40)
+  cs 11d0415700: table 11e0ccdbc0 dword 0: base 11935d3900 size 0x400000 stride 4 (x37)
+  cs 11d0415700: table 11e06adbc0 dword 0: base 11935d3900 size 0x400000 stride 4 (x35)
+  cs 11d0415700: table 11e0c6dbc0 dword 0: base 11935d3900 size 0x400000 stride 4 (x35)
+  cs 11d0415700: table 11e036dbc0 dword 0: base 11935d3900 size 0x400000 stride 4 (x34)
+  cs 11d0415700: table 11e06cdbc0 dword 0: base 11935d3900 size 0x400000 stride 4 (x33)
+  cs 11d0415700: table 11e03cdbc0 dword 0: base 11935d3900 size 0x400000 stride 4 (x32)
+  cs 11d0415700: table 11e0a0dbc0 dword 0: base 11935d3900 size 0x400000 stride 4 (x32)
+  cs 11d0415700: table 11e026dbc0 dword 0: base 11935d3900 size 0x400000 stride 4 (x32)
+  cs 11d0415700: table 11e04cdbc0 dword 0: base 11935d3900 size 0x400000 stride 4 (x32)
+  cs 11d0415700: table 11e08cdbc0 dword 0: base 11935d3900 size 0x400000 stride 4 (x31)
+  cs 11d0415700: table 11e05adbc0 dword 0: base 11935d3900 size 0x400000 stride 4 (x31)
+  cs 11d0415700: table 11e058dbc0 dword 0: base 11935d3900 size 0x400000 stride 4 (x31)
+  cs 11d0415700: table 11e0bcdbc0 dword 0: base 11935d3900 size 0x400000 stride 4 (x31)
+  cs 11d0415700: table 11e0b0dbc0 dword 0: base 11935d3900 size 0x400000 stride 4 (x31)
+  cs 11d0415700: table 11e062dbc0 dword 0: base 11935d3900 size 0x400000 stride 4 (x30)
+  cs 11d0415700: table 11e08adbc0 dword 0: base 11935d3900 size 0x400000 stride 4 (x30)
+  cs 11d0415700: table 11e088dbc0 dword 0: base 11935d3900 size 0x400000 stride 4 (x30)
+  cs 11d0415700: table 11e07edbc0 dword 0: base 11935d3900 size 0x400000 stride 4 (x30)
+  cs 11d0415700: table 11e054dbc0 dword 0: base 11935d3900 size 0x400000 stride 4 (x30)
+  cs 11d04f0c00: table 11e0b6db48 dword 0: base 11934d3900 size 0x100000 stride 4 (x43)
+  cs 11d04f0c00: table 11e0b4db48 dword 0: base 11934d3900 size 0x100000 stride 4 (x39)
+  cs 11d04f0c00: table 11e098db48 dword 0: base 11934d3900 size 0x100000 stride 4 (x38)
+  cs 11d04f0c00: table 11e06edb48 dword 0: base 11934d3900 size 0x100000 stride 4 (x38)
+  cs 11d04f0c00: table 11e03edb48 dword 0: base 11934d3900 size 0x100000 stride 4 (x36)
+  cs 11d04f0c00: table 11e084db48 dword 0: base 11934d3900 size 0x100000 stride 4 (x36)
+  cs 11d04f0c00: table 11e04edb48 dword 0: base 11934d3900 size 0x100000 stride 4 (x36)
+  cs 11d04f0c00: table 11e078db48 dword 0: base 11934d3900 size 0x100000 stride 4 (x35)
+  cs 11d04f0c00: table 11e02edb48 dword 0: base 11934d3900 size 0x100000 stride 4 (x35)
+  cs 11d04f0c00: table 11e09cdb48 dword 0: base 11934d3900 size 0x100000 stride 4 (x34)
+  cs 11d04f0c00: table 11e04cdb48 dword 0: base 11934d3900 size 0x100000 stride 4 (x34)
+  cs 11d04f0c00: table 11e056db48 dword 0: base 11934d3900 size 0x100000 stride 4 (x33)
+  cs 11d04f0c00: table 11e04adb48 dword 0: base 11934d3900 size 0x100000 stride 4 (x32)
+  cs 11d04f0c00: table 11e036db48 dword 0: base 11934d3900 size 0x100000 stride 4 (x32)
+  cs 11d04f0c00: table 11e046db48 dword 0: base 11934d3900 size 0x100000 stride 4 (x32)
+  cs 11d04f0c00: table 11e0a4db48 dword 0: base 11934d3900 size 0x100000 stride 4 (x32)
+  cs 11d04f0c00: table 11e06cdb48 dword 0: base 11934d3900 size 0x100000 stride 4 (x32)
+  cs 11d04f0c00: table 11e060db48 dword 0: base 11934d3900 size 0x100000 stride 4 (x31)
+  cs 11d04f0c00: table 11e0a8db48 dword 0: base 11934d3900 size 0x100000 stride 4 (x31)
+  cs 11d04f0c00: table 11e0c4db48 dword 0: base 11934d3900 size 0x100000 stride 4 (x31)

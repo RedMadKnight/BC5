@@ -1,0 +1,29 @@
+10:05:08 W1 live saves before: 3f8412c4884ddf14
+10:05:08 W1 start: binary affa0c22, /var/home 60 %, dmesg 1794 lines; switches: BC5_DIRECT_FIND_VA=1193400000:1193c00000 BC5_DIRECT_DRAW_JOURNAL=200:1 BC5_DIRECT_DRAW_JOURNAL_PS=ffffffffff BC5_DIRECT_DRAW_JOURNAL_FIND=934d3900,935d3900,939d3900,93ad3900 BC5_DIRECT_DRAW_JOURNAL_ACB=1
+  private save copy reset to saves-lake-1153
+  == W1 (BC5_DIRECT_FIND_VA=1193400000:1193c00000 BC5_DIRECT_DRAW_JOURNAL=200:1 BC5_DIRECT_DRAW_JOURNAL_PS=ffffffffff BC5_DIRECT_DRAW_JOURNAL_FIND=934d3900,935d3900,939d3900,93ad3900 BC5_DIRECT_DRAW_JOURNAL_ACB=1) shots done 10:09:57
+  kernel: 0 fault lines, 0 ring timeout/reset lines
+  journal: 0 fence timeouts; 0 ray-tracing-off lines; compute-ring lines (two rings: >= 1; one ring: 0): 0; skip lines: 
+  100814-ts00.png: patch  31.1 %
+  100819-ts01.png: patch  33.5 %
+  100825-ts02.png: patch  31.6 %
+  100830-ts03.png: patch  31.6 %
+  100835-ts04.png: patch  30.7 %
+  100841-ts05.png: patch  34.5 %
+  100846-ts06.png: patch  32.8 %
+  100851-ts07.png: patch  32.8 %
+  100856-ts08.png: patch  32.0 %
+  100901-ts09.png: patch  33.4 %
+  100906-ts10.png: patch  32.6 %
+  100912-ts11.png: patch  32.1 %
+  100917-ts12.png: patch  32.0 %
+  100922-ts13.png: patch  33.6 %
+  100927-ts14.png: patch  32.5 %
+  100932-ts15.png: patch  33.1 %
+  100937-ts16.png: patch  29.3 %
+  100942-ts17.png: patch  33.0 %
+  100947-ts18.png: patch  31.8 %
+  100952-ts19.png: patch  30.8 %
+  fps counter: t 286.506 s: 30 flips in 1.017 s, longest gap 46.5 ms, gaps over 40 ms 1, ove
+10:10:10 W1 live saves after: 3f8412c4884ddf14; /var/home 60%
+10:10:10 W1 done
