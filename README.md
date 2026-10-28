@@ -67,7 +67,7 @@ As of 2026-10-28, measured on one BC-250 with the maintainer's own copies of the
 | Audio grain model and display-event coalescing | The second title's sound and timeline at real speed (1.00× for 10 minutes), no 30-fps cap needed | F246, F247 |
 | Tessellation-factor ring, second title | The night scene's tessellated draws are drawn; the geometry engine's reads at address 0 are gone | F248 |
 
-**The research so far:** 462 findings (F1–F458, F465, F467–F469) in `docs/HANDOFF.md`, 361 experiments (0001–0364) in `experiments/`, 14 architecture decision records in `docs/decisions/`.
+**The research so far:** 463 findings (F1–F458, F465–F469) in `docs/HANDOFF.md`, 362 experiments (0001–0364) in `experiments/`, 14 architecture decision records in `docs/decisions/`.
 
 ### Known issues
 
