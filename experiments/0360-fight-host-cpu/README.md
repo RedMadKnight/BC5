@@ -129,6 +129,58 @@ play logs were read on the laptop and not committed: their fault prints carry ti
   frame off the render thread, and the cores are not saturated on average. Whether the title's threads wait for a core
   in bursts, and what the 55 ms "outside" is, needs the CPU meter.
 
+  *Recut (16:30).* The 2-s flip rates of the six plays show the same timeline every time:
+  - a slow boot phase at t 32–44 s (~14 flips/s) with the package mount reading. M1 shows that phase without any key
+    press, so it is part of the boot, not the Continue load;
+  - a burst at 44–48 s;
+  - the slow fight phase at t ~50–62 s (14 flips/s);
+  - a recovery to 28–30 flips/s, and the crash 8–14 s into it. In 13:53 the slow phase ran on to 72 s, came back at
+    80–92 s, and the crash followed at 100 s.
+
+  The windows above mix the boot phase in. On the fight seconds alone (t 50–62, 1,032 flips) the means are, per flip:
+
+  | ms between flips | direct path | sync / hints / prepare / cs | outside | GPU busy | jobs + ring jobs |
+  |---|---|---|---|---|---|
+  | 69.8 | 12.5 | 2.4 / 2.1 / 3.4 / 4.1 | 54.4 | 11.8 | 20.3 + 76.3 |
+
+  The boot phase (t 34–44) has nearly the same profile. The conclusion is unchanged.
+
+## The automated fight test (16:20–17:00, the top session's standing GO; the maintainer away)
+
+The maintainer had already played through the fight at 15:38, and the game saved (live saves 41a5a36fffb4f8d4), so
+the fight needs a scripted route from before it. F446's replay had lost his path at 52 s.
+
+- **The route.**
+  - **Saves:** exp 0358's private copy of his saves `47aefd4567e6d346` (`~/bc5-work/exp0358/saves-live-47aefd45`,
+    read only, its sum checked), copied into the run's private wd.
+  - **Inputs:** one of his own pad records, split by `mk-fight0360.pl` at the long wait after the menu presses.
+    - The menu part goes into the input script after `wait 85000`, the S6N route's own time for the title screen.
+    - `run0360.sh` (`REPRO_PHASE2`) appends the gameplay part only after the journal shows the Continue load (the
+      last 5 flips over 55 ms) and then gameplay (20 of the last 25 flips under 40 ms, the last 3 among them). A
+      timeout fires 30 s after the load. Every poll goes to `raw/<tag>-phase2.txt`.
+    - The input thread tails the script file every 20 ms (`controller.cpp`), so the appended lines start at once.
+      The load time can no longer shift his gameplay inputs.
+  - **Runner:** `go0360.sh` (laptop) waits for a free box and starts the run with its own kernel stream, which ends
+    with the run's lock line; `chain0360.sh` runs several in order.
+- **F1 and F1c, his 15:38 record: no fight reached.** Shared build 1000ad2a, `KYTY_BC5_JOB_ARENA_FIX=0`, RT on, 180 s
+  and 200 s. Both passed at 38–39 flips/s, saves unchanged, no kernel line. Two causes:
+  - In F1 the gate wanted 25 fast flips in a row. Gameplay at 43 flips/s has a 40–65 ms hitch every 15–25 flips,
+    so the gate never opened; fixed to 20 of 25.
+  - In F1c the poll log shows no load at all after the menu presses. The 15:38 record goes down ×4 (slot 5), and
+    from this save copy that path loads nothing. His four trap plays of 12:16, 13:53, 14:29 and 14:50 all go
+    cross, down ×3, cross, cross (slot 4).
+- **F464 — F2 (16:57–17:00) reproduces F454's crash by script: the route is the fight test.**
+  - **Route:** his 14:50 record (slot 4, 5.3 s of gameplay inputs), shared build 1000ad2a, the job-arena fix OFF
+    (the play log: "job-arena fix OFF for PPSA03671"), RT on.
+  - **Timeline:** the Continue load seen at 91 s, the gameplay inputs appended at 103 s. In journal time the load
+    ran at t 88–99 (14 flips/s) and gameplay at t 100–106 (24–32 flips/s).
+  - **Result:** the title exits 65 at 113 s with an access violation, a read of 0xc at eboot.bin+0x3d7eca0, the
+    site of F444–F454.
+  - **Clean otherwise:** no kernel line (`raw/F2-kernel-stream.txt`), no devcoredump, live saves unchanged.
+  - The crash comes ~8 s into gameplay, earlier than in his plays: with his short input the character does not move
+    on.
+  - Exp 0359's fix ON (F3) is the control. The fix OFF on the candidate builds is the test of the throughput work.
+
 **Setup.** (filled in as the work goes)
 
 **Result.**
