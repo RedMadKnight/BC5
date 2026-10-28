@@ -438,3 +438,50 @@ crash: the print's host-thread lines (state, CPU, nice) and the ring's latencies
 waited a millisecond for a core with the host threads at +5 — then the contention is among the title's own threads
 (Render, Havok, the Bk workers) and the remaining candidates are the Hi workers above them (a finer priority mapping,
 the console's order) or the frame's host cost itself.
+
+## Trap v5 fired with the mask 3 (14:52): the nice is not enough, and the race is read in full
+
+The maintainer's play with `BC5_0358_FIX=3`: start 14:50:46, crash 14:52:01 (exit 65, the same site; log
+`~/bc5-work/exp0358/play/play-20261028-145046.log`). The lock was empty afterwards.
+
+- **F454 — the owner takes the crash job within microseconds of pushing it, while every Hi worker is busy on the
+  partner jobs; the woken workers arrive 0.7–1.4 ms later, scan, find nothing left and sleep.** The same structure
+  as F450/F453: the Hi entry holds four pairs pushed by the owner at frame end — a 603-block job (fn +0x3fad450,
+  jobs 18–21, started 604 done 603) and a one-block crash-type job (fn +0x4661e50, jobs 22–25) per pair, their
+  handles interleaved in push order — and job 25, the fourth pair's one-block job, is the one the owner runs. The
+  ring (the newest 96 events, the last 4.6 ms): the owner (host id 5) signals the Hi semaphore eight times (4.47,
+  4.38, 4.37, 4.36, 3.92, 3.83, 3.74, 3.66 ms before the fault: its pushes); between them Hi 4 (host id 15) signals
+  with counts 4 and 1 (a worker spreading a 603-block job) and Hi 2–4 return from waits in 8–22 µs; after the
+  owner's last push the woken Hi 1 and Hi 0 (host ids 12, 11) return 718 and 836 µs after their signal, Hi 0 then
+  drains ~45 counts in immediate returns within 11 µs (each an empty scan), and the Hi workers go to sleep one by one
+  (wait-begin 3.59 → 2.98 ms before the fault) — nothing left to take: job 25 was already started by the owner,
+  whose block then ran ~3.5 ms before dereferencing the null. The nice +5 on the host's 22 threads (bit 2) cut the
+  wake latencies (wait-ok median 342 µs, max 1387, against 1114 median before) but the race is not a wake race:
+  at the push of job 25 the five Hi workers were awake and inside the 603-block jobs' chunks, and the owner, which
+  pushes job 25 and waits at once, reaches the help loop before any of them finishes a chunk and rescans. The five
+  Bk workers stay runnable without a core (R, 0.04–0.06 CPU s) at nice +5 — irrelevant here, the Hi entry is the one
+  scanned — and Archive Loose IO and AK::AudioMgr are R too. So neither a faster wake nor a bounded spin before
+  blocking can reach this case: a spin helps a worker that is *waiting*; these were *working*.
+- **Why the console survives this, as far as the code says:** the same sequence runs there, and the owner's help
+  loop would take job 25 just the same if it got there first. What differs is the chunk time of the 603-block jobs
+  on a console core against this host's (the title's thread inside the host for 66 ms of a 104 ms frame at the
+  fight; the Hi workers' CPU 0.5 s each in 71 s), i.e. how soon a worker rescans. That is a throughput gap, not a
+  mechanism the host lacks.
+
+**Options left (none built; the top session's choice):**
+- (e) **The title's own inline mechanism applied in the help path, as a loader game patch.** The title already has
+  the arena a non-worker thread needs when it runs a block inline: the override window (+0x3ccae16–+0x3ccae51) sets
+  the stack arena into image+0xb064018 and the thread's index to N around `call [job+0x80]`, and the crash job's
+  arena lookup (+0x466212d) honours index N. The owner's help loop (+0x3cca600) runs the same `call [r15+0x80]` at
+  +0x3cca87b without that window — the one inline path in the title without it. A game patch (`loader/gamePatch.cpp`
+  is the host's existing mechanism) that wraps the owner's call at +0x3cca87b in the same window (index N and the
+  owner arena image+0xb09bf10 as the override arena, restored after) gives the job what its code expects, with the
+  title's own data structures; the workers' path and every other thread are untouched. It is a change to the title's
+  code, so it is outside "implement the host function properly" — proposed because the three traps show the host's
+  functions in this chain (semaphore, condvar, priorities, TLS) behaving as the console's do, and the remaining gap
+  is CPU throughput at the fight.
+- (f) **Throughput at the fight**: the frame's host cost (sync 28.6 ms of the game thread inside the host per frame;
+  the ring thread the busiest host thread) — the lever that would also move everything else, but no single change in
+  reach today; the thread tables in the journal (every fifth second) now show where the CPU goes in his play.
+- (g) **The bounded spin** (`KernelWaitSema` spinning ~20 µs before blocking) stays available as bit 4 for a
+  wake-latency case; this crash is not one, so it is not built.
