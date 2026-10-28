@@ -1,0 +1,12 @@
+2026-10-28 16:03:26 before: normal affa0c22, lean cd7ea936, archive bb50b2e0, tree diff 6ac6cc16, /home/kjaniszewski/src/bc5 d0c2668
+== 16:03:27 1. host files into /home/kjaniszewski/src/KytyPlus
+== 16:03:27 2. backend files into /home/kjaniszewski/src/bc5/backend
+== 16:03:27 3a. normal build
+== 16:03:45 3b. lean build
+strings /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator: job-arena APPLIED 1, menu item 1, JobArenaFix key 17, 0349 cut 1
+strings /home/kjaniszewski/bc5-work/kytyplus-build-lean/src/kyty_emulator: job-arena APPLIED 1, menu item 1, JobArenaFix key 17, 0349 cut 1
+warnings: normal 6, lean 6; recompiled: normal 7, lean 7
+== 16:04:13 4. the candidate patch 0001
+candidate patch 0001: 59057 lines, md5 2db34349; new header in it: 1
+2026-10-28 16:04:13 after: normal 1000ad2a, lean 23e233f7, archive bb50b2e0
+== 16:04:13 done; undo: cp -p /home/kjaniszewski/bc5-work/exp0361/integration/kyty_emulator.before-0361 /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator; cp -p /home/kjaniszewski/bc5-work/exp0361/integration/kyty_emulator-lean.before-0361 /home/kjaniszewski/bc5-work/kytyplus-build-lean/src/kyty_emulator; for f in src/loader/gamePatch.cpp src/loader/gamePatch.h src/loader/runtimeLinker.cpp src/graphics/presentation/window/hostInput.cpp src/graphics/presentation/window/hostInput.h src/graphics/presentation/hostMenu.cpp ; do cp -p /home/kjaniszewski/bc5-work/exp0361/integration/tree-before/$f /home/kjaniszewski/src/KytyPlus/$f; done; rm -f /home/kjaniszewski/src/KytyPlus/src/bc5/job_arena_fix.hpp; cp -p /home/kjaniszewski/bc5-work/exp0361/integration/backend-before/CMakeLists.txt /home/kjaniszewski/src/bc5/backend/CMakeLists.txt; rm -f /home/kjaniszewski/src/bc5/backend/include/bc5/job_arena_fix.hpp /home/kjaniszewski/src/bc5/backend/tests/job_arena_fix_test.cpp; then ninja kyty_emulator in both builds (or keep the restored binaries)
