@@ -1,0 +1,79 @@
+# 265235 submit lines, 265233 done lines, 146323 paired; wall - t offset 1793202439.8930 s (spread 0.0010)
+# W job (the water draw's): submitted n 748, 10 % 1.2, median 2.2, 90 % 3.8 ms after the frame start; done n 762, 10 % 4.8, median 6.7, 90 % 8.5 ms
+# R job (the first depth reader's): submitted n 1011, 10 % 10.8, median 13.5, 90 % 15.0 ms after the frame start; done n 1009, 10 % 14.5, median 16.4, 90 % 18.0 ms
+# burst 1: start n 1779, 10 % 4.6, median 6.4, 90 % 7.3 ms; end n 1779, 10 % 4.7, median 6.5, 90 % 7.4 ms
+# burst 2: start n 1207, 10 % 7.7, median 8.3, 90 % 9.6 ms; end n 1207, 10 % 7.8, median 8.4, 90 % 9.7 ms
+# burst 3: start n 2649, 10 % 17.5, median 19.2, 90 % 20.7 ms; end n 2649, 10 % 17.7, median 19.3, 90 % 20.8 ms
+# water      prepared n 1511, 10 % 1.5, median 2.5, 90 % 4.1 ms; the job of the last submit line before it done n 762, 10 % 4.8, median 6.7, 90 % 8.5 ms
+# 11d02d0a00 prepared n 1536, 10 % 11.5, median 14.0, 90 % 15.6 ms; the job of the last submit line before it done n 1009, 10 % 14.5, median 16.4, 90 % 18.0 ms
+# 11d0404200 prepared n 1534, 10 % 12.6, median 14.7, 90 % 16.5 ms; the job of the last submit line before it done n 1101, 10 % 14.8, median 16.8, 90 % 20.7 ms
+# 11d039cd00 prepared n 1534, 10 % 12.6, median 14.8, 90 % 16.5 ms; the job of the last submit line before it done n 1104, 10 % 14.8, median 16.9, 90 % 21.3 ms
+# 11d0288800 prepared n 3118, 10 % 13.8, median 16.0, 90 % 18.0 ms; the job of the last submit line before it done n 2699, 10 % 18.6, median 23.4, 90 % 25.2 ms
+## frame at pyramid change 100; bursts (ms): 8.0-8.0, 9.7-9.7, 20.3-20.4, 21.3-21.4
+   job 197667 submitted  -1.6 done  -1.6  acb    18  
+   job 197668 submitted  -1.6 done     -  acb   100  
+   job 197669 submitted  -1.6 done     -  acb     2  
+   job 197670 submitted  -1.6 done   0.4  dcb  5018  
+   job 197671 submitted  +2.4 done   8.4  acb  5548  
+   job 197672 submitted  +2.4 done   8.4  dcb  2999  
+   job 197673 submitted  +3.4 done   8.4  acb    28  
+   job 197674 submitted  +3.4 done   8.4  acb     2  water draw
+   job 197675 submitted  +4.4 done   9.4  dcb 14469  
+   job 197676 submitted  +5.4 done     -  acb     4  
+   job 197677 submitted  +5.4 done  10.4  acb  4682  
+   job 197678 submitted  +6.4 done     -  acb    28  
+   job 197679 submitted  +6.4 done  10.4  acb     2  
+   job 197680 submitted  +7.4 done  13.4  dcb 20245  
+   job 197681 submitted  +8.4 done  13.4  acb     4  
+   job 197682 submitted  +8.4 done     -  acb   835  
+   job 197683 submitted  +8.4 done     -  acb   750  
+   job 197684 submitted  +8.4 done  13.4  acb   309  
+   job 197685 submitted  +9.4 done  15.4  dcb   226  
+   job 197686 submitted  +9.4 done     -  acb    28  
+   job 197687 submitted  +9.4 done     -  acb     2  
+   job 197688 submitted  +9.4 done     -  acb   460  
+   job 197689 submitted  +9.4 done     -  acb     4  
+   job 197690 submitted  +9.4 done  15.4  acb   610  
+   job 197691 submitted +10.4 done  15.4  dcb  1843  
+   job 197692 submitted +10.4 done     -  acb    28  
+   job 197693 submitted +10.4 done  17.4  acb     2  
+   job 197694 submitted +11.4 done  17.4  acb     4  
+   job 197695 submitted +11.4 done     -  acb 10186  draw 11d4d01800; dispatch 11d02d0a00 320x180x1; draw 11d020ce00; draw 11d1d02d00
+   job 197696 submitted +12.4 done  19.4  dcb  1844  dispatch 11d0404200 480x270x1; dispatch 11d039cd00 1x1x1
+   job 197697 submitted +14.4 done  25.4  dcb 13420  dispatch 11d0288800 16384x1x1; dispatch 11d0288800 4096x1x1
+   job 197698 submitted +15.4 done  29.4  dcb  8538  
+   job 197699 submitted +16.4 done  29.4  acb    84  
+   job 197700 submitted +16.4 done     -  acb   140  
+## frame at pyramid change 101; bursts (ms): 4.9-5.0, 6.7-6.7, 17.6-17.7, 18.6-18.7
+   job 197704 submitted  -1.0 done  -1.0  acb    20  
+   job 197705 submitted  -1.0 done     -  dcb  8001  
+   job 197706 submitted  +0.0 done   4.0  acb  4060  
+   job 197707 submitted  +1.0 done   5.0  acb  1488  
+   job 197708 submitted  +2.0 done     -  dcb 14493  
+   job 197709 submitted  +3.0 done   6.0  acb    28  
+   job 197710 submitted  +3.0 done     -  acb     2  water draw
+   job 197711 submitted  +4.0 done   7.0  dcb  1618  
+   job 197712 submitted  +4.0 done     -  acb     4  
+   job 197713 submitted  +4.0 done   7.0  acb  4682  
+   job 197714 submitted  +6.0 done   7.0  acb    28  
+   job 197715 submitted  +6.0 done     -  acb     2  
+   job 197716 submitted  +6.0 done   8.0  dcb 20229  
+   job 197717 submitted  +8.0 done  11.0  acb     4  
+   job 197718 submitted  +8.0 done     -  acb   835  
+   job 197719 submitted  +8.0 done     -  acb   750  
+   job 197720 submitted  +8.0 done     -  acb   309  
+   job 197721 submitted  +8.0 done  11.0  dcb   242  
+   job 197722 submitted  +9.0 done     -  acb    28  
+   job 197723 submitted  +9.0 done     -  acb     2  
+   job 197724 submitted  +9.0 done     -  acb   460  
+   job 197725 submitted  +9.0 done     -  acb    28  
+   job 197726 submitted  +9.0 done     -  acb     4  
+   job 197727 submitted  +9.0 done  13.0  dcb  1843  
+   job 197728 submitted +10.0 done  13.0  acb   612  
+   job 197729 submitted +10.0 done     -  acb     4  
+   job 197730 submitted +10.0 done  15.0  acb  6807  draw 11d4d01800; dispatch 11d02d0a00 320x180x1; draw 11d020ce00; draw 11d1d02d00
+   job 197731 submitted +12.0 done  17.0  dcb  1844  dispatch 11d0404200 480x270x1; dispatch 11d039cd00 1x1x1
+   job 197732 submitted +13.0 done  23.0  dcb 13420  dispatch 11d0288800 16384x1x1; dispatch 11d0288800 4096x1x1
+   job 197733 submitted +14.0 done  30.0  dcb  8538  
+   job 197734 submitted +15.0 done  30.0  acb    84  
+   job 197735 submitted +15.0 done     -  acb   140  

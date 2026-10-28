@@ -1,0 +1,7 @@
+# 111 sized frames; 3000 water draws in the journal; 9200 flip lines
+# side by display buffer index of the latest flip: {('A', 0): 28, ('A', 1): 31, ('B', 0): 29, ('B', 1): 23}
+# side by flip count parity: {('A', 0): 28, ('A', 1): 31, ('B', 0): 29, ('B', 1): 23}
+# side by water-draw count parity: {('A', 0): 31, ('A', 1): 28, ('B', 0): 23, ('B', 1): 29}
+# consecutive journal frames:
+   side changed, buffer changed, flips between 1: 41
+   side kept, buffer changed, flips between 1: 47

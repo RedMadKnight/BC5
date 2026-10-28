@@ -1,0 +1,81 @@
+# play-20261023-2023.direct.log: 1422 draw/dispatch lines, 816 kept; render_control values: ['0', '60']
+# the passes in journal order, one letter each, runs folded (H HTILE fill, Z depth writer, e depth-tested, o depth bound with Z off, W water, D decompress, P CS 0x11d0288800, c other dispatch):
+   cPc12P2c11Pc4HZ16c2Z78e8Z20e20cZ17Wc2ec12Z2eZ6eZ4e2Z10eHe6oc11Pc17Pc10Pc3ece2c3HoZ9Dc6Pc2oec8e86ce2Hc3PDc3P3c2HPc3Hc3H7c
+   2Pc12P2c11Pc4HZ16c2Z78e8Z20e20cZ17Wc2ec12Z2eZ6eZ4e2Z10eHe6oc11Pc17Pc10Pc3ece2c3HoZ9Dc6Pc2oec8e86ce2Hc3PDc3P3c2HPc3Hc3H7c
+   2Pc12P2c13Pc4HZ16c2Z77e7Z20e20cZ17Wc2ec12
+## decompress state at buf 40 +2970 (PS 11d0208400):
+      buf 40 +1611: DRAW_INDEX_AUTO 324 PS 11d314e300 rt0 11a5c90000 2048x3072 mask f vp 2048x3072 | Z on GEQUAL | z_write 0000000000
+      buf 40 +1679: DRAW_INDEX_AUTO 186 PS 11d314e300 rt0 11a5c90000 2048x3072 mask f vp 2048x3072 | Z on GEQUAL | z_write 0000000000
+      buf 40 +1883: DRAW_INDEX_AUTO 4 PS 11d015fb00 rt0 1164d80000 960x540 mask f vp 960x540 | Z off | z_write 0000000000
+      buf 40 +1930: dispatch CS 11d0288a00 1792x1x1
+      buf 40 +1970: DRAW_INDEX_AUTO 3 PS 11d01e2300 rt0 113f230000 3328x1872 mask 0 vp 3328x1872 | Z off | stencil_control 00111111 | z 1129ec0000 htile 112b720000 clear z 0
+      buf 40 +2105: DRAW_INDEX_2 PS 11d01ff900 rt0 113f230000 3328x1872 mask fffff vp 3328x1872 | Z on+write GREATER | stencil_control 00030030 | z 1129ec0000 htile 112b720000 clear z 0
+      buf 40 +2198: DRAW_INDEX_2 PS 11d01ff900 rt0 113f230000 3328x1872 mask fffff vp 3328x1872 | Z on+write GREATER | stencil_control 00030030 | z 1129ec0000 htile 112b720000 clear z 0
+      buf 40 +2291: DRAW_INDEX_2 PS 11d01ff900 rt0 113f230000 3328x1872 mask fffff vp 3328x1872 | Z on+write GREATER | stencil_control 00030030 | z 1129ec0000 htile 112b720000 clear z 0
+      buf 40 +2384: DRAW_INDEX_2 PS 11d01ff900 rt0 113f230000 3328x1872 mask fffff vp 3328x1872 | Z on+write GREATER | stencil_control 00030030 | z 1129ec0000 htile 112b720000 clear z 0
+      buf 40 +2497: DRAW_INDEX_2 PS 11d0203f00 rt0 113f230000 3328x1872 mask fffff vp 3328x1872 | Z on+write GREATER | stencil_control 00030030 | z 1129ec0000 htile 112b720000 clear z 0
+      buf 40 +2605: DRAW_INDEX_2 PS 11d0208400 rt0 113f230000 3328x1872 mask fffff vp 3328x1872 | Z on+write GREATER | stencil_control 00030030 | z 1129ec0000 htile 112b720000 clear z 0
+      buf 40 +2698: DRAW_INDEX_2 PS 11d0208400 rt0 113f230000 3328x1872 mask fffff vp 3328x1872 | Z on+write GREATER | stencil_control 00030030 | z 1129ec0000 htile 112b720000 clear z 0
+      buf 40 +2791: DRAW_INDEX_2 PS 11d0208400 rt0 113f230000 3328x1872 mask fffff vp 3328x1872 | Z on+write GREATER | stencil_control 00030030 | z 1129ec0000 htile 112b720000 clear z 0
+      buf 40 +2884: DRAW_INDEX_2 PS 11d0208400 rt0 113f230000 3328x1872 mask fffff vp 3328x1872 | Z on+write GREATER | stencil_control 00030030 | z 1129ec0000 htile 112b720000 clear z 0
+   => buf 40 +2970: DRAW_INDEX_AUTO 3 PS 11d0208400 rt0 113f230000 3328x1872 mask 0 vp 3328x1872 | Z off | render_control STENCIL_COMPRESS_DISABLE+DEPTH_COMPRESS_DISABLE | stencil_control 00030030 | z 1129ec0000 htile 112b720000 clear z 0
+      buf 40 +3063: dispatch CS 11d0408000 208x117x1
+      buf 40 +3107: dispatch CS 11d0409b00 26x15x1
+      buf 40 +3176: dispatch CS 11d0406100 DISPATCH_INDIRECT
+## decompress state at buf 44 +399 (PS 11d01e1700):
+      buf 40 +11707: DRAW_INDEX_AUTO 0 PS 11d4c02300 rt0 113d770000 3328x1872 mask f vp 3328x1872 | Z on GEQUAL | stencil_control 00030030 | z 1129ec0000 htile 112b720000 clear z 0
+      buf 40 +11816: DRAW_INDIRECT_MULTI PS 11d3519b00 rt0 113d770000 3328x1872 mask f vp 3328x1872 | Z on GEQUAL | stencil_control 00030030 | z 1129ec0000 htile 112b720000 clear z 0
+      buf 40 +11940: DRAW_INDIRECT PS 11d0edf900 rt0 113d770000 3328x1872 mask f vp 3328x1872 | Z on GEQUAL | stencil_control 00030030 | z 1129ec0000 htile 112b720000 clear z 0
+      buf 40 +12027: DRAW_INDEX_AUTO 6 PS 11d3445600 rt0 113d770000 3328x1872 mask f vp 3328x1872 | Z on GEQUAL | stencil_control 00030030 | z 1129ec0000 htile 112b720000 clear z 0
+      buf 40 +12151: DRAW_INDEX_INDIRECT_MULTI PS 11d2da5d00 rt0 113d770000 3328x1872 mask f vp 3328x1872 | Z on GEQUAL | stencil_control 00030030 | z 1129ec0000 htile 112b720000 clear z 0
+      buf 41 +83: DRAW_INDIRECT_MULTI PS 11d1c96200 rt0 113d770000 3328x1872 mask f vp 3328x1872 | Z on GEQUAL | stencil_control 00030030 | z 1129ec0000 htile 112b720000 clear z 0
+      buf 41 +189: dispatch CS 11d03e9600 416x234x1
+      buf 41 +319: DRAW_INDEX_AUTO 324 PS 11d3157800 rt0 113d770000 3328x1872 mask f vp 3328x1872 | Z on GEQUAL | stencil_control 00030030 | z 1129ec0000 htile 112b720000 clear z 0
+      buf 41 +387: DRAW_INDEX_AUTO 186 PS 11d3157800 rt0 113d770000 3328x1872 mask f vp 3328x1872 | Z on GEQUAL | stencil_control 00030030 | z 1129ec0000 htile 112b720000 clear z 0
+      buf 41 +780: dispatch CS 11d0288a00 640x1x1 | z 1129ec0000 htile 112bea0000 clear z 0
+      buf 41 +890: dispatch CS 11d0404200 480x270x1
+      buf 41 +982: dispatch CS 11d039cd00 1x1x1 | z 1129ec0000 htile 112bea0000 clear z 0
+      buf 44 +138: dispatch CS 11d0288100 1x1x1 | z 1129ec0000 htile 112bea0000 clear z 0
+      buf 44 +306: dispatch CS 11d0288800 7168x1x1 | z 1129ec0000 htile 112b720000 clear z 0
+   => buf 44 +399: DRAW_INDEX_AUTO 3 PS 11d01e1700 rt0 114c6c0000 3840x2160 mask 0 vp 3328x1872 | Z off | render_control STENCIL_COMPRESS_DISABLE+DEPTH_COMPRESS_DISABLE | z 1129ec0000 htile 112b720000 clear z 0
+      buf 44 +500: dispatch CS 11d03f7900 480x270x1
+      buf 44 +536: dispatch CS 11d03f8800 480x270x1
+      buf 44 +619: dispatch CS 11d039c700 1x1x1 | z 1129ec0000 htile 112bea0000 clear z 0
+## decompress state at buf 88 +2970 (PS 11d0208400):
+      buf 88 +1611: DRAW_INDEX_AUTO 324 PS 11d314e300 rt0 11a5c90000 2048x3072 mask f vp 2048x3072 | Z on GEQUAL | z_write 0000000000
+      buf 88 +1679: DRAW_INDEX_AUTO 186 PS 11d314e300 rt0 11a5c90000 2048x3072 mask f vp 2048x3072 | Z on GEQUAL | z_write 0000000000
+      buf 88 +1883: DRAW_INDEX_AUTO 4 PS 11d015fb00 rt0 1164d80000 960x540 mask f vp 960x540 | Z off | z_write 0000000000
+      buf 88 +1930: dispatch CS 11d0288a00 1792x1x1
+      buf 88 +1970: DRAW_INDEX_AUTO 3 PS 11d01e2300 rt0 113f230000 3328x1872 mask 0 vp 3328x1872 | Z off | stencil_control 00111111 | z 1129ec0000 htile 112b720000 clear z 0
+      buf 88 +2105: DRAW_INDEX_2 PS 11d01ff900 rt0 113f230000 3328x1872 mask fffff vp 3328x1872 | Z on+write GREATER | stencil_control 00030030 | z 1129ec0000 htile 112b720000 clear z 0
+      buf 88 +2198: DRAW_INDEX_2 PS 11d01ff900 rt0 113f230000 3328x1872 mask fffff vp 3328x1872 | Z on+write GREATER | stencil_control 00030030 | z 1129ec0000 htile 112b720000 clear z 0
+      buf 88 +2291: DRAW_INDEX_2 PS 11d01ff900 rt0 113f230000 3328x1872 mask fffff vp 3328x1872 | Z on+write GREATER | stencil_control 00030030 | z 1129ec0000 htile 112b720000 clear z 0
+      buf 88 +2384: DRAW_INDEX_2 PS 11d01ff900 rt0 113f230000 3328x1872 mask fffff vp 3328x1872 | Z on+write GREATER | stencil_control 00030030 | z 1129ec0000 htile 112b720000 clear z 0
+      buf 88 +2497: DRAW_INDEX_2 PS 11d0203f00 rt0 113f230000 3328x1872 mask fffff vp 3328x1872 | Z on+write GREATER | stencil_control 00030030 | z 1129ec0000 htile 112b720000 clear z 0
+      buf 88 +2605: DRAW_INDEX_2 PS 11d0208400 rt0 113f230000 3328x1872 mask fffff vp 3328x1872 | Z on+write GREATER | stencil_control 00030030 | z 1129ec0000 htile 112b720000 clear z 0
+      buf 88 +2698: DRAW_INDEX_2 PS 11d0208400 rt0 113f230000 3328x1872 mask fffff vp 3328x1872 | Z on+write GREATER | stencil_control 00030030 | z 1129ec0000 htile 112b720000 clear z 0
+      buf 88 +2791: DRAW_INDEX_2 PS 11d0208400 rt0 113f230000 3328x1872 mask fffff vp 3328x1872 | Z on+write GREATER | stencil_control 00030030 | z 1129ec0000 htile 112b720000 clear z 0
+      buf 88 +2884: DRAW_INDEX_2 PS 11d0208400 rt0 113f230000 3328x1872 mask fffff vp 3328x1872 | Z on+write GREATER | stencil_control 00030030 | z 1129ec0000 htile 112b720000 clear z 0
+   => buf 88 +2970: DRAW_INDEX_AUTO 3 PS 11d0208400 rt0 113f230000 3328x1872 mask 0 vp 3328x1872 | Z off | render_control STENCIL_COMPRESS_DISABLE+DEPTH_COMPRESS_DISABLE | stencil_control 00030030 | z 1129ec0000 htile 112b720000 clear z 0
+      buf 88 +3063: dispatch CS 11d0408000 208x117x1
+      buf 88 +3107: dispatch CS 11d0409b00 26x15x1
+      buf 88 +3176: dispatch CS 11d0406100 DISPATCH_INDIRECT
+## decompress state at buf 92 +399 (PS 11d01e1700):
+      buf 88 +11707: DRAW_INDEX_AUTO 0 PS 11d4c02300 rt0 113d770000 3328x1872 mask f vp 3328x1872 | Z on GEQUAL | stencil_control 00030030 | z 1129ec0000 htile 112b720000 clear z 0
+      buf 88 +11816: DRAW_INDIRECT_MULTI PS 11d3519b00 rt0 113d770000 3328x1872 mask f vp 3328x1872 | Z on GEQUAL | stencil_control 00030030 | z 1129ec0000 htile 112b720000 clear z 0
+      buf 88 +11940: DRAW_INDIRECT PS 11d0edf900 rt0 113d770000 3328x1872 mask f vp 3328x1872 | Z on GEQUAL | stencil_control 00030030 | z 1129ec0000 htile 112b720000 clear z 0
+      buf 88 +12027: DRAW_INDEX_AUTO 6 PS 11d3445600 rt0 113d770000 3328x1872 mask f vp 3328x1872 | Z on GEQUAL | stencil_control 00030030 | z 1129ec0000 htile 112b720000 clear z 0
+      buf 88 +12151: DRAW_INDEX_INDIRECT_MULTI PS 11d2da5d00 rt0 113d770000 3328x1872 mask f vp 3328x1872 | Z on GEQUAL | stencil_control 00030030 | z 1129ec0000 htile 112b720000 clear z 0
+      buf 89 +83: DRAW_INDIRECT_MULTI PS 11d1c96200 rt0 113d770000 3328x1872 mask f vp 3328x1872 | Z on GEQUAL | stencil_control 00030030 | z 1129ec0000 htile 112b720000 clear z 0
+      buf 89 +189: dispatch CS 11d03e9600 416x234x1
+      buf 89 +319: DRAW_INDEX_AUTO 324 PS 11d3157800 rt0 113d770000 3328x1872 mask f vp 3328x1872 | Z on GEQUAL | stencil_control 00030030 | z 1129ec0000 htile 112b720000 clear z 0
+      buf 89 +387: DRAW_INDEX_AUTO 186 PS 11d3157800 rt0 113d770000 3328x1872 mask f vp 3328x1872 | Z on GEQUAL | stencil_control 00030030 | z 1129ec0000 htile 112b720000 clear z 0
+      buf 89 +780: dispatch CS 11d0288a00 640x1x1 | z 1129ec0000 htile 112bea0000 clear z 0
+      buf 89 +890: dispatch CS 11d0404200 480x270x1
+      buf 89 +982: dispatch CS 11d039cd00 1x1x1 | z 1129ec0000 htile 112bea0000 clear z 0
+      buf 92 +138: dispatch CS 11d0288100 1x1x1 | z 1129ec0000 htile 112bea0000 clear z 0
+      buf 92 +306: dispatch CS 11d0288800 7168x1x1 | z 1129ec0000 htile 112b720000 clear z 0
+   => buf 92 +399: DRAW_INDEX_AUTO 3 PS 11d01e1700 rt0 114c6c0000 3840x2160 mask 0 vp 3328x1872 | Z off | render_control STENCIL_COMPRESS_DISABLE+DEPTH_COMPRESS_DISABLE | z 1129ec0000 htile 112b720000 clear z 0
+      buf 92 +500: dispatch CS 11d03f7900 480x270x1
+      buf 92 +536: dispatch CS 11d03f8800 480x270x1
+      buf 92 +619: dispatch CS 11d039c700 1x1x1 | z 1129ec0000 htile 112bea0000 clear z 0
