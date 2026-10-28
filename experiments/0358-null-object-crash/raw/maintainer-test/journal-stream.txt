@@ -15,3 +15,13 @@ cpu-wait WAIT_REG_MEM64 at 5934 on 0x12004b7838: GIVEN UP after 16.8 ms
 cpu-wait WAIT_REG_MEM64 at 7921 on 0x12004b7838: GIVEN UP after 17.0 ms
 cpu-wait WAIT_REG_MEM64 at 384 on 0x12004b3c38: GIVEN UP after 43.3 ms
 cpu-wait WAIT_REG_MEM64 at 223 on 0x12004b5438: GIVEN UP after 16.5 ms
+journal /home/kjaniszewski/bc5-data/captures/play-20261028-1429/gc/direct.log from 14:29:44
+scratch: zero page at 0x0 refused, trying from 0x10000
+cpu-wait WAIT_REG_MEM64 at 590 on 0x12004b4838: GIVEN UP after 16.4 ms
+scratch: zero page at 0x0 refused, trying from 0x10000
+cpu-wait WAIT_REG_MEM64 at 281 on 0x12004b5438: GIVEN UP after 16.4 ms
+cpu-wait WAIT_REG_MEM64 at 384 on 0x12004b3c38: GIVEN UP after 16.4 ms
+cpu-wait WAIT_REG_MEM64 at 281 on 0x12004b5438: GIVEN UP after 16.3 ms
+scratch: zero page at 0x0 refused, trying from 0x10000
+cpu-wait WAIT_REG_MEM64 at 223 on 0x12004b5438: GIVEN UP after 17.9 ms
+cpu-wait WAIT_REG_MEM64 at 223 on 0x12004b5438: GIVEN UP after 31.6 ms
