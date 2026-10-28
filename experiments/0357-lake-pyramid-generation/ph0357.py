@@ -5,11 +5,14 @@
 # every such read; phi between every two reads; the leading eigenvector of the centred phi matrix splits the reads into
 # two states, A and B (in J1: phi +0.55 within, -0.24 between, F436). Writes <out json> {"labels": {read: "A"|"B"},
 # "within": [..], "between": ..} and prints the split. Summaries only.
-# usage: python3 -I ph0357.py <capture dir> <rdj json> <swz0248-z4.json> <out json>   (on the box, in the distrobox)
+# With FLOOR (added after run P1, most of whose reads had few or no holes, so the split separated holes from none): reads
+# whose depth-0 share over the common pixels is below FLOOR get "0", and only the rest are split into A and B.
+# usage: python3 -I ph0357.py <capture dir> <rdj json> <swz0248-z4.json> <out json> [FLOOR]   (on the box, in the distrobox)
 import json, os, sys
 import numpy as np
 
 cdir, rjson, zsw, out = sys.argv[1:5]
+floor = float(sys.argv[5]) if len(sys.argv) > 5 else None
 X0, X1, Y0, Y1 = 300, 1900, 400, 680
 pz = json.load(open(zsw))["patterns"]["4"]
 
@@ -62,6 +65,11 @@ if n < 4:
 common = np.logical_and.reduce(oks)
 M = np.array([m[common] for m in masks], dtype=np.float64)
 share = M.mean(axis=1)
+none = [nm for nm, sh in zip(names, share) if floor is not None and sh < floor]
+keep = np.array([floor is None or sh >= floor for sh in share])
+print("# floor %s: %d reads below it (no holes), %d split" % (floor, len(none), int(keep.sum())))
+M, names, share = M[keep], [nm for nm, k in zip(names, keep) if k], share[keep]
+n = len(names)
 Z = (M - M.mean(axis=1, keepdims=True)) / np.maximum(M.std(axis=1, keepdims=True), 1e-9)
 PHI = Z @ Z.T / M.shape[1]
 C = PHI - PHI.mean(axis=0, keepdims=True) - PHI.mean(axis=1, keepdims=True) + PHI.mean()
@@ -81,5 +89,7 @@ print("# %d sized depth reads of %d; %d common valid pixels; hole share min %.3f
 print("  split: A %d, B %d reads; mean phi within %.3f and %.3f, between %.3f (eigenvalue share %.2f)" % (
     len(a), len(b2), within[0], within[1], between, w[-1] / max(w[w > 0].sum(), 1e-9)))
 print("  states in read order: %s" % "".join("A" if s else "B" for s in side))
-json.dump({"labels": {nm: ("A" if s else "B") for nm, s in zip(names, side)}, "within": within, "between": between},
+lab = {nm: ("A" if s else "B") for nm, s in zip(names, side)}
+lab.update({nm: "0" for nm in none})
+json.dump({"labels": lab, "within": within, "between": between, "floor": floor},
           open(out, "w"), indent=0)

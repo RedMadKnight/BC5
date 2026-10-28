@@ -1,0 +1,4 @@
+# floor 0.03: 69 reads below it (no holes), 49 split
+# 49 sized depth reads of 119; 266001 common valid pixels; hole share min 0.033, median 0.158, max 0.291
+  split: A 24, B 25 reads; mean phi within 0.413 and 0.602, between -0.119 (eigenvalue share 0.46)
+  states in read order: AABBBBAAAAABBBBAAAAABBAABBABBBBBABABBABBBBAABAAAA

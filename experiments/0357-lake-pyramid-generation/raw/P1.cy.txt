@@ -1,0 +1,10 @@
+# 21390 polls with a change; 3266 windows (cycles) at G 3.0 ms
+  cycle period: median 16.7 ms, quartiles 12.3 / 20.5; depth activity per cycle: median 0.2 ms
+  classes over all cycles: PA 1114, AP 358, P 144, A 1477, - 173
+  cycles with both: records changed before the pyramid 7, after 1428, both before and after 37
+  pyramid mips changed per rebuilding cycle: 11111 1575, 11110 10, 11001 7, 10000 6
+  PA cycles: pyramid at +14.4 ms and records at +15.3 ms after the depth activity's end (medians); 168 records changed (median)
+  AP cycles: pyramid at +13.2 ms and records at +12.9 ms after the depth activity's end (medians); 177 records changed (median)
+  full reads with a state and a quiet start: 117 of 119
+  state x class of the feeding window (c-1): A: PA 11 AP 1 A 17 - 0  B: PA 26 AP 7 A 50 - 5; chi2 2.79, p 0.4393 (2000)
+  state x class of the shown window (c): A: PA 0 AP 0 A 12 - 17  B: PA 1 AP 4 A 33 - 50; chi2 1.75, p 0.7456 (2000)

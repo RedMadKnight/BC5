@@ -1,0 +1,6 @@
+# 1600 cycles cut at the pyramid's rebuild, 1600 with depth writes
+  cycle period: median 33.7 ms, quartiles 32.9 / 34.7; depth writes start 5.1 ms after the rebuild (median)
+  late cycles (culling records change > 1 ms after the depth writes began): 629 of 1600 (39 %); their first late change 1.8 ms after the start (median); records: before 0, at 95, late 122 (medians over late cycles)
+  full reads placed: 116 of 119; states {'0': 67, 'A': 24, 'B': 25}
+  holes vs none x late/on-time: holes: late 14 on-time 35  none: late 21 on-time 46; chi2 0.10, p 0.8526 (2000)
+  A vs B x late/on-time: A: late 5 on-time 19  B: late 9 on-time 16; chi2 1.38, p 0.3573 (2000)
