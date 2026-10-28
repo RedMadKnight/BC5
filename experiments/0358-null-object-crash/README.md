@@ -369,3 +369,72 @@ there is evidence.
 still shows how the workers woke; a journal line per start is not yet printed — the ring is read only at a fault).
 A crash: the print's `proc` lines answer asleep (S, in a wait on the Hi entry's semaphore, with the ring's last
 signal to it older than the wait) versus no core (R), and the fix moves to candidate (a).
+
+## Trap v4 fired with the targeted wake on (14:30): no fix, and the wake-up measured
+
+The maintainer's play on the test 0358 shortcut with `BC5_0358_FIX=1`: start 14:29:42, crash 14:30:55 (t ≈ 71 s, exit
+65, the same site; log `~/bc5-work/exp0358/play/play-20261028-142942.log`, the trap block from line 1084, the
+`/proc` states from 1191, the ring from 1247). The lock was empty afterwards.
+
+- **F453 — the targeted semaphore wake does not prevent the crash; the woken worker loses the race for a core.**
+  The same picture as F450: the Hi entry holds four instances of the crash job, job 25 active on the owner
+  (started 1, done 0), live 4/27/31, generation 7518, the ring says "fix on" (2,713,316 events in 71 s). At the fault
+  every Lo and Hi worker is asleep (state S) in a wait on the job system's semaphore (named "JobLoaderSema" by the
+  title; the Lo and Hi entries' semaphores carry the same name — distinct objects, one per entry, created at
+  +0x3cc95d0 per entry) for 0.4–1.9 ms; the five Bk workers are **runnable (R) with 0.05–0.06 CPU seconds in 71 s**,
+  i.e. they wait for a core and rarely get one (they run at nice +5 by the host's mapping of their guest priority);
+  AK::AudioMgr and the Coherent thread are R too; the Havok solvers have waited 62 ms on their own semaphore. The
+  ring's newest 96 events (the last 4.1 ms): the owner (host id 5) signalled the semaphore with count 1 at 3.33,
+  3.25, 3.15 and 3.09 ms before the fault (its pushes of the frame-end jobs), workers signalled it with counts 1–4,
+  Hi 1 (host id 12) drained about fifty counts in `wait-immediate` returns within 15 µs at 3.04 ms (the count had
+  piled up with no job to take), then the workers went to sleep one by one (wait-begin 3.0 → 0.4 ms before the
+  fault). The satisfied waits' latency from the signal that made the waiter ready to its return: **1742, 1738,
+  1231, 1114 µs** for four of them and **54, 51, 48 µs** for the other three — two bands, the fast one the futex
+  wake on a free core, the slow one a wait for a core. So the wake-up itself is fine (bit 1 made no difference to
+  the outcome) and the box's cores are saturated at the fight: a Hi worker woken for the crash job needs about a
+  millisecond to run, and the owner, already running, reaches its wait and helps within that millisecond. On the
+  console the title's threads have seven cores to themselves.
+- **What "started > done" means, confirmed:** the fifty `wait-immediate` returns of one worker show the semaphore's
+  count is a wake-up hint (the title signals up to min(N, blocks) per push), not a job count.
+
+**The next candidate: the host's own threads yield (F453 → candidate (a)), `BC5_0358_FIX` bit 2.** The threads
+the console does not have — the direct path's completion and ring threads, the pollers, the flip and label
+threads, the APR workers, the rest of the host's helpers — go to nice +5, the title's threads keep the nice the
+host's priority mapping gives them (main and render 0, Hi workers 0, Lo/Bk +5, audio −15). On the console the
+title's threads own their cores and the GPU's command processor runs on the GPU; here the host threads that stand
+in for it compete with the title for sixteen hardware threads, and at the fight they win against a freshly woken
+Hi worker. nice +5 is a third of the weight at nice 0 (CFS: 1024 → 335), enough for a woken nice-0 thread to
+preempt, not a starvation. Applied once per host thread by the sampler's thread table (every fifth second; new
+host threads are caught at the next table), with `setpriority` on the thread id, which needs no root for positive
+values; the game thread and the process's main thread are left alone. `BC5_0358_FIX` is now a bit mask: 1 the
+targeted wake, 2 the nice; the shortcut runs with 3. Trap v5 adds the evidence the nice needs: every fifth second
+a thread table (every thread of the process with its CPU over the interval and state, the top 12 journaled, the
+count of runnable threads, the system's busy share from `/proc/stat`), and at the fault every host thread's state,
+CPU and nice beside the guest threads' lines. Risk, to be read in his play's frame profiles: the GPU feed threads
+at +5 could lengthen frames when the box is saturated; the smoke run's rate is the first check.
+
+**Trap v5 built and smoke-tested (14:36–14:48), the shortcut on 2a3b4634 with `BC5_0358_FIX=3`.** `raw/patch0358v5.pl`
+(after v1, v3, v4; 11 edits), `build0358v5.sh/.py` (the same four units), `mktest0358v5.pl` (the launcher exports
+`BC5_0358_FIX=3`). Two builds: 3ce620b3 niced the title's main thread too — the thread the host names "game-main" is
+the guest's main thread, which is not in the pthread pool's list that the sampler uses to recognise guest threads
+(the trap's per-block line shows it as guest id −1 "?") — its smoke run (`raw-v5-tainted/` on the box: pass, 27.1 ms
+between flips) does not count; 2a3b4634 excludes "game-main" by name. Its smoke run (`repro0358.sh`, the Continue
+route, RT on, 200 s, tag v5smoke2; `BC5_0358_FIX=3` and the binary confirmed through `/proc/<pid>/environ` and
+`/proc/<pid>/exe`): **pass**, 26.9 ms between flips (37 flips/s, the route's rate), GPU busy 18.16 ms, host prepare
+1.96 ms, no crash, no kernel line, live saves unchanged. The thread table: 22 host threads to nice +5 at the first
+table (kyty-thread, bc5-input-cmd, mangohud ×2, kyty-cmdsched ×2, kyty-present ×2, kyty-gpu, HIDAPI Rumble, bc5-ring,
+bc5-chainwd, bc5-cq0/1, bc5-apr-q5, bc5-apr-r5-0..3, bc5-fliplabel; the two `kyty_em:disk$0` threads refused the
+change), "game-main" and the guest pthreads untouched; on the route the box is 20–26 % busy with 1–2 runnable
+threads, and the top CPU users over 5 s are bc5-ring (220–480 ms), the Render Thread (150–330), bc5-apr-q5,
+kyty-present, bc5-chainwd, kyty-gpu (50–150 each) — the ring thread is the host's busiest thread. The table costs
+0.8–1.7 ms every fifth second (a `/proc` read per thread, ~98 threads); the per-second sample is as in v4.
+The shortcut: "BC5 emulator (test 0358)" runs 2a3b4634 (md5-checked) with the launcher f37e2412 (the 5-line diff:
+log, comment, pad record, `export BC5_0358_FIX=3`); RT on; nothing shared written, the game not started, the five
+previous binaries kept beside it (`.86ebf2bd`, `.c4a1f713`, `.1691b436`, `.f8b849f0`, `.3ce620b3`).
+
+**What his next play says.** No crash through the fight: the nice is the fix signal (the thread tables in the journal
+show the box's busy share and the runnable count at the fight, the ring in a later print the wake latencies). A
+crash: the print's host-thread lines (state, CPU, nice) and the ring's latencies say whether a woken Hi worker still
+waited a millisecond for a core with the host threads at +5 — then the contention is among the title's own threads
+(Render, Havok, the Bk workers) and the remaining candidates are the Hi workers above them (a finer priority mapping,
+the console's order) or the frame's host cost itself.
