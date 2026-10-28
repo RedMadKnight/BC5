@@ -1,0 +1,5 @@
+harness: 0346's backend (host_indirect, per-type bases in the check)
+<private-dumps>/play-20261027-2001/ib-timeout-00081929-dcb-108366.bin: 108366 dwords
+filter: passed 15802 rewritten 241 dropped 307 unsatisfiable-wait drops 1
+host_indirect: left non-zero 2224, left never-set 3529, rewritten 0, dropped no-candidate 0 unmapped 0 unreadable 0 insane 0; overflow NOPs 0; rewrite_verified ok; register out 0x0 (zeroed); window seen 0x1100000000
+check: checked 2273 (staircase 2224) unbased 3529 NOP-ed 0 inserted 204485 -> 312851 dwords

@@ -1,0 +1,11 @@
+harness: 0346's backend (host_indirect, per-type bases in the check)
+== ib-timeout-00090425-dcb-106950.bin: 106950 dwords
+filter: passed 14225 rewritten 795 dropped 1142 unsatisfiable-wait drops 1
+host_indirect: left non-zero 2706, left never-set 1045, rewritten 0, dropped no-candidate 0 unmapped 0 unreadable 0 insane 0; overflow NOPs 0; rewrite_verified ok; register out 0x1193ad3900; window seen 0x1100000000
+check: checked 3050 (staircase 2706) unbased 1045 NOP-ed 0 inserted 252258 -> 359208 dwords
+split: FAILED at 267776: more pieces would be needed (5762 COND_EXEC ranges)
+== ib-timeout-00090426-acb-4.bin: 4 dwords
+filter: passed 0 rewritten 0 dropped 1 unsatisfiable-wait drops 0
+host_indirect: left non-zero 0, left never-set 0, rewritten 0, dropped no-candidate 0 unmapped 0 unreadable 0 insane 0; overflow NOPs 0; rewrite_verified ok; register out 0x1193ad3900; window seen 0x0
+check: checked 0 (staircase 0) unbased 0 NOP-ed 0 inserted 0 -> 4 dwords
+split: 4 dwords over 65536 into 1 pieces: [0 +4]; 0 COND_EXEC ranges, 0 fallback cuts

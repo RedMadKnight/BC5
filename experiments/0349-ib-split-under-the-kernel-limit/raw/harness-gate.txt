@@ -1,0 +1,65 @@
+# Offline gate, 2026-10-27 ~20:00 on the laptop: harness_0346.exe (0346's harness, a98c8b2's passes) vs harness_0349.exe (822c800) over the 14 private dumps of the day, all with --window 1100000000; per play: differing lines old vs new, new vs new --split 16384 --pieces 64 (split lines removed), new vs new --split 0xfffff; then the dumps' check and split lines.
+play 1237: old vs new 0, new vs split16k 0, new vs splitmax 0, output lines 213
+play 1251: old vs new 0, new vs split16k 0, new vs splitmax 0, output lines 611
+play 1327: old vs new 0, new vs split16k 0, new vs splitmax 0, output lines 7999
+play 1423: old vs new 0, new vs split16k 0, new vs splitmax 0, output lines 6857
+play 1534: old vs new 0, new vs split16k 0, new vs splitmax 0, output lines 107
+play 1854: old vs new 0, new vs split16k 0, new vs splitmax 0, output lines 621
+play 1919: old vs new 0, new vs split16k 0, new vs splitmax 0, output lines 609
+
+== ib-timeout-00076004-acb-2605.bin: 2605 dwords
+check: checked 45 (staircase 45) unbased 0 NOP-ed 0 inserted 3960 -> 6565 dwords
+split: 6565 dwords over 16384 into 1 pieces: [0 +6565]; 0 COND_EXEC ranges, 0 fallback cuts
+== ib-timeout-00076005-dcb-17748.bin: 17748 dwords
+check: checked 46 (staircase 0) unbased 0 NOP-ed 0 inserted 1610 -> 19358 dwords
+split: 19358 dwords over 16384 into 2 pieces: [0 +15744] [15744 +3614]; 49 COND_EXEC ranges, 0 fallback cuts
+at the kernel limit: split: 6565 dwords over 1048575 into 1 pieces: [0 +6565]; 0 COND_EXEC ranges, 0 fallback cuts
+at the kernel limit: split: 19358 dwords over 1048575 into 1 pieces: [0 +19358]; 0 COND_EXEC ranges, 0 fallback cuts
+== ib-timeout-00048055-dcb-30221.bin: 30221 dwords
+check: checked 141 (staircase 0) unbased 435 NOP-ed 0 inserted 5805 -> 36026 dwords
+split: 36026 dwords over 16384 into 3 pieces: [0 +16064] [16064 +16320] [32384 +3642]; 148 COND_EXEC ranges, 0 fallback cuts
+== ib-timeout-00048056-acb-4.bin: 4 dwords
+check: checked 0 (staircase 0) unbased 0 NOP-ed 0 inserted 0 -> 4 dwords
+split: 4 dwords over 16384 into 1 pieces: [0 +4]; 0 COND_EXEC ranges, 0 fallback cuts
+at the kernel limit: split: 36026 dwords over 1048575 into 1 pieces: [0 +36026]; 0 COND_EXEC ranges, 0 fallback cuts
+at the kernel limit: split: 4 dwords over 1048575 into 1 pieces: [0 +4]; 0 COND_EXEC ranges, 0 fallback cuts
+== ib-timeout-00081041-dcb-98099.bin: 98099 dwords
+check: checked 1490 (staircase 1490) unbased 5009 NOP-ed 0 inserted 141138 -> 239237 dwords
+split: 239237 dwords over 16384 into 15 pieces: [0 +16384] [16384 +16256] [32640 +16128] [48768 +16320] [65088 +16256] [81344 +16384] [97728 +16384] [114112 +15552] [129664 +16256] [145920 +16256] [162176 +16192] [178368 +16256] [194624 +16384] [211008 +16128] [227136 +12101]; 2980 COND_EXEC ranges, 0 fallback cuts
+== ib-timeout-00081042-acb-1318.bin: 1318 dwords
+check: checked 0 (staircase 0) unbased 0 NOP-ed 0 inserted 0 -> 1318 dwords
+split: 1318 dwords over 16384 into 1 pieces: [0 +1318]; 0 COND_EXEC ranges, 0 fallback cuts
+at the kernel limit: split: 239237 dwords over 1048575 into 1 pieces: [0 +239237]; 0 COND_EXEC ranges, 0 fallback cuts
+at the kernel limit: split: 1318 dwords over 1048575 into 1 pieces: [0 +1318]; 0 COND_EXEC ranges, 0 fallback cuts
+== ib-timeout-00090425-dcb-106950.bin: 106950 dwords
+check: checked 3050 (staircase 2706) unbased 1045 NOP-ed 0 inserted 252258 -> 359208 dwords
+split: 359208 dwords over 16384 into 23 pieces: [0 +16320] [16320 +16256] [32576 +16256] [48832 +16320] [65152 +16128] [81280 +16256] [97536 +16320] [113856 +16000] [129856 +16128] [145984 +16256] [162240 +16320] [178560 +16128] [194688 +16256] [210944 +16320] [227264 +15616] [242880 +15104] [257984 +16128] [274112 +15744] [289856 +16256] [306112 +16320] [322432 +16256] [338688 +16064] [354752 +4456]; 5762 COND_EXEC ranges, 0 fallback cuts
+== ib-timeout-00090426-acb-4.bin: 4 dwords
+check: checked 0 (staircase 0) unbased 0 NOP-ed 0 inserted 0 -> 4 dwords
+split: 4 dwords over 16384 into 1 pieces: [0 +4]; 0 COND_EXEC ranges, 0 fallback cuts
+at the kernel limit: split: 359208 dwords over 1048575 into 1 pieces: [0 +359208]; 0 COND_EXEC ranges, 0 fallback cuts
+at the kernel limit: split: 4 dwords over 1048575 into 1 pieces: [0 +4]; 0 COND_EXEC ranges, 0 fallback cuts
+== ib-timeout-00022813-acb-1990.bin: 1990 dwords
+check: checked 19 (staircase 19) unbased 0 NOP-ed 0 inserted 1672 -> 3662 dwords
+split: 3662 dwords over 16384 into 1 pieces: [0 +3662]; 0 COND_EXEC ranges, 0 fallback cuts
+== ib-timeout-00022816-dcb-10171.bin: 10171 dwords
+check: checked 23 (staircase 0) unbased 0 NOP-ed 0 inserted 805 -> 10976 dwords
+split: 10976 dwords over 16384 into 1 pieces: [0 +10976]; 0 COND_EXEC ranges, 0 fallback cuts
+at the kernel limit: split: 3662 dwords over 1048575 into 1 pieces: [0 +3662]; 0 COND_EXEC ranges, 0 fallback cuts
+at the kernel limit: split: 10976 dwords over 1048575 into 1 pieces: [0 +10976]; 0 COND_EXEC ranges, 0 fallback cuts
+== ib-timeout-00054515-acb-4641.bin: 4641 dwords
+check: checked 127 (staircase 127) unbased 0 NOP-ed 0 inserted 11176 -> 15817 dwords
+split: 15817 dwords over 16384 into 1 pieces: [0 +15817]; 0 COND_EXEC ranges, 0 fallback cuts
+== ib-timeout-00054518-dcb-28288.bin: 28288 dwords
+check: checked 209 (staircase 0) unbased 0 NOP-ed 0 inserted 7315 -> 35603 dwords
+split: 35603 dwords over 16384 into 3 pieces: [0 +16000] [16000 +16384] [32384 +3219]; 214 COND_EXEC ranges, 0 fallback cuts
+at the kernel limit: split: 15817 dwords over 1048575 into 1 pieces: [0 +15817]; 0 COND_EXEC ranges, 0 fallback cuts
+at the kernel limit: split: 35603 dwords over 1048575 into 1 pieces: [0 +35603]; 0 COND_EXEC ranges, 0 fallback cuts
+== ib-timeout-00168772-dcb-9779.bin: 9779 dwords
+check: checked 0 (staircase 0) unbased 595 NOP-ed 0 inserted 1190 -> 10969 dwords
+split: 10969 dwords over 16384 into 1 pieces: [0 +10969]; 0 COND_EXEC ranges, 0 fallback cuts
+== ib-timeout-00168773-acb-1853.bin: 1853 dwords
+check: checked 0 (staircase 0) unbased 0 NOP-ed 0 inserted 0 -> 1853 dwords
+split: 1853 dwords over 16384 into 1 pieces: [0 +1853]; 0 COND_EXEC ranges, 0 fallback cuts
+at the kernel limit: split: 10969 dwords over 1048575 into 1 pieces: [0 +10969]; 0 COND_EXEC ranges, 0 fallback cuts
+at the kernel limit: split: 1853 dwords over 1048575 into 1 pieces: [0 +1853]; 0 COND_EXEC ranges, 0 fallback cuts

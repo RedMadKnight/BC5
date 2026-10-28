@@ -1,0 +1,21 @@
+2026-10-27 20:25:59
+== exact BO
+ib-probe: /dev/dri/renderD128, libdrm amdgpu 3.64; NOP IBs on the GFX ring, one IB per submit, fence timeout 2000 ms, BO exactly the IB (page-rounded)
+size 200000 dwords (0x30d40; 800000 bytes) in a BO of 802816 bytes: cs rc 0, fence signaled: the IB ran
+size 262143 dwords (0x3ffff; 1048572 bytes) in a BO of 1048576 bytes: cs rc 0, fence signaled: the IB ran
+size 262144 dwords (0x40000; 1048576 bytes) in a BO of 1048576 bytes: cs rc 0, fence signaled: the IB ran
+size 262145 dwords (0x40001; 1048580 bytes) in a BO of 1052672 bytes: cs rc 0, fence signaled: the IB ran
+size 300000 dwords (0x493e0; 1200000 bytes) in a BO of 1200128 bytes: cs rc 0, fence signaled: the IB ran
+size 524288 dwords (0x80000; 2097152 bytes) in a BO of 2097152 bytes: cs rc 0, fence signaled: the IB ran
+size 1048575 dwords (0xfffff; 4194300 bytes) in a BO of 4194304 bytes: cs rc 0, fence signaled: the IB ran
+size 1048576 dwords (0x100000; 4194304 bytes) in a BO of 4194304 bytes: cs rc -22 (refused before the GPU)
+rc 0
+== BO 1 MiB larger
+ib-probe: /dev/dri/renderD128, libdrm amdgpu 3.64; NOP IBs on the GFX ring, one IB per submit, fence timeout 2000 ms, BO 1 MiB larger than the IB
+size 200000 dwords (0x30d40; 800000 bytes) in a BO of 1851392 bytes: cs rc 0, fence signaled: the IB ran
+size 262144 dwords (0x40000; 1048576 bytes) in a BO of 2097152 bytes: cs rc 0, fence signaled: the IB ran
+size 300000 dwords (0x493e0; 1200000 bytes) in a BO of 2248704 bytes: cs rc 0, fence signaled: the IB ran
+size 1048575 dwords (0xfffff; 4194300 bytes) in a BO of 5242880 bytes: cs rc 0, fence signaled: the IB ran
+size 1048576 dwords (0x100000; 4194304 bytes) in a BO of 5242880 bytes: cs rc -22 (refused before the GPU)
+rc 0
+== dmesg after

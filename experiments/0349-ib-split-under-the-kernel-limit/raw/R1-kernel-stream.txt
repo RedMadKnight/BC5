@@ -1,0 +1,24 @@
+paź 27 20:02:26 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 27 20:02:56 bazzite kernel: amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:6 pasid:24)
+paź 27 20:02:56 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 11128 thread Render Thread pid 11271
+paź 27 20:02:56 bazzite kernel: amdgpu 0000:01:00.0:   in page starting at address 0x00000000ccc55000 from client 0x1b (UTCL2)
+paź 27 20:02:56 bazzite kernel: amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00600830
+paź 27 20:02:56 bazzite kernel: amdgpu 0000:01:00.0:          Faulty UTCL2 client ID: CPF (0x4)
+paź 27 20:02:56 bazzite kernel: amdgpu 0000:01:00.0:          MORE_FAULTS: 0x0
+paź 27 20:02:56 bazzite kernel: amdgpu 0000:01:00.0:          WALKER_ERROR: 0x0
+paź 27 20:02:56 bazzite kernel: amdgpu 0000:01:00.0:          PERMISSION_FAULTS: 0x3
+paź 27 20:02:56 bazzite kernel: amdgpu 0000:01:00.0:          MAPPING_ERROR: 0x0
+paź 27 20:02:56 bazzite kernel: amdgpu 0000:01:00.0:          RW: 0x0
+paź 27 20:02:58 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State
+paź 27 20:02:58 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State Completed
+paź 27 20:02:58 bazzite kernel: amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+paź 27 20:02:58 bazzite kernel: amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+paź 27 20:02:58 bazzite kernel: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=103824, emitted seq=103826
+paź 27 20:02:58 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 11128 thread bc5-ring pid 11252
+paź 27 20:02:58 bazzite kernel: amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+paź 27 20:02:58 bazzite kernel: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset failed
+paź 27 20:02:58 bazzite kernel: amdgpu 0000:01:00.0: GPU reset begin!. Source:  1
+paź 27 20:02:58 bazzite bc5-gpu-watch: armed: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=103824, emitted seq=103826
+paź 27 20:02:58 bazzite bc5-gpu-watch: a ring reset failed [amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset failed]: crashing before the full reset: syncing and crashing the kernel for a reboot (SysRq s, c)
+paź 27 20:02:58 bazzite kernel: sysrq: Emergency Sync
+paź 27 20:02:58 bazzite kernel: Emergency Sync complete
