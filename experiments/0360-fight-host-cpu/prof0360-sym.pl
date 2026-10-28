@@ -7,7 +7,8 @@ use strict;
 use warnings;
 my ($nmf, $file, $per) = @ARGV;
 $per //= 25;
-open(my $n, "<", $nmf) or die "$nmf: $!\n";
+my $n;
+if ($nmf =~ /\.gz$/) { open($n, "-|", "gzip", "-dc", $nmf) or die "$nmf: $!\n"; } else { open($n, "<", $nmf) or die "$nmf: $!\n"; }
 my (@addr, @name);
 while (my $l = <$n>) {
 	next unless $l =~ /^([0-9a-f]+) ([tTwWiI]) (.+)$/;
@@ -26,7 +27,8 @@ sub sym {
 	}
 	return $name[$lo];
 }
-open(my $h, "<", $file) or die "$file: $!\n";
+my $h;
+if ($file =~ /\.gz$/) { open($h, "-|", "gzip", "-dc", $file) or die "$file: $!\n"; } else { open($h, "<", $file) or die "$file: $!\n"; }
 my $last;
 while (my $l = <$h>) { $last = $l if $l =~ /^cpu prof top host /; }
 close $h;

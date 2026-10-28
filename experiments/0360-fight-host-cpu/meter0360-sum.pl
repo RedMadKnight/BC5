@@ -10,7 +10,8 @@ my ($file, $win, $t0, $t1) = @ARGV;
 $win //= 5;
 $t0  //= 0;
 $t1  //= 1e9;
-open(my $h, "<", $file) or die "$file: $!\n";
+my $h;
+if ($file =~ /\.gz$/) { open($h, "-|", "gzip", "-dc", $file) or die "$file: $!\n"; } else { open($h, "<", $file) or die "$file: $!\n"; }
 my (%w, %p, %topn);
 while (my $l = <$h>) {
 	if ($l =~ /^cpu meter: t ([\d.]+) s, ([\d.]+) ms; box busy (-?[\d.]+) % of (\d+) CPUs, (\d+) over 90 % \[([^\]]*)\]; CPU ms \(on a CPU\/runnable waiting\): title ([\d.]+)\/([\d.]+), host ([\d.]+)\/([\d.]+), bc5-mount (-?[\d.]+), rest of the box (-?[\d.]+); Hi ([\d.]+)\/([\d.]+) \(max wait ([\d.]+)\), Lo ([\d.]+)\/([\d.]+), Bk ([\d.]+)\/([\d.]+), game-main ([\d.]+)\/([\d.]+), Render ([\d.]+)\/([\d.]+); runnable now: title (\d+), host (\d+); submits \(n, jobs, sync\/hints\/prepare\/list\/cs ms\): title (\d+) (\d+) ([\d.\/]+), ring (\d+) (\d+) ([\d.\/]+), chainwd (\d+) (\d+) ([\d.\/]+), host (\d+) (\d+) ([\d.\/]+); (\d+) threads, top by CPU \(cpu\/wait\/sys ms\):(.*); cost (\d+) us/) {
