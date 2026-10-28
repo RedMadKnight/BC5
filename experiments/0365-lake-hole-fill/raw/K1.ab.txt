@@ -1,0 +1,30 @@
+407994
+19:16:55 K1 live saves before: 41a5a36fffb4f8d4
+19:16:55 K1 start: binary 1000ad2a, /var/home 62 %, dmesg 1417 lines; switches: 
+  private save copy reset to saves-lake-1153
+  == K1 (defaults) shots done 19:21:49
+  kernel: 0 fault lines, 0 ring timeout/reset lines
+  journal: 0 fence timeouts; 0 ray-tracing-off lines; compute-ring lines (two rings: >= 1; one ring: 0): 0; skip lines: 
+  192000-ts00.png: patch  30.4 %
+  192006-ts01.png: patch  32.1 %
+  192011-ts02.png: patch  32.3 %
+  192016-ts03.png: patch  33.2 %
+  192021-ts04.png: patch  31.2 %
+  192026-ts05.png: patch  30.4 %
+  192031-ts06.png: patch  33.0 %
+  192037-ts07.png: patch  31.7 %
+  192042-ts08.png: patch  31.3 %
+  192047-ts09.png: patch  30.3 %
+  192053-ts10.png: patch  31.8 %
+  192058-ts11.png: patch  29.4 %
+  192103-ts12.png: patch  32.3 %
+  192109-ts13.png: patch  32.1 %
+  192114-ts14.png: patch  29.5 %
+  192120-ts15.png: patch  32.0 %
+  192125-ts16.png: patch  31.7 %
+  192132-ts17.png: patch  32.6 %
+  192137-ts18.png: patch  31.0 %
+  192143-ts19.png: patch  29.7 %
+  fps counter: t 292.571 s: 29 flips in 1.015 s, longest gap 60.8 ms, gaps over 40 ms 2, ove
+19:21:59 K1 live saves after: 41a5a36fffb4f8d4; /var/home 62%
+19:21:59 K1 done

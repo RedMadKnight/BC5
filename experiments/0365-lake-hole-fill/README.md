@@ -86,3 +86,90 @@ frames were not tested: run H1 had none. This experiment asks two things (the to
   - the kernel stream to the laptop; stop at the first reset;
   - live saves compared only;
   - snapshots and shots deleted after the analysis, unviewed.
+
+**Setup as run** (the top session's GO of 2026-10-28 ~17:05, and its slot of 18:5x: the box once exp 0367's lock
+cleared, done by ~19:45; build 1000ad2a; launcher 55531ab6).
+- **17:05–19:16.** The box was busy: exp 0364 (the bvh session) until its STOPPED line of 18:34, then exp 0367. A
+  read-only laptop watcher checked the lock, `pgrep` and the queue's last line, and cleared at exp 0367's "done" line
+  (19:16:15).
+- **19:16:29.** Our lock line went into the empty BOX-LOCK, `~/bc5-work/exp0365/CLAIM.txt` was written and a
+  BOX-QUEUE line added. Live saves 41a5a36fffb4f8d4.
+  - `setup0365.sh`: `play-pkg-0365.sh` b8cd25f5 with exp 0353's five edits (`raw/play-pkg-0365.diff`);
+    `input-0365.cfg` 1666716f, RT on, MangoHud off (`raw/input-0365.cfg`).
+  - `sn0365.py --selftest` passed on the box (copy 1.0, late 0.0, early: no filled pixels).
+  - The kernel stream ran throughout (`raw/kernel-stream.txt`: four IPv6 lines, no amdgpu line).
+- **K1, 19:16:55–19:21:59** (`raw/K1.ab.txt`, `raw/K1.out`): binary 1000ad2a, RT on (0 ray-tracing-off lines), one
+  ring (0 compute-ring lines), no draw journal, 20 frozen-view shots. The shots read 29.4–33.2 % patch: a heavily
+  patched run.
+- **`pl0365.py K1 85 … 212 2.0 6`** (`raw/K1.pl.txt`): polling from the frozen view at 212.0 s. It stopped after
+  82.2 s, when the bench ended and dropped its lock line.
+  - 1,834,000 polls at a mean 0.045 ms; the largest gap, 581 ms, was a capture being written;
+  - D changes 23,656, P changes 2,807, 2,161 frames;
+  - 33 captures, 396 snapshots, 25 torn (23 sM, 2 sF). sM came at a median +9.2 ms, sF at +20.9 ms; 193 sF followed
+    a late burst, 5 came at the 25-ms cap.
+- **Analysis on the box, 19:22–19:25:** `ana0365.sh K1` (`raw/K1.bursts.txt`, `raw/K1.reads.txt`, `raw/K1.ana.txt`),
+  then `x0365.py` (`raw/K1.x.txt`).
+- **Changes after seeing the data:**
+  - `x0365.py` was written after `sn0365.py ana` showed that filled pixels never equal the previous final. It
+    compares the mid snapshot itself with the previous final and with this frame's final, at the final's width.
+  - The run had no clean frames (150 of 150 labelled finals have holes), so the plan's copy test "in clean frames" had
+    none. It ran on the hole frames' 138 consecutive pairs instead.
+- **19:25:29, release:** snapshots (2.8 GB) and the 22 shots deleted unviewed; our journalctl ended by PID; our lock
+  line removed; a BOX-QUEUE "released" line added. Live saves still 41a5a36fffb4f8d4. One run was enough (150 hole
+  finals against the 10 needed).
+
+**Result.**
+- **Bursts:** as in H1. 1,718 of 2,160 frames had three D bursts, at a median +6.5, +8.2 and +18.3 ms; the third ends
+  at +19.0 ms (`raw/K1.bursts.txt`).
+- **Sizes:** 194 of 198 sF have a clear block-row size (151 at 2560, 43 at 2816); none of the 198 sM has one, as in
+  H1.
+- **The two states, on clear finals only:** all 150 finals at widths 2048–2560 have holes. The eigen split gives A 74
+  and B 76, φ within 0.61 / 0.64, between −0.11. X holds 0.307 of the window and Y 0.319, and they overlap on 0.0014:
+  two complementary halves, as F436 found. The state switches irregularly: from A 30 of 61 times, from B 25 of 61.
+- **What the mid snapshot (+9 ms) holds** (`x0365.py`; per frame, 138 consecutive pairs at one width):
+
+| Comparison at the final's width, lake window | Median | Range (10–90 %) |
+|---|---|---|
+| Mid equal to the previous final, bitwise, where both are non-zero | 0.919 | 0.915–0.932 |
+| Mid 0 where the previous final is 0 | 0.999 | — |
+| Mid 0 where the previous final is non-zero | 0.054 | 0.039–0.057 |
+| Mid equal to this frame's final, where both are non-zero (173 frames) | 0.028 | 0.018–0.044 |
+
+  - So at +9 ms the lake window still holds the previous frame's final, holes included. φ of the mid zeros with the
+    previous final's zeros is 0.92–0.94 in every pair type; with this frame's own zeros it is −0.21 to −0.23 when the
+    state switches.
+  - Bursts 1 and 2 change ~8 % of its non-zero pixels and zero ~5 % more.
+- **What the last burst does** (`sn0365.py ana`, means per pair type; A has its holes in X, B in Y):
+
+| Pair | n | 0 mid-frame | 0 at the end | Filled | Stayed 0 | 0 only at the end | Filled = previous final | Filled where previous final 0 | Other = previous final |
+|---|---|---|---|---|---|---|---|---|---|
+| A>B | 29 | 0.355 | 0.324 | 0.290 (X 0.726) | 0.064 | 0.262 | 0.000 | 0.869 | 0.000 |
+| B>A | 24 | 0.370 | 0.320 | 0.299 (Y 0.732) | 0.072 | 0.249 | 0.000 | 0.869 | 0.000 |
+| A>A | 28 | 0.353 | 0.312 | 0.114 | 0.239 | 0.075 | 0.000 | 0.564 | 0.000 |
+| B>B | 26 | 0.359 | 0.324 | 0.115 | 0.243 | 0.086 | 0.000 | 0.563 | 0.000 |
+
+  - The last burst rewrites almost the whole window (only 2.8 % of pixels keep their mid value).
+  - It writes new values into the previous holes: never the previous final's value, which was 0 there.
+  - It writes 0 into this frame's hole half: 99.9 % of the pixels that turn 0 at the end held the previous final's
+    values mid-frame (`late zeros: mid = previous final`).
+  - On a switch, the old hole half is filled (X 0.73 for A>B) and the new one is zeroed.
+
+**Verdict** (F477, F478).
+- **History fill: rejected for hole frames.** Not one filled pixel in 138 pairs equals the previous final (0.000,
+  against ≥ 0.9 needed). The previous final was 0 at 56–87 % of them.
+- **The holes are drawn in the frame's last burst, not left over:** the late-draw reading. The depth image holds the
+  previous frame's final until about +18 ms. Then the last burst rewrites the lake and leaves one complementary half,
+  X or Y, at 0. On a switch it writes 0 over pixels that held the previous frame's depth.
+  - Whether that 0 is a clear that the draw then misses, or a written 0, cannot be told from memory snapshots.
+  - Since nothing else in the window keeps its value either, the miss fits F333 (nothing wrote depth there).
+- **F436 stands on clear reads only:** J1 offline (20 clear reads on each side), and K1's 150 clear finals here.
+- **F466 corrected twice:**
+  - Unclear reads taken before the last burst carry the hole state; their zeros sit at hole pixels.
+  - In K1 a read at +9 ms holds the previous final in the lake window (92 % bitwise), although its block-row shear
+    is unclear at every width. So "no per-pixel depth before the last burst" and the compressed-tile inference do not
+    hold for the lake window. What makes the shear unclear (the rows outside the window, which bursts 1–2 may
+    rewrite) was not checked.
+- **Next (Q21):** name the pass that writes the lake's depth in the last burst (~+18 ms), and find why it misses one
+  half. For example, a draw journal timed against the burst, with the depth image as the depth target: which draws
+  write it, and do they cover the hole half at all in hole frames?
+- Fault-free; live saves 41a5a36fffb4f8d4 never used; snapshots and shots deleted unviewed.

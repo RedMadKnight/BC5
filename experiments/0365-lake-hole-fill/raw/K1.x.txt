@@ -1,0 +1,15 @@
+# x0365: 193 frames, 173 with a mid snapshot
+# per frame, mid = previous final (both non-zero): n 138, min 0.909, 10 % 0.915, median 0.919, 90 % 0.932, max 0.938
+# per frame, mid = this final (both non-zero): n 173, min 0.012, 10 % 0.018, median 0.028, 90 % 0.044, max 0.058
+# per frame, share mid zero where previous final non-zero: n 138, min 0.035, 10 % 0.039, median 0.054, 90 % 0.057, max 0.061
+  ->?   mid = this final (both non-zero) 0.018 (9); phi mid zeros, this final zeros 0.195 (9)
+  ->A   mid = this final (both non-zero) 0.038 (15); phi mid zeros, this final zeros 0.035 (15)
+  ->B   mid = this final (both non-zero) 0.031 (7); phi mid zeros, this final zeros -0.092 (7)
+  ?>?   late zeros: mid = previous final 0.999 (31); mid = previous final (both non-zero) 0.932 (31); mid = this final (both non-zero) 0.018 (31); phi mid zeros, previous final zeros 0.938 (31); phi mid zeros, this final zeros 0.179 (31); share mid zero where previous final non-zero 0.039 (31); share mid zero where previous final zero 0.999 (31)
+  ?>A   mid = this final (both non-zero) 0.036 (1); phi mid zeros, this final zeros -0.212 (1)
+  ?>B   mid = this final (both non-zero) 0.036 (2); phi mid zeros, this final zeros -0.106 (2)
+  A>A   late zeros: mid = previous final 0.998 (28); mid = previous final (both non-zero) 0.919 (28); mid = this final (both non-zero) 0.029 (28); phi mid zeros, previous final zeros 0.919 (28); phi mid zeros, this final zeros 0.577 (28); share mid zero where previous final non-zero 0.054 (28); share mid zero where previous final zero 0.999 (28)
+  A>B   late zeros: mid = previous final 1.000 (29); mid = previous final (both non-zero) 0.918 (29); mid = this final (both non-zero) 0.036 (29); phi mid zeros, previous final zeros 0.919 (29); phi mid zeros, this final zeros -0.230 (29); share mid zero where previous final non-zero 0.054 (29); share mid zero where previous final zero 0.999 (29)
+  B>?   mid = this final (both non-zero) 0.015 (1); phi mid zeros, this final zeros -0.213 (1)
+  B>A   late zeros: mid = previous final 0.999 (24); mid = previous final (both non-zero) 0.916 (24); mid = this final (both non-zero) 0.044 (24); phi mid zeros, previous final zeros 0.921 (24); phi mid zeros, this final zeros -0.212 (24); share mid zero where previous final non-zero 0.056 (24); share mid zero where previous final zero 0.999 (24)
+  B>B   late zeros: mid = previous final 0.999 (26); mid = previous final (both non-zero) 0.918 (26); mid = this final (both non-zero) 0.025 (26); phi mid zeros, previous final zeros 0.920 (26); phi mid zeros, this final zeros 0.555 (26); share mid zero where previous final non-zero 0.055 (26); share mid zero where previous final zero 0.999 (26)
