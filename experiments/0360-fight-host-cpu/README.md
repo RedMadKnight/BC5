@@ -311,6 +311,10 @@ fight with exp 0359's patch off decides.
   | M2 | meter2 | S6N | default (ON) | pass, 33.8 flips/s |
   | C1 | cand (A + B) | S6N | default (ON) | pass, 33.7 flips/s |
 
+  Every one of the eight crashes with the fix off is the same fault: an access violation reading 0xc at eboot.bin+0x3d7eca0
+  (the play logs' fault prints, read on the box; not kept here because they carry title code bytes). The repeats' summaries are
+  in `raw/repeats-summaries.txt.gz`.
+
 - **F470 — candidates A and B cut the host's per-call cost on the title's threads, but neither the frame rate nor the
   fight's crash moves.**
   - **A (fast TLS) works as designed.** `Loader::TlsMainGetAddr` vanishes from game-main's host samples (M2 2,537,
