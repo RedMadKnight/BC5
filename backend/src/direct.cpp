@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 #include "bc5/direct.hpp"
+#include "bc5/host_indirect.hpp"
+#include "bc5/ib_split.hpp"
 #include "bc5/indirect_check.hpp"
 #include "bc5/shadow_labels.hpp"
 
@@ -21,6 +23,7 @@
 #include <mutex>
 #include <cstdlib>
 #include <map>
+#include <set>
 
 namespace bc5::direct {
 
@@ -115,6 +118,19 @@ struct Device::Impl {
     // Device::open (the host's FilterOptions / OpenOptions fields win when set), the dispatch
     // argument histogram (arm 1), the shadow-label sums (arm 2) and the summary at close.
     bool env_product = false, env_histogram = false, env_shadow = false, bo_journal = false;
+    // Experiment 0346: BC5_DIRECT_HOST_INDIRECT — a GFX-form DISPATCH_INDIRECT without a SET_BASE of its type
+    // in its own IB is resolved and verified by the host at filter time (bc5/host_indirect.hpp): rewritten
+    // to the page the host read, or NOP-ed. "1" or "learn": the window for a base of 0 learned from the
+    // title's own SET_BASEs; "learn:<hex>" with that value until one is seen; "<hex>" fixed. Unset: off.
+    bool env_host_indirect = false;
+    std::uint64_t hi_window_fixed = 0, hi_window_learned = 0;
+    host_indirect::Register hi_reg; // the CP's one base-1 register as the GFX ring's jobs leave it (third version)
+    host_indirect::Stats hi_sum;
+    // Experiment 0349: a job's executed IB longer than this is cut into up to four IBs of one submit
+    // (bc5/ib_split.hpp); the kernel refuses an IB over 0xfffff dwords (F421). BC5_DIRECT_IB_MAX_DW lowers it.
+    std::size_t ib_max_dw = ib_split::kDefaultMaxDwords;
+    std::uint64_t split_jobs = 0, split_pieces = 0, split_fallback = 0, split_failed = 0;
+    std::set<std::uint64_t> hi_programs;
     indirect_check::ProductLimit product;
     std::map<std::uint32_t, std::uint64_t> hist; // key: the log2 classes of x, y, z, 8 bits each
     std::uint64_t hist_n = 0, hist_printed = 0, hist_stair = 0, hist_dim = 0;
@@ -199,6 +215,12 @@ struct Device::Impl {
                          static_cast<unsigned long long>(shadow_writes_sum), static_cast<unsigned long long>(shadow_waits_sum),
                          static_cast<unsigned long long>(shadow_overflow_sum), static_cast<unsigned long long>(shadow_failed_sum),
                          static_cast<unsigned long long>(product_sum));
+        if (env_host_indirect) // experiment 0346
+            std::fprintf(stderr,
+                         "bc5-direct: experiment 0346 %s: dispatches seen by the host: %u left (the register non-zero) + %u left (never set), after the title's zeroing %u rewritten to a verified page, dropped %u (no candidate) + %u (not a real mapping) + %u (unreadable) + %u (counts), %u NOP-ed on a COND_EXEC overflow; window 0x%llx; %zu programs\n",
+                         when, hi_sum.left_nonzero, hi_sum.left_never_set, hi_sum.rewritten, hi_sum.dropped_no_candidate, hi_sum.dropped_unmapped, hi_sum.dropped_unreadable,
+                         hi_sum.dropped_insane, hi_sum.nop_on_overflow,
+                         static_cast<unsigned long long>(hi_window_learned != 0 ? hi_window_learned : hi_window_fixed), hi_programs.size());
     }
     // Experiment 0064: the filtered main IB, kept between submissions so that its memory is not
     // allocated and zeroed again for every buffer (up to ~470 KB each, four of them a frame).
@@ -462,6 +484,22 @@ std::unique_ptr<Device> Device::open(const std::string &node, const OpenOptions 
         if (end != e && x > 1) d->impl_->product.x_limit = static_cast<std::uint32_t>(x);
         if (end != nullptr && *end == ':') d->impl_->product.yz_min = static_cast<std::uint32_t>(std::strtoul(end + 1, nullptr, 0));
     }
+    if (const char *e = std::getenv("BC5_DIRECT_HOST_INDIRECT"); e != nullptr && *e != 0) { // experiment 0346
+        d->impl_->env_host_indirect = true;
+        if (std::strncmp(e, "learn", 5) == 0) {
+            if (e[5] == ':') d->impl_->hi_window_fixed = std::strtoull(e + 6, nullptr, 16);
+        } else if (std::strcmp(e, "1") != 0) {
+            d->impl_->hi_window_fixed = std::strtoull(e, nullptr, 16);
+        }
+        std::fprintf(stderr, "bc5-direct: experiment 0346 switch: a GFX-form dispatch without a SET_BASE of its type in its IB is resolved by the host (the carried base, or the window 0x%llx%s) and rewritten only to a page the host read, else NOP-ed; no CP read at an inferred address\n",
+                     static_cast<unsigned long long>(d->impl_->hi_window_fixed), d->impl_->hi_window_fixed == 0 ? " learned from the title's SET_BASEs" : " until one is learned");
+    }
+    if (const char *e = std::getenv("BC5_DIRECT_IB_MAX_DW"); e != nullptr && *e != 0) { // experiment 0349
+        const std::size_t v = static_cast<std::size_t>(std::strtoull(e, nullptr, 0));
+        if (v >= 64 && v <= ib_split::kKernelMaxDwords) d->impl_->ib_max_dw = v;
+    }
+    std::fprintf(stderr, "bc5-direct: experiment 0349: a job's IB over %zu dwords is cut at aligned packet boundaries outside COND_EXEC ranges into up to %zu IBs of one submit (the kernel takes at most 0xfffff dwords per IB)\n",
+                 d->impl_->ib_max_dw, ib_split::kMaxPieces);
     if (d->impl_->bo_journal || d->impl_->env_histogram || d->impl_->env_shadow || d->impl_->env_product)
         std::fprintf(stderr, "bc5-direct: experiment 0341 switches: product staircase %d (x > %u with y or z > %u), args histogram %d, shadow labels %d, bo journal %d\n",
                      d->impl_->env_product ? 1 : 0, d->impl_->product.x_limit, d->impl_->product.yz_min,
@@ -1001,6 +1039,65 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     double t_phase = now_ms();
     policy::filter(policy::Policy::builtin(), ib, main_out, fopt, r.filter);
     executed_offsets_of(ib, main_out.data(), r.executed_offsets);
+    // Experiment 0346: the host-side resolution of GFX-form dispatches without a SET_BASE of their type in
+    // this IB (bc5/host_indirect.hpp). The real mappings are the device's userptr and shared mappings (the
+    // sorted table: no PRT window, guard or zero buffer is in it); the reader is the host's `mapped` test
+    // and a CPU read of the arguments (GPU VA == guest VA, as the 0341 histogram read them).
+    // Experiment 0348: the register the pass carries is committed only once the job is on the ring. A job
+    // the kernel refuses (rc -22: the ~250,000-dword dcbs of 12:52, 18:55 and 19:22) changes nothing on the
+    // GPU, so its SET_BASEs must not move the host's copy either (F421).
+    host_indirect::Register hi_next = impl_->hi_reg;
+    if (impl_->env_host_indirect && !comp) {
+        const host_indirect::Reader read = [&opt](std::uint64_t va, std::uint32_t (&cnt)[3]) {
+            if (opt.mapped && !opt.mapped(va, 12)) return false;
+            const auto *p = reinterpret_cast<const volatile std::uint32_t *>(va);
+            cnt[0] = p[0];
+            cnt[1] = p[1];
+            cnt[2] = p[2];
+            return true;
+        };
+        host_indirect::Stats hs;
+        const std::uint64_t window = impl_->hi_window_learned != 0 ? impl_->hi_window_learned : impl_->hi_window_fixed;
+        // The mapping table (~19,000 userptr and shared mappings) is copied and sorted only when a dispatch is
+        // a candidate (the register 0 after the title's zeroing): the first walk runs against no region, and
+        // a candidate then shows as "not a real mapping"; R1 of the third version (RT off) paid ~15 % of its
+        // flips for the sort on every GFX-ring job with no candidate at all.
+        static const std::vector<host_indirect::Region> kNoRegion;
+        auto decisions = host_indirect::resolve_indirect(main_out, impl_->hi_reg, window, kNoRegion, read,
+                                                         host_indirect::Limits{}, hs);
+        if (hs.dropped_unmapped != 0) {
+            std::vector<host_indirect::Region> regions; // the device lock is held: the lists, not sorted_mappings()
+            regions.reserve(impl_->shared_maps.size() + impl_->userptrs.size());
+            for (const auto &m : impl_->shared_maps) regions.push_back({m.va, m.size});
+            for (const auto &u : impl_->userptrs) regions.push_back({u.va, u.size});
+            std::sort(regions.begin(), regions.end(), [](const host_indirect::Region &a, const host_indirect::Region &b) { return a.va < b.va; });
+            hs = host_indirect::Stats{};
+            decisions = host_indirect::resolve_indirect(main_out, impl_->hi_reg, window, regions, read,
+                                                        host_indirect::Limits{}, hs);
+        }
+        if (!decisions.empty()) host_indirect::rewrite_verified(main_out, decisions, hs);
+        hi_next = hs.register_out;
+        if (hs.window_seen != 0) impl_->hi_window_learned = hs.window_seen;
+        impl_->hi_sum.left_nonzero += hs.left_nonzero;
+        impl_->hi_sum.left_never_set += hs.left_never_set;
+        impl_->hi_sum.rewritten += hs.rewritten;
+        impl_->hi_sum.dropped_no_candidate += hs.dropped_no_candidate;
+        impl_->hi_sum.dropped_unmapped += hs.dropped_unmapped;
+        impl_->hi_sum.dropped_unreadable += hs.dropped_unreadable;
+        impl_->hi_sum.dropped_insane += hs.dropped_insane;
+        impl_->hi_sum.nop_on_overflow += hs.nop_on_overflow;
+        for (const auto &x : decisions) { // one line per program, the first time it is rewritten or dropped
+            if (x.decision == host_indirect::Decision::Leave) continue;
+            if (!impl_->hi_programs.insert(x.program).second) continue;
+            static const char *const why[] = {"left: the register is non-zero", "left: the register was never set", "verified: SET_BASE to the page, the dispatch, SET_BASE 0",
+                                              "no candidate (register 0, no window): NOP", "not a real mapping: NOP", "unreadable: NOP", "counts fail the limits: NOP"};
+            std::fprintf(stderr, "bc5-direct: experiment 0346 %s: dispatch at %zu of program 0x%llx (%s type), register 0 after the title's zeroing, window 0x%llx + offset 0x%llx -> 0x%llx (page 0x%llx), counts %u %u %u: %s\n",
+                         x.decision == host_indirect::Decision::Rewrite ? "rewrite" : "drop", x.at, static_cast<unsigned long long>(x.program),
+                         x.shader_type != 0 ? "compute" : "graphics", static_cast<unsigned long long>(x.window), static_cast<unsigned long long>(x.address - x.window),
+                         static_cast<unsigned long long>(x.address), static_cast<unsigned long long>(x.page), x.counts[0], x.counts[1], x.counts[2],
+                         why[static_cast<std::size_t>(x.why)]);
+        }
+    }
     r.prep_filter_ms = now_ms() - t_phase;
     t_phase = now_ms();
     if (state_stack_ && opt.mapped && !comp) { // the context registers are the GFX ring's
@@ -1224,6 +1321,34 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
         }
     }
     const std::size_t padded = pro_padded + pieces[0].padded; // the CP runs prologue then IB
+    // Experiment 0349: the executed IB [0, padded) cut into up to four IBs when it is over the limit; the
+    // cuts are packet boundaries 256 bytes aligned (else 32, the CP's fetch chunk) outside every COND_EXEC
+    // range, no dword moves. A job that cannot be cut is refused here as the kernel would refuse it.
+    std::vector<ib_split::Piece> ib_pieces;
+    if (padded > impl_->ib_max_dw) {
+        ib_split::Stats ss;
+        ib_pieces = ib_split::split(std::span<const std::uint32_t>(impl_->image.data(), padded), padded, impl_->ib_max_dw,
+                                    ib_split::kMaxPieces, 64, 8, ss);
+        if (ib_pieces.empty()) {
+            impl_->split_failed++;
+            std::fprintf(stderr, "bc5-direct: experiment 0349: job of %zu dwords (%zu from the title's %zu) cannot be cut into %zu IBs of %zu: %s (%u COND_EXEC ranges, at %zu); refused\n",
+                         padded, main_n, ib.size(), ib_split::kMaxPieces, impl_->ib_max_dw,
+                         ss.too_many_pieces ? "more pieces would be needed" : "no aligned packet boundary outside a COND_EXEC range", ss.cond_ranges, ss.failed_at);
+            r.rc = -EINVAL;
+            return r;
+        }
+        impl_->split_jobs++;
+        impl_->split_pieces += ib_pieces.size();
+        impl_->split_fallback += ss.fallback_cuts;
+        if (impl_->split_jobs <= 8 || impl_->split_jobs % 500 == 0) {
+            std::fprintf(stderr, "bc5-direct: experiment 0349 split #%llu: job of %zu dwords (%zu from the title's %zu) into %zu IBs:",
+                         static_cast<unsigned long long>(impl_->split_jobs), padded, main_n, ib.size(), ib_pieces.size());
+            for (const auto &pc : ib_pieces) std::fprintf(stderr, " [%zu +%zu]", pc.off, pc.n);
+            std::fprintf(stderr, "; %u COND_EXEC ranges, %u fallback cuts; so far %llu jobs cut into %llu IBs, %llu fallback cuts, %llu refused\n", ss.cond_ranges, ss.fallback_cuts,
+                         static_cast<unsigned long long>(impl_->split_jobs), static_cast<unsigned long long>(impl_->split_pieces),
+                         static_cast<unsigned long long>(impl_->split_fallback), static_cast<unsigned long long>(impl_->split_failed));
+        }
+    }
     // One sequential copy into the uncached scratch (MTYPE_UC, F25); nothing reads it back.
     std::memcpy(impl_->slots[impl_->cur].cpu, impl_->image.data(), bytes);
     r.prep_copy_ms += now_ms() - t_phase;
@@ -1323,15 +1448,25 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     r.list_ms = now_ms() - t_list;
     if (r.rc != 0) return r;
 
-    amdgpu_cs_ib_info ib_info{};
-    ib_info.ib_mc_address = impl_->slots[impl_->cur].va;
-    ib_info.size = static_cast<std::uint32_t>(padded);
+    amdgpu_cs_ib_info ib_info[ib_split::kMaxPieces]{};
+    std::uint32_t n_ibs = 0;
+    if (ib_pieces.empty()) {
+        ib_info[0].ib_mc_address = impl_->slots[impl_->cur].va;
+        ib_info[0].size = static_cast<std::uint32_t>(padded);
+        n_ibs = 1;
+    } else {
+        for (const auto &pc : ib_pieces) { // experiment 0349: the pieces run back to back, each an IB1
+            ib_info[n_ibs].ib_mc_address = impl_->slots[impl_->cur].va + pc.off * 4;
+            ib_info[n_ibs].size = static_cast<std::uint32_t>(pc.n);
+            n_ibs++;
+        }
+    }
     amdgpu_cs_request req{};
     req.ip_type = comp ? AMDGPU_HW_IP_COMPUTE : AMDGPU_HW_IP_GFX;
     req.ring = comp ? static_cast<std::uint32_t>(ring) : 0;
     req.resources = list;
-    req.number_of_ibs = 1;
-    req.ibs = &ib_info;
+    req.number_of_ibs = n_ibs;
+    req.ibs = ib_info;
     amdgpu_cs_fence deps[kComputeRings]{};
     if ((ring_deps_ & (comp ? 1 : 2)) != 0) { // set_ring_deps
         std::uint32_t n = 0;
@@ -1348,6 +1483,10 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
 
     const double t0 = now_ms();
     r.rc = amdgpu_cs_submit(impl_->ctx, 0, &req, 1);
+    if (r.rc == 0) impl_->hi_reg = hi_next; // experiment 0348: the CP's base-1 register as this job leaves it
+    if (r.rc != 0) // experiment 0348: amdgpu_cs refuses an IB over 0xfffff dwords (amdgpu_cs.c, amdgpu_cs_p2_ib)
+        std::fprintf(stderr, "bc5-direct: cs refused rc %d: the job's IB is %zu dwords (%zu from the title's %zu) in %u IBs, %u BOs; the kernel takes at most 0xfffff dwords per IB\n",
+                     r.rc, padded, main_n, ib.size(), n_ibs, r.bo_count);
     r.cs_ms = now_ms() - t0;
     std::uint32_t expired = 0;
     r.seq_no = req.seq_no;

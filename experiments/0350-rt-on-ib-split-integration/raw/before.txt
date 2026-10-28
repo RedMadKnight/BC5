@@ -1,0 +1,9 @@
+2026-10-28 07:51:16 before: normal ddfb9456, lean 03337c24, archive 44ba4435, /home/kjaniszewski/src/bc5 d0c2668, tree f266548 with 96 changed entries, its diff (patch 0001 as built) md5 12716e3b, src/libs/bc5LleAgc.cpp cfeec2f8, play-pkg.sh 5b469087
+  backend/CMakeLists.txt e7d80fff -> 8c02fb60
+  backend/include/bc5/host_indirect.hpp new -> c9f68384
+  backend/include/bc5/ib_split.hpp new -> 6b1bba40
+  backend/src/direct.cpp c802cc89 -> ddb3e393
+  backend/src/host_indirect.cpp new -> 3457152d
+  backend/src/ib_split.cpp new -> a2ba37ad
+  backend/tests/host_indirect_test.cpp new -> 76a519af
+  backend/tests/ib_split_test.cpp new -> 0166c4fd

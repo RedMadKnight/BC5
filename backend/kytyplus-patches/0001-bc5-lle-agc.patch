@@ -27503,10 +27503,10 @@ index 82be73c..f090fcb 100644
  } // namespace Libs::Audio::AudioInternal
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..3c3d4f1
+index 0000000..8d2f498
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
-@@ -0,0 +1,9477 @@
+@@ -0,0 +1,9550 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +//
 +// BC5 track B (github.com/RedMadKnight/BC5, docs/HANDOFF.md D11, experiments 0009/0010).
@@ -27853,6 +27853,7 @@ index 0000000..3c3d4f1
 +static bool wait_trace();                                        // experiment 0133
 +static void describe_pending(uint64_t a, char* out, size_t cap); // experiment 0133
 +static void journal(const char* fmt, ...) __attribute__((format(printf, 1, 2)));
++static double timing_now(); // experiment 0343: the journal's time base, for the soft CP's lines
 +// Experiment 0024 (BC5_DIRECT_ASYNC=1): what has to follow a buffer's execution on the GPU — the
 +// soft CP's pass over it, a ring's read-pointer publication — runs through post(): at once when
 +// submissions are waited for, otherwise on the completion thread, in submission order, after the
@@ -27923,6 +27924,16 @@ index 0000000..3c3d4f1
 +static std::atomic<uint64_t>        g_packets {0};
 +static uint64_t                     g_skipped[256];
 +static std::atomic<uint64_t>        g_waits_timed_out {0};
++// Experiment 0343: the soft CP's label polls journaled and, in a replay, bounded. t_wait_bound_ns is
++// the deadline of a WAIT_REG_MEM poll on this thread (0: the 2-s deadline of the standalone soft CP
++// and of the ring thread's own pass; the completion threads set BC5_DIRECT_SOFT_WAIT_MS around the
++// replays they run). t_cur_* name the buffer submit() is executing, for the lines. The counters feed
++// the frame profile (polls not satisfied at the first look, their time, those that ran to the deadline).
++static thread_local uint64_t        t_wait_bound_ns = 0;
++static thread_local const uint32_t* t_cur_buf  = nullptr;
++static thread_local uint32_t        t_cur_n    = 0;
++static thread_local const char*     t_cur_kind = "?";
++static std::atomic<uint64_t>        g_soft_polls {0}, g_soft_poll_ns {0}, g_soft_timeouts {0}, g_soft_lines {0};
 +
 +static void register_eq(Libs::LibKernel::EventQueue::KernelEqueue eq, int ident, bool add) {
 +	std::lock_guard lock(g_eq_mutex);
@@ -28171,6 +28182,29 @@ index 0000000..3c3d4f1
 +	}
 +}
 +
++// Experiment 0343: a poll that was not satisfied at the first look. Counted for the frame profile;
++// journaled through Direct::journal (which the session's printf direction does not silence) when it
++// lasted over 50 ms or ran to its deadline: the label, function, reference and value, the buffer
++// (kind, pointer; the packet's offset in it, or its address when it lies in an INDIRECT_BUFFER target)
++// and whether the marks were empty (then every packet counts as not run by the GPU). Exp 0341's 22-s
++// hold (F415) was eleven such polls at 2 s each inside bc5-cq0's replays, with no line anywhere.
++static void soft_wait_done(const uint32_t* p, bool is64, uint64_t a, uint32_t function, uint64_t t0, bool timed_out) {
++	const uint64_t held = now_ns() - t0;
++	g_soft_polls++;
++	g_soft_poll_ns += held;
++	if (timed_out) g_soft_timeouts++;
++	if (held < 50'000'000ull && !timed_out) return;
++	if (g_soft_lines++ >= 2000) return; // the counters go on, the lines stop
++	const uint64_t  ref   = is64 ? (p[4] | (static_cast<uint64_t>(p[5]) << 32u)) : p[4];
++	const uint64_t  value = is64 ? *reinterpret_cast<volatile uint64_t*>(a) : *reinterpret_cast<volatile uint32_t*>(a);
++	const bool      in    = t_cur_buf != nullptr && p >= t_cur_buf && p < t_cur_buf + t_cur_n;
++	const long long where = in ? static_cast<long long>(p - t_cur_buf) : -1;
++	Direct::journal("soft-cp wait: t %.3f s WAIT_REG_MEM%s on 0x%" PRIx64 " %s after %.1f ms (bound %" PRIu64 " ms): fn %u ref 0x%" PRIx64 " value 0x%" PRIx64 "; %s %u dwords at %p, packet at %p (offset %lld); marks %s\n",
++	                Direct::timing_now(), is64 ? "64" : "", a, timed_out ? "TIMED OUT" : "satisfied", static_cast<double>(held) / 1e6,
++	                (t_wait_bound_ns != 0 ? t_wait_bound_ns : 2'000'000'000ull) / 1'000'000ull, function, ref, value, t_cur_kind, t_cur_n,
++	                static_cast<const void*>(t_cur_buf), static_cast<const void*>(p), where, t_gpu_done.empty() ? "empty" : "set");
++}
++
 +static void wait_reg_mem(const uint32_t* p, bool is64) {
 +	const uint32_t function  = p[1] & 7u;
 +	const bool     mem_space = ((p[1] >> 4u) & 1u) != 0;
@@ -28181,7 +28215,9 @@ index 0000000..3c3d4f1
 +	if (a == 0) {
 +		return;
 +	}
-+	const uint64_t deadline = now_ns() + 2'000'000'000ull;
++	const uint64_t t0       = now_ns();
++	const uint64_t deadline = t0 + (t_wait_bound_ns != 0 ? t_wait_bound_ns : 2'000'000'000ull); // experiment 0343
++	bool           polled   = false; // experiment 0343: not satisfied at the first look
 +	for (;;) {
 +		bool ok;
 +		if (is64) {
@@ -28204,10 +28240,13 @@ index 0000000..3c3d4f1
 +			ok = compare(function, *reinterpret_cast<volatile uint32_t*>(a), p[5], p[4]);
 +		}
 +		if (ok) {
++			if (polled) soft_wait_done(p, is64, a, function, t0, false); // experiment 0343
 +			return;
 +		}
++		polled = true;
 +		if (now_ns() > deadline) {
 +			g_waits_timed_out++;
++			soft_wait_done(p, is64, a, function, t0, true); // experiment 0343
 +			LOGF_COLOR(Log::Color::Yellow, "[bc5-cp] WAIT_REG_MEM%s on 0x%" PRIx64 " timed out (fn %u ref 0x%x), continuing\n",
 +			           is64 ? "64" : "", a, function, p[4]);
 +			return;
@@ -28414,6 +28453,9 @@ index 0000000..3c3d4f1
 +
 +static void submit(const uint32_t* buf, uint32_t num_dwords, const char* kind) {
 +	const uint64_t n = g_submits.fetch_add(1);
++	t_cur_buf  = buf; // experiment 0343: for the soft-cp wait lines
++	t_cur_n    = num_dwords;
++	t_cur_kind = kind;
 +	execute(buf, num_dwords, 0);
 +	if (n < 16 || (n & 0xffu) == 0) {
 +		std::string skipped;
@@ -33753,6 +33795,21 @@ index 0000000..3c3d4f1
 +	t_cq = index == 1 ? 1 : 0;
 +}
 +
++// Experiment 0343: the bound of a WAIT_REG_MEM poll inside a replay run by the game thread's completion
++// queue (BC5_DIRECT_SOFT_WAIT_MS, default 8, like the game thread's DCB waits; 0 keeps the soft CP's
++// 2-s deadline) and by the ring thread's (BC5_DIRECT_SOFT_WAIT_RING_MS, default 0: unchanged — a compute
++// buffer may legitimately end in a wait for the next frame's label there, run 110). A replay runs after
++// the job's fence: a label still unwritten then can only be written by work the title has not submitted,
++// and while drain() holds the game thread at the flip that work cannot come (exp 0341's 22-s hold, F415:
++// eleven polls at 2 s). The packets after the wait run as before, only sooner.
++static uint64_t soft_wait_ns() {
++	static const uint64_t v = (std::getenv("BC5_DIRECT_SOFT_WAIT_MS") != nullptr ? std::strtoull(std::getenv("BC5_DIRECT_SOFT_WAIT_MS"), nullptr, 10) : 8ull) * 1'000'000ull;
++	return v;
++}
++static uint64_t soft_wait_ring_ns() {
++	static const uint64_t v = (std::getenv("BC5_DIRECT_SOFT_WAIT_RING_MS") != nullptr ? std::strtoull(std::getenv("BC5_DIRECT_SOFT_WAIT_RING_MS"), nullptr, 10) : 0ull) * 1'000'000ull;
++	return v;
++}
 +static void completion_thread(int index) {
 +	{
 +		char name[16];
@@ -33884,8 +33941,17 @@ index 0000000..3c3d4f1
 +			g_cq_fences--;
 +		} else {
 +			const uint64_t t_post = SoftCp::now_ns();
++			SoftCp::t_wait_bound_ns = index == 0 ? soft_wait_ns() : soft_wait_ring_ns(); // experiment 0343
 +			it.post(failed);
-+			if (index == 0) frame_profile_post(static_cast<double>(SoftCp::now_ns() - t_post) / 1e6);
++			SoftCp::t_wait_bound_ns = 0;
++			const double post_ms = static_cast<double>(SoftCp::now_ns() - t_post) / 1e6;
++			if (index == 0) frame_profile_post(post_ms);
++			if (post_ms >= 100.0) { // experiment 0343: exp 0341's hold was posts of 2 s on cq0, with no line
++				static std::atomic<uint32_t> n_slow {0};
++				if (n_slow++ < 1000) journal("slow post: t %.3f s cq%d %.1f ms; last replayed %s %u dwords at %p; soft-cp polls so far %" PRIu64 " (%.1f ms), timed out %" PRIu64 "\n",
++				                             timing_now(), index, post_ms, SoftCp::t_cur_kind, SoftCp::t_cur_n, static_cast<const void*>(SoftCp::t_cur_buf),
++				                             SoftCp::g_soft_polls.load(), static_cast<double>(SoftCp::g_soft_poll_ns.load()) / 1e6, SoftCp::g_soft_timeouts.load());
++			}
 +			failed = false;
 +		}
 +		g_cq_items--;
@@ -34018,15 +34084,22 @@ index 0000000..3c3d4f1
 +	if (!g_frame_profile_on()) return;
 +	std::lock_guard lock(g_fp_mutex);
 +	const double now = timing_now();
++	// Experiment 0343: the soft CP's polls since the last flip (its counters are global: both completion threads and
++	// the ring thread's own pass; the lines say which).
++	static uint64_t sp0 = 0, st0 = 0, sn0 = 0;
++	const uint64_t  sp = SoftCp::g_soft_polls.load(), st = SoftCp::g_soft_timeouts.load(), sn = SoftCp::g_soft_poll_ns.load();
 +	if (g_fp.t_last_flip != 0) {
 +		const double interval = (now - g_fp.t_last_flip) * 1e3;
 +		const double inside   = g_fp.sync_ms + g_fp.hints_ms + g_fp.prepare_ms + g_fp.list_ms + g_fp.cs_ms + g_fp.fence_ms + g_fp.cap_ms + g_fp.cpuwait_ms + g_fp.eqwait_ms;
-+		journal("frame profile: t %.3f s, %.1f ms since the last flip; game thread inside the host %.1f ms (sync %.1f, hints %.1f, prepare %.1f, list %.1f, cs %.1f, fence %.1f, cap %.1f, label waits %.1f, event waits %.1f), at the flip %.1f, outside %.1f; GPU busy %.1f ms in %" PRIu64 " jobs (+%" PRIu64 " from the ring thread); soft-CP passes %.1f ms in %" PRIu64 "; prepare = filter %.1f + tracker %.1f + cu %.1f + nested %.1f + copy %.1f\n",
++		journal("frame profile: t %.3f s, %.1f ms since the last flip; game thread inside the host %.1f ms (sync %.1f, hints %.1f, prepare %.1f, list %.1f, cs %.1f, fence %.1f, cap %.1f, label waits %.1f, event waits %.1f), at the flip %.1f, outside %.1f; GPU busy %.1f ms in %" PRIu64 " jobs (+%" PRIu64 " from the ring thread); soft-CP passes %.1f ms in %" PRIu64 ", waits polled %" PRIu64 " (%.1f ms, %" PRIu64 " timed out); prepare = filter %.1f + tracker %.1f + cu %.1f + nested %.1f + copy %.1f\n",
 +		        now, interval, inside, g_fp.sync_ms, g_fp.hints_ms, g_fp.prepare_ms, g_fp.list_ms, g_fp.cs_ms, g_fp.fence_ms, g_fp.cap_ms, g_fp.cpuwait_ms, g_fp.eqwait_ms, drain_ms, interval - inside - drain_ms,
-+		        static_cast<double>(g_fp.gpu_busy_ns) / 1e6, g_fp.jobs, g_fp.ring_jobs, g_fp.post_ms, g_fp.posts, g_fp.pf_ms, g_fp.pt_ms, g_fp.pc_ms, g_fp.pn_ms, g_fp.pcopy_ms);
++		        static_cast<double>(g_fp.gpu_busy_ns) / 1e6, g_fp.jobs, g_fp.ring_jobs, g_fp.post_ms, g_fp.posts, sp - sp0, static_cast<double>(sn - sn0) / 1e6, st - st0, g_fp.pf_ms, g_fp.pt_ms, g_fp.pc_ms, g_fp.pn_ms, g_fp.pcopy_ms);
 +	}
 +	g_fp.sync_ms = g_fp.hints_ms = g_fp.prepare_ms = g_fp.list_ms = g_fp.cs_ms = g_fp.fence_ms = g_fp.cap_ms = g_fp.cpuwait_ms = g_fp.eqwait_ms = g_fp.post_ms = 0;
 +	g_fp.jobs = g_fp.ring_jobs = g_fp.gpu_busy_ns = g_fp.posts = 0;
++	sp0 = sp; // experiment 0343
++	st0 = st;
++	sn0 = sn;
 +	g_fp.pf_ms = g_fp.pt_ms = g_fp.pc_ms = g_fp.pn_ms = g_fp.pcopy_ms = 0;
 +	g_fp.t_last_flip = now;
 +}

@@ -1,0 +1,7 @@
+bc5-direct: experiment 0349: a job's IB over 983040 dwords is cut at aligned packet boundaries outside COND_EXEC ranges into up to 4 IBs of one submit (the kernel takes at most 0xfffff dwords per IB)
+bc5-direct: experiment 0341 switches: product staircase 1 (x > 65536 with y or z > 1), args histogram 0, shadow labels 1, bo journal 0
+bc5-direct: experiment 0349 split #1: job of 1212560 dwords (1212560 from the title's 196681) into 2 IBs: [0 +982464] [982464 +230096]; 23089 COND_EXEC ranges, 0 fallback cuts; so far 1 jobs cut into 2 IBs, 0 fallback cuts, 0 refused
+bc5-direct: experiment 0349 split #2: job of 1153776 dwords (1153774 from the title's 224251) into 2 IBs: [0 +983040] [983040 +170736]; 21132 COND_EXEC ranges, 0 fallback cuts; so far 2 jobs cut into 4 IBs, 0 fallback cuts, 0 refused
+bc5-direct: experiment 0341 periodic: shadow labels in 98000 jobs: 929025 labels, 1858050 writes copied, 929025 waits redirected, 10 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 11289609 dispatches
+bc5-direct: experiment 0341 switches: product staircase 1 (x > 65536 with y or z > 1), args histogram 0, shadow labels 1, bo journal 0
+bo lines: 0 (userptr map 0, unmap 0, shared map 0, scratch 0)

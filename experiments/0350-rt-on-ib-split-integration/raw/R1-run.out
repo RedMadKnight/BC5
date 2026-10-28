@@ -1,0 +1,10 @@
+swappiness 60 vfs_cache_pressure 100 watermark_scale_factor 10 min_free_kbytes 67584 page-cluster 3
+zram0 disksize 7964983296 comp lzo-rle lzo lz4 lz4hc [zstd] deflate 842 ; MemTotal 15192 MiB; GTT total 13312 MiB
+kernel 7.2.9-ogc3.1.fc44.x86_64; launcher /home/kjaniszewski/bc5-work/play-pkg.sh md5 55531ab6; shared normal affa0c22, lean cd7ea936; private normal /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator md5 affa0c22; shared bc5-mount 43277724
+learned file /home/kjaniszewski/bc5-work/direct-learned-pkg.txt md5 a7cc8581, 109 windows
+launcher /home/kjaniszewski/bc5-work/exp0350/play-pkg-0350.sh md5 bcb4ffee (/home/kjaniszewski/bc5-work/exp0350/raw/play-pkg-0350.diff); wd /home/kjaniszewski/bc5-work/exp0350/wd (5151 entries)
+2026-10-28 07:53:00 live saves 3f8412c4884ddf14, snapshot /home/kjaniszewski/bc5-work/exp0350/saves-before-0753 (comparison only)
+R1: stopped at 600 s after 604 s; launcher exit 0; crash lines 0, kernel lines 0, TIMEOUT lines 0, compute-ring lines 0, fdinfo engines drm-engine-gfx , devcoredumps 0, RT-off drop lines 5384, flips 21616 over 600.8 s = 36.0 flips/s; direct: 19379 views; +0 BOs (95, 11348.0 MiB pinned); maps +1 -2 (19414); imports  (stubs ), call lines , procparam ; the private learned file is unchanged
+pass
+2026-10-28 08:03:17 live saves 3f8412c4884ddf14 (want 3f8412c4884ddf14)
+BOX-LOCK released

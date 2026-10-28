@@ -1,0 +1,25 @@
+2026-10-28 07:51:16 before: normal ddfb9456, lean 03337c24, archive 44ba4435, /home/kjaniszewski/src/bc5 d0c2668, tree f266548 with 96 changed entries, its diff (patch 0001 as built) md5 12716e3b, src/libs/bc5LleAgc.cpp cfeec2f8, play-pkg.sh 5b469087
+  backend/CMakeLists.txt e7d80fff -> 8c02fb60
+  backend/include/bc5/host_indirect.hpp new -> c9f68384
+  backend/include/bc5/ib_split.hpp new -> 6b1bba40
+  backend/src/direct.cpp c802cc89 -> ddb3e393
+  backend/src/host_indirect.cpp new -> 3457152d
+  backend/src/ib_split.cpp new -> a2ba37ad
+  backend/tests/host_indirect_test.cpp new -> 76a519af
+  backend/tests/ib_split_test.cpp new -> 0166c4fd
+== 07:51:16 1. backend files into /home/kjaniszewski/src/bc5/backend
+== 07:51:16 2. exp 0343's host unit
+== 07:51:16 3a. the shared archive
+archive bb50b2e0; 0 warnings; objects: ib_split 1, host_indirect 1
+== 07:51:23 3b. normal build
+== 07:51:49 3c. lean build
+strings /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator: 0349 switch 1, 0346 switch 1, cs refused 1, soft-cp wait 1, 0341 switches 1
+strings /home/kjaniszewski/bc5-work/kytyplus-build-lean/src/kyty_emulator: 0349 switch 1, 0346 switch 1, cs refused 1, soft-cp wait 0, 0341 switches 1
+warnings: normal 5, lean 8; recompiled: normal 1, lean 1
+== 07:52:22 4. play-pkg.sh: HOST_INDIRECT + SOFT_WAIT after the guards
+== 07:52:22 5. the candidate patch 0001
+candidate patch 0001: 58742 lines, md5 6ac6cc16 (before 12716e3b)
+2026-10-28 07:52:22 after: normal affa0c22, lean cd7ea936, archive bb50b2e0, src/libs/bc5LleAgc.cpp e7cc2f60, play-pkg.sh 55531ab6
+== 07:52:22 done; undo: cp -p /home/kjaniszewski/bc5-work/exp0350/integration/kyty_emulator.before-0350 /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator; cp -p /home/kjaniszewski/bc5-work/exp0350/integration/kyty_emulator-lean.before-0350 /home/kjaniszewski/bc5-work/kytyplus-build-lean/src/kyty_emulator; cp -p /home/kjaniszewski/bc5-work/exp0350/integration/libbc5_backend.a.before-0350 /home/kjaniszewski/bc5-work/backend-ubuntu/libbc5_backend.a; git -C /home/kjaniszewski/src/bc5 checkout -- backend; rm -f /home/kjaniszewski/src/bc5/backend/include/bc5/host_indirect.hpp /home/kjaniszewski/src/bc5/backend/include/bc5/ib_split.hpp /home/kjaniszewski/src/bc5/backend/src/host_indirect.cpp /home/kjaniszewski/src/bc5/backend/src/ib_split.cpp /home/kjaniszewski/src/bc5/backend/tests/host_indirect_test.cpp /home/kjaniszewski/src/bc5/backend/tests/ib_split_test.cpp; cp -p /home/kjaniszewski/bc5-work/exp0350/integration/tree-before/src/libs/bc5LleAgc.cpp /home/kjaniszewski/src/KytyPlus/src/libs/bc5LleAgc.cpp; cp -p /home/kjaniszewski/bc5-work/exp0350/integration/play-pkg.sh.before-0350 /home/kjaniszewski/bc5-work/play-pkg.sh; then ninja bc5_backend, and kyty_emulator in both builds (or keep the restored binaries)
+
+[exited with code 1]
