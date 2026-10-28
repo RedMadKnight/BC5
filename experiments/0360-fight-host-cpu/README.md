@@ -89,8 +89,54 @@ Plan:
 3. The maintainer plays one fight on a meter shortcut. That gives the fight's real per-thread CPU and wait.
 4. Choose 2–3 candidates from (1)–(3), each designed here before code.
 
+## The fight in the day's journals (read-only extracts, the top session's GO, 15:29)
+
+`~/bc5-work/exp0360/CLAIM.txt` and a BOX-QUEUE line were written at 15:29:01. The lock was empty and no emulator ran.
+The extracts were taken at nice 19 / ionice idle; nothing else was written on the box:
+- the journals of the six fight plays: 11:10 and 11:16 (test 0356), 12:16, 13:53, 14:29 and 14:50 (test 0358 traps v1, v3, v4, v5);
+- the 14:44 trap v5 smoke run on the Continue route, which has thread tables like the 14:50 play;
+- the 11:33 S6N 900-s run.
+
+Only the lines `fp0360.pl` and the thread tables need are kept, in `raw/journal-extracts.txt.gz` (the 11:33 run left
+out for size). `raw/frame-profiles-5s.txt` holds the 5-s means of every frame profile line (`fp0360.pl`). The trap
+play logs were read on the laptop and not committed: their fault prints carry title code bytes.
+
+- **F461 — at the fight the frame is not bound by the direct path, the GPU or the box's CPU count.** Means of the 29
+  five-second windows of the six plays with ≥ 60 ms between flips, against the 14:44 route's steady part (t 120–200 s,
+  16 windows). All values are ms per flip, except the first row:
+
+  | | fight | route |
+  |---|---|---|
+  | flips/s | 14.2 | 45.4 |
+  | ms between flips | 71.0 | 22.0 |
+  | render thread inside the direct path | 13.3 | 9.5 |
+  | – sync / hints / prepare / cs | 3.0 / 2.2 / 3.3 / 4.2 | 0.4 / 0.2 / 2.0 / 1.3 |
+  | – label waits | 0.4 | 5.6 |
+  | at the flip (drain) | 3.0 | 5.2 |
+  | **outside the direct path** | **54.6** | 7.4 |
+  | GPU busy | 11.8 | 17.4 |
+  | game-thread jobs + ring jobs | 19.7 + 73.8 | 7.6 + 26.9 |
+
+  The v5 thread tables of the 14:50 play put the box at 24, 26, 37, 45 and 34 % busy over the fight's 5-s windows
+  (t 52–73 s). That is `/proc/stat`, unaffected by F460, and means 4–7 of the 16 hardware threads. The route is
+  20–28 % at 45 flips/s. Over the fight the per-second pool sampler finds the five Hi workers asleep (S) in 28 of 29
+  samples. So the fight does about the route's CPU work per second at a third of its frame rate. Each frame carries
+  2.7 times the route's submissions but less GPU time. And 77 % of the render thread's frame is spent outside the
+  direct path: in title code, in other HLE calls, or waiting. F454's single frame (104.6 ms with 66.8 inside the host)
+  was a spike. The fight's typical frame has 13 ms inside.
+
+  Consequence for the task: making the direct path or the GPU feed faster can take at most ~13 ms of a 71-ms fight
+  frame off the render thread, and the cores are not saturated on average. Whether the title's threads wait for a core
+  in bursts, and what the 55 ms "outside" is, needs the CPU meter.
+
 **Setup.** (filled in as the work goes)
 
 **Result.**
+
+- **F460 — exp 0358's per-thread "cpu" figures are kernel time (stime), not CPU.** See the offline reading above:
+  `bc5_proc_state` (trap v4/v5) prints `/proc/<tid>/stat` field 15 as "user" and fields 15 + 16 as "cpu". Every
+  per-thread CPU figure is kernel time: the crash prints, the sampler's Hi columns, and the v5 thread tables'
+  ranking. F453/F454's "the Bk workers got only 0.05–0.06 CPU s" and "the Hi workers' CPU 0.5 s each" therefore do
+  not show starvation. The state letters and the box's busy share are correct.
 
 **Verdict.**
