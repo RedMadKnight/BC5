@@ -26,11 +26,16 @@ src = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "sn0369.py")
 exec(compile(src[:src.index('\nif sys.argv[1:2] == ["--selftest"]:\n    selftest()')], "sn0369.py", "exec"), S.__dict__)
 
 
+GRIDS = {}
+
+
 def grid(sw, w):
-    h = w * 9 // 16
-    x0, x1 = (S.X0 * w // 1920) // 8 * 8, (S.X1 * w // 1920) // 8 * 8
-    y0, y1 = (S.Y0 * h // 1080) // 8 * 8, (S.Y1 * h // 1080) // 8 * 8
-    return sw.local(w, np.arange(y0, y1), np.arange(x0, x1))
+    if w not in GRIDS:
+        h = w * 9 // 16
+        x0, x1 = (S.X0 * w // 1920) // 8 * 8, (S.X1 * w // 1920) // 8 * 8
+        y0, y1 = (S.Y0 * h // 1080) // 8 * 8, (S.Y1 * h // 1080) // 8 * 8
+        GRIDS[w] = sw.local(w, np.arange(y0, y1), np.arange(x0, x1))
+    return GRIDS[w]
 
 
 def tiles(a, shift=0):
