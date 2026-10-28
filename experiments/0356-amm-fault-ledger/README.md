@@ -90,3 +90,19 @@ and the faulting instruction's module and offset before the host exits. The fata
 runs on 2026-10-28, three plays on 2026-10-18); the efficient trap is the maintainer's own play on this build, which
 needs the top session's word for a test shortcut. R2's hang (F443) belongs to the shader-fault class and to the
 sessions working on it; its dumps are kept.
+
+**The shortcut (11:01).** `~/Pulpit/BC5 emulator (test 0356).desktop`, Exec `distrobox enter ubuntu -- env
+BC5_EMU=~/bc5-work/exp0356/kyty_emulator ~/bc5-work/exp0356/play-pkg-0356t.sh`; the launcher (md5 725052b3) is the
+integrated play-pkg.sh 55531ab6 with one change, the log line (`raw/mktest0356.pl`, `raw/shortcut0356.sh`; the diff is
+3 lines: the LOG line replaced and a comment), so it carries the shared launcher's own switches; the binary is the
+ledger build 187910d8, checked by md5 before the file is written; RT on from the shared input.cfg; a log per start in
+`~/bc5-work/exp0356/play/`. Nothing shared written; the game was not started.
+
+**On the ~100-s big frame and the cut (for Q20).** Not involved in F443's hang, as far as this experiment can tell:
+the cut at the default limit ran clean in 0352's arms A, B and C (jobs of 1.04, 1.14 and 1.29 million dwords into 2 IBs
+and one of 2.27 million into 3, all at ~100 s, 600 s each) and the pieces are windows of the same image; the hung dcb
+is a later, small one (34,003 dwords) whose shader wrote to a heap page and to junk addresses 0xe3808c…, the picture of
+F399/F403 (garbage in a dispatch's data). What varies run to run is the big frame itself: 238,192 → 589,792 → 969,320 →
+1,121,536 → 2,265,120 final dwords on the same route, so the title's work at that point (the BVH build lists it keeps
+with RT on) differs, and a run that happens to hit a bad set of arguments hangs there; the cut only keeps the job
+submittable. One hang in ten S6N RT-on runs with the cut, no machine-down.
