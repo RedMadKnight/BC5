@@ -1,0 +1,273 @@
+# Offline gate 2026-10-28: harness_0352 (per-dispatch form) vs --batch 256 (the batched form) over the 16 private dumps, --window 1100000000 --sim; per play: differing lines among filter/host_indirect/check-decision lines (print_dispatches and the check summary excluded), differing simulator lines, then the check summaries and every simulator line of the batched run.
+
+== play 1237: decision lines differing 0, simulator lines differing 0
+== ib-timeout-00076004-acb-2605.bin: 2605 dwords
+check: checked 45 (staircase 45, batched 0 in 0 chains, flag dwords 8) unbased 0 NOP-ed 0 inserted 3960 -> 6565 dwords
+sim 1 1 1 (plain): 45 of 45 dispatches run
+sim 44 1 1 (plain): 45 of 45 dispatches run
+sim 1048576 1 1 (x at its limit): 45 of 45 dispatches run
+sim 1048577 1 1 (x over): 0 of 0 dispatches run; refused as expected
+sim 65536 2 1 (x at x_limit, 2-D): 45 of 45 dispatches run
+sim 65537 2 1 (staircase: x over x_limit with y > 1): 0 of 0 dispatches run; refused as expected
+sim 65537 1 1 (1-D above x_limit): 45 of 45 dispatches run
+sim 1 1024 1 (y at its limit): 45 of 45 dispatches run
+sim 1 1025 1 (y over): 0 of 0 dispatches run; refused as expected
+sim 818 820 819 (F403's grid): 45 of 45 dispatches run; RUNAWAY LET THROUGH
+sim 4294967295 4294967295 1 (18:55's garbage): 0 of 0 dispatches run; refused as expected
+sim 2139095040 2139095040 2139095040 (+inf): 0 of 0 dispatches run; refused as expected
+sim 28800 4286578688 1 (-inf y): 0 of 0 dispatches run; refused as expected
+sim 1 1 2000 (z over): 0 of 0 dispatches run; refused as expected
+== ib-timeout-00076005-dcb-17748.bin: 17748 dwords
+check: checked 46 (staircase 0, batched 0 in 0 chains, flag dwords 8) unbased 0 NOP-ed 0 inserted 1610 -> 19358 dwords
+sim 1 1 1 (plain): 0 of 0 dispatches run
+sim 44 1 1 (plain): 0 of 0 dispatches run
+sim 1048576 1 1 (x at its limit): 0 of 0 dispatches run
+sim 1048577 1 1 (x over): 0 of 0 dispatches run; refused as expected
+sim 65536 2 1 (x at x_limit, 2-D): 0 of 0 dispatches run
+sim 65537 2 1 (staircase: x over x_limit with y > 1): 0 of 0 dispatches run; refused as expected
+sim 65537 1 1 (1-D above x_limit): 0 of 0 dispatches run
+sim 1 1024 1 (y at its limit): 0 of 0 dispatches run
+sim 1 1025 1 (y over): 0 of 0 dispatches run; refused as expected
+sim 818 820 819 (F403's grid): 0 of 0 dispatches run; refused as expected
+sim 4294967295 4294967295 1 (18:55's garbage): 0 of 0 dispatches run; refused as expected
+sim 2139095040 2139095040 2139095040 (+inf): 0 of 0 dispatches run; refused as expected
+sim 28800 4286578688 1 (-inf y): 0 of 0 dispatches run; refused as expected
+sim 1 1 2000 (z over): 0 of 0 dispatches run; refused as expected
+
+== play 1251: decision lines differing 0, simulator lines differing 0
+== ib-timeout-00048055-dcb-30221.bin: 30221 dwords
+check: checked 141 (staircase 0, batched 0 in 0 chains, flag dwords 8) unbased 435 NOP-ed 0 inserted 5805 -> 36026 dwords
+sim 1 1 1 (plain): 435 of 435 dispatches run
+sim 44 1 1 (plain): 435 of 435 dispatches run
+sim 1048576 1 1 (x at its limit): 435 of 435 dispatches run
+sim 1048577 1 1 (x over): 435 of 435 dispatches run; RUNAWAY LET THROUGH
+sim 65536 2 1 (x at x_limit, 2-D): 435 of 435 dispatches run
+sim 65537 2 1 (staircase: x over x_limit with y > 1): 435 of 435 dispatches run; RUNAWAY LET THROUGH
+sim 65537 1 1 (1-D above x_limit): 435 of 435 dispatches run
+sim 1 1024 1 (y at its limit): 435 of 435 dispatches run
+sim 1 1025 1 (y over): 435 of 435 dispatches run; RUNAWAY LET THROUGH
+sim 818 820 819 (F403's grid): 435 of 435 dispatches run; RUNAWAY LET THROUGH
+sim 4294967295 4294967295 1 (18:55's garbage): 435 of 435 dispatches run; RUNAWAY LET THROUGH
+sim 2139095040 2139095040 2139095040 (+inf): 435 of 435 dispatches run; RUNAWAY LET THROUGH
+sim 28800 4286578688 1 (-inf y): 435 of 435 dispatches run; RUNAWAY LET THROUGH
+sim 1 1 2000 (z over): 435 of 435 dispatches run; RUNAWAY LET THROUGH
+== ib-timeout-00048056-acb-4.bin: 4 dwords
+check: checked 0 (staircase 0, batched 0 in 0 chains, flag dwords 8) unbased 0 NOP-ed 0 inserted 0 -> 4 dwords
+sim 1 1 1 (plain): 0 of 0 dispatches run
+sim 44 1 1 (plain): 0 of 0 dispatches run
+sim 1048576 1 1 (x at its limit): 0 of 0 dispatches run
+sim 1048577 1 1 (x over): 0 of 0 dispatches run; refused as expected
+sim 65536 2 1 (x at x_limit, 2-D): 0 of 0 dispatches run
+sim 65537 2 1 (staircase: x over x_limit with y > 1): 0 of 0 dispatches run; refused as expected
+sim 65537 1 1 (1-D above x_limit): 0 of 0 dispatches run
+sim 1 1024 1 (y at its limit): 0 of 0 dispatches run
+sim 1 1025 1 (y over): 0 of 0 dispatches run; refused as expected
+sim 818 820 819 (F403's grid): 0 of 0 dispatches run; refused as expected
+sim 4294967295 4294967295 1 (18:55's garbage): 0 of 0 dispatches run; refused as expected
+sim 2139095040 2139095040 2139095040 (+inf): 0 of 0 dispatches run; refused as expected
+sim 28800 4286578688 1 (-inf y): 0 of 0 dispatches run; refused as expected
+sim 1 1 2000 (z over): 0 of 0 dispatches run; refused as expected
+
+== play 1327: decision lines differing 0, simulator lines differing 0
+== ib-timeout-00081041-dcb-98099.bin: 98099 dwords
+check: checked 1490 (staircase 1490, batched 1490 in 7 chains, flag dwords 888) unbased 5009 NOP-ed 0 inserted 111415 -> 209514 dwords
+sim 1 1 1 (plain): 6499 of 6499 dispatches run
+sim 44 1 1 (plain): 6499 of 6499 dispatches run
+sim 1048576 1 1 (x at its limit): 6499 of 6499 dispatches run
+sim 1048577 1 1 (x over): 5009 of 5009 dispatches run; RUNAWAY LET THROUGH
+sim 65536 2 1 (x at x_limit, 2-D): 6499 of 6499 dispatches run
+sim 65537 2 1 (staircase: x over x_limit with y > 1): 5009 of 5009 dispatches run; RUNAWAY LET THROUGH
+sim 65537 1 1 (1-D above x_limit): 6499 of 6499 dispatches run
+sim 1 1024 1 (y at its limit): 6499 of 6499 dispatches run
+sim 1 1025 1 (y over): 5009 of 5009 dispatches run; RUNAWAY LET THROUGH
+sim 818 820 819 (F403's grid): 6499 of 6499 dispatches run; RUNAWAY LET THROUGH
+sim 4294967295 4294967295 1 (18:55's garbage): 5009 of 5009 dispatches run; RUNAWAY LET THROUGH
+sim 2139095040 2139095040 2139095040 (+inf): 5009 of 5009 dispatches run; RUNAWAY LET THROUGH
+sim 28800 4286578688 1 (-inf y): 5009 of 5009 dispatches run; RUNAWAY LET THROUGH
+sim 1 1 2000 (z over): 5009 of 5009 dispatches run; RUNAWAY LET THROUGH
+== ib-timeout-00081042-acb-1318.bin: 1318 dwords
+check: checked 0 (staircase 0, batched 0 in 0 chains, flag dwords 8) unbased 0 NOP-ed 0 inserted 0 -> 1318 dwords
+sim 1 1 1 (plain): 0 of 0 dispatches run
+sim 44 1 1 (plain): 0 of 0 dispatches run
+sim 1048576 1 1 (x at its limit): 0 of 0 dispatches run
+sim 1048577 1 1 (x over): 0 of 0 dispatches run; refused as expected
+sim 65536 2 1 (x at x_limit, 2-D): 0 of 0 dispatches run
+sim 65537 2 1 (staircase: x over x_limit with y > 1): 0 of 0 dispatches run; refused as expected
+sim 65537 1 1 (1-D above x_limit): 0 of 0 dispatches run
+sim 1 1024 1 (y at its limit): 0 of 0 dispatches run
+sim 1 1025 1 (y over): 0 of 0 dispatches run; refused as expected
+sim 818 820 819 (F403's grid): 0 of 0 dispatches run; refused as expected
+sim 4294967295 4294967295 1 (18:55's garbage): 0 of 0 dispatches run; refused as expected
+sim 2139095040 2139095040 2139095040 (+inf): 0 of 0 dispatches run; refused as expected
+sim 28800 4286578688 1 (-inf y): 0 of 0 dispatches run; refused as expected
+sim 1 1 2000 (z over): 0 of 0 dispatches run; refused as expected
+
+== play 1423: decision lines differing 0, simulator lines differing 0
+== ib-timeout-00090425-dcb-106950.bin: 106950 dwords
+check: checked 3050 (staircase 2706, batched 2706 in 17 chains, flag dwords 1024) unbased 1045 NOP-ed 0 inserted 198325 -> 305275 dwords
+sim 1 1 1 (plain): 3751 of 3751 dispatches run
+sim 44 1 1 (plain): 3751 of 3751 dispatches run
+sim 1048576 1 1 (x at its limit): 3751 of 3751 dispatches run
+sim 1048577 1 1 (x over): 1045 of 1045 dispatches run; RUNAWAY LET THROUGH
+sim 65536 2 1 (x at x_limit, 2-D): 3751 of 3751 dispatches run
+sim 65537 2 1 (staircase: x over x_limit with y > 1): 1045 of 1045 dispatches run; RUNAWAY LET THROUGH
+sim 65537 1 1 (1-D above x_limit): 3751 of 3751 dispatches run
+sim 1 1024 1 (y at its limit): 3751 of 3751 dispatches run
+sim 1 1025 1 (y over): 1045 of 1045 dispatches run; RUNAWAY LET THROUGH
+sim 818 820 819 (F403's grid): 3751 of 3751 dispatches run; RUNAWAY LET THROUGH
+sim 4294967295 4294967295 1 (18:55's garbage): 1045 of 1045 dispatches run; RUNAWAY LET THROUGH
+sim 2139095040 2139095040 2139095040 (+inf): 1045 of 1045 dispatches run; RUNAWAY LET THROUGH
+sim 28800 4286578688 1 (-inf y): 1045 of 1045 dispatches run; RUNAWAY LET THROUGH
+sim 1 1 2000 (z over): 1045 of 1045 dispatches run; RUNAWAY LET THROUGH
+== ib-timeout-00090426-acb-4.bin: 4 dwords
+check: checked 0 (staircase 0, batched 0 in 0 chains, flag dwords 8) unbased 0 NOP-ed 0 inserted 0 -> 4 dwords
+sim 1 1 1 (plain): 0 of 0 dispatches run
+sim 44 1 1 (plain): 0 of 0 dispatches run
+sim 1048576 1 1 (x at its limit): 0 of 0 dispatches run
+sim 1048577 1 1 (x over): 0 of 0 dispatches run; refused as expected
+sim 65536 2 1 (x at x_limit, 2-D): 0 of 0 dispatches run
+sim 65537 2 1 (staircase: x over x_limit with y > 1): 0 of 0 dispatches run; refused as expected
+sim 65537 1 1 (1-D above x_limit): 0 of 0 dispatches run
+sim 1 1024 1 (y at its limit): 0 of 0 dispatches run
+sim 1 1025 1 (y over): 0 of 0 dispatches run; refused as expected
+sim 818 820 819 (F403's grid): 0 of 0 dispatches run; refused as expected
+sim 4294967295 4294967295 1 (18:55's garbage): 0 of 0 dispatches run; refused as expected
+sim 2139095040 2139095040 2139095040 (+inf): 0 of 0 dispatches run; refused as expected
+sim 28800 4286578688 1 (-inf y): 0 of 0 dispatches run; refused as expected
+sim 1 1 2000 (z over): 0 of 0 dispatches run; refused as expected
+
+== play 1534: decision lines differing 0, simulator lines differing 0
+== ib-timeout-00022813-acb-1990.bin: 1990 dwords
+check: checked 19 (staircase 19, batched 0 in 0 chains, flag dwords 8) unbased 0 NOP-ed 0 inserted 1672 -> 3662 dwords
+sim 1 1 1 (plain): 19 of 19 dispatches run
+sim 44 1 1 (plain): 19 of 19 dispatches run
+sim 1048576 1 1 (x at its limit): 19 of 19 dispatches run
+sim 1048577 1 1 (x over): 0 of 0 dispatches run; refused as expected
+sim 65536 2 1 (x at x_limit, 2-D): 19 of 19 dispatches run
+sim 65537 2 1 (staircase: x over x_limit with y > 1): 0 of 0 dispatches run; refused as expected
+sim 65537 1 1 (1-D above x_limit): 19 of 19 dispatches run
+sim 1 1024 1 (y at its limit): 19 of 19 dispatches run
+sim 1 1025 1 (y over): 0 of 0 dispatches run; refused as expected
+sim 818 820 819 (F403's grid): 19 of 19 dispatches run; RUNAWAY LET THROUGH
+sim 4294967295 4294967295 1 (18:55's garbage): 0 of 0 dispatches run; refused as expected
+sim 2139095040 2139095040 2139095040 (+inf): 0 of 0 dispatches run; refused as expected
+sim 28800 4286578688 1 (-inf y): 0 of 0 dispatches run; refused as expected
+sim 1 1 2000 (z over): 0 of 0 dispatches run; refused as expected
+== ib-timeout-00022816-dcb-10171.bin: 10171 dwords
+check: checked 23 (staircase 0, batched 0 in 0 chains, flag dwords 8) unbased 0 NOP-ed 0 inserted 805 -> 10976 dwords
+sim 1 1 1 (plain): 0 of 0 dispatches run
+sim 44 1 1 (plain): 0 of 0 dispatches run
+sim 1048576 1 1 (x at its limit): 0 of 0 dispatches run
+sim 1048577 1 1 (x over): 0 of 0 dispatches run; refused as expected
+sim 65536 2 1 (x at x_limit, 2-D): 0 of 0 dispatches run
+sim 65537 2 1 (staircase: x over x_limit with y > 1): 0 of 0 dispatches run; refused as expected
+sim 65537 1 1 (1-D above x_limit): 0 of 0 dispatches run
+sim 1 1024 1 (y at its limit): 0 of 0 dispatches run
+sim 1 1025 1 (y over): 0 of 0 dispatches run; refused as expected
+sim 818 820 819 (F403's grid): 0 of 0 dispatches run; refused as expected
+sim 4294967295 4294967295 1 (18:55's garbage): 0 of 0 dispatches run; refused as expected
+sim 2139095040 2139095040 2139095040 (+inf): 0 of 0 dispatches run; refused as expected
+sim 28800 4286578688 1 (-inf y): 0 of 0 dispatches run; refused as expected
+sim 1 1 2000 (z over): 0 of 0 dispatches run; refused as expected
+
+== play 1854: decision lines differing 0, simulator lines differing 0
+== ib-timeout-00054515-acb-4641.bin: 4641 dwords
+check: checked 127 (staircase 127, batched 0 in 0 chains, flag dwords 8) unbased 0 NOP-ed 0 inserted 11176 -> 15817 dwords
+sim 1 1 1 (plain): 127 of 127 dispatches run
+sim 44 1 1 (plain): 127 of 127 dispatches run
+sim 1048576 1 1 (x at its limit): 127 of 127 dispatches run
+sim 1048577 1 1 (x over): 0 of 0 dispatches run; refused as expected
+sim 65536 2 1 (x at x_limit, 2-D): 127 of 127 dispatches run
+sim 65537 2 1 (staircase: x over x_limit with y > 1): 0 of 0 dispatches run; refused as expected
+sim 65537 1 1 (1-D above x_limit): 127 of 127 dispatches run
+sim 1 1024 1 (y at its limit): 127 of 127 dispatches run
+sim 1 1025 1 (y over): 0 of 0 dispatches run; refused as expected
+sim 818 820 819 (F403's grid): 127 of 127 dispatches run; RUNAWAY LET THROUGH
+sim 4294967295 4294967295 1 (18:55's garbage): 0 of 0 dispatches run; refused as expected
+sim 2139095040 2139095040 2139095040 (+inf): 0 of 0 dispatches run; refused as expected
+sim 28800 4286578688 1 (-inf y): 0 of 0 dispatches run; refused as expected
+sim 1 1 2000 (z over): 0 of 0 dispatches run; refused as expected
+== ib-timeout-00054518-dcb-28288.bin: 28288 dwords
+check: checked 209 (staircase 0, batched 0 in 0 chains, flag dwords 8) unbased 0 NOP-ed 0 inserted 7315 -> 35603 dwords
+sim 1 1 1 (plain): 0 of 0 dispatches run
+sim 44 1 1 (plain): 0 of 0 dispatches run
+sim 1048576 1 1 (x at its limit): 0 of 0 dispatches run
+sim 1048577 1 1 (x over): 0 of 0 dispatches run; refused as expected
+sim 65536 2 1 (x at x_limit, 2-D): 0 of 0 dispatches run
+sim 65537 2 1 (staircase: x over x_limit with y > 1): 0 of 0 dispatches run; refused as expected
+sim 65537 1 1 (1-D above x_limit): 0 of 0 dispatches run
+sim 1 1024 1 (y at its limit): 0 of 0 dispatches run
+sim 1 1025 1 (y over): 0 of 0 dispatches run; refused as expected
+sim 818 820 819 (F403's grid): 0 of 0 dispatches run; refused as expected
+sim 4294967295 4294967295 1 (18:55's garbage): 0 of 0 dispatches run; refused as expected
+sim 2139095040 2139095040 2139095040 (+inf): 0 of 0 dispatches run; refused as expected
+sim 28800 4286578688 1 (-inf y): 0 of 0 dispatches run; refused as expected
+sim 1 1 2000 (z over): 0 of 0 dispatches run; refused as expected
+
+== play 1919: decision lines differing 0, simulator lines differing 0
+== ib-timeout-00168772-dcb-9779.bin: 9779 dwords
+check: checked 0 (staircase 0, batched 0 in 0 chains, flag dwords 8) unbased 595 NOP-ed 0 inserted 1190 -> 10969 dwords
+sim 1 1 1 (plain): 595 of 595 dispatches run
+sim 44 1 1 (plain): 595 of 595 dispatches run
+sim 1048576 1 1 (x at its limit): 595 of 595 dispatches run
+sim 1048577 1 1 (x over): 595 of 595 dispatches run; RUNAWAY LET THROUGH
+sim 65536 2 1 (x at x_limit, 2-D): 595 of 595 dispatches run
+sim 65537 2 1 (staircase: x over x_limit with y > 1): 595 of 595 dispatches run; RUNAWAY LET THROUGH
+sim 65537 1 1 (1-D above x_limit): 595 of 595 dispatches run
+sim 1 1024 1 (y at its limit): 595 of 595 dispatches run
+sim 1 1025 1 (y over): 595 of 595 dispatches run; RUNAWAY LET THROUGH
+sim 818 820 819 (F403's grid): 595 of 595 dispatches run; RUNAWAY LET THROUGH
+sim 4294967295 4294967295 1 (18:55's garbage): 595 of 595 dispatches run; RUNAWAY LET THROUGH
+sim 2139095040 2139095040 2139095040 (+inf): 595 of 595 dispatches run; RUNAWAY LET THROUGH
+sim 28800 4286578688 1 (-inf y): 595 of 595 dispatches run; RUNAWAY LET THROUGH
+sim 1 1 2000 (z over): 595 of 595 dispatches run; RUNAWAY LET THROUGH
+== ib-timeout-00168773-acb-1853.bin: 1853 dwords
+check: checked 0 (staircase 0, batched 0 in 0 chains, flag dwords 8) unbased 0 NOP-ed 0 inserted 0 -> 1853 dwords
+sim 1 1 1 (plain): 0 of 0 dispatches run
+sim 44 1 1 (plain): 0 of 0 dispatches run
+sim 1048576 1 1 (x at its limit): 0 of 0 dispatches run
+sim 1048577 1 1 (x over): 0 of 0 dispatches run; refused as expected
+sim 65536 2 1 (x at x_limit, 2-D): 0 of 0 dispatches run
+sim 65537 2 1 (staircase: x over x_limit with y > 1): 0 of 0 dispatches run; refused as expected
+sim 65537 1 1 (1-D above x_limit): 0 of 0 dispatches run
+sim 1 1024 1 (y at its limit): 0 of 0 dispatches run
+sim 1 1025 1 (y over): 0 of 0 dispatches run; refused as expected
+sim 818 820 819 (F403's grid): 0 of 0 dispatches run; refused as expected
+sim 4294967295 4294967295 1 (18:55's garbage): 0 of 0 dispatches run; refused as expected
+sim 2139095040 2139095040 2139095040 (+inf): 0 of 0 dispatches run; refused as expected
+sim 28800 4286578688 1 (-inf y): 0 of 0 dispatches run; refused as expected
+sim 1 1 2000 (z over): 0 of 0 dispatches run; refused as expected
+
+== play 2001: decision lines differing 0, simulator lines differing 0
+== ib-timeout-00081929-dcb-108366.bin: 108366 dwords
+check: checked 2273 (staircase 2224, batched 2224 in 10 chains, flag dwords 1024) unbased 3529 NOP-ed 0 inserted 160115 -> 268481 dwords
+sim 1 1 1 (plain): 5753 of 5753 dispatches run
+sim 44 1 1 (plain): 5753 of 5753 dispatches run
+sim 1048576 1 1 (x at its limit): 5753 of 5753 dispatches run
+sim 1048577 1 1 (x over): 3529 of 3529 dispatches run; RUNAWAY LET THROUGH
+sim 65536 2 1 (x at x_limit, 2-D): 5753 of 5753 dispatches run
+sim 65537 2 1 (staircase: x over x_limit with y > 1): 3529 of 3529 dispatches run; RUNAWAY LET THROUGH
+sim 65537 1 1 (1-D above x_limit): 5753 of 5753 dispatches run
+sim 1 1024 1 (y at its limit): 5753 of 5753 dispatches run
+sim 1 1025 1 (y over): 3529 of 3529 dispatches run; RUNAWAY LET THROUGH
+sim 818 820 819 (F403's grid): 5753 of 5753 dispatches run; RUNAWAY LET THROUGH
+sim 4294967295 4294967295 1 (18:55's garbage): 3529 of 3529 dispatches run; RUNAWAY LET THROUGH
+sim 2139095040 2139095040 2139095040 (+inf): 3529 of 3529 dispatches run; RUNAWAY LET THROUGH
+sim 28800 4286578688 1 (-inf y): 3529 of 3529 dispatches run; RUNAWAY LET THROUGH
+sim 1 1 2000 (z over): 3529 of 3529 dispatches run; RUNAWAY LET THROUGH
+== ib-timeout-00081930-acb-4.bin: 4 dwords
+check: checked 0 (staircase 0, batched 0 in 0 chains, flag dwords 8) unbased 0 NOP-ed 0 inserted 0 -> 4 dwords
+sim 1 1 1 (plain): 0 of 0 dispatches run
+sim 44 1 1 (plain): 0 of 0 dispatches run
+sim 1048576 1 1 (x at its limit): 0 of 0 dispatches run
+sim 1048577 1 1 (x over): 0 of 0 dispatches run; refused as expected
+sim 65536 2 1 (x at x_limit, 2-D): 0 of 0 dispatches run
+sim 65537 2 1 (staircase: x over x_limit with y > 1): 0 of 0 dispatches run; refused as expected
+sim 65537 1 1 (1-D above x_limit): 0 of 0 dispatches run
+sim 1 1024 1 (y at its limit): 0 of 0 dispatches run
+sim 1 1025 1 (y over): 0 of 0 dispatches run; refused as expected
+sim 818 820 819 (F403's grid): 0 of 0 dispatches run; refused as expected
+sim 4294967295 4294967295 1 (18:55's garbage): 0 of 0 dispatches run; refused as expected
+sim 2139095040 2139095040 2139095040 (+inf): 0 of 0 dispatches run; refused as expected
+sim 28800 4286578688 1 (-inf y): 0 of 0 dispatches run; refused as expected
+sim 1 1 2000 (z over): 0 of 0 dispatches run; refused as expected
