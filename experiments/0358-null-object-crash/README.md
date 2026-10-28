@@ -247,3 +247,125 @@ one (`kyty_emulator.86ebf2bd`, `.c4a1f713`).
 per start in `~/bc5-work/exp0358/play/`) is unchanged, RT on from the shared input.cfg; the desktop file's Comment says
 v3. The previous builds are kept beside it (`kyty_emulator.86ebf2bd`, `.c4a1f713`). Nothing shared written, the game not
 started, the 0356 shortcut untouched.
+
+## Trap v3 fired (13:55): the owner helps with a job no worker had taken
+
+The maintainer's play on the test 0358 shortcut, 13:53:35 → crash 13:55:18 (t ≈ 103 s, exit 65, the same site; log
+`~/bc5-work/exp0358/play/play-20261028-135335.log`, the pad record beside it, the journal of the capture
+`~/bc5-data/captures/play-20261028-1353/gc/direct.log`). The lock was empty afterwards (the maintainer done).
+
+- **F450 — the owner thread, helping, took the first unstarted Hi job, a crash-type job no idle worker had taken.**
+  The faulting thread is MainThread (host id 5), job id 1 = the owner id. The job system at the fault: workers 5,
+  special 5, owner mask 0x40, override arena 0, generation 17024 in every entry; entry 0 (Bk) live 4, entry 1 (Lo)
+  live 29, entry 2 (Hi) live 31 of 512. The crash job's function (+0x4661e50) has four instances in the Hi entry
+  (jobs 22–25, class 0x7f = any thread): 22–24 finished (started 1, done 1, total 1), job 25 **active, started 1,
+  done 0** — the one the owner was running (frame [1] +0x3cca882 is the return from its block function). No other
+  Hi job was active and none had unstarted blocks (every other Hi job: started ≥ total): the five Hi workers were
+  **idle** when the owner reached its wait and helped. The only runnable job anywhere was entry 0 job 3 (fn
+  +0x3b05a50, a background job of 1007 blocks, started 815, done 810, 5 blocks in flight on the Bk workers): not
+  the cause, the owner scans the Hi entry only (the waited job's flags 0x9, bit 0 → entries 2..2). The [3] site
+  +0x4920df2 queues a 1–2 block Hi job of its own (`call 0x3cca270(&desc, 1)`, fn +0x4920f30: entry 2 jobs 6 and
+  30, 3/2/2) and waits on it at once (`call 0x3cca900`); the help loop walks the Hi list from index 0 and takes the
+  first job with started < total: job 25, queued earlier by +0x4663043, ahead of the owner's own job 30.
+  "started" is chunks claimed (`lock xadd [job+0x90]` in the run method at +0x3ccc53b/+0x3ccc566, by chunk size),
+  so it may exceed total (entry 1 job 7: 3136/3026/3026 is 110 over-claims, harmless); "done" is `lock xadd
+  [job+0x94]` at +0x3ccc58b; started < total is what "a block left to take" means.
+  So the race is: a crash-type job sits in the Hi list unstarted; the owner reaches a wait before any Hi worker has
+  taken it. On the console the same code runs with the Hi workers on their own cores; here they were idle yet
+  absent. Which of the two — asleep with the wake-up still in flight, or runnable without a core — the print cannot
+  say; that is trap v4's question.
+- **F451 — the host's part of the wake-up, read from the code (no polling, priorities already mapped).** The
+  workers wait on one semaphore per entry (`[entry+0x298]`, created at +0x3cc95d0 with attr 1 (fifo), max N<<10;
+  the worker loop +0x3ccc0b0 waits `sema, need 1, timeout 8000 µs` at +0x3ccc0c0 through the stub +0x5f202a0; a
+  push signals it through +0x5f20260 at +0x3ccbb66 / +0x3ccbe09 / +0x3ccbe36, the owner's push signalling 1, a
+  worker's up to min(N, total)) — the import names are inferred from the arguments and the host's semaphore
+  signature; `raw/selfimports.py` was written to read them from the SELF's JUMP_SLOT relocations but the PS5 SELF
+  keeps its dynamic data in segment types 0x6fffff00/01 that KytyPlus's loader names differently (TODO(verify)
+  the names there). The host (`kernel/semaphore.cpp`): Signal adds the count, marks the first waiters whose need
+  fits as ready, and broadcasts the condvar; Wait blocks in `std::condition_variable::wait_for` for the remaining
+  timeout (`common/threads.cpp` CondVar::WaitFor), with `SIGNAL_APC_POLL_MICROS` = 10 ms only for infinite waits —
+  no polling, a futex wake. Thread priorities (`Bc5ApplyGuestPriority`, exp 0180's mapping): guest ≤ 299 → nice
+  −15 (the title's audio threads), ≥ 733 → +5 (its Lo/Bk workers at 700–750), the rest 0 — so the main thread
+  (300), the render thread (300) and the Hi workers (500) share nice 0 with the host's own threads. The sampler of
+  v3 ran (97 lines, 42–144 µs a sample; its lines are in the journal, not the play log): over the fight (t 92–100
+  s) the Hi entry's live jobs rose 10 → 96, runnable 0 at every flip, so the backlog is not visible at flips; at
+  t 100.7 s the frame took 104.6 ms with the game thread 66.8 ms inside the host (sync 28.6).
+
+**Design: trap v4 (the wake-up, measured).** Same private units plus `kernel/semaphore.cpp`, applied after v1 and
+v3:
+1. A ring of the last 512 semaphore events (steady-clock µs, semaphore pointer and name, kind: signal/count,
+   wait-begin, wait-ok with the signal→return latency, wait-timeout, thread host id), filled in KernelSignalSema and
+   KernelSemaPrivate::Wait (the waiter records the signal's time when marked ready). Printed at the fault, newest
+   64 first, so the last pushes to the Hi semaphore and the Hi workers' last waits stand next to the crash.
+2. At the fault, for every guest thread: its `/proc/self/task/<tid>/stat` state letter (R running or runnable, S
+   sleeping, D), utime+stime, and `/proc/self/task/<tid>/status` voluntary / nonvoluntary context switches; plus the
+   host-side flag "inside KernelWaitSema on <sema>" set by Wait. Idle Hi workers in S inside the Hi semaphore's
+   wait with the push's signal older than their wake would mean the wake-up itself is slow; in R would mean no
+   core; not in the wait at all would mean they were busy elsewhere (and the print says where: their last events).
+3. The sampler stays; it adds the five Hi workers' CPU seconds once a second (a `/proc` read each, ~15 µs apiece).
+Cost: the ring is a lock-free index and a 32-byte store per event (the job system signals a few hundred times a
+second), nothing the fight would feel.
+
+**Fix candidates, to be chosen on v4's answer (none built; the title's code stays untouched):**
+- (a) *Runnable without a core* → the host's own threads yield first: the pollers and completion threads of the
+  direct path (soft CP polls, bc5-flipdone, bc5-labelwatch, the ring thread) at nice +5 (`setpriority` on the
+  thread id needs no root for positive values), the Hi workers kept at 0 — a scheduling change the console does
+  not need because the title has its cores alone. Measured by v4's R-state counts before and after.
+- (b) *Asleep with the wake-up in flight* → `KernelWaitSema` spins on the count for a bounded ~20 µs before
+  blocking (an adaptive wait, as glibc's mutexes do): a worker that is signalled within that window never sleeps,
+  so the owner's help loop finds the job already started. Costs ~20 µs of CPU per wait that does block; the
+  console's kernel does not do this, but the console's workers do not share cores with a host either.
+- (c) If v4 shows the Hi workers were busy with other jobs for milliseconds (no idle worker in reach): the host's
+  throughput at the fight is the cause (the 66.8 ms inside the host per frame) and the fix is the frame's host
+  cost, not the job system — back to the profile's "sync 28.6 ms".
+- (d) Last resort, a loader game patch (`loader/gamePatch.cpp` exists): the arena lookup at +0x4662141 given the
+  owner arena when the index is −1. It changes the title's code; proposed only if (a)–(c) do not close the race.
+
+## Trap v4 with the fix candidate (14:19–14:25): build f8b849f0 on the shortcut, switch on
+
+The top session's word (14:1x): trap v4 plus one fix candidate in the same build, behind a switch, the shortcut with
+the switch on; the maintainer's fight reproduces the crash in five of five plays that reached it, so a clean pass
+there is evidence.
+
+- **The candidate chosen: the targeted semaphore wake (`BC5_0358_FIX=1`).** F451 pointed at the one host step the
+  console does not have: `KernelSemaPrivate::Signal` marks the waiters it hands the count to as ready and then
+  broadcasts the semaphore's single condition variable, so every waiter of that semaphore wakes — the five Hi
+  workers all leave their futex wait, take the semaphore's mutex in turn, and the four not made ready go back to
+  sleep; the one made ready can be the last through the convoy. The console's kernel wakes the thread it gave the
+  count to and no other. Under the switch each waiting thread waits on its own condition variable (one per thread,
+  `thread_local`; a thread waits on one semaphore at a time), `WakeWaiters`, `Cancel` and the destructor signal
+  exactly the waiters they mark ready, and `Signal` no longer broadcasts; the semaphore's mutex, the fifo/priority
+  order, the counts and `KernelDispatchPendingSignalForCurrentThread` are unchanged, and `CondVar::SignalThread`
+  (the guest-signal delivery) still finds a waiter through `RegisterCondWaiter`, which every `WaitFor` does. With
+  the switch off the semaphore behaves as before. Not chosen for this build: the helper threads at nice +5 (a
+  scheduler change touching the GPU feed threads, for the "no core" answer if v4 gives it) and the bounded spin
+  (it only helps a worker signalled within the spin window).
+- **Trap v4 (`raw/patch0358v4.pl`, after v1 and v3; `build0358v4.sh/.py`, four units: pthread.cpp,
+  runtimeLinker.cpp, bc5LleAgc.cpp, semaphore.cpp).** `kernel/semaphore.cpp`: a ring of the last 512 semaphore
+  events (µs since start, kind: signal / wait-begin / wait-ok / wait-timeout / wait-immediate / wait-other, the
+  semaphore's name, the thread's host id, the count, and for a satisfied wait the latency from the signal that made
+  it ready to the waiter's return), and a per-thread "inside a wait on <name> since <µs>" table. The crash print
+  adds, after v3's job lines, every guest thread's `/proc/self/task/<tid>/stat` state letter, CPU seconds and
+  context switches (voluntary / involuntary) with its semaphore wait state, then the ring's newest 96 events. The
+  sampler adds the five Hi workers' CPU seconds and state letters. Dry-run on local copies of the four units (v1 4,
+  v3 8, v4 23 edits), built 14:19–14:20 (0 errors; the tree's 11 warnings), nothing shared written, the previous
+  binaries kept (`kyty_emulator.86ebf2bd`, `.c4a1f713`, `.1691b436`).
+- **F452 — the smoke run with the switch on passes at the route's rate.** `repro0358.sh`, the Continue route from
+  the private copy of the live saves, RT on, 200 s, `BC5_0358_FIX=1` confirmed in the emulator's environment
+  (`/proc/<pid>/environ`, binary f8b849f0): pass, 7340 flips over 198.9 s (36.9 flips/s; v3's run 37.6, v2's
+  35.3), GPU busy 18.26 ms, host prepare 2.00 ms, 27.1 ms between flips, no crash, no kernel line, live saves
+  unchanged (`raw-v4/` on the box). The sampler's Hi columns: the five Hi workers asleep (S) in 191 of 196
+  samples, 1.8–1.9 CPU seconds each over 200 s on the route. The sampler's cost rose to a median 247 µs (p90 375 µs,
+  max 3.1 ms once) because each worker costs two `/proc` reads a second; at 15 flips/s that is 0.4 % of one frame
+  per second, and the one 3 ms outlier is the price of the state letters — to be trimmed (the `/status` read is not
+  needed in the sampler) if his play shows frame hitches at the sample instants.
+- **The shortcut (14:25).** "BC5 emulator (test 0358)" runs f8b849f0 (md5-checked) with the launcher
+  `play-pkg-0358t.sh` 4089732d: the 5-line diff against the integrated 55531ab6 = the log line, a comment, the pad
+  record line and `export BC5_0358_FIX=1` (`raw/mktest0358v4.pl`, `raw/shortcut0358.sh` with `MKTEST`, `DIFF_LINES`
+  and `WANT_BIN`); RT on from the shared input.cfg; the desktop file's Comment names v4 and the switch. Nothing
+  shared written, the game not started, the 0356 shortcut untouched.
+
+**What his next play says.** No crash through the fight: the fix signal (the ring in a later crash print, or none,
+still shows how the workers woke; a journal line per start is not yet printed — the ring is read only at a fault).
+A crash: the print's `proc` lines answer asleep (S, in a wait on the Hi entry's semaphore, with the ring's last
+signal to it older than the wait) versus no core (R), and the fix moves to candidate (a).

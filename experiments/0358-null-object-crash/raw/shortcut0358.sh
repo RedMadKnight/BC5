@@ -16,11 +16,11 @@ m() { md5sum < "$1" | cut -c1-8; }
 [ "$(m "$BIN")" = "$WANT_BIN" ] && [ "$(cat "$E/binary.md5")" = "$WANT_BIN" ] || { echo "$BIN is md5 $(m "$BIN"), not $WANT_BIN: stop"; exit 1; }
 [ -d "$DESK" ] || { echo "no desktop directory $DESK"; exit 1; }
 mkdir -p "$E/play"
-perl "$HERE/mktest0358.pl" "$SRC" "$OUT" || exit 1
+perl "$HERE/${MKTEST:-mktest0358.pl}" "$SRC" "$OUT" || exit 1
 bash -n "$OUT" || { echo "$OUT does not parse"; exit 1; }
 chmod +x "$OUT"
 diff -u "$SRC" "$OUT" > "$E/raw/play-pkg-0358t.diff"
-[ "$(grep -c '^[-+][^-+]' "$E/raw/play-pkg-0358t.diff")" = 4 ] || { echo "the test launcher's diff is not the LOG line replaced + a comment + the recorder line: stop"; cat "$E/raw/play-pkg-0358t.diff"; exit 1; }
+[ "$(grep -c '^[-+][^-+]' "$E/raw/play-pkg-0358t.diff")" = "${DIFF_LINES:-4}" ] || { echo "the test launcher's diff is not the LOG line replaced + a comment + the recorder line: stop"; cat "$E/raw/play-pkg-0358t.diff"; exit 1; }
 grep -q "^BC5_EMU=\|BC5_EMU" "$OUT" || { echo "the launcher does not take BC5_EMU: stop"; exit 1; }
 D="$DESK/BC5 emulator (test 0358).desktop"
 cat > "$D" <<EOF
@@ -28,7 +28,7 @@ cat > "$D" <<EOF
 Type=Application
 Version=1.0
 Name=BC5 emulator (test 0358)
-Comment=BC5 test 0358: the integrated build (one ring, the 0341 guards, exps 0343, 0346, 0349) plus the thread trap v3: a crash in the title prints the faulting thread, every thread's worker slots and the job system's live jobs; a job-system sample once a second (for the null-object crash at eboot.bin+0x3d7eca0); RT on; a log per start in ~/bc5-work/exp0358/play/
+Comment=BC5 test 0358: the integrated build (one ring, the 0341 guards, exps 0343, 0346, 0349) plus the thread trap v4 (the faulting thread, every thread's worker slots and /proc state, the job system's live jobs, the semaphore event ring) and the fix candidate BC5_0358_FIX=1 (the targeted semaphore wake); a job-system sample once a second (for the null-object crash at eboot.bin+0x3d7eca0); RT on; a log per start in ~/bc5-work/exp0358/play/
 Exec=/usr/bin/distrobox enter ubuntu -- /usr/bin/env BC5_EMU=$BIN $OUT
 Icon=applications-games
 Terminal=false
