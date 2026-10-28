@@ -1,0 +1,9 @@
+journal /home/kjaniszewski/bc5-data/captures/play-20261028-1216/gc/direct.log from 12:16:03
+scratch: zero page at 0x0 refused, trying from 0x10000
+cpu-wait WAIT_REG_MEM64 at 590 on 0x12004b4838: GIVEN UP after 16.2 ms
+scratch: zero page at 0x0 refused, trying from 0x10000
+cpu-wait WAIT_REG_MEM64 at 384 on 0x12004b3c38: GIVEN UP after 58.0 ms
+cpu-wait WAIT_REG_MEM64 at 384 on 0x12004b3c38: GIVEN UP after 16.4 ms
+cpu-wait WAIT_REG_MEM64 at 8414 on 0x12004b4c38: GIVEN UP after 19.0 ms
+scratch: zero page at 0x0 refused, trying from 0x10000
+cpu-wait WAIT_REG_MEM64 at 384 on 0x12004b3c38: GIVEN UP after 53.0 ms

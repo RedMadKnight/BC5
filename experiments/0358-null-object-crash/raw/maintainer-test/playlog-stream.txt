@@ -1,0 +1,64 @@
+play log /home/kjaniszewski/bc5-work/exp0358/play/play-20261028-121601.log from 12:16:02
+bc5-direct: experiment 0346 switch: a GFX-form dispatch without a SET_BASE of its type in its IB is resolved by the host (the carried base, or the window 0x1100000000 until one is learned) and rewritten only to a page the host read, else NOP-ed; no CP read at an inferred address
+bc5-direct: experiment 0349: a job's IB over 983040 dwords is cut at aligned packet boundaries outside COND_EXEC ranges into up to 4 IBs of one submit (the kernel takes at most 0xfffff dwords per IB)
+bc5-direct: experiment 0341 switches: product staircase 1 (x > 65536 with y or z > 1), args histogram 0, shadow labels 1, bo journal 0
+bc5-direct: experiment 0341 periodic: shadow labels in 2000 jobs: 9914 labels, 19828 writes copied, 9914 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 11808 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 11808 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5-direct: experiment 0341 periodic: shadow labels in 4000 jobs: 20795 labels, 41590 writes copied, 20795 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 18894 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 18894 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5-direct: experiment 0341 periodic: shadow labels in 6000 jobs: 32897 labels, 65794 writes copied, 32897 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 18894 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 18894 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5-direct: experiment 0341 periodic: shadow labels in 8000 jobs: 50662 labels, 101324 writes copied, 50662 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 142973 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 142973 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+bc5-direct: experiment 0341 periodic: shadow labels in 10000 jobs: 64536 labels, 129072 writes copied, 64536 waits redirected, 0 labels without a slot, 0 IBs left alone (COND_EXEC); product staircase on 142973 dispatches
+bc5-direct: experiment 0346 periodic: dispatches seen by the host: 142973 left (the register non-zero) + 0 left (never set), after the title's zeroing 0 rewritten to a verified page, dropped 0 (no candidate) + 0 (not a real mapping) + 0 (unreadable) + 0 (counts), 0 NOP-ed on a COND_EXEC overflow; window 0x1100000000; 0 programs
+thread trap: faulting pthread "MainThread" guest id 1, host unique id 5, os thread 1955342
+thread trap: tls image_size 0x120 init_size 0x20 tcb_offset 0x120 blocks 46
+thread trap: image at tcb-0x110..-0x100: 074c02d5 00000009 ffffffff ffffffff
+thread trap: host id 35 guest id 31 "AK::IOThread": gen -1 index -1 ptr-0x98 000000000000001f
+thread trap: host id 37 guest id 33 "AK::BankMgr": gen -1 index -1 ptr-0x98 0000000000000021
+thread trap: host id 51 guest id 47 "User UDS Thread": gen -1 index -1 ptr-0x98 000000000000002f
+thread trap: host id 50 guest id 46 "Save Thread": gen -1 index -1 ptr-0x98 000000000000002e
+thread trap: host id 49 guest id 45 "File Video Stream": gen -1 index -1 ptr-0x98 000000000000002d
+thread trap: host id 48 guest id 44 "File Video Stream": gen -1 index -1 ptr-0x98 000000000000002c
+thread trap: host id 47 guest id 43 "File Video Stream": gen -1 index -1 ptr-0x98 000000000000002b
+thread trap: host id 46 guest id 42 "File Video Stream": gen -1 index -1 ptr-0x98 000000000000002a
+thread trap: host id 45 guest id 41 "File Video Stream": gen -1 index -1 ptr-0x98 0000000000000029
+thread trap: host id 44 guest id 40 "EntitlementSysPPR::QueryThread": gen -1 index -1 ptr-0x98 0000000000000028
+thread trap: host id 43 guest id 39 "UXAnalytics::UploadThread": gen -1 index -1 ptr-0x98 0000000000000027
+thread trap: host id 42 guest id 38 "Coherent Layout Worker Thread": gen -1 index -1 ptr-0x98 0000000000000026
+thread trap: host id 41 guest id 37 "Coherent Resource Worker Thread": gen -1 index -1 ptr-0x98 0000000000000025
+thread trap: host id 40 guest id 36 "Coherent Thread": gen -1 index -1 ptr-0x98 0000000000000024
+thread trap: host id 39 guest id 35 "AK::AudioMgr": gen -1 index -1 ptr-0x98 0000000000000023
+thread trap: host id 34 guest id 30 "Havok Queries and Cloth": gen -1 index -1 ptr-0x98 000000000000001e
+thread trap: host id 17 guest id 13 "Job Bk 1": gen 0 index 1 ptr-0x98 000000000000000d
+thread trap: host id 16 guest id 12 "Job Bk 0": gen 0 index 0 ptr-0x98 000000000000000c
+thread trap: host id 15 guest id 11 "Job Hi 4": gen 2 index 4 ptr-0x98 000000000000000b
+thread trap: host id 14 guest id 10 "Job Hi 3": gen 2 index 3 ptr-0x98 000000000000000a
+thread trap: host id 13 guest id 9 "Job Hi 2": gen 2 index 2 ptr-0x98 0000000000000009
+thread trap: host id 12 guest id 8 "Job Hi 1": gen 2 index 1 ptr-0x98 0000000000000008
+thread trap: host id 11 guest id 7 "Job Hi 0": gen 2 index 0 ptr-0x98 0000000000000007
+thread trap: host id 10 guest id 6 "Job Lo 4": gen 1 index 4 ptr-0x98 0000000000000006
+thread trap: host id 9 guest id 5 "Job Lo 3": gen 1 index 3 ptr-0x98 0000000000000005
+thread trap: host id 8 guest id 4 "Job Lo 2": gen 1 index 2 ptr-0x98 0000000000000004
+thread trap: host id 7 guest id 3 "Job Lo 1": gen 1 index 1 ptr-0x98 0000000000000003
+thread trap: host id 65 guest id 60 "Bink IO": gen -1 index -1 ptr-0x98 000000000000003c
+thread trap: host id 6 guest id 2 "Job Lo 0": gen 1 index 0 ptr-0x98 0000000000000002
+thread trap: host id 5 guest id -1 "?": gen -1 index -1 ptr-0x98 0000000000000001 <- faulting
+thread trap: host id 18 guest id 14 "Job Bk 2": gen 0 index 2 ptr-0x98 000000000000000e
+thread trap: host id 19 guest id 15 "Job Bk 3": gen 0 index 3 ptr-0x98 000000000000000f
+thread trap: host id 20 guest id 16 "Job Bk 4": gen 0 index 4 ptr-0x98 0000000000000010
+thread trap: host id 21 guest id 17 "Archive Asset IO": gen -1 index -1 ptr-0x98 0000000000000011
+thread trap: host id 22 guest id 18 "Archive Loose IO": gen -1 index -1 ptr-0x98 0000000000000012
+thread trap: host id 23 guest id 19 "Archive Resolve IO": gen -1 index -1 ptr-0x98 0000000000000013
+thread trap: host id 24 guest id 20 "Render Thread": gen -1 index -1 ptr-0x98 0000000000000014
+thread trap: host id 25 guest id 21 "Havok Solve": gen -1 index -1 ptr-0x98 0000000000000015
+thread trap: host id 26 guest id 22 "Havok Solve": gen -1 index -1 ptr-0x98 0000000000000016
+thread trap: host id 27 guest id 23 "Havok Solve": gen -1 index -1 ptr-0x98 0000000000000017
+thread trap: host id 28 guest id 24 "Havok Solve": gen -1 index -1 ptr-0x98 0000000000000018
+thread trap: host id 29 guest id 25 "Havok Solve": gen -1 index -1 ptr-0x98 0000000000000019
+thread trap: host id 30 guest id 26 "Havok Queries and Cloth": gen -1 index -1 ptr-0x98 000000000000001a
+thread trap: host id 31 guest id 27 "Havok Queries and Cloth": gen -1 index -1 ptr-0x98 000000000000001b
+thread trap: host id 32 guest id 28 "Havok Queries and Cloth": gen -1 index -1 ptr-0x98 000000000000001c
+thread trap: host id 33 guest id 29 "Havok Queries and Cloth": gen -1 index -1 ptr-0x98 000000000000001d
+Access violation: Read [000000000000000c] 
