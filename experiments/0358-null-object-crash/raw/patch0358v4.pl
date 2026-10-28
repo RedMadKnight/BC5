@@ -65,7 +65,7 @@ my $procread =
 	"\tconst char* p = std::strrchr(buf, ')');\n" .
 	"\tif (p == nullptr || p[1] != ' ') return false;\n" .
 	"\tout->state = p[2];\n" .
-	"\t// fields after the state: ppid pgrp session tty tpgid flags minflt cminflt majflt cmajflt utime stime\n" .
+	"\t// fields after the state: ppid(0) pgrp session tty tpgid flags minflt cminflt majflt cmajflt utime(10) stime(11); exp 0360 found the index slip (f[11]/f[12] printed kernel time only)\n" .
 	"\tunsigned long long f[13] {};\n" .
 	"\tconst char* q = p + 3;\n" .
 	"\tfor (int k = 0; k < 13; k++) {\n" .
@@ -76,8 +76,8 @@ my $procread =
 	"\t\tq = e;\n" .
 	"\t}\n" .
 	"\tconst double hz = static_cast<double>(sysconf(_SC_CLK_TCK));\n" .
-	"\tout->user_s = static_cast<double>(f[11]) / hz;\n" .
-	"\tout->cpu_s  = static_cast<double>(f[11] + f[12]) / hz;\n" .
+	"\tout->user_s = static_cast<double>(f[10]) / hz;\n" .
+	"\tout->cpu_s  = static_cast<double>(f[10] + f[11]) / hz;\n" .
 	"\tstd::snprintf(path, sizeof(path), \"/proc/self/task/%\" PRIu64 \"/status\", os_tid);\n" .
 	"\tfd = open(path, O_RDONLY | O_CLOEXEC);\n" .
 	"\tif (fd >= 0) {\n" .
