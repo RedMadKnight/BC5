@@ -13,7 +13,10 @@ rep('o2-continue.cmd, sample0379.sh or', 'o2-continue.cmd, sample0379m.sh or', 1
 # Codex review (REVIEW-02): each DRM client's identity, once at 120 s: every drm- key of every fd, by fd number and the
 # fd's target (so the direct path's render-node client and RADV's can be told apart by size and fd).
 rep('FDINFO=1; {', 'FDINFO=1; for f in /proc/$EP/fdinfo/*; do grep -a "^drm-" "$f" 2> /dev/null | sed "s#^#fd $(basename "$f") $(readlink "/proc/$EP/fd/$(basename "$f")") #"; done > "$R/$TAG-fdinfo-full.txt"; {', 1);
-rep('(exp 0379: zero-skip A/B)', '(exp 0379: GTT growth A/B, 20 min)', 1);
+# The moving route (G3/G4): BC5_0379_ROUTE=<input script> replaces o2-continue.cmd (default: the S6N route as before).
+rep('cp "$W/exp0203/o2-continue.cmd" "$E/in-$TAG.cmd"', 'cp "${BC5_0379_ROUTE:-$W/exp0203/o2-continue.cmd}" "$E/in-$TAG.cmd"  # exp 0379 G3/G4: BC5_0379_ROUTE', 1);
+rep('[ -f "$W/exp0203/o2-continue.cmd" ]', '[ -f "${BC5_0379_ROUTE:-$W/exp0203/o2-continue.cmd}" ]', 1);
+rep('(exp 0379: zero-skip A/B)', '(exp 0379: GTT growth A/B, 20 min, route ${BC5_0379_ROUTE:-o2-continue.cmd})', 1);
 my $head = "#!/usr/bin/env bash\n# BC5 experiment 0379, GTT growth (raw/s6n0379.sh, made by gtt/mk-s6n0379m.pl): the zero-skip A/B runner for up to 1,500 s,\n# with the per-client GTT sampler gtt/sample0379m.sh.\n";
 $s =~ s/\A#!\/usr\/bin\/env bash\n/$head/ or die "no shebang\n";
 open my $o, '>', $out or die "$out: $!\n"; binmode $o; print {$o} $s; close $o or die "$out: $!\n";

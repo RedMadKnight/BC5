@@ -37,7 +37,7 @@ mkdir -p "$R"
 pgrep '^kyty_emulator' > /dev/null && { echo "an emulator is running: not started"; exit 1; }
 [ -s "$LOCK" ] && ! grep -q "^top exp 0379 |" "$LOCK" && { echo "the box is locked: $(cat "$LOCK")"; exit 1; }
 [ -n "$WANT" ] && [ "$(md5sum < "$BIN" | cut -c1-8)" = "$WANT" ] || { echo "$BIN is not md5 ${WANT:-?} (build0358.sh first): not started"; exit 1; }
-[ -d "$SAVES" ] && [ -x "$LAUNCH_SRC" ] && [ -f "$W/exp0203/o2-continue.cmd" ] && [ -f "$E/in/gtt/sample0379m.sh" ] && [ -f "$LEARN_SRC" ] || { echo "no $SAVES, $LAUNCH_SRC, o2-continue.cmd, sample0379m.sh or $LEARN_SRC"; exit 1; }
+[ -d "$SAVES" ] && [ -x "$LAUNCH_SRC" ] && [ -f "${BC5_0379_ROUTE:-$W/exp0203/o2-continue.cmd}" ] && [ -f "$E/in/gtt/sample0379m.sh" ] && [ -f "$LEARN_SRC" ] || { echo "no $SAVES, $LAUNCH_SRC, o2-continue.cmd, sample0379m.sh or $LEARN_SRC"; exit 1; }
 saves() { (cd "$W/_SaveData" && find PPSA03671 -type f -exec md5sum {} + | sort -k2 | md5sum | cut -c1-16); }  # exp 0253's ab0253.sh
 LIVE=$(saves)
 [ "$LIVE" = "$EXPECT_SAVES" ] || { echo "the live saves read $LIVE, not $EXPECT_SAVES: not started"; exit 1; }
@@ -101,7 +101,7 @@ SNAP=$E/saves-before-$(date +%H%M)
 cp -a "$SD" "$SNAP" && diff -rq "$SD" "$SNAP" > /dev/null || { echo "the live saves could not be snapshot: not started"; exit 1; }
 WANT_SAVES=$(saves)
 echo "$(date '+%F %T') live saves $WANT_SAVES, snapshot $SNAP (comparison only)" | tee -a "$R/s6n-saves.txt"
-echo "top exp 0379 | s6n run: the second title's S6N route, RT $RT, $TAG, the $ARM build $WANT (exp 0379: GTT growth A/B, 20 min) (one ring, both guards${SWITCHES:+, $SWITCHES}), $SECS s, private wd | start $(date +%H:%M) | until ~$(date -d "+$(((SECS + 90) / 60 + 2)) min" +%H:%M)" > "$LOCK"
+echo "top exp 0379 | s6n run: the second title's S6N route, RT $RT, $TAG, the $ARM build $WANT (exp 0379: GTT growth A/B, 20 min, route ${BC5_0379_ROUTE:-o2-continue.cmd}) (one ring, both guards${SWITCHES:+, $SWITCHES}), $SECS s, private wd | start $(date +%H:%M) | until ~$(date -d "+$(((SECS + 90) / 60 + 2)) min" +%H:%M)" > "$LOCK"
 trap '[ -z "${SOAK:-}" ] && grep -q "^top exp 0379 | s6n run" "$LOCK" 2> /dev/null && : > "$LOCK"' EXIT  # exp 0368: under the soak the loop owns the lock
 EP=""; SP=""
 abort() { if [ -n "$EP" ] && [ -d "/proc/$EP" ]; then kill "$EP"; sleep 4; [ -d "/proc/$EP" ] && kill -9 "$EP" 2> /dev/null; fi; [ -n "$SP" ] && kill "$SP" 2> /dev/null; echo "$(date '+%F %T') aborted" >> "$R/s6n-saves.txt"; sync; exit 1; }
@@ -117,7 +117,7 @@ WANTENV=("BC5_DIRECT_COMPUTE_RING=-1" "BC5_DIRECT_RING_DEPS=dcb" "BC5_DIRECT_GPU
 case "$SROOT" in "$E"/*) rm -rf "$SROOT/PPSA03671" ;; *) echo "refusing to clear $SROOT"; exit 1 ;; esac
 cp -a "$SAVES" "$SROOT/PPSA03671" && diff -rq "$SAVES" "$SROOT/PPSA03671" > /dev/null || { echo "the route saves could not be put into $SROOT"; exit 1; }
 find "$SROOT/PPSA03671" -type f -exec touch -a -d '2020-01-01 00:00:00' {} +
-cp "$W/exp0203/o2-continue.cmd" "$E/in-$TAG.cmd"
+cp "${BC5_0379_ROUTE:-$W/exp0203/o2-continue.cmd}" "$E/in-$TAG.cmd"  # exp 0379 G3/G4: BC5_0379_ROUTE
 N=$(sudo -n dmesg 2> /dev/null | wc -l)
 { date '+%F %T'; echo "arm $TAG, $SECS s, launcher $LAUNCH md5 $(md5sum < "$LAUNCH" | cut -c1-8), BC5_EMU $BIN md5 $WANT; env: ${ENVS[*]}"; echo "boot $(cut -c1-8 /proc/sys/kernel/random/boot_id), up since $(uptime -s)"; } > "$R/$TAG-start.txt"
 bash "$E/in/gtt/sample0379m.sh" "$R/$TAG-mem.txt" $((SECS + 60)) < /dev/null > /dev/null 2>&1 & SP=$!

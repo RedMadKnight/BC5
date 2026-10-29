@@ -651,3 +651,31 @@ line. The live saves were unchanged after each arm.
   - 824 MiB minus the 104-MiB canary is 720 MiB, the measured gap of 716 MiB.
 - **What it does not show:** the plays' minute-16 pressure. Both arms stand at PSI ≈ 0 with reads of 0–34 MiB a
   minute, as F543 predicted. Whether the 0.7 GB eases that pressure still needs a moving route or a long SKIP play.
+
+### Proposed moving-route bench G3/G4 (2026-10-30, laptop only, not run)
+
+**The fight route doesn't fit.** The top session named exp 0360's fight route as a candidate, but it holds only 5.3 s of
+the maintainer's gameplay inputs (his 14:50 record, F464), after which the character stands. A time-based pad replay
+also loses his path within about a minute (F446: at 52 s). And the box keeps only the latest start's record
+(`~/bc5-work/route-record.txt`), not the save it started from. So no recorded route streams for 20 minutes.
+
+**A synthetic walk instead.**
+- `gtt/mk-walk0379.py` writes `gtt/walk0379.cmd`:
+  - exp 0203's `o2-continue.cmd` menu on the S6N route save, then a 30-s load;
+  - then 70 cycles to 1,273 s: the left stick fully forward for 15 s, a right-stick camera turn of 1.2 s, and a 0.3-s
+    pause;
+  - the turn goes right for four cycles, then left for four, so the path sweeps instead of circling;
+  - no button after the menu.
+- The stick syntax is exp 0061's `route.cmd` and exp 0180's `record-run.sh` (`stick l 128 0 <ms>`).
+- Whether the walk leaves the S6N area and streams is the open part. It may meet walls, enemies or a death reload, all
+  of which still stream.
+
+**Runner.** `gtt/s6n0379m.sh` takes `BC5_0379_ROUTE=<input script>` in place of `o2-continue.cmd` (`gtt/mk-s6n0379m.pl`,
+one more anchor). Everything else is G1/G2's:
+- the same binary e1cc0c92, skip off (G3) and on (G4);
+- RT on, 1,200 s per arm, drop_caches logged before each;
+- the per-client fdinfo sampler every 10 s;
+- flips per 10 s, the kernel stream, and a stop at any amdgpu line.
+
+**Gate.** G4 runs only if G3 streams. After minute 4, G3's mount reads must stay above ~200 MiB a minute in most
+minutes, against G1's 0–33, and PSI mem or io "full" must be above 0. Otherwise G3 is reported and G4 is not run.
