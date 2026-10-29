@@ -1,7 +1,7 @@
 # 0380 — Is the F403 class a zero-dimension indirect dispatch? (sources, title side, a guard, a box plan)
 
 **Date.** 2026-10-29. **Laptop only.** No box access and no GPU submission in this experiment. Branch
-`exp/0380-zero-dim-dispatch`. Findings F545–F584 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
+`exp/0380-zero-dim-dispatch`. Findings F545–F585 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
 session's GO).
 
 **Question.** F527 puts the ME just past a `DISPATCH_INDIRECT` that passed the host's check, inside the title's
@@ -1040,6 +1040,22 @@ unstable). The records are on the box (`~/bc5-work/exp0380wb/play/`, the journal
   - The B class may also depend on load: start 2 ran under heavy memory pressure.
 - **Next.** A second long play on the same shortcut decides it far better than more bench runs. Two clean 36-minute
   plays would put the "unchanged rate" chance below ~10^−3.
+- **The graphics glitches in start 2 (the maintainer: glitches, the sound fine) (F585).**
+  - `ARGS_WB=first` itself is an unlikely cause. It adds an `ACQUIRE_MEM` that writes dirty GL2 lines back to memory
+    (`GCR_CNTL` `GL2_WB` only, no invalidate). The GPU's own clients read through GL2 either way, so no value a shader
+    or the CP sees changes, and only timing can differ.
+  - Exception: if the write-back is exactly what makes the CP's argument fetch see the right arguments (F569), then
+    with it some dispatches run with their real grid, where on the shared build they could have launched a stale one.
+    That changes the picture towards the console's, not away from it.
+  - The other switch in that shortcut, `BC5_DIRECT_FORCE_START_000=1` (F551), *can* change results. It forces every
+    indirect dispatch to start at group 0. If the title ever meant an indirect dispatch to start at a non-zero
+    `COMPUTE_START`, those groups would be wrong. START read 0 in all 40 healthy samples (exp 0378), so this is
+    possible but unshown. It was also on in the 0379+0380 shortcut's plays.
+  - The shared build had glitches of its own in RT-on play: the maintainer's "przekłamania grafiki" of 10-28, during
+    F505's page-cache thrash. Start 2 ran under similar memory pressure (F583), with assets re-read from the package
+    under PSI memory-full 16–24 %. That fits streaming or late-data glitches without either switch.
+  - To tell them apart: his description of the glitches (what, where, how long), then if needed one long play with
+    `ARGS_WB=first` and FORCE_START **off**.
 - If it holds, F569's "the fetch misses GL2-resident writes" becomes the working explanation for sub-class B. It was
   withdrawn because the copy runs did not test it; the write-back result now supports it directly.
 
