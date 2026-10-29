@@ -763,3 +763,42 @@ TEST_CASE("indirect_check: a GL2 write-back before the check (experiment 0380)",
         CHECK(count(m) == 0);
     }
 }
+
+TEST_CASE("indirect_check: the copy at a low GPU VA (experiment 0380, F574)", "[indirect_check]") {
+    const std::vector<std::uint32_t> ib = {0xC0021100u, 1u, 0x34567000u, 0x12u, kDispatchIndirect, 0x40u, 0x41u};
+    constexpr std::uint64_t slot = 0x0000'0000'8001'2000ull; // libdrm's 32-bit range
+    std::vector<std::size_t> refs;
+    indirect_check::Stats st;
+    auto out = indirect_check::apply(ib, 0, kMax, kDrawMax, refs, st, false, nullptr, false, false, false, true,
+                                     indirect_check::ArgsWb::off, slot);
+    REQUIRE(st.args_copied == 1);
+    REQUIRE(out.size() == ib.size() + indirect_check::kCheckDwords + indirect_check::kArgsCopyDwords);
+    indirect_check::patch(out, refs, 0x1000'0000'2000ull);
+    std::size_t i = 4;
+    for (std::uint32_t k = 0; k < 3; ++k, i += 6) { // COPY_DATA args + 4k -> slot + 4k
+        CHECK(out[i] == 0xC0044000u);
+        CHECK(out[i + 2] == 0x34567040u + 4 * k);
+        CHECK(out[i + 4] == 0x80012000u + 4 * k);
+        CHECK(out[i + 5] == 0u);
+    }
+    std::size_t polls = 0, slot_polls = 0, flag_polls = 0;
+    for (std::size_t j = 0; j + 8 < out.size(); ++j) {
+        if (out[j] != 0xC0074500u) continue;
+        polls++;
+        slot_polls += out[j + 2] >= 0x80012000u && out[j + 2] <= 0x80012008u && out[j + 3] == 0u ? 1 : 0;
+        flag_polls += out[j + 3] == 0x1000u ? 1 : 0; // the flag area is only the COND_WRITEs' target
+    }
+    CHECK(polls == 3);
+    CHECK(slot_polls == 3);
+    CHECK(flag_polls == 0);
+    const std::size_t e = out.size() - 4 - 3; // the dispatch, before the restoring SET_BASE
+    CHECK(out[e - 4] == 0xC0021100u);        // SET_BASE index 1 = the slot
+    CHECK(out[e - 2] == 0x80012000u);
+    CHECK(out[e - 1] == 0u);
+    CHECK(out[e] == kDispatchIndirect);
+    CHECK(out[e + 1] == 0u);
+    CHECK(out[out.size() - 2] == 0x34567000u); // the title's base again
+    // the flag area still holds the flag and its confirm word: 6 refs (flag = 1, 3 COND_WRITE targets,
+    // confirm, COND_EXEC), none for the copy
+    CHECK(refs.size() == 6);
+}

@@ -114,6 +114,12 @@ inline constexpr std::size_t kArgsCopyDwords = 3 * 6 + 4 + 4;
 // only the first DISPATCH_INDIRECT after an INDEX_BASE (the F403 sub-class B slot); "all": every
 // checked dispatch.
 enum class ArgsWb { off, first_after_index_base, all };
+// Experiment 0380 (F572-F574): copy_va, the GPU VA of a 12-byte slot for args_copy's copy. With 0 the copy
+// goes into the flag area (+16) as before. That area lies in the job scratch at 16 TiB + (slot << 32),
+// and with it two runs launched one fixed set of dwords instead of the copy (F572). A nonzero copy_va
+// (direct.cpp: a 4 KiB BO in libdrm's 32-bit VA range) puts the COPY_DATA destination, the polls and
+// the dispatch's SET_BASE on that address. TODO(verify): the address width of the indirect-argument
+// base / fetch.
 inline constexpr std::size_t kArgsWbDwords = 8;
 
 // Experiment 0380 (the 12:12 hang, F555): tighter y and z limits for indirect dispatches. The host's
@@ -168,7 +174,7 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib, std::uint64_
                                  bool compute_ring = false, const ProductLimit *product = nullptr,
                                  bool zero_dims = false, bool force_start = false,
                                  bool rebase = false, bool args_copy = false,
-                                 ArgsWb args_wb = ArgsWb::off);
+                                 ArgsWb args_wb = ArgsWb::off, std::uint64_t copy_va = 0);
 
 void patch(std::span<std::uint32_t> ib, const std::vector<std::size_t> &flag_refs,
            std::uint64_t flag_va);

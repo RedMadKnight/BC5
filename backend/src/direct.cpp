@@ -277,6 +277,11 @@ struct Device::Impl {
     amdgpu_bo_handle oa = nullptr;  // OpenOptions::oa_count
     amdgpu_bo_handle gws = nullptr; // OpenOptions::gws_count
     amdgpu_bo_handle shadow = nullptr; // OpenOptions::gds_shadow, 64 KiB at kShadowVa
+    // Experiment 0380 (F574): BC5_DIRECT_ARGS_COPY's slot, 4 KiB at a low GPU VA (libdrm's 32-bit range):
+    // the job scratch at 16 TiB is not where an indirect fetch through SET_BASE reads (F572)
+    amdgpu_bo_handle args_slot = nullptr;
+    amdgpu_va_handle args_slot_vah = nullptr;
+    std::uint64_t args_slot_va = 0;
     void *shadow_cpu = nullptr;
     state_stack::Tracker tracker; // Device::set_state_stack
     static constexpr std::uint64_t kShadowVa = 0x1000'0400'0000ull; // 64 MiB above the scratch
@@ -607,6 +612,35 @@ std::unique_ptr<Device> Device::open(const std::string &node, const OpenOptions 
         std::fprintf(stderr, "bc5-direct: OA BO %u: %s (%d)\n", opts.oa_count, orc == 0 ? "ok" : "FAILED", orc);
         if (orc != 0) d->impl_->oa = nullptr;
     }
+    if (d->impl_->env_args_copy) { // experiment 0380 (F574): the copy's slot below 4 GiB
+        amdgpu_bo_alloc_request req{};
+        req.alloc_size = 4096;
+        req.phys_alignment = 4096;
+        req.preferred_heap = AMDGPU_GEM_DOMAIN_GTT;
+        int arc = amdgpu_bo_alloc(d->impl_->dev, &req, &d->impl_->args_slot);
+        if (arc == 0) {
+            void *cpu = nullptr;
+            if (amdgpu_bo_cpu_map(d->impl_->args_slot, &cpu) == 0) {
+                std::memset(cpu, 0, 4096);
+                amdgpu_bo_cpu_unmap(d->impl_->args_slot);
+            }
+            arc = amdgpu_va_range_alloc(d->impl_->dev, amdgpu_gpu_va_range_general, 4096, 4096, 0,
+                                        &d->impl_->args_slot_va, &d->impl_->args_slot_vah, AMDGPU_VA_RANGE_32_BIT);
+            if (arc == 0)
+                arc = amdgpu_bo_va_op_raw(d->impl_->dev, d->impl_->args_slot, 0, 4096, d->impl_->args_slot_va,
+                                          AMDGPU_VM_PAGE_READABLE | AMDGPU_VM_PAGE_WRITEABLE, AMDGPU_VA_OP_MAP);
+        }
+        std::fprintf(stderr, "bc5-direct: experiment 0380 args copy slot 4 KiB at 0x%llx: %s (%d)\n",
+                     static_cast<unsigned long long>(d->impl_->args_slot_va), arc == 0 ? "ok" : "FAILED, the copy is off", arc);
+        if (arc != 0) {
+            if (d->impl_->args_slot_vah) amdgpu_va_range_free(d->impl_->args_slot_vah);
+            if (d->impl_->args_slot) amdgpu_bo_free(d->impl_->args_slot);
+            d->impl_->args_slot = nullptr;
+            d->impl_->args_slot_vah = nullptr;
+            d->impl_->args_slot_va = 0;
+            d->impl_->env_args_copy = false;
+        }
+    }
     if (opts.gds_shadow) {
         amdgpu_bo_alloc_request req{};
         req.alloc_size = 65536;
@@ -669,6 +703,11 @@ Device::~Device() {
         amdgpu_bo_free(impl_->shadow);
     }
     if (impl_->gws) amdgpu_bo_free(impl_->gws);
+    if (impl_->args_slot) { // experiment 0380 (F574)
+        amdgpu_bo_va_op_raw(impl_->dev, impl_->args_slot, 0, 4096, impl_->args_slot_va, 0, AMDGPU_VA_OP_UNMAP);
+        amdgpu_bo_free(impl_->args_slot);
+        if (impl_->args_slot_vah) amdgpu_va_range_free(impl_->args_slot_vah);
+    }
     if (impl_->ctx) amdgpu_cs_ctx_free(impl_->ctx);
     if (impl_->dev) amdgpu_device_deinitialize(impl_->dev);
     if (impl_->fd >= 0) close(impl_->fd);
@@ -1260,7 +1299,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
                                          opt.gpu_check_draw_max, flag_refs, st, comp,
                                          impl_->env_product && !comp ? &impl_->product : nullptr, // experiment 0341
                                          impl_->env_zero, impl_->env_force_start, impl_->env_rebase,
-                                         impl_->env_args_copy, impl_->env_args_wb); // experiment 0380
+                                         impl_->env_args_copy, impl_->env_args_wb, impl_->args_slot_va); // experiment 0380
         impl_->product_sum += st.product_checked;
         impl_->zero_sum += st.zero_checked;
         impl_->start_forced_sum += st.start_forced;
@@ -1440,6 +1479,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     if (with_gds && impl_->oa) bos.push_back(impl_->oa);
     if (with_gds && impl_->gws) bos.push_back(impl_->gws);
     if (impl_->shadow) bos.push_back(impl_->shadow);
+    if (impl_->args_slot) bos.push_back(impl_->args_slot); // experiment 0380 (F574)
     bool draws = !short_possible;
     if (short_possible) {
         draws = has_draw_or_dispatch(dst + pieces[0].off, main_n);

@@ -70,7 +70,8 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib_in, std::uint
                                  const std::uint32_t (&max)[3], const std::uint32_t (&draw_max)[2],
                                  std::vector<std::size_t> &flag_refs, Stats &stats,
                                  bool compute_ring, const ProductLimit *product, bool zero_dims,
-                                 bool force_start, bool rebase, bool args_copy, ArgsWb args_wb) {
+                                 bool force_start, bool rebase, bool args_copy, ArgsWb args_wb,
+                                 std::uint64_t copy_va) {
     // ADR 0010 section A: a COND_EXEC range whose grown count no longer fits has its own checked
     // packets NOP-ed (nothing of that range runs unchecked) and the pass runs again over the
     // rest; it used to give up on the whole IB, which in a chain is several buffers.
@@ -143,9 +144,18 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib_in, std::uint
                 // experiment 0380 (F566): the CP copies the arguments into the flag area first; the check
                 // reads the copy and the dispatch fetches it (SET_BASE to the copy, offset 0)
                 const bool copy_here = args_copy && dims == 3 && !compute_ring;
+                // experiment 0380 (F574): the copy at copy_va (a low GPU VA) when given, else in the flag area
+                const auto slot_at = [&](std::uint32_t k) {
+                    if (copy_va != 0) {
+                        out.push_back(static_cast<std::uint32_t>(copy_va + 4 * k));
+                        out.push_back(static_cast<std::uint32_t>((copy_va + 4 * k) >> 32) & 0xffffu);
+                    } else {
+                        flag_at(kArgsSlot + 4 * k);
+                    }
+                };
                 const auto poll = [&](std::uint32_t k) {
                     if (copy_here) {
-                        flag_at(kArgsSlot + 4 * k);
+                        slot_at(k);
                     } else {
                         const std::uint64_t a = args + 4 * k;
                         out.push_back(static_cast<std::uint32_t>(a) & ~3u);
@@ -157,7 +167,7 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib_in, std::uint
                         const std::uint64_t a = args + 4 * k;
                         out.insert(out.end(), {kCopyData, kCopyMemToMem, static_cast<std::uint32_t>(a) & ~3u,
                                                static_cast<std::uint32_t>(a >> 32) & 0xffffu});
-                        flag_at(kArgsSlot + 4 * k);
+                        slot_at(k);
                     }
                     stats.args_copied++;
                 }
@@ -228,7 +238,7 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib_in, std::uint
                 stats.checked++;
                 if (copy_here) { // experiment 0380 (F566): the dispatch's base is the copy
                     out.insert(out.end(), {kSetBase, 1u});
-                    flag_at(kArgsSlot);
+                    slot_at(0);
                     restore_base = base;
                 }
                 if (rebase_here) {
