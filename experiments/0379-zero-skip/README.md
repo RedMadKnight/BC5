@@ -295,3 +295,53 @@ four private paths of the S6N bench, the route saves copy, RT on, 300 s, scans a
 **Undo:** delete `~/Pulpit/BC5 emulator (test 0379+0380).desktop`; `~/bc5-work/exp0379t/` can then be removed. Nothing
 shared was changed, so nothing else needs undoing. To run SCAN again, move the files out of
 `~/bc5-work/exp0379t/play-lists/`.
+
+### The maintainer's two plays with the test shortcut (2026-10-29 12:00–12:12)
+
+Read afterwards from the box, reads only (`test0379t/raw/play/`, `test0379t/raw/play-lists/`,
+`test0379t/raw/play-launcher-and-zero-lines.txt`; the comparison `test0379t/cmp0379t.py` → `raw/cmp-S1-vs-P1.txt`).
+
+**Play 1, SCAN, 12:00:01–12:08:31** (8.5 min, exit 0). Its first log line: `mode: SCAN`. Three scans (240, 360, 480 s):
+
+| heap | zero in all 3 scans | listed (≥ 8 MiB) | bench S1 listed | in both | bench only | play only |
+|---|---|---|---|---|---|---|
+| RenderGpuWcLarge | 1,098 MiB | 934 MiB in 48 runs | 1,218 MiB | 934 MiB | 284 MiB (27 runs) | 0 |
+| CommitIABufferAllocator | 288 MiB | 284 MiB in 4 runs | 1,380 MiB | 276 MiB | **1,104 MiB** (3 runs) | 8 MiB |
+| total | | **1,218 MiB** | 2,598 MiB | 1,210 MiB | 1,388 MiB | 8 MiB |
+
+- In free play the title fills most of CommitIABufferAllocator: 288 MiB of it stays zero, against 1,384 MiB on the bench.
+  A 1,020 MiB run at +0x6ac00000 and runs of 62 and 22 MiB that are zero on the bench hold data in this play.
+  RenderGpuWcLarge loses 284 MiB in 27 runs, the largest 68 MiB at +0x98400000.
+- So **1,388 MiB that was zero on the bench is written in the maintainer's play**. A list from the bench would have put those chunks
+  under the canary: as many canary hits, and that much of the GPU's data lost until each hit. The list from the maintainer's own play
+  avoids them. The play list is almost a subset of the bench list (8 MiB outside it).
+- The maintainer's memory record (`mem-20261029-120000.txt`) is F505 again: GTT 12,338–12,429 MiB, MemAvailable 322–485 MiB after
+  the load, bc5-mount reads 5.7–10.2 GB a minute, PSI io "full" 7.7–13.4 %, swap 0.8–0.9 GB.
+
+**Play 2, SKIP, 12:09:44 until the hang at 12:12:06** (2.4 min). Its first log line names
+`zero-list-20261029-120000.txt`. The skip placed RenderGpuWcLarge 934 MiB (48 runs) and CommitIABufferAllocator 284 MiB
+(4 runs) behind a 52-slice canary (104 MiB). Within two minutes hints took back 183 chunks (366 MiB), no CPU writes, and
+**one canary hit: run 37, file 0x1cb400000 + 24 MiB** (RenderGpuWcLarge +0x74800000), before the hang. That run was zero
+in all three scans of play 1. On the bench (S1), 30 MiB around it at +0x74400000 was zero in six scans and B1 skipped it
+without a hit, so which runs get hit varies between sessions. 828 MiB were still skipped at the last report.
+
+| at ~2 min after the start | GTT used | MemAvailable | mount reads (the minute before) | PSI io full60 |
+|---|---|---|---|---|
+| play 1 (SCAN), 12:02:01 | 12,054 MiB | 485 MiB | 10,173 MiB | 13.4 % |
+| play 2 (SKIP), 12:11:44 | 11,471 MiB | 1,079 MiB | 8,578 MiB | 13.8 % |
+
+- At the same point of the load, SKIP has 583 MiB less GTT and 0.6 GB more MemAvailable. That fits 828 MiB skipped
+  minus the 104 MiB canary. The mount reads are those of a load in both (8.1–10.2 GB/min). Two samples tell nothing
+  about the steady state.
+- The hang at 12:12:06 is exp 0380's to read. Exp 0380 found no sign that the skip played a part (F554, on exp 0380's
+  branch).
+
+**Recommendation.** A longer SKIP play (20 minutes or more, on the same list) is worth doing, with these expectations:
+- It is the only way to see whether ~0.7 GB more page cache cuts F505's re-reads. The bench cannot show it (F543), and
+  play 2 ended in the load.
+- The gain in free play is ~0.7 GB, not the bench's 1.9 GB: the maintainer's list is 1.2 GB, and hints take back ~0.4 GB of it.
+- The risk is the canary's, not a fault: expect a few hits (one in 2.4 minutes here) and a possible short glitch at each.
+  `zero skip: canary hit` lines in the journal count them.
+- For a next test shortcut (with 0380's rebase fix): one slice per run costs 104 MiB here, and sharing slices between
+  runs would save most of it. A list made from a longer SCAN play, or the intersection of several plays, would carry
+  fewer hits than this 3-scan list.

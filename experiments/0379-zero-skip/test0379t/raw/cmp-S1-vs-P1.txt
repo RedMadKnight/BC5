@@ -1,0 +1,6 @@
+A raw/S1-zero-list.txt
+B test0379t/raw/play-lists/zero-list-20261029-120000.txt
+CommitIABufferAllocator: span A 2736 MiB (6 scans), B 2736 MiB (3 scans); A 1380 MiB, B 284 MiB, both 276 MiB, only A 1104 MiB, only B 8 MiB
+  only in A: 3 runs; the largest: +0x6ac00000 1020 MiB, +0x3a00000 62 MiB, +0x2e800000 22 MiB
+RenderGpuWcLarge: span A 2758 MiB (6 scans), B 2758 MiB (3 scans); A 1218 MiB, B 934 MiB, both 934 MiB, only A 284 MiB, only B 0 MiB
+  only in A: 27 runs; the largest: +0x98400000 68 MiB, +0x83600000 28 MiB, +0x3aa00000 24 MiB, +0x57a00000 18 MiB, +0x89a00000 14 MiB, +0x86a00000 12 MiB, +0x95800000 12 MiB, +0x97000000 12 MiB
