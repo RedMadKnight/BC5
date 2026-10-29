@@ -1,7 +1,10 @@
 # 0372 — The DualSense's haptics after a replug: back to the pad, never to the speakers
 
-**Date.** 2026-10-28/29. **Branch.** `exp/0372-pad-haptics-replug`. **Box.** Reads only, with the top session's GO
-(sources, md5s, `play-pkg.sh`, the WirePlumber scripts and man pages); nothing built, written or run there.
+**Date.** 2026-10-28/29. **Branch.** `exp/0372-pad-haptics-replug`. **Box.**
+- The design read sources there with the top session's GO: md5s, `play-pkg.sh`, the WirePlumber scripts and man pages.
+- The top session then built the private binary (00:18) and ran two software replug runs under the lock (01:26–01:45,
+  S6N RT on).
+- The maintainer's physical test is to come.
 
 **Question.** At 23:32:44 on 2026-10-28 the maintainer unplugged the USB DualSense during the second title (shared
 normal build) and plugged it back at 23:32:49; afterwards he heard the haptics from the speakers. Of the title's two
@@ -131,7 +134,108 @@ unit compiled with the shared build's compdb command, relinked); `mkplay0372.pl`
 
 ## Result
 
-**Not yet built; box steps below.** On the laptop (2026-10-29 00:10–00:30):
+### The box build (2026-10-29 00:18–00:19, the top session)
+
+Steps 1–3 of the test plan below ran as written:
+- `build0372.sh` ran with rc 0.
+- The backend's Catch2 tests passed on the box: 91 cases (33,675 assertions); `[pad_audio_route]` 15 cases (1,092).
+- The private binary is `~/bc5-work/exp0372/kyty_emulator`, md5 **cd5048e7**. It is the shared normal objects
+  (1000ad2a) with this `audio.cpp` (06d21dba), linked against the archive bb50b2e0.
+- The one compiler warning is KytyPlus's own `stringUtils.h:321` (`wstring_convert` deprecated), not this change.
+- The test launcher `play-pkg-0372t.sh` (acdd5492) and the desktop shortcut "BC5 emulator (test 0372)" were made by
+  `raw/shortcut0372.sh`.
+- The shared builds, `play-pkg.sh` (55531ab6) and `input.cfg` are unchanged.
+
+### The software replug test (2026-10-29 01:26–01:45, the top session, no one at the box)
+
+**The method.** Before the maintainer's physical test (A), a replug was simulated. `raw/replug0372.sh` turns the
+DualSense's PipeWire card profile off (index 0) and back to "Direct" (1) with `pw-cli set-param <dev> Profile`:
+- the pad's sink node is destroyed and created again, as at a USB replug, so SDL's PipeWire backend gets the same
+  registry removal and addition, and with them `SDL_AUDIODEVICEREMOVED` / `ADDED`;
+- the pad's HID side stays, so the rumble fallback and the joystick are not exercised;
+- `set-param` passes no `save`, so WirePlumber stores nothing;
+- the script puts the original profile back and unmutes the default sink at its end, on failure too (checked:
+  "restored: DualSense profile 1 Direct, default sink 54 Volume: 0.95").
+
+The title ran exp 0368's S6N route, RT on, with the private binary: `raw/s6n0372.sh`, made from `s6n0368.sh` by
+`raw/mk-s6n0372.pl`, with a private working directory and save copy, and the live saves compared only. The dock (the
+default sink) was muted for the runs. Reads came from `pw-dump` through `raw/streams0372.py`. Its first version
+matched streams by a node property that SDL's nodes lack, so R0 and P1's 5-s-pull reads list no stream. A fixed copy
+(client → `application.process.binary`) read the 30 s after that pull and everything later.
+
+**P1: three pulls, as in test plan A** (`s6n0372.sh 530ac03cb15b0ddf P1 420 on`; `replug0372.sh P1`).
+
+At the start, both pad ports opened on the DualSense with both keys:
+- t 34.386 s: `port 1 type 4: opened on DualSense … (48000 Hz, 6 ch); node.dont-reconnect, node.dont-fallback`;
+- t 34.418 s: `port 2 type 10` the same.
+
+The vibration port (port 2) wrote all the time: `(pad) … device playing` once a second. The pad-speaker port
+(port 1) was never written in this route, so it never looked at an event: its stream lives or is destroyed by
+WirePlumber alone.
+
+| pull | profile off → on (box clock) | host log | reads |
+|---|---|---|---|
+| 5 s | 01:29:05.62 → 01:29:10.84 | `closed (an output device was removed)` at t 171.271; `pad route: … calls dropped, no controller device` each second; `opened on DualSense … after an output device was added; node.dont-reconnect, node.dont-fallback` at t 176.503 | R1 (2 s in): only the dock sink is listed. 30 s after: main mix (serial 115) → dock; pad stream serial **723** → the DualSense sink, both keys |
+| < 1 s | 01:29:46.10 → 01:29:46.55 | `closed` at t 211.708, `opened … after an output device was added` at t 212.199 | 5 s after: the pad stream is a new serial **833** → the DualSense sink, both keys; main mix unchanged |
+| 30 s | 01:30:21.80 → 01:30:51.94 | `closed` at t 247.410; dropped lines until t 277; `opened …` at t 277.582 | R1 (15 s in): **one** emulator stream, the main mix on the dock, nothing else; R2 5 s after: new serial **970** → the DualSense sink, both keys |
+
+- No pad stream was ever linked to the dock.
+- No `(pad) … device playing` line appeared while the profile was off (302 such lines in the run, all while the
+  controller was listed).
+- In all three pulls the port reopened within ~50 ms of the sink's return (the close's t against the box clock of
+  the profile change gives the offset).
+
+**The cost.** Each reopen ran on the title's audio thread, as designed. In the second of each reopen the main port's
+pacing hold fell from ~1,000 ms to 930 / 947 / 941 ms. Its SDL queue's minimum fell from 42 ms to **0 ms** (t
+176.867, 212.964, 278.137), so the main mix probably has one short gap (≤ ~30 ms) per replug. The closes did not
+empty it (t 171.854: the minimum 21 ms).
+
+**The run.** `pass`: stopped at 420 s, 15,055 flips over 420.5 s = **35.8 flips/s** (the soak's mean, F494).
+- 0 crash lines, 0 kernel lines (`raw/P1-kernel-stream.txt`: four IPv6 MLD lines), 0 TIMEOUT lines, no devcoredump;
+- 11,330 MiB pinned;
+- the live saves 530ac03cb15b0ddf before and after.
+
+**P2: a DualSense that comes after the start, as in test plan D** (`replug0372.sh P2 late`; the profile off from
+before the start).
+- **At the start.** No exp 0372 open line. R0 at 171 s shows two emulator streams, both on the dock: the main mix
+  (serial 1385) and the pad-speaker port on the default sink (serial 1417, no keys), as F330 designs it for no
+  controller. The vibration port had no device and no `pad route:` line: a port opened without a controller looks
+  only at device events.
+- **The late plug (01:38:49.12).** At t 171.162 s: `port 2 type 10: opened on DualSense … after an output device was
+  added; node.dont-reconnect, node.dont-fallback`. From the next second on: `(pad) … device playing`. R2 5 s later
+  shows serial 1528 on the DualSense sink with both keys.
+- **The port that did not move.** The pad-speaker port (never written in this route) stayed on the dock. It moves
+  only at its own next write (`moved from the default sink …`), so this run cannot show that line.
+- **A 5-s pull after the late plug.** `closed (an output device was removed)` at t 206.355. R1 shows only the two dock
+  streams. `opened …` came at t 211.482. R2 shows serial 1639 on the DualSense sink with both keys.
+- **The cost.** At the late plug the main port's hold was 883.8 ms with its queue down to 0 ms; at the reopen after
+  the pull, 949.3 ms and 0 ms (one short gap each, as in P1). The close left the queue at 10 ms.
+- **The run.** `pass`: 14,818 flips over 419.9 s = **35.3 flips/s**, 0 crash, kernel or TIMEOUT lines, 11,324 MiB
+  pinned, the live saves unchanged.
+- **Restored.** The profile was back at 1 (Direct) and the dock unmuted at 0.95. `~/.local/state/wireplumber/`
+  still holds only `default-routes` and `stream-properties`: no saved profile.
+
+**What the software test does not cover.**
+- The HID side: a real replug also re-creates the joystick, and the vibration port's frames go to F214's rumble
+  fallback while the pad is away.
+- A pad-speaker port that is written: this route never writes port 1.
+- The DualShock 4 (C).
+- The sound in the room: the dock was muted. The reads show no emulator stream but the main mix linked to it.
+
+So test plan A with the maintainer stays the deciding run; C and the HID half of D stay his.
+
+`raw/`:
+- `P1-*.txt`, `P2-*.txt`: the driver's log, the run's summary, verdict, end, frame profile, `dmesg` and devcoredump
+  lists;
+- `P1-audio-lines.txt.gz`, `P2-audio-lines.txt.gz`: every `AudioOut`, `pad route:`, `(pad)` and main-port trace line
+  of the run's log;
+- the laptop's kernel streams;
+- `s6n-saves.txt`, and `play-pkg-0358.diff` (the run launcher against `play-pkg.sh`).
+
+The play logs stay on the box (`~/bc5-work/exp0372/raw/P{1,2}-play.log`).
+
+### On the laptop (2026-10-29 00:10–00:30)
+
 - `backend/` configured and built with MSVC 14.51 (`cmake -G Ninja`, `/W4 /WX`, Catch2 from the earlier Windows build
   dir): `bc5_backend_tests "[pad_audio_route]"` — 15 test cases, 1092 assertions passed; the whole suite 91 cases
   passed. `pad_audio_route_test.cpp` also passes clang 22 (`clang-cl -fsyntax-only`, `-Wall -Wextra -Wpedantic
@@ -270,13 +374,26 @@ If A, C and D pass, integration is the top session's: the two files into `~/src/
   dont-fallback is the essential one (dont-reconnect alone could pin a racing reopen to the default sink,
   `prepare-link.lua:63-67`). The swap is safe against concurrent `getenv` (glibc `__add_to_environ` overwrites an
   existing slot and frees nothing). `KYTY_BC5_PAD_PW_PROPS=0` is the A/B arm. Unverified on the box.
-- **F504 — Status: written and checked on the laptop only.** The header's tests pass (MSVC 14.51 /W4 /WX: 15 cases,
-  1092 assertions; full suite 91 cases; clang 22 strict warnings clean); the changed part of `audio.cpp` passes a
-  clang 22 syntax check against SDL 2.33.0's headers with stubbed KytyPlus headers; `raw/0372.diff` reproduces the
-  copies from the box originals. Not compiled as a whole, not linked, not run. Box steps: copy, `build0372.sh`
-  (~5 min), `mkplay0372.pl`, then tests A–D with the maintainer (~30 min); the pass criteria are in the test plan.
+- **F504 — Status: built on the box, and a software replug passes; the maintainer's physical replug is still to
+  come.**
+  - **Build.** `build0372.sh` built the private binary cd5048e7 (the shared normal objects 1000ad2a + this
+    `audio.cpp`) with Catch2 91/91 and `[pad_audio_route]` 15/15 on the box.
+  - **Method.** Two S6N RT-on runs of 420 s ran with no one at the pad (2026-10-29 01:26 and 01:36).
+    `replug0372.sh` turned the DualSense's PipeWire card profile off and on, which makes SDL's audio device removal
+    and addition as a USB replug does.
+  - **P1 (pulls of 5 s, under 1 s and 30 s).** The vibration port closed at each removal. It dropped its frames while
+    the pad was away, and reopened on the DualSense within ~50 ms of its return with `node.dont-reconnect` and
+    `node.dont-fallback`. No pad stream was ever linked to the dock.
+  - **P2 (the pad's audio arriving at 171 s, then a 5-s pull).** The vibration port opened on it at once and
+    survived the pull the same way.
+  - **Both runs passed.** 35.8 and 35.3 flips/s, no kernel line, live saves unchanged.
+  - **Cost.** One short main-mix gap per reopen: the main port's SDL queue reached 0 ms, against 42 ms normally.
+  - **Not covered.** The HID side of a replug, a written pad-speaker port, and the DualShock 4.
 
 ## Verdict
 
-Open: the fix is written and unit-tested; whether the haptics come back to the pad, and only to the pad, after a
-replug is for the box test (A), with the DualShock 4 (C) and a late DualSense (D) as the regression checks.
+Open, likely pass:
+- The software replug (P1, P2) shows the pad's haptics stream leaving with the pad and coming back on it, never on
+  the speakers, with no regression in the run.
+- The maintainer's physical replug (A) decides; the DualShock 4 (C) is the regression check that remains.
+- Then integration into the shared builds needs his yes (D19).
