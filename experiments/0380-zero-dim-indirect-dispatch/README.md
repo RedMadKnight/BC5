@@ -1892,35 +1892,40 @@ RT on, `BC5_CRASH_FRAMES=1` and `BC5_0380_REC=1` in each:
 
 ## 27. How gfx10 fetches indirect arguments, against what our check polls (F614–F616; laptop only, public sources)
 
-The task came from the top session after exp 0381's F667. The 18:08 stall is the draw-side twin of sub-class B:
-exp 0057's CP check polls sane words, and the draw still runs away. So F403 and 18:08 may share one root: the CP's
-argument fetch does not read what the check polled.
+The task came from the top session after exp 0381's F667. At 18:08 the draw slots held index-like counts at the
+timeout, counts that exp 0057's CP check would have refused. What the CP itself fetched is not captured: there is no
+fetch capture (Codex reviews REVIEW-04 and REVIEW-05). So "the polls saw sane words and the fetch other ones" is a
+hypothesis for 18:08, as it is a finding only for F403's sub-class B (F590). If it holds, F403 and 18:08 may share
+one root: the CP's argument fetch does not read what the check polled.
 
 Sources:
 - Mesa main 79590604 (freedesktop GitLab, fetched 2026-10-30): `src/gallium/drivers/radeonsi/si_barrier.c`,
   `si_state_draw.cpp`, `src/amd/common/ac_barrier.c`, `ac_cmdbuf_cp.c`, `ac_gpu_info.c`,
-  `src/amd/vulkan/radv_cmd_buffer.c`.
+  `src/amd/vulkan/radv_cmd_buffer.c`. Line numbers move between commits, so each citation below also names its
+  function. Codex checked the same pattern against Mesa ab2374a (REVIEW-05).
 - Linux master 9c7e3d59: `drivers/gpu/drm/amd/amdgpu/gfx_v10_0.c`, `nvd.h`.
 - No AMD PM4 document was reachable. Everything below is what the drivers assume, not a hardware specification.
 
 **What the public drivers say (F614).**
 - **The PFP reads the indirect arguments, and through GL2 since GFX9.**
-  - radeonsi turns `PIPE_BARRIER_INDIRECT_BUFFER` into `AC_BARRIER_PFP_SYNC_ME` (`si_barrier.c:405-406`). It adds an
-    L2 write-back only for GFX ≤ 8 or `cp_sdma_ge_use_system_memory_scope` (`si_barrier.c:412-415`, "Indirect
-    buffers use L2 since GFX9"). That flag is set for GFX12 only (`ac_gpu_info.c:1262`).
+  - radeonsi turns `PIPE_BARRIER_INDIRECT_BUFFER` into `AC_BARRIER_PFP_SYNC_ME` (`si_memory_barrier`,
+    `si_barrier.c:405-406`). It adds an L2 write-back only for GFX ≤ 8 or `cp_sdma_ge_use_system_memory_scope`
+    (ibid. 412-415, "Indirect buffers use L2 since GFX9"). That flag is set for GFX12 only (`ac_fill_hw_info`,
+    `ac_gpu_info.c:1262`).
   - RADV sets `PFP_SYNC_ME` for any later `DRAW_INDIRECT` stage, which covers indirect dispatches too
-    (`radv_cmd_buffer.c:7896-7902`). For `INDIRECT_COMMAND_READ` it invalidates only the scalar cache, for shaders
-    that read the grid size (8092-8095).
+    (`radv_stage_flush`, `radv_cmd_buffer.c:7896-7902`). For `INDIRECT_COMMAND_READ` it invalidates only the scalar
+    cache, for shaders that read the grid size (`radv_dst_access_flush`, 8092-8095).
   - The kernel's gfx10 VM flush ends with a `PFP_SYNC_ME`, "otherwise we might get invalid PFP reads"
-    (`gfx_v10_0.c:8774-8778`). So the PFP reads ahead of the ME on its own.
+    (`gfx_v10_0_ring_emit_vm_flush`, `gfx_v10_0.c:8774-8778`). So the PFP reads ahead of the ME on its own.
 - **The polls and the flag are ME work, and the gate is PFP work.** The check's `COND_WRITE`s poll memory and write
   the flag on the ME. `PFP_SYNC_ME` holds the PFP until the ME has caught up. `COND_EXEC` and the dispatch's argument
   fetch are then the PFP's.
   - In Mesa's model this order is enough: after `PFP_SYNC_ME`, the PFP's read of the same address through the same
     GL2 sees what the ME's polls saw.
-  - An `ACQUIRE_MEM` for the PFP is "an ACQUIRE at the ME plus a PFP_SYNC_ME" (`ac_barrier.c:214-220`;
-    `ac_cmdbuf_cp.c:412-429`, `ENGINE_SEL`). So in that model the PFP keeps no data cache of its own that would need
-    invalidating.
+  - An `ACQUIRE_MEM` for the PFP is "an ACQUIRE at the ME plus a PFP_SYNC_ME" (`ac_gfx10_emit_barrier`,
+    `ac_barrier.c:214-220`; `ac_emit_cp_acquire_mem`, `ac_cmdbuf_cp.c:412-429`, `ENGINE_SEL`). The drivers emit no
+    cache action for the PFP. That does not rule out a private read cache in the PFP or the CP. It only shows that
+    the drivers do not manage one (REVIEW-05).
   - TODO(verify) the `ENGINE_SEL` encoding of our `ACQUIRE_MEM`s (dword 1 = 0, as the kernel's `emit_mem_sync`,
     `gfx_v10_0.c:9472-9494`; `nvd.h:447-456` names the bit only).
 - **How the drivers emit the packet.** RADV: `SET_BASE` 1 to the buffer's VA right before a GFX-form
@@ -1957,8 +1962,8 @@ The differences from the drivers:
 - **(e) Different engines:** the ME polls and the PFP fetches. That is no difference from the drivers; it is
   inherent.
 
-**So in the public model the mismatch cannot happen with sane, settled memory.** Something outside the model is
-needed.
+**So in the drivers' model, the mismatch cannot happen with sane, settled memory and no private cache.**
+Something outside that model is needed.
 - **(i) The fetch read a different address from the polls.**
   - F591/F572 shows this for our high-VA copy slot: one fixed garbage from two slots, so the fetch takes fewer address
     bits than 2^44.
@@ -1982,11 +1987,14 @@ explain if it worked:
 | 4 | NO_CLEAR arms (F613) | built (b), (c) needs an edit | no mechanism | no | yes, as a test of the prefix | no |
 | 5 | Move `PFP_SYNC_ME`, or a PFP-engine `ACQUIRE_MEM` | not built | no: the drivers' model says these change nothing here | no | no | no |
 
-- **Rank 1 decides between (i)–(iii)** for the title's dispatches, as F567 meant for C1. It puts the
-  dispatch's base on a slot the host chose at a low VA, holding dwords the ME copied, polled and wrote back.
-  - If B still comes, the fetch is wrong at the CP itself.
-  - It needs a relink and a bench run. C1 and W1 hung within 7 s at the high VA, so the low-VA slot must pass a bench
-    before any play.
+- **Rank 1 changes several things at once** (REVIEW-05): the address the CP fetches from, the base packet, a slot
+  that the ME writes with `WR_CONFIRM`, a GL2 write-back, and the timing of the whole check. So it does not decide
+  between (i)–(iii).
+  - A play without B would say that this bundle prevents it, not which part does.
+  - A B with it on would say that the bundle does not prevent it. It would not prove that the fetch is wrong at the
+    CP itself: a fault elsewhere, such as the launch, a register, or the producer, would also fit.
+  - Its value is that it is the strongest prevention we have. It needs a relink and a bench run first. C1 and W1
+    hung within 7 s at the high VA, so the low-VA slot must pass a bench before any play.
 - **Rank 2 is the cheapest mitigation and already played clean once.**
 - **Rank 3 is the new idea here: test (ii) directly.** It costs a wait at about 145 dispatches a second, so it needs
   a bench before play.
