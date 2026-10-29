@@ -39,6 +39,7 @@ struct Stats {
     std::uint32_t zero_checked = 0;    // ... with the zero-dimension guard as well (experiment 0380)
     std::uint32_t start_forced = 0;    // dispatches given FORCE_START_AT_000 (experiment 0380)
     std::uint32_t rebased = 0;         // checked dispatches given their SET_BASE again (experiment 0380)
+    std::uint32_t rebased_after_index_base = 0; // ... of them the first DISPATCH_INDIRECT after an INDEX_BASE
     std::uint32_t unbased = 0;         // dispatches without a known base: PFP_SYNC_ME only
     std::uint32_t conditional = 0;     // dispatches NOP-ed: a COND_EXEC range grew too long
     std::uint32_t inserted_dwords = 0; // growth of the IB

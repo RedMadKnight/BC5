@@ -501,6 +501,7 @@ TEST_CASE("indirect_check: the SET_BASE rebase before a checked dispatch (experi
     REQUIRE(st.checked == 1);
     CHECK(st.rebased == 1);
     REQUIRE(out.size() == ib.size() + indirect_check::kCheckDwords + indirect_check::kRebaseDwords);
+    CHECK(st.rebased_after_index_base == 1); // the first DISPATCH_INDIRECT after the INDEX_BASE
     CHECK(st.inserted_dwords == indirect_check::kCheckDwords + indirect_check::kRebaseDwords);
     // the title's packets first, unchanged
     CHECK(std::vector<std::uint32_t>(out.begin(), out.begin() + 9) ==
@@ -560,6 +561,15 @@ TEST_CASE("indirect_check: the SET_BASE rebase before a checked dispatch (experi
         auto dr = indirect_check::apply(draw, 0, kMax, kDrawMax, r, s, false, nullptr, false, false, true);
         CHECK(dr.size() == draw.size() + indirect_check::kDrawCheckDwords);
         CHECK(s.rebased == 0);
+    }
+    SECTION("only the first dispatch after an INDEX_BASE counts as after it") {
+        auto two = ib;
+        two.insert(two.end(), {kDispatchIndirect, 0x80u, 0x41u});
+        std::vector<std::size_t> r;
+        indirect_check::Stats s;
+        indirect_check::apply(two, 0, kMax, kDrawMax, r, s, false, nullptr, false, false, true);
+        CHECK(s.rebased == 2);
+        CHECK(s.rebased_after_index_base == 1);
     }
     SECTION("inside the IB's own COND_EXEC: its count grows by the rebase too") {
         std::vector<std::uint32_t> c = {0xC0032200u, 0x100u, 0x12u, 0u, static_cast<std::uint32_t>(ib.size())};

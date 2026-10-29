@@ -131,7 +131,7 @@ struct Device::Impl {
     // Experiment 0380 (F558-F560): BC5_DIRECT_REBASE_DISPATCH — each checked GFX-form DISPATCH_INDIRECT
     // gets its SET_BASE index 1 again right before it (indirect_check rebase). Unset: off.
     bool env_rebase = false;
-    std::uint64_t rebased_sum = 0;
+    std::uint64_t rebased_sum = 0, rebased_ib_sum = 0;
     indirect_check::YzLimit yz;
     std::uint64_t start_forced_sum = 0, start_seen_sum = 0;
     // Experiment 0346: BC5_DIRECT_HOST_INDIRECT — a GFX-form DISPATCH_INDIRECT without a SET_BASE of its type
@@ -235,8 +235,8 @@ struct Device::Impl {
             std::fprintf(stderr, "bc5-direct: experiment 0380 %s: zero-dimension guard on %llu checked dispatches\n",
                          when, static_cast<unsigned long long>(zero_sum));
         if (env_rebase) // experiment 0380
-            std::fprintf(stderr, "bc5-direct: experiment 0380 %s: SET_BASE re-emitted before %llu checked indirect dispatches\n",
-                         when, static_cast<unsigned long long>(rebased_sum));
+            std::fprintf(stderr, "bc5-direct: experiment 0380 %s: SET_BASE re-emitted before %llu checked indirect dispatches, %llu of them the first after an INDEX_BASE\n",
+                         when, static_cast<unsigned long long>(rebased_sum), static_cast<unsigned long long>(rebased_ib_sum));
         if (env_force_start) // experiment 0380
             std::fprintf(stderr, "bc5-direct: experiment 0380 %s: FORCE_START_AT_000 set on %llu of %llu indirect dispatches (the rest had it)\n",
                          when, static_cast<unsigned long long>(start_forced_sum), static_cast<unsigned long long>(start_seen_sum));
@@ -1241,6 +1241,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
         impl_->zero_sum += st.zero_checked;
         impl_->start_forced_sum += st.start_forced;
         impl_->rebased_sum += st.rebased;
+        impl_->rebased_ib_sum += st.rebased_after_index_base;
         if (impl_->env_force_start) impl_->start_seen_sum += st.checked + st.unbased;
         r.filter.gpu_checks += st.checked;
         r.filter.gpu_check_unbased += st.unbased;

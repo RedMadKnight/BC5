@@ -13,6 +13,7 @@ constexpr std::uint32_t kOpDispatchIndirect = 0x16;
 constexpr std::uint32_t kOpDrawIndirect = 0x24;
 constexpr std::uint32_t kOpDrawIndexIndirect = 0x25;
 constexpr std::uint32_t kOpCondExec = 0x22;
+constexpr std::uint32_t kOpIndexBase = 0x26; // experiment 0380: INDEX_BASE (Mesa sid.h PKT3_INDEX_BASE)
 
 constexpr std::uint32_t kWriteData = 0xC0033700u; // PKT3(WRITE_DATA, 3, 0)
 constexpr std::uint32_t kWriteDataMem = 5u << 8;  // DST_SEL memory
@@ -69,6 +70,7 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib_in, std::uint
     std::uint32_t dropped_total = 0;
     for (int attempt = 0; attempt < 64; ++attempt) {
     std::uint64_t base = base_in;
+    bool after_index_base = false; // experiment 0380: an INDEX_BASE since the last DISPATCH_INDIRECT
     std::uint32_t dispatches = 0;
     bool has_cond_exec = false;
     for (std::size_t i = 0; i < ib.size();) {
@@ -106,6 +108,8 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib_in, std::uint
         if (h >> 30 == 3 && op == kOpCondExec && len == 5) {
             conds.push_back({i + len, i + len + (ib[i + 4] & 0x3fffu), out.size()});
         }
+        if (h >> 30 == 3 && op == kOpIndexBase)
+            after_index_base = true;
         if (h >> 30 == 3 && op == kOpSetBase && len >= 4 && (ib[i + 1] & 0xfu) == 1) {
             base = (static_cast<std::uint64_t>(ib[i + 2]) & ~3ull) |
                    (static_cast<std::uint64_t>(ib[i + 3] & 0xffffu) << 32);
@@ -195,6 +199,8 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib_in, std::uint
                     out.insert(out.end(), {kSetBase, 1u, static_cast<std::uint32_t>(base),
                                            static_cast<std::uint32_t>(base >> 32) & 0xffffu});
                     stats.rebased++;
+                    if (after_index_base)
+                        stats.rebased_after_index_base++;
                 }
             } else {
                 out.insert(out.end(), {kPfpSyncMe, 0u});
@@ -204,6 +210,8 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib_in, std::uint
         }
         out.insert(out.end(), ib.begin() + static_cast<std::ptrdiff_t>(i),
                    ib.begin() + static_cast<std::ptrdiff_t>(i + len));
+        if (h >> 30 == 3 && op == kOpDispatchIndirect)
+            after_index_base = false;
         if (force_start && checked_dims(h, len, compute_ring) == 3) {
             // experiment 0380: the initiator is the packet's last dword in both forms
             if ((out.back() & kForceStartAt000) == 0)
