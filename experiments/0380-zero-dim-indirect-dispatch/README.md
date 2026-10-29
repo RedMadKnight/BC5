@@ -1,7 +1,7 @@
 # 0380 — Is the F403 class a zero-dimension indirect dispatch? (sources, title side, a guard, a box plan)
 
 **Date.** 2026-10-29. **Laptop only.** No box access and no GPU submission in this experiment. Branch
-`exp/0380-zero-dim-dispatch`. Findings F545–F607 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
+`exp/0380-zero-dim-dispatch`. Findings F545–F609 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
 session's GO).
 
 **Question.** F527 puts the ME just past a `DISPATCH_INDIRECT` that passed the host's check, inside the title's
@@ -1670,6 +1670,73 @@ rest of the game at its own pace."
   2. the log's fps counter around the cutscene, and the time from its end to 23:15:21;
   3. the AJM lines and the gc journal at 23:15.
 
+## 24. Codex review REVIEW-01: the recorder's event matching, the prefix boundary, and F604's two factors (F608, F609)
+
+Codex reviewed this experiment independently (`REVIEW-01`, outside the repo; relayed by the top session, which
+accepted its three points). Laptop only, no box access: the maintainer was playing on the lean build.
+
+**R1, the recorder's event matching (F608).** `rec0380.inc` took the newest `event-*/summary.txt` of the last 30 s,
+from any ring, and stopped at the first parsable compute line. A stale event, or another ring's, could therefore stand
+in for the current timeout. Changed in `raw/rec0380.inc` (with `raw/mk-rec0380.py`):
+- **The ring.** An event counts only if its directory names the ring right after the time stamp
+  (`event-YYYYMMDD-HHMMSS-<ring>`, then the end or `-`). The ring is `BC5_0380_REC_RING`, default `gfx_0.0.0`, the
+  ring both kinds of job run on here.
+- **The time.** Its `summary.txt` must be written after the timed-out job was queued, less 1 s of slack. It is
+  compared in nanoseconds. The callers pass the job's age:
+  - the asynchronous path from `SoftCp::now_ns() - j.queued_ns`;
+  - the synchronous path from `r.submit_ms`.
+- **Several matches** must agree on the program and the dims. Otherwise the dims are "unknown: N events … disagree".
+- **No match** within `BC5_0380_REC_WAIT_S` (default 8 s) gives "unknown: no event of <ring> newer than the job …".
+- With unknown dims nothing is scanned. The dumps of the buffer's bases and arguments are still written.
+- **Tests added to `raw/rec0380_test.cpp`, not yet compiled:** there is no C++ compiler on the laptop, so they need the
+  box's container (a box check on a GO). The cases:
+  - no event;
+  - only a 20-s-old event;
+  - another ring's event, and a ring name that merely starts with `gfx_0.0.0`;
+  - two events in the same second that disagree (unknown) and that agree (taken);
+  - an old event with other dims while the right one arrives during the wait.
+
+  The existing timeout case now passes the job's age.
+- The box binaries b8561eaa and 99d91d2d still carry the old matching. Rebuilding waits for a GO. Until then a
+  recorder file from them names the event it used, so a reader can check that event's ring and time by hand.
+
+**R2, the prefix boundary in `shape0380.py` (F608).** The F601 version ended the prefix at the first
+`SET_UCONFIG_REG` 0x261. But `emit_prefix` replays every stored register before its packet state, so a stored 0x261
+would end the prefix too early and count our `SET_BASE` as the title's. Codex's synthetic case has the true boundary at
+21; the script said 8, with shapeB 0. `DRAWS` also counted `DISPATCH_DIRECT` (0x15) as a draw.
+- **The fix** (`raw/shape0380.py`). The tail starts at the first packet-state packet (`SET_BASE`, `INDEX_BASE`,
+  `INDEX_BUFFER_SIZE`, `INDEX_TYPE`, `NUM_INSTANCES`, in `emit_prefix`'s order). It continues through
+  `tf_ring_prefix`'s single-register packets 0x260, 0x24e, 0x250 and 0x261, in order. A tail without TF registers is
+  flagged `amb=1`. `DRAWS` no longer holds either dispatch.
+- **Tests:** `raw/test_shape0380.py`, 5 of 5 pass on the laptop:
+  - Codex's two counterexamples (boundary 21, shapeB 1; `DISPATCH_DIRECT` alone gives draws=0);
+  - the B dumps' layout;
+  - a title that opens with its own `SET_BASE`;
+  - a tail with no TF registers (ambiguous).
+
+  Codex's `test_review01_shape.py` asserted the old wrong output, so it now fails as intended.
+- **Can the real dumps hit it? Not this set.** The tracker's register file holds only what the title's own buffers set,
+  because the host's prefix is never applied to it. And a stored 0x261 would show in the F601 output:
+  - In all 43 prefixed dumps, the old rule's boundary was dword 1269. That is exactly the tail's length after the
+    prefix's `SET_BASE` at 1249: `SET_BASE` 4, `INDEX_BASE` 3, `INDEX_BUFFER_SIZE` 2, `NUM_INSTANCES` 2, and three TF
+    packets of 3 dwords each (`raw/runs/SHAPE-timeout-dumps.txt`).
+  - Had the replay held a 0x261, the boundary would have fallen before 1249, and the title's first `SET_BASE` would
+    read 1249. In all 43 it is 1323 or later.
+  - The draws column was not part of the shape test.
+  - So F601's counts stand. The re-run is still owed (below).
+- **Box re-check for the next GO:** run the corrected script over the same 53 timeout dumps and 1,987 healthy dumps.
+  Expect `title_at=1269 amb=0` in every prefixed dump, and the same counts: 5 shape-B dumps of 43 prefixed, 0 SET_BASE
+  in a COND_EXEC.
+
+**R3, F604's test changes two factors at once (F609).** Against the rec play, the noclear launcher turns on both
+`BC5_DIRECT_PIECES_NO_CLEAR` and the zero skip, on a new binary. So its outcome cannot be put on `CLEAR_STATE` alone.
+`BC5_DIRECT_PIECES_NO_CLEAR` also drops the prefix's first five dwords, `CONTEXT_CONTROL` and `CLEAR_STATE` together
+(`prefix_of`, patch line 32246). Even a clean run would not separate those two packets.
+- A causal reading needs a control with the same binary, list and settings and NO_CLEAR off. Or, F606's
+  recommendation: drop the skip so that NO_CLEAR is the one change against the rec play.
+- No source ties `CLEAR_STATE` to the CP's argument fetch on gfx1013. F603 stays a hypothesis, not a mechanism. The
+  design of the next test is the top session's and the maintainer's.
+
 ## Result
 
 - Sources read and cited (F545, F546). The title-side evidence was re-read from exps 0376/0378 (F547).
@@ -1677,6 +1744,11 @@ rest of the game at its own pace."
 - A second guard, `FORCE_START_AT_000` on indirect dispatches, is built the same way: default off, with unit tests
   (F551).
 - The box plan is written. Only step A0 ran: a CPU-only compile check, which passed (F552). Nothing ran on the GPU.
+- Codex's review REVIEW-01 led to two fixes. The recorder now takes only a sampler event of its own ring that is newer
+  than the timed-out job, else "unknown"; its tests are written and not yet compiled, and the box binaries keep the old
+  matching until a rebuild. `shape0380.py` now finds the prefix boundary from `emit_prefix`'s tail; F601's counts
+  stand on the real dumps, with a re-run owed. F604's test changes two factors at once, NO_CLEAR (itself both
+  `CONTEXT_CONTROL` and `CLEAR_STATE`) and the skip (F608, F609).
 - The noclear play crashed after 8 min at a new CPU site, eboot+0x1b3a36. It reads through a null sample-buffer
   pointer in the title's 4-channel int16 → float conversion, right after an ATRAC9 decode. Neither NO_CLEAR nor the
   zero skip has a plausible path to it (medium). The next play should drop the skip and keep NO_CLEAR (F605, F606).

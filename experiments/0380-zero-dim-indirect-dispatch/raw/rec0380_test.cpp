@@ -4,7 +4,10 @@
 // 2. the timeout mode takes the dims from a sampler summary.txt and finds a triple placed elsewhere, its pairs and
 //    dwords, and dumps the INDEX_BASE;
 // 3. a PROT_NONE mapping and a never-touched one are counted (unreadable / not resident), not fatal;
-// 4. the scan rate on 512 MiB of resident memory.
+// 4. the scan rate on 512 MiB of resident memory;
+// 5. the event matching (Codex review REVIEW-01 R1, F608): no event, only an old one, another ring's (and a ring name
+//    that merely starts with ours), two events in the same second (disagreeing: unknown; agreeing: taken), and an old
+//    event while the new one arrives during the wait.
 // build: g++ -std=c++20 -O2 -Wall -Wextra -Werror rec0380_test.cpp -o rec0380_test  (beside rec0380.inc)
 #include <sys/mman.h>
 #include <sys/stat.h>
@@ -22,6 +25,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+#include <fcntl.h>
 #include <memory>
 #include <string>
 #include <thread>
@@ -128,7 +132,8 @@ int main() {
         std::fclose(f);
     }
     setenv("BC5_0380_REC_SAMPLER_DIR", sdir.c_str(), 1);
-    ok = rec0380(ib.data(), static_cast<uint32_t>(ib.size()), "dcb", 8, false);
+    setenv("BC5_0380_REC_WAIT_S", "0.6", 1);
+    ok = rec0380(ib.data(), static_cast<uint32_t>(ib.size()), "dcb", 8, false, 5.0);
     std::string r2 = slurp(root + "/rec0380-00000008-dcb.txt");
     std::printf("--- timeout file:\n%s", r2.c_str());
     std::snprintf(want, sizeof(want), "TRIPLE at 0x%" PRIx64, ib_base);
@@ -138,6 +143,63 @@ int main() {
     assert(r2.find("dump program") != std::string::npos);
     assert(r2.find("triple 1, pairs 1 / 1") != std::string::npos);
     assert(g_journal_text.find("rec0380: #8 dcb: written") != std::string::npos);
+
+    // 5. the event matching; each case has its own sampler directory and submission number
+    auto event = [&](const std::string& d, const std::string& nm, unsigned x, unsigned y, unsigned z, int age_s) {
+        const std::string e = d + "/" + nm;
+        mkdir(d.c_str(), 0700);
+        mkdir(e.c_str(), 0700);
+        const std::string f = e + "/summary.txt";
+        if (FILE* o = std::fopen(f.c_str(), "w")) {
+            std::fprintf(o, "   compute: program=0x%" PRIx64 " dim=[%u %u %u] threads=[64 1 1] initiator=0x45 id=1 (gfx)
+", base + 0x1000, x, y, z);
+            std::fclose(o);
+        }
+        if (age_s > 0) {
+            timespec ts[2];
+            clock_gettime(CLOCK_REALTIME, &ts[0]);
+            ts[0].tv_sec -= age_s;
+            ts[1] = ts[0];
+            utimensat(AT_FDCWD, f.c_str(), ts, 0);
+        }
+    };
+    auto run = [&](const std::string& d, uint64_t no) {
+        setenv("BC5_0380_REC_SAMPLER_DIR", d.c_str(), 1);
+        rec0380(ib.data(), static_cast<uint32_t>(ib.size()), "dcb", no, false, 2.0);
+        char f[64];
+        std::snprintf(f, sizeof(f), "/rec0380-%08" PRIu64 "-dcb.txt", no);
+        std::string r = slurp(root + f);
+        std::printf("--- case %" PRIu64 ": %s", no, r.substr(0, r.find('
+', r.find('
+') + 1) + 1).c_str());
+        return r;
+    };
+    std::string r5 = run(root + "/s9", 9); // no event at all
+    assert(r5.find("unknown: no event of gfx_0.0.0") != std::string::npos && r5.find("TRIPLE") == std::string::npos);
+    event(root + "/s10", "event-20261029-140400-gfx_0.0.0", 481, 0x4000008a, 480, 20); // 20 s old, the job 2 s
+    std::string r6 = run(root + "/s10", 10);
+    assert(r6.find("unknown: no event") != std::string::npos && r6.find("TRIPLE") == std::string::npos);
+    event(root + "/s11", "event-20261029-140441-comp_1.0.0", 481, 0x4000008a, 480, 0);
+    event(root + "/s11", "event-20261029-140441-gfx_0.0.01", 481, 0x4000008a, 480, 0);
+    std::string r7 = run(root + "/s11", 11);
+    assert(r7.find("unknown: no event") != std::string::npos && r7.find("TRIPLE") == std::string::npos);
+    event(root + "/s12", "event-20261029-140441-gfx_0.0.0", 481, 0x4000008a, 480, 0);
+    event(root + "/s12", "event-20261029-140441-gfx_0.0.0-2", 3158, 1, 1, 0);
+    std::string r8 = run(root + "/s12", 12);
+    assert(r8.find("unknown: 2 events of gfx_0.0.0 in the window disagree") != std::string::npos && r8.find("TRIPLE") == std::string::npos);
+    event(root + "/s13", "event-20261029-140441-gfx_0.0.0", 481, 0x4000008a, 480, 0);
+    event(root + "/s13", "event-20261029-140441-gfx_0.0.0-2", 481, 0x4000008a, 480, 0);
+    std::string r9 = run(root + "/s13", 13);
+    assert(r9.find("(+1 agreeing)") != std::string::npos && r9.find("TRIPLE at") != std::string::npos);
+    event(root + "/s14", "event-20261029-140400-gfx_0.0.0", 3158, 1, 1, 20); // old, with other dims
+    setenv("BC5_0380_REC_WAIT_S", "3", 1);
+    std::thread late([&] {
+        std::this_thread::sleep_for(std::chrono::milliseconds(400));
+        event(root + "/s14", "event-20261029-140441-gfx_0.0.0", 481, 0x4000008a, 480, 0);
+    });
+    std::string r10 = run(root + "/s14", 14);
+    late.join();
+    assert(r10.find("dims 000001e1 4000008a 000001e0") != std::string::npos && r10.find("TRIPLE at") != std::string::npos);
     std::printf("--- all checks passed (%s)\n", root.c_str());
     return 0;
 }

@@ -7,6 +7,10 @@
 // together, each neighbouring pair and each one alone. A triple across a 64 KiB read block is missed. The scan stops
 // after BC5_0380_REC_SCAN_S seconds (default 20). Results: <dump dir>/rec0380-<submission>-<kind>.txt (1 MiB at most,
 // fsynced) and "rec0380:" journal lines, synced. CPU only: no packet is added to any buffer.
+// Event matching (Codex review REVIEW-01 R1, F608): an event counts only if its directory names the ring
+// (event-YYYYMMDD-HHMMSS-<ring>, BC5_0380_REC_RING, default gfx_0.0.0) and its summary.txt was written after the timed-out
+// job was queued (the caller's age_s, less 1 s of slack; mtime in ns). Several matching events must agree on the dims.
+// Otherwise, or with none within BC5_0380_REC_WAIT_S (default 8 s), the dims are "unknown" and nothing is scanned.
 // BC5_0380_REC_SELFTEST_S=<s>: once, on the first completed dcb with an indirect dispatch after <s> s of journal time,
 // the same with that dispatch's arguments as the dims (the dump path's check; it holds the completion thread for the
 // scan).
@@ -18,7 +22,62 @@ static bool rec0380_selftest_due(const char* kind) {
 	}();
 	return at >= 0 && !g_rec0380_selftest_done.load() && std::strncmp(kind, "dcb", 3) == 0 && timing_now() >= at;
 }
-static bool rec0380(const uint32_t* sub_ib, uint32_t sub_n, const char* kind, uint64_t n, bool selftest) {
+struct Rec0380Pick {
+	bool               have = false;
+	uint32_t           d[3] = {};
+	unsigned long long prog = 0;
+	std::string        src;
+};
+// One look at the sampler's directory: the events of `ring` written at or after not_before (CLOCK_REALTIME).
+static Rec0380Pick rec0380_pick(const std::string& dir, const std::string& ring, const timespec& not_before) {
+	Rec0380Pick              r;
+	std::vector<std::string> names;
+	if (DIR* dd = opendir(dir.c_str()); dd != nullptr) {
+		while (const dirent* e = readdir(dd)) {
+			const std::string nm = e->d_name;
+			constexpr size_t  kStamp = 22; // "event-YYYYMMDD-HHMMSS-"
+			if (nm.size() < kStamp + ring.size() || nm.compare(0, 6, "event-") != 0 || nm.compare(kStamp, ring.size(), ring) != 0) continue;
+			if (nm.size() > kStamp + ring.size() && nm[kStamp + ring.size()] != '-') continue; // another ring with this one as prefix
+			const std::string p = dir + "/" + nm + "/summary.txt";
+			struct stat       st {};
+			if (stat(p.c_str(), &st) != 0) continue;
+			if (st.st_mtim.tv_sec < not_before.tv_sec || (st.st_mtim.tv_sec == not_before.tv_sec && st.st_mtim.tv_nsec < not_before.tv_nsec)) continue;
+			names.push_back(p);
+		}
+		closedir(dd);
+	}
+	std::sort(names.begin(), names.end());
+	int parsed = 0, disagree = 0;
+	for (const auto& p: names) {
+		FILE* f = std::fopen(p.c_str(), "r");
+		if (f == nullptr) continue;
+		char               line[600];
+		unsigned long long pr = 0;
+		unsigned           x = 0, y = 0, z = 0;
+		bool               ok = false;
+		while (!ok && std::fgets(line, sizeof(line), f) != nullptr) {
+			const char* c = std::strstr(line, "compute: program=0x");
+			ok            = c != nullptr && std::sscanf(c, "compute: program=0x%llx dim=[%u %u %u]", &pr, &x, &y, &z) == 4;
+		}
+		std::fclose(f);
+		if (!ok) continue;
+		if (parsed++ == 0) {
+			r.d[0] = x, r.d[1] = y, r.d[2] = z, r.prog = pr, r.src = "sampler " + p;
+		} else if (x != r.d[0] || y != r.d[1] || z != r.d[2] || pr != r.prog) {
+			disagree++;
+		}
+	}
+	if (parsed > 0 && disagree == 0) {
+		r.have = true;
+		if (parsed > 1) r.src += " (+" + std::to_string(parsed - 1) + " agreeing)";
+	} else if (parsed > 0) {
+		r.src = "unknown: " + std::to_string(parsed) + " events of " + ring + " in the window disagree";
+		r.d[0] = r.d[1] = r.d[2] = 0, r.prog = 0;
+	}
+	return r;
+}
+// age_s: seconds since the timed-out job was queued (the event must be newer); < 0 in the self-test.
+static bool rec0380(const uint32_t* sub_ib, uint32_t sub_n, const char* kind, uint64_t n, bool selftest, double age_s = -1.0) {
 	if (sub_ib == nullptr || sub_n == 0 || g_dump_dir.empty() || !g_dev) return false;
 	using clk     = std::chrono::steady_clock;
 	const auto t0 = clk::now();
@@ -77,34 +136,32 @@ static bool rec0380(const uint32_t* sub_ib, uint32_t sub_n, const char* kind, ui
 		std::string dir;
 		if (const char* e = BC5_DIAG_ENV("BC5_0380_REC_SAMPLER_DIR"); e != nullptr && *e != 0) dir = e;
 		else if (const char* home = std::getenv("HOME"); home != nullptr) dir = std::string(home) + "/bc5-data/captures/gpu-stall";
-		const time_t since = time(nullptr) - 30;
-		while (!have && secs() < 8.0) {
-			std::string best;
-			time_t      best_t = 0;
-			if (DIR* dd = opendir(dir.c_str()); dd != nullptr) {
-				while (const dirent* e = readdir(dd)) {
-					if (std::strncmp(e->d_name, "event-", 6) != 0) continue;
-					const std::string p = dir + "/" + e->d_name + "/summary.txt";
-					struct stat       st {};
-					if (stat(p.c_str(), &st) == 0 && st.st_mtime >= since && st.st_mtime >= best_t) best = p, best_t = st.st_mtime;
-				}
-				closedir(dd);
+		std::string ring = "gfx_0.0.0";
+		if (const char* e = BC5_DIAG_ENV("BC5_0380_REC_RING"); e != nullptr && *e != 0) ring = e;
+		double wait_s = 8.0;
+		if (const char* e = BC5_DIAG_ENV("BC5_0380_REC_WAIT_S"); e != nullptr && *e != 0) wait_s = std::atof(e);
+		timespec nb {};
+		clock_gettime(CLOCK_REALTIME, &nb);
+		const double back = age_s + 1.0; // the job's age and 1 s of slack
+		nb.tv_sec -= static_cast<time_t>(back);
+		nb.tv_nsec -= static_cast<long>((back - static_cast<double>(static_cast<time_t>(back))) * 1e9);
+		if (nb.tv_nsec < 0) nb.tv_nsec += 1000000000L, nb.tv_sec--;
+		bool undecided = false;
+		while (age_s >= 0 && !have && secs() < wait_s) {
+			const Rec0380Pick pk = rec0380_pick(dir, ring, nb);
+			if (pk.have) {
+				d[0] = pk.d[0], d[1] = pk.d[1], d[2] = pk.d[2], prog = pk.prog, src = pk.src, have = true;
+			} else if (!pk.src.empty()) {
+				src = pk.src, undecided = true; // matching events that disagree: no dims
+				break;
+			} else {
+				std::this_thread::sleep_for(std::chrono::milliseconds(100));
 			}
-			if (!best.empty()) {
-				if (FILE* f = std::fopen(best.c_str(), "r"); f != nullptr) {
-					char line[600];
-					while (!have && std::fgets(line, sizeof(line), f) != nullptr) {
-						const char* c = std::strstr(line, "compute: program=0x");
-						unsigned    x = 0, y = 0, z = 0;
-						if (c != nullptr && std::sscanf(c, "compute: program=0x%llx dim=[%u %u %u]", &prog, &x, &y, &z) == 4) d[0] = x, d[1] = y, d[2] = z, have = true;
-					}
-					std::fclose(f);
-				}
-				if (have) src = "sampler " + best;
-			}
-			if (!have) std::this_thread::sleep_for(std::chrono::milliseconds(100));
 		}
-		if (!have) src = "no sampler event with a COMPUTE_DIM line in " + dir + " within 8 s";
+		char wb[96];
+		std::snprintf(wb, sizeof(wb), "%.1f s", wait_s);
+		if (age_s < 0) src = "unknown: the job's age is unknown";
+		else if (!have && !undecided) src = "unknown: no event of " + ring + " newer than the job in " + dir + " within " + wb;
 	}
 	char name[512];
 	std::snprintf(name, sizeof(name), "%s/rec0380-%08" PRIu64 "-%.8s.txt", g_dump_dir.c_str(), n, kind);
