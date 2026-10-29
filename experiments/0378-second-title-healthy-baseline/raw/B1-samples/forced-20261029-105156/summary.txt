@@ -1,0 +1,8 @@
+bc5-gpu-stall-sampler 0377 forced sample forced-20261029-105156 (request: once)
+pending rings: gfx_0.0.0
+ sample 1 (forced) mono 3778.479, clocks gfx_0.0.0=0.00, gfxoff 0
+   registers 50 (0 errors) in 0.2 ms; waves not scanned (registers only)
+   distinct PCs 0: -
+   queues: -
+   GRBM_STATUS=0xa0407028 CP_STAT=0x94078600 CP_PFP_INSTR_PNTR=0xea0 CP_ME_INSTR_PNTR=0x77b CP_IB1_BASE_HI=0x1002 CP_IB1_BASE_LO=0x0 CP_IB1_BUFSZ=0x0 CP_IB1_CMD_BUFSZ=0x4090
+   compute: program=0x11d021a400 dim=[1 1 1] threads=[16 4 1] initiator=0x41 id=2682980799 (gfx ME0 pipe0 queue0 (gfx_0.0.0))

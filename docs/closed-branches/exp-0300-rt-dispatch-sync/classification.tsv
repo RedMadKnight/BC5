@@ -1,0 +1,148 @@
+class	commit	date	exp	subject	note
+on-main+superseded	bbfe572	2026-10-25	0297	exp: 0297 — plan: who writes the float into the title's sync label (F360): the 0x11d03a family's stores read o	
+on-main+superseded	9a397c7	2026-10-25	0297	exp: 0297 — step 1 read: the eight programs store only through V#/T# descriptors from the resource table at s[	
+on-main+superseded	bcd8cdc	2026-10-25	0300	exp: 0300 — a sync packet behind every dispatch of the ray-tracing build families (CS_PARTIAL_FLUSH, or the da	
+on-main+superseded	9a89b5c	2026-10-25	0300	exp: 0300 — s6n0300.sh runs with a private input configuration (RayTracing.PPSA03671=on in exp0300/input-rt.cf	
+on-main+superseded	9029cb7	2026-10-25	0300	exp: 0300 — s6n0300.sh derives play-pkg-0300.sh from the maintainer's play-pkg.sh (fde58cda) at chain start: e	
+on-main+superseded	d9e79a0	2026-10-25	0300	exp: 0300 — s6n0300.sh: private working directory with its own _SaveData (the route's saves copied in before e	
+on-main+superseded	f55b50a	2026-10-25	0300	exp: 0300 — s6n0300.sh: the working directory laid out as exp 0299's (own _SaveData, symlinks into ~/bc5-work)	
+on-main+superseded	5a3329d	2026-10-25	0300	exp: 0300 — built on the box: kyty_emulator 663ae115 (12/12 anchors, 26 s); caveat: the box's shared backend a	
+on-main+superseded	3f26c56	2026-10-25	0300	exp: 0300 — relinked against exp 0290's archive on the supervisor's GO: kyty_emulator 0bfe9c39 (refusal in), 6	
+on-main+superseded	ffd886f	2026-10-25	0300	exp: 0300 — the chain: S1 600 s pass, S2 machine-down (F360 SQC fault, comp_1.1.0 reset failed, MODE1): the pe	
+on-main+superseded	5a15f7d	2026-10-25	0300	exp: 0300 — verdict reworded: reads like 0294 (one clean run, then a machine-down); the failed reset was on co	
+on-main+superseded	ad78a91	2026-10-25	0302	exp: 0302 — the descriptor check, diagnostic (a): the F360 family's resource table read at filter time (mappin	
+on-main	249268a	2026-10-25	0300	exp: 0300/0297 — S2's coredump read: the hung acb is in it as submitted; the title's own SET_SH_REG sets user 	
+on-main	77bd1ba	2026-10-25	0300	exp: 0300 — raw/journal-stream.txt trimmed as on main (fc434b5): the first 200 of 14,488 rt-sync lines kept, u	
+on-main+superseded	3ddd5b7	2026-10-25	0302	exp: 0302 — README: the setup differences between 0290's six hangs and today's clean first runs (PlayGo, arena	
+on-main	a09bc4a	2026-10-25	0302	exp: 0302 — built (39440597) and run: 2 x 600 s clean with RT on and no sync packets, no hang, so no A/B/C ans	
+on-main	72044e2	2026-10-25	0302	exp: 0302 — play0302.sh: the maintainer's play session on the 0302 binary (his live saves with a snapshot befo	
+on-main+superseded	51be66b	2026-10-25	0302	exp: 0302 — play0302.sh: ray tracing on by default for the maintainer's session (his words of 12:55), RT=off p	
+on-main+superseded	190b445	2026-10-25	0302	exp: 0302 — play0302.sh: play-pkg.sh ac7a9a57 (the MangoHud integration, F367) allowed	
+on-main	2d9997a	2026-10-25	0302	exp: 0302 — play0302.sh: play-pkg.sh 628b2714 (the lab fix, 13:03) allowed	
+on-main+superseded	94f616c	2026-10-25	0306	exp: 0306 — is the compaction 0x909974400 safe on the S6N route: exp 0302's chain on its binary with BC5_DIREC	
+on-main	1d17636	2026-10-25	0306	exp: 0306 — result: with the compaction on the S6N route hangs at ~2 min in both runs (F332: the leaf builder'	
+on-main+superseded	f119ee3	2026-10-25	0308	exp: 0308 — what the compaction writes and where: filter-time extents of 0x909974400's output (node table, cou	
+on-main	e394078	2026-10-25	0306	exp: 0306 — addendum: flips/s (the compaction costs ~4 % on the route until the hang), one devcoredump copy, a	
+on-main+superseded	3e9bff3	2026-10-25	0308	exp: 0308 — run 1: both runs F332 hangs at ~2 min, recovered; the refit's indirect arguments are sane counts a	
+on-main+superseded	b9e6857	2026-10-25	0308	exp: 0308 — patch for run 2: the register pairs as the program uses them (s7 = s1, s3:s0), 'header not yet wri	
+on-main+superseded	d9dfad8	2026-10-25	0308	exp: 0308 — run-2 patch: the label writes after a compaction dispatch (the CPU-readback lead), README section 	
+on-main+superseded	2716c6a	2026-10-25	0308	exp: 0308 — run 2: both runs F332 at ~2 min, recovered (0/5 machine-downs today); the header at ud[4:5] is no 	
+on-main	d43845b	2026-10-25	0308	exp: 0308 — run 2 completed from the box's journals: the count pass and the leaf builder share stride-0x20 rec	
+on-main+superseded	1c642b4	2026-10-25	0310	exp: 0310 — design: who writes floats into the count records — the leaf builder's and the refit's output descr	
+on-main+superseded	d06d6c5	2026-10-25	0310	exp: 0310 — step 1 first reading: the count pass read-modify-writes record v7 of a two-record V# whose record 	
+on-main+superseded	4ca6efe	2026-10-25	0310	exp: 0310 — step 1 completed offline: the count pass writes record 1 of {struct+0x100, stride 0x20, 2 records}	
+on-main+superseded	c4d3b82	2026-10-25	0310	exp: 0310 — 0310b: at the timeout record 1 is sampled three times 50 ms apart (a value that moves while the GP	
+on-main	669c9ea	2026-10-25	0310	exp: 0310 — runs S1-S3: three F332 hangs at ~2 min with the compaction on, all recovered; the leaf builder's n	
+on-main+superseded	49ec78d	2026-10-25	0310	exp: 0310 — README: the decoder's reading verified against llvm-mc (disf.sh, read-only): instruction for instr	
+on-main	bd59a2a	2026-10-25	0310	exp: 0310 — 0310c: the CPU-writer test first in the probe (the last 24 structs, record 1 read in three passes 	
+on-main+superseded	6781cba	2026-10-25	0310	exp: 0310 — prior art note (public sources, laptop only): GPURT's task-counter build model and 64-byte scratch	
+on-main	5c0c7d4	2026-10-25	0310	exp: 0310 — 0310c S4: HANG at 117 s, recovered, no crash; record 1 of every sampled struct stayed still across	
+on-main+superseded	bd9afe7	2026-10-25	0312	exp: 0312 — who writes the count record from the CPU: a host-side write trap (mprotect + SIGSEGV/SIGTRAP softw	
+on-main+superseded	09b5344	2026-10-25	0313	exp: 0313 — the write trap renamed from 0312 (held for the water session), with the supervisor's two notes: re	
+on-main+superseded	c817e62	2026-10-25	0313	exp: 0313 — run 1: the trap caught the CPU writer of record 1 — a libc memcpy/memset store loop on the title's	
+on-main+superseded	ec1d6a8	2026-10-25	0313	exp: 0313 — run 2 (0313b): the F332 hang at 112 s again, 2,203 stores caught on the LRU-armed pages, 12 into r	
+on-main	aacc111	2026-10-25	0313	exp: 0313 — README: the attribution caveat stated plainly (run 1's title worker threads right, run 2's AMPR li	
+on-main	60e01f0	2026-10-25	0314	exp: 0314 — negative 2/2: with BC5_DIRECT_SOFTCP_POST_IB=1 the F332 hang comes at 116 s and 113 s as without i	
+on-main+superseded	7a630e4	2026-10-25	0316	exp: 0316 — the 0313 write trap with the chain's completion state per store (mode 1: the arming submission vs 	
+on-main+superseded	856c385	2026-10-25	0316	exp: 0316 run A (mode 1, 180 s): pass; 1,056 stores, none into a slot whose arming job was unfinished; the tit	
+on-main+superseded	6c6ce1a	2026-10-25	0320	exp: 0320 — the ring A/B renamed from the provisional 0317 (every compute buffer on the GFX ring, BC5_DIRECT_C	
+on-main	51b4c0d	2026-10-25	0320	exp: 0320 — PASS 2/2 (2 x 600 s, RT on, compaction on) with every compute buffer on the GFX ring, against 11/1	
+on-main	6274c62	2026-10-25	0320	exp: 0320 — README: the journals' paths and sizes (private, not trimmed), and the ordering-fix proposal: (a) B	
+on-main+superseded	2e1d3fe	2026-10-25	0321	exp: 0321 — the ordering fix for the two-ring split: a kernel CS dependency on the compute rings' last jobs fo	
+on-main+superseded	0303530	2026-10-25	0321	exp: 0321 — two chains: s6n0321.sh the approved environment-line form (BC5_DIRECT_RING_DEPS=dcb on the 0302 bi	
+on-main	31a2f46	2026-10-25	0321	exp: 0321 — s6n0321b.sh usage line	
+on-main	b0007ba	2026-10-25	0321	exp: 0321 — results: the env-line form (BC5_DIRECT_RING_DEPS=dcb, two rings) PASS 2/2 x 600 s at ~35.4 flips/s	
+on-main	c3207fd	2026-10-25	0321	exp: 0321 — README: the dcb-aware dependency as a proposal (refused compute buffers + dcbs carrying a dispatch	
+on-main+superseded	3c94b30	2026-10-25	0322	exp: 0322 — the dcb-aware ordering: the cross-ring dependency for compute buffers on the GFX ring and for dcbs	
+on-main	e08bf84	2026-10-25	0290	feat(backend): keep every DISPATCH_INDIRECT off the compute ring until the MEC argument check is verified (exp	
+on-main	293ee97	2026-10-25	0322	exp: 0322 — PASS 2/2 (2 x 600 s, RT on, compaction on) with the dcb-aware ordering (109-111 k refused acbs + 1	
+on-main+superseded	cc32bcb	2026-10-25	0323	exp: 0323 — the integration of the ring ordering: int0323.sh (the refusal archive rebuilt in place, backend te	
+on-main	d1ee47a	2026-10-25	0323	exp: 0323 — the integration verified: parts 1-2 by the top session (archive 549892e8 -> 825ae1d1 = exp 0290's,	
+on-main	f0cd4e0	2026-10-25	0325	exp: 0325 — RT off WITHOUT the ordering on the integrated shared build hangs at 111 s (recovered gfx + comp_1.	
+on-main+superseded	3381a01	2026-10-25	0327	exp: 0327 — the second title's twelve missing imports implemented as the console behaves: sceKernelSyncOnAddre	
+on-main+superseded	28bb6b7	2026-10-25	0327	exp: 0327 — built on the box (kyty_emulator 1f7169a9, first compile clean, SyncOnAddressTests all passed), the	
+on-main	2ba4c24	2026-10-25	0327	exp: 0327 — the link-time stub list resolved offline: 186 of 197 NIDs named (the calculator over 28k sce/posix	
+on-main	ec7c7bb	2026-10-25	0327	exp: 0327 — .gitattributes: *.diff -text (the integration diff keeps its bytes)	
+on-main+superseded	6e8cf1f	2026-10-25	0328	exp: 0328 — libSceNpCppWebApi for an offline console, AnyPS5's implementation (GPL-2.0, 27c88a8) ported into s	
+on-main	356857d	2026-10-25	0328	exp: 0328 — built on the box (kyty_emulator fcb50e58, the new unit warning-free; SyncOnAddressTests and NpCppW	
+on-main+superseded	1b89d65	2026-10-25	0329	exp: 0329 — the second title's remaining 61 missing imports implemented as the console behaves (offline): patc	
+on-main	3ef7cc3	2026-10-25	0329	exp: 0329 — first box build: the errno include and no try/catch in the new units (the tree builds without exce	
+on-main+superseded	e410f5d	2026-10-25	0329	exp: 0329 — the private build (31482a75) and the start check pass recorded: four test programs passed, the stu	
+on-main	80fe374	2026-10-25	0329	exp: 0329 — integrated into both shared builds on the maintainer's word (normal 4a146894, lean c28cdd3c; candi	
+on-main+superseded	446efd6	2026-10-27	0339	exp: 0339 — one ring for all compute (COMPUTE_RING=-1) on the shared normal build, RT off, 2 x 600 s S6N: chai	
+on-main	98e6ac6	2026-10-27	0339	exp: 0339 — one ring, RT off, 2 x 600 s on the shared normal build 9382b1e9: both pass (38.6 and 36.9 flips/s 	
+on-main	f8138f8	2026-10-27	0340	exp: 0340 — the RT-on machine-down classes read on the box (read-only): devcd1 07:28 = F403's runaway indirect	
+superseded	b3f3c55	2026-10-27	0341	exp: 0341 — the RT-on arms of exp 0340 in the backend, each behind a switch (default off): the product stairca	intermediate direct.cpp/indirect_check versions; the integrated state is on main (d0c2668 for 0341, 9bd60be/F433 for 0343-0349)
+on-main	c6726a3	2026-10-27	0341	exp: 0341 — the shadow copy goes right before its writer (inside the same COND_EXEC range: a skipped writer sk	
+superseded	eeb2ed2	2026-10-27	0341	exp: 0341 — the switches and their counts live in the backend's Device (environment only): FilterOptions / Fil	intermediate direct.cpp/indirect_check versions; the integrated state is on main (d0c2668 for 0341, 9bd60be/F433 for 0343-0349)
+on-main	f0fc75d	2026-10-27	0341	exp: 0341 — built and run on the box: tests pass, R2 (600 s, RT off, one ring, all switches) passes at 36.6 fl	
+on-main	06128ae	2026-10-27	0343	exp: 0343 — claimed: the soft CP's label polls journaled (over 50 ms or at the deadline: label, function, refe	
+on-main+superseded	ab6bff6	2026-10-27	0344	exp: 0344 — claimed: which checked dispatch of acb #76004 sat at the CP's fetch point of R2's 6,584-dword job 	
+on-main	c7c8928	2026-10-27	0344	exp: 0344 — run on the box (read-only, 13:00–13:13): hang 1 (12:39) mapped exactly (job IB 6,584 = the replay)	
+superseded	e4ffa17	2026-10-27	0345	exp: 0345 — claimed: a GFX-form DISPATCH_INDIRECT with base-1 0 gets the title's window as its base (SET_BASE 	0345 window-base code withdrawn on main (F417, 0346 removed the path)
+on-main+superseded	b1b6219	2026-10-27	0345	exp: 0345 — built on the box (archive c65ed368, 64 tests pass, emulator 495f8795) and R1 (RT off, GFX_BASE1=le	
+on-main+superseded	55cd39b	2026-10-27	0345	exp: 0345 — the reads (probe0345.sh, read-only): 0345 was dormant in R1 (0 rebase lines), the machine-down is 	h3-journal-dcb-probe.txt is on main gzipped (268fbd8); the 5.5 MB text copy left out
+superseded	d4ea4f9	2026-10-27	0345	exp: 0345 — second version: one base-1 per shader type (the PM4 header's bit 1) tracked in the check and carri	0345 window-base code withdrawn on main (F417, 0346 removed the path)
+on-main+superseded	e4d3ace	2026-10-27	0345	exp: 0345 — withdrawn: the second version (9a221a67) took the box down at ~110 s with RT off (14:25:12: a burs	
+on-main	40d15c7	2026-10-27	0345	exp: 0345 — README: a stray placeholder in the hang-1 arm removed	
+superseded	c8d084c	2026-10-27	0346	exp: 0346 — claimed: the host resolves and verifies a GFX-form DISPATCH_INDIRECT without a SET_BASE of its typ	intermediate direct.cpp/indirect_check versions; the integrated state is on main (d0c2668 for 0341, 9bd60be/F433 for 0343-0349)
+on-main+superseded	107bddd	2026-10-27	0346	exp: 0346 — the box scripts (build/s6n/mktest/shortcut derived from 0345's), the overflow test on a real COND_	
+on-main+superseded	d6f844c	2026-10-27	0346	exp: 0346 — the offline diff harness (harness0346.cpp: main d0c2668's filter + shadow + check against 0346's w	
+on-main+superseded	0002100	2026-10-27	0346	exp: 0346 — README: R1 (784a9a62, RT off) hung the GPU at ~60 s without a fault; the line stops until the offl	
+on-main+superseded	47f35c8	2026-10-27	0346	exp: 0346 — the offline replay: the CP has one base-1 register (the host's conversions pair a compute-type SET	
+superseded	a909365	2026-10-27	0346	exp: 0346 — the third version: one base-1 register carried across GFX-ring jobs, nothing touched while it is n	intermediate direct.cpp/indirect_check versions; the integrated state is on main (d0c2668 for 0341, 9bd60be/F433 for 0343-0349)
+superseded	a98c8b2	2026-10-27	0346	exp: 0346 — the third version's mapping table copied and sorted only when a dispatch is a candidate (R1 of 3c3	intermediate direct.cpp/indirect_check versions; the integrated state is on main (d0c2668 for 0341, 9bd60be/F433 for 0343-0349)
+on-main+superseded	17281b8	2026-10-27	0346	exp: 0346 — the third version on the box: R1 (RT off) and R2 (RT on) 600 s each pass, 1.04 M / 11.7 M dispatch	
+on-main	cdf6822	2026-10-27	0346	exp: 0346 — the lazy mapping table on the box: R1 RT off 36.1 flips/s and R2 RT on 36.5 flips/s, 600 s each pa	
+on-main+superseded	484818d	2026-10-27	0346	exp: 0346 — the four runs' streamed kernel logs (no amdgpu line in any); 0345's streams closed by the 14:25 re	
+on-main+superseded	9c73b1d	2026-10-27	0343	exp: 0343 — the anchors re-checked against main's patch 0001 (12716e3b: bc5LleAgc.cpp cfeec2f8, the box's tree	
+on-main	1df1e99	2026-10-27	0343	exp: 0343 — patch0343.pl: the bound in the soft-cp wait line cast to uint64_t (clang -Wformat on the box build	
+on-main	e1b47d1	2026-10-27	0343	exp: 0343 — R1 on the box (ecbb95ce, RT off, 600 s): pass at 36.3 flips/s, 0 soft-cp wait / slow post lines, 0	
+superseded	859a86b	2026-10-27	0348	exp: 0348 refused submit and the carried base register (F421-F426)	intermediate direct.cpp/indirect_check versions; the integrated state is on main (d0c2668 for 0341, 9bd60be/F433 for 0343-0349)
+superseded	822c800	2026-10-27	0349	exp: 0349 a job's IB cut under the kernel's 0xfffff-dword limit (F421/F426)	intermediate direct.cpp/indirect_check versions; the integrated state is on main (d0c2668 for 0341, 9bd60be/F433 for 0343-0349)
+on-main+superseded	0656bde	2026-10-27	0349	exp: 0349 R1 machine-down: the cut works (F427), the forced limit's refusal reproduced the lost-frame class (F	
+on-main+superseded	d9d301b	2026-10-27	0349	exp: 0349 the kernel's IB limit measured (0xfffff dwords exactly), the cut's default 0xf0000, a balanced cut	
+left-out	8dd5d7f	2026-10-27	0349	docs: 0349 the box kernel's check verified by source and probe	stream0290.sh SSH line switched to the LAN address for one night; a local workaround
+on-main	7668ccf	2026-10-27	0349	exp: 0349 the retry limit capped at the cut limit; the default-limit test	
+on-main+superseded	d37726e	2026-10-27	0349	exp: 0349 passed: S6N R1b RT off, R2 RT on (4 jobs cut into 9 IBs), R3 at the default; shortcut test 0349	
+branch-only	ade0735	2026-10-28	0352	exp: 0352 the CP check's batched form (one ME phase per chain) and a CP-check simulator in the harness	the batched CP check and arm C; not worth integrating (F438); kept in backend-0352-0364-vs-main-e7ab9b1.diff
+on-main+superseded	24be7c5	2026-10-28	0352	exp: 0352 README (question, setup, gates) and the box scripts	
+branch-only	6ba9cc0	2026-10-28	0352	exp: 0352 the summary line's escape	the batched CP check and arm C; not worth integrating (F438); kept in backend-0352-0364-vs-main-e7ab9b1.diff
+branch-only	0784ec4	2026-10-28	0352	exp: 0352 the batch test's offsets	the batched CP check and arm C; not worth integrating (F438); kept in backend-0352-0364-vs-main-e7ab9b1.diff
+branch-only	e8ce870	2026-10-28	0352	exp: 0352 the batch test's size	the batched CP check and arm C; not worth integrating (F438); kept in backend-0352-0364-vs-main-e7ab9b1.diff
+branch-only	8cdd2fe	2026-10-28	0352	exp: 0352 arm C: every per-dispatch CP check emitted twice (a measurement arm, equal protection)	the batched CP check and arm C; not worth integrating (F438); kept in backend-0352-0364-vs-main-e7ab9b1.diff
+on-main+superseded	957b6c7	2026-10-28	0352	exp: 0352 results of the gate and arms A and B (F435, F436)	
+on-main+superseded	142ea25	2026-10-28	0352	exp: 0352 passed: the CP check costs ~0.8 ms GPU a frame RT on (F437); the batched form reaches 0.27 % of chec	
+on-main+superseded	d2dc4ce	2026-10-28	0356	exp: 0356 the AMM fault ledger: design note, the host patch, the ledger and its test, the box scripts	
+on-main	324b6dd	2026-10-28	0356	exp: 0356 the ledger's include	
+on-main	d7f49a9	2026-10-28	0356	exp: 0356 the ledger's name in the unit's namespace	
+on-main	4c90b9d	2026-10-28	0356	exp: 0356 the units' sibling includes in the private tree	
+on-main+superseded	33d0055	2026-10-28	0356	exp: 0356 build 187910d8 and R1 (900 s, no fault, F440)	
+on-main+superseded	ce4f6ed	2026-10-28	0356	exp: 0356 R2 hung at 107 s in the shader-fault class (F441); the AMM fatal did not reproduce (F440); the ledge	
+on-main	71f3204	2026-10-28	0356	exp: 0356 findings renumbered F442, F443 (main took F440, F441)	
+on-main	9af31a6	2026-10-28	0356	exp: 0356 the test shortcut, and a note on the big frame and the cut for Q20	
+on-main+superseded	ed1577e	2026-10-28	0358	exp: 0358 the null-object crash: the reading of the four dumps and the code, the thread trap, box scripts	
+on-main+superseded	0c80761	2026-10-28	0358	exp: 0358 the null is the title's worker-index sentinel (F444); the thread trap built, R1 900 s clean (F445)	
+on-main+superseded	2e2b74d	2026-10-28	0358	exp: 0358 the box repro from the maintainer's save: the Continue route and his replayed pad record pass on the	
+on-main+superseded	66ef22f	2026-10-28	0358	exp: 0358 the test shortcut on the trap build, with a pad record per start	
+on-main	bec057d	2026-10-28	0358	exp: 0358 the trap's reading (F447, F448) and the trap-v2 design	
+on-main	51a7d28	2026-10-28	0358	exp: 0358 trap v2 scripts (pool state at the fault, TLS block journal, per-second pool sample)	
+on-main	f762557	2026-10-28	0358	exp: 0358 trap v3 scripts (the job system at the fault, the per-second entry sample); v2 anchor fix	
+on-main	98d4f37	2026-10-28	0358	exp: 0358 trap v2/v3 built and smoke-tested, F449 (the job system read from the code), the shortcut on 1691b43	
+on-main+superseded	9593808	2026-10-28	0358	exp: 0358 trap v3's reading (F450, F451), the trap v4 design and the fix candidates	
+on-main	6588245	2026-10-28	0358	exp: 0358 trap v4 + the targeted semaphore wake (BC5_0358_FIX) built, smoke-tested (F452), on the test shortcu	
+on-main	3556c2f	2026-10-28	0358	exp: 0358 F453 (the targeted wake does not fix it; cores saturated at the fight), trap v5 + host threads at ni	
+on-main	f10b839	2026-10-28	0358	exp: 0358 F454 (the owner takes the job while every Hi worker is busy; neither wake nor spin reaches it), the 	
+on-main+superseded	3a46a34	2026-10-28	0358	exp: 0358 fix the /proc reader's utime/stime indices (found by exp 0360); the correction noted	the README correction paragraph was dropped by merge f4bea94; its content is on main as F460 and in exp 0360
+on-main	3c4e54d	2026-10-28	0359	exp: 0359 the job-arena fix (a temporary, switchable game-code workaround): header + Catch2, the host patch sc	the job-arena fix is on main; only the CMake test list differs (by 0352/0364 tests)
+on-main	0351862	2026-10-28	0363	exp: 0363 ASTRO BOT regression check on the integrated shared build: no regression (F465), the run script	
+on-main	0771ac7	2026-10-28	0364	exp: 0364 the RT-on shader-fault hang read offline (F467-F469): the title's user-data pointer into an unimport	
+branch-only	86259ff	2026-10-28	0364	exp: 0364 the compute user-data hint (header + Catch2) and the fault-view trap: the host patch, build and S6N 	the compute user-data hint; private builds only (F474); kept in backend-0352-0364-vs-main-e7ab9b1.diff
+branch-only	2568bba	2026-10-28	0364	exp: 0364 hint v2: the 1 MiB threshold, the window's views and unimported bytes journaled, a forced sync only 	the compute user-data hint; private builds only (F474); kept in backend-0352-0364-vs-main-e7ab9b1.diff
+branch-only	5758f67	2026-10-28	0364	exp: 0364 hint v3: 16-byte-aligned candidates only; after the forced sync the hinted windows are re-measured a	the compute user-data hint; private builds only (F474); kept in backend-0352-0364-vs-main-e7ab9b1.diff
+on-main	23a0c26	2026-10-28	0364	exp: 0364 the runs R1-R4 (F472-F475): the hint finds and imports the lazy FileSystem heap before the dispatch;	
+on-main	f43b5ba	2026-10-28	0364	exp: 0364 R4's dumps read offline (F476): F403's class, not the runaway grid, the hint not in the state	
+on-main	9b32d39	2026-10-28	0368	exp: 0368 F403's class read across five devcoredumps (F490-F492): one CP state, no shared program, the wave du	
+on-main	12c832b	2026-10-28	0368	exp: 0368 the soak loop and the per-run S6N script (shared build, umr on timeout)	
+on-main	a3636b9	2026-10-28	0368	exp: 0368 the soak — 16 S6N RT-on runs, no event, rates flat (F493–F495)	
+on-main	055c1d0	2026-10-28	0370	exp: 0370 design — a resident, non-halting GPU stall sampler to name F403's stuck program (F496–F499)	
