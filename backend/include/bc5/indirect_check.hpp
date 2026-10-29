@@ -127,8 +127,10 @@ inline constexpr std::size_t kArgsWbDwords = 8;
 //
 //   EVENT_WRITE  CS_PARTIAL_FLUSH, EVENT_INDEX 4   (2 dwords)
 //
-// so the dispatches before it have finished, and no writer of its arguments is still running, when the
-// check polls them and (after the check's PFP_SYNC_ME) the PFP fetches them. Drivers wait for the producer
+// so the compute work issued before it in this GFX context has finished when the check polls the arguments and
+// (after the check's PFP_SYNC_ME) the PFP fetches them. It waits for nothing else: not a CP DMA (DMA_DATA
+// without CP_SYNC), not other queues or processes, and it makes no memory visible by itself (Codex review
+// REVIEW-05). So it rules out only a compute producer of the same ring still running. Drivers wait for the producer
 // so before an indirect read (Mesa ac_barrier.c CS_PARTIAL_FLUSH, then PFP_SYNC_ME; F614); the packet is
 // the one the title itself emits (EVENT_WRITE event 7 index 4, the B dumps; Mesa sid.h PKT3_EVENT_WRITE
 // 0x46, V_028A90_CS_PARTIAL_FLUSH 7). dispatch: "first" = only the first DISPATCH_INDIRECT after an
