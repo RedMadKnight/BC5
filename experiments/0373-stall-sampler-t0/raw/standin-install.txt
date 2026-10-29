@@ -1,0 +1,259 @@
+== stand-in: SUDO_USER=standin bash install.sh (paths under $SCRATCH/standin5)
+== self-test (synthetic fence traces and the wave decoder, no device)
+ok    wave decoder and debugfs positions
+ok    healthy run: 30 s of 60-Hz jobs on two rings and a 5-s idle gap
+ok    stall resolving at 0.7 s: one census line, no event
+ok    stall reaching the kernel's timeout line (clock 2.03 s, after the 1.9-s write): one event, line added
+ok    the kernel's timeout line before the 1.9-s clock (clock 1.82 s): event written on the line
+ok    stall past 1.9 s with no kernel line: event written at 1.9 s, before any line
+ok    two rings stalling 0.1 s apart: shared samples, one event
+ok    a second ring stalled through the first ring's reset: no reads from clock 1.85 s to the reset's end
+ok    a timeout line on a ring with no sampled stall: a standalone event, no reads after the line
+ok    a second stall while an event is being written
+selftest: 10/10 passed
+== register offsets and values against umr, at idle, read-only (exp 0370 D3)
+totals: addr ok 35, not read 4, same 31
+== the service
+first stalls.log line:
+2026-10-29T12:00:00.000 start pid=4242 version=0373-t0 debugfs=/sys/kernel/debug/dri/0000:01:00.0 (standin)
+done. Captures: $SCRATCH/standin5/home/bc5-data/captures/gpu-stall (stalls.log, event-*/, forced-*/, install-check.txt). Undo: sudo bash $SCRATCH/standin5/setup/undo.sh
+== actions
+install -m 755 -o root -g root $SCRATCH/standin5/setup/bc5-gpu-stall-sampler $SCRATCH/standin5/sbin/bc5-gpu-stall-sampler
+install -d -m 700 -o standin -g standin $SCRATCH/standin5/home/bc5-data/captures/gpu-stall
+umr -lr gfx1013
+umr -r *.gfx1013.^mmGRBM_STATUS$
+umr -r *.gfx1013.^mmGRBM_STATUS2$
+umr -r *.gfx1013.^mmGRBM_STATUS3$
+umr -r *.gfx1013.^mmGRBM_STATUS_SE0$
+umr -r *.gfx1013.^mmGRBM_STATUS_SE1$
+umr -r *.gfx1013.^mmCP_STAT$
+umr -r *.gfx1013.^mmCP_STALLED_STAT1$
+umr -r *.gfx1013.^mmCP_STALLED_STAT2$
+umr -r *.gfx1013.^mmCP_STALLED_STAT3$
+umr -r *.gfx1013.^mmCP_BUSY_STAT$
+umr -r *.gfx1013.^mmCP_CPF_STATUS$
+umr -r *.gfx1013.^mmCP_CPF_BUSY_STAT$
+umr -r *.gfx1013.^mmCP_CPF_STALLED_STAT1$
+umr -r *.gfx1013.^mmCP_CPC_STATUS$
+umr -r *.gfx1013.^mmCP_CPC_BUSY_STAT$
+umr -r *.gfx1013.^mmCP_CPC_STALLED_STAT1$
+umr -r *.gfx1013.^mmCP_RB0_RPTR$
+umr -r *.gfx1013.^mmCP_RB0_WPTR$
+umr -r *.gfx1013.^mmCP_IB1_BASE_LO$
+umr -r *.gfx1013.^mmCP_IB1_BASE_HI$
+umr -r *.gfx1013.^mmCP_IB1_BUFSZ$
+umr -r *.gfx1013.^mmCP_IB1_CMD_BUFSZ$
+umr -r *.gfx1013.^mmCP_IB2_BASE_LO$
+umr -r *.gfx1013.^mmCP_IB2_BASE_HI$
+umr -r *.gfx1013.^mmCP_IB2_BUFSZ$
+umr -r *.gfx1013.^mmCP_PFP_INSTR_PNTR$
+umr -r *.gfx1013.^mmCP_ME_INSTR_PNTR$
+umr -r *.gfx1013.^mmCP_MEC1_INSTR_PNTR$
+umr -r *.gfx1013.^mmCP_MEC2_INSTR_PNTR$
+umr -r *.gfx1013.^mmSPI_CSQ_WF_ACTIVE_STATUS$
+umr -r *.gfx1013.^mmGCVM_L2_PROTECTION_FAULT_STATUS$
+chown standin:standin $SCRATCH/standin5/home/bc5-data/captures/gpu-stall/install-check.txt
+systemctl daemon-reload
+systemctl enable bc5-gpu-stall-sampler.service
+systemctl restart bc5-gpu-stall-sampler.service
+systemctl --no-pager --lines=0 status bc5-gpu-stall-sampler.service
+== install-check.txt
+# bc5-gpu-stall-sampler install check, 2026-10-29T06:20:06+01:00, kernel 3.6.9-b4195d69.x86_64, umr '$SCRATCH/standin5/shim/umr'
+## find
+debugfs /sys/kernel/debug/dri/0000:01:00.0 realpath /sys/kernel/debug/dri/0000:01:00.0 name 'amdgpu dev=0000:01:00.0 unique=0000:01:00.0' links 1 (stand-in)
+## umr -lr gfx1013
+	cyan_skillfish.gfx1013.mmGRBM_STATUS (0) => 0x02004
+	cyan_skillfish.gfx1013.mmGRBM_STATUS2 (0) => 0x02002
+	cyan_skillfish.gfx1013.mmGRBM_STATUS3 (0) => 0x02007
+	cyan_skillfish.gfx1013.mmGRBM_STATUS_SE0 (0) => 0x02005
+	cyan_skillfish.gfx1013.mmGRBM_STATUS_SE1 (0) => 0x02006
+	cyan_skillfish.gfx1013.mmCP_STAT (0) => 0x021a0
+	cyan_skillfish.gfx1013.mmCP_STALLED_STAT1 (0) => 0x0219d
+	cyan_skillfish.gfx1013.mmCP_STALLED_STAT2 (0) => 0x0219e
+	cyan_skillfish.gfx1013.mmCP_STALLED_STAT3 (0) => 0x0219c
+	cyan_skillfish.gfx1013.mmCP_BUSY_STAT (0) => 0x0219f
+	cyan_skillfish.gfx1013.mmCP_CPF_STATUS (0) => 0x02087
+	cyan_skillfish.gfx1013.mmCP_CPF_BUSY_STAT (0) => 0x02088
+	cyan_skillfish.gfx1013.mmCP_CPF_STALLED_STAT1 (0) => 0x02089
+	cyan_skillfish.gfx1013.mmCP_CPC_STATUS (0) => 0x02084
+	cyan_skillfish.gfx1013.mmCP_CPC_BUSY_STAT (0) => 0x02085
+	cyan_skillfish.gfx1013.mmCP_CPC_STALLED_STAT1 (0) => 0x02086
+	cyan_skillfish.gfx1013.mmCP_RB0_RPTR (0) => 0x021c0
+	cyan_skillfish.gfx1013.mmCP_RB0_WPTR (0) => 0x03054
+	cyan_skillfish.gfx1013.mmCP_IB1_BASE_LO (0) => 0x0c0cc
+	cyan_skillfish.gfx1013.mmCP_IB1_BASE_HI (0) => 0x0c0cd
+	cyan_skillfish.gfx1013.mmCP_IB1_BUFSZ (0) => 0x0c0ce
+	cyan_skillfish.gfx1013.mmCP_IB1_CMD_BUFSZ (0) => 0x0c0c0
+	cyan_skillfish.gfx1013.mmCP_IB2_BASE_LO (0) => 0x0c0cf
+	cyan_skillfish.gfx1013.mmCP_IB2_BASE_HI (0) => 0x0c0d0
+	cyan_skillfish.gfx1013.mmCP_IB2_BUFSZ (0) => 0x0c0d1
+	cyan_skillfish.gfx1013.mmCP_PFP_INSTR_PNTR (0) => 0x021a5
+	cyan_skillfish.gfx1013.mmCP_ME_INSTR_PNTR (0) => 0x021a6
+	cyan_skillfish.gfx1013.mmCP_MEC1_INSTR_PNTR (0) => 0x021a8
+	cyan_skillfish.gfx1013.mmCP_MEC2_INSTR_PNTR (0) => 0x021a9
+	cyan_skillfish.gfx1013.mmCP_PFP_HEADER_DUMP (0) => 0x021a2
+	cyan_skillfish.gfx1013.mmCP_ME_HEADER_DUMP (0) => 0x021a1
+	cyan_skillfish.gfx1013.mmSPI_CSQ_WF_ACTIVE_STATUS (0) => 0x024db
+	cyan_skillfish.gfx1013.mmGCVM_L2_PROTECTION_FAULT_STATUS (0) => 0x0284c
+	cyan_skillfish.gfx1013.mmCC_GC_SHADER_ARRAY_CONFIG (0) => 0x0226f
+	cyan_skillfish.gfx1013.mmGC_USER_SHADER_ARRAY_CONFIG (0) => 0x02270
+## sampler read 1
+# bc5-gpu-stall-sampler 0373-t0 --once: debugfs (stand-in), pending rings: none, gfxoff 0
+gfx1013.mmGRBM_STATUS => 0x00001007   (byte -)
+gfx1013.mmGRBM_STATUS2 => 0x00002007   (byte -)
+gfx1013.mmGRBM_STATUS3 => 0x00003007   (byte -)
+gfx1013.mmGRBM_STATUS_SE0 => 0x00004007   (byte -)
+gfx1013.mmGRBM_STATUS_SE1 => 0x00005007   (byte -)
+gfx1013.mmCP_STAT => 0x00006007   (byte -)
+gfx1013.mmCP_STALLED_STAT1 => 0x00007007   (byte -)
+gfx1013.mmCP_STALLED_STAT2 => 0x00008007   (byte -)
+gfx1013.mmCP_STALLED_STAT3 => 0x00009007   (byte -)
+gfx1013.mmCP_BUSY_STAT => 0x0000a007   (byte -)
+gfx1013.mmCP_CPF_STATUS => 0x0000b007   (byte -)
+gfx1013.mmCP_CPF_BUSY_STAT => 0x0000c007   (byte -)
+gfx1013.mmCP_CPF_STALLED_STAT1 => 0x0000d007   (byte -)
+gfx1013.mmCP_CPC_STATUS => 0x0000e007   (byte -)
+gfx1013.mmCP_CPC_BUSY_STAT => 0x0000f007   (byte -)
+gfx1013.mmCP_CPC_STALLED_STAT1 => 0x00010007   (byte -)
+gfx1013.mmCP_RB0_RPTR => 0x00011007   (byte -)
+gfx1013.mmCP_RB0_WPTR => 0x00012007   (byte -)
+gfx1013.mmCP_IB1_BASE_LO => 0x00013007   (byte -)
+gfx1013.mmCP_IB1_BASE_HI => 0x00014007   (byte -)
+gfx1013.mmCP_IB1_BUFSZ => 0x00015007   (byte -)
+gfx1013.mmCP_IB1_CMD_BUFSZ => 0x00016007   (byte -)
+gfx1013.mmCP_IB2_BASE_LO => 0x00017007   (byte -)
+gfx1013.mmCP_IB2_BASE_HI => 0x00018007   (byte -)
+gfx1013.mmCP_IB2_BUFSZ => 0x00019007   (byte -)
+gfx1013.mmCP_PFP_INSTR_PNTR => 0x0001a007   (byte -)
+gfx1013.mmCP_ME_INSTR_PNTR => 0x0001b007   (byte -)
+gfx1013.mmCP_MEC1_INSTR_PNTR => 0x0001c007   (byte -)
+gfx1013.mmCP_MEC2_INSTR_PNTR => 0x0001d007   (byte -)
+gfx1013.mmSPI_CSQ_WF_ACTIVE_STATUS => 0x00020007   (byte -)
+gfx1013.mmGCVM_L2_PROTECTION_FAULT_STATUS => 0x00021007   (byte -)
+gfx1013.mmCC_GC_SHADER_ARRAY_CONFIG[se0.sa0] => 0x00180000
+## umr -r
+[36mgfx1013.mmGRBM_STATUS[0m => [33m0x00001007[0m
+[36mgfx1013.mmGRBM_STATUS2[0m => [33m0x00002007[0m
+[36mgfx1013.mmGRBM_STATUS3[0m => [33m0x00003007[0m
+[36mgfx1013.mmGRBM_STATUS_SE0[0m => [33m0x00004007[0m
+[36mgfx1013.mmGRBM_STATUS_SE1[0m => [33m0x00005007[0m
+[36mgfx1013.mmCP_STAT[0m => [33m0x00006007[0m
+[36mgfx1013.mmCP_STALLED_STAT1[0m => [33m0x00007007[0m
+[36mgfx1013.mmCP_STALLED_STAT2[0m => [33m0x00008007[0m
+[36mgfx1013.mmCP_STALLED_STAT3[0m => [33m0x00009007[0m
+[36mgfx1013.mmCP_BUSY_STAT[0m => [33m0x0000a007[0m
+[36mgfx1013.mmCP_CPF_STATUS[0m => [33m0x0000b007[0m
+[36mgfx1013.mmCP_CPF_BUSY_STAT[0m => [33m0x0000c007[0m
+[36mgfx1013.mmCP_CPF_STALLED_STAT1[0m => [33m0x0000d007[0m
+[36mgfx1013.mmCP_CPC_STATUS[0m => [33m0x0000e007[0m
+[36mgfx1013.mmCP_CPC_BUSY_STAT[0m => [33m0x0000f007[0m
+[36mgfx1013.mmCP_CPC_STALLED_STAT1[0m => [33m0x00010007[0m
+[36mgfx1013.mmCP_RB0_RPTR[0m => [33m0x00011007[0m
+[36mgfx1013.mmCP_RB0_WPTR[0m => [33m0x00012007[0m
+[36mgfx1013.mmCP_IB1_BASE_LO[0m => [33m0x00013007[0m
+[36mgfx1013.mmCP_IB1_BASE_HI[0m => [33m0x00014007[0m
+[36mgfx1013.mmCP_IB1_BUFSZ[0m => [33m0x00015007[0m
+[36mgfx1013.mmCP_IB1_CMD_BUFSZ[0m => [33m0x00016007[0m
+[36mgfx1013.mmCP_IB2_BASE_LO[0m => [33m0x00017007[0m
+[36mgfx1013.mmCP_IB2_BASE_HI[0m => [33m0x00018007[0m
+[36mgfx1013.mmCP_IB2_BUFSZ[0m => [33m0x00019007[0m
+[36mgfx1013.mmCP_PFP_INSTR_PNTR[0m => [33m0x0001a007[0m
+[36mgfx1013.mmCP_ME_INSTR_PNTR[0m => [33m0x0001b007[0m
+[36mgfx1013.mmCP_MEC1_INSTR_PNTR[0m => [33m0x0001c007[0m
+[36mgfx1013.mmCP_MEC2_INSTR_PNTR[0m => [33m0x0001d007[0m
+[36mgfx1013.mmSPI_CSQ_WF_ACTIVE_STATUS[0m => [33m0x00020007[0m
+[36mgfx1013.mmGCVM_L2_PROTECTION_FAULT_STATUS[0m => [33m0x00021007[0m
+## sampler read 2 (16 header-history reads: the period check)
+# bc5-gpu-stall-sampler 0373-t0 --once: debugfs (stand-in), pending rings: none, gfxoff 0
+gfx1013.mmGRBM_STATUS => 0x00001007   (byte -)
+gfx1013.mmGRBM_STATUS2 => 0x00002007   (byte -)
+gfx1013.mmGRBM_STATUS3 => 0x00003007   (byte -)
+gfx1013.mmGRBM_STATUS_SE0 => 0x00004007   (byte -)
+gfx1013.mmGRBM_STATUS_SE1 => 0x00005007   (byte -)
+gfx1013.mmCP_STAT => 0x00006007   (byte -)
+gfx1013.mmCP_STALLED_STAT1 => 0x00007007   (byte -)
+gfx1013.mmCP_STALLED_STAT2 => 0x00008007   (byte -)
+gfx1013.mmCP_STALLED_STAT3 => 0x00009007   (byte -)
+gfx1013.mmCP_BUSY_STAT => 0x0000a007   (byte -)
+gfx1013.mmCP_CPF_STATUS => 0x0000b007   (byte -)
+gfx1013.mmCP_CPF_BUSY_STAT => 0x0000c007   (byte -)
+gfx1013.mmCP_CPF_STALLED_STAT1 => 0x0000d007   (byte -)
+gfx1013.mmCP_CPC_STATUS => 0x0000e007   (byte -)
+gfx1013.mmCP_CPC_BUSY_STAT => 0x0000f007   (byte -)
+gfx1013.mmCP_CPC_STALLED_STAT1 => 0x00010007   (byte -)
+gfx1013.mmCP_RB0_RPTR => 0x00011007   (byte -)
+gfx1013.mmCP_RB0_WPTR => 0x00012007   (byte -)
+gfx1013.mmCP_IB1_BASE_LO => 0x00013007   (byte -)
+gfx1013.mmCP_IB1_BASE_HI => 0x00014007   (byte -)
+gfx1013.mmCP_IB1_BUFSZ => 0x00015007   (byte -)
+gfx1013.mmCP_IB1_CMD_BUFSZ => 0x00016007   (byte -)
+gfx1013.mmCP_IB2_BASE_LO => 0x00017007   (byte -)
+gfx1013.mmCP_IB2_BASE_HI => 0x00018007   (byte -)
+gfx1013.mmCP_IB2_BUFSZ => 0x00019007   (byte -)
+gfx1013.mmCP_PFP_INSTR_PNTR => 0x0001a007   (byte -)
+gfx1013.mmCP_ME_INSTR_PNTR => 0x0001b007   (byte -)
+gfx1013.mmCP_MEC1_INSTR_PNTR => 0x0001c007   (byte -)
+gfx1013.mmCP_MEC2_INSTR_PNTR => 0x0001d007   (byte -)
+gfx1013.mmSPI_CSQ_WF_ACTIVE_STATUS => 0x00020007   (byte -)
+gfx1013.mmGCVM_L2_PROTECTION_FAULT_STATUS => 0x00021007   (byte -)
+gfx1013.mmCC_GC_SHADER_ARRAY_CONFIG[se0.sa0] => 0x00180000
+## comparison
+register                         byte     read 1     umr -r     read 2     values                               address
+GRBM_STATUS                      0x08010  0x00001007 0x00001007 0x00001007 same                                 addr ok (dword)
+GRBM_STATUS2                     0x08008  0x00002007 0x00002007 0x00002007 same                                 addr ok (dword)
+GRBM_STATUS3                     0x0801c  0x00003007 0x00003007 0x00003007 same                                 addr ok (dword)
+GRBM_STATUS_SE0                  0x08014  0x00004007 0x00004007 0x00004007 same                                 addr ok (dword)
+GRBM_STATUS_SE1                  0x08018  0x00005007 0x00005007 0x00005007 same                                 addr ok (dword)
+CP_STAT                          0x08680  0x00006007 0x00006007 0x00006007 same                                 addr ok (dword)
+CP_STALLED_STAT1                 0x08674  0x00007007 0x00007007 0x00007007 same                                 addr ok (dword)
+CP_STALLED_STAT2                 0x08678  0x00008007 0x00008007 0x00008007 same                                 addr ok (dword)
+CP_STALLED_STAT3                 0x08670  0x00009007 0x00009007 0x00009007 same                                 addr ok (dword)
+CP_BUSY_STAT                     0x0867c  0x0000a007 0x0000a007 0x0000a007 same                                 addr ok (dword)
+CP_CPF_STATUS                    0x0821c  0x0000b007 0x0000b007 0x0000b007 same                                 addr ok (dword)
+CP_CPF_BUSY_STAT                 0x08220  0x0000c007 0x0000c007 0x0000c007 same                                 addr ok (dword)
+CP_CPF_STALLED_STAT1             0x08224  0x0000d007 0x0000d007 0x0000d007 same                                 addr ok (dword)
+CP_CPC_STATUS                    0x08210  0x0000e007 0x0000e007 0x0000e007 same                                 addr ok (dword)
+CP_CPC_BUSY_STAT                 0x08214  0x0000f007 0x0000f007 0x0000f007 same                                 addr ok (dword)
+CP_CPC_STALLED_STAT1             0x08218  0x00010007 0x00010007 0x00010007 same                                 addr ok (dword)
+CP_RB0_RPTR                      0x08700  0x00011007 0x00011007 0x00011007 same                                 addr ok (dword)
+CP_RB0_WPTR                      0x0c150  0x00012007 0x00012007 0x00012007 same                                 addr ok (dword)
+CP_IB1_BASE_LO                   0x30330  0x00013007 0x00013007 0x00013007 same                                 addr ok (dword)
+CP_IB1_BASE_HI                   0x30334  0x00014007 0x00014007 0x00014007 same                                 addr ok (dword)
+CP_IB1_BUFSZ                     0x30338  0x00015007 0x00015007 0x00015007 same                                 addr ok (dword)
+CP_IB1_CMD_BUFSZ                 0x30300  0x00016007 0x00016007 0x00016007 same                                 addr ok (dword)
+CP_IB2_BASE_LO                   0x3033c  0x00017007 0x00017007 0x00017007 same                                 addr ok (dword)
+CP_IB2_BASE_HI                   0x30340  0x00018007 0x00018007 0x00018007 same                                 addr ok (dword)
+CP_IB2_BUFSZ                     0x30344  0x00019007 0x00019007 0x00019007 same                                 addr ok (dword)
+CP_PFP_INSTR_PNTR                0x08694  0x0001a007 0x0001a007 0x0001a007 same                                 addr ok (dword)
+CP_ME_INSTR_PNTR                 0x08698  0x0001b007 0x0001b007 0x0001b007 same                                 addr ok (dword)
+CP_MEC1_INSTR_PNTR               0x086a0  0x0001c007 0x0001c007 0x0001c007 same                                 addr ok (dword)
+CP_MEC2_INSTR_PNTR               0x086a4  0x0001d007 0x0001d007 0x0001d007 same                                 addr ok (dword)
+CP_PFP_HEADER_DUMP               0x08688  -          -          -          not read                             addr ok (dword)
+CP_ME_HEADER_DUMP                0x08684  -          -          -          not read                             addr ok (dword)
+SPI_CSQ_WF_ACTIVE_STATUS         0x0936c  0x00020007 0x00020007 0x00020007 same                                 addr ok (dword)
+GCVM_L2_PROTECTION_FAULT_STATUS  0x0a130  0x00021007 0x00021007 0x00021007 same                                 addr ok (dword)
+CC_GC_SHADER_ARRAY_CONFIG        0x089bc  -          -          -          not read                             addr ok (dword)
+GC_USER_SHADER_ARRAY_CONFIG      0x089c0  -          -          -          not read                             addr ok (dword)
+totals: addr ok 35, not read 4, same 31
+== unit
+# BC5 (exp 0373; exp 0370 D1-D7): the resident, non-halting GPU stall sampler for the F403 hang class.
+# A template: install.sh beside this file fills in OWNER and OUT (the maintainer's user and
+# ~/bc5-data/captures/gpu-stall) and writes it to /etc/systemd/system. Undo: undo.sh beside this file.
+[Unit]
+Description=BC5: non-halting GPU stall sampler (exp 0370/0373)
+After=systemd-modules-load.service sys-kernel-debug.mount
+Wants=sys-kernel-debug.mount
+
+[Service]
+ExecStart=/usr/bin/python3 -I -B /usr/local/sbin/bc5-gpu-stall-sampler --owner standin --out $SCRATCH/standin5/home/bc5-data/captures/gpu-stall
+Restart=always
+RestartSec=5
+# exp 0370 D5: keep the sampler itself from stalling under memory pressure (exp 0203 O2)
+Nice=-10
+MemoryMin=32M
+OOMScoreAdjust=-900
+LimitMEMLOCK=infinity
+
+[Install]
+WantedBy=multi-user.target
+exit 0

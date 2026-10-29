@@ -1,0 +1,5 @@
+python 3.14.0 on win32
+1. healthy poll: 96.3 us per poll, 0.39% of one core at 40 Hz
+2. scan, user-space side: 5.7 ms per 1,600 slots (800 valid), 3.6 us per slot
+3. event summary, 5 samples x 800 waves: 29.6 ms the first time (decodes), 7.7 ms after (cached)
+   event size: 651 KB for the five samples' files

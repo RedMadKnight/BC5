@@ -1,0 +1,35 @@
+== self-test (synthetic fence traces and the wave decoder, no device)
+ok    wave decoder and debugfs positions
+ok    healthy run: 30 s of 60-Hz jobs on two rings and a 5-s idle gap
+ok    stall resolving at 0.7 s: one census line, no event
+ok    stall reaching the kernel's timeout line (clock 2.03 s, after the 1.9-s write): one event, line added
+ok    the kernel's timeout line before the 1.9-s clock (clock 1.82 s): event written on the line
+ok    stall past 1.9 s with no kernel line: event written at 1.9 s, before any line
+ok    two rings stalling 0.1 s apart: shared samples, one event
+ok    a second ring stalled through the first ring's reset: no reads from clock 1.85 s to the reset's end
+ok    a timeout line on a ring with no sampled stall: a standalone event, no reads after the line
+ok    a second stall while an event is being written
+selftest: 10/10 passed
+== the unit as it would be written to /etc/systemd/system/bc5-gpu-stall-sampler.service
+# BC5 (exp 0373; exp 0370 D1-D7): the resident, non-halting GPU stall sampler for the F403 hang class.
+# A template: install.sh beside this file fills in OWNER and OUT (the maintainer's user and
+# ~/bc5-data/captures/gpu-stall) and writes it to /etc/systemd/system. Undo: undo.sh beside this file.
+[Unit]
+Description=BC5: non-halting GPU stall sampler (exp 0370/0373)
+After=systemd-modules-load.service sys-kernel-debug.mount
+Wants=sys-kernel-debug.mount
+
+[Service]
+ExecStart=/usr/bin/python3 -I -B /usr/local/sbin/bc5-gpu-stall-sampler --owner Laptop --out $HOME/bc5-data/captures/gpu-stall
+Restart=always
+RestartSec=5
+# exp 0370 D5: keep the sampler itself from stalling under memory pressure (exp 0203 O2)
+Nice=-10
+MemoryMin=32M
+OOMScoreAdjust=-900
+LimitMEMLOCK=infinity
+
+[Install]
+WantedBy=multi-user.target
+dry run: nothing installed
+exit 0

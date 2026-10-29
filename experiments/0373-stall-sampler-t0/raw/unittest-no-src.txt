@@ -1,0 +1,35 @@
+test_table (__main__.CompareCheck.test_table) ... ok
+test_not_found (__main__.DebugfsDiscovery.test_not_found) ... ok
+test_numbered_dirs_by_name_file (__main__.DebugfsDiscovery.test_numbered_dirs_by_name_file) ... ok
+test_v72_layout_pci_named_dir (__main__.DebugfsDiscovery.test_v72_layout_pci_named_dir) ... ok
+test_forced_requests (__main__.EngineScenarios.test_forced_requests) ... ok
+test_gfxoff_and_pending_gates (__main__.EngineScenarios.test_gfxoff_and_pending_gates) ... ok
+test_late_poll_skips_thresholds_without_a_burst (__main__.EngineScenarios.test_late_poll_skips_thresholds_without_a_burst) ... ok
+test_replay_file_path (__main__.EngineScenarios.test_replay_file_path) ... ok
+test_scenarios (__main__.EngineScenarios.test_scenarios) ... ok
+test_second_stall_while_event_is_written (__main__.EngineScenarios.test_second_stall_while_event_is_written) ... ok
+test_kmsg_records (__main__.FenceAndKmsg.test_kmsg_records) ... ok
+test_parse_fence_text (__main__.FenceAndKmsg.test_parse_fence_text) ... ok
+test_fence_info_format (__main__.KernelSourceLayout.test_fence_info_format) ... skipped 'BC5_LINUX_SRC not set'
+test_field_masks (__main__.KernelSourceLayout.test_field_masks) ... skipped 'BC5_LINUX_SRC not set'
+test_gfx10_record_order_and_simd_rule (__main__.KernelSourceLayout.test_gfx10_record_order_and_simd_rule) ... skipped 'BC5_LINUX_SRC not set'
+test_timeout_lines (__main__.KernelSourceLayout.test_timeout_lines) ... skipped 'BC5_LINUX_SRC not set'
+test_wave_read_position_bits (__main__.KernelSourceLayout.test_wave_read_position_bits) ... skipped 'BC5_LINUX_SRC not set'
+test_gc_base_against_cyan_skillfish_ip_offset_h (__main__.RegisterReads.test_gc_base_against_cyan_skillfish_ip_offset_h) ... skipped 'BC5_LINUX_SRC not set'
+test_header_dump_period_check (__main__.RegisterReads.test_header_dump_period_check) ... ok
+test_header_dumps_eight_reads_by_default_none_when_zero (__main__.RegisterReads.test_header_dumps_eight_reads_by_default_none_when_zero) ... ok
+test_kernel_regs_op_mask (__main__.RegisterReads.test_kernel_regs_op_mask) ... skipped 'BC5_LINUX_SRC not set'
+test_offsets_against_gc_10_1_0_offset_h (__main__.RegisterReads.test_offsets_against_gc_10_1_0_offset_h) ... skipped 'BC5_LINUX_SRC not set'
+test_offsets_against_mesa (__main__.RegisterReads.test_offsets_against_mesa) ... ok
+test_positions_through_the_kernel_decode (__main__.RegisterReads.test_positions_through_the_kernel_decode) ... ok
+test_bin_round_trip_and_text (__main__.WaveRecord.test_bin_round_trip_and_text) ... ok
+test_hw_id_mismatch_is_flagged (__main__.WaveRecord.test_hw_id_mismatch_is_flagged) ... ok
+test_scan_through_the_kernel_model (__main__.WaveRecord.test_scan_through_the_kernel_model) ... ok
+test_short_or_foreign_records (__main__.WaveRecord.test_short_or_foreign_records) ... ok
+test_files_modes_and_append (__main__.Writer.test_files_modes_and_append) ... ok
+
+----------------------------------------------------------------------
+Ran 29 tests in 2.463s
+
+OK (skipped=8)
+exit 0
