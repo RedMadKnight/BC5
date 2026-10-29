@@ -1,7 +1,7 @@
 # 0380 — Is the F403 class a zero-dimension indirect dispatch? (sources, title side, a guard, a box plan)
 
 **Date.** 2026-10-29. **Laptop only.** No box access and no GPU submission in this experiment. Branch
-`exp/0380-zero-dim-dispatch`. Findings F545–F604 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
+`exp/0380-zero-dim-dispatch`. Findings F545–F606 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
 session's GO).
 
 **Question.** F527 puts the ME just past a `DISPATCH_INDIRECT` that passed the host's check, inside the title's
@@ -1593,6 +1593,56 @@ with only IPv6 MLD lines.
   About 3 h without B gives p ≈ 0.05, and one B refutes it. A B event is recorded by part A, the timeout probe and
   sampler 0377 as before.
 
+## 23. The noclear play's crash at eboot+0x1b3a36 (F605, F606; the top session's GO, reads only, cut short)
+
+The maintainer's play on "test 0380 noclear" ran from 23:07:25 to 23:15:21 and ended with exit 65. It was not a GPU
+hang. Reads only, 23:16–23:2x, lock line `top exp 0380 | reads only: noclear crash 23:15 …`. The session stopped when the
+maintainer started the lean shared build; the lock was cleared then, and the claim and done lines are in BOX-QUEUE.
+Sources:
+- `~/bc5-work/exp0380nc/play/play-20261029-230725.log` (private), its exception report;
+- the private text copy `~/bc5-data/priv/eboot-text-900000000.bin`. Its bytes at 0x1b3a26–0x1b3a55 are the crash
+  report's code bytes. The disassembly (`objdump -D -b binary -m i386:x86-64`) is in
+  `~/bc5-data/priv/exp0380nc/f1b3a36.dis` (private).
+
+**The faulting instruction and its function (F605).**
+- At 0x1b3a36 the title loads a dword through `r14 + rcx*2` (`vmovd`). r14 = 0 and rcx = 0, so it reads address 0
+  (`access_violation_vaddr` 0, read). The `lea` just before it left r8 = 0, which agrees.
+- **What the function does.** It converts interleaved 16-bit samples into 32-bit floats: sign extend, convert, then
+  scale by a broadcast constant. It writes them through a table of per-channel output pointers (r11).
+  - The strides are multiples of r10 = 4 (r12 = 0x10, rsi = 0xc, rdi = 0x18, eax = 0x14, r13 = 0x1c, r15 = 8), so the
+    frame has 4 channels.
+  - A caller (stack frame 0, 0x1b315f) picks it from a function table indexed by format (`call *(%rax,%r8,8)`).
+- **Where the null comes from.** The function builds r14 from an offset plus the first qword of a descriptor its
+  caller passes in: `add (%rdi),%r14` at 0x1b3848. That pointer was null: a sample-buffer descriptor with no buffer.
+  - The descriptor is CPU data, handed down a call chain of the title's own code (stack frames 0x1d58a6, 0x1d23df,
+    0x19fe14, 0x1a1a69, …).
+  - The crash report's last lines name the ATRAC9 decoder (AJM codec 1). The thread was audio's, not a render
+    thread.
+- **The site is new.** None of these addresses (the fault and frames 0–3) appears in any other play log on the box,
+  nor in the repo's history.
+- **What the session could not read before the maintainer started playing:** the log's last two minutes, the gc
+  journal around 23:15 (TIMEOUT, faults, canary hits) and the memory record. Those three reads remain.
+
+**Which piece could cause it (F606).**
+- **(a) `BC5_DIRECT_PIECES_NO_CLEAR`: no plausible path.** It changes only what the host puts in front of drawing
+  dcbs on the GFX ring. The null is a CPU audio descriptor's buffer pointer, in a sample conversion that reads no GPU
+  output.
+- **(b) The zero skip: no plausible path either.** It decides which chunks of two GPU heaps, RenderGpuWcLarge and
+  CommitIABufferAllocator, are imported for the GPU; the CPU's view of them is unchanged (exp 0379). The CPU-only
+  audio heaps (Wwise, SoundAlloc) are lazy and never in the list. A canary hit concerns GPU accesses only.
+  - Not checked, because of the cut-short read: whether the descriptor's address lies in a listed chunk. The
+    address was not in the registers at the fault.
+- **(c) A rare title-side or host audio path, the most likely.** It is a null source buffer in the title's sample
+  conversion right after an ATRAC9 decode. Ruling out (a) and (b) is medium confidence, from the code path only. The
+  same site again on another binary would settle it.
+- **Recommendation for the next play: drop exp 0379's skip and keep NO_CLEAR.** NO_CLEAR is the variable under test,
+  and the skip is only comfort. Of the two, the skip is the one that changes which memory exists for whom, while
+  NO_CLEAR has no route to a CPU pointer.
+  - That is the rec binary b8561eaa, which already holds the `BC5_DIRECT_PIECES_NO_CLEAR` switch, with one launcher
+    line set: no build.
+  - The cost is the 21:33 play's memory pressure (F602).
+  - If the crash comes again without the skip, it is (c) or NO_CLEAR. If it never comes, the skip stays suspect.
+
 ## Result
 
 - Sources read and cited (F545, F546). The title-side evidence was re-read from exps 0376/0378 (F547).
@@ -1600,6 +1650,9 @@ with only IPv6 MLD lines.
 - A second guard, `FORCE_START_AT_000` on indirect dispatches, is built the same way: default off, with unit tests
   (F551).
 - The box plan is written. Only step A0 ran: a CPU-only compile check, which passed (F552). Nothing ran on the GPU.
+- The noclear play crashed after 8 min at a new CPU site, eboot+0x1b3a36. It reads through a null sample-buffer
+  pointer in the title's 4-channel int16 → float conversion, right after an ATRAC9 decode. Neither NO_CLEAR nor the
+  zero skip has a plausible path to it (medium). The next play should drop the skip and keep NO_CLEAR (F605, F606).
 - The test shortcut "test 0380 noclear" is installed and "test 0380 rec" is retired. Binary 99d91d2d = recorder part A +
   exp 0379's zero skip; it runs `BC5_DIRECT_PIECES_NO_CLEAR=1` with RT on. Its smoke run passed at a 5 % lower
   frame rate than RC1 (one run each), and the menus look normal (F604).
