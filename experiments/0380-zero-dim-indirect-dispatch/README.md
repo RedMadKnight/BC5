@@ -1,7 +1,7 @@
 # 0380 — Is the F403 class a zero-dimension indirect dispatch? (sources, title side, a guard, a box plan)
 
 **Date.** 2026-10-29. **Laptop only.** No box access and no GPU submission in this experiment. Branch
-`exp/0380-zero-dim-dispatch`. Findings F545–F616. Exp 0379, not yet merged, holds F540–F543, F563–F565 and F620–F626; its F563–F565 collide with this experiment's and take new numbers at its merge. One box session, CPU only (step A0, 11:28–11:31, on the top
+`exp/0380-zero-dim-dispatch`. Findings F545–F617. Exp 0379, not yet merged, holds F540–F543, F563–F565 and F620–F626; its F563–F565 collide with this experiment's and take new numbers at its merge. One box session, CPU only (step A0, 11:28–11:31, on the top
 session's GO).
 
 **Question.** F527 puts the ME just past a `DISPATCH_INDIRECT` that passed the host's check, inside the title's
@@ -1992,6 +1992,25 @@ explain if it worked:
   a bench before play.
 - Every rank needs a draw-side counterpart to cover F667: the draw check (`indirect_check`'s `draw_max` path) gets
   the same pieces before checked `DRAW_INDIRECT`s.
+
+## 28. Rank 3 built: a CS_PARTIAL_FLUSH before the check (F617), and the selftest fix of REVIEW-05
+
+- **`BC5_DIRECT_ARGS_FLUSH=first|all` (default off)** puts an `EVENT_WRITE` `CS_PARTIAL_FLUSH` (event 7, index 4,
+  the title's own form; Mesa sid.h `PKT3_EVENT_WRITE` 0x46) at the start of a checked GFX-form dispatch's check, before
+  the copy and the write-back when those are on. Every earlier dispatch has then finished when the ME polls the
+  arguments, and when the PFP fetches them after the check's `PFP_SYNC_ME`. `first` means the first
+  `DISPATCH_INDIRECT` after an `INDEX_BASE`; `all` means every checked dispatch.
+- **`BC5_DIRECT_ARGS_FLUSH_DRAWS=1`** does the same before every checked `DRAW_INDIRECT` / `DRAW_INDEX_INDIRECT`.
+  That covers exp 0381's 18:08 class (F667). Neither switch acts on the MEC form.
+- **Where it lives:** `indirect_check::apply(…, ArgsFlush, flush_draws)`, `Stats::args_flushed`, `kArgsFlushDwords`
+  = 2. `direct.cpp` adds the env switches, a switch line and a periodic counter line.
+- **Tests:** a new Catch2 case `[indirect_check]` covers placement, first / all / draws, the order with the
+  write-back, and off by default and on the MEC form. On the laptop (MSVC) `[indirect_check]` passes 16/16 cases
+  and the whole suite 99/99 (34,452 assertions). `direct.cpp` compiles only on the box.
+- **Codex review REVIEW-05 (fixed, c520ec3):** `direct-selftest`'s four zero-count cases had gone into the MEC
+  ladder, which ran them always and without the guard. The GFX `--zero-check` table had none. Now the ladder runs
+  them only with `--zero-check` and the guard on, and the GFX table has them. Until a `--zero-check --submit` run,
+  the selftest is no evidence for the zero guard.
 
 ## Result
 
