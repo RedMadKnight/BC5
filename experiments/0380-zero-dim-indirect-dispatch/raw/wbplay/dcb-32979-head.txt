@@ -1,0 +1,21 @@
+ib-timeout-00032979-dcb-14911.bin: 14911 dwords
+     0 type 3 op 0x58 ACQUIRE_MEM len 8 coher_cntl 0x0 gcr_cntl 0x280
+     8 type 3 op 0x63 LOAD_SH_REG_INDEX len 5 addr 0x909842dc0 reg/fmt 0x80000000 n 10
+    13 type 3 op 0x16 DISPATCH_INDIRECT len 3 offset 0x80 init 0x61
+    16 type 3 op 0x76 SET_SH_REG len 10 reg 0x247 n 8
+    26 type 3 op 0x16 DISPATCH_INDIRECT len 3 offset 0xa0 init 0x61
+    29 type 3 op 0x76 SET_SH_REG len 14 reg 0x243 n 12
+    43 type 3 op 0x16 DISPATCH_INDIRECT len 3 offset 0x2280 init 0x61
+    46 type 3 op 0x76 SET_SH_REG len 14 reg 0x243 n 12
+    60 type 3 op 0x16 DISPATCH_INDIRECT len 3 offset 0x2d80 init 0x61
+    63 type 3 op 0x76 SET_SH_REG len 10 reg 0x247 n 8
+    73 type 3 op 0x16 DISPATCH_INDIRECT len 3 offset 0x2da0 init 0x61
+    76 type 3 op 0x76 SET_SH_REG len 14 reg 0x243 n 12
+    90 type 3 op 0x16 DISPATCH_INDIRECT len 3 offset 0x4e80 init 0x61
+    93 type 3 op 0x76 SET_SH_REG len 14 reg 0x243 n 12
+   107 type 3 op 0x16 DISPATCH_INDIRECT len 3 offset 0x7280 init 0x61
+   110 type 3 op 0x76 SET_SH_REG len 10 reg 0x247 n 8
+   120 type 3 op 0x16 DISPATCH_INDIRECT len 3 offset 0x72a0 init 0x61
+   123 type 3 op 0x76 SET_SH_REG len 10 reg 0x247 n 8
+   133 type 3 op 0x16 DISPATCH_INDIRECT len 3 offset 0x72c0 init 0x61
+   136 type 3 op 0x76 SET_SH_REG len 10 reg 0x247 n 8

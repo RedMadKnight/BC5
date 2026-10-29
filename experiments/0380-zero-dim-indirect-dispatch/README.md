@@ -1,7 +1,7 @@
 # 0380 — Is the F403 class a zero-dimension indirect dispatch? (sources, title side, a guard, a box plan)
 
 **Date.** 2026-10-29. **Laptop only.** No box access and no GPU submission in this experiment. Branch
-`exp/0380-zero-dim-dispatch`. Findings F545–F581 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
+`exp/0380-zero-dim-dispatch`. Findings F545–F584 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
 session's GO).
 
 **Question.** F527 puts the ME just past a `DISPATCH_INDIRECT` that passed the host's check, inside the title's
@@ -979,6 +979,66 @@ were 3c1f2001a3863535 at the last read.
     (e.g. no GL2 caching). That would affect all the title's GPU memory equally, not only the stuck dispatch.
   - The cheapest test of that is not a per-range switch. It needs a source for type 12's caching first.
 
+## 16. The maintainer's play on "test 0380 wb" (16:24–17:02): one recovered start-up fault, then 36 minutes without F403 (F582–F584)
+
+**The setup.** The top session installed the staged shortcut (F576): binary c3c8660b, `BC5_DIRECT_ARGS_WB=first`,
+FORCE_START, no copy, no rebase, no zero skip, RT on. The maintainer called the play "bardzo niestabilna" (very
+unstable). The records are on the box (`~/bc5-work/exp0380wb/play/`, the journals in
+`~/bc5-data/captures/play-20261029-1624`/`-1625`). The filtered extracts are in `raw/wbplay/`.
+
+**Box.** Reads only, 17:0x–17:1x, with a reads-only lock line, cleared at the end. Done line in BOX-QUEUE.
+
+**Start 1 (16:24:42–16:25:50): a recovered start-up fault, not F403 (F582).**
+- **The kernel lines.**
+  - At 16:25:39, `[gfxhub] page fault` (vmid 6) from client TCP, `PERMISSION_FAULTS` 0x3, `RW` 0 (a read), `MORE_FAULTS`
+    1, at pages 0x8608c654000 … 0x8608c65c000.
+  - Then two `ring gfx_0.0.0 timeout`s (16:25:41, 16:25:43), each with `Ring gfx_0.0.0 reset succeeded`; `bc5-gpu-watch`
+    armed and disarmed.
+  - The emulator ended at 66 s.
+- **The sampler.**
+  - 16:25:41: `GRBM_STATUS` 0xa04030ac, PFP 0xea1 / ME 0xe15, program 0x909977100, dim [697 1 1].
+  - 16:25:43: `GRBM_STATUS` 0xa0003028, ME 0x5c0, dim [213 1 1].
+  - Both: initiator 0x65 = 0x61 (`USE_THREAD_DIMENSIONS`, `ORDER_MODE`) + FORCE_START. Neither is F403's state.
+- **The stuck job.** dcb #32979 (14,911 dwords) with acb #32980 (4 dwords), both TIMEOUT.
+  - Its title IB (`raw/wbplay/dcb-32979-head.txt`) opens with `ACQUIRE_MEM` and `LOAD_SH_REG_INDEX` (from
+    0x909842dc0, 10 registers), then a run of GFX-form `DISPATCH_INDIRECT`s of program 0x909977100 (offsets 0x80, 0xa0,
+    0x2280, …).
+  - The IB has no `SET_BASE` and no `INDEX_BASE`: these are **unbased** dispatches on a carried base, the class of
+    F416, F417 and F422 that exp 0346's resolver handles. The probe printed "not mapped" for base 0 + offset.
+- **The fault address** is in no direct-memory mapping of the title in M1's map log, not as 0x8608c65c000, not as its
+  40-bit core 0x608c65c000 (F92's tagged-address reading), not as 0x8c65c000. It is a read by a shader (TCP) of the
+  0x0909 ray-tracing/BVH program window (0x909977100 is not on F343's ten-program list) through an address the title
+  never maps.
+- **Not caused by the write-back.** `ARGS_WB=first` only inserts its `ACQUIRE_MEM` into the check of a based dispatch
+  after an `INDEX_BASE` in the same IB. This IB has neither, so it got none: the start's whole count was 908. A GL2
+  write-back changes no data and no address either. The class is the title's start-up BVH work faulting on an unmapped
+  address, as in F92 and F417.
+  - TODO(verify): whether the shared build shows the same fault at this start-up point. No run of today's build on the
+    same save path is on record.
+
+**Start 2 (16:25:52–17:02:29, 36.6 min): no F403 and no kernel line (F583).**
+- **The run.** 67,616 flips in 2,192 s (30.8 flips/s, from the journal), 0 TIMEOUT lines, no sampler event, no
+  devcoredump.
+- **Exposure.** 282,894 first-after-`INDEX_BASE` dispatches got the GL2 write-back (~129 a second, ~4.2 a frame).
+- **Memory pressure.** MemAvailable fell to 205–279 MiB, swap 1.3–1.6 GiB, PSI memory "full" 16–24 % at the end
+  (`raw/wbplay/mem-start2.txt`). That is exp 0379's subject.
+
+**How significant (F584).**
+- **Today's B events in the maintainer's plays.** 12:12 came about 2.4 min into its start (12:09:44); 14:04 about 6.9
+  min (13:57:49). The top session puts the shared-build rate at about one per 7–10 min of his play.
+- **If the write-back changed nothing:** with a Poisson rate of 1/7 to 1/10 per minute, the chance of 0 events in 36.6
+  min is e^−5.2 ≈ 0.005 to e^−3.7 ≈ 0.026.
+- **Also, by exposure.** The 14:04 hang came after 36,148 first-after-`INDEX_BASE` dispatches (F564). Start 2 ran 7.8
+  times that without one.
+- **So the result is significant at roughly the 97–99 % level, if the rate holds,** but it is one session.
+  - The rate rests on a few events (09:48, 12:12, 14:04 and the shared-build plays the top session counted).
+  - The play may not have covered the same scenes.
+  - The B class may also depend on load: start 2 ran under heavy memory pressure.
+- **Next.** A second long play on the same shortcut decides it far better than more bench runs. Two clean 36-minute
+  plays would put the "unchanged rate" chance below ~10^−3.
+- If it holds, F569's "the fetch misses GL2-resident writes" becomes the working explanation for sub-class B. It was
+  withdrawn because the copy runs did not test it; the write-back result now supports it directly.
+
 ## Result
 
 - Sources read and cited (F545, F546). The title-side evidence was re-read from exps 0376/0378 (F547).
@@ -986,6 +1046,9 @@ were 3c1f2001a3863535 at the last read.
 - A second guard, `FORCE_START_AT_000` on indirect dispatches, is built the same way: default off, with unit tests
   (F551).
 - The box plan is written. Only step A0 ran: a CPU-only compile check, which passed (F552). Nothing ran on the GPU.
+- The maintainer's 36.6-minute play with the GL2 write-back on (`test 0380 wb`, start 2) had no F403, against today's
+  rate of about one per 7–10 min (p ≈ 0.005–0.03 if unchanged). Start 1's recovered start-up fault is unrelated to the
+  write-back (F582–F584).
 - The audit of our libraries and filter found no rewrite of ours between the stuck dispatch and its IB's start (F577,
   F578). The strongest remaining host-side lead is that requested memory types never reach the GPU mapping (F579).
 - The GL2 write-back alone (`ARGS_WB=first`) passed W2 and W3 at bench frame rates. Its play-test shortcut is staged,
@@ -1009,6 +1072,10 @@ were 3c1f2001a3863535 at the last read.
   CP fetched other arguments than memory held (F555). A y/z limit is built, default off (F556).
 
 ## Verdict so far
+
+*Updated after the maintainer's 16:25 play (F582–F584).* The GL2 write-back before the first indirect dispatch after an
+`INDEX_BASE` (`BC5_DIRECT_ARGS_WB=first`) is the first change with evidence against sub-class B. It ran 36.6 minutes of
+RT-on play without F403, p ≈ 0.005–0.03 if the rate were unchanged. One more long play is needed to call it a fix.
 
 *Updated after the 12:12 hang (F553–F557).* H0380 (zero dimension) is **refuted** for the event that names its dispatch:
 it launched 65,536 × 196,610 × 2,752,552 groups. The class is a runaway grid whose arguments, as fetched by the CP,
