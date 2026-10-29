@@ -1,7 +1,7 @@
 # 0380 — Is the F403 class a zero-dimension indirect dispatch? (sources, title side, a guard, a box plan)
 
 **Date.** 2026-10-29. **Laptop only.** No box access and no GPU submission in this experiment. Branch
-`exp/0380-zero-dim-dispatch`. Findings F545–F580 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
+`exp/0380-zero-dim-dispatch`. Findings F545–F581 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
 session's GO).
 
 **Question.** F527 puts the ME just past a `DISPATCH_INDIRECT` that passed the host's check, inside the title's
@@ -952,6 +952,32 @@ were 3c1f2001a3863535 at the last read.
 **To resolve the argument ranges offline once M1 has run:**
 - the `alloc` lines give physical ranges and types, and the `map` lines give VA → physical;
 - so 0x11d05df300 / 0x11d0571d00 / 0x11d0571b00 → map → alloc → type, and the `name` / `rangename` lines give the heap.
+
+**M1 ran later (the user allowed it, 2026-10-29 15:56–16:06).**
+- **The run.** S6N, RT on, 600 s, binary 541e484e, no switches: pass, 37.1 flips/s, 0 kernel lines, 0 TIMEOUT, 0
+  devcoredumps; saves 3c1f2001a3863535 unchanged. The runner wrote and cleared its lock, and the kernel stream ran.
+  70,965 `bc5-0380 mem:` lines. `raw/resolve0380m.py` resolves them; output in `raw/runs/M1-memory-types.txt`.
+- **The argument ranges (F581).** Every indirect-argument address on record (0x11d05df300, 0x11d0571d00,
+  0x11d0571b00, 0x11d0571f00) and the programs (0x11d02a1600) lie in one heap: **`RenderGpuWcSmall`**.
+  - It is mapped at VA 0x11d0000000 + 0x6e00000 (110 MiB), phys 0x203200000, prot 0x32, memory **type 12**.
+  - The `LOAD_SH_REG_INDEX` source 0x11e072fa94 and the index base 0x11e9db6280 lie in `RenderGpuRwLarge` (prot 0xf2,
+    type 12); the index base 0x1210012000 lies in `CommitIABufferAllocator` (prot 0xf2, type 12).
+- **Types across the run.**
+  - 1,668 of 1,669 direct allocations are type 12 (9,810 MiB); one is type 0 (3,034 MiB).
+  - All 15,170 `MapDirectMemory2` calls pass type 12, and there are no `Mtypeprotect` calls.
+  - So the title asks for **one** type for practically all of its GPU memory. The "Wc"/"Rw" heaps differ in protection
+    (0x32 against 0xf2), not in type.
+- **Type 12** is not in the PS4 numbering: WB_ONION 0, WC_GARLIC 3, WB_GARLIC 10 (shadPS4 memory.h:24-28, 60c42b9;
+  GPCS4 sce_kernel_memory.h:68-70). The one public PS5 trace in `refs/` is KytyPS5's test expecting the AGC driver's
+  own `SceAgcDriver` memory to be type 12 with prot 0x33 (`tests/ShaderRecompilerComputeTests.cpp:47883`, 4644c52).
+  What caching type 12 asks for is TODO(verify). The meaning of prot bits 0x40/0x80 (0xf2 against 0x32) is
+  TODO(verify) too.
+- **What this does to suspect 3.**
+  - The title does not request a special (uncached) type for its argument heap. A per-range `MTYPE_UC` fix for "the
+    argument heap" has no basis in the data, and it is not designed here.
+  - What remains open is broader: whether type 12 as a whole means something our default GPU mapping does not give
+    (e.g. no GL2 caching). That would affect all the title's GPU memory equally, not only the stuck dispatch.
+  - The cheapest test of that is not a per-range switch. It needs a source for type 12's caching first.
 
 ## Result
 

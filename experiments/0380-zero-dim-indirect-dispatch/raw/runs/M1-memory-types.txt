@@ -1,0 +1,81 @@
+lines: alloc 1669, map 27837, map2 15170, name 11060, rangename 15229, mtypeprotect 0
+alloc types: 12 (?) x1668 (9810 MiB), 0 (WB_ONION) x1 (3034 MiB)
+map2 types: 12 (?) x15170
+mtypeprotect types: -
+== VA 0x11d05df300
+   map  va 0x11d0000000 len 0x6e00000 phys 0x203200000 prot 0x32 block type 12 (?) (1 maps cover it)
+   alloc phys 0x203200000 len 0x6e00000 type 12 (?)
+   name 0x11d0000000+0x6e00000 RenderGpuWcSmall
+   name 0x11d0000000+0x6e00000 RenderGpuWcSmall
+== VA 0x11d0571d00
+   map  va 0x11d0000000 len 0x6e00000 phys 0x203200000 prot 0x32 block type 12 (?) (1 maps cover it)
+   alloc phys 0x203200000 len 0x6e00000 type 12 (?)
+   name 0x11d0000000+0x6e00000 RenderGpuWcSmall
+   name 0x11d0000000+0x6e00000 RenderGpuWcSmall
+== VA 0x11d0571b00
+   map  va 0x11d0000000 len 0x6e00000 phys 0x203200000 prot 0x32 block type 12 (?) (1 maps cover it)
+   alloc phys 0x203200000 len 0x6e00000 type 12 (?)
+   name 0x11d0000000+0x6e00000 RenderGpuWcSmall
+   name 0x11d0000000+0x6e00000 RenderGpuWcSmall
+== VA 0x11d0571f00
+   map  va 0x11d0000000 len 0x6e00000 phys 0x203200000 prot 0x32 block type 12 (?) (1 maps cover it)
+   alloc phys 0x203200000 len 0x6e00000 type 12 (?)
+   name 0x11d0000000+0x6e00000 RenderGpuWcSmall
+   name 0x11d0000000+0x6e00000 RenderGpuWcSmall
+== VA 0x11d02a1600
+   map  va 0x11d0000000 len 0x6e00000 phys 0x203200000 prot 0x32 block type 12 (?) (1 maps cover it)
+   alloc phys 0x203200000 len 0x6e00000 type 12 (?)
+   name 0x11d0000000+0x6e00000 RenderGpuWcSmall
+   name 0x11d0000000+0x6e00000 RenderGpuWcSmall
+== VA 0x11e072fa94
+   map  va 0x11e0000000 len 0x19e00000 phys 0x20a000000 prot 0xf2 block type 12 (?) (1 maps cover it)
+   alloc phys 0x20a000000 len 0x19e00000 type 12 (?)
+   name 0x11e0000000+0x19e00000 RenderGpuRwLarge
+   name 0x11e0000000+0x19e00000 RenderGpuRwLarge
+== VA 0x1210012000
+   map  va 0x1210000000 len 0xab000000 phys 0x226200000 prot 0xf2 block type 12 (?) (1 maps cover it)
+   alloc phys 0x226200000 len 0xab000000 type 12 (?)
+   name 0x1210000000+0xab000000 CommitIABufferAllocator
+   name 0x1210000000+0xab000000 CommitIABufferAllocator
+== VA 0x11e9db6280
+   map  va 0x11e0000000 len 0x19e00000 phys 0x20a000000 prot 0xf2 block type 12 (?) (1 maps cover it)
+   alloc phys 0x20a000000 len 0x19e00000 type 12 (?)
+   name 0x11e0000000+0x19e00000 RenderGpuRwLarge
+   name 0x11e0000000+0x19e00000 RenderGpuRwLarge
+== distinct (name, prot, type) of the named maps
+  11009 anon
+     15 Job
+      2 StreamingFileS...rity
+      2 StreamingFileS...riority
+      2 StreamingFileS...m
+      2 StreamingFileS...
+      2 Physics
+      2 DynamicHeap
+      2 ComponentHeap
+      2 AssetHeap
+      2 Amm
+      1 Wwise
+      1 VisualEffectInstanceHeap
+      1 UIStringAlloc
+      1 UI
+      1 SoundAlloc
+      1 SceAgcDriver
+      1 RenderGpuWcSmall
+      1 RenderGpuWcLarge
+      1 RenderGpuRwSmall
+      1 RenderGpuRwLarge
+      1 RenderAlloc
+      1 MaterialHeap
+      1 InitAllocator
+      1 FileSystem
+== map prot/type pairs
+  14456 0x13 0
+  11009 0xfffffff2 12
+   1607 0x2 12
+    537 0x33 0
+    161 0x32 0
+     34 0xc2 12
+     16 0x13 12
+      7 0xf2 12
+      5 0x42 12
+      2 0x3f2 12
