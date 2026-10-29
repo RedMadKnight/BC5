@@ -1,11 +1,11 @@
 --- /home/kjaniszewski/bc5-work/play-pkg.sh	2026-10-28 07:52:22.140252572 +0100
-+++ /home/kjaniszewski/bc5-work/exp0380s/play-pkg-0380s.sh	2026-10-29 12:55:20.461595477 +0100
++++ /home/kjaniszewski/bc5-work/exp0380c/run/play-pkg-0380s.sh	2026-10-29 14:27:39.809433696 +0100
 @@ -10,7 +10,7 @@
  M=~/bc5-data/mnt/pkg-play
  EMU=~/bc5-work/kytyplus-build/src/kyty_emulator
  ENVF=${BC5_RUN_ENV:-$HOME/bc5-work/bc5-run.env}
 -LOG=~/bc5-work/play-pkg-last.log
-+LOG=~/bc5-work/exp0380s/play-last.log  # exp 0350/0364: own log
++LOG=~/bc5-work/exp0380c/run/play-last.log  # exp 0350/0364: own log
  # Experiment 0177: BC5_LEAN=1 (the "BC5 emulator (lean)" shortcut) runs the emulator built with
  # KYTY_BC5_LEAN in ~/bc5-work/kytyplus-build-lean: no tracing, journal, counters, recorder or
  # samplers, inside or outside; its own log file. The title scripts take the same switch.
@@ -23,8 +23,8 @@
  export BC5_DIRECT_EAGER_NAMES="RenderGpuWcLarge,RenderGpuWcSmall,RenderGpuRwLarge,RenderGpuRwSmall,CommitIABufferAllocator,AMM,RenderAlloc,Physics,Decal Job Scheduler,VisualEffectInstanceHeap,DynamicHeap,DynamicHeap Small,ComponentHeap,ComponentHeap Small,MaterialHeap,DDLHeap,Physics query allocator"
 -export BC5_DIRECT_LEARNED=$HOME/bc5-work/direct-learned-pkg.txt
 -export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/_SaveData-pkg-play
-+export BC5_DIRECT_LEARNED=$HOME/bc5-work/exp0380s/direct-learned-pkg.txt  # exp 0350/0364: a private copy
-+export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/exp0380s/wd/_SaveData-pkg-play  # exp 0350/0364: private
++export BC5_DIRECT_LEARNED=$HOME/bc5-work/exp0380c/run/direct-learned-pkg.txt  # exp 0350/0364: a private copy
++export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/exp0380c/run/wd/_SaveData-pkg-play  # exp 0350/0364: private
  # Experiment 0039: the compute IBs indirect dispatches run (rewritten for the GFX ring).
  # Experiment 0053: their arguments checked by the CP when it runs them, a CP DMA wait before a
  # dispatch after an unsynced copy; with both the tree refit runs too (before: skipped,
@@ -33,7 +33,7 @@
    [ -r "$PKG_ENV" ] && grep -v '^#' "$PKG_ENV" | grep -v '^$'
  } > "$LOG"
 -cd ~/bc5-work
-+cd ~/bc5-work/exp0380s/wd  # exp 0350/0364: the private working directory (its own _SaveData)
++cd ~/bc5-work/exp0380c/run/wd  # exp 0350/0364: the private working directory (its own _SaveData)
  # Experiment 0047: exit code 75 is the F2 menu's "Restart game": start the emulator again, with
  # the mount and the settings kept.
  while :; do

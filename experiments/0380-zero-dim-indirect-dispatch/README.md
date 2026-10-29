@@ -1,7 +1,7 @@
 # 0380 — Is the F403 class a zero-dimension indirect dispatch? (sources, title side, a guard, a box plan)
 
 **Date.** 2026-10-29. **Laptop only.** No box access and no GPU submission in this experiment. Branch
-`exp/0380-zero-dim-dispatch`. Findings F545–F567 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
+`exp/0380-zero-dim-dispatch`. Findings F545–F570 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
 session's GO).
 
 **Question.** F527 puts the ME just past a `DISPATCH_INDIRECT` that passed the host's check, inside the title's
@@ -674,6 +674,79 @@ binary c442f6c7`. It hung at 14:04:41. The ring reset failed and the box reboote
     check reading the copy rules out;
   - `COMPUTE_DIM` different from the copy → the CP's argument fetch is incoherent even for CP-written dwords.
 
+## 11. The argument copy on the bench: it hangs at once, and what that shows (F568–F570)
+
+**GO and box.** The maintainer's "Tak, testujcie" (F567's plan), relayed by the top session. 14:2x–14:5x: my lock and
+claim lines, the kernel stream to the laptop, the route's save copy. The live saves were re-read: **3c1f2001a3863535**
+(newest file 14:03, his play), the same after the reboot. Done line in BOX-QUEUE.
+
+**The binary.** `~/bc5-work/exp0380c/kyty_emulator` md5 **09345cbb**: the shared objects (**no** zero skip) relinked
+with archive bf8b8d4a (c0d00ef, `BC5_DIRECT_ARGS_COPY`), pinned as `exp0380c/libbc5_backend-bf8b8d4a.a`
+(`link0380r.py`). The runner `raw/s6n0380c.sh` (box md5 f5cecd86) is made by `raw/mk-s6n0380c.pl` from `s6n0380.sh`.
+The switches were `BC5_DIRECT_ARGS_COPY=1 BC5_DIRECT_FORCE_START_000=1`.
+
+**C1 hung after 7 s (F568).**
+- The run started at 14:27:40. At 14:27:47, during the title's start-up (fence seq 1255):
+  `ring gfx_0.0.0 timeout`, `Ring gfx_0.0.0 reset failed`, then `bc5-gpu-watch` crashed the kernel for a reboot
+  (`raw/runs/C1-kernel-stream.txt`). The box was up again at 14:29; the saves were unchanged.
+- **The registers.** Sampler 0377: `GRBM_STATUS` 0xa0407028, PFP 0xea1, ME 0x779 (F403's state);
+  `COMPUTE_PGM` 0x11d0323c00, `COMPUTE_DIM` **[3204318058 2165211406 100939574]** (0xbefe036a / 0x810e810e /
+  0x06043736), threads [8 4 1], initiator 0x8045 (`raw/hang-1427/sampler-summary.txt`).
+- **The probe** of dcb #81 (8,995 dwords; acb #79, 1,192 dwords; both TIMEOUT): title dword 533, program
+  0x11d0323c00, arguments 0x11d0571b00, **28,800 × 1 × 1** in memory at the timeout.
+- **The devcoredump's IB #0** (1,808 dwords, fetched 1,184). The PFP history, newest first: `ACQUIRE_MEM`,
+  `EVENT_WRITE`, `SET_BASE` (the restore), `DISPATCH_INDIRECT`, `SET_BASE` (to the copy), `COND_EXEC`, …
+  - That puts the stuck dispatch among the copied ones at 657 / 838 / 1019. Each fetched from **0x100f00001c50**: the
+    copy slot in this job's scratch, just after the 1,808-dword IB.
+  - 657 is the probe's dispatch, the first copied one.
+  - The launched values occur nowhere in the IB.
+- **What it means.** The ME had copied the arguments into that slot with `WR_CONFIRM`, and the check's `COND_WRITE`s
+  then read the slot and passed. The CP's argument fetch from the same address returned other data.
+  - In the title's own case (F553, F564), the arguments are written by the GPU shortly before the frame's first
+    dispatch. The fetch went wrong about once an hour.
+  - Here the slot is rewritten by the ME in every job, at a scratch address whose earlier contents were other data.
+    The fetch went wrong at once.
+
+**The mechanism this points to (F569).** The CP's `DISPATCH_INDIRECT` argument fetch does not see data that is
+written but not yet written back from GL2. The ME's writes (`COPY_DATA` with `WR_CONFIRM`, which confirms at L2) and
+the check's polls go through GL2, and the fetch sees memory behind it.
+- That fits every observation so far:
+  - the check always passes;
+  - memory reads sane at the timeout, after the line has been written back;
+  - the bad values are old data from that address;
+  - the copy breaks at once, since its slot is rewritten every job;
+  - the title breaks rarely, since its arguments are usually written back long before the fetch;
+  - the stuck dispatch is the frame's first, whose arguments were written just before.
+- Mesa assumes the opposite on GFX9+: for `VK_ACCESS_INDIRECT_COMMAND_READ` RADV invalidates only SMEM, not L2
+  (radv_cmd_buffer.c:8087-8098, ab2374a). So this would be specific to this chip or to how the direct path maps the
+  memory (userptr/GTT pages, the MTYPE of the mapping): TODO(verify).
+- Alternative not excluded: a CP-side read cache holding the line from an earlier fetch.
+
+**The candidate fix (F570): `BC5_DIRECT_ARGS_WB=first|all`, default off.**
+- What it does: an `ACQUIRE_MEM` with `GCR_CNTL` `GL2_WB` (bit 15) over the full range, `COHER_CNTL` 0 (8 dwords).
+  - This is the kernel's own gfx10 memory-sync packet with only the write-back bit (Linux v7.2 `nvd.h:447-501`,
+    `gfx_v10_0_emit_mem_sync` in gfx_v10_0.c:9473-9494).
+  - It sits at the start of the check (after the copy when the copy is on), so the check's `PFP_SYNC_ME` keeps the PFP
+    behind it.
+  - `first` covers only the first `DISPATCH_INDIRECT` after an `INDEX_BASE` (sub-class B, ~145 a second); `all` covers
+    every checked dispatch (~24,000 a second, a full-L2 write-back each).
+  - `Stats::args_written_back`, `kArgsWbDwords` = 8.
+- Tests: Catch2 "a GL2 write-back before the check (experiment 0380)" — first, all, with the copy, off/MEC. Laptop
+  97/97 (34,411 assertions). Box clang 21.1.8 `-Werror`, 0 warnings, 97/97 (34,410), archive eff535ac
+  (`raw/box-A0e/`).
+- TODO(verify): that `ACQUIRE_MEM` waits for the write-back before the next packet. Mesa's gfx10 comment says it
+  "doesn't wait for idle", which is about waiting for the shaders.
+
+**Not done, by the plan.** C1 failed, so no "test 0380 copy" shortcut was made, and "BC5 emulator (test 0380 fix +
+0379)" was left on the desktop. It carries the refuted rebase and the zero skip, so the maintainer should not use it as
+a fix. **The copy switch must not be used on its own:** it hangs within seconds.
+
+**Next (needs the maintainer's yes: GPU).** One discriminating bench run: copy + `BC5_DIRECT_ARGS_WB=all`.
+- Without the write-back the copy hung within 7 s. If the same run passes 600 s with it, the GL2 mechanism is shown in
+  one run.
+- Then `BC5_DIRECT_ARGS_WB=first` alone, without the copy, for the bench and the maintainer's play. It has the smallest
+  cost and covers the sub-class B slot.
+
 ## Result
 
 - Sources read and cited (F545, F546). The title-side evidence was re-read from exps 0376/0378 (F547).
@@ -681,6 +754,9 @@ binary c442f6c7`. It hung at 14:04:41. The ring reset failed and the box reboote
 - A second guard, `FORCE_START_AT_000` on indirect dispatches, is built the same way: default off, with unit tests
   (F551).
 - The box plan is written. Only step A0 ran: a CPU-only compile check, which passed (F552). Nothing ran on the GPU.
+- The argument copy hung the bench within 7 s (C1): the fetch returned other data than the ME had just written and
+  the check had read, at the same address. That points to the fetch missing GL2-resident writes. A GL2 write-back
+  before the fetch (`BC5_DIRECT_ARGS_WB`) is built, default off, not run (F568–F570).
 - The maintainer's play with that shortcut hung at 14:04 in sub-class B, with the rebase `SET_BASE` executed right
   before the stuck dispatch. **The rebase is refuted as a fix** (F564, F565). The next candidate, the CP's own
   argument copy, is built, default off, and not run (F566, F567).
