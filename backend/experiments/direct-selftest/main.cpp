@@ -19,6 +19,7 @@
 //   2 timestamps WRITE_DATA with the job timestamps (COPY_DATA, RELEASE_MEM DATA_SEL 3)
 //   3 events     RELEASE_MEM BOTTOM_OF_PIPE_TS/5 and CS_DONE/6 with data
 //   4 cp-check   the indirect-count check of the MEC form (COND_WRITE, COND_EXEC) on five triples
+//                (nine with --zero-check: the zero guard on, four more with a 0 count)
 //   5 overlap    a 64 MiB CP DMA fill on the GFX ring, then a compute job: their timestamps overlap
 //   6 wait       a compute job waits for a label that a later GFX job writes; a userptr range is
 //                mapped while it waits, and a second compute job writes into it
@@ -90,7 +91,7 @@ bool run(bc5::direct::Device &dev, const char *name, const std::vector<std::uint
 }
 
 // ADR 0009, ladder step 5 (see the top of the file). mem: 80 MiB mapped 1:1.
-int compute_ladder(bc5::direct::Device &dev, char *mem, int ring) {
+int compute_ladder(bc5::direct::Device &dev, char *mem, int ring, bool zero_check) {
     using bc5::direct::kGfxRing;
     constexpr std::uint64_t kTimeout = 2'000'000'000ull;
     dev.set_async(true);
@@ -170,13 +171,15 @@ int compute_ladder(bc5::direct::Device &dev, char *mem, int ring) {
                               {28800, 0xff800000u, 1, false},
                               {1, 1, 2000, false},
                               {1u << 20, 1024, 1024, true},
-                              // experiment 0380 (--zero-check only): a 0 count must not run
+                              // experiment 0380 (--zero-check only, with the zero guard on): a 0 count must
+                              // not run (Codex review REVIEW-05: they ran before without the guard)
                               {0, 1, 1, false},
                               {1, 0, 1, false},
                               {1, 1, 0, false},
                               {0, 0, 0, false}};
         int wrong = 0;
-        for (std::size_t k = 0; k < std::size(cases); ++k) {
+        const std::size_t n_cases = zero_check ? std::size(cases) : 5;
+        for (std::size_t k = 0; k < n_cases; ++k) {
             const std::size_t page = 0x1000 * (k + 1);
             word(page + 0x40) = cases[k].x;
             word(page + 0x44) = cases[k].y;
@@ -190,7 +193,7 @@ int compute_ladder(bc5::direct::Device &dev, char *mem, int ring) {
             std::vector<std::size_t> refs;
             bc5::indirect_check::Stats st;
             auto seq = bc5::indirect_check::apply(in, 0, defaults.gpu_check_max, defaults.gpu_check_draw_max, refs,
-                                                  st, true);
+                                                  st, true, nullptr, zero_check);
             bc5::indirect_check::patch(seq, refs, va(page + 0x100));
             seq.resize(seq.size() - 4); // the dispatch; COND_EXEC's count becomes the WRITE_DATA's 5
             seq.back() = 5;
@@ -366,7 +369,12 @@ int main(int argc, char **argv) {
                               {0x7f800000u, 0x7f800000u, 0x7f800000u, false},
                               {28800, 0xff800000u, 1, false},
                               {1, 1, 2000, false},
-                              {1u << 20, 1024, 1024, true}};
+                              {1u << 20, 1024, 1024, true},
+                              // experiment 0380 (--zero-check only): a 0 count must not run (REVIEW-05: missing)
+                              {0, 1, 1, false},
+                              {1, 0, 1, false},
+                              {1, 1, 0, false},
+                              {0, 0, 0, false}};
         int failures = 0;
         const std::size_t n_cases = zero_check ? std::size(cases) : 5; // --cp-check: the five of 0052
         for (std::size_t k = 0; k < n_cases; ++k) {
@@ -408,7 +416,7 @@ int main(int argc, char **argv) {
         std::printf("cp-check: %d wrong\n", failures);
         return failures == 0 ? 0 : 1;
     }
-    if (compute_ring >= 0) return compute_ladder(*dev, static_cast<char *>(mem), compute_ring);
+    if (compute_ring >= 0) return compute_ladder(*dev, static_cast<char *>(mem), compute_ring, zero_check);
     std::vector<std::uint32_t> ib;
     if (synthetic) {
         ib.assign(8, bc5::policy::kNop);
