@@ -1,0 +1,6 @@
+start 2026-10-29 12:09:44, 126 counter lines, 2690 flips in 134 s (20.0 flips/s)
+minute  flips/s  <15/s  <25/s  gap>=500ms  longest_ms | memavail swap gtt mount_read psi_mem psi_io
+12:09    28.4     0%     0%    0      114 | 13611M 566M 120M -M 0.42 5.62
+12:10    16.7    58%    67%    5     1467 | 2119M 559M 10456M 8230M 0.15 13.50
+12:11    21.9    33%    70%    1     1498 | 1079M 567M 11471M 8578M 0.06 13.77
+12:12    17.4    33%   100%    0      214 | 1079M 567M 11471M 8578M 0.06 13.77

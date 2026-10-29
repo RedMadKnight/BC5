@@ -1,0 +1,28 @@
+### play 120000
+== exp 0379t mode: SCAN; BC5_DIRECT_FORCE_START_000=1; binary 459d34cd
+== 2026-10-29 12:00:01 emulator 2026-10-29 11:44:23
+== 2026-10-29 12:08:31 exit 0
+== exp 0379t: the zero list of this play (3 scans) is /home/kjaniszewski/bc5-work/exp0379t/play-lists/zero-list-20261029-120000.txt
+### play 120944
+== exp 0379t mode: SKIP /home/kjaniszewski/bc5-work/exp0379t/play-lists/zero-list-20261029-120000.txt; BC5_DIRECT_FORCE_START_000=1; binary 459d34cd
+== 2026-10-29 12:09:44 emulator 2026-10-29 11:44:23
+### journal /home/kjaniszewski/bc5-data/captures/play-20261029-1200 102576800
+zero scan 1 at t 240.0 s: RenderGpuWcLarge 2758.0 MiB, zero now 1154.0 MiB, zero in all 1 scans 1154.0 MiB, listed 974.0 MiB in 48 runs of >= 8 MiB (539 ms)
+zero scan 1 at t 240.0 s: CommitIABufferAllocator 2736.0 MiB, zero now 306.0 MiB, zero in all 1 scans 306.0 MiB, listed 302.0 MiB in 4 runs of >= 8 MiB (943 ms)
+zero scan 1: list written to /home/kjaniszewski/bc5-work/exp0379t/play-lists/scan-20261029-120000.txt
+zero scan 2 at t 360.0 s: RenderGpuWcLarge 2758.0 MiB, zero now 1136.0 MiB, zero in all 2 scans 1116.0 MiB, listed 958.0 MiB in 48 runs of >= 8 MiB (479 ms)
+zero scan 2 at t 360.0 s: CommitIABufferAllocator 2736.0 MiB, zero now 306.0 MiB, zero in all 2 scans 306.0 MiB, listed 302.0 MiB in 4 runs of >= 8 MiB (889 ms)
+zero scan 2: list written to /home/kjaniszewski/bc5-work/exp0379t/play-lists/scan-20261029-120000.txt
+zero scan 3 at t 480.0 s: RenderGpuWcLarge 2758.0 MiB, zero now 1120.0 MiB, zero in all 3 scans 1098.0 MiB, listed 934.0 MiB in 48 runs of >= 8 MiB (452 ms)
+zero scan 3 at t 480.0 s: CommitIABufferAllocator 2736.0 MiB, zero now 288.0 MiB, zero in all 3 scans 288.0 MiB, listed 284.0 MiB in 4 runs of >= 8 MiB (875 ms)
+zero scan 3: list written to /home/kjaniszewski/bc5-work/exp0379t/play-lists/scan-20261029-120000.txt
+### journal /home/kjaniszewski/bc5-data/captures/play-20261029-1209 24717528
+zero skip: list /home/kjaniszewski/bc5-work/exp0379t/play-lists/zero-list-20261029-120000.txt, 2 heaps, 1218.0 MiB listed, 0 bad lines
+zero skip: RenderGpuWcLarge at file 0x156c00000: 934.0 MiB in 48 runs skipped
+zero skip: canary BO 1, 52 slices of 2 MiB
+zero skip: canary +467 mappings (467)
+zero skip: CommitIABufferAllocator at file 0x226200000: 284.0 MiB in 4 runs skipped
+zero skip: canary +142 mappings (609)
+zero skip: canary hit in run 37 (file 0x1cb400000 +24.0 MiB): 24.0 MiB taken back
+zero skip: 904.0 MiB still skipped of 1218.0 placed; taken back: 0 chunks by CPU writes, 145 by hints, 1 runs by canary hits; 452 canary mappings
+zero skip: 828.0 MiB still skipped of 1218.0 placed; taken back: 0 chunks by CPU writes, 183 by hints, 1 runs by canary hits; 414 canary mappings

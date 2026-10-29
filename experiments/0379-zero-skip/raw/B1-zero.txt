@@ -1,0 +1,14 @@
+zero skip: list /home/kjaniszewski/bc5-work/exp0379/zero-list-B1.txt, 2 heaps, 2598.0 MiB listed, 0 bad lines
+zero skip: RenderGpuWcLarge at file 0x156c00000: 1218.0 MiB in 52 runs skipped
+zero skip: canary BO 1, 55 slices of 2 MiB
+zero skip: canary +609 mappings (609)
+zero skip: CommitIABufferAllocator at file 0x226200000: 1380.0 MiB in 3 runs skipped
+zero skip: canary +690 mappings (1299)
+zero skip: 2310.0 MiB still skipped of 2598.0 placed; taken back: 0 chunks by CPU writes, 144 by hints, 0 runs by canary hits; 1155 canary mappings
+zero skip: canary hit in run 22 (file 0x1ae600000 +18.0 MiB): 18.0 MiB taken back
+zero skip: 2030.0 MiB still skipped of 2598.0 placed; taken back: 0 chunks by CPU writes, 275 by hints, 1 runs by canary hits; 1015 canary mappings
+zero skip: 2018.0 MiB still skipped of 2598.0 placed; taken back: 2 chunks by CPU writes, 279 by hints, 1 runs by canary hits; 1009 canary mappings
+zero skip: 2018.0 MiB still skipped of 2598.0 placed; taken back: 2 chunks by CPU writes, 279 by hints, 1 runs by canary hits; 1009 canary mappings
+zero skip: 2018.0 MiB still skipped of 2598.0 placed; taken back: 2 chunks by CPU writes, 279 by hints, 1 runs by canary hits; 1009 canary mappings
+zero skip: 2018.0 MiB still skipped of 2598.0 placed; taken back: 2 chunks by CPU writes, 279 by hints, 1 runs by canary hits; 1009 canary mappings
+zero skip: 2018.0 MiB still skipped of 2598.0 placed; taken back: 2 chunks by CPU writes, 279 by hints, 1 runs by canary hits; 1009 canary mappings
