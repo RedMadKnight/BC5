@@ -67,7 +67,6 @@ for k, a in enumerate(argv):
         n += 1
     elif ARCHIVE and a.endswith("/libbc5_backend.a"):
         argv[k] = ARCHIVE
-        n_arch = n_arch + 1 if "n_arch" in dir() else 1
     elif a.startswith("-Wl,-Map="):
         argv[k] = "-Wl,-Map=" + out_bin + ".map"
     elif a.startswith("--dependency-file="):
