@@ -593,7 +593,7 @@ binary c442f6c7`. It hung at 14:04:41. The ring reset failed and the box reboote
   - `COMPUTE_DIM` [481 1073741962 480] = 0x1e1 / **0x4000008a** / 0x1e0;
   - threads [64 1 1], initiator 0x45;
   - `GRBM_STATUS` 0xa0407028, PFP 0xea1, ME 0x77b.
-- The journal's timeout probe for dcb #278264 (, 8,251 dwords; acb #278265, 68 dwords; TIMEOUT after 2,037 ms)
+- The journal's timeout probe for dcb #278264 (8,251 dwords; acb #278265, 68 dwords; TIMEOUT after 2,037 ms)
   names that program at **title dword 1287, arguments at 0x11d05df300, 3158 × 1 × 1 at the timeout**. It is the first
   indirect dispatch of the dcb.
 - In the devcoredump's IB #0 (8,880 dwords, fetched 1,920) the dispatch is dword **1379**. It is the first
