@@ -1,0 +1,60 @@
+bc5-gpu-stall-sampler 0377 event event-20261029-140441-gfx_0.0.0
+reason: stall clock 1.90 s on gfx_0.0.0 (written before the kernel's 2-s timeout)
+written: 2026-10-29T14:04:41.209 (mono 6723.676); debugfs /sys/kernel/debug/dri/0000:01:00.0
+rings:
+ gfx_0.0.0: stalled since mono 6721.637 (sig 0x002777b8 emit 0x002777ba), samples at clock 0.53 0.80 1.10 1.40 1.72, missed 0, past 1.9 s: yes, kmsg timeout: [ 6723.364005] amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=2586552, emitted seq=2586554, still stalled
+samples: 5 (registers, no wave scan of the whole GPU, shared by the rings above)
+ sample 1 (stall) mono 6722.163, clocks gfx_0.0.0=0.53, gfxoff 0
+   registers 50 (0 errors) in 0.3 ms; waves not scanned (registers only)
+   distinct PCs 0: -
+   queues: -
+   GRBM_STATUS=0xa0407028 CP_STAT=0x9403a600 CP_PFP_INSTR_PNTR=0xea1 CP_ME_INSTR_PNTR=0x77b CP_IB1_BASE_HI=0x1018 CP_IB1_BASE_LO=0x0 CP_IB1_BUFSZ=0x1b30 CP_IB1_CMD_BUFSZ=0x22b0
+   compute: program=0x11d02a4a00 dim=[481 1073741962 480] threads=[64 1 1] initiator=0x45 id=2682980799 (gfx ME0 pipe0 queue0 (gfx_0.0.0))
+ sample 2 (stall) mono 6722.438, clocks gfx_0.0.0=0.80, gfxoff 0
+   registers 50 (0 errors) in 0.1 ms; waves not scanned (registers only)
+   distinct PCs 0: -
+   queues: -
+   GRBM_STATUS=0xa0407028 CP_STAT=0x9403a600 CP_PFP_INSTR_PNTR=0xea1 CP_ME_INSTR_PNTR=0x77b CP_IB1_BASE_HI=0x1018 CP_IB1_BASE_LO=0x0 CP_IB1_BUFSZ=0x1b30 CP_IB1_CMD_BUFSZ=0x22b0
+   compute: program=0x11d02a4a00 dim=[481 1073741962 480] threads=[64 1 1] initiator=0x45 id=2682980799 (gfx ME0 pipe0 queue0 (gfx_0.0.0))
+ sample 3 (stall) mono 6722.737, clocks gfx_0.0.0=1.10, gfxoff 0
+   registers 50 (0 errors) in 0.2 ms; waves not scanned (registers only)
+   distinct PCs 0: -
+   queues: -
+   GRBM_STATUS=0xa0407028 CP_STAT=0x9403a600 CP_PFP_INSTR_PNTR=0xea1 CP_ME_INSTR_PNTR=0x77b CP_IB1_BASE_HI=0x1018 CP_IB1_BASE_LO=0x0 CP_IB1_BUFSZ=0x1b30 CP_IB1_CMD_BUFSZ=0x22b0
+   compute: program=0x11d02a4a00 dim=[481 1073741962 480] threads=[64 1 1] initiator=0x45 id=2682980799 (gfx ME0 pipe0 queue0 (gfx_0.0.0))
+ sample 4 (stall) mono 6723.038, clocks gfx_0.0.0=1.40, gfxoff 0
+   registers 50 (0 errors) in 0.2 ms; waves not scanned (registers only)
+   distinct PCs 0: -
+   queues: -
+   GRBM_STATUS=0xa0407028 CP_STAT=0x9503a600 CP_PFP_INSTR_PNTR=0xea1 CP_ME_INSTR_PNTR=0x77b CP_IB1_BASE_HI=0x1018 CP_IB1_BASE_LO=0x0 CP_IB1_BUFSZ=0x1b30 CP_IB1_CMD_BUFSZ=0x22b0
+   compute: program=0x11d02a4a00 dim=[481 1073741962 480] threads=[64 1 1] initiator=0x45 id=2682980799 (gfx ME0 pipe0 queue0 (gfx_0.0.0))
+ sample 5 (stall) mono 6723.362, clocks gfx_0.0.0=1.72, gfxoff 0
+   registers 50 (0 errors) in 0.2 ms; waves not scanned (registers only)
+   distinct PCs 0: -
+   queues: -
+   GRBM_STATUS=0xa0407028 CP_STAT=0x9403a600 CP_PFP_INSTR_PNTR=0xea1 CP_ME_INSTR_PNTR=0x779 CP_IB1_BASE_HI=0x1018 CP_IB1_BASE_LO=0x0 CP_IB1_BUFSZ=0x1b30 CP_IB1_CMD_BUFSZ=0x22b0
+   compute: program=0x11d02a4a00 dim=[481 1073741962 480] threads=[64 1 1] initiator=0x45 id=2682980799 (gfx ME0 pipe0 queue0 (gfx_0.0.0))
+ samples 1->2: still 0, moved 0, gone 0, new 0: no waves
+ samples 2->3: still 0, moved 0, gone 0, new 0: no waves
+ samples 3->4: still 0, moved 0, gone 0, new 0: no waves
+ samples 4->5: still 0, moved 0, gone 0, new 0: no waves
+shape: mixed: no waves, no waves, no waves, no waves
+program names: match the compute program address (and any PCs) offline against the host journal's dispatch and timeout-probe lists (exp 0370 K4, F113, F528).
+## recent amdgpu kernel lines (facility 0), oldest first
+[   29.644582] amdgpu 0000:01:00.0: [drm] *ERROR* Unsupported screen format RA24 little-endian (0x34324152)
+[   29.644811] amdgpu 0000:01:00.0: [drm] *ERROR* Unsupported screen format RA24 little-endian (0x34324152)
+[   29.651026] amdgpu 0000:01:00.0: [drm] *ERROR* Unsupported screen format RA24 little-endian (0x34324152)
+[   29.666194] amdgpu 0000:01:00.0: [drm] *ERROR* Unsupported screen format RA24 little-endian (0x34324152)
+[   29.666431] amdgpu 0000:01:00.0: [drm] *ERROR* Unsupported screen format RA24 little-endian (0x34324152)
+[   29.668726] amdgpu 0000:01:00.0: [drm] *ERROR* Unsupported screen format RA24 little-endian (0x34324152)
+[   29.697648] amdgpu 0000:01:00.0: [drm] *ERROR* Unsupported screen format RA24 little-endian (0x34324152)
+[   31.319118] amdgpu 0000:01:00.0: [drm] *ERROR* Unsupported screen format RA24 little-endian (0x34324152)
+[ 6723.361582] amdgpu 0000:01:00.0: Dumping IP State
+[ 6723.363976] amdgpu 0000:01:00.0: Dumping IP State Completed
+[ 6723.363996] amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+[ 6723.364000] amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+[ 6723.364005] amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=2586552, emitted seq=2586554
+[ 6723.364010] amdgpu 0000:01:00.0:  Process kyty_emulator pid 263824 thread bc5-ring pid 263895
+[ 6723.364014] amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+[ 6723.553532] amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset failed
+[ 6723.553541] amdgpu 0000:01:00.0: GPU reset begin!. Source:  1

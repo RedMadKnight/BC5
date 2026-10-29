@@ -1,0 +1,177 @@
+# exp 0380: the 14:04 hang, filtered (the devcoredump, journal and IB stay private on the box)
+== play log /home/kjaniszewski/bc5-work/exp0380f/play/play-20261029-135749.log, first line
+== exp 0380f mode: SKIP /home/kjaniszewski/bc5-work/exp0379t/play-lists/zero-list-20261029-120000.txt; BC5_DIRECT_REBASE_DISPATCH=1; BC5_DIRECT_FORCE_START_000=1; binary c442f6c7
+== devcoredump CP/GRBM registers
+IP Type: 0 Ring Name: gfx_0.0.0
+Faulty page starting at address: 0x0000000000000000
+mmGRBM_STATUS                                      	 0xa0407028
+mmGRBM_STATUS2                                     	 0x52000008
+mmGRBM_STATUS3                                     	 0x40018000
+mmCP_STALLED_STAT1                                 	 0x00000c00
+mmCP_STALLED_STAT2                                 	 0x00018000
+mmCP_BUSY_STAT                                     	 0x00400400
+mmCP_IB1_CMD_BUFSZ                                 	 0x000022b0
+mmCP_IB1_BASE_LO                                   	 0x00000000
+mmCP_IB1_BASE_HI                                   	 0x00001018
+mmCP_IB1_BUFSZ                                     	 0x00001b30
+mmCP_CE_INSTR_PNTR                                 	 0x00000554
+mmCP_MEC1_INSTR_PNTR                               	 0x00000447
+mmCP_MEC2_INSTR_PNTR                               	 0x00000491
+mmCP_MES_DEBUG_INTERRUPT_INSTR_PNTR                	 0x00000000
+mmCP_MES_INSTR_PNTR                                	 0x00000000
+mmCP_ME_INSTR_PNTR                                 	 0x00000779
+mmCP_PFP_INSTR_PNTR                                	 0x00000ea1
+mmGRBM_STATUS_SE0                                  	 0x0a00003e
+mmGRBM_STATUS_SE1                                  	 0x0a000036
+mmGRBM_STATUS_SE2                                  	 0x00000006
+mmGRBM_STATUS_SE3                                  	 0x00000006
+mmCP_PFP_HEADER_DUMP                               	 0xc0065800
+mmCP_PFP_HEADER_DUMP                               	 0xc0004600
+mmCP_PFP_HEADER_DUMP                               	 0xc0011600
+mmCP_PFP_HEADER_DUMP                               	 0xc0021100
+mmCP_PFP_HEADER_DUMP                               	 0xc0032200
+mmCP_PFP_HEADER_DUMP                               	 0xc0004200
+mmCP_PFP_HEADER_DUMP                               	 0xc0033700
+mmCP_PFP_HEADER_DUMP                               	 0xc0032200
+mmCP_ME_HEADER_DUMP                                	 0xc0004600
+mmCP_ME_HEADER_DUMP                                	 0xc0011600
+mmCP_ME_HEADER_DUMP                                	 0xc0004200
+mmCP_ME_HEADER_DUMP                                	 0xc0033700
+mmCP_ME_HEADER_DUMP                                	 0xc0004200
+mmCP_ME_HEADER_DUMP                                	 0xc0033700
+mmCP_ME_HEADER_DUMP                                	 0xc0074500
+mmCP_ME_HEADER_DUMP                                	 0xc0074500
+mmCP_PFP_HEADER_DUMP                               	 0xc0065800
+mmCP_PFP_HEADER_DUMP                               	 0xc0004600
+mmCP_PFP_HEADER_DUMP                               	 0xc0011600
+mmCP_PFP_HEADER_DUMP                               	 0xc0021100
+mmCP_PFP_HEADER_DUMP                               	 0xc0032200
+mmCP_PFP_HEADER_DUMP                               	 0xc0004200
+mmCP_PFP_HEADER_DUMP                               	 0xc0033700
+mmCP_PFP_HEADER_DUMP                               	 0xc0032200
+mmCP_ME_HEADER_DUMP                                	 0xc0004600
+mmCP_ME_HEADER_DUMP                                	 0xc0011600
+mmCP_ME_HEADER_DUMP                                	 0xc0004200
+mmCP_ME_HEADER_DUMP                                	 0xc0033700
+mmCP_ME_HEADER_DUMP                                	 0xc0004200
+mmCP_ME_HEADER_DUMP                                	 0xc0033700
+mmCP_ME_HEADER_DUMP                                	 0xc0074500
+mmCP_ME_HEADER_DUMP                                	 0xc0074500
+mmCP_PFP_HEADER_DUMP                               	 0xc0065800
+mmCP_PFP_HEADER_DUMP                               	 0xc0004600
+mmCP_PFP_HEADER_DUMP                               	 0xc0011600
+mmCP_PFP_HEADER_DUMP                               	 0xc0021100
+mmCP_PFP_HEADER_DUMP                               	 0xc0032200
+== near0380.py (structure only)
+== 20261029-140441-devcd1.txt: fetched 1920 of 8880 dwords
+   PFP history (newest first): c0065800 c0004600 c0011600 c0021100 c0032200 c0004200 c0033700 c0032200
+   ME  history (newest first): c0004600 c0011600 c0004200 c0033700 c0004200 c0033700 c0074500 c0074500
+        0 draw op 28
+     1249 SET_BASE 1 0x11d05df300
+     1253 INDEX_BASE 0x1210012000
+     1256 INDEX_BUFFER_SIZE 0xffffffff
+     1375 SET_BASE 1 0x11d05df300
+     1379 DISPATCH_INDIRECT off 0x0 init 0x45  <- first after INDEX_BASE
+     1382 EVENT_WRITE 7
+     1392 EVENT_WRITE 7
+     1402 EVENT_WRITE 7
+     1412 EVENT_WRITE 7
+     1422 EVENT_WRITE 7
+     1432 EVENT_WRITE 7
+     1463 SET_BASE 1 0x11d0571b00
+     1557 SET_BASE 1 0x11d0571b00
+     1561 DISPATCH_INDIRECT off 0x0 init 0x45
+     1585 SET_BASE 1 0x11d0571b00
+     1679 SET_BASE 1 0x11d0571b00
+     1683 DISPATCH_INDIRECT off 0x0 init 0x45
+     1686 EVENT_WRITE 7
+     1696 EVENT_WRITE 7
+     1706 EVENT_WRITE 7
+     1716 EVENT_WRITE 7
+     1747 SET_BASE 1 0x11d0571b00
+     1841 SET_BASE 1 0x11d0571b00
+     1845 DISPATCH_INDIRECT off 0x0 init 0x45
+     1853 EVENT_WRITE 16
+     1855 EVENT_WRITE 44
+     1958 EVENT_WRITE 7   (past the fetch)
+     1968 EVENT_WRITE 7   (past the fetch)
+     1978 EVENT_WRITE 7   (past the fetch)
+== span0380.py 1230-1400
+  1232 op 10 len   1 
+  1233 op 10 len   1 
+  1234 op 10 len   1 
+  1235 op 10 len   1 
+  1236 op 79 len   4 reg 0x380 n 2
+  1240 op 79 len   4 reg 0x383 n 2
+  1244 op 79 len   5 reg 0x41d n 3
+  1249 op 11 len   4 index 1 0x11d05df300
+  1253 op 26 len   3 
+  1256 op 13 len   2 
+  1258 op 2f len   2 
+  1260 op 79 len   3 reg 0x24e n 1
+  1263 op 79 len   3 reg 0x250 n 1
+  1266 op 79 len   3 reg 0x261 n 1
+  1269 op 58 len   8 
+  1277 op 10 len   1 
+  1278 op 10 len   1 
+  1279 op 10 len   1 
+  1280 op 10 len   1 
+  1281 op 10 len   1 
+  1282 op 10 len   1 
+  1283 op 10 len   1 
+  1284 op 10 len   1 
+  1285 op 10 len   1 
+  1286 op 10 len   1 
+  1287 op 37 len   5 ctl 0x500 addr 0x101800008ac0
+  1292 op 37 len   5 ctl 0x500 addr 0x101800008ac8
+  1297 op 45 len   9 fn6 poll 0x11d05df300 ref 0x100000 write 0x101800008ac0 data 0
+  1306 op 45 len   9 fn6 poll 0x11d05df304 ref 0x400 write 0x101800008ac0 data 0
+  1315 op 45 len   9 fn6 poll 0x11d05df308 ref 0x400 write 0x101800008ac0 data 0
+  1324 op 45 len   9 fn6 poll 0x11d05df304 ref 0x1 write 0x101800008ac8 data 1
+  1333 op 45 len   9 fn6 poll 0x11d05df308 ref 0x1 write 0x101800008ac8 data 1
+  1342 op 37 len   5 ctl 0x100500 addr 0x101800008acc
+  1347 op 42 len   2 
+  1349 op 22 len   5 addr 0x101800008ac8 count 9
+  1354 op 45 len   9 fn6 poll 0x11d05df300 ref 0x10000 write 0x101800008ac0 data 0
+  1363 op 37 len   5 ctl 0x100500 addr 0x101800008ac4
+  1368 op 42 len   2 
+  1370 op 22 len   5 addr 0x101800008ac0 count 7
+  1375 op 11 len   4 index 1 0x11d05df300
+  1379 op 16 len   3 offset 0x0 init 0x45
+  1382 op 46 len   2 event 7
+  1384 op 58 len   8 
+  1392 op 46 len   2 event 7
+  1394 op 58 len   8 
+== find0380.py 1e1 4000008a 1e0 (the launched values in the IB)
+(none above = not in the IB)
+== journal /home/kjaniszewski/bc5-data/captures/play-20261029-1357/gc/direct.log: TIMEOUT lines, probe dispatch lines, zero skip, the last 0380 counters
+submit #278265 acb 68 dwords at 0x7f4f80116750: pass 4 rewrite 6 drop 0 unmapped 0 cc 0 mappings 26419 ... FAILED rc 0 TIMEOUT 2037.36 ms
+submit #278264 dcb 8251 dwords at 0x7f4f2417cf40: pass 629 rewrite 104 drop 148 unmapped 2 cc 0 mappings 26419 ... FAILED rc 0 TIMEOUT 2037.68 ms
+timeout probe: dispatch op 16 at 1287: program 0x11d02a4a00, groups 3158 x 1 x 1 (arguments at 0x11d05df300) ran
+timeout probe: dispatch op 16 at 1377: program 0x11d02ae300, groups 4464 x 1 x 1 (arguments at 0x11d0571b00) ran
+timeout probe: dispatch op 16 at 1407: program 0x11d02a3f00, groups 4464 x 1 x 1 (arguments at 0x11d0571b00) ran
+timeout probe: dispatch op 16 at 1477: program 0x11d02ade00, groups 4464 x 1 x 1 (arguments at 0x11d0571b00) ran
+timeout probe: dispatch op 15 at 1638: program 0x11d03a5d00, groups 104 x 59 x 1 ran
+timeout probe: dispatch op 15 at 1676: program 0x11d03a6400, groups 26 x 15 x 1 ran
+timeout probe: dispatch op 15 at 1712: program 0x11d03aa000, groups 104 x 59 x 1 ran
+timeout probe: dispatch op 15 at 1768: program 0x11d03a8100, groups 104 x 59 x 1 ran
+timeout probe: dispatch op 15 at 2130: program 0x11d0288a00, groups 288 x 1 x 1 ran
+timeout probe: dispatch op 15 at 2288: program 0x11d039cd00, groups 2 x 1 x 1 ran
+timeout probe: dispatch op 15 at 2307: program 0x11d039cd00, groups 2 x 1 x 1 ran
+timeout probe: dispatch op 15 at 3972: program 0x11d0288100, groups 1 x 1 x 1 ran
+zero skip: list /home/kjaniszewski/bc5-work/exp0379t/play-lists/zero-list-20261029-120000.txt, 2 heaps, 1218.0 MiB listed, 0 bad lines
+zero skip: RenderGpuWcLarge at file 0x156c00000: 934.0 MiB in 48 runs skipped
+zero skip: canary BO 1, 52 slices of 2 MiB
+zero skip: canary +467 mappings (467)
+zero skip: CommitIABufferAllocator at file 0x226200000: 284.0 MiB in 4 runs skipped
+zero skip: canary +142 mappings (609)
+zero skip: canary hit in run 37 (file 0x1cb400000 +24.0 MiB): 24.0 MiB taken back
+56638:zero skip: canary hit in run 37 (file 0x1cb400000 +24.0 MiB): 24.0 MiB taken back
+93702:zero skip: 904.0 MiB still skipped of 1218.0 placed; taken back: 0 chunks by CPU writes, 145 by hints, 1 runs by canary hits; 452 canary mappings
+214618:zero skip: 828.0 MiB still skipped of 1218.0 placed; taken back: 0 chunks by CPU writes, 183 by hints, 1 runs by canary hits; 414 canary mappings
+330387:zero skip: 812.0 MiB still skipped of 1218.0 placed; taken back: 4 chunks by CPU writes, 187 by hints, 1 runs by canary hits; 406 canary mappings
+463063:zero skip: 812.0 MiB still skipped of 1218.0 placed; taken back: 4 chunks by CPU writes, 187 by hints, 1 runs by canary hits; 406 canary mappings
+579756:zero skip: 812.0 MiB still skipped of 1218.0 placed; taken back: 4 chunks by CPU writes, 187 by hints, 1 runs by canary hits; 406 canary mappings
+687028:zero skip: 812.0 MiB still skipped of 1218.0 placed; taken back: 4 chunks by CPU writes, 187 by hints, 1 runs by canary hits; 406 canary mappings
+journal lines: 773549
+bc5-direct: experiment 0380 periodic: SET_BASE re-emitted before 5270722 checked indirect dispatches, 36148 of them the first after an INDEX_BASE

@@ -1,0 +1,133 @@
+# exp 0380: the 14:49 hang of W1 (copy + ARGS_WB=all), filtered (the devcoredump, journal and IB stay private)
+mmGRBM_STATUS                                      	 0xa0407028
+mmGRBM_STATUS2                                     	 0x52000008
+mmGRBM_STATUS3                                     	 0x00018000
+mmCP_STALLED_STAT1                                 	 0x00000c00
+mmCP_STALLED_STAT2                                 	 0x00018000
+mmCP_IB1_CMD_BUFSZ                                 	 0x00000738
+mmCP_IB1_BASE_LO                                   	 0x00000000
+mmCP_IB1_BASE_HI                                   	 0x0000100e
+mmCP_IB1_BUFSZ                                     	 0x00000278
+mmCP_CE_INSTR_PNTR                                 	 0x00000552
+mmCP_MEC1_INSTR_PNTR                               	 0x00000447
+mmCP_MEC2_INSTR_PNTR                               	 0x00000491
+mmCP_MES_DEBUG_INTERRUPT_INSTR_PNTR                	 0x00000000
+mmCP_MES_INSTR_PNTR                                	 0x00000000
+mmCP_ME_INSTR_PNTR                                 	 0x0000077b
+mmCP_PFP_INSTR_PNTR                                	 0x00000ea1
+mmGRBM_STATUS_SE0                                  	 0x0a000036
+mmGRBM_STATUS_SE1                                  	 0x0a000036
+mmGRBM_STATUS_SE2                                  	 0x00000006
+mmGRBM_STATUS_SE3                                  	 0x00000006
+mmCP_PFP_HEADER_DUMP                               	 0xc0065800
+mmCP_PFP_HEADER_DUMP                               	 0xc0004600
+mmCP_PFP_HEADER_DUMP                               	 0xc0021100
+mmCP_PFP_HEADER_DUMP                               	 0xc0011600
+mmCP_PFP_HEADER_DUMP                               	 0xc0021100
+mmCP_PFP_HEADER_DUMP                               	 0xc0032200
+mmCP_PFP_HEADER_DUMP                               	 0xc0004200
+mmCP_PFP_HEADER_DUMP                               	 0xc0033700
+mmCP_ME_HEADER_DUMP                                	 0xc0004600
+mmCP_ME_HEADER_DUMP                                	 0xc0011600
+mmCP_ME_HEADER_DUMP                                	 0xc0004200
+mmCP_ME_HEADER_DUMP                                	 0xc0033700
+mmCP_ME_HEADER_DUMP                                	 0xc0004200
+mmCP_ME_HEADER_DUMP                                	 0xc0033700
+mmCP_ME_HEADER_DUMP                                	 0xc0074500
+mmCP_ME_HEADER_DUMP                                	 0xc0074500
+mmCP_PFP_HEADER_DUMP                               	 0xc0065800
+mmCP_PFP_HEADER_DUMP                               	 0xc0004600
+mmCP_PFP_HEADER_DUMP                               	 0xc0021100
+mmCP_PFP_HEADER_DUMP                               	 0xc0011600
+== near0380.py
+== 20261029-144905-devcd1.txt: fetched 1216 of 1848 dwords
+   PFP history (newest first): c0065800 c0004600 c0021100 c0011600 c0021100 c0032200 c0004200 c0033700
+   ME  history (newest first): c0004600 c0011600 c0004200 c0033700 c0004200 c0033700 c0074500 c0074500
+       90 EVENT_WRITE 7
+      100 EVENT_WRITE 7
+      110 EVENT_WRITE 7
+      120 EVENT_WRITE 7
+      130 EVENT_WRITE 7
+      186 EVENT_WRITE 7
+      196 EVENT_WRITE 7
+      206 EVENT_WRITE 7
+      216 EVENT_WRITE 7
+      226 EVENT_WRITE 7
+      236 EVENT_WRITE 7
+      253 DISPATCH_DIRECT 160 180 1
+      258 EVENT_WRITE 7
+      275 EVENT_WRITE 7
+      285 EVENT_WRITE 7
+      302 EVENT_WRITE 7
+      312 EVENT_WRITE 7
+      329 EVENT_WRITE 7
+      339 EVENT_WRITE 7
+      356 EVENT_WRITE 7
+      366 EVENT_WRITE 7
+      383 EVENT_WRITE 7
+      462 DISPATCH_DIRECT 46080 1 1
+      473 EVENT_WRITE 7
+      483 EVENT_WRITE 7
+      493 EVENT_WRITE 7
+      541 SET_BASE 1 0x11d0571000
+      661 SET_BASE 1 0x100e00001cf0
+      665 DISPATCH_INDIRECT off 0x0 init 0x8045
+      668 SET_BASE 1 0x11d0571000
+      672 EVENT_WRITE 7
+      682 EVENT_WRITE 7
+      730 SET_BASE 1 0x11d0571000
+      850 SET_BASE 1 0x100e00001cf0
+      854 DISPATCH_INDIRECT off 0x0 init 0x8045
+      857 SET_BASE 1 0x11d0571000
+      861 EVENT_WRITE 7
+      871 EVENT_WRITE 7
+      919 SET_BASE 1 0x11d0571000
+     1039 SET_BASE 1 0x100e00001cf0
+     1043 DISPATCH_INDIRECT off 0x0 init 0x8045
+     1046 SET_BASE 1 0x11d0571000
+     1050 EVENT_WRITE 7
+     1060 EVENT_WRITE 7
+     1108 SET_BASE 1 0x11d05df000
+     1228 SET_BASE 1 0x100e00001cf0   (past the fetch)
+     1232 DISPATCH_INDIRECT off 0x0 init 0x8045   (past the fetch)
+     1235 SET_BASE 1 0x11d05df000   (past the fetch)
+     1239 EVENT_WRITE 7   (past the fetch)
+     1249 EVENT_WRITE 7   (past the fetch)
+== span0380.py 600-670
+   601 op 45 len   9 fn6 poll 0x100e00001cf8 ref 0x400 write 0x100e00001ce0 data 0
+   610 op 45 len   9 fn6 poll 0x100e00001cf4 ref 0x1 write 0x100e00001ce8 data 1
+   619 op 45 len   9 fn6 poll 0x100e00001cf8 ref 0x1 write 0x100e00001ce8 data 1
+   628 op 37 len   5 ctl 0x100500 addr 0x100e00001cec
+   633 op 42 len   2 
+   635 op 22 len   5 addr 0x100e00001ce8 count 9
+   640 op 45 len   9 fn6 poll 0x100e00001cf0 ref 0x10000 write 0x100e00001ce0 data 0
+   649 op 37 len   5 ctl 0x100500 addr 0x100e00001ce4
+   654 op 42 len   2 
+   656 op 22 len   5 addr 0x100e00001ce0 count 7
+   661 op 11 len   4 index 1 0x100e00001cf0
+   665 op 16 len   3 offset 0x0 init 0x8045
+   668 op 11 len   4 index 1 0x11d0571000
+== find0380.py befe036a 810e810e 6043736
+(none above = not in the IB)
+== journal /home/kjaniszewski/bc5-data/captures/play-20261029-1448/gc/direct.log
+submit #78 acb 1192 dwords at 0x7f25c00469e0: pass 182 rewrite 17 drop 29 unmapped 0 cc 0 mappings 2169 ... FAILED rc 0 TIMEOUT 2001.74 ms
+submit #80 dcb 8995 dwords at 0x7f257004bb10: pass 533 rewrite 195 drop 305 unmapped 0 cc 0 mappings 2169 ... FAILED rc 0 TIMEOUT 2062.23 ms
+timeout probe: dispatch op 15 at 246: program 0x11d0369e00, groups 160 x 180 x 1 ran
+timeout probe: dispatch op 15 at 448: program 0x11d0288800, groups 46080 x 1 x 1 ran
+timeout probe: dispatch op 16 at 533: program 0x11d0323c00, groups 28800 x 1 x 1 (arguments at 0x11d0571b00) ran
+timeout probe: dispatch op 16 at 600: program 0x11d032b100, groups 0 x 1 x 1 (arguments at 0x11d0571d00) DROPPED
+timeout probe: dispatch op 16 at 667: program 0x11d0349300, groups 0 x 1 x 1 (arguments at 0x11d0571f00) ran
+timeout probe: dispatch op 16 at 734: program 0x11d0339900, groups 0 x 1 x 1 (arguments at 0x11d05df100) DROPPED
+timeout probe: dispatch op 16 at 801: program 0x11d0359000, groups 0 x 1 x 1 (arguments at 0x11d05df300) DROPPED
+timeout probe: dispatch op 15 at 876: program 0x11d0288800, groups 61440 x 1 x 1 DROPPED
+journal lines: 814
+   541 op 11 len   4 index 1 0x11d0571000
+   545 op 42 len   2 
+   547 op 40 len   6 
+   553 op 40 len   6 
+   559 op 40 len   6 
+   565 op 58 len   8 
+   573 op 37 len   5 ctl 0x500 addr 0x100e00001ce0
+   578 op 37 len   5 ctl 0x500 addr 0x100e00001ce8
+   583 op 45 len   9 fn6 poll 0x100e00001cf0 ref 0x100000 write 0x100e00001ce0 data 0
+   592 op 45 len   9 fn6 poll 0x100e00001cf4 ref 0x400 write 0x100e00001ce0 data 0

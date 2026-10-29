@@ -1,0 +1,151 @@
+# exp 0380: the 18:08 hang on the shared normal build (58c4a627), filtered (devcoredump, journal, IB private)
+IP Type: 0 Ring Name: gfx_0.0.0
+mmGRBM_STATUS                                      	 0xa2712028
+mmGRBM_STATUS2                                     	 0x50000008
+mmGRBM_STATUS3                                     	 0x00002000
+mmCP_STALLED_STAT1                                 	 0x00000c00
+mmCP_STALLED_STAT2                                 	 0x00218000
+mmCP_BUSY_STAT                                     	 0x00448400
+mmCP_IB1_CMD_BUFSZ                                 	 0x00003f18
+mmCP_IB1_BASE_LO                                   	 0x00000000
+mmCP_IB1_BASE_HI                                   	 0x0000100a
+mmCP_IB1_BUFSZ                                     	 0x00000000
+mmCP_CE_INSTR_PNTR                                 	 0x00000554
+mmCP_MEC1_INSTR_PNTR                               	 0x00000447
+mmCP_MEC2_INSTR_PNTR                               	 0x00000491
+mmCP_MES_DEBUG_INTERRUPT_INSTR_PNTR                	 0x00000000
+mmCP_MES_INSTR_PNTR                                	 0x00000000
+mmCP_ME_INSTR_PNTR                                 	 0x0000077a
+mmCP_PFP_INSTR_PNTR                                	 0x00000ea1
+mmGRBM_STATUS_SE0                                  	 0x0d000004
+mmGRBM_STATUS_SE1                                  	 0x0d000004
+mmGRBM_STATUS_SE2                                  	 0x00000006
+mmGRBM_STATUS_SE3                                  	 0x00000006
+mmCP_PFP_HEADER_DUMP                               	 0xc0065800
+mmCP_PFP_HEADER_DUMP                               	 0xc0004600
+mmCP_PFP_HEADER_DUMP                               	 0xc0065800
+mmCP_PFP_HEADER_DUMP                               	 0xc0004600
+mmCP_PFP_HEADER_DUMP                               	 0xc0064900
+mmCP_PFP_HEADER_DUMP                               	 0xffff1000
+mmCP_PFP_HEADER_DUMP                               	 0xffff1000
+mmCP_PFP_HEADER_DUMP                               	 0xffff1000
+mmCP_ME_HEADER_DUMP                                	 0xc0004600
+mmCP_ME_HEADER_DUMP                                	 0xc0065800
+mmCP_ME_HEADER_DUMP                                	 0xc0000c00
+mmCP_ME_HEADER_DUMP                                	 0xc0004600
+mmCP_ME_HEADER_DUMP                                	 0xc0064900
+mmCP_ME_HEADER_DUMP                                	 0xc0064900
+mmCP_ME_HEADER_DUMP                                	 0xc0019f00
+mmCP_ME_HEADER_DUMP                                	 0xc0064900
+mmCP_PFP_HEADER_DUMP                               	 0xc0065800
+mmCP_PFP_HEADER_DUMP                               	 0xc0004600
+== IB #0 tail (span0380.py 15900-16152)
+ 15905 op 49 len   8 
+ 15913 op 58 len   8 
+ 15921 op 10 len   1 
+ 15922 op 10 len   1 
+ 15923 op 10 len   1 
+ 15924 op 10 len   1 
+ 15925 op 10 len   1 
+ 15926 op 46 len   2 event 7
+ 15928 op 46 len   2 event 16
+ 15930 op 22 len   5 addr 0xfe0040060 count 11
+ 15935 op 12 len   2 
+ 15937 op 1e len   9 
+ 15946 op 9f len   5 w 0xe0040068 0xf 0x80000000 0x399
+ 15951 op 63 len   5 LOAD_SH_REG_INDEX? addr 0xfe0042068 w1 0x0 reg 0x0 hi16 0x8000 n 174
+ 15956 op 64 len   5 
+ 15961 op 2f len   2 
+ 15963 op 7a len   3 
+ 15966 op 26 len   3 
+ 15969 op 13 len   2 
+ 15971 op 11 len   4 index 1 0x0
+ 15975 op 11 len   4 index 1 0x0
+ 15979 op 58 len   8 
+ 15987 op 46 len   2 event 46
+ 15989 op 46 len   2 event 44
+ 15991 op 46 len   4 event 56
+ 15995 op 10 len   1 
+ 15996 op 10 len   1 
+ 15997 op 10 len   1 
+ 15998 op 7a len   3 
+ 16001 op 9f len   5 w 0xe036fc00 0x11 0x80000000 0x1
+ 16006 op 9f len   5 w 0xe036fc08 0x11 0x80000000 0x2f
+ 16011 op 10 len   1 
+ 16012 op 10 len   1 
+ 16013 op 10 len   1 
+ 16014 op 10 len   1 
+ 16015 op 10 len   1 
+ 16016 op 10 len   1 
+ 16017 op 49 len   8 
+ 16025 op 10 len   1 
+ 16026 op 10 len   1 
+ 16027 op 10 len   1 
+ 16028 op 10 len   1 
+ 16029 op 10 len   1 
+ 16030 op 10 len   1 
+ 16031 op 10 len   1 
+ 16032 op 10 len   1 
+ 16033 op 10 len   1 
+ 16034 op 10 len   1 
+ 16035 op 10 len   1 
+ 16036 op 10 len   1 
+ 16037 op 10 len   1 
+ 16038 op 49 len   8 
+ 16046 op 49 len   8 
+ 16054 op 49 len   8 
+ 16062 op 10 len   1 
+ 16063 op 10 len   1 
+ 16064 op 10 len   1 
+ 16065 op 10 len   1 
+ 16066 op 10 len   1 
+ 16067 op 10 len   1 
+ 16068 op 10 len   1 
+ 16069 op 10 len   1 
+ 16070 op 10 len   1 
+ 16071 op 10 len   1 
+ 16072 op 10 len   1 
+ 16073 op 10 len   1 
+ 16074 op 10 len   1 
+ 16075 op 49 len   8 
+ 16083 op 49 len   8 
+ 16091 op 49 len   8 
+ 16099 op 49 len   8 
+ 16107 op 58 len   8 
+ 16115 op 49 len   8 
+ 16123 op 49 len   8 
+ 16131 op 49 len   8 
+ 16139 op 50 len   7 ctl 0xe0300000 src 0x0 dst 0x0 n 0x0
+ 16146 op 10 len   1 
+ 16147 op 10 len   1 
+ 16148 op 10 len   1 
+ 16149 op 10 len   1 
+ 16150 op 10 len   1 
+ 16151 op 10 len   1 
+== journal: TIMEOUT and probe summary
+submit #127530 dcb 14945 dwords at 0x7fa8b0295a30: pass 1084 rewrite 261 drop 378 unmapped 0 cc 0 mappings 20374 ... FAILED rc 0 TIMEOUT 2004.59 ms
+cpu-wait WAIT_REG_MEM64 at 0 on 0x1200c0d550: TIMEOUT after 0.0 ms
+cpu-wait WAIT_REG_MEM64 at 28 on 0x1200c0d550: TIMEOUT after 0.0 ms
+cpu-wait WAIT_REG_MEM64 at 28 on 0x1200c0d550: TIMEOUT after 0.0 ms
+cpu-wait WAIT_REG_MEM64 at 28 on 0x1200c0d550: TIMEOUT after 0.0 ms
+cpu-wait WAIT_REG_MEM64 at 28 on 0x1200a7fc50: TIMEOUT after 0.0 ms
+cpu-wait WAIT_REG_MEM64 at 0 on 0x1200926f50: TIMEOUT after 0.0 ms
+timeout probe: dcb #127530 14945 dwords: 17 waits (16 kept for the GPU), 270 label writes, 29 dispatches (5 indirect; the largest grid 15678 groups, at 14666)
+timeout probe: HS user data address 0x0 at 1046 not mapped
+timeout probe: HS user data address 0x0 at 9233 not mapped
+timeout probe: HS user data address 0x0 at 12139 not mapped
+== the sampler kmsg lines of this boot after 11900 s
+[11914.382653] amdgpu 0000:01:00.0: Dumping IP State
+[11914.384742] amdgpu 0000:01:00.0: Dumping IP State Completed
+[11914.384752] amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+[11914.384755] amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+[11914.384756] amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=5875900, emitted seq=5875903
+[11914.384759] amdgpu 0000:01:00.0:  Process kyty_emulator pid 672225 thread Render Thread pid 672278
+[11914.384762] amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+[11914.572316] amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset failed
+[11914.572322] amdgpu 0000:01:00.0: GPU reset begin!. Source:  1
+== host window pause lines (play-pkg-last.log)
+window: paused at 148.715 s (Space key)
+window: resumed at 148.715 s (Space key)
+window: paused at 150.059 s (Space key)
+window: resumed at 150.059 s (Space key)

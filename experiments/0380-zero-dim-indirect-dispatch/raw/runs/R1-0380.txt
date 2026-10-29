@@ -1,0 +1,4 @@
+bc5-direct: experiment 0380 switch: every checked GFX-form indirect dispatch gets its SET_BASE index 1 again right before it
+bc5-direct: experiment 0380 periodic: SET_BASE re-emitted before 13956384 checked indirect dispatches, 85424 of them the first after an INDEX_BASE
+bc5-direct: experiment 0380 periodic: SET_BASE re-emitted before 14193883 checked indirect dispatches, 86928 of them the first after an INDEX_BASE
+bc5-direct: experiment 0380 periodic: SET_BASE re-emitted before 14429590 checked indirect dispatches, 88420 of them the first after an INDEX_BASE

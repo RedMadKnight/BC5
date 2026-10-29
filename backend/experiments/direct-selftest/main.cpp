@@ -10,6 +10,9 @@
 // with the dispatch replaced by a WRITE_DATA (no shader runs): the write must happen for sane
 // group counts only. The packets go in the unfiltered prologue (the policy drops COND_WRITE).
 //
+// --zero-check (experiment 0380): as --cp-check with the zero-dimension guard on and four more
+// triples with a 0 count, which must not write the result either.
+//
 // --compute-ring N (ADR 0009, ladder step 5): Device::submit's own path on compute ring N, one
 // job at a time, stopping at the first failure. No shader runs.
 //   1 nop        the filter's one-dword NOP (0xffff1000) on the MEC
@@ -166,7 +169,12 @@ int compute_ladder(bc5::direct::Device &dev, char *mem, int ring) {
                               {0x7f800000u, 0x7f800000u, 0x7f800000u, false},
                               {28800, 0xff800000u, 1, false},
                               {1, 1, 2000, false},
-                              {1u << 20, 1024, 1024, true}};
+                              {1u << 20, 1024, 1024, true},
+                              // experiment 0380 (--zero-check only): a 0 count must not run
+                              {0, 1, 1, false},
+                              {1, 0, 1, false},
+                              {1, 1, 0, false},
+                              {0, 0, 0, false}};
         int wrong = 0;
         for (std::size_t k = 0; k < std::size(cases); ++k) {
             const std::size_t page = 0x1000 * (k + 1);
@@ -295,7 +303,7 @@ int main(int argc, char **argv) {
     std::uint64_t map_mib = 0;
     bool submit = false;
     bool synthetic = true;
-    bool cp_check = false;
+    bool cp_check = false, zero_check = false;
     int compute_ring = -1;
     std::string journal_path;
     bc5::direct::OpenOptions open_opts;
@@ -310,10 +318,11 @@ int main(int argc, char **argv) {
         else if (a == "--legacy-va") open_opts.legacy_scratch_va = true;
         else if (a == "--skip-synthetic") synthetic = false;
         else if (a == "--cp-check") cp_check = true;
+        else if (a == "--zero-check") cp_check = zero_check = true; // experiment 0380
         else if (a == "--compute-ring" && i + 1 < argc) compute_ring = std::stoi(argv[++i]);
         else {
             std::fputs("usage: direct-selftest --submit [--render-node PATH] [--ib-file FILE]... [--map-mib N] [--journal FILE]\n"
-                       "                       [--dedup] [--legacy-va] [--skip-synthetic] [--cp-check]\n"
+                       "                       [--dedup] [--legacy-va] [--skip-synthetic] [--cp-check] [--zero-check]\n"
                        "                       [--compute-ring N]\n", stderr);
             return 2;
         }
@@ -359,7 +368,8 @@ int main(int argc, char **argv) {
                               {1, 1, 2000, false},
                               {1u << 20, 1024, 1024, true}};
         int failures = 0;
-        for (std::size_t k = 0; k < std::size(cases); ++k) {
+        const std::size_t n_cases = zero_check ? std::size(cases) : 5; // --cp-check: the five of 0052
+        for (std::size_t k = 0; k < n_cases; ++k) {
             auto *page = reinterpret_cast<volatile std::uint32_t *>(static_cast<char *>(mem) + 0x1000 * k);
             const std::uint64_t va = reinterpret_cast<std::uint64_t>(page);
             page[0x40 / 4] = cases[k].x;
@@ -374,7 +384,8 @@ int main(int argc, char **argv) {
                                                    static_cast<std::uint32_t>(va >> 32), 0xC0011600u, 0x40u, 0x41u};
             std::vector<std::size_t> refs;
             bc5::indirect_check::Stats st;
-            auto seq = bc5::indirect_check::apply(in, 0, defaults.gpu_check_max, defaults.gpu_check_draw_max, refs, st);
+            auto seq = bc5::indirect_check::apply(in, 0, defaults.gpu_check_max, defaults.gpu_check_draw_max, refs, st,
+                                                  false, nullptr, zero_check);
             bc5::indirect_check::patch(seq, refs, va + 0x100);
             seq.resize(seq.size() - 3);
             seq.back() = 5;

@@ -1,0 +1,11 @@
+swappiness 60 vfs_cache_pressure 100 watermark_scale_factor 10 min_free_kbytes 67584 page-cluster 3
+zram0 disksize 7964983296 comp lzo-rle lzo lz4 lz4hc [zstd] deflate 842 ; MemTotal 15192 MiB; GTT total 13312 MiB
+kernel 7.2.9-ogc3.1.fc44.x86_64; launcher /home/kjaniszewski/bc5-work/play-pkg.sh md5 55531ab6; shared normal 58c4a627, lean dcbeb440; private normal /home/kjaniszewski/bc5-work/exp0380r/kyty_emulator md5 7943d581; shared bc5-mount 43277724
+learned file /home/kjaniszewski/bc5-work/direct-learned-pkg.txt md5 a7cc8581, 109 windows
+launcher /home/kjaniszewski/bc5-work/exp0380s/play-pkg-0380s.sh md5 06a0ffa6 (/home/kjaniszewski/bc5-work/exp0380s/raw/play-pkg-0380s.diff); wd /home/kjaniszewski/bc5-work/exp0380s/wd (5151 entries)
+2026-10-29 12:55:21 live saves 6560743e7473baa1, snapshot /home/kjaniszewski/bc5-work/exp0380s/saves-before-1255 (comparison only)
+R2: stopped at 600 s after 600 s; launcher exit 0; crash lines 0, kernel lines 0, TIMEOUT lines 0, compute-ring lines 0, fdinfo engines drm-engine-gfx , devcoredumps 0, RT-off drop lines 0, flips 21790 over 596.3 s = 36.5 flips/s; direct: 19378 views; +0 BOs (87, 11302.0 MiB pinned); maps +1 -2 (19414); imports  (stubs ), call lines , procparam ; the private learned file is unchanged
+exp 0358 frame profiles 21789: per frame GPU busy 20.10 ms, host prepare 2.57 ms (filter 0.98), 27.4 ms between flips
+pass
+2026-10-29 13:05:34 live saves 6560743e7473baa1 (want 6560743e7473baa1)
+BOX-LOCK released

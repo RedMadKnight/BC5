@@ -1,0 +1,40 @@
+9,10c9,10
+< unset BC5_LEAN BC5_LOGS  # exp 0380nc: the normal build's journal and timeout probe
+< Z=~/bc5-work/exp0380nc; ZSTAMP=$(date +%Y%m%d-%H%M%S)  # exp 0380nc
+---
+> unset BC5_LEAN BC5_LOGS  # exp 0380r1: the normal build's journal and timeout probe
+> Z=~/bc5-work/exp0380r1; ZSTAMP=$(date +%Y%m%d-%H%M%S)  # exp 0380r1
+13c13
+< EMU=~/bc5-work/exp0380nc/bin/kyty_emulator  # exp 0380nc: shared objects and archive, bc5LleAgc.cpp with exp 0379's zero skip and the recorder (build0380nc.sh)
+---
+> EMU=~/bc5-work/exp0380r1/bin/kyty_emulator  # exp 0380r1: shared objects and archive, bc5LleAgc.cpp with exp 0379's zero skip and the recorder of F608, runtimeLinker.cpp with BC5_CRASH_FRAMES (build0380r1.sh)
+15,16c15,16
+< mkdir -p ~/bc5-work/exp0380nc/play
+< LOG=~/bc5-work/exp0380nc/play/play-$ZSTAMP.log  # exp 0380nc: one log per start
+---
+> mkdir -p ~/bc5-work/exp0380r1/play
+> LOG=~/bc5-work/exp0380r1/play/play-$ZSTAMP.log  # exp 0380r1: one log per start
+25c25
+< MLOG=~/bc5-work/exp0380nc/play/mount-$ZSTAMP.log  # exp 0380nc: its own mount log
+---
+> MLOG=~/bc5-work/exp0380r1/play/mount-$ZSTAMP.log  # exp 0380r1: its own mount log
+43c43
+< # exp 0380nc (the maintainer's play, F603/F604): the prefix without CONTEXT_CONTROL and CLEAR_STATE, exp 0379's zero skip
+---
+> # exp 0380r1 (the maintainer's play, F603/F604): the prefix without CONTEXT_CONTROL and CLEAR_STATE, exp 0379's zero skip
+46c46
+< export BC5_0380_REC=1 BC5_DIRECT_PIECES_NO_CLEAR=1 BC5_DIRECT_ZERO_SKIP=$HOME/bc5-work/exp0380nc/zero-list-20261029-120000.txt
+---
+> export BC5_CRASH_FRAMES=1 BC5_0380_REC=1 BC5_DIRECT_PIECES_NO_CLEAR=1 BC5_DIRECT_ZERO_SKIP=$HOME/bc5-work/exp0380r1/zero-list-20261029-120000.txt
+176c176
+<   [ -n "${ZSP:-}" ] && kill "$ZSP" 2> /dev/null  # exp 0380nc: the memory sampler
+---
+>   [ -n "${ZSP:-}" ] && kill "$ZSP" 2> /dev/null  # exp 0380r1: the memory sampler
+192c192
+< bash "$Z/play-sample0379t.sh" $$ "$Z/play/mem-$ZSTAMP.txt" < /dev/null > /dev/null 2>&1 & ZSP=$!  # exp 0380nc: once a minute
+---
+> bash "$Z/play-sample0379t.sh" $$ "$Z/play/mem-$ZSTAMP.txt" < /dev/null > /dev/null 2>&1 & ZSP=$!  # exp 0380r1: once a minute
+195c195
+<   echo "== exp 0380nc: BC5_0380_REC=1 BC5_DIRECT_PIECES_NO_CLEAR=1 BC5_DIRECT_ZERO_SKIP=$BC5_DIRECT_ZERO_SKIP ($(md5sum < "$BC5_DIRECT_ZERO_SKIP" | cut -c1-8)); no write-back, FORCE_START, copy or rebase; binary $(md5sum < "$EMU" | cut -c1-8)"
+---
+>   echo "== exp 0380r1: BC5_CRASH_FRAMES=1 BC5_0380_REC=1 BC5_DIRECT_PIECES_NO_CLEAR=1 BC5_DIRECT_ZERO_SKIP=$BC5_DIRECT_ZERO_SKIP ($(md5sum < "$BC5_DIRECT_ZERO_SKIP" | cut -c1-8)); no write-back, FORCE_START, copy or rebase; binary $(md5sum < "$EMU" | cut -c1-8)"

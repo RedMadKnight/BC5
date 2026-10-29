@@ -1,0 +1,176 @@
+== play logs, first lines and the last write-back counters
+-- /home/kjaniszewski/bc5-work/exp0380wb/play/play-20261029-162442.log
+== exp 0380wb: BC5_DIRECT_ARGS_WB=first; BC5_DIRECT_FORCE_START_000=1; no copy, no rebase, no zero skip; binary c3c8660b
+bc5-direct: experiment 0380 periodic: GL2 write-back before 908 checked indirect dispatches
+-- /home/kjaniszewski/bc5-work/exp0380wb/play/play-20261029-162552.log
+== exp 0380wb: BC5_DIRECT_ARGS_WB=first; BC5_DIRECT_FORCE_START_000=1; no copy, no rebase, no zero skip; binary c3c8660b
+bc5-direct: experiment 0380 periodic: GL2 write-back before 282894 checked indirect dispatches
+== kernel lines of start 1 (dmesg, amdgpu)
+[ 5760.891924] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:6 pasid:30)
+[ 5760.891930] amdgpu 0000:01:00.0:  Process kyty_emulator pid 303630 thread bc5-ring pid 303700
+[ 5760.891933] amdgpu 0000:01:00.0:   in page starting at address 0x000008608c654000 from client 0x1b (UTCL2)
+[ 5760.891935] amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00601031
+[ 5760.891937] amdgpu 0000:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+[ 5760.891938] amdgpu 0000:01:00.0: 	 MORE_FAULTS: 0x1
+[ 5760.891939] amdgpu 0000:01:00.0: 	 WALKER_ERROR: 0x0
+[ 5760.891940] amdgpu 0000:01:00.0: 	 PERMISSION_FAULTS: 0x3
+[ 5760.891941] amdgpu 0000:01:00.0: 	 MAPPING_ERROR: 0x0
+[ 5760.891942] amdgpu 0000:01:00.0: 	 RW: 0x0
+[ 5760.891946] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:6 pasid:30)
+[ 5760.891947] amdgpu 0000:01:00.0:  Process kyty_emulator pid 303630 thread bc5-ring pid 303700
+[ 5760.891948] amdgpu 0000:01:00.0:   in page starting at address 0x000008608c659000 from client 0x1b (UTCL2)
+[ 5760.891950] amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00601031
+[ 5760.891951] amdgpu 0000:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+[ 5760.891951] amdgpu 0000:01:00.0: 	 MORE_FAULTS: 0x1
+[ 5760.891952] amdgpu 0000:01:00.0: 	 WALKER_ERROR: 0x0
+[ 5760.891953] amdgpu 0000:01:00.0: 	 PERMISSION_FAULTS: 0x3
+[ 5760.891954] amdgpu 0000:01:00.0: 	 MAPPING_ERROR: 0x0
+[ 5760.891955] amdgpu 0000:01:00.0: 	 RW: 0x0
+[ 5760.891958] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:6 pasid:30)
+[ 5760.891959] amdgpu 0000:01:00.0:  Process kyty_emulator pid 303630 thread bc5-ring pid 303700
+[ 5760.891960] amdgpu 0000:01:00.0:   in page starting at address 0x000008608c65a000 from client 0x1b (UTCL2)
+[ 5760.891961] amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00601031
+[ 5760.891962] amdgpu 0000:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+[ 5760.891963] amdgpu 0000:01:00.0: 	 MORE_FAULTS: 0x1
+[ 5760.891964] amdgpu 0000:01:00.0: 	 WALKER_ERROR: 0x0
+[ 5760.891965] amdgpu 0000:01:00.0: 	 PERMISSION_FAULTS: 0x3
+[ 5760.891966] amdgpu 0000:01:00.0: 	 MAPPING_ERROR: 0x0
+[ 5760.891966] amdgpu 0000:01:00.0: 	 RW: 0x0
+[ 5760.891970] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:6 pasid:30)
+[ 5760.891971] amdgpu 0000:01:00.0:  Process kyty_emulator pid 303630 thread bc5-ring pid 303700
+[ 5760.891973] amdgpu 0000:01:00.0:   in page starting at address 0x000008608c657000 from client 0x1b (UTCL2)
+[ 5760.891974] amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00601031
+[ 5760.891975] amdgpu 0000:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+[ 5760.891976] amdgpu 0000:01:00.0: 	 MORE_FAULTS: 0x1
+[ 5760.891978] amdgpu 0000:01:00.0: 	 WALKER_ERROR: 0x0
+[ 5760.891979] amdgpu 0000:01:00.0: 	 PERMISSION_FAULTS: 0x3
+[ 5760.891980] amdgpu 0000:01:00.0: 	 MAPPING_ERROR: 0x0
+[ 5760.891981] amdgpu 0000:01:00.0: 	 RW: 0x0
+[ 5760.891984] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:6 pasid:30)
+[ 5760.891986] amdgpu 0000:01:00.0:  Process kyty_emulator pid 303630 thread bc5-ring pid 303700
+[ 5760.891987] amdgpu 0000:01:00.0:   in page starting at address 0x000008608c658000 from client 0x1b (UTCL2)
+[ 5760.891989] amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00601031
+[ 5760.891990] amdgpu 0000:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+[ 5760.891991] amdgpu 0000:01:00.0: 	 MORE_FAULTS: 0x1
+[ 5760.891992] amdgpu 0000:01:00.0: 	 WALKER_ERROR: 0x0
+[ 5760.891992] amdgpu 0000:01:00.0: 	 PERMISSION_FAULTS: 0x3
+[ 5760.891993] amdgpu 0000:01:00.0: 	 MAPPING_ERROR: 0x0
+[ 5760.891994] amdgpu 0000:01:00.0: 	 RW: 0x0
+[ 5760.891997] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:6 pasid:30)
+[ 5760.891998] amdgpu 0000:01:00.0:  Process kyty_emulator pid 303630 thread bc5-ring pid 303700
+[ 5760.891999] amdgpu 0000:01:00.0:   in page starting at address 0x000008608c65b000 from client 0x1b (UTCL2)
+[ 5760.892000] amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00601031
+[ 5760.892001] amdgpu 0000:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+[ 5760.892002] amdgpu 0000:01:00.0: 	 MORE_FAULTS: 0x1
+[ 5760.892003] amdgpu 0000:01:00.0: 	 WALKER_ERROR: 0x0
+[ 5760.892004] amdgpu 0000:01:00.0: 	 PERMISSION_FAULTS: 0x3
+[ 5760.892004] amdgpu 0000:01:00.0: 	 MAPPING_ERROR: 0x0
+[ 5760.892005] amdgpu 0000:01:00.0: 	 RW: 0x0
+[ 5760.892008] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:6 pasid:30)
+[ 5760.892009] amdgpu 0000:01:00.0:  Process kyty_emulator pid 303630 thread bc5-ring pid 303700
+[ 5760.892010] amdgpu 0000:01:00.0:   in page starting at address 0x000008608c65d000 from client 0x1b (UTCL2)
+[ 5760.892011] amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00601031
+[ 5760.892012] amdgpu 0000:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+[ 5760.892013] amdgpu 0000:01:00.0: 	 MORE_FAULTS: 0x1
+[ 5760.892014] amdgpu 0000:01:00.0: 	 WALKER_ERROR: 0x0
+[ 5760.892015] amdgpu 0000:01:00.0: 	 PERMISSION_FAULTS: 0x3
+[ 5760.892015] amdgpu 0000:01:00.0: 	 MAPPING_ERROR: 0x0
+[ 5760.892016] amdgpu 0000:01:00.0: 	 RW: 0x0
+[ 5760.892019] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:6 pasid:30)
+[ 5760.892020] amdgpu 0000:01:00.0:  Process kyty_emulator pid 303630 thread bc5-ring pid 303700
+[ 5760.892022] amdgpu 0000:01:00.0:   in page starting at address 0x000008608c660000 from client 0x1b (UTCL2)
+[ 5760.892023] amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00601031
+[ 5760.892023] amdgpu 0000:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+[ 5760.892024] amdgpu 0000:01:00.0: 	 MORE_FAULTS: 0x1
+[ 5760.892025] amdgpu 0000:01:00.0: 	 WALKER_ERROR: 0x0
+[ 5760.892026] amdgpu 0000:01:00.0: 	 PERMISSION_FAULTS: 0x3
+[ 5760.892027] amdgpu 0000:01:00.0: 	 MAPPING_ERROR: 0x0
+[ 5760.892028] amdgpu 0000:01:00.0: 	 RW: 0x0
+[ 5760.892031] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:6 pasid:30)
+[ 5760.892032] amdgpu 0000:01:00.0:  Process kyty_emulator pid 303630 thread bc5-ring pid 303700
+[ 5760.892033] amdgpu 0000:01:00.0:   in page starting at address 0x000008608c657000 from client 0x1b (UTCL2)
+[ 5760.892034] amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00601031
+[ 5760.892035] amdgpu 0000:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+[ 5760.892036] amdgpu 0000:01:00.0: 	 MORE_FAULTS: 0x1
+[ 5760.892037] amdgpu 0000:01:00.0: 	 WALKER_ERROR: 0x0
+[ 5760.892037] amdgpu 0000:01:00.0: 	 PERMISSION_FAULTS: 0x3
+[ 5760.892038] amdgpu 0000:01:00.0: 	 MAPPING_ERROR: 0x0
+[ 5760.892039] amdgpu 0000:01:00.0: 	 RW: 0x0
+[ 5760.892042] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:6 pasid:30)
+[ 5760.892043] amdgpu 0000:01:00.0:  Process kyty_emulator pid 303630 thread bc5-ring pid 303700
+[ 5760.892044] amdgpu 0000:01:00.0:   in page starting at address 0x000008608c65c000 from client 0x1b (UTCL2)
+[ 5760.892046] amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00601031
+[ 5760.892046] amdgpu 0000:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+[ 5760.892048] amdgpu 0000:01:00.0: 	 MORE_FAULTS: 0x1
+[ 5760.892048] amdgpu 0000:01:00.0: 	 WALKER_ERROR: 0x0
+[ 5760.892049] amdgpu 0000:01:00.0: 	 PERMISSION_FAULTS: 0x3
+[ 5760.892050] amdgpu 0000:01:00.0: 	 MAPPING_ERROR: 0x0
+[ 5760.892051] amdgpu 0000:01:00.0: 	 RW: 0x0
+[ 5762.954801] amdgpu 0000:01:00.0: Dumping IP State
+[ 5762.956758] amdgpu 0000:01:00.0: Dumping IP State Completed
+[ 5762.956769] amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+[ 5762.956770] amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+[ 5762.956773] amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=2799211, emitted seq=2799213
+[ 5762.956776] amdgpu 0000:01:00.0:  Process kyty_emulator pid 303630 thread Render Thread pid 303719
+[ 5762.956778] amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+[ 5762.956937] amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded
+[ 5762.956939] amdgpu 0000:01:00.0: [drm] device wedged, but no recovery needed
+[ 5763.032043] bc5-gpu-watch: armed: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=2799211, emitted seq=2799213
+[ 5763.036375] bc5-gpu-watch: disarmed: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded
+[ 5765.002804] amdgpu 0000:01:00.0: Dumping IP State
+[ 5765.004804] amdgpu 0000:01:00.0: Dumping IP State Completed
+[ 5765.004826] amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+[ 5765.004828] amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+[ 5765.004830] amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=2799214, emitted seq=2799216
+[ 5765.004832] amdgpu 0000:01:00.0:  Process kyty_emulator pid 303630 thread Render Thread pid 303719
+[ 5765.004834] amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+[ 5765.004893] amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded
+[ 5765.004895] amdgpu 0000:01:00.0: [drm] device wedged, but no recovery needed
+[ 5765.007853] bc5-gpu-watch: armed: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=2799214, emitted seq=2799216
+[ 5765.012548] bc5-gpu-watch: disarmed: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded
+== start 1 journal: TIMEOUT and probe dispatch lines
+submit #32980 acb 4 dwords at 0x7f46c0133cb0: pass 0 rewrite 0 drop 1 unmapped 0 cc 0 mappings 26893 ... FAILED rc 0 TIMEOUT 2062.97 ms
+submit #32979 dcb 14911 dwords at 0x7f466c1f40d0: pass 1917 rewrite 46 drop 43 unmapped 0 cc 0 mappings 26893 ... FAILED rc 0 TIMEOUT 2064.72 ms
+timeout probe: dispatch op 16 at 13: program 0x909977100, groups ? (arguments at 0x80, not mapped) ran
+timeout probe: dispatch op 16 at 26: program 0x909977100, groups ? (arguments at 0xa0, not mapped) ran
+timeout probe: dispatch op 16 at 43: program 0x909977100, groups ? (arguments at 0x2280, not mapped) ran
+timeout probe: dispatch op 16 at 60: program 0x909977100, groups ? (arguments at 0x2d80, not mapped) ran
+timeout probe: dispatch op 16 at 73: program 0x909977100, groups ? (arguments at 0x2da0, not mapped) ran
+timeout probe: dispatch op 16 at 90: program 0x909977100, groups ? (arguments at 0x4e80, not mapped) ran
+timeout probe: dispatch op 16 at 107: program 0x909977100, groups ? (arguments at 0x7280, not mapped) ran
+timeout probe: dispatch op 16 at 120: program 0x909977100, groups ? (arguments at 0x72a0, not mapped) ran
+timeout probe: dispatch op 16 at 133: program 0x909977100, groups ? (arguments at 0x72c0, not mapped) ran
+timeout probe: dispatch op 16 at 146: program 0x909977100, groups ? (arguments at 0x72e0, not mapped) ran
+== start 2 journal: flips and TIMEOUT lines
+flips 67616 over 2192 s = 30.8/s
+TIMEOUT lines: 0
+== /home/kjaniszewski/bc5-data/captures/gpu-stall/event-20261029-162541-gfx_0.0.0
+bc5-gpu-stall-sampler 0377 event event-20261029-162541-gfx_0.0.0
+reason: stall clock 1.90 s on gfx_0.0.0 (written before the kernel's 2-s timeout)
+written: 2026-10-29T16:25:42.031 (mono 5763.443); debugfs /sys/kernel/debug/dri/0000:01:00.0
+rings:
+ gfx_0.0.0: stalled since mono 5761.274 (sig 0x002ab66b emit 0x002ab66d), samples at clock 0.52 0.80 1.10 1.40 1.70, missed 0, past 1.9 s: yes, kmsg timeout: [ 5762.956773] amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=2799211, emitted seq=2799213, ended after 2.08 s
+samples: 5 (registers, no wave scan of the whole GPU, shared by the rings above)
+ sample 1 (stall) mono 5761.797, clocks gfx_0.0.0=0.52, gfxoff 0
+   registers 50 (0 errors) in 52.2 ms; waves not scanned (registers only)
+   distinct PCs 0: -
+   queues: -
+   GRBM_STATUS=0xa04030ac CP_STAT=0x9482a600 CP_PFP_INSTR_PNTR=0xea1 CP_ME_INSTR_PNTR=0xe15 CP_IB1_BASE_HI=0x1013 CP_IB1_BASE_LO=0x0 CP_IB1_BUFSZ=0x38f8 CP_IB1_CMD_BUFSZ=0x4138
+   compute: program=0x909977100 dim=[697 1 1] threads=[64 1 1] initiator=0x65 id=2682980799 (gfx ME0 pipe0 queue0 (gfx_0.0.0))
+ sample 2 (stall) mono 5762.074, clocks gfx_0.0.0=0.80, gfxoff 0
+   registers 50 (0 errors) in 0.2 ms; waves not scanned (registers only)
+== /home/kjaniszewski/bc5-data/captures/gpu-stall/event-20261029-162543-gfx_0.0.0
+bc5-gpu-stall-sampler 0377 event event-20261029-162543-gfx_0.0.0
+reason: stall clock 1.92 s on gfx_0.0.0 (written before the kernel's 2-s timeout)
+written: 2026-10-29T16:25:43.990 (mono 5765.402); debugfs /sys/kernel/debug/dri/0000:01:00.0
+rings:
+ gfx_0.0.0: stalled since mono 5763.350 (sig 0x002ab66e emit 0x002ab670), samples at clock 0.52 0.82 1.12 1.42 1.72, missed 0, past 1.9 s: yes, kmsg timeout: [ 5765.004830] amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=2799214, emitted seq=2799216, ended after 2.05 s
+samples: 5 (registers, no wave scan of the whole GPU, shared by the rings above)
+ sample 1 (stall) mono 5763.875, clocks gfx_0.0.0=0.52, gfxoff 0
+   registers 50 (0 errors) in 0.2 ms; waves not scanned (registers only)
+   distinct PCs 0: -
+   queues: -
+   GRBM_STATUS=0xa0003028 CP_STAT=0x94038600 CP_PFP_INSTR_PNTR=0xea0 CP_ME_INSTR_PNTR=0x5c0 CP_IB1_BASE_HI=0x1015 CP_IB1_BASE_LO=0x0 CP_IB1_BUFSZ=0xaf0 CP_IB1_CMD_BUFSZ=0xd50
+   compute: program=0x909977100 dim=[213 1 1] threads=[64 1 1] initiator=0x65 id=2682980799 (gfx ME0 pipe0 queue0 (gfx_0.0.0))
+ sample 2 (stall) mono 5764.175, clocks gfx_0.0.0=0.82, gfxoff 0
+   registers 50 (0 errors) in 0.3 ms; waves not scanned (registers only)

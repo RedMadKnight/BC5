@@ -1,0 +1,34 @@
+Starting container...                   	[32m [ OK ]
+[0mInstalling basic packages...            	[32m [ OK ]
+[0mSetting up devpts mounts...             	[32m [ OK ]
+[0mSetting up read-only mounts...          	[32m [ OK ]
+[0mSetting up read-write mounts...         	[32m [ OK ]
+[0mSetting up host's sockets integration...	[32m [ OK ]
+[0mIntegrating host's themes, icons, fonts...	[32m [ OK ]
+[0mSetting up distrobox profile...         	[32m [ OK ]
+[0mSetting up sudo...                      	[32m [ OK ]
+[0mSetting up user's group list...         	[32m [ OK ]
+[0m
+Container Setup Complete!
+-- The CXX compiler identification is Clang 21.1.8
+-- Detecting CXX compiler ABI info
+-- Detecting CXX compiler ABI info - done
+-- Check for working CXX compiler: /usr/bin/clang++ - skipped
+-- Detecting CXX compile features
+-- Detecting CXX compile features - done
+-- Found PkgConfig: /usr/bin/pkg-config (found version "2.5.1")
+-- Checking for module 'libdrm_amdgpu'
+--   Found libdrm_amdgpu, version 2.4.131
+-- Checking for module 'libdrm'
+--   Found libdrm, version 2.4.131
+-- Performing Test HAVE_FLAG__ffile_prefix_map__home_kjaniszewski_bc5_work_exp0323_backend_tests__deps_catch2_src__
+-- Performing Test HAVE_FLAG__ffile_prefix_map__home_kjaniszewski_bc5_work_exp0323_backend_tests__deps_catch2_src__ - Success
+-- Configuring done (1.5s)
+-- Generating done (0.0s)
+CMake Warning:
+  Manually-specified variables were not used by the project:
+
+    CMAKE_C_COMPILER
+
+
+-- Build files have been written to: /home/kjaniszewski/bc5-work/exp0380/backend-build

@@ -1,0 +1,41 @@
+9,10c9,10
+< unset BC5_LEAN BC5_LOGS  # exp 0380rec: the normal build's journal and timeout probe
+< Z=~/bc5-work/exp0380rec; ZSTAMP=$(date +%Y%m%d-%H%M%S)  # exp 0380rec
+---
+> unset BC5_LEAN BC5_LOGS  # exp 0380nc: the normal build's journal and timeout probe
+> Z=~/bc5-work/exp0380nc; ZSTAMP=$(date +%Y%m%d-%H%M%S)  # exp 0380nc
+13c13
+< EMU=~/bc5-work/exp0380rec/bin/kyty_emulator  # exp 0380rec: shared objects and archive, bc5LleAgc.cpp with the recorder (build0380x.py)
+---
+> EMU=~/bc5-work/exp0380nc/bin/kyty_emulator  # exp 0380nc: shared objects and archive, bc5LleAgc.cpp with exp 0379's zero skip and the recorder (build0380nc.sh)
+15,16c15,16
+< mkdir -p ~/bc5-work/exp0380rec/play
+< LOG=~/bc5-work/exp0380rec/play/play-$ZSTAMP.log  # exp 0380rec: one log per start
+---
+> mkdir -p ~/bc5-work/exp0380nc/play
+> LOG=~/bc5-work/exp0380nc/play/play-$ZSTAMP.log  # exp 0380nc: one log per start
+25c25
+< MLOG=~/bc5-work/exp0380rec/play/mount-$ZSTAMP.log  # exp 0380rec: its own mount log
+---
+> MLOG=~/bc5-work/exp0380nc/play/mount-$ZSTAMP.log  # exp 0380nc: its own mount log
+43,45c43,46
+< # exp 0380rec (the maintainer's play): the flight recorder's part A after a fence timeout; no exp 0379/0380 fix switch.
+< export BC5_0380_REC=1
+< unset BC5_DIRECT_ARGS_WB BC5_DIRECT_FORCE_START_000 BC5_DIRECT_ARGS_COPY BC5_DIRECT_REBASE_DISPATCH BC5_DIRECT_GPU_CHECK_ZERO BC5_DIRECT_GPU_CHECK_YZ BC5_DIRECT_ZERO_SKIP BC5_DIRECT_ZEROSCAN_AT BC5_DIRECT_ZEROSCAN_OUT BC5_0380_REC_SELFTEST_S BC5_NO_TIMEOUT_PROBE
+---
+> # exp 0380nc (the maintainer's play, F603/F604): the prefix without CONTEXT_CONTROL and CLEAR_STATE, exp 0379's zero skip
+> # on its fixed list, the flight recorder's part A after a fence timeout; no other exp 0379/0380 switch.
+> unset BC5_DIRECT_ARGS_WB BC5_DIRECT_FORCE_START_000 BC5_DIRECT_ARGS_COPY BC5_DIRECT_REBASE_DISPATCH BC5_DIRECT_GPU_CHECK_ZERO BC5_DIRECT_GPU_CHECK_YZ BC5_DIRECT_ZEROSCAN_AT BC5_DIRECT_ZEROSCAN_OUT BC5_0380_REC_SELFTEST_S BC5_NO_TIMEOUT_PROBE
+> export BC5_0380_REC=1 BC5_DIRECT_PIECES_NO_CLEAR=1 BC5_DIRECT_ZERO_SKIP=$HOME/bc5-work/exp0380nc/zero-list-20261029-120000.txt
+175c176
+<   [ -n "${ZSP:-}" ] && kill "$ZSP" 2> /dev/null  # exp 0380rec: the memory sampler
+---
+>   [ -n "${ZSP:-}" ] && kill "$ZSP" 2> /dev/null  # exp 0380nc: the memory sampler
+191c192
+< bash "$Z/play-sample0379t.sh" $$ "$Z/play/mem-$ZSTAMP.txt" < /dev/null > /dev/null 2>&1 & ZSP=$!  # exp 0380rec: once a minute
+---
+> bash "$Z/play-sample0379t.sh" $$ "$Z/play/mem-$ZSTAMP.txt" < /dev/null > /dev/null 2>&1 & ZSP=$!  # exp 0380nc: once a minute
+194c195
+<   echo "== exp 0380rec: BC5_0380_REC=1; no write-back, FORCE_START, copy, rebase or zero skip; binary $(md5sum < "$EMU" | cut -c1-8)"
+---
+>   echo "== exp 0380nc: BC5_0380_REC=1 BC5_DIRECT_PIECES_NO_CLEAR=1 BC5_DIRECT_ZERO_SKIP=$BC5_DIRECT_ZERO_SKIP ($(md5sum < "$BC5_DIRECT_ZERO_SKIP" | cut -c1-8)); no write-back, FORCE_START, copy or rebase; binary $(md5sum < "$EMU" | cut -c1-8)"

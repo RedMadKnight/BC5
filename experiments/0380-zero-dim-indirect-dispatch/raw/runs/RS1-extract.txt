@@ -1,0 +1,46 @@
+== RS1-summary
+RS1: stopped at 300 s after 303 s; launcher exit 0; crash lines 0, kernel lines 0, TIMEOUT lines 0, compute-ring lines 0, fdinfo engines drm-engine-gfx , devcoredumps 0, RT-off drop lines 0, flips 9254 over 299.1 s = 30.9 flips/s; direct: 19408 views; +0 BOs (125, 10474.0 MiB pinned); maps +1 -2 (19474); imports  (stubs ), call lines , procparam ; the private learned file is unchanged
+== RS1-verdict
+pass
+== RS1-end
+RS1 stopped at 300 s (after 303 s)
+== RS1-start
+2026-10-29 23:51:11
+arm RS1, 300 s, launcher /home/kjaniszewski/bc5-work/exp0380r1/run/play-pkg-0380s.sh md5 b0504f88, BC5_EMU /home/kjaniszewski/bc5-work/exp0380r1/bin/kyty_emulator md5 44417414; env: BC5_EMU=/home/kjaniszewski/bc5-work/exp0380r1/bin/kyty_emulator BC5_0358_INPUT_CONFIG=/home/kjaniszewski/bc5-work/exp0380r1/run/input-rton.cfg KYTY_BC5_INPUT_CMD=/home/kjaniszewski/bc5-work/exp0380r1/run/in-RS1.cmd BC5_CRASH_FRAMES=1 BC5_0380_REC=1 BC5_0380_REC_SELFTEST_S=150 BC5_DIRECT_PIECES_NO_CLEAR=1 BC5_DIRECT_ZERO_SKIP=/home/kjaniszewski/bc5-work/exp0380r1/zero-list-20261029-120000.txt
+boot 3047f2ba, up since 2026-10-29 18:08:44
+emulator pid 728084 exe /home/kjaniszewski/bc5-work/exp0380r1/bin/kyty_emulator cwd /home/kjaniszewski/bc5-work/exp0380r1/run/wd
+environ: KYTY_GUEST_MEMORY_MB=13824 KYTY_BC5_INPUT_CONFIG=/home/kjaniszewski/bc5-work/exp0380r1/run/input-rton.cfg BC5_DIRECT_LAZY_NAMES=orbis_user_malloc,Wwise,SoundAlloc,FileSystem,UIStringAlloc BC5_DIRECT_LEARNED=/home/kjaniszewski/bc5-work/exp0380r1/run/direct-learned-pkg.txt BC5_DIRECT_SKIP_PGM=0 BC5_DIRECT_EAGER_NAMES=RenderGpuWcLarge,RenderGpuWcSmall,RenderGpuRwLarge,RenderGpuRwSmall,CommitIABufferAllocator,AMM,RenderAlloc,Physics,Decal Job Scheduler,VisualEffectInstanceHeap,DynamicHeap,DynamicHeap Small,ComponentHeap,ComponentHeap Small,MaterialHeap,DDLHeap,Physics query allocator BC5_DIRECT_JOURNAL=min KYTY_BC5_SAVEDATA_DIR=/home/kjaniszewski/bc5-work/exp0380r1/run/wd/_SaveData-pkg-play KYTY_BC5_RT_BUILD_PGM=909974400,909939400,909936c00,909939700,909939900,909974200,909973900,909973b00,909973d00,909973f00,11d049aa00,11d04a6000,11d04bb900 
+== RS1-box-settings
+swappiness 60 vfs_cache_pressure 100 watermark_scale_factor 10 min_free_kbytes 67584 page-cluster 3
+zram0 disksize 7964983296 comp lzo-rle lzo lz4 lz4hc [zstd] deflate 842 ; MemTotal 15192 MiB; GTT total 13312 MiB
+kernel 7.2.9-ogc3.1.fc44.x86_64; launcher /home/kjaniszewski/bc5-work/play-pkg.sh md5 55531ab6; shared normal 58c4a627, lean dcbeb440; private normal /home/kjaniszewski/bc5-work/exp0380r1/bin/kyty_emulator md5 44417414; shared bc5-mount 43277724
+learned file /home/kjaniszewski/bc5-work/direct-learned-pkg.txt md5 a7cc8581, 109 windows
+== journal: zero skip and rec0380 lines (/home/kjaniszewski/bc5-data/captures/play-20261029-2351/gc/direct.log)
+zero skip: list /home/kjaniszewski/bc5-work/exp0380r1/zero-list-20261029-120000.txt, 2 heaps, 1218.0 MiB listed, 0 bad lines
+zero skip: RenderGpuWcLarge at file 0x156c00000: 934.0 MiB in 48 runs skipped
+zero skip: canary BO 1, 52 slices of 2 MiB
+zero skip: canary +467 mappings (467)
+zero skip: CommitIABufferAllocator at file 0x226200000: 284.0 MiB in 4 runs skipped
+zero skip: canary +142 mappings (609)
+zero skip: 964.0 MiB still skipped of 1218.0 placed; taken back: 0 chunks by CPU writes, 127 by hints, 0 runs by canary hits; 482 canary mappings
+zero skip: canary hit in run 49 (file 0x230a00000 +8.0 MiB): 8.0 MiB taken back
+zero skip: 830.0 MiB still skipped of 1218.0 placed; taken back: 0 chunks by CPU writes, 190 by hints, 1 runs by canary hits; 415 canary mappings
+rec0380: #134433 dcb: start (self-test), 5686 dwords, 2 indirect dispatches, 5 addresses
+rec0380: #134433 dcb: dims 00000000 00000001 00000001 (self-test: the first indirect dispatch's arguments at 0x11d05df100); scan: 10526.5 MiB resident read, 4730.5 MiB not resident, 0.2 MiB unreadable, 22107 mappings, 9.63 s; triple 46247, pairs 653762 / 865068, dwords 1234094765 / 5895072 / 5895072
+rec0380: #134433 dcb: written /home/kjaniszewski/bc5-data/captures/play-20261029-2351/gc/rec0380-00134433-dcb.txt (14932 bytes) in 9.72 s
+zero skip: 824.0 MiB still skipped of 1218.0 placed; taken back: 0 chunks by CPU writes, 193 by hints, 1 runs by canary hits; 412 canary mappings
+zero skip: 824.0 MiB still skipped of 1218.0 placed; taken back: 0 chunks by CPU writes, 193 by hints, 1 runs by canary hits; 412 canary mappings
+zero skip: 824.0 MiB still skipped of 1218.0 placed; taken back: 0 chunks by CPU writes, 193 by hints, 1 runs by canary hits; 412 canary mappings
+== build
+before: shared normal 58c4a627 lean dcbeb440 archive bb50b2e0 tree unit e7cc2f60 play-pkg.sh 55531ab6
+runtimeLinker.cpp: tree 96e03695 + crash frames = 5f2bc982
+unit: 0379 e62113a5 + recorder = c46144c4; ZERO_SKIP 3, rec0380( 5
+binary 44417414; strings: zero skip 10, rec0380 3, BC5_0380_REC 1, BC5_DIRECT_ZERO_SKIP 1, PIECES_NO_CLEAR 1, CRASH_FRAMES 1, REC_RING 1
+4:[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+line 701 -Wformat
+line 2754 -Wformat
+line 85 -Wunused-const-variable
+line 403 -Wunused-const-variable
+32:[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+41:[0m[1m/home/kjaniszewski/bc5-work/exp0380r1/src/loader/runtimeLinker.cpp:889:3: [0m[0;1;35mwarning: [0m[1mnon-void lambda does not return a value in all control paths [-Wreturn-type][0m
+after: shared normal 58c4a627 lean dcbeb440 archive bb50b2e0 tree unit e7cc2f60 play-pkg.sh 55531ab6
