@@ -375,3 +375,75 @@ TEST_CASE("indirect_check: the zero-dimension guard (experiment 0380)", "[indire
         CHECK(o[4] == 7u + indirect_check::kCheckDwords + indirect_check::kZeroDwords);
     }
 }
+
+TEST_CASE("indirect_check: FORCE_START_AT_000 on indirect dispatches (experiment 0380)", "[indirect_check]") {
+    // SET_BASE index 1 = 0x12_3456_7000, then DISPATCH_INDIRECT offset 0x40, initiator 0x41.
+    const std::vector<std::uint32_t> ib = {0xC0021100u,       1u,    0x34567000u, 0x12u,
+                                           kDispatchIndirect, 0x40u, 0x41u};
+    std::vector<std::size_t> refs;
+    indirect_check::Stats st;
+    auto out = indirect_check::apply(ib, 0, kMax, kDrawMax, refs, st, false, nullptr, false, true);
+    REQUIRE(out.size() == ib.size() + indirect_check::kCheckDwords); // no packet added
+    CHECK(st.start_forced == 1);
+    CHECK(out[out.size() - 3] == kDispatchIndirect);
+    CHECK(out[out.size() - 2] == 0x40u);
+    CHECK(out[out.size() - 1] == 0x45u); // 0x41 | FORCE_START_AT_000
+    // the check before it is the plain one, byte for byte
+    std::vector<std::size_t> refs0;
+    indirect_check::Stats st0;
+    auto plain = indirect_check::apply(ib, 0, kMax, kDrawMax, refs0, st0);
+    CHECK(st0.start_forced == 0);
+    CHECK(plain.back() == 0x41u);
+    CHECK(std::vector<std::uint32_t>(out.begin(), out.end() - 1) ==
+          std::vector<std::uint32_t>(plain.begin(), plain.end() - 1));
+
+    SECTION("an initiator that has the bit is left alone and not counted") {
+        auto has = ib;
+        has.back() = 0x8045u;
+        std::vector<std::size_t> r;
+        indirect_check::Stats s;
+        auto o = indirect_check::apply(has, 0, kMax, kDrawMax, r, s, false, nullptr, false, true);
+        CHECK(o.back() == 0x8045u);
+        CHECK(s.start_forced == 0);
+    }
+    SECTION("a dispatch without a known base: PFP_SYNC_ME and the bit") {
+        const std::vector<std::uint32_t> unbased = {kDispatchIndirect, 0x40u, 0x8041u};
+        std::vector<std::size_t> r;
+        indirect_check::Stats s;
+        auto o = indirect_check::apply(unbased, 0, kMax, kDrawMax, r, s, false, nullptr, false, true);
+        CHECK(s.unbased == 1);
+        CHECK(s.start_forced == 1);
+        CHECK(o == std::vector<std::uint32_t>{0xC0004200u, 0u, kDispatchIndirect, 0x40u, 0x8045u});
+    }
+    SECTION("the MEC form: its initiator is its fourth dword") {
+        const std::vector<std::uint32_t> mec = {0xC0021600u, 0x34567040u, 0x12u, 0x61u};
+        std::vector<std::size_t> r;
+        indirect_check::Stats s;
+        auto o = indirect_check::apply(mec, 0, kMax, kDrawMax, r, s, true, nullptr, false, true);
+        CHECK(s.start_forced == 1);
+        CHECK(o[o.size() - 4] == 0xC0021600u);
+        CHECK(o[o.size() - 3] == 0x34567040u);
+        CHECK(o[o.size() - 2] == 0x12u);
+        CHECK(o[o.size() - 1] == 0x65u);
+    }
+    SECTION("direct dispatches and indirect draws are not touched") {
+        const std::vector<std::uint32_t> other = {0xC0031500u, 13u,         8u,   1u,   0x41u, // DISPATCH_DIRECT
+                                                  0xC0021100u, 1u,          0x1000u, 0x12u,
+                                                  0xC0032400u, 0x20u,       0x4cu, 0x4du, 2u}; // DRAW_INDIRECT
+        std::vector<std::size_t> r;
+        indirect_check::Stats s;
+        auto o = indirect_check::apply(other, 0, kMax, kDrawMax, r, s, false, nullptr, false, true);
+        CHECK(s.start_forced == 0);
+        CHECK(o[4] == 0x41u);
+        CHECK(o.back() == 2u);
+    }
+    SECTION("with the zero guard: both, the check grows by the guard only") {
+        std::vector<std::size_t> r;
+        indirect_check::Stats s;
+        auto o = indirect_check::apply(ib, 0, kMax, kDrawMax, r, s, false, nullptr, true, true);
+        CHECK(o.size() == ib.size() + indirect_check::kCheckDwords + indirect_check::kZeroDwords);
+        CHECK(o.back() == 0x45u);
+        CHECK(s.zero_checked == 1);
+        CHECK(s.start_forced == 1);
+    }
+}

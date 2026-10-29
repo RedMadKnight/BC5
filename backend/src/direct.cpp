@@ -122,6 +122,10 @@ struct Device::Impl {
     // argument is 0 (indirect_check zero_dims). Unset: off.
     bool env_zero = false;
     std::uint64_t zero_sum = 0;
+    // Experiment 0380: BC5_DIRECT_FORCE_START_000 — every indirect dispatch the check pass sees gets
+    // FORCE_START_AT_000 in its initiator (indirect_check force_start), as RADV sets it. Unset: off.
+    bool env_force_start = false;
+    std::uint64_t start_forced_sum = 0, start_seen_sum = 0;
     // Experiment 0346: BC5_DIRECT_HOST_INDIRECT — a GFX-form DISPATCH_INDIRECT without a SET_BASE of its type
     // in its own IB is resolved and verified by the host at filter time (bc5/host_indirect.hpp): rewritten
     // to the page the host read, or NOP-ed. "1" or "learn": the window for a base of 0 learned from the
@@ -222,6 +226,9 @@ struct Device::Impl {
         if (env_zero) // experiment 0380: how many the CP skipped is not seen by the host
             std::fprintf(stderr, "bc5-direct: experiment 0380 %s: zero-dimension guard on %llu checked dispatches\n",
                          when, static_cast<unsigned long long>(zero_sum));
+        if (env_force_start) // experiment 0380
+            std::fprintf(stderr, "bc5-direct: experiment 0380 %s: FORCE_START_AT_000 set on %llu of %llu indirect dispatches (the rest had it)\n",
+                         when, static_cast<unsigned long long>(start_forced_sum), static_cast<unsigned long long>(start_seen_sum));
         if (env_host_indirect) // experiment 0346
             std::fprintf(stderr,
                          "bc5-direct: experiment 0346 %s: dispatches seen by the host: %u left (the register non-zero) + %u left (never set), after the title's zeroing %u rewritten to a verified page, dropped %u (no candidate) + %u (not a real mapping) + %u (unreadable) + %u (counts), %u NOP-ed on a COND_EXEC overflow; window 0x%llx; %zu programs\n",
@@ -494,6 +501,10 @@ std::unique_ptr<Device> Device::open(const std::string &node, const OpenOptions 
     if (const char *e = std::getenv("BC5_DIRECT_GPU_CHECK_ZERO"); e != nullptr && *e != 0 && std::strcmp(e, "0") != 0) {
         d->impl_->env_zero = true; // experiment 0380
         std::fprintf(stderr, "bc5-direct: experiment 0380 switch: the CP check also skips an indirect dispatch whose x, y or z argument is 0\n");
+    }
+    if (const char *e = std::getenv("BC5_DIRECT_FORCE_START_000"); e != nullptr && *e != 0 && std::strcmp(e, "0") != 0) {
+        d->impl_->env_force_start = true; // experiment 0380
+        std::fprintf(stderr, "bc5-direct: experiment 0380 switch: every indirect dispatch the GPU check pass sees gets FORCE_START_AT_000 in its initiator\n");
     }
     if (const char *e = std::getenv("BC5_DIRECT_HOST_INDIRECT"); e != nullptr && *e != 0) { // experiment 0346
         d->impl_->env_host_indirect = true;
@@ -1203,9 +1214,11 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
         main_out = indirect_check::apply(main_out, opt.mec_indirect_base, opt.gpu_check_max,
                                          opt.gpu_check_draw_max, flag_refs, st, comp,
                                          impl_->env_product && !comp ? &impl_->product : nullptr, // experiment 0341
-                                         impl_->env_zero); // experiment 0380
+                                         impl_->env_zero, impl_->env_force_start); // experiment 0380
         impl_->product_sum += st.product_checked;
         impl_->zero_sum += st.zero_checked;
+        impl_->start_forced_sum += st.start_forced;
+        if (impl_->env_force_start) impl_->start_seen_sum += st.checked + st.unbased;
         r.filter.gpu_checks += st.checked;
         r.filter.gpu_check_unbased += st.unbased;
         r.filter.gpu_check_skipped += st.conditional;

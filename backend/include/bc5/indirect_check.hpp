@@ -37,6 +37,7 @@ struct Stats {
     std::uint32_t checked = 0;         // dispatches given the check
     std::uint32_t product_checked = 0; // ... with the product staircase as well (experiment 0341)
     std::uint32_t zero_checked = 0;    // ... with the zero-dimension guard as well (experiment 0380)
+    std::uint32_t start_forced = 0;    // dispatches given FORCE_START_AT_000 (experiment 0380)
     std::uint32_t unbased = 0;         // dispatches without a known base: PFP_SYNC_ME only
     std::uint32_t conditional = 0;     // dispatches NOP-ed: a COND_EXEC range grew too long
     std::uint32_t inserted_dwords = 0; // growth of the IB
@@ -91,11 +92,18 @@ inline constexpr std::size_t kDrawCheckDwords = 5 + 2 * 9 + 5 + 2 + 5;
 // product (experiment 0341): when given, every checked GFX-form dispatch gets the staircase too;
 // the flag area then holds four dwords (flag, confirm, flag2, confirm2).
 // zero_dims (experiment 0380, default off): every checked dispatch gets the zero-dimension guard.
+// force_start (experiment 0380, default off): every DISPATCH_INDIRECT the pass sees (checked or not,
+// GFX or MEC form) gets COMPUTE_DISPATCH_INITIATOR.FORCE_START_AT_000 (bit 2, Linux v7.2
+// gc_10_1_0_sh_mask.h; Mesa gfx10.json as in tools/bc5-agc/regdb) ORed into its initiator dword,
+// as Mesa RADV does for every indirect dispatch (radv_cmd_buffer.c radv_get_dispatch_params,
+// ab2374a: "Indirect CS does not support offsets in the API"). Without it the CP starts at
+// COMPUTE_START_X/Y/Z and takes the counts as end values (ibid., the direct path). The title's
+// 0x41 / 0x8041 initiators lack it (exp 0378). Stats::start_forced counts the initiators changed.
 std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib, std::uint64_t base,
                                  const std::uint32_t (&max)[3], const std::uint32_t (&draw_max)[2],
                                  std::vector<std::size_t> &flag_refs, Stats &stats,
                                  bool compute_ring = false, const ProductLimit *product = nullptr,
-                                 bool zero_dims = false);
+                                 bool zero_dims = false, bool force_start = false);
 
 void patch(std::span<std::uint32_t> ib, const std::vector<std::size_t> &flag_refs,
            std::uint64_t flag_va);
