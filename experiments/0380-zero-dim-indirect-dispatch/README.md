@@ -1,7 +1,7 @@
 # 0380 — Is the F403 class a zero-dimension indirect dispatch? (sources, title side, a guard, a box plan)
 
 **Date.** 2026-10-29. **Laptop only.** No box access and no GPU submission in this experiment. Branch
-`exp/0380-zero-dim-dispatch`. Findings F545–F576 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
+`exp/0380-zero-dim-dispatch`. Findings F545–F579 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
 session's GO).
 
 **Question.** F527 puts the ME just past a `DISPATCH_INDIRECT` that passed the host's check, inside the title's
@@ -854,6 +854,75 @@ skip, S6N, RT on, 600 s each; `raw/runs/W2-*`, `raw/runs/W3-*`):
 - **What his play would show:** one sub-class B hang with it on refutes the write-back as a fix and, with it, the GL2
   idea for the title's hang. Hours without one support it.
 
+## 14. Our libraries and filter against the title's use: an audit, and three read-only checks (F577–F579)
+
+**The question (the maintainer).** Does the title use a library we implemented, or copied from KytyPlus or AnyPS5,
+differently from how we wrote it? Is our logic wrong?
+
+**Audit (laptop, read-only, two parallel code reviews).**
+- The title loads its own `libSceAgc`/`libSceAgcDriver` (LLE, patch 0001). So the PM4 at the hang is the title's, not
+  code we copied.
+- Our logic sits in three places: the PM4 filter (`backend/src/policy.cpp`, `backend/policy/pm4-policy.tsv`,
+  `backend/src/direct.cpp`), the `/dev/gc` and kernel-memory calls in the patch, and the submission order.
+- **Found and not suspect:**
+  - ENGINE_SEL (PFP/ME) is never changed;
+  - `ACQUIRE_MEM`'s `GCR_CNTL` passes unchanged (`gcr_clear` is off);
+  - the CS_DONE → BOTTOM_OF_PIPE rewrite of `RELEASE_MEM` keeps the cache bits and waits longer, not shorter;
+  - the `SET_BASE`s of the class-B dispatches carry clean addresses (0x11d05df300, 0x11d0571b00, 0x12…), so the alias
+    windows for tagged addresses (bits 40–47) do not apply to them.
+- **Found and suspect**, each with a code location; the three cheapest were checked below:
+  - cross-buffer `WAIT_REG_MEM`s dropped when a CPU read at submission says they are met (`policy.cpp:490-506`,
+    `self_waits_only`; patch ~31037/31280/31320);
+  - 10 dropped dwords right before the stuck dispatch;
+  - the memory type a title asks for never reaching the GPU mapping. `KernelMtypeprotect` is `mprotect`, as in
+    upstream KytyPlus (`refs/Coder787-source_KytyPlus/src/kernel/memory.cpp:4025-4029`). `memory_type` is stored but
+    not passed to the mapper (patch 21759-21781), and every GPU map gets the default MTYPE (`direct.cpp:763-767,
+    879-880, 936-937`);
+  - the DMA snapshot (≥ 4 KiB dcb `DMA_DATA` sources copied by the CPU at submission);
+  - nested IBs getting no DMA wait and no check;
+  - alias windows rebuilt at most once a second;
+  - `submit+EOP` completion reported at submission.
+
+**Box.** Reads only, 15:39–15:5x, with a reads-only lock line, after the top session's note that the box was free and
+the maintainer not playing. The lock was cleared and the done line is in BOX-QUEUE. Scripts: `raw/binspan0380.py`
+(title IB dumps, structure only), run from stdin; the outputs are in `raw/suspects/`.
+
+**1. The 10 dropped dwords (F577).**
+- In the title's own IB of all three B events with a dump (09:48 dcb #183691, 12:12 #94500, 14:04 #278264), dwords
+  1277–1286 are the same two packets: `0xc0039f00 0 0 0x80000000 0` and `0xc0036300 0 0 0x80000000 0`. They sit
+  between the title's `ACQUIRE_MEM` (1269, `GCR_CNTL` 0x280) and the stuck `DISPATCH_INDIRECT` (1287).
+  - The first is `LOAD_CONTEXT_REG_INDEX` (0x9f), the second `LOAD_SH_REG_INDEX` (0x63) (Mesa sid.h:211, 228).
+  - Both have INDEX 0 (a direct address), address 0, DATA_FORMAT 1 (offset-and-data pairs) and **0 dwords** (field
+    layout per RPCSX `loadContextRegIndex` / `loadShRegIndex`, rpcsx/gpu/Pipe.cpp:1958-2060, e8ae148).
+  - The filter drops them as unmapped (address 0; `policy.cpp:92-95`).
+- By that reading they load nothing, so dropping them does not change what the CP does. TODO(verify): whether a
+  count-0 load has a side effect on gfx10, such as a PFP-side sync. No public source says so.
+
+**2. Dropped waits (F578).**
+- The timeout probes of the same three jobs list 10, 15 and 9 waits. In none of the IBs is there a wait before the
+  stuck dispatch at 1287: the first comes at 1751, 1709 and 1516.
+- The dropped ones (four per IB) are `WAIT_REG_MEM64` on the PFP with reference 0, already met at the timeout, at
+  5835+, 6815+ and 2369+, all after the stuck dispatch (`raw/suspects/probe-waits.txt`).
+- So inside its IB the stuck dispatch is ordered after its argument producer only by what earlier jobs did, and no
+  wait of ours was removed in between. The cross-job question remains (an earlier job's dropped wait, or the
+  producer's own visibility), and the IB dumps cannot answer it.
+
+**3. The memory type of the argument range (F579).**
+- Not recoverable from what is captured. The host logs `memory_type` only in its `LOGF` lines, which normal play does
+  not write, and no record maps 0x11d05xxxxx to a named heap.
+- The code fact stands, sourced above: whatever the type, the GPU mapping is the default MTYPE.
+- Deciding it needs a run with the host's memory `LOGF` lines on, or a journal line naming the heap and type of each
+  view (GPU work, the maintainer's yes). If the argument heap is a write-combined / "Garlic" type (shadPS4 lists
+  WB_ONION 0, WC_GARLIC 3, WB_GARLIC 10, `src/core/libraries/kernel/memory.h:24-28`), the next test is that range
+  mapped `MTYPE_UC`.
+
+**Ranking after the checks.**
+- Within the stuck IB, the 10 dwords and the dropped waits are cleared.
+- The memory-type mismatch is the strongest remaining lead. It is a host fact, inherited from KytyPlus, that would make
+  GPU-written arguments travel through caches the console would not use. It is untested.
+- Then the cross-job ordering: the producer of 0x11d05df300 is a GDS → memory `DMA_DATA` without `CP_SYNC`, in the
+  previous job.
+
 ## Result
 
 - Sources read and cited (F545, F546). The title-side evidence was re-read from exps 0376/0378 (F547).
@@ -861,6 +930,8 @@ skip, S6N, RT on, 600 s each; `raw/runs/W2-*`, `raw/runs/W3-*`):
 - A second guard, `FORCE_START_AT_000` on indirect dispatches, is built the same way: default off, with unit tests
   (F551).
 - The box plan is written. Only step A0 ran: a CPU-only compile check, which passed (F552). Nothing ran on the GPU.
+- The audit of our libraries and filter found no rewrite of ours between the stuck dispatch and its IB's start (F577,
+  F578). The strongest remaining host-side lead is that requested memory types never reach the GPU mapping (F579).
 - The GL2 write-back alone (`ARGS_WB=first`) passed W2 and W3 at bench frame rates. Its play-test shortcut is staged,
   not installed. The copy slot now sits at a low VA, built but not run (F574–F576).
 - W1 (copy + write-back) hung like C1, with identical garbage from a different slot address. The copy runs
