@@ -1,7 +1,7 @@
 # 0380 — Is the F403 class a zero-dimension indirect dispatch? (sources, title side, a guard, a box plan)
 
 **Date.** 2026-10-29. **Laptop only.** No box access and no GPU submission in this experiment. Branch
-`exp/0380-zero-dim-dispatch`. Findings F545–F617. Exp 0379, not yet merged, holds F540–F543, F563–F565 and F620–F626; its F563–F565 collide with this experiment's and take new numbers at its merge. One box session, CPU only (step A0, 11:28–11:31, on the top
+`exp/0380-zero-dim-dispatch`. Findings F545–F619. Exp 0379, not yet merged, holds F540–F543, F563–F565 and F620–F626; its F563–F565 collide with this experiment's and take new numbers at its merge. One box session, CPU only (step A0, 11:28–11:31, on the top
 session's GO).
 
 **Question.** F527 puts the ME just past a `DISPATCH_INDIRECT` that passed the host's check, inside the title's
@@ -2060,6 +2060,60 @@ on `exp/0380-zero-dim-dispatch` (a13a849); the int branch is `int/0380-to-main` 
   So any arm also helps with the 23:15/23:30 CPU crashes (F610).
 - The maintainer's crash in the noclear play (F605) had no visible link to NO_CLEAR or the skip (F606). Arm (b) can
   therefore be played as it stands.
+
+## 30. The first bench B event: exp 0379's G3 at 00:52:38, and the INDEX_BASE lead (F618, F619; reads only)
+
+Exp 0379's G3 (binary e1cc0c92, the shared tree plus 0379's code, skip off, RT on, S6N save with a walk route) hung
+the GPU at 00:52:38. The ring reset failed and the box rebooted. Read only, on the top session's GO, with no lock or
+writes of mine:
+- the sampler event `~/bc5-data/captures/gpu-stall/event-20261030-005238-gfx_0.0.0`;
+- the timeout probe in `~/bc5-data/captures/play-20261030-0050/gc/` (dcb #89939, 7,346 dwords);
+- private eboot copies in `~/bc5-data/priv/`.
+
+**It is sub-class B (F618).**
+- **Our prefix** puts `SET_BASE` 1 = 0x11d05df300 at dword 1249 (14:04's slot), then `INDEX_BASE` 0x1210000000 at
+  1253 and `INDEX_BUFFER_SIZE` 0xffffffff at 1256.
+- **The stuck dispatch is the first after our prefix:** `DISPATCH_INDIRECT` at 1287, program 0x11d02a1600, initiator
+  0x41, offset 0. The probe read its arguments as 2632 × 1 × 1.
+- **What the CP launched:** all five sampler records hold `COMPUTE_DIM` [0x5f525350 0x4c485642 0x3aee9ad9],
+  `GRBM_STATUS` 0xa0407028, PFP 0xea0/0xea1, ME 0x77a/0x77b.
+- **The shape is F601's**, and the program and slot are 14:04's. It hung at journal t ≈ 112 s, about 23 s after
+  Continue: during the save's load, before the route's walk cycles (from about 119 s). The S6N entry passed in many
+  earlier runs (M1, RC1, NC1, RS1, …), so this is a rare event at the load, not a trigger of the route.
+- **"PSR_BVHL".** The first two dims are the ASCII bytes of "PSR_BVHL" (little-endian). The title's code holds this as
+  a 64-bit magic: 25 `movabs` sites in its text, which store it into objects, for example at a +0xe0 field. Its data
+  holds one copy, followed by 0x0a, not 0x3aee9ad9.
+  - So the CP fetched the first 12 bytes of a GPU-side object the title stamps "PSR_BVHL": a magic plus a 32-bit
+    field, plausibly a BVH-related header (RT on).
+  - Where that object lay cannot be read after the reboot.
+  - The disassembly and the copies stay private; only the offsets are cited.
+
+**The INDEX_BASE lead (F619; medium, not proven).** Lay the three events with known launched dims beside their
+`INDEX_BASE`; each dispatch has offset 0:
+
+| Event | `INDEX_BASE` | Heap | Launched | Reads as |
+|---|---|---|---|---|
+| 12:12 | 0x11e9db6280 | RenderGpuRwLarge | [65536 196610 2752552] | u16 0, 1, 2, 3, 40, 42: index data |
+| 14:04 | 0x1210012000 | CommitIABufferAllocator | [481 0x4000008a 480] | count-like words around a float |
+| 00:52 | 0x1210000000 | CommitIABufferAllocator's start (14:04's lies at its +0x12000, §19) | "PSR_BVHL" + 0x3aee9ad9 | a tagged header |
+
+- Index data at an index buffer's base, and header-like words at the starts of CommitIA buffers, fit one rule: the
+  CP took its arguments at `INDEX_BASE` + 0, not at `SET_BASE` 1 + offset.
+- It explains why 14:04's rebase failed. A `SET_BASE` right before the dispatch changes nothing if the fetch uses
+  `INDEX_BASE`.
+- It does not explain the rarity. The shape occurs many times a second (F601), so the alias would have to be a rare
+  race, for example in how the PFP latches the base for its argument read.
+- F596 already named "the fetch read at the `INDEX_BASE` itself" as the one candidate common to 12:12 and 14:04, but
+  no one had recorded what lay there.
+- No public source says the two bases alias on gfx10 (F558/F560). TODO(verify).
+
+**How to test it.** The flight recorder's part A (binary 44417414, or the arms binary) dumps 64 bytes at the
+`INDEX_BASE` and at every `SET_BASE` base of the timed-out buffer, and scans memory for the triple (F595, F608).
+- One more B with it confirms or refutes F619 directly: "dump INDEX_BASE …" equal to the launched dims, or not.
+- On the bench, a loop of 180-s S6N runs reaches the load point each time. A hang means a watch reboot.
+- It needs box writes (a lock, the runs), so it waits for the maintainer and the permission check.
+- A fix under F619 would change what `INDEX_BASE` holds, or where our prefix's `INDEX_BASE` replay sits relative to a
+  following dispatch. Design only, after the test.
 
 ## Result
 
