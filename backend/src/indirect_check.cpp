@@ -2,6 +2,7 @@
 #include "bc5/indirect_check.hpp"
 
 #include <algorithm>
+#include <cstdlib>
 
 namespace bc5::indirect_check {
 
@@ -255,6 +256,31 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib_in, std::uint
         i += len;
     }
     return out;
+}
+
+bool parse_yz_limit(const char *s, YzLimit &out) {
+    if (s == nullptr || *s == 0 || (s[0] == '0' && s[1] == 0))
+        return false;
+    YzLimit l;
+    if (!(s[0] == '1' && s[1] == 0)) {
+        char *end = nullptr;
+        const unsigned long y = std::strtoul(s, &end, 0);
+        if (end != s && y != 0)
+            l.y = static_cast<std::uint32_t>(std::min<unsigned long>(y, 0xffffffffu));
+        if (end != nullptr && *end == ':') {
+            const char *zs = end + 1;
+            const unsigned long z = std::strtoul(zs, &end, 0);
+            if (end != zs && z != 0)
+                l.z = static_cast<std::uint32_t>(std::min<unsigned long>(z, 0xffffffffu));
+        }
+    }
+    out = l;
+    return true;
+}
+
+void tighten(std::uint32_t (&max)[3], const YzLimit &limit) {
+    max[1] = std::min(max[1], limit.y);
+    max[2] = std::min(max[2], limit.z);
 }
 
 bool insert_before(std::vector<std::uint32_t> &ib, const std::vector<Insert> &inserts) {

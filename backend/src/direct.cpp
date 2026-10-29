@@ -125,6 +125,10 @@ struct Device::Impl {
     // Experiment 0380: BC5_DIRECT_FORCE_START_000 — every indirect dispatch the check pass sees gets
     // FORCE_START_AT_000 in its initiator (indirect_check force_start), as RADV sets it. Unset: off.
     bool env_force_start = false;
+    // Experiment 0380 (F555): BC5_DIRECT_GPU_CHECK_YZ — the CP check's y and z limits for indirect
+    // dispatches lowered ("1" = 256:64, or "<y>[:<z>]"). Unset: the host's limits as they are.
+    bool env_yz = false;
+    indirect_check::YzLimit yz;
     std::uint64_t start_forced_sum = 0, start_seen_sum = 0;
     // Experiment 0346: BC5_DIRECT_HOST_INDIRECT — a GFX-form DISPATCH_INDIRECT without a SET_BASE of its type
     // in its own IB is resolved and verified by the host at filter time (bc5/host_indirect.hpp): rewritten
@@ -501,6 +505,11 @@ std::unique_ptr<Device> Device::open(const std::string &node, const OpenOptions 
     if (const char *e = std::getenv("BC5_DIRECT_GPU_CHECK_ZERO"); e != nullptr && *e != 0 && std::strcmp(e, "0") != 0) {
         d->impl_->env_zero = true; // experiment 0380
         std::fprintf(stderr, "bc5-direct: experiment 0380 switch: the CP check also skips an indirect dispatch whose x, y or z argument is 0\n");
+    }
+    if (indirect_check::parse_yz_limit(std::getenv("BC5_DIRECT_GPU_CHECK_YZ"), d->impl_->yz)) { // experiment 0380
+        d->impl_->env_yz = true;
+        std::fprintf(stderr, "bc5-direct: experiment 0380 switch: the CP check refuses an indirect dispatch with y > %u or z > %u (never above the host's limits)\n",
+                     d->impl_->yz.y, d->impl_->yz.z);
     }
     if (const char *e = std::getenv("BC5_DIRECT_FORCE_START_000"); e != nullptr && *e != 0 && std::strcmp(e, "0") != 0) {
         d->impl_->env_force_start = true; // experiment 0380
@@ -1211,7 +1220,9 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     if (impl_->env_histogram && !comp) impl_->histogram(main_out, opt.mec_indirect_base, opt.mapped, fopt); // experiment 0341
     if (opt.gpu_check_indirect) {
         indirect_check::Stats st;
-        main_out = indirect_check::apply(main_out, opt.mec_indirect_base, opt.gpu_check_max,
+        std::uint32_t check_max[3] = {opt.gpu_check_max[0], opt.gpu_check_max[1], opt.gpu_check_max[2]};
+        if (impl_->env_yz) indirect_check::tighten(check_max, impl_->yz); // experiment 0380
+        main_out = indirect_check::apply(main_out, opt.mec_indirect_base, check_max,
                                          opt.gpu_check_draw_max, flag_refs, st, comp,
                                          impl_->env_product && !comp ? &impl_->product : nullptr, // experiment 0341
                                          impl_->env_zero, impl_->env_force_start); // experiment 0380

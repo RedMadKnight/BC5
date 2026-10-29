@@ -447,3 +447,44 @@ TEST_CASE("indirect_check: FORCE_START_AT_000 on indirect dispatches (experiment
         CHECK(s.start_forced == 1);
     }
 }
+
+TEST_CASE("indirect_check: tighter y and z limits (experiment 0380, the 12:12 hang)", "[indirect_check]") {
+    indirect_check::YzLimit l;
+    CHECK_FALSE(indirect_check::parse_yz_limit(nullptr, l));
+    CHECK_FALSE(indirect_check::parse_yz_limit("", l));
+    CHECK_FALSE(indirect_check::parse_yz_limit("0", l));
+    REQUIRE(indirect_check::parse_yz_limit("1", l));
+    CHECK(l.y == 256u);
+    CHECK(l.z == 64u);
+    REQUIRE(indirect_check::parse_yz_limit("180", l));
+    CHECK(l.y == 180u);
+    CHECK(l.z == 64u);
+    REQUIRE(indirect_check::parse_yz_limit("0x100:8", l));
+    CHECK(l.y == 256u);
+    CHECK(l.z == 8u);
+    REQUIRE(indirect_check::parse_yz_limit("junk", l)); // set but unreadable: the defaults
+    CHECK(l.y == 256u);
+    CHECK(l.z == 64u);
+
+    std::uint32_t max[3] = {kMax[0], kMax[1], kMax[2]};
+    indirect_check::tighten(max, indirect_check::YzLimit{180, 8});
+    CHECK(max[0] == kMax[0]);
+    CHECK(max[1] == 180u);
+    CHECK(max[2] == 8u);
+    std::uint32_t low[3] = {1u << 20, 16, 2};
+    indirect_check::tighten(low, indirect_check::YzLimit{180, 8}); // never raised
+    CHECK(low[1] == 16u);
+    CHECK(low[2] == 2u);
+
+    // The tightened limits are what the COND_WRITEs compare against.
+    const std::vector<std::uint32_t> ib = {0xC0021100u,       1u,    0x34567000u, 0x12u,
+                                           kDispatchIndirect, 0x40u, 0x41u};
+    std::vector<std::size_t> refs;
+    indirect_check::Stats st;
+    auto out = indirect_check::apply(ib, 0, max, kDrawMax, refs, st);
+    REQUIRE(out.size() == ib.size() + indirect_check::kCheckDwords);
+    const std::size_t i = 4 + 5;
+    CHECK(out[i + 4] == kMax[0]);
+    CHECK(out[i + 9 + 4] == 180u);
+    CHECK(out[i + 18 + 4] == 8u);
+}

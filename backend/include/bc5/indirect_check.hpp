@@ -77,6 +77,20 @@ inline constexpr std::size_t kProductDwords = 5 + 9 + 9 + 5 + 2 + 5 + 9;
 // that gfx1013's CP launches nothing for a zero count (exp 0380, test plan part B). Dispatches
 // only (both forms), not draws.
 inline constexpr std::size_t kZeroDwords = 3 * 9;
+
+// Experiment 0380 (the 12:12 hang, F555): tighter y and z limits for indirect dispatches. The host's
+// FilterOptions default is y, z <= 2^10; the title's legitimate indirect grids are one-dimensional
+// (y = z = 1, F414's histogram, the timeout probes of F528/F553) and its largest healthy y and z are
+// 180 and 4 (exp 0378 F536: 320 x 180 x 1, 4 x 32 x 4). "1" = y <= 256, z <= 64; "<y>[:<z>]" sets
+// them; a part that is 0 or does not parse keeps its default. The limits only ever lower the
+// caller's, never raise them. Returns false (switch off) for an unset, empty or "0" string.
+struct YzLimit {
+    std::uint32_t y = 256;
+    std::uint32_t z = 64;
+};
+bool parse_yz_limit(const char *s, YzLimit &out);
+// max[1], max[2] lowered to the limit (never raised).
+void tighten(std::uint32_t (&max)[3], const YzLimit &limit);
 inline constexpr std::size_t kDrawCheckDwords = 5 + 2 * 9 + 5 + 2 + 5;
 
 // ib: a filtered IB. base: the SET_BASE index-1 base in effect at its start (0 = unknown).
