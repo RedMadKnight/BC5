@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=BC5 emulator (test 0380 rec)
+Comment=BC5 test 0380 rec: the shared normal build with the flight recorder part A (after a GPU hang it records where the launched group counts lie in memory, CPU only); no exp 0379/0380 fix switch; RT on; a log and a memory record per start in ~/bc5-work/exp0380rec/play/
+Exec=/usr/bin/distrobox enter ubuntu -- /home/kjaniszewski/bc5-work/exp0380rec/play-pkg-0380rec.sh
+Icon=applications-games
+Terminal=false
+Categories=Game;
+StartupNotify=false

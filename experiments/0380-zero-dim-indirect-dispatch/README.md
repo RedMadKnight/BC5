@@ -1,7 +1,7 @@
 # 0380 — Is the F403 class a zero-dimension indirect dispatch? (sources, title side, a guard, a box plan)
 
 **Date.** 2026-10-29. **Laptop only.** No box access and no GPU submission in this experiment. Branch
-`exp/0380-zero-dim-dispatch`. Findings F545–F594 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
+`exp/0380-zero-dim-dispatch`. Findings F545–F596 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
 session's GO).
 
 **Question.** F527 puts the ME just past a `DISPATCH_INDIRECT` that passed the host's check, inside the title's
@@ -1175,11 +1175,10 @@ and W1 add a third, host-induced triple.
   - So both are consistent with "the fetch read at or near the `INDEX_BASE`" (H0380b's original form, F555). Neither
     proves it: the index data at those addresses is not recorded anywhere.
 - **The `INDEX_BASE` heap at 14:04 was in the zero-skip list's heap** (CommitIABufferAllocator, 284 MiB in 4 runs
-  skipped). TODO(verify) on the box whether its first chunk (file 0x226212000) was a skipped run. It matters only for
-  14:04: the class predates the skip.
+  skipped). *Checked in §19: the chunk at heap offset 0x12000 was not in any skipped run.*
 
 **C1/W1's triple is shader code (F591).** The three dwords decode as three valid gfx10 instructions (field layout of
-AMD's RDNA 1.0 ISA guide; TODO(verify) with llvm-mc on the box):
+AMD's RDNA 1.0 ISA guide; *confirmed in §19 by llvm-mc 21.1.8 `-mcpu=gfx1013`*):
 - 0xbefe036a: SOP1 op 3 `s_mov_b32`, sdst 126 (`exec_lo`), ssrc0 106 (`vcc_lo`);
 - 0x810e810e: SOP2 op 2 `s_add_i32`, sdst s14, ssrc0 s14, ssrc1 129 (inline 1), a loop counter;
 - 0x06043736: VOP2 op 3 `v_add_f32`, vdst v2, src0 310 (v54), vsrc1 v27.
@@ -1275,6 +1274,109 @@ These registers are where the sampler saw the garbage. So the ring compares the 
   near where he plays.
 - **Best with B on.** Mismatches counted per hour make a night useful even without a hang.
 
+## 19. Part A built: the "test 0380 rec" shortcut, and what the records say about candidate addresses (F595, F596)
+
+**GO.** The top session relayed the maintainer's "zbuduj" (build it) for part A, with box access. 20:36–20:49: my lock
+line (`top exp 0380 | rec build`, the smoke runner's own `… | rec build run` line during RC1), claim and done lines
+in BOX-QUEUE, the kernel stream to `raw/runs/REC-kernel-stream.txt` (no GPU line). Live saves
+**a92fe0992638a454** before and after.
+
+**The two open reads.**
+- llvm-mc 21.1.8 (`-arch=amdgcn -mcpu=gfx1013 --disassemble`, the ubuntu container) decodes C1/W1's triple as
+  `s_mov_b32 exec_lo, vcc_lo`, `s_add_i32 s14, s14, 1`, `v_add_f32_e32 v2, v54, v27`, as F591 had it. 12:12's
+  0x00010000 and 14:04's 0x4000008a are "invalid instruction encoding": not code.
+- 14:04's `INDEX_BASE` 0x1210012000 is at offset 0x12000 of CommitIABufferAllocator. The zero list
+  `zero-list-20261029-120000.txt` skipped that heap at offsets 0x7800000 (+0x2e00000), 0xa800000 (+0x800000),
+  0x2fe00000 (+0xde00000) and 0xaa800000 (+0x800000). So the chunk was **not skipped**: the skip did not touch the index
+  data there.
+
+**The build (F595).**
+- **Source.** The shared tree's `src/libs/bc5LleAgc.cpp`, git blob 8d2f498 (= patch 0001 on main; the tree at
+  f266548 + patch, exp 0372's `pad_audio_route.hpp` and audio edits present), copied by `raw/mk-rec0380.py`. That
+  script makes four counted literal edits:
+  - three includes;
+  - `raw/rec0380.inc` inserted in front of `timeout_probe`;
+  - one call after each of the two `timeout_probe` calls.
+- **Compile and link.** `raw/build0380x.py` compiles that one unit with the shared build's own compile command
+  (clang, compdb). It then runs the shared link command with only that object swapped in. The other objects and the
+  backend archive stay the shared build's (no exp 0379/0380 switch exists in it). No warning comes from the new code;
+  the unit's five warnings are pre-existing.
+- **Binary** `~/bc5-work/exp0380rec/bin/kyty_emulator`, **md5 b8561eaa**. Shared normal 58c4a627, lean dcbeb440
+  and `play-pkg.sh` 55531ab6 are unchanged.
+- **What it does** (`BC5_0380_REC=1`, default off). After a fence timeout, right after the existing timeout probe,
+  CPU only, with no packet added:
+  1. It takes the launched `COMPUTE_DIM` from the newest sampler 0377 event (`summary.txt`), waiting up to 8 s.
+  2. It dumps 64 B at every `SET_BASE` 1 base, `INDEX_BASE` and argument address of the buffer, and at the program.
+  3. It scans every resident page of the title's GPU mappings, read through `process_vm_readv`. `mincore` keeps it
+     from faulting a page in, and an unreadable page is counted, not fatal. It looks for the triple, each pair and
+     each dword.
+  4. It writes `<dump dir>/rec0380-<submission>-<kind>.txt` (≤ 1 MiB, fsynced) and synced "rec0380:" journal lines.
+  - The scan stops at 20 s (`BC5_0380_REC_SCAN_S`).
+- **Harness.** `raw/rec0380_test.cpp` (g++ `-Werror`, box container) passes all checks: the self-test path, the
+  sampler path, a `PROT_NONE` mapping counted as unreadable, an untouched one as not resident, 512 MiB in 0.18 s.
+
+**Smoke run RC1** (`raw/s6n0380rec.sh` by `raw/mk-s6n0380rec.py`; S6N, RT on, the route's save copy, 300 s,
+`BC5_0380_REC=1 BC5_0380_REC_SELFTEST_S=150`; `raw/runs/RC1-extract.txt`):
+- **Pass.** 0 crash, kernel, TIMEOUT or devcoredump lines; 9,944 flips in 299.8 s.
+- **Idle.** No "rec0380" line other than the one self-test.
+- **No visible overhead.** From 160 s on, RC1 ran 387–410 flips per 10 s. M1 on the shared build's objects ran
+  386–409 over the same window (`raw/runs/RC1-flips-per-10s.txt` against `M1-flips-per-10s.txt`). The 300-s mean
+  (33.2/s) is lower only because a 300-s run holds proportionally more of the loading ramp and the self-test window.
+  The window 150–160 s had 18 flips: the self-test held the completion thread.
+- **The dump path, triggered once.** At 150 s, on dcb #138480 (1,675 dwords, 9 indirect dispatches), it wrote
+  `rec0380-00138480-dcb.txt` (14,932 bytes, fsynced) and the journal lines. It scanned **11,347.8 MiB resident** (3,827.8
+  MiB not resident, 0.2 MiB unreadable, 21,540 mappings) in **8.92 s, 8.97 s in all**. The self-test's dims were
+  (0, 1, 1), a poor pattern (46,058 triples); the harness, not this run, shows that a planted triple is found at its
+  address.
+- **Live saves unchanged** (a92fe0992638a454).
+
+**Timing against `bc5-gpu-watch`.** The watch crashes the kernel 60 s after a ring timeout that is not followed by a
+successful reset. The host sees the fence timeout ~2.04 s after its submission (F553, F564). Then come the existing
+probe, the sampler wait (its event is written 0.1–0.2 s before the host's timeout, so the wait is normally short,
+≤ 8 s by design), and the scan (≤ 20 s cap, 9 s measured). So the recorder ends within ~2 + probe + 8 + 20 = ~30 s
+plus the probe, and is typically at ~11–12 s plus the probe. It is not tested in a real hang: inducing one is not
+safe.
+- The probe's own lines reached the journal at 12:12 and 14:04, whose resets also failed. TODO(verify) the existing
+  probe's duration, which the next hang's journal timestamps will show.
+
+**The shortcut.**
+- "BC5 emulator (test 0380 rec)" is on the maintainer's desktop (`~/Pulpit`, md5 884256a5, `raw/rec/`). It runs
+  `~/bc5-work/exp0380rec/play-pkg-0380rec.sh` (md5 9aa6f587, made by `raw/mkplay0380rec.pl` from `play-pkg.sh`;
+  diff in `raw/play-pkg-0380rec.diff`).
+- It sets `BC5_0380_REC=1` and unsets every exp 0379/0380 fix switch. Logs go to `~/bc5-work/exp0380rec/play/`.
+- The launcher was not started itself: RC1 ran the same binary and switch through the runner's own launcher copy.
+- "test 0380 wb" was moved to `~/bc5-work/exp0380wb/retired/`. The two shared shortcuts are untouched.
+
+**After a hang.** The maintainer does nothing but tell us; the box reboots by itself. The results land in:
+- `~/bc5-data/captures/play-<date>/gc/rec0380-<submission>-dcb.txt`;
+- the "rec0380:" lines of that directory's `direct.log`;
+- the sampler event in `~/bc5-data/captures/gpu-stall/`.
+
+All of them are private, never in the repo.
+
+**The records against candidate-address rules (F596; the top session's follow-up, laptop only).**
+- **12:12.** `SET_BASE` 1 = 0x11d0571d00, the dispatch's data offset 0, so the slot is 0x11d0571d00. `INDEX_BASE`
+  0x11e9db6280.
+- **14:04.** Slot 0x11d05df300 (offset 0); `INDEX_BASE` 0x1210012000.
+- **The candidates collapse.** With offset 0 and the slot at its base, "`INDEX_BASE` + the slot's offset", "`INDEX_BASE`
+  + the data offset" and "`INDEX_BASE`" are one address per event. "The slot with `INDEX_BASE`'s high bits" is the slot
+  itself at 12:12 (both high dwords 0x11) and 0x12d05df300 at 14:04: above CommitIABufferAllocator's end (0x12bb000000)
+  and in no heap of the M1 extract.
+- **No rule fits both.** The offsets of the `INDEX_BASE` from the slot differ (0x19844580, 0x3fa32d00). So do the low
+  bits (0x280 vs 0x000 for the `INDEX_BASE`, 0xd00 vs 0x300 for the slot) and the alignment (128 B vs 8 KiB), and the
+  heaps differ (RenderGpuRwLarge vs CommitIABufferAllocator). The only common candidate, "the fetch read at the
+  `INDEX_BASE` itself", cannot be checked from the records: no one recorded what lay there.
+- **The packet stream between them is the same in both, dword for dword.** `SET_BASE` 1 (1249), `INDEX_BASE` (1253),
+  `INDEX_BUFFER_SIZE` 0xffffffff (1256), `NUM_INSTANCES` (1258), then three `SET_UCONFIG_REG`s: 0x24e
+  `VGT_TF_RING_SIZE`, 0x250 `VGT_TF_MEMORY_BASE` and 0x261 `VGT_TF_MEMORY_BASE_HI` (names from
+  `tools/bc5-agc/regdb/gfx10.json`). After them come `ACQUIRE_MEM` (1269), ten NOPs, the host's check (1287–1374;
+  plus the rebase `SET_BASE` at 1375 at 14:04), and the dispatch.
+  - No `DRAW_INDEX*`, no IB boundary (all in IB #0), no CE/DE switch.
+- **A new candidate.** The title reprograms the tessellation-factor ring right between the `INDEX_BASE` and the
+  stuck dispatch. The timeout probe already dumps that ring (`<ib dump>.tfring.bin` and a "TF ring" journal line,
+  exp 0189). Searching the 12:12 and 14:04 TF-ring dumps for the two triples is a box read of already-captured
+  private data (it needs a GO). Part A adds the TF ring base to its candidates only if that read is positive.
+
 ## Result
 
 - Sources read and cited (F545, F546). The title-side evidence was re-read from exps 0376/0378 (F547).
@@ -1282,6 +1384,10 @@ These registers are where the sampler saw the garbage. So the ring compares the 
 - A second guard, `FORCE_START_AT_000` on indirect dispatches, is built the same way: default off, with unit tests
   (F551).
 - The box plan is written. Only step A0 ran: a CPU-only compile check, which passed (F552). Nothing ran on the GPU.
+- Part A of the flight recorder is built (binary b8561eaa), the smoke run passed with no visible overhead, and its
+  dump path wrote and fsynced 11.3 GiB's scan in 9 s. The shortcut "BC5 emulator (test 0380 rec)" is installed for the
+  maintainer's play, and "test 0380 wb" is retired. No rule maps the two B events' slot or `INDEX_BASE` to one
+  candidate address. Between `INDEX_BASE` and the dispatch, both reprogram the TF ring (F595, F596).
 - The garbage dims match no PM4, address, IB dword or argument of ours, and cannot be stale arguments of their
   fixed slots, so the CP fetched dwords from elsewhere (medium). C1/W1's triple is shader code from the arguments'
   own heap, a shown wrong-address read. The records cannot say which address it was for the title's events. A
