@@ -29,6 +29,7 @@
 #include "bc5/direct.hpp"
 #include "bc5/indirect_check.hpp"
 #include "bc5/policy.hpp"
+#include "bc5/selftest_route.hpp" // experiment 0380 (REVIEW-05): which test the command line selects
 
 #include <cstdint>
 #include <cstdio>
@@ -330,7 +331,8 @@ int main(int argc, char **argv) {
             return 2;
         }
     }
-    if (!submit) {
+    const bc5::selftest::Path path = bc5::selftest::route({submit, cp_check, zero_check, compute_ring});
+    if (path == bc5::selftest::Path::nothing) {
         std::puts("direct-selftest: nothing done without --submit");
         return 0;
     }
@@ -356,7 +358,7 @@ int main(int argc, char **argv) {
         std::printf("userptr 1:1 %llu MiB at %p: %s\n", static_cast<unsigned long long>(map_mib), mem, ok ? "ok" : "FAILED");
         if (!ok) return 1;
     }
-    if (cp_check) {
+    if (path == bc5::selftest::Path::gfx_check) {
         // Per case a 4 KiB page of the mapping: arguments at +0x40, the result word at +0x80, the
         // flag and its confirm word at +0x100. Expected: the result written (1) only when all
         // three counts are within bc5::policy::FilterOptions{}.gpu_check_max.
@@ -416,7 +418,8 @@ int main(int argc, char **argv) {
         std::printf("cp-check: %d wrong\n", failures);
         return failures == 0 ? 0 : 1;
     }
-    if (compute_ring >= 0) return compute_ladder(*dev, static_cast<char *>(mem), compute_ring, zero_check);
+    if (path == bc5::selftest::Path::compute_ladder)
+        return compute_ladder(*dev, static_cast<char *>(mem), compute_ring, zero_check);
     std::vector<std::uint32_t> ib;
     if (synthetic) {
         ib.assign(8, bc5::policy::kNop);
