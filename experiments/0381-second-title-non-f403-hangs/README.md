@@ -203,3 +203,45 @@ Next (F666), cheapest first:
    half. A recovery candidate: after a ring reset that succeeds, have the host complete the killed job's label
    writes (it knows them from the filter), so later jobs do not wait forever (TODO(verify) against the title's
    expectations).
+
+## 4. Follow-up on the laptop (night of 10-29/30): the draw journal, the existing draw check, the program's code (F667–F669)
+
+**The CP already checks these draws (F667).** The shared builds' host puts experiment 0057's check in front of every
+GFX-ring `DRAW_INDIRECT` / `DRAW_INDEX_INDIRECT` with a known base when `BC5_DIRECT_GPU_CHECK` is set (patch 0001:
+`opt.gpu_check_draw_max` = 2^20 vertices, 64 instances, overridable by `BC5_DIRECT_DRAW_MAX`; `indirect_check::apply`,
+`kDrawCheckDwords`). Every index-like slot of F662 has an instance count far above 64 (0x000f0102 = 983,298), so a
+check whose `COND_WRITE`s polled those words would have skipped the draw. A runaway 18:08 draw therefore needs one of:
+the polls read sane words and the fetch read other data (sub-class B's mismatch, F590, now on the draw side); the
+words arrived after the draws ran (then the draws were not runaways and the stuck work is elsewhere); or no check in
+front of them (the switch unset in that play). `drawcheck0381.py` lists, from the devcoredump's own IB, each draw with
+the `COND_WRITE`s and `COND_EXEC` before it: the read for step 1. So the step-3 "draw-count guard" exists; what is
+missing is the same thing as for B, the assurance that the CP fetches what it polled.
+
+**The journal (step 2, F668): `BC5_DIRECT_DRAW_ARGS_JOURNAL=1`, default off, CPU reads only.**
+- `backend/include/bc5/draw_args.hpp`, `src/draw_args.cpp`: `scan` (every based `DRAW_INDIRECT` / `DRAW_INDEX_INDIRECT`
+  of a filtered GFX IB, the four argument dwords read through a reader), `classify` (over the check's limits,
+  index-like: two of three neighbouring dwords step by one with a count above 0xffff, unread), `line`, `reread`.
+- `src/direct.cpp`: at submit, after the 0341 histogram and before the CP check is inserted, the job's records are read
+  (`process_vm_readv`, so an unreadable slot is reported, not fatal) and kept in its slot; `finish()` (and the
+  synchronous path) reads them again when the fence signals or times out. A timed-out job prints every record
+  (`bc5-direct: exp 0381 draw-args submit seq … v … flags … | timeout v … flags … changed yes|no`); otherwise the
+  first 256 flagged records and then one in 4096, and a summary every 100,000 draws and at close.
+- What it decides: healthy completions with index-like words in these slots make the timeout read worthless; healthy
+  completions with sane words and a hang with index-like words at the timeout make F662 specific. Its format follows
+  the timeout probe's and exp 0380's recorder's "one line per record" journal (`rec0380.inc` read, not edited).
+- Tests: `tests/draw_args_test.cpp`, 4 cases (scan with and without a base, the 18:08 words against sane ones, the
+  line and the re-read). Laptop: `cmake -S backend -B <scratch> -DBC5_BUILD_TESTS=ON` (Visual Studio 18 2026, Catch2
+  from the main checkout's fetch), `cmake --build <scratch> --config Debug --target bc5_backend_tests`,
+  `bc5_backend_tests.exe`: all tests passed (33,706 assertions in 95 test cases; 30 in the 4 new ones). `direct.cpp`
+  is not compiled on the laptop (it needs libdrm_amdgpu): its compile check is a box step (clang in the `ubuntu`
+  container, as exp 0380's A0), not done.
+
+**The program's code (step 4, F669).** No disassembly or binary of 0x909977100 is on the laptop: the scratchpads of the
+other sessions and `private-dumps/` hold only journal lines and IB dumps naming it. The read goes into the step-1
+request (a `find` for a dump of it on the box, then `llvm-mc -mcpu=gfx1013` there).
+
+**Step-1 request, extended (reads only, guarded ssh, no file written on the box):**
+1. the `op 24`/`op 2c` probe lines of the earlier hang journals (09:48, 12:12, 14:04 of 10-29; 18:15, 23:36 of 10-28);
+2. `drawcheck0381.py` over stdin on `devcoredump/20261029-180813-devcd3.txt`;
+3. `find ~/bc5-work ~/bc5-data/captures -maxdepth 4 -iname '*977100*'`, then, if a code dump exists, its disassembly to
+   stdout.
