@@ -1,7 +1,7 @@
 # 0380 — Is the F403 class a zero-dimension indirect dispatch? (sources, title side, a guard, a box plan)
 
 **Date.** 2026-10-29. **Laptop only.** No box access and no GPU submission in this experiment. Branch
-`exp/0380-zero-dim-dispatch`. Findings F545–F597 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
+`exp/0380-zero-dim-dispatch`. Findings F545–F600 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
 session's GO).
 
 **Question.** F527 puts the ME just past a `DISPATCH_INDIRECT` that passed the host's check, inside the title's
@@ -1393,6 +1393,70 @@ cleared; claim and done lines in BOX-QUEUE).**
   reprogramming of `VGT_TF_*` between `INDEX_BASE` and the dispatch stays a timing fact, not a data source. Part A's
   candidate list needs no TF-ring entry, and its whole-memory scan would find such data anyway.
 
+## 20. The maintainer's hypothesis: a SET_BASE tracked inside a conditional block (F598–F600; laptop only)
+
+The hypothesis (the maintainer, via the top session): the host tracks `SET_BASE` wrongly inside a conditional block,
+so the guard may check the wrong address. Read from the code on this branch and the records already in `raw/`.
+
+**How the host tracks `SET_BASE` index 1 (F598).**
+- **The check's tracker** (`backend/src/indirect_check.cpp:124`) walks the IB linearly from `base_in` and takes every
+  `SET_BASE` index 1 it meets. It notes the IB's `COND_EXEC` ranges (`:120`) only to grow their counts, never to ask
+  whether a `SET_BASE` inside one ran.
+- **The full-state tracker** (`backend/src/full_state.cpp:224`) is the same: linear, no `COND_EXEC` handling. Patch
+  0001 keeps one global copy (`static bc5::full_state::Tracker tracker`, patch lines 33353–33354). It applies every
+  `cc`, `hib` and `dcb` buffer in the order the host filters them, not the order the CP runs them, and it reads
+  nested IBs through the host's mappings.
+- So a `SET_BASE` index 1 inside a `COND_EXEC` range the CP skips moves both host views but not the CP. The CP keeps
+  the old base while the host holds the new one. The reverse case cannot happen, because neither tracker ever drops
+  a `SET_BASE`. This is a real, latent defect.
+- **How often the title does this:** not counted. The three B dumps' records (`raw/suspects/title-ib-1240-1300.txt`,
+  F596) have no `COND_EXEC` near the stuck dispatch. F430's event had no `SET_BASE` inside a range either. A count
+  over whole streams needs the private IB dumps, which is a box read.
+
+**What the B events' `SET_BASE` is (F599).**
+- Dwords 1249–1268 of all three B dumps are not the title's packets. They are the host's full-state prefix, in
+  exactly the order the host emits it:
+  - `Tracker::emit_prefix` (`full_state.cpp:271-275`) emits `SET_BASE`, `INDEX_BASE`, `INDEX_BUFFER_SIZE`, then
+    `INDEX_TYPE` (empty, so left out), then `NUM_INSTANCES`;
+  - `tf_ring_prefix` (patch line 32167) emits `VGT_TF_RING_SIZE` 0x24e, `VGT_TF_MEMORY_BASE` 0x250 and
+    `VGT_TF_MEMORY_BASE_HI` 0x261;
+  - the prefix is emitted in front of every `dcb` that draws (`BC5_DIRECT_PREFIX_ALL`, default `draws`, exp 0157;
+    patch lines 31995–32004 and 32527–32528).
+- The title's buffer starts at 1269: `ACQUIRE_MEM` (`GCR_CNTL` 0x280), the two empty loads (F577), then the stuck
+  `DISPATCH_INDIRECT` with offset 0. It sets no `SET_BASE` of its own. The dispatch's base therefore comes from our
+  prefix, that is, from the global tracker's last `SET_BASE` index 1.
+- This corrects F596's "the title reprograms the TF ring": that is our `tf_ring_prefix`.
+- Confidence: high, from the order. TODO(verify): dword 0 of a B dump should be `CONTEXT_CONTROL` 0x80000000 /
+  0x80000000, then `CLEAR_STATE`.
+
+**What the host emits from a tracked base, and the verdict (F600).**
+- **What the host emits from a tracked base:**
+  - the check's `COND_WRITE` poll addresses, from the check's `base` (`indirect_check.cpp:132-134`);
+  - with `ARGS_COPY`, the `COPY_DATA` sources;
+  - with `REBASE_DISPATCH`, a re-emitted `SET_BASE` index 1 (`:244-248`);
+  - the prefix's `SET_BASE`, `INDEX_BASE`, `INDEX_BUFFER_SIZE` and `NUM_INSTANCES`, from the global tracker;
+  - with `BC5_DIRECT_HOST_INDIRECT` (exp 0346, off in these builds) only, rewrites from the carried register.
+  With `REBASE`, `ARGS_COPY` or the prefix, a base taken from a skipped block would become a base the CP really
+  uses.
+- **It does not fit the B events.** In both events, the check's polls (0x11d0571d00/04/08 at 12:12, §5) and the
+  dispatch's fetch go through the same `SET_BASE` packet, our prefix's at 1249. That packet is unconditional and 38
+  dwords before the dispatch. The 14:04 rebase at 1375 re-emits the same value. A wrong tracked base moves the check
+  and the fetch together. That can launch the wrong slot's sane arguments (a slot the check also passed), but not
+  garbage that the polled slot never held (F590).
+- **It does not fit C1/W1 (F568, F591).** There the base was our own copy (`copy_va`, set by the host and not
+  derived from a tracked title base). The ME's `COPY_DATA`s with `WR_CONFIRM` and every poll of that copy passed,
+  and the fetch still read shader code.
+- **Verdict: refuted** as the cause of the B-class garbage dims. The latent defect stays (a `SET_BASE` in a skipped
+  `COND_EXEC` range); it would give wrong but sane arguments.
+- **What it leaves:** every B event is the first `DISPATCH_INDIRECT` after our `CONTEXT_CONTROL` + `CLEAR_STATE` +
+  full register prefix, in a buffer that relies on the base that prefix sets.
+- **The cheapest next test is a box read, with no build.** Over the private IB dumps already captured, count:
+  1. `SET_BASE` index 1 inside `COND_EXEC` ranges (this closes Q2);
+  2. prefixed dcbs whose first indirect dispatch comes before their own `SET_BASE` (how common the B shape is);
+  3. whether every recorded F403 B event has that shape.
+
+  A behavioural test of the prefix as the trigger would follow only if count 3 holds.
+
 ## Result
 
 - Sources read and cited (F545, F546). The title-side evidence was re-read from exps 0376/0378 (F547).
@@ -1400,6 +1464,10 @@ cleared; claim and done lines in BOX-QUEUE).**
 - A second guard, `FORCE_START_AT_000` on indirect dispatches, is built the same way: default off, with unit tests
   (F551).
 - The box plan is written. Only step A0 ran: a CPU-only compile check, which passed (F552). Nothing ran on the GPU.
+- The maintainer's hypothesis, a `SET_BASE` tracked inside a skipped conditional block, is refuted as the cause of the garbage
+  dims: in every B event, our check and the CP's fetch use the same `SET_BASE`. That `SET_BASE` is our own full-state
+  prefix's, not the title's. The trackers' blindness to `COND_EXEC` is a real, latent defect, and how often the title
+  triggers it is not counted (F598–F600).
 - Part A of the flight recorder is built (binary b8561eaa), the smoke run passed with no visible overhead, and its
   dump path wrote and fsynced 11.3 GiB's scan in 9 s. The shortcut "BC5 emulator (test 0380 rec)" is installed for the
   maintainer's play, and "test 0380 wb" is retired. No rule maps the two B events' slot or `INDEX_BASE` to one
