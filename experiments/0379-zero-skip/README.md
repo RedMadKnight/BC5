@@ -345,3 +345,136 @@ without a hit, so which runs get hit varies between sessions. 828 MiB were still
 - For a next test shortcut (with 0380's rebase fix): one slice per run costs 104 MiB here, and sharing slices between
   runs would save most of it. A list made from a longer SCAN play, or the intersection of several plays, would carry
   fewer hits than this 3-scan list.
+
+### The maintainer's 36-minute play on "test 0380 wb", without the skip (2026-10-29 16:25:52–17:02:29)
+
+Read afterwards from the box, reads only, under a reads-only lock line. The files are exp 0380wb's
+`play/mem-20261029-162552.txt` (the launcher's once-a-minute record) and the play log's fps counter lines
+(`test0379t/wb/raw/`: the memory record, the counter and switch lines, and the per-minute join
+`fpsmem-20261029-162552.txt` made by `test0379t/wb/fpsmem0379wb.py`).
+
+- **Build:** exp 0380's c3c8660b, with `BC5_DIRECT_ARGS_WB=first` and FORCE_START. No zero skip, no copy, no rebase.
+  RT on. It ran until the maintainer closed it (exit 0), with no hang. The only error lines are two `shared map at
+  0x0+0x10000: -22`. The maintainer found it very unstable.
+- **Overall:** 30.8 flips/s. After the first 240 s it was 32.2 flips/s. Of the seconds after 240 s, 12 % ran under 15
+  flips/s and 27 % under 25. There were 137 gaps of 500 ms or more (37 of 800 ms or more), and the longest gap was 2.9 s.
+
+**Memory.** After the load (16:30–17:02):
+
+| measure | this play |
+|---|---|
+| GTT used | 12,666–12,729 MiB, still rising slowly |
+| MemAvailable | 188–374 MiB |
+| zram swap | 1.0–1.7 GB |
+| PSI mem "full" (60 s) | 1.5–23.6 % |
+| PSI io "full" (60 s) | 2.6–23.2 % |
+| bc5-mount reads | 1.2–9.6 GB a minute |
+
+- The emulator's RSS fell from 7.2 GB at the load to 0.3–1.2 GB, and bc5-mount's from 0.7 GB to 0.15 GB at the peaks.
+  So the kernel was reclaiming both processes' own pages, not only the page cache. (What RSS counts for the pinned
+  memfd pages is TODO(verify).)
+
+**The frame rate follows the reads.** These are per-minute figures over the 32 minutes from 16:30 on:
+
+| per-minute correlation with flips/s | r |
+|---|---|
+| bc5-mount reads in the minute | **−0.84** |
+| PSI mem full60 | −0.77 |
+| PSI io full60 | −0.45 |
+| swap used | −0.17 |
+| MemAvailable | +0.15 |
+
+- The 9 minutes with reads under 3 GB averaged **41.2 flips/s**; the 12 minutes with 5.5 GB or more averaged **24.9**.
+- The bad stretches are 16:38–16:43 (17.7–29.6 flips/s; reads 5.1–9.2 GB/min; PSI mem 9–15 %), 16:48–16:49 and
+  16:59–17:02 (18.9–29.2 flips/s; reads 5.8–9.6 GB/min; PSI mem 13–24 %, the highest of the session).
+- The good stretches, 16:31–16:34 and 16:50–16:57 (35–48 flips/s), are the minutes with reads at 1.2–2.8 GB/min.
+- MemAvailable hardly correlates. It sits at its floor (0.2–0.3 GB) the whole time, so it shows that the box is full,
+  not how badly.
+
+**Against F505 and the 0379t plays.** At the same minute after the start, this session pins about 300 MiB more GTT than
+play 1 of the 0379t shortcut (12,639 against 12,342 MiB at ~4 min). Over 36 minutes it reaches the deepest pressure
+recorded so far:
+
+| | F505 (23:32–23:36) | 0379t play 1, SCAN (12:00–12:08) | 0379t play 2, SKIP (12:09–12:12, load only) | this play (16:30–17:02) |
+|---|---|---|---|---|
+| GTT used | 11,967–12,402 MiB | 12,338–12,429 MiB | 11,471 MiB at 2 min | 12,666–12,729 MiB |
+| MemAvailable | 536–724 MiB | 322–485 MiB | 1,079 MiB at 2 min | 188–374 MiB |
+| swap | 592–929 MiB | 0.8–0.9 GB | 0.57 GB | 1.0–1.7 GB |
+| PSI mem full60 | — | 0.2–1.8 % | 0.06 % | up to 23.6 % |
+| mount reads | 3.0–4.4 GB/min | 5.7–10.2 GB/min | 8.2–8.6 GB/min (load) | 1.2–9.6 GB/min |
+
+- PSI mem "full" is new: up to 24 % of the time, every task waited on memory. That is reclaim stalls, on top of F505's
+  I/O stalls.
+- The ~300 MiB more GTT than play 1 has no cause recorded. ARGS_WB adds no BO, so it is likely the scene or the
+  session; this is not checked.
+
+**The frame rate against the 0379t plays.** These are the same per-minute joins, from the fps counter lines read under
+a second reads-only lock: `test0379t/raw/play/play-*-fps.txt` and `fpsmem-*.txt`.
+
+| minute after the start | 1 | 2 | 3 | 4–8 |
+|---|---|---|---|---|
+| play 1, SCAN | 21.5 | 15.2 | 21.2 | 20.6–31.5 (reads 5.7–7.7 GB/min) |
+| play 2, SKIP | 16.7 | 21.9 | 17.4 (to the hang) | — |
+| this play | 19.5 | 15.6 | 16.1 | 27.9–43.1 (reads 1.8–6.7 GB/min) |
+
+- **The loads look alike.** In the first three minutes all three plays run at 15–22 flips/s, with reads of 8–13 GB a
+  minute and gaps of up to 1.5–2 s. The skip's 0.6 GB more MemAvailable at minute 2 shows no frame-rate difference
+  there. That is expected: the load reads data the title has not read yet, so more page cache cannot help it.
+- **Play 1's steady minutes fit this play's relation.** Its reads stayed at 5.7–7.7 GB a minute and it ran 20–31
+  flips/s, close to this play's 24.9-flips/s average for minutes with reads of 5.5 GB or more.
+- **No steady-state minute with the skip exists yet.** Play 2 hung at 2.4 min, still in the load. So the question F565
+  asked, whether ~0.7 GB more cache lowers the steady reads, is still open.
+
+**Should the skip go into the next test build with ARGS_WB?** Yes. The reasons:
+
+- The two do not touch each other. ARGS_WB is in the backend archive (`backend/src/direct.cpp`). The skip is in the
+  host's `bc5LleAgc.cpp`. The 0379t build already linked the skip with an exp 0380 archive by an archive swap (459d34cd,
+  smoke run passed), and that method carries over.
+- The session above is what the skip is for. Its frame rate falls when the box re-reads (r = −0.84) and stalls on
+  reclaim (PSI mem up to 24 %), with MemAvailable at 0.2–0.3 GB. Play 2 showed that the 1.2 GB list frees ~0.6 GB at
+  the load (F564), roughly two to three times this session's MemAvailable.
+- Whether that cuts the re-reads and the reclaim stalls in a 30-minute play is still unmeasured. This would be the
+  measurement.
+
+What to set up, and what to watch:
+
+- Start it in SKIP mode directly, on `zero-list-20261029-120000.txt`. A SCAN start would spend one play without the
+  skip. The launcher checks each heap's size, so a title update falls back to a full import.
+- It does not blur ARGS_WB's question, whether a sub-class B hang still comes. The skip never stalls the GPU and
+  carries no new submission, and exp 0380 found no part for it in the 12:12 hang (F554). A hang's devcoredump and the
+  journal's `zero skip:` lines still show what the skip held at that moment.
+- Expect a few canary hits, each a possible one-frame glitch. Their count goes in the record.
+- Add PSI mem "full" and the per-minute flips/s to the play's own summary, so the comparison with this session is
+  direct.
+
+**What else would cut pinned memory (F402's levers, and what is left of them).** F353 puts ~90 % of the ~12 GB pinned in
+the eager list. Of that, RenderGpuWcLarge is 2.7 GB, CommitIABufferAllocator 2.7 GB and the AMM pool 3.1 GB in
+18,661 small pages. In order of what each could give:
+
+1. **The zero skip on the play list, ~0.6–0.7 GB in play** (this experiment).
+2. **The zero scan on the other eager heaps and on the AMM pool: not measured; the AMM pool (3.1 GB) could be the largest.**
+   About 1.5 GB of the eager list lies outside the two render heaps and the AMM pool (F353: ~10.1 of 11.2 GB imported is
+   eager, 8.6 GB of it in those three). Its zero share is unknown, and so is the AMM pool's.
+   - Measuring the heaps is cheap: one SCAN play with `BC5_DIRECT_ZERO_NAMES` set to every eager heap name, with no
+     new code.
+   - The AMM pool's small pages need a per-view list. Today's list is per named heap. That would be new code, and its
+     own experiment.
+3. **Narrower learned windows: up to ~0.7 GB, and only outside the eager heaps.**
+   - Inside the two render heaps the windows change nothing, because those heaps are imported in full (Design).
+   - F353's 61 windows cover 3.9 GB, and F402 puts 3.2 GB of that inside the render heaps. The rest, ≤ 0.7 GB, is the
+     only part a narrower window (for example 16 MiB around the fault instead of 96) could free. These counts are from
+     exp 0288 and exp 0333, and the learned file has changed since (F473). Which heaps hold that remainder today is
+     TODO(verify), from one breakdown run (`BC5_DIRECT_BREAKDOWN_AT`, F353).
+   - The risk is a fault where a window used to cover the address: F473 shows how the learned list grows one hang at a
+     time.
+4. **Shared canary slices, ~0.1 GB.** Today each skipped run gets its own 2 MiB slice, 104 MiB for this list. One
+   slice per heap would do if a hit is attributed by a second step instead of by slice. This is a code change in the
+   skip.
+5. **Not pinned, but the same page cache:**
+   - the normal build's journal and logs: the lean build swapped about 10× less (F353);
+   - bc5-mount's ~0.7 GB RSS (`MALLOC_ARENA_MAX=2` is in already);
+   - the reads' amplification (F396: about 3× what the emulator is served). F505 shows the re-reads outlive F398's fix.
+
+   Using the lean build in the play shortcut is a launcher choice, not code.
+- **Not a lever:** making the render heaps lazy brings back F96's faults and freezes (Design). Lowering
+  `KYTY_GUEST_MEMORY_MB` saves nothing (F353).
