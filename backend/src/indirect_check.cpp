@@ -146,7 +146,8 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib_in, std::uint
                 // experiment 0380 (F566): the CP copies the arguments into the flag area first; the check
                 // reads the copy and the dispatch fetches it (SET_BASE to the copy, offset 0)
                 const bool copy_here = args_copy && dims == 3 && !compute_ring;
-                // experiment 0380 (F617): no producer still running when the check polls and the PFP fetches
+                // experiment 0380 (F617): earlier compute work of this GFX context finished before the polls and the
+                // fetch (not DMA, other queues or memory visibility: REVIEW-05)
                 const bool flush_here = !compute_ring &&
                     (dims == 3 ? (args_flush == ArgsFlush::all ||
                                   (args_flush == ArgsFlush::first_after_index_base && after_index_base))

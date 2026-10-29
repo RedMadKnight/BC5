@@ -2005,8 +2005,11 @@ explain if it worked:
 
 - **`BC5_DIRECT_ARGS_FLUSH=first|all` (default off)** puts an `EVENT_WRITE` `CS_PARTIAL_FLUSH` (event 7, index 4,
   the title's own form; Mesa sid.h `PKT3_EVENT_WRITE` 0x46) at the start of a checked GFX-form dispatch's check, before
-  the copy and the write-back when those are on. Every earlier dispatch has then finished when the ME polls the
-  arguments, and when the PFP fetches them after the check's `PFP_SYNC_ME`. `first` means the first
+  the copy and the write-back when those are on. The compute work issued before it in this GFX context has then
+  finished when the ME polls the arguments, and when the PFP fetches them after the check's `PFP_SYNC_ME`.
+  - It does not wait for a CP DMA (`DMA_DATA` without `CP_SYNC`), other queues or other processes.
+  - It makes no memory visible by itself.
+  - So it rules out only a compute producer on this ring still running, part of (ii) (Codex review REVIEW-05). `first` means the first
   `DISPATCH_INDIRECT` after an `INDEX_BASE`; `all` means every checked dispatch.
 - **`BC5_DIRECT_ARGS_FLUSH_DRAWS=1`** does the same before every checked `DRAW_INDIRECT` / `DRAW_INDEX_INDIRECT`.
   That covers exp 0381's 18:08 class (F667). Neither switch acts on the MEC form.
