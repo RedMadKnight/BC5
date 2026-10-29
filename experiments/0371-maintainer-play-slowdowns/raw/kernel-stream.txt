@@ -1,0 +1,1397 @@
+paź 28 23:29:42.796421 bazzite kernel: Linux version 7.2.9-ogc3.1.fc44.x86_64 (root@581607306d9b) (gcc (GCC) 16.2.1 20260819 (Red Hat 16.2.1-2), GNU ld version 2.46.1-1.fc44) #1 SMP PREEMPT_DYNAMIC Mon Oct 12 22:17:26 UTC 2026
+paź 28 23:29:42.796452 bazzite kernel: Command line: BOOT_IMAGE=(hd0,gpt2)/ostree/default-6d7b72549d9a0fcfa4475d1f692127da437b2072e4270109b08a19f66aae7ca1/vmlinuz-7.2.9-ogc3.1.fc44.x86_64 ostree=/ostree/boot.1/default/6d7b72549d9a0fcfa4475d1f692127da437b2072e4270109b08a19f66aae7ca1/0 rhgb quiet root=UUID=e212b78a-b5c7-49ad-aba3-6441c650ce69 vconsole.keymap=pl rootflags=subvol=root rw bluetooth.disable_ertm=1 amd_iommu=off iommu=soft mitigations=off ttm.pages_limit=3407872 udmabuf.size_limit_mb=1024 efi_pstore.pstore_disable=0
+paź 28 23:29:42.796462 bazzite kernel: x86 CPU feature dependency check failure: CPU0 has '13*32+ 3' enabled but 'pcid' disabled. Kernel might be fine, but no guarantees.
+paź 28 23:29:42.796469 bazzite kernel: BIOS-provided physical RAM map:
+paź 28 23:29:42.796476 bazzite kernel: BIOS-e820: [mem 0x0000000000000000-0x000000000009ffff]  System RAM
+paź 28 23:29:42.796482 bazzite kernel: BIOS-e820: [mem 0x00000000000a0000-0x00000000000fffff]  device reserved
+paź 28 23:29:42.796489 bazzite kernel: BIOS-e820: [mem 0x0000000000100000-0x0000000003ffffff]  System RAM
+paź 28 23:29:42.796494 bazzite kernel: BIOS-e820: [mem 0x0000000004000000-0x0000000004000fff]  ACPI NVS
+paź 28 23:29:42.796500 bazzite kernel: BIOS-e820: [mem 0x0000000004001000-0x0000000009e01fff]  System RAM
+paź 28 23:29:42.796508 bazzite kernel: BIOS-e820: [mem 0x0000000009e02000-0x0000000009ffffff]  device reserved
+paź 28 23:29:42.796514 bazzite kernel: BIOS-e820: [mem 0x000000000a000000-0x000000007dcb6fff]  System RAM
+paź 28 23:29:42.796519 bazzite kernel: BIOS-e820: [mem 0x000000007dcb7000-0x000000007ddf4fff]  device reserved
+paź 28 23:29:42.796525 bazzite kernel: BIOS-e820: [mem 0x000000007ddf5000-0x000000007de04fff]  ACPI data
+paź 28 23:29:42.796530 bazzite kernel: BIOS-e820: [mem 0x000000007de05000-0x000000007defbfff]  ACPI NVS
+paź 28 23:29:42.796538 bazzite kernel: BIOS-e820: [mem 0x000000007defc000-0x000000007e23ffff]  device reserved
+paź 28 23:29:42.796547 bazzite kernel: BIOS-e820: [mem 0x000000007e240000-0x000000007effffff]  System RAM
+paź 28 23:29:42.796553 bazzite kernel: BIOS-e820: [mem 0x000000007f000000-0x000000007fffffff]  device reserved
+paź 28 23:29:42.796558 bazzite kernel: BIOS-e820: [gap 0x0000000080000000-0x00000000dfffffff]
+paź 28 23:29:42.796564 bazzite kernel: BIOS-e820: [mem 0x00000000e0000000-0x00000000efffffff]  device reserved
+paź 28 23:29:42.796569 bazzite kernel: BIOS-e820: [gap 0x00000000f0000000-0x00000000fdcfffff]
+paź 28 23:29:42.796575 bazzite kernel: BIOS-e820: [mem 0x00000000fdd00000-0x00000000fddfffff]  device reserved
+paź 28 23:29:42.796580 bazzite kernel: BIOS-e820: [gap 0x00000000fde00000-0x00000000feb7ffff]
+paź 28 23:29:42.796585 bazzite kernel: BIOS-e820: [mem 0x00000000feb80000-0x00000000fec01fff]  device reserved
+paź 28 23:29:42.796601 bazzite kernel: BIOS-e820: [gap 0x00000000fec02000-0x00000000fec0ffff]
+paź 28 23:29:42.796606 bazzite kernel: BIOS-e820: [mem 0x00000000fec10000-0x00000000fec10fff]  device reserved
+paź 28 23:29:42.796612 bazzite kernel: BIOS-e820: [gap 0x00000000fec11000-0x00000000fed7ffff]
+paź 28 23:29:42.796618 bazzite kernel: BIOS-e820: [mem 0x00000000fed80000-0x00000000fed8ffff]  device reserved
+paź 28 23:29:42.796624 bazzite kernel: BIOS-e820: [gap 0x00000000fed90000-0x00000000fedfffff]
+paź 28 23:29:42.796629 bazzite kernel: BIOS-e820: [mem 0x00000000fee00000-0x00000000feefffff]  device reserved
+paź 28 23:29:42.796635 bazzite kernel: BIOS-e820: [gap 0x00000000fef00000-0x00000000feffffff]
+paź 28 23:29:42.796640 bazzite kernel: BIOS-e820: [mem 0x00000000ff000000-0x00000000ffffffff]  device reserved
+paź 28 23:29:42.796646 bazzite kernel: BIOS-e820: [mem 0x0000000100000000-0x000000044fffffff]  System RAM
+paź 28 23:29:42.796651 bazzite kernel: BIOS-e820: [mem 0x0000000450000000-0x000000046fffffff]  device reserved
+paź 28 23:29:42.796657 bazzite kernel: NX (Execute Disable) protection: active
+paź 28 23:29:42.796662 bazzite kernel: APIC: Static calls initialized
+paź 28 23:29:42.796668 bazzite kernel: efi: EFI v2.6 by American Megatrends
+paź 28 23:29:42.796674 bazzite kernel: efi: ACPI 2.0=0x7de30000 ACPI=0x7de30000 SMBIOS=0x7e133000 SMBIOS 3.0=0x7e132000 ESRT=0x7cce2898 MEMATTR=0x7a747018 MOKvar=0x7e139000 
+paź 28 23:29:42.796679 bazzite kernel: efi: Remove mem29: MMIO range=[0xe0000000-0xefffffff] (256MB) from e820 map
+paź 28 23:29:42.796685 bazzite kernel: e820: remove [mem 0xe0000000-0xefffffff] device reserved
+paź 28 23:29:42.796691 bazzite kernel: efi: Remove mem30: MMIO range=[0xfdd00000-0xfddfffff] (1MB) from e820 map
+paź 28 23:29:42.796699 bazzite kernel: e820: remove [mem 0xfdd00000-0xfddfffff] device reserved
+paź 28 23:29:42.796705 bazzite kernel: efi: Remove mem31: MMIO range=[0xfeb80000-0xfec01fff] (0MB) from e820 map
+paź 28 23:29:42.796710 bazzite kernel: e820: remove [mem 0xfeb80000-0xfec01fff] device reserved
+paź 28 23:29:42.796716 bazzite kernel: efi: Not removing mem32: MMIO range=[0xfec10000-0xfec10fff] (4KB) from e820 map
+paź 28 23:29:42.796722 bazzite kernel: efi: Not removing mem33: MMIO range=[0xfed80000-0xfed8ffff] (64KB) from e820 map
+paź 28 23:29:42.796728 bazzite kernel: efi: Remove mem34: MMIO range=[0xfee00000-0xfeefffff] (1MB) from e820 map
+paź 28 23:29:42.796733 bazzite kernel: e820: remove [mem 0xfee00000-0xfeefffff] device reserved
+paź 28 23:29:42.796739 bazzite kernel: efi: Remove mem35: MMIO range=[0xff000000-0xffffffff] (16MB) from e820 map
+paź 28 23:29:42.796745 bazzite kernel: e820: remove [mem 0xff000000-0xffffffff] device reserved
+paź 28 23:29:42.796750 bazzite kernel: DMI: SMBIOS 3.0.0 present.
+paź 28 23:29:42.796756 bazzite kernel: DMI: Default string AMD BC-250/AMD BC-250, BIOS P3.00 12/09/2021
+paź 28 23:29:42.796761 bazzite kernel: DMI: Memory slots populated: 16/16
+paź 28 23:29:42.796766 bazzite kernel: tsc: Fast TSC calibration using PIT
+paź 28 23:29:42.796772 bazzite kernel: tsc: Detected 3194.056 MHz processor
+paź 28 23:29:42.796779 bazzite kernel: e820: update [mem 0x00000000-0x00000fff] System RAM ==> device reserved
+paź 28 23:29:42.796790 bazzite kernel: e820: remove [mem 0x000a0000-0x000fffff] System RAM
+paź 28 23:29:42.796797 bazzite kernel: last_pfn = 0x450000 max_arch_pfn = 0x400000000
+paź 28 23:29:42.796804 bazzite kernel: MTRR map: 6 entries (4 fixed + 2 variable; max 21), built from 9 variable MTRRs
+paź 28 23:29:42.796811 bazzite kernel: x86/PAT: Configuration [0-7]: WB  WC  UC- UC  WB  WP  UC- WT  
+paź 28 23:29:42.796817 bazzite kernel: e820: update [mem 0x80000000-0xffffffff] System RAM ==> device reserved
+paź 28 23:29:42.796826 bazzite kernel: last_pfn = 0x7f000 max_arch_pfn = 0x400000000
+paź 28 23:29:42.796832 bazzite kernel: esrt: Reserving ESRT space from 0x000000007cce2898 to 0x000000007cce28d0.
+paź 28 23:29:42.796841 bazzite kernel: e820: update [mem 0x7cce2000-0x7cce2fff] System RAM ==> device reserved
+paź 28 23:29:42.796847 bazzite kernel: Using GB pages for direct mapping
+paź 28 23:29:42.796853 bazzite kernel: Secure boot disabled
+paź 28 23:29:42.796862 bazzite kernel: RAMDISK: [mem 0x6183a000-0x70a85fff]
+paź 28 23:29:42.796876 bazzite kernel: ACPI: Early table checksum verification disabled
+paź 28 23:29:42.796884 bazzite kernel: ACPI: RSDP 0x000000007DE30000 000024 (v02 ALASKA)
+paź 28 23:29:42.796892 bazzite kernel: ACPI: XSDT 0x000000007DE30088 00008C (v01 ALASKA A M I    01072009 AMI  00010013)
+paź 28 23:29:42.796901 bazzite kernel: ACPI: FACP 0x000000007DE36038 000114 (v06 ALASKA A M I    01072009 AMI  00010013)
+paź 28 23:29:42.796910 bazzite kernel: ACPI BIOS Warning (bug): Optional FADT field Pm2ControlBlock has valid Length but zero Address: 0x0000000000000000/0x1 (20260408/tbfadt-614)
+paź 28 23:29:42.796919 bazzite kernel: ACPI: DSDT 0x000000007DE301A8 005E90 (v02 ALASKA A M I    01072009 INTL 20120913)
+paź 28 23:29:42.796929 bazzite kernel: ACPI: FACS 0x000000007DEE4D80 000040
+paź 28 23:29:42.796939 bazzite kernel: ACPI: APIC 0x000000007DE36150 0000DE (v03 ALASKA A M I    01072009 AMI  00010013)
+paź 28 23:29:42.796950 bazzite kernel: ACPI: FPDT 0x000000007DE36230 000044 (v01 ALASKA A M I    01072009 AMI  00010013)
+paź 28 23:29:42.796961 bazzite kernel: ACPI: FIDT 0x000000007DE36278 00009C (v01 ALASKA A M I    01072009 AMI  00010013)
+paź 28 23:29:42.796971 bazzite kernel: ACPI: MCFG 0x000000007DE36318 00003C (v01 ALASKA A M I    01072009 MSFT 00010013)
+paź 28 23:29:42.796978 bazzite kernel: ACPI: SSDT 0x000000007DE36358 000814 (v01 AMD    AMD CPU  00000001 AMD  00000001)
+paź 28 23:29:42.796984 bazzite kernel: ACPI: CRAT 0x000000007DE36B70 000F50 (v01 AMD    AMD CRAT 00000001 AMD  00000001)
+paź 28 23:29:42.796991 bazzite kernel: ACPI: CDIT 0x000000007DE37AC0 000029 (v01 AMD    AMD CDIT 00000001 AMD  00000001)
+paź 28 23:29:42.796997 bazzite kernel: ACPI: HPET 0x000000007DE37AF0 000038 (v01 ALASKA A M I    01072009 AMI  00000005)
+paź 28 23:29:42.797003 bazzite kernel: ACPI: UEFI 0x000000007DE37B28 000042 (v01                 00000000      00000000)
+paź 28 23:29:42.797010 bazzite kernel: ACPI: VFCT 0x000000007DE37B70 00D884 (v01 ALASKA A M I    00000001 AMD  31504F47)
+paź 28 23:29:42.797018 bazzite kernel: ACPI: BGRT 0x000000007DE453F8 000038 (v01 ALASKA A M I    01072009 AMI  00010013)
+paź 28 23:29:42.797025 bazzite kernel: ACPI: SSDT 0x000000007DE45430 001942 (v01 AMD    AmdTable 00000001 INTL 20120913)
+paź 28 23:29:42.797031 bazzite kernel: ACPI: Reserving FACP table memory at [mem 0x7de36038-0x7de3614b]
+paź 28 23:29:42.797037 bazzite kernel: ACPI: Reserving DSDT table memory at [mem 0x7de301a8-0x7de36037]
+paź 28 23:29:42.797044 bazzite kernel: ACPI: Reserving FACS table memory at [mem 0x7dee4d80-0x7dee4dbf]
+paź 28 23:29:42.797049 bazzite kernel: ACPI: Reserving APIC table memory at [mem 0x7de36150-0x7de3622d]
+paź 28 23:29:42.797056 bazzite kernel: ACPI: Reserving FPDT table memory at [mem 0x7de36230-0x7de36273]
+paź 28 23:29:42.797062 bazzite kernel: ACPI: Reserving FIDT table memory at [mem 0x7de36278-0x7de36313]
+paź 28 23:29:42.797068 bazzite kernel: ACPI: Reserving MCFG table memory at [mem 0x7de36318-0x7de36353]
+paź 28 23:29:42.797075 bazzite kernel: ACPI: Reserving SSDT table memory at [mem 0x7de36358-0x7de36b6b]
+paź 28 23:29:42.797082 bazzite kernel: ACPI: Reserving CRAT table memory at [mem 0x7de36b70-0x7de37abf]
+paź 28 23:29:42.797088 bazzite kernel: ACPI: Reserving CDIT table memory at [mem 0x7de37ac0-0x7de37ae8]
+paź 28 23:29:42.797094 bazzite kernel: ACPI: Reserving HPET table memory at [mem 0x7de37af0-0x7de37b27]
+paź 28 23:29:42.797101 bazzite kernel: ACPI: Reserving UEFI table memory at [mem 0x7de37b28-0x7de37b69]
+paź 28 23:29:42.797107 bazzite kernel: ACPI: Reserving VFCT table memory at [mem 0x7de37b70-0x7de453f3]
+paź 28 23:29:42.797113 bazzite kernel: ACPI: Reserving BGRT table memory at [mem 0x7de453f8-0x7de4542f]
+paź 28 23:29:42.797120 bazzite kernel: ACPI: Reserving SSDT table memory at [mem 0x7de45430-0x7de46d71]
+paź 28 23:29:42.797126 bazzite kernel: No NUMA configuration found
+paź 28 23:29:42.797133 bazzite kernel: Faking a node at [mem 0x0000000000000000-0x000000044fffffff]
+paź 28 23:29:42.797140 bazzite kernel: NODE_DATA(0) allocated [mem 0x44ffd4f80-0x44fffffff]
+paź 28 23:29:42.797147 bazzite kernel: ACPI: PM-Timer IO Port: 0x408
+paź 28 23:29:42.797154 bazzite kernel: ACPI: LAPIC_NMI (acpi_id[0xff] high edge lint[0x1])
+paź 28 23:29:42.797160 bazzite kernel: IOAPIC[0]: apic_id 17, version 33, address 0xfec00000, GSI 0-23
+paź 28 23:29:42.797167 bazzite kernel: IOAPIC[1]: apic_id 18, version 33, address 0xfec01000, GSI 24-55
+paź 28 23:29:42.797174 bazzite kernel: ACPI: INT_SRC_OVR (bus 0 bus_irq 0 global_irq 2 dfl dfl)
+paź 28 23:29:42.797180 bazzite kernel: ACPI: INT_SRC_OVR (bus 0 bus_irq 9 global_irq 9 low level)
+paź 28 23:29:42.797187 bazzite kernel: ACPI: Using ACPI (MADT) for SMP configuration information
+paź 28 23:29:42.797193 bazzite kernel: ACPI: HPET id: 0x10228210 base: 0xfed00000
+paź 28 23:29:42.797201 bazzite kernel: e820: update [mem 0x7b4ab000-0x7b4abfff] System RAM ==> device reserved
+paź 28 23:29:42.797207 bazzite kernel: CPU topo: Max. logical packages:   1
+paź 28 23:29:42.797214 bazzite kernel: CPU topo: Max. logical nodes:      1
+paź 28 23:29:42.797220 bazzite kernel: CPU topo: Num. nodes per package:  1
+paź 28 23:29:42.797226 bazzite kernel: CPU topo: Max. logical dies:       1
+paź 28 23:29:42.797232 bazzite kernel: CPU topo: Max. dies per package:   1
+paź 28 23:29:42.797238 bazzite kernel: CPU topo: Max. threads per core:   2
+paź 28 23:29:42.797248 bazzite kernel: CPU topo: Num. cores per package:     8
+paź 28 23:29:42.797254 bazzite kernel: CPU topo: Num. threads per package:  16
+paź 28 23:29:42.797259 bazzite kernel: CPU topo: Allowing 16 present CPUs plus 0 hotplug CPUs
+paź 28 23:29:42.797266 bazzite kernel: PM: hibernation: Registered nosave memory: [mem 0x00000000-0x00000fff]
+paź 28 23:29:42.797273 bazzite kernel: PM: hibernation: Registered nosave memory: [mem 0x000a0000-0x000fffff]
+paź 28 23:29:42.797280 bazzite kernel: PM: hibernation: Registered nosave memory: [mem 0x04000000-0x04000fff]
+paź 28 23:29:42.797286 bazzite kernel: PM: hibernation: Registered nosave memory: [mem 0x09e02000-0x09ffffff]
+paź 28 23:29:42.797292 bazzite kernel: PM: hibernation: Registered nosave memory: [mem 0x7b4ab000-0x7b4abfff]
+paź 28 23:29:42.797299 bazzite kernel: PM: hibernation: Registered nosave memory: [mem 0x7cce2000-0x7cce2fff]
+paź 28 23:29:42.797305 bazzite kernel: PM: hibernation: Registered nosave memory: [mem 0x7dcb7000-0x7e23ffff]
+paź 28 23:29:42.797311 bazzite kernel: PM: hibernation: Registered nosave memory: [mem 0x7f000000-0xffffffff]
+paź 28 23:29:42.797318 bazzite kernel: [gap 0x80000000-0xfec0ffff] available for PCI devices
+paź 28 23:29:42.797324 bazzite kernel: Booting paravirtualized kernel on bare hardware
+paź 28 23:29:42.797332 bazzite kernel: clocksource: refined-jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 1910969940391419 ns
+paź 28 23:29:42.797339 bazzite kernel: Zone ranges:
+paź 28 23:29:42.797345 bazzite kernel:   DMA      [mem 0x0000000000001000-0x0000000000ffffff]
+paź 28 23:29:42.797352 bazzite kernel:   DMA32    [mem 0x0000000001000000-0x00000000ffffffff]
+paź 28 23:29:42.797358 bazzite kernel:   Normal   [mem 0x0000000100000000-0x000000044fffffff]
+paź 28 23:29:42.797364 bazzite kernel:   Device   empty
+paź 28 23:29:42.797371 bazzite kernel: Movable zone start for each node
+paź 28 23:29:42.797379 bazzite kernel: Early memory node ranges
+paź 28 23:29:42.797386 bazzite kernel:   node   0: [mem 0x0000000000001000-0x000000000009ffff]
+paź 28 23:29:42.797391 bazzite kernel:   node   0: [mem 0x0000000000100000-0x0000000003ffffff]
+paź 28 23:29:42.797398 bazzite kernel:   node   0: [mem 0x0000000004001000-0x0000000009e01fff]
+paź 28 23:29:42.797404 bazzite kernel:   node   0: [mem 0x000000000a000000-0x000000007dcb6fff]
+paź 28 23:29:42.797411 bazzite kernel:   node   0: [mem 0x000000007e240000-0x000000007effffff]
+paź 28 23:29:42.797417 bazzite kernel:   node   0: [mem 0x0000000100000000-0x000000044fffffff]
+paź 28 23:29:42.797423 bazzite kernel: Initmem setup node 0 [mem 0x0000000000001000-0x000000044fffffff]
+paź 28 23:29:42.797429 bazzite kernel: On node 0, zone DMA: 1 pages in unavailable ranges
+paź 28 23:29:42.797437 bazzite kernel: On node 0, zone DMA: 96 pages in unavailable ranges
+paź 28 23:29:42.797444 bazzite kernel: On node 0, zone DMA32: 1 pages in unavailable ranges
+paź 28 23:29:42.797450 bazzite kernel: On node 0, zone DMA32: 510 pages in unavailable ranges
+paź 28 23:29:42.797457 bazzite kernel: On node 0, zone DMA32: 1417 pages in unavailable ranges
+paź 28 23:29:42.797463 bazzite kernel: On node 0, zone Normal: 4096 pages in unavailable ranges
+paź 28 23:29:42.797470 bazzite kernel: setup_percpu: NR_CPUS:8192 nr_cpumask_bits:16 nr_cpu_ids:16 nr_node_ids:1
+paź 28 23:29:42.797476 bazzite kernel: percpu: Embedded 85 pages/cpu s225280 r8192 d114688 u524288
+paź 28 23:29:42.797482 bazzite kernel: pcpu-alloc: s225280 r8192 d114688 u524288 alloc=1*2097152
+paź 28 23:29:42.797489 bazzite kernel: pcpu-alloc: [0] 00 01 02 03 [0] 04 05 06 07 
+paź 28 23:29:42.797496 bazzite kernel: pcpu-alloc: [0] 08 09 10 11 [0] 12 13 14 15 
+paź 28 23:29:42.797504 bazzite kernel: Kernel command line: BOOT_IMAGE=(hd0,gpt2)/ostree/default-6d7b72549d9a0fcfa4475d1f692127da437b2072e4270109b08a19f66aae7ca1/vmlinuz-7.2.9-ogc3.1.fc44.x86_64 ostree=/ostree/boot.1/default/6d7b72549d9a0fcfa4475d1f692127da437b2072e4270109b08a19f66aae7ca1/0 rhgb quiet root=UUID=e212b78a-b5c7-49ad-aba3-6441c650ce69 vconsole.keymap=pl rootflags=subvol=root rw bluetooth.disable_ertm=1 amd_iommu=off iommu=soft mitigations=off ttm.pages_limit=3407872 udmabuf.size_limit_mb=1024 efi_pstore.pstore_disable=0
+paź 28 23:29:42.797514 bazzite kernel: Unknown kernel command line parameters "rhgb ostree=/ostree/boot.1/default/6d7b72549d9a0fcfa4475d1f692127da437b2072e4270109b08a19f66aae7ca1/0", will be passed to user space.
+paź 28 23:29:42.797523 bazzite kernel: random: crng init done
+paź 28 23:29:42.797533 bazzite kernel: printk: log buffer data + meta data: 262144 + 1114112 = 1376256 bytes
+paź 28 23:29:42.797540 bazzite kernel: Dentry cache hash table entries: 2097152 (order: 12, 16777216 bytes, linear)
+paź 28 23:29:42.797547 bazzite kernel: Inode-cache hash table entries: 1048576 (order: 11, 8388608 bytes, linear)
+paź 28 23:29:42.797553 bazzite kernel: software IO TLB: area num 16.
+paź 28 23:29:42.797561 bazzite kernel: Fallback order for Node 0: 0 
+paź 28 23:29:42.797568 bazzite kernel: Built 1 zonelists, mobility grouping on.  Total pages: 3991575
+paź 28 23:29:42.797574 bazzite kernel: Policy zone: Normal
+paź 28 23:29:42.797581 bazzite kernel: mem auto-init: stack:all(zero), heap alloc:on, heap free:off
+paź 28 23:29:42.797587 bazzite kernel: SLUB: HWalign=64, Order=0-3, MinObjects=0, CPUs=16, Nodes=1
+paź 28 23:29:42.797600 bazzite kernel: ftrace: allocating 65984 entries in 260 pages
+paź 28 23:29:42.797606 bazzite kernel: ftrace: allocated 260 pages with 2 groups
+paź 28 23:29:42.797613 bazzite kernel: Dynamic Preempt: lazy
+paź 28 23:29:42.797619 bazzite kernel: rcu: Preemptible hierarchical RCU implementation.
+paź 28 23:29:42.797629 bazzite kernel: rcu:         RCU event tracing is enabled.
+paź 28 23:29:42.797635 bazzite kernel: rcu:         RCU restricting CPUs from NR_CPUS=8192 to nr_cpu_ids=16.
+paź 28 23:29:42.797641 bazzite kernel:         Trampoline variant of Tasks RCU enabled.
+paź 28 23:29:42.797648 bazzite kernel:         Rude variant of Tasks RCU enabled.
+paź 28 23:29:42.797654 bazzite kernel:         Tracing variant of Tasks RCU enabled.
+paź 28 23:29:42.797660 bazzite kernel: rcu: RCU calculated value of scheduler-enlistment delay is 100 jiffies.
+paź 28 23:29:42.797667 bazzite kernel: rcu: Adjusting geometry for rcu_fanout_leaf=16, nr_cpu_ids=16
+paź 28 23:29:42.797673 bazzite kernel: RCU Tasks: Setting shift to 4 and lim to 1 rcu_task_cb_adjust=1 rcu_task_cpu_ids=16.
+paź 28 23:29:42.797680 bazzite kernel: RCU Tasks Rude: Setting shift to 4 and lim to 1 rcu_task_cb_adjust=1 rcu_task_cpu_ids=16.
+paź 28 23:29:42.797688 bazzite kernel: NR_IRQS: 524544, nr_irqs: 1096, preallocated irqs: 16
+paź 28 23:29:42.797695 bazzite kernel: rcu: srcu_init: Setting srcu_struct sizes based on contention.
+paź 28 23:29:42.797701 bazzite kernel: clocksource: jiffies: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 1911260446275000 ns
+paź 28 23:29:42.797708 bazzite kernel: kfence: initialized - using 2097152 bytes for 255 objects at 0x(____ptrval____)-0x(____ptrval____)
+paź 28 23:29:42.797714 bazzite kernel: Console: colour dummy device 80x25
+paź 28 23:29:42.797720 bazzite kernel: printk: legacy console [tty0] enabled
+paź 28 23:29:42.797727 bazzite kernel: ACPI: Core revision 20260408
+paź 28 23:29:42.797733 bazzite kernel: clocksource: hpet: mask: 0xffffffff max_cycles: 0xffffffff, max_idle_ns: 133484873504 ns
+paź 28 23:29:42.797741 bazzite kernel: APIC: Switch to symmetric I/O mode setup
+paź 28 23:29:42.797747 bazzite kernel: ..TIMER: vector=0x30 apic1=0 pin1=2 apic2=-1 pin2=-1
+paź 28 23:29:42.797754 bazzite kernel: clocksource: tsc-early: mask: 0xffffffffffffffff max_cycles: 0x2e0a5aa1597, max_idle_ns: 440795214018 ns
+paź 28 23:29:42.797760 bazzite kernel: Calibrating delay loop (skipped), value calculated using timer frequency.. 6388.11 BogoMIPS (lpj=3194056)
+paź 28 23:29:42.797767 bazzite kernel: Zenbleed: please update your microcode for the most optimal fix
+paź 28 23:29:42.797773 bazzite kernel: RDSEED is not reliable on this platform; disabling.
+paź 28 23:29:42.797783 bazzite kernel: x86/cpu: User Mode Instruction Prevention (UMIP) activated
+paź 28 23:29:42.797790 bazzite kernel: LVT offset 1 assigned for vector 0xf9
+paź 28 23:29:42.797796 bazzite kernel: LVT offset 2 assigned for vector 0xf4
+paź 28 23:29:42.797804 bazzite kernel: Last level iTLB entries: 4KB 1024, 2MB 1024, 4MB 512
+paź 28 23:29:42.797810 bazzite kernel: Last level dTLB entries: 4KB 2048, 2MB 2048, 4MB 1024, 1GB 0
+paź 28 23:29:42.797816 bazzite kernel: process: using mwait in idle threads
+paź 28 23:29:42.797823 bazzite kernel: mitigations: Enabled attack vectors: SMT mitigations: off
+paź 28 23:29:42.797829 bazzite kernel: Speculative Store Bypass: Vulnerable
+paź 28 23:29:42.797835 bazzite kernel: Spectre V2 : Vulnerable
+paź 28 23:29:42.797841 bazzite kernel: RETBleed: Vulnerable
+paź 28 23:29:42.797847 bazzite kernel: Speculative Return Stack Overflow: Vulnerable
+paź 28 23:29:42.797853 bazzite kernel: VMSCAPE: Vulnerable
+paź 28 23:29:42.797861 bazzite kernel: Spectre V1 : Vulnerable: __user pointer sanitization and usercopy barriers only; no swapgs barriers
+paź 28 23:29:42.797867 bazzite kernel: x86/fpu: Supporting XSAVE feature 0x001: 'x87 floating point registers'
+paź 28 23:29:42.797873 bazzite kernel: x86/fpu: Supporting XSAVE feature 0x002: 'SSE registers'
+paź 28 23:29:42.797880 bazzite kernel: x86/fpu: Supporting XSAVE feature 0x004: 'AVX registers'
+paź 28 23:29:42.797886 bazzite kernel: x86/fpu: xstate_offset[2]:  576, xstate_sizes[2]:  256
+paź 28 23:29:42.797892 bazzite kernel: x86/fpu: Enabled xstate features 0x7, context size is 832 bytes, using 'compacted' format.
+paź 28 23:29:42.797898 bazzite kernel: pid_max: default: 32768 minimum: 301
+paź 28 23:29:42.797905 bazzite kernel: Yama: becoming mindful.
+paź 28 23:29:42.797912 bazzite kernel: SELinux:  Initializing.
+paź 28 23:29:42.797919 bazzite kernel: LSM support for eBPF active
+paź 28 23:29:42.797926 bazzite kernel: landlock: Up and running.
+paź 28 23:29:42.797932 bazzite kernel: Mount-cache hash table entries: 32768 (order: 6, 262144 bytes, linear)
+paź 28 23:29:42.797939 bazzite kernel: Mountpoint-cache hash table entries: 32768 (order: 6, 262144 bytes, linear)
+paź 28 23:29:42.797945 bazzite kernel: VFS: Finished mounting rootfs on nullfs
+paź 28 23:29:42.797951 bazzite kernel: smpboot: CPU0: AMD BC-250 (family: 0x17, model: 0x47, stepping: 0x0)
+paź 28 23:29:42.797958 bazzite kernel: Performance Events: Fam17h+ core perfctr, AMD PMU driver.
+paź 28 23:29:42.797964 bazzite kernel: ... version:                   0
+paź 28 23:29:42.797970 bazzite kernel: ... bit width:                 48
+paź 28 23:29:42.797978 bazzite kernel: ... generic counters:          6
+paź 28 23:29:42.797985 bazzite kernel: ... generic bitmap:            000000000000003f
+paź 28 23:29:42.797991 bazzite kernel: ... fixed-purpose counters:    0
+paź 28 23:29:42.797997 bazzite kernel: ... fixed-purpose bitmap:      0000000000000000
+paź 28 23:29:42.798003 bazzite kernel: ... value mask:                0000ffffffffffff
+paź 28 23:29:42.798009 bazzite kernel: ... max period:                00007fffffffffff
+paź 28 23:29:42.798016 bazzite kernel: ... global_ctrl mask:          000000000000003f
+paź 28 23:29:42.798022 bazzite kernel: signal: max sigframe size: 1776
+paź 28 23:29:42.798029 bazzite kernel: rcu: Hierarchical SRCU implementation.
+paź 28 23:29:42.798037 bazzite kernel: rcu:         Max phase no-delay instances is 400.
+paź 28 23:29:42.798043 bazzite kernel: Timer migration: 2 hierarchy levels; 8 children per group; 2 crossnode level
+paź 28 23:29:42.798050 bazzite kernel: NMI watchdog: Enabled. Permanently consumes one hw-PMU counter.
+paź 28 23:29:42.798056 bazzite kernel: smp: Bringing up secondary CPUs ...
+paź 28 23:29:42.798062 bazzite kernel: smpboot: x86: Booting SMP configuration:
+paź 28 23:29:42.798067 bazzite kernel: .... node  #0, CPUs:        #2  #4  #6  #8 #10 #12 #14
+paź 28 23:29:42.798073 bazzite kernel: RDSEED is not reliable on this platform; disabling.
+paź 28 23:29:42.798080 bazzite kernel: RDSEED is not reliable on this platform; disabling.
+paź 28 23:29:42.798085 bazzite kernel: RDSEED is not reliable on this platform; disabling.
+paź 28 23:29:42.798090 bazzite kernel: RDSEED is not reliable on this platform; disabling.
+paź 28 23:29:42.798095 bazzite kernel: RDSEED is not reliable on this platform; disabling.
+paź 28 23:29:42.798101 bazzite kernel: RDSEED is not reliable on this platform; disabling.
+paź 28 23:29:42.798106 bazzite kernel: RDSEED is not reliable on this platform; disabling.
+paź 28 23:29:42.798112 bazzite kernel:   #1  #3  #5  #7  #9 #11 #13 #15
+paź 28 23:29:42.798120 bazzite kernel: RDSEED is not reliable on this platform; disabling.
+paź 28 23:29:42.798125 bazzite kernel: RDSEED is not reliable on this platform; disabling.
+paź 28 23:29:42.798130 bazzite kernel: RDSEED is not reliable on this platform; disabling.
+paź 28 23:29:42.798135 bazzite kernel: RDSEED is not reliable on this platform; disabling.
+paź 28 23:29:42.798140 bazzite kernel: RDSEED is not reliable on this platform; disabling.
+paź 28 23:29:42.798146 bazzite kernel: RDSEED is not reliable on this platform; disabling.
+paź 28 23:29:42.798151 bazzite kernel: RDSEED is not reliable on this platform; disabling.
+paź 28 23:29:42.798157 bazzite kernel: RDSEED is not reliable on this platform; disabling.
+paź 28 23:29:42.798162 bazzite kernel: smp: Brought up 1 node, 16 CPUs
+paź 28 23:29:42.798169 bazzite kernel: smpboot: Total of 16 processors activated (102209.79 BogoMIPS)
+paź 28 23:29:42.798175 bazzite kernel: Memory: 15249800K/15966300K available (24901K kernel code, 4857K rwdata, 19100K rodata, 5376K init, 6052K bss, 694268K reserved, 0K cma-reserved)
+paź 28 23:29:42.798182 bazzite kernel: devtmpfs: initialized
+paź 28 23:29:42.798188 bazzite kernel: x86/mm: Memory block size: 128MB
+paź 28 23:29:42.798194 bazzite kernel: ACPI: PM: Registering ACPI NVS region [mem 0x04000000-0x04000fff] (4096 bytes)
+paź 28 23:29:42.798202 bazzite kernel: ACPI: PM: Registering ACPI NVS region [mem 0x7de05000-0x7defbfff] (1011712 bytes)
+paź 28 23:29:42.798208 bazzite kernel: posixtimers hash table entries: 8192 (order: 5, 131072 bytes, linear)
+paź 28 23:29:42.798214 bazzite kernel: futex hash table entries: 4096 (262144 bytes on 1 NUMA nodes, total 256 KiB, linear).
+paź 28 23:29:42.798220 bazzite kernel: xor: automatically using best checksumming function   avx       
+paź 28 23:29:42.798227 bazzite kernel: PM: RTC time: 22:29:41, date: 2026-10-28
+paź 28 23:29:42.798235 bazzite kernel: NET: Registered PF_NETLINK/PF_ROUTE protocol family
+paź 28 23:29:42.798246 bazzite kernel: DMA: preallocated 2048 KiB GFP_KERNEL pool for atomic allocations
+paź 28 23:29:42.798253 bazzite kernel: DMA: preallocated 2048 KiB GFP_KERNEL|GFP_DMA pool for atomic allocations
+paź 28 23:29:42.798260 bazzite kernel: DMA: preallocated 2048 KiB GFP_KERNEL|GFP_DMA32 pool for atomic allocations
+paź 28 23:29:42.798267 bazzite kernel: audit: initializing netlink subsys (disabled)
+paź 28 23:29:42.798274 bazzite kernel: audit: type=2000 audit(1793226581.163:1): state=initialized audit_enabled=0 res=1
+paź 28 23:29:42.798280 bazzite kernel: thermal_sys: Registered thermal governor 'fair_share'
+paź 28 23:29:42.798289 bazzite kernel: thermal_sys: Registered thermal governor 'bang_bang'
+paź 28 23:29:42.798295 bazzite kernel: thermal_sys: Registered thermal governor 'step_wise'
+paź 28 23:29:42.798302 bazzite kernel: thermal_sys: Registered thermal governor 'user_space'
+paź 28 23:29:42.798308 bazzite kernel: cpuidle: using governor menu
+paź 28 23:29:42.798314 bazzite kernel: Freeing SMP alternatives memory: 60K
+paź 28 23:29:42.798320 bazzite kernel: efi: Freeing EFI boot services memory: 26844K
+paź 28 23:29:42.798328 bazzite kernel: acpiphp: ACPI Hot Plug PCI Controller Driver version: 0.5
+paź 28 23:29:42.798334 bazzite kernel: PCI: ECAM [mem 0xe0000000-0xefffffff] (base 0xe0000000) for domain 0000 [bus 00-ff]
+paź 28 23:29:42.798344 bazzite kernel: PCI: Using configuration type 1 for base access
+paź 28 23:29:42.798353 bazzite kernel: virt/tdx: TDX not supported by the host platform
+paź 28 23:29:42.798362 bazzite kernel: kprobes: kprobe jump-optimization is enabled. All kprobes are optimized if possible.
+paź 28 23:29:42.798371 bazzite kernel: HugeTLB: registered 1.00 GiB page size, pre-allocated 0 pages
+paź 28 23:29:42.798378 bazzite kernel: HugeTLB: 16380 KiB vmemmap can be freed for a 1.00 GiB page
+paź 28 23:29:42.798386 bazzite kernel: HugeTLB: registered 2.00 MiB page size, pre-allocated 0 pages
+paź 28 23:29:42.798395 bazzite kernel: HugeTLB: 28 KiB vmemmap can be freed for a 2.00 MiB page
+paź 28 23:29:42.798401 bazzite kernel: raid6: using avx2x2 recovery algorithm
+paź 28 23:29:42.798413 bazzite kernel: raid6: skipped pq benchmark and selected avx2x4
+paź 28 23:29:42.798419 bazzite kernel: fbcon: Taking over console
+paź 28 23:29:42.798425 bazzite kernel: ACPI: Added _OSI(Module Device)
+paź 28 23:29:42.798432 bazzite kernel: ACPI: Added _OSI(Processor Device)
+paź 28 23:29:42.798438 bazzite kernel: ACPI: Added _OSI(Processor Aggregator Device)
+paź 28 23:29:42.798445 bazzite kernel: ACPI BIOS Error (bug): Could not resolve symbol [\_PR.C000], AE_NOT_FOUND (20260408/dswload2-162)
+paź 28 23:29:42.798451 bazzite kernel: ACPI Error: AE_NOT_FOUND, During name lookup/catalog (20260408/psobject-220)
+paź 28 23:29:42.798458 bazzite kernel: ACPI: Skipping parse of AML opcode: Scope (0x0010)
+paź 28 23:29:42.798465 bazzite kernel: ACPI BIOS Error (bug): Could not resolve symbol [\_PR.C001], AE_NOT_FOUND (20260408/dswload2-162)
+paź 28 23:29:42.798472 bazzite kernel: ACPI Error: AE_NOT_FOUND, During name lookup/catalog (20260408/psobject-220)
+paź 28 23:29:42.798478 bazzite kernel: ACPI: Skipping parse of AML opcode: Scope (0x0010)
+paź 28 23:29:42.798485 bazzite kernel: ACPI BIOS Error (bug): Could not resolve symbol [\_PR.C002], AE_NOT_FOUND (20260408/dswload2-162)
+paź 28 23:29:42.798491 bazzite kernel: ACPI Error: AE_NOT_FOUND, During name lookup/catalog (20260408/psobject-220)
+paź 28 23:29:42.798497 bazzite kernel: ACPI: Skipping parse of AML opcode: Scope (0x0010)
+paź 28 23:29:42.798504 bazzite kernel: ACPI BIOS Error (bug): Could not resolve symbol [\_PR.C003], AE_NOT_FOUND (20260408/dswload2-162)
+paź 28 23:29:42.798510 bazzite kernel: ACPI Error: AE_NOT_FOUND, During name lookup/catalog (20260408/psobject-220)
+paź 28 23:29:42.798516 bazzite kernel: ACPI: Skipping parse of AML opcode: Scope (0x0010)
+paź 28 23:29:42.798522 bazzite kernel: ACPI BIOS Error (bug): Could not resolve symbol [\_PR.C004], AE_NOT_FOUND (20260408/dswload2-162)
+paź 28 23:29:42.798530 bazzite kernel: ACPI Error: AE_NOT_FOUND, During name lookup/catalog (20260408/psobject-220)
+paź 28 23:29:42.798536 bazzite kernel: ACPI: Skipping parse of AML opcode: Scope (0x0010)
+paź 28 23:29:42.798542 bazzite kernel: ACPI BIOS Error (bug): Could not resolve symbol [\_PR.C005], AE_NOT_FOUND (20260408/dswload2-162)
+paź 28 23:29:42.798548 bazzite kernel: ACPI Error: AE_NOT_FOUND, During name lookup/catalog (20260408/psobject-220)
+paź 28 23:29:42.798554 bazzite kernel: ACPI: Skipping parse of AML opcode: Scope (0x0010)
+paź 28 23:29:42.798561 bazzite kernel: ACPI BIOS Error (bug): Could not resolve symbol [\_PR.C006], AE_NOT_FOUND (20260408/dswload2-162)
+paź 28 23:29:42.798567 bazzite kernel: ACPI Error: AE_NOT_FOUND, During name lookup/catalog (20260408/psobject-220)
+paź 28 23:29:42.798573 bazzite kernel: ACPI: Skipping parse of AML opcode: Scope (0x0010)
+paź 28 23:29:42.798582 bazzite kernel: ACPI BIOS Error (bug): Could not resolve symbol [\_PR.C007], AE_NOT_FOUND (20260408/dswload2-162)
+paź 28 23:29:42.798595 bazzite kernel: ACPI Error: AE_NOT_FOUND, During name lookup/catalog (20260408/psobject-220)
+paź 28 23:29:42.798603 bazzite kernel: ACPI: Skipping parse of AML opcode: Scope (0x0010)
+paź 28 23:29:42.798609 bazzite kernel: ACPI BIOS Error (bug): Could not resolve symbol [\_PR.C008], AE_NOT_FOUND (20260408/dswload2-162)
+paź 28 23:29:42.798615 bazzite kernel: ACPI Error: AE_NOT_FOUND, During name lookup/catalog (20260408/psobject-220)
+paź 28 23:29:42.798622 bazzite kernel: ACPI: Skipping parse of AML opcode: Scope (0x0010)
+paź 28 23:29:42.798629 bazzite kernel: ACPI BIOS Error (bug): Could not resolve symbol [\_PR.C009], AE_NOT_FOUND (20260408/dswload2-162)
+paź 28 23:29:42.798637 bazzite kernel: ACPI Error: AE_NOT_FOUND, During name lookup/catalog (20260408/psobject-220)
+paź 28 23:29:42.798646 bazzite kernel: ACPI: Skipping parse of AML opcode: Scope (0x0010)
+paź 28 23:29:42.798654 bazzite kernel: ACPI BIOS Error (bug): Could not resolve symbol [\_PR.C00A], AE_NOT_FOUND (20260408/dswload2-162)
+paź 28 23:29:42.798664 bazzite kernel: ACPI Error: AE_NOT_FOUND, During name lookup/catalog (20260408/psobject-220)
+paź 28 23:29:42.798673 bazzite kernel: ACPI: Skipping parse of AML opcode: Scope (0x0010)
+paź 28 23:29:42.798682 bazzite kernel: ACPI BIOS Error (bug): Could not resolve symbol [\_PR.C00B], AE_NOT_FOUND (20260408/dswload2-162)
+paź 28 23:29:42.798696 bazzite kernel: ACPI Error: AE_NOT_FOUND, During name lookup/catalog (20260408/psobject-220)
+paź 28 23:29:42.798704 bazzite kernel: ACPI: Skipping parse of AML opcode: Scope (0x0010)
+paź 28 23:29:42.798715 bazzite kernel: ACPI BIOS Error (bug): Could not resolve symbol [\_PR.C00C], AE_NOT_FOUND (20260408/dswload2-162)
+paź 28 23:29:42.798725 bazzite kernel: ACPI Error: AE_NOT_FOUND, During name lookup/catalog (20260408/psobject-220)
+paź 28 23:29:42.798736 bazzite kernel: ACPI: Skipping parse of AML opcode: Scope (0x0010)
+paź 28 23:29:42.798745 bazzite kernel: ACPI BIOS Error (bug): Could not resolve symbol [\_PR.C00D], AE_NOT_FOUND (20260408/dswload2-162)
+paź 28 23:29:42.798754 bazzite kernel: ACPI Error: AE_NOT_FOUND, During name lookup/catalog (20260408/psobject-220)
+paź 28 23:29:42.798763 bazzite kernel: ACPI: Skipping parse of AML opcode: Scope (0x0010)
+paź 28 23:29:42.798771 bazzite kernel: ACPI BIOS Error (bug): Could not resolve symbol [\_PR.C00E], AE_NOT_FOUND (20260408/dswload2-162)
+paź 28 23:29:42.798783 bazzite kernel: ACPI Error: AE_NOT_FOUND, During name lookup/catalog (20260408/psobject-220)
+paź 28 23:29:42.798791 bazzite kernel: ACPI: Skipping parse of AML opcode: Scope (0x0010)
+paź 28 23:29:42.798800 bazzite kernel: ACPI BIOS Error (bug): Could not resolve symbol [\_PR.C00F], AE_NOT_FOUND (20260408/dswload2-162)
+paź 28 23:29:42.798811 bazzite kernel: ACPI Error: AE_NOT_FOUND, During name lookup/catalog (20260408/psobject-220)
+paź 28 23:29:42.798819 bazzite kernel: ACPI: Skipping parse of AML opcode: Scope (0x0010)
+paź 28 23:29:42.798827 bazzite kernel: ACPI: 3 ACPI AML tables successfully acquired and loaded
+paź 28 23:29:42.798835 bazzite kernel: ACPI: \_SB_: platform _OSC: OS support mask [006e7eff]
+paź 28 23:29:42.798843 bazzite kernel: ACPI: Interpreter enabled
+paź 28 23:29:42.798852 bazzite kernel: ACPI: PM: (supports S0 S4 S5)
+paź 28 23:29:42.798859 bazzite kernel: ACPI: Using IOAPIC for interrupt routing
+paź 28 23:29:42.798868 bazzite kernel: PCI: Using host bridge windows from ACPI; if necessary, use "pci=nocrs" and report a bug
+paź 28 23:29:42.798875 bazzite kernel: PCI: Using E820 reservations for host bridge windows
+paź 28 23:29:42.798881 bazzite kernel: ACPI: Enabled 8 GPEs in block 00 to 1F
+paź 28 23:29:42.798896 bazzite kernel: ACPI: PCI Root Bridge [PCI0] (domain 0000 [bus 00-ff])
+paź 28 23:29:42.799121 bazzite kernel: acpi PNP0A08:00: _OSC: OS supports [ExtendedConfig ASPM ClockPM Segments MSI EDR HPX-Type3]
+paź 28 23:29:42.799222 bazzite kernel: acpi PNP0A08:00: _OSC: platform does not support [SHPCHotplug LTR DPC]
+paź 28 23:29:42.799327 bazzite kernel: acpi PNP0A08:00: _OSC: OS now controls [PCIeHotplug PME AER PCIeCapability]
+paź 28 23:29:42.799340 bazzite kernel: PCI host bridge to bus 0000:00
+paź 28 23:29:42.799446 bazzite kernel: pci_bus 0000:00: root bus resource [io  0x0000-0x03af window]
+paź 28 23:29:42.799527 bazzite kernel: pci_bus 0000:00: root bus resource [io  0x03e0-0x0cf7 window]
+paź 28 23:29:42.799629 bazzite kernel: pci_bus 0000:00: root bus resource [io  0x03b0-0x03df window]
+paź 28 23:29:42.799704 bazzite kernel: pci_bus 0000:00: root bus resource [io  0x0d00-0xffff window]
+paź 28 23:29:42.799777 bazzite kernel: pci_bus 0000:00: root bus resource [mem 0x000a0000-0x000dffff window]
+paź 28 23:29:42.799860 bazzite kernel: pci_bus 0000:00: root bus resource [mem 0x80000000-0xfebfffff window]
+paź 28 23:29:42.799962 bazzite kernel: pci_bus 0000:00: root bus resource [mem 0xfee00000-0xffffffff window]
+paź 28 23:29:42.800063 bazzite kernel: pci_bus 0000:00: root bus resource [bus 00-ff]
+paź 28 23:29:42.800179 bazzite kernel: pci 0000:00:00.0: [1022:13e0] type 00 class 0x060000 conventional PCI endpoint
+paź 28 23:29:42.800289 bazzite kernel: pci 0000:00:01.0: [1022:13e2] type 00 class 0x060000 conventional PCI endpoint
+paź 28 23:29:42.800394 bazzite kernel: pci 0000:00:08.0: [1022:13e2] type 00 class 0x060000 conventional PCI endpoint
+paź 28 23:29:42.800496 bazzite kernel: pci 0000:00:08.1: [1022:13e5] type 01 class 0x060400 PCIe Root Port
+paź 28 23:29:42.800582 bazzite kernel: pci 0000:00:08.1: PCI bridge to [bus 01]
+paź 28 23:29:42.800675 bazzite kernel: pci 0000:00:08.1:   bridge window [io  0xe000-0xefff]
+paź 28 23:29:42.800760 bazzite kernel: pci 0000:00:08.1:   bridge window [mem 0xfe700000-0xfe8fffff]
+paź 28 23:29:42.800845 bazzite kernel: pci 0000:00:08.1:   bridge window [mem 0xc0000000-0xd01fffff 64bit pref]
+paź 28 23:29:42.800935 bazzite kernel: pci 0000:00:08.1: enabling Extended Tags
+paź 28 23:29:42.801016 bazzite kernel: pci 0000:00:08.1: PME# supported from D0 D3hot D3cold
+paź 28 23:29:42.801113 bazzite kernel: pci 0000:00:10.0: [1022:7814] type 00 class 0x0c0330 PCIe Root Complex Integrated Endpoint
+paź 28 23:29:42.801196 bazzite kernel: pci 0000:00:10.0: BAR 0 [mem 0xfeb00000-0xfeb01fff 64bit]
+paź 28 23:29:42.801299 bazzite kernel: pci 0000:00:10.0: PME# supported from D0 D3hot D3cold
+paź 28 23:29:42.801438 bazzite kernel: pci 0000:00:11.0: [1022:7801] type 00 class 0x010601 conventional PCI endpoint
+paź 28 23:29:42.801548 bazzite kernel: pci 0000:00:11.0: BAR 0 [io  0xf040-0xf047]
+paź 28 23:29:42.801658 bazzite kernel: pci 0000:00:11.0: BAR 1 [io  0xf030-0xf033]
+paź 28 23:29:42.801753 bazzite kernel: pci 0000:00:11.0: BAR 2 [io  0xf020-0xf027]
+paź 28 23:29:42.801840 bazzite kernel: pci 0000:00:11.0: BAR 3 [io  0xf010-0xf013]
+paź 28 23:29:42.801956 bazzite kernel: pci 0000:00:11.0: BAR 4 [io  0xf000-0xf00f]
+paź 28 23:29:42.802062 bazzite kernel: pci 0000:00:11.0: BAR 5 [mem 0xfeb07000-0xfeb077ff]
+paź 28 23:29:42.802167 bazzite kernel: pci 0000:00:12.0: [1022:7807] type 00 class 0x0c0310 conventional PCI endpoint
+paź 28 23:29:42.802251 bazzite kernel: pci 0000:00:12.0: BAR 0 [mem 0xfeb06000-0xfeb06fff]
+paź 28 23:29:42.802365 bazzite kernel: pci 0000:00:12.2: [1022:7808] type 00 class 0x0c0320 conventional PCI endpoint
+paź 28 23:29:42.802545 bazzite kernel: pci 0000:00:12.2: BAR 0 [mem 0xfeb05000-0xfeb050ff]
+paź 28 23:29:42.802724 bazzite kernel: pci 0000:00:12.2: supports D1 D2
+paź 28 23:29:42.802813 bazzite kernel: pci 0000:00:12.2: PME# supported from D0 D1 D2 D3hot D3cold
+paź 28 23:29:42.802910 bazzite kernel: pci 0000:00:13.0: [1022:7807] type 00 class 0x0c0310 conventional PCI endpoint
+paź 28 23:29:42.803018 bazzite kernel: pci 0000:00:13.0: BAR 0 [mem 0xfeb04000-0xfeb04fff]
+paź 28 23:29:42.803151 bazzite kernel: pci 0000:00:13.2: [1022:7808] type 00 class 0x0c0320 conventional PCI endpoint
+paź 28 23:29:42.803266 bazzite kernel: pci 0000:00:13.2: BAR 0 [mem 0xfeb03000-0xfeb030ff]
+paź 28 23:29:42.803357 bazzite kernel: pci 0000:00:13.2: supports D1 D2
+paź 28 23:29:42.803442 bazzite kernel: pci 0000:00:13.2: PME# supported from D0 D1 D2 D3hot D3cold
+paź 28 23:29:42.803540 bazzite kernel: pci 0000:00:14.0: [1022:780b] type 00 class 0x0c0500 conventional PCI endpoint
+paź 28 23:29:42.803650 bazzite kernel: pci 0000:00:14.3: [1022:780e] type 00 class 0x060100 conventional PCI endpoint
+paź 28 23:29:42.803756 bazzite kernel: pci 0000:00:14.4: [1022:780f] type 01 class 0x060401 conventional PCI bridge
+paź 28 23:29:42.803849 bazzite kernel: pci 0000:00:14.4: PCI bridge to [bus 02] (subtractive decode)
+paź 28 23:29:42.803969 bazzite kernel: pci 0000:00:14.5: [1022:7809] type 00 class 0x0c0310 conventional PCI endpoint
+paź 28 23:29:42.804070 bazzite kernel: pci 0000:00:14.5: BAR 0 [mem 0xfeb02000-0xfeb02fff]
+paź 28 23:29:42.804163 bazzite kernel: pci 0000:00:15.0: [1022:43a0] type 01 class 0x060400 PCIe Root Port
+paź 28 23:29:42.804254 bazzite kernel: pci 0000:00:15.0: PCI bridge to [bus 03]
+paź 28 23:29:42.804375 bazzite kernel: pci 0000:00:15.0:   bridge window [mem 0xfea00000-0xfeafffff]
+paź 28 23:29:42.804468 bazzite kernel: pci 0000:00:15.0: enabling Extended Tags
+paź 28 23:29:42.804551 bazzite kernel: pci 0000:00:15.0: supports D1 D2
+paź 28 23:29:42.804647 bazzite kernel: pci 0000:00:15.0: PME# supported from D0 D3hot D3cold
+paź 28 23:29:42.804744 bazzite kernel: pci 0000:00:15.1: [1022:43a1] type 01 class 0x060400 PCIe Root Port
+paź 28 23:29:42.804828 bazzite kernel: pci 0000:00:15.1: PCI bridge to [bus 04]
+paź 28 23:29:42.804909 bazzite kernel: pci 0000:00:15.1:   bridge window [io  0xd000-0xdfff]
+paź 28 23:29:42.804995 bazzite kernel: pci 0000:00:15.1:   bridge window [mem 0xfe900000-0xfe9fffff]
+paź 28 23:29:42.805077 bazzite kernel: pci 0000:00:15.1: enabling Extended Tags
+paź 28 23:29:42.805159 bazzite kernel: pci 0000:00:15.1: supports D1 D2
+paź 28 23:29:42.805244 bazzite kernel: pci 0000:00:15.1: PME# supported from D0 D3hot D3cold
+paź 28 23:29:42.805335 bazzite kernel: pci 0000:00:18.0: [1022:13f0] type 00 class 0x060000 conventional PCI endpoint
+paź 28 23:29:42.805427 bazzite kernel: pci 0000:00:18.1: [1022:13f1] type 00 class 0x060000 conventional PCI endpoint
+paź 28 23:29:42.805531 bazzite kernel: pci 0000:00:18.2: [1022:13f2] type 00 class 0x060000 conventional PCI endpoint
+paź 28 23:29:42.805635 bazzite kernel: pci 0000:00:18.3: [1022:13f3] type 00 class 0x060000 conventional PCI endpoint
+paź 28 23:29:42.805734 bazzite kernel: pci 0000:00:18.4: [1022:13f4] type 00 class 0x060000 conventional PCI endpoint
+paź 28 23:29:42.805825 bazzite kernel: pci 0000:00:18.5: [1022:13f5] type 00 class 0x060000 conventional PCI endpoint
+paź 28 23:29:42.805931 bazzite kernel: pci 0000:00:18.6: [1022:13f6] type 00 class 0x060000 conventional PCI endpoint
+paź 28 23:29:42.806028 bazzite kernel: pci 0000:00:18.7: [1022:13f7] type 00 class 0x060000 conventional PCI endpoint
+paź 28 23:29:42.806131 bazzite kernel: pci 0000:01:00.0: [1002:13fe] type 00 class 0x030000 PCIe Legacy Endpoint
+paź 28 23:29:42.806217 bazzite kernel: pci 0000:01:00.0: BAR 0 [mem 0xc0000000-0xcfffffff 64bit pref]
+paź 28 23:29:42.806300 bazzite kernel: pci 0000:01:00.0: BAR 2 [mem 0xd0000000-0xd01fffff 64bit pref]
+paź 28 23:29:42.806382 bazzite kernel: pci 0000:01:00.0: BAR 4 [io  0xe000-0xe0ff]
+paź 28 23:29:42.806465 bazzite kernel: pci 0000:01:00.0: BAR 5 [mem 0xfe800000-0xfe87ffff]
+paź 28 23:29:42.806547 bazzite kernel: pci 0000:01:00.0: enabling Extended Tags
+paź 28 23:29:42.806646 bazzite kernel: pci 0000:01:00.0: PME# supported from D1 D2 D3hot D3cold
+paź 28 23:29:42.806739 bazzite kernel: pci 0000:01:00.1: [1002:13ff] type 00 class 0x040300 PCIe Legacy Endpoint
+paź 28 23:29:42.806823 bazzite kernel: pci 0000:01:00.1: BAR 0 [mem 0xfe880000-0xfe883fff]
+paź 28 23:29:42.806907 bazzite kernel: pci 0000:01:00.1: enabling Extended Tags
+paź 28 23:29:42.806998 bazzite kernel: pci 0000:01:00.1: PME# supported from D1 D2 D3hot D3cold
+paź 28 23:29:42.807098 bazzite kernel: pci 0000:01:00.2: [1022:143e] type 00 class 0x108000 PCIe Endpoint
+paź 28 23:29:42.807183 bazzite kernel: pci 0000:01:00.2: BAR 2 [mem 0xfe700000-0xfe7fffff]
+paź 28 23:29:42.807267 bazzite kernel: pci 0000:01:00.2: BAR 5 [mem 0xfe884000-0xfe885fff]
+paź 28 23:29:42.807355 bazzite kernel: pci 0000:01:00.2: enabling Extended Tags
+paź 28 23:29:42.807441 bazzite kernel: pci 0000:00:08.1: PCI bridge to [bus 01]
+paź 28 23:29:42.807534 bazzite kernel: pci_bus 0000:02: extended config space not accessible
+paź 28 23:29:42.807626 bazzite kernel: pci 0000:00:14.4: PCI bridge to [bus 02] (subtractive decode)
+paź 28 23:29:42.807708 bazzite kernel: pci 0000:00:14.4:   bridge window [io  0x0000-0x03af window] (subtractive decode)
+paź 28 23:29:42.807789 bazzite kernel: pci 0000:00:14.4:   bridge window [io  0x03e0-0x0cf7 window] (subtractive decode)
+paź 28 23:29:42.807869 bazzite kernel: pci 0000:00:14.4:   bridge window [io  0x03b0-0x03df window] (subtractive decode)
+paź 28 23:29:42.807949 bazzite kernel: pci 0000:00:14.4:   bridge window [io  0x0d00-0xffff window] (subtractive decode)
+paź 28 23:29:42.808033 bazzite kernel: pci 0000:00:14.4:   bridge window [mem 0x000a0000-0x000dffff window] (subtractive decode)
+paź 28 23:29:42.808113 bazzite kernel: pci 0000:00:14.4:   bridge window [mem 0x80000000-0xfebfffff window] (subtractive decode)
+paź 28 23:29:42.808193 bazzite kernel: pci 0000:00:14.4:   bridge window [mem 0xfee00000-0xffffffff window] (subtractive decode)
+paź 28 23:29:42.808295 bazzite kernel: pci 0000:03:00.0: [10ec:5765] type 00 class 0x010802 PCIe Endpoint
+paź 28 23:29:42.808384 bazzite kernel: pci 0000:03:00.0: BAR 0 [mem 0xfea00000-0xfea03fff 64bit]
+paź 28 23:29:42.808468 bazzite kernel: pci 0000:03:00.0: BAR 5 [mem 0xfea04000-0xfea05fff]
+paź 28 23:29:42.808550 bazzite kernel: pci 0000:03:00.0: enabling Extended Tags
+paź 28 23:29:42.808646 bazzite kernel: pci 0000:03:00.0: 8.000 Gb/s available PCIe bandwidth, limited by 5.0 GT/s PCIe x2 link at 0000:00:15.0 (capable of 31.504 Gb/s with 8.0 GT/s PCIe x4 link)
+paź 28 23:29:42.808732 bazzite kernel: pci 0000:00:15.0: PCI bridge to [bus 03]
+paź 28 23:29:42.808826 bazzite kernel: pci 0000:04:00.0: [10ec:8168] type 00 class 0x020000 PCIe Endpoint
+paź 28 23:29:42.808910 bazzite kernel: pci 0000:04:00.0: BAR 0 [io  0xd000-0xd0ff]
+paź 28 23:29:42.808997 bazzite kernel: pci 0000:04:00.0: BAR 2 [mem 0xfe904000-0xfe904fff 64bit]
+paź 28 23:29:42.809080 bazzite kernel: pci 0000:04:00.0: BAR 4 [mem 0xfe900000-0xfe903fff 64bit]
+paź 28 23:29:42.809162 bazzite kernel: pci 0000:04:00.0: supports D1 D2
+paź 28 23:29:42.809244 bazzite kernel: pci 0000:04:00.0: PME# supported from D0 D1 D2 D3hot D3cold
+paź 28 23:29:42.809337 bazzite kernel: pci 0000:00:15.1: PCI bridge to [bus 04]
+paź 28 23:29:42.809346 bazzite kernel: ACPI: PCI: Interrupt link LNKA configured for IRQ 0
+paź 28 23:29:42.809353 bazzite kernel: ACPI: PCI: Interrupt link LNKB configured for IRQ 0
+paź 28 23:29:42.809360 bazzite kernel: ACPI: PCI: Interrupt link LNKC configured for IRQ 0
+paź 28 23:29:42.809366 bazzite kernel: ACPI: PCI: Interrupt link LNKD configured for IRQ 0
+paź 28 23:29:42.809372 bazzite kernel: ACPI: PCI: Interrupt link LNKE configured for IRQ 0
+paź 28 23:29:42.809379 bazzite kernel: ACPI: PCI: Interrupt link LNKF configured for IRQ 0
+paź 28 23:29:42.809385 bazzite kernel: ACPI: PCI: Interrupt link LNKG configured for IRQ 0
+paź 28 23:29:42.809392 bazzite kernel: ACPI: PCI: Interrupt link LNKH configured for IRQ 0
+paź 28 23:29:42.809400 bazzite kernel: iommu: Default domain type: Translated
+paź 28 23:29:42.809407 bazzite kernel: iommu: DMA domain TLB invalidation policy: lazy mode
+paź 28 23:29:42.809413 bazzite kernel: SCSI subsystem initialized
+paź 28 23:29:42.809419 bazzite kernel: libata version 3.00 loaded.
+paź 28 23:29:42.809426 bazzite kernel: ACPI: bus type USB registered
+paź 28 23:29:42.809432 bazzite kernel: usbcore: registered new interface driver usbfs
+paź 28 23:29:42.809438 bazzite kernel: usbcore: registered new interface driver hub
+paź 28 23:29:42.809444 bazzite kernel: usbcore: registered new device driver usb
+paź 28 23:29:42.809449 bazzite kernel: pps_core: LinuxPPS API ver. 1 registered
+paź 28 23:29:42.809456 bazzite kernel: pps_core: Software ver. 5.3.6 - Copyright 2005-2007 Rodolfo Giometti <giometti@linux.it>
+paź 28 23:29:42.809461 bazzite kernel: PTP clock support registered
+paź 28 23:29:42.809467 bazzite kernel: EDAC MC: Ver: 3.0.0
+paź 28 23:29:42.809473 bazzite kernel: efivars: Registered efivars operations
+paź 28 23:29:42.809479 bazzite kernel: NetLabel: Initializing
+paź 28 23:29:42.809485 bazzite kernel: NetLabel:  domain hash size = 128
+paź 28 23:29:42.809492 bazzite kernel: NetLabel:  protocols = UNLABELED CIPSOv4 CALIPSO
+paź 28 23:29:42.809498 bazzite kernel: NetLabel:  unlabeled traffic allowed by default
+paź 28 23:29:42.809505 bazzite kernel: mctp: management component transport protocol core
+paź 28 23:29:42.809511 bazzite kernel: NET: Registered PF_MCTP protocol family
+paź 28 23:29:42.809518 bazzite kernel: PCI: Using ACPI for IRQ routing
+paź 28 23:29:42.809524 bazzite kernel: PCI: pci_cache_line_size set to 64 bytes
+paź 28 23:29:42.809530 bazzite kernel: e820: register RAM buffer resource [mem 0x09e02000-0x0bffffff]
+paź 28 23:29:42.809538 bazzite kernel: e820: register RAM buffer resource [mem 0x7b4ab000-0x7bffffff]
+paź 28 23:29:42.809544 bazzite kernel: e820: register RAM buffer resource [mem 0x7cce2000-0x7fffffff]
+paź 28 23:29:42.809551 bazzite kernel: e820: register RAM buffer resource [mem 0x7dcb7000-0x7fffffff]
+paź 28 23:29:42.809557 bazzite kernel: e820: register RAM buffer resource [mem 0x7f000000-0x7fffffff]
+paź 28 23:29:42.809734 bazzite kernel: pci 0000:01:00.0: vgaarb: setting as boot VGA device
+paź 28 23:29:42.809819 bazzite kernel: pci 0000:01:00.0: vgaarb: bridge control possible
+paź 28 23:29:42.809901 bazzite kernel: pci 0000:01:00.0: vgaarb: VGA device added: decodes=io+mem,owns=none,locks=none
+paź 28 23:29:42.809910 bazzite kernel: vgaarb: loaded
+paź 28 23:29:42.809916 bazzite kernel: hpet0: at MMIO 0xfed00000, IRQs 2, 8, 0
+paź 28 23:29:42.809921 bazzite kernel: hpet0: 3 comparators, 32-bit 14.318180 MHz counter
+paź 28 23:29:42.809930 bazzite kernel: clocksource: Switched to clocksource tsc-early
+paź 28 23:29:42.809937 bazzite kernel: VFS: Disk quotas dquot_6.6.0
+paź 28 23:29:42.809943 bazzite kernel: VFS: Dquot-cache hash table entries: 512 (4096 bytes)
+paź 28 23:29:42.810042 bazzite kernel: acpi PNP0C01:00: Reserved [mem 0xe0000000-0xefffffff]
+paź 28 23:29:42.810138 bazzite kernel: acpi PNP0C02:01: Could not reserve [mem 0x68000000-0x7fffffff]
+paź 28 23:29:42.810232 bazzite kernel: acpi PNP0C02:02: Skipped [io  0x0010-0x001f]
+paź 28 23:29:42.810319 bazzite kernel: acpi PNP0C02:02: Skipped [io  0x0022-0x003f]
+paź 28 23:29:42.810402 bazzite kernel: acpi PNP0C02:02: Skipped [io  0x0063]
+paź 28 23:29:42.810489 bazzite kernel: acpi PNP0C02:02: Skipped [io  0x0065]
+paź 28 23:29:42.810571 bazzite kernel: acpi PNP0C02:02: Skipped [io  0x0067-0x006f]
+paź 28 23:29:42.810675 bazzite kernel: acpi PNP0C02:02: Skipped [io  0x0072-0x007f]
+paź 28 23:29:42.810783 bazzite kernel: acpi PNP0C02:02: Skipped [io  0x0080]
+paź 28 23:29:42.810866 bazzite kernel: acpi PNP0C02:02: Skipped [io  0x0084-0x0086]
+paź 28 23:29:42.810947 bazzite kernel: acpi PNP0C02:02: Skipped [io  0x0088]
+paź 28 23:29:42.811029 bazzite kernel: acpi PNP0C02:02: Skipped [io  0x008c-0x008e]
+paź 28 23:29:42.811110 bazzite kernel: acpi PNP0C02:02: Skipped [io  0x0090-0x009f]
+paź 28 23:29:42.811194 bazzite kernel: acpi PNP0C02:02: Skipped [io  0x00a2-0x00bf]
+paź 28 23:29:42.811276 bazzite kernel: acpi PNP0C02:02: Skipped [io  0x00b1]
+paź 28 23:29:42.811356 bazzite kernel: acpi PNP0C02:02: Skipped [io  0x00e0-0x00ef]
+paź 28 23:29:42.811454 bazzite kernel: acpi PNP0C02:02: Reserved [io  0x04d0-0x04d1]
+paź 28 23:29:42.811547 bazzite kernel: acpi PNP0C02:02: Reserved [io  0x040b]
+paź 28 23:29:42.811652 bazzite kernel: acpi PNP0C02:02: Reserved [io  0x04d6]
+paź 28 23:29:42.811736 bazzite kernel: acpi PNP0C02:02: Reserved [io  0x0c00-0x0c01]
+paź 28 23:29:42.811818 bazzite kernel: acpi PNP0C02:02: Reserved [io  0x0c14]
+paź 28 23:29:42.811903 bazzite kernel: acpi PNP0C02:02: Reserved [io  0x0c50-0x0c51]
+paź 28 23:29:42.811989 bazzite kernel: acpi PNP0C02:02: Reserved [io  0x0c52]
+paź 28 23:29:42.812071 bazzite kernel: acpi PNP0C02:02: Reserved [io  0x0c6c]
+paź 28 23:29:42.812153 bazzite kernel: acpi PNP0C02:02: Reserved [io  0x0c6f]
+paź 28 23:29:42.812236 bazzite kernel: acpi PNP0C02:02: Reserved [io  0x0cd0-0x0cd1]
+paź 28 23:29:42.812317 bazzite kernel: acpi PNP0C02:02: Reserved [io  0x0cd2-0x0cd3]
+paź 28 23:29:42.812398 bazzite kernel: acpi PNP0C02:02: Reserved [io  0x0cd4-0x0cd5]
+paź 28 23:29:42.812483 bazzite kernel: acpi PNP0C02:02: Reserved [io  0x0cd6-0x0cd7]
+paź 28 23:29:42.812564 bazzite kernel: acpi PNP0C02:02: Reserved [io  0x0cd8-0x0cdf]
+paź 28 23:29:42.812668 bazzite kernel: acpi PNP0C02:02: Could not reserve [io  0x0400-0x049f]
+paź 28 23:29:42.812751 bazzite kernel: acpi PNP0C02:02: Reserved [io  0x0b00-0x0b0f]
+paź 28 23:29:42.812831 bazzite kernel: acpi PNP0C02:02: Reserved [io  0x0b20-0x0b3f]
+paź 28 23:29:42.812912 bazzite kernel: acpi PNP0C02:02: Reserved [io  0x0900-0x090f]
+paź 28 23:29:42.812992 bazzite kernel: acpi PNP0C02:02: Reserved [io  0x0910-0x091f]
+paź 28 23:29:42.813072 bazzite kernel: acpi PNP0C02:02: Reserved [io  0xfe00-0xfefe]
+paź 28 23:29:42.813153 bazzite kernel: acpi PNP0C02:02: Could not reserve [mem 0xfec00000-0xfec00fff]
+paź 28 23:29:42.813238 bazzite kernel: acpi PNP0C02:02: Reserved [mem 0xfee00000-0xfee00fff]
+paź 28 23:29:42.813323 bazzite kernel: acpi PNP0C02:02: Reserved [mem 0xfed80000-0xfed8ffff]
+paź 28 23:29:42.813405 bazzite kernel: acpi PNP0C02:02: Reserved [mem 0xfed61000-0xfed70fff]
+paź 28 23:29:42.813487 bazzite kernel: acpi PNP0C02:02: Reserved [mem 0xfec10000-0xfec10fff]
+paź 28 23:29:42.813568 bazzite kernel: acpi PNP0C02:02: Reserved [mem 0xff000000-0xffffffff]
+paź 28 23:29:42.813666 bazzite kernel: acpi PNP0C02:03: Reserved [io  0x0a00-0x0a0f]
+paź 28 23:29:42.813751 bazzite kernel: acpi PNP0C02:03: Reserved [io  0x0a10-0x0a1f]
+paź 28 23:29:42.813837 bazzite kernel: acpi PNP0C02:03: Reserved [io  0x0a20-0x0a2f]
+paź 28 23:29:42.813931 bazzite kernel: acpi PNP0C02:04: Reserved [mem 0xfdd00000-0xfddfffff]
+paź 28 23:29:42.813941 bazzite kernel: pnp: PnP ACPI init
+paź 28 23:29:42.814034 bazzite kernel: pnp 00:02: [dma 0 disabled]
+paź 28 23:29:42.814046 bazzite kernel: pnp: PnP ACPI: found 3 devices
+paź 28 23:29:42.814053 bazzite kernel: clocksource: acpi_pm: mask: 0xffffff max_cycles: 0xffffff, max_idle_ns: 2085701024 ns
+paź 28 23:29:42.814059 bazzite kernel: NET: Registered PF_INET protocol family
+paź 28 23:29:42.814066 bazzite kernel: IP idents hash table entries: 262144 (order: 9, 2097152 bytes, linear)
+paź 28 23:29:42.814074 bazzite kernel: tcp_listen_portaddr_hash hash table entries: 8192 (order: 5, 131072 bytes, linear)
+paź 28 23:29:42.814081 bazzite kernel: Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
+paź 28 23:29:42.814087 bazzite kernel: TCP established hash table entries: 131072 (order: 8, 1048576 bytes, linear)
+paź 28 23:29:42.814094 bazzite kernel: TCP bind hash table entries: 65536 (order: 9, 2097152 bytes, linear)
+paź 28 23:29:42.814100 bazzite kernel: TCP: Hash tables configured (established 131072 bind 65536)
+paź 28 23:29:42.814107 bazzite kernel: MPTCP token hash table entries: 16384 (order: 7, 393216 bytes, linear)
+paź 28 23:29:42.814113 bazzite kernel: UDP hash table entries: 8192 (order: 7, 524288 bytes, linear)
+paź 28 23:29:42.814120 bazzite kernel: NET: Registered PF_UNIX/PF_LOCAL protocol family
+paź 28 23:29:42.814126 bazzite kernel: NET: Registered PF_XDP protocol family
+paź 28 23:29:42.814214 bazzite kernel: pci 0000:00:08.1: PCI bridge to [bus 01]
+paź 28 23:29:42.814301 bazzite kernel: pci 0000:00:08.1:   bridge window [io  0xe000-0xefff]
+paź 28 23:29:42.814383 bazzite kernel: pci 0000:00:08.1:   bridge window [mem 0xfe700000-0xfe8fffff]
+paź 28 23:29:42.814463 bazzite kernel: pci 0000:00:08.1:   bridge window [mem 0xc0000000-0xd01fffff 64bit pref]
+paź 28 23:29:42.814545 bazzite kernel: pci 0000:00:14.4: PCI bridge to [bus 02]
+paź 28 23:29:42.814640 bazzite kernel: pci 0000:00:15.0: PCI bridge to [bus 03]
+paź 28 23:29:42.814741 bazzite kernel: pci 0000:00:15.0:   bridge window [mem 0xfea00000-0xfeafffff]
+paź 28 23:29:42.814836 bazzite kernel: pci 0000:00:15.1: PCI bridge to [bus 04]
+paź 28 23:29:42.814931 bazzite kernel: pci 0000:00:15.1:   bridge window [io  0xd000-0xdfff]
+paź 28 23:29:42.815024 bazzite kernel: pci 0000:00:15.1:   bridge window [mem 0xfe900000-0xfe9fffff]
+paź 28 23:29:42.815117 bazzite kernel: pci_bus 0000:00: resource 4 [io  0x0000-0x03af window]
+paź 28 23:29:42.815203 bazzite kernel: pci_bus 0000:00: resource 5 [io  0x03e0-0x0cf7 window]
+paź 28 23:29:42.815283 bazzite kernel: pci_bus 0000:00: resource 6 [io  0x03b0-0x03df window]
+paź 28 23:29:42.815367 bazzite kernel: pci_bus 0000:00: resource 7 [io  0x0d00-0xffff window]
+paź 28 23:29:42.815455 bazzite kernel: pci_bus 0000:00: resource 8 [mem 0x000a0000-0x000dffff window]
+paź 28 23:29:42.815544 bazzite kernel: pci_bus 0000:00: resource 9 [mem 0x80000000-0xfebfffff window]
+paź 28 23:29:42.815640 bazzite kernel: pci_bus 0000:00: resource 10 [mem 0xfee00000-0xffffffff window]
+paź 28 23:29:42.815751 bazzite kernel: pci_bus 0000:01: resource 0 [io  0xe000-0xefff]
+paź 28 23:29:42.815843 bazzite kernel: pci_bus 0000:01: resource 1 [mem 0xfe700000-0xfe8fffff]
+paź 28 23:29:42.815917 bazzite kernel: pci_bus 0000:01: resource 2 [mem 0xc0000000-0xd01fffff 64bit pref]
+paź 28 23:29:42.816013 bazzite kernel: pci_bus 0000:02: resource 4 [io  0x0000-0x03af window]
+paź 28 23:29:42.816096 bazzite kernel: pci_bus 0000:02: resource 5 [io  0x03e0-0x0cf7 window]
+paź 28 23:29:42.816183 bazzite kernel: pci_bus 0000:02: resource 6 [io  0x03b0-0x03df window]
+paź 28 23:29:42.816257 bazzite kernel: pci_bus 0000:02: resource 7 [io  0x0d00-0xffff window]
+paź 28 23:29:42.816328 bazzite kernel: pci_bus 0000:02: resource 8 [mem 0x000a0000-0x000dffff window]
+paź 28 23:29:42.816400 bazzite kernel: pci_bus 0000:02: resource 9 [mem 0x80000000-0xfebfffff window]
+paź 28 23:29:42.816477 bazzite kernel: pci_bus 0000:02: resource 10 [mem 0xfee00000-0xffffffff window]
+paź 28 23:29:42.816559 bazzite kernel: pci_bus 0000:03: resource 1 [mem 0xfea00000-0xfeafffff]
+paź 28 23:29:42.816660 bazzite kernel: pci_bus 0000:04: resource 0 [io  0xd000-0xdfff]
+paź 28 23:29:42.816735 bazzite kernel: pci_bus 0000:04: resource 1 [mem 0xfe900000-0xfe9fffff]
+paź 28 23:29:42.816819 bazzite kernel: pci 0000:00:12.2: PME# does not work under D3, disabling it
+paź 28 23:29:42.816905 bazzite kernel: pci 0000:00:13.2: PME# does not work under D3, disabling it
+paź 28 23:29:42.816991 bazzite kernel: pci 0000:01:00.1: D0 power state depends on 0000:01:00.0
+paź 28 23:29:42.817003 bazzite kernel: PCI: CLS 64 bytes, default 64
+paź 28 23:29:42.817010 bazzite kernel: PCI-DMA: Using software bounce buffering for IO (SWIOTLB)
+paź 28 23:29:42.817017 bazzite kernel: software IO TLB: mapped [mem 0x0000000074cbc000-0x0000000078cbc000] (64MB)
+paź 28 23:29:42.817023 bazzite kernel: LVT offset 0 assigned for vector 0x400
+paź 28 23:29:42.817030 bazzite kernel: Trying to unpack rootfs image as initramfs...
+paź 28 23:29:42.817036 bazzite kernel: perf: AMD IBS detected (0x000003ff)
+paź 28 23:29:42.817042 bazzite kernel: amd_uncore: 4 amd_df counters detected
+paź 28 23:29:42.817049 bazzite kernel: amd_uncore: 6 amd_l3 counters detected
+paź 28 23:29:42.817055 bazzite kernel: Initialise system trusted keyrings
+paź 28 23:29:42.817063 bazzite kernel: Key type blacklist registered
+paź 28 23:29:42.817069 bazzite kernel: workingset: timestamp_bits=36 (anon: 31) max_order=22 bucket_order=0 (anon: 0)
+paź 28 23:29:42.817076 bazzite kernel: integrity: Platform Keyring initialized
+paź 28 23:29:42.817082 bazzite kernel: integrity: Machine keyring initialized
+paź 28 23:29:42.817088 bazzite kernel: cryptd: max_cpu_qlen set to 1000
+paź 28 23:29:42.817095 bazzite kernel: NET: Registered PF_ALG protocol family
+paź 28 23:29:42.817101 bazzite kernel: Key type asymmetric registered
+paź 28 23:29:42.817107 bazzite kernel: Asymmetric key parser 'x509' registered
+paź 28 23:29:42.817114 bazzite kernel: Block layer SCSI generic (bsg) driver version 0.4 loaded (major 244)
+paź 28 23:29:42.817121 bazzite kernel: io scheduler mq-deadline registered
+paź 28 23:29:42.817127 bazzite kernel: io scheduler kyber registered
+paź 28 23:29:42.817134 bazzite kernel: io scheduler bfq registered
+paź 28 23:29:42.817140 bazzite kernel: atomic64_test: passed for x86-64 platform with CX8 and with SSE
+paź 28 23:29:42.817222 bazzite kernel: pcieport 0000:00:08.1: PME: Signaling with IRQ 25
+paź 28 23:29:42.817303 bazzite kernel: pcieport 0000:00:15.0: PME: Signaling with IRQ 26
+paź 28 23:29:42.817384 bazzite kernel: pcieport 0000:00:15.1: PME: Signaling with IRQ 27
+paź 28 23:29:42.817393 bazzite kernel: input: Power Button as /devices/platform/PNP0C0C:00/input/input0
+paź 28 23:29:42.817401 bazzite kernel: ACPI: button: Power Button [PWRB]
+paź 28 23:29:42.817408 bazzite kernel: input: Power Button as /devices/platform/LNXPWRBN:00/input/input1
+paź 28 23:29:42.817414 bazzite kernel: ACPI: button: Power Button [PWRF]
+paź 28 23:29:42.817421 bazzite kernel: Serial: 8250/16550 driver, 32 ports, IRQ sharing enabled
+paź 28 23:29:42.817427 bazzite kernel: 00:02: ttyS0 at I/O 0x3f8 (irq = 4, base_baud = 115200) is a 16550A
+paź 28 23:29:42.817433 bazzite kernel: Non-volatile memory driver v1.3
+paź 28 23:29:42.817440 bazzite kernel: ACPI: bus type drm_connector registered
+paź 28 23:29:42.817446 bazzite kernel: Key type psk registered
+paź 28 23:29:42.817533 bazzite kernel: nvme nvme0: pci function 0000:03:00.0
+paź 28 23:29:42.817629 bazzite kernel: ahci 0000:00:11.0: AHCI vers 0001.0300, 32 command slots, 6 Gbps, SATA mode
+paź 28 23:29:42.817713 bazzite kernel: ahci 0000:00:11.0: 1/1 ports implemented (port mask 0x1)
+paź 28 23:29:42.817794 bazzite kernel: ahci 0000:00:11.0: flags: 64bit ncq sntf ilck pm led clo pmp pio slum part 
+paź 28 23:29:42.817894 bazzite kernel: scsi host0: ahci
+paź 28 23:29:42.817905 bazzite kernel: ata1: SATA max UDMA/133 abar m2048@0xfeb07000 port 0xfeb07100 irq 28 lpm-pol 4
+paź 28 23:29:42.817914 bazzite kernel: CAN device driver interface
+paź 28 23:29:42.817920 bazzite kernel: QUIRK: Enable AMD PLL fix
+paź 28 23:29:42.818004 bazzite kernel: ohci-pci 0000:00:12.0: OHCI PCI host controller
+paź 28 23:29:42.818085 bazzite kernel: ohci-pci 0000:00:12.0: new USB bus registered, assigned bus number 1
+paź 28 23:29:42.818165 bazzite kernel: ohci-pci 0000:00:12.0: irq 18, io mem 0xfeb06000
+paź 28 23:29:42.818270 bazzite kernel: usb usb1: New USB device found, idVendor=1d6b, idProduct=0001, bcdDevice= 7.02
+paź 28 23:29:42.818349 bazzite kernel: usb usb1: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+paź 28 23:29:42.818424 bazzite kernel: usb usb1: Product: OHCI PCI host controller
+paź 28 23:29:42.818495 bazzite kernel: usb usb1: Manufacturer: Linux 7.2.9-ogc3.1.fc44.x86_64 ohci_hcd
+paź 28 23:29:42.818567 bazzite kernel: usb usb1: SerialNumber: 0000:00:12.0
+paź 28 23:29:42.818726 bazzite kernel: hub 1-0:1.0: USB hub found
+paź 28 23:29:42.818818 bazzite kernel: hub 1-0:1.0: 5 ports detected
+paź 28 23:29:42.818901 bazzite kernel: ehci-pci 0000:00:12.2: EHCI Host Controller
+paź 28 23:29:42.818982 bazzite kernel: ehci-pci 0000:00:12.2: new USB bus registered, assigned bus number 2
+paź 28 23:29:42.819062 bazzite kernel: ehci-pci 0000:00:12.2: applying AMD SB700/SB800/Hudson-2/3 EHCI dummy qh workaround
+paź 28 23:29:42.819147 bazzite kernel: ehci-pci 0000:00:12.2: debug port 1
+paź 28 23:29:42.819226 bazzite kernel: ehci-pci 0000:00:12.2: irq 17, io mem 0xfeb05000
+paź 28 23:29:42.819309 bazzite kernel: ehci-pci 0000:00:12.2: USB 2.0 started, EHCI 1.00
+paź 28 23:29:42.819410 bazzite kernel: usb usb2: New USB device found, idVendor=1d6b, idProduct=0002, bcdDevice= 7.02
+paź 28 23:29:42.819486 bazzite kernel: usb usb2: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+paź 28 23:29:42.819558 bazzite kernel: usb usb2: Product: EHCI Host Controller
+paź 28 23:29:42.819640 bazzite kernel: usb usb2: Manufacturer: Linux 7.2.9-ogc3.1.fc44.x86_64 ehci_hcd
+paź 28 23:29:42.819715 bazzite kernel: usb usb2: SerialNumber: 0000:00:12.2
+paź 28 23:29:42.819810 bazzite kernel: hub 2-0:1.0: USB hub found
+paź 28 23:29:42.819899 bazzite kernel: hub 2-0:1.0: 5 ports detected
+paź 28 23:29:42.819969 bazzite kernel: nvme nvme0: passthrough uses implicit buffer lengths
+paź 28 23:29:42.820038 bazzite kernel: nvme nvme0: allocated 64 MiB host memory buffer (16 segments).
+paź 28 23:29:42.820048 bazzite kernel: ata1: SATA link down (SStatus 0 SControl 300)
+paź 28 23:29:42.820132 bazzite kernel: hub 1-0:1.0: USB hub found
+paź 28 23:29:42.820218 bazzite kernel: hub 1-0:1.0: 5 ports detected
+paź 28 23:29:42.820302 bazzite kernel: ehci-pci 0000:00:13.2: EHCI Host Controller
+paź 28 23:29:42.820383 bazzite kernel: ehci-pci 0000:00:13.2: new USB bus registered, assigned bus number 3
+paź 28 23:29:42.820463 bazzite kernel: ehci-pci 0000:00:13.2: applying AMD SB700/SB800/Hudson-2/3 EHCI dummy qh workaround
+paź 28 23:29:42.820544 bazzite kernel: ehci-pci 0000:00:13.2: debug port 1
+paź 28 23:29:42.820635 bazzite kernel: ehci-pci 0000:00:13.2: irq 17, io mem 0xfeb03000
+paź 28 23:29:42.820717 bazzite kernel: ehci-pci 0000:00:13.2: USB 2.0 started, EHCI 1.00
+paź 28 23:29:42.820834 bazzite kernel: usb usb3: New USB device found, idVendor=1d6b, idProduct=0002, bcdDevice= 7.02
+paź 28 23:29:42.820925 bazzite kernel: usb usb3: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+paź 28 23:29:42.820998 bazzite kernel: usb usb3: Product: EHCI Host Controller
+paź 28 23:29:42.821070 bazzite kernel: usb usb3: Manufacturer: Linux 7.2.9-ogc3.1.fc44.x86_64 ehci_hcd
+paź 28 23:29:42.821141 bazzite kernel: usb usb3: SerialNumber: 0000:00:13.2
+paź 28 23:29:42.821238 bazzite kernel: hub 3-0:1.0: USB hub found
+paź 28 23:29:42.821328 bazzite kernel: hub 3-0:1.0: 5 ports detected
+paź 28 23:29:42.821415 bazzite kernel: ohci-pci 0000:00:13.0: OHCI PCI host controller
+paź 28 23:29:42.821496 bazzite kernel: ohci-pci 0000:00:13.0: new USB bus registered, assigned bus number 4
+paź 28 23:29:42.821581 bazzite kernel: ohci-pci 0000:00:13.0: irq 18, io mem 0xfeb04000
+paź 28 23:29:42.821673 bazzite kernel: nvme nvme0: 8/0/0 default/read/poll queues
+paź 28 23:29:42.821745 bazzite kernel: nvme nvme0: Ignoring bogus Namespace Identifiers
+paź 28 23:29:42.821754 bazzite kernel:  nvme0n1: p1 p2 p3
+paź 28 23:29:42.821859 bazzite kernel: usb usb4: New USB device found, idVendor=1d6b, idProduct=0001, bcdDevice= 7.02
+paź 28 23:29:42.821936 bazzite kernel: usb usb4: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+paź 28 23:29:42.822010 bazzite kernel: usb usb4: Product: OHCI PCI host controller
+paź 28 23:29:42.822086 bazzite kernel: usb usb4: Manufacturer: Linux 7.2.9-ogc3.1.fc44.x86_64 ohci_hcd
+paź 28 23:29:42.822158 bazzite kernel: usb usb4: SerialNumber: 0000:00:13.0
+paź 28 23:29:42.822256 bazzite kernel: hub 4-0:1.0: USB hub found
+paź 28 23:29:42.822347 bazzite kernel: hub 4-0:1.0: 5 ports detected
+paź 28 23:29:42.822434 bazzite kernel: ohci-pci 0000:00:14.5: OHCI PCI host controller
+paź 28 23:29:42.822517 bazzite kernel: ohci-pci 0000:00:14.5: new USB bus registered, assigned bus number 5
+paź 28 23:29:42.822604 bazzite kernel: ohci-pci 0000:00:14.5: irq 18, io mem 0xfeb02000
+paź 28 23:29:42.822708 bazzite kernel: usb usb5: New USB device found, idVendor=1d6b, idProduct=0001, bcdDevice= 7.02
+paź 28 23:29:42.822792 bazzite kernel: usb usb5: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+paź 28 23:29:42.822864 bazzite kernel: usb usb5: Product: OHCI PCI host controller
+paź 28 23:29:42.822936 bazzite kernel: usb usb5: Manufacturer: Linux 7.2.9-ogc3.1.fc44.x86_64 ohci_hcd
+paź 28 23:29:42.823007 bazzite kernel: usb usb5: SerialNumber: 0000:00:14.5
+paź 28 23:29:42.823104 bazzite kernel: hub 5-0:1.0: USB hub found
+paź 28 23:29:42.823193 bazzite kernel: hub 5-0:1.0: 2 ports detected
+paź 28 23:29:42.823279 bazzite kernel: xhci_hcd 0000:00:10.0: xHCI Host Controller
+paź 28 23:29:42.823365 bazzite kernel: xhci_hcd 0000:00:10.0: new USB bus registered, assigned bus number 6
+paź 28 23:29:42.823446 bazzite kernel: xhci_hcd 0000:00:10.0: hcc params 0x014040c3 hci version 0x100 quirks 0x0000000000000018
+paź 28 23:29:42.823528 bazzite kernel: xhci_hcd 0000:00:10.0: xHCI Host Controller
+paź 28 23:29:42.823614 bazzite kernel: xhci_hcd 0000:00:10.0: new USB bus registered, assigned bus number 7
+paź 28 23:29:42.823722 bazzite kernel: xhci_hcd 0000:00:10.0: Host supports USB 3.0 SuperSpeed
+paź 28 23:29:42.823831 bazzite kernel: usb usb6: New USB device found, idVendor=1d6b, idProduct=0002, bcdDevice= 7.02
+paź 28 23:29:42.823921 bazzite kernel: usb usb6: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+paź 28 23:29:42.823994 bazzite kernel: usb usb6: Product: xHCI Host Controller
+paź 28 23:29:42.824068 bazzite kernel: usb usb6: Manufacturer: Linux 7.2.9-ogc3.1.fc44.x86_64 xhci-hcd
+paź 28 23:29:42.824141 bazzite kernel: usb usb6: SerialNumber: 0000:00:10.0
+paź 28 23:29:42.824241 bazzite kernel: hub 6-0:1.0: USB hub found
+paź 28 23:29:42.824335 bazzite kernel: hub 6-0:1.0: 2 ports detected
+paź 28 23:29:42.824438 bazzite kernel: usb usb7: We don't know the algorithms for LPM for this host, disabling LPM.
+paź 28 23:29:42.824529 bazzite kernel: usb usb7: New USB device found, idVendor=1d6b, idProduct=0003, bcdDevice= 7.02
+paź 28 23:29:42.824616 bazzite kernel: usb usb7: New USB device strings: Mfr=3, Product=2, SerialNumber=1
+paź 28 23:29:42.824689 bazzite kernel: usb usb7: Product: xHCI Host Controller
+paź 28 23:29:42.824761 bazzite kernel: usb usb7: Manufacturer: Linux 7.2.9-ogc3.1.fc44.x86_64 xhci-hcd
+paź 28 23:29:42.824831 bazzite kernel: usb usb7: SerialNumber: 0000:00:10.0
+paź 28 23:29:42.824928 bazzite kernel: hub 7-0:1.0: USB hub found
+paź 28 23:29:42.825017 bazzite kernel: hub 7-0:1.0: 2 ports detected
+paź 28 23:29:42.825027 bazzite kernel: usbcore: registered new interface driver usb-storage
+paź 28 23:29:42.825034 bazzite kernel: usbcore: registered new interface driver usbserial_generic
+paź 28 23:29:42.825043 bazzite kernel: usbserial: USB Serial support registered for generic
+paź 28 23:29:42.825050 bazzite kernel: i8042: PNP: PS/2 Controller [PNP0303:PS2K,PNP0f03:PS2M] at 0x60,0x64 irq 1,12
+paź 28 23:29:42.825153 bazzite kernel: usb 1-5: new low-speed USB device number 2 using ohci-pci
+paź 28 23:29:42.825256 bazzite kernel: usb 4-1: new low-speed USB device number 2 using ohci-pci
+paź 28 23:29:42.825362 bazzite kernel: usb 6-1: new high-speed USB device number 2 using xhci_hcd
+paź 28 23:29:42.825373 bazzite kernel: serio: i8042 KBD port at 0x60,0x64 irq 1
+paź 28 23:29:42.825382 bazzite kernel: mousedev: PS/2 mouse device common for all mice
+paź 28 23:29:42.825479 bazzite kernel: rtc_cmos PNP0B00:00: RTC can wake from S4
+paź 28 23:29:42.825557 bazzite kernel: rtc_cmos PNP0B00:00: registered as rtc0
+paź 28 23:29:42.825674 bazzite kernel: rtc_cmos PNP0B00:00: setting system clock to 2026-10-28T22:29:42 UTC (1793226582)
+paź 28 23:29:42.825752 bazzite kernel: rtc_cmos PNP0B00:00: alarms up to one month, y3k, 114 bytes nvram
+paź 28 23:29:42.825762 bazzite kernel: device-mapper: core: CONFIG_IMA_DISABLE_HTABLE is disabled. Duplicate IMA measurements will not be recorded in the IMA log.
+paź 28 23:29:42.825768 bazzite kernel: device-mapper: uevent: version 1.0.3
+paź 28 23:29:42.825775 bazzite kernel: device-mapper: ioctl: 4.50.0-ioctl (2025-04-28) initialised: dm-devel@lists.linux.dev
+paź 28 23:29:42.825784 bazzite kernel: amd_pstate: the _CPC object is not present in SBIOS or ACPI disabled
+paź 28 23:29:42.825877 bazzite kernel: simple-framebuffer simple-framebuffer.0: [drm] Registered 1 planes with drm panic
+paź 28 23:29:42.825888 bazzite kernel: [drm] Initialized simpledrm 1.0.0 for simple-framebuffer.0 on minor 0
+paź 28 23:29:42.825894 bazzite kernel: Console: switching to colour frame buffer device 240x67
+paź 28 23:29:42.825973 bazzite kernel: simple-framebuffer simple-framebuffer.0: [drm] fb0: simpledrmdrmfb frame buffer device
+paź 28 23:29:42.825983 bazzite kernel: pstore: Using crash dump compression: deflate
+paź 28 23:29:42.825990 bazzite kernel: pstore: Registered efi_pstore as persistent store backend
+paź 28 23:29:42.825998 bazzite kernel: hid: raw HID events driver (C) Jiri Kosina
+paź 28 23:29:42.826005 bazzite kernel: usbcore: registered new interface driver usbhid
+paź 28 23:29:42.826011 bazzite kernel: usbhid: USB HID core driver
+paź 28 23:29:42.826018 bazzite kernel: drop_monitor: Initializing network drop monitor service
+paź 28 23:29:42.826024 bazzite kernel: Initializing XFRM netlink socket
+paź 28 23:29:42.826031 bazzite kernel: NET: Registered PF_INET6 protocol family
+paź 28 23:29:42.826124 bazzite kernel: usb 1-5: New USB device found, idVendor=413c, idProduct=2106, bcdDevice= 1.55
+paź 28 23:29:42.826134 bazzite kernel: Segment Routing with IPv6
+paź 28 23:29:42.826141 bazzite kernel: RPL Segment Routing with IPv6
+paź 28 23:29:42.826149 bazzite kernel: In-situ OAM (IOAM) with IPv6
+paź 28 23:29:42.826155 bazzite kernel: mip6: Mobile IPv6
+paź 28 23:29:42.826162 bazzite kernel: NET: Registered PF_PACKET protocol family
+paź 28 23:29:42.826169 bazzite kernel: can: controller area network core
+paź 28 23:29:42.826175 bazzite kernel: NET: Registered PF_CAN protocol family
+paź 28 23:29:42.826182 bazzite kernel: x86/amd: Previous system reset reason [0x40080400]: software wrote 0x6 to reset control register 0xCF9
+paź 28 23:29:42.826188 bazzite kernel: x86/amd: Previous system reset reason [0x40080400]: a parity error occurred
+paź 28 23:29:42.826195 bazzite kernel: microcode: Current revision: 0x08407007
+paź 28 23:29:42.826201 bazzite kernel: resctrl: L3 allocation detected
+paź 28 23:29:42.826209 bazzite kernel: resctrl: MB allocation detected
+paź 28 23:29:42.826215 bazzite kernel: resctrl: L3 monitoring detected
+paź 28 23:29:42.826221 bazzite kernel: IPI shorthand broadcast: enabled
+paź 28 23:29:42.826227 bazzite kernel: sched_clock: Marking stable (984366891, 384229)->(1001996892, -17245772)
+paź 28 23:29:42.826234 bazzite kernel: registered taskstats version 1
+paź 28 23:29:42.826312 bazzite kernel: usb 1-5: New USB device strings: Mfr=1, Product=2, SerialNumber=0
+paź 28 23:29:42.826388 bazzite kernel: usb 1-5: Product: Dell QuietKey Keyboard
+paź 28 23:29:42.826462 bazzite kernel: usb 1-5: Manufacturer: Dell
+paź 28 23:29:42.826474 bazzite kernel: Loading compiled-in X.509 certificates
+paź 28 23:29:42.826481 bazzite kernel: input: Dell Dell QuietKey Keyboard as /devices/pci0000:00/0000:00:12.0/usb1/1-5/1-5:1.0/0003:413C:2106.0001/input/input3
+paź 28 23:29:42.826488 bazzite kernel: Loaded X.509 cert 'Build time autogenerated kernel key: ba9b58361404c1dfe19f3169394b9ccc44cf6afe'
+paź 28 23:29:42.826494 bazzite kernel: Demotion targets for Node 0: null
+paź 28 23:29:42.826500 bazzite kernel: page_owner is disabled
+paź 28 23:29:42.826507 bazzite kernel: Key type .fscrypt registered
+paź 28 23:29:42.826513 bazzite kernel: Key type fscrypt-provisioning registered
+paź 28 23:29:42.826519 bazzite kernel: Btrfs loaded, zoned=yes, fsverity=yes
+paź 28 23:29:42.826526 bazzite kernel: Key type big_key registered
+paź 28 23:29:42.826533 bazzite kernel: Key type encrypted registered
+paź 28 23:29:42.826540 bazzite kernel: ima: No TPM chip found, activating TPM-bypass!
+paź 28 23:29:42.826546 bazzite kernel: Loading compiled-in module X.509 certificates
+paź 28 23:29:42.826553 bazzite kernel: Loaded X.509 cert 'Build time autogenerated kernel key: ba9b58361404c1dfe19f3169394b9ccc44cf6afe'
+paź 28 23:29:42.826559 bazzite kernel: ima: Allocated hash algorithm: sha256
+paź 28 23:29:42.826565 bazzite kernel: ima: No architecture policies found
+paź 28 23:29:42.826572 bazzite kernel: evm: Initialising EVM extended attributes:
+paź 28 23:29:42.826578 bazzite kernel: evm: security.selinux
+paź 28 23:29:42.826584 bazzite kernel: evm: security.SMACK64 (disabled)
+paź 28 23:29:42.826597 bazzite kernel: evm: security.SMACK64EXEC (disabled)
+paź 28 23:29:42.826604 bazzite kernel: evm: security.SMACK64TRANSMUTE (disabled)
+paź 28 23:29:42.826609 bazzite kernel: evm: security.SMACK64MMAP (disabled)
+paź 28 23:29:42.826616 bazzite kernel: evm: security.apparmor
+paź 28 23:29:42.826622 bazzite kernel: evm: security.ima
+paź 28 23:29:42.826628 bazzite kernel: evm: security.capability
+paź 28 23:29:42.826634 bazzite kernel: evm: HMAC attrs: 0x1
+paź 28 23:29:42.826640 bazzite kernel: alg: No test for 842 (842-scomp)
+paź 28 23:29:42.826646 bazzite kernel: alg: No test for mldsa87 (mldsa87-lib)
+paź 28 23:29:42.826653 bazzite kernel: alg: No test for mldsa65 (mldsa65-lib)
+paź 28 23:29:42.826661 bazzite kernel: alg: No test for mldsa44 (mldsa44-lib)
+paź 28 23:29:42.826667 bazzite kernel: PM:   Magic number: 14:391:503
+paź 28 23:29:42.826673 bazzite kernel: RAS: Correctable Errors collector initialized.
+paź 28 23:29:42.826679 bazzite kernel: clk: Disabling unused clocks
+paź 28 23:29:42.826686 bazzite kernel: PM: genpd: Disabling unused power domains
+paź 28 23:29:42.826801 bazzite kernel: hid-generic 0003:413C:2106.0001: input,hidraw0: USB HID v1.10 Keyboard [Dell Dell QuietKey Keyboard] on usb-0000:00:12.0-5/input0
+paź 28 23:29:42.826899 bazzite kernel: usb 4-1: New USB device found, idVendor=1bcf, idProduct=08a0, bcdDevice= 1.03
+paź 28 23:29:42.826979 bazzite kernel: usb 4-1: New USB device strings: Mfr=0, Product=0, SerialNumber=0
+paź 28 23:29:42.826991 bazzite kernel: input: HID 1bcf:08a0 Mouse as /devices/pci0000:00/0000:00:13.0/usb4/4-1/4-1:1.0/0003:1BCF:08A0.0002/input/input4
+paź 28 23:29:42.826998 bazzite kernel: input: HID 1bcf:08a0 Keyboard as /devices/pci0000:00/0000:00:13.0/usb4/4-1/4-1:1.0/0003:1BCF:08A0.0002/input/input5
+paź 28 23:29:42.827004 bazzite kernel: Freeing initrd memory: 248112K
+paź 28 23:29:42.827099 bazzite kernel: usb 6-1: New USB device found, idVendor=17ef, idProduct=1016, bcdDevice=50.41
+paź 28 23:29:42.827109 bazzite kernel: Freeing unused decrypted memory: 2028K
+paź 28 23:29:42.827116 bazzite kernel: Freeing unused kernel image (initmem) memory: 5376K
+paź 28 23:29:42.827123 bazzite kernel: Write protecting the kernel read-only data: 47104k
+paź 28 23:29:42.827131 bazzite kernel: Freeing unused kernel image (text/rodata gap) memory: 1720K
+paź 28 23:29:42.827137 bazzite kernel: Freeing unused kernel image (rodata/data gap) memory: 1380K
+paź 28 23:29:42.827215 bazzite kernel: usb 6-1: New USB device strings: Mfr=1, Product=2, SerialNumber=0
+paź 28 23:29:42.827290 bazzite kernel: usb 6-1: Product: TP USB 3.0 Pro Dock    
+paź 28 23:29:42.827365 bazzite kernel: usb 6-1: Manufacturer: LENOVO                 
+paź 28 23:29:42.827467 bazzite kernel: hub 6-1:1.0: USB hub found
+paź 28 23:29:42.827560 bazzite kernel: hub 6-1:1.0: 4 ports detected
+paź 28 23:29:42.827570 bazzite kernel: x86/mm: Checked W+X mappings: passed, no W+X pages found.
+paź 28 23:29:42.827579 bazzite kernel: Run /init as init process
+paź 28 23:29:42.827585 bazzite kernel:   with arguments:
+paź 28 23:29:42.827593 bazzite kernel:     /init
+paź 28 23:29:42.827609 bazzite kernel:     rhgb
+paź 28 23:29:42.827615 bazzite kernel:   with environment:
+paź 28 23:29:42.827622 bazzite kernel:     HOME=/
+paź 28 23:29:42.827628 bazzite kernel:     TERM=linux
+paź 28 23:29:42.827637 bazzite kernel:     ostree=/ostree/boot.1/default/6d7b72549d9a0fcfa4475d1f692127da437b2072e4270109b08a19f66aae7ca1/0
+paź 28 23:29:42.827645 bazzite systemd[1]: Successfully made /usr/ read-only.
+paź 28 23:29:42.827663 bazzite systemd[1]: systemd 259.9-1.fc44 running in system mode (+PAM +AUDIT +SELINUX -APPARMOR +IMA +IPE +SMACK +SECCOMP -GCRYPT +GNUTLS +OPENSSL +ACL +BLKID +CURL +ELFUTILS +FIDO2 +IDN2 -IDN +KMOD +LIBCRYPTSETUP +LIBCRYPTSETUP_PLUGINS +LIBFDISK +PCRE2 +PWQUALITY +P11KIT +QRENCODE +TPM2 +BZIP2 +LZ4 +XZ +ZLIB +ZSTD +BPF_FRAMEWORK +BTF +XKBCOMMON +UTMP +SYSVINIT +LIBARCHIVE)
+paź 28 23:29:42.827671 bazzite systemd[1]: Detected architecture x86-64.
+paź 28 23:29:42.827678 bazzite systemd[1]: Running in initrd.
+paź 28 23:29:42.827688 bazzite systemd[1]: Initializing machine ID from random generator.
+paź 28 23:29:42.827695 bazzite systemd[1]: No hostname configured, using default hostname.
+paź 28 23:29:42.827703 bazzite systemd[1]: Hostname set to <bazzite>.
+paź 28 23:29:42.827822 bazzite kernel: hid-generic 0003:1BCF:08A0.0002: input,hiddev96,hidraw1: USB HID v1.10 Mouse [HID 1bcf:08a0] on usb-0000:00:13.0-1/input0
+paź 28 23:29:42.827841 bazzite systemd[1]: bpf-restrict-fs: LSM BPF program attached
+paź 28 23:29:42.827878 bazzite kernel: usb 7-1: new SuperSpeed USB device number 2 using xhci_hcd
+paź 28 23:29:42.827890 bazzite systemd[1]: /usr/lib/systemd/system/systemd-udevd.service:56: System call bpf cannot be resolved as libseccomp is not available, ignoring: Operation not supported
+paź 28 23:29:42.827900 bazzite systemd[1]: Queued start job for default target initrd.target.
+paź 28 23:29:42.827909 bazzite systemd[1]: Expecting device dev-disk-by\x2duuid-e212b78a\x2db5c7\x2d49ad\x2daba3\x2d6441c650ce69.device - /dev/disk/by-uuid/e212b78a-b5c7-49ad-aba3-6441c650ce69...
+paź 28 23:29:42.827916 bazzite systemd[1]: Reached target initrd-usr-fs.target - Initrd /usr File System.
+paź 28 23:29:42.827926 bazzite systemd[1]: Reached target slices.target - Slice Units.
+paź 28 23:29:42.827933 bazzite systemd[1]: Reached target swap.target - Swaps.
+paź 28 23:29:42.827943 bazzite systemd[1]: Reached target timers.target - Timer Units.
+paź 28 23:29:42.827950 bazzite systemd[1]: Listening on pcscd.socket - PC/SC Smart Card Daemon Activation Socket (Dracut).
+paź 28 23:29:42.827960 bazzite systemd[1]: Listening on systemd-journald-dev-log.socket - Journal Socket (/dev/log).
+paź 28 23:29:42.827967 bazzite systemd[1]: Listening on systemd-journald.socket - Journal Sockets.
+paź 28 23:29:42.827974 bazzite systemd[1]: Listening on systemd-udevd-control.socket - udev Control Socket.
+paź 28 23:29:42.827981 bazzite systemd[1]: Listening on systemd-udevd-kernel.socket - udev Kernel Socket.
+paź 28 23:29:42.827988 bazzite systemd[1]: Reached target sockets.target - Socket Units.
+paź 28 23:29:42.827995 bazzite systemd[1]: Starting kmod-static-nodes.service - Create List of Static Device Nodes...
+paź 28 23:29:42.828005 bazzite systemd[1]: memstrack.service - Memstrack Anylazing Service skipped, no trigger condition checks were met.
+paź 28 23:29:42.828012 bazzite systemd[1]: Starting systemd-journald.service - Journal Service...
+paź 28 23:29:42.828019 bazzite systemd[1]: Starting systemd-modules-load.service - Load Kernel Modules...
+paź 28 23:29:42.828026 bazzite systemd[1]: systemd-pcrphase-initrd.service - TPM PCR Barrier (initrd) skipped, unmet condition check ConditionSecurity=measured-uki
+paź 28 23:29:42.828033 bazzite systemd[1]: Starting systemd-vconsole-setup.service - Virtual Console Setup...
+paź 28 23:29:42.828040 bazzite systemd[1]: Finished kmod-static-nodes.service - Create List of Static Device Nodes.
+paź 28 23:29:42.828048 bazzite systemd[1]: Starting systemd-tmpfiles-setup-dev-early.service - Create Static Device Nodes in /dev gracefully...
+paź 28 23:29:42.828073 bazzite systemd-journald[286]: Collecting audit messages is disabled.
+paź 28 23:29:42.828095 bazzite kernel: gcadapter_oc: loading out-of-tree module taints kernel.
+paź 28 23:29:42.828102 bazzite kernel: kvmfr: loading out-of-tree module taints kernel.
+paź 28 23:29:42.828109 bazzite kernel: kvmfr: module verification failed: signature and/or required key missing - tainting kernel
+paź 28 23:29:42.828115 bazzite kernel: i2c_dev: i2c /dev entries driver
+paź 28 23:29:42.828123 bazzite kernel: kvmfr: creating 0 static devices
+paź 28 23:29:42.828129 bazzite kernel: kvmfr: kvmfr_module_init: module loaded
+paź 28 23:29:42.828136 bazzite systemd[1]: Finished systemd-tmpfiles-setup-dev-early.service - Create Static Device Nodes in /dev gracefully.
+paź 28 23:29:42.828144 bazzite systemd[1]: Starting systemd-tmpfiles-setup-dev.service - Create Static Device Nodes in /dev...
+paź 28 23:29:42.828151 bazzite kernel: usbcore: registered new interface driver system76-io
+paź 28 23:29:42.828157 bazzite kernel: mc: Linux media interface: v0.10
+paź 28 23:29:42.828164 bazzite kernel: fuse: init (API version 7.45)
+paź 28 23:29:42.828170 bazzite kernel: system76: Model does not utilize this driver
+paź 28 23:29:42.828177 bazzite systemd[1]: Finished systemd-tmpfiles-setup-dev.service - Create Static Device Nodes in /dev.
+paź 28 23:29:42.828185 bazzite systemd[1]: Reached target local-fs-pre.target - Preparation for Local File Systems.
+paź 28 23:29:42.828192 bazzite systemd[1]: Reached target local-fs.target - Local File Systems.
+paź 28 23:29:42.828199 bazzite kernel: videodev: Linux video capture interface: v2.00
+paź 28 23:29:42.828206 bazzite kernel: v4l2-loopback driver version 0.15.4 loaded
+paź 28 23:29:42.828212 bazzite systemd[1]: Finished systemd-vconsole-setup.service - Virtual Console Setup.
+paź 28 23:29:42.828219 bazzite systemd[1]: Starting dracut-cmdline-ask.service - dracut ask for additional cmdline parameters...
+paź 28 23:29:42.832666 bazzite systemd[1]: Started systemd-journald.service - Journal Service.
+paź 28 23:29:42.860608 bazzite kernel: usb 7-1: New USB device found, idVendor=17ef, idProduct=1016, bcdDevice=50.41
+paź 28 23:29:42.871607 bazzite kernel: usb 7-1: New USB device strings: Mfr=1, Product=2, SerialNumber=0
+paź 28 23:29:42.871839 bazzite kernel: usb 7-1: Product: TP USB 3.0 Pro Dock    
+paź 28 23:29:42.871923 bazzite kernel: usb 7-1: Manufacturer: LENOVO                 
+paź 28 23:29:42.873599 bazzite kernel: hub 7-1:1.0: USB hub found
+paź 28 23:29:42.876597 bazzite kernel: hub 7-1:1.0: 4 ports detected
+paź 28 23:29:42.884607 bazzite kernel: tsc: Refined TSC clocksource calibration: 3194.029 MHz
+paź 28 23:29:42.884669 bazzite kernel: clocksource: tsc: mask: 0xffffffffffffffff max_cycles: 0x2e0a41ca3be, max_idle_ns: 440795356728 ns
+paź 28 23:29:42.884678 bazzite kernel: clocksource: Switched to clocksource tsc
+paź 28 23:29:42.942604 bazzite kernel: VFIO - User Level meta-driver version: 0.3
+paź 28 23:29:42.973799 bazzite kernel: usb 6-2: new high-speed USB device number 3 using xhci_hcd
+paź 28 23:29:43.097627 bazzite kernel: usb 6-2: New USB device found, idVendor=054c, idProduct=0ce6, bcdDevice= 1.00
+paź 28 23:29:43.099598 bazzite kernel: usb 6-2: New USB device strings: Mfr=1, Product=2, SerialNumber=0
+paź 28 23:29:43.099925 bazzite kernel: usb 6-2: Product: DualSense Wireless Controller
+paź 28 23:29:43.100158 bazzite kernel: usb 6-2: Manufacturer: Sony Interactive Entertainment
+paź 28 23:29:43.107598 bazzite kernel: playstation 0003:054C:0CE6.0003: hidraw2: USB HID v1.11 Gamepad [Sony Interactive Entertainment DualSense Wireless Controller] on usb-0000:00:10.0-2/input3
+paź 28 23:29:43.159600 bazzite kernel: input: Sony Interactive Entertainment DualSense Wireless Controller as /devices/pci0000:00/0000:00:10.0/usb6/6-2/6-2:1.3/0003:054C:0CE6.0003/input/input6
+paź 28 23:29:43.159635 bazzite kernel: input: Sony Interactive Entertainment DualSense Wireless Controller Motion Sensors as /devices/pci0000:00/0000:00:10.0/usb6/6-2/6-2:1.3/0003:054C:0CE6.0003/input/input7
+paź 28 23:29:43.159656 bazzite kernel: input: Sony Interactive Entertainment DualSense Wireless Controller Touchpad as /devices/pci0000:00/0000:00:10.0/usb6/6-2/6-2:1.3/0003:054C:0CE6.0003/input/input8
+paź 28 23:29:43.159675 bazzite kernel: input: Sony Interactive Entertainment DualSense Wireless Controller Headset Jack as /devices/pci0000:00/0000:00:10.0/usb6/6-2/6-2:1.3/0003:054C:0CE6.0003/input/input9
+paź 28 23:29:43.160596 bazzite kernel: playstation 0003:054C:0CE6.0003: Registered DualSense controller hw_version=0x00000313 fw_version=0x0110002a
+paź 28 23:29:43.175601 bazzite kernel: usb 6-1.4: new high-speed USB device number 4 using xhci_hcd
+paź 28 23:29:43.241608 bazzite kernel: sp5100_tco: SP5100/SB800 TCO WatchDog Timer Driver
+paź 28 23:29:43.245606 bazzite kernel: ACPI: video: Video Device [VGA] (multi-head: yes  rom: no  post: no)
+paź 28 23:29:43.247608 bazzite kernel: sp5100-tco sp5100-tco: Using 0xfed80b00 for watchdog MMIO address
+paź 28 23:29:43.249923 bazzite kernel: input: Video Bus as /devices/pci0000:00/0000:00:08.1/acpi.video_bus.0/input/input10
+paź 28 23:29:43.259632 bazzite kernel: sp5100-tco sp5100-tco: initialized. heartbeat=60 sec (nowayout=0)
+paź 28 23:29:43.267609 bazzite kernel: usb 6-1.4: New USB device found, idVendor=17ef, idProduct=1017, bcdDevice=50.41
+paź 28 23:29:43.272609 bazzite kernel: usb 6-1.4: New USB device strings: Mfr=1, Product=2, SerialNumber=0
+paź 28 23:29:43.273009 bazzite kernel: usb 6-1.4: Product: TP USB 3.0 Pro Dock    
+paź 28 23:29:43.273772 bazzite kernel: usb 6-1.4: Manufacturer: LENOVO                 
+paź 28 23:29:43.290613 bazzite kernel: hub 6-1.4:1.0: USB hub found
+paź 28 23:29:43.290861 bazzite kernel: hub 6-1.4:1.0: 4 ports detected
+paź 28 23:29:43.345602 bazzite kernel: usb 7-1.1: new SuperSpeed USB device number 3 using xhci_hcd
+paź 28 23:29:43.359620 bazzite kernel: usb 7-1.1: New USB device found, idVendor=17e9, idProduct=433f, bcdDevice=31.01
+paź 28 23:29:43.362593 bazzite kernel: usb 7-1.1: New USB device strings: Mfr=1, Product=2, SerialNumber=3
+paź 28 23:29:43.362732 bazzite kernel: usb 7-1.1: Product: ThinkPad USB 3.0 Pro Dock
+paź 28 23:29:43.362820 bazzite kernel: usb 7-1.1: Manufacturer: DisplayLink
+paź 28 23:29:43.362904 bazzite kernel: usb 7-1.1: SerialNumber: 4551220101128AJ5PZ
+paź 28 23:29:43.487609 bazzite kernel: usb 7-1.4: new SuperSpeed USB device number 4 using xhci_hcd
+paź 28 23:29:43.581607 bazzite kernel: usb 7-1.4: New USB device found, idVendor=17ef, idProduct=1017, bcdDevice=50.41
+paź 28 23:29:43.583601 bazzite kernel: usb 7-1.4: New USB device strings: Mfr=1, Product=2, SerialNumber=0
+paź 28 23:29:43.583934 bazzite kernel: usb 7-1.4: Product: TP USB 3.0 Pro Dock    
+paź 28 23:29:43.584130 bazzite kernel: usb 7-1.4: Manufacturer: LENOVO                 
+paź 28 23:29:43.585595 bazzite kernel: hub 7-1.4:1.0: USB hub found
+paź 28 23:29:43.586595 bazzite kernel: hub 7-1.4:1.0: 4 ports detected
+paź 28 23:29:43.844599 bazzite kernel: nct6687: Found NCT6686D or compatible chip at 0x002e:0x0a20
+paź 28 23:29:43.844648 bazzite kernel: nct6687 nct6687.2592: active fan config=default, SYS_FAN reg_rpm=0x0144/0x0146/0x0148
+paź 28 23:29:43.844986 bazzite kernel: nct6687 nct6687.2592: enabled channels: fan/pwm mask=0xff, temp mask=0x7f
+paź 28 23:29:43.845197 bazzite kernel: nct6687 nct6687.2592: NCT6686D EC firmware version 1.0 build 07/28/21
+paź 28 23:29:48.085305 bazzite kernel: amdgpu: Virtual CRAT table created for CPU
+paź 28 23:29:48.085362 bazzite kernel: amdgpu: Topology: Add CPU node
+paź 28 23:29:48.085382 bazzite kernel: amdgpu 0000:01:00.0: enabling device (0006 -> 0007)
+paź 28 23:29:48.085817 bazzite kernel: amdgpu 0000:01:00.0: initializing kernel modesetting (CYAN_SKILLFISH 0x1002:0x13FE 0x1022:0x0000 0x00).
+paź 28 23:29:48.086091 bazzite kernel: amdgpu 0000:01:00.0: register mmio base: 0xFE800000
+paź 28 23:29:48.086352 bazzite kernel: amdgpu 0000:01:00.0: register mmio size: 524288
+paź 28 23:29:48.086552 bazzite kernel: amdgpu 0000:01:00.0: detected ip block number 0 <common_v1_0_0> (nv_common)
+paź 28 23:29:48.086663 bazzite kernel: amdgpu 0000:01:00.0: detected ip block number 1 <gmc_v10_0_0> (gmc_v10_0)
+paź 28 23:29:48.086761 bazzite kernel: amdgpu 0000:01:00.0: detected ip block number 2 <ih_v5_0_0> (navi10_ih)
+paź 28 23:29:48.086857 bazzite kernel: amdgpu 0000:01:00.0: detected ip block number 3 <psp_v11_0_8> (psp)
+paź 28 23:29:48.086952 bazzite kernel: amdgpu 0000:01:00.0: detected ip block number 4 <smu_v11_0_0> (smu)
+paź 28 23:29:48.087048 bazzite kernel: amdgpu 0000:01:00.0: detected ip block number 5 <dce_v1_0_0> (dm)
+paź 28 23:29:48.087144 bazzite kernel: amdgpu 0000:01:00.0: detected ip block number 6 <gfx_v10_0_0> (gfx_v10_0)
+paź 28 23:29:48.087239 bazzite kernel: amdgpu 0000:01:00.0: detected ip block number 7 <sdma_v5_0_0> (sdma_v5_0)
+paź 28 23:29:48.087335 bazzite kernel: amdgpu 0000:01:00.0: Fetched VBIOS from VFCT
+paź 28 23:29:48.087431 bazzite kernel: amdgpu 0000:01:00.0: [drm] ATOM BIOS: 113-AMDRBN-003, build: 584828  , ver: 016.002.000.006.000000, 2021/09/10
+paź 28 23:29:48.128605 bazzite kernel: Console: switching to colour dummy device 80x25
+paź 28 23:29:48.128648 bazzite kernel: amdgpu 0000:01:00.0: vgaarb: deactivate vga console
+paź 28 23:29:48.128997 bazzite kernel: amdgpu 0000:01:00.0: Trusted Memory Zone (TMZ) feature disabled as experimental (default)
+paź 28 23:29:48.129245 bazzite kernel: amdgpu 0000:01:00.0: vm size is 262144 GB, 4 levels, block size is 9-bit, fragment size is 9-bit
+paź 28 23:29:48.129490 bazzite kernel: amdgpu 0000:01:00.0: VRAM: 512M 0x000000F400000000 - 0x000000F41FFFFFFF (512M used)
+paź 28 23:29:48.129752 bazzite kernel: amdgpu 0000:01:00.0: GART: 512M 0x0000000000000000 - 0x000000001FFFFFFF
+paź 28 23:29:48.129996 bazzite kernel: amdgpu 0000:01:00.0: [drm] Detected VRAM RAM=512M, BAR=512M
+paź 28 23:29:48.130237 bazzite kernel: amdgpu 0000:01:00.0: [drm] RAM width 1024bits UNKNOWN
+paź 28 23:29:48.130490 bazzite kernel: amdgpu 0000:01:00.0:  512M of VRAM memory ready
+paź 28 23:29:48.130745 bazzite kernel: amdgpu 0000:01:00.0:  13312M of GTT memory ready.
+paź 28 23:29:48.130993 bazzite kernel: amdgpu 0000:01:00.0: [drm] GART: num cpu pages 131072, num gpu pages 131072
+paź 28 23:29:48.131237 bazzite kernel: amdgpu 0000:01:00.0: [drm] PCIE GART of 512M enabled (table at 0x000000F41FE00000).
+paź 28 23:29:48.152602 bazzite kernel: amdgpu 0000:01:00.0: reserve 0x400000 from 0xf41f800000 for PSP TMR
+paź 28 23:29:48.188603 bazzite kernel: amdgpu 0000:01:00.0: smu driver if version = 0x00000008, smu fw if version = 0x00000008, smu fw program = 0, smu fw version = 0x00580600 (88.6.0)
+paź 28 23:29:48.188875 bazzite kernel: amdgpu 0000:01:00.0: SMU is initialized successfully!
+paź 28 23:29:48.189117 bazzite kernel: amdgpu 0000:01:00.0: [drm] Display Core v3.2.384 initialized on DCN 2.0.1
+paź 28 23:29:48.213600 bazzite kernel: workqueue: name exceeds WQ_NAME_LEN. Truncating to: hdmi_frl_status_polling_workque
+paź 28 23:29:48.404932 bazzite kernel: amdgpu 0000:01:00.0: [drm] dal_irq_service_ack: src: 3
+paź 28 23:29:48.405183 bazzite kernel: ------------[ cut here ]------------
+paź 28 23:29:48.405202 bazzite kernel: WARNING: drivers/gpu/drm/amd/amdgpu/../display/dc/irq/irq_service.c:169 at dal_irq_service_ack.cold+0x31/0x78 [amdgpu], CPU#12: (udev-worker)/568
+paź 28 23:29:48.405219 bazzite kernel: Modules linked in: amdgpu(+) drm_buddy amdxcp drm_panel_backlight_quirks gpu_sched drm_ttm_helper ttm drm_exec i2c_algo_bit drm_suballoc_helper serio_raw drm_display_helper cec video sp5100_tco hid_playstation vfio_pci vfio_pci_core irqbypass vfio_iommu_type1 vfio iommufd v4l2loopback(OE) videodev hid_fanatec(OE) hid_logitech_new(OE) ryzen_smu(OE) system76_thelio_io(OE) mc system76_io(OE) ntsync hid_tmff_new(OE) wmi nct6687(OE) ff_memless kvmfr(OE) gcadapter_oc(OE) fuse i2c_dev led_class_multicolor
+paź 28 23:29:48.405240 bazzite kernel: Unloaded tainted modules: system76(OE):1
+paź 28 23:29:48.405261 bazzite kernel: CPU: 12 UID: 0 PID: 568 Comm: (udev-worker) Tainted: G           OE       7.2.9-ogc3.1.fc44.x86_64 #1 PREEMPT(lazy) 
+paź 28 23:29:48.405278 bazzite kernel: Tainted: [O]=OOT_MODULE, [E]=UNSIGNED_MODULE
+paź 28 23:29:48.405294 bazzite kernel: Hardware name: Default string AMD BC-250/AMD BC-250, BIOS P3.00 12/09/2021
+paź 28 23:29:48.405310 bazzite kernel: RIP: 0010:dal_irq_service_ack.cold+0x31/0x78 [amdgpu]
+paź 28 23:29:48.405327 bazzite kernel: Code: 48 8b 38 48 85 ff 74 04 48 8b 7f 08 89 f1 48 c7 c2 10 4e f3 c1 48 c7 c6 b2 ba 0d c2 4c 89 04 24 4c 89 4c 24 08 e8 a1 f3 db f9 <0f> 0b 4c 8b 04 24 4c 8b 4c 24 08 49 8b 40 28 48 8b 40 08 e9 14 16
+paź 28 23:29:48.405344 bazzite kernel: RSP: 0018:ffffce9d80d738c0 EFLAGS: 00010046
+paź 28 23:29:48.405361 bazzite kernel: RAX: 0000000000000000 RBX: ffffffffc1f3ec10 RCX: 0000000000000000
+paź 28 23:29:48.405377 bazzite kernel: RDX: 0000000000000000 RSI: 0000000000000001 RDI: ffff8c668081d280
+paź 28 23:29:48.405393 bazzite kernel: RBP: ffff8c6343440b40 R08: 0000000000000000 R09: ffffffffbe16b150
+paź 28 23:29:48.405411 bazzite kernel: R10: 3fffffffffffdfff R11: ffffce9d80d73688 R12: 0000000000000000
+paź 28 23:29:48.405427 bazzite kernel: R13: 0000000000000003 R14: 0000000000000001 R15: 0000000000000297
+paź 28 23:29:48.405443 bazzite kernel: FS:  00007f6d32359f00(0000) GS:ffff8c66c1831000(0000) knlGS:0000000000000000
+paź 28 23:29:48.405459 bazzite kernel: CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+paź 28 23:29:48.405475 bazzite kernel: CR2: 00007f768b974470 CR3: 000000012942f000 CR4: 0000000000350ef0
+paź 28 23:29:48.405491 bazzite kernel: Call Trace:
+paź 28 23:29:48.405502 bazzite kernel:  <TASK>
+paź 28 23:29:48.405510 bazzite kernel:  dal_irq_service_set+0x4d/0x130 [amdgpu]
+paź 28 23:29:48.405518 bazzite kernel:  ? __pfx_dm_hw_init+0x10/0x10 [amdgpu]
+paź 28 23:29:48.405525 bazzite kernel:  amdgpu_dm_hpd_init+0x71/0x1f0 [amdgpu]
+paź 28 23:29:48.405533 bazzite kernel:  dm_hw_init+0x48/0xd0 [amdgpu]
+paź 28 23:29:48.405540 bazzite kernel:  amdgpu_device_ip_init+0x690/0x7e1 [amdgpu]
+paź 28 23:29:48.405548 bazzite kernel:  amdgpu_device_init.cold+0x4fb/0x7c3 [amdgpu]
+paź 28 23:29:48.405555 bazzite kernel:  ? do_pci_enable_device+0x151/0x190
+paź 28 23:29:48.405562 bazzite kernel:  ? pci_update_current_state+0x72/0xb0
+paź 28 23:29:48.405569 bazzite kernel:  amdgpu_driver_load_kms+0x19/0x80 [amdgpu]
+paź 28 23:29:48.405576 bazzite kernel:  amdgpu_pci_probe+0x1ab/0x5e0 [amdgpu]
+paź 28 23:29:48.405585 bazzite kernel:  local_pci_probe+0x4a/0x90
+paź 28 23:29:48.405597 bazzite kernel:  ? cpu_hotplug_disable+0x15/0x30
+paź 28 23:29:48.405605 bazzite kernel:  pci_call_probe+0x5a/0x1a0
+paź 28 23:29:48.405612 bazzite kernel:  pci_device_probe+0xdb/0x180
+paź 28 23:29:48.405620 bazzite kernel:  call_driver_probe+0x23/0x100
+paź 28 23:29:48.405627 bazzite kernel:  ? driver_sysfs_add+0x55/0xc0
+paź 28 23:29:48.405634 bazzite kernel:  really_probe+0xd7/0x2d0
+paź 28 23:29:48.405641 bazzite kernel:  ? __pm_runtime_resume+0x5f/0x90
+paź 28 23:29:48.405648 bazzite kernel:  __driver_probe_device+0x90/0x190
+paź 28 23:29:48.405657 bazzite kernel:  driver_probe_device+0x1f/0x80
+paź 28 23:29:48.405665 bazzite kernel:  ? __pfx___driver_attach+0x10/0x10
+paź 28 23:29:48.405672 bazzite kernel:  __driver_attach+0xca/0x1f0
+paź 28 23:29:48.405680 bazzite kernel:  ? __pfx___driver_attach+0x10/0x10
+paź 28 23:29:48.405687 bazzite kernel:  bus_for_each_dev+0x97/0x100
+paź 28 23:29:48.405694 bazzite kernel:  bus_add_driver+0x15c/0x260
+paź 28 23:29:48.405702 bazzite kernel:  ? __pfx_init_module+0x10/0x10 [amdgpu]
+paź 28 23:29:48.405709 bazzite kernel:  driver_register+0x75/0xe0
+paź 28 23:29:48.405716 bazzite kernel:  ? amdgpu_init+0x24/0xff0 [amdgpu]
+paź 28 23:29:48.405724 bazzite kernel:  do_one_initcall+0x8e/0x3d0
+paź 28 23:29:48.405731 bazzite kernel:  do_init_module+0x8e/0x2b0
+paź 28 23:29:48.405739 bazzite kernel:  init_module_from_file+0xc8/0x180
+paź 28 23:29:48.405746 bazzite kernel:  idempotent_init_module+0x23e/0x360
+paź 28 23:29:48.405753 bazzite kernel:  __x64_sys_finit_module+0x7f/0x110
+paź 28 23:29:48.405760 bazzite kernel:  do_syscall_64+0xe2/0x570
+paź 28 23:29:48.405768 bazzite kernel:  ? do_syscall_64+0x11f/0x570
+paź 28 23:29:48.405775 bazzite kernel:  ? irqentry_exit+0x45/0x760
+paź 28 23:29:48.405784 bazzite kernel:  ? do_syscall_64+0x99/0x570
+paź 28 23:29:48.405792 bazzite kernel:  ? exc_page_fault+0x90/0x1e0
+paź 28 23:29:48.405799 bazzite kernel:  entry_SYSCALL_64_after_hwframe+0x76/0x7e
+paź 28 23:29:48.405806 bazzite kernel: RIP: 0033:0x7f6d32b313bd
+paź 28 23:29:48.405813 bazzite kernel: Code: ff c3 66 2e 0f 1f 84 00 00 00 00 00 90 f3 0f 1e fa 48 89 f8 48 89 f7 48 89 d6 48 89 ca 4d 89 c2 4d 89 c8 4c 8b 4c 24 08 0f 05 <48> 3d 01 f0 ff ff 73 01 c3 48 8b 0d 0b aa 0f 00 f7 d8 64 89 01 48
+paź 28 23:29:48.405821 bazzite kernel: RSP: 002b:00007ffd4de323b8 EFLAGS: 00000246 ORIG_RAX: 0000000000000139
+paź 28 23:29:48.405829 bazzite kernel: RAX: ffffffffffffffda RBX: 000056334f5bbc40 RCX: 00007f6d32b313bd
+paź 28 23:29:48.405836 bazzite kernel: RDX: 0000000000000000 RSI: 00007f6d322255c8 RDI: 0000000000000056
+paź 28 23:29:48.405844 bazzite kernel: RBP: 00007ffd4de32450 R08: 0000000000000000 R09: 0000000000000000
+paź 28 23:29:48.405852 bazzite kernel: R10: 0000000000000000 R11: 0000000000000246 R12: 00007f6d322255c8
+paź 28 23:29:48.405859 bazzite kernel: R13: 000056334f5bbf80 R14: 0000000000020000 R15: 0000000000000000
+paź 28 23:29:48.405867 bazzite kernel:  </TASK>
+paź 28 23:29:48.405874 bazzite kernel: ---[ end trace 0000000000000000 ]---
+paź 28 23:29:48.405881 bazzite kernel: amdgpu 0000:01:00.0: [drm] *ERROR* dal_irq_service_dummy_ack: called for non-implemented irq source, src_id=0, ext_id=0
+paź 28 23:29:48.405987 bazzite kernel: amdgpu 0000:01:00.0: [drm] dal_irq_service_set: src: 3, st: 0
+paź 28 23:29:48.406085 bazzite kernel: ------------[ cut here ]------------
+paź 28 23:29:48.406093 bazzite kernel: WARNING: drivers/gpu/drm/amd/amdgpu/../display/dc/irq/irq_service.c:129 at dal_irq_service_set.cold+0x5e/0x7a [amdgpu], CPU#12: (udev-worker)/568
+paź 28 23:29:48.406101 bazzite kernel: Modules linked in: amdgpu(+) drm_buddy amdxcp drm_panel_backlight_quirks gpu_sched drm_ttm_helper ttm drm_exec i2c_algo_bit drm_suballoc_helper serio_raw drm_display_helper cec video sp5100_tco hid_playstation vfio_pci vfio_pci_core irqbypass vfio_iommu_type1 vfio iommufd v4l2loopback(OE) videodev hid_fanatec(OE) hid_logitech_new(OE) ryzen_smu(OE) system76_thelio_io(OE) mc system76_io(OE) ntsync hid_tmff_new(OE) wmi nct6687(OE) ff_memless kvmfr(OE) gcadapter_oc(OE) fuse i2c_dev led_class_multicolor
+paź 28 23:29:48.406112 bazzite kernel: Unloaded tainted modules: system76(OE):1
+paź 28 23:29:48.406119 bazzite kernel: CPU: 12 UID: 0 PID: 568 Comm: (udev-worker) Tainted: G        W  OE       7.2.9-ogc3.1.fc44.x86_64 #1 PREEMPT(lazy) 
+paź 28 23:29:48.406127 bazzite kernel: Tainted: [W]=WARN, [O]=OOT_MODULE, [E]=UNSIGNED_MODULE
+paź 28 23:29:48.406134 bazzite kernel: Hardware name: Default string AMD BC-250/AMD BC-250, BIOS P3.00 12/09/2021
+paź 28 23:29:48.406141 bazzite kernel: RIP: 0010:dal_irq_service_set.cold+0x5e/0x7a [amdgpu]
+paź 28 23:29:48.406148 bazzite kernel: Code: 00 48 8b 40 10 48 8b 38 48 85 ff 74 04 48 8b 7f 08 45 89 e0 44 89 e9 48 c7 c2 d0 4e f3 c1 48 c7 c6 c6 ba 0d c2 e8 fc f2 db f9 <0f> 0b 48 8b 43 28 48 8b 00 e9 68 16 c8 ff 66 2e 0f 1f 84 00 00 00
+paź 28 23:29:48.406156 bazzite kernel: RSP: 0018:ffffce9d80d738e0 EFLAGS: 00010046
+paź 28 23:29:48.406163 bazzite kernel: RAX: 0000000000000000 RBX: ffffffffc1f3ec10 RCX: 0000000000000027
+paź 28 23:29:48.406171 bazzite kernel: RDX: 0000000000000000 RSI: 0000000000000001 RDI: ffff8c668081d280
+paź 28 23:29:48.406179 bazzite kernel: RBP: ffff8c6343440b40 R08: 0000000000000000 R09: ffffffffbe16b150
+paź 28 23:29:48.406187 bazzite kernel: R10: 3fffffffffffdfff R11: ffffce9d80d736a8 R12: 0000000000000000
+paź 28 23:29:48.406195 bazzite kernel: R13: 0000000000000003 R14: 0000000000000001 R15: 0000000000000297
+paź 28 23:29:48.406202 bazzite kernel: FS:  00007f6d32359f00(0000) GS:ffff8c66c1831000(0000) knlGS:0000000000000000
+paź 28 23:29:48.406209 bazzite kernel: CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+paź 28 23:29:48.406216 bazzite kernel: CR2: 00007f768b974470 CR3: 000000012942f000 CR4: 0000000000350ef0
+paź 28 23:29:48.406223 bazzite kernel: Call Trace:
+paź 28 23:29:48.406230 bazzite kernel:  <TASK>
+paź 28 23:29:48.406237 bazzite kernel:  ? __pfx_dm_hw_init+0x10/0x10 [amdgpu]
+paź 28 23:29:48.406244 bazzite kernel:  amdgpu_dm_hpd_init+0x71/0x1f0 [amdgpu]
+paź 28 23:29:48.406252 bazzite kernel:  dm_hw_init+0x48/0xd0 [amdgpu]
+paź 28 23:29:48.406259 bazzite kernel:  amdgpu_device_ip_init+0x690/0x7e1 [amdgpu]
+paź 28 23:29:48.406266 bazzite kernel:  amdgpu_device_init.cold+0x4fb/0x7c3 [amdgpu]
+paź 28 23:29:48.406273 bazzite kernel:  ? do_pci_enable_device+0x151/0x190
+paź 28 23:29:48.406280 bazzite kernel:  ? pci_update_current_state+0x72/0xb0
+paź 28 23:29:48.406287 bazzite kernel:  amdgpu_driver_load_kms+0x19/0x80 [amdgpu]
+paź 28 23:29:48.406294 bazzite kernel:  amdgpu_pci_probe+0x1ab/0x5e0 [amdgpu]
+paź 28 23:29:48.406301 bazzite kernel:  local_pci_probe+0x4a/0x90
+paź 28 23:29:48.406308 bazzite kernel:  ? cpu_hotplug_disable+0x15/0x30
+paź 28 23:29:48.406317 bazzite kernel:  pci_call_probe+0x5a/0x1a0
+paź 28 23:29:48.406324 bazzite kernel:  pci_device_probe+0xdb/0x180
+paź 28 23:29:48.406331 bazzite kernel:  call_driver_probe+0x23/0x100
+paź 28 23:29:48.406338 bazzite kernel:  ? driver_sysfs_add+0x55/0xc0
+paź 28 23:29:48.406344 bazzite kernel:  really_probe+0xd7/0x2d0
+paź 28 23:29:48.406351 bazzite kernel:  ? __pm_runtime_resume+0x5f/0x90
+paź 28 23:29:48.406358 bazzite kernel:  __driver_probe_device+0x90/0x190
+paź 28 23:29:48.406365 bazzite kernel:  driver_probe_device+0x1f/0x80
+paź 28 23:29:48.406372 bazzite kernel:  ? __pfx___driver_attach+0x10/0x10
+paź 28 23:29:48.406379 bazzite kernel:  __driver_attach+0xca/0x1f0
+paź 28 23:29:48.406386 bazzite kernel:  ? __pfx___driver_attach+0x10/0x10
+paź 28 23:29:48.406394 bazzite kernel:  bus_for_each_dev+0x97/0x100
+paź 28 23:29:48.406407 bazzite kernel:  bus_add_driver+0x15c/0x260
+paź 28 23:29:48.406417 bazzite kernel:  ? __pfx_init_module+0x10/0x10 [amdgpu]
+paź 28 23:29:48.406427 bazzite kernel:  driver_register+0x75/0xe0
+paź 28 23:29:48.406435 bazzite kernel:  ? amdgpu_init+0x24/0xff0 [amdgpu]
+paź 28 23:29:48.406442 bazzite kernel:  do_one_initcall+0x8e/0x3d0
+paź 28 23:29:48.406449 bazzite kernel:  do_init_module+0x8e/0x2b0
+paź 28 23:29:48.406461 bazzite kernel:  init_module_from_file+0xc8/0x180
+paź 28 23:29:48.406469 bazzite kernel:  idempotent_init_module+0x23e/0x360
+paź 28 23:29:48.406481 bazzite kernel:  __x64_sys_finit_module+0x7f/0x110
+paź 28 23:29:48.406488 bazzite kernel:  do_syscall_64+0xe2/0x570
+paź 28 23:29:48.406499 bazzite kernel:  ? do_syscall_64+0x11f/0x570
+paź 28 23:29:48.406510 bazzite kernel:  ? irqentry_exit+0x45/0x760
+paź 28 23:29:48.406517 bazzite kernel:  ? do_syscall_64+0x99/0x570
+paź 28 23:29:48.406524 bazzite kernel:  ? exc_page_fault+0x90/0x1e0
+paź 28 23:29:48.406531 bazzite kernel:  entry_SYSCALL_64_after_hwframe+0x76/0x7e
+paź 28 23:29:48.406538 bazzite kernel: RIP: 0033:0x7f6d32b313bd
+paź 28 23:29:48.406545 bazzite kernel: Code: ff c3 66 2e 0f 1f 84 00 00 00 00 00 90 f3 0f 1e fa 48 89 f8 48 89 f7 48 89 d6 48 89 ca 4d 89 c2 4d 89 c8 4c 8b 4c 24 08 0f 05 <48> 3d 01 f0 ff ff 73 01 c3 48 8b 0d 0b aa 0f 00 f7 d8 64 89 01 48
+paź 28 23:29:48.406553 bazzite kernel: RSP: 002b:00007ffd4de323b8 EFLAGS: 00000246 ORIG_RAX: 0000000000000139
+paź 28 23:29:48.406560 bazzite kernel: RAX: ffffffffffffffda RBX: 000056334f5bbc40 RCX: 00007f6d32b313bd
+paź 28 23:29:48.406568 bazzite kernel: RDX: 0000000000000000 RSI: 00007f6d322255c8 RDI: 0000000000000056
+paź 28 23:29:48.406575 bazzite kernel: RBP: 00007ffd4de32450 R08: 0000000000000000 R09: 0000000000000000
+paź 28 23:29:48.406583 bazzite kernel: R10: 0000000000000000 R11: 0000000000000246 R12: 00007f6d322255c8
+paź 28 23:29:48.406591 bazzite kernel: R13: 000056334f5bbf80 R14: 0000000000020000 R15: 0000000000000000
+paź 28 23:29:48.406602 bazzite kernel:  </TASK>
+paź 28 23:29:48.406609 bazzite kernel: ---[ end trace 0000000000000000 ]---
+paź 28 23:29:48.406616 bazzite kernel: amdgpu 0000:01:00.0: [drm] *ERROR* dal_irq_service_dummy_set: called for non-implemented irq source, src_id=0, ext_id=0
+paź 28 23:29:48.406730 bazzite kernel: amdgpu 0000:01:00.0: [drm] *ERROR* Failed to clear hpd(rx) source=3 on init
+paź 28 23:29:48.406833 bazzite kernel: amdgpu 0000:01:00.0: [drm] dal_irq_service_ack: src: 4
+paź 28 23:29:48.406930 bazzite kernel: amdgpu 0000:01:00.0: [drm] *ERROR* dal_irq_service_dummy_ack: called for non-implemented irq source, src_id=0, ext_id=0
+paź 28 23:29:48.407030 bazzite kernel: amdgpu 0000:01:00.0: [drm] dal_irq_service_set: src: 4, st: 0
+paź 28 23:29:48.407128 bazzite kernel: amdgpu 0000:01:00.0: [drm] *ERROR* dal_irq_service_dummy_set: called for non-implemented irq source, src_id=0, ext_id=0
+paź 28 23:29:48.407224 bazzite kernel: amdgpu 0000:01:00.0: [drm] *ERROR* Failed to clear hpd(rx) source=4 on init
+paź 28 23:29:48.407320 bazzite kernel: amdgpu 0000:01:00.0: [drm] dal_irq_service_ack: src: 5
+paź 28 23:29:48.407416 bazzite kernel: amdgpu 0000:01:00.0: [drm] *ERROR* dal_irq_service_dummy_ack: called for non-implemented irq source, src_id=0, ext_id=0
+paź 28 23:29:48.407516 bazzite kernel: amdgpu 0000:01:00.0: [drm] dal_irq_service_set: src: 5, st: 0
+paź 28 23:29:48.407619 bazzite kernel: amdgpu 0000:01:00.0: [drm] *ERROR* dal_irq_service_dummy_set: called for non-implemented irq source, src_id=0, ext_id=0
+paź 28 23:29:48.407715 bazzite kernel: amdgpu 0000:01:00.0: [drm] *ERROR* Failed to clear hpd(rx) source=5 on init
+paź 28 23:29:48.407810 bazzite kernel: amdgpu 0000:01:00.0: [drm] dal_irq_service_ack: src: 6
+paź 28 23:29:48.407909 bazzite kernel: amdgpu 0000:01:00.0: [drm] *ERROR* dal_irq_service_dummy_ack: called for non-implemented irq source, src_id=0, ext_id=0
+paź 28 23:29:48.408005 bazzite kernel: amdgpu 0000:01:00.0: [drm] dal_irq_service_set: src: 6, st: 0
+paź 28 23:29:48.408101 bazzite kernel: amdgpu 0000:01:00.0: [drm] *ERROR* dal_irq_service_dummy_set: called for non-implemented irq source, src_id=0, ext_id=0
+paź 28 23:29:48.408197 bazzite kernel: amdgpu 0000:01:00.0: [drm] *ERROR* Failed to clear hpd(rx) source=6 on init
+paź 28 23:29:48.408292 bazzite kernel: amdgpu 0000:01:00.0: [drm] dal_irq_service_ack: src: 9
+paź 28 23:29:48.408388 bazzite kernel: amdgpu 0000:01:00.0: [drm] *ERROR* dal_irq_service_dummy_ack: called for non-implemented irq source, src_id=0, ext_id=0
+paź 28 23:29:48.408485 bazzite kernel: amdgpu 0000:01:00.0: [drm] dal_irq_service_set: src: 9, st: 0
+paź 28 23:29:48.408582 bazzite kernel: amdgpu 0000:01:00.0: [drm] *ERROR* dal_irq_service_dummy_set: called for non-implemented irq source, src_id=0, ext_id=0
+paź 28 23:29:48.408685 bazzite kernel: amdgpu 0000:01:00.0: [drm] *ERROR* Failed to clear hpd(rx) source=9 on init
+paź 28 23:29:48.408782 bazzite kernel: amdgpu 0000:01:00.0: [drm] dal_irq_service_ack: src: 10
+paź 28 23:29:48.408882 bazzite kernel: amdgpu 0000:01:00.0: [drm] *ERROR* dal_irq_service_dummy_ack: called for non-implemented irq source, src_id=0, ext_id=0
+paź 28 23:29:48.408979 bazzite kernel: amdgpu 0000:01:00.0: [drm] dal_irq_service_set: src: 10, st: 0
+paź 28 23:29:48.409076 bazzite kernel: amdgpu 0000:01:00.0: [drm] *ERROR* dal_irq_service_dummy_set: called for non-implemented irq source, src_id=0, ext_id=0
+paź 28 23:29:48.409171 bazzite kernel: amdgpu 0000:01:00.0: [drm] *ERROR* Failed to clear hpd(rx) source=10 on init
+paź 28 23:29:48.409267 bazzite kernel: amdgpu 0000:01:00.0: [drm] dal_irq_service_ack: src: 11
+paź 28 23:29:48.409363 bazzite kernel: amdgpu 0000:01:00.0: [drm] *ERROR* dal_irq_service_dummy_ack: called for non-implemented irq source, src_id=0, ext_id=0
+paź 28 23:29:48.409458 bazzite kernel: amdgpu 0000:01:00.0: [drm] dal_irq_service_set: src: 11, st: 0
+paź 28 23:29:48.409553 bazzite kernel: amdgpu 0000:01:00.0: [drm] *ERROR* dal_irq_service_dummy_set: called for non-implemented irq source, src_id=0, ext_id=0
+paź 28 23:29:48.409657 bazzite kernel: amdgpu 0000:01:00.0: [drm] *ERROR* Failed to clear hpd(rx) source=11 on init
+paź 28 23:29:48.409756 bazzite kernel: amdgpu 0000:01:00.0: [drm] dal_irq_service_ack: src: 12
+paź 28 23:29:48.409853 bazzite kernel: amdgpu 0000:01:00.0: [drm] *ERROR* dal_irq_service_dummy_ack: called for non-implemented irq source, src_id=0, ext_id=0
+paź 28 23:29:48.409950 bazzite kernel: amdgpu 0000:01:00.0: [drm] dal_irq_service_set: src: 12, st: 0
+paź 28 23:29:48.410045 bazzite kernel: amdgpu 0000:01:00.0: [drm] *ERROR* dal_irq_service_dummy_set: called for non-implemented irq source, src_id=0, ext_id=0
+paź 28 23:29:48.410141 bazzite kernel: amdgpu 0000:01:00.0: [drm] *ERROR* Failed to clear hpd(rx) source=12 on init
+paź 28 23:29:48.410237 bazzite kernel: amdgpu 0000:01:00.0: kiq ring mec 2 pipe 1 q 0
+paź 28 23:29:48.914623 bazzite kernel: amdgpu 0000:01:00.0: Fence fallback timer expired on ring sdma0
+paź 28 23:29:48.914924 bazzite kernel: kfd kfd: Allocated 3969056 bytes on gart
+paź 28 23:29:48.915140 bazzite kernel: kfd kfd: Total number of KFD nodes to be created: 1
+paź 28 23:29:49.418613 bazzite kernel: amdgpu 0000:01:00.0: Fence fallback timer expired on ring sdma0
+paź 28 23:29:49.418958 bazzite kernel: amdgpu: Virtual CRAT table created for GPU
+paź 28 23:29:49.418981 bazzite kernel: amdgpu: Topology: Add GPU node [0x1002:0x13fe]
+paź 28 23:29:49.418999 bazzite kernel: kfd kfd: added device 1002:13fe
+paź 28 23:29:49.419277 bazzite kernel: amdgpu 0000:01:00.0: SE 2, SH per SE 2, CU per SH 10, active_cu_number 24
+paź 28 23:29:49.419535 bazzite kernel: amdgpu 0000:01:00.0: ring gfx_0.0.0 uses VM inv eng 0 on hub 0
+paź 28 23:29:49.419835 bazzite kernel: amdgpu 0000:01:00.0: ring comp_1.0.0 uses VM inv eng 1 on hub 0
+paź 28 23:29:49.420093 bazzite kernel: amdgpu 0000:01:00.0: ring comp_1.1.0 uses VM inv eng 4 on hub 0
+paź 28 23:29:49.420358 bazzite kernel: amdgpu 0000:01:00.0: ring comp_1.2.0 uses VM inv eng 5 on hub 0
+paź 28 23:29:49.420634 bazzite kernel: amdgpu 0000:01:00.0: ring comp_1.3.0 uses VM inv eng 6 on hub 0
+paź 28 23:29:49.420888 bazzite kernel: amdgpu 0000:01:00.0: ring comp_1.0.1 uses VM inv eng 7 on hub 0
+paź 28 23:29:49.421138 bazzite kernel: amdgpu 0000:01:00.0: ring comp_1.1.1 uses VM inv eng 8 on hub 0
+paź 28 23:29:49.421396 bazzite kernel: amdgpu 0000:01:00.0: ring comp_1.2.1 uses VM inv eng 9 on hub 0
+paź 28 23:29:49.421656 bazzite kernel: amdgpu 0000:01:00.0: ring comp_1.3.1 uses VM inv eng 10 on hub 0
+paź 28 23:29:49.421896 bazzite kernel: amdgpu 0000:01:00.0: ring kiq_0.2.1.0 uses VM inv eng 11 on hub 0
+paź 28 23:29:49.422136 bazzite kernel: amdgpu 0000:01:00.0: ring sdma0 uses VM inv eng 12 on hub 0
+paź 28 23:29:49.422383 bazzite kernel: amdgpu 0000:01:00.0: ring sdma1 uses VM inv eng 13 on hub 0
+paź 28 23:29:49.422635 bazzite kernel: amdgpu 0000:01:00.0: Runtime PM not available
+paź 28 23:29:49.422878 bazzite kernel: amdgpu 0000:01:00.0: [drm] Registered 2 planes with drm panic
+paź 28 23:29:49.429606 bazzite kernel: [drm] Initialized amdgpu 3.64.0 for 0000:01:00.0 on minor 1
+paź 28 23:29:49.432604 bazzite kernel: fbcon: amdgpudrmfb (fb0) is primary device
+paź 28 23:29:49.432626 bazzite kernel: Console: switching to colour frame buffer device 240x67
+paź 28 23:29:49.432645 bazzite kernel: amdgpu 0000:01:00.0: [drm] fb0: amdgpudrmfb frame buffer device
+paź 28 23:29:49.541603 bazzite kernel: BTRFS: device label bazzite devid 1 transid 51120 /dev/nvme0n1p3 (259:3) scanned by mount (658)
+paź 28 23:29:49.542606 bazzite kernel: BTRFS info (device nvme0n1p3): first mount of filesystem e212b78a-b5c7-49ad-aba3-6441c650ce69
+paź 28 23:29:49.542655 bazzite kernel: BTRFS info (device nvme0n1p3): using crc32c checksum algorithm
+paź 28 23:29:49.596603 bazzite kernel: BTRFS info (device nvme0n1p3): enabling ssd optimizations
+paź 28 23:29:49.596625 bazzite kernel: BTRFS info (device nvme0n1p3): turning on async discard
+paź 28 23:29:49.596643 bazzite kernel: BTRFS info (device nvme0n1p3): enabling free space tree
+paź 28 23:29:49.624603 bazzite kernel: [drm] Failed to add display topology, DTM TA is not initialized.
+paź 28 23:29:49.624629 bazzite kernel: erofs (device 0:39): mounted with root inode @ nid 36.
+paź 28 23:29:51.566688 bazzite systemd-journald[286]: Received SIGTERM from PID 1 (systemd).
+paź 28 23:29:51.566727 bazzite kernel: audit: type=1404 audit(1793226590.001:2): enforcing=1 old_enforcing=0 auid=4294967295 ses=4294967295 enabled=1 old-enabled=1 lsm=selinux res=1
+paź 28 23:29:51.566741 bazzite kernel: SELinux:  Permission firmware_load in class system not defined in policy.
+paź 28 23:29:51.566754 bazzite kernel: SELinux:  Permission kexec_image_load in class system not defined in policy.
+paź 28 23:29:51.566762 bazzite kernel: SELinux:  Permission kexec_initramfs_load in class system not defined in policy.
+paź 28 23:29:51.566771 bazzite kernel: SELinux:  Permission policy_load in class system not defined in policy.
+paź 28 23:29:51.566780 bazzite kernel: SELinux:  Permission x509_certificate_load in class system not defined in policy.
+paź 28 23:29:51.566788 bazzite kernel: SELinux:  Permission map_create_as in class bpf not defined in policy.
+paź 28 23:29:51.566796 bazzite kernel: SELinux:  Permission prog_load_as in class bpf not defined in policy.
+paź 28 23:29:51.566804 bazzite kernel: SELinux:  Permission allowed in class io_uring not defined in policy.
+paź 28 23:29:51.566813 bazzite kernel: SELinux:  Class memfd_file not defined in policy.
+paź 28 23:29:51.566820 bazzite kernel: SELinux: the above unknown classes and permissions will be allowed
+paź 28 23:29:51.566828 bazzite kernel: SELinux:  policy capability network_peer_controls=1
+paź 28 23:29:51.566836 bazzite kernel: SELinux:  policy capability open_perms=1
+paź 28 23:29:51.566845 bazzite kernel: SELinux:  policy capability extended_socket_class=1
+paź 28 23:29:51.566853 bazzite kernel: SELinux:  policy capability always_check_network=0
+paź 28 23:29:51.566862 bazzite kernel: SELinux:  policy capability cgroup_seclabel=1
+paź 28 23:29:51.566869 bazzite kernel: SELinux:  policy capability nnp_nosuid_transition=1
+paź 28 23:29:51.566877 bazzite kernel: SELinux:  policy capability genfs_seclabel_symlinks=1
+paź 28 23:29:51.566884 bazzite kernel: SELinux:  policy capability ioctl_skip_cloexec=0
+paź 28 23:29:51.566892 bazzite kernel: SELinux:  policy capability userspace_initial_context=0
+paź 28 23:29:51.566900 bazzite kernel: SELinux:  policy capability netlink_xperm=0
+paź 28 23:29:51.566908 bazzite kernel: SELinux:  policy capability netif_wildcard=0
+paź 28 23:29:51.566916 bazzite kernel: SELinux:  policy capability genfs_seclabel_wildcard=0
+paź 28 23:29:51.566923 bazzite kernel: SELinux:  policy capability functionfs_seclabel=0
+paź 28 23:29:51.566930 bazzite kernel: SELinux:  policy capability memfd_class=0
+paź 28 23:29:51.566939 bazzite kernel: SELinux:  policy capability bpf_token_perms=0
+paź 28 23:29:51.566947 bazzite kernel: audit: type=1403 audit(1793226590.084:3): auid=4294967295 ses=4294967295 lsm=selinux res=1
+paź 28 23:29:51.566955 bazzite systemd[1]: Successfully loaded SELinux policy in 85.424ms.
+paź 28 23:29:51.566966 bazzite systemd[1]: Relabeled /dev/, /dev/shm/, /run/ in 11.348ms.
+paź 28 23:29:51.566976 bazzite systemd[1]: systemd 259.9-1.fc44 running in system mode (+PAM +AUDIT +SELINUX -APPARMOR +IMA +IPE +SMACK +SECCOMP -GCRYPT +GNUTLS +OPENSSL +ACL +BLKID +CURL +ELFUTILS +FIDO2 +IDN2 -IDN +KMOD +LIBCRYPTSETUP +LIBCRYPTSETUP_PLUGINS +LIBFDISK +PCRE2 +PWQUALITY +P11KIT +QRENCODE +TPM2 +BZIP2 +LZ4 +XZ +ZLIB +ZSTD +BPF_FRAMEWORK +BTF +XKBCOMMON +UTMP +SYSVINIT +LIBARCHIVE)
+paź 28 23:29:51.566984 bazzite systemd[1]: Detected architecture x86-64.
+paź 28 23:29:51.566993 bazzite systemd[1]: bpf-restrict-fs: LSM BPF program attached
+paź 28 23:29:51.567005 bazzite systemd[1]: Using hardware watchdog /dev/watchdog0: 'SP5100 TCO timer', version 0.
+paź 28 23:29:51.567014 bazzite systemd[1]: Watchdog running with a hardware timeout of 30s.
+paź 28 23:29:51.567025 bazzite kernel: zram: Added device: zram0
+paź 28 23:29:51.567036 bazzite systemd[1]: initrd-switch-root.service: Deactivated successfully.
+paź 28 23:29:51.567048 bazzite systemd[1]: Stopped initrd-switch-root.service - Switch Root.
+paź 28 23:29:51.567060 bazzite systemd[1]: systemd-journald.service: Scheduled restart job, restart counter is at 1.
+paź 28 23:29:51.567072 bazzite systemd[1]: Created slice system-getty.slice - Slice /system/getty.
+paź 28 23:29:51.567086 bazzite systemd[1]: Created slice system-sshd\x2dkeygen.slice - Slice /system/sshd-keygen.
+paź 28 23:29:51.567095 bazzite systemd[1]: Created slice system-systemd\x2dfsck.slice - Slice /system/systemd-fsck.
+paź 28 23:29:51.567104 bazzite systemd[1]: Created slice system-systemd\x2dzram\x2dsetup.slice - Slice /system/systemd-zram-setup.
+paź 28 23:29:51.567113 bazzite systemd[1]: Created slice user.slice - User and Session Slice.
+paź 28 23:29:51.567123 bazzite systemd[1]: systemd-ask-password-console.path - Dispatch Password Requests to Console Directory Watch skipped, unmet condition check ConditionPathExists=!/run/plymouth/pid
+paź 28 23:29:51.567132 bazzite systemd[1]: Started systemd-ask-password-wall.path - Forward Password Requests to Wall Directory Watch.
+paź 28 23:29:51.567140 bazzite systemd[1]: Set up automount proc-sys-fs-binfmt_misc.automount - Arbitrary Executable File Formats File System Automount Point.
+paź 28 23:29:51.567150 bazzite systemd[1]: Expecting device dev-disk-by\x2duuid-28c82d8a\x2db4f1\x2d4212\x2db3a6\x2d600d8d6b18e5.device - /dev/disk/by-uuid/28c82d8a-b4f1-4212-b3a6-600d8d6b18e5...
+paź 28 23:29:51.567159 bazzite systemd[1]: Expecting device dev-disk-by\x2duuid-6622\x2d1140.device - /dev/disk/by-uuid/6622-1140...
+paź 28 23:29:51.567167 bazzite systemd[1]: Expecting device dev-disk-by\x2duuid-e212b78a\x2db5c7\x2d49ad\x2daba3\x2d6441c650ce69.device - /dev/disk/by-uuid/e212b78a-b5c7-49ad-aba3-6441c650ce69...
+paź 28 23:29:51.567176 bazzite systemd[1]: Expecting device dev-zram0.device - /dev/zram0...
+paź 28 23:29:51.567184 bazzite systemd[1]: Reached target getty.target - Login Prompts.
+paź 28 23:29:51.567194 bazzite systemd[1]: Reached target imports.target - Image Downloads.
+paź 28 23:29:51.567202 bazzite systemd[1]: Stopped target initrd-switch-root.target - Switch Root.
+paź 28 23:29:51.567210 bazzite systemd[1]: Stopped target initrd-fs.target - Initrd File Systems.
+paź 28 23:29:51.567218 bazzite systemd[1]: Stopped target initrd-root-fs.target - Initrd Root File System.
+paź 28 23:29:51.567227 bazzite systemd[1]: Reached target integritysetup.target - Local Integrity Protected Volumes.
+paź 28 23:29:51.567242 bazzite systemd[1]: Reached target slices.target - Slice Units.
+paź 28 23:29:51.567252 bazzite systemd[1]: Reached target veritysetup.target - Local Verity Protected Volumes.
+paź 28 23:29:51.567262 bazzite systemd[1]: Listening on dm-event.socket - Device-mapper event daemon FIFOs.
+paź 28 23:29:51.567272 bazzite systemd[1]: Listening on lvm2-lvmpolld.socket - LVM2 poll daemon socket.
+paź 28 23:29:51.567280 bazzite systemd[1]: Listening on systemd-ask-password.socket - Query the User Interactively for a Password.
+paź 28 23:29:51.567288 bazzite systemd[1]: Listening on systemd-coredump.socket - Process Core Dump Socket.
+paź 28 23:29:51.567297 bazzite systemd[1]: Listening on systemd-creds.socket - Credential Encryption/Decryption.
+paź 28 23:29:51.567305 bazzite systemd[1]: Listening on systemd-factory-reset.socket - Factory Reset Management.
+paź 28 23:29:51.567314 bazzite systemd[1]: Listening on systemd-journald-audit.socket - Journal Audit Socket.
+paź 28 23:29:51.567322 bazzite systemd[1]: Listening on systemd-mountfsd.socket - DDI File System Mounter Socket.
+paź 28 23:29:51.567330 bazzite systemd[1]: Listening on systemd-mute-console.socket - Console Output Muting Service Socket.
+paź 28 23:29:51.567339 bazzite systemd[1]: Listening on systemd-nsresourced.socket - Namespace Resource Manager Socket.
+paź 28 23:29:51.567349 bazzite systemd[1]: Listening on systemd-oomd.socket - Userspace Out-Of-Memory (OOM) Killer Socket.
+paź 28 23:29:51.567358 bazzite systemd[1]: systemd-pcrextend.socket - TPM PCR Measurements skipped, unmet condition check ConditionSecurity=measured-uki
+paź 28 23:29:51.567366 bazzite systemd[1]: systemd-pcrlock.socket - Make TPM PCR Policy skipped, unmet condition check ConditionSecurity=measured-uki
+paź 28 23:29:51.567375 bazzite systemd[1]: Listening on systemd-repart.socket - Disk Repartitioning Service Socket.
+paź 28 23:29:51.567383 bazzite systemd[1]: Listening on systemd-resolved-monitor.socket - Resolve Monitor Varlink Socket.
+paź 28 23:29:51.567391 bazzite systemd[1]: Listening on systemd-resolved-varlink.socket - Resolve Service Varlink Socket.
+paź 28 23:29:51.567404 bazzite systemd[1]: Listening on systemd-udevd-control.socket - udev Control Socket.
+paź 28 23:29:51.567416 bazzite systemd[1]: Listening on systemd-udevd-varlink.socket - udev Varlink Socket.
+paź 28 23:29:51.567427 bazzite systemd[1]: Listening on systemd-userdbd.socket - User Database Manager Socket.
+paź 28 23:29:51.567439 bazzite systemd[1]: Mounting dev-hugepages.mount - Huge Pages File System...
+paź 28 23:29:51.567450 bazzite systemd[1]: dev-hugepages1G.mount - 1GB Huge Pages File System skipped, unmet condition check ConditionKernelCommandLine=hugepagesz=1G
+paź 28 23:29:51.567458 bazzite systemd[1]: Mounting dev-mqueue.mount - POSIX Message Queue File System...
+paź 28 23:29:51.567466 bazzite systemd[1]: Mounting sys-kernel-debug.mount - Kernel Debug File System...
+paź 28 23:29:51.567475 bazzite systemd[1]: Mounting sys-kernel-tracing.mount - Kernel Trace File System...
+paź 28 23:29:51.567485 bazzite systemd[1]: auth-rpcgss-module.service - Kernel Module supporting RPCSEC_GSS skipped, unmet condition check ConditionPathExists=/etc/krb5.keytab
+paź 28 23:29:51.567495 bazzite systemd[1]: fips-crypto-policy-overlay.service - Bind-mount FIPS crypto-policy in FIPS mode skipped, unmet condition check ConditionKernelCommandLine=fips=1
+paź 28 23:29:51.567503 bazzite systemd[1]: Starting kmod-static-nodes.service - Create List of Static Device Nodes...
+paź 28 23:29:51.567512 bazzite systemd[1]: Starting lvm2-monitor.service - Monitoring of LVM2 mirrors, snapshots etc. using dmeventd or progress polling...
+paź 28 23:29:51.567520 bazzite systemd[1]: modprobe@configfs.service - Load Kernel Module configfs skipped, unmet condition check ConditionKernelModuleLoaded=!configfs
+paź 28 23:29:51.567529 bazzite systemd[1]: modprobe@drm.service - Load Kernel Module drm skipped, unmet condition check ConditionKernelModuleLoaded=!drm
+paź 28 23:29:51.567538 bazzite systemd[1]: modprobe@efi_pstore.service - Load Kernel Module efi_pstore skipped, unmet condition check ConditionKernelModuleLoaded=!efi_pstore
+paź 28 23:29:51.567546 bazzite systemd[1]: modprobe@fuse.service - Load Kernel Module fuse skipped, unmet condition check ConditionKernelModuleLoaded=!fuse
+paź 28 23:29:51.567556 bazzite systemd[1]: Mounting sys-fs-fuse-connections.mount - FUSE Control File System...
+paź 28 23:29:51.567564 bazzite systemd[1]: ostree-prepare-root.service: Deactivated successfully.
+paź 28 23:29:51.567573 bazzite systemd[1]: Stopped ostree-prepare-root.service - OSTree Prepare OS/.
+paź 28 23:29:51.567581 bazzite systemd[1]: plymouth-switch-root.service: Deactivated successfully.
+paź 28 23:29:51.567603 bazzite systemd[1]: Stopped plymouth-switch-root.service - Plymouth switch root service.
+paź 28 23:29:51.567613 bazzite systemd[1]: systemd-boot-clear-sysfail.service - Clear SysFail Entry If The Boot Is Successful skipped, unmet condition check ConditionPathExists=/sys/firmware/efi/efivars/LoaderEntrySysFail-4a67b082-0a4c-41cf-b6c7-440b29bb8c4f
+paź 28 23:29:51.567622 bazzite systemd[1]: systemd-fsck-root.service: Deactivated successfully.
+paź 28 23:29:51.567631 bazzite systemd[1]: Stopped systemd-fsck-root.service - File System Check on Root Device.
+paź 28 23:29:51.567642 bazzite systemd[1]: systemd-hibernate-clear.service - Clear Stale Hibernate Storage Info skipped, unmet condition check ConditionPathExists=/sys/firmware/efi/efivars/HibernateLocation-8cf2644b-4b0b-428f-9387-6d876050dc67
+paź 28 23:29:51.567651 bazzite systemd[1]: systemd-hwdb-update.service - Rebuild Hardware Database skipped, unmet condition check ConditionNeedsUpdate=/etc
+paź 28 23:29:51.567659 bazzite systemd[1]: Starting systemd-journald.service - Journal Service...
+paź 28 23:29:51.567667 bazzite systemd[1]: Starting systemd-modules-load.service - Load Kernel Modules...
+paź 28 23:29:51.567676 bazzite systemd[1]: Starting systemd-network-generator.service - Generate Network Units from Kernel Command Line...
+paź 28 23:29:51.567687 bazzite systemd[1]: systemd-pcrmachine.service - TPM PCR Machine ID Measurement skipped, unmet condition check ConditionSecurity=measured-uki
+paź 28 23:29:51.567696 bazzite systemd[1]: systemd-tpm2-setup-early.service - Early TPM SRK Setup skipped, unmet condition check ConditionSecurity=measured-uki
+paź 28 23:29:51.567708 bazzite systemd[1]: systemd-pcrnvdone.service - TPM PCR NvPCR Initialization Separator skipped, unmet condition check ConditionPathExists=/etc/initrd-release
+paź 28 23:29:51.567722 bazzite systemd[1]: Reached target cryptsetup.target - Local Encrypted Volumes.
+paź 28 23:29:51.567734 bazzite systemd[1]: Starting systemd-udev-load-credentials.service - Load udev Rules from Credentials...
+paź 28 23:29:51.567745 bazzite systemd[1]: Starting systemd-udev-trigger.service - Coldplug All udev Devices...
+paź 28 23:29:51.567753 bazzite systemd[1]: Mounted dev-hugepages.mount - Huge Pages File System.
+paź 28 23:29:51.567761 bazzite systemd[1]: Mounted dev-mqueue.mount - POSIX Message Queue File System.
+paź 28 23:29:51.567769 bazzite systemd[1]: Mounted sys-kernel-debug.mount - Kernel Debug File System.
+paź 28 23:29:51.567777 bazzite systemd[1]: Mounted sys-kernel-tracing.mount - Kernel Trace File System.
+paź 28 23:29:51.567786 bazzite systemd[1]: Finished kmod-static-nodes.service - Create List of Static Device Nodes.
+paź 28 23:29:51.567796 bazzite systemd[1]: Mounted sys-fs-fuse-connections.mount - FUSE Control File System.
+paź 28 23:29:51.567805 bazzite systemd[1]: Starting systemd-tmpfiles-setup-dev-early.service - Create Static Device Nodes in /dev gracefully...
+paź 28 23:29:51.567813 bazzite systemd[1]: Finished systemd-network-generator.service - Generate Network Units from Kernel Command Line.
+paź 28 23:29:51.567824 bazzite systemd[1]: Finished systemd-udev-load-credentials.service - Load udev Rules from Credentials.
+paź 28 23:29:51.567857 bazzite systemd-journald[776]: Collecting audit messages is enabled.
+paź 28 23:29:51.568634 bazzite systemd[1]: Started systemd-journald.service - Journal Service.
+paź 28 23:29:51.568716 bazzite kernel: audit: type=1130 audit(1793226591.566:4): pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:init_t:s0 msg='unit=systemd-journald comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+paź 28 23:29:51.594592 bazzite kernel: system76: Model does not utilize this driver
+paź 28 23:29:51.594612 bazzite kernel: audit: type=1334 audit(1793226591.592:5): prog-id=48 op=LOAD
+paź 28 23:29:51.603608 bazzite kernel: audit: type=1334 audit(1793226591.601:6): prog-id=49 op=LOAD
+paź 28 23:29:51.603651 bazzite kernel: audit: type=1334 audit(1793226591.601:7): prog-id=50 op=LOAD
+paź 28 23:29:51.605669 bazzite kernel: audit: type=1130 audit(1793226591.603:8): pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:init_t:s0 msg='unit=lvm2-monitor comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+paź 28 23:29:51.610593 bazzite kernel: audit: type=1130 audit(1793226591.608:9): pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:init_t:s0 msg='unit=systemd-modules-load comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+paź 28 23:29:51.611598 bazzite kernel: tun: Universal TUN/TAP device driver, 1.6
+paź 28 23:29:51.612603 bazzite kernel: audit: type=1130 audit(1793226591.610:10): pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:init_t:s0 msg='unit=modprobe@tun comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+paź 28 23:29:51.612635 bazzite kernel: audit: type=1131 audit(1793226591.610:11): pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:init_t:s0 msg='unit=modprobe@tun comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+paź 28 23:29:52.246632 bazzite kernel: zram0: detected capacity change from 0 to 15556608
+paź 28 23:29:52.360605 bazzite kernel: Adding 7778300k swap on /dev/zram0.  Priority:100 extents:1 across:7778300k SSDsc
+paź 28 23:29:52.382607 bazzite kernel: piix4_smbus 0000:00:14.0: SMBus Host Controller at 0xb00, revision 0
+paź 28 23:29:52.389988 bazzite kernel: piix4_smbus 0000:00:14.0: Using register 0x2e for SMBus port selection
+paź 28 23:29:52.430609 bazzite kernel: piix4_smbus 0000:00:14.0: Auxiliary SMBus Host Controller at 0xb20
+paź 28 23:29:52.440608 bazzite kernel: input: PC Speaker as /devices/platform/pcspkr/input/input11
+paź 28 23:29:52.494606 bazzite kernel: RAPL PMU: API unit is 2^-32 Joules, 0 fixed counters, 10737418240 ms ovfl timer
+paź 28 23:29:52.497608 bazzite kernel: usbcore: registered new interface driver cdc_ether
+paź 28 23:29:52.506607 bazzite kernel: r8169 0000:04:00.0: enabling device (0000 -> 0003)
+paź 28 23:29:52.555604 bazzite kernel: r8169 0000:04:00.0 eth0: RTL8168h/8111h, a8:a1:59:b5:ed:fe, XID 541, IRQ 48
+paź 28 23:29:52.560428 bazzite kernel: r8169 0000:04:00.0 eth0: jumbo features [frames: 9194 bytes, tx checksumming: ko]
+paź 28 23:29:52.570626 bazzite kernel: cdc_ncm 7-1.1:1.5: MAC-Address: 3c:e1:a1:47:9c:f2
+paź 28 23:29:52.571125 bazzite kernel: cdc_ncm 7-1.1:1.5: setting rx_max = 16384
+paź 28 23:29:52.571602 bazzite kernel: cdc_ncm 7-1.1:1.5: setting tx_max = 16384
+paź 28 23:29:52.571979 bazzite kernel: cdc_ncm 7-1.1:1.5 eth1: register 'cdc_ncm' at usb-0000:00:10.0-1.1, CDC NCM (SEND ZLP), 3c:e1:a1:47:9c:f2
+paź 28 23:29:52.572339 bazzite kernel: usbcore: registered new interface driver cdc_ncm
+paź 28 23:29:52.612611 bazzite kernel: usbcore: registered new interface driver cdc_wdm
+paź 28 23:29:52.645616 bazzite kernel: snd_hda_intel 0000:01:00.1: enabling device (0000 -> 0002)
+paź 28 23:29:52.652618 bazzite kernel: usbcore: registered new interface driver snd-usb-audio
+paź 28 23:29:52.652710 bazzite kernel: usbcore: registered new interface driver cdc_mbim
+paź 28 23:29:52.659609 bazzite kernel: kvm_amd: TSC scaling supported
+paź 28 23:29:52.659712 bazzite kernel: kvm_amd: Nested Virtualization enabled
+paź 28 23:29:52.659730 bazzite kernel: kvm_amd: Nested Paging enabled
+paź 28 23:29:52.659746 bazzite kernel: kvm_amd: LBR virtualization supported
+paź 28 23:29:52.659761 bazzite kernel: kvm_amd: SEV disabled (ASIDs 1 - 14)
+paź 28 23:29:52.659777 bazzite kernel: kvm_amd: SEV-ES disabled (ASIDs 0 - 0)
+paź 28 23:29:52.659803 bazzite kernel: kvm_amd: Virtual VMLOAD VMSAVE supported
+paź 28 23:29:52.659817 bazzite kernel: kvm_amd: Virtual GIF supported
+paź 28 23:29:52.747626 bazzite kernel: r8169 0000:04:00.0 enp4s0: renamed from eth0
+paź 28 23:29:52.753620 bazzite kernel: cdc_ncm 7-1.1:1.5 enp0s16f0u1u1i5: renamed from eth1
+paź 28 23:29:56.083646 bazzite systemd-journald[776]: Received client request to flush runtime journal.
+paź 28 23:29:56.084837 bazzite kernel: MCE: In-kernel MCE decoding enabled.
+paź 28 23:29:56.085225 bazzite kernel: snd_hda_intel 0000:01:00.1: bound 0000:01:00.0 (ops amdgpu_dm_audio_component_bind_ops [amdgpu])
+paź 28 23:29:56.086047 bazzite kernel: input: HD-Audio Generic HDMI/DP,pcm=3 as /devices/pci0000:00/0000:00:08.1/0000:01:00.1/sound/card2/input12
+paź 28 23:29:56.086449 bazzite kernel: input: HD-Audio Generic HDMI/DP,pcm=7 as /devices/pci0000:00/0000:00:08.1/0000:01:00.1/sound/card2/input13
+paź 28 23:29:56.086759 bazzite kernel: EXT4-fs (nvme0n1p2): mounted filesystem 28c82d8a-b4f1-4212-b3a6-600d8d6b18e5 r/w with ordered data mode. Quota mode: none.
+paź 28 23:29:56.087050 bazzite kernel: kauditd_printk_skb: 78 callbacks suppressed
+paź 28 23:29:56.087321 bazzite kernel: audit: type=1130 audit(1793226595.193:58): pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:init_t:s0 msg='unit=systemd-binfmt comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+paź 28 23:29:56.087462 bazzite kernel: audit: type=1130 audit(1793226596.083:59): pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:init_t:s0 msg='unit=systemd-journal-flush comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+paź 28 23:29:56.967595 bazzite kernel: audit: type=1130 audit(1793226596.965:60): pid=1 uid=0 auid=4294967295 ses=4294967295 subj=system_u:system_r:init_t:s0 msg='unit=systemd-tmpfiles-setup comm="systemd" exe="/usr/lib/systemd/systemd" hostname=? addr=? terminal=? res=success'
+paź 28 23:29:57.130610 bazzite kernel: RPC: Registered named UNIX socket transport module.
+paź 28 23:29:57.130892 bazzite kernel: RPC: Registered udp transport module.
+paź 28 23:29:57.130928 bazzite kernel: RPC: Registered tcp transport module.
+paź 28 23:29:57.130954 bazzite kernel: RPC: Registered tcp-with-tls transport module.
+paź 28 23:29:57.130982 bazzite kernel: RPC: Registered tcp NFSv4.1 backchannel transport module.
+paź 28 23:29:57.261011 bazzite kernel: audit: type=1305 audit(1793226597.258:61): op=set audit_enabled=1 old=1 auid=4294967295 ses=4294967295 subj=system_u:system_r:auditd_t:s0 res=1
+paź 28 23:29:57.261134 bazzite kernel: audit: type=1300 audit(1793226597.258:61): arch=c000003e syscall=44 success=yes exit=60 a0=3 a1=7ffe67b8e3f0 a2=3c a3=0 items=0 ppid=1014 pid=1020 auid=4294967295 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 sgid=0 fsgid=0 tty=(none) ses=4294967295 comm="auditd" exe="/usr/bin/auditd" subj=system_u:system_r:auditd_t:s0 key=(null)
+paź 28 23:29:57.261189 bazzite kernel: audit: type=1327 audit(1793226597.258:61): proctitle="/usr/bin/auditd"
+paź 28 23:30:01.908615 bazzite bc5-gpu-watch: watching the kernel log for amdgpu resets that do not finish (grace 60 s)
+paź 28 23:30:02.015620 bazzite kernel: pci 0000:00:00.0: cyan-skillfish-: Unexpected write to kernel-exclusive config offset b8
+paź 28 23:30:03.160603 bazzite kernel: Generic FE-GE Realtek PHY r8169-0-400:00: attached PHY driver (mii_bus:phy_addr=r8169-0-400:00, irq=MAC)
+paź 28 23:30:03.260615 bazzite kernel: NET: Registered PF_QIPCRTR protocol family
+paź 28 23:30:03.318608 bazzite kernel: r8169 0000:04:00.0 enp4s0: Link is Down
+paź 28 23:30:06.254612 bazzite kernel: r8169 0000:04:00.0 enp4s0: Link is Up - 1Gbps/Full - flow control rx/tx
+paź 28 23:30:21.217612 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 28 23:30:34.038824 bazzite kernel: evm: overlay not supported
+paź 28 23:32:26.217620 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 28 23:32:44.315607 bazzite kernel: usb 6-2: USB disconnect, device number 3
+paź 28 23:32:49.076610 bazzite kernel: usb 6-2: new high-speed USB device number 5 using xhci_hcd
+paź 28 23:32:49.200612 bazzite kernel: usb 6-2: New USB device found, idVendor=054c, idProduct=0ce6, bcdDevice= 1.00
+paź 28 23:32:49.202651 bazzite kernel: usb 6-2: New USB device strings: Mfr=1, Product=2, SerialNumber=0
+paź 28 23:32:49.203427 bazzite kernel: usb 6-2: Product: DualSense Wireless Controller
+paź 28 23:32:49.203828 bazzite kernel: usb 6-2: Manufacturer: Sony Interactive Entertainment
+paź 28 23:32:49.227612 bazzite kernel: playstation 0003:054C:0CE6.0004: hidraw2: USB HID v1.11 Gamepad [Sony Interactive Entertainment DualSense Wireless Controller] on usb-0000:00:10.0-2/input3
+paź 28 23:32:49.280612 bazzite kernel: input: Sony Interactive Entertainment DualSense Wireless Controller as /devices/pci0000:00/0000:00:10.0/usb6/6-2/6-2:1.3/0003:054C:0CE6.0004/input/input14
+paź 28 23:32:49.280763 bazzite kernel: input: Sony Interactive Entertainment DualSense Wireless Controller Motion Sensors as /devices/pci0000:00/0000:00:10.0/usb6/6-2/6-2:1.3/0003:054C:0CE6.0004/input/input15
+paź 28 23:32:49.280811 bazzite kernel: input: Sony Interactive Entertainment DualSense Wireless Controller Touchpad as /devices/pci0000:00/0000:00:10.0/usb6/6-2/6-2:1.3/0003:054C:0CE6.0004/input/input16
+paź 28 23:32:49.280841 bazzite kernel: input: Sony Interactive Entertainment DualSense Wireless Controller Headset Jack as /devices/pci0000:00/0000:00:10.0/usb6/6-2/6-2:1.3/0003:054C:0CE6.0004/input/input17
+paź 28 23:32:49.282745 bazzite kernel: playstation 0003:054C:0CE6.0004: Registered DualSense controller hw_version=0x00000313 fw_version=0x0110002a
+paź 28 23:34:31.217686 bazzite kernel: IPv6: MLD: clamping QRV from 1 to 2!
+paź 28 23:36:11.683616 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State
+paź 28 23:36:11.809668 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State Completed
+paź 28 23:36:11.810429 bazzite kernel: amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+paź 28 23:36:11.828261 bazzite kernel: amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+paź 28 23:36:11.828820 bazzite kernel: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=357942, emitted seq=357944
+paź 28 23:36:11.829015 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 3626 thread bc5-ring pid 3658
+paź 28 23:36:11.841864 bazzite kernel: amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+paź 28 23:36:11.873597 bazzite kernel: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset failed
+paź 28 23:36:11.874087 bazzite kernel: amdgpu 0000:01:00.0: GPU reset begin!. Source:  1
+paź 28 23:36:11.876610 bazzite bc5-gpu-watch: armed: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=357942, emitted seq=357944
+paź 28 23:36:11.880610 bazzite bc5-gpu-watch: a ring reset failed [amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset failed]: crashing before the full reset: syncing and crashing the kernel for a reboot (SysRq s, c)
+paź 28 23:36:11.934936 bazzite kernel: sysrq: Emergency Sync
+paź 28 23:36:11.971610 bazzite kernel: Emergency Sync complete
+Read from remote host 100.88.23.35: Connection reset by peer
+client_loop: send disconnect: Connection reset by peer

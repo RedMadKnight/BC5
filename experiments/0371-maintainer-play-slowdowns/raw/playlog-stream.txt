@@ -1,0 +1,33 @@
+SDL_JOYSTICK_DISABLE_UDEV=1
+game fix (temporary, exp 0359): job-arena fix ON for PPSA03671 (input.cfg on)
+game fix: job-arena fix APPLIED: site +0x3cca87b -> slot +0x3cca4c8 -> host hook 0x5568e007d260 (temporary; input.cfg JobArenaFix.PPSA03671=off turns it off)
+AudioOut: SDL audio driver pipewire
+AudioOut: SDLAudioP0 thread 3944 at nice -15
+AudioOut: SDLAudioP0 thread 4556 at nice -15
+AudioOut: SDLAudioP52 thread 9715 at nice -15
+AudioOut: SDLAudioP52 thread 9720 at nice -15
+game fix: job-arena hook call 1 (1 wrapped), thread index -1 -> the window
+game fix: job-arena hook call 1000 (1000 wrapped), thread index -1 -> the window
+bc5 ajm: ATRAC9 vibration layout 7 decoded by vgmstream (haptics)
+game fix: job-arena hook call 2000 (2000 wrapped), thread index -1 -> the window
+game fix: job-arena hook call 3000 (3000 wrapped), thread index -1 -> the window
+game fix: job-arena hook call 4000 (4000 wrapped), thread index -1 -> the window
+game fix: job-arena hook call 5000 (5000 wrapped), thread index -1 -> the window
+game fix: job-arena hook call 6000 (6000 wrapped), thread index -1 -> the window
+game fix: job-arena hook call 7000 (7000 wrapped), thread index -1 -> the window
+game fix: job-arena hook call 8000 (8000 wrapped), thread index -1 -> the window
+game fix: job-arena hook call 9000 (9000 wrapped), thread index -1 -> the window
+game fix: job-arena hook call 10000 (10000 wrapped), thread index -1 -> the window
+game fix: job-arena hook call 11000 (11000 wrapped), thread index -1 -> the window
+game fix: job-arena hook call 12000 (12000 wrapped), thread index -1 -> the window
+game fix: job-arena hook call 13000 (13000 wrapped), thread index -1 -> the window
+game fix: job-arena hook call 14000 (14000 wrapped), thread index -1 -> the window
+game fix: job-arena hook call 15000 (15000 wrapped), thread index -1 -> the window
+game fix: job-arena hook call 16000 (16000 wrapped), thread index -1 -> the window
+game fix: job-arena hook call 17000 (17000 wrapped), thread index -1 -> the window
+game fix: job-arena hook call 18000 (18000 wrapped), thread index -1 -> the window
+game fix: job-arena hook call 19000 (19000 wrapped), thread index -1 -> the window
+game fix: job-arena hook call 20000 (20000 wrapped), thread index -1 -> the window
+game fix: job-arena hook call 21000 (21000 wrapped), thread index -1 -> the window
+Read from remote host 100.88.23.35: Connection reset by peer
+client_loop: send disconnect: Connection reset by peer
