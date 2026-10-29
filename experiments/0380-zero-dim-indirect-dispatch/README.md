@@ -738,8 +738,9 @@ the check's polls go through GL2, and the fetch sees memory behind it.
   "doesn't wait for idle", which is about waiting for the shaders.
 
 **Not done, by the plan.** C1 failed, so no "test 0380 copy" shortcut was made, and "BC5 emulator (test 0380 fix +
-0379)" was left on the desktop. It carries the refuted rebase and the zero skip, so the maintainer should not use it as
-a fix. **The copy switch must not be used on its own:** it hangs within seconds.
+0379)" was left on the desktop at first. It carries the refuted rebase and the zero skip, so on the top session's
+instruction it was moved to `~/bc5-work/exp0380f/retired/` afterwards (a file move only). Only the normal and lean
+shortcuts remain. **The copy switch must not be used on its own:** it hangs within seconds.
 
 **Next (needs the maintainer's yes: GPU).** One discriminating bench run: copy + `BC5_DIRECT_ARGS_WB=all`.
 - Without the write-back the copy hung within 7 s. If the same run passes 600 s with it, the GL2 mechanism is shown in
