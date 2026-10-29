@@ -497,8 +497,9 @@ This section was written at the top session's request. It uses the existing reco
   (12,385 → 12,729), and the 12:00 SCAN play +375 MB in 6 min (12,054 → 12,429). F353 had +0.5 GB in 29 min with
   RT off.
 - **On the bench it is flat.** A1 (shared build) and B1 (skip) reached 11,992 and 10,080 MiB at 180 s and stayed there to
-  421 s, at the same frame. So the growth follows the play's movement through the game world, not time. A host leak
-  would grow while standing still too.
+  421 s, at the same frame. So the growth follows the play's movement through the game world, not time. That does not
+  rule out a host leak, since a leak can depend on streaming as well (Codex review, REVIEW-02). The device-wide GTT
+  cannot tell apart live data, data the title freed but the host retains, and other clients.
 
 **What the code allows** (patch 0001, `bc5LleAgc.cpp` `direct_sync_one`; `memory.cpp` `PhysicalMemory::Alloc`,
 `ReleaseDirectMemoryInternal`):
@@ -523,7 +524,7 @@ This section was written at the top session's request. It uses the existing reco
   the compositor and the rest of the desktop. Its growth in play is not measured; `mem_info_gtt_used` counts the whole
   device.
 
-**Answer:** this is not a mapping leak. The growth after the load is the title filling more of its own direct-memory
+**Answer:** the code shows no duplicate import or mapping. The growth after the load is the title filling more of its own direct-memory
 reservation as new areas stream in. The host keeps all of it pinned for good. It never gives back a chunk the title has
 freed and not reused, and it never punches the memfd.
 
@@ -553,12 +554,16 @@ freed and not reused, and it never punches the memfd.
   the title loads nothing new there. And how much of GTT is the direct path's against the Vulkan side, with and without
   the skip?
 - **Route:** the S6N route as in A1/B1. That means exp 0203's `o2-continue.cmd`, exp 0196's route saves in a private
-  save copy, a private wd, and the live saves only compared. RT on, 1,200 s per arm, with `sync` and `drop_caches`
-  before each.
+  save copy, a private wd, and the live saves only compared. RT on, 1,200 s per arm.
+  - The runner itself does not drop the page cache, although the Setup above says each arm starts empty. Here
+    `sync` and `drop_caches` are an explicit pre-step of each arm, logged to `gtt/raw/<tag>-dropcaches.txt`, and only
+    with a passwordless `sudo -n` (Codex review, REVIEW-02).
 - **Arms:**
-  - G1 is the shared normal build: 58c4a627, or today's md5 through `EXPECT_NORMAL` once its pins are re-read.
-  - G2 is this experiment's private e1cc0c92 with `BC5_DIRECT_ZERO_SKIP` on the maintainer's 1.2-GB list
-    (`exp0379t/play-lists/zero-list-20261029-120000.txt`).
+  - Both arms run the same private binary, e1cc0c92: G1 with the zero skip off, G2 with `BC5_DIRECT_ZERO_SKIP` on the
+    maintainer's 1.2-GB list (`exp0379t/play-lists/zero-list-20261029-120000.txt`). So one factor differs (Codex
+    review, REVIEW-02).
+  - At 120 s the runner also writes every `drm-` key of every fd with the fd's target (`<tag>-fdinfo-full.txt`). That
+    tells the direct path's client from RADV's, and shows whether the imported udmabuf counts. A missing key is NA.
   - No leak fix is in either arm, because the code shows no leak to fix. G1's minute-by-minute GTT is the leak test.
 - **Scripts:**
   - `gtt/s6n0379m.sh` (made by `gtt/mk-s6n0379m.pl` from `raw/s6n0379.sh`): the cap is raised to 1,500 s and the
@@ -578,7 +583,8 @@ freed and not reused, and it never punches the memfd.
   emulator's RSS. From the journal, the direct path's pinned total (`*-pinned-every20.txt`), the canary hits and the
   take-backs. Also flips/s, kernel lines and the live-save checksum.
 - **Pass, and what each outcome means:**
-  - G1's GTT within ±32 MiB of its 180-s value through 1,200 s means no host growth while standing. More than that,
+  - G1's GTT within ±32 MiB of its 180-s value through 1,200 s means no host growth while standing (it does not rule
+    out growth tied to streaming). More than that,
     with the direct client's GTT flat, puts the growth on the Vulkan side. If the direct client grows, it is the
     host's import path.
   - G2 should hold its skip for 20 minutes: canary hits counted, and its GTT difference to G1 measured at 180 s and at

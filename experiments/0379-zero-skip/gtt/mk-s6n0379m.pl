@@ -10,6 +10,9 @@ sub rep { my ($from, $to, $n) = @_; my $c = () = $s =~ /\Q$from\E/g; die "[$from
 rep('[ "$SECS" -le 900 ] || { echo "at most 900 s"; exit 1; }', '[ "$SECS" -le 1500 ] || { echo "at most 1500 s"; exit 1; }', 1);
 rep('"$E/in/raw/sample0379.sh"', '"$E/in/gtt/sample0379m.sh"', 2);
 rep('o2-continue.cmd, sample0379.sh or', 'o2-continue.cmd, sample0379m.sh or', 1);
+# Codex review (REVIEW-02): each DRM client's identity, once at 120 s: every drm- key of every fd, by fd number and the
+# fd's target (so the direct path's render-node client and RADV's can be told apart by size and fd).
+rep('FDINFO=1; {', 'FDINFO=1; for f in /proc/$EP/fdinfo/*; do grep -a "^drm-" "$f" 2> /dev/null | sed "s#^#fd $(basename "$f") $(readlink "/proc/$EP/fd/$(basename "$f")") #"; done > "$R/$TAG-fdinfo-full.txt"; {', 1);
 rep('(exp 0379: zero-skip A/B)', '(exp 0379: GTT growth A/B, 20 min)', 1);
 my $head = "#!/usr/bin/env bash\n# BC5 experiment 0379, GTT growth (raw/s6n0379.sh, made by gtt/mk-s6n0379m.pl): the zero-skip A/B runner for up to 1,500 s,\n# with the per-client GTT sampler gtt/sample0379m.sh.\n";
 $s =~ s/\A#!\/usr\/bin\/env bash\n/$head/ or die "no shebang\n";

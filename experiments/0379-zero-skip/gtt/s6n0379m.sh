@@ -140,7 +140,7 @@ while [ -z "$ENDED" ] && [ $(($(date +%s) - T0)) -lt "$SECS" ]; do
     else ROUTED=warned; fi
   fi
   if [ -z "$FDINFO" ] && [ $(($(date +%s) - T0)) -ge 120 ]; then  # exp 0341: the rings the work ran on (amdgpu fdinfo: drm-engine-gfx / drm-engine-compute, ns of GPU time per engine)
-    FDINFO=1; { echo "at $(($(date +%s) - T0)) s:"; cat /proc/$EP/fdinfo/* 2> /dev/null | grep -a "^drm-engine-\|^drm-client-id" | sort | uniq -c; } > "$R/$TAG-fdinfo.txt"
+    FDINFO=1; for f in /proc/$EP/fdinfo/*; do grep -a "^drm-" "$f" 2> /dev/null | sed "s#^#fd $(basename "$f") $(readlink "/proc/$EP/fd/$(basename "$f")") #"; done > "$R/$TAG-fdinfo-full.txt"; { echo "at $(($(date +%s) - T0)) s:"; cat /proc/$EP/fdinfo/* 2> /dev/null | grep -a "^drm-engine-\|^drm-client-id" | sort | uniq -c; } > "$R/$TAG-fdinfo.txt"
   fi
   if [ "$VARIANT" = normal ] && [ -z "$RTOFF" ] && [ $(($(date +%s) - T0)) -ge 180 ]; then
     J=$(ls -td ~/bc5-data/captures/play-*/gc 2> /dev/null | head -1)/direct.log
