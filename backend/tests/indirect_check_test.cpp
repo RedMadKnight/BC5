@@ -764,6 +764,69 @@ TEST_CASE("indirect_check: a GL2 write-back before the check (experiment 0380)",
     }
 }
 
+TEST_CASE("indirect_check: a CS_PARTIAL_FLUSH before the check (experiment 0380, F617)", "[indirect_check]") {
+    // SET_BASE index 1, INDEX_BASE, INDEX_BUFFER_SIZE, two DISPATCH_INDIRECTs, a DRAW_INDIRECT.
+    const std::vector<std::uint32_t> ib = {0xC0021100u, 1u,         0x34567000u, 0x12u,
+                                           0xC0012600u, 0x9db6280u, 0x11u,
+                                           0xC0001300u, 0xffffffffu,
+                                           kDispatchIndirect, 0x40u, 0x41u,
+                                           kDispatchIndirect, 0x80u, 0x41u,
+                                           0xC0032400u, 0x20u, 0x4cu, 0x4du, 2u};
+    const auto count = [](const std::vector<std::uint32_t> &o) {
+        std::size_t n = 0;
+        for (std::size_t j = 0; j + 1 < o.size(); ++j)
+            n += (o[j] == 0xC0004600u && o[j + 1] == 0x407u) ? 1 : 0;
+        return n;
+    };
+    const auto run = [&ib](indirect_check::ArgsFlush f, bool draws, indirect_check::Stats &s, bool wb = false) {
+        std::vector<std::size_t> r;
+        return indirect_check::apply(ib, 0, kMax, kDrawMax, r, s, false, nullptr, false, false, false, false,
+                                     wb ? indirect_check::ArgsWb::all : indirect_check::ArgsWb::off, 0, f, draws);
+    };
+    SECTION("first: only the first dispatch after the INDEX_BASE, before its check") {
+        indirect_check::Stats s;
+        auto o = run(indirect_check::ArgsFlush::first_after_index_base, false, s);
+        CHECK(s.args_flushed == 1);
+        CHECK(count(o) == 1);
+        CHECK(o[9] == 0xC0004600u);
+        CHECK(o[10] == 0x407u);
+        CHECK(o[11] == 0xC0033700u); // then the check's flag = 1
+        CHECK(o.size() == ib.size() + 2 * indirect_check::kCheckDwords + indirect_check::kDrawCheckDwords +
+                              indirect_check::kArgsFlushDwords);
+    }
+    SECTION("all: every checked dispatch; draws: every checked draw") {
+        indirect_check::Stats s;
+        auto o = run(indirect_check::ArgsFlush::all, false, s);
+        CHECK(s.args_flushed == 2);
+        CHECK(count(o) == 2);
+        indirect_check::Stats d;
+        auto od = run(indirect_check::ArgsFlush::off, true, d);
+        CHECK(d.args_flushed == 1);
+        CHECK(count(od) == 1);
+        indirect_check::Stats b;
+        auto ob = run(indirect_check::ArgsFlush::all, true, b);
+        CHECK(b.args_flushed == 3);
+        CHECK(count(ob) == 3);
+    }
+    SECTION("before the GL2 write-back when both are on") {
+        indirect_check::Stats s;
+        auto o = run(indirect_check::ArgsFlush::first_after_index_base, false, s, true);
+        CHECK(o[9] == 0xC0004600u);
+        CHECK(o[11] == 0xC0065800u);
+    }
+    SECTION("off by default; never on the MEC form") {
+        indirect_check::Stats s;
+        std::vector<std::size_t> r;
+        auto o = indirect_check::apply(ib, 0, kMax, kDrawMax, r, s);
+        CHECK(count(o) == 0);
+        CHECK(s.args_flushed == 0);
+        const std::vector<std::uint32_t> mec = {0xC0021600u, 0x34567040u, 0x12u, 0x41u};
+        auto m = indirect_check::apply(mec, 0, kMax, kDrawMax, r, s, true, nullptr, false, false, false, false,
+                                       indirect_check::ArgsWb::off, 0, indirect_check::ArgsFlush::all, true);
+        CHECK(count(m) == 0);
+    }
+}
+
 TEST_CASE("indirect_check: the copy at a low GPU VA (experiment 0380, F574)", "[indirect_check]") {
     const std::vector<std::uint32_t> ib = {0xC0021100u, 1u, 0x34567000u, 0x12u, kDispatchIndirect, 0x40u, 0x41u};
     constexpr std::uint64_t slot = 0x0000'0000'8001'2000ull; // libdrm's 32-bit range
