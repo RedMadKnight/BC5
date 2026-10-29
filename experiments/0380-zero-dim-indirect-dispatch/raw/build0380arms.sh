@@ -40,8 +40,7 @@ CATCH=$(ls -d "$W"/exp03*/backend-tests/_deps/catch2-src "$W"/exp03*/backend-bui
 CATCH_ARG=""; [ -n "$CATCH" ] && CATCH_ARG="-DFETCHCONTENT_SOURCE_DIR_CATCH2=$CATCH"
 distrobox enter ubuntu -- sh -c "nice -n 19 cmake -S '$BM/backend' -B '$BT' -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DBC5_WITH_AMDGPU=ON -DBC5_BUILD_TESTS=ON $CATCH_ARG && nice -n 19 cmake --build '$BT' -j8" > "$R/backend-tests-build.out" 2>&1 || { tail -20 "$R/backend-tests-build.out"; echo "the backend tests did not build: stop"; exit 1; }
 distrobox enter ubuntu -- sh -c "cd '$BT' && nice -n 19 ./bc5_backend_tests" > "$R/backend-tests.out" 2>&1; trc=$?
-echo "Catch2 rc $trc: $(tail -2 "$R/backend-tests.out" | tr '
-' ' '); warnings $(grep -c 'warning:' "$R/backend-tests-build.out")" | tee -a "$R/build-pins.txt"
+echo "Catch2 rc $trc: $(tail -2 "$R/backend-tests.out" | tr '\n' ' '); warnings $(grep -c 'warning:' "$R/backend-tests-build.out")" | tee -a "$R/build-pins.txt"
 [ $trc = 0 ] || { echo "backend tests FAILED: no emulator linked"; exit 2; }
 distrobox enter ubuntu -- sh -c "nice -n 19 cmake -S '$BM/backend' -B '$BA' -G Ninja -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=clang -DCMAKE_CXX_COMPILER=clang++ -DBC5_WITH_AMDGPU=ON -DBC5_BUILD_TESTS=OFF && nice -n 19 cmake --build '$BA' --target bc5_backend -j8" > "$R/archive-build.out" 2>&1 || { tail -20 "$R/archive-build.out"; echo "the archive did not build: stop"; exit 1; }
 PARCH=$BA/libbc5_backend.a
