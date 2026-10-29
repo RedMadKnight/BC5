@@ -140,6 +140,12 @@ struct Device::Impl {
     // "all": a GL2 write-back (ACQUIRE_MEM GL2_WB) before the check of a checked indirect dispatch. Unset: off.
     indirect_check::ArgsWb env_args_wb = indirect_check::ArgsWb::off;
     std::uint64_t args_wb_sum = 0;
+    // Experiment 0380 (F617): BC5_DIRECT_ARGS_FLUSH — "first" (the first DISPATCH_INDIRECT after an INDEX_BASE) or
+    // "all": a CS_PARTIAL_FLUSH before the check of a checked indirect dispatch; BC5_DIRECT_ARGS_FLUSH_DRAWS=1: the
+    // same before the check of every checked indirect draw. Unset: off.
+    indirect_check::ArgsFlush env_args_flush = indirect_check::ArgsFlush::off;
+    bool env_flush_draws = false;
+    std::uint64_t args_flush_sum = 0;
     indirect_check::YzLimit yz;
     std::uint64_t start_forced_sum = 0, start_seen_sum = 0;
     // Experiment 0346: BC5_DIRECT_HOST_INDIRECT — a GFX-form DISPATCH_INDIRECT without a SET_BASE of its type
@@ -245,6 +251,10 @@ struct Device::Impl {
         if (env_args_wb != indirect_check::ArgsWb::off) // experiment 0380 (F570)
             std::fprintf(stderr, "bc5-direct: experiment 0380 %s: GL2 write-back before %llu checked indirect dispatches\n",
                          when, static_cast<unsigned long long>(args_wb_sum));
+        if (env_args_flush != indirect_check::ArgsFlush::off || env_flush_draws) // experiment 0380 (F617)
+            std::fprintf(stderr, "bc5-direct: experiment 0380 %s: CS_PARTIAL_FLUSH before %llu checked indirect dispatches and draws
+",
+                         when, static_cast<unsigned long long>(args_flush_sum));
         if (env_args_copy) // experiment 0380 (F566)
             std::fprintf(stderr, "bc5-direct: experiment 0380 %s: %llu checked indirect dispatches ran from the CP's copy of their arguments\n",
                          when, static_cast<unsigned long long>(args_copied_sum));
@@ -536,6 +546,17 @@ std::unique_ptr<Device> Device::open(const std::string &node, const OpenOptions 
         d->impl_->env_args_wb = std::strcmp(e, "all") == 0 ? indirect_check::ArgsWb::all : indirect_check::ArgsWb::first_after_index_base; // experiment 0380 (F570)
         std::fprintf(stderr, "bc5-direct: experiment 0380 switch: a GL2 write-back before the check of %s\n",
                      d->impl_->env_args_wb == indirect_check::ArgsWb::all ? "every checked indirect dispatch" : "the first indirect dispatch after an INDEX_BASE");
+    }
+    if (const char *e = std::getenv("BC5_DIRECT_ARGS_FLUSH"); e != nullptr && *e != 0 && std::strcmp(e, "0") != 0) {
+        d->impl_->env_args_flush = std::strcmp(e, "all") == 0 ? indirect_check::ArgsFlush::all : indirect_check::ArgsFlush::first_after_index_base; // experiment 0380 (F617)
+        std::fprintf(stderr, "bc5-direct: experiment 0380 switch: a CS_PARTIAL_FLUSH before the check of %s
+",
+                     d->impl_->env_args_flush == indirect_check::ArgsFlush::all ? "every checked indirect dispatch" : "the first indirect dispatch after an INDEX_BASE");
+    }
+    if (const char *e = std::getenv("BC5_DIRECT_ARGS_FLUSH_DRAWS"); e != nullptr && *e != 0 && std::strcmp(e, "0") != 0) {
+        d->impl_->env_flush_draws = true; // experiment 0380 (F617)
+        std::fprintf(stderr, "bc5-direct: experiment 0380 switch: a CS_PARTIAL_FLUSH before the check of every checked indirect draw
+");
     }
     if (const char *e = std::getenv("BC5_DIRECT_ARGS_COPY"); e != nullptr && *e != 0 && std::strcmp(e, "0") != 0) {
         d->impl_->env_args_copy = true; // experiment 0380 (F566)
@@ -1299,7 +1320,8 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
                                          opt.gpu_check_draw_max, flag_refs, st, comp,
                                          impl_->env_product && !comp ? &impl_->product : nullptr, // experiment 0341
                                          impl_->env_zero, impl_->env_force_start, impl_->env_rebase,
-                                         impl_->env_args_copy, impl_->env_args_wb, impl_->args_slot_va); // experiment 0380
+                                         impl_->env_args_copy, impl_->env_args_wb, impl_->args_slot_va, // experiment 0380
+                                         impl_->env_args_flush, impl_->env_flush_draws); // experiment 0380 (F617)
         impl_->product_sum += st.product_checked;
         impl_->zero_sum += st.zero_checked;
         impl_->start_forced_sum += st.start_forced;
@@ -1307,6 +1329,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
         impl_->rebased_ib_sum += st.rebased_after_index_base;
         impl_->args_copied_sum += st.args_copied;
         impl_->args_wb_sum += st.args_written_back;
+        impl_->args_flush_sum += st.args_flushed; // experiment 0380 (F617)
         if (impl_->env_force_start) impl_->start_seen_sum += st.checked + st.unbased;
         r.filter.gpu_checks += st.checked;
         r.filter.gpu_check_unbased += st.unbased;

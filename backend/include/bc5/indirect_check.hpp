@@ -42,6 +42,7 @@ struct Stats {
     std::uint32_t rebased_after_index_base = 0; // ... of them the first DISPATCH_INDIRECT after an INDEX_BASE
     std::uint32_t args_copied = 0;     // checked dispatches run from the CP's copy of their arguments (0380)
     std::uint32_t args_written_back = 0; // ... given a GL2 write-back before their check (0380, F570)
+    std::uint32_t args_flushed = 0;      // checked dispatches and draws given a CS_PARTIAL_FLUSH first (0380, F617)
     std::uint32_t unbased = 0;         // dispatches without a known base: PFP_SYNC_ME only
     std::uint32_t conditional = 0;     // dispatches NOP-ed: a COND_EXEC range grew too long
     std::uint32_t inserted_dwords = 0; // growth of the IB
@@ -121,6 +122,20 @@ enum class ArgsWb { off, first_after_index_base, all };
 // the dispatch's SET_BASE on that address. TODO(verify): the address width of the indirect-argument
 // base / fetch.
 inline constexpr std::size_t kArgsWbDwords = 8;
+// Experiment 0380 (F616, F617): args_flush, default off. A checked indirect packet on the GFX ring gets, before
+// everything else of its check (before the copy and the write-back when those are on),
+//
+//   EVENT_WRITE  CS_PARTIAL_FLUSH, EVENT_INDEX 4   (2 dwords)
+//
+// so the dispatches before it have finished, and no writer of its arguments is still running, when the
+// check polls them and (after the check's PFP_SYNC_ME) the PFP fetches them. Drivers wait for the producer
+// so before an indirect read (Mesa ac_barrier.c CS_PARTIAL_FLUSH, then PFP_SYNC_ME; F614); the packet is
+// the one the title itself emits (EVENT_WRITE event 7 index 4, the B dumps; Mesa sid.h PKT3_EVENT_WRITE
+// 0x46, V_028A90_CS_PARTIAL_FLUSH 7). dispatch: "first" = only the first DISPATCH_INDIRECT after an
+// INDEX_BASE (sub-class B's slot), "all" = every checked GFX-form dispatch. draws: every checked
+// DRAW_INDIRECT / DRAW_INDEX_INDIRECT (exp 0381's 18:08 class, F667). Never on the MEC form.
+enum class ArgsFlush { off, first_after_index_base, all };
+inline constexpr std::size_t kArgsFlushDwords = 2;
 
 // Experiment 0380 (the 12:12 hang, F555): tighter y and z limits for indirect dispatches. The host's
 // FilterOptions default is y, z <= 2^10; the title's legitimate indirect grids are one-dimensional
@@ -174,7 +189,8 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib, std::uint64_
                                  bool compute_ring = false, const ProductLimit *product = nullptr,
                                  bool zero_dims = false, bool force_start = false,
                                  bool rebase = false, bool args_copy = false,
-                                 ArgsWb args_wb = ArgsWb::off, std::uint64_t copy_va = 0);
+                                 ArgsWb args_wb = ArgsWb::off, std::uint64_t copy_va = 0,
+                                 ArgsFlush args_flush = ArgsFlush::off, bool flush_draws = false);
 
 void patch(std::span<std::uint32_t> ib, const std::vector<std::size_t> &flag_refs,
            std::uint64_t flag_va);

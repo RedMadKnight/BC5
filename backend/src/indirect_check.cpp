@@ -37,6 +37,8 @@ constexpr std::uint32_t kPollMem = 1u << 4;
 constexpr std::uint32_t kWriteMem = 1u << 8;
 constexpr std::uint32_t kPfpSyncMe = 0xC0004200u; // PKT3(PFP_SYNC_ME, 0, 0)
 constexpr std::uint32_t kCondExec = 0xC0032200u;  // PKT3(COND_EXEC, 3, 0), GFX7+ form
+constexpr std::uint32_t kEventWrite = 0xC0004600u; // experiment 0380 (F617): PKT3(EVENT_WRITE, 0, 0)
+constexpr std::uint32_t kCsPartialFlush = 7u | (4u << 8); // V_028A90_CS_PARTIAL_FLUSH, EVENT_INDEX 4 (Mesa sid.h)
 
 // The argument dwords the check compares for an indirect packet, 0 for other packets:
 // DISPATCH_INDIRECT (GFX form, 3 dwords) x, y, z; DRAW_INDIRECT and DRAW_INDEX_INDIRECT (5 dwords)
@@ -71,7 +73,7 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib_in, std::uint
                                  std::vector<std::size_t> &flag_refs, Stats &stats,
                                  bool compute_ring, const ProductLimit *product, bool zero_dims,
                                  bool force_start, bool rebase, bool args_copy, ArgsWb args_wb,
-                                 std::uint64_t copy_va) {
+                                 std::uint64_t copy_va, ArgsFlush args_flush, bool flush_draws) {
     // ADR 0010 section A: a COND_EXEC range whose grown count no longer fits has its own checked
     // packets NOP-ed (nothing of that range runs unchecked) and the pass runs again over the
     // rest; it used to give up on the whole IB, which in a chain is several buffers.
@@ -144,6 +146,15 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib_in, std::uint
                 // experiment 0380 (F566): the CP copies the arguments into the flag area first; the check
                 // reads the copy and the dispatch fetches it (SET_BASE to the copy, offset 0)
                 const bool copy_here = args_copy && dims == 3 && !compute_ring;
+                // experiment 0380 (F617): no producer still running when the check polls and the PFP fetches
+                const bool flush_here = !compute_ring &&
+                    (dims == 3 ? (args_flush == ArgsFlush::all ||
+                                  (args_flush == ArgsFlush::first_after_index_base && after_index_base))
+                               : flush_draws);
+                if (flush_here) {
+                    out.insert(out.end(), {kEventWrite, kCsPartialFlush});
+                    stats.args_flushed++;
+                }
                 // experiment 0380 (F574): the copy at copy_va (a low GPU VA) when given, else in the flag area
                 const auto slot_at = [&](std::uint32_t k) {
                     if (copy_va != 0) {
