@@ -1,0 +1,209 @@
+dwords 11115, type-3 packets 700
+opcode histogram: 10:5 11:8 12:2 13:2 15:21 16:7 26:2 28:2 2d:32 2f:33 37:28 3c:4 42:7 46:44 49:82 50:4 58:47 63:49 64:24 69:16 76:129 79:100 7a:1 93:3 9f:48
+  1204 op 79 SET_UCONFIG_REG    len 18
+  1222 op 79 SET_UCONFIG_REG    len 10
+  1232 op 79 SET_UCONFIG_REG    len 4
+  1236 op 79 SET_UCONFIG_REG    len 4
+  1240 op 79 SET_UCONFIG_REG    len 4
+  1244 op 79 SET_UCONFIG_REG    len 5
+  1249 op 11 SET_BASE           len 4
+  1253 op 26 INDEX_BASE         len 3
+  1256 op 13                    len 2
+  1258 op 2f                    len 2
+  1260 op 79 SET_UCONFIG_REG    len 3
+  1263 op 79 SET_UCONFIG_REG    len 3
+  1266 op 79 SET_UCONFIG_REG    len 3
+  1269 op 58 ACQUIRE_MEM        len 8
+  1277 op 9f                    len 5
+  1282 op 63                    len 5
+  1287 op 42 PFP_SYNC_ME        len 2
+  1289 op 16 DISPATCH_INDIRECT  len 3
+  1292 op 46 EVENT_WRITE        len 2 event_type 7
+  1294 op 58 ACQUIRE_MEM        len 8
+  1302 op 63                    len 5
+  1307 op 76 SET_SH_REG         len 16
+  1323 op 11 SET_BASE           len 4
+  1327 op 42 PFP_SYNC_ME        len 2
+  1329 op 16 DISPATCH_INDIRECT  len 3
+  1332 op 63                    len 5
+  1337 op 76 SET_SH_REG         len 17
+  1354 op 50 DMA_DATA           len 7
+  1361 op 15 DISPATCH_DIRECT    len 5 dims 13 x 8 x 1
+  1366 op 46 EVENT_WRITE        len 2 event_type 7
+  1368 op 58 ACQUIRE_MEM        len 8
+  1376 op 50 DMA_DATA           len 7
+  1383 op 46 EVENT_WRITE        len 2 event_type 7
+  1385 op 58 ACQUIRE_MEM        len 8
+  1393 op 63                    len 5
+  1398 op 76 SET_SH_REG         len 16
+  1414 op 11 SET_BASE           len 4
+  1418 op 42 PFP_SYNC_ME        len 2
+  1420 op 16 DISPATCH_INDIRECT  len 3
+  1423 op 46 EVENT_WRITE        len 2 event_type 7
+  1425 op 58 ACQUIRE_MEM        len 8
+  1433 op 46 EVENT_WRITE        len 2 event_type 7
+  1435 op 58 ACQUIRE_MEM        len 8
+  1443 op 63                    len 5
+  1448 op 76 SET_SH_REG         len 16
+  1464 op 11 SET_BASE           len 4
+  1468 op 42 PFP_SYNC_ME        len 2
+  1470 op 16 DISPATCH_INDIRECT  len 3
+  1473 op 46 EVENT_WRITE        len 2 event_type 7
+  1475 op 58 ACQUIRE_MEM        len 8
+  1483 op 46 EVENT_WRITE        len 2 event_type 7
+  1485 op 58 ACQUIRE_MEM        len 8
+  1493 op 63                    len 5
+  1498 op 76 SET_SH_REG         len 16
+  1514 op 11 SET_BASE           len 4
+  1518 op 42 PFP_SYNC_ME        len 2
+  1520 op 16 DISPATCH_INDIRECT  len 3
+  1523 op 63                    len 5
+  1528 op 76 SET_SH_REG         len 16
+  1544 op 11 SET_BASE           len 4
+  1548 op 42 PFP_SYNC_ME        len 2
+  1550 op 16 DISPATCH_INDIRECT  len 3
+  1553 op 63                    len 5
+  1558 op 76 SET_SH_REG         len 17
+  1575 op 50 DMA_DATA           len 7
+  1582 op 15 DISPATCH_DIRECT    len 5 dims 13 x 8 x 1
+  1587 op 46 EVENT_WRITE        len 2 event_type 7
+  1589 op 58 ACQUIRE_MEM        len 8
+  1597 op 50 DMA_DATA           len 7
+  1604 op 46 EVENT_WRITE        len 2 event_type 7
+  1606 op 58 ACQUIRE_MEM        len 8
+  1614 op 46 EVENT_WRITE        len 2 event_type 7
+  1616 op 58 ACQUIRE_MEM        len 8
+  1624 op 63                    len 5
+  1629 op 76 SET_SH_REG         len 16
+  1645 op 11 SET_BASE           len 4
+  1649 op 42 PFP_SYNC_ME        len 2
+  1651 op 16 DISPATCH_INDIRECT  len 3
+  1654 op 9f                    len 5
+  1659 op 46 EVENT_WRITE        len 2 event_type 7
+  1661 op 58 ACQUIRE_MEM        len 8
+  1669 op 64                    len 5
+  1674 op 63                    len 5
+  1679 op 76 SET_SH_REG         len 10
+  1689 op 76 SET_SH_REG         len 26
+  1715 op 2f                    len 2
+  1717 op 2d                    len 3
+  1720 op 46 EVENT_WRITE        len 2 event_type 16
+  1722 op 46 EVENT_WRITE        len 2 event_type 44
+  1724 op 10 NOP                len 10
+  1734 op 37 WRITE_DATA         len 5
+  1739 op 49 RELEASE_MEM        len 8
+  1747 op 79 SET_UCONFIG_REG    len 4
+  1751 op 3c WAIT_REG_MEM       len 7
+  1758 op 79 SET_UCONFIG_REG    len 3
+  1761 op 58 ACQUIRE_MEM        len 8
+  1769 op 58 ACQUIRE_MEM        len 8
+  1777 op 79 SET_UCONFIG_REG    len 3
+  1780 op 49 RELEASE_MEM        len 8
+  1788 op 79 SET_UCONFIG_REG    len 4
+  1792 op 37 WRITE_DATA         len 7
+  1799 op 49 RELEASE_MEM        len 8
+  1807 op 9f                    len 5
+  1812 op 64                    len 5
+  1817 op 63                    len 5
+  1822 op 76 SET_SH_REG         len 31
+  1853 op 76 SET_SH_REG         len 34
+  1887 op 2f                    len 2
+  1889 op 2d                    len 3
+  1892 op 9f                    len 5
+  1897 op 64                    len 5
+  1902 op 63                    len 5
+  1907 op 9f                    len 5
+  1912 op 76 SET_SH_REG         len 31
+  1943 op 76 SET_SH_REG         len 34
+  1977 op 2f                    len 2
+  1979 op 2d                    len 3
+  1982 op 76 SET_SH_REG         len 31
+  2425 op 46 EVENT_WRITE        len 2 event_type 16
+  2427 op 58 ACQUIRE_MEM        len 8
+  2435 op 46 EVENT_WRITE        len 2 event_type 7
+  2437 op 58 ACQUIRE_MEM        len 8
+  2445 op 46 EVENT_WRITE        len 2 event_type 7
+  2447 op 58 ACQUIRE_MEM        len 8
+  2476 op 15 DISPATCH_DIRECT    len 5 dims 208 x 117 x 1
+  2536 op 15 DISPATCH_DIRECT    len 5 dims 32 x 16 x 1
+  2541 op 46 EVENT_WRITE        len 2 event_type 7
+  2543 op 58 ACQUIRE_MEM        len 8
+  2572 op 15 DISPATCH_DIRECT    len 5 dims 1 x 128 x 1
+  2598 op 15 DISPATCH_DIRECT    len 5 dims 32 x 16 x 1
+  2603 op 46 EVENT_WRITE        len 2 event_type 7
+  2605 op 58 ACQUIRE_MEM        len 8
+  2613 op 46 EVENT_WRITE        len 2 event_type 7
+  2615 op 58 ACQUIRE_MEM        len 8
+  2644 op 15 DISPATCH_DIRECT    len 5 dims 1 x 128 x 1
+  2670 op 15 DISPATCH_DIRECT    len 5 dims 32 x 16 x 1
+  2675 op 46 EVENT_WRITE        len 2 event_type 7
+  2677 op 58 ACQUIRE_MEM        len 8
+  2685 op 46 EVENT_WRITE        len 2 event_type 7
+  2687 op 58 ACQUIRE_MEM        len 8
+  2716 op 15 DISPATCH_DIRECT    len 5 dims 1 x 128 x 1
+  2726 op 46 EVENT_WRITE        len 2 event_type 7
+  2728 op 58 ACQUIRE_MEM        len 8
+  2736 op 46 EVENT_WRITE        len 2 event_type 7
+  2738 op 58 ACQUIRE_MEM        len 8
+  2746 op 46 EVENT_WRITE        len 2 event_type 16
+  2748 op 46 EVENT_WRITE        len 2 event_type 44
+  2777 op 3c WAIT_REG_MEM       len 7
+  2787 op 58 ACQUIRE_MEM        len 8
+  2795 op 58 ACQUIRE_MEM        len 8
+  2834 op 46 EVENT_WRITE        len 2 event_type 16
+  2836 op 46 EVENT_WRITE        len 2 event_type 44
+  2865 op 3c WAIT_REG_MEM       len 7
+  2875 op 58 ACQUIRE_MEM        len 8
+  2883 op 58 ACQUIRE_MEM        len 8
+  2912 op 15 DISPATCH_DIRECT    len 5 dims 104 x 59 x 1
+  2922 op 46 EVENT_WRITE        len 2 event_type 7
+  2924 op 58 ACQUIRE_MEM        len 8
+  2988 op 46 EVENT_WRITE        len 2 event_type 7
+  2990 op 58 ACQUIRE_MEM        len 8
+  3158 op 46 EVENT_WRITE        len 2 event_type 16
+  3160 op 46 EVENT_WRITE        len 2 event_type 44
+  3189 op 3c WAIT_REG_MEM       len 7
+  3199 op 58 ACQUIRE_MEM        len 8
+  3207 op 58 ACQUIRE_MEM        len 8
+  3239 op 15 DISPATCH_DIRECT    len 5 dims 3584 x 1 x 1
+  3290 op 46 EVENT_WRITE        len 2 event_type 7
+  3292 op 58 ACQUIRE_MEM        len 8
+  4446 op 46 EVENT_WRITE        len 2 event_type 7
+  4448 op 58 ACQUIRE_MEM        len 8
+  4456 op 46 EVENT_WRITE        len 2 event_type 16
+  4458 op 58 ACQUIRE_MEM        len 8
+  4466 op 46 EVENT_WRITE        len 2 event_type 7
+  4468 op 58 ACQUIRE_MEM        len 8
+  4476 op 46 EVENT_WRITE        len 2 event_type 16
+  4478 op 58 ACQUIRE_MEM        len 8
+  4507 op 15 DISPATCH_DIRECT    len 5 dims 104 x 59 x 1
+  4512 op 46 EVENT_WRITE        len 2 event_type 7
+  4514 op 58 ACQUIRE_MEM        len 8
+  4545 op 15 DISPATCH_DIRECT    len 5 dims 26 x 15 x 1
+  4550 op 46 EVENT_WRITE        len 2 event_type 7
+  4552 op 58 ACQUIRE_MEM        len 8
+  4581 op 15 DISPATCH_DIRECT    len 5 dims 104 x 59 x 1
+  4586 op 46 EVENT_WRITE        len 2 event_type 7
+  4588 op 58 ACQUIRE_MEM        len 8
+  4596 op 46 EVENT_WRITE        len 2 event_type 7
+  4598 op 58 ACQUIRE_MEM        len 8
+  4606 op 46 EVENT_WRITE        len 2 event_type 7
+  4608 op 58 ACQUIRE_MEM        len 8
+  4637 op 15 DISPATCH_DIRECT    len 5 dims 104 x 59 x 1
+  4652 op 46 EVENT_WRITE        len 2 event_type 7
+  4654 op 58 ACQUIRE_MEM        len 8
+  4662 op 46 EVENT_WRITE        len 2 event_type 7
+  4664 op 58 ACQUIRE_MEM        len 8
+  5235 op 46 EVENT_WRITE        len 2 event_type 7
+  5237 op 58 ACQUIRE_MEM        len 8
+  5256 op 15 DISPATCH_DIRECT    len 5 dims 288 x 1 x 1
+  5697 op 15 DISPATCH_DIRECT    len 5 dims 2 x 1 x 1
+  5716 op 15 DISPATCH_DIRECT    len 5 dims 2 x 1 x 1
+  5735 op 15 DISPATCH_DIRECT    len 5 dims 2 x 1 x 1
+  5754 op 15 DISPATCH_DIRECT    len 5 dims 2 x 1 x 1
+  5773 op 15 DISPATCH_DIRECT    len 5 dims 1 x 1 x 1
+  5835 op 93 WAIT_REG_MEM64     len 9
+  5891 op 93 WAIT_REG_MEM64     len 9
+  5947 op 93 WAIT_REG_MEM64     len 9
+  5999 op 58 ACQUIRE_MEM        len 8
+  7300 op 58 ACQUIRE_MEM        len 8

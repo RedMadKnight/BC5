@@ -1,0 +1,10 @@
+## recent amdgpu kernel lines (facility 0), oldest first
+[11613.248817] amdgpu 0000:01:00.0: Dumping IP State
+[11613.251119] amdgpu 0000:01:00.0: Dumping IP State Completed
+[11613.251148] amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+[11613.251152] amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+[11613.251156] amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=578809, emitted seq=578811
+[11613.251161] amdgpu 0000:01:00.0:  Process kyty_emulator pid 78460 thread bc5-ring pid 78501
+[11613.251165] amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+[11613.439949] amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset failed
+[11613.439958] amdgpu 0000:01:00.0: GPU reset begin!. Source:  1

@@ -1,0 +1,276 @@
+## sample 1, mono 11610.996, clocks gfx_0.0.0=0.52
+--- ring 0 (gfx_0.0.0) ---
+Last signaled fence          0x0008d4f9
+Last emitted                 0x0008d4fb
+Last signaled trailing fence 0x00000000
+Last emitted                 0x00000000
+Last preempted               0x00000000
+Last reset                   0x00000000
+Last both                    0x00000000
+--- ring 1 (comp_1.0.0) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 2 (comp_1.1.0) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 3 (comp_1.2.0) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 4 (comp_1.3.0) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 5 (comp_1.0.1) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 6 (comp_1.1.1) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 7 (comp_1.2.1) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 8 (comp_1.3.1) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 9 (kiq_0.2.1.0) ---
+Last signaled fence          0x00000014
+Last emitted                 0x00000014
+--- ring 10 (sdma0) ---
+Last signaled fence          0x00003d6d
+Last emitted                 0x00003d6d
+Last signaled trailing fence 0x00000000
+Last emitted                 0x00000000
+--- ring 11 (sdma1) ---
+Last signaled fence          0x00081b1f
+Last emitted                 0x00081b1f
+Last signaled trailing fence 0x00000000
+Last emitted                 0x00000000
+## sample 2, mono 11611.297, clocks gfx_0.0.0=0.82
+--- ring 0 (gfx_0.0.0) ---
+Last signaled fence          0x0008d4f9
+Last emitted                 0x0008d4fb
+Last signaled trailing fence 0x00000000
+Last emitted                 0x00000000
+Last preempted               0x00000000
+Last reset                   0x00000000
+Last both                    0x00000000
+--- ring 1 (comp_1.0.0) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 2 (comp_1.1.0) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 3 (comp_1.2.0) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 4 (comp_1.3.0) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 5 (comp_1.0.1) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 6 (comp_1.1.1) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 7 (comp_1.2.1) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 8 (comp_1.3.1) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 9 (kiq_0.2.1.0) ---
+Last signaled fence          0x00000014
+Last emitted                 0x00000014
+--- ring 10 (sdma0) ---
+Last signaled fence          0x00003d6d
+Last emitted                 0x00003d6d
+Last signaled trailing fence 0x00000000
+Last emitted                 0x00000000
+--- ring 11 (sdma1) ---
+Last signaled fence          0x00081b1f
+Last emitted                 0x00081b1f
+Last signaled trailing fence 0x00000000
+Last emitted                 0x00000000
+## sample 3, mono 11611.597, clocks gfx_0.0.0=1.12
+--- ring 0 (gfx_0.0.0) ---
+Last signaled fence          0x0008d4f9
+Last emitted                 0x0008d4fb
+Last signaled trailing fence 0x00000000
+Last emitted                 0x00000000
+Last preempted               0x00000000
+Last reset                   0x00000000
+Last both                    0x00000000
+--- ring 1 (comp_1.0.0) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 2 (comp_1.1.0) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 3 (comp_1.2.0) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 4 (comp_1.3.0) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 5 (comp_1.0.1) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 6 (comp_1.1.1) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 7 (comp_1.2.1) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 8 (comp_1.3.1) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 9 (kiq_0.2.1.0) ---
+Last signaled fence          0x00000014
+Last emitted                 0x00000014
+--- ring 10 (sdma0) ---
+Last signaled fence          0x00003d6d
+Last emitted                 0x00003d6d
+Last signaled trailing fence 0x00000000
+Last emitted                 0x00000000
+--- ring 11 (sdma1) ---
+Last signaled fence          0x00081b1f
+Last emitted                 0x00081b1f
+Last signaled trailing fence 0x00000000
+Last emitted                 0x00000000
+## sample 4, mono 11611.897, clocks gfx_0.0.0=1.42
+--- ring 0 (gfx_0.0.0) ---
+Last signaled fence          0x0008d4f9
+Last emitted                 0x0008d4fb
+Last signaled trailing fence 0x00000000
+Last emitted                 0x00000000
+Last preempted               0x00000000
+Last reset                   0x00000000
+Last both                    0x00000000
+--- ring 1 (comp_1.0.0) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 2 (comp_1.1.0) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 3 (comp_1.2.0) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 4 (comp_1.3.0) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 5 (comp_1.0.1) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 6 (comp_1.1.1) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 7 (comp_1.2.1) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 8 (comp_1.3.1) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 9 (kiq_0.2.1.0) ---
+Last signaled fence          0x00000014
+Last emitted                 0x00000014
+--- ring 10 (sdma0) ---
+Last signaled fence          0x00003d6d
+Last emitted                 0x00003d6d
+Last signaled trailing fence 0x00000000
+Last emitted                 0x00000000
+--- ring 11 (sdma1) ---
+Last signaled fence          0x00081b1f
+Last emitted                 0x00081b1f
+Last signaled trailing fence 0x00000000
+Last emitted                 0x00000000
+## sample 5, mono 11612.197, clocks gfx_0.0.0=1.72
+--- ring 0 (gfx_0.0.0) ---
+Last signaled fence          0x0008d4f9
+Last emitted                 0x0008d4fb
+Last signaled trailing fence 0x00000000
+Last emitted                 0x00000000
+Last preempted               0x00000000
+Last reset                   0x00000000
+Last both                    0x00000000
+--- ring 1 (comp_1.0.0) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 2 (comp_1.1.0) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 3 (comp_1.2.0) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 4 (comp_1.3.0) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 5 (comp_1.0.1) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 6 (comp_1.1.1) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 7 (comp_1.2.1) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 8 (comp_1.3.1) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 9 (kiq_0.2.1.0) ---
+Last signaled fence          0x00000014
+Last emitted                 0x00000014
+--- ring 10 (sdma0) ---
+Last signaled fence          0x00003d6d
+Last emitted                 0x00003d6d
+Last signaled trailing fence 0x00000000
+Last emitted                 0x00000000
+--- ring 11 (sdma1) ---
+Last signaled fence          0x00081b1f
+Last emitted                 0x00081b1f
+Last signaled trailing fence 0x00000000
+Last emitted                 0x00000000
+## at write, mono 11612.372
+--- ring 0 (gfx_0.0.0) ---
+Last signaled fence          0x0008d4f9
+Last emitted                 0x0008d4fb
+Last signaled trailing fence 0x00000000
+Last emitted                 0x00000000
+Last preempted               0x00000000
+Last reset                   0x00000000
+Last both                    0x00000000
+--- ring 1 (comp_1.0.0) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 2 (comp_1.1.0) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 3 (comp_1.2.0) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 4 (comp_1.3.0) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 5 (comp_1.0.1) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 6 (comp_1.1.1) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 7 (comp_1.2.1) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 8 (comp_1.3.1) ---
+Last signaled fence          0x00000001
+Last emitted                 0x00000001
+--- ring 9 (kiq_0.2.1.0) ---
+Last signaled fence          0x00000014
+Last emitted                 0x00000014
+--- ring 10 (sdma0) ---
+Last signaled fence          0x00003d6d
+Last emitted                 0x00003d6d
+Last signaled trailing fence 0x00000000
+Last emitted                 0x00000000
+--- ring 11 (sdma1) ---
+Last signaled fence          0x00081b1f
+Last emitted                 0x00081b1f
+Last signaled trailing fence 0x00000000
+Last emitted                 0x00000000

@@ -1,0 +1,107 @@
+# exp 0376: filtered from hang0376.sh's output (the unfiltered read stays off the repo: it holds title memory).
+# kept: the devcoredump's register lines, the journal's line counts, submit/timing lines, the probe's dispatch, wait and summary lines.
+== devcoredump 409525 bytes
+1:**** AMDGPU Device Coredump ****
+3:kernel: 7.2.9-ogc3.1.fc44.x86_64
+5:time: 11612.488357687
+8:process_name: kyty_emulator TGID: 78460 thread: bc5-ring PID: 78501
+462:Ring timed out details
+463:IP Type: 0 Ring Name: gfx_0.0.0
+466:Faulty page starting at address: 0x0000000000000000
+471:mmGRBM_STATUS                                      	 0xa0407028
+472:mmGRBM_STATUS2                                     	 0x52000008
+473:mmGRBM_STATUS3                                     	 0x00018000
+474:mmCP_STALLED_STAT1                                 	 0x00000c00
+475:mmCP_STALLED_STAT2                                 	 0x00018000
+476:mmCP_CPC_STALLED_STAT1                             	 0x00000000
+477:mmCP_CPF_STALLED_STAT1                             	 0x00000003
+478:mmCP_BUSY_STAT                                     	 0x00400400
+479:mmCP_CPC_BUSY_STAT                                 	 0x00000000
+480:mmCP_CPF_BUSY_STAT                                 	 0x00000006
+481:mmCP_CPC_BUSY_STAT2                                	 0x00000000
+482:mmCP_CPF_BUSY_STAT2                                	 0x00000000
+483:mmCP_CPF_STATUS                                    	 0xb4000263
+500:mmCP_IB1_CMD_BUFSZ                                 	 0x00002e48
+501:mmCP_IB2_CMD_BUFSZ                                 	 0x000000a8
+508:mmCP_IB1_BASE_LO                                   	 0x00000000
+509:mmCP_IB1_BASE_HI                                   	 0x0000100b
+510:mmCP_IB1_BUFSZ                                     	 0x000026c8
+511:mmCP_IB2_BASE_LO                                   	 0x00015000
+512:mmCP_IB2_BASE_HI                                   	 0x00008001
+513:mmCP_IB2_BUFSZ                                     	 0x00000000
+529:mmGCVM_L2_PROTECTION_FAULT_CNTL                    	 0x3ffffffc
+530:mmGCVM_L2_PROTECTION_FAULT_STATUS                  	 0x00000000
+539:mmCP_ME_INSTR_PNTR                                 	 0x00000779
+540:mmCP_PFP_INSTR_PNTR                                	 0x00000ea1
+541:mmCP_CPC_STATUS                                    	 0x00000000
+562:mmGRBM_STATUS_SE0                                  	 0x0a000036
+563:mmGRBM_STATUS_SE1                                  	 0x0a000036
+564:mmGRBM_STATUS_SE2                                  	 0x00000006
+565:mmGRBM_STATUS_SE3                                  	 0x00000006
+(header-dump lines dropped: 83)
+== the journal: 497813 lines, 48161208 bytes
+== probe and TIMEOUT lines: 631
+497180:submit #183691 dcb 11115 dwords at 0x7f302812f260: pass 871 rewrite 130 drop 169 unmapped 2 cc 0 mappings 26415 ... FAILED rc 0 TIMEOUT 2036.72 ms
+497182:submit #183692 acb 84 dwords at 0x7f308014dcb0: pass 5 rewrite 6 drop 0 unmapped 0 cc 0 mappings 26415 ... FAILED rc 0 TIMEOUT 2036.41 ms
+497189:timeout probe: HS user data address 0x0 at 9481 not mapped
+497197:timeout probe: dispatch op 16 at 1289: program 0x11d028dd00, groups 0 x 1 x 1 (arguments at 0x11d0571f00) ran
+497205:timeout probe: acb #183692 84 dwords: 0 waits (0 kept for the GPU), 6 label writes, 0 dispatches (0 indirect; the largest grid 0 groups, at 0)
+497207:timeout probe: dispatch op 16 at 1329: program 0x11d0289c00, groups 0 x 1 x 1 (arguments at 0x11d0571d00) ran
+497211:timeout probe: dispatch op 15 at 1361: program 0x11d02a0e00, groups 13 x 8 x 1 ran
+497216:timeout probe: dispatch op 16 at 1420: program 0x11d02a1600, groups 0 x 1 x 1 (arguments at 0x11d05df300) ran
+497221:timeout probe: dispatch op 16 at 1470: program 0x11d02a1800, groups 0 x 1 x 1 (arguments at 0x11d05df300) ran
+497226:timeout probe: dispatch op 16 at 1520: program 0x11d028ae00, groups 0 x 1 x 1 (arguments at 0x11d05df300) ran
+497231:timeout probe: dispatch op 16 at 1550: program 0x11d02a1600, groups 0 x 1 x 1 (arguments at 0x11d05df300) ran
+497235:timeout probe: dispatch op 15 at 1582: program 0x11d02a3200, groups 13 x 8 x 1 ran
+497240:timeout probe: dispatch op 16 at 1651: program 0x11d02a2e00, groups 3498 x 1 x 1 (arguments at 0x11d0571b00) ran
+497251:timeout probe: wait op 3c at 1751: label 0x11e05b0770 function 3 reference 0x1 mask 0xffffffff me; now 0x9 (NOT met) ran
+497300:timeout probe: dispatch op 15 at 2476: program 0x11d03e9600, groups 208 x 117 x 1 ran
+497306:timeout probe: dispatch op 15 at 2536: program 0x11d0374100, groups 32 x 16 x 1 ran
+497310:timeout probe: dispatch op 15 at 2572: program 0x11d0373c00, groups 1 x 128 x 1 ran
+497314:timeout probe: dispatch op 15 at 2598: program 0x11d0374100, groups 32 x 16 x 1 ran
+497318:timeout probe: dispatch op 15 at 2644: program 0x11d0373c00, groups 1 x 128 x 1 ran
+497322:timeout probe: dispatch op 15 at 2670: program 0x11d0374100, groups 32 x 16 x 1 ran
+497326:timeout probe: dispatch op 15 at 2716: program 0x11d0373c00, groups 1 x 128 x 1 ran
+497331:timeout probe: wait op 3c at 2777: label 0x11e05b1778 function 3 reference 0x1 mask 0xffffffff me; now 0x0 (NOT met) ran
+497340:timeout probe: wait op 3c at 2865: label 0x11e05b18d8 function 3 reference 0x1 mask 0xffffffff me; now 0x0 (NOT met) ran
+497342:timeout probe: dispatch op 15 at 2912: program 0x11d0373700, groups 104 x 59 x 1 ran
+497363:timeout probe: wait op 3c at 3189: label 0x11e05b1de8 function 3 reference 0x1 mask 0xffffffff me; now 0x0 (NOT met) ran
+497365:timeout probe: dispatch op 15 at 3239: program 0x11d0288a00, groups 3584 x 1 x 1 ran
+497459:timeout probe: dispatch op 15 at 4507: program 0x11d03a5d00, groups 104 x 59 x 1 ran
+497463:timeout probe: dispatch op 15 at 4545: program 0x11d03a6400, groups 26 x 15 x 1 ran
+497468:timeout probe: dispatch op 15 at 4581: program 0x11d03aa000, groups 104 x 59 x 1 ran
+497472:timeout probe: dispatch op 15 at 4637: program 0x11d03a8100, groups 104 x 59 x 1 ran
+497518:timeout probe: dispatch op 15 at 5256: program 0x11d0288a00, groups 288 x 1 x 1 ran
+497559:timeout probe: dispatch op 15 at 5697: program 0x11d039cd00, groups 2 x 1 x 1 ran
+497562:timeout probe: dispatch op 15 at 5716: program 0x11d039cd00, groups 2 x 1 x 1 ran
+497565:timeout probe: dispatch op 15 at 5735: program 0x11d039cd00, groups 2 x 1 x 1 ran
+497568:timeout probe: dispatch op 15 at 5754: program 0x11d039cd00, groups 2 x 1 x 1 ran
+497571:timeout probe: dispatch op 15 at 5773: program 0x11d039cd00, groups 1 x 1 x 1 ran
+497578:timeout probe: wait op 93 at 5835: label 0x12004b3838 function 3 reference 0x0 mask 0xffffffffffffffff pfp; now 0x0 (met) DROPPED
+497584:timeout probe: wait op 93 at 5891: label 0x12004b4038 function 3 reference 0x0 mask 0xffffffffffffffff pfp; now 0x0 (met) DROPPED
+497590:timeout probe: wait op 93 at 5947: label 0x12004b7838 function 3 reference 0x0 mask 0xffffffffffffffff pfp; now 0x0 (met) DROPPED
+497608:timeout probe: dispatch op 15 at 7438: program 0x11d0288100, groups 1 x 1 x 1 ran
+497620:timeout probe: dispatch op 15 at 7601: program 0x11d03f6400, groups 104 x 59 x 1 ran
+497625:timeout probe: wait op 3c at 7657: label 0x11e0bb0580 function 3 reference 0x1 mask 0xffffffff me; now 0xd6c23e89 (NOT met) ran
+497634:timeout probe: wait op 3c at 7735: label 0x11e0bb06b8 function 3 reference 0x1 mask 0xffffffff me; now 0x0 (NOT met) ran
+497636:timeout probe: dispatch op 15 at 7792: program 0x11d03f7900, groups 320 x 180 x 1 ran
+497640:timeout probe: dispatch op 15 at 7828: program 0x11d03f8800, groups 320 x 180 x 1 ran
+497648:timeout probe: dispatch op 15 at 7925: program 0x11d0288a00, groups 1792 x 1 x 1 ran
+497665:timeout probe: dispatch op 15 at 8120: program 0x11d0288800, groups 1 x 1 x 1 ran
+497668:timeout probe: dispatch op 15 at 8179: program 0x11d03f9700, groups 52 x 29 x 1 ran
+497672:timeout probe: dispatch op 15 at 8245: program 0x11d03f9f00, groups 1 x 1 x 1 ran
+497675:timeout probe: dispatch op 15 at 8299: program 0x11d0287900, groups 1 x 1 x 1 ran
+497685:timeout probe: wait op 93 at 8398: label 0x7f342ecbb000 function 3 reference 0x0 mask 0xffffffffffffffff pfp; now not read DROPPED
+497696:timeout probe: dispatch op 15 at 9841: program 0x11d0288a00, groups 768 x 1 x 1 ran
+497705:timeout probe: dispatch op 15 at 9940: program 0x11d0288a00, groups 256 x 1 x 1 ran
+497714:timeout probe: dispatch op 15 at 10045: program 0x11d0288a00, groups 48 x 1 x 1 ran
+497723:timeout probe: dispatch op 15 at 10135: program 0x11d0288a00, groups 16 x 1 x 1 ran
+497180:submit #183691 dcb 11115 dwords at 0x7f302812f260: pass 871 rewrite 130 drop 169 unmapped 2 cc 0 mappings 26415 ... FAILED rc 0 TIMEOUT 2036.72 ms
+497181:timing: #183691 done at t 231.892 s, 2037.2 ms after the sync and hints; device: prepare 0.26 list 0.00 cs 0.20 fence 2036.53 ms, 146 BOs
+497182:submit #183692 acb 84 dwords at 0x7f308014dcb0: pass 5 rewrite 6 drop 0 unmapped 0 cc 0 mappings 26415 ... FAILED rc 0 TIMEOUT 2036.41 ms
+497183:timing: #183692 done at t 231.892 s, 2036.6 ms after the sync and hints; device: prepare 0.02 list 0.04 cs 0.07 fence 2036.34 ms, 39 BOs (short list)
+497205:timeout probe: acb #183692 84 dwords: 0 waits (0 kept for the GPU), 6 label writes, 0 dispatches (0 indirect; the largest grid 0 groups, at 0)
+497813:timeout probe: dcb #183691 11115 dwords: 10 waits (6 kept for the GPU), 129 label writes, 45 dispatches (7 indirect; the largest grid 57600 groups, at 7792)
+timeout probe: dispatch op 15 at 10925: program 0x11d03fe700, groups 320 x 180 x 1 ran
+timeout probe: dcb #183691 11115 dwords: 10 waits (6 kept for the GPU), 129 label writes, 45 dispatches (7 indirect; the largest grid 57600 groups, at 7792)
+probe write-op lines (label writes, values not kept): 135
