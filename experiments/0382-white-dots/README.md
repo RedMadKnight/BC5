@@ -64,6 +64,50 @@ current save, slot 4, RT on).
   - none in A → the bench does not reach them (hypothesis 3; next a longer arm, or the scene he played).
   - Within A, the paused shots against the running ones separate a per-frame defect from a history one.
 
+**Laptop analysis** (2026-10-30 ~00:30, the top session's ask: narrow the pass, prepare the thresholds; no box
+access, nothing from the title's binaries read beyond what main's experiments already state).
+- **Today's defaults exclude F370's cause.** With `BC5_DIRECT_SKIP_PGM=0` the compaction runs and the traversal walks
+  compacted trees, the configuration in which the lab's reflections came out right (F370). The flat-aperture rewrite is
+  on in the second title's settings (D15; its "flat aperture: program … 6 stack pushes" lines are in the shared
+  build's journal of 2026-10-28 16:47, a private copy on the laptop).
+- **The traversal's own stack is not a source of wrong hits on the host.** Exp 0190 decoded the walk: the stack
+  pointer is one VGPR whose high half is a scratch offset starting at 0xff84 (the empty stack) and whose low half is
+  an LDS address. Entries 0–30 live in LDS, later ones in scratch, and pushes stop at 76. The push address's high
+  dword is `v_med3_u32` of two aperture constants and that whole pointer; the host's rewrite changes the constants
+  from (0x80000000, 0x70000000) to (0x20000000, 0x10000000) (F249).
+  - LDS entries: the pointer's high half is negative (0xff84–0xfffc), so the pointer is ≥ 0xff840000 and the median is
+    the upper constant, LDS, with either pair.
+  - Spilled entries: the high half is 0x0000–0x00b4 ((76 − 31) × 4), so the pointer is ≤ 0x00b4ffff, under both lower
+    constants, and the median is the lower constant, private, with either pair.
+  - So the rewrite sends every one of the 76 possible entries to the same aperture as on the console. Pushes go
+    through FLAT and pops through `ds_read_b32` / `scratch_load_dword`. For spilled entries that pairing relies on
+    FLAT's private aperture and the `scratch_` instructions resolving through the same per-wave scratch base, as the
+    RDNA 1.0 ISA describes for the private aperture. TODO(verify): the section number and the lane swizzle, AMD's
+    "RDNA 1.0 Instruction Set Architecture", flat and scratch memory chapter.
+  - This removes the one host-made defect that would hit only deep (rare) rays: a mis-paired push and pop on spill.
+- **What is left for hypothesis 1** is wrong input to a correct walk, or wrong shading of its hits:
+  - tree data read while being rebuilt or refit (the build chain's ordering, F371's argument pointer in node data);
+  - stale or zero pages under the trees or the hit materials (hypothesis 3);
+  - a hit shading or denoise pass downstream.
+  All of these sit downstream of, or inside, what arm B removes (no traversal dispatch, so no reflection samples),
+  and none of them is in arm C either.
+- **If box time is short: arms A (with the pause) and B.**
+  - A shows whether the bench shows dots at all, and whether pausing removes them.
+  - B decides "the reflection traversal and what it feeds" against everything else in one run.
+  - C is needed only if B still has dots (another RT pass against not RT).
+- **The pause is weak evidence until a paused shot is viewed.** The title's pause menu may blur, darken or cover the
+  scene behind it, which would remove the dots for a reason that is not history. Arm A's paused shots therefore get a
+  look (in the session scratchpad, deleted after, with the top session's leave) before any reading of them.
+- **Thresholds.** No shot of the dots exists to calibrate on. The committed shot metrics (exp 0299/0303/0305's
+  `*.wh.txt`) only bound the ordinary brights: the scenes' p99 luma runs 0.68–0.96. The shots are also the 1920×1080
+  window after the title's upscale, which dims a one-pixel dot. So `dots0382.py` now defaults to T 0.70 / D 0.25 and
+  also counts every shot on a 3 × 3 grid, T 0.55 / 0.70 / 0.85 by D 0.15 / 0.25 / 0.40, with the grid's medians at the
+  end. An arm comparison that holds on most of the grid does not hinge on one threshold.
+  - Self-test: six dots at T 0.70 (four 1-px, one 2×2, one dim at 0.75), five at T 0.85; none in a bright area or on
+    its edges; kept 6 of 6 unchanged, 0 when moved.
+  - Synthetic shots (1920×1080, σ 0.05 noise, 20/30/40 one-pixel dots): the counts match at every grid point, with
+    no false dot from the noise.
+
 **Bookkeeping.** Findings F640–F659 (the top session's range). Branch `exp/0382-white-dots`, never main.
 
 **Status** (2026-10-29 ~23:55). Claimed in the repo. The box side is not claimed: this session's permission
