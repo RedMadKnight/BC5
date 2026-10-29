@@ -1,7 +1,7 @@
 # 0380 — Is the F403 class a zero-dimension indirect dispatch? (sources, title side, a guard, a box plan)
 
 **Date.** 2026-10-29. **Laptop only.** No box access and no GPU submission in this experiment. Branch
-`exp/0380-zero-dim-dispatch`. Findings F545–F573 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
+`exp/0380-zero-dim-dispatch`. Findings F545–F576 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
 session's GO).
 
 **Question.** F527 puts the ME just past a `DISPATCH_INDIRECT` that passed the host's check, inside the title's
@@ -798,6 +798,62 @@ BOX-QUEUE. W2/W3 were **not run** (the stop rule).
   hang. W2 is ready to run (same binary c3c8660b) on the maintainer's yes.
 - The "test 0380 wb" shortcut was not prepared: its precondition (W2/W3 passing) was not reached.
 
+## 13. W2/W3: the GL2 write-back alone on the bench, the low-VA copy slot, the "test 0380 wb" shortcut (F574–F576)
+
+**GO and box.** The maintainer's "Tak, testujcie" (the `ARGS_WB` runs), relayed by the top session. 14:53–15:15, my lock
+and claim lines; each run's runner wrote and cleared its own lock. Kernel stream to the laptop. Live saves
+**3c1f2001a3863535** before and after both runs. Then a CPU-only compile check and the staging of the launcher. Done
+line in BOX-QUEUE.
+
+**W2 and W3** (binary c3c8660b, `BC5_DIRECT_ARGS_WB=first BC5_DIRECT_FORCE_START_000=1`, no copy, no rebase, no zero
+skip, S6N, RT on, 600 s each; `raw/runs/W2-*`, `raw/runs/W3-*`):
+
+| Run | Result | Flips/s | Running scene (150–590 s) | Kernel lines | TIMEOUT | Devcoredumps | Sampler events | GL2 write-backs |
+|---|---|---|---|---|---|---|---|---|
+| W2 | pass | 37.9 | 40.8 | 0 | 0 | 0 | 0 | 89,514 |
+| W3 | pass | 36.1 | 38.4 | 0 | 0 | 0 | 0 | 85,136 |
+
+- The write-back counts come from the last periodic line of each run; the emulator is killed at 600 s.
+- The cost of a full-L2 write-back before the frame's opening dispatch is within noise: B1 37.8, R1/R2 37.5/36.5.
+
+**Reading (F575).**
+- The write-back is safe on the bench.
+- As with the rebase (F562), two clean bench runs say nothing about the hang: sub-class B has no measured bench rate
+  and came about once per hour of the maintainer's play.
+- The title's argument addresses (0x11d05df300, 0x11d0571d00, 0x11d0571b00 ≈ 2^36) lie far below 2^44, so the high-VA
+  read of F572 does not cover the title's hangs. It only explains the copy runs.
+
+**The low-VA copy slot (F574).**
+- `BC5_DIRECT_ARGS_COPY`'s slot is now a 4 KiB GTT BO, zeroed and mapped at a VA from libdrm's 32-bit range
+  (`amdgpu_va_range_alloc(…, AMDGPU_VA_RANGE_32_BIT)`). It is allocated at `Device::open` only when the switch is on,
+  listed in every submission (as the GDS shadow is), and unmapped and freed at close. If the allocation fails, the
+  switch is turned off with a line.
+- `indirect_check::apply(…, copy_va)` puts the `COPY_DATA` destination, the polls and the dispatch's `SET_BASE` on that
+  address; with 0 it uses the flag area as before.
+- Catch2 "the copy at a low GPU VA (experiment 0380, F574)". Laptop 98/98 (34,435 assertions). Box clang 21.1.8
+  `-Werror`, 0 warnings, 98/98 (34,434), archive 02acc42b at 22e1bda (`raw/box-A0f/`). Not relinked, not run.
+- **The fetch's address width** is TODO(verify). No public source was found that states it:
+  - Mesa RADV emits the full 64-bit VA into `SET_BASE` (radv_cmd_buffer.c:12305-12313);
+  - RPCSX keeps 16 bits of the high dword;
+  - the kernel's IB fetch reaches 2^48 (direct.cpp's own note on `kScratchVa`, exp 0016).
+
+  The evidence that it is narrower than the IB fetch is F572 alone.
+
+**The shortcut, PREPARED, NOT INSTALLED (F576).**
+- Launcher: `~/bc5-work/exp0380wb/play-pkg-0380wb.sh`, md5 **1b8a6a17**, made from `play-pkg.sh` 55531ab6 by
+  `raw/mkplay0380wb.pl`.
+  - It uses the binary `~/bc5-work/exp0380w/kyty_emulator` (**c3c8660b**) and sets
+    `BC5_DIRECT_ARGS_WB=first BC5_DIRECT_FORCE_START_000=1`, with every other 0379/0380 switch unset.
+  - It writes per-start logs and a once-a-minute memory sample to `exp0380wb/play/`. The log's first line names both
+    switches and the binary md5.
+- Shortcut file: `~/bc5-work/exp0380wb/BC5 emulator (test 0380 wb).desktop.staged`, md5 528aa794. It passes
+  `desktop-file-validate` (checked on a `.desktop` copy).
+- To install on the maintainer's yes:
+  `cp ~/bc5-work/exp0380wb/"BC5 emulator (test 0380 wb).desktop.staged" ~/Pulpit/"BC5 emulator (test 0380 wb).desktop"`.
+- Only the normal and lean shortcuts are on the desktop now.
+- **What his play would show:** one sub-class B hang with it on refutes the write-back as a fix and, with it, the GL2
+  idea for the title's hang. Hours without one support it.
+
 ## Result
 
 - Sources read and cited (F545, F546). The title-side evidence was re-read from exps 0376/0378 (F547).
@@ -805,6 +861,8 @@ BOX-QUEUE. W2/W3 were **not run** (the stop rule).
 - A second guard, `FORCE_START_AT_000` on indirect dispatches, is built the same way: default off, with unit tests
   (F551).
 - The box plan is written. Only step A0 ran: a CPU-only compile check, which passed (F552). Nothing ran on the GPU.
+- The GL2 write-back alone (`ARGS_WB=first`) passed W2 and W3 at bench frame rates. Its play-test shortcut is staged,
+  not installed. The copy slot now sits at a low VA, built but not run (F574–F576).
 - W1 (copy + write-back) hung like C1, with identical garbage from a different slot address. The copy runs
   tested the slot's high VA, not coherence, and F569's GL2 reading is withdrawn (F571–F573).
 - The argument copy hung the bench within 7 s (C1): the fetch returned other data than the ME had just written and
