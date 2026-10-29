@@ -11,9 +11,11 @@
 #    8d3ae59288f1 drivers/gpu/drm/scheduler/sched_main.c:198-302,923-948), so this clock is the kernel's within one
 #    poll (F496; lockup_timeout 2000 ms, exp 0259).
 #  * A ring is stalled when emitted != signaled and nothing changed for 0.5 s. At stall clock 0.5, 0.8, 1.1, 1.4 and
-#    1.7 s it takes one sample: the CP/GRBM registers through amdgpu_regs, and a scan of every wave slot through
-#    amdgpu_wave (STATUS, PC, EXEC, HW_ID1/2 and the rest of the kernel's record). It never reads GPRs, never halts a
-#    wave, never runs umr and never forks. The samples stay in RAM.
+#    1.7 s it takes one sample: the CP/GRBM registers through amdgpu_regs and the fences. Only with --wave-scan does
+#    a sample also scan every wave slot through amdgpu_wave (STATUS, PC, EXEC, HW_ID1/2 and the rest of the kernel's
+#    record): off by default since exp 0374, whose T1 lost the machine to a GPU hang 106 ms after a wave scan under
+#    load (suspected, not proven). It never reads GPRs, never halts a wave, never runs umr and never forks. The
+#    samples stay in RAM.
 #  * It writes an event directory when /dev/kmsg shows amdgpu's "ring <name> timeout" line, or when the stall clock
 #    passes 1.9 s, whichever comes first, then fsyncs it and chowns it to the owner (files 600, directories 700).
 #    A stall that resolves earlier adds one census line to stalls.log.
@@ -22,8 +24,10 @@
 # Usage, as root:
 #   bc5-gpu-stall-sampler --owner USER --out DIR     the service (bc5-gpu-stall-sampler.service, from install.sh)
 #   bc5-gpu-stall-sampler --find                     print the amdgpu debugfs directory it would use, then exit
-#   bc5-gpu-stall-sampler --once [--regs-only] [--idle-ok]
-#                                                    one sample now, printed (registers in umr's "=>" format)
+#   bc5-gpu-stall-sampler --once [--idle-ok] [--wave-scan]
+#                                                    one sample now, printed (registers in umr's "=>" format; the
+#                                                    waves only with --wave-scan; --regs-only is the default)
+#   --wave-scan (service or --once): allow wave scans at all; without it nothing reads amdgpu_wave (exp 0374)
 # Usage, any user, no device:
 #   bc5-gpu-stall-sampler --test                     built-in self-test: synthetic fence traces and the wave decoder
 #   bc5-gpu-stall-sampler --replay TRACE [--out DIR] replay a fence/kmsg trace (format: see read_trace)
@@ -31,7 +35,9 @@
 #   bc5-gpu-stall-sampler --compare-check FILE       read install.sh's sampler-versus-umr check file, print a table
 # Forced samples for T1/T2, as the owner, no root: write a file named "force" into DIR, e.g. "echo once > DIR/force".
 #   Tokens: once (default; the file is removed after the sample) | N (one sample every N >= 5 s while the file exists)
-#   | regs (registers only) | idle (also when no job is pending). Results go to DIR/forced-<date>-<time>/.
+#   | regs (registers only, the default) | waves (also scan the wave slots: only when the service runs with
+#   --wave-scan, otherwise refused in the census line) | idle (also when no job is pending). Results go to
+#   DIR/forced-<date>-<time>/. Writing a new request replaces one still waiting for a job (exp 0374).
 #
 # Output in DIR (default ~OWNER/bc5-data/captures/gpu-stall): stalls.log (census, one line per stall >= 0.5 s, plus
 # start and forced lines), event-<date>-<time>-<ring>/ (summary.txt, fence.txt, kmsg.txt, regs-N.txt, waves-N.txt,
@@ -52,7 +58,7 @@ import threading
 import time
 import queue
 
-VERSION = "0373-t0"
+VERSION = "0374"
 
 # ---------------------------------------------------------------------------------------------------------------
 # Hardware and debugfs facts, each with its source
@@ -400,13 +406,18 @@ class Config:
         # below sample_until (the kernel's clock is ours plus at most one poll, its timeout at 2.0 s; a scan is
         # tens of ms, to be measured at T1).
         self.sample_until = 1.85
+        # exp 0374: the T1 forced wave scan under ASTRO BOT was followed 106 ms later by a GFX hang that the ring reset
+        # could not recover; the scans read SQ_IND of running waves without a halt and returned torn records (PCs with
+        # 0xbebebeef/0xbeef bytes, HW_ID1 naming SE 3 on a 2-SE chip). Until a scan is shown safe it needs --wave-scan.
+        self.wave_scan = False
         for k, v in kw.items():
             setattr(self, k, v)
 
 
 class Sample:
     __slots__ = ("idx", "kind", "t", "wall", "clocks", "fence_text", "gfxoff", "skipped", "regs", "banked",
-                 "reg_errors", "regs_s", "waves", "slots_read", "wave_errors", "wave_errno", "scan_s", "badver", "dec")
+                 "reg_errors", "regs_s", "waves", "slots_read", "wave_errors", "wave_errno", "scan_s", "badver", "dec",
+                 "scanned")
 
     def __init__(self, kind, t, wall, fence_text):
         self.idx, self.kind, self.t, self.wall, self.fence_text = 0, kind, t, wall, fence_text
@@ -424,6 +435,7 @@ class Sample:
         self.scan_s = 0.0
         self.badver = 0
         self.dec = None         # [(slot, decode_wave)] once, on first use (the waves never change after the scan)
+        self.scanned = False    # the wave slots were read (False: registers only)
 
 
 def decoded(s):
@@ -470,6 +482,7 @@ def take_sample(dev, cfg, kind, t, wall, fence_text, pending, idle_ok=False, reg
     s.regs_s = t1 - t0
     if regs_only:
         return s
+    s.scanned = True
     ok = 0
     for se in range(cfg.ses):
         for sa in range(cfg.sas):
@@ -598,9 +611,13 @@ def fmt_sample_summary(s):
     if s.skipped:
         return [head, "   skipped: " + s.skipped]
     lines.append(head)
-    lines.append("   registers %d (%d errors) in %.1f ms; waves %d kept of %d slots (%d errors, errno %s), scan %.1f ms; "
-                 "HW_ID1 mismatches %d" % (len(s.regs), s.reg_errors, s.regs_s * 1e3, len(s.waves), s.slots_read,
-                                            s.wave_errors, s.wave_errno, s.scan_s * 1e3, hw_mismatches(s)))
+    if not s.scanned:
+        lines.append("   registers %d (%d errors) in %.1f ms; waves not scanned (registers only)"
+                     % (len(s.regs), s.reg_errors, s.regs_s * 1e3))
+    else:
+        lines.append("   registers %d (%d errors) in %.1f ms; waves %d kept of %d slots (%d errors, errno %s), scan %.1f "
+                     "ms; HW_ID1 mismatches %d" % (len(s.regs), s.reg_errors, s.regs_s * 1e3, len(s.waves), s.slots_read,
+                                                   s.wave_errors, s.wave_errno, s.scan_s * 1e3, hw_mismatches(s)))
     pcs = valid_pcs(s)
     lines.append("   distinct PCs %d: %s" % (len(pcs), ", ".join("0x%x x%d" % kv for kv in pcs.most_common(16)) or "-"))
     q = collections.Counter("me%d pipe%d q%d vmid%d" % (d["me"], d["pipe"], d["queue"], d["vmid"])
@@ -850,7 +867,8 @@ class Engine:
                         s.next_k += 1
                         s.missed += 1
             elif due:
-                smp = take_sample(self.dev, self.cfg, "stall", now, self.wall(), text, True, clock=self.clock)
+                smp = take_sample(self.dev, self.cfg, "stall", now, self.wall(), text, True,
+                                  regs_only=not self.cfg.wave_scan, clock=self.clock)
                 smp.idx = len(ep.samples) + 1
                 for s in act:
                     c = now - s.t_start
@@ -899,8 +917,8 @@ class Engine:
         if s.samples:
             first = ep.samples[s.samples[0][0] - 1]
         pcs = valid_pcs(first).most_common(4) if first else []
-        nw = len(first.waves) if first and not first.skipped else 0
-        self._census("stall ring=%s dur=%.2f sig=0x%08x emit=0x%08x now_sig=0x%08x samples=%d missed=%d waves@first=%d "
+        nw = (len(first.waves) if first.scanned else "-") if first and not first.skipped else 0
+        self._census("stall ring=%s dur=%.2f sig=0x%08x emit=0x%08x now_sig=0x%08x samples=%d missed=%d waves@first=%s "
                      "top=%s kmsg_timeout=%s event=%s"
                      % (s.ring, now - s.t_start, s.sig, s.emit, sig, len(s.samples), s.missed, nw,
                         ",".join("0x%x:%d" % kv for kv in pcs) or "-", "yes" if s.kmsg_line else "no",
@@ -946,8 +964,9 @@ class Engine:
         out = []
         for s in samples:
             out.append(("regs-%d.txt" % s.idx, lambda s=s: fmt_regs(s)))
-            out.append(("waves-%d.txt" % s.idx, lambda s=s: fmt_waves_txt(s)))
-            out.append(("waves-%d.bin" % s.idx, lambda s=s: pack_waves_bin(s)))
+            if s.scanned:
+                out.append(("waves-%d.txt" % s.idx, lambda s=s: fmt_waves_txt(s)))
+                out.append(("waves-%d.bin" % s.idx, lambda s=s: pack_waves_bin(s)))
         return out
 
     def _fence_file(self, ep):
@@ -968,7 +987,8 @@ class Engine:
                      % (s.ring, s.t_start, s.sig, s.emit, " ".join("%.2f" % c for i, c in s.samples) or "-", s.missed,
                         self.cfg.write_at, "yes" if s.deadline else "no", s.kmsg_line or "no",
                         "ended after %.2f s" % (s.t_end - s.t_start) if s.t_end else "still stalled"))
-        L.append("samples: %d (registers and waves of the whole GPU, shared by the rings above)" % len(ep.samples))
+        L.append("samples: %d (registers%s of the whole GPU, shared by the rings above)"
+                 % (len(ep.samples), " and waves" if self.cfg.wave_scan else ", no wave scan"))
         for s in ep.samples:
             L.extend(fmt_sample_summary(s))
         shapes = [pair_shape(a, b) for a, b in zip(ep.samples, ep.samples[1:])]
@@ -1046,6 +1066,21 @@ class Engine:
     def request_force(self, req):
         self.force_req = req
 
+    def offer_force(self, txt, on_done=None):
+        """The owner's request file, read once a second (None: no file). A one-shot request still waiting for a job is
+        replaced when the file says something else, so a later "idle" never waits behind a "once" (exp 0374); a
+        request ends when its file is removed; a periodic one keeps its rhythm while the file is unchanged."""
+        req = self.force_req
+        if txt is None:
+            self.force_req = None
+            return
+        new = parse_force_request(txt)
+        if req is not None and new["text"] == req["text"]:
+            return
+        if new["once"] and on_done:
+            new["on_done"] = on_done
+        self.force_req = new
+
     def _forced(self, now, fences, text):
         req = self.force_req
         if now < self.quiet_until:
@@ -1057,8 +1092,10 @@ class Engine:
         pending = self._pending(fences)
         if not pending and not req["idle"]:
             return   # wait for a job in flight (GFX up, D5)
+        scan = req["waves"] and not req["regs"] and self.cfg.wave_scan
+        refused = " waves refused (no --wave-scan)" if req["waves"] and not self.cfg.wave_scan else ""
         smp = take_sample(self.dev, self.cfg, "forced", now, self.wall(), text, bool(pending), idle_ok=req["idle"],
-                          regs_only=req["regs"], banked=True, clock=self.clock)
+                          regs_only=not scan, banked=True, clock=self.clock)
         smp.idx = 1
         smp.clocks = {n: now - self.rings[n].t_change for n in pending if n in self.rings}
         self.force_last = now
@@ -1070,9 +1107,9 @@ class Engine:
                  ("fence.txt", text)] + self._sample_files([smp])
         self.writer.submit(("mkdir", name))
         self.writer.submit(("files", name, files))
-        self._census("forced dir=%s pending=%s waves=%d slots=%d scan_ms=%.1f regs_ms=%.1f gfxoff=%s%s"
+        self._census("forced dir=%s pending=%s waves=%d slots=%d scan_ms=%.1f regs_ms=%.1f gfxoff=%s%s%s"
                      % (name, ",".join(pending) or "-", len(smp.waves), smp.slots_read, smp.scan_s * 1e3,
-                        smp.regs_s * 1e3, smp.gfxoff, " skipped" if smp.skipped else ""))
+                        smp.regs_s * 1e3, smp.gfxoff, " skipped" if smp.skipped else "", refused))
         if not req["period"]:
             self.force_req = None
             if req.get("on_done"):
@@ -1080,10 +1117,13 @@ class Engine:
 
 
 def parse_force_request(text):
-    req = {"once": True, "period": 0.0, "regs": False, "idle": False, "text": " ".join(text.split()) or "once"}
+    req = {"once": True, "period": 0.0, "regs": False, "waves": False, "idle": False,
+           "text": " ".join(text.split()) or "once"}
     for tok in text.split():
         if tok == "regs":
             req["regs"] = True
+        elif tok == "waves":
+            req["waves"] = True
         elif tok == "idle":
             req["idle"] = True
         elif tok == "once":
@@ -1475,10 +1515,11 @@ def scenarios():
     return S
 
 
-def run_scenario(name, events, check, tmp_root):
+def run_scenario(name, events, check, tmp_root, cfg=None):
+    """The scenarios check wave contents, so they run with --wave-scan unless cfg says otherwise."""
     out = os.path.join(tmp_root, re.sub(r"[^a-z0-9]+", "-", name.lower())[:40])
     os.makedirs(out, exist_ok=True)
-    eng, dev = replay(events, out)
+    eng, dev = replay(events, out, cfg or Config(wave_scan=True))
     f = check(eng, dev, out)
     if dev.warn_simd:
         f.append("a wave read set the simd field (the kernel's WARN_ON)")
@@ -1513,7 +1554,7 @@ def scenario_second_stall_while_writing(tmp_root):
                 release.set()
     ev = gen_trace([("gfx_0.0.0", 1.0, 3.0), ("comp_1.1.0", 3.4, 6.0)], 8.0, rings=("gfx_0.0.0", "comp_1.1.0"))
     ev += [(1.0, "busy", "32 0xaaaa00"), (3.0, "busy", "0 0"), (3.4, "busy", "48 0xbbbb00")]
-    eng, dev = replay(sorted(ev, key=lambda e: e[0]), out, writer=w, on_tick=on_tick)
+    eng, dev = replay(sorted(ev, key=lambda e: e[0]), out, Config(wave_scan=True), writer=w, on_tick=on_tick)
     release.set()
     w.flush()
     w.close()
@@ -1557,6 +1598,37 @@ def selftest_decoder():
     return f
 
 
+def scenario_default_regs_only(tmp_root):
+    """The default (no --wave-scan): a stall to the 1.9-s write reads registers at every threshold and never a wave
+    slot, the event has no waves-N files, and a forced "waves" request is refused and reads registers only."""
+    out = os.path.join(tmp_root, "default-regs-only")
+    os.makedirs(out, exist_ok=True)
+    ev = gen_trace([("gfx_0.0.0", 1.0, None)], 3.4, rings=("gfx_0.0.0",)) + [(1.0, "busy", "40 0x11d049aa00")]
+    eng, dev = replay(sorted(ev, key=lambda e: e[0]), out)
+    f = []
+    if dev.wave_reads:
+        f.append("%d wave reads without --wave-scan" % dev.wave_reads)
+    if len(eng.events) != 1:
+        return f + ["events %d, expected 1" % len(eng.events)]
+    files = sorted(os.listdir(os.path.join(out, eng.events[0])))
+    if [x for x in files if x.startswith("waves-")] or "regs-5.txt" not in files:
+        f.append("event files: %s" % files)
+    summ = _read(os.path.join(out, eng.events[0], "summary.txt"))
+    if summ.count("waves not scanned (registers only)") != 5 or "no wave scan" not in summ:
+        f.append("summary does not say registers only")
+    clock = FakeClock(10.0)
+    dev2 = FakeDevice(clock)
+    w = Writer(out, threaded=False, log=lambda s: None)
+    eng2 = Engine(dev2, w, Config(), clock=clock, wall=lambda: 1.9e9 + clock.t, log=lambda s: None)
+    dev2.fences["gfx_0.0.0"] = (5, 6)
+    dev2.busy = busy_slots(8, 0xaaaa00)
+    eng2.offer_force("once waves\n")
+    eng2.tick(clock.t)
+    if dev2.wave_reads or not dev2.reg_reads or not eng2.census or "waves refused" not in eng2.census[-1]:
+        f.append("forced waves without --wave-scan: %d wave reads, census %s" % (dev2.wave_reads, list(eng2.census)))
+    return f
+
+
 def run_selftest(tmp_root=None):
     """Every scenario with the fake device and a scratch output directory (removed when all pass)."""
     import shutil
@@ -1566,6 +1638,7 @@ def run_selftest(tmp_root=None):
     for name, ev, chk in scenarios():
         results.append((name, run_scenario(name, ev, chk, tmp)))
     results.append(("a second stall while an event is being written", scenario_second_stall_while_writing(tmp)))
+    results.append(("the default: registers only, no wave read, forced waves refused", scenario_default_regs_only(tmp)))
     bad = 0
     for name, f in results:
         print("%s  %s" % ("ok  " if not f else "FAIL", name))
@@ -1700,10 +1773,10 @@ def run_service(args, cfg):
     writer = Writer(out, uid, gid, threaded=True, log=log)
     eng = Engine(dev, writer, cfg, log=log, ddir=ddir)
     eng._census("start pid=%d version=%s debugfs=%s (%s) realpath=%s gfxoff=%s rings=%s poll_ms=%d samples_at=%s "
-                "write_at=%.1f slots=%dx%dx%dx%dx%d header_dump_reads=%d mlockall=%s"
+                "write_at=%.1f slots=%dx%dx%dx%dx%d header_dump_reads=%d wave_scan=%s mlockall=%s"
                 % (os.getpid(), VERSION, ddir, name, os.path.realpath(ddir), dev.read_gfxoff(), cfg.rings.pattern,
                    cfg.poll * 1000, ",".join("%.1f" % x for x in cfg.thresholds), cfg.write_at, cfg.ses, cfg.sas,
-                   cfg.wgps, cfg.simds, cfg.waves, cfg.header_dump_reads, locked))
+                   cfg.wgps, cfg.simds, cfg.waves, cfg.header_dump_reads, "on" if cfg.wave_scan else "off", locked))
     import select
     import signal
     signal.signal(signal.SIGTERM, lambda *a: sys.exit(0))   # systemctl stop: let the writer finish (finally below)
@@ -1739,20 +1812,13 @@ def run_service(args, cfg):
                     next_tick = time.monotonic() + cfg.poll
             if now >= next_force_check:
                 next_force_check = now + 1.0
-                if eng.force_req is None:
-                    txt = read_force_file(force_path)
-                    if txt is not None:
-                        req = parse_force_request(txt)
-                        if req["once"]:
-                            def done(p=force_path):
-                                try:
-                                    os.unlink(p)
-                                except OSError:
-                                    pass
-                            req["on_done"] = done
-                        eng.request_force(req)
-                elif eng.force_req["period"] and read_force_file(force_path) is None:
-                    eng.force_req = None   # periodic mode ends when the owner removes the file
+
+                def done(p=force_path):
+                    try:
+                        os.unlink(p)
+                    except OSError:
+                        pass
+                eng.offer_force(read_force_file(force_path), done)
     finally:
         writer.close()
 
@@ -1763,11 +1829,11 @@ def run_once(args, cfg):
     fences = parse_fence_info(dev.read_fence())
     pending = [n for n, (s, e) in fences.items() if cfg.rings.search(n) and s != e]
     s = take_sample(dev, cfg, "once", time.monotonic(), time.time(), "", bool(pending), idle_ok=args.idle_ok,
-                    regs_only=args.regs_only, banked=True)
+                    regs_only=args.regs_only or not cfg.wave_scan, banked=True)
     print("# bc5-gpu-stall-sampler %s --once: debugfs %s (%s), pending rings: %s, gfxoff %s"
           % (VERSION, d, name, ", ".join(pending) or "none", s.gfxoff))
     sys.stdout.write(fmt_regs(s))
-    if not args.regs_only:
+    if s.scanned:
         sys.stdout.write(fmt_waves_txt(s))
         print("\n".join(fmt_sample_summary(s)))
     return 0 if not s.skipped else 2
@@ -1801,14 +1867,17 @@ def main(argv=None):
     ap.add_argument("--replay", metavar="TRACE", help="replay a trace file, no device")
     ap.add_argument("--find", action="store_true", help="print the debugfs directory and exit (root)")
     ap.add_argument("--once", action="store_true", help="take one sample now and print it (root)")
-    ap.add_argument("--regs-only", action="store_true", help="with --once: registers only")
+    ap.add_argument("--regs-only", action="store_true", help="with --once: registers only (the default since exp 0374)")
+    ap.add_argument("--wave-scan", action="store_true",
+                    help="allow wave-slot scans through amdgpu_wave (off by default: exp 0374)")
     ap.add_argument("--idle-ok", action="store_true", help="with --once: read even with no job pending")
     ap.add_argument("--list-regs", action="store_true", help="print the register table and exit")
     ap.add_argument("--compare-check", metavar="FILE", help="compare install.sh's check file and exit")
     a = ap.parse_args(argv)
     if a.header_dump_reads not in (0, 8, 16):
         ap.error("--header-dump-reads: 0, 8 or 16")
-    cfg = Config(wgps=a.wgps, waves=a.waves_per_simd, header_dump_reads=a.header_dump_reads, rings=re.compile(a.rings))
+    cfg = Config(wgps=a.wgps, waves=a.waves_per_simd, header_dump_reads=a.header_dump_reads, rings=re.compile(a.rings),
+                 wave_scan=a.wave_scan)
     if a.test:
         return run_selftest()
     if a.list_regs:

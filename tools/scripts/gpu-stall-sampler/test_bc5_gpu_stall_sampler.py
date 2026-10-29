@@ -452,7 +452,7 @@ class EngineScenarios(unittest.TestCase):
         with open(trace) as fh:
             ev = S.read_trace(fh)
         self.assertIn((1.5, "kmsg", "6 amdgpu 0000:01:00.0: a comment-like # inside a kernel line stays"), ev)
-        eng, dev = S.replay(ev, self.tmp)
+        eng, dev = S.replay(ev, self.tmp, S.Config(wave_scan=True))
         self.assertEqual(len(eng.census), 1)
         self.assertIn("ring=comp_1.2.0", eng.census[0])
         self.assertIn("samples=2 ", eng.census[0])        # 0.5 and 0.8
@@ -507,7 +507,8 @@ class EngineScenarios(unittest.TestCase):
         self.assertEqual(done, [1])
         self.assertIsNone(eng.force_req)
         files = sorted(os.listdir(os.path.join(out, eng.forced[0])))
-        self.assertEqual(files, ["fence.txt", "regs-1.txt", "summary.txt", "waves-1.bin", "waves-1.txt"])
+        self.assertEqual(files, ["fence.txt", "regs-1.txt", "summary.txt"])   # registers only (exp 0374)
+        self.assertEqual(dev.wave_reads, 0)
         self.assertIn("mmCC_GC_SHADER_ARRAY_CONFIG[se1.sa1]", _read(os.path.join(out, eng.forced[0], "regs-1.txt")))
         p = S.parse_force_request("30 regs")
         self.assertEqual((p["period"], p["regs"], p["once"]), (30.0, True, False))
@@ -522,6 +523,70 @@ class EngineScenarios(unittest.TestCase):
         eng.tick(clock.t)
         self.assertEqual(len(eng.forced), 2)             # "idle": taken with nothing pending (gfxoff 0)
         self.assertTrue(any(l.split()[1] == "forced" for l in eng.census))
+
+
+    def test_default_regs_only_scenario(self):
+        self.assertEqual(S.scenario_default_regs_only(self.tmp), [])
+
+    def _engine(self, cfg):
+        clock = S.FakeClock(10.0)
+        dev = S.FakeDevice(clock)
+        w = S.Writer(tempfile.mkdtemp(dir=self.tmp), threaded=False, log=lambda s: None)
+        eng = S.Engine(dev, w, cfg, clock=clock, wall=lambda: 1.8e9 + clock.t, log=lambda s: None)
+        return clock, dev, eng
+
+    def test_wave_scan_needs_the_flag_and_the_token(self):
+        for flag, text, scans in ((False, "once waves", False), (True, "once", False), (True, "once regs waves", False),
+                                  (True, "once waves", True)):
+            with self.subTest(flag=flag, text=text):
+                clock, dev, eng = self._engine(S.Config(wave_scan=flag))
+                dev.fences["gfx_0.0.0"] = (5, 6)
+                eng.offer_force(text)
+                eng.tick(clock.t)
+                self.assertEqual(len(eng.forced), 1)
+                self.assertEqual(dev.wave_reads, 1600 if scans else 0)
+                self.assertGreater(dev.reg_reads, 0)
+                self.assertEqual("waves refused" in eng.census[-1], text.endswith("waves") and not flag)
+
+    def test_stall_samples_scan_only_with_the_flag(self):
+        ev = S.gen_trace([("gfx_0.0.0", 1.0, 2.5)], 3.0, rings=("gfx_0.0.0",)) + [(1.0, "busy", "12 0xfe00001ce4")]
+        ev = sorted(ev, key=lambda e: e[0])
+        eng, dev = S.replay(ev, self.tmp)
+        self.assertEqual(dev.wave_reads, 0)
+        self.assertIn("waves@first=- ", eng.census[0])
+        eng, dev = S.replay(ev, self.tmp, S.Config(wave_scan=True))
+        self.assertEqual(dev.wave_reads, 4 * 1600)     # 0.5, 0.8, 1.1, 1.4 (it ends at clock 1.5)
+        self.assertIn("waves@first=12 ", eng.census[0])
+
+    def test_a_new_request_replaces_a_waiting_one(self):
+        # exp 0374: "once" written at idle waited for a job; the later "once idle" must not wait behind it
+        clock, dev, eng = self._engine(S.Config())
+        dev.fences["gfx_0.0.0"] = (5, 5)
+        done = []
+        eng.offer_force("once\n", lambda: done.append(1))
+        eng.tick(clock.t)
+        self.assertEqual(list(eng.forced), [])           # nothing pending: "once" waits (D5)
+        first = eng.force_req
+        eng.offer_force("once\n", lambda: done.append(2))
+        self.assertIs(eng.force_req, first)              # the same text: the waiting request stays
+        clock.advance(1.0)
+        eng.offer_force("once idle\n", lambda: done.append(3))
+        eng.tick(clock.t)
+        self.assertEqual(len(eng.forced), 1)             # taken at idle (gfxoff 0)
+        self.assertEqual(done, [3])
+        self.assertIsNone(eng.force_req)
+        self.assertIn("pending=- ", eng.census[-1])
+        # the same text again keeps a periodic request's rhythm; removing the file ends it
+        clock.advance(31.0)
+        eng.offer_force("30 idle")
+        eng.tick(clock.t)
+        self.assertEqual(len(eng.forced), 2)
+        clock.advance(10.0)
+        eng.offer_force("30 idle")
+        eng.tick(clock.t)
+        self.assertEqual(len(eng.forced), 2)             # 10 s < 30 s
+        eng.offer_force(None)
+        self.assertIsNone(eng.force_req)
 
 
 class Writer(unittest.TestCase):

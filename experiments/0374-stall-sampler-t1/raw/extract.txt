@@ -1,0 +1,402 @@
+# extract0374 on bazzite at 2026-10-29T07:57:03+01:00, kernel 7.2.9-ogc3.1.fc44.x86_64
+## stalls.log
+2026-10-29T06:31:22.709 start pid=197980 version=0373-t0 debugfs=/sys/kernel/debug/dri/0000:01:00.0 (amdgpu dev=0000:01:00.0 unique=0000:01:00.0) realpath=/sys/kernel/debug/dri/0000:01:00.0 gfxoff=0 rings=^(gfx|comp)_ poll_ms=25 samples_at=0.5,0.8,1.1,1.4,1.7 write_at=1.9 slots=2x2x5x4x20 header_dump_reads=8 mlockall=True
+2026-10-29T06:33:08.464 forced dir=forced-20261029-063308 pending=gfx_0.0.0 waves=134 slots=1600 scan_ms=26.9 regs_ms=0.1 gfxoff=0
+2026-10-29T06:34:21.305 forced dir=forced-20261029-063421 pending=gfx_0.0.0 waves=268 slots=1600 scan_ms=39.3 regs_ms=0.1 gfxoff=0
+2026-10-29T06:35:08.194 start pid=1104 version=0373-t0 debugfs=/sys/kernel/debug/dri/0000:01:00.0 (amdgpu dev=0000:01:00.0 unique=0000:01:00.0) realpath=/sys/kernel/debug/dri/0000:01:00.0 gfxoff=0 rings=^(gfx|comp)_ poll_ms=25 samples_at=0.5,0.8,1.1,1.4,1.7 write_at=1.9 slots=2x2x5x4x20 header_dump_reads=8 mlockall=True
+## install-check.txt: find, period and comparison
+# bc5-gpu-stall-sampler install check, 2026-10-29T06:31:18+01:00, kernel 7.2.9-ogc3.1.fc44.x86_64, umr '/usr/sbin/umr'
+## find
+debugfs /sys/kernel/debug/dri/0000:01:00.0 realpath /sys/kernel/debug/dri/0000:01:00.0 name 'amdgpu dev=0000:01:00.0 unique=0000:01:00.0' links 1,128
+  amdgpu_fence_info present
+  amdgpu_regs present
+  amdgpu_wave present
+  amdgpu_gfxoff present
+## umr -lr gfx1013
+# CP_PFP_HEADER_DUMP period 8: yes (reads 0-7 == reads 8-15)
+# CP_ME_HEADER_DUMP period 8: yes (reads 0-7 == reads 8-15)
+## comparison
+register                         byte     read 1     umr -r     read 2     values                               address
+GRBM_STATUS                      0x08010  0x00003028 0x00003028 0x00003028 same                                 addr ok (dword)
+GRBM_STATUS2                     0x08008  0x00000008 0x00000008 0x00000008 same                                 addr ok (dword)
+GRBM_STATUS3                     0x0801c  0x00000000 0x00000000 0x00000000 same                                 addr ok (dword)
+GRBM_STATUS_SE0                  0x08014  0x00000006 0x00000006 0x00000006 same                                 addr ok (dword)
+GRBM_STATUS_SE1                  0x08018  0x00000006 0x00000006 0x00000006 same                                 addr ok (dword)
+CP_STAT                          0x08680  0x00000000 0x00000000 0x00000000 same                                 addr ok (dword)
+CP_STALLED_STAT1                 0x08674  0x00000c00 0x00000c00 0x00000c00 same                                 addr ok (dword)
+CP_STALLED_STAT2                 0x08678  0x00000000 0x00000000 0x00000000 same                                 addr ok (dword)
+CP_STALLED_STAT3                 0x08670  0x00000000 0x00000000 0x00000000 same                                 addr ok (dword)
+CP_BUSY_STAT                     0x0867c  0x00000400 0x00000400 0x00000400 same                                 addr ok (dword)
+CP_CPF_STATUS                    0x0821c  0x00000000 0x00000000 0x00000000 same                                 addr ok (dword)
+CP_CPF_BUSY_STAT                 0x08220  0x00000000 0x00000000 0x00000000 same                                 addr ok (dword)
+CP_CPF_STALLED_STAT1             0x08224  0x00000000 0x00000000 0x00000000 same                                 addr ok (dword)
+CP_CPC_STATUS                    0x08210  0x00000000 0x00000000 0x00000000 same                                 addr ok (dword)
+CP_CPC_BUSY_STAT                 0x08214  0x00000000 0x00000000 0x00000000 same                                 addr ok (dword)
+CP_CPC_STALLED_STAT1             0x08218  0x00000000 0x00000000 0x00000000 same                                 addr ok (dword)
+CP_RB0_RPTR                      0x08700  0x00000300 0x00000300 0x00000300 same                                 addr ok (dword)
+CP_RB0_WPTR                      0x0c150  0x10751b00 0x10751b00 0x10751b00 same                                 addr ok (dword)
+CP_IB1_BASE_LO                   0x30330  0x002f8000 0x002f8000 0x002f8000 same                                 addr ok (dword)
+CP_IB1_BASE_HI                   0x30334  0x00008001 0x00008001 0x00008001 same                                 addr ok (dword)
+CP_IB1_BUFSZ                     0x30338  0x00000000 0x00000000 0x00000000 same                                 addr ok (dword)
+CP_IB1_CMD_BUFSZ                 0x30300  0x000000a8 0x000000a8 0x000000a8 same                                 addr ok (dword)
+CP_IB2_BASE_LO                   0x3033c  0x00015000 0x00015000 0x00015000 same                                 addr ok (dword)
+CP_IB2_BASE_HI                   0x30340  0x00008001 0x00008001 0x00008001 same                                 addr ok (dword)
+CP_IB2_BUFSZ                     0x30344  0x00000000 0x00000000 0x00000000 same                                 addr ok (dword)
+CP_PFP_INSTR_PNTR                0x08694  0x0000172e 0x0000172e 0x0000172e same                                 addr ok (dword)
+CP_ME_INSTR_PNTR                 0x08698  0x00000e19 0x00000e19 0x00000e19 same                                 addr ok (dword)
+CP_MEC1_INSTR_PNTR               0x086a0  0x00000447 0x00000447 0x00000447 same                                 addr ok (dword)
+CP_MEC2_INSTR_PNTR               0x086a4  0x00000491 0x00000491 0x00000491 same                                 addr ok (dword)
+CP_PFP_HEADER_DUMP               0x08688  -          -          -          not read                             addr ok (dword)
+CP_ME_HEADER_DUMP                0x08684  -          -          -          not read                             addr ok (dword)
+SPI_CSQ_WF_ACTIVE_STATUS         0x0936c  0x00000000 0x00000000 0x00000000 same                                 addr ok (dword)
+GCVM_L2_PROTECTION_FAULT_STATUS  0x0a130  0x00000000 0x00000000 0x00000000 same                                 addr ok (dword)
+CC_GC_SHADER_ARRAY_CONFIG        0x089bc  -          -          -          not read                             addr ok (dword)
+GC_USER_SHADER_ARRAY_CONFIG      0x089c0  -          -          -          not read                             addr ok (dword)
+totals: addr ok 35, not read 4, same 31
+## forced-20261029-063308/summary.txt
+bc5-gpu-stall-sampler 0373-t0 forced sample forced-20261029-063308 (request: once)
+pending rings: gfx_0.0.0
+ sample 1 (forced) mono 24986.898, clocks gfx_0.0.0=0.00, gfxoff 0
+   registers 33 (0 errors) in 0.1 ms; waves 134 kept of 1600 slots (0 errors, errno None), scan 26.9 ms; HW_ID1 mismatches 23
+   distinct PCs 82: 0x50070c07c x11, 0x5bebebeef x9, 0x50070c06c x5, 0x50079506c x4, 0x50079505c x4, 0x500797f4c x4, 0x50070c628 x4, 0x500793054 x3, 0xbeefbebebeef x3, 0x50070c0d8 x3, 0x50079654c x2, 0x5003e5e68 x2, 0x50071cba0 x2, 0xbeef003e3a3c x2, 0x50070c090 x2, 0x5007c3fa8 x2
+   queues: me0 pipe0 q6 vmid6 x36, me0 pipe0 q0 vmid6 x26, me0 pipe0 q7 vmid6 x22, me2 pipe2 q15 vmid14 x20, me0 pipe0 q8 vmid6 x15, me0 pipe0 q9 vmid6 x14, me0 pipe0 q0 vmid0 x1
+   GRBM_STATUS=0xe5f14028 CP_STAT=0x95078600 CP_PFP_INSTR_PNTR=0xea0 CP_ME_INSTR_PNTR=0x537 CP_IB1_BASE_HI=0x1014 CP_IB1_BASE_LO=0x0 CP_IB1_BUFSZ=0x19c8 CP_IB1_CMD_BUFSZ=0x39c8
+## forced-20261029-063421/summary.txt
+bc5-gpu-stall-sampler 0373-t0 forced sample forced-20261029-063421 (request: once)
+pending rings: gfx_0.0.0
+ sample 1 (forced) mono 25059.726, clocks gfx_0.0.0=0.00, gfxoff 0
+   registers 33 (0 errors) in 0.1 ms; waves 268 kept of 1600 slots (0 errors, errno None), scan 39.3 ms; HW_ID1 mismatches 47
+   distinct PCs 172: 0x5bebebeef x13, 0x500849324 x12, 0xbeefbebebeef x10, 0x5009944dc x9, 0x500793054 x6, 0x5009946bc x5, 0x500000000 x5, 0x500994ed0 x4, 0x500849384 x4, 0x50070c1e8 x4, 0x500994330 x4, 0x5009946d4 x3, 0x5002ba8ec x3, 0x5002bb450 x3, 0x500722eb8 x3, 0x50070c1dc x3
+   queues: me0 pipe0 q8 vmid6 x52, me0 pipe0 q7 vmid6 x51, me0 pipe0 q9 vmid6 x46, me0 pipe0 q0 vmid6 x44, me0 pipe0 q6 vmid6 x25, me0 pipe0 q0 vmid0 x24, me2 pipe2 q15 vmid14 x20, me0 pipe0 q2 vmid6 x3
+   GRBM_STATUS=0xe7f141ac CP_STAT=0x94839600 CP_PFP_INSTR_PNTR=0x694 CP_ME_INSTR_PNTR=0xb8b CP_IB1_BASE_HI=0x101d CP_IB1_BASE_LO=0x0 CP_IB1_BUFSZ=0x5e70 CP_IB1_CMD_BUFSZ=0x8a10
+## event-20261029-063423-gfx_0.0.0/summary.txt
+bc5-gpu-stall-sampler 0373-t0 event event-20261029-063423-gfx_0.0.0
+reason: stall clock 1.91 s on gfx_0.0.0 (written before the kernel's 2-s timeout)
+written: 2026-10-29T06:34:23.367 (mono 25061.828); debugfs /sys/kernel/debug/dri/0000:01:00.0
+rings:
+ gfx_0.0.0: stalled since mono 25059.832 (sig 0x001447af emit 0x001447b1), samples at clock 0.50 0.82 1.11 1.42 1.72, missed 0, past 1.9 s: yes, kmsg timeout: [25061.425850] amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=1329071, emitted seq=1329073, still stalled
+samples: 5 (registers and waves of the whole GPU, shared by the rings above)
+ sample 1 (stall) mono 25060.333, clocks gfx_0.0.0=0.50, gfxoff 0
+   registers 33 (0 errors) in 0.2 ms; waves 3 kept of 1600 slots (0 errors, errno None), scan 40.7 ms; HW_ID1 mismatches 3
+   distinct PCs 2: 0x0 x2, 0x84953c x1
+   queues: me0 pipe0 q0 vmid0 x3
+   GRBM_STATUS=0xe5f100ac CP_STAT=0x94839600 CP_PFP_INSTR_PNTR=0xea1 CP_ME_INSTR_PNTR=0xb8b CP_IB1_BASE_HI=0x1008 CP_IB1_BASE_LO=0x0 CP_IB1_BUFSZ=0x5cf0 CP_IB1_CMD_BUFSZ=0x8a10
+ sample 2 (stall) mono 25060.649, clocks gfx_0.0.0=0.82, gfxoff 0
+   registers 33 (0 errors) in 0.2 ms; waves 0 kept of 1600 slots (0 errors, errno None), scan 40.4 ms; HW_ID1 mismatches 0
+   distinct PCs 0: -
+   queues: -
+   GRBM_STATUS=0xe5f100ac CP_STAT=0x94839600 CP_PFP_INSTR_PNTR=0xea1 CP_ME_INSTR_PNTR=0xb8b CP_IB1_BASE_HI=0x1008 CP_IB1_BASE_LO=0x0 CP_IB1_BUFSZ=0x5cf0 CP_IB1_CMD_BUFSZ=0x8a10
+ sample 3 (stall) mono 25060.940, clocks gfx_0.0.0=1.11, gfxoff 0
+   registers 33 (0 errors) in 0.2 ms; waves 0 kept of 1600 slots (0 errors, errno None), scan 39.9 ms; HW_ID1 mismatches 0
+   distinct PCs 0: -
+   queues: -
+   GRBM_STATUS=0xe5f100ac CP_STAT=0x94839600 CP_PFP_INSTR_PNTR=0xea1 CP_ME_INSTR_PNTR=0xb8b CP_IB1_BASE_HI=0x1008 CP_IB1_BASE_LO=0x0 CP_IB1_BUFSZ=0x5cf0 CP_IB1_CMD_BUFSZ=0x8a10
+ sample 4 (stall) mono 25061.255, clocks gfx_0.0.0=1.42, gfxoff 0
+   registers 33 (0 errors) in 0.2 ms; waves 0 kept of 1600 slots (0 errors, errno None), scan 40.9 ms; HW_ID1 mismatches 0
+   distinct PCs 0: -
+   queues: -
+   GRBM_STATUS=0xe5f100ac CP_STAT=0x94839600 CP_PFP_INSTR_PNTR=0xe9f CP_ME_INSTR_PNTR=0xb8b CP_IB1_BASE_HI=0x1008 CP_IB1_BASE_LO=0x0 CP_IB1_BUFSZ=0x5cf0 CP_IB1_CMD_BUFSZ=0x8a10
+ sample 5 (stall) mono 25061.548, clocks gfx_0.0.0=1.72, gfxoff 0
+   registers 33 (0 errors) in 0.2 ms; waves 0 kept of 1600 slots (0 errors, errno None), scan 41.2 ms; HW_ID1 mismatches 0
+   distinct PCs 0: -
+   queues: -
+   GRBM_STATUS=0xe5f100ac CP_STAT=0x94839600 CP_PFP_INSTR_PNTR=0xea1 CP_ME_INSTR_PNTR=0xb8b CP_IB1_BASE_HI=0x1008 CP_IB1_BASE_LO=0x0 CP_IB1_BUFSZ=0x5cf0 CP_IB1_CMD_BUFSZ=0x8a10
+ samples 1->2: still 0, moved 0, gone 3, new 0: draining
+ samples 2->3: still 0, moved 0, gone 0, new 0: no waves
+ samples 3->4: still 0, moved 0, gone 0, new 0: no waves
+ samples 4->5: still 0, moved 0, gone 0, new 0: no waves
+shape: mixed: draining, no waves, no waves, no waves
+program names: match the PCs offline against the host journal's dispatch and timeout-probe lists (exp 0370 K4, F113).
+## event kmsg.txt
+## recent amdgpu kernel lines (facility 0), oldest first
+[25061.423621] amdgpu 0000:01:00.0: Dumping IP State
+[25061.425825] amdgpu 0000:01:00.0: Dumping IP State Completed
+[25061.425842] amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+[25061.425845] amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+[25061.425850] amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=1329071, emitted seq=1329073
+[25061.425854] amdgpu 0000:01:00.0:  Process kyty_emulator pid 199024 thread bc5-ring pid 199097
+[25061.425858] amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+[25061.614911] amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset failed
+[25061.614921] amdgpu 0000:01:00.0: GPU reset begin!. Source:  1
+## event regs-1.txt and regs-5.txt: the header histories
+gfx1013.mmCP_PFP_HEADER_DUMP[0] => 0xc0065800   (byte 0x08688)
+gfx1013.mmCP_PFP_HEADER_DUMP[1] => 0xc0065800   (byte 0x08688)
+gfx1013.mmCP_PFP_HEADER_DUMP[2] => 0xffff1000   (byte 0x08688)
+gfx1013.mmCP_PFP_HEADER_DUMP[3] => 0xffff1000   (byte 0x08688)
+gfx1013.mmCP_PFP_HEADER_DUMP[4] => 0xffff1000   (byte 0x08688)
+gfx1013.mmCP_PFP_HEADER_DUMP[5] => 0xc0053c00   (byte 0x08688)
+gfx1013.mmCP_PFP_HEADER_DUMP[6] => 0xffff1000   (byte 0x08688)
+gfx1013.mmCP_PFP_HEADER_DUMP[7] => 0xffff1000   (byte 0x08688)
+gfx1013.mmCP_ME_HEADER_DUMP[0] => 0xc0187600   (byte 0x08684)
+gfx1013.mmCP_ME_HEADER_DUMP[1] => 0xc0005300   (byte 0x08684)
+gfx1013.mmCP_ME_HEADER_DUMP[2] => 0xc0013500   (byte 0x08684)
+gfx1013.mmCP_ME_HEADER_DUMP[3] => 0xc0017a00   (byte 0x08684)
+gfx1013.mmCP_ME_HEADER_DUMP[4] => 0xc01e7600   (byte 0x08684)
+gfx1013.mmCP_ME_HEADER_DUMP[5] => 0xc0187600   (byte 0x08684)
+gfx1013.mmCP_ME_HEADER_DUMP[6] => 0xc0016400   (byte 0x08684)
+gfx1013.mmCP_ME_HEADER_DUMP[7] => 0xc0016300   (byte 0x08684)
+(regs-5)
+gfx1013.mmCP_PFP_HEADER_DUMP[0] => 0xc0065800   (byte 0x08688)
+gfx1013.mmCP_PFP_HEADER_DUMP[1] => 0xc0065800   (byte 0x08688)
+gfx1013.mmCP_PFP_HEADER_DUMP[2] => 0xffff1000   (byte 0x08688)
+gfx1013.mmCP_PFP_HEADER_DUMP[3] => 0xffff1000   (byte 0x08688)
+gfx1013.mmCP_PFP_HEADER_DUMP[4] => 0xffff1000   (byte 0x08688)
+gfx1013.mmCP_PFP_HEADER_DUMP[5] => 0xc0053c00   (byte 0x08688)
+gfx1013.mmCP_PFP_HEADER_DUMP[6] => 0xffff1000   (byte 0x08688)
+gfx1013.mmCP_PFP_HEADER_DUMP[7] => 0xffff1000   (byte 0x08688)
+gfx1013.mmCP_ME_HEADER_DUMP[0] => 0xc0187600   (byte 0x08684)
+gfx1013.mmCP_ME_HEADER_DUMP[1] => 0xc0005300   (byte 0x08684)
+gfx1013.mmCP_ME_HEADER_DUMP[2] => 0xc0013500   (byte 0x08684)
+gfx1013.mmCP_ME_HEADER_DUMP[3] => 0xc0017a00   (byte 0x08684)
+gfx1013.mmCP_ME_HEADER_DUMP[4] => 0xc01e7600   (byte 0x08684)
+gfx1013.mmCP_ME_HEADER_DUMP[5] => 0xc0187600   (byte 0x08684)
+gfx1013.mmCP_ME_HEADER_DUMP[6] => 0xc0016400   (byte 0x08684)
+gfx1013.mmCP_ME_HEADER_DUMP[7] => 0xc0016300   (byte 0x08684)
+## event waves-1.txt (the only stall sample with kept slots)
+# sample 1 (stall) mono 25060.333, clocks gfx_0.0.0=0.50: 3 kept of 1600 slots read, 0 errors (errno None), 0 bad versions, scan 40.7 ms
+se1 sa0 wgp1 simd0 w00 08010500[VALID,MUST_EXPORT] PC=00000084953c EXEC=0 me0.p0.q0 vm0 w32 HW_ID1-mismatch(se0 sa0 wgp0 simd0 w0)
+se1 sa0 wgp1 simd0 w02 08010400[VALID,MUST_EXPORT] PC=000000000000 EXEC=0 me0.p0.q0 vm0 w32 HW_ID1-mismatch(se0 sa0 wgp0 simd0 w0)
+se1 sa0 wgp1 simd0 w18 08010400[VALID,MUST_EXPORT] PC=000000000000 EXEC=0 me0.p0.q0 vm0 w32 HW_ID1-mismatch(se0 sa0 wgp0 simd0 w0)
+## forced-20261029-063308/waves-1.txt counts: lines 134, HW_ID1-mismatch 23, PC with beef 22, mismatch naming se2/se3 23, EXEC=0 0
+## forced-20261029-063421/waves-1.txt counts: lines 268, HW_ID1-mismatch 47, PC with beef 34, mismatch naming se2/se3 26, EXEC=0 11
+## event fence.txt: gfx_0.0.0 at sample 1 and at write
+## sample 1, mono 25060.333, clocks gfx_0.0.0=0.50
+Last signaled fence          0x001447af
+Last emitted                 0x001447b1
+## sample 2, mono 25060.649, clocks gfx_0.0.0=0.82
+Last signaled fence          0x001447af
+Last emitted                 0x001447b1
+## sample 3, mono 25060.940, clocks gfx_0.0.0=1.11
+Last signaled fence          0x001447af
+Last emitted                 0x001447b1
+## sample 4, mono 25061.255, clocks gfx_0.0.0=1.42
+Last signaled fence          0x001447af
+Last emitted                 0x001447b1
+## sample 5, mono 25061.548, clocks gfx_0.0.0=1.72
+Last signaled fence          0x001447af
+Last emitted                 0x001447b1
+## at write, mono 25061.740
+Last signaled fence          0x001447af
+Last emitted                 0x001447b1
+## devcoredump 20261029-063423-devcd1.txt: header fields and named registers (values only)
+kernel: 7.2.9-ogc3.1.fc44.x86_64
+time: 25061.769243355
+vmid: 6
+process_name: kyty_emulator TGID: 199024 thread: bc5-ring PID: 199097
+[gfxhub] Page fault observed
+Faulty page starting at address: 0x0000000000000000
+Protection fault status register: 0x0
+mmGRBM_STATUS                                      	 0xe5f100ac
+mmGRBM_STATUS2                                     	 0x50000008
+mmGRBM_STATUS3                                     	 0x00002000
+mmCP_STALLED_STAT1                                 	 0x01000c00
+mmCP_STALLED_STAT2                                 	 0x00031000
+mmCP_CPF_STALLED_STAT1                             	 0x00000003
+mmCP_BUSY_STAT                                     	 0x00428100
+mmCP_CPF_BUSY_STAT                                 	 0x00000016
+mmCP_CPF_STATUS                                    	 0xb4000363
+mmCP_RB0_RPTR                                      	 0x00000126
+mmCP_RB0_WPTR                                      	 0x117c4b00
+mmCP_IB1_CMD_BUFSZ                                 	 0x00008a10
+mmCP_IB1_BASE_LO                                   	 0x00000000
+mmCP_IB1_BASE_HI                                   	 0x00001008
+mmCP_IB1_BUFSZ                                     	 0x00005cf0
+mmGCVM_L2_PROTECTION_FAULT_STATUS                  	 0x00000000
+mmCP_ME_INSTR_PNTR                                 	 0x00000b8b
+mmCP_PFP_INSTR_PNTR                                	 0x00000e9f
+mmGRBM_STATUS_SE0                                  	 0x08000000
+mmGRBM_STATUS_SE1                                  	 0xec400000
+mmGRBM_STATUS2                                     	 0x50000008
+mmGRBM_STATUS2                                     	 0x00000000
+me 0, pipe 0, queue 0
+mmCP_PFP_HEADER_DUMP                               	 0xc0065800
+mmCP_PFP_HEADER_DUMP                               	 0xc0065800
+mmCP_PFP_HEADER_DUMP                               	 0xffff1000
+mmCP_PFP_HEADER_DUMP                               	 0xffff1000
+mmCP_PFP_HEADER_DUMP                               	 0xffff1000
+mmCP_PFP_HEADER_DUMP                               	 0xc0053c00
+mmCP_PFP_HEADER_DUMP                               	 0xffff1000
+mmCP_PFP_HEADER_DUMP                               	 0xffff1000
+mmCP_ME_HEADER_DUMP                                	 0xc0187600
+mmCP_ME_HEADER_DUMP                                	 0xc0005300
+mmCP_ME_HEADER_DUMP                                	 0xc0013500
+mmCP_ME_HEADER_DUMP                                	 0xc0017a00
+mmCP_ME_HEADER_DUMP                                	 0xc01e7600
+mmCP_ME_HEADER_DUMP                                	 0xc0187600
+mmCP_ME_HEADER_DUMP                                	 0xc0016400
+mmCP_ME_HEADER_DUMP                                	 0xc0016300
+## devcoredump 20261028-233612-devcd1.txt: header fields and named registers (values only)
+kernel: 7.2.9-ogc3.1.fc44.x86_64
+time: 390.152505135
+vmid: 6
+process_name: kyty_emulator TGID: 3626 thread: bc5-ring PID: 3658
+[gfxhub] Page fault observed
+Faulty page starting at address: 0x0000000000000000
+Protection fault status register: 0x0
+mmGRBM_STATUS                                      	 0xa0407028
+mmGRBM_STATUS2                                     	 0x52000008
+mmGRBM_STATUS3                                     	 0x00000000
+mmCP_STALLED_STAT1                                 	 0x00000c00
+mmCP_STALLED_STAT2                                 	 0x00018000
+mmCP_CPF_STALLED_STAT1                             	 0x00000003
+mmCP_BUSY_STAT                                     	 0x00400400
+mmCP_CPF_BUSY_STAT                                 	 0x00000006
+mmCP_CPF_STATUS                                    	 0xb4000263
+mmCP_RB0_RPTR                                      	 0x0000050e
+mmCP_RB0_WPTR                                      	 0x04d54700
+mmCP_IB1_CMD_BUFSZ                                 	 0x00003428
+mmCP_IB1_BASE_LO                                   	 0x00000000
+mmCP_IB1_BASE_HI                                   	 0x0000101a
+mmCP_IB1_BUFSZ                                     	 0x00002ca8
+mmGCVM_L2_PROTECTION_FAULT_STATUS                  	 0x00000000
+mmCP_ME_INSTR_PNTR                                 	 0x0000077b
+mmCP_PFP_INSTR_PNTR                                	 0x00000ea1
+mmGRBM_STATUS_SE0                                  	 0x0a000016
+mmGRBM_STATUS_SE1                                  	 0x0a000016
+mmGRBM_STATUS2                                     	 0x52000008
+mmGRBM_STATUS2                                     	 0x00000000
+me 0, pipe 0, queue 0
+mmCP_PFP_HEADER_DUMP                               	 0xc0065800
+mmCP_PFP_HEADER_DUMP                               	 0xc0004600
+mmCP_PFP_HEADER_DUMP                               	 0xc0011600
+mmCP_PFP_HEADER_DUMP                               	 0xc0032200
+mmCP_PFP_HEADER_DUMP                               	 0xc0004200
+mmCP_PFP_HEADER_DUMP                               	 0xc0033700
+mmCP_PFP_HEADER_DUMP                               	 0xc0032200
+mmCP_PFP_HEADER_DUMP                               	 0xc0004200
+mmCP_ME_HEADER_DUMP                                	 0xc0004600
+mmCP_ME_HEADER_DUMP                                	 0xc0011600
+mmCP_ME_HEADER_DUMP                                	 0xc0004200
+mmCP_ME_HEADER_DUMP                                	 0xc0033700
+mmCP_ME_HEADER_DUMP                                	 0xc0004200
+mmCP_ME_HEADER_DUMP                                	 0xc0033700
+mmCP_ME_HEADER_DUMP                                	 0xc0074500
+mmCP_ME_HEADER_DUMP                                	 0xc0074500
+## host direct.log: the clock line and the submits around the hang
+bc5 clock: journal t 0 = monotonic 24985.426 s
+timing: #45139 done at t 74.291 s, 10.6 ms after the sync and hints; device: prepare 0.34 list 0.00 cs 0.16 fence 9.87 ms, 81 BOs
+timing: #45140 done at t 74.291 s, 9.8 ms after the sync and hints; device: prepare 0.04 list 0.04 cs 0.09 fence 9.56 ms, 36 BOs (short list)
+timing: #45141 done at t 74.291 s, 9.6 ms after the sync and hints; device: prepare 0.01 list 0.01 cs 0.02 fence 9.53 ms, 38 BOs (short list)
+timing: t 74.291 s acb 87 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q32
+timing: t 74.291 s acb 2 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q32
+timing: #45142 done at t 74.291 s, 0.1 ms after the sync and hints; device: prepare 0.01 list 0.02 cs 0.05 fence 0.01 ms, 36 BOs (short list)
+timing: t 74.291 s acb 87 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q40
+timing: #45143 done at t 74.291 s, 0.0 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.01 fence 0.01 ms, 36 BOs (short list)
+timing: t 74.291 s acb 2 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q40
+timing: #45144 done at t 74.291 s, 0.1 ms after the sync and hints; device: prepare 0.00 list 0.00 cs 0.01 fence 0.03 ms, 36 BOs (short list)
+timing: #45145 done at t 74.291 s, 0.0 ms after the sync and hints; device: prepare 0.00 list 0.00 cs 0.01 fence 0.01 ms, 36 BOs (short list)
+frame profile: t 74.292 s, 16.8 ms since the last flip; game thread inside the host 4.2 ms (sync 0.1, hints 0.1, prepare 0.7, list 0.0, cs 0.2, fence 0.0, cap 0.0, label waits 3.1, event waits 0.0), at the flip 0.0, outside 12.6; 
+timing: t 74.292 s dcb 29912 dwords: sync 1.2 ms, hints 0.1 ms q-1
+timing: t 74.294 s acb 3330 dwords: sync 0.0 ms, hints 0.0 ms q32
+timing: t 74.294 s after that wait (acb 376 dwords)
+timing: t 74.294 s acb 446 dwords: sync 0.0 ms, hints 0.0 ms q40
+timing: #45146 done at t 74.296 s, 2.5 ms after the sync and hints; device: prepare 0.40 list 0.00 cs 0.19 fence 1.74 ms, 81 BOs
+timing: #45147 done at t 74.296 s, 2.4 ms after the sync and hints; device: prepare 0.06 list 0.00 cs 0.12 fence 2.17 ms, 81 BOs
+timing: t 74.296 s after that wait (dcb 25636 dwords)
+timing: t 74.296 s after that wait (dcb 25636 dwords)
+timing: #45148 done at t 74.297 s, 2.4 ms after the sync and hints; device: prepare 0.01 list 0.00 cs 0.02 fence 2.40 ms, 81 BOs
+timing: t 74.298 s dcb 26897 dwords: sync 0.0 ms, hints 0.1 ms q-1
+timing: t 74.299 s acb 1563 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q32
+timing: t 74.299 s acb 49 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q32
+timing: t 74.307 s acb 87 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q32
+timing: t 74.307 s acb 2 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q32
+timing: t 74.308 s acb 87 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q40
+timing: t 74.308 s acb 2 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q40
+frame profile: t 74.308 s, 16.3 ms since the last flip; game thread inside the host 5.0 ms (sync 1.2, hints 0.1, prepare 0.8, list 0.0, cs 0.3, fence 0.0, cap 0.0, label waits 2.6, event waits 0.0), at the flip 0.0, outside 11.4; 
+timing: t 74.308 s dcb 30015 dwords: sync 0.1 ms, hints 0.0 ms q-1
+timing: t 74.309 s acb 3330 dwords: sync 0.0 ms, hints 0.0 ms q32
+timing: t 74.309 s acb 70 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q40
+timing: t 74.309 s acb 376 dwords: sync 0.0 ms, hints 0.0 ms q40
+timing: #45149 done at t 74.309 s, 11.3 ms after the sync and hints; device: prepare 0.37 list 0.00 cs 0.13 fence 10.63 ms, 81 BOs
+timing: #45150 done at t 74.309 s, 10.4 ms after the sync and hints; device: prepare 0.03 list 0.03 cs 0.08 fence 10.20 ms, 36 BOs (short list)
+timing: #45151 done at t 74.309 s, 10.2 ms after the sync and hints; device: prepare 0.01 list 0.01 cs 0.02 fence 10.17 ms, 38 BOs (short list)
+timing: #45152 done at t 74.309 s, 2.3 ms after the sync and hints; device: prepare 0.01 list 0.03 cs 0.06 fence 2.14 ms, 36 BOs (short list)
+timing: #45153 done at t 74.309 s, 2.1 ms after the sync and hints; device: prepare 0.00 list 0.01 cs 0.01 fence 2.11 ms, 36 BOs (short list)
+timing: #45154 done at t 74.309 s, 1.8 ms after the sync and hints; device: prepare 0.00 list 0.00 cs 0.01 fence 1.82 ms, 36 BOs (short list)
+timing: #45155 done at t 74.309 s, 1.8 ms after the sync and hints; device: prepare 0.00 list 0.00 cs 0.02 fence 1.80 ms, 36 BOs (short list)
+timing: #45156 done at t 74.311 s, 3.2 ms after the sync and hints; device: prepare 0.33 list 0.00 cs 0.16 fence 2.51 ms, 81 BOs
+timing: #45157 done at t 74.312 s, 3.3 ms after the sync and hints; device: prepare 0.06 list 0.00 cs 0.11 fence 3.14 ms, 81 BOs
+timing: #45158 done at t 74.312 s, 3.1 ms after the sync and hints; device: prepare 0.00 list 0.00 cs 0.01 fence 3.11 ms, 36 BOs (short list)
+timing: t 74.312 s after that wait (dcb 25636 dwords)
+timing: #45159 done at t 74.313 s, 3.4 ms after the sync and hints; device: prepare 0.01 list 0.00 cs 0.03 fence 3.37 ms, 81 BOs
+timing: t 74.313 s after that wait (dcb 25636 dwords)
+timing: t 74.314 s dcb 26897 dwords: sync 0.0 ms, hints 0.1 ms q-1
+timing: t 74.315 s acb 1563 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q32
+timing: t 74.315 s acb 49 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q32
+timing: t 74.323 s acb 87 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q32
+timing: t 74.323 s acb 2 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q32
+timing: t 74.323 s acb 87 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q40
+timing: t 74.323 s acb 2 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q40
+frame profile: t 74.324 s, 15.8 ms since the last flip; game thread inside the host 4.9 ms (sync 0.1, hints 0.1, prepare 0.7, list 0.0, cs 0.3, fence 0.0, cap 0.0, label waits 3.6, event waits 0.0), at the flip 0.0, outside 11.0; 
+timing: t 74.324 s dcb 29777 dwords: sync 0.1 ms, hints 0.0 ms q-1
+timing: t 74.325 s acb 3330 dwords: sync 0.0 ms, hints 0.0 ms q32
+timing: t 74.325 s acb 70 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q40
+timing: t 74.325 s acb 376 dwords: sync 0.0 ms, hints 0.0 ms q40
+timing: t 74.333 s dcb 1376 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q-1
+cpu-wait WAIT_REG_MEM64 at 115 on 0x400202d40: GIVEN UP after 16.4 ms
+timing: t 74.341 s after that wait (dcb 25717 dwords)
+timing: t 74.441 s after that wait (dcb 25717 dwords)
+timing: t 74.443 s dcb 26863 dwords: sync 0.3 ms, hints 0.1 ms q-1
+timing: t 74.445 s acb 1563 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q32
+timing: t 74.445 s acb 49 dwords: sync (lazy) 0.0 ms, hints 0.0 ms q32
+submit #45161 acb 1563 dwords at 0x7f22dc11d7a0: pass 207 rewrite 0 drop 103 unmapped 0 cc 0 mappings 217 ... FAILED rc 0 TIMEOUT 2026.14 ms
+timing: #45161 done at t 76.342 s, 2026.3 ms after the sync and hints; device: prepare 0.03 list 0.04 cs 0.07 fence 2026.07 ms, 36 BOs (short list)
+submit #45160 dcb 26897 dwords at 0x7f2280217290: pass 2170 rewrite 571 drop 515 unmapped 3 cc 18 mappings 217 ... FAILED rc 0 TIMEOUT 2026.88 ms
+timing: #45160 done at t 76.342 s, 2027.5 ms after the sync and hints; device: prepare 0.36 list 0.00 cs 0.15 fence 2026.73 ms, 81 BOs
+## journal: boots
+ -2 cce599b39d53475586dab5c5cc3b4dac Wed 2026-10-28 23:29:42 CET  Wed 2026-10-28 23:36:11 CET
+ -1 ca3a824ad10342f7b794e3eb660fe8e1 Wed 2026-10-28 23:36:42 CET  Thu 2026-10-29 06:34:23 CET
+  0 34361c632eed488282121bd20025e9a3 Thu 2026-10-29 06:34:55 CET  Thu 2026-10-29 07:57:03 CET
+## journal -b -1: the sampler unit
+Oct 29 06:31:21.785214 bazzite systemd[1]: Started bc5-gpu-stall-sampler.service - BC5: non-halting GPU stall sampler (exp 0370/0373).
+Oct 29 06:31:22.709570 bazzite python3[197980]: bc5-gpu-stall-sampler: 2026-10-29T06:31:22.709 start pid=197980 version=0373-t0 debugfs=/sys/kernel/debug/dri/0000:01:00.0 (amdgpu dev=0000:01:00.0 unique=0000:01:00.0) realpath=/sys/kernel/debug/dri/0000:01:00.0
+Oct 29 06:33:08.464633 bazzite python3[197980]: bc5-gpu-stall-sampler: 2026-10-29T06:33:08.464 forced dir=forced-20261029-063308 pending=gfx_0.0.0 waves=134 slots=1600 scan_ms=26.9 regs_ms=0.1 gfxoff=0
+Oct 29 06:34:21.305822 bazzite python3[197980]: bc5-gpu-stall-sampler: 2026-10-29T06:34:21.305 forced dir=forced-20261029-063421 pending=gfx_0.0.0 waves=268 slots=1600 scan_ms=39.3 regs_ms=0.1 gfxoff=0
+Oct 29 06:34:23.279541 bazzite python3[197980]: bc5-gpu-stall-sampler: event event-20261029-063423-gfx_0.0.0: stall clock 1.91 s on gfx_0.0.0 (written before the kernel's 2-s timeout) (5 samples)
+## journal -b -1: kernel lines from 06:34, monotonic
+[25061.768022] bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State
+[25061.769244] bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State Completed
+[25061.769710] bazzite kernel: amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+[25061.770135] bazzite kernel: amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+[25061.770520] bazzite kernel: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=1329071, emitted seq=1329073
+[25061.770923] bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 199024 thread bc5-ring pid 199097
+[25061.771318] bazzite kernel: amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+[25061.959018] bazzite kernel: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset failed
+[25061.959530] bazzite kernel: amdgpu 0000:01:00.0: GPU reset begin!. Source:  1
+[25062.057021] bazzite bc5-gpu-watch: armed: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=1329071, emitted seq=1329073
+[25062.060012] bazzite bc5-gpu-watch: a ring reset failed [amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset failed]: crashing before the full reset: syncing and crashing the kernel for a reboot (SysRq s, c)
+[25062.060076] bazzite kernel: sysrq: Emergency Sync
+## journal -b -1: WARNING lines (all of the boot) and wave-read lines
+Oct 28 23:36:48 bazzite kernel: WARNING: drivers/gpu/drm/amd/amdgpu/../display/dc/irq/irq_service.c:169 at dal_irq_service_ack.cold+0x31/0x78 [amdgpu], CPU#4: (udev-worker)/562
+Oct 28 23:36:48 bazzite kernel: WARNING: drivers/gpu/drm/amd/amdgpu/../display/dc/irq/irq_service.c:129 at dal_irq_service_set.cold+0x5e/0x7a [amdgpu], CPU#4: (udev-worker)/562
+read_wave/amdgpu_debugfs lines: 0
+## pstore records of 06:35: the panic's amdgpu, gpu-watch, sysrq and taint lines
+records: 19
+<0>[25062.718168] Kernel panic - not syncing: sysrq triggered crash
+<12>[25061.713304] bc5-gpu-watch: armed: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=1329071, emitted seq=1329073
+<12>[25061.716364] bc5-gpu-watch: a ring reset failed [amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset failed]: crashing before the full reset: syncing and crashing the kernel for a reboot (SysRq s, c)
+<3>[25061.425850] amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=1329071, emitted seq=1329073
+<3>[25061.425854] amdgpu 0000:01:00.0:  Process kyty_emulator pid 199024 thread bc5-ring pid 199097
+<3>[25061.425858] amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+<3>[25061.614911] amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset failed
+<4>[25062.718174] CPU: 4 UID: 0 PID: 1109 Comm: bash Tainted: G     U  W  OE       7.2.9-ogc3.1.fc44.x86_64 #1 PREEMPT(lazy) 
+<4>[25062.718183] Tainted: [U]=USER, [W]=WARN, [O]=OOT_MODULE, [E]=UNSIGNED_MODULE
+<4>[25062.718226]  sysrq_handle_crash+0x1a/0x20
+<4>[25062.718233]  __handle_sysrq.cold+0xba/0x1b9
+<4>[25062.718247]  write_sysrq_trigger+0x7b/0xe0
+<6>[25061.423621] amdgpu 0000:01:00.0: Dumping IP State
+<6>[25061.425825] amdgpu 0000:01:00.0: Dumping IP State Completed
+<6>[25061.425842] amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+<6>[25061.425845] amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+<6>[25061.614921] amdgpu 0000:01:00.0: GPU reset begin!. Source:  1
+<6>[25061.716642] sysrq: Emergency Sync
+<6>[25062.718157] sysrq: Trigger a crash
+## now: the service and the saves
+is-enabled: not-found; is-active: inactive
+Oct 29 07:42:56.293329 bazzite systemd[1]: Stopping bc5-gpu-stall-sampler.service - BC5: non-halting GPU stall sampler (exp 0370/0373)...
+Oct 29 07:42:56.308226 bazzite systemd[1]: bc5-gpu-stall-sampler.service: Deactivated successfully.
+Oct 29 07:42:56.308632 bazzite systemd[1]: Stopped bc5-gpu-stall-sampler.service - BC5: non-halting GPU stall sampler (exp 0370/0373).
+  ls: cannot access '/usr/local/sbin/bc5-gpu-stall-sampler': No such file or directory
+  ls: cannot access '/etc/systemd/system/bc5-gpu-stall-sampler.service': No such file or directory
+live saves: 530ac03cb15b0ddf
+# extract0374 done
