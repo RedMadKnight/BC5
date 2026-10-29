@@ -1,7 +1,7 @@
 # 0380 — Is the F403 class a zero-dimension indirect dispatch? (sources, title side, a guard, a box plan)
 
 **Date.** 2026-10-29. **Laptop only.** No box access and no GPU submission in this experiment. Branch
-`exp/0380-zero-dim-dispatch`. Findings F545–F609 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
+`exp/0380-zero-dim-dispatch`. Findings F545–F610 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
 session's GO).
 
 **Question.** F527 puts the ME just past a `DISPATCH_INDIRECT` that passed the host's check, inside the title's
@@ -1737,6 +1737,65 @@ would end the prefix too early and count our `SET_BASE` as the title's. Codex's 
 - No source ties `CLEAR_STATE` to the CP's argument fetch on gfx1013. F603 stays a hypothesis, not a mechanism. The
   design of the next test is the top session's and the maintainer's.
 
+## 25. The night's crash work: the 23:15 and 23:30 exits (F610; the top session's night GO)
+
+The maintainer approved the night's work: "Tak. Do rana działajcie sami z codexem" (yes; until morning, work on your
+own with Codex). Box session from 23:33, lock lines `top exp 0380 | night: …`, claim in BOX-QUEUE.
+- **Live saves:** 377a8d456a9b4cb1 at the start. That is the maintainer's state after the lean play's 23:30:00
+  autosave.
+- **Kernel stream:** `raw/runs/CR-kernel-stream.txt`.
+
+**What the reads show.**
+- **The lean crash at 23:30:10 cannot be placed.**
+  - The user journal has only the shortcut's unit: `status=65/DATAERR`, 12 min 10 s wall clock.
+  - Exit 65 is what the emulator's guest exception handler returns, as at 23:15. coredumpctl has no entry, because
+    the handler exits rather than dumping. The lean build writes no log, and nothing else was written between 23:18
+    and 23:32 except the saves.
+  - Its slot-4 autosave came 10 s before.
+  - So both crashes are guest exceptions. The lean one ran with neither NO_CLEAR nor the zero skip. If the two are
+    one crash, neither piece causes it. One or the other may still be a different fault.
+- **F607's ATRAC9 lead is withdrawn.**
+  - The "AJM codec=1, name=ATRAC9 decoder" line after the 23:15 register dump is a buffered-stdout artefact.
+    `AjmLogCodecSupport` (KytyPlus `src/libs/ajm.cpp:384-388`) prints it with `printf` once, at the first supported
+    instance, and stdout was flushed at exit, after the stderr crash lines.
+  - The 4-channel reading of F605 stands. The loads take elements e, e+4, …, e+28 of an interleaved int16 source with
+    a stride of r10 = 4, and the output pointers sit 0x800 apart on the stack.
+  - But 4-channel streams are common in this title: Opus music stems at 7.999 bytes per 4-channel sample (F241)
+    besides the eight ATRAC9 4.0 streams. So the channel count does not point at ATRAC9.
+- **The source of the null, one frame further up.**
+  - Frame 1 (0x1d58a1) passes the descriptor from a saved local (`-0x40(%rbp)`). The other argument is `r14 + 0x10`
+    of a voice-like object: it has a format word at +0x92, a sub-object at +0xe8 with counters at +0x29c/+0x2a2, and
+    a flag byte at +0xf2.
+  - The registers at the fault no longer hold either pointer, so the descriptor cannot be recovered from this report.
+- **The 23:07 play's own records** (`exp0380nc/play/mem-…-230725.txt`, the log's fps lines, the gc journal; private):
+  - **Memory, minutes 2–8:** memavail 730–1,020 MB against 21:33's 470–555 MB; PSI memory full ≤ 0.58 % against
+    ≤ 1.18 %; swap about 830 MB against 560–920 MB. So it was "more stable" in memory, as the skip should make it.
+    The play ended at minute 8, before 21:33's minute-16 collapse.
+  - **Frames:** 12.8–31.4 flips/s per minute; from t 380 s to the crash at t 473 s, 9–54 flips/s with gaps up to
+    197 ms. That is not the multi-second stall of the old slow motion, but the scene differs from 21:33's, so it is no
+    comparison. The cutscene's place cannot be found in these records. Whether the crash fell in it stays open.
+  - **The gc journal:** no TIMEOUT, no given-up wait. The zero skip had 3 canary hits and took back 67 chunks on CPU
+    writes, with 562 MiB still skipped at 23:15.
+- **Reproduction attempt CR1** (`raw/s6n0380cr.sh` by `raw/mk-s6n0380cr.py`; the shared normal build 58c4a627, only
+  read):
+  - **Setup:** a private copy of the live saves (377a8d45) and the slot-4 route (`raw/slot4.cmd`: ✕, down ×3, ✕, ✕
+    at 85 s), RT on, 420 s.
+  - **Result: pass, no exception.** The game loaded the 23:30 autosave into the city at night (a private shot at 200 s)
+    and stood there with no input: 27.1 flips/s, 0 crash, kernel or TIMEOUT lines, live saves unchanged.
+  - The lean crash came 10 s after that autosave, while the maintainer was playing. An idle run of the same spot
+    does not reach it.
+
+**State of priority 1: no confirmed cause and no fix candidate.**
+- The fault is a null source buffer in the title's 4-channel int16 → float conversion. One crash is on our test
+  binary and one, unplaced, on the shared lean build.
+- A switch to fix it cannot be written before the descriptor's owner is known. A guard in the title's code path
+  would hide the symptom, not cure it.
+- **The cheapest way to the cause:** a crash-context dump, host side and CPU only, default off. On a guest
+  exception it would print 32 qwords below every saved rbp of the stack walk and 8 qwords at each pointer found
+  there. The descriptor (frame 1's `-0x40(%rbp)`) and the voice object would then be in the next crash's log.
+  - It lives in `runtimeLinker.cpp`'s handler, a second unit beside `bc5LleAgc.cpp`.
+  - It can ride along in priority 2's rebuild of the test binary, so that the maintainer's morning play records it.
+
 ## Result
 
 - Sources read and cited (F545, F546). The title-side evidence was re-read from exps 0376/0378 (F547).
@@ -1744,6 +1803,10 @@ would end the prefix too early and count our `SET_BASE` as the title's. Codex's 
 - A second guard, `FORCE_START_AT_000` on indirect dispatches, is built the same way: default off, with unit tests
   (F551).
 - The box plan is written. Only step A0 ran: a CPU-only compile check, which passed (F552). Nothing ran on the GPU.
+- The two CPU crashes are both guest exceptions (exit 65). The lean one (23:30:10) had neither NO_CLEAR nor the skip
+  and cannot be placed, and an idle run from its autosave did not crash. F607's ATRAC9 lead was a stdout artefact.
+  There is no cause and no fix yet. A crash-context dump in the next test binary is the proposed way to the
+  descriptor's owner (F610).
 - Codex's review REVIEW-01 led to two fixes. The recorder now takes only a sampler event of its own ring that is newer
   than the timed-out job, else "unknown"; its tests are written and not yet compiled, and the box binaries keep the old
   matching until a rebuild. `shape0380.py` now finds the prefix boundary from `emit_prefix`'s tail; F601's counts
