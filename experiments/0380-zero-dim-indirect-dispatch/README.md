@@ -1,7 +1,7 @@
 # 0380 — Is the F403 class a zero-dimension indirect dispatch? (sources, title side, a guard, a box plan)
 
 **Date.** 2026-10-29. **Laptop only.** No box access and no GPU submission in this experiment. Branch
-`exp/0380-zero-dim-dispatch`. Findings F545–F613. Exp 0379, not yet merged, holds F540–F543, F563–F565 and F620–F626; its F563–F565 collide with this experiment's and take new numbers at its merge (int/0380-to-main). One box session, CPU only (step A0, 11:28–11:31, on the top
+`exp/0380-zero-dim-dispatch`. Findings F545–F616. Exp 0379, not yet merged, holds F540–F543, F563–F565 and F620–F626; its F563–F565 collide with this experiment's and take new numbers at its merge. One box session, CPU only (step A0, 11:28–11:31, on the top
 session's GO).
 
 **Question.** F527 puts the ME just past a `DISPATCH_INDIRECT` that passed the host's check, inside the title's
@@ -1889,6 +1889,109 @@ RT on, `BC5_CRASH_FRAMES=1` and `BC5_0380_REC=1` in each:
   already be refuted.
 - **What every arm also records:** the crash frames at any guest exception (F610, F611), and part A at any fence
   timeout. Any arm's play also tests the CPU crashes.
+
+## 27. How gfx10 fetches indirect arguments, against what our check polls (F614–F616; laptop only, public sources)
+
+The task came from the top session after exp 0381's F667. The 18:08 stall is the draw-side twin of sub-class B:
+exp 0057's CP check polls sane words, and the draw still runs away. So F403 and 18:08 may share one root: the CP's
+argument fetch does not read what the check polled.
+
+Sources:
+- Mesa main 79590604 (freedesktop GitLab, fetched 2026-10-30): `src/gallium/drivers/radeonsi/si_barrier.c`,
+  `si_state_draw.cpp`, `src/amd/common/ac_barrier.c`, `ac_cmdbuf_cp.c`, `ac_gpu_info.c`,
+  `src/amd/vulkan/radv_cmd_buffer.c`.
+- Linux master 9c7e3d59: `drivers/gpu/drm/amd/amdgpu/gfx_v10_0.c`, `nvd.h`.
+- No AMD PM4 document was reachable. Everything below is what the drivers assume, not a hardware specification.
+
+**What the public drivers say (F614).**
+- **The PFP reads the indirect arguments, and through GL2 since GFX9.**
+  - radeonsi turns `PIPE_BARRIER_INDIRECT_BUFFER` into `AC_BARRIER_PFP_SYNC_ME` (`si_barrier.c:405-406`). It adds an
+    L2 write-back only for GFX ≤ 8 or `cp_sdma_ge_use_system_memory_scope` (`si_barrier.c:412-415`, "Indirect
+    buffers use L2 since GFX9"). That flag is set for GFX12 only (`ac_gpu_info.c:1262`).
+  - RADV sets `PFP_SYNC_ME` for any later `DRAW_INDIRECT` stage, which covers indirect dispatches too
+    (`radv_cmd_buffer.c:7896-7902`). For `INDIRECT_COMMAND_READ` it invalidates only the scalar cache, for shaders
+    that read the grid size (8092-8095).
+  - The kernel's gfx10 VM flush ends with a `PFP_SYNC_ME`, "otherwise we might get invalid PFP reads"
+    (`gfx_v10_0.c:8774-8778`). So the PFP reads ahead of the ME on its own.
+- **The polls and the flag are ME work, and the gate is PFP work.** The check's `COND_WRITE`s poll memory and write
+  the flag on the ME. `PFP_SYNC_ME` holds the PFP until the ME has caught up. `COND_EXEC` and the dispatch's argument
+  fetch are then the PFP's.
+  - In Mesa's model this order is enough: after `PFP_SYNC_ME`, the PFP's read of the same address through the same
+    GL2 sees what the ME's polls saw.
+  - An `ACQUIRE_MEM` for the PFP is "an ACQUIRE at the ME plus a PFP_SYNC_ME" (`ac_barrier.c:214-220`;
+    `ac_cmdbuf_cp.c:412-429`, `ENGINE_SEL`). So in that model the PFP keeps no data cache of its own that would need
+    invalidating.
+  - TODO(verify) the `ENGINE_SEL` encoding of our `ACQUIRE_MEM`s (dword 1 = 0, as the kernel's `emit_mem_sync`,
+    `gfx_v10_0.c:9472-9494`; `nvd.h:447-456` names the bit only).
+- **How the drivers emit the packet.** RADV: `SET_BASE` 1 to the buffer's VA right before a GFX-form
+  `DISPATCH_INDIRECT` with offset 0 (`radv_emit_indirect_buffer`, `radv_cmd_buffer.c:12310-12318`, 15452-15457),
+  with `FORCE_START_AT_000` in the initiator (F546). radeonsi: `SET_BASE` 1 to the buffer's base, then the draw with
+  its offset (`si_state_draw.cpp:1598-1601`). The barrier comes before the `SET_BASE`, at the start of the draw or
+  dispatch.
+
+**Our packet order against the drivers' (F615).** Ours, at 12:12 and 14:04, from F599, §5 and §19:
+1. Our prefix: `CONTEXT_CONTROL`, `CLEAR_STATE`, the replayed registers, `SET_BASE` 1 (dword 1249), `INDEX_BASE`,
+   `INDEX_BUFFER_SIZE`, `NUM_INSTANCES`, the TF ring registers.
+2. The title: `ACQUIRE_MEM` with `GCR_CNTL` 0x280 (GLK_INV and GL1_INV, no GL2 action; field names `nvd.h`).
+3. Our filter's NOPs in place of the two empty loads.
+4. Our check:
+   - `WRITE_DATA` flag = 1;
+   - `COND_WRITE` polls of x, y and z, and the 0341 staircase;
+   - the confirm `WRITE_DATA` with `WR_CONFIRM`;
+   - `PFP_SYNC_ME`;
+   - `COND_EXEC` on the flag.
+5. The title's `DISPATCH_INDIRECT`, offset 0, initiator 0x41 (no `FORCE_START_AT_000`).
+   - At 14:04, our rebase `SET_BASE` came first, inside the `COND_EXEC`.
+
+The differences from the drivers:
+- **(a) `PFP_SYNC_ME` placement:** after the polls, as the drivers place it after the last writer. Correct in their
+  model.
+- **(b) `SET_BASE` distance:** ours sits 38 dwords before the fetch, behind `CLEAR_STATE` and an `ACQUIRE_MEM`; the
+  drivers' sits right before it. No source says a later `ACQUIRE_MEM` or `CLEAR_STATE` touches the base. The 14:04
+  rebase put it right before the fetch and B came anyway (F564, F565).
+- **(c) No `FORCE_START_AT_000`:** the title's, kept by us. F551's switch adds it; FORCE_START was on at 14:04 and B
+  came anyway.
+- **(d) Whether the producer has finished:** the drivers wait for it with a `CS_PARTIAL_FLUSH` before
+  `PFP_SYNC_ME` when a shader wrote the buffer. We keep only the title's own waits, which were written for the
+  console's CP (F578: none removed).
+- **(e) Different engines:** the ME polls and the PFP fetches. That is no difference from the drivers; it is
+  inherent.
+
+**So in the public model the mismatch cannot happen with sane, settled memory.** Something outside the model is
+needed.
+- **(i) The fetch read a different address from the polls.**
+  - F591/F572 shows this for our high-VA copy slot: one fixed garbage from two slots, so the fetch takes fewer address
+    bits than 2^44.
+  - Not shown for the title's slots, which lie near 2^36.
+- **(ii) The slot changed between the poll and the fetch, and back.**
+  - A writer still running, which (d) would allow: an earlier dispatch's waves, or a `DMA_DATA` without `CP_SYNC`
+    (F578).
+  - It must leave the final, sane words that the timeout read shows (F590). F662's draw slots held index-like words
+    even at the timeout, which fits a writer that is wrong or late.
+- **(iii) A gfx1013 behaviour outside the drivers' model.** For example, the fetch reads memory behind GL2 for some
+  memory types (F569's idea; F579: requested memory types never reach our GPU mappings). Nothing public describes it.
+
+**The fix candidates, ranked (F616), all default-off switches.** The table says which observation each one would
+explain if it worked:
+
+| Rank | Candidate | State | F590 (index-like dims, sane slot) | F591 (copy runs' fixed garbage) | F599 (B is the first dispatch after our prefix) | F667 (draw twin) |
+|---|---|---|---|---|---|---|
+| 1 | `ARGS_COPY` into the low-VA slot (F574) + `ARGS_WB=all` | built in the backend, not relinked or run | yes if (ii) or (iii): the fetch reads ME-written, written-back dwords | tests it properly: the C1/W1 slot was the high VA | no | needs a `DRAW_INDIRECT` copy (5 dwords), not built |
+| 2 | `ARGS_WB=first` (GL2 write-back before the first fetch after an `INDEX_BASE`) | built; 36.6 min of play without B (F584) | yes if (iii) | no | partly: "first after `INDEX_BASE`" is our prefix's dispatch | the draw side needs the same packet before checked draws |
+| 3 | A `CS_PARTIAL_FLUSH` (+ `PFP_SYNC_ME`) before the first checked dispatch after an `INDEX_BASE` | not built; about 145 a second, each one a serialising wait | yes if (ii), a writer still running | no | yes: the prefix's dispatch is where the title's own wait may have lost its meaning | yes with a draw variant |
+| 4 | NO_CLEAR arms (F613) | built (b), (c) needs an edit | no mechanism | no | yes, as a test of the prefix | no |
+| 5 | Move `PFP_SYNC_ME`, or a PFP-engine `ACQUIRE_MEM` | not built | no: the drivers' model says these change nothing here | no | no | no |
+
+- **Rank 1 decides between (i)–(iii)** for the title's dispatches, as F567 meant for C1. It puts the
+  dispatch's base on a slot the host chose at a low VA, holding dwords the ME copied, polled and wrote back.
+  - If B still comes, the fetch is wrong at the CP itself.
+  - It needs a relink and a bench run. C1 and W1 hung within 7 s at the high VA, so the low-VA slot must pass a bench
+    before any play.
+- **Rank 2 is the cheapest mitigation and already played clean once.**
+- **Rank 3 is the new idea here: test (ii) directly.** It costs a wait at about 145 dispatches a second, so it needs
+  a bench before play.
+- Every rank needs a draw-side counterpart to cover F667: the draw check (`indirect_check`'s `draw_max` path) gets
+  the same pieces before checked `DRAW_INDIRECT`s.
 
 ## Result
 
