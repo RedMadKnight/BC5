@@ -1,7 +1,7 @@
 # 0380 — Is the F403 class a zero-dimension indirect dispatch? (sources, title side, a guard, a box plan)
 
 **Date.** 2026-10-29. **Laptop only.** No box access and no GPU submission in this experiment. Branch
-`exp/0380-zero-dim-dispatch`. Findings F545–F596 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
+`exp/0380-zero-dim-dispatch`. Findings F545–F597 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
 session's GO).
 
 **Question.** F527 puts the ME just past a `DISPATCH_INDIRECT` that passed the host's check, inside the title's
@@ -1376,6 +1376,22 @@ All of them are private, never in the repo.
   stuck dispatch. The timeout probe already dumps that ring (`<ib dump>.tfring.bin` and a "TF ring" journal line,
   exp 0189). Searching the 12:12 and 14:04 TF-ring dumps for the two triples is a box read of already-captured
   private data (it needs a GO). Part A adds the TF ring base to its candidates only if that read is positive.
+
+**The TF-ring read (F597; the top session's GO, reads only, 21:0x, lock line `top exp 0380 | reads only: TF-ring …`,
+cleared; claim and done lines in BOX-QUEUE).**
+- **Coverage.** Both events have the ring at 0x1120000000, 0x3fff8 bytes (the probe's "TF ring" journal line). At 14:04
+  the probe's dump (`ib-timeout-00278264-dcb-8251.bin.tfring.bin`, private) holds all 262,136 bytes, the whole ring
+  as programmed; the acb's copy is identical. At 12:12 both `.tfring.bin` files are **empty** (0 bytes): only the
+  journal line's first ~48 dwords exist.
+- **No hit.** None of the three triples (12:12, 14:04, C1/W1) occurs in the 14:04 ring at any byte alignment: not as
+  a triple, a pair, a single 32-bit dword or the 16-bit sequence. Nor do 12:12's or 14:04's dwords occur in 12:12's
+  journal excerpt.
+- **What it holds.** The ring holds f32 tessellation factors: 22,289 distinct values between 0 and 0x40800000 (4.0),
+  0x40000000 (2.0) 280 times, only 2 dwords below 0x10000. 14:04's 0x4000008a (≈ 2.0000329) looks like such a factor,
+  but it is not in the ring, and its neighbours 481 and 480 are integers, which the ring does not hold.
+- **So the TF ring is not the source** at 14:04 (fully covered) and is not supported at 12:12 (barely covered). The
+  reprogramming of `VGT_TF_*` between `INDEX_BASE` and the dispatch stays a timing fact, not a data source. Part A's
+  candidate list needs no TF-ring entry, and its whole-memory scan would find such data anyway.
 
 ## Result
 
