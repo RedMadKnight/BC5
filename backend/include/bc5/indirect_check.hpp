@@ -40,6 +40,7 @@ struct Stats {
     std::uint32_t start_forced = 0;    // dispatches given FORCE_START_AT_000 (experiment 0380)
     std::uint32_t rebased = 0;         // checked dispatches given their SET_BASE again (experiment 0380)
     std::uint32_t rebased_after_index_base = 0; // ... of them the first DISPATCH_INDIRECT after an INDEX_BASE
+    std::uint32_t args_copied = 0;     // checked dispatches run from the CP's copy of their arguments (0380)
     std::uint32_t unbased = 0;         // dispatches without a known base: PFP_SYNC_ME only
     std::uint32_t conditional = 0;     // dispatches NOP-ed: a COND_EXEC range grew too long
     std::uint32_t inserted_dwords = 0; // growth of the IB
@@ -80,6 +81,24 @@ inline constexpr std::size_t kProductDwords = 5 + 9 + 9 + 5 + 2 + 5 + 9;
 // only (both forms), not draws.
 inline constexpr std::size_t kZeroDwords = 3 * 9;
 inline constexpr std::size_t kRebaseDwords = 4; // experiment 0380: SET_BASE index 1
+// Experiment 0380 (F566, after the 14:04 hang): args_copy, default off. Every checked GFX-form
+// DISPATCH_INDIRECT runs from a copy of its arguments that the CP itself makes after the title's
+// writes:
+//
+//   COPY_DATA    args + 0, 4, 8 -> flag area + 16, 20, 24   (memory to memory, ME, WR_CONFIRM)
+//   WRITE_DATA   flag = 1, and the check's COND_WRITEs, now on the COPY
+//   ...          confirm, PFP_SYNC_ME
+//   COND_EXEC    flag, 3 + 4 dwords
+//   SET_BASE     index 1 = flag area + 16
+//   DISPATCH_INDIRECT  offset 0 (the title's offset is folded into the copy's source)
+//   SET_BASE     index 1 = the title's base again (for its later indirect packets)
+//
+// The check and the dispatch then read the same dwords, written by the CP's ME and confirmed before
+// the PFP_SYNC_ME. RADV does the same copy-then-dispatch for GFX7's compute-queue alignment bug
+// (radv_cmd_buffer.c radv_emit_dispatch_packets, has_async_compute_align32_bug, ab2374a). The flag
+// area holds 8 dwords (direct.cpp), and the copy uses dwords 4-6. Supersedes rebase for the dispatch it
+// covers. MEC form and draws are unchanged.
+inline constexpr std::size_t kArgsCopyDwords = 3 * 6 + 4 + 4;
 
 // Experiment 0380 (the 12:12 hang, F555): tighter y and z limits for indirect dispatches. The host's
 // FilterOptions default is y, z <= 2^10; the title's legitimate indirect grids are one-dimensional
@@ -132,7 +151,7 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib, std::uint64_
                                  std::vector<std::size_t> &flag_refs, Stats &stats,
                                  bool compute_ring = false, const ProductLimit *product = nullptr,
                                  bool zero_dims = false, bool force_start = false,
-                                 bool rebase = false);
+                                 bool rebase = false, bool args_copy = false);
 
 void patch(std::span<std::uint32_t> ib, const std::vector<std::size_t> &flag_refs,
            std::uint64_t flag_va);

@@ -132,6 +132,10 @@ struct Device::Impl {
     // gets its SET_BASE index 1 again right before it (indirect_check rebase). Unset: off.
     bool env_rebase = false;
     std::uint64_t rebased_sum = 0, rebased_ib_sum = 0;
+    // Experiment 0380 (F566): BC5_DIRECT_ARGS_COPY — each checked GFX-form DISPATCH_INDIRECT runs from the
+    // CP's own copy of its arguments, the copy the check reads (indirect_check args_copy). Unset: off.
+    bool env_args_copy = false;
+    std::uint64_t args_copied_sum = 0;
     indirect_check::YzLimit yz;
     std::uint64_t start_forced_sum = 0, start_seen_sum = 0;
     // Experiment 0346: BC5_DIRECT_HOST_INDIRECT — a GFX-form DISPATCH_INDIRECT without a SET_BASE of its type
@@ -234,6 +238,9 @@ struct Device::Impl {
         if (env_zero) // experiment 0380: how many the CP skipped is not seen by the host
             std::fprintf(stderr, "bc5-direct: experiment 0380 %s: zero-dimension guard on %llu checked dispatches\n",
                          when, static_cast<unsigned long long>(zero_sum));
+        if (env_args_copy) // experiment 0380 (F566)
+            std::fprintf(stderr, "bc5-direct: experiment 0380 %s: %llu checked indirect dispatches ran from the CP's copy of their arguments\n",
+                         when, static_cast<unsigned long long>(args_copied_sum));
         if (env_rebase) // experiment 0380
             std::fprintf(stderr, "bc5-direct: experiment 0380 %s: SET_BASE re-emitted before %llu checked indirect dispatches, %llu of them the first after an INDEX_BASE\n",
                          when, static_cast<unsigned long long>(rebased_sum), static_cast<unsigned long long>(rebased_ib_sum));
@@ -512,6 +519,10 @@ std::unique_ptr<Device> Device::open(const std::string &node, const OpenOptions 
     if (const char *e = std::getenv("BC5_DIRECT_GPU_CHECK_ZERO"); e != nullptr && *e != 0 && std::strcmp(e, "0") != 0) {
         d->impl_->env_zero = true; // experiment 0380
         std::fprintf(stderr, "bc5-direct: experiment 0380 switch: the CP check also skips an indirect dispatch whose x, y or z argument is 0\n");
+    }
+    if (const char *e = std::getenv("BC5_DIRECT_ARGS_COPY"); e != nullptr && *e != 0 && std::strcmp(e, "0") != 0) {
+        d->impl_->env_args_copy = true; // experiment 0380 (F566)
+        std::fprintf(stderr, "bc5-direct: experiment 0380 switch: every checked GFX-form indirect dispatch runs from the CP's copy of its arguments, the copy the check reads\n");
     }
     if (const char *e = std::getenv("BC5_DIRECT_REBASE_DISPATCH"); e != nullptr && *e != 0 && std::strcmp(e, "0") != 0) {
         d->impl_->env_rebase = true; // experiment 0380
@@ -1236,12 +1247,14 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
         main_out = indirect_check::apply(main_out, opt.mec_indirect_base, check_max,
                                          opt.gpu_check_draw_max, flag_refs, st, comp,
                                          impl_->env_product && !comp ? &impl_->product : nullptr, // experiment 0341
-                                         impl_->env_zero, impl_->env_force_start, impl_->env_rebase); // experiment 0380
+                                         impl_->env_zero, impl_->env_force_start, impl_->env_rebase,
+                                         impl_->env_args_copy); // experiment 0380
         impl_->product_sum += st.product_checked;
         impl_->zero_sum += st.zero_checked;
         impl_->start_forced_sum += st.start_forced;
         impl_->rebased_sum += st.rebased;
         impl_->rebased_ib_sum += st.rebased_after_index_base;
+        impl_->args_copied_sum += st.args_copied;
         if (impl_->env_force_start) impl_->start_seen_sum += st.checked + st.unbased;
         r.filter.gpu_checks += st.checked;
         r.filter.gpu_check_unbased += st.unbased;

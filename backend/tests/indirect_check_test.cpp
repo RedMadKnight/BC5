@@ -580,3 +580,128 @@ TEST_CASE("indirect_check: the SET_BASE rebase before a checked dispatch (experi
         CHECK(o[4] == ib.size() + indirect_check::kCheckDwords + indirect_check::kRebaseDwords);
     }
 }
+
+TEST_CASE("indirect_check: the dispatch runs from the CP's copy of its arguments (experiment 0380)", "[indirect_check]") {
+    // SET_BASE index 1 = 0x12_3456_7000, INDEX_BASE, INDEX_BUFFER_SIZE, DISPATCH_INDIRECT offset 0x40, initiator 0x41.
+    const std::vector<std::uint32_t> ib = {0xC0021100u, 1u,         0x34567000u, 0x12u,
+                                           0xC0012600u, 0x9db6280u, 0x11u,
+                                           0xC0001300u, 0xffffffffu,
+                                           kDispatchIndirect, 0x40u, 0x41u};
+    std::vector<std::size_t> refs;
+    indirect_check::Stats st;
+    auto out = indirect_check::apply(ib, 0, kMax, kDrawMax, refs, st, false, nullptr, false, false, false, true);
+    REQUIRE(st.checked == 1);
+    CHECK(st.args_copied == 1);
+    REQUIRE(out.size() == ib.size() + indirect_check::kCheckDwords + indirect_check::kArgsCopyDwords);
+    CHECK(st.inserted_dwords == indirect_check::kCheckDwords + indirect_check::kArgsCopyDwords);
+    indirect_check::patch(out, refs, 0x1000'0000'2000ull);
+    std::size_t i = 9;
+    for (std::uint32_t k = 0; k < 3; ++k, i += 6) { // COPY_DATA args + 4k -> flag area + 16 + 4k
+        CHECK(out[i] == 0xC0044000u);
+        CHECK(out[i + 1] == (1u | (5u << 8) | (1u << 20))); // memory to memory, WR_CONFIRM, ME
+        CHECK(out[i + 2] == 0x34567040u + 4 * k);         // the title's base + offset
+        CHECK(out[i + 3] == 0x12u);
+        CHECK(out[i + 4] == 0x2010u + 4 * k);
+        CHECK(out[i + 5] == 0x1000u);
+    }
+    CHECK(out[i] == 0xC0033700u); // flag = 1
+    CHECK(out[i + 2] == 0x2000u);
+    i += 5;
+    for (std::uint32_t k = 0; k < 3; ++k, i += 9) { // the limits, polled on the copy
+        CHECK(out[i] == 0xC0074500u);
+        CHECK(out[i + 1] == (6u | 0x10u | 0x100u));
+        CHECK(out[i + 2] == 0x2010u + 4 * k);
+        CHECK(out[i + 3] == 0x1000u);
+        CHECK(out[i + 4] == kMax[k]);
+        CHECK(out[i + 6] == 0x2000u);
+    }
+    CHECK(out[i] == 0xC0033700u); // confirm
+    i += 5;
+    CHECK(out[i] == 0xC0004200u); // PFP_SYNC_ME
+    i += 2;
+    CHECK(out[i] == 0xC0032200u); // COND_EXEC flag over SET_BASE + the dispatch
+    CHECK(out[i + 4] == 7u);
+    i += 5;
+    CHECK(out[i] == 0xC0021100u); // SET_BASE index 1 = the copy
+    CHECK(out[i + 1] == 1u);
+    CHECK(out[i + 2] == 0x2010u);
+    CHECK(out[i + 3] == 0x1000u);
+    i += 4;
+    CHECK(out[i] == kDispatchIndirect);
+    CHECK(out[i + 1] == 0u); // offset 0 into the copy
+    CHECK(out[i + 2] == 0x41u);
+    i += 3;
+    CHECK(out[i] == 0xC0021100u); // the title's base again
+    CHECK(out[i + 1] == 1u);
+    CHECK(out[i + 2] == 0x34567000u);
+    CHECK(out[i + 3] == 0x12u);
+    CHECK(i + 4 == out.size());
+
+    SECTION("with the staircase, the zero guard, FORCE_START and rebase: all poll the copy, the copy wins over rebase") {
+        std::vector<std::size_t> r;
+        indirect_check::Stats s;
+        const indirect_check::ProductLimit product{1u << 16, 1};
+        auto o = indirect_check::apply(ib, 0, kMax, kDrawMax, r, s, false, &product, true, true, true, true);
+        CHECK(o.size() == ib.size() + indirect_check::kCheckDwords + indirect_check::kProductDwords +
+                               indirect_check::kZeroDwords + indirect_check::kArgsCopyDwords);
+        CHECK(s.rebased == 0);
+        CHECK(s.args_copied == 1);
+        indirect_check::patch(o, r, 0x1000'0000'2000ull);
+        std::size_t polls = 0, title_polls = 0;
+        for (std::size_t j = 0; j + 8 < o.size(); ++j) {
+            if (o[j] != 0xC0074500u) continue;
+            if (o[j + 2] >= 0x2010u && o[j + 2] <= 0x2018u && o[j + 3] == 0x1000u) polls++;
+            if ((o[j + 2] & 0xfffff000u) == 0x34567000u) title_polls++;
+        }
+        CHECK(polls == 3 + 3 + 2 + 1); // limits, zero guard, staircase y/z, staircase x
+        CHECK(title_polls == 0);
+        const std::size_t e = o.size() - 4 - 3; // the dispatch, before the restoring SET_BASE
+        CHECK(o[e] == kDispatchIndirect);
+        CHECK(o[e + 1] == 0u);
+        CHECK(o[e + 2] == 0x45u); // FORCE_START on the dispatch's initiator, not on the SET_BASE after it
+        CHECK(o.back() == 0x12u);
+    }
+    SECTION("off by default; unbased, MEC form and draws are untouched") {
+        std::vector<std::size_t> r;
+        indirect_check::Stats s;
+        auto plain = indirect_check::apply(ib, 0, kMax, kDrawMax, r, s);
+        CHECK(plain.size() == ib.size() + indirect_check::kCheckDwords);
+        CHECK(s.args_copied == 0);
+        const std::vector<std::uint32_t> unbased = {kDispatchIndirect, 0x40u, 0x41u};
+        auto u = indirect_check::apply(unbased, 0, kMax, kDrawMax, r, s, false, nullptr, false, false, false, true);
+        CHECK(u == std::vector<std::uint32_t>{0xC0004200u, 0u, kDispatchIndirect, 0x40u, 0x41u});
+        const std::vector<std::uint32_t> mec = {0xC0021600u, 0x34567040u, 0x12u, 0x41u};
+        auto m = indirect_check::apply(mec, 0, kMax, kDrawMax, r, s, true, nullptr, false, false, false, true);
+        CHECK(m.size() == mec.size() + indirect_check::kCheckDwords - 2);
+        const std::vector<std::uint32_t> draw = {0xC0021100u, 1u, 0x1000u, 0x12u, 0xC0032400u, 0x20u, 0x4cu, 0x4du, 2u};
+        auto d = indirect_check::apply(draw, 0, kMax, kDrawMax, r, s, false, nullptr, false, false, false, true);
+        CHECK(d.size() == draw.size() + indirect_check::kDrawCheckDwords);
+        CHECK(s.args_copied == 0);
+    }
+    SECTION("inside the IB's own COND_EXEC: the restoring SET_BASE is inside the grown range") {
+        std::vector<std::uint32_t> c = {0xC0032200u, 0x100u, 0x12u, 0u, static_cast<std::uint32_t>(ib.size())};
+        c.insert(c.end(), ib.begin(), ib.end());
+        c.push_back(kNop);
+        std::vector<std::size_t> r;
+        indirect_check::Stats s;
+        auto o = indirect_check::apply(c, 0, kMax, kDrawMax, r, s, false, nullptr, false, false, false, true);
+        CHECK(o[4] == ib.size() + indirect_check::kCheckDwords + indirect_check::kArgsCopyDwords);
+        CHECK(o.back() == kNop);
+        CHECK(o[5 + o[4] - 4] == 0xC0021100u); // the range ends with the restore
+    }
+    SECTION("two copied dispatches: each restores the base in effect for it") {
+        auto two = ib;
+        two.insert(two.end(), {0xC0021100u, 1u, 0x55550000u, 0x13u, kDispatchIndirect, 0x8u, 0x41u});
+        std::vector<std::size_t> r;
+        indirect_check::Stats s;
+        auto o = indirect_check::apply(two, 0, kMax, kDrawMax, r, s, false, nullptr, false, false, false, true);
+        CHECK(s.args_copied == 2);
+        CHECK(o[o.size() - 2] == 0x55550000u);
+        CHECK(o[o.size() - 1] == 0x13u);
+        indirect_check::patch(o, r, 0x1000'0000'2000ull);
+        bool second_src = false;
+        for (std::size_t j = 0; j + 5 < o.size(); ++j)
+            second_src = second_src || (o[j] == 0xC0044000u && o[j + 2] == 0x55550008u && o[j + 3] == 0x13u);
+        CHECK(second_src); // its offset 8 is folded into the copy's source
+    }
+}
