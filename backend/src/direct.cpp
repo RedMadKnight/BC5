@@ -252,8 +252,7 @@ struct Device::Impl {
             std::fprintf(stderr, "bc5-direct: experiment 0380 %s: GL2 write-back before %llu checked indirect dispatches\n",
                          when, static_cast<unsigned long long>(args_wb_sum));
         if (env_args_flush != indirect_check::ArgsFlush::off || env_flush_draws) // experiment 0380 (F617)
-            std::fprintf(stderr, "bc5-direct: experiment 0380 %s: CS_PARTIAL_FLUSH before %llu checked indirect dispatches and draws
-",
+            std::fprintf(stderr, "bc5-direct: experiment 0380 %s: CS_PARTIAL_FLUSH before %llu checked indirect dispatches and draws\n",
                          when, static_cast<unsigned long long>(args_flush_sum));
         if (env_args_copy) // experiment 0380 (F566)
             std::fprintf(stderr, "bc5-direct: experiment 0380 %s: %llu checked indirect dispatches ran from the CP's copy of their arguments\n",
@@ -549,14 +548,12 @@ std::unique_ptr<Device> Device::open(const std::string &node, const OpenOptions 
     }
     if (const char *e = std::getenv("BC5_DIRECT_ARGS_FLUSH"); e != nullptr && *e != 0 && std::strcmp(e, "0") != 0) {
         d->impl_->env_args_flush = std::strcmp(e, "all") == 0 ? indirect_check::ArgsFlush::all : indirect_check::ArgsFlush::first_after_index_base; // experiment 0380 (F617)
-        std::fprintf(stderr, "bc5-direct: experiment 0380 switch: a CS_PARTIAL_FLUSH before the check of %s
-",
+        std::fprintf(stderr, "bc5-direct: experiment 0380 switch: a CS_PARTIAL_FLUSH before the check of %s\n",
                      d->impl_->env_args_flush == indirect_check::ArgsFlush::all ? "every checked indirect dispatch" : "the first indirect dispatch after an INDEX_BASE");
     }
     if (const char *e = std::getenv("BC5_DIRECT_ARGS_FLUSH_DRAWS"); e != nullptr && *e != 0 && std::strcmp(e, "0") != 0) {
         d->impl_->env_flush_draws = true; // experiment 0380 (F617)
-        std::fprintf(stderr, "bc5-direct: experiment 0380 switch: a CS_PARTIAL_FLUSH before the check of every checked indirect draw
-");
+        std::fprintf(stderr, "bc5-direct: experiment 0380 switch: a CS_PARTIAL_FLUSH before the check of every checked indirect draw\n");
     }
     if (const char *e = std::getenv("BC5_DIRECT_ARGS_COPY"); e != nullptr && *e != 0 && std::strcmp(e, "0") != 0) {
         d->impl_->env_args_copy = true; // experiment 0380 (F566)
