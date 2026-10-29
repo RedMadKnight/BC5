@@ -232,3 +232,66 @@ idle between runs (BOX-QUEUE: exp 0378 done at 10:5x; this experiment's lock 10:
 - **F541** — Skipping those chunks behind a canary pins 1.9 GB less at the same frame rate.
 - **F542** — What took chunks back: hints 558 MiB, CPU writes 4 MiB, one canary hit of 18 MiB during the load.
 - **F543** — The bench route does not reproduce F505's re-reads, so the gain in free play is not measured.
+
+## Follow-up: the maintainer's test shortcut (0379 + 0380), 2026-10-29 11:30–11:55
+
+*Added after the verdict, at the top session's request, on the maintainer's yes ("Tak, przygotuj") to a test shortcut for
+two of the maintainer's play sessions with RT on. The result and verdict above are unchanged; this section records the
+build, the launcher and the smoke run. Files in `test0379t/`.*
+
+**Build** (`test0379t/build0379t.sh` + `build0379t.py`, box 11:43–11:44, into `~/bc5-work/exp0379t/`):
+- a private backend archive from main's backend + this experiment's header and test + exp 0380's backend change
+  (`origin/exp/0380-zero-dim-dispatch` ed68b12; `test0379t/0380-backend-ed68b12.diff`, md5 c14097de, on the merge base
+  0c13576, whose backend equals main's). The two changes do not overlap: 0380 changes `direct.cpp`,
+  `indirect_check.{hpp,cpp}` and their test; this experiment adds `zero_skip.hpp` and its test. The host includes neither
+  `indirect_check.hpp` nor a changed `direct.hpp`, so the shared host objects link against the private archive unchanged;
+- configured as the shared archive (clang, Release, `BC5_WITH_AMDGPU=ON`): **584dca77**, 0 warnings;
+- the merged backend's Catch2 tests 98/98 (MSVC on the laptop as well: 98/98), `[zero_skip]` 5/5, `[indirect_check]` 10/10;
+- the emulator: the shared normal objects (58c4a627) + `bc5LleAgc.cpp` with `patch0379-bc5LleAgc.diff` (e62113a5) +
+  the private archive: **459d34cd**, 5 warnings (the same older ones as e1cc0c92). Strings: the exp 0380 switch lines,
+  `BC5_DIRECT_FORCE_START_000`, the zero-skip and zero-scan lines;
+- the shared binary, the shared archive (bb50b2e0), `~/src/KytyPlus` and `play-pkg.sh` (55531ab6) unchanged afterwards.
+
+**Launcher** `~/bc5-work/exp0379t/play-pkg-0379t.sh` (**b3cddc1d**), made from `play-pkg.sh` 55531ab6 by
+`test0379t/mkplay0379t.pl` (nine anchors, each found once; diff in `test0379t/raw/play-pkg-0379t.diff`):
+- the private emulator; `BC5_LEAN`/`BC5_LOGS` cleared; `BC5_DIRECT_FORCE_START_000=1` always; `BC5_DIRECT_GPU_CHECK_ZERO`
+  unset;
+- the mode per start: **SCAN** while `~/bc5-work/exp0379t/play-lists/` holds no `zero-list-*.txt` (scans every 120 s
+  from 240 s to 7,200 s into `scan-<start>.txt`; at the end, a list with at least 3 scans becomes
+  `zero-list-<start>.txt`); otherwise **SKIP** on the newest `zero-list-*.txt`, with the canary and the take-back;
+- one log and one mount log per start in `~/bc5-work/exp0379t/play/`, the first line
+  `== exp 0379t mode: SCAN|SKIP <list>; BC5_DIRECT_FORCE_START_000=1; binary <md5>`;
+- `play-sample0379t.sh` (e094a3f5; exp 0371's sampler) writes `play/mem-<start>.txt` once a minute (MemAvailable,
+  swap, GTT, the emulator's and the mount's RSS, mount reads per minute, PSI memory/io full avg60, load). It is started
+  after the mount and killed by the launcher's EXIT trap, and ends by itself when the launcher is gone.
+
+**Shortcut** "**BC5 emulator (test 0379+0380)**" in `~/Pulpit` (`test0379t/shortcut0379t.sh`, as exp 0372's):
+`distrobox enter ubuntu -- ~/bc5-work/exp0379t/play-pkg-0379t.sh`. RT on comes from the shared `input.cfg`.
+
+**Smoke run T1** (`test0379t/s6n0379t.sh`, made from `raw/s6n0379.sh` by `mk-s6n0379t.pl`; the test launcher with the
+four private paths of the S6N bench, the route saves copy, RT on, 300 s, scans at 120/180/240 s through
+`BC5_0379T_SCAN_AT`; 11:45–11:50; `test0379t/raw/`):
+- **pass**: 34.2 flips/s (a 300-s run, so more of it is the load than in the 420-s arms), 0 crash lines, 0 kernel amdgpu
+  lines (stream and dmesg), 0 TIMEOUT, 0 devcoredumps, the learned file unchanged, live saves 1e451f8fefd534f3 before
+  and after;
+- the log's first line says `SCAN`; exp 0380's switch line is there, and its periodic line at the end: FORCE_START_AT_000
+  set on 6,748,739 of 9,940,597 indirect dispatches (the rest had it already);
+- the three scans found RenderGpuWcLarge 1,366 MiB and CommitIABufferAllocator 1,382 MiB zero in all of them
+  (S1: 1,378 and 1,384); the launcher kept the 3-scan list as `zero-list-…`;
+- the sampler wrote one line a minute (GTT 11,973 MiB and MemAvailable 492–590 MiB after the load; mount reads 5.4 GB a
+  minute during the load, 20–38 MiB after it);
+- afterwards the list, the memory record and the mount log were moved out of `play-lists/` and `play/` into
+  `~/bc5-work/exp0379t/raw/` (as `T1-zero-list.txt`, `T1-play-mem.txt`, `T1-play-mount.log`): both directories are empty,
+  so the maintainer's first start runs SCAN.
+
+**For the maintainer.**
+1. First play with the test shortcut: SCAN. Play as usual. A list is kept only when the session runs at least ~8 minutes
+   (three scans, at 240, 360 and 480 s).
+2. Second play with the same shortcut: SKIP on the first play's list. Compare `play/mem-*.txt` of the two plays: GTT,
+   MemAvailable and mount reads per minute.
+3. Logs: `~/bc5-work/exp0379t/play/play-<start>.log` (mode in the first line); the journal's `zero skip:` and
+   `zero scan` lines are in `~/bc5-data/captures/play-<date>/gc/direct.log`.
+
+**Undo:** delete `~/Pulpit/BC5 emulator (test 0379+0380).desktop`; `~/bc5-work/exp0379t/` can then be removed. Nothing
+shared was changed, so nothing else needs undoing. To run SCAN again, move the files out of
+`~/bc5-work/exp0379t/play-lists/`.
