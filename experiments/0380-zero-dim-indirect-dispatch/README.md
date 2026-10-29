@@ -1,7 +1,7 @@
 # 0380 — Is the F403 class a zero-dimension indirect dispatch? (sources, title side, a guard, a box plan)
 
 **Date.** 2026-10-29. **Laptop only.** No box access and no GPU submission in this experiment. Branch
-`exp/0380-zero-dim-dispatch`. Findings F545–F570 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
+`exp/0380-zero-dim-dispatch`. Findings F545–F573 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
 session's GO).
 
 **Question.** F527 puts the ME just past a `DISPATCH_INDIRECT` that passed the host's check, inside the title's
@@ -748,6 +748,56 @@ shortcuts remain. **The copy switch must not be used on its own:** it hangs with
 - Then `BC5_DIRECT_ARGS_WB=first` alone, without the copy, for the bench and the maintainer's play. It has the smallest
   cost and covers the sub-class B slot.
 
+## 12. W1, copy + GL2 write-back: the same hang, the same garbage, and what that changes (F571–F573)
+
+**GO and box.** The maintainer's "Tak, testujcie" for the `ARGS_WB` runs, relayed by the top session. 14:4x–14:5x: my
+lock and claim lines and the kernel stream. Live saves 3c1f2001a3863535 before, and after the reboot. Done line in
+BOX-QUEUE. W2/W3 were **not run** (the stop rule).
+
+**The binary.** `~/bc5-work/exp0380w/kyty_emulator` md5 **c3c8660b**: shared objects, no zero skip, archive eff535ac
+(0ce8c97), pinned as `exp0380w/libbc5_backend-eff535ac.a`. The runner `raw/s6n0380w.sh` (box md5 2c27a702) is made by
+`raw/mk-s6n0380w.pl` from `s6n0380c.sh`. The switches were
+`BC5_DIRECT_ARGS_COPY=1 BC5_DIRECT_ARGS_WB=all BC5_DIRECT_FORCE_START_000=1`.
+
+**W1 hung 7 s after its start (14:48:58 → 14:49:05, fence seq 1402),** exactly as C1 did. The ring reset failed and
+`bc5-gpu-watch` rebooted the box (`raw/runs/W1-kernel-stream.txt`).
+- Sampler: `GRBM_STATUS` 0xa0407028, PFP 0xea0, ME 0x77b; `COMPUTE_PGM` 0x11d0323c00, `COMPUTE_DIM`
+  **[3204318058 2165211406 100939574]**, initiator 0x8045 (`raw/hang-1449/`).
+- Probe: dcb #80, title dword 533, arguments 0x11d0571b00 = 28,800 × 1 × 1. That is the same program, the same
+  dispatch and **the same three launched values as C1**.
+- The IB has what the switches should insert before that dispatch:
+  - three `COPY_DATA` (547, 553, 559);
+  - the `ACQUIRE_MEM` write-back (565);
+  - the check polling the copy at 0x100e00001cf0/f4/f8 (583–640, all passed);
+  - `SET_BASE` 1 = 0x100e00001cf0 (661), the dispatch with offset 0 (665), the restore (668).
+
+**What changes (F572).**
+- The copy slot was at 0x100f00001c50 in C1 and 0x100e00001cf0 in W1: two scratch slots, two runs, two boots. Both
+  launched the same three dwords, none of which occur in either IB.
+- Leftover scratch contents cannot be identical across two different addresses and boots. And the write-back did not
+  change the outcome at all.
+- So the two copy runs did **not** test coherence: the fetch through `SET_BASE` did not read the slot.
+- The slot lies at 16 TiB + (slot << 32) (direct.cpp `kScratchVa` = 0x1000'0000'0000, above 2^44). The title's
+  arguments lie below 2^37.
+- The ME can address the slot: its `COPY_DATA` and `COND_WRITE`s worked there, and the check passed. A base above
+  what the indirect-argument fetch can address (TODO(verify): its width; RPCSX keeps 16 bits of the high dword,
+  `setBase`, e8ae148, which is a model, not hardware) would make every such fetch read one fixed location. The
+  identical garbage fits that.
+- **F568's and F569's reading is withdrawn:** the GL2 mechanism has no support left from the copy runs. F570's
+  write-back is untested against the title's own hang.
+- The title's sub-class B values differ from event to event (12:12, 14:04), so they are not this fixed read.
+
+**Next (F573).**
+- **The copy must sit below the fetch's address limit.** That means a small private buffer at a low GPU VA, e.g. from
+  libdrm's general range (`amdgpu_va_range_alloc`, as the legacy-scratch option does), listed in every submission.
+  That is host plumbing in `direct.cpp`, not built yet.
+- With such a slot, the copy test regains its meaning:
+  - a copy-only run that passes shows the copy is sound;
+  - a later class-B hang with it on decides between bad arguments and an incoherent fetch.
+- `BC5_DIRECT_ARGS_WB=first` alone (no copy) is still a valid, cheap test of the GL2 idea against the title's own
+  hang. W2 is ready to run (same binary c3c8660b) on the maintainer's yes.
+- The "test 0380 wb" shortcut was not prepared: its precondition (W2/W3 passing) was not reached.
+
 ## Result
 
 - Sources read and cited (F545, F546). The title-side evidence was re-read from exps 0376/0378 (F547).
@@ -755,6 +805,8 @@ shortcuts remain. **The copy switch must not be used on its own:** it hangs with
 - A second guard, `FORCE_START_AT_000` on indirect dispatches, is built the same way: default off, with unit tests
   (F551).
 - The box plan is written. Only step A0 ran: a CPU-only compile check, which passed (F552). Nothing ran on the GPU.
+- W1 (copy + write-back) hung like C1, with identical garbage from a different slot address. The copy runs
+  tested the slot's high VA, not coherence, and F569's GL2 reading is withdrawn (F571–F573).
 - The argument copy hung the bench within 7 s (C1): the fetch returned other data than the ME had just written and
   the check had read, at the same address. That points to the fetch missing GL2-resident writes. A GL2 write-back
   before the fetch (`BC5_DIRECT_ARGS_WB`) is built, default off, not run (F568–F570).
