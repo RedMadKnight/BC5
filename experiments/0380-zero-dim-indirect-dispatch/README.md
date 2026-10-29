@@ -2023,6 +2023,44 @@ explain if it worked:
   them only with `--zero-check` and the guard on, and the GFX table has them. Until a `--zero-check --submit` run,
   the selftest is no evidence for the zero guard.
 
+## 29. The morning decision sheet (2026-10-30; nothing below has run)
+
+The night's box sequence stopped before it began. This session's permission check refused the first write (the
+`BOX-LOCK` line, the `BOX-QUEUE` claim and the slot files) as "Modify Shared Resources". No lock was set and no file
+was written. Each step below needs the maintainer's yes, and a session allowed to write to the box. All scripts are
+on `exp/0380-zero-dim-dispatch` (a13a849); the int branch is `int/0380-to-main` (4188ded).
+
+**Box steps, in the planned order:**
+
+| Step | What it proves | Length | Risk | Files |
+|---|---|---|---|---|
+| 1. BUILD-01 dry test | Codex's backup block for `bc5-build.sh` restores staged, unstaged, binary, untracked and ignored-collision files, and stops on a tar failure, with the box's own git, tar and bash (host and ubuntu container). Run against throwaway repos in `~/bc5-work/exp0380/build01/tmp`, never `~/src`. | ~1 min | none: CPU, no emulator | `raw/slot0380.sh`; Codex's `test_build01_backup.py`, `build01_prepare.py` |
+| 2. int-check | The int branch's backend builds as the shared archive is built (clang, Release, `BC5_WITH_AMDGPU=ON`). That is the first real compile of `direct.cpp`'s ARGS_FLUSH and of `direct-selftest`'s routing fix (REVIEW-05). Then the full Catch2 suite, `[indirect_check]`, `[zero_skip]`, and `direct-selftest` without `--submit`. It does not test the zero guard on the GPU. | ~5–8 min | none: CPU; in `~/bc5-work/exp0380/int-check/` | `raw/slot0380.sh`; a `git archive` of 4188ded's `backend/` |
+| 3. Arms build | A private backend archive from a13a849. It holds every exp 0380 switch, ARGS_FLUSH and the low-VA ARGS_COPY slot among them, all default off. Its Catch2 suite must pass before anything is linked. Then binary `~/bc5-work/exp0380arms/bin/kyty_emulator` = the r1 units (0379 skip, F608 recorder, crash frames) + that archive. | ~5 min | none: CPU; shared builds only read, pins checked before and after | `raw/build0380arms.sh`, `raw/build0380y.py` (`--archive`) |
+| 4. Bench A2 | Safety and cost of rank 3: `BC5_DIRECT_ARGS_FLUSH=first BC5_DIRECT_ARGS_FLUSH_DRAWS=1`, plus the recorder, crash frames and the zero skip, with NO_CLEAR off. S6N route, RT on, route save copy, 600 s, kernel stream on. Compared with RS1's 30.9 flips/s. | ~12 min | low: an added wait about 145 times a second and before checked draws; a hang is possible but no mechanism for one is known | `raw/s6n0380arms.sh`, `raw/stream0380arms.sh` |
+| 5. Bench A1 | Safety and cost of rank 1: `BC5_DIRECT_ARGS_COPY=1 BC5_DIRECT_ARGS_WB=all`, the copy into the low-VA slot (F574). The same route and setup as A2. | ~12 min | **a hang and a reboot**: C1 and W1 hung within 7 s with the old high-VA slot (F568, F571). `bc5-gpu-watch` reboots the box if the reset fails within 60 s. The plan: check before it that the live saves are untouched, the maintainer's shortcuts are unchanged, and no lock or watcher of ours would survive a reboot; afterwards check uptime, the stall sampler, `bc5-gpu-watch` and the saves. | as A2 |
+
+- None of the benches can show a sub-class B event; they show only safety and frame cost.
+- Steps 1–2 decide whether `int/0380-to-main` can be merged without a separate check.
+- Steps 3–5 are needed only for the play arms that use ranks 1 or 3.
+
+**Play arms for the maintainer.** At about one B per RT-on hour (F613; Poisson):
+- one B event in an arm refutes that arm at once;
+- a clean arm needs about 3 h for p ≈ 0.05.
+
+| Arm | Switches | Binary | Ready? | Play |
+|---|---|---|---|---|
+| (b) noclear | zero skip + `BC5_DIRECT_PIECES_NO_CLEAR=1` (no `CONTEXT_CONTROL` or `CLEAR_STATE` in our prefix) + recorder + crash frames | 44417414 | **yes**: today's "BC5 emulator (test 0380 noclear)" | first, about 3 h. One B refutes F603. A clean (b) alone is not a result (Codex R3, F609). |
+| (a) control | as (b) with NO_CLEAR off | 44417414 | a launcher line, no build | after a clean (b): until 3 B (about 3 h), or 5 h each for p ≈ 0.03 |
+| (c) no CLEAR_STATE only | `CONTEXT_CONTROL` kept | needs a two-line `prefix_of` edit and a rebuild | no | only if (b) stays clean for 3 h |
+| rank 3 | `ARGS_FLUSH=first` + `_DRAWS` on the arms binary | the arms build (step 3) | after steps 3–4 | 3 h for a weak result; it also covers the 18:08 class |
+| rank 1 | `ARGS_COPY` + `ARGS_WB=all` on the arms binary | the arms build (step 3) | after steps 3 and 5 | the strongest prevention we have, but it bundles several changes, so a clean result would not say which one helped (REVIEW-05) |
+
+- Every arm records a guest exception's frames (`BC5_CRASH_FRAMES`, F611) and a fence timeout's part-A scan (F608).
+  So any arm also helps with the 23:15/23:30 CPU crashes (F610).
+- The maintainer's crash in the noclear play (F605) had no visible link to NO_CLEAR or the skip (F606). Arm (b) can
+  therefore be played as it stands.
+
 ## Result
 
 - Sources read and cited (F545, F546). The title-side evidence was re-read from exps 0376/0378 (F547).
