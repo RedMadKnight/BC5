@@ -4,8 +4,9 @@
 # emulator runs, one line each, to <out>. Read-only (/proc, /sys). Ends when the emulator is gone or after <max s>.
 # Columns: uptime; MemAvailable SwapUsed Shmem Cached (MiB); GTT used (MiB); PSI memory full total, PSI io full total (us);
 # bc5-mount read_bytes (MiB, cumulative) and Rss (MiB); the emulator's Rss (MiB); /proc/vmstat pswpin pswpout pgmajfault
-# workingset_refault_file; then one field per DRM client of the emulator, c<client id>=<GTT MiB>/<resident GTT MiB>, from
-# /proc/<pid>/fdinfo (drm-total-gtt / drm-resident-gtt, or the older drm-memory-gtt; KiB or MiB units; "?" when a field
+# workingset_refault_file; then one field per DRM client of the emulator, c<client id>=<GTT MiB>/<resident GTT MiB>/<shared GTT MiB>, from
+# /proc/<pid>/fdinfo (drm-total-gtt, else the older drm-memory-gtt; drm-resident-gtt; drm-shared-gtt, the dma-buf
+# shared part; 7.2.9 prints all four, read 2026-10-30 on plasma-keyboard's fds; KiB or MiB units; "?" when a field
 # is missing). TODO(verify) the
 # key names on kernel 7.2.9 and that the direct path's udmabuf imports count in its client's drm-total-gtt.
 # usage: sample0379m.sh <out> [max s]   (started before the emulator; waits up to 120 s for it)
@@ -14,7 +15,7 @@ OUT=$1; MAX=${2:-900}
 for _ in $(seq 1 240); do EP=$(pgrep -o '^kyty_emulator') && break; sleep 0.5; done
 [ -n "${EP:-}" ] || { echo "# no emulator" >> "$OUT"; exit 1; }
 MP=$(pgrep -o -x bc5-mount || echo "")
-echo "# emulator $EP ($(readlink "/proc/$EP/exe")), bc5-mount ${MP:-none}; columns: uptime avail swapused shmem cached gtt_used psi_mem_full_us psi_io_full_us mount_read_mib mount_rss emu_rss pswpin pswpout pgmajfault refault_file c<id>=gtt/resident..." >> "$OUT"
+echo "# emulator $EP ($(readlink "/proc/$EP/exe")), bc5-mount ${MP:-none}; columns: uptime avail swapused shmem cached gtt_used psi_mem_full_us psi_io_full_us mount_read_mib mount_rss emu_rss pswpin pswpout pgmajfault refault_file c<id>=gtt/resident/shared..." >> "$OUT"
 T0=$(date +%s)
 while [ -d "/proc/$EP" ] && [ $(($(date +%s) - T0)) -lt "$MAX" ]; do
   mi=$(awk '/^MemAvailable:/ {a=$2} /^SwapTotal:/ {t=$2} /^SwapFree:/ {s=$2} /^Shmem:/ {h=$2} /^Cached:/ {c=$2} END {printf "%d %d %d %d", a/1024, (t-s)/1024, h/1024, c/1024}' /proc/meminfo)
@@ -29,8 +30,9 @@ while [ -d "/proc/$EP" ] && [ $(($(date +%s) - T0)) -lt "$MAX" ]; do
   # Codex review (REVIEW-02): the END block's newline is an escape, and a missing GTT or resident field prints "?"
   # (unknown), never 0.
   fd=$(for f in /proc/$EP/fdinfo/*; do awk 'function mib(v, u) { return u == "KiB" ? v / 1024 : (u == "MiB" ? v : v / 1048576) }
-      BEGIN {t = "?"; r = "?"} /^drm-client-id:/ {c=$2} /^drm-total-gtt:|^drm-memory-gtt:/ {t=sprintf("%d", mib($2, $3))} /^drm-resident-gtt:/ {r=sprintf("%d", mib($2, $3))}
-      END {if (c != "") printf "c%s=%s/%s\n", c, t, r}' "$f" 2> /dev/null; done | sort -u | tr '\n' ' ')
+      BEGIN {t = "?"; m = "?"; r = "?"; h = "?"} /^drm-client-id:/ {c=$2} /^drm-total-gtt:/ {t=sprintf("%d", mib($2, $3))}
+      /^drm-memory-gtt:/ {m=sprintf("%d", mib($2, $3))} /^drm-resident-gtt:/ {r=sprintf("%d", mib($2, $3))} /^drm-shared-gtt:/ {h=sprintf("%d", mib($2, $3))}
+      END {if (c != "") printf "c%s=%s/%s/%s\n", c, (t != "?" ? t : m), r, h}' "$f" 2> /dev/null; done | sort -u | tr '\n' ' ')
   echo "$(cut -d' ' -f1 /proc/uptime) $mi $gtt $pm $pio $mnt $er $vm $fd" >> "$OUT"
   sleep 10
 done

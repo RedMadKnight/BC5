@@ -9,8 +9,8 @@ start = text.index("  fd=$(for f in /proc/$EP/fdinfo/*;")
 end = text.index("\n", text.index(r"| tr '\n' ' ')", start))
 pipeline = text[start:end].replace("/proc/$EP/fdinfo/*", "$D/*")
 cases = {
-    "5": "pos:\t0\ndrm-client-id:\t29\ndrm-total-gtt:\t11610112 KiB\ndrm-resident-gtt:\t11610112 KiB\n",
-    "6": "drm-client-id:\t29\ndrm-total-gtt:\t11610112 KiB\ndrm-resident-gtt:\t11610112 KiB\n",  # a second fd of client 29
+    "5": "pos:\t0\ndrm-client-id:\t29\ndrm-memory-gtt:\t1024 KiB\ndrm-total-gtt:\t11610112 KiB\ndrm-shared-gtt:\t11610112 KiB\ndrm-resident-gtt:\t11610112 KiB\n",  # 7.2.9 prints both keys: total wins
+    "6": "drm-client-id:\t29\ndrm-total-gtt:\t11610112 KiB\ndrm-memory-gtt:\t1024 KiB\ndrm-shared-gtt:\t11610112 KiB\ndrm-resident-gtt:\t11610112 KiB\n",  # a second fd of client 29, the other key order
     "7": "drm-client-id:\t30\ndrm-memory-gtt:\t655 MiB\n",  # the older key, no resident field
     "8": "pos:\t0\nflags:\t02\n",  # not a DRM fd
     "9": "drm-client-id:\t31\ndrm-engine-gfx:\t5 ns\n",  # a client with no GTT field
@@ -25,5 +25,5 @@ with tempfile.TemporaryDirectory() as d:
 out = p.stdout.strip()
 print("exit", p.returncode, "out", repr(out), "err", repr(p.stderr))
 assert p.returncode == 0 and p.stderr == "", p.stderr
-assert out == "c29=11338/11338 c30=655/? c31=?/?", out
+assert out == "c29=11338/11338/11338 c30=655/?/? c31=?/?/?", out
 print("pass")
