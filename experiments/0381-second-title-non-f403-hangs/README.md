@@ -64,7 +64,7 @@ Decoded (`raw/ana.txt`):
 The early-warning design of F535 can therefore name two classes from one sample: `f403-early` (compute) and
 `gfx-stall-early` (graphics). F519 is caught by neither (no partial-flush wait); it needs the stall clock alone.
 
-### 16:25 is F443's pointer family, not the compaction (F662)
+### 16:25 is F443's pointer family, not the compaction (F663, F665)
 
 - The ten fault pages 0x8608c654000…0x8608c660000 (TCP, read, `PERMISSION_FAULTS` 0x3, status 0x00601031) have the
   low dwords 0x8c654000–0x8c660000. F443's junk pages were 0xe3808c5f2000…0xe3808c634000, low dwords
@@ -108,14 +108,98 @@ The early-warning design of F535 can therefore name two classes from one sample:
 - H5: the lazy-import class of F468 (an unimported view). Against it: no real-address fault preceded the junk.
 - H6: the test binary's FORCE_START. Against it: F443 without it.
 
-## 3. The box reads
+## 3. The box reads (late evening 2026-10-29, the top session's GO, reads only)
 
-Pending the top session's GO.
+`reads0381.sh` was refused by the laptop's permission classifier as a remote shell write, so it never ran: no lock
+line, no claim directory and no queue lines were written on the box (the top session was told). The same reads ran in
+read-only form instead, each `ssh` starting with the emulator guard (none ran; BOX-LOCK was empty):
+`walk0381.py` fed over stdin against `play-20261029-1716/gc/ib-timeout-00127530-dcb-14945.bin` and
+`play-20261029-1624/gc/ib-timeout-00032979-dcb-14911.bin`, `grep` of the status registers and fault lines of
+`devcoredump/20261029-162542-devcd1.txt` and `-162544-devcd2.txt`, the last 400 `timeout probe` lines of
+`play-20261029-1716/gc/direct.log`, the 16:25 journal's probe lines, and the learned list (109 windows, a7cc8581).
+`extract0381.py` made the committed extracts: `raw/hang-1808-indirect-draws.txt`, `raw/hang-1808-walk-summary.txt`,
+`raw/hang-1625-dispatch-pointers.txt`, `raw/hang-1625-devcd-regs.txt` (register values, packet offsets, argument
+dwords and addresses only; the probe's memory dumps and user-data dumps were dropped; the words left were checked:
+register, packet and tool names only). The dumps and journals stay private.
+
+`walk0381.py`'s IB-only state is unreliable for this title (252 `LOAD_*_REG_INDEX` packets in the 18:08 dcb); the
+probe's own "state before" lines, which track the loaded tables, are used for stages and programs instead.
+
+### 18:08: the dcb's indirect draws hold index-like counts (F662)
+
+- No tessellation: in the probe's tracked state every draw of the dcb has `hs 0` and `ls 0`. H1(a) is out; the
+  "HS user data address 0x0" lines are generic (they also appear at 09:48).
+- The dcb's last draws (dwords 12640–14286) are one pass: `VGT_SHADER_STAGES_EN` 0x482030 (ES_EN 2, GS_EN,
+  PRIMGEN_EN, GS_FAST_LAUNCH 1, GS_W32_EN; Linux v7.2 `gc_10_1_0_sh_mask.h`), primitive type 1 (point list), ES
+  programs 0x11d00f85xx–0x11d01345xx, 15 `DRAW_INDIRECT` with arguments at `SET_BASE` 1 0x1193ad3900 + 0xc4a0 …
+  0x229a0, interleaved with `DRAW_INDIRECT_MULTI` (count 1–4, stride 32) from 0x11228fff70 … 0x1122905e70.
+- At the timeout the probe read these `DRAW_INDIRECT` arguments (vertex count, instance count, start vertex, start
+  instance): **13 of 15 hold ascending 16-bit pairs**, e.g. 000f0101 000f0102 000f0103 000f0104 (dword 12640),
+  00050006 00050007 … (13566), 000a01a7 000a01a8 … (14178), i.e. 2^16–2^20 vertices times as many instances; only
+  13972 (0x35, 1) and 14061 (1, 1) are sane. The multi-draws' first records are sane (0x1b–0x3b vertices, 1
+  instance).
+- Such a draw in fast-launch mode would launch 10^10–10^12 primitive-shader threads: GE, PA, SX and SPI busy for
+  as long as the GPU runs, and a static status if the waves exit early without vector memory traffic. That turns
+  H2 (a runaway indirect draw) into the lead: the graphics twin of F403 sub-class B's index-like dims (F590).
+- What the dump cannot say: whether the CP fetched these words, or the title overwrote the slots after the GPU had
+  read sane ones (the title's CPU side runs on for ~2 s after the hang). The 12:12 B event shows the opposite case
+  (sane memory at the timeout, garbage launched, F553/F590), so the CPU view at the timeout is a lead, not proof.
+
+### 16:25: the IB's pointers are right; the shader makes the bad high dword (F663, F664)
+
+- 887 of the dcb's 893 dispatches set `COMPUTE_USER_DATA_5` = 0x11 with `USER_DATA_3`/`4` low dwords
+  0x8c64e600–0x8ce71c00; the other six use other layouts (three direct dispatches among them). Every fault page has
+  one of these low dwords: 0x8608c65c000 is exactly `USER_DATA_3` 0x8c65c000 of five dispatches, 0x8608c654000 is
+  the page of 0x8c654a00/0x8c654c00 (dword 43), and devcd1's recorded fault 0x8608c728000 lies in the range. The
+  intended addresses 0x118c654000…0x118c728000 lie in the learned (imported) window 0x118a000000 + 96 MiB.
+- So the IB carried the right high dword and the memory was mapped: neither the host's user-data tracking (H4a for
+  the IB) nor a lazy view (H5, F468) explains it. The shader formed 0x860 in place of 0x11 from data it loaded:
+  F467's "later loads of a high dword returned garbage", here without a real-address fault first. Where the
+  high half comes from (the `LOAD_SH_REG_INDEX` table at 0x909842dc0, the compacted list, a descriptor) needs the
+  program's code (0x909977100, read by the BVH compaction session); H4b stays open.
+- devcd1 (16:25:42): `GRBM_STATUS` 0xa04030ac, SE0/SE1 0x08000006 (SPI only), `GRBM_STATUS2` 0x50000008, PFP 0xea0,
+  ME 0xe15: waves resident without memory traffic after a no-retry fault. devcd2 (16:25:44, after the first
+  successful reset): shaders idle, the ME's newest header `WAIT_REG_MEM64` (0xc0079300), `CP_STALLED_STAT2`
+  0x10000: the next job waits on a 64-bit label. The killed dcb #32979 had 45 label writes (the probe: e.g.
+  0x12004bac80 to be written 2, read 1 at the timeout). **The picture was lost because the reset kills the job that
+  would have written the title's labels, so every later job waits on them**: F403's devcd4 pattern (F403's
+  correction of 18:45).
 
 ## Result
 
-Pending.
+- **18:08 (F660–F662): a graphics-pipe stall of its own class, most likely a runaway fast-launch NGG
+  `DRAW_INDIRECT`.** Its state is static and ≥ 18 status bits from every healthy sample. The stuck dcb's last pass
+  is the fast-launch point-list pass (stages 0x482030, ES 0x11d00f85xx…, no tessellation), whose argument slots at
+  0x1193ad3900 + 0xc4a0…0x229a0 held index-like counts in 13 of 15 draws at the timeout. The candidate hanging draw
+  is the first slot the CP read garbage from; on the dump that is dword 12640.
+- **Rules (F661):** the graphics stall and F403 are told apart in one sample; F535's rule fires on both.
+- **16:25 (F663, F664): F443's class (Q22's family) exactly.** The same `USER_DATA_3/4` pointer family under
+  `USER_DATA_5` = 0x11, the same garbage high dword made inside the shader, in the BVH adjacency build's dcb. Not
+  lazy import, not the IB, not FORCE_START. The lost picture is the killed job's label writes.
+- **Tie to the BVH work (F665):** 0x909977100 consumes the compaction's output and the compaction runs in the
+  shared launchers; the tie to F207 (a GE read of page 0) is the program window only.
 
 ## Verdict
 
-Pending.
+Both hangs are classified with evidence. 18:08 is not F403 and not F519: a geometry front end busy with no memory
+traffic behind a fast-launch pass whose indirect draw counts read index-like at the timeout, sub-class B's twin on
+the draw side, with the read-time question open. 16:25 is F443/Q22's garbage-high-dword class in the BVH adjacency
+build, decided against lazy import and the IB's user data; the shader's own load is left.
+
+Next (F666), cheapest first:
+1. **Control read (box, reads only, ~2 min):** the `op 24 at` / `op 2c at` probe lines of the earlier hang journals
+   (09:48, 12:12, 14:04 of 10-29; 18:15 and 23:36 of 10-28). If the same fast-launch slots (0x1193… + offsets) hold
+   index-like counts at those timeouts too, while those hangs were compute (F403), the CPU view at the timeout is
+   not evidence and 18:08's draw stays unnamed; if they hold sane counts, 18:08's garbage is specific and the draw is
+   named.
+2. **A host-only submit-time log (no packet, default off):** for `DRAW_INDIRECT` whose base 1 lies in the 0x1193…
+   window, journal the four argument dwords at submit and flag counts above 2^16: "garbage at submit" (title data or
+   our memory sync) against "sane at submit" (the fetch, as in B). One CPU read per draw.
+3. **Fix candidate (design, default off, needs the maintainer's yes):** a CP-side draw guard, the draw analogue of
+   the dispatch check: `COND_WRITE`/`COND_EXEC` on the vertex and instance counts of each GFX-ring `DRAW_INDIRECT`,
+   skipping the draw if either exceeds a limit (e.g. 2^16 instances), so a garbage count costs one draw, not the box.
+   Like the dispatch check it does not help if the CP reads other data than the check polls (F590).
+4. **16:25:** read 0x909977100's code (the BVH session's private disassembly) for how it forms the pointer's high
+   half. A recovery candidate: after a ring reset that succeeds, have the host complete the killed job's label
+   writes (it knows them from the filter), so later jobs do not wait forever (TODO(verify) against the title's
+   expectations).
