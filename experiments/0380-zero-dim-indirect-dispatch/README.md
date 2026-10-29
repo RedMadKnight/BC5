@@ -1,7 +1,7 @@
 # 0380 — Is the F403 class a zero-dimension indirect dispatch? (sources, title side, a guard, a box plan)
 
 **Date.** 2026-10-29. **Laptop only.** No box access and no GPU submission in this experiment. Branch
-`exp/0380-zero-dim-dispatch`. Findings F545–F550 (exp 0379 holds F540–F544).
+`exp/0380-zero-dim-dispatch`. Findings F545–F551 (exp 0379 holds F540–F544).
 
 **Question.** F527 puts the ME just past a `DISPATCH_INDIRECT` that passed the host's check, inside the title's
 `CS_PARTIAL_FLUSH` after it. The candidates are 0x11d028dd00 (dword 1289), 0x11d02a1600 (1420) and 0x11d02a1800
@@ -152,6 +152,41 @@ COND_WRITE   x == 0 ? flag = 0      (function 3, reference 0, mask 0xffffffff; t
   - **Not compiled here:** `direct.cpp` and `direct-selftest` (they need libdrm, `BC5_WITH_AMDGPU=ON`). Their build
     is step A0 of the box plan.
 
+## 3b. The second guard: `FORCE_START_AT_000` (F551, the top session's follow-up to F546)
+
+`indirect_check::apply(…, bool force_start = false)`, switched by `BC5_DIRECT_FORCE_START_000=1` in the host's
+environment (`backend/src/direct.cpp`). Unset or `0`: off, IB unchanged.
+
+- **What it does.** Every `DISPATCH_INDIRECT` the check pass sees gets `COMPUTE_DISPATCH_INITIATOR` bit 2
+  (`FORCE_START_AT_000`) ORed into its initiator dword. That is the packet's last dword in both forms: GFX form
+  dword 2, MEC form dword 3.
+  - It covers checked and unbased dispatches, GFX and MEC form.
+  - Bit 2 per v7.2 `gc_10_1_0_sh_mask.h:17071-17083` and Mesa's `gfx10.json` (`tools/bc5-agc/regdb/gfx10.json:11831`).
+  - It adds no packet, and the check before the dispatch stays byte-identical.
+  - This is what RADV does for every indirect dispatch (radv_cmd_buffer.c:15227-15229, ab2374a). Without the bit
+    the CP starts at `COMPUTE_START_X/Y/Z` and the counts are end values (15259-15263).
+  - `Stats::start_forced` counts the initiators it changed. The close summary prints "FORCE_START_AT_000 set on N of
+    M indirect dispatches".
+  - It runs only where the GPU check pass runs (`gpu_check_indirect`, on in play).
+  - Direct dispatches and indirect draws are untouched.
+- **Risk.** If the title *meant* an indirect dispatch to start at a non-zero `COMPUTE_START` (a base offset that RADV's
+  API cannot express), forcing the start at 0 changes which groups run. That would be a visual change, so look for it
+  in A2.
+- **Tests.** Catch2 "FORCE_START_AT_000 on indirect dispatches (experiment 0380)", six sections:
+  - the GFX form, 0x41 → 0x45, the rest byte-identical;
+  - an initiator that already has the bit is not counted;
+  - unbased;
+  - MEC form, 0x61 → 0x65;
+  - direct dispatch and indirect draw untouched;
+  - combined with the zero guard.
+
+  Laptop: **All tests passed (34019 assertions in 93 test cases)**, 10 `[indirect_check]` cases.
+- **What decides F546 without running the guard.** Sampler 0377 records `COMPUTE_START_X/Y/Z` in every sample (F530).
+  - The next F403-class hang shows whether START was non-zero, together with `DIM` and `INITIATOR`.
+  - START = 0 at the hang means F546's degenerate start/end case did not happen there, and this guard cannot help.
+  - START > 0 with the title's 0x41 initiator makes this guard the candidate fix, tested by A2 with
+    `BC5_DIRECT_FORCE_START_000=1`.
+
 ## 4. Box test plan (NOT run; every step needs the top session's GO, steps A1, A2 and B the maintainer's yes)
 
 Box etiquette as usual: BOX-LOCK line, claims in BOX-QUEUE, never during the maintainer's play, unique run tags,
@@ -180,7 +215,8 @@ from a private build in `~/bc5-work/exp0380/`.
   line by 180 s, sampler 0377 resident.
 - **Arms.**
   - OFF: the private binary without the variable.
-  - ON: `BC5_DIRECT_GPU_CHECK_ZERO=1` (plus `BC5_DIRECT_ARGS_HISTOGRAM=1` in both arms, for the host-side zero
+  - ON: `BC5_DIRECT_GPU_CHECK_ZERO=1`, or `BC5_DIRECT_FORCE_START_000=1` as its own arm if the next hang's sampler
+    record shows START > 0 (F551) (plus `BC5_DIRECT_ARGS_HISTOGRAM=1` in both arms, for the host-side zero
     count).
   - Interleave ON/OFF, one 10-minute run each, saves checked before and after.
 - **Hang frequency.** The base rate is low: about 1 in 25 bench runs (F491), plus the maintainer's play events.
@@ -228,6 +264,8 @@ explicit yes; only after A1).**
 
 - Sources read and cited (F545, F546). The title-side evidence was re-read from exps 0376/0378 (F547).
 - The guard is built, default off, with unit tests passing on the laptop (F548).
+- A second guard, `FORCE_START_AT_000` on indirect dispatches, is built the same way: default off, with unit tests
+  (F551).
 - The box plan is written; nothing ran on the box.
 
 ## Verdict so far
