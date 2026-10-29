@@ -422,7 +422,7 @@ a second reads-only lock: `test0379t/raw/play/play-*-fps.txt` and `fpsmem-*.txt`
   there. That is expected: the load reads data the title has not read yet, so more page cache cannot help it.
 - **Play 1's steady minutes fit this play's relation.** Its reads stayed at 5.7–7.7 GB a minute and it ran 20–31
   flips/s, close to this play's 24.9-flips/s average for minutes with reads of 5.5 GB or more.
-- **No steady-state minute with the skip exists yet.** Play 2 hung at 2.4 min, still in the load. So the question F565
+- **No steady-state minute with the skip exists yet.** Play 2 hung at 2.4 min, still in the load. So the question F632
   asked, whether ~0.7 GB more cache lowers the steady reads, is still open.
 
 **Should the skip go into the next test build with ARGS_WB?** Yes. The reasons:
@@ -432,7 +432,7 @@ a second reads-only lock: `test0379t/raw/play/play-*-fps.txt` and `fpsmem-*.txt`
   smoke run passed), and that method carries over.
 - The session above is what the skip is for. Its frame rate falls when the box re-reads (r = −0.84) and stalls on
   reclaim (PSI mem up to 24 %), with MemAvailable at 0.2–0.3 GB. Play 2 showed that the 1.2 GB list frees ~0.6 GB at
-  the load (F564), roughly two to three times this session's MemAvailable.
+  the load (F631), roughly two to three times this session's MemAvailable.
 - Whether that cuts the re-reads and the reclaim stalls in a 30-minute play is still unmeasured. This would be the
   measurement.
 
@@ -481,7 +481,8 @@ the eager list. Of that, RenderGpuWcLarge is 2.7 GB, CommitIABufferAllocator 2.7
 
 ### Why GTT grows in play, the next levers, and a 20-minute bench test (2026-10-29 evening, laptop only)
 
-Findings: F620–F622 are the 36-minute play section above. They were first numbered F582–F584, which exp 0380's
+Findings: F630–F632 are the two test-shortcut plays' section. They were first numbered F563–F565, which exp 0380's
+branch also uses, and were renumbered on 2026-10-30. Findings: F620–F622 are the 36-minute play section above. They were first numbered F582–F584, which exp 0380's
 branch also uses, and were renumbered on 2026-10-29 evening. F623–F626 are this section's.
 
 This section was written at the top session's request. It uses the existing records: exp 0380's 21:33 play
