@@ -205,21 +205,43 @@ class RegisterReads(unittest.TestCase):
         dev = ModelDevice({})
         smp = S.take_sample(dev, S.Config(), "stall", 1.0, 1.0, "", True, regs_only=True, banked=True)
         offs = [o for o, b in dev.reg_log if b is None]
-        self.assertEqual(offs, [S.reg_byte(mm, bi) for n, mm, bi in S.REGS if n not in S.HEADER_DUMPS])
+        want = []
+        for n, mm, bi in S.REGS:
+            want += [S.reg_byte(mm, bi)] * (S.HEADER_DUMP_PERIOD if n in S.HEADER_DUMPS else 1)
+        self.assertEqual(offs, want)
         banked = [(o, b) for o, b in dev.reg_log if b is not None]
         self.assertEqual(len(banked), 2 * 2 * 2)
         self.assertEqual(sorted(set(b for o, b in banked)), [(0, 0, 0), (0, 1, 0), (1, 0, 0), (1, 1, 0)])
         self.assertEqual(smp.reg_errors, 0)
 
-    def test_header_dumps_off_by_default_and_eight_when_asked(self):
+    def test_header_dumps_eight_reads_by_default_none_when_zero(self):
         hd = set(S.reg_byte(mm, bi) for n, mm, bi in S.REGS if n in S.HEADER_DUMPS)
         dev = ModelDevice({})
-        S.take_sample(dev, S.Config(), "stall", 1.0, 1.0, "", True, regs_only=True)
-        self.assertFalse(hd & set(o for o, b in dev.reg_log))
-        dev = ModelDevice({})
-        smp = S.take_sample(dev, S.Config(header_dump_reads=8), "stall", 1.0, 1.0, "", True, regs_only=True)
+        smp = S.take_sample(dev, S.Config(), "stall", 1.0, 1.0, "", True, regs_only=True)
         self.assertEqual(collections.Counter(o for o, b in dev.reg_log if o in hd), {o: 8 for o in hd})
-        self.assertIn("gfx1013.mmCP_PFP_HEADER_DUMP[7] =>", S.fmt_regs(smp))
+        txt = S.fmt_regs(smp)
+        self.assertIn("gfx1013.mmCP_PFP_HEADER_DUMP[7] =>", txt)
+        self.assertNotIn("HEADER_DUMP[8]", txt)
+        dev = ModelDevice({})
+        S.take_sample(dev, S.Config(header_dump_reads=0), "stall", 1.0, 1.0, "", True, regs_only=True)
+        self.assertFalse(hd & set(o for o, b in dev.reg_log))
+
+    def test_header_dump_period_check(self):
+        hd = set(S.reg_byte(mm, bi) for n, mm, bi in S.REGS if n in S.HEADER_DUMPS)
+
+        class History(ModelDevice):   # a header history read cyclically with period p
+            def __init__(self, p):
+                ModelDevice.__init__(self, {})
+                self.p, self.pos = p, collections.Counter()
+
+            def read_reg(self, byte_off, bank=None):
+                if byte_off in hd:
+                    self.pos[byte_off] += 1
+                    return 0xC0000000 | ((self.pos[byte_off] - 1) % self.p) << 8
+                return ModelDevice.read_reg(self, byte_off, bank)
+        for p, verdict in ((8, "yes"), (9, "NO")):
+            smp = S.take_sample(History(p), S.Config(header_dump_reads=16), "once", 0, 0, "", True, regs_only=True)
+            self.assertIn("# CP_PFP_HEADER_DUMP period 8: %s" % verdict, S.fmt_regs(smp))
 
     def test_offsets_against_mesa(self):
         with open(MESA) as fh:

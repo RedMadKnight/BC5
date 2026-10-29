@@ -105,12 +105,17 @@ REGS = (
     ("SPI_CSQ_WF_ACTIVE_STATUS", 0x127B, 0),    # 2681  TODO(verify) whether it is per SE (read unbanked)
     ("GCVM_L2_PROTECTION_FAULT_STATUS", 0x15EC, 0),  # 3221 (devcoredump list)
 )
-# The kernel's devcoredump reads CP_PFP_HEADER_DUMP and CP_ME_HEADER_DUMP eight times in a row
-# (gfx_v10_0.c gc_gfx_queue_reg_list_10, lines 465-480): each read returns the next entry of the CP's packet-header
-# history, so a read moves that history's read position. A sampler read before the kernel's own dump would shift
-# what the devcoredump shows (F403/F476 classify events by those eight headers) unless the history's period is 8.
-# TODO(verify) at T1: the period (16 reads at idle). Until then they are not read (--header-dump-reads 0).
+# The kernel's devcoredump reads CP_PFP_HEADER_DUMP and CP_ME_HEADER_DUMP eight times in a row, once per gfx queue
+# (gfx_v10_0.c gc_gfx_queue_reg_list_10, lines 465-480; gfx_v10_ip_dump 9765-9782): each read returns the next entry
+# of the CP's packet-header history, so a read moves that history's read position, and F403/F476/F490 classify events
+# by those eight headers. The box's dumps show an 8-entry history read cyclically: exp 0368 F490 found the same
+# eight-packet sequence "eight times over" in one dump (8 queues x 8 reads), and exp 0279 raw/coredump-cp-state.txt
+# shows an empty MEC history as 0xdef0def0..0xdef7def7 in order. So the sampler reads them 8 times per sample (the
+# kernel's own count), which leaves the position where the kernel's dump will find it; a single read (umr -r) would
+# not, and install.sh never makes one. TODO(verify) at T1: the period is 8 (--once --header-dump-reads 16 at idle
+# shows two equal halves); if it is not, run the service with --header-dump-reads 0.
 HEADER_DUMPS = ("CP_PFP_HEADER_DUMP", "CP_ME_HEADER_DUMP")
+HEADER_DUMP_PERIOD = 8
 
 # Read once per SE/SA with a GRBM bank select, as umr does (scan_waves.c:767-781): which WGPs the fuses mark
 # inactive. Logged only; the scan covers every WGP index below --wgps (the 40-CU unlock rewrites
@@ -386,7 +391,7 @@ class Config:
         self.write_at = 1.9
         self.share_tol = 0.15
         self.ses, self.sas, self.wgps, self.simds, self.waves = 2, 2, 5, 4, 20
-        self.header_dump_reads = 0
+        self.header_dump_reads = HEADER_DUMP_PERIOD
         self.rings = re.compile(r"^(gfx|comp)_")
         self.retire_after = 5.0
         self.kmsg_tail = 10.0
@@ -527,6 +532,9 @@ def fmt_regs(s):
         for i, v in enumerate(vals):
             tag = "" if len(vals) == 1 else "[%d]" % i
             out.append("gfx1013.mm%s%s => %s   (byte 0x%05x)" % (name, tag, "ERROR" if v is None else "0x%08x" % v, off))
+        if name in HEADER_DUMPS and len(vals) == 2 * HEADER_DUMP_PERIOD:   # the T1 check of HEADER_DUMPS
+            out.append("# %s period %d: %s" % (name, HEADER_DUMP_PERIOD, "yes (reads 0-7 == reads 8-15)"
+                                               if vals[:HEADER_DUMP_PERIOD] == vals[HEADER_DUMP_PERIOD:] else "NO"))
     for name, se, sa, v in s.banked:
         out.append("gfx1013.mm%s[se%d.sa%d] => %s" % (name, se, sa, "ERROR" if v is None else "0x%08x" % v))
     return "\n".join(out) + "\n"
@@ -1786,8 +1794,8 @@ def main(argv=None):
     ap.add_argument("--pci", default="0000:01:00.0", help="the amdgpu device (default 0000:01:00.0)")
     ap.add_argument("--wgps", type=int, default=5, help="WGPs per shader array to scan (default 5: 40 CU)")
     ap.add_argument("--waves-per-simd", type=int, default=20, help="wave slots per SIMD (default 20, GC 10.1.x)")
-    ap.add_argument("--header-dump-reads", type=int, default=0,
-                    help="reads of CP_PFP/ME_HEADER_DUMP per sample (default 0; see HEADER_DUMPS)")
+    ap.add_argument("--header-dump-reads", type=int, default=HEADER_DUMP_PERIOD,
+                    help="reads of CP_PFP/ME_HEADER_DUMP per sample: 8 (default), 0 or 16 (see HEADER_DUMPS)")
     ap.add_argument("--rings", default=r"^(gfx|comp)_", help="regex of the rings to watch")
     ap.add_argument("--test", action="store_true", help="built-in self-test, no device")
     ap.add_argument("--replay", metavar="TRACE", help="replay a trace file, no device")
@@ -1804,9 +1812,12 @@ def main(argv=None):
     if a.test:
         return run_selftest()
     if a.list_regs:
+        # third column: "sampled" (one read per sample: umr -r may read it too), "sampled-x8"/"x16" (a header
+        # history: never read once, see HEADER_DUMPS), "skipped", "banked"
         for name, mm, bi in REGS:
-            print("%s 0x%05x %s" % (name, reg_byte(mm, bi),
-                                    "skipped" if name in HEADER_DUMPS and not a.header_dump_reads else "sampled"))
+            hd = name in HEADER_DUMPS
+            print("%s 0x%05x %s" % (name, reg_byte(mm, bi), ("sampled-x%d" % a.header_dump_reads if a.header_dump_reads
+                                                             else "skipped") if hd else "sampled"))
         for name, mm, bi in BANKED_REGS:
             print("%s 0x%05x banked" % (name, reg_byte(mm, bi)))
         return 0

@@ -71,11 +71,13 @@ NAMES=$("$PY" $PYF "$BIN" --list-regs | awk '{print $1}' | paste -sd'|' -)
   rc=0; "$PY" $PYF "$BIN" --once --regs-only --idle-ok || rc=$?
   if [ "$rc" = 0 ] && [ -n "$UMR" ]; then
     echo "## umr -r"
+    # one umr start per register, "sampled" ones only: never the CP header histories ("sampled-x8"), which a single
+    # read would move (the sampler's HEADER_DUMPS note)
     for n in $("$PY" $PYF "$BIN" --list-regs | awk '$3 == "sampled" {print $1}'); do
       "$UMR" -r "*.gfx1013.^mm${n}\$" || true
     done
-    echo "## sampler read 2"
-    "$PY" $PYF "$BIN" --once --regs-only --idle-ok || true
+    echo "## sampler read 2 (16 header-history reads: the period check)"
+    "$PY" $PYF "$BIN" --once --regs-only --idle-ok --header-dump-reads 16 || true
   else
     echo "## no value comparison (sampler read exit $rc: 2 = skipped, see its '# skipped' line; umr '${UMR:-not found}')"
   fi
