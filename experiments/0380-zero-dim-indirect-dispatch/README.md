@@ -1,7 +1,7 @@
 # 0380 — Is the F403 class a zero-dimension indirect dispatch? (sources, title side, a guard, a box plan)
 
 **Date.** 2026-10-29. **Laptop only.** No box access and no GPU submission in this experiment. Branch
-`exp/0380-zero-dim-dispatch`. Findings F545–F560 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
+`exp/0380-zero-dim-dispatch`. Findings F545–F562 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
 session's GO).
 
 **Question.** F527 puts the ME just past a `DISPATCH_INDIRECT` that passed the host's check, inside the title's
@@ -468,6 +468,62 @@ only. Output in `raw/class-dumps-pattern.txt` and `raw/class-dumps-near.txt`.
   across the maintainer's sessions. Several hours of play with the rebase on and no class hang would be evidence for
   it; one class-B hang with it on refutes the base-alias idea. The sampler and timeout probe record every event.
 
+## 8. The rebase fix on the bench: R1 and R2 (F561, F562)
+
+**GO and box.** The maintainer's yes, "Najpierw test skryptem", was relayed by the top session. It covers GPU runs of
+`BC5_DIRECT_REBASE_DISPATCH=1` on the scripted route. Runs at 12:44–12:54 and 12:55–13:05, after my lock and claim
+lines. The runner wrote and cleared its own `top exp 0380 | rebase run …` lock. The done line is in BOX-QUEUE.
+
+**Live saves.** They read 6560743e7473baa1, not the 86574ead361e510b I was given. The top session confirmed the change
+was the maintainer's own play 2 (`prefs.save` at 12:10:39) and set 6560743e7473baa1 as the reference. It was unchanged
+before and after both runs (`raw/runs/s6n-saves.txt`).
+
+**Setup.**
+- **Binary.** A new archive 86534bb1 (this branch at e0fe42b, with the counter
+  `Stats::rebased_after_index_base`) relinked into `~/bc5-work/exp0380r/kyty_emulator` md5 **7943d581**.
+  - Same method as §7. The 1791aeb2 binary is kept beside it.
+  - Box build: clang `-Werror`, 0 warnings, 95/95 tests.
+- **Runner.** `raw/s6n0380.sh` (box md5 7c9920c9), made from exp 0378's `s6n0378.sh` by `raw/mk-s6n0380.pl`, literal
+  edits only:
+  - its own directory `~/bc5-work/exp0380s` and its lock text;
+  - the private binary, md5-pinned;
+  - no forced sampler requests;
+  - the backend's exp 0380 lines kept per run.
+- **Route.** The S6N route as in exp 0378's B1: exp 0196's route save copy, `o2-continue.cmd`, RT on, no RT-off line by
+  180 s. The private launcher copy has the same 9-line diff as B1 (`raw/runs/play-pkg-0380s.diff`).
+- **The switch.** `BC5_0368_SWITCHES="BC5_DIRECT_REBASE_DISPATCH=1"`, checked in the emulator's environment.
+- **Monitoring.** Sampler 0377 was active (`VERSION = "0377"`, service active). The kernel log was streamed to the
+  laptop (`raw/runs/R*-kernel-stream.txt`: empty).
+
+**Results** (`raw/runs/R1-*`, `raw/runs/R2-*`; the play logs and journals stay on the box):
+
+| Run | Result | Flips/s | 10-s bins after 150 s | Kernel lines | TIMEOUT | Devcoredumps | Crash lines | Sampler events | SET_BASE re-emitted | First after `INDEX_BASE` |
+|---|---|---|---|---|---|---|---|---|---|---|
+| R1 | pass | 37.5 (22,356 in 596.7 s) | 354–409 | 0 | 0 | 0 | 0 | 0 | 14,429,590 | 88,420 |
+| R2 | pass | 36.5 (21,790 in 596.3 s) | 352–401 | 0 | 0 | 0 | 0 | 0 | 13,894,050 | 85,619 |
+
+- The shared build's B1 ran 37.8 flips/s.
+- The counters come from the last periodic summary line of each run. The emulator is killed at 600 s, so there is no
+  at-close line, and the true totals are slightly higher.
+- The frame profiles show GPU busy 19.3 / 20.1 ms a frame and host prepare 2.53 / 2.57 ms. The rebase adds 4 dwords
+  per checked dispatch, ~24,000 dispatches a second.
+
+**Reading (F562).**
+- **Safe on the bench.** The fix candidate changes nothing visible in the logs. The frame rate is within noise of the
+  shared build (−0.8 % and −3.4 % against B1's single run). The live saves and learned file are unchanged.
+- **Exposure.** About 87,000 first-after-`INDEX_BASE` dispatches per 10 minutes (~145 a second), each with the rebase
+  in front of it. 174,039 in the two runs.
+- **What that does not show.**
+  - Sub-class B's bench rate is unknown. F491's "one in ~25 bench runs" is for the whole class, and B appeared in the
+    maintainer's play: 18:15, 23:36, 09:48, 12:12.
+  - Two clean bench runs are therefore expected even without a fix, and say nothing yet about the hang.
+- **Recommendation.** Go ahead with the maintainer's play test with the staged shortcut (§7). The bench shows the
+  switch costs nothing measurable and breaks nothing. Sub-class B came about once per hour of his RT-on play, so an
+  evening of play is the real test:
+  - one class-B hang with the switch on refutes the base-alias idea (and the sampler and timeout probe will record
+    it);
+  - several hours without one is evidence for it.
+
 ## Result
 
 - Sources read and cited (F545, F546). The title-side evidence was re-read from exps 0376/0378 (F547).
@@ -475,6 +531,8 @@ only. Output in `raw/class-dumps-pattern.txt` and `raw/class-dumps-near.txt`.
 - A second guard, `FORCE_START_AT_000` on indirect dispatches, is built the same way: default off, with unit tests
   (F551).
 - The box plan is written. Only step A0 ran: a CPU-only compile check, which passed (F552). Nothing ran on the GPU.
+- The rebase fix ran twice on the bench (RT on, 600 s each): both runs pass at 37.5 and 36.5 flips/s, with ~174,000
+  first-after-`INDEX_BASE` dispatches rebased. It is safe, but untested against the hang itself (F561, F562).
 - Two sub-classes. B (the four events since 10-28 18:15) is consistent with "the first indirect dispatch after
   `INDEX_BASE`" (F558). The rebase fix candidate is built, default off, and staged as a launcher, not run (F559,
   F560).
