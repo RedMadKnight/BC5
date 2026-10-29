@@ -87,7 +87,56 @@ Read from main's patch 0001 (9420cfa0), `src/libs/bc5LleAgc.cpp` (blob 8d2f498):
 
 ## Setup
 
-*(filled in after the build)*
+**Code.**
+- `backend/include/bc5/zero_skip.hpp` (and its copy `src/bc5/zero_skip.hpp`, md5 782ca0e9): the list format, the
+  scan's intersection (`ZeroMask`), the skip set (`SkipSet`), `all_zero`. 5 Catch2 cases in
+  `backend/tests/zero_skip_test.cpp`.
+- `patch0379-bc5LleAgc.diff` (md5 6f0c7c16; 348 lines) on the tree's `src/libs/bc5LleAgc.cpp` (e7cc2f60, patch 0001's
+  file, git blob 8d2f498) gives e62113a5. It is made by `raw/splice0379.py` from `raw/zskip_block.cpp` and seven anchors:
+  - the scan and skip block before `direct_sync_one`;
+  - in `direct_sync_one`: the placement, the scan tick and the canary-hit check before the fast path; the take-back
+    (CPU writes, canary hits) at the start of the full path; the skip in the eager loop and the forced loop; the canary
+    release before a real mapping is added; the canary mapping after a rebuild;
+  - in `direct_force`: a hint takes a skipped chunk back; `map_window` marks its call as a learned window's;
+  - in the reopen path: `zskip_disable`.
+- Switches (all off unless set; the shared builds do not have them):
+
+  | switch | what |
+  |---|---|
+  | `BC5_DIRECT_ZEROSCAN_AT=<s>,…` | scan times (journal t); a diagnostic (`BC5_DIAG_ENV`, absent from the lean build) |
+  | `BC5_DIRECT_ZEROSCAN_OUT=<file>` | where each scan rewrites the list |
+  | `BC5_DIRECT_ZERO_NAMES=<n>,…` | heaps scanned (default `RenderGpuWcLarge,CommitIABufferAllocator`) |
+  | `BC5_DIRECT_ZERO_MIN_MIB=<n>` | shortest listed run (default 8) |
+  | `BC5_DIRECT_ZERO_SKIP=<file>` | skip the list's chunks, canary under them |
+
+**Laptop checks (2026-10-29).**
+- `backend` configured with MSVC 14.51 + Ninja, `-DBC5_BUILD_TESTS=ON` (Catch2 3.7.1 from `build-win/_deps`):
+  `bc5_backend_tests` 96/96 cases, 33,730 assertions; `[zero_skip]` 5/5 (54 assertions). One expected count in the
+  parser test was wrong on the first try (7 bad lines, not 8) and was corrected.
+- `raw/harness0379.cpp`: `zskip_block.cpp` with stand-ins for the host, `clang++ -fsyntax-only -std=c++20 -Wall -Wextra
+  -Wformat=2 -Wshadow -Werror`: clean.
+- `git -c core.autocrlf=false apply` of the diff on the extracted file gives e62113a5; `bash -n` on every script.
+
+**Box build** (`raw/build0379.sh`, 2026-10-29 11:00–11:01; the experiment in `~/bc5-work/exp0379/in/`):
+- pins checked: shared normal 58c4a627, archive bb50b2e0, tree unit e7cc2f60, diff, header;
+- the backend's Catch2 tests: 96 cases pass (33,729 assertions; one fewer than on Windows, a platform-dependent
+  case), `[zero_skip]` 5/5;
+- the patched unit compiled with the shared compdb command and relinked: **e1cc0c92**, rc 0, 5 warnings, all in
+  older code (`stringUtils.h`, and four in `bc5LleAgc.cpp` outside the new block);
+- the shared binary, archive and tree unit unchanged after the build.
+
+**Runs.** `raw/s6n0379.sh` (made from exp 0372's `s6n0372.sh` by `raw/mk-s6n0379.pl`): the S6N route (exp 0203's
+`o2-continue.cmd` on exp 0196's route saves, a private wd and save copy), **RT on**, 420 s, the shared `play-pkg.sh`
+(55531ab6) with exp 0372's four private paths, a private copy of the learned file. Before each run `sync` and
+`drop_caches` (the sudoers entry), so each arm starts with an empty page cache. `raw/sample0379.sh` samples every 10 s
+(MemAvailable, swap, Shmem, Cached, GTT used, PSI memory/io full totals, bc5-mount `read_bytes` and RSS, refaults).
+`raw/stream0379.sh` streams the kernel log to the laptop. `raw/ana0379.py` makes the table over one window.
+
+| arm | binary | switches |
+|---|---|---|
+| S1 | private e1cc0c92 | scans at 150, 200, 250, 300, 350, 400 s, list to `~/bc5-work/exp0379/zero-list-S.txt` |
+| A1 | shared normal 58c4a627 | — |
+| B1 | private e1cc0c92 | `BC5_DIRECT_ZERO_SKIP` = S1's list |
 
 ## Result
 
