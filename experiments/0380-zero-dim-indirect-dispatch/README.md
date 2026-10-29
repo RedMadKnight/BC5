@@ -1,7 +1,7 @@
 # 0380 — Is the F403 class a zero-dimension indirect dispatch? (sources, title side, a guard, a box plan)
 
 **Date.** 2026-10-29. **Laptop only.** No box access and no GPU submission in this experiment. Branch
-`exp/0380-zero-dim-dispatch`. Findings F545–F606 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
+`exp/0380-zero-dim-dispatch`. Findings F545–F607 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
 session's GO).
 
 **Question.** F527 puts the ME just past a `DISPATCH_INDIRECT` that passed the host's check, inside the title's
@@ -1642,6 +1642,33 @@ Sources:
     line set: no build.
   - The cost is the 21:33 play's memory pressure (F602).
   - If the crash comes again without the skip, it is (c) or NO_CLEAR. If it never comes, the skip stays suspect.
+
+**The maintainer's notes on the same play (F607; laptop only, after the top session withdrew the GO for his lean
+play).** In translation: "The game was more stable, but there was no fight. During an in-game animation the picture
+slowed down and fell behind while the sound ran correctly. When the animation ended, the picture caught up with the
+rest of the game at its own pace."
+- **The cutscene lag matches the known slow motion, by description.** F259 describes the second title's cutscene
+  slow motion as its cinematic clock stopping while the rest of the sound plays on. That clock is Wwise's play
+  position of a silent 10-s looping voice. The characters slewed to it crawl, then recover. F267 adds that the voice
+  stalls when its next streamed read comes late, under swap storms or a late APR queue. F302 had it gone on one route,
+  "not from every session". The maintainer's words fit this exactly: the picture behind the sound, then catching up.
+- **What would show NO_CLEAR made it worse is not read:** the play's flips/s and frame gaps in that stretch, its memory
+  record, and the journal's clock-voice reads. NO_CLEAR changes no audio or APR path. A worse lag would have to come
+  through frame time, which F302 already excludes as the cause.
+- **"More stable" is not yet measured.** The 23:07 memory record (memavail, swap, PSI, mount reads) against the 21:33
+  one (F602) is unread.
+- **A lead for the crash.** The faulting conversion handles a 4-channel frame (F605). The title's Wwise archives hold
+  exactly eight ATRAC9 streams with 4 channels (`fe 7a 17 e0`, "4.0 audio", F300), against 1,193 haptic streams of 1
+  or 2 channels. The host's regular ATRAC9 path, not exp 0243's vibration decoder, decodes those 4.0 streams. The crash
+  report names the ATRAC9 decoder.
+  - A rarely played 4.0 stream, such as one cutscene's, would explain a new and rare site with a null sample buffer,
+    with nothing from either new piece.
+  - TODO(verify): which stream the AJM decoded last, and whether the crash fell inside the cutscene. This needs the
+    log's last two minutes (AJM lines, the fps counter) and the journal.
+- **Pending box reads after his play, on a new GO:**
+  1. the 23:07 memory record against 21:33;
+  2. the log's fps counter around the cutscene, and the time from its end to 23:15:21;
+  3. the AJM lines and the gc journal at 23:15.
 
 ## Result
 
