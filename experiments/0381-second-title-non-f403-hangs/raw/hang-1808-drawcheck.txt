@@ -1,0 +1,17 @@
+# exp 0381: drawcheck0381.py (strict, after Codex REVIEW-04) over devcoredump 20261029-180813-devcd3 (private): every DRAW_INDIRECT of the hung host IB
+ 13344 op 0x24 data_offset 0xc4a0 base1 0x1193ad3900 args 0x1193adfda0 | ok (limits 1048576 vertices, 64 instances)
+ 13468 op 0x24 data_offset 0xc4c0 base1 0x1193ad3900 args 0x1193adfdc0 | ok (limits 1048576 vertices, 64 instances)
+ 13564 op 0x24 data_offset 0xc4e0 base1 0x1193ad3900 args 0x1193adfde0 | ok (limits 1048576 vertices, 64 instances)
+ 13650 op 0x24 data_offset 0xc500 base1 0x1193ad3900 args 0x1193adfe00 | ok (limits 1048576 vertices, 64 instances)
+ 13942 op 0x24 data_offset 0x14bc0 base1 0x1193ad3900 args 0x1193ae84c0 | ok (limits 1048576 vertices, 64 instances)
+ 14071 op 0x24 data_offset 0x14be0 base1 0x1193ad3900 args 0x1193ae84e0 | ok (limits 1048576 vertices, 64 instances)
+ 14167 op 0x24 data_offset 0x14c00 base1 0x1193ad3900 args 0x1193ae8500 | ok (limits 1048576 vertices, 64 instances)
+ 14253 op 0x24 data_offset 0x14c20 base1 0x1193ad3900 args 0x1193ae8520 | ok (limits 1048576 vertices, 64 instances)
+ 14550 op 0x24 data_offset 0x1bfe0 base1 0x1193ad3900 args 0x1193aef8e0 | ok (limits 1048576 vertices, 64 instances)
+ 14678 op 0x24 data_offset 0x1c000 base1 0x1193ad3900 args 0x1193aef900 | ok (limits 1048576 vertices, 64 instances)
+ 14764 op 0x24 data_offset 0x1c020 base1 0x1193ad3900 args 0x1193aef920 | ok (limits 1048576 vertices, 64 instances)
+ 15061 op 0x24 data_offset 0x22940 base1 0x1193ad3900 args 0x1193af6240 | ok (limits 1048576 vertices, 64 instances)
+ 15185 op 0x24 data_offset 0x22960 base1 0x1193ad3900 args 0x1193af6260 | ok (limits 1048576 vertices, 64 instances)
+ 15286 op 0x24 data_offset 0x22980 base1 0x1193ad3900 args 0x1193af6280 | ok (limits 1048576 vertices, 64 instances)
+ 15372 op 0x24 data_offset 0x229a0 base1 0x1193ad3900 args 0x1193af62a0 | ok (limits 1048576 vertices, 64 instances)
+draws 15, with exp 0057's check verified packet for packet: 15

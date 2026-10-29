@@ -289,3 +289,56 @@ They are corrected here; sections 1–4 stay as written.
 Consequences for the next steps: the existing guard read (now verified per draw) comes first; the strongest control
 for F662 is a healthy, completed job of the same pass whose slots read index-like at completion (F668's journal), not
 an earlier compute hang that never reached the pass.
+
+## 6. The box slot (2026-10-30 ~00:5x, the top session's GO, read-only ssh, nothing written on the box) (F671–F673)
+
+**The guard (F672).** Strict `drawcheck0381.py` over stdin on `devcoredump/20261029-180813-devcd3.txt`
+(`raw/hang-1808-drawcheck.txt`): **all 15 `DRAW_INDIRECT`s of the hung host IB carry exp 0057's check, verified
+packet for packet** (flag = 1; `COND_WRITE`s polling exactly base 0x1193ad3900 + data offset and + 4, function 6, limits
+2^20 vertices and 64 instances, writing 0 to the flag; the confirm write; `PFP_SYNC_ME`; a `COND_EXEC` on the same flag
+over exactly the 5-dword draw). So a draw ran only if its polls read a vertex count ≤ 2^20 and an instance count ≤ 64.
+If one of these draws ran away, the CP fetched other words than it polled (sub-class B's mismatch, F590, on the draw
+side); otherwise the index-like words arrived after the draws were polled, and the stuck work is not shown to be these
+draws. Which of the two needs F668's journal (healthy completions) or a fetch-side record; the guard is not the gap.
+
+**The control (F673).** The full-journal grep was refused by the laptop's classifier ("interfere with workloads"); the
+same grep over the last 8 MB of each journal (`raw/control-earlier-hangs-draws.txt`) found the probe lines of the five
+earlier hangs (10-28 18:15, 23:36; 10-29 09:48, 12:12, 14:04): none of their dcbs holds the 0x1193ad3900 fast-launch
+pass; their 8 `DRAW_INDIRECT` slots (base 0x11a5c68000) and 4 multi-draws all read sane at the timeout. As Codex
+predicted, a weak control: it shows sane slots of another pass, not the same pass completing.
+
+**0x909977100's address path (F671).** A disassembly exists on the box (`~/bc5-work/dis-909/dis-909977100.txt`, 502
+lines, from the private shader dump `captures/shaders-0159*/0909977100.bin`); it was read into the laptop's private
+scratchpad and is not committed. In it (user SGPR k = `COMPUTE_USER_DATA_k`):
+- the program's only vector-memory load (one `buffer_load_dwordx4`, so the source of every TCP *read* fault in it) uses
+  a buffer descriptor whose 48-bit base is built as low = `USER_DATA_3` + (header dword 0x9c × 32) + 0x80 and high =
+  `USER_DATA_0` + the carry of that add (at most 1), with a stride bit set in the same word; header =
+  {`USER_DATA_5`:`USER_DATA_4`} (0x118c654a00 at 16:25, read by scalar loads, not TCP);
+- its stores use bases from `USER_DATA_1` (high) with `USER_DATA_6` (low), and a 64-bit pointer from the header plus
+  {`USER_DATA_1`:`USER_DATA_6`}.
+
+So the faults' high half 0x860 is `USER_DATA_0`'s low 16 bits (or one less), **not** `USER_DATA_5` and not a pointer the
+shader loaded. Offset arithmetic adds at most a carry of 1 to the high half; an index × stride carry would need an index
+of at least 0x84f00000000 / stride, impossible for a 32-bit index at the stride the title's 0x0010_xxxx values give
+(16), and an out-of-range index is clamped by the descriptor's record count (TODO(verify): the gfx10 V# word-1 layout,
+base [47:32] in bits 15:0 and stride in bits 29:16, from the RDNA 1.0 ISA guide's buffer resource table and Mesa's
+`ac_build_buffer_descriptor`). This narrows Codex's counter-model to "a wrong `USER_DATA_0`".
+
+**Where `USER_DATA_0` comes from.** `walk0381.py` and exp 0380's `binspan0380.py` over the 16:25 IB (read again for
+this, a read-only stdin run after the top session had been told the box was free): **none of the 890
+`DISPATCH_INDIRECT`s has `USER_DATA_0` or `USER_DATA_1` set by a `SET_SH_REG`**; the IB's first `SET_SH_REG` at 0x240
+is at dword 13824, after the chain. They come from the `LOAD_SH_REG_INDEX` tables the CP fetches at dword 8
+(0x909842dc0, 10 entries) and 8418 (0x909843280, 10 entries; format bit 31 set, TODO(verify) PAL's offset-and-data
+form) or from state carried in from an earlier IB. F443's high half 0xe380 fits the same register. So the 16:25 and
+F443 faults are a wrong `USER_DATA_0` for the adjacency build, which the host never writes: either the title's table
+held it (written late or not at all at start-up), or the CP's table fetch read other data (a CP-side fetch like
+sub-class B's), or a carried register.
+
+**Next for 16:25:** the title's tables at 0x909842dc0 / 0x909843280 hold the answer. The host already tracks
+`LOAD_SH_REG_INDEX` tables (F207: `BC5_DIRECT_DISPATCH_JOURNAL=1` lists program and user data through them); a start-up
+run with that journal shows `USER_DATA_0` of these dispatches at submit (0x11-like or not); and the timeout probe could
+dump each `LOAD_SH_REG_INDEX` table's pairs at a timeout (host-only, no packet). Not done: a run needs the maintainer's
+yes.
+
+**Not done in the slot:** the compile check of `direct.cpp`'s hook (`compile0381.sh`, the throwaway
+`~/bc5-work/exp0381cc`) was refused by the laptop's classifier as a remote shell write; listed for the morning.
