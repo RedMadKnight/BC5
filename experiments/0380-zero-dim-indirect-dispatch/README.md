@@ -1,7 +1,7 @@
 # 0380 — Is the F403 class a zero-dimension indirect dispatch? (sources, title side, a guard, a box plan)
 
 **Date.** 2026-10-29. **Laptop only.** No box access and no GPU submission in this experiment. Branch
-`exp/0380-zero-dim-dispatch`. Findings F545–F603 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
+`exp/0380-zero-dim-dispatch`. Findings F545–F604 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
 session's GO).
 
 **Question.** F527 puts the ME just past a `DISPATCH_INDIRECT` that passed the host's check, inside the title's
@@ -1540,6 +1540,59 @@ shares besides the shape: the dispatch is the first after our `CONTEXT_CONTROL` 
   - One B event with the switch on refutes `CLEAR_STATE` as the trigger.
 - Not to be built or staged before the top session's GO.
 
+## 22. The "test 0380 noclear" shortcut: the recorder with exp 0379's zero skip, and the prefix without `CLEAR_STATE` (F604)
+
+On the top session's GO, with the maintainer's "Tak, z 0379". The box session ran 22:47–22:59: lock lines
+`top exp 0380 | noclear …`, cleared; claim and done lines in BOX-QUEUE; kernel stream `raw/runs/NC-kernel-stream.txt`,
+with only IPv6 MLD lines.
+
+- **The skip needs its own binary.** Exp 0379's zero skip is host code in `bc5LleAgc.cpp` (`patch0379-bc5LleAgc.diff`
+  plus `zero_skip.hpp`), so the rec binary b8561eaa does not hold it. The first brief therefore stopped before any box
+  access.
+- **The build** (`raw/build0380nc.sh`, CPU only, nice 19, 30 s):
+  - **Unit:** exp 0379's patched unit (exp0379t's copy, e62113a5; header 782ca0e9) gets the recorder's four edits
+    (`mk-rec0380.py`), giving 71fae694, the same as the laptop's combination.
+  - **Compile and link:** only that unit is compiled (`build0380x.py`), against the shared objects and the shared
+    archive bb50b2e0. The unit's five warnings are all pre-existing; none falls in the recorder's lines (6315–6507).
+  - **Binary** `~/bc5-work/exp0380nc/bin/kyty_emulator`, **md5 99d91d2d**. It contains the zero-skip strings (10),
+    the `rec0380:` strings and the `BC5_DIRECT_PIECES_NO_CLEAR` switch name.
+  - **Shared files unchanged:** normal 58c4a627, lean dcbeb440, archive bb50b2e0, tree unit e7cc2f60 and
+    `play-pkg.sh` 55531ab6, before and after.
+- **The launcher** `~/bc5-work/exp0380nc/play-pkg-0380nc.sh` (**29c82f19**) is made by `raw/mkplay0380nc.py` from the
+  rec launcher (9aa6f587), with counted edits. Its diffs are `raw/play-pkg-0380nc.diff` (against `play-pkg.sh`) and
+  `raw/play-pkg-0380nc-vs-rec.diff`. It:
+  - sets `BC5_0380_REC=1` and `BC5_DIRECT_PIECES_NO_CLEAR=1`;
+  - sets `BC5_DIRECT_ZERO_SKIP` to a private copy of exp 0379's fixed list `zero-list-20261029-120000.txt` (7a4f972c);
+  - unsets write-back, FORCE_START, copy, rebase, the zero guard, the scan and the self-test;
+  - otherwise behaves as the rec launcher: RT on from the shared `input.cfg`, the job arena as shipped, one log, mount
+    log and memory record per start in `~/bc5-work/exp0380nc/play/`, and a first log line naming the switches, the
+    list's md5 and the binary's md5.
+- **The shortcut** "**BC5 emulator (test 0380 noclear)**" is installed in `~/Pulpit` (d208b444, `raw/nc/`). "test 0380
+  rec" was moved to `~/bc5-work/exp0380rec/retired/`. The shared shortcuts are untouched. Sampler 0377 stays
+  installed and active.
+- **The smoke run NC1** (`raw/s6n0380nc.sh` by `raw/mk-s6n0380nc.py`; extract `raw/runs/NC1-extract.txt`): S6N route,
+  RT on, the route's save copy, 300 s. Switches: `BC5_0380_REC=1 BC5_0380_REC_SELFTEST_S=150
+  BC5_DIRECT_PIECES_NO_CLEAR=1 BC5_DIRECT_ZERO_SKIP=<the list>`, each checked in the emulator's environment.
+  - **Pass:** no crash, kernel or TIMEOUT line, no devcoredump, launcher exit 0, and no RT-off line, so RT was on.
+  - **Frame rate:** 9,573 flips in 299 s (32.0/s; RC1 had 33.2/s). From 160 s on, NC1 ran 352–393 flips per 10 s
+    against RC1's 366–410, a mean 5 % lower. That is one run each, and the cause is not attributed: it could be the
+    skip, the missing `CLEAR_STATE` or noise.
+  - **The skip is active.** It placed 934 MiB of RenderGpuWcLarge and 284 MiB of CommitIABufferAllocator. 824 MiB
+    were still skipped at the end: 193 chunks were taken back by hints, and one canary hit took back 8 MiB, a possible
+    one-frame glitch. 10,504 MiB pinned.
+  - **The recorder is active.** The self-test at 150 s scanned 10,526.7 MiB resident in 8.79 s and wrote its file
+    (14,933 bytes) in 8.88 s.
+  - **NO_CLEAR has no line of its own.** It is confirmed by the emulator's environment. Its effect would show in a
+    hang's timeout dump as a dword 0 that is no longer `CONTEXT_CONTROL`.
+  - **Menu:** shots at 80, 86, 87.5, 89 and 200 s are in `~/bc5-data/captures/exp0380nc/shots/` (private). The save
+    list (86 s) and the Continue menu (87.5 s) look normal: every element's panel, text and highlight is drawn, with
+    none of F204's transparent rectangles. The laptop's viewing copies were deleted.
+  - **The live saves** read 2d7b7a1575dcad6d before and after. That is the maintainer's state after his 21:33 play;
+    the earlier a92fe099 reference changed with that play.
+- **What the maintainer's play will test:** whether sub-class B comes without the prefix's `CLEAR_STATE` (F603).
+  About 3 h without B gives p ≈ 0.05, and one B refutes it. A B event is recorded by part A, the timeout probe and
+  sampler 0377 as before.
+
 ## Result
 
 - Sources read and cited (F545, F546). The title-side evidence was re-read from exps 0376/0378 (F547).
@@ -1547,6 +1600,9 @@ shares besides the shape: the dispatch is the first after our `CONTEXT_CONTROL` 
 - A second guard, `FORCE_START_AT_000` on indirect dispatches, is built the same way: default off, with unit tests
   (F551).
 - The box plan is written. Only step A0 ran: a CPU-only compile check, which passed (F552). Nothing ran on the GPU.
+- The test shortcut "test 0380 noclear" is installed and "test 0380 rec" is retired. Binary 99d91d2d = recorder part A +
+  exp 0379's zero skip; it runs `BC5_DIRECT_PIECES_NO_CLEAR=1` with RT on. Its smoke run passed at a 5 % lower
+  frame rate than RC1 (one run each), and the menus look normal (F604).
 - Every recorded sub-class B event (5 of 5) is the first indirect dispatch right after our full-state prefix, in a dcb
   with no `SET_BASE` of its own. No recorded stream has a `SET_BASE` inside a `COND_EXEC`. The shape is probably
   common in healthy play, so it is context, not a trigger. A `CLEAR_STATE`-less prefix test is proposed. The
