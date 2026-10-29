@@ -245,3 +245,47 @@ request (a `find` for a dump of it on the box, then `llvm-mc -mcpu=gfx1013` ther
 2. `drawcheck0381.py` over stdin on `devcoredump/20261029-180813-devcd3.txt`;
 3. `find ~/bc5-work ~/bc5-data/captures -maxdepth 4 -iname '*977100*'`, then, if a code dump exists, its disassembly to
    stdout.
+
+## 5. Codex review (REVIEW-04): corrections (F670)
+
+Codex's independent review of `ab86f97` and the follow-ups (`C:\Users\kjani\Documents\ChatGPT\BC5\audit\REVIEW-04.md`,
+with `review04_evidence.py` and `test_review04_guard_heuristic.py`; accepted by the top session) narrows five claims.
+They are corrected here; sections 1–4 stay as written.
+
+1. **18:08's state (F660, §1, §3) is a distinct graphics/front-end stall signature, not a shown deadlock.** Five
+   discrete register samples cannot show "no movement" or "no memory traffic" across the 1.2 s between them; SPI busy
+   is not a wave scan (the sampler ran registers only); and static status bits do not tell a deadlock from work or a
+   wait that leaves those bits unchanged. A runaway draw is not excluded on those bits, and a deadlock is not shown;
+   both stay mechanisms to decide. The 18–20-bit distance describes how the registers differ; it is not a
+   probability.
+2. **The counts (F662) mix two definitions.** Of the 15 `DRAW_INDIRECT` slots, **13 have an instance count above 64**
+   (the existing check's limit) and **12 are index-like by `draw_args::index_like`** (at least two neighbouring dwords
+   step by one, a count above 0xffff): 14127's 0x8a64 0xa418 0xa41d 0xa48d is over the limit without the steps.
+   The journal already reports the two as separate flags (`over-instances`, `index-like`; `draw_args_test.cpp`
+   asserts 14127's flags are `over-instances` only). "Candidate hanging draw: dword 12640" is withdrawn: 12640 is the
+   first slot with suspicious *later* contents; which address the CP fetched is unknown. The stage and program state
+   in the probe's lines is also a later read of mutable tables, so "no HS/LS" is weaker than a direct exclusion of
+   tessellation in what ran.
+3. **`drawcheck0381.py`'s first version counted any `COND_WRITE` and `COND_EXEC` among the 8 packets before a draw.**
+   Codex's synthetic counterexample (a poll of an unrelated address, a zero-dword `COND_EXEC`) came out "checked". It
+   now verifies, per draw, the six packets `indirect_check::apply` emits, in order and adjacent to the draw: flag
+   initialisation, both polls at the args address and address + 4 (the base in effect + data offset), function 6, mask,
+   the write target and value, the `WR_CONFIRM` write at flag + 4, `PFP_SYNC_ME`, and a `COND_EXEC` on the same flag
+   covering exactly the draw. It names the first mismatch. `test_drawcheck0381.py`: 6 cases pass (the emitted check,
+   Codex's counterexample, a shifted poll, a zero-dword and a wrong-flag `COND_EXEC`, no base). The flag word left at
+   a timeout may belong to another draw of the job (one flag per IB), so it is not read as that draw's result.
+4. **F661 is a signature tag, not a validated detector.** The rules were chosen after looking at these samples; 0 of 40
+   on the same set gives no false-positive rate (even for 40 independent samples, the one-sided 95 % binomial bound is
+   about 7.2 %, and these are correlated). Use it to label an event the stall clock already caught; never trigger a
+   reset or a GPU change on it.
+5. **16:25 (F663, F664) narrowed.** `USER_DATA_5` = 0x11 and matching low dwords support the same pointer family as F443;
+   they do not show that the shader loaded a bad high dword. The IB is not a snapshot of the waves' registers after the
+   `LOAD_SH_REG_INDEX` tables, and offset arithmetic gives the same low dword: 0x118c65c000 + 0x84f00000000 =
+   0x8608c65c000. The mapped learned window shows coverage, not the contents at the fetch. The first *printed* fault
+   under the kernel's rate limit need not be the first access, so "no real-address fault came first" is withdrawn. The
+   address path needs the faulting instruction's dataflow (F669's box step). F664: the data show one later job waiting
+   on a label the killed job did not write; "every later job waits" is wider than the evidence.
+
+Consequences for the next steps: the existing guard read (now verified per draw) comes first; the strongest control
+for F662 is a healthy, completed job of the same pass whose slots read index-like at completion (F668's journal), not
+an earlier compute hang that never reached the pass.
