@@ -478,3 +478,108 @@ the eager list. Of that, RenderGpuWcLarge is 2.7 GB, CommitIABufferAllocator 2.7
    Using the lean build in the play shortcut is a launcher choice, not code.
 - **Not a lever:** making the render heaps lazy brings back F96's faults and freezes (Design). Lowering
   `KYTY_GUEST_MEMORY_MB` saves nothing (F353).
+
+### Why GTT grows in play, the next levers, and a 20-minute bench test (2026-10-29 evening, laptop only)
+
+Findings: F620–F622 are the 36-minute play section above. They were first numbered F582–F584, which exp 0380's
+branch also uses, and were renumbered on 2026-10-29 evening. F623–F626 are this section's.
+
+This section was written at the top session's request. It uses the existing records: exp 0380's 21:33 play
+`PLAY-2133-mem.txt` (on exp 0380's branch), this experiment's plays and bench runs, and main's patch 0001. No box access.
+
+**1. Where the 1.3 GB comes from.**
+
+- **Most of it is the load.** In the 21:33 play GTT went from 11,437 MB at 1 min to 12,149 MB at 2 min. Those
+  712 MB are the load still running, since 11.4 GB is reached within ~160 s (F353, and A1 here). After the load it grew
+  only 553 MB in 19 minutes, to 12,702 MB.
+- **The growth after the load comes in steps, never down.** The steps were +119, +88, +39, +82 and +113 MB, at 21:39,
+  21:40, 21:43, 21:45 and 21:50, with flat minutes between. Two other plays grew less: the 16:25 play +344 MB in 34 min
+  (12,385 → 12,729), and the 12:00 SCAN play +375 MB in 6 min (12,054 → 12,429). F353 had +0.5 GB in 29 min with
+  RT off.
+- **On the bench it is flat.** A1 (shared build) and B1 (skip) reached 11,992 and 10,080 MiB at 180 s and stayed there to
+  421 s, at the same frame. So the growth follows the play's movement through the game world, not time. A host leak
+  would grow while standing still too.
+
+**What the code allows** (patch 0001, `bc5LleAgc.cpp` `direct_sync_one`; `memory.cpp` `PhysicalMemory::Alloc`,
+`ReleaseDirectMemoryInternal`):
+
+- **No duplicate imports.** A chunk is imported only when `direct_covered_end` finds no BO covering its memfd offset,
+  so a memfd chunk is pinned once however many views (aliases) map it.
+- **No duplicate or stale GPU mappings.** Each rebuild computes the wanted (view × BO) set and unmaps every mapping no
+  view asks for ("drop what no view asks for any more"). A1's end state is stable: 19,396 views and 19,431 mappings.
+- **But nothing is ever released.** `S.bos` only grows. The merge replaces BOs with one covering the same range, and
+  the old ones are freed in the same sync, so the extra is at most the 256 MiB merge budget for a moment.
+  - When the title releases direct memory, `ReleaseDirectMemoryInternal` unmaps the GPU and CPU aliases and frees the
+    physical block. The imported BO stays, and the memfd is never punched: the patch has no `FALLOC_FL_PUNCH_HOLE` and
+    no `MADV_REMOVE`.
+  - So pinned memory is a high-water mark: every memfd chunk that ever held data, or was forced by a hint or a learned
+    window, stays pinned to the end.
+- **Freed memory is reused before new memory is touched.** The physical allocator is first-fit from the bottom of the
+  search range (`m_free.upper_bound(search_start)`). A freed and re-allocated block lands on chunks that are already
+  pinned, so churn costs nothing new. The high-water mark rises only when the title's allocations reach chunks never
+  written before.
+- **Part of GTT is not the direct path's at all.** On the bench, A1's journal shows 11,338 MiB pinned by the direct
+  path against 11,992 MiB of GTT used. The other ~650 MiB belongs to other clients: the emulator's Vulkan side (RADV),
+  the compositor and the rest of the desktop. Its growth in play is not measured; `mem_info_gtt_used` counts the whole
+  device.
+
+**Answer:** this is not a mapping leak. The growth after the load is the title filling more of its own direct-memory
+reservation as new areas stream in. The host keeps all of it pinned for good. It never gives back a chunk the title has
+freed and not reused, and it never punches the memfd.
+
+- How much of the 12.7 GB is "freed by the title but still pinned" is not recorded. First-fit reuse suggests it is
+  small. TODO(verify): a diagnostic would compare, at one moment, the imported chunks against `m_physical`'s
+  allocated blocks.
+- How the growth splits between the direct path and the Vulkan side is not recorded either. The test below records
+  it.
+
+**2. The next levers beyond the zero skip, ranked by expected gain over risk.**
+
+| # | lever | expected gain | risk | cost to try |
+|---|---|---|---|---|
+| 1 | Zero scan of the other eager heaps (~1.5 GB) and the AMM pool (3.1 GB in 18,661 small pages); skip what stays zero | unknown; the pool could be the largest, by size | as the skip: canary hits, no faults | heaps: one SCAN play with every eager name, no code; pool: a per-view list (new code) |
+| 2 | Find what the non-direct ~0.65 GB GTT is (RADV allocations: display buffers, the tiler pool's 96 MiB, F311) | part of 0.65 GB, unknown | low; measurement first | the per-client sampler below |
+| 3 | Less page-cache churn from the normal build's journal and logs (the lean build swapped ~10× less, F353) | not pinned, but it eases the reclaim that F620 ties to the slow minutes | none for correctness; exp 0380 loses the journal it reads | a launcher choice (the maintainer's) |
+| 4 | Release imports the title has freed: free the BO and punch the memfd for fully freed chunks | the "freed but pinned" share, likely small (first-fit) | medium-high: needs a BO split (merged BOs span up to 256 MiB+), a drain before the free, and a race with the title's next allocation; exp 0333's phase R had the same problems | code; a diagnostic first to size it |
+| 5 | Narrower learned windows outside the eager heaps (F622) | ≤ ~0.7 GB | a fault where a window used to cover (F473) | code + a breakdown run |
+| 6 | Shared canary slices | ~0.1 GB | low | code in the skip |
+
+- **Not levers:** lazy render heaps (F96's faults); a smaller `KYTY_GUEST_MEMORY_MB` (F353); the box's swap and VM
+  settings (the maintainer's, root).
+
+**3. Proposed bench test (G1/G2): 20 minutes per arm, with the GTT split by client.**
+
+- **Question:** over 20 minutes, does GTT grow on a standing route? If it does, that growth is the host's, since
+  the title loads nothing new there. And how much of GTT is the direct path's against the Vulkan side, with and without
+  the skip?
+- **Route:** the S6N route as in A1/B1. That means exp 0203's `o2-continue.cmd`, exp 0196's route saves in a private
+  save copy, a private wd, and the live saves only compared. RT on, 1,200 s per arm, with `sync` and `drop_caches`
+  before each.
+- **Arms:**
+  - G1 is the shared normal build: 58c4a627, or today's md5 through `EXPECT_NORMAL` once its pins are re-read.
+  - G2 is this experiment's private e1cc0c92 with `BC5_DIRECT_ZERO_SKIP` on the maintainer's 1.2-GB list
+    (`exp0379t/play-lists/zero-list-20261029-120000.txt`).
+  - No leak fix is in either arm, because the code shows no leak to fix. G1's minute-by-minute GTT is the leak test.
+- **Scripts:**
+  - `gtt/s6n0379m.sh` (made by `gtt/mk-s6n0379m.pl` from `raw/s6n0379.sh`): the cap is raised to 1,500 s and the
+    sampler swapped.
+  - `gtt/sample0379m.sh`: `raw/sample0379.sh` plus one `c<client>=<GTT>/<resident>` field per DRM client of the
+    emulator, from fdinfo. A dry run on stand-in files parses both key forms. TODO(verify) the key names on 7.2.9, and
+    that the udmabuf imports count in their client's `drm-total-gtt`.
+  - `gtt/stream0379m.sh`: the kernel stream into `gtt/raw/`.
+- **What it records:** per 10 s, GTT used per client, MemAvailable, swap, PSI mem/io full, mount reads, and the
+  emulator's RSS. From the journal, the direct path's pinned total (`*-pinned-every20.txt`), the canary hits and the
+  take-backs. Also flips/s, kernel lines and the live-save checksum.
+- **Pass, and what each outcome means:**
+  - G1's GTT within ±32 MiB of its 180-s value through 1,200 s means no host growth while standing. More than that,
+    with the direct client's GTT flat, puts the growth on the Vulkan side. If the direct client grows, it is the
+    host's import path.
+  - G2 should hold its skip for 20 minutes: canary hits counted, and its GTT difference to G1 measured at 180 s and at
+    1,200 s.
+  - Both must pass with flips/s within ~1 of each other, 0 kernel lines, and the saves unchanged.
+- **What it cannot show:** the minute-16 pressure of the plays. The S6N route stands still, so its steady reads are
+  21–25 MiB/min (F543) and its GTT plateaus at 180 s. For that, a moving route is needed, such as exp 0360's
+  pad-record replay from the 47aefd45 save copy. Its length and coverage need checking first. Otherwise, a longer
+  SKIP play by the maintainer.
+- **Box time:** about 50 min. That is 2 × (1,200 s + ~3 min of setup and checks) plus ~5 min of reads before (pins,
+  the list's md5, copying the three scripts).

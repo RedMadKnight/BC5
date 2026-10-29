@@ -35,7 +35,7 @@ BC5 is a hobby research project and is against piracy. You play games you own, d
 
 ## Status in numbers
 
-As of 2026-10-28, measured on one BC-250 with the maintainer's own copies of the games. Every number is a finding (F1 … F584) in [`docs/HANDOFF.md`](docs/HANDOFF.md) §2, backed by an experiment under [`experiments/`](experiments/). A "flip" is one frame the game presented.
+As of 2026-10-28, measured on one BC-250 with the maintainer's own copies of the games. Every number is a finding (F1 … F626) in [`docs/HANDOFF.md`](docs/HANDOFF.md) §2, backed by an experiment under [`experiments/`](experiments/). A "flip" is one frame the game presented.
 
 | | ASTRO BOT | Marvel's Wolverine (second title) |
 | --- | --- | --- |
@@ -67,7 +67,7 @@ As of 2026-10-28, measured on one BC-250 with the maintainer's own copies of the
 | Audio grain model and display-event coalescing | The second title's sound and timeline at real speed (1.00× for 10 minutes), no 30-fps cap needed | F246, F247 |
 | Tessellation-factor ring, second title | The night scene's tessellated draws are drawn; the geometry engine's reads at address 0 are gone | F248 |
 
-**The research so far:** 537 findings (F1–F478, F482–F486, F490–F506, F510–F537, F540–F543, F563–F565, F582–F584) in `docs/HANDOFF.md`, 378 experiments (0001–0379) in `experiments/`, 14 architecture decision records in `docs/decisions/`.
+**The research so far:** 541 findings (F1–F478, F482–F486, F490–F506, F510–F537, F540–F543, F563–F565, F620–F626) in `docs/HANDOFF.md`, 378 experiments (0001–0379) in `experiments/`, 14 architecture decision records in `docs/decisions/`.
 
 ### Known issues
 
@@ -188,7 +188,7 @@ Environment variables; the launchers set the title's values. The full list, with
 README.md            this file
 CLAUDE.md            standing instructions and the hard rules
 docs/
-  HANDOFF.md         research state: findings F1–F584 with sources, open questions, decisions
+  HANDOFF.md         research state: findings F1–F626 with sources, open questions, decisions
   PHASES.md          the gated roadmap (G0a, G1b, G2, G3 passed; 0b and 4 retired by D18; phase 5, play, current)
   console-vs-host.md what the console does, what the host does instead
   decisions/         ADRs 0001–0014, one decision each
