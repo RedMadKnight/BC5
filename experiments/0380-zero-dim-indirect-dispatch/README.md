@@ -1,7 +1,7 @@
 # 0380 — Is the F403 class a zero-dimension indirect dispatch? (sources, title side, a guard, a box plan)
 
 **Date.** 2026-10-29. **Laptop only.** No box access and no GPU submission in this experiment. Branch
-`exp/0380-zero-dim-dispatch`. Findings F545–F585 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
+`exp/0380-zero-dim-dispatch`. Findings F545–F586 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
 session's GO).
 
 **Question.** F527 puts the ME just past a `DISPATCH_INDIRECT` that passed the host's check, inside the title's
@@ -1056,6 +1056,30 @@ unstable). The records are on the box (`~/bc5-work/exp0380wb/play/`, the journal
     under PSI memory-full 16–24 %. That fits streaming or late-data glitches without either switch.
   - To tell them apart: his description of the glitches (what, where, how long), then if needed one long play with
     `ARGS_WB=first` and FORCE_START **off**.
+- **Reclassification with the TCP-fault history (F586, offline).**
+  - *Start 1's fault* belongs to the shader-side class of F443 and Q22: a shader using a garbage pointer, then a ring
+    timeout whose reset succeeds.
+    - F443 (exp 0356 R2): a TCP write fault plus four faults at junk addresses, the GFX ring timed out, the reset
+      succeeded. It is "the shader-side class of F399/F403 (garbage pointers in a dispatch's data), not the AMM fault".
+    - Q22: stray TCP accesses at heap-side addresses that hold no guest memory, followed by ring timeouts (F257, F275,
+      F304, F331, F338/F339). These are the tcp-write session's findings.
+    - Today's differs only in being a read (RW 0) at an address in no mapping (0x8608c65xxxx). The program is from the
+      0x0909 RT/BVH window, and the job is an unbased dispatch chain.
+    - The lost picture after the resets fits the reset dropping the title's GPU state.
+  - *The "białe kropki" (white specks) of start 2.* HANDOFF has no "white speck" finding. The nearest known RT state:
+    - the RT reflection traversal turning surfaces white when it reads trees that are not (yet) compacted or built
+      (F362, F366: the lab washed out white by 0x11d049aa00 / 0x11d04a6000);
+    - F370: running the BVH compaction 0x909974400 removes it, which is how the shared builds run RT on (F343).
+
+    Isolated white dots during play fit the same family: reflection rays hitting incomplete or stale BVH data, or
+    unwritten samples. They are also typical of NaNs in a denoise pass (TODO(verify) for this title).
+  - *Could `ARGS_WB=first` matter?* Only through its intended effect: if it makes the CP fetch the arguments the title
+    wrote (F569), BVH-related dispatches would launch the grids the console launches. That should reduce artefacts, not
+    add them.
+  - The other candidates stand as in F585: FORCE_START, and the RT-on glitches already seen on the shared build under
+    memory pressure (10-28).
+  - A capture would decide it: a screenshot or short recording of the dots, and whether they appear with the shared
+    build on the same save.
 - If it holds, F569's "the fetch misses GL2-resident writes" becomes the working explanation for sub-class B. It was
   withdrawn because the copy runs did not test it; the write-back result now supports it directly.
 
