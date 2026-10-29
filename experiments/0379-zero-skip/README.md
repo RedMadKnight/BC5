@@ -680,3 +680,43 @@ one more anchor). Everything else is G1/G2's:
 
 **Gate.** G4 runs only if G3 streams. After minute 4, G3's mount reads must stay above ~200 MiB a minute in most
 minutes, against G1's 0–33, and PSI mem or io "full" must be above 0. Otherwise G3 is reported and G4 is not run.
+
+### G3/G4 result (2026-10-30 00:50–00:53): G3 hung the GPU about 2 minutes in, before the walk began; G4 not run
+
+The run had the top session's GO. G3 was e1cc0c92 with the zero skip OFF, RT on, the walk route
+(`gtt/walk0379.cmd`), and the runner `gtt/s6n0379m.sh` (02f9133d).
+- Pins were unchanged: shared normal 58c4a627, `play-pkg.sh` 55531ab6, the list 7a4f972c, live saves
+  377a8d456a9b4cb1.
+- `drop_caches` ran as the logged pre-step at 00:50:35.
+
+**What is recorded.** These are raw facts only; exp 0380 classifies the hang against F403's classes.
+
+- **Timeline.**
+  - The last fps counter line in the private `play-last.log` is t 114.1 s, at 33–44 flips/s from t 109 to 114:
+    gameplay after the Continue load.
+  - The gfx ring stalled about 3 s later.
+  - The first walk input was due at t ≈ 118.2 s (85 s + 3.2 s of menu presses + the 30-s load wait). So at the hang
+    the title had received only the S6N route's own inputs. G1 and G2 ran that same start without a hang.
+- **Kernel** (`gtt/raw/G3-kernel-stream.txt`):
+  - At 00:52:38 "Dumping IP State", then a devcoredump was created.
+  - `ring gfx_0.0.0 timeout, signaled seq=8353704, emitted seq=8353706`, in process kyty_emulator, thread `bc5-ring`.
+  - `Ring gfx_0.0.0 reset failed`, then "GPU reset begin!".
+  - bc5-gpu-watch then synced and crashed the kernel for a reboot (SysRq s, c).
+  - The box was back at 00:53:11 (boot b30ad76b), with bc5-gpu-watch and bc5-gpu-stall-sampler active again.
+- **Stall sampler event** (private: `~/bc5-data/captures/gpu-stall/event-20261030-005238-gfx_0.0.0/`):
+  - "stall clock 1.92 s on gfx_0.0.0", five register samples, no wave scan.
+  - In every sample: `CP_PFP_INSTR_PNTR` 0xea0–0xea1, `CP_ME_INSTR_PNTR` 0x779–0x77b, `CP_IB1_BUFSZ` 0x1ae8.
+  - The launched compute state was program 0x11d02a1600, dim [1599230800 1279809090 988715737], threads [64 1 1],
+    initiator 0x41, on gfx ME0 pipe0 queue0.
+  - `stalls.log` holds no line for this event.
+- **Memory** at the last sample, 9 s before the stall (`gtt/raw/G3-mem.txt`): GTT used 10,644 MiB and MemAvailable
+  2,015 MiB, with the load still growing. The direct client held 10,417 MiB of GTT and RADV 117.
+- **Private captures, not committed:**
+  - `~/bc5-data/captures/devcoredump/20261030-005238-devcd1.txt`;
+  - four pstore records of 00:53:24 in `~/bc5-data/captures/pstore/`.
+- **Saves:** the live saves were 377a8d456a9b4cb1 after the reboot, unchanged.
+
+**Consequences for G3/G4.**
+- The gate was never reached, and G4 (skip on) was not run.
+- The walk route is untested: no walk input was ever sent.
+- The skip played no part, since it was off.
