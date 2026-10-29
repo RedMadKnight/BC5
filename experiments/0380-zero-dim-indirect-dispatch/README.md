@@ -1,7 +1,7 @@
 # 0380 — Is the F403 class a zero-dimension indirect dispatch? (sources, title side, a guard, a box plan)
 
 **Date.** 2026-10-29. **Laptop only.** No box access and no GPU submission in this experiment. Branch
-`exp/0380-zero-dim-dispatch`. Findings F545–F586 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
+`exp/0380-zero-dim-dispatch`. Findings F545–F589 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
 session's GO).
 
 **Question.** F527 puts the ME just past a `DISPATCH_INDIRECT` that passed the host's check, inside the title's
@@ -1040,7 +1040,8 @@ unstable). The records are on the box (`~/bc5-work/exp0380wb/play/`, the journal
   - The B class may also depend on load: start 2 ran under heavy memory pressure.
 - **Next.** A second long play on the same shortcut decides it far better than more bench runs. Two clean 36-minute
   plays would put the "unchanged rate" chance below ~10^−3.
-- **The graphics glitches in start 2 (the maintainer: glitches, the sound fine) (F585).**
+- **The graphics glitches in start 2 (the maintainer: glitches, the sound fine) (F585).** *Corrected by F587: the same
+  white dots appeared on the shared build, so neither FORCE_START nor `ARGS_WB` causes them.*
   - `ARGS_WB=first` itself is an unlikely cause. It adds an `ACQUIRE_MEM` that writes dirty GL2 lines back to memory
     (`GCR_CNTL` `GL2_WB` only, no invalidate). The GPU's own clients read through GL2 either way, so no value a shader
     or the CP sees changes, and only timing can differ.
@@ -1082,6 +1083,60 @@ unstable). The records are on the box (`~/bc5-work/exp0380wb/play/`, the journal
     build on the same save.
 - If it holds, F569's "the fetch misses GL2-resident writes" becomes the working explanation for sub-class B. It was
   withdrawn because the copy runs did not test it; the write-back result now supports it directly.
+
+## 17. White dots on the shared build too; the 18:08 hang is a graphics-pipe stall, not F403 (F587–F589)
+
+**New data (the maintainer, relayed by the top session).** He played the shared normal build (58c4a627, the regular "BC5
+emulator" shortcut, RT on, the same save). The white dots appeared there too. He had the impression the game was more
+stable at first (subjective). He paused and unpaused, and a few moments later it hung, at 18:08:13. The ring reset failed
+and `bc5-gpu-watch` rebooted the box.
+
+**Box.** Reads only, after the reboot, with a reads-only lock line, cleared at the end. Done line in BOX-QUEUE. Extracts
+in `raw/hang-1808/`.
+
+**The dots (F587).** They are not caused by FORCE_START or `ARGS_WB` (F585 and F586 are corrected): they are the title's
+RT-on rendering on this host in general. F586's nearest known state stays: the reflection traversal on incomplete or
+uncompacted trees (F362, F366, F370), or denoise NaNs (TODO(verify)).
+
+**The 18:08 hang (F588).**
+- **Where the CP is.**
+  - The IB of the stuck job is dcb #127530 (14,945 title dwords; 16,152 with the host's packets). It is **fully
+    fetched**: `CP_IB1_BUFSZ` 0, `CMD_BUFSZ` 0x3f18.
+  - Its tail: the title's `RELEASE_MEM`s and an `ACQUIRE_MEM`, the host's zero-byte `DMA_DATA` CP_SYNC (16139), NOPs.
+  - PFP history (newest first): `ACQUIRE_MEM`, `EVENT_WRITE`, `ACQUIRE_MEM`, `EVENT_WRITE`, `RELEASE_MEM`, then three
+    one-dword ring NOPs (0xffff1000). So the PFP is past the IB, on the ring's own packets.
+  - ME history: `EVENT_WRITE`, `ACQUIRE_MEM`, 0xc0000c00, `EVENT_WRITE`, `RELEASE_MEM` ×2, `LOAD_CONTEXT_REG_INDEX`,
+    `RELEASE_MEM`. The ME stands at an `EVENT_WRITE` after the job's last packets.
+  - It waits for a partial flush there (`CP_STALLED_STAT2` `ME_WAITING_ON_PARTIAL_FLUSH`), with an end-of-pipe event
+    pending (`EOPD_FIFO_NEEDS_SC_EOP_DONE`, `CP_BUSY_STAT` `EOP_DONE_BUSY`).
+  - So the hang is in work launched earlier in the job, not in a packet the CP is processing.
+  - The CP pointers (PFP 0xea1, ME 0x77b) are the generic wait loop of F524, not a sign of F403.
+- **What is busy.** Decoded with Linux v7.2 `gc_10_1_0_sh_mask.h`:
+  - `GRBM_STATUS` 0xa2712028 has **GE, PA and SX busy** and SPI busy, with TA idle and DB not clean. `GRBM_STATUS_SE0`
+    0x0d000004 has PA and SX busy, no TA/TCP. `GRBM_STATUS2` 0x50000008 has no TCP_BUSY.
+  - Against F403 (0xa0407028, SE 0x0a000036, TA and TCP busy, no EOP pending), this is the **graphics pipeline**
+    (geometry → rasteriser → export) that does not drain. It is not a compute dispatch.
+- **The sampler's `COMPUTE_PGM` 0, `DIM` [0 1 1], threads [8 4 1], initiator 0x8041** read the compute SH copy, which
+  says nothing about a graphics stall. F536 already saw program 0 with a live grid in 9 healthy samples. So the stuck
+  work is not shown to be a dispatch at all.
+- **No page fault** precedes the 18:08 timeout in this boot (the sampler's kernel-line copy).
+- **The probe.** The job holds 29 dispatches (5 indirect, the largest grid 15,678) and draws. "HS user data address 0x0
+  … not mapped" appears at three places, as in earlier probes (09:48), so it is not specific.
+- **The class.** The nearest earlier state is F519 (ASTRO BOT, 06:34): a graphics-pipe stop with GE/PA busy and resident
+  waves drained, which also reached `bc5-gpu-watch`. Unlike F519, SPI is still busy here. Which draw does not finish is
+  open. The next read would be the devcoredump's IB walk for the job's last draws and the sampler's per-sample SE state.
+- **The unpause.** The host's own pause (the window's Space key) appears in the play log only at 146–150 s, nowhere near
+  the hang (~52 min into the play). So his pause was most likely the title's own menu pause. Unpausing makes the title
+  resume rendering (and may rebuild render targets or start effects), but no host path (flip, video out) changes state
+  then. Relevance: possible, not shown.
+
+**F535's discriminator (F589).**
+- The rule (`ME_WAITING_ON_PARTIAL_FLUSH` set and `EA_LINK_BUSY` clear) **fires on this hang too**, although it is not
+  F403's state. So the rule alone does not identify F403.
+- Adding **TA_BUSY or TCP_BUSY set, GE_BUSY clear and no EOPD wait** separates both the 18:08 state and the healthy
+  parked frames from F403's. That is consistent with F525/F534's records, but untested on the 40 healthy samples beyond
+  these fields.
+- An early-warning rule should report "graphics stall" and "compute stall (F403-like)" as different events.
 
 ## Result
 
