@@ -28,7 +28,11 @@ constexpr std::uint32_t kSetBase = 0xC0021100u; // PKT3(SET_BASE, 2, 0), experim
 // ac_emit_cp_copy_data in src/amd/common/ac_cmdbuf_cp.c emits it, ab2374a)
 constexpr std::uint32_t kCopyData = 0xC0044000u;
 constexpr std::uint32_t kCopyMemToMem = 1u | (5u << 8) | (1u << 20);
-constexpr std::uint32_t kArgsSlot = 16; // byte offset of the argument copy in the flag area (dwords 4-6) // experiment 0380: WAIT_REG_MEM_FUNCTION 3 "==", Linux v7.2 nvd.h
+constexpr std::uint32_t kArgsSlot = 16; // byte offset of the argument copy in the flag area (dwords 4-6)
+// experiment 0380 (F570): PKT3(ACQUIRE_MEM, 6, 0) with GCR_CNTL GL2_WB (bit 15), the full range, as the kernel's
+// gfx_v10_0_emit_mem_sync writes it (Linux v7.2 nvd.h:447-501, gfx_v10_0.c:9473-9494; COHER_CNTL 0)
+constexpr std::uint32_t kAcquireMem = 0xC0065800u;
+constexpr std::uint32_t kGcrGl2Wb = 1u << 15; // experiment 0380: WAIT_REG_MEM_FUNCTION 3 "==", Linux v7.2 nvd.h
 constexpr std::uint32_t kPollMem = 1u << 4;
 constexpr std::uint32_t kWriteMem = 1u << 8;
 constexpr std::uint32_t kPfpSyncMe = 0xC0004200u; // PKT3(PFP_SYNC_ME, 0, 0)
@@ -66,7 +70,7 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib_in, std::uint
                                  const std::uint32_t (&max)[3], const std::uint32_t (&draw_max)[2],
                                  std::vector<std::size_t> &flag_refs, Stats &stats,
                                  bool compute_ring, const ProductLimit *product, bool zero_dims,
-                                 bool force_start, bool rebase, bool args_copy) {
+                                 bool force_start, bool rebase, bool args_copy, ArgsWb args_wb) {
     // ADR 0010 section A: a COND_EXEC range whose grown count no longer fits has its own checked
     // packets NOP-ed (nothing of that range runs unchecked) and the pass runs again over the
     // rest; it used to give up on the whole IB, which in a chain is several buffers.
@@ -156,6 +160,12 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib_in, std::uint
                         flag_at(kArgsSlot + 4 * k);
                     }
                     stats.args_copied++;
+                }
+                // experiment 0380 (F570): GL2 written back before the check and the fetch (after the copy)
+                if (dims == 3 && !compute_ring &&
+                    (args_wb == ArgsWb::all || (args_wb == ArgsWb::first_after_index_base && after_index_base))) {
+                    out.insert(out.end(), {kAcquireMem, 0u, 0xffffffffu, 0xffffffu, 0u, 0u, 0x0000000Au, kGcrGl2Wb});
+                    stats.args_written_back++;
                 }
                 out.insert(out.end(), {kWriteData, kWriteDataMem});
                 flag();

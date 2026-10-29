@@ -3,6 +3,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <algorithm>
 #include <cstdint>
 #include <vector>
 
@@ -703,5 +704,62 @@ TEST_CASE("indirect_check: the dispatch runs from the CP's copy of its arguments
         for (std::size_t j = 0; j + 5 < o.size(); ++j)
             second_src = second_src || (o[j] == 0xC0044000u && o[j + 2] == 0x55550008u && o[j + 3] == 0x13u);
         CHECK(second_src); // its offset 8 is folded into the copy's source
+    }
+}
+
+TEST_CASE("indirect_check: a GL2 write-back before the check (experiment 0380)", "[indirect_check]") {
+    // SET_BASE index 1, INDEX_BASE, INDEX_BUFFER_SIZE, two DISPATCH_INDIRECTs.
+    const std::vector<std::uint32_t> ib = {0xC0021100u, 1u,         0x34567000u, 0x12u,
+                                           0xC0012600u, 0x9db6280u, 0x11u,
+                                           0xC0001300u, 0xffffffffu,
+                                           kDispatchIndirect, 0x40u, 0x41u,
+                                           kDispatchIndirect, 0x80u, 0x41u};
+    const std::vector<std::uint32_t> acquire = {0xC0065800u, 0u, 0xffffffffu, 0xffffffu, 0u, 0u, 0xAu, 1u << 15};
+    const auto count = [&acquire](const std::vector<std::uint32_t> &o) {
+        std::size_t n = 0;
+        for (std::size_t j = 0; j + acquire.size() <= o.size(); ++j)
+            n += std::equal(acquire.begin(), acquire.end(), o.begin() + static_cast<std::ptrdiff_t>(j)) ? 1 : 0;
+        return n;
+    };
+    SECTION("first: only the first dispatch after the INDEX_BASE, at the start of its check") {
+        std::vector<std::size_t> r;
+        indirect_check::Stats s;
+        auto o = indirect_check::apply(ib, 0, kMax, kDrawMax, r, s, false, nullptr, false, false, false, false,
+                                       indirect_check::ArgsWb::first_after_index_base);
+        CHECK(s.args_written_back == 1);
+        CHECK(count(o) == 1);
+        CHECK(o.size() == ib.size() + 2 * indirect_check::kCheckDwords + indirect_check::kArgsWbDwords);
+        CHECK(std::equal(acquire.begin(), acquire.end(), o.begin() + 9)); // before the check's flag = 1
+        CHECK(o[9 + 8] == 0xC0033700u);
+    }
+    SECTION("all: every checked dispatch") {
+        std::vector<std::size_t> r;
+        indirect_check::Stats s;
+        auto o = indirect_check::apply(ib, 0, kMax, kDrawMax, r, s, false, nullptr, false, false, false, false,
+                                       indirect_check::ArgsWb::all);
+        CHECK(s.args_written_back == 2);
+        CHECK(count(o) == 2);
+    }
+    SECTION("with the copy: after the three COPY_DATA, before flag = 1") {
+        std::vector<std::size_t> r;
+        indirect_check::Stats s;
+        auto o = indirect_check::apply(ib, 0, kMax, kDrawMax, r, s, false, nullptr, false, false, false, true,
+                                       indirect_check::ArgsWb::all);
+        CHECK(s.args_copied == 2);
+        CHECK(s.args_written_back == 2);
+        CHECK(o[9] == 0xC0044000u);
+        CHECK(std::equal(acquire.begin(), acquire.end(), o.begin() + 9 + 18));
+        CHECK(o[9 + 18 + 8] == 0xC0033700u);
+    }
+    SECTION("off by default; never on the MEC form") {
+        std::vector<std::size_t> r;
+        indirect_check::Stats s;
+        auto o = indirect_check::apply(ib, 0, kMax, kDrawMax, r, s);
+        CHECK(count(o) == 0);
+        CHECK(s.args_written_back == 0);
+        const std::vector<std::uint32_t> mec = {0xC0021600u, 0x34567040u, 0x12u, 0x41u};
+        auto m = indirect_check::apply(mec, 0, kMax, kDrawMax, r, s, true, nullptr, false, false, false, false,
+                                       indirect_check::ArgsWb::all);
+        CHECK(count(m) == 0);
     }
 }

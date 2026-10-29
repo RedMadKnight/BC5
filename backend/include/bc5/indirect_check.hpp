@@ -41,6 +41,7 @@ struct Stats {
     std::uint32_t rebased = 0;         // checked dispatches given their SET_BASE again (experiment 0380)
     std::uint32_t rebased_after_index_base = 0; // ... of them the first DISPATCH_INDIRECT after an INDEX_BASE
     std::uint32_t args_copied = 0;     // checked dispatches run from the CP's copy of their arguments (0380)
+    std::uint32_t args_written_back = 0; // ... given a GL2 write-back before their check (0380, F570)
     std::uint32_t unbased = 0;         // dispatches without a known base: PFP_SYNC_ME only
     std::uint32_t conditional = 0;     // dispatches NOP-ed: a COND_EXEC range grew too long
     std::uint32_t inserted_dwords = 0; // growth of the IB
@@ -99,6 +100,21 @@ inline constexpr std::size_t kRebaseDwords = 4; // experiment 0380: SET_BASE ind
 // area holds 8 dwords (direct.cpp), and the copy uses dwords 4-6. Supersedes rebase for the dispatch it
 // covers. MEC form and draws are unchanged.
 inline constexpr std::size_t kArgsCopyDwords = 3 * 6 + 4 + 4;
+// Experiment 0380 (F568-F570, after the copy run's hang): args_wb, default off. A checked GFX-form
+// DISPATCH_INDIRECT gets, at the start of its check (after the copy, when args_copy is on),
+//
+//   ACQUIRE_MEM  COHER_CNTL 0, the full range, GCR_CNTL GL2_WB   (8 dwords)
+//
+// the kernel's own gfx10 memory-sync packet (gfx_v10_0_emit_mem_sync, Linux v7.2) with only the GL2
+// write-back bit. The check's PFP_SYNC_ME after it keeps the PFP behind it. The point is to write
+// back dirty GL2 lines that hold the arguments before the CP fetches them: with the copy on, the CP
+// launched data other than what its own ME had just written and confirmed at that address, and the
+// check had just read correctly (F568). TODO(verify): that the argument fetch reads memory past
+// dirty GL2 lines, and that ACQUIRE_MEM waits for the write-back before the next packet. "first":
+// only the first DISPATCH_INDIRECT after an INDEX_BASE (the F403 sub-class B slot); "all": every
+// checked dispatch.
+enum class ArgsWb { off, first_after_index_base, all };
+inline constexpr std::size_t kArgsWbDwords = 8;
 
 // Experiment 0380 (the 12:12 hang, F555): tighter y and z limits for indirect dispatches. The host's
 // FilterOptions default is y, z <= 2^10; the title's legitimate indirect grids are one-dimensional
@@ -151,7 +167,8 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib, std::uint64_
                                  std::vector<std::size_t> &flag_refs, Stats &stats,
                                  bool compute_ring = false, const ProductLimit *product = nullptr,
                                  bool zero_dims = false, bool force_start = false,
-                                 bool rebase = false, bool args_copy = false);
+                                 bool rebase = false, bool args_copy = false,
+                                 ArgsWb args_wb = ArgsWb::off);
 
 void patch(std::span<std::uint32_t> ib, const std::vector<std::size_t> &flag_refs,
            std::uint64_t flag_va);
