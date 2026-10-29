@@ -1,0 +1,22 @@
+8a9,10
+> unset BC5_LEAN BC5_LOGS  # exp 0380r: the normal build's journal and timeout probe
+> R=~/bc5-work/exp0380r; RSTAMP=$(date +%Y%m%d-%H%M%S)  # exp 0380r
+11c13
+< EMU=~/bc5-work/kytyplus-build/src/kyty_emulator
+---
+> EMU=~/bc5-work/exp0380r/kyty_emulator  # exp 0380r: shared objects + exp 0380's backend archive (link0380r.py)
+13c15,16
+< LOG=~/bc5-work/play-pkg-last.log
+---
+> mkdir -p ~/bc5-work/exp0380r/play
+> LOG=~/bc5-work/exp0380r/play/play-$RSTAMP.log  # exp 0380r: one log per start
+22c25
+< MLOG=~/bc5-work/play-pkg-mount.log
+---
+> MLOG=~/bc5-work/exp0380r/play/mount-$RSTAMP.log  # exp 0380r: its own mount log
+39a43,45
+> # exp 0380r (prepared; run only with the maintainer's yes): the rebase fix candidate alone
+> export BC5_DIRECT_REBASE_DISPATCH=1
+> unset BC5_DIRECT_FORCE_START_000 BC5_DIRECT_GPU_CHECK_ZERO BC5_DIRECT_GPU_CHECK_YZ BC5_DIRECT_ZERO_SKIP BC5_DIRECT_ZEROSCAN_AT BC5_DIRECT_ZEROSCAN_OUT
+185a192
+>   echo "== exp 0380r: BC5_DIRECT_REBASE_DISPATCH=1; binary $(md5sum < "$EMU" | cut -c1-8)"

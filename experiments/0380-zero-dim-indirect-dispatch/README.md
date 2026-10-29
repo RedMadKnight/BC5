@@ -1,7 +1,7 @@
 # 0380 — Is the F403 class a zero-dimension indirect dispatch? (sources, title side, a guard, a box plan)
 
 **Date.** 2026-10-29. **Laptop only.** No box access and no GPU submission in this experiment. Branch
-`exp/0380-zero-dim-dispatch`. Findings F545–F557 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
+`exp/0380-zero-dim-dispatch`. Findings F545–F560 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
 session's GO).
 
 **Question.** F527 puts the ME just past a `DISPATCH_INDIRECT` that passed the host's check, inside the title's
@@ -383,6 +383,91 @@ lines are in `~/bc5-work/BOX-QUEUE` and `~/bc5-work/exp0380/CLAIM.txt`. The filt
 - **Aside.** The pass saw 270,977 of 773,350 dispatches that already had `FORCE_START_AT_000`. That suggests some IBs
   pass through the check twice (TODO(verify)).
 
+## 7. Every class dump against the INDEX_BASE pattern, and the rebase fix candidate (F558–F560)
+
+**Box.** Reads only, then CPU-only builds, 12:29–12:45, under the lock line `top exp 0380 | reads only: the F403-class
+devcoredumps …`, cleared at the end. Done line in BOX-QUEUE. Scripts `raw/class0380.py` and `raw/near0380.py`, structure
+only. Output in `raw/class-dumps-pattern.txt` and `raw/class-dumps-near.txt`.
+
+**Which dumps.** Of the 24 devcoredumps of 10-26 … 10-29, nine have the class signature (`GRBM_STATUS` 0xa0407028 with
+`CP_STALLED_STAT2` 0x18000): 10-26 10:08, 12:20, 12:21:44, 18:01:16; 10-27 12:39 (F416 R2); 10-28 18:15, 23:36; 10-29
+09:48, 12:12. Three more are near-class (0xa0403028, the same `STALLED_STAT2`): 10-27 07:28 (F413's fault), 18:55;
+10-28 10:48. 10-29 06:34 is not class (F519).
+
+**Two sub-classes (F558).**
+- **A, 10-26 … 10-27 (5 class + 3 near-class).** The hung IB is a large dcb: 5,736–28,760 dwords, 45–400 indirect
+  dispatches, initiator 0x61 (the BVH builders). It has **no `INDEX_BASE` at all**. This is F403/F404's era of runaway
+  grids that were really in memory, e.g. 818 × 820 × 819, which passes the per-dimension limits (y, z ≤ 2^10) and the
+  staircase (F416). The pattern does not apply here. F556's y/z limit (y ≤ 256) would refuse such a grid.
+- **B, 10-28 18:15 → 10-29 12:12 (4 events).**
+  - The hung dcb opens the same way every time: a draw at 0, then `SET_BASE` 1 at 1249, `INDEX_BASE` at 1253
+    (0x1210000000 twice, 0x11e26368c0, 0x11e9db6280) and `INDEX_BUFFER_SIZE` 0xffffffff at 1256.
+  - Then the first `DISPATCH_INDIRECT` at 1375/1377, with the fetch at 1,920–1,952 dwords.
+  - The PFP history is `ACQUIRE_MEM`, `EVENT_WRITE`, `DISPATCH_INDIRECT`, then the check's packets; at 12:12 it has
+    `DISPATCH_DIRECT` instead (§5).
+  - That history allows these dispatches ("followed by `EVENT_WRITE` 7"): 18:15 {1377, 1836}, 23:36 {1377, 1515},
+    09:48 {1377, 1698, 1836}. 12:12 is pinned to 1375 by the sampler.
+  - In all four the dispatch that comes first after `INDEX_BASE` is allowed, and at 12:12 it is the one.
+  - Each dcb holds 1–2 dispatches that are first after an `INDEX_BASE`.
+- **How often in healthy play: not countable from what is captured.**
+  - No healthy dcb or dispatch journal is on the box (F537). The `ib-timeout-*.bin` dumps are all hangs.
+  - Sub-class B's opener is F506's "family that opens most frames' dcb", so the pattern almost certainly runs once per
+    frame (~37 a second) and hangs about once an hour of play. That is a rare race, not a deterministic alias: a fixed
+    alias would hang every frame.
+  - A count needs a dispatch journal of a healthy run (`BC5_DIRECT_DRAW_JOURNAL`, F149). That is a box run, not done.
+
+**Sources for SET_BASE and INDEX_BASE (F559).**
+- `SET_BASE` index 1 is the base for indirect arguments:
+  - RADV emits `SET_BASE` (1, va) before a gfx-queue `DISPATCH_INDIRECT` and indirect draws
+    (`radv_emit_indirect_buffer`, radv_cmd_buffer.c:12305-12313, ab2374a).
+  - RPCSX's `setBase` case 1 sets `drawIndexIndirPatchBase`, which its `dispatchIndirect` reads as base + offset
+    (rpcsx/gpu/Pipe.cpp:876-895, e8ae148).
+  - Linux v7.2 `nvd.h` defines `PACKET3_SET_BASE` 0x11 and `PACKET3_BASE_INDEX`, naming only index 3,
+    `CE_PARTITION_BASE`.
+- `INDEX_BASE` (0x26) and `INDEX_BUFFER_SIZE` (0x13) set the separate VGT index state: RADV radv_cmd_buffer.c:6308-6313,
+  RPCSX `indexBase` → `vgtIndexBase`.
+- No public source says that they alias on gfx10, or that a dispatch after `INDEX_BASE` needs anything (TODO(verify)).
+  PAL was not reachable from the laptop.
+- So the sources do not point to moving `INDEX_BASE`, and that alternative is not built. Re-emitting `SET_BASE`
+  directly before the dispatch is the smallest change that makes the dispatch's base the last base state the PFP sees,
+  whatever `INDEX_BASE` did.
+
+**The fix candidate (F560): `BC5_DIRECT_REBASE_DISPATCH=1`** (default off;
+`indirect_check::apply(…, rebase)`, `Stats::rebased`, `kRebaseDwords` = 4).
+- **What it does.** Every checked GFX-form `DISPATCH_INDIRECT` gets `SET_BASE` index 1 with the base in effect, the
+  title's own as the pass tracks it, right before it.
+  - The SET_BASE sits inside the check's `COND_EXEC` range, whose count is now 7: a refused dispatch skips its rebase
+    too.
+  - No `PFP_SYNC_ME` is added after it: `SET_BASE` and the dispatch's fetch are both PFP-side (TODO(verify)), and the
+    check's `PFP_SYNC_ME` is still just before the `COND_EXEC`.
+  - Unbased dispatches, the MEC form and draws are unchanged.
+- **Tests.** Catch2 "the SET_BASE rebase before a checked dispatch (experiment 0380)":
+  - the packet bytes and the `COND_EXEC` count;
+  - the latest index-1 base wins and index 0 is ignored;
+  - combined with the zero guard, the staircase and FORCE_START;
+  - unbased / MEC / draw untouched;
+  - the IB's own `COND_EXEC` grows.
+
+  Laptop 95/95 (34,119 assertions). Box clang 21.1.8 `-Werror`, 0 warnings, 95/95 (34,118), private archive cee8fc22
+  (`raw/box-A0c/`).
+- **Private binary for the test shortcut (built, CPU only).** `~/bc5-work/exp0380r/kyty_emulator` md5 **1791aeb2**:
+  the shared normal build's link command (`ninja -t compdb -x`) with only the backend archive swapped (`raw/link0380r.py`).
+  - The same command with the shared archive reproduces the shared binary **58c4a627** byte for byte.
+  - Main's backend equals this branch's base (no backend diff 0c13576..origin/main), so the binary differs from the
+    shared one by exp 0380's backend alone.
+- **The launcher variant, PREPARED, NOT INSTALLED, NOT RUN.**
+  - `~/bc5-work/exp0380r/play-pkg-0380r.sh`, md5 f1bf660d, made by `raw/mkplay0380r.pl` from `play-pkg.sh` 55531ab6;
+    the diff is `raw/play-pkg-0380r.diff`.
+  - It changes the binary, its own log and mount log per start in `exp0380r/play/`, and
+    `BC5_DIRECT_REBASE_DISPATCH=1`. Every other exp 0379/0380 switch is unset (FORCE_START, zero guard, y/z, zero
+    skip/scan), so it is one change against the maintainer's normal play (one ring, staircase, shadow labels as
+    shared).
+  - The shortcut file is staged as `~/bc5-work/exp0380r/BC5-test-0380-rebase.desktop.staged`, not on the desktop.
+    Installing it (a copy to `~/Pulpit/…desktop`) and playing it waits for the maintainer's yes.
+- **What it can show.** Sub-class B ran into the hang about once per hour of RT-on play: 18:15, 23:36, 09:48, 12:12
+  across the maintainer's sessions. Several hours of play with the rebase on and no class hang would be evidence for
+  it; one class-B hang with it on refutes the base-alias idea. The sampler and timeout probe record every event.
+
 ## Result
 
 - Sources read and cited (F545, F546). The title-side evidence was re-read from exps 0376/0378 (F547).
@@ -390,6 +475,9 @@ lines are in `~/bc5-work/BOX-QUEUE` and `~/bc5-work/exp0380/CLAIM.txt`. The filt
 - A second guard, `FORCE_START_AT_000` on indirect dispatches, is built the same way: default off, with unit tests
   (F551).
 - The box plan is written. Only step A0 ran: a CPU-only compile check, which passed (F552). Nothing ran on the GPU.
+- Two sub-classes. B (the four events since 10-28 18:15) is consistent with "the first indirect dispatch after
+  `INDEX_BASE`" (F558). The rebase fix candidate is built, default off, and staged as a launcher, not run (F559,
+  F560).
 - The 12:12 hang names the class's dispatch and grid (F553). It is not skip-induced on the evidence (F554), and the
   CP fetched other arguments than memory held (F555). A y/z limit is built, default off (F556).
 
