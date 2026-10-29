@@ -1,7 +1,7 @@
 # 0380 — Is the F403 class a zero-dimension indirect dispatch? (sources, title side, a guard, a box plan)
 
 **Date.** 2026-10-29. **Laptop only.** No box access and no GPU submission in this experiment. Branch
-`exp/0380-zero-dim-dispatch`. Findings F545–F552 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
+`exp/0380-zero-dim-dispatch`. Findings F545–F557 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
 session's GO).
 
 **Question.** F527 puts the ME just past a `DISPATCH_INDIRECT` that passed the host's check, inside the title's
@@ -275,6 +275,114 @@ explicit yes; only after A1).**
   RADV does (a new experiment). No hang anywhere: H0380 needs the "launches something for x = 0" premise and falls
   back to the rewritten-argument reading.
 
+## 5. The 12:12 hang: the F403 class caught with its program and grid (F553–F557)
+
+**Box.** Reads only, 12:15–12:23 (a fresh boot, the maintainer not playing), then the CPU-only compile check of §6,
+12:23–12:25. The lock line was `top exp 0380 | reads only: 12:12 hang …` and was cleared at the end. Claim and done
+lines are in `~/bc5-work/BOX-QUEUE` and `~/bc5-work/exp0380/CLAIM.txt`. The filtered extracts are in
+`raw/hang-1212/`; the devcoredump, the journal and the IB stay private. Scripts: `raw/walk0380.py` and
+`raw/span0380.py`, structure only. walk0380.py's program column is not reliable: the title loads `COMPUTE_PGM` by
+`LOAD_SH_REG_INDEX`.
+
+**The play.**
+- The maintainer's second play of the test shortcut "BC5 emulator (test 0379+0380)", binary 459d34cd.
+- Settings: exp 0379 SKIP mode on `zero-list-20261029-120000.txt` (2 heaps, 1,218 MiB, 52 runs),
+  `BC5_DIRECT_FORCE_START_000=1`, one ring, the shared guards (0341 staircase on), RT on.
+- At 12:12:06 `ring gfx_0.0.0 timeout`. The reset failed and the box rebooted.
+
+**What the records show (F553).**
+- Sampler 0377, 5 samples over 0.53–1.70 s, all identical:
+  - `COMPUTE_PGM` 0x11d0289c00;
+  - `COMPUTE_DIM` [65536 196610 2752552] = 0x10000 / 0x30002 / 0x2a0028;
+  - threads [64 1 1], START [0 0 0], initiator **0x45**;
+  - `GRBM_STATUS` 0xa0407028, SE0/SE1 0x0a000036, PFP 0xea0–0xea1, ME 0x77a–0x77b.
+
+  0x45 is the title's 0x41 with exp 0380's forced bit, which only indirect dispatches get.
+- The journal's timeout probe for dcb #94500 (11,745 dwords; acb #94501, 84 dwords; both TIMEOUT after 2,050 ms)
+  names the first indirect dispatch of the dcb: **title dword 1287, program 0x11d0289c00, arguments at 0x11d0571d00,
+  read 111 × 1 × 1 at the timeout**.
+- Then come F506/F528's family: 0x11d02a1600, 0x11d02a1800 and 0x11d028ae00 at 0x11d05df300 (0 × 1 × 1), and
+  0x11d02a2e00 at 0x11d0571b00 (6,136 × 1 × 1).
+- In the devcoredump's IB #0 (the filtered IB, 13,408 dwords; `CP_IB1_BUFSZ` 0x2cc0, so 1,952 dwords fetched) that
+  dispatch is dword **1375**. It is preceded by:
+  - `SET_BASE` index 1 = 0x11d0571d00 (1249);
+  - `INDEX_BASE` 0x11e9db6280 (1253);
+  - `INDEX_BUFFER_SIZE` 0xffffffff (1256);
+  - `NUM_INSTANCES` 1 (1258);
+  - the host's check (1287–1374).
+- The check's packets in the dump: `COND_WRITE` x > 0x100000, y > 0x400, z > 0x400 on 0x11d0571d00/04/08 → flag = 0;
+  then the 0341 staircase (y or z > 1 → flag2; `COND_EXEC` flag2 over x > 0x10000); confirm, `PFP_SYNC_ME`,
+  `COND_EXEC` flag, 3 dwords.
+- The header histories, read newest-first (F527):
+  - PFP: `ACQUIRE_MEM`, `EVENT_WRITE`, `DISPATCH_DIRECT`, `DMA_DATA` ×2, `SET_SH_REG` (17), `LOAD_SH_REG_INDEX`,
+    `DISPATCH_INDIRECT`;
+  - ME: `EVENT_WRITE`, `DISPATCH_DIRECT`, `DMA_DATA`, 0xc0011800, `DMA_DATA`, 0xc0011800, `SET_SH_REG`, 0xc0016300.
+
+  They match the IB at 1375 → 1378 (`LOAD_SH_REG_INDEX`, 10 registers from 0x11e072fa94) → 1383 → 1400/1407
+  (`DMA_DATA`) → 1414 (`DISPATCH_DIRECT` 13 × 8 × 1, program 0x11d02a0e00 per the probe) → 1419 (`EVENT_WRITE` 7) →
+  1421 (`ACQUIRE_MEM`). So the ME is in the `CS_PARTIAL_FLUSH` at 1419. The SH registers it read still name the
+  *indirect* dispatch at 1375 (program, initiator 0x45), not the direct one at 1414 that the ME has already passed.
+  The readable `COMPUTE_*` copy therefore looks like the dispatch the SPI is still launching (TODO(verify)).
+- So the stuck dispatch is 1375, launched with **65,536 × 196,610 × 2,752,552 groups**. That grid never finishes,
+  which fits F535's "SPI busy, no memory traffic": waves that leave at once for out-of-range group ids
+  (TODO(verify)).
+
+**Was it exp 0379's zero skip? No sign of it (F554).**
+- The arguments are real memory, not canary. At the timeout the host's CPU probe read 111 at 0x11d0571d00 and
+  6,136 at 0x11d0571b00 (same page). A skipped chunk is GPU-mapped onto its canary slice, so its memfd pages would
+  stay 0 for the CPU. GPU-written data there means the chunk was imported.
+- The CB0 hint windows 0x11ce5b0000–0x11ce600000 (+64 MiB) cover these addresses, and a hint takes skipped chunks
+  back (exp 0379 README, lever item 3).
+- The slot is the class's, from before the skip existed. At 09:48 (no skip) the dcb opened the same way: `SET_BASE` /
+  `INDEX_BASE` / `INDEX_BUFFER_SIZE` / `NUM_INSTANCES`, then the first indirect dispatch (0x11d028dd00, dword 1289,
+  F527's first candidate). Program 0x11d0289c00 at 0x11d0571d00 was its *second* dispatch (1329, F528). F403, F416
+  and F506 had no skip at all.
+- The play's one canary hit (run 37, file 0x1cb400000 + 24 MiB) is at journal line 57,296 of 253,396, long before the
+  hang.
+- Not placed: the `LOAD_SH_REG_INDEX` source 0x11e072fa94 and the index base 0x11e9db6280 against the zero list. The
+  logs have no guest-VA → heap-file mapping.
+
+**Why the check did not catch it: it never saw these values (F555).**
+- The check does test y and z (> 0x400) on this dispatch's own argument address. 196,610 or 2,752,552 there would
+  have cleared the flag, and the `COND_EXEC` would have skipped the dispatch.
+- Memory read 111 × 1 × 1 at the timeout. Across four hangs this family's arguments read x ∈ {0, 111, 1,295, 3,498,
+  6,136} with y = z = 1 (F506, F528, this one), and the 0341 histogram found only one-dimensional legitimate classes
+  (F414).
+- So the CP's *argument fetch* for this `DISPATCH_INDIRECT` returned other data than its own `COND_WRITE` polls of
+  the same address just before it.
+- The values look like 16-bit index data: (0, 1), (2, 3), (0x28, 0x2a). The dispatch is the first one after an
+  `INDEX_BASE` / `INDEX_BUFFER_SIZE` 0xffffffff pair.
+- Hypothesis H0380b (TODO(verify)): on gfx1013, a GFX-form `DISPATCH_INDIRECT` right after
+  `INDEX_BASE`/`INDEX_BUFFER_SIZE` sometimes fetches its arguments from the wrong place, perhaps through the index
+  fetch path. That matches the class's rate (rare) and slot (the dcb's opening dispatch).
+- A guard that polls memory (y/z limits, the product staircase, F548's zero guard) cannot catch a wrong fetch.
+  Moreover, x = 65,536 equals the staircase's 2^16 and is not above it.
+
+## 6. A y/z limit anyway, and what would decide H0380b (F556, F557)
+
+- **`BC5_DIRECT_GPU_CHECK_YZ`** (default off): `indirect_check::parse_yz_limit` / `tighten`.
+  - `1` sets y ≤ 256, z ≤ 64; `<y>[:<z>]` sets them; the limits only ever lower the host's 2^10.
+  - The limits come from the title's healthy maxima: y 180 and z 4 in exp 0378's grids (320 × 180 × 1, 4 × 32 × 4;
+    F536), and y = z = 1 for every indirect dispatch on record.
+  - The product bound already exists: the 0341 staircase, `BC5_DIRECT_GPU_CHECK_PRODUCT="x_limit:yz_min"`. A tighter
+    `x_limit` such as 65535 would refuse x = 65,536 with y > 1.
+  - Catch2 "tighter y and z limits (experiment 0380, the 12:12 hang)": parsing, never raising, and the `COND_WRITE`
+    references. Laptop 94/94 (34,043 assertions).
+  - Box (12:23–12:25, CPU only): clang 21.1.8 Release `-Werror`, 0 warnings, 94/94 (34,042), private archive
+    d41fde2f (`raw/box-A0b/`).
+  - **It would not have caught 12:12** (F555). It guards against garbage that is really in memory.
+- **What decides H0380b, cheapest first:**
+  1. **Offline, no box.** The dcb of every class event should open with `SET_BASE` + `INDEX_BASE` + the first
+     indirect dispatch. Recheck F416 R2's and F506's walks; the timeout dumps `ib-timeout-*.bin` hold the dcbs.
+  2. **Read-only probe addition.** At a timeout, log 12 bytes at `INDEX_BASE` (here 0x11e9db6280 + 0) and compare them
+     with the sampler's `COMPUTE_DIM`. Equal values mean the CP fetched the index buffer.
+  3. **Host fix candidate, design only (a new experiment; GPU, maintainer's yes).** Move the title's
+     `INDEX_BASE`/`INDEX_BUFFER_SIZE` that precede a `DISPATCH_INDIRECT` to just before the next draw, or put a
+     `SET_BASE` index 1 again right before each checked dispatch. Neither changes what the title draws.
+  4. Synthetic (part B of §4, extended): `INDEX_BASE` → `DISPATCH_INDIRECT` on the gfx ring. It may hang.
+- **Aside.** The pass saw 270,977 of 773,350 dispatches that already had `FORCE_START_AT_000`. That suggests some IBs
+  pass through the check twice (TODO(verify)).
+
 ## Result
 
 - Sources read and cited (F545, F546). The title-side evidence was re-read from exps 0376/0378 (F547).
@@ -282,8 +390,14 @@ explicit yes; only after A1).**
 - A second guard, `FORCE_START_AT_000` on indirect dispatches, is built the same way: default off, with unit tests
   (F551).
 - The box plan is written. Only step A0 ran: a CPU-only compile check, which passed (F552). Nothing ran on the GPU.
+- The 12:12 hang names the class's dispatch and grid (F553). It is not skip-induced on the evidence (F554), and the
+  CP fetched other arguments than memory held (F555). A y/z limit is built, default off (F556).
 
 ## Verdict so far
+
+*Updated after the 12:12 hang (F553–F557).* H0380 (zero dimension) is **refuted** for the event that names its dispatch:
+it launched 65,536 × 196,610 × 2,752,552 groups. The class is a runaway grid whose arguments, as fetched by the CP,
+are not what memory holds (H0380b, medium). The original text follows.
 
 **H0380 is not supported by the sources and sits badly with the hang's own state, but is not refuted (F549).**
 Strength: medium-low against.

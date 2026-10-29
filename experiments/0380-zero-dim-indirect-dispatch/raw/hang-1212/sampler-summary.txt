@@ -1,0 +1,52 @@
+bc5-gpu-stall-sampler 0377 event event-20261029-121205-gfx_0.0.0
+reason: stall clock 1.90 s on gfx_0.0.0 (written before the kernel's 2-s timeout)
+written: 2026-10-29T12:12:06.318 (mono 8588.778); debugfs /sys/kernel/debug/dri/0000:01:00.0
+rings:
+ gfx_0.0.0: stalled since mono 8586.458 (sig 0x0039c889 emit 0x0039c88b), samples at clock 0.53 0.83 1.10 1.40 1.70, missed 0, past 1.9 s: yes, kmsg timeout: [ 8588.807892] amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=3786889, emitted seq=3786891, still stalled
+samples: 5 (registers, no wave scan of the whole GPU, shared by the rings above)
+ sample 1 (stall) mono 8586.983, clocks gfx_0.0.0=0.53, gfxoff 0
+   registers 50 (0 errors) in 0.2 ms; waves not scanned (registers only)
+   distinct PCs 0: -
+   queues: -
+   GRBM_STATUS=0xa0407028 CP_STAT=0x9503a600 CP_PFP_INSTR_PNTR=0xea1 CP_ME_INSTR_PNTR=0x77b CP_IB1_BASE_HI=0x1004 CP_IB1_BASE_LO=0x0 CP_IB1_BUFSZ=0x2cc0 CP_IB1_CMD_BUFSZ=0x3460
+   compute: program=0x11d0289c00 dim=[65536 196610 2752552] threads=[64 1 1] initiator=0x45 id=2682980799 (gfx ME0 pipe0 queue0 (gfx_0.0.0))
+ sample 2 (stall) mono 8587.283, clocks gfx_0.0.0=0.83, gfxoff 0
+   registers 50 (0 errors) in 0.2 ms; waves not scanned (registers only)
+   distinct PCs 0: -
+   queues: -
+   GRBM_STATUS=0xa0407028 CP_STAT=0x9403a600 CP_PFP_INSTR_PNTR=0xea1 CP_ME_INSTR_PNTR=0x77a CP_IB1_BASE_HI=0x1004 CP_IB1_BASE_LO=0x0 CP_IB1_BUFSZ=0x2cc0 CP_IB1_CMD_BUFSZ=0x3460
+   compute: program=0x11d0289c00 dim=[65536 196610 2752552] threads=[64 1 1] initiator=0x45 id=2682980799 (gfx ME0 pipe0 queue0 (gfx_0.0.0))
+ sample 3 (stall) mono 8587.558, clocks gfx_0.0.0=1.10, gfxoff 0
+   registers 50 (0 errors) in 0.2 ms; waves not scanned (registers only)
+   distinct PCs 0: -
+   queues: -
+   GRBM_STATUS=0xa0407028 CP_STAT=0x9403a600 CP_PFP_INSTR_PNTR=0xea1 CP_ME_INSTR_PNTR=0x77b CP_IB1_BASE_HI=0x1004 CP_IB1_BASE_LO=0x0 CP_IB1_BUFSZ=0x2cc0 CP_IB1_CMD_BUFSZ=0x3460
+   compute: program=0x11d0289c00 dim=[65536 196610 2752552] threads=[64 1 1] initiator=0x45 id=2682980799 (gfx ME0 pipe0 queue0 (gfx_0.0.0))
+ sample 4 (stall) mono 8587.858, clocks gfx_0.0.0=1.40, gfxoff 0
+   registers 50 (0 errors) in 0.1 ms; waves not scanned (registers only)
+   distinct PCs 0: -
+   queues: -
+   GRBM_STATUS=0xa0407028 CP_STAT=0x9503a600 CP_PFP_INSTR_PNTR=0xea1 CP_ME_INSTR_PNTR=0x77b CP_IB1_BASE_HI=0x1004 CP_IB1_BASE_LO=0x0 CP_IB1_BUFSZ=0x2cc0 CP_IB1_CMD_BUFSZ=0x3460
+   compute: program=0x11d0289c00 dim=[65536 196610 2752552] threads=[64 1 1] initiator=0x45 id=2682980799 (gfx ME0 pipe0 queue0 (gfx_0.0.0))
+ sample 5 (stall) mono 8588.158, clocks gfx_0.0.0=1.70, gfxoff 0
+   registers 50 (0 errors) in 0.1 ms; waves not scanned (registers only)
+   distinct PCs 0: -
+   queues: -
+   GRBM_STATUS=0xa0407028 CP_STAT=0x9403a600 CP_PFP_INSTR_PNTR=0xea0 CP_ME_INSTR_PNTR=0x77b CP_IB1_BASE_HI=0x1004 CP_IB1_BASE_LO=0x0 CP_IB1_BUFSZ=0x2cc0 CP_IB1_CMD_BUFSZ=0x3460
+   compute: program=0x11d0289c00 dim=[65536 196610 2752552] threads=[64 1 1] initiator=0x45 id=2682980799 (gfx ME0 pipe0 queue0 (gfx_0.0.0))
+ samples 1->2: still 0, moved 0, gone 0, new 0: no waves
+ samples 2->3: still 0, moved 0, gone 0, new 0: no waves
+ samples 3->4: still 0, moved 0, gone 0, new 0: no waves
+ samples 4->5: still 0, moved 0, gone 0, new 0: no waves
+shape: mixed: no waves, no waves, no waves, no waves
+program names: match the compute program address (and any PCs) offline against the host journal's dispatch and timeout-probe lists (exp 0370 K4, F113, F528).
+## recent amdgpu kernel lines (facility 0), oldest first
+[ 8588.805692] amdgpu 0000:01:00.0: Dumping IP State
+[ 8588.807876] amdgpu 0000:01:00.0: Dumping IP State Completed
+[ 8588.807888] amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+[ 8588.807889] amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+[ 8588.807892] amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=3786889, emitted seq=3786891
+[ 8588.807894] amdgpu 0000:01:00.0:  Process kyty_emulator pid 487097 thread bc5-ring pid 487133
+[ 8588.807896] amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+[ 8588.995713] amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset failed
+[ 8588.995721] amdgpu 0000:01:00.0: GPU reset begin!. Source:  1
