@@ -38,6 +38,7 @@ struct Stats {
     std::uint32_t product_checked = 0; // ... with the product staircase as well (experiment 0341)
     std::uint32_t zero_checked = 0;    // ... with the zero-dimension guard as well (experiment 0380)
     std::uint32_t start_forced = 0;    // dispatches given FORCE_START_AT_000 (experiment 0380)
+    std::uint32_t rebased = 0;         // checked dispatches given their SET_BASE again (experiment 0380)
     std::uint32_t unbased = 0;         // dispatches without a known base: PFP_SYNC_ME only
     std::uint32_t conditional = 0;     // dispatches NOP-ed: a COND_EXEC range grew too long
     std::uint32_t inserted_dwords = 0; // growth of the IB
@@ -77,6 +78,7 @@ inline constexpr std::size_t kProductDwords = 5 + 9 + 9 + 5 + 2 + 5 + 9;
 // that gfx1013's CP launches nothing for a zero count (exp 0380, test plan part B). Dispatches
 // only (both forms), not draws.
 inline constexpr std::size_t kZeroDwords = 3 * 9;
+inline constexpr std::size_t kRebaseDwords = 4; // experiment 0380: SET_BASE index 1
 
 // Experiment 0380 (the 12:12 hang, F555): tighter y and z limits for indirect dispatches. The host's
 // FilterOptions default is y, z <= 2^10; the title's legitimate indirect grids are one-dimensional
@@ -113,11 +115,23 @@ inline constexpr std::size_t kDrawCheckDwords = 5 + 2 * 9 + 5 + 2 + 5;
 // ab2374a: "Indirect CS does not support offsets in the API"). Without it the CP starts at
 // COMPUTE_START_X/Y/Z and takes the counts as end values (ibid., the direct path). The title's
 // 0x41 / 0x8041 initiators lack it (exp 0378). Stats::start_forced counts the initiators changed.
+// rebase (experiment 0380, F558-F560, default off): every checked GFX-form DISPATCH_INDIRECT gets the
+// SET_BASE index 1 in effect (the title's own, as the pass tracks it) emitted again right before it,
+// inside the check's COND_EXEC range (the count grows by kRebaseDwords, so a skipped dispatch skips
+// it too). In the F403 events of 10-28 18:15 to 10-29 12:12 the stuck dispatch is (12:12) or may be
+// the first DISPATCH_INDIRECT after an INDEX_BASE / INDEX_BUFFER_SIZE 0xffffffff pair, and at 12:12 it
+// launched what looks like index data, not its arguments (F555). SET_BASE index 1 is the base of
+// DISPATCH_INDIRECT / DRAW_INDIRECT arguments (RADV radv_emit_indirect_buffer, radv_cmd_buffer.c
+// ab2374a; RPCSX rpcsx/gpu/Pipe.cpp setBase case 1 drawIndexIndirPatchBase, read by dispatchIndirect,
+// e8ae148), and INDEX_BASE sets the separate VGT index base (ibid. indexBase). No public source says
+// they alias on gfx10: TODO(verify). SET_BASE is a PFP packet like the dispatch's fetch; no
+// PFP_SYNC_ME is added after it. MEC form and draws unchanged.
 std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib, std::uint64_t base,
                                  const std::uint32_t (&max)[3], const std::uint32_t (&draw_max)[2],
                                  std::vector<std::size_t> &flag_refs, Stats &stats,
                                  bool compute_ring = false, const ProductLimit *product = nullptr,
-                                 bool zero_dims = false, bool force_start = false);
+                                 bool zero_dims = false, bool force_start = false,
+                                 bool rebase = false);
 
 void patch(std::span<std::uint32_t> ib, const std::vector<std::size_t> &flag_refs,
            std::uint64_t flag_va);

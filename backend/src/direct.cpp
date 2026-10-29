@@ -128,6 +128,10 @@ struct Device::Impl {
     // Experiment 0380 (F555): BC5_DIRECT_GPU_CHECK_YZ — the CP check's y and z limits for indirect
     // dispatches lowered ("1" = 256:64, or "<y>[:<z>]"). Unset: the host's limits as they are.
     bool env_yz = false;
+    // Experiment 0380 (F558-F560): BC5_DIRECT_REBASE_DISPATCH — each checked GFX-form DISPATCH_INDIRECT
+    // gets its SET_BASE index 1 again right before it (indirect_check rebase). Unset: off.
+    bool env_rebase = false;
+    std::uint64_t rebased_sum = 0;
     indirect_check::YzLimit yz;
     std::uint64_t start_forced_sum = 0, start_seen_sum = 0;
     // Experiment 0346: BC5_DIRECT_HOST_INDIRECT — a GFX-form DISPATCH_INDIRECT without a SET_BASE of its type
@@ -230,6 +234,9 @@ struct Device::Impl {
         if (env_zero) // experiment 0380: how many the CP skipped is not seen by the host
             std::fprintf(stderr, "bc5-direct: experiment 0380 %s: zero-dimension guard on %llu checked dispatches\n",
                          when, static_cast<unsigned long long>(zero_sum));
+        if (env_rebase) // experiment 0380
+            std::fprintf(stderr, "bc5-direct: experiment 0380 %s: SET_BASE re-emitted before %llu checked indirect dispatches\n",
+                         when, static_cast<unsigned long long>(rebased_sum));
         if (env_force_start) // experiment 0380
             std::fprintf(stderr, "bc5-direct: experiment 0380 %s: FORCE_START_AT_000 set on %llu of %llu indirect dispatches (the rest had it)\n",
                          when, static_cast<unsigned long long>(start_forced_sum), static_cast<unsigned long long>(start_seen_sum));
@@ -505,6 +512,10 @@ std::unique_ptr<Device> Device::open(const std::string &node, const OpenOptions 
     if (const char *e = std::getenv("BC5_DIRECT_GPU_CHECK_ZERO"); e != nullptr && *e != 0 && std::strcmp(e, "0") != 0) {
         d->impl_->env_zero = true; // experiment 0380
         std::fprintf(stderr, "bc5-direct: experiment 0380 switch: the CP check also skips an indirect dispatch whose x, y or z argument is 0\n");
+    }
+    if (const char *e = std::getenv("BC5_DIRECT_REBASE_DISPATCH"); e != nullptr && *e != 0 && std::strcmp(e, "0") != 0) {
+        d->impl_->env_rebase = true; // experiment 0380
+        std::fprintf(stderr, "bc5-direct: experiment 0380 switch: every checked GFX-form indirect dispatch gets its SET_BASE index 1 again right before it\n");
     }
     if (indirect_check::parse_yz_limit(std::getenv("BC5_DIRECT_GPU_CHECK_YZ"), d->impl_->yz)) { // experiment 0380
         d->impl_->env_yz = true;
@@ -1225,10 +1236,11 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
         main_out = indirect_check::apply(main_out, opt.mec_indirect_base, check_max,
                                          opt.gpu_check_draw_max, flag_refs, st, comp,
                                          impl_->env_product && !comp ? &impl_->product : nullptr, // experiment 0341
-                                         impl_->env_zero, impl_->env_force_start); // experiment 0380
+                                         impl_->env_zero, impl_->env_force_start, impl_->env_rebase); // experiment 0380
         impl_->product_sum += st.product_checked;
         impl_->zero_sum += st.zero_checked;
         impl_->start_forced_sum += st.start_forced;
+        impl_->rebased_sum += st.rebased;
         if (impl_->env_force_start) impl_->start_seen_sum += st.checked + st.unbased;
         r.filter.gpu_checks += st.checked;
         r.filter.gpu_check_unbased += st.unbased;

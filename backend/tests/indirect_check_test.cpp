@@ -488,3 +488,85 @@ TEST_CASE("indirect_check: tighter y and z limits (experiment 0380, the 12:12 ha
     CHECK(out[i + 9 + 4] == 180u);
     CHECK(out[i + 18 + 4] == 8u);
 }
+
+TEST_CASE("indirect_check: the SET_BASE rebase before a checked dispatch (experiment 0380)", "[indirect_check]") {
+    // SET_BASE index 1 = 0x12_3456_7000, INDEX_BASE, INDEX_BUFFER_SIZE, then DISPATCH_INDIRECT offset 0x40.
+    const std::vector<std::uint32_t> ib = {0xC0021100u, 1u,          0x34567000u, 0x12u,  // SET_BASE 1
+                                           0xC0012600u, 0x9db6280u,  0x11u,               // INDEX_BASE
+                                           0xC0001300u, 0xffffffffu,                      // INDEX_BUFFER_SIZE
+                                           kDispatchIndirect, 0x40u, 0x41u};
+    std::vector<std::size_t> refs;
+    indirect_check::Stats st;
+    auto out = indirect_check::apply(ib, 0, kMax, kDrawMax, refs, st, false, nullptr, false, false, true);
+    REQUIRE(st.checked == 1);
+    CHECK(st.rebased == 1);
+    REQUIRE(out.size() == ib.size() + indirect_check::kCheckDwords + indirect_check::kRebaseDwords);
+    CHECK(st.inserted_dwords == indirect_check::kCheckDwords + indirect_check::kRebaseDwords);
+    // the title's packets first, unchanged
+    CHECK(std::vector<std::uint32_t>(out.begin(), out.begin() + 9) ==
+          std::vector<std::uint32_t>(ib.begin(), ib.begin() + 9));
+    const std::size_t d = out.size() - 3; // the dispatch
+    CHECK(out[d] == kDispatchIndirect);
+    CHECK(out[d + 2] == 0x41u);
+    // SET_BASE index 1 with the same base right before it
+    CHECK(out[d - 4] == 0xC0021100u);
+    CHECK(out[d - 3] == 1u);
+    CHECK(out[d - 2] == 0x34567000u);
+    CHECK(out[d - 1] == 0x12u);
+    // the check's COND_EXEC covers both: 4 + 3 dwords
+    CHECK(out[d - 9] == 0xC0032200u);
+    CHECK(out[d - 9 + 4] == 7u);
+    // without the switch: the plain check, the COND_EXEC over 3 dwords
+    std::vector<std::size_t> refs0;
+    indirect_check::Stats st0;
+    auto plain = indirect_check::apply(ib, 0, kMax, kDrawMax, refs0, st0);
+    CHECK(st0.rebased == 0);
+    CHECK(plain.size() == ib.size() + indirect_check::kCheckDwords);
+    CHECK(plain[plain.size() - 3 - 5 + 4] == 3u);
+
+    SECTION("the base in effect is the latest SET_BASE index 1 (index 0 is ignored)") {
+        auto two = ib;
+        two.insert(two.begin() + 9, {0xC0021100u, 1u, 0x55550000u, 0x13u, 0xC0021100u, 0u, 0x77770000u, 0x14u});
+        std::vector<std::size_t> r;
+        indirect_check::Stats s;
+        auto o = indirect_check::apply(two, 0, kMax, kDrawMax, r, s, false, nullptr, false, false, true);
+        const std::size_t e = o.size() - 3;
+        CHECK(o[e - 2] == 0x55550000u);
+        CHECK(o[e - 1] == 0x13u);
+    }
+    SECTION("with the zero guard, the staircase and FORCE_START: the rebase stays next to the dispatch") {
+        std::vector<std::size_t> r;
+        indirect_check::Stats s;
+        const indirect_check::ProductLimit product{1u << 16, 1};
+        auto o = indirect_check::apply(ib, 0, kMax, kDrawMax, r, s, false, &product, true, true, true);
+        CHECK(o.size() == ib.size() + indirect_check::kCheckDwords + indirect_check::kProductDwords +
+                               indirect_check::kZeroDwords + indirect_check::kRebaseDwords);
+        const std::size_t e = o.size() - 3;
+        CHECK(o[e + 2] == 0x45u);
+        CHECK(o[e - 4] == 0xC0021100u);
+        CHECK(o[e - 9] == 0xC0032200u);
+        CHECK(o[e - 9 + 4] == 7u);
+    }
+    SECTION("an unbased dispatch, the MEC form and draws get no rebase") {
+        const std::vector<std::uint32_t> unbased = {kDispatchIndirect, 0x40u, 0x41u};
+        std::vector<std::size_t> r;
+        indirect_check::Stats s;
+        auto o = indirect_check::apply(unbased, 0, kMax, kDrawMax, r, s, false, nullptr, false, false, true);
+        CHECK(o == std::vector<std::uint32_t>{0xC0004200u, 0u, kDispatchIndirect, 0x40u, 0x41u});
+        const std::vector<std::uint32_t> mec = {0xC0021600u, 0x34567040u, 0x12u, 0x41u};
+        auto m = indirect_check::apply(mec, 0, kMax, kDrawMax, r, s, true, nullptr, false, false, true);
+        CHECK(m.size() == mec.size() + indirect_check::kCheckDwords - 2);
+        const std::vector<std::uint32_t> draw = {0xC0021100u, 1u, 0x1000u, 0x12u, 0xC0032400u, 0x20u, 0x4cu, 0x4du, 2u};
+        auto dr = indirect_check::apply(draw, 0, kMax, kDrawMax, r, s, false, nullptr, false, false, true);
+        CHECK(dr.size() == draw.size() + indirect_check::kDrawCheckDwords);
+        CHECK(s.rebased == 0);
+    }
+    SECTION("inside the IB's own COND_EXEC: its count grows by the rebase too") {
+        std::vector<std::uint32_t> c = {0xC0032200u, 0x100u, 0x12u, 0u, static_cast<std::uint32_t>(ib.size())};
+        c.insert(c.end(), ib.begin(), ib.end());
+        std::vector<std::size_t> r;
+        indirect_check::Stats s;
+        auto o = indirect_check::apply(c, 0, kMax, kDrawMax, r, s, false, nullptr, false, false, true);
+        CHECK(o[4] == ib.size() + indirect_check::kCheckDwords + indirect_check::kRebaseDwords);
+    }
+}

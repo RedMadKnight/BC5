@@ -20,7 +20,8 @@ constexpr std::uint32_t kWrConfirm = 1u << 20;
 constexpr std::uint32_t kCondWrite = 0xC0074500u; // PKT3(COND_WRITE, 7, 0)
 constexpr std::uint32_t kGreater = 6;
 constexpr std::uint32_t kForceStartAt000 = 1u << 2; // COMPUTE_DISPATCH_INITIATOR bit 2 (exp 0380)
-constexpr std::uint32_t kEqual = 3; // experiment 0380: WAIT_REG_MEM_FUNCTION 3 "==", Linux v7.2 nvd.h
+constexpr std::uint32_t kEqual = 3;
+constexpr std::uint32_t kSetBase = 0xC0021100u; // PKT3(SET_BASE, 2, 0), experiment 0380's rebase // experiment 0380: WAIT_REG_MEM_FUNCTION 3 "==", Linux v7.2 nvd.h
 constexpr std::uint32_t kPollMem = 1u << 4;
 constexpr std::uint32_t kWriteMem = 1u << 8;
 constexpr std::uint32_t kPfpSyncMe = 0xC0004200u; // PKT3(PFP_SYNC_ME, 0, 0)
@@ -58,7 +59,7 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib_in, std::uint
                                  const std::uint32_t (&max)[3], const std::uint32_t (&draw_max)[2],
                                  std::vector<std::size_t> &flag_refs, Stats &stats,
                                  bool compute_ring, const ProductLimit *product, bool zero_dims,
-                                 bool force_start) {
+                                 bool force_start, bool rebase) {
     // ADR 0010 section A: a COND_EXEC range whose grown count no longer fits has its own checked
     // packets NOP-ed (nothing of that range runs unchecked) and the pass runs again over the
     // rest; it used to give up on the whole IB, which in a chain is several buffers.
@@ -183,10 +184,18 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib_in, std::uint
                 out.push_back(0);
                 if (!compute_ring)
                     out.insert(out.end(), {kPfpSyncMe, 0u});
+                // experiment 0380: the title's SET_BASE index 1 again, right before the dispatch and
+                // inside the COND_EXEC's range (skipped with it)
+                const bool rebase_here = rebase && dims == 3 && !compute_ring;
                 out.push_back(kCondExec);
                 flag();
-                out.insert(out.end(), {0u, static_cast<std::uint32_t>(len)});
+                out.insert(out.end(), {0u, static_cast<std::uint32_t>(len + (rebase_here ? kRebaseDwords : 0))});
                 stats.checked++;
+                if (rebase_here) {
+                    out.insert(out.end(), {kSetBase, 1u, static_cast<std::uint32_t>(base),
+                                           static_cast<std::uint32_t>(base >> 32) & 0xffffu});
+                    stats.rebased++;
+                }
             } else {
                 out.insert(out.end(), {kPfpSyncMe, 0u});
                 stats.unbased++;

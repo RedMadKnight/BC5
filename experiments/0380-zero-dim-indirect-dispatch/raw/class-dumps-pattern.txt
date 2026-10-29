@@ -1,0 +1,80 @@
+== 20261026-100846-devcd1.txt: GRBM_STATUS 0xa0407028 STALLED_STAT2 0x18000 PFP 0xea1 ME 0x77a
+   IB 28760 dwords, 5202 packets; IB1 fetched 28760 dwords
+   PFP history matches at packet(s) [25810, 26352, 26540, 26662, 26728, 26794, 26860, 26926, 26992, 27058, 27124, 27220, 27357, 27445, 27533, 27599, 27665, 27731, 27797, 27863, 27929, 27995, 28061, 28127, 28193, 28297, 28440, 28525, 28631] (dword offsets of the newest)
+   indirect dispatches 400, first after an INDEX_BASE 0
+   before the PFP:  28348 DISPATCH_DIRECT  | no INDEX_BASE before
+   before the PFP:  28435 DISPATCH_INDIRECT not first | no INDEX_BASE before
+   before the PFP:  28520 DISPATCH_INDIRECT not first | no INDEX_BASE before
+   before the PFP:  28626 DISPATCH_INDIRECT not first | no INDEX_BASE before
+== 20261026-122011-devcd2.txt: GRBM_STATUS 0xa0407028 STALLED_STAT2 0x18000 PFP 0xea1 ME 0x77b
+   IB 27592 dwords, 5144 packets; IB1 fetched 26048 dwords
+   PFP history matches at packet(s) [24653, 25195, 25383, 25505, 25571, 25637, 25703, 25769, 25835, 25901, 25967, 26063, 26200, 26288, 26376, 26442, 26508, 26574, 26640, 26706, 26772, 26838, 26904, 26970, 27036, 27140, 27283, 27368, 27474] (dword offsets of the newest)
+   indirect dispatches 377, first after an INDEX_BASE 0
+   before the PFP:  27191 DISPATCH_DIRECT  | no INDEX_BASE before
+   before the PFP:  27278 DISPATCH_INDIRECT not first | no INDEX_BASE before
+   before the PFP:  27363 DISPATCH_INDIRECT not first | no INDEX_BASE before
+   before the PFP:  27469 DISPATCH_INDIRECT not first | no INDEX_BASE before
+== 20261026-122144-devcd3.txt: GRBM_STATUS 0xa0407028 STALLED_STAT2 0x18000 PFP 0xea0 ME 0x77b
+   IB 5736 dwords, 1090 packets; IB1 fetched 5056 dwords
+   PFP history matches at packet(s) [2800, 3342, 3530, 3652, 3718, 3784, 3850, 3916, 3982, 4048, 4114, 4210, 4347, 4435, 4523, 4589, 4655, 4721, 4787, 4853, 4919, 4985, 5051, 5117, 5183, 5287, 5430, 5515, 5621] (dword offsets of the newest)
+   indirect dispatches 65, first after an INDEX_BASE 0
+   before the PFP:   5338 DISPATCH_DIRECT  | no INDEX_BASE before
+   before the PFP:   5425 DISPATCH_INDIRECT not first | no INDEX_BASE before
+   before the PFP:   5510 DISPATCH_INDIRECT not first | no INDEX_BASE before
+   before the PFP:   5616 DISPATCH_INDIRECT not first | no INDEX_BASE before
+== 20261026-180116-devcd5.txt: GRBM_STATUS 0xa0407028 STALLED_STAT2 0x18000 PFP 0xea1 ME 0x77b
+   IB 6992 dwords, 1306 packets; IB1 fetched 6784 dwords
+   PFP history matches at packet(s) [4496, 5038, 5468, 5605, 5693, 5781, 5847, 5913, 5979, 6045, 6111, 6177, 6243, 6309, 6375, 6441, 6545, 6688, 6773, 6879] (dword offsets of the newest)
+   indirect dispatches 81, first after an INDEX_BASE 0
+   before the PFP:   6596 DISPATCH_DIRECT  | no INDEX_BASE before
+   before the PFP:   6683 DISPATCH_INDIRECT not first | no INDEX_BASE before
+   before the PFP:   6768 DISPATCH_INDIRECT not first | no INDEX_BASE before
+   before the PFP:   6874 DISPATCH_INDIRECT not first | no INDEX_BASE before
+== 20261027-123919-devcd1.txt: GRBM_STATUS 0xa0407028 STALLED_STAT2 0x18000 PFP 0xea1 ME 0x77b
+   IB 6584 dwords, 1200 packets; IB1 fetched 3744 dwords
+   PFP history matches at packet(s) [] (dword offsets of the newest)
+   indirect dispatches 45, first after an INDEX_BASE 0
+== 20261028-181505-devcd2.txt: GRBM_STATUS 0xa0407028 STALLED_STAT2 0x18000 PFP 0xe9f ME 0x77a
+   IB 12248 dwords, 2158 packets; IB1 fetched 1920 dwords
+   PFP history matches at packet(s) [] (dword offsets of the newest)
+   indirect dispatches 14, first after an INDEX_BASE 2
+== 20261028-233612-devcd1.txt: GRBM_STATUS 0xa0407028 STALLED_STAT2 0x18000 PFP 0xea1 ME 0x77b
+   IB 13352 dwords, 2243 packets; IB1 fetched 1920 dwords
+   PFP history matches at packet(s) [] (dword offsets of the newest)
+   indirect dispatches 5, first after an INDEX_BASE 1
+== 20261029-094827-devcd1.txt: GRBM_STATUS 0xa0407028 STALLED_STAT2 0x18000 PFP 0xea1 ME 0x779
+   IB 11848 dwords, 1923 packets; IB1 fetched 1920 dwords
+   PFP history matches at packet(s) [] (dword offsets of the newest)
+   indirect dispatches 7, first after an INDEX_BASE 1
+== 20261029-121206-devcd1.txt: GRBM_STATUS 0xa0407028 STALLED_STAT2 0x18000 PFP 0xea1 ME 0x779
+   IB 13408 dwords, 2286 packets; IB1 fetched 1952 dwords
+   PFP history matches at packet(s) [1421, 2008, 5985, 6198] (dword offsets of the newest)
+   indirect dispatches 16, first after an INDEX_BASE 2
+   before the PFP:   5939 DISPATCH_INDIRECT not first | INDEX_BASE @1253 0x11e9db6280, size 0xffffffff
+   before the PFP:   5978 DISPATCH_DIRECT  | INDEX_BASE @1253 0x11e9db6280, size 0xffffffff
+   before the PFP:   6152 DISPATCH_INDIRECT not first | INDEX_BASE @1253 0x11e9db6280, size 0xffffffff
+   before the PFP:   6191 DISPATCH_DIRECT  | INDEX_BASE @1253 0x11e9db6280, size 0xffffffff
+== 20261027-072841-devcd1.txt: GRBM_STATUS 0xa0403028 STALLED_STAT2 0x18000 PFP 0xea1 ME 0x77a
+   IB 10584 dwords, 1942 packets; IB1 fetched 10016 dwords
+   PFP history matches at packet(s) [8150, 8692, 9040, 9177, 9265, 9353, 9419, 9485, 9551, 9617, 9683, 9749, 9815, 9881, 9947, 10013, 10117, 10260, 10345, 10451] (dword offsets of the newest)
+   indirect dispatches 134, first after an INDEX_BASE 0
+   before the PFP:  10168 DISPATCH_DIRECT  | no INDEX_BASE before
+   before the PFP:  10255 DISPATCH_INDIRECT not first | no INDEX_BASE before
+   before the PFP:  10340 DISPATCH_INDIRECT not first | no INDEX_BASE before
+   before the PFP:  10446 DISPATCH_INDIRECT not first | no INDEX_BASE before
+== 20261027-185531-devcd1.txt: GRBM_STATUS 0xa0403028 STALLED_STAT2 0x18000 PFP 0xea1 ME 0x77b
+   IB 15832 dwords, 2778 packets; IB1 fetched 9024 dwords
+   PFP history matches at packet(s) [8497] (dword offsets of the newest)
+   indirect dispatches 127, first after an INDEX_BASE 0
+   before the PFP:   8464 DISPATCH_DIRECT  | no INDEX_BASE before
+   before the PFP:   8474 DISPATCH_DIRECT  | no INDEX_BASE before
+   before the PFP:   8482 DISPATCH_DIRECT  | no INDEX_BASE before
+   before the PFP:   8490 DISPATCH_DIRECT  | no INDEX_BASE before
+== 20261028-104822-devcd1.txt: GRBM_STATUS 0xa0403028 STALLED_STAT2 0x18000 PFP 0xea1 ME 0x77b
+   IB 38720 dwords, 7219 packets; IB1 fetched 608 dwords
+   PFP history matches at packet(s) [83] (dword offsets of the newest)
+   indirect dispatches 25, first after an INDEX_BASE 0
+   before the PFP:     38 DISPATCH_DIRECT  | no INDEX_BASE before
+   before the PFP:     54 DISPATCH_DIRECT  | no INDEX_BASE before
+   before the PFP:     65 DISPATCH_DIRECT  | no INDEX_BASE before
+   before the PFP:     76 DISPATCH_DIRECT  | no INDEX_BASE before
