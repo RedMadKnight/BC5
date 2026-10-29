@@ -1,7 +1,7 @@
 # 0380 — Is the F403 class a zero-dimension indirect dispatch? (sources, title side, a guard, a box plan)
 
 **Date.** 2026-10-29. **Laptop only.** No box access and no GPU submission in this experiment. Branch
-`exp/0380-zero-dim-dispatch`. Findings F545–F612 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
+`exp/0380-zero-dim-dispatch`. Findings F545–F613 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
 session's GO).
 
 **Question.** F527 puts the ME just past a `DISPATCH_INDIRECT` that passed the host's check, inside the title's
@@ -1846,6 +1846,49 @@ the repo; KytyPlus f266548 plus main's patch 0001).
   - the format, `output_written` and the buffer addresses of the last job.
 
   That would need an AJM trace in the private binary. The crash frames come first.
+
+## 26. The next F403 test, one factor per arm (F613; a proposal, nothing built)
+
+Codex's R3 (F609) asks for arms that each differ from a control on one factor only. The maintainer decides in the
+morning.
+
+**The arms, all on binary 44417414** (shared objects and archive; exp 0379's unit, the F608 recorder, crash frames),
+RT on, `BC5_CRASH_FRAMES=1` and `BC5_0380_REC=1` in each:
+
+| Arm | Zero skip | Prefix | Changes against (a) | Needs |
+|---|---|---|---|---|
+| (a) control | on | full (`CONTEXT_CONTROL` + `CLEAR_STATE`) | — | a launcher line (`BC5_DIRECT_PIECES_NO_CLEAR` unset) |
+| (b) noclear | on | neither | both packets | nothing: today's shortcut |
+| (c) no CLEAR_STATE | on | `CONTEXT_CONTROL` kept | `CLEAR_STATE` only | a code change, below |
+
+- **(c) needs a code change.** `prefix_of` erases the prefix's first five dwords as one block (patch 0001 lines
+  32244–32248): `CONTEXT_CONTROL` (3 dwords), then `CLEAR_STATE` (2). Dropping only `CLEAR_STATE` means erasing dwords
+  3–4 instead, for example with `BC5_DIRECT_PIECES_NO_CLEAR=state`.
+  - It is a two-line edit in the private `bc5LleAgc.cpp`, plus a rebuild (≈ 1 min) and a smoke run (≈ 6 min). It
+    touches no shared build.
+  - The reverse arm, `CLEAR_STATE` kept with `CONTEXT_CONTROL` dropped, is the fourth combination. It adds little
+    unless (b) shows an effect.
+
+**How long, at about one B event per hour of RT-on play.** B came about once an hour in RT-on play (§7; 18:15,
+23:36, 09:48, 12:12, 14:04). Assume a Poisson rate λ = 1/h. "Play" means RT-on gameplay, not menus.
+- **One arm alone (b or c), as a refutation test.** A single B with the arm on refutes its packet(s) as the trigger,
+  at once. A clean arm says little until long: P(no B in T h | λ = 1) = e^−T, which is 0.37 after 1 h, 0.14 after 2 h
+  and 0.05 after 3 h. So **3 h without B** is the least for "this arm changes the rate".
+- **The control is needed for a clean answer.** The skip changes memory pressure, and so the timing that B may depend
+  on. A clean (b) on its own could be the skip's doing. A control (a) on the same binary must show that B still comes
+  at about 1/h with the skip on.
+  - With equal play in (a) and (b), and every B in (a), the chance of that split under "no difference" is 0.5^n.
+  - n = 4 B in (a) gives 0.06, n = 5 gives 0.03. At λ = 1/h that is **about 5 h of (a) and 5 h of (b)**.
+  - Cheaper and sequential: (b) first for 3 h. If B comes, the arm is refuted and (a) is not needed. If none comes,
+    then (a) until 3 B (about 3 h). This answers "is the skip alone enough?" too.
+- **Is (b) alone still worth it?** Yes, as the cheapest refutation. One B in the next hours of (b) removes the whole
+  prefix-reset hypothesis (F603) for both packets at once, without building anything. A clean (b) is not a result
+  without (a). The rec and wb plays without B (22 and 37 min) are too short to stand in for a control (p ≈ 0.7 and
+  0.5).
+- **(c) is worth building only if (b) stays clean for 3 h.** Before then, it would split a hypothesis that may
+  already be refuted.
+- **What every arm also records:** the crash frames at any guest exception (F610, F611), and part A at any fence
+  timeout. Any arm's play also tests the CPU crashes.
 
 ## Result
 
