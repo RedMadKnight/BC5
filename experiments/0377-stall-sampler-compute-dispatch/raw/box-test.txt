@@ -1,0 +1,30 @@
+# box 2026-10-29T10:30:37+01:00, 7.2.9-ogc3.1.fc44.x86_64, Python 3.14.8, staged copy ~/bc5-work/exp0377/sampler
+ff65042a2026830a3be7775a01a7c5b99fcb9bc369c1cc908c934af5bfb9e09f  bc5-gpu-stall-sampler
+12ba2938b5b234bb3acf109c53b74cc08a492da67f56d7f5b0bbd67aed4da0e0  bc5-gpu-stall-sampler.service
+c35c0c3b7daa00dce0fcaf3cace347363e34d3ec45afa58bc54eb57b6e70a09e  install.sh
+28ecb912ab568225d916176d7a4a44aa0c2f310be65e5a8cee3a420740dd5fa3  undo.sh
+352b33723644f02072474be9e36a6153193f8cc3631cc12e098691c77d9f24f2  test_bc5_gpu_stall_sampler.py
+== /usr/bin/python3 -I -B bc5-gpu-stall-sampler --test
+ok    wave decoder and debugfs positions
+ok    compute dispatch registers: bracketed by the bank witness, decoded (exp 0377)
+ok    healthy run: 30 s of 60-Hz jobs on two rings and a 5-s idle gap
+ok    stall resolving at 0.7 s: one census line, no event
+ok    stall reaching the kernel's timeout line (clock 2.03 s, after the 1.9-s write): one event, line added
+ok    the kernel's timeout line before the 1.9-s clock (clock 1.82 s): event written on the line
+ok    stall past 1.9 s with no kernel line: event written at 1.9 s, before any line
+ok    two rings stalling 0.1 s apart: shared samples, one event
+ok    a second ring stalled through the first ring's reset: no reads from clock 1.85 s to the reset's end
+ok    a timeout line on a ring with no sampled stall: a standalone event, no reads after the line
+ok    a second stall while an event is being written
+ok    the default: registers only, no wave read, forced waves refused
+selftest: 12/12 passed
+== BC5_MESA_GFX10=~/src/mesa/src/amd/registers/gfx10.json (mesa 0866ae7) python3 -W error test_bc5_gpu_stall_sampler.py
+Ran 44 tests in 0.508s
+
+OK (skipped=12)
+== bash install.sh --dry-run
+selftest: 12/12 passed
+ExecStart=/usr/bin/python3 -I -B /usr/local/sbin/bc5-gpu-stall-sampler --owner kjaniszewski --out /home/kjaniszewski/bc5-data/captures/gpu-stall
+dry run: nothing installed
+LOCK after: []
+no emulator

@@ -5,7 +5,8 @@
 
 The source-checked tests read the kernel files the sampler cites, when BC5_LINUX_SRC names a directory that holds them
 (flat, by basename): amdgpu_debugfs.c, gfx_v10_0.c, amdgpu_fence.c, amdgpu_job.c, gc_10_1_0_offset.h,
-gc_10_1_0_sh_mask.h, cyan_skillfish_ip_offset.h, all from Linux v7.2 (github.com/torvalds/linux commit
+gc_10_1_0_sh_mask.h, cyan_skillfish_ip_offset.h, nv.c, v10_structs.h, gfx_v9_0.c (the last three since exp 0377),
+all from Linux v7.2 (github.com/torvalds/linux commit
 8d3ae59288f1e7d58d76558a6ee96d533bc5019f), e.g.
     curl -o DIR/amdgpu_debugfs.c https://raw.githubusercontent.com/torvalds/linux/<commit>/drivers/gpu/drm/amd/amdgpu/amdgpu_debugfs.c
 Without it those tests are skipped; the rest still run. The Mesa register database vendored in the repo
@@ -28,7 +29,8 @@ _loader = importlib.machinery.SourceFileLoader("bc5_gpu_stall_sampler", os.path.
 S = importlib.util.module_from_spec(importlib.util.spec_from_loader(_loader.name, _loader))
 _loader.exec_module(S)
 SRC = os.environ.get("BC5_LINUX_SRC")
-MESA = os.path.join(HERE, "..", "..", "bc5-agc", "regdb", "gfx10.json")
+# BC5_MESA_GFX10 names another copy (exp 0377: the box's flat copy uses ~/src/mesa/src/amd/registers/gfx10.json)
+MESA = os.environ.get("BC5_MESA_GFX10") or os.path.join(HERE, "..", "..", "bc5-agc", "regdb", "gfx10.json")
 
 
 def src(name):
@@ -95,9 +97,12 @@ def kernel_wave_read(pos, size, slot_regs, warnings):
 
 
 def kernel_regs_decode(pos):
-    """amdgpu_debugfs_process_reg_op (amdgpu_debugfs.c:90-121): (byte offset, bank or None)."""
+    """amdgpu_debugfs_process_reg_op (amdgpu_debugfs.c:90-121): (byte offset, bank or None). A bit-61 position (an
+    SRBM ME/pipe/queue select, 109-116) fails here: the sampler must never make one (exp 0377, COMPUTE_BANK)."""
     if pos & 3 or ((pos >> 62) & 1 and (pos >> 61) & 1):
         raise OSError(22, "EINVAL")
+    if pos & (1 << 61):
+        raise AssertionError("an SRBM select (bit 61) at pos 0x%x: the kernel would write GRBM_GFX_CNTL" % pos)
     bank = None
     if pos & (1 << 62):
         bank = ((pos & genmask(33, 24)) >> 24, (pos & genmask(43, 34)) >> 34, (pos & genmask(53, 44)) >> 44)
@@ -208,6 +213,8 @@ class RegisterReads(unittest.TestCase):
         want = []
         for n, mm, bi in S.REGS:
             want += [S.reg_byte(mm, bi)] * (S.HEADER_DUMP_PERIOD if n in S.HEADER_DUMPS else 1)
+            if n == S.COMPUTE_LAST:
+                want.append(S.reg_byte(0x0DC2, 0))     # the bank witness again, closing the COMPUTE_* block
         self.assertEqual(offs, want)
         banked = [(o, b) for o, b in dev.reg_log if b is not None]
         self.assertEqual(len(banked), 2 * 2 * 2)
@@ -255,7 +262,7 @@ class RegisterReads(unittest.TestCase):
             if n in mesa:
                 self.assertEqual(S.reg_byte(mm, bi), mesa[n], n)
                 checked += 1
-        self.assertGreaterEqual(checked, 15)
+        self.assertGreaterEqual(checked, 15 + 16)     # exp 0377: all 16 COMPUTE_* registers are in Mesa's list
 
     def test_offsets_against_gc_10_1_0_offset_h(self):
         h = src("gc_10_1_0_offset.h")
@@ -280,6 +287,146 @@ class RegisterReads(unittest.TestCase):
         self.assertIn("instance_bank = (*pos & GENMASK_ULL(53, 44)) >> 44;", body)
         for n, mm, bi in S.REGS:
             self.assertEqual(kernel_regs_decode(S.regs_pos(S.reg_byte(mm, bi))), (S.reg_byte(mm, bi), None))
+
+
+class ComputeDispatch(unittest.TestCase):
+    """exp 0377 (F529): the compute dispatch registers, their bank and their decode."""
+
+    def names(self):
+        return [n for n, mm, bi in S.REGS]
+
+    def test_the_f529_list_is_read(self):
+        f529 = ["COMPUTE_DISPATCH_INITIATOR"] + ["COMPUTE_%s_%s" % (k, a) for k in ("DIM", "START", "NUM_THREAD")
+                                                 for a in "XYZ"]
+        f529 += ["COMPUTE_PGM_LO", "COMPUTE_PGM_HI", "COMPUTE_PGM_RSRC1", "COMPUTE_PGM_RSRC2", "COMPUTE_PGM_RSRC3",
+                 "COMPUTE_DISPATCH_ID"]
+        n = self.names()
+        self.assertEqual(sorted(x for x in n if x.startswith("COMPUTE_")), sorted(f529))
+        self.assertEqual(len(n), len(set(n)))
+        # the block sits between the witness and COMPUTE_LAST, nothing else inside
+        i, j = n.index(S.COMPUTE_BANK), n.index(S.COMPUTE_LAST)
+        self.assertTrue(all(x.startswith("COMPUTE_") for x in n[i + 1:j + 1]))
+        self.assertEqual(j - i, 16)
+        mm, bi = {x: (m, b) for x, m, b in S.REGS}["COMPUTE_PGM_LO"]
+        self.assertEqual(S.reg_byte(mm, bi), 0xB830)          # F529's byte offset
+
+    def test_no_position_selects_a_bank_or_a_queue(self):
+        dev = ModelDevice({})
+        S.take_sample(dev, S.Config(), "stall", 1.0, 1.0, "", True, regs_only=True)   # bit 61 fails in the model
+        self.assertFalse(any(b for o, b in dev.reg_log))
+        self.assertFalse(hasattr(S.Device, "write_reg"))
+
+    def sample(self, values, cntl=(0, 0)):
+        byname = {S.reg_byte(mm, bi): n for n, mm, bi in S.REGS}
+        cntl = list(cntl)
+
+        class Dev(ModelDevice):
+            def read_reg(self, byte_off, bank=None):
+                ModelDevice.read_reg(self, byte_off, bank)
+                n = byname.get(byte_off)
+                if n == S.COMPUTE_BANK:
+                    return cntl.pop(0)
+                return values.get(n, 0)
+        return S.take_sample(Dev({}), S.Config(), "stall", 1.0, 1.0, "", True, regs_only=True)
+
+    def test_decode_and_text(self):
+        v = {"COMPUTE_PGM_LO": 0x11d02a16, "COMPUTE_PGM_HI": 0xFF00 | 0x01, "COMPUTE_DIM_X": 0, "COMPUTE_DIM_Y": 180,
+             "COMPUTE_DIM_Z": 1, "COMPUTE_NUM_THREAD_X": 0x00030008, "COMPUTE_NUM_THREAD_Y": 8,
+             "COMPUTE_NUM_THREAD_Z": 1, "COMPUTE_DISPATCH_INITIATOR": 0x8001, "COMPUTE_DISPATCH_ID": 7,
+             "COMPUTE_PGM_RSRC1": 0x1, "COMPUTE_PGM_RSRC2": 0x2, "COMPUTE_PGM_RSRC3": 0x3}
+        smp = self.sample(v)
+        c = S.compute_dispatch(smp)
+        self.assertEqual(c["pgm"], 0x0111d02a1600)          # PGM_HI's DATA is bits 7:0 only
+        self.assertEqual((c["dim"], c["threads"], c["start"]), ((0, 180, 1), (8, 8, 1), (0, 0, 0)))
+        self.assertEqual(c["flags"], ["COMPUTE_SHADER_EN", "CS_W32_EN"])
+        txt = S.fmt_regs(smp)
+        self.assertIn("gfx1013.mmCOMPUTE_PGM_LO => 0x11d02a16   (byte 0x0b830)", txt)
+        self.assertIn("gfx1013.mmGRBM_GFX_CNTL[0] => 0x00000000", txt)
+        self.assertIn("gfx1013.mmGRBM_GFX_CNTL[1] => 0x00000000", txt)
+        self.assertIn("# compute dispatch, gfx ME0 pipe0 queue0 (gfx_0.0.0):\n"
+                      "#   program address = PGM_HI:PGM_LO << 8 = 0x111d02a1600", txt)
+        self.assertIn("dim [0 180 1], start [0 0 0], threads [8 8 1], initiator 0x8001 [COMPUTE_SHADER_EN,CS_W32_EN], "
+                      "dispatch id 7", txt)
+        self.assertIn("#   rsrc1 0x1 rsrc2 0x2 rsrc3 0x3", txt)
+        self.assertTrue(any(l.startswith("   compute: program=0x111d02a1600 dim=[0 180 1] threads=[8 8 1]")
+                            for l in S.fmt_sample_summary(smp)))
+
+    def test_a_select_in_flight_is_flagged(self):
+        for cntl in ((0x4, 0), (0, 0x100), (0, 0x10)):     # MEID 1; QUEUEID 1; VMID 1 (gc_10_1_0_sh_mask.h)
+            c = S.compute_dispatch(self.sample({}, cntl))
+            self.assertTrue(c["bank"].startswith("UNKNOWN bank"), cntl)
+        self.assertIn("gfx ME0", S.compute_dispatch(self.sample({}, (0x800, 0x800)))["bank"])   # outside the fields
+
+    def test_read_error_in_the_witness(self):
+        class Bad(ModelDevice):
+            def read_reg(self, byte_off, bank=None):
+                if byte_off == S.reg_byte(0x0DC2, 0):
+                    raise OSError(5, "EIO")
+                return ModelDevice.read_reg(self, byte_off, bank)
+        smp = S.take_sample(Bad({}), S.Config(), "stall", 1.0, 1.0, "", True, regs_only=True)
+        self.assertEqual(smp.reg_errors, 2)
+        self.assertIn("UNKNOWN bank (GRBM_GFX_CNTL ERROR/ERROR", S.compute_dispatch(smp)["bank"])
+
+    def test_skipped_sample_has_no_compute(self):
+        s = S.take_sample(ModelDevice({}), S.Config(), "forced", 0, 0, "", pending=False)
+        self.assertIsNone(S.compute_dispatch(s))
+        self.assertNotIn("compute dispatch", S.fmt_regs(s))
+
+    def test_list_regs_marks_the_witness(self):
+        import contextlib
+        import io
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            S.main(["--list-regs"])
+        rows = {l.split()[0]: l.split()[2] for l in buf.getvalue().splitlines()}
+        self.assertEqual(rows["GRBM_GFX_CNTL"], "sampled-x2")          # install.sh never umr -r's it
+        self.assertEqual(rows["COMPUTE_PGM_LO"], "sampled")
+        self.assertEqual(S.VERSION, "0377")
+
+    # -- the cited kernel text --------------------------------------------------------------------------------
+    def test_masks_against_sh_mask(self):
+        h = src("gc_10_1_0_sh_mask.h")
+
+        def mask(reg, field):
+            m = re.search(r"^#define %s__%s_MASK\s+(0x[0-9A-Fa-f]+)L" % (reg, field), h, re.M)
+            self.assertTrue(m, (reg, field))
+            return int(m.group(1), 16)
+        self.assertEqual(mask("COMPUTE_PGM_HI", "DATA"), S.PGM_HI_DATA)
+        self.assertEqual(mask("COMPUTE_PGM_LO", "DATA"), 0xFFFFFFFF)
+        self.assertEqual(mask("COMPUTE_NUM_THREAD_X", "NUM_THREAD_FULL"), S.NUM_THREAD_FULL)
+        for name, m in S.INITIATOR_BITS:
+            self.assertEqual(mask("COMPUTE_DISPATCH_INITIATOR", name), m, name)
+        self.assertEqual(sum(mask("GRBM_GFX_CNTL", f) for f in ("PIPEID", "MEID", "VMID", "QUEUEID")),
+                         S.GRBM_GFX_CNTL_SELECT)
+
+    def test_plain_reads_carry_no_select_and_the_kernel_restores_me0(self):
+        body = c_function(src("amdgpu_debugfs.c"), "amdgpu_debugfs_process_reg_op")
+        self.assertIn("} else if (*pos & (1ULL << 61)) {", body)
+        self.assertIn("use_bank = use_ring = false;", body)
+        self.assertIn("amdgpu_gfx_select_me_pipe_q(adev, 0, 0, 0, 0, 0);", body)
+        nv = c_function(src("nv.c"), "nv_grbm_select")
+        for f in ("PIPEID, pipe", "MEID, me", "VMID, vmid", "QUEUEID, queue"):
+            self.assertIn("GRBM_GFX_CNTL, %s)" % f, nv)
+        self.assertIn("WREG32_SOC15(GC, 0, mmGRBM_GFX_CNTL, grbm_gfx_cntl);", nv)
+        g = src("gfx_v10_0.c")
+        self.assertIn("ring->me = mec + 1;", c_function(g, "gfx_v10_0_compute_ring_init"))   # compute: ME 1, 2
+        # the gfx10 code undoes its selects to ME 0 / pipe 0 / queue 0 / VMID 0
+        sel = re.findall(r"nv_grbm_select\(adev, ([^;]*)\);", g)
+        self.assertGreaterEqual(sel.count("0, 0, 0, 0"), 5)
+
+    def test_mqd_holds_the_compute_registers_per_queue(self):
+        body = re.search(r"struct v10_compute_mqd \{(.*?)\n\};", src("v10_structs.h"), re.S).group(1)
+        fields = re.findall(r"uint32_t (compute_\w+);", body)
+        for n in self.names():
+            if n.startswith("COMPUTE_") and n != "COMPUTE_PGM_RSRC3":
+                self.assertIn(n.lower(), fields, n)
+
+    def test_pgm_address_shift(self):
+        g9 = src("gfx_v9_0.c")
+        self.assertIn("gpu_addr = (ib.gpu_addr + (u64)vgpr_offset) >> 8;", g9)
+        self.assertRegex(g9, r"mmCOMPUTE_PGM_LO\)\s*- PACKET3_SET_SH_REG_START;\s*"
+                             r"ib\.ptr\[ib\.length_dw\+\+\] = lower_32_bits\(gpu_addr\);\s*"
+                             r"ib\.ptr\[ib\.length_dw\+\+\] = upper_32_bits\(gpu_addr\);")
 
 
 class KernelSourceLayout(unittest.TestCase):

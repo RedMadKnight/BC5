@@ -1,0 +1,42 @@
+bc5-gpu-stall-sampler 0377 event event-20270115-090002-gfx_0.0.0
+reason: stall clock 1.92 s on gfx_0.0.0 (written before the kernel's 2-s timeout)
+written: 2027-01-15T09:00:02.925 (mono 2.925); debugfs (replay)
+rings:
+ gfx_0.0.0: stalled since mono 1.000 (sig 0x00000100 emit 0x00000101), samples at clock 0.52 0.82 1.12 1.42 1.72, missed 0, past 1.9 s: yes, kmsg timeout: no, still stalled
+samples: 5 (registers, no wave scan of the whole GPU, shared by the rings above)
+ sample 1 (stall) mono 1.525, clocks gfx_0.0.0=0.52, gfxoff 0
+   registers 50 (0 errors) in 0.5 ms; waves not scanned (registers only)
+   distinct PCs 0: -
+   queues: -
+   GRBM_STATUS=0xa0501b10 CP_STAT=0x256f7e80 CP_PFP_INSTR_PNTR=0x81c50054 CP_ME_INSTR_PNTR=0xfaa2e718 CP_IB1_BASE_HI=0x36c4caf4 CP_IB1_BASE_LO=0xbde6e430 CP_IB1_BUFSZ=0xafa2b1b8 CP_IB1_CMD_BUFSZ=0x13801300
+   compute: program=0x11d028dd00 dim=[40 23 1] threads=[8 8 1] initiator=0x8021 id=4711 (gfx ME0 pipe0 queue0 (gfx_0.0.0))
+ sample 2 (stall) mono 1.825, clocks gfx_0.0.0=0.82, gfxoff 0
+   registers 50 (0 errors) in 0.5 ms; waves not scanned (registers only)
+   distinct PCs 0: -
+   queues: -
+   GRBM_STATUS=0xa0501b10 CP_STAT=0x256f7e80 CP_PFP_INSTR_PNTR=0x81c50054 CP_ME_INSTR_PNTR=0xfaa2e718 CP_IB1_BASE_HI=0x36c4caf4 CP_IB1_BASE_LO=0xbde6e430 CP_IB1_BUFSZ=0xafa2b1b8 CP_IB1_CMD_BUFSZ=0x13801300
+   compute: program=0x11d028dd00 dim=[40 23 1] threads=[8 8 1] initiator=0x8021 id=4711 (gfx ME0 pipe0 queue0 (gfx_0.0.0))
+ sample 3 (stall) mono 2.125, clocks gfx_0.0.0=1.12, gfxoff 0
+   registers 50 (0 errors) in 0.5 ms; waves not scanned (registers only)
+   distinct PCs 0: -
+   queues: -
+   GRBM_STATUS=0xa0501b10 CP_STAT=0x256f7e80 CP_PFP_INSTR_PNTR=0x81c50054 CP_ME_INSTR_PNTR=0xfaa2e718 CP_IB1_BASE_HI=0x36c4caf4 CP_IB1_BASE_LO=0xbde6e430 CP_IB1_BUFSZ=0xafa2b1b8 CP_IB1_CMD_BUFSZ=0x13801300
+   compute: program=0x11d028dd00 dim=[40 23 1] threads=[8 8 1] initiator=0x8021 id=4711 (gfx ME0 pipe0 queue0 (gfx_0.0.0))
+ sample 4 (stall) mono 2.425, clocks gfx_0.0.0=1.42, gfxoff 0
+   registers 50 (0 errors) in 1.0 ms; waves not scanned (registers only)
+   distinct PCs 0: -
+   queues: -
+   GRBM_STATUS=0xa0501b10 CP_STAT=0x256f7e80 CP_PFP_INSTR_PNTR=0x81c50054 CP_ME_INSTR_PNTR=0xfaa2e718 CP_IB1_BASE_HI=0x36c4caf4 CP_IB1_BASE_LO=0xbde6e430 CP_IB1_BUFSZ=0xafa2b1b8 CP_IB1_CMD_BUFSZ=0x13801300
+   compute: program=0x11d028dd00 dim=[40 23 1] threads=[8 8 1] initiator=0x8021 id=4711 (gfx ME0 pipe0 queue0 (gfx_0.0.0))
+ sample 5 (stall) mono 2.725, clocks gfx_0.0.0=1.72, gfxoff 0
+   registers 50 (0 errors) in 0.5 ms; waves not scanned (registers only)
+   distinct PCs 0: -
+   queues: -
+   GRBM_STATUS=0xa0501b10 CP_STAT=0x256f7e80 CP_PFP_INSTR_PNTR=0x81c50054 CP_ME_INSTR_PNTR=0xfaa2e718 CP_IB1_BASE_HI=0x36c4caf4 CP_IB1_BASE_LO=0xbde6e430 CP_IB1_BUFSZ=0xafa2b1b8 CP_IB1_CMD_BUFSZ=0x13801300
+   compute: program=0x11d028dd00 dim=[40 23 1] threads=[8 8 1] initiator=0x8021 id=4711 (gfx ME0 pipe0 queue0 (gfx_0.0.0))
+ samples 1->2: still 0, moved 0, gone 0, new 0: no waves
+ samples 2->3: still 0, moved 0, gone 0, new 0: no waves
+ samples 3->4: still 0, moved 0, gone 0, new 0: no waves
+ samples 4->5: still 0, moved 0, gone 0, new 0: no waves
+shape: mixed: no waves, no waves, no waves, no waves
+program names: match the compute program address (and any PCs) offline against the host journal's dispatch and timeout-probe lists (exp 0370 K4, F113, F528).

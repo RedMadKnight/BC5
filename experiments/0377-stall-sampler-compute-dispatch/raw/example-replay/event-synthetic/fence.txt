@@ -1,0 +1,54 @@
+## sample 1, mono 1.525, clocks gfx_0.0.0=0.52
+--- ring 0 (gfx_0.0.0) ---
+Last signaled fence          0x00000100
+Last emitted                 0x00000101
+Last signaled trailing fence 0x00000000
+Last emitted                 0x00000000
+Last preempted               0x00000000
+Last reset                   0x00000000
+Last both                    0x00000000
+## sample 2, mono 1.825, clocks gfx_0.0.0=0.82
+--- ring 0 (gfx_0.0.0) ---
+Last signaled fence          0x00000100
+Last emitted                 0x00000101
+Last signaled trailing fence 0x00000000
+Last emitted                 0x00000000
+Last preempted               0x00000000
+Last reset                   0x00000000
+Last both                    0x00000000
+## sample 3, mono 2.125, clocks gfx_0.0.0=1.12
+--- ring 0 (gfx_0.0.0) ---
+Last signaled fence          0x00000100
+Last emitted                 0x00000101
+Last signaled trailing fence 0x00000000
+Last emitted                 0x00000000
+Last preempted               0x00000000
+Last reset                   0x00000000
+Last both                    0x00000000
+## sample 4, mono 2.425, clocks gfx_0.0.0=1.42
+--- ring 0 (gfx_0.0.0) ---
+Last signaled fence          0x00000100
+Last emitted                 0x00000101
+Last signaled trailing fence 0x00000000
+Last emitted                 0x00000000
+Last preempted               0x00000000
+Last reset                   0x00000000
+Last both                    0x00000000
+## sample 5, mono 2.725, clocks gfx_0.0.0=1.72
+--- ring 0 (gfx_0.0.0) ---
+Last signaled fence          0x00000100
+Last emitted                 0x00000101
+Last signaled trailing fence 0x00000000
+Last emitted                 0x00000000
+Last preempted               0x00000000
+Last reset                   0x00000000
+Last both                    0x00000000
+## at write, mono 2.925
+--- ring 0 (gfx_0.0.0) ---
+Last signaled fence          0x00000100
+Last emitted                 0x00000101
+Last signaled trailing fence 0x00000000
+Last emitted                 0x00000000
+Last preempted               0x00000000
+Last reset                   0x00000000
+Last both                    0x00000000

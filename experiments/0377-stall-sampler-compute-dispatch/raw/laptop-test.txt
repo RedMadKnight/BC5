@@ -1,0 +1,75 @@
+# laptop 2026-10-29T10:30:07+01:00, Python 3.14.0, Windows 11, Git Bash; branch exp/0377-stall-sampler-compute-dispatch
+## sha256
+ff65042a2026830a3be7775a01a7c5b99fcb9bc369c1cc908c934af5bfb9e09f *bc5-gpu-stall-sampler
+352b33723644f02072474be9e36a6153193f8cc3631cc12e098691c77d9f24f2 *test_bc5_gpu_stall_sampler.py
+## python bc5-gpu-stall-sampler --test
+ok    wave decoder and debugfs positions
+ok    compute dispatch registers: bracketed by the bank witness, decoded (exp 0377)
+ok    healthy run: 30 s of 60-Hz jobs on two rings and a 5-s idle gap
+ok    stall resolving at 0.7 s: one census line, no event
+ok    stall reaching the kernel's timeout line (clock 2.03 s, after the 1.9-s write): one event, line added
+ok    the kernel's timeout line before the 1.9-s clock (clock 1.82 s): event written on the line
+ok    stall past 1.9 s with no kernel line: event written at 1.9 s, before any line
+ok    two rings stalling 0.1 s apart: shared samples, one event
+ok    a second ring stalled through the first ring's reset: no reads from clock 1.85 s to the reset's end
+ok    a timeout line on a ring with no sampled stall: a standalone event, no reads after the line
+ok    a second stall while an event is being written
+ok    the default: registers only, no wave read, forced waves refused
+selftest: 12/12 passed
+## BC5_LINUX_SRC=<v7.2 files from git.kernel.org ?h=v7.2> python -W error test_bc5_gpu_stall_sampler.py -v
+test_table (__main__.CompareCheck.test_table) ... ok
+test_a_select_in_flight_is_flagged (__main__.ComputeDispatch.test_a_select_in_flight_is_flagged) ... ok
+test_decode_and_text (__main__.ComputeDispatch.test_decode_and_text) ... ok
+test_list_regs_marks_the_witness (__main__.ComputeDispatch.test_list_regs_marks_the_witness) ... ok
+test_masks_against_sh_mask (__main__.ComputeDispatch.test_masks_against_sh_mask) ... ok
+test_mqd_holds_the_compute_registers_per_queue (__main__.ComputeDispatch.test_mqd_holds_the_compute_registers_per_queue) ... ok
+test_no_position_selects_a_bank_or_a_queue (__main__.ComputeDispatch.test_no_position_selects_a_bank_or_a_queue) ... ok
+test_pgm_address_shift (__main__.ComputeDispatch.test_pgm_address_shift) ... ok
+test_plain_reads_carry_no_select_and_the_kernel_restores_me0 (__main__.ComputeDispatch.test_plain_reads_carry_no_select_and_the_kernel_restores_me0) ... ok
+test_read_error_in_the_witness (__main__.ComputeDispatch.test_read_error_in_the_witness) ... ok
+test_skipped_sample_has_no_compute (__main__.ComputeDispatch.test_skipped_sample_has_no_compute) ... ok
+test_the_f529_list_is_read (__main__.ComputeDispatch.test_the_f529_list_is_read) ... ok
+test_not_found (__main__.DebugfsDiscovery.test_not_found) ... ok
+test_numbered_dirs_by_name_file (__main__.DebugfsDiscovery.test_numbered_dirs_by_name_file) ... ok
+test_v72_layout_pci_named_dir (__main__.DebugfsDiscovery.test_v72_layout_pci_named_dir) ... ok
+test_a_new_request_replaces_a_waiting_one (__main__.EngineScenarios.test_a_new_request_replaces_a_waiting_one) ... ok
+test_default_regs_only_scenario (__main__.EngineScenarios.test_default_regs_only_scenario) ... ok
+test_forced_requests (__main__.EngineScenarios.test_forced_requests) ... ok
+test_gfxoff_and_pending_gates (__main__.EngineScenarios.test_gfxoff_and_pending_gates) ... ok
+test_late_poll_skips_thresholds_without_a_burst (__main__.EngineScenarios.test_late_poll_skips_thresholds_without_a_burst) ... ok
+test_replay_file_path (__main__.EngineScenarios.test_replay_file_path) ... ok
+test_scenarios (__main__.EngineScenarios.test_scenarios) ... ok
+test_second_stall_while_event_is_written (__main__.EngineScenarios.test_second_stall_while_event_is_written) ... ok
+test_stall_samples_scan_only_with_the_flag (__main__.EngineScenarios.test_stall_samples_scan_only_with_the_flag) ... ok
+test_wave_scan_needs_the_flag_and_the_token (__main__.EngineScenarios.test_wave_scan_needs_the_flag_and_the_token) ... ok
+test_kmsg_records (__main__.FenceAndKmsg.test_kmsg_records) ... ok
+test_parse_fence_text (__main__.FenceAndKmsg.test_parse_fence_text) ... ok
+test_fence_info_format (__main__.KernelSourceLayout.test_fence_info_format) ... ok
+test_field_masks (__main__.KernelSourceLayout.test_field_masks) ... ok
+test_gfx10_record_order_and_simd_rule (__main__.KernelSourceLayout.test_gfx10_record_order_and_simd_rule) ... ok
+test_timeout_lines (__main__.KernelSourceLayout.test_timeout_lines) ... ok
+test_wave_read_position_bits (__main__.KernelSourceLayout.test_wave_read_position_bits) ... ok
+test_gc_base_against_cyan_skillfish_ip_offset_h (__main__.RegisterReads.test_gc_base_against_cyan_skillfish_ip_offset_h) ... ok
+test_header_dump_period_check (__main__.RegisterReads.test_header_dump_period_check) ... ok
+test_header_dumps_eight_reads_by_default_none_when_zero (__main__.RegisterReads.test_header_dumps_eight_reads_by_default_none_when_zero) ... ok
+test_kernel_regs_op_mask (__main__.RegisterReads.test_kernel_regs_op_mask) ... ok
+test_offsets_against_gc_10_1_0_offset_h (__main__.RegisterReads.test_offsets_against_gc_10_1_0_offset_h) ... ok
+test_offsets_against_mesa (__main__.RegisterReads.test_offsets_against_mesa) ... ok
+test_positions_through_the_kernel_decode (__main__.RegisterReads.test_positions_through_the_kernel_decode) ... ok
+test_bin_round_trip_and_text (__main__.WaveRecord.test_bin_round_trip_and_text) ... ok
+test_hw_id_mismatch_is_flagged (__main__.WaveRecord.test_hw_id_mismatch_is_flagged) ... ok
+test_scan_through_the_kernel_model (__main__.WaveRecord.test_scan_through_the_kernel_model) ... ok
+test_short_or_foreign_records (__main__.WaveRecord.test_short_or_foreign_records) ... ok
+test_files_modes_and_append (__main__.Writer.test_files_modes_and_append) ... ok
+
+----------------------------------------------------------------------
+Ran 44 tests in 9.885s
+
+OK
+## python -W error test_bc5_gpu_stall_sampler.py (no sources)
+Ran 44 tests in 4.288s
+
+OK (skipped=12)
+## PYTHON=python bash install.sh --dry-run (tail)
+WantedBy=multi-user.target
+dry run: nothing installed

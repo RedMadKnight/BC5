@@ -1,0 +1,4 @@
+# exp 0377 example: a gfx_0.0.0 stall from 1.0 s that reaches the 1.9-s write (synthetic, FakeDevice)
+0.0 fence gfx_0.0.0 0x100 0x100
+1.0 fence gfx_0.0.0 0x100 0x101
+3.2 end

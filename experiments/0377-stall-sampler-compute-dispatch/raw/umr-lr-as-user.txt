@@ -1,0 +1,59 @@
+/usr/bin/umr
+[ERROR]: ASIC not found or compatible (instance=256, did=ffffffffffffffff)
+[ERROR]: UMR was not invoked as root.
+1 umr-lr.txt
+## umr -lr gfx1013
+register                         byte     read 1     umr -r     read 2     values                               address
+GRBM_STATUS                      0x08010  -          -          -          not read                             umr-unlisted
+GRBM_STATUS2                     0x08008  -          -          -          not read                             umr-unlisted
+GRBM_STATUS3                     0x0801c  -          -          -          not read                             umr-unlisted
+GRBM_STATUS_SE0                  0x08014  -          -          -          not read                             umr-unlisted
+GRBM_STATUS_SE1                  0x08018  -          -          -          not read                             umr-unlisted
+CP_STAT                          0x08680  -          -          -          not read                             umr-unlisted
+CP_STALLED_STAT1                 0x08674  -          -          -          not read                             umr-unlisted
+CP_STALLED_STAT2                 0x08678  -          -          -          not read                             umr-unlisted
+CP_STALLED_STAT3                 0x08670  -          -          -          not read                             umr-unlisted
+CP_BUSY_STAT                     0x0867c  -          -          -          not read                             umr-unlisted
+CP_CPF_STATUS                    0x0821c  -          -          -          not read                             umr-unlisted
+CP_CPF_BUSY_STAT                 0x08220  -          -          -          not read                             umr-unlisted
+CP_CPF_STALLED_STAT1             0x08224  -          -          -          not read                             umr-unlisted
+CP_CPC_STATUS                    0x08210  -          -          -          not read                             umr-unlisted
+CP_CPC_BUSY_STAT                 0x08214  -          -          -          not read                             umr-unlisted
+CP_CPC_STALLED_STAT1             0x08218  -          -          -          not read                             umr-unlisted
+CP_RB0_RPTR                      0x08700  -          -          -          not read                             umr-unlisted
+CP_RB0_WPTR                      0x0c150  -          -          -          not read                             umr-unlisted
+CP_IB1_BASE_LO                   0x30330  -          -          -          not read                             umr-unlisted
+CP_IB1_BASE_HI                   0x30334  -          -          -          not read                             umr-unlisted
+CP_IB1_BUFSZ                     0x30338  -          -          -          not read                             umr-unlisted
+CP_IB1_CMD_BUFSZ                 0x30300  -          -          -          not read                             umr-unlisted
+CP_IB2_BASE_LO                   0x3033c  -          -          -          not read                             umr-unlisted
+CP_IB2_BASE_HI                   0x30340  -          -          -          not read                             umr-unlisted
+CP_IB2_BUFSZ                     0x30344  -          -          -          not read                             umr-unlisted
+CP_PFP_INSTR_PNTR                0x08694  -          -          -          not read                             umr-unlisted
+CP_ME_INSTR_PNTR                 0x08698  -          -          -          not read                             umr-unlisted
+CP_MEC1_INSTR_PNTR               0x086a0  -          -          -          not read                             umr-unlisted
+CP_MEC2_INSTR_PNTR               0x086a4  -          -          -          not read                             umr-unlisted
+CP_PFP_HEADER_DUMP               0x08688  -          -          -          not read                             umr-unlisted
+CP_ME_HEADER_DUMP                0x08684  -          -          -          not read                             umr-unlisted
+SPI_CSQ_WF_ACTIVE_STATUS         0x0936c  -          -          -          not read                             umr-unlisted
+GCVM_L2_PROTECTION_FAULT_STATUS  0x0a130  -          -          -          not read                             umr-unlisted
+GRBM_GFX_CNTL                    0x08088  -          -          -          not read                             umr-unlisted
+COMPUTE_DISPATCH_INITIATOR       0x0b800  -          -          -          not read                             umr-unlisted
+COMPUTE_DIM_X                    0x0b804  -          -          -          not read                             umr-unlisted
+COMPUTE_DIM_Y                    0x0b808  -          -          -          not read                             umr-unlisted
+COMPUTE_DIM_Z                    0x0b80c  -          -          -          not read                             umr-unlisted
+COMPUTE_START_X                  0x0b810  -          -          -          not read                             umr-unlisted
+COMPUTE_START_Y                  0x0b814  -          -          -          not read                             umr-unlisted
+COMPUTE_START_Z                  0x0b818  -          -          -          not read                             umr-unlisted
+COMPUTE_NUM_THREAD_X             0x0b81c  -          -          -          not read                             umr-unlisted
+COMPUTE_NUM_THREAD_Y             0x0b820  -          -          -          not read                             umr-unlisted
+COMPUTE_NUM_THREAD_Z             0x0b824  -          -          -          not read                             umr-unlisted
+COMPUTE_PGM_LO                   0x0b830  -          -          -          not read                             umr-unlisted
+COMPUTE_PGM_HI                   0x0b834  -          -          -          not read                             umr-unlisted
+COMPUTE_PGM_RSRC1                0x0b848  -          -          -          not read                             umr-unlisted
+COMPUTE_PGM_RSRC2                0x0b84c  -          -          -          not read                             umr-unlisted
+COMPUTE_PGM_RSRC3                0x0b8a0  -          -          -          not read                             umr-unlisted
+COMPUTE_DISPATCH_ID              0x0b880  -          -          -          not read                             umr-unlisted
+CC_GC_SHADER_ARRAY_CONFIG        0x089bc  -          -          -          not read                             umr-unlisted
+GC_USER_SHADER_ARRAY_CONFIG      0x089c0  -          -          -          not read                             umr-unlisted
+totals: not read 52, umr-unlisted 52

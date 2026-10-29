@@ -20,6 +20,9 @@
 #    passes 1.9 s, whichever comes first, then fsyncs it and chowns it to the owner (files 600, directories 700).
 #    A stall that resolves earlier adds one census line to stalls.log.
 #  * It writes nothing to /dev/kmsg (F420) and needs no process start at the event (F112).
+#  * Since exp 0377 (F529) every register sample also reads the compute dispatch registers (COMPUTE_PGM_LO/HI, DIM,
+#    START, NUM_THREAD, PGM_RSRC1-3, DISPATCH_INITIATOR, DISPATCH_ID) of the gfx ME, unbanked (see COMPUTE_BANK), and
+#    decodes the program address (PGM_HI:PGM_LO << 8) into regs-N.txt, summary.txt and the census line.
 #
 # Usage, as root:
 #   bc5-gpu-stall-sampler --owner USER --out DIR     the service (bc5-gpu-stall-sampler.service, from install.sh)
@@ -58,7 +61,7 @@ import threading
 import time
 import queue
 
-VERSION = "0374"
+VERSION = "0377"
 
 # ---------------------------------------------------------------------------------------------------------------
 # Hardware and debugfs facts, each with its source
@@ -110,7 +113,105 @@ REGS = (
     ("CP_ME_HEADER_DUMP", 0x0F41, 0),           # 2179  (see HEADER_DUMPS)
     ("SPI_CSQ_WF_ACTIVE_STATUS", 0x127B, 0),    # 2681  TODO(verify) whether it is per SE (read unbanked)
     ("GCVM_L2_PROTECTION_FAULT_STATUS", 0x15EC, 0),  # 3221 (devcoredump list)
+    # exp 0377 (F529): the compute dispatch registers, to name the stuck program. The ME waits in the CS_PARTIAL_FLUSH
+    # right after the stuck DISPATCH_INDIRECT (F527), so no later SET_SH_REG has reached them. Same header (line of
+    # the mm define); every byte offset also equals Mesa's gfx10.json (vendored, tools/bc5-agc/regdb, fe554882).
+    # GRBM_GFX_CNTL is the bank witness (see COMPUTE_BANK): read before and after the block, never written.
+    ("GRBM_GFX_CNTL", 0x0DC2, 0),               # 2089  (not in Mesa's list)
+    ("COMPUTE_DISPATCH_INITIATOR", 0x1BA0, 0),  # 4535
+    ("COMPUTE_DIM_X", 0x1BA1, 0),               # 4537
+    ("COMPUTE_DIM_Y", 0x1BA2, 0),               # 4539
+    ("COMPUTE_DIM_Z", 0x1BA3, 0),               # 4541
+    ("COMPUTE_START_X", 0x1BA4, 0),             # 4543
+    ("COMPUTE_START_Y", 0x1BA5, 0),             # 4545
+    ("COMPUTE_START_Z", 0x1BA6, 0),             # 4547
+    ("COMPUTE_NUM_THREAD_X", 0x1BA7, 0),        # 4549
+    ("COMPUTE_NUM_THREAD_Y", 0x1BA8, 0),        # 4551
+    ("COMPUTE_NUM_THREAD_Z", 0x1BA9, 0),        # 4553
+    ("COMPUTE_PGM_LO", 0x1BAC, 0),              # 4559
+    ("COMPUTE_PGM_HI", 0x1BAD, 0),              # 4561
+    ("COMPUTE_PGM_RSRC1", 0x1BB2, 0),           # 4571
+    ("COMPUTE_PGM_RSRC2", 0x1BB3, 0),           # 4573
+    ("COMPUTE_PGM_RSRC3", 0x1BC8, 0),           # 4629
+    ("COMPUTE_DISPATCH_ID", 0x1BC0, 0),         # 4607
 )
+
+# Which instance a plain read of the COMPUTE_* registers returns (exp 0377). amdgpu_regs selects a ME/pipe/queue
+# only when the position has bit 61 (v7.2 amdgpu_debugfs.c:109-116, 145-147); without it RREG32 (:157) reads
+# whatever GRBM_GFX_CNTL selects. The kernel writes GRBM_GFX_CNTL under srbm_mutex and puts it back to ME 0, pipe 0,
+# queue 0, VMID 0 (nv.c:317-327 nv_grbm_select; amdgpu_debugfs.c:179-181; gfx_v10_0.c:3867, 5218, 5378, 6875,
+# 7165). ME 0 is the gfx ME (compute rings use ME = MEC + 1, gfx_v10_0.c:4689-4690), so a plain read gives the gfx
+# ME's pipe-0 values, the ring gfx_0.0.0: the ring the title dispatches on and the one the F403 class stops (F253: a
+# foreign client's COMPUTE_PGM_HI was left on that ring; F527: the ME waits). The sampler never sets bit 61: that
+# select is a kernel write to GRBM_GFX_CNTL in the middle of a stall, which nothing shows safe, and the gfx ring
+# needs none; so compute rings' values are out of reach. It reads GRBM_GFX_CNTL before and after the block instead:
+# no ME/pipe/queue/VMID bit in either read (gc_10_1_0_sh_mask.h:5925-5932) means no select was in place at either
+# end. A select made and undone between the two reads would go unseen; the kernel makes them at queue setup, reset
+# and KFD/MQD operations, not per submission, and the sampler stays out of reset windows (RESET_LINES).
+# TODO(verify) at T1: that these SH registers read back at all on gfx1013 and that GRBM_GFX_CNTL banks them per ME;
+# the MQD keeps a copy per compute queue (v10_structs.h:675-709), which says per-queue state, not the gfx ME's.
+COMPUTE_BANK = "GRBM_GFX_CNTL"
+COMPUTE_LAST = "COMPUTE_DISPATCH_ID"
+GRBM_GFX_CNTL_SELECT = 0x7FF   # PIPEID 0x3 | MEID 0xC | VMID 0xF0 | QUEUEID 0x700 (gc_10_1_0_sh_mask.h:5929-5932)
+
+# Field masks, v7.2 gc_10_1_0_sh_mask.h (line): COMPUTE_PGM_HI DATA 0xff (17128; Mesa's gfx10.json has DATA [7:0]);
+# COMPUTE_PGM_LO/HI hold the program address >> 8 and >> 40 (gfx_v9_0.c:4758-4764 writes them so; the backend's
+# own dispatch_min.cpp:52 does the same). COMPUTE_NUM_THREAD_X NUM_THREAD_FULL 0xffff (17105).
+# COMPUTE_DISPATCH_INITIATOR (17071-17083):
+INITIATOR_BITS = (("COMPUTE_SHADER_EN", 0x1), ("PARTIAL_TG_EN", 0x2), ("FORCE_START_AT_000", 0x4),
+                  ("ORDERED_APPEND_ENBL", 0x8), ("ORDERED_APPEND_MODE", 0x10), ("USE_THREAD_DIMENSIONS", 0x20),
+                  ("ORDER_MODE", 0x40), ("SCALAR_L1_INV_VOL", 0x400), ("VECTOR_L1_INV_VOL", 0x800),
+                  ("TUNNEL_ENABLE", 0x2000), ("RESTORE", 0x4000), ("CS_W32_EN", 0x8000))
+PGM_HI_DATA = 0xFF
+NUM_THREAD_FULL = 0xFFFF
+
+
+def compute_dispatch(s):
+    """The decoded compute dispatch registers of a sample (None if the sample did not read them)."""
+    v = {n: (vals[0] if vals else None) for n, o, vals in s.regs}
+    if v.get("COMPUTE_PGM_LO") is None or v.get("COMPUTE_PGM_HI") is None:
+        return None
+    bank = [x for n, o, vals in s.regs if n == COMPUTE_BANK for x in vals]
+    init = v.get("COMPUTE_DISPATCH_INITIATOR")
+
+    def xyz(prefix, mask=0xFFFFFFFF):
+        t = [v.get(prefix + a) for a in "XYZ"]
+        return None if None in t else tuple(x & mask for x in t)
+    if len(bank) == 2 and None not in bank and not (bank[0] | bank[1]) & GRBM_GFX_CNTL_SELECT:
+        where = "gfx ME0 pipe0 queue0 (gfx_0.0.0)"
+    else:
+        where = "UNKNOWN bank (GRBM_GFX_CNTL %s: a kernel select overlapped)" % "/".join(
+            "ERROR" if x is None else "0x%x" % x for x in bank)
+    return {
+        "pgm": ((v["COMPUTE_PGM_HI"] & PGM_HI_DATA) << 40) | (v["COMPUTE_PGM_LO"] << 8),
+        "dim": xyz("COMPUTE_DIM_"), "start": xyz("COMPUTE_START_"),
+        "threads": xyz("COMPUTE_NUM_THREAD_", NUM_THREAD_FULL),
+        "initiator": init,
+        "flags": [n for n, m in INITIATOR_BITS if init is not None and init & m],
+        "rsrc": tuple(v.get("COMPUTE_PGM_RSRC%d" % i) for i in (1, 2, 3)),
+        "id": v.get("COMPUTE_DISPATCH_ID"),
+        "bank": where,
+    }
+
+
+def _hex_or(x):
+    return "-" if x is None else "0x%x" % x
+
+
+def _dims(t):
+    return "-" if t is None else "[%s]" % " ".join("%d" % a for a in t)
+
+
+def fmt_compute(c):
+    """The decoded lines for regs-N.txt. DIM after a DISPATCH_INDIRECT: TODO(verify) whether the CP copies the
+    indirect arguments into COMPUTE_DIM_X/Y/Z (F528's x = 0 question)."""
+    return ["# compute dispatch, %s:" % c["bank"],
+            "#   program address = PGM_HI:PGM_LO << 8 = 0x%x   (match against the host journal's dispatch list, F528)"
+            % c["pgm"],
+            "#   dim %s, start %s, threads %s, initiator %s [%s], dispatch id %s"
+            % (_dims(c["dim"]), _dims(c["start"]), _dims(c["threads"]), _hex_or(c["initiator"]), ",".join(c["flags"]),
+               "-" if c["id"] is None else "%d" % c["id"]),
+            "#   rsrc1 %s rsrc2 %s rsrc3 %s" % tuple(_hex_or(x) for x in c["rsrc"])]
 # The kernel's devcoredump reads CP_PFP_HEADER_DUMP and CP_ME_HEADER_DUMP eight times in a row, once per gfx queue
 # (gfx_v10_0.c gc_gfx_queue_reg_list_10, lines 465-480; gfx_v10_ip_dump 9765-9782): each read returns the next entry
 # of the CP's packet-header history, so a read moves that history's read position, and F403/F476/F490 classify events
@@ -455,19 +556,25 @@ def take_sample(dev, cfg, kind, t, wall, fence_text, pending, idle_ok=False, reg
         s.skipped = "GFXOFF state 1 and no job pending: not reading GC registers (exp 0370 D5)"
         return s
     t0 = clock()
+
+    def read(off):
+        try:
+            return dev.read_reg(off)
+        except OSError:
+            s.reg_errors += 1
+            return None
+    witness = None
     for name, mm, bi in REGS:
         n = cfg.header_dump_reads if name in HEADER_DUMPS else 1
         if n <= 0:
             continue
         off = reg_byte(mm, bi)
-        vals = []
-        for _ in range(n):
-            try:
-                vals.append(dev.read_reg(off))
-            except OSError:
-                s.reg_errors += 1
-                vals.append(None)
+        vals = [read(off) for _ in range(n)]
         s.regs.append((name, off, vals))
+        if name == COMPUTE_BANK:
+            witness = (off, vals)
+        elif name == COMPUTE_LAST and witness:
+            witness[1].append(read(witness[0]))   # the second witness read closes the COMPUTE_* block
     if banked:
         for name, mm, bi in BANKED_REGS:
             for se in range(cfg.ses):
@@ -550,6 +657,9 @@ def fmt_regs(s):
                                                if vals[:HEADER_DUMP_PERIOD] == vals[HEADER_DUMP_PERIOD:] else "NO"))
     for name, se, sa, v in s.banked:
         out.append("gfx1013.mm%s[se%d.sa%d] => %s" % (name, se, sa, "ERROR" if v is None else "0x%08x" % v))
+    c = compute_dispatch(s)
+    if c:
+        out.extend(fmt_compute(c))
     return "\n".join(out) + "\n"
 
 
@@ -627,6 +737,11 @@ def fmt_sample_summary(s):
     keys = ("GRBM_STATUS", "CP_STAT", "CP_PFP_INSTR_PNTR", "CP_ME_INSTR_PNTR", "CP_IB1_BASE_HI", "CP_IB1_BASE_LO",
             "CP_IB1_BUFSZ", "CP_IB1_CMD_BUFSZ")
     lines.append("   " + " ".join("%s=0x%x" % (k, cp[k]) for k in keys if k in cp))
+    c = compute_dispatch(s)
+    if c:
+        lines.append("   compute: program=0x%x dim=%s threads=%s initiator=%s id=%s (%s)"
+                     % (c["pgm"], _dims(c["dim"]), _dims(c["threads"]), _hex_or(c["initiator"]),
+                        "-" if c["id"] is None else "%d" % c["id"], c["bank"]))
     return lines
 
 
@@ -918,11 +1033,12 @@ class Engine:
             first = ep.samples[s.samples[0][0] - 1]
         pcs = valid_pcs(first).most_common(4) if first else []
         nw = (len(first.waves) if first.scanned else "-") if first and not first.skipped else 0
+        c = compute_dispatch(first) if first else None
         self._census("stall ring=%s dur=%.2f sig=0x%08x emit=0x%08x now_sig=0x%08x samples=%d missed=%d waves@first=%s "
-                     "top=%s kmsg_timeout=%s event=%s"
+                     "top=%s pgm@first=%s kmsg_timeout=%s event=%s"
                      % (s.ring, now - s.t_start, s.sig, s.emit, sig, len(s.samples), s.missed, nw,
-                        ",".join("0x%x:%d" % kv for kv in pcs) or "-", "yes" if s.kmsg_line else "no",
-                        ep.event or "-"))
+                        ",".join("0x%x:%d" % kv for kv in pcs) or "-", "0x%x" % c["pgm"] if c else "-",
+                        "yes" if s.kmsg_line else "no", ep.event or "-"))
         if s in self.lingering:
             self.lingering.remove(s)
         if ep is self.ep and not ep.active():
@@ -1001,8 +1117,8 @@ class Engine:
                                      else "draining (progress, not a stuck shader)" if "draining" in g and len(g) == 1
                                      else "moving (a loop inside one program? arm A)" if g == {"moving"}
                                      else "mixed: " + ", ".join(x[4] for x in shapes)))
-        L.append("program names: match the PCs offline against the host journal's dispatch and timeout-probe lists "
-                 "(exp 0370 K4, F113).")
+        L.append("program names: match the compute program address (and any PCs) offline against the host journal's "
+                 "dispatch and timeout-probe lists (exp 0370 K4, F113, F528).")
         L.extend("note: " + n for n in ep.notes)
         return "\n".join(L) + "\n"
 
@@ -1107,9 +1223,11 @@ class Engine:
                  ("fence.txt", text)] + self._sample_files([smp])
         self.writer.submit(("mkdir", name))
         self.writer.submit(("files", name, files))
-        self._census("forced dir=%s pending=%s waves=%d slots=%d scan_ms=%.1f regs_ms=%.1f gfxoff=%s%s%s"
+        c = compute_dispatch(smp)
+        self._census("forced dir=%s pending=%s waves=%d slots=%d scan_ms=%.1f regs_ms=%.1f gfxoff=%s pgm=%s%s%s"
                      % (name, ",".join(pending) or "-", len(smp.waves), smp.slots_read, smp.scan_s * 1e3,
-                        smp.regs_s * 1e3, smp.gfxoff, " skipped" if smp.skipped else "", refused))
+                        smp.regs_s * 1e3, smp.gfxoff, "0x%x" % c["pgm"] if c else "-",
+                        " skipped" if smp.skipped else "", refused))
         if not req["period"]:
             self.force_req = None
             if req.get("on_done"):
@@ -1167,6 +1285,17 @@ def hw_id1(se, sa, wgp, simd, wave):
     return (se << 18) | (sa << 16) | (wgp << 10) | (simd << 8) | wave
 
 
+# A dispatch as SET_SH_REG would leave it: program 0x11d028dd00 (F527's first candidate), 40x23x1 groups of 8x8x1,
+# wave32; GRBM_GFX_CNTL 0 (no select in flight).
+FAKE_COMPUTE = {"GRBM_GFX_CNTL": 0, "COMPUTE_DISPATCH_INITIATOR": 0x8021, "COMPUTE_DIM_X": 40, "COMPUTE_DIM_Y": 23,
+                "COMPUTE_DIM_Z": 1, "COMPUTE_START_X": 0, "COMPUTE_START_Y": 0, "COMPUTE_START_Z": 0,
+                "COMPUTE_NUM_THREAD_X": 8, "COMPUTE_NUM_THREAD_Y": 8, "COMPUTE_NUM_THREAD_Z": 1,
+                "COMPUTE_PGM_LO": 0x11d028dd00 >> 8 & 0xFFFFFFFF, "COMPUTE_PGM_HI": 0x11d028dd00 >> 40,
+                "COMPUTE_PGM_RSRC1": 0x60af0041, "COMPUTE_PGM_RSRC2": 0x90, "COMPUTE_PGM_RSRC3": 0,
+                "COMPUTE_DISPATCH_ID": 4711}
+FAKE_COMPUTE_BYTES = {reg_byte(mm, bi): FAKE_COMPUTE[n] for n, mm, bi in REGS if n in FAKE_COMPUTE}
+
+
 class FakeDevice:
     """Fence values set by the trace; waves: `busy` maps a slot to a PC while any watched ring is pending."""
 
@@ -1188,6 +1317,8 @@ class FakeDevice:
         self.reg_reads += 1
         if self.reg_reads % len(REGS) == 0:
             self.clock.advance(self.regs_cost)
+        if byte_off in FAKE_COMPUTE_BYTES:
+            return FAKE_COMPUTE_BYTES[byte_off]
         return (byte_off * 2654435761) & 0xFFFFFFFF
 
     def read_gfxoff(self):
@@ -1363,7 +1494,8 @@ def scenarios():
         c = eng.census[0]
         if not 0.65 <= _census_dur(c) <= 0.75 or "samples=1 " not in c or "event=-" not in c:
             f.append("census line: %s" % c)
-        if "waves@first=40 " not in c or "top=0x11d049aa00:40" not in c or "ring=gfx_0.0.0" not in c:
+        if "waves@first=40 " not in c or "top=0x11d049aa00:40" not in c or "ring=gfx_0.0.0" not in c \
+                or "pgm@first=0x11d028dd00 " not in c:
             f.append("census waves/top: %s" % c)
         if eng.events or [d for d in os.listdir(out) if d.startswith("event-")]:
             f.append("an event was written")
@@ -1598,6 +1730,47 @@ def selftest_decoder():
     return f
 
 
+def selftest_compute():
+    """exp 0377: the COMPUTE_* block is read between two GRBM_GFX_CNTL reads, and decoded (the program address too)."""
+    f = []
+    log = []
+
+    class Dev(FakeDevice):
+        def __init__(self, cntl):
+            FakeDevice.__init__(self, FakeClock())
+            self.cntl = list(cntl)
+
+        def read_reg(self, byte_off, bank=None):
+            log.append(byte_off)
+            if byte_off == reg_byte(0x0DC2, 0):
+                return self.cntl.pop(0)
+            if byte_off == reg_byte(0x1BAD, 0):
+                return 0x12            # a high byte, to check the << 40
+            return FakeDevice.read_reg(self, byte_off, bank)
+    s = take_sample(Dev((0, 0)), Config(), "once", 0, 0, "", True, regs_only=True)
+    names = {reg_byte(mm, bi): n for n, mm, bi in REGS}
+    seq = [names[o] for o in log]
+    i, j = seq.index(COMPUTE_BANK), len(seq) - 1 - seq[::-1].index(COMPUTE_BANK)
+    if seq.count(COMPUTE_BANK) != 2 or not all(n.startswith("COMPUTE_") for n in seq[i + 1:j]) \
+            or len(seq[i + 1:j]) != 16:
+        f.append("the COMPUTE_* block is not bracketed by two %s reads: %s" % (COMPUTE_BANK, seq[i:j + 1]))
+    c = compute_dispatch(s)
+    want = {"pgm": 0x12 << 40 | 0x11d028dd00, "dim": (40, 23, 1), "threads": (8, 8, 1), "id": 4711,
+            "flags": ["COMPUTE_SHADER_EN", "USE_THREAD_DIMENSIONS", "CS_W32_EN"]}
+    for k, v in want.items():
+        if not c or c[k] != v:
+            f.append("compute %s: %r != %r" % (k, c and c[k], v))
+    txt = fmt_regs(s)
+    if "program address = PGM_HI:PGM_LO << 8 = 0x1211d028dd00" not in txt or "gfx ME0 pipe0 queue0" not in txt:
+        f.append("regs-N.txt lacks the decoded program line")
+    if not any("compute: program=0x1211d028dd00 dim=[40 23 1]" in x for x in fmt_sample_summary(s)):
+        f.append("the summary lacks the compute line")
+    s = take_sample(Dev((0, 0x4)), Config(), "once", 0, 0, "", True, regs_only=True)   # MEID 1 at the second read
+    if "UNKNOWN bank (GRBM_GFX_CNTL 0x0/0x4" not in compute_dispatch(s)["bank"]:
+        f.append("a select seen by the witness is not flagged: %s" % compute_dispatch(s)["bank"])
+    return f
+
+
 def scenario_default_regs_only(tmp_root):
     """The default (no --wave-scan): a stall to the 1.9-s write reads registers at every threshold and never a wave
     slot, the event has no waves-N files, and a forced "waves" request is refused and reads registers only."""
@@ -1634,7 +1807,8 @@ def run_selftest(tmp_root=None):
     import shutil
     import tempfile
     tmp = tmp_root or tempfile.mkdtemp(prefix="bc5-stall-selftest-")
-    results = [("wave decoder and debugfs positions", selftest_decoder())]
+    results = [("wave decoder and debugfs positions", selftest_decoder()),
+               ("compute dispatch registers: bracketed by the bank witness, decoded (exp 0377)", selftest_compute())]
     for name, ev, chk in scenarios():
         results.append((name, run_scenario(name, ev, chk, tmp)))
     results.append(("a second stall while an event is being written", scenario_second_stall_while_writing(tmp)))
@@ -1882,11 +2056,13 @@ def main(argv=None):
         return run_selftest()
     if a.list_regs:
         # third column: "sampled" (one read per sample: umr -r may read it too), "sampled-x8"/"x16" (a header
-        # history: never read once, see HEADER_DUMPS), "skipped", "banked"
+        # history: never read once, see HEADER_DUMPS), "sampled-x2" (the bank witness, COMPUTE_BANK: its value is
+        # not compared), "skipped", "banked"
         for name, mm, bi in REGS:
             hd = name in HEADER_DUMPS
             print("%s 0x%05x %s" % (name, reg_byte(mm, bi), ("sampled-x%d" % a.header_dump_reads if a.header_dump_reads
-                                                             else "skipped") if hd else "sampled"))
+                                                             else "skipped") if hd else "sampled-x2"
+                                     if name == COMPUTE_BANK else "sampled"))
         for name, mm, bi in BANKED_REGS:
             print("%s 0x%05x banked" % (name, reg_byte(mm, bi)))
         return 0
