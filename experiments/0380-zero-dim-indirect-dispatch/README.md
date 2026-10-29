@@ -1,7 +1,7 @@
 # 0380 — Is the F403 class a zero-dimension indirect dispatch? (sources, title side, a guard, a box plan)
 
 **Date.** 2026-10-29. **Laptop only.** No box access and no GPU submission in this experiment. Branch
-`exp/0380-zero-dim-dispatch`. Findings F545–F563 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
+`exp/0380-zero-dim-dispatch`. Findings F545–F567 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
 session's GO).
 
 **Question.** F527 puts the ME just past a `DISPATCH_INDIRECT` that passed the host's check, inside the title's
@@ -576,6 +576,104 @@ lines, records the exposure. A class-B hang with this shortcut, recorded by the 
 the rebase. Hours without one support it. The zero skip is in the same play, so a hang must also be checked against the
 zero list (F554's method).
 
+## 10. The 14:04 hang with the rebase on, and the argument copy (F564–F567)
+
+**Box.** Reads only, then a CPU-only compile check, 14:07–14:2x, on a fresh boot with the maintainer not playing.
+Lock line `top exp 0380 | reads only: the 14:04 hang …`, cleared at the end; done line in BOX-QUEUE. The filtered
+extracts are in `raw/hang-1404/`; the devcoredump `20261029-140441-devcd1.txt` and the journal
+`play-20261029-1357/gc/direct.log` stay private.
+
+**The play.** The maintainer's play on "BC5 emulator (test 0380 fix + 0379)" started at 13:57:49. Its log's first line:
+`== exp 0380f mode: SKIP …zero-list-20261029-120000.txt; BC5_DIRECT_REBASE_DISPATCH=1; BC5_DIRECT_FORCE_START_000=1;
+binary c442f6c7`. It hung at 14:04:41. The ring reset failed and the box rebooted.
+
+**(a) The stuck dispatch and the rebase (F564).**
+- Sampler 0377 (all samples alike):
+  - `COMPUTE_PGM` 0x11d02a4a00;
+  - `COMPUTE_DIM` [481 1073741962 480] = 0x1e1 / **0x4000008a** / 0x1e0;
+  - threads [64 1 1], initiator 0x45;
+  - `GRBM_STATUS` 0xa0407028, PFP 0xea1, ME 0x77b.
+- The journal's timeout probe for dcb #278264 (, 8,251 dwords; acb #278265, 68 dwords; TIMEOUT after 2,037 ms)
+  names that program at **title dword 1287, arguments at 0x11d05df300, 3158 × 1 × 1 at the timeout**. It is the first
+  indirect dispatch of the dcb.
+- In the devcoredump's IB #0 (8,880 dwords, fetched 1,920) the dispatch is dword **1379**. It is the first
+  `DISPATCH_INDIRECT` after `SET_BASE` 1 = 0x11d05df300 (1249), `INDEX_BASE` 0x1210012000 (1253) and
+  `INDEX_BUFFER_SIZE` 0xffffffff (1256). This is **sub-class B again**, the fifth event (F558).
+- The rebase `SET_BASE` (1375, 0x11d05df300) stands right before it.
+- The PFP history, newest first: `ACQUIRE_MEM`, `EVENT_WRITE`, `DISPATCH_INDIRECT`, **`SET_BASE` (0xc0021100)**,
+  `COND_EXEC`, `PFP_SYNC_ME`, `WRITE_DATA`, `COND_EXEC`.
+  - So the CP *executed* the re-emitted `SET_BASE` immediately before the stuck dispatch.
+  - Of the dispatches the history allows (1379 and 1683 are followed by `EVENT_WRITE` 7), only 1379 is the probe's
+    and the sampler's program.
+- Exposure before the hang: 36,148 first-after-`INDEX_BASE` dispatches rebased (5.27 M checked) in about 6.5 minutes
+  (the play log's last periodic line).
+
+**(b) What the values say (F565).**
+- **Not in the IB.** 481, 0x4000008a and 480 occur nowhere in the hung IB (`find0380.py`). Neither do 12:12's 0x30002
+  and 0x2a0028; 0x10000 occurs only as the staircase's reference and in the title's register loads.
+- **Not index-like.** As 32-bit words they are two neighbouring counts (480, 481) around a word with bit 30 set, not
+  pairs of small 16-bit indices like 12:12's. The index-buffer reading of F555 has no support here.
+- **Not a base problem.** The base was set again directly before the dispatch.
+- **Memory was sane.** The check's `COND_WRITE`s read y and z from the same address and would have refused
+  0x4000008a, and memory held 3158 × 1 × 1 at the timeout.
+- **What remains of H0380b:** the CP's argument fetch for a `DISPATCH_INDIRECT` can return dwords other than those its
+  own ME reads at the same address just before it. TODO(verify) the mechanism: a fetch path that is not coherent with
+  the writes producing the arguments, a stale line from an earlier use of that memory, or another address. **The
+  base-alias variant is refuted, and so is the rebase as a fix.**
+- **The zero skip:** no sign it is involved. The arguments' memory was real (the CPU read 3158 there). The same slot
+  hung at 18:15, 23:36 and 09:48 without the skip. The one canary hit (run 37, file 0x1cb400000, 24 MiB) came at
+  journal line 56,638 of 773,549, as at 12:12.
+  - It is still worth noting that the last two B events both ran SKIP mode and both hit run 37.
+
+**(c) The next guard: the CP's own copy of the arguments (F566).**
+- `BC5_DIRECT_ARGS_COPY=1`, default off. `indirect_check::apply(…, args_copy)`, `Stats::args_copied`,
+  `kArgsCopyDwords` = 26.
+- For every checked GFX-form `DISPATCH_INDIRECT`:
+  1. three `COPY_DATA` (memory → memory, ME, `WR_CONFIRM`) copy the arguments (base + offset) to the check's flag area
+     + 16/20/24;
+  2. every `COND_WRITE` of the check (the limits, F548's zero guard, the 0341 staircase) polls the **copy**;
+  3. after the check's confirm, `PFP_SYNC_ME` and `COND_EXEC` (count 3 + 4), a `SET_BASE` index 1 points at the copy
+     and the dispatch's offset becomes 0;
+  4. a `SET_BASE` with the title's base follows the dispatch, for the title's later indirect packets.
+- So the check and the fetch read the same three dwords, written by the CP's ME and confirmed before the PFP is
+  released.
+- **Sources.** The packet is Mesa's `ac_emit_cp_copy_data` (src/amd/common/ac_cmdbuf_cp.c:238-265; `PKT3_COPY_DATA`
+  0x40, `COPY_DATA_SRC_MEM` 1, `COPY_DATA_DST_MEM` 5, `COPY_DATA_WR_CONFIRM` 1 << 20, sid.h:99-116; ab2374a). RADV uses
+  the same copy-then-dispatch for GFX7's compute-queue alignment bug (radv_cmd_buffer.c, `needs_align32_workaround`).
+- It supersedes the rebase for the dispatch it covers. The flag area is 8 dwords per job (direct.cpp), and the copy
+  uses dwords 4–6.
+- **Limits** (TODO(verify)):
+  - If the fetch path can return stale data even for these freshly ME-written dwords, the copy does not help. A hang
+    with it on still decides between the mechanisms: the sampler's `COMPUTE_DIM` against the copy, whose source the
+    probe reads.
+  - The copy sits in each job's scratch, whose earlier contents at that address are other jobs' IB dwords.
+- **Tests.** Catch2 "the dispatch runs from the CP's copy of its arguments (experiment 0380)", five sections:
+  - the exact packets;
+  - every poll on the copy, with the staircase, the zero guard, FORCE_START and rebase, FORCE_START landing on the
+    dispatch;
+  - off by default, with unbased, MEC and draws untouched;
+  - inside the IB's own `COND_EXEC`;
+  - two dispatches with their own bases and offsets.
+
+  Laptop 96/96 (34,396 assertions). Box clang 21.1.8 `-Werror`, 0 warnings, 96/96 (34,395), archive bf8b8d4a
+  (`raw/box-A0d/`).
+- **Not built: converting to `DISPATCH_DIRECT` through the CP.**
+  - The CP cannot patch dwords of an IB it has already prefetched: the fetcher stood 1,920–1,952 dwords ahead in every
+    B event (F528, F558).
+  - The other route, building a direct dispatch in an IB2 with `COPY_DATA` and calling it with `INDIRECT_BUFFER`, reads
+    the dims through the CP's fetch again. That is the path in question.
+  - No public source shows a register path that sets the group counts of a `DISPATCH_DIRECT` from memory.
+  - So the copy is the smaller and better-sourced test.
+
+**Next (F567).**
+- A private binary with `BC5_DIRECT_ARGS_COPY=1`: the same relink as F563, CPU only.
+- A bench run, then a play test **without the zero skip**, to separate the two: the last two B events both had SKIP
+  on. This needs the maintainer's yes (GPU).
+- A class-B hang with the copy on is decisive in either direction:
+  - `COMPUTE_DIM` equal to the copy (memory) → the arguments themselves were bad and the check missed them, which the
+    check reading the copy rules out;
+  - `COMPUTE_DIM` different from the copy → the CP's argument fetch is incoherent even for CP-written dwords.
+
 ## Result
 
 - Sources read and cited (F545, F546). The title-side evidence was re-read from exps 0376/0378 (F547).
@@ -583,6 +681,9 @@ zero list (F554's method).
 - A second guard, `FORCE_START_AT_000` on indirect dispatches, is built the same way: default off, with unit tests
   (F551).
 - The box plan is written. Only step A0 ran: a CPU-only compile check, which passed (F552). Nothing ran on the GPU.
+- The maintainer's play with that shortcut hung at 14:04 in sub-class B, with the rebase `SET_BASE` executed right
+  before the stuck dispatch. **The rebase is refuted as a fix** (F564, F565). The next candidate, the CP's own
+  argument copy, is built, default off, and not run (F566, F567).
 - The maintainer's test shortcut "BC5 emulator (test 0380 fix + 0379)" is on the desktop (binary c442f6c7,
   launcher 05762c4e), and its 5-min smoke run passed (F563).
 - The rebase fix ran twice on the bench (RT on, 600 s each): both runs pass at 37.5 and 36.5 flips/s, with ~174,000
