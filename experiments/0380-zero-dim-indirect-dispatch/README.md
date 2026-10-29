@@ -994,7 +994,11 @@ unstable). The records are on the box (`~/bc5-work/exp0380wb/play/`, the journal
     1, at pages 0x8608c654000 … 0x8608c65c000.
   - Then two `ring gfx_0.0.0 timeout`s (16:25:41, 16:25:43), each with `Ring gfx_0.0.0 reset succeeded`; `bc5-gpu-watch`
     armed and disarmed.
-  - The emulator ended at 66 s.
+  - The emulator ended at 66 s. *Correction (the maintainer, relayed by the top session):* it did not exit by itself.
+    After the fault and the two successful resets the menu showed no picture, and he closed it by hand. So the resets
+    recovered the ring, but rendering did not come back: the title's GPU state was lost in the reset (TODO(verify)
+    what a gfx ring reset on this kernel restores, e.g. shadowed registers, the title's GDS/rings, the host's
+    labels).
 - **The sampler.**
   - 16:25:41: `GRBM_STATUS` 0xa04030ac, PFP 0xea1 / ME 0xe15, program 0x909977100, dim [697 1 1].
   - 16:25:43: `GRBM_STATUS` 0xa0003028, ME 0x5c0, dim [213 1 1].
