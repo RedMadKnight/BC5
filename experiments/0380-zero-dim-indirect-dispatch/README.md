@@ -2088,6 +2088,33 @@ writes of mine:
   - Where that object lay cannot be read after the reboot.
   - The disassembly and the copies stay private; only the offsets are cited.
 
+**Corrections from exp 0379, and the bench rate.**
+- **Timing:** the hang came about 2 min into the run: the last fps line at t 114.1 s, the ring stalled at mono
+  24231.6. That was before the walk began, while the title was still loading (GTT 10,644 MiB and rising). So it is
+  the plain S6N route state, nothing walk-specific.
+  - The same binary passed G1 and G2 earlier tonight (20 min each, with drop_caches), so this is a chance B on the
+    ordinary bench.
+- **Box side:** `stalls.log` has no line for this event, though its event directory exists; that is a gap in the
+  sampler's logging, to fix there. pstore holds 4 records from 00:53:24.
+- **The bench rate now.** Before tonight, F594 counted about 35 min of S6N bench without B. Since then (RT on, S6N
+  route save, the same load point):
+  - RC1, NC1 and RS1, 300 s each;
+  - CR1, 420 s (the slot-4 save, not S6N, counted for time only);
+  - 0379's G1 and G2, 1,200 s each;
+  - G3 up to the hang, about 114 s.
+
+  That is about 64 min more, so about 99 min (1.65 h) with one B: a rate of about 0.6 per hour. The Poisson 95 %
+  interval for one event is 0.015–3.4 per hour. That cannot be told apart from the play's rate of about 1 per hour.
+  - If B instead belongs to the load phase, the count is per load. About 6 S6N loads tonight plus F594's several
+    give about one B per 10–15 loads.
+- **As a reproducer, then:**
+  - **If B is a time rate:** a loop of short S6N runs pays the load for every try, and finds one B in about 1.5 h of
+    running.
+  - **If B is load-bound:** about 10–15 runs of 3 min each (30–45 min) per B.
+  - Either way, every try should run on the recorder binary, so that one B also answers F619 through part A's
+    `INDEX_BASE` dump.
+  - Each B means a watch reboot (~2 min). The loop needs box writes.
+
 **The INDEX_BASE lead (F619; medium, not proven).** Lay the three events with known launched dims beside their
 `INDEX_BASE`; each dispatch has offset 0:
 
