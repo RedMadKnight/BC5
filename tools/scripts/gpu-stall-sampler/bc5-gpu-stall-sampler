@@ -1,0 +1,1836 @@
+#!/usr/bin/python3
+# SPDX-License-Identifier: GPL-2.0-only
+#
+# bc5-gpu-stall-sampler: BC5 (exp 0373, stage T0 of exp 0370's design D1-D8). A resident, non-halting root sampler
+# for the F403 GPU hang class on the BC-250 (gfx1013, Cyan Skillfish). Python 3, stdlib only (the box host's 3.14).
+#
+# What it does:
+#  * Every 25 ms it reads debugfs amdgpu_fence_info and runs a per-ring "stall clock": the time since that ring's
+#    "Last emitted" or "Last signaled fence" last changed. drm_sched re-arms the kernel's ring timeout at every push and
+#    every completion (drm_sched_start_timeout from drm_sched_job_begin and drm_sched_get_finished_job, Linux v7.2
+#    8d3ae59288f1 drivers/gpu/drm/scheduler/sched_main.c:198-302,923-948), so this clock is the kernel's within one
+#    poll (F496; lockup_timeout 2000 ms, exp 0259).
+#  * A ring is stalled when emitted != signaled and nothing changed for 0.5 s. At stall clock 0.5, 0.8, 1.1, 1.4 and
+#    1.7 s it takes one sample: the CP/GRBM registers through amdgpu_regs, and a scan of every wave slot through
+#    amdgpu_wave (STATUS, PC, EXEC, HW_ID1/2 and the rest of the kernel's record). It never reads GPRs, never halts a
+#    wave, never runs umr and never forks. The samples stay in RAM.
+#  * It writes an event directory when /dev/kmsg shows amdgpu's "ring <name> timeout" line, or when the stall clock
+#    passes 1.9 s, whichever comes first, then fsyncs it and chowns it to the owner (files 600, directories 700).
+#    A stall that resolves earlier adds one census line to stalls.log.
+#  * It writes nothing to /dev/kmsg (F420) and needs no process start at the event (F112).
+#
+# Usage, as root:
+#   bc5-gpu-stall-sampler --owner USER --out DIR     the service (bc5-gpu-stall-sampler.service, from install.sh)
+#   bc5-gpu-stall-sampler --find                     print the amdgpu debugfs directory it would use, then exit
+#   bc5-gpu-stall-sampler --once [--regs-only] [--idle-ok]
+#                                                    one sample now, printed (registers in umr's "=>" format)
+# Usage, any user, no device:
+#   bc5-gpu-stall-sampler --test                     built-in self-test: synthetic fence traces and the wave decoder
+#   bc5-gpu-stall-sampler --replay TRACE [--out DIR] replay a fence/kmsg trace (format: see read_trace)
+#   bc5-gpu-stall-sampler --list-regs                the registers: name, byte offset, sampled or skipped
+#   bc5-gpu-stall-sampler --compare-check FILE       read install.sh's sampler-versus-umr check file, print a table
+# Forced samples for T1/T2, as the owner, no root: write a file named "force" into DIR, e.g. "echo once > DIR/force".
+#   Tokens: once (default; the file is removed after the sample) | N (one sample every N >= 5 s while the file exists)
+#   | regs (registers only) | idle (also when no job is pending). Results go to DIR/forced-<date>-<time>/.
+#
+# Output in DIR (default ~OWNER/bc5-data/captures/gpu-stall): stalls.log (census, one line per stall >= 0.5 s, plus
+# start and forced lines), event-<date>-<time>-<ring>/ (summary.txt, fence.txt, kmsg.txt, regs-N.txt, waves-N.txt,
+# waves-N.bin), forced-<date>-<time>/. waves-N.bin: b"BC5WAVE1", u32 record count, u32 dwords per record (17), then
+# per record u8 se, sa, wgp, simd, wave, 3 pad bytes, and the 17 raw little-endian dwords that amdgpu_wave returned.
+#
+# Sources (rule 4; read 2026-10-29): Linux v7.2 = github.com/torvalds/linux commit 8d3ae59288f1e7d58d76558a6ee96d533bc5019f
+# (tag v7.2, 2026-08-16); umr = gitlab.freedesktop.org/tomstdenis/umr commit aa7f72dcb8bd33af27c6a0b6a3e173644dc3a800.
+# The box runs 7.2.9-ogc3.1: TODO(verify) every v7.2 citation below against that tree at T1.
+
+import argparse
+import collections
+import os
+import re
+import struct
+import sys
+import threading
+import time
+import queue
+
+VERSION = "0373-t0"
+
+# ---------------------------------------------------------------------------------------------------------------
+# Hardware and debugfs facts, each with its source
+# ---------------------------------------------------------------------------------------------------------------
+
+# GC register base segments. v7.2 drivers/gpu/drm/amd/include/cyan_skillfish_ip_offset.h:67 GC_BASE = {0x1260, 0xA000}
+# (navi10_ip_offset.h has the same two). The kernel applies them as (base[BASE_IDX] + mmREG) dwords
+# (soc15_common.h SOC15_REG_OFFSET); amdgpu_regs takes byte offsets, so x4.
+# TODO(verify) at T1: the box's GC base (BC-250 may take its bases from IP discovery, amdgpu_discovery.c:3050-3061);
+# install.sh compares every offset with `umr -lr gfx1013`.
+GC_BASE = (0x00001260, 0x0000A000)
+
+# (name, mm dword offset, BASE_IDX) from v7.2 drivers/gpu/drm/amd/include/asic_reg/gc/gc_10_1_0_offset.h (line of the
+# mm define). gfx_v10_0.c includes these 10.1.0 offsets (line 35) and uses them for IP_VERSION(10, 1, 3) too (its
+# cases at 3978, 4613, 7833); TODO(verify) at T1 that GC 10.1.3 keeps every one (install.sh's umr comparison).
+# The first 19 are exp 0370 D3's list (CP_RB_RPTR shares CP_RB0_RPTR's offset, line 2213/2215); the rest are cheap
+# reads from the kernel's own devcoredump list (gfx_v10_0.c gc_reg_list_10_1, lines 279-377).
+REGS = (
+    ("GRBM_STATUS", 0x0DA4, 0),                 # 2045
+    ("GRBM_STATUS2", 0x0DA2, 0),                # 2041
+    ("GRBM_STATUS3", 0x0DA7, 0),                # 2051  (devcoredump list)
+    ("GRBM_STATUS_SE0", 0x0DA5, 0),             # 2047
+    ("GRBM_STATUS_SE1", 0x0DA6, 0),             # 2049
+    ("CP_STAT", 0x0F40, 0),                     # 2177
+    ("CP_STALLED_STAT1", 0x0F3D, 0),            # 2171
+    ("CP_STALLED_STAT2", 0x0F3E, 0),            # 2173
+    ("CP_STALLED_STAT3", 0x0F3C, 0),            # 2169
+    ("CP_BUSY_STAT", 0x0F3F, 0),                # 2175
+    ("CP_CPF_STATUS", 0x0E27, 0),               # 2133
+    ("CP_CPF_BUSY_STAT", 0x0E28, 0),            # 2135  (devcoredump list)
+    ("CP_CPF_STALLED_STAT1", 0x0E29, 0),        # 2137  (devcoredump list)
+    ("CP_CPC_STATUS", 0x0E24, 0),               # 2127  (devcoredump list; compute rings)
+    ("CP_CPC_BUSY_STAT", 0x0E25, 0),            # 2129  (devcoredump list)
+    ("CP_CPC_STALLED_STAT1", 0x0E26, 0),        # 2131  (devcoredump list)
+    ("CP_RB0_RPTR", 0x0F60, 0),                 # 2213  (= mmCP_RB_RPTR, 2215)
+    ("CP_RB0_WPTR", 0x1DF4, 0),                 # 4761  (devcoredump list)
+    ("CP_IB1_BASE_LO", 0x20CC, 1),              # 7343
+    ("CP_IB1_BASE_HI", 0x20CD, 1),              # 7345
+    ("CP_IB1_BUFSZ", 0x20CE, 1),                # 7347
+    ("CP_IB1_CMD_BUFSZ", 0x20C0, 1),            # 7319  (devcoredump list; F403's TODO on IB1_BUFSZ)
+    ("CP_IB2_BASE_LO", 0x20CF, 1),              # 7349  (devcoredump list)
+    ("CP_IB2_BASE_HI", 0x20D0, 1),              # 7351  (devcoredump list)
+    ("CP_IB2_BUFSZ", 0x20D1, 1),                # 7353  (devcoredump list)
+    ("CP_PFP_INSTR_PNTR", 0x0F45, 0),           # 2187
+    ("CP_ME_INSTR_PNTR", 0x0F46, 0),            # 2189
+    ("CP_MEC1_INSTR_PNTR", 0x0F48, 0),          # 2193  (devcoredump list)
+    ("CP_MEC2_INSTR_PNTR", 0x0F49, 0),          # 2195  (devcoredump list)
+    ("CP_PFP_HEADER_DUMP", 0x0F42, 0),          # 2181  (see HEADER_DUMPS)
+    ("CP_ME_HEADER_DUMP", 0x0F41, 0),           # 2179  (see HEADER_DUMPS)
+    ("SPI_CSQ_WF_ACTIVE_STATUS", 0x127B, 0),    # 2681  TODO(verify) whether it is per SE (read unbanked)
+    ("GCVM_L2_PROTECTION_FAULT_STATUS", 0x15EC, 0),  # 3221 (devcoredump list)
+)
+# The kernel's devcoredump reads CP_PFP_HEADER_DUMP and CP_ME_HEADER_DUMP eight times in a row
+# (gfx_v10_0.c gc_gfx_queue_reg_list_10, lines 465-480): each read returns the next entry of the CP's packet-header
+# history, so a read moves that history's read position. A sampler read before the kernel's own dump would shift
+# what the devcoredump shows (F403/F476 classify events by those eight headers) unless the history's period is 8.
+# TODO(verify) at T1: the period (16 reads at idle). Until then they are not read (--header-dump-reads 0).
+HEADER_DUMPS = ("CP_PFP_HEADER_DUMP", "CP_ME_HEADER_DUMP")
+
+# Read once per SE/SA with a GRBM bank select, as umr does (scan_waves.c:767-781): which WGPs the fuses mark
+# inactive. Logged only; the scan covers every WGP index below --wgps (the 40-CU unlock rewrites
+# SPI_PG_ENABLE_STATIC_WGP_MASK, not these, CLAUDE.md).
+BANKED_REGS = (
+    ("CC_GC_SHADER_ARRAY_CONFIG", 0x100F, 0),   # 2341, INACTIVE_WGPS [31:16] (gc_10_1_0_sh_mask.h:7094)
+    ("GC_USER_SHADER_ARRAY_CONFIG", 0x1010, 0), # 2343, INACTIVE_WGPS [31:16] (gc_10_1_0_sh_mask.h:7097)
+)
+
+
+def reg_byte(mm, base_idx):
+    return (GC_BASE[base_idx] + mm) * 4
+
+
+# amdgpu_regs (v7.2 amdgpu_debugfs.c:52-191, amdgpu_debugfs_process_reg_op): *pos is the register's byte offset in
+# bits 0..21 (`*pos &= (1UL << 22) - 1`), bit 62 asks for a GRBM bank select with SE in bits 24..33, SH/SA in 34..43
+# and INSTANCE in 44..53 (taken under grbm_idx_mutex); size and pos must be multiples of 4.
+REGS_OFFSET_MASK = (1 << 22) - 1
+
+
+def regs_pos(byte_off, bank=None):
+    if byte_off & 3 or byte_off & ~REGS_OFFSET_MASK:
+        raise ValueError("bad register byte offset 0x%x" % byte_off)
+    pos = byte_off
+    if bank is not None:
+        se, sh, inst = bank
+        pos |= (1 << 62) | (se << 24) | (sh << 34) | (inst << 44)
+    return pos
+
+
+# amdgpu_wave (v7.2 amdgpu_debugfs.c:1136-1224, amdgpu_debugfs_wave_read): *pos bits 0..6 byte offset into the
+# record, 7..14 SE, 15..22 SH/SA, 23..30 "CU/{WGP+SIMD}" (the GRBM INSTANCE), 31..36 wave, 37..44 SIMD. On gfx10 the
+# SIMD is part of the INSTANCE and the simd field must be 0: gfx_v10_0_read_wave_data has WARN_ON(simd != 0)
+# (gfx_v10_0.c:4498-4504). umr builds the INSTANCE as ((wgp << 2) | (simd & 3)) (umr src/lib/scan_waves.c:30
+# MANY_TO_INSTANCE, used at 598 with simd 0) and scans 20 wave slots per SIMD on GC 10.1.x (scan_waves.c:671-672).
+def wave_pos(se, sa, wgp, simd, wave):
+    inst = (wgp << 2) | (simd & 3)
+    return (se << 7) | (sa << 15) | (inst << 23) | (wave << 31)   # simd field (bits 37..44) stays 0
+
+
+# The record (gfx_v10_0.c:4506-4523): dword 0 is the version (2 for gfx10), then 16 SQ_WAVE registers in this order.
+WAVE_VERSION_GFX10 = 2
+WAVE_FIELDS = ("STATUS", "PC_LO", "PC_HI", "EXEC_LO", "EXEC_HI", "HW_ID1", "HW_ID2", "INST_DW0", "GPR_ALLOC",
+               "LDS_ALLOC", "TRAPSTS", "IB_STS", "IB_STS2", "IB_DBG1", "M0", "MODE")
+WAVE_DWORDS = 1 + len(WAVE_FIELDS)   # 17 dwords, 68 bytes
+WAVE_BYTES = WAVE_DWORDS * 4
+
+# Field masks, v7.2 gc_10_1_0_sh_mask.h: SQ_WAVE_STATUS 42730-42769, SQ_WAVE_TRAPSTS 42771-42790, SQ_WAVE_PC_HI 42860,
+# SQ_WAVE_HW_ID1 42887-42896, SQ_WAVE_HW_ID2 42898-42911, SQ_WAVE_IB_STS2 42937-42943.
+STATUS_BITS = (("PRIV", 0x20), ("TRAP_EN", 0x40), ("EXECZ", 0x200), ("IN_BARRIER", 0x1000), ("HALT", 0x2000),
+               ("TRAP", 0x4000), ("VALID", 0x10000), ("ECC_ERR", 0x20000), ("SKIP_EXPORT", 0x40000),
+               ("FATAL_HALT", 0x800000), ("MUST_EXPORT", 0x8000000))
+ST_VALID, ST_HALT = 0x10000, 0x2000
+PC_HI_MASK = 0xFFFF
+TRAPSTS_EXCP_MASK, TRAPSTS_ILLEGAL_INST, TRAPSTS_XNACK_ERROR = 0x1FF, 0x800, 0x10000000
+IB_STS2_WAVE64 = 0x800
+# umr skips a slot unless VALID, or HALT with a STATUS that is not its 0xbebebeef no-data pattern (scan_waves.c:603-605).
+NO_DATA = (0xBEBEBEEF, 0xFFFFFFFF)
+
+
+def _f(v, mask):
+    shift = (mask & -mask).bit_length() - 1
+    return (v & mask) >> shift
+
+
+def decode_wave(dw):
+    """dw: the dwords amdgpu_wave returned (version first). None if it is not a gfx10 record."""
+    if len(dw) < WAVE_DWORDS or dw[0] != WAVE_VERSION_GFX10:
+        return None
+    r = dict(zip(WAVE_FIELDS, dw[1:WAVE_DWORDS]))
+    st, h1, h2 = r["STATUS"], r["HW_ID1"], r["HW_ID2"]
+    return {
+        "regs": r,
+        "status": st,
+        "flags": [n for n, m in STATUS_BITS if st & m],
+        "valid": bool(st & ST_VALID),
+        "halt": bool(st & ST_HALT),
+        "pc": ((r["PC_HI"] & PC_HI_MASK) << 32) | r["PC_LO"],
+        "exec": (r["EXEC_HI"] << 32) | r["EXEC_LO"],
+        # HW_ID1: WAVE_ID [4:0], SIMD_ID [9:8], WGP_ID [13:10], SA_ID [16], SE_ID [19:18]
+        "hw": (_f(h1, 0xC0000), _f(h1, 0x10000), _f(h1, 0x3C00), _f(h1, 0x300), _f(h1, 0x1F)),
+        # HW_ID2: QUEUE_ID [3:0], PIPE_ID [5:4], ME_ID [9:8], STATE_ID [14:12], WG_ID [20:16], VM_ID [27:24]
+        "queue": _f(h2, 0xF), "pipe": _f(h2, 0x30), "me": _f(h2, 0x300), "state": _f(h2, 0x7000),
+        "wg": _f(h2, 0x1F0000), "vmid": _f(h2, 0xF000000),
+        "trapsts": r["TRAPSTS"],
+        "wave64": bool(r["IB_STS2"] & IB_STS2_WAVE64),
+    }
+
+
+def slot_kept(dw):
+    if len(dw) < 2 or dw[0] != WAVE_VERSION_GFX10:
+        return False
+    st = dw[1]
+    return st not in NO_DATA and bool(st & (ST_VALID | ST_HALT))
+
+
+# amdgpu_fence_info (v7.2 amdgpu_fence.c:883-924): per ring "--- ring %d (%s) ---", "Last signaled fence 0x%08x",
+# "Last emitted 0x%08x"; GFX and SDMA rings add a trailing-fence pair (a second "Last emitted"), GFX rings add
+# preempted/reset/both lines. Each read runs amdgpu_fence_process on every ring (line 894). Ring names: gfx10
+# "gfx_%d.%d.%d" and "comp_%d.%d.%d" (gfx_v10_0.c:4671, 4700).
+FENCE_HDR = re.compile(r"^--- ring (\d+) \((.*)\) ---\s*$")
+
+
+def parse_fence_info(text):
+    rings = collections.OrderedDict()
+    cur = None
+    for line in text.splitlines():
+        m = FENCE_HDR.match(line)
+        if m:
+            cur = m.group(2)
+            rings[cur] = [None, None]
+            continue
+        if cur is None:
+            continue
+        v = rings[cur]
+        try:
+            if line.startswith("Last signaled fence"):
+                v[0] = int(line.split()[-1], 16)
+            elif line.startswith("Last emitted") and v[0] is not None and v[1] is None:
+                v[1] = int(line.split()[-1], 16)
+        except ValueError:
+            pass
+    return collections.OrderedDict((k, (v[0], v[1])) for k, v in rings.items() if None not in v)
+
+
+def format_fence_info(rings):
+    """The kernel's text for {name: (signaled, emitted)} (used by the fake device and the tests)."""
+    out = []
+    for i, (name, (sig, emit)) in enumerate(rings.items()):
+        out.append("--- ring %d (%s) ---" % (i, name))
+        out.append("Last signaled fence          0x%08x" % sig)
+        out.append("Last emitted                 0x%08x" % emit)
+        if name.startswith("gfx") or name.startswith("sdma"):
+            out.append("Last signaled trailing fence 0x%08x" % 0)
+            out.append("Last emitted                 0x%08x" % 0)
+        if name.startswith("gfx"):
+            out.append("Last preempted               0x%08x" % 0)
+            out.append("Last reset                   0x%08x" % 0)
+            out.append("Last both                    0x%08x" % 0)
+    return "\n".join(out) + "\n"
+
+
+# /dev/kmsg (v7.2 Documentation/ABI/testing/dev-kmsg): one record per read(), "prefix,seq,usec,flags[,...];text\n"
+# plus " KEY=value" continuation lines; prefix = facility << 3 | level; user space cannot inject facility 0, so
+# bc5-gpu-watch's own lines (written with "<4>", and quoting the amdgpu line, F420) are facility 1.
+# The timeout line: amdgpu_job.c:117 "ring %s timeout, but soft recovered" and :122 "ring %s timeout, signaled
+# seq=%u, emitted seq=%u" (dev_err, so the text starts "amdgpu 0000:01:00.0: "). In v7.2 the line comes after
+# amdgpu_job_core_dump (line 112) and the soft-recovery attempt (114-120), right before the ring reset (133-152).
+TIMEOUT_RE = re.compile(r"\bring (\S+) timeout\b")
+
+# Reset windows. In v7.2 a debugfs register or wave read does not wait for a GPU reset: amdgpu_debugfs_process_reg_op
+# and amdgpu_debugfs_wave_read take no reset lock, and RREG32's amdgpu_device_skip_hw_access (amdgpu_device.c:827-852)
+# skips the hardware only when no_hw_access is set (PCI error or unplug, :6753). So the sampler keeps its reads out of
+# the window itself: from a timeout or reset-begin line until the reset's end line (the cap is the worst case).
+# Lines: amdgpu_job.c:117/122 timeout, :136 "Starting %s ring reset", :145 "Ring %s reset succeeded", :151 "Ring %s
+# reset failed", :174 "GPU Recovery Failed: %d"; amdgpu_device.c:5898 "GPU %s begin!. Source:  %d", :5793 "GPU
+# reset(%d) failed with error %d", :5804 "GPU reset(%d) succeeded!", :5966 "GPU reset end with ret = %d"; nv.c:465-477
+# "PCI reset", "BACO reset", "MODE1 reset". A failed ring reset went to MODE1 ~4 s later on the box (F420).
+RESET_LINES = (   # first match wins
+    (re.compile(r"Ring \S+ reset succeeded|GPU reset\(\d+\) succeeded|GPU reset end with ret = 0\b|"
+                r"timeout, but soft recovered"), "end", 0.2),
+    (re.compile(r"Ring \S+ reset failed|GPU reset\(\d+\) failed|GPU Recovery Failed"), "fail", 30.0),
+    (re.compile(r"\bring \S+ timeout\b|Starting \S+ ring reset|GPU \w+ begin!|\b(PCI|BACO|MODE1|MODE2) reset\b"),
+     "begin", 10.0),
+)
+
+
+def parse_kmsg_record(rec):
+    head, sep, rest = rec.partition(";")
+    if not sep:
+        return None
+    f = head.split(",")
+    try:
+        pri, seq, usec = int(f[0]), int(f[1]), int(f[2])
+    except (ValueError, IndexError):
+        return None
+    return {"facility": pri >> 3, "level": pri & 7, "seq": seq, "usec": usec, "text": rest.split("\n", 1)[0]}
+
+
+def kmsg_amdgpu_line(r):
+    return r is not None and r["facility"] == 0 and "amdgpu" in r["text"] and "bc5-gpu-watch:" not in r["text"]
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# The debugfs directory and the device
+# ---------------------------------------------------------------------------------------------------------------
+
+DEBUGFS_FILES = ("amdgpu_fence_info", "amdgpu_regs", "amdgpu_wave")
+
+
+def find_debugfs_dir(pci, root="/sys/kernel/debug/dri"):
+    """The amdgpu debugfs directory of PCI device `pci`. v7.2 names the device's directory after dev->unique, which
+    is dev_name(parent) = the PCI address (drm_drv.c:785, drm_debugfs.c:401-407), with "<minor>" symlinks to it
+    (drm_debugfs.c:433-441); older kernels have only the numbered directories. Both carry `name`, "amdgpu
+    dev=<pci> ... unique=<pci>" (drm_debugfs.c:54-73). TODO(verify) at T1: whether card1's index is 0 or 1."""
+    try:
+        entries = sorted(os.listdir(root))
+    except OSError as e:
+        raise RuntimeError("cannot list %s: %s" % (root, e))
+    seen = []
+    order = [pci] + [e for e in entries if e != pci] if pci in entries else entries
+    for e in order:
+        d = os.path.join(root, e)
+        if not all(os.path.exists(os.path.join(d, f)) for f in DEBUGFS_FILES):
+            continue
+        name = ""
+        try:
+            with open(os.path.join(d, "name")) as fh:
+                name = fh.read().strip()
+        except OSError:
+            pass
+        toks = name.split()
+        seen.append("%s: %s" % (e, name or "(no name file)"))
+        if e == pci or (toks and toks[0] == "amdgpu" and ("dev=" + pci in toks or "unique=" + pci in toks)):
+            return d, name
+    raise RuntimeError("no amdgpu debugfs directory for %s under %s (seen: %s)" % (pci, root, "; ".join(seen) or "none"))
+
+
+class Device:
+    """The open debugfs files. Every access is a pread on a held descriptor: no process, no halt, no write."""
+
+    def __init__(self, ddir):
+        self.dir = ddir
+        self.fence_fd = os.open(os.path.join(ddir, "amdgpu_fence_info"), os.O_RDONLY)
+        self.regs_fd = os.open(os.path.join(ddir, "amdgpu_regs"), os.O_RDONLY)
+        self.wave_fd = os.open(os.path.join(ddir, "amdgpu_wave"), os.O_RDONLY)
+        try:
+            # amdgpu_debugfs_gfxoff_read (v7.2 amdgpu_debugfs.c:1528-1562) returns adev->gfx.gfx_off_state as a u32:
+            # a software flag, no SMU message. TODO(verify) at T1: its value on the box at idle and in play.
+            self.gfxoff_fd = os.open(os.path.join(ddir, "amdgpu_gfxoff"), os.O_RDONLY)
+        except OSError:
+            self.gfxoff_fd = None
+
+    def read_fence(self):
+        # seq_files support pread (v7.2 fs/seq_file.c:78); a read at 0 restarts the show (seq_read_iter, 189-196).
+        chunks, off = [], 0
+        while off < (1 << 20):
+            b = os.pread(self.fence_fd, 65536, off)
+            chunks.append(b)
+            off += len(b)
+            if len(b) < 65536:   # single_open: the first read returns the whole text when it fits
+                break
+        return b"".join(chunks).decode("ascii", "replace")
+
+    def read_reg(self, byte_off, bank=None):
+        b = os.pread(self.regs_fd, 4, regs_pos(byte_off, bank))
+        if len(b) != 4:
+            raise OSError(0, "short register read (%d bytes)" % len(b))
+        return struct.unpack("<I", b)[0]
+
+    def read_gfxoff(self):
+        if self.gfxoff_fd is None:
+            return None
+        try:
+            b = os.pread(self.gfxoff_fd, 4, 0)
+            return struct.unpack("<I", b)[0] if len(b) == 4 else None
+        except OSError:
+            return None
+
+    def read_wave(self, se, sa, wgp, simd, wave):
+        b = os.pread(self.wave_fd, WAVE_BYTES, wave_pos(se, sa, wgp, simd, wave))
+        return struct.unpack("<%dI" % (len(b) // 4), b[: len(b) // 4 * 4])
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# Samples
+# ---------------------------------------------------------------------------------------------------------------
+
+class Config:
+    def __init__(self, **kw):
+        self.poll = 0.025
+        self.thresholds = (0.5, 0.8, 1.1, 1.4, 1.7)
+        self.write_at = 1.9
+        self.share_tol = 0.15
+        self.ses, self.sas, self.wgps, self.simds, self.waves = 2, 2, 5, 4, 20
+        self.header_dump_reads = 0
+        self.rings = re.compile(r"^(gfx|comp)_")
+        self.retire_after = 5.0
+        self.kmsg_tail = 10.0
+        self.force_min_period = 5.0
+        # No read may run into a reset (see RESET_LINES): a sample starts only while every stalled ring's clock is
+        # below sample_until (the kernel's clock is ours plus at most one poll, its timeout at 2.0 s; a scan is
+        # tens of ms, to be measured at T1).
+        self.sample_until = 1.85
+        for k, v in kw.items():
+            setattr(self, k, v)
+
+
+class Sample:
+    __slots__ = ("idx", "kind", "t", "wall", "clocks", "fence_text", "gfxoff", "skipped", "regs", "banked",
+                 "reg_errors", "regs_s", "waves", "slots_read", "wave_errors", "wave_errno", "scan_s", "badver", "dec")
+
+    def __init__(self, kind, t, wall, fence_text):
+        self.idx, self.kind, self.t, self.wall, self.fence_text = 0, kind, t, wall, fence_text
+        self.clocks = {}
+        self.gfxoff = None
+        self.skipped = None
+        self.regs = []          # (name, byte offset, [values])
+        self.banked = []        # (name, se, sa, value)
+        self.reg_errors = 0
+        self.regs_s = 0.0
+        self.waves = []         # (se, sa, wgp, simd, wave, dwords)
+        self.slots_read = 0
+        self.wave_errors = 0
+        self.wave_errno = None
+        self.scan_s = 0.0
+        self.badver = 0
+        self.dec = None         # [(slot, decode_wave)] once, on first use (the waves never change after the scan)
+
+
+def decoded(s):
+    if s.dec is None:
+        s.dec = [(w[:5], decode_wave(w[5])) for w in s.waves]
+    return s.dec
+
+
+def take_sample(dev, cfg, kind, t, wall, fence_text, pending, idle_ok=False, regs_only=False, banked=False,
+                clock=time.monotonic):
+    s = Sample(kind, t, wall, fence_text)
+    s.gfxoff = dev.read_gfxoff()
+    if not pending and not idle_ok:
+        s.skipped = "no job pending on a watched ring (exp 0370 D5: read while GFX is up)"
+        return s
+    if not pending and s.gfxoff == 1:
+        s.skipped = "GFXOFF state 1 and no job pending: not reading GC registers (exp 0370 D5)"
+        return s
+    t0 = clock()
+    for name, mm, bi in REGS:
+        n = cfg.header_dump_reads if name in HEADER_DUMPS else 1
+        if n <= 0:
+            continue
+        off = reg_byte(mm, bi)
+        vals = []
+        for _ in range(n):
+            try:
+                vals.append(dev.read_reg(off))
+            except OSError:
+                s.reg_errors += 1
+                vals.append(None)
+        s.regs.append((name, off, vals))
+    if banked:
+        for name, mm, bi in BANKED_REGS:
+            for se in range(cfg.ses):
+                for sa in range(cfg.sas):
+                    try:
+                        v = dev.read_reg(reg_byte(mm, bi), (se, sa, 0))
+                    except OSError:
+                        s.reg_errors += 1
+                        v = None
+                    s.banked.append((name, se, sa, v))
+    t1 = clock()
+    s.regs_s = t1 - t0
+    if regs_only:
+        return s
+    ok = 0
+    for se in range(cfg.ses):
+        for sa in range(cfg.sas):
+            for wgp in range(cfg.wgps):
+                for simd in range(cfg.simds):
+                    for wave in range(cfg.waves):
+                        if s.wave_errors >= 64 and ok == 0:
+                            break   # the file answers nothing (D5: log it, no retry inside the stall)
+                        try:
+                            dw = dev.read_wave(se, sa, wgp, simd, wave)
+                        except OSError as e:
+                            s.wave_errors += 1
+                            s.wave_errno = e.errno
+                            continue
+                        ok += 1
+                        if dw and dw[0] != WAVE_VERSION_GFX10:
+                            s.badver += 1
+                        if slot_kept(dw):
+                            s.waves.append((se, sa, wgp, simd, wave, tuple(dw)))
+    s.slots_read = ok
+    s.scan_s = clock() - t1
+    return s
+
+
+def valid_pcs(s):
+    return collections.Counter(d["pc"] for k, d in decoded(s) if d and d["valid"])
+
+
+def hw_mismatches(s):
+    """Slots whose HW_ID1 does not name the slot we addressed (umr's own race check, scan_waves.c:1183-1204)."""
+    return sum(1 for k, d in decoded(s) if d and d["hw"] != k)
+
+
+def pair_shape(a, b):
+    pa = {k: d["pc"] for k, d in decoded(a) if d}
+    pb = {k: d["pc"] for k, d in decoded(b) if d}
+    both = set(pa) & set(pb)
+    still = sum(1 for k in both if pa[k] == pb[k])
+    moved = len(both) - still
+    gone, new = len(set(pa) - set(pb)), len(set(pb) - set(pa))
+    if not pa and not pb:
+        guess = "no waves"
+    elif pa and still >= 0.9 * len(pa) and new == 0:
+        guess = "standing still"
+    elif pa and gone >= 0.5 * len(pa):
+        guess = "draining"
+    elif moved > still:
+        guess = "moving"
+    else:
+        guess = "mixed"
+    return still, moved, gone, new, guess
+
+
+def fmt_regs(s):
+    out = ["# sample %d (%s) mono %.3f, clocks %s, gfxoff %s, registers in %.1f ms, %d read errors"
+           % (s.idx, s.kind, s.t, fmt_clocks(s.clocks), s.gfxoff, s.regs_s * 1e3, s.reg_errors)]
+    if s.skipped:
+        out.append("# skipped: " + s.skipped)
+    for name, off, vals in s.regs:
+        for i, v in enumerate(vals):
+            tag = "" if len(vals) == 1 else "[%d]" % i
+            out.append("gfx1013.mm%s%s => %s   (byte 0x%05x)" % (name, tag, "ERROR" if v is None else "0x%08x" % v, off))
+    for name, se, sa, v in s.banked:
+        out.append("gfx1013.mm%s[se%d.sa%d] => %s" % (name, se, sa, "ERROR" if v is None else "0x%08x" % v))
+    return "\n".join(out) + "\n"
+
+
+def fmt_wave_line(se, sa, wgp, simd, wave, dw):
+    d = decode_wave(dw)
+    head = "se%d sa%d wgp%d simd%d w%02d" % (se, sa, wgp, simd, wave)
+    if d is None:
+        return head + " raw " + " ".join("%08x" % x for x in dw)
+    # exp 0370 D3's decoded line: slot, STATUS, PC, EXEC, HW_ID, TRAPSTS (all 17 raw dwords are in waves-N.bin)
+    extra = []
+    if d["trapsts"]:
+        extra.append("TRAPSTS=0x%08x%s" % (d["trapsts"], "!" if d["trapsts"] & (
+            TRAPSTS_EXCP_MASK | TRAPSTS_ILLEGAL_INST | TRAPSTS_XNACK_ERROR) else ""))
+    if d["hw"] != (se, sa, wgp, simd, wave):
+        extra.append("HW_ID1-mismatch(se%d sa%d wgp%d simd%d w%d)" % d["hw"])
+    return ("%s %08x[%s] PC=%012x EXEC=%x me%d.p%d.q%d vm%d %s%s"
+            % (head, d["status"], ",".join(d["flags"]), d["pc"], d["exec"], d["me"], d["pipe"], d["queue"], d["vmid"],
+               "w64" if d["wave64"] else "w32", (" " + " ".join(extra)) if extra else ""))
+
+
+def fmt_waves_txt(s):
+    out = ["# sample %d (%s) mono %.3f, clocks %s: %d kept of %d slots read, %d errors (errno %s), %d bad versions, "
+           "scan %.1f ms" % (s.idx, s.kind, s.t, fmt_clocks(s.clocks), len(s.waves), s.slots_read, s.wave_errors,
+                             s.wave_errno, s.badver, s.scan_s * 1e3)]
+    if s.skipped:
+        out.append("# skipped: " + s.skipped)
+    out.extend(fmt_wave_line(*w) for w in s.waves)
+    return "\n".join(out) + "\n"
+
+
+def pack_waves_bin(s):
+    parts = [b"BC5WAVE1", struct.pack("<II", len(s.waves), WAVE_DWORDS)]
+    for se, sa, wgp, simd, wave, dw in s.waves:
+        dw = (tuple(dw) + (0,) * WAVE_DWORDS)[:WAVE_DWORDS]
+        parts.append(struct.pack("<BBBBB3x%dI" % WAVE_DWORDS, se, sa, wgp, simd, wave, *dw))
+    return b"".join(parts)
+
+
+def unpack_waves_bin(b):
+    if b[:8] != b"BC5WAVE1":
+        raise ValueError("not a waves-N.bin")
+    n, ndw = struct.unpack_from("<II", b, 8)
+    rec = struct.Struct("<BBBBB3x%dI" % ndw)
+    out, off = [], 16
+    for _ in range(n):
+        v = rec.unpack_from(b, off)
+        out.append((v[0], v[1], v[2], v[3], v[4], tuple(v[5:])))
+        off += rec.size
+    return out
+
+
+def fmt_clocks(clocks):
+    return " ".join("%s=%.2f" % kv for kv in sorted(clocks.items())) or "-"
+
+
+def fmt_sample_summary(s):
+    lines = []
+    head = " sample %d (%s) mono %.3f, clocks %s, gfxoff %s" % (s.idx, s.kind, s.t, fmt_clocks(s.clocks), s.gfxoff)
+    if s.skipped:
+        return [head, "   skipped: " + s.skipped]
+    lines.append(head)
+    lines.append("   registers %d (%d errors) in %.1f ms; waves %d kept of %d slots (%d errors, errno %s), scan %.1f ms; "
+                 "HW_ID1 mismatches %d" % (len(s.regs), s.reg_errors, s.regs_s * 1e3, len(s.waves), s.slots_read,
+                                            s.wave_errors, s.wave_errno, s.scan_s * 1e3, hw_mismatches(s)))
+    pcs = valid_pcs(s)
+    lines.append("   distinct PCs %d: %s" % (len(pcs), ", ".join("0x%x x%d" % kv for kv in pcs.most_common(16)) or "-"))
+    q = collections.Counter("me%d pipe%d q%d vmid%d" % (d["me"], d["pipe"], d["queue"], d["vmid"])
+                            for k, d in decoded(s) if d)
+    lines.append("   queues: %s" % (", ".join("%s x%d" % kv for kv in q.most_common(8)) or "-"))
+    cp = {n: v[0] for n, o, v in s.regs if v and v[0] is not None}
+    keys = ("GRBM_STATUS", "CP_STAT", "CP_PFP_INSTR_PNTR", "CP_ME_INSTR_PNTR", "CP_IB1_BASE_HI", "CP_IB1_BASE_LO",
+            "CP_IB1_BUFSZ", "CP_IB1_CMD_BUFSZ")
+    lines.append("   " + " ".join("%s=0x%x" % (k, cp[k]) for k in keys if k in cp))
+    return lines
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# The writer (a thread: the poll loop keeps sampling while an event is written and fsynced)
+# ---------------------------------------------------------------------------------------------------------------
+
+class Writer:
+    def __init__(self, out, uid=None, gid=None, threaded=True, gate=None, log=print):
+        self.out, self.uid, self.gid, self.gate, self.log = out, uid, gid, gate, log
+        self.threaded = threaded
+        self.started = collections.deque(maxlen=256)
+        self.finished = collections.deque(maxlen=256)
+        self.errors = collections.deque(maxlen=64)
+        self.q = queue.Queue(maxsize=64)
+        if threaded:
+            self.th = threading.Thread(target=self._run, name="bc5-stall-writer", daemon=True)
+            self.th.start()
+
+    def submit(self, task):
+        if not self.threaded:
+            self._do(task)
+            return
+        try:
+            self.q.put_nowait(task)
+        except queue.Full:
+            self.log("bc5-gpu-stall-sampler: writer queue full, dropped %s %s" % (task[0], task[1]))
+
+    def flush(self):
+        if self.threaded:
+            self.q.join()
+
+    def close(self):
+        if self.threaded:
+            self.q.put(None)
+            self.th.join(10)
+
+    def _run(self):
+        while True:
+            task = self.q.get()
+            try:
+                if task is None:
+                    return
+                if self.gate:
+                    self.gate(task)
+                self._do(task)
+            except Exception as e:   # the writer must not die; the sampler keeps sampling
+                self.errors.append("%s: %r" % (task[:2], e))
+                self.log("bc5-gpu-stall-sampler: write failed %s %s: %r" % (task[0], task[1], e))
+            finally:
+                self.q.task_done()
+
+    def _own(self, fd):
+        if self.uid is not None and hasattr(os, "fchown"):
+            os.fchown(fd, self.uid, self.gid)
+
+    def _fsync_dir(self, d):
+        try:
+            fd = os.open(d, os.O_RDONLY)
+        except OSError:
+            return   # (Windows test runs)
+        try:
+            os.fsync(fd)
+        except OSError:
+            pass
+        finally:
+            os.close(fd)
+
+    def _write_file(self, path, data, mode=0o600):
+        tmp = path + ".tmp"
+        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_BINARY", 0)
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        fd = os.open(tmp, flags, mode)
+        try:
+            os.write(fd, data)
+            os.fsync(fd)
+            self._own(fd)
+        finally:
+            os.close(fd)
+        os.replace(tmp, path)
+
+    def _do(self, task):
+        kind, name = task[0], task[1]
+        self.started.append((kind, name))
+        if kind == "mkdir":
+            d = os.path.join(self.out, name)
+            os.mkdir(d, 0o700)
+            fd = os.open(d, os.O_RDONLY) if hasattr(os, "fchown") else None
+            if fd is not None:
+                try:
+                    self._own(fd)
+                finally:
+                    os.close(fd)
+            self._fsync_dir(self.out)
+        elif kind == "files":
+            d = os.path.join(self.out, name)
+            for fname, data in task[2]:
+                if callable(data):
+                    data = data()
+                if isinstance(data, str):
+                    data = data.encode()
+                self._write_file(os.path.join(d, fname), data)
+            self._fsync_dir(d)
+        elif kind == "append":
+            d = os.path.join(self.out, name) if name else self.out
+            data = task[3].encode() if isinstance(task[3], str) else task[3]
+            flags = os.O_WRONLY | os.O_APPEND | os.O_CREAT | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_BINARY", 0)
+            fd = os.open(os.path.join(d, task[2]), flags, 0o600)
+            try:
+                os.write(fd, data)
+                os.fsync(fd)
+                self._own(fd)
+            finally:
+                os.close(fd)
+        self.finished.append((kind, name))
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# The engine: stall clocks, samples, episodes, events, census
+# ---------------------------------------------------------------------------------------------------------------
+
+class RingState:
+    __slots__ = ("name", "sig", "emit", "t_change", "stall")
+
+    def __init__(self, name, sig, emit, t):
+        self.name, self.sig, self.emit, self.t_change, self.stall = name, sig, emit, t, None
+
+
+class Stall:
+    def __init__(self, ring, t_start, sig, emit, episode):
+        self.ring, self.t_start, self.sig, self.emit, self.episode = ring, t_start, sig, emit, episode
+        self.next_k, self.samples, self.missed = 0, [], 0
+        self.deadline = False
+        self.kmsg_line = None
+        self.t_end = None
+
+
+class Episode:
+    """The rings that stall together share the samples (registers and waves belong to the whole GPU)."""
+
+    def __init__(self, n, t):
+        self.n, self.t_open = n, t
+        self.samples, self.stalls = [], []
+        self.event, self.event_t, self.event_reason = None, None, None
+        self.written = 0          # samples already in the event directory
+        self.closed_t = None
+        self.notes = []
+
+    def active(self):
+        return [s for s in self.stalls if s.t_end is None]
+
+
+class Engine:
+    def __init__(self, dev, writer, cfg, clock=time.monotonic, wall=time.time, log=print, ddir="?"):
+        self.dev, self.writer, self.cfg, self.clock, self.wall, self.log = dev, writer, cfg, clock, wall, log
+        self.ddir = ddir
+        self.rings = collections.OrderedDict()
+        self.ep = None
+        self.last_ep = None
+        self.lingering = []
+        self.n_ep = 0
+        self.names = collections.deque(maxlen=64)    # recent directory names (same-second collisions)
+        self.recent = collections.deque(maxlen=64)
+        self.fence_text = ""
+        self.fence_errors = 0
+        # bounded: the service runs for weeks; the files on disk are the record
+        self.census = collections.deque(maxlen=1000)  # census lines written (the tests read them)
+        self.events = collections.deque(maxlen=1000)  # event directory names in order
+        self.forced = collections.deque(maxlen=1000)
+        self.force_req = None     # {"once", "period", "regs", "idle"}
+        self.force_last = -1e9
+        self.quiet_until = -1e9   # no register or wave read before this (a reset in progress, RESET_LINES)
+        self.fail_t = -1e9
+
+    # -- helpers ---------------------------------------------------------------------------------------------
+    def _stamp(self, wall=None):
+        w = self.wall() if wall is None else wall
+        return time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(w)) + ".%03d" % (int(w * 1000) % 1000)
+
+    def _name(self, prefix, suffix=""):
+        base = prefix + time.strftime("%Y%m%d-%H%M%S", time.localtime(self.wall())) + suffix
+        n, i = base, 2
+        while n in self.names:
+            n, i = "%s-%d" % (base, i), i + 1
+        self.names.append(n)
+        return n
+
+    def _census(self, line):
+        line = self._stamp() + " " + line
+        self.census.append(line)
+        self.writer.submit(("append", None, "stalls.log", line + "\n"))
+        self.log("bc5-gpu-stall-sampler: " + line)
+
+    def _pending(self, fences):
+        return [n for n, (sig, emit) in fences.items() if self.cfg.rings.search(n) and sig != emit]
+
+    # -- the poll --------------------------------------------------------------------------------------------
+    def tick(self, now):
+        try:
+            text = self.dev.read_fence()
+        except OSError as e:
+            self.fence_errors += 1
+            if self.fence_errors in (1, 10, 100) or self.fence_errors % 1000 == 0:
+                self.log("bc5-gpu-stall-sampler: amdgpu_fence_info read failed (%d): %s" % (self.fence_errors, e))
+            return
+        self.fence_text = text
+        fences = parse_fence_info(text)
+        for name, (sig, emit) in fences.items():
+            if not self.cfg.rings.search(name):
+                continue
+            st = self.rings.get(name)
+            if st is None:
+                self.rings[name] = RingState(name, sig, emit, now)
+                continue
+            if (sig, emit) != (st.sig, st.emit):
+                if st.stall is not None:
+                    self._end_stall(st.stall, now, sig, emit)
+                    st.stall = None
+                st.sig, st.emit, st.t_change = sig, emit, now
+            elif sig != emit and st.stall is None and now - st.t_change >= self.cfg.thresholds[0]:
+                st.stall = self._open_stall(st, now)
+        ep = self.ep
+        if ep is not None:
+            th, tol = self.cfg.thresholds, self.cfg.share_tol
+            act = ep.active()
+            due = any(s.next_k < len(th) and now - s.t_start >= th[s.next_k] for s in act)
+            hot = [s.ring for s in act if now - s.t_start >= self.cfg.sample_until]
+            if due and (hot or now < self.quiet_until):
+                # too close to a kernel timeout, or inside a reset window: no read; the thresholds count as missed
+                if not ep.notes or not ep.notes[-1].startswith("no sample"):
+                    ep.notes.append("no sample at mono %.3f: %s" % (now, ("stall clock past %.2f s on %s" % (
+                        self.cfg.sample_until, ",".join(hot))) if hot else "inside a reset window (kernel line)"))
+                for s in act:
+                    while s.next_k < len(th) and now - s.t_start >= th[s.next_k]:
+                        s.next_k += 1
+                        s.missed += 1
+            elif due:
+                smp = take_sample(self.dev, self.cfg, "stall", now, self.wall(), text, True, clock=self.clock)
+                smp.idx = len(ep.samples) + 1
+                for s in act:
+                    c = now - s.t_start
+                    smp.clocks[s.ring] = c
+                    if s.next_k < len(th) and c >= th[s.next_k] - tol:
+                        s.samples.append((smp.idx, c))
+                        s.next_k += 1
+                        while s.next_k < len(th) and c >= th[s.next_k] - tol:
+                            s.next_k += 1
+                            s.missed += 1
+                ep.samples.append(smp)   # complete before the writer thread can see it
+                if ep.event is not None:
+                    self._event_update(ep, new_samples=True)
+            now2 = self.clock()
+            for s in ep.active():
+                if not s.deadline and now2 - s.t_start >= self.cfg.write_at:
+                    s.deadline = True
+                    if ep.event is None:
+                        self._event_write(ep, "stall clock %.2f s on %s (written before the kernel's 2-s timeout)"
+                                          % (now2 - s.t_start, s.ring))
+                    else:
+                        ep.notes.append("%s: stall clock passed %.1f s at mono %.3f" % (s.ring, self.cfg.write_at, now2))
+                        self._event_update(ep)
+        if self.force_req is not None and (self.ep is None or not self.ep.active()):
+            self._forced(now, fences, text)
+
+    def _open_stall(self, st, now):
+        ep = self.ep
+        if ep is not None and ep.event is not None and now - ep.event_t > self.cfg.retire_after:
+            # a ring that stays stuck long after its event (a reset that never moved its fences): retire that episode
+            ep.notes.append("retired at mono %.3f: a new stall opened %.1f s after the event" % (now, now - ep.event_t))
+            self._event_update(ep)
+            self.lingering.extend(ep.active())
+            self.last_ep, self.ep, ep = ep, None, None
+        if ep is None:
+            self.n_ep += 1
+            ep = self.ep = Episode(self.n_ep, now)
+        s = Stall(st.name, st.t_change, st.sig, st.emit, ep)
+        ep.stalls.append(s)
+        return s
+
+    def _end_stall(self, s, now, sig, emit):
+        s.t_end = now
+        ep = s.episode
+        first = None
+        if s.samples:
+            first = ep.samples[s.samples[0][0] - 1]
+        pcs = valid_pcs(first).most_common(4) if first else []
+        nw = len(first.waves) if first and not first.skipped else 0
+        self._census("stall ring=%s dur=%.2f sig=0x%08x emit=0x%08x now_sig=0x%08x samples=%d missed=%d waves@first=%d "
+                     "top=%s kmsg_timeout=%s event=%s"
+                     % (s.ring, now - s.t_start, s.sig, s.emit, sig, len(s.samples), s.missed, nw,
+                        ",".join("0x%x:%d" % kv for kv in pcs) or "-", "yes" if s.kmsg_line else "no",
+                        ep.event or "-"))
+        if s in self.lingering:
+            self.lingering.remove(s)
+        if ep is self.ep and not ep.active():
+            ep.closed_t = now
+            if ep.event is not None:
+                ep.notes.append("all stalls ended at mono %.3f" % now)
+                self._event_update(ep)
+            self.last_ep, self.ep = ep, None
+
+    # -- events ----------------------------------------------------------------------------------------------
+    def _event_write(self, ep, reason, ring=None):
+        ring = ring or (ep.stalls[0].ring if ep.stalls else "none")
+        ep.event = self._name("event-", "-" + re.sub(r"[^A-Za-z0-9_.]", "_", ring))
+        ep.event_t, ep.event_reason = self.clock(), reason
+        self.events.append(ep.event)
+        # the summary decodes every wave: formatted in the writer thread, so the poll keeps its 25 ms
+        files = [("summary.txt", lambda ep=ep: self._summary(ep)), ("fence.txt", self._fence_file(ep)),
+                 ("kmsg.txt", "## recent amdgpu kernel lines (facility 0), oldest first\n"
+                  + "".join(l + "\n" for l in self.recent))]
+        files += self._sample_files(ep.samples)
+        ep.written = len(ep.samples)
+        self.writer.submit(("mkdir", ep.event))
+        self.writer.submit(("files", ep.event, files))
+        self.log("bc5-gpu-stall-sampler: event %s: %s (%d samples)" % (ep.event, reason, len(ep.samples)))
+
+    def _event_update(self, ep, new_samples=False):
+        if ep.event is None:
+            return
+        files = []
+        if new_samples and ep.written < len(ep.samples):
+            files += self._sample_files(ep.samples[ep.written:])
+            ep.written = len(ep.samples)
+            files.append(("fence.txt", self._fence_file(ep)))
+        files.append(("summary.txt", lambda ep=ep: self._summary(ep)))
+        self.writer.submit(("files", ep.event, files))
+
+    @staticmethod
+    def _sample_files(samples):
+        out = []
+        for s in samples:
+            out.append(("regs-%d.txt" % s.idx, lambda s=s: fmt_regs(s)))
+            out.append(("waves-%d.txt" % s.idx, lambda s=s: fmt_waves_txt(s)))
+            out.append(("waves-%d.bin" % s.idx, lambda s=s: pack_waves_bin(s)))
+        return out
+
+    def _fence_file(self, ep):
+        out = []
+        for s in ep.samples:
+            out.append("## sample %d, mono %.3f, clocks %s\n%s" % (s.idx, s.t, fmt_clocks(s.clocks), s.fence_text))
+        out.append("## at write, mono %.3f\n%s" % (self.clock(), self.fence_text))
+        return "".join(out)
+
+    def _summary(self, ep):
+        L = ["bc5-gpu-stall-sampler %s event %s" % (VERSION, ep.event),
+             "reason: %s" % ep.event_reason,
+             "written: %s (mono %.3f); debugfs %s" % (self._stamp(), self.clock(), self.ddir),
+             "rings:"]
+        for s in ep.stalls:
+            L.append(" %s: stalled since mono %.3f (sig 0x%08x emit 0x%08x), samples at clock %s, missed %d, "
+                     "past %.1f s: %s, kmsg timeout: %s, %s"
+                     % (s.ring, s.t_start, s.sig, s.emit, " ".join("%.2f" % c for i, c in s.samples) or "-", s.missed,
+                        self.cfg.write_at, "yes" if s.deadline else "no", s.kmsg_line or "no",
+                        "ended after %.2f s" % (s.t_end - s.t_start) if s.t_end else "still stalled"))
+        L.append("samples: %d (registers and waves of the whole GPU, shared by the rings above)" % len(ep.samples))
+        for s in ep.samples:
+            L.extend(fmt_sample_summary(s))
+        shapes = [pair_shape(a, b) for a, b in zip(ep.samples, ep.samples[1:])]
+        for i, (still, moved, gone, new, guess) in enumerate(shapes):
+            L.append(" samples %d->%d: still %d, moved %d, gone %d, new %d: %s" % (i + 1, i + 2, still, moved, gone, new,
+                                                                              guess))
+        if shapes:
+            g = set(x[4] for x in shapes)
+            L.append("shape: %s" % ("standing still in every interval (F249's halted shape)" if g == {"standing still"}
+                                     else "draining (progress, not a stuck shader)" if "draining" in g and len(g) == 1
+                                     else "moving (a loop inside one program? arm A)" if g == {"moving"}
+                                     else "mixed: " + ", ".join(x[4] for x in shapes)))
+        L.append("program names: match the PCs offline against the host journal's dispatch and timeout-probe lists "
+                 "(exp 0370 K4, F113).")
+        L.extend("note: " + n for n in ep.notes)
+        return "\n".join(L) + "\n"
+
+    # -- kmsg ------------------------------------------------------------------------------------------------
+    def on_kmsg(self, now, rec):
+        r = parse_kmsg_record(rec) if isinstance(rec, str) else rec
+        if not kmsg_amdgpu_line(r):
+            return
+        line = "[%5d.%06d] %s" % (r["usec"] // 1000000, r["usec"] % 1000000, r["text"])
+        self.recent.append(line)
+        self._reset_window(now, r["text"])
+        m = TIMEOUT_RE.search(r["text"])
+        ep = self.ep
+        target = None
+        if ep is not None:
+            target = ep
+        elif self.last_ep is not None and self.last_ep.event is not None and self.last_ep.closed_t is not None \
+                and now - self.last_ep.closed_t <= self.cfg.kmsg_tail:
+            target = self.last_ep
+        if m:
+            ring = m.group(1)
+            if target is ep and ep is not None:
+                for s in ep.stalls:
+                    if s.ring == ring and s.kmsg_line is None:
+                        s.kmsg_line = line
+                if not any(s.ring == ring for s in ep.stalls):
+                    ep.notes.append("timeout line for %s, which the sampler did not see stalled" % ring)
+                if ep.event is None:
+                    self._event_write(ep, "kernel timeout line for %s" % ring)
+                    return
+                self.writer.submit(("append", ep.event, "kmsg.txt", line + "\n"))
+                self._event_update(ep)
+                return
+            if target is None:
+                # a timeout with no stall in progress: write what there is, with no sample after the line (F112)
+                self.n_ep += 1
+                e2 = Episode(self.n_ep, now)
+                e2.notes.append("no sampled stall: the sampler saw no stall >= %.1f s before this line"
+                                % self.cfg.thresholds[0])
+                self._event_write(e2, "kernel timeout line for %s" % ring, ring)
+                e2.closed_t = now
+                self.last_ep = e2
+                return
+        if target is not None and target.event is not None:
+            self.writer.submit(("append", target.event, "kmsg.txt", line + "\n"))
+
+    def _reset_window(self, now, text):
+        for rx, kind, secs in RESET_LINES:
+            if rx.search(text):
+                if kind == "end":
+                    if now - self.fail_t > 30.0:      # a failed reset's window is not shortened by another ring
+                        self.quiet_until = min(self.quiet_until, now + secs)
+                else:
+                    if kind == "fail":
+                        self.fail_t = now
+                    self.quiet_until = max(self.quiet_until, now + secs)
+                return kind
+        return None
+
+    # -- forced samples (T1/T2) ------------------------------------------------------------------------------
+    def request_force(self, req):
+        self.force_req = req
+
+    def _forced(self, now, fences, text):
+        req = self.force_req
+        if now < self.quiet_until:
+            return   # a reset in progress
+        if req["period"] and now - self.force_last < req["period"]:
+            return
+        if now - self.force_last < self.cfg.force_min_period:
+            return
+        pending = self._pending(fences)
+        if not pending and not req["idle"]:
+            return   # wait for a job in flight (GFX up, D5)
+        smp = take_sample(self.dev, self.cfg, "forced", now, self.wall(), text, bool(pending), idle_ok=req["idle"],
+                          regs_only=req["regs"], banked=True, clock=self.clock)
+        smp.idx = 1
+        smp.clocks = {n: now - self.rings[n].t_change for n in pending if n in self.rings}
+        self.force_last = now
+        name = self._name("forced-")
+        self.forced.append(name)
+        head = ["bc5-gpu-stall-sampler %s forced sample %s (request: %s)" % (VERSION, name, req["text"]),
+                "pending rings: %s" % (", ".join(pending) or "none")]
+        files = [("summary.txt", lambda h=head, s=smp: "\n".join(h + fmt_sample_summary(s)) + "\n"),
+                 ("fence.txt", text)] + self._sample_files([smp])
+        self.writer.submit(("mkdir", name))
+        self.writer.submit(("files", name, files))
+        self._census("forced dir=%s pending=%s waves=%d slots=%d scan_ms=%.1f regs_ms=%.1f gfxoff=%s%s"
+                     % (name, ",".join(pending) or "-", len(smp.waves), smp.slots_read, smp.scan_s * 1e3,
+                        smp.regs_s * 1e3, smp.gfxoff, " skipped" if smp.skipped else ""))
+        if not req["period"]:
+            self.force_req = None
+            if req.get("on_done"):
+                req["on_done"]()
+
+
+def parse_force_request(text):
+    req = {"once": True, "period": 0.0, "regs": False, "idle": False, "text": " ".join(text.split()) or "once"}
+    for tok in text.split():
+        if tok == "regs":
+            req["regs"] = True
+        elif tok == "idle":
+            req["idle"] = True
+        elif tok == "once":
+            pass
+        else:
+            try:
+                req["period"] = max(5.0, float(tok))
+                req["once"] = False
+            except ValueError:
+                pass
+    return req
+
+
+def read_force_file(path):
+    """The owner's request file. Opened without following links, regular files only, at most 256 bytes."""
+    try:
+        fd = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0))
+    except OSError:
+        return None
+    try:
+        import stat
+        if not stat.S_ISREG(os.fstat(fd).st_mode):
+            return None
+        return os.read(fd, 256).decode("ascii", "replace")
+    finally:
+        os.close(fd)
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# A fake device and the replay (no device access): --test, --replay and the unit tests
+# ---------------------------------------------------------------------------------------------------------------
+
+def make_wave_record(status, pc, exec_=0xFFFFFFFF, hw1=0, hw2=0, trapsts=0, ib_sts2=0):
+    regs = {"STATUS": status, "PC_LO": pc & 0xFFFFFFFF, "PC_HI": (pc >> 32) & PC_HI_MASK,
+            "EXEC_LO": exec_ & 0xFFFFFFFF, "EXEC_HI": exec_ >> 32, "HW_ID1": hw1, "HW_ID2": hw2, "TRAPSTS": trapsts,
+            "IB_STS2": ib_sts2}
+    return (WAVE_VERSION_GFX10,) + tuple(regs.get(f, 0) for f in WAVE_FIELDS)
+
+
+def hw_id1(se, sa, wgp, simd, wave):
+    return (se << 18) | (sa << 16) | (wgp << 10) | (simd << 8) | wave
+
+
+class FakeDevice:
+    """Fence values set by the trace; waves: `busy` maps a slot to a PC while any watched ring is pending."""
+
+    def __init__(self, clock, scan_cost=0.06, regs_cost=0.0005):
+        self.clock = clock
+        self.fences = collections.OrderedDict()
+        self.busy = {}
+        self.scan_cost, self.regs_cost = scan_cost, regs_cost
+        self.wave_reads = 0
+        self.reg_reads = 0
+        self.gfxoff = 0
+        self.warn_simd = 0
+
+    def read_fence(self):
+        return format_fence_info(self.fences)
+
+    def read_reg(self, byte_off, bank=None):
+        regs_pos(byte_off, bank)
+        self.reg_reads += 1
+        if self.reg_reads % len(REGS) == 0:
+            self.clock.advance(self.regs_cost)
+        return (byte_off * 2654435761) & 0xFFFFFFFF
+
+    def read_gfxoff(self):
+        return self.gfxoff
+
+    def read_wave(self, se, sa, wgp, simd, wave):
+        pos = wave_pos(se, sa, wgp, simd, wave)
+        if (pos >> 37) & 0xFF:
+            self.warn_simd += 1
+        self.wave_reads += 1
+        if self.wave_reads % 1600 == 0:
+            self.clock.advance(self.scan_cost)
+        pc = self.busy.get((se, sa, wgp, simd, wave))
+        if pc is None:
+            return make_wave_record(0, 0, 0)
+        return make_wave_record(ST_VALID, pc, hw1=hw_id1(se, sa, wgp, simd, wave), hw2=(1 << 8) | (6 << 24))
+
+
+class FakeClock:
+    def __init__(self, t=0.0):
+        self.t = t
+
+    def __call__(self):
+        return self.t
+
+    def advance(self, d):
+        self.t += d
+
+
+def read_trace(lines):
+    """Trace lines: "<t> fence <ring> <signaled> <emitted>", "<t> kmsg <prefix> <text>", "<t> busy <n> <pc>" (n waves
+    at pc from now on; n 0 clears), "<t> end". '#' starts a comment. Times in seconds, values decimal or 0x."""
+    ev = []
+    for ln in lines:
+        ln = ln.split("#", 1)[0].strip() if not re.match(r"^\s*[\d.]+\s+kmsg\s", ln) else ln.strip()
+        if not ln:
+            continue
+        p = ln.split(None, 2)
+        t, kind = float(p[0]), p[1]
+        rest = p[2] if len(p) > 2 else ""
+        ev.append((t, kind, rest))
+    ev.sort(key=lambda e: e[0])
+    return ev
+
+
+def busy_slots(n, pc):
+    out, i = {}, 0
+    for se in range(2):
+        for sa in range(2):
+            for wgp in range(5):
+                for simd in range(4):
+                    for wave in range(20):
+                        if i >= n:
+                            return out
+                        out[(se, sa, wgp, simd, wave)] = pc
+                        i += 1
+    return out
+
+
+def replay(events, out, cfg=None, writer=None, log=None, scan_cost=0.06, on_tick=None):
+    """Drive an Engine over the trace with a fake clock: one tick per poll (later when a sample took time)."""
+    cfg = cfg or Config()
+    clock = FakeClock()
+    dev = FakeDevice(clock, scan_cost=scan_cost)
+    log = log or (lambda s: None)
+    writer = writer or Writer(out, threaded=False, log=log)
+    eng = Engine(dev, writer, cfg, clock=clock, wall=lambda: 1.8e9 + clock.t, log=log, ddir="(replay)")
+    end = max([e[0] for e in events] + [0.0])
+    i, seq = 0, 0
+    next_tick = 0.0
+    while True:
+        clock.t = max(clock.t, next_tick)
+        while i < len(events) and events[i][0] <= clock.t:
+            t, kind, rest = events[i]
+            i += 1
+            if kind == "fence":
+                ring, sig, emit = rest.split()
+                dev.fences[ring] = (int(sig, 0), int(emit, 0))
+            elif kind == "kmsg":
+                pri, text = rest.split(None, 1)
+                seq += 1
+                eng.on_kmsg(clock.t, "%s,%d,%d,-;%s\n" % (pri, seq, int(t * 1e6), text))
+            elif kind == "busy":
+                n, pc = rest.split()
+                dev.busy = busy_slots(int(n), int(pc, 0))
+        if clock.t > end:
+            break
+        eng.tick(clock.t)
+        if on_tick:
+            on_tick(eng, clock.t)
+        next_tick += cfg.poll
+        if next_tick < clock.t:          # a sample took longer than a poll: as the service, no catch-up burst
+            next_tick = clock.t + cfg.poll
+    writer.flush()
+    return eng, dev
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# --test: the built-in scenarios (the same ones the unit tests run, plus the wave decoder)
+# ---------------------------------------------------------------------------------------------------------------
+
+def gen_trace(spec, length, rings=("gfx_0.0.0", "comp_1.0.0"), idle=()):
+    """Synthetic fence traces, simulated in 2-ms steps. spec: list of (ring, t_stall, t_resolve or None). Outside its
+    stalls a ring pushes one job every 16 ms and completes it 8 ms later (a 60-Hz game); in a stall window the job in
+    flight (or one pushed at its start) never completes and nothing is pushed; at t_resolve it completes (a reset
+    force-completes it the same way). In an `idle` window (t0, t1) nothing is pushed and nothing is pending."""
+    ev = [(0.0, "fence", "%s 0x100 0x100" % r) for r in rings]
+    st = {r: [0x100, 0x100, None] for r in rings}   # signaled, emitted, completion due
+    step = 0.002
+    for i in range(1, int(round(length / step))):
+        t = round(i * step, 6)
+        for j, r in enumerate(rings):
+            sig, emit, due = st[r]
+            changed = False
+            if any(sr == r and ts <= t and (te is None or t < te) for sr, ts, te in spec):
+                if sig == emit:
+                    emit += 1
+                    changed = True
+                due = None
+            elif any(sr == r and te is not None and te <= t < te + step for sr, ts, te in spec) and sig != emit:
+                sig, due, changed = emit, None, True
+            else:
+                if due is not None and t >= due - 1e-9:
+                    sig, due, changed = emit, None, True
+                if due is None and sig == emit and (i + 3 * j) % 8 == 0 and not any(a <= t < b for a, b in idle):
+                    emit, due, changed = emit + 1, t + 0.008, True
+            st[r] = [sig, emit, due]
+            if changed:
+                ev.append((t, "fence", "%s 0x%x 0x%x" % (r, sig, emit)))
+    ev.append((length, "end", ""))
+    return ev
+
+
+def kmsg_timeout(t, ring, sig=1, emit=2):
+    return (t, "kmsg", "3 amdgpu 0000:01:00.0: ring %s timeout, signaled seq=%d, emitted seq=%d" % (ring, sig, emit))
+
+
+def _read(path, mode="r"):
+    with open(path, mode, **({} if "b" in mode else {"encoding": "utf-8"})) as fh:
+        return fh.read()
+
+
+def _sorted(ev):
+    return sorted(ev, key=lambda e: e[0])
+
+
+def _census_dur(line):
+    m = re.search(r" dur=([\d.]+) ", line)
+    return float(m.group(1)) if m else -1.0
+
+
+def _event_files(out, name):
+    d = os.path.join(out, name)
+    return d, sorted(os.listdir(d))
+
+
+def scenarios():
+    """(name, events, check(eng, dev, out) -> list of failures). The traces come from gen_trace (60-Hz jobs)."""
+    S = []
+
+    def chk_healthy(eng, dev, out):
+        if eng.census or eng.events or dev.wave_reads or dev.reg_reads:
+            return ["expected no census/event/register/wave reads, got %d/%d/%d/%d"
+                    % (len(eng.census), len(eng.events), dev.reg_reads, dev.wave_reads)]
+        return []
+    S.append(("healthy run: 30 s of 60-Hz jobs on two rings and a 5-s idle gap",
+              gen_trace([], 30.0, idle=[(10.0, 15.0)]), chk_healthy))
+
+    def chk_resolves(eng, dev, out):
+        f = []
+        if len(eng.census) != 1:
+            return ["census lines %d, expected 1: %s" % (len(eng.census), eng.census)]
+        c = eng.census[0]
+        if not 0.65 <= _census_dur(c) <= 0.75 or "samples=1 " not in c or "event=-" not in c:
+            f.append("census line: %s" % c)
+        if "waves@first=40 " not in c or "top=0x11d049aa00:40" not in c or "ring=gfx_0.0.0" not in c:
+            f.append("census waves/top: %s" % c)
+        if eng.events or [d for d in os.listdir(out) if d.startswith("event-")]:
+            f.append("an event was written")
+        if not os.path.exists(os.path.join(out, "stalls.log")):
+            f.append("no stalls.log")
+        return f
+    S.append(("stall resolving at 0.7 s: one census line, no event",
+              _sorted(gen_trace([("gfx_0.0.0", 5.0, 5.7)], 8.0) + [(5.0, "busy", "40 0x11d049aa00"),
+                                                                   (5.7, "busy", "0 0")]), chk_resolves))
+
+    def chk_kmsg_after(eng, dev, out):
+        f = []
+        if len(eng.events) != 1:
+            return ["events %d, expected 1" % len(eng.events)]
+        d, files = _event_files(out, eng.events[0])
+        summ = _read(os.path.join(d, "summary.txt"))
+        if not re.search(r"reason: stall clock 1\.9\d s on gfx_0\.0\.0", summ):
+            f.append("reason: " + summ.splitlines()[1])
+        if not re.search(r"gfx_0\.0\.0: .*kmsg timeout: \[ *\d+\.\d+\] amdgpu 0000:01:00\.0: ring gfx_0\.0\.0 timeout",
+                         summ):
+            f.append("summary does not carry the timeout line")
+        k = _read(os.path.join(d, "kmsg.txt"))
+        for want in ("ring gfx_0.0.0 timeout", "Ring gfx_0.0.0 reset succeeded", "page fault"):
+            if want not in k:
+                f.append("kmsg.txt lacks %r" % want)
+        if "bc5-gpu-watch" in k or "systemd" in k:
+            f.append("kmsg.txt took a line that is not amdgpu's (bc5-gpu-watch's quote or another)")
+        for n in range(1, 6):
+            for ext in ("txt", "bin"):
+                if "waves-%d.%s" % (n, ext) not in files or "regs-%d.txt" % n not in files:
+                    f.append("sample %d files missing" % n)
+        if "waves-6.bin" in files:
+            f.append("a sixth sample")
+        if len(unpack_waves_bin(_read(os.path.join(d, "waves-3.bin"), "rb"))) != 64:
+            f.append("waves-3.bin does not hold 64 waves")
+        if len(eng.census) != 1 or "kmsg_timeout=yes" not in eng.census[0] or eng.events[0] not in eng.census[0]:
+            f.append("census: %s" % eng.census)
+        return f
+    S.append(("stall reaching the kernel's timeout line (clock 2.03 s, after the 1.9-s write): one event, line added",
+              _sorted(gen_trace([("gfx_0.0.0", 3.0, 5.4)], 8.0) + [
+                  (3.0, "busy", "64 0x11d049aa00"),
+                  (2.5, "kmsg", "3 amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:6 pasid:32772)"),
+                  (3.2, "kmsg", "30 systemd[1]: Started something unrelated with amdgpu in its name."),
+                  kmsg_timeout(5.03, "gfx_0.0.0"),
+                  (5.04, "kmsg", "12 bc5-gpu-watch: armed: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=1"),
+                  (5.10, "kmsg", "3 amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset"),
+                  (5.35, "kmsg", "3 amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded"),
+                  (5.4, "busy", "0 0")]), chk_kmsg_after))
+
+    def chk_kmsg_first(eng, dev, out):
+        f = []
+        if len(eng.events) != 1:
+            return ["events %d, expected 1" % len(eng.events)]
+        d, files = _event_files(out, eng.events[0])
+        summ = _read(os.path.join(d, "summary.txt"))
+        if "reason: kernel timeout line for gfx_0.0.0" not in summ:
+            f.append("reason: " + summ.splitlines()[1])
+        if "waves-5.bin" not in files:
+            f.append("the five samples are not all in the event")
+        if len(eng.census) != 1 or "kmsg_timeout=yes" not in eng.census[0]:
+            f.append("census: %s" % eng.census)
+        return f
+    S.append(("the kernel's timeout line before the 1.9-s clock (clock 1.82 s): event written on the line",
+              _sorted(gen_trace([("gfx_0.0.0", 3.0, 5.2)], 8.0) + [(3.0, "busy", "64 0x11d049aa00"),
+                                                                   kmsg_timeout(4.82, "gfx_0.0.0"),
+                                                                   (5.2, "busy", "0 0")]), chk_kmsg_first))
+
+    def chk_deadline(eng, dev, out):
+        f = []
+        if len(eng.events) != 1:
+            return ["events %d, expected 1" % len(eng.events)]
+        d, files = _event_files(out, eng.events[0])
+        summ = _read(os.path.join(d, "summary.txt"))
+        m = re.search(r"reason: stall clock ([\d.]+) s on gfx_0.0.0", summ)
+        if not m or not (1.9 <= float(m.group(1)) < 1.95):
+            f.append("reason: " + summ.splitlines()[1])
+        if "standing still in every interval" not in summ:
+            f.append("shape line missing")
+        if "kmsg timeout: no" not in summ or not re.search(r"ended after (3\.9\d|4\.0\d) s", summ):
+            f.append("summary ring line: %s" % [l for l in summ.splitlines() if l.startswith(" gfx")])
+        if len(eng.census) != 1 or "event=" + eng.events[0] not in eng.census[0] or "kmsg_timeout=no" not in eng.census[0]:
+            f.append("census: %s" % eng.census)
+        if "timeout" in _read(os.path.join(d, "kmsg.txt")):
+            f.append("kmsg.txt has a timeout line; none was sent")
+        return f
+    S.append(("stall past 1.9 s with no kernel line: event written at 1.9 s, before any line",
+              _sorted(gen_trace([("gfx_0.0.0", 2.0, 6.0)], 9.0) + [(2.0, "busy", "100 0x909974400"),
+                                                                   (6.0, "busy", "0 0")]), chk_deadline))
+
+    def chk_two(eng, dev, out):
+        f = []
+        if len(eng.events) != 1:
+            return ["events %d, expected 1 (one episode for both rings)" % len(eng.events)]
+        d, files = _event_files(out, eng.events[0])
+        summ = _read(os.path.join(d, "summary.txt"))
+        if " gfx_0.0.0: stalled" not in summ or " comp_1.0.0: stalled" not in summ:
+            f.append("summary lacks a ring")
+        nsamp = len([n for n in files if n.startswith("waves-") and n.endswith(".bin")])
+        if not 5 <= nsamp <= 7:
+            f.append("samples %d, expected 5-7 (shared between the rings, not 10)" % nsamp)
+        if len(eng.census) != 2 or not all(eng.events[0] in c for c in eng.census):
+            f.append("census: %s" % eng.census)
+        for ring in ("gfx_0.0.0", "comp_1.0.0"):
+            m = re.search(r" %s: stalled .*samples at clock ([\d. ]+), missed" % re.escape(ring), summ)
+            if not m or len(m.group(1).split()) != 5:
+                f.append("%s does not have five samples: %s" % (ring, m and m.group(1)))
+        return f
+    S.append(("two rings stalling 0.1 s apart: shared samples, one event",
+              _sorted(gen_trace([("gfx_0.0.0", 2.0, 4.5), ("comp_1.0.0", 2.1, 4.6)], 7.0)
+                      + [(2.0, "busy", "80 0x1234500")]), chk_two))
+
+    def chk_reset_window(eng, dev, out):
+        f = []
+        ep = eng.last_ep
+        if len(eng.events) != 1 or ep is None:
+            return ["events %d, expected 1" % len(eng.events)]
+        ts = [s.t for s in ep.samples]
+        bad = [t for t in ts if 2.84 <= t <= 3.48]
+        if bad:
+            f.append("samples inside the hot/reset window: %s" % ["%.3f" % t for t in bad])
+        if not any(t > 3.48 for t in ts):
+            f.append("no sample after the reset ended: %s" % ["%.3f" % t for t in ts])
+        comp = [c for c in eng.census if "ring=comp_1.0.0" in c]
+        if len(comp) != 1 or not re.search(r"missed=[2-9]", comp[0]):
+            f.append("comp census: %s" % comp)
+        summ = _read(os.path.join(out, eng.events[0], "summary.txt"))
+        if "no sample at mono" not in summ:
+            f.append("summary lacks the no-sample note")
+        return f
+    S.append(("a second ring stalled through the first ring's reset: no reads from clock 1.85 s to the reset's end",
+              _sorted(gen_trace([("gfx_0.0.0", 1.0, 3.3), ("comp_1.0.0", 2.0, 5.0)], 6.0)
+                      + [(1.0, "busy", "16 0xcafe00"), kmsg_timeout(3.03, "gfx_0.0.0"),
+                         (3.05, "kmsg", "3 amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset"),
+                         (3.28, "kmsg", "3 amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded")]), chk_reset_window))
+
+    def chk_lone_kmsg(eng, dev, out):
+        if len(eng.events) != 1:
+            return ["events %d, expected 1" % len(eng.events)]
+        d, files = _event_files(out, eng.events[0])
+        summ = _read(os.path.join(d, "summary.txt"))
+        f = []
+        if not eng.events[0].endswith("sdma0") or "no sampled stall" not in summ or "samples: 0" not in summ:
+            f.append("standalone event: %s / %s" % (eng.events[0], summ.splitlines()[:2]))
+        if dev.wave_reads or dev.reg_reads:
+            f.append("registers or waves read after the line (F112)")
+        return f
+    S.append(("a timeout line on a ring with no sampled stall: a standalone event, no reads after the line",
+              _sorted(gen_trace([], 4.0) + [kmsg_timeout(2.0, "sdma0")]), chk_lone_kmsg))
+    return S
+
+
+def run_scenario(name, events, check, tmp_root):
+    out = os.path.join(tmp_root, re.sub(r"[^a-z0-9]+", "-", name.lower())[:40])
+    os.makedirs(out, exist_ok=True)
+    eng, dev = replay(events, out)
+    f = check(eng, dev, out)
+    if dev.warn_simd:
+        f.append("a wave read set the simd field (the kernel's WARN_ON)")
+    return f
+
+
+def scenario_second_stall_while_writing(tmp_root):
+    """An event is being written (the writer blocked in its first file write) while a second ring stalls: the
+    second stall is sampled during the write, and its event is written after the first one finishes."""
+    out = os.path.join(tmp_root, "second-stall-while-writing")
+    os.makedirs(out, exist_ok=True)
+    release = threading.Event()
+    blocked = threading.Event()
+
+    def gate(task):
+        if task[0] == "files" and task[1].endswith("gfx_0.0.0") and not release.is_set():
+            blocked.set()
+            release.wait(30)
+    w = Writer(out, threaded=True, gate=gate, log=lambda s: None)
+    seen = {}
+
+    def on_tick(eng, t):
+        if eng.events and not blocked.is_set():
+            blocked.wait(5)      # the replay runs faster than a thread switch: let the writer reach its first write
+        if blocked.is_set() and not release.is_set():
+            comp = [s for e in [eng.ep] if e for s in e.stalls if s.ring == "comp_1.1.0"]
+            if comp:
+                seen["comp_samples_during_write"] = len(comp[0].samples)
+            if len(eng.events) == 2:
+                seen["second_queued"] = True
+                seen["second_finished_before_release"] = any(n == eng.events[1] for k, n in w.finished)
+                release.set()
+    ev = gen_trace([("gfx_0.0.0", 1.0, 3.0), ("comp_1.1.0", 3.4, 6.0)], 8.0, rings=("gfx_0.0.0", "comp_1.1.0"))
+    ev += [(1.0, "busy", "32 0xaaaa00"), (3.0, "busy", "0 0"), (3.4, "busy", "48 0xbbbb00")]
+    eng, dev = replay(sorted(ev, key=lambda e: e[0]), out, writer=w, on_tick=on_tick)
+    release.set()
+    w.flush()
+    w.close()
+    f = []
+    if len(eng.events) != 2:
+        return ["events %d, expected 2" % len(eng.events)]
+    if seen.get("comp_samples_during_write", 0) != 5:
+        f.append("comp_1.1.0 samples taken while event 1 was being written: %s, expected 5"
+                 % seen.get("comp_samples_during_write"))
+    if not seen.get("second_queued") or seen.get("second_finished_before_release"):
+        f.append("event 2 was not queued behind event 1: %s" % seen)
+    order = [n for k, n in w.finished if k == "files"]
+    if order[:1] != [eng.events[0]] or eng.events[1] not in order or order.index(eng.events[1]) < 1:
+        f.append("write order: %s" % order)
+    for e in eng.events:
+        if not os.path.exists(os.path.join(out, e, "waves-5.bin")):
+            f.append("%s lacks waves-5.bin" % e)
+    if w.errors:
+        f.append("writer errors: %s" % w.errors)
+    return f
+
+
+def selftest_decoder():
+    f = []
+    rec = make_wave_record(ST_VALID | 0x20, 0x11D049AA04, exec_=0xFFFF0000FFFF, hw1=hw_id1(1, 0, 4, 3, 19),
+                           hw2=(2 << 8) | (3 << 4) | 5 | (9 << 24), trapsts=0x800, ib_sts2=IB_STS2_WAVE64)
+    d = decode_wave(rec)
+    want = {"pc": 0x11D049AA04, "exec": 0xFFFF0000FFFF, "hw": (1, 0, 4, 3, 19), "me": 2, "pipe": 3, "queue": 5,
+            "vmid": 9, "valid": True, "wave64": True}
+    for k, v in want.items():
+        if d[k] != v:
+            f.append("decode %s: %r != %r" % (k, d[k], v))
+    if not slot_kept(rec) or slot_kept(make_wave_record(0xBEBEBEEF, 0)) or slot_kept(make_wave_record(0, 5)):
+        f.append("slot_kept")
+    pos = wave_pos(1, 1, 4, 3, 19)
+    if (pos >> 7) & 0xFF != 1 or (pos >> 15) & 0xFF != 1 or (pos >> 23) & 0xFF != 19 or (pos >> 31) & 0x3F != 19 \
+            or (pos >> 37) & 0xFF != 0 or pos & 0x7F:
+        f.append("wave_pos 0x%x" % pos)
+    if reg_byte(0x0DA4, 0) != 0x8010 or reg_byte(0x2200, 1) != 0x30800:
+        f.append("reg_byte")
+    return f
+
+
+def run_selftest(tmp_root=None):
+    """Every scenario with the fake device and a scratch output directory (removed when all pass)."""
+    import shutil
+    import tempfile
+    tmp = tmp_root or tempfile.mkdtemp(prefix="bc5-stall-selftest-")
+    results = [("wave decoder and debugfs positions", selftest_decoder())]
+    for name, ev, chk in scenarios():
+        results.append((name, run_scenario(name, ev, chk, tmp)))
+    results.append(("a second stall while an event is being written", scenario_second_stall_while_writing(tmp)))
+    bad = 0
+    for name, f in results:
+        print("%s  %s" % ("ok  " if not f else "FAIL", name))
+        for x in f:
+            print("        " + x)
+        bad += bool(f)
+    if bad or tmp_root:
+        print("selftest: %d/%d passed (output kept in %s)" % (len(results) - bad, len(results), tmp))
+    else:
+        shutil.rmtree(tmp, ignore_errors=True)
+        print("selftest: %d/%d passed" % (len(results), len(results)))
+    return 1 if bad else 0
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# --compare-check: install.sh's sampler-versus-umr file
+# ---------------------------------------------------------------------------------------------------------------
+
+# umr -r prints "<ip>.<reg> => 0x%08lx" (umr src/app/scan.c:108-109; e.g. "gfx1013.mmCP_STAT => 0x9507a200" in exp
+# 0137 raw/runs-561-564.txt:47); umr -lr prints "\t<asic>.<ip>.<reg> (<type>) => 0x%05lx" with the register's dword
+# address (umr src/app/main.c:1112-1122; scan.c:86-100 reads MMIO at addr * 4). The sampler's own lines use the same
+# "gfx1013.mm<reg> => 0x..." shape.
+UMR_READ_RE = re.compile(r"^\s*(?:\S+\.)?gfx1013\.mm(\w+?)(?:\[[^\]]*\])?\s+=>\s+(0x[0-9a-fA-F]+)")
+UMR_LIST_RE = re.compile(r"^\s*\S+\.gfx1013\.mm(\w+)\s+\(\d+\)\s+=>\s+(0x[0-9a-fA-F]+)")
+
+
+def compare_check(text):
+    sec, data = None, {"read1": {}, "umr": {}, "list": {}, "read2": {}}
+    for line in text.splitlines():
+        line = re.sub(r"\x1b\[[0-9;]*m", "", line)    # umr colours its "-r" output (umr src/app/scan.c:108-109)
+        if line.startswith("## "):
+            h = line[3:].strip()
+            sec = ("read1" if h.startswith("sampler read 1") else "read2" if h.startswith("sampler read 2")
+                   else "umr" if h.startswith("umr -r") else "list" if h.startswith("umr -lr") else None)
+            continue
+        if sec == "list":
+            m = UMR_LIST_RE.match(line)
+        elif sec:
+            m = UMR_READ_RE.match(line)
+            if m and "[" in line.split("=>")[0]:
+                continue   # banked or repeated reads are not compared
+        else:
+            m = None
+        if m:
+            data[sec].setdefault(m.group(1), int(m.group(2), 16))
+    rows, counts = [], collections.Counter()
+    for name, mm, bi in REGS + BANKED_REGS:
+        off = reg_byte(mm, bi)
+        a, u, b = data["read1"].get(name), data["umr"].get(name), data["read2"].get(name)
+        la = data["list"].get(name)
+        if la is None:
+            addr = "umr-unlisted"
+        elif la == off:
+            addr = "addr ok (byte)"
+        elif la == off // 4:
+            addr = "addr ok (dword)"
+        else:
+            addr = "ADDR DIFF umr 0x%x" % la
+        if a is None or b is None:
+            val = "not read"
+        elif u is None:
+            val = "umr missing"
+        elif a == u == b:
+            val = "same"
+        elif a == b != u:
+            val = "MISMATCH (stable here, umr differs)"
+        else:
+            val = "changing (inconclusive)"
+        counts[val.split(" (")[0]] += 1
+        counts[addr.split(" (")[0].split(" umr")[0]] += 1
+        rows.append("%-32s 0x%05x  %-10s %-10s %-10s %-36s %s" % (name, off, "-" if a is None else "0x%08x" % a,
+                                                                   "-" if u is None else "0x%08x" % u,
+                                                                   "-" if b is None else "0x%08x" % b, val, addr))
+    head = "%-32s %-7s  %-10s %-10s %-10s %-36s %s" % ("register", "byte", "read 1", "umr -r", "read 2", "values",
+                                                      "address")
+    return "\n".join([head] + rows + ["totals: " + ", ".join("%s %d" % kv for kv in sorted(counts.items()))]) + "\n"
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# The service and the root one-shots
+# ---------------------------------------------------------------------------------------------------------------
+
+def mlockall(log):
+    try:
+        import ctypes
+        libc = ctypes.CDLL(None, use_errno=True)
+        if libc.mlockall(3) != 0:   # MCL_CURRENT | MCL_FUTURE
+            log("bc5-gpu-stall-sampler: mlockall failed: errno %d" % ctypes.get_errno())
+            return False
+        return True
+    except Exception as e:
+        log("bc5-gpu-stall-sampler: mlockall unavailable: %r" % e)
+        return False
+
+
+def open_device(pci, wait, log):
+    """At boot the sampler can start before amdgpu has probed: wait up to `wait` seconds, then exit (systemd
+    restarts it)."""
+    t_end = time.monotonic() + wait
+    next_log = 0.0
+    while True:
+        try:
+            d, name = find_debugfs_dir(pci)
+            return Device(d), d, name
+        except (RuntimeError, OSError) as e:
+            if time.monotonic() >= t_end:
+                raise
+            if time.monotonic() >= next_log:
+                log("bc5-gpu-stall-sampler: waiting for the amdgpu debugfs directory: %s" % e)
+                next_log = time.monotonic() + 30
+        time.sleep(2)
+
+
+def owner_ids(owner):
+    import pwd
+    pw = pwd.getpwnam(owner)
+    return pw.pw_uid, pw.pw_gid, pw.pw_dir
+
+
+def run_service(args, cfg):
+    log = lambda s: print(s, flush=True)
+    uid, gid, home = owner_ids(args.owner)
+    out = args.out or os.path.join(home, "bc5-data", "captures", "gpu-stall")
+    if not os.path.isdir(out):
+        os.makedirs(out, 0o700)
+        os.chown(out, uid, gid)
+    dev, ddir, name = open_device(args.pci, 120, log)
+    kfd = os.open("/dev/kmsg", os.O_RDONLY | os.O_NONBLOCK)
+    os.lseek(kfd, 0, os.SEEK_END)
+    threading.stack_size(512 * 1024)   # mlockall's MCL_FUTURE would otherwise pin the writer's default 8-MiB stack
+    locked = mlockall(log)
+    writer = Writer(out, uid, gid, threaded=True, log=log)
+    eng = Engine(dev, writer, cfg, log=log, ddir=ddir)
+    eng._census("start pid=%d version=%s debugfs=%s (%s) realpath=%s gfxoff=%s rings=%s poll_ms=%d samples_at=%s "
+                "write_at=%.1f slots=%dx%dx%dx%dx%d header_dump_reads=%d mlockall=%s"
+                % (os.getpid(), VERSION, ddir, name, os.path.realpath(ddir), dev.read_gfxoff(), cfg.rings.pattern,
+                   cfg.poll * 1000, ",".join("%.1f" % x for x in cfg.thresholds), cfg.write_at, cfg.ses, cfg.sas,
+                   cfg.wgps, cfg.simds, cfg.waves, cfg.header_dump_reads, locked))
+    import select
+    import signal
+    signal.signal(signal.SIGTERM, lambda *a: sys.exit(0))   # systemctl stop: let the writer finish (finally below)
+    poller = select.poll()
+    poller.register(kfd, select.POLLIN)
+    force_path = os.path.join(out, "force")
+    next_tick = time.monotonic()
+    next_force_check = next_tick
+    lost = 0
+    try:
+        while True:
+            now = time.monotonic()
+            timeout_ms = max(0, int((next_tick - now) * 1000 + 0.999))
+            for fd, evm in poller.poll(timeout_ms):
+                while True:
+                    try:
+                        b = os.read(kfd, 16384)
+                    except BlockingIOError:
+                        break
+                    except BrokenPipeError:
+                        lost += 1   # records overwritten while we were away (EPIPE); the read position moved on
+                        if lost in (1, 10, 100) or lost % 1000 == 0:
+                            log("bc5-gpu-stall-sampler: /dev/kmsg overran %d times (kernel lines lost)" % lost)
+                        continue
+                    if not b:
+                        break
+                    eng.on_kmsg(time.monotonic(), b.decode("utf-8", "replace"))
+            now = time.monotonic()
+            if now >= next_tick:
+                eng.tick(now)
+                next_tick += cfg.poll
+                if next_tick < time.monotonic():
+                    next_tick = time.monotonic() + cfg.poll
+            if now >= next_force_check:
+                next_force_check = now + 1.0
+                if eng.force_req is None:
+                    txt = read_force_file(force_path)
+                    if txt is not None:
+                        req = parse_force_request(txt)
+                        if req["once"]:
+                            def done(p=force_path):
+                                try:
+                                    os.unlink(p)
+                                except OSError:
+                                    pass
+                            req["on_done"] = done
+                        eng.request_force(req)
+                elif eng.force_req["period"] and read_force_file(force_path) is None:
+                    eng.force_req = None   # periodic mode ends when the owner removes the file
+    finally:
+        writer.close()
+
+
+def run_once(args, cfg):
+    d, name = find_debugfs_dir(args.pci)
+    dev = Device(d)
+    fences = parse_fence_info(dev.read_fence())
+    pending = [n for n, (s, e) in fences.items() if cfg.rings.search(n) and s != e]
+    s = take_sample(dev, cfg, "once", time.monotonic(), time.time(), "", bool(pending), idle_ok=args.idle_ok,
+                    regs_only=args.regs_only, banked=True)
+    print("# bc5-gpu-stall-sampler %s --once: debugfs %s (%s), pending rings: %s, gfxoff %s"
+          % (VERSION, d, name, ", ".join(pending) or "none", s.gfxoff))
+    sys.stdout.write(fmt_regs(s))
+    if not args.regs_only:
+        sys.stdout.write(fmt_waves_txt(s))
+        print("\n".join(fmt_sample_summary(s)))
+    return 0 if not s.skipped else 2
+
+
+def run_find(args):
+    d, name = find_debugfs_dir(args.pci)
+    root = os.path.dirname(d)
+    links = []
+    for e in sorted(os.listdir(root)):
+        p = os.path.join(root, e)
+        if os.path.islink(p) and os.path.realpath(p) == os.path.realpath(d):
+            links.append(e)
+    print("debugfs %s realpath %s name '%s' links %s" % (d, os.path.realpath(d), name, ",".join(links) or "-"))
+    for f in DEBUGFS_FILES + ("amdgpu_gfxoff",):
+        print("  %s %s" % (f, "present" if os.path.exists(os.path.join(d, f)) else "MISSING"))
+    return 0
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(description="BC5 non-halting GPU stall sampler (exp 0370 design, exp 0373 T0)")
+    ap.add_argument("--owner", help="user who owns the captures (the service)")
+    ap.add_argument("--out", help="capture directory (default ~OWNER/bc5-data/captures/gpu-stall)")
+    ap.add_argument("--pci", default="0000:01:00.0", help="the amdgpu device (default 0000:01:00.0)")
+    ap.add_argument("--wgps", type=int, default=5, help="WGPs per shader array to scan (default 5: 40 CU)")
+    ap.add_argument("--waves-per-simd", type=int, default=20, help="wave slots per SIMD (default 20, GC 10.1.x)")
+    ap.add_argument("--header-dump-reads", type=int, default=0,
+                    help="reads of CP_PFP/ME_HEADER_DUMP per sample (default 0; see HEADER_DUMPS)")
+    ap.add_argument("--rings", default=r"^(gfx|comp)_", help="regex of the rings to watch")
+    ap.add_argument("--test", action="store_true", help="built-in self-test, no device")
+    ap.add_argument("--replay", metavar="TRACE", help="replay a trace file, no device")
+    ap.add_argument("--find", action="store_true", help="print the debugfs directory and exit (root)")
+    ap.add_argument("--once", action="store_true", help="take one sample now and print it (root)")
+    ap.add_argument("--regs-only", action="store_true", help="with --once: registers only")
+    ap.add_argument("--idle-ok", action="store_true", help="with --once: read even with no job pending")
+    ap.add_argument("--list-regs", action="store_true", help="print the register table and exit")
+    ap.add_argument("--compare-check", metavar="FILE", help="compare install.sh's check file and exit")
+    a = ap.parse_args(argv)
+    if a.header_dump_reads not in (0, 8, 16):
+        ap.error("--header-dump-reads: 0, 8 or 16")
+    cfg = Config(wgps=a.wgps, waves=a.waves_per_simd, header_dump_reads=a.header_dump_reads, rings=re.compile(a.rings))
+    if a.test:
+        return run_selftest()
+    if a.list_regs:
+        for name, mm, bi in REGS:
+            print("%s 0x%05x %s" % (name, reg_byte(mm, bi),
+                                    "skipped" if name in HEADER_DUMPS and not a.header_dump_reads else "sampled"))
+        for name, mm, bi in BANKED_REGS:
+            print("%s 0x%05x banked" % (name, reg_byte(mm, bi)))
+        return 0
+    if a.compare_check:
+        with open(a.compare_check) as fh:
+            sys.stdout.write(compare_check(fh.read()))
+        return 0
+    if a.replay:
+        import tempfile
+        out = a.out or tempfile.mkdtemp(prefix="bc5-stall-replay-")
+        with open(a.replay) as fh:
+            eng, dev = replay(read_trace(fh), out, cfg, log=print)
+        print("replay: %d census lines, %d events, %d wave reads; output in %s" % (len(eng.census), len(eng.events),
+                                                                                   dev.wave_reads, out))
+        return 0
+    if a.find:
+        return run_find(a)
+    if a.once:
+        return run_once(a, cfg)
+    if not a.owner:
+        ap.error("--owner is required for the service")
+    run_service(a, cfg)
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
