@@ -1,0 +1,3 @@
+# The full copies keep the bytes of the box tree's files (LF; md5s in README.md), and the diff keeps its bytes too.
+src/** -text
+*.diff -text

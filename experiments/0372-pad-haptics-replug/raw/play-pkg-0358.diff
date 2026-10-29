@@ -1,0 +1,39 @@
+--- /home/kjaniszewski/bc5-work/play-pkg.sh	2026-10-28 07:52:22.140252572 +0100
++++ /home/kjaniszewski/bc5-work/exp0372/play-pkg-0358.sh	2026-10-29 01:35:56.886195066 +0100
+@@ -10,7 +10,7 @@
+ M=~/bc5-data/mnt/pkg-play
+ EMU=~/bc5-work/kytyplus-build/src/kyty_emulator
+ ENVF=${BC5_RUN_ENV:-$HOME/bc5-work/bc5-run.env}
+-LOG=~/bc5-work/play-pkg-last.log
++LOG=~/bc5-work/exp0372/play-last.log  # exp 0350/0364: own log
+ # Experiment 0177: BC5_LEAN=1 (the "BC5 emulator (lean)" shortcut) runs the emulator built with
+ # KYTY_BC5_LEAN in ~/bc5-work/kytyplus-build-lean: no tracing, journal, counters, recorder or
+ # samplers, inside or outside; its own log file. The title scripts take the same switch.
+@@ -37,6 +37,7 @@
+   key=${line%%=*}; val=${line#*=}
+   if [ "$key" = PLAY_ARGS ]; then PLAY_ARGS=$val; else export "$key=$val"; fi
+ done < "$ENVF"
++[ -n "${BC5_0358_INPUT_CONFIG:-}" ] && export KYTY_BC5_INPUT_CONFIG=$BC5_0358_INPUT_CONFIG  # exp 0339
+ export BC5_DIRECT_LAZY_NAMES="${BC5_DIRECT_LAZY_NAMES:+$BC5_DIRECT_LAZY_NAMES,}Wwise,SoundAlloc,FileSystem,UIStringAlloc"  # exp 0330 (F394): the four CPU-only heaps lazy, 242 MiB less pinned
+ PLAY_ARGS="$PLAY_ARGS --fullscreen"  # the maintainer: this title fullscreen, at the display's resolution (Full HD here)
+ unset BC5_GC_DUMP_DIR
+@@ -45,8 +46,8 @@
+ export SHADPS4_SYSMODULES_PACK_DIR=$HOME/bc5-data/sysmodules-pack-hle-ampr-noplaygo  # 2026-10-25 (exp 0298, the maintainer's yes): no libScePlayGo.sprx, the host answers PlayGo (100 chunks)
+ # Experiment 0042: also the heaps the GPU reads or writes before the CPU touches them
+ export BC5_DIRECT_EAGER_NAMES="RenderGpuWcLarge,RenderGpuWcSmall,RenderGpuRwLarge,RenderGpuRwSmall,CommitIABufferAllocator,AMM,RenderAlloc,Physics,Decal Job Scheduler,VisualEffectInstanceHeap,DynamicHeap,DynamicHeap Small,ComponentHeap,ComponentHeap Small,MaterialHeap,DDLHeap,Physics query allocator"
+-export BC5_DIRECT_LEARNED=$HOME/bc5-work/direct-learned-pkg.txt
+-export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/_SaveData-pkg-play
++export BC5_DIRECT_LEARNED=$HOME/bc5-work/exp0372/direct-learned-pkg.txt  # exp 0350/0364: a private copy
++export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/exp0372/wd/_SaveData-pkg-play  # exp 0350/0364: private
+ # Experiment 0039: the compute IBs indirect dispatches run (rewritten for the GFX ring).
+ # Experiment 0053: their arguments checked by the CP when it runs them, a CP DMA wait before a
+ # dispatch after an unsynced copy; with both the tree refit runs too (before: skipped,
+@@ -187,7 +188,7 @@
+   grep -v '^#' "$ENVF" | grep -v '^$'
+   [ -r "$PKG_ENV" ] && grep -v '^#' "$PKG_ENV" | grep -v '^$'
+ } > "$LOG"
+-cd ~/bc5-work
++cd ~/bc5-work/exp0372/wd  # exp 0350/0364: the private working directory (its own _SaveData)
+ # Experiment 0047: exit code 75 is the F2 menu's "Restart game": start the emulator again, with
+ # the mount and the settings kept.
+ while :; do

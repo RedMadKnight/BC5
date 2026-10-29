@@ -1,0 +1,664 @@
+--- a/src/libs/audio.cpp
++++ b/src/libs/audio.cpp
+@@ -1,6 +1,7 @@
+ #include "libs/audio.h"
+ 
+ #include "SDL.h"
++#include "bc5/pad_audio_route.hpp" // BC5 (experiment 0372)
+ #include "common/assert.h"
+ #include "common/common.h"
+ #include "common/logging/log.h"
+@@ -21,6 +22,7 @@
+ #include <cstdlib>
+ #include <cstring>
+ #include <limits>
++#include <string>
+ #include <vector>
+ #include <cstdio>
+ #include <mutex>
+@@ -127,13 +129,23 @@
+ 		// no audio device (a DualShock 4), queues without ever holding the title's audio thread, like the
+ 		// pad-routed ports; exp 0268 saw that wait cost the main mix 0.36 s at t 149-150 s of the 16:05 play.
+ 		bool pad_nb = false;
+-		// BC5: when the controller's device last had to be reopened (ms), see QueueSdlAudio.
++		// BC5: when the port last looked for the controller's device (ms), see PadRouteStep.
+ 		uint64_t pad_retry_ms = 0;
++		// BC5 (experiment 0372): the port belongs on the controller (a pad-speaker port unless
++		// KYTY_BC5_PAD_SPEAKER=main, a vibration port; KYTY_BC5_NO_PAD_AUDIO unset), whether or not the
++		// controller's device is there now; the SDL audio device events it has acted on; whether it looks
++		// once a second without one; its failed opens in a row (the log line is rate-limited).
++		bool                               pad_want        = false;
++		bc5::pad_audio_route::DeviceEvents pad_seen        = {};
++		bool                               pad_retry_armed = false;
++		uint32_t                           pad_open_fails  = 0;
+ 		// BC5 (audio pacing, KYTY_BC5_AUDIO_TRACE=1): what the port did since the last trace line.
+ 		uint32_t tr_calls = 0, tr_frames = 0, tr_clears = 0;
+ 		uint64_t tr_blocked_us = 0;
+ 		uint32_t tr_queued_min = 0xffffffffu, tr_queued_max = 0;
+ 		uint32_t tr_queued_bytes_per_ms = 0;
++		// BC5 (experiment 0372, KYTY_BC5_AUDIO_TRACE=1): calls whose frames were dropped while the controller was away.
++		uint32_t tr_pad_dropped = 0;
+ 	};
+ 
+ 	// BC5: the channel count of the stream opened on the controller's audio device. The device
+@@ -169,6 +181,11 @@
+ 	                                           std::vector<uint8_t>* buffer);
+ 	static bool            QueueSdlAudio(PortOut* port, const void* data, bool blocking);
+ 	static void            PadRumbleFromVibrationFrames(const PortOut& port, const void* data);
++	// BC5 (experiment 0372): a pad port following the controller's audio device.
++	static void            PadRouteStep(PortOut* port);
++	static void            PadCloseDevice(PortOut* port);
++	static bool            PadOpenDevice(PortOut* port, const std::string& name, const char* why);
++	static int             PortId(const PortOut* port);
+ };
+ 
+ static Audio* g_audio = nullptr;
+@@ -262,13 +279,89 @@
+ 	return FormatIsFloat(format) ? AUDIO_F32SYS : AUDIO_S16SYS;
+ }
+ 
+-// BC5 (haptics, F69): the controller's own audio output, or nullptr. The first SDL output device
++// BC5 (experiment 0372): the controller's audio device going away and coming back, seen independently of
++// SDL_GetAudioDeviceStatus. SDL 2.33.0 stops only the first open device on a removed node
++// (3rdparty/SDL2/src/audio/SDL_audio.c:522-529) and its PipeWire backend never stops one by itself
++// (src/audio/pipewire/SDL_pipewire.c:1129-1140): with the pad-speaker and the vibration port both on the
++// DualSense, the second stayed "playing" after the unplug of 2026-10-28 23:32:44, F93's reopen never ran for
++// it, and PipeWire linked its stream to the default sink (the dock's speakers). SDL pushes
++// SDL_AUDIODEVICEREMOVED and SDL_AUDIODEVICEADDED for every output device that goes or comes
++// (SDL_audio.c:450-464, 510-551; from the PipeWire registry, SDL_pipewire.c:298-341), and SDL_PushEvent hands
++// each event to the event watches on the thread that pushes it, before it is queued
++// (src/events/SDL_events.c:1156-1176): SDL's hotplug thread, which nothing of ours waits on. The watch only
++// counts; each pad port compares the counts with what it last acted on, on the thread that writes the port
++// (Audio::PadRouteStep). Chosen over a once-a-second look at the device list, which cannot see an unplug and
++// replug that both fall between two looks (the old stream is then on another sink while the name is listed
++// again); that look stays as the backstop for a missed event. The events also reach the window's queue as
++// before (window.cpp ProcessEvent ignores them).
++static std::atomic<uint32_t> g_bc5_audio_removed {0};
++static std::atomic<uint32_t> g_bc5_audio_added {0};
++
++static int SDLCALL Bc5AudioDeviceWatch(void* /*userdata*/, SDL_Event* event) {
++	if (event != nullptr && (event->type == SDL_AUDIODEVICEREMOVED || event->type == SDL_AUDIODEVICEADDED) &&
++	    event->adevice.iscapture == 0) {
++		auto& count = event->type == SDL_AUDIODEVICEREMOVED ? g_bc5_audio_removed : g_bc5_audio_added;
++		count.fetch_add(1, std::memory_order_acq_rel);
++	}
++	return 1; // what a watch returns is ignored (SDL_PushEvent)
++}
++
++static bc5::pad_audio_route::DeviceEvents Bc5AudioDeviceEvents() {
++	return {g_bc5_audio_removed.load(std::memory_order_acquire), g_bc5_audio_added.load(std::memory_order_acquire)};
++}
++
++// BC5 (experiment 0372): every SDL_OpenAudioDevice of this file runs under this lock. A stream opened on the
++// controller gets node.dont-reconnect and node.dont-fallback through PIPEWIRE_PROPS, which libpipewire reads in
++// pw_stream_connect (PipeWire 1.6.2 src/pipewire/stream.c; SDL calls it inside the open, SDL_pipewire.c:1281);
++// the lock keeps that value from ever reaching the main mix's stream. With them, WirePlumber 0.5.17 never links a
++// pad stream to another sink: a stream whose target is gone or not found is destroyed
++// (/usr/share/wireplumber/scripts/linking/find-defined-target.lua:116-123, node.linger unset) and one already
++// linked is not moved (prepare-link.lua:63-76); without them the stream of 23:32:44 went to the default sink
++// (pipewire-props(7): "destroy the node as well ... inhibits that the node is moved"). PIPEWIRE_PROPS exists
++// from the first open on (exp 0181, below), so the swap replaces one pointer in the environment and frees
++// nothing (glibc stdlib/setenv.c __add_to_environ keeps every string in its known_values tree): safe against
++// getenv on other threads. KYTY_BC5_PAD_PW_PROPS=0 opens pad streams without them (the A/B arm); a PIPEWIRE_PROPS
++// set by the user is left as it is (bc5::pad_audio_route::pad_stream_props); with SDL's PulseAudio backend
++// nothing is set (it has PA_STREAM_DONT_MOVE of its own, SDL_pulseaudio.c:695-699).
++static std::mutex g_bc5_sdl_open_mutex;
++
++static SDL_AudioDeviceID Bc5OpenSdlAudioDevice(const char* name, const SDL_AudioSpec* desired, SDL_AudioSpec* obtained,
++                                               int allowed_changes, bool pad, bool* pad_props) {
++	static const bool props_on = [] {
++		const char* e = std::getenv("KYTY_BC5_PAD_PW_PROPS");
++		return e == nullptr || std::strcmp(e, "0") != 0;
++	}();
++	std::lock_guard<std::mutex> lock(g_bc5_sdl_open_mutex);
++	std::string                 props;
++	if (pad && props_on) {
++		const char* driver = SDL_GetCurrentAudioDriver();
++		const char* now    = std::getenv("PIPEWIRE_PROPS");
++		if (driver != nullptr && std::strcmp(driver, "pipewire") == 0 && now != nullptr) {
++			props = bc5::pad_audio_route::pad_stream_props(now);
++		}
++	}
++	if (!props.empty()) {
++		setenv("PIPEWIRE_PROPS", props.c_str(), 1);
++	}
++	const SDL_AudioDeviceID dev = SDL_OpenAudioDevice(name, 0, desired, obtained, allowed_changes);
++	if (!props.empty()) {
++		setenv("PIPEWIRE_PROPS", bc5::pad_audio_route::kHostStreamProps, 1);
++	}
++	if (pad_props != nullptr) {
++		*pad_props = !props.empty();
++	}
++	return dev;
++}
++
++// BC5 (haptics, F69): the controller's own audio output, or an empty name. The first SDL output device
+ // whose name contains KYTY_BC5_PAD_AUDIO_DEVICE (default "DualSense"). With the default, a device
+ // named "Wireless Controller" is accepted too when it has the DualSense's four channels: on Linux
+ // (PipeWire/ALSA) the controller's USB audio device carries Sony's USB product string instead of
+ // "DualSense" (ported from KytyPlus c885da0a "haptics: recognize 'Wireless Controller' audio
+ // endpoint on Linux", src/libs/dualSenseHaptics.cpp, GPL-2.0; the channel check is theirs too).
+-static const char* Bc5FindPadAudioDevice() {
++// BC5 (experiment 0372): the name is copied, since SDL frees a removed device's entry at the next
++// SDL_GetNumAudioDevices on any thread (SDL_audio.c clean_out_device_list).
++static std::string Bc5FindPadAudioDevice() {
+ 	const char* env  = std::getenv("KYTY_BC5_PAD_AUDIO_DEVICE");
+ 	const char* want = env != nullptr ? env : "DualSense";
+ 	const int   n    = SDL_GetNumAudioDevices(0);
+@@ -290,7 +383,7 @@
+ 		}
+ #endif
+ 	}
+-	return nullptr;
++	return {};
+ }
+ 
+ bool Audio::OpenSdlDevice(PortOut* port) {
+@@ -312,7 +405,8 @@
+ 		static std::once_flag once;
+ 		std::call_once(once, [] {
+ 			if (std::getenv("PIPEWIRE_PROPS") == nullptr) {
+-				setenv("PIPEWIRE_PROPS", "{ channelmix.normalize = true }", 0);
++				// "{ channelmix.normalize = true }"; experiment 0372 adds two keys to it for the pad streams only.
++				setenv("PIPEWIRE_PROPS", bc5::pad_audio_route::kHostStreamProps, 0);
+ 			}
+ 		});
+ 	}
+@@ -327,6 +421,15 @@
+ 			std::fprintf(stderr, "AudioOut: SDL audio driver %s\n", d != nullptr ? d : "?");
+ 		}
+ 	}
++	// BC5 (experiment 0372): count SDL's audio device events from now on (Bc5AudioDeviceWatch). Audio implies
++	// SDL's events subsystem (3rdparty/SDL2/src/SDL.c:289-296), whose lock the watch list uses.
++	{
++		static std::once_flag watch_once;
++		std::call_once(watch_once, [] {
++			SDL_AddEventWatch(Bc5AudioDeviceWatch, nullptr);
++			std::fprintf(stderr, "AudioOut (exp 0372): the controller's ports follow SDL's audio device events\n");
++		});
++	}
+ 
+ 	SDL_AudioSpec desired {};
+ 	desired.freq     = static_cast<int>(port->freq);
+@@ -340,7 +443,7 @@
+ 	// (default "DualSense") in it — opened with its four channels; the port's samples are placed
+ 	// on channels 1-2 (speaker) or 3-4 (actuators) when queued. KYTY_BC5_NO_PAD_AUDIO=1 leaves the
+ 	// old behaviour: the speaker port on the default device, the vibration port unopened.
+-	const char* pad_name = nullptr;
++	std::string pad_name;
+ 	port->pad_route      = 0;
+ 	// KYTY_BC5_PAD_SPEAKER=main: the pad-speaker ports stay on the default output (the game sends
+ 	// some effects to the controller's speaker, as on the console); the haptics still go to the pad.
+@@ -361,10 +464,17 @@
+ 		const char* e = std::getenv("KYTY_BC5_PAD_SPEAKER");
+ 		return e != nullptr && std::strcmp(e, "main-blocking") == 0;
+ 	}();
+-	if (std::getenv("KYTY_BC5_NO_PAD_AUDIO") == nullptr &&
+-	    ((port->type == AUDIO_OUT_PORT_TYPE_PADSPK && !speaker_on_main) || port->type == AUDIO_OUT_PORT_TYPE_VIBRATION)) {
++	// BC5 (experiment 0372): whether the port belongs on the controller, whatever is plugged in now; the device
++	// events are read before the look, so that one arriving during it is acted on at the port's next write.
++	port->pad_want = std::getenv("KYTY_BC5_NO_PAD_AUDIO") == nullptr &&
++	                 ((port->type == AUDIO_OUT_PORT_TYPE_PADSPK && !speaker_on_main) || port->type == AUDIO_OUT_PORT_TYPE_VIBRATION);
++	port->pad_seen        = Bc5AudioDeviceEvents();
++	port->pad_retry_ms    = LibKernel::KernelGetProcessTime() / 1000;
++	port->pad_retry_armed = false;
++	port->pad_open_fails  = 0;
++	if (port->pad_want) {
+ 		pad_name = Bc5FindPadAudioDevice();
+-		if (pad_name != nullptr) {
++		if (!pad_name.empty()) {
+ 			desired.channels = PAD_STREAM_CHANNELS;
+ 			port->pad_route  = port->type == AUDIO_OUT_PORT_TYPE_VIBRATION ? 2 : 1;
+ 		} else if (port->type == AUDIO_OUT_PORT_TYPE_PADSPK && speaker_off) {
+@@ -377,21 +487,35 @@
+ 	}
+ 
+ 	SDL_AudioSpec obtained {};
++	const bool    on_pad    = !pad_name.empty();
++	bool          pad_props = false;
+ 
+-	port->audio_device = SDL_OpenAudioDevice(pad_name, 0, &desired, &obtained,
+-	                                         pad_name != nullptr ? (SDL_AUDIO_ALLOW_FREQUENCY_CHANGE | SDL_AUDIO_ALLOW_FORMAT_CHANGE) : SDL_AUDIO_ALLOW_ANY_CHANGE);
++	// BC5 (experiment 0372): through Bc5OpenSdlAudioDevice (one open at a time; a pad stream gets
++	// node.dont-reconnect and node.dont-fallback).
++	port->audio_device = Bc5OpenSdlAudioDevice(on_pad ? pad_name.c_str() : nullptr, &desired, &obtained,
++	                                           on_pad ? (SDL_AUDIO_ALLOW_FREQUENCY_CHANGE | SDL_AUDIO_ALLOW_FORMAT_CHANGE) : SDL_AUDIO_ALLOW_ANY_CHANGE,
++	                                           on_pad, &pad_props);
+ 	if (port->audio_device == 0) {
+ 		LOGF("AudioOut: SDL_OpenAudioDevice failed: %s\n", SDL_GetError());
+-		port->pad_route = 0;
++		// BC5 (experiment 0372): a port that found the controller but could not open on it tries again once a
++		// second (PadRouteStep).
++		port->pad_retry_armed = on_pad;
++		port->pad_route       = 0;
+ 		return false;
+ 	}
+ 
+ 	port->audio_spec = obtained;
+ 	SDL_PauseAudioDevice(port->audio_device, 0);
+-	port->pad_nb = port->type == AUDIO_OUT_PORT_TYPE_PADSPK && pad_name == nullptr && !speaker_blocking;
++	port->pad_nb = port->type == AUDIO_OUT_PORT_TYPE_PADSPK && !on_pad && !speaker_blocking;
+ 
+-	LOGF("AudioOut: opened SDL device (%d Hz, %u ch, format 0x%04x) for port type %d, %d ch%s%s\n", obtained.freq,
+-	     obtained.channels, obtained.format, port->type, port->channels_num, pad_name != nullptr ? " on " : "", pad_name != nullptr ? pad_name : "");
++	LOGF("AudioOut: opened SDL device (%d Hz, %u ch, format 0x%04x) for port type %d, %d ch%s%s%s\n", obtained.freq,
++	     obtained.channels, obtained.format, port->type, port->channels_num, on_pad ? " on " : "", pad_name.c_str(),
++	     pad_props ? " (node.dont-reconnect, node.dont-fallback)" : "");
++	if (on_pad) { // BC5 (experiment 0372): the start of the port's route, beside the trace (rare: one line per open)
++		std::fprintf(stderr, "AudioOut (exp 0372): t %.3f s port %d type %d: opened on %s (%d Hz, %d ch)%s\n",
++		             static_cast<double>(LibKernel::KernelGetProcessTime()) / 1e6, PortId(port), port->type, pad_name.c_str(),
++		             obtained.freq, static_cast<int>(obtained.channels), pad_props ? "; node.dont-reconnect, node.dont-fallback" : "");
++	}
+ 	return true;
+ }
+ 
+@@ -521,6 +645,13 @@
+ bool Audio::QueueSdlAudio(PortOut* port, const void* data, bool blocking) {
+ 	EXIT_IF(port == nullptr);
+ 
++	// BC5 (experiment 0372): a port that belongs on the controller first follows the controller's audio device:
++	// its stream is closed when the device goes (the frames dropped, never played on another sink), reopened when
++	// it comes back, and moved onto it when it comes after the start (PadRouteStep).
++	if (port->pad_want) {
++		PadRouteStep(port);
++	}
++
+ 	// BC5 (rumble fallback): a vibration port with no controller audio device, or whose device is
+ 	// not playing (unplugged, F93), drives the pad's motors instead of its actuators.
+ 	if (port->type == AUDIO_OUT_PORT_TYPE_VIBRATION && data != nullptr && PadRumbleFallbackEnabled() &&
+@@ -545,6 +676,9 @@
+ 	}
+ 
+ 	if (port->audio_device == 0 || data == nullptr) {
++		if (port->pad_route != 0 && data != nullptr) {
++			port->tr_pad_dropped++; // BC5 (experiment 0372): the controller is away
++		}
+ 		return false;
+ 	}
+ 
+@@ -708,30 +842,11 @@
+ 	// BC5 (haptics): the controller's device can vanish mid-run (its USB link drops) and its
+ 	// queue then never drains, so the game's audio thread is never held for a pad port: a
+ 	// removed or paused device drops the frames, a full queue is cleared, not waited for.
++	// The reopen after an unplug (F93; the maintainer, 2026-10-09: SDL stops a removed device
++	// for good) is in PadRouteStep since experiment 0372, at the top of this call.
+ 	if (port->pad_route != 0) {
+ 		if (SDL_GetAudioDeviceStatus(port->audio_device) != SDL_AUDIO_PLAYING) {
+-			// The controller was unplugged: SDL stops the device and never restarts it, so the
+-			// haptics and the pad speaker stayed silent for the rest of the run after one
+-			// unplug (the maintainer, 2026-10-09). Once a second, look for the controller's
+-			// device again and reopen it with the spec the port was opened with.
+-			const uint64_t now_ms = LibKernel::KernelGetProcessTime() / 1000;
+-			if (SDL_GetAudioDeviceStatus(port->audio_device) != SDL_AUDIO_STOPPED || now_ms - port->pad_retry_ms < 1000) {
+-				return false;
+-			}
+-			port->pad_retry_ms = now_ms;
+-			const char* name   = Bc5FindPadAudioDevice();
+-			if (name == nullptr) {
+-				return false;
+-			}
+-			SDL_AudioSpec           spec = port->audio_spec;
+-			const SDL_AudioDeviceID dev  = SDL_OpenAudioDevice(name, 0, &spec, nullptr, 0);
+-			if (dev == 0) {
+-				return false;
+-			}
+-			SDL_CloseAudioDevice(port->audio_device);
+-			port->audio_device = dev;
+-			SDL_PauseAudioDevice(dev, 0);
+-			LOGF("AudioOut: controller audio device reopened for port type %d on %s\n", port->type, name);
++			return false;
+ 		}
+ 		if (SDL_GetQueuedAudioSize(port->audio_device) > queue_size * 8) {
+ 			SDL_ClearQueuedAudio(port->audio_device);
+@@ -806,6 +921,152 @@
+ 	return true;
+ }
+ 
++// BC5 (experiment 0372): the port's index, as the audio trace numbers ports.
++int Audio::PortId(const PortOut* port) {
++	return g_audio != nullptr ? static_cast<int>(port - g_audio->m_out_ports) : -1;
++}
++
++static const char* Bc5PadWhy(bc5::pad_audio_route::Why why) {
++	using bc5::pad_audio_route::Why;
++	switch (why) {
++		case Why::DeviceRemoved: return "an output device was removed";
++		case Why::DeviceStopped: return "SDL stopped its device";
++		case Why::NotListed: return "the controller's device is no longer listed";
++		case Why::DeviceAdded: return "an output device was added";
++		case Why::Retry: return "the once-a-second retry";
++		case Why::None: break;
++	}
++	return "-";
++}
++
++// BC5 (experiment 0372): what a port that belongs on the controller does with its device before its frames are
++// queued; the decision is bc5::pad_audio_route::decide (bc5/pad_audio_route.hpp, unit-tested in the BC5 backend).
++// - A stream on the controller is closed at any output device removal, when SDL stopped it (F93), or when the
++//   once-a-second look no longer lists the controller, and reopened at once with the port's spec if the
++//   controller is listed (a replug faster than this port's next write, or another sink removed: one close and
++//   open). SDL cannot say which node went, and a stream whose node went may already be on the default sink.
++// - While the controller is away the frames are dropped (the vibration port's go to the rumble fallback, F214),
++//   and the port looks at every device event and once a second.
++// - A port opened before the controller came (no pad at the start; a DualShock 4 swapped for a DualSense) is moved
++//   onto it when it is listed; with no controller a pad-speaker port on the default sink stays there (F329, F330).
++// Only the thread that writes the port opens and closes its device, as with F93; the port's device fields change
++// under m_mutex, under which AudioOutHasDevice and AudioOutQueuedFrames read them, and SDL's close runs after the
++// field is cleared. Every pad port is handled at its own next write, so each one is closed and reopened.
++void Audio::PadRouteStep(PortOut* port) {
++	namespace route = bc5::pad_audio_route;
++	const route::DeviceEvents now    = Bc5AudioDeviceEvents();
++	const uint64_t            now_ms = LibKernel::KernelGetProcessTime() / 1000;
++
++	route::PortState state;
++	state.wants_pad    = true;
++	state.on_pad       = port->pad_route != 0;
++	state.has_device   = port->audio_device != 0;
++	state.stopped      = state.has_device && SDL_GetAudioDeviceStatus(port->audio_device) == SDL_AUDIO_STOPPED;
++	state.retry_armed  = port->pad_retry_armed;
++	state.seen         = port->pad_seen;
++	state.last_look_ms = port->pad_retry_ms;
++
++	std::string           name;
++	const route::Decision d = route::decide(state, now, now_ms, [&name] {
++		name = Bc5FindPadAudioDevice();
++		return !name.empty();
++	});
++
++	bool opened = false;
++	if (d.step == route::Step::Close || (d.step == route::Step::Open && state.on_pad && state.has_device)) {
++		// First: the stream may already be on another sink.
++		PadCloseDevice(port);
++		std::fprintf(stderr, "AudioOut (exp 0372): t %.3f s port %d type %d: its stream on the controller closed (%s)%s\n",
++		             static_cast<double>(LibKernel::KernelGetProcessTime()) / 1e6, PortId(port), port->type, Bc5PadWhy(d.why),
++		             d.step == route::Step::Close ? "; frames dropped until the controller is back" : "");
++		std::fflush(stderr);
++	}
++	if (d.step == route::Step::Open) {
++		opened = PadOpenDevice(port, name, Bc5PadWhy(d.why));
++	}
++
++	const route::PortState next = route::after(state, d, now, now_ms, opened);
++	port->pad_seen        = next.seen;
++	port->pad_retry_ms    = next.last_look_ms;
++	port->pad_retry_armed = next.retry_armed;
++}
++
++// BC5 (experiment 0372): the port's device closed, its spec and route kept for the reopen.
++void Audio::PadCloseDevice(PortOut* port) {
++	SDL_AudioDeviceID old = 0;
++	{
++		Common::LockGuard lock(g_audio->m_mutex);
++		old                = port->audio_device;
++		port->audio_device = 0;
++	}
++	if (old != 0) {
++		SDL_ClearQueuedAudio(old);
++		SDL_CloseAudioDevice(old);
++	}
++}
++
++#if KYTY_PLATFORM == KYTY_PLATFORM_LINUX
++static void Bc5RaiseAudioClientThreads(); // below (experiment 0180)
++#endif
++
++// BC5 (experiment 0372): the port opened on the controller's device `name`: with the spec it had there (F93's
++// reopen), or the first time (the controller came after the port was opened) as OpenSdlDevice opens a pad port.
++// A device the port still has (on the default sink) is closed once the new one is open, so a port has one device
++// at a time. False, the port as it was, when SDL cannot open it (e.g. WirePlumber destroyed the stream because the
++// returning sink was not linkable yet, node.dont-fallback); the port tries again a second later. The new
++// stream's SDLAudioP thread gets nice -15 like those of the first opens (exp 0180/0181; F93's reopen left it at 0).
++bool Audio::PadOpenDevice(PortOut* port, const std::string& name, const char* why) {
++	SDL_AudioSpec desired {};
++	int           allowed = 0;
++	if (port->pad_route != 0) {
++		desired = port->audio_spec;
++	} else {
++		desired.freq     = static_cast<int>(port->freq);
++		desired.format   = SdlFormat(port->format);
++		desired.channels = PAD_STREAM_CHANNELS;
++		desired.samples  = static_cast<Uint16>(port->samples_num);
++		desired.callback = nullptr;
++		allowed          = SDL_AUDIO_ALLOW_FREQUENCY_CHANGE | SDL_AUDIO_ALLOW_FORMAT_CHANGE;
++	}
++	SDL_AudioSpec           obtained {};
++	bool                    props = false;
++	const SDL_AudioDeviceID dev   = Bc5OpenSdlAudioDevice(name.c_str(), &desired, &obtained, allowed, true, &props);
++	const double            t     = static_cast<double>(LibKernel::KernelGetProcessTime()) / 1e6;
++	if (dev == 0) {
++		if (port->pad_open_fails++ % 60 == 0) {
++			std::fprintf(stderr, "AudioOut (exp 0372): t %.3f s port %d type %d: opening on %s failed (after %s): %s; %u in a row, again in 1 s\n",
++			             t, PortId(port), port->type, name.c_str(), why, SDL_GetError(), port->pad_open_fails);
++			std::fflush(stderr);
++		}
++		return false;
++	}
++	const bool        moved = port->pad_route == 0 && port->audio_device != 0;
++	SDL_AudioDeviceID old   = 0;
++	{
++		Common::LockGuard lock(g_audio->m_mutex);
++		old                = port->audio_device;
++		port->audio_device = dev;
++		port->audio_spec   = obtained;
++		port->pad_route    = port->type == AUDIO_OUT_PORT_TYPE_VIBRATION ? 2 : 1;
++		port->pad_nb       = false;
++	}
++	if (old != 0) {
++		SDL_ClearQueuedAudio(old);
++		SDL_CloseAudioDevice(old);
++	}
++	SDL_PauseAudioDevice(dev, 0);
++#if KYTY_PLATFORM == KYTY_PLATFORM_LINUX
++	Bc5RaiseAudioClientThreads();
++#endif
++	port->pad_open_fails = 0;
++	LOGF("AudioOut: controller audio device %s for port type %d on %s\n", moved ? "taken from the default sink" : "reopened", port->type, name.c_str());
++	std::fprintf(stderr, "AudioOut (exp 0372): t %.3f s port %d type %d: %s on %s (%d Hz, %d ch) after %s%s\n", t, PortId(port),
++	             port->type, moved ? "moved from the default sink" : "opened", name.c_str(), obtained.freq,
++	             static_cast<int>(obtained.channels), why, props ? "; node.dont-reconnect, node.dont-fallback" : "");
++	std::fflush(stderr);
++	return true;
++}
++
+ #if KYTY_PLATFORM == KYTY_PLATFORM_LINUX
+ // BC5 (experiment 0180): SDL's PulseAudio backend moves the sound to the server on its own thread,
+ // "PulseMainloop", which ran at nice 0 beside ~60 busy game threads while SDL's audio threads have
+@@ -1055,6 +1316,13 @@
+ 			const double wall_s = static_cast<double>(now - last_us) / 1e6;
+ 			for (int id = 0; id < OUT_PORTS_MAX; id++) {
+ 				auto& p = m_out_ports[id];
++				// BC5 (experiment 0372): a pad port whose controller is away has no device and no trace line of
++				// its own; once a second, how many of its calls were dropped.
++				if (p.used && p.tr_pad_dropped != 0) {
++					std::fprintf(stderr, "pad route: t %.3f s port %d type %d (pad): %u calls dropped, no controller device\n",
++					             static_cast<double>(now) / 1e6, id, p.type, p.tr_pad_dropped);
++					p.tr_pad_dropped = 0;
++				}
+ 				if (!p.used || p.tr_calls == 0) {
+ 					continue;
+ 				}
+--- /dev/null
++++ b/src/bc5/pad_audio_route.hpp
+@@ -0,0 +1,182 @@
++// SPDX-License-Identifier: GPL-2.0-only
++// Experiment 0372: where a pad port's frames may go after the DualSense is unplugged and plugged in again.
++//
++// What went wrong (2026-10-28 23:32, the second title, USB DualSense, the shared normal build): the title's pad-speaker
++// port (type 4) and its vibration port (type 10) each open an SDL device on the controller's PipeWire sink. When the
++// sink goes away, SDL 2.33.0 (KytyPlus f266548's 3rdparty/SDL2, 4b69833) stops only the FIRST open device on that node
++// (SDL_RemoveAudioDevice breaks out of its loop after one: src/audio/SDL_audio.c:522-529), and its PipeWire backend
++// reports nothing itself
++// (stream_state_changed_callback, src/audio/pipewire/SDL_pipewire.c:1129-1140). The second port's device stays
++// "playing"; its stream carries target.object but neither node.dont-reconnect nor node.dont-fallback
++// (SDL_pipewire.c:1160, 1243-1272), so WirePlumber 0.5.17 neither destroys it (linking/find-defined-target.lua:116)
++// nor keeps it from a new target (linking/prepare-link.lua:71-76): it was linked to the default sink, where the
++// haptics were heard. Before exp 0181 SDL's PulseAudio backend opened a named device with PA_STREAM_DONT_MOVE
++// (SDL_pulseaudio.c:695-699), which pipewire-pulse turns into PW_STREAM_FLAG_DONT_RECONNECT (PipeWire 1.6.9
++// module-protocol-pulse/pulse-server.c, do_create_playback_stream): by today's WirePlumber scripts the second stream
++// was then left unlinked, silent rather than on the speakers (not observed), and F94 saw only the pad-speaker port
++// reopen after the unplugs of 2026-10-09.
++//
++// The host now follows the controller's device by SDL's audio device events, counted by an event watch on the thread
++// that pushes them (SDL_PushEvent calls the watches first, src/events/SDL_events.c:1156-1176), and decides here, per
++// port and per call on the thread that writes the port, what to do with its device. This header holds that decision
++// and the PIPEWIRE_PROPS value for a pad stream, so they can be unit-tested; the host side lives in KytyPlus
++// src/libs/audio.cpp (Audio::PadRouteStep).
++#pragma once
++
++#include <cstdint>
++#include <string>
++#include <string_view>
++
++namespace bc5::pad_audio_route {
++
++// How often a port that is on the controller, or waiting for it, looks at the device list without an event.
++inline constexpr std::uint64_t kLookPeriodMs = 1000;
++
++// SDL_AUDIODEVICEREMOVED / SDL_AUDIODEVICEADDED of output devices since the start (wrapping counters).
++struct DeviceEvents {
++    std::uint32_t removed = 0;
++    std::uint32_t added   = 0;
++};
++
++// What the port's writer does before queueing its frames.
++enum class Step : std::uint8_t {
++    Play,  // keep the device the port has (on the controller, or on the default sink) and queue on it
++    Drop,  // the port has no device now: its frames are dropped
++    Close, // close the port's device (its controller device has gone) and drop the frames
++    Open,  // open the port on the controller's device; a device still on the controller is closed first, one on
++           // the default sink only after the new one is open
++};
++
++enum class Why : std::uint8_t {
++    None,
++    DeviceRemoved, // an output device was removed since the port last looked
++    DeviceStopped, // SDL stopped the port's device (the first device on a removed node, F93)
++    NotListed,     // the once-a-second look did not find the controller's device (an event missed)
++    DeviceAdded,   // an output device was added since the port last looked
++    Retry,         // the once-a-second retry after a failed open, or while the controller is away
++};
++
++struct PortState {
++    bool          wants_pad   = false; // the port belongs on the controller (type 4 unless =main, type 10)
++    bool          on_pad      = false; // its stream is laid out for the controller (6 channels, pad_route != 0)
++    bool          has_device  = false; // an SDL device is open for it
++    bool          stopped     = false; // SDL reports that device stopped
++    bool          retry_armed = false; // look once a second without an event
++    DeviceEvents  seen {};             // the events the port has acted on
++    std::uint64_t last_look_ms = 0;    // when it last looked at the device list
++};
++
++struct Decision {
++    Step step   = Step::Play;
++    Why  why    = Why::None;
++    bool looked = false; // `present` was called
++};
++
++// The decision for one call. `present()` looks for the controller's device in SDL's list (and keeps its name); it is
++// called at most once, and only when the port has to look.
++//
++// A port whose stream is on the controller never keeps it after a removal: SDL cannot say which node went, and a
++// stream whose node went may already be on the default sink. If the controller is listed again (a replug faster than
++// the port's next write, or the removed device was another sink), the port is reopened at once, at the cost of one
++// close and open; otherwise it is closed and its frames are dropped. A port without a stream on the controller looks
++// at every device event, and once a second when it is armed; with no controller listed, a port on the default sink
++// (a DualShock 4's pad speaker, F329/F330) keeps playing there and a port without a device drops its frames.
++template <class Present>
++Decision decide(const PortState& p, DeviceEvents now, std::uint64_t now_ms, Present&& present) {
++    Decision d;
++    if (!p.wants_pad) {
++        return d;
++    }
++    const bool removed = now.removed != p.seen.removed;
++    const bool added   = now.added != p.seen.added;
++    const bool due     = now_ms - p.last_look_ms >= kLookPeriodMs;
++    if (p.on_pad && p.has_device) {
++        if (removed || p.stopped) {
++            d.why    = removed ? Why::DeviceRemoved : Why::DeviceStopped;
++            d.looked = true;
++            d.step   = present() ? Step::Open : Step::Close;
++            return d;
++        }
++        if (due) {
++            d.looked = true;
++            if (!present()) {
++                d.step = Step::Close;
++                d.why  = Why::NotListed;
++            }
++        }
++        return d;
++    }
++    if (removed || added || (p.retry_armed && due)) {
++        d.looked = true;
++        if (present()) {
++            d.step = Step::Open;
++            d.why  = removed ? Why::DeviceRemoved : added ? Why::DeviceAdded : Why::Retry;
++            return d;
++        }
++    }
++    d.step = p.has_device ? Step::Play : Step::Drop;
++    return d;
++}
++
++// The port after the step was carried out (`open_ok`: the open of Step::Open succeeded).
++inline PortState after(const PortState& p, const Decision& d, DeviceEvents now, std::uint64_t now_ms, bool open_ok) {
++    PortState n = p;
++    n.seen      = now;
++    if (d.looked) {
++        n.last_look_ms = now_ms;
++    }
++    switch (d.step) {
++    case Step::Play:
++    case Step::Drop:
++        // A port that was never on the controller stops polling once a look found nothing; one that was on it
++        // keeps looking once a second until it is back (F93).
++        if (d.looked && !p.on_pad) {
++            n.retry_armed = false;
++        }
++        break;
++    case Step::Close:
++        n.has_device  = false;
++        n.stopped     = false;
++        n.retry_armed = true;
++        break;
++    case Step::Open:
++        if (open_ok) {
++            n.on_pad      = true;
++            n.has_device  = true;
++            n.stopped     = false;
++            n.retry_armed = false;
++        } else {
++            // A stream on the controller was closed before the open; one on the default sink is kept.
++            n.has_device  = !p.on_pad && p.has_device;
++            n.stopped     = false;
++            n.retry_armed = true;
++        }
++        break;
++    }
++    return n;
++}
++
++// The host's PIPEWIRE_PROPS default (exp 0181: PipeWire's downmix normalized so that it cannot clip).
++inline constexpr char kHostStreamProps[] = "{ channelmix.normalize = true }";
++// What a stream on the controller adds: never moved to another sink when its target goes, never linked to the default
++// sink when its target is not found (pipewire-props(7), PipeWire 1.6.9: node.dont-reconnect, node.dont-fallback;
++// WirePlumber 0.5.17 linking/prepare-link.lua:71-76 and find-defined-target.lua:116-123, which destroys such a stream,
++// node.linger unset). dont-fallback matters most: with dont-reconnect alone, a reopen that reaches WirePlumber before
++// the returning sink is linkable would be linked to the default sink and then kept there (prepare-link.lua:63-67);
++// with dont-fallback it fails, and the port retries a second later.
++inline constexpr std::string_view kPadStreamKeys = "node.dont-reconnect = true node.dont-fallback = true";
++
++// The PIPEWIRE_PROPS value for a stream opened on the controller: the host's default with kPadStreamKeys added, or
++// empty when `current` is not the host's default (a value the user set is left as it is).
++inline std::string pad_stream_props(std::string_view current) {
++    const std::string_view host(kHostStreamProps);
++    if (current != host) {
++        return {};
++    }
++    std::string out(host.substr(0, host.rfind('}')));
++    out += kPadStreamKeys;
++    out += " }";
++    return out;
++}
++
++} // namespace bc5::pad_audio_route
