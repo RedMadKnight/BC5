@@ -1,7 +1,7 @@
 # 0380 — Is the F403 class a zero-dimension indirect dispatch? (sources, title side, a guard, a box plan)
 
 **Date.** 2026-10-29. **Laptop only.** No box access and no GPU submission in this experiment. Branch
-`exp/0380-zero-dim-dispatch`. Findings F545–F589 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
+`exp/0380-zero-dim-dispatch`. Findings F545–F594 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
 session's GO).
 
 **Question.** F527 puts the ME just past a `DISPATCH_INDIRECT` that passed the host's check, inside the title's
@@ -1138,6 +1138,143 @@ uncompacted trees (F362, F366, F370), or denoise NaNs (TODO(verify)).
   these fields.
 - An early-warning rule should report "graphics stall" and "compute stall (F403-like)" as different events.
 
+## 18. Where the garbage dims come from, a flight recorder, and a soak (F590–F594; laptop only, no box access)
+
+**The request (the top session).** Stop testing fixes. Find out where the garbage dims come from: did the CP read the
+wrong address, or the right address with stale data? Design a flight recorder that settles it at the next hang, and
+assess an unattended soak. Laptop only: everything below is read from extracts already in `raw/`, and nothing touched
+the box. Decode script: `raw/dims0380.py`.
+
+**The triples.** Only two title events have a launched grid (sampler 0377 came after 09:48, F550). The bench runs C1
+and W1 add a third, host-induced triple.
+
+| event | program | launched `COMPUTE_DIM` | memory at the args address (CPU, at the timeout) | `INDEX_BASE` before it, its heap (M1 map log) |
+|---|---|---|---|---|
+| 12:12 | 0x11d0289c00 | 0x00010000 0x00030002 0x002a0028 | 111 × 1 × 1 at 0x11d0571d00 | 0x11e9db6280, RenderGpuRwLarge |
+| 14:04 | 0x11d02a4a00 | 0x000001e1 0x4000008a 0x000001e0 | 3158 × 1 × 1 at 0x11d05df300 | 0x1210012000, CommitIABufferAllocator |
+| C1, W1 | 0x11d0323c00 | 0xbefe036a 0x810e810e 0x06043736 | 28,800 × 1 × 1 at 0x11d0571b00 | (the dispatch ran from the high-VA copy slot) |
+
+**What they do not match (F590).**
+- **Not PM4.** None is a type-3 header, and none occurs in its hung IB (`find0380.py`, F565).
+- **Not an address of ours.** None equals a half of the `SET_BASE`, `INDEX_BASE`, `LOAD_SH_REG_INDEX` or program
+  addresses, or of the check's flag area.
+- **Not another dispatch's arguments.** Every argument the timeout probes read is (x, 1, 1) with x ∈ {0, 111, 1,295,
+  3,158, 3,498, 4,464, 6,136, 28,800} (F506, F528, F553, F564, F571).
+- **Not stale arguments of the same slot.** The slots (0x11d05df300, 0x11d0571b00, 0x11d0571d00) are fixed: the same
+  addresses carry this family's arguments in every frame, across hours and boots (18:15, 23:36, 09:48, 12:12, 14:04).
+  So any older contents of the slot are arguments too, (x, 1, 1). A stale line of the slot would launch an old
+  (x, 1, 1), not these.
+- **So the CP fetched dwords that were never at the slot.** Either the fetch went to another address, or a cache line
+  of another address answered for it, which comes to the same thing. Medium confidence: it rests on the slots never
+  holding other data, which the logs support but cannot prove for the moment of the fetch.
+- **What each one looks like** (TODO(verify): which candidate address held it at the time):
+  - 12:12 reads as six little-endian 16-bit values: 0, 1, 2, 3, 40, 42. That is index-buffer-like data. Its
+    `INDEX_BASE` is in RenderGpuRwLarge, a GPU-written heap.
+  - 14:04 reads as 32-bit 481, 0x4000008a, 480. The outer two are index-like; the middle one is not an index (as f32
+    it is 2.0000329). Its `INDEX_BASE` is in CommitIABufferAllocator, the input-assembler (index/vertex) heap.
+  - So both are consistent with "the fetch read at or near the `INDEX_BASE`" (H0380b's original form, F555). Neither
+    proves it: the index data at those addresses is not recorded anywhere.
+- **The `INDEX_BASE` heap at 14:04 was in the zero-skip list's heap** (CommitIABufferAllocator, 284 MiB in 4 runs
+  skipped). TODO(verify) on the box whether its first chunk (file 0x226212000) was a skipped run. It matters only for
+  14:04: the class predates the skip.
+
+**C1/W1's triple is shader code (F591).** The three dwords decode as three valid gfx10 instructions (field layout of
+AMD's RDNA 1.0 ISA guide; TODO(verify) with llvm-mc on the box):
+- 0xbefe036a: SOP1 op 3 `s_mov_b32`, sdst 126 (`exec_lo`), ssrc0 106 (`vcc_lo`);
+- 0x810e810e: SOP2 op 2 `s_add_i32`, sdst s14, ssrc0 s14, ssrc1 129 (inline 1), a loop counter;
+- 0x06043736: VOP2 op 3 `v_add_f32`, vdst v2, src0 310 (v54), vsrc1 v27.
+
+The title's compute programs (0x11d02…–0x11d03…) live in the same heap as the arguments, RenderGpuWcSmall
+(0x11d0000000 + 0x6e00000, M1's map log, `raw/runs/M1-memory-types.txt`). So with the base above the fetch's reach
+(F572), the CP's argument fetch read program code from one fixed place: a wrong address, shown. That is the
+host-induced case, but it is the first direct evidence that this fetch path can land on an address other than base +
+offset without faulting.
+
+**Can (1) alone settle it? No (F592).**
+- The decision needs the contents of the candidate addresses (the `INDEX_BASE`, the earlier bases, the program) at
+  the moment of the hang. No record holds them. The devcoredump has registers and IBs, no memory; the probe reads only
+  the argument slot; and the box rebooted after both events.
+- One box read remains (it needs a GO): 14:04's skip list against the `INDEX_BASE` chunk.
+- **Part A of the recorder needs no GPU change.** It is an extension of the host's timeout probe, CPU only, zero CP
+  packets:
+  1. Read the newest sampler 0377 event for the launched `COMPUTE_DIM` (it is written 0.1–0.2 s before the host's
+     timeout).
+  2. Dump 64 bytes at the IB's last `INDEX_BASE`, at every `SET_BASE` 1 base of the IB, at the stuck program's
+     address, and at the args slot.
+  3. Scan every title GPU mapping (CPU-visible memfd, ~10–12 GiB) for the 12-byte triple, and for each dword alone at
+     4-byte alignment. Log each hit's VA and heap name, then fsync.
+
+  The scan costs ~2–4 s single-threaded, inside the ~60 s before `bc5-gpu-watch` reboots. The probe's lines survived
+  the failed resets at 12:12 and 14:04.
+- **The verdict A gives at the next B hang:**
+  - the triple found at the `INDEX_BASE` (+k) → wrong address through the index path (H0380b);
+  - found elsewhere → another wrong address, named by its heap;
+  - found nowhere → the data was transient (stale or a translation error), and part B is needed.
+
+**Part B, the GPU-side ring (F593).** Off by default (`BC5_DIRECT_FLIGHT_RECORDER=1`, not built); no shared-build change
+without D19. It records, per indirect dispatch:
+1. **Host view** (CPU, free, at filter time). A host ring entry: sequence number, submission #, IB dword, base,
+   offset, VA, the last `INDEX_BASE`, the program.
+2. **ME view, before the dispatch.** A `WRITE_DATA` of the sequence number, then three `COPY_DATA` memory → ring of
+   the arguments at base + offset (the same packet as the copy guard, F566).
+3. **Fetch view, after the dispatch.** Three `COPY_DATA` *register* → ring of `COMPUTE_DIM_X/Y/Z` (byte offsets
+   0xb804/08/0c = dword 0x2e01–0x2e03, `tools/bc5-agc/regdb/gfx10.json`). The register source is the packet the
+   kernel itself uses to read registers on gfx10 rings (src_sel 0, dst 5, `WR_CONFIRM`; Linux v7.2
+   `gfx_v10_0.c:8986-9000`, fields in `nvd.h:252-271`).
+
+These registers are where the sampler saw the garbage. So the ring compares the ME view with the fetch view for
+**every** recorded dispatch, not only the one that hangs.
+- **Readout.** The host reads each retired ring entry at its fence (CPU-mapped low-VA BO). It logs every mismatch at
+  once, with the host entry, and keeps a periodic count. At TIMEOUT it dumps the last N = 256 entries and fsyncs.
+  After the reboot everything is in the journal, as the probe lines are today. The devcoredump adds nothing new for
+  this.
+- **What it buys.** A benign mismatch (a wrong fetch with small values that does not hang) would show up during healthy
+  play. That gives a rate without a hang, and turns any bench or soak into a measurement.
+- **Cost.**
+  - 5 + 18 + 18 = 41 dwords per recorded dispatch.
+  - On the B slot (first after `INDEX_BASE`, ~130/s in play, F583) plus the next three indirect dispatches of the IB:
+    ~520 a second, ~85 KB/s of IB, nothing measurable.
+  - On every indirect dispatch it would add ~47 % to the check (88 dwords) on the BVH dcbs (Q23); not recommended.
+  - Ring: 256 × 16 dwords = 16 KiB, one low-VA BO in every BO list (F574's slot plumbing).
+- **Risks** (CP hazards first):
+  - **The register read.** Reading an SH register through `COPY_DATA` on the gfx ring while the SPI launches that
+    dispatch is not shown to be safe or to return the launched value. TODO(verify): F553's open question whether the
+    readable copy is the SPI's. A privileged-register filter could also reject it. It needs a bench self-test first:
+    `direct-selftest` with known direct and indirect dims, the reg copy against them, `--submit`, the maintainer's
+    yes.
+  - **The observer effect.** Packets between `INDEX_BASE` and the dispatch may hide the bug, as the GL2 write-back's
+    `ACQUIRE_MEM` perhaps does (F584). So: no `ACQUIRE_MEM`, no `SET_BASE`; the before-copies go before the check,
+    which already puts 88 ME dwords there, and the register copies go after the dispatch.
+  - **IB structure.** The title's own `COND_EXEC` counts must cover the added dwords (the check's tests already cover
+    this case, F566), and the ring BO must be in every submission.
+  - **The copies' own reads** of the argument slot go through the ME path that already reads the right values (the
+    check's polls). They add no new kind of access.
+- **Order.** A first: no GPU change, decides most outcomes at the next B hang. B's self-test next, then B in play.
+
+**A soak without the maintainer (F594).**
+- **The bench has shown no B event.**
+  - The S6N route with RT on and no effective fix ran R1, R2 (rebase, refuted as a fix by 14:04), S1 (rebase +
+    FORCE_START, 300 s) and M1 (no switches): 2,100 s, ~300,000 first-after-`INDEX_BASE` dispatches, **0 B events**.
+    W2/W3 are left out: they had the write-back on.
+  - All five B events on record came in the maintainer's own plays.
+- **His rate.** The top session's ~1 per 7–10 min of play (6–8.6/h), or ~1 per 54,000–77,000 such dispatches at
+  ~130/s.
+- **The comparison.** At his rate the bench should have shown 3.5–5 events by time, or 3.9–5.6 by exposure. Zero has
+  p ≈ 0.004–0.03. So the scripted route is much less prone, although it runs the B slot at least as often (~145/s).
+  The trigger is in what he does (scenes, movement, combat, streaming, menus), not in the dispatch count alone.
+- **Per-hour estimate for the route.** Unknown, with a point estimate of 0. These 35 min bound it below ~5/h (95 %),
+  which is not tight.
+- **An overnight soak (8 h, RT on, on a save copy) as a measurement:**
+  - one hit → a reproducer;
+  - none → the route's rate is below 0.37/h (95 %), and the route is useless for this.
+- **Practical limits.**
+  - The first hang reboots the box, so one event per night, unless the loop restarts itself after autologin. That is
+    unattended GPU work and needs the maintainer's yes.
+  - Memory pressure grows over hours (exp 0379).
+- **Better soak content.** Alternate the lake bench with the automated fight test, from a copy of his current save
+  near where he plays.
+- **Best with B on.** Mismatches counted per hour make a night useful even without a hang.
+
 ## Result
 
 - Sources read and cited (F545, F546). The title-side evidence was re-read from exps 0376/0378 (F547).
@@ -1145,6 +1282,11 @@ uncompacted trees (F362, F366, F370), or denoise NaNs (TODO(verify)).
 - A second guard, `FORCE_START_AT_000` on indirect dispatches, is built the same way: default off, with unit tests
   (F551).
 - The box plan is written. Only step A0 ran: a CPU-only compile check, which passed (F552). Nothing ran on the GPU.
+- The garbage dims match no PM4, address, IB dword or argument of ours, and cannot be stale arguments of their
+  fixed slots, so the CP fetched dwords from elsewhere (medium). C1/W1's triple is shader code from the arguments'
+  own heap, a shown wrong-address read. The records cannot say which address it was for the title's events. A
+  host-only probe extension (part A, no GPU change) and a register-readback ring (part B) are designed, not built.
+  The scripted bench route has shown no B event in 35 min (p ≈ 0.004–0.03 at the play's rate) (F590–F594).
 - The maintainer's 36.6-minute play with the GL2 write-back on (`test 0380 wb`, start 2) had no F403, against today's
   rate of about one per 7–10 min (p ≈ 0.005–0.03 if unchanged). Start 1's recovered start-up fault is unrelated to the
   write-back (F582–F584).
