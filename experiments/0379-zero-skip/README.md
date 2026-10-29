@@ -140,8 +140,95 @@ Read from main's patch 0001 (9420cfa0), `src/libs/bc5LleAgc.cpp` (blob 8d2f498):
 
 ## Result
 
-*(filled in after the runs)*
+Box state (`raw/*-box-settings.txt`): kernel 7.2.9-ogc3.1, 15,192 MiB RAM, GTT 13,312 MiB, zram 7.4 GiB (zstd),
+swappiness 60; `play-pkg.sh` 55531ab6, bc5-mount 43277724, the shared learned file a7cc8581 (109 windows). The box was
+idle between runs (BOX-QUEUE: exp 0378 done at 10:5x; this experiment's lock 10:59–11:25).
+
+### Every run passed (`raw/*-summary.txt`, `*-verdict.txt`, `*-kernel-stream.txt`)
+
+| arm | time | flips over 420 s | flips/s | pinned at the end | kernel amdgpu lines | TIMEOUT | devcoredumps | learned file |
+|---|---|---|---|---|---|---|---|---|
+| S1 | 11:02–11:09 | 14,796 | 35.2 | 11,324 MiB in 90 BOs | 0 | 0 | 0 | unchanged |
+| A1 | 11:09–11:17 | 14,843 | 35.4 | 11,338 MiB in 93 BOs | 0 | 0 | 0 | unchanged |
+| B1 | 11:17–11:24 | 14,854 | 35.4 | **9,306 MiB in 121 BOs** | 0 | 0 | 0 | unchanged |
+
+- No crash line in any run. The live saves read 1e451f8fefd534f3 before and after every run (`raw/s6n-saves.txt`).
+- Frame profiles (`raw/*-0358.txt`): GPU busy 20.47 / 20.35 / 20.60 ms a frame, host prepare 2.46 / 2.49 / 2.39 ms,
+  28.4 / 28.3 / 28.3 ms between flips (S1 / A1 / B1).
+
+### Arm S1: the zero list with RT on (`raw/S1-zero.txt`, `raw/S1-zero-list.txt`)
+
+| heap | span | zero at 150 s | zero in all 6 scans | listed (runs ≥ 8 MiB) |
+|---|---|---|---|---|
+| RenderGpuWcLarge | 2,758 MiB | 1,430 MiB | 1,378 MiB | 1,218 MiB in 52 runs |
+| CommitIABufferAllocator | 2,736 MiB | 1,424 MiB | 1,384 MiB | 1,380 MiB in 3 runs |
+
+- The intersection stopped changing after the second scan (200 s): scans 2–6 gave the same 1,378 + 1,384 MiB.
+  Per scan, 1,396–1,410 MiB of RenderGpuWcLarge were zero, so ~20–30 MiB moves between zero and data there; in
+  CommitIABufferAllocator nothing moved after 200 s. That matches F402 (RT off, bench) within 60 MiB per heap.
+- A scan took 0.46–0.66 s (RenderGpuWcLarge) and 0.91–1.15 s (CommitIABufferAllocator) on its nice-19 thread. S1's
+  frame rate (35.2) is within 0.2 flips/s of A1's.
+
+### B1 against A1 (`raw/ana0379.py`, window 180–410 s; then 60–410 s, which includes the load)
+
+| arm | GTT used MiB | MemAvailable MiB (min) | swap used MiB | Shmem MiB | Cached MiB | mount reads MiB/min | PSI mem full % | PSI io full % | refaults /min | major faults /min | flips/s |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| S1 | 11,992 | 637 (600) | 609 | 11,721 | 12,392 | 23 | 0.08 | 0.14 | 419 | 263 | 39.1 |
+| A1 | 11,992 | 480 (457) | 397 | 11,832 | 12,412 | 25 | 0.03 | 0.19 | 2,357 | 389 | 38.9 |
+| **B1** | **10,080** | **2,490 (2,480)** | 532 | 9,869 | 12,327 | **21** | 0.09 | 0.14 | **491** | **38** | 39.1 |
+
+| 60–410 s | GTT used MiB | MemAvailable MiB (min) | mount reads MiB/min | PSI io full % | refaults /min | major faults /min | flips/s |
+|---|---|---|---|---|---|---|---|
+| S1 | 11,992 | 639 (570) | 1,525 | 2.83 | 25,956 | 3,080 | 36.5 |
+| A1 | 11,992 | 503 (407) | 1,515 | 2.77 | 46,200 | 494 | 36.7 |
+| B1 | 10,080 | 2,495 (2,457) | 1,303 | 2.26 | 128,001 | 590 | 36.7 |
+
+- **GTT used fell by 1,912 MiB** and **MemAvailable rose by ~2.0 GB** (480 → 2,490 MiB). The page cache outside shmem
+  (Cached − Shmem) was 580 MiB in A1 and 2,458 MiB in B1.
+- **bc5-mount read 14 % less** over 60–410 s (1,303 against 1,515 MiB a minute) and 16 % less in the steady window
+  (21 against 25). In the steady window, major faults fell from 389 to 38 a minute and file refaults from 2,357 to 491.
+- During the load (60–180 s) B1 had more file refaults (the 60–410 rate is 128 k against 46 k a minute) at the same
+  major-fault rate. With 2 GB more page cache the kernel keeps and recycles more file pages while the title streams;
+  this was not looked at further.
+- **No frame-rate cost:** 35.4 flips/s over the whole run in both arms, 39.1 against 38.9 in the steady window.
+- **The bench does not show F505's thrash.** The S6N route stands after Continue, and its mount reads in the steady
+  window are 21–25 MiB a minute in every arm, against 3–4 GB a minute in the maintainer's play (F505). PSI io "full"
+  is 0.14–0.19 %. So the bench shows the memory freed, not the slowdown it should cure.
+
+### What the skip did (`raw/B1-zero.txt`)
+
+- Placed: RenderGpuWcLarge at file 0x156c00000 (1,218 MiB in 52 runs) and CommitIABufferAllocator at 0x226200000
+  (1,380 MiB in 3 runs); one canary BO of 55 slices (110 MiB pinned); 1,299 canary mappings at the start.
+- Taken back in 420 s: **279 chunks by hints** (558 MiB; 144 of them in the first minute), **2 chunks by CPU writes**,
+  and **one run by a canary hit**: run 22, file 0x1ae600000 + 18 MiB in RenderGpuWcLarge, between the first and second
+  minute reports (journal t ≈ 60–120 s, the load and the Continue). Its 18 MiB went back to a real import.
+- 2,018 MiB stayed skipped from the second minute to the end; with the 110 MiB canary that is 1,908 MiB, the GTT
+  difference within 4 MiB.
+- 28 more BOs than A1 (121 against 93: the skipped runs cut the eager imports) and ~1,000 canary mappings, with no
+  measurable host cost (prepare 2.39 against 2.49 ms a frame).
 
 ## Verdict
 
-*(filled in after the runs)*
+- **Pass on the bench route with RT on.** The zero skip pins 1.9 GB less (GTT used 10,080 against 11,992 MiB),
+  leaves MemAvailable at 2.5 GB instead of 0.5 GB, cuts the mount's reads by 14–16 % and major faults by 10× in the
+  steady window, at the same frame rate, with no kernel GPU line, TIMEOUT, devcoredump, new learned fault or crash,
+  and the live saves unchanged.
+- **One canary hit is a real event, not noise.** The GPU wrote non-zero data into 18 MiB of RenderGpuWcLarge that was
+  zero in all six S1 scans, during the load. The canary caught it and the run was imported, as designed; whatever the
+  GPU wrote there before the check (up to ~2.75 s: 55 slices at 50 ms) was lost. The logs cannot show whether that
+  was visible. A list made on one route will meet more such writes in free play.
+- **What the bench cannot answer.** F505's thrash happens in the maintainer's free play, which moves through the world; the bench
+  stands still and its mount reads 21–25 MiB a minute in every arm. Whether 2 GB more page cache removes the 3–4 GB a
+  minute of re-reads, and how many canary hits a list from the bench meets in free play, needs a run in that play.
+- **Not integrated.** The host diff (`patch0379-bc5LleAgc.diff`) and the header go into patch 0001 and the shared
+  builds only on the maintainer's yes (D19), with `BC5_DIRECT_ZERO_SKIP` and a list file in `play-pkg.sh`. Before
+  that, two improvements are cheap: one canary slice per run is 110 MiB (a slice shared by several small runs would
+  cost less), and the list could be the intersection of several sessions, the maintainer's free play included
+  (one S run with the scan switches in the maintainer's play).
+
+## Findings (for HANDOFF)
+
+- **F540** — With RT on, 2.6 GB of the two eager render heaps stays all-zero through six scans of the S6N route.
+- **F541** — Skipping those chunks behind a canary pins 1.9 GB less at the same frame rate.
+- **F542** — What took chunks back: hints 558 MiB, CPU writes 4 MiB, one canary hit of 18 MiB during the load.
+- **F543** — The bench route does not reproduce F505's re-reads, so the gain in free play is not measured.
