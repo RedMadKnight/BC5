@@ -1,7 +1,7 @@
 # 0380 — Is the F403 class a zero-dimension indirect dispatch? (sources, title side, a guard, a box plan)
 
 **Date.** 2026-10-29. **Laptop only.** No box access and no GPU submission in this experiment. Branch
-`exp/0380-zero-dim-dispatch`. Findings F545–F600 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
+`exp/0380-zero-dim-dispatch`. Findings F545–F603 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
 session's GO).
 
 **Question.** F527 puts the ME just past a `DISPATCH_INDIRECT` that passed the host's check, inside the title's
@@ -1457,6 +1457,89 @@ so the guard may check the wrong address. Read from the code on this branch and 
 
   A behavioural test of the prefix as the trigger would follow only if count 3 holds.
 
+## 21. The count over the private dumps, and the 21:33 play (F601–F603; the top session's GO, reads only)
+
+Reads only, 22:37–22:5x. Lock line `top exp 0380 | reads only: IB-dump SET_BASE count + 21:33 play logs`, cleared;
+claim and done lines are in BOX-QUEUE. The maintainer was not playing. The script is `raw/shape0380.py`, which
+prints offsets and counts only. Its outputs are in `raw/runs/`: `SHAPE-timeout-dumps.txt`, `PLAY-2133-mem.txt` (our
+own memory sampler) and `PLAY-2133-fps-per-minute.txt`.
+
+**The counts (F601).**
+- **What was read:**
+  - all 53 `ib-timeout-*-dcb-*.bin` dumps under `~/bc5-data/captures/play-*/gc/` (2026-10-23 to 10-29);
+  - 1,987 healthy dcb dumps: `exp0157-ib679`…`ib682`, `ibdump-262`, `-372` and `-377`, from 10-12 to 10-18.
+- **Count 1:** no `SET_BASE` index 1 lies inside a `COND_EXEC` range, in any dump.
+  - Timeout dumps: 0 of 5,982 `SET_BASE` index 1 packets, in 175 ranges.
+  - Healthy dumps: 0 of 30,564, in 1,452 ranges.
+  - So F598's latent defect has never been exercised in any recorded stream.
+- **Dword 0 is our prefix's.** 43 of the 53 timeout dumps begin with `CONTEXT_CONTROL` 0x80000000/0x80000000, then
+  `CLEAR_STATE`. All five B dumps are among them. In every prefixed dump, the prefix's first `VGT_TF_MEMORY_BASE_HI`
+  ends at dword 1269, which confirms F599's TODO.
+  - Several dumps hold more than one prefix: at 12:12, `CONTEXT_CONTROL` sits at 0, 7011 and 10027.
+- **Count 2, the shape:** a prefixed dcb whose first GFX-form `DISPATCH_INDIRECT` comes before any `SET_BASE`
+  index 1 of its own.
+  - It appears in exactly 5 of the 43 prefixed timeout dumps, the five sub-class B events: 18:15 (10-28), 23:36,
+    09:48, 12:12 and 14:04. Their first dispatch is at 1287–1289, right after the prefix.
+  - The other 38 prefixed hangs have the title's own `SET_BASE` before their first indirect dispatch, or no
+    indirect dispatch at all.
+  - Seven unprefixed timeout dumps also dispatch before any `SET_BASE` (10-27 to 10-29 16:25, first dispatch at 13–102).
+    These are the earlier chain classes under a carried base (F430 era), not B.
+- **Count 3 holds: every recorded B event has the shape** (5 of 5).
+- **Healthy streams: not measured for the current build.** The healthy dumps show the shape 0 times and have no
+  dispatch before a `SET_BASE` at all. But they predate the default prefix (only 54 of the 1,987 carry it), and they
+  come from other scenes.
+  - The indirect evidence says the shape is common now. F506 calls B's opener the family that "opens most frames'
+    dcb" (§11).
+  - `ARGS_WB=first` wrote GL2 back before 282,894 first-after-`INDEX_BASE` dispatches in 36.6 min (about 129 a
+    second; `exp0380wb/play/play-20261029-162552.log`). Every prefix supplies such an `INDEX_BASE`.
+  - So the shape is the context of every B event, not by itself a trigger. It runs many times a second, and B comes
+    about once an hour.
+
+**The 21:33–21:55 play on "test 0380 rec" (F602).**
+- No hang and exit 0. The direct log (`~/bc5-data/captures/play-20261029-2133*/gc/direct.log`, 318 MB, private)
+  has no fence timeout, no fault and no `rec0380:` line. Its "timeout" matches are frame-profile and slow-post
+  counters, plus one "timed out 0".
+- **Frame rate per minute:**
+
+  | Minutes | flips/s | Longest gaps |
+  |---|---|---|
+  | 0–1 | 21–23 | loading, gaps up to 1.7 s |
+  | 2–15 | 24–45 | 0.11–0.8 s |
+  | 16–21 | 21.5, 17.4, 17.1, 13.2, 14.9, 9.0 | 0.7–1.7 s |
+
+- **The memory sampler shows why.** Up to 21:49, memavail ran at 300–560 MB, swap at 0.8–1.07 GB and
+  `psi_mem_full60` at 0.16–1.24 %. At 21:50:58:
+  - `psi_mem_full60` jumped to 8.5 %, then 9.3, 13.2, 16.4 and 14.1 %;
+  - swap peaked at 1.62 GB;
+  - the emulator's RSS fell from about 2.5 GB to 0.7–1.3 GB, and the mount's from about 715 MB to 140–325 MB;
+  - the mount's reads rose to 9.0–9.9 GB a minute, against 2–6 GB/min in minutes 2–15.
+
+  The game's working set and the package mount's cache were being evicted and re-read: a reclaim storm. GTT grew
+  the whole time, from 11,437 MB to 12,702 MB (+1.27 GB in 21 min), and it is pinned. That growth pushed the box
+  over the edge in minute 16.
+- **The recorder cost nothing measurable.** It never fired, because there was no timeout and the self-test is off
+  in the play launcher. Its only work per completed dcb is one `getenv` check. The smoke run showed 387–410 flips per
+  10 s against M1's 386–409 (F595). The instability is the memory pressure. Not checked: whether the shared normal
+  build's GTT grows the same way in the same scene. The launcher's `fusermount3` "Device or resource busy" at exit
+  left no `bc5-mount` process behind.
+
+**The behavioural test, proposed and not built (F603).** Count 3 holds, so it tests the one thing every B event
+shares besides the shape: the dispatch is the first after our `CONTEXT_CONTROL` + `CLEAR_STATE`.
+- **The test needs no build.** It is the shared normal build with `BC5_DIRECT_PIECES_NO_CLEAR=1` (exp 0155's
+  diagnostic, patch lines 32244–32247), which drops the prefix's first five dwords and keeps its `SET_BASE`,
+  `INDEX_BASE` and TF-ring registers. It runs as one test launcher (`mkplay0380rec.pl`'s pattern) with RT on,
+  played by the maintainer.
+- **Cost:** none on the GPU side. It writes five dwords fewer per drawing dcb.
+- **Risk:**
+  - Context registers the tracker never saw keep whatever the last job on the ring left. That brings back F204-type
+    menu artefacts, a visual risk, not a hang.
+  - Whether `CLEAR_STATE` matters to the CP's fetch is TODO(verify). It is the hypothesis under test.
+- **Power:** B came about once per hour of RT-on play. Two hours without B gives p ≈ 0.14 if nothing changed; three
+  hours gives about 0.05.
+  - `ARGS_WB=first` already went 36.6 min without B, with a sync at the same point.
+  - One B event with the switch on refutes `CLEAR_STATE` as the trigger.
+- Not to be built or staged before the top session's GO.
+
 ## Result
 
 - Sources read and cited (F545, F546). The title-side evidence was re-read from exps 0376/0378 (F547).
@@ -1464,6 +1547,11 @@ so the guard may check the wrong address. Read from the code on this branch and 
 - A second guard, `FORCE_START_AT_000` on indirect dispatches, is built the same way: default off, with unit tests
   (F551).
 - The box plan is written. Only step A0 ran: a CPU-only compile check, which passed (F552). Nothing ran on the GPU.
+- Every recorded sub-class B event (5 of 5) is the first indirect dispatch right after our full-state prefix, in a dcb
+  with no `SET_BASE` of its own. No recorded stream has a `SET_BASE` inside a `COND_EXEC`. The shape is probably
+  common in healthy play, so it is context, not a trigger. A `CLEAR_STATE`-less prefix test is proposed. The
+  21:33 play's instability was memory reclaim from minute 16 (GTT +1.27 GB, PSI up to 16 %); the recorder cost
+  nothing (F601–F603).
 - The maintainer's hypothesis, a `SET_BASE` tracked inside a skipped conditional block, is refuted as the cause of the garbage
   dims: in every B event, our check and the CP's fetch use the same `SET_BASE`. That `SET_BASE` is our own full-state
   prefix's, not the title's. The trackers' blindness to `COND_EXEC` is a real, latent defect, and how often the title
