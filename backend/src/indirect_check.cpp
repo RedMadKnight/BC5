@@ -18,6 +18,7 @@ constexpr std::uint32_t kWriteDataMem = 5u << 8;  // DST_SEL memory
 constexpr std::uint32_t kWrConfirm = 1u << 20;
 constexpr std::uint32_t kCondWrite = 0xC0074500u; // PKT3(COND_WRITE, 7, 0)
 constexpr std::uint32_t kGreater = 6;
+constexpr std::uint32_t kEqual = 3; // experiment 0380: WAIT_REG_MEM_FUNCTION 3 "==", Linux v7.2 nvd.h
 constexpr std::uint32_t kPollMem = 1u << 4;
 constexpr std::uint32_t kWriteMem = 1u << 8;
 constexpr std::uint32_t kPfpSyncMe = 0xC0004200u; // PKT3(PFP_SYNC_ME, 0, 0)
@@ -54,7 +55,7 @@ std::size_t packet_len(std::uint32_t h) {
 std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib_in, std::uint64_t base_in,
                                  const std::uint32_t (&max)[3], const std::uint32_t (&draw_max)[2],
                                  std::vector<std::size_t> &flag_refs, Stats &stats,
-                                 bool compute_ring, const ProductLimit *product) {
+                                 bool compute_ring, const ProductLimit *product, bool zero_dims) {
     // ADR 0010 section A: a COND_EXEC range whose grown count no longer fits has its own checked
     // packets NOP-ed (nothing of that range runs unchecked) and the pass runs again over the
     // rest; it used to give up on the whole IB, which in a chain is several buffers.
@@ -79,7 +80,8 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib_in, std::uint
     if (dispatches == 0)
         return {ib.begin(), ib.end()};
     std::vector<std::uint32_t> out;
-    out.reserve(ib.size() + dispatches * (kCheckDwords + (product != nullptr ? kProductDwords : 0) + 2));
+    out.reserve(ib.size() + dispatches * (kCheckDwords + (product != nullptr ? kProductDwords : 0) +
+                                          (zero_dims ? kZeroDwords : 0) + 2));
     // The IB's own COND_EXECs skip a count of dwords: a check inserted inside one's range grows it.
     // new_at[i]: where the packet at offset i starts in out, its inserted check included.
     std::vector<std::size_t> new_at;
@@ -135,6 +137,18 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib_in, std::uint
                                            0xffffffffu});
                     flag();
                     out.push_back(0);
+                }
+                if (zero_dims && dims == 3) { // experiment 0380: x, y or z == 0 ? flag = 0
+                    for (std::uint32_t k = 0; k < 3; ++k) {
+                        const std::uint64_t a = args + 4 * k;
+                        out.insert(out.end(), {kCondWrite, kEqual | kPollMem | kWriteMem,
+                                               static_cast<std::uint32_t>(a) & ~3u,
+                                               static_cast<std::uint32_t>(a >> 32) & 0xffffu, 0u,
+                                               0xffffffffu});
+                        flag();
+                        out.push_back(0);
+                    }
+                    stats.zero_checked++;
                 }
                 if (stair) { // experiment 0341: the staircase
                     for (std::uint32_t k = 1; k < 3; ++k) { // y, z > yz_min ? flag2 = 1

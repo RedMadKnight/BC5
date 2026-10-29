@@ -276,3 +276,102 @@ TEST_CASE("insert_before: an insert at the IB's end is appended (experiment 0341
     CHECK(ib[4] == 2u); // the range does not grow: the insert lies after it
     CHECK(ib[7] == kNop);
 }
+
+TEST_CASE("indirect_check: the zero-dimension guard (experiment 0380)", "[indirect_check]") {
+    // SET_BASE index 1 = 0x12_3456_7000, then DISPATCH_INDIRECT offset 0x40, initiator 0x41.
+    const std::vector<std::uint32_t> ib = {0xC0021100u,       1u,    0x34567000u, 0x12u,
+                                           kDispatchIndirect, 0x40u, 0x41u};
+    std::vector<std::size_t> refs;
+    indirect_check::Stats st;
+    auto out = indirect_check::apply(ib, 0, kMax, kDrawMax, refs, st, false, nullptr, true);
+    REQUIRE(st.checked == 1);
+    CHECK(st.zero_checked == 1);
+    REQUIRE(out.size() == ib.size() + indirect_check::kCheckDwords + indirect_check::kZeroDwords);
+    CHECK(st.inserted_dwords == indirect_check::kCheckDwords + indirect_check::kZeroDwords);
+    REQUIRE(refs.size() == 9); // flag = 1, six COND_WRITEs, the confirm word, COND_EXEC
+    indirect_check::patch(out, refs, 0x1000'0000'2000ull);
+    std::size_t i = 4;
+    CHECK(out[i] == 0xC0033700u); // flag = 1
+    CHECK(out[i + 4] == 1u);
+    i += 5;
+    for (std::uint32_t k = 0; k < 3; ++k, i += 9) { // the per-dimension limits, unchanged
+        CHECK(out[i] == 0xC0074500u);
+        CHECK(out[i + 1] == (6u | 0x10u | 0x100u));
+        CHECK(out[i + 2] == 0x34567040u + 4 * k);
+        CHECK(out[i + 4] == kMax[k]);
+    }
+    for (std::uint32_t k = 0; k < 3; ++k, i += 9) { // x, y, z == 0 ? flag = 0
+        CHECK(out[i] == 0xC0074500u);
+        CHECK(out[i + 1] == (3u | 0x10u | 0x100u)); // equal, memory poll, memory write
+        CHECK(out[i + 2] == 0x34567040u + 4 * k);
+        CHECK(out[i + 3] == 0x12u);
+        CHECK(out[i + 4] == 0u);          // reference 0
+        CHECK(out[i + 5] == 0xffffffffu); // mask
+        CHECK(out[i + 6] == 0x2000u);     // writes the flag
+        CHECK(out[i + 7] == 0x1000u);
+        CHECK(out[i + 8] == 0u);
+    }
+    CHECK(out[i] == 0xC0033700u); // the confirm
+    CHECK(out[i + 2] == 0x2004u);
+    i += 5;
+    CHECK(out[i] == 0xC0004200u); // PFP_SYNC_ME
+    i += 2;
+    CHECK(out[i] == 0xC0032200u); // COND_EXEC flag, 3 dwords
+    CHECK(out[i + 1] == 0x2000u);
+    CHECK(out[i + 4] == 3u);
+    i += 5;
+    CHECK(out[i] == kDispatchIndirect);
+    CHECK(i + 3 == out.size());
+
+    SECTION("off by default: the IB is the plain check") {
+        std::vector<std::size_t> refs2;
+        indirect_check::Stats st2;
+        auto plain = indirect_check::apply(ib, 0, kMax, kDrawMax, refs2, st2);
+        CHECK(plain.size() == ib.size() + indirect_check::kCheckDwords);
+        CHECK(st2.zero_checked == 0);
+    }
+    SECTION("with the staircase: both, the staircase after the guard") {
+        std::vector<std::size_t> refs2;
+        indirect_check::Stats st2;
+        const indirect_check::ProductLimit product{1u << 16, 1};
+        auto both = indirect_check::apply(ib, 0, kMax, kDrawMax, refs2, st2, false, &product, true);
+        CHECK(both.size() == ib.size() + indirect_check::kCheckDwords +
+                                 indirect_check::kProductDwords + indirect_check::kZeroDwords);
+        CHECK(st2.zero_checked == 1);
+        CHECK(st2.product_checked == 1);
+        CHECK(refs2.size() == 15);
+        const std::size_t g = 4 + 5 + 5 + 3 * 9; // flag, flag2, the three limits
+        CHECK(both[g + 1] == (3u | 0x10u | 0x100u));
+        CHECK(both[g + 27 + 1] == (6u | 0x10u | 0x100u)); // then y > yz_min
+    }
+    SECTION("on a compute ring: the MEC form, its own address") {
+        const std::vector<std::uint32_t> mec = {0xC0021600u, 0x34567040u, 0x12u, 0x41u};
+        std::vector<std::size_t> refs2;
+        indirect_check::Stats st2;
+        auto m = indirect_check::apply(mec, 0, kMax, kDrawMax, refs2, st2, true, nullptr, true);
+        CHECK(st2.zero_checked == 1);
+        CHECK(m.size() == mec.size() + indirect_check::kCheckDwords - 2 + indirect_check::kZeroDwords);
+        const std::size_t g = 5 + 3 * 9;
+        CHECK(m[g + 1] == (3u | 0x10u | 0x100u));
+        CHECK(m[g + 2] == 0x34567040u);
+        CHECK(m[g + 9 + 2] == 0x34567044u);
+    }
+    SECTION("indirect draws get no guard") {
+        const std::vector<std::uint32_t> draw = {0xC0021100u, 1u,    0x1000u, 0x12u, 0xC0032400u,
+                                                 0x20u,       0x4cu, 0x4du,   2u};
+        std::vector<std::size_t> refs2;
+        indirect_check::Stats st2;
+        auto d = indirect_check::apply(draw, 0, kMax, kDrawMax, refs2, st2, false, nullptr, true);
+        CHECK(d.size() == draw.size() + indirect_check::kDrawCheckDwords);
+        CHECK(st2.zero_checked == 0);
+    }
+    SECTION("inside the IB's own COND_EXEC: its count grows by the guard too") {
+        // COND_EXEC (addr, 0, 7 dwords) over SET_BASE + DISPATCH_INDIRECT.
+        std::vector<std::uint32_t> c = {0xC0032200u, 0x100u, 0x12u, 0u, 7u};
+        c.insert(c.end(), ib.begin(), ib.end());
+        std::vector<std::size_t> refs2;
+        indirect_check::Stats st2;
+        auto o = indirect_check::apply(c, 0, kMax, kDrawMax, refs2, st2, false, nullptr, true);
+        CHECK(o[4] == 7u + indirect_check::kCheckDwords + indirect_check::kZeroDwords);
+    }
+}
