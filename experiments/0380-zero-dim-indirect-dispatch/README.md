@@ -1,7 +1,8 @@
 # 0380 — Is the F403 class a zero-dimension indirect dispatch? (sources, title side, a guard, a box plan)
 
 **Date.** 2026-10-29. **Laptop only.** No box access and no GPU submission in this experiment. Branch
-`exp/0380-zero-dim-dispatch`. Findings F545–F551 (exp 0379 holds F540–F544).
+`exp/0380-zero-dim-dispatch`. Findings F545–F552 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
+session's GO).
 
 **Question.** F527 puts the ME just past a `DISPATCH_INDIRECT` that passed the host's check, inside the title's
 `CS_PARTIAL_FLUSH` after it. The candidates are 0x11d028dd00 (dword 1289), 0x11d02a1600 (1420) and 0x11d02a1800
@@ -149,8 +150,8 @@ COND_WRITE   x == 0 ? flag = 0      (function 3, reference 0, mask 0xffffffff; t
   `cmake -S backend -B build-win -G Ninja -DBC5_BUILD_TESTS=ON -DBC5_WITH_AMDGPU=OFF` then
   `cmake --build build-win` and `build-win\bc5_backend_tests.exe`. The result: **All tests passed (33962 assertions
   in 92 test cases)**, and 492 assertions in 9 `[indirect_check]` cases.
-  - **Not compiled here:** `direct.cpp` and `direct-selftest` (they need libdrm, `BC5_WITH_AMDGPU=ON`). Their build
-    is step A0 of the box plan.
+  - **Not compiled on the laptop:** `direct.cpp` and `direct-selftest` (they need libdrm, `BC5_WITH_AMDGPU=ON`).
+    Box step A0 compiled them (§4, F552).
 
 ## 3b. The second guard: `FORCE_START_AT_000` (F551, the top session's follow-up to F546)
 
@@ -193,7 +194,21 @@ Box etiquette as usual: BOX-LOCK line, claims in BOX-QUEUE, never during the mai
 kernel log streamed to the laptop. Shared builds, `play-pkg.sh` and patch 0001 are not touched (D19): everything runs
 from a private build in `~/bc5-work/exp0380/`.
 
-**A0 — build and unit tests (CPU only, no GPU).**
+**A0 — build and unit tests (CPU only, no GPU). DONE 2026-10-29 11:28–11:31 (F552).**
+- Run by `raw/build0380.sh` (md5 f3222383) on the branch's `backend/` at 52d9d8a, unpacked by `git archive` into
+  `~/bc5-work/exp0380/in/`.
+- Built into `~/bc5-work/exp0380/backend-build` in the `ubuntu` distrobox: clang 21.1.8, cmake 4.2.3, Release,
+  `BC5_WITH_AMDGPU=ON`, `-Werror`.
+- Result: **0 warnings, `direct.cpp` and `direct-selftest` compiled, Catch2 93/93 (34,018 assertions), 10/10
+  `[indirect_check]`**. Private archive 584dca77, not installed. Logs in `raw/box-A0/`.
+- Lock line written and cleared. Claim and done lines are in `~/bc5-work/BOX-QUEUE` and `~/bc5-work/exp0380/CLAIM.txt`.
+  It ran after 0379's done line, with no emulator running.
+- The first attempt used the container's default `c++` (GCC 15) and stopped at `-Werror=array-bounds` in a
+  *pre-existing* test, "a COND_EXEC range whose grown count overflows…" (`indirect_check_test.cpp:112`, `ib.insert`
+  of an initializer list, a GCC false positive at `-O3`). The box's builds use clang (`tools/scripts/bc5-build.sh:163`,
+  exp 0379's `build0379.sh`), and the script now does too.
+
+The plan as first written, for the record:
 - Check out this branch into `~/bc5-work/exp0380/in/`.
 - In the `ubuntu` distrobox:
   `cmake -S backend -B ~/bc5-work/exp0380/backend-build -G Ninja -DCMAKE_BUILD_TYPE=Release -DBC5_WITH_AMDGPU=ON -DBC5_BUILD_TESTS=ON`,
@@ -266,7 +281,7 @@ explicit yes; only after A1).**
 - The guard is built, default off, with unit tests passing on the laptop (F548).
 - A second guard, `FORCE_START_AT_000` on indirect dispatches, is built the same way: default off, with unit tests
   (F551).
-- The box plan is written; nothing ran on the box.
+- The box plan is written. Only step A0 ran: a CPU-only compile check, which passed (F552). Nothing ran on the GPU.
 
 ## Verdict so far
 
