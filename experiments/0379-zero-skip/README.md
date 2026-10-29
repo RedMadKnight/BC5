@@ -603,3 +603,51 @@ freed and not reused, and it never punches the memfd.
   SKIP play by the maintainer.
 - **Box time:** about 50 min. That is 2 × (1,200 s + ~3 min of setup and checks) plus ~5 min of reads before (pins,
   the list's md5, copying the three scripts).
+
+### G1/G2 result (2026-10-30 00:01–00:42, the top session's GO)
+
+**Setup as proposed, with Codex review (REVIEW-02)'s changes:**
+- Both arms ran the same private binary, e1cc0c92: G1 with the skip off, G2 with `BC5_DIRECT_ZERO_SKIP` on the
+  maintainer's list (7a4f972c, copied to `exp0379/zero-list-G2.txt`).
+- S6N route, RT on, 1,200 s per arm, `gtt/s6n0379m.sh` (c88305c1) with `gtt/sample0379m.sh` (39ceea8d).
+- Before each arm, `sync` and `drop_caches` ran as a logged pre-step (`gtt/raw/G?-dropcaches.txt`). `sudo -n tee` is
+  passwordless for that file only.
+- Pins: shared normal 58c4a627, `play-pkg.sh` 55531ab6, learned file a7cc8581 (109 windows), kernel 7.2.9-ogc3.1,
+  live saves 377a8d456a9b4cb1.
+
+**Both arms passed** (`gtt/raw/G?-summary.txt`). Each ran 37.6 flips/s (44,954 and 44,940 flips), with 0 crash,
+TIMEOUT or compute-ring lines and 0 devcoredumps. The laptop's kernel streams hold only IPv6 MLD lines, no amdgpu
+line. The live saves were unchanged after each arm.
+
+**GTT does not grow on the standing route** (`gtt/ana0379g.py` → per minute):
+
+| | G1, skip off | G2, skip on | G1 − G2 |
+|---|---|---|---|
+| GTT used at 3 min | 12,049 MiB | 11,333 MiB | 716 MiB |
+| GTT used at 20 min | 12,049 MiB | 11,333 MiB | 716 MiB |
+| direct client (fds 48/49) total / shared GTT | 11,694 / 11,602 MiB | 10,978 / 10,886 MiB | 716 / 716 |
+| RADV client (fds 12/13) total GTT | 117 MiB (179 resident; 313 MiB VRAM) | 117 MiB | 0 |
+| rest of the device (desktop) | ~238 MiB | ~238 MiB | 0 |
+| direct path's journal, pinned at the end | 11,328 MiB | 10,508 MiB | 820 |
+| MemAvailable, minutes 4–20 | 544–573 MiB | 1,227–1,294 MiB | −0.71 GB |
+| PSI mem / io full, minutes 4–20 | 0.00–0.01 % / 0.04–0.21 % | 0.00–0.01 % / 0.05–0.16 % | — |
+| mount reads, minutes 4–20 | 0–33 MiB a minute | 0–34 MiB a minute | — |
+
+- **No growth while standing.** Over 17 minutes, from minute 3 to minute 20, neither arm's GTT changed by one MiB, and
+  neither did any client's. That fits F623/F624: nothing in the host grows by itself. It does not test growth that
+  depends on streaming, because this route streams nothing after the load.
+- **Clients told apart.** The direct path is the client on fds 48/49. Nearly all of its GTT (99 %) is shared: the
+  udmabuf imports count in its `drm-total-gtt` and its `drm-shared-gtt`. This answers the TODO(verify) in F626.
+  RADV's client (fds 12/13) holds only 117 MiB of GTT. The ~650 MiB outside the direct path's pinned total that F623
+  named is therefore:
+  - ~366 MiB of the direct client's own (the gap between its fdinfo total and the journal's pinned total);
+  - ~117 MiB RADV;
+  - ~238 MiB the rest of the device.
+- **The skip held 0.72 GB for 20 minutes.** G2's journal (`gtt/raw/G2-zero.txt`):
+  - 1,218 MiB was placed. 824 MiB was still skipped from the first minutes to the end.
+  - Hints took back 193 chunks (386 MiB) and CPU writes none.
+  - There was one canary hit: run 49, CommitIABufferAllocator, file 0x230a00000 + 8 MiB, the same 8-MiB size as
+    NC1's.
+  - 824 MiB minus the 104-MiB canary is 720 MiB, the measured gap of 716 MiB.
+- **What it does not show:** the plays' minute-16 pressure. Both arms stand at PSI ≈ 0 with reads of 0–34 MiB a
+  minute, as F543 predicted. Whether the 0.7 GB eases that pressure still needs a moving route or a long SKIP play.
