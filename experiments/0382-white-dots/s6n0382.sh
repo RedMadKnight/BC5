@@ -4,22 +4,36 @@
 # copy; the shared file is only read). The route save is a FRESH snapshot of the maintainer's live saves taken at the
 # arm's start (his current progress, the top session's ask), copied into the private wd; the live saves themselves
 # are compared only, never written. Route: slot 4 from the save-slot list (cross at 90 s, down x3, cross, cross;
-# exp 0305's slot4-90.cmd), then the scene idles. Screenshots by exp 0190's shots.sh at SHOTS seconds; with PAUSE=1
-# the game is paused (options) at PAUSE_AT s and unpaused 40 s later, with shots in both phases. The shots stay on
-# the box; only their numbers (exp 0299's wh0299.py, this experiment's dots0382.py) are kept.
-# Arms (the top session's GO): A defaults RT on (PAUSE=1); B RT on with the reflection traversal skipped
-# (BC5_0382_SWITCHES="BC5_DIRECT_SKIP_PGM=..."); C RT off.
-# usage: [PAUSE=1] [BC5_0382_SWITCHES="..."] s6n0382.sh <expected live-saves sum> <tag> [secs] [on|off]   (on the box)
+# exp 0305's slot4-90.cmd), then the scene idles with the camera where the save left it. Screenshots by exp 0190's
+# shots.sh into one directory per phase, so every phase is measured on its own (Codex review REVIEW-03, R3/R5); the
+# shots stay on the box, only their numbers (exp 0299's wh0299.py, this experiment's dots0382.py, ROI from the
+# environment) are kept.
+#   MODE=run    (default) phase run: every 10 s from 200 s to 300 s, plus a 1-s burst 281-285.
+#   MODE=pause  run, then options at 310 s (paused: 320, 330, 340), options at 350 s (after: 360, 370, 380).
+#   MODE=acs    A -> C -> A in one scene: run (A), "rt off" at 310 s and 30 s to settle (c: 340-370 every 10 s),
+#               "rt on" at 380 s and 30 s to settle (a2: 410-440). Needs a binary with patch0382-input-rt.diff's "rt"
+#               input verb (BC5_0382_BIN, BC5_0382_WANT); the play log's "ray tracing off/on at the flip" lines are
+#               checked.
+# Arms (the top session's GO): A1 RT on, the defaults, MODE=pause; C RT off; B as an ablation after the map run:
+# BVH_MISS per variant (the title's own miss result) before SKIP_PGM (no neutral output, README).
+# usage: [MODE=run|pause|acs] [BC5_0382_SWITCHES="..."] [ROI=x0,y0,x1,y1] s6n0382.sh <live-saves sum> <tag> [secs] [on|off]
 set -u
 EXPECT_SAVES=${1:?the live saves sum}; TAG=${2:?a tag}; SECS=${3:-400}; RT=${4:-on}
 case "$RT" in off | on) ;; *) echo "RT is off or on"; exit 1 ;; esac
 case "$TAG" in *[!A-Za-z0-9]* | "") echo "the tag is letters and digits"; exit 1 ;; esac
 E=$HOME/bc5-work/exp0382; R=$E/raw; W=$HOME/bc5-work; LOCK=$W/BOX-LOCK; E30=$W/exp0330
-BIN=$W/kytyplus-build/src/kyty_emulator; WANT=${BC5_0382_WANT:-58c4a627}   # the shared normal build as read on 2026-10-29 23:5x
+BIN=${BC5_0382_BIN:-$W/kytyplus-build/src/kyty_emulator}; WANT=${BC5_0382_WANT:-58c4a627}   # the shared normal build as read on 2026-10-29 23:5x
 SWITCHES=${BC5_0382_SWITCHES-}
-PAUSE=${PAUSE:-0}; PAUSE_AT=${PAUSE_AT:-310}
-SHOTS=${SHOTS:-200 210 220 230 240 250 260 270 280 290 300}
-[ "$PAUSE" = 1 ] && SHOTS="$SHOTS $((PAUSE_AT + 10)) $((PAUSE_AT + 20)) $((PAUSE_AT + 30)) $((PAUSE_AT + 50)) $((PAUSE_AT + 60)) $((PAUSE_AT + 70))"
+MODE=${MODE:-run}
+case "$MODE" in run | pause | acs) ;; *) echo "MODE is run, pause or acs"; exit 1 ;; esac
+[ "$MODE" = acs ] && [ "$RT" = off ] && { echo "MODE=acs starts with RT on"; exit 1; }
+[ "$MODE" = acs ] && [ -z "${BC5_0382_BIN:-}" ] && { echo "MODE=acs needs BC5_0382_BIN (a build with the rt input verb)"; exit 1; }
+PH_run="200 210 220 230 240 250 260 270 280 281 282 283 284 285 290 300"
+PH_paused="320 330 340"; PH_after="360 370 380"
+PH_c="340 350 360 370"; PH_a2="410 420 430 440"
+case "$MODE" in run) PHASES="run" ;; pause) PHASES="run paused after" ;; acs) PHASES="run c a2" ;; esac
+case "$MODE" in run) NEED=310 ;; pause) NEED=390 ;; acs) NEED=450 ;; esac
+[ "$SECS" -ge "$NEED" ] || { echo "MODE=$MODE needs at least $NEED s"; exit 1; }
 SD=$W/_SaveData/PPSA03671
 LAUNCH_SRC=$W/play-pkg.sh; LAUNCH=$E/play-pkg-0382.sh; LEARN_SRC=$W/direct-learned-pkg.txt; LEARN=$E/direct-learned-pkg.txt
 ME="white-dots exp 0382 | arm $TAG"
@@ -77,11 +91,11 @@ cp -a "$SD" "$SNAP" && diff -rq "$SD" "$SNAP" > /dev/null || { echo "the live sa
 WANT_SAVES=$(saves)
 echo "$(date '+%F %T') $TAG live saves $WANT_SAVES, snapshot $SNAP (the route save)" | tee -a "$R/s6n-saves.txt"
 [ -e "$LOCK" ] || touch "$LOCK"
-echo "$ME | white dots, slot 4 RT $RT, ${SECS} s, switches [${SWITCHES:-none}] pause $PAUSE | $(date '+%F %T')" >> "$LOCK"
-EP=""; SP=""; SHP=""
+echo "$ME | white dots, slot 4 RT $RT, ${SECS} s, switches [${SWITCHES:-none}] mode $MODE | $(date '+%F %T')" >> "$LOCK"
+EP=""; SP=""; SHP=()
 cleanup() {
   if [ -n "$EP" ] && [ -d "/proc/$EP" ]; then kill "$EP"; sleep 4; [ -d "/proc/$EP" ] && kill -9 "$EP" 2> /dev/null; fi
-  [ -n "$SP" ] && kill "$SP" 2> /dev/null; [ -n "$SHP" ] && kill "$SHP" 2> /dev/null
+  [ -n "$SP" ] && kill "$SP" 2> /dev/null; for p in "${SHP[@]}"; do kill "$p" 2> /dev/null; done
   sed -i "/^white-dots exp 0382 | arm $TAG /d" "$LOCK" 2> /dev/null
 }
 trap cleanup EXIT
@@ -97,17 +111,21 @@ WANTENV=("BC5_DIRECT_RING_DEPS=dcb" $SWITCHES "KYTY_BC5_INPUT_CONFIG=$CFG" "KYTY
 case " $SWITCHES " in *" BC5_DIRECT_SKIP_PGM="*) ;; *) WANTENV+=("BC5_DIRECT_SKIP_PGM=0") ;; esac  # the launcher's default: nothing skipped
 case "$SROOT" in "$E"/*) rm -rf "$SROOT/PPSA03671" ;; *) echo "refusing to clear $SROOT"; exit 1 ;; esac
 cp -a "$SNAP" "$SROOT/PPSA03671" && diff -rq "$SNAP" "$SROOT/PPSA03671" > /dev/null || { echo "the route saves could not be put into $SROOT"; exit 1; }
-# The input: exp 0305's slot-4 path; with PAUSE=1 options at PAUSE_AT s and again 40 s later (times from the start).
+# The input: exp 0305's slot-4 path, then by MODE (times from the start): pause = options at 310 s and 350 s;
+# acs = "rt off" at 310 s and "rt on" at 380 s.
 cp "$W/exp0305/slot4-90.cmd" "$E/in-$TAG.cmd"
-if [ "$PAUSE" = 1 ]; then
-  ms=$(awk '/^wait / {s += $2} END {print s + 0}' "$E/in-$TAG.cmd")
-  printf 'wait %d\npress options\nwait 40000\npress options\n' $((PAUSE_AT * 1000 - ms)) >> "$E/in-$TAG.cmd"
-fi
+ms=$(awk '/^wait / {s += $2} END {print s + 0}' "$E/in-$TAG.cmd")
+case "$MODE" in
+  pause) printf 'wait %d\npress options\nwait 40000\npress options\n' $((310000 - ms)) >> "$E/in-$TAG.cmd" ;;
+  acs) printf 'wait %d\nrt off\nwait 70000\nrt on\n' $((310000 - ms)) >> "$E/in-$TAG.cmd" ;;
+esac
 N=$(sudo -n dmesg 2> /dev/null | wc -l)
-{ date '+%F %T'; echo "arm $TAG, $SECS s, RT $RT, pause $PAUSE at $PAUSE_AT, launcher $LAUNCH md5 $(md5sum < "$LAUNCH" | cut -c1-8), BC5_EMU $BIN md5 $WANT; env: ${ENVS[*]}; shots at $SHOTS"; echo "boot $(cut -c1-8 /proc/sys/kernel/random/boot_id), up since $(uptime -s)"; cat "$E/in-$TAG.cmd" | tr '\n' ';'; echo; } > "$R/$TAG-start.txt"
-mkdir -p "$E/shots-$TAG"
+{ date '+%F %T'; echo "arm $TAG, $SECS s, RT $RT, mode $MODE (phases $PHASES), ROI ${ROI:-whole shot}, launcher $LAUNCH md5 $(md5sum < "$LAUNCH" | cut -c1-8), BC5_EMU $BIN md5 $WANT; env: ${ENVS[*]}"; echo "boot $(cut -c1-8 /proc/sys/kernel/random/boot_id), up since $(uptime -s)"; cat "$E/in-$TAG.cmd" | tr '\n' ';'; echo; } > "$R/$TAG-start.txt"
 "$E30/sample0330.sh" "$R/$TAG-mem.txt" $((SECS + 60)) < /dev/null > /dev/null 2>&1 & SP=$!
-setsid nohup "$W/exp0190/shots.sh" "$E/shots-$TAG" $SHOTS < /dev/null > /dev/null 2>&1 & SHP=$!
+for p in $PHASES; do
+  v="PH_$p"; mkdir -p "$E/shots-$TAG/$p"; echo "phase $p shots at ${!v}" >> "$R/$TAG-start.txt"
+  setsid nohup "$W/exp0190/shots.sh" "$E/shots-$TAG/$p" ${!v} < /dev/null > /dev/null 2>&1 & SHP+=($!)
+done
 setsid nohup bash -c 'distrobox enter ubuntu -- env "$@"; echo "launcher exit $?"' _ "${ENVS[@]}" "$LAUNCH" < /dev/null > "$R/$TAG-launch.out" 2>&1 &
 for _ in $(seq 1 120); do EP=$(pgrep -o -x kyty_emulator) && break; sleep 0.5; done
 T0=$(date +%s)
@@ -141,7 +159,7 @@ while [ -z "$ENDED" ] && [ $(($(date +%s) - T0)) -lt "$SECS" ]; do
 done
 DUR=$(($(date +%s) - T0))
 if [ -n "$EP" ] && [ -d "/proc/$EP" ]; then kill "$EP"; sleep 4; [ -d "/proc/$EP" ] && kill -9 "$EP" 2> /dev/null; fi
-sleep 3; [ -n "$SP" ] && kill "$SP" 2> /dev/null; SP=""; [ -n "$SHP" ] && kill "$SHP" 2> /dev/null; SHP=""
+sleep 3; [ -n "$SP" ] && kill "$SP" 2> /dev/null; SP=""; for p in "${SHP[@]}"; do kill "$p" 2> /dev/null; done; SHP=()
 echo "$TAG ${ENDED:-stopped at $SECS s} (after $DUR s)" > "$R/$TAG-end.txt"
 if [ -f "$LOG" ] && [ "$(stat -c %Y "$LOG")" -ge "$T0" ]; then cp -p "$LOG" "$R/$TAG-play.log"; else echo "no log of this run at $LOG" > "$R/$TAG-play.log"; fi
 grep -a -B2 -A8 "Access violation\|Segmentation\|Aborted\|terminate called\|exception_address" "$R/$TAG-play.log" | head -60 > "$R/$TAG-crash.txt" 2> /dev/null
@@ -159,16 +177,20 @@ else echo "no journal of this run ($J)" > "$R/$TAG-journal.txt"; : > "$R/$TAG-pr
 sudo -n dmesg 2> /dev/null | tail -n +"$((N + 1))" | grep -i "amdgpu\|gpu\|oom\|hung\|SQC" > "$R/$TAG-dmesg-after.txt"
 find "$HOME/bc5-data/captures/devcoredump" -maxdepth 1 -type f -newermt "@$T0" -printf '%TY-%Tm-%Td %TH:%TM:%.2TS %s %p\n' 2> /dev/null > "$R/$TAG-devcoredump.txt"
 # 5. The shots' numbers, on the box (the shots never leave it).
-nice -n 5 distrobox enter ubuntu -- python3 -I "$W/exp0299/wh0299.py" "$E/shots-$TAG" 2>&1 | grep -v "^Container\|OK \]" > "$R/$TAG-wh.txt"
-nice -n 5 distrobox enter ubuntu -- python3 -I "$E/dots0382.py" "$E/shots-$TAG" 2>&1 | grep -v "^Container\|OK \]" > "$R/$TAG-dots.txt"
+for p in $PHASES; do   # one set of numbers per phase (Codex review REVIEW-03, R3/R5)
+  nice -n 5 distrobox enter ubuntu -- python3 -I "$W/exp0299/wh0299.py" "$E/shots-$TAG/$p" 2>&1 | grep -v "^Container\|OK \]" > "$R/$TAG-$p-wh.txt"
+  nice -n 5 distrobox enter ubuntu -- env ROI="${ROI:-}" python3 -I "$E/dots0382.py" "$E/shots-$TAG/$p" 2>&1 | grep -v "^Container\|OK \]" > "$R/$TAG-$p-dots.txt"
+done
+# MODE=acs: the switch took effect at a flip, both ways (the host's stderr line, bc5LleAgc.cpp ApplyPendingRayTracing)
+[ "$MODE" = acs ] && grep -a "input-cmd: ray tracing\|bc5-direct: ray tracing o[nf]*f* at the flip" "$R/$TAG-play.log" > "$R/$TAG-rtswitch.txt"
 NC=$(grep -c "Access violation\|Segmentation\|Aborted\|terminate called" "$R/$TAG-crash.txt"); NK=$(grep -c . "$R/$TAG-dmesg-after.txt"); NT=$(grep -c "TIMEOUT" "$R/$TAG-probe.txt")
-echo "$TAG: ${ENDED:-stopped at $SECS s} after $DUR s; crash lines $NC, kernel lines $NK, TIMEOUT lines $NT, devcoredumps $(grep -c . "$R/$TAG-devcoredump.txt"), RT-off drop lines $NRT, flips $FL over $SPAN s = $FPS flips/s; shots $(ls "$E/shots-$TAG" 2> /dev/null | wc -l)" > "$R/$TAG-summary.txt"
+echo "$TAG: ${ENDED:-stopped at $SECS s} after $DUR s; crash lines $NC, kernel lines $NK, TIMEOUT lines $NT, devcoredumps $(grep -c . "$R/$TAG-devcoredump.txt"), RT-off drop lines $NRT, flips $FL over $SPAN s = $FPS flips/s; shots $(find "$E/shots-$TAG" -name "*.png" 2> /dev/null | wc -l) in phases $PHASES" > "$R/$TAG-summary.txt"
 case "$ENDED" in
   "") if [ "$NC" = 0 ]; then echo pass; else echo "CRASH: $NC crash lines"; fi ;;
   *) echo "$ENDED" ;;
 esac > "$R/$TAG-verdict.txt"
 sync
-cat "$R/$TAG-summary.txt" "$R/$TAG-verdict.txt"; head -8 "$R/$TAG-drops.txt"; grep "^# median" "$R/$TAG-wh.txt" "$R/$TAG-dots.txt"
+cat "$R/$TAG-summary.txt" "$R/$TAG-verdict.txt"; head -8 "$R/$TAG-drops.txt"; for p in $PHASES; do grep -H "^# median" "$R/$TAG-$p-wh.txt" "$R/$TAG-$p-dots.txt"; done; [ "$MODE" = acs ] && cat "$R/$TAG-rtswitch.txt"
 S1=$(saves); echo "$(date '+%F %T') $TAG live saves $S1 (want $WANT_SAVES)" | tee -a "$R/s6n-saves.txt"
 [ "$S1" = "$WANT_SAVES" ] || echo "THE LIVE SAVES ARE NOT $WANT_SAVES (snapshot $SNAP): tell the top session before anything is restored"
 sync

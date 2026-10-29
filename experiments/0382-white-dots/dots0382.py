@@ -13,8 +13,10 @@
 # 0.68-0.96 in exp 0299/0303/0305's extracts). So every shot is also counted on a grid, T in 0.55 / 0.70 / 0.85 and D
 # in 0.15 / 0.25 / 0.40, with the grid's medians at the end: an arm comparison that holds on most of the grid does not
 # hang on one threshold.
-# usage: python3 dots0382.py <shots dir> [T] [D]  |  python3 dots0382.py --selftest
-import glob, os, sys
+# Frames are told apart by the SHA-256 of their decoded RGB pixels (Codex review REVIEW-03, R2: mean luma plus dot
+# count took different frames for repeats). ROI=x0,y0,x1,y1 in the environment counts inside a fixed scene region only.
+# usage: [ROI=x0,y0,x1,y1] python3 dots0382.py <shots dir> [T] [D]  |  python3 dots0382.py --selftest
+import glob, os, sys, hashlib
 import numpy as np
 
 
@@ -108,20 +110,28 @@ def main():
     from PIL import Image
     t = float(sys.argv[2]) if len(sys.argv) > 2 else 0.70
     d = float(sys.argv[3]) if len(sys.argv) > 3 else 0.25
+    # ROI=x0,y0,x1,y1 (environment, shot pixels, x1/y1 exclusive): count inside that region only (Codex review REVIEW-03, R3/R5)
+    roi = tuple(int(v) for v in os.environ["ROI"].split(",")) if os.environ.get("ROI") else None
+    assert roi is None or (len(roi) == 4 and roi[0] < roi[2] and roi[1] < roi[3]), "ROI is x0,y0,x1,y1"
     grid_td = [(gt, gd) for gt in (0.55, 0.70, 0.85) for gd in (0.15, 0.25, 0.40)]
     rows, prev = [], None
     for f in sorted(glob.glob(os.path.join(sys.argv[1], "*.png"))):
         try:
-            a = np.asarray(Image.open(f).convert("RGB")).astype(np.float64) / 255.0
+            pixels = np.asarray(Image.open(f).convert("RGB"))
+            digest = hashlib.sha256(pixels.tobytes()).digest()
+            a = pixels.astype(np.float64) / 255.0
         except OSError as e:
             print("  %s: unreadable (%s)" % (os.path.basename(f), e))
             continue
         y = luma(a)
+        if roi is not None:  # the fixed scene region (no HUD or menu), in the shot's pixels
+            y = y[roi[1]:roi[3], roi[0]:roi[2]]
         r = measure(y, t, d, prev)
         r["name"] = os.path.basename(f)
+        r["digest"] = digest
         r["gridn"] = [len(dots(y, gt, gd)) for gt, gd in grid_td]
         dark = r["mean"] < 0.03
-        same = rows and abs(r["mean"] - rows[-1]["mean"]) < 1e-12 and r["n"] == rows[-1]["n"]
+        same = bool(rows) and digest == rows[-1]["digest"]
         r["use"] = not dark and not same
         print("  %s %s: dots %d (%.1f per Mpix), kept %d of them from the previous shot; luma mean %.3f; grid %s%s" % (
             r["name"], r["size"], r["n"], r["per_mpix"], r["kept"], r["mean"], " ".join(str(g) for g in r["grid"]),
@@ -130,7 +140,7 @@ def main():
         rows.append(r)
         prev = r["pts"]
     use = [r for r in rows if r["use"]]
-    print("# %s: %d shots, %d used; T %.2f D %.2f" % (sys.argv[1], len(rows), len(use), t, d))
+    print("# %s: %d shots, %d used; T %.2f D %.2f; ROI %s" % (sys.argv[1], len(rows), len(use), t, d, ",".join(map(str, roi)) if roi else "whole shot"))
     if use:
         med = lambda k: float(np.median([r[k] for r in use]))
         print("# median over the used shots: dots %.0f (%.1f per Mpix), kept %.0f; max dots %d" % (
