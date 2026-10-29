@@ -1,7 +1,7 @@
 # 0380 — Is the F403 class a zero-dimension indirect dispatch? (sources, title side, a guard, a box plan)
 
 **Date.** 2026-10-29. **Laptop only.** No box access and no GPU submission in this experiment. Branch
-`exp/0380-zero-dim-dispatch`. Findings F545–F562 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
+`exp/0380-zero-dim-dispatch`. Findings F545–F563 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
 session's GO).
 
 **Question.** F527 puts the ME just past a `DISPATCH_INDIRECT` that passed the host's check, inside the title's
@@ -524,6 +524,58 @@ before and after both runs (`raw/runs/s6n-saves.txt`).
     it);
   - several hours without one is evidence for it.
 
+## 9. The test shortcut "BC5 emulator (test 0380 fix + 0379)" for the maintainer's long play (F563)
+
+**GO.** The maintainer's "Tak, oba", relayed by the top session: one shortcut combining the rebase fix (with
+FORCE_START_AT_000) and exp 0379's zero skip in SKIP mode on his play list, RT on, for a long play.
+
+**Box.** 13:4x–13:55: the lock and claim lines, then the relink, the launcher, the smoke run (whose runner wrote and
+cleared its own lock) and the shortcut. Done line in BOX-QUEUE. Nothing shared was written.
+
+**The binary: `~/bc5-work/exp0380f/kyty_emulator`, md5 c442f6c7.**
+- It is the shared normal build's link command (`ninja -t compdb -x`) with two inputs swapped (`raw/link0380f.py`):
+  - exp 0379t's private `bc5LleAgc.cpp` object (the zero skip, compiled by `build0379t.sh`; md5 17ff00c1, copied to
+    `exp0380f/bc5LleAgc-0379t-17ff00c1.cpp.o`);
+  - this branch's archive 86534bb1 (e0fe42b, with the rebase; copied to `exp0380f/libbc5_backend-86534bb1.a`, so a
+    later rebuild of `exp0380/backend-build` cannot change it). 5c79c56 has no backend change after e0fe42b.
+- The method was checked first: the same command with exp 0379t's own archive (584dca77) reproduces exp 0379t's binary
+  459d34cd byte for byte.
+- Exp 0379's backend part is header-only (`zero_skip.hpp`, compiled into the unit), so exp 0380's archive serves both.
+- The binary carries both features' strings.
+
+**The launcher: `~/bc5-work/exp0380f/play-pkg-0380f.sh`, md5 05762c4e.** Made from `play-pkg.sh` 55531ab6 by
+`raw/mkplay0380f.pl` (exp 0379t's pattern); the diff is in `raw/runs/S1-launcher-and-zero-skip.txt`.
+- The private binary; one log and one mount log per start in `exp0380f/play/`.
+- `BC5_DIRECT_REBASE_DISPATCH=1 BC5_DIRECT_FORCE_START_000=1`, with the zero guard and the y/z limit unset.
+- The zero skip forced to **SKIP on `~/bc5-work/exp0379t/play-lists/zero-list-20261029-120000.txt`** (md5 7a4f972c).
+  There is no scan and no list rotation, and the launcher refuses to start without the list.
+- The memory sample once a minute (exp 0379t's `play-sample0379t.sh`, md5 e094a3f5, copied beside it).
+- The log's first line names the mode, both switches and the binary md5:
+  `== exp 0380f mode: SKIP …zero-list-20261029-120000.txt; BC5_DIRECT_REBASE_DISPATCH=1; BC5_DIRECT_FORCE_START_000=1; binary c442f6c7`.
+
+**The smoke run S1** (`raw/s6n0380f.sh`, from `s6n0380.sh` by `raw/mk-s6n0380f.pl`; its source launcher is the
+shortcut's own, with the usual four private edits). S6N route, RT on, 300 s. Live saves 6560743e7473baa1 before and
+after. Sampler 0377 active. Kernel stream: two IPv6 MLD notices only.
+- Pass at 33.8 flips/s over the whole run and **38.4 in the running scene** (150–290 s; B1 41 there).
+- 0 kernel amdgpu lines, 0 TIMEOUT lines, 0 devcoredumps, 0 crash lines, 0 RT-off drop lines.
+- The rebase covered 6,619,656 checked dispatches, 38,887 of them first after `INDEX_BASE`.
+- Zero skip: list 1,218 MiB (934 + 284) in 52 runs, 609 canary mappings. One canary hit (run 49, file 0x230a00000,
+  8 MiB) was taken back as designed. 10,524 MiB pinned, against 11,302–11,310 in R1/R2.
+- The memory sampler wrote `exp0380f/play/mem-20261029-134855.txt`.
+- The records are in `raw/runs/S1-*`.
+
+**The desktop.**
+- `~/Pulpit/BC5 emulator (test 0380 fix + 0379).desktop` (md5 4e4aa440, passes `desktop-file-validate`) runs
+  `distrobox enter ubuntu -- ~/bc5-work/exp0380f/play-pkg-0380f.sh`.
+- The old `BC5 emulator (test 0379+0380).desktop` was moved to `~/bc5-work/exp0379t/retired/`.
+- The normal and lean shortcuts are untouched.
+- **Undo:** delete the new shortcut, and move the old one back from `exp0379t/retired/` if wanted.
+
+**What his play shows.** Every start's log in `exp0380f/play/`, plus the journal's `experiment 0380` and `zero skip`
+lines, records the exposure. A class-B hang with this shortcut, recorded by the sampler and the timeout probe, refutes
+the rebase. Hours without one support it. The zero skip is in the same play, so a hang must also be checked against the
+zero list (F554's method).
+
 ## Result
 
 - Sources read and cited (F545, F546). The title-side evidence was re-read from exps 0376/0378 (F547).
@@ -531,6 +583,8 @@ before and after both runs (`raw/runs/s6n-saves.txt`).
 - A second guard, `FORCE_START_AT_000` on indirect dispatches, is built the same way: default off, with unit tests
   (F551).
 - The box plan is written. Only step A0 ran: a CPU-only compile check, which passed (F552). Nothing ran on the GPU.
+- The maintainer's test shortcut "BC5 emulator (test 0380 fix + 0379)" is on the desktop (binary c442f6c7,
+  launcher 05762c4e), and its 5-min smoke run passed (F563).
 - The rebase fix ran twice on the bench (RT on, 600 s each): both runs pass at 37.5 and 36.5 flips/s, with ~174,000
   first-after-`INDEX_BASE` dispatches rebased. It is safe, but untested against the hang itself (F561, F562).
 - Two sub-classes. B (the four events since 10-28 18:15) is consistent with "the first indirect dispatch after
