@@ -151,8 +151,7 @@ int main() {
         mkdir(e.c_str(), 0700);
         const std::string f = e + "/summary.txt";
         if (FILE* o = std::fopen(f.c_str(), "w")) {
-            std::fprintf(o, "   compute: program=0x%" PRIx64 " dim=[%u %u %u] threads=[64 1 1] initiator=0x45 id=1 (gfx)
-", base + 0x1000, x, y, z);
+            std::fprintf(o, "   compute: program=0x%" PRIx64 " dim=[%u %u %u] threads=[64 1 1] initiator=0x45 id=1 (gfx)\n", base + 0x1000, x, y, z);
             std::fclose(o);
         }
         if (age_s > 0) {
@@ -169,9 +168,7 @@ int main() {
         char f[64];
         std::snprintf(f, sizeof(f), "/rec0380-%08" PRIu64 "-dcb.txt", no);
         std::string r = slurp(root + f);
-        std::printf("--- case %" PRIu64 ": %s", no, r.substr(0, r.find('
-', r.find('
-') + 1) + 1).c_str());
+        std::printf("--- case %" PRIu64 ": %s", no, r.substr(0, r.find('\n', r.find('\n') + 1) + 1).c_str());
         return r;
     };
     std::string r5 = run(root + "/s9", 9); // no event at all

@@ -1,7 +1,7 @@
 # 0380 — Is the F403 class a zero-dimension indirect dispatch? (sources, title side, a guard, a box plan)
 
 **Date.** 2026-10-29. **Laptop only.** No box access and no GPU submission in this experiment. Branch
-`exp/0380-zero-dim-dispatch`. Findings F545–F610 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
+`exp/0380-zero-dim-dispatch`. Findings F545–F612 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
 session's GO).
 
 **Question.** F527 puts the ME just past a `DISPATCH_INDIRECT` that passed the host's check, inside the title's
@@ -1796,6 +1796,57 @@ own with Codex). Box session from 23:33, lock lines `top exp 0380 | night: …`,
   - It lives in `runtimeLinker.cpp`'s handler, a second unit beside `bc5LleAgc.cpp`.
   - It can ride along in priority 2's rebuild of the test binary, so that the maintainer's morning play records it.
 
+**Priority 2: the rebuilt test binary (F611; the same night session, 23:4x–23:58).**
+- **The recorder's tests** (`raw/rec0380_test.cpp` with F608's matching) pass on the box: g++ `-std=c++20 -O2 -Wall
+  -Wextra -Werror` in the container, every check including the six new event cases (`raw/runs/R1-rec0380_test-out.txt`).
+- **The crash-context dump.** `raw/mk-crash0380.py` makes one counted edit to the tree's
+  `src/loader/runtimeLinker.cpp` (96e03695 → 5f2bc982). With `BC5_CRASH_FRAMES=1` (default off), after an access
+  violation's stack trace, the handler walks the saved-rbp chain, up to 8 frames, and for each frame prints:
+  - the 0x110 bytes from rbp−0x100: the frame's locals and the callee-saved registers its callee pushed;
+  - 8 qwords at each aligned, readable address in that window, at most 24 a frame.
+
+  All reads go through the handler's own `IsReadableRange`, and nothing is written. The top session approved it for
+  the private binary only.
+- **The build** (`raw/build0380r1.sh`; `raw/build0380y.py` is `build0380x.py` for several units):
+  - `bc5LleAgc.cpp` (exp 0379's unit plus the F608 recorder, c46144c4) and the private `runtimeLinker.cpp` are
+    compiled with the shared build's own commands and linked with the shared objects and archive.
+  - **Binary** `~/bc5-work/exp0380r1/bin/kyty_emulator`, **md5 44417414**.
+  - 7 warnings, all pre-existing: the unit's five, the deprecated `wstring_convert` in `stringUtils.h`, and a lambda
+    at `runtimeLinker.cpp:889`, before the edit.
+  - The shared pins are unchanged before and after.
+- **The launcher** `exp0380r1/play-pkg-0380r1.sh` (299a2519) is made by `raw/mkplay0380r1.py` from the noclear one,
+  diff in `raw/play-pkg-0380r1-vs-nc.diff`. The switches are as before (NO_CLEAR, the zero skip on the same list
+  7a4f972c, the recorder) plus `BC5_CRASH_FRAMES=1`.
+- **Smoke RS1** (`raw/s6n0380r1.sh`: `mk-s6n0380nc.py`'s output for this binary, with its paths and lock text changed
+  by sed; route save copy, RT on, 300 s; `raw/runs/RS1-extract.txt`):
+  - **Pass:** no crash, TIMEOUT or kernel line, 30.9 flips/s (NC1 32.0, RC1 33.2), 10,474 MiB pinned.
+  - The recorder's self-test ran; the skip placed its list.
+  - The crash dump's path is not exercised by a healthy run. It runs for the first time at the next guest exception.
+- **The shortcut.** "BC5 emulator (test 0380 noclear)" now starts `exp0380r1/play-pkg-0380r1.sh` (b4a986df,
+  `raw/r1/`). The previous file is kept in `~/bc5-work/exp0380nc/retired/`. The live saves read 377a8d456a9b4cb1
+  before and after.
+
+**Codex's AUDIO-01 and the Opus path (F612).** Codex read the host's ATRAC9 path independently (`AUDIO-01`, outside
+the repo; KytyPlus f266548 plus main's patch 0001).
+- **Its verdict agrees with F610.** The 4-channel ATRAC9 path has no fixed stereo buffer: `m_pcm_buffer` is sized
+  from the codec's channels. The wrapper hands the guest no pointer of the host's own, so no host path is shown to
+  create the null sample buffer.
+- **It found two host defects, neither tied to the crash:**
+  - ATRAC9 `Reset` (`atrac9_decoder.h:89-103`) frees the handle. If the new `Atrac9GetHandle` returns null,
+    `m_is_initialized` stays true, so a later decode can pass a null handle. Its CPU probe shows the state.
+  - `AjmDecodeSplitInstance` (`ajm.cpp:620-660`) skips a null output entry's copy but still counts its bytes in
+    `output_written`, which hides a bad descriptor.
+  - A third point, a lifetime gap after the instance mutex is released, needs a concurrent destroy.
+- **The Opus decoder does not share the Reset defect** (`src/libs/ajm/opus_decoder.h:79-100, 213-275`, read on the
+  box). `Release()` clears `m_decoder_ok`, `OpenDecoder()` sets it only on success, and `Decode` returns
+  `CODEC_ERROR|FATAL` while it is false. An Opus voice whose decoder cannot be recreated gets an error, not a null
+  handle.
+- **To bring Codex's correlation data to the next crash:**
+  - the AJM instance, its reset and initialize history;
+  - the format, `output_written` and the buffer addresses of the last job.
+
+  That would need an AJM trace in the private binary. The crash frames come first.
+
 ## Result
 
 - Sources read and cited (F545, F546). The title-side evidence was re-read from exps 0376/0378 (F547).
@@ -1803,6 +1854,10 @@ own with Codex). Box session from 23:33, lock lines `top exp 0380 | night: …`,
 - A second guard, `FORCE_START_AT_000` on indirect dispatches, is built the same way: default off, with unit tests
   (F551).
 - The box plan is written. Only step A0 ran: a CPU-only compile check, which passed (F552). Nothing ran on the GPU.
+- "test 0380 noclear" now runs binary 44417414: the recorder with F608's event matching (its tests pass on the box)
+  and a crash-context dump, `BC5_CRASH_FRAMES`, so the next guest exception names its frames' locals. Smoke RS1
+  passed. Codex's AUDIO-01 agrees that no host path is shown to make the null; the Opus decoder has no ATRAC9-style
+  Reset defect (F611, F612).
 - The two CPU crashes are both guest exceptions (exit 65). The lean one (23:30:10) had neither NO_CLEAR nor the skip
   and cannot be placed, and an idle run from its autosave did not crash. F607's ATRAC9 lead was a stdout artefact.
   There is no cause and no fix yet. A crash-context dump in the next test binary is the proposed way to the
