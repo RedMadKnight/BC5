@@ -564,8 +564,15 @@ freed and not reused, and it never punches the memfd.
   - `gtt/s6n0379m.sh` (made by `gtt/mk-s6n0379m.pl` from `raw/s6n0379.sh`): the cap is raised to 1,500 s and the
     sampler swapped.
   - `gtt/sample0379m.sh`: `raw/sample0379.sh` plus one `c<client>=<GTT>/<resident>` field per DRM client of the
-    emulator, from fdinfo. A dry run on stand-in files parses both key forms. TODO(verify) the key names on 7.2.9, and
-    that the udmabuf imports count in their client's `drm-total-gtt`.
+    emulator, from fdinfo. A missing field prints `?` (unknown), never 0. TODO(verify) the key names on 7.2.9, and that
+    the udmabuf imports count in their client's `drm-total-gtt`. Both are checked on the box's real fdinfo at the run's
+    pin step.
+  - The first version (2e99306) had a literal newline inside the awk program's `printf`. Awk failed on it, the
+    sampler's `2> /dev/null` hid the failure, and the run would have recorded no client field at all. My earlier dry
+    run had used a hand-typed copy of the program, not the script's text. Codex review (REVIEW-02) found it.
+    `gtt/test_sample0379m.py` now runs the script's own `fd=` pipeline through Git Bash on stand-in fdinfo files: two
+    fds of one client, the older key, a client with no GTT field, and a non-DRM fd. It passes; the 2e99306 text fails
+    it.
   - `gtt/stream0379m.sh`: the kernel stream into `gtt/raw/`.
 - **What it records:** per 10 s, GTT used per client, MemAvailable, swap, PSI mem/io full, mount reads, and the
   emulator's RSS. From the journal, the direct path's pinned total (`*-pinned-every20.txt`), the canary hits and the

@@ -5,7 +5,8 @@
 # Columns: uptime; MemAvailable SwapUsed Shmem Cached (MiB); GTT used (MiB); PSI memory full total, PSI io full total (us);
 # bc5-mount read_bytes (MiB, cumulative) and Rss (MiB); the emulator's Rss (MiB); /proc/vmstat pswpin pswpout pgmajfault
 # workingset_refault_file; then one field per DRM client of the emulator, c<client id>=<GTT MiB>/<resident GTT MiB>, from
-# /proc/<pid>/fdinfo (drm-total-gtt / drm-resident-gtt, or the older drm-memory-gtt; KiB or MiB units). TODO(verify) the
+# /proc/<pid>/fdinfo (drm-total-gtt / drm-resident-gtt, or the older drm-memory-gtt; KiB or MiB units; "?" when a field
+# is missing). TODO(verify) the
 # key names on kernel 7.2.9 and that the direct path's udmabuf imports count in its client's drm-total-gtt.
 # usage: sample0379m.sh <out> [max s]   (started before the emulator; waits up to 120 s for it)
 set -u
@@ -25,11 +26,11 @@ while [ -d "/proc/$EP" ] && [ $(($(date +%s) - T0)) -lt "$MAX" ]; do
   else mnt="-1 -1"; fi
   er=$(awk '/^VmRSS:/ {printf "%d", $2/1024}' "/proc/$EP/status" 2> /dev/null || echo -1)
   vm=$(awk '$1 == "pswpin" || $1 == "pswpout" || $1 == "pgmajfault" || $1 == "workingset_refault_file" {v[$1]=$2} END {printf "%d %d %d %d", v["pswpin"], v["pswpout"], v["pgmajfault"], v["workingset_refault_file"]}' /proc/vmstat)
+  # Codex review (REVIEW-02): the END block's newline is an escape, and a missing GTT or resident field prints "?"
+  # (unknown), never 0.
   fd=$(for f in /proc/$EP/fdinfo/*; do awk 'function mib(v, u) { return u == "KiB" ? v / 1024 : (u == "MiB" ? v : v / 1048576) }
-      /^drm-client-id:/ {c=$2} /^drm-total-gtt:|^drm-memory-gtt:/ {t=mib($2, $3)} /^drm-resident-gtt:/ {r=mib($2, $3)}
-      END {if (c != "") printf "c%s=%d/%d
-", c, t, r}' "$f" 2> /dev/null; done | sort -u | tr '
-' ' ')
+      BEGIN {t = "?"; r = "?"} /^drm-client-id:/ {c=$2} /^drm-total-gtt:|^drm-memory-gtt:/ {t=sprintf("%d", mib($2, $3))} /^drm-resident-gtt:/ {r=sprintf("%d", mib($2, $3))}
+      END {if (c != "") printf "c%s=%s/%s\n", c, t, r}' "$f" 2> /dev/null; done | sort -u | tr '\n' ' ')
   echo "$(cut -d' ' -f1 /proc/uptime) $mi $gtt $pm $pio $mnt $er $vm $fd" >> "$OUT"
   sleep 10
 done
