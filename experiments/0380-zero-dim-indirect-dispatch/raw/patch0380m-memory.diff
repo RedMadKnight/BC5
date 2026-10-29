@@ -1,0 +1,66 @@
+--- /c/Users/kjani/AppData/Local/Temp/claude/C--Users-kjani-Downloads-bc5/cba0ee96-9a46-48e2-a78c-dc68826aa959/scratchpad/mem/memory.cpp	2026-10-29 15:44:26.369138100 +0100
++++ /c/Users/kjani/AppData/Local/Temp/claude/C--Users-kjani-Downloads-bc5/cba0ee96-9a46-48e2-a78c-dc68826aa959/scratchpad/mem/memory-0380.cpp	2026-10-29 15:45:34.960545100 +0100
+@@ -2,6 +2,8 @@
+ #include <cinttypes>
+ #include <cstdio>
+ #include "kernel/memory.h"
++// BC5 experiment 0380 (F580): memory-type logging only, to stderr; changes nothing
++#define BC5_MEMLOG(...) std::fprintf(stderr, "bc5-0380 mem: " __VA_ARGS__)
+ 
+ #include "common/assert.h"
+ #include "common/logging/log.h"
+@@ -2697,6 +2699,8 @@
+ 	if (std::strlen(name) >= KERNEL_MAXIMUM_NAME_LENGTH) {
+ 		return KERNEL_ERROR_ENAMETOOLONG;
+ 	}
++	BC5_MEMLOG("rangename va 0x%" PRIx64 " len 0x%" PRIx64 " name %s caller %p\n", vaddr, static_cast<uint64_t>(len),
++	           name, __builtin_return_address(0));
+ 
+ 	g_physical_memory->SetVirtualRangeName(vaddr, len, name);
+ 	g_flexible_memory->SetVirtualRangeName(vaddr, len, name);
+@@ -3000,6 +3004,8 @@
+ 	}
+ 
+ 	*phys_addr_out = static_cast<int64_t>(addr);
++	BC5_MEMLOG("alloc phys 0x%" PRIx64 " len 0x%" PRIx64 " type %d caller %p\n", addr, static_cast<uint64_t>(len),
++	           memory_type, __builtin_return_address(0));
+ 
+ 	LOGF_COLOR(Log::Color::Green, "\tphys_addr    = %016" PRIx64 "\n\t[Ok]\n", addr);
+ 
+@@ -3318,6 +3324,9 @@
+ 		return KERNEL_ERROR_EBUSY;
+ 	}
+ 
++	BC5_MEMLOG("map va 0x%" PRIx64 " len 0x%" PRIx64 " phys 0x%" PRIx64 " prot 0x%x flags 0x%x type %d caller %p\n",
++	           static_cast<uint64_t>(out_addr), static_cast<uint64_t>(len), static_cast<uint64_t>(direct_memory_start), prot,
++	           flags, mapped_block.memory_type, __builtin_return_address(0));
+ 	MapGpuRange(out_addr, len);
+ 
+ 	if (g_alloc_callback != nullptr) {
+@@ -3342,6 +3351,8 @@
+ 		const auto out_addr = reinterpret_cast<uint64_t>(*addr);
+ 		g_physical_memory->SetVirtualRangeMemoryType(out_addr, len, type);
+ 		g_virtual_ranges->SetMemoryType(out_addr, len, type);
++		BC5_MEMLOG("map2 va 0x%" PRIx64 " len 0x%" PRIx64 " type %d caller %p\n", static_cast<uint64_t>(out_addr),
++		           static_cast<uint64_t>(len), type, __builtin_return_address(0));
+ 	}
+ 
+ 	return ret;
+@@ -3368,6 +3379,8 @@
+ 	if (ret == OK && addr != nullptr) {
+ 		g_physical_memory->SetVirtualRangeName(reinterpret_cast<uint64_t>(*addr), len, name);
+ 		g_virtual_ranges->Rename(reinterpret_cast<uint64_t>(*addr), len, name);
++		BC5_MEMLOG("name va 0x%" PRIx64 " len 0x%" PRIx64 " name %s caller %p\n", reinterpret_cast<uint64_t>(*addr),
++		           static_cast<uint64_t>(len), name, __builtin_return_address(0));
+ 	}
+ 
+ 	return ret;
+@@ -4101,6 +4114,8 @@
+ 	     "\t prot = 0x%08" PRIx32 "\n",
+ 	     reinterpret_cast<uint64_t>(addr), static_cast<uint64_t>(len), static_cast<uint32_t>(type),
+ 	     static_cast<uint32_t>(prot));
++	BC5_MEMLOG("mtypeprotect va 0x%" PRIx64 " len 0x%" PRIx64 " type %d prot 0x%x caller %p\n",
++	           reinterpret_cast<uint64_t>(addr), static_cast<uint64_t>(len), type, prot, __builtin_return_address(0));
+ 
+ 	return KernelMprotect(addr, len, prot);
+ }

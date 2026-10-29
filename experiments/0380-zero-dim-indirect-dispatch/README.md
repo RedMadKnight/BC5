@@ -1,7 +1,7 @@
 # 0380 — Is the F403 class a zero-dimension indirect dispatch? (sources, title side, a guard, a box plan)
 
 **Date.** 2026-10-29. **Laptop only.** No box access and no GPU submission in this experiment. Branch
-`exp/0380-zero-dim-dispatch`. Findings F545–F579 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
+`exp/0380-zero-dim-dispatch`. Findings F545–F580 (exp 0379 holds F540–F544). One box session, CPU only (step A0, 11:28–11:31, on the top
 session's GO).
 
 **Question.** F527 puts the ME just past a `DISPATCH_INDIRECT` that passed the host's check, inside the title's
@@ -922,6 +922,36 @@ the maintainer not playing. The lock was cleared and the done line is in BOX-QUE
   GPU-written arguments travel through caches the console would not use. It is untested.
 - Then the cross-job ordering: the producer of 0x11d05df300 is a GDS → memory `DMA_DATA` without `CP_SYNC`, in the
   previous job.
+
+## 15. Suspect 3: a logging-only build of the host's memory calls (F580)
+
+**What it logs.** `raw/memlog0380.py` makes a private copy of the KytyPlus tree's `src/kernel/memory.cpp` (md5 11b1df22,
+patch 0001 applied) with six stderr lines, prefixed `bc5-0380 mem:`, each with the caller's return address:
+- `alloc`: physical start, length, `memory_type` of `sceKernelAllocateDirectMemory`;
+- `map`: VA, length, physical offset, prot, flags and the block's type;
+- `map2`: `MapDirectMemory2`'s type;
+- `name`: `MapNamedDirectMemory`'s name;
+- `rangename`: `SetVirtualRangeName`;
+- `mtypeprotect`: VA, length, type, prot.
+
+Nothing else changes; the diff is `raw/patch0380m-memory.diff`, 16 added lines. Flexible-memory maps are not logged.
+
+**The build (CPU only, box, 15:44–15:5x, under my lock).** `raw/build0380m.py` compiles that one unit with the shared
+build's own compile command (`ninja -t compdb -x`, `-iquote` the tree's `src/kernel` for its `.inc`) and runs the shared
+link command with the object swapped in, against the shared archive.
+- The same method on the tree's unchanged `memory.cpp` reproduces the shared binary **58c4a627** byte for byte.
+- The logging binary is `~/bc5-work/exp0380m/kyty_emulator`, md5 **541e484e**. It carries the 6 log strings and has the
+  same GPU path as the shared build.
+- The runner is `raw/s6n0380m.sh` (box md5 9746592a, made by `raw/mk-s6n0380m.py` from `s6n0380w.sh`), with no
+  switches.
+
+**The run M1 was not started.** This session's permission check refused the GPU run itself. I stopped the kernel
+stream I had started for it and its leftover `journalctl`, cleared my lock line, and wrote the done line. The saves
+were 3c1f2001a3863535 at the last read.
+
+**To resolve the argument ranges offline once M1 has run:**
+- the `alloc` lines give physical ranges and types, and the `map` lines give VA → physical;
+- so 0x11d05df300 / 0x11d0571d00 / 0x11d0571b00 → map → alloc → type, and the `name` / `rangename` lines give the heap.
 
 ## Result
 
