@@ -1,0 +1,17 @@
+== 08:55:04 1. BUILD-01 dry test
+host: git version 2.56.0; tar (GNU tar) 1.35; bash 5.3.9(1)-release; Python 3.14.8
+FileNotFoundError: [Errno 2] No such file or directory: '/var/home/kjaniszewski/bc5-work/exp0380/source/tools/scripts/bc5-build.sh'
+container: git version 2.53.0; tar (GNU tar) 1.35; bash 5.3.9(1)-release; Python 3.14.4
+FileNotFoundError: [Errno 2] No such file or directory: '/home/kjaniszewski/bc5-work/exp0380/source/tools/scripts/bc5-build.sh'
+== 08:55:05 2. int/0380-to-main backend: Catch2 and direct-selftest
+Catch2 from /home/kjaniszewski/bc5-work/exp0323/backend-tests/_deps/catch2-src
+build rc 0; errors 0, warnings 0
+Catch2 rc 0: =============================================================================== All tests passed (34459 assertions in 100 test cases)  
+[indirect_check] All tests passed (982 assertions in 16 test cases)  
+[zero_skip] No tests ran  
+direct-selftest: nothing done without --submit
+rc 0
+direct-selftest: nothing done without --submit
+rc 0
+== 08:55:38 done
+== rerun with tools/scripts/bc5-build.sh (2d6a8094) beside it: 2 tests OK on the host and in the container, rc 0; shared pins 58c4a627 dcbeb440 bb50b2e0 55531ab6 unchanged
