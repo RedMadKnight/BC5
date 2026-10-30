@@ -1,0 +1,30 @@
+# exp 0381 J1 (2026-10-30 08:14:42 box time): exp 0379 D2's invocation + BC5_DIRECT_DISPATCH_JOURNAL=1, RT on.
+# Private sources: ~/bc5-data/captures/play-20261030-0814/gc/direct.log (70.5 MB, 113,427 dispatch lines),
+# devcoredump 20261030-081544-devcd3.txt, ib-timeout-00035749-dcb-15083.bin. Register values and counts only.
+
+## kernel (laptop stream)
+08:15:42.290 [gfxhub] page faults, ring 24 vmid 7, client TCP, RW 0, status 0x00701031, pages 0x8608c654000..0x8608c65b000 (8 pages, 10 lines)
+08:15:44.279 ring gfx_0.0.0 timeout, signaled 2621167 emitted 2621169; reset succeeded; bc5-gpu-watch armed/disarmed
+08:16:51 emulator stopped by TERM at etimes 128; launcher exit 0
+
+## dj0381.py over direct.log (run on the box over stdin)
+dispatch lines 113427; 0x909977100 dispatches 1114 in 5 runs
+0x909977100 ud0-2 always 00000011 00000012 0000000{0,1} in the host tracker
+runs (first 0x909977100 dispatch of each; previous dispatch; last acb ud0 before it):
+  dcb at 23864  previous dcb 0x909974400 ud0 0x11   last acb ud0 0xe0e5fe18
+  dcb at 53054  previous dcb 0x909974400 ud0 0x11   last acb ud0 0xe0e5fe18
+  dcb at 53106  previous dcb 0x909975900 ud0 0x11   last acb ud0 0xe0e5fe18
+  dcb at 56333  previous dcb 0x909974400 ud0 0x11   last acb ud0 0xe0f7fee8
+  dcb at 13     previous ACB 0x11d03a3500 ud0 0x11d00860 (low 16 bits 0x0860)   <- the faulting job
+
+## the faulting job's neighbourhood (journal order)
+acb rest 28..1051 of 1051 dwords: state prefix of 4 dwords replayed first
+t 56.944-56.945 s acb 4 + 1041 dwords (q0)
+  acb dispatch at 225..592: pgm 0x11d039f000 (8 dispatches)
+  acb dispatch at 727, 758, 789, 881: pgm 0x11d03a3500 ud0-3 80e5b980 cb520000 007fc07f 90560fac
+  acb dispatch at 850, 912:           pgm 0x11d03a3500 ud0-3 11d00860 c3800000 0000c000 90500fac   <- last acb dispatch
+t 56.945-56.946 s acb 28 + 2 dwords
+t 56.946 s dcb 15083 dwords (q-1)
+  dcb dispatch op 16 at 13: pgm 0x909977100 ud0-5 00000011 00000012 00000001 8c652a00 8c64e600 00000011 (tracker)
+  dcb dispatch op 16 at 43: pgm 0x909977100 ud0-5 00000011 00000012 00000001 8c654c00 8c654a00 00000011 (tracker)
+  ... ud3 0x8c652a00..0x8c65c000 over the first dispatches; the fault pages are {0x0860, ud3 + ...}

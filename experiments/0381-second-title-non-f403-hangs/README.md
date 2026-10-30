@@ -444,3 +444,50 @@ initiator 0x61, PFP 0xea1 / ME 0xe15 and `CP_IB1_BUFSZ` 0x38f8. The ring reset s
 `20261030-013640-devcd2.txt`. Starts from the maintainer's live saves hit it in 2 of 3 bench starts (D3 did not reach
 the point), plus his own 16:25 start 1. Starts from the S6N route saves hit it in 0 of 5. The live-save start-up is a
 reproducer for F678's dispatch-journal run.
+
+## 9. The start-up run J1 (2026-10-30 08:14, the maintainer's yes in this session's chat): an acb leaves `USER_DATA_0` behind (F679)
+
+**Setup.** `setup0381j.sh` built `~/bc5-work/exp0381` from exp 0379's D2 setup, reading exp 0379's files only:
+- the launcher `play-pkg-0358.sh` with its paths moved to exp0381 (md5 3e470c50);
+- exp 0379's binary e1cc0c92, its `input-rton.cfg` (RT on), the learned file (a7cc8581) and `in-D2.cmd`;
+- a working directory with a fresh copy of the live saves, 377a8d45, unchanged after the run.
+
+The run added `BC5_DIRECT_DISPATCH_JOURNAL=1`. `BC5_DIRECT_GE_PROBE` stayed off because it switches chaining off, so
+the tables' contents are not journaled. The tracker's per-dispatch user data are journaled. The page-cache drop
+failed (sudo wanted a password), so J1 started with a warm cache, unlike D2. The kernel log was streamed to the
+laptop. The emulator was stopped by TERM at 128 s. Extract: `raw/j1-dispatch-journal.txt`; reader: `dj0381.py`.
+
+**The event reproduced.** At t ≈ 60 s TCP read faults hit 0x8608c654000–0x8608c65b000 (status 0x00701031). The gfx
+ring timed out and the ring reset succeeded (devcoredump `20261030-081544-devcd3.txt`, private). From the live saves
+that makes 3 of 4 bench starts.
+
+**The source of 0x860 (F679).**
+- The faulting dcb (15,083 dwords) opens with 0x909977100 dispatches at dword 13. These use the `USER_DATA_0` they
+  inherit.
+- Immediately before it on the host (t 56.945 s), a 1,051-dword acb ran. Its last dispatch (program 0x11d03a3500)
+  sets user data 0 to **0x11d00860**.
+- 0x909977100 forms its descriptor base's high half from `USER_DATA_0` (F671). The fault's high half is 0x0860, the
+  low 16 bits of that value.
+- The host's tracker keeps the dcb's compute state apart from the acb's, so it journals `ud0` 0x11 for the dcb.
+- The journal holds 5 runs of 0x909977100 dispatches. The 4 healthy ones sit mid-dcb, right after the dcb's own
+  0x909974400 dispatches with `ud0` 0x11. The faulting one is the only run that starts a dcb right after an acb.
+
+With `BC5_DIRECT_COMPUTE_RING=-1` (exp 0342, `play-pkg.sh`), acbs run on the GFX ring and share its `COMPUTE_*` SH
+registers. On the console an acb runs on its own queue, so the graphics queue's compute registers would survive it.
+So the bad value is carried state, written by the title's own acb. It is not the dcb's table or the CP's fetch of it.
+
+What is not shown:
+- that the dcb's table at dword 8 leaves SH 0x240 out (the table was not journaled). That fits the fault: if the
+  table set 0x240, the CP would have used the table's value.
+- the same order (an acb right before this dcb) in the 16:25, 01:26 and 01:36 events. Their journals have no
+  dispatch lines.
+
+**Fix candidate, design only.** In front of a dcb that follows an acb on the same ring, re-emit the dcb tracker's
+compute SH state: the CS prefix, SH 0x204–0x3ff, which already exists for dcbs that dispatch before setting their
+program. Alternatively, save and restore the compute SH state around each merged acb. Either needs the maintainer's
+yes and a build. The test: J1's route with the fix, 3 starts from the live saves (the event hit 3 of 4).
+
+**The compile check** (`compile0381.sh`, `~/bc5-work/exp0381cc`, clang 21.1.8 with libdrm 2.4.131). Its first build
+stopped on a `-Wsign-conversion` error in `draw_args_test.cpp`, which MSVC had not flagged; the error is fixed. After
+the fix: 0 warnings, 95 of 95 test cases, archive 46aed659. `direct.cpp`, with the draw-args journal, compiled
+cleanly. The script also gained `< /dev/null` on its `distrobox enter` calls, which had swallowed `bash -s` input.
