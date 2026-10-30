@@ -10,7 +10,7 @@ a healthy smoke. It is a different capture and would need its own manifest. Noth
 | Binary's parts | shared objects 58c4a627, archive bb50b2e0; unit c46144c4 (exp 0379's e62113a5 + recorder); `runtimeLinker.cpp` 5f2bc982 (tree 96e03695 + crash frames) | RS1-extract.txt |
 | Recorder | `rec0380.inc` b844fb51 + `mk-rec0380.py` 78d98c50 **at commit 6c0c84d** (F608). The files at HEAD are r2's and do not reproduce r1. Part A only | git; R1-rec0380_test-out.txt passed |
 | Runner | `~/bc5-work/exp0380r1/s6n0380r1.sh`, repo copy md5 494ac253, pinned by the loop | the box copy is unread; the loop refuses another hash |
-| Loop | `raw/loop0380b.sh` md5 af63df3f | stand-in dry run passed; not on the box yet |
+| Loop | `raw/loop0380b.sh` md5 f53d0984 | stand-in dry run passed; not on the box yet |
 | Kernel stream | `raw/stream0380bl.sh` md5 3d9d7b3b, from the laptop | not run yet |
 | Launcher | `play-pkg.sh` 55531ab6, derived private copy b0504f88; the runner checks the first and records the second | RS1 |
 | Learned file | `direct-learned-pkg.txt` a7cc8581, 109 windows, private copy | RS1; recorded per try, not pinned |
@@ -18,7 +18,7 @@ a healthy smoke. It is a different capture and would need its own manifest. Noth
 | Mode | RT on, one ring (the launcher's `BC5_DIRECT_COMPUTE_RING=-1`), the runner's environment check | runner |
 | Saves | Live sum 377a8d456a9b4cb1 (read 2026-10-29, re-read before start; the loop refuses another). Route saves `exp0196/saves-before-152617`, private copy. The live saves are only compared | RS1 |
 | Limits | 180 s a try, 7200 s in all, about 34 tries, a new tag each; one loop, no resume after a reboot, no extra hours | Codex's GO, pasted by the maintainer into the session's chat |
-| Stops | first try not `pass` (any class, not only F403); stop file; live saves changed; under 20 GiB free; budget; lock taken by someone else; emulator left running; time control (a try over 480 s, or the wall clock off the uptime by over 30 s); the binary's and runner's hashes at start | loop |
+| Stops | first try not `pass` (any class, not only F403); stop file; live saves changed; under 20 GiB free; budget; lock taken by someone else; an emulator running before a try (the maintainer's play) or left after one; time control (a try over 480 s, or the wall clock off the uptime by over 30 s); the binary's and runner's hashes at start | loop |
 
 ## Smoke
 
