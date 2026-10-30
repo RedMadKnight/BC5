@@ -1,0 +1,39 @@
+--- /home/kjaniszewski/bc5-work/exp0380f/play-pkg-0380f.sh	2026-10-29 13:47:14.714127939 +0100
++++ /home/kjaniszewski/bc5-work/exp0380t/play-pkg-0380t.sh	2026-10-29 13:48:52.684840963 +0100
+@@ -13,7 +13,7 @@
+ EMU=~/bc5-work/exp0380f/kyty_emulator  # exp 0380f: shared objects + exp 0379t's zero-skip unit + exp 0380's archive (link0380f.py)
+ ENVF=${BC5_RUN_ENV:-$HOME/bc5-work/bc5-run.env}
+ mkdir -p ~/bc5-work/exp0380f/play
+-LOG=~/bc5-work/exp0380f/play/play-$ZSTAMP.log  # exp 0380f: one log per start
++LOG=~/bc5-work/exp0380t/play-last.log  # exp 0350/0364: own log
+ # Experiment 0177: BC5_LEAN=1 (the "BC5 emulator (lean)" shortcut) runs the emulator built with
+ # KYTY_BC5_LEAN in ~/bc5-work/kytyplus-build-lean: no tracing, journal, counters, recorder or
+ # samplers, inside or outside; its own log file. The title scripts take the same switch.
+@@ -40,6 +40,7 @@
+   key=${line%%=*}; val=${line#*=}
+   if [ "$key" = PLAY_ARGS ]; then PLAY_ARGS=$val; else export "$key=$val"; fi
+ done < "$ENVF"
++[ -n "${BC5_0358_INPUT_CONFIG:-}" ] && export KYTY_BC5_INPUT_CONFIG=$BC5_0358_INPUT_CONFIG  # exp 0339
+ # exp 0380f (the maintainer's yes "Tak, oba", 2026-10-29): exp 0380's rebase fix with FORCE_START_AT_000, and exp 0379's
+ # zero skip forced to SKIP on his play list (no scan); the zero guard and the y/z limit off.
+ export BC5_DIRECT_REBASE_DISPATCH=1 BC5_DIRECT_FORCE_START_000=1
+@@ -56,8 +57,8 @@
+ export SHADPS4_SYSMODULES_PACK_DIR=$HOME/bc5-data/sysmodules-pack-hle-ampr-noplaygo  # 2026-10-25 (exp 0298, the maintainer's yes): no libScePlayGo.sprx, the host answers PlayGo (100 chunks)
+ # Experiment 0042: also the heaps the GPU reads or writes before the CPU touches them
+ export BC5_DIRECT_EAGER_NAMES="RenderGpuWcLarge,RenderGpuWcSmall,RenderGpuRwLarge,RenderGpuRwSmall,CommitIABufferAllocator,AMM,RenderAlloc,Physics,Decal Job Scheduler,VisualEffectInstanceHeap,DynamicHeap,DynamicHeap Small,ComponentHeap,ComponentHeap Small,MaterialHeap,DDLHeap,Physics query allocator"
+-export BC5_DIRECT_LEARNED=$HOME/bc5-work/direct-learned-pkg.txt
+-export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/_SaveData-pkg-play
++export BC5_DIRECT_LEARNED=$HOME/bc5-work/exp0380t/direct-learned-pkg.txt  # exp 0350/0364: a private copy
++export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/exp0380t/wd/_SaveData-pkg-play  # exp 0350/0364: private
+ # Experiment 0039: the compute IBs indirect dispatches run (rewritten for the GFX ring).
+ # Experiment 0053: their arguments checked by the CP when it runs them, a CP DMA wait before a
+ # dispatch after an unsynced copy; with both the tree refit runs too (before: skipped,
+@@ -201,7 +202,7 @@
+   grep -v '^#' "$ENVF" | grep -v '^$'
+   [ -r "$PKG_ENV" ] && grep -v '^#' "$PKG_ENV" | grep -v '^$'
+ } > "$LOG"
+-cd ~/bc5-work
++cd ~/bc5-work/exp0380t/wd  # exp 0350/0364: the private working directory (its own _SaveData)
+ # Experiment 0047: exit code 75 is the F2 menu's "Restart game": start the emulator again, with
+ # the mount and the settings kept.
+ while :; do

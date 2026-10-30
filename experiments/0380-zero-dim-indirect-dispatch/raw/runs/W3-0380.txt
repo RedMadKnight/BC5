@@ -1,0 +1,5 @@
+bc5-direct: experiment 0380 switch: a GL2 write-back before the check of the first indirect dispatch after an INDEX_BASE
+bc5-direct: experiment 0380 switch: every indirect dispatch the GPU check pass sees gets FORCE_START_AT_000 in its initiator
+bc5-direct: experiment 0380 periodic: FORCE_START_AT_000 set on 13595363 of 21659890 indirect dispatches (the rest had it)
+bc5-direct: experiment 0380 periodic: GL2 write-back before 85136 checked indirect dispatches
+bc5-direct: experiment 0380 periodic: FORCE_START_AT_000 set on 13830982 of 22063278 indirect dispatches (the rest had it)

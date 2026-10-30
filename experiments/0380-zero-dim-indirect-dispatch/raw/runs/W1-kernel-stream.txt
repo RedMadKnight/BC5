@@ -1,0 +1,15 @@
+paź 29 14:49:04.867875 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State
+paź 29 14:49:05.058398 bazzite kernel: amdgpu 0000:01:00.0: Dumping IP State Completed
+paź 29 14:49:05.059042 bazzite kernel: amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+paź 29 14:49:05.059492 bazzite kernel: amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+paź 29 14:49:05.059674 bazzite kernel: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=1402, emitted seq=1404
+paź 29 14:49:05.059845 bazzite kernel: amdgpu 0000:01:00.0:  Process kyty_emulator pid 7752 thread bc5-ring pid 7883
+paź 29 14:49:05.060012 bazzite kernel: amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+paź 29 14:49:05.060163 bazzite kernel: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset failed
+paź 29 14:49:05.060316 bazzite kernel: amdgpu 0000:01:00.0: GPU reset begin!. Source:  1
+paź 29 14:49:05.061860 bazzite bc5-gpu-watch: armed: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=1402, emitted seq=1404
+paź 29 14:49:05.064862 bazzite bc5-gpu-watch: a ring reset failed [amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset failed]: crashing before the full reset: syncing and crashing the kernel for a reboot (SysRq s, c)
+paź 29 14:49:05.065864 bazzite kernel: sysrq: Emergency Sync
+paź 29 14:49:05.144868 bazzite kernel: Emergency Sync complete
+Read from remote host 100.88.23.35: Connection reset by peer
+client_loop: send disconnect: Connection reset by peer

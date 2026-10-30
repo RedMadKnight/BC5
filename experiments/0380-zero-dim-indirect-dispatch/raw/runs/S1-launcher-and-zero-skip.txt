@@ -1,0 +1,39 @@
+8a9,10
+> unset BC5_LEAN BC5_LOGS  # exp 0380f: the normal build's journal holds the zero and timeout lines
+> Z=~/bc5-work/exp0380f; ZSTAMP=$(date +%Y%m%d-%H%M%S)  # exp 0380f
+11c13
+< EMU=~/bc5-work/kytyplus-build/src/kyty_emulator
+---
+> EMU=~/bc5-work/exp0380f/kyty_emulator  # exp 0380f: shared objects + exp 0379t's zero-skip unit + exp 0380's archive (link0380f.py)
+13c15,16
+< LOG=~/bc5-work/play-pkg-last.log
+---
+> mkdir -p ~/bc5-work/exp0380f/play
+> LOG=~/bc5-work/exp0380f/play/play-$ZSTAMP.log  # exp 0380f: one log per start
+22c25
+< MLOG=~/bc5-work/play-pkg-mount.log
+---
+> MLOG=~/bc5-work/exp0380f/play/mount-$ZSTAMP.log  # exp 0380f: its own mount log
+39a43,50
+> # exp 0380f (the maintainer's yes "Tak, oba", 2026-10-29): exp 0380's rebase fix with FORCE_START_AT_000, and exp 0379's
+> # zero skip forced to SKIP on his play list (no scan); the zero guard and the y/z limit off.
+> export BC5_DIRECT_REBASE_DISPATCH=1 BC5_DIRECT_FORCE_START_000=1
+> unset BC5_DIRECT_GPU_CHECK_ZERO BC5_DIRECT_GPU_CHECK_YZ BC5_DIRECT_ZEROSCAN_AT BC5_DIRECT_ZEROSCAN_OUT
+> ZLIST=/home/kjaniszewski/bc5-work/exp0379t/play-lists/zero-list-20261029-120000.txt
+> [ -r "$ZLIST" ] || { say "No zero list at $ZLIST"; exit 1; }
+> export BC5_DIRECT_ZERO_SKIP=$ZLIST
+> ZMODE="SKIP $ZLIST"
+168a180
+>   [ -n "${ZSP:-}" ] && kill "$ZSP" 2> /dev/null  # exp 0380f: the memory sampler
+183a196
+> bash "$Z/play-sample0379t.sh" $$ "$Z/play/mem-$ZSTAMP.txt" < /dev/null > /dev/null 2>&1 & ZSP=$!  # exp 0380f: once a minute
+185a199
+>   echo "== exp 0380f mode: $ZMODE; BC5_DIRECT_REBASE_DISPATCH=1; BC5_DIRECT_FORCE_START_000=1; binary $(md5sum < "$EMU" | cut -c1-8)"
+== exp 0380f mode: SKIP /home/kjaniszewski/bc5-work/exp0379t/play-lists/zero-list-20261029-120000.txt; BC5_DIRECT_REBASE_DISPATCH=1; BC5_DIRECT_FORCE_START_000=1; binary c442f6c7
+zero skip: list /home/kjaniszewski/bc5-work/exp0379t/play-lists/zero-list-20261029-120000.txt, 2 heaps, 1218.0 MiB listed, 0 bad lines
+zero skip: RenderGpuWcLarge at file 0x156c00000: 934.0 MiB in 48 runs skipped
+zero skip: canary BO 1, 52 slices of 2 MiB
+zero skip: canary +467 mappings (467)
+zero skip: CommitIABufferAllocator at file 0x226200000: 284.0 MiB in 4 runs skipped
+zero skip: canary +142 mappings (609)
+zero skip: canary hit in run 49 (file 0x230a00000 +8.0 MiB): 8.0 MiB taken back

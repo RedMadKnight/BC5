@@ -1,0 +1,66 @@
+rec0380: #7 dcb: start (self-test), 12 dwords, 1 indirect dispatches, 3 addresses
+rec0380: #7 dcb: dims 00000c56 00000001 00000001 (self-test: the first indirect dispatch's arguments at 0x7f8eb0a00300); scan: 512.0 MiB resident read, 8.0 MiB not resident, 1.0 MiB unreadable, 3 mappings, 0.20 s; triple 1, pairs 1 / 1, dwords 1 / 2 / 2 (lines: the first 16 per dword, 32 per pair, 64 triples)
+rec0380: #7 dcb: written /tmp/rec0380-8jtr/rec0380-00000007-dcb.txt (1622 bytes) in 0.20 s
+--- self-test file:
+rec0380 #7 dcb (self-test), 12 dwords, 1 indirect dispatches
+dims 00000c56 00000001 00000001 program 0x0 (self-test: the first indirect dispatch's arguments at 0x7f8eb0a00300)
+dump SET_BASE 1 0x7f8eb0a00000: a4900000 c2c779b1 e0fef362 ff366d13 9d6de6c4 bba56075 d9dcda26 f81453d7 964bcd88 b4834739 d2bac0ea f0f23a9b 8f29b44c ad612dfd cb98a7ae e9d0215f
+dump INDEX_BASE 0x7f8ebd202000: 000001e1 4000008a 000001e0 8423f513 a25b6ec4 c092e875 deca6226 fd01dbd7 9b395588 b970cf39 d7a848ea f5dfc29b 94173c4c b24eb5fd d0862fae eebda95f
+dump arguments  0x7f8eb0a00300: 00000c56 00000001 00000001 a8d1b1d3 c7092b84 e540a535 83781ee6 a1af9897 bfe71248 de1e8bf9 fc5605aa 9a8d7f5b b8c4f90c d6fc72bd f533ec6e 936b661f
+dword 0 (00000c56) at 0x7f8eb0a00300 (mapping 0x7f8eaa600000 +0x6400300 of 0x20000000, shared)
+pair 0-1 at 0x7f8eb0a00300 (mapping 0x7f8eaa600000 +0x6400300 of 0x20000000, shared)
+TRIPLE at 0x7f8eb0a00300 (mapping 0x7f8eaa600000 +0x6400300 of 0x20000000, shared)
+dword 1 (00000001) at 0x7f8eb0a00304 (mapping 0x7f8eaa600000 +0x6400304 of 0x20000000, shared)
+dword 2 (00000001) at 0x7f8eb0a00304 (mapping 0x7f8eaa600000 +0x6400304 of 0x20000000, shared)
+pair 1-2 at 0x7f8eb0a00304 (mapping 0x7f8eaa600000 +0x6400304 of 0x20000000, shared)
+dword 1 (00000001) at 0x7f8eb0a00308 (mapping 0x7f8eaa600000 +0x6400308 of 0x20000000, shared)
+dword 2 (00000001) at 0x7f8eb0a00308 (mapping 0x7f8eaa600000 +0x6400308 of 0x20000000, shared)
+scan: 512.0 MiB resident read, 8.0 MiB not resident, 1.0 MiB unreadable, 3 mappings, 0.20 s; triple 1, pairs 1 / 1, dwords 1 / 2 / 2 (lines: the first 16 per dword, 32 per pair, 64 triples)
+rec0380: #8 dcb: start (timeout), 12 dwords, 1 indirect dispatches, 3 addresses
+rec0380: #8 dcb: dims 000001e1 4000008a 000001e0 (sampler /tmp/rec0380-8jtr/gpu-stall/event-20261029-140441-gfx_0.0.0/summary.txt); scan: 512.0 MiB resident read, 8.0 MiB not resident, 1.0 MiB unreadable, 3 mappings, 0.20 s; triple 1, pairs 1 / 1, dwords 1 / 1 / 1 (lines: the first 16 per dword, 32 per pair, 64 triples)
+rec0380: #8 dcb: written /tmp/rec0380-8jtr/rec0380-00000008-dcb.txt (1634 bytes) in 0.20 s
+--- timeout file:
+rec0380 #8 dcb (timeout), 12 dwords, 1 indirect dispatches
+dims 000001e1 4000008a 000001e0 program 0x7f8eb0a01000 (sampler /tmp/rec0380-8jtr/gpu-stall/event-20261029-140441-gfx_0.0.0/summary.txt)
+dump SET_BASE 1 0x7f8eb0a00000: a4900000 c2c779b1 e0fef362 ff366d13 9d6de6c4 bba56075 d9dcda26 f81453d7 964bcd88 b4834739 d2bac0ea f0f23a9b 8f29b44c ad612dfd cb98a7ae e9d0215f
+dump INDEX_BASE 0x7f8ebd202000: 000001e1 4000008a 000001e0 8423f513 a25b6ec4 c092e875 deca6226 fd01dbd7 9b395588 b970cf39 d7a848ea f5dfc29b 94173c4c b24eb5fd d0862fae eebda95f
+dump arguments  0x7f8eb0a00300: 00000c56 00000001 00000001 a8d1b1d3 c7092b84 e540a535 83781ee6 a1af9897 bfe71248 de1e8bf9 fc5605aa 9a8d7f5b b8c4f90c d6fc72bd f533ec6e 936b661f
+dump program    0x7f8eb0a01000: 8276c400 a0ae3db1 bee5b762 dd1d3113 fb54aac4 998c2475 b7c39e26 d5fb17d7 f4329188 926a0b39 b0a184ea ced8fe9b ed10784c 8b47f1fd a97f6bae c7b6e55f
+dword 0 (000001e1) at 0x7f8ebd202000 (mapping 0x7f8eaa600000 +0x12c02000 of 0x20000000, shared)
+pair 0-1 at 0x7f8ebd202000 (mapping 0x7f8eaa600000 +0x12c02000 of 0x20000000, shared)
+TRIPLE at 0x7f8ebd202000 (mapping 0x7f8eaa600000 +0x12c02000 of 0x20000000, shared)
+dword 1 (4000008a) at 0x7f8ebd202004 (mapping 0x7f8eaa600000 +0x12c02004 of 0x20000000, shared)
+pair 1-2 at 0x7f8ebd202004 (mapping 0x7f8eaa600000 +0x12c02004 of 0x20000000, shared)
+dword 2 (000001e0) at 0x7f8ebd202008 (mapping 0x7f8eaa600000 +0x12c02008 of 0x20000000, shared)
+scan: 512.0 MiB resident read, 8.0 MiB not resident, 1.0 MiB unreadable, 3 mappings, 0.20 s; triple 1, pairs 1 / 1, dwords 1 / 1 / 1 (lines: the first 16 per dword, 32 per pair, 64 triples)
+rec0380: #9 dcb: start (timeout), 12 dwords, 1 indirect dispatches, 3 addresses
+rec0380: #9 dcb: dims 00000000 00000000 00000000 (unknown: no event of gfx_0.0.0 newer than the job in /tmp/rec0380-8jtr/s9 within 0.6 s); scan: 0.0 MiB resident read, 0.0 MiB not resident, 0.0 MiB unreadable, 3 mappings, 0.00 s, not run: no dims; triple 0, pairs 0 / 0, dwords 0 / 0 / 0 (lines: the first 16 per dword, 32 per pair, 64 triples)
+rec0380: #9 dcb: written /tmp/rec0380-8jtr/rec0380-00000009-dcb.txt (926 bytes) in 0.60 s
+--- case 9: rec0380 #9 dcb (timeout), 12 dwords, 1 indirect dispatches
+dims 00000000 00000000 00000000 program 0x0 (unknown: no event of gfx_0.0.0 newer than the job in /tmp/rec0380-8jtr/s9 within 0.6 s)
+rec0380: #10 dcb: start (timeout), 12 dwords, 1 indirect dispatches, 3 addresses
+rec0380: #10 dcb: dims 00000000 00000000 00000000 (unknown: no event of gfx_0.0.0 newer than the job in /tmp/rec0380-8jtr/s10 within 0.6 s); scan: 0.0 MiB resident read, 0.0 MiB not resident, 0.0 MiB unreadable, 3 mappings, 0.00 s, not run: no dims; triple 0, pairs 0 / 0, dwords 0 / 0 / 0 (lines: the first 16 per dword, 32 per pair, 64 triples)
+rec0380: #10 dcb: written /tmp/rec0380-8jtr/rec0380-00000010-dcb.txt (928 bytes) in 0.60 s
+--- case 10: rec0380 #10 dcb (timeout), 12 dwords, 1 indirect dispatches
+dims 00000000 00000000 00000000 program 0x0 (unknown: no event of gfx_0.0.0 newer than the job in /tmp/rec0380-8jtr/s10 within 0.6 s)
+rec0380: #11 dcb: start (timeout), 12 dwords, 1 indirect dispatches, 3 addresses
+rec0380: #11 dcb: dims 00000000 00000000 00000000 (unknown: no event of gfx_0.0.0 newer than the job in /tmp/rec0380-8jtr/s11 within 0.6 s); scan: 0.0 MiB resident read, 0.0 MiB not resident, 0.0 MiB unreadable, 3 mappings, 0.00 s, not run: no dims; triple 0, pairs 0 / 0, dwords 0 / 0 / 0 (lines: the first 16 per dword, 32 per pair, 64 triples)
+rec0380: #11 dcb: written /tmp/rec0380-8jtr/rec0380-00000011-dcb.txt (928 bytes) in 0.60 s
+--- case 11: rec0380 #11 dcb (timeout), 12 dwords, 1 indirect dispatches
+dims 00000000 00000000 00000000 program 0x0 (unknown: no event of gfx_0.0.0 newer than the job in /tmp/rec0380-8jtr/s11 within 0.6 s)
+rec0380: #12 dcb: start (timeout), 12 dwords, 1 indirect dispatches, 3 addresses
+rec0380: #12 dcb: dims 00000000 00000000 00000000 (unknown: 2 events of gfx_0.0.0 in the window disagree); scan: 0.0 MiB resident read, 0.0 MiB not resident, 0.0 MiB unreadable, 3 mappings, 0.00 s, not run: no dims; triple 0, pairs 0 / 0, dwords 0 / 0 / 0 (lines: the first 16 per dword, 32 per pair, 64 triples)
+rec0380: #12 dcb: written /tmp/rec0380-8jtr/rec0380-00000012-dcb.txt (894 bytes) in 0.00 s
+--- case 12: rec0380 #12 dcb (timeout), 12 dwords, 1 indirect dispatches
+dims 00000000 00000000 00000000 program 0x0 (unknown: 2 events of gfx_0.0.0 in the window disagree)
+rec0380: #13 dcb: start (timeout), 12 dwords, 1 indirect dispatches, 3 addresses
+rec0380: #13 dcb: dims 000001e1 4000008a 000001e0 (sampler /tmp/rec0380-8jtr/s13/event-20261029-140441-gfx_0.0.0-2/summary.txt (+1 agreeing)); scan: 512.0 MiB resident read, 8.0 MiB not resident, 1.0 MiB unreadable, 3 mappings, 0.20 s; triple 1, pairs 1 / 1, dwords 1 / 1 / 1 (lines: the first 16 per dword, 32 per pair, 64 triples)
+rec0380: #13 dcb: written /tmp/rec0380-8jtr/rec0380-00000013-dcb.txt (1645 bytes) in 0.20 s
+--- case 13: rec0380 #13 dcb (timeout), 12 dwords, 1 indirect dispatches
+dims 000001e1 4000008a 000001e0 program 0x7f8eb0a01000 (sampler /tmp/rec0380-8jtr/s13/event-20261029-140441-gfx_0.0.0-2/summary.txt (+1 agreeing))
+rec0380: #14 dcb: start (timeout), 12 dwords, 1 indirect dispatches, 3 addresses
+rec0380: #14 dcb: dims 000001e1 4000008a 000001e0 (sampler /tmp/rec0380-8jtr/s14/event-20261029-140441-gfx_0.0.0/summary.txt); scan: 512.0 MiB resident read, 8.0 MiB not resident, 1.0 MiB unreadable, 3 mappings, 0.20 s; triple 1, pairs 1 / 1, dwords 1 / 1 / 1 (lines: the first 16 per dword, 32 per pair, 64 triples)
+rec0380: #14 dcb: written /tmp/rec0380-8jtr/rec0380-00000014-dcb.txt (1629 bytes) in 0.70 s
+--- case 14: rec0380 #14 dcb (timeout), 12 dwords, 1 indirect dispatches
+dims 000001e1 4000008a 000001e0 program 0x7f8eb0a01000 (sampler /tmp/rec0380-8jtr/s14/event-20261029-140441-gfx_0.0.0/summary.txt)
+--- all checks passed (/tmp/rec0380-8jtr)

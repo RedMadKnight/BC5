@@ -1,0 +1,21 @@
+== RC1 summary
+RC1: stopped at 300 s after 304 s; launcher exit 0; crash lines 0, kernel lines 0, TIMEOUT lines 0, compute-ring lines 0, fdinfo engines drm-engine-gfx , devcoredumps 0, RT-off drop lines 0, flips 9944 over 299.8 s = 33.2 flips/s; direct: 19386 views; +0 BOs (96, 11302.0 MiB pinned); maps +0 -2 (19421); imports  (stubs ), call lines , procparam ; the private learned file is unchanged
+== RC1 start
+2026-10-29 20:42:02
+arm RC1, 300 s, launcher /home/kjaniszewski/bc5-work/exp0380rec/run/play-pkg-0380s.sh md5 f8220830, BC5_EMU /home/kjaniszewski/bc5-work/exp0380rec/bin/kyty_emulator md5 b8561eaa; env: BC5_EMU=/home/kjaniszewski/bc5-work/exp0380rec/bin/kyty_emulator BC5_0358_INPUT_CONFIG=/home/kjaniszewski/bc5-work/exp0380rec/run/input-rton.cfg KYTY_BC5_INPUT_CMD=/home/kjaniszewski/bc5-work/exp0380rec/run/in-RC1.cmd BC5_0380_REC=1 BC5_0380_REC_SELFTEST_S=150
+boot 3047f2ba, up since 2026-10-29 18:08:44
+emulator pid 7503 exe /home/kjaniszewski/bc5-work/exp0380rec/bin/kyty_emulator cwd /home/kjaniszewski/bc5-work/exp0380rec/run/wd
+environ: KYTY_GUEST_MEMORY_MB=13824 KYTY_BC5_INPUT_CONFIG=/home/kjaniszewski/bc5-work/exp0380rec/run/input-rton.cfg BC5_DIRECT_LAZY_NAMES=orbis_user_malloc,Wwise,SoundAlloc,FileSystem,UIStringAlloc BC5_DIRECT_LEARNED=/home/kjaniszewski/bc5-work/exp0380rec/run/direct-learned-pkg.txt BC5_DIRECT_SKIP_PGM=0 BC5_DIRECT_EAGER_NAMES=RenderGpuWcLarge,RenderGpuWcSmall,RenderGpuRwLarge,RenderGpuRwSmall,CommitIABufferAllocator,AMM,RenderAlloc,Physics,Decal Job Scheduler,VisualEffectInstanceHeap,DynamicHeap,DynamicHeap Small,ComponentHeap,ComponentHeap Small,MaterialHeap,DDLHeap,Physics query allocator BC5_DIRECT_JOURNAL=min KYTY_BC5_SAVEDATA_DIR=/home/kjaniszewski/bc5-work/exp0380rec/run/wd/_SaveData-pkg-play KYTY_BC5_RT_BUILD_PGM=909974400,909939400,909936c00,909939700,909939900,909974200,909973900,909973b00,909973d00,909973f00,11d049aa00,11d04a6000,11d04bb900 
+== RC1 verdict
+pass
+== saves
+2026-10-29 20:42:02 live saves a92fe0992638a454, snapshot /home/kjaniszewski/bc5-work/exp0380rec/run/saves-before-2042 (comparison only)
+2026-10-29 20:47:17 live saves a92fe0992638a454 (want a92fe0992638a454)
+== rec0380 journal lines (/home/kjaniszewski/bc5-data/captures/play-20261029-2042/gc/direct.log)
+rec0380: #138480 dcb: start (self-test), 1675 dwords, 9 indirect dispatches, 5 addresses
+rec0380: #138480 dcb: dims 00000000 00000001 00000001 (self-test: the first indirect dispatch's arguments at 0x11d081ab00); scan: 11347.8 MiB resident read, 3827.8 MiB not resident, 0.2 MiB unreadable, 21540 mappings, 8.92 s; triple 46058, pairs 632036 / 866739, dwords 1440661899 / 5872457 / 5872457 (lines: the first 16 per dword, 32 per pair, 64 triples)
+rec0380: #138480 dcb: written /home/kjaniszewski/bc5-data/captures/play-20261029-2042/gc/rec0380-00138480-dcb.txt (14932 bytes) in 8.97 s
+== the file /home/kjaniszewski/bc5-data/captures/play-20261029-2042/gc/rec0380-00138480-dcb.txt: its head line and scan line only (its memory dumps stay private)
+rec0380 #138480 dcb (self-test), 1675 dwords, 9 indirect dispatches
+dims 00000000 00000001 00000001 program 0x0 (self-test: the first indirect dispatch's arguments at 0x11d081ab00)
+scan: 11347.8 MiB resident read, 3827.8 MiB not resident, 0.2 MiB unreadable, 21540 mappings, 8.92 s; triple 46058, pairs 632036 / 866739, dwords 1440661899 / 5872457 / 5872457 (lines: the first 16 per dword, 32 per pair, 64 triples)

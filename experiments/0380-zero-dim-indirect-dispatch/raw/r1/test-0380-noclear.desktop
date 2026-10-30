@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=BC5 emulator (test 0380 noclear)
+Comment=BC5 test 0380 noclear (r1, 44417414): the shared normal build's objects with exp 0379's zero skip (fixed list), the flight recorder part A (event matched by ring and job age) and a crash-context dump (BC5_CRASH_FRAMES); the full-state prefix without CONTEXT_CONTROL/CLEAR_STATE (BC5_DIRECT_PIECES_NO_CLEAR=1); RT on; a log and a memory record per start in ~/bc5-work/exp0380r1/play/
+Exec=/usr/bin/distrobox enter ubuntu -- /home/kjaniszewski/bc5-work/exp0380r1/play-pkg-0380r1.sh
+Icon=applications-games
+Terminal=false
+Categories=Game;
+StartupNotify=false

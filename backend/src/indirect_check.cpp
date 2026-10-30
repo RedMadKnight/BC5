@@ -2,6 +2,7 @@
 #include "bc5/indirect_check.hpp"
 
 #include <algorithm>
+#include <cstdlib>
 
 namespace bc5::indirect_check {
 
@@ -12,16 +13,32 @@ constexpr std::uint32_t kOpDispatchIndirect = 0x16;
 constexpr std::uint32_t kOpDrawIndirect = 0x24;
 constexpr std::uint32_t kOpDrawIndexIndirect = 0x25;
 constexpr std::uint32_t kOpCondExec = 0x22;
+constexpr std::uint32_t kOpIndexBase = 0x26; // experiment 0380: INDEX_BASE (Mesa sid.h PKT3_INDEX_BASE)
 
 constexpr std::uint32_t kWriteData = 0xC0033700u; // PKT3(WRITE_DATA, 3, 0)
 constexpr std::uint32_t kWriteDataMem = 5u << 8;  // DST_SEL memory
 constexpr std::uint32_t kWrConfirm = 1u << 20;
 constexpr std::uint32_t kCondWrite = 0xC0074500u; // PKT3(COND_WRITE, 7, 0)
 constexpr std::uint32_t kGreater = 6;
+constexpr std::uint32_t kForceStartAt000 = 1u << 2; // COMPUTE_DISPATCH_INITIATOR bit 2 (exp 0380)
+constexpr std::uint32_t kEqual = 3;
+constexpr std::uint32_t kSetBase = 0xC0021100u; // PKT3(SET_BASE, 2, 0), experiment 0380's rebase
+// experiment 0380 (F566): PKT3(COPY_DATA, 4, 0); SRC_SEL memory (1), DST_SEL memory (5 << 8), WR_CONFIRM (1 << 20),
+// engine ME (Mesa sid.h PKT3_COPY_DATA, COPY_DATA_SRC_MEM / COPY_DATA_DST_MEM / COPY_DATA_WR_CONFIRM; the packet as
+// ac_emit_cp_copy_data in src/amd/common/ac_cmdbuf_cp.c emits it, ab2374a)
+constexpr std::uint32_t kCopyData = 0xC0044000u;
+constexpr std::uint32_t kCopyMemToMem = 1u | (5u << 8) | (1u << 20);
+constexpr std::uint32_t kArgsSlot = 16; // byte offset of the argument copy in the flag area (dwords 4-6)
+// experiment 0380 (F570): PKT3(ACQUIRE_MEM, 6, 0) with GCR_CNTL GL2_WB (bit 15), the full range, as the kernel's
+// gfx_v10_0_emit_mem_sync writes it (Linux v7.2 nvd.h:447-501, gfx_v10_0.c:9473-9494; COHER_CNTL 0)
+constexpr std::uint32_t kAcquireMem = 0xC0065800u;
+constexpr std::uint32_t kGcrGl2Wb = 1u << 15; // experiment 0380: WAIT_REG_MEM_FUNCTION 3 "==", Linux v7.2 nvd.h
 constexpr std::uint32_t kPollMem = 1u << 4;
 constexpr std::uint32_t kWriteMem = 1u << 8;
 constexpr std::uint32_t kPfpSyncMe = 0xC0004200u; // PKT3(PFP_SYNC_ME, 0, 0)
 constexpr std::uint32_t kCondExec = 0xC0032200u;  // PKT3(COND_EXEC, 3, 0), GFX7+ form
+constexpr std::uint32_t kEventWrite = 0xC0004600u; // experiment 0380 (F617): PKT3(EVENT_WRITE, 0, 0)
+constexpr std::uint32_t kCsPartialFlush = 7u | (4u << 8); // V_028A90_CS_PARTIAL_FLUSH, EVENT_INDEX 4 (Mesa sid.h)
 
 // The argument dwords the check compares for an indirect packet, 0 for other packets:
 // DISPATCH_INDIRECT (GFX form, 3 dwords) x, y, z; DRAW_INDIRECT and DRAW_INDEX_INDIRECT (5 dwords)
@@ -54,7 +71,9 @@ std::size_t packet_len(std::uint32_t h) {
 std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib_in, std::uint64_t base_in,
                                  const std::uint32_t (&max)[3], const std::uint32_t (&draw_max)[2],
                                  std::vector<std::size_t> &flag_refs, Stats &stats,
-                                 bool compute_ring, const ProductLimit *product) {
+                                 bool compute_ring, const ProductLimit *product, bool zero_dims,
+                                 bool force_start, bool rebase, bool args_copy, ArgsWb args_wb,
+                                 std::uint64_t copy_va, ArgsFlush args_flush, bool flush_draws) {
     // ADR 0010 section A: a COND_EXEC range whose grown count no longer fits has its own checked
     // packets NOP-ed (nothing of that range runs unchecked) and the pass runs again over the
     // rest; it used to give up on the whole IB, which in a chain is several buffers.
@@ -64,6 +83,7 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib_in, std::uint
     std::uint32_t dropped_total = 0;
     for (int attempt = 0; attempt < 64; ++attempt) {
     std::uint64_t base = base_in;
+    bool after_index_base = false; // experiment 0380: an INDEX_BASE since the last DISPATCH_INDIRECT
     std::uint32_t dispatches = 0;
     bool has_cond_exec = false;
     for (std::size_t i = 0; i < ib.size();) {
@@ -79,7 +99,8 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib_in, std::uint
     if (dispatches == 0)
         return {ib.begin(), ib.end()};
     std::vector<std::uint32_t> out;
-    out.reserve(ib.size() + dispatches * (kCheckDwords + (product != nullptr ? kProductDwords : 0) + 2));
+    out.reserve(ib.size() + dispatches * (kCheckDwords + (product != nullptr ? kProductDwords : 0) +
+                                          (zero_dims ? kZeroDwords : 0) + 2));
     // The IB's own COND_EXECs skip a count of dwords: a check inserted inside one's range grows it.
     // new_at[i]: where the packet at offset i starts in out, its inserted check included.
     std::vector<std::size_t> new_at;
@@ -100,10 +121,13 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib_in, std::uint
         if (h >> 30 == 3 && op == kOpCondExec && len == 5) {
             conds.push_back({i + len, i + len + (ib[i + 4] & 0x3fffu), out.size()});
         }
+        if (h >> 30 == 3 && op == kOpIndexBase)
+            after_index_base = true;
         if (h >> 30 == 3 && op == kOpSetBase && len >= 4 && (ib[i + 1] & 0xfu) == 1) {
             base = (static_cast<std::uint64_t>(ib[i + 2]) & ~3ull) |
                    (static_cast<std::uint64_t>(ib[i + 3] & 0xffffu) << 32);
         }
+        std::uint64_t restore_base = 0; // experiment 0380: the title's base, restored after a copied dispatch
         if (const std::uint32_t dims = checked_dims(h, len, compute_ring); dims != 0) {
             const std::uint32_t *limit = dims == 3 ? max : draw_max;
             const std::size_t before = out.size();
@@ -119,6 +143,52 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib_in, std::uint
                 };
                 const auto flag = [&flag_at] { flag_at(0); };
                 const bool stair = product != nullptr && dims == 3 && !compute_ring;
+                // experiment 0380 (F566): the CP copies the arguments into the flag area first; the check
+                // reads the copy and the dispatch fetches it (SET_BASE to the copy, offset 0)
+                const bool copy_here = args_copy && dims == 3 && !compute_ring;
+                // experiment 0380 (F617): earlier compute work of this GFX context finished before the polls and the
+                // fetch (not DMA, other queues or memory visibility: REVIEW-05)
+                const bool flush_here = !compute_ring &&
+                    (dims == 3 ? (args_flush == ArgsFlush::all ||
+                                  (args_flush == ArgsFlush::first_after_index_base && after_index_base))
+                               : flush_draws);
+                if (flush_here) {
+                    out.insert(out.end(), {kEventWrite, kCsPartialFlush});
+                    stats.args_flushed++;
+                }
+                // experiment 0380 (F574): the copy at copy_va (a low GPU VA) when given, else in the flag area
+                const auto slot_at = [&](std::uint32_t k) {
+                    if (copy_va != 0) {
+                        out.push_back(static_cast<std::uint32_t>(copy_va + 4 * k));
+                        out.push_back(static_cast<std::uint32_t>((copy_va + 4 * k) >> 32) & 0xffffu);
+                    } else {
+                        flag_at(kArgsSlot + 4 * k);
+                    }
+                };
+                const auto poll = [&](std::uint32_t k) {
+                    if (copy_here) {
+                        slot_at(k);
+                    } else {
+                        const std::uint64_t a = args + 4 * k;
+                        out.push_back(static_cast<std::uint32_t>(a) & ~3u);
+                        out.push_back(static_cast<std::uint32_t>(a >> 32) & 0xffffu);
+                    }
+                };
+                if (copy_here) {
+                    for (std::uint32_t k = 0; k < 3; ++k) {
+                        const std::uint64_t a = args + 4 * k;
+                        out.insert(out.end(), {kCopyData, kCopyMemToMem, static_cast<std::uint32_t>(a) & ~3u,
+                                               static_cast<std::uint32_t>(a >> 32) & 0xffffu});
+                        slot_at(k);
+                    }
+                    stats.args_copied++;
+                }
+                // experiment 0380 (F570): GL2 written back before the check and the fetch (after the copy)
+                if (dims == 3 && !compute_ring &&
+                    (args_wb == ArgsWb::all || (args_wb == ArgsWb::first_after_index_base && after_index_base))) {
+                    out.insert(out.end(), {kAcquireMem, 0u, 0xffffffffu, 0xffffffu, 0u, 0u, 0x0000000Au, kGcrGl2Wb});
+                    stats.args_written_back++;
+                }
                 out.insert(out.end(), {kWriteData, kWriteDataMem});
                 flag();
                 out.push_back(1);
@@ -128,21 +198,27 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib_in, std::uint
                     out.push_back(0);
                 }
                 for (std::uint32_t k = 0; k < dims; ++k) {
-                    const std::uint64_t a = args + 4 * k;
-                    out.insert(out.end(), {kCondWrite, kGreater | kPollMem | kWriteMem,
-                                           static_cast<std::uint32_t>(a) & ~3u,
-                                           static_cast<std::uint32_t>(a >> 32) & 0xffffu, limit[k],
-                                           0xffffffffu});
+                    out.insert(out.end(), {kCondWrite, kGreater | kPollMem | kWriteMem});
+                    poll(k);
+                    out.insert(out.end(), {limit[k], 0xffffffffu});
                     flag();
                     out.push_back(0);
                 }
+                if (zero_dims && dims == 3) { // experiment 0380: x, y or z == 0 ? flag = 0
+                    for (std::uint32_t k = 0; k < 3; ++k) {
+                        out.insert(out.end(), {kCondWrite, kEqual | kPollMem | kWriteMem});
+                        poll(k);
+                        out.insert(out.end(), {0u, 0xffffffffu});
+                        flag();
+                        out.push_back(0);
+                    }
+                    stats.zero_checked++;
+                }
                 if (stair) { // experiment 0341: the staircase
                     for (std::uint32_t k = 1; k < 3; ++k) { // y, z > yz_min ? flag2 = 1
-                        const std::uint64_t a = args + 4 * k;
-                        out.insert(out.end(), {kCondWrite, kGreater | kPollMem | kWriteMem,
-                                               static_cast<std::uint32_t>(a) & ~3u,
-                                               static_cast<std::uint32_t>(a >> 32) & 0xffffu,
-                                               product->yz_min, 0xffffffffu});
+                        out.insert(out.end(), {kCondWrite, kGreater | kPollMem | kWriteMem});
+                        poll(k);
+                        out.insert(out.end(), {product->yz_min, 0xffffffffu});
                         flag_at(8);
                         out.push_back(1);
                     }
@@ -153,10 +229,9 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib_in, std::uint
                     out.push_back(kCondExec); // flag2 != 0: the x check below runs
                     flag_at(8);
                     out.insert(out.end(), {0u, 9u});
-                    out.insert(out.end(), {kCondWrite, kGreater | kPollMem | kWriteMem, // x > x_limit ? flag = 0
-                                           static_cast<std::uint32_t>(args) & ~3u,
-                                           static_cast<std::uint32_t>(args >> 32) & 0xffffu,
-                                           product->x_limit, 0xffffffffu});
+                    out.insert(out.end(), {kCondWrite, kGreater | kPollMem | kWriteMem}); // x > x_limit ? flag = 0
+                    poll(0);
+                    out.insert(out.end(), {product->x_limit, 0xffffffffu});
                     flag();
                     out.push_back(0);
                     stats.product_checked++;
@@ -166,10 +241,25 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib_in, std::uint
                 out.push_back(0);
                 if (!compute_ring)
                     out.insert(out.end(), {kPfpSyncMe, 0u});
+                // experiment 0380: the title's SET_BASE index 1 again, right before the dispatch and
+                // inside the COND_EXEC's range (skipped with it)
+                const bool rebase_here = rebase && dims == 3 && !compute_ring && !copy_here;
                 out.push_back(kCondExec);
                 flag();
-                out.insert(out.end(), {0u, static_cast<std::uint32_t>(len)});
+                out.insert(out.end(), {0u, static_cast<std::uint32_t>(len + (rebase_here || copy_here ? kRebaseDwords : 0))});
                 stats.checked++;
+                if (copy_here) { // experiment 0380 (F566): the dispatch's base is the copy
+                    out.insert(out.end(), {kSetBase, 1u});
+                    slot_at(0);
+                    restore_base = base;
+                }
+                if (rebase_here) {
+                    out.insert(out.end(), {kSetBase, 1u, static_cast<std::uint32_t>(base),
+                                           static_cast<std::uint32_t>(base >> 32) & 0xffffu});
+                    stats.rebased++;
+                    if (after_index_base)
+                        stats.rebased_after_index_base++;
+                }
             } else {
                 out.insert(out.end(), {kPfpSyncMe, 0u});
                 stats.unbased++;
@@ -178,6 +268,21 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib_in, std::uint
         }
         out.insert(out.end(), ib.begin() + static_cast<std::ptrdiff_t>(i),
                    ib.begin() + static_cast<std::ptrdiff_t>(i + len));
+        if (h >> 30 == 3 && op == kOpDispatchIndirect)
+            after_index_base = false;
+        if (force_start && checked_dims(h, len, compute_ring) == 3) {
+            // experiment 0380: the initiator is the packet's last dword in both forms
+            if ((out.back() & kForceStartAt000) == 0)
+                stats.start_forced++;
+            out.back() |= kForceStartAt000;
+        }
+        if (restore_base != 0) { // experiment 0380 (F566): offset 0 into the copy, then the title's base again
+            out[out.size() - len + 1] = 0;
+            out.insert(out.end(), {kSetBase, 1u, static_cast<std::uint32_t>(restore_base),
+                                   static_cast<std::uint32_t>(restore_base >> 32) & 0xffffu});
+            stats.inserted_dwords += static_cast<std::uint32_t>(kRebaseDwords);
+            restore_base = 0;
+        }
         i += len;
     }
     if (has_cond_exec) {
@@ -233,6 +338,31 @@ std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib_in, std::uint
         i += len;
     }
     return out;
+}
+
+bool parse_yz_limit(const char *s, YzLimit &out) {
+    if (s == nullptr || *s == 0 || (s[0] == '0' && s[1] == 0))
+        return false;
+    YzLimit l;
+    if (!(s[0] == '1' && s[1] == 0)) {
+        char *end = nullptr;
+        const unsigned long y = std::strtoul(s, &end, 0);
+        if (end != s && y != 0)
+            l.y = static_cast<std::uint32_t>(std::min<unsigned long>(y, 0xffffffffu));
+        if (end != nullptr && *end == ':') {
+            const char *zs = end + 1;
+            const unsigned long z = std::strtoul(zs, &end, 0);
+            if (end != zs && z != 0)
+                l.z = static_cast<std::uint32_t>(std::min<unsigned long>(z, 0xffffffffu));
+        }
+    }
+    out = l;
+    return true;
+}
+
+void tighten(std::uint32_t (&max)[3], const YzLimit &limit) {
+    max[1] = std::min(max[1], limit.y);
+    max[2] = std::min(max[2], limit.z);
 }
 
 bool insert_before(std::vector<std::uint32_t> &ib, const std::vector<Insert> &inserts) {

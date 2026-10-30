@@ -10,12 +10,16 @@
 // with the dispatch replaced by a WRITE_DATA (no shader runs): the write must happen for sane
 // group counts only. The packets go in the unfiltered prologue (the policy drops COND_WRITE).
 //
+// --zero-check (experiment 0380): as --cp-check with the zero-dimension guard on and four more
+// triples with a 0 count, which must not write the result either.
+//
 // --compute-ring N (ADR 0009, ladder step 5): Device::submit's own path on compute ring N, one
 // job at a time, stopping at the first failure. No shader runs.
 //   1 nop        the filter's one-dword NOP (0xffff1000) on the MEC
 //   2 timestamps WRITE_DATA with the job timestamps (COPY_DATA, RELEASE_MEM DATA_SEL 3)
 //   3 events     RELEASE_MEM BOTTOM_OF_PIPE_TS/5 and CS_DONE/6 with data
 //   4 cp-check   the indirect-count check of the MEC form (COND_WRITE, COND_EXEC) on five triples
+//                (nine with --zero-check: the zero guard on, four more with a 0 count)
 //   5 overlap    a 64 MiB CP DMA fill on the GFX ring, then a compute job: their timestamps overlap
 //   6 wait       a compute job waits for a label that a later GFX job writes; a userptr range is
 //                mapped while it waits, and a second compute job writes into it
@@ -25,6 +29,7 @@
 #include "bc5/direct.hpp"
 #include "bc5/indirect_check.hpp"
 #include "bc5/policy.hpp"
+#include "bc5/selftest_route.hpp" // experiment 0380 (REVIEW-05): which test the command line selects
 
 #include <cstdint>
 #include <cstdio>
@@ -87,7 +92,7 @@ bool run(bc5::direct::Device &dev, const char *name, const std::vector<std::uint
 }
 
 // ADR 0009, ladder step 5 (see the top of the file). mem: 80 MiB mapped 1:1.
-int compute_ladder(bc5::direct::Device &dev, char *mem, int ring) {
+int compute_ladder(bc5::direct::Device &dev, char *mem, int ring, bool zero_check) {
     using bc5::direct::kGfxRing;
     constexpr std::uint64_t kTimeout = 2'000'000'000ull;
     dev.set_async(true);
@@ -166,9 +171,16 @@ int compute_ladder(bc5::direct::Device &dev, char *mem, int ring) {
                               {0x7f800000u, 0x7f800000u, 0x7f800000u, false},
                               {28800, 0xff800000u, 1, false},
                               {1, 1, 2000, false},
-                              {1u << 20, 1024, 1024, true}};
+                              {1u << 20, 1024, 1024, true},
+                              // experiment 0380 (--zero-check only, with the zero guard on): a 0 count must
+                              // not run (Codex review REVIEW-05: they ran before without the guard)
+                              {0, 1, 1, false},
+                              {1, 0, 1, false},
+                              {1, 1, 0, false},
+                              {0, 0, 0, false}};
         int wrong = 0;
-        for (std::size_t k = 0; k < std::size(cases); ++k) {
+        const std::size_t n_cases = zero_check ? std::size(cases) : 5;
+        for (std::size_t k = 0; k < n_cases; ++k) {
             const std::size_t page = 0x1000 * (k + 1);
             word(page + 0x40) = cases[k].x;
             word(page + 0x44) = cases[k].y;
@@ -182,7 +194,7 @@ int compute_ladder(bc5::direct::Device &dev, char *mem, int ring) {
             std::vector<std::size_t> refs;
             bc5::indirect_check::Stats st;
             auto seq = bc5::indirect_check::apply(in, 0, defaults.gpu_check_max, defaults.gpu_check_draw_max, refs,
-                                                  st, true);
+                                                  st, true, nullptr, zero_check);
             bc5::indirect_check::patch(seq, refs, va(page + 0x100));
             seq.resize(seq.size() - 4); // the dispatch; COND_EXEC's count becomes the WRITE_DATA's 5
             seq.back() = 5;
@@ -295,7 +307,7 @@ int main(int argc, char **argv) {
     std::uint64_t map_mib = 0;
     bool submit = false;
     bool synthetic = true;
-    bool cp_check = false;
+    bool cp_check = false, zero_check = false;
     int compute_ring = -1;
     std::string journal_path;
     bc5::direct::OpenOptions open_opts;
@@ -310,15 +322,17 @@ int main(int argc, char **argv) {
         else if (a == "--legacy-va") open_opts.legacy_scratch_va = true;
         else if (a == "--skip-synthetic") synthetic = false;
         else if (a == "--cp-check") cp_check = true;
+        else if (a == "--zero-check") cp_check = zero_check = true; // experiment 0380
         else if (a == "--compute-ring" && i + 1 < argc) compute_ring = std::stoi(argv[++i]);
         else {
             std::fputs("usage: direct-selftest --submit [--render-node PATH] [--ib-file FILE]... [--map-mib N] [--journal FILE]\n"
-                       "                       [--dedup] [--legacy-va] [--skip-synthetic] [--cp-check]\n"
+                       "                       [--dedup] [--legacy-va] [--skip-synthetic] [--cp-check] [--zero-check]\n"
                        "                       [--compute-ring N]\n", stderr);
             return 2;
         }
     }
-    if (!submit) {
+    const bc5::selftest::Path path = bc5::selftest::route({submit, cp_check, zero_check, compute_ring});
+    if (path == bc5::selftest::Path::nothing) {
         std::puts("direct-selftest: nothing done without --submit");
         return 0;
     }
@@ -344,7 +358,7 @@ int main(int argc, char **argv) {
         std::printf("userptr 1:1 %llu MiB at %p: %s\n", static_cast<unsigned long long>(map_mib), mem, ok ? "ok" : "FAILED");
         if (!ok) return 1;
     }
-    if (cp_check) {
+    if (path == bc5::selftest::Path::gfx_check) {
         // Per case a 4 KiB page of the mapping: arguments at +0x40, the result word at +0x80, the
         // flag and its confirm word at +0x100. Expected: the result written (1) only when all
         // three counts are within bc5::policy::FilterOptions{}.gpu_check_max.
@@ -357,9 +371,15 @@ int main(int argc, char **argv) {
                               {0x7f800000u, 0x7f800000u, 0x7f800000u, false},
                               {28800, 0xff800000u, 1, false},
                               {1, 1, 2000, false},
-                              {1u << 20, 1024, 1024, true}};
+                              {1u << 20, 1024, 1024, true},
+                              // experiment 0380 (--zero-check only): a 0 count must not run (REVIEW-05: missing)
+                              {0, 1, 1, false},
+                              {1, 0, 1, false},
+                              {1, 1, 0, false},
+                              {0, 0, 0, false}};
         int failures = 0;
-        for (std::size_t k = 0; k < std::size(cases); ++k) {
+        const std::size_t n_cases = zero_check ? std::size(cases) : 5; // --cp-check: the five of 0052
+        for (std::size_t k = 0; k < n_cases; ++k) {
             auto *page = reinterpret_cast<volatile std::uint32_t *>(static_cast<char *>(mem) + 0x1000 * k);
             const std::uint64_t va = reinterpret_cast<std::uint64_t>(page);
             page[0x40 / 4] = cases[k].x;
@@ -374,7 +394,8 @@ int main(int argc, char **argv) {
                                                    static_cast<std::uint32_t>(va >> 32), 0xC0011600u, 0x40u, 0x41u};
             std::vector<std::size_t> refs;
             bc5::indirect_check::Stats st;
-            auto seq = bc5::indirect_check::apply(in, 0, defaults.gpu_check_max, defaults.gpu_check_draw_max, refs, st);
+            auto seq = bc5::indirect_check::apply(in, 0, defaults.gpu_check_max, defaults.gpu_check_draw_max, refs, st,
+                                                  false, nullptr, zero_check);
             bc5::indirect_check::patch(seq, refs, va + 0x100);
             seq.resize(seq.size() - 3);
             seq.back() = 5;
@@ -397,7 +418,8 @@ int main(int argc, char **argv) {
         std::printf("cp-check: %d wrong\n", failures);
         return failures == 0 ? 0 : 1;
     }
-    if (compute_ring >= 0) return compute_ladder(*dev, static_cast<char *>(mem), compute_ring);
+    if (path == bc5::selftest::Path::compute_ladder)
+        return compute_ladder(*dev, static_cast<char *>(mem), compute_ring, zero_check);
     std::vector<std::uint32_t> ib;
     if (synthetic) {
         ib.assign(8, bc5::policy::kNop);

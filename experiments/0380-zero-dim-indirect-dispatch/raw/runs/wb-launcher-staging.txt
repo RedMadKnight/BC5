@@ -1,0 +1,35 @@
+/home/kjaniszewski/bc5-work/exp0380wb/play-pkg-0380wb.sh written
+syntax-ok
+/home/kjaniszewski/bc5-work/exp0380wb/BC5 emulator (test 0380 wb).desktop.staged: error: filename does not have a .desktop extension
+1b8a6a17  /home/kjaniszewski/bc5-work/exp0380wb/play-pkg-0380wb.sh
+c3c8660b  /home/kjaniszewski/bc5-work/exp0380w/kyty_emulator
+528aa794  /home/kjaniszewski/bc5-work/exp0380wb/BC5 emulator (test 0380 wb).desktop.staged
+BC5 emulator (lean).desktop
+BC5 emulator.desktop
+8a9,10
+> unset BC5_LEAN BC5_LOGS  # exp 0380wb: the normal build's journal and timeout probe
+> Z=~/bc5-work/exp0380wb; ZSTAMP=$(date +%Y%m%d-%H%M%S)  # exp 0380wb
+11c13
+< EMU=~/bc5-work/kytyplus-build/src/kyty_emulator
+---
+> EMU=~/bc5-work/exp0380w/kyty_emulator  # exp 0380wb: shared objects + exp 0380's archive eff535ac (link0380r.py)
+13c15,16
+< LOG=~/bc5-work/play-pkg-last.log
+---
+> mkdir -p ~/bc5-work/exp0380wb/play
+> LOG=~/bc5-work/exp0380wb/play/play-$ZSTAMP.log  # exp 0380wb: one log per start
+22c25
+< MLOG=~/bc5-work/play-pkg-mount.log
+---
+> MLOG=~/bc5-work/exp0380wb/play/mount-$ZSTAMP.log  # exp 0380wb: its own mount log
+39a43,46
+> # exp 0380wb (prepared for the maintainer's play): the GL2 write-back before the first indirect dispatch after an
+> # INDEX_BASE, with FORCE_START_AT_000; no copy, no rebase, no zero skip.
+> export BC5_DIRECT_ARGS_WB=first BC5_DIRECT_FORCE_START_000=1
+> unset BC5_DIRECT_ARGS_COPY BC5_DIRECT_REBASE_DISPATCH BC5_DIRECT_GPU_CHECK_ZERO BC5_DIRECT_GPU_CHECK_YZ BC5_DIRECT_ZERO_SKIP BC5_DIRECT_ZEROSCAN_AT BC5_DIRECT_ZEROSCAN_OUT
+168a176
+>   [ -n "${ZSP:-}" ] && kill "$ZSP" 2> /dev/null  # exp 0380wb: the memory sampler
+183a192
+> bash "$Z/play-sample0379t.sh" $$ "$Z/play/mem-$ZSTAMP.txt" < /dev/null > /dev/null 2>&1 & ZSP=$!  # exp 0380wb: once a minute
+185a195
+>   echo "== exp 0380wb: BC5_DIRECT_ARGS_WB=first; BC5_DIRECT_FORCE_START_000=1; no copy, no rebase, no zero skip; binary $(md5sum < "$EMU" | cut -c1-8)"

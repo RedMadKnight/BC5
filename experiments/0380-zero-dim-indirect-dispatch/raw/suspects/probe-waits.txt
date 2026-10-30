@@ -1,0 +1,37 @@
+== play-20261029-0944
+timeout probe: wait op 3c at 1751: label 0x11e05b0770 function 3 reference 0x1 mask 0xffffffff me; now 0x9 (NOT met) ran
+timeout probe: wait op 3c at 2777: label 0x11e05b1778 function 3 reference 0x1 mask 0xffffffff me; now 0x0 (NOT met) ran
+timeout probe: wait op 3c at 2865: label 0x11e05b18d8 function 3 reference 0x1 mask 0xffffffff me; now 0x0 (NOT met) ran
+timeout probe: wait op 3c at 3189: label 0x11e05b1de8 function 3 reference 0x1 mask 0xffffffff me; now 0x0 (NOT met) ran
+timeout probe: wait op 93 at 5835: label 0x12004b3838 function 3 reference 0x0 mask 0xffffffffffffffff pfp; now 0x0 (met) DROPPED
+timeout probe: wait op 93 at 5891: label 0x12004b4038 function 3 reference 0x0 mask 0xffffffffffffffff pfp; now 0x0 (met) DROPPED
+timeout probe: wait op 93 at 5947: label 0x12004b7838 function 3 reference 0x0 mask 0xffffffffffffffff pfp; now 0x0 (met) DROPPED
+timeout probe: wait op 3c at 7657: label 0x11e0bb0580 function 3 reference 0x1 mask 0xffffffff me; now 0xd6c23e89 (NOT met) ran
+timeout probe: wait op 3c at 7735: label 0x11e0bb06b8 function 3 reference 0x1 mask 0xffffffff me; now 0x0 (NOT met) ran
+timeout probe: wait op 93 at 8398: label 0x7f342ecbb000 function 3 reference 0x0 mask 0xffffffffffffffff pfp; now not read DROPPED
+== play-20261029-1209
+timeout probe: wait op 3c at 1709: label 0x11e07106c8 function 3 reference 0x1 mask 0xffffffff me; now 0x9 (NOT met) ran
+timeout probe: wait op 3c at 2006: label 0x11e0710b70 function 3 reference 0x1 mask 0xffffffff me; now 0x11c4c720 (NOT met) ran
+timeout probe: wait op 3c at 2394: label 0x11e0711180 function 3 reference 0x1 mask 0xffffffff me; now 0x0 (NOT met) ran
+timeout probe: wait op 3c at 3126: label 0x11e0711cf0 function 3 reference 0x1 mask 0xffffffff me; now 0x397fffff (NOT met) ran
+timeout probe: wait op 3c at 3209: label 0x11e0711e38 function 3 reference 0x1 mask 0xffffffff me; now 0x0 (NOT met) ran
+timeout probe: wait op 3c at 3523: label 0x11e0712320 function 3 reference 0x1 mask 0xffffffff me; now 0x0 (NOT met) ran
+timeout probe: wait op 3c at 5428: label 0x11e07140e8 function 3 reference 0x1 mask 0xffffffff me; now 0x0 (NOT met) ran
+timeout probe: wait op 93 at 6815: label 0x12004b3838 function 3 reference 0x0 mask 0xffffffffffffffff pfp; now 0x0 (met) DROPPED
+timeout probe: wait op 93 at 6871: label 0x12004b4038 function 3 reference 0x0 mask 0xffffffffffffffff pfp; now 0x0 (met) DROPPED
+timeout probe: wait op 93 at 6927: label 0x12004b7838 function 3 reference 0x0 mask 0xffffffffffffffff pfp; now 0x0 (met) DROPPED
+timeout probe: wait op 3c at 8717: label 0x11e04506c0 function 3 reference 0x1 mask 0xffffffff me; now 0x268748a9 (NOT met) ran
+timeout probe: wait op 3c at 8795: label 0x11e04507f8 function 3 reference 0x1 mask 0xffffffff me; now 0x0 (NOT met) ran
+timeout probe: wait op 3c at 9219: label 0x11e0450e98 function 3 reference 0x1 mask 0xffffffff me; now 0xe0207be8 (NOT met) ran
+timeout probe: wait op 3c at 9422: label 0x11e04511c0 function 3 reference 0x1 mask 0xffffffff me; now 0x558d (NOT met) ran
+timeout probe: wait op 93 at 9990: label 0x7fa73a125008 function 3 reference 0x0 mask 0xffffffffffffffff pfp; now not read DROPPED
+== play-20261029-1357
+timeout probe: wait op 3c at 1516: label 0x11e09503c8 function 3 reference 0x1 mask 0xffffffff me; now 0x50022908 (NOT met) ran
+timeout probe: wait op 93 at 2369: label 0x12004b3838 function 3 reference 0x0 mask 0xffffffffffffffff pfp; now 0x0 (met) DROPPED
+timeout probe: wait op 93 at 2425: label 0x12004b4038 function 3 reference 0x0 mask 0xffffffffffffffff pfp; now 0x0 (met) DROPPED
+timeout probe: wait op 93 at 2481: label 0x12004b7838 function 3 reference 0x0 mask 0xffffffffffffffff pfp; now 0x0 (met) DROPPED
+timeout probe: wait op 3c at 4281: label 0x11e0bb06e8 function 3 reference 0x1 mask 0xffffffff me; now 0xacff2b09 (NOT met) ran
+timeout probe: wait op 3c at 4359: label 0x11e0bb0820 function 3 reference 0x1 mask 0xffffffff me; now 0x0 (NOT met) ran
+timeout probe: wait op 3c at 4773: label 0x11e0bb0e98 function 3 reference 0x1 mask 0xffffffff me; now 0x88936a21 (NOT met) ran
+timeout probe: wait op 3c at 4976: label 0x11e0bb11c0 function 3 reference 0x1 mask 0xffffffff me; now 0x5634 (NOT met) ran
+timeout probe: wait op 93 at 5544: label 0x7f532f4b8000 function 3 reference 0x0 mask 0xffffffffffffffff pfp; now not read DROPPED
