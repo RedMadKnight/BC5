@@ -41,6 +41,10 @@ and this is the first time they meet it.
   The file is read as data, never sourced or evaluated. A line counts only as a name with one of its documented values; any other line is ignored and logged by number. The last valid line for a name wins.
   The log's first line is built from the environment after the block, so it states the effective values. The restore, recorder and crash settings are not touched. The smoke launcher's input is `/dev/null`, so a smoke
   runs with all of them off. The build stops if anything after the block loads the env file or names a switch. Rollback: revert this revision and 2db9e86; nothing else depends on them.
+- **Revised after Codex's REVIEW-PORTS-09 (HOLD), not proved yet.** A later `bc5-pkg.env` could undo the reset, so the block moves to right before the log, after both settings files, and `tb2_check` stops the start if the
+  environment at the emulator's line is not what the log says. The order is checked by counted anchors on the launcher as built, and the two launchers get pins. **The proof is missing:** r1's launcher (299a2519) has no ordinary local
+  copy, and `play-pkg.sh` 55531ab6, where the versioned generators start, is not in git. The tests refuse to run without it and `PIN_TB2_LAUNCHER`, `PIN_TB2_SMOKE` are `FILL`, so the build refuses too. After the maintainer's play and an agreed read of
+  `~/bc5-work/exp0380r1/play-pkg-0380r1.sh`: put it in `raw/`, run the tests, fill the pins. The anchors were written after reading a copy taken from a session transcript, which is outside what was allowed and has been deleted; the build checks them on the real file either way.
 - `BC5_DIRECT_DRAW_ARGS_JOURNAL` is not in the list: it is a diagnostic, and a long journal is what filled 38 GB in `on-3`.
 
 **What this costs.** With the new base, a difference between 4c686b5b and tb2 is no longer only three small changes: the whole archive moves too. The fallback's list below stops being exact.

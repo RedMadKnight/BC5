@@ -95,15 +95,23 @@ L=$TB/play-pkg-0381tb2.sh; S=$TB/play-pkg-0381tb2s.sh
 sed -e 's#exp0380r1#exp0381/tb2#g' -e 's#exp 0380r1#exp 0381 test build 2#g' "$R1/play-pkg-0380r1.sh" > "$L" || fail launcher
 [ "$(grep -c '^export BC5_CRASH_FRAMES=1 ' "$L")" = 1 ] || fail "the switch line is not there once"
 sed -i 's/^export BC5_CRASH_FRAMES=1 /export BC5_DIRECT_ACB_STATE_RESTORE=1 BC5_CRASH_FRAMES=1 /' "$L"
-# The switches: r1's launcher unsets six of them, so an export from outside never reaches the emulator. The file is read after that unset.
+# The switches: read after bc5-run.env and bc5-pkg.env, right before the log, with a check right before each emulator start.
 [ "$(grep -c 'no write-back, FORCE_START, copy or rebase' "$L")" = 1 ] || fail "the log line is not there once"
 sed -i 's/no write-back, FORCE_START, copy or rebase/switches:${TB2_SW:- none}/' "$L"
-sed -i "/^export BC5_DIRECT_ACB_STATE_RESTORE=1 BC5_CRASH_FRAMES=1 /r $HERE/switches0381tb2.inc" "$L"
-[ "$(grep -c '^TB2_SW=""$' "$L")" = 1 ] && [ "$(grep -c '^SWF=' "$L")" = 1 ] || fail "the switches block is not there once"
-# Nothing may load or set a switch after the block, or the reset and the log would not be the emulator's state.
-env_at=$(grep -nxF 'done < "$ENVF"' "$L" | cut -d: -f1); end_at=$(grep -n "^# end of exp 0381 test build 2's switches$" "$L" | cut -d: -f1)
-[ -n "$env_at" ] && [ -n "$end_at" ] && [ "$env_at" -lt "$end_at" ] || fail "the switches block is not after the launcher's env file"
-if tail -n +"$((end_at + 1))" "$L" | grep -E 'ENVF|BC5_DIRECT_(GPU_CHECK_YZ|FORCE_START_000|ARGS_WB|ARGS_FLUSH|ARGS_COPY|GPU_CHECK_ZERO|DRAW_ARGS_JOURNAL)'; then fail "a switch is touched after the block"; fi
+at() { [ "$(grep -cxF -- "$1" "$L")" = 1 ] || { echo "FAIL: anchor [$1] is not there once" >&2; return 1; }; grep -nxF -- "$1" "$L" | cut -d: -f1; }
+brace=$(at '{') || exit 1
+sed -i "$((brace - 1))r $HERE/switches0381tb2.inc" "$L"
+[ "$(grep -c '^  "$EMU" ' "$L")" = 1 ] || fail "the emulator's line is not there once"
+sed -i 's/^  # shellcheck disable=SC2086$/  tb2_check\n&/' "$L"
+[ "$(grep -c '^TB2_ENV=' "$L")" = 1 ] && [ "$(grep -c '^SWF=' "$L")" = 1 ] || fail "the switches block is not there once"
+# The order, counted on the launcher as built: both settings files, the block, the log at once, and the check right before the emulator.
+env_at=$(at 'done < "$ENVF"') || exit 1; pkg_at=$(at '  done < "$PKG_ENV"') || exit 1; end_at=$(at "# end of exp 0381 test build 2's switches") || exit 1
+brace=$(at '{') || exit 1; check_at=$(at '  tb2_check') || exit 1; emu_at=$(grep -n '^  "$EMU" ' "$L" | cut -d: -f1)
+[ "$env_at" -lt "$pkg_at" ] && [ "$pkg_at" -lt "$end_at" ] || fail "the switches block is not after both settings files"
+[ "$brace" = "$((end_at + 1))" ] && sed -n "$((brace + 1))p" "$L" | grep -q '^  echo "== exp 0381 test build 2: .*switches:' || fail "the log does not follow the block"
+[ "$((check_at + 2))" = "$emu_at" ] || fail "the check is not right before the emulator"
+# After the block, nothing may load settings or set anything: the log's reads of the two files are fine, a loop over them is not.
+if tail -n +"$((end_at + 1))" "$L" | grep -E "(^|[;&|[:space:]])(export|unset|declare|typeset|readonly|source|eval|env)[[:space:]]|^[[:space:]]*\.[[:space:]]|done <|$(sed -n 's/^TB2_NAMES="\(.*\)"$/\1/p' "$HERE/switches0381tb2.inc" | tr ' ' '|')"; then fail "settings or a switch are touched after the block"; fi
 [ -e "$TB/switches.env" ] || cp "$HERE/switches0381tb2.env" "$TB/switches.env" || fail "the switches file"
 cp "$R1/zero-list-20261029-120000.txt" "$R1/play-sample0379t.sh" "$TB/" || fail copy
 bash -n "$L" || fail "the launcher does not parse"
@@ -122,6 +130,8 @@ bash -n "$S" || fail "the smoke launcher does not parse"
 chmod +x "$S"
 diff "$L" "$S" > "$R/smoke-vs-launcher.diff"
 echo "smoke launcher $(m "$S"), $(grep -c '^>' "$R/smoke-vs-launcher.diff") lines against the launcher"
+# r1's launcher is pinned, so the two built here are known to the byte: these pins are of the text the review read.
+[ "$(m "$L")" = "$PIN_TB2_LAUNCHER" ] && [ "$(m "$S")" = "$PIN_TB2_SMOKE" ] || fail "the launchers are $(m "$L") and $(m "$S"), not the reviewed text"
 P1=$(pins); echo "after: $P1"
 [ "$P1" = "$P0" ] || fail "A SHARED PIN CHANGED"
 ok=1

@@ -1,7 +1,8 @@
-# exp 0381 test build 2: the switches, read from a data file at every start. Each is reset first, so an inherited value never survives a commented line.
+# exp 0381 test build 2: the switches, read from a data file at every start, after bc5-run.env and bc5-pkg.env, so this file beats both.
+# Each is reset first, so a value from either file or from outside never survives a commented line. BC5_DIRECT_REBASE_DISPATCH is refuted: reset, never accepted.
 # The file is not sourced: a line counts only if it is a name with one of its documented values. The last valid line for a name wins, and the log names the effective state.
 SWF=$HOME/bc5-work/exp0381/tb2/switches.env
-TB2_NAMES="BC5_DIRECT_GPU_CHECK_YZ BC5_DIRECT_FORCE_START_000 BC5_DIRECT_ARGS_WB BC5_DIRECT_ARGS_FLUSH BC5_DIRECT_ARGS_FLUSH_DRAWS BC5_DIRECT_GPU_CHECK_ZERO BC5_DIRECT_ARGS_COPY BC5_DIRECT_DRAW_ARGS_JOURNAL"
+TB2_NAMES="BC5_DIRECT_GPU_CHECK_YZ BC5_DIRECT_FORCE_START_000 BC5_DIRECT_ARGS_WB BC5_DIRECT_ARGS_FLUSH BC5_DIRECT_ARGS_FLUSH_DRAWS BC5_DIRECT_GPU_CHECK_ZERO BC5_DIRECT_ARGS_COPY BC5_DIRECT_DRAW_ARGS_JOURNAL BC5_DIRECT_REBASE_DISPATCH"
 unset $TB2_NAMES
 TB2_BAD=""; TB2_N=0
 if [ -f "$SWF" ] && [ -r "$SWF" ]; then
@@ -17,9 +18,20 @@ if [ -f "$SWF" ] && [ -r "$SWF" ]; then
     esac
   done < "$SWF"
 fi
-TB2_SW=""
-for n in $TB2_NAMES; do
-  v=$(printenv "$n") && TB2_SW="$TB2_SW $n=$v"
-done
+tb2_env() {
+  local n v
+  for n in $TB2_NAMES; do
+    v=$(printenv "$n") && printf ' %s=%s' "$n" "$v"
+  done
+}
+TB2_ENV=$(tb2_env)
+TB2_SW=$TB2_ENV
 [ -z "$TB2_BAD" ] || TB2_SW="$TB2_SW REJECTED-LINES:$TB2_BAD"
+# Called right before each emulator start: what the log says is what the emulator gets, or it does not start.
+tb2_check() {
+  [ "$(tb2_env)" = "$TB2_ENV" ] && return 0
+  echo "== $(date '+%F %T') exp 0381: the switches changed after the block, not started:$(tb2_env)" >> "$LOG"
+  say "The switches changed after they were read; not started (see $LOG)."
+  exit 1
+}
 # end of exp 0381 test build 2's switches
