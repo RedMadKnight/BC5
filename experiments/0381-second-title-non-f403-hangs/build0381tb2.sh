@@ -95,6 +95,12 @@ L=$TB/play-pkg-0381tb2.sh; S=$TB/play-pkg-0381tb2s.sh
 sed -e 's#exp0380r1#exp0381/tb2#g' -e 's#exp 0380r1#exp 0381 test build 2#g' "$R1/play-pkg-0380r1.sh" > "$L" || fail launcher
 [ "$(grep -c '^export BC5_CRASH_FRAMES=1 ' "$L")" = 1 ] || fail "the switch line is not there once"
 sed -i 's/^export BC5_CRASH_FRAMES=1 /export BC5_DIRECT_ACB_STATE_RESTORE=1 BC5_CRASH_FRAMES=1 /' "$L"
+# The switches: r1's launcher unsets six of them, so an export from outside never reaches the emulator. The file is read after that unset.
+[ "$(grep -c 'no write-back, FORCE_START, copy or rebase' "$L")" = 1 ] || fail "the log line is not there once"
+sed -i 's/no write-back, FORCE_START, copy or rebase/switches:${TB2_SW:- none}/' "$L"
+sed -i "/^export BC5_DIRECT_ACB_STATE_RESTORE=1 BC5_CRASH_FRAMES=1 /r $HERE/switches0381tb2.inc" "$L"
+[ "$(grep -c '^TB2_SW=""$' "$L")" = 1 ] || fail "the switches block is not there once"
+[ -e "$TB/switches.env" ] || cp "$HERE/switches0381tb2.env" "$TB/switches.env" || fail "the switches file"
 cp "$R1/zero-list-20261029-120000.txt" "$R1/play-sample0379t.sh" "$TB/" || fail copy
 bash -n "$L" || fail "the launcher does not parse"
 chmod +x "$L"

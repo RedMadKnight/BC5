@@ -47,6 +47,7 @@ setup() {
     echo e > "$W/exp0380r1/bin/kyty_emulator"; echo f > "$W/exp0380r1/src/libs/bc5LleAgc.cpp"; echo g > "$W/exp0380r1/src/loader/runtimeLinker.cpp"; echo h > "$W/exp0380r1/src/libs/bc5/zero_skip.hpp"
     echo z > "$W/exp0380r1/build0380y.py"; echo z > "$W/exp0380r1/zero-list-20261029-120000.txt"; echo z > "$W/exp0380r1/play-sample0379t.sh"
     printf '%s\n' 'cd ~/bc5-work' 'while read x; do :; done < /dev/null' 'done < "$ENVF"' 'export BC5_DIRECT_LEARNED=$HOME/bc5-work/direct-learned-pkg.txt' 'export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/_SaveData-pkg-play' 'export BC5_CRASH_FRAMES=1 BC5_0380_REC=1' > "$W/exp0380r1/play-pkg-0380r1.sh"
+    echo 'echo "no write-back, FORCE_START, copy or rebase"' >> "$W/exp0380r1/play-pkg-0380r1.sh"
     sed -i '/^done < "\$ENVF"$/d' "$W/exp0380r1/play-pkg-0380r1.sh"; sed -i 's/^while read x; do :; done < \/dev\/null$/while read x; do :\ndone < "$ENVF"/' "$W/exp0380r1/play-pkg-0380r1.sh"
     K=$X/src/KytyPlus; echo one > "$K/src/libs/libC.cpp"; echo one > "$K/src/libs/libNpCppWebApi.cpp"; echo keep > "$K/src/libs/bc5LleAgc.cpp"; echo 'exp 0372' > "$K/src/bc5/pad_audio_route.hpp"
     git -C "$K" init -q; git -C "$K" config core.autocrlf false; git -C "$K" add -A; git -C "$K" -c user.email=a@b -c user.name=a commit -q -m base
@@ -116,6 +117,19 @@ setup; echo x > "$T/pins.tmp"; sed -i 's/^PIN_0372_LINES=.*/PIN_0372_LINES=9/' "
 expect "exp 0372's pieces are not all there: FAILED" "[ $r != 0 ] && q | grep -q 'build FAILED' && grep -q 'exp 0372' '$T/out'"
 setup; mkdir -p "$X/bc5-work/exp0381/tb2/bin"; echo x > "$X/bc5-work/exp0381/tb2/bin/kyty_emulator"; r=$(run)
 expect "an existing binary is not overwritten" "[ $r != 0 ] && [ \"\$(cat '$X/bc5-work/exp0381/tb2/bin/kyty_emulator')\" = x ]"
+# The switches: read after the launcher's unset, only the listed names, off until a line is uncommented, kept across a rebuild.
+setup; r=$(run)
+L=$X/bc5-work/exp0381/tb2/play-pkg-0381tb2.sh; SW=$X/bc5-work/exp0381/tb2/switches.env
+expect "switches: the file is there, every line commented" "[ $r = 0 ] && [ -f '$SW' ] && ! grep -q '^BC5' '$SW' && grep -q '^# BC5_DIRECT_ARGS_WB=first' '$SW'"
+expect "switches: read after the restore's export, and the log line names them" "grep -A1 '^export BC5_DIRECT_ACB_STATE_RESTORE=1' '$L' | grep -q 'the switches, read from' && grep -q 'switches:\${TB2_SW:- none}' '$L'"
+sed -n '/the switches, read from/,/^done$/p' "$L" > "$T/block"
+printf '%s\n' 'BC5_DIRECT_ARGS_WB=first' 'BC5_DIRECT_GPU_CHECK_YZ=256:64' 'BC5_DIRECT_REBASE_DISPATCH=1' '# BC5_DIRECT_ARGS_COPY=1' 'BC5_DIRECT_ARGS_FLUSH=$(id)' > "$SW"
+sw=$(HOME=$X bash -c "set -u; . '$T/block'; echo \"[\$TB2_SW] \${BC5_DIRECT_ARGS_WB:-} \${BC5_DIRECT_REBASE_DISPATCH:-no} \${BC5_DIRECT_ARGS_COPY:-no} \${BC5_DIRECT_ARGS_FLUSH:-no}\"")
+expect "switches: listed names on, others refused, bad values dropped" "[ '$sw' = '[ BC5_DIRECT_ARGS_WB=first BC5_DIRECT_GPU_CHECK_YZ=256:64 IGNORED:BC5_DIRECT_REBASE_DISPATCH=1] first no no no' ]"
+sw0=$(rm -f "$SW"; HOME=$X bash -c "set -u; . '$T/block'; echo \"[\$TB2_SW]\"")
+expect "switches: no file, nothing on, no error" "[ '$sw0' = '[]' ]"
+setup; echo 'BC5_DIRECT_ARGS_WB=first' > "$T/keep"; mkdir -p "$X/bc5-work/exp0381/tb2"; cp "$T/keep" "$X/bc5-work/exp0381/tb2/switches.env"; r=$(run)
+expect "switches: a rebuild keeps his file" "[ $r = 0 ] && cmp -s '$T/keep' '$X/bc5-work/exp0381/tb2/switches.env'"
 # The rebased mode: the shared tree holds the fixes, and only two units are compiled.
 rebased() {
     setup
