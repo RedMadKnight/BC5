@@ -18,12 +18,12 @@ case "$c" in
 *direct-selftest*) [ "${NO_NOTHING:-}" = 1 ] && echo "something done" || echo "direct-selftest: nothing done without --submit" ;;
 *bc5_backend_tests*) [ "${NO_TESTS:-}" = 1 ] && echo "No tests ran" || echo "All tests passed (1 assertion in 1 test case)" ;;
 *clang++*) echo "stand-in clang" ;;
+*"cmake --build"*) d=$(echo "$c" | sed "s/.*--build '\([^']*\)'.*/\1/"); mkdir -p "$d"; for f in libbc5_backend.a bc5_backend_tests direct-selftest; do echo x > "$d/$f"; done ;;
 esac
 exit 0
 EOF
 cat > "$T/remote" <<'EOF'
 #!/usr/bin/env bash
-if [ "$1" = "bash -s" ]; then exec bash -s; fi
 exec bash -c "$1"
 EOF
 chmod +x "$T/bin/"* "$T/remote"
@@ -33,7 +33,7 @@ setup() {
     export HOME=$T/home
     rm -rf "$HOME" "$T/emulator"; mkdir -p "$HOME/bc5-work/exp0381"
     : > "$HOME/bc5-work/BOX-LOCK"; : > "$HOME/bc5-work/BOX-QUEUE"
-    unset FAIL_AT NO_TESTS NO_NOTHING
+    unset FAIL_AT NO_TESTS NO_NOTHING PC_EXPECT
 }
 run() { (cd "$HERE" && bash pcrun0381.sh "${1:-HEAD}") > "$T/out" 2>&1; echo $?; }
 q() { cat "$HOME/bc5-work/BOX-QUEUE"; }
@@ -57,4 +57,9 @@ setup; export NO_NOTHING=1; r=$(run)
 expect "selftest did not do nothing: FAILED, no done" "[ $r != 0 ] && q | grep -q 'check FAILED' && ! q | grep -q 'check done'"
 setup; r=$(run)
 expect "both selftests keep their own log" "[ -s '$HOME/bc5-work/exp0381/pc/selftest-1.log' ] && [ -s '$HOME/bc5-work/exp0381/pc/selftest-2.log' ]"
+setup; export PC_EXPECT=0000000000000000; r=$(run)
+expect "sources not the commit's: FAILED before any build, no done" "[ $r != 0 ] && q | grep -q 'check FAILED' && ! q | grep -q 'check done' && [ ! -e '$HOME/bc5-work/exp0381/pc/build.log' ]"
+setup; r=$(run); r2=$(run)
+expect "a second run keeps the first run's logs" "[ $r2 = 0 ] && ls -d '$HOME'/bc5-work/exp0381/pc-before-* > /dev/null 2>&1 && [ -s \"\$(ls -d '$HOME'/bc5-work/exp0381/pc-before-* | head -1)/selftest-1.log\" ]"
+expect "the output says which md5 is the output library's" "grep -q 'output library (built here, not an input)' '$T/out'"
 exit $fail
