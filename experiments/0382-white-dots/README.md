@@ -225,8 +225,67 @@ only:
   and relinked with the shared objects and archive (bb50b2e0) into `~/bc5-work/exp0382/rt/kyty_emulator`. Shared
   builds, the tree, `play-pkg.sh` and the shortcuts are only read.
 
-**Bookkeeping.** Findings F640–F659 (the top session's range). Branch `exp/0382-white-dots`, never main.
+### Result (2026-10-30 08:37–09:39)
 
-**Status** (2026-10-30 ~08:30). Claimed in the repo, laptop work done, no box step run. The box side is not claimed
-yet: the night's classifier refusal stands until the first write. The maintainer has allowed box writes this
-morning; the steps wait for the top session's GO (~09:15, after 0381 and 0380's checks).
+The maintainer gave his yes for box writes in this session's chat, on the top session's GO for the private build, A1
+and the viewing of private shots. Pins held throughout: shared normal 58c4a627, archive bb50b2e0, `play-pkg.sh`
+55531ab6, live saves 377a8d456a9b4cb1 before and after each arm. Numbers are in `raw/`; shots, sheets and journals
+stay on the box.
+
+**Private build.** `~/bc5-work/exp0382/rt/kyty_emulator`, md5 11f8bc19, 0 errors. The shared binary, archive and tree
+were unchanged afterwards. It was not run: step 2 needs dots from A1.
+
+| Arm | Build, mode | Ended | Kernel lines | Flips | Dots |
+|---|---|---|---|---|---|
+| A1 | shared, `pause` | ROUTE: "the start screen did not run by 160 s" (no key sent) | 0 | 3,400 in 156 s | no shots |
+| A2 | shared, `pause` | pass at G+220 (G = 140 s, Continue 99 s, load 101 s, 368 s in all) | 0 | 9,383 in 363 s | below |
+
+- **A1 was my gate's fault** (F640). The threshold of 25 flips/s came from 16 ms flips in an older extract; this
+  start screen runs at ~22 flips/s (43 ms). The gate now asks ≥ 15 flips/s in the menus and ≥ 20 after the load.
+- **The gated route reaches gameplay from a copy of the live saves** (F640): start-screen ✕ 87 s, slot keys 93 s,
+  Continue 99 s, G 140 s, then ~30 flips/s. The shots show the slot list with the highlight on its way down and the
+  Madripoor scene. No GPU event this time, so nothing to add to F443's count for exp 0381.
+- **The whole-shot counts are not dot counts** (F641). The first sheet is MangoHud's text (digits, "120v1", the clock):
+  the 154 dots per shot, like the rest of `raw/A2-*-dots.txt` without `roi`, mean nothing. All counts below use
+  `ROI=0,260,1920,870`, which leaves out both overlays, the tutorial box and the subtitles.
+- **The pause menu hides the scene** (F642). It is nearly opaque: mean luma 0.049 against 0.215 running, and the 158
+  "dots" there are its text. So if he paused with Options, seeing no dots then says nothing about history, and
+  hypothesis 2's main support falls away. Whether he used this menu is not known.
+- **Inside the ROI** (F643), `run`: median 61 dots per shot, 10 % neutral, median size 8 px; `after`: 60 dots, 7 %
+  neutral, size 8 px. The counts are level across the phases.
+  - The 48 highest-contrast dots are the scene's lamps: string bulbs and one small lamp, with the title's colour
+    fringing.
+  - The idle camera drifts 0–5 px between shots, so no pair is still (change 0.14–0.53) and the still-view reading
+    never applies. The new `--transient` mode aligns the views first.
+  - The nudge worked: a 59 px jump, seen between t114 and t115 because the burst's shots ran late. 1 of 67 dots kept
+    its screen position, so these dots belong to the world, not to a stuck screen buffer.
+  - Dots with no match in the neighbouring shots: median 18 of 61 per shot, 0–2 of them neutral, 0–3 of size ≤ 3. At
+    the lowest thresholds (T 0.55, D 0.15): 1,020 over 13 shots, 12 neutral, 47 of size ≤ 3.
+  - Those 47 are all of the small ones, and I viewed them, along with the 48 highest-contrast unmatched dots at both
+    thresholds. All are scene detail: neon strips, cable edges, small lamps, shirt pattern, colour fringes. None is
+    an isolated white point.
+
+### Verdict
+
+**In this scene, on this bench, the white dots do not reproduce** (F644): the outcome table's "A has none". A2 ran
+~6 minutes in Madripoor from his slot-4 save, RT on, and its shots hold no isolated white points. By the rule above
+the arm stops here, so A → C → A, the map and B were not run, and no RT pass is implicated or cleared. There is no fix
+candidate.
+
+**What this does not show.** It says nothing against the dots being real, nor about memory pressure.
+- It sampled 13 frames of about 2,100 in the run phase, so a rare or brief dot would be missed.
+- The character stood still in one scene for ~6 minutes. He reported dots within 30–60 minutes of play, so scene,
+  motion, time or pressure may be what is missing.
+- The shots are the 1080p output; a dot dimmer than T 0.55, D 0.15 would not count.
+- Without his description, I am assuming "white dots" means isolated white points. If he meant the string lights,
+  or anything else in this scene, the result reads differently.
+
+**What would move it forward:** his description or one private shot taken when he sees them. Failing that, shots
+across a longer, moving route; `Tryb fotograficzny` (photo mode, in the pause menu) would give the still view the
+pause menu cannot, untested so far.
+
+**Bookkeeping.** Findings F640–F644 here, for HANDOFF (from the top session's range F640–F659). Branch
+`exp/0382-white-dots`, never main.
+
+**Status** (2026-10-30 09:45). Stopped at step 1's rule: A2 passed and shows no white dots. Steps 2–4 were not run.
+Claimed in both places; the box's lock is clear and `BOX-QUEUE` has the done line.

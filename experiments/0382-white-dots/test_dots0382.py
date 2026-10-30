@@ -55,5 +55,23 @@ with tempfile.TemporaryDirectory(prefix="bc5-dots0382-") as t:
     p = subprocess.run([sys.executable, str(script), str(b)], capture_output=True, text=True, env={**os.environ, "SHEET": str(root / "sheet.png")})
     assert p.returncode == 0 and "# sheet: 2 dots" in p.stdout and (root / "sheet.png").stat().st_size > 0, p.stdout + p.stderr
     assert "# reading: few or no dots" in p.stdout, p.stdout
+    # --transient: lamps that drift with the camera are matched after alignment; a dot of one frame is alone
+    rng = np.random.default_rng(382)
+    bg = np.clip(40 + 14 * rng.standard_normal((180, 320)), 0, 255)
+    bg[30:60, 40:120] = 90
+    bg[110:140, 200:280] = 15
+    lamps = [(30, 30), (60, 150), (90, 250), (150, 90), (140, 300)]
+    t3 = root / "t"
+    t3.mkdir()
+    for i, ((dy, dx), one) in enumerate(zip([(0, 0), (2, -3), (-1, 4), (3, 1)], [(20, 200), (100, 60), (170, 180), (50, 300)])):
+        f = bg.copy()
+        for yy, xx in lamps:
+            f[yy, xx] = 255
+        f = np.roll(f, (dy, dx), axis=(0, 1))
+        f[one] = 255
+        Image.fromarray(np.repeat(f[:, :, None], 3, 2).astype(np.uint8)).save(t3 / ("%04d.png" % i))
+    out = run("--transient", str(t3))
+    assert all(": dots 6, alone 1 (neutral 1, size <= 3: 1)" in l for l in out.splitlines() if l.startswith("  000")), out
+    assert "alone per shot median 1, max 1 of median 6 dots" in out and "+2,-3" in out, out
 print("test_dots0382 ok: two different frames with equal mean and count both used; an exact repeat dropped; ROI counts"
-      " inside its region only; --compare; SHEET; selftest ok")
+      " inside its region only; --compare; SHEET; --transient; selftest ok")

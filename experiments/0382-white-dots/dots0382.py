@@ -26,11 +26,16 @@
 #     >= 0.6 while change >= 0.15) are stuck to the screen (a buffer that is not reprojected), not to the world.
 # --compare <dir A> <dir B>: the share of B's dots within 2 pixels of any dot of A (A -> C: the dots that RT off
 # keeps are scene brights, not RT's), and the change from A's last used shot to B's first.
+# --transient <dir>: A2 of 2026-10-30 showed the idle camera drifting, so no pair of shots is still, and the scene's
+# lamps dominate a sheet ranked by contrast. Each shot is aligned to its neighbours (phase correlation), and a dot
+# with no dot within 3 pixels of it in the shot before or after is "alone": a dot of one frame is, a lamp is not.
+# A moving person or leaf can be too, so the alone dots' sheet (SHEET) has to be looked at.
 # SHEET=<png> in the environment writes a contact sheet of the phase's 48 highest-contrast dots (21x21 crops, x6) to
 # that path: the title's imagery, so it stays on the box beside the shots, never committed; viewing it on the laptop
 # needs the top session's leave and is deleted there afterwards.
 # usage: [ROI=x0,y0,x1,y1] [SHEET=<png>] python3 dots0382.py <shots dir> [T] [D]
 #        [ROI=...] python3 dots0382.py --compare <dir A> <dir B> [T] [D]  |  python3 dots0382.py --selftest
+#        [ROI=...] [SHEET=<png>] python3 dots0382.py --transient <dir> [T] [D]
 import glob, os, sys, hashlib
 import numpy as np
 
@@ -87,6 +92,33 @@ def near(cur, prev, r=2):
 
 
 kept = near
+
+
+def view_shift(a, b):
+    # the displacement (dy, dx) that moves b onto a (phase correlation): the camera's drift between two shots
+    r = np.fft.rfft2(a - a.mean()) * np.conj(np.fft.rfft2(b - b.mean()))
+    r = np.fft.irfft2(r / np.maximum(np.abs(r), 1e-9), s=a.shape)
+    yy, xx = (int(v) for v in np.unravel_index(int(np.argmax(r)), r.shape))
+    return (yy - a.shape[0] if yy > a.shape[0] // 2 else yy, xx - a.shape[1] if xx > a.shape[1] // 2 else xx)
+
+
+def transient(rows, r=3):
+    # per shot, its dots with no dot within r pixels in the shot before or after it, with the views aligned, and the
+    # shifts: a dot of one frame is alone, a lamp is not (a dot only tested against one neighbour at the phase's ends)
+    out = []
+    for i, cur in enumerate(rows):
+        occ, shifts = set(), []
+        for j in (i - 1, i + 1):
+            if 0 <= j < len(rows):
+                dy, dx = view_shift(cur["y"], rows[j]["y"])
+                shifts.append((dy, dx))
+                for yy, xx in rows[j]["pts"]:
+                    for a in range(-r, r + 1):
+                        for b in range(-r, r + 1):
+                            occ.add((int(yy) + dy + a, int(xx) + dx + b))
+        alone = [(p, k) for p, k in zip(cur["pts"], cur["kinds"]) if (int(p[0]), int(p[1])) not in occ]
+        out.append({"alone": alone, "shifts": shifts})
+    return out
 
 
 def kinds(rgb, y, ring, pts):
@@ -278,7 +310,8 @@ def main():
         selftest()
         return
     cmp = sys.argv[1:2] == ["--compare"]
-    args = sys.argv[2:] if cmp else sys.argv[1:]
+    alone = sys.argv[1:2] == ["--transient"]
+    args = sys.argv[2:] if cmp or alone else sys.argv[1:]
     dirs = args[:2] if cmp else args[:1]
     rest = args[len(dirs):]
     t = float(rest[0]) if len(rest) > 0 else 0.70
@@ -287,6 +320,20 @@ def main():
     roi = tuple(int(v) for v in os.environ["ROI"].split(",")) if os.environ.get("ROI") else None
     assert roi is None or (len(roi) == 4 and roi[0] < roi[2] and roi[1] < roi[3]), "ROI is x0,y0,x1,y1"
     roi_s = ",".join(map(str, roi)) if roi else "whole shot"
+    if alone:
+        use = [r for r in phase_rows(load(dirs[0], roi), t, d, verbose=False) if r["use"]]
+        res = transient(use)
+        for r, a in zip(use, res):
+            print("  %s: dots %d, alone %d (neutral %d, size <= 3: %d); view shifts %s" % (r["name"], r["n"], len(a["alone"]),
+                  sum(k[0] for _, k in a["alone"]), sum(1 for _, k in a["alone"] if k[1] <= 3), " ".join("%+d,%+d" % s for s in a["shifts"])))
+        counts = [len(a["alone"]) for a in res] or [0]
+        print("# transient %s: %d used; alone per shot median %.0f, max %d of median %.0f dots; T %.2f D %.2f; ROI %s" % (
+            dirs[0], len(use), float(np.median(counts)), max(counts), float(np.median([r["n"] for r in use])) if use else 0, t, d, roi_s))
+        if os.environ.get("SHEET") and use:
+            small = [[(p, k) for p, k in a["alone"] if not os.environ.get("SHEET_SMALL") or k[1] <= 3] for a in res]  # SHEET_SMALL=1: size <= 3 only
+            only = [{"pts": [p for p, _ in s], "kinds": [k for _, k in s], "rgb": r["rgb"]} for r, s in zip(use, small)]
+            print("# sheet: %d alone dots in %s (private: the title's imagery)" % (sheet(only, os.environ["SHEET"]), os.environ["SHEET"]))
+        return
     if cmp:
         ua = [r for r in phase_rows(load(dirs[0], roi), t, d, verbose=False) if r["use"]]
         ub = [r for r in phase_rows(load(dirs[1], roi), t, d, verbose=False) if r["use"]]

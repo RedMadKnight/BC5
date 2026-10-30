@@ -7,8 +7,9 @@
 # The route is gated on the journal (2026-10-30, after exp 0379's D3: from a copy of the live saves the save list was
 # still loading at ~5 fps at 88.5 s and the fixed-time keys were dropped, F637). From 85 s the script reads the
 # journal's frame profile lines every second (exp 0360's measure, by journal time): a screen "runs" when its newest
-# flip is newer than at the previous poll and it had at least 25 flips in its last 3 s, on 2-3 polls in a row; a
-# "load" is 5 flips in a row slower than 55 ms or no new flip. Keys are appended to the input script (the input thread
+# flip is newer than at the previous poll and it had at least 15 flips per second over its last 3 s (20 after the
+# load; A1 of 09:21: the start screen runs at ~22 flips/s, D3's loading list at ~5), on 2-3 polls in a row; a "load"
+# is 5 flips in a row slower than 55 ms or no new flip. Keys are appended to the input script (the input thread
 # tails it every 20 ms) only when the screen runs: cross (start screen -> the save list), then down x3 and cross
 # (slot 4 -> the Continue / Load / Credits menu), then cross (Continue). G is the first second the screen runs again
 # at least 3 s after the load that follows; a stage that does not come in time ends the arm as ROUTE (no phase shot).
@@ -163,7 +164,8 @@ while [ -z "$ENDED" ] && [ $(($(date +%s) - T0)) -lt "$SECS" ]; do
   if [ -n "$J" ] && [ "$RS" -lt 4 ] && [ "$NOW" -ge 85 ]; then
     read -r NT FPS3 SLOW5 <<< "$(gate "$J")"
     FRESH=$(awk -v a="${NT:-0}" -v b="$PREV" 'BEGIN {print (a > b) ? 1 : 0}'); PREV=${NT:-0}
-    if [ "$FRESH" = 1 ] && awk -v f="${FPS3:-0}" 'BEGIN {exit !(f >= 25)}'; then FASTN=$((FASTN + 1)); else FASTN=0; fi
+    RUNS=15; [ "$RS" = 3 ] && RUNS=20
+    if [ "$FRESH" = 1 ] && awk -v f="${FPS3:-0}" -v r="$RUNS" 'BEGIN {exit !(f >= r)}'; then FASTN=$((FASTN + 1)); else FASTN=0; fi
     LOADING=0; { [ "${SLOW5:-0}" = 1 ] || [ "$FRESH" = 0 ]; } && LOADING=1
     echo "$NOW s: stage $RS, newest flip t ${NT:-?}, fresh $FRESH, flips/s ${FPS3:-?}, slow5 ${SLOW5:-?}, runs $FASTN, loading $LOADING, keys done $(cat "$CMD.done" 2> /dev/null || echo 0)" >> "$R/$TAG-route.txt"
     case "$RS" in
