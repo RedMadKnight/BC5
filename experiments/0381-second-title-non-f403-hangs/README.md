@@ -972,3 +972,37 @@ are set: `BC5_DIRECT_CHAIN_BREAK_AT` (lean: absent) and the job and segment jour
 Add `bc5/acb_restore.hpp` as exp 0379 added `zero_skip.hpp`, keep exp 0372's pieces, and set
 `BC5_DIRECT_ACB_STATE_RESTORE=1` in the test launcher only. The diff sits on exp 0379's unit, so its hunks need a re-apply
 check. The `final_value` fix touches only that header, and no build has run with it on the host yet.
+
+## 20. The maintainer's yes for a test build (2026-10-30): the diff for main
+
+His words here: "Yes, test build". That is for `BC5_DIRECT_ACB_STATE_RESTORE=1` in the next test build, not the shared
+builds.
+
+`patch0381-main-bc5LleAgc.diff` is the same change on patch 0001's unit as it stands on main (f139db7, md5 e7cc2f60, no zero
+skip): 123 added lines, result 3b3b485e, diff 5a315d59. It applies cleanly on the laptop, and the old unit plus `mkpatch0381.py` still gives
+J4's unit (be1970af). **It has not been compiled, and no binary built from it has run**: J4's e72bc317 sits on exp 0379's
+unit and has the older `final_value`. It is for the top session's integration (D19); patch 0001 is not touched here.
+
+## 21. The test build: plan (the top session's brief, the maintainer's yes)
+
+**The journal.** The top session gzipped on-3's journal at 11:59: `play-20261030-1111/gc/direct.log.gz`, 3.6 GB. That
+item is closed.
+
+**The base.** The binary he plays now, exp 0380's r1, **44417414**, so that a crash or an F403 is still caught: shared
+objects and archive, the recorder, crash frames, `NO_CLEAR` and the zero skip. Its unit (c46144c4) reproduces on the laptop
+from the recorder at commit 6c0c84d, and `mkpatch0381.py` applies to it cleanly: unit **c743bb76**.
+
+**`build0381tb.sh`** writes only under `~/bc5-work/exp0381/tb`. It refuses to run if a shared pin or an r1 source differs,
+runs the backend's Catch2 tests, compiles the two units with the shared commands, and links. It makes:
+- `tb/play-pkg-0381tb.sh`: r1's launcher with its paths moved and `BC5_DIRECT_ACB_STATE_RESTORE=1` added. No shortcut; the
+  top session asks him. **It uses the live saves when he plays it.**
+- `tb/play-pkg-0381tbs.sh`: the same, on private saves, config and learned file, for the smoke only.
+
+**The smoke's rule, written before it runs.** One start of 120 s, RT on, with a fresh copy of the live saves, `BC5_DIRECT_DISPATCH_JOURNAL` off,
+no chain break, the box cap at 135 s (`start0381tb.sh`, `tbrun0381.sh`).
+- **Pass:** no kernel fault or gfx timeout, no crash, the emulator reaches 120 s, `acb state restore` lines in the journal,
+  the zero skip's lines, and live saves unchanged.
+- **Stop and report:** anything else. No second start without a new go.
+
+The smoke tests the combination for 120 s (restore with `NO_CLEAR`, zero skip and the recorder, which J3 and J4 did not
+run). It proves nothing about F443 in play, and this start need not reach the exposed position.
