@@ -240,18 +240,18 @@ were unchanged afterwards. It was not run: step 2 needs dots from A1.
 | A1 | shared, `pause` | ROUTE: "the start screen did not run by 160 s" (no key sent) | 0 | 3,400 in 156 s | no shots |
 | A2 | shared, `pause` | pass at G+220 (G = 140 s, Continue 99 s, load 101 s, 368 s in all) | 0 | 9,383 in 363 s | below |
 
-- **A1 was my gate's fault** (F640). The threshold of 25 flips/s came from 16 ms flips in an older extract; this
+- **A1 was my gate's fault** (F700). The threshold of 25 flips/s came from 16 ms flips in an older extract; this
   start screen runs at ~22 flips/s (43 ms). The gate now asks ≥ 15 flips/s in the menus and ≥ 20 after the load.
-- **The gated route reaches gameplay from a copy of the live saves** (F640): start-screen ✕ 87 s, slot keys 93 s,
+- **The gated route reaches gameplay from a copy of the live saves** (F700): start-screen ✕ 87 s, slot keys 93 s,
   Continue 99 s, G 140 s, then ~30 flips/s. The shots show the slot list with the highlight on its way down and the
   Madripoor scene. No GPU event this time, so nothing to add to F443's count for exp 0381.
-- **The whole-shot counts are not dot counts** (F641). The first sheet is MangoHud's text (digits, "120v1", the clock):
+- **The whole-shot counts are not dot counts** (F701). The first sheet is MangoHud's text (digits, "120v1", the clock):
   the 154 dots per shot, like the rest of `raw/A2-*-dots.txt` without `roi`, mean nothing. All counts below use
   `ROI=0,260,1920,870`, which leaves out both overlays, the tutorial box and the subtitles.
-- **The pause menu hides the scene** (F642). It is nearly opaque: mean luma 0.049 against 0.215 running, and the 158
+- **The pause menu hides the scene** (F702). It is nearly opaque: mean luma 0.049 against 0.215 running, and the 158
   "dots" there are its text. So if he paused with Options, seeing no dots then says nothing about history, and
   hypothesis 2's main support falls away. Whether he used this menu is not known.
-- **Inside the ROI** (F643), `run`: median 61 dots per shot, 10 % neutral, median size 8 px; `after`: 60 dots, 7 %
+- **Inside the ROI** (F703), `run`: median 61 dots per shot, 10 % neutral, median size 8 px; `after`: 60 dots, 7 %
   neutral, size 8 px. The counts are level across the phases.
   - The 48 highest-contrast dots are the scene's lamps: string bulbs and one small lamp, with the title's colour
     fringing.
@@ -267,7 +267,7 @@ were unchanged afterwards. It was not run: step 2 needs dots from A1.
 
 ### Verdict
 
-**In this scene, on this bench, the white dots do not reproduce** (F644): the outcome table's "A has none". A2 ran
+**In this scene, on this bench, the white dots do not reproduce** (F704): the outcome table's "A has none". A2 ran
 ~6 minutes in Madripoor from his slot-4 save, RT on, and its shots hold no isolated white points. By the rule above
 the arm stops here, so A → C → A, the map and B were not run, and no RT pass is implicated or cleared. There is no fix
 candidate.
@@ -284,7 +284,7 @@ candidate.
 across a longer, moving route; `Tryb fotograficzny` (photo mode, in the pause menu) would give the still view the
 pause menu cannot, untested so far.
 
-**Bookkeeping.** Findings F640–F644 here, for HANDOFF (from the top session's range F640–F659). Branch
+**Bookkeeping.** Findings F700–F704 here, for HANDOFF (from the top session's range F700–F719). Branch
 `exp/0382-white-dots`, never main.
 
 **Status** (2026-10-30 09:45). Stopped at step 1's rule: A2 passed and shows no white dots. Steps 2–4 were not run.
