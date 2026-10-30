@@ -1,10 +1,17 @@
 # PORT-CHAIN Linux check of e00f084 (backend tree 89121f6b), 2026-10-30 14:25, pcrun0381.sh + pcbox0381.sh at ee92f68.
-# The session's terminal output, as printed. The full logs stay on the box in ~/bc5-work/exp0381/pc (configure.log,
-# build.log, tests-*.log, selftest.log); they were not copied here, to keep to no new box access.
+# The session's terminal output, as printed. The full logs are beside this file in port-chain-linux/, copied read-only from
+# ~/bc5-work/exp0381/pc on the box (10 files; a search found no private paths or title material).
+# Pins, read on the box after the run:
+#   tree under test: 64 files, sum of sorted md5s 61188ee518e63d8e, equal to a clean `git archive e00f084 backend`
+#   libbc5_backend.a  c570d1a2fb077124f34df6b09936b05e
+#   bc5_backend_tests 68c62001ba9624f9aa69a50bc2454e42
+#   direct-selftest   ac5b9bde3c062f0af248fdfe1edde909
+#   toolchain Ubuntu clang 21.1.8 (6ubuntu1)
 # Limits of this record:
-# - selftest.log holds only the second selftest: that runner overwrote the first (fixed later, 23252e9).
-# - The run did not print the archive's md5, so the archive is not pinned (the fixed runner prints it). The shared pins were
-#   not compared: the script wrote only under ~/bc5-work/exp0381/pc.
+# - selftest.log holds only the second selftest: that runner overwrote the first (fixed later, 23252e9). The first selftest's
+#   rc and last line exist only below.
+# - The hashes were read after the run, not printed by it (the fixed runner prints the archive's md5).
+# - The shared pins were not compared: the script wrote only under ~/bc5-work/exp0381/pc.
 # - ce46317 (a test and a comment on top of e00f084) has not been built by clang; MSVC only.
 claimed
 == 14:25:03 configure
