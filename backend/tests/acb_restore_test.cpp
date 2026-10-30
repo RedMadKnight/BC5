@@ -444,6 +444,12 @@ TEST_CASE("final_value: what cannot be followed is Unknown, never certain", "[ac
         unknown(run(cat({ud0(0x11), cond_exec(1), ud0(0x22)}), m));       // into a packet
         unknown(run(cat({ud0(0x11), {0xC0005F00u, 0x1000}, ud0(0x33)}), m)); // a LOAD_SH_REG too short
     }
+    SECTION("the longer conditional IB is not decoded: Unknown, and a later write does not settle it") {
+        // Codex's REVIEW-PORTS-01: opcode 0x3f of another length than 4. The body is made up; only the length matters.
+        const std::vector<std::uint32_t> cond_ib = {0xC0083F00u, 0x1000, 0, 0, 0, 0, 0, 0, 0, 3};
+        unknown(run(cat({ud0(0x11), cond_ib}), m));
+        unknown(run(cat({ud0(0x11), cond_ib, ud0(0x33)}), m));
+    }
     SECTION("the one-dword NOP pad and type 2 fillers are not malformed") {
         known(run(cat({ud0(0x11), {0xFFFF1000u, 0x80000000u}}), m), 0x11);
     }

@@ -142,7 +142,8 @@ inline bool sh_value(std::span<const std::uint32_t> pre, std::uint32_t reg, std:
 // src/core/hw/gfxip/gfx9/chip/gfx9_plus_merged_f32_pfp_pm4_packets.h:2580; shadPS4 1b9d159 made the
 // same correction in its interpreter). COND_EXEC (0x22) has two ways on: the packets after it, or
 // the packet its count points to. So a COND_EXEC over an IB covers a conditional call and a
-// conditional CHAIN alike.
+// conditional CHAIN alike. Opcode 0x3f of any other length than 4 is not decoded: AMD's longer
+// conditional IB (COND_INDIRECT_BUFFER, TODO(verify) its layout) gives Unknown, not support.
 enum class Final { None, Known, Unknown };
 
 namespace detail {
