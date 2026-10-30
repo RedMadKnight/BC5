@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# BC5 experiment 0380 (F679, F627): the recorder binary with the job history, ~/bc5-work/exp0380r2/bin/kyty_emulator: as build0380r1.sh (F611), with
+# BC5 experiment 0380 (F679, F640): the recorder binary with the job history, ~/bc5-work/exp0380r2/bin/kyty_emulator: as build0380r1.sh (F611), with
 #   rec0380_before added to the recorder (the 16 jobs in front of a timeout); exp0380r1 and its binary stay as they are. Made from build0380r1.sh.
 #   the shared normal build's objects (58c4a627) and the shared backend archive (bb50b2e0)
 #   + src/libs/bc5LleAgc.cpp = exp 0379's unit (exp0379t's patched copy, e62113a5; header zero_skip.hpp 782ca0e9) with
