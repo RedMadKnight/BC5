@@ -152,7 +152,7 @@ rep("""	if (chain != nullptr) { // ADR 0010: the kept waits were converted to ch
 				else std::snprintf(final_ud0, sizeof(final_ud0), "%s", f == bc5::acb_restore::Final::None ? "none" : "unknown");
 			}
 			const size_t seg_count = chain != nullptr ? chain->segs.size() : 0;
-			journal("job %" PRIu64 " %s: %u dwords, %zu segments, ring %d, previous job %s %" PRIu64 ", final ud0 %s\n", job0381, kind, num_dwords, seg_count, ring, prev, job0381 - 1, final_ud0);
+			journal("job %" PRIu64 " %s: %u dwords, %zu segments, ring %d, previous job %s %" PRIu64 ", final ud0 %s\\n", job0381, kind, num_dwords, seg_count, ring, prev, job0381 - 1, final_ud0);
 			for (size_t k = 0; k < seg_count; k++) {
 				const ChainSeg& sg = chain->segs[k];
 				uint32_t        v  = 0;

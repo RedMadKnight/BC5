@@ -11,7 +11,7 @@ set -u
 E=$HOME/bc5-work/exp0381; R=$E/raw; LOCK=$HOME/bc5-work/BOX-LOCK; S79=$HOME/bc5-work/exp0379/src
 B=$HOME/bc5-work/kytyplus-build; ARCH=$HOME/bc5-work/backend-ubuntu/libbc5_backend.a
 EXPECT_ARCHIVE=${EXPECT_ARCHIVE:-bb50b2e0}; EXPECT_NORMAL=${EXPECT_NORMAL:-58c4a627}
-EXPECT_BASE=e62113a5; EXPECT_UNIT=eaf6f67f; EXPECT_DIFF=24c65968  # the 0379 unit, the patched unit, this experiment's diff
+EXPECT_BASE=e62113a5; EXPECT_UNIT=be1970af; EXPECT_DIFF=23001545  # the 0379 unit, the patched unit, this experiment's diff
 HERE=$(cd "$(dirname "$0")" && pwd); IN=$E/in; SRC=$E/src; BB=$E/backend-build
 mkdir -p "$R"
 pgrep '^kyty_emulator' > /dev/null && { echo "an emulator runs: stop"; exit 1; }

@@ -120,7 +120,7 @@
  		if (!waits.empty()) with_waits++;
  	}
  	tracker.apply(span, read, st);
-@@ -7956,6 +8030,50 @@ static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char* kind
+@@ -7956,6 +8030,49 @@ static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char* kind
  		opt.gpu_check_draw_max[1] = dm.second;
  	}
  	opt.keep_wait_offsets.clear(); // experiment 0055
@@ -156,8 +156,7 @@
 +				else std::snprintf(final_ud0, sizeof(final_ud0), "%s", f == bc5::acb_restore::Final::None ? "none" : "unknown");
 +			}
 +			const size_t seg_count = chain != nullptr ? chain->segs.size() : 0;
-+			journal("job %" PRIu64 " %s: %u dwords, %zu segments, ring %d, previous job %s %" PRIu64 ", final ud0 %s
-+", job0381, kind, num_dwords, seg_count, ring, prev, job0381 - 1, final_ud0);
++			journal("job %" PRIu64 " %s: %u dwords, %zu segments, ring %d, previous job %s %" PRIu64 ", final ud0 %s\n", job0381, kind, num_dwords, seg_count, ring, prev, job0381 - 1, final_ud0);
 +			for (size_t k = 0; k < seg_count; k++) {
 +				const ChainSeg& sg = chain->segs[k];
 +				uint32_t        v  = 0;
@@ -171,7 +170,7 @@
  	if (chain != nullptr) { // ADR 0010: the kept waits were converted to chain offsets when the segment was appended
  		for (const ChainSeg& s: chain->segs) opt.keep_wait_offsets.insert(opt.keep_wait_offsets.end(), s.keep.begin(), s.keep.end());
  	} else {
-@@ -8168,8 +8286,10 @@ static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char* kind
+@@ -8168,8 +8285,10 @@ static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char* kind
  			// buffer with its program and first user data (which program faults the GPU).
  			{
  				static const bool dj = BC5_DIAG_ENV("BC5_DIRECT_DISPATCH_JOURNAL") != nullptr;
