@@ -2349,6 +2349,29 @@ run is owed before the B loop uses it. `raw/loop0380b.sh` takes `BC5_0380_S6N` a
 - **A lock gap in `raw/loop0380b.sh`, found while writing it:** the runner frees the lock after each try, and the loop
   overwrote the lock file at the next try. It now retakes the lock at once and ends if someone else holds it. It also pins
   the runner's hash. A stand-in dry run passed.
+- **The B loop ran on r1 (2026-10-30 12:16:58–14:15:07): 33 tries, all pass, no B.** Codex's GO, the maintainer's word in
+  the session. It ended on its time budget after 7,089 s, the only stop that fired.
+  - Every try: launcher exit 0; crash, kernel, TIMEOUT, compute-ring, devcoredump and RT-off drop lines all 0; gfx engine
+    only; saves 377a8d456a9b4cb1 before and after; switches `BC5_CRASH_FRAMES=1 BC5_0380_REC=1` and no other exp 0380 switch
+    in all 33 start records. The kernel stream has only the network's MLD lines.
+  - 174,090 flips over 5,882 s of frame time (1.63 h). Per try 26.3–30.5 flips/s, median 29.9; 6 tries under 29, with spells
+    of about 14 flips/s at 40–70 s or 90–120 s. Their cause was not looked at. Pinned 11,284–11,348 MiB.
+  - **After the loop (14:17):** same boot b30ad76b, lock empty, no emulator, gpu-watch active, 157 GiB free, 13,655 MiB
+    available, no devcoredump, no reset. Binary, runner and all five shared pins are unchanged, read in full.
+  - **At 13:40, during BL24, exp 0381 wrote a done line claiming a CPU check and "lock cleared" to BOX-QUEUE, and corrected it
+    25 s later:** the check had not run, its guard stopped it. BL24 passed and the loop's lock check held, but nothing here
+    shows whether the lock line was touched in that minute.
+  - **What it says, with no B to read:**
+    - One loop can't separate the models. If B is a time rate, 1.63 h without B has p = 0.38 at 0.6 per hour and 0.20 at 1
+      per hour. Bench time is now about 3.3 h with one B, about 0.3 per hour, Poisson 95 % 0.008–1.7.
+    - If B is load-bound at §30's one per 10–15 loads, 33 loads without B has p = 0.03–0.10. That estimate rests on one
+      event, so it is weak evidence against §29's forecast of 35–55 min per B, no more.
+    - The recorder is on in all these tries and was not on the 00:52 B's binary (e1cc0c92). That the recorder changes B's rate is
+      not excluded. Nor is a rate of zero on this binary: the two can't be told apart here.
+  - **It does not say:** nothing about H (F619): part A wrote no B capture, so §29's test did not happen. The result concerns
+    r1, a legacy baseline, not new main. A timeout snapshot would not have been a fetch capture either.
+  - Output: `raw/runs/BL-tries.txt`, `BL-loop.log`, `BL-after.txt`, `BL-kernel-stream.txt`. The GO gave no extra hours and no
+    resume, so a second loop needs a new decision.
 
 ## Result
 
