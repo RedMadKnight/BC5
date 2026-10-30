@@ -117,19 +117,45 @@ setup; echo x > "$T/pins.tmp"; sed -i 's/^PIN_0372_LINES=.*/PIN_0372_LINES=9/' "
 expect "exp 0372's pieces are not all there: FAILED" "[ $r != 0 ] && q | grep -q 'build FAILED' && grep -q 'exp 0372' '$T/out'"
 setup; mkdir -p "$X/bc5-work/exp0381/tb2/bin"; echo x > "$X/bc5-work/exp0381/tb2/bin/kyty_emulator"; r=$(run)
 expect "an existing binary is not overwritten" "[ $r != 0 ] && [ \"\$(cat '$X/bc5-work/exp0381/tb2/bin/kyty_emulator')\" = x ]"
-# The switches: read after the launcher's unset, only the listed names, off until a line is uncommented, kept across a rebuild.
+# The switches: reset first, read as data by name and value, the log says the effective state. The block runs as built, with only its input path changed.
 setup; r=$(run)
-L=$X/bc5-work/exp0381/tb2/play-pkg-0381tb2.sh; SW=$X/bc5-work/exp0381/tb2/switches.env
+L=$X/bc5-work/exp0381/tb2/play-pkg-0381tb2.sh; S2=$X/bc5-work/exp0381/tb2/play-pkg-0381tb2s.sh; SW=$X/bc5-work/exp0381/tb2/switches.env
 expect "switches: the file is there, every line commented" "[ $r = 0 ] && [ -f '$SW' ] && ! grep -q '^BC5' '$SW' && grep -q '^# BC5_DIRECT_ARGS_WB=first' '$SW'"
-expect "switches: read after the restore's export, and the log line names them" "grep -A1 '^export BC5_DIRECT_ACB_STATE_RESTORE=1' '$L' | grep -q 'the switches, read from' && grep -q 'switches:\${TB2_SW:- none}' '$L'"
-sed -n '/the switches, read from/,/^done$/p' "$L" > "$T/block"
-printf '%s\n' 'BC5_DIRECT_ARGS_WB=first' 'BC5_DIRECT_GPU_CHECK_YZ=256:64' 'BC5_DIRECT_REBASE_DISPATCH=1' '# BC5_DIRECT_ARGS_COPY=1' 'BC5_DIRECT_ARGS_FLUSH=$(id)' > "$SW"
-sw=$(HOME=$X bash -c "set -u; . '$T/block'; echo \"[\$TB2_SW] \${BC5_DIRECT_ARGS_WB:-} \${BC5_DIRECT_REBASE_DISPATCH:-no} \${BC5_DIRECT_ARGS_COPY:-no} \${BC5_DIRECT_ARGS_FLUSH:-no}\"")
-expect "switches: listed names on, others refused, bad values dropped" "[ '$sw' = '[ BC5_DIRECT_ARGS_WB=first BC5_DIRECT_GPU_CHECK_YZ=256:64 IGNORED:BC5_DIRECT_REBASE_DISPATCH=1] first no no no' ]"
-sw0=$(rm -f "$SW"; HOME=$X bash -c "set -u; . '$T/block'; echo \"[\$TB2_SW]\"")
-expect "switches: no file, nothing on, no error" "[ '$sw0' = '[]' ]"
+expect "switches: after the restore's export, and the log line names them" "grep -A1 '^export BC5_DIRECT_ACB_STATE_RESTORE=1' '$L' | grep -q 'the switches, read from' && grep -q 'switches:\${TB2_SW:- none}' '$L'"
+expect "switches: the smoke reads none" "grep -q '^SWF=/dev/null$' '$S2'"
+sed -n '/the switches, read from/,/^# end of exp 0381 test build 2/p' "$L" > "$T/block"
+blk() {
+    f=$1; shift
+    sed "s#^SWF=.*#SWF=$f#" "$T/block" > "$T/b2"
+    env "$@" bash -c 'set -u; . "$1"; echo "[$TB2_SW] wb=${BC5_DIRECT_ARGS_WB:-} fl=${BC5_DIRECT_ARGS_FLUSH:-} dr=${BC5_DIRECT_ARGS_FLUSH_DRAWS:-} j=${BC5_DIRECT_DRAW_ARGS_JOURNAL:-} copy=${BC5_DIRECT_ARGS_COPY:-} yz=${BC5_DIRECT_GPU_CHECK_YZ:-} fs=${BC5_DIRECT_FORCE_START_000:-} keep=${BC5_DIRECT_ACB_STATE_RESTORE:-}${BC5_CRASH_FRAMES:-}"' _ "$T/b2"
+}
+OFF='wb= fl= dr= j= copy= yz= fs='
+INH='BC5_DIRECT_ARGS_FLUSH=all BC5_DIRECT_ARGS_FLUSH_DRAWS=1 BC5_DIRECT_DRAW_ARGS_JOURNAL=1 BC5_DIRECT_ARGS_WB=all'
+res=$(blk "$SW" $INH)
+expect "switches: inherited on, file commented: all off, the log empty" "[ \"\$res\" = '[] $OFF keep=' ]"
+res=$(blk "$T/no-such-file" $INH)
+expect "switches: inherited on, no file: all off, the log empty" "[ \"\$res\" = '[] $OFF keep=' ]"
+res=$(blk "$T/no-such-file" BC5_DIRECT_ACB_STATE_RESTORE=1 BC5_CRASH_FRAMES=1)
+expect "switches: restore and crash frames are kept" "[ \"\$res\" = '[] $OFF keep=11' ]"
+printf '%s\n' '# a comment' '' 'BC5_DIRECT_ARGS_WB=first' 'BC5_DIRECT_GPU_CHECK_YZ=256:64' > "$T/sw1"
+res=$(blk "$T/sw1")
+expect "switches: file on, the log gives the effective state" "[ \"\$res\" = '[ BC5_DIRECT_GPU_CHECK_YZ=256:64 BC5_DIRECT_ARGS_WB=first] wb=first fl= dr= j= copy= yz=256:64 fs= keep=' ]"
+printf '%s\n' 'BC5_DIRECT_ARGS_WB=firts' 'BC5_DIRECT_ARGS_FLUSH=$(id)' 'BC5_DIRECT_FORCE_START_000=2' 'BC5_DIRECT_REBASE_DISPATCH=1' 'BC5_DIRECT_GPU_CHECK_YZ=0' ' BC5_DIRECT_ARGS_COPY=1' 'BC5_DIRECT_DRAW_ARGS_JOURNAL=1' 'BC5_DIRECT_GPU_CHECK_ZERO=1;id' > "$T/sw2"
+res=$(blk "$T/sw2")
+expect "switches: bad names and values refused by line number" "[ \"\$res\" = '[ REJECTED-LINES: 1 2 3 4 5 6 7 8] $OFF keep=' ]"
+printf '%s\n' 'BC5_DIRECT_ARGS_WB=first' 'BC5_DIRECT_ARGS_WB=all' 'BC5_DIRECT_ARGS_FLUSH=all' 'BC5_DIRECT_ARGS_FLUSH=bad' > "$T/sw3"
+res=$(blk "$T/sw3")
+expect "switches: duplicates: the last valid line wins, and the log says so" "[ \"\$res\" = '[ BC5_DIRECT_ARGS_WB=all BC5_DIRECT_ARGS_FLUSH=all REJECTED-LINES: 4] wb=all fl=all dr= j= copy= yz= fs= keep=' ]"
+printf 'BC5_DIRECT_ARGS_COPY=1' > "$T/sw4"
+res=$(blk "$T/sw4")
+expect "switches: a last line with no newline counts" "[ \"\$res\" = '[ BC5_DIRECT_ARGS_COPY=1] wb= fl= dr= j= copy=1 yz= fs= keep=' ]"
+printf 'BC5_DIRECT_ARGS_COPY=1\r\n' > "$T/sw5"
+res=$(blk "$T/sw5")
+expect "switches: a CRLF line is refused" "[ \"\$res\" = '[ REJECTED-LINES: 1] $OFF keep=' ]"
 setup; echo 'BC5_DIRECT_ARGS_WB=first' > "$T/keep"; mkdir -p "$X/bc5-work/exp0381/tb2"; cp "$T/keep" "$X/bc5-work/exp0381/tb2/switches.env"; r=$(run)
 expect "switches: a rebuild keeps his file" "[ $r = 0 ] && cmp -s '$T/keep' '$X/bc5-work/exp0381/tb2/switches.env'"
+setup; echo 'export BC5_DIRECT_ARGS_FLUSH=all' >> "$X/bc5-work/exp0380r1/play-pkg-0380r1.sh"; sed -i "s/^PIN_R1_LAUNCHER=.*/PIN_R1_LAUNCHER=$(m "$X/bc5-work/exp0380r1/play-pkg-0380r1.sh")/" "$T/pins.env"; r=$(run)
+expect "switches: one set after the block stops the build" "[ $r != 0 ] && q | grep -q 'build FAILED' && grep -q 'touched after the block' '$T/out'"
 # The rebased mode: the shared tree holds the fixes, and only two units are compiled.
 rebased() {
     setup

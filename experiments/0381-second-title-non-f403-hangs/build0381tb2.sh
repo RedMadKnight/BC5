@@ -99,7 +99,11 @@ sed -i 's/^export BC5_CRASH_FRAMES=1 /export BC5_DIRECT_ACB_STATE_RESTORE=1 BC5_
 [ "$(grep -c 'no write-back, FORCE_START, copy or rebase' "$L")" = 1 ] || fail "the log line is not there once"
 sed -i 's/no write-back, FORCE_START, copy or rebase/switches:${TB2_SW:- none}/' "$L"
 sed -i "/^export BC5_DIRECT_ACB_STATE_RESTORE=1 BC5_CRASH_FRAMES=1 /r $HERE/switches0381tb2.inc" "$L"
-[ "$(grep -c '^TB2_SW=""$' "$L")" = 1 ] || fail "the switches block is not there once"
+[ "$(grep -c '^TB2_SW=""$' "$L")" = 1 ] && [ "$(grep -c '^SWF=' "$L")" = 1 ] || fail "the switches block is not there once"
+# Nothing may load or set a switch after the block, or the reset and the log would not be the emulator's state.
+env_at=$(grep -nxF 'done < "$ENVF"' "$L" | cut -d: -f1); end_at=$(grep -n "^# end of exp 0381 test build 2's switches$" "$L" | cut -d: -f1)
+[ -n "$env_at" ] && [ -n "$end_at" ] && [ "$env_at" -lt "$end_at" ] || fail "the switches block is not after the launcher's env file"
+if tail -n +"$((end_at + 1))" "$L" | grep -E 'ENVF|BC5_DIRECT_(GPU_CHECK_YZ|FORCE_START_000|ARGS_WB|ARGS_FLUSH|ARGS_COPY|GPU_CHECK_ZERO|DRAW_ARGS_JOURNAL)'; then fail "a switch is touched after the block"; fi
 [ -e "$TB/switches.env" ] || cp "$HERE/switches0381tb2.env" "$TB/switches.env" || fail "the switches file"
 cp "$R1/zero-list-20261029-120000.txt" "$R1/play-sample0379t.sh" "$TB/" || fail copy
 bash -n "$L" || fail "the launcher does not parse"
@@ -112,6 +116,7 @@ done
 sed -e 's#^cd ~/bc5-work$#cd ~/bc5-work/exp0381/wd#' \
     -e 's#^export BC5_DIRECT_LEARNED=.*$#export BC5_DIRECT_LEARNED=$HOME/bc5-work/exp0381/direct-learned-pkg.txt#' \
     -e 's#^export KYTY_BC5_SAVEDATA_DIR=.*$#export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/exp0381/wd/_SaveData-pkg-play#' \
+    -e 's#^SWF=.*$#SWF=/dev/null#' \
     -e '/^done < "\$ENVF"$/a export KYTY_BC5_INPUT_CONFIG=$HOME/bc5-work/exp0381/input-rton.cfg' "$L" > "$S" || fail "smoke launcher"
 bash -n "$S" || fail "the smoke launcher does not parse"
 chmod +x "$S"
