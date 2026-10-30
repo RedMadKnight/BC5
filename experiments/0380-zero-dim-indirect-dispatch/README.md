@@ -2251,7 +2251,7 @@ writes of mine:
   - Under H it would still leave an earlier `INDEX_BASE` in the hardware. A clean run with it would change timing
     and placement, not prove H. Not built.
 
-## 31. Can an acb's state explain B? Exp 0381's F679 checked against the six events (F627; laptop extracts and source only)
+## 31. Can an acb's state explain B? Exp 0381's F679 checked against the six events (F640; laptop extracts and source only)
 
 **The question.** F679 showed that with `BC5_DIRECT_COMPUTE_RING=-1` an acb's registers carry into the next dcb, and the
 host's tracker does not see them (`cc`, `hib` and `dcb` feed it; acbs do not). Does that explain the six B events
