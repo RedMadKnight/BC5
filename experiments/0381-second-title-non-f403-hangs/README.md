@@ -342,3 +342,37 @@ yes.
 
 **Not done in the slot:** the compile check of `direct.cpp`'s hook (`compile0381.sh`, the throwaway
 `~/bc5-work/exp0381cc`) was refused by the laptop's classifier as a remote shell write; listed for the morning.
+
+## 7. Codex review (REVIEW-06): a host replay path for 16:25, and a third reading of 18:08 (F674, F675)
+
+Codex's REVIEW-06 (in progress, `C:\Users\kjani\Documents\ChatGPT\BC5\audit\REVIEW-06.md`), relayed by the top session.
+
+**F672's third reading (F675).** The slots may already have held the index-like words when the CP polled them. Then
+the guard did its job and skipped those draws, and the stall came from other work. Fifteen verified guards show that a
+draw ran only if its polls read sane counts. They do not show that any of these draws ran. So F672 has three readings:
+the fetch read other words than the polls (B on the draw side); the words arrived after the polls; or the words were
+there at the poll, the draws were skipped, and the stuck work is elsewhere in the job.
+
+**A host replay path for 16:25 (F674).** F671's "the host never writes `USER_DATA_0`" does not follow from the title IB
+alone. Two host prefixes replay SH registers from the CPU-side tracker, and both cover `USER_DATA_0` (SH 0x240):
+- the compute-state prefix (`BC5_DIRECT_CS_PREFIX=1`, on in `play-pkg.sh` since 10-24, F321; SH 0x204–0x3ff, in front
+  of a dcb that dispatches before it sets `COMPUTE_PGM_LO`; F254 names the BVH 0x0909… buffers with their first
+  dispatch at offset 8–27, the 16:25 dcb's shape);
+- the full draw prefix (`prefix_of(t_fs_before)`, in front of every drawing dcb; the 16:25 dcb has two
+  `DRAW_INDEX_AUTO`s).
+
+The tracker applies `LOAD_SH_REG_INDEX` tables, but from the CPU's view of the table at submit
+(`backend/src/full_state.cpp:185-193`), so a table the CPU read early or stale becomes the replayed value. Codex ran
+the real `full_state.cpp` on a synthetic table and got a prefix that writes `USER_DATA_0` = 0x860 while the later
+table holds 0x11.
+
+What decides it on the CP: the dcb's own `LOAD_SH_REG_INDEX` at dword 8 (table 0x909842dc0, 10 pairs) runs after any
+prefix. If that table names 0x240, the prefix value is overwritten, and the bad value comes from the table or the CP's
+fetch of it. If it does not, the prefix's replayed value is what the waves use, and a 0x860 there is a host bug. One
+conflict stays open: exp 0380's shape scan lists the 16:25 dump as `prefix=0 title_at=0 first_di=13`, and from the
+laptop it cannot be told whether that scan read the emitted IB.
+
+The read: `head0381.py` over the 16:25 devcoredump's IB #0, the emitted IB. It lists the packets up to the first three
+`DISPATCH_INDIRECT`s, with any `CONTEXT_CONTROL` / `CLEAR_STATE`, every `SET_SH_REG` value of SH 0x200–0x24f and the
+`LOAD_SH_REG_INDEX` addresses. At 2026-10-30 ~01:xx the guarded read-only ssh found an emulator running and exited
+with nothing read. It runs when the box is free.
