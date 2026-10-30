@@ -490,95 +490,26 @@ TEST_CASE("indirect_check: tighter y and z limits (experiment 0380, the 12:12 ha
     CHECK(out[i + 18 + 4] == 8u);
 }
 
-TEST_CASE("indirect_check: the SET_BASE rebase before a checked dispatch (experiment 0380)", "[indirect_check]") {
-    // SET_BASE index 1 = 0x12_3456_7000, INDEX_BASE, INDEX_BUFFER_SIZE, then DISPATCH_INDIRECT offset 0x40.
-    const std::vector<std::uint32_t> ib = {0xC0021100u, 1u,          0x34567000u, 0x12u,  // SET_BASE 1
-                                           0xC0012600u, 0x9db6280u,  0x11u,               // INDEX_BASE
-                                           0xC0001300u, 0xffffffffu,                      // INDEX_BUFFER_SIZE
+TEST_CASE("indirect_check: the copy keeps the base and the IB's own COND_EXEC (experiment 0380)", "[indirect_check]") {
+    const std::vector<std::uint32_t> ib = {0xC0021100u, 1u, 0x34567000u, 0x12u, // SET_BASE 1
                                            kDispatchIndirect, 0x40u, 0x41u};
-    std::vector<std::size_t> refs;
-    indirect_check::Stats st;
-    auto out = indirect_check::apply(ib, 0, kMax, kDrawMax, refs, st, false, nullptr, false, false, true);
-    REQUIRE(st.checked == 1);
-    CHECK(st.rebased == 1);
-    REQUIRE(out.size() == ib.size() + indirect_check::kCheckDwords + indirect_check::kRebaseDwords);
-    CHECK(st.rebased_after_index_base == 1); // the first DISPATCH_INDIRECT after the INDEX_BASE
-    CHECK(st.inserted_dwords == indirect_check::kCheckDwords + indirect_check::kRebaseDwords);
-    // the title's packets first, unchanged
-    CHECK(std::vector<std::uint32_t>(out.begin(), out.begin() + 9) ==
-          std::vector<std::uint32_t>(ib.begin(), ib.begin() + 9));
-    const std::size_t d = out.size() - 3; // the dispatch
-    CHECK(out[d] == kDispatchIndirect);
-    CHECK(out[d + 2] == 0x41u);
-    // SET_BASE index 1 with the same base right before it
-    CHECK(out[d - 4] == 0xC0021100u);
-    CHECK(out[d - 3] == 1u);
-    CHECK(out[d - 2] == 0x34567000u);
-    CHECK(out[d - 1] == 0x12u);
-    // the check's COND_EXEC covers both: 4 + 3 dwords
-    CHECK(out[d - 9] == 0xC0032200u);
-    CHECK(out[d - 9 + 4] == 7u);
-    // without the switch: the plain check, the COND_EXEC over 3 dwords
-    std::vector<std::size_t> refs0;
-    indirect_check::Stats st0;
-    auto plain = indirect_check::apply(ib, 0, kMax, kDrawMax, refs0, st0);
-    CHECK(st0.rebased == 0);
-    CHECK(plain.size() == ib.size() + indirect_check::kCheckDwords);
-    CHECK(plain[plain.size() - 3 - 5 + 4] == 3u);
-
-    SECTION("the base in effect is the latest SET_BASE index 1 (index 0 is ignored)") {
+    SECTION("the title's base put back is the latest SET_BASE index 1 (index 0 is ignored)") {
         auto two = ib;
-        two.insert(two.begin() + 9, {0xC0021100u, 1u, 0x55550000u, 0x13u, 0xC0021100u, 0u, 0x77770000u, 0x14u});
+        two.insert(two.begin() + 4, {0xC0021100u, 1u, 0x55550000u, 0x13u, 0xC0021100u, 0u, 0x77770000u, 0x14u});
         std::vector<std::size_t> r;
         indirect_check::Stats s;
         auto o = indirect_check::apply(two, 0, kMax, kDrawMax, r, s, false, nullptr, false, false, true);
-        const std::size_t e = o.size() - 3;
-        CHECK(o[e - 2] == 0x55550000u);
-        CHECK(o[e - 1] == 0x13u);
+        REQUIRE(s.args_copied == 1);
+        CHECK(std::vector<std::uint32_t>(o.end() - 4, o.end()) ==
+              std::vector<std::uint32_t>{0xC0021100u, 1u, 0x55550000u, 0x13u});
     }
-    SECTION("with the zero guard, the staircase and FORCE_START: the rebase stays next to the dispatch") {
-        std::vector<std::size_t> r;
-        indirect_check::Stats s;
-        const indirect_check::ProductLimit product{1u << 16, 1};
-        auto o = indirect_check::apply(ib, 0, kMax, kDrawMax, r, s, false, &product, true, true, true);
-        CHECK(o.size() == ib.size() + indirect_check::kCheckDwords + indirect_check::kProductDwords +
-                               indirect_check::kZeroDwords + indirect_check::kRebaseDwords);
-        const std::size_t e = o.size() - 3;
-        CHECK(o[e + 2] == 0x45u);
-        CHECK(o[e - 4] == 0xC0021100u);
-        CHECK(o[e - 9] == 0xC0032200u);
-        CHECK(o[e - 9 + 4] == 7u);
-    }
-    SECTION("an unbased dispatch, the MEC form and draws get no rebase") {
-        const std::vector<std::uint32_t> unbased = {kDispatchIndirect, 0x40u, 0x41u};
-        std::vector<std::size_t> r;
-        indirect_check::Stats s;
-        auto o = indirect_check::apply(unbased, 0, kMax, kDrawMax, r, s, false, nullptr, false, false, true);
-        CHECK(o == std::vector<std::uint32_t>{0xC0004200u, 0u, kDispatchIndirect, 0x40u, 0x41u});
-        const std::vector<std::uint32_t> mec = {0xC0021600u, 0x34567040u, 0x12u, 0x41u};
-        auto m = indirect_check::apply(mec, 0, kMax, kDrawMax, r, s, true, nullptr, false, false, true);
-        CHECK(m.size() == mec.size() + indirect_check::kCheckDwords - 2);
-        const std::vector<std::uint32_t> draw = {0xC0021100u, 1u, 0x1000u, 0x12u, 0xC0032400u, 0x20u, 0x4cu, 0x4du, 2u};
-        auto dr = indirect_check::apply(draw, 0, kMax, kDrawMax, r, s, false, nullptr, false, false, true);
-        CHECK(dr.size() == draw.size() + indirect_check::kDrawCheckDwords);
-        CHECK(s.rebased == 0);
-    }
-    SECTION("only the first dispatch after an INDEX_BASE counts as after it") {
-        auto two = ib;
-        two.insert(two.end(), {kDispatchIndirect, 0x80u, 0x41u});
-        std::vector<std::size_t> r;
-        indirect_check::Stats s;
-        indirect_check::apply(two, 0, kMax, kDrawMax, r, s, false, nullptr, false, false, true);
-        CHECK(s.rebased == 2);
-        CHECK(s.rebased_after_index_base == 1);
-    }
-    SECTION("inside the IB's own COND_EXEC: its count grows by the rebase too") {
+    SECTION("inside the IB's own COND_EXEC: its count grows by the copy too") {
         std::vector<std::uint32_t> c = {0xC0032200u, 0x100u, 0x12u, 0u, static_cast<std::uint32_t>(ib.size())};
         c.insert(c.end(), ib.begin(), ib.end());
         std::vector<std::size_t> r;
         indirect_check::Stats s;
         auto o = indirect_check::apply(c, 0, kMax, kDrawMax, r, s, false, nullptr, false, false, true);
-        CHECK(o[4] == ib.size() + indirect_check::kCheckDwords + indirect_check::kRebaseDwords);
+        CHECK(o[4] == ib.size() + indirect_check::kCheckDwords + indirect_check::kArgsCopyDwords);
     }
 }
 
@@ -590,7 +521,7 @@ TEST_CASE("indirect_check: the dispatch runs from the CP's copy of its arguments
                                            kDispatchIndirect, 0x40u, 0x41u};
     std::vector<std::size_t> refs;
     indirect_check::Stats st;
-    auto out = indirect_check::apply(ib, 0, kMax, kDrawMax, refs, st, false, nullptr, false, false, false, true);
+    auto out = indirect_check::apply(ib, 0, kMax, kDrawMax, refs, st, false, nullptr, false, false, true);
     REQUIRE(st.checked == 1);
     CHECK(st.args_copied == 1);
     REQUIRE(out.size() == ib.size() + indirect_check::kCheckDwords + indirect_check::kArgsCopyDwords);
@@ -638,14 +569,13 @@ TEST_CASE("indirect_check: the dispatch runs from the CP's copy of its arguments
     CHECK(out[i + 3] == 0x12u);
     CHECK(i + 4 == out.size());
 
-    SECTION("with the staircase, the zero guard, FORCE_START and rebase: all poll the copy, the copy wins over rebase") {
+    SECTION("with the staircase, the zero guard and FORCE_START: all poll the copy") {
         std::vector<std::size_t> r;
         indirect_check::Stats s;
         const indirect_check::ProductLimit product{1u << 16, 1};
-        auto o = indirect_check::apply(ib, 0, kMax, kDrawMax, r, s, false, &product, true, true, true, true);
+        auto o = indirect_check::apply(ib, 0, kMax, kDrawMax, r, s, false, &product, true, true, true);
         CHECK(o.size() == ib.size() + indirect_check::kCheckDwords + indirect_check::kProductDwords +
                                indirect_check::kZeroDwords + indirect_check::kArgsCopyDwords);
-        CHECK(s.rebased == 0);
         CHECK(s.args_copied == 1);
         indirect_check::patch(o, r, 0x1000'0000'2000ull);
         std::size_t polls = 0, title_polls = 0;
@@ -669,13 +599,13 @@ TEST_CASE("indirect_check: the dispatch runs from the CP's copy of its arguments
         CHECK(plain.size() == ib.size() + indirect_check::kCheckDwords);
         CHECK(s.args_copied == 0);
         const std::vector<std::uint32_t> unbased = {kDispatchIndirect, 0x40u, 0x41u};
-        auto u = indirect_check::apply(unbased, 0, kMax, kDrawMax, r, s, false, nullptr, false, false, false, true);
+        auto u = indirect_check::apply(unbased, 0, kMax, kDrawMax, r, s, false, nullptr, false, false, true);
         CHECK(u == std::vector<std::uint32_t>{0xC0004200u, 0u, kDispatchIndirect, 0x40u, 0x41u});
         const std::vector<std::uint32_t> mec = {0xC0021600u, 0x34567040u, 0x12u, 0x41u};
-        auto m = indirect_check::apply(mec, 0, kMax, kDrawMax, r, s, true, nullptr, false, false, false, true);
+        auto m = indirect_check::apply(mec, 0, kMax, kDrawMax, r, s, true, nullptr, false, false, true);
         CHECK(m.size() == mec.size() + indirect_check::kCheckDwords - 2);
         const std::vector<std::uint32_t> draw = {0xC0021100u, 1u, 0x1000u, 0x12u, 0xC0032400u, 0x20u, 0x4cu, 0x4du, 2u};
-        auto d = indirect_check::apply(draw, 0, kMax, kDrawMax, r, s, false, nullptr, false, false, false, true);
+        auto d = indirect_check::apply(draw, 0, kMax, kDrawMax, r, s, false, nullptr, false, false, true);
         CHECK(d.size() == draw.size() + indirect_check::kDrawCheckDwords);
         CHECK(s.args_copied == 0);
     }
@@ -685,7 +615,7 @@ TEST_CASE("indirect_check: the dispatch runs from the CP's copy of its arguments
         c.push_back(kNop);
         std::vector<std::size_t> r;
         indirect_check::Stats s;
-        auto o = indirect_check::apply(c, 0, kMax, kDrawMax, r, s, false, nullptr, false, false, false, true);
+        auto o = indirect_check::apply(c, 0, kMax, kDrawMax, r, s, false, nullptr, false, false, true);
         CHECK(o[4] == ib.size() + indirect_check::kCheckDwords + indirect_check::kArgsCopyDwords);
         CHECK(o.back() == kNop);
         CHECK(o[5 + o[4] - 4] == 0xC0021100u); // the range ends with the restore
@@ -695,7 +625,7 @@ TEST_CASE("indirect_check: the dispatch runs from the CP's copy of its arguments
         two.insert(two.end(), {0xC0021100u, 1u, 0x55550000u, 0x13u, kDispatchIndirect, 0x8u, 0x41u});
         std::vector<std::size_t> r;
         indirect_check::Stats s;
-        auto o = indirect_check::apply(two, 0, kMax, kDrawMax, r, s, false, nullptr, false, false, false, true);
+        auto o = indirect_check::apply(two, 0, kMax, kDrawMax, r, s, false, nullptr, false, false, true);
         CHECK(s.args_copied == 2);
         CHECK(o[o.size() - 2] == 0x55550000u);
         CHECK(o[o.size() - 1] == 0x13u);
@@ -724,7 +654,7 @@ TEST_CASE("indirect_check: a GL2 write-back before the check (experiment 0380)",
     SECTION("first: only the first dispatch after the INDEX_BASE, at the start of its check") {
         std::vector<std::size_t> r;
         indirect_check::Stats s;
-        auto o = indirect_check::apply(ib, 0, kMax, kDrawMax, r, s, false, nullptr, false, false, false, false,
+        auto o = indirect_check::apply(ib, 0, kMax, kDrawMax, r, s, false, nullptr, false, false, false,
                                        indirect_check::ArgsWb::first_after_index_base);
         CHECK(s.args_written_back == 1);
         CHECK(count(o) == 1);
@@ -735,7 +665,7 @@ TEST_CASE("indirect_check: a GL2 write-back before the check (experiment 0380)",
     SECTION("all: every checked dispatch") {
         std::vector<std::size_t> r;
         indirect_check::Stats s;
-        auto o = indirect_check::apply(ib, 0, kMax, kDrawMax, r, s, false, nullptr, false, false, false, false,
+        auto o = indirect_check::apply(ib, 0, kMax, kDrawMax, r, s, false, nullptr, false, false, false,
                                        indirect_check::ArgsWb::all);
         CHECK(s.args_written_back == 2);
         CHECK(count(o) == 2);
@@ -743,7 +673,7 @@ TEST_CASE("indirect_check: a GL2 write-back before the check (experiment 0380)",
     SECTION("with the copy: after the three COPY_DATA, before flag = 1") {
         std::vector<std::size_t> r;
         indirect_check::Stats s;
-        auto o = indirect_check::apply(ib, 0, kMax, kDrawMax, r, s, false, nullptr, false, false, false, true,
+        auto o = indirect_check::apply(ib, 0, kMax, kDrawMax, r, s, false, nullptr, false, false, true,
                                        indirect_check::ArgsWb::all);
         CHECK(s.args_copied == 2);
         CHECK(s.args_written_back == 2);
@@ -758,7 +688,7 @@ TEST_CASE("indirect_check: a GL2 write-back before the check (experiment 0380)",
         CHECK(count(o) == 0);
         CHECK(s.args_written_back == 0);
         const std::vector<std::uint32_t> mec = {0xC0021600u, 0x34567040u, 0x12u, 0x41u};
-        auto m = indirect_check::apply(mec, 0, kMax, kDrawMax, r, s, true, nullptr, false, false, false, false,
+        auto m = indirect_check::apply(mec, 0, kMax, kDrawMax, r, s, true, nullptr, false, false, false,
                                        indirect_check::ArgsWb::all);
         CHECK(count(m) == 0);
     }
@@ -780,7 +710,7 @@ TEST_CASE("indirect_check: a CS_PARTIAL_FLUSH before the check (experiment 0380,
     };
     const auto run = [&ib](indirect_check::ArgsFlush f, bool draws, indirect_check::Stats &s, bool wb = false) {
         std::vector<std::size_t> r;
-        return indirect_check::apply(ib, 0, kMax, kDrawMax, r, s, false, nullptr, false, false, false, false,
+        return indirect_check::apply(ib, 0, kMax, kDrawMax, r, s, false, nullptr, false, false, false,
                                      wb ? indirect_check::ArgsWb::all : indirect_check::ArgsWb::off, 0, f, draws);
     };
     SECTION("first: only the first dispatch after the INDEX_BASE, before its check") {
@@ -821,7 +751,7 @@ TEST_CASE("indirect_check: a CS_PARTIAL_FLUSH before the check (experiment 0380,
         CHECK(count(o) == 0);
         CHECK(s.args_flushed == 0);
         const std::vector<std::uint32_t> mec = {0xC0021600u, 0x34567040u, 0x12u, 0x41u};
-        auto m = indirect_check::apply(mec, 0, kMax, kDrawMax, r, s, true, nullptr, false, false, false, false,
+        auto m = indirect_check::apply(mec, 0, kMax, kDrawMax, r, s, true, nullptr, false, false, false,
                                        indirect_check::ArgsWb::off, 0, indirect_check::ArgsFlush::all, true);
         CHECK(count(m) == 0);
     }
@@ -832,7 +762,7 @@ TEST_CASE("indirect_check: the copy at a low GPU VA (experiment 0380, F574)", "[
     constexpr std::uint64_t slot = 0x0000'0000'8001'2000ull; // libdrm's 32-bit range
     std::vector<std::size_t> refs;
     indirect_check::Stats st;
-    auto out = indirect_check::apply(ib, 0, kMax, kDrawMax, refs, st, false, nullptr, false, false, false, true,
+    auto out = indirect_check::apply(ib, 0, kMax, kDrawMax, refs, st, false, nullptr, false, false, true,
                                      indirect_check::ArgsWb::off, slot);
     REQUIRE(st.args_copied == 1);
     REQUIRE(out.size() == ib.size() + indirect_check::kCheckDwords + indirect_check::kArgsCopyDwords);

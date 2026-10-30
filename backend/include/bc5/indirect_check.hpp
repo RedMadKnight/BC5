@@ -38,8 +38,6 @@ struct Stats {
     std::uint32_t product_checked = 0; // ... with the product staircase as well (experiment 0341)
     std::uint32_t zero_checked = 0;    // ... with the zero-dimension guard as well (experiment 0380)
     std::uint32_t start_forced = 0;    // dispatches given FORCE_START_AT_000 (experiment 0380)
-    std::uint32_t rebased = 0;         // checked dispatches given their SET_BASE again (experiment 0380)
-    std::uint32_t rebased_after_index_base = 0; // ... of them the first DISPATCH_INDIRECT after an INDEX_BASE
     std::uint32_t args_copied = 0;     // checked dispatches run from the CP's copy of their arguments (0380)
     std::uint32_t args_written_back = 0; // ... given a GL2 write-back before their check (0380, F570)
     std::uint32_t args_flushed = 0;      // checked dispatches and draws given a CS_PARTIAL_FLUSH first (0380, F617)
@@ -82,7 +80,7 @@ inline constexpr std::size_t kProductDwords = 5 + 9 + 9 + 5 + 2 + 5 + 9;
 // that gfx1013's CP launches nothing for a zero count (exp 0380, test plan part B). Dispatches
 // only (both forms), not draws.
 inline constexpr std::size_t kZeroDwords = 3 * 9;
-inline constexpr std::size_t kRebaseDwords = 4; // experiment 0380: SET_BASE index 1
+inline constexpr std::size_t kSetBaseDwords = 4; // experiment 0380: SET_BASE index 1, around args_copy's dispatch
 // Experiment 0380 (F566, after the 14:04 hang): args_copy, default off. Every checked GFX-form
 // DISPATCH_INDIRECT runs from a copy of its arguments that the CP itself makes after the title's
 // writes:
@@ -98,8 +96,7 @@ inline constexpr std::size_t kRebaseDwords = 4; // experiment 0380: SET_BASE ind
 // The check and the dispatch then read the same dwords, written by the CP's ME and confirmed before
 // the PFP_SYNC_ME. RADV does the same copy-then-dispatch for GFX7's compute-queue alignment bug
 // (radv_cmd_buffer.c radv_emit_dispatch_packets, has_async_compute_align32_bug, ab2374a). The flag
-// area holds 8 dwords (direct.cpp), and the copy uses dwords 4-6. Supersedes rebase for the dispatch it
-// covers. MEC form and draws are unchanged.
+// area holds 8 dwords (direct.cpp), and the copy uses dwords 4-6. MEC form and draws are unchanged.
 inline constexpr std::size_t kArgsCopyDwords = 3 * 6 + 4 + 4;
 // Experiment 0380 (F568-F570, after the copy run's hang): args_wb, default off. A checked GFX-form
 // DISPATCH_INDIRECT gets, at the start of its check (after the copy, when args_copy is on),
@@ -174,23 +171,12 @@ inline constexpr std::size_t kDrawCheckDwords = 5 + 2 * 9 + 5 + 2 + 5;
 // ab2374a: "Indirect CS does not support offsets in the API"). Without it the CP starts at
 // COMPUTE_START_X/Y/Z and takes the counts as end values (ibid., the direct path). The title's
 // 0x41 / 0x8041 initiators lack it (exp 0378). Stats::start_forced counts the initiators changed.
-// rebase (experiment 0380, F558-F560, default off): every checked GFX-form DISPATCH_INDIRECT gets the
-// SET_BASE index 1 in effect (the title's own, as the pass tracks it) emitted again right before it,
-// inside the check's COND_EXEC range (the count grows by kRebaseDwords, so a skipped dispatch skips
-// it too). In the F403 events of 10-28 18:15 to 10-29 12:12 the stuck dispatch is (12:12) or may be
-// the first DISPATCH_INDIRECT after an INDEX_BASE / INDEX_BUFFER_SIZE 0xffffffff pair, and at 12:12 it
-// launched what looks like index data, not its arguments (F555). SET_BASE index 1 is the base of
-// DISPATCH_INDIRECT / DRAW_INDIRECT arguments (RADV radv_emit_indirect_buffer, radv_cmd_buffer.c
-// ab2374a; RPCSX rpcsx/gpu/Pipe.cpp setBase case 1 drawIndexIndirPatchBase, read by dispatchIndirect,
-// e8ae148), and INDEX_BASE sets the separate VGT index base (ibid. indexBase). No public source says
-// they alias on gfx10: TODO(verify). SET_BASE is a PFP packet like the dispatch's fetch; no
-// PFP_SYNC_ME is added after it. MEC form and draws unchanged.
 std::vector<std::uint32_t> apply(std::span<const std::uint32_t> ib, std::uint64_t base,
                                  const std::uint32_t (&max)[3], const std::uint32_t (&draw_max)[2],
                                  std::vector<std::size_t> &flag_refs, Stats &stats,
                                  bool compute_ring = false, const ProductLimit *product = nullptr,
                                  bool zero_dims = false, bool force_start = false,
-                                 bool rebase = false, bool args_copy = false,
+                                 bool args_copy = false,
                                  ArgsWb args_wb = ArgsWb::off, std::uint64_t copy_va = 0,
                                  ArgsFlush args_flush = ArgsFlush::off, bool flush_draws = false);
 
