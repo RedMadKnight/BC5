@@ -128,6 +128,6 @@ expect "rebased: done, with no patched tree and two units" "[ $r = 0 ] && q | gr
 rebased; echo three > "$X/src/KytyPlus/src/libs/libC.cpp"; r=$(run)
 expect "rebased: the shared tree lacks the fix: FAILED" "[ $r != 0 ] && q | grep -q 'build FAILED' && grep -q 'does not hold the NP and libc' '$T/out'"
 rebased; sed -i 's/^PIN_LIBC=.*/PIN_LIBC=FILL/' "$T/pins.env"; r=$(run)
-expect "rebased: unfilled pins: stops, no outcome line beyond the claim's" "[ $r != 0 ] && ! q | grep -q 'build done' && grep -q 'not filled in' '$T/out'"
+expect "rebased: unfilled pins: FAILED, the lock cleared" "[ $r != 0 ] && q | grep -q 'build FAILED' && grep -q 'not filled in' '$T/out' && [ -z \"\$(lock)\" ]"
 export HOME=$REAL_HOME
 exit $fail

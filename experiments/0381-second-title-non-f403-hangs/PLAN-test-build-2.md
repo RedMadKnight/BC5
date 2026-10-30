@@ -4,6 +4,38 @@ The maintainer's words, by way of the top session: "Build testowy: => wszystkie 
 for his testing. Status: prepared on the laptop. **Nothing has run on the box.** Codex reviews before the box step, and it needs a slot and
 his go in this session's chat.
 
+## Decided since: the rebuilt shared base
+
+The top session's answer: "all changes" means all of them, and he has chosen to merge NP/libc and rebuild the shared builds. So tb2 goes on the new
+shared objects and archive, with the recorder, crash frames, `NO_CLEAR`, zero skip and the restore on top. It waits for the merge and the rebuild. **The
+rest of this file is the fallback,** if the rebuild is refused; cap 125 s and backstop 140 s are accepted for both.
+
+**What changes with the new base** (read from the repo, against 49f1116, the commit before main's backend moved; not built yet):
+
+| | Fallback | Rebased |
+|---|---|---|
+| Shared objects, archive | 58c4a627, bb50b2e0 | **new, pins unfilled** (`pins0381tb2r.env`; the scripts refuse to run until they are filled from the rebuild) |
+| Private units | four | **two**, as in test build 1: `bc5LleAgc.cpp` c743bb76 and `runtimeLinker.cpp` 5f2bc982 |
+| `libC.cpp`, `libNpCppWebApi.cpp` | private, proved by the src tree | from the shared objects, proved by their md5 in the shared tree |
+
+**Does the unit need adapting? By reading, no.** Its backend includes are `direct.hpp`, `full_state.hpp`, `zero_skip.hpp` and `acb_restore.hpp`. `direct.hpp` and
+`full_state.hpp` are unchanged since that commit, main's `zero_skip.hpp` is r1's (782ca0e9), `acb_restore.hpp` is pinned, and the unit does not include
+`indirect_check.hpp`, which did change. Only a compile proves this, and the build stops if it fails. A rebuild that touches `bc5LleAgc.cpp`'s tree unit does not
+reach this unit, which comes from r1 + the restore: anything added to the host unit by the merge would be **missing** from tb2, so `PIN_TREE_UNIT` is
+checked and a change there stops the build for a new look.
+
+**What else the new base brings in.** The archive moves to main's backend: the restore's `final_value` no change, plus exp 0380's eight switches and the draw-args journal,
+`BC5_DIRECT_GPU_CHECK_ZERO`, `FORCE_START_000`, `GPU_CHECK_YZ`, `REBASE_DISPATCH`, `ARGS_COPY`, `ARGS_WB`, `ARGS_FLUSH`, `ARGS_FLUSH_DRAWS` and `DRAW_ARGS_JOURNAL`. All are off
+unless set, so **the code comes in and its behaviour does not, as far as reading shows.** r1's launcher unsets the first six; `ARGS_FLUSH`, `ARGS_FLUSH_DRAWS` and `DRAW_ARGS_JOURNAL`
+it neither sets nor unsets. The archive's other changes (213 lines in `direct.cpp`, 164 in `indirect_check.cpp`) have run in exp 0380's private builds, but **not under the restore**,
+and this is the first time they meet it.
+
+**Question for the top session and the maintainer:** does "all changes" mean compiled in, or switched on? tb2 compiles them in and leaves them off. Exp 0380's switches were experiments, and
+turning them on would be a separate decision.
+
+**What this costs.** With the new base, a difference between 4c686b5b and tb2 is no longer only three small changes: the whole archive moves too. The fallback's list below stops being exact.
+The smoke rule below stands unchanged for both. The difference list, the overlap and the pins are re-read after the rebuild.
+
 ## What goes in
 
 `~/bc5-work/exp0381/tb2/bin/kyty_emulator`, linked from the shared objects (58c4a627) and the shared archive (bb50b2e0), with four private
@@ -76,12 +108,10 @@ crash frames (no event); that the cap survives a dropped ssh (not tested).
 - Three independent changes are in one binary, as he asked. If a new fault appears, the binary alone will not say which change did it. Test build 1 (4c686b5b)
   stays on the box for comparison.
 
-## A question for the top session
+## The fallback's limit
 
-"Wszystkie zmiany" as listed does **not** include main's other backend changes. The shared archive bb50b2e0 is older than main: main has `direct.cpp`,
-`indirect_check.cpp` and exp 0380's `zero_skip` work (about 1,700 lines against test build 1's backend) that are not in this build. The Catch2 run at main
-tests a tree that is not the archive linked here, as in test build 1. Taking them means a private archive, a bigger change, and a new review. I have
-left them out, per the list.
+On the fallback, main's other backend changes are not in the build: the shared archive bb50b2e0 is older than main. The Catch2 run at main tests a tree that is not
+the archive linked here, as in test build 1.
 
 ## Rollback
 

@@ -22,7 +22,6 @@ TAG='top exp 0381 | test build 2'
 m() { md5sum < "$1" | cut -c1-8; }
 pgrep '^kyty_emulator' > /dev/null && { echo "GUARD: an emulator runs"; exit 3; }
 grep -q "^$TAG" "$LOCK" 2> /dev/null || { echo "GUARD: the lock is not this build's: $(cat "$LOCK" 2> /dev/null)"; exit 4; }
-grep -q '=FILL$' "${TB2_PINS:-$HERE/pins0381tb2.env}" && { echo "these pins are not filled in: nothing done"; exit 2; }
 ok=0
 finish() {
     if [ "$ok" = 1 ]; then echo "$TAG build done: all steps passed, no GPU | $(date '+%F %T')" >> "$W/BOX-QUEUE"
@@ -33,6 +32,7 @@ finish() {
 }
 trap finish EXIT
 fail() { echo "FAIL: $1"; exit 1; }
+grep -q '=FILL$' "${TB2_PINS:-$HERE/pins0381tb2.env}" && fail "these pins are not filled in"
 box() { distrobox enter ubuntu -- sh -c "$1" < /dev/null; }
 pins() { echo "shared normal $(m "$B/src/kyty_emulator") lean $(m "$W/kytyplus-build-lean/src/kyty_emulator") archive $(m "$ARCH") tree unit $(m "$K/src/libs/bc5LleAgc.cpp") play-pkg.sh $(m "$W/play-pkg.sh")"; }
 P0=$(pins); echo "before: $P0"
