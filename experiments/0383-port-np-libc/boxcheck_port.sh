@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# PORT-NP / PORT-LIBC: the Linux check that the laptop cannot do. CPU only, nice 19, no emulator and no GPU, under its
+# Exp 0383, PORT-NP / PORT-LIBC: the Linux check that the laptop cannot do. CPU only, nice 19, no emulator and no GPU, under its
 # own lock line, after a GO. Rebuilds the patched tree from ~/src/KytyPlus's f266548 and the branch's patch 0001 in a
 # private directory, proves it against the pinned src tree, compiles libC.cpp and libNpCppWebApi.cpp with the shared
 # build's flags, relinks a private kyty_emulator (never run) and runs the tests. Nothing shared is written;
 # ~/src/KytyPlus and the shared build are only read. Stops at the first mismatch.
 # usage: boxcheck_port.sh   from the unpacked archive; ~10 min
 set -u
-E=$HOME/bc5-work/port-host; R=$E/raw; T=$E/tree; LOCK=$HOME/bc5-work/BOX-LOCK
+E=$HOME/bc5-work/exp0383; R=$E/raw; T=$E/tree; LOCK=$HOME/bc5-work/BOX-LOCK
 B=$HOME/bc5-work/kytyplus-build; K=$HOME/src/KytyPlus
 HERE=$(cd "$(dirname "$0")" && pwd); ROOT=$(cd "$HERE/../.." && pwd)
 PATCH=$ROOT/backend/kytyplus-patches/0001-bc5-lle-agc.patch
@@ -18,10 +18,10 @@ pgrep -x kyty_emulator > /dev/null && { echo "an emulator runs: stop"; exit 1; }
 [ "$(m "$B/src/kyty_emulator")" = "$EXPECT_NORMAL" ] || { echo "the shared normal binary is $(m "$B/src/kyty_emulator"), not $EXPECT_NORMAL: stop (EXPECT_NORMAL=... to accept)"; exit 1; }
 for f in NpAliasTests.cpp LibcNidTests.cpp boxbuild_port.py; do [ -s "$HERE/$f" ] || { echo "no $f beside this script"; exit 1; }; done
 [ -s "$ROOT/experiments/0328-npcppwebapi-port/NpCppWebApiTests.cpp" ] || { echo "no exp 0328 test file"; exit 1; }
-[ -e "$E" ] && { echo "$E exists: stop (a new run tag, or move it aside)"; exit 1; }
+[ -e "$T" ] && { echo "$T exists: stop (a new run tag, or move it aside)"; exit 1; }
 mkdir -p "$R" "$T"
-echo "top exp port-host | CPU check of the NP and libc fixes (two units compiled, private relink, tests; nice 19, no emulator, no GPU) | start $(date +%H:%M) | until ~$(date -d +15min +%H:%M)" > "$LOCK"
-trap 'grep -q "^top exp port-host | CPU check" "$LOCK" 2> /dev/null && : > "$LOCK"' EXIT
+echo "top exp 0383 | CPU check of the NP and libc fixes (two units compiled, private relink, tests; nice 19, no emulator, no GPU) | start $(date +%H:%M) | until ~$(date -d +15min +%H:%M)" > "$LOCK"
+trap 'grep -q "^top exp 0383 | CPU check" "$LOCK" 2> /dev/null && : > "$LOCK"' EXIT
 
 echo "== $(date +%T) tree from f266548 + the patch"
 git -C "$K" -c core.autocrlf=false archive f266548 | tar -x -C "$T" || { echo "archive failed"; exit 1; }

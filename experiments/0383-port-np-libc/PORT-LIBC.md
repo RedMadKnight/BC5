@@ -1,4 +1,4 @@
-# PORT-LIBC: three wrong NID registrations in `libC.cpp`
+# 0383, PORT-LIBC: three wrong NID registrations in `libC.cpp`
 
 **Question.** The `LibcInternal` table of `src/libs/libC.cpp` has `strcmp` and `strncmp` swapped, and registers the
 two-argument `strcpy` under `strcpy_s`'s NID. Does correcting the table give the right functions from the real
