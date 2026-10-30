@@ -224,6 +224,18 @@ TEST_CASE("acb restore: final_value is the state after all writes, or unknown", 
         REQUIRE(acb_restore::final_value(ib, ud0, kHost, v) == Final::Known);
         CHECK(v == 0x88u);
     }
+    SECTION("a write in an IB2 under COND_EXEC is unknown, at any depth; a later plain write settles it") {
+        // Codex's J4 review: a seeded 0x11, then a skipped IB2 would keep 0x11.
+        const std::vector<std::uint32_t> ib2 = set_sh(ud0, {0x11d00860u});
+        const std::vector<std::uint32_t> ib1 = {0xC0023F00u, lo(ib2.data()), hi(ib2.data()), static_cast<std::uint32_t>(ib2.size())};
+        std::vector<std::uint32_t> ib = set_sh(ud0, {0x11u});
+        append(ib, {0xC0032200u, 0x1000, 0, 0, 4}); // COND_EXEC over the 4-dword INDIRECT_BUFFER
+        append(ib, {0xC0023F00u, lo(ib1.data()), hi(ib1.data()), static_cast<std::uint32_t>(ib1.size())});
+        CHECK(acb_restore::final_value(ib, ud0, kHost, v) == Final::Unknown);
+        append(ib, set_sh(ud0, {0x11u}));
+        REQUIRE(acb_restore::final_value(ib, ud0, kHost, v) == Final::Known);
+        CHECK(v == 0x11u);
+    }
     SECTION("a write under COND_EXEC is unknown") {
         std::vector<std::uint32_t> ib = {0xC0032200u, 0x1000, 0, 0, 3}; // COND_EXEC over the next 3 dwords
         append(ib, set_sh(ud0, {0x99u}));

@@ -890,3 +890,53 @@ build only runs after it compiles; no shared build, launcher or patch 0001 chang
 Counts are reported as counts, with no odds. An OFF start with F443 is expected and does not stop the series; §11's
 other stops hold, and F443 in an ON start stops it. A result covers this start-up workload, this save, this build, 120 s,
 and a forced position. It does not cover play.
+
+## 18. J4's result (2026-10-30 11:03–11:49, the maintainer's go in this session's chat): Supported
+
+**The build.** `build0381.sh`: binary **e72bc317**. Clang 21: backend 0 warnings, 102 of 102 test cases; host unit 5 compiler
+warnings, the older ones. The shared binary and archive are unchanged.
+
+**The runs.** `BC5_DIRECT_CHAIN_BREAK_AT=12673`, default hold, restore explicitly 0 or 1, live saves 377a8d45, RT on.
+3 pairs, off first; the series stopped there because the rule was met. Extract: `raw/j4.txt`.
+
+| Start | Buffer | Inherited | Prefix | Result |
+|---|---|---|---|---|
+| off-1 | t 56.55, seg 0 of 4, after an acb | 0x11d00860 | none | **F443**, 62 s, resets ok |
+| on-1 | t 98.22, seg 0 of 4, after an acb | 0x11d00860 | 58, ud0 0x11 | clean, 120 s |
+| off-2 | t 55.82, seg 0 of 4, after an acb | 0x11d00860 | none | **F443**, 63 s, resets ok |
+| on-2 | t 55.30, seg 0 of 4, after an acb | 0x11d00860 | 58, ud0 0x11 | clean, 121 s |
+| off-3 | t 56.33, seg 0 of 4, after an acb | 0x11d00860 | none | **F443**, 64 s, resets ok |
+| on-3 | t 55.66, seg 0 of 4, after an acb | 0x11d00860 | 58, ud0 0x11 | clean (see the incident) |
+
+Every OFF fault lies at high half 0x860 (pages 0x8608c654000 and up), the low 16 bits of the inherited value. Live saves
+were unchanged.
+
+**The verdict under §17: Supported.** 3 exposed OFF starts with F443 and 3 exposed ON starts with the attributed restore
+and no F443; the rule needed 2 of each. Under the same forced position, the only difference between the arms being the
+switch, the fault follows the missing restore every time.
+
+**What it does not show.** The position is forced by a diagnostic. The order is the host's submission order and the
+inherited value the host's view of the packets, not a capture of what the GPU consumed, although the faults' high half
+agrees with that value. It covers this start-up workload, this save, this build and these 120 s; not play, F403 or the
+18:08 stall. The switch's cost is bounded only roughly (§16).
+
+**The incident: on-3 overran the cap.** A `Connection reset` on the laptop's ssh left the stop loop blocked, so the
+emulator ran **1,919 s, not 120 s**, attended by nobody, and wrote a 38 GB journal (`play-20261030-1111`, private). The
+kernel stream ended at its 240-s cap, so the laptop has no record past that. `sudo dmesg` shows the last amdgpu event was
+off-3's at 11:11:30, so on-3 had no fault in those 32 minutes. Its buffer came at t 55.66, inside the 120 s, so it counts
+in the table; its later time is a bonus observation, not part of the rule. `j3run0381.sh` and `j4run0381.sh` now bound
+every ssh in the stop path and retry the TERM. The stop still depends on the laptop.
+
+**Codex's `final_value` finding.** A write in an IB2 under a COND_EXEC came out Known, though the GPU may skip the IB2.
+It is fixed with a test (`final_level` carries the conditional down; a later plain write still settles it). **Binary
+e72bc317 has the old code**, so its journaled finals were checked separately. In all 6 starts the writing job's last
+dispatch is a top-level `DISPATCH_DIRECT` of 0x11d03a3500, at dword 912 or 916, with 0x11d00860 in the top-level tracker.
+A write inside an IB2 cannot put a value there, and a top-level write under COND_EXEC was already Unknown, so the path did
+not act in these starts. Also in all 6, the tiny acbs between that job and the buffer write nothing.
+
+**A correction to F684.** Mid-chain did not fault in J3 because no acb stood in front, not because mid-chain is safe in
+itself. J4's three clean ON starts and three faulting OFF starts are the evidence that the state decides.
+
+**Open.** Integration is the maintainer's decision (D19): the switch needs patch 0001, a launcher setting, and a test in
+play. `BC5_DIRECT_CHAIN_BREAK_AT` is a diagnostic and stays out of that. The on-3 journal takes 38 GB on the box until
+someone clears it.

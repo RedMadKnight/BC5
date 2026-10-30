@@ -133,9 +133,11 @@ inline bool sh_value(std::span<const std::uint32_t> pre, std::uint32_t reg, std:
 enum class Final { None, Known, Unknown };
 
 namespace detail {
+// conditional: this whole level is under a COND_EXEC of a caller (Codex's J4 review: a skipped IB2
+// keeps the earlier value, so a write inside it is no more certain than a direct one).
 inline void final_level(std::span<const std::uint32_t> ib, std::uint32_t reg,
                         const full_state::Tracker::Reader &read, int depth, Final &state,
-                        std::uint32_t &value) {
+                        std::uint32_t &value, bool conditional = false) {
     const auto address = [](std::uint32_t lo, std::uint32_t hi) {
         return (lo & ~3u) | (static_cast<std::uint64_t>(hi & 0xffffu) << 32);
     };
@@ -150,7 +152,7 @@ inline void final_level(std::span<const std::uint32_t> ib, std::uint32_t reg,
         const std::uint32_t *p = &ib[i];
         const std::uint32_t op = (h >> 8) & 0xffu;
         const auto wrote = [&](std::uint32_t v) {
-            state = i < cond_end ? Final::Unknown : Final::Known;
+            state = conditional || i < cond_end ? Final::Unknown : Final::Known;
             value = v;
         };
         if (op == 0x22 && len >= 5) { // COND_EXEC: the next (dwords) are conditional
@@ -187,7 +189,8 @@ inline void final_level(std::span<const std::uint32_t> ib, std::uint32_t reg,
             const std::uint32_t n = p[3] & 0xfffffu;
             const std::uint32_t *t = read && n != 0 && depth < 4 ? read(address(p[1], p[2]), n * 4ull) : nullptr;
             if (t == nullptr) state = Final::Unknown;
-            else final_level(std::span<const std::uint32_t>(t, n), reg, read, depth + 1, state, value);
+            else final_level(std::span<const std::uint32_t>(t, n), reg, read, depth + 1, state, value,
+                             conditional || i < cond_end);
         }
         i += len;
     }
