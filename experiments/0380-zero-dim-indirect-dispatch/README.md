@@ -2338,6 +2338,12 @@ run is owed before the B loop uses it. `raw/loop0380b.sh` takes `BC5_0380_S6N` a
   0001 or the emulator link. The shared pins did not change. Output: `raw/runs/SLOT-main-check.txt`.
 - **The manifest** is `raw/MANIFEST-B-loop-r1.md`. No smoke has used the loop's exact switches, so one comes first. Codex
   decides the limits; the loop has no GO.
+- **`int/0381-to-main`'s CPU check passed (2026-10-30 11:51).** Tree c8652825 (4e924f3), the same runner: build rc 0, 0
+  errors, 0 warnings; Catch2 115 cases, 34,661 assertions; `[indirect_check]` 16, `[zero_skip]` 5, `[draw_args]` 4,
+  `[acb_restore]` 6 cases; both selftests did nothing; rc 0; shared pins unchanged. `raw/runs/SLOT-int0381-check.txt`. Tree
+  437a0d5a (100feea) came after it and is not checked.
+- **Smoke BS1 passed (11:52)**, r1, 180 s, RT on: verdict pass, no kernel line, 27.4 flips/s, the recorder's self-test
+  written, saves and pins unchanged. Details in the manifest and `raw/runs/BS1-smoke.txt`. The loop still has no GO.
 - **A lock gap in `raw/loop0380b.sh`, found while writing it:** the runner frees the lock after each try, and the loop
   overwrote the lock file at the next try. It now retakes the lock at once and ends if someone else holds it. It also pins
   the runner's hash. A stand-in dry run passed.

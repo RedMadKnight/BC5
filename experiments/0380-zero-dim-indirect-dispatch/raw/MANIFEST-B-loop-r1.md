@@ -1,6 +1,6 @@
-# B loop manifest: variant r1 (for Codex's decision; nothing here has run)
+# B loop manifest: variant r1 (for Codex's decision; BS1 has run, the loop has not)
 
-Requested variant: **r1**, the only one with a binary. r2 (`rec0380_before`, the 16 jobs before a timeout) is not built,
+Legacy baseline, not current main (Codex's follow-up of 2026-10-30). Requested variant: **r1**, the only one with a binary. r2 (`rec0380_before`, the 16 jobs before a timeout) is not built,
 has no md5 and no smoke, and its test `rec0380_test.cpp` case 6 has not been compiled. Its timeout path would not run in
 a healthy smoke. It is a different capture and would need its own manifest. Nothing below applies to it.
 
@@ -25,10 +25,15 @@ a healthy smoke. It is a different capture and would need its own manifest. Noth
 - **RS1 (2026-10-29 23:51) passed, but with other switches:** 300 s, plus `BC5_DIRECT_PIECES_NO_CLEAR=1`,
   `BC5_DIRECT_ZERO_SKIP` and `BC5_0380_REC_SELFTEST_S=150`. 30.9 flips/s, no crash or kernel line, the recorder's
   self-test wrote its file.
-- **No smoke exists with the loop's exact switches.** Proposed first box step, tag `BS1`: one 180-s try with the loop's
-  two switches plus `BC5_0380_REC_SELFTEST_S=150`, the one difference, because a healthy run does not otherwise run the
-  recorder. Pass means verdict `pass`, a `rec0380:` self-test line and file, and flips/s near RS1's. Its hashes are read
-  on the box and added here before the loop starts.
+- **BS1 (2026-10-30 11:52) passed**, Codex's GO, the maintainer's go. 180 s, RT on, the loop's two switches plus
+  `BC5_0380_REC_SELFTEST_S=150`, the one difference. Verdict pass, runner rc 0, no crash, kernel, TIMEOUT or devcoredump
+  line. 27.4 flips/s over 177.9 s, 11,328 MiB pinned. The recorder wrote its self-test line and file.
+- **Full hashes read on the box, the same before and after:** binary 44417414800ea99c8ca19a33a36b05fc; runner
+  494ac253a1699e2770853a8335eedc2f; shared normal 58c4a627d23b06e25c2868249124f9c5, lean
+  dcbeb440ee0ac0c054c42c2227431f9a, archive bb50b2e0183a75d3e147099379157d7a, `play-pkg.sh`
+  55531ab6277d6816c0603a7a6c6d62b4, learned a7cc85814d7c9d53de05898b1e22b78f. Live saves 377a8d456a9b4cb1 before and
+  after. Output: `raw/runs/BS1-smoke.txt`.
+- BS1's 27.4 flips/s is below RS1's 30.9, but the two differ in length and switches, so this is no measured regression.
 - A smoke covers neither the recorder's timeout trigger nor the crash frames. Those have unit tests only for this binary.
 
 ## What it can and cannot show
