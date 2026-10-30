@@ -1,0 +1,16 @@
+# shadow0384.exe, MSVC Debug, /W4 /WX, base d6fa368
+Randomness seeded to: 2060551713
+shadow: 40000 streams, unsound 0, too big to check 0, certain registers 27949
+shadow: seed 1384, 100000 streams, unsound 0, too big to check 0
+shadow: seed 2384, 100000 streams, unsound 0, too big to check 0
+shadow: seed 3384, 100000 streams, unsound 0, too big to check 0
+mutant CHAIN as a call: unsound in 580 of 6000
+mutant no carry past a buffer's end: unsound in 763 of 6000
+mutant conditional writes count as plain: unsound in 2086 of 6000
+mutant what cannot be followed is only counted: unsound in 1870 of 6000
+mutant the tail of a conditional CHAIN counts as plain: unsound in 38 of 6000
+mutant a count inside a packet is ignored: unsound in 494 of 6000
+bytes: 40000 streams identical, 24368 with a CHAIN; old value differs from a certain shadow value on 1257 registers
+===============================================================================
+All tests passed (68766 assertions in 7 test cases)
+
