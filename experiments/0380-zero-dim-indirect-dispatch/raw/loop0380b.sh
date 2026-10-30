@@ -14,6 +14,8 @@ case "$PFX" in *[!A-Za-z]* | "") echo "the prefix is letters"; exit 1 ;; esac
 [ -x "$S6N" ] || { echo "no $S6N"; exit 1; }
 WANT_S6N=${BC5_0380_S6N_MD5:-494ac253}   # another runner or binary is another capture: its manifest first
 [ "$(md5sum < "$S6N" | cut -c1-8)" = "$WANT_S6N" ] || { echo "$S6N is not md5 $WANT_S6N"; exit 1; }
+BIN=${BC5_0380_BIN:-$W/exp0380r1/bin/kyty_emulator}; WANT_BIN=${BC5_0380_BIN_MD5:-44417414800ea99c8ca19a33a36b05fc}
+[ "$(md5sum < "$BIN" | cut -d' ' -f1)" = "$WANT_BIN" ] || { echo "$BIN is not md5 $WANT_BIN"; exit 1; }
 pgrep '^kyty_emulator' > /dev/null && { echo "an emulator runs: not started"; exit 1; }
 [ -s "$LOCK" ] && ! grep -q '^top exp 0380 |' "$LOCK" && { echo "the box is locked: $(cat "$LOCK")"; exit 1; }
 [ -e "$LOG" ] && { echo "$LOG exists: a new prefix"; exit 1; }
@@ -23,6 +25,8 @@ lock() { [ -s "$LOCK" ] && ! grep -q '^top exp 0380 |' "$LOCK" && { WHY="the box
 note() { echo "$(date '+%F %T') $*" | tee -a "$LOG"; sync; }
 trap 'touch "$DONE"; grep -q "^top exp 0380 |" "$LOCK" 2> /dev/null && : > "$LOCK"; sync' EXIT
 T0=$(date +%s); i=0; WHY=""
+up() { cut -d. -f1 /proc/uptime; }
+U0=$(up)
 note "loop $PFX start: budget $BUDGET s, $SECS s per try, boot $(cut -c1-8 /proc/sys/kernel/random/boot_id)"
 while :; do
   [ -e "$STOP" ] && { WHY="stop file"; break; }
@@ -31,12 +35,16 @@ while :; do
   [ "$FREE" -ge 20 ] || { WHY="disk: $FREE GiB free"; break; }
   i=$((i + 1)); TAG=$PFX$(printf %02d "$i")
   lock || break
+  TT=$(date +%s)
   note "try $TAG start ($FREE GiB free, MemAvailable $(awk '/^MemAvailable:/ {print int($2/1024)}' /proc/meminfo) MiB)"
   BC5_0368_SWITCHES="BC5_CRASH_FRAMES=1 BC5_0380_REC=1" bash "$S6N" "$SAVES" "$TAG" "$SECS" on > "$R/$TAG-runner.out" 2>&1
   lock; HELD=$?
   V=$(cat "$R/$TAG-verdict.txt" 2> /dev/null || echo "no verdict (runner: $(tail -1 "$R/$TAG-runner.out"))")
   note "try $TAG verdict: $V"
   [ "$HELD" = 0 ] || break
+  # the clock: a try ends within its time plus the runner's overhead, and the wall clock keeps to the uptime
+  D=$(($(date +%s) - TT)); S=$(($(date +%s) - T0 - $(up) + U0))
+  { [ "$D" -ge 0 ] && [ "$D" -le $((SECS + 300)) ] && [ "$S" -ge -30 ] && [ "$S" -le 30 ]; } || { WHY="time control: try took $D s, clock skew $S s"; break; }
   grep -q "THE LIVE SAVES ARE NOT" "$R/$TAG-runner.out" && { WHY="the live saves changed"; break; }
   [ "$V" = pass ] || { WHY="try $TAG: $V"; break; }
   pgrep '^kyty_emulator' > /dev/null && { WHY="an emulator still runs after $TAG"; break; }
