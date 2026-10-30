@@ -10,8 +10,8 @@
 #      $WORK/kytyplus-build, then the lean variant (KYTY_BC5_LEAN=ON: no tracing, journals or
 #      measurements, experiment 0177) into $WORK/kytyplus-build-lean;
 #   4. keep the previous binary as kyty_emulator.prev and print what was built.
-# Local changes in either checkout are never discarded silently: they go to a diff file under
-# $WORK (and a git stash for the BC5 checkout) and the script says where.
+# Before resetting KytyPlus, tracked/index patches and untracked files are backed up under
+# $WORK. BC5 changes also go to a git stash. The script says where each backup lives.
 # Everything is logged to $LOG; the script exits non-zero on the first failure and names the log.
 #
 # Knobs (environment): BC5_SRC, KYTY_SRC, WORK, BC5_REPO, KYTY_REPO, KYTY_COMMIT, BOX (distrobox
@@ -60,7 +60,7 @@ step() { STEP=$1; say "== $1"; }
 say "start $TS  host=$(hostname)  user=$USER  args: $*"
 
 step prerequisites
-for t in git distrobox df; do command -v "$t" >/dev/null || fail "$t is not installed on the host"; done
+for t in git distrobox df mktemp tar; do command -v "$t" >/dev/null || fail "$t is not installed on the host"; done
 distrobox list --no-color 2>/dev/null | awk -F'|' 'NR>1 {gsub(/^ +| +$/, "", $2); print $2}' | grep -qx "$BOX" || fail "no distrobox named '$BOX' (README: How to start, 2)"
 avail_gb=$(( $(df --output=avail -B1 "$WORK" | tail -1) / 1024 / 1024 / 1024 ))
 say "free space on $WORK: ${avail_gb} GB (minimum ${MIN_FREE_GB})"
@@ -111,12 +111,36 @@ if [ "$patched_ok" = 1 ]; then
 elif [ "${BC5_BUILD_KEEP_KYTY:-0}" = 1 ]; then
   say "BC5_BUILD_KEEP_KYTY=1: building $KYTY_SRC as it is (HEAD ${kyty_head:0:7}; the patch is NOT re-applied)"
 else
-  if [ -n "$(git -C "$KYTY_SRC" status --porcelain)" ]; then
-    bk=$WORK/kytyplus-local-$TS.diff
-    git -C "$KYTY_SRC" status --porcelain > "$bk.files"
-    git -C "$KYTY_SRC" diff --binary > "$bk" || true
-    say "LOCAL CHANGES in $KYTY_SRC (HEAD ${kyty_head:0:7}) saved to $bk (file list: $bk.files); the tree is reset to ${KYTY_COMMIT} + $PATCH_REL. Untracked files other than the patch's are left in place."
-  fi
+  # Complete the backup before any reset, checkout or removal. A plain `git diff`
+  # omits staged content, and no Git diff holds untracked files.
+  bk=$(mktemp -d "$WORK/kytyplus-local-$TS.XXXXXX") || fail "cannot create backup directory"
+  git -C "$KYTY_SRC" rev-parse HEAD > "$bk/HEAD" || fail "cannot save backup HEAD"
+  git -C "$KYTY_SRC" status --porcelain=v1 -z > "$bk/status.z" || fail "cannot save status"
+  git -C "$KYTY_SRC" diff HEAD --binary > "$bk/worktree.patch" || fail "cannot save worktree"
+  git -C "$KYTY_SRC" diff --cached --binary > "$bk/index.patch" || fail "cannot save index"
+  git -C "$KYTY_SRC" ls-files --others --exclude-standard -z > "$bk/untracked.z" || fail "cannot list untracked files"
+  # A patch-created path can already exist as an ignored file; the cleanup below
+  # would remove it too. Include ignored collisions, without archiving build trees.
+  git -C "$KYTY_SRC" apply --numstat -z "$PATCH" > "$bk/patch-paths.z" || fail "cannot list patch paths"
+  while IFS= read -r -d '' record; do
+    path=${record#*$'\t'}
+    path=${path#*$'\t'}
+    if [ -e "$KYTY_SRC/$path" ] || [ -L "$KYTY_SRC/$path" ]; then
+      ignored_rc=0
+      git -C "$KYTY_SRC" check-ignore -q -- "$path" || ignored_rc=$?
+      [ "$ignored_rc" -le 1 ] || fail "cannot check ignored path: $path"
+      if [ "$ignored_rc" = 0 ]; then
+        printf '%s\0' "$path" >> "$bk/untracked.z" || fail "cannot list ignored collision"
+      fi
+    fi
+  done < "$bk/patch-paths.z"
+  tar -C "$KYTY_SRC" --null --verbatim-files-from -T "$bk/untracked.z" -cf "$bk/untracked.tar" || fail "cannot archive untracked files"
+  tar -tf "$bk/untracked.tar" > "$bk/archive-list.txt" || fail "cannot verify backup archive"
+  # Restore in a clean checkout at HEAD: apply worktree.patch to the worktree,
+  # index.patch with `git apply --cached`, then extract untracked.tar. Skip empty
+  # patches. Intent-to-add contents survive, but that index flag is not restored.
+  printf '%s\n' 'backup complete' > "$bk/COMPLETE" || fail "cannot finish backup"
+  say "KytyPlus backup complete at $bk; HEAD, staged/worktree patches and untracked archive saved"
   git -C "$KYTY_SRC" reset -q
   git -C "$KYTY_SRC" checkout -q -f "$KYTY_FULL"
   # files the patch creates must not pre-exist (an earlier version of the patch, or the saved tree)
