@@ -575,3 +575,48 @@ stand in front of the faulting dcb, and with which `USER_DATA_0`?
 
 **A pass does not show** that F443 is gone from play: it covers the start-up job only, on one save state, for 120 s.
 The next step would be a test build with the switch on, and that build needs the maintainer's yes (D19).
+
+## 12. J2's result (2026-10-30 08:40–08:53, the maintainer's yes in this session's chat): no event, but no test by the written rule
+
+**The build.** `build0381.sh`: binary 6415be8f, the shared objects with the unit of exp 0379 + this experiment's diff
+(9d4649ba) and the shared archive. Clang 21: backend 0 warnings, 99 of 99 test cases; 5 warnings in the host unit's
+link step, the older ones, none in the new lines. The shared binary (58c4a627) and archive (bb50b2e0) are unchanged.
+
+**The journal read.** In J1 one dcb opens with a dispatch right after an acb, and it is the faulting one. The other
+1,114 dcb dispatches that follow an acb line in the journal sit mid-buffer, which is the journal's interleaving. J1
+hit no F403, so it says nothing about the F403 dispatches.
+
+**The runs.** Five starts (the 3 of §11 plus the 2 replacements), each with a fresh copy of the live saves, binary
+6415be8f, the switch on, the dispatch journal on, RT on.
+
+| Start | Journal | Emulator time | Kernel faults | gfx timeouts | Opener of F679's shape | Runs of 0x909977100 |
+|---|---|---|---|---|---|---|
+| J2-1 | `play-20261030-0840` | 123 s | 0 | 0 | 0 | 79 |
+| J2-2 | `play-20261030-0843` | 121 s | 0 | 0 | 0 | 80 |
+| J2-3 | `play-20261030-0846` | 122 s | 0 | 0 | 0 | 91 |
+| J2-4 | `play-20261030-0849` | 123 s | 0 | 0 | 0 | 84 |
+| J2-5 | `play-20261030-0851` | 121 s | 0 | 0 | 0 | 85 |
+
+The restore was active in the two starts where its lines were counted (J2-1, J2-2): 40 registers in 58 dwords on each
+of ~11,000 dispatching dcbs. Acbs wrote 40 compute registers, and none is missing from the dcb state, so **nothing
+is left behind**, which answers §10's open limit for this stretch. Saves were unchanged (377a8d45). Lines mentioning
+flips run at about 41–42/s against J1's ~43/s over its first 57 s: a rough count, with no sign of a slowdown.
+
+**The verdict under §11's rules: not a pass.** No start was clean, because none shows the F679 order. All five count
+as no test.
+
+**What the runs do show.** In J1 the second burst of BVH work was a dcb of 88,848 dwords, then the 15,083-dword dcb
+opening at dword 13, which faulted. In all five J2 starts that dcb did not appear: 0x909977100 stays inside large
+dcbs, after their own 0x909974400 dispatches. The J2 starts also ran past the fault's time, 54–57 s, so they reached
+the point.
+
+Two readings stay open:
+1. The restore removes the shape: an earlier, silent register carry changed what the title builds, and with the
+   registers right the title never emits that dcb. Faults stopped because the trigger stopped.
+2. The shape varies on the title's side, and these five starts missed it by chance or by timing. Against that, at
+   J1's rate of 3 in 4 the odds of 5 misses are about 1 in 1,000, and at 2 in 3 about 1 in 240. Those rates are from
+   a few starts, though, and every earlier run differs (binary, journal).
+
+**The test that separates them:** the same binary 6415be8f with the switch off, 3 to 5 starts, same setup. If the
+shape and the fault come back, the switch is the cause, and reading 1 stands. It needs the maintainer's yes, because
+a start can end in a GPU timeout.
