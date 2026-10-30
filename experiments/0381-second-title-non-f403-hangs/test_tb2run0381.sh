@@ -175,12 +175,12 @@ runl() {
 }
 # What the log's first line says, and what the emulator's environment holds, in the same form.
 logsw() { sed -n '1s/.*switches:\(.*\); binary .*/\1/p' "$R"/bc5-work/exp0381/tb2/play/play-*.log; }
-gotsw() { o=""; for n in $NAMES; do v=$(grep "^$n=" "$1" | cut -d= -f2-) && o="$o $n=$v"; done; echo "${o:- none}"; }
+gotsw() { o=""; for n in $NAMES; do grep -q "^$n=" "$1" && o="$o $(grep "^$n=" "$1")"; done; echo "${o:- none}"; }
 KEPT='BC5_DIRECT_ACB_STATE_RESTORE=1 BC5_CRASH_FRAMES=1 BC5_0380_REC=1 BC5_DIRECT_PIECES_NO_CLEAR=1 BC5_DIRECT_GPU_CHECK_PRODUCT=1 BC5_DIRECT_SHADOW_LABELS=1 BC5_DIRECT_COMPUTE_RING=-1 BC5_DIRECT_GPU_CHECK=1 BC5_DIRECT_HOST_INDIRECT=learn:1100000000 BC5_DIRECT_SOFT_WAIT_MS=8'
 kept() { for k in $KEPT; do grep -qx "$k" "$1" || return 1; done; }
 # The emulator's first start (it asks for a restart) and its second: same switches, the same as the log, and the launcher's other settings kept.
 same() { [ "$rl" = 0 ] && [ "$(logsw)" = "$1" ] && [ "$(gotsw "$E1")" = "$1" ] && [ "$(gotsw "$E2")" = "$1" ] && kept "$E1" && kept "$E2"; }
-E1=$T/rt/bc5-work/exp0381/tb2/bin/kyty_emulator.env1; E2=$T/rt/bc5-work/exp0381/tb2/bin/kyty_emulator.env2
+R=$T/rt; E1=$T/rt/bc5-work/exp0381/tb2/bin/kyty_emulator.env1; E2=$T/rt/bc5-work/exp0381/tb2/bin/kyty_emulator.env2
 setup; r=$(run); LR=$T/l-real; SR=$T/s-real; cp "$L" "$LR"; cp "$S2" "$SR"
 [ -z "${TB2_KEEP:-}" ] || { cp "$L" "$TB2_KEEP/play-pkg-0381tb2.sh"; cp "$S2" "$TB2_KEEP/play-pkg-0381tb2s.sh"; }
 ON='BC5_DIRECT_ARGS_WB=all
@@ -202,7 +202,7 @@ printf '%s\n' 'BC5_DIRECT_ARGS_WB=first' 'BC5_DIRECT_GPU_CHECK_YZ=256:64' 'BC5_D
 expect "launcher: the file beats both, and the emulator gets what the log says" "[ \"\$rl\" = 0 ] && [ \"\$(logsw)\" = ' BC5_DIRECT_GPU_CHECK_YZ=256:64 BC5_DIRECT_ARGS_WB=first REJECTED-LINES: 3' ] && [ \"\$(gotsw '$E1')\" = ' BC5_DIRECT_GPU_CHECK_YZ=256:64 BC5_DIRECT_ARGS_WB=first' ] && [ \"\$(gotsw '$E2')\" = \"\$(gotsw '$E1')\" ] && kept '$E1'"
 rl=$(runl "$SR" $ON)
 expect "launcher: the smoke runs with all off whatever the files say" "same ' none'"
-sed '/^} > "\$LOG"$/a export BC5_DIRECT_ARGS_FLUSH=all' "$LR" > "$T/l-late"; rl=$(runl "$T/l-late")
+rm -f "$T/sw.env"; sed '/^} > "\$LOG"$/a export BC5_DIRECT_ARGS_FLUSH=all' "$LR" > "$T/l-late"; rl=$(runl "$T/l-late")
 expect "launcher: a switch set after the block: the emulator does not start, and the log says why" "[ \"\$rl\" = 1 ] && [ ! -e '$E1' ] && grep -q 'changed after the block, not started: BC5_DIRECT_ARGS_FLUSH=all' $T/rt/bc5-work/exp0381/tb2/play/play-*.log"
 r1=$X/bc5-work/exp0380r1/play-pkg-0380r1.sh
 repin() { sed -i "s/^PIN_R1_LAUNCHER=.*/PIN_R1_LAUNCHER=$(m "$r1")/" "$T/pins.env"; }
