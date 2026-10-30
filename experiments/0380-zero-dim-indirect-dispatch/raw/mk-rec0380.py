@@ -5,6 +5,7 @@
 # 2. rec0380.inc (the recorder, BC5_0380_REC=1, default off) in front of timeout_probe;
 # 3. a call after each of the two timeout_probe calls: on a timeout (with the job's age, so that only a sampler event
 #    newer than the job counts; F608), and the one-time self-test on a completed dcb.
+# 4. rec0380_before in front of the completion thread's timeout_probe call: the last 16 jobs, journaled on a timeout (F679).
 # Nothing else changes; every exp 0380 fix switch lives in the backend archive, which this build takes as shared.
 # usage: python3 mk-rec0380.py <shared bc5LleAgc.cpp> <rec0380.inc> <private bc5LleAgc.cpp>
 import sys
@@ -25,7 +26,10 @@ rep("// Experiment 0160: BC5_DIRECT_TIMEOUT_PROBE=1 — after a fence timeout, t
     rec + "// Experiment 0160: BC5_DIRECT_TIMEOUT_PROBE=1 — after a fence timeout, the buffer the GPU ran (prefix")
 old_a = ("\t\t\tif (r.timed_out && !j.ib_copy.empty()) timeout_probe(j.ib_copy.data(), static_cast<uint32_t>(j.ib_copy.size()), "
          "j.kind, j.n, &j.ran_copy, &j.ge_probe); // experiment 0160\n")
-rep(old_a, old_a +
+rep(old_a,
+    "			if (BC5_DIAG_ENV(\"BC5_0380_REC\") != nullptr) rec0380_before(j, r); // experiment 0380 (F679): the jobs in front of a timeout
+"
+    + old_a +
     "\t\t\tif (!j.ib_copy.empty() && BC5_DIAG_ENV(\"BC5_0380_REC\") != nullptr) { // experiment 0380: the flight recorder's part A\n"
     "\t\t\t\tif (r.timed_out) rec0380(j.ib_copy.data(), static_cast<uint32_t>(j.ib_copy.size()), j.kind, j.n, false, j.queued_ns != 0 ? static_cast<double>(SoftCp::now_ns() - j.queued_ns) / 1e9 : -1.0);\n"
     "\t\t\t\telse if (r.ok && rec0380_selftest_due(j.kind) && rec0380(j.ib_copy.data(), static_cast<uint32_t>(j.ib_copy.size()), j.kind, j.n, true)) g_rec0380_selftest_done = true;\n"

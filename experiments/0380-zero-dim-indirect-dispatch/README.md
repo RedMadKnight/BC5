@@ -2251,6 +2251,60 @@ writes of mine:
   - Under H it would still leave an earlier `INDEX_BASE` in the hardware. A clean run with it would change timing
     and placement, not prove H. Not built.
 
+## 31. Can an acb's state explain B? Exp 0381's F679 checked against the six events (F627; laptop extracts and source only)
+
+**The question.** F679 showed that with `BC5_DIRECT_COMPUTE_RING=-1` an acb's registers carry into the next dcb, and the
+host's tracker does not see them (`cc`, `hib` and `dcb` feed it; acbs do not). Does that explain the six B events
+(18:15, 23:36, 09:48, 12:12, 14:04, 00:52)?
+
+**Was the faulting dispatch the first in a dcb?** Yes, in all six: the first `DISPATCH_INDIRECT` of the dcb, title
+dword 1287–1289 (F601, F618). In the three events with a listing (09:48, 12:12, 14:04) it also appears to bind nothing of its own: the
+load packets in front of it decode with address 0 and count 0 (`raw/suspects/title-ib-1240-1300.txt`), so it would
+inherit its compute state, as F679's dispatch does. The 0x9f packet at 1277 is not decoded by that listing.
+
+**Did it run right after an acb?** Not known for any of the six.
+- The journal keeps a `submit #` line only for failed jobs and every 64th job, so job N-1 is not recorded.
+- The two failed pairs show an acb numbered *after* the dcb (#94500 / #94501 and #278264 / #278265). That acb was queued
+  behind the stuck job, so it did not run before it.
+- The pairing suggests the title submits dcb, acb, dcb, acb, which would put an acb in front of many dcbs. That is an
+  inference from two pairs, not a measurement.
+- The laptop extracts hold no ring contents. Whether the private devcoredumps do is unchecked.
+
+**Could an acb-set register be the carried state?** Not by the route F679 found.
+- **The difference from F679.** Its dcb draws nothing, so it gets no full-state prefix. All six B dcbs do draw and get
+  the prefix (F601). The prefix re-sets, in the same IB and in front of the fetch: `SET_BASE` 1, `INDEX_BASE`,
+  `INDEX_BUFFER_SIZE`, `NUM_INSTANCES` and every SH register the dcb tracker holds (`Tracker::emit_prefix`,
+  `full_state.cpp`). No acb can run between them and the dispatch.
+- **`SET_BASE`.** Exp 0346's header records one base-1 register for either shader type
+  (`backend/include/bc5/host_indirect.hpp:12-17`; learned from failed builds, not from a document), so a compute-type `SET_BASE` from an acb has no separate slot to
+  survive in. Mesa does emit compute-type `SET_BASE` and dispatches on the GFX queue (79590604
+  `radv_cmd_buffer.c:12313`, `si_compute.c:772`), while our prefix and the title's dispatch are graphics type. That was
+  checked for this reason, and exp 0346's result answers it. At 14:04 a host `SET_BASE` stood right before the
+  dispatch and B still came.
+- **SH registers.** At 12:12 the sampler's `COMPUTE_PGM` equals the program the timeout probe names, so nothing replaced
+  it there. A
+  register the dcb tracker never saw would still carry. But the fetch address is the base plus the packet's offset, and
+  neither is an SH register. Carried user data would change what the shader does, not the launched `COMPUTE_DIM`.
+
+**What stays open from the acb side.**
+- An acb's writes still in flight when the dcb fetches, which is explanation (ii) of F615. F578 notes the 14:04 producer
+  is a `DMA_DATA` without `CP_SYNC` in an earlier job; whether that job was an acb is unknown.
+- CP state that no prefix packet touches. None is identified. TODO(verify) which state `CLEAR_STATE` leaves alone: no
+  public source was checked for it.
+- Other processes' jobs on the same ring, which neither the host nor the recorder sees.
+
+**Verdict.** F679's mechanism does not carry over to B as found: the state it carries is re-set in front of B's fetch,
+and SH state does not feed the fetch. That is a source reading, not a measurement, and it says nothing on whether an acb
+ran first. It does not refute a link through in-flight writes.
+
+**The recorder addition (not built).** `rec0380_before` in `raw/rec0380.inc`, called from the completion thread by a
+fourth edit in `raw/mk-rec0380.py`: the last 16 jobs of that thread, and on a timeout "rec0380 before:" journal lines with
+number, kind, size, ring, GPU times and, for an acb, its last `SET_BASE` 1, `INDEX_BASE`, `COMPUTE_PGM`, `USER_DATA_0` and
+`LOAD_SH_REG_INDEX` count and table. It reads buffers the probe already copies, adds no packet, and scans acbs only (up to
+8,192 dwords). `raw/rec0380_test.cpp` gets a sixth case. Neither has been compiled: the laptop has no compiler for it.
+`raw/build0380r2.sh` and `raw/s6n0380r2.sh` make the binary and run it beside the r1 build, which stays as it is; a smoke
+run is owed before the B loop uses it. `raw/loop0380b.sh` takes `BC5_0380_S6N` and `BC5_0380_WANT` for that.
+
 ## Result
 
 - Sources read and cited (F545, F546). The title-side evidence was re-read from exps 0376/0378 (F547).
