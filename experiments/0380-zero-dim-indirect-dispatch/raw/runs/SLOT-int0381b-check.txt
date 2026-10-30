@@ -1,0 +1,16 @@
+0bfd0bfb27406c6a0838c9cbd9d0b22b  /home/kjaniszewski/bc5-work/exp0380/int0381b-check/main-backend.tar
+pins before: 58c4a627 dcbeb440 bb50b2e0 55531ab6
+== 12:07:28 main backend (tar md5 0bfd0bfb27406c6a0838c9cbd9d0b22b): Catch2 and direct-selftest
+Catch2 from /home/kjaniszewski/bc5-work/exp0323/backend-tests/_deps/catch2-src
+build rc 0; errors 0, warnings 0
+tests rc 0: All tests passed (34682 assertions in 116 test cases)
+indirect_check rc 0: All tests passed (982 assertions in 16 test cases)
+zero_skip rc 0: All tests passed (54 assertions in 5 test cases)
+draw_args rc 0: All tests passed (30 assertions in 4 test cases)
+acb_restore rc 0: All tests passed (139 assertions in 7 test cases)
+selftest-plain rc 0: direct-selftest: nothing done without --submit
+selftest-checks rc 0: direct-selftest: nothing done without --submit
+== 12:08:05 done: all passed
+OUTER RC 0
+pins after: 58c4a627 dcbeb440 bb50b2e0 55531ab6
+lock: []
