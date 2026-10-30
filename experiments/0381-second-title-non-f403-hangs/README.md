@@ -953,8 +953,8 @@ reset` blocked it, and the emulator kept running, because nothing on the box wou
   ends with the emulator. A start refuses to run without it.
 
 `test_boxcap0381.sh` passes 5 checks against a stand-in on the laptop. **The cap has not run on the box yet**, and the
-`setsid` survival of a dropped ssh is not tested. CLAUDE.md's standing advice against unattended stoppers is set aside
-here at the top session's request, for this one bounded script.
+`setsid` survival of a dropped ssh is not tested. The box rule against unattended stoppers is set aside here at the top
+session's request, for this one bounded script.
 
 **The journal.** `play-20261030-1111`'s 38 GB `direct.log` is not compressed yet: the guarded `gzip` found an emulator
 running and did nothing.
