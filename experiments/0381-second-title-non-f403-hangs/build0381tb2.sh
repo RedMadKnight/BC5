@@ -4,6 +4,8 @@
 #   + acb_restore.hpp at main d6fa368 (the final_value fix)
 #   + libC.cpp and libNpCppWebApi.cpp of exp 0383's patch (PORT-NP, PORT-LIBC), rebuilt from KytyPlus f266548 + that patch and
 #     proved by its src tree. F761's shadow prototype is not in it: it is not runtime code.
+# That is the fallback, pins0381tb2.env. With pins0381tb2r.env (PIN_MODE=rebased) the shared builds already carry main's backend
+# and the NP and libc fixes, so only bc5LleAgc.cpp and runtimeLinker.cpp are private, as in test build 1.
 # Then the private launcher tb2/play-pkg-0381tb2.sh and the smoke variant tb2/play-pkg-0381tb2s.sh.
 # Only private files are written. The shared builds, the archive, play-pkg.sh, patch 0001 and the shortcuts are only read.
 # CPU only, nice 19, no emulator. It holds the queue record: the outcome line comes from the EXIT trap, only after the lock
@@ -13,12 +15,14 @@ set -u
 export LC_ALL=C
 HERE=$(cd "$(dirname "$0")" && pwd)
 . "${TB2_PINS:-$HERE/pins0381tb2.env}"
+MODE=${PIN_MODE:-fallback}
 W=$HOME/bc5-work; E=$W/exp0381; IN=$E/in-tb2; TB=$E/tb2; R=$TB/raw; LOCK=$W/BOX-LOCK; B=$W/kytyplus-build; K=$HOME/src/KytyPlus
 ARCH=$W/backend-ubuntu/libbc5_backend.a; R1=$W/exp0380r1; BB=$E/backend-build-tb2; T=$TB/tree
 TAG='top exp 0381 | test build 2'
 m() { md5sum < "$1" | cut -c1-8; }
 pgrep '^kyty_emulator' > /dev/null && { echo "GUARD: an emulator runs"; exit 3; }
 grep -q "^$TAG" "$LOCK" 2> /dev/null || { echo "GUARD: the lock is not this build's: $(cat "$LOCK" 2> /dev/null)"; exit 4; }
+grep -q '=FILL$' "${TB2_PINS:-$HERE/pins0381tb2.env}" && { echo "these pins are not filled in: nothing done"; exit 2; }
 ok=0
 finish() {
     if [ "$ok" = 1 ]; then echo "$TAG build done: all steps passed, no GPU | $(date '+%F %T')" >> "$W/BOX-QUEUE"
@@ -37,7 +41,7 @@ P0=$(pins); echo "before: $P0"
 [ "$(m "$R1/src/libs/bc5LleAgc.cpp")" = "$PIN_R1_UNIT" ] && [ "$(m "$R1/src/loader/runtimeLinker.cpp")" = "$PIN_R1_LINKER" ] && [ "$(m "$R1/src/libs/bc5/zero_skip.hpp")" = "$PIN_R1_ZERO" ] || fail "r1's sources"
 [ "$(m "$R1/play-pkg-0380r1.sh")" = "$PIN_R1_LAUNCHER" ] || fail "r1's launcher"
 [ "$(m "$IN/backend/include/bc5/acb_restore.hpp")" = "$PIN_HEADER" ] || fail "the header is not main's"
-[ "$(md5sum < "$IN/patch0001-np.patch" | cut -d' ' -f1)" = "$PIN_PATCH" ] || fail "the patch is not exp 0383's"
+[ "$(md5sum < "$IN/patch0001-np.patch" | cut -d' ' -f1)" = "$PIN_PATCH" ] || fail "the patch is not the pinned one"
 [ -f "$R1/build0380y.py" ] || fail "no build0380y.py in $R1"
 [ -e "$TB/bin/kyty_emulator" ] && fail "$TB/bin/kyty_emulator exists"
 mkdir -p "$R" "$TB/src/libs/bc5" "$TB/src/loader" "$TB/bin" "$TB/obj" "$TB/play"
@@ -48,6 +52,12 @@ box "cd '$E' && nice -n 19 cmake -S '$IN/backend' -B '$BB' -G Ninja -DCMAKE_BUIL
 box "cd '$BB' && nice -n 19 ./bc5_backend_tests" > "$R/backend-tests.out" 2>&1 || fail "backend tests"
 grep -q 'All tests passed' "$R/backend-tests.out" || fail "no pass line from the tests"
 tail -2 "$R/backend-tests.out" | head -1
+if [ "$MODE" = rebased ]; then
+    # 2. The shared tree already is the patched tree: prove it, and take the two fixes from the shared objects.
+    [ "$(m "$K/src/libs/libC.cpp")" = "$PIN_LIBC" ] && [ "$(m "$K/src/libs/libNpCppWebApi.cpp")" = "$PIN_NP" ] || fail "the shared tree does not hold the NP and libc fixes"
+    n=$(grep -rl 'exp 0372' "$K/src" 2> /dev/null | xargs cat 2> /dev/null | grep -c 'exp 0372'); echo "exp 0372: $n lines, pad_audio_route.hpp $([ -f "$K/src/bc5/pad_audio_route.hpp" ] && echo present || echo MISSING)"
+    [ "$n" = "$PIN_0372_LINES" ] && [ -f "$K/src/bc5/pad_audio_route.hpp" ] || fail "exp 0372's pieces"
+else
 # 2. The patched tree, as exp 0383: f266548 + the patch, proved by its src tree.
 echo "== $(date +%T) tree"
 rm -rf "$T"; mkdir -p "$T"
@@ -62,17 +72,19 @@ n=$(grep -rl 'exp 0372' "$T/src" 2> /dev/null | xargs cat 2> /dev/null | grep -c
 diff -rq "$K/src" "$T/src" > "$R/tree-diff.txt" 2>&1
 { echo "Files $K/src/libs/libC.cpp and $T/src/libs/libC.cpp differ"; echo "Files $K/src/libs/libNpCppWebApi.cpp and $T/src/libs/libNpCppWebApi.cpp differ"; } > "$R/tree-diff-allowed.txt"
 cmp -s "$R/tree-diff.txt" "$R/tree-diff-allowed.txt" || fail "the shared tree differs beyond the two approved files"
-# 3. The private sources: four units.
+fi
+# 3. The private sources: four units, or two on the rebased shared build.
 cp "$R1/src/libs/bc5/zero_skip.hpp" "$IN/backend/include/bc5/acb_restore.hpp" "$TB/src/libs/bc5/" || fail copy
-cp "$R1/src/loader/runtimeLinker.cpp" "$TB/src/loader/" && cp "$T/src/libs/libC.cpp" "$T/src/libs/libNpCppWebApi.cpp" "$TB/src/libs/" || fail copy
+cp "$R1/src/loader/runtimeLinker.cpp" "$TB/src/loader/" || fail copy
+[ "$MODE" = rebased ] || cp "$T/src/libs/libC.cpp" "$T/src/libs/libNpCppWebApi.cpp" "$TB/src/libs/" || fail copy
 python3 -I "$HERE/mkpatch0381.py" "$R1/src/libs/bc5LleAgc.cpp" "$TB/src/libs/bc5LleAgc.cpp" || fail "the restore's edits did not apply"
 [ "$(m "$TB/src/libs/bc5LleAgc.cpp")" = "$PIN_UNIT" ] || fail "the unit is $(m "$TB/src/libs/bc5LleAgc.cpp"), not $PIN_UNIT"
 box "cd '$B' && ninja -t compdb -x" > "$TB/compdb.json" 2> "$R/compdb.err" || fail compdb
 BIN=$TB/bin/kyty_emulator
-echo "== $(date +%T) compile four units, link"
-distrobox enter ubuntu -- python3 -I "$R1/build0380y.py" "$TB/compdb.json" "$B" "$TB/obj" "$BIN" \
-    "libs/bc5LleAgc.cpp.o=$TB/src/libs/bc5LleAgc.cpp=$K/src/libs" "loader/runtimeLinker.cpp.o=$TB/src/loader/runtimeLinker.cpp=$K/src/loader" \
-    "libs/libC.cpp.o=$TB/src/libs/libC.cpp=$T/src/libs" "libs/libNpCppWebApi.cpp.o=$TB/src/libs/libNpCppWebApi.cpp=$T/src/libs" < /dev/null > "$R/build.out" 2>&1 || { grep -n "error:\|undefined\|COMPILE FAILED" "$R/build.out" | head -20; fail build; }
+echo "== $(date +%T) compile, link ($MODE)"
+UNITS=("libs/bc5LleAgc.cpp.o=$TB/src/libs/bc5LleAgc.cpp=$K/src/libs" "loader/runtimeLinker.cpp.o=$TB/src/loader/runtimeLinker.cpp=$K/src/loader")
+[ "$MODE" = rebased ] || UNITS+=("libs/libC.cpp.o=$TB/src/libs/libC.cpp=$T/src/libs" "libs/libNpCppWebApi.cpp.o=$TB/src/libs/libNpCppWebApi.cpp=$T/src/libs")
+distrobox enter ubuntu -- python3 -I "$R1/build0380y.py" "$TB/compdb.json" "$B" "$TB/obj" "$BIN" "${UNITS[@]}" < /dev/null > "$R/build.out" 2>&1 || { grep -n "error:\|undefined\|COMPILE FAILED" "$R/build.out" | head -20; fail build; }
 [ -x "$BIN" ] || fail "no binary"
 # The shared flags colour the compiler's lines: strip the codes before counting (exp 0383's lesson).
 sed 's/\x1b\[[0-9;]*m//g' "$R/build.out" > "$R/build-plain.out"

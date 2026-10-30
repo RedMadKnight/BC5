@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # BC5 exp 0381: test build 2 from the laptop. Each step runs only if the one before passed, and this script writes no outcome
 # line: the box scripts do, after their guards. On a box slot and the maintainer's go, after Codex's review.
-#   tb2run0381.sh build <out-dir>       the tree goes across, then guard, claim, build
+#   tb2run0381.sh build <out-dir> [pins file]   the tree goes across, then guard, claim, build; default pins0381tb2.env (the
+#                                               fallback), pins0381tb2r.env on the rebuilt shared base, with TB2_MAIN and TB2_NP set
 #   tb2run0381.sh smoke <tag> <out-dir> the kernel stream, the smoke; the cap stops it at 125 s, the laptop's backstop at 140 s
 # PC_REMOTE: runs a shell line on the box (default: ssh bc250); the dry run sets a stand-in.
 set -u
@@ -12,12 +13,13 @@ PATCHFILE=backend/kytyplus-patches/0001-bc5-lle-agc.patch
 BSSH="timeout 20 ssh -o ConnectTimeout=10 bc250"
 case "${1:-}" in
 build)
-    OUT=$2
+    OUT=$2; PINS=${3:-pins0381tb2.env}
     X=$(mktemp -d); trap 'rm -rf "$X"' EXIT
     git -C "$TOP" -c core.autocrlf=false archive "$BASE" backend | tar -xf - -C "$X" || { echo "no such tree: nothing run"; exit 3; }
     git -C "$TOP" -c core.autocrlf=false archive HEAD "$E" | tar -xf - -C "$X" || { echo "no scripts: nothing run"; exit 3; }
     git -C "$TOP" show "$NP:$PATCHFILE" > "$X/patch0001-np.patch" || { echo "no patch: nothing run"; exit 3; }
-    [ -f "$X/$E/build0381tb2.sh" ] && [ -f "$X/$E/boxcap0381.sh" ] && [ -f "$X/$E/mkpatch0381.py" ] && [ -f "$X/$E/pins0381tb2.env" ] || { echo "the scripts are not in this commit: nothing run"; exit 3; }
+    [ -f "$X/$E/build0381tb2.sh" ] && [ -f "$X/$E/boxcap0381.sh" ] && [ -f "$X/$E/mkpatch0381.py" ] && [ -f "$X/$E/$PINS" ] || { echo "the scripts are not in this commit: nothing run"; exit 3; }
+    if [ -z "${TB2_PINS_ABS:-}" ] && grep -q '=FILL$' "$X/$E/$PINS"; then echo "$PINS is not filled in: nothing run"; exit 3; fi
     echo "main $(git -C "$TOP" rev-parse "$BASE"), backend $(git -C "$TOP" rev-parse "$BASE:backend"), np $(git -C "$TOP" rev-parse "$NP"), patch $(md5sum < "$X/patch0001-np.patch" | cut -d' ' -f1), scripts $(git -C "$TOP" rev-parse HEAD)"
     CLAIM='W=$HOME/bc5-work; T="top exp 0381 | test build 2"
 guard() { pgrep "^kyty_emulator" > /dev/null && { echo "GUARD: an emulator runs; lock: $(cat $W/BOX-LOCK)"; exit 3; }; [ -s $W/BOX-LOCK ] && { echo "GUARD: lock: $(cat $W/BOX-LOCK)"; exit 4; }; return 0; }
@@ -31,7 +33,7 @@ echo claimed'
     tar -cf - -C "$X" backend experiments patch0001-np.patch | $REMOTE "$CLAIM"
     rcs=("${PIPESTATUS[@]}")
     [ "${rcs[0]}" = 0 ] && [ "${rcs[1]}" = 0 ] || { echo "not claimed: nothing run, nothing recorded"; exit 3; }
-    timeout ${PC_TIMEOUT:-900} $REMOTE "bash \$HOME/bc5-work/exp0381/in-tb2/$E/build0381tb2.sh"
+    timeout ${PC_TIMEOUT:-900} $REMOTE "TB2_PINS=${TB2_PINS_ABS:-\$HOME/bc5-work/exp0381/in-tb2/$E/$PINS} bash \$HOME/bc5-work/exp0381/in-tb2/$E/build0381tb2.sh"
     rc=$?
     echo "build rc $rc"
     exit $rc

@@ -79,9 +79,8 @@ PINS
 }
 # The real driver, with one change: the fake patch goes over in place of the real one, and the box scripts see the test's pins.
 run() {
-    sed -e 's#git -C "$TOP" show "$NP:$PATCHFILE" > "$X/patch0001-np.patch"#cp "$STAND/fake.patch" "$X/patch0001-np.patch"#' \
-        -e "s#timeout \${PC_TIMEOUT:-900} \$REMOTE \"bash#timeout \${PC_TIMEOUT:-900} \$REMOTE \"TB2_PINS=$T/pins.env bash#" "$HERE/tb2run0381.sh" > "$HERE/.tb2run-test.sh"
-    (cd "$HERE" && HERE_OVERRIDE=1 bash .tb2run-test.sh build "$T") > "$T/out" 2>&1
+    sed -e 's#git -C "$TOP" show "$NP:$PATCHFILE" > "$X/patch0001-np.patch"#cp "$STAND/fake.patch" "$X/patch0001-np.patch"#' "$HERE/tb2run0381.sh" > "$HERE/.tb2run-test.sh"
+    (cd "$HERE" && TB2_PINS_ABS=$T/pins.env bash .tb2run-test.sh build "$T") > "$T/out" 2>&1
     r=$?
     rm -f "$HERE/.tb2run-test.sh"
     echo $r
@@ -117,5 +116,18 @@ setup; echo x > "$T/pins.tmp"; sed -i 's/^PIN_0372_LINES=.*/PIN_0372_LINES=9/' "
 expect "exp 0372's pieces are not all there: FAILED" "[ $r != 0 ] && q | grep -q 'build FAILED' && grep -q 'exp 0372' '$T/out'"
 setup; mkdir -p "$X/bc5-work/exp0381/tb2/bin"; echo x > "$X/bc5-work/exp0381/tb2/bin/kyty_emulator"; r=$(run)
 expect "an existing binary is not overwritten" "[ $r != 0 ] && [ \"\$(cat '$X/bc5-work/exp0381/tb2/bin/kyty_emulator')\" = x ]"
+# The rebased mode: the shared tree holds the fixes, and only two units are compiled.
+rebased() {
+    setup
+    K=$X/src/KytyPlus
+    echo two > "$K/src/libs/libC.cpp"; echo two > "$K/src/libs/libNpCppWebApi.cpp"
+    { echo "PIN_MODE=rebased"; echo "PIN_LIBC=$(m "$K/src/libs/libC.cpp")"; echo "PIN_NP=$(m "$K/src/libs/libNpCppWebApi.cpp")"; } >> "$T/pins.env"
+}
+rebased; r=$(run)
+expect "rebased: done, with no patched tree and two units" "[ $r = 0 ] && q | grep -q 'build done' && [ ! -e '$X/bc5-work/exp0381/tb2/tree' ] && [ ! -e '$X/bc5-work/exp0381/tb2/src/libs/libC.cpp' ]"
+rebased; echo three > "$X/src/KytyPlus/src/libs/libC.cpp"; r=$(run)
+expect "rebased: the shared tree lacks the fix: FAILED" "[ $r != 0 ] && q | grep -q 'build FAILED' && grep -q 'does not hold the NP and libc' '$T/out'"
+rebased; sed -i 's/^PIN_LIBC=.*/PIN_LIBC=FILL/' "$T/pins.env"; r=$(run)
+expect "rebased: unfilled pins: stops, no outcome line beyond the claim's" "[ $r != 0 ] && ! q | grep -q 'build done' && grep -q 'not filled in' '$T/out'"
 export HOME=$REAL_HOME
 exit $fail
