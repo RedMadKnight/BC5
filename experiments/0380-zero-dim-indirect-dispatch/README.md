@@ -1905,6 +1905,12 @@ Sources:
   function. Codex checked the same pattern against Mesa ab2374a (REVIEW-05).
 - Linux master 9c7e3d59: `drivers/gpu/drm/amd/amdgpu/gfx_v10_0.c`, `nvd.h`.
 - No AMD PM4 document was reachable. Everything below is what the drivers assume, not a hardware specification.
+- Added from Codex review REVIEW-06, using AMD PAL c5e80007:
+  - PAL defines `LOAD_SH_REG_INDEX` as a PFP packet.
+  - It has both a PFP and an ME form of the GFX `DISPATCH_INDIRECT`, and `BuildDispatchIndirectGfx` builds the ME
+    one.
+  - So the two engines have different command views. That says nothing about which physical data path or cache each
+    one uses. No hardware fault should be derived from the packet type names.
 
 **What the public drivers say (F614).**
 - **The PFP reads the indirect arguments, and through GL2 since GFX9.**
@@ -2022,6 +2028,13 @@ explain if it worked:
   ladder, which ran them always and without the guard. The GFX `--zero-check` table had none. Now the ladder runs
   them only with `--zero-check` and the guard on, and the GFX table has them. Until a `--zero-check --submit` run,
   the selftest is no evidence for the zero guard.
+- The selftest's routing fix (`bc5/selftest_route.hpp`, in the int branch since 6fd0066) was checked on the CPU by
+  Codex review REVIEW-06, with the exact option parser plus the route header:
+  - nothing runs without `--submit`;
+  - the MEC ladder runs for `--compute-ring` with `--zero-check` in either order;
+  - the GFX check runs for `--zero-check` alone.
+
+  The CLI-routing finding is cleared. The full libdrm build is still owed.
 
 ## 29. The morning decision sheet (2026-10-30; nothing below has run)
 
