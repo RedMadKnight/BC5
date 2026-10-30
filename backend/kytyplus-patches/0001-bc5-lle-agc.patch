@@ -42655,7 +42655,7 @@ index 312870a..748f6b0 100644
  
  	const void* pcm_data = nullptr;
 diff --git a/src/libs/libC.cpp b/src/libs/libC.cpp
-index 43f62dd..3c2d250 100644
+index 43f62dd..2501929 100644
 --- a/src/libs/libC.cpp
 +++ b/src/libs/libC.cpp
 @@ -27,6 +27,10 @@
@@ -42757,7 +42757,7 @@ index 43f62dd..3c2d250 100644
  }
  
  } // namespace LibcInternalExt
-@@ -845,6 +907,8 @@ LIB_DEFINE(InitLibcInternal_1) {
+@@ -845,15 +907,18 @@ LIB_DEFINE(InitLibcInternal_1) {
  	LIB_OBJECT("2sWzhYqFH4E", stdout);
  
  	LIB_FUNC("GMpvxPFW924", LibcInternal::vprintf);
@@ -42766,6 +42766,19 @@ index 43f62dd..3c2d250 100644
  	LIB_FUNC("MUjC4lbHrK4", LibcInternal::fflush);
  	LIB_FUNC("8zTFvBIAIN8", LibcInternal::memset);
  	LIB_FUNC("Q3VBxCXhUHs", LibcInternal::memcpy);
+ 	LIB_FUNC("+P6FRGH4LfA", LibcInternal::memmove);
+ 	LIB_FUNC("DfivPArhucg", LibcInternal::memcmp);
+-	LIB_FUNC("aesyjrHVWy4", LibcInternal::strcmp);
+-	LIB_FUNC("Ovb2dSJOAuE", LibcInternal::strncmp);
++	// NIDs after KytyPS5 8c01d8e (GPL-2.0-only). strcpy_s (5Xa2ACNECdo) takes a size and stays unregistered: no wrapper here.
++	LIB_FUNC("Ovb2dSJOAuE", LibcInternal::strcmp);
++	LIB_FUNC("aesyjrHVWy4", LibcInternal::strncmp);
+ 	LIB_FUNC("j4ViWNHEgww", LibcInternal::strlen);
+-	LIB_FUNC("5Xa2ACNECdo", LibcInternal::strcpy);
++	LIB_FUNC("kiZSXIWd9vg", LibcInternal::strcpy);
+ 	LIB_FUNC("6sJWiWSRuqk", LibcInternal::strncpy);
+ 	LIB_FUNC("Ls4tzzhimqQ", LibcInternal::strcat);
+ 	LIB_FUNC("ob5xAW4ln-0", LibcInternal::strchr);
 diff --git a/src/libs/libGraphicsDriver.cpp b/src/libs/libGraphicsDriver.cpp
 index b67cfd5..0531e49 100644
 --- a/src/libs/libGraphicsDriver.cpp
