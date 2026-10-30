@@ -43,7 +43,7 @@ python test_runner_port.py
 | mutants of the fix | | 7 of 7 caught |
 | `LibcNidTests` on the real `SymbolDatabase` | 13 checks fail, rc 1 | **all pass, rc 0** |
 | `check_nids.py`, independent of the C++ | rc 1, the 4 NIDs wrong | rc 0 |
-| `test_runner_port.py`, the runner on synthetic cases | | 33 of 33 as expected, rc 0 (`raw/runner-tests.txt`) |
+| `test_runner_port.py`, the runner on synthetic cases | | 35 of 35 as expected, rc 0 (`raw/runner-tests.txt`) |
 
 - Both vectors' use-after-free, a code reading in the review, is shown here by test with a forced move.
 - On a tree built only from `f266548` + the final patch, the results are the same, with 0 compiler warnings.
@@ -51,6 +51,13 @@ python test_runner_port.py
 - Each commit reverts alone (tested in a throwaway clone), and the patch applies after either revert.
 - `strcpy_s` stays unregistered: the host has no wrapper with its size and error contract, so an import of it is stubbed
   and logged. A real wrapper is a separate request.
+
+**First box run (2026-10-30 14:44–14:45, Codex's GO, the maintainer's yes).** It stopped with rc 1 at the shared-tree step, before
+any compile (`raw/box1-boxcheck.txt`). Passed first: the archive's hashes, the patch, the shared binary, both baseline units,
+`git apply`, the `src` tree pin and exp 0372's pieces. The box's locale is pl_PL, so `diff -rq` printed "Pliki ... różnią się"
+where the script compared with English. The output named the two approved files and nothing else, so the stop was the
+runner's, not the tree's. Nothing shared changed, and the shared binary's md5 was the pin afterwards. The script and the
+build step now run in the C locale, and a Polish stand-in `diff` reproduces the stop on the old script and passes on the new.
 
 **Not shown.** The Linux compile with the shared flags, the host link, the path through `InitAll` and `InitLibC_1`, and the
 Linux run. Nothing shows a title calling these paths, and nothing here links to F443, F403 or Q21.

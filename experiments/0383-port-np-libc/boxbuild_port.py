@@ -70,11 +70,12 @@ def warnings_of(output):
 class RealExec:
     def __init__(self, build):
         self.build = build
+        self.base_env = dict(os.environ, LC_ALL="C", LANGUAGE="C")  # warnings_of() reads the compiler's English
 
     def run(self, argv, env=None):
         """Merged stdout and stderr, echoed to the log."""
         print("+", " ".join(argv)[:220], "...", flush=True)
-        r = subprocess.run(["nice", "-n", "19"] + argv, cwd=self.build, env=env, stdout=subprocess.PIPE,
+        r = subprocess.run(["nice", "-n", "19"] + argv, cwd=self.build, env=env or self.base_env, stdout=subprocess.PIPE,
                            stderr=subprocess.STDOUT, text=True, errors="replace")
         print(r.stdout, end="", flush=True)
         return r.returncode, r.stdout
@@ -224,7 +225,7 @@ def main(args, ex):
         print("== np_alias_tests NO LINK", flush=True)
         failures.append("np_alias_tests did not build")
     else:
-        env = dict(os.environ, ASAN_OPTIONS="detect_leaks=0:detect_odr_violation=0")  # the tracker counts leaks
+        env = dict(os.environ, LC_ALL="C", LANGUAGE="C", ASAN_OPTIONS="detect_leaks=0:detect_odr_violation=0")  # the tracker counts leaks
         rc, listing = ex.listing(binary, env)
         error = f"the listing's rc is {rc}" if rc != 0 else listing_error(manifest, listing)
         if error is not None:

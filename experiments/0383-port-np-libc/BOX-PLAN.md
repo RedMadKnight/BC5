@@ -1,12 +1,13 @@
-# 0383: the Linux check of PORT-NP and PORT-LIBC (not run)
+# 0383: the Linux check of PORT-NP and PORT-LIBC
 
 The laptop cannot compile the full `libC.cpp`, link the host or run on Linux. This is the CPU-only plan for that. It needs
 its own slot from the top session and Codex's decision on the current commit and archive; the B loop's GO does not cover
-it. It has not been run. The runner was hardened after Codex's review `REVIEW-PORTS-01`, and `test_runner_port.py` tests it
-on the laptop.
+it. The runner was hardened after Codex's review `REVIEW-PORTS-01`, and `test_runner_port.py` tests it on the laptop.
+The first run stopped early on the box's locale and compiled nothing (README, `raw/box1-boxcheck.txt`), so the check itself
+has not been done. It kept `~/bc5-work/exp0383/tree` and `raw/`; the next run works in `~/bc5-work/exp0383/run2/`.
 
 **What runs.** `boxcheck_port.sh`, from the unpacked archive, on the box, about 15 minutes at nice 19. No emulator, no
-GPU, no root, no `drop_caches`. It writes only under `~/bc5-work/exp0383/` and its own BOX-LOCK line, which it clears.
+GPU, no root, no `drop_caches`. It writes only under `~/bc5-work/exp0383/run2/` and its own BOX-LOCK line, which it clears. It runs in the C locale.
 
 **Pins.** `pins.env` holds them, and no variable overrides them: a new pin is a new commit and a new review.
 
@@ -20,7 +21,7 @@ GPU, no root, no `drop_caches`. It writes only under `~/bc5-work/exp0383/` and i
 
 | step | what | stops if |
 |---|---|---|
-| guards | no emulator running, empty lock, the patch, the shared binary and both baseline units at their pins, `~/bc5-work/exp0383/tree` absent | any fails |
+| guards | no emulator running, empty lock, the patch, the shared binary and both baseline units at their pins, `~/bc5-work/exp0383/run2/tree` absent | any fails |
 | tree | `git archive f266548` of `~/src/KytyPlus`, then `git apply --check` and `git apply` of the branch's patch | the apply fails, or the `src` tree is not the pin |
 | exp 0372 | `grep -c 'exp 0372'` is 5 and `src/bc5/pad_audio_route.hpp` is there | either is not |
 | shared tree | `diff -rq` of `~/src/KytyPlus/src` against the patched tree, because the other objects come from there | its output is anything but the two approved files, both differing; the rest is printed |
@@ -38,12 +39,13 @@ binary's md5 before and after.
 `== PASS: ... np_alias_tests 30/30 ...` with 0 new warnings, and the shared binary unchanged. Anything else is a failure:
 rc 5 the shared binary changed, rc 6 the build step failed, rc 7 rc 0 without the final line, rc 1 a stop.
 
-**Synthetic tests (laptop).** `python test_runner_port.py` needs no SSH, compiler or box, and its rc 0 means all 33 checks
+**Synthetic tests (laptop).** `python test_runner_port.py` needs no SSH, compiler or box, and its rc 0 means all 35 checks
 came out as expected (`raw/runner-tests.txt`). Part A runs `boxbuild_port.py`'s real `main()` with a stand-in executor; part B
-runs the real `boxcheck_port.sh` in a temporary HOME with stand-in tools, its own pins and a stub build step. So the real
+runs the real `boxcheck_port.sh` in a temporary HOME with stand-in tools, a `diff` that speaks Polish outside the C locale as
+the box's does, its own pins and a stub build step. So the real
 compile, link and test runs are exactly what they do not cover.
 
-**If it fails.** Stop, keep `~/bc5-work/exp0383/`, and report. No retry and no change to a pin. A failure of `LibcNidTests` at
+**If it fails.** Stop, keep `~/bc5-work/exp0383/run2/`, and report. No retry and no change to a pin. A failure of `LibcNidTests` at
 `InitAll` with a crash or an EXIT before its final line may be a side effect of running `InitAll` outside the emulator, not a
 wrong table; that would be reported with the log, and the test changed only by a new commit and a new review. A stop at the
 shared tree or at the baseline pins would mean `~/src/KytyPlus` is not `f266548` + main's patch; it gets reported, not

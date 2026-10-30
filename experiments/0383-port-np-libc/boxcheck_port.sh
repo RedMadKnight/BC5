@@ -8,7 +8,9 @@
 # A pass is the last line "boxcheck: PASS" and exit 0, and nothing else is.
 # usage: boxcheck_port.sh   from the unpacked archive; ~15 min
 set -u
-E=$HOME/bc5-work/exp0383; R=$E/raw; T=$E/tree; LOCK=$HOME/bc5-work/BOX-LOCK
+# The box's locale is pl_PL: diff's and the tools' words below are compared as text (the first run stopped on "Pliki").
+export LC_ALL=C LANGUAGE=C
+E=$HOME/bc5-work/exp0383/run2; R=$E/raw; T=$E/tree; LOCK=$HOME/bc5-work/BOX-LOCK
 B=$HOME/bc5-work/kytyplus-build; K=$HOME/src/KytyPlus
 HERE=$(cd "$(dirname "$0")" && pwd); ROOT=$(cd "$HERE/../.." && pwd)
 PATCH=$ROOT/backend/kytyplus-patches/0001-bc5-lle-agc.patch
@@ -57,7 +59,7 @@ mkdir -p "$E/tests"; cp "$HERE/NpAliasTests.cpp" "$HERE/LibcNidTests.cpp" "$HERE
 distrobox enter ubuntu -- sh -c 'clang++ --version | head -1; g++ --version | head -1; uname -r' > "$R/toolchain.txt" 2>&1
 
 echo "== $(date +%T) compile, link, tests"
-distrobox enter ubuntu -- python3 -I "$HERE/boxbuild_port.py" "$E/compdb.json" "$T" "$E" "$B" "$E/tests" "$K" > "$R/build.out" 2>&1
+distrobox enter ubuntu -- env LC_ALL=C LANGUAGE=C python3 -I "$HERE/boxbuild_port.py" "$E/compdb.json" "$T" "$E" "$B" "$E/tests" "$K" > "$R/build.out" 2>&1
 rc=$?; echo "== $(date +%T) rc $rc"
 grep -an "error:\|FAILED\|FAIL\|== " "$R/build.out" | tail -50
 [ -s "$E/warnings.txt" ] && cp "$E/warnings.txt" "$R/warnings.txt"

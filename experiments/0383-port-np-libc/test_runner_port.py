@@ -118,6 +118,7 @@ def posix(path):
 
 STUB_PASS = 'print("compiled"); print("== PASS: 0328 and libc final lines seen, np_alias_tests 30/30 ASan, new warnings 0 of 2")\n'
 STUB_CUT = 'print("compiled"); print("== np_alias_tests ASan: 12/30 cases pass")\n'
+STUB_LOCALE = 'import os, sys; print("== PASS: 0328 and libc final lines seen, np_alias_tests 30/30 ASan, new warnings 0 of 2"); sys.exit(0 if os.environ.get("LC_ALL") == "C" else 9)\n'
 STUB_FAIL = 'import sys; print("== FAIL: libc"); sys.exit(1)\n'
 STUB_TOUCH = 'import sys; open(sys.argv[4] + "/src/kyty_emulator", "a").write("x"); ' + STUB_PASS
 
@@ -139,11 +140,16 @@ def part_b(tmp):
             "clang++": "echo clang stand-in\n",
             "g++": "echo g++ stand-in\n",
             "python3": 'shift; exec python "$@"\n',
+            # as on the box (pl_PL): diff's words follow the locale, and the shim keeps diff's real rc
+            "diff": 'out=$(/usr/bin/diff "$@"); rc=$?\n'
+                    'if [ "${LC_ALL:-}" = C ]; then printf "%s\\n" "$out"; else printf "%s\\n" "$out" | sed -e "s/^Files /Pliki /" -e "s/ and / i /" -e "s/ differ$/ roznia sie/"; fi\n'
+                    'exit $rc\n',
         }.items():
             (shim / tool).write_bytes(("#!/bin/sh\n" + body).encode())
-        env = {k: v for k, v in os.environ.items() if k not in ("HOME",)}
+        env = {k: v for k, v in os.environ.items() if k not in ("HOME", "LC_ALL", "LANGUAGE")}
+        env["LANG"] = "pl_PL.UTF-8"
         env["HOME"] = posix(home)
-        env["PATH"] = posix(shim) + ":/usr/bin:/mingw64/bin:" + os.environ["PATH"]
+        env["SHIM_DIR"] = posix(shim)  # put first by the shell itself: Git Bash rewrites a PATH it inherits
         env["GIT_CONFIG_NOSYSTEM"] = "1"
         kyty = home / "src" / "KytyPlus"
         (kyty / "src" / "libs").mkdir(parents=True)
@@ -153,7 +159,7 @@ def part_b(tmp):
             (kyty / rel).write_bytes(text.encode())
         script = ("git init -q; git config core.autocrlf false; git config core.filemode false; git config user.name x; "
                   "git config user.email x@x; git add -A; git commit -qm base; git tag f266548")
-        assert sh(script, kyty, env).returncode == 0
+        assert sh('export PATH="$SHIM_DIR:$PATH"; ' + script, kyty, env).returncode == 0
         # the shared tree: the tag plus "patch 0001" with exp 0372's piece; the fixed tree: that and the two fixes
         (kyty / "src" / "bc5" / "pad_audio_route.hpp").write_bytes(b"route\n")
         fixed = root / "fixed"
@@ -185,18 +191,21 @@ def part_b(tmp):
         return root, home, exp, env, kyty, shared, patch
 
     def case(name, expected, change=None, stub=STUB_PASS, extra_env=None, want=None):
-        root, home, exp, env, kyty, shared, patch = world(name.replace(" ", "-").replace(",", "").replace(":", ""))
+        root, home, exp, env, kyty, shared, patch = world("".join(c if c.isalnum() else "-" for c in name))
         (exp / "boxbuild_port.py").write_text(stub, encoding="utf-8")
         if change:
             change(kyty=kyty, shared=shared, patch=patch, home=home)
         env.update(extra_env or {})
-        r = sh("bash ./boxcheck_port.sh", exp, env)
+        r = sh('export PATH="$SHIM_DIR:$PATH"; type diff; bash ./boxcheck_port.sh', exp, env)
         out = r.stdout.strip().splitlines()
         last = out[-1] if out else ""
         lock = home / "bc5-work" / "BOX-LOCK"
         lock_left = lock.exists() and lock.read_text().strip() != "" and "MAINTAINER" not in lock.read_text()
         expected_tail = (expected == "pass") == (last == "boxcheck: PASS")
         record("B", name, expected, r.returncode, last[:70])
+        if "shim/diff" not in r.stdout.splitlines()[0]:
+            rows.append(False)
+            print("  WRONG: the stand-in diff is not the one in use: " + r.stdout.splitlines()[0])
         if not expected_tail or lock_left or (want and want not in r.stdout):
             rows.append(False)
             print(f"  WRONG: last line, lock left {lock_left}, or no {want!r}\n  " + "\n  ".join(out[-12:]))
@@ -223,7 +232,9 @@ def part_b(tmp):
         (k["home"] / "bc5-work" / "BOX-LOCK").write_text("MAINTAINER PLAYING\n")
 
     case("correct result", "pass")
+    case("correct result, the caller's LC_ALL is pl_PL", "pass", extra_env={"LC_ALL": "pl_PL.UTF-8"})
     case("shared hash changed before", "fail", shared_changed, want="stop")
+    case("the build step gets LC_ALL=C", "pass", stub=STUB_LOCALE)
     case("shared hash changed during the run", "fail", stub=STUB_TOUCH, want="the shared binary changed")
     case("env cannot move the shared pin", "fail", shared_changed, extra_env={"EXPECT_NORMAL": "x", "PIN_SHARED_MD5": "x"})
     case("foreign source diff", "fail", foreign, want="beyond the two approved")
