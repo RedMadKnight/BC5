@@ -720,3 +720,22 @@ The run had the top session's GO. G3 was e1cc0c92 with the zero skip OFF, RT on,
 - The gate was never reached, and G4 (skip on) was not run.
 - The walk route is untested: no walk input was ever sent.
 - The skip played no part, since it was off.
+
+### G3b, the G3 repeat (2026-10-30 00:56–01:17): passed, but the walk did not stream; G4b not run
+
+This run was the top session's second GO, on the same pins, scripts and arm as G3: e1cc0c92 with the skip off, RT on,
+the walk route, and drop_caches logged before the run.
+- **Clean pass.** It ran 39.2 flips/s against G1's 37.6, with 0 crash, TIMEOUT or amdgpu lines and 0 devcoredumps. The
+  live saves were unchanged. One kernel line not from the GPU: 00:58:56 "clocksource: Watchdog remote CPU 2 read
+  timed out".
+- **The gate failed.** From minute 4 to minute 20, mount reads were 0–33 MiB a minute and PSI mem/io "full" was about
+  0. GTT was flat at 12,005 MiB from minute 3 (the direct client 11,689, RADV 117). That is G1's standing picture
+  (`gtt/raw/G3b-mem.txt`).
+- **The input script ran to its end.** `in-G3b.cmd.done` reads 144, written at 01:16, for the script's 147 non-wait
+  commands. So the stick inputs were sent. Whether the character moved is not recorded: no screenshot was taken, and
+  viewing one needs the maintainer's leave. The higher frame rate suggests the view changed.
+- **Not checked** (any of these fits): the S6N spot is enclosed; the forward stick does not move the character there
+  (a menu, a cutscene or another control state); or walking there loads nothing new.
+- **This walk does not reach the plays' pressure.** A streaming bench needs a route checked by eye first (a few
+  screenshots across the walk), or another start point.
+- G3's hang (F633) did not recur on the same start in G3b.
