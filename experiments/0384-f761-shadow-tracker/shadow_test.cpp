@@ -31,6 +31,12 @@ Buf cond(std::uint32_t dwords) { return {0xC0032200u, 0x2000, 0, 0, dwords}; }
 Buf pairs_table(std::uint64_t a, std::uint32_t n) {
     return {0xC0036300u, static_cast<std::uint32_t>(a), static_cast<std::uint32_t>(a >> 32), 0x80000000u, n};
 }
+Buf flat_table(std::uint64_t a, std::uint32_t off, std::uint32_t n) {
+    return {0xC0036300u, static_cast<std::uint32_t>(a), static_cast<std::uint32_t>(a >> 32), off, n};
+}
+Buf load_range(std::uint64_t base, std::uint32_t off, std::uint32_t n) {
+    return {0xC0035F00u, static_cast<std::uint32_t>(base), static_cast<std::uint32_t>(base >> 32), off, n};
+}
 Buf cat(std::initializer_list<Buf> parts) {
     Buf out;
     for (const auto &p : parts) out.insert(out.end(), p.begin(), p.end());
@@ -66,7 +72,7 @@ int verdict(const Stream &s, const Memory &m, const shadow::ShadowState &st) {
     return 0;
 }
 
-constexpr std::uint64_t kA[] = {0x1000, 0x2000, 0x3000}, kTable = 0x4000, kGone = 0x9000;
+constexpr std::uint64_t kA[] = {0x1000, 0x2000, 0x3000}, kTable = 0x4000, kFlat = 0x5000, kRange = 0x7000, kGone = 0x9000;
 
 Buf gen_buffer(std::mt19937 &g, const Memory &m, int max_packets) {
     const auto pick = [&g](std::uint32_t n) { return static_cast<std::uint32_t>(g() % n); };
@@ -80,9 +86,21 @@ Buf gen_buffer(std::mt19937 &g, const Memory &m, int max_packets) {
         } else if (x < 65) {
             const Buf p = cond(1 + pick(9));
             b.insert(b.end(), p.begin(), p.end());
-        } else if (x < 72) {
+        } else if (x < 68) {
             const Buf p = pairs_table(pick(4) == 0 ? kGone : kTable, 2);
             b.insert(b.end(), p.begin(), p.end());
+        } else if (x < 71) {
+            const Buf p = flat_table(pick(4) == 0 ? kGone : kFlat, kReg0, 2);
+            b.insert(b.end(), p.begin(), p.end());
+        } else if (x < 74) {
+            const Buf p = load_range(pick(4) == 0 ? kGone : kRange, kReg0 + 1, 2);
+            b.insert(b.end(), p.begin(), p.end());
+        } else if (x < 79) { // short forms of known packets
+            static const std::uint32_t heads[] = {0xC0007600u, 0xC0003F00u, 0xC0013F00u, 0xC0002200u, 0xC0005F00u, 0xC0016300u};
+            const std::uint32_t h = heads[pick(6)];
+            const std::uint32_t body = ((h >> 16) & 0x3fffu) + 1;
+            b.push_back(h);
+            for (std::uint32_t q = 0; q < body; ++q) b.push_back(pick(3));
         } else {
             const std::uint64_t a = pick(5) == 0 ? kGone : kA[pick(3)];
             const auto it = m.find(a);
@@ -99,6 +117,8 @@ struct Case {
 Case gen_case(std::mt19937 &g) {
     Case c;
     c.m[kTable] = {kReg0 + 1, 2, kReg0, 1};
+    c.m[kFlat] = {2, 1};
+    c.m[kRange + (kReg0 + 1) * 4ull] = {1, 2};
     // Sizes first, so that buffers can point at each other with the right size.
     for (const auto a : kA) c.m[a] = {0xC0001000u, 0};
     for (const auto a : kA) {
@@ -212,6 +232,127 @@ TEST_CASE("counts past a buffer's end: the oracle's two findings, kept as regres
         std::uint32_t v = 0;
         CHECK(state_of(st, kReg0, v) == State::Uncertain);
         CHECK(verdict(s, m, st) == 0);
+    }
+}
+
+TEST_CASE("Codex's table counterexample: no cap, at the boundaries, in every form", "[shadow][tables]") {
+    using shadow::State;
+    constexpr std::uint32_t kHigh = 0x1100; // past 4,096 entries from offset 0x100
+    const auto value = [](const shadow::ShadowState &st, std::uint32_t reg, State want, std::uint32_t v) {
+        std::uint32_t got = 0;
+        CHECK(st.get(full_state::Sh, reg, got) == want);
+        if (want == State::Certain) CHECK(got == v);
+    };
+    shadow::ShadowState::Options capped;
+    capped.table_cap = true;
+    SECTION("pairs: the last entry writes the seeded register, n 4095, 4096, 4097") {
+        for (const std::uint32_t n : {4095u, 4096u, 4097u}) {
+            Memory m;
+            Buf t;
+            for (std::uint32_t k = 0; k + 1 < n; ++k) {
+                t.push_back(kReg0 + 1);
+                t.push_back(7);
+            }
+            t.push_back(kReg0);
+            t.push_back(0x22);
+            m[kTable] = t;
+            const Stream s = {cat({ud0(0x11), pairs_table(kTable, n)})};
+            const auto st = walk(s, m);
+            value(st, kReg0, State::Certain, 0x22);
+            CHECK(verdict(s, m, st) == 0);
+            // The cap as Codex's probe met it: a reader that allows a shorter read of the same table.
+            const full_state::Tracker::Reader prefix = [&m](std::uint64_t a, std::uint64_t bytes) -> const std::uint32_t * {
+                const auto it = m.find(a);
+                return it != m.end() && bytes <= it->second.size() * 4 ? it->second.data() : nullptr;
+            };
+            shadow::ShadowState old(capped);
+            old.apply(s[0], prefix);
+            value(old, kReg0, State::Certain, n > 4096 ? 0x11 : 0x22);
+            CHECK(verdict(s, m, old) == (n > 4096 ? 1 : 0)); // fails with the cap, passes without it
+            shadow::ShadowState fixed;
+            fixed.apply(s[0], prefix);
+            value(fixed, kReg0, State::Certain, 0x22);
+            const Stream under = {cat({ud0(0x11), cond(5), pairs_table(kTable, n)})};
+            const auto c = walk(under, m);
+            value(c, kReg0, State::Uncertain, 0);
+            CHECK(verdict(under, m, c) == 0);
+            const Stream gone = {cat({ud0(0x11), pairs_table(kGone, n), ud0(0x11)})};
+            CHECK(verdict(gone, m, walk(gone, m)) == 0);
+            const Stream gone2 = {cat({ud0(0x11), pairs_table(kGone, n)})};
+            value(walk(gone2, m), kReg0, State::Uncertain, 0);
+        }
+    }
+    SECTION("flat, and LOAD_SH_REG: entry 4096 is the seeded register") {
+        for (const std::uint32_t n : {4095u, 4096u, 4097u}) {
+            for (const bool ranged : {false, true}) {
+                Memory m;
+                Buf t(n, 7);
+                t[n - 1] = 0x22;
+                const std::uint32_t off = 0x100;
+                const std::uint64_t key = ranged ? kRange + off * 4ull : kFlat;
+                m[key] = t;
+                const Buf load = ranged ? load_range(kRange, off, n) : flat_table(kFlat, off, n);
+                const Buf gone = ranged ? load_range(kGone, off, n) : flat_table(kGone, off, n);
+                const std::uint32_t last = off + n - 1; // the table's last register
+                const Buf seed = set(last, 0x11);
+                value(walk({cat({seed, load})}, m), last, State::Certain, 0x22);
+                value(walk({cat({seed, load})}, m, capped), last, State::Certain, n > 4096 ? 0x11 : 0x22); // fails old
+                value(walk({cat({seed, cond(5), load})}, m), last, State::Uncertain, 0);
+                value(walk({cat({seed, gone})}, m), last, State::Uncertain, 0);
+                value(walk({cat({seed, gone, seed})}, m), last, State::Certain, 0x11);
+            }
+        }
+        (void)kHigh;
+    }
+    SECTION("an unreadable pairs table names any register: a seed past its count is not safe either") {
+        Memory m;
+        const Stream s = {cat({set(kHigh, 0x11), pairs_table(kGone, 2)})};
+        value(walk(s, m), kHigh, State::Uncertain, 0);
+    }
+    SECTION("the old tracker has the same cap: not fixed here, recorded") {
+        Memory m;
+        Buf t;
+        for (std::uint32_t k = 0; k < 4096; ++k) {
+            t.push_back(kReg0 + 1);
+            t.push_back(7);
+        }
+        t.push_back(kReg0);
+        t.push_back(0x22);
+        m[kTable] = t;
+        const auto r = reader(m);
+        shadow::Pair pair;
+        pair.apply(cat({ud0(0x11), pairs_table(kTable, 4097)}), r);
+        std::uint32_t v = 0;
+        REQUIRE(pair.old.get(full_state::Sh, kReg0, v));
+        CHECK(v == 0x11u); // F764: the real tracker stops at 4,096 entries
+    }
+}
+
+TEST_CASE("short forms of known packets, with no read past the packet", "[shadow][malformed]") {
+    using shadow::State;
+    Memory m;
+    m[0x1000] = ud0(0x22);
+    const std::vector<Buf> shorts = {
+        {0xC0003F00u, 0x1000},             // IB of 2 dwords
+        {0xC0013F00u, 0x1000, 0},          // IB of 3
+        {0xC0027F00u, 0, 0, 0},            // an unknown opcode: not malformed
+        {0xC0007600u, kReg0},              // SET_SH_REG with no value
+        {0xC0002200u, 0},                  // COND_EXEC of 2
+        {0xC0022200u, 0, 0, 0},            // COND_EXEC of 4
+        {0xC0005F00u, 0},                  // LOAD_SH_REG of 2
+        {0xC0025F00u, 0, 0, 0},            // of 4
+        {0xC0045F00u, 0, 0, 0, 0, 0},      // of 6: an offset with no count
+        {0xC0006300u, 0},                  // LOAD_SH_REG_INDEX of 2
+    };
+    for (const Buf &p : shorts) {
+        const bool known = ((p[0] >> 8) & 0xffu) != 0x7fu;
+        for (const Stream &s : {Stream{cat({ud0(0x11), p})}, Stream{cat({ud0(0x11), p, ud0(0x33)})}, Stream{p}}) {
+            const auto st = walk(s, m);
+            CHECK(verdict(s, m, st) == 0);
+        }
+        std::uint32_t v = 0;
+        const auto st = walk({cat({ud0(0x11), p})}, m);
+        CHECK(state_of(st, kReg0, v) == (known ? State::Uncertain : State::Certain));
     }
 }
 

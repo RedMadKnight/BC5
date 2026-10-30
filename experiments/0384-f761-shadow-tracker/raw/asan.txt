@@ -1,0 +1,17 @@
+# shadow0384.exe, MSVC RelWithDebInfo, /fsanitize=address: the whole suite, no filter. An earlier run with a wrong filter said No tests ran and was not counted.
+asan all rc 0
+Randomness seeded to: 3663580858
+shadow: 40000 streams, unsound 0, too big to check 0, certain registers 28889
+shadow: seed 1384, 100000 streams, unsound 0, too big to check 0
+shadow: seed 2384, 100000 streams, unsound 0, too big to check 0
+shadow: seed 3384, 100000 streams, unsound 0, too big to check 0
+mutant CHAIN as a call: unsound in 472 of 6000
+mutant no carry past a buffer's end: unsound in 691 of 6000
+mutant conditional writes count as plain: unsound in 2016 of 6000
+mutant what cannot be followed is only counted: unsound in 1761 of 6000
+mutant the tail of a conditional CHAIN counts as plain: unsound in 34 of 6000
+mutant a count inside a packet is ignored: unsound in 424 of 6000
+bytes: 40000 streams identical, 19952 with a CHAIN; old value differs from a certain shadow value on 1138 registers
+===============================================================================
+All tests passed (68893 assertions in 9 test cases)
+

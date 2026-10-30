@@ -29,28 +29,40 @@ skipping way decodes other dwords: everything is Uncertain and the rest of the b
 ## Result
 
 Laptop, MSVC C++20 `/W4 /WX`, Debug: `cmake -S . -B <build>`, `cmake --build <build> --config Debug --target shadow0384`,
-`shadow0384.exe`, rc 0: 7 test cases, 68,766 assertions (`raw/run.txt`). clang-cl with the strict warning set: see `raw/clang-cl.txt`.
+`shadow0384.exe`, rc 0: 9 test cases, 68,893 assertions (`raw/run.txt`). The same under ASan (`-DBC5_0384_ASAN=ON`, RelWithDebInfo), rc 0, no
+reports (`raw/asan.txt`). clang-cl with the strict warning set: `raw/clang-cl.txt`.
 
 | Check | Result |
 |---|---|
 | Codex's case 1: target 0x22, dead tail 0x33 | old 0x33, shadow Certain 0x22, old `emit_prefix` unchanged |
 | Codex's case 2: `[set 0x11, cond]` then `[set 0x22]` | Uncertain. The oracle gives 0x22 if a count stops at the end, and 0x11 or 0x22 if it carries. With the carry taken out, the same false 0x22 returns |
-| Oracle against shadow | 340,000 random streams, 4 seeds: **0 unsound**, 0 too big to check; 27,949 certain registers in the first 40,000, so it does not pass by claiming nothing |
-| Mutants, each caught | CHAIN as a call 580 of 6,000; no carry 763; conditional writes as plain 2,086; what cannot be followed only counted 1,870; a conditional CHAIN's tail as plain 38; a count inside a packet ignored 494 |
-| Old bytes | 40,000 random streams, 24,368 with a CHAIN: `emit_prefix` of the old tracker in the pair equals a tracker alone |
-| The defect, seen through the pair | the old value differs from a certain shadow value on 1,257 registers of those streams |
+| Codex's table counterexample (`f761-table-probe.cpp`) | before: Certain 0x11, oracle 0x22. Now: `shadow=0x22 oracle=0x22 false_certain=0`, probe rc 1, meaning not reproduced |
+| Tables at 4095, 4096, 4097 entries | pairs, flat, `LOAD_SH_REG`: right value at each; Uncertain under a condition and unreadable; with the cap put back as a mutant, 4097 gives the stale value (fails old, passes new) |
+| Short forms of known packets | 10 named cases, also as the last packet of a buffer; ASan clean. The oracle now checks the length before any body dword |
+| Oracle against shadow | 340,000 random streams, 4 seeds, with flat tables, ranges and short packets added: **0 unsound**, 0 too big to check; 28,889 certain registers in the first 40,000, so it does not pass by claiming nothing |
+| Mutants, each caught | CHAIN as a call 472 of 6,000; no carry 691; conditional writes as plain 2,016; what cannot be followed only counted 1,761; a conditional CHAIN's tail as plain 34; a count inside a packet ignored 424 |
+| Old bytes | 40,000 random streams, 19,952 with a CHAIN: `emit_prefix` of the old tracker in the pair equals a tracker alone |
+| The defect, seen through the pair | the old value differs from a certain shadow value on 1,138 registers of those streams |
 | Plain streams | shadow and old tracker agree exactly |
 
 **The oracle earned its keep.** The first version was unsound in 126 of 40,000 streams, with all mutants caught. Two bugs of mine, both
 now named regressions: different ways leave a buffer with different counts, so the carry must be a set, not the largest; and a count
 left by a CHAIN's target runs on after the buffer, not in the tail. Neither was unsettled semantics, so the stop rule did not apply.
 
+**Codex's review of cbea178 (`F761-PROTOTYPE-REVIEW.md`) falsified the first commit's contract, and the random check could not have.** I had
+copied `full_state.cpp`'s 4,096-entry cap, so a table of 4,097 pairs left a stale Certain, and nothing generated a table that long. There is now
+no cap: the count fields are 14 bits, so a declared table is at most 16,383 entries, and it is read whole or treated as unreadable. An
+unreadable flat load makes its range Uncertain, and unreadable pairs the whole space. The oracle also read a 0x3f packet's fourth dword before
+checking its length; that is fixed for every known packet. Short forms are malformed on both sides.
+
 ## Limits
 
 - **The oracle and the shadow share an author and a reading of the packets**, and both follow `full_state.cpp`'s opcodes. Passing shows
   they agree on the contract, not that either matches the CP. No GPU was involved.
-- Synthetic streams: three SH registers in the random check, small buffers, one table form. Context, uconfig and config spaces, and
-  `CLEAR_STATE`, have named cases only.
+- Synthetic streams: three SH registers in the random check and small buffers. Tables longer than 2 entries have named cases only, so
+  **a bug that needs a long table or an unusual size will not show in the random check**, as the cap did not. Context, uconfig and config
+  spaces, and `CLEAR_STATE`, have named cases only.
+- The tables' 14-bit count mask is the tracker's reading (TODO(verify)). `LOAD_*` forms with a stale or overlapping range are not tested.
 - A `COND_EXEC` count's dword semantics follow how the host reads it. Past the end of a buffer it is unsourced, hence both readings.
   Inside a nested target, the count's return into the caller is modelled the same way and equally unsourced.
 - **Not modelled:** `SET_BASE`, `INDEX_BASE`, `INDEX_BUFFER_SIZE`, `INDEX_TYPE`, `NUM_INSTANCES`, `CONTEXT_CONTROL` (counted);
@@ -63,11 +75,12 @@ left by a CHAIN's target runs on after the buffer, not in the tail. Neither was 
 ## Verdict
 
 The contract holds in C++ on synthetic streams, Codex's two cases are closed, and the old bytes are unchanged, CHAIN streams included.
-That supports the design. It does not change runtime, and no runtime decision follows from it. Findings F762 (the shadow and its
-contract) and F763 (the carry is a set of counts, and a CHAIN's count leaves the buffer) are recorded here. HANDOFF rows wait for
-integration, so this commit stays inside this directory.
+That supports the design. It does not change runtime, and no runtime decision follows from it. Findings, recorded here: F762 (the shadow
+and its contract), F763 (the carry is a set of counts, and a CHAIN's count leaves the buffer), F764 (the real tracker stops at 4,096
+table entries, so its value past the cap is stale: a test pins this, nothing changes it here; a third way the old tracker can be wrong
+apart from CHAIN). HANDOFF rows wait for integration, so these commits stay inside this directory.
 
 ## Open, not done here
 
 The box scanner, a run of the shadow on real recorded streams, emission groups, and any change to the backend's tracker. Each needs its
-own review. Rollback: revert this one commit.
+own review. Rollback: revert this experiment's commits.

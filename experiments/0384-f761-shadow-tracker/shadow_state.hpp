@@ -17,6 +17,11 @@
 // conditional into the next packets: a write there is Uncertain, which is right under both readings. A count ending inside
 // a packet means the skipping way decodes other dwords: everything is Uncertain and the rest of the buffer conditional.
 //
+// Tables are modelled whole. The count fields are 14 bits, as the tracker masks them (TODO(verify) the width), so a declared
+// range is at most 16,383 entries and there is no cap here: Codex's review of cbea178 showed that a cap, copied from
+// full_state.cpp's kMaxTable, left a stale Certain past the entries read. A table that cannot be read is Uncertain: its range
+// for a flat load, its whole space for pairs, which can name any register.
+//
 // Not modelled, and so not covered by the contract: SET_BASE, INDEX_BASE, INDEX_BUFFER_SIZE, INDEX_TYPE, NUM_INSTANCES and
 // CONTEXT_CONTROL (counted in stats.unmodelled_packets); INDIRECT_BUFFER_CONST 0x33; the longer conditional IB (any other
 // length of 0x3f makes everything Uncertain); the GPU writing a table after the CPU read it.
@@ -61,9 +66,10 @@ public:
         bool cannot_follow_clobbers = true;
         bool conditional_chain_tail = true;
         bool inside_packet = true;
+        bool table_cap = false; // the old tracker's 4,096-entry cap, the bug Codex found: on only as a mutant
     };
     static constexpr std::size_t kMaxDepth = 32; // calls and chains together
-    static constexpr std::uint32_t kMaxTable = 0x1000;
+    static constexpr std::uint32_t kCapMutant = 0x1000;
 
     ShadowState() = default;
     explicit ShadowState(Options o) : opt_(o) {}
@@ -150,6 +156,7 @@ private:
         default: return -1;
         }
     }
+    std::uint32_t table_count(std::uint32_t n) const { return opt_.table_cap ? std::min(n, kCapMutant) : n; }
     static std::uint64_t address(std::uint32_t lo, std::uint32_t hi) {
         return (static_cast<std::uint64_t>(lo) & ~3ull) | (static_cast<std::uint64_t>(hi & 0xffffu) << 32);
     }
@@ -215,15 +222,25 @@ private:
                 continue;
             }
             const std::uint32_t *p = &ib[i];
-            if (const int sp = space_of_set(op); sp >= 0 && len >= 3) {
+            // A short form of a known packet: nobody knows what the CP does with it. The length is checked here, before any
+            // body dword is read.
+            const bool loads = space_of_load(op) >= 0, indexed = space_of_load_index(op) >= 0;
+            if ((space_of_set(op) >= 0 && len < 3) || (loads && (len < 5 || (len - 3) % 2 != 0)) || (indexed && len < 5) ||
+                (op == 0x22 && len < 5) || (op == 0x12 && len < 2) || (op == 0x3f && len != 4)) {
+                ++stats_.malformed;
+                clobber_all();
+                i += len;
+                continue;
+            }
+            if (const int sp = space_of_set(op); sp >= 0) {
                 const std::uint32_t off = p[1] & 0xffffu;
                 for (std::size_t k = 2; k < len; ++k)
                     write(static_cast<full_state::Space>(sp), off + static_cast<std::uint32_t>(k - 2), p[k], c);
-            } else if (const int lsp = space_of_load(op); lsp >= 0 && len >= 5) {
+            } else if (const int lsp = space_of_load(op); lsp >= 0) {
                 const auto s = static_cast<full_state::Space>(lsp);
                 const std::uint64_t base = address(p[1], p[2]);
                 for (std::size_t k = 3; k + 1 < len; k += 2) {
-                    const std::uint32_t off = p[k] & 0xffffu, n = std::min(p[k + 1] & 0x3fffu, kMaxTable);
+                    const std::uint32_t off = p[k] & 0xffffu, n = table_count(p[k + 1] & 0x3fffu);
                     if (n == 0) continue;
                     const std::uint32_t *t = read ? read(base + static_cast<std::uint64_t>(off) * 4, n * 4ull) : nullptr;
                     for (std::uint32_t q = 0; q < n; ++q) {
@@ -232,11 +249,11 @@ private:
                     }
                     if (t == nullptr) ++stats_.unreadable_tables;
                 }
-            } else if (const int isp = space_of_load_index(op); isp >= 0 && len >= 5) {
+            } else if (const int isp = space_of_load_index(op); isp >= 0) {
                 const auto s = static_cast<full_state::Space>(isp);
                 const std::uint64_t a = address(p[1], p[2]);
                 const bool pairs = (p[3] >> 31) != 0;
-                const std::uint32_t n = std::min(p[4] & 0x3fffu, kMaxTable);
+                const std::uint32_t n = table_count(p[4] & 0x3fffu);
                 if (n != 0) {
                     const std::uint32_t *t = read ? read(a, static_cast<std::uint64_t>(n) * (pairs ? 8 : 4)) : nullptr;
                     if (t == nullptr) {
@@ -251,17 +268,11 @@ private:
                         }
                     }
                 }
-            } else if (op == 0x12 && len >= 2) { // CLEAR_STATE
+            } else if (op == 0x12) { // CLEAR_STATE
                 clear_state(p[1] & 0xfu, c);
-            } else if (op == 0x22 && len >= 5) { // COND_EXEC
+            } else if (op == 0x22) { // COND_EXEC
                 add_count(i + len + (p[4] & 0x3fffu));
             } else if (op == 0x3f) {
-                if (len != 4) {
-                    ++stats_.malformed;
-                    clobber_all();
-                    i += len;
-                    continue;
-                }
                 const std::uint64_t a = address(p[1], p[2]);
                 const std::uint32_t n = p[3] & 0xfffffu;
                 const bool chain = (p[3] & (1u << 20)) != 0;

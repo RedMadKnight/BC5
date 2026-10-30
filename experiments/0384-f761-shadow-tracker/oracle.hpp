@@ -66,6 +66,18 @@ private:
     void write(Way &w, std::uint32_t off, std::uint32_t v) const {
         if (off >= kReg0 && off - kReg0 < kRegs) w.r[off - kReg0] = v;
     }
+    // A flat load: unreadable, the range may be anything, one way untouched and one way overwritten.
+    void load_range(std::span<const std::uint32_t> ib, std::size_t i, std::size_t len, Way &st, std::vector<Way> &out,
+                    std::size_t depth, Memory::const_iterator it, std::uint32_t off, std::uint32_t n) {
+        if (it != mem_.end() && it->second.size() == n) {
+            for (std::uint32_t q = 0; q < n; ++q) write(st, off + q, it->second[q]);
+            return;
+        }
+        Way any = st;
+        for (std::uint32_t q = 0; q < n; ++q)
+            if (off + q >= kReg0 && off + q - kReg0 < kRegs) any.r[off + q - kReg0] = kAny;
+        if (any.r != st.r) walk(ib, i + len, any, out, depth);
+    }
     void walk(std::span<const std::uint32_t> ib, std::size_t i, Way st, std::vector<Way> &out, std::size_t depth) {
         if (++steps_ > 400000 || out.size() > 4096) {
             overflow_ = true;
@@ -86,18 +98,35 @@ private:
                 return;
             }
             const std::uint32_t *p = &ib[i];
-            if (type == 3 && (op == 0x76 || op == 0x9b) && len >= 3) {
+            // A short form of a known packet: unchanged, or anything. No body dword is read before this.
+            if (type == 3 && (((op == 0x76 || op == 0x9b) && len < 3) || ((op == 0x22 || op == 0x63) && len < 5) ||
+                              (op == 0x5f && (len < 5 || (len - 3) % 2 != 0)) || (op == 0x3f && len != 4))) {
+                walk(ib, i + len, all_any(st), out, depth);
+                i += len;
+                continue;
+            }
+            if (type == 3 && (op == 0x76 || op == 0x9b)) {
                 for (std::size_t k = 2; k < len; ++k) write(st, (p[1] & 0xffffu) + static_cast<std::uint32_t>(k - 2), p[k]);
-            } else if (type == 3 && op == 0x22 && len >= 5) {
+            } else if (type == 3 && op == 0x22) {
                 walk(ib, i + len + (p[4] & 0x3fffu), st, out, depth);
-            } else if (type == 3 && op == 0x63 && len >= 5 && (p[3] >> 31) != 0) {
+            } else if (type == 3 && op == 0x63) {
                 const std::uint64_t a = (static_cast<std::uint64_t>(p[1]) & ~3ull) | (static_cast<std::uint64_t>(p[2] & 0xffffu) << 32);
                 const auto it = mem_.find(a);
                 const std::uint32_t n = p[4] & 0x3fffu;
-                if (it == mem_.end() || it->second.size() != n * 2ull) {
-                    walk(ib, i + len, all_any(st), out, depth);
+                if ((p[3] >> 31) != 0) { // pairs: an unreadable table can name any register
+                    if (it == mem_.end() || it->second.size() != n * 2ull) {
+                        if (n != 0) walk(ib, i + len, all_any(st), out, depth);
+                    } else {
+                        for (std::uint32_t q = 0; q < n; ++q) write(st, it->second[2 * q] & 0xffffu, it->second[2 * q + 1]);
+                    }
                 } else {
-                    for (std::uint32_t q = 0; q < n; ++q) write(st, it->second[2 * q] & 0xffffu, it->second[2 * q + 1]);
+                    load_range(ib, i, len, st, out, depth, it, p[3] & 0xffffu, n);
+                }
+            } else if (type == 3 && op == 0x5f) {
+                const std::uint64_t base = (static_cast<std::uint64_t>(p[1]) & ~3ull) | (static_cast<std::uint64_t>(p[2] & 0xffffu) << 32);
+                for (std::size_t k = 3; k + 1 < len; k += 2) {
+                    const std::uint32_t off = p[k] & 0xffffu, n = p[k + 1] & 0x3fffu;
+                    if (n != 0) load_range(ib, i, len, st, out, depth, mem_.find(base + off * 4ull), off, n);
                 }
             } else if (type == 3 && op == 0x3f) {
                 const std::uint64_t a = (static_cast<std::uint64_t>(p[1]) & ~3ull) | (static_cast<std::uint64_t>(p[2] & 0xffffu) << 32);
