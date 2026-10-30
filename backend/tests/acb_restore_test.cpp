@@ -5,7 +5,9 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <initializer_list>
 #include <ios>
+#include <map>
 #include <vector>
 
 using namespace bc5;
@@ -243,6 +245,213 @@ TEST_CASE("acb restore: final_value is the state after all writes, or unknown", 
         append(ib, set_sh(ud0, {0xaau}));
         REQUIRE(acb_restore::final_value(ib, ud0, kNone, v) == Final::Known);
         CHECK(v == 0xaau);
+    }
+}
+
+// PORT-CHAIN (F760). agc_chain_probe.cpp's cases, turned from a reproducer of the defect into
+// regressions on the right answers, and the control flow around them. The packets are invented.
+namespace {
+constexpr std::uint32_t kChainBit = 1u << 20;
+
+// Buffers at made-up addresses, read through a Reader; an address not listed cannot be read.
+struct Memory {
+    std::map<std::uint64_t, std::vector<std::uint32_t>> at;
+    Tracker::Reader reader() const {
+        return [this](std::uint64_t a, std::uint64_t bytes) -> const std::uint32_t * {
+            const auto it = at.find(a);
+            return it != at.end() && it->second.size() * 4 == bytes ? it->second.data() : nullptr;
+        };
+    }
+};
+std::vector<std::uint32_t> ib_packet(std::uint64_t a, std::size_t dwords, bool chain) {
+    return {0xC0023F00u, static_cast<std::uint32_t>(a), static_cast<std::uint32_t>(a >> 32),
+            static_cast<std::uint32_t>(dwords) | (chain ? kChainBit : 0u)};
+}
+std::vector<std::uint32_t> cond_exec(std::uint32_t skip) { return {0xC0032200u, 0x2000, 0, 0, skip}; }
+std::vector<std::uint32_t> ud0(std::uint32_t v) { return set_sh(acb_restore::kUserData0, {v}); }
+std::vector<std::uint32_t> cat(std::initializer_list<std::vector<std::uint32_t>> parts) {
+    std::vector<std::uint32_t> out;
+    for (const auto &p : parts) append(out, p);
+    return out;
+}
+struct Answer {
+    acb_restore::Final state;
+    std::uint32_t value;
+};
+Answer run(const std::vector<std::uint32_t> &ib, const Memory &m) {
+    std::uint32_t v = 0xdeadbeefu;
+    const auto f = acb_restore::final_value(ib, acb_restore::kUserData0, m.reader(), v);
+    return {f, v};
+}
+void known(const Answer &a, std::uint32_t v) {
+    CHECK(a.state == acb_restore::Final::Known);
+    CHECK(a.value == v);
+}
+void unknown(const Answer &a) {
+    CHECK(a.state == acb_restore::Final::Unknown);
+    CHECK(a.value == 0xdeadbeefu); // value is set only for Known
+}
+void none(const Answer &a) { CHECK(a.state == acb_restore::Final::None); }
+} // namespace
+
+TEST_CASE("final_value: a call returns, a CHAIN replaces the tail (the probe's four cases)", "[acb_restore][chain]") {
+    Memory m;
+    m.at[0x1000] = ud0(0x22);
+    SECTION("a call: the tail runs after it") {
+        known(run(cat({ib_packet(0x1000, 3, false), ud0(0x33)}), m), 0x33);
+    }
+    SECTION("a CHAIN: the tail is dead") {
+        known(run(cat({ib_packet(0x1000, 3, true), ud0(0x33)}), m), 0x22);
+    }
+    SECTION("an unreadable CHAIN: the dead tail decides nothing") {
+        unknown(run(cat({ib_packet(0x9000, 3, true), ud0(0x33)}), m));
+    }
+    SECTION("a conditional CHAIN whose ends differ") {
+        unknown(run(cat({cond_exec(4), ib_packet(0x1000, 3, true), ud0(0x33)}), m));
+    }
+}
+
+TEST_CASE("final_value: CHAIN through levels", "[acb_restore][chain]") {
+    Memory m;
+    SECTION("a CHAIN to a CHAIN") {
+        m.at[0x1000] = cat({ib_packet(0x2000, 3, true), ud0(0x44)});
+        m.at[0x2000] = ud0(0x22);
+        known(run(cat({ib_packet(0x1000, 7, true), ud0(0x33)}), m), 0x22);
+    }
+    SECTION("a call that holds a CHAIN returns, and the caller's tail runs") {
+        m.at[0x1000] = cat({ib_packet(0x2000, 3, true), ud0(0x44)});
+        m.at[0x2000] = ud0(0x22);
+        known(run(ib_packet(0x1000, 7, false), m), 0x22);
+        known(run(cat({ib_packet(0x1000, 7, false), ud0(0x33)}), m), 0x33);
+    }
+    SECTION("a CHAIN to a buffer with a call: the call returns into the target") {
+        m.at[0x1000] = cat({ib_packet(0x2000, 3, false), ud0(0x55)});
+        m.at[0x2000] = ud0(0x22);
+        known(run(cat({ib_packet(0x1000, 7, true), ud0(0x33)}), m), 0x55);
+    }
+    SECTION("a child that writes nothing keeps the seed, through a call and a CHAIN") {
+        m.at[0x1000] = {0xC0001000u, 0}; // a NOP
+        known(run(cat({ud0(0x11), ib_packet(0x1000, 2, false)}), m), 0x11);
+        known(run(cat({ud0(0x11), ib_packet(0x1000, 2, true), ud0(0x33)}), m), 0x11);
+        none(run(ib_packet(0x1000, 2, true), m));
+    }
+    SECTION("a malformed tail after a taken CHAIN is never parsed") {
+        m.at[0x1000] = ud0(0x22);
+        known(run(cat({ib_packet(0x1000, 3, true), {0xC0FF7600u}}), m), 0x22);
+    }
+}
+
+TEST_CASE("final_value: conditions join every way through", "[acb_restore][chain]") {
+    Memory m;
+    m.at[0x1000] = ud0(0x22);
+    m.at[0x2000] = {0xC0001000u, 0};  // writes nothing
+    m.at[0x3000] = ud0(0x11);         // writes the seed's value
+    SECTION("a conditional call: skipped keeps the seed") {
+        unknown(run(cat({ud0(0x11), cond_exec(4), ib_packet(0x1000, 3, false)}), m));
+        known(run(cat({ud0(0x11), cond_exec(4), ib_packet(0x3000, 3, false)}), m), 0x11);
+        known(run(cat({ud0(0x11), cond_exec(4), ib_packet(0x2000, 2, false)}), m), 0x11);
+        unknown(run(cat({cond_exec(4), ib_packet(0x1000, 3, false)}), m)); // None or 0x22
+    }
+    SECTION("a conditional CHAIN: both ends agree") {
+        known(run(cat({cond_exec(4), ib_packet(0x1000, 3, true), ud0(0x22)}), m), 0x22);
+        known(run(cat({ud0(0x11), cond_exec(4), ib_packet(0x2000, 2, true)}), m), 0x11);
+    }
+    SECTION("a conditional CHAIN: the ends differ") {
+        unknown(run(cat({ud0(0x11), cond_exec(4), ib_packet(0x1000, 3, true)}), m));
+    }
+    SECTION("a conditional CHAIN with a child that writes nothing, and a tail") {
+        unknown(run(cat({ud0(0x11), cond_exec(4), ib_packet(0x2000, 2, true), ud0(0x33)}), m));
+    }
+    SECTION("a write before the condition stands; a write after it settles") {
+        known(run(cat({ud0(0x11), cond_exec(4), ib_packet(0x1000, 3, false), ud0(0x77)}), m), 0x77);
+        known(run(cat({cond_exec(4), ib_packet(0x1000, 3, true), ud0(0x22), ud0(0x22)}), m), 0x22);
+    }
+    SECTION("a plain write settles after a way that CHAINed only if it was not the way out") {
+        // Taken leaves with 0x22; not taken goes on to 0x33: the ends differ, however late the write.
+        unknown(run(cat({cond_exec(4), ib_packet(0x1000, 3, true), ud0(0x33)}), m));
+    }
+    SECTION("a condition inside a call and inside a CHAIN target") {
+        m.at[0x4000] = cat({cond_exec(3), ud0(0x66)});
+        unknown(run(cat({ud0(0x11), ib_packet(0x4000, 8, false)}), m));
+        unknown(run(cat({ud0(0x11), ib_packet(0x4000, 8, true), ud0(0x33)}), m));
+        known(run(cat({ud0(0x11), ib_packet(0x4000, 8, false), ud0(0x33)}), m), 0x33);
+    }
+    SECTION("two conditions do not explode and still join") {
+        std::vector<std::uint32_t> ib = ud0(0x11);
+        for (int k = 0; k < 2000; ++k) append(ib, cat({cond_exec(3), ud0(0x11)}));
+        known(run(ib, m), 0x11);
+    }
+}
+
+TEST_CASE("final_value: what cannot be followed is Unknown, never certain", "[acb_restore][chain]") {
+    Memory m;
+    m.at[0x1000] = ud0(0x22);
+    SECTION("an unreadable call is lost until a plain write") {
+        unknown(run(ib_packet(0x9000, 3, false), m));
+        known(run(cat({ib_packet(0x9000, 3, false), ud0(0x33)}), m), 0x33);
+    }
+    SECTION("no reader at all") {
+        std::uint32_t v = 0xdeadbeefu;
+        const auto ib = ib_packet(0x1000, 3, true);
+        CHECK(acb_restore::final_value(ib, acb_restore::kUserData0, Tracker::Reader{}, v) == acb_restore::Final::Unknown);
+    }
+    SECTION("a size that does not match, and a zero size") {
+        unknown(run(ib_packet(0x1000, 4, true), m));
+        unknown(run(ib_packet(0x1000, 0, true), m));
+        unknown(run(ib_packet(0x1000, 0, false), m));
+    }
+    SECTION("a CHAIN cycle, and a call cycle: a later write cannot rescue them") {
+        m.at[0x5000] = ib_packet(0x5000, 4, true);
+        m.at[0x6000] = ib_packet(0x6000, 4, false);
+        unknown(run(ib_packet(0x5000, 4, true), m));
+        unknown(run(cat({ib_packet(0x6000, 4, false), ud0(0x33)}), m));
+        m.at[0x7000] = ib_packet(0x8000, 4, true);
+        m.at[0x8000] = ib_packet(0x7000, 4, true);
+        unknown(run(ib_packet(0x7000, 4, true), m));
+    }
+    SECTION("the same buffer twice in a row is no cycle") {
+        known(run(cat({ib_packet(0x1000, 3, false), ib_packet(0x1000, 3, false)}), m), 0x22);
+    }
+    SECTION("the depth limit") {
+        const auto chain_of = [&m](std::uint64_t n) {
+            for (std::uint64_t k = 0; k + 1 < n; ++k)
+                m.at[0x10000 + k * 16] = ib_packet(0x10000 + (k + 1) * 16, k + 2 == n ? 3u : 4u, true);
+            m.at[0x10000 + (n - 1) * 16] = ud0(0x22);
+            return ib_packet(0x10000, n == 1 ? 3u : 4u, true);
+        };
+        known(run(chain_of(acb_restore::detail::kFinalMaxDepth), m), 0x22);
+        unknown(run(chain_of(acb_restore::detail::kFinalMaxDepth + 1), m));
+    }
+    SECTION("the work limit: a wide tree of calls ends as Unknown, not as an answer") {
+        std::vector<std::uint32_t> leaf;
+        for (int k = 0; k < 64; ++k) append(leaf, ib_packet(0x1000, 3, false));
+        m.at[0x20000] = leaf;
+        for (std::uint64_t d = 1; d < 6; ++d) {
+            std::vector<std::uint32_t> up;
+            for (int k = 0; k < 64; ++k) append(up, ib_packet(0x20000 * d, leaf.size(), false));
+            m.at[0x20000 * (d + 1)] = up;
+        }
+        unknown(run(ib_packet(0x20000 * 6, leaf.size(), false), m));
+    }
+    SECTION("truncated and malformed packets") {
+        unknown(run({0xC0017600u, acb_restore::kUserData0}, m));          // SET_SH_REG cut short
+        unknown(run(cat({ud0(0x11), {0xC0027600u, 0x240}}), m));          // after a good write
+        unknown(run(cat({ud0(0x11), {0xC0023F00u, 0x1000}}), m));         // an IB cut short
+        unknown(run(cat({ud0(0x11), {0xC0013F00u, 0x1000, 0}}), m));      // an IB of the wrong length
+        unknown(run(cat({ud0(0x11), {0xC0002200u, 0}}), m));              // a COND_EXEC too short
+        unknown(run(cat({ud0(0x11), {0x40000000u}}), m));                 // type 1
+        unknown(run(cat({ud0(0x11), cond_exec(9)}), m));                  // past the end
+        unknown(run(cat({ud0(0x11), cond_exec(1), ud0(0x22)}), m));       // into a packet
+        unknown(run(cat({ud0(0x11), {0xC0005F00u, 0x1000}, ud0(0x33)}), m)); // a LOAD_SH_REG too short
+    }
+    SECTION("the longer conditional IB is not decoded: Unknown, and a later write does not settle it") {
+        // Codex's REVIEW-PORTS-01: opcode 0x3f of another length than 4. The body is made up; only the length matters.
+        const std::vector<std::uint32_t> cond_ib = {0xC0083F00u, 0x1000, 0, 0, 0, 0, 0, 0, 0, 3};
+        unknown(run(cat({ud0(0x11), cond_ib}), m));
+        unknown(run(cat({ud0(0x11), cond_ib, ud0(0x33)}), m));
+    }
+    SECTION("the one-dword NOP pad and type 2 fillers are not malformed") {
+        known(run(cat({ud0(0x11), {0xFFFF1000u, 0x80000000u}}), m), 0x11);
     }
 }
 

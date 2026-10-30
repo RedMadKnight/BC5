@@ -19,10 +19,14 @@
 
 #include "bc5/full_state.hpp"
 
+#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
+#include <map>
+#include <optional>
 #include <span>
+#include <utility>
 #include <vector>
 
 namespace bc5::acb_restore {
@@ -125,83 +129,159 @@ inline bool sh_value(std::span<const std::uint32_t> pre, std::uint32_t reg, std:
     return found;
 }
 
-// What a buffer leaves in SH register reg, in packet order, after all its writes (Codex's J4
-// review: the last dispatch's user data is not the final state). None: nothing writes it. Unknown:
-// a table or IB2 that may write it cannot be read, or the last write is under a COND_EXEC, whose
-// outcome the host does not know. A later plain write settles an earlier Unknown. This is the
-// CPU's view of the packets, not a capture of what the GPU consumed.
+// What a buffer leaves in SH register reg at its end, over every way through it (Codex's J4 review:
+// the last dispatch's user data is not the final state). None: no way through it writes the
+// register. Known: every way ends with that value. Unknown: the ends differ, or one of them cannot
+// be read; a later plain write on that way settles this. An IB that cannot be followed (a cycle, the
+// depth or work limit) or a malformed or truncated packet makes the whole answer Unknown, whatever
+// follows it. This is the CPU's view of the packets, not a capture of what the GPU consumed.
+//
+// Control flow (PORT-CHAIN, F760): INDIRECT_BUFFER (0x3f) with bit 20 of its size dword clear is a
+// call that returns. With the bit set it is a CHAIN: the target replaces the rest of this buffer, so
+// the tail is never read and the target's end is this buffer's end (AMD PAL c5e8000
+// src/core/hw/gfxip/gfx9/chip/gfx9_plus_merged_f32_pfp_pm4_packets.h:2580; shadPS4 1b9d159 made the
+// same correction in its interpreter). COND_EXEC (0x22) has two ways on: the packets after it, or
+// the packet its count points to. So a COND_EXEC over an IB covers a conditional call and a
+// conditional CHAIN alike. Opcode 0x3f of any other length than 4 is not decoded: AMD's longer
+// conditional IB (COND_INDIRECT_BUFFER, TODO(verify) its layout) gives Unknown, not support.
 enum class Final { None, Known, Unknown };
 
 namespace detail {
-// conditional: this whole level is under a COND_EXEC of a caller (Codex's J4 review: a skipped IB2
-// keeps the earlier value, so a write inside it is no more certain than a direct one).
-inline void final_level(std::span<const std::uint32_t> ib, std::uint32_t reg,
-                        const full_state::Tracker::Reader &read, int depth, Final &state,
-                        std::uint32_t &value, bool conditional = false) {
+struct FinalState {
+    Final state = Final::None;
+    std::uint32_t value = 0;
+};
+inline FinalState final_join(const FinalState &a, const FinalState &b) {
+    if (a.state == b.state && (a.state != Final::Known || a.value == b.value)) return a;
+    return {Final::Unknown, 0};
+}
+inline constexpr std::size_t kFinalMaxDepth = 32;         // calls and chains together
+inline constexpr std::size_t kFinalMaxPackets = 1u << 22; // over the whole walk
+struct FinalWalk {
+    std::uint32_t reg = 0;
+    const full_state::Tracker::Reader &read;
+    std::vector<std::pair<std::uint64_t, std::uint32_t>> active{}; // the buffers being walked
+    std::size_t packets = 0;
+    bool failed = false; // the whole answer is Unknown
+};
+// One forward pass: a COND_EXEC only jumps forward, so a buffer needs no more, and the ways join at
+// the packet its count points to. Packets after a taken CHAIN are not parsed unless a way lands there.
+inline FinalState final_ib(std::span<const std::uint32_t> ib, FinalState entry, FinalWalk &w) {
     const auto address = [](std::uint32_t lo, std::uint32_t hi) {
         return (lo & ~3u) | (static_cast<std::uint64_t>(hi & 0xffffu) << 32);
     };
-    std::size_t cond_end = 0;
-    for (std::size_t i = 0; i < ib.size();) {
-        const std::uint32_t h = ib[i], len = packet_len(h);
-        if (i + len > ib.size()) break;
-        if (h >> 30 != 3 || len == 1) {
+    const auto fail = [&w] {
+        w.failed = true;
+        return FinalState{Final::Unknown, 0};
+    };
+    std::map<std::size_t, FinalState> joins; // COND_EXEC targets not reached yet
+    std::optional<FinalState> live = entry;  // the way being walked; empty after a taken CHAIN
+    std::optional<FinalState> end;           // what the ways that left through a CHAIN ended with
+    const auto ended = [&end](const FinalState &s) { end = end ? final_join(*end, s) : s; };
+    std::size_t i = 0;
+    for (;;) {
+        if (!joins.empty() && joins.begin()->first < i) return fail(); // a target inside a packet
+        if (!joins.empty() && joins.begin()->first == i) {
+            live = live ? final_join(*live, joins.begin()->second) : joins.begin()->second;
+            joins.erase(joins.begin());
+        }
+        if (!live) {
+            if (joins.empty()) break;
+            i = joins.begin()->first;
+            continue;
+        }
+        if (i >= ib.size()) break;
+        if (++w.packets > kFinalMaxPackets) return fail();
+        const std::uint32_t h = ib[i], type = h >> 30, len = packet_len(h);
+        const std::uint32_t op = (h >> 8) & 0xffu;
+        if (type == 1 || i + len > ib.size()) return fail();
+        if (type != 3 || op == 0x10) { // type 0, type 2, NOP and its one-dword pad
             i += len;
             continue;
         }
+        if (len < 2) return fail();
         const std::uint32_t *p = &ib[i];
-        const std::uint32_t op = (h >> 8) & 0xffu;
-        const auto wrote = [&](std::uint32_t v) {
-            state = conditional || i < cond_end ? Final::Unknown : Final::Known;
-            value = v;
-        };
-        if (op == 0x22 && len >= 5) { // COND_EXEC: the next (dwords) are conditional
-            cond_end = i + len + (p[4] & 0x3fffu);
-        } else if ((op == 0x76 || op == 0x9b) && len >= 3) {
+        FinalState &cur = *live;
+        const auto wrote = [&cur](std::uint32_t v) { cur = {Final::Known, v}; };
+        const auto lost = [&cur] { cur = {Final::Unknown, 0}; };
+        if (op == 0x22) { // COND_EXEC: the count is in the fifth dword
+            if (len < 5) return fail();
+            const std::size_t target = i + len + (p[4] & 0x3fffu);
+            if (target > ib.size()) return fail(); // it skips into what follows this buffer
+            const auto it = joins.find(target);
+            if (it == joins.end()) joins.emplace(target, cur);
+            else it->second = final_join(it->second, cur);
+        } else if (op == 0x76 || op == 0x9b) {
+            if (len < 3) return fail();
             const std::uint32_t first = p[1] & 0xffffu;
-            if (reg >= first && reg - first < len - 2) wrote(p[2 + (reg - first)]);
-        } else if (op == 0x5f && len >= 5) { // LOAD_SH_REG: dword offset, count pairs from the base
+            if (w.reg >= first && w.reg - first < len - 2) wrote(p[2 + (w.reg - first)]);
+        } else if (op == 0x5f) { // LOAD_SH_REG: dword offset, count pairs from the base
+            if (len < 5 || (len - 3) % 2 != 0) return fail();
             for (std::uint32_t k = 3; k + 1 < len; k += 2) {
                 const std::uint32_t off = p[k] & 0xffffu, n = p[k + 1] & 0x3fffu;
-                if (reg < off || reg - off >= n) continue;
-                const std::uint32_t *t = read ? read(address(p[1], p[2]) + off * 4ull, n * 4ull) : nullptr;
-                if (t == nullptr) state = Final::Unknown;
-                else wrote(t[reg - off]);
+                if (w.reg < off || w.reg - off >= n) continue;
+                const std::uint32_t *t = w.read ? w.read(address(p[1], p[2]) + off * 4ull, n * 4ull) : nullptr;
+                if (t == nullptr) lost();
+                else wrote(t[w.reg - off]);
             }
-        } else if (op == 0x63 && len >= 5) { // LOAD_SH_REG_INDEX: flat, or (offset, value) pairs
+        } else if (op == 0x63) { // LOAD_SH_REG_INDEX: flat, or (offset, value) pairs
+            if (len < 5) return fail();
             const std::uint32_t n = p[4] & 0x3fffu;
             const bool pairs = (p[3] >> 31) != 0;
             if (!pairs) {
                 const std::uint32_t off = p[3] & 0xffffu;
-                if (reg >= off && reg - off < n) {
-                    const std::uint32_t *t = read ? read(address(p[1], p[2]), n * 4ull) : nullptr;
-                    if (t == nullptr) state = Final::Unknown;
-                    else wrote(t[reg - off]);
+                if (w.reg >= off && w.reg - off < n) {
+                    const std::uint32_t *t = w.read ? w.read(address(p[1], p[2]), n * 4ull) : nullptr;
+                    if (t == nullptr) lost();
+                    else wrote(t[w.reg - off]);
                 }
             } else if (n != 0) {
-                const std::uint32_t *t = read ? read(address(p[1], p[2]), n * 8ull) : nullptr;
-                if (t == nullptr) state = Final::Unknown;
+                const std::uint32_t *t = w.read ? w.read(address(p[1], p[2]), n * 8ull) : nullptr;
+                if (t == nullptr) lost();
                 else
                     for (std::uint32_t q = 0; q < n; ++q)
-                        if ((t[2 * q] & 0xffffu) == reg) wrote(t[2 * q + 1]);
+                        if ((t[2 * q] & 0xffffu) == w.reg) wrote(t[2 * q + 1]);
             }
-        } else if (op == 0x3f && len >= 4) {
+        } else if (op == 0x3f) { // INDIRECT_BUFFER: address lo, hi, size in bits 19:0, CHAIN in bit 20
+            if (len != 4) return fail();
+            const std::uint64_t a = address(p[1], p[2]);
             const std::uint32_t n = p[3] & 0xfffffu;
-            const std::uint32_t *t = read && n != 0 && depth < 4 ? read(address(p[1], p[2]), n * 4ull) : nullptr;
-            if (t == nullptr) state = Final::Unknown;
-            else final_level(std::span<const std::uint32_t>(t, n), reg, read, depth + 1, state, value,
-                             conditional || i < cond_end);
+            const bool chain = (p[3] & (1u << 20)) != 0;
+            const std::uint32_t *t = w.read && n != 0 ? w.read(a, n * 4ull) : nullptr;
+            FinalState after{Final::Unknown, 0};
+            if (t != nullptr) {
+                const std::pair<std::uint64_t, std::uint32_t> id{a, n};
+                if (w.active.size() >= kFinalMaxDepth ||
+                    std::find(w.active.begin(), w.active.end(), id) != w.active.end())
+                    return fail();
+                w.active.push_back(id);
+                after = final_ib(std::span<const std::uint32_t>(t, n), cur, w);
+                w.active.pop_back();
+                if (w.failed) return after;
+            }
+            if (chain) {
+                ended(after);
+                live.reset();
+                i += len;
+                continue;
+            }
+            cur = after;
         }
         i += len;
     }
+    if (live) ended(*live);
+    return end ? *end : fail();
 }
 } // namespace detail
 
+// value is set only for Known.
 inline Final final_value(std::span<const std::uint32_t> ib, std::uint32_t reg,
                          const full_state::Tracker::Reader &read, std::uint32_t &value) {
-    Final state = Final::None;
-    detail::final_level(ib, reg, read, 0, state, value);
-    return state;
+    detail::FinalWalk walk{reg, read};
+    const detail::FinalState r = detail::final_ib(ib, {}, walk);
+    if (walk.failed) return Final::Unknown;
+    if (r.state == Final::Known) value = r.value;
+    return r.state;
 }
 
 // The compute SH registers acbs write: SET_SH_REG(_INDEX) 0x76/0x9b, LOAD_SH_REG 0x5f ranges,
