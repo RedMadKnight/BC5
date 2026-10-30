@@ -40,9 +40,11 @@ current save, slot 4, RT on).
     working directory, save directory, learned-file copy; the input-configuration hook).
   - The route save is a fresh snapshot of the live saves taken at each arm's start, copied into the private working
     directory. The live saves are compared only.
-  - Slot 4 by exp 0305's `slot4-90.cmd` (✕ at 90 s, down ×3, ✕, ✕), then the scene idles with the camera where the
-    save left it (no input after the load).
-  - Shots by exp 0190's `shots.sh`, into one directory per phase, measured per phase (`MODE`, below).
+  - Slot 4 (✕, down ×3, ✕, ✕), with each key sent only when the journal shows the screen running (revised
+    2026-10-30, below: exp 0379's D3 lost fixed-time keys to a save list still loading from a copy of the live saves).
+    The scene then idles with the camera where the save left it, apart from one camera nudge.
+  - Shots by exp 0190's `shots.sh`, into one directory per phase, measured per phase (`MODE`, below), at times
+    relative to G, the start of gameplay found by the gate.
   - The kernel log is streamed to the laptop during each arm.
 - **Measured on the box only** (the shots never leave it): exp 0299's `wh0299.py` (luma, white and clipped shares,
   the whole shot) and `dots0382.py` per phase.
@@ -52,22 +54,29 @@ current save, slot 4, RT on).
     dots sit within 2 px of the previous shot's ("kept"). That is a description of the shots, not a test of
     history: with shots 1–10 s apart and no camera control, a low "kept" can be scene motion and a high one static
     geometry or the HUD (Codex review REVIEW-03, R3).
-  - Frames are told apart by the SHA-256 of their decoded RGB pixels (REVIEW-03, R2; below).
+  - Frames are told apart by the SHA-256 of their decoded RGB pixels (REVIEW-03, R2; below). Each phase reports
+    its distinct frames, so a paused phase whose shots are one frame shows as one.
+  - What kind of dot (added 2026-10-30, below): colour, size, contrast, the view's change between shots, a reading
+    per phase, `--compare` between phases, and a private contact sheet.
   - Tests: `python test_dots0382.py` (laptop; numpy and PIL): the self-test, the review's counterexample, an exact
-    repeat, the ROI.
+    repeat, the ROI, `--compare`, the contact sheet.
 
 **Order of the box steps** (revised after the Codex review, REVIEW-03, R1/R4/R5; each step only if the one before
 showed what it needs):
-1. **A1, reproduce** (`MODE=pause`, RT on, the defaults, ~390 s): phase `run` (every 10 s from 200 to 300 s with a
-   1-s burst at 281–285), options at 310 s, phase `paused` (320–340 s), options at 350 s, phase `after` (360–380 s).
-   One running shot and one paused shot are viewed (in the session scratchpad, with the top session's leave, deleted
-   after) to fix the ROI, the dots' size and whether the pause menu covers the scene. If A1 shows no dots in `run`,
-   stop: the bench does not reproduce the symptom, which by itself confirms nothing about memory pressure (the scene,
-   time, motion or an event may be missing, R4).
+0. **The private build** (`build0382.sh`, CPU only, ~3 min, no emulator; times revised 2026-10-30): the shared
+   normal objects with `controller.cpp` + `patch0382-input-rt.diff`, to `~/bc5-work/exp0382/rt/kyty_emulator`, for
+   step 2's one-run form. It can run before A1.
+1. **A1, reproduce** (`MODE=pause`, RT on, the defaults, the shared build; the route ~150 s, then G+220 s, then
+   ~2 min of numbers): phase `run` (every 10 s from G+60 to G+130, a 1-s burst G+111–115, the camera nudge at
+   G+117), options at G+140, phase `paused` (G+150–170), options at G+180, phase `after` (G+190–210). The route's
+   four shots and one running and one paused shot are viewed (in the session scratchpad, with the top session's leave,
+   deleted after) to check the route, fix the ROI, see the dots' size and whether the pause menu covers the scene. If
+   A1 shows no dots in `run`, stop: the bench does not reproduce the symptom, which by itself confirms nothing about
+   memory pressure (the scene, time, motion or an event may be missing, R4).
 2. **A → C → A in the same scene**, only if A1 shows dots:
-   - preferred, one run (`MODE=acs`): "rt off" at 310 s, 30 s to settle, phase `c` (340–370 s); "rt on" at 380 s,
-     30 s to settle, phase `a2` (410–440 s). The scripted input has no RT verb on today's builds, so this needs a
-     private build with `patch0382-input-rt.diff` (below);
+   - preferred, one run (`MODE=acs`, the private build of step 0): "rt off" at G+140, 30 s to settle, phase `c`
+     (G+170–200); "rt on" at G+210, 30 s to settle, phase `a2` (G+240–270). The scripted input has no RT verb on
+     today's builds, hence the build;
    - without a build: three fresh runs on the shared build, A, C (RT off at load), A, in `MODE=run`. Weaker: each run
      is a new start.
    Dots that leave in C and come back in `a2` tie them to the RT path being on (R4: not yet to which RT pass).
@@ -164,10 +173,60 @@ repo, in the maintainer's audit folder):
   543a6f9c. Not compiled here: the host does not build on the laptop. Integration into a private build is the top
   session's (D19).
 
+### Morning preparation (2026-10-30, before the box steps)
+
+The maintainer allowed box writes for this experiment this morning (his words to the top session: "masz zgodę -
+działaj dalej"). The box order is 0381, then 0380's checks, then this experiment, on the top session's GO. Still no
+description of the dots from him, so the arms have to tell from the private shots what they are. Changes, laptop
+only:
+- **The route is gated** (`s6n0382.sh`). Exp 0379 started three times from a copy of the live saves on 10-30:
+  - D3: the save list was still loading at ~5 fps at 88.5 s, so the down and cross presses were dropped and the
+    menu stayed;
+  - D2 and D4: GPU events at t 61 s, before the first key (the same pages and program; exp 0380 classifies them).
+  Now each key waits until the journal's frame profile lines show the screen running: a new flip since the last
+  poll and ≥ 25 flips in the newest 3 s of journal time, on 2–3 polls in a row. The first ✕ waits from 85 s, down ×3
+  and ✕ wait ≥ 6 s after it, and the Continue ✕ ≥ 6 s after that. A load is 5 flips slower than 55 ms, or no new
+  flip. G is the first second of a running screen ≥ 3 s after the load, and all later times are G+.
+  - Each stage has a deadline: the start screen by 160 s, the list within 90 s of its ✕, the menu within 60 s, the
+    load within 40 s of Continue, gameplay within 150 s of the load. A missed deadline ends the arm as `ROUTE: …`
+    with no phase shots.
+  - Every poll goes to `raw/<tag>-route.txt` and one private shot per stage to `shots-<tag>/route/`.
+  - The stand-in run (laptop, a virtual clock, a fake game that drops keys while its list loads, the real loop):
+    - the normal route reached G at 146 s, and the arm ended at G+225 (`pause`) or G+285 (`acs`) with its keys in
+      order;
+    - a list that never ran ended as "ROUTE: the save list did not run within 90 s of its cross";
+    - a load with no flips at all was seen as a load.
+    This checks the loop's logic only. The title's real flip rates at each stage are first seen in A1's
+    `raw/<tag>-route.txt`.
+  - Any amdgpu kernel line still ends the arm. A GPU event before the menu (exp 0379's 61-s event) is not this
+    experiment's question; a retry is the top session's call.
+- **What kind of dot** (`dots0382.py`, `s6n0382.sh`):
+  - per dot, its colour (neutral when (max − min)/max of its RGB is ≤ 0.15, else tinted), its size (pixels of its
+    5×5 above halfway from the ring to the peak), and its contrast;
+  - per shot, the view's change: the share of pixels whose luma moved by > 0.04 since the previous shot;
+  - a camera nudge in the run phase, the right stick right for 300 ms at G+117, between the burst (G+115) and G+120;
+  - the readings per phase, with their thresholds printed:
+    - in a still view (change ≤ 0.02), dots that move from shot to shot (median kept share < 0.25) are per-frame
+      noise, and dots that stay (≥ 0.6) are tied to the scene or to a stuck buffer;
+    - at the largest view change (≥ 0.15, the nudge), dots that keep their screen position (≥ 0.6) are stuck to the
+      screen, a buffer that is not reprojected; otherwise they moved with the view;
+  - `--compare` between phases: the share of B's dots within 2 px of any of A's (run → c: dots that RT off keeps are
+    scene brights, not RT's), and the change from A's last shot to B's first. Pairs: `run → after` (pause);
+    `run → c`, `run → a2`, `c → a2` (acs);
+  - each phase reports its distinct frames by SHA-256: a paused title that presents one frame shows as one;
+  - a contact sheet per phase, `shots-<tag>/<phase>-sheet.png`: the 48 highest-contrast dots, 21×21 crops at ×6. It
+    is the title's imagery, so it stays on the box like the shots; viewed only with the top session's leave, and
+    deleted on the laptop afterwards;
+  - the synthetic tests cover each reading; one 1080p shot takes ~2.3 s on the laptop.
+- **The private build for A → C → A** (`build0382.sh`, `build0382.py`, after exp 0372's): the shared tree's
+  `controller.cpp` is checked by git blob (5cdb29a, patch 0001's on main 49f1116, md5 40a0e7b6), copied into
+  `~/bc5-work/exp0382/src`, the diff applied (`git apply`, LF) and checked again (blob 44daf5b, md5 7d3c26f9: the
+  diff's own index line, reproduced on the laptop). That one unit is compiled with the shared build's compdb command
+  and relinked with the shared objects and archive (bb50b2e0) into `~/bc5-work/exp0382/rt/kyty_emulator`. Shared
+  builds, the tree, `play-pkg.sh` and the shortcuts are only read.
+
 **Bookkeeping.** Findings F640–F659 (the top session's range). Branch `exp/0382-white-dots`, never main.
 
-**Status** (2026-10-30 ~01:00). Claimed in the repo, laptop work done, no box step run. The box side is not
-claimed: this session's permission classifier refused the `mkdir ~/bc5-work/exp0382` of the GO'd read as a write to a
-shared resource, so no file has been written on the box. The steps need that permission (box writes: the lock line,
-the private working directory, the save snapshot, the shots) before they can run from this session; the top session
-puts it to the maintainer.
+**Status** (2026-10-30 ~08:30). Claimed in the repo, laptop work done, no box step run. The box side is not claimed
+yet: the night's classifier refusal stands until the first write. The maintainer has allowed box writes this
+morning; the steps wait for the top session's GO (~09:15, after 0381 and 0380's checks).

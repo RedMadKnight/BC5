@@ -42,5 +42,18 @@ with tempfile.TemporaryDirectory(prefix="bc5-dots0382-") as t:
     lines = [l for l in p.stdout.splitlines() if l.startswith("  000")]
     assert lines[0].split(": dots ")[1].startswith("0 ") and lines[1].split(": dots ")[1].startswith("1 "), p.stdout
     assert "ROI 32,32,64,64" in p.stdout, p.stdout
+    # --compare: B's dot at (40,40) sits at one of A's dots (A = 0002 alone), the other B shot's (16,16) does not
+    a, b = root / "a", root / "b"
+    a.mkdir(); b.mkdir()
+    Image.fromarray(second).save(a / "0001.png")
+    Image.fromarray(first).save(b / "0001.png")
+    Image.fromarray(second).save(b / "0002.png")
+    out = run("--compare", str(a), str(b))
+    assert "0001.png: dots 1, 0 of them" in out and "0002.png: dots 1, 1 of them" in out, out
+    assert "median share of B's dots at A's dots 0.50" in out, out
+    # SHEET: a contact sheet of the dots is written where asked (a synthetic image here)
+    p = subprocess.run([sys.executable, str(script), str(b)], capture_output=True, text=True, env={**os.environ, "SHEET": str(root / "sheet.png")})
+    assert p.returncode == 0 and "# sheet: 2 dots" in p.stdout and (root / "sheet.png").stat().st_size > 0, p.stdout + p.stderr
+    assert "# reading: few or no dots" in p.stdout, p.stdout
 print("test_dots0382 ok: two different frames with equal mean and count both used; an exact repeat dropped; ROI counts"
-      " inside its region only; selftest ok")
+      " inside its region only; --compare; SHEET; selftest ok")
