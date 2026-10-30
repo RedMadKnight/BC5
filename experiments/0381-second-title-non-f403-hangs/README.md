@@ -795,3 +795,50 @@ yet**; §14 calls for Stage 2. Off against on here is a comparison of the switch
 this buffer at a job's head more often. Starts stay the same: 3 pairs, up to 5, off first, tags `J3-S2-*`. The rules,
 stops and eligibility are §14's, unchanged. The shorter hold is off the tested path, so §11's flip-rate and stall stops
 matter here. The value is a round choice, not derived from a measured gap: the journal has no segment times.
+
+## 16. J3 Stage 2 (10:10–10:24, hold 200 µs) and the verdict: §14's "Open"; one buffer, one pair
+
+**The runs.** Binary 2e69e902, `BC5_DIRECT_CHAIN_HOLD_US=200`, 3 pairs, off first, 120 s each. No faults, no timeouts in
+any of the 6. Extract: `raw/j3-s2.txt`. Jobs rose by about half (~112,000 per start against ~75,000), so the hold took
+effect. Pairs 4 and 5 were not run: the deciding buffer stood in segment 1 in all 6 starts, and two more pairs at this
+hold would not have put it at a head.
+
+| Start | The 12,673-dword buffer | Prefix | Eligible targets | Faults |
+|---|---|---|---|---|
+| off-1 | seg 1 of 3 | none | 4 | 0 |
+| on-1 | seg 1 of 3 | 58, ud0 0x11 | 3 | 0 |
+| off-2 | seg 1 of 2 | none | 3 | 0 |
+| on-2 | seg 1 of 2 | 58, ud0 0x11 | 1 | 0 |
+| off-3 | seg 1 of 3 | none | 2 | 0 |
+| on-3 | seg 1 of 3 | 58, ud0 0x11 | 0 | 0 |
+
+**The verdict under §14, applied as written: "Open".** At hold 200, two ON starts (on-1, on-2) are eligible with the
+attributed restore and no F443, but no eligible OFF start has F443. The rule for evidence of the mechanism is not met at
+either hold.
+
+**The rule's own weakness, found after the results; the verdict above does not change for it.** §14's "eligible" did
+not separate the buffer the restore adds from the buffers the existing CS prefix already covers. Every eligible target at
+hold 200, in both arms, sits at offset 8, 18 or 22 and carries a 58-dword prefix even with the switch off. An OFF
+start cannot fault there for this reason, so those counts say nothing about the switch. The only start pairs that bear
+on the restore are the two with the 12,673-dword buffer at a job's head.
+
+**What the whole of J3 supports, in counts.** 16 starts, 8 in each arm.
+- The buffer at a job's head after an acb, no prefix: 1 start, F443 (off-3).
+- The same, with the attributed restore: 1 start, no fault (on-5).
+- The buffer mid-chain: 14 starts, 7 OFF and 7 ON, no fault.
+- Other buffers at a job's head after an acb, behind a 0x11 prefix from either path: 9 of the 16 starts, no fault.
+- F443 overall: OFF 1 of 8, ON 0 of 8. As counts these separate nothing.
+
+The direct pair is what matters. It agrees with F679 and the fix, and it is **one pair**. The switch's effect on chain
+position is not shown: the buffer reached a head once in each arm.
+
+**Other results.**
+- With 0x11 restored, the head position is safe in every case seen; there is no hint of a further cause at that point.
+- Flip lines per start, default hold: OFF 2,187–2,270 (mean 2,237 over 4 full starts), ON 2,133–2,233 (mean 2,171). Hold
+  200: OFF 2,205–2,249, ON 2,205–2,315. The spread covers the differences: no slowdown shown, and none excluded below
+  about 3 %.
+- A shorter hold does not bring this buffer to a head, so forcing the order needs another means: for example a diagnostic
+  flush in front of a named buffer size, or more starts at the default hold.
+- This is the start-up workload on one save state, 120 s, on this build. It says nothing about F403 or the 18:08 stall.
+
+**Open.** A second direct pair, and the table's content (inferred from the fault, still not journaled).
