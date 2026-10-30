@@ -2315,6 +2315,39 @@ run is owed before the B loop uses it. `raw/loop0380b.sh` takes `BC5_0380_S6N` a
   where the test's helper reads it; the rerun with a copy (2d6a8094) passed.
 - The shared pins did not change: 58c4a627, dcbeb440, bb50b2e0, 55531ab6. Output: `raw/runs/SLOT-int-check.txt`.
 
+## 33. The slot script's false pass, and the B loop's manifest (Codex's check of 2026-10-30)
+
+- **Codex found that `raw/slot0380m.sh` could pass falsely** (`audit/SUPERVISION-2026-10-30.md`,
+  `audit/probe_slot0380m_exit.py`): with a mock returning 9 the outer rc was 0. Fixed before it ever ran.
+  - Every build, Catch2, subset and selftest rc now ends the script non-zero.
+  - A Catch2 run also needs a summary with at least one passing test case, and a selftest must say it did nothing.
+  - The archive's md5 is an argument. `raw/test-slot0380m.sh` runs it against a mock distrobox: 17 cases pass.
+  - Target: main a7f5aa7, backend tree 003fbb0c, tar md5 07825f1b260eb9aac8306d62945ea732.
+- **`raw/slot0380.sh`, which gave §32's int-check, has the same defect.** Its outer rc proves nothing, and the subsets' rcs
+  were not recorded. §32 rests on the printed output in `raw/runs/SLOT-int-check.txt`:
+  - Build rc 0 was enforced; Catch2 printed rc 0 and 34,459 assertions in 100 cases; `[indirect_check]` printed 982
+    assertions in 16 cases; both selftests printed rc 0 and "nothing done".
+  - `[zero_skip]` printed "No tests ran". That was no pass and §32 did not count it: tree d64f057 has no such test.
+  - No failure is hidden in that output, so §32 stands, but it is read from the text, not enforced.
+- **BUILD-01's dry test ran through a `tail` pipeline in that script too**, so its rc was not recorded either. The first
+  try's failure was seen in the text. The rerun's "2 tests OK" is a line written from what the run printed.
+- **The main-check passed with the fixed script (2026-10-30 10:40, CPU only).** Backend tree 003fbb0c (main a7f5aa7; main
+  067461d has the same tree), clang Release with `BC5_WITH_AMDGPU=ON`: build rc 0, 0 errors, 0 warnings; Catch2 105 cases,
+  34,513 assertions; `[indirect_check]` 16 cases, 982 assertions; `[zero_skip]` 5 cases, 54 assertions; both
+  `direct-selftest` runs without `--submit` did nothing; the script's own rc 0. It covers the backend tree only, not patch
+  0001 or the emulator link. The shared pins did not change. Output: `raw/runs/SLOT-main-check.txt`.
+- **The manifest** is `raw/MANIFEST-B-loop-r1.md`. No smoke has used the loop's exact switches, so one comes first. Codex
+  decides the limits; the loop has no GO.
+- **`int/0381-to-main`'s CPU check passed (2026-10-30 11:51).** Tree c8652825 (4e924f3), the same runner: build rc 0, 0
+  errors, 0 warnings; Catch2 115 cases, 34,661 assertions; `[indirect_check]` 16, `[zero_skip]` 5, `[draw_args]` 4,
+  `[acb_restore]` 6 cases; both selftests did nothing; rc 0; shared pins unchanged. `raw/runs/SLOT-int0381-check.txt`. Tree
+  437a0d5a (100feea) came after it and is not checked.
+- **Smoke BS1 passed (11:52)**, r1, 180 s, RT on: verdict pass, no kernel line, 27.4 flips/s, the recorder's self-test
+  written, saves and pins unchanged. Details in the manifest and `raw/runs/BS1-smoke.txt`. The loop still has no GO.
+- **A lock gap in `raw/loop0380b.sh`, found while writing it:** the runner frees the lock after each try, and the loop
+  overwrote the lock file at the next try. It now retakes the lock at once and ends if someone else holds it. It also pins
+  the runner's hash. A stand-in dry run passed.
+
 ## Result
 
 - Sources read and cited (F545, F546). The title-side evidence was re-read from exps 0376/0378 (F547).
