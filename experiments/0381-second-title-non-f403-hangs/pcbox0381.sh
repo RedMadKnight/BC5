@@ -31,13 +31,14 @@ for t in "" "[acb_restore]" "[chain]" "[full_state]" "[indirect_check]" "[zero_s
     grep -q 'No tests ran' "$out" && fail "no tests ran: $t"
     grep -q 'All tests passed' "$out" || fail "no pass line: $t"
 done
+n=0
 for a in "" "--cp-check --zero-check"; do
-    out=$I/selftest.log
+    n=$((n + 1)); out=$I/selftest-$n.log
     box "cd '$I/build' && ./direct-selftest $a" > "$out" 2>&1; rc=$?
     echo "direct-selftest [$a] rc $rc: $(tail -1 "$out")"
     [ "$rc" = 0 ] || fail selftest
     grep -q '^direct-selftest: nothing done without --submit' "$out" || fail "selftest did not report doing nothing"
 done
-echo "toolchain: $(box 'clang++ --version | head -1')"
+echo "toolchain: $(box 'clang++ --version | head -1'); archive $(md5sum < "$I/build/libbc5_backend.a" | cut -c1-8)"
 ok=1
 echo "CHECK PASS $(date +%T)"

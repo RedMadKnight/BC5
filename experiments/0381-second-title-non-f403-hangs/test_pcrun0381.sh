@@ -55,4 +55,6 @@ setup; export NO_TESTS=1; r=$(run)
 expect "no tests ran: FAILED, no done" "[ $r != 0 ] && q | grep -q 'check FAILED' && ! q | grep -q 'check done'"
 setup; export NO_NOTHING=1; r=$(run)
 expect "selftest did not do nothing: FAILED, no done" "[ $r != 0 ] && q | grep -q 'check FAILED' && ! q | grep -q 'check done'"
+setup; r=$(run)
+expect "both selftests keep their own log" "[ -s '$HOME/bc5-work/exp0381/pc/selftest-1.log' ] && [ -s '$HOME/bc5-work/exp0381/pc/selftest-2.log' ]"
 exit $fail
