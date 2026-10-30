@@ -30,6 +30,7 @@ U0=$(up)
 note "loop $PFX start: budget $BUDGET s, $SECS s per try, boot $(cut -c1-8 /proc/sys/kernel/random/boot_id)"
 while :; do
   [ -e "$STOP" ] && { WHY="stop file"; break; }
+  pgrep '^kyty_emulator' > /dev/null && { WHY="an emulator runs (the maintainer's play?): no new try"; break; }
   [ $(($(date +%s) - T0 + SECS + 60)) -le "$BUDGET" ] || { WHY="time budget"; break; }
   FREE=$(df -Pk "$W" | awk 'NR == 2 {print int($4 / 1048576)}')
   [ "$FREE" -ge 20 ] || { WHY="disk: $FREE GiB free"; break; }
