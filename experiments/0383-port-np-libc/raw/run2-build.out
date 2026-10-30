@@ -1,0 +1,313 @@
++ /usr/bin/clang++ -I~/src/KytyPlus/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_BUILD -DZYDIS_S ...
+In file included from ~/src/KytyPlus/src/libs/libC.cpp:6:
+[1m~/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<[0;34mchar16_t[0m>, [0;34mchar16_t[0m> convert;[0m
+      | [0;1;32m             ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: [0m[0;1;36mnote: [0m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here[0m
+  262 |     [0;34mclass[0m _GLIBCXX17_DEPRECATED wstring_convert[0m
+      | [0;1;32m          ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: [0m[0;1;36mnote: [0mexpanded from macro '_GLIBCXX17_DEPRECATED'[0m
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]][0m
+      | [0;1;32m                                 ^
+[0m1 warning generated.
++ /usr/bin/clang++ -I~/bc5-work/exp0383/run2/tree/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_B ...
+In file included from ~/bc5-work/exp0383/run2/tree/src/libs/libC.cpp:6:
+[1m~/bc5-work/exp0383/run2/tree/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<[0;34mchar16_t[0m>, [0;34mchar16_t[0m> convert;[0m
+      | [0;1;32m             ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: [0m[0;1;36mnote: [0m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here[0m
+  262 |     [0;34mclass[0m _GLIBCXX17_DEPRECATED wstring_convert[0m
+      | [0;1;32m          ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: [0m[0;1;36mnote: [0mexpanded from macro '_GLIBCXX17_DEPRECATED'[0m
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]][0m
+      | [0;1;32m                                 ^
+[0m1 warning generated.
++ /usr/bin/clang++ -I~/src/KytyPlus/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_BUILD -DZYDIS_S ...
+In file included from ~/src/KytyPlus/src/libs/libNpCppWebApi.cpp:21:
+In file included from ~/src/KytyPlus/src/libs/libs.h:6:
+[1m~/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<[0;34mchar16_t[0m>, [0;34mchar16_t[0m> convert;[0m
+      | [0;1;32m             ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: [0m[0;1;36mnote: [0m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here[0m
+  262 |     [0;34mclass[0m _GLIBCXX17_DEPRECATED wstring_convert[0m
+      | [0;1;32m          ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: [0m[0;1;36mnote: [0mexpanded from macro '_GLIBCXX17_DEPRECATED'[0m
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]][0m
+      | [0;1;32m                                 ^
+[0m[1m~/src/KytyPlus/src/libs/libNpCppWebApi.cpp:47:1: [0m[0;1;35mwarning: [0m[1mfunction declared 'noreturn' should not return [-Winvalid-noreturn][0m
+   47 | }[0m
+      | [0;1;32m^
+[0m[1m~/src/KytyPlus/src/libs/libNpCppWebApi.cpp:59:30: [0m[0;1;35mwarning: [0m[1munused variable 'VectorReferenceCountOffset' [-Wunused-const-variable][0m
+   59 | [0;34mstatic[0m [0;34mconstexpr[0m std::size_t VectorReferenceCountOffset = [0;32m0x30[0m;[0m
+      | [0;1;32m                             ^~~~~~~~~~~~~~~~~~~~~~~~~~
+[0m3 warnings generated.
++ /usr/bin/clang++ -I~/bc5-work/exp0383/run2/tree/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_B ...
+In file included from ~/bc5-work/exp0383/run2/tree/src/libs/libNpCppWebApi.cpp:24:
+In file included from ~/bc5-work/exp0383/run2/tree/src/libs/libs.h:6:
+[1m~/bc5-work/exp0383/run2/tree/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<[0;34mchar16_t[0m>, [0;34mchar16_t[0m> convert;[0m
+      | [0;1;32m             ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: [0m[0;1;36mnote: [0m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here[0m
+  262 |     [0;34mclass[0m _GLIBCXX17_DEPRECATED wstring_convert[0m
+      | [0;1;32m          ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: [0m[0;1;36mnote: [0mexpanded from macro '_GLIBCXX17_DEPRECATED'[0m
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]][0m
+      | [0;1;32m                                 ^
+[0m[1m~/bc5-work/exp0383/run2/tree/src/libs/libNpCppWebApi.cpp:50:1: [0m[0;1;35mwarning: [0m[1mfunction declared 'noreturn' should not return [-Winvalid-noreturn][0m
+   50 | }[0m
+      | [0;1;32m^
+[0m[1m~/bc5-work/exp0383/run2/tree/src/libs/libNpCppWebApi.cpp:62:30: [0m[0;1;35mwarning: [0m[1munused variable 'VectorReferenceCountOffset' [-Wunused-const-variable][0m
+   62 | [0;34mstatic[0m [0;34mconstexpr[0m std::size_t VectorReferenceCountOffset = [0;32m0x30[0m;[0m
+      | [0;1;32m                             ^~~~~~~~~~~~~~~~~~~~~~~~~~
+[0m3 warnings generated.
+== warnings: baseline 0, fixed 0, new 0
++ /usr/bin/clang++ -fno-rtti -fno-exceptions -fcolor-diagnostics -finput-charset=UTF-8 -fexec-charset=UTF-8 -g -fno-strict-aliasing -fno-omit-frame-pointer -Wall -fmessage-length=0 -fno-rtti -fno-exceptions -fcolor-diagnos ...
+== emulator linked (not run)
++ /usr/bin/clang++ -I~/bc5-work/exp0383/run2/tree/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_B ...
++ /usr/bin/clang++ -o ~/bc5-work/exp0383/run2/np_cpp_web_api_tests ~/bc5-work/exp0383/run2/obj/NpCppWebApiTests.cpp.o src/CMakeFiles/kyty_emulator.dir/platformDispatch.cpp.o src/CMakeFiles ...
++ ~/bc5-work/exp0383/run2/np_cpp_web_api_tests ...
+NpCppWebApiTests: ok: String ctor zeroes the reference count
+NpCppWebApiTests: ok: String ctor keeps the context at +0x18
+NpCppWebApiTests: ok: append returns 0
+NpCppWebApiTests: ok: append grows the buffer
+NpCppWebApiTests: ok: c_str holds both appends
+NpCppWebApiTests: ok: String dtor frees and clears the buffer
+NpCppWebApiTests: ok: String stays within 0x20 bytes
+NpCppWebApiTests: ok: Vector<String>::pushBack returns 0
+NpCppWebApiTests: ok: a second pushBack returns 0
+NpCppWebApiTests: ok: the vector has a body after pushBack
+NpCppWebApiTests: ok: the body holds two elements
+NpCppWebApiTests: ok: the body's reference count is 1
+NpCppWebApiTests: ok: Vector<String> dtor releases the body
+NpCppWebApiTests: ok: a default IntrusivePtr is empty
+NpCppWebApiTests: ok: destroying an empty IntrusivePtr is a no-op
+NpCppWebApiTests: ok: the copy ctor shares the object and adds a reference
+NpCppWebApiTests: ok: operator-> returns the object
+NpCppWebApiTests: ok: releasing one of two references keeps the object (the field is left as AnyPS5 leaves it)
+NpCppWebApiTests: ok: releasing the last reference calls the deleter once
+NpCppWebApiTests: ok: pushBack of an IntrusivePtr returns 0
+NpCppWebApiTests: ok: the vector holds a reference to the element
+NpCppWebApiTests: ok: destroying the vector releases its element's reference
+NpCppWebApiTests: ok: the element's last reference deletes it
+NpCppWebApiTests: ok: LibContext ctor zeroes the context
+NpCppWebApiTests: ok: initialize succeeds as on an offline console
+NpCppWebApiTests: ok: a parameter initialize succeeds (bookkeeping)
+NpCppWebApiTests: ok: terminate returns 0
+NpCppWebApiTests: all checks passed
+== np_cpp_web_api_tests exit 0, final line seen
++ /usr/bin/clang++ -I~/bc5-work/exp0383/run2/tree/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_B ...
+In file included from ~/bc5-work/exp0383/run2/tests/LibcNidTests.cpp:11:
+In file included from ~/bc5-work/exp0383/run2/tree/src/libs/libs.h:6:
+[1m~/bc5-work/exp0383/run2/tree/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<[0;34mchar16_t[0m>, [0;34mchar16_t[0m> convert;[0m
+      | [0;1;32m             ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: [0m[0;1;36mnote: [0m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here[0m
+  262 |     [0;34mclass[0m _GLIBCXX17_DEPRECATED wstring_convert[0m
+      | [0;1;32m          ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: [0m[0;1;36mnote: [0mexpanded from macro '_GLIBCXX17_DEPRECATED'[0m
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]][0m
+      | [0;1;32m                                 ^
+[0m1 warning generated.
++ /usr/bin/clang++ -o ~/bc5-work/exp0383/run2/libc_nid_tests ~/bc5-work/exp0383/run2/obj/LibcNidTests.cpp.o src/CMakeFiles/kyty_emulator.dir/platformDispatch.cpp.o src/CMakeFiles/kyty_emul ...
++ ~/bc5-work/exp0383/run2/libc_nid_tests ...
+LibcNidTests: ok: LibcInternal::strcmp
+LibcNidTests: ok: the NID binds that wrapper
+LibcNidTests: ok: the record names that wrapper
+LibcNidTests: ok: LibcInternal::strncmp
+LibcNidTests: ok: the NID binds that wrapper
+LibcNidTests: ok: the record names that wrapper
+LibcNidTests: ok: LibcInternal::strcpy
+LibcNidTests: ok: the NID binds that wrapper
+LibcNidTests: ok: the record names that wrapper
+LibcNidTests: ok: LibcInternal::strlen
+LibcNidTests: ok: the NID binds that wrapper
+LibcNidTests: ok: the record names that wrapper
+LibcNidTests: ok: LibcInternal::strncpy
+LibcNidTests: ok: the NID binds that wrapper
+LibcNidTests: ok: the record names that wrapper
+LibcNidTests: ok: strcmp resolves
+LibcNidTests: ok: strcmp: equal
+LibcNidTests: ok: strcmp: sees past the third byte, below
+LibcNidTests: ok: strcmp: above
+LibcNidTests: ok: strcmp: a prefix sorts first
+LibcNidTests: ok: strncmp resolves
+LibcNidTests: ok: strncmp: a difference past n does not count
+LibcNidTests: ok: strncmp: a difference at n does
+LibcNidTests: ok: strncmp: above
+LibcNidTests: ok: strncmp: n = 0
+LibcNidTests: ok: strncmp: stops at the terminator
+LibcNidTests: ok: strcpy resolves
+LibcNidTests: ok: strcpy returns dest
+LibcNidTests: ok: strcpy copies the text and the terminator
+LibcNidTests: ok: strcpy leaves the guard bytes
+LibcNidTests: ok: strcpy of an empty string writes the terminator
+LibcNidTests: ok: and nothing past it
+LibcNidTests: ok: strcpy_s: no Find
+LibcNidTests: ok: strcpy_s: no FindByNid as a function
+LibcNidTests: ok: strcpy_s: no FindByNid as an object
+LibcNidTests: ok: strcpy_s: no FindByName
+LibcNidTests: all checks passed
+== libc_nid_tests exit 0, final line seen
++ /usr/bin/clang++ -I~/bc5-work/exp0383/run2/tree/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_B ...
+In file included from ~/bc5-work/exp0383/run2/tests/NpAliasTests.cpp:17:
+In file included from ~/bc5-work/exp0383/run2/tree/src/libs/libs.h:6:
+[1m~/bc5-work/exp0383/run2/tree/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<[0;34mchar16_t[0m>, [0;34mchar16_t[0m> convert;[0m
+      | [0;1;32m             ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: [0m[0;1;36mnote: [0m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here[0m
+  262 |     [0;34mclass[0m _GLIBCXX17_DEPRECATED wstring_convert[0m
+      | [0;1;32m          ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: [0m[0;1;36mnote: [0mexpanded from macro '_GLIBCXX17_DEPRECATED'[0m
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]][0m
+      | [0;1;32m                                 ^
+[0mIn file included from ~/bc5-work/exp0383/run2/tests/NpAliasTests.cpp:103:
+[1m~/bc5-work/exp0383/run2/tree/src/libs/libNpCppWebApi.cpp:50:1: [0m[0;1;35mwarning: [0m[1mfunction declared 'noreturn' should not return [-Winvalid-noreturn][0m
+   50 | }[0m
+      | [0;1;32m^
+[0m2 warnings generated.
++ /usr/bin/clang++ -fsanitize=address -fno-omit-frame-pointer -o ~/bc5-work/exp0383/run2/np_alias_tests_asan ~/bc5-work/exp0383/run2/obj/NpAliasTests.cppfsanitize=addressfno-omit-frame-poi ...
+/usr/bin/x86_64-linux-gnu-ld.bfd: cannot find /usr/lib/llvm-21/lib/clang/21/lib/x86_64-pc-linux-gnu/libclang_rt.asan_static.a: No such file or directory
+/usr/bin/x86_64-linux-gnu-ld.bfd: cannot find /usr/lib/llvm-21/lib/clang/21/lib/x86_64-pc-linux-gnu/libclang_rt.asan.a: No such file or directory
+/usr/bin/x86_64-linux-gnu-ld.bfd: cannot find /usr/lib/llvm-21/lib/clang/21/lib/x86_64-pc-linux-gnu/libclang_rt.asan_cxx.a: No such file or directory
+clang++: error: linker command failed with exit code 1 (use -v to see invocation)
+== ASan link failed: the same tests with the tracker alone
++ /usr/bin/clang++ -I~/bc5-work/exp0383/run2/tree/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_B ...
+In file included from ~/bc5-work/exp0383/run2/tests/NpAliasTests.cpp:17:
+In file included from ~/bc5-work/exp0383/run2/tree/src/libs/libs.h:6:
+[1m~/bc5-work/exp0383/run2/tree/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<[0;34mchar16_t[0m>, [0;34mchar16_t[0m> convert;[0m
+      | [0;1;32m             ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: [0m[0;1;36mnote: [0m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here[0m
+  262 |     [0;34mclass[0m _GLIBCXX17_DEPRECATED wstring_convert[0m
+      | [0;1;32m          ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: [0m[0;1;36mnote: [0mexpanded from macro '_GLIBCXX17_DEPRECATED'[0m
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]][0m
+      | [0;1;32m                                 ^
+[0mIn file included from ~/bc5-work/exp0383/run2/tests/NpAliasTests.cpp:103:
+[1m~/bc5-work/exp0383/run2/tree/src/libs/libNpCppWebApi.cpp:50:1: [0m[0;1;35mwarning: [0m[1mfunction declared 'noreturn' should not return [-Winvalid-noreturn][0m
+   50 | }[0m
+      | [0;1;32m^
+[0m2 warnings generated.
++ /usr/bin/clang++ -o ~/bc5-work/exp0383/run2/np_alias_tests ~/bc5-work/exp0383/run2/obj/NpAliasTests.cpp.o src/CMakeFiles/kyty_emulator.dir/platformDispatch.cpp.o src/CMakeFiles/kyty_emul ...
++ ~/bc5-work/exp0383/run2/np_alias_tests string_repro_40_39 ...
+NpAliasTests: ok: string_repro_40_39
+NpAliasTests: all checks passed (1 cases)
+== string_repro_40_39 exit 0 pass
++ ~/bc5-work/exp0383/run2/np_alias_tests string_self_offset0_growth ...
+NpAliasTests: ok: string_self_offset0_growth
+NpAliasTests: all checks passed (1 cases)
+== string_self_offset0_growth exit 0 pass
++ ~/bc5-work/exp0383/run2/np_alias_tests string_self_offset0_no_growth ...
+NpAliasTests: ok: string_self_offset0_no_growth
+NpAliasTests: all checks passed (1 cases)
+== string_self_offset0_no_growth exit 0 pass
++ ~/bc5-work/exp0383/run2/np_alias_tests string_substring_no_growth ...
+NpAliasTests: ok: string_substring_no_growth
+NpAliasTests: all checks passed (1 cases)
+== string_substring_no_growth exit 0 pass
++ ~/bc5-work/exp0383/run2/np_alias_tests string_substring_growth ...
+NpAliasTests: ok: string_substring_growth
+NpAliasTests: all checks passed (1 cases)
+== string_substring_growth exit 0 pass
++ ~/bc5-work/exp0383/run2/np_alias_tests string_empty_own_terminator ...
+NpAliasTests: ok: string_empty_own_terminator
+NpAliasTests: all checks passed (1 cases)
+== string_empty_own_terminator exit 0 pass
++ ~/bc5-work/exp0383/run2/np_alias_tests string_empty_external ...
+NpAliasTests: ok: string_empty_external
+NpAliasTests: all checks passed (1 cases)
+== string_empty_external exit 0 pass
++ ~/bc5-work/exp0383/run2/np_alias_tests string_exact_fit ...
+NpAliasTests: ok: string_exact_fit
+NpAliasTests: all checks passed (1 cases)
+== string_exact_fit exit 0 pass
++ ~/bc5-work/exp0383/run2/np_alias_tests string_repeated_growth ...
+NpAliasTests: ok: string_repeated_growth
+NpAliasTests: all checks passed (1 cases)
+== string_repeated_growth exit 0 pass
++ ~/bc5-work/exp0383/run2/np_alias_tests string_length_offset_sweep ...
+NpAliasTests: ok: string_length_offset_sweep
+NpAliasTests: all checks passed (1 cases)
+== string_length_offset_sweep exit 0 pass
++ ~/bc5-work/exp0383/run2/np_alias_tests string_external_appends ...
+NpAliasTests: ok: string_external_appends
+NpAliasTests: all checks passed (1 cases)
+== string_external_appends exit 0 pass
++ ~/bc5-work/exp0383/run2/np_alias_tests string_oom_self_growth ...
+NpAliasTests: ok: string_oom_self_growth
+NpAliasTests: all checks passed (1 cases)
+== string_oom_self_growth exit 0 pass
++ ~/bc5-work/exp0383/run2/np_alias_tests ivec_self_growth_each_index ...
+NpAliasTests: ok: ivec_self_growth_each_index
+NpAliasTests: all checks passed (1 cases)
+== ivec_self_growth_each_index exit 0 pass
++ ~/bc5-work/exp0383/run2/np_alias_tests ivec_self_no_growth ...
+NpAliasTests: ok: ivec_self_no_growth
+NpAliasTests: all checks passed (1 cases)
+== ivec_self_no_growth exit 0 pass
++ ~/bc5-work/exp0383/run2/np_alias_tests ivec_self_null_element_growth ...
+NpAliasTests: ok: ivec_self_null_element_growth
+NpAliasTests: all checks passed (1 cases)
+== ivec_self_null_element_growth exit 0 pass
++ ~/bc5-work/exp0383/run2/np_alias_tests ivec_repeated_growth ...
+NpAliasTests: ok: ivec_repeated_growth
+NpAliasTests: all checks passed (1 cases)
+== ivec_repeated_growth exit 0 pass
++ ~/bc5-work/exp0383/run2/np_alias_tests ivec_all_instantiations ...
+NpAliasTests: ok: ivec_all_instantiations
+NpAliasTests: all checks passed (1 cases)
+== ivec_all_instantiations exit 0 pass
++ ~/bc5-work/exp0383/run2/np_alias_tests ivec_oom_grow_self ...
+NpAliasTests: ok: ivec_oom_grow_self
+NpAliasTests: all checks passed (1 cases)
+== ivec_oom_grow_self exit 0 pass
++ ~/bc5-work/exp0383/run2/np_alias_tests ivec_oom_first_body ...
+NpAliasTests: ok: ivec_oom_first_body
+NpAliasTests: all checks passed (1 cases)
+== ivec_oom_first_body exit 0 pass
++ ~/bc5-work/exp0383/run2/np_alias_tests ivec_oom_first_storage ...
+NpAliasTests: ok: ivec_oom_first_storage
+NpAliasTests: all checks passed (1 cases)
+== ivec_oom_first_storage exit 0 pass
++ ~/bc5-work/exp0383/run2/np_alias_tests ivec_fault_sweep ...
+NpAliasTests: ok: ivec_fault_sweep
+NpAliasTests: all checks passed (1 cases)
+== ivec_fault_sweep exit 0 pass
++ ~/bc5-work/exp0383/run2/np_alias_tests svec_self_growth_each_index ...
+NpAliasTests: ok: svec_self_growth_each_index
+NpAliasTests: all checks passed (1 cases)
+== svec_self_growth_each_index exit 0 pass
++ ~/bc5-work/exp0383/run2/np_alias_tests svec_self_no_growth ...
+NpAliasTests: ok: svec_self_no_growth
+NpAliasTests: all checks passed (1 cases)
+== svec_self_no_growth exit 0 pass
++ ~/bc5-work/exp0383/run2/np_alias_tests svec_self_null_buffer_growth ...
+NpAliasTests: ok: svec_self_null_buffer_growth
+NpAliasTests: all checks passed (1 cases)
+== svec_self_null_buffer_growth exit 0 pass
++ ~/bc5-work/exp0383/run2/np_alias_tests svec_repeated_growth ...
+NpAliasTests: ok: svec_repeated_growth
+NpAliasTests: all checks passed (1 cases)
+== svec_repeated_growth exit 0 pass
++ ~/bc5-work/exp0383/run2/np_alias_tests svec_copies_are_independent ...
+NpAliasTests: ok: svec_copies_are_independent
+NpAliasTests: all checks passed (1 cases)
+== svec_copies_are_independent exit 0 pass
++ ~/bc5-work/exp0383/run2/np_alias_tests svec_oom_copy ...
+NpAliasTests: ok: svec_oom_copy
+NpAliasTests: all checks passed (1 cases)
+== svec_oom_copy exit 0 pass
++ ~/bc5-work/exp0383/run2/np_alias_tests svec_oom_grow ...
+NpAliasTests: ok: svec_oom_grow
+NpAliasTests: all checks passed (1 cases)
+== svec_oom_grow exit 0 pass
++ ~/bc5-work/exp0383/run2/np_alias_tests svec_fault_sweep ...
+NpAliasTests: ok: svec_fault_sweep
+NpAliasTests: all checks passed (1 cases)
+== svec_fault_sweep exit 0 pass
++ ~/bc5-work/exp0383/run2/np_alias_tests layout ...
+NpAliasTests: ok: layout
+NpAliasTests: all checks passed (1 cases)
+== layout exit 0 pass
+== np_alias_tests no ASan: 30/30 cases pass
+== PASS: 0328 and libc final lines seen, np_alias_tests 30/30 no ASan, new warnings 0 of 0

@@ -3,8 +3,9 @@
 The laptop cannot compile the full `libC.cpp`, link the host or run on Linux. This is the CPU-only plan for that. It needs
 its own slot from the top session and Codex's decision on the current commit and archive; the B loop's GO does not cover
 it. The runner was hardened after Codex's review `REVIEW-PORTS-01`, and `test_runner_port.py` tests it on the laptop.
-The first run stopped early on the box's locale and compiled nothing (README, `raw/box1-boxcheck.txt`), so the check itself
-has not been done. It kept `~/bc5-work/exp0383/tree` and `raw/`; the next run works in `~/bc5-work/exp0383/run2/`.
+The first run stopped early on the box's locale and compiled nothing (README, `raw/box1-boxcheck.txt`). It kept
+`~/bc5-work/exp0383/tree` and `raw/`; the second run worked in `~/bc5-work/exp0383/run2/` and passed (README, `raw/run2-*`).
+Its warnings gate matched nothing, because of the shared flags' colour codes: fix that before reusing this runner.
 
 **What runs.** `boxcheck_port.sh`, from the unpacked archive, on the box, about 15 minutes at nice 19. No emulator, no
 GPU, no root, no `drop_caches`. It writes only under `~/bc5-work/exp0383/run2/` and its own BOX-LOCK line, which it clears. It runs in the C locale.

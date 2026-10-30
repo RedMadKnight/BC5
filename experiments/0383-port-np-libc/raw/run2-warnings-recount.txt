@@ -1,0 +1,4 @@
+baseline 4, fixed 4, new 0, gone 0
+fixed: 1 x libNpCppWebApi.cpp: function declared 'noreturn' should not return [-Winvalid-noreturn]
+fixed: 1 x libNpCppWebApi.cpp: unused variable 'VectorReferenceCountOffset' [-Wunused-const-variable]
+fixed: 2 x stringUtils.h: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations]

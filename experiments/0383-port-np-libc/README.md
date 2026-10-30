@@ -1,6 +1,6 @@
 # 0383 — Host fixes from the upstream review: NpCppWebApi self-aliasing and three libc NIDs
 
-**Date.** 2026-10-30. **Branch.** `fix/port-np-libc`. **Box.** None so far; everything here ran on the laptop.
+**Date.** 2026-10-30. **Branch.** `fix/port-np-libc`. **Box.** CPU only, no emulator run and no GPU; the rest ran on the laptop.
 Both fixes are default behaviour of the host library, so neither has a switch.
 
 **Question.** Do the fixes from AnyPS5 `daf4eb3` and KytyPS5 `8c01d8e`, ported into patch 0001, correct the host's
@@ -59,8 +59,34 @@ where the script compared with English. The output named the two approved files 
 runner's, not the tree's. Nothing shared changed, and the shared binary's md5 was the pin afterwards. The script and the
 build step now run in the C locale, and a Polish stand-in `diff` reproduces the stop on the old script and passes on the new.
 
-**Not shown.** The Linux compile with the shared flags, the host link, the path through `InitAll` and `InitLibC_1`, and the
-Linux run. Nothing shows a title calling these paths, and nothing here links to F443, F403 or Q21.
+**Second box run (2026-10-30 19:00–19:01, commit `4968372`, Codex's GO, the maintainer's yes).** `boxcheck: PASS`, exit 0, in
+54 s (`raw/run2-*`). The archive's full hashes matched before and after the transfer. Ubuntu clang 21.1.8, kernel 7.2.9.
 
-**Verdict.** Inconclusive until the Linux check in [`BOX-PLAN.md`](BOX-PLAN.md) has run: the laptop results pass, but the
-acceptance needs that check. This section is to be finished then, and the directory is not frozen before it.
+| check | result |
+|---|---|
+| patched tree | `src` tree is the pin; exp 0372's 5 lines and header there; only the two approved files differ from the shared tree |
+| compile | the two fixed units and their baselines, with the shared build's flags |
+| link | a private `kyty_emulator`, md5 `269c5569b12b2301335fd5567e1bfd45`, never run |
+| `NpCppWebApiTests` (exp 0328) | rc 0, final line seen |
+| `LibcNidTests`, through `InitAll` → `InitLibC_1` → `InitLibcInternal_1` | rc 0, final line seen |
+| `NpAliasTests` | 30/30 manifest cases, one process each, **without ASan** |
+| shared binary | `58c4a627...` before and after; lock empty and no process of ours left afterwards |
+
+Two things the PASS line does not say:
+
+- **ASan did not run on Linux.** The box's clang has no `libclang_rt.asan*.a`, so `NpAliasTests` fell back to its tracker, as
+  the plan allows. The use-after-free proof is the laptop's; the box adds the Linux build and the tracker's exact counts.
+  No unfixed tree was run on Linux, so a before/after exists on the laptop only.
+- **The runner's warnings gate did not work.** `-fcolor-diagnostics` in the shared flags put colour codes in the compiler's
+  lines, its pattern matched none, and "new warnings 0 of 0" says nothing. The test programs hid this because synthetic
+  output had no colour. `recount_warnings.py` recounted from the same log with the codes removed: baseline 4, fixed 4, new
+  0 (`raw/run2-warnings-recount.txt`), and each of the four is an existing warning. The gate in `boxbuild_port.py` stays as it
+  ran; it needs that fix before it is used again.
+
+**Not shown.** The fixed paths in the emulator itself, since the private binary was not run. Nothing shows a title calling
+these paths, and nothing here links to F443, F403 or Q21.
+
+**Verdict.** Supported. The self-aliasing and the three NID registrations are fixed in patch 0001, with the acceptance tests
+passing on the laptop (with ASan) and on Linux (compile, link, `InitAll`, tests, without ASan), and with no new warning by the
+recount. Integration is not decided here: the plan for it goes to Codex separately, and merge, the shared patch, shared
+builds and the launcher each stay separate decisions.
