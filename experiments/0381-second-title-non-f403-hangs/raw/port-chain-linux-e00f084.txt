@@ -1,0 +1,28 @@
+# PORT-CHAIN Linux check of e00f084 (backend tree 89121f6b), 2026-10-30 14:25, pcrun0381.sh + pcbox0381.sh at ee92f68.
+# The session's terminal output, as printed. The full logs stay on the box in ~/bc5-work/exp0381/pc (configure.log,
+# build.log, tests-*.log, selftest.log); they were not copied here, to keep to no new box access.
+# Limits of this record:
+# - selftest.log holds only the second selftest: that runner overwrote the first (fixed later, 23252e9).
+# - The run did not print the archive's md5, so the archive is not pinned (the fixed runner prints it). The shared pins were
+#   not compared: the script wrote only under ~/bc5-work/exp0381/pc.
+# - ce46317 (a test and a comment on top of e00f084) has not been built by clang; MSVC only.
+claimed
+== 14:25:03 configure
+== 14:25:05 build
+build rc 0, warnings 0, errors 0
+(all) rc 0: All tests passed (34780 assertions in 120 test cases)
+[acb_restore] rc 0: All tests passed (237 assertions in 11 test cases)
+[chain] rc 0: All tests passed (98 assertions in 4 test cases)
+[full_state] rc 0: All tests passed (78 assertions in 10 test cases)
+[indirect_check] rc 0: All tests passed (982 assertions in 16 test cases)
+[zero_skip] rc 0: All tests passed (54 assertions in 5 test cases)
+[draw_args] rc 0: All tests passed (30 assertions in 4 test cases)
+direct-selftest [] rc 0: direct-selftest: nothing done without --submit
+direct-selftest [--cp-check --zero-check] rc 0: direct-selftest: nothing done without --submit
+toolchain: Ubuntu clang version 21.1.8 (6ubuntu1)
+CHECK PASS 14:25:49
+check rc 0
+pcrun rc 0
+lock: []
+top exp 0381 | PORT-CHAIN claim | 2026-10-30 14:25:02
+top exp 0381 | PORT-CHAIN check done: all steps passed, no GPU; lock cleared | 2026-10-30 14:25:49
