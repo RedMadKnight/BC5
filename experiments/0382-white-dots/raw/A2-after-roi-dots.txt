@@ -1,0 +1,11 @@
+  t190.png 1920x610: dots 62 (52.9 per Mpix), kept 0 of them from the previous shot; luma mean 0.241; grid 1 5 19 2 31 3 0 1 0; neutral 6, tinted 56, size median 7; change -
+    grid T/D: 0.55/0.15:128 0.55/0.25:44 0.55/0.40:8 0.70/0.15:111 0.70/0.25:62 0.70/0.40:23 0.85/0.15:40 0.85/0.25:31 0.85/0.40:24
+  t200.png 1920x610: dots 59 (50.4 per Mpix), kept 4 of them from the previous shot; luma mean 0.239; grid 0 4 17 4 30 2 0 1 1; neutral 4, tinted 55, size median 9; change 0.291
+    grid T/D: 0.55/0.15:129 0.55/0.25:46 0.55/0.40:8 0.70/0.15:103 0.70/0.25:59 0.70/0.40:22 0.85/0.15:42 0.85/0.25:34 0.85/0.40:22
+  t210.png 1920x610: dots 60 (51.2 per Mpix), kept 8 of them from the previous shot; luma mean 0.238; grid 0 6 17 3 28 3 0 2 1; neutral 3, tinted 57, size median 8; change 0.260
+    grid T/D: 0.55/0.15:133 0.55/0.25:36 0.55/0.40:5 0.70/0.15:118 0.70/0.25:60 0.70/0.40:24 0.85/0.15:45 0.85/0.25:34 0.85/0.40:22
+# shots-A2/after: 3 shots, 3 used, 3 distinct frames; T 0.70 D 0.25; ROI 0,260,1920,870
+# median over the used shots: dots 60 (51.2 per Mpix), kept 4; max dots 62; change 0.275
+# median over the used shots, grid T/D: 0.55/0.15:129 0.55/0.25:44 0.55/0.40:8 0.70/0.15:111 0.70/0.25:60 0.70/0.40:23 0.85/0.15:42 0.85/0.25:34 0.85/0.40:22
+# reading: no still pair (every change > 0.02): no flicker reading; at the largest view change (t200.png, change 0.29) 4 of 59 dots kept their screen position (0.07): they moved with the view; 7% neutral (white or grey), median size 8 px, median contrast 0.37
+# sheet: 48 dots in /home/kjaniszewski/bc5-work/exp0382/shots-A2/after-roi-sheet.png (private: the title's imagery)

@@ -1,0 +1,33 @@
+--- /home/kjaniszewski/src/KytyPlus/src/libs/controller.cpp	2026-10-25 23:42:30.121570989 +0100
++++ /home/kjaniszewski/bc5-work/exp0382/src/src/libs/controller.cpp	2026-10-30 08:54:15.547150199 +0100
+@@ -29,6 +29,12 @@
+ #include <vector>
+ #include <mutex>
+ 
++// BC5 (experiment 0382): the Ray tracing switch, set from a script by the "rt on|off" line below (bc5LleAgc.cpp, experiment
++// 0273: the Emulation menu's switch; taken at the next flip).
++namespace Libs::Bc5Gc::Direct {
++void SetRayTracing(bool on);
++} // namespace Libs::Bc5Gc::Direct
++
+ namespace Libs::Controller {
+ 
+ LIB_NAME("Pad", "Pad");
+@@ -376,6 +382,7 @@
+ //   stick <l|r> <x> <y> [ms]     0..255, 128 = centre; with ms it re-centres afterwards
+ //   trigger <l2|r2> <0..255> [ms]
+ //   shake | wait <ms> | reset    (reset: centre the sticks, release everything)
++//   rt on | rt off               (experiment 0382: the Ray tracing switch, as the menu sets it, at the next flip)
+ // Buttons: cross circle square triangle options up down left right l1 r1 l2 r2 l3 r3 touchpad.
+ // After each line the count of lines done is written to <file>.done. Nothing runs without the
+ // variable.
+@@ -469,6 +476,9 @@
+ 				ControllerMotion(-1000, true, still);
+ 			} else if (n >= 1 && (cmd == "pause" || cmd == "resume")) { // BC5 (experiment 0166): the window's pause from a script
+ 				Graphics::WindowSetPaused(cmd == "pause");
++			} else if (n >= 2 && cmd == "rt" && (arg == "on" || arg == "off")) { // BC5 (experiment 0382): A -> C -> A in one scene
++				Libs::Bc5Gc::Direct::SetRayTracing(arg == "on");
++				LOGF("[bc5] input-cmd: ray tracing %s requested\n", arg.c_str());
+ 			} else if (n >= 2 && cmd == "wait") {
+ 				ms(std::clamp(std::atoi(b), 0, 600000));
+ 			} else if (n >= 1 && cmd == "reset") {

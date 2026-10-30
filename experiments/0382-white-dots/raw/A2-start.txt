@@ -1,0 +1,14 @@
+2026-10-30 09:26:15
+arm A2, cap 600 s, RT on, mode pause (phases run paused after, end at G+220), ROI whole shot, launcher /home/kjaniszewski/bc5-work/exp0382/play-pkg-0382.sh md5 7e5df4c2, BC5_EMU /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator md5 58c4a627; env: BC5_EMU=/home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator BC5_0382_INPUT_CONFIG=/home/kjaniszewski/bc5-work/exp0382/input-rton.cfg KYTY_BC5_INPUT_CMD=/home/kjaniszewski/bc5-work/exp0382/in-A2.cmd
+boot b30ad76b, up since 2026-10-30 00:53:10
+keys after G: wait 117000;stick r 200 128 300;wait 22700;press options;wait 40000;press options;
+emulator pid 683564 exe /home/kjaniszewski/bc5-work/kytyplus-build/src/kyty_emulator cwd /home/kjaniszewski/bc5-work/exp0382/wd
+environ: KYTY_BC5_INPUT_CONFIG=/home/kjaniszewski/bc5-work/exp0382/input-rton.cfg BC5_DIRECT_LEARNED=/home/kjaniszewski/bc5-work/exp0382/direct-learned-pkg.txt BC5_DIRECT_SKIP_PGM=0 KYTY_BC5_SAVEDATA_DIR=/home/kjaniszewski/bc5-work/exp0382/wd/_SaveData-pkg-play BC5_DIRECT_RING_DEPS=dcb KYTY_BC5_RT_BUILD_PGM=909974400,909939400,909936c00,909939700,909939900,909974200,909973900,909973b00,909973d00,909973f00,11d049aa00,11d04a6000,11d04bb900 
+route: cross (start screen) at 87 s
+route: down x3, cross (slot 4) at 93 s
+route: cross (Continue) at 99 s
+route: the load seen at 101 s
+phase run shots at G+ 60 70 80 90 100 110 111 112 113 114 115 120 130
+phase paused shots at G+ 150 160 170
+phase after shots at G+ 190 200 210
+route: gameplay G = 140 s (the load at 101 s); the MODE's keys and the phase shots start

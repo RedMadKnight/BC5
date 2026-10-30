@@ -1,0 +1,5 @@
+# /home/kjaniszewski/bc5-work/exp0382/shots-A2/after: 3 shots
+  t190.png 1920x1080: luma mean 0.215 p50 0.178 p90 0.389 p99 0.722; white 0.002 clipped 0.001; chroma 0.137; grid 0.15 0.30 0.20 0.21 0.37 0.23 0.12 0.21 0.14
+  t200.png 1920x1080: luma mean 0.216 p50 0.180 p90 0.383 p99 0.720; white 0.002 clipped 0.001; chroma 0.137; grid 0.15 0.30 0.21 0.21 0.37 0.23 0.12 0.21 0.15
+  t210.png 1920x1080: luma mean 0.214 p50 0.179 p90 0.382 p99 0.729; white 0.002 clipped 0.001; chroma 0.136; grid 0.15 0.29 0.21 0.21 0.36 0.23 0.12 0.21 0.14
+# median over 3 shots (not dark, not repeated): luma mean 0.215 p90 0.383 p99 0.722; white 0.002 clipped 0.001; chroma 0.137

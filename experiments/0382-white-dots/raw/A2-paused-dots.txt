@@ -1,0 +1,11 @@
+  t150.png 1920x1080: dots 158 (76.2 per Mpix), kept 0 of them from the previous shot; luma mean 0.049; grid 52 0 28 0 2 14 0 1 61; neutral 103, tinted 55, size median 7; change -
+    grid T/D: 0.55/0.15:89 0.55/0.25:74 0.55/0.40:46 0.70/0.15:170 0.70/0.25:158 0.70/0.40:140 0.85/0.15:110 0.85/0.25:79 0.85/0.40:70
+  t160.png 1920x1080: dots 155 (74.7 per Mpix), kept 150 of them from the previous shot; luma mean 0.049; grid 50 0 27 0 2 14 0 1 61; neutral 100, tinted 55, size median 7; change 0.001
+    grid T/D: 0.55/0.15:89 0.55/0.25:74 0.55/0.40:45 0.70/0.15:167 0.70/0.25:155 0.70/0.40:137 0.85/0.15:112 0.85/0.25:81 0.85/0.40:72
+  t170.png 1920x1080: dots 158 (76.2 per Mpix), kept 149 of them from the previous shot; luma mean 0.049; grid 53 0 27 0 2 14 0 1 61; neutral 103, tinted 55, size median 7; change 0.001
+    grid T/D: 0.55/0.15:93 0.55/0.25:78 0.55/0.40:50 0.70/0.15:170 0.70/0.25:158 0.70/0.40:140 0.85/0.15:116 0.85/0.25:85 0.85/0.40:76
+# /home/kjaniszewski/bc5-work/exp0382/shots-A2/paused: 3 shots, 3 used, 3 distinct frames; T 0.70 D 0.25; ROI whole shot
+# median over the used shots: dots 158 (76.2 per Mpix), kept 149; max dots 158; change 0.001
+# median over the used shots, grid T/D: 0.55/0.15:89 0.55/0.25:74 0.55/0.40:46 0.70/0.15:170 0.70/0.25:158 0.70/0.40:140 0.85/0.15:112 0.85/0.25:81 0.85/0.40:72
+# reading: in a still view (2 pairs, change <= 0.02) the dots stay (median kept share 0.96 >= 0.60): tied to the scene or to a stuck buffer; 65% neutral (white or grey), median size 7 px, median contrast 0.66
+# sheet: 48 dots in /home/kjaniszewski/bc5-work/exp0382/shots-A2/paused-sheet.png (private: the title's imagery)
