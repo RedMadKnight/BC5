@@ -579,8 +579,8 @@ The next step would be a test build with the switch on, and that build needs the
 ## 12. J2's result (2026-10-30 08:40–08:53, the maintainer's yes in this session's chat): no event, but no test by the written rule
 
 **The build.** `build0381.sh`: binary 6415be8f, the shared objects with the unit of exp 0379 + this experiment's diff
-(9d4649ba) and the shared archive. Clang 21: backend 0 warnings, 99 of 99 test cases; 5 warnings in the host unit's
-link step, the older ones, none in the new lines. The shared binary (58c4a627) and archive (bb50b2e0) are unchanged.
+(9d4649ba) and the shared archive. Clang 21: backend 0 warnings, 99 of 99 test cases; 5 compiler warnings in the host
+unit, the older ones, none in the new lines. The shared binary (58c4a627) and archive (bb50b2e0) are unchanged.
 
 **The journal read.** In J1 one dcb opens with a dispatch right after an acb, and it is the faulting one. The other
 1,114 dcb dispatches that follow an acb line in the journal sit mid-buffer, which is the journal's interleaving. J1
@@ -605,6 +605,8 @@ flips run at about 41–42/s against J1's ~43/s over its first 57 s: a rough cou
 **The verdict under §11's rules: not a pass.** No start was clean, because none shows the F679 order. All five count
 as no test.
 
+*Corrected by §13: the buffer below did not vanish. The journal's `dcb N dwords` and `at` describe host chains, so readings 1 and 2 and their odds are withdrawn.*
+
 **What the runs do show.** In J1 the second burst of BVH work was a dcb of 88,848 dwords, then the 15,083-dword dcb
 opening at dword 13, which faulted. In all five J2 starts that dcb did not appear: 0x909977100 stays inside large
 dcbs, after their own 0x909974400 dispatches. The J2 starts also ran past the fault's time, 54–57 s, so they reached
@@ -620,3 +622,62 @@ Two readings stay open:
 **The test that separates them:** the same binary 6415be8f with the switch off, 3 to 5 starts, same setup. If the
 shape and the fault come back, the switch is the cause, and reading 1 stands. It needs the maintainer's yes, because
 a start can end in a GPU timeout.
+
+## 13. Correction: the buffer never left; J2 shows a chain boundary, not a title change (F681), and J3's rule
+
+**The error.** §12 read the journal's `dcb N dwords` and `at` as title buffers. They are not. The dispatch journal and
+the timing line sit in `submit_now`, which sees a whole chain (ADR 0010): title buffers laid end to end, with their
+host prefixes. So "a dcb opening at dword 13" means "a chain that starts with this buffer", and §11's clean-start
+test measured where chains start.
+
+**The evidence** (`raw/shape-j1-j2.txt`, `shape0381.py`, from the journal offsets).
+- In all five J2 starts the step from the burst's first 0x909977100 run to its second is 32,586 dwords. Across J1's
+  chain break it is 32,528 (32,515 to the chain's end, then 13). The difference is **58 dwords, the restore's exact
+  size**, five times of five.
+- Over the first burst, with no title buffer boundary between the runs, J1 and J2 agree exactly (29,190).
+- The chain sizes (47,670, 77,940, 103,865, 67,871) differ from start to start, while that step does not. J2-4's
+  103,865 is within 66 dwords of J1's two chains together.
+
+So in every J2 start the title's ~15k-dword buffer is **there, at the same stream position**, with the restore right
+in front of it, as a segment in the middle of a chain. This is inferred from offsets; no J2 journal line names a
+segment. **§12's reading 1 (the restore changes what the title builds) is refuted at this level**, and its odds are
+withdrawn.
+
+**What differs is the chain boundary.** In J1, and by their 13/26/43 offsets in the 16:25 and 01:26 events, a chain
+started with this buffer, and in J1 an acb landed right in front of it. In J2 no chain ended there, so no acb could
+land there: the restore had nothing to undo at that point. **J2 therefore did not test the fix**, which agrees with
+§11's verdict for a better reason.
+
+Why the chain held is open. Chains end on host timing: the 2 ms hold bound (`BC5_DIRECT_CHAIN_HOLD_US`), the title's
+observe points, an unsatisfied wait (`chain_flush(1)`), or a class change. The restore's code path touches none of
+these directly: it uses `chain_append` with a prefix, as any prefixed buffer does. Indirect effects are possible; for
+example, a wait that is satisfied sooner keeps a chain open. So 5 of 5 without a break against 3 of 4 with one is
+either timing or an effect of the switch through the GPU's results. J2 cannot tell.
+
+**The fix itself is untested at its target.** F679's cause stands, on J1's journal. The model test passes. No run has
+yet put an acb right in front of this buffer with the restore on.
+
+**What decides, before J3.** One read, needing a slot and the maintainer's yes: the chain statistics line and the
+timing lines around the burst, in J1 and all J2 journals, plus the journals of the earlier starts
+(`play-20261030-0125`, `-0135` and the 16:25 start). It answers:
+- which flush reason ended the chain in J1, and whether the older events show the same one;
+- where the J2 starts put the acb of that moment, before or after the chain.
+
+**J3's rule, written before it runs.**
+
+*J3a, the control:* binary 6415be8f, switch off, otherwise §11's setup. 3 starts, up to 5; stop the series at the
+first F443, and keep every journal. The measure is a chain that starts with 0x909977100 (below dword 64) right after an
+acb.
+- That order appears, with F443: the control reproduces J1. Its rate against J2's 0 of 5 says whether the switch moves
+  the chain boundary.
+- No such order in 5 starts: the order is rarer than 3 of 4 on this binary, whatever the switch does. J3b decides.
+
+*J3b, the real test of the fix:* the switch **on**, with the chain boundary forced so the acb can land in front of the
+buffer: a shorter hold, `BC5_DIRECT_CHAIN_HOLD_US`, set from J3a's and the read's data. Not `BC5_DIRECT_CHAIN=0`, which
+changes more. 3 starts, up to 5.
+- **Pass:** at least 2 starts show the F679 order (the buffer at a chain's head, right after an acb) and none shows
+  F443. That also means the restore ran in front of that buffer.
+- **Fail:** F443 with the restore in front of the buffer. Read the emitted IB.
+- **No test:** the order does not appear. Report it; do not count clean starts.
+
+Both arms keep §11's stop list. J3b needs its own yes: it changes a chain setting, which is off the tested path.
