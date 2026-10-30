@@ -27,7 +27,12 @@ python run_np_laptop.py <label> <dir with libs/libNpCppWebApi.cpp> <host tree> <
 python mutate_np.py <fixed unit> <host tree> <out>
 python run_libc_laptop.py <label> <host tree> <out>
 python check_nids.py <host tree>
+python test_runner_port.py
 ```
+
+- The box runner was hardened after Codex's review `REVIEW-PORTS-01`, which found that an empty case listing passed with
+  exit 0, that the shared hash was printed and not enforced, and that `ACCEPT_TREE_DIFF=1` allowed any source diff. It also
+  required final lines and a warnings baseline. `BOX-PLAN.md` has the new rules, and `pins.env` the pins.
 
 **Result (laptop).** Logs in `raw/`.
 
@@ -38,6 +43,7 @@ python check_nids.py <host tree>
 | mutants of the fix | | 7 of 7 caught |
 | `LibcNidTests` on the real `SymbolDatabase` | 13 checks fail, rc 1 | **all pass, rc 0** |
 | `check_nids.py`, independent of the C++ | rc 1, the 4 NIDs wrong | rc 0 |
+| `test_runner_port.py`, the runner on synthetic cases | | 33 of 33 as expected, rc 0 (`raw/runner-tests.txt`) |
 
 - Both vectors' use-after-free, a code reading in the review, is shown here by test with a forced move.
 - On a tree built only from `f266548` + the final patch, the results are the same, with 0 compiler warnings.
