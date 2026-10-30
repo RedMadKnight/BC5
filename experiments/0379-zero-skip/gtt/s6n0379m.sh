@@ -30,7 +30,7 @@ case "$ARM" in
 esac
 SWITCHES=${BC5_0368_SWITCHES-}
 case "$TAG" in *[!A-Za-z0-9]* | "") echo "the tag is letters and digits"; exit 1 ;; esac
-SD=$W/_SaveData/PPSA03671; SAVES=$W/exp0196/saves-before-152617
+SD=$W/_SaveData/PPSA03671; SAVES=${BC5_0379_SAVES:-$W/exp0196/saves-before-152617}
 LAUNCH_SRC=$W/play-pkg.sh; LAUNCH=$E/play-pkg-0358.sh; LEARN_SRC=$W/direct-learned-pkg.txt; LEARN=$E/direct-learned-pkg.txt
 mkdir -p "$R"
 [ "$SECS" -le 1500 ] || { echo "at most 1500 s"; exit 1; }
@@ -124,6 +124,12 @@ bash "$E/in/gtt/sample0379m.sh" "$R/$TAG-mem.txt" $((SECS + 60)) < /dev/null > /
 setsid nohup bash -c 'distrobox enter ubuntu -- env "$@"; echo "launcher exit $?"' _ "${ENVS[@]}" "$LAUNCH" < /dev/null > "$R/$TAG-launch.out" 2>&1 &
 for _ in $(seq 1 120); do EP=$(pgrep -o -x kyty_emulator) && break; sleep 0.5; done
 T0=$(date +%s)
+if [ -n "${BC5_0379_SHOTS:-}" ]; then SHOTS=$HOME/bc5-data/captures/exp0379/shots; mkdir -p "$SHOTS"; chmod 700 "$HOME/bc5-data/captures/exp0379"   # exp 0379: route shots, private
+( for s in $BC5_0379_SHOTS; do while awk -v n="$(date +%s.%N)" -v t0="$T0" -v s="$s" 'BEGIN {exit !(n - t0 < s)}'; do sleep 0.2; done
+    pgrep -x kyty_emulator > /dev/null || break
+    XDG_RUNTIME_DIR=/run/user/$(id -u) WAYLAND_DISPLAY=wayland-0 spectacle -b -n -f -o "$SHOTS/$TAG-$s.png" > /dev/null 2>&1
+    echo "$(date '+%T.%3N') shot $s s: $(stat -c %s "$SHOTS/$TAG-$s.png" 2> /dev/null || echo none)" >> "$R/$TAG-shots.txt"; done ) < /dev/null > /dev/null 2>&1 &
+fi
 if [ -z "$EP" ]; then ENDED="SETUP: no emulator started"
 else
   echo "emulator pid $EP exe $(readlink "/proc/$EP/exe") cwd $(readlink "/proc/$EP/cwd")" >> "$R/$TAG-start.txt"

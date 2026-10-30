@@ -1,0 +1,111 @@
+[ 2010.960621] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:7 pasid:28)
+[ 2010.960628] amdgpu 0000:01:00.0:  Process kyty_emulator pid 274720 thread bc5-ring pid 274875
+[ 2010.960631] amdgpu 0000:01:00.0:   in page starting at address 0x000008608c654000 from client 0x1b (UTCL2)
+[ 2010.960634] amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00701031
+[ 2010.960636] amdgpu 0000:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+[ 2010.960638] amdgpu 0000:01:00.0: 	 MORE_FAULTS: 0x1
+[ 2010.960639] amdgpu 0000:01:00.0: 	 WALKER_ERROR: 0x0
+[ 2010.960640] amdgpu 0000:01:00.0: 	 PERMISSION_FAULTS: 0x3
+[ 2010.960641] amdgpu 0000:01:00.0: 	 MAPPING_ERROR: 0x0
+[ 2010.960643] amdgpu 0000:01:00.0: 	 RW: 0x0
+[ 2010.960647] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:7 pasid:28)
+[ 2010.960649] amdgpu 0000:01:00.0:  Process kyty_emulator pid 274720 thread bc5-ring pid 274875
+[ 2010.960650] amdgpu 0000:01:00.0:   in page starting at address 0x000008608c659000 from client 0x1b (UTCL2)
+[ 2010.960652] amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00701031
+[ 2010.960653] amdgpu 0000:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+[ 2010.960654] amdgpu 0000:01:00.0: 	 MORE_FAULTS: 0x1
+[ 2010.960655] amdgpu 0000:01:00.0: 	 WALKER_ERROR: 0x0
+[ 2010.960656] amdgpu 0000:01:00.0: 	 PERMISSION_FAULTS: 0x3
+[ 2010.960657] amdgpu 0000:01:00.0: 	 MAPPING_ERROR: 0x0
+[ 2010.960658] amdgpu 0000:01:00.0: 	 RW: 0x0
+[ 2010.960661] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:7 pasid:28)
+[ 2010.960663] amdgpu 0000:01:00.0:  Process kyty_emulator pid 274720 thread bc5-ring pid 274875
+[ 2010.960664] amdgpu 0000:01:00.0:   in page starting at address 0x000008608c65a000 from client 0x1b (UTCL2)
+[ 2010.960666] amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00701031
+[ 2010.960667] amdgpu 0000:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+[ 2010.960668] amdgpu 0000:01:00.0: 	 MORE_FAULTS: 0x1
+[ 2010.960669] amdgpu 0000:01:00.0: 	 WALKER_ERROR: 0x0
+[ 2010.960670] amdgpu 0000:01:00.0: 	 PERMISSION_FAULTS: 0x3
+[ 2010.960672] amdgpu 0000:01:00.0: 	 MAPPING_ERROR: 0x0
+[ 2010.960673] amdgpu 0000:01:00.0: 	 RW: 0x0
+[ 2010.960676] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:7 pasid:28)
+[ 2010.960678] amdgpu 0000:01:00.0:  Process kyty_emulator pid 274720 thread bc5-ring pid 274875
+[ 2010.960680] amdgpu 0000:01:00.0:   in page starting at address 0x000008608c657000 from client 0x1b (UTCL2)
+[ 2010.960682] amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00701031
+[ 2010.960683] amdgpu 0000:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+[ 2010.960684] amdgpu 0000:01:00.0: 	 MORE_FAULTS: 0x1
+[ 2010.960685] amdgpu 0000:01:00.0: 	 WALKER_ERROR: 0x0
+[ 2010.960687] amdgpu 0000:01:00.0: 	 PERMISSION_FAULTS: 0x3
+[ 2010.960688] amdgpu 0000:01:00.0: 	 MAPPING_ERROR: 0x0
+[ 2010.960689] amdgpu 0000:01:00.0: 	 RW: 0x0
+[ 2010.960692] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:7 pasid:28)
+[ 2010.960694] amdgpu 0000:01:00.0:  Process kyty_emulator pid 274720 thread bc5-ring pid 274875
+[ 2010.960695] amdgpu 0000:01:00.0:   in page starting at address 0x000008608c658000 from client 0x1b (UTCL2)
+[ 2010.960697] amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00701031
+[ 2010.960698] amdgpu 0000:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+[ 2010.960699] amdgpu 0000:01:00.0: 	 MORE_FAULTS: 0x1
+[ 2010.960700] amdgpu 0000:01:00.0: 	 WALKER_ERROR: 0x0
+[ 2010.960701] amdgpu 0000:01:00.0: 	 PERMISSION_FAULTS: 0x3
+[ 2010.960702] amdgpu 0000:01:00.0: 	 MAPPING_ERROR: 0x0
+[ 2010.960703] amdgpu 0000:01:00.0: 	 RW: 0x0
+[ 2010.960707] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:7 pasid:28)
+[ 2010.960708] amdgpu 0000:01:00.0:  Process kyty_emulator pid 274720 thread bc5-ring pid 274875
+[ 2010.960710] amdgpu 0000:01:00.0:   in page starting at address 0x000008608c655000 from client 0x1b (UTCL2)
+[ 2010.960711] amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00701031
+[ 2010.960712] amdgpu 0000:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+[ 2010.960713] amdgpu 0000:01:00.0: 	 MORE_FAULTS: 0x1
+[ 2010.960715] amdgpu 0000:01:00.0: 	 WALKER_ERROR: 0x0
+[ 2010.960716] amdgpu 0000:01:00.0: 	 PERMISSION_FAULTS: 0x3
+[ 2010.960717] amdgpu 0000:01:00.0: 	 MAPPING_ERROR: 0x0
+[ 2010.960718] amdgpu 0000:01:00.0: 	 RW: 0x0
+[ 2010.960721] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:7 pasid:28)
+[ 2010.960723] amdgpu 0000:01:00.0:  Process kyty_emulator pid 274720 thread bc5-ring pid 274875
+[ 2010.960724] amdgpu 0000:01:00.0:   in page starting at address 0x000008608c657000 from client 0x1b (UTCL2)
+[ 2010.960726] amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00701031
+[ 2010.960727] amdgpu 0000:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+[ 2010.960728] amdgpu 0000:01:00.0: 	 MORE_FAULTS: 0x1
+[ 2010.960729] amdgpu 0000:01:00.0: 	 WALKER_ERROR: 0x0
+[ 2010.960730] amdgpu 0000:01:00.0: 	 PERMISSION_FAULTS: 0x3
+[ 2010.960731] amdgpu 0000:01:00.0: 	 MAPPING_ERROR: 0x0
+[ 2010.960732] amdgpu 0000:01:00.0: 	 RW: 0x0
+[ 2010.960735] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:7 pasid:28)
+[ 2010.960737] amdgpu 0000:01:00.0:  Process kyty_emulator pid 274720 thread bc5-ring pid 274875
+[ 2010.960738] amdgpu 0000:01:00.0:   in page starting at address 0x000008608c65b000 from client 0x1b (UTCL2)
+[ 2010.960740] amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00701031
+[ 2010.960741] amdgpu 0000:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+[ 2010.960742] amdgpu 0000:01:00.0: 	 MORE_FAULTS: 0x1
+[ 2010.960743] amdgpu 0000:01:00.0: 	 WALKER_ERROR: 0x0
+[ 2010.960744] amdgpu 0000:01:00.0: 	 PERMISSION_FAULTS: 0x3
+[ 2010.960746] amdgpu 0000:01:00.0: 	 MAPPING_ERROR: 0x0
+[ 2010.960747] amdgpu 0000:01:00.0: 	 RW: 0x0
+[ 2010.960751] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:7 pasid:28)
+[ 2010.960752] amdgpu 0000:01:00.0:  Process kyty_emulator pid 274720 thread bc5-ring pid 274875
+[ 2010.960754] amdgpu 0000:01:00.0:   in page starting at address 0x000008608c656000 from client 0x1b (UTCL2)
+[ 2010.960756] amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00701031
+[ 2010.960757] amdgpu 0000:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+[ 2010.960758] amdgpu 0000:01:00.0: 	 MORE_FAULTS: 0x1
+[ 2010.960759] amdgpu 0000:01:00.0: 	 WALKER_ERROR: 0x0
+[ 2010.960760] amdgpu 0000:01:00.0: 	 PERMISSION_FAULTS: 0x3
+[ 2010.960761] amdgpu 0000:01:00.0: 	 MAPPING_ERROR: 0x0
+[ 2010.960762] amdgpu 0000:01:00.0: 	 RW: 0x0
+[ 2010.960766] amdgpu 0000:01:00.0: [gfxhub] page fault (src_id:0 ring:24 vmid:7 pasid:28)
+[ 2010.960768] amdgpu 0000:01:00.0:  Process kyty_emulator pid 274720 thread bc5-ring pid 274875
+[ 2010.960769] amdgpu 0000:01:00.0:   in page starting at address 0x000008608c65d000 from client 0x1b (UTCL2)
+[ 2010.960771] amdgpu 0000:01:00.0: GCVM_L2_PROTECTION_FAULT_STATUS:0x00701031
+[ 2010.960772] amdgpu 0000:01:00.0: 	 Faulty UTCL2 client ID: TCP (0x8)
+[ 2010.960773] amdgpu 0000:01:00.0: 	 MORE_FAULTS: 0x1
+[ 2010.960774] amdgpu 0000:01:00.0: 	 WALKER_ERROR: 0x0
+[ 2010.960776] amdgpu 0000:01:00.0: 	 PERMISSION_FAULTS: 0x3
+[ 2010.960777] amdgpu 0000:01:00.0: 	 MAPPING_ERROR: 0x0
+[ 2010.960778] amdgpu 0000:01:00.0: 	 RW: 0x0
+[ 2012.993650] amdgpu 0000:01:00.0: Dumping IP State
+[ 2012.995746] amdgpu 0000:01:00.0: Dumping IP State Completed
+[ 2012.995771] amdgpu 0000:01:00.0: [drm] AMDGPU device coredump file has been created
+[ 2012.995774] amdgpu 0000:01:00.0: [drm] Check your /sys/class/drm/card1/device/devcoredump/data
+[ 2012.995777] amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=2325648, emitted seq=2325650
+[ 2012.995779] amdgpu 0000:01:00.0:  Process kyty_emulator pid 274720 thread bc5-ring pid 274875
+[ 2012.995781] amdgpu 0000:01:00.0: Starting gfx_0.0.0 ring reset
+[ 2012.995937] amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded
+[ 2012.995940] amdgpu 0000:01:00.0: [drm] device wedged, but no recovery needed
+[ 2012.999167] bc5-gpu-watch: armed: amdgpu 0000:01:00.0: ring gfx_0.0.0 timeout, signaled seq=2325648, emitted seq=2325650
+[ 2013.004389] bc5-gpu-watch: disarmed: amdgpu 0000:01:00.0: Ring gfx_0.0.0 reset succeeded

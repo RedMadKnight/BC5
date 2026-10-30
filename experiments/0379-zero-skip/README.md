@@ -739,3 +739,39 @@ the walk route, and drop_caches logged before the run.
 - **This walk does not reach the plays' pressure.** A streaming bench needs a route checked by eye first (a few
   screenshots across the walk), or another start point.
 - G3's hang (F633) did not recur on the same start in G3b.
+
+### Route diagnosis D1 and D2 (2026-10-30 01:19–01:27, the top session's leave for private screenshots)
+
+**D1** (01:19:30–01:23:47): e1cc0c92 with the skip off, RT on, the S6N start with the walk, 240 s, and full-screen shots
+at 105, 120, 150 and 210 s.
+- The shots were taken on the box into `~/bc5-data/captures/exp0379/shots/` (private). Three were viewed on the
+  laptop and then deleted there. None is in the repo.
+- D1 passed: 32.5 flips/s, 0 kernel lines, saves unchanged.
+- **Diagnosis:** the S6N save does not start in free movement.
+  - After the Continue load the title plays an in-engine cutscene, still running at 150 s, where stick input does
+    nothing.
+  - At 210 s the gameplay is a scripted fight in an enclosed yard, with a combat tutorial prompt on screen.
+  - The walk cannot leave either, so nothing new streams. This explains G3b (F634) and the bench's flat reads
+    (F543, F627).
+
+**D2** (01:25:43–01:27:16): the same arm and walk, started from a private copy of the maintainer's current live saves
+(`exp0379/saves-live-377a8d45`, sum 377a8d456a9b4cb1, copied into the wd as the route saves are). The menu was cross,
+cross (slot 1), cross, and there was a slot-list shot at 89 s. **It hung before the menu, so no shot was taken.**
+These are raw facts; the classification is exp 0380's.
+- **Page faults:** from 01:26:41.588 the kernel logged repeated gfxhub page faults (ring 24, vmid 7) in kyty_emulator,
+  thread `bc5-ring`.
+  - The addresses were 0x8608c654000, 0x8608c659000, 0x8608c65a000 and so on.
+  - UTCL2 client TCP, `GCVM_L2_PROTECTION_FAULT_STATUS` 0x00701031, PERMISSION_FAULTS 0x3, MAPPING_ERROR 0, RW 0.
+- **Timeout:** at 01:26:43.6 `ring gfx_0.0.0 timeout` (signaled 2325648, emitted 2325650), then "Ring gfx_0.0.0 reset
+  succeeded" and "device wedged, but no recovery needed".
+  - bc5-gpu-watch armed and then disarmed, with no reboot.
+  - The runner's verdict: "HANG: kernel amdgpu line at 61 s, ring reset succeeded".
+  - At the time: 1,148 flips in 52.4 s, 24,801 views, and 10,130 MiB pinned. The input script's first key was due at
+    85 s.
+- **Stall event** (private, `gpu-stall/event-20261030-012643-gfx_0.0.0`; one `stalls.log` line, dur 2.04 s):
+  - sample 1: PFP 0xea1, ME 0xe15, `CP_IB1_BUFSZ` 0x38f8;
+  - compute program 0x909977100, dim [697 1 1], threads [64 1 1], initiator 0x61.
+- **Devcoredump:** `20261030-012643-devcd1.txt` (private).
+- **Stopped by me:** I sent TERM to the emulator at 01:26:51 (stop at any amdgpu line). The live saves were unchanged.
+- **Not run:** a slot-4 repeat (the top session's hint: his current progress is in slot 4) and G3/G4. Both wait for
+  the top session.
