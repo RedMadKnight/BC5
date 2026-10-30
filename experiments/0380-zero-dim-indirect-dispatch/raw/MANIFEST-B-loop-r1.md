@@ -14,7 +14,7 @@ a healthy smoke. It is a different capture and would need its own manifest. Noth
 | Kernel stream | `raw/stream0380bl.sh` md5 3d9d7b3b, from the laptop | not run yet |
 | Launcher | `play-pkg.sh` 55531ab6, derived private copy b0504f88; the runner checks the first and records the second | RS1 |
 | Learned file | `direct-learned-pkg.txt` a7cc8581, 109 windows, private copy | RS1; recorded per try, not pinned |
-| Switches | `BC5_CRASH_FRAMES=1 BC5_0380_REC=1`, hard-coded in the loop, and nothing else from exp 0380: no `NO_CLEAR`, no `ZERO_SKIP` (the skip's code is in the unit, off) | loop line 34; each try's start record shows the environment |
+| Switches | `BC5_CRASH_FRAMES=1 BC5_0380_REC=1`, hard-coded in the loop, and nothing else from exp 0380: no `NO_CLEAR`, no `ZERO_SKIP` (the skip's code is in the unit, off) | loop line 35; each try's start record shows the environment |
 | Mode | RT on, one ring (the launcher's `BC5_DIRECT_COMPUTE_RING=-1`), the runner's environment check | runner |
 | Saves | Live sum 377a8d456a9b4cb1 (read 2026-10-29, re-read before start; the loop refuses another). Route saves `exp0196/saves-before-152617`, private copy. The live saves are only compared | RS1 |
 | Limits asked | 180 s a try, 7200 s budget, about 34 tries | for Codex to decide |
