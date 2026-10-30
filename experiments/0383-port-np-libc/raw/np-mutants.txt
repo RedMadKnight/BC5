@@ -1,0 +1,9 @@
+m1-leak-on-failed-growth: rc=1, 2 case(s) fail: svec_oom_grow svec_fault_sweep
+m2-no-reference-taken: rc=1, 6 case(s) fail: ivec_self_growth_each_index ivec_self_no_growth ivec_repeated_growth ivec_all_instantiations ivec_oom_grow_self ivec_fault_sweep
+m3-reference-through-element: rc=1, 6 case(s) fail: ivec_self_growth_each_index ivec_self_null_element_growth ivec_repeated_growth ivec_all_instantiations ivec_oom_grow_self ivec_fault_sweep
+m4-grow-branch-falls-through: rc=1, 7 case(s) fail: string_repro_40_39 string_self_offset0_growth string_substring_growth string_exact_fit string_repeated_growth string_length_offset_sweep
+m5-memcpy-without-growth: rc=1, 4 case(s) fail: string_self_offset0_no_growth string_substring_no_growth string_exact_fit string_length_offset_sweep
+m6-copy-after-free: rc=1, 7 case(s) fail: string_repro_40_39 string_self_offset0_growth string_substring_growth string_exact_fit string_repeated_growth string_length_offset_sweep
+m7-shallow-string-copy: rc=1, 7 case(s) fail: svec_self_growth_each_index svec_self_no_growth svec_repeated_growth svec_copies_are_independent svec_oom_copy svec_oom_grow
+all mutants caught
+mutants rc=0

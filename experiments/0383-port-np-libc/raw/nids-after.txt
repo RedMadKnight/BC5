@@ -1,0 +1,9 @@
+self-check ok: 4 known pairs and the 4 PORT-LIBC names
+Ovb2dSJOAuE strcmp: ok [('libC.cpp', 918, 'LibcInternal::strcmp')]
+aesyjrHVWy4 strncmp: ok [('libC.cpp', 919, 'LibcInternal::strncmp')]
+kiZSXIWd9vg strcpy: ok [('libC.cpp', 921, 'LibcInternal::strcpy')]
+5Xa2ACNECdo strcpy_s: not registered: ok
+InitLibcInternal_1: 27 LibcInternal:: registrations, 2 not under their wrapper's name:
+  zlfEH8FmyUA -> strtoul (its NID would be QxmSHBCuKTk)
+  al3JzFI9MQ0 -> LibcHeapErrorReportForGame (its NID would be SlMztUijOSk)
+PASS

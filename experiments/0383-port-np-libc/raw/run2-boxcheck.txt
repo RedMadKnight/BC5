@@ -1,0 +1,51 @@
+== 19:00:36 tree from f266548 + the patch
+apply --check rc 0
+src tree 7fab373ac309cf05b0f666dd8152601756d2df3d
+exp 0372: 5 lines, pad_audio_route.hpp present
+the shared tree differs in the two approved files only
+== 19:00:37 compdb
+== 19:00:38 compile, link, tests
+== 19:01:30 rc 0
+63:== warnings: baseline 0, fixed 0, new 0
+65:== emulator linked (not run)
+97:== np_cpp_web_api_tests exit 0, final line seen
+150:== libc_nid_tests exit 0, final line seen
+172:clang++: error: linker command failed with exit code 1 (use -v to see invocation)
+173:== ASan link failed: the same tests with the tracker alone
+195:== string_repro_40_39 exit 0 pass
+199:== string_self_offset0_growth exit 0 pass
+203:== string_self_offset0_no_growth exit 0 pass
+207:== string_substring_no_growth exit 0 pass
+211:== string_substring_growth exit 0 pass
+215:== string_empty_own_terminator exit 0 pass
+219:== string_empty_external exit 0 pass
+223:== string_exact_fit exit 0 pass
+227:== string_repeated_growth exit 0 pass
+231:== string_length_offset_sweep exit 0 pass
+235:== string_external_appends exit 0 pass
+239:== string_oom_self_growth exit 0 pass
+243:== ivec_self_growth_each_index exit 0 pass
+247:== ivec_self_no_growth exit 0 pass
+251:== ivec_self_null_element_growth exit 0 pass
+255:== ivec_repeated_growth exit 0 pass
+259:== ivec_all_instantiations exit 0 pass
+263:== ivec_oom_grow_self exit 0 pass
+267:== ivec_oom_first_body exit 0 pass
+271:== ivec_oom_first_storage exit 0 pass
+275:== ivec_fault_sweep exit 0 pass
+279:== svec_self_growth_each_index exit 0 pass
+283:== svec_self_no_growth exit 0 pass
+287:== svec_self_null_buffer_growth exit 0 pass
+291:== svec_repeated_growth exit 0 pass
+295:== svec_copies_are_independent exit 0 pass
+299:== svec_oom_copy exit 0 pass
+303:== svec_oom_grow exit 0 pass
+307:== svec_fault_sweep exit 0 pass
+311:== layout exit 0 pass
+312:== np_alias_tests no ASan: 30/30 cases pass
+313:== PASS: 0328 and libc final lines seen, np_alias_tests 30/30 no ASan, new warnings 0 of 0
+private binary 269c5569b12b2301335fd5567e1bfd45 (not run); shared binary before 58c4a627d23b06e25c2868249124f9c5, after 58c4a627d23b06e25c2868249124f9c5
+boxcheck: PASS
+boxcheck exit 0
+
+[exited with code 0]

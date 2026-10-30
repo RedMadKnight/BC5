@@ -1,0 +1,64 @@
+=================================================================
+==11356==ERROR: AddressSanitizer: heap-use-after-free on address 0x11ab3eca00a0 at pc 0x7ffa0cecb35c bp 0x0026192fec00 sp 0x0026192fec48
+READ of size 24 at 0x11ab3eca00a0 thread T0
+    #0 0x7ffa0cecb35b in _asan_memcpy+0x25b (<vs>/VC\Tools\Llvm\x64\lib\clang\22\lib\windows\clang_rt.asan_dynamic-x86_64.dll+0x18004b35b)
+    #1 0x7ff73dce47b9 in `anonymous namespace'::ivec_self_growth_each_index <repo>/experiments\port-np-libc\NpAliasTests.cpp:331
+    #2 0x7ff73dcd9e7b in main <repo>/experiments\port-np-libc\NpAliasTests.cpp:683
+    #3 0x7ff73dd8ca2e in __scrt_common_main_seh D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl:288
+    #4 0x7ffaeb7fdda6 in BaseThreadInitThunk+0x16 (C:\WINDOWS\System32\KERNEL32.DLL+0x18002dda6)
+    #5 0x7ffaec5d9c5b in RtlUserThreadStart+0x2b (C:\WINDOWS\SYSTEM32\ntdll.dll+0x1800c9c5b)
+
+0x11ab3eca00a0 is located 0 bytes inside of 96-byte region [0x11ab3eca00a0,0x11ab3eca0100)
+freed by thread T0 here:
+    #0 0x7ffa0cecc81f in _asan_wrap_memcpy+0x62f (<vs>/VC\Tools\Llvm\x64\lib\clang\22\lib\windows\clang_rt.asan_dynamic-x86_64.dll+0x18004c81f)
+    #1 0x7ff73dc92433 in free S:\compiler-rt\lib\asan\asan_malloc_win_thunk.cpp:52
+    #2 0x7ff73dc92fc8 in std::TrackedRealloc <repo>/experiments\port-np-libc\NpAliasTests.cpp:91
+    #3 0x7ff73dce4732 in `anonymous namespace'::ivec_self_growth_each_index <repo>/experiments\port-np-libc\NpAliasTests.cpp:331
+    #4 0x7ff73dcd9e7b in main <repo>/experiments\port-np-libc\NpAliasTests.cpp:683
+    #5 0x7ff73dd8ca2e in __scrt_common_main_seh D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl:288
+    #6 0x7ffaeb7fdda6 in BaseThreadInitThunk+0x16 (C:\WINDOWS\System32\KERNEL32.DLL+0x18002dda6)
+    #7 0x7ffaec5d9c5b in RtlUserThreadStart+0x2b (C:\WINDOWS\SYSTEM32\ntdll.dll+0x1800c9c5b)
+
+previously allocated by thread T0 here:
+    #0 0x7ffa0cecc92f in _asan_wrap_memcpy+0x73f (<vs>/VC\Tools\Llvm\x64\lib\clang\22\lib\windows\clang_rt.asan_dynamic-x86_64.dll+0x18004c92f)
+    #1 0x7ff73dc92493 in malloc S:\compiler-rt\lib\asan\asan_malloc_win_thunk.cpp:64
+    #2 0x7ff73dc92e56 in std::TrackedRealloc <repo>/experiments\port-np-libc\NpAliasTests.cpp:85
+    #3 0x7ff73dce44a2 in `anonymous namespace'::ivec_self_growth_each_index <repo>/experiments\port-np-libc\NpAliasTests.cpp:326
+    #4 0x7ff73dcd9e7b in main <repo>/experiments\port-np-libc\NpAliasTests.cpp:683
+    #5 0x7ff73dd8ca2e in __scrt_common_main_seh D:\a\_work\1\s\src\vctools\crt\vcstartup\src\startup\exe_common.inl:288
+    #6 0x7ffaeb7fdda6 in BaseThreadInitThunk+0x16 (C:\WINDOWS\System32\KERNEL32.DLL+0x18002dda6)
+    #7 0x7ffaec5d9c5b in RtlUserThreadStart+0x2b (C:\WINDOWS\SYSTEM32\ntdll.dll+0x1800c9c5b)
+
+SUMMARY: AddressSanitizer: heap-use-after-free <repo>/experiments\port-np-libc\NpAliasTests.cpp:331 in `anonymous namespace'::ivec_self_growth_each_index
+Shadow bytes around the buggy address:
+  0x11ab3ec9fe00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x11ab3ec9fe80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x11ab3ec9ff00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x11ab3ec9ff80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x11ab3eca0000: fa fa fa fa 00 00 00 00 00 00 00 00 00 00 04 fa
+=>0x11ab3eca0080: fa fa fa fa[fd]fd fd fd fd fd fd fd fd fd fd fd
+  0x11ab3eca0100: fa fa fa fa 00 00 00 00 00 00 00 00 00 00 00 00
+  0x11ab3eca0180: fa fa fa fa 00 00 00 00 00 00 00 00 00 00 00 00
+  0x11ab3eca0200: fa fa fa fa 00 00 00 00 00 00 00 00 00 00 00 00
+  0x11ab3eca0280: fa fa fa fa fd fd fd fd fd fd fd fd fd fd fd fd
+  0x11ab3eca0300: fa fa fa fa fd fd fd fd fd fd fd fd fd fd fd fd
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==11356==ABORTING

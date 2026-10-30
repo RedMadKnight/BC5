@@ -1,0 +1,28 @@
+NpCppWebApiTests: ok: String ctor zeroes the reference count
+NpCppWebApiTests: ok: String ctor keeps the context at +0x18
+NpCppWebApiTests: ok: append returns 0
+NpCppWebApiTests: ok: append grows the buffer
+NpCppWebApiTests: ok: c_str holds both appends
+NpCppWebApiTests: ok: String dtor frees and clears the buffer
+NpCppWebApiTests: ok: String stays within 0x20 bytes
+NpCppWebApiTests: ok: Vector<String>::pushBack returns 0
+NpCppWebApiTests: ok: a second pushBack returns 0
+NpCppWebApiTests: ok: the vector has a body after pushBack
+NpCppWebApiTests: ok: the body holds two elements
+NpCppWebApiTests: ok: the body's reference count is 1
+NpCppWebApiTests: ok: Vector<String> dtor releases the body
+NpCppWebApiTests: ok: a default IntrusivePtr is empty
+NpCppWebApiTests: ok: destroying an empty IntrusivePtr is a no-op
+NpCppWebApiTests: ok: the copy ctor shares the object and adds a reference
+NpCppWebApiTests: ok: operator-> returns the object
+NpCppWebApiTests: ok: releasing one of two references keeps the object (the field is left as AnyPS5 leaves it)
+NpCppWebApiTests: ok: releasing the last reference calls the deleter once
+NpCppWebApiTests: ok: pushBack of an IntrusivePtr returns 0
+NpCppWebApiTests: ok: the vector holds a reference to the element
+NpCppWebApiTests: ok: destroying the vector releases its element's reference
+NpCppWebApiTests: ok: the element's last reference deletes it
+NpCppWebApiTests: ok: LibContext ctor zeroes the context
+NpCppWebApiTests: ok: initialize succeeds as on an offline console
+NpCppWebApiTests: ok: a parameter initialize succeeds (bookkeeping)
+NpCppWebApiTests: ok: terminate returns 0
+NpCppWebApiTests: all checks passed

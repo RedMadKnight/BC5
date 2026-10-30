@@ -42655,7 +42655,7 @@ index 312870a..748f6b0 100644
  
  	const void* pcm_data = nullptr;
 diff --git a/src/libs/libC.cpp b/src/libs/libC.cpp
-index 43f62dd..3c2d250 100644
+index 43f62dd..2501929 100644
 --- a/src/libs/libC.cpp
 +++ b/src/libs/libC.cpp
 @@ -27,6 +27,10 @@
@@ -42757,7 +42757,7 @@ index 43f62dd..3c2d250 100644
  }
  
  } // namespace LibcInternalExt
-@@ -845,6 +907,8 @@ LIB_DEFINE(InitLibcInternal_1) {
+@@ -845,15 +907,18 @@ LIB_DEFINE(InitLibcInternal_1) {
  	LIB_OBJECT("2sWzhYqFH4E", stdout);
  
  	LIB_FUNC("GMpvxPFW924", LibcInternal::vprintf);
@@ -42766,6 +42766,19 @@ index 43f62dd..3c2d250 100644
  	LIB_FUNC("MUjC4lbHrK4", LibcInternal::fflush);
  	LIB_FUNC("8zTFvBIAIN8", LibcInternal::memset);
  	LIB_FUNC("Q3VBxCXhUHs", LibcInternal::memcpy);
+ 	LIB_FUNC("+P6FRGH4LfA", LibcInternal::memmove);
+ 	LIB_FUNC("DfivPArhucg", LibcInternal::memcmp);
+-	LIB_FUNC("aesyjrHVWy4", LibcInternal::strcmp);
+-	LIB_FUNC("Ovb2dSJOAuE", LibcInternal::strncmp);
++	// NIDs after KytyPS5 8c01d8e (GPL-2.0-only). strcpy_s (5Xa2ACNECdo) takes a size and stays unregistered: no wrapper here.
++	LIB_FUNC("Ovb2dSJOAuE", LibcInternal::strcmp);
++	LIB_FUNC("aesyjrHVWy4", LibcInternal::strncmp);
+ 	LIB_FUNC("j4ViWNHEgww", LibcInternal::strlen);
+-	LIB_FUNC("5Xa2ACNECdo", LibcInternal::strcpy);
++	LIB_FUNC("kiZSXIWd9vg", LibcInternal::strcpy);
+ 	LIB_FUNC("6sJWiWSRuqk", LibcInternal::strncpy);
+ 	LIB_FUNC("Ls4tzzhimqQ", LibcInternal::strcat);
+ 	LIB_FUNC("ob5xAW4ln-0", LibcInternal::strchr);
 diff --git a/src/libs/libGraphicsDriver.cpp b/src/libs/libGraphicsDriver.cpp
 index b67cfd5..0531e49 100644
 --- a/src/libs/libGraphicsDriver.cpp
@@ -44668,10 +44681,10 @@ index 0000000..6b58dd4
 +} // namespace Libs::NpCommerceDialog
 diff --git a/src/libs/libNpCppWebApi.cpp b/src/libs/libNpCppWebApi.cpp
 new file mode 100644
-index 0000000..2de9a34
+index 0000000..0e19c18
 --- /dev/null
 +++ b/src/libs/libNpCppWebApi.cpp
-@@ -0,0 +1,942 @@
+@@ -0,0 +1,951 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +// KytyPlus host library: libSceNpCppWebApi (the PS5's C++ web API — Common, SessionManager V1, TitleCloudStorage V1)
 +// for a console that is not signed in to PSN.
@@ -44687,6 +44700,9 @@ index 0000000..2de9a34
 +// message instead of returning garbage. Changes from AnyPS5: APS5_VABI -> KYTY_SYSV_ABI, NotImplemented ->
 +// the tree's EXIT, the registration through LIB_FUNC by NID (SHA1 of the mangled name, experiment 0327's calculator).
 +// AnyPS5's copyright remains with its authors; this file is GPL-2.0 as the rest of the KytyPlus host.
++//
++// The self-aliasing fix in String::append and the two Vector pushBack helpers (a source inside the buffer or the
++// storage the call is about to free or move) is AnyPS5's commit daf4eb3 (PR #9612 by Ondra97, GPL-2.0-only).
 +
 +#include "common/abi.h"
 +#include "common/assert.h"
@@ -44821,10 +44837,11 @@ index 0000000..2de9a34
 +static int VectorPushBackIntrusivePtr(IntrusivePtr* self, const IntrusivePtr* element) {
 +	VectorBody* body = VectorBodyFor(self, 1, __func__);
 +	if (body == nullptr) return -1;
++	const IntrusivePtr copy = *element;
 +	if (!VectorGrow(body, sizeof(IntrusivePtr))) return -1;
 +	auto* elements = static_cast<IntrusivePtr*>(body->elements);
-+	elements[body->size] = *element;
-+	if (element->object != nullptr) ReferenceCount(element->object, ReferenceCountOffset).fetch_add(1);
++	elements[body->size] = copy;
++	if (copy.object != nullptr) ReferenceCount(copy.object, ReferenceCountOffset).fetch_add(1);
 +	body->size += 1;
 +	return 0;
 +}
@@ -44832,7 +44849,6 @@ index 0000000..2de9a34
 +static int VectorPushBackString(IntrusivePtr* self, const CommonString* element) {
 +	VectorBody* body = VectorBodyFor(self, 2, __func__);
 +	if (body == nullptr) return -1;
-+	if (!VectorGrow(body, sizeof(CommonString))) return -1;
 +	CommonString copy   = *element;
 +	copy.referenceCount = 0;
 +	copy.buffer         = nullptr;
@@ -44843,6 +44859,10 @@ index 0000000..2de9a34
 +		if (copy.buffer == nullptr) return -1;
 +		std::memcpy(copy.buffer, element->buffer, length);
 +		copy.bufferSize = length;
++	}
++	if (!VectorGrow(body, sizeof(CommonString))) {
++		std::free(copy.buffer);
++		return -1;
 +	}
 +	static_cast<CommonString*>(body->elements)[body->size] = copy;
 +	body->size += 1;
@@ -45091,11 +45111,13 @@ index 0000000..2de9a34
 +        char* buffer = static_cast<char*>(std::malloc(capacity));
 +        if (buffer == nullptr) return -1;
 +        if (oldLength != 0) std::memcpy(buffer, self->buffer, oldLength);
++        std::memmove(buffer + oldLength, text, textLength + 1);
 +        std::free(self->buffer);
 +        self->buffer = buffer;
 +        self->bufferSize = capacity;
++        return 0;
 +    }
-+    std::memcpy(self->buffer + oldLength, text, textLength + 1);
++    std::memmove(self->buffer + oldLength, text, textLength + 1);
 +    return 0;
 +}
 +

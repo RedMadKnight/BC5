@@ -1,0 +1,11 @@
+== 14:45:06 tree from f266548 + the patch
+apply --check rc 0
+src tree 7fab373ac309cf05b0f666dd8152601756d2df3d
+exp 0372: 5 lines, pad_audio_route.hpp present
+the shared tree differs from the patched tree beyond the two approved files, or not in both:
+Pliki ~/src/KytyPlus/src/libs/libC.cpp i ~/bc5-work/exp0383/tree/src/libs/libC.cpp różnią się
+Pliki ~/src/KytyPlus/src/libs/libNpCppWebApi.cpp i ~/bc5-work/exp0383/tree/src/libs/libNpCppWebApi.cpp różnią się
+stop
+boxcheck exit 1
+ssh=0
+14:45:06

@@ -1,0 +1,37 @@
+LibcNidTests: ok: LibcInternal::strcmp
+LibcNidTests: ok: the NID binds that wrapper
+LibcNidTests: ok: the record names that wrapper
+LibcNidTests: ok: LibcInternal::strncmp
+LibcNidTests: ok: the NID binds that wrapper
+LibcNidTests: ok: the record names that wrapper
+LibcNidTests: ok: LibcInternal::strcpy
+LibcNidTests: ok: the NID binds that wrapper
+LibcNidTests: ok: the record names that wrapper
+LibcNidTests: ok: LibcInternal::strlen
+LibcNidTests: ok: the NID binds that wrapper
+LibcNidTests: ok: the record names that wrapper
+LibcNidTests: ok: LibcInternal::strncpy
+LibcNidTests: ok: the NID binds that wrapper
+LibcNidTests: ok: the record names that wrapper
+LibcNidTests: ok: strcmp resolves
+LibcNidTests: ok: strcmp: equal
+LibcNidTests: ok: strcmp: sees past the third byte, below
+LibcNidTests: ok: strcmp: above
+LibcNidTests: ok: strcmp: a prefix sorts first
+LibcNidTests: ok: strncmp resolves
+LibcNidTests: ok: strncmp: a difference past n does not count
+LibcNidTests: ok: strncmp: a difference at n does
+LibcNidTests: ok: strncmp: above
+LibcNidTests: ok: strncmp: n = 0
+LibcNidTests: ok: strncmp: stops at the terminator
+LibcNidTests: ok: strcpy resolves
+LibcNidTests: ok: strcpy returns dest
+LibcNidTests: ok: strcpy copies the text and the terminator
+LibcNidTests: ok: strcpy leaves the guard bytes
+LibcNidTests: ok: strcpy of an empty string writes the terminator
+LibcNidTests: ok: and nothing past it
+LibcNidTests: ok: strcpy_s: no Find
+LibcNidTests: ok: strcpy_s: no FindByNid as a function
+LibcNidTests: ok: strcpy_s: no FindByNid as an object
+LibcNidTests: ok: strcpy_s: no FindByName
+LibcNidTests: all checks passed

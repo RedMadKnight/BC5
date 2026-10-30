@@ -1,0 +1,31 @@
+string_repro_40_39                               FAIL rc=1 asan=heap-use-after-free
+string_self_offset0_growth                       FAIL rc=1 asan=heap-use-after-free
+string_self_offset0_no_growth                    FAIL rc=1 asan=memcpy-param-overlap
+string_substring_no_growth                       FAIL rc=1 asan=memcpy-param-overlap
+string_substring_growth                          FAIL rc=1 asan=heap-use-after-free
+string_empty_own_terminator                      PASS rc=0
+string_empty_external                            PASS rc=0
+string_exact_fit                                 FAIL rc=1 asan=memcpy-param-overlap
+string_repeated_growth                           FAIL rc=1 asan=heap-use-after-free
+string_length_offset_sweep                       FAIL rc=1 asan=memcpy-param-overlap
+string_external_appends                          PASS rc=0
+string_oom_self_growth                           FAIL rc=1 asan=heap-use-after-free
+ivec_self_growth_each_index                      FAIL rc=1 asan=heap-use-after-free
+ivec_self_no_growth                              PASS rc=0
+ivec_self_null_element_growth                    FAIL rc=1 asan=heap-use-after-free
+ivec_repeated_growth                             FAIL rc=1 asan=heap-use-after-free
+ivec_all_instantiations                          FAIL rc=1 asan=heap-use-after-free
+ivec_oom_grow_self                               FAIL rc=1 asan=heap-use-after-free
+ivec_oom_first_body                              PASS rc=0
+ivec_oom_first_storage                           PASS rc=0
+ivec_fault_sweep                                 FAIL rc=1 asan=heap-use-after-free
+svec_self_growth_each_index                      FAIL rc=1 asan=heap-use-after-free
+svec_self_no_growth                              PASS rc=0
+svec_self_null_buffer_growth                     FAIL rc=1 asan=heap-use-after-free
+svec_repeated_growth                             FAIL rc=1 asan=heap-use-after-free
+svec_copies_are_independent                      PASS rc=0
+svec_oom_copy                                    FAIL rc=1 asan=heap-use-after-free
+svec_oom_grow                                    FAIL rc=1 asan=heap-use-after-free
+svec_fault_sweep                                 FAIL rc=1 asan=heap-use-after-free
+layout                                           PASS rc=0
+before: 9/30 cases pass

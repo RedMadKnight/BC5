@@ -1,0 +1,37 @@
+A correct result                               want pass rc=0   as expected  30 case runs
+A empty listing, rc 0                          want fail rc=1   as expected  0 case runs
+A listing with a duplicate name                want fail rc=1   as expected  0 case runs
+A listing with a name missing (29)             want fail rc=1   as expected  0 case runs
+A listing with a foreign name                  want fail rc=1   as expected  0 case runs
+A listing with 31 names                        want fail rc=1   as expected  0 case runs
+A listing's own rc non-zero                    want fail rc=1   as expected  0 case runs
+A one case fails, rc 1                         want fail rc=1   as expected  30 case runs
+A one case rc 0 without its final line         want fail rc=1   as expected  30 case runs
+A one case rc 0 with another case's ok         want fail rc=1   as expected  30 case runs
+A libc interrupted: rc 0, no final line        want fail rc=1   as expected  30 case runs
+A libc FAILED line with the final line         want fail rc=1   as expected  30 case runs
+A libc rc 1                                    want fail rc=1   as expected  30 case runs
+A 0328 interrupted: rc 0, no final line        want fail rc=1   as expected  30 case runs
+A a new warning in a fixed unit                want fail rc=1   as expected  30 case runs
+A the same warning on a moved line             want pass rc=0   as expected  30 case runs
+A the same warning once more                   want fail rc=1   as expected  30 case runs
+A a unit does not compile                      want fail rc=1   as expected  0 case runs
+A the private link fails                       want fail rc=1   as expected  0 case runs
+B correct result                               want pass rc=0   as expected  boxcheck: PASS
+B correct result, the caller's LC_ALL is pl_PL want pass rc=0   as expected  boxcheck: PASS
+B shared hash changed before                   want fail rc=1   as expected  the shared normal binary is d8e3ebce12e1f8960e47a3fbea5f4ffc, not ae4e
+B the build step gets LC_ALL=C                 want pass rc=0   as expected  boxcheck: PASS
+B shared hash changed during the run           want fail rc=5   as expected  boxcheck: FAIL: the shared binary changed during the run
+B env cannot move the shared pin               want fail rc=1   as expected  the shared normal binary is d8e3ebce12e1f8960e47a3fbea5f4ffc, not ae4e
+B foreign source diff                          want fail rc=1   as expected  stop
+B foreign new file                             want fail rc=1   as expected  stop
+B near name libC.cpp.bak                       want fail rc=1   as expected  stop
+B ACCEPT_TREE_DIFF=1 does nothing              want fail rc=1   as expected  stop
+B baseline libC.cpp not the pin                want fail rc=1   as expected  the shared tree's libC.cpp is not the pinned baseline: stop
+B patch md5 changed                            want fail rc=1   as expected  the patch is 0f341fc6223511822b05b78a5379d384, not 2f255473a64c34c77a4
+B build step rc 0 without its final line       want fail rc=7   as expected  boxcheck: FAIL: rc 0 without the build step's final line
+B build step fails                             want fail rc=6   as expected  boxcheck: FAIL: the build step's rc is 1
+B an emulator runs                             want fail rc=1   as expected  an emulator runs: stop
+B box locked                                   want fail rc=1   as expected  box locked: MAINTAINER PLAYING
+35 checks, 0 wrong
+test_runner_port.py rc=0
