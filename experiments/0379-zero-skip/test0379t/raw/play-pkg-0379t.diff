@@ -1,0 +1,83 @@
+--- /home/kjaniszewski/bc5-work/play-pkg.sh	2026-10-28 07:52:22.140252572 +0100
++++ /home/kjaniszewski/bc5-work/exp0379t/play-pkg-0379t.sh	2026-10-29 11:44:40.007901287 +0100
+@@ -6,11 +6,14 @@
+ # desktop shortcut does: distrobox enter ubuntu -- ~/bc5-work/play-pkg.sh). No time limit, no
+ # buffer captures (the journal: see experiment 0129 below); the emulator's output goes to ~/bc5-work/play-pkg-last.log.
+ set -u
++unset BC5_LEAN BC5_LOGS  # exp 0379t: the normal build's journal holds the zero lines
++Z=~/bc5-work/exp0379t; ZSTAMP=$(date +%Y%m%d-%H%M%S)  # exp 0379t
+ PKG=${BC5_PKG:-$HOME/bc5-data/pkg/game.pkg}
+ M=~/bc5-data/mnt/pkg-play
+-EMU=~/bc5-work/kytyplus-build/src/kyty_emulator
++EMU=~/bc5-work/exp0379t/kyty_emulator  # exp 0379t: zero skip + exp 0380's backend (build0379t.sh)
+ ENVF=${BC5_RUN_ENV:-$HOME/bc5-work/bc5-run.env}
+-LOG=~/bc5-work/play-pkg-last.log
++mkdir -p ~/bc5-work/exp0379t/play
++LOG=~/bc5-work/exp0379t/play/play-$ZSTAMP.log  # exp 0379t: one log per start
+ # Experiment 0177: BC5_LEAN=1 (the "BC5 emulator (lean)" shortcut) runs the emulator built with
+ # KYTY_BC5_LEAN in ~/bc5-work/kytyplus-build-lean: no tracing, journal, counters, recorder or
+ # samplers, inside or outside; its own log file. The title scripts take the same switch.
+@@ -19,7 +22,7 @@
+ fi
+ # 2026-10-25 (exp 0324, the maintainer): with BC5_LEAN=1 this script writes no log at all; BC5_LOGS=1 keeps
+ # its logs. The normal shortcut logs as before.
+-MLOG=~/bc5-work/play-pkg-mount.log
++MLOG=~/bc5-work/exp0379t/play/mount-$ZSTAMP.log  # exp 0379t: its own mount log
+ if [ "${BC5_LEAN:-0}" = 1 ] && [ "${BC5_LOGS:-0}" != 1 ]; then LOG=/dev/null MLOG=/dev/null; fi
+ [ -n "${BC5_EMU:-}" ] && EMU=$BC5_EMU  # exp 0177: another binary (A/B against an older build)
+ BM=~/bc5-work/bc5-tools-ubuntu/release/bc5-mount
+@@ -37,6 +40,21 @@
+   key=${line%%=*}; val=${line#*=}
+   if [ "$key" = PLAY_ARGS ]; then PLAY_ARGS=$val; else export "$key=$val"; fi
+ done < "$ENVF"
++# exp 0379t (the maintainer's yes, 2026-10-29): exp 0380's FORCE_START_AT_000 on every indirect dispatch, its zero
++# guard off; exp 0379's zero skip, SCAN until a list from this play exists, then SKIP on the newest list.
++export BC5_DIRECT_FORCE_START_000=1
++unset BC5_DIRECT_GPU_CHECK_ZERO BC5_DIRECT_ZERO_SKIP BC5_DIRECT_ZEROSCAN_AT BC5_DIRECT_ZEROSCAN_OUT
++mkdir -p "$Z/play-lists"
++ZLIST=$(ls -t "$Z"/play-lists/zero-list-*.txt 2> /dev/null | head -1)
++ZSCAN=""
++if [ -n "$ZLIST" ]; then
++  ZMODE="SKIP $ZLIST"
++  export BC5_DIRECT_ZERO_SKIP=$ZLIST
++else
++  ZMODE=SCAN
++  ZSCAN=$Z/play-lists/scan-$ZSTAMP.txt
++  export BC5_DIRECT_ZEROSCAN_AT=${BC5_0379T_SCAN_AT:-$(seq -s, 240 120 7200)} BC5_DIRECT_ZEROSCAN_OUT=$ZSCAN
++fi
+ export BC5_DIRECT_LAZY_NAMES="${BC5_DIRECT_LAZY_NAMES:+$BC5_DIRECT_LAZY_NAMES,}Wwise,SoundAlloc,FileSystem,UIStringAlloc"  # exp 0330 (F394): the four CPU-only heaps lazy, 242 MiB less pinned
+ PLAY_ARGS="$PLAY_ARGS --fullscreen"  # the maintainer: this title fullscreen, at the display's resolution (Full HD here)
+ unset BC5_GC_DUMP_DIR
+@@ -166,6 +184,7 @@
+ # 2026-10-25 (the maintainer's yes): a failed unmount no longer hangs the launcher (exp 0301's T1 waited an hour):
+ # retry, then a lazy unmount, log the failure, and wait for bc5-mount at most 10 s.
+ cleanup() {
++  [ -n "${ZSP:-}" ] && kill "$ZSP" 2> /dev/null  # exp 0379t: the memory sampler
+   [ -n "$MP" ] || return 0
+   local i
+   for i in 1 2 3 4 5; do fusermount3 -u "$M" 2>> "$MLOG" && break; sleep 1; done
+@@ -181,8 +200,10 @@
+   fi
+ }
+ trap cleanup EXIT
++bash "$Z/play-sample0379t.sh" $$ "$Z/play/mem-$ZSTAMP.txt" < /dev/null > /dev/null 2>&1 & ZSP=$!  # exp 0379t: once a minute
+ 
+ {
++  echo "== exp 0379t mode: $ZMODE; BC5_DIRECT_FORCE_START_000=1; binary $(md5sum < "$EMU" | cut -c1-8)"
+   echo "== $(date '+%F %T') emulator $(stat -c '%y' "$EMU" | cut -c1-19)"
+   grep -v '^#' "$ENVF" | grep -v '^$'
+   [ -r "$PKG_ENV" ] && grep -v '^#' "$PKG_ENV" | grep -v '^$'
+@@ -198,4 +219,13 @@
+   echo "== $(date '+%F %T') restart requested from the F2 menu" >> "$LOG"
+ done
+ echo "== $(date '+%F %T') exit $RC" >> "$LOG"
++# exp 0379t: a scan of this play with at least 3 scans becomes the list the next start skips
++if [ -n "$ZSCAN" ] && [ -f "$ZSCAN" ]; then
++  ZN=$(awk '$1 == "heap" {print $4}' "$ZSCAN" | sort -n | head -1)
++  if [ "${ZN:-0}" -ge 3 ]; then
++    mv "$ZSCAN" "$Z/play-lists/zero-list-$ZSTAMP.txt" && echo "== exp 0379t: the zero list of this play ($ZN scans) is $Z/play-lists/zero-list-$ZSTAMP.txt" >> "$LOG"
++  else
++    echo "== exp 0379t: $ZSCAN has ${ZN:-0} scans (< 3): not used" >> "$LOG"
++  fi
++fi
+ exit $RC
