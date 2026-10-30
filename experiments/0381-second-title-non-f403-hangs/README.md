@@ -826,7 +826,7 @@ on the restore are the two with the 12,673-dword buffer at a job's head.
 - The buffer at a job's head after an acb, no prefix: 1 start, F443 (off-3).
 - The same, with the attributed restore: 1 start, no fault (on-5).
 - The buffer mid-chain: 14 starts, 7 OFF and 7 ON, no fault.
-- Other buffers at a job's head after an acb, behind a 0x11 prefix from either path: 9 of the 16 starts, no fault.
+- Other buffers at a job's head after an acb, behind a 0x11 prefix from either path: 6 of the 16 starts, no fault.
 - F443 overall: OFF 1 of 8, ON 0 of 8. As counts these separate nothing.
 
 The direct pair is what matters. It agrees with F679 and the fix, and it is **one pair**. The switch's effect on chain
