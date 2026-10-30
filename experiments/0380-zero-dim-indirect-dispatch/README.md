@@ -2305,6 +2305,16 @@ number, kind, size, ring, GPU times and, for an acb, its last `SET_BASE` 1, `IND
 `raw/build0380r2.sh` and `raw/s6n0380r2.sh` make the binary and run it beside the r1 build, which stays as it is; a smoke
 run is owed before the B loop uses it. `raw/loop0380b.sh` takes `BC5_0380_S6N` and `BC5_0380_WANT` for that.
 
+## 32. The int-check and BUILD-01's dry test (2026-10-30 08:55, CPU only)
+
+- **The int-check passed.** `int/0380-to-main` at d64f057 (backend tree e63a34e) on the box, clang Release with
+  `BC5_WITH_AMDGPU=ON`: 0 errors, 0 warnings; Catch2 100 test cases, 34,459 assertions, all passed; `direct-selftest`
+  without `--submit` did nothing, rc 0. It covers the backend tree only, not patch 0001 or the emulator link.
+- **BUILD-01's dry test passed** (Codex's `test_build01_backup.py`, 2 tests) on the host and in the ubuntu container,
+  against throwaway repos only. The first try stopped because `raw/slot0380.sh` did not place `tools/scripts/bc5-build.sh`
+  where the test's helper reads it; the rerun with a copy (2d6a8094) passed.
+- The shared pins did not change: 58c4a627, dcbeb440, bb50b2e0, 55531ab6. Output: `raw/runs/SLOT-int-check.txt`.
+
 ## Result
 
 - Sources read and cited (F545, F546). The title-side evidence was re-read from exps 0376/0378 (F547).
