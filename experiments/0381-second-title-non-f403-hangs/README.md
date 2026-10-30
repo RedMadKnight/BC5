@@ -491,3 +491,50 @@ yes and a build. The test: J1's route with the fix, 3 starts from the live saves
 stopped on a `-Wsign-conversion` error in `draw_args_test.cpp`, which MSVC had not flagged; the error is fixed. After
 the fix: 0 warnings, 95 of 95 test cases, archive 46aed659. `direct.cpp`, with the draw-args journal, compiled
 cleanly. The script also gained `< /dev/null` on its `distrobox enter` calls, which had swallowed `bash -s` input.
+
+## 10. The fix: `BC5_DIRECT_ACB_STATE_RESTORE` (design and code; default off; not yet built or run)
+
+**The choice: re-emit in front of the dcb, not save and restore around the acb.**
+- **The ring order is not known where the state is known.** The tracker runs on the submitting thread, ahead of the
+  ring. The ring thread decides later in which order jobs land. A restore queued after an acb would hold the
+  tracker's newest state, which may be ahead of the ring position it lands at. The dcb's own prefix holds exactly
+  the state before that dcb (`t_fs_before`).
+- **Nothing can run between the restore and the dcb.** The prefix goes in the dcb's own chain segment (ADR 0010). A
+  restore after an acb is a separate job, so another acb, or another process's job (F251), can still run between it
+  and the dcb.
+- **The GPU cannot simply save.** Saving means reading SH registers back on the CP, and this project has never tested
+  that path. Tracking acb state on the CPU instead would need a tracker per guest queue.
+- **It reuses a proven path.** The CS prefix (exp 0195, on in `play-pkg.sh`) is this restore with a narrower trigger.
+  It only fires when a dcb dispatches before it sets `COMPUTE_PGM_LO`. The F679 dcb's table sets the program, so it
+  never fired there.
+
+**The trigger.** With the switch on, every dcb that has a `DISPATCH_DIRECT`, a `DISPATCH_INDIRECT` or an
+`INDIRECT_BUFFER` at its top level gets the prefix, unless another prefix already stands there. "Only after an acb"
+is deliberately not the rule: whether an acb lands between two dcbs is the ring thread's decision, made after this
+point. An unconditional restore also covers other processes' jobs. The cost is one short `SET_SH_REG` set per
+dispatching dcb; the journal line gives its size, and J2 can compare flip rates against J1.
+
+**The registers.** All SH offsets 0x204–0x3ff the dcb tracker knows, as the CS prefix replays them: `COMPUTE_START_*`,
+`NUM_THREAD_*`, `PGM_LO/HI`, `RSRC1/2/3`, `RESOURCE_LIMITS`, `TMPRING_SIZE`, `USER_DATA_0`–`15` and everything else
+in the range. Two exclusions:
+- 0x200–0x203 (`DISPATCH_INITIATOR`, `DIM_*`) belong to the dispatch packet.
+- 0x214 (`COMPUTE_VMID`) is the kernel's. This is a difference from the CS prefix, which would replay it if the title
+  wrote it.
+
+**What it cannot restore.** A register an acb writes that no dcb has written has no known graphics-queue value. The
+restore leaves it as the acb left it. `bc5::acb_restore::Touched` scans acbs (`SET_SH_REG(_INDEX)`, `LOAD_SH_REG`,
+`LOAD_SH_REG_INDEX`, IB2s) and the journal line names those offsets when their number changes, so J2 shows whether any
+exist. The acb side is not covered either: an acb that inherits its own queue's state gets the dcb's registers.
+Nothing has shown that happening. The tracker's limit also stands (Codex REVIEW-06): tables are read from the CPU's
+view at submit.
+
+**The code.**
+- `backend/include/bc5/acb_restore.hpp`: header-only (`wants`, `runs`, `Touched`), so the shared archive links
+  unchanged.
+- `backend/tests/acb_restore_test.cpp`: 4 cases, 99 assertions. One models the ring with a second tracker: dcb, acb,
+  dcb. Without the restore `USER_DATA_0` reads 0x11d00860; with it, every register the dcbs set is back.
+- `patch0381-bc5LleAgc.diff`: on top of exp 0379's unit (e62113a5, also J1's), so the binary differs from J1's by this
+  switch alone. Made by `mkpatch0381.py`.
+- `build0381.sh` / `build0381.py`: exp 0379's private build, into `~/bc5-work/exp0381/kyty_emulator`.
+
+The laptop build (MSVC) passes 99 of 99 test cases, 33,805 assertions. The host unit needs the box to compile.
