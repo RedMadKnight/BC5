@@ -103,7 +103,7 @@ if(BC5_BUILD_TESTS)
                    tests/indirect_check_test.cpp tests/shadow_labels_test.cpp tests/host_indirect_test.cpp tests/ib_split_test.cpp tests/job_arena_fix_test.cpp
                    tests/pad_audio_route_test.cpp tests/selftest_route_test.cpp
                    tests/zero_skip_test.cpp tests/draw_args_test.cpp
-                   tests/acb_restore_test.cpp)
+                   tests/acb_restore_test.cpp tests/env_flag_test.cpp)
     target_link_libraries(bc5_backend_tests PRIVATE bc5_backend bc5_warnings Catch2::Catch2WithMain)
     catch_discover_tests(bc5_backend_tests)
 endif()

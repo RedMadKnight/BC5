@@ -415,7 +415,8 @@ profiler zones (`KYTY_PROFILER_*`) expand to nothing and `--profiler-direction` 
 guest's printf direction is Silent; the journal mode is fixed to "min" (asynchronous submission
 allowed, no journal); and a `constructor(101)` in `main.cpp` removes the diagnostic variables
 (the list there, ~60) from the environment before any static initializer, then sets
-`BC5_LOGGING=0`. Functional switches are untouched. What still prints: the setup lines of the
+`BC5_LOGGING=0`. Functional switches are untouched. Since F766 the list also holds
+`BC5_DIRECT_BO_JOURNAL`, `BC5_DIRECT_ARGS_HISTOGRAM` and `BC5_DIRECT_DRAW_ARGS_JOURNAL`. What still prints: the setup lines of the
 direct path, the window's pause/resume lines, fatal errors with the crash handler's backtrace.
 `bc5-build.sh` builds it into `~/bc5-work/kytyplus-build-lean` (`BC5_BUILD_LEAN=0` skips it);
 the dev box's launchers run it with `BC5_LEAN=1`.

@@ -32243,7 +32243,7 @@ index 0000000..8d2f498
 +}
 +static std::vector<uint32_t> prefix_of(const bc5::full_state::Tracker& t) {
 +	std::vector<uint32_t> p = t.emit_prefix();
-+	static const bool no_clear = std::getenv("BC5_DIRECT_PIECES_NO_CLEAR") != nullptr;
++	static const bool no_clear = bc5::env_on(std::getenv("BC5_DIRECT_PIECES_NO_CLEAR"));
 +	if (no_clear && p.size() >= 5) p.erase(p.begin(), p.begin() + 5);
 +	tf_ring_prefix(p); // experiment 0160
 +	return p;
@@ -32559,7 +32559,7 @@ index 0000000..8d2f498
 +			return;
 +		}
 +		{ // ADR 0010: prefix and part as one segment of the chain; the instrumented copies keep the old path
-+			static const bool instrumented = ge_probe_range().second != 0 || !uconfig_force().empty() || std::getenv("BC5_DIRECT_INDEX_BASE_DUP") != nullptr ||
++			static const bool instrumented = ge_probe_range().second != 0 || !uconfig_force().empty() || bc5::env_on(std::getenv("BC5_DIRECT_INDEX_BASE_DUP")) ||
 +			                                 std::getenv("BC5_DIRECT_INDEX_TYPE_MASK") != nullptr;
 +			if (chain_on() && !instrumented) {
 +				chain_append(pre.data(), static_cast<uint32_t>(pre.size()), part, n, kind, false);
@@ -32575,7 +32575,7 @@ index 0000000..8d2f498
 +			t_ge_probe.clear();
 +			const bool ge_capture = gmax != 0 && n >= gmin && n <= gmax && g_dev && g_dev->gds_shadow_va() != 0;
 +			const bool uc_force   = !uconfig_force().empty();
-+			static const bool ib_dup = std::getenv("BC5_DIRECT_INDEX_BASE_DUP") != nullptr; // experiment 0160: re-emit INDEX_BASE/INDEX_BUFFER_SIZE/INDEX_TYPE before each indexed draw
++			static const bool ib_dup = bc5::env_on(std::getenv("BC5_DIRECT_INDEX_BASE_DUP")); // experiment 0160: re-emit INDEX_BASE/INDEX_BUFFER_SIZE/INDEX_TYPE before each indexed draw
 +			std::vector<uint32_t> last_ibase, last_isize, last_itype;
 +			if ((ge_capture || uc_force || ib_dup) && std::strcmp(kind, "dcb") == 0) {
 +				for (const auto& [reg, val]: uconfig_force()) one.insert(one.end(), {0xC0017900u, reg, val}); // after the prefix
@@ -35787,7 +35787,7 @@ index 0000000..8d2f498
 +		uint32_t ud[16] = {}; // experiment 0059: COMPUTE_USER_DATA_0..15 as this buffer sets them
 +		uint32_t fl_stages = 0, fl_prim = 0, fl_gecntl = 0; // experiment 0160: VGT_SHADER_STAGES_EN, VGT_PRIMITIVE_TYPE, GE_CNTL as this buffer sets them
 +		uint32_t fl_gs[32] = {}; // experiment 0160: SPI_SHADER_USER_DATA_GS_0..31 as this buffer sets them
-+		static const bool no_carry = std::getenv("BC5_DIRECT_NO_CARRY") != nullptr; // experiment 0161
++		static const bool no_carry = bc5::env_on(std::getenv("BC5_DIRECT_NO_CARRY")); // experiment 0161
 +		CarriedCpState&   carried  = g_carried[compute_ib ? 1 : 0];
 +		if (!no_carry) {
 +			std::lock_guard<std::mutex> lk(g_carried_mutex);
@@ -59521,7 +59521,7 @@ index c44d32f..27ed1e0 100644
 +	    "KYTY_BC5_FPS_COUNTER", "KYTY_BC5_INPUT_RECORD", "KYTY_BC5_INPUT_TRACE", "KYTY_BC5_JSON_TRACE",
 +	    "KYTY_BC5_LOG_WAITS", "KYTY_BC5_MAP_STATS", "KYTY_BC5_MEASURE", "KYTY_BC5_MOTION_TRACE",
 +	    "KYTY_BC5_RANGE_WATCH", "KYTY_BC5_SAVE_TRACE", "KYTY_BC5_VIDEOOUT_TRACE", "KYTY_BC5_VMA_TRACE",
-+	    "KYTY_BC5_THREAD_TRACE", "KYTY_BC5_AUDIO_DUMP_FROM", "KYTY_BC5_AUDIO_DUMP_SECONDS", "KYTY_BC5_AJM_DUMP", "KYTY_BC5_FLIP_STATUS_TRACE", "KYTY_BC5_VIDEOOUT_EVENT_TRACE", "KYTY_BC5_EQUEUE_TRACE", "KYTY_BC5_AUDIO2_TRACE"};
++	    "KYTY_BC5_THREAD_TRACE", "KYTY_BC5_AUDIO_DUMP_FROM", "KYTY_BC5_AUDIO_DUMP_SECONDS", "KYTY_BC5_AJM_DUMP", "KYTY_BC5_FLIP_STATUS_TRACE", "KYTY_BC5_VIDEOOUT_EVENT_TRACE", "KYTY_BC5_EQUEUE_TRACE", "KYTY_BC5_AUDIO2_TRACE", "BC5_DIRECT_BO_JOURNAL", "BC5_DIRECT_ARGS_HISTOGRAM", "BC5_DIRECT_DRAW_ARGS_JOURNAL"};
 +	for (const char* name: kDiagnostic) {
 +		unsetenv(name);
 +	}

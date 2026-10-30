@@ -24,6 +24,8 @@
 // No GPU access.
 #pragma once
 
+#include "bc5/env_flag.hpp"
+
 #include <cstdint>
 #include <functional>
 #include <map>

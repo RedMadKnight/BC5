@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-only
 #include "bc5/direct.hpp"
 #include "bc5/draw_args.hpp"
+#include "bc5/env_flag.hpp"
 #include "bc5/host_indirect.hpp"
 #include "bc5/ib_split.hpp"
 #include "bc5/indirect_check.hpp"
@@ -577,14 +578,14 @@ std::unique_ptr<Device> Device::open(const std::string &node, const OpenOptions 
     d->impl_->opts = opts;
     // Experiment 0341: the experimental switches, read here until the host's option parsing
     // carries them (each default off; the host's fields, when set, are kept).
-    d->impl_->bo_journal = std::getenv("BC5_DIRECT_BO_JOURNAL") != nullptr;
-    d->impl_->env_histogram = std::getenv("BC5_DIRECT_ARGS_HISTOGRAM") != nullptr;
+    d->impl_->bo_journal = env_on(std::getenv("BC5_DIRECT_BO_JOURNAL"));
+    d->impl_->env_histogram = env_on(std::getenv("BC5_DIRECT_ARGS_HISTOGRAM"));
     d->impl_->env_shadow = std::getenv("BC5_DIRECT_SHADOW_LABELS") != nullptr;
     if (const char *e = std::getenv("BC5_DIRECT_DRAW_ARGS_JOURNAL"); e != nullptr && *e != 0 && std::strcmp(e, "0") != 0) {
         d->impl_->env_draw_args = true; // experiment 0381; the limits follow the CP check's (FilterOptions::gpu_check_draw_max)
         std::fprintf(stderr, "bc5-direct: experiment 0381 switch: indirect draw arguments read at submit and at completion or timeout (journal only)\n");
     }
-    if (const char *e = std::getenv("BC5_DIRECT_GPU_CHECK_PRODUCT"); e != nullptr && *e != 0) {
+    if (const char *e = std::getenv("BC5_DIRECT_GPU_CHECK_PRODUCT"); env_on(e)) {
         d->impl_->env_product = true; // "1", or "x_limit[:yz_min]"
         char *end = nullptr;
         const unsigned long x = std::strtoul(e, &end, 0);
@@ -622,7 +623,7 @@ std::unique_ptr<Device> Device::open(const std::string &node, const OpenOptions 
         d->impl_->env_force_start = true; // experiment 0380
         std::fprintf(stderr, "bc5-direct: experiment 0380 switch: every indirect dispatch the GPU check pass sees gets FORCE_START_AT_000 in its initiator\n");
     }
-    if (const char *e = std::getenv("BC5_DIRECT_HOST_INDIRECT"); e != nullptr && *e != 0) { // experiment 0346
+    if (const char *e = std::getenv("BC5_DIRECT_HOST_INDIRECT"); env_on(e)) { // experiment 0346
         d->impl_->env_host_indirect = true;
         if (std::strncmp(e, "learn", 5) == 0) {
             if (e[5] == ':') d->impl_->hi_window_fixed = std::strtoull(e + 6, nullptr, 16);
