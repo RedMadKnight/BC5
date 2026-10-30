@@ -15,7 +15,7 @@ cat > "$T/bin/distrobox" <<'EOF'
 c="$*"
 [ -n "${FAIL_AT:-}" ] && case "$c" in *"$FAIL_AT"*) echo "stand-in failure"; exit 7 ;; esac
 case "$c" in
-*build0380y.py*) o=$(echo "$c" | sed 's/.*obj //; s/ .*//'); printf 'x\n' > "$o"; chmod +x "$o" ;;
+*build0380y.py*) o=$(echo "$c" | sed 's/.*obj //; s/ .*//'); printf '#!/bin/sh\n' > "$o"; chmod +x "$o" ;;
 *bc5_backend_tests*) [ "${NO_TESTS:-}" = 1 ] && echo "No tests ran" || { echo "All tests passed (1 assertion in 1 test case)"; echo; } ;;
 esac
 exit 0
@@ -109,8 +109,12 @@ setup; export UNIT_BAD=1; r=$(run)
 expect "the unit is not the pinned one: FAILED" "[ $r != 0 ] && q | grep -q 'build FAILED'"
 setup; echo x >> "$X/bc5-work/play-pkg.sh"; r=$(run)
 expect "a shared pin differs: FAILED, nothing built" "[ $r != 0 ] && q | grep -q 'build FAILED' && [ ! -e '$X/bc5-work/exp0381/tb2/bin/kyty_emulator' ]"
-setup; echo x >> "$X/src/KytyPlus/src/libs/libC.cpp"; git -C "$X/src/KytyPlus" -c user.email=a@b -c user.name=a commit -qam other; r=$(run)
-expect "the tree is not the pinned one: FAILED" "[ $r != 0 ] && q | grep -q 'build FAILED'"
+setup; sed -i 's/^PIN_SRC_TREE=.*/PIN_SRC_TREE=0000000000000000000000000000000000000000/' "$T/pins.env"; r=$(run)
+expect "the tree is not the pinned one: FAILED" "[ $r != 0 ] && q | grep -q 'build FAILED' && grep -q 'not the pinned src tree' '$T/out'"
+setup; echo x > "$X/src/KytyPlus/src/libs/extra.cpp"; r=$(run)
+expect "the shared tree differs beyond the two files: FAILED" "[ $r != 0 ] && q | grep -q 'build FAILED' && grep -q 'beyond the two approved' '$T/out'"
+setup; echo x > "$T/pins.tmp"; sed -i 's/^PIN_0372_LINES=.*/PIN_0372_LINES=9/' "$T/pins.env"; r=$(run)
+expect "exp 0372's pieces are not all there: FAILED" "[ $r != 0 ] && q | grep -q 'build FAILED' && grep -q 'exp 0372' '$T/out'"
 setup; mkdir -p "$X/bc5-work/exp0381/tb2/bin"; echo x > "$X/bc5-work/exp0381/tb2/bin/kyty_emulator"; r=$(run)
 expect "an existing binary is not overwritten" "[ $r != 0 ] && [ \"\$(cat '$X/bc5-work/exp0381/tb2/bin/kyty_emulator')\" = x ]"
 export HOME=$REAL_HOME
