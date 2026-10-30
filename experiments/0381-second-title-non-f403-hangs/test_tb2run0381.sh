@@ -5,6 +5,9 @@
 HERE=$(cd "$(dirname "$0")" && pwd)
 # These tests need r1's launcher itself, read from the box by agreement after the maintainer's play, and the two PIN_TB2_ pins it gives.
 [ -f "$HERE/raw/play-pkg-0380r1.sh" ] && [ "$(md5sum < "$HERE/raw/play-pkg-0380r1.sh" | cut -c1-8)" = 299a2519 ] || { echo "NOT RUN: no raw/play-pkg-0380r1.sh at 299a2519"; exit 3; }
+# tb2run0381.sh takes the scripts from HEAD, so an edited tree would not be what is tested.
+[ -z "$(git -C "$HERE" status --short -- .)" ] || { echo "NOT RUN: uncommitted changes here, and the tests take HEAD"; git -C "$HERE" status --short -- .; exit 3; }
+echo "testing $(git -C "$HERE" rev-parse HEAD)"
 T=$(mktemp -d); trap 'rm -rf "$T"' EXIT
 mkdir -p "$T/bin"
 cat > "$T/bin/pgrep" <<'EOF'
@@ -161,6 +164,7 @@ setup; echo 'export BC5_DIRECT_ARGS_FLUSH=all' >> "$X/bc5-work/exp0380r1/play-pk
 expect "switches: one set after the block stops the build" "[ $r != 0 ] && q | grep -q 'build FAILED' && grep -q 'touched after the block' '$T/out'"
 # The launcher as built, run whole on stand-ins for the emulator, the mount's two commands and pad-volume.sh, with HOME and PATH left alone: only the paths in its text move.
 NAMES=$(sed -n 's/^TB2_NAMES="\(.*\)"$/\1/p' "$HERE/switches0381tb2.inc")
+KNAMES=$(sed -n 's/^TB2_KEPT_NAMES="\(.*\)"$/\1/p' "$HERE/switches0381tb2.inc")
 runl() {
     l=$1; shift
     R=$T/rt; rm -rf "$R"; RW=$R/bc5-work; RT=$RW/exp0381/tb2
@@ -169,17 +173,19 @@ runl() {
     printf '%s\n' '#!/usr/bin/env bash' '[ -e "$0.first" ] || { touch "$0.first"; env | sort > "$0.env1"; exit 75; }' 'env | sort > "$0.env2"; echo "$*" > "$0.args"; exit 0' > "$RT/bin/kyty_emulator"
     chmod +x "$RW/pad-volume.sh" "$RT/bin/kyty_emulator"
     cp "$T/run.env" "$RW/bc5-run.env"; [ -f "$T/pkg.env" ] && cp "$T/pkg.env" "$RW/bc5-pkg.env"; [ -f "$T/sw.env" ] && cp "$T/sw.env" "$RT/switches.env"
-    { echo '#!/usr/bin/env bash'; echo 'pgrep() { return 1; }; mountpoint() { return 0; }'; tail -n +2 "$l"; } | sed -e "s#~/#$R/#g" -e "s#\$HOME#$R#g" > "$R/l.sh"
+    { echo '#!/usr/bin/env bash'; echo 'pgrep() { return 1; }; mountpoint() { return 0; }'; [ -z "${LINKED:-}" ] || echo 'readlink() { case "$2" in *wd/_SaveData*) echo /live/_SaveData ;; *) command readlink "$@" ;; esac; }'; tail -n +2 "$l"; } | sed -e "s#~/#$R/#g" -e "s#\$HOME#$R#g" > "$R/l.sh"
     env HOME="$REAL_HOME" PATH="$REAL_PATH" "$@" bash "$R/l.sh" > "$R/out" 2>&1
     echo $?
 }
 # What the log's first line says, and what the emulator's environment holds, in the same form.
-logsw() { sed -n '1s/.*switches:\(.*\); binary .*/\1/p' "$R"/bc5-work/exp0381/tb2/play/play-*.log; }
+logsw() { sed -n '1s/.*switches:\(.*\); list .*/\1/p' "$R"/bc5-work/exp0381/tb2/play/play-*.log; }
+logkept() { sed -n '1s/.*; kept:\(.*\); binary .*/\1/p' "$R"/bc5-work/exp0381/tb2/play/play-*.log; }
+gotkept() { o=""; for n in $KNAMES; do grep -q "^$n=" "$1" && o="$o $(grep "^$n=" "$1")"; done; echo "$o"; }
 gotsw() { o=""; for n in $NAMES; do grep -q "^$n=" "$1" && o="$o $(grep "^$n=" "$1")"; done; echo "${o:- none}"; }
 KEPT='BC5_DIRECT_ACB_STATE_RESTORE=1 BC5_CRASH_FRAMES=1 BC5_0380_REC=1 BC5_DIRECT_PIECES_NO_CLEAR=1 BC5_DIRECT_GPU_CHECK_PRODUCT=1 BC5_DIRECT_SHADOW_LABELS=1 BC5_DIRECT_COMPUTE_RING=-1 BC5_DIRECT_GPU_CHECK=1 BC5_DIRECT_HOST_INDIRECT=learn:1100000000 BC5_DIRECT_SOFT_WAIT_MS=8'
 kept() { for k in $KEPT; do grep -qx "$k" "$1" || return 1; done; }
 # The emulator's first start (it asks for a restart) and its second: same switches, the same as the log, and the launcher's other settings kept.
-same() { [ "$rl" = 0 ] && [ "$(logsw)" = "$1" ] && [ "$(gotsw "$E1")" = "$1" ] && [ "$(gotsw "$E2")" = "$1" ] && kept "$E1" && kept "$E2"; }
+same() { [ "$rl" = 0 ] && [ "$(logsw)" = "$1" ] && [ "$(gotsw "$E1")" = "$1" ] && [ "$(gotsw "$E2")" = "$1" ] && kept "$E1" && kept "$E2" && [ "$(logkept)" = "$(gotkept "$E1")" ] && [ "$(logkept)" = "$(gotkept "$E2")" ]; }
 R=$T/rt; E1=$T/rt/bc5-work/exp0381/tb2/bin/kyty_emulator.env1; E2=$T/rt/bc5-work/exp0381/tb2/bin/kyty_emulator.env2
 setup; r=$(run); LR=$T/l-real; SR=$T/s-real; cp "$L" "$LR"; cp "$S2" "$SR"
 [ -z "${TB2_KEEP:-}" ] || { cp "$L" "$TB2_KEEP/play-pkg-0381tb2.sh"; cp "$S2" "$TB2_KEEP/play-pkg-0381tb2s.sh"; }
@@ -203,7 +209,43 @@ expect "launcher: the file beats both, and the emulator gets what the log says" 
 rl=$(runl "$SR" $ON)
 expect "launcher: the smoke runs with all off whatever the files say" "same ' none'"
 rm -f "$T/sw.env"; sed '/^} > "\$LOG"$/a export BC5_DIRECT_ARGS_FLUSH=all' "$LR" > "$T/l-late"; rl=$(runl "$T/l-late")
-expect "launcher: a switch set after the block: the emulator does not start, and the log says why" "[ \"\$rl\" = 1 ] && [ ! -e '$E1' ] && grep -q 'changed after the block, not started: BC5_DIRECT_ARGS_FLUSH=all' $T/rt/bc5-work/exp0381/tb2/play/play-*.log"
+expect "launcher: a switch set after the block: the emulator does not start, and the log says why" "[ \"\$rl\" = 1 ] && [ ! -e '$E1' ] && grep -q 'not started: switches: BC5_DIRECT_ARGS_FLUSH=all' $T/rt/bc5-work/exp0381/tb2/play/play-*.log"
+# A late pkg.env, the outside and run.env all try to move the smoke's private files and turn off what the build is. Its paths in the text are moved to the test's root by runl.
+EL=$T/elsewhere
+BAD="KYTY_BC5_SAVEDATA_DIR=$EL/_SaveData
+BC5_DIRECT_LEARNED=$EL/learned.txt
+KYTY_BC5_INPUT_CONFIG=$EL/input.cfg
+BC5_DIRECT_ACB_STATE_RESTORE=0
+BC5_CRASH_FRAMES=0
+BC5_0380_REC=0
+BC5_DIRECT_PIECES_NO_CLEAR=0
+BC5_DIRECT_ZERO_SKIP=$EL/list.txt
+BC5_DIRECT_COMPUTE_RING=0
+BC5_DIRECT_GPU_CHECK_PRODUCT=0
+BC5_DIRECT_SHADOW_LABELS=0
+BC5_DIRECT_HOST_INDIRECT=0
+BC5_DIRECT_SOFT_WAIT_MS=0"
+{ echo "PLAY_ARGS=--from-run-env"; echo "$BAD"; } > "$T/run.env"; { echo "BC5_TB2_PKG_KEPT=1"; echo "$BAD"; } > "$T/pkg.env"; rm -f "$T/sw.env"
+rl=$(runl "$SR" $BAD)
+RP=$T/rt/bc5-work/exp0381
+private() { grep -qx "KYTY_BC5_SAVEDATA_DIR=$RP/wd/_SaveData-pkg-play" "$1" && grep -qx "BC5_DIRECT_LEARNED=$RP/direct-learned-pkg.txt" "$1" && grep -qx "KYTY_BC5_INPUT_CONFIG=$RP/input-rton.cfg" "$1" && grep -qx "BC5_DIRECT_ZERO_SKIP=$RP/tb2/zero-list-20261029-120000.txt" "$1"; }
+expect "smoke: everything redirected or off, late in pkg.env: the exact private setup at both starts, and the log says so" "same ' none' && private '$E1' && private '$E2' && grep -qx BC5_TB2_PKG_KEPT=1 '$E1' && ! grep -q '$EL' '$E1' && [ ! -d '$EL' ]"
+expect "smoke: the log's first line has the private paths from the environment" "logkept | grep -q 'KYTY_BC5_SAVEDATA_DIR=$RP/wd/_SaveData-pkg-play' && logkept | grep -q 'BC5_DIRECT_ACB_STATE_RESTORE=1'"
+rl=$(runl "$LR" $BAD)
+expect "player's launcher: restore, recorder and crash frames forced, the moved paths and guards in the log as they are" "[ \"\$rl\" = 0 ] && grep -qx BC5_DIRECT_ACB_STATE_RESTORE=1 '$E1' && grep -qx BC5_CRASH_FRAMES=1 '$E1' && grep -qx BC5_0380_REC=1 '$E2' && grep -qx 'KYTY_BC5_SAVEDATA_DIR=$EL/_SaveData' '$E1' && [ \"\$(logkept)\" = \"\$(gotkept '$E1')\" ] && logkept | grep -q BC5_DIRECT_COMPUTE_RING=0"
+rm -f "$T/pkg.env"; echo PLAY_ARGS=--from-run-env > "$T/run.env"
+for bad in 'export BC5_DIRECT_ACB_STATE_RESTORE=0' 'export KYTY_BC5_SAVEDATA_DIR=/elsewhere/_SaveData' 'export BC5_DIRECT_LEARNED=$HOME/bc5-work/direct-learned-pkg.txt' 'unset KYTY_BC5_INPUT_CONFIG' 'export BC5_DIRECT_SHADOW_LABELS=0'; do
+    sed "/^} > \"\\\$LOG\"\$/a $bad" "$SR" > "$T/s-late"; rl=$(runl "$T/s-late")
+    expect "smoke: [$bad] after the check's snapshot: the emulator does not start" "[ \"\$rl\" = 1 ] && [ ! -e '$E1' ] && grep -q 'not started:' $T/rt/bc5-work/exp0381/tb2/play/play-*.log"
+done
+# The restart: the emulator's second start is checked too. Between its two starts a stand-in changes the launcher's environment.
+sed '/^  \[ "\$RC" = 75 \] || break$/a \  export BC5_DIRECT_ACB_STATE_RESTORE=0' "$SR" > "$T/s-restart"; rl=$(runl "$T/s-restart")
+expect "smoke: a change between start and restart: the second start does not happen" "[ \"\$rl\" = 1 ] && [ -e '$E1' ] && [ ! -e '$E2' ]"
+sed 's#^cd ~/bc5-work/exp0381/wd$#cd ~/bc5-work#' "$SR" > "$T/s-wd"; rl=$(runl "$T/s-wd")
+expect "smoke: run from the live working directory, where the title's saves would go: the emulator does not start" "[ \"\$rl\" = 1 ] && [ ! -e '$E1' ] && grep -q 'not started: wd:' $T/rt/bc5-work/exp0381/tb2/play/play-*.log"
+LINKED=1; rl=$(runl "$SR"); LINKED=""
+expect "smoke: a private path that is a link elsewhere: the emulator does not start" "[ \"\$rl\" = 1 ] && [ ! -e '$E1' ] && grep -q 'not started: link:KYTY_BC5_SAVEDATA_DIR' $T/rt/bc5-work/exp0381/tb2/play/play-*.log"
+expect "generator: the live save path is not a private value of the smoke" "! grep -E '^TB2_PRIVATE=' '$SR' | grep -E '=[^ ]*bc5-work/(_SaveData|direct-learned)'"
 r1=$X/bc5-work/exp0380r1/play-pkg-0380r1.sh
 repin() { sed -i "s/^PIN_R1_LAUNCHER=.*/PIN_R1_LAUNCHER=$(m "$r1")/" "$T/pins.env"; }
 setup; sed -n '/^if \[ -r "\$PKG_ENV" \]; then$/,/^fi$/p' "$r1" > "$T/loop"; sed -i '/^if \[ -r "\$PKG_ENV" \]; then$/,/^fi$/d' "$r1"; sed -i "/^} > \"\\\$LOG\"$/r $T/loop" "$r1"; repin; r=$(run)

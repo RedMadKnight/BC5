@@ -42,9 +42,15 @@ and this is the first time they meet it.
   The log's first line is built from the environment after the block, so it states the effective values. The restore, recorder and crash settings are not touched. The smoke launcher's input is `/dev/null`, so a smoke
   runs with all of them off. The build stops if anything after the block loads the env file or names a switch. Rollback: revert this revision and 2db9e86; nothing else depends on them.
 - **Revised after Codex's REVIEW-PORTS-09 (HOLD).** A later `bc5-pkg.env` could undo the reset, so the block moves to right before the log, after both settings files, and `tb2_check` stops the start if the environment
-  at the emulator's line is not what the log says. `BC5_DIRECT_REBASE_DISPATCH` joins the reset, since the fallback archive still holds it. The order is checked by counted anchors on the launcher as built, and the two launchers are pinned (4a9a1c22, 10be7aeb).
+  at the emulator's line is not what the log says. `BC5_DIRECT_REBASE_DISPATCH` joins the reset, since the fallback archive still holds it. The order is checked by counted anchors on the launcher as built, and the two launchers are pinned (values below).
   `raw/play-pkg-0380r1.sh` is the box's file, 299a2519, read by the top session after the maintainer's play; the anchors were written before that from a copy taken out of a session transcript, which was outside what was allowed and is deleted, and they were then checked
   against this file. `~/bc5-work/bc5-pkg.env` does not exist on the box today; the launcher reads it if it appears. The log's lines after the first still list the two files' raw contents, so a switch in them shows there although it is off: the first line is the effective state.
+- **Revised after Codex's REVIEW-PORTS-11 (HOLD) and REVIEW-CLAUDE-02 §A.** r1's exports stand before the `bc5-pkg.env` loop, so that file could move the smoke's saves, config and learned file or turn the restore off, and the log's first line was r1's literal text.
+  Now `force0381tb2.inc`, right after the loop and before the launcher's `mkdir`, sets the restore, crash frames, recorder, `NO_CLEAR` and the zero list again, in both launchers. In the smoke launcher it also sets its three private paths and seven RT guards
+  (`COMPUTE_RING`, `CROSS_RING_WAITS`, `GPU_CHECK`, `GPU_CHECK_PRODUCT`, `SHADOW_LABELS`, `HOST_INDIRECT`, `SOFT_WAIT_MS`). `tb2_check`, before every start and restart, wants each of these exactly, the nine switches and the logged settings unchanged, and in the smoke the three paths and the working
+  directory to be themselves, not links elsewhere (`KYTY_BC5_SAVEDATA_DIR` only covers `memory.dat`; other saves go under `_SaveData` in the working directory, so the directory counts). Otherwise the emulator does not start and the log says why. The log's first line now gives the
+  switches, then the list's md5 and the settings read from the environment. **The player's launcher keeps r1's rule on purpose:** `bc5-pkg.env` may move its paths and guards, since it runs on the live saves; the log shows where they went. The restore, crash frames, recorder, `NO_CLEAR` and the zero list are not movable there either.
+  Launcher pins: 8549de83, smoke b849559d. Runtime pins stay for the final D19 and a fresh read; `start0381tb2.sh`'s save pin 377a8d45 is older than the 2026-10-30 play and will stop the smoke. A link test uses a stand-in for `readlink`, because Git Bash makes no real links here; a real link on the box is not tested.
 - `BC5_DIRECT_DRAW_ARGS_JOURNAL` is not in the list: it is a diagnostic, and a long journal is what filled 38 GB in `on-3`.
 
 **What this costs.** With the new base, a difference between 4c686b5b and tb2 is no longer only three small changes: the whole archive moves too. The fallback's list below stops being exact.
@@ -93,8 +99,8 @@ rechecks this. `mkpatch0381.py` touches `bc5LleAgc.cpp` only. Exp 0372's pieces 
 
 1. `tb2run0381.sh build <out>`: the tree crosses, then guard, claim, build. Catch2 at main (clang), the patched tree proved, four units compiled with
    the shared commands, link, launchers. Writes only under `~/bc5-work/exp0381/tb2`, `in-tb2` and `backend-build-tb2`. About 3 minutes, CPU only.
-2. `tb2run0381.sh smoke TS2 <out>`: one start, RT on, a fresh private copy of the live saves (377a8d45), through the smoke launcher (5 lines different
-   from the real one: saves, config, learned file, working directory, switches file), journal off, the kernel log streamed.
+2. `tb2run0381.sh smoke TS2 <out>`: one start, RT on, a fresh private copy of the live saves (377a8d45), through the smoke launcher (8 lines different
+   from the real one: saves, config, learned file, working directory, switches file, and the private paths, directory and guards it forces), journal off, the kernel log streamed.
 
 **One change from the brief, for Codex and the top session to accept or refuse.** "120 s with the cap" would never test the cap, since the laptop
 stopped the last smoke first. So the **cap is set to 125 s and the laptop's stop to 140 s as a backstop**, so that the cap fires. If it does

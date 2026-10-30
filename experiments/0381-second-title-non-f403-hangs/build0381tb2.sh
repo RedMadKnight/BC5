@@ -98,7 +98,15 @@ sed -i 's/^export BC5_CRASH_FRAMES=1 /export BC5_DIRECT_ACB_STATE_RESTORE=1 BC5_
 # The switches: read after bc5-run.env and bc5-pkg.env, right before the log, with a check right before each emulator start.
 [ "$(grep -c 'no write-back, FORCE_START, copy or rebase' "$L")" = 1 ] || fail "the log line is not there once"
 sed -i 's/no write-back, FORCE_START, copy or rebase/switches:${TB2_SW:- none}/' "$L"
+# The log's first line states the settings as they are, not as r1's text says they should be.
+O='BC5_CRASH_FRAMES=1 BC5_0380_REC=1 BC5_DIRECT_PIECES_NO_CLEAR=1 BC5_DIRECT_ZERO_SKIP=$BC5_DIRECT_ZERO_SKIP ($(md5sum < "$BC5_DIRECT_ZERO_SKIP" | cut -c1-8)); switches:${TB2_SW:- none}; binary'
+[ "$(grep -cF -- "$O" "$L")" = 1 ] || fail "the settings in the log line are not there once"
+N='switches:${TB2_SW:- none}; list $(md5sum < "$BC5_DIRECT_ZERO_SKIP" | cut -c1-8); kept:$TB2_KEPT; binary'
+O="$O" N="$N" perl -i -pe 's/\Q$ENV{O}\E/$ENV{N}/' "$L"
 at() { [ "$(grep -cxF -- "$1" "$L")" = 1 ] || { echo "FAIL: anchor [$1] is not there once" >&2; return 1; }; grep -nxF -- "$1" "$L" | cut -d: -f1; }
+pkg_at=$(at '  done < "$PKG_ENV"') || exit 1
+[ "$(sed -n "$((pkg_at + 1))p" "$L")" = fi ] || fail "the end of the pkg.env loop is not where it should be"
+sed -i "$((pkg_at + 1))r $HERE/force0381tb2.inc" "$L"
 brace=$(at '{') || exit 1
 sed -i "$((brace - 1))r $HERE/switches0381tb2.inc" "$L"
 [ "$(grep -c '^  "$EMU" ' "$L")" = 1 ] || fail "the emulator's line is not there once"
@@ -107,7 +115,9 @@ sed -i 's/^  # shellcheck disable=SC2086$/  tb2_check\n&/' "$L"
 # The order, counted on the launcher as built: both settings files, the block, the log at once, and the check right before the emulator.
 env_at=$(at 'done < "$ENVF"') || exit 1; pkg_at=$(at '  done < "$PKG_ENV"') || exit 1; end_at=$(at "# end of exp 0381 test build 2's switches") || exit 1
 brace=$(at '{') || exit 1; check_at=$(at '  tb2_check') || exit 1; emu_at=$(grep -n '^  "$EMU" ' "$L" | cut -d: -f1)
+req_at=$(at 'export "${TB2_REQ[@]}" "${TB2_PRIVATE[@]}"') || exit 1; arr_at=$(grep -n '^TB2_REQ=' "$L" | cut -d: -f1)
 [ "$env_at" -lt "$pkg_at" ] && [ "$pkg_at" -lt "$end_at" ] || fail "the switches block is not after both settings files"
+[ "$((pkg_at + 2))" -lt "$arr_at" ] && [ "$arr_at" -lt "$req_at" ] && [ "$req_at" -lt "$(grep -n '^mkdir -p "$M" ' "$L" | cut -d: -f1)" ] || fail "the required settings are not right after the settings files"
 [ "$brace" = "$((end_at + 1))" ] && sed -n "$((brace + 1))p" "$L" | grep -q '^  echo "== exp 0381 test build 2: .*switches:' || fail "the log does not follow the block"
 [ "$((check_at + 2))" = "$emu_at" ] || fail "the check is not right before the emulator"
 # After the block, nothing may load settings or set anything: the log's reads of the two files are fine, a loop over them is not.
@@ -125,6 +135,9 @@ sed -e 's#^cd ~/bc5-work$#cd ~/bc5-work/exp0381/wd#' \
     -e 's#^export BC5_DIRECT_LEARNED=.*$#export BC5_DIRECT_LEARNED=$HOME/bc5-work/exp0381/direct-learned-pkg.txt#' \
     -e 's#^export KYTY_BC5_SAVEDATA_DIR=.*$#export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/exp0381/wd/_SaveData-pkg-play#' \
     -e 's#^SWF=.*$#SWF=/dev/null#' \
+    -e 's#^TB2_PATHS=()$#TB2_PATHS=(KYTY_BC5_SAVEDATA_DIR BC5_DIRECT_LEARNED KYTY_BC5_INPUT_CONFIG)#' \
+    -e 's#^TB2_WD=""$#TB2_WD=$HOME/bc5-work/exp0381/wd#' \
+    -e 's#^TB2_PRIVATE=()$#TB2_PRIVATE=("KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/exp0381/wd/_SaveData-pkg-play" "BC5_DIRECT_LEARNED=$HOME/bc5-work/exp0381/direct-learned-pkg.txt" "KYTY_BC5_INPUT_CONFIG=$HOME/bc5-work/exp0381/input-rton.cfg" BC5_DIRECT_COMPUTE_RING=-1 BC5_DIRECT_CROSS_RING_WAITS=all BC5_DIRECT_GPU_CHECK=1 BC5_DIRECT_GPU_CHECK_PRODUCT=1 BC5_DIRECT_SHADOW_LABELS=1 BC5_DIRECT_HOST_INDIRECT=learn:1100000000 BC5_DIRECT_SOFT_WAIT_MS=8)#' \
     -e '/^done < "\$ENVF"$/a export KYTY_BC5_INPUT_CONFIG=$HOME/bc5-work/exp0381/input-rton.cfg' "$L" > "$S" || fail "smoke launcher"
 bash -n "$S" || fail "the smoke launcher does not parse"
 chmod +x "$S"

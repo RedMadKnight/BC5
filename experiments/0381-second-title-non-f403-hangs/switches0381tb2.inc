@@ -18,20 +18,32 @@ if [ -f "$SWF" ] && [ -r "$SWF" ]; then
     esac
   done < "$SWF"
 fi
+TB2_KEPT_NAMES="BC5_DIRECT_ACB_STATE_RESTORE BC5_CRASH_FRAMES BC5_0380_REC BC5_DIRECT_PIECES_NO_CLEAR BC5_DIRECT_ZERO_SKIP KYTY_BC5_SAVEDATA_DIR BC5_DIRECT_LEARNED KYTY_BC5_INPUT_CONFIG BC5_DIRECT_COMPUTE_RING BC5_DIRECT_CROSS_RING_WAITS BC5_DIRECT_GPU_CHECK BC5_DIRECT_GPU_CHECK_PRODUCT BC5_DIRECT_SHADOW_LABELS BC5_DIRECT_HOST_INDIRECT BC5_DIRECT_SOFT_WAIT_MS"
 tb2_env() {
   local n v
-  for n in $TB2_NAMES; do
+  for n in $1; do
     v=$(printenv "$n") && printf ' %s=%s' "$n" "$v"
   done
 }
-TB2_ENV=$(tb2_env)
+TB2_ENV=$(tb2_env "$TB2_NAMES")
+TB2_KEPT=$(tb2_env "$TB2_KEPT_NAMES")
 TB2_SW=$TB2_ENV
 [ -z "$TB2_BAD" ] || TB2_SW="$TB2_SW REJECTED-LINES:$TB2_BAD"
-# Called right before each emulator start: what the log says is what the emulator gets, or it does not start.
+# Called right before each emulator start: what the log says is what the emulator gets, each required value is exact, and each private path is itself, not a link elsewhere. If not, it does not start.
 tb2_check() {
-  [ "$(tb2_env)" = "$TB2_ENV" ] && return 0
-  echo "== $(date '+%F %T') exp 0381: the switches changed after the block, not started:$(tb2_env)" >> "$LOG"
-  say "The switches changed after they were read; not started (see $LOG)."
+  local r v w=""
+  [ "$(tb2_env "$TB2_NAMES")" = "$TB2_ENV" ] || w="$w switches:$(tb2_env "$TB2_NAMES")"
+  [ "$(tb2_env "$TB2_KEPT_NAMES")" = "$TB2_KEPT" ] || w="$w settings:$(tb2_env "$TB2_KEPT_NAMES")"
+  for r in "${TB2_REQ[@]}" "${TB2_PRIVATE[@]}"; do
+    v=$(printenv "${r%%=*}"); [ "$v" = "${r#*=}" ] || w="$w ${r%%=*}=$v"
+  done
+  for r in "${TB2_PATHS[@]}"; do
+    v=$(printenv "$r"); [ "$(readlink -f "$v")" = "$(readlink -f "$HOME")${v#"$HOME"}" ] || w="$w link:$r"
+  done
+  [ -z "$TB2_WD" ] || [ "$(pwd -P)" = "$(readlink -f "$TB2_WD")" ] || w="$w wd:$(pwd -P)"
+  [ -z "$w" ] && return 0
+  echo "== $(date '+%F %T') exp 0381: changed after the settings were read, not started:$w" >> "$LOG"
+  say "The settings changed after they were read; not started (see $LOG)."
   exit 1
 }
 # end of exp 0381 test build 2's switches
