@@ -35,8 +35,12 @@ and this is the first time they meet it.
   archive still holds it. The archive pin is read after the rebuild, so an archive without the removal would not stop the build: check `strings` for the name at the pin read.
 - `ARGS_COPY`'s old flag-area slot, which hung in C1 and W1, stays in the source: it is not a switch, the runtime cannot reach it (`Device::open` turns the copy off when the low slot fails),
   and the copy's unit tests run through it.
-- The other seven go through `tb2/switches.env`, read at every start after the launcher's `unset`, by a list of names (`switches0381tb2.inc`, `switches0381tb2.env`). All are commented out
-  in the file as shipped, so the smoke and a first play run with them off. The first line of the start's log names what was on, and a rebuild keeps his file.
+- The other seven go through `tb2/switches.env`, read at every start (`switches0381tb2.inc`, `switches0381tb2.env`). All are commented out in the file as shipped, and a rebuild keeps his file.
+- **Revised after Codex's REVIEW-PORTS-08 (HOLD).** The first loader added switches but cleared none, and r1's launcher does not unset `ARGS_FLUSH`, `ARGS_FLUSH_DRAWS` or `DRAW_ARGS_JOURNAL`: an inherited
+  `ARGS_FLUSH=all` with the whole file commented stayed on while the log said none. Now, after the launcher's env file, all seven and `DRAW_ARGS_JOURNAL` are unset first, and only then is the file read.
+  The file is read as data, never sourced or evaluated. A line counts only as a name with one of its documented values; any other line is ignored and logged by number. The last valid line for a name wins.
+  The log's first line is built from the environment after the block, so it states the effective values. The restore, recorder and crash settings are not touched. The smoke launcher's input is `/dev/null`, so a smoke
+  runs with all of them off. The build stops if anything after the block loads the env file or names a switch. Rollback: revert this revision and 2db9e86; nothing else depends on them.
 - `BC5_DIRECT_DRAW_ARGS_JOURNAL` is not in the list: it is a diagnostic, and a long journal is what filled 38 GB in `on-3`.
 
 **What this costs.** With the new base, a difference between 4c686b5b and tb2 is no longer only three small changes: the whole archive moves too. The fallback's list below stops being exact.
@@ -85,8 +89,8 @@ rechecks this. `mkpatch0381.py` touches `bc5LleAgc.cpp` only. Exp 0372's pieces 
 
 1. `tb2run0381.sh build <out>`: the tree crosses, then guard, claim, build. Catch2 at main (clang), the patched tree proved, four units compiled with
    the shared commands, link, launchers. Writes only under `~/bc5-work/exp0381/tb2`, `in-tb2` and `backend-build-tb2`. About 3 minutes, CPU only.
-2. `tb2run0381.sh smoke TS2 <out>`: one start, RT on, a fresh private copy of the live saves (377a8d45), through the smoke launcher (4 lines different
-   from the real one: saves, config, learned file, working directory), journal off, the kernel log streamed.
+2. `tb2run0381.sh smoke TS2 <out>`: one start, RT on, a fresh private copy of the live saves (377a8d45), through the smoke launcher (5 lines different
+   from the real one: saves, config, learned file, working directory, switches file), journal off, the kernel log streamed.
 
 **One change from the brief, for Codex and the top session to accept or refuse.** "120 s with the cap" would never test the cap, since the laptop
 stopped the last smoke first. So the **cap is set to 125 s and the laptop's stop to 140 s as a backstop**, so that the cap fires. If it does
