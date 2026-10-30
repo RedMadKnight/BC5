@@ -1,6 +1,6 @@
 # Plan: INDIRECT_BUFFER CHAIN in the tracker and the other walkers
 
-Status: a plan. Revision 2, after Codex rejected Step 1 of the first version. Nothing runs in the host, and no box step has
+Status: a plan. Revision 3: Codex's review of revision 2 (`F761-PLAN-REVIEW.md`) corrected below; the C++ prototype is exp 0384, branch `proto/f761-shadow`. Revision 2 came after Codex rejected Step 1 of the first version. Nothing runs in the host, and no box step has
 run. Allowed now: this plan, the scanner, and synthetic CPU tests. A runtime fix needs its own review and the maintainer's yes.
 Separate from PORT-CHAIN (`fix/port-chain`, which fixes `acb_restore::final_value` only).
 
@@ -44,7 +44,7 @@ emitted as fact.** It needs one flag per register, not a copy of the state per w
 | A later plain write | makes that one register certain again |
 | `CLEAR_STATE` or a state push/pop under a condition | the context space uncertain |
 | `SET_BASE`, `INDEX_BASE` and the other tracked packets | the same flag, per packet |
-| A `COND_EXEC` whose count runs past the buffer | the rest uncertain, and the next buffer starts with a carried count |
+| A `COND_EXEC` whose count runs past the buffer | what the CP does here has no source. Both readings are checked; the leftover counts, a set, are carried as conditional, and a count from a CHAIN's target leaves the buffer (exp 0384) |
 
 Both ends writing the same value still reads as uncertain; that is a safe overestimate, and the price of keeping no second
 copy.
@@ -54,16 +54,14 @@ That stays a stated limit, and a certain register means certain *in the host's v
 
 ## What happens to an uncertain register at emission
 
-Two options, and I recommend the first for the restore and neither yet for the other prefixes.
+Two options, neither decided. Certain registers are not an emission policy.
 
-1. **Leave it out.** The restore omits uncertain registers and journals them. An omitted register stays as the ring left it, the
-   same as with the restore off for that register, so it is no worse than today. This keeps a dispatch working when one user-data
-   register is in doubt.
+1. **Leave it out.** The restore omits uncertain registers and journals them. *Corrected:* an earlier revision called this no worse than the restore off. That does not follow: dependent fields, such as a program pointer and its resources, could end up half from the logical queue and half from the ring. Any omission needs groups of dependent registers, which is not designed yet.
 2. **Refuse the whole prefix.** Clearer, but a single uncertain register would drop the program too.
 
 The **CS and full prefixes run today and carry the title.** How often registers go uncertain there is unknown, and title streams
 do use `COND_EXEC`, so a strict policy could remove registers the title needs. They therefore go through **shadow mode first**:
-the tracker computes the flags, emission is unchanged, and the journal counts uncertain registers at each prefix, by name of
+a separate shadow object with its own value store computes the flags (one store cannot keep the old bytes, since old and new disagree on the value after a CHAIN), the old tracker and emission stay as they are, and the journal counts uncertain registers at each prefix, by name of
 register. That number decides their policy, in its own review.
 
 ## The check that it is safe
@@ -131,7 +129,7 @@ and a visited set, and hitting either one is "cannot be followed". A shared `ib_
 
 `walk_draws`: no draw from a dead tail; draws in the target see the right state. `Touched`: a dead tail not marked.
 
-**No-change proof:** with shadow mode only, the same emitted prefixes byte for byte as today on recorded streams.
+**No-change proof:** with shadow mode only, the same emitted prefixes byte for byte as today on recorded streams, with a CHAIN as well as without. Exp 0384 shows this on synthetic streams.
 
 ## Gates and order
 
