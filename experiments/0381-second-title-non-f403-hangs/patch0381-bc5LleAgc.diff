@@ -58,7 +58,7 @@
 +		size_t                regs = 0;
 +		std::vector<uint32_t> re   = bc5::acb_restore::runs(t_fs_before, &regs);
 +		static std::atomic<uint64_t> n_re {0};
-+		static size_t                last_missing = static_cast<size_t>(-1);
++		static std::vector<uint32_t> last_missing {0xffffffffu}; // Codex review REVIEW-06-J2: the offsets, not their number
 +		const uint64_t               k = n_re++;
 +		std::vector<uint32_t>        missing;
 +		size_t                       touched = 0, unreadable = 0;
@@ -67,8 +67,8 @@
 +			missing    = g_acb_touched.missing(t_fs_before);
 +			touched    = g_acb_touched.count();
 +			unreadable = g_acb_touched.unreadable();
-+			if (missing.size() == last_missing) missing.clear();
-+			else last_missing = missing.size();
++			if (missing == last_missing) missing.clear();
++			else last_missing = missing;
 +		}
 +		if (k < 16 || (k & 0x3ffu) == 0 || !missing.empty()) {
 +			std::string names;
@@ -106,3 +106,47 @@
  		if (!waits.empty()) with_waits++;
  	}
  	tracker.apply(span, read, st);
+@@ -7956,6 +8016,30 @@ static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char* kind
+ 		opt.gpu_check_draw_max[1] = dm.second;
+ 	}
+ 	opt.keep_wait_offsets.clear(); // experiment 0055
++	// Experiment 0381 (Codex review REVIEW-06-J2): the dispatch journal's offsets are the assembled chain's. With it, a
++	// line per job (and the class of the job before it, in the host's submission order, not read from the ring), a line
++	// per segment (its place, its prefix, and the USER_DATA_0 the emitted prefix really holds), and job, segment and
++	// title-buffer offset on every dispatch line.
++	uint64_t job0381 = 0;
++	{
++		static const bool dj = BC5_DIAG_ENV("BC5_DIRECT_DISPATCH_JOURNAL") != nullptr;
++		if (dj) {
++			static std::atomic<uint64_t>    n_job {0};
++			static std::atomic<const char*> prev_class {"none"};
++			job0381                = ++n_job;
++			const char* prev       = prev_class.exchange(std::strncmp(kind, "acb", 3) == 0 ? "acb" : "dcb");
++			const size_t seg_count = chain != nullptr ? chain->segs.size() : 0;
++			journal("job %" PRIu64 " %s: %u dwords, %zu segments, ring %d, previous job %s\n", job0381, kind, num_dwords, seg_count, ring, prev);
++			for (size_t k = 0; k < seg_count; k++) {
++				const ChainSeg& sg = chain->segs[k];
++				uint32_t        v  = 0;
++				char            ud[16] = "none";
++				if (sg.prefix != 0 && sg.off + sg.prefix <= num_dwords && bc5::acb_restore::sh_value(std::span<const uint32_t>(ib + sg.off, sg.prefix), bc5::acb_restore::kUserData0, v))
++					std::snprintf(ud, sizeof(ud), "%08x", v);
++				journal("  job %" PRIu64 " seg %zu: off %u prefix %u n %u prefix ud0 %s\n", job0381, k, sg.off, sg.prefix, sg.n, ud);
++			}
++		}
++	}
+ 	if (chain != nullptr) { // ADR 0010: the kept waits were converted to chain offsets when the segment was appended
+ 		for (const ChainSeg& s: chain->segs) opt.keep_wait_offsets.insert(opt.keep_wait_offsets.end(), s.keep.begin(), s.keep.end());
+ 	} else {
+@@ -8168,8 +8252,10 @@ static void submit_now(const uint32_t* ib, uint32_t num_dwords, const char* kind
+ 			// buffer with its program and first user data (which program faults the GPU).
+ 			{
+ 				static const bool dj = BC5_DIAG_ENV("BC5_DIRECT_DISPATCH_JOURNAL") != nullptr;
+-				if (dj && type == 3 && (op == 0x15 || op == 0x16))
+-					journal("  %s dispatch op %02x at %u: pgm 0x%" PRIx64 " ud0-3 %08x %08x %08x %08x ud4-7 %08x %08x %08x %08x ud8-11 %08x %08x %08x %08x ud12-15 %08x %08x %08x %08x%s base1 0x%" PRIx64 " +0x%x len %u\n", kind, op, q, pgm, ud[0], ud[1], ud[2], ud[3], ud[4], ud[5], ud[6], ud[7], ud[8], ud[9], ud[10], ud[11], ud[12], ud[13], ud[14], ud[15], op == 0x16 ? " indirect" : "", base1, op == 0x16 && len >= 2 ? ib[q + 1] : 0u, len); // experiment 0160: all user data and the indirect base
++				if (dj && type == 3 && (op == 0x15 || op == 0x16)) {
++					const bc5::acb_restore::Where w0381 = bc5::acb_restore::locate(chain != nullptr ? std::span<const ChainSeg>(chain->segs) : std::span<const ChainSeg>(), q);
++					journal("  %s dispatch op %02x at %u: pgm 0x%" PRIx64 " ud0-3 %08x %08x %08x %08x ud4-7 %08x %08x %08x %08x ud8-11 %08x %08x %08x %08x ud12-15 %08x %08x %08x %08x%s base1 0x%" PRIx64 " +0x%x len %u job %" PRIu64 " seg %d orig %u\n", kind, op, q, pgm, ud[0], ud[1], ud[2], ud[3], ud[4], ud[5], ud[6], ud[7], ud[8], ud[9], ud[10], ud[11], ud[12], ud[13], ud[14], ud[15], op == 0x16 ? " indirect" : "", base1, op == 0x16 && len >= 2 ? ib[q + 1] : 0u, len, job0381, w0381.seg, w0381.orig); // experiment 0160: all user data and the indirect base
++				}
+ 				// experiment 0160: register tables — LOAD_SH_REG_INDEX (0x63), LOAD_CONTEXT_REG_INDEX (0x9f) and
+ 				// LOAD_UCONFIG_REG_INDEX (0x64) pairs of a graphics buffer in the GE probe size range, read now.
+ 				if (dj && type == 3 && (op == 0x63 || op == 0x9f || op == 0x64) && len >= 5 && std::strncmp(kind, "dcb", 3) == 0 && ge_probe_range().second != 0 && num_dwords >= ge_probe_range().first + 1249 && num_dwords <= ge_probe_range().second + 1249) {

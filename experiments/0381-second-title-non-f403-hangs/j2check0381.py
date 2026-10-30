@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SUPERSEDED by j3check0381.py: this filters on the chain offset, a false negative behind a prefix (REVIEW-06-J2).
 # BC5 exp 0381: J2's clean-start checks over a direct.log: the restore lines, the F679 order (a dcb opening with
 # 0x909977100 right after an acb) and the flip-free timing line of that buffer. Register values and counts only.
 # usage: python3 j2check0381.py direct.log

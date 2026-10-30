@@ -70,7 +70,7 @@ rep("""				full_prefix.swap(cs);
 		size_t                regs = 0;
 		std::vector<uint32_t> re   = bc5::acb_restore::runs(t_fs_before, &regs);
 		static std::atomic<uint64_t> n_re {0};
-		static size_t                last_missing = static_cast<size_t>(-1);
+		static std::vector<uint32_t> last_missing {0xffffffffu}; // Codex review REVIEW-06-J2: the offsets, not their number
 		const uint64_t               k = n_re++;
 		std::vector<uint32_t>        missing;
 		size_t                       touched = 0, unreadable = 0;
@@ -79,8 +79,8 @@ rep("""				full_prefix.swap(cs);
 			missing    = g_acb_touched.missing(t_fs_before);
 			touched    = g_acb_touched.count();
 			unreadable = g_acb_touched.unreadable();
-			if (missing.size() == last_missing) missing.clear();
-			else last_missing = missing.size();
+			if (missing == last_missing) missing.clear();
+			else last_missing = missing;
 		}
 		if (k < 16 || (k & 0x3ffu) == 0 || !missing.empty()) {
 			std::string names;
@@ -103,6 +103,43 @@ rep("if (!pieces_dry() && !pieces_full() && draw_journal.second == 0 && !prefix_
     "if (!pieces_dry() && !pieces_full() && draw_journal.second == 0 && !prefix_all() && cs_prefix_mode() == 0 && acb_restore_mode() == 0) return; // exp 0195: the compute prefix needs the tracker too; exp 0381 too")
 rep("if (t_fs_valid || prefix_all() || cs_prefix_mode() != 0) t_fs_before = tracker;",
     "if (t_fs_valid || prefix_all() || cs_prefix_mode() != 0 || acb_restore_mode() != 0) t_fs_before = tracker;")
+
+# Codex review REVIEW-06-J2: with the dispatch journal, the job and segment identity it lacked.
+rep("""	if (chain != nullptr) { // ADR 0010: the kept waits were converted to chain offsets when the segment was appended
+""", """	// Experiment 0381 (Codex review REVIEW-06-J2): the dispatch journal's offsets are the assembled chain's. With it, a
+	// line per job (and the class of the job before it, in the host's submission order, not read from the ring), a line
+	// per segment (its place, its prefix, and the USER_DATA_0 the emitted prefix really holds), and job, segment and
+	// title-buffer offset on every dispatch line.
+	uint64_t job0381 = 0;
+	{
+		static const bool dj = BC5_DIAG_ENV("BC5_DIRECT_DISPATCH_JOURNAL") != nullptr;
+		if (dj) {
+			static std::atomic<uint64_t>    n_job {0};
+			static std::atomic<const char*> prev_class {"none"};
+			job0381                = ++n_job;
+			const char* prev       = prev_class.exchange(std::strncmp(kind, "acb", 3) == 0 ? "acb" : "dcb");
+			const size_t seg_count = chain != nullptr ? chain->segs.size() : 0;
+			journal("job %" PRIu64 " %s: %u dwords, %zu segments, ring %d, previous job %s\\n", job0381, kind, num_dwords, seg_count, ring, prev);
+			for (size_t k = 0; k < seg_count; k++) {
+				const ChainSeg& sg = chain->segs[k];
+				uint32_t        v  = 0;
+				char            ud[16] = "none";
+				if (sg.prefix != 0 && sg.off + sg.prefix <= num_dwords && bc5::acb_restore::sh_value(std::span<const uint32_t>(ib + sg.off, sg.prefix), bc5::acb_restore::kUserData0, v))
+					std::snprintf(ud, sizeof(ud), "%08x", v);
+				journal("  job %" PRIu64 " seg %zu: off %u prefix %u n %u prefix ud0 %s\\n", job0381, k, sg.off, sg.prefix, sg.n, ud);
+			}
+		}
+	}
+	if (chain != nullptr) { // ADR 0010: the kept waits were converted to chain offsets when the segment was appended
+""")
+rep("""				if (dj && type == 3 && (op == 0x15 || op == 0x16))
+					journal("  %s dispatch op %02x at %u: pgm""", """				if (dj && type == 3 && (op == 0x15 || op == 0x16)) {
+					const bc5::acb_restore::Where w0381 = bc5::acb_restore::locate(chain != nullptr ? std::span<const ChainSeg>(chain->segs) : std::span<const ChainSeg>(), q);
+					journal("  %s dispatch op %02x at %u: pgm""")
+rep(""" base1 0x%" PRIx64 " +0x%x len %u\\n", kind, op, q, pgm, ud[0]""", """ base1 0x%" PRIx64 " +0x%x len %u job %" PRIu64 " seg %d orig %u\\n", kind, op, q, pgm, ud[0]""")
+rep("""op == 0x16 && len >= 2 ? ib[q + 1] : 0u, len); // experiment 0160: all user data and the indirect base""",
+    """op == 0x16 && len >= 2 ? ib[q + 1] : 0u, len, job0381, w0381.seg, w0381.orig); // experiment 0160: all user data and the indirect base
+				}""")
 
 open(sys.argv[2], "wb").write(s.encode("utf-8"))
 print("ok")

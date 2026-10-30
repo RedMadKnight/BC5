@@ -83,6 +83,48 @@ inline std::vector<std::uint32_t> runs(const full_state::Tracker &t, std::size_t
     return p;
 }
 
+// A chain offset's place (Codex review REVIEW-06-J2): the dispatch journal runs on the assembled
+// chain, so its offsets include earlier segments and every host prefix. S has the ChainSeg fields
+// off (where the segment's prefix starts), prefix and n. seg is -1 outside every segment; orig is
+// the offset in the title's own buffer, meaningful unless in_prefix.
+struct Where {
+    int seg = -1;
+    std::uint32_t orig = 0;
+    bool in_prefix = false;
+};
+template <class S> Where locate(std::span<const S> segs, std::uint32_t q) {
+    Where w;
+    w.orig = q;
+    for (std::size_t i = 0; i < segs.size(); ++i) {
+        const S &s = segs[i];
+        if (q < s.off || q - s.off >= s.prefix + s.n) continue;
+        w.seg = static_cast<int>(i);
+        w.in_prefix = q - s.off < s.prefix;
+        w.orig = w.in_prefix ? q - s.off : q - s.off - s.prefix;
+        break;
+    }
+    return w;
+}
+
+// The value a run of SET_SH_REG packets gives SH register reg, the last one if it is set twice:
+// what a prefix really emitted, read from its dwords.
+inline bool sh_value(std::span<const std::uint32_t> pre, std::uint32_t reg, std::uint32_t &value) {
+    bool found = false;
+    for (std::size_t i = 0; i < pre.size();) {
+        const std::uint32_t h = pre[i], len = packet_len(h);
+        if (i + len > pre.size()) break;
+        if (h >> 30 == 3 && ((h >> 8) & 0xffu) == 0x76u && len >= 3) {
+            const std::uint32_t first = pre[i + 1] & 0xffffu;
+            if (reg >= first && reg - first < len - 2) {
+                value = pre[i + 2 + (reg - first)];
+                found = true;
+            }
+        }
+        i += len;
+    }
+    return found;
+}
+
 // The compute SH registers acbs write: SET_SH_REG(_INDEX) 0x76/0x9b, LOAD_SH_REG 0x5f ranges,
 // LOAD_SH_REG_INDEX 0x63 (flat ranges, or pairs read through the reader), and INDIRECT_BUFFER
 // 0x3f followed through the reader (4 levels). Tables the reader cannot read are counted.

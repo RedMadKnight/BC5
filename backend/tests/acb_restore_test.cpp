@@ -137,6 +137,49 @@ TEST_CASE("acb restore: runs skip untracked offsets, COMPUTE_VMID and the dispat
     CHECK(acb_restore::runs(Tracker{}).empty());
 }
 
+TEST_CASE("acb restore: chain offsets map back to the title's buffer", "[acb_restore]") {
+    struct S {
+        std::uint32_t off, prefix, n;
+    };
+    // Two title buffers in one chain, the second behind a 58-dword restore (REVIEW-06-J2's 13 + 58).
+    const std::vector<S> segs = {{0, 0, 100}, {100, 58, 15083}};
+    const auto at = [&](std::uint32_t q) { return acb_restore::locate(std::span<const S>(segs), q); };
+    CHECK(at(13).seg == 0);
+    CHECK(at(13).orig == 13);
+    const auto opener = at(100 + 58 + 13);
+    CHECK(opener.seg == 1);
+    CHECK(opener.orig == 13);
+    CHECK_FALSE(opener.in_prefix);
+    const auto in_pre = at(120);
+    CHECK(in_pre.seg == 1);
+    CHECK(in_pre.in_prefix);
+    CHECK(at(100 + 58 + 15083).seg == -1);
+    // A job alone behind its restore: the same opener at 71, which a fixed limit on the offset missed.
+    const std::vector<S> head = {{0, 58, 15083}};
+    const auto alone = acb_restore::locate(std::span<const S>(head), 71);
+    CHECK(alone.seg == 0);
+    CHECK(alone.orig == 13);
+    CHECK(acb_restore::locate(std::span<const S>(), 5).seg == -1);
+}
+
+TEST_CASE("acb restore: sh_value reads what a prefix emitted", "[acb_restore]") {
+    const Scene s;
+    Tracker t;
+    full_state::Stats st;
+    t.apply(s.dcb1, kHost, st);
+    const auto pre = acb_restore::runs(t);
+    std::uint32_t v = 0;
+    REQUIRE(acb_restore::sh_value(pre, acb_restore::kUserData0, v));
+    CHECK(v == 0x11u);
+    REQUIRE(acb_restore::sh_value(pre, 0x20c, v));
+    CHECK(v == 0x09977100u >> 8);
+    CHECK_FALSE(acb_restore::sh_value(pre, 0x2a0, v));
+    CHECK_FALSE(acb_restore::sh_value({}, acb_restore::kUserData0, v));
+    const std::vector<std::uint32_t> twice = {0xC0017600u, 0x240, 1, 0xC0017600u, 0x240, 2};
+    REQUIRE(acb_restore::sh_value(twice, acb_restore::kUserData0, v));
+    CHECK(v == 2u);
+}
+
 TEST_CASE("acb restore: Touched lists what acbs write and the dcb state lacks", "[acb_restore]") {
     const Scene s;
     acb_restore::Touched touched;

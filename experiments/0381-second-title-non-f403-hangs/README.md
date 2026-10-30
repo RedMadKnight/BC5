@@ -548,8 +548,7 @@ journal is what shows a start reached the F679 order. The page cache stays warm,
 to the laptop for each start.
 
 **The comparison.** Starts from the live saves hit F443 in 3 of 4 bench starts (D2, D4, J1 hit; D3 did not reach the
-point), plus the maintainer's own 16:25 start. Without J1, the count the top session quotes is 2 of 3 plus 16:25. If
-the switch changed nothing, 3 clean starts would have a chance of about 1 in 27 at 2 of 3, and 1 in 64 at 3 of 4.
+point), plus the maintainer's own 16:25 start. Without J1, the count the top session quotes is 2 of 3 plus 16:25. *The odds that stood here are withdrawn (§14).*
 
 **Each start ends** at 120 s of emulator time, or on the first gfx timeout, whichever comes first. It is stopped by
 TERM from the laptop.
@@ -560,6 +559,8 @@ TERM from the laptop.
 - the journal has `acb state restore (exp 0381)` lines, so the switch was active;
 - the journal shows a dcb opening with 0x909977100 right after an acb, the F679 order. Without it the start did not
   test the fix: it counts as **no test**, and does not count towards the 3.
+
+*The checks below were applied with a faulty detector; J2 is eligibility unverified (§14).*
 
 **Pass:** 3 clean starts, no F443 in any. At most 2 extra starts may replace no-test starts.
 
@@ -663,7 +664,7 @@ timing lines around the burst, in J1 and all J2 journals, plus the journals of t
 - which flush reason ended the chain in J1, and whether the older events show the same one;
 - where the J2 starts put the acb of that moment, before or after the chain.
 
-**J3's rule, written before it runs.**
+**J3's rule as first written; replaced by §14.**
 
 *J3a, the control:* binary 6415be8f, switch off, otherwise §11's setup. 3 starts, up to 5; stop the series at the
 first F443, and keep every journal. The measure is a chain that starts with 0x909977100 (below dword 64) right after an
@@ -681,3 +682,73 @@ changes more. 3 starts, up to 5.
 - **No test:** the order does not appear. Report it; do not count clean starts.
 
 Both arms keep §11's stop list. J3b needs its own yes: it changes a chain setting, which is off the tested path.
+
+## 14. Codex review (REVIEW-06-J2): corrections, and J3's rule, which replaces §13's (F682)
+
+**A detector false negative.** `j2check0381.py` and `j2job0381.py` filter on the journal's `at < 64`. That offset comes
+after prefix insertion and chain assembly, so the same opener at dword 13 reads 71 behind a 58-dword restore, and both
+scripts reject it. Codex's probe on the real scripts gives 13 → 1 and 71 → 0. The J2 journals carry no segment or job
+identity, so raising the limit would not repair them.
+
+**What that changes in J2.** The rule written in §11 stands; the instrument that applied it did not. **J2's five
+starts are eligibility unverified**, not "no test": §11's order was neither shown nor excluded across the 120 s. F681's
+offsets still place the buffer mid-chain at the one burst measured, with the restore inside the step. They say nothing
+about the 79–91 later runs of 0x909977100. "No start put an acb in front of the buffer" (F680 as first written) was too
+strong. J2 stands as five starts with no fault, and it shows no repair.
+
+**Another correction.** The odds in §11 and §12 (1 in 27, 1 in 64, 1 in 240, 1 in 1,000) plug a rate from a few unlike
+starts into a model of independent, identical trials. They are withdrawn; they were never a significance level.
+
+**A third reading of J2 (Codex).** The switch is a bundle: it adds packets, copying and chain length as well as
+register values. A changed chain boundary may be a host coalescing or timing effect, with no silent register carry
+cured. §13's "effect through the GPU's results" is one candidate and this is another.
+
+**What changed in the code.**
+- `patch0381-bc5LleAgc.diff`, with the dispatch journal on, now writes a line per job (with the class of the job
+  before it), a line per segment (`off`, `prefix`, `n`, and the `USER_DATA_0` read from the prefix's emitted dwords), and
+  job, segment and original offset on every dispatch line. The previous job's class is the host's submission order,
+  not read from the ring.
+- `locate` and `sh_value` in `acb_restore.hpp` compute those, with tests: 101 of 101 test cases on the laptop.
+- `last_missing` now compares the offsets, not their number (REVIEW-06-J2's logging finding).
+- `j3check0381.py` replaces the two J2 checkers: it uses the original offset and the segment, attributes the restore to
+  the target's own segment, and says "eligibility unverified" for a journal without identity. `test_j3check0381.py`: 6
+  cases, including 13 and 71.
+
+The new unit (637f964c) is not compiled on the box yet. The new binary differs from 6415be8f by those journal lines and
+the `last_missing` comparison. With the dispatch journal off, the new code does nothing except the comparison.
+
+**J3's rule, replacing §13's.** Written before any start.
+
+*Setup.* The new binary for every arm, `BC5_DIRECT_DISPATCH_JOURNAL=1`, §11's saves (a fresh copy per start, 377a8d45),
+RT on, warm cache, 120 s or the first gfx timeout (`start0381j3.sh`, `j3run0381.sh`). All starts count; every journal,
+no-test start and failure is kept. The eligibility rule below does not change after any result is seen.
+
+*Stage 1, at the default hold.* Switch off and on, alternating, starting with off: 3 starts each, up to 5 each.
+
+*Stage 2, at one shorter `BC5_DIRECT_CHAIN_HOLD_US`.* The value is written here, from Stage 1's journals, before Stage 2
+runs. Off and on again alternating, 3 each, up to 5 each, so the comparison is off against on at **one** hold value.
+Stage 2 runs only if Stage 1 left the question open, and needs its own yes.
+
+*Eligible start.* `j3check0381.py` reports a target: 0x909977100 as the first dispatch of the job's first segment, at an
+original offset below 64, with an acb as the previous job.
+
+*Attributed restore.* On an eligible ON start, that same segment's prefix holds `USER_DATA_0` = 0x11. A restore line
+elsewhere in the run does not count.
+
+*Outcomes.*
+- **Evidence for the mechanism:** at one hold value, at least 2 eligible ON starts with the attributed restore and no
+  F443, and at least 1 eligible OFF start with F443.
+- **Fail:** an eligible ON start with the attributed restore and F443. Stop the series and read the emitted IB.
+- **No test of the mechanism:** no eligible ON start at that hold. Clean ON starts then count for nothing.
+- **Open:** eligible ON starts clean, but no eligible OFF start with F443. The target order was not shown to fault in
+  this setup.
+
+*What each comparison means.* Off against on, in the rate of F443 or of eligibility, tests **the switch as a bundle**
+(register values, packets, copying, timing). It does not by itself establish the register mechanism; only the
+attributed outcomes above speak to that. Counts are reported as counts, with no odds attached. A pass covers this
+start-up workload, this save state, this build, 120 s.
+
+*Stop rules.* §11's list holds, with one change: F443 in an OFF start is expected and does not stop the series. F443
+in an ON start does. After any gfx timeout, the next start waits for the reset's success line.
+
+*Before it.* The read of §13 stays useful for the old journals' chain statistics, but it cannot make J2 eligible.

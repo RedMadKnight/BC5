@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SUPERSEDED by j3check0381.py: this filters on the chain offset, a false negative behind a prefix (REVIEW-06-J2).
 # BC5 exp 0381: every dcb that opens (first dispatch below dword 64) with 0x909977100: its time, size and tracker ud0,
 # the previous dispatch line and the previous acb lines in journal order. usage: python3 j2job0381.py direct.log
 import re
