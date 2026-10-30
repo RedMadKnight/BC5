@@ -1,0 +1,89 @@
+# exp 0381 J3 Stage 2: j3series0381.sh output, binary 2e69e902, BC5_DIRECT_CHAIN_HOLD_US=200
+=== J3-S2-off-1 10:10:26
+J3-S2-off-1 stop reason: 120 s
+etimes     121
+faults 0; timeouts 0; resets ok 0
+play-20261030-1010
+jobs 110611, dispatch lines with identity 1216253
+target t 54.74 job 52420 seg 1/3 orig 13 title 12673 dwords, previous job acb, prefix 0 dwords, prefix ud0 none, tracker ud0 0x11: not eligible
+target t 54.89 job 52474 seg 1/2 orig 22 title 32638 dwords, previous job acb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: not eligible
+target t 55.03 job 52524 seg 0/2 orig 18 title 12029 dwords, previous job acb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: ELIGIBLE
+target t 55.14 job 52568 seg 1/2 orig 8 title 32643 dwords, previous job dcb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: not eligible
+target t 55.23 job 52610 seg 1/2 orig 18 title 26938 dwords, previous job acb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: not eligible
+target t 87.39 job 79944 seg 0/2 orig 22 title 3899 dwords, previous job acb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: ELIGIBLE
+target t 88.38 job 80319 seg 0/2 orig 18 title 1031 dwords, previous job acb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: ELIGIBLE
+target t 88.78 job 80554 seg 0/3 orig 18 title 4740 dwords, previous job acb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: ELIGIBLE
+target t 107.35 job 100233 seg 0/3 orig 8 title 2717 dwords, previous job dcb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: not eligible
+targets 9, eligible 4
+=== J3-S2-on-1 10:12:42
+J3-S2-on-1 stop reason: 120 s
+etimes     120
+faults 0; timeouts 0; resets ok 0
+play-20261030-1012
+jobs 114622, dispatch lines with identity 1205716
+target t 56.46 job 56010 seg 1/3 orig 13 title 12673 dwords, previous job acb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: not eligible
+target t 56.65 job 56065 seg 1/2 orig 22 title 32642 dwords, previous job dcb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: not eligible
+target t 56.76 job 56113 seg 1/3 orig 22 title 6751 dwords, previous job dcb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: not eligible
+target t 56.87 job 56155 seg 0/3 orig 22 title 32631 dwords, previous job dcb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: not eligible
+target t 56.87 job 56155 seg 1/3 orig 22 title 9107 dwords, previous job dcb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: not eligible
+target t 86.94 job 82093 seg 0/2 orig 22 title 24937 dwords, previous job acb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: ELIGIBLE
+target t 87.38 job 82233 seg 0/3 orig 18 title 906 dwords, previous job acb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: ELIGIBLE
+target t 87.59 job 82382 seg 0/3 orig 18 title 10422 dwords, previous job acb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: ELIGIBLE
+target t 107.07 job 104360 seg 0/3 orig 8 title 2497 dwords, previous job dcb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: not eligible
+target t 107.17 job 104417 seg 1/2 orig 18 title 32643 dwords, previous job dcb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: not eligible
+target t 107.25 job 104453 seg 1/3 orig 22 title 14136 dwords, previous job dcb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: not eligible
+targets 11, eligible 3
+=== J3-S2-off-2 10:14:57
+J3-S2-off-2 stop reason: 120 s
+etimes     121
+faults 0; timeouts 0; resets ok 0
+play-20261030-1015
+jobs 111373, dispatch lines with identity 1227383
+target t 56.06 job 52798 seg 1/2 orig 13 title 12673 dwords, previous job acb, prefix 0 dwords, prefix ud0 none, tracker ud0 0x11: not eligible
+target t 56.25 job 52854 seg 0/2 orig 22 title 32639 dwords, previous job acb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: ELIGIBLE
+target t 56.41 job 52908 seg 0/3 orig 18 title 8482 dwords, previous job acb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: ELIGIBLE
+target t 56.52 job 52960 seg 0/3 orig 18 title 32642 dwords, previous job dcb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: not eligible
+target t 56.74 job 53008 seg 0/3 orig 18 title 32643 dwords, previous job dcb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: not eligible
+target t 88.36 job 80129 seg 1/3 orig 8 title 4511 dwords, previous job acb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: not eligible
+target t 107.15 job 100351 seg 0/3 orig 8 title 2425 dwords, previous job acb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: ELIGIBLE
+target t 107.25 job 100402 seg 0/3 orig 18 title 24141 dwords, previous job dcb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: not eligible
+targets 8, eligible 3
+=== J3-S2-on-2 10:17:13
+J3-S2-on-2 stop reason: 120 s
+etimes     123
+faults 0; timeouts 0; resets ok 0
+play-20261030-1017
+jobs 115962, dispatch lines with identity 1386341
+target t 55.43 job 53163 seg 1/2 orig 13 title 12673 dwords, previous job acb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: not eligible
+target t 55.69 job 53213 seg 1/2 orig 18 title 32639 dwords, previous job dcb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: not eligible
+target t 55.84 job 53256 seg 1/3 orig 22 title 14052 dwords, previous job dcb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: not eligible
+target t 56.03 job 53306 seg 1/2 orig 8 title 32639 dwords, previous job dcb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: not eligible
+target t 87.78 job 81130 seg 0/3 orig 8 title 8671 dwords, previous job acb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: ELIGIBLE
+target t 107.43 job 101739 seg 1/2 orig 22 title 32635 dwords, previous job dcb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: not eligible
+targets 6, eligible 1
+=== J3-S2-off-3 10:19:31
+J3-S2-off-3 stop reason: 120 s
+etimes     120
+faults 0; timeouts 0; resets ok 0
+play-20261030-1019
+jobs 112761, dispatch lines with identity 1231703
+target t 55.14 job 53687 seg 1/3 orig 13 title 12673 dwords, previous job acb, prefix 0 dwords, prefix ud0 none, tracker ud0 0x11: not eligible
+target t 55.29 job 53739 seg 1/2 orig 8 title 32642 dwords, previous job dcb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: not eligible
+target t 55.41 job 53790 seg 1/3 orig 22 title 13760 dwords, previous job dcb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: not eligible
+target t 55.52 job 53838 seg 1/2 orig 22 title 32641 dwords, previous job dcb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: not eligible
+target t 87.44 job 82581 seg 0/3 orig 22 title 14220 dwords, previous job acb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: ELIGIBLE
+target t 107.26 job 102730 seg 0/3 orig 18 title 2742 dwords, previous job acb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: ELIGIBLE
+targets 6, eligible 2
+=== J3-S2-on-3 10:21:46
+J3-S2-on-3 stop reason: 120 s
+etimes     123
+faults 0; timeouts 0; resets ok 0
+play-20261030-1021
+jobs 128400, dispatch lines with identity 1372680
+target t 59.01 job 68606 seg 1/3 orig 13 title 12673 dwords, previous job acb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: not eligible
+target t 59.30 job 68712 seg 1/3 orig 18 title 13965 dwords, previous job dcb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: not eligible
+target t 59.44 job 68762 seg 0/3 orig 22 title 32638 dwords, previous job dcb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: not eligible
+target t 87.12 job 93541 seg 1/3 orig 18 title 3584 dwords, previous job acb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: not eligible
+target t 87.89 job 93901 seg 1/3 orig 22 title 6272 dwords, previous job acb, prefix 58 dwords, prefix ud0 00000011, tracker ud0 0x11: not eligible
+targets 5, eligible 0
+=== series done 10:24:06

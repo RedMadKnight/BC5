@@ -1,0 +1,9 @@
+J1: chain 88848 with run A at 56333, then chain 15083 with run B at 13
+J1 step A to B across the chain break: 32528
+J2-1 chain 47670: A 186 B 32772 step 32586 (J1 + 58); B minus its previous dispatch 115
+J2-2 chain 47670: A 186 B 32772 step 32586 (J1 + 58); B minus its previous dispatch 115
+J2-3 chain 77940: A 30456 B 63042 step 32586 (J1 + 58); B minus its previous dispatch 115
+J2-4 chain 103865: A 56397 B 88983 step 32586 (J1 + 58); B minus its previous dispatch 115
+J2-5 chain 67871: A 20387 B 52973 step 32586 (J1 + 58); B minus its previous dispatch 115
+first burst, runs at 23864/53054 in J1: step 29190; J2-1 29190, J2-2 29190 (no restore between them)
+J2-4's chain minus J1's two chains: -66

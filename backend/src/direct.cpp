@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-2.0-only
 #include "bc5/direct.hpp"
+#include "bc5/draw_args.hpp"
 #include "bc5/host_indirect.hpp"
 #include "bc5/ib_split.hpp"
 #include "bc5/indirect_check.hpp"
@@ -10,6 +11,7 @@
 #include <fcntl.h>
 #include <linux/udmabuf.h>
 #include <sys/ioctl.h>
+#include <sys/uio.h>
 #include <xf86drm.h>
 #include <unistd.h>
 
@@ -238,6 +240,7 @@ struct Device::Impl {
     }
     void summary(const char *when = "at close") { // also every 2000 shadowed jobs: a killed emulator never gets here
         if (hist_n != 0 && when[0] == 'a') hist_print("close");
+        if (env_draw_args && when[0] == 'a') da_summary("close"); // experiment 0381
         if (shadow_jobs != 0 || product_sum != 0 || shadow_failed_sum != 0)
             std::fprintf(stderr,
                          "bc5-direct: experiment 0341 %s: shadow labels in %llu jobs: %llu labels, %llu writes copied, %llu waits redirected, %llu labels without a slot, %llu IBs left alone (COND_EXEC); product staircase on %llu dispatches\n",
@@ -454,6 +457,60 @@ struct Device::Impl {
     std::atomic<std::uint64_t> last_seq{0};            // the job queued last on the GFX ring (wait_idle)
     std::atomic<std::uint64_t> last_seq_comp[kComputeRings] = {}; // ... on each compute ring
 
+    // Experiment 0381: BC5_DIRECT_DRAW_ARGS_JOURNAL=1 (default off), the GFX jobs' indirect draw
+    // arguments read at submit and again at completion or timeout (bc5/draw_args.hpp). CPU reads
+    // through process_vm_readv (an unreadable slot is reported, not fatal); no packet is added. The
+    // records of a job wait in its slot; the submitting thread fills a slot before the job is
+    // queued and the completion thread empties it before the slot is given back.
+    bool env_draw_args = false;
+    std::vector<draw_args::Rec> da_pending[kSlots];
+    draw_args::Limits da_limits;
+    draw_args::Counters da;
+    std::uint64_t da_loud = 0;
+    std::mutex da_mu; // the counters and the line budget: submit and completion run on two threads
+    static bool da_read(std::uint64_t a, std::uint32_t (&out)[4]) {
+        iovec l{out, sizeof(out)}, r{reinterpret_cast<void *>(a), sizeof(out)};
+        return process_vm_readv(getpid(), &l, 1, &r, 1, 0) == static_cast<ssize_t>(sizeof(out));
+    }
+    void da_submit(const std::vector<draw_args::Rec> &recs, std::uint32_t unbased) {
+        std::lock_guard<std::mutex> g(da_mu);
+        da.draws += recs.size();
+        da.unbased += unbased;
+        for (const auto &r : recs)
+            if (draw_args::classify(r, da_limits) != 0) da.flagged_submit++;
+    }
+    // Every record of a timed-out job is printed; otherwise the first 256 flagged ones and then
+    // one in 4096, with a summary every 100,000 draws.
+    void da_complete(std::uint64_t seq, std::vector<draw_args::Rec> &recs, bool timed_out) {
+        if (recs.empty()) return;
+        const auto done = draw_args::reread(recs, &Impl::da_read);
+        std::lock_guard<std::mutex> g(da_mu);
+        if (timed_out) da.timed_out_jobs++;
+        for (std::size_t k = 0; k < recs.size(); ++k) {
+            const std::uint32_t f0 = draw_args::classify(recs[k], da_limits);
+            const std::uint32_t f1 = draw_args::classify(done[k], da_limits);
+            if (f1 != 0) da.flagged_done++;
+            if (std::memcmp(recs[k].v, done[k].v, sizeof(recs[k].v)) != 0) da.changed++;
+            if (timed_out || ((f0 | f1) != 0 && (da_loud++ < 256 || da_loud % 4096 == 0)))
+                std::fprintf(stderr, "bc5-direct: exp 0381 %s\n",
+                             draw_args::line("submit", seq, recs[k], f0, timed_out ? "timeout" : "done", &done[k], f1).c_str());
+        }
+        recs.clear();
+        if (da.draws >= da_next_summary) {
+            da_summary("periodic");
+            da_next_summary = da.draws + 100000;
+        }
+    }
+    std::uint64_t da_next_summary = 100000;
+    void da_summary(const char *when) { // da_mu held, or at close
+        std::fprintf(stderr,
+                     "bc5-direct: exp 0381 draw-args %s: %llu draws read (%llu unbased), flagged at submit %llu, at completion %llu, changed %llu, timed-out jobs %llu (limits %u vertices, %u instances)\n",
+                     when, static_cast<unsigned long long>(da.draws), static_cast<unsigned long long>(da.unbased),
+                     static_cast<unsigned long long>(da.flagged_submit), static_cast<unsigned long long>(da.flagged_done),
+                     static_cast<unsigned long long>(da.changed), static_cast<unsigned long long>(da.timed_out_jobs),
+                     da_limits.vertices, da_limits.instances);
+    }
+
     // A fence of this context on `ring`.
     amdgpu_cs_fence fence_of(int ring, std::uint64_t seq) const {
         amdgpu_cs_fence f{};
@@ -530,6 +587,10 @@ std::unique_ptr<Device> Device::open(const std::string &node, const OpenOptions 
     d->impl_->bo_journal = std::getenv("BC5_DIRECT_BO_JOURNAL") != nullptr;
     d->impl_->env_histogram = std::getenv("BC5_DIRECT_ARGS_HISTOGRAM") != nullptr;
     d->impl_->env_shadow = std::getenv("BC5_DIRECT_SHADOW_LABELS") != nullptr;
+    if (const char *e = std::getenv("BC5_DIRECT_DRAW_ARGS_JOURNAL"); e != nullptr && *e != 0 && std::strcmp(e, "0") != 0) {
+        d->impl_->env_draw_args = true; // experiment 0381; the limits follow the CP check's (FilterOptions::gpu_check_draw_max)
+        std::fprintf(stderr, "bc5-direct: experiment 0381 switch: indirect draw arguments read at submit and at completion or timeout (journal only)\n");
+    }
     if (const char *e = std::getenv("BC5_DIRECT_GPU_CHECK_PRODUCT"); e != nullptr && *e != 0) {
         d->impl_->env_product = true; // "1", or "x_limit[:yz_min]"
         char *end = nullptr;
@@ -1309,6 +1370,14 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     // scratch, after the last piece; its address is filled in once the slot is known.
     std::vector<std::size_t> flag_refs;
     if (impl_->env_histogram && !comp) impl_->histogram(main_out, opt.mec_indirect_base, opt.mapped, fopt); // experiment 0341
+    std::vector<draw_args::Rec> da_recs; // experiment 0381: the indirect draws' arguments as the host sees them now
+    if (impl_->env_draw_args && !comp) {
+        std::uint32_t unbased = 0;
+        da_recs = draw_args::scan(main_out, opt.mec_indirect_base, &Impl::da_read, &unbased);
+        impl_->da_limits.vertices = opt.gpu_check_draw_max[0];
+        impl_->da_limits.instances = opt.gpu_check_draw_max[1];
+        impl_->da_submit(da_recs, unbased);
+    }
     if (opt.gpu_check_indirect) {
         indirect_check::Stats st;
         std::uint32_t check_max[3] = {opt.gpu_check_max[0], opt.gpu_check_max[1], opt.gpu_check_max[2]};
@@ -1630,6 +1699,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
         r.slot = static_cast<std::uint32_t>(impl_->cur);
         r.pending = r.rc == 0;
         if (r.pending) {
+            if (!da_recs.empty()) impl_->da_pending[impl_->cur] = std::move(da_recs); // experiment 0381, read in finish()
             impl_->slot_seq[impl_->cur] = req.seq_no;
             (comp ? impl_->last_seq_comp[ring] : impl_->last_seq) = req.seq_no;
             impl_->snap_commit(req.seq_no); // experiment 0122
@@ -1656,6 +1726,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
             }
 #endif
         }
+        impl_->da_complete(req.seq_no, da_recs, r.timed_out); // experiment 0381 (empty unless the switch is on)
     }
     r.submit_ms = now_ms() - t0;
     r.fence_ms = r.submit_ms - r.cs_ms;
@@ -1729,6 +1800,8 @@ SubmitResult Device::finish(std::uint64_t seq_no, std::uint32_t slot, std::uint6
     }
     r.fence_ms = now_ms() - t0;
     r.ok = r.rc == 0 && expired != 0;
+    if ((r.ok || r.timed_out) && slot < static_cast<std::uint32_t>(Impl::kSlots)) // experiment 0381
+        impl_->da_complete(seq_no, impl_->da_pending[slot], r.timed_out);
     if (r.ok) impl_->read_job_ts(slot, r); // experiment 0124, before the slot is given back
     if (r.ok && slot < static_cast<std::uint32_t>(Impl::kSlots)) impl_->slot_seq[slot] = 0;
     return r;

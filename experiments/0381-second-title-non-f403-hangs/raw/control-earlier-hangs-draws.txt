@@ -1,0 +1,23 @@
+# exp 0381: control, the probe's indirect-draw lines of five earlier hang journals (last 8 MB of each; journals private): arguments at the timeout
+== play-20261028-1813
+op 2c at 1696: off 0x0 count 1 stride 32 base1 0x1122c3b7b0 ib 0x1210000000 type 0x0 args [0x1122c3b7b0] 0000001e 00000001 00000000 c2080000 ffffffff 0ad54000 0ad54000 00000003 indices  ran
+dcb #103567 10842 dwords: 12 waits (8 kept for the GPU), 125 label writes, 53 dispatches (14 indirect; the largest grid 57600 groups, at 7007)
+== play-20261028-2330
+op 24 at 1837: off 0xaf0 base1 0x11a5c68000 ib 0x1210000000 args [0x11a5c68af0] 000000d2 00000001 00000000 00000000 000784d0 ran
+op 24 at 2288: off 0xc80 base1 0x11a5c68000 ib 0x1210000000 args [0x11a5c68c80] 0000000c 00000001 00000000 00000000 0007cff0 ran
+op 24 at 2369: off 0xc30 base1 0x11a5c68000 ib 0x1210000000 args [0x11a5c68c30] 00000018 00000001 00000000 00000000 00078503 ran
+op 24 at 2618: off 0xa50 base1 0x11a5c68000 ib 0x1210000000 args [0x11a5c68a50] 000000c0 00000001 00000000 00000000 000787f4 ran
+op 24 at 3408: off 0xeb0 base1 0x11a5c68000 ib 0x1210000000 args [0x11a5c68eb0] 0000000c 00000001 00000000 00000000 0007cffa ran
+op 24 at 3494: off 0xaa0 base1 0x11a5c68000 ib 0x1210000000 args [0x11a5c68aa0] 0000002a 00000001 00000000 00000000 000787d1 ran
+op 2c at 3693: off 0x0 count 1 stride 32 base1 0x1123423030 ib 0x1210000000 type 0x0 args [0x1123423030] 0000000d 00000001 00000000 000a4243 0000b96e 29d85951 00000035 000a418d indices  ran
+op 2c at 4236: off 0x0 count 1 stride 32 base1 0x1123423470 ib 0x1210000000 type 0x0 args [0x1123423470] 00000001 00000001 00000000 00000000 0001c795 30009aa0 00000000 00000000 indices  ran
+op 24 at 4620: off 0x8c0 base1 0x11a5c68000 ib 0x1210000000 args [0x11a5c688c0] 0000001e 00000001 00000000 00000000 0007845f ran
+dcb #287098 12487 dwords: 16 waits (12 kept for the GPU), 147 label writes, 40 dispatches (5 indirect; the largest grid 57600 groups, at 9164)
+== play-20261029-0944
+dcb #183691 11115 dwords: 10 waits (6 kept for the GPU), 129 label writes, 45 dispatches (7 indirect; the largest grid 57600 groups, at 7792)
+== play-20261029-1209
+op 2c at 2529: off 0x0 count 1 stride 32 base1 0x1122f73ac0 ib 0x11e9db6280 type 0x0 args [0x1122f73ac0] 00000002 00000001 00000000 00001000 00000000 0006c639 31c0af68 00001000 indices  ran
+op 24 at 4194: off 0x2df0 base1 0x11a5c68000 ib 0x11e9db6280 args [0x11a5c6adf0] 000000d2 00000001 00000000 00000000 00079db8 ran
+dcb #94500 11745 dwords: 15 waits (11 kept for the GPU), 148 label writes, 68 dispatches (16 indirect; the largest grid 57600 groups, at 8852)
+== play-20261029-1357
+dcb #278264 8251 dwords: 9 waits (5 kept for the GPU), 102 label writes, 35 dispatches (6 indirect; the largest grid 57600 groups, at 4416)
