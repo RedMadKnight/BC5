@@ -30,8 +30,14 @@ unless set, so **the code comes in and its behaviour does not, as far as reading
 it neither sets nor unsets. The archive's other changes (213 lines in `direct.cpp`, 164 in `indirect_check.cpp`) have run in exp 0380's private builds, but **not under the restore**,
 and this is the first time they meet it.
 
-**Question for the top session and the maintainer:** does "all changes" mean compiled in, or switched on? tb2 compiles them in and leaves them off. Exp 0380's switches were experiments, and
-turning them on would be a separate decision.
+**The maintainer's answer (2026-10-30, in this session):** refuted switches are not compiled; the others can be turned on and off. So:
+- `BC5_DIRECT_REBASE_DISPATCH` (refuted by the 14:04 hang, F565) goes from the backend: branch `fix/drop-rebase`, which must reach main before the shared rebuild, or the rebuilt
+  archive still holds it. The archive pin is read after the rebuild, so an archive without the removal would not stop the build: check `strings` for the name at the pin read.
+- `ARGS_COPY`'s old flag-area slot, which hung in C1 and W1, stays in the source: it is not a switch, the runtime cannot reach it (`Device::open` turns the copy off when the low slot fails),
+  and the copy's unit tests run through it.
+- The other seven go through `tb2/switches.env`, read at every start after the launcher's `unset`, by a list of names (`switches0381tb2.inc`, `switches0381tb2.env`). All are commented out
+  in the file as shipped, so the smoke and a first play run with them off. The first line of the start's log names what was on, and a rebuild keeps his file.
+- `BC5_DIRECT_DRAW_ARGS_JOURNAL` is not in the list: it is a diagnostic, and a long journal is what filled 38 GB in `on-3`.
 
 **What this costs.** With the new base, a difference between 4c686b5b and tb2 is no longer only three small changes: the whole archive moves too. The fallback's list below stops being exact.
 The smoke rule below stands unchanged for both. The difference list, the overlap and the pins are re-read after the rebuild.
