@@ -6,6 +6,7 @@
 #include <catch2/catch_test_macros.hpp>
 
 #include <array>
+#include <cstddef>
 #include <map>
 
 using namespace bc5::draw_args;
@@ -29,7 +30,7 @@ struct Mem {
             auto it = at.find(a);
             if (it == at.end())
                 return false;
-            for (int k = 0; k < 4; ++k)
+            for (std::size_t k = 0; k < 4; ++k)
                 out[k] = it->second[k];
             return true;
         };
