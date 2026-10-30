@@ -51,6 +51,20 @@ rep("""static void submit_split(const uint32_t* ib, uint32_t num_dwords, const c
 	t_wait_given_up = false;
 	t_keep_waits.clear();
 	if (acb_restore_mode() != 0 && std::strncmp(kind, "acb", 3) == 0 && g_dev) acb_touched_note(ib, num_dwords); // experiment 0381
+	// Experiment 0381 (J4, a diagnostic): BC5_DIRECT_CHAIN_BREAK_AT=<dwords> ends the chain in front of a title graphics
+	// buffer of exactly that size, so that it heads a job and an acb can land in front of it. It changes the order
+	// only; absent from the lean build.
+	{
+		static const uint32_t break_at = [] {
+			const char* e = BC5_DIAG_ENV("BC5_DIRECT_CHAIN_BREAK_AT");
+			return e != nullptr ? static_cast<uint32_t>(std::strtoul(e, nullptr, 10)) : 0u;
+		}();
+		if (break_at != 0 && num_dwords == break_at && std::strcmp(kind, "dcb") == 0) {
+			static std::atomic<uint64_t> n_break {0};
+			chain_flush(7);
+			journal("chain break (exp 0381): t %.3f s, in front of a dcb of %u dwords (%" PRIu64 " so far)\\n", timing_now(), num_dwords, ++n_break);
+		}
+	}
 """)
 
 rep("""				full_prefix.swap(cs);

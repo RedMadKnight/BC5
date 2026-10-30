@@ -842,3 +842,38 @@ position is not shown: the buffer reached a head once in each arm.
 - This is the start-up workload on one save state, 120 s, on this build. It says nothing about F403 or the 18:08 stall.
 
 **Open.** A second direct pair, and the table's content (inferred from the fault, still not journaled).
+
+## 17. J4: a second direct pair, with the order forced (the maintainer's choice, 2026-10-30). The rule, written before any start
+
+**Why.** J3's whole case for the restore is one pair, and without help the buffer heads a job in about 1 start in 8.
+A shorter hold did not change that (§16). J4 forces the position instead.
+
+**The diagnostic.** `BC5_DIRECT_CHAIN_BREAK_AT=12673` ends the chain in front of a title graphics buffer of exactly
+that size (in all 16 J3 starts this buffer is 12,673 dwords). It only moves a chain boundary. It is a diagnostic
+(`BC5_DIAG_ENV`), absent from the lean build, and each use writes a `chain break (exp 0381)` journal line.
+
+**What it cannot do.** It makes the buffer head a job. It cannot make the job before it an acb: that stays the ring
+thread's timing, so an acb in front still has to be seen in the journal. The flush is a separate change from the switch,
+applied to both arms alike, so off against on stays a comparison at one setting. J4 is a forced position on a
+diagnostic path, not the title's normal timing.
+
+**The setup.** A new binary (the J3 unit plus this switch), `BC5_DIRECT_CHAIN_BREAK_AT=12673` in every start, the default
+hold, the dispatch journal, §11's saves, RT on, warm cache, 120 s or the first gfx timeout. Off and on alternating, off
+first: 3 pairs, up to 5. Every start, journal and failure is kept. The rule below does not change after any result.
+
+**The check is `j4check0381.py`,** and it fixes §16's weakness: it counts this one buffer (size 12,673, first dispatch of
+0x909977100 at original offset 13), which has no CS prefix with the switch off. **Direct** means that buffer in a job's
+first segment with an acb as the previous job. It also prints the last acb's user data 0 before the job: the value the
+buffer would inherit. Tests: `test_j4check0381.py`, 7 cases.
+
+**Outcomes.**
+- **Supported:** at least 2 direct OFF starts with F443, and at least 2 direct ON starts with `USER_DATA_0` = 0x11 in the
+  buffer's own prefix and no F443.
+- **Fail:** a direct ON start with that prefix and F443. Stop the series and read the emitted IB.
+- **Not explained by this cause:** direct OFF starts, in at least 2 starts with an acb's user data 0 not equal to 0x11,
+  with no F443. Then the acb's carry is not sufficient for the fault, whatever the restore does.
+- **Inconclusive:** anything else, such as fewer than 2 direct starts in an arm. Clean ON starts then count for nothing.
+
+Counts are reported as counts, with no odds. An OFF start with F443 is expected and does not stop the series; §11's
+other stops hold, and F443 in an ON start stops it. A result covers this start-up workload, this save, this build, 120 s,
+and a forced position. It does not cover play.
