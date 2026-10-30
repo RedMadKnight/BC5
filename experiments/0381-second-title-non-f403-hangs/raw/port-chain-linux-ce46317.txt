@@ -1,0 +1,33 @@
+# PORT-CHAIN Linux check of ce46317, 2026-10-30 14:42-14:43, runner at 81d3231 (pcrun0381.sh + pcbox0381.sh). CPU only, no GPU.
+# The terminal output, as printed. Full logs beside this file in port-chain-linux-ce46317/, copied read-only from
+# ~/bc5-work/exp0381/pc (11 files, both selftests separate; a search found no private paths or title material).
+# Earlier logs on the box: ~/bc5-work/exp0381/pc-before-20261030-144243 (the e00f084 run), kept by the runner.
+# The library md5 is an OUTPUT of this build, not an input. It equals the e00f084 run's, as a test and a comment would give.
+# The shared pins were not compared: the check wrote only under ~/bc5-work/exp0381/pc.
+# merge-tree, origin/main e0d33d2b00f4b7c4a87f201a019a741fdf37f232 (backend 437a0d5) with ce46317: clean, rc 0, result tree
+# 8763b43d6b3ca315260fced6d6032568877d3ea8. Three files: acb_restore.hpp, acb_restore_test.cpp, HANDOFF.md.
+commit ce46317f2dd296396f54063c4d46126ef52f9b56, backend tree 909f683217d82811169492dffa626f885565546d, source manifest e20bdff8f3aae12f
+claimed
+sources before: e20bdff8f3aae12f (want e20bdff8f3aae12f), 64 files
+== 14:42:45 configure
+== 14:42:46 build
+build rc 0, warnings 0, errors 0
+(all) rc 0: All tests passed (34784 assertions in 120 test cases)
+[acb_restore] rc 0: All tests passed (241 assertions in 11 test cases)
+[chain] rc 0: All tests passed (102 assertions in 4 test cases)
+[full_state] rc 0: All tests passed (78 assertions in 10 test cases)
+[indirect_check] rc 0: All tests passed (982 assertions in 16 test cases)
+[zero_skip] rc 0: All tests passed (54 assertions in 5 test cases)
+[draw_args] rc 0: All tests passed (30 assertions in 4 test cases)
+direct-selftest [] rc 0: direct-selftest: nothing done without --submit
+direct-selftest [--cp-check --zero-check] rc 0: direct-selftest: nothing done without --submit
+sources after: e20bdff8f3aae12f
+toolchain: Ubuntu clang version 21.1.8 (6ubuntu1)
+output library (built here, not an input): libbc5_backend.a md5 c570d1a2fb077124f34df6b09936b05e
+output binaries: bc5_backend_tests 6eef0ee079602db65c47c75803091a05, direct-selftest ac5b9bde3c062f0af248fdfe1edde909
+CHECK PASS 14:43:30
+check rc 0
+pcrun rc 0
+lock: []
+top exp 0381 | PORT-CHAIN claim | 2026-10-30 14:42:44
+top exp 0381 | PORT-CHAIN check done: all steps passed, no GPU; lock cleared | 2026-10-30 14:43:30
