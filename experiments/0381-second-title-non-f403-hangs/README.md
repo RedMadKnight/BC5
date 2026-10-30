@@ -1006,3 +1006,26 @@ no chain break, the box cap at 135 s (`start0381tb.sh`, `tbrun0381.sh`).
 
 The smoke tests the combination for 120 s (restore with `NO_CLEAR`, zero skip and the recorder, which J3 and J4 did not
 run). It proves nothing about F443 in play, and this start need not reach the exposed position.
+
+## 22. The test build: built, smoke passed (2026-10-30 12:08–12:12, the maintainer's go)
+
+**The build.** `build0381tb.sh`: binary `~/bc5-work/exp0381/tb/bin/kyty_emulator`, **md5 4c686b5bfb086295d326c44a07fbad6c**: r1's
+parts with the restore (unit c743bb76) and the current `acb_restore.hpp`. Clang 21: backend 0 warnings, 102 of 102 test cases,
+33,844 assertions, which is the `final_value` fix's first clang build. Host link: 0 errors, 7 warnings (r1's count). The
+shared pins are identical before and after.
+
+**The launcher.** `~/bc5-work/exp0381/tb/play-pkg-0381tb.sh` (9f393ec5): r1's launcher with its paths moved and the switch set
+(11 lines against r1, no mention of r1 left). No shortcut. It uses the live saves when played. The smoke used
+`play-pkg-0381tbs.sh` (913863f9), 4 lines different: private saves, config and learned file.
+
+**The smoke TS1, under §21's rule: pass.** 121 s, RT on, a fresh copy of the live saves: no kernel fault, no gfx timeout, no
+crash line. The restore ran in front of 13,313 dispatching buffers by the journal's last sample, 40 registers in 58 dwords.
+The zero skip placed its list (934 MiB of `RenderGpuWcLarge`, 22 lines in `direct.log`). Live saves unchanged, 377a8d45.
+
+**Not shown.**
+- The cap did not fire: the laptop stopped the run at 121 s, first. No process was left, but its TERM and its survival of a
+  dropped ssh are still not tested on the box.
+- `exposed` is unknown: the dispatch journal was off, so this start may not have met the position.
+- Recorder and crash-frame paths only act at an event; none happened.
+- The tracker starts with fewer registers: the first buffers carried 0, then 12, and 40 from t 1.6 s. J2 and J3 showed 40 from
+  the first line. It does not reach the job at t ~55 s; the cause of the difference is not read.
