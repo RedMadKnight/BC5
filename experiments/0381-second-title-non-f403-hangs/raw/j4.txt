@@ -1,0 +1,74 @@
+# exp 0381 J4: j4series0381.sh output, binary e72bc317, BC5_DIRECT_CHAIN_BREAK_AT=12673, default hold
+=== J4-F-off-1 11:03:35
+J4-F-off-1 stop reason: gfx timeout
+etimes      62
+faults 10; timeouts 2; resets ok 2
+address 0x000008608c654000
+address 0x000008608c655000
+address 0x000008608c657000
+address 0x000008608c658000
+address 0x000008608c659000
+address 0x000008608c65a000
+address 0x000008608c65c000
+address 0x000008608c65e000
+address 0x000008608c661000
+address 0x000008608c663000
+play-20261030-1103
+buffer t 56.55 job 34368 seg 0/4 previous job acb, prefix 0 dwords, prefix ud0 none, inherited 11d00860: EXPOSED
+buffers 1, direct 1, exposed 1
+=== J4-F-on-1 11:04:45
+J4-F-on-1 stop reason: 120 s
+etimes     120
+faults 0; timeouts 0; resets ok 0
+play-20261030-1104
+buffer t 98.22 job 105488 seg 0/4 previous job acb, prefix 58 dwords, prefix ud0 00000011, inherited 11d00860: EXPOSED
+buffers 1, direct 1, exposed 1
+=== J4-F-off-2 11:06:58
+J4-F-off-2 stop reason: gfx timeout
+etimes      63
+faults 10; timeouts 4; resets ok 4
+address 0x000008608c654000
+address 0x000008608c655000
+address 0x000008608c657000
+address 0x000008608c658000
+address 0x000008608c659000
+address 0x000008608c65a000
+address 0x000008608c65b000
+address 0x000008608c65d000
+address 0x000008608c660000
+play-20261030-1107
+buffer t 55.82 job 33277 seg 0/4 previous job acb, prefix 0 dwords, prefix ud0 none, inherited 11d00860: EXPOSED
+buffers 1, direct 1, exposed 1
+=== J4-F-on-2 11:08:10
+J4-F-on-2 stop reason: 120 s
+etimes     121
+faults 0; timeouts 0; resets ok 0
+play-20261030-1108
+buffer t 55.30 job 32688 seg 0/4 previous job acb, prefix 58 dwords, prefix ud0 00000011, inherited 11d00860: EXPOSED
+buffers 1, direct 1, exposed 1
+=== J4-F-off-3 11:10:25
+J4-F-off-3 stop reason: gfx timeout
+etimes      64
+faults 10; timeouts 2; resets ok 2
+address 0x000008608c654000
+address 0x000008608c655000
+address 0x000008608c657000
+address 0x000008608c658000
+address 0x000008608c659000
+address 0x000008608c65a000
+address 0x000008608c661000
+address 0x000008608c663000
+address 0x000008608c665000
+address 0x000008608c666000
+play-20261030-1110
+buffer t 56.33 job 33915 seg 0/4 previous job acb, prefix 0 dwords, prefix ud0 none, inherited 11d00860: EXPOSED
+buffers 1, direct 1, exposed 1
+=== J4-F-on-3 11:11:38
+Connection reset by 100.88.23.35 port 22
+J4-F-on-3 stop reason: 120 s
+etimes    1919
+faults 0; timeouts 0; resets ok 0
+play-20261030-1111
+buffer t 55.66 job 33711 seg 0/4 previous job acb, prefix 58 dwords, prefix ud0 00000011, inherited 11d00860: EXPOSED
+buffers 1, direct 1, exposed 1
+=== series done 11:49:29

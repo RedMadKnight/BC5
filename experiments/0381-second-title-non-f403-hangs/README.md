@@ -800,8 +800,8 @@ matter here. The value is a round choice, not derived from a measured gap: the j
 
 **The runs.** Binary 2e69e902, `BC5_DIRECT_CHAIN_HOLD_US=200`, 3 pairs, off first, 120 s each. No faults, no timeouts in
 any of the 6. Extract: `raw/j3-s2.txt`. Jobs rose by about half (~112,000 per start against ~75,000), so the hold took
-effect. Pairs 4 and 5 were not run: the deciding buffer stood in segment 1 in all 6 starts, and two more pairs at this
-hold would not have put it at a head.
+effect. Pairs 4 and 5 were not run, as a choice: the deciding buffer stood in segment 1 in all 6 starts. That two more pairs
+could not have put it at a head is not shown (Codex's J4 review).
 
 | Start | The 12,673-dword buffer | Prefix | Eligible targets | Faults |
 |---|---|---|---|---|
@@ -842,3 +842,101 @@ position is not shown: the buffer reached a head once in each arm.
 - This is the start-up workload on one save state, 120 s, on this build. It says nothing about F403 or the 18:08 stall.
 
 **Open.** A second direct pair, and the table's content (inferred from the fault, still not journaled).
+
+## 17. J4: a second direct pair, with the order forced (the maintainer's choice, 2026-10-30). The rule, written before any start
+
+**Why.** J3's whole case for the restore is one pair, and without help the buffer heads a job in about 1 start in 8.
+A shorter hold did not change that (§16). J4 forces the position instead.
+
+**The diagnostic.** `BC5_DIRECT_CHAIN_BREAK_AT=12673` ends the chain in front of a title graphics buffer of exactly
+that size (in all 16 J3 starts this buffer is 12,673 dwords). It only moves a chain boundary. It is a diagnostic
+(`BC5_DIAG_ENV`), absent from the lean build, and each use writes a `chain break (exp 0381)` journal line.
+
+**What it cannot do.** It makes the buffer head a job. It cannot make the job before it an acb: that stays the ring
+thread's timing, so an acb in front still has to be seen in the journal. The flush is a separate change from the switch,
+applied to both arms alike, so off against on stays a comparison at one setting. J4 is a forced position on a
+diagnostic path, not the title's normal timing.
+
+**The setup.** A new binary (the J3 unit plus this switch), `BC5_DIRECT_CHAIN_BREAK_AT=12673` in every start, the default
+hold, the dispatch journal, §11's saves, RT on, warm cache, 120 s or the first gfx timeout. Off and on alternating, off
+first: 3 pairs, up to 5. Every start, journal and failure is kept. The rule below does not change after any result.
+
+**The check is `j4check0381.py`,** and it fixes §16's weakness: it counts this one buffer (size 12,673, first dispatch of
+0x909977100 at original offset 13), which has no CS prefix with the switch off. **Direct** means that buffer in a job's
+first segment with an acb as the previous job.
+
+**Inherited value; corrected before any start (Codex's J4 review).** The first version read the last acb dispatch line
+seen. A later acb's line could arrive before the buffer's own dispatch line and be counted, and the last dispatch is not
+the state after an acb's final packets. Now the host journals, per job, the exact predecessor's id and each acb's **final
+`USER_DATA_0`** from all its packets (tables and IB2s followed; `unknown` if a table is unreadable or the write is under
+a COND_EXEC). The checker walks the ids back from the buffer: the first acb with a known final value gives the inherited
+value, an acb with no write is passed over, an `unknown` or a missing job gives UNKNOWN, and a dcb gives "dcb". Journal
+line order no longer matters. **Exposed** means direct with a known inherited value other than 0x11; UNKNOWN never
+counts as exposed. This is the host's view in the host's submission order, not a capture of what the GPU consumed.
+Tests: `test_j4check0381.py`, 13 cases, with Codex's interleaving case; `final_value` in `acb_restore.hpp`.
+
+**Fixed conditions.** Both arms run the same new binary with `BC5_DIRECT_CHAIN_BREAK_AT=12673` and the default hold. The
+restore is set explicitly: `BC5_DIRECT_ACB_STATE_RESTORE=0` in OFF, `=1` in ON. Live saves 377a8d456a9b4cb1. The private
+build only runs after it compiles; no shared build, launcher or patch 0001 changes.
+
+**Outcomes.**
+- **Supported:** at least 2 exposed OFF starts with F443, and at least 2 exposed ON starts with `USER_DATA_0` = 0x11 in
+  the buffer's own prefix and no F443.
+- **Fail:** an exposed ON start with that prefix and F443. Stop the series and read the emitted IB.
+- **Carry not sufficient, in this view:** at least 2 exposed OFF starts with no F443. It rests on the known inherited value
+  above and never on UNKNOWN. Since that value is a CPU view, it still does not exclude inheritance on the GPU.
+- **Inconclusive:** anything else, such as fewer than 2 exposed starts in an arm. Clean ON starts then count for nothing.
+
+Counts are reported as counts, with no odds. An OFF start with F443 is expected and does not stop the series; §11's
+other stops hold, and F443 in an ON start stops it. A result covers this start-up workload, this save, this build, 120 s,
+and a forced position. It does not cover play.
+
+## 18. J4's result (2026-10-30 11:03–11:49, the maintainer's go in this session's chat): Supported
+
+**The build.** `build0381.sh`: binary **e72bc317**. Clang 21: backend 0 warnings, 102 of 102 test cases; host unit 5 compiler
+warnings, the older ones. The shared binary and archive are unchanged.
+
+**The runs.** `BC5_DIRECT_CHAIN_BREAK_AT=12673`, default hold, restore explicitly 0 or 1, live saves 377a8d45, RT on.
+3 pairs, off first; the series stopped there because the rule was met. Extract: `raw/j4.txt`.
+
+| Start | Buffer | Inherited | Prefix | Result |
+|---|---|---|---|---|
+| off-1 | t 56.55, seg 0 of 4, after an acb | 0x11d00860 | none | **F443**, 62 s, resets ok |
+| on-1 | t 98.22, seg 0 of 4, after an acb | 0x11d00860 | 58, ud0 0x11 | clean, 120 s |
+| off-2 | t 55.82, seg 0 of 4, after an acb | 0x11d00860 | none | **F443**, 63 s, resets ok |
+| on-2 | t 55.30, seg 0 of 4, after an acb | 0x11d00860 | 58, ud0 0x11 | clean, 121 s |
+| off-3 | t 56.33, seg 0 of 4, after an acb | 0x11d00860 | none | **F443**, 64 s, resets ok |
+| on-3 | t 55.66, seg 0 of 4, after an acb | 0x11d00860 | 58, ud0 0x11 | clean (see the incident) |
+
+Every OFF fault lies at high half 0x860 (pages 0x8608c654000 and up), the low 16 bits of the inherited value. Live saves
+were unchanged.
+
+**The verdict under §17: Supported.** 3 exposed OFF starts with F443 and 3 exposed ON starts with the attributed restore
+and no F443; the rule needed 2 of each. Under the same forced position, the only difference between the arms being the
+switch, the fault follows the missing restore every time.
+
+**What it does not show.** The position is forced by a diagnostic. The order is the host's submission order and the
+inherited value the host's view of the packets, not a capture of what the GPU consumed, although the faults' high half
+agrees with that value. It covers this start-up workload, this save, this build and these 120 s; not play, F403 or the
+18:08 stall. The switch's cost is bounded only roughly (§16).
+
+**The incident: on-3 overran the cap.** A `Connection reset` on the laptop's ssh left the stop loop blocked, so the
+emulator ran **1,919 s, not 120 s**, attended by nobody, and wrote a 38 GB journal (`play-20261030-1111`, private). The
+kernel stream ended at its 240-s cap, so the laptop has no record past that. `sudo dmesg` shows the last amdgpu event was
+off-3's at 11:11:30, so on-3 had no fault in those 32 minutes. Its buffer came at t 55.66, inside the 120 s, so it counts
+in the table; its later time is a bonus observation, not part of the rule. `j3run0381.sh` and `j4run0381.sh` now bound
+every ssh in the stop path and retry the TERM. The stop still depends on the laptop.
+
+**Codex's `final_value` finding.** A write in an IB2 under a COND_EXEC came out Known, though the GPU may skip the IB2.
+It is fixed with a test (`final_level` carries the conditional down; a later plain write still settles it). **Binary
+e72bc317 has the old code**, so its journaled finals were checked separately. In all 6 starts the writing job's last
+dispatch is a top-level `DISPATCH_DIRECT` of 0x11d03a3500, at dword 912 or 916, with 0x11d00860 in the top-level tracker.
+A write inside an IB2 cannot put a value there, and a top-level write under COND_EXEC was already Unknown, so the path did
+not act in these starts. Also in all 6, the tiny acbs between that job and the buffer write nothing.
+
+**A correction to F684.** Mid-chain did not fault in J3 because no acb stood in front, not because mid-chain is safe in
+itself. J4's three clean ON starts and three faulting OFF starts are the evidence that the state decides.
+
+**Open.** Integration is the maintainer's decision (D19): the switch needs patch 0001, a launcher setting, and a test in
+play. `BC5_DIRECT_CHAIN_BREAK_AT` is a diagnostic and stays out of that. The on-3 journal takes 38 GB on the box until
+someone clears it.

@@ -12,11 +12,11 @@ for _ in $(seq 1 90); do
     sleep 3
     kill -0 $SP 2> /dev/null || { why="launcher ended"; break; }
     grep -q 'ring gfx_0.0.0 timeout' "$K" && { why="gfx timeout"; break; }
-    e=$(ssh bc250 'P=$(pgrep -x kyty_emulator | head -1); [ -n "$P" ] && ps -o etimes= -p $P')
+    e=$(timeout 20 ssh -o ConnectTimeout=10 bc250 'P=$(pgrep -x kyty_emulator | head -1); [ -n "$P" ] && ps -o etimes= -p $P')
     [ -n "$e" ] && [ "$e" -ge 120 ] && { why="120 s"; break; }
 done
 echo "$TAG stop reason: ${why:-loop ended}"
-ssh bc250 'P=$(pgrep -x kyty_emulator | head -1); [ -z "$P" ] && { echo "no emulator"; exit 0; }; readlink /proc/$P/exe | grep -q exp0381/kyty_emulator || { echo "not our emulator"; exit 5; }; echo "etimes $(ps -o etimes= -p $P)"; kill -TERM $P'
+for _ in 1 2 3 4 5 6 7 8 9 10; do timeout 20 ssh -o ConnectTimeout=10 bc250 'P=$(pgrep -x kyty_emulator | head -1); [ -z "$P" ] && { echo "no emulator"; exit 0; }; readlink /proc/$P/exe | grep -q exp0381/kyty_emulator || { echo "not our emulator"; exit 5; }; echo "etimes $(ps -o etimes= -p $P)"; kill -TERM $P' && break; sleep 3; done
 wait $SP
 cat "$OUT/start-$TAG.txt"
 kill $KP 2> /dev/null

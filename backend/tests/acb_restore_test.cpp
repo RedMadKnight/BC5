@@ -180,6 +180,72 @@ TEST_CASE("acb restore: sh_value reads what a prefix emitted", "[acb_restore]") 
     CHECK(v == 2u);
 }
 
+TEST_CASE("acb restore: final_value is the state after all writes, or unknown", "[acb_restore]") {
+    using acb_restore::Final;
+    const std::uint32_t ud0 = acb_restore::kUserData0;
+    std::uint32_t v = 0;
+    const auto dispatch = std::vector<std::uint32_t>{0xC0031500u, 4, 1, 1, 1};
+    SECTION("nothing writes it") {
+        CHECK(acb_restore::final_value(dispatch, ud0, kNone, v) == Final::None);
+    }
+    SECTION("a write after the last dispatch counts") {
+        std::vector<std::uint32_t> ib = set_sh(ud0, {0x11d00860u});
+        append(ib, dispatch);
+        append(ib, set_sh(ud0, {0x22u}));
+        REQUIRE(acb_restore::final_value(ib, ud0, kNone, v) == Final::Known);
+        CHECK(v == 0x22u);
+    }
+    SECTION("tables: pairs, flat, and LOAD_SH_REG") {
+        const std::vector<std::uint32_t> pairs = {0x241, 1, ud0, 0x33};
+        std::vector<std::uint32_t> ib = {0xC0036300u, lo(pairs.data()), hi(pairs.data()), 0x80000000u, 2};
+        REQUIRE(acb_restore::final_value(ib, ud0, kHost, v) == Final::Known);
+        CHECK(v == 0x33u);
+        const std::vector<std::uint32_t> flat = {0x44, 0x55};
+        ib = {0xC0036300u, lo(flat.data()), hi(flat.data()), ud0 - 1, 2};
+        REQUIRE(acb_restore::final_value(ib, ud0, kHost, v) == Final::Known);
+        CHECK(v == 0x55u);
+        std::vector<std::uint32_t> mem(0x242, 0);
+        mem[0x240] = 0x66;
+        ib = {0xC0035F00u, lo(mem.data()), hi(mem.data()), 0x23f, 3};
+        REQUIRE(acb_restore::final_value(ib, ud0, kHost, v) == Final::Known);
+        CHECK(v == 0x66u);
+    }
+    SECTION("an unreadable table or IB2 is unknown, a later plain write settles it") {
+        std::vector<std::uint32_t> ib = {0xC0036300u, 0x1000, 0, 0x80000000u, 2};
+        CHECK(acb_restore::final_value(ib, ud0, kNone, v) == Final::Unknown);
+        append(ib, set_sh(ud0, {0x77u}));
+        REQUIRE(acb_restore::final_value(ib, ud0, kNone, v) == Final::Known);
+        CHECK(v == 0x77u);
+        CHECK(acb_restore::final_value(std::vector<std::uint32_t>{0xC0023F00u, 0x1000, 0, 4}, ud0, kNone, v) == Final::Unknown);
+    }
+    SECTION("an IB2 is followed") {
+        const std::vector<std::uint32_t> ib2 = set_sh(ud0, {0x88u});
+        const std::vector<std::uint32_t> ib = {0xC0023F00u, lo(ib2.data()), hi(ib2.data()), static_cast<std::uint32_t>(ib2.size())};
+        REQUIRE(acb_restore::final_value(ib, ud0, kHost, v) == Final::Known);
+        CHECK(v == 0x88u);
+    }
+    SECTION("a write in an IB2 under COND_EXEC is unknown, at any depth; a later plain write settles it") {
+        // Codex's J4 review: a seeded 0x11, then a skipped IB2 would keep 0x11.
+        const std::vector<std::uint32_t> ib2 = set_sh(ud0, {0x11d00860u});
+        const std::vector<std::uint32_t> ib1 = {0xC0023F00u, lo(ib2.data()), hi(ib2.data()), static_cast<std::uint32_t>(ib2.size())};
+        std::vector<std::uint32_t> ib = set_sh(ud0, {0x11u});
+        append(ib, {0xC0032200u, 0x1000, 0, 0, 4}); // COND_EXEC over the 4-dword INDIRECT_BUFFER
+        append(ib, {0xC0023F00u, lo(ib1.data()), hi(ib1.data()), static_cast<std::uint32_t>(ib1.size())});
+        CHECK(acb_restore::final_value(ib, ud0, kHost, v) == Final::Unknown);
+        append(ib, set_sh(ud0, {0x11u}));
+        REQUIRE(acb_restore::final_value(ib, ud0, kHost, v) == Final::Known);
+        CHECK(v == 0x11u);
+    }
+    SECTION("a write under COND_EXEC is unknown") {
+        std::vector<std::uint32_t> ib = {0xC0032200u, 0x1000, 0, 0, 3}; // COND_EXEC over the next 3 dwords
+        append(ib, set_sh(ud0, {0x99u}));
+        CHECK(acb_restore::final_value(ib, ud0, kNone, v) == Final::Unknown);
+        append(ib, set_sh(ud0, {0xaau}));
+        REQUIRE(acb_restore::final_value(ib, ud0, kNone, v) == Final::Known);
+        CHECK(v == 0xaau);
+    }
+}
+
 TEST_CASE("acb restore: Touched lists what acbs write and the dcb state lacks", "[acb_restore]") {
     const Scene s;
     acb_restore::Touched touched;

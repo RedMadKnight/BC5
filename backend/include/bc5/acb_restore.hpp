@@ -125,6 +125,85 @@ inline bool sh_value(std::span<const std::uint32_t> pre, std::uint32_t reg, std:
     return found;
 }
 
+// What a buffer leaves in SH register reg, in packet order, after all its writes (Codex's J4
+// review: the last dispatch's user data is not the final state). None: nothing writes it. Unknown:
+// a table or IB2 that may write it cannot be read, or the last write is under a COND_EXEC, whose
+// outcome the host does not know. A later plain write settles an earlier Unknown. This is the
+// CPU's view of the packets, not a capture of what the GPU consumed.
+enum class Final { None, Known, Unknown };
+
+namespace detail {
+// conditional: this whole level is under a COND_EXEC of a caller (Codex's J4 review: a skipped IB2
+// keeps the earlier value, so a write inside it is no more certain than a direct one).
+inline void final_level(std::span<const std::uint32_t> ib, std::uint32_t reg,
+                        const full_state::Tracker::Reader &read, int depth, Final &state,
+                        std::uint32_t &value, bool conditional = false) {
+    const auto address = [](std::uint32_t lo, std::uint32_t hi) {
+        return (lo & ~3u) | (static_cast<std::uint64_t>(hi & 0xffffu) << 32);
+    };
+    std::size_t cond_end = 0;
+    for (std::size_t i = 0; i < ib.size();) {
+        const std::uint32_t h = ib[i], len = packet_len(h);
+        if (i + len > ib.size()) break;
+        if (h >> 30 != 3 || len == 1) {
+            i += len;
+            continue;
+        }
+        const std::uint32_t *p = &ib[i];
+        const std::uint32_t op = (h >> 8) & 0xffu;
+        const auto wrote = [&](std::uint32_t v) {
+            state = conditional || i < cond_end ? Final::Unknown : Final::Known;
+            value = v;
+        };
+        if (op == 0x22 && len >= 5) { // COND_EXEC: the next (dwords) are conditional
+            cond_end = i + len + (p[4] & 0x3fffu);
+        } else if ((op == 0x76 || op == 0x9b) && len >= 3) {
+            const std::uint32_t first = p[1] & 0xffffu;
+            if (reg >= first && reg - first < len - 2) wrote(p[2 + (reg - first)]);
+        } else if (op == 0x5f && len >= 5) { // LOAD_SH_REG: dword offset, count pairs from the base
+            for (std::uint32_t k = 3; k + 1 < len; k += 2) {
+                const std::uint32_t off = p[k] & 0xffffu, n = p[k + 1] & 0x3fffu;
+                if (reg < off || reg - off >= n) continue;
+                const std::uint32_t *t = read ? read(address(p[1], p[2]) + off * 4ull, n * 4ull) : nullptr;
+                if (t == nullptr) state = Final::Unknown;
+                else wrote(t[reg - off]);
+            }
+        } else if (op == 0x63 && len >= 5) { // LOAD_SH_REG_INDEX: flat, or (offset, value) pairs
+            const std::uint32_t n = p[4] & 0x3fffu;
+            const bool pairs = (p[3] >> 31) != 0;
+            if (!pairs) {
+                const std::uint32_t off = p[3] & 0xffffu;
+                if (reg >= off && reg - off < n) {
+                    const std::uint32_t *t = read ? read(address(p[1], p[2]), n * 4ull) : nullptr;
+                    if (t == nullptr) state = Final::Unknown;
+                    else wrote(t[reg - off]);
+                }
+            } else if (n != 0) {
+                const std::uint32_t *t = read ? read(address(p[1], p[2]), n * 8ull) : nullptr;
+                if (t == nullptr) state = Final::Unknown;
+                else
+                    for (std::uint32_t q = 0; q < n; ++q)
+                        if ((t[2 * q] & 0xffffu) == reg) wrote(t[2 * q + 1]);
+            }
+        } else if (op == 0x3f && len >= 4) {
+            const std::uint32_t n = p[3] & 0xfffffu;
+            const std::uint32_t *t = read && n != 0 && depth < 4 ? read(address(p[1], p[2]), n * 4ull) : nullptr;
+            if (t == nullptr) state = Final::Unknown;
+            else final_level(std::span<const std::uint32_t>(t, n), reg, read, depth + 1, state, value,
+                             conditional || i < cond_end);
+        }
+        i += len;
+    }
+}
+} // namespace detail
+
+inline Final final_value(std::span<const std::uint32_t> ib, std::uint32_t reg,
+                         const full_state::Tracker::Reader &read, std::uint32_t &value) {
+    Final state = Final::None;
+    detail::final_level(ib, reg, read, 0, state, value);
+    return state;
+}
+
 // The compute SH registers acbs write: SET_SH_REG(_INDEX) 0x76/0x9b, LOAD_SH_REG 0x5f ranges,
 // LOAD_SH_REG_INDEX 0x63 (flat ranges, or pairs read through the reader), and INDIRECT_BUFFER
 // 0x3f followed through the reader (4 levels). Tables the reader cannot read are counted.
