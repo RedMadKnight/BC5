@@ -5,10 +5,11 @@
 set -u
 HERE=$(cd "$(dirname "$0")" && pwd); S=$HERE/slot0380m.sh
 T=$(mktemp -d); trap 'rm -rf "$T"' EXIT
-mkdir -p "$T/bin" "$T/home/bc5-work/exp0380/main-check/x"
+mkdir -p "$T/bin" "$T/home/bc5-work/exp0380/main-check/x" "$T/home/bc5-work/exp0380/other"
 echo stand-in > "$T/home/bc5-work/exp0380/main-check/x/f"
 tar -cf "$T/home/bc5-work/exp0380/main-check/main-backend.tar" -C "$T/home/bc5-work/exp0380/main-check/x" f
 rm -rf "$T/home/bc5-work/exp0380/main-check/x"
+cp "$T/home/bc5-work/exp0380/main-check/main-backend.tar" "$T/home/bc5-work/exp0380/other/"
 MD5=$(md5sum < "$T/home/bc5-work/exp0380/main-check/main-backend.tar" | cut -d' ' -f1)
 echo "top exp 0380 | test" > "$T/home/bc5-work/BOX-LOCK"
 printf '#!/bin/sh\nexit 1\n' > "$T/bin/pgrep"
@@ -18,8 +19,7 @@ cat > "$T/bin/distrobox" <<'MOCK'
 c=$6   # enter ubuntu -- sh -c <command>
 case "$c" in
   *cmake*) s=build ;;
-  *"'[indirect_check]'"*) s=indirect_check ;;
-  *"'[zero_skip]'"*) s=zero_skip ;;
+  *"'["*) s=$(printf %s "$c" | sed -E 's/.*\[([a-z_]+)\].*/\1/') ;;
   *bc5_backend_tests*) s=tests ;;
   *"direct-selftest --cp-check"*) s=selftest-checks ;;
   *direct-selftest*) s=selftest-plain ;;
@@ -43,7 +43,8 @@ chmod +x "$T/bin/pgrep" "$T/bin/distrobox"
 BAD=0
 run() { # <want rc 0 or not> <text wanted> <case name> [env...]
   local want=$1 text=$2 name=$3 out rc; shift 3
-  out=$(env HOME="$T/home" PATH="$T/bin:$PATH" "$@" bash "$S" "${ARG:-$MD5}" 2>&1); rc=$?
+  # shellcheck disable=SC2086
+  out=$(env HOME="$T/home" PATH="$T/bin:$PATH" "$@" bash "$S" "${ARG:-$MD5}" ${REST:-} 2>&1); rc=$?
   if { [ "$want" = 0 ] && [ "$rc" = 0 ]; } || { [ "$want" != 0 ] && [ "$rc" != 0 ]; } && printf '%s\n' "$out" | grep -qF -- "$text"; then echo "ok   $name (rc $rc)"
   else echo "BAD  $name (rc $rc): $out"; BAD=1; fi
 }
@@ -54,6 +55,12 @@ for s in tests indirect_check zero_skip; do
   run 1 "ran no tests" "$s prints no summary, rc 0" MOCK=$s MODE=mute
 done
 for s in selftest-plain selftest-checks; do run 1 "did not report doing nothing" "$s silent, rc 0" MOCK=$s MODE=mute; done
+TAGS="other draw_args acb_restore indirect_check zero_skip"
+REST=$TAGS run 0 "acb_restore rc 0" "another directory and four subsets"
+for s in draw_args acb_restore; do
+  REST=$TAGS run 1 "FAIL: $s rc 9" "$s rc 9" MOCK=$s MODE=9
+  REST=$TAGS run 1 "ran no tests" "$s says No tests ran, rc 0" MOCK=$s MODE=none
+done
 ARG=0123 run 1 "not 0123" "wrong archive md5"
 : > "$T/home/bc5-work/BOX-LOCK"; run 1 "not this session's" "lock not ours"
 exit $BAD
