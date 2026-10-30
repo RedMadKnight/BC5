@@ -775,3 +775,38 @@ These are raw facts; the classification is exp 0380's.
 - **Stopped by me:** I sent TERM to the emulator at 01:26:51 (stop at any amdgpu line). The live saves were unchanged.
 - **Not run:** a slot-4 repeat (the top session's hint: his current progress is in slot 4) and G3/G4. Both wait for
   the top session.
+
+### D3 and D4, and the night's start-up event rate (2026-10-30 01:30–01:37)
+
+These ran under the top session's GO for D3 (slot 4, with shots), with one retry allowed after a GPU event before the
+menu. The arm, pins and drop_caches pre-step were as before. Both runs started from the live-save copy.
+
+**D3** (`gtt/walk0379d3.cmd`, the slot-4 keys from 85 s): it passed, with no kernel line. The menu keys came too early
+for this save set, so the save never loaded.
+- At 88.5 s the title's "Continue game" menu was still loading at about 5 fps.
+- The down and cross presses were dropped, and the menu was still up at 125 s and 210 s.
+- Three shots were viewed and deleted from the laptop; they stay private on the box.
+
+**D4** (`gtt/walk0379d4.cmd`: cross at 85 s, Continue at 100 s) hung at t 61 s, before its first key, exactly as D2 did.
+These are raw facts; the classification is exp 0380's.
+- gfxhub page faults from 01:36:38.387: TCP, a read, PERMISSION_FAULTS 0x3, status 0x00701031.
+  - Pages 0x8608c654000–0x8608c65b000; D2 had the same pages plus 0x8608c65d000.
+- At 01:36:40.408 `ring gfx_0.0.0 timeout` (signaled 2574054, emitted 2574056), this time in thread `Render Thread`.
+  - The ring reset succeeded, and bc5-gpu-watch disarmed.
+- Stall event `gpu-stall/event-20261030-013640-gfx_0.0.0` (private): the same compute program 0x909977100 as D2, dim
+  [697 1 1], PFP 0xea1, ME 0xe15, `CP_IB1_BUFSZ` 0x38f8. Devcoredump `20261030-013640-devcd2.txt` (private).
+- At the hang: 1,145 flips in 52.9 s, 24,744 views and 10,124 MiB pinned. D2 had 1,148, 24,801 and 10,130.
+- I stopped the emulator at 01:36:47. The live saves were unchanged.
+
+**The night's start-up event rate** (all starts on e1cc0c92, skip off, RT on, page cache dropped before each):
+
+| start saves | starts | GPU event before the menu (< 85 s) | GPU event after the load |
+|---|---|---|---|
+| exp 0196's S6N route saves | 5 (G1, G2, G3, G3b, D1) | 0 | 1 (G3 at ~117 s, F633: ring reset failed, reboot) |
+| a copy of the live saves 377a8d45 | 3 (D2, D3, D4) | 2 (D2, D4: same pages, program and dims, both at t 61 s) | 0 |
+
+- Before the menu, the title has only read the saves for its menu. The two starts differ only in the save directory
+  copied into the private wd.
+- Whether the save set matters, or the two events and D3's clean start are chance, is not decided by 3 starts.
+- **G3/G4 were stopped for the night** under the top session's rule: a second pre-menu event. The walk route from the
+  live saves (`walk0379s4.cmd`, `menu-continue.cmd`) is prepared and untested.
