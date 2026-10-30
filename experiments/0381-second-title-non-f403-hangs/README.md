@@ -389,3 +389,51 @@ host prefix's replay, the title's own, or the table load of an earlier dcb. The 
 in the dump. They are visible at submit through the host's table tracking (`BC5_DIRECT_DISPATCH_JOURNAL=1`, F207). The
 absence of a `cs prefix` journal line for this dcb would mean the table names `COMPUTE_PGM_LO` (`cs_inherit_at`), not
 that it names `USER_DATA_0`.
+
+## 8. A second F443-class event at start-up, 2026-10-30 01:26 (exp 0379 D2) (F677, F678)
+
+**The event (the top session's report).** Exp 0379's D2 run used binary e1cc0c92 with the zero skip off and RT on. The
+S6N runner started from a copy of the live saves. At about t 57–59 s, before any menu key, TCP read faults came at
+0x8608c654000 … 0x8608c65d000. The `GCVM_L2_PROTECTION_FAULT_STATUS` was 0x00701031 and RW 0 (`sudo dmesg`, read
+here). The gfx ring timed out at 2012.996 and the ring reset succeeded, with no reboot. The run was then stopped by
+TERM. The devcoredump is `20261030-012643-devcd1.txt` (its recorded fault page is 0x8608d027000, status 0x701030), and
+the sampler event is `event-20261030-012643-gfx_0.0.0`.
+
+**Read (the top session's GO, read-only, under exp 0379's lock).** `head0381.py` over the devcoredump
+(`raw/hang-0126-emitted-head.txt`), `walk0381.py` over `play-20261030-0125/gc/ib-timeout-00034604-dcb-14911.bin`, and
+the sampler summary's compute and status lines.
+
+**It is the 16:25 job again (F677).**
+- **The same buffer.** dcb #34604 has 14,911 dwords (16:25: #32979, 14,911). It holds 890 `DISPATCH_INDIRECT`s plus
+  three direct dispatches. In 887 of them `USER_DATA_5` is 0x11; 2 carry 0x700000 and 1 carries 0x100011, the same
+  histogram as 16:25. The first 538 dispatches sit at the same dword offsets.
+- **The same opening and no prefix.** The emitted IB opens with the same `ACQUIRE_MEM` and the same
+  `LOAD_SH_REG_INDEX` (0x909842dc0, 10 pairs) at dword 8. No host prefix stands in front, and nothing sets
+  `USER_DATA_0`–`2` before the first three dispatches. The first `SET_SH_REG`s carry the same `USER_DATA_3`/`4`/`5`
+  (0x8c654c00 / 0x8c654a00 / 0x11). Only `USER_DATA_6` and the 0xc22a62xx / 0xc0c9c4xx words differ.
+- **The same state.** The sampler shows program 0x909977100, dim [697 1 1], threads [64 1 1]. `GRBM_STATUS` is
+  0xa04030ac, SE0/SE1 0x08000006, ME 0xe15 and PFP 0xea0–0xea1. The CP had fetched to `CP_IB1_BUFSZ` 0x38f8 of
+  `CMD_BUFSZ` 0x4138. All of this matches 16:25 exactly.
+- **The same faults.** The pages are 0x8608c654000–0x8608c65d000, all reads, with the same high half 0x860.
+- **Only one thing differs.** The initiator is 0x61 here against 0x65 at 16:25, so FORCE_START is absent. **H6 (the
+  test binary's FORCE_START) is refuted.** The zero skip is not involved either: D2 ran with it off.
+- **The same faulting value from two runs.** Both events came from different binaries and different sessions, but from
+  start-ups from the maintainer's current saves, and both wrote the same garbage high half, 0x860. That fits a value
+  the title computes or stores deterministically (its table, or data the table points the waves to) better than a
+  random stale register. A carried register from an earlier IB is not excluded.
+
+**A start-up reproducer (F678).** Two of the start-ups from the current saves hit this job at ~57–60 s: the
+maintainer's 16:25 start 1 and D2. The scripted S6N runs from older saves did not. A start-up run from the same copy
+of the live saves with the dispatch journal decides where `USER_DATA_0` comes from. The run needs box writes that
+this session's classifier refuses, so it is listed for the maintainer's morning decision:
+
+- binary and route: exp 0379's D2 invocation unchanged (e1cc0c92, or the shared normal 58c4a627; RT on; the S6N
+  runner from a fresh copy of the live saves), plus `BC5_DIRECT_DISPATCH_JOURNAL=1` (F207: program and user data per
+  dispatch, tables included). Stop at t 120 s, or at the first gfx timeout.
+- read after it: the journal's lines for the dispatches after `LOAD_SH_REG_INDEX` 0x909842dc0 (does the table name SH
+  0x240, and with which value?), and `ud0` of the 0x909977100 dispatches.
+- expected risk: a gfx ring timeout whose reset succeeds, as both times so far. Both events stayed up, but F399/F413
+  show that a reset can fail.
+- what it decides: if the table names 0x240 with 0x860, the title's table is the source. If it names 0x240 with 0x11
+  while the waves used 0x860, the CP fetched the table wrongly. If the table does not name 0x240, the value is carried,
+  and the previous IB's last `USER_DATA_0` write (a host prefix or the title) is next.
