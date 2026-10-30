@@ -2071,7 +2071,15 @@ soonest. It needs box writes, so it waits for the maintainer's yes.
   - If B is a time rate (about 0.6 per hour of bench, F618): about 1.5–2 h.
   - Each B costs a watch reboot of about 2 min, then a check of the box's health. A planned stop after 2 h without B
     is reasonable.
-- **What part A records at a B:**
+- **What the recorder should record at a B** (REVIEW-07, extending part A; the additions need the optional
+  rebuild below):
+  - the words at the effective `SET_BASE` + offset and at `INDEX_BASE` + offset, all three words of each;
+  - more bytes around both, and every duplicate match of the triple in memory;
+  - the identity and generation of each candidate's mapping;
+  - precise read times;
+  - the final emitted IB and the provenance of the prefix (title or replay) for the same job.
+
+  Part A as built records:
   - the launched dims from the sampler event, matched by ring and newer than the job (F608);
   - 64 bytes at every `SET_BASE` 1 base, at the `INDEX_BASE`, at each argument address and at the program;
   - a scan of all resident GPU memory for the triple, its pairs and single dwords, with addresses and mappings.
@@ -2079,6 +2087,7 @@ soonest. It needs box writes, so it waits for the maintainer's yes.
   It reads about 2–20 s after the stall, which is not the fetch instant (REVIEW-06).
 - **What the result can and cannot say:**
   - **Under F619 (H):** "dump INDEX_BASE …" equals the launched dims while the argument slot holds sane counts.
+    REVIEW-07: this supports H only if the bytes were stable, and a mismatch would not refute H.
     - For a correct fetch from the slot to give that, the slot would have had to hold, for a moment, exactly the
       bytes that lie at `INDEX_BASE`. That is far less likely than a fetch from `INDEX_BASE`. H is then strongly
       supported.
@@ -2193,13 +2202,54 @@ writes of mine:
   no one had recorded what lay there.
 - No public source says the two bases alias on gfx10 (F558/F560). TODO(verify).
 
+**REVIEW-07 on H (Codex review REVIEW-07, accepted).**
+- **No event contradicts H, but none identifies the address by a byte match at fetch time.** H stays a hypothesis,
+  below an established finding.
+  - The 12:12 index-like words and 14:04's counts fit the heap classes of their `INDEX_BASE`, but data of that kind
+    lies at many addresses.
+  - "PSR_BVHL" identifies a family of objects, not one VA. It only makes non-argument data in the launched state
+    more likely. Stale bytes at the intended address, a reuse of the memory, or another producer's writes all remain
+    open.
+- **Public sources.**
+  - AMD PAL c5e80007's GFX `DISPATCH_INDIRECT` carries only a data offset and the initiator, with no per-dispatch
+    base selector. `SET_BASE` has its own base index; `INDEX_BASE` is a separate packet.
+  - PAL's builders, RADV's `radv_emit_indirect_buffer` and radeonsi's indirect draw all use `SET_BASE` index 1, with
+    no `INDEX_BASE` alias workaround.
+  - RPCSX models `setBase` case 1 and `indexBase` as separate state.
+  - So there is no documented mechanism for H, and also no proof against an unpublished erratum.
+- **The rarity.** At about 129 matching dispatches a second and about one B an hour, a stationary model would need
+  about 2.2e-6 per dispatch. That only illustrates the missing condition; it is not a measured rate. Candidate
+  conditions to record, none established:
+  - job, context and reset history;
+  - whether the base came from the title or from our replay;
+  - the exact prefix and conditional boundaries;
+  - memory generation and lifetime;
+  - unfinished producer or DMA work.
+
 **How to test it.** The flight recorder's part A (binary 44417414, or the arms binary) dumps 64 bytes at the
 `INDEX_BASE` and at every `SET_BASE` base of the timed-out buffer, and scans memory for the triple (F595, F608).
-- One more B with it confirms or refutes F619 directly: "dump INDEX_BASE …" equal to the launched dims, or not.
+- One more B with it does not decide F619 on its own (corrected by REVIEW-07).
+  - A match at the timeout supports `INDEX_BASE` as the source only if those bytes stayed stable from the fetch to
+    the read.
+  - A mismatch does not refute H, because the target of `INDEX_BASE` is mutable memory.
+  - Neither alone is causal.
+  - A decisive alias test would need candidate contents that are stable and identifiable during the fetch, and an
+    observed consumer value. That means a separate synthetic GPU experiment or ordered instrumentation.
 - On the bench, a loop of 180-s S6N runs reaches the load point each time. A hang means a watch reboot.
 - It needs box writes (a lock, the runs), so it waits for the maintainer and the permission check.
-- A fix under F619 would change what `INDEX_BASE` holds, or where our prefix's `INDEX_BASE` replay sits relative to a
-  following dispatch. Design only, after the test.
+- **Not to do** (REVIEW-07):
+  - Deleting our prefix's `INDEX_BASE` replay: a later inherited indexed draw may depend on it.
+  - Pointing `INDEX_BASE` at the arguments, zero or a sentinel: that risks real index consumers.
+  - Repeating the rebase: 14:04 already tested `SET_BASE` right before the fetch, plus FORCE_START.
+- **A narrowly deferred replay is a design candidate only**, and it tests order dependence; it is not a fix. It is
+  acceptable only under REVIEW-07's five conditions:
+  1. only a prefix-owned `INDEX_BASE` is deferred, never a title-owned one;
+  2. no consumer, nested or unknown IB, or unanalysed conditional comes before the restore;
+  3. the latest state is restored before the first real index-base consumer, preserving later title updates;
+  4. job, split and context boundaries cannot lose it, and an unknown boundary restores conservatively;
+  5. `INDEX_BUFFER_SIZE` and other packet state keep their own dependency argument.
+  - Under H it would still leave an earlier `INDEX_BASE` in the hardware. A clean run with it would change timing
+    and placement, not prove H. Not built.
 
 ## Result
 
