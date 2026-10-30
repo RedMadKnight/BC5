@@ -12,7 +12,7 @@ stop_after = int(sys.argv[2]) if len(sys.argv) > 2 else 3
 start = next(i for i, l in enumerate(lines) if l.startswith("IB #0 "))
 n = int(lines[start].split()[3])
 ib = [int(x, 16) for x in lines[start + 1:start + 1 + n]]
-NAMES = {0x28: "CONTEXT_CONTROL", 0x6a: "CLEAR_STATE", 0x76: "SET_SH_REG", 0x9b: "SET_SH_REG_INDEX", 0x63: "LOAD_SH_REG_INDEX",
+NAMES = {0x28: "CONTEXT_CONTROL", 0x12: "CLEAR_STATE", 0x76: "SET_SH_REG", 0x9b: "SET_SH_REG_INDEX", 0x63: "LOAD_SH_REG_INDEX",
          0x5f: "LOAD_SH_REG", 0x16: "DISPATCH_INDIRECT", 0x15: "DISPATCH_DIRECT", 0x11: "SET_BASE", 0x58: "ACQUIRE_MEM",
          0x69: "SET_CONTEXT_REG", 0x79: "SET_UCONFIG_REG", 0x10: "NOP", 0x42: "PFP_SYNC_ME", 0x45: "COND_WRITE",
          0x22: "COND_EXEC", 0x37: "WRITE_DATA"}
