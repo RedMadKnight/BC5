@@ -800,8 +800,8 @@ matter here. The value is a round choice, not derived from a measured gap: the j
 
 **The runs.** Binary 2e69e902, `BC5_DIRECT_CHAIN_HOLD_US=200`, 3 pairs, off first, 120 s each. No faults, no timeouts in
 any of the 6. Extract: `raw/j3-s2.txt`. Jobs rose by about half (~112,000 per start against ~75,000), so the hold took
-effect. Pairs 4 and 5 were not run: the deciding buffer stood in segment 1 in all 6 starts, and two more pairs at this
-hold would not have put it at a head.
+effect. Pairs 4 and 5 were not run, as a choice: the deciding buffer stood in segment 1 in all 6 starts. That two more pairs
+could not have put it at a head is not shown (Codex's J4 review).
 
 | Start | The 12,673-dword buffer | Prefix | Eligible targets | Faults |
 |---|---|---|---|---|
@@ -863,16 +863,29 @@ first: 3 pairs, up to 5. Every start, journal and failure is kept. The rule belo
 
 **The check is `j4check0381.py`,** and it fixes §16's weakness: it counts this one buffer (size 12,673, first dispatch of
 0x909977100 at original offset 13), which has no CS prefix with the switch off. **Direct** means that buffer in a job's
-first segment with an acb as the previous job. It also prints the last acb's user data 0 before the job: the value the
-buffer would inherit. Tests: `test_j4check0381.py`, 7 cases.
+first segment with an acb as the previous job.
+
+**Inherited value; corrected before any start (Codex's J4 review).** The first version read the last acb dispatch line
+seen. A later acb's line could arrive before the buffer's own dispatch line and be counted, and the last dispatch is not
+the state after an acb's final packets. Now the host journals, per job, the exact predecessor's id and each acb's **final
+`USER_DATA_0`** from all its packets (tables and IB2s followed; `unknown` if a table is unreadable or the write is under
+a COND_EXEC). The checker walks the ids back from the buffer: the first acb with a known final value gives the inherited
+value, an acb with no write is passed over, an `unknown` or a missing job gives UNKNOWN, and a dcb gives "dcb". Journal
+line order no longer matters. **Exposed** means direct with a known inherited value other than 0x11; UNKNOWN never
+counts as exposed. This is the host's view in the host's submission order, not a capture of what the GPU consumed.
+Tests: `test_j4check0381.py`, 13 cases, with Codex's interleaving case; `final_value` in `acb_restore.hpp`.
+
+**Fixed conditions.** Both arms run the same new binary with `BC5_DIRECT_CHAIN_BREAK_AT=12673` and the default hold. The
+restore is set explicitly: `BC5_DIRECT_ACB_STATE_RESTORE=0` in OFF, `=1` in ON. Live saves 377a8d456a9b4cb1. The private
+build only runs after it compiles; no shared build, launcher or patch 0001 changes.
 
 **Outcomes.**
-- **Supported:** at least 2 direct OFF starts with F443, and at least 2 direct ON starts with `USER_DATA_0` = 0x11 in the
-  buffer's own prefix and no F443.
-- **Fail:** a direct ON start with that prefix and F443. Stop the series and read the emitted IB.
-- **Not explained by this cause:** direct OFF starts, in at least 2 starts with an acb's user data 0 not equal to 0x11,
-  with no F443. Then the acb's carry is not sufficient for the fault, whatever the restore does.
-- **Inconclusive:** anything else, such as fewer than 2 direct starts in an arm. Clean ON starts then count for nothing.
+- **Supported:** at least 2 exposed OFF starts with F443, and at least 2 exposed ON starts with `USER_DATA_0` = 0x11 in
+  the buffer's own prefix and no F443.
+- **Fail:** an exposed ON start with that prefix and F443. Stop the series and read the emitted IB.
+- **Carry not sufficient, in this view:** at least 2 exposed OFF starts with no F443. It rests on the known inherited value
+  above and never on UNKNOWN. Since that value is a CPU view, it still does not exclude inheritance on the GPU.
+- **Inconclusive:** anything else, such as fewer than 2 exposed starts in an arm. Clean ON starts then count for nothing.
 
 Counts are reported as counts, with no odds. An OFF start with F443 is expected and does not stop the series; §11's
 other stops hold, and F443 in an ON start stops it. A result covers this start-up workload, this save, this build, 120 s,

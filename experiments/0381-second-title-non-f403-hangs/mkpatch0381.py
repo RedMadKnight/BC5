@@ -128,12 +128,31 @@ rep("""	if (chain != nullptr) { // ADR 0010: the kept waits were converted to ch
 	{
 		static const bool dj = BC5_DIAG_ENV("BC5_DIRECT_DISPATCH_JOURNAL") != nullptr;
 		if (dj) {
-			static std::atomic<uint64_t>    n_job {0};
-			static std::atomic<const char*> prev_class {"none"};
-			job0381                = ++n_job;
-			const char* prev       = prev_class.exchange(std::strncmp(kind, "acb", 3) == 0 ? "acb" : "dcb");
+			static std::mutex  job_mtx;
+			static uint64_t    n_job      = 0;
+			static const char* prev_class = "none";
+			const char*        prev       = nullptr;
+			const bool         is_acb     = std::strncmp(kind, "acb", 3) == 0;
+			{
+				std::lock_guard<std::mutex> lock(job_mtx); // the id and the class are one step: the predecessor is job - 1
+				job0381    = ++n_job;
+				prev       = prev_class;
+				prev_class = is_acb ? "acb" : "dcb";
+			}
+			// Codex's J4 review: what an acb leaves, after all its packets; "unknown" rather than a guess.
+			char final_ud0[16] = "-";
+			if (is_acb) {
+				std::shared_ptr<const std::vector<bc5::direct::Mapping>> maps = g_dev->sorted_mappings();
+				const auto read = [&maps](uint64_t a, uint64_t bytes) -> const uint32_t* {
+					return covered_sorted(*maps, a, bytes) ? reinterpret_cast<const uint32_t*>(a) : nullptr;
+				};
+				uint32_t v = 0;
+				const bc5::acb_restore::Final f = bc5::acb_restore::final_value(std::span<const uint32_t>(ib, num_dwords), bc5::acb_restore::kUserData0, read, v);
+				if (f == bc5::acb_restore::Final::Known) std::snprintf(final_ud0, sizeof(final_ud0), "%08x", v);
+				else std::snprintf(final_ud0, sizeof(final_ud0), "%s", f == bc5::acb_restore::Final::None ? "none" : "unknown");
+			}
 			const size_t seg_count = chain != nullptr ? chain->segs.size() : 0;
-			journal("job %" PRIu64 " %s: %u dwords, %zu segments, ring %d, previous job %s\\n", job0381, kind, num_dwords, seg_count, ring, prev);
+			journal("job %" PRIu64 " %s: %u dwords, %zu segments, ring %d, previous job %s %" PRIu64 ", final ud0 %s\n", job0381, kind, num_dwords, seg_count, ring, prev, job0381 - 1, final_ud0);
 			for (size_t k = 0; k < seg_count; k++) {
 				const ChainSeg& sg = chain->segs[k];
 				uint32_t        v  = 0;
