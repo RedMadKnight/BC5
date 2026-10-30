@@ -1,0 +1,108 @@
+== decoded states
+
+# 1808 graphics stall (devcd 20261029-180813-devcd3)
+  GRBM_STATUS        0xa2712028  ME0PIPE0_CMDFIFO_AVAIL=8 RSMU_RQ_PENDING CB_CLEAN GE_BUSY_NO_DMA SX_BUSY GE_BUSY SPI_BUSY PA_BUSY CP_BUSY GUI_ACTIVE
+  GRBM_STATUS2       0x50000008  ME0PIPE1_CMDFIFO_AVAIL=8 CPF_BUSY CPG_BUSY
+  GRBM_STATUS3       0x00002000  PH_BUSY
+  GRBM_STATUS_SE0    0x0d000004  CB_CLEAN PA_BUSY SX_BUSY SPI_BUSY
+  GRBM_STATUS_SE1    0x0d000004  CB_CLEAN PA_BUSY SX_BUSY SPI_BUSY
+  CP_STAT            0x94078600  ROQ_RING_BUSY ROQ_INDIRECT1_BUSY PFP_BUSY MEQ_BUSY ME_BUSY QUERY_BUSY CE_BUSY ROQ_CE_RING_BUSY CP_BUSY
+  CP_STALLED_STAT1   0x00000c00  ME_HAS_ACTIVE_CE_BUFFER_FLAG ME_HAS_ACTIVE_DE_BUFFER_FLAG
+  CP_STALLED_STAT2   0x00218000  ME_WAITING_ON_PARTIAL_FLUSH MEQ_TO_ME_NOT_RDY_TO_RCV EOPD_FIFO_NEEDS_SC_EOP_DONE
+  CP_BUSY_STAT       0x00448400  RCIU_ME_BUSY GFX_CONTEXT_BUSY EOP_DONE_BUSY CE_PARSING_PACKETS
+
+# T1 0634 ASTRO BOT graphics stop (F519)
+  GRBM_STATUS        0xe5f100ac  ME0PIPE0_CMDFIFO_AVAIL=12 RSMU_RQ_PENDING ME0PIPE0_CF_RQ_PENDING GE_BUSY_NO_DMA SX_BUSY GE_BUSY SPI_BUSY BCI_BUSY SC_BUSY DB_BUSY CP_BUSY CB_BUSY GUI_ACTIVE
+  GRBM_STATUS2       0x50000008  ME0PIPE1_CMDFIFO_AVAIL=8 CPF_BUSY CPG_BUSY
+  GRBM_STATUS3       0x00002000  PH_BUSY
+  GRBM_STATUS_SE0    0x08000000  SPI_BUSY
+  GRBM_STATUS_SE1    0xec400000  BCI_BUSY SX_BUSY SPI_BUSY SC_BUSY DB_BUSY CB_BUSY
+  CP_STAT            0x94839600  ROQ_RING_BUSY ROQ_INDIRECT1_BUSY ROQ_STATE_BUSY PFP_BUSY MEQ_BUSY ME_BUSY RCIU_BUSY CE_BUSY ROQ_CE_RING_BUSY CP_BUSY
+  CP_STALLED_STAT1   0x01000c00  ME_HAS_ACTIVE_CE_BUFFER_FLAG ME_HAS_ACTIVE_DE_BUFFER_FLAG RCIU_WAITING_ON_GRBM_FREE
+  CP_STALLED_STAT2   0x00031000  ME_RCIU_NOT_RDY_TO_RCV MEQ_TO_ME_NOT_RDY_TO_RCV STQ_TO_ME_NOT_RDY_TO_RCV
+  CP_BUSY_STAT       0x00428100  ME_PARSING_PACKETS GFX_CONTEXT_BUSY ME_PARSER_BUSY CE_PARSING_PACKETS
+
+# 1625 start 1, sample at 16:25:41 (TCP fault class)
+  GRBM_STATUS        0xa04030ac  ME0PIPE0_CMDFIFO_AVAIL=12 RSMU_RQ_PENDING ME0PIPE0_CF_RQ_PENDING DB_CLEAN CB_CLEAN SPI_BUSY CP_BUSY GUI_ACTIVE
+
+# 1625 start 1, sample at 16:25:43 (after the first reset)
+  GRBM_STATUS        0xa0003028  ME0PIPE0_CMDFIFO_AVAIL=8 RSMU_RQ_PENDING DB_CLEAN CB_CLEAN CP_BUSY GUI_ACTIVE
+
+# F403 0948 sampler sample 1 (F525)
+  GRBM_STATUS        0xa0407028  ME0PIPE0_CMDFIFO_AVAIL=8 RSMU_RQ_PENDING DB_CLEAN CB_CLEAN TA_BUSY SPI_BUSY CP_BUSY GUI_ACTIVE
+  GRBM_STATUS2       0x52000008  ME0PIPE1_CMDFIFO_AVAIL=8 TCP_BUSY CPF_BUSY CPG_BUSY
+  GRBM_STATUS3       0x00018000  GL2CC_BUSY GL1CC_BUSY
+  GRBM_STATUS_SE0    0x0a000036  DB_CLEAN CB_CLEAN TCP_BUSY GL1CC_BUSY TA_BUSY SPI_BUSY
+  GRBM_STATUS_SE1    0x0a000036  DB_CLEAN CB_CLEAN TCP_BUSY GL1CC_BUSY TA_BUSY SPI_BUSY
+  CP_STAT            0x9403a600  ROQ_RING_BUSY ROQ_INDIRECT1_BUSY DC_BUSY PFP_BUSY MEQ_BUSY ME_BUSY CE_BUSY ROQ_CE_RING_BUSY CP_BUSY
+  CP_STALLED_STAT1   0x00000c00  ME_HAS_ACTIVE_CE_BUFFER_FLAG ME_HAS_ACTIVE_DE_BUFFER_FLAG
+  CP_STALLED_STAT2   0x00018000  ME_WAITING_ON_PARTIAL_FLUSH MEQ_TO_ME_NOT_RDY_TO_RCV
+  CP_STALLED_STAT3   0x00000800  CE_WAITING_ON_CE_BUFFER_FLAG
+  CP_BUSY_STAT       0x00400400  RCIU_ME_BUSY CE_PARSING_PACKETS
+  CP_CPF_STATUS      0xb4000263  POST_WPTR_GFX_BUSY CSF_BUSY ROQ_RING_BUSY ROQ_INDIRECT1_BUSY ROQ_CE_RING_BUSY CPF_GFX_BUSY GRBM_CPF_STAT_BUSY=3 CPF_BUSY
+  CP_CPF_BUSY_STAT   0x00000006  CSF_RING_BUSY CSF_INDIRECT1_BUSY
+  CP_CPF_STALLED_STAT1 0x00000003  RING_FETCHING_DATA INDR1_FETCHING_DATA
+
+== 18:08 against the 40 healthy samples, field by field
+  GRBM_STATUS 0xa2712028: exactly equal in 0/40 healthy
+    CB_CLEAN                           set in 37/40 healthy
+    CP_BUSY                            set in 35/40 healthy
+    GE_BUSY                            set in  8/40 healthy
+    GE_BUSY_NO_DMA                     set in  8/40 healthy
+    GUI_ACTIVE                         set in 35/40 healthy
+    ME0PIPE0_CMDFIFO_AVAIL=8           set in 37/40 healthy
+    PA_BUSY                            set in  5/40 healthy
+    RSMU_RQ_PENDING                    set in 40/40 healthy
+    SPI_BUSY                           set in 33/40 healthy
+    SX_BUSY                            set in  8/40 healthy
+    DB_CLEAN                           CLEAR here, set in 28/40 healthy
+    TA_BUSY                            CLEAR here, set in 32/40 healthy
+  GRBM_STATUS2 0x50000008: exactly equal in 0/40 healthy
+    CPF_BUSY                           set in 35/40 healthy
+    CPG_BUSY                           set in 35/40 healthy
+    ME0PIPE1_CMDFIFO_AVAIL=8           set in 40/40 healthy
+    EA_BUSY                            CLEAR here, set in 29/40 healthy
+    EA_LINK_BUSY                       CLEAR here, set in 35/40 healthy
+    TCP_BUSY                           CLEAR here, set in 29/40 healthy
+  GRBM_STATUS_SE0 0x0d000004: exactly equal in 0/40 healthy
+    CB_CLEAN                           set in 36/40 healthy
+    PA_BUSY                            set in  8/40 healthy
+    SPI_BUSY                           set in 32/40 healthy
+    SX_BUSY                            set in 10/40 healthy
+    DB_CLEAN                           CLEAR here, set in 28/40 healthy
+    GL1CC_BUSY                         CLEAR here, set in 29/40 healthy
+    TA_BUSY                            CLEAR here, set in 26/40 healthy
+    TCP_BUSY                           CLEAR here, set in 26/40 healthy
+  GRBM_STATUS_SE1 0x0d000004: exactly equal in 0/40 healthy
+    CB_CLEAN                           set in 36/40 healthy
+    PA_BUSY                            set in  7/40 healthy
+    SPI_BUSY                           set in 34/40 healthy
+    SX_BUSY                            set in 11/40 healthy
+    DB_CLEAN                           CLEAR here, set in 27/40 healthy
+    GL1CC_BUSY                         CLEAR here, set in 31/40 healthy
+    TA_BUSY                            CLEAR here, set in 31/40 healthy
+    TCP_BUSY                           CLEAR here, set in 31/40 healthy
+  CP_STALLED_STAT2 0x00218000: exactly equal in 6/40 healthy
+    EOPD_FIFO_NEEDS_SC_EOP_DONE        set in 17/40 healthy
+    MEQ_TO_ME_NOT_RDY_TO_RCV           set in 28/40 healthy
+    ME_WAITING_ON_PARTIAL_FLUSH        set in 17/40 healthy
+  CP_BUSY_STAT 0x00448400: exactly equal in 2/40 healthy
+    CE_PARSING_PACKETS                 set in 29/40 healthy
+    EOP_DONE_BUSY                      set in 16/40 healthy
+    GFX_CONTEXT_BUSY                   set in 11/40 healthy
+    RCIU_ME_BUSY                       set in 40/40 healthy
+
+== nearest healthy samples to 18:08 (number of differing status bits over the six registers)
+  18 bits  20261029-105130  (hang has +, healthy has -) GRBM_STATUS:+[GE_BUSY_NO_DMA SX_BUSY GE_BUSY SPI_BUSY PA_BUSY] -[]; GRBM_STATUS2:+[] -[UTCL2_BUSY EA_BUSY EA_LINK_BUSY TCP_BUSY]; GRBM_STATUS_SE0:+[] -[GL1CC_BUSY]; GRBM_STATUS_SE1:+[] -[GL1CC_BUSY]; CP_STALLED_STAT2:+[ME_WAITING_ON_PARTIAL_FLUSH MEQ_TO_ME_NOT_RDY_TO_RCV EOPD_FIFO_NEEDS_SC_EOP_DONE] -[]; CP_BUSY_STAT:+[EOP_DONE_BUSY] -[ME_PARSING_PACKETS SEM_POLLING_FOR_PASS ME_PARSER_BUSY]
+  19 bits  20261029-104719  (hang has +, healthy has -) GRBM_STATUS:+[GE_BUSY_NO_DMA SX_BUSY GE_BUSY PA_BUSY] -[DB_CLEAN TA_BUSY]; GRBM_STATUS2:+[] -[EA_BUSY EA_LINK_BUSY TCP_BUSY]; GRBM_STATUS_SE0:+[PA_BUSY SX_BUSY] -[DB_CLEAN]; GRBM_STATUS_SE1:+[PA_BUSY SX_BUSY] -[DB_CLEAN TCP_BUSY GL1CC_BUSY TA_BUSY]; CP_BUSY_STAT:+[GFX_CONTEXT_BUSY] -[]
+  19 bits  20261029-104734  (hang has +, healthy has -) GRBM_STATUS:+[GE_BUSY_NO_DMA SX_BUSY GE_BUSY PA_BUSY] -[TA_BUSY]; GRBM_STATUS2:+[] -[EA_BUSY EA_LINK_BUSY TCP_BUSY]; GRBM_STATUS_SE0:+[PA_BUSY SX_BUSY] -[TCP_BUSY GL1CC_BUSY TA_BUSY]; GRBM_STATUS_SE1:+[PA_BUSY SX_BUSY] -[TCP_BUSY GL1CC_BUSY TA_BUSY]; CP_BUSY_STAT:+[GFX_CONTEXT_BUSY] -[]
+  19 bits  20261029-105125  (hang has +, healthy has -) GRBM_STATUS:+[CB_CLEAN GE_BUSY_NO_DMA GE_BUSY PA_BUSY] -[TA_BUSY SC_BUSY DB_BUSY CB_BUSY]; GRBM_STATUS2:+[] -[EA_LINK_BUSY RLC_BUSY]; GRBM_STATUS_SE0:+[SX_BUSY] -[SC_BUSY DB_BUSY CB_BUSY]; GRBM_STATUS_SE1:+[PA_BUSY SX_BUSY] -[]; CP_STALLED_STAT2:+[EOPD_FIFO_NEEDS_SC_EOP_DONE] -[]; CP_BUSY_STAT:+[GFX_CONTEXT_BUSY EOP_DONE_BUSY] -[]
+  20 bits  20261029-104634  (hang has +, healthy has -) GRBM_STATUS:+[GE_BUSY_NO_DMA SX_BUSY GE_BUSY PA_BUSY] -[DB_CLEAN TA_BUSY]; GRBM_STATUS2:+[] -[EA_BUSY EA_LINK_BUSY TCP_BUSY]; GRBM_STATUS_SE0:+[PA_BUSY SX_BUSY] -[DB_CLEAN GL1CC_BUSY]; GRBM_STATUS_SE1:+[PA_BUSY SX_BUSY] -[DB_CLEAN TCP_BUSY GL1CC_BUSY TA_BUSY]; CP_BUSY_STAT:+[GFX_CONTEXT_BUSY] -[]
+
+== single-sample rules (fires = looks like that stall)
+  rule | healthy | 1808 graphics stall | T1 0634 ASTRO BOT graphics stop | F403 0948 sampler sample 1
+  F535 C&E: ME_WAITING_ON_PARTIAL_FLUSH, EA_LINK_BUSY clear | 0/40 | yes | no | yes
+  F589 compute: C&E, TA_BUSY, GE_BUSY clear, no EOPD wait | 0/40 | no | no | yes
+  G graphics: C&E, GE_BUSY, TA_BUSY clear, EOPD wait | 0/40 | yes | no | no
+  G2 graphics, no EA term: ME_WAITING_ON_PARTIAL_FLUSH, GE_BUSY, TA_BUSY clear, EOPD wait | 0/40 | yes | no | no
+  healthy samples with ME_WAITING_ON_PARTIAL_FLUSH: 17; of them GE_BUSY 3, EOPD wait 9, both 2
