@@ -13,8 +13,9 @@ def rep(old, new):
     s = s.replace(old, new)
 
 
-rep('#include "bc5/zero_skip.hpp" // experiment 0379\n',
-    '#include "bc5/zero_skip.hpp" // experiment 0379\n#include "bc5/acb_restore.hpp" // experiment 0381\n')
+# The anchor: exp 0379's unit has the zero-skip include, patch 0001 on main does not.
+anchor = '#include "bc5/zero_skip.hpp" // experiment 0379\n' if 'bc5/zero_skip.hpp' in s else '#include "bc5/full_state.hpp"\n'
+rep(anchor, anchor + '#include "bc5/acb_restore.hpp" // experiment 0381\n')
 
 rep("static bool ib_has_draw(const uint32_t* ib, uint32_t num_dwords) {\n",
     """// Experiment 0381 (F679): BC5_DIRECT_ACB_STATE_RESTORE=1: in front of every graphics buffer that dispatches (or calls

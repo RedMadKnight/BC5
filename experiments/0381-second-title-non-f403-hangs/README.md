@@ -972,3 +972,13 @@ are set: `BC5_DIRECT_CHAIN_BREAK_AT` (lean: absent) and the job and segment jour
 Add `bc5/acb_restore.hpp` as exp 0379 added `zero_skip.hpp`, keep exp 0372's pieces, and set
 `BC5_DIRECT_ACB_STATE_RESTORE=1` in the test launcher only. The diff sits on exp 0379's unit, so its hunks need a re-apply
 check. The `final_value` fix touches only that header, and no build has run with it on the host yet.
+
+## 20. The maintainer's yes for a test build (2026-10-30): the diff for main
+
+His words here: "Yes, test build". That is for `BC5_DIRECT_ACB_STATE_RESTORE=1` in the next test build, not the shared
+builds.
+
+`patch0381-main-bc5LleAgc.diff` is the same change on patch 0001's unit as it stands on main (f139db7, md5 e7cc2f60, no zero
+skip): 123 added lines, result 3b3b485e, diff 5a315d59. It applies cleanly on the laptop, and the old unit plus `mkpatch0381.py` still gives
+J4's unit (be1970af). **It has not been compiled, and no binary built from it has run**: J4's e72bc317 sits on exp 0379's
+unit and has the older `final_value`. It is for the top session's integration (D19); patch 0001 is not touched here.
