@@ -752,3 +752,46 @@ start-up workload, this save state, this build, 120 s.
 in an ON start does. After any gfx timeout, the next start waits for the reset's success line.
 
 *Before it.* The read of §13 stays useful for the old journals' chain statistics, but it cannot make J2 eligible.
+
+## 15. J3 Stage 1 (2026-10-30 09:47–10:09, the maintainer's go in this session's chat): the order is proved, one eligible ON start
+
+**The build.** `build0381.sh`: binary **2e69e902** (6415be8f plus the identity journal and the `last_missing` comparison).
+Clang 21: backend 0 warnings, 101 of 101 test cases; host unit 5 compiler warnings, the older ones. The shared binary
+and archive are unchanged.
+
+**The runs.** Default hold, 5 pairs, off first, all 120 s except off-3. Extract: `raw/j3-s1.txt`.
+
+| Start | Faults | Timeouts | The 12,673-dword buffer (original offset 13) | Prefix | Eligible by the rule | F443 |
+|---|---|---|---|---|---|---|
+| off-1 | 0 | 0 | seg 1 of 5 | none | 1, another buffer at t 106 (offset 22), behind the CS prefix | no |
+| on-1 | 0 | 0 | seg 1 of 5 | 58, ud0 0x11 | 0 | no |
+| off-2 | 0 | 0 | seg 1 of 5 | none | 0 | no |
+| on-2 | 0 | 0 | seg 1 of 5 | 58, ud0 0x11 | 0 | no |
+| off-3 | 10 | 2 | **seg 0 of 4, after an acb** | **none** | **1** | **yes, t ~56–62 s; both resets succeeded** |
+| on-3 | 0 | 0 | seg 5 of 8 | 58, ud0 0x11 | 0 | no |
+| off-4 | 0 | 0 | seg 1 of 5 | none | 0 | no |
+| on-4 | 0 | 0 | seg 1 of 5 | 58, ud0 0x11 | 0 | no |
+| off-5 | 0 | 0 | seg 5 of 7 | none | 0 | no |
+| on-5 | 0 | 0 | **seg 0 of 4, after an acb** | **58, ud0 0x11** | **1** | **no** |
+
+**What this shows.**
+- **The F679 order is now shown with identity.** In off-3 the same title buffer, at a job's head right after an acb, with
+  no prefix, gave F443. In the four other OFF starts it stood mid-chain with no prefix and did not fault.
+- **The same position with the restore did not fault.** on-5 is the same buffer, same position, same acb order, with
+  `USER_DATA_0` = 0x11 in that segment's emitted prefix.
+- **The buffer is present in all 10 starts**, which settles F681's inference across the run.
+- **Why the buffer was exposed.** Most targets (offsets 8, 18, 22) carry the existing CS prefix in OFF starts too, since
+  their dispatch precedes `COMPUTE_PGM_LO`. Only this buffer's table sets the program first, so `cs_inherit_at` skips it.
+  The switch's practical effect at these targets is that one buffer. off-1's eligible start at t 106 is such a CS-prefix
+  case and did not fault.
+- **The position decides the exposure**, not the switch: seg 0 came 1 time of 5 in each arm. The J2 chain boundary was
+  not an effect of the switch, as far as these counts go.
+
+**Verdict under §14.** OFF: 5 starts, 1 F443. ON: 5 starts, 0 F443. The rule needs at least 2 eligible ON starts with the
+attributed restore and no F443, plus 1 eligible OFF start with F443. There is 1 and 1, so the mechanism's rule is **not met
+yet**; §14 calls for Stage 2. Off against on here is a comparison of the switch as a bundle, in counts.
+
+**Stage 2's hold, set before it runs: `BC5_DIRECT_CHAIN_HOLD_US=200`**, a tenth of the default (2,000). The aim is to put
+this buffer at a job's head more often. Starts stay the same: 3 pairs, up to 5, off first, tags `J3-S2-*`. The rules,
+stops and eligibility are §14's, unchanged. The shorter hold is off the tested path, so §11's flip-rate and stall stops
+matter here. The value is a round choice, not derived from a measured gap: the journal has no segment times.
