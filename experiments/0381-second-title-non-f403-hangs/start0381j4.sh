@@ -20,6 +20,10 @@ ENVS="BC5_EMU=$E/kyty_emulator BC5_0358_INPUT_CONFIG=$E/input-rton.cfg KYTY_BC5_
 [ "$HOLD" = default ] || ENVS="$ENVS BC5_DIRECT_CHAIN_HOLD_US=$HOLD"
 echo "top exp 0381 | $TAG: J4 switch $SW break 12673, 120 s, RT on | $(date '+%F %T')" > "$W/BOX-LOCK"
 echo "$(date '+%F %T') $TAG start: binary $(md5sum < "$E/kyty_emulator" | cut -c1-8), switch $SW, hold $HOLD, live saves $LIVE" > "$E/raw/$TAG-start.txt"
+# The backstop on the box (the on-3 incident, README §19): setsid, so a dropped ssh cannot end it.
+CAPS=$E/in/experiments/0381-second-title-non-f403-hangs/boxcap0381.sh
+[ -f "$CAPS" ] || { echo "no box cap at $CAPS: stop"; exit 7; }
+setsid bash "$CAPS" /exp0381/kyty_emulator 135 "$E/raw/$TAG-start.txt" < /dev/null > /dev/null 2>&1 &
 # shellcheck disable=SC2086
 distrobox enter ubuntu -- env $ENVS "$E/play-pkg-0381.sh" < /dev/null > "$E/raw/$TAG-launch.out" 2>&1
 echo "launcher exit $?" >> "$E/raw/$TAG-launch.out"

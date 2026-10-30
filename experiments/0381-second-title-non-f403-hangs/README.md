@@ -940,3 +940,35 @@ itself. J4's three clean ON starts and three faulting OFF starts are the evidenc
 **Open.** Integration is the maintainer's decision (D19): the switch needs patch 0001, a launcher setting, and a test in
 play. `BC5_DIRECT_CHAIN_BREAK_AT` is a diagnostic and stays out of that. The on-3 journal takes 38 GB on the box until
 someone clears it.
+
+## 19. The on-3 incident's fix, and the recommendation
+
+**Incident (§18), the cause.** The stop lived only on the laptop, and its polling ssh had no time limit. One `Connection
+reset` blocked it, and the emulator kept running, because nothing on the box would stop it.
+
+**Fix.** Two layers, in `j3run0381.sh`/`j4run0381.sh` and the start scripts.
+- The laptop's polls and TERM are bounded, and the TERM is retried (§18).
+- `boxcap0381.sh` runs **on the box**, started with `setsid` by the start script, so a dropped ssh cannot end it. It
+  sends TERM at 135 s of emulator time and KILL 20 s later, signals only the private binary, logs to the start file, and
+  ends with the emulator. A start refuses to run without it.
+
+`test_boxcap0381.sh` passes 5 checks against a stand-in on the laptop. **The cap has not run on the box yet**, and the
+`setsid` survival of a dropped ssh is not tested. CLAUDE.md's standing advice against unattended stoppers is set aside
+here at the top session's request, for this one bounded script.
+
+**The journal.** `play-20261030-1111`'s 38 GB `direct.log` is not compressed yet: the guarded `gzip` found an emulator
+running and did nothing.
+
+**Recommendation for the maintainer (he decides, D19): yes, default on in a test build, not yet in the shared builds.**
+- For: the fault followed the missing restore 3 of 3 against 0 of 3 on a forced position, the cost is 58 dwords per
+  dispatching buffer with no slowdown shown, and acbs wrote nothing the restore cannot put back. The CS prefix already
+  does the same for most buffers in play, so this widens a path that has run since exp 0195.
+- Against: the proof is start-up only, and it needs a real play session to show F443 stays away. Natural exposure is about
+  1 start in 8, so one clean session shows little by itself.
+
+**The D19 diff.** Take `patch0381-bc5LleAgc.diff` as tested, onto patch 0001's current unit: the include; `acb_restore_mode` and
+`acb_touched_note`; the restore block in `submit_split`; the two tracker gates. Also in it, and inert unless their switches
+are set: `BC5_DIRECT_CHAIN_BREAK_AT` (lean: absent) and the job and segment journal (only with the dispatch journal).
+Add `bc5/acb_restore.hpp` as exp 0379 added `zero_skip.hpp`, keep exp 0372's pieces, and set
+`BC5_DIRECT_ACB_STATE_RESTORE=1` in the test launcher only. The diff sits on exp 0379's unit, so its hunks need a re-apply
+check. The `final_value` fix touches only that header, and no build has run with it on the host yet.
