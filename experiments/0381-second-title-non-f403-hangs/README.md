@@ -538,3 +538,40 @@ view at submit.
 - `build0381.sh` / `build0381.py`: exp 0379's private build, into `~/bc5-work/exp0381/kyty_emulator`.
 
 The laptop build (MSVC) passes 99 of 99 test cases, 33,805 assertions. The host unit needs the box to compile.
+
+## 11. J2: the rules, written before the run
+
+**Setup.** J1's setup (`~/bc5-work/exp0381`, launcher `play-pkg-0381.sh`, `input-rton.cfg`, `in-D2.cmd`, RT on) with
+the binary from `build0381.sh` and `BC5_DIRECT_ACB_STATE_RESTORE=1`. Each of the 3 starts (`start0381j2.sh`) gets a
+fresh copy of the live saves. `BC5_DIRECT_DISPATCH_JOURNAL=1` stays on: J1 is the comparison and ran with it, and the
+journal is what shows a start reached the F679 order. The page cache stays warm, as in J1. The kernel log is streamed
+to the laptop for each start.
+
+**The comparison.** Starts from the live saves hit F443 in 3 of 4 bench starts (D2, D4, J1 hit; D3 did not reach the
+point), plus the maintainer's own 16:25 start. Without J1, the count the top session quotes is 2 of 3 plus 16:25. If
+the switch changed nothing, 3 clean starts would have a chance of about 1 in 27 at 2 of 3, and 1 in 64 at 3 of 4.
+
+**Each start ends** at 120 s of emulator time, or on the first gfx timeout, whichever comes first. It is stopped by
+TERM from the laptop.
+
+**A start is clean** when all of these hold:
+- no TCP fault with a high half other than the title's, and no gfx ring timeout, in the kernel stream;
+- the emulator reached 120 s;
+- the journal has `acb state restore (exp 0381)` lines, so the switch was active;
+- the journal shows a dcb opening with 0x909977100 right after an acb, the F679 order. Without it the start did not
+  test the fix: it counts as **no test**, and does not count towards the 3.
+
+**Pass:** 3 clean starts, no F443 in any. At most 2 extra starts may replace no-test starts.
+
+**Fail:** any start with the F443 signature (TCP read faults at high half 0x860, or any wrong high half, with
+0x909977100 running). Stop the series, keep the journal and the devcoredump, and read the emitted IB: did the restore
+stand in front of the faulting dcb, and with which `USER_DATA_0`?
+
+**Stop the series at once**, and tell the top session, on any of:
+- a gfx timeout or page fault of another class; that is a new finding, not a pass or a fail;
+- a failed ring reset, or a machine-down;
+- live saves that differ from 377a8d45 at a start (never restore over them; ask);
+- a flip rate well below J1's, or a stall, which would point to the prefix itself.
+
+**A pass does not show** that F443 is gone from play: it covers the start-up job only, on one save state, for 120 s.
+The next step would be a test build with the switch on, and that build needs the maintainer's yes (D19).
