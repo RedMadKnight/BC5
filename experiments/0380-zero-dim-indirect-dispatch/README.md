@@ -2329,9 +2329,13 @@ run is owed before the B loop uses it. `raw/loop0380b.sh` takes `BC5_0380_S6N` a
     assertions in 16 cases; both selftests printed rc 0 and "nothing done".
   - `[zero_skip]` printed "No tests ran". That was no pass and §32 did not count it: tree d64f057 has no such test.
   - No failure is hidden in that output, so §32 stands, but it is read from the text, not enforced.
-  - `[zero_skip]`'s five cases have not been run on any tree yet.
 - **BUILD-01's dry test ran through a `tail` pipeline in that script too**, so its rc was not recorded either. The first
   try's failure was seen in the text. The rerun's "2 tests OK" is a line written from what the run printed.
+- **The main-check passed with the fixed script (2026-10-30 10:40, CPU only).** Backend tree 003fbb0c (main a7f5aa7; main
+  067461d has the same tree), clang Release with `BC5_WITH_AMDGPU=ON`: build rc 0, 0 errors, 0 warnings; Catch2 105 cases,
+  34,513 assertions; `[indirect_check]` 16 cases, 982 assertions; `[zero_skip]` 5 cases, 54 assertions; both
+  `direct-selftest` runs without `--submit` did nothing; the script's own rc 0. It covers the backend tree only, not patch
+  0001 or the emulator link. The shared pins did not change. Output: `raw/runs/SLOT-main-check.txt`.
 - **The manifest** is `raw/MANIFEST-B-loop-r1.md`. No smoke has used the loop's exact switches, so one comes first. Codex
   decides the limits; the loop has no GO.
 - **A lock gap in `raw/loop0380b.sh`, found while writing it:** the runner frees the lock after each try, and the loop

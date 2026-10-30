@@ -1,0 +1,15 @@
+top exp 0380 | claim: main-check, backend tree 003fbb0c, CPU only, no emulator, no GPU submit, then release (~5 min) | 2026-10-30 10:39:59
+07825f1b260eb9aac8306d62945ea732  /home/kjaniszewski/bc5-work/exp0380/main-check/main-backend.tar
+27c3ebffd49830facb885cbe741d934b  /home/kjaniszewski/bc5-work/exp0380/slot0380m.sh
+pins before: 58c4a627 dcbeb440 bb50b2e0 55531ab6
+== 10:40:00 main backend (tar md5 07825f1b260eb9aac8306d62945ea732): Catch2 and direct-selftest
+Catch2 from /home/kjaniszewski/bc5-work/exp0323/backend-tests/_deps/catch2-src
+build rc 0; errors 0, warnings 0
+tests rc 0: All tests passed (34513 assertions in 105 test cases)
+indirect_check rc 0: All tests passed (982 assertions in 16 test cases)
+zero_skip rc 0: All tests passed (54 assertions in 5 test cases)
+selftest-plain rc 0: direct-selftest: nothing done without --submit
+selftest-checks rc 0: direct-selftest: nothing done without --submit
+== 10:40:34 done: all passed
+OUTER RC 0
+pins after: 58c4a627 dcbeb440 bb50b2e0 55531ab6
