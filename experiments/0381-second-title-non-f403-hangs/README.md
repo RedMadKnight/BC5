@@ -1029,3 +1029,15 @@ The zero skip placed its list (934 MiB of `RenderGpuWcLarge`, 22 lines in `direc
 - Recorder and crash-frame paths only act at an event; none happened.
 - The tracker starts with fewer registers: the first buffers carried 0, then 12, and 40 from t 1.6 s. J2 and J3 showed 40 from
   the first line. It does not reach the job at t ~55 s; the cause of the difference is not read.
+
+## 23. A false queue line during BL24 (2026-10-30 13:40)
+
+A PORT-CHAIN check was tried at 13:40 while exp 0380's B loop ran its try BL24. The guard stopped it, and nothing was built
+or run. The command's last step was not tied to the guard, though, so it appended a false `done: PORT-CHAIN CPU check`
+line to `BOX-QUEUE` at 13:40:02, during BL24, and a `CORRECTION` line followed it at once. Those two lines are the only
+writes; BL24 itself was not touched, and anything reading the queue should ignore that done line.
+
+`pcrun0381.sh` and `pcbox0381.sh` replace that command. The guard reads the lock and the queue record comes from the box
+script's EXIT trap, written only after a passed guard, and `done` only when every step passed. `test_pcrun0381.sh` passes 10
+stand-in cases and caught two more ways of leaving a stale lock, both fixed. Not covered: a dropped ssh between claim and
+check can leave this check's lock with no outcome line.
