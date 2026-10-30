@@ -75,7 +75,37 @@ static std::string slurp(const std::string& p) {
     return s;
 }
 
+// 6. the jobs in front of a timeout (F679): the tail scan and the journal lines.
+struct FakeJob { std::uint64_t n; const char* kind; std::uint32_t num_dwords; std::vector<std::uint32_t> ib_copy; };
+struct FakeResult { bool timed_out, ok; int ring; std::uint64_t gpu_start, gpu_end; };
+static void test_before() {
+    using namespace stand_in;
+    const std::vector<std::uint32_t> ib = {
+        0xC0021100u, 1u, 0xd0571d00u, 0x11u,            // SET_BASE 1
+        0xC0012600u, 0xe9db6280u, 0x11u,                // INDEX_BASE
+        0xC0027600u, 0x20cu, 0x11d0289cu, 0u,           // SET_SH_REG COMPUTE_PGM_LO, HI
+        0xC0017600u, 0x240u, 0x11d00860u,               // USER_DATA_0
+        0xC0036300u, 0xe072fa94u, 0x11u, 0x80000000u, 10u, // LOAD_SH_REG_INDEX
+        0xC0FF1000u};                                   // truncated: the scan stops here
+    const Rec0380Tail t = rec0380_scan_tail(ib.data(), static_cast<std::uint32_t>(ib.size()));
+    assert(t.has_base1 && t.base1 == 0x11d0571d00ull);
+    assert(t.has_index_base && t.index_base == 0x11e9db6280ull);
+    assert(t.has_pgm && t.pgm == 0x11d0289c00ull);
+    assert(t.has_ud0 && t.ud0 == 0x11d00860u);
+    assert(t.loads == 1 && t.load_addr == 0x11e072fa94ull);
+    g_journal_text.clear();
+    for (std::uint64_t i = 0; i < 20; i++) rec0380_before(FakeJob {i, i % 2 ? "acb" : "dcb", 8, ib}, FakeResult {false, true, 0, i, i + 1});
+    assert(g_journal_text.empty());
+    rec0380_before(FakeJob {20, "dcb", 8, {}}, FakeResult {true, false, 0, 0, 0});
+    assert(g_journal_text.find("rec0380 before: #3 acb") == std::string::npos);
+    assert(g_journal_text.find("rec0380 before: #4 dcb") != std::string::npos);
+    assert(g_journal_text.find("rec0380 before: #19 acb 8 dwords ring 0 ok gpu 19..20; base1 0x11d0571d00") != std::string::npos);
+    assert(g_journal_text.find("(before #20)") != std::string::npos);
+    std::puts("6. the jobs in front of a timeout: ok");
+}
+
 int main() {
+    test_before();
     using namespace stand_in;
     char tmpl[] = "/tmp/rec0380-XXXXXX";
     const char* dir = getenv("REC0380_TMP");

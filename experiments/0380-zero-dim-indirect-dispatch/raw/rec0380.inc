@@ -251,3 +251,77 @@ static bool rec0380(const uint32_t* sub_ib, uint32_t sub_n, const char* kind, ui
 	return true;
 }
 
+// Experiment 0380 (exp 0381's F679): which jobs ran before a timed-out job on this completion thread. The journal keeps
+// only every 64th submit line, so the job in front of a B dcb is otherwise unknown. Kept for the last 16 jobs: number,
+// kind, size, ring, GPU times and, from the executed buffer of an acb (its dump copy, 8 KiB dwords at most), what it left
+// on a shared ring: the last SET_BASE 1, INDEX_BASE, COMPUTE_PGM, USER_DATA_0, and its LOAD_SH_REG_INDEX count and last
+// table. Other processes' jobs on the ring are not seen here. On a timeout: "rec0380 before:" journal lines, oldest
+// first, synced. CPU only.
+struct Rec0380Tail {
+	uint64_t base1 = 0, index_base = 0, pgm = 0, load_addr = 0;
+	uint32_t ud0 = 0, loads = 0;
+	bool     has_base1 = false, has_index_base = false, has_pgm = false, has_ud0 = false;
+};
+static Rec0380Tail rec0380_scan_tail(const uint32_t* ib, uint32_t n) {
+	Rec0380Tail t;
+	uint32_t    pgm_lo = 0, pgm_hi = 0;
+	bool        lo = false, hi = false;
+	for (uint32_t q = 0; q < n;) {
+		const uint32_t h = ib[q], type = h >> 30u;
+		uint32_t       len = 1;
+		if (type == 3 || type == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
+		if (q + len > n) break;
+		const uint32_t op = (h >> 8u) & 0xffu;
+		if (type == 3 && op == 0x11 && len >= 4 && (ib[q + 1] & 0xfu) == 1) {
+			t.base1     = (ib[q + 2] & ~3u) | (static_cast<uint64_t>(ib[q + 3] & 0xffffu) << 32u);
+			t.has_base1 = true;
+		} else if (type == 3 && op == 0x26 && len >= 3) {
+			t.index_base     = ib[q + 1] | (static_cast<uint64_t>(ib[q + 2] & 0xffffu) << 32u);
+			t.has_index_base = true;
+		} else if (type == 3 && op == 0x63 && len >= 5) {
+			t.loads++;
+			t.load_addr = (ib[q + 1] & ~3u) | (static_cast<uint64_t>(ib[q + 2] & 0xffffu) << 32u);
+		} else if (type == 3 && op == 0x76 && len >= 3) {
+			const uint32_t r0 = ib[q + 1] & 0xffffu;
+			for (uint32_t k = 2; k < len; k++) {
+				const uint32_t r = r0 + k - 2, v = ib[q + k];
+				if (r == 0x20cu) { pgm_lo = v; lo = true; }
+				else if (r == 0x20du) { pgm_hi = v; hi = true; }
+				else if (r == 0x240u) { t.ud0 = v; t.has_ud0 = true; }
+			}
+		}
+		q += len;
+	}
+	if (lo || hi) {
+		t.pgm     = (static_cast<uint64_t>(pgm_lo) << 8u) | (static_cast<uint64_t>(pgm_hi & 0xffu) << 40u);
+		t.has_pgm = true;
+	}
+	return t;
+}
+struct Rec0380Before {
+	uint64_t    n = 0, gpu_start = 0, gpu_end = 0;
+	const char* kind = "";
+	uint32_t    dwords = 0;
+	int         ring = 0;
+	bool        ok = false;
+	Rec0380Tail tail;
+};
+template <class Job, class Result>
+static void rec0380_before(const Job& j, const Result& r) {
+	static constexpr size_t kKeep = 16;
+	static thread_local Rec0380Before hist[kKeep];
+	static thread_local uint64_t      count = 0;
+	if (r.timed_out) {
+		for (uint64_t i = count > kKeep ? count - kKeep : 0; i < count; i++) {
+			const Rec0380Before& b = hist[i % kKeep];
+			journal("rec0380 before: #%" PRIu64 " %s %u dwords ring %d %s gpu %" PRIu64 "..%" PRIu64 "; base1 %s0x%" PRIx64 " index_base %s0x%" PRIx64 " pgm %s0x%" PRIx64 " ud0 %s0x%x, %u loads, last 0x%" PRIx64 " (before #%" PRIu64 ")\n",
+			        b.n, b.kind, b.dwords, b.ring, b.ok ? "ok" : "failed", b.gpu_start, b.gpu_end, b.tail.has_base1 ? "" : "none ", b.tail.base1, b.tail.has_index_base ? "" : "none ", b.tail.index_base,
+			        b.tail.has_pgm ? "" : "none ", b.tail.pgm, b.tail.has_ud0 ? "" : "none ", b.tail.ud0, b.tail.loads, b.tail.load_addr, j.n);
+		}
+		if (FILE* jf = journal_min_file(true); jf != nullptr) fsync(fileno(jf));
+	}
+	Rec0380Before& b = hist[count++ % kKeep];
+	b = Rec0380Before {};
+	b.n = j.n; b.kind = j.kind; b.dwords = j.num_dwords; b.ring = r.ring; b.ok = r.ok; b.gpu_start = r.gpu_start; b.gpu_end = r.gpu_end;
+	if (std::strncmp(j.kind, "acb", 3) == 0 && !j.ib_copy.empty() && j.ib_copy.size() <= 8192) b.tail = rec0380_scan_tail(j.ib_copy.data(), static_cast<uint32_t>(j.ib_copy.size()));
+}
