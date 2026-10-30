@@ -2044,6 +2044,52 @@ on `exp/0380-zero-dim-dispatch` (a13a849); the int branch is `int/0380-to-main` 
 - Steps 1–2 decide whether `int/0380-to-main` can be merged without a separate check.
 - Steps 3–5 are needed only for the play arms that use ranks 1 or 3.
 
+**The B loop on the bench (added after F618/F619 and Codex's REVIEW-06).** This is the step that can test F619
+soonest. It needs box writes, so it waits for the maintainer's yes.
+- **Setup:**
+  - binary 44417414 (the r1 build: the recorder's part A with F608's event matching, `BC5_CRASH_FRAMES`, exp 0379's
+    skip available but off), with `BC5_0380_REC=1`;
+  - no other exp 0380 switch, so the B shape stays untouched;
+  - S6N route save copy, RT on, 180-s tries back to back (`raw/s6n0380r1.sh <saves> <tag> 180 on`, a new tag each try, `BC5_0368_SWITCHES="BC5_CRASH_FRAMES=1 BC5_0380_REC=1"`), the kernel stream on.
+- **Per try:** about 3.5 min (load about 115 s, about 65 s in the scene, the runner's overhead). The 00:52 B came at
+  the load (F618), so every try passes the point where it happened.
+- **Time per B:**
+  - If B is load-bound (about one per 10–15 S6N loads): about 35–55 min.
+  - If B is a time rate (about 0.6 per hour of bench, F618): about 1.5–2 h.
+  - Each B costs a watch reboot of about 2 min, then a check of the box's health. A planned stop after 2 h without B
+    is reasonable.
+- **What part A records at a B:**
+  - the launched dims from the sampler event, matched by ring and newer than the job (F608);
+  - 64 bytes at every `SET_BASE` 1 base, at the `INDEX_BASE`, at each argument address and at the program;
+  - a scan of all resident GPU memory for the triple, its pairs and single dwords, with addresses and mappings.
+
+  It reads about 2–20 s after the stall, which is not the fetch instant (REVIEW-06).
+- **What the result can and cannot say:**
+  - **Under F619 (H):** "dump INDEX_BASE …" equals the launched dims while the argument slot holds sane counts.
+    - For a correct fetch from the slot to give that, the slot would have had to hold, for a moment, exactly the
+      bytes that lie at `INDEX_BASE`. That is far less likely than a fetch from `INDEX_BASE`. H is then strongly
+      supported.
+    - It is still not proven. REVIEW-06: no timeout-only capture can separate a correct fetch of transiently bad
+      input from a wrong fetch of correct input, and a CPU read is not the GPU's cache view.
+  - **Not H:** the `INDEX_BASE` dump differs from the dims.
+    - The scan then gives where else the triple lies, as an address and a mapping: the next candidate rule.
+    - Or it finds the triple nowhere: overwritten, or transient.
+  - The prefix boundaries and the final emitted IB come from the timeout probe's dump of the same job (F601's
+    tools), so the B shape and our prefix's provenance are checked from the same event.
+- **Small additions REVIEW-06 suggests:**
+  - capture times (monotonic) per dump;
+  - a second read of the slot and the `INDEX_BASE` about 1 s later, which detects instability but proves no
+    stability;
+  - the job, fence and mapping generation in the file's header.
+
+  They would mean a rebuild of the recorder unit (about 1 min) and a smoke run (about 6 min) before the loop. They
+  are useful but not needed for the H test itself, so they are optional. Without them the loop runs on 44417414 as
+  it is.
+- **The limits, as REVIEW-06 states them:** this cannot prove a hardware fetch bug. A truly discriminating fetch test
+  would need the consumer's value tied to the executing packet and a producer interval known to be immutable, or
+  instrumentation of the fetch or the guard's decision itself. That would alter the experiment and needs a separate
+  review.
+
 **Play arms for the maintainer.** At about one B per RT-on hour (F613; Poisson):
 - one B event in an arm refutes that arm at once;
 - a clean arm needs about 3 h for p ≈ 0.05.
