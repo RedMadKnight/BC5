@@ -437,3 +437,10 @@ this session's classifier refuses, so it is listed for the maintainer's morning 
 - what it decides: if the table names 0x240 with 0x860, the title's table is the source. If it names 0x240 with 0x11
   while the waves used 0x860, the CP fetched the table wrongly. If the table does not name 0x240, the value is carried,
   and the previous IB's last `USER_DATA_0` write (a host prefix or the title) is next.
+
+**Rate update (10-30, the top session's report, not read by this session).** Exp 0379's D4 at 01:36:40 hit the same
+event at t ≈ 61 s. Its fault pages were 0x8608c654000–0x8608c65b000, with program 0x909977100, dim [697 1 1],
+initiator 0x61, PFP 0xea1 / ME 0xe15 and `CP_IB1_BUFSZ` 0x38f8. The ring reset succeeded; the devcoredump is
+`20261030-013640-devcd2.txt`. Starts from the maintainer's live saves hit it in 2 of 3 bench starts (D3 did not reach
+the point), plus his own 16:25 start 1. Starts from the S6N route saves hit it in 0 of 5. The live-save start-up is a
+reproducer for F678's dispatch-journal run.
