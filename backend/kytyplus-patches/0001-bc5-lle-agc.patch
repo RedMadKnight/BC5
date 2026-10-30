@@ -44668,10 +44668,10 @@ index 0000000..6b58dd4
 +} // namespace Libs::NpCommerceDialog
 diff --git a/src/libs/libNpCppWebApi.cpp b/src/libs/libNpCppWebApi.cpp
 new file mode 100644
-index 0000000..2de9a34
+index 0000000..0e19c18
 --- /dev/null
 +++ b/src/libs/libNpCppWebApi.cpp
-@@ -0,0 +1,942 @@
+@@ -0,0 +1,951 @@
 +// SPDX-License-Identifier: GPL-2.0-only
 +// KytyPlus host library: libSceNpCppWebApi (the PS5's C++ web API — Common, SessionManager V1, TitleCloudStorage V1)
 +// for a console that is not signed in to PSN.
@@ -44687,6 +44687,9 @@ index 0000000..2de9a34
 +// message instead of returning garbage. Changes from AnyPS5: APS5_VABI -> KYTY_SYSV_ABI, NotImplemented ->
 +// the tree's EXIT, the registration through LIB_FUNC by NID (SHA1 of the mangled name, experiment 0327's calculator).
 +// AnyPS5's copyright remains with its authors; this file is GPL-2.0 as the rest of the KytyPlus host.
++//
++// The self-aliasing fix in String::append and the two Vector pushBack helpers (a source inside the buffer or the
++// storage the call is about to free or move) is AnyPS5's commit daf4eb3 (PR #9612 by Ondra97, GPL-2.0-only).
 +
 +#include "common/abi.h"
 +#include "common/assert.h"
@@ -44821,10 +44824,11 @@ index 0000000..2de9a34
 +static int VectorPushBackIntrusivePtr(IntrusivePtr* self, const IntrusivePtr* element) {
 +	VectorBody* body = VectorBodyFor(self, 1, __func__);
 +	if (body == nullptr) return -1;
++	const IntrusivePtr copy = *element;
 +	if (!VectorGrow(body, sizeof(IntrusivePtr))) return -1;
 +	auto* elements = static_cast<IntrusivePtr*>(body->elements);
-+	elements[body->size] = *element;
-+	if (element->object != nullptr) ReferenceCount(element->object, ReferenceCountOffset).fetch_add(1);
++	elements[body->size] = copy;
++	if (copy.object != nullptr) ReferenceCount(copy.object, ReferenceCountOffset).fetch_add(1);
 +	body->size += 1;
 +	return 0;
 +}
@@ -44832,7 +44836,6 @@ index 0000000..2de9a34
 +static int VectorPushBackString(IntrusivePtr* self, const CommonString* element) {
 +	VectorBody* body = VectorBodyFor(self, 2, __func__);
 +	if (body == nullptr) return -1;
-+	if (!VectorGrow(body, sizeof(CommonString))) return -1;
 +	CommonString copy   = *element;
 +	copy.referenceCount = 0;
 +	copy.buffer         = nullptr;
@@ -44843,6 +44846,10 @@ index 0000000..2de9a34
 +		if (copy.buffer == nullptr) return -1;
 +		std::memcpy(copy.buffer, element->buffer, length);
 +		copy.bufferSize = length;
++	}
++	if (!VectorGrow(body, sizeof(CommonString))) {
++		std::free(copy.buffer);
++		return -1;
 +	}
 +	static_cast<CommonString*>(body->elements)[body->size] = copy;
 +	body->size += 1;
@@ -45091,11 +45098,13 @@ index 0000000..2de9a34
 +        char* buffer = static_cast<char*>(std::malloc(capacity));
 +        if (buffer == nullptr) return -1;
 +        if (oldLength != 0) std::memcpy(buffer, self->buffer, oldLength);
++        std::memmove(buffer + oldLength, text, textLength + 1);
 +        std::free(self->buffer);
 +        self->buffer = buffer;
 +        self->bufferSize = capacity;
++        return 0;
 +    }
-+    std::memcpy(self->buffer + oldLength, text, textLength + 1);
++    std::memmove(self->buffer + oldLength, text, textLength + 1);
 +    return 0;
 +}
 +
