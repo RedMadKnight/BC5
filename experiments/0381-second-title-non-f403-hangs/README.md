@@ -376,3 +376,16 @@ The read: `head0381.py` over the 16:25 devcoredump's IB #0, the emitted IB. It l
 `DISPATCH_INDIRECT`s, with any `CONTEXT_CONTROL` / `CLEAR_STATE`, every `SET_SH_REG` value of SH 0x200–0x24f and the
 `LOAD_SH_REG_INDEX` addresses. At 2026-10-30 ~01:xx the guarded read-only ssh found an emulator running and exited
 with nothing read. It runs when the box is free.
+
+**The read (F676; 2026-10-30, the top session's GO, under exp 0379's bench lock, one file read).** The emitted IB of
+the 16:25 job (`raw/hang-1625-emitted-head.txt`) begins with the title's own `ACQUIRE_MEM` and its
+`LOAD_SH_REG_INDEX` at dword 8 (0x909842dc0, 10 pairs). The host added only a `PFP_SYNC_ME` before each
+`DISPATCH_INDIRECT` (initiator 0x65: FORCE_START on this test binary). **No host prefix stands in front: no
+`CONTEXT_CONTROL`/`CLEAR_STATE`, and no `SET_SH_REG` of `USER_DATA_0`–`2` before the first three dispatches.** The
+first `SET_SH_REG`s set `USER_DATA_7`–`14` and `3`–`14` (0x8c654c00 / 0x8c654a00 / 0x11 / …), the title's own. So
+in this job our prefixes did not write `USER_DATA_0`. The value the waves used came from the dcb's table at dword 8 if
+that table names SH 0x240, or else it was carried on the ring from an earlier IB. An earlier IB's last write could be a
+host prefix's replay, the title's own, or the table load of an earlier dcb. The table's contents are title memory, not
+in the dump. They are visible at submit through the host's table tracking (`BC5_DIRECT_DISPATCH_JOURNAL=1`, F207). The
+absence of a `cs prefix` journal line for this dcb would mean the table names `COMPUTE_PGM_LO` (`cs_inherit_at`), not
+that it names `USER_DATA_0`.
