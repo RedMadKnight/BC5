@@ -1,30 +1,45 @@
-TOK=20261031213646925905
+TOK=202610312341091381283
 lock released
-RESULT C1 runner 1 check 0 saves same CLASS CRASH_TARGET fix off crash target reached 1
-TOK=20261031213911954378
+RESULT G1 runner 1 check 0 saves same CLASS CRASH_TARGET fix off crash target reached 1
+TOK=202610312343301410180
 lock released
-RESULT A1 runner 1 check 0 saves same CLASS CRASH_TARGET fix off crash target reached 1
-TOK=20261031214136982620
+RESULT E1 runner 0 check 0 saves same CLASS NOT_ROUTED fix off crash none reached 0
+TOK=202610312347111444516
 lock released
-RESULT B1 runner 1 check 0 saves same CLASS CRASH_TARGET fix off crash target reached 1
-TOK=202610312143461010192
+RESULT E1R runner 0 check 0 saves same CLASS NOT_ROUTED fix off crash none reached 0
+TOK=202610312350551478956
 lock released
-RESULT C2 runner 1 check 0 saves same CLASS CRASH_TARGET fix off crash target reached 1
-TOK=202610312146111039519
+RESULT F1 runner 0 check 0 saves same CLASS NO_CRASH fix off crash none reached 1
+TOK=202610312354381517784
 lock released
-RESULT A2 runner 1 check 0 saves same CLASS CRASH_TARGET fix off crash target reached 1
-TOK=202610312148301067678
+RESULT E2 runner 0 check 0 saves same CLASS NOT_ROUTED fix off crash none reached 0
+TOK=202610312358181550076
 lock released
-RESULT B2 runner 1 check 0 saves same CLASS CRASH_TARGET fix off crash target reached 1
-TOK=202610312150391093895
+RESULT F2 runner 0 check 0 saves same CLASS NO_CRASH fix off crash none reached 1
+TOK=202611010001571588649
 lock released
-RESULT C3 runner 1 check 0 saves same CLASS CRASH_TARGET fix off crash target reached 1
-TOK=202610312153101120926
+RESULT G2 runner 1 check 0 saves same CLASS CRASH_TARGET fix off crash target reached 1
+TOK=202611010004301617825
 lock released
-RESULT A3 runner 1 check 0 saves same CLASS CRASH_TARGET fix off crash target reached 1
-TOK=202610312155371150659
+RESULT E3 runner 0 check 0 saves same CLASS NOT_ROUTED fix off crash none reached 0
+TOK=202611010008071650585
 lock released
-RESULT B3 runner 1 check 0 saves same CLASS CRASH_TARGET fix off crash target reached 1
-control: 3 of 3 crashed at the site
-RULE arm A REFUTED: 0 clean, 3 at the site, 0 elsewhere, of 3
-RULE arm B REFUTED: 0 clean, 3 at the site, 0 elsewhere, of 3
+RESULT F3 runner 0 check 0 saves same CLASS NO_CRASH fix off crash none reached 1
+TOK=202611010011261687561
+lock released
+RESULT E4 runner 0 check 0 saves same CLASS NOT_ROUTED fix off crash none reached 0
+TOK=202611010014571721934
+lock released
+RESULT F4 runner 0 check 0 saves same CLASS NO_CRASH fix off crash none reached 1
+TOK=202611010018311760092
+lock released
+RESULT G3 runner 0 check 0 saves same CLASS NO_CRASH fix off crash none reached 1
+TOK=202611010022041799816
+lock released
+RESULT E5 runner 0 check 0 saves same CLASS NOT_ROUTED fix off crash none reached 0
+TOK=202611010025341834210
+lock released
+RESULT F5 runner 0 check 0 saves same CLASS NO_CRASH fix off crash none reached 1
+control: 2 of 3 crashed at the site
+RULE arm E OPEN: 0 clean, 0 at the site, 0 elsewhere, of 5
+RULE arm F HOLDS: 5 clean, 0 at the site, 0 elsewhere, of 5

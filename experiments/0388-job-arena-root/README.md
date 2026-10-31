@@ -109,3 +109,24 @@ Order G1 E1 F1 E2 F2 G2 E3 F3 E4 F4 G3 E5 F5, about 4 min each, about 52 min, de
 **Limits of the catchers (R11).** Both use global state with no pairing to a signal, a sema generation or a job. A later signal overwrites the time of an earlier one, and an old credit or a return between the snapshot and the signal changes the count. So the bands do not measure one worker's wake-to-run time, and a wait that returned in time does not show that the target job was taken. They support only the effect of the bounded wait on the outcome and the change in those counts. `JobArenaFix` goes only after the maintainer's own fight.
 
 **Local tests so far.** `patch0388.py` applies (5 edits on `semaphore.cpp`), the scripts parse, `check0388.py rule` tried on sample rows, `test_box0388.sh` 14 of 14. The patched units are not compiled until the slot.
+
+## Second cycle's result (2026-10-31 to 11-01, F795–F798)
+
+Binary `caede695c1f41c2b322c9a04bfec5bf1`, order as fixed, with one replacement E1R. The rule's output: control 2 of 3 at the site, arm E OPEN, arm F HOLDS.
+
+| arm | runs | at the site | no crash, reached the fight | not routed | flips/s, 120–170 s |
+|---|---|---|---|---|---|
+| G, control | 3 | 2 | 1 (G3) | 0 | 33.5 (G3) |
+| E, spin 500 µs | 5 + E1R | 0 | 0 | 6 | 16.7 (E3) |
+| F, until a wait returns, at most 500 µs | 5 | 0 | 5 | 0 | 27.8–29.1 |
+
+No crash elsewhere, no amdgpu kernel line, GPU reset or devcoredump. Exposure in F: about 570,000 push spins per run, of which about 430,000 saw a wait return within the limit. The job threads stayed at 15.
+
+- **F795.** Arm F held 5 of 5 by the rule fixed before the build. The controls of both cycles crashed 5 of 6.
+- **F796.** Arm E did not test the candidate: every run missed the gameplay gate and got its inputs late (P2 at 120–123 s, gameplay 0). A fixed 500 µs on about 270,000 pushes halves the frame rate.
+- **F797.** Arm F costs frame rate: about 28–29 flips/s against 33.5 in G3, about 15 %. About 140,000 spins per run ran to the limit, which is up to 70 s of the main thread's 180 s.
+- **F798.** G3 ran 180 s without the crash, so the crash is not certain on this route. It is frequent, not fixed; F792's 9 of 9 was without a spin and in the first cycle.
+
+**Limits.** 180 s on one route, after a fight start at about 107 s. By R11 the counts are not paired with a signal or a job, so this shows the effect of the bounded wait on the outcome, not why it works. The cause of the worker's lateness is not shown. Arm F is a host-side timing change with a cost, not a shown root fix.
+
+**Verdict.** Arm F is the first host candidate that holds with `JobArenaFix` off. The workaround stays until the maintainer's own fight passes with F on and the fix off. It is not in any shared build.
