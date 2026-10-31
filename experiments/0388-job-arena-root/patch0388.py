@@ -57,7 +57,7 @@ static void Bc5ApplyAffinity(Pthread thread, const char* why) {
 EDITS = {
     "src/kernel/pthread.cpp": [
         ('#include "common/assert.h"\n', INCLUDE + '#include "common/assert.h"\n'),
-        ("#include <atomic>\n", "#include <atomic>\n#include <cinttypes>\n#include <cstdio>\n#include <cstdlib>\n"),
+        ("#include <atomic>\n", "#include <atomic>\n#include <cinttypes>\n#include <cstdio>\n#include <cstdlib>\n#include <sched.h>\n"),
         ("static void* RunThread(void* arg) {\n", HELPERS_PTHREAD + "static void* RunThread(void* arg) {\n"),
         ('\tBc5ApplyGuestPriority(thread, "start");\n#endif\n',
          '\tBc5ApplyGuestPriority(thread, "start");\n\tBc5ApplyAffinity(thread, "start");\n#endif\n'),
@@ -73,6 +73,7 @@ EDITS = {
     ],
     "src/libs/libKernel.cpp": [
         ('#include "common/abi.h"\n', INCLUDE + '#include "common/abi.h"\n'),
+        ("#include <atomic>\n", "#include <atomic>\n#include <sched.h>\n"),
         ("static KYTY_SYSV_ABI int KernelGetCurrentCpu() {\n\tPRINT_NAME();\n\n\treturn 0;\n}\n",
          "static KYTY_SYSV_ABI int KernelGetCurrentCpu() {\n\tPRINT_NAME();\n\n"
          "\t// BC5 (experiment 0388): the real CPU, inside the thread's guest mask.\n"
