@@ -12,9 +12,12 @@ MAP = {
 }
 ARMS = {
     "C": "KYTY_BC5_0388_TRACE=1",
+    "G": "KYTY_BC5_0388_TRACE=1",  # the second cycle's control
     "A": "KYTY_BC5_0388_CPU_MASK=1 KYTY_BC5_0388_TRACE=1",
     "B": "KYTY_BC5_0388_CPU_MASK=1 KYTY_BC5_0388_CURRENT_CPU=1 KYTY_BC5_0388_APPLY_AFFINITY=1 KYTY_BC5_0388_TRACE=1",
     "D": "KYTY_BC5_0388_PUSH_SPIN_US=200 KYTY_BC5_0388_TRACE=1",
+    "E": "KYTY_BC5_0388_PUSH_SPIN_US=500 KYTY_BC5_0388_TRACE=1",
+    "F": "KYTY_BC5_0388_PUSH_UNTIL_TAKEN_US=500 KYTY_BC5_0388_TRACE=1",
 }
 
 
@@ -73,16 +76,16 @@ s = s[:i] + '''def rule(path):
     rows = [x.split() for x in open(path) if x.strip()]
     def arm(a):
         return [r for r in rows if r[0].startswith(a)]
-    site = sum(r[3] == "target" for r in arm("C"))
-    print(f"control: {site} of {len(arm('C'))} crashed at the site")
+    site = sum(r[3] == "target" for r in arm("G"))
+    print(f"control: {site} of {len(arm('G'))} crashed at the site")
     if site < 2:
         print("RULE AMBIGUOUS the control did not crash; no conclusion on any arm")
         return 0
-    for a in "AB":
+    for a in "EF":
         clean = sum(r[2] == "NO_CRASH" for r in arm(a))
         hit = sum(r[3] == "target" for r in arm(a))
         other = sum(r[2] == "CRASH_OTHER" for r in arm(a))
-        verdict = "HOLDS" if clean == 3 and hit == 0 and other == 0 else "REFUTED" if hit else "OPEN"
+        verdict = "HOLDS" if clean == 5 and hit == 0 and other == 0 else "REFUTED" if hit else "OPEN"
         print(f"RULE arm {a} {verdict}: {clean} clean, {hit} at the site, {other} elsewhere, of {len(arm(a))}")
     return 0
 
@@ -91,13 +94,13 @@ s = s[:i] + '''def rule(path):
 files["check0388.py"] = s
 
 s = files["series0388.sh"]
-s = R(s, "ON, OFF, ON, OFF, ON, OFF, one go0388.sh at a time, under one deadline of 35 min.", "C1 A1 B1 C2 A2 B2 C3 A3 B3, one go0388.sh at a time, under one deadline of 52 min.")
-s = R(s, "LIMIT=2100;", "LIMIT=3120;")
-s = R(s, "for t in K1N:on K1F:off K2N:on K2F:off K3N:on K3F:off; do", "for t in C1:off A1:off B1:off C2:off A2:off B2:off C3:off A3:off B3:off; do")
+s = R(s, "ON, OFF, ON, OFF, ON, OFF, one go0388.sh at a time, under one deadline of 35 min.", "G1 E1 F1 E2 F2 G2 E3 F3 E4 F4 G3 E5 F5, one go0388.sh at a time, under one deadline of 75 min.")
+s = R(s, "LIMIT=2100;", "LIMIT=4500;")
+s = R(s, "for t in K1N:on K1F:off K2N:on K2F:off K3N:on K3F:off; do", "for t in G1:off E1:off F1:off E2:off F2:off G2:off E3:off F3:off E4:off F4:off G3:off E5:off F5:off; do")
 files["series0388.sh"] = s
 
 s = files["pins0388.env"]
-s = re.sub(r"NORMAL=[0-9a-f]+", "NORMAL=8801066653a7ce491b9be3f753ec3b30", s)
+s = re.sub(r"NORMAL=[0-9a-f]+", "NORMAL=FILL", s)  # the second build, filled after it
 s = re.sub(r"INPUT_CFG=[0-9a-f]+", "INPUT_CFG=a5259c60c2beed35f5565f4744255ac5", s)
 s = re.sub(r"LEARNED=[0-9a-f]+", "LEARNED=5b92521f646a897b8957cec4cd754ba4", s)
 files["pins0388.env"] = s

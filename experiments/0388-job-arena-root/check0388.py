@@ -26,9 +26,12 @@ FIXLINE = re.compile(r"job-arena fix (ON|OFF) for PPSA03671")
 
 ARMS = {
     "C": "KYTY_BC5_0388_TRACE=1",
+    "G": "KYTY_BC5_0388_TRACE=1",
     "A": "KYTY_BC5_0388_CPU_MASK=1 KYTY_BC5_0388_TRACE=1",
     "B": "KYTY_BC5_0388_CPU_MASK=1 KYTY_BC5_0388_CURRENT_CPU=1 KYTY_BC5_0388_APPLY_AFFINITY=1 KYTY_BC5_0388_TRACE=1",
     "D": "KYTY_BC5_0388_PUSH_SPIN_US=200 KYTY_BC5_0388_TRACE=1",
+    "E": "KYTY_BC5_0388_PUSH_SPIN_US=500 KYTY_BC5_0388_TRACE=1",
+    "F": "KYTY_BC5_0388_PUSH_UNTIL_TAKEN_US=500 KYTY_BC5_0388_TRACE=1",
 }
 
 
@@ -177,16 +180,16 @@ def rule(path):
     rows = [x.split() for x in open(path) if x.strip()]
     def arm(a):
         return [r for r in rows if r[0].startswith(a)]
-    site = sum(r[3] == "target" for r in arm("C"))
-    print(f"control: {site} of {len(arm('C'))} crashed at the site")
+    site = sum(r[3] == "target" for r in arm("G"))
+    print(f"control: {site} of {len(arm('G'))} crashed at the site")
     if site < 2:
         print("RULE AMBIGUOUS the control did not crash; no conclusion on any arm")
         return 0
-    for a in "AB":
+    for a in "EF":
         clean = sum(r[2] == "NO_CRASH" for r in arm(a))
         hit = sum(r[3] == "target" for r in arm(a))
         other = sum(r[2] == "CRASH_OTHER" for r in arm(a))
-        verdict = "HOLDS" if clean == 3 and hit == 0 and other == 0 else "REFUTED" if hit else "OPEN"
+        verdict = "HOLDS" if clean == 5 and hit == 0 and other == 0 else "REFUTED" if hit else "OPEN"
         print(f"RULE arm {a} {verdict}: {clean} clean, {hit} at the site, {other} elsewhere, of {len(arm(a))}")
     return 0
 

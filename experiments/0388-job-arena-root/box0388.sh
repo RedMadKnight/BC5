@@ -58,7 +58,7 @@ build() {
     rc=$?; echo "build rc $rc; errors $(grep -c 'error:' "$R/build.out")"
     grep -n "error:\|undefined\|COMPILE FAILED" "$R/build.out" | head -20
     [ "$rc" = 0 ] && [ -x "$bin" ] || stop "build failed: $R/build.out"
-    [ "$(strings "$bin" | grep -c 'KYTY_BC5_0388_')" -ge 5 ] || stop "the switches are not in the binary"
+    [ "$(strings "$bin" | grep -c 'KYTY_BC5_0388_')" -ge 6 ] || stop "the switches are not in the binary"
     echo "private binary $(md5sum < "$bin" | cut -d' ' -f1), shared before $shared, after $(md5sum < "$B/src/kyty_emulator" | cut -d' ' -f1)"
     [ "$shared" = "$(md5sum < "$B/src/kyty_emulator" | cut -d' ' -f1)" ] || stop "the shared binary changed"
 }
