@@ -157,8 +157,7 @@ class Box:
             cd bc5-work; ln -s {r}/bc5-work/resource exp0330/wd/resource
             {{ m() {{ md5sum < "$1" | cut -d' ' -f1; }}
               echo BIN_MD5=$(m kytyplus-build/src/kyty_emulator); echo ARCHIVE_MD5=$(m backend-ubuntu/libbc5_backend.a)
-              echo LAUNCHER_MD5=$(m play-pkg.sh); echo RUN_ENV_MD5=$(m bc5-run.env)
-              echo LIVE_SAVES=$(cd _SaveData && find PPSA03671 -type f -exec md5sum {{}} + | LC_ALL=C sort -k2 | md5sum | cut -c1-16); }} > ../pins.sh''')
+              echo LAUNCHER_MD5=$(m play-pkg.sh); echo RUN_ENV_MD5=$(m bc5-run.env); }} > ../pins.sh''')
         assert rc.returncode == 0, rc.stderr
 
     def copy_of(self, t):
@@ -430,17 +429,33 @@ def claim_any_failed_pin_gives_the_lock_back(b):
     b.write("bc5-work/backend-ubuntu/libbc5_backend.a", "other\n")
     again("the archive is not")
     b.write("bc5-work/backend-ubuntu/libbc5_backend.a", orig)
-    orig = b.read("bc5-work/_SaveData/PPSA03671/SAVE1/data.bin")
-    b.write("bc5-work/_SaveData/PPSA03671/SAVE1/data.bin", "played on\n")
-    again("live saves")
-    assert b.read("bc5-work/_SaveData/PPSA03671/SAVE1/data.bin") == "played on\n"   # never restored
-    b.write("bc5-work/_SaveData/PPSA03671/SAVE1/data.bin", orig)
+    (b.w / "_SaveData").rename(b.w / "_SaveData.aside")
+    again("cannot be read")
+    (b.w / "_SaveData.aside").rename(b.w / "_SaveData")
     for flag, text in (("compress-runs", "compression"), ("disk-full", "disk"), ("no-dmesg", "dmesg")):
         b.flag(flag)
         again(text)
         (b.root / flag).unlink()
     shutil.rmtree(b.root / "bc5-data/captures/devcoredump")
     again("devcoredump")
+
+
+@case
+def the_claim_reads_the_live_saves_fresh_and_the_series_holds_that_value(b):
+    b.write("bc5-work/_SaveData/PPSA03671/SAVE1/data.bin", "the maintainer played at 17:01\n")
+    out = b.claim()
+    held = b.read("bc5-work/exp0385/live.sum").strip()
+    assert re.fullmatch(r"[0-9a-f]{16}", held) and f"live saves {held}" in out, out
+    assert b.read("bc5-work/_SaveData/PPSA03671/SAVE1/data.bin") == "the maintainer played at 17:01\n"
+
+
+@case
+def live_saves_that_change_after_the_claim_refuse_the_next_run_and_are_not_restored(b):
+    b.ready()
+    b.write("bc5-work/_SaveData/PPSA03671/SAVE1/data.bin", "played on\n")
+    r = b.box("run", b.token, "K4")
+    assert r.returncode == 1 and "ask the top session" in r.stdout and not (b.e / "r-K4").exists(), r.stdout
+    assert b.read("bc5-work/_SaveData/PPSA03671/SAVE1/data.bin") == "played on\n"
 
 
 @case

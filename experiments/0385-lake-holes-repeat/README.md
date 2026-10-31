@@ -117,7 +117,7 @@ launched.
 | Backend archive | md5 3292bdaf0aca16ca9922a7f732386aa8 | D19 |
 | `play-pkg.sh` | md5 55531ab6277d6816c0603a7a6c6d62b4 | the top session: unchanged by D19 |
 | `bc5-run.env` | md5 cb8ad5fcfd6eac2a5cafac2a501b3eba | the top session: unchanged by D19 |
-| Live saves | 52ee672646ca6087, C locale | the top session. Compared only, never restored |
+| Live saves | no fixed pin, because the maintainer's play moves it: read under the claim's lock, printed by the claim, and held for the series in `live.sum` (C locale) | this run. Compared only, never restored |
 | `saves-lake-1153` | no earlier value exists: its sum is recorded under the lock at claim, then checked before and after each run | this run |
 | `exp0330/wd`'s links | the listing's sha256 is recorded at setup; every link must point into `~/bc5-work` | the layout of D19's smokes |
 | Our kit | `kit.sha256`, checked on the box by setup | this commit |
