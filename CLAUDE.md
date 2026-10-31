@@ -61,6 +61,7 @@ experiments/
 - **Tests first for parsers.** Every binary format reader gets: a synthetic fixture generator (we can always build a valid container ourselves), round-trip tests, and fuzz/property tests for the header parsers.
 - **Small commits with conventional messages** (`feat(mount): …`, `fix(agc): …`, `docs: …`, `exp: 0003 userptr mapping`). Never commit generated binaries or fixtures larger than 1 MB; generate them in tests.
 - **When unsure about a hardware fact, write the experiment, not the assumption.** An experiment directory with a clear question and a runnable script is a valid deliverable on its own.
+- **Fixes and catchers first, then test** (the maintainer, 2026-10-31). When there are candidate fixes or a catcher for a problem, put all of them into one private test build at once, each behind its own on/off switch, and only then test. Do not diagnose first or build them one at a time. Shared builds still change only by decision.
 - **Ask before**: adding a new dependency, changing the repository layout, touching anything that submits to the GPU, or when a task would need material covered by the hard rules.
 - Keep `docs/HANDOFF.md` current: when an open question is answered, move it to "Findings" with its source, and update `README.md` if the public story changes.
 

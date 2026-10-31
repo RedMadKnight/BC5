@@ -5,6 +5,7 @@
 #include "bc5/host_indirect.hpp"
 #include "bc5/ib_split.hpp"
 #include "bc5/indirect_check.hpp"
+#include "bc5/lake_probe.hpp"
 #include "bc5/shadow_labels.hpp"
 
 #include <amdgpu.h>
@@ -26,6 +27,7 @@
 #include <mutex>
 #include <cstdlib>
 #include <map>
+#include <memory>
 #include <set>
 
 namespace bc5::direct {
@@ -288,6 +290,14 @@ struct Device::Impl {
     amdgpu_bo_handle args_slot = nullptr;
     amdgpu_va_handle args_slot_vah = nullptr;
     std::uint64_t args_slot_va = 0;
+    // Experiment 0385: BC5_DIRECT_LAKE_CTL=<file> — the test build's lake switches, re-read during the run
+    // (bc5/lake_probe.hpp). BC5_DIRECT_LAKE_OUT=<file>: where zpass's records go. Unset: none of this runs.
+    static constexpr std::uint32_t kLakeBytes = 16u << 20;
+    std::unique_ptr<lake_probe::Session> lake;
+    amdgpu_bo_handle lake_bo = nullptr;
+    amdgpu_va_handle lake_vah = nullptr;
+    void *lake_cpu = nullptr;
+    std::uint64_t lake_va = 0;
     void *shadow_cpu = nullptr;
     state_stack::Tracker tracker; // Device::set_state_stack
     static constexpr std::uint64_t kShadowVa = 0x1000'0400'0000ull; // 64 MiB above the scratch
@@ -681,6 +691,31 @@ std::unique_ptr<Device> Device::open(const std::string &node, const OpenOptions 
         std::fprintf(stderr, "bc5-direct: OA BO %u: %s (%d)\n", opts.oa_count, orc == 0 ? "ok" : "FAILED", orc);
         if (orc != 0) d->impl_->oa = nullptr;
     }
+    if (const char *e = std::getenv("BC5_DIRECT_LAKE_CTL"); env_on(e)) { // experiment 0385
+        Impl &im = *d->impl_;
+        const char *o = std::getenv("BC5_DIRECT_LAKE_OUT");
+        im.lake = std::make_unique<lake_probe::Session>(e, env_on(o) ? o : "");
+        std::fprintf(stderr, "bc5-direct: experiment 0385 switch: the lake switches are read from %s\n", e);
+        if (env_on(o)) {
+            amdgpu_bo_alloc_request req{}; // the pattern of F574's slot: GTT, below 4 GiB, listed in every submission
+            req.alloc_size = Impl::kLakeBytes;
+            req.phys_alignment = 4096;
+            req.preferred_heap = AMDGPU_GEM_DOMAIN_GTT;
+            int lrc = amdgpu_bo_alloc(im.dev, &req, &im.lake_bo);
+            if (lrc == 0) lrc = amdgpu_bo_cpu_map(im.lake_bo, &im.lake_cpu);
+            if (lrc == 0) {
+                std::memset(im.lake_cpu, 0, Impl::kLakeBytes);
+                lrc = amdgpu_va_range_alloc(im.dev, amdgpu_gpu_va_range_general, Impl::kLakeBytes, 4096, 0, &im.lake_va,
+                                            &im.lake_vah, AMDGPU_VA_RANGE_32_BIT);
+            }
+            if (lrc == 0)
+                lrc = amdgpu_bo_va_op_raw(im.dev, im.lake_bo, 0, Impl::kLakeBytes, im.lake_va,
+                                          AMDGPU_VM_PAGE_READABLE | AMDGPU_VM_PAGE_WRITEABLE, AMDGPU_VA_OP_MAP);
+            if (lrc == 0) im.lake->attach(im.lake_va, im.lake_cpu, Impl::kLakeBytes);
+            std::fprintf(stderr, "bc5-direct: experiment 0385 zpass records at 0x%llx: %s (%d)\n",
+                         static_cast<unsigned long long>(im.lake_va), lrc == 0 ? "ok" : "FAILED, zpass is off", lrc);
+        }
+    }
     if (d->impl_->env_args_copy) { // experiment 0380 (F574): the copy's slot below 4 GiB
         amdgpu_bo_alloc_request req{};
         req.alloc_size = 4096;
@@ -772,6 +807,12 @@ Device::~Device() {
         amdgpu_bo_free(impl_->shadow);
     }
     if (impl_->gws) amdgpu_bo_free(impl_->gws);
+    if (impl_->lake_bo) { // experiment 0385
+        if (impl_->lake_cpu) amdgpu_bo_cpu_unmap(impl_->lake_bo);
+        amdgpu_bo_va_op_raw(impl_->dev, impl_->lake_bo, 0, Impl::kLakeBytes, impl_->lake_va, 0, AMDGPU_VA_OP_UNMAP);
+        amdgpu_bo_free(impl_->lake_bo);
+        if (impl_->lake_vah) amdgpu_va_range_free(impl_->lake_vah);
+    }
     if (impl_->args_slot) { // experiment 0380 (F574)
         amdgpu_bo_va_op_raw(impl_->dev, impl_->args_slot, 0, 4096, impl_->args_slot_va, 0, AMDGPU_VA_OP_UNMAP);
         amdgpu_bo_free(impl_->args_slot);
@@ -1276,6 +1317,12 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     if (state_stack_ && opt.mapped && !comp) { // the context registers are the GFX ring's
         impl_->tracker.apply_in_place(ib, main_out, opt.mapped, r.state_stack);
     }
+    if (impl_->lake && !comp) { // experiment 0385; GPU VA == guest VA, as the 0341 histogram reads them
+        impl_->lake->step(main_out, [&opt](std::uint64_t va, std::uint64_t bytes) -> const std::uint32_t * {
+            if (!opt.mapped || !opt.mapped(va, bytes)) return nullptr;
+            return reinterpret_cast<const std::uint32_t *>(va);
+        });
+    }
     r.prep_tracker_ms = now_ms() - t_phase;
     t_phase = now_ms();
     // The CU mask for registers loaded from memory (phase 3 step f): a SET_SH_REG after the load.
@@ -1557,6 +1604,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     if (with_gds && impl_->gws) bos.push_back(impl_->gws);
     if (impl_->shadow) bos.push_back(impl_->shadow);
     if (impl_->args_slot) bos.push_back(impl_->args_slot); // experiment 0380 (F574)
+    if (impl_->lake_bo) bos.push_back(impl_->lake_bo);     // experiment 0385
     bool draws = !short_possible;
     if (short_possible) {
         draws = has_draw_or_dispatch(dst + pieces[0].off, main_n);

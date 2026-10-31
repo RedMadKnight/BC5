@@ -114,6 +114,11 @@ private:
     PacketState packets_;
 };
 
+// Experiment 0385 (F761): on, both walkers stop a buffer at an INDIRECT_BUFFER CHAIN (bit 20 of the size
+// dword), which replaces the rest of the buffer, instead of going on into its dead tail. COND_EXEC stays
+// followed as if taken: that needs the flag's value at run time. Off is what every shared build does.
+void set_chain_stop(bool on);
+
 // `before`: the state after the frame's earlier buffers. Draws and dispatches: Mesa sid.h
 // (DISPATCH_DIRECT 0x15, DISPATCH_INDIRECT 0x16, DRAW_INDIRECT 0x24, DRAW_INDEX_INDIRECT 0x25,
 // DRAW_INDEX_2 0x27, DRAW_INDIRECT_MULTI 0x2C, DRAW_INDEX_AUTO 0x2D, DRAW_INDEX_OFFSET_2 0x35,
