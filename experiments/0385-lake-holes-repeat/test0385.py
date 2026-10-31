@@ -429,9 +429,6 @@ def claim_any_failed_pin_gives_the_lock_back(b):
     b.write("bc5-work/backend-ubuntu/libbc5_backend.a", "other\n")
     again("the archive is not")
     b.write("bc5-work/backend-ubuntu/libbc5_backend.a", orig)
-    (b.w / "_SaveData").rename(b.w / "_SaveData.aside")
-    again("cannot be read")
-    (b.w / "_SaveData.aside").rename(b.w / "_SaveData")
     for flag, text in (("compress-runs", "compression"), ("disk-full", "disk"), ("no-dmesg", "dmesg")):
         b.flag(flag)
         again(text)
@@ -441,21 +438,20 @@ def claim_any_failed_pin_gives_the_lock_back(b):
 
 
 @case
-def the_claim_reads_the_live_saves_fresh_and_the_series_holds_that_value(b):
-    b.write("bc5-work/_SaveData/PPSA03671/SAVE1/data.bin", "the maintainer played at 17:01\n")
-    out = b.claim()
-    held = b.read("bc5-work/exp0385/live.sum").strip()
-    assert re.fullmatch(r"[0-9a-f]{16}", held) and f"live saves {held}" in out, out
-    assert b.read("bc5-work/_SaveData/PPSA03671/SAVE1/data.bin") == "the maintainer played at 17:01\n"
+def the_live_saves_are_no_gate_and_are_never_touched(b):
+    b.write("bc5-work/_SaveData/PPSA03671/SAVE1/data.bin", "the maintainer played\n")
+    b.claim()
+    assert not (b.e / "live.sum").exists()
+    assert b.read("bc5-work/_SaveData/PPSA03671/SAVE1/data.bin") == "the maintainer played\n"
 
 
 @case
-def live_saves_that_change_after_the_claim_refuse_the_next_run_and_are_not_restored(b):
+def live_saves_that_change_during_a_run_stop_nothing_and_stay_as_they_are(b):
+    b.hook("after-manifest", '''echo "played" > "$W/_SaveData/PPSA03671/SAVE1/data.bin"''')
     b.ready()
-    b.write("bc5-work/_SaveData/PPSA03671/SAVE1/data.bin", "played on\n")
     r = b.box("run", b.token, "K4")
-    assert r.returncode == 1 and "ask the top session" in r.stdout and not (b.e / "r-K4").exists(), r.stdout
-    assert b.read("bc5-work/_SaveData/PPSA03671/SAVE1/data.bin") == "played on\n"
+    assert r.returncode == 0, r.stdout[-500:]
+    assert b.read("bc5-work/_SaveData/PPSA03671/SAVE1/data.bin") == "played\n"
 
 
 @case
@@ -775,13 +771,6 @@ def stop_kernel_log_unreadable_during_the_run(b):
 def stop_devcoredump_after_the_run(b):
     b.hook("after-watch-loop", '''echo dump > "$DATA/captures/devcoredump/x.txt"''')
     stop_case(b, None, "devcoredump")
-
-
-@case
-def stop_live_saves_changed_during_the_run_and_nothing_restored(b):
-    b.hook("after-manifest", '''echo "played" > "$W/_SaveData/PPSA03671/SAVE1/data.bin"''')
-    stop_case(b, None, "live changed")
-    assert b.read("bc5-work/_SaveData/PPSA03671/SAVE1/data.bin") == "played\n"
 
 
 @case
@@ -1338,7 +1327,7 @@ def a_run_qualifies_on_its_all_off_shots_only(b):
     def w(n, t):
         (d / ("K4" + n)).write_text(t, newline="\n")
     w(".kernel.txt", "lines 0\ndevcoredumps 0\n")
-    w(".saves.txt", "live a want a\nlake b want b\nlearned c want c\n")
+    w(".saves.txt", "lake b want b\nlearned c want c\n")
     w(".manifest.txt", "MANIFEST PASS\n")
     w(".route.txt", "bench_rc 0\npoller_rc 0\nsave_read 1\ncapped 0\nana_rc 0\n")
     w(".journal.txt", "path /p\nrtoff 0\nskip 0\ntimeouts 0\nflips 2000\n")
@@ -1471,7 +1460,7 @@ def an_empty_count_is_never_a_zero(b):
     def w(n, t):
         (d / ("K4" + n)).write_text(t, newline="\n")
     w(".kernel.txt", "lines 0\ndevcoredumps 0\n")
-    w(".saves.txt", "live a want a\nlake b want b\nlearned c want c\n")
+    w(".saves.txt", "lake b want b\nlearned c want c\n")
     w(".manifest.txt", "x=1\nMANIFEST PASS\n")
     w(".route.txt", "bench_rc 0\npoller_rc 0\nsave_read 1\ncapped 0\n")
     w(".pl.txt", PL_OK)
@@ -1480,11 +1469,11 @@ def an_empty_count_is_never_a_zero(b):
     w(".journal.txt", "path /p\nrtoff \nskip 0\ntimeouts 0\nflips 2000\n")
     assert "could not be read" in " ".join(gates.run_check(str(d), "K4", "pre")[0])
     w(".journal.txt", "path /p\nrtoff 0\nskip 0\ntimeouts 0\nflips 2000\n")
-    w(".saves.txt", "live  want a\nlake b want b\nlearned c want c\n")
+    w(".saves.txt", "lake  want b\nlearned c want c\n")
     assert gates.run_check(str(d), "K4", "pre")[0]
     (d / "K4.saves.txt").unlink()
     assert gates.run_check(str(d), "K4", "pre")[0]
-    w(".saves.txt", "live a want a\nlake b want b\nlearned c want c\n")
+    w(".saves.txt", "lake b want b\nlearned c want c\n")
     w(".kernel.txt", "lines 0\n")
     assert gates.run_check(str(d), "K4", "pre")[0]
 

@@ -215,8 +215,8 @@ def run_check(exp, tag, stage):
     if number(k, "devcoredumps") != 0:
         stop.append("a devcoredump, or no devcoredump record")
     saves = read(p(".saves.txt"))
-    rows = re.findall(r"^(live|lake|learned) (\S*) want (\S*)$", saves or "", re.M)
-    if {r[0] for r in rows} != {"live", "lake", "learned"} or len(rows) != 3:
+    rows = re.findall(r"^(lake|learned) (\S*) want (\S*)$", saves or "", re.M)
+    if {r[0] for r in rows} != {"lake", "learned"} or len(rows) != 2:
         stop.append("no saves record")
     for name, got, want in rows:
         if not got or got != want:

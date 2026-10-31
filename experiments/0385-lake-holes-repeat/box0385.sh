@@ -30,7 +30,6 @@ LAKE=$W/saves-lake-1153; SELF=$E/box0385.sh; TB=$E/tb; TB_BIN=$TB/kyty_emulator
 
 BIN_MD5=78f251729b06001d67d642ff06773758; ARCHIVE_MD5=3292bdaf0aca16ca9922a7f732386aa8
 LAUNCHER_MD5=55531ab6277d6816c0603a7a6c6d62b4; RUN_ENV_MD5=cb8ad5fcfd6eac2a5cafac2a501b3eba
-LIVE_SAVES=""   # no fixed pin, the maintainer's play moves it: read under the claim, then held in $E/live.sum (C locale)
 SERIES_S=2700; GRACE=120; RUN_S=780; EMU_S=560; BENCH_S=500; ANA_S=150; BUILD_S=420; EMU_WAIT=60
 REAP_TERM=15; REAP_KILL=10; REAP_WAIT=40; WATCH_NAP=3; WATCH_WAIT=25
 SERIES=53; STEP=5; SLOTWAIT=5; LOADWAIT=60; KEYWAIT=120; TAGS="K4 K5 K6"; DISK_MAX=80; DISK_STOP=90
@@ -77,8 +76,6 @@ load() {
     [ -n "$LOCKLINE" ] || die "no lock line in $E"
     DEADLINE=$(rd "$E/deadline")
     case "$DEADLINE" in "" | *[!0-9]*) die "no valid deadline in $E" ;; esac
-    LIVE_SAVES=$(rd "$E/live.sum")
-    [ -n "$LIVE_SAVES" ] || die "no live saves sum in $E"
     marks
 }
 state() { rd "$ST"; }
@@ -248,17 +245,14 @@ stop_run() {
     return 0
 }
 
-# The two identities the review asks for: the live saves (compared, never restored) and the source lake save.
-saves_sum() { (cd "$W/_SaveData" && find PPSA03671 -type f -exec md5sum {} + | sort -k2 | md5sum | cut -c1-16); }
+# The sample: one named snapshot of the lake save, identified by its sum, and a private copy reset from it. The live saves are
+# neither read nor gated (the maintainer, 2026-10-31: the saves are only copied for these repeatable runs).
 lake_sum() { (cd "$LAKE" && find . -type f -exec md5sum {} + | sort -k2 | md5sum | cut -d' ' -f1); }
 pins_why() {   # prints the first pin that does not hold
     [ "$(m "$W/kytyplus-build/src/kyty_emulator")" = "$BIN_MD5" ] || { echo "the binary is not $BIN_MD5"; return; }
     [ "$(m "$W/backend-ubuntu/libbc5_backend.a")" = "$ARCHIVE_MD5" ] || { echo "the archive is not $ARCHIVE_MD5"; return; }
     [ "$(m "$W/play-pkg.sh")" = "$LAUNCHER_MD5" ] || { echo "the launcher is not $LAUNCHER_MD5"; return; }
     [ "$(m "$W/bc5-run.env")" = "$RUN_ENV_MD5" ] || { echo "bc5-run.env is not $RUN_ENV_MD5"; return; }
-    local s; s=$(saves_sum)
-    [ -n "$s" ] || { echo "the live saves cannot be read"; return; }
-    [ -z "$LIVE_SAVES" ] || [ "$s" = "$LIVE_SAVES" ] || { echo "live saves $s, not $LIVE_SAVES: ask the top session"; return; }
     [ -d "$LAKE" ] && [ ! -L "$LAKE" ] || { echo "$LAKE is not a plain directory"; return; }
     [ -z "$(find "$LAKE" -type l -print -quit 2> /dev/null)" ] || { echo "$LAKE holds a link"; return; }
     compress_idle || { echo "the capture compression runs"; return; }
@@ -288,15 +282,13 @@ cmd_claim() {
     try_put "$E/lock.line" "$LOCKLINE" || unclaim "write failed: lock.line"
     try_put "$E/deadline" "$DEADLINE" || unclaim "write failed: deadline"
     try_put "$E/lake.sum" "$(lake_sum)" || unclaim "write failed: lake.sum"
-    LIVE_SAVES=$(saves_sum)                     # under the lock, nothing of ours has run: the series holds this one
-    [ -n "$LIVE_SAVES" ] && try_put "$E/live.sum" "$LIVE_SAVES" || unclaim "write failed: live.sum"
     try_put "$E/boot.id" "$(boot_id)" || unclaim "write failed: boot.id"
     line="water exp 0385 | claimed: K4-K6 lake bench, RT on, build ${BIN_MD5:0:8}, token $TOKEN, until the deadline $DEADLINE | $(date '+%F %T')"
     queue_try "$line" || unclaim "queue write failed"
     try_put "$ST" claimed || unclaim "write failed: state"
     hook claimed
     echo "TOKEN=$TOKEN"
-    echo "kernel $(uname -r); live saves $LIVE_SAVES (C locale); lake save $(cat "$E/lake.sum"); until $(date -d "@$DEADLINE" '+%F %T')"
+    echo "kernel $(uname -r); lake save $(cat "$E/lake.sum"); until $(date -d "@$DEADLINE" '+%F %T')"
 }
 
 # play-pkg.sh by the exact pin, with its own logs, working directory, save directory and learned copy, and one hook for
@@ -610,7 +602,6 @@ cmd_run() {
         echo "devcoredumps $(find "$DATA/captures/devcoredump" -maxdepth 1 -type f -newermt "@$T0" 2> /dev/null | wc -l)"
     } > "$E/$tag.kernel.txt"
     {
-        s=$(saves_sum); echo "live $s want $LIVE_SAVES"
         s=$(lake_sum); echo "lake $s want $(cat "$E/lake.sum")"
         echo "learned $(m "$W/direct-learned-pkg.txt") want $(cat "$E/learned.md5")"
     } > "$E/$tag.saves.txt"
@@ -758,7 +749,7 @@ cmd_watch() {
     echo "watchdog ends $(date +%T), state $(state)"
 }
 do_release() {
-    local line sum
+    local line
     [ "$(state)" != released ] || { echo "released already"; return 0; }
     mkdir "$E/release.claim" 2> /dev/null || { echo "a release runs, or $E/release.claim was left behind"; return 1; }
     series_stop "release: $1"
@@ -773,14 +764,13 @@ do_release() {
         echo "no line of ours in $LOCK, left as it is: $(cat "$LOCK" 2> /dev/null)"
         return 1
     fi
-    sum=$(saves_sum)
-    line="water exp 0385 | released: $1, live saves ${sum:-unreadable} (C locale), token $TOKEN | $(date '+%F %T')"
+    line="water exp 0385 | released: $1, token $TOKEN | $(date '+%F %T')"
     hook before-release-queue
     if ! queue_try "$line"; then rmdir "$E/release.claim"; echo "queue write failed, the lock stays"; return 1; fi
     if ! lock_remove; then rmdir "$E/release.claim"; echo "$WHY"; return 1; fi
     try_put "$ST" released
     rmdir "$E/release.claim"
-    echo "released, live saves ${sum:-unreadable}"
+    echo "released"
 }
 cmd_kstream() {
     load "${1:-}"
