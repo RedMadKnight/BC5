@@ -18,7 +18,7 @@ B = REPO / "backend"
 srcs = [B / "tests" / "lake_probe_test.cpp", B / "src" / "lake_probe.cpp", B / "src" / "full_state.cpp",
         B / "src" / "indirect_check.cpp", HERE / "shim_main.cpp"]
 exe = out / "lake_probe_test.exe"
-cmd = [str(LLVM / "bin" / "clang++.exe"), "-std=c++20", "-O1", "-g", "-fsanitize=address", "-Wall", "-Wextra", "-Wshadow",
+cmd = [str(LLVM / "bin" / "clang++.exe"), "-std=c++20", "-O1", "-g", "-fsanitize=address", "-Wall", "-Wextra", "-Wpedantic", "-Wshadow", "-Wconversion", "-Wsign-conversion", "-Werror",
        "-Wno-deprecated-declarations", "-D_CRT_SECURE_NO_WARNINGS", "-I", str(B / "include"), "-I", str(HERE / "laptop-shim"),
        *map(str, srcs), "-o", str(exe)]
 r = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, errors="replace")
