@@ -41,13 +41,14 @@ lacked the +8.4 ms burst; the patch per shot; flips per second.
 
 - **Binary:** shared normal build `~/bc5-work/kytyplus-build/src/kyty_emulator`, md5 78f25172. Its archive is 3292bdaf. The
   lean build 7b246487 is not used, because each run's RT proof reads the journal, which lean compiles out.
-- **Source:** `cand/port-np-libc` fab8660 (D19 finished 12:40:53; both RT-on smokes passed, startup evidence only). Main is
-  d6fa368 until its fast-forward, so this branch starts from origin/main and carries no build change.
+- **Source:** fab8660, built from `cand/port-np-libc` and since fast-forwarded to main (D19 finished 12:40:53; both RT-on
+  smokes passed, startup evidence only). This branch sits on that commit and carries no build change.
 - **Changes since K1–K3's build 1000ad2a that this repo records:** among them the NP and libc fixes (F740, F741),
   `BC5_DIRECT_REBASE_DISPATCH` removed (F765), lean's list (F766), `=0` meaning off for seven switches (F767). The run sets
   none of those switches (`ENVX` is empty).
-- **Launcher:** `play-pkg.sh` was 55531ab6 at the last read, on 2026-10-30. **Whether D19 changed it is not known here.** `setup0385.sh`
-  stops if it differs, and then the five edits must be derived again before any run.
+- **Launcher:** `play-pkg.sh` 55531ab6 and `bc5-run.env` cb8ad5fc, unchanged by D19 (the top session's word, 2026-10-31; this
+  session has not read them). `setup0385.sh` stops if the launcher differs, and then the five edits must be derived again.
+  The take step stops if the settings file differs.
 - `pl`, `sn`, `tz` and `ana` read no journal. The bench's `journal:` line reads `direct.log`, and F766 changes lean only.
 
 ## Plan
@@ -88,7 +89,7 @@ its save directory beside it. The live saves are compared only, never restored o
 - A kernel fault, ring timeout or reset line (ab exit 1), or a machine-down. No analysis runs and nothing is deleted.
 - Live saves differ from the pin, before or after a run: ask the top session.
 - A foreign lock line, a `MAINTAINER PLAYING` line, or an emulator that is not ours.
-- The binary is not 78f25172, or the launcher is not the pinned one.
+- The binary is not 78f25172, or the launcher or `bc5-run.env` is not the pinned one.
 - `/var/home` at 80 % or more (K-runs write ~2.7 GB of snapshots, deleted after each run).
 - A classifier refusal of any box step: reported to the top session, never worked around.
 
@@ -120,7 +121,7 @@ Each is one plain command, in the forms the maintainer's allow rules cover. From
 
 1. **Take** (guard first, the first thing that touches the box):
    ```
-   ssh -o ConnectTimeout=10 -o BatchMode=yes bc250 'cd ~/bc5-work || exit 1; pgrep -a "^kyty_emulator" && { echo "an emulator runs: stop"; exit 1; }; [ -e BOX-LOCK ] || touch BOX-LOCK; [ -s BOX-LOCK ] && { echo "locked:"; cat BOX-LOCK; exit 1; }; [ -e exp0385 ] && { echo "exp0385 exists: stop"; exit 1; }; S=$(cd _SaveData && find PPSA03671 -type f -exec md5sum {} + | LC_ALL=C sort -k2 | md5sum | cut -c1-16); [ "$S" = 52ee672646ca6087 ] || { echo "live saves $S: stop"; exit 1; }; b=$(md5sum < kytyplus-build/src/kyty_emulator | cut -c1-8); [ "$b" = 78f25172 ] || { echo "binary $b: stop"; exit 1; }; mkdir exp0385 && echo "water session exp 0385 | series K4-K6, lake bench, RT on, build 78f25172 | start $(date +%H:%M) | until ~$(date -d +30min +%H:%M)" >> BOX-LOCK; echo "exp 0385, water session, Q21: the lake bench K4-K6, RT on, build 78f25172 | $(date "+%F %T")" > exp0385/CLAIM.txt; echo "water exp 0385 | claimed: the lake bench K4-K6, RT on, build 78f25172, up to 30 min | $(date "+%F %T")" >> BOX-QUEUE; md5sum play-pkg.sh | cut -c1-8; uname -r; df --output=pcent /var/home | tail -1; cat BOX-LOCK'
+   ssh -o ConnectTimeout=10 -o BatchMode=yes bc250 'cd ~/bc5-work || exit 1; pgrep -a "^kyty_emulator" && { echo "an emulator runs: stop"; exit 1; }; [ -e BOX-LOCK ] || touch BOX-LOCK; [ -s BOX-LOCK ] && { echo "locked:"; cat BOX-LOCK; exit 1; }; [ -e exp0385 ] && { echo "exp0385 exists: stop"; exit 1; }; S=$(cd _SaveData && find PPSA03671 -type f -exec md5sum {} + | LC_ALL=C sort -k2 | md5sum | cut -c1-16); [ "$S" = 52ee672646ca6087 ] || { echo "live saves $S: stop"; exit 1; }; b=$(md5sum < kytyplus-build/src/kyty_emulator | cut -c1-8); [ "$b" = 78f25172 ] || { echo "binary $b: stop"; exit 1; }; e=$(md5sum < bc5-run.env | cut -c1-8); [ "$e" = cb8ad5fc ] || { echo "bc5-run.env $e: stop"; exit 1; }; mkdir exp0385 && echo "water session exp 0385 | series K4-K6, lake bench, RT on, build 78f25172 | start $(date +%H:%M) | until ~$(date -d +30min +%H:%M)" >> BOX-LOCK; echo "exp 0385, water session, Q21: the lake bench K4-K6, RT on, build 78f25172 | $(date "+%F %T")" > exp0385/CLAIM.txt; echo "water exp 0385 | claimed: the lake bench K4-K6, RT on, build 78f25172, up to 30 min | $(date "+%F %T")" >> BOX-QUEUE; md5sum play-pkg.sh | cut -c1-8; uname -r; df --output=pcent /var/home | tail -1; cat BOX-LOCK'
    ```
 2. **Kit:** `scp setup0385.sh ab0385.sh bench0385.sh ana0385.sh run0385.sh kstream0385.sh bt0362.sh pl0385.py sn0385.py tz0385.py swz0248-z4.json bc250:bc5-work/exp0385/`
 3. **Setup and self-test:**
