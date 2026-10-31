@@ -34,7 +34,7 @@ FAKE = r'''# stand-ins for one test case, at the box's edge only
 ROOT=$BC5_0385_ROOT
 . "$ROOT/pins.sh"
 DBX=(env); PY=(python); KS=(sleep 300)
-REAP_TERM=8; REAP_KILL=4; REAP_WAIT=30; WATCH_NAP=1; WATCH_WAIT=1200; SLOTWAIT=1; LOADWAIT=1; STEP=1; EMU_WAIT=1200
+REAP_TERM=8; REAP_KILL=4; REAP_WAIT=30; WATCH_NAP=1; WATCH_WAIT=1200; SLOTWAIT=1; LOADWAIT=1; KEYWAIT=4000; STEP=1; EMU_WAIT=1200
 [ ! -f "$ROOT/tune.sh" ] || . "$ROOT/tune.sh"
 exec 9<>"$ROOT/nap.fifo"
 now() { local c; if [ -s "$ROOT/clock" ]; then read -r c < "$ROOT/clock"; echo "$c"; else printf '%(%s)T
@@ -468,7 +468,7 @@ def claim_refused_while_an_emulator_runs_and_leaves_it(b):
 # 2. setup
 @case
 def setup_derives_the_launcher_exactly_and_starts_the_watchdog(b):
-    b.ready()
+    built_to_setup(b)
     d = b.read("bc5-work/exp0385/play-pkg-0385.diff")
     assert len(re.findall(r"^[-+][^-+]", d, re.M)) == 13
     L = b.read("bc5-work/exp0385/play-pkg-0385.sh")
@@ -1210,13 +1210,18 @@ def build_refuses_a_changed_source_tar(b):
 
 
 @case
-def build_refuses_a_lost_lock_and_touches_nothing_shared(b):
+def build_refuses_a_lost_lock(b):
     built_to_setup(b)
     keep = b.lock()
     b.write("bc5-work/BOX-LOCK", keep + "foreign\n")
-    r = b.box("build", b.token)
-    assert r.returncode == 1 and "not ours" in r.stdout and not (b.e / "tb").exists()
-    b.write("bc5-work/BOX-LOCK", keep)
+    r = b.box("build", b.token)          # refused by the lock, or by the watchdog's stop if that came first
+    assert r.returncode == 1 and "0385 STOP" in r.stdout and not (b.e / "tb").exists(), r.stdout
+    assert b.lock() == keep + "foreign\n"
+
+
+@case
+def build_touches_nothing_shared(b):
+    built_to_setup(b)
     before = (b.w / "backend-ubuntu/libbc5_backend.a").read_bytes(), (b.w / "kytyplus-build/src/kyty_emulator.exe").read_bytes()
     assert b.box("build", b.token).returncode == 0
     assert before == ((b.w / "backend-ubuntu/libbc5_backend.a").read_bytes(), (b.w / "kytyplus-build/src/kyty_emulator.exe").read_bytes())

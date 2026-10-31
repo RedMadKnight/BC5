@@ -33,7 +33,7 @@ LAUNCHER_MD5=55531ab6277d6816c0603a7a6c6d62b4; RUN_ENV_MD5=cb8ad5fcfd6eac2a5cafa
 LIVE_SAVES=52ee672646ca6087   # C locale, the top session's pin
 SERIES_S=2700; GRACE=120; RUN_S=780; EMU_S=560; BENCH_S=500; ANA_S=150; BUILD_S=420; EMU_WAIT=60
 REAP_TERM=15; REAP_KILL=10; REAP_WAIT=40; WATCH_NAP=3; WATCH_WAIT=25
-SERIES=53; STEP=5; SLOTWAIT=5; LOADWAIT=60; TAGS="K4 K5 K6"; DISK_MAX=80; DISK_STOP=90
+SERIES=53; STEP=5; SLOTWAIT=5; LOADWAIT=60; KEYWAIT=120; TAGS="K4 K5 K6"; DISK_MAX=80; DISK_STOP=90
 KPAT='amdgpu.*(fault|timeout|reset)|gpu reset|ring .* timeout'
 
 # What a test may replace. Each stays a plain box command here.
@@ -682,7 +682,7 @@ cmd_bench() {
     }
     snap() { local t; printf -v t '%(%H%M%S)T' -1; shot "$R/shots/$t-$1.png"; }
     route() {
-        for _ in $(seq 1 120); do [ "$(done_n)" -ge 2 ] && break; gone && return 1; nap 2; done
+        for _ in $(seq 1 "$KEYWAIT"); do [ "$(done_n)" -ge 2 ] && break; gone && return 1; nap 2; done
         [ "$(done_n)" -ge 2 ] || { echo "the first keys were not taken"; return 1; }
         for _ in $(seq 1 "$SLOTWAIT"); do gone && return 1; nap 1; done
         step "press down\nwait 700\npress down\nwait 900\n" || return 1
