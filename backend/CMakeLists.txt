@@ -38,6 +38,7 @@ add_library(bc5_backend
     src/shadow_labels.cpp
     src/host_indirect.cpp
     src/ib_split.cpp
+    src/lake_probe.cpp
     src/draw_args.cpp
 )
 target_include_directories(bc5_backend PUBLIC include PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/generated)
@@ -103,7 +104,7 @@ if(BC5_BUILD_TESTS)
                    tests/indirect_check_test.cpp tests/shadow_labels_test.cpp tests/host_indirect_test.cpp tests/ib_split_test.cpp tests/job_arena_fix_test.cpp
                    tests/pad_audio_route_test.cpp tests/selftest_route_test.cpp
                    tests/zero_skip_test.cpp tests/draw_args_test.cpp
-                   tests/acb_restore_test.cpp tests/env_flag_test.cpp)
+                   tests/acb_restore_test.cpp tests/env_flag_test.cpp tests/lake_probe_test.cpp)
     target_link_libraries(bc5_backend_tests PRIVATE bc5_backend bc5_warnings Catch2::Catch2WithMain)
     catch_discover_tests(bc5_backend_tests)
 endif()
