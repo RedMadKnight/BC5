@@ -163,6 +163,7 @@ impl DiskCache {
             slot.store(0, Ordering::Release);
             return None;
         }
+        crate::io::drop_after_read(&self.data, index as u64 * self.block_bytes, len as u64);
         Some(buf)
     }
 
@@ -188,6 +189,7 @@ impl DiskCache {
         if write_all_at(&self.map, &e.to_le_bytes(), index as u64 * 8).is_ok() {
             slot.store(e, Ordering::Release);
             self.written.fetch_add(len, Ordering::Relaxed);
+            crate::stats::disk_put(len);
         }
     }
 

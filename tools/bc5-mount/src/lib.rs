@@ -28,8 +28,10 @@ pub mod pfs;
 pub mod pfsc;
 pub mod pkg;
 pub mod preload;
+pub mod reuse;
 pub mod stats;
 pub mod tree;
+pub mod tuning;
 pub mod verify;
 
 #[cfg(all(feature = "fuse", target_os = "linux"))]

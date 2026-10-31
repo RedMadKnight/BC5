@@ -166,7 +166,10 @@ impl<R: ReadAt> InnerImage<R> {
     fn decode_block(&self, index: usize) -> Result<Vec<u8>> {
         let b = self.blocks[index];
         if b.kraken {
-            if let Some(v) = self.disk.as_ref().and_then(|d| d.get(index)) {
+            let start = crate::stats::span_start();
+            let found = self.disk.as_ref().and_then(|d| d.get(index));
+            crate::stats::span_end(crate::stats::Span::DiskRead, start);
+            if let Some(v) = found {
                 if v.len() == b.uncomp as usize {
                     crate::stats::from_disk(v.len() as u64);
                     return Ok(v);
@@ -175,7 +178,11 @@ impl<R: ReadAt> InnerImage<R> {
         }
         let mut out = vec![0u8; b.uncomp as usize];
         if b.comp != 0 {
+            let start = crate::stats::span_start();
             let payload = self.image.read_vec_at(b.on_disk, b.comp as usize)?;
+            crate::stats::span_end(crate::stats::Span::ImageRead, start);
+            crate::stats::image_read(payload.len() as u64);
+            let start = crate::stats::span_start();
             if b.kraken {
                 kraken::decode_block(&payload, b.even_comp as usize, b.flags, &mut out).map_err(
                     |e| {
@@ -191,6 +198,7 @@ impl<R: ReadAt> InnerImage<R> {
             } else {
                 out.copy_from_slice(&payload);
             }
+            crate::stats::span_end(crate::stats::Span::Decode, start);
         }
         crate::stats::decoded(index as u64, out.len() as u64);
         if b.kraken {
@@ -225,6 +233,7 @@ impl<R: ReadAt> ReadAt for InnerImage<R> {
             let b = self.blocks[index];
             let within = (pos - b.logical) as usize;
             let n = (b.uncomp as usize - within).min(total - done);
+            crate::stats::touched(index as u64);
             let bytes = self.block(index).map_err(io::Error::other)?;
             buf[done..done + n].copy_from_slice(&bytes[within..within + n]);
             done += n;
@@ -240,7 +249,11 @@ impl<R: ReadAt> ReadAt for InnerImage<R> {
                 return Ok(()); // the real read reports it
             };
             self.cache
-                .prefetch(index as u64, || self.decode_block(index))
+                .prefetch(index as u64, || {
+                    let block = self.decode_block(index)?;
+                    crate::stats::ahead(index as u64);
+                    Ok(block)
+                })
                 .map_err(io::Error::other)?;
             let b = self.blocks[index];
             pos = b.logical + u64::from(b.uncomp);

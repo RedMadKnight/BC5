@@ -179,6 +179,46 @@ fn advise_random(file: &File) {
 #[cfg(not(target_os = "linux"))]
 fn advise_random(_file: &File) {}
 
+/// The whole pages covering `[offset, offset + len)`, as (start, length): the
+/// kernel keeps a page that a `POSIX_FADV_DONTNEED` range covers only in part.
+fn page_span(offset: u64, len: u64) -> (u64, u64) {
+    const PAGE: u64 = 4096;
+    let start = offset & !(PAGE - 1);
+    let end = (offset + len + PAGE - 1) & !(PAGE - 1);
+    (start, end - start)
+}
+
+/// With `BC5_MOUNT_DROP_BACKING=1`, drops a range just read from `file` out of
+/// the page cache (exp 0381). The block goes on to the block cache and the
+/// mounted file's own page cache, so a copy here only pushes the title's data
+/// out sooner. Best effort; dirty pages stay.
+pub(crate) fn drop_after_read(file: &File, offset: u64, len: u64) {
+    static ON: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    if *ON.get_or_init(|| {
+        std::env::var_os("BC5_MOUNT_DROP_BACKING").as_deref() == Some(std::ffi::OsStr::new("1"))
+    }) {
+        let (start, n) = page_span(offset, len);
+        advise_dontneed(file, start, n);
+    }
+}
+
+#[cfg(target_os = "linux")]
+fn advise_dontneed(file: &File, offset: u64, len: u64) {
+    use nix::fcntl::{posix_fadvise, PosixFadviseAdvice};
+    use std::os::unix::io::AsRawFd;
+    if let (Ok(offset), Ok(len)) = (i64::try_from(offset), i64::try_from(len)) {
+        let _ = posix_fadvise(
+            file.as_raw_fd(),
+            offset,
+            len,
+            PosixFadviseAdvice::POSIX_FADV_DONTNEED,
+        );
+    }
+}
+
+#[cfg(not(target_os = "linux"))]
+fn advise_dontneed(_file: &File, _offset: u64, _len: u64) {}
+
 impl ReadAt for FileSource {
     fn len(&self) -> u64 {
         self.len
@@ -190,6 +230,7 @@ impl ReadAt for FileSource {
         let n = self.file.read_at(buf, offset)?;
         if self.traced {
             crate::preload::trace(offset, n as u64);
+            drop_after_read(&self.file, offset, n as u64);
         }
         Ok(n)
     }
@@ -200,6 +241,7 @@ impl ReadAt for FileSource {
         let n = self.file.seek_read(buf, offset)?;
         if self.traced {
             crate::preload::trace(offset, n as u64);
+            drop_after_read(&self.file, offset, n as u64);
         }
         Ok(n)
     }
@@ -292,6 +334,14 @@ impl Le<'_> {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn page_span_covers_every_page_touched() {
+        assert_eq!(page_span(0, 4096), (0, 4096));
+        assert_eq!(page_span(4095, 2), (0, 8192));
+        assert_eq!(page_span(8192, 1), (8192, 4096));
+        assert_eq!(page_span(100, 0), (0, 4096));
+    }
 
     #[test]
     fn slice_reads_are_bounded() {

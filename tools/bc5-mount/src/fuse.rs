@@ -25,7 +25,10 @@ use fuser::{
     ReplyDirectory, ReplyEntry, ReplyOpen, ReplyStatfs, Request,
 };
 
+use crate::reuse::{Reuse, AGE_LIMITS, DISTANCE_LIMITS_MIB};
+use crate::stats::Span;
 use crate::tree::{fold_name, FileTree};
+use crate::tuning::Tuning;
 
 const ENOENT: i32 = 2;
 const EIO: i32 = 5;
@@ -88,7 +91,8 @@ impl Pool {
     }
 
     fn run(&self, job: Job) {
-        self.pending.fetch_add(1, Ordering::Relaxed);
+        let jobs = self.pending.fetch_add(1, Ordering::Relaxed) + 1;
+        crate::stats::pending(jobs as u64);
         // A send fails only when every worker is gone, which the pool's owner
         // outlives; run the job here then.
         if let Err(e) = self.tx.send(job) {
@@ -138,6 +142,10 @@ struct Bc5Fs<T> {
     pool: Pool,
     prefetch: u64,
     streams: HashMap<usize, Stream>,
+    /// Exp 0381's switches.
+    tuning: Tuning,
+    /// What is read again, with `BC5_MOUNT_STATS`.
+    reuse: Option<Arc<Mutex<Reuse>>>,
     uid: u32,
     gid: u32,
     mounted_at: SystemTime,
@@ -243,9 +251,16 @@ impl<T: FileTree + 'static> Bc5Fs<T> {
 }
 
 impl<T: FileTree + 'static> Filesystem for Bc5Fs<T> {
-    fn init(&mut self, req: &Request<'_>, _config: &mut KernelConfig) -> Result<(), i32> {
+    fn init(&mut self, req: &Request<'_>, config: &mut KernelConfig) -> Result<(), i32> {
         self.uid = req.uid();
         self.gid = req.gid();
+        if let Some(n) = self.tuning.max_readahead {
+            let got = config.set_max_readahead(n);
+            eprintln!("bc5-mount: kernel readahead asked {} KiB: {got:?}", n >> 10);
+        }
+        if self.tuning.direct_io {
+            eprintln!("bc5-mount: direct I/O, reads pass the page cache by");
+        }
         // Reads from different threads are separate requests the kernel sends
         // without waiting for each other; the pool answers them in parallel.
         eprintln!(
@@ -284,6 +299,7 @@ impl<T: FileTree + 'static> Filesystem for Bc5Fs<T> {
     fn open(&mut self, _req: &Request<'_>, ino: u64, _flags: i32, reply: ReplyOpen) {
         match Self::idx(ino).and_then(|i| self.tree.entry(i)) {
             Some(e) if e.is_dir => reply.error(EISDIR),
+            Some(_) if self.tuning.direct_io => reply.opened(0, fuser::consts::FOPEN_DIRECT_IO),
             Some(_) => reply.opened(0, fuser::consts::FOPEN_KEEP_CACHE),
             None => reply.error(ENOENT),
         }
@@ -312,9 +328,18 @@ impl<T: FileTree + 'static> Filesystem for Bc5Fs<T> {
         let path = e.path.to_owned();
         let file_size = e.size;
         let want = usize::try_from(e.size.saturating_sub(offset).min(u64::from(size))).unwrap_or(0);
+        if let Some(r) = &self.reuse {
+            let now = self.mounted_at.elapsed().map_or(0.0, |d| d.as_secs_f64());
+            r.lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner)
+                .read(idx, offset, want as u64, now);
+        }
         self.decode_ahead(idx, offset, offset + want as u64, file_size);
         let tree = Arc::clone(&self.tree);
+        let queued = crate::stats::span_start();
         self.pool.run(Box::new(move || {
+            crate::stats::span_end(Span::Queue, queued);
+            let service = crate::stats::span_start();
             let mut buf = vec![0u8; want];
             match tree.read_file_at(idx, offset, &mut buf) {
                 Ok(n) => {
@@ -326,6 +351,7 @@ impl<T: FileTree + 'static> Filesystem for Bc5Fs<T> {
                     reply.error(EIO);
                 }
             }
+            crate::stats::span_end(Span::Service, service);
         }));
     }
 
@@ -404,11 +430,15 @@ pub fn mount<T: FileTree + 'static>(
     mountpoint: &Path,
     allow_other: bool,
 ) -> std::io::Result<()> {
+    let tree = Arc::new(tree);
+    let reuse = report_stats(&tree);
     let fs = Bc5Fs {
-        tree: Arc::new(tree),
+        tree,
         pool: Pool::new(worker_count()),
         prefetch: prefetch_len(),
         streams: HashMap::new(),
+        tuning: Tuning::from_env(),
+        reuse,
         uid: 0,
         gid: 0,
         mounted_at: SystemTime::now(),
@@ -425,26 +455,30 @@ pub fn mount<T: FileTree + 'static>(
     if allow_other {
         options.push(MountOption::AllowOther);
     }
-    report_stats();
     fuser::mount2(fs, mountpoint, &options)
 }
 
 /// With `BC5_MOUNT_STATS=<seconds>`, prints the read and decode counters at that
-/// interval on stderr, while they change (experiment 0112).
-fn report_stats() {
-    let Some(every) = std::env::var("BC5_MOUNT_STATS")
+/// interval on stderr, while they change (experiment 0112), and what is read
+/// again (exp 0381): a `reread` and a `spans` line each time, the files with the
+/// most repeats once a minute.
+fn report_stats<T: FileTree + 'static>(tree: &Arc<T>) -> Option<Arc<Mutex<Reuse>>> {
+    let every = std::env::var("BC5_MOUNT_STATS")
         .ok()
         .and_then(|v| v.trim().parse::<f64>().ok())
-        .filter(|s| *s > 0.0)
-    else {
-        return;
-    };
+        .filter(|s| *s > 0.0)?;
     crate::stats::enable();
+    let reuse = Arc::new(Mutex::new(Reuse::default()));
+    let shared = Arc::clone(&reuse);
+    let tree = Arc::clone(tree);
     let started = std::time::Instant::now();
     let _ = std::thread::Builder::new()
         .name("bc5-mount-stats".into())
         .spawn(move || {
             let mut last = crate::stats::Snapshot::default();
+            let mut last_reuse = crate::reuse::Totals::default();
+            let mut last_spans = crate::stats::spans();
+            let mut last_files = 0.0;
             loop {
                 std::thread::sleep(Duration::from_secs_f64(every));
                 let s = crate::stats::snapshot();
@@ -465,7 +499,63 @@ fn report_stats() {
                     mib(s.disk_bytes),
                     mib(s.disk_bytes - last.disk_bytes)
                 );
+                let (r, top) = {
+                    let u = shared
+                        .lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner);
+                    (u.totals(), u.top_files(12))
+                };
+                let t = started.elapsed().as_secs_f64();
+                eprintln!(
+                    "bc5-mount reread {t:.1} s: first {} MiB (+{}), again {} MiB (+{}), age s {:?} {:?} MiB, distance MiB {:?} {:?} MiB",
+                    mib(r.first),
+                    mib(r.first - last_reuse.first),
+                    mib(r.again),
+                    mib(r.again - last_reuse.again),
+                    AGE_LIMITS,
+                    r.by_age.map(mib),
+                    DISTANCE_LIMITS_MIB,
+                    r.by_distance.map(mib),
+                );
+                last_reuse = r;
+                let now = crate::stats::spans();
+                let mut line = format!(
+                    "bc5-mount spans {t:.1} s: jobs peak {}, image {} MiB (+{}), written {} MiB (+{}), block uses {}, ahead {} used {}",
+                    crate::stats::take_pending_peak(),
+                    mib(s.image_bytes),
+                    mib(s.image_bytes - last.image_bytes),
+                    mib(s.put_bytes),
+                    mib(s.put_bytes - last.put_bytes),
+                    s.touches,
+                    s.ahead_blocks,
+                    s.ahead_used
+                );
+                for (((_, name), n), o) in crate::stats::SPANS.iter().zip(&now).zip(&last_spans) {
+                    use std::fmt::Write as _;
+                    let count = n.count - o.count;
+                    let mean = (n.ns - o.ns).checked_div(count).unwrap_or(0);
+                    let _ = write!(
+                        line,
+                        ", {name} {count} mean {} us peak {} us",
+                        mean / 1000,
+                        n.peak_ns / 1000
+                    );
+                }
+                eprintln!("{line}");
+                last_spans = now;
+                if t - last_files >= 60.0 {
+                    last_files = t;
+                    for (idx, b) in top {
+                        let path = tree.entry(idx).map_or("?", |e| e.path);
+                        eprintln!(
+                            "bc5-mount again {t:.0} s: {} MiB of {} MiB {path}",
+                            mib(b.again),
+                            mib(b.first + b.again)
+                        );
+                    }
+                }
                 last = s;
             }
         });
+    Some(reuse)
 }
