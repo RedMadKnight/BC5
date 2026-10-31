@@ -94,8 +94,9 @@ EDITS = {
         ("int KYTY_SYSV_ABI KernelWaitSema(KernelSema sem, int need, KernelUseconds* time) {\n",
          '''// BC5 (experiment 0388), JobLoaderSema only. Catcher (KYTY_BC5_0388_TRACE=1): the time from the last signal to a wait's
 // return, as counts in five bands. Candidates, each after a game-main signal: PUSH_SPIN_US spins that long,
-// PUSH_UNTIL_TAKEN_US spins until a waiter has returned, at most that long.
-static std::atomic<uint64_t> g_bc5_taken {0};
+// PUSH_UNTIL_RETURN_US spins until any wait on it has returned, at most that long. Neither is paired with a signal or a job (R11): the bands are
+// not one worker's wake time, and a return does not show that a worker took the job.
+static std::atomic<uint64_t> g_bc5_wait_returns {0};
 static std::atomic<int64_t>  g_bc5_signal_ns {0};
 
 static int64_t Bc5NowNs() {
@@ -113,11 +114,11 @@ static bool Bc5Trace0388() {
 	return on;
 }
 
-static void Bc5NoteTaken(const std::string& name) {
+static void Bc5NoteWaitReturn(const std::string& name) {
 	if (!Bc5JobSema(name)) {
 		return;
 	}
-	g_bc5_taken.fetch_add(1, std::memory_order_release);
+	g_bc5_wait_returns.fetch_add(1, std::memory_order_release);
 	const int64_t signal_ns = g_bc5_signal_ns.load(std::memory_order_relaxed);
 	if (!Bc5Trace0388() || signal_ns == 0) {
 		return;
@@ -129,14 +130,14 @@ static void Bc5NoteTaken(const std::string& name) {
 	bands[band].fetch_add(1, std::memory_order_relaxed);
 	const uint64_t n = total.fetch_add(1, std::memory_order_relaxed) + 1;
 	if (n % 5000 == 0) {
-		std::fprintf(stderr, "bc5 exp 0388: wake us <50 %" PRIu64 " <200 %" PRIu64 " <500 %" PRIu64 " <2000 %" PRIu64 " more %" PRIu64 "\\n", bands[0].load(), bands[1].load(), bands[2].load(),
+		std::fprintf(stderr, "bc5 exp 0388: last signal to wait return, us <50 %" PRIu64 " <200 %" PRIu64 " <500 %" PRIu64 " <2000 %" PRIu64 " more %" PRIu64 "\\n", bands[0].load(), bands[1].load(), bands[2].load(),
 		             bands[3].load(), bands[4].load());
 	}
 }
 
-static void Bc5OwnerPushSpin(const std::string& name, uint64_t taken_before) {
+static void Bc5OwnerPushSpin(const std::string& name, uint64_t returns_before) {
 	static const unsigned spin_us  = bc5::cpu_model::parse_spin_us(std::getenv("KYTY_BC5_0388_PUSH_SPIN_US"));
-	static const unsigned until_us = bc5::cpu_model::parse_spin_us(std::getenv("KYTY_BC5_0388_PUSH_UNTIL_TAKEN_US"));
+	static const unsigned until_us = bc5::cpu_model::parse_spin_us(std::getenv("KYTY_BC5_0388_PUSH_UNTIL_RETURN_US"));
 	if ((spin_us == 0 && until_us == 0) || !Bc5JobSema(name)) {
 		return;
 	}
@@ -150,31 +151,31 @@ static void Bc5OwnerPushSpin(const std::string& name, uint64_t taken_before) {
 	}
 	const int64_t start = Bc5NowNs();
 	const int64_t limit = static_cast<int64_t>(spin_us != 0 ? spin_us : until_us) * 1000;
-	bool          taken = false;
+	bool          returned = false;
 	while (Bc5NowNs() - start < limit) {
-		if (spin_us == 0 && g_bc5_taken.load(std::memory_order_acquire) != taken_before) {
-			taken = true;
+		if (spin_us == 0 && g_bc5_wait_returns.load(std::memory_order_acquire) != returns_before) {
+			returned = true;
 			break;
 		}
 		__builtin_ia32_pause();
 	}
 	static std::atomic<uint64_t> spins {0};
-	static std::atomic<uint64_t> takes {0};
-	const uint64_t               got = takes.fetch_add(taken ? 1 : 0, std::memory_order_relaxed) + (taken ? 1 : 0);
+	static std::atomic<uint64_t> returns {0};
+	const uint64_t               got = returns.fetch_add(returned ? 1 : 0, std::memory_order_relaxed) + (returned ? 1 : 0);
 	const uint64_t               n   = spins.fetch_add(1, std::memory_order_relaxed) + 1;
 	if (n == 1 || n % 2000 == 0) {
-		std::fprintf(stderr, "bc5 exp 0388: push spin %" PRIu64 ", taken in time %" PRIu64 "\\n", n, got);
+		std::fprintf(stderr, "bc5 exp 0388: push spin %" PRIu64 ", a wait returned in time %" PRIu64 "\\n", n, got);
 	}
 }
 
 int KYTY_SYSV_ABI KernelWaitSema(KernelSema sem, int need, KernelUseconds* time) {
 '''),
         ("\tauto result = sem->Wait(need, time);\n",
-         "\tauto result = sem->Wait(need, time);\n\n\tif (result == KernelSemaPrivate::Result::Ok) {\n\t\tBc5NoteTaken(sem->GetName());\n\t}\n"),
+         "\tauto result = sem->Wait(need, time);\n\n\tif (result == KernelSemaPrivate::Result::Ok) {\n\t\tBc5NoteWaitReturn(sem->GetName());\n\t}\n"),
         ("\tauto result = sem->Signal(count);\n\n\tint ret = OK;\n",
-         "\tconst uint64_t bc5_taken = g_bc5_taken.load(std::memory_order_acquire);\n"
+         "\tconst uint64_t bc5_returns = g_bc5_wait_returns.load(std::memory_order_acquire);\n"
          "\tif (Bc5Trace0388() && Bc5JobSema(sem->GetName())) {\n\t\tg_bc5_signal_ns.store(Bc5NowNs(), std::memory_order_relaxed);\n\t}\n"
-         "\tauto result = sem->Signal(count);\n\n\tBc5OwnerPushSpin(sem->GetName(), bc5_taken);\n\n\tint ret = OK;\n"),
+         "\tauto result = sem->Signal(count);\n\n\tBc5OwnerPushSpin(sem->GetName(), bc5_returns);\n\n\tint ret = OK;\n"),
     ],
 }
 

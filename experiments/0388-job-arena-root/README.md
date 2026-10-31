@@ -81,14 +81,14 @@ All 12 reached the fight and all crashes read 0xc at eboot+0x3d7eca0, 110–119 
 
 ## Second cycle, fixed before its build (the maintainer's yes, after water)
 
-**Question.** Does giving a worker time, or waiting until one has really taken the job, end the crash, and how long does a worker need?
+**Question.** Does a bounded wait after the owner's push, fixed or until a wait on the semaphore returns, end the crash?
 
 **New in the build.**
 
 | switch | does |
 |---|---|
-| `KYTY_BC5_0388_PUSH_UNTIL_TAKEN_US=<0..500>` | candidate: after a main-thread signal of `JobLoaderSema`, spin until a waiter has returned from the semaphore, at most this long |
-| `KYTY_BC5_0388_TRACE=1` | adds two catchers: the time from a signal to a wait's return in five bands, and the count of push spins and how many were taken in time |
+| `KYTY_BC5_0388_PUSH_UNTIL_RETURN_US=<0..500>` | candidate: after a main-thread signal of `JobLoaderSema`, spin until the count of returned waits changes, at most this long |
+| `KYTY_BC5_0388_TRACE=1` | adds two catchers: the time from the latest signal to a wait's return in five bands, and the count of push spins and how many saw a wait return in time |
 
 `PUSH_SPIN_US` keeps its meaning. The binary's md5 goes into `pins0388.env` (`NORMAL`, FILL until then) after `box0388.sh build`.
 
@@ -98,12 +98,14 @@ All 12 reached the fight and all crashes read 0xc at eboot+0x3d7eca0, 110–119 
 |---|---|---|
 | G, control | G1–G3 | none |
 | E | E1–E5 | `PUSH_SPIN_US=500` |
-| F | F1–F5 | `PUSH_UNTIL_TAKEN_US=500` |
+| F | F1–F5 | `PUSH_UNTIL_RETURN_US=500` |
 
 Order G1 E1 F1 E2 F2 G2 E3 F3 E4 F4 G3 E5 F5, about 4 min each, about 52 min, deadline 75 min.
 
 **Exposure.** An E or F run needs `push spin` lines in its log, or it has not tested the candidate and does not count.
 
-**Rule.** Control at least 2 of 3 at the site, or no conclusion. HOLDS: 5 of 5 NO_CRASH that reached the fight. REFUTED: any crash at the site. OPEN: anything else. A hold is still a 180 s result on this route, and a spin is a host-side workaround until the wake-time bands say why the worker is late. `JobArenaFix` goes only after the maintainer's own fight.
+**Rule.** Control at least 2 of 3 at the site, or no conclusion. HOLDS: 5 of 5 NO_CRASH that reached the fight. REFUTED: any crash at the site. OPEN: anything else. A hold is still a 180 s result on this route, and a spin is a host-side workaround until the reason is shown.
+
+**Limits of the catchers (R11).** Both use global state with no pairing to a signal, a sema generation or a job. A later signal overwrites the time of an earlier one, and an old credit or a return between the snapshot and the signal changes the count. So the bands do not measure one worker's wake-to-run time, and a wait that returned in time does not show that the target job was taken. They support only the effect of the bounded wait on the outcome and the change in those counts. `JobArenaFix` goes only after the maintainer's own fight.
 
 **Local tests so far.** `patch0388.py` applies (5 edits on `semaphore.cpp`), the scripts parse, `check0388.py rule` tried on sample rows, `test_box0388.sh` 14 of 14. The patched units are not compiled until the slot.
