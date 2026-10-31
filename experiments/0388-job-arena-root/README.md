@@ -1,6 +1,6 @@
 # 0388 — The root of the job-arena crash, so the workaround can go
 
-**Date.** 2026-10-31. **Branch.** `exp/0388-job-arena-root`, base main `5b22f70`. **Status.** Root read, private build `88010666` made; the runs below are fixed before they start.
+**Date.** 2026-10-31. **Branch.** `exp/0388-job-arena-root`, base main `5b22f70`. **Status.** Finished 2026-10-31: the workaround is still needed. See the result at the end.
 
 **Question.** Why does the title's main thread reach a worker-only job (F444–F454) on this host, and can a host fix make the crash go with `JobArenaFix` off?
 
@@ -55,3 +55,26 @@ Order C1 A1 B1 C2 A2 B2 C3 A3 B3, about 4 min each, 36 min, deadline 52 min. One
 - A pass here says the crash did not come in 180 s on this route; it is not yet the maintainer's fight, and exp 0359's fix stays until that play.
 
 **Stops.** The first kernel amdgpu line, GPU reset or devcoredump ends the series with no retry. No one touches the pad during the series: exp 0386's runs had mixed input.
+
+## Result (2026-10-31 21:36–22:07, F790–F794)
+
+Runner tests before the runs: 43 of the stand-in checks passed, 0 failed, and they found one real fault (the manifest demanded the shared binary), fixed before the first run. The suite hit its 590 s cap, so its kernel, ssh, signal, recovery, gate, release, storage, rule and series groups did not run on the derived scripts. `check0388.py rule` was tried by hand on sample rows.
+
+Pins at the start: `input.cfg` a5259c60 (JobArenaFix off) and the learned file 5b92521f differ from exp 0386's pins and were re-measured. The route copy is 9347496fbaf30f25.
+
+| arm | runs | at the site | no crash | `Job ` threads |
+|---|---|---|---|---|
+| C, control, mask `0x7f` | C1 C2 C3 | 3 | 0 | 15 |
+| A, mask `0x1fff` | A1 A2 A3 | 3 | 0 | 24 |
+| B, A + real CPU + applied affinity | B1 B2 B3 | 3 | 0 | 24 |
+| D, spin 200 µs | D1 D2 D3 | 1 (D2) | 2 (D1, D3, 180 s) | 15 |
+
+All 12 reached the fight and all crashes read 0xc at eboot+0x3d7eca0, 110–119 s in, about 10 s after the gameplay inputs. There was no amdgpu kernel line, GPU reset or devcoredump; the only kernel lines were IPv6 MLD. Rule output for C, A and B: control 3 of 3, A REFUTED, B REFUTED. The rule's code does not read D; by the fixed rule D is also REFUTED, since a run crashed at the site.
+
+- **F790.** The title's CPU count is the population count of the host's thread mask, read by the title's `libc.prx` (the root section above). Exp 0358's "7, as on the console" came from the host. Shown in the runs: the mask was read as `0x1fff`, and the job threads rose from 15 to 24, so N rose from 5 to 8.
+- **F791.** The worker count is not the crash's cause: 8 workers crash 6 of 6, at the same time as 5 workers. CURRENT_CPU and APPLY_AFFINITY do not change that. Whether `0x1fff` is right for other reasons is still open, as neither source is a console measurement.
+- **F792.** With no pad input from a person the crash came 9 of 9 without the spin. The automated route is a fast repro: under 2 min, about 10 s after the inputs.
+- **F793.** The 200 µs spin after the owner's push changed the outcome: 1 of 3 crashed against 9 of 9 without it. D differs from C only by this switch. Three runs are few and D has no counter of its own, so the spin's effect is shown only by this difference. Exp 0358's "a spin cannot" does not hold here. This contradicts what I expected before the runs.
+- **F794.** The time between the owner's push and its help is the lever, not the number of workers. That fits a worker that needs more time to take the job than the owner does. It is not proven, and the spin is not a fix: it still crashed, and 180 s is not the maintainer's fight.
+
+**Verdict.** No candidate holds; `JobArenaFix` stays. Next: the host's wake-to-run time for a worker after the owner's signal, with a counter on the spin, 500 µs, and a longer window.

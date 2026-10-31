@@ -1,0 +1,30 @@
+TOK=20261031213646925905
+lock released
+RESULT C1 runner 1 check 0 saves same CLASS CRASH_TARGET fix off crash target reached 1
+TOK=20261031213911954378
+lock released
+RESULT A1 runner 1 check 0 saves same CLASS CRASH_TARGET fix off crash target reached 1
+TOK=20261031214136982620
+lock released
+RESULT B1 runner 1 check 0 saves same CLASS CRASH_TARGET fix off crash target reached 1
+TOK=202610312143461010192
+lock released
+RESULT C2 runner 1 check 0 saves same CLASS CRASH_TARGET fix off crash target reached 1
+TOK=202610312146111039519
+lock released
+RESULT A2 runner 1 check 0 saves same CLASS CRASH_TARGET fix off crash target reached 1
+TOK=202610312148301067678
+lock released
+RESULT B2 runner 1 check 0 saves same CLASS CRASH_TARGET fix off crash target reached 1
+TOK=202610312150391093895
+lock released
+RESULT C3 runner 1 check 0 saves same CLASS CRASH_TARGET fix off crash target reached 1
+TOK=202610312153101120926
+lock released
+RESULT A3 runner 1 check 0 saves same CLASS CRASH_TARGET fix off crash target reached 1
+TOK=202610312155371150659
+lock released
+RESULT B3 runner 1 check 0 saves same CLASS CRASH_TARGET fix off crash target reached 1
+control: 3 of 3 crashed at the site
+RULE arm A REFUTED: 0 clean, 3 at the site, 0 elsewhere, of 3
+RULE arm B REFUTED: 0 clean, 3 at the site, 0 elsewhere, of 3
