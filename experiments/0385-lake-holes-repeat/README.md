@@ -1,7 +1,7 @@
 # 0385 — The night lake's holes on the merged build: does F486's coverage hold on a run with holes
 
-**Status: plan only.** Written on the laptop on 2026-10-31, before any box access. Nothing below has run. This revision answers
-Codex's REVIEW-PORTS-27 (HOLD on a49c2c7). Findings, if any, take numbers from F720 (range F720–F739, given by the top session).
+**Status: run and closed.** The plan below was written before any box access. One run, K4, on 2026-10-31; the result and verdict are at the end.
+Findings F720–F723 (range F720–F739, given by the top session).
 
 **Question.** F486 called the holes coverage ("where a hole forms, no writer drew") from one episode: 14 finals in K3,
 median 7.4 % of the lake window, with K2 hole-free. On the merged shared build, RT on, in a run with holes (mean shot
@@ -303,6 +303,53 @@ a still image that stopped the series instead of counting as a failed route.
 checked on its own), a foreign uid, a second file system, `mkdir -m 700` and the kernel's access times. Those first run on the box. So do all the test build's GPU packets:
 the unit tests prove what goes into the buffer, not what the GPU does with it. The RB count of gfx1013 and `FORCE_HIZ`/`FORCE_HIS` on hardware stay TODO(verify).
 
-**Result.** Pending.
+## Setup as run (2026-10-31)
 
-**Verdict.** Pending.
+Commit 8dd118da, on fab8660. That is c88e5c4a plus one change made at the slot, on the top session's order and the maintainer's word: "nie potrzebuję ochrony saveów - savy
+maja być tylko skopiowane dla was na wasze powtarzalne cele". So the live saves were neither read nor gated, and everything above that says otherwise was superseded. The
+sample was `saves-lake-1153`, sum 1bf541067f123fab9b3d60b714f21339, unchanged before and after.
+
+- **Tests before the run:** the full suite on c88e5c4a was stopped at the top session's order at 44 passed, 0 failed (`raw/test0385-c88e5c4a-partial.txt`). This is a partial result. The last
+  complete pass is 101 of 102 on adca393e. Eight targeted cases then passed on the change (`raw/test0385-8dd118da-targeted.txt`).
+- **Two refused claims,** at about 17:49 and 17:51, both "Remote Shell Writes", ran nothing. The third, at 18:05:44 on the top session's order, passed.
+- **18:05:59–18:06:18:** kit and setup. Launcher 81269ab6e5f19e505fcf6052a292a7f3, 5,149 links. Setup printed one harmless line: the first look at `watch.id` before the watchdog had written it.
+- **18:06:18–18:07:19:** the private build: backend, its Catch2 tests, relink. Binary 65de159d5cca294a427bc98b9bdfefdb, `tb/` 187 MB. This was the first full compile of `direct.cpp` with these lines, under `-Werror`.
+- **18:07:43–18:16:04:** run K4, exit 0, RT on: 0 `ray tracing off:`, 0 `skip pgm`, 0 TIMEOUT lines, 13,016 flips, journal 109 MB, manifest passed, 2.9 GB of snapshots and 55 shots deleted unviewed.
+- **18:16:48:** release. Lock empty, no emulator, none of our processes; the watchdog and the stream ended by themselves. Shared normal 78f25172 and archive 3292bdaf unchanged, disk 66 %.
+  The private `exp0385/` (217 MB) and the private environment dump stay on the box.
+- **Change after seeing the data:** the alignment of shots with captures by wall clock, and the kernel line count, were done on the laptop.
+
+**Result, K4** (`raw/K4.*`).
+
+- **The run had holes.** Shots 0–15: 27.9–32.4 %, mean patch of shots 0–16 28.8 %. It qualified, so the series ended; K5 and K6 did not run.
+- **The holes' test:** 190 finals, 133 hole finals, 91 pairs. Mixed tiles T 0.379 on the true grid, Z 0.381 on the shifted grid, Z − T 0.002. Writes in all-hole tiles A 0.000, in no-hole tiles B 0.262. Offsets 0–7 held 28.7 % of the changed dwords.
+- **The holes ended by themselves at 18:12:15,** with every switch off. Capture c22 (18:12:13.7) had a hole share of 0.166, c23 (18:12:16.1) 0.000, and shot 16 (18:12:16) 9.2 % after 27.9 % five seconds earlier. Shots and depth agree to the second. The first switch went in at 18:12:18.
+- **The catcher:** over the whole run 0 lake writers inside a COND_EXEC, 0 predication packets and 0 nested IBs, with about 5.5 writers per GFX job and 145 in the jobs that hold them. Zpass: 65,536 records, 0 skipped. Its window, 18:12:18–18:12:38, fell after the holes had ended, so it holds no hole frame.
+- **The arms** (`raw/K4.arms.txt`; patch of each shot):
+
+| Shots | Switches | Patch % | Rule's reading | Host's count |
+|---|---|---|---|---|
+| 0–16 | all off | 27.9–32.4, then 9.2 | all off | — |
+| 17–20 | census, zpass | 9.6 9.6 9.1 9.6 | CLEARS | 546,266 words |
+| 21–23 | cache wbinv each | 23.8 9.6 9.4 | no effect | 628,280 words |
+| 24–26 | cull | 17.1 29.4 9.1 | no effect | 17,238 barriers |
+| 27–29 | pfp | 9.6 9.6 9.6 | CLEARS | 170,882 words |
+| 30–32 | dbmeta | 23.1 9.6 9.5 | no effect | 5,732 fills |
+| 33–35 | idle | 9.7 26.3 9.5 | no effect | 6,912 words |
+| 36–38 | nohiz | 9.6 9.6 16.4 | no effect | 25,128 words |
+| 39–41 | trackercf | 17.1 18.7 16.1 | NOT EFFECTIVE | 0 CHAIN stops |
+| 42–44 | cache all each | 19.4 12.2 17.2 | no effect | 364,648 words |
+| 45–47 | all together | 17.0 17.1 17.2 | no effect | 796,754 words |
+| 48–52 | all off | 17.1 17.2 17.2 17.1 17.1 | all off | — |
+
+- **Writers per job fell late in the run,** from about 5.7 to about 3.4, around shots 39–42, and the patch then sat near 17 % through the last all-off shots. No shot was viewed, so what changed is not known.
+- **The kernel:** no GPU fault, ring timeout, reset or devcoredump. 28,256 lines `amdgpu ... bo ... va ... conflict with 0x10-0x1010`, from 18:07:50 on: one 2-MiB BO, tried at 64-KiB steps through the low range that the catcher's 16-MiB BO held at VA 0x10000. One `clocksource: Watchdog remote CPU 7 read timed out` at 18:09:57. `raw/kernel-stream.txt.gz`.
+
+**Verdict.**
+
+1. **Coverage is Confirmed** by the rule fixed before the run (F720). On a full hole run the holes' edges ignore the 8×8 grid and the frame's writes miss the tiles that end as holes. F486 loses its "one episode" limit. Its other limit stands: metadata finer than a tile, or a writer skipping cells for a metadata reason, is not excluded, and the HTILE's 8×8 granularity stays TODO(verify).
+2. **The CP does not skip the lake writers** by `COND_EXEC` or predication, and none sits in a nested IB (F721). That row of the candidates is closed, as is the wiring idea that a state cut at a nested buffer loses them.
+3. **No fix is shown to work** (F722). The arms cannot say, because the state they were to be compared with ended by itself before the first switch. The catcher arm, which holds no fix, reads CLEARS, so pfp's CLEARS is worth nothing more. Some shots came back at 17–29 % in arms that were on, which argues against those fixes only weakly, one shot at a time. `trackercf` did nothing here: no CHAIN reached a walker.
+4. **The method's faults** (F723): the arm rule assumed a state that holds, and K4 shows it does not; arms need all-off shots beside them. The catcher came after the all-off window, so it missed the holes: it has to run while they are there. Its BO sat in the low VA range and caused the conflict lines. The gate's pattern matched neither those lines nor the clocksource line, so neither stopped the run. Nothing suggests they changed the holes, but their cost was not measured.
+
+**Next:** one follow-up, under a new number: zpass from shot 0, its BO out of the low range, arms with all-off shots beside them. Q21 itself stays open.

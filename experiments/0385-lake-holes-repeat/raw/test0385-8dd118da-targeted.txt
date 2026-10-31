@@ -1,0 +1,8 @@
+PASS claim_valid_over_stdin_exact_line_and_queue (11.3 s)
+PASS claim_any_failed_pin_gives_the_lock_back (23.4 s)
+PASS the_live_saves_are_no_gate_and_are_never_touched (7.3 s)
+PASS live_saves_that_change_during_a_run_stop_nothing_and_stay_as_they_are (47.5 s)
+PASS stop_source_lake_save_changed (49.1 s)
+PASS stop_shared_learned_file_changed (50.6 s)
+PASS a_run_qualifies_on_its_all_off_shots_only
+PASS an_empty_count_is_never_a_zero

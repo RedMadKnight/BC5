@@ -1,0 +1,12 @@
+ 0 all off | 28.9 29.1 28.5 29.9 32.0 30.5 30.2 30.0 31.4 30.2 30.6 28.9 29.9 30.2 32.4 27.9 9.2 | all off
+17 CLEARS | 9.6 9.6 9.1 9.6 | census=1 zpass=1
+21 no effect | 23.8 9.6 9.4 | cache=wbinv cache_at=each
+24 no effect | 17.1 29.4 9.1 | cull=1
+27 CLEARS | 9.6 9.6 9.6 | pfp=1
+30 no effect | 23.1 9.6 9.5 | dbmeta=1
+33 no effect | 9.7 26.3 9.5 | idle=1
+36 no effect | 9.6 9.6 16.4 | nohiz=1
+39 NOT EFFECTIVE: the host's counts show nothing | 17.1 18.7 16.1 | trackercf=1
+42 no effect | 19.4 12.2 17.2 | cache=all cache_at=each
+45 no effect | 17.0 17.1 17.2 | cache=all cache_at=each cull=1 pfp=1 dbmeta=1 idle=1 nohiz=1 trackercf=1
+48 all off | 17.1 17.2 17.2 17.1 17.1 | all off
