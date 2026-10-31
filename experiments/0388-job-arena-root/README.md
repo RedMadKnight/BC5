@@ -19,3 +19,5 @@ All default off; off leaves the host as it was. `patch0388.py` applies them to p
 | `KYTY_BC5_0388_TRACE=1` | catcher: logs the first 400 affinity reads and sets, and each host mask applied |
 
 **Tests so far.** The pure parts: 65 checks, 0 failed, on the laptop with clang 22 and a small stand-in for Catch2's macros, not Catch2 itself. `patch0388.py` applied to a tree of `f266548` + main's patch; the patched units have not been compiled.
+
+**Box scripts.** `box0388.sh claim|build|release`, with `build0388.py`, `patch0388.py`, `units.sha256` and `backend/include/bc5/cpu_model.hpp` beside it on the box. `test_box0388.sh` tests the claim and release in a temporary HOME with a stand-in `pgrep`: 14 of 14. The `build` step has had `bash -n` only.
