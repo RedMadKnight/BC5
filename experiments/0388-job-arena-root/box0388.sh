@@ -13,7 +13,7 @@ stop() { echo "0388 STOP: $*"; exit 1; }
 own() { [ -s "$ID" ] && [ "$(cat "$LOCK" 2> /dev/null)" = "$(cat "$ID")" ]; }
 claim() {
     local c=$LOCK.d19-claim t=$LOCK.0388-$$.new a=$LOCK.0388-$$.aside line
-    pgrep -x kyty_emulator > /dev/null && stop "an emulator runs"
+    pgrep '^kyty_emulator' > /dev/null && stop "an emulator runs"
     [ ! -L "$E" ] || stop "$E is a link"
     mkdir -p "$R" || stop "cannot make $R"
     line="top exp 0388 | token $(date +%s)$$ | $1, no emulator, until $(date -d +"$2"min +%H:%M) | $(date '+%F %T')"
@@ -43,7 +43,7 @@ release() {
 }
 build() {
     own || stop "no lock held by 0388"
-    pgrep -x kyty_emulator > /dev/null && stop "an emulator runs"
+    pgrep '^kyty_emulator' > /dev/null && stop "an emulator runs"
     local u shared bin rc
     (cd "$TREE" && sha256sum -c "$HERE/units.sha256") > "$R/units.txt" 2>&1 || { cat "$R/units.txt"; stop "the shared tree's units are not the pins"; }
     shared=$(md5sum < "$B/src/kyty_emulator" | cut -d' ' -f1)

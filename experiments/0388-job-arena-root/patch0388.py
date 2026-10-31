@@ -65,6 +65,11 @@ EDITS = {
         ("\tauto result = PthreadAttrSetaffinity(&thread->attr, mask);\n\n\treturn result;\n",
          '\tauto result = PthreadAttrSetaffinity(&thread->attr, mask);\n\n\tBc5TraceAffinity("set", thread->name.c_str(), mask);\n'
          '#if KYTY_PLATFORM == KYTY_PLATFORM_LINUX\n\tBc5ApplyAffinity(thread, "set");\n#endif\n\n\treturn result;\n'),
+        ("int KYTY_SYSV_ABI PthreadAttrGetaffinity(const PthreadAttr* attr, KernelCpumask* mask) {\n",
+         "static void Bc5TraceAffinity(const char* what, const char* name, uint64_t mask);\n\n"
+         "int KYTY_SYSV_ABI PthreadAttrGetaffinity(const PthreadAttr* attr, KernelCpumask* mask) {\n"),
+        ("\t*mask = (*attr)->affinity;\n",
+         '\t*mask = (*attr)->affinity;\n\tBc5TraceAffinity("attr get", "(attr)", *mask); // libc.prx counts its CPUs from this read\n'),
         ("\treturn PthreadAttrGetaffinity(&thread->attr, mask);\n",
          '\tconst int result = PthreadAttrGetaffinity(&thread->attr, mask);\n\tBc5TraceAffinity("get", thread->name.c_str(), *mask);\n\treturn result;\n'),
     ],
