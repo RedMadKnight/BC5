@@ -35,8 +35,6 @@ check "mount io and stat past a spaced name" "echo '$L' | grep -q 'mount_read_by
 check "emulator and gtt" "echo '$L' | grep -q 'emu_majflt=77' && echo '$L' | grep -q 'gtt=4096'"
 check "threads" "grep -q '^THREADS .* bc5-ring:77' '$T/s.txt'"
 check "ends when the mount is gone" "grep -q '^END ' '$T/s.txt'"
-: > "$T/none.txt"
-COUNT=$T/c2 PROCDIR=$P PATH="$T/bin:$PATH" PROC=$P DRM=$T/drm EVERY=0.05 bash -c "pgrep() { :; }; export -f pgrep; true"
 cat > "$T/m.log" <<'E'
 bc5-mount: 8 read workers, decode-ahead 2048 KiB
 bc5-mount stats 30.0 s: served 100 MiB (+100), decoded 10 blocks 40 MiB (+40), 0 decoded again, from disk 20 blocks 50 MiB (+50)
