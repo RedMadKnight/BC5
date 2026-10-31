@@ -29,7 +29,7 @@ TB2_ENV=$(tb2_env "$TB2_NAMES")
 TB2_KEPT=$(tb2_env "$TB2_KEPT_NAMES")
 TB2_SW=$TB2_ENV
 [ -z "$TB2_BAD" ] || TB2_SW="$TB2_SW REJECTED-LINES:$TB2_BAD"
-# Called right before each emulator start: what the log says is what the emulator gets, each required value is exact, and each private path is itself, not a link elsewhere. If not, it does not start.
+# Called right before each emulator start: what the log says is what the emulator gets, each required value is exact, and in the smoke every place it writes is private and it runs from its own directory. If not, it does not start.
 tb2_check() {
   local r v w=""
   [ "$(tb2_env "$TB2_NAMES")" = "$TB2_ENV" ] || w="$w switches:$(tb2_env "$TB2_NAMES")"
@@ -37,13 +37,13 @@ tb2_check() {
   for r in "${TB2_REQ[@]}" "${TB2_PRIVATE[@]}"; do
     v=$(printenv "${r%%=*}"); [ "$v" = "${r#*=}" ] || w="$w ${r%%=*}=$v"
   done
-  for r in "${TB2_PATHS[@]}"; do
-    v=$(printenv "$r"); [ "$(readlink -f "$v")" = "$(readlink -f "$HOME")${v#"$HOME"}" ] || w="$w link:$r"
-  done
-  [ -z "$TB2_WD" ] || [ "$(pwd -P)" = "$(readlink -f "$TB2_WD")" ] || w="$w wd:$(pwd -P)"
+  if [ -n "$TB2_WD" ]; then
+    v=$(tb2_private_all) || w="$w private:$v"
+    [ "$(pwd -P)" = "$(readlink -f "$HOME")/bc5-work/exp0381/wd" ] || w="$w wd:$(pwd -P)"
+  fi
   [ -z "$w" ] && return 0
-  echo "== $(date '+%F %T') exp 0381: changed after the settings were read, not started:$w" >> "$LOG"
-  say "The settings changed after they were read; not started (see $LOG)."
+  case "$w" in *private:*) ;; *) echo "== $(date '+%F %T') exp 0381: changed after the settings were read, not started:$w" >> "$LOG" ;; esac
+  say "The settings changed after they were read, not started:$w"
   exit 1
 }
 # end of exp 0381 test build 2's switches

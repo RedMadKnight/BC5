@@ -170,10 +170,12 @@ runl() {
     R=$T/rt; rm -rf "$R"; RW=$R/bc5-work; RT=$RW/exp0381/tb2
     mkdir -p "$RT/bin" "$RW/exp0381/wd" "$R/bc5-data/pkg"; : > "$R/bc5-data/pkg/game.pkg"; : > "$RT/zero-list-20261029-120000.txt"
     printf '#!/usr/bin/env bash\nexit 0\n' > "$RW/pad-volume.sh"; cp "$RW/pad-volume.sh" "$RT/play-sample0379t.sh"
-    printf '%s\n' '#!/usr/bin/env bash' '[ -e "$0.first" ] || { touch "$0.first"; env | sort > "$0.env1"; exit 75; }' 'env | sort > "$0.env2"; echo "$*" > "$0.args"; exit 0' > "$RT/bin/kyty_emulator"
+    printf '%s\n' '#!/usr/bin/env bash' '[ -e "$0.first" ] || { touch "$0.first"; env | sort > "$0.env1"; [ ! -x "$0.hook" ] || "$0.hook"; exit 75; }' 'env | sort > "$0.env2"; echo "$*" > "$0.args"; exit 0' > "$RT/bin/kyty_emulator"
     chmod +x "$RW/pad-volume.sh" "$RT/bin/kyty_emulator"
     cp "$T/run.env" "$RW/bc5-run.env"; [ -f "$T/pkg.env" ] && cp "$T/pkg.env" "$RW/bc5-pkg.env"; [ -f "$T/sw.env" ] && cp "$T/sw.env" "$RT/switches.env"
-    { echo '#!/usr/bin/env bash'; echo 'pgrep() { return 1; }; mountpoint() { return 0; }'; [ -z "${LINKED:-}" ] || echo 'readlink() { case "$2" in *wd/_SaveData*) echo /live/_SaveData ;; *) command readlink "$@" ;; esac; }'; tail -n +2 "$l"; } | sed -e "s#~/#$R/#g" -e "s#\$HOME#$R#g" > "$R/l.sh"
+    [ -z "${HOOK:-}" ] || cp "$HOOK" "$RT/bin/kyty_emulator.hook"
+    [ -z "${PRE:-}" ] || eval "$PRE"
+    { echo '#!/usr/bin/env bash'; echo 'pgrep() { return 1; }; mountpoint() { return 0; }'; tail -n +2 "$l"; } | sed -e "s#~/#$R/#g" -e "s#\$HOME#$R#g" > "$R/l.sh"
     env HOME="$REAL_HOME" PATH="$REAL_PATH" "$@" bash "$R/l.sh" > "$R/out" 2>&1
     echo $?
 }
@@ -243,8 +245,55 @@ sed '/^  \[ "\$RC" = 75 \] || break$/a \  export BC5_DIRECT_ACB_STATE_RESTORE=0'
 expect "smoke: a change between start and restart: the second start does not happen" "[ \"\$rl\" = 1 ] && [ -e '$E1' ] && [ ! -e '$E2' ]"
 sed 's#^cd ~/bc5-work/exp0381/wd$#cd ~/bc5-work#' "$SR" > "$T/s-wd"; rl=$(runl "$T/s-wd")
 expect "smoke: run from the live working directory, where the title's saves would go: the emulator does not start" "[ \"\$rl\" = 1 ] && [ ! -e '$E1' ] && grep -q 'not started: wd:' $T/rt/bc5-work/exp0381/tb2/play/play-*.log"
-LINKED=1; rl=$(runl "$SR"); LINKED=""
-expect "smoke: a private path that is a link elsewhere: the emulator does not start" "[ \"\$rl\" = 1 ] && [ ! -e '$E1' ] && grep -q 'not started: link:KYTY_BC5_SAVEDATA_DIR' $T/rt/bc5-work/exp0381/tb2/play/play-*.log"
+# Real links: a junction on Windows, a symbolic link elsewhere. Nothing is deleted or written through one: the target's marker file is compared at the end.
+mklnk() { if command -v cygpath > /dev/null; then cmd //c mklink //J "$(cygpath -w "$1")" "$(cygpath -w "$2")" > /dev/null; else ln -s "$2" "$1"; fi; }
+LV=$T/live-target; mkdir -p "$LV"; echo keep > "$LV/marker"
+lnk() { p=$1/$2; mkdir -p "${p%/*}"; rm -rf "$p"; mklnk "$p" "$LV"; }
+# The starter as a whole, its paths moved like the launcher's, on stand-ins for the emulator's side. rm and cp are wrapped so that a call is on record.
+stage() {
+    R=$T/rt; rm -rf "$R"; RW=$R/bc5-work; RE=$RW/exp0381; RT=$RE/tb2
+    mkdir -p "$RT/bin" "$RT/raw" "$RE/wd/_SaveData/PPSA03671" "$RW/exp0379/saves-live-377a8d45" "$RW/_SaveData/PPSA03671" "$RE/in-tb2/$ED"
+    echo save > "$RW/exp0379/saves-live-377a8d45/a.dat"; cp "$RW/exp0379/saves-live-377a8d45/a.dat" "$RW/_SaveData/PPSA03671/"; echo old > "$RE/wd/_SaveData/PPSA03671/old.dat"; : > "$RW/exp0379/in-D2.cmd"
+    echo 'RayTracing.PPSA03671=on' > "$RE/input-rton.cfg"; : > "$RW/BOX-LOCK"; : > "$RW/BOX-QUEUE"
+    printf '#!/usr/bin/env bash\n' > "$RT/bin/kyty_emulator"; cp "$RT/bin/kyty_emulator" "$RT/play-pkg-0381tb2s.sh"; cp "$RT/bin/kyty_emulator" "$RE/in-tb2/$ED/boxcap0381.sh"; chmod +x "$RT/bin/kyty_emulator" "$RT/play-pkg-0381tb2s.sh"
+    sed -e "s#\$HOME#$R#g" "$HERE/pathcheck0381tb2.inc" > "$RE/in-tb2/$ED/pathcheck0381tb2.inc"
+}
+ED=experiments/0381-second-title-non-f403-hangs
+runs() {
+    LIVE=$( (cd "$RW/_SaveData" && find PPSA03671 -type f -exec md5sum {} + | sort -k2 | md5sum | cut -c1-16) )
+    { echo '#!/usr/bin/env bash'; echo 'pgrep() { return 1; }; setsid() { :; }; distrobox() { echo distrobox >> "$CALLS"; }'
+      echo 'rm() { echo "rm $*" >> "$CALLS"; command rm "$@"; }'; echo "cp() { echo \"cp \$*\" >> \"\$CALLS\"; ${CPSTUB:-command cp \"\$@\"}; }"
+      tail -n +2 "$HERE/start0381tb2.sh"; } | sed -e "s#\$HOME#$R#g" -e "s#377a8d456a9b4cb1#$LIVE#" > "$R/s.sh"
+    : > "$R/calls"; env HOME="$REAL_HOME" PATH="$REAL_PATH" CALLS="$R/calls" bash "$R/s.sh" T1 > "$R/sout" 2>&1
+    echo $?
+}
+stage; rs=$(runs)
+expect "starter: a private tree: copied, checked, launched, the old copy gone, the live saves as they were" "[ \"\$rs\" = 0 ] && grep -q '^rm -rf' $T/rt/calls && grep -q '^cp -a' $T/rt/calls && grep -q distrobox $T/rt/calls && [ ! -e $T/rt/bc5-work/exp0381/wd/_SaveData/PPSA03671/old.dat ] && [ -e $T/rt/bc5-work/exp0381/wd/_SaveData/PPSA03671/a.dat ] && cmp -s $T/rt/bc5-work/_SaveData/PPSA03671/a.dat $T/rt/bc5-work/exp0379/saves-live-377a8d45/a.dat"
+for c in exp0381/wd exp0381/wd/_SaveData exp0381/wd/_SaveData/PPSA03671 exp0381/wd/_SaveData-pkg-play exp0381/wd/_SaveData/PPSA03671/sce_sdmemory exp0381/direct-learned-pkg.txt exp0381/input-rton.cfg exp0381/tb2/raw; do
+    stage; lnk "$RW" "$c"; rs=$(runs)
+    expect "starter: a real link at $c: stopped before any delete, copy or launch" "[ \"\$rs\" = 9 ] && [ ! -s $T/rt/calls ] && grep -q 'not itself' $T/rt/sout"
+done
+stage; ln "$RW/_SaveData/PPSA03671/a.dat" "$RW/direct-learned-pkg.txt"; ln "$RW/direct-learned-pkg.txt" "$RE/direct-learned-pkg.txt"; rs=$(runs)
+expect "starter: the private learned file is a hard link to the live one: stopped before any write" "[ \"\$rs\" = 9 ] && [ ! -s $T/rt/calls ]"
+stage; CPSTUB='return 1'; rs=$(runs); CPSTUB=''
+expect "starter: the copy fails: stopped, nothing launched" "[ \"\$rs\" = 5 ] && ! grep -q distrobox $T/rt/calls && grep -q 'save copy failed' $T/rt/sout"
+stage; mklnk "$RW/exp0379/saves-live-377a8d45/lnk" "$LV"; rs=$(runs)
+expect "starter: a link arrives with the copy: stopped, nothing launched" "[ \"\$rs\" != 0 ] && ! grep -q distrobox $T/rt/calls"
+stage; command rm -rf "$RE/wd/_SaveData"; rs=$(runs)
+expect "starter: no private save directory: stopped before any delete" "[ \"\$rs\" = 5 ] && [ ! -s $T/rt/calls ]"
+# The smoke launcher on the same links: before its mkdir, so nothing is made through them.
+for c in exp0381/wd/_SaveData exp0381/wd/_SaveData/PPSA03671 exp0381/wd/_SaveData-pkg-play exp0381/tb2/play; do
+    PRE="lnk \"\$RW\" '$c'"; rl=$(runl "$SR"); PRE=""
+    expect "smoke launcher: a real link at $c: the emulator does not start" "[ \"\$rl\" = 1 ] && [ ! -e '$E1' ] && [ \"\$(ls '$LV')\" = marker ]"
+done
+PRE="lnk \"\$RW\" exp0381/wd"; rl=$(runl "$SR"); PRE=""
+expect "smoke launcher: a real link at the working directory: the emulator does not start" "[ \"\$rl\" = 1 ] && [ ! -e '$E1' ]"
+rl=$(runl "$SR")
+expect "smoke launcher: a private tree: both starts run" "[ \"\$rl\" = 0 ] && [ -e '$E1' ] && [ -e '$E2' ]"
+printf '%s\n' '#!/usr/bin/env bash' 'R=$(dirname "$(dirname "$(dirname "$(dirname "$(dirname "$0")")")")")' 'rm -rf "$R/bc5-work/exp0381/wd/_SaveData"' 'if command -v cygpath > /dev/null; then cmd //c mklink //J "$(cygpath -w "$R/bc5-work/exp0381/wd/_SaveData")" "$(cygpath -w "$LV")" > /dev/null; else ln -s "$LV" "$R/bc5-work/exp0381/wd/_SaveData"; fi' > "$T/hook"; chmod +x "$T/hook"
+export LV; HOOK=$T/hook; PRE='mkdir -p "$RW/exp0381/wd/_SaveData"'; rl=$(runl "$SR"); HOOK=""; PRE=""
+expect "smoke launcher: a link appears between start and restart: the second start does not happen" "[ \"\$rl\" = 1 ] && [ -e '$E1' ] && [ ! -e '$E2' ] && grep -q 'not started: private:' $T/rt/out"
+expect "links: the target was never touched" "[ \"\$(ls '$LV')\" = marker ] && [ \"\$(cat '$LV/marker')\" = keep ]"
 expect "generator: the live save path is not a private value of the smoke" "! grep -E '^TB2_PRIVATE=' '$SR' | grep -E '=[^ ]*bc5-work/(_SaveData|direct-learned)'"
 r1=$X/bc5-work/exp0380r1/play-pkg-0380r1.sh
 repin() { sed -i "s/^PIN_R1_LAUNCHER=.*/PIN_R1_LAUNCHER=$(m "$r1")/" "$T/pins.env"; }

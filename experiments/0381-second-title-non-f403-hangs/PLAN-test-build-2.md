@@ -50,7 +50,10 @@ and this is the first time they meet it.
   (`COMPUTE_RING`, `CROSS_RING_WAITS`, `GPU_CHECK`, `GPU_CHECK_PRODUCT`, `SHADOW_LABELS`, `HOST_INDIRECT`, `SOFT_WAIT_MS`). `tb2_check`, before every start and restart, wants each of these exactly, the nine switches and the logged settings unchanged, and in the smoke the three paths and the working
   directory to be themselves, not links elsewhere (`KYTY_BC5_SAVEDATA_DIR` only covers `memory.dat`; other saves go under `_SaveData` in the working directory, so the directory counts). Otherwise the emulator does not start and the log says why. The log's first line now gives the
   switches, then the list's md5 and the settings read from the environment. **The player's launcher keeps r1's rule on purpose:** `bc5-pkg.env` may move its paths and guards, since it runs on the live saves; the log shows where they went. The restore, crash frames, recorder, `NO_CLEAR` and the zero list are not movable there either.
-  Launcher pins: 8549de83, smoke b849559d. Runtime pins stay for the final D19 and a fresh read; `start0381tb2.sh`'s save pin 377a8d45 is older than the 2026-10-30 play and will stop the smoke. A link test uses a stand-in for `readlink`, because Git Bash makes no real links here; a real link on the box is not tested.
+  Launcher pins: see the pins files. Runtime pins stay for the final D19 and a fresh read; `start0381tb2.sh`'s save pin 377a8d45 is older than the 2026-10-30 play and will stop the smoke.
+- **Revised after Codex's REVIEW-PORTS-12 (HOLD).** The starter deleted and copied under `wd/_SaveData` before any check, and the launcher never looked at that tree: a junction there passed. `pathcheck0381tb2.inc` now walks every write target from the canonical home (the only alias allowed)
+  and refuses a link at any part, a link anywhere in the trees, and a private path that is its live twin (`-ef`, for mounts and hard links). The starter runs it first, before the live-save pin, again right before `rm`, and after the copy, and checks the status of `rm` and both `cp`. The launcher runs it before its `mkdir` and in `tb2_check` before every start and restart.
+  If `~/bc5-work` itself is a link on the box, or `wd` holds a link for another reason, the smoke stops there: that needs a read, not a looser check. The check is not atomic with the write that follows it. It needs the box's `readlink -f`, `find` and `-ef`, only exercised here in Git Bash. The save pin 377a8d45 stays stale and stops the starter after the first check.
 - `BC5_DIRECT_DRAW_ARGS_JOURNAL` is not in the list: it is a diagnostic, and a long journal is what filled 38 GB in `on-3`.
 
 **What this costs.** With the new base, a difference between 4c686b5b and tb2 is no longer only three small changes: the whole archive moves too. The fallback's list below stops being exact.
@@ -99,7 +102,7 @@ rechecks this. `mkpatch0381.py` touches `bc5LleAgc.cpp` only. Exp 0372's pieces 
 
 1. `tb2run0381.sh build <out>`: the tree crosses, then guard, claim, build. Catch2 at main (clang), the patched tree proved, four units compiled with
    the shared commands, link, launchers. Writes only under `~/bc5-work/exp0381/tb2`, `in-tb2` and `backend-build-tb2`. About 3 minutes, CPU only.
-2. `tb2run0381.sh smoke TS2 <out>`: one start, RT on, a fresh private copy of the live saves (377a8d45), through the smoke launcher (8 lines different
+2. `tb2run0381.sh smoke TS2 <out>`: one start, RT on, a fresh private copy of the live saves (377a8d45), through the smoke launcher (7 lines different
    from the real one: saves, config, learned file, working directory, switches file, and the private paths, directory and guards it forces), journal off, the kernel log streamed.
 
 **One change from the brief, for Codex and the top session to accept or refuse.** "120 s with the cap" would never test the cap, since the laptop

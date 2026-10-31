@@ -107,6 +107,7 @@ at() { [ "$(grep -cxF -- "$1" "$L")" = 1 ] || { echo "FAIL: anchor [$1] is not t
 pkg_at=$(at '  done < "$PKG_ENV"') || exit 1
 [ "$(sed -n "$((pkg_at + 1))p" "$L")" = fi ] || fail "the end of the pkg.env loop is not where it should be"
 sed -i "$((pkg_at + 1))r $HERE/force0381tb2.inc" "$L"
+sed -i "$((pkg_at + 1))r $HERE/pathcheck0381tb2.inc" "$L"
 brace=$(at '{') || exit 1
 sed -i "$((brace - 1))r $HERE/switches0381tb2.inc" "$L"
 [ "$(grep -c '^  "$EMU" ' "$L")" = 1 ] || fail "the emulator's line is not there once"
@@ -135,7 +136,6 @@ sed -e 's#^cd ~/bc5-work$#cd ~/bc5-work/exp0381/wd#' \
     -e 's#^export BC5_DIRECT_LEARNED=.*$#export BC5_DIRECT_LEARNED=$HOME/bc5-work/exp0381/direct-learned-pkg.txt#' \
     -e 's#^export KYTY_BC5_SAVEDATA_DIR=.*$#export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/exp0381/wd/_SaveData-pkg-play#' \
     -e 's#^SWF=.*$#SWF=/dev/null#' \
-    -e 's#^TB2_PATHS=()$#TB2_PATHS=(KYTY_BC5_SAVEDATA_DIR BC5_DIRECT_LEARNED KYTY_BC5_INPUT_CONFIG)#' \
     -e 's#^TB2_WD=""$#TB2_WD=$HOME/bc5-work/exp0381/wd#' \
     -e 's#^TB2_PRIVATE=()$#TB2_PRIVATE=("KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/exp0381/wd/_SaveData-pkg-play" "BC5_DIRECT_LEARNED=$HOME/bc5-work/exp0381/direct-learned-pkg.txt" "KYTY_BC5_INPUT_CONFIG=$HOME/bc5-work/exp0381/input-rton.cfg" BC5_DIRECT_COMPUTE_RING=-1 BC5_DIRECT_CROSS_RING_WAITS=all BC5_DIRECT_GPU_CHECK=1 BC5_DIRECT_GPU_CHECK_PRODUCT=1 BC5_DIRECT_SHADOW_LABELS=1 BC5_DIRECT_HOST_INDIRECT=learn:1100000000 BC5_DIRECT_SOFT_WAIT_MS=8)#' \
     -e '/^done < "\$ENVF"$/a export KYTY_BC5_INPUT_CONFIG=$HOME/bc5-work/exp0381/input-rton.cfg' "$L" > "$S" || fail "smoke launcher"

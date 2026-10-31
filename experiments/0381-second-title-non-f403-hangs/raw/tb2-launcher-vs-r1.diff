@@ -26,24 +26,58 @@
 < export BC5_CRASH_FRAMES=1 BC5_0380_REC=1 BC5_DIRECT_PIECES_NO_CLEAR=1 BC5_DIRECT_ZERO_SKIP=$HOME/bc5-work/exp0380r1/zero-list-20261029-120000.txt
 ---
 > export BC5_DIRECT_ACB_STATE_RESTORE=1 BC5_CRASH_FRAMES=1 BC5_0380_REC=1 BC5_DIRECT_PIECES_NO_CLEAR=1 BC5_DIRECT_ZERO_SKIP=$HOME/bc5-work/exp0381/tb2/zero-list-20261029-120000.txt
-156a157,164
+156a157,198
+> # exp 0381 test build 2: is each private path what its name says? Used by the smoke's starter before it deletes or copies anything, and by the smoke launcher before its mkdir and before every start.
+> # Each path is walked from the canonical home, the only alias allowed: every part that exists must be a real directory (or the file it names), not a link or junction. A tree must hold no link at all. Absent parts pass: nothing is there to follow.
+> tb2_private() {
+>   local h p r c
+>   h=$(readlink -f "$HOME") && [ -n "$h" ] || return 1
+>   p=$h; r=$1/
+>   while [ -n "$r" ]; do
+>     c=${r%%/*}; r=${r#*/}
+>     case "$c" in ''|.|..) return 1 ;; esac
+>     p=$p/$c
+>     [ ! -L "$p" ] || return 1
+>     [ -e "$p" ] || continue
+>     [ "$(readlink -f "$p")" = "$p" ] || return 1
+>     if [ -n "$r" ] || [ "$2" != file ]; then [ -d "$p" ] || return 1; else [ -f "$p" ] || return 1; fi
+>   done
+>   [ "$2" != tree ] || [ ! -e "$p" ] || [ -z "$(find "$p" -type l -print -quit 2>&1)" ]
+> }
+> # Every place the smoke writes, then the private paths against their live twins, which catches a mount or a hard link that a walk cannot see. Prints what failed.
+> tb2_private_all() {
+>   local t a b h
+>   for t in bc5-work/exp0381/wd:tree bc5-work/exp0381/wd/_SaveData:tree bc5-work/exp0381/wd/_SaveData/PPSA03671:tree bc5-work/exp0381/wd/_SaveData-pkg-play:tree \
+>            bc5-work/exp0381/direct-learned-pkg.txt:file bc5-work/exp0381/input-rton.cfg:file bc5-work/exp0381/tb2:dir bc5-work/exp0381/tb2/raw:dir bc5-work/exp0381/tb2/play:dir; do
+>     tb2_private "${t%:*}" "${t##*:}" || { echo "${t%:*}"; return 1; }
+>   done
+>   h=$(readlink -f "$HOME")/bc5-work
+>   for t in wd: wd/_SaveData:_SaveData wd/_SaveData-pkg-play:_SaveData-pkg-play direct-learned-pkg.txt:direct-learned-pkg.txt; do
+>     a=$h/exp0381/${t%:*}; b=$h/${t##*:}
+>     [ ! "$a" -ef "$b" ] || { echo "$a is $b"; return 1; }
+>   done
+> }
+> # end of exp 0381 test build 2's path check
 > # exp 0381 test build 2: what this build is, set again right after both settings files, so that neither can turn it off. In the smoke launcher TB2_PRIVATE also fixes
 > # its private paths and the RT guards. In the player's launcher it is empty: bc5-pkg.env may move those there, as in r1, and the log's first line says where they went.
 > TB2_REQ=(BC5_DIRECT_ACB_STATE_RESTORE=1 BC5_CRASH_FRAMES=1 BC5_0380_REC=1 BC5_DIRECT_PIECES_NO_CLEAR=1 "BC5_DIRECT_ZERO_SKIP=$HOME/bc5-work/exp0381/tb2/zero-list-20261029-120000.txt")
 > TB2_PRIVATE=()
-> TB2_PATHS=()
 > TB2_WD=""
 > export "${TB2_REQ[@]}" "${TB2_PRIVATE[@]}"
+> if [ -n "$TB2_WD" ]; then
+>   # Not in $LOG: the log's own directory may be what is wrong. The starter keeps this in raw/<tag>-launch.out, or stops first.
+>   TB2_W=$(tb2_private_all) || { say "A private path is not itself: $TB2_W; not started."; exit 1; }
+> fi
 > # end of exp 0381 test build 2's required settings
-176c184
+176c218
 <   [ -n "${ZSP:-}" ] && kill "$ZSP" 2> /dev/null  # exp 0380r1: the memory sampler
 ---
 >   [ -n "${ZSP:-}" ] && kill "$ZSP" 2> /dev/null  # exp 0381 test build 2: the memory sampler
-192c200
+192c234
 < bash "$Z/play-sample0379t.sh" $$ "$Z/play/mem-$ZSTAMP.txt" < /dev/null > /dev/null 2>&1 & ZSP=$!  # exp 0380r1: once a minute
 ---
 > bash "$Z/play-sample0379t.sh" $$ "$Z/play/mem-$ZSTAMP.txt" < /dev/null > /dev/null 2>&1 & ZSP=$!  # exp 0381 test build 2: once a minute
-193a202,250
+193a236,284
 > # exp 0381 test build 2: the switches, read from a data file at every start, after bc5-run.env and bc5-pkg.env, so this file beats both.
 > # Each is reset first, so a value from either file or from outside never survives a commented line. BC5_DIRECT_REBASE_DISPATCH is refuted: reset, never accepted.
 > # The file is not sourced: a line counts only if it is a name with one of its documented values. The last valid line for a name wins, and the log names the effective state.
@@ -75,7 +109,7 @@
 > TB2_KEPT=$(tb2_env "$TB2_KEPT_NAMES")
 > TB2_SW=$TB2_ENV
 > [ -z "$TB2_BAD" ] || TB2_SW="$TB2_SW REJECTED-LINES:$TB2_BAD"
-> # Called right before each emulator start: what the log says is what the emulator gets, each required value is exact, and each private path is itself, not a link elsewhere. If not, it does not start.
+> # Called right before each emulator start: what the log says is what the emulator gets, each required value is exact, and in the smoke every place it writes is private and it runs from its own directory. If not, it does not start.
 > tb2_check() {
 >   local r v w=""
 >   [ "$(tb2_env "$TB2_NAMES")" = "$TB2_ENV" ] || w="$w switches:$(tb2_env "$TB2_NAMES")"
@@ -83,19 +117,19 @@
 >   for r in "${TB2_REQ[@]}" "${TB2_PRIVATE[@]}"; do
 >     v=$(printenv "${r%%=*}"); [ "$v" = "${r#*=}" ] || w="$w ${r%%=*}=$v"
 >   done
->   for r in "${TB2_PATHS[@]}"; do
->     v=$(printenv "$r"); [ "$(readlink -f "$v")" = "$(readlink -f "$HOME")${v#"$HOME"}" ] || w="$w link:$r"
->   done
->   [ -z "$TB2_WD" ] || [ "$(pwd -P)" = "$(readlink -f "$TB2_WD")" ] || w="$w wd:$(pwd -P)"
+>   if [ -n "$TB2_WD" ]; then
+>     v=$(tb2_private_all) || w="$w private:$v"
+>     [ "$(pwd -P)" = "$(readlink -f "$HOME")/bc5-work/exp0381/wd" ] || w="$w wd:$(pwd -P)"
+>   fi
 >   [ -z "$w" ] && return 0
->   echo "== $(date '+%F %T') exp 0381: changed after the settings were read, not started:$w" >> "$LOG"
->   say "The settings changed after they were read; not started (see $LOG)."
+>   case "$w" in *private:*) ;; *) echo "== $(date '+%F %T') exp 0381: changed after the settings were read, not started:$w" >> "$LOG" ;; esac
+>   say "The settings changed after they were read, not started:$w"
 >   exit 1
 > }
 > # end of exp 0381 test build 2's switches
-195c252
+195c286
 <   echo "== exp 0380r1: BC5_CRASH_FRAMES=1 BC5_0380_REC=1 BC5_DIRECT_PIECES_NO_CLEAR=1 BC5_DIRECT_ZERO_SKIP=$BC5_DIRECT_ZERO_SKIP ($(md5sum < "$BC5_DIRECT_ZERO_SKIP" | cut -c1-8)); no write-back, FORCE_START, copy or rebase; binary $(md5sum < "$EMU" | cut -c1-8)"
 ---
 >   echo "== exp 0381 test build 2: switches:${TB2_SW:- none}; list $(md5sum < "$BC5_DIRECT_ZERO_SKIP" | cut -c1-8); kept:$TB2_KEPT; binary $(md5sum < "$EMU" | cut -c1-8)"
-203a261
+203a295
 >   tb2_check

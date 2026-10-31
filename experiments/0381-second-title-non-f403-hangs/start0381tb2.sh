@@ -14,14 +14,22 @@ pgrep '^kyty_emulator' > /dev/null && { echo "GUARD: an emulator runs"; exit 3; 
 [ -e "$TB/raw/$TAG-start.txt" ] && { echo "tag $TAG is used"; exit 6; }
 CAPS=$E/in-tb2/experiments/0381-second-title-non-f403-hangs/boxcap0381.sh
 [ -f "$CAPS" ] || { echo "no box cap at $CAPS: stop"; exit 7; }
+PC=$E/in-tb2/experiments/0381-second-title-non-f403-hangs/pathcheck0381tb2.inc
+[ -f "$PC" ] || { echo "no path check at $PC: stop"; exit 7; }
+. "$PC"
+private() { BAD=$(tb2_private_all) || { echo "a private path is not itself: $BAD: stop, nothing written"; exit 9; }; }
+private
 grep -qx 'RayTracing.PPSA03671=on' "$E/input-rton.cfg" || { echo "the smoke config is not RT on"; exit 8; }
 sum() { (cd "$1" && find PPSA03671 -type f -exec md5sum {} + | sort -k2 | md5sum | cut -c1-16); }
 LIVE=$(sum "$W/_SaveData")
 [ "$LIVE" = 377a8d456a9b4cb1 ] || { echo "live saves are $LIVE: stop and ask"; exit 5; }
-rm -rf "$E/wd/_SaveData/PPSA03671"
-cp -a "$S/saves-live-377a8d45" "$E/wd/_SaveData/PPSA03671"
+[ -d "$E/wd/_SaveData" ] || { echo "no private save directory: stop"; exit 5; }
+private
+rm -rf "$E/wd/_SaveData/PPSA03671" || { echo "the old copy was not removed: stop"; exit 5; }
+cp -a "$S/saves-live-377a8d45" "$E/wd/_SaveData/PPSA03671" || { echo "the save copy failed: stop"; exit 5; }
+private
 [ "$(sum "$E/wd/_SaveData")" = "$LIVE" ] || { echo "the save copy differs"; exit 5; }
-cp "$S/in-D2.cmd" "$TB/in-$TAG.cmd"
+cp "$S/in-D2.cmd" "$TB/in-$TAG.cmd" || { echo "the input script was not copied: stop"; exit 5; }
 echo "$LINE: $TAG, cap $CAP s, RT on | $(date '+%F %T')" > "$W/BOX-LOCK"
 finish() {
     echo "$LINE ended: $TAG, launcher returned, result read on the laptop; lock cleared | $(date '+%F %T')" >> "$W/BOX-QUEUE"
