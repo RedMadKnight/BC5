@@ -615,7 +615,7 @@ def route_too_few_finals(b):
 
 @case
 def route_the_emulators_time_ran_out(b):
-    b.tune("EMU_S=1; LOADWAIT=100000")
+    b.tune("EMU_S=30; LOADWAIT=100000")
     route_case(b, "time ran out")
 
 

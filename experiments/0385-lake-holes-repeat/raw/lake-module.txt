@@ -1,0 +1,18 @@
+PASS switches parse, and a bad request leaves them all off
+PASS all off inserts nothing, and the tracker still follows the job
+PASS only draws on the lake's depth with Z and Z write on are writers
+PASS the cache switch goes before the first writer, or each with cache_at=each
+PASS cull and dbmeta go after the named programs only
+PASS pfp goes before COND_EXEC and indirect writers, and the COND_EXEC count grows
+PASS idle flushes CS and PS once, before the first writer
+PASS nohiz forces HiZ off for the writers and restores the title's value
+PASS an override still on at the job's end is put back there
+PASS zpass wraps each writer in its own record until they run out
+PASS zpass with the switch off or no records wraps nothing
+PASS nested IBs and predication are counted, a truncated packet ends the walk
+PASS trackercf stops the tracker at a CHAIN, and off keeps today's walk
+PASS every insert is in ascending order and lands on a packet start
+PASS a session follows the control file during the run, in both directions
+PASS zpass's records reach the file once the switch goes off and every job has ended
+16 cases, 0 failed
+wiring compile rc 0; 86 lines, the real lines from direct.cpp between the stand-ins

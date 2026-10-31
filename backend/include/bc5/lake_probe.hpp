@@ -24,8 +24,8 @@
 //   zpass=1                  occlusion counters around each lake writer, as RADV takes them (Mesa ab2374a
 //                            radv_query.c:146-151, radv_cmd_buffer.c:6339-6341). A record whose begin
 //                            stayed zero was skipped by the CP.
-// TODO(verify): the RB count of gfx1013 (kRecordBytes allows 16); FORCE_HIZ/HIS on hardware; that
-// FLUSH_AND_INV_DB_META takes EVENT_INDEX 0 on gfx10 (the regdb names the event, not its index).
+// Event indices: 4 for the partial flushes, 0 for FLUSH_AND_INV_DB_META (Mesa ab2374a ac_cmdbuf.h:396-405).
+// TODO(verify): the RB count of gfx1013 (kRecordBytes allows 16); FORCE_HIZ/HIS on hardware.
 // No GPU access.
 #pragma once
 

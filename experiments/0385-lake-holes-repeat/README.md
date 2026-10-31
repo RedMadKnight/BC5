@@ -283,8 +283,11 @@ with HOME and PATH unchanged. Roots and stand-ins are accepted only from a `0385
 clock, dmesg, container, shots and the poller. Real processes stand in for the emulator (a copy of `sleep.exe` named `kyty_emulator`),
 so the identity and signal code reads a real `/proc`, with a foreign sentinel running beside it.
 
-**Run on these files:** 83 of 84 in one full pass, 40 min (`raw/test0385.txt`). The one failure was the test's own fixture, which
-lacked the poller file that a gate had just begun to read; with that file added, that case passes (`raw/test0385-rerun.txt`).
+**Run on these files:** 101 of 102 in one full pass, 49 min (`raw/test0385.txt`). The one failure was the test's own setting: with a time limit of 1 s the watchdog
+stopped the stand-in emulator before the run had saved its environment, and the run stopped, as it should. With a limit of 30 s that case passes
+(`raw/test0385-rerun.txt`). The module's own tests, 16 of 16 under the backend's warning flags and ASan, and a compile of the real `direct.cpp` lines between
+stand-ins for libdrm, are in `raw/lake-module.txt` (`testbuild/run_laptop.py`, `testbuild/check_wiring.py`). `direct.cpp` as a whole has not been compiled: the box's
+private build is the first to do it.
 
 **What the cases cover:** the claim against a foreign line before it, a new file and a held-open writer during it, and six real
 claimants at once; a link at the lock, the queue, the save copy, the tree, its parent and its root, junctions included; ownership
@@ -297,7 +300,8 @@ stopped a healthy run, one at its start and one at its end; a third, in which th
 a still image that stopped the series instead of counting as a failed route.
 
 **Not reachable on this laptop:** the real distrobox and podman chain, `setsid`, `/proc/PID/mem` (the poller's reads; its lock test is
-checked on its own), a foreign uid, a second file system, `mkdir -m 700` and the kernel's access times. Those first run on the box.
+checked on its own), a foreign uid, a second file system, `mkdir -m 700` and the kernel's access times. Those first run on the box. So do all the test build's GPU packets:
+the unit tests prove what goes into the buffer, not what the GPU does with it. The RB count of gfx1013 and `FORCE_HIZ`/`FORCE_HIS` on hardware stay TODO(verify).
 
 **Result.** Pending.
 
