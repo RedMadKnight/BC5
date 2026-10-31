@@ -2,6 +2,8 @@
 # BC5 experiment 0385: every box step of the lake series, one subcommand each. The README has the order.
 #   claim                  over stdin, before anything else of ours is on the box: the lock, then the pins under it
 #   setup <token>          checks the sent kit; private launcher, wd, input and learned copies; starts the watchdog
+#   build <token>          the private test binary from testbuild.tar: its tests, then the shared link command with the
+#                          private archive. Nothing shared is written. CPU only, no emulator
 #   kstream <token>        the kernel log for the laptop; ends with our lock line or the deadline
 #   run <token> <tag>      one attempt: K4, K5, K6, in that order
 #   bench <token> <tag>    the route and the shots, started by run
@@ -24,14 +26,14 @@ W=$HOME/bc5-work; DATA=$HOME/bc5-data; TESTING=0
 case "${BC5_0385_ROOT:-}" in *0385-test-*) case "${BC5_0385_FAKE:-}" in *0385-test-*) TESTING=1 ;; esac ;; esac
 [ "$TESTING" = 0 ] || { W=$BC5_0385_ROOT/bc5-work; DATA=$BC5_0385_ROOT/bc5-data; }
 E=$W/exp0385; WD=$E/wd; PRIV=$DATA/priv/exp0385; EV=$PRIV/evidence; LOCK=$W/BOX-LOCK; QUEUE=$W/BOX-QUEUE; ST=$E/state
-LAKE=$W/saves-lake-1153; SELF=$E/box0385.sh
+LAKE=$W/saves-lake-1153; SELF=$E/box0385.sh; TB=$E/tb; TB_BIN=$TB/kyty_emulator
 
 BIN_MD5=78f251729b06001d67d642ff06773758; ARCHIVE_MD5=3292bdaf0aca16ca9922a7f732386aa8
 LAUNCHER_MD5=55531ab6277d6816c0603a7a6c6d62b4; RUN_ENV_MD5=cb8ad5fcfd6eac2a5cafac2a501b3eba
 LIVE_SAVES=52ee672646ca6087   # C locale, the top session's pin
-SERIES_S=1800; GRACE=120; RUN_S=600; EMU_S=390; BENCH_S=330; ANA_S=150; EMU_WAIT=60
+SERIES_S=2700; GRACE=120; RUN_S=780; EMU_S=560; BENCH_S=500; ANA_S=150; BUILD_S=420; EMU_WAIT=60
 REAP_TERM=15; REAP_KILL=10; REAP_WAIT=40; WATCH_NAP=3; WATCH_WAIT=25
-SERIES=20; STEP=5; SLOTWAIT=5; LOADWAIT=60; TAGS="K4 K5 K6"; DISK_MAX=80
+SERIES=53; STEP=5; SLOTWAIT=5; LOADWAIT=60; TAGS="K4 K5 K6"; DISK_MAX=80; DISK_STOP=90
 KPAT='amdgpu.*(fault|timeout|reset)|gpu reset|ring .* timeout'
 
 # What a test may replace. Each stays a plain box command here.
@@ -80,7 +82,7 @@ load() {
 state() { rd "$ST"; }
 # stopped and released are final, but for stopped to released.
 set_state() {
-    case "$(state):$1" in released:* | stopped:ready | stopped:running | stopped:done) return 1 ;; esac
+    case "$(state):$1" in released:* | stopped:setup | stopped:ready | stopped:running | stopped:done) return 1 ;; esac
     put "$ST" "$1"
 }
 series_stop() {
@@ -358,8 +360,39 @@ cmd_setup() {
     for i in $(seq 1 "$WATCH_WAIT"); do id_alive "$E/watch.id" && break; nap 0.2; done
     id_alive "$E/watch.id" || die "the watchdog did not start"
     own
-    set_state ready || die "state is $(state)"
+    set_state setup || die "state is $(state)"
     echo "set up: launcher $(m "$E/play-pkg-0385.sh"), wd $(find "$WD" -mindepth 1 -maxdepth 1 -type l | wc -l) links, watchdog running"
+}
+# The private backend with this experiment's switches, its Catch2 tests, then the shared normal build's link command with
+# the private archive in place of the shared one (relink0385.py). No host unit changes and the backend's public headers keep
+# their ABI, so nothing else is compiled. The shared objects, archive and binary are only read.
+cmd_build() {
+    load "${1:-}"
+    [ "$(state)" = setup ] || die "state is $(state), want setup"
+    own; budget $((BUILD_S + GRACE))
+    work_free || die "$WHY"
+    (cd "$E" && sha256sum -c --quiet tb.sha256) > "$E/tb.check" 2>&1 || die "testbuild.tar is not what was sent"
+    mkdir "$TB" "$TB/in" "$TB/raw" 2> /dev/null || die "cannot make $TB"
+    tar xf "$E/testbuild.tar" -C "$TB/in" || die "cannot unpack testbuild.tar"
+    hook before-build
+    local catch arg="" bcache=$W/backend-ubuntu/CMakeCache.txt bt cxx
+    catch=$(find "$W" -maxdepth 4 -type d -path '*/backend-build/_deps/catch2-src' -print -quit 2> /dev/null)
+    [ -z "$catch" ] || arg="-DFETCHCONTENT_SOURCE_DIR_CATCH2=$catch"
+    bt=$(sed -n 's/^CMAKE_BUILD_TYPE:[A-Z]*=//p' "$bcache" 2> /dev/null); cxx=$(sed -n 's/^CMAKE_CXX_COMPILER:[A-Z]*=//p' "$bcache" 2> /dev/null)
+    [ -n "$bt" ] && [ -n "$cxx" ] || die "cannot read the shared archive's configuration"
+    in_box "$BUILD_S" sh -c "nice -n 19 cmake -S '$TB/in' -B '$TB/build' -G Ninja -DCMAKE_BUILD_TYPE=$bt -DCMAKE_CXX_COMPILER=$cxx -DBC5_WITH_AMDGPU=ON -DBC5_BUILD_TESTS=ON $arg && nice -n 19 cmake --build '$TB/build' -j8" > "$TB/raw/backend-build.out" 2>&1 || die "the private backend did not build: $(grep -m3 'error:' "$TB/raw/backend-build.out" | cut -c1-160 | tr '\n' ' ')"
+    in_box 120 sh -c "cd '$TB/build' && nice -n 19 ./bc5_backend_tests" > "$TB/raw/backend-tests.out" 2>&1 || die "the backend's tests failed: no emulator linked"
+    own
+    in_box 60 sh -c "cd '$W/kytyplus-build' && ninja -t compdb -x" > "$TB/compdb.json" 2> "$TB/raw/compdb.err" || die "no compile database"
+    in_box 300 python3 -I "$E/relink0385.py" "$TB/compdb.json" "$W/kytyplus-build" "$W/backend-ubuntu/libbc5_backend.a" "$TB/build/libbc5_backend.a" "$TB_BIN" > "$TB/raw/link.out" 2>&1 || die "the private link failed"
+    [ -x "$TB_BIN" ] || die "no private binary"
+    grep -aq BC5_DIRECT_LAKE_CTL "$TB_BIN" || die "the private binary has no lake switches"
+    local why; why=$(pins_why)
+    [ -z "$why" ] || die "$why"
+    try_put "$E/tb.md5" "$(m "$TB_BIN")" || die "write failed: tb.md5"
+    own
+    set_state ready || die "state is $(state)"
+    echo "built: private binary $(rd "$E/tb.md5"), tb/ $(du -sh "$TB" | cut -f1), shared binary and archive unchanged"
 }
 
 # Only these three trees are ever deleted, each only if it is what it says: a plain directory of ours, at its canonical
@@ -433,6 +466,7 @@ journal_facts() {
         echo "skip $(count 'skip pgm' "$j")"
         echo "timeouts $(count TIMEOUT "$j")"
         echo "flips $(count 'VideoOutSubmitFlip took' "$j")"
+        echo "bytes $(stat -c %s "$j")"
     } > "$E/$tag.journal.txt"
 }
 analyse() {   # every step's status counts
@@ -450,7 +484,8 @@ files_of() {
     local t=$1
     echo "$t.out $t.pl.txt $t.start.txt $t.manifest.txt $t.journal.txt $t.kernel.txt $t.saves.txt $t.route.txt $t.dmesg.txt"
     echo "$t.patch.txt $t.bursts.txt $t.reads.txt $t.reads.json $t.tz.txt $t.events.txt.gz $t.snaps.txt $t.gates.txt"
-    echo "play-pkg-0385.diff input-0385.cfg inputs.txt"
+    echo "$t.arms.txt $t.armlog.txt $t.switches.txt $t.zp.txt"
+    echo "play-pkg-0385.diff input-0385.cfg inputs.txt arms0385.txt tb.md5"
 }
 pack() {   # strict: every file, or no pass and no cleanup
     local t=$1 f n
@@ -467,7 +502,7 @@ pack() {   # strict: every file, or no pass and no cleanup
 
 cmd_run() {
     load "${1:-}"
-    local tag=${2:-} next why R C T0 N BP PP brc=0 prc=0 end kern="" lost=0 foreign=0 died=0 capped=0 read_ok=1 s qual rc=0 ana=0 i p
+    local tag=${2:-} next why R C T0 N BP PP brc=0 prc=0 end kern="" lost=0 foreign=0 died=0 capped=0 full=0 read_ok=1 s qual rc=0 ana=0 i p
     TAG=$tag
     next=$(next_tag)
     [ -n "$next" ] || die "no attempts left"
@@ -481,6 +516,8 @@ cmd_run() {
     why=$(pins_why)
     [ -z "$why" ] || die "$why"
     [ "$(lake_sum)" = "$(cat "$E/lake.sum")" ] || die "the lake save changed"
+    local tb; tb=$(rd "$E/tb.md5")
+    [ -n "$tb" ] && [ "$(m "$TB_BIN")" = "$tb" ] || die "the private binary is not the one built"
     N=$(dmesg_read | wc -l)
     R=$E/r-$tag; C=$PRIV/$tag
     mkdir "$R" 2> /dev/null || die "$R exists"    # the attempt is used from here on
@@ -503,7 +540,8 @@ cmd_run() {
     end=$((T0 + EMU_S)); [ "$end" -le $((DEADLINE - GRACE)) ] || end=$((DEADLINE - GRACE))
     put "$E/run.end" "$end"
     session bash -c '"$@"; echo "launcher exit $?"' _ "${DBX[@]}" env "$MARK" "KYTY_BC5_INPUT_CMD=$R/input.cmd" \
-        "BC5_0385_INPUT_CONFIG=$E/input-0385.cfg" "$E/play-pkg-0385.sh" < /dev/null > "$R/launcher.out" 2>&1 &
+        "BC5_0385_INPUT_CONFIG=$E/input-0385.cfg" "BC5_EMU=$TB_BIN" "BC5_DIRECT_LAKE_CTL=$R/lake.ctl" \
+        "BC5_DIRECT_LAKE_OUT=$C/zpass.dat" "$E/play-pkg-0385.sh" < /dev/null > "$R/launcher.out" 2>&1 &
     for i in $(seq 1 "$EMU_WAIT"); do
         p=$(own_emus)
         [ -z "$p" ] || break
@@ -514,7 +552,7 @@ cmd_run() {
     EP=$p; stat_of "$EP" || halt "the emulator is gone"
     ES=$START
     put "$R/emu.id" "$EP $ES"
-    [ "$(md5sum < "/proc/$EP/exe" | cut -d' ' -f1)" = "$BIN_MD5" ] || halt "the emulator is not $BIN_MD5"
+    [ "$(md5sum < "/proc/$EP/exe" | cut -d' ' -f1)" = "$tb" ] || halt "the emulator is not the private binary $tb"
     [ "$(readlink -f "/proc/$EP/cwd")" = "$(readlink -f "$WD")" ] || halt "the emulator's working directory is not $WD"
     (umask 077; set -C; cat "/proc/$EP/environ" > "$EV/$tag-environ.bin") || halt "the emulator's environment could not be saved"
     {
@@ -535,6 +573,7 @@ cmd_run() {
         [ -z "$s" ] || { kern=$s; break; }
         own_q || { lost=1; break; }
         [ -z "$(foreign_emus)" ] || { foreign=1; break; }
+        [ "$(disk_pct)" -lt "$DISK_STOP" ] || { full=1; break; }
         [ "$(now)" -lt "$end" ] || { capped=1; break; }
         # the watchdog stops it at the same limit: gone at that time is the limit, not a crash
         if ! emu_alive; then
@@ -548,6 +587,7 @@ cmd_run() {
     put "$E/run.end" 0
     cp "$E/play-last.log" "$R/emu.log" 2> /dev/null
     reap || halt "processes of ours remain: $(own_pids | tr '\n' ' ')"
+    cp "$E/play-last.log" "$R/emu.log" 2> /dev/null
     wait "$BP"; brc=$?
     wait "$PP"; prc=$?
     echo "bench exit $brc, poller exit $prc $(date +%T)"
@@ -555,6 +595,7 @@ cmd_run() {
     [ -z "$kern" ] || halt "kernel lines: no analysis, nothing deleted"
     [ "$lost" = 0 ] || halt "the lock stopped being ours during the run"
     [ "$foreign" = 0 ] || halt "an emulator that is not ours appeared during the run"
+    [ "$full" = 0 ] || halt "the disk reached $DISK_STOP %: nothing deleted"
     [ "$died" = 0 ] || halt "the emulator ended by itself"
     s=$(kernel_new "$N") || halt "the kernel log cannot be read at the end"
     [ -z "$s" ] || halt "kernel lines at the end: nothing deleted"
@@ -594,6 +635,15 @@ cmd_run() {
             exit 10 ;;
         *) halt "the gates: $(tail -1 "$E/$tag.gates.txt" | cut -c1-200)" ;;
     esac
+    # the arms and the catcher: what they say is the result, but a failed summary loses nothing else
+    grep -a 'experiment 0385' "$R/emu.log" > "$E/$tag.switches.txt" 2> /dev/null || echo "no switch lines" > "$E/$tag.switches.txt"
+    "${PY[@]}" "$E/gates0385.py" arms "$E/$tag.patch.txt" "$E/arms0385.txt" "$E/$tag.switches.txt" > "$E/$tag.arms.txt" 2>&1 || echo "no arm table" >> "$E/$tag.arms.txt"
+    cp "$R/arms.log" "$E/$tag.armlog.txt" 2> /dev/null || : > "$E/$tag.armlog.txt"
+    if [ -s "$C/zpass.dat" ]; then
+        "${PY[@]}" "$E/zp0385.py" "$C/zpass.dat" "$C/zpass.dat.meta" > "$E/$tag.zp.txt" 2>&1 || echo "zp0385.py failed" >> "$E/$tag.zp.txt"
+    else
+        echo "no zpass records" > "$E/$tag.zp.txt"
+    fi
     hook before-pack
     pack "$tag" || halt "the summaries could not be packed: nothing deleted"
     hook before-clean
@@ -612,8 +662,12 @@ cmd_run() {
 # shot taken.
 cmd_bench() {
     load "${1:-}"
-    local tag=${2:-} R n k T0
+    local tag=${2:-} R n k T0 a b
+    local -A arm=()
     R=$E/r-$tag
+    while IFS='|' read -r a b; do
+        case $a in "" | \#*) ;; *) arm[$a]=$b ;; esac
+    done < "$E/arms0385.txt"
     read -r EP ES < "$R/emu.id" || die "no emulator id"
     T0=$(rd "$R/t0"); [ -n "$T0" ] || die "no start time"
     gone() { emu_alive && [ $(($(now) - T0)) -lt "$BENCH_S" ] && return 1; echo "== $tag: the emulator ended or the time ran out at $(date +%T)"; return 0; }
@@ -639,7 +693,17 @@ cmd_bench() {
         snap game
         step "press options\nwait 1300\npress down\nwait 400\npress down\nwait 400\npress down\nwait 400\npress down\nwait 600\npress cross\nwait 3000\npress triangle\nwait 1500\n" || return 1
         step "stick r 0 128 1600\nwait 300\ntrigger r2 255 1500\nwait 300\nstick r 128 255 350\nwait 900\n" || return 1
-        for k in $(seq -w 0 $((SERIES - 1))); do gone && return 1; snap "ts$k"; nap $((STEP - 1)); done
+        # a switch goes in one step before its shot, so the shot shows its effect
+        for k in $(seq -w 0 $((SERIES - 1))); do
+            gone && return 1
+            n=$((10#$k))
+            if [ -n "${arm[$n]+x}" ]; then
+                try_put "$R/lake.ctl" "${arm[$n]}" || { echo "cannot write the switches"; return 1; }
+                echo "$n $(now) ${arm[$n]}" >> "$R/arms.log"
+            fi
+            nap $((STEP - 1))
+            snap "ts$k"
+        done
     }
     route; n=$?
     echo "== $tag route exit $n, shots done $(date +%T)"
@@ -735,6 +799,7 @@ cmd_status() {
 case "${1:-}" in
     claim) cmd_claim ;;
     setup) cmd_setup "${2:-}" ;;
+    build) cmd_build "${2:-}" ;;
     run) cmd_run "${2:-}" "${3:-}" ;;
     bench) cmd_bench "${2:-}" "${3:-}" ;;
     kstream) cmd_kstream "${2:-}" ;;

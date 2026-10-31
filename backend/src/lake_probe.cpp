@@ -154,6 +154,14 @@ void Session::read_ctl() {
     }
     if (text == text_) return;
     text_ = text;
+    const std::uint64_t chains = full_state::chain_stops();
+    std::fprintf(stderr, "bc5-direct: experiment 0385 period: jobs %llu writers %llu in_cond %llu inserted_words %llu refused %llu cull_barriers %llu htile_fills %llu chain_stops %llu cond_exec %llu predication %llu nested_ibs %llu\n",
+                 static_cast<unsigned long long>(period_.jobs), static_cast<unsigned long long>(period_.writers), static_cast<unsigned long long>(period_.in_cond),
+                 static_cast<unsigned long long>(period_.words), static_cast<unsigned long long>(period_.refused), static_cast<unsigned long long>(period_.cull),
+                 static_cast<unsigned long long>(period_.htile), static_cast<unsigned long long>(chains - chain_at_), static_cast<unsigned long long>(period_.cond),
+                 static_cast<unsigned long long>(period_.pred), static_cast<unsigned long long>(period_.nested));
+    period_ = Period{};
+    chain_at_ = chains;
     std::string bad;
     if (!parse(text, sw_, bad)) std::fprintf(stderr, "bc5-direct: experiment 0385 bad switch \"%s\": all off\n", bad.c_str());
     full_state::set_chain_stop(sw_.trackercf);
@@ -175,6 +183,15 @@ void Session::dump() {
 void Session::step(std::vector<std::uint32_t> &ib, const full_state::Tracker::Reader &read) {
     if ((jobs_++ & 31) == 0) read_ctl();
     Result res = plan(ib, t_, read, sw_, cfg_, cpu_ != nullptr ? &z_ : nullptr);
+    period_.jobs++;
+    period_.writers += res.writers.size();
+    for (const Writer &w : res.writers) period_.in_cond += w.in_cond ? 1u : 0u;
+    for (const indirect_check::Insert &in : res.inserts) period_.words += in.words.size();
+    period_.cull += res.cull_barriers;
+    period_.htile += res.htile_fills;
+    period_.cond += res.cond_exec;
+    period_.pred += res.predication;
+    period_.nested += res.nested_ibs;
     if (sw_.census && !res.writers.empty() && census_lines_ < 2000) {
         census_lines_++;
         std::size_t in_cond = 0;
@@ -190,7 +207,10 @@ void Session::step(std::vector<std::uint32_t> &ib, const full_state::Tracker::Re
                                     static_cast<unsigned long long>(jobs_), static_cast<unsigned long long>(w.ps), w.op, w.in_cond ? 1 : 0, now_ms());
         meta_.append(line, static_cast<std::size_t>(n));
     }
-    if (!res.inserts.empty() && !indirect_check::insert_before(ib, res.inserts)) refused_++;
+    if (!res.inserts.empty() && !indirect_check::insert_before(ib, res.inserts)) {
+        refused_++;
+        period_.refused++;
+    }
     if (cpu_ != nullptr && z_.used != 0 && !dumped_ && (!sw_.zpass || z_.used >= z_.capacity)) {
         if (++since_end_ >= 200) dump();
     }

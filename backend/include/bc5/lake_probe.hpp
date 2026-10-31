@@ -88,9 +88,11 @@ Result plan(std::span<const std::uint32_t> ib, full_state::Tracker &t, const ful
             const Switches &s, const Config &c, Zpass *z);
 
 // One run: the control file, re-read every 32 jobs (missing or empty: all off; bad: all off, with a line), the
-// census lines, and the records, written to <out> and <out>.meta 200 jobs after zpass goes off or they run out,
-// when every job that wrote them is done (the host lets far fewer fly, BC5_DIRECT_MAX_IN_FLIGHT). Times are
-// steady_clock ms: CLOCK_MONOTONIC on the box, the clock the poller's lines use. Device owns the records' memory.
+// census lines (2000 at most), and the records, written to <out> and <out>.meta 200 jobs after zpass goes off or
+// they run out, when every job that wrote them is done (the host lets far fewer fly, BC5_DIRECT_MAX_IN_FLIGHT).
+// Each change of the switches first prints a "period" line of what the switches just ending did, so the log shows
+// each arm's effect as counts: a switch that inserted nothing is seen as such. Times are steady_clock ms:
+// CLOCK_MONOTONIC on the box, the clock the poller's lines use. Device owns the records' memory.
 class Session {
 public:
     Session(std::string ctl, std::string out);
@@ -110,6 +112,10 @@ private:
     void *cpu_ = nullptr;
     full_state::Tracker t_;
     std::uint64_t jobs_ = 0, refused_ = 0, census_lines_ = 0;
+    struct Period {
+        std::uint64_t jobs = 0, writers = 0, in_cond = 0, words = 0, refused = 0, cull = 0, htile = 0, cond = 0, pred = 0, nested = 0;
+    } period_;
+    std::uint64_t chain_at_ = 0;
     std::uint32_t since_end_ = 0;
     bool dumped_ = false;
 };

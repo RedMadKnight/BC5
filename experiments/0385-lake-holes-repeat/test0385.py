@@ -13,7 +13,8 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 BASH = "C:/Program Files/Git/bin/bash.exe"
-KIT = ["box0385.sh", "gates0385.py", "pl0385.py", "sn0385.py", "tz0385.py", "bt0362.sh", "patch0385.py", "swz0248-z4.json", "input-0385.cfg"]
+KIT = ["box0385.sh", "gates0385.py", "pl0385.py", "sn0385.py", "tz0385.py", "bt0362.sh", "patch0385.py", "swz0248-z4.json", "input-0385.cfg",
+       "arms0385.txt", "relink0385.py", "zp0385.py"]
 K3_TZ = HERE.parent / "0369-lake-last-burst-writer/raw/K3.tz.txt"
 K2_TZ = HERE.parent / "0369-lake-last-burst-writer/raw/K2.tz.txt"
 PL_OK = "# frozen view, emulator at 212.0 s: polling begins\n# 1355441 polls in 85.0 s (mean period 0.063 ms, largest gap 2436.1 ms); polls with a change: D 20335, P 2816; 2228 frames; 34 captures, 408 snapshots (1 torn)\n"
@@ -61,6 +62,12 @@ in_box() {
     shift
     case "$*" in
         *--selftest*) [ ! -e "$ROOT/selftest-fails" ] ;;
+        *"cmake -S"*) [ ! -e "$ROOT/backend-fails" ] || { echo "x.cpp:1: error: no"; return 1; } ;;
+        *bc5_backend_tests*) [ ! -e "$ROOT/tests-fail" ] ;;
+        *"ninja -t compdb"*) echo '[]' ;;
+        *relink0385.py*) [ ! -e "$ROOT/link-fails" ] || return 1
+            cp "$ROOT/bin/kyty_emulator.exe" "$TB_BIN.exe"
+            [ -e "$ROOT/no-switches" ] || printf BC5_DIRECT_LAKE_CTL >> "$TB_BIN.exe" ;;
         *patch0385.py*) [ ! -e "$ROOT/patch-fails" ] || return 1
             local f; shift 2; for f in "$@"; do echo "$f: patch  $(cat "$ROOT/patch-value") %"; done ;;
         *sn0385.py*) [ ! -e "$ROOT/sn-fails" ] || return 1; echo '{}' > "$7"; echo "# sF: fixture" ;;
@@ -93,7 +100,8 @@ mkdir -p "$J"
 H=$!
 env -i PATH="$PATH" SYSTEMROOT="${SYSTEMROOT:-}" WINDIR="${WINDIR:-}" HOME="$ROOT" "BC5_0385_OWNER=$BC5_0385_OWNER" BC5_GC_DUMP_DIR="$J" \
     KYTY_BC5_INPUT_CMD="$KYTY_BC5_INPUT_CMD" KYTY_BC5_INPUT_CONFIG="$BC5_0385_INPUT_CONFIG" BC5_0385_INPUT_CONFIG="$BC5_0385_INPUT_CONFIG" \
-    "${ENVV[@]}" "$ROOT/bc5-work/kytyplus-build/src/kyty_emulator" 300 &
+    BC5_EMU="$BC5_EMU" BC5_DIRECT_LAKE_CTL="$BC5_DIRECT_LAKE_CTL" BC5_DIRECT_LAKE_OUT="$BC5_DIRECT_LAKE_OUT" \
+    "${ENVV[@]}" "$BC5_EMU" 300 &
 EP=$!
 trap 'kill "$EP" 2> /dev/null' TERM
 wait "$EP"; rc=$?
@@ -134,7 +142,8 @@ class Box:
                           ("bc5-work/bc5-run.env", "BC5_GC_MODE=direct\n"), ("bc5-work/backend-ubuntu/libbc5_backend.a", "archive\n"),
                           ("bc5-work/direct-learned-pkg.txt", "0x1\n"), ("bc5-work/_SaveData/PPSA03671/SAVE1/data.bin", "live save\n"),
                           ("bc5-work/saves-lake-1153/SAVE3/data.bin", "lake save\n"), ("bc5-work/exp0299/wd/_SaveData/PPSA03671/sentinel", "exp 0299's save\n"),
-                          ("bc5-work/resource", "a work file\n")]:
+                          ("bc5-work/resource", "a work file\n"),
+                          ("bc5-work/backend-ubuntu/CMakeCache.txt", "CMAKE_BUILD_TYPE:STRING=Release\nCMAKE_CXX_COMPILER:FILEPATH=/usr/bin/clang++\n")]:
             self.write(rel, text)
         shutil.copy(K3_TZ, self.root / "tz-fixture.txt")
         (self.root / "journal-fixture.log").write_text("VideoOutSubmitFlip took 1 ms\n" * 1200, newline="\n")
@@ -211,13 +220,16 @@ class Box:
     def kit(self):
         for f in KIT:
             shutil.copy(HERE / f, self.e / f)
-        rc = self.bashc(f"cd {posix(self.e)} && sha256sum {' '.join(KIT)} > kit.sha256")
+        rc = self.bashc(f"""cd {posix(self.e)} && sha256sum {' '.join(KIT)} > kit.sha256 && mkdir t && echo x > t/CMakeLists.txt &&
+            tar cf testbuild.tar -C t CMakeLists.txt && rm -rf t && sha256sum testbuild.tar > tb.sha256""")
         assert rc.returncode == 0, rc.stderr
 
     def real_ready(self):
         self.claim()
         self.kit()
         r = self.box("setup", self.token)
+        assert r.returncode == 0, r.stdout + r.stderr
+        r = self.box("build", self.token)
         assert r.returncode == 0, r.stdout + r.stderr
 
     def ready(self):
@@ -463,7 +475,7 @@ def setup_derives_the_launcher_exactly_and_starts_the_watchdog(b):
     for x in ("LOG=~/bc5-work/exp0385/play-last.log", "MLOG=~/bc5-work/exp0385/play-pkg-mount.log", "cd ~/bc5-work/exp0385/wd",
               "KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/exp0385/wd/_SaveData-pkg-play", "BC5_DIRECT_LEARNED=$HOME/bc5-work/exp0385/direct-learned-pkg.txt"):
         assert x in L, x
-    assert b.state() == "ready"
+    assert b.state() == "setup"
     assert b.bashc(f"[ -L {b.r}/bc5-work/exp0385/wd/resource ]").returncode == 0
     assert (b.e / "wd-links.sha256").read_text().strip()
     p, s = b.ids("bc5-work/exp0385/watch.id")
@@ -541,7 +553,7 @@ def success_in_the_intended_order_then_a_qualifying_run_ends_the_series(b):
     assert r.returncode == 0, r.stdout
     assert b.lock() == "" and b.state() == "released"
     assert b.queue().splitlines()[-1].startswith("water exp 0385 | released")
-    assert [x for x in b.order() if x != "tick-read"] == ["before-claim", "after-aside", "after-pins", "claimed", "before-setup", "before-watch"] + \
+    assert [x for x in b.order() if x != "tick-read"] == ["before-claim", "after-aside", "after-pins", "claimed", "before-setup", "before-watch", "before-build"] + \
         ["before-reset", "before-launch", "after-manifest", "after-watch-loop", "before-gates", "before-pack", "before-clean", "run-done"] * 2 + \
         ["before-release-queue", "after-release-aside", "after-release-link"]
     b.wait_for(lambda: not b.alive(b.ids("bc5-work/exp0385/watch.id")[0]), what="the watchdog's end")
@@ -768,6 +780,16 @@ def stop_source_lake_save_changed(b):
 def stop_shared_learned_file_changed(b):
     b.hook("after-manifest", '''echo "0x2" >> "$W/direct-learned-pkg.txt"''')
     stop_case(b, None, "learned changed")
+
+
+@case
+def stop_the_disk_fills_during_the_run(b):
+    b.tune("LOADWAIT=100000")
+    b.hook("after-manifest", '''( sleep 1; touch "$ROOT/disk-full" ) &''')
+    b.ready()
+    r = b.box("run", b.token, "K4")
+    assert_stopped(b, r, "K4", "the disk reached 90 %")
+    assert b.own_count() == 0
 
 
 @case
@@ -1136,7 +1158,246 @@ def the_run_never_touches_exp0299_or_the_source_or_the_live_saves(b):
     assert a == snap()
 
 
-# 10. the gates and the guards on their own
+# 10. the test build
+def built_to_setup(b):
+    b.claim()
+    b.kit()
+    r = b.box("setup", b.token)
+    assert r.returncode == 0, r.stdout
+
+
+@case
+def build_stops_on_a_failed_backend_and_links_nothing(b):
+    built_to_setup(b)
+    b.flag("backend-fails")
+    r = b.box("build", b.token)
+    assert r.returncode == 1 and "did not build" in r.stdout and b.state() == "setup", r.stdout
+    assert not (b.e / "tb/kyty_emulator.exe").exists() and not (b.e / "tb.md5").exists()
+
+
+@case
+def build_stops_on_failed_tests_and_links_nothing(b):
+    built_to_setup(b)
+    b.flag("tests-fail")
+    r = b.box("build", b.token)
+    assert r.returncode == 1 and "tests failed" in r.stdout and b.state() == "setup", r.stdout
+    assert not (b.e / "tb/kyty_emulator.exe").exists()
+
+
+@case
+def build_stops_on_a_failed_link(b):
+    built_to_setup(b)
+    b.flag("link-fails")
+    r = b.box("build", b.token)
+    assert r.returncode == 1 and "private link failed" in r.stdout and b.state() == "setup", r.stdout
+
+
+@case
+def build_refuses_a_binary_without_the_switches(b):
+    built_to_setup(b)
+    b.flag("no-switches")
+    r = b.box("build", b.token)
+    assert r.returncode == 1 and "no lake switches" in r.stdout and not (b.e / "tb.md5").exists(), r.stdout
+
+
+@case
+def build_refuses_a_changed_source_tar(b):
+    built_to_setup(b)
+    with open(b.e / "testbuild.tar", "ab") as f:
+        f.write(b"x")
+    r = b.box("build", b.token)
+    assert r.returncode == 1 and "not what was sent" in r.stdout
+
+
+@case
+def build_refuses_a_lost_lock_and_touches_nothing_shared(b):
+    built_to_setup(b)
+    keep = b.lock()
+    b.write("bc5-work/BOX-LOCK", keep + "foreign\n")
+    r = b.box("build", b.token)
+    assert r.returncode == 1 and "not ours" in r.stdout and not (b.e / "tb").exists()
+    b.write("bc5-work/BOX-LOCK", keep)
+    before = (b.w / "backend-ubuntu/libbc5_backend.a").read_bytes(), (b.w / "kytyplus-build/src/kyty_emulator.exe").read_bytes()
+    assert b.box("build", b.token).returncode == 0
+    assert before == ((b.w / "backend-ubuntu/libbc5_backend.a").read_bytes(), (b.w / "kytyplus-build/src/kyty_emulator.exe").read_bytes())
+    assert b.state() == "ready"
+
+
+@case
+def a_run_needs_the_build(b):
+    built_to_setup(b)
+    r = b.box("run", b.token, "K4")
+    assert r.returncode == 1 and "want ready" in r.stdout and not (b.e / "r-K4").exists()
+
+
+@case
+def a_changed_private_binary_is_refused_before_the_attempt(b):
+    b.ready()
+    b.bashc(f"printf x >> {b.r}/bc5-work/exp0385/tb/kyty_emulator.exe")
+    r = b.box("run", b.token, "K4")
+    assert r.returncode == 1 and "not the one built" in r.stdout and not (b.e / "r-K4").exists(), r.stdout
+
+
+@case
+def an_emulator_that_is_not_the_private_binary_stops_the_run(b):
+    b.hook("before-launch", 'tb=deadbeef')
+    b.ready()
+    r = b.box("run", b.token, "K4")
+    assert r.returncode == 1 and "not the private binary" in r.stdout and b.state() == "stopped", r.stdout[-400:]
+    assert b.own_count() == 0
+
+
+@case
+def the_arms_go_into_the_control_file_in_order(b):
+    b.ready()
+    assert b.box("run", b.token, "K4").returncode == 0
+    log = [l.split(None, 2) for l in b.read("bc5-work/exp0385/r-K4/arms.log").splitlines()]
+    assert [int(l[0]) for l in log] == [0, 17, 21, 24, 27, 30, 33, 36, 39, 42, 45, 48], log
+    assert log[1][2] == "census=1 zpass=1" and "nohiz=1" in log[10][2]
+    assert b.read("bc5-work/exp0385/r-K4/lake.ctl").strip() == ""     # all off at the end
+    assert len(b.read("bc5-work/exp0385/K4.arms.txt").splitlines()) == 12
+    assert "no zpass records" in b.read("bc5-work/exp0385/K4.zp.txt")  # a missing catcher loses nothing else
+    names = b.bashc(f"tar tf {b.r}/bc5-work/exp0385/K4.raw.tar").stdout.split()
+    assert "K4.arms.txt" in names and "K4.zp.txt" in names and "tb.md5" in names
+
+
+@case
+def every_token_in_the_arms_file_is_real(b):
+    # the same tokens lake_probe.cpp's parse() takes; a wrong one would read as all off on the box
+    src = (HERE.parent.parent / "backend/src/lake_probe.cpp").read_text(encoding="utf-8")
+    flags = set(re.findall(r'flag\("(\w+)"', src))
+    good = flags | {"cache", "cache_at"}
+    seen = 0
+    for line in (HERE / "arms0385.txt").read_text().splitlines():
+        if line.startswith("#") or "|" not in line:
+            continue
+        for tok in line.split("|", 1)[1].split():
+            name, value = tok.split("=")
+            assert name in good, tok
+            seen += 1
+            if name == "cache":
+                assert f'tok == "cache={value}"' in src, tok
+            elif name == "cache_at":
+                assert f'tok == "cache_at={value}"' in src, tok
+            else:
+                assert value == "1", tok
+    assert seen > 10
+
+
+@case
+def the_arm_rule_matches_the_readme(b):
+    arms = "0|\n17|census=1 zpass=1\n21|cull=1\n24|pfp=1\n27|\n"
+    def lines(v):
+        return "".join(f"x-ts{k:02d}.png: patch {x:5.1f} %\n" for k, x in enumerate(v))
+    def desc(**on):
+        d = dict(cache="off", cache_at="first", cull=0, pfp=0, dbmeta=0, idle=0, nohiz=0, trackercf=0, census=0, zpass=0)
+        d.update(on)
+        return " ".join(f"{k}={v}" for k, v in d.items())
+    def period(words=0, cull=0):
+        return f"bc5-direct: experiment 0385 period: jobs 9 writers 9 in_cond 0 inserted_words {words} refused 0 cull_barriers {cull} htile_fills 0 chain_stops 0 cond_exec 0 predication 0 nested_ibs 0\n"
+    def at(**on):
+        return f"bc5-direct: experiment 0385 at 1.5 ms: {desc(**on)}\n"
+    good = at() + period() + at(census=1, zpass=1) + period(words=500) + at(cull=1) + period(words=20, cull=4) + at(pfp=1) + period(words=8) + at() + period()
+    rows = gates.arms(lines([30.0] * 21 + [9.0, 10.0, 11.9] + [30.0] * 6), arms, good)
+    assert [r[3] for r in rows] == ["all off", "no effect", "CLEARS", "no effect", "all off"], rows
+    rows = gates.arms(lines([30.0] * 21 + [9.0, 12.1, 9.0] + [30.0] * 6), arms, good)
+    assert rows[2][3] == "no effect"                                  # one shot above the clean level
+    rows = gates.arms(lines([9.5] * 30), arms, good)
+    assert rows[2][3].startswith("no verdict") and rows[0][3] == "all off"  # no holes to clear
+    idle = good.replace("cull_barriers 4", "cull_barriers 0")
+    rows = gates.arms(lines([30.0] * 21 + [9.0, 10.0, 11.9] + [30.0] * 6), arms, idle)
+    assert rows[2][3].startswith("NOT EFFECTIVE"), rows               # clean shots, but the barrier never ran: a chance clean phase
+    rows = gates.arms(lines([30.0] * 30), arms, "no switch lines\n")
+    assert all(r[3].startswith("NOT EFFECTIVE") for r in rows if r[1]), rows
+
+
+@case
+def a_run_qualifies_on_its_all_off_shots_only(b):
+    d = b.root / "e"
+    d.mkdir()
+    def w(n, t):
+        (d / ("K4" + n)).write_text(t, newline="\n")
+    w(".kernel.txt", "lines 0\ndevcoredumps 0\n")
+    w(".saves.txt", "live a want a\nlake b want b\nlearned c want c\n")
+    w(".manifest.txt", "MANIFEST PASS\n")
+    w(".route.txt", "bench_rc 0\npoller_rc 0\nsave_read 1\ncapped 0\nana_rc 0\n")
+    w(".journal.txt", "path /p\nrtoff 0\nskip 0\ntimeouts 0\nflips 2000\n")
+    w(".pl.txt", PL_OK)
+    w(".bursts.txt", "frames with 3 bursts: 1\n")
+    w(".tz.txt", K3_TZ.read_text())
+    w(".patch.txt", "".join(f"x-ts{k:02d}.png: patch   9.0 %\n" for k in range(17)) + "".join(f"x-ts{k:02d}.png: patch  40.0 %\n" for k in range(17, 53)))
+    stop, route, mean = gates.run_check(str(d), "K4", "post")
+    assert (stop, route) == ([], []) and abs(mean - 9.0) < 1e-9, (stop, route, mean)
+    w(".patch.txt", "x-ts00.png: patch   9.0 %\n" * 20)
+    assert "20 patch values, want 53" in " ".join(gates.run_check(str(d), "K4", "post")[0])
+
+
+@case
+def the_manifest_needs_the_test_builds_own_options(b):
+    h = "/home/x"
+    want = gates.table(h, "77", "K4")
+    def entries(**over):
+        out = [("HOME", h)]
+        fixed = {"XDG_RUNTIME_DIR": "/run/user/1000", "WAYLAND_DISPLAY": "w", "DISPLAY": ":0", "BC5_GC_DUMP_DIR": h + "/bc5-data/captures/play-20261031-1500/gc",
+                 "KYTY_BC5_INPUT_CONFIG": h + "/bc5-work/exp0385/input-0385.cfg", "BC5_0385_INPUT_CONFIG": h + "/bc5-work/exp0385/input-0385.cfg",
+                 "KYTY_BC5_INPUT_CMD": h + "/bc5-work/exp0385/r-K4/input.cmd", "BC5_EMU": h + "/bc5-work/exp0385/tb/kyty_emulator",
+                 "BC5_DIRECT_LAKE_CTL": h + "/bc5-work/exp0385/r-K4/lake.ctl", "BC5_DIRECT_LAKE_OUT": h + "/bc5-data/priv/exp0385/K4/zpass.dat"}
+        fixed.update(over)
+        for k, v in want.items():
+            if k in fixed:
+                if fixed[k] is not None:
+                    out.append((k, fixed[k]))
+            else:
+                out.append((k, v))
+        return out
+    assert gates.check_manifest(entries(), "77", "K4")[1] == []
+    assert "missing chain name BC5_EMU" in gates.check_manifest(entries(BC5_EMU=None), "77", "K4")[1]
+    assert "BC5_EMU is not the chain's value" in gates.check_manifest(entries(BC5_EMU=h + "/bc5-work/kytyplus-build/src/kyty_emulator"), "77", "K4")[1]
+    assert "missing chain name BC5_DIRECT_LAKE_CTL" in gates.check_manifest(entries(BC5_DIRECT_LAKE_CTL=None), "77", "K4")[1]
+    assert "BC5_DIRECT_LAKE_OUT is not the chain's value" in gates.check_manifest(entries(BC5_DIRECT_LAKE_OUT="/tmp/x"), "77", "K4")[1]
+
+
+@case
+def the_lake_candidate_leaves_audio_guards_and_patch_alone(b):
+    repo = HERE.parent.parent
+    def git(*a):
+        return subprocess.run(["git", "-C", str(repo), *a], text=True, capture_output=True)
+    # patch 0001, which carries exp 0372's pad audio route, is the host's source: the private binary links its objects as they are
+    assert git("diff", "--quiet", "fab8660", "HEAD", "--", "backend/kytyplus-patches").returncode == 0
+    assert (repo / "backend/kytyplus-patches/0001-bc5-lle-agc.patch").read_text(encoding="utf-8", errors="replace").count("exp 0372") == 5
+    names = git("diff", "--name-only", "fab8660", "HEAD", "--", "backend").stdout.split()
+    assert sorted(names) == ["backend/CMakeLists.txt", "backend/include/bc5/full_state.hpp", "backend/include/bc5/lake_probe.hpp",
+                             "backend/src/direct.cpp", "backend/src/full_state.cpp", "backend/src/lake_probe.cpp", "backend/tests/lake_probe_test.cpp"], names
+    d = git("diff", "fab8660", "HEAD", "--", "backend/src/direct.cpp").stdout
+    assert [l for l in d.splitlines() if l.startswith("-") and not l.startswith("---")] == [], "direct.cpp lost a line"
+    for f in ("backend/src/lake_probe.cpp", "backend/src/direct.cpp"):
+        assert "REBASE_DISPATCH" not in (repo / f).read_text(encoding="utf-8")   # F765 stays removed
+    assert "BC5_DIRECT_REBASE_DISPATCH" in gates.FORBIDDEN
+    for g in ("BC5_DIRECT_GPU_CHECK", "BC5_DIRECT_GPU_CHECK_PRODUCT", "BC5_DIRECT_SHADOW_LABELS", "BC5_DIRECT_HOST_INDIRECT", "BC5_DIRECT_RING_DEPS"):
+        assert g in gates.GUARDS and g in gates.COMMON, g                        # the functional guards stay required
+
+
+@case
+def the_catchers_reader_tells_a_skipped_writer(b):
+    spec2 = importlib.util.spec_from_file_location("zp0385", HERE / "zp0385.py")
+    zp = importlib.util.module_from_spec(spec2)
+    spec2.loader.exec_module(zp)
+    import struct
+    v = 1 << 63
+    raw = bytearray(256)
+    struct.pack_into("<QQ", raw, 0, v | 100, v | 175)
+    struct.pack_into("<QQ", raw, 16, v | 5, v | 30)
+    assert zp.record(bytes(raw)) == (100, True, True)
+    assert zp.record(bytes(256)) == (0, False, False)
+    half = bytearray(256)
+    struct.pack_into("<QQ", half, 8, 0, 0)
+    struct.pack_into("<Q", half, 8, v | 7)
+    assert zp.record(bytes(half)) == (0, False, True)                 # a COND_EXEC skipped the begin, not the end
+    out = zp.summarise(bytes(raw) + bytes(half), "0 7 0x11d29e9600 0x2d 0 1.5\n1 9 0x11d29e9600 0x2d 0 2.5\n")
+    assert "frames 2 skipped 1 passed 100 100 100" in out, out
+
+
+# 11. the gates and the guards on their own
 @case
 def gates_read_the_real_k2_and_k3_summaries(b):
     k3 = K3_TZ.read_text()

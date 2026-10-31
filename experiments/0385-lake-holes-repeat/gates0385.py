@@ -3,6 +3,7 @@
 usage: gates0385.py manifest <environ dump> <token> <tag>   this emulator's effective options against the table
        gates0385.py check <exp dir> <tag> pre|post          one run's evidence: exit 0 pass, 10 route failure, 1 stop
        gates0385.py decide <tz file> <mean patch>           the README's decision rule on one run
+       gates0385.py arms <patch file> <arms file> <switch lines>   each arm's shots against the all-off shots
 The table is D19's, copied from coordination/d19/d19manifest.py (sha256 ce98521e) with this experiment's private paths
 and mark, for launcher 55531ab6 and bc5-run.env cb8ad5fc. It is an allow list: a missing, changed, forbidden or unknown
 option blocks. The manifest prints table names and their values only; session names are counted, never printed, so its
@@ -71,8 +72,10 @@ NORMAL = {
 
 # Least evidence of a run that reached the lake. K2 and K3 had 2,228 and 2,069 frames, 408 and 372 snapshots, 37 and 182
 # finals used; a route that missed the lake polls an image that does not change.
-SHOTS, FRAMES_MIN, SNAPS_MIN, FLIPS_MIN, FINALS_MIN = 20, 500, 100, 1000, 30
-QUALIFY = 20.0
+SHOTS, FRAMES_MIN, SNAPS_MIN, FLIPS_MIN, FINALS_MIN = 53, 500, 100, 1000, 30
+# Shots 0-16 run with every switch off (arms0385.txt): they alone decide whether a run qualifies. CLEAN is above the clean
+# level with RT on (K2 9.2, K3 9.9, H1 9.7).
+BASE_SHOTS, QUALIFY, CLEAN = 17, 20.0, 12.0
 MAX_ENVIRON = 1 << 20
 
 
@@ -90,6 +93,10 @@ def table(home, token, tag):
         out[k] = v
     out["BC5_0385_OWNER"] = token
     out["KYTY_BC5_INPUT_CMD"] = re.compile(r"/.*/bc5-work/exp0385/r-" + re.escape(tag) + r"/input\.cmd")
+    # the test build: its binary and its switches
+    out["BC5_EMU"] = re.compile(r"/.*/bc5-work/exp0385/tb/kyty_emulator")
+    out["BC5_DIRECT_LAKE_CTL"] = re.compile(r"/.*/bc5-work/exp0385/r-" + re.escape(tag) + r"/lake\.ctl")
+    out["BC5_DIRECT_LAKE_OUT"] = re.compile(r"/.*/bc5-data/priv/exp0385/" + re.escape(tag) + r"/zpass\.dat")
     return out
 
 
@@ -259,7 +266,7 @@ def run_check(exp, tag, stage):
         if len(v) != SHOTS:
             stop.append(f"{len(v)} patch values, want {SHOTS}")
         else:
-            mean = sum(v) / len(v)
+            mean = sum(v[:BASE_SHOTS]) / BASE_SHOTS
         if (number(j, "flips") or 0) < FLIPS_MIN:
             route.append(f"{j.get('flips') if j else '?'} flips")
         if not (read(p(".bursts.txt")) or "").strip():
@@ -289,6 +296,75 @@ def cmd_check(exp, tag, stage):
         return 0
     print(f"GATES PASS mean patch {mean:.1f} qualify {'yes' if mean >= QUALIFY else 'no'}")
     return 0
+
+
+def periods(text):
+    """[(switches, counts)] from the host's lines: what each span of the run's switches did."""
+    out, cur = [], ""
+    for line in (text or "").splitlines():
+        m = re.search(r"experiment 0385 at [0-9.]+ ms: (.*)$", line)
+        if m:
+            cur = m.group(1).strip()
+            continue
+        m = re.search(r"experiment 0385 period: (.*)$", line)
+        if m:
+            w = m.group(1).split()
+            out.append((cur, dict(zip(w[0::2], (int(x) for x in w[1::2])))))
+    return out
+
+
+def effective(text, counts):
+    """Did the host's own counts show this arm's switches doing something? Each switch has its own count."""
+    t = text.split()
+    checks = []
+    if "cull=1" in t:
+        checks.append(counts.get("cull_barriers", 0) > 0)
+    if "dbmeta=1" in t:
+        checks.append(counts.get("htile_fills", 0) > 0)
+    if "trackercf=1" in t:
+        checks.append(counts.get("chain_stops", 0) > 0)
+    if [x for x in t if x not in ("cull=1", "dbmeta=1", "trackercf=1") and not x.startswith("cache_at=")]:
+        checks.append(counts.get("inserted_words", 0) > 0)
+    return any(checks)
+
+
+def arms(patch_text, arms_text, switch_text):
+    """[(first shot, switches, shot values, verdict)]. The README's rule: with all-off shots at QUALIFY or more, an arm clears
+    the holes if every one of its shots is at CLEAN or less. An arm the host's counts do not show working is not called anything
+    else: its shots say nothing about its fix."""
+    v = patch_values(patch_text)
+    spans = periods(switch_text)
+    rows = []
+    for line in arms_text.splitlines():
+        if line and not line.startswith("#"):
+            a, _, b = line.partition("|")
+            rows.append((int(a), b.strip()))
+    base = v[:BASE_SHOTS]
+    level = statistics.median(base) if base else 0.0
+    out, at = [], 0
+    for k, (first, text) in enumerate(rows):
+        last = rows[k + 1][0] if k + 1 < len(rows) else len(v)
+        got = v[first:last]
+        worked = False
+        if text:
+            tokens = text.split()
+            for n in range(at, len(spans)):
+                if all(x in spans[n][0].split() for x in tokens):
+                    worked = effective(text, spans[n][1])
+                    at = n + 1
+                    break
+        if not text:
+            verdict = "all off"
+        elif not worked:
+            verdict = "NOT EFFECTIVE: the host's counts show nothing"
+        elif level < QUALIFY:
+            verdict = "no verdict: no holes in the all-off shots"
+        elif got and max(got) <= CLEAN:
+            verdict = "CLEARS"
+        else:
+            verdict = "no effect" if got else "no shots"
+        out.append((first, text, got, verdict))
+    return out
 
 
 FINAL = re.compile(r"^\s+(c\d+\.f\d+) w \d+ holes ([0-9.]+) mixed true ([0-9.]+|nan) shifted ([0-9.]+|nan) one-block [0-9.nan]+"
@@ -331,6 +407,10 @@ if __name__ == "__main__":
         sys.exit(cmd_manifest(a[1], a[2], a[3]))
     if len(a) == 4 and a[0] == "check" and a[3] in ("pre", "post"):
         sys.exit(cmd_check(a[1], a[2], a[3]))
+    if len(a) == 4 and a[0] == "arms":
+        for first, text, got, verdict in arms(read(a[1]) or "", read(a[2]) or "", read(a[3]) or ""):
+            print(f"{first:2d} {verdict} | {' '.join(f'{x:.1f}' for x in got)} | {text or 'all off'}")
+        sys.exit(0)
     if len(a) == 3 and a[0] == "decide":
         out, nums = decide(read(a[1]) or "", float(a[2]))
         print(out, nums)

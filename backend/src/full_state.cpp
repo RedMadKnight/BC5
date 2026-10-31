@@ -9,6 +9,7 @@ namespace bc5::full_state {
 namespace {
 
 std::atomic<bool> g_chain_stop{false}; // experiment 0385
+std::atomic<std::uint64_t> g_chain_stops{0};
 constexpr std::uint32_t kChainBit = 1u << 20;
 constexpr std::uint32_t kMaxTable = 0x1000;
 constexpr std::size_t kMaxStack = 8;
@@ -224,7 +225,10 @@ void Tracker::apply_level(std::span<const std::uint32_t> ib, const Reader &read,
                 stats.nested++;
                 apply_level(std::span<const std::uint32_t>(t, n), read, stats, depth + 1);
             }
-            if ((p[3] & kChainBit) != 0 && g_chain_stop.load(std::memory_order_relaxed)) return;
+            if ((p[3] & kChainBit) != 0 && g_chain_stop.load(std::memory_order_relaxed)) {
+                g_chain_stops.fetch_add(1, std::memory_order_relaxed);
+                return;
+            }
         } else if (op == 0x11 && len >= 2) { // SET_BASE: base_index in dword 1 bits 3:0
             packets_.set_base[p[1] & 0xfu] = body();
         } else if (op == 0x26) { // INDEX_BASE
@@ -243,6 +247,7 @@ void Tracker::apply_level(std::span<const std::uint32_t> ib, const Reader &read,
 }
 
 void set_chain_stop(bool on) { g_chain_stop.store(on, std::memory_order_relaxed); }
+std::uint64_t chain_stops() { return g_chain_stops.load(std::memory_order_relaxed); }
 
 std::vector<std::uint32_t> Tracker::emit_prefix() const {
     std::vector<std::uint32_t> out;
@@ -368,7 +373,10 @@ void walk_draws(Tracker &t, std::span<const std::uint32_t> ib, const Tracker::Re
                                     (static_cast<std::uint64_t>(ib[i + 2] & 0xffffu) << 32);
             if (const std::uint32_t *nested = n != 0 ? read(a, n * 4ull) : nullptr; nested != nullptr)
                 walk_draws(t, std::span<const std::uint32_t>(nested, n), read, depth + 1, f);
-            if ((ib[i + 3] & kChainBit) != 0 && g_chain_stop.load(std::memory_order_relaxed)) return;
+            if ((ib[i + 3] & kChainBit) != 0 && g_chain_stop.load(std::memory_order_relaxed)) {
+                g_chain_stops.fetch_add(1, std::memory_order_relaxed);
+                return;
+            }
         }
         i += len;
     }

@@ -13,6 +13,75 @@ patch ≥ 20 %):
 in any outcome. It tests the step F486 took between coverage (a) and metadata (b), and so decides where the next Q21
 experiment looks: at the writers' input (the culling or occlusion input, F350), or back at the metadata.
 
+## The test build
+
+The maintainer, 2026-10-31: every candidate fix and catcher goes into one test build at once, each with an on/off switch, and only
+then does testing start. So this is not a plain repeat any more. The series runs a private binary: the shared objects of 78f25172
+with a private backend archive (`backend/`, `bc5/lake_probe.hpp`). With `BC5_DIRECT_LAKE_CTL` unset none of it runs. Shared builds,
+patch 0001 and the launcher do not change.
+
+The host re-reads a control file every 32 GFX jobs, so **one run with holes can turn each switch on and off**. That sets each arm
+against all-off shots of the same run, which the run-to-run variation (0.8–32 %) would otherwise hide.
+
+| Shots | Switches (`arms0385.txt`) | What it tests |
+|---|---|---|
+| 0–16 | all off | The poller's window: F486's test, unchanged, and whether the run qualifies |
+| 17–20 | `census=1 zpass=1` | **Catchers.** Per job: lake writers, those inside a COND_EXEC, nested IBs, predication. Per writer: passed samples, and whether the CP skipped it |
+| 21–23 | `cache=wbinv cache_at=each` | Stale GL2 data (GL2 write-back and invalidate before each lake writer) |
+| 24–26 | `cull=1` | A barrier after each culling pass (F355's four programs) |
+| 27–29 | `pfp=1` | `PFP_SYNC_ME` before each COND_EXEC and indirect lake writer |
+| 30–32 | `dbmeta=1` | `FLUSH_AND_INV_DB_META` after each HTILE fill (F310) |
+| 33–35 | `idle=1` | CS and PS partial flushes before the first writer |
+| 36–38 | `nohiz=1` | HiZ and HiS forced off for the writers (what F486 left open) |
+| 39–41 | `trackercf=1` | The host's state tracker stops at a CHAIN (F761) |
+| 42–44 | `cache=all cache_at=each` | The kernel's whole cache set before each writer |
+| 45–47 | all of them | In case only a combination works |
+| 48–52 | all off | Back to the start: an arm that seemed to clear should not hold here |
+
+These are hypotheses; none is proven. The fixes come one at a time so that a hang names its arm, and all together last.
+
+**Off and on, per switch.** With `BC5_DIRECT_LAKE_CTL` unset the module does not exist at run time: no tracker, no BO, no insert. With it set and
+a switch off, that switch inserts nothing (unit tests). Each change of the switches first logs a `period` line of what the ending span did, and an arm
+counts only if its own count moved; otherwise it reads NOT EFFECTIVE, whatever its shots show.
+
+| Switch | Off | On, what the GPU gets | Its evidence in `<tag>.switches.txt` |
+|---|---|---|---|
+| `cache=` | Title's own barriers only | `ACQUIRE_MEM` with the chosen GCR bits before the writer | `inserted_words` |
+| `cull=1` | No insert | `CS_PARTIAL_FLUSH` and GL2 write-back and invalidate after each of F355's programs | `cull_barriers` |
+| `pfp=1` | No insert | `PFP_SYNC_ME` before COND_EXEC and indirect writers | `inserted_words` |
+| `dbmeta=1` | No insert | `CS_PARTIAL_FLUSH`, GL2 write-back and invalidate, `FLUSH_AND_INV_DB_META` after each HTILE fill | `htile_fills` |
+| `idle=1` | No insert | CS and PS partial flushes before the first writer | `inserted_words` |
+| `nohiz=1` | No insert | `DB_RENDER_OVERRIDE` with HiZ and HiS forced off for the writers, the title's value restored after | `inserted_words` |
+| `trackercf=1` | The tracker walks past a CHAIN, as every shared build | It stops there | `chain_stops` |
+| `census=1` | No line | One line per job, 2,000 at most; no packet | the census lines |
+| `zpass=1` | No insert | `DB_COUNT_CONTROL` set for the writers and restored, `ZPASS_DONE` around each | `inserted_words`, `<tag>.zp.txt` |
+
+**Limits.**
+
+| What | Bound |
+|---|---|
+| Census | 2,000 lines, ~300 KB of the private log |
+| Catcher | A 16-MiB GTT BO, 65,536 records, about 500 frames at ~130 writers each; the `.dat` file at most 16 MiB and its `.meta` about 3 MiB, both private and deleted with the snapshots |
+| Snapshots | ~2.7 GB a run, deleted after a pass; kept after a failure, so ~8 GB at the worst |
+| Disk | No claim or run at 80 %; a run stops at 90 % (`disk_pct`, checked every 3 s) |
+| Private tree | `exp0385/tb`; its size is printed by build and has not been measured |
+| Journal | `BC5_DIRECT_JOURNAL=min`, as K1–K3, for at most 560 s; its size goes into `<tag>.journal.txt` |
+| Time | Build 7 min, each emulator 560 s, each run 13 min, the series 45 min |
+
+**Audio and guards.** The test build changes no audio. Patch 0001 is byte for byte fab8660's and carries exp 0372's pad audio route (5 marks), and the private binary
+links the shared objects unchanged, so exp 0372's replug check is not due: this is not an audio change. The functional guards stay required by the manifest, and
+`BC5_DIRECT_REBASE_DISPATCH` stays removed and forbidden (F765). `test0385.py` checks all of this.
+
+**Backup.** Nothing shared is replaced, so there is nothing to back up: the private binary, its build and all evidence stay in `exp0385/` and `priv/exp0385/`.
+
+**Arm rule, fixed before the runs.** With the all-off shots at a median of 20 % or more, an arm **clears the holes** if every one of its
+shots is at 12 % or less (`gates0385.py arms`; K2, K3 and H1 sat at 9.2–9.9 %). A clearing arm is a lead, not a fix: three shots can
+coincide with a clean phase, so it gets its own repeat before anything moves toward a shared build. With no holes in the all-off shots
+a run says nothing about the arms. `trackercf` acts where the host's prefixes do, so a null there is weak unless the census shows CHAINs.
+
+**The catcher's reading.** A writer whose passed samples fall in some frames is the one losing the lake's cells. A record whose begin stayed
+unwritten was skipped by the CP. Lake writers in nested IBs cannot be wrapped; the census counts them.
+
 ## Decision rule, fixed before the runs
 
 All numbers come from `raw/<tag>.tz.txt`. Each final has `holes H mixed true T shifted Z`; each consecutive pair has
@@ -52,6 +121,8 @@ launched.
 | `saves-lake-1153` | no earlier value exists: its sum is recorded under the lock at claim, then checked before and after each run | this run |
 | `exp0330/wd`'s links | the listing's sha256 is recorded at setup; every link must point into `~/bc5-work` | the layout of D19's smokes |
 | Our kit | `kit.sha256`, checked on the box by setup | this commit |
+| `testbuild.tar` | `tb.sha256`, made from this commit's `backend` tree at the slot, checked by build | this commit |
+| Private binary | its md5 is recorded after the build and checked before each run and against the running emulator | this run |
 | Source | fab8660, main. This branch carries no build change | the top session |
 
 The lean build is not used, because the RT proof reads the journal. `input-0385.cfg` is exp 0369's `input-0369.cfg` byte for
@@ -62,20 +133,24 @@ staying as it was. Changes since K1–K3's build 1000ad2a that this repo records
 ## Plan
 
 **Runs.** At most three, tags **K4, K5, K6**, in that order, one GPU workload. `box0385.sh` enforces the order and the limit. The
-series ends at the first run with a mean shot patch of 20 % or more. A failed route uses its attempt and is not a pass.
+series ends at the first run with a mean patch of 20 % or more over the all-off shots 0–16. A failed route uses its attempt and is not a pass.
+
+**Build first.** `build` makes the private backend, runs its Catch2 tests, and only if they pass links the shared normal build's objects
+with that archive. CPU only, at nice 19, no emulator, ~5 min (exp 0381's was). A failed build ends with nothing linked.
 
 **Length.**
 
 | Step | Expected |
 |---|---|
 | Claim, copy the kit, setup, self-test | ~1 min |
-| One run: bench ~5:05–5:16 (K2, K3), analysis and clean-up ~0:35 | ~6 min |
+| Private build and its tests | ~5 min |
+| One run: the view at ~200 s, then 53 shots 5 s apart, analysis and clean-up ~0:35 | ~8.5 min |
 | Release | ~0:30 |
-| **Total** | **~7.5 min if K4 has holes, ~20 min for all three** |
-| **Series deadline** | **30 min from the claim, recovery and release included** |
+| **Total** | **~15 min if K4 has holes, ~32 min for all three** |
+| **Series deadline** | **45 min from the claim, recovery and release included** |
 
-**The deadline is enforced, not described.** It is written at the claim and read by every step. No run starts with under 12 min
-left (10 for the run, 2 for recovery), and that attempt is then not used. Each emulator lives at most 390 s. A watchdog, started by
+**The deadline is enforced, not described.** It is written at the claim and read by every step. No run starts with under 15 min
+left (13 for the run, 2 for recovery), and that attempt is then not used. Each emulator lives at most 560 s. A watchdog, started by
 setup in its own session, stops what is ours at 2 min before the deadline and releases at the deadline. `status`, `stop` and
 `release` still work after it. The kernel stream ends with our lock line or the deadline.
 
@@ -122,7 +197,10 @@ finals). Exit 10: the attempt is used, the evidence stays, and the next tag may 
 directory of ours at its canonical place, holding no link and no foreign file. Nothing else is deleted, and nothing at all after a
 failure.
 
-**Written on the box:** `~/bc5-work/exp0385/`, `~/bc5-data/priv/exp0385/`, the private journal under `~/bc5-data/captures/play-*`, the
+**Risk added by the test build.** The arms change what the GPU runs while the title plays. A fix can hang the ring or take the machine
+down. The kernel gate stops the series at the first line, and the arm in force is in `arms.log`.
+
+**Written on the box:** `~/bc5-work/exp0385/` with the private build in `tb/`, `~/bc5-data/priv/exp0385/`, the private journal under `~/bc5-data/captures/play-*`, the
 launcher's `route-record.txt`, and our BOX-LOCK and BOX-QUEUE lines. No shot or snapshot is viewed.
 
 ## Commands, in order, after the top session's slot
@@ -134,13 +212,22 @@ from step 1.
    ```
    ssh -o ConnectTimeout=10 -o BatchMode=yes bc250 'bash -s -- claim' < box0385.sh
    ```
-2. **Kit:**
+2. **Kit,** after making `testbuild.tar` on the laptop from this commit's `backend` tree, without patch 0001:
    ```
-   scp -o ConnectTimeout=10 -o BatchMode=yes box0385.sh gates0385.py pl0385.py sn0385.py tz0385.py bt0362.sh patch0385.py swz0248-z4.json input-0385.cfg kit.sha256 bc250:bc5-work/exp0385/
+   git archive -o testbuild.tar HEAD:backend ':!kytyplus-patches'
    ```
-3. **Setup:**
+   ```
+   sha256sum testbuild.tar > tb.sha256
+   ```
+   ```
+   scp -o ConnectTimeout=10 -o BatchMode=yes box0385.sh gates0385.py pl0385.py sn0385.py tz0385.py bt0362.sh patch0385.py swz0248-z4.json input-0385.cfg arms0385.txt relink0385.py zp0385.py kit.sha256 testbuild.tar tb.sha256 bc250:bc5-work/exp0385/
+   ```
+3. **Setup and build:**
    ```
    ssh -o ConnectTimeout=10 -o BatchMode=yes bc250 'bash ~/bc5-work/exp0385/box0385.sh setup <token>'
+   ```
+   ```
+   ssh -o ConnectTimeout=10 -o BatchMode=yes -o ServerAliveInterval=30 bc250 'timeout -k 30 480 bash ~/bc5-work/exp0385/box0385.sh build <token>'
    ```
 4. **Kernel stream,** in the background through the series:
    ```
@@ -148,7 +235,7 @@ from step 1.
    ```
 5. **Each run,** in the background. Exit 0 pass, 10 route failure, 1 stop; the `RESULT` line gives the mean patch and the next step:
    ```
-   ssh -o ConnectTimeout=10 -o BatchMode=yes -o ServerAliveInterval=30 bc250 'timeout -k 90 660 bash ~/bc5-work/exp0385/box0385.sh run <token> K4'
+   ssh -o ConnectTimeout=10 -o BatchMode=yes -o ServerAliveInterval=30 bc250 'timeout -k 90 840 bash ~/bc5-work/exp0385/box0385.sh run <token> K4'
    ```
 6. **Summaries after a passed run;** compare with the `RESULT` line's sha256, unpack into `raw/`, delete the tar:
    ```
@@ -167,13 +254,14 @@ from step 1.
 | The claim's answer was lost | Lock line and `exp0385/token` agree on the box | Read both; carry on only if the lock line holds that token |
 | A run exits 1 | Series stopped, ours stopped, evidence kept, lock held | `status`, `release`, report; the top session decides on the evidence |
 | The run process was killed | The watchdog stops ours within seconds | `status`, `release` |
-| The laptop is gone | The watchdog stops ours at 28 min and releases at 30 | The top session sees the BOX-QUEUE line |
+| The build fails | Nothing linked, the shared builds untouched, state stays `setup` | `release`; the log is in `tb/raw/` |
+| The laptop is gone | The watchdog stops ours at 43 min and releases at 45 | The top session sees the BOX-QUEUE line |
 | Another line in the lock | No launch, ours stopped, that line kept | `release` takes out only ours |
 | `bc5-mount` does not leave | Never killed; release refuses and the lock stays | Ask the top session |
 | Our lock line is gone | Nothing is touched; release refuses | Ask the top session |
 
-Rollback of this preparation: discard branch `exp/0385-r2`. `exp/0385-lake-holes-repeat` stays at a49c2c7, and a9aeed5 stays at local tag
-`exp0385-a9aeed5`.
+Rollback of this preparation: discard branches `exp/0385-r3` and `exp/0385-testbuild`. `exp/0385-r2` stays at 65ac8485, `exp/0385-lake-holes-repeat`
+at a49c2c7, and a9aeed5 at local tag `exp0385-a9aeed5`. Rollback on the box: nothing shared changes, so `release` is enough.
 
 ## Changes from a49c2c7 (REVIEW-PORTS-27)
 
@@ -183,6 +271,10 @@ Rollback of this preparation: discard branch `exp/0385-r2`. `exp/0385-lake-holes
 - `pl0385.py` is given the run's emulator by pid and start time and the exact lock line, and now exits with a status.
 - `mkkit0385.py` is gone. The kit is pinned by `kit.sha256`.
 - The question, the thresholds and the K4–K6 limit are unchanged.
+
+**r3, the test build, on the maintainer's word:** `backend/` gains `lake_probe` and a CHAIN switch in `full_state`; `direct.cpp` allocates the
+records' BO and calls the module, all behind `BC5_DIRECT_LAKE_CTL`. `box0385.sh` gains `build`, runs the private binary and writes the arms;
+`relink0385.py`, `zp0385.py` and `arms0385.txt` are new. The bench takes 53 shots instead of 20, and the series deadline is 45 min instead of 30.
 
 ## Tests
 

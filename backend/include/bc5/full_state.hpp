@@ -118,6 +118,7 @@ private:
 // dword), which replaces the rest of the buffer, instead of going on into its dead tail. COND_EXEC stays
 // followed as if taken: that needs the flag's value at run time. Off is what every shared build does.
 void set_chain_stop(bool on);
+std::uint64_t chain_stops(); // how many times a walker stopped there: the switch's effect, as a count
 
 // `before`: the state after the frame's earlier buffers. Draws and dispatches: Mesa sid.h
 // (DISPATCH_DIRECT 0x15, DISPATCH_INDIRECT 0x16, DRAW_INDIRECT 0x24, DRAW_INDEX_INDIRECT 0x25,
