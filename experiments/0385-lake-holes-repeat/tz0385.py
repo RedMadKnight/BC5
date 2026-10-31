@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# BC5 experiment 0385: exp 0369's tz0369.py with 0369 -> 0385 (mkkit0385.py). Older comments below keep their wording.
+# BC5 experiment 0385: exp 0369's tz0369.py with 0369 -> 0385. Older comments below keep their wording.
 # BC5 experiment 0385, run K2: are the night lake's holes whole 8x8 depth tiles (the HTILE that decompress #2 reads says
 # "cleared" where a writer drew: the metadata reading) or cell-shaped (no writer drew there: the coverage reading)? And do
 # the frame's compressed writes, before the decompress, touch the hole tiles at all?

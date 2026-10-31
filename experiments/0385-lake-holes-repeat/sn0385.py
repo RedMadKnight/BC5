@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# BC5 experiment 0385: exp 0369's sn0369.py with 0369 -> 0385 (mkkit0385.py). Older comments below keep their wording.
+# BC5 experiment 0385: exp 0369's sn0369.py with 0369 -> 0385. Older comments below keep their wording.
 # BC5 experiment 0385, run K2: exp 0365's sn0365.py with 0365 -> 0385 (its reads and definitions; tz0385.py loads them).
 # BC5 experiment 0385: what the night lake's hole pixels hold mid-frame and after the frame's last burst, and where the
 # final values of pixels that were 0 mid-frame come from, from pl0385.py's snapshots (the depth image at +0x300000 ..

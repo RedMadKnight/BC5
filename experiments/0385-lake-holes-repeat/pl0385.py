@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-# BC5 experiment 0385: exp 0369's pl0369.py with 0369 -> 0385 (mkkit0385.py). Older comments below keep their wording.
+# BC5 experiment 0385: exp 0369's pl0369.py with 0369 -> 0385. Older comments below keep their wording.
 # BC5 experiment 0385, run K2: exp 0365's pl0365.py unchanged but for its paths and lock text (0365 -> 0385).
 # BC5 experiment 0385: the night lake's depth mid-frame and after the frame's last write burst, in consecutive frames.
 # exp 0362's pl0362.py with its snapshot points moved. In exp 0362's run H1 a frame's depth sample (D) changed in three
@@ -22,15 +22,19 @@
 #   "c<NN> f<k> s<M|F> wall <start wall> mono <start mono> since <ms since the frame's start> read <ms> torn <0|1>
 #    late <1|0> dch <D changes since the frame's start> dlast <ms of the last D change>"
 # and per frame "c<NN> f<k> frame mono <start> end <ms to the next frame start or -1>".
-# Stops after SECS, or when the run's BOX-LOCK line or its emulator is gone. Reads go to <out> (mode 700; the title's
+# Stops after SECS, or when the lock stops being ours or its emulator is gone. Reads go to <out> (mode 700; the title's
 # data).
-# usage: pl0385.py <tag> <secs> <out dir> [MIN_T s] [CAPGAP s] [K]   (on the box, attended, beside ab0385.sh)
+# usage: pl0385.py <tag> <secs> <out dir> <MIN_T s> <CAPGAP s> <K> <emulator pid> <its start time> <lock line file>
+#        (on the box, started by box0385.sh's run). It is given the run's own emulator, by pid and start time, and never
+#        looks one up. The lock must be exactly our one line. Exit 0 when it polled to the end or its emulator left; 1 if
+#        it never began or a read failed with the emulator alive; 2 if the lock stopped being ours.
 import glob, os, sys, time
 
 tag, secs, out = sys.argv[1], float(sys.argv[2]), sys.argv[3]
 min_t = float(sys.argv[4]) if len(sys.argv) > 4 else 0.0
 capgap = float(sys.argv[5]) if len(sys.argv) > 5 else 2.0
 K = int(sys.argv[6]) if len(sys.argv) > 6 else 6
+pid, pid_start, line_file = int(sys.argv[7]), sys.argv[8], sys.argv[9]
 TM0, TM1, QM = 0.0090, 0.0130, 0.0010
 TF0, TF1, QF = 0.0150, 0.0250, 0.0015
 home = os.path.expanduser("~")
@@ -42,23 +46,22 @@ S = (0x1129ec0000 + 0x300000, 0x700000)
 os.makedirs(out, mode=0o700, exist_ok=True)
 
 
+line = open(line_file).read().strip(chr(10))
+
+
 def ours():
     try:
-        return ("exp 0385 | lake bench %s " % tag) in open(lock).read()
+        return open(lock).read().strip(chr(10)) == line
     except OSError:
         return False
 
 
-def emulators():
-    pids = []
-    for p in os.listdir("/proc"):
-        if p.isdigit():
-            try:
-                if open("/proc/%s/comm" % p).read().strip() == "kyty_emulator":
-                    pids.append(int(p))
-            except OSError:
-                pass
-    return pids
+def alive():
+    try:
+        st = open("/proc/%d/stat" % pid).read().rsplit(")", 1)[1].split()
+    except (OSError, IndexError):
+        return False
+    return len(st) > 19 and st[19] == pid_start and st[0] != "Z"
 
 
 def age(pid):  # seconds since the process started
@@ -69,19 +72,14 @@ def age(pid):  # seconds since the process started
         return 0.0
 
 
-for _ in range(600):
-    if emulators():
-        break
-    time.sleep(1)
 while True:
-    pids = emulators()
-    if len(pids) != 1 or not ours():
-        print("no single emulator or lock gone before the start: stop", flush=True)
+    if not alive() or not ours():
+        print("no emulator or lock gone before the start: stop", flush=True)
         sys.exit(1)
-    if glob.glob(os.path.join(rdir, "shots", "*-ts00.png")) and age(pids[0]) >= min_t:
+    if glob.glob(os.path.join(rdir, "shots", "*-ts00.png")) and age(pid) >= min_t:
         break
     time.sleep(0.05)
-pid = pids[0]
+rc = 0
 print("# frozen view, emulator at %.1f s: polling begins" % age(pid), flush=True)
 fd = os.open("/proc/%d/mem" % pid, os.O_RDONLY)
 ev = open(os.path.join(out, "events.txt"), "w", buffering=1 << 20)
@@ -127,9 +125,14 @@ while True:
     now = time.monotonic()
     if now - t_start > secs:
         break
-    if polls % 2000 == 0 and (not ours() or not os.path.exists("/proc/%d" % pid)):
-        print("lock or emulator gone: stop", flush=True)
-        break
+    if polls % 2000 == 0:
+        if not ours():
+            print("the lock is not ours: stop", flush=True)
+            rc = 2
+            break
+        if not alive():
+            print("emulator gone: stop", flush=True)
+            break
     w = time.time()
     m = time.monotonic()
     try:
@@ -137,6 +140,7 @@ while True:
         p = os.pread(fd, P0[1], P0[0])
     except OSError as e:
         print("poll read error %s: stop" % e, flush=True)
+        rc = 1 if alive() else 0
         break
     polls += 1
     maxgap = max(maxgap, m - last)
@@ -189,6 +193,7 @@ while True:
             fr["fin"] = True
     except OSError as e:
         print("snapshot read error %s: stop" % e, flush=True)
+        rc = 1 if alive() else 0
         break
 if cap is not None:
     if fr is not None:
@@ -200,3 +205,4 @@ sl.close()
 dur = time.monotonic() - t_start
 print("# %d polls in %.1f s (mean period %.3f ms, largest gap %.1f ms); polls with a change: D %d, P %d; %d frames; %d captures, %d snapshots (%d torn)" % (
     polls, dur, 1000 * dur / max(polls, 1), 1000 * maxgap, nd, npc, nfr, ncap, nsnap, ntorn), flush=True)
+sys.exit(rc)
