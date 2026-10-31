@@ -90,7 +90,7 @@ All 12 reached the fight and all crashes read 0xc at eboot+0x3d7eca0, 110–119 
 | `KYTY_BC5_0388_PUSH_UNTIL_RETURN_US=<0..500>` | candidate: after a main-thread signal of `JobLoaderSema`, spin until the count of returned waits changes, at most this long |
 | `KYTY_BC5_0388_TRACE=1` | adds two catchers: the time from the latest signal to a wait's return in five bands, and the count of push spins and how many saw a wait return in time |
 
-`PUSH_SPIN_US` keeps its meaning. The binary's md5 goes into `pins0388.env` (`NORMAL`, FILL until then) after `box0388.sh build`.
+`PUSH_SPIN_US` keeps its meaning. The binary's md5 goes into `pins0388.env` (`NORMAL`, `caede695c1f41c2b322c9a04bfec5bf1`) after `box0388.sh build`.
 
 **Arms.** All with `JobArenaFix` off, `TRACE=1`, RT on, 180 s, the same route and named save copy, one binary.
 

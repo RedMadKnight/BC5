@@ -100,7 +100,7 @@ s = R(s, "for t in K1N:on K1F:off K2N:on K2F:off K3N:on K3F:off; do", "for t in 
 files["series0388.sh"] = s
 
 s = files["pins0388.env"]
-s = re.sub(r"NORMAL=[0-9a-f]+", "NORMAL=FILL", s)  # the second build, filled after it
+s = re.sub(r"NORMAL=[0-9a-f]+", "NORMAL=caede695c1f41c2b322c9a04bfec5bf1", s)  # the second build
 s = re.sub(r"INPUT_CFG=[0-9a-f]+", "INPUT_CFG=a5259c60c2beed35f5565f4744255ac5", s)
 s = re.sub(r"LEARNED=[0-9a-f]+", "LEARNED=5b92521f646a897b8957cec4cd754ba4", s)
 files["pins0388.env"] = s
