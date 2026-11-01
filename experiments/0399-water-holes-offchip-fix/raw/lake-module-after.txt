@@ -1,0 +1,45 @@
+
+d 0 inserted_words 0 refused 0 cull_barriers 0 htile_fills 0 chain_stops 1 cond_exec 0 predication 0 nested_ibs 0
+bc5-direct: experiment 0387 period ring writes stripped: 0
+bc5-direct: experiment 0387 at 1343280.962 ms: cache=off cache_at=first cull=0 pfp=0 dbmeta=0 idle=0 nohiz=0 trackercf=0 census=0 zpass=1 binoff=0 smallprim=0 latez=0 nocompress=0 zwater=1 stats=1 ureg=1 inputs=1 uwatch=0 tailflush=0 tfonce=1 gepc=0 offchip=off tfdist=off
+bc5-direct: experiment 0387 period: jobs 32 writers 128 in_cond 0 inserted_words 3008 refused 0 cull_barriers 0 htile_fills 0 chain_stops 0 cond_exec 0 predication 0 nested_ibs 0
+bc5-direct: experiment 0387 period ring writes stripped: 31
+bc5-direct: experiment 0387 at 1343297.316 ms: cache=off cache_at=first cull=0 pfp=0 dbmeta=0 idle=0 nohiz=0 trackercf=0 census=0 zpass=0 binoff=0 smallprim=0 latez=0 nocompress=0 zwater=0 stats=0 ureg=0 inputs=0 uwatch=0 tailflush=0 tfonce=0 gepc=0 offchip=off tfdist=off
+bc5-direct: experiment 0387 zpass: 224 records to C:\Users\kjani\AppData\Local\Temp/bc5-lake-test3.bin: ok
+bc5-direct: experiment 0387 period: jobs 0 writers 0 in_cond 0 inserted_words 0 refused 0 cull_barriers 0 htile_fills 0 chain_stops 1 cond_exec 0 predication 0 nested_ibs 0
+bc5-direct: experiment 0387 period ring writes stripped: 0
+bc5-direct: experiment 0387 at 1343337.864 ms: cache=off cache_at=first cull=0 pfp=0 dbmeta=0 idle=0 nohiz=0 trackercf=0 census=0 zpass=0 binoff=0 smallprim=0 latez=0 nocompress=0 zwater=0 stats=0 ureg=0 inputs=0 uwatch=1 tailflush=0 tfonce=0 gepc=0 offchip=off tfdist=off
+PASS switches parse, and a bad request leaves them all off
+PASS all off inserts nothing, and the tracker still follows the job
+PASS only draws on the lake's depth with Z and Z write on are writers
+PASS the cache switch goes before the first writer, or each with cache_at=each
+PASS cull and dbmeta go after the named programs only
+PASS pfp goes before COND_EXEC and indirect writers, and the COND_EXEC count grows
+PASS idle flushes CS and PS once, before the first writer
+PASS nohiz forces HiZ off for the writers and restores the title's value
+PASS exp 0389's forced registers follow the title's value and go back after the writers
+PASS a register the job never set is not forced, and all four stay off by default
+PASS the census reads the raster registers at a writer and changes nothing
+PASS an override still on at the job's end is put back there
+PASS zpass wraps each writer in its own record until they run out
+PASS zpass with the switch off or no records wraps nothing
+PASS nested IBs and predication are counted, a truncated packet ends the walk
+PASS trackercf stops the tracker at a CHAIN, and off keeps today's walk
+PASS every insert is in ascending order and lands on a packet start
+PASS a session follows the control file during the run, in both directions
+PASS zpass's records reach the file once the switch goes off and every job has ended
+PASS exp 0392's switches parse, and a value out of range leaves them all off
+PASS zwater wraps only the water's draws, and without it zpass wraps them all
+PASS stats take their own record around each water draw, start once and stop by the job's end
+PASS ureg copies the ring's registers once a job, at the first water draw
+PASS tailflush ends a job that draws, and leaves a job without draws alone
+PASS offchip goes in once, before the job's first draw, after the two flushes
+PASS tfdist changes only the water's draws and the title's value comes back
+PASS gepc goes in once a job, at the first water draw
+PASS ring_writes finds the prefix's writes and only those, and a strip keeps the job's length
+PASS the first water shader's inputs are one self-delimited entry, with what could be read
+PASS a session strips the ring's writes only after one went through, and writes kinds and inputs
+PASS uwatch reads the registers at any title's first draw of a due job, and nothing otherwise
+PASS a session reads the registers every kWatchEvery jobs when uwatch is on
+32 cases, 0 failed
+

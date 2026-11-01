@@ -1,0 +1,108 @@
+# 12014 frames, 0 unreadable records; clean 11249, hole 522, between 243, unknown 0
+# size 25936575: TOP 1327689, frames 806, hole 95
+# size 23577215: TOP 1097340, frames 10702, hole 390
+# size 21217855: TOP 888887, frames 366, hole 31
+# size 18858495: TOP 702464, frames 140, hole 6
+# stats sample: PS 502899 C_PRIM 32324 C_INV 37744 VS 15616 GS 37744 GS_PRIM 0 IA_PRIM 3904 IA_VERT 15616 HS 3904 DS 42012 CS 0
+# counters that never move in occurrence 0: GS_PRIM CS
+# first stage to fall: PS (occurrence 0, 2)
+mean occ 0: z 693,620 IA_VERT 15,513 IA_PRIM 3,878 HS 3,878 DS 41,422 VS 15,513 GS 37,111 GS_PRIM 0 C_INV 37,111 C_PRIM 29,514 PS 693,620
+mean occ 1: z 702,548 IA_VERT 12,544 IA_PRIM 3,136 HS 3,136 DS 32,666 VS 12,544 GS 28,976 GS_PRIM 0 C_INV 28,976 C_PRIM 23,684 PS 702,548
+mean occ 2: z 391,229 IA_VERT 12,063 IA_PRIM 3,016 HS 3,016 DS 33,427 VS 12,063 GS 30,273 GS_PRIM 0 C_INV 30,273 C_PRIM 23,872 PS 391,229
+mean occ 3: z 143,300 IA_VERT 6,173 IA_PRIM 1,543 HS 1,543 DS 19,115 VS 6,173 GS 17,858 GS_PRIM 0 C_INV 17,858 C_PRIM 13,309 PS 143,300
+occ 0 z        clean      701,786 hole      507,081 ratio 0.723
+occ 0 IA_VERT  clean       15,514 hole       15,519 ratio 1.000
+occ 0 IA_PRIM  clean        3,878 hole        3,880 ratio 1.000
+occ 0 HS       clean        3,878 hole        3,880 ratio 1.000
+occ 0 DS       clean       41,429 hole       41,346 ratio 0.998
+occ 0 VS       clean       15,514 hole       15,519 ratio 1.000
+occ 0 GS       clean       37,118 hole       37,029 ratio 0.998
+occ 0 GS_PRIM  clean            0 hole            0 ratio 0.000
+occ 0 C_INV    clean       37,118 hole       37,029 ratio 0.998
+occ 0 C_PRIM   clean       29,480 hole       29,664 ratio 1.006
+occ 0 PS       clean      701,786 hole      507,081 ratio 0.723
+occ 1 z        clean      710,300 hole      518,407 ratio 0.730
+occ 1 IA_VERT  clean       12,544 hole       12,541 ratio 1.000
+occ 1 IA_PRIM  clean        3,136 hole        3,135 ratio 1.000
+occ 1 HS       clean        3,136 hole        3,135 ratio 1.000
+occ 1 DS       clean       32,667 hole       32,649 ratio 0.999
+occ 1 VS       clean       12,544 hole       12,541 ratio 1.000
+occ 1 GS       clean       28,976 hole       28,969 ratio 1.000
+occ 1 GS_PRIM  clean            0 hole            0 ratio 0.000
+occ 1 C_INV    clean       28,976 hole       28,969 ratio 1.000
+occ 1 C_PRIM   clean       23,649 hole       24,225 ratio 1.024
+occ 1 PS       clean      710,300 hole      518,407 ratio 0.730
+occ 2 z        clean      395,005 hole      296,453 ratio 0.751
+occ 2 IA_VERT  clean       12,064 hole       12,056 ratio 0.999
+occ 2 IA_PRIM  clean        3,016 hole        3,014 ratio 0.999
+occ 2 HS       clean        3,016 hole        3,014 ratio 0.999
+occ 2 DS       clean       33,432 hole       33,328 ratio 0.997
+occ 2 VS       clean       12,064 hole       12,056 ratio 0.999
+occ 2 GS       clean       30,277 hole       30,174 ratio 0.997
+occ 2 GS_PRIM  clean            0 hole            0 ratio 0.000
+occ 2 C_INV    clean       30,277 hole       30,174 ratio 0.997
+occ 2 C_PRIM   clean       23,809 hole       24,955 ratio 1.048
+occ 2 PS       clean      395,005 hole      296,453 ratio 0.751
+occ 3 z        clean      143,656 hole      133,915 ratio 0.932
+occ 3 IA_VERT  clean        6,168 hole        6,210 ratio 1.007
+occ 3 IA_PRIM  clean        1,542 hole        1,552 ratio 1.007
+occ 3 HS       clean        1,542 hole        1,552 ratio 1.007
+occ 3 DS       clean       19,103 hole       19,193 ratio 1.005
+occ 3 VS       clean        6,168 hole        6,210 ratio 1.007
+occ 3 GS       clean       17,847 hole       17,931 ratio 1.005
+occ 3 GS_PRIM  clean            0 hole            0 ratio 0.000
+occ 3 C_INV    clean       17,847 hole       17,931 ratio 1.005
+occ 3 C_PRIM   clean       13,303 hole       13,476 ratio 1.013
+occ 3 PS       clean      143,656 hole      133,915 ratio 0.932
+reg VGT_TF_RING_SIZE 0xfffe: clean 11249 hole 522 between 243
+reg VGT_HS_OFFCHIP_PARAM 0x0: clean 9938 hole 522 between 243
+reg VGT_HS_OFFCHIP_PARAM 0x5f: clean 432 hole 0 between 0
+reg VGT_HS_OFFCHIP_PARAM 0x1ff: clean 879 hole 0 between 0
+reg VGT_TF_MEMORY_BASE 0x11200000: clean 11249 hole 522 between 243
+reg VGT_TF_MEMORY_BASE_HI 0x0: clean 11249 hole 522 between 243
+reg GE_CNTL 0x8040: clean 11249 hole 522 between 243
+reg GE_PC_ALLOC 0x0: clean 10374 hole 522 between 243
+reg GE_PC_ALLOC 0x1ff: clean 875 hole 0 between 0
+arm  0 frames 4125 S 0.960 hole 0.127 | off | mean S 1,060,019
+arm 24 frames  442 S 1.000 hole 0.000 | off | mean S 1,097,128
+arm 27 frames  443 S 1.000 hole 0.000 | tfdist=0 | mean S 1,097,133
+arm 30 frames  440 S 1.000 hole 0.000 | off | mean S 1,097,127
+arm 33 frames  412 S 1.000 hole 0.000 | tailflush=1 | mean S 1,097,132
+arm 36 frames  439 S 1.000 hole 0.000 | off | mean S 1,097,132
+arm 39 frames  444 S 1.000 hole 0.000 | gepc=1 | mean S 1,097,133
+arm 42 frames  441 S 1.000 hole 0.000 | off | mean S 1,097,132
+arm 45 frames  440 S 1.000 hole 0.000 | tailflush=1 tfonce=1 | mean S 1,097,132
+arm 48 frames  442 S 1.000 hole 0.000 | off | mean S 1,097,131
+arm 51 frames  441 S 1.000 hole 0.000 | tailflush=1 tfonce=1 tfdist=0 gepc=1 | mean S 1,097,132
+arm 54 frames  443 S 1.000 hole 0.000 | off | mean S 1,097,134
+arm 57 frames  413 S 1.000 hole 0.000 | tfonce=1 | mean S 1,097,132
+arm 60 frames  441 S 1.000 hole 0.000 | off | mean S 1,097,133
+arm 63 frames  444 S 1.000 hole 0.000 | tfdist=3 | mean S 1,097,132
+arm 66 frames  441 S 1.000 hole 0.000 | off | mean S 1,097,132
+arm 69 frames  440 S 1.000 hole 0.000 | offchip=1ff | mean S 1,097,136
+arm 72 frames  440 S 1.000 hole 0.000 | offchip=5f | mean S 1,097,133
+arm 75 frames  442 S 1.000 hole 0.000 | offchip=1ff | mean S 1,097,131
+arm 78 frames    1 S 1.000 hole 0.000 | off | mean S 1,097,340
+# against the depth: 34 finals at 2560, S against hole pixels r -0.92 slope -0.00
+depth occ 0 z        r -0.93
+depth occ 0 IA_VERT  r -0.25
+depth occ 0 IA_PRIM  r -0.25
+depth occ 0 HS       r -0.25
+depth occ 0 DS       r -0.30
+depth occ 0 VS       r -0.25
+depth occ 0 GS       r -0.30
+depth occ 0 GS_PRIM  r +0.00
+depth occ 0 C_INV    r -0.30
+depth occ 0 C_PRIM   r -0.50
+depth occ 0 PS       r -0.93
+depth occ 2 z        r -0.86
+depth occ 2 IA_VERT  r -0.16
+depth occ 2 IA_PRIM  r -0.16
+depth occ 2 HS       r -0.16
+depth occ 2 DS       r -0.19
+depth occ 2 VS       r -0.16
+depth occ 2 GS       r -0.19
+depth occ 2 GS_PRIM  r +0.00
+depth occ 2 C_INV    r -0.19
+depth occ 2 C_PRIM   r +0.45
+depth occ 2 PS       r -0.86

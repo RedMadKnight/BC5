@@ -1,0 +1,42 @@
+templates ready in 37 s
+PASS the_arms_go_into_the_control_file_in_order (399.5 s)
+PASS every_token_in_the_arms_file_is_real (7.7 s)
+PASS the_reader_names_the_first_stage_that_loses_the_cells (12.6 s)
+PASS the_reader_says_no_test_without_both_kinds_and_nothing_falls_with_no_loss (10.8 s)
+PASS the_reader_skips_a_record_the_cp_never_wrote (15.9 s)
+PASS the_reader_reports_the_registers_by_state_and_each_arm_on_the_records_clock (10.8 s)
+PASS the_reader_joins_the_water_to_the_depth (9.8 s)
+PASS the_inputs_reader_finds_a_dword_that_separates_and_prints_no_values (8.5 s)
+FAIL the_inputs_reader_finds_nothing_in_equal_inputs_and_says_no_test_without_both_kinds (3.5 s)
+Traceback (most recent call last):
+  File "C:\Users\kjani\Downloads\bc5\bc5-0385\experiments\0397-water-stage-with-holes\test0397.py", line 1808, in main
+    b = Box(f"c{i:02d}", FRESH)
+  File "C:\Users\kjani\Downloads\bc5\bc5-0385\experiments\0397-water-stage-with-holes\test0397.py", line 129, in __init__
+    self.copy_of(template)
+    ~~~~~~~~~~~~^^^^^^^^^^
+  File "C:\Users\kjani\Downloads\bc5\bc5-0385\experiments\0397-water-stage-with-holes\test0397.py", line 171, in copy_of
+    assert rc.returncode == 0, rc.stderr
+           ^^^^^^^^^^^^^^^^^^
+AssertionError
+
+Traceback (most recent call last):
+  File "C:\Users\kjani\Downloads\bc5\bc5-0385\experiments\0397-water-stage-with-holes\test0397.py", line 1825, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "C:\Users\kjani\Downloads\bc5\bc5-0385\experiments\0397-water-stage-with-holes\test0397.py", line 1799, in main
+    READY.real_ready()
+    ~~~~~~~~~~~~~~~~^^
+  File "C:\Users\kjani\Downloads\bc5\bc5-0385\experiments\0397-water-stage-with-holes\test0397.py", line 229, in real_ready
+    self.claim()
+    ~~~~~~~~~~^^
+  File "C:\Users\kjani\Downloads\bc5\bc5-0385\experiments\0397-water-stage-with-holes\test0397.py", line 210, in claim
+    r = subprocess.run([BASH, "-s", "--", "claim"], env=self.env, stdin=f, capture_output=True, timeout=60)
+  File "C:\Program Files\Python314\Lib\subprocess.py", line 556, in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+                     ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python314\Lib\subprocess.py", line 1220, in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+                     ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Program Files\Python314\Lib\subprocess.py", line 1644, in _communicate
+    raise TimeoutExpired(self.args, orig_timeout)
+subprocess.TimeoutExpired: Command '['C:/Program Files/Git/bin/bash.exe', '-s', '--', 'claim']' timed out after 60 seconds

@@ -1,0 +1,45 @@
+diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
+--- a/src/libs/bc5LleAgc.cpp
++++ b/src/libs/bc5LleAgc.cpp
+@@ -204,10 +204,12 @@ static bool gc_tf_ring_on() {
+ 	}();
+ 	return v;
+ }
++// Exp 0399 (F785, F786): on unless =0. The chip's reset value is 0, one offchip workgroup, which loses the night lake's
++// pixels, and on the console the system programs what the title hands it; here nothing else does.
+ static bool gc_hs_offchip_on() {
+ 	static const bool v = [] {
+ 		const char* e = std::getenv("BC5_DIRECT_GC_HS_OFFCHIP");
+-		return e != nullptr && *e != 0 && std::strcmp(e, "0") != 0;
++		return e == nullptr || *e == 0 || std::strcmp(e, "0") != 0;
+ 	}();
+ 	return v;
+ }
+@@ -4049,7 +4051,9 @@ static void tf_ring_prefix(std::vector<uint32_t>& p) {
+ 		size = std::get<1>(forced);
+ 		o0   = std::get<2>(forced);
+ 	}
+-	uint32_t   off_v        = static_cast<uint32_t>(second ? o1 : o0);
++	// Exp 0399: a 0 in the first value takes the second, as ps5-vulkan's lease reads them (native/tess_offchip_lease.h:27-44 @
++	// e6d3c3f, GPL-3.0, read for the idea only). TODO(verify): the [bc5-tess] line of a title that calls the HLE entry.
++	uint32_t   off_v        = static_cast<uint32_t>(second || o0 == 0 ? o1 : o0);
+ 	bool       write_off    = true;
+ 	bool       host_default = false, gc_ring = false;
+ 	if ((base == 0 || size == 0) && gc_tf_ring_on()) { // experiment 0189: the ring the title's driver sent /dev/gc
+@@ -4088,6 +4092,16 @@ static void tf_ring_prefix(std::vector<uint32_t>& p) {
+ 		if (write_off && gc_hs_offchip_on() && (g_gc_hs_offchip.load() >> 32u) != 0) p.insert(p.end(), {0xC0017900u, 0x24fu, off_v});
+ 		return;
+ 	}
++	// Exp 0399: a title with a ring tessellates, so with no value from it: BC5_DIRECT_HS_OFFCHIP, else RADV's on this chip, 96
++	// workgroups of 32 KiB (see above). TODO(verify): whether that fits a title's real offchip allocation.
++	if (gc_hs_offchip_on() && (!write_off || off_v == 0)) {
++		uint32_t fallback = 0x5fu;
++		(void)hs_offchip_force(&fallback);
++		off_v     = fallback;
++		write_off = true;
++		static std::atomic<bool> told {false};
++		if (!told.exchange(true)) journal("tf ring: no HS offchip value from the title, using 0x%x (exp 0399)\n", off_v);
++	}
+ 	static std::atomic<uint64_t> n {0};
+ 	if ((n++ & 0xffffu) == 0) journal("tf ring: base 0x%" PRIx64 " size 0x%x offchip 0x%" PRIx64 " 0x%" PRIx64 " 0x%" PRIx64 " -> VGT_HS_OFFCHIP_PARAM %s0x%x%s (%" PRIu64 " prefixes)\n", base, size, o0, o1, o2, write_off ? "" : "untouched, not ", off_v, host_default ? ", host default ring" : gc_ring ? ", the title's /dev/gc ring" : "", n.load());
+ 	const uint32_t size_dw = static_cast<uint32_t>(std::min<uint64_t>(size / 4, 0xffffu));

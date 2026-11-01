@@ -1,0 +1,69 @@
+# 14982 jobs, 3791 lake jobs, 0 records skipped by the CP, 16 RBs with a begin written ([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]); 207 finals, 207 joined
+# lag 0: side A 4, B 5, hole 207, clean 0: 0 writers follow the side, 0 lose cells, 0 follow the hole share
+# lag -1: side A 4, B 5, hole 207, clean 0: 0 writers follow the side, 0 lose cells, 0 follow the hole share
+# lag 1: side A 4, B 5, hole 207, clean 0: 0 writers follow the side, 0 lose cells, 0 follow the hole share
+# lag -2: side A 4, B 5, hole 207, clean 0: 0 writers follow the side, 0 lose cells, 0 follow the hole share
+# lag 2: side A 4, B 5, hole 207, clean 0: 0 writers follow the side, 0 lose cells, 0 follow the hole share
+# lag used: 0
+# NO TEST by side: fewer than 10 frames of a side
+# NO TEST by holes: fewer than 10 hole or clean frames
+# 0 of 48 writers follow the hole share: rank correlation at most -0.5
+spread -0.483 ps 0x11d0208400 occ 0 job 2 mean share 0.00353
+spread -0.483 ps 0x11d01ff900 occ 1 job 2 mean share 0.04659
+spread -0.274 ps 0x11d01ff900 occ 2 job 2 mean share 0.02708
+spread -0.113 ps 0x11d1e2b900 occ 4 job 0 mean share 0.00275
+spread -0.026 ps 0x11d1e2b900 occ 2 job 0 mean share 0.02363
+spread -0.021 ps 0x11d1dd6400 occ 1 job 0 mean share 0.00577
+spread -0.006 ps 0x11d1dd6400 occ 2 job 0 mean share 0.00540
+spread 0.044 ps 0x11d1d96400 occ 1 job 0 mean share 0.00636
+spread 0.045 ps 0x11d1dd6400 occ 6 job 0 mean share 0.00331
+spread 0.047 ps 0x11d1dd6400 occ 3 job 0 mean share 0.00675
+spread 0.049 ps 0x11d1dd6400 occ 5 job 0 mean share 0.01264
+spread 0.051 ps 0x11d1d10f00 occ 1 job 0 mean share 0.05946
+spread 0.061 ps 0x11d3d60800 occ 0 job 0 mean share 0.00257
+spread 0.064 ps 0x11d29c9500 occ 0 job 1 mean share 0.00881
+spread 0.067 ps 0x11d4691100 occ 2 job 0 mean share 0.00514
+spread 0.074 ps 0x11d29ea100 occ 8 job 0 mean share 0.01996
+spread 0.081 ps 0x11d1e16100 occ 0 job 0 mean share 0.02039
+spread 0.081 ps 0x11d1cf4600 occ 0 job 1 mean share 0.00122
+spread 0.084 ps 0x11d1d88300 occ 3 job 0 mean share 0.00702
+spread 0.090 ps 0x11d090d900 occ 0 job 0 mean share 0.00169
+spread 0.107 ps 0x11d1d88300 occ 4 job 0 mean share 0.03757
+spread 0.116 ps 0x11d29ea100 occ 5 job 0 mean share 0.00437
+spread 0.130 ps 0x11d0203f00 occ 0 job 2 mean share 0.00179
+spread 0.140 ps 0x11d373f100 occ 10 job 0 mean share 0.00762
+spread 0.154 ps 0x11d1dd6400 occ 4 job 0 mean share 0.02151
+# NO TEST against K4's clean frames: 96 jobs of 126 writers against K4's 146
+# NO TEST of the RBs by side
+rb 0 A 0.0625 B 0.0626
+rb 1 A 0.0625 B 0.0627
+rb 2 A 0.0625 B 0.0626
+rb 3 A 0.0624 B 0.0626
+rb 4 A 0.0624 B 0.0623
+rb 5 A 0.0624 B 0.0623
+rb 6 A 0.0626 B 0.0625
+rb 7 A 0.0627 B 0.0625
+rb 8 A 0.0625 B 0.0623
+rb 9 A 0.0626 B 0.0623
+rb 10 A 0.0623 B 0.0622
+rb 11 A 0.0624 B 0.0623
+rb 12 A 0.0625 B 0.0627
+rb 13 A 0.0624 B 0.0625
+rb 14 A 0.0626 B 0.0628
+rb 15 A 0.0628 B 0.0629
+# the widest shares across 3791 lake jobs
+swing 5.454 ps 0x11d1cf4600 occ 0 job 0 share 0.00123 0.00127 0.00813 (74)
+swing 5.344 ps 0x11d0203f00 occ 0 job 1 share 0.00113 0.00256 0.01483 (70)
+swing 4.738 ps 0x11d0208400 occ 0 job 1 share 0.00241 0.00470 0.02466 (70)
+swing 4.277 ps 0x11d01ff900 occ 1 job 1 share 0.04115 0.05790 0.28878 (70)
+swing 4.039 ps 0x11d01ff900 occ 3 job 1 share 0.01018 0.01324 0.06365 (70)
+swing 3.883 ps 0x11d01ff900 occ 2 job 1 share 0.02392 0.03175 0.14721 (70)
+swing 3.859 ps 0x11d01ff900 occ 0 job 1 share 0.06369 0.08888 0.40666 (70)
+swing 3.587 ps 0x11d0208400 occ 1 job 1 share 0.00373 0.00677 0.02800 (70)
+swing 2.958 ps 0x11d0208400 occ 2 job 1 share 0.00082 0.00150 0.00527 (70)
+swing 1.823 ps 0x11d29c9500 occ 1 job 0 share 0.00881 0.00927 0.02571 (74)
+swing 1.218 ps 0x11d0203f00 occ 0 job -1 share 0.00076 0.00147 0.00255 (59)
+swing 1.154 ps 0x11d0203f00 occ 0 job 3 share 0.00091 0.00175 0.00293 (39)
+swing 1.106 ps 0x11d0203f00 occ 0 job 2 share 0.00108 0.00181 0.00308 (3592)
+swing 1.062 ps 0x11d0208400 occ 0 job 3 share 0.00207 0.00372 0.00602 (39)
+swing 1.025 ps 0x11d0208400 occ 2 job 3 share 0.00073 0.00102 0.00177 (39)

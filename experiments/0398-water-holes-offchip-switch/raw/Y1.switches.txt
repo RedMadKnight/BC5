@@ -1,0 +1,41 @@
+bc5-direct: experiment 0387 switch: the lake switches are read from /home/kjaniszewski/bc5-work/exp0398/r-Y1/lake.ctl
+bc5-direct: experiment 0387 zpass records at 0x110000000000: ok (0)
+bc5-direct: experiment 0387 period: jobs 170944 writers 711525 in_cond 0 inserted_words 0 refused 0 cull_barriers 0 htile_fills 0 chain_stops 0 cond_exec 186040 predication 0 nested_ibs 0
+bc5-direct: experiment 0387 period ring writes stripped: 0
+bc5-direct: experiment 0387 at 5284180.890 ms: cache=off cache_at=first cull=0 pfp=0 dbmeta=0 idle=0 nohiz=0 trackercf=0 census=0 zpass=0 binoff=0 smallprim=0 latez=0 nocompress=0 zwater=0 stats=0 ureg=0 inputs=0 tailflush=0 tfonce=0 gepc=0 offchip=off tfdist=off
+bc5-direct: experiment 0387 period: jobs 59840 writers 358456 in_cond 0 inserted_words 0 refused 0 cull_barriers 0 htile_fills 0 chain_stops 0 cond_exec 49771 predication 0 nested_ibs 0
+bc5-direct: experiment 0387 period ring writes stripped: 0
+bc5-direct: experiment 0387 at 5349741.515 ms: cache=off cache_at=first cull=0 pfp=0 dbmeta=0 idle=0 nohiz=0 trackercf=0 census=0 zpass=0 binoff=0 smallprim=0 latez=0 nocompress=0 zwater=0 stats=0 ureg=0 inputs=0 tailflush=0 tfonce=0 gepc=0 offchip=0 tfdist=off
+bc5-direct: experiment 0387 period: jobs 5184 writers 31057 in_cond 0 inserted_words 6923 refused 0 cull_barriers 0 htile_fills 0 chain_stops 0 cond_exec 4316 predication 0 nested_ibs 0
+bc5-direct: experiment 0387 period ring writes stripped: 0
+bc5-direct: experiment 0387 at 5355451.225 ms: cache=off cache_at=first cull=0 pfp=0 dbmeta=0 idle=0 nohiz=0 trackercf=0 census=0 zpass=0 binoff=0 smallprim=0 latez=0 nocompress=0 zwater=0 stats=0 ureg=0 inputs=0 tailflush=0 tfonce=0 gepc=0 offchip=off tfdist=off
+bc5-direct: experiment 0387 period: jobs 57120 writers 339825 in_cond 0 inserted_words 0 refused 0 cull_barriers 0 htile_fills 0 chain_stops 0 cond_exec 47287 predication 0 nested_ibs 0
+bc5-direct: experiment 0387 period ring writes stripped: 0
+bc5-direct: experiment 0387 at 5417715.655 ms: cache=off cache_at=first cull=0 pfp=0 dbmeta=0 idle=0 nohiz=0 trackercf=0 census=0 zpass=0 binoff=0 smallprim=0 latez=0 nocompress=0 zwater=0 stats=0 ureg=0 inputs=0 tailflush=0 tfonce=0 gepc=0 offchip=1ff tfdist=off
+bc5-direct: experiment 0387 period: jobs 4576 writers 27118 in_cond 0 inserted_words 6139 refused 0 cull_barriers 0 htile_fills 0 chain_stops 0 cond_exec 3770 predication 0 nested_ibs 0
+bc5-direct: experiment 0387 period ring writes stripped: 0
+bc5-direct: experiment 0387 at 5422627.638 ms: cache=off cache_at=first cull=0 pfp=0 dbmeta=0 idle=0 nohiz=0 trackercf=0 census=0 zpass=0 binoff=0 smallprim=0 latez=0 nocompress=0 zwater=0 stats=0 ureg=0 inputs=0 tailflush=0 tfonce=0 gepc=0 offchip=off tfdist=off
+bc5-direct: experiment 0387 period: jobs 50400 writers 300847 in_cond 0 inserted_words 0 refused 0 cull_barriers 0 htile_fills 0 chain_stops 0 cond_exec 41782 predication 0 nested_ibs 0
+bc5-direct: experiment 0387 period ring writes stripped: 0
+bc5-direct: experiment 0387 at 5477311.160 ms: cache=off cache_at=first cull=0 pfp=0 dbmeta=0 idle=0 nohiz=0 trackercf=0 census=0 zpass=0 binoff=0 smallprim=0 latez=0 nocompress=0 zwater=0 stats=0 ureg=0 inputs=0 tailflush=0 tfonce=0 gepc=0 offchip=0 tfdist=off
+bc5-direct: experiment 0387 period: jobs 4672 writers 27493 in_cond 0 inserted_words 6174 refused 0 cull_barriers 0 htile_fills 0 chain_stops 0 cond_exec 3830 predication 0 nested_ibs 0
+bc5-direct: experiment 0387 period ring writes stripped: 0
+bc5-direct: experiment 0387 at 5482303.715 ms: cache=off cache_at=first cull=0 pfp=0 dbmeta=0 idle=0 nohiz=0 trackercf=0 census=0 zpass=0 binoff=0 smallprim=0 latez=0 nocompress=0 zwater=0 stats=0 ureg=0 inputs=0 tailflush=0 tfonce=0 gepc=0 offchip=off tfdist=off
+bc5-direct: experiment 0387 period: jobs 50656 writers 300881 in_cond 0 inserted_words 0 refused 0 cull_barriers 0 htile_fills 0 chain_stops 0 cond_exec 41852 predication 0 nested_ibs 0
+bc5-direct: experiment 0387 period ring writes stripped: 0
+bc5-direct: experiment 0387 at 5537082.865 ms: cache=off cache_at=first cull=0 pfp=0 dbmeta=0 idle=0 nohiz=0 trackercf=0 census=0 zpass=0 binoff=0 smallprim=0 latez=0 nocompress=0 zwater=0 stats=0 ureg=0 inputs=0 tailflush=0 tfonce=0 gepc=0 offchip=1ff tfdist=off
+bc5-direct: experiment 0387 period: jobs 4640 writers 27344 in_cond 0 inserted_words 6167 refused 0 cull_barriers 0 htile_fills 0 chain_stops 0 cond_exec 3808 predication 0 nested_ibs 0
+bc5-direct: experiment 0387 period ring writes stripped: 0
+bc5-direct: experiment 0387 at 5542078.152 ms: cache=off cache_at=first cull=0 pfp=0 dbmeta=0 idle=0 nohiz=0 trackercf=0 census=0 zpass=0 binoff=0 smallprim=0 latez=0 nocompress=0 zwater=0 stats=0 ureg=0 inputs=0 tailflush=0 tfonce=0 gepc=0 offchip=off tfdist=off
+bc5-direct: experiment 0387 period: jobs 50720 writers 301625 in_cond 0 inserted_words 0 refused 0 cull_barriers 0 htile_fills 0 chain_stops 0 cond_exec 41908 predication 0 nested_ibs 0
+bc5-direct: experiment 0387 period ring writes stripped: 0
+bc5-direct: experiment 0387 at 5596722.824 ms: cache=off cache_at=first cull=0 pfp=0 dbmeta=0 idle=0 nohiz=0 trackercf=0 census=0 zpass=0 binoff=0 smallprim=0 latez=0 nocompress=0 zwater=0 stats=0 ureg=0 inputs=0 tailflush=0 tfonce=0 gepc=0 offchip=0 tfdist=off
+bc5-direct: experiment 0387 period: jobs 4512 writers 26733 in_cond 0 inserted_words 6013 refused 0 cull_barriers 0 htile_fills 0 chain_stops 0 cond_exec 3722 predication 0 nested_ibs 0
+bc5-direct: experiment 0387 period ring writes stripped: 0
+bc5-direct: experiment 0387 at 5601575.964 ms: cache=off cache_at=first cull=0 pfp=0 dbmeta=0 idle=0 nohiz=0 trackercf=0 census=0 zpass=0 binoff=0 smallprim=0 latez=0 nocompress=0 zwater=0 stats=0 ureg=0 inputs=0 tailflush=0 tfonce=0 gepc=0 offchip=off tfdist=off
+bc5-direct: experiment 0387 period: jobs 50624 writers 300484 in_cond 0 inserted_words 0 refused 0 cull_barriers 0 htile_fills 0 chain_stops 0 cond_exec 41778 predication 0 nested_ibs 0
+bc5-direct: experiment 0387 period ring writes stripped: 0
+bc5-direct: experiment 0387 at 5656161.984 ms: cache=off cache_at=first cull=0 pfp=0 dbmeta=0 idle=0 nohiz=0 trackercf=0 census=0 zpass=0 binoff=0 smallprim=0 latez=0 nocompress=0 zwater=0 stats=0 ureg=0 inputs=0 tailflush=0 tfonce=0 gepc=0 offchip=1ff tfdist=off
+bc5-direct: experiment 0387 period: jobs 4640 writers 27341 in_cond 0 inserted_words 6181 refused 0 cull_barriers 0 htile_fills 0 chain_stops 0 cond_exec 3800 predication 0 nested_ibs 0
+bc5-direct: experiment 0387 period ring writes stripped: 0
+bc5-direct: experiment 0387 at 5661128.142 ms: cache=off cache_at=first cull=0 pfp=0 dbmeta=0 idle=0 nohiz=0 trackercf=0 census=0 zpass=0 binoff=0 smallprim=0 latez=0 nocompress=0 zwater=0 stats=0 ureg=0 inputs=0 tailflush=0 tfonce=0 gepc=0 offchip=off tfdist=off

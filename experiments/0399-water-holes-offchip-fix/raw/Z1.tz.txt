@@ -1,0 +1,65 @@
+  c11.f1 w 2048 holes 0.000 mixed true 0.000 shifted 0.000 one-block 1.000
+  c11.f2 w 2048 holes 0.000 mixed true 0.000 shifted 0.000 one-block 1.000 | changed 0.109 hole tiles nan drawn tiles 0.109 off0-7 0.357
+  c11.f3 w 2048 holes 0.000 mixed true 0.000 shifted 0.000 one-block 1.000 | changed 0.109 hole tiles nan drawn tiles 0.109 off0-7 0.357
+  c11.f4 w 2048 holes 0.000 mixed true 0.000 shifted 0.000 one-block 1.000 | changed 0.108 hole tiles nan drawn tiles 0.108 off0-7 0.358
+  c11.f5 w 2048 holes 0.000 mixed true 0.000 shifted 0.000 one-block 1.000 | changed 0.109 hole tiles nan drawn tiles 0.109 off0-7 0.357
+  c12.f0 w 2304 holes 0.000 mixed true 0.000 shifted 0.000 one-block 1.000
+  c12.f1 w 2304 holes 0.000 mixed true 0.000 shifted 0.000 one-block 1.000 | changed 0.112 hole tiles nan drawn tiles 0.112 off0-7 0.360
+  c12.f2 w 2304 holes 0.000 mixed true 0.000 shifted 0.000 one-block 1.000 | changed 0.112 hole tiles nan drawn tiles 0.112 off0-7 0.360
+  c12.f3 w 2304 holes 0.000 mixed true 0.000 shifted 0.000 one-block 1.000 | changed 0.113 hole tiles nan drawn tiles 0.113 off0-7 0.360
+  c12.f4 w 2304 holes 0.000 mixed true 0.000 shifted 0.000 one-block 1.000 | changed 0.112 hole tiles nan drawn tiles 0.112 off0-7 0.359
+  c12.f5 w 2304 holes 0.000 mixed true 0.000 shifted 0.000 one-block 1.000 | changed 0.113 hole tiles nan drawn tiles 0.113 off0-7 0.360
+  c13.f0 w 2560 holes 0.000 mixed true 0.000 shifted 0.000 one-block 1.000
+  c13.f1 w 2560 holes 0.000 mixed true 0.000 shifted 0.000 one-block 1.000 | changed 0.104 hole tiles nan drawn tiles 0.104 off0-7 0.374
+  c13.f2 w 2560 holes 0.000 mixed true 0.000 shifted 0.000 one-block 1.000 | changed 0.105 hole tiles nan drawn tiles 0.105 off0-7 0.372
+  c13.f3 w 2560 holes 0.000 mixed true 0.000 shifted 0.000 one-block 1.000 | changed 0.105 hole tiles nan drawn tiles 0.105 off0-7 0.372
+  c13.f4 w 2560 holes 0.000 mixed true 0.000 shifted 0.000 one-block 1.000 | changed 0.105 hole tiles nan drawn tiles 0.105 off0-7 0.373
+  c13.f5 w 2560 holes 0.000 mixed true 0.000 shifted 0.000 one-block 1.000 | changed 0.106 hole tiles nan drawn tiles 0.106 off0-7 0.372
+  c21.f0 w 2304 holes 0.000 mixed true 0.000 shifted 0.000 one-block 1.000
+  c21.f1 w 2304 holes 0.000 mixed true 0.000 shifted 0.000 one-block 1.000 | changed 0.113 hole tiles nan drawn tiles 0.113 off0-7 0.360
+  c21.f2 w 2304 holes 0.000 mixed true 0.000 shifted 0.000 one-block 1.000 | changed 0.112 hole tiles nan drawn tiles 0.112 off0-7 0.359
+  c21.f3 w 2304 holes 0.000 mixed true 0.000 shifted 0.000 one-block 1.000 | changed 0.113 hole tiles nan drawn tiles 0.113 off0-7 0.360
+  c21.f4 w 2304 holes 0.000 mixed true 0.000 shifted 0.000 one-block 1.000 | changed 0.113 hole tiles nan drawn tiles 0.113 off0-7 0.360
+  c21.f5 w 2304 holes 0.000 mixed true 0.000 shifted 0.000 one-block 1.000 | changed 0.112 hole tiles nan drawn tiles 0.112 off0-7 0.359
+  c26.f0 w 2560 holes 0.000 mixed true 0.000 shifted 0.000 one-block 1.000
+  c26.f1 w 2560 holes 0.000 mixed true 0.000 shifted 0.000 one-block 1.000 | changed 0.106 hole tiles nan drawn tiles 0.106 off0-7 0.371
+  c26.f2 w 2560 holes 0.000 mixed true 0.000 shifted 0.000 one-block 1.000 | changed 0.105 hole tiles nan drawn tiles 0.105 off0-7 0.372
+  c26.f3 w 2560 holes 0.000 mixed true 0.000 shifted 0.000 one-block 1.000 | changed 0.105 hole tiles nan drawn tiles 0.105 off0-7 0.373
+  c26.f4 w 2560 holes 0.000 mixed true 0.000 shifted 0.000 one-block 1.000 | changed 0.106 hole tiles nan drawn tiles 0.106 off0-7 0.372
+  c26.f5 w 2560 holes 0.000 mixed true 0.000 shifted 0.000 one-block 1.000 | changed 0.104 hole tiles nan drawn tiles 0.104 off0-7 0.374
+  c31.f5 w 2048 holes 0.000 mixed true 0.000 shifted 0.000 one-block 1.000
+# 30 finals; one 256-byte block per 8x8 tile: 1.000 (n 30); hole share 0.000 (n 30)
+# tiles with a hole that are mixed: true grid 0.000 (n 30), grid shifted by (4, 4) 0.000 (n 30)
+# mid against the previous final: changed 0.109 (n 24); in tiles all hole in this final -, in tiles with no hole 0.109 (n 24)
+# changed dwords by offset in their 256-byte block: share at offsets 0..7 0.365 (uniform 0.125); top offsets 5:0.046, 7:0.046, 2:0.046, 4:0.046, 1:0.046, 0:0.046, 3:0.046, 6:0.046
+side c11.f1 - 0.000 0.000
+side c11.f2 - 0.000 0.000
+side c11.f3 - 0.000 0.000
+side c11.f4 - 0.000 0.000
+side c11.f5 - 0.000 0.000
+side c12.f0 - 0.000 0.000
+side c12.f1 - 0.000 0.000
+side c12.f2 - 0.000 0.000
+side c12.f3 - 0.000 0.000
+side c12.f4 - 0.000 0.000
+side c12.f5 - 0.000 0.000
+side c13.f0 - 0.000 0.000
+side c13.f1 - 0.000 0.000
+side c13.f2 - 0.000 0.000
+side c13.f3 - 0.000 0.000
+side c13.f4 - 0.000 0.000
+side c13.f5 - 0.000 0.000
+side c21.f0 - 0.000 0.000
+side c21.f1 - 0.000 0.000
+side c21.f2 - 0.000 0.000
+side c21.f3 - 0.000 0.000
+side c21.f4 - 0.000 0.000
+side c21.f5 - 0.000 0.000
+side c26.f0 - 0.000 0.000
+side c26.f1 - 0.000 0.000
+side c26.f2 - 0.000 0.000
+side c26.f3 - 0.000 0.000
+side c26.f4 - 0.000 0.000
+side c26.f5 - 0.000 0.000
+side c31.f5 - 0.000 0.000
+# sides: A 0, B 0, unknown 0, too few holes 30
