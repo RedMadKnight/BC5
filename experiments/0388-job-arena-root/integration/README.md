@@ -16,7 +16,7 @@ The wait and the fix touch `src/bc5/job_push_wait.hpp` (new, also `backend/inclu
 |---|---|
 | `BC5_DIRECT_HS_OFFCHIP`, `GC_HS_OFFCHIP`, `OFFCHIP_SECOND` | the top session: exp 0397 points at `VGT_HS_OFFCHIP_PARAM` |
 | `BC5_DIRECT_TF_DEFAULT` | `hs_offchip_force()` is called only inside its block; removing it would leave HS_OFFCHIP with no effect |
-| `BC5_AGC_DUMP_DIR` | it is the whole RPCSX capture tap: `backend/rpcsx-patches` and a CI job would go with it; for the top session to decide |
+| `BC5_AGC_DUMP_DIR` | it is the whole RPCSX capture tap: `backend/rpcsx-patches` and a CI job would go with it; the top session: it stays |
 
 The tunables with no stated default fold as the code had them: `FENCE_TIMEOUT_MS` to 2 s, `MAX_BO_MIB` keeps its sysfs read and clamps, `NODE` is `/dev/dri/renderD128`, `CU_MASK` 0xffffffff. One option field goes, `FilterOptions::pfp_sync_indirect`, so the archive and the host are rebuilt together (F414). Unset behaviour should be the same but for timing and log text: the journal's t 0 may move slightly, since FIND_ALL made the first clock call; some unconditional counters and a per-call lock in the audio path are gone; two stderr lines lost fields.
 
@@ -85,6 +85,8 @@ Before the run: `pins0388.env` holds the values read on 2026-11-01 for `input.cf
 7. ASTRO BOT start: `job push wait OFF, 2000 us at most, not the code it knows`, and it plays as before.
 8. The Emulation menu has no "Game fixes".
 9. His own play through the fight on the shared build.
+
+The checks run at `VGT_HS_OFFCHIP_PARAM` 0, as the shared builds do, unless `GC_HS_OFFCHIP` lands first (exp 0397).
 
 Only then `int/0388-j` goes to main, so main matches the builds.
 
