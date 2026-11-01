@@ -162,3 +162,26 @@ F689–F691, free on `docs/HANDOFF.md` of all 30 refs on 2026-11-01. Check again
 - **F690.** `bc5-mount` gains counters for repeated reads and read waits and three switches, off by default (5249deee). Laptop
   tests only.
 - **F691.** The re-read plan: this file. Nothing measured yet.
+
+## First measured arm (RR3, 2026-11-01)
+
+The series stopped in A0 on its first kernel line, as set: A1, C1, A2 and C2 did not run, so no lever is compared. Setup passed and
+both catchers compiled. RT on, no pad, snapshot saves-sample, mount c39cac9f, emulator be846ba2. Gameplay at 140 s; the kernel line at
+839 s.
+
+- **What is repeated.** Of 33.1 GiB served, 22.1 GiB (67 %) reached the mount a second time or more; 11.0 GiB were new. From minute 5 to minute 14 repeats are
+  80–99.7 % of what the mount serves (1.2–1.9 GiB a minute), and new data is 5–389 MiB a minute.
+- **How soon.** 16,154 MiB of the 22,633 MiB of repeats came back within a second, and 16,118 MiB within 64 MiB of other reads. Only
+  244 MiB were older than 256 s. So this is not the title walking old areas: it is mostly the same pages asked for again at once.
+- **What it costs.** 164,756 of 221,526 Kraken decodes (74 %, 41 of 55 GiB) were of blocks decoded before. From minute 5 the mount
+  decodes 2.6–4.1 GiB a minute against 0.2–0.4 GiB taken from the disk cache, while serving 1.3–2.0 GiB. Whether those decodes cost the
+  frame rate is not measured here.
+- **Pressure.** `workingset_refault_file` runs 84–325k pages a minute (0.3–1.3 GiB), the same order as the repeats, with `pgsteal_direct`
+  near 0 from minute 9. Swap-in is small but comes in bursts (5–11k pages a minute in minutes 7–9), with 2.4–5.3k emulator major
+  faults in those minutes.
+- **Reading, not a result.** A page evicted within a second of being read fits read-ahead pages thrown away before use. Nothing here
+  shows that; C1 and C2, with read-ahead at 32 KiB, are the test.
+- **The stop.** At 839 s, gfxhub permission faults, SQC data, `bc5-ring`, ten lines at six addresses with a zero high dword (first 0x16382000), then a gfx ring
+  timeout, a ring reset that succeeded and a devcoredump. Not the page of F687: the three reads of 0x1112eae000 say read-write in a
+  shared range, resident or not, and that page did not fault, so F687 stays open. No reopen, so F688 got nothing.
+- **Script bug found.** RR2 ended silently: `distrobox` read the setup script from stdin (f5ae3a1c).
