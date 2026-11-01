@@ -414,7 +414,7 @@ the timeout probe and its IB copy per job, the input recorder; 105 sites in 19 f
 profiler zones (`KYTY_PROFILER_*`) expand to nothing and `--profiler-direction` is ignored; the
 guest's printf direction is Silent; the journal mode is fixed to "min" (asynchronous submission
 allowed, no journal); and a `constructor(101)` in `main.cpp` removes the diagnostic variables
-(the list there, 36) from the environment before any static initializer, then sets
+(the list there, 35) from the environment before any static initializer, then sets
 `BC5_LOGGING=0`. Functional switches are untouched. Since F766 the list also holds
 `BC5_DIRECT_DRAW_ARGS_JOURNAL`. What still prints: the setup lines of the
 direct path, the window's pause/resume lines, fatal errors with the crash handler's backtrace.
