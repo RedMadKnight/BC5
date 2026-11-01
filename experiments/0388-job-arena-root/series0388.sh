@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# BC5 exp 0388 from the laptop: G1 E1 F1 E2 F2 G2 E3 F3 E4 F4 G3 E5 F5, one go0388.sh at a time, under one deadline of 75 min.
+# BC5 exp 0388 from the laptop: the third cycle's 22 runs, one go0388.sh at a time, under one deadline of 105 min.
 # A run that did not reach the fight gets at most one replacement in the whole series. Any stop ends the series.
 # usage: series0388.sh     Exit: 0 the rule was applied; 1 the series stopped; the RESULT lines are in raw/series.txt
 set -u
 HERE=$(cd "$(dirname "$0")" && pwd)
-LIMIT=4500; RUN_NEED=430   # 35 min for everything; run0388.sh keeps kill, reap and release inside it
+LIMIT=6300; RUN_NEED=430   # 35 min for everything; run0388.sh keeps kill, reap and release inside it
 GO=$HERE/go0388.sh
 case "${D19_RUN_FAKE:-}" in *d19-test-*) . "$D19_RUN_FAKE" ;; esac
 DL=$(($(date +%s) + LIMIT))
@@ -28,7 +28,7 @@ one() {  # tag, fix. Sets CL and CRASH
     if [ "$fix" = on ] && [ "$CRASH" = target ]; then echo "series: REGRESSION at $tag"; return 1; fi
     return 0
 }
-for t in G1:off E1:off F1:off E2:off F2:off G2:off E3:off F3:off E4:off F4:off G3:off E5:off F5:off; do
+for t in G4:off F6:off H1:off J1:off K1:off L1:off H2:off J2:off G5:off F7:off K2:off L2:off H3:off J3:off H4:off J4:off G6:off F8:off K3:off L3:off H5:off J5:off; do
     tag=${t%:*}; fix=${t#*:}
     one "$tag" "$fix" || exit 1
     if [ "$CL" = NOT_ROUTED ]; then

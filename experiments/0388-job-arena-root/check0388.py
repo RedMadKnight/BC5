@@ -32,6 +32,10 @@ ARMS = {
     "D": "KYTY_BC5_0388_PUSH_SPIN_US=200 KYTY_BC5_0388_TRACE=1",
     "E": "KYTY_BC5_0388_PUSH_SPIN_US=500 KYTY_BC5_0388_TRACE=1",
     "F": "KYTY_BC5_0388_PUSH_UNTIL_RETURN_US=500 KYTY_BC5_0388_TRACE=1",
+    "H": "KYTY_BC5_0388_PUSH_UNTIL_PAIRED_US=500 KYTY_BC5_0388_TRACE=1",
+    "J": "KYTY_BC5_0388_PUSH_UNTIL_TARGET_US=2000 KYTY_BC5_0388_TRACE=1",
+    "K": "KYTY_BC5_0388_PUSH_UNTIL_TARGET_US=2000 KYTY_BC5_0388_TARGETED_WAKE=1 KYTY_BC5_0388_WAIT_SPIN_US=20 KYTY_BC5_0388_TRACE=1",
+    "L": "KYTY_BC5_0388_PUSH_UNTIL_RETURN_US=500 KYTY_BC5_0388_WORKER_NICE=-5 KYTY_BC5_0388_TRACE=1",
 }
 
 
@@ -185,11 +189,11 @@ def rule(path):
     if site < 2:
         print("RULE AMBIGUOUS the control did not crash; no conclusion on any arm")
         return 0
-    for a in "EF":
+    for a, want in (("H", 5), ("J", 5), ("F", 3), ("K", 3), ("L", 3)):
         clean = sum(r[2] == "NO_CRASH" for r in arm(a))
         hit = sum(r[3] == "target" for r in arm(a))
         other = sum(r[2] == "CRASH_OTHER" for r in arm(a))
-        verdict = "HOLDS" if clean == 5 and hit == 0 and other == 0 else "REFUTED" if hit else "OPEN"
+        verdict = "HOLDS" if clean == want and hit == 0 and other == 0 else "REFUTED" if hit else "OPEN"
         print(f"RULE arm {a} {verdict}: {clean} clean, {hit} at the site, {other} elsewhere, of {len(arm(a))}")
     return 0
 

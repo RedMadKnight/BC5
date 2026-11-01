@@ -18,6 +18,10 @@ ARMS = {
     "D": "KYTY_BC5_0388_PUSH_SPIN_US=200 KYTY_BC5_0388_TRACE=1",
     "E": "KYTY_BC5_0388_PUSH_SPIN_US=500 KYTY_BC5_0388_TRACE=1",
     "F": "KYTY_BC5_0388_PUSH_UNTIL_RETURN_US=500 KYTY_BC5_0388_TRACE=1",
+    "H": "KYTY_BC5_0388_PUSH_UNTIL_PAIRED_US=500 KYTY_BC5_0388_TRACE=1",
+    "J": "KYTY_BC5_0388_PUSH_UNTIL_TARGET_US=2000 KYTY_BC5_0388_TRACE=1",
+    "K": "KYTY_BC5_0388_PUSH_UNTIL_TARGET_US=2000 KYTY_BC5_0388_TARGETED_WAKE=1 KYTY_BC5_0388_WAIT_SPIN_US=20 KYTY_BC5_0388_TRACE=1",
+    "L": "KYTY_BC5_0388_PUSH_UNTIL_RETURN_US=500 KYTY_BC5_0388_WORKER_NICE=-5 KYTY_BC5_0388_TRACE=1",
 }
 
 
@@ -55,6 +59,10 @@ s = R(s, '  if [ -z "$FDINFO" ] && [ "$(el)" -ge "$T_FD" ]; then',
       '    JOBS=1; cat /proc/"$EP"/task/*/comm 2> /dev/null | grep -c "^Job " > "$R/$TAG-jobs.txt"\n  fi\n'
       '  if [ -z "$FDINFO" ] && [ "$(el)" -ge "$T_FD" ]; then')
 s = R(s, "|KYTY_BC5_JOB_ARENA_FIX|", "|KYTY_BC5_JOB_ARENA_FIX|KYTY_BC5_0388_[A-Z_]*|")
+# 0388: the idle states and the governor around each run, read only: is a late worker a core coming out of idle?
+s = R(s, "boot_line() {", 'cpuidle_read() { grep -H . /sys/devices/system/cpu/cpu*/cpuidle/state*/usage /sys/devices/system/cpu/cpu*/cpuidle/state*/time /sys/devices/system/cpu/cpu0/cpuidle/state*/name /sys/devices/system/cpu/cpu0/cpuidle/state*/latency /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2> /dev/null; return 0; }\nboot_line() {')
+s = R(s, "sampler\nT0=$(now)\n", 'cpuidle_read > "$R/$TAG-cpuidle-start.txt"\nsampler\nT0=$(now)\n')
+s = R(s, 'stop_emu\npause "$T_SETTLE"', 'cpuidle_read > "$R/$TAG-cpuidle-end.txt"\nstop_emu\npause "$T_SETTLE"')
 files["s6n0388.sh"] = s
 
 s = files["go0388.sh"]
@@ -81,11 +89,11 @@ s = s[:i] + '''def rule(path):
     if site < 2:
         print("RULE AMBIGUOUS the control did not crash; no conclusion on any arm")
         return 0
-    for a in "EF":
+    for a, want in (("H", 5), ("J", 5), ("F", 3), ("K", 3), ("L", 3)):
         clean = sum(r[2] == "NO_CRASH" for r in arm(a))
         hit = sum(r[3] == "target" for r in arm(a))
         other = sum(r[2] == "CRASH_OTHER" for r in arm(a))
-        verdict = "HOLDS" if clean == 5 and hit == 0 and other == 0 else "REFUTED" if hit else "OPEN"
+        verdict = "HOLDS" if clean == want and hit == 0 and other == 0 else "REFUTED" if hit else "OPEN"
         print(f"RULE arm {a} {verdict}: {clean} clean, {hit} at the site, {other} elsewhere, of {len(arm(a))}")
     return 0
 
@@ -94,13 +102,13 @@ s = s[:i] + '''def rule(path):
 files["check0388.py"] = s
 
 s = files["series0388.sh"]
-s = R(s, "ON, OFF, ON, OFF, ON, OFF, one go0388.sh at a time, under one deadline of 35 min.", "G1 E1 F1 E2 F2 G2 E3 F3 E4 F4 G3 E5 F5, one go0388.sh at a time, under one deadline of 75 min.")
-s = R(s, "LIMIT=2100;", "LIMIT=4500;")
-s = R(s, "for t in K1N:on K1F:off K2N:on K2F:off K3N:on K3F:off; do", "for t in G1:off E1:off F1:off E2:off F2:off G2:off E3:off F3:off E4:off F4:off G3:off E5:off F5:off; do")
+s = R(s, "ON, OFF, ON, OFF, ON, OFF, one go0388.sh at a time, under one deadline of 35 min.", "the third cycle's 22 runs, one go0388.sh at a time, under one deadline of 105 min.")
+s = R(s, "LIMIT=2100;", "LIMIT=6300;")
+s = R(s, "for t in K1N:on K1F:off K2N:on K2F:off K3N:on K3F:off; do", "for t in G4:off F6:off H1:off J1:off K1:off L1:off H2:off J2:off G5:off F7:off K2:off L2:off H3:off J3:off H4:off J4:off G6:off F8:off K3:off L3:off H5:off J5:off; do")
 files["series0388.sh"] = s
 
 s = files["pins0388.env"]
-s = re.sub(r"NORMAL=[0-9a-f]+", "NORMAL=caede695c1f41c2b322c9a04bfec5bf1", s)  # the second build
+s = re.sub(r"NORMAL=[0-9a-f]+", "NORMAL=FILL", s)  # the third build, filled after it
 s = re.sub(r"INPUT_CFG=[0-9a-f]+", "INPUT_CFG=a5259c60c2beed35f5565f4744255ac5", s)
 s = re.sub(r"LEARNED=[0-9a-f]+", "LEARNED=5b92521f646a897b8957cec4cd754ba4", s)
 files["pins0388.env"] = s

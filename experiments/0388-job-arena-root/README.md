@@ -130,3 +130,67 @@ No crash elsewhere, no amdgpu kernel line, GPU reset or devcoredump. Exposure in
 **Limits.** 180 s on one route, after a fight start at about 107 s. By R11 the counts are not paired with a signal or a job, so this shows the effect of the bounded wait on the outcome, not why it works. The cause of the worker's lateness is not shown. Arm F is a host-side timing change with a cost, not a shown root fix.
 
 **Verdict.** Arm F is the first host candidate that holds with `JobArenaFix` off. The workaround stays until the maintainer's own fight passes with F on and the fix off. It is not in any shared build.
+
+## Third cycle, prepared on the laptop only (2026-11-01)
+
+**Question.** Why is a worker late after the owner's push, and is there a cheaper bounded wait than arm F?
+
+**What the host's code shows (read, not run).**
+
+- Thread count: 15 job threads with `0x7f`, 24 with `0x1fff`, of 16 hardware threads. `0x7f` stays the host's default; F791 says more workers do not end the crash.
+- Semaphore: every worker entry has its own `JobLoaderSema` (exp 0358 F451, fifo, a worker waits with an 8000 µs timeout). `Signal` marks the waiters it hands the count to, then broadcasts one condvar while it holds the semaphore's mutex. Every waiter wakes, takes that mutex in turn, drops it for the pending-signal dispatch and takes it again. On Linux this is a `std::condition_variable` on a recursive mutex.
+- Priorities: guest 300 (main) and 500 (Hi workers) are both nice 0, the same as the host's own threads; 700 and below 733 too, 733 and above +5.
+- Affinity: guest masks are only stored. No guest thread is pinned unless `APPLY_AFFINITY=1`.
+
+**What earlier experiments measured.** Exp 0358 F453 and the trace after it: a woken Hi worker returned 718–836 µs after its signal, median 1114 µs, 342 µs with the host's 22 threads at nice +5. The targeted wake alone did not stop the crash, and at the push of the crash job the Hi workers were awake, inside the 603-block chunks. Exp 0360 F471 measured about 20 µs of run-queue wait per wake, with the box 28–43 % busy.
+
+**Hypotheses, none shown.**
+
+- H1. The workers are mostly late because they are working, not asleep (F453). A wait on sleeping workers then misses the dangerous case. Arm H tests this: if it crashes while J holds, H1 stands.
+- H2. A sleeping worker is late because of the scheduler's choice of core with host threads at the same nice: nice +5 on them cut the median by two thirds. Arm L tests the other side, Hi workers at nice −5.
+- H3. Idle cores coming out of a deep state add to the wake time. Each run now keeps the idle-state counts, latencies and the governor. Holding cores awake would be a system setting, so it is not in this build.
+- H4. The broadcast and the double mutex pass add to it. F453 says this alone is not the crash; arm K tests the targeted wake and a 20 µs waiter spin on top of J.
+- Why the console does not crash stays unknown. F790 removed one reason (the worker count), and no console measurement exists.
+
+**Switches added.** All default off, all on `JobLoaderSema` or the Hi workers only.
+
+| switch | does |
+|---|---|
+| `KYTY_BC5_0388_PUSH_UNTIL_PAIRED_US=<0..5000>` | wait until every waiter this semaphore marked has returned; no wait if none is marked |
+| `KYTY_BC5_0388_PUSH_UNTIL_TARGET_US=<0..5000>` | wait only while this semaphore's entry has an open job of the crash's function (+0x4661e50), read from the title's job table |
+| `KYTY_BC5_0388_TARGETED_WAKE=1` | wake only the marked waiters, each on its own condvar (exp 0358's candidate) |
+| `KYTY_BC5_0388_WAIT_SPIN_US=<0..500>` | a waiter watches the count for this long before it sleeps |
+| `KYTY_BC5_0388_WORKER_NICE=<-10..0>` | the nice of guest priority 500 threads |
+
+**Catchers with pairing (R11).** With `TRACE=1`: per semaphore, signal to return of the waiter that signal marked (`marked waiter returned`), and a credit taken without sleeping (`credit taken after signal`), kept apart. Per push of the main thread: `open target jobs`, spins, and spins ended by their condition. The older band stays and is now named unpaired. The credit band is only the time since the semaphore's last signal, so it pairs by semaphore, not by credit.
+
+**Risks in the build.**
+
+- J reads the title's job table from a host thread while the title changes it. A torn read could give a wrong answer for one push; a moved pending list could fault. Hypothesis: the title's list stays mapped.
+- Where the job object keeps the function is not read, so J looks through all 0xc0 bytes for the address. `open target jobs` at 0 means J never armed.
+- All of this is title-specific. J is a host workaround that knows the title's layout, not a root fix.
+
+**Local tests.** Pure parts 102 checks, 0 failed (clang 22 with the stand-in for Catch2's macros). The patched `semaphore.cpp` type-checked with stand-ins for the project's headers, up to the POSIX part; not compiled with its real headers, and `pthread.cpp` and `libKernel.cpp` not rechecked. `patch0388.py` applies, the scripts parse, `test0388run.sh positive` 7 of 7 and `test_box0388.sh` 14 of 14, the rule tried on sample rows. Nothing ran on the box.
+
+**Arms, fixed before the build.** All with `JobArenaFix` off, `TRACE=1`, RT on, 180 s, the same route and named save copy, one binary, `NORMAL` pinned after the build.
+
+| arm | runs | tags | switches |
+|---|---|---|---|
+| G, control | 3 | G4–G6 | none |
+| F, reference | 3 | F6–F8 | `PUSH_UNTIL_RETURN_US=500` |
+| H | 5 | H1–H5 | `PUSH_UNTIL_PAIRED_US=500` |
+| J | 5 | J1–J5 | `PUSH_UNTIL_TARGET_US=2000` |
+| K | 3 | K1–K3 | J + `TARGETED_WAKE=1 WAIT_SPIN_US=20` |
+| L | 3 | L1–L3 | F + `WORKER_NICE=-5` |
+
+22 runs, mixed in the order in `series0388.sh`, about 80 min, deadline 105 min.
+
+**Rule.**
+
+- Control at least 2 of 3 at the site, or no conclusion.
+- HOLDS: every planned run NO_CRASH that reached the fight (5 of 5 for H and J, 3 of 3 for F, K and L). REFUTED: any crash at the site. OPEN: anything else; a crash elsewhere is reported on its own.
+- Exposure: a run needs `push spin` lines; H needs spins above 0; J and K need `open target jobs` above 0, or the arm is NO TEST. L needs the nice applied (`KYTY_BC5_THREAD_TRACE` is off, so `/proc` at 70 s is not taken; L's nice is unconfirmed unless the catcher is added).
+- CHEAPER: an arm that HOLDS and has mean flips/s over 120–170 s of at least 31, against F's 28–29 and the control's 33.5.
+- The pick for the maintainer's play: the cheapest arm that HOLDS, J first if tied. If none is cheaper, F.
+
+**The maintainer's play.** `play0388.sh F` or `play0388.sh J` on the box, started by the top session: `JobArenaFix` off, the chosen wait on, RT as in `input.cfg`, the normal launcher and his own saves, no time limit. `input.cfg` is not changed. F needs only the existing binary if the third build is not made, but the script uses the path the newest build replaces, so the binary is named in its first line. Pass: he plays through the fight that crashed and on, and closes the game himself, with no access violation and no amdgpu line. Fail: a crash at eboot+0x3d7eca0, and `JobArenaFix` stays. Only that pass can start the removal of exp 0359's fix, and that is his decision.

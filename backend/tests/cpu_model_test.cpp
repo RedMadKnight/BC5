@@ -61,6 +61,53 @@ TEST_CASE("the spin is bounded", "[cpu_model]") {
     }
 }
 
+TEST_CASE("the bound and the nice stay inside their ranges", "[cpu_model]") {
+    bool invalid = true;
+    CHECK(parse_bound_us(nullptr, &invalid) == 0);
+    CHECK_FALSE(invalid);
+    CHECK(parse_bound_us("5000", &invalid) == 5000);
+    CHECK_FALSE(invalid);
+    for (const char* bad : {"5001", "-1", "1x"}) {
+        invalid = false;
+        CHECK(parse_bound_us(bad, &invalid) == 0);
+        CHECK(invalid);
+    }
+    CHECK(parse_worker_nice(nullptr, &invalid) == 0);
+    CHECK_FALSE(invalid);
+    CHECK(parse_worker_nice("-5", &invalid) == -5);
+    CHECK_FALSE(invalid);
+    CHECK(parse_worker_nice("0", &invalid) == 0);
+    CHECK_FALSE(invalid);
+    for (const char* bad : {"-11", "1", "x"}) {
+        invalid = false;
+        CHECK(parse_worker_nice(bad, &invalid) == 0);
+        CHECK(invalid);
+    }
+}
+
+TEST_CASE("a time falls in one of five bands", "[cpu_model]") {
+    CHECK(time_band(-1) == 0);
+    CHECK(time_band(49) == 0);
+    CHECK(time_band(50) == 1);
+    CHECK(time_band(199) == 1);
+    CHECK(time_band(200) == 2);
+    CHECK(time_band(499) == 2);
+    CHECK(time_band(500) == 3);
+    CHECK(time_band(1999) == 3);
+    CHECK(time_band(2000) == 4);
+}
+
+TEST_CASE("a job handle decodes as the title's code does", "[cpu_model]") {
+    const JobHandle h = decode_job((0x12345678ull << 32) | (0x1fffffffull << 2) | 2u);
+    CHECK(h.entry == 2);
+    CHECK(h.index == 0x1fffffff);
+    CHECK(h.generation == 0x12345678);
+    const JobHandle bit31 = decode_job(0x80000000ull | 1u);  // bit 31 is outside the index
+    CHECK(bit31.entry == 1);
+    CHECK(bit31.index == 0);
+    CHECK(bit31.generation == 0);
+}
+
 TEST_CASE("a host CPU maps into the thread's guest mask", "[cpu_model]") {
     CHECK(guest_cpu(0, 0x7f, 0x7f) == 0);
     CHECK(guest_cpu(6, 0x7f, 0x7f) == 6);

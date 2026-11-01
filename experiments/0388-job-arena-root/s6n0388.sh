@@ -25,6 +25,10 @@ case "$TAG" in
   D*) ARM="KYTY_BC5_0388_PUSH_SPIN_US=200 KYTY_BC5_0388_TRACE=1" ;;
   E*) ARM="KYTY_BC5_0388_PUSH_SPIN_US=500 KYTY_BC5_0388_TRACE=1" ;;
   F*) ARM="KYTY_BC5_0388_PUSH_UNTIL_RETURN_US=500 KYTY_BC5_0388_TRACE=1" ;;
+  H*) ARM="KYTY_BC5_0388_PUSH_UNTIL_PAIRED_US=500 KYTY_BC5_0388_TRACE=1" ;;
+  J*) ARM="KYTY_BC5_0388_PUSH_UNTIL_TARGET_US=2000 KYTY_BC5_0388_TRACE=1" ;;
+  K*) ARM="KYTY_BC5_0388_PUSH_UNTIL_TARGET_US=2000 KYTY_BC5_0388_TARGETED_WAKE=1 KYTY_BC5_0388_WAIT_SPIN_US=20 KYTY_BC5_0388_TRACE=1" ;;
+  L*) ARM="KYTY_BC5_0388_PUSH_UNTIL_RETURN_US=500 KYTY_BC5_0388_WORKER_NICE=-5 KYTY_BC5_0388_TRACE=1" ;;
   *) echo "no arm for $TAG"; exit 1 ;;
 esac
 SWITCHES="KYTY_BC5_JOB_ARENA_FIX=$FIXV $ARM"
@@ -53,6 +57,7 @@ sampler() { "$E30/sample0330.sh" "$R/$TAG-mem.txt" $((SECS + 60)) < /dev/null > 
 launch() { setsid nohup bash -c 'distrobox enter ubuntu -- env "$@"; echo "launcher exit $?"' _ "${ENVS[@]}" "$LAUNCH" < /dev/null > "$R/$TAG-launch.out" 2>&1 & }
 devcores() { find "$HOME/bc5-data/captures/devcoredump" -maxdepth 1 -type f -newermt "@$T0" -printf '%TY-%Tm-%Td %TH:%TM:%.2TS %s %p\n' 2> /dev/null; }
 box_settings() { echo "swappiness $(cat /proc/sys/vm/swappiness); kernel $(uname -r); shared normal $(md5sum < "$BIN" | cut -c1-8); learned $(md5sum < "$LEARN_SRC" | cut -c1-8)"; }
+cpuidle_read() { grep -H . /sys/devices/system/cpu/cpu*/cpuidle/state*/usage /sys/devices/system/cpu/cpu*/cpuidle/state*/time /sys/devices/system/cpu/cpu0/cpuidle/state*/name /sys/devices/system/cpu/cpu0/cpuidle/state*/latency /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2> /dev/null; return 0; }
 boot_line() { echo "boot $(cut -c1-8 /proc/sys/kernel/random/boot_id), up since $(uptime -s)"; }
 # Stand-ins load only from a d19-test- path; they replace the functions above and the T_ times, nothing else.
 case "${D19_FAKE:-}" in *d19-test-*) . "$D19_FAKE" ;; esac
@@ -205,6 +210,7 @@ P2LOAD=""; P2DONE=""; P2GAME=0  # 0388: the fight route's second part
 NEWDIRS=$(ls -d "$HOME"/bc5-data/captures/play-*/gc 2> /dev/null)  # 0388: what existed before this run
 N=$(kern | wc -l)
 { date '+%F %T'; echo "arm $TAG, $SECS s, launcher $LAUNCH md5 $(md5sum < "$LAUNCH" | cut -c1-8), BC5_EMU $BIN md5 $WANT; env: ${ENVS[*]}"; boot_line; } > "$R/$TAG-start.txt"
+cpuidle_read > "$R/$TAG-cpuidle-start.txt"
 sampler
 T0=$(now)
 own_lock_q || { echo "the lock is not this run's: not launched"; [ -z "$SP" ] || kill "$SP" 2> /dev/null; exit 1; }  # 0388: the last look before the launch
@@ -278,6 +284,7 @@ while [ -z "$ENDED" ] && [ "$(el)" -lt "$SECS" ]; do
 done
 DUR=$(el)
 if [ -n "$EP" ] && alive "$EP" && is_ours "$EP"; then { echo "at $DUR s (end):"; fdinfo_of "$EP"; } >> "$R/$TAG-fdinfo.txt"; fi
+cpuidle_read > "$R/$TAG-cpuidle-end.txt"
 stop_emu
 pause "$T_SETTLE"; [ -n "$SP" ] && kill "$SP" 2> /dev/null; SP=""
 echo "$TAG ${ENDED:-stopped at $SECS s} (after $DUR s)" > "$R/$TAG-end.txt"
