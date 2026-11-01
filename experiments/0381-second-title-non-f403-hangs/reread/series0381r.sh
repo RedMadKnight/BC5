@@ -73,6 +73,8 @@ $(cat "$HERE/setup0381r.sh")
 S
 )
 }
+# The setup's last line says it ran to its end: the script comes on stdin, and a command that reads stdin ends it early with rc 0.
+setup() { send | tee "$OUT/setup.txt"; grep -q '^set up:' "$OUT/setup.txt"; }
 arm() { local tag=$1; shift; ssh bc250 'bash -s' -- "$ID$tag" "$TOKEN" "$CAP" "$@" < "$HERE/arm0381r.sh"; }
 release() {
     ssh bc250 "bash -s" -- "$TOKEN" <<'S'
@@ -92,7 +94,7 @@ claim; rc=$?
 echo "== claim rc $rc"
 [ "$rc" = 0 ] || exit "$rc"
 start_stream
-step setup send
+step setup setup
 step baseline arm A0
 stream
 step A1 arm A1

@@ -8,7 +8,7 @@ pgrep '^kyty_emulator' > /dev/null && { echo "GUARD: an emulator runs"; exit 3; 
 tb2_own
 mkdir -p "$RR/src" "$RR/raw"
 tar -xf "$BC5_SRC" -C "$RR/src" || { echo "the tools did not unpack"; exit 5; }
-distrobox enter ubuntu -- bash -lc "cd '$RR/src/tools' && cargo build --release -p bc5-mount --target-dir '$RR/target' && cargo test -p bc5-mount --target-dir '$RR/target-test'" > "$RR/raw/build.txt" 2>&1 || { echo "build or test failed: $RR/raw/build.txt"; tail -5 "$RR/raw/build.txt"; exit 5; }
+distrobox enter ubuntu -- bash -lc "cd '$RR/src/tools' && cargo build --release -p bc5-mount --target-dir '$RR/target' && cargo test -p bc5-mount --target-dir '$RR/target-test'" < /dev/null > "$RR/raw/build.txt" 2>&1 || { echo "build or test failed: $RR/raw/build.txt"; tail -5 "$RR/raw/build.txt"; exit 5; }
 grep -c '^test result: ok' "$RR/raw/build.txt"
 tb2_own
 mkdir -p "$EM/src/libs/bc5" "$EM/src/loader" "$EM/obj" "$RR/bin"
