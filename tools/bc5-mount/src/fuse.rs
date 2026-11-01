@@ -27,6 +27,7 @@ use fuser::{
 
 use crate::reuse::{Reuse, AGE_LIMITS, DISTANCE_LIMITS_MIB};
 use crate::stats::Span;
+use crate::trace::ReadTrace;
 use crate::tree::{fold_name, FileTree};
 use crate::tuning::Tuning;
 
@@ -146,6 +147,8 @@ struct Bc5Fs<T> {
     tuning: Tuning,
     /// What is read again, with `BC5_MOUNT_STATS`.
     reuse: Option<Arc<Mutex<Reuse>>>,
+    /// Every request, with `BC5_MOUNT_READ_TRACE`.
+    trace: Option<ReadTrace<std::fs::File>>,
     uid: u32,
     gid: u32,
     mounted_at: SystemTime,
@@ -296,7 +299,16 @@ impl<T: FileTree + 'static> Filesystem for Bc5Fs<T> {
         }
     }
 
-    fn open(&mut self, _req: &Request<'_>, ino: u64, _flags: i32, reply: ReplyOpen) {
+    fn forget(&mut self, _req: &Request<'_>, ino: u64, nlookup: u64) {
+        if let Some(t) = &mut self.trace {
+            t.forget(ino, nlookup);
+        }
+    }
+
+    fn open(&mut self, req: &Request<'_>, ino: u64, _flags: i32, reply: ReplyOpen) {
+        if let Some(t) = &mut self.trace {
+            t.open(ino, req.pid());
+        }
         match Self::idx(ino).and_then(|i| self.tree.entry(i)) {
             Some(e) if e.is_dir => reply.error(EISDIR),
             Some(_) if self.tuning.direct_io => reply.opened(0, fuser::consts::FOPEN_DIRECT_IO),
@@ -307,7 +319,7 @@ impl<T: FileTree + 'static> Filesystem for Bc5Fs<T> {
 
     fn read(
         &mut self,
-        _req: &Request<'_>,
+        req: &Request<'_>,
         ino: u64,
         _fh: u64,
         offset: i64,
@@ -328,6 +340,9 @@ impl<T: FileTree + 'static> Filesystem for Bc5Fs<T> {
         let path = e.path.to_owned();
         let file_size = e.size;
         let want = usize::try_from(e.size.saturating_sub(offset).min(u64::from(size))).unwrap_or(0);
+        if let Some(t) = &mut self.trace {
+            t.read(ino, offset, want as u64, req.pid());
+        }
         if let Some(r) = &self.reuse {
             let now = self.mounted_at.elapsed().map_or(0.0, |d| d.as_secs_f64());
             r.lock()
@@ -439,6 +454,7 @@ pub fn mount<T: FileTree + 'static>(
         streams: HashMap::new(),
         tuning: Tuning::from_env(),
         reuse,
+        trace: ReadTrace::from_env(),
         uid: 0,
         gid: 0,
         mounted_at: SystemTime::now(),

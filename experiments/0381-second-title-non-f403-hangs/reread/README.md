@@ -260,3 +260,17 @@ session's note), so RR5 is not the same GPU state as RR4. The private cache ende
 
 **Verdict.** The bigger cache is no frame-rate fix and stays off. Together with RR4 this also takes the case out of the pre-decoded image: removing Kraken brought no frames. The open questions stay why a page read under a
 second ago comes back, and what sets off a storm.
+
+## Correction: the "within a second" figure (2026-11-01)
+
+**Every "within a second" and "within 64 MiB" above, in A0, RR4, RR5 and the design note, is an artefact, as is the question "why does a page read under a second ago come back".** `reuse.rs` kept age and distance per 256 KiB chunk, and a request
+reset them for the whole chunk. A chunk comes back in about three requests (mean 61–95 KiB), so the second and third saw the first one's time. That predicts 1.7–2.2 of bytes under a second for each byte older (3.2 in C2); the logs show 2.2–2.5, in all
+ten arms, whatever the switches.
+
+Read from the buckets of 1 s or older only, 76–85 % of repeats are 16–256 s old in the calm arms (52–55 % in A1 and C1 of RR4, with the storms). The file LRU, about 900 MiB at 19–30 MiB/s served, lasts 30–50 s. So plain eviction from a small page
+cache fits, with the title cycling over more than the cache holds. That is a reading: per-page ages are not measured yet.
+
+What stands: repeats are 80–91 % of serving, the cache spares little, neither the bundle nor the big cache gave frames. What falls: "read-ahead refuted" loses its age argument and keeps only the unchanged repeat share.
+
+**Fix and tool, laptop only.** Age is now per 32 KiB slot (about 64 bytes a chunk). `BC5_MOUNT_READ_TRACE=<file>` writes every read, open and forget with its caller, off by default; `ana-trace.py` replays it per page. `series0381r.sh <id> <out> trace` runs two default arms with it.
+Windows `cargo test -p bc5-mount` 85+15+10, clippy for Windows and for Linux (with the stub fuser) clean, `cargo fmt`, test_arm, test_stream 18, ana-trace on a made-up trace. Nothing of this has run on the box.

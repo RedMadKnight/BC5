@@ -10,7 +10,7 @@ TAG=${1:?tag}; TB2_TOKEN=${2:?token}; CAP=${3:?cap}; shift 3
 case "$TAG" in *[!A-Za-z0-9]* | "") echo "the tag is letters and digits"; exit 2 ;; esac
 for a in "$@"; do
     case "$a" in
-        BC5_MOUNT_DROP_BACKING=1 | BC5_MOUNT_DIRECT_IO=1 | BC5_MOUNT_MAX_READAHEAD_KIB=[0-9]* | BC5_MOUNT_PREFETCH_KIB=[0-9]* | BC5_MOUNT_CACHE_MIB=[0-9]* | BC5_MOUNT_THREADS=[0-9]* | BC5_MOUNT_DISK_CACHE_MIB=[0-9]* | BC5_0381_DC=1) ;;
+        BC5_MOUNT_DROP_BACKING=1 | BC5_MOUNT_DIRECT_IO=1 | BC5_MOUNT_MAX_READAHEAD_KIB=[0-9]* | BC5_MOUNT_PREFETCH_KIB=[0-9]* | BC5_MOUNT_CACHE_MIB=[0-9]* | BC5_MOUNT_THREADS=[0-9]* | BC5_MOUNT_DISK_CACHE_MIB=[0-9]* | BC5_0381_DC=1 | BC5_0381_TRACE=1) ;;
         *) echo "not a switch of this test: $a"; exit 2 ;;
     esac
 done
@@ -29,7 +29,11 @@ mkdir -p "$R" "$RR/dc"
 grep -qx 'RayTracing.PPSA03671=on' "$E/input-rton.cfg" || { echo "the config is not RT on"; exit 8; }
 ARGS=()
 for a in "$@"; do
-    if [ "$a" = BC5_0381_DC=1 ]; then ARGS+=("BC5_0381_DC=$RR/dc"); else ARGS+=("$a"); fi
+    case "$a" in
+        BC5_0381_DC=1) ARGS+=("BC5_0381_DC=$RR/dc") ;;
+        BC5_0381_TRACE=1) ARGS+=("BC5_MOUNT_READ_TRACE=$R/$TAG-reads.txt") ;;
+        *) ARGS+=("$a") ;;
+    esac
 done
 SNAP=$E/saves-sample; SD=$E/wd/_SaveData
 [ -d "$SNAP/PPSA03671" ] && [ ! -L "$SD" ] && [ -d "$SD" ] || { echo "no sample or private save directory"; exit 5; }

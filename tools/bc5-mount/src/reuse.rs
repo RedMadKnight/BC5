@@ -3,14 +3,21 @@
 //! answers a read from its page cache without asking the mount, so with the
 //! default open flags a page that reaches the mount twice was evicted between
 //! the two reads. Pages are tracked per 256 KiB chunk of a file; the age and the
-//! bytes served since the chunk's last read say how much longer the page would
-//! have had to stay. An upper bound of an LRU stack distance: bytes served twice
-//! in between count twice. Kept only with `BC5_MOUNT_STATS`.
+//! bytes served since a slot's last read say how much longer the page would have
+//! had to stay. An upper bound of an LRU stack distance: bytes served twice in
+//! between count twice. Kept only with `BC5_MOUNT_STATS`.
+//!
+//! Age and distance are per 32 KiB slot. They were per chunk until RR5: a chunk
+//! is read back in about three requests, so the later ones saw the first one's
+//! time, and about 70 % of the repeats looked under a second old.
 
 use std::collections::HashMap;
 
 const PAGE_BITS: u32 = 12;
 const CHUNK_BITS: u32 = 18;
+const SLOT_BITS: u32 = 15;
+const SLOT_PAGES: u32 = 1 << (SLOT_BITS - PAGE_BITS);
+const SLOTS: usize = 1 << (CHUNK_BITS - SLOT_BITS);
 
 /// Upper ends of the age buckets, in seconds; the last bucket has no end.
 pub const AGE_LIMITS: [f64; 5] = [1.0, 4.0, 16.0, 64.0, 256.0];
@@ -21,8 +28,9 @@ pub const DISTANCE_LIMITS_MIB: [u64; 4] = [64, 256, 1024, 4096];
 struct Chunk {
     /// Pages read at least once, one bit per 4 KiB.
     seen: u64,
-    last_secs: f64,
-    last_total: u64,
+    last_secs: [f32; SLOTS],
+    /// Pages served in all when the slot was last read.
+    last_total: [u32; SLOTS],
 }
 
 /// The counters at one moment.
@@ -83,32 +91,40 @@ impl Reuse {
 
     fn read_chunk(&mut self, file: usize, chunk: u64, mask: u64, now_secs: f64) {
         let total = self.totals.first + self.totals.again;
+        let total_pages = (total >> PAGE_BITS) as u32;
         let e = self.chunks.entry((file, chunk)).or_insert(Chunk {
             seen: 0,
-            last_secs: now_secs,
-            last_total: total,
+            last_secs: [0.0; SLOTS],
+            last_total: [0; SLOTS],
         });
         let again = u64::from((mask & e.seen).count_ones()) << PAGE_BITS;
         let first = u64::from((mask & !e.seen).count_ones()) << PAGE_BITS;
-        let age = now_secs - e.last_secs;
-        let distance = total - e.last_total;
+        for slot in 0..SLOTS {
+            let in_slot = mask & (((1u64 << SLOT_PAGES) - 1) << (slot as u32 * SLOT_PAGES));
+            if in_slot == 0 {
+                continue;
+            }
+            let bytes = u64::from((in_slot & e.seen).count_ones()) << PAGE_BITS;
+            if bytes != 0 {
+                let age = now_secs - f64::from(e.last_secs[slot]);
+                let distance = u64::from(total_pages.wrapping_sub(e.last_total[slot])) << PAGE_BITS;
+                let a = AGE_LIMITS
+                    .iter()
+                    .position(|&l| age < l)
+                    .unwrap_or(AGE_LIMITS.len());
+                self.totals.by_age[a] += bytes;
+                let d = DISTANCE_LIMITS_MIB
+                    .iter()
+                    .position(|&l| distance < l << 20)
+                    .unwrap_or(DISTANCE_LIMITS_MIB.len());
+                self.totals.by_distance[d] += bytes;
+            }
+            e.last_secs[slot] = now_secs as f32;
+            e.last_total[slot] = total_pages;
+        }
         e.seen |= mask;
-        e.last_secs = now_secs;
-        e.last_total = total;
         self.totals.first += first;
         self.totals.again += again;
-        if again != 0 {
-            let a = AGE_LIMITS
-                .iter()
-                .position(|&l| age < l)
-                .unwrap_or(AGE_LIMITS.len());
-            self.totals.by_age[a] += again;
-            let d = DISTANCE_LIMITS_MIB
-                .iter()
-                .position(|&l| distance < l << 20)
-                .unwrap_or(DISTANCE_LIMITS_MIB.len());
-            self.totals.by_distance[d] += again;
-        }
         let f = self.files.entry(file).or_default();
         f.first += first;
         f.again += again;
@@ -155,6 +171,19 @@ mod tests {
         assert_eq!(t.first, 8 * P + (100 << 20) + 4 * P);
         assert_eq!(t.by_age[2], 4 * P); // 5 s: under 16
         assert_eq!(t.by_distance[1], 4 * P); // ~100 MiB: under 256
+    }
+
+    #[test]
+    fn a_chunk_read_back_in_pieces_keeps_each_slots_own_age() {
+        let mut r = Reuse::default();
+        r.read(1, 0, C, 0.0);
+        r.read(2, 0, 2 * C, 1.0);
+        r.read(1, 0, C / 2, 100.0);
+        r.read(1, C / 2, C / 2, 100.1);
+        let t = r.totals();
+        assert_eq!(t.again, C);
+        assert_eq!(t.by_age[0], 0);
+        assert_eq!(t.by_age[4], C); // ~100 s: under 256
     }
 
     #[test]

@@ -30,6 +30,7 @@ pub mod pkg;
 pub mod preload;
 pub mod reuse;
 pub mod stats;
+pub mod trace;
 pub mod tree;
 pub mod tuning;
 pub mod verify;

@@ -3,6 +3,7 @@
 # build, calibration, A C A C, release, copy of the numbers. The kernel log is streamed to the laptop. Run from the worktree's root.
 # usage: bash series0381r.sh <run-id> <out-dir> [rest]   (needs the cycle's copy of lock0381tb2.inc and boxcap0381.sh on the box, in in-tb2)
 # rest: no calibration, only A C A C. cache: a fill arm, then A W A W, W on the private 64 GiB disk cache.
+# trace: two default arms, each with the mount's read trace.
 set -u
 ID=${1:?run id: letters and digits}; OUT=${2:?out dir}; REST=${3:-}
 HERE=$(cd "$(dirname "$0")" && pwd)
@@ -102,6 +103,12 @@ echo "== claim rc $rc"
 [ "$rc" = 0 ] || exit "$rc"
 start_stream
 step setup setup
+if [ "$REST" = trace ]; then
+    step T1 arm T1 BC5_0381_TRACE=1
+    step T2 arm T2 BC5_0381_TRACE=1
+    finish
+    exit 0
+fi
 if [ "$REST" = cache ]; then
     step fill arm W0 $WARM
     step A1 arm A1
