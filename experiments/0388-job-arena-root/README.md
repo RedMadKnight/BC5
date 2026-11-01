@@ -254,3 +254,25 @@ Neither play is the rule's Pass or Fail, so J is still untested in the fight and
 - Cost, from the code: a window imports its guest direct memory in full 2 MiB chunks, pinned, so the worst case is the window's size. Holes share one 2 MiB zero buffer and cost nothing. Measured neighbours gave 80 and 52 MiB of 96, so about 110 of 160 MiB is the likely size; pages the title has already touched add no new RAM, but they stop being swappable.
 - The gap 0x111c000000–0x112a000000 (224 MiB) is left out: no fault came there, and render-target hints already import part of it. Listing it too would risk up to 384 MiB against a MemAvailable floor of 158 MiB. The two windows can still pass that floor at the worst moment, 160 MiB, plus at most 32 MiB new from 0x1112000000, which the shared list also carries. The expected result is more swap and slowdown, not a failed import: GTT would stay near 12880 MiB, under the 13312 MiB limit.
 - A fault at a page inside a listed window would count against the class. A clean stretch is weak evidence, and with a zero buffer a bad write into a hole goes unseen.
+
+## The third J play (2026-11-01 08:01:20–08:13:40): passed the rule's words, once
+
+Binary `1a596e50`, `JobArenaFix` off, private list `571f8928` with 114 windows, swappiness 150 and page-cluster 0 for the first time. The maintainer: "Przeszło walkę . Gram dalej. Pamięć jest na wyczerpaniu", then "Za bardzo zwalnia. Wyłączam". He closed the game at t ≈ 735 s, launcher exit 0. No amdgpu kernel line, no access violation, no devcoredump, no timeout, reopen or failed submit in the journal. 1923 open target jobs in 1.54 M pushes, 89 ended by their condition.
+
+**Reading of the rule.** Pass by its words, one pass: he played through the fight and on, and closed the game himself. The log has no scene marker, so "through the fight" is his word. It is not a removal: `JobArenaFix` stays until his decision.
+
+**Limits.** One play. It differs from the 180 s arm in the list and the sysctls, and from the two crashed plays in the two windows and page-cluster 0, and those plays never reached the fight. Which of the list, the sysctls or luck carried it is not known. He stopped it for slowness at 12 min, so it says nothing about a long session.
+
+**The list cost nothing, and my estimate was wrong.** `0x1104000000` and `0x1108000000` got 96 and 64 MiB of holes, the whole 160 MiB, and no direct memory, so they pinned 0, not the 110 MiB estimated above. Direct pinned peaked at 11970–12002 MiB, inside the earlier plays' range.
+
+**That changes the class of 07:54.** In this play the window `0x1112000000` got 32 MiB of holes and no direct memory, which is the gap 0x1114000000–0x1116000000. So 0x1115e32000, the 07:54 write, lies in a hole here: the guest had no range there at the load, and no later line shows one. That is the F403 side of F468 (a bad or stale pointer), not memory the host failed to import, unless the title's placement differs between plays. The window at 0x10fe000000 holds 80 MiB of direct memory, so 07:41's 0x1100000000 may well be title memory; not shown. The two hangs are therefore not shown to share a cause, and the earlier "every fault page lay in a gap" stands only as where they fell. With a zero buffer a write into a hole goes unseen, so this play cannot show whether that write came again. Both 0x1112000000 and 0x10fe000000 are on the shared list as well.
+
+**The slowdown is on the CPU side, and memory fits it.**
+
+| t, s | frame gap, ms | host, ms | title outside host, ms | GPU, ms | PSI memory full60 | mount reads, GiB/min |
+|---|---|---|---|---|---|---|
+| 360–450 | 26–40 | 10–16 | 10–19 | 14–18 | 10.5 → 6.5 | 1.4 → 0.9 |
+| 480–540 | 64–92 | 24–29 | 34–59 | 23–26 | 18.5 → 27 | 3.4 |
+| 600–690 | 68–111 | 23–35 | 41–70 | 23–29 | 22–35.5 | 3.1–3.7 |
+
+Mapped by the exit, t 0 is about 08:01:25. The GPU stays flat while the title's own time grows sevenfold. Frames recover when the mount reads less and PSI falls, and the same pairing shows at t 240–300. Emulator RSS fell from 4357 MiB to 700–1100 MiB, mount RSS from 700 to 190–400 MiB, and swap reached 1.65 GiB, with GTT at 12.77 GiB of the box's 15.2. So the room left for the title's CPU memory, the mount and the desktop is about 2.4 GiB. Major faults were not sampled, so paging as the cost of the title's time is a reading from correlation in one play, and a heavier scene is not excluded. The sysctls show no visible gain: the 07:54 play's slow stretch had gaps of 81–94 ms on another scene.
