@@ -256,7 +256,7 @@ struct Device::Impl {
 
     // One scratch buffer per job in flight (Device::set_async); synchronous submission uses
     // slot 0 only. Each slot has its own VA, 4 GiB apart. Experiment 0045: 64, so that the host
-    // can let more than a dozen jobs fly (BC5_DIRECT_MAX_IN_FLIGHT); a slot grows to the largest
+    // can let more than a dozen jobs fly (24 since experiment 0045); a slot grows to the largest
     // IB it carried, a few hundred KiB.
     static constexpr int kSlots = 128;
     // ADR 0009: slots [0, kGfxSlots) carry GFX-ring jobs, then kCompSlots for each compute ring.
