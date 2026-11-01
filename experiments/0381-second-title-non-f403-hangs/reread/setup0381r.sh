@@ -19,10 +19,11 @@ distrobox enter ubuntu -- python3 -I "$R1/build0380y.py" "$TB/compdb.json" "$B" 
 # F687: every arm has the learned line of the 20:39 fault, as the next play will.
 [ ! -L "$E/direct-learned-pkg.txt" ] && cp "$W/direct-learned-pkg.txt" "$E/direct-learned-pkg.txt" || { echo "the private learned file"; exit 5; }
 grep -qx '0x110e000000 0x6000000' "$E/direct-learned-pkg.txt" || { echo "no learned line for the fault"; exit 5; }
-sed -e 's#^BM=~/bc5-work/bc5-tools-ubuntu/release/bc5-mount$#BM='"$RR"'/target/release/bc5-mount#' "$TB/play-pkg-0381tb2s.sh" > "$RR/play-pkg-0381r.sh"
+sed -e 's#^BM=~/bc5-work/bc5-tools-ubuntu/release/bc5-mount$#BM='"$RR"'/target/release/bc5-mount#' -e 's#BC5_MOUNT_DISK_CACHE=$HOME/bc5-data/cache/bc5-mount$#BC5_MOUNT_DISK_CACHE=${BC5_0381_DC:-$HOME/bc5-data/cache/bc5-mount}#' "$TB/play-pkg-0381tb2s.sh" > "$RR/play-pkg-0381r.sh"
 chmod +x "$RR/play-pkg-0381r.sh"
 [ "$(grep -c "^BM=$RR/target/release/bc5-mount\$" "$RR/play-pkg-0381r.sh")" = 1 ] || { echo "the launcher's BM line did not change"; exit 5; }
-[ "$(diff "$TB/play-pkg-0381tb2s.sh" "$RR/play-pkg-0381r.sh" | grep -c '^[<>]')" = 2 ] || { echo "the launcher differs in more than one line"; exit 5; }
+[ "$(grep -c 'BC5_MOUNT_DISK_CACHE=${BC5_0381_DC:-$HOME/bc5-data/cache/bc5-mount}$' "$RR/play-pkg-0381r.sh")" = 1 ] || { echo "the launcher's disk cache line did not change"; exit 5; }
+[ "$(diff "$TB/play-pkg-0381tb2s.sh" "$RR/play-pkg-0381r.sh" | grep -c '^[<>]')" = 4 ] || { echo "the launcher differs in more than two lines"; exit 5; }
 pgrep -x bc5-mount > /dev/null && { echo "a mount is still running"; exit 3; }
 tb2_own
 echo "set up: mount $(md5sum < "$RR/target/release/bc5-mount" | cut -c1-8), emulator $(md5sum < "$RR/bin/kyty_emulator" | cut -c1-8), shared normal $(md5sum < "$B/src/kyty_emulator" | cut -c1-8), launcher $(md5sum < "$RR/play-pkg-0381r.sh" | cut -c1-8)"

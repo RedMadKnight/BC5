@@ -45,6 +45,8 @@ check "full series: five arms" "[ \"\$(grep -c '^arm' '$T/log')\" = 5 ]"
 check "full series: the stream stops, the numbers copy, then the lock goes, last" "[ \"\$(tail -4 '$T/log' | tr '\n' ' ')\" = 'stream-stop copy copy release ' ]"
 : > "$T/log"; SLOG=$T/log PATH="$T/bin:$PATH" bash "$HERE/series0381r.sh" T1 "$T/out" rest > "$T/out.txt" 2>&1; rc=$?
 check "rest: four arms, no calibration" "[ $rc = 0 ] && [ \"\$(grep -c '^arm' '$T/log')\" = 4 ]"
+: > "$T/log"; SLOG=$T/log PATH="$T/bin:$PATH" bash "$HERE/series0381r.sh" T1 "$T/out" cache > "$T/out.txt" 2>&1; rc=$?
+check "cache: a fill arm and four more" "[ $rc = 0 ] && [ \"\$(grep -c '^arm' '$T/log')\" = 5 ]"
 check "no global match is left in the series" "! grep -q 'pgrep -f' '$HERE/series0381r.sh'"
 P=$T/proc; RR=$T/rr; mkdir -p "$RR" "$P/10" "$P/20"
 stat() { echo "$1 (timeout) S 1 1 1 0 -1 0 0 0 0 0 0 0 0 0 20 0 1 0 $2 0 0" > "$P/$1/stat"; printf 'timeout\0007000\000journalctl\000-k\000-f\000' > "$P/$1/cmdline"; }

@@ -9,6 +9,12 @@ check() { if eval "$2"; then echo "ok   $1"; else echo "FAIL $1"; fail=1; fi; }
 RR=$T; CMD=$T/cmd; : > "$CMD"; printf 'stick l 128 0 15000\n' > "$T/walk0381r.cmd"
 for f in arm0381r.sh gate0381r.inc setup0381r.sh series0381r.sh streamstop0381r.sh sample-reread.sh; do bash -n "$HERE/$f" || fail=1; done
 check "no box script lets distrobox read its stdin" "! grep -h 'distrobox enter' \"\$HERE/setup0381r.sh\" \"\$HERE/arm0381r.sh\" | grep -v '< /dev/null'"
+bash "$HERE/arm0381r.sh" T1 tok 9 BC5_MOUNT_DISK_CACHE_MIB=100 > "$T/o" 2>&1; rc=$?
+check "a disk cache limit without the private directory is refused" "[ $rc = 2 ] && grep -q 'private directory' '$T/o'"
+printf 'export KYTY_BC5_APR_PARALLEL=8 BC5_MOUNT_DISK_CACHE=$HOME/bc5-data/cache/bc5-mount
+' > "$T/l"
+sed -e 's#BC5_MOUNT_DISK_CACHE=$HOME/bc5-data/cache/bc5-mount$#BC5_MOUNT_DISK_CACHE=${BC5_0381_DC:-$HOME/bc5-data/cache/bc5-mount}#' "$T/l" > "$T/l2"
+check "the launcher's cache line takes the private directory" "[ \"\$(HOME=/h BC5_0381_DC=/p bash -c '. \"$T/l2\"; echo \$BC5_MOUNT_DISK_CACHE')\" = /p ] && [ \"\$(HOME=/h bash -c '. \"$T/l2\"; echo \$BC5_MOUNT_DISK_CACHE')\" = /h/bc5-data/cache/bc5-mount ]"
 fast() { awk -v t="$1" 'BEGIN { for (i = 0; i < 90; i++) printf "frame profile: t %.3f s, 33.3 ms since the last flip; x\n", t - 3 + i * 0.033 }' > "$T/j"; }
 slow() { awk -v t="$1" 'BEGIN { for (i = 0; i < 12; i++) printf "frame profile: t %.3f s, 200.0 ms since the last flip; x\n", t - 3 + i * 0.25 }' > "$T/j"; }
 fast 100

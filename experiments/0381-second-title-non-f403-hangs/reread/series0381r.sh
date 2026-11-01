@@ -2,13 +2,14 @@
 # BC5 exp 0381, re-reads: the whole series from the laptop, on the top session's slot, stopping at the first failed step: claim and
 # build, calibration, A C A C, release, copy of the numbers. The kernel log is streamed to the laptop. Run from the worktree's root.
 # usage: bash series0381r.sh <run-id> <out-dir> [rest]   (needs the cycle's copy of lock0381tb2.inc and boxcap0381.sh on the box, in in-tb2)
-# rest: no calibration, only A C A C.
+# rest: no calibration, only A C A C. cache: a fill arm, then A W A W, W on the private 64 GiB disk cache.
 set -u
 ID=${1:?run id: letters and digits}; OUT=${2:?out dir}; REST=${3:-}
 HERE=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(git -C "$HERE" rev-parse --show-toplevel)
 CAP=900
 CAND="BC5_MOUNT_DROP_BACKING=1 BC5_MOUNT_MAX_READAHEAD_KIB=32 BC5_MOUNT_PREFETCH_KIB=512"
+WARM="BC5_0381_DC=1 BC5_MOUNT_DISK_CACHE_MIB=65536"
 mkdir -p "$OUT"
 TOKEN=$(date +%Y%m%d%H%M%S)$RANDOM
 echo "$TOKEN" > "$OUT/token"
@@ -101,6 +102,15 @@ echo "== claim rc $rc"
 [ "$rc" = 0 ] || exit "$rc"
 start_stream
 step setup setup
+if [ "$REST" = cache ]; then
+    step fill arm W0 $WARM
+    step A1 arm A1
+    step W1 arm W1 $WARM
+    step A2 arm A2
+    step W2 arm W2 $WARM
+    finish
+    exit 0
+fi
 if [ "$REST" != rest ]; then
     step baseline arm A0
     stream

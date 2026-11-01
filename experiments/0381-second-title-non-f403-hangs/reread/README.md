@@ -228,3 +228,6 @@ figures are the window 200–830 s; flips are the whole run.
 
 **Verdict.** The bundle is not a frame-rate fix and stays off. Its memory saving is real in both pairs, but needs its own test, one switch at a time, against the storm. The next question is why a
 page read under a second ago reaches the mount again.
+
+**Cache test (RR5).** `series0381r.sh <id> <out> cache`: a fill arm W0, then A1 W1 A2 W2, about 76 minutes. W uses the private `reread/dc` with a 64 GiB limit, through one more changed line in the private launcher. A arms keep the shared cache, and `arm0381r.sh` refuses
+a bigger limit without the private directory, so the shared cache is never written. Each arm's start file records the private cache's size.
