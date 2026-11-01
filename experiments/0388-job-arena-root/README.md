@@ -139,7 +139,7 @@ No crash elsewhere, no amdgpu kernel line, GPU reset or devcoredump. Exposure in
 
 - Thread count: 15 job threads with `0x7f`, 24 with `0x1fff`, of 16 hardware threads. `0x7f` stays the host's default; F791 says more workers do not end the crash.
 - Semaphore: every worker entry has its own `JobLoaderSema` (exp 0358 F451, fifo, a worker waits with an 8000 µs timeout). `Signal` marks the waiters it hands the count to, then broadcasts one condvar while it holds the semaphore's mutex. Every waiter wakes, takes that mutex in turn, drops it for the pending-signal dispatch and takes it again. On Linux this is a `std::condition_variable` on a recursive mutex.
-- Priorities: guest 300 (main) and 500 (Hi workers) are both nice 0, the same as the host's own threads; 700 and below 733 too, 733 and above +5.
+- Priorities: guest 300 (main) and 500 (Hi workers) are both nice 0, the same as the host's own threads; guest 733 and above is +5.
 - Affinity: guest masks are only stored. No guest thread is pinned unless `APPLY_AFFINITY=1`.
 
 **What earlier experiments measured.** Exp 0358 F453 and the trace after it: a woken Hi worker returned 718–836 µs after its signal, median 1114 µs, 342 µs with the host's 22 threads at nice +5. The targeted wake alone did not stop the crash, and at the push of the crash job the Hi workers were awake, inside the 603-block chunks. Exp 0360 F471 measured about 20 µs of run-queue wait per wake, with the box 28–43 % busy.
@@ -189,8 +189,8 @@ No crash elsewhere, no amdgpu kernel line, GPU reset or devcoredump. Exposure in
 
 - Control at least 2 of 3 at the site, or no conclusion.
 - HOLDS: every planned run NO_CRASH that reached the fight (5 of 5 for H and J, 3 of 3 for F, K and L). REFUTED: any crash at the site. OPEN: anything else; a crash elsewhere is reported on its own.
-- Exposure: a run needs `push spin` lines; H needs spins above 0; J and K need `open target jobs` above 0, or the arm is NO TEST. L needs the nice applied (`KYTY_BC5_THREAD_TRACE` is off, so `/proc` at 70 s is not taken; L's nice is unconfirmed unless the catcher is added).
+- Exposure: a run needs `push spin` lines; H needs spins above 0; J and K need `open target jobs` above 0, or the arm is NO TEST. L needs nice −5 on its `Job Hi` threads in `<tag>-nice.txt`, taken at 70 s; a host that refuses the nice leaves L as NO TEST.
 - CHEAPER: an arm that HOLDS and has mean flips/s over 120–170 s of at least 31, against F's 28–29 and the control's 33.5.
 - The pick for the maintainer's play: the cheapest arm that HOLDS, J first if tied. If none is cheaper, F.
 
-**The maintainer's play.** `play0388.sh F` or `play0388.sh J` on the box, started by the top session: `JobArenaFix` off, the chosen wait on, RT as in `input.cfg`, the normal launcher and his own saves, no time limit. `input.cfg` is not changed. F needs only the existing binary if the third build is not made, but the script uses the path the newest build replaces, so the binary is named in its first line. Pass: he plays through the fight that crashed and on, and closes the game himself, with no access violation and no amdgpu line. Fail: a crash at eboot+0x3d7eca0, and `JobArenaFix` stays. Only that pass can start the removal of exp 0359's fix, and that is his decision.
+**The maintainer's play.** `play0388.sh F` or `play0388.sh J` on the box, started by the top session: `JobArenaFix` off, the chosen wait on, RT as in `input.cfg`, the normal launcher and his own saves, no time limit. `input.cfg` is not changed. The script prints the binary's md5 at start: `caede695` is enough for F, and J needs the third build. Pass: he plays through the fight that crashed and on, and closes the game himself, with no access violation and no amdgpu line. Fail: a crash at eboot+0x3d7eca0, and `JobArenaFix` stays. Only that pass can start the removal of exp 0359's fix, and that is his decision.

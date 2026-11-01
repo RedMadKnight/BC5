@@ -56,7 +56,7 @@ s = R(s, 'SWITCHES="KYTY_BC5_JOB_ARENA_FIX=$FIXV"  # 0388\n',
 s = R(s, "DISK_MAX=80; T_ROUTE=60;", "JOBS=\"\"; T_JOBS=70; DISK_MAX=80; T_ROUTE=60;")
 s = R(s, '  if [ -z "$FDINFO" ] && [ "$(el)" -ge "$T_FD" ]; then',
       '  if [ -z "$JOBS" ] && [ "$(el)" -ge "$T_JOBS" ]; then  # 0388: how many workers the title made\n'
-      '    JOBS=1; cat /proc/"$EP"/task/*/comm 2> /dev/null | grep -c "^Job " > "$R/$TAG-jobs.txt"\n  fi\n'
+      '    JOBS=1; cat /proc/"$EP"/task/*/comm 2> /dev/null | grep -c "^Job " > "$R/$TAG-jobs.txt"; ps -L -o ni=,comm= -p "$EP" 2> /dev/null | grep " Job " | sort | uniq -c > "$R/$TAG-nice.txt"\n  fi\n'
       '  if [ -z "$FDINFO" ] && [ "$(el)" -ge "$T_FD" ]; then')
 s = R(s, "|KYTY_BC5_JOB_ARENA_FIX|", "|KYTY_BC5_JOB_ARENA_FIX|KYTY_BC5_0388_[A-Z_]*|")
 # 0388: the idle states and the governor around each run, read only: is a late worker a core coming out of idle?

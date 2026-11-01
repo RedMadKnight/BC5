@@ -247,7 +247,7 @@ while [ -z "$ENDED" ] && [ "$(el)" -lt "$SECS" ]; do
     else ENDED="SETUP: the route save was not read by $T_ROUTE s"; break; fi
   fi
   if [ -z "$JOBS" ] && [ "$(el)" -ge "$T_JOBS" ]; then  # 0388: how many workers the title made
-    JOBS=1; cat /proc/"$EP"/task/*/comm 2> /dev/null | grep -c "^Job " > "$R/$TAG-jobs.txt"
+    JOBS=1; cat /proc/"$EP"/task/*/comm 2> /dev/null | grep -c "^Job " > "$R/$TAG-jobs.txt"; ps -L -o ni=,comm= -p "$EP" 2> /dev/null | grep " Job " | sort | uniq -c > "$R/$TAG-nice.txt"
   fi
   if [ -z "$FDINFO" ] && [ "$(el)" -ge "$T_FD" ]; then  # exp 0341: the rings the work ran on (amdgpu fdinfo: drm-engine-gfx / drm-engine-compute, ns of GPU time per engine)
     FDINFO=1; { echo "at $(el) s:"; fdinfo_of "$EP"; } > "$R/$TAG-fdinfo.txt"
