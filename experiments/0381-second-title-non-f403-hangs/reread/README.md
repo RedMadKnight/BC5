@@ -189,3 +189,42 @@ both catchers compiled. RT on, no pad, snapshot saves-sample, mount c39cac9f, em
 **Rest of the series (RR4).** `series0381r.sh <id> <out> rest` runs A1 C1 A2 C2 without A0. The maintainer set vm.swappiness 150 and
 vm.page-cluster 0 at about 08:00 (until reboot), so A0 was under other VM settings: compare A with C inside RR4, and read A0 against
 it only with that said. Each arm's start file records the settings.
+
+## RR4: A1 C1 A2 C2 (2026-11-01)
+
+All four arms ran to the 900 s cap with no amdgpu kernel line. RT on, no pad, mount c39cac9f, emulator be846ba2, vm.swappiness 150, vm.page-cluster 0. C is
+`BC5_MOUNT_DROP_BACKING=1 BC5_MOUNT_MAX_READAHEAD_KIB=32 BC5_MOUNT_PREFETCH_KIB=512`, all three together, so nothing below separates them. Mount and sampler
+figures are the window 200–830 s; flips are the whole run.
+
+| | A1 | C1 | A2 | C2 |
+|---|---:|---:|---:|---:|
+| title's reads (`emu_rchar`), GiB | 36.7 | 51.5 | 19.0 | 17.4 |
+| served by the mount, GiB | 35.3 | 47.5 | 16.3 | 11.0 |
+| new, GiB | 6.7 | 7.1 | 2.0 | 1.5 |
+| repeats, % of served | 81.0 | 85.0 | 87.7 | 86.4 |
+| repeats within 1 s, % of repeats | 71.3 | 71.8 | 71.1 | 71.0 |
+| backing read per MiB served | 1.25 | 0.79 | 1.32 | 0.95 |
+| decoded per MiB served | 1.88 | 1.19 | 1.86 | 1.47 |
+| decode-ahead blocks used, % | 46 | 76 | 50 | 72 |
+| service mean, µs (whole run) | 1,292 | 1,409 | 1,172 | 1,493 |
+| flips | 21,896 | 21,022 | 27,368 | 25,774 |
+| frames of 100 ms or more | 795 | 885 | 349 | 447 |
+| kswapd steals, M pages | 21.7 | 13.2 | 10.6 | 3.2 |
+| direct steals, k pages | 670 | 165 | 197 | 53 |
+| swap-in, k pages | 246 | 152 | 103 | 21 |
+| emulator major faults, k | 66.6 | 36.7 | 31.5 | 10.8 |
+
+- **What is repeated.** Archive data: `movie` and `movie_inst` (over 90 % of what these files serve is repeats in A1), then textures. It is not refilled from a kept cache: in the A arms the title asks for only
+  1.04–1.16 times what the mount serves, so the page cache spares it at most 4–14 %, even though 71 % of repeats came back within a second. Pages read under a second ago are
+  gone, or the read never looks at them. Why is open.
+- **Read-ahead refuted as the cause.** At 32 KiB the shares do not move. The reading in the A0 section does not hold.
+- **The levers.** C does not cut the repeats. It cuts the mount's own waste: backing read per MiB served by 28–37 %, decoding by 21–37 %, unused decode-ahead by about half.
+  Memory churn falls in both pairs, even in C1 where the load rose by 34 %.
+- **Frame rate.** No gain. C loses 4 % and 6 % of flips, and has 11 % and 28 % more frames of 100 ms or more; service time rises. Two pairs, with very different load, so this is a direction, not a size.
+- **The storm.** Minutes under 1,400 flips (6 in A1, 7 in C1, none elsewhere) serve 5.8–6.2 GiB a minute against 1.1–1.7 GiB in the others, at 15–23 flips/s; r = −0.91 over 54 minutes
+  of all five arms. C does not stop it: it came in C1 as in A1. What sets it off is not known, it may be where the route walks to.
+- **A0.** A0 ran at swappiness 60 and the old page-cluster, so its swap and fault counts do not compare: with page-cluster 0 each swap-in is one page. Repeat shares match.
+- **Fault.** No amdgpu line in 60 minutes of these arms, so the 07:22 fault did not repeat. F687's page again read read-write in a shared range and did not fault. No reopen: F688 got nothing.
+
+**Verdict.** The bundle is not a frame-rate fix and stays off. Its memory saving is real in both pairs, but needs its own test, one switch at a time, against the storm. The next question is why a
+page read under a second ago reaches the mount again.
