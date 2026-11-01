@@ -1,7 +1,8 @@
 # 0393 — What the dispatch breadcrumbs cost per frame, on the same route
 
-**Date.** Planned 2026-11-01. **Box.** Not yet run; this README is the plan until the Result section is filled in.
-**Asked by.** The maintainer's yes of 2026-11-01 to the same-route cost test.
+**Date.** 2026-11-01 10:46–11:48. **Box.** On the top session's GO (read, build and series under one GO, ahead of RR5 and
+0391, deadline 12:11:52). One lock line per step, `tcp exp0393 | token … |`, with claim and done lines in
+`~/bc5-work/BOX-QUEUE`. **Asked by.** The maintainer's yes of 2026-11-01 to the same-route cost test.
 
 **Question.** Exp 0277 added a breadcrumb in front of and behind each dispatch, with the instruction "Measure its cost
 per frame in the first run". That was never done: F351 says the cost was not measured, and exps 0277, 0279 and 0281 ran
@@ -61,8 +62,75 @@ Written before any run. The window is 200–400 s of journal time, inside the pl
 
 ## Result
 
-Not run yet.
+All eight runs passed, 2026-11-01 10:48–11:48, on the top session's GO, in order and with no retry. The private binary is
+md5 bf927e14, linked from shared normal 78f25172. Boot d9cca008 throughout, kernel 7.2.9-ogc3.1. In every arm: swappiness
+150, page-cluster 0, and `VGT_HS_OFFCHIP_PARAM` latched at 0x1ff since exp 0392's T1 (the top session's statement, not
+read here; `raw/*-box-settings.txt`). There was no amdgpu line in any kernel stream, no devcoredump, no TIMEOUT line and
+no crash. Environment and journal proved each arm.
+
+### Cost per frame
+
+Window 200–400 s of journal time, ms per frame on the game thread (`raw/ana.txt`; `python -I ana0393.py <frames> raw`).
+"Outside" is the flip interval minus the host time and the flip: the guest's own work plus anything the host does there
+without a timer.
+
+| Run | Flips/s | Flip interval | GPU busy | Inside the host | At the flip | Outside | Label waits | Prepare | cs |
+|---|---|---|---|---|---|---|---|---|---|
+| O1 | 38.66 | 25.86 | 19.55 | 10.20 | 5.73 | 9.94 | 5.43 | 2.70 | 1.24 |
+| O2 | 39.01 | 25.64 | 19.53 | 9.98 | 5.72 | 9.93 | 5.18 | 2.73 | 1.24 |
+| O3 | 39.04 | 25.62 | 19.56 | 9.94 | 5.69 | 9.99 | 5.18 | 2.73 | 1.19 |
+| L1 | 37.83 | 26.43 | 19.54 | 9.92 | 5.52 | 10.99 | 4.80 | 2.86 | 1.38 |
+| L2 | 37.78 | 26.46 | 19.80 | 9.95 | 5.57 | 10.95 | 4.86 | 2.86 | 1.35 |
+| L3 | 38.55 | 25.94 | 19.50 | 9.68 | 5.45 | 10.82 | 4.71 | 2.79 | 1.37 |
+| T1 | 37.32 | 26.79 | 20.16 | 10.01 | 5.55 | 11.24 | 4.85 | 2.88 | 1.37 |
+| T2 | 36.88 | 27.12 | 20.28 | 10.24 | 5.53 | 11.35 | 5.04 | 2.98 | 1.33 |
+
+| Mean difference from off | Flip interval | GPU busy | Inside the host | At the flip | Outside | Label waits | Prepare | cs |
+|---|---|---|---|---|---|---|---|---|
+| Spread of the off runs | 0.25 | 0.03 | 0.26 | 0.04 | 0.06 | 0.25 | 0.03 | 0.05 |
+| Level 1 | **+0.57** (+2.2 %) | +0.07 | −0.19, not resolved | −0.20 | **+0.97** | −0.47 | +0.12 | +0.14 |
+| Level 2 | **+1.25** (+4.9 %) | +0.68 | +0.08, not resolved | −0.18 | **+1.34** | −0.32 | +0.21 | +0.12 |
+
+- **The cost is resolved at both levels.** Off averages 25.71 ms, level 1 26.28 ms, level 2 26.96 ms, about 38.9, 38.1 and
+  37.1 flips/s. Each level run minus the off run before it gives +0.57, +0.82, +0.32 ms (level 1) and +0.93, +1.48 ms
+  (level 2). The slowest off run (25.86) and the fastest level 1 run (25.94) nearly touch, so the size at level 1 is known
+  only roughly. Three runs against three, and two for level 2. L3 sits closest to off; nothing in its files says why.
+- **Most of it lands outside the host, not on the GPU.** At level 1 GPU busy moves +0.07 ms, about 1,320 breadcrumbs a
+  frame at 50,000 a second. At level 2 it moves +0.68 ms; level 2 differs only by the COPY_DATA of the indirect counts,
+  so those take about 0.6 ms. The interval's growth is in "outside", +0.97 and +1.34 ms, partly paid back by shorter label
+  waits.
+- **Why "outside" grows is not shown.** The frame profile times only the game thread, and the ring thread carries about
+  26 of the ~33 jobs of a frame, so most of the rebuild's host time is in no column here. One candidate is that those
+  jobs reach the GPU later and the guest waits longer in its own code. That was not measured.
+- **Long frames.** Frames over 40 ms in the window: off 349–368, level 1 374–423, level 2 428–441 of about 7,600.
+- **Whole-run means do not see it.** The summary lines give 29.3 ms between flips for both O1 and L1, because the load is
+  in the mean. The window was needed.
+- **Only comparable inside this series.** Exp 0378 had ~40.8 flips/s on this route with another build and other box
+  settings; off here is ~38.9. The first 10-s bin of the plateau (160 s) is low in every run and is outside the window.
+- **The pad was not observed.** The top session said the maintainer was away for about 40 min from the GO, so the last
+  runs (T2, O3, L3, from about 11:26) may have had him nearby. O3 matches O2 within 0.02 ms, so the numbers show no sign of
+  input, but that is not proof.
+
+### Behaviour
+
+- **Every sample reached and done.** All 42 health lines of each of the five breadcrumb runs read 4096 of 4096 reached and
+  done, over about 21 million breadcrumbs a run, with RT on, one ring and today's frames (`raw/*-bc.txt`).
+- **No COND_EXEC overflow line** in any run.
+- **IB split.** It held at both levels: 1–2 jobs a run were cut (none in T1), with 0 fallback cuts and 0 refused. The
+  largest was 1,671,120 dwords at level 2 from the title's 641,508 (`raw/T2-0341.txt`). O1's largest cut job was 1,225,448.
+- **Memory.** Mean available memory in the window was 601 MiB off (590–623), 523 MiB at level 1 and 553 MiB at level 2.
+  That fits the 64 MiB the slots and the host table take, within the spread (`raw/*-mem.txt`).
 
 ## Verdict
 
-Not run yet.
+**Exp 0277's instruction is now fulfilled: level 1 costs about 0.6 ms a frame (+2.2 %) and level 2 about 1.25 ms
+(+4.9 %) on the S6N route with RT on.** Breadcrumbs behaved at both levels on today's setup through five runs of 7 min,
+with every sample reached and done and no kernel line.
+
+By the reading rule written before the runs, **neither level is "cheap enough"**. Level 1 meets the first test (GPU busy
+plus the resolved host parts come to 0.33 ms, under 0.51 ms) and fails the second, because its flip-interval change is
+resolved. Level 2 fails both (1.01 ms). So breadcrumbs stay off by default. Level 1 is the level to use when a hang is
+being chased, knowing the run is about 2 % slower; level 2 only when the indirect counts themselves are the question.
+Patch 0001 stays as it is; anything for a shared build is the maintainer's decision.
+
+Open: where the ~1 ms outside the host goes, since the ring thread is not timed.

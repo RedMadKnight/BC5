@@ -14,7 +14,7 @@ LINE = re.compile(
     rf'{NUM} \+ tracker {NUM} \+ cu {NUM} \+ nested {NUM} \+ copy {NUM}\s*$')
 NAMES = ('t since inside sync hints prepare list cs fence cap label event flip outside gpu jobs ringjobs softms softn '
          'polled pollms timedout filter tracker cu nested copy').split()
-SHOW = ('since', 'gpu', 'inside', 'prepare', 'copy', 'filter', 'list', 'cs', 'fence', 'jobs')
+SHOW = ('since', 'gpu', 'inside', 'flip', 'outside', 'label', 'prepare', 'copy', 'filter', 'list', 'cs', 'fence', 'jobs')
 BC = re.compile(r'breadcrumbs \(exp 0277\): (\d+) inserted, (\d+) a second; of (\d+) that followed the previous line, '
                 r'(\d+) reached and (\d+) done')
 

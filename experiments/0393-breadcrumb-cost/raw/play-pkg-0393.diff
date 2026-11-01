@@ -1,0 +1,58 @@
+--- /home/kjaniszewski/bc5-work/play-pkg.sh	2026-10-28 07:52:22.140252572 +0100
++++ /home/kjaniszewski/bc5-work/exp0393/run/play-pkg-0393.sh	2026-11-01 11:40:48.000754563 +0100
+@@ -10,12 +10,12 @@
+ M=~/bc5-data/mnt/pkg-play
+ EMU=~/bc5-work/kytyplus-build/src/kyty_emulator
+ ENVF=${BC5_RUN_ENV:-$HOME/bc5-work/bc5-run.env}
+-LOG=~/bc5-work/play-pkg-last.log
++LOG=~/bc5-work/exp0393/run/play-last.log  # exp 0350/0364: own log
+ # Experiment 0177: BC5_LEAN=1 (the "BC5 emulator (lean)" shortcut) runs the emulator built with
+ # KYTY_BC5_LEAN in ~/bc5-work/kytyplus-build-lean: no tracing, journal, counters, recorder or
+ # samplers, inside or outside; its own log file. The title scripts take the same switch.
+ if [ "${BC5_LEAN:-0}" = 1 ]; then
+-  EMU=~/bc5-work/kytyplus-build-lean/src/kyty_emulator LOG=~/bc5-work/play-pkg-lean-last.log
++  EMU=~/bc5-work/kytyplus-build-lean/src/kyty_emulator LOG=~/bc5-work/exp0393/run/play-last.log  # the same own log
+ fi
+ # 2026-10-25 (exp 0324, the maintainer): with BC5_LEAN=1 this script writes no log at all; BC5_LOGS=1 keeps
+ # its logs. The normal shortcut logs as before.
+@@ -37,6 +37,7 @@
+   key=${line%%=*}; val=${line#*=}
+   if [ "$key" = PLAY_ARGS ]; then PLAY_ARGS=$val; else export "$key=$val"; fi
+ done < "$ENVF"
++[ -n "${BC5_0358_INPUT_CONFIG:-}" ] && export KYTY_BC5_INPUT_CONFIG=$BC5_0358_INPUT_CONFIG  # exp 0339
+ export BC5_DIRECT_LAZY_NAMES="${BC5_DIRECT_LAZY_NAMES:+$BC5_DIRECT_LAZY_NAMES,}Wwise,SoundAlloc,FileSystem,UIStringAlloc"  # exp 0330 (F394): the four CPU-only heaps lazy, 242 MiB less pinned
+ PLAY_ARGS="$PLAY_ARGS --fullscreen"  # the maintainer: this title fullscreen, at the display's resolution (Full HD here)
+ unset BC5_GC_DUMP_DIR
+@@ -45,8 +46,8 @@
+ export SHADPS4_SYSMODULES_PACK_DIR=$HOME/bc5-data/sysmodules-pack-hle-ampr-noplaygo  # 2026-10-25 (exp 0298, the maintainer's yes): no libScePlayGo.sprx, the host answers PlayGo (100 chunks)
+ # Experiment 0042: also the heaps the GPU reads or writes before the CPU touches them
+ export BC5_DIRECT_EAGER_NAMES="RenderGpuWcLarge,RenderGpuWcSmall,RenderGpuRwLarge,RenderGpuRwSmall,CommitIABufferAllocator,AMM,RenderAlloc,Physics,Decal Job Scheduler,VisualEffectInstanceHeap,DynamicHeap,DynamicHeap Small,ComponentHeap,ComponentHeap Small,MaterialHeap,DDLHeap,Physics query allocator"
+-export BC5_DIRECT_LEARNED=$HOME/bc5-work/direct-learned-pkg.txt
+-export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/_SaveData-pkg-play
++export BC5_DIRECT_LEARNED=$HOME/bc5-work/exp0393/run/direct-learned-pkg.txt  # exp 0350/0364: a private copy
++export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/exp0393/run/wd/_SaveData-pkg-play  # exp 0350/0364: private
+ # Experiment 0039: the compute IBs indirect dispatches run (rewritten for the GFX ring).
+ # Experiment 0053: their arguments checked by the CP when it runs them, a CP DMA wait before a
+ # dispatch after an unsynced copy; with both the tree refit runs too (before: skipped,
+@@ -147,6 +148,7 @@
+     export "${line%%=*}=${line#*=}"
+   done < "$PKG_ENV"
+ fi
++. ~/bc5-work/exp0393/s/prestart0393.sh || exit 97  # exp 0393
+ ~/bc5-work/pad-volume.sh >> "$LOG" 2>&1 || true; ~/bc5-work/pad-volume.sh --watch $$ >> "$LOG" 2>&1 &  # F94: the pad ALSA volume resets on every replug
+ # Experiment 0301 (the maintainer asked, 2026-10-25): MangoHud is part of the emulator: it loads hidden and
+ # Emulation > MangoHud shows its hardware figures and the title's frame rate (saved per title in the input
+@@ -187,11 +189,12 @@
+   grep -v '^#' "$ENVF" | grep -v '^$'
+   [ -r "$PKG_ENV" ] && grep -v '^#' "$PKG_ENV" | grep -v '^$'
+ } > "$LOG"
+-cd ~/bc5-work
++cd ~/bc5-work/exp0393/run/wd  # exp 0350/0364: the private working directory (its own _SaveData)
+ # Experiment 0047: exit code 75 is the F2 menu's "Restart game": start the emulator again, with
+ # the mount and the settings kept.
+ while :; do
+   # shellcheck disable=SC2086
++. ~/bc5-work/exp0393/s/prestart0393.sh || exit 97  # exp 0393
+   "$EMU" --game "$M" --printf-direction Silent --shader-log-direction Silent --command-buffer-dump false $PLAY_ARGS >> "$LOG" 2>&1
+   RC=$?
+   [ "$RC" = 75 ] || break
