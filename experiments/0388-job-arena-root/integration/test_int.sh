@@ -9,7 +9,7 @@ setup() {
     rm -rf "$T/h" "$T/bin"; H=$T/h; W=$H/bc5-work; K=$H/src/KytyPlus; S=$W/exp0388/s
     mkdir -p "$W/kytyplus-build/src" "$W/kytyplus-build-lean/src" "$W/backend-ubuntu" "$S" "$T/bin" "$K/src/bc5"
     echo normal > "$W/kytyplus-build/src/kyty_emulator"; echo lean > "$W/kytyplus-build-lean/src/kyty_emulator"; echo arch > "$W/backend-ubuntu/libbc5_backend.a"
-    for f in src/kernel/semaphore.cpp src/loader/gamePatch.cpp src/loader/gamePatch.h src/loader/runtimeLinker.cpp; do mkdir -p "$K/$(dirname "$f")"; cp "$BASE/$f" "$K/$f"; done
+    for f in src/kernel/semaphore.cpp src/loader/gamePatch.cpp src/loader/gamePatch.h src/loader/runtimeLinker.cpp src/graphics/presentation/hostMenu.cpp src/graphics/presentation/window/hostInput.cpp src/graphics/presentation/window/hostInput.h src/bc5/job_arena_fix.hpp; do mkdir -p "$K/$(dirname "$f")"; cp "$BASE/$f" "$K/$f"; done
     cp "$HERE/mkhost.py" "$HERE/../../../backend/include/bc5/job_push_wait.hpp" "$S/"
     printf 'old patch\n' > "$T/old.diff"
     { echo "new patch"; echo "exp 0372"; echo "exp 0372"; echo "exp 0372"; echo "exp 0372"; echo "exp 0372"; echo "+++ b/src/bc5/pad_audio_route.hpp"; } > "$S/0001-new.patch"
@@ -54,7 +54,7 @@ check "success: exit 0" '[ $rc = 0 ]'
 check "success: claimed and released" 'grep -q claim $H/lock.log && grep -q release $H/lock.log'
 check "success: the new binaries" 'grep -q normal2 $W/kytyplus-build/src/kyty_emulator && grep -q lean2 $W/kytyplus-build-lean/src/kyty_emulator'
 check "success: the rollback copies" 'grep -qx normal $W/exp0388/integration/kyty_emulator.before-j && grep -qx lean $W/exp0388/integration/kyty_emulator-lean.before-j'
-check "success: the wait is in the tree" 'grep -q Bc5JobPushWait $K/src/kernel/semaphore.cpp'
+check "success: the wait is in the tree, the fix is not" 'grep -q Bc5JobPushWait $K/src/kernel/semaphore.cpp && [ ! -e $K/src/bc5/job_arena_fix.hpp ]'
 
 setup; echo other > "$W/kytyplus-build/src/kyty_emulator"; run
 check "a wrong binary: stops before the lock" '[ $rc != 0 ] && [ ! -e $H/lock.log ]'
@@ -65,7 +65,7 @@ check "another semaphore.cpp: stops before the lock" '[ $rc != 0 ] && [ ! -e $H/
 setup; sed -i '/exp 0372/d' "$S/0001-new.patch"; sed -i "s/EXPECT_NEW=[0-9a-f]*;/EXPECT_NEW=$(m "$S/0001-new.patch");/" "$S/int0388j.sh"; run
 check "a candidate without exp 0372: stops before the lock" '[ $rc != 0 ] && [ ! -e $H/lock.log ]'
 setup; before=$(m "$K/src/kernel/semaphore.cpp"); TEST_FAIL=lean; export TEST_FAIL; run; unset TEST_FAIL
-check "a failed lean build restores all" '[ $rc != 0 ] && grep -qx normal $W/kytyplus-build/src/kyty_emulator && [ "$(m $K/src/kernel/semaphore.cpp)" = $before ] && [ ! -e $K/src/bc5/job_push_wait.hpp ] && grep -q release $H/lock.log'
+check "a failed lean build restores all" '[ $rc != 0 ] && [ -e $K/src/bc5/job_arena_fix.hpp ] && grep -qx normal $W/kytyplus-build/src/kyty_emulator && [ "$(m $K/src/kernel/semaphore.cpp)" = $before ] && [ ! -e $K/src/bc5/job_push_wait.hpp ] && grep -q release $H/lock.log'
 setup; before=$(m "$K/src/kernel/semaphore.cpp"); TEST_DIFF=$T/old.diff; export TEST_DIFF; run; unset TEST_DIFF
 check "a tree diff that is not the candidate restores all" '[ $rc != 0 ] && grep -qx lean $W/kytyplus-build-lean/src/kyty_emulator && [ "$(m $K/src/kernel/semaphore.cpp)" = $before ] && grep -q release $H/lock.log'
 echo "== $ok passed, $bad failed"

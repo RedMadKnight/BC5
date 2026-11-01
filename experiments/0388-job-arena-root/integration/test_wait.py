@@ -38,7 +38,7 @@ ok("mutant: a dropped gate is caught", not gated(text.replace("base == 0 || !sem
 ok("the trace is inside the lean guard", trace_in_lean_guard(text))
 ok("mutant: a trace outside it is caught", not trace_in_lean_guard(text.replace("#ifndef BC5_LEAN\n\tstatic const bool trace", "\tstatic const bool trace")))
 g = open(f"{TREE}/src/loader/runtimeLinker.cpp", encoding="utf-8", newline="").read()
-ok("the wait looks at the site before the fix writes there", g.index("GamePatch::ApplyJobPushWait(") < g.index("GamePatch::ApplyJobArenaFix("))
+ok("the loader calls the wait, and no fix", "GamePatch::ApplyJobPushWait(" in g and "ApplyJobArenaFix" not in g)
 
 STUB = re.search(r"STUB = r'''(.*?)'''", open(f"{HERE}/../test_sem0388.py", encoding="utf-8").read(), re.S).group(1)
 STUB = STUB.replace("#define BC5_DIAG_ENV(x) nullptr\n", "#include <cinttypes>\n#include <cstdlib>\n#include <cstring>\n#ifdef BC5_LEAN\n#define BC5_DIAG_ENV(x) static_cast<const char*>(nullptr)\n#else\n#define BC5_DIAG_ENV(x) std::getenv(x)\n#endif\n")

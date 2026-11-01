@@ -53,14 +53,24 @@ Mem one_open_job() {
     return mem;
 }
 
-TEST_CASE("the wait runs only for the known title and code, and the switch turns it off", "[job_push_wait]") {
-    CHECK(wait_on(true, true, nullptr));
-    CHECK(wait_on(true, true, ""));
-    CHECK(wait_on(true, true, "1"));
-    CHECK_FALSE(wait_on(true, true, "0"));
-    CHECK_FALSE(wait_on(false, true, nullptr));
-    CHECK_FALSE(wait_on(true, false, nullptr));
-    CHECK(wait_on(true, true, "00")); // only the exact 0 is off, as the fix's switch reads its first character
+TEST_CASE("the wait runs where the code is known, and the switch turns it off", "[job_push_wait]") {
+    CHECK(wait_on(true, nullptr));
+    CHECK(wait_on(true, ""));
+    CHECK(wait_on(true, "1"));
+    CHECK_FALSE(wait_on(true, "0"));
+    CHECK_FALSE(wait_on(false, nullptr));
+    CHECK(wait_on(true, "00")); // only the exact 0 is off
+}
+
+TEST_CASE("a small image is never read, and the site is compared whole", "[job_push_wait]") {
+    CHECK_FALSE(image_holds(0x1000));
+    CHECK_FALSE(image_holds(kSiteOffset + 7));
+    CHECK_FALSE(image_holds(kJobTable));
+    CHECK(image_holds(kJobTable + 0x1000));
+    auto site = kSiteExpected;
+    CHECK(site_matches(site.data()));
+    site[6] = 1;
+    CHECK_FALSE(site_matches(site.data()));
 }
 
 TEST_CASE("a handle splits into entry, index and generation", "[job_push_wait]") {

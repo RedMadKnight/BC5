@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
-"""BC5 exp 0388, the integration: the job push wait (arm J) into the host's units, on a tree of patch 0001 at main.
-Each edit's anchor must occur exactly once, or nothing is written. Line endings stay as each file has them.
+"""BC5 exp 0388, the integration: the job push wait (arm J) into the host's units and the job-arena fix out of them, on a
+tree of patch 0001 at main. Each anchor must occur exactly once, or nothing is written. Line endings stay as each file has them.
 usage: python3 -I mkhost.py <tree with src/> <the new header>"""
+import os
 import shutil
 import sys
 
 ROOT, HEADER = sys.argv[1:3]
 
 WAIT = '''// BC5 (experiment 0388): the job push wait, arm J (bc5/job_push_wait.hpp). loader/gamePatch.cpp turns it on with the image
-// base, for the second title only; until then a signal pays one relaxed load.
+// base where the executable is the known one; until then a signal pays one relaxed load.
 static std::atomic<uint64_t> g_bc5_job_image {0};
 
 extern "C" void bc5_job_push_wait_enable(uint64_t image_base) {
@@ -70,20 +71,16 @@ static void Bc5JobPushWait(const KernelSemaPrivate* sem) {
 int KYTY_SYSV_ABI KernelWaitSema(KernelSema sem, int need, KernelUseconds* time) {
 '''
 
-APPLY = '''// BC5 (experiment 0388): the job push wait, arm J (bc5/job_push_wait.hpp), on by default for the second title. It looks
-// at the owner's help call to know the title's code, so it runs before the job-arena fix writes there.
+APPLY = '''// BC5 (experiment 0388): the job push wait, arm J (bc5/job_push_wait.hpp), on by default for every title. Where the main
+// executable has the known code it runs; anywhere else there is no such job table and it stays out.
 extern "C" void bc5_job_push_wait_enable(uint64_t image_base); // kernel/semaphore.cpp
 
 bool ApplyJobPushWait(Program* program) {
-	std::string title;
-	SystemContentParamSfoGetString("TITLE_ID", &title);
-	const bool title_ok = Common::EqualNoCase(title, bc5::job_arena_fix::kTitleId);
-	const bool loaded   = program != nullptr && program->elf != nullptr && program->base_vaddr != 0;
-	const bool code_ok  = title_ok && loaded && bc5::job_arena_fix::site_matches(reinterpret_cast<const uint8_t*>(program->base_vaddr + bc5::job_arena_fix::kSiteOffset));
-	const bool on       = bc5::job_push_wait::wait_on(title_ok, code_ok, std::getenv("KYTY_BC5_JOB_PUSH_WAIT"));
-	if (title_ok) {
-		std::fprintf(stderr, "game fix (exp 0388): job push wait %s, %d us at most%s\\n", on ? "ON" : "OFF", static_cast<int>(bc5::job_push_wait::kBoundUs), code_ok ? "" : ", not the known build of the title");
-	}
+	using namespace bc5::job_push_wait;
+	const bool loaded  = program != nullptr && program->elf != nullptr && program->base_vaddr != 0;
+	const bool code_ok = loaded && image_holds(program->base_size) && site_matches(reinterpret_cast<const uint8_t*>(program->base_vaddr + kSiteOffset));
+	const bool on      = wait_on(code_ok, std::getenv("KYTY_BC5_JOB_PUSH_WAIT"));
+	std::fprintf(stderr, "job push wait %s, %d us at most%s\\n", on ? "ON" : "OFF", static_cast<int>(kBoundUs), code_ok ? "" : ", not the code it knows");
 	if (on) {
 		bc5_job_push_wait_enable(program->base_vaddr);
 	}
@@ -105,24 +102,53 @@ EDITS = {
         ("\tauto result = sem->Signal(count);\n\n\tint ret = OK;\n", "\tauto result = sem->Signal(count);\n\n\tBc5JobPushWait(sem);\n\n\tint ret = OK;\n"),
     ],
     "src/loader/gamePatch.cpp": [
-        ('#include "bc5/job_arena_fix.hpp" // BC5 (experiment 0359)\n',
-         '#include "bc5/job_arena_fix.hpp" // BC5 (experiment 0359)\n#include "bc5/job_push_wait.hpp" // BC5 (experiment 0388)\n'),
-        ("#include <cstdint>\n", "#include <cstdint>\n#include <cstdlib>\n"),
-        ("bool Apply(const std::filesystem::path& plan_path, Program* program) {\n", APPLY),
+        ('#include "bc5/job_arena_fix.hpp" // BC5 (experiment 0359)\n#include "common/abi.h"\n\n#include <array>\n#include <atomic>\n#include <cinttypes>\n#include <cstdint>\n',
+         '#include "bc5/job_push_wait.hpp" // BC5 (experiment 0388)\n\n#include <cstdint>\n#include <cstdlib>\n'),
+        (("// BC5 (experiment 0359): the job-arena fix, a TEMPORARY game-code workaround for the second title.", "bool Apply(const std::filesystem::path& plan_path, Program* program) {\n"), APPLY),
     ],
     "src/loader/gamePatch.h": [
-        ("bool Apply(const std::filesystem::path& plan_path, Program* program);\n",
-         "bool Apply(const std::filesystem::path& plan_path, Program* program);\n\n"
-         "// BC5 (experiment 0388): the job push wait for PPSA03671 (bc5/job_push_wait.hpp); KYTY_BC5_JOB_PUSH_WAIT=0 turns it off.\n"
-         "// True when on. Call it before ApplyJobArenaFix, which writes at the site this looks at.\n"
+        (("// BC5 (experiment 0359): the job-arena fix for PPSA03671,", "bool ApplyJobArenaFix(Program* program, int setting);\n"),
+         "// BC5 (experiment 0388): the job push wait (bc5/job_push_wait.hpp), on by default; KYTY_BC5_JOB_PUSH_WAIT=0 turns it off.\n"
+         "// True when on.\n"
          "bool ApplyJobPushWait(Program* program);\n"),
     ],
     "src/loader/runtimeLinker.cpp": [
-        ("	// BC5 (experiment 0359): the job-arena fix (a temporary game-code workaround), per the title's switch.\n",
-         "	GamePatch::ApplyJobPushWait(m_programs.empty() ? nullptr : m_programs.front()); // BC5 (experiment 0388)\n"
-         "	// BC5 (experiment 0359): the job-arena fix (a temporary game-code workaround), per the title's switch.\n"),
+        ('extern "C" int bc5_title_switch_job_arena_fix(); // graphics/presentation/window/hostInput.cpp, BC5 (experiment 0359)\n', ""),
+        ('// BC5 (experiment 0359): the current thread\'s thread control block of the main program, for the job-arena hook.\nextern "C" uint8_t* bc5_tls_main_tcb() {\n	return TlsMainGetAddr();\n}\n\n', ""),
+        ("	// BC5 (experiment 0359): the job-arena fix (a temporary game-code workaround), per the title's switch.\n	GamePatch::ApplyJobArenaFix(m_programs.empty() ? nullptr : m_programs.front(), bc5_title_switch_job_arena_fix());\n",
+         "	GamePatch::ApplyJobPushWait(m_programs.empty() ? nullptr : m_programs.front()); // BC5 (experiment 0388)\n"),
+    ],
+    "src/graphics/presentation/hostMenu.cpp": [
+        (("			// Experiment 0359: game fixes - TEMPORARY game-code workarounds,", "				ImGui::EndMenu();\n			}\n"), ""),
+    ],
+    "src/graphics/presentation/window/hostInput.cpp": [
+        ('		if (m_job_arena_fix >= 0) out.emplace_back("JobArenaFix." + HostInputTitleId() + (m_job_arena_fix == 1 ? "=on" : "=off")); // experiment 0359\n', ""),
+        ("	[[nodiscard]] int    JobArenaFix() const { return m_job_arena_fix; } // experiment 0359: -1 not set, 0 off, 1 on\n	void                 SetJobArenaFix(int v) { m_job_arena_fix = v; }\n", ""),
+        (('		if (left.size() > 12 && EqualNoCase(left.substr(0, 12), "JobArenaFix.")) {', '				m_other_title_scales.emplace_back("JobArenaFix." + id + (v == 1 ? "=on" : "=off")); // another title\'s line, kept\n			}\n			return true;\n		}\n'),
+         '		if (left.size() > 12 && EqualNoCase(left.substr(0, 12), "JobArenaFix.")) { // exp 0388: the fix is gone, an old file\'s line is dropped\n			return true;\n		}\n'),
+        (("	int                  m_job_arena_fix    = -1;", "\n"), ""),
+        (("// BC5 (experiment 0359): the job-arena fix switch, JobArenaFix.<TITLE_ID>=on|off;", 'extern "C" int bc5_title_switch_job_arena_fix() { // for loader/runtimeLinker.cpp\n	return HostInputJobArenaFix();\n}\n'), ""),
+    ],
+    "src/graphics/presentation/window/hostInput.h": [
+        (("// BC5 (experiment 0359): the job-arena fix switch (JobArenaFix.<TITLE_ID>=on|off):", "void HostInputSetJobArenaFix(int v);\n"), ""),
     ],
 }
+
+
+def apply_edit(text, old, new, rel):
+    """old is an anchor, or (first, last): everything from the one through the other."""
+    if isinstance(old, tuple):
+        first, last = old
+        if text.count(first) != 1:
+            raise SystemExit(f"{rel}: anchor occurs {text.count(first)} times: {first[:60]!r}")
+        i = text.index(first)
+        j = text.find(last, i)
+        if j < 0:
+            raise SystemExit(f"{rel}: no end for {first[:60]!r}")
+        return text[:i] + new + text[j + len(last):]
+    if text.count(old) != 1:
+        raise SystemExit(f"{rel}: anchor occurs {text.count(old)} times: {old[:60]!r}")
+    return text.replace(old, new)
 
 
 def main():
@@ -133,16 +159,14 @@ def main():
         crlf = b"\r\n" in data
         text = data.decode("utf-8").replace("\r\n", "\n")
         for old, new in edits:
-            if text.count(old) != 1:
-                print(f"{rel}: anchor occurs {text.count(old)} times: {old[:60]!r}")
-                return 1
-            text = text.replace(old, new)
+            text = apply_edit(text, old, new, rel)
         out[rel] = (text.replace("\n", "\r\n") if crlf else text).encode("utf-8")
     for rel, data in out.items():
         with open(f"{ROOT}/{rel}", "wb") as f:
             f.write(data)
         print(f"{rel}: {len(EDITS[rel])} edits")
     shutil.copyfile(HEADER, f"{ROOT}/src/bc5/job_push_wait.hpp")
+    os.remove(f"{ROOT}/src/bc5/job_arena_fix.hpp")
     return 0
 
 
