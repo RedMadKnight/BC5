@@ -1,32 +1,30 @@
 #!/usr/bin/env bash
 # BC5 exp 0388, the integration: int0388j.sh against stand-ins of the box in a temporary HOME; nothing real is touched.
-# usage: test_int.sh <tree of main's patch 0001, with the edits NOT applied, as a directory> (run from this directory)
+# A small kit of its own: a changed, a removed and a new host file, a backend file, a mount file.
+# usage: test_int.sh   (from this directory)
 set -u
-HERE=$(pwd); BASE=$1; T=$(mktemp -d); ok=0; bad=0
+HERE=$(pwd); T=$(mktemp -d); ok=0; bad=0
 m() { md5sum < "$1" | cut -c1-8; }
 check() { if eval "$2"; then ok=$((ok + 1)); echo "ok   $1"; else bad=$((bad + 1)); echo "FAIL $1"; fi; }
 setup() {
-    rm -rf "$T/h" "$T/bin"; H=$T/h; W=$H/bc5-work; K=$H/src/KytyPlus; S=$W/exp0388/s
-    mkdir -p "$W/kytyplus-build/src" "$W/kytyplus-build-lean/src" "$W/backend-ubuntu" "$S" "$T/bin" "$K/src/bc5"
+    rm -rf "$T/h" "$T/bin"; H=$T/h; W=$H/bc5-work; K=$H/src/KytyPlus; TL=$H/src/bc5/tools; BS=$W/export/backend; S=$W/exp0388/s; KIT=$S/kit
+    mkdir -p "$W/kytyplus-build/src" "$W/kytyplus-build-lean/src" "$W/backend-ubuntu" "$W/bc5-tools-ubuntu/release" "$S" "$T/bin" "$K/src/bc5" "$TL/m" "$BS/src" "$KIT/H/src/bc5" "$KIT/B/src" "$KIT/T/m"
     echo normal > "$W/kytyplus-build/src/kyty_emulator"; echo lean > "$W/kytyplus-build-lean/src/kyty_emulator"; echo arch > "$W/backend-ubuntu/libbc5_backend.a"
-    for f in src/kernel/semaphore.cpp src/loader/gamePatch.cpp src/loader/gamePatch.h src/loader/runtimeLinker.cpp src/graphics/presentation/hostMenu.cpp src/graphics/presentation/window/hostInput.cpp src/graphics/presentation/window/hostInput.h src/bc5/job_arena_fix.hpp; do mkdir -p "$K/$(dirname "$f")"; cp "$BASE/$f" "$K/$f"; done
-    cp "$HERE/mkhost.py" "$HERE/../../../backend/include/bc5/job_push_wait.hpp" "$S/"
+    echo mount > "$W/bc5-tools-ubuntu/release/bc5-mount"; chmod +x "$W/bc5-tools-ubuntu/release/bc5-mount"
+    echo "KYTY_BC5_BACKEND_SRC:PATH=$BS" > "$W/kytyplus-build/CMakeCache.txt"; echo x > "$BS/CMakeLists.txt"
+    echo a0 > "$K/src/a.cpp"; echo o0 > "$K/src/old.hpp"; echo d0 > "$BS/src/d.cpp"; echo r0 > "$TL/m/r.rs"
+    echo a1 > "$KIT/H/src/a.cpp"; echo n1 > "$KIT/H/src/bc5/job_push_wait.hpp"; echo d1 > "$KIT/B/src/d.cpp"; echo r1 > "$KIT/T/m/r.rs"
+    { echo "H src/a.cpp $(m "$K/src/a.cpp") $(m "$KIT/H/src/a.cpp")"; echo "H src/old.hpp $(m "$K/src/old.hpp") -"; echo "H src/bc5/job_push_wait.hpp - $(m "$KIT/H/src/bc5/job_push_wait.hpp")"
+      echo "B src/d.cpp $(m "$BS/src/d.cpp") $(m "$KIT/B/src/d.cpp")"; echo "T m/r.rs $(m "$TL/m/r.rs") $(m "$KIT/T/m/r.rs")"; } > "$KIT/manifest.txt"
+    echo BC5_DIRECT_GONE > "$KIT/removed-names.txt"
     printf 'old patch\n' > "$T/old.diff"
-    { echo "new patch"; echo "exp 0372"; echo "exp 0372"; echo "exp 0372"; echo "exp 0372"; echo "exp 0372"; echo "+++ b/src/bc5/pad_audio_route.hpp"; } > "$S/0001-new.patch"
-    sed -e "s/^EXPECT_NORMAL=78f25172; EXPECT_LEAN=7b246487; EXPECT_ARCHIVE=3292bdaf; EXPECT_PATCH=716dcaf6; EXPECT_NEW=[0-9a-f]*;/EXPECT_NORMAL=$(m "$W/kytyplus-build/src/kyty_emulator"); EXPECT_LEAN=$(m "$W/kytyplus-build-lean/src/kyty_emulator"); EXPECT_ARCHIVE=$(m "$W/backend-ubuntu/libbc5_backend.a"); EXPECT_PATCH=$(m "$T/old.diff"); EXPECT_NEW=$(m "$S/0001-new.patch");/" "$HERE/int0388j.sh" > "$S/int0388j.sh"
+    { echo "new patch"; for i in 1 2 3 4 5; do echo "exp 0372"; done; echo "+++ b/src/bc5/pad_audio_route.hpp"; } > "$S/0001-new.patch"
+    pins
     cat > "$S/box0388.sh" << 'EOS'
 #!/bin/sh
 echo "box0388 $1" >> "$HOME/lock.log"
 EOS
-    cat > "$T/bin/pgrep" << 'EOS'
-#!/bin/sh
-exit 1
-EOS
-    cat > "$T/bin/python3" << 'EOS'
-#!/bin/sh
-shift
-exec python "$@"
-EOS
+    printf '#!/bin/sh\nexit 1\n' > "$T/bin/pgrep"
     cat > "$T/bin/git" << EOS
 #!/bin/sh
 case "\$3" in
@@ -34,40 +32,55 @@ case "\$3" in
     *) exit 0 ;;
 esac
 EOS
-    cat > "$T/bin/strings" << 'EOS'
-#!/bin/sh
-cat "$1"
-EOS
+    printf '#!/bin/sh\ncat "$1"\n' > "$T/bin/strings"
     cat > "$T/bin/distrobox" << EOS
 #!/bin/sh
 case "\$*" in
+    *"cmake --build"*) [ "\${TEST_FAIL:-}" = archive ] && exit 1; echo arch2 > "$W/backend-ubuntu/libbc5_backend.a" ;;
     *build-lean*) [ "\${TEST_FAIL:-}" = lean ] && exit 1; printf 'lean2\njob push wait %%s\nKYTY_BC5_JOB_PUSH_WAIT\n' > "$W/kytyplus-build-lean/src/kyty_emulator" ;;
+    *cargo*) [ "\${TEST_FAIL:-}" = mount ] && exit 1; echo mount2 > "$W/bc5-tools-ubuntu/release/bc5-mount" ;;
     *) printf 'normal2\njob push wait %%s\njob push wait: pushes\nKYTY_BC5_JOB_PUSH_WAIT\n' > "$W/kytyplus-build/src/kyty_emulator" ;;
 esac
 EOS
     chmod +x "$T"/bin/*
 }
+pins() {
+    python - "$HERE/int0388j.sh" "$S/int0388j.sh" "$(m "$W/kytyplus-build/src/kyty_emulator")" "$(m "$W/kytyplus-build-lean/src/kyty_emulator")" "$(m "$W/backend-ubuntu/libbc5_backend.a")" "$(grep -v '^index ' "$T/old.diff" | md5sum | cut -c1-8)" "$(m "$S/0001-new.patch")" "$(m "$KIT/manifest.txt")" << 'EOS'
+import re, sys
+s = open(sys.argv[1], encoding="utf-8", newline="").read()
+s, n = re.subn(r"^EXPECT_NORMAL=.*$", "EXPECT_NORMAL=%s; EXPECT_LEAN=%s; EXPECT_ARCHIVE=%s; EXPECT_PATCH=%s; EXPECT_NEW=%s; EXPECT_KIT=%s" % tuple(sys.argv[3:9]), s, flags=re.M)
+assert n == 1
+open(sys.argv[2], "w", encoding="utf-8", newline="").write(s)
+EOS
+}
 run() { ( cd "$S" && PATH="$T/bin:$PATH" HOME="$H" bash int0388j.sh ) > "$T/out" 2>&1; rc=$?; }
+restored='[ $rc != 0 ] && grep -qx normal $W/kytyplus-build/src/kyty_emulator && grep -qx lean $W/kytyplus-build-lean/src/kyty_emulator && grep -qx arch $W/backend-ubuntu/libbc5_backend.a && grep -qx mount $W/bc5-tools-ubuntu/release/bc5-mount && grep -qx a0 $K/src/a.cpp && grep -qx o0 $K/src/old.hpp && [ ! -e $K/src/bc5/job_push_wait.hpp ] && grep -qx d0 $BS/src/d.cpp && grep -qx r0 $TL/m/r.rs && grep -q release $H/lock.log'
 
 setup; run
 check "success: exit 0" '[ $rc = 0 ]'
 check "success: claimed and released" 'grep -q claim $H/lock.log && grep -q release $H/lock.log'
-check "success: the new binaries" 'grep -q normal2 $W/kytyplus-build/src/kyty_emulator && grep -q lean2 $W/kytyplus-build-lean/src/kyty_emulator'
-check "success: the rollback copies" 'grep -qx normal $W/exp0388/integration/kyty_emulator.before-j && grep -qx lean $W/exp0388/integration/kyty_emulator-lean.before-j'
-check "success: the wait is in the tree, the fix is not" 'grep -q Bc5JobPushWait $K/src/kernel/semaphore.cpp && [ ! -e $K/src/bc5/job_arena_fix.hpp ]'
+check "success: all four outputs" 'grep -q normal2 $W/kytyplus-build/src/kyty_emulator && grep -q lean2 $W/kytyplus-build-lean/src/kyty_emulator && grep -q arch2 $W/backend-ubuntu/libbc5_backend.a && grep -q mount2 $W/bc5-tools-ubuntu/release/bc5-mount'
+check "success: the rollback copies" 'grep -qx normal $W/exp0388/integration/kyty_emulator.before-j && grep -qx arch $W/exp0388/integration/libbc5_backend.a.before-j && grep -qx mount $W/exp0388/integration/bc5-mount.before-j'
+check "success: changed, removed and new files" 'grep -qx a1 $K/src/a.cpp && [ ! -e $K/src/old.hpp ] && [ -e $K/src/bc5/job_push_wait.hpp ] && grep -qx d1 $BS/src/d.cpp && grep -qx r1 $TL/m/r.rs'
 
 setup; echo other > "$W/kytyplus-build/src/kyty_emulator"; run
 check "a wrong binary: stops before the lock" '[ $rc != 0 ] && [ ! -e $H/lock.log ]'
-setup; touch "$K/src/bc5/job_push_wait.hpp"; run
-check "a header already there: stops before the lock" '[ $rc != 0 ] && [ ! -e $H/lock.log ]'
-setup; echo x >> "$K/src/kernel/semaphore.cpp"; run
-check "another semaphore.cpp: stops before the lock" '[ $rc != 0 ] && [ ! -e $H/lock.log ]'
-setup; sed -i '/exp 0372/d' "$S/0001-new.patch"; sed -i "s/EXPECT_NEW=[0-9a-f]*;/EXPECT_NEW=$(m "$S/0001-new.patch");/" "$S/int0388j.sh"; run
+setup; echo x > "$K/src/bc5/job_push_wait.hpp"; run
+check "a new file already there: stops before the lock" '[ $rc != 0 ] && [ ! -e $H/lock.log ]'
+setup; echo x >> "$BS/src/d.cpp"; run
+check "another backend file: stops before the lock" '[ $rc != 0 ] && [ ! -e $H/lock.log ]'
+setup; echo x >> "$KIT/T/m/r.rs"; run
+check "a damaged kit: stops before the lock" '[ $rc != 0 ] && [ ! -e $H/lock.log ]'
+setup; python -c "import sys;p=sys.argv[1];s=open(p).read().replace('exp 0372\n','');open(p,'w').write(s)" "$S/0001-new.patch"; pins; run
 check "a candidate without exp 0372: stops before the lock" '[ $rc != 0 ] && [ ! -e $H/lock.log ]'
-setup; before=$(m "$K/src/kernel/semaphore.cpp"); TEST_FAIL=lean; export TEST_FAIL; run; unset TEST_FAIL
-check "a failed lean build restores all" '[ $rc != 0 ] && [ -e $K/src/bc5/job_arena_fix.hpp ] && grep -qx normal $W/kytyplus-build/src/kyty_emulator && [ "$(m $K/src/kernel/semaphore.cpp)" = $before ] && [ ! -e $K/src/bc5/job_push_wait.hpp ] && grep -q release $H/lock.log'
-setup; before=$(m "$K/src/kernel/semaphore.cpp"); TEST_DIFF=$T/old.diff; export TEST_DIFF; run; unset TEST_DIFF
-check "a tree diff that is not the candidate restores all" '[ $rc != 0 ] && grep -qx lean $W/kytyplus-build-lean/src/kyty_emulator && [ "$(m $K/src/kernel/semaphore.cpp)" = $before ] && grep -q release $H/lock.log'
+setup; TEST_FAIL=archive; export TEST_FAIL; run; unset TEST_FAIL
+check "a failed archive build restores all" "$restored"
+setup; TEST_FAIL=lean; export TEST_FAIL; run; unset TEST_FAIL
+check "a failed lean build restores all" "$restored"
+setup; TEST_FAIL=mount; export TEST_FAIL; run; unset TEST_FAIL
+check "a failed mount build restores all" "$restored"
+setup; TEST_DIFF=$T/old.diff; export TEST_DIFF; run; unset TEST_DIFF
+check "a tree diff that is not the candidate restores all" "$restored"
 echo "== $ok passed, $bad failed"
 rm -rf "$T"
 [ "$bad" = 0 ]

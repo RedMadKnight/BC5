@@ -12,6 +12,7 @@ for a, b, n in (
     ('mkdir -p "$W/exp0388r"; echo binary > "$W/exp0388r/kyty_emulator"\n', 'echo binary > "$W/kytyplus-build/src/kyty_emulator"\n', 1),
     ('{ echo "NORMAL=$(m "$W/exp0388r/kyty_emulator")";', '{ echo "NORMAL=$(m "$W/kytyplus-build/src/kyty_emulator" | cut -c1-8)"; echo "NEW=$(m "$W/kytyplus-build/src/kyty_emulator" | cut -c1-8)";', 1),
     ('mkdir -p "$EX"; echo binary > "$EX/kyty_emulator"\n', 'mkdir -p "$EX"; echo binary > "$W/kytyplus-build/src/kyty_emulator"; echo "job push wait ON, 2000 us at most" > "$F/waitline"\n', 1),
+    ('timeout 300 bash "$RUND/go0388.sh"', 'timeout 900 bash "$RUND/go0388.sh"', 1),
     ('echo x >> "$W/exp0388r/kyty_emulator"', 'echo x >> "$W/kytyplus-build/src/kyty_emulator"', 1),
     ("printf 'binary\\n' > \"$W/exp0388r/kyty_emulator\"", "printf 'binary\\n' > \"$W/kytyplus-build/src/kyty_emulator\"", 1),
     ('  { echo "game fix (temporary, exp 0359): job-arena fix $(cat "$F/fixline") for PPSA03671 (environment)"\n',

@@ -195,7 +195,7 @@ reset() {
   cp "$PIN/play-pkg.sh" "$W/play-pkg.sh"; echo live > "$W/_SaveData/PPSA03671/a"
 }
 go() {  # tag fix: sets out and rc
-  out=$(D19_RUN_FAKE=$F/runfake.sh timeout 300 bash "$RUND/go0388.sh" "$1" "$2" "$(($(date +%s) + ${DLS:-700}))" 2>&1); rc=$?
+  out=$(D19_RUN_FAKE=$F/runfake.sh timeout 900 bash "$RUND/go0388.sh" "$1" "$2" "$(($(date +%s) + ${DLS:-700}))" 2>&1); rc=$?
 }
 want() {  # name, expected rc, text in the output, expected lock text ('' free)
   local lk; lk=$(cat "$W/BOX-LOCK" 2> /dev/null)

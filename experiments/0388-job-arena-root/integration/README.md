@@ -1,25 +1,24 @@
 # 0388, the integration of arm J and the removal of the job-arena fix (D19)
 
-**Date.** 2026-11-01. **Branch.** `int/0388-j`, from main `4ef4f6fe`. **Request.** The maintainer: "Ramię J ma być wbudowane", then, for the wait, "dla wszystkich tytułów", and "arena fix ma zniknąć z opcji i z kodu". **Status.** Prepared on the laptop. Nothing on the box has changed, and the patch is not merged: main must match the shared builds (D19).
+**Date.** 2026-11-01. **Branch.** `int/0388-j`, from main `4ef4f6fe`. **Request.** The maintainer: "Ramię J ma być wbudowane", then, for the wait, "dla wszystkich tytułów", "arena fix ma zniknąć z opcji i z kodu", and "Usuń A oraz B, wbuduj J. Daj mi do testów na świeżym buildzie." **Status.** Prepared on the laptop. Nothing on the box has changed, and the patch is not merged: main must match the shared builds (D19).
 
-**Scope.** The wait J: 2000 µs at most, on by default for every title, off with `KYTY_BC5_JOB_PUSH_WAIT=0`. Exp 0359's job-arena fix goes from the menu and the code. No zero skip, no 0390, no catcher of exp 0388. `input.cfg`, `play-pkg.sh`, the learned list and the archive stay as they are.
+**Scope.** The wait J: 2000 µs at most, on by default for every title, off with `KYTY_BC5_JOB_PUSH_WAIT=0`. Exp 0359's job-arena fix goes from the menu and the code, and classes A and B of the switch inventory go. No zero skip, no 0390, no catcher of exp 0388. `input.cfg`, `play-pkg.sh` and the learned list stay as they are.
 
 ## What changes
 
-Patch 0001: `716dcaf6` → `e5bb3acd`, 123 lines added and 383 removed. `grep -c 'exp 0372'` stays 5, and `pad_audio_route.hpp` stays. No `KYTY_BC5_0388`, `ZERO_SKIP` or `APR_PARK` in it.
+Patch 0001: `716dcaf6` → `4e559f47`, 318 lines added and 2,552 removed in the patch file. `grep -c 'exp 0372'` stays 5, and `pad_audio_route.hpp` stays. No `KYTY_BC5_0388`, `ZERO_SKIP` or `APR_PARK` in it. 42 files in all: 28 host, 7 backend, 7 mount. `mkkit.py` makes the kit and the pins from a host tree of the candidate.
 
-| file | change |
+The wait and the fix touch `src/bc5/job_push_wait.hpp` (new, also `backend/include/bc5`), `src/bc5/job_arena_fix.hpp` (removed, also in `backend/` with its test), `kernel/semaphore.cpp`, `loader/gamePatch.cpp`/`.h`, `loader/runtimeLinker.cpp`, `presentation/hostMenu.cpp` (the "Game fixes" menu goes; the fix was its only item) and `window/hostInput.cpp`/`.h`.
+
+**Classes A and B** (`coordination/switch-removal-20261101.md`): 110 of its 115 names are removed. None was set in the live launchers or `bc5-run.env`, read at 19:30 (`bc5-pkg.env` does not exist).
+
+| kept | why |
 |---|---|
-| `src/bc5/job_push_wait.hpp`, new, also `backend/include/bc5` | constants, the known code, the look at the job table |
-| `src/bc5/job_arena_fix.hpp`, also in `backend/` with its test | removed |
-| `src/kernel/semaphore.cpp` | `m_bc5_job` by name, `Bc5JobPushWait` after the signal in `KernelSignalSema`, the trace |
-| `src/loader/gamePatch.cpp`, `.h` | the hook and `ApplyJobArenaFix` out, `ApplyJobPushWait` in |
-| `src/loader/runtimeLinker.cpp` | one call; the fix's call, its switch and `bc5_tls_main_tcb` out |
-| `src/graphics/presentation/hostMenu.cpp` | the "Game fixes" menu out; the fix was its only item |
-| `src/graphics/presentation/window/hostInput.cpp`, `.h` | the switch and `KYTY_BC5_JOB_ARENA_FIX` out |
-| `backend/tests/job_push_wait_test.cpp`, `backend/CMakeLists.txt` | the new test in, the fix's test out |
+| `BC5_DIRECT_HS_OFFCHIP`, `GC_HS_OFFCHIP`, `OFFCHIP_SECOND` | the top session: exp 0397 points at `VGT_HS_OFFCHIP_PARAM` |
+| `BC5_DIRECT_TF_DEFAULT` | `hs_offchip_force()` is called only inside its block; removing it would leave HS_OFFCHIP with no effect |
+| `BC5_AGC_DUMP_DIR` | it is the whole RPCSX capture tap: `backend/rpcsx-patches` and a CI job would go with it; for the top session to decide |
 
-The archive is not rebuilt, since the backend changes only by a header and tests.
+The tunables with no stated default fold as the code had them: `FENCE_TIMEOUT_MS` to 2 s, `MAX_BO_MIB` keeps its sysfs read and clamps, `NODE` is `/dev/dri/renderD128`, `CU_MASK` 0xffffffff. One option field goes, `FilterOptions::pfp_sync_indirect`, so the archive and the host are rebuilt together (F414). Unset behaviour should be the same but for timing and log text: the journal's t 0 may move slightly, since FIND_ALL made the first clock call; some unconditional counters and a per-call lock in the audio path are gone; two stderr lines lost fields.
 
 **One old line stays understood.** `input.cfg` holds `JobArenaFix.PPSA03671=off`, and an unknown key is an error at start. So the parser keeps one three-line branch that reads such a line and drops it, and that file stays untouched. The next save from the menu leaves the line out. This is the only place the name remains in code, besides a comment in the new header.
 
@@ -35,16 +34,19 @@ The archive is not rebuilt, since the backend changes only by a header and tests
 
 ## Tests run on the laptop
 
-- `backend/tests/job_push_wait_test.cpp`: 26 checks pass with a Catch2 stand-in; the real Catch2 was not run.
-- `test_wait.py`: 13 pass. Text checks with three mutants, then `semaphore.cpp`'s own code built with stand-ins and run on a fake job table, normal and lean: off until enabled, another semaphore, the bound (2,000 µs), nothing to do, a job closing at 300 µs. Lean holds no trace. The timing case can fail on a loaded laptop; it failed once while another suite ran and passed alone.
-- `test_apply.py`: `ApplyJobPushWait` from `gamePatch.cpp` on a fake image: on with no title known, the switch, other code, an image too small, nothing loaded.
-- `test_int.sh`: `int0388j.sh` on stand-ins: success, four stops before the lock, and two restores.
+- `backend/tests/job_push_wait_test.cpp`: 26 checks pass with a Catch2 stand-in; the real Catch2 runs on the box if that tree built it.
+- `test_wait.py`: 13 pass, on the final tree: text checks with mutants, then `semaphore.cpp`'s own code on a fake job table, normal and lean. The timing case failed once on a loaded laptop and passed alone.
+- `test_apply.py`: `ApplyJobPushWait` on a fake image: on with no title known, the switch, other code, a small image, nothing loaded.
+- `test_int.sh`: 14 pass, the swap on stand-ins: success, five stops before the lock, four restores.
+- `cargo test -p bc5-mount`: 93 passed, 0 failed, 1 ignored. `clippy -D warnings` and `fmt --check` clean. On Windows, so `fuse.rs`, which needs the `fuse` feature on Linux, was not compiled.
 
-Not done: the changed units compiled whole with the real headers on Linux. That is the build. No test on the GPU or in a run. The menu and parser edits are checked only by the swap script's stand-ins and by grep.
+Not done: **no changed C++ unit has been compiled whole**, neither host nor backend. The box build is the first compile of a change of 28 host files, and the backend has `-Werror`. Expect at least one round of build errors. No test on the GPU or in a run.
 
 ## Build and swap
 
-In a slot, under the lock: with `mkhost.py`, `job_push_wait.hpp`, `box0388.sh` and the new patch as `0001-new.patch` in `exp0388/s/`, run `int0388j.sh`. It checks, in this order: no emulator; normal `78f25172`, lean `7b246487`, archive `3292bdaf`; the tree's diff is `716dcaf6`; the seven files' md5 and the old header; the kit; exp 0372 in the candidate. Then it claims the lock, and copies both binaries, the seven files and the old header to `exp0388/integration/`, reading the binaries back. Then it edits `~/src/KytyPlus`, checks each file's md5 against the laptop's, and runs `ninja kyty_emulator` at nice 19, normal then lean. Both binaries must hold the wait and no `job-arena` string, and the tree's diff must equal the candidate byte for byte. Any failure after the edit restores both binaries and the files and releases the lock.
+In a slot: with `box0388.sh`, the candidate as `0001-new.patch` and `kit/` in `exp0388/s/`, run `int0388j.sh`. Before the lock it checks no emulator; normal `78f25172`, lean `7b246487`, archive `3292bdaf`; the tree's diff, index lines apart; every file's md5; exp 0372 in the candidate. Under the lock it copies the four outputs and every file to `exp0388/integration/`, writes the kit's files over the host tree, the backend source named in the build's cache and `~/src/bc5/tools`, then builds archive, backend tests if present, normal, lean and mount at nice 19. Both binaries must hold the wait and no `job-arena` string; removed names still in them are counted and printed. The tree's diff must equal the candidate. Any failure after the first write restores everything and releases the lock.
+
+If the build fails on a compile error the script restores all, so a fix means a new kit and a new slot.
 
 **Rollback after a good swap.**
 
@@ -56,7 +58,7 @@ cp -p ~/bc5-work/exp0388/integration/kyty_emulator.before-j ~/bc5-work/kytyplus-
 cp -p ~/bc5-work/exp0388/integration/kyty_emulator-lean.before-j ~/bc5-work/kytyplus-build-lean/src/kyty_emulator
 ```
 
-Then the files from `integration/tree-before`, and remove `src/bc5/job_push_wait.hpp`. The old binaries bring the fix back, per `input.cfg`.
+Then `libbc5_backend.a.before-j` and `bc5-mount.before-j` the same way, and the files from `integration/tree-before`. The old binaries bring the fix back, per `input.cfg`.
 
 ## The route runner
 
@@ -77,11 +79,12 @@ Before the run: `pins0388.env` holds the values read on 2026-11-01 for `input.cf
 1. `series0388.sh baseline` before the swap.
 2. The start line in the normal log: `job push wait ON, 2000 us at most`. Lean prints it too.
 3. `series0388.sh post`: T1–T3 and U1.
-4. Lean: the runner cannot route lean, since its second phase is gated on the journal. So D19's lean smoke, plus the start line and no access violation.
-5. The audio replug check: exp 0372's `s6n0372.sh` with `replug0372.sh`, then his physical replug and a DS4.
-6. ASTRO BOT start: `job push wait OFF, 2000 us at most, not the code it knows`, and it plays as before.
-7. The Emulation menu has no "Game fixes".
-8. His own play through the fight on the shared build.
+4. The rebuilt `bc5-mount`: a real start; the audio check covers the two folded audio values.
+5. Lean: the runner cannot route lean, since its second phase is gated on the journal. So D19's lean smoke, plus the start line and no access violation.
+6. The audio replug check: exp 0372's `s6n0372.sh` with `replug0372.sh`, then his physical replug and a DS4.
+7. ASTRO BOT start: `job push wait OFF, 2000 us at most, not the code it knows`, and it plays as before.
+8. The Emulation menu has no "Game fixes".
+9. His own play through the fight on the shared build.
 
 Only then `int/0388-j` goes to main, so main matches the builds.
 
