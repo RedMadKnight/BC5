@@ -24,6 +24,7 @@ case "$a" in
 esac
 echo "$k" >> "$SLOG"
 [ "$k" = claim ] && exit "${CLAIM_RC:-0}"
+[ "$k" = setup ] && [ -z "${SETUP_SILENT:-}" ] && echo "set up: stand-in"
 [ "$k" = setup ] && exit "${SETUP_RC:-0}"
 exit 0
 E
@@ -34,11 +35,16 @@ check "busy lock: the claim's rc" "[ $rc = 4 ]"
 check "busy lock: one call, no stream, no stop, no release" "[ \"\$(cat '$T/log')\" = claim ]"
 : > "$T/log"; SETUP_RC=5 run; rc=$?
 check "failed step: its rc" "[ $rc = 5 ]"
-check "failed step: the stream stops, then the lock goes" "[ \"\$(tail -2 '$T/log' | tr '\n' ' ')\" = 'stream-stop release ' ]"
+check "failed step: the stream stops, the numbers copy, then the lock goes" "[ \"\$(tail -4 '$T/log' | tr '\n' ' ')\" = 'stream-stop copy copy release ' ]"
+: > "$T/log"; SETUP_SILENT=1 run; rc=$?
+check "a setup that ends early with rc 0 stops the series" "[ $rc = 1 ] && ! grep -q arm '$T/log'"
 : > "$T/log"; run; rc=$?
 check "full series passes" "[ $rc = 0 ]"
 check "full series: claim, then the stream" "[ \"\$(head -2 '$T/log' | tr '\n' ' ')\" = 'claim stream-start ' ]"
-check "full series: the stream stops, then the lock goes, last" "[ \"\$(tail -2 '$T/log' | tr '\n' ' ')\" = 'stream-stop release ' ]"
+check "full series: five arms" "[ \"\$(grep -c '^arm' '$T/log')\" = 5 ]"
+check "full series: the stream stops, the numbers copy, then the lock goes, last" "[ \"\$(tail -4 '$T/log' | tr '\n' ' ')\" = 'stream-stop copy copy release ' ]"
+: > "$T/log"; SLOG=$T/log PATH="$T/bin:$PATH" bash "$HERE/series0381r.sh" T1 "$T/out" rest > "$T/out.txt" 2>&1; rc=$?
+check "rest: four arms, no calibration" "[ $rc = 0 ] && [ \"\$(grep -c '^arm' '$T/log')\" = 4 ]"
 check "no global match is left in the series" "! grep -q 'pgrep -f' '$HERE/series0381r.sh'"
 P=$T/proc; RR=$T/rr; mkdir -p "$RR" "$P/10" "$P/20"
 stat() { echo "$1 (timeout) S 1 1 1 0 -1 0 0 0 0 0 0 0 0 0 20 0 1 0 $2 0 0" > "$P/$1/stat"; printf 'timeout\0007000\000journalctl\000-k\000-f\000' > "$P/$1/cmdline"; }

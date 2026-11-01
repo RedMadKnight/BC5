@@ -80,7 +80,7 @@ S
 )
 }
 # The setup's last line says it ran to its end: the script comes on stdin, and a command that reads stdin ends it early with rc 0.
-setup() { send | tee "$OUT/setup.txt"; grep -q '^set up:' "$OUT/setup.txt"; }
+setup() { local rc; send > "$OUT/setup.txt"; rc=$?; cat "$OUT/setup.txt"; [ "$rc" = 0 ] || return "$rc"; grep -q '^set up:' "$OUT/setup.txt"; }
 arm() { local tag=$1; shift; ssh bc250 'bash -s' -- "$ID$tag" "$TOKEN" "$CAP" "$@" < "$HERE/arm0381r.sh"; }
 release() {
     ssh bc250 "bash -s" -- "$TOKEN" <<'S'
