@@ -12,7 +12,11 @@ mkdir -p "$OUT"
 TOKEN=$(date +%Y%m%d%H%M%S)$RANDOM
 echo "$TOKEN" > "$OUT/token"
 RDIR='$HOME/bc5-work/exp0381/reread'
-step() { local n=$1; shift; echo "== $n"; "$@"; local rc=$?; echo "== $n rc $rc"; [ "$rc" = 0 ] || { release; exit "$rc"; }; }
+stop_stream() {
+    kill "${KP:-}" 2> /dev/null
+    ssh bc250 'pgrep -f "^timeout 7000 journalctl -k" | xargs -r kill'
+}
+step() { local n=$1; shift; echo "== $n"; "$@"; local rc=$?; echo "== $n rc $rc"; [ "$rc" = 0 ] || { release; stop_stream; exit "$rc"; }; }
 send() {
     ssh bc250 "bash -s" -- "$TOKEN" < <(cat <<S
 set -u
@@ -62,7 +66,6 @@ step C1 arm C1 $CAND
 step A2 arm A2
 step C2 arm C2 $CAND
 release
-kill $KP 2> /dev/null
-ssh bc250 'pgrep -f "^timeout 7000 journalctl -k" | xargs -r kill'
+stop_stream
 ssh bc250 "tar -cf - -C ~/bc5-work/exp0381/reread raw" | tar -xf - -C "$OUT"
 ssh bc250 'L=$(ls -t ~/bc5-work/exp0381/tb2/play/mount-*.log | head -5); tar -cf - $L' | tar -xf - -C "$OUT"
