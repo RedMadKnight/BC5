@@ -1223,7 +1223,7 @@ SubmitResult Device::submit(std::span<const std::uint32_t> ib, const policy::Fil
     // PKT3_PFP_SYNC_ME, TODO(verify) the lines). Inserting dwords moves every offset after it:
     // the IB's own COND_EXEC counts are grown around the insertions (ADR 0010 section A, as the
     // CP DMA waits below since experiment 0052); an IB used to be left alone when it held one.
-    if ((opt.mec_indirect_base != 0 || opt.pfp_sync_indirect) && !opt.gpu_check_indirect && !comp) {
+    if (opt.mec_indirect_base != 0 && !opt.gpu_check_indirect && !comp) {
         std::vector<indirect_check::Insert> syncs;
         for (std::size_t i = 0; i < main_out.size();) {
             const std::uint32_t h = main_out[i];

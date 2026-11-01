@@ -26,8 +26,7 @@ pub const TABLE_OFFSET: u64 = 0x400;
 pub const INITIAL_DATA_OFFSET: u64 = 0x10000;
 /// Sanity limit on block count (16 Mi blocks = 1 TiB logical).
 pub const MAX_BLOCKS: u64 = 1 << 24;
-/// Decoded blocks kept in memory, in MiB, unless `BC5_MOUNT_CACHE_MIB` says
-/// otherwise: 4096 × 64 KiB. Each sequentially read file runs 2 MiB of
+/// Decoded blocks kept in memory, in MiB: 4096 × 64 KiB. Each sequentially read file runs 2 MiB of
 /// decode-ahead (`fuse.rs`), and ASTRO BOT's loaders read many files at once;
 /// the 16 MiB of experiment 0033 held only eight such windows, so blocks were
 /// evicted before their read arrived and inflated again (experiment 0114:

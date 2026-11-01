@@ -83,14 +83,8 @@ impl BlockCache {
     }
 }
 
-/// Cache size in blocks of `block_bytes`: `BC5_MOUNT_CACHE_MIB` MiB when set
-/// to a positive number (experiment 0112), else `default_mib` MiB.
-pub fn cache_blocks(default_mib: usize, block_bytes: usize) -> usize {
-    let mib = std::env::var("BC5_MOUNT_CACHE_MIB")
-        .ok()
-        .and_then(|v| v.trim().parse::<usize>().ok())
-        .filter(|&mib| mib > 0)
-        .unwrap_or(default_mib);
+/// Cache size in blocks of `block_bytes`: `mib` MiB.
+pub fn cache_blocks(mib: usize, block_bytes: usize) -> usize {
     ((mib << 20) / block_bytes.max(1)).max(1)
 }
 
@@ -400,10 +394,7 @@ mod tests {
 
     #[test]
     fn cache_size_from_the_default() {
-        // BC5_MOUNT_CACHE_MIB is not set in the test environment.
-        if std::env::var_os("BC5_MOUNT_CACHE_MIB").is_none() {
-            assert_eq!(cache_blocks(16, 64 << 10), 256);
-            assert_eq!(cache_blocks(0, 64 << 10), 1);
-        }
+        assert_eq!(cache_blocks(16, 64 << 10), 256);
+        assert_eq!(cache_blocks(0, 64 << 10), 1);
     }
 }

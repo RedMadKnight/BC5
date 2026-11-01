@@ -23,7 +23,6 @@ use crate::tree::{fold_name, EntryRef, FileTree};
 const LAYER: &str = "inner";
 /// Decoded blocks kept, in MiB: 128 × 256 KiB, room for the reads in flight
 /// and the decode-ahead of several loader threads (experiment 0033).
-/// `BC5_MOUNT_CACHE_MIB` sets another size (experiment 0112).
 const CACHE_MIB: usize = 32;
 /// Inner inode size (the compact layout: data address at 0x60).
 const INODE_SIZE: usize = 0xa8;

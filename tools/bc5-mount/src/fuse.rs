@@ -35,11 +35,9 @@ const EINVAL: i32 = 22;
 
 /// Attribute/entry cache lifetime; the source never changes.
 const TTL: Duration = Duration::from_secs(3600);
-/// Worker threads answering reads, unless `BC5_MOUNT_THREADS` says otherwise:
-/// the machine's parallelism, at most this many.
+/// Worker threads answering reads: the machine's parallelism, at most this many.
 const MAX_WORKERS: usize = 8;
-/// Bytes decoded ahead of a file read in order, unless `BC5_MOUNT_PREFETCH_KIB`
-/// says otherwise (0 turns it off).
+/// Bytes decoded ahead of a file read in order.
 const PREFETCH: u64 = 2 << 20;
 /// A read starting this close to where the last one of the same file ended
 /// counts as reading in order (the kernel's own readahead skips a little).
@@ -103,27 +101,11 @@ impl Pool {
     }
 }
 
-/// Worker count from `BC5_MOUNT_THREADS` (1 answers reads one at a time, as
-/// before), or the machine's parallelism capped at [`MAX_WORKERS`].
+/// Worker count: the machine's parallelism capped at [`MAX_WORKERS`].
 fn worker_count() -> usize {
-    if let Some(n) = std::env::var("BC5_MOUNT_THREADS")
-        .ok()
-        .and_then(|v| v.parse::<usize>().ok())
-        .filter(|&n| n >= 1)
-    {
-        return n.min(64);
-    }
     std::thread::available_parallelism()
         .map_or(1, NonZeroUsize::get)
         .clamp(1, MAX_WORKERS)
-}
-
-/// Decode-ahead length from `BC5_MOUNT_PREFETCH_KIB`, or [`PREFETCH`].
-fn prefetch_len() -> u64 {
-    std::env::var("BC5_MOUNT_PREFETCH_KIB")
-        .ok()
-        .and_then(|v| v.parse::<u64>().ok())
-        .map_or(PREFETCH, |k| k.min(256 << 10) << 10)
 }
 
 /// Per file: where the last read ended and how far decode-ahead has gone.
@@ -407,7 +389,7 @@ pub fn mount<T: FileTree + 'static>(
     let fs = Bc5Fs {
         tree: Arc::new(tree),
         pool: Pool::new(worker_count()),
-        prefetch: prefetch_len(),
+        prefetch: PREFETCH,
         streams: HashMap::new(),
         uid: 0,
         gid: 0,
