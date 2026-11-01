@@ -196,7 +196,7 @@ No crash elsewhere, no amdgpu kernel line, GPU reset or devcoredump. Exposure in
 
 **The maintainer's play.** `play0388.sh F` or `play0388.sh J` on the box, started by the top session: `JobArenaFix` off, the chosen wait on, RT as in `input.cfg`, the normal launcher and his own saves, no time limit. `input.cfg` is not changed. The script prints the binary's md5 at start: `caede695` is enough for F, and J needs the third build. The 5 of 5 belongs to `caede695`; the third build's F has its own three runs. Pass: he plays through the fight that crashed and on, and closes the game himself, with no access violation and no amdgpu line. Fail: a crash at eboot+0x3d7eca0, and `JobArenaFix` stays. Only that pass can start the removal of exp 0359's fix, and that is his decision.
 
-## Third cycle's result (2026-11-01 01:54–03:08, F799–F802): outcome known, exposure and cost not closed
+## Third cycle's result (2026-11-01 01:54–03:08, F799–F805)
 
 Binary `1a596e5063f9d04ff745db2b8dc9809a`, compiled with the host's real headers. 22 RESULT lines, 22 `lock released`, all 22 routed. No run was INVALID, NOT_ROUTED or KERNEL, and no crash came elsewhere. No amdgpu line in any of the 22 kernel streams; their only line is the IPv6 MLD one, 43 times. No recovery was needed. The class of a run includes its dmesg and devcoredump gates.
 
@@ -209,11 +209,27 @@ Binary `1a596e5063f9d04ff745db2b8dc9809a`, compiled with the host's real headers
 | K | J + targeted wake + 20 µs waiter spin | 3 | 0 | 3 | HOLDS |
 | L | F + Hi workers at nice −5 | 3 | 0 | 3 | HOLDS |
 
-**Missing.** `raw/` on the laptop holds only the series lines, the rows, the kernel streams and the sent hashes. These are still only on the box, in `~/bc5-work/exp0388/run/raw`: the `push spin` lines, `<tag>-nice.txt`, `<tag>-flips-per-10s.txt` and the idle-state snapshots. So the fixed rule's exposure gates and CHEAPER are not applied yet, and the HOLDS above are the rule's raw output, not verdicts: J and K are NO TEST until `open target jobs` is above 0, and L until its Hi workers show nice −5. `read0388.sh` reads all of them in one read-only pass in a slot.
+**Exposure and cost**, from one read-only pass of `read0388.sh` in a slot, kept in `raw/read0388-20261101.txt`. The counters are each run's last `push spin` line, printed every 2000 pushes. Flips/s is the mean over 120–170 s; a run that crashed before 120 s has none, so G has only G4, and H only its four clean runs.
+
+| arm | flips/s, mean | range | `open target jobs`, all runs | waits | ended by their condition | CHEAPER (≥ 31) |
+|---|---|---|---|---|---|---|
+| G4, control | 32.3 | one run | 0 | 0 | 0 | no wait |
+| F | 28.3 | 28.2–28.5 | 0 | 1 708 000 | 1 298 629 | no |
+| H, out | 33.5 | 33.2–34.1 | 0 | 1 997 286 | 1 956 704 | out by the rule |
+| J | 33.8 | 32.1–37.1 | 1 649 of 3 080 000 pushes | 1 649 | 125 | yes |
+| K | 32.6 | 32.3–32.8 | 566 of 1 828 000 pushes | 566 | 26 | yes |
+| L | 28.6 | 28.4–28.7 | 0 | 1 708 000 | 1 291 407 | no |
+
+All three exposure gates pass: J and K have `open target jobs` above 0 in every run, and L's five Hi workers show nice −5 at 70 s in all three runs. No arm is NO TEST.
 
 - **F799.** The controls of the three cycles crashed 7 of 9. F held 8 of 8 over two builds.
 - **F800.** H's crash fits H1 (the danger is workers at work, not asleep): waiting only for marked sleepers lets it through. One crash in five does not show H1. By the fixed rule H is out.
-- **F801.** J's 5 of 5, if its exposure holds, pairs the wait with the crash's own job. If `open target jobs` is 0, J never waited, and the five clean runs would be chance at the control's rate (about 0.0005 at 7 of 9), so that reading would be unlikely, but it is not excluded until read.
-- **F802.** H2 (hypothesis) cannot be judged yet, and H3 not either, without the idle-state files. L adds nothing visible on crashes, since F alone already holds.
+- **F801.** J waited in every run and held 5 of 5. Five clean runs by chance at the control's rate would be about 0.0005 at 7 of 9, taking the runs as independent. That ties the wait to the outcome on this route; it does not show the mechanism.
+- **F802.** H2 and H3 stay open. L adds nothing visible on crashes, since F alone already holds. Nothing of the idle states came back: the read printed no line from J5's snapshot, and why is not known.
+- **F803.** J costs nothing measurable: 33.8 flips/s against the only comparable control, 32.3, and the second cycle's 33.5. It holds without J3's 37.1 too (33.0 over the other four). F's price stays about 15 %, and L's nice does not buy it back.
+- **F804.** J's wait is rare and short: about 1 in 1870 pushes, 330 waits per run, at most 2 ms each, so at most 0.7 s of the main thread in 180 s. Its target job was open in 0.05 % of pushes, against F waiting on every one.
+- **F805.** J's wait mostly does not end on its condition: 125 of 1 649 ended because the job closed, and the other 92 % ran out the 2000 µs bound with the job still open. So J buys time; it does not wait for the job to end. Why time is enough, and whether the console does something like it, is not known. K's 189 open jobs per run against J's 330 come from 3 and 5 runs and are not a result.
 
-**Verdict.** Open on price, not on the crash: no candidate that holds is named cheapest. The pick by the fixed rule is one read away. `JobArenaFix` stays until the maintainer's own fight.
+**Limits.** 180 s on one scripted route, one save, 22 runs. Nobody has played these builds. The HOLDS say nothing about stability past 180 s or about the fight's later phases. J's five clean runs are in the third build only; F alone has two builds. The read's nice lines are from 70 s, not from the crash's moment. Flips/s from one control run is thin, so "nothing measurable" holds only down to the spread between runs, 32.1 to 37.1 for J itself.
+
+**Verdict.** By the fixed rule the pick is J, `PUSH_UNTIL_TARGET_US=2000`, build `1a596e50`: it HOLDS, has exposure, is CHEAPER, and is the cheapest arm. It goes to the maintainer's fight as `play0388.sh J`. F stays the fallback. The job-arena workaround is not replaced: `JobArenaFix` stays until that fight passes and the maintainer decides.
