@@ -20,7 +20,7 @@ use sha2::{Digest, Sha256};
 
 use crate::io::ReadAt;
 
-/// Default limit for the data written, in MiB (`BC5_MOUNT_DISK_CACHE_MIB`).
+/// Limit for the data written, in MiB.
 pub const DEFAULT_LIMIT_MIB: u64 = 8192;
 
 /// The cache files of one package image.

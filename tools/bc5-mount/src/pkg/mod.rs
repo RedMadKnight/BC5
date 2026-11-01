@@ -441,15 +441,11 @@ impl PkgImage<FileSource> {
     }
 }
 
-/// The on-disk block cache from `BC5_MOUNT_DISK_CACHE=<dir>`, with its limit from
-/// `BC5_MOUNT_DISK_CACHE_MIB` (experiment 0112).
+/// The on-disk block cache from `BC5_MOUNT_DISK_CACHE=<dir>`, with its limit
+/// [`diskcache::DEFAULT_LIMIT_MIB`] (experiment 0112).
 fn disk_cache_from_env() -> Option<(std::path::PathBuf, u64)> {
     let dir = std::env::var_os("BC5_MOUNT_DISK_CACHE").filter(|d| !d.is_empty())?;
-    let mib = std::env::var("BC5_MOUNT_DISK_CACHE_MIB")
-        .ok()
-        .and_then(|v| v.trim().parse::<u64>().ok())
-        .unwrap_or(diskcache::DEFAULT_LIMIT_MIB);
-    Some((dir.into(), mib << 20))
+    Some((dir.into(), diskcache::DEFAULT_LIMIT_MIB << 20))
 }
 
 impl<R: ReadAt> PkgImage<R> {

@@ -121,7 +121,7 @@ impl ReadAt for Vec<u8> {
 /// containers are immutable while mounted. Its reads go to the
 /// `BC5_MOUNT_TRACE` trace when that is set (ADR 0014), unless it was opened
 /// with [`FileSource::open_untraced`]. The kernel's readahead is turned off for
-/// it, unless `BC5_MOUNT_READAHEAD=1` (`advise_readahead_off`).
+/// it (`advise_readahead_off`).
 #[derive(Debug)]
 pub struct FileSource {
     file: File,
@@ -149,9 +149,8 @@ impl FileSource {
     }
 }
 
-/// Turns the kernel's readahead off for `file` alone (`POSIX_FADV_RANDOM`),
-/// unless `BC5_MOUNT_READAHEAD=1` keeps it. The image and the disk cache's data
-/// file are read a block at a time, in pieces of tens of KiB, and on the dev
+/// Turns the kernel's readahead off for `file` alone (`POSIX_FADV_RANDOM`).
+/// The image and the disk cache's data file are read a block at a time, in pieces of tens of KiB, and on the dev
 /// box's btrfs (bdi readahead 4096 KiB) the readahead fetched 78 % more than
 /// was asked for, all of it through a page cache the game was short of (F396).
 /// With the box's readahead at 128 KiB the surplus fell to 7 % and the memory
@@ -159,9 +158,7 @@ impl FileSource {
 /// no root (experiment 0331). The advice is best effort: a failure leaves the
 /// readahead as it was.
 pub(crate) fn advise_readahead_off(file: &File) {
-    if std::env::var_os("BC5_MOUNT_READAHEAD").as_deref() != Some(std::ffi::OsStr::new("1")) {
-        advise_random(file);
-    }
+    advise_random(file);
 }
 
 #[cfg(target_os = "linux")]

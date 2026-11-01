@@ -125,3 +125,24 @@ The smallest way to have it on in his test: that one line to `=on`, or the line 
 **Second swap.** `int0388j.sh` now stands for this one: pins normal `7c0efa36`, lean `f13f3fc3`, archive `75e30335`, patch `df13b062`, 12 files (8 host, 4 backend). It builds archive, normal and lean; the archive must not change, and the mount and the launcher are not touched. Copies go to `exp0388/integration2/`.
 
 **After it.** `series0388.sh post`: T7–T9, fix on, wait on. Then ASTRO BOT start, lean smoke, the software replug check, then his build.
+
+## Result of the second swap (2026-11-01 21:59–22:43)
+
+Shared builds: normal `f4e1a52e`, lean `206aa65d`, archive `75e30335` unchanged, mount `a59ef623`, launcher `48a4dbf9`, patch `df13b062`. Rollback to the fixless build in `exp0388/integration2/`, to the pre-integration build in `exp0388/integration/`.
+
+| check | result |
+|---|---|
+| T7, T8, T9: fix and J on, RT on, 180 s, route, env override | NO_CRASH, 33.8, 33.9, 34.2 flips/s; 318, 316, 338 waits; `HS offchip 0x1ff (programmed)`; no amdgpu line |
+| Lean, 150 s, private saves | job push wait ON, job-arena fix ON and APPLIED, hook wrapping; no access violation, no amdgpu line; launcher exit 0 |
+| ASTRO BOT start, 90 s, no input | `job push wait OFF ... not the code it knows`, the fix OFF; no access violation, no amdgpu line; exit 0 |
+| Software replug J1, `s6n0372j.sh` and `replug0372j.sh`, RT on, 420 s | pass: three pulls, every pad stream back on the DualSense with both flags, the main mix on the dock; 0 kernel lines; live saves unchanged `b80e1812c389f309` |
+
+`series0388.sh`'s `RULE T FAIL: 5 clean of 7` counts every T row, T4R and T4 from the fixless binary too; T7–T9 alone are 3 of 3.
+
+Lean ran with the fix forced by the environment and the menu route only: it did not reach the fight, which the runner cannot gate on lean. J's job-table reads have the private save route, not free play.
+
+`input.cfg`: `JobArenaFix.PPSA03671=on`, on the maintainer's word ("Tak, ustaw =on"), md5 `6de9c4c4`; the old file is `exp0388/integration2/input.cfg.before-on`.
+
+Left: his physical replug with a DualSense and a DS4, his fight, then the merge to main by the top session. HANDOFF's findings go with the merge.
+
+My waiting loop on the box matched its own `pgrep -f` and held the lock from 22:23 to 22:43 with nothing running.

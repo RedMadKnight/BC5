@@ -97,21 +97,16 @@ struct FilterOptions {
     // zero-byte DMA_DATA with CP_SYNC (the CP waits for its DMA to finish). Device::submit; the
     // IB's own COND_EXEC counts grow around them (experiment 0052).
     bool dma_sync_before_dispatch = false;
-    // Experiment 0050: a PFP_SYNC_ME before every DISPATCH_INDIRECT of any IB (as for the rebuilt
-    // compute IBs of experiment 0039): the prefetch parser must not read arguments the GPU is
-    // still writing. Device::submit; the IB's own COND_EXEC counts grow around them (ADR 0010
-    // section A; an IB with one used to be left alone).
-    bool pfp_sync_indirect = false;
     // Experiment 0052: the CP checks every DISPATCH_INDIRECT's group counts when it runs it
     // (bc5/indirect_check.hpp) and skips the dispatch if one exceeds gpu_check_max; a PFP_SYNC_ME
-    // goes before each, as with pfp_sync_indirect. Device::submit; the IB's own COND_EXEC counts
+    // goes before each, as for the rebuilt compute IBs. Device::submit; the IB's own COND_EXEC counts
     // grow by what is inserted in their ranges. The base of a rebuilt compute IB is mec_indirect_base.
     bool gpu_check_indirect = false;
     std::uint32_t gpu_check_max[3] = {1u << 20, 1u << 10, 1u << 10};
     std::uint32_t gpu_check_draw_max[2] = {1u << 22, 1024}; // experiment 0054: indirect draws
-    // Experiment 0341: the product staircase (bc5/indirect_check.hpp ProductLimit), the argument
-    // histogram and the shadow labels (bc5/shadow_labels.hpp) are switched on by the environment
-    // in Device::open (BC5_DIRECT_GPU_CHECK_PRODUCT, BC5_DIRECT_ARGS_HISTOGRAM,
+    // Experiment 0341: the product staircase (bc5/indirect_check.hpp ProductLimit)
+    // and the shadow labels (bc5/shadow_labels.hpp) are switched on by the environment
+    // in Device::open (BC5_DIRECT_GPU_CHECK_PRODUCT,
     // BC5_DIRECT_SHADOW_LABELS), not by fields here: this struct's layout is the host's ABI, and
     // the experiment's emulator keeps the host's objects as they were compiled.
     bool drop_draws = false;             // staging (ADR 0005 §5c): NOP every draw and dispatch
