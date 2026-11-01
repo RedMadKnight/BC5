@@ -146,3 +146,20 @@ Lean ran with the fix forced by the environment and the menu route only: it did 
 Left: his physical replug with a DualSense and a DS4, his fight, then the merge to main by the top session. HANDOFF's findings go with the merge.
 
 My waiting loop on the box matched its own `pgrep -f` and held the lock from 22:23 to 22:43 with nothing running.
+
+## Third swap (2026-11-02 00:30, branch int/0389-clean)
+
+The maintainer: "Jak już, to bez J. Do wyrzucenia. Zrób czyszczenie też innych zbędnych przełączników. Job arena zostaje", then "Zbuduj już właściwie wersję lean i zwykła." `coordination/switch-removal-2-20261102.md`, on main `5072d65b`: J is gone, and the rest of the list in four groups: `KYTY_BC5_OSD_FPS` and `DRAW_JOURNAL_PS`; the GPU folds; the no-GPU folds; the default-on knobs. `SKIP_PGM=0` stays in the launcher: `pgm_list("0")` is the set {0}, not empty, so the line is not equal to the default. No other name was left or dropped. OpenOptions and FilterOptions did not change.
+
+Patch `df13b062` → `728f2a77`, 26 files: 20 host, 4 backend, `play-pkg.sh` `97835f88` and `bc5-run.env` `e5030475` without their dead lines. Normal `4d2b1b1d`, lean `30d4be33`, archive `75e30335` (direct.cpp changed in comments only). It compiled at the first try. Copies in `exp0388/integration3/`, `integration2/` kept. The old binaries need the old settings files back too.
+
+| check | result |
+|---|---|
+| T10, T11, T12: fix on, no J, RT on, 180 s, route | NO_CRASH, 35.1, 34.0, 32.9 flips/s, no amdgpu line |
+| Lean, 150 s, private saves, to the load only | fix ON and APPLIED, hook wrapping; no access violation, no amdgpu line; exit 0 |
+| ASTRO BOT start, 90 s, no input | fix OFF, the tiler pool at work, no access violation, no amdgpu line, exit 0. The log has no fps line, so the frame rate was not read |
+| Software replug J2, RT on, 420 s | pass: every pad stream back on the DualSense with both flags, the main mix on the dock, 0 kernel lines, live saves unchanged |
+
+The `RULE T FAIL` line of the series counts older rows of the fixless binary; T10–T12 alone are 3 of 3.
+
+Limits: 180 s on one route, and ASTRO BOT only to its start, though the folds run on its path too. The route was at the fix on through the environment; `input.cfg` already says `=on`. The 00:11 hang is not addressed. Left: his play, his physical replug and a DS4, then the merge by the top session.

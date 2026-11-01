@@ -1,0 +1,108 @@
+00:47:25.733 tag J2: DualSense card 44 profile 1 (Direct); default sink 55 muted=0
+00:47:25.747 default sink 55 muted for the run
+00:50:18.965 == R0 before the first pull (emulator up 171 s)
+stream 89 serial 2910 state running ch ? target.object=- dont-reconnect=- dont-fallback=- -> 55:ThinkPad USB 3.0 Pro Dock Analogowe stereo
+stream 95 serial 2962 state running ch ? target.object=alsa_output.usb-Sony_Interactive_Entertainment_DualSense_Wireless_Controller-00.Direct__Direct__sink dont-reconnect=True dont-fallback=True -> 53
+stream 102 serial 2972 state running ch ? target.object=alsa_output.usb-Sony_Interactive_Entertainment_DualSense_Wireless_Controller-00.Direct__Direct__sink dont-reconnect=True dont-fallback=True -> 5
+3 emulator output streams
+sink 53 DualSense wireless controller (PS5) Direct DualSense Wireless Controller
+sink 55 ThinkPad USB 3.0 Pro Dock Analogowe stereo
+AudioOut (exp 0372): the controller's ports follow SDL's audio device events
+AudioOut (exp 0372): t 33.830 s port 1 type 4: opened on DualSense wireless controller (PS5) Direct DualSense Wireless Controller (48000 Hz, 6 ch); node.dont-reconnect, node.dont-fallback
+AudioOut (exp 0372): t 33.873 s port 2 type 10: opened on DualSense wireless controller (PS5) Direct DualSense Wireless Controller (48000 Hz, 6 ch); node.dont-reconnect, node.dont-fallback
+00:50:19.181 profile -> 0 (0 off)
+00:50:21.215 == R1 2 s into the 5-s pull (emulator up 173 s)
+stream 89 serial 2910 state running ch ? target.object=- dont-reconnect=- dont-fallback=- -> 55:ThinkPad USB 3.0 Pro Dock Analogowe stereo
+1 emulator output streams
+sink 55 ThinkPad USB 3.0 Pro Dock Analogowe stereo
+AudioOut (exp 0372): t 171.251 s port 2 type 10: its stream on the controller closed (an output device was removed); frames dropped until the controller is back
+pad route: t 172.097 s port 2 type 10 (pad): 84 calls dropped, no controller device
+pad route: t 173.100 s port 2 type 10 (pad): 94 calls dropped, no controller device
+00:50:24.354 profile -> 1 (1 Direct)
+00:50:29.384 == R2 5 s after the 5-s pull (emulator up 181 s)
+stream 89 serial 2910 state running ch ? target.object=- dont-reconnect=- dont-fallback=- -> 55:ThinkPad USB 3.0 Pro Dock Analogowe stereo
+stream 65 serial 3518 state running ch ? target.object=alsa_output.usb-Sony_Interactive_Entertainment_DualSense_Wireless_Controller-00.Direct__Direct__sink dont-reconnect=True dont-fallback=True -> 98
+2 emulator output streams
+sink 55 ThinkPad USB 3.0 Pro Dock Analogowe stereo
+sink 98 DualSense wireless controller (PS5) Direct DualSense Wireless Controller
+pad route: t 174.103 s port 2 type 10 (pad): 94 calls dropped, no controller device
+pad route: t 175.105 s port 2 type 10 (pad): 94 calls dropped, no controller device
+pad route: t 176.108 s port 2 type 10 (pad): 94 calls dropped, no controller device
+AudioOut (exp 0372): t 176.709 s port 2 type 10: opened on DualSense wireless controller (PS5) Direct DualSense Wireless Controller (48000 Hz, 6 ch) after an output device was added; node.dont-reconne
+pad route: t 177.111 s port 2 type 10 (pad): 26 calls dropped, no controller device
+00:50:59.466 == 30 s after the 5-s pull (emulator up 211 s)
+stream 89 serial 2910 state running ch ? target.object=- dont-reconnect=- dont-fallback=- -> 55:ThinkPad USB 3.0 Pro Dock Analogowe stereo
+stream 65 serial 3518 state running ch ? target.object=alsa_output.usb-Sony_Interactive_Entertainment_DualSense_Wireless_Controller-00.Direct__Direct__sink dont-reconnect=True dont-fallback=True -> 98
+2 emulator output streams
+sink 55 ThinkPad USB 3.0 Pro Dock Analogowe stereo
+sink 98 DualSense wireless controller (PS5) Direct DualSense Wireless Controller
+00:50:59.627 profile -> 0 (0 off)
+00:51:00.076 profile -> 1 (1 Direct)
+00:51:05.109 == R2 5 s after the short pull (emulator up 217 s)
+stream 89 serial 2910 state running ch ? target.object=- dont-reconnect=- dont-fallback=- -> 55:ThinkPad USB 3.0 Pro Dock Analogowe stereo
+stream 95 serial 3636 state running ch ? target.object=alsa_output.usb-Sony_Interactive_Entertainment_DualSense_Wireless_Controller-00.Direct__Direct__sink dont-reconnect=True dont-fallback=True -> 66
+2 emulator output streams
+sink 55 ThinkPad USB 3.0 Pro Dock Analogowe stereo
+sink 66 DualSense wireless controller (PS5) Direct DualSense Wireless Controller
+AudioOut (exp 0372): t 211.674 s port 2 type 10: its stream on the controller closed (an output device was removed); frames dropped until the controller is back
+AudioOut (exp 0372): t 212.340 s port 2 type 10: opened on DualSense wireless controller (PS5) Direct DualSense Wireless Controller (48000 Hz, 6 ch) after an output device was added; node.dont-reconne
+pad route: t 212.362 s port 2 type 10 (pad): 44 calls dropped, no controller device
+00:51:35.192 == 30 s after the short pull (emulator up 247 s)
+stream 89 serial 2910 state running ch ? target.object=- dont-reconnect=- dont-fallback=- -> 55:ThinkPad USB 3.0 Pro Dock Analogowe stereo
+stream 95 serial 3636 state running ch ? target.object=alsa_output.usb-Sony_Interactive_Entertainment_DualSense_Wireless_Controller-00.Direct__Direct__sink dont-reconnect=True dont-fallback=True -> 66
+2 emulator output streams
+sink 55 ThinkPad USB 3.0 Pro Dock Analogowe stereo
+sink 66 DualSense wireless controller (PS5) Direct DualSense Wireless Controller
+00:51:35.319 profile -> 0 (0 off)
+00:51:50.352 == R1 15 s into the 30-s pull (emulator up 262 s)
+stream 89 serial 2910 state running ch ? target.object=- dont-reconnect=- dont-fallback=- -> 55:ThinkPad USB 3.0 Pro Dock Analogowe stereo
+1 emulator output streams
+sink 55 ThinkPad USB 3.0 Pro Dock Analogowe stereo
+AudioOut (exp 0372): t 247.345 s port 2 type 10: its stream on the controller closed (an output device was removed); frames dropped until the controller is back
+pad route: t 247.458 s port 2 type 10 (pad): 12 calls dropped, no controller device
+pad route: t 248.460 s port 2 type 10 (pad): 94 calls dropped, no controller device
+pad route: t 249.463 s port 2 type 10 (pad): 94 calls dropped, no controller device
+pad route: t 250.466 s port 2 type 10 (pad): 94 calls dropped, no controller device
+pad route: t 251.469 s port 2 type 10 (pad): 94 calls dropped, no controller device
+pad route: t 252.472 s port 2 type 10 (pad): 94 calls dropped, no controller device
+pad route: t 253.474 s port 2 type 10 (pad): 94 calls dropped, no controller device
+pad route: t 254.477 s port 2 type 10 (pad): 94 calls dropped, no controller device
+pad route: t 255.480 s port 2 type 10 (pad): 94 calls dropped, no controller device
+pad route: t 256.482 s port 2 type 10 (pad): 94 calls dropped, no controller device
+pad route: t 257.485 s port 2 type 10 (pad): 94 calls dropped, no controller device
+pad route: t 258.488 s port 2 type 10 (pad): 94 calls dropped, no controller device
+pad route: t 259.490 s port 2 type 10 (pad): 94 calls dropped, no controller device
+pad route: t 260.493 s port 2 type 10 (pad): 94 calls dropped, no controller device
+pad route: t 261.495 s port 2 type 10 (pad): 94 calls dropped, no controller device
+00:52:05.452 profile -> 1 (1 Direct)
+00:52:10.493 == R2 5 s after the 30-s pull (emulator up 282 s)
+stream 89 serial 2910 state running ch ? target.object=- dont-reconnect=- dont-fallback=- -> 55:ThinkPad USB 3.0 Pro Dock Analogowe stereo
+stream 113 serial 3763 state running ch ? target.object=alsa_output.usb-Sony_Interactive_Entertainment_DualSense_Wireless_Controller-00.Direct__Direct__sink dont-reconnect=True dont-fallback=True -> 6
+2 emulator output streams
+sink 55 ThinkPad USB 3.0 Pro Dock Analogowe stereo
+sink 65 DualSense wireless controller (PS5) Direct DualSense Wireless Controller
+pad route: t 262.498 s port 2 type 10 (pad): 94 calls dropped, no controller device
+pad route: t 263.501 s port 2 type 10 (pad): 94 calls dropped, no controller device
+pad route: t 264.504 s port 2 type 10 (pad): 94 calls dropped, no controller device
+pad route: t 265.506 s port 2 type 10 (pad): 94 calls dropped, no controller device
+pad route: t 266.509 s port 2 type 10 (pad): 94 calls dropped, no controller device
+pad route: t 267.511 s port 2 type 10 (pad): 94 calls dropped, no controller device
+pad route: t 268.514 s port 2 type 10 (pad): 94 calls dropped, no controller device
+pad route: t 269.518 s port 2 type 10 (pad): 94 calls dropped, no controller device
+pad route: t 270.520 s port 2 type 10 (pad): 94 calls dropped, no controller device
+pad route: t 271.523 s port 2 type 10 (pad): 94 calls dropped, no controller device
+pad route: t 272.525 s port 2 type 10 (pad): 94 calls dropped, no controller device
+pad route: t 273.527 s port 2 type 10 (pad): 94 calls dropped, no controller device
+pad route: t 274.530 s port 2 type 10 (pad): 94 calls dropped, no controller device
+pad route: t 275.533 s port 2 type 10 (pad): 94 calls dropped, no controller device
+pad route: t 276.536 s port 2 type 10 (pad): 94 calls dropped, no controller device
+AudioOut (exp 0372): t 277.523 s port 2 type 10: opened on DualSense wireless controller (PS5) Direct DualSense Wireless Controller (48000 Hz, 6 ch) after an output device was added; node.dont-reconne
+pad route: t 277.543 s port 2 type 10 (pad): 89 calls dropped, no controller device
+00:52:30.619 == R3 25 s after the 30-s pull (emulator up 302 s)
+stream 89 serial 2910 state running ch ? target.object=- dont-reconnect=- dont-fallback=- -> 55:ThinkPad USB 3.0 Pro Dock Analogowe stereo
+stream 113 serial 3763 state running ch ? target.object=alsa_output.usb-Sony_Interactive_Entertainment_DualSense_Wireless_Controller-00.Direct__Direct__sink dont-reconnect=True dont-fallback=True -> 6
+2 emulator output streams
+sink 55 ThinkPad USB 3.0 Pro Dock Analogowe stereo
+sink 65 DualSense wireless controller (PS5) Direct DualSense Wireless Controller
+00:52:30.673 sequence done
+00:52:30.805 restored: DualSense profile 1 Direct, default sink 55 Volume: 0.95

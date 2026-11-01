@@ -40,3 +40,15 @@ RESULT T9 runner 0 check 0 saves same CLASS NO_CRASH fix on crash none reached 1
 RULE S PASS: 1 clean of 1, baseline on the old binary, fix on
 RULE T FAIL: 5 clean of 7, the wait on
 RULE U INFO: U2 NO_CRASH crash none, the wait off: a crash here is the control, no crash is no failure
+TOK=2026110200322411907
+lock released
+RESULT T10 runner 0 check 0 saves same CLASS NO_CRASH fix on crash none reached 1
+TOK=2026110200355053151
+lock released
+RESULT T11 runner 0 check 0 saves same CLASS NO_CRASH fix on crash none reached 1
+TOK=2026110200391494019
+lock released
+RESULT T12 runner 0 check 0 saves same CLASS NO_CRASH fix on crash none reached 1
+RULE S PASS: 1 clean of 1, baseline on the old binary, fix on
+RULE T FAIL: 8 clean of 10, the wait on
+RULE U INFO: U2 NO_CRASH crash none, the wait off: a crash here is the control, no crash is no failure
