@@ -11,12 +11,34 @@ CAND="BC5_MOUNT_DROP_BACKING=1 BC5_MOUNT_MAX_READAHEAD_KIB=32 BC5_MOUNT_PREFETCH
 mkdir -p "$OUT"
 TOKEN=$(date +%Y%m%d%H%M%S)$RANDOM
 echo "$TOKEN" > "$OUT/token"
-RDIR='$HOME/bc5-work/exp0381/reread'
-stop_stream() {
-    kill "${KP:-}" 2> /dev/null
-    ssh bc250 'pgrep -f "^timeout 7000 journalctl -k" | xargs -r kill'
+# The claim comes first: a busy box starts nothing. Everything after it ends in finish, the stream before the lock goes.
+claim() {
+    ssh bc250 "bash -s" -- "$TOKEN" <<'S'
+set -u
+W=$HOME/bc5-work; TB2_TOKEN=$1
+pgrep '^kyty_emulator' > /dev/null && { echo "GUARD: an emulator runs"; exit 3; }
+. $W/exp0381/in-tb2/experiments/0381-second-title-non-f403-hangs/lock0381tb2.inc
+trap tb2_held_release EXIT
+tb2_claim
+tb2_own
+pgrep '^kyty_emulator' > /dev/null && { echo "GUARD: an emulator runs"; exit 3; }
+tb2_queue "$TB2_LINE: mount reread series | $(date '+%F %T')"
+mkdir -p $W/exp0381/reread/raw
+TB2_HELD=0
+S
 }
-step() { local n=$1; shift; echo "== $n"; "$@"; local rc=$?; echo "== $n rc $rc"; [ "$rc" = 0 ] || { release; stop_stream; exit "$rc"; }; }
+# exec keeps the shell's PID, so the file names the stream itself, with its start time.
+start_stream() {
+    ssh bc250 "F=\$HOME/bc5-work/exp0381/reread/stream-$TOKEN.pid; echo \"\$\$ \$(sed 's/^.*) //' /proc/\$\$/stat | awk '{ print \$20 }')\" > \"\$F\"; exec timeout 7000 journalctl -k -f -n 0 -o short-precise" > "$OUT/kern-$ID.txt" 2>&1 &
+    KP=$!
+}
+stop_stream() {
+    ssh bc250 'bash -s' -- "$TOKEN" < "$HERE/streamstop0381r.sh"
+    kill "$KP" 2> /dev/null
+    wait "$KP" 2> /dev/null
+}
+finish() { stop_stream; release; }
+step() { local n=$1; shift; echo "== $n"; "$@"; local rc=$?; echo "== $n rc $rc"; [ "$rc" = 0 ] || { finish; exit "$rc"; }; }
 send() {
     ssh bc250 "bash -s" -- "$TOKEN" < <(cat <<S
 set -u
@@ -56,8 +78,11 @@ S
 stream() {
     ssh bc250 "R=\$HOME/bc5-work/exp0381/reread/raw; G=\$(sed -n 's/.*gameplay at \([0-9]*\),.*/\1/p' \$R/${ID}A0-start.txt); grep '^T ' \$R/${ID}A0-sample.txt | tr ' ' '\n' | grep '^mount_read_bytes=' | cut -d= -f2 | awk -v g=\"\${G:-0}\" 'NR > g + 120 && (NR % 60) == 0 { if (p && \$1 - p >= 4 * 2^30) n++; p = \$1 } END { print n + 0, \"minutes at 4 GiB or more\" }'" | tee "$OUT/stream.txt"
 }
-ssh bc250 "timeout 7000 journalctl -k -f -n 0 -o short-precise" > "$OUT/kern-$ID.txt" 2>&1 &
-KP=$!
+echo "== claim"
+claim; rc=$?
+echo "== claim rc $rc"
+[ "$rc" = 0 ] || exit "$rc"
+start_stream
 step setup send
 step baseline arm A0
 stream
@@ -65,7 +90,6 @@ step A1 arm A1
 step C1 arm C1 $CAND
 step A2 arm A2
 step C2 arm C2 $CAND
-release
-stop_stream
 ssh bc250 "tar -cf - -C ~/bc5-work/exp0381/reread raw" | tar -xf - -C "$OUT"
 ssh bc250 'L=$(ls -t ~/bc5-work/exp0381/tb2/play/mount-*.log | head -5); tar -cf - $L' | tar -xf - -C "$OUT"
+finish
