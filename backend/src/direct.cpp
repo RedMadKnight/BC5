@@ -732,7 +732,7 @@ bool Device::map_userptr(std::uint64_t cpu_va, std::uint64_t size, bool readonly
         // raw ioctl hands back a GEM handle and libdrm's amdgpu_bo_import refuses KMS handles
         // (-EPERM), so the BO cannot enter an amdgpu_bo_list; a raw-handle BO list
         // (amdgpu_bo_list_create_raw) and a raw VA map are needed. Until then the host keeps
-        // the guest's pages writable instead (KYTY_BC5_ALL_RW).
+        // the guest's pages writable instead (sysLinuxVirtual.cpp in the host).
         drm_amdgpu_gem_userptr args{};
         args.addr = cpu_va;
         args.size = size;
