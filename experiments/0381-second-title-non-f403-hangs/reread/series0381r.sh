@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 # BC5 exp 0381, re-reads: the whole series from the laptop, on the top session's slot, stopping at the first failed step: claim and
 # build, calibration, A C A C, release, copy of the numbers. The kernel log is streamed to the laptop. Run from the worktree's root.
-# usage: bash series0381r.sh <run-id> <out-dir>   (needs the cycle's copy of lock0381tb2.inc and boxcap0381.sh on the box, in in-tb2)
+# usage: bash series0381r.sh <run-id> <out-dir> [rest]   (needs the cycle's copy of lock0381tb2.inc and boxcap0381.sh on the box, in in-tb2)
+# rest: no calibration, only A C A C.
 set -u
-ID=${1:?run id: letters and digits}; OUT=${2:?out dir}
+ID=${1:?run id: letters and digits}; OUT=${2:?out dir}; REST=${3:-}
 HERE=$(cd "$(dirname "$0")" && pwd)
 ROOT=$(git -C "$HERE" rev-parse --show-toplevel)
 CAP=900
@@ -37,7 +38,12 @@ stop_stream() {
     kill "$KP" 2> /dev/null
     wait "$KP" 2> /dev/null
 }
-finish() { stop_stream; release; }
+# A stopped series keeps its numbers too: the copy comes before the release.
+collect() {
+    ssh bc250 "tar -cf - -C ~/bc5-work/exp0381/reread raw" | tar -xf - -C "$OUT"
+    ssh bc250 'L=$(ls -t ~/bc5-work/exp0381/tb2/play/mount-*.log | head -5); tar -cf - $L' | tar -xf - -C "$OUT"
+}
+finish() { stop_stream; collect; release; }
 step() { local n=$1; shift; echo "== $n"; "$@"; local rc=$?; echo "== $n rc $rc"; [ "$rc" = 0 ] || { finish; exit "$rc"; }; }
 send() {
     ssh bc250 "bash -s" -- "$TOKEN" < <(cat <<S
@@ -95,12 +101,12 @@ echo "== claim rc $rc"
 [ "$rc" = 0 ] || exit "$rc"
 start_stream
 step setup setup
-step baseline arm A0
-stream
+if [ "$REST" != rest ]; then
+    step baseline arm A0
+    stream
+fi
 step A1 arm A1
 step C1 arm C1 $CAND
 step A2 arm A2
 step C2 arm C2 $CAND
-ssh bc250 "tar -cf - -C ~/bc5-work/exp0381/reread raw" | tar -xf - -C "$OUT"
-ssh bc250 'L=$(ls -t ~/bc5-work/exp0381/tb2/play/mount-*.log | head -5); tar -cf - $L' | tar -xf - -C "$OUT"
 finish

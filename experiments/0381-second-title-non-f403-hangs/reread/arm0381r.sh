@@ -36,7 +36,7 @@ tb2_queue "$TB2_LINE: mount reread arm $TAG, cap $CAP s, RT on, [$*] | $(date '+
 sync; sudo -n sh -c 'echo 3 > /proc/sys/vm/drop_caches' 2> /dev/null || echo "caches not dropped" >> "$R/$TAG-start.txt"
 CMD=$RR/in-$TAG.cmd
 printf 'wait 1000\n' > "$CMD"; rm -f "$CMD.done"
-{ date '+%F %T'; echo "arm $TAG cap $CAP [$*], binary $(md5sum < "$EMU" | cut -c1-8), mount $(md5sum < "$MB" | cut -c1-8), launcher $(md5sum < "$LAUNCH" | cut -c1-8), sample $SAMPLE"; } > "$R/$TAG-start.txt"
+{ date '+%F %T'; echo "arm $TAG cap $CAP [$*], binary $(md5sum < "$EMU" | cut -c1-8), mount $(md5sum < "$MB" | cut -c1-8), launcher $(md5sum < "$LAUNCH" | cut -c1-8), sample $SAMPLE"; echo "vm swappiness $(cat /proc/sys/vm/swappiness), page-cluster $(cat /proc/sys/vm/page-cluster), vfs_cache_pressure $(cat /proc/sys/vm/vfs_cache_pressure), min_free_kbytes $(cat /proc/sys/vm/min_free_kbytes)"; } > "$R/$TAG-start.txt"
 DRM=/sys/class/drm/card1/device setsid bash "$RR/sample-reread.sh" "$R/$TAG-sample.txt" $((CAP + 60)) < /dev/null > /dev/null 2>&1 &
 setsid bash "$IN/boxcap0381.sh" /exp0381/reread/bin/kyty_emulator "$CAP" "$R/$TAG-start.txt" < /dev/null > /dev/null 2>&1 &
 distrobox enter ubuntu -- env BC5_EMU="$EMU" BC5_0381_PAGE_CHECK=1112eae000 BC5_0381_REOPEN_TRACE=1 BC5_MOUNT_STATS=5 KYTY_BC5_INPUT_CMD="$CMD" TB2_SERIES_LINE="$TB2_LINE" "$@" "$LAUNCH" < /dev/null > "$R/$TAG-launch.out" 2>&1 &

@@ -185,3 +185,7 @@ both catchers compiled. RT on, no pad, snapshot saves-sample, mount c39cac9f, em
   timeout, a ring reset that succeeded and a devcoredump. Not the page of F687: the three reads of 0x1112eae000 say read-write in a
   shared range, resident or not, and that page did not fault, so F687 stays open. No reopen, so F688 got nothing.
 - **Script bug found.** RR2 ended silently: `distrobox` read the setup script from stdin (f5ae3a1c).
+
+**Rest of the series (RR4).** `series0381r.sh <id> <out> rest` runs A1 C1 A2 C2 without A0. The maintainer set vm.swappiness 150 and
+vm.page-cluster 0 at about 08:00 (until reboot), so A0 was under other VM settings: compare A with C inside RR4, and read A0 against
+it only with that said. Each arm's start file records the settings.
