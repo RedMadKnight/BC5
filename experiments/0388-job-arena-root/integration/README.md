@@ -111,3 +111,17 @@ No amdgpu line in T4R's stream. Each log has the right wait line and `HS offchip
 **J does not hold.** With the wait on and the fix gone, the crash came at its site in one of three routed runs, with the wait active. By the rule that is REFUTED. Over all route runs with J: 7 clean of 8. Controls without it: 3 clean of 10 (U2 included). So J lowers the crash and does not end it, and the 92 % of waits that run out the bound fit that, though that is not shown. This build differs from the arm in having no trace, and in `GC_HS_OFFCHIP` and the removals; one crash does not say whether any of those matter. The shared builds now have no fix, so this crash is live in play.
 
 Not run after this, pending a decision: lean, audio replug, ASTRO BOT. Main stays unmerged.
+
+## The fix comes back (the maintainer, 2026-11-01: "B: fix wraca")
+
+Patch `f3022900` → `df13b062`: the job-arena fix returns exactly as it was, on by default for PPSA03671: hook, `ApplyJobArenaFix`, `KYTY_BC5_JOB_ARENA_FIX`, the "Game fixes" menu, `JobArenaFix.<TITLE>` parsing, the header in both places and its backend test, whose md5 are the integrated ones of exp 0361 (`22a78051`, `a65221ca`). J stays on, the launcher's water line and classes A and B stay. J still looks at the site first, before the fix writes there. The sections above about the fix being gone are the record of what was tried.
+
+**With J and the fix both on.** No run has had that combination yet; T7–T9 are it.
+
+**`input.cfg`.** The default only applies when the file has no line for the title. `JobArenaFix.PPSA03671=off` is explicit, so the restored fix would stay off in his play, and J alone would stand, as in T4R. `KYTY_BC5_JOB_ARENA_FIX=0|1` overrides the file; the route runs set it to 1, so they do not depend on the file. The start log says which it was: `job-arena fix ON for PPSA03671 (input.cfg on)`, `(not set, on for that title)`, or `OFF ... (input.cfg off)`.
+
+The smallest way to have it on in his test: that one line to `=on`, or the line removed. He can do it himself from Emulation → Game fixes, which writes the line, and it counts from the next start. Otherwise it needs his word.
+
+**Second swap.** `int0388j.sh` now stands for this one: pins normal `7c0efa36`, lean `f13f3fc3`, archive `75e30335`, patch `df13b062`, 12 files (8 host, 4 backend). It builds archive, normal and lean; the archive must not change, and the mount and the launcher are not touched. Copies go to `exp0388/integration2/`.
+
+**After it.** `series0388.sh post`: T7–T9, fix on, wait on. Then ASTRO BOT start, lean smoke, the software replug check, then his build.
