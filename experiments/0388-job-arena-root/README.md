@@ -195,3 +195,25 @@ No crash elsewhere, no amdgpu kernel line, GPU reset or devcoredump. Exposure in
 - The pick for the maintainer's play: the cheapest arm that HOLDS, J first if tied. If none is cheaper, F.
 
 **The maintainer's play.** `play0388.sh F` or `play0388.sh J` on the box, started by the top session: `JobArenaFix` off, the chosen wait on, RT as in `input.cfg`, the normal launcher and his own saves, no time limit. `input.cfg` is not changed. The script prints the binary's md5 at start: `caede695` is enough for F, and J needs the third build. The 5 of 5 belongs to `caede695`; the third build's F has its own three runs. Pass: he plays through the fight that crashed and on, and closes the game himself, with no access violation and no amdgpu line. Fail: a crash at eboot+0x3d7eca0, and `JobArenaFix` stays. Only that pass can start the removal of exp 0359's fix, and that is his decision.
+
+## Third cycle's result (2026-11-01 01:54–03:08, F799–F802): outcome known, exposure and cost not closed
+
+Binary `1a596e5063f9d04ff745db2b8dc9809a`, compiled with the host's real headers. 22 RESULT lines, 22 `lock released`, all 22 routed. No run was INVALID, NOT_ROUTED or KERNEL, and no crash came elsewhere. No amdgpu line in any of the 22 kernel streams; their only line is the IPv6 MLD one, 43 times. No recovery was needed. The class of a run includes its dmesg and devcoredump gates.
+
+| arm | switches | runs | at the site | NO_CRASH | rule's output |
+|---|---|---|---|---|---|
+| G, control | none | 3 | 2 | 1 (G4) | control 2 of 3 |
+| F | `PUSH_UNTIL_RETURN_US=500` | 3 | 0 | 3 | HOLDS |
+| H | `PUSH_UNTIL_PAIRED_US=500` | 5 | 1 (H2) | 4 | REFUTED |
+| J | `PUSH_UNTIL_TARGET_US=2000` | 5 | 0 | 5 | HOLDS |
+| K | J + targeted wake + 20 µs waiter spin | 3 | 0 | 3 | HOLDS |
+| L | F + Hi workers at nice −5 | 3 | 0 | 3 | HOLDS |
+
+**Missing.** `raw/` on the laptop holds only the series lines, the rows, the kernel streams and the sent hashes. These are still only on the box, in `~/bc5-work/exp0388/run/raw`: the `push spin` lines, `<tag>-nice.txt`, `<tag>-flips-per-10s.txt` and the idle-state snapshots. So the fixed rule's exposure gates and CHEAPER are not applied yet, and the HOLDS above are the rule's raw output, not verdicts: J and K are NO TEST until `open target jobs` is above 0, and L until its Hi workers show nice −5. `read0388.sh` reads all of them in one read-only pass in a slot.
+
+- **F799.** The controls of the three cycles crashed 7 of 9. F held 8 of 8 over two builds.
+- **F800.** H's crash fits H1 (the danger is workers at work, not asleep): waiting only for marked sleepers lets it through. One crash in five does not show H1. By the fixed rule H is out.
+- **F801.** J's 5 of 5, if its exposure holds, pairs the wait with the crash's own job. If `open target jobs` is 0, J never waited, and the five clean runs would be chance at the control's rate (about 0.0005 at 7 of 9), so that reading would be unlikely, but it is not excluded until read.
+- **F802.** H2 (hypothesis) cannot be judged yet, and H3 not either, without the idle-state files. L adds nothing visible on crashes, since F alone already holds.
+
+**Verdict.** Open on price, not on the crash: no candidate that holds is named cheapest. The pick by the fixed rule is one read away. `JobArenaFix` stays until the maintainer's own fight.
