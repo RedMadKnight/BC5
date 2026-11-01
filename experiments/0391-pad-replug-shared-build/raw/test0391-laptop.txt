@@ -1,0 +1,30 @@
+ok   check: P1 is PASS with 3 pulls
+ok   check: P2 is PASS with 1 pull
+ok   check: a pad stream on the dock is FAIL
+ok   check: no DualSense is NO_TEST
+ok   check: a crashed run without pulls is FAIL
+ok   check: a missing file is INVALID
+ok   check: two pulls of three is FAIL
+ok   claim: a foreign lock is refused and kept
+ok   claim: an emulator refuses it
+ok   claim: 100 s to the deadline is refused
+ok   claim: a bad mode is refused
+ok   claim: the lock holds our line with the token
+ok   claim: the queue has the line
+ok   claim: the token file holds the line
+ok   claim: a second claim under our lock is refused
+ok   start: confirmed
+ok   run: done file written
+ok   run: the lock was released (lock released)
+ok   run: RESULT T1 runner 0 check 0 CLASS PASS mode pulls pulls 3
+ok   run: BOX-LOCK is empty afterwards
+ok   run: the S6N stand-in got the token, the shared binary and its md5
+ok   run: the launcher md5 and 420 s were passed
+ok   run: the replug stand-in got the mode, the token and the lock line
+ok   run: the pins file records the full md5
+ok   run: the queue has the done line
+ok   claim: a used tag is refused
+ok   claim: the refused claim left the lock empty
+ok   release: a foreign line is refused and kept
+ok   run: a changed launcher stops before the launch and releases
+passed 29, failed 0
