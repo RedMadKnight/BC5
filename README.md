@@ -241,3 +241,21 @@ PlayStation, PS5 and DualSense are trademarks of Sony Interactive Entertainment.
 GPL-2.0, matching KytyPlus, so that the patches and the backend can go upstream without relicensing. Files that originate elsewhere keep their own licence and say so in their header (the vendored `oozextract`, MIT; Mesa's register tables, MIT; the AnyPS5 ports, GPL-2.0; vgmstream's ATRAC9 decoder in patch 0001, ISC, with its `COPYING`).
 
 BC5 stands on [KytyPlus](https://github.com/Coder787-source/KytyPlus) and the Kyty line it comes from, on [AnyPS5](https://github.com/boykopovar/AnyPS5)'s libraries, on Mesa's register tables and libdrm's tests, on `oozextract`, on [vgmstream](https://github.com/vgmstream/vgmstream)'s ATRAC9 decoder, and on the BC-250 community's documentation of the board's unlocks.
+
+## Design note: nearer the console's read path (paper only, nothing run)
+
+Question: a full pre-decoded image on the NVMe in place of Kraken, with title reads going straight to guest memory.
+
+- **Size.** 750 k blocks decode to 196 GiB (210 GB); 157 GB were free on 2026-11-01. The full image does not fit, by at least 53 GB. A partial one does: the arms touched 11–16 GiB new in 15 minutes.
+- **The disk cache is that image, already, cut short.** Same 256 KiB blocks, sparse, with a CRC, but its 8 GiB filled on 10-25 and has not changed since. It serves 8–11 % of blocks, and 84–88 % of decodes are of blocks decoded
+  earlier in the same run. Nothing is kept past the limit.
+- **Kraken is not the limit.** In 630 s, decoding takes 57–236 s of worker time (0.1–0.4 of a core) of 305–854 s of image work. C cut decoding by 21–37 % and flips did not rise.
+- **Copies.** File LRU pages average 0.9–1.0 GiB, so at most that much memory comes back from bypassing them (11.3 GiB of `Cached` is shmem, the title's own). C already shows the churn falling, 39 % and 69 %, with the three switches together.
+  `BC5_MOUNT_DROP_BACKING` was never run alone, and `BC5_MOUNT_DIRECT_IO` never ran at all.
+- **NVMe.** Title demand peaks at 360 MiB/s, p99 182–307, so with no cache the repeats fit the link. Latency was not measured.
+- **What breaks.** O_DIRECT needs aligned offset, length and buffer, and the title's reads are not, so it needs a bounce buffer and read-around. The host needs its own path-to-offset table, or FUSE stays for metadata. The CRC check goes or moves to the host.
+  POSIX_FADV_DONTNEED drops only clean, unmapped pages, after the fact. Whether the title maps files was not checked.
+- **Expected gain.** Memory: up to ~0.9 GiB and less reclaim, supported. Frame rate: none shown; service time, not decoding, moved with flips in RR4 (+9 % to +27 %, flips down), and bypass should shorten it, but that is a guess until tried.
+
+**Smallest test, no code:** a private cache directory with `BC5_MOUNT_DISK_CACHE_MIB=65536` (only a launcher copy and the arm's switch list change), one fill arm, then A and warm arms in turn. If decodes fall by 80 % or more and flips and service
+time do not move, the storm is not the mount's decoding, and FUSE bypass is the only part left to test. Then `BC5_MOUNT_DIRECT_IO=1` alone, then `BC5_MOUNT_DROP_BACKING=1` alone.
