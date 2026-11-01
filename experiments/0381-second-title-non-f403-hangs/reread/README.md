@@ -123,6 +123,22 @@ is one arm and takes only this test's switches. The lock line is test build 2's 
 Not yet run; `test_arm.sh` drives the gate on stand-ins. The launcher's check of `TB2_SERIES_LINE` was not read: the refused read
 was for that, so if the launcher refuses, this is the first place to look.
 
+## F687 and F688 catchers
+
+`mkcatch0381r.py` puts them into a copy of test build 2's `bc5LleAgc.cpp`; `setup0381r.sh` builds that into `reread/bin/kyty_emulator`,
+linked as tb2 was. Read-only, off unless set, and written to their own files in the capture directory, so logging off and the
+journal's buffer do not hide them. Neither touches GPU submission.
+
+- `BC5_0381_PAGE_CHECK=1112eae000` (`page-check.txt`). For each address: the host's GPU mapping and the rights it recorded, zero
+  page, learned window, guest ranges, guest VMA, `/proc/self/maps` rights, and resident and swapped from pagemap. Written at each
+  change, and for any fault address at a timeout. It decides F687's open point at the next start: is the page in a real mapping, with
+  read rights? The rights are the host's record, not a read of the PTE.
+- `BC5_0381_REOPEN_TRACE=1` (`reopen-trace.txt`). For 240 s after a device reopen, each second: flips, mapped bytes, GTT, fence wait,
+  how many of the killed jobs' labels have not reached their value, and the threads asleep on an unusual kernel wait. Pinning would
+  show GTT climbing with a thread in the driver; labels would show flat GTT with open labels and the title asleep. It only acts on a
+  reopen, so the arms may never exercise it: nothing here forces a hang. To learn from the next one, these two switches must be
+  in his play launcher, and the emulator must be this binary. That launcher change is the maintainer's decision.
+
 ## Local checks
 
 - `cargo test -p bc5-mount`: 81 + 15 + 10 passed, 1 ignored (Windows host).
@@ -130,7 +146,10 @@ was for that, so if the launcher refuses, this is the first place to look.
   `fuser` whose build script accepts a Windows host (not committed). `cargo fmt --check` clean.
 - `bash test_reread.sh`: 10 of 10, stand-in `/proc`, lines in the mount's format. `bash test_arm.sh`: 8 of 8, with `bash -n` of all
   scripts.
-- Not run: any FUSE read, `fadvise`, the switches, the sampler on the box.
+- `test_stream.sh`: 13 of 13. `test_catch0381r.cpp` (MSVC 19, pure parts): all passed. `mkcatch0381r.py` applied to main's unit,
+  extracted from patch 0001: 8 edits, every anchor once.
+- Not run: any FUSE read, `fadvise`, the switches, the sampler on the box. `catch0381r_host.inc` has never been compiled: the laptop
+  has no Linux C++ toolchain. Its first compile is `setup0381r.sh`, on the box, and an anchor that does not fit tb2's unit stops there.
 
 ## Proposed F rows
 

@@ -29,7 +29,7 @@ S
 }
 # exec keeps the shell's PID, so the file names the stream itself, with its start time.
 start_stream() {
-    ssh bc250 "F=\$HOME/bc5-work/exp0381/reread/stream-$TOKEN.pid; echo \"\$\$ \$(sed 's/^.*) //' /proc/\$\$/stat | awk '{ print \$20 }')\" > \"\$F\"; exec timeout 7000 journalctl -k -f -n 0 -o short-precise" > "$OUT/kern-$ID.txt" 2>&1 &
+    ssh bc250 "F=\$HOME/bc5-work/exp0381/reread/stream-$TOKEN.pid; echo \"\$\$ \$(sed 's/^.*) //' /proc/\$\$/stat | awk '{ print \$20 }')\" > \"\$F\"; exec timeout 7000 journalctl -k -f -n 0 -o short-precise" < /dev/null > "$OUT/kern-$ID.txt" 2>&1 &
     KP=$!
 }
 stop_stream() {
@@ -58,6 +58,15 @@ $(base64 -w76 "$HERE/sample-reread.sh")
 B
 base64 -d > \$W/exp0381/reread/walk0381r.cmd <<'B'
 $(base64 -w76 "$HERE/walk0381r.cmd")
+B
+base64 -d > \$W/exp0381/reread/mkcatch0381r.py <<'B'
+$(base64 -w76 "$HERE/mkcatch0381r.py")
+B
+base64 -d > \$W/exp0381/reread/catch0381r_pure.inc <<'B'
+$(base64 -w76 "$HERE/catch0381r_pure.inc")
+B
+base64 -d > \$W/exp0381/reread/catch0381r_host.inc <<'B'
+$(base64 -w76 "$HERE/catch0381r_host.inc")
 B
 BC5_SRC=\$W/exp0381/reread/tools.tar
 $(cat "$HERE/setup0381r.sh")

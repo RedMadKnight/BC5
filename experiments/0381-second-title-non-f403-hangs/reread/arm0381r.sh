@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # BC5 exp 0381, re-reads: one arm of the second title on the box, RT on, no pad, under the series' lock line.
-# Private paths only: test build 2's binary and wd, the snapshot saves-sample reset into the private save directory, the
+# Private paths only: test build 2 with the catchers (reread/bin) and its wd, the snapshot saves-sample reset into the private save directory, the
 # private learned file, a private mount binary. The route is gated on the journal as exp 0382's s6n0382.sh (slot 4, then the walk
 # of exp 0379's walk0379s4.cmd). It stops on the first kernel line and at the box cap. It writes no lock line of its own.
 # usage: ssh bc250 'bash -s' -- <tag> <token> <cap_s> [NAME=value ...] < arm0381r.sh
@@ -20,8 +20,8 @@ IN=$E/in-tb2/experiments/0381-second-title-non-f403-hangs
 . "$RR/gate0381r.inc"
 tb2_own
 pgrep '^kyty_emulator' > /dev/null && { echo "GUARD: an emulator runs"; exit 3; }
-LAUNCH=$RR/play-pkg-0381r.sh; MB=$RR/target/release/bc5-mount
-[ -x "$LAUNCH" ] && [ -x "$MB" ] && [ -x "$TB/bin/kyty_emulator" ] && [ -f "$RR/walk0381r.cmd" ] || { echo "not set up"; exit 1; }
+LAUNCH=$RR/play-pkg-0381r.sh; MB=$RR/target/release/bc5-mount; EMU=$RR/bin/kyty_emulator
+[ -x "$LAUNCH" ] && [ -x "$MB" ] && [ -x "$EMU" ] && [ -f "$RR/walk0381r.cmd" ] || { echo "not set up"; exit 1; }
 mkdir -p "$R"
 [ -e "$R/$TAG-start.txt" ] && { echo "tag $TAG is used"; exit 6; }
 grep -qx 'RayTracing.PPSA03671=on' "$E/input-rton.cfg" || { echo "the config is not RT on"; exit 8; }
@@ -36,10 +36,10 @@ tb2_queue "$TB2_LINE: mount reread arm $TAG, cap $CAP s, RT on, [$*] | $(date '+
 sync; sudo -n sh -c 'echo 3 > /proc/sys/vm/drop_caches' 2> /dev/null || echo "caches not dropped" >> "$R/$TAG-start.txt"
 CMD=$RR/in-$TAG.cmd
 printf 'wait 1000\n' > "$CMD"; rm -f "$CMD.done"
-{ date '+%F %T'; echo "arm $TAG cap $CAP [$*], binary $(md5sum < "$TB/bin/kyty_emulator" | cut -c1-8), mount $(md5sum < "$MB" | cut -c1-8), launcher $(md5sum < "$LAUNCH" | cut -c1-8), sample $SAMPLE"; } > "$R/$TAG-start.txt"
+{ date '+%F %T'; echo "arm $TAG cap $CAP [$*], binary $(md5sum < "$EMU" | cut -c1-8), mount $(md5sum < "$MB" | cut -c1-8), launcher $(md5sum < "$LAUNCH" | cut -c1-8), sample $SAMPLE"; } > "$R/$TAG-start.txt"
 DRM=/sys/class/drm/card1/device setsid bash "$RR/sample-reread.sh" "$R/$TAG-sample.txt" $((CAP + 60)) < /dev/null > /dev/null 2>&1 &
-setsid bash "$IN/boxcap0381.sh" /exp0381/tb2/bin/kyty_emulator "$CAP" "$R/$TAG-start.txt" < /dev/null > /dev/null 2>&1 &
-distrobox enter ubuntu -- env BC5_MOUNT_STATS=5 KYTY_BC5_INPUT_CMD="$CMD" TB2_SERIES_LINE="$TB2_LINE" "$@" "$LAUNCH" < /dev/null > "$R/$TAG-launch.out" 2>&1 &
+setsid bash "$IN/boxcap0381.sh" /exp0381/reread/bin/kyty_emulator "$CAP" "$R/$TAG-start.txt" < /dev/null > /dev/null 2>&1 &
+distrobox enter ubuntu -- env BC5_EMU="$EMU" BC5_0381_PAGE_CHECK=1112eae000 BC5_0381_REOPEN_TRACE=1 BC5_MOUNT_STATS=5 KYTY_BC5_INPUT_CMD="$CMD" TB2_SERIES_LINE="$TB2_LINE" "$@" "$LAUNCH" < /dev/null > "$R/$TAG-launch.out" 2>&1 &
 LP=$!
 EP=""
 for _ in $(seq 1 120); do EP=$(pgrep -o -x kyty_emulator) && break; sleep 0.5; done
@@ -60,6 +60,7 @@ done
 [ -n "$WHY" ] && { echo "$(date '+%F %T') stopped: $WHY" >> "$R/$TAG-start.txt"; [ -d "/proc/$EP" ] && kill -TERM "$EP"; }
 wait $LP
 echo "launcher exit $?" >> "$R/$TAG-launch.out"
+[ -n "$J" ] && for f in page-check.txt reopen-trace.txt; do [ -f "$(dirname "$J")/$f" ] && cp "$(dirname "$J")/$f" "$R/$TAG-$f"; done
 echo "$(date '+%F %T') arm ended, gameplay at ${G:-never}, ${WHY:-the cap or the launcher}" >> "$R/$TAG-start.txt"
 tb2_queue "$TB2_LINE: mount reread arm $TAG ended | $(date '+%F %T')"
 [ -z "$WHY" ]
