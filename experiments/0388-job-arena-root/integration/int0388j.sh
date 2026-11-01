@@ -14,7 +14,7 @@ export LC_ALL=C LANGUAGE=C
 W=$HOME/bc5-work; E=$W/exp0388; I=$E/integration; K=$HOME/src/KytyPlus; HERE=$(cd "$(dirname "$0")" && pwd)
 NB=$W/kytyplus-build/src/kyty_emulator; LB=$W/kytyplus-build-lean/src/kyty_emulator; ARCH=$W/backend-ubuntu/libbc5_backend.a
 MB=$W/bc5-tools-ubuntu/release/bc5-mount; TOOLS=$HOME/src/bc5/tools; NEWHDR=src/bc5/job_push_wait.hpp
-EXPECT_NORMAL=78f25172; EXPECT_LEAN=7b246487; EXPECT_ARCHIVE=3292bdaf; EXPECT_PATCH=476e1b3a; EXPECT_NEW=4e559f47; EXPECT_KIT=0874d633
+EXPECT_NORMAL=78f25172; EXPECT_LEAN=7b246487; EXPECT_ARCHIVE=3292bdaf; EXPECT_PATCH=476e1b3a; EXPECT_NEW=f3022900; EXPECT_KIT=dc2cf334
 m() { md5sum < "$1" | cut -c1-8; }
 tdiff() { git -C "$K" diff --no-color f266548 | grep -av '^index ' | md5sum | cut -c1-8; }
 stop() { echo "int0388j STOP: $*"; exit 1; }

@@ -73,7 +73,7 @@ files["check0388.py"] = s
 s = files["series0388.sh"]
 s = R(s, "the third cycle's 22 runs, one go0388.sh at a time, under one deadline of 105 min.", "the route runs on the shared build, one go0388.sh at a time, under one deadline.")
 s = R(s, "# usage: series0388.sh     Exit:", "# usage: series0388.sh baseline|post     Exit:")
-s = R(s, "LIMIT=6300;", 'case "${1:-}" in baseline) LIMIT=900; RUNS="S1:on" ;; post) LIMIT=3000; RUNS="T1:off T2:off T3:off U1:off" ;; *) echo "baseline or post"; exit 1 ;; esac\n')
+s = R(s, "LIMIT=6300;", 'case "${1:-}" in baseline) LIMIT=900; RUNS="S2:on" ;; post) LIMIT=3000; RUNS="T1:off T2:off T3:off U1:off" ;; *) echo "baseline or post"; exit 1 ;; esac\n')
 s = R(s, "for t in G4:off F6:off H1:off J1:off K1:off L1:off H2:off J2:off G5:off F7:off K2:off L2:off H3:off J3:off H4:off J4:off G6:off F8:off K3:off L3:off H5:off J5:off; do", "for t in $RUNS; do")
 s = R(s, 'OUT=$HERE/raw/series.txt; ROWS=$HERE/raw/rows.txt\nmkdir -p "$HERE/raw"; : > "$OUT"; : > "$ROWS"\n', 'OUT=$HERE/raw/series.txt; ROWS=$HERE/raw/rows.txt\nmkdir -p "$HERE/raw"; touch "$OUT" "$ROWS"\n')
 files["series0388.sh"] = s

@@ -27498,7 +27498,7 @@ index 82be73c..f090fcb 100644
  } // namespace Libs::Audio::AudioInternal
 diff --git a/src/libs/bc5LleAgc.cpp b/src/libs/bc5LleAgc.cpp
 new file mode 100644
-index 0000000..fbe979a
+index 0000000..f25c107
 --- /dev/null
 +++ b/src/libs/bc5LleAgc.cpp
 @@ -0,0 +1,8374 @@
@@ -32151,7 +32151,7 @@ index 0000000..fbe979a
 +			}
 +		}
 +		char name[512];
-+		if (every > 0 || force)
++		if (every > 0)
 +			std::snprintf(name, sizeof(name), "%s/rt-%010" PRIx64 "-%ux%u-%s-f%u-t%07.2f.ppm", g_dump_dir.c_str(), va, w, h, fmt, family, dump_t);
 +		else
 +			std::snprintf(name, sizeof(name), "%s/rt-%010" PRIx64 "-%ux%u-%s-f%u.ppm", g_dump_dir.c_str(), va, w, h, fmt, family);
