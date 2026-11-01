@@ -231,3 +231,32 @@ page read under a second ago reaches the mount again.
 
 **Cache test (RR5).** `series0381r.sh <id> <out> cache`: a fill arm W0, then A1 W1 A2 W2, about 76 minutes. W uses the private `reread/dc` with a 64 GiB limit, through one more changed line in the private launcher. A arms keep the shared cache, and `arm0381r.sh` refuses
 a bigger limit without the private directory, so the shared cache is never written. Each arm's start file records the private cache's size.
+
+## RR5: the private 64 GiB disk cache (2026-11-01)
+
+W0 (fill), A1, W1, A2, W2, all to the 900 s cap with no amdgpu kernel line. RT on, no pad, mount c39cac9f, emulator be846ba2, swappiness 60, page-cluster 3. VGT_HS_OFFCHIP_PARAM was latched at 0x1ff since exp 0392's T1 (top
+session's note), so RR5 is not the same GPU state as RR4. The private cache ended at 18.0 GiB of its 64: 15.6 GiB after the fill, so it was never at its limit. The shared cache was not written. Mount figures are the window
+200–830 s; flips are minutes 3–14. The counter "decoded" also counts raw blocks, which the cache does not hold, so decode time is the measure of Kraken here, not the block count.
+
+| | A1 | W1 | A2 | W2 | W0 |
+|---:|---:|---:|---:|---:|---:|
+| served, GiB | 14.2 | 17.4 | 18.7 | 11.6 | 14.3 |
+| Kraken and raw decode time, s | 61 | 7 | 101 | 4 | 10 |
+| mount CPU, s | 105 | 66 | 157 | 54 | 60 |
+| from the disk cache, GiB | 2.2 | 21.0 | 3.1 | 18.7 | 11.9 |
+| disk read mean, µs | 1,351 | 9,057 | 666 | 6,739 | 8,621 |
+| service mean, µs | 2,466 | 3,723 | 1,412 | 3,661 | 3,408 |
+| backing read per MiB served | 1.38 | 1.89 | 1.41 | 2.26 | 1.67 |
+| repeats, % of served | 89.2 | 87.1 | 88.9 | 80.3 | 90.7 |
+| repeats within 1 s, % | 70.0 | 70.4 | 68.9 | 71.2 | 70.3 |
+| flips/s | 34.4 | 29.9 | 31.3 | 31.8 | 32.3 |
+| frames of 100 ms or more, whole run | 301 | 353 | 352 | 316 | 267 |
+
+- **Decoding.** The cache takes out 91–96 % of decode time, and flips do not follow: A 34.4 and 31.3, W 29.9 and 31.8. Kraken is not what limits the frame rate in these calm minutes.
+- **Price.** A read from the new cache takes 6.7–9.1 ms, against 0.7–1.4 ms in the A arms, and service time rises by 51–159 %. Why was not measured; the fresh file was written block by block.
+- **Memory.** No change that holds across the pairs: file LRU 750–920 MiB in all.
+- **Repeats.** Unchanged, again at about 70 % within a second, so they do not depend on the decode path.
+- **Not tested.** No arm had a storm (no minute under 1,400 flips after minute 3), so this says nothing about storms. They came in 2 of the 4 RR4 arms, and in none of the 6 at swappiness 60; too few to say why.
+
+**Verdict.** The bigger cache is no frame-rate fix and stays off. Together with RR4 this also takes the case out of the pre-decoded image: removing Kraken brought no frames. The open questions stay why a page read under a
+second ago comes back, and what sets off a storm.
