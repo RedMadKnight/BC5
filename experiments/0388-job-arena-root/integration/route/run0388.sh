@@ -164,7 +164,7 @@ inputs_ok() {
         case "${!v:-FILL}" in FILL) die "the pin $v is not filled" ;; esac
     done
     BIN=$W/kytyplus-build/src/kyty_emulator  # the shared normal build
-    case "$TAG" in S*) WANT8=$NORMAL; WANTL=$LAUNCHER ;; *) WANT8=$NEW; WANTL=$LAUNCHER_NEW ;; esac
+    WANT8=$NEW; WANTL=$LAUNCHER_NEW
     [ "$(m "$BIN" | cut -c1-8)" = "$WANT8" ] || die "the shared binary is not $WANT8"
     [ "$(m "$W/play-pkg.sh")" = "$WANTL" ] || die "the launcher is not $WANTL"
     [ "$(m "$W/bc5-run.env")" = "$RUN_ENV" ] || die "bc5-run.env is not $RUN_ENV"

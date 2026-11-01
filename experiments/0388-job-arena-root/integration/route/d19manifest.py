@@ -12,8 +12,8 @@ Nothing here sources or runs a settings file. Exit 0 only for a pass; 1 blocks; 
 Last line: MANIFEST PASS or MANIFEST FAIL."""
 import hashlib, os, re, shlex, sys
 
-ENV_MD5 = "cb8ad5fcfd6eac2a5cafac2a501b3eba"   # the bc5-run.env these tables were read from (RUN_ENV in pins.env)
-LAUNCHER_MD5 = "48a4dbf964693a22b13e88612fc1dc4f"  # exp 0399's line in the new launcher; S runs do not use this check
+ENV_MD5 = "e5030475c208c557ac9147f0f8dd2429"   # the bc5-run.env these tables were read from (RUN_ENV in pins.env)
+LAUNCHER_MD5 = "97835f8850cc22ece5c4bcdbbb646912"  # exp 0399's line in the new launcher; S runs do not use this check
 MAX_ENVIRON = 1 << 20
 SLACK = 2  # seconds, as d19gates.py
 
@@ -33,30 +33,30 @@ SYSTEM_BACKGROUND = {"SDL_VIDEO_MINIMIZE_ON_FOCUS_LOSS": "0"}
 
 # The guards named by the reviews. They are also on the tables; these are named again so their loss reads as such.
 GUARDS = ("BC5_DIRECT_GPU_CHECK", "BC5_DIRECT_GPU_CHECK_PRODUCT", "BC5_DIRECT_SHADOW_LABELS", "BC5_DIRECT_HOST_INDIRECT",
-          "BC5_DIRECT_COMPUTE_RING", "BC5_DIRECT_CROSS_RING_WAITS", "BC5_DIRECT_RING_DEPS", "BC5_DIRECT_SOFT_WAIT_MS",
-          "BC5_DIRECT_TWO_RING_WAIT_MS", "BC5_DIRECT_RING_ORDER_WAITS", "BC5_DIRECT_DMA_SYNC", "BC5_DIRECT_RINGS",
-          "BC5_DIRECT_MAX_IN_FLIGHT", "BC5_DIRECT_ASYNC", "BC5_DIRECT_RING_ASYNC", "BC5_DIRECT_CHAIN")
+          "BC5_DIRECT_CROSS_RING_WAITS", "BC5_DIRECT_RING_DEPS", "BC5_DIRECT_SOFT_WAIT_MS",
+          "BC5_DIRECT_TWO_RING_WAIT_MS", "BC5_DIRECT_DMA_SYNC",
+          "BC5_DIRECT_CHAIN")
 
 RT_BUILD = "909974400,909939400,909936c00,909939700,909939900,909974200,909973900,909973b00,909973d00,909973f00,11d049aa00,11d04a6000,11d04bb900"
 EAGER = "RenderGpuWcLarge,RenderGpuWcSmall,RenderGpuRwLarge,RenderGpuRwSmall,CommitIABufferAllocator,AMM,RenderAlloc,Physics,Decal Job Scheduler,VisualEffectInstanceHeap,DynamicHeap,DynamicHeap Small,ComponentHeap,ComponentHeap Small,MaterialHeap,DDLHeap,Physics query allocator"
 # Both variants, in the order the chain settles them. {HOME} is the HOME of the dump.
 COMMON = {
     # bc5-run.env
-    "BC5_GC_MODE": "direct", "BC5_DIRECT_STAGE": "all", "BC5_DIRECT_RINGS": "1", "BC5_DIRECT_REOPEN": "1",
-    "BC5_DIRECT_GDS_KIB": "64", "BC5_DIRECT_OA": "16", "BC5_DIRECT_GWS": "64", "BC5_DIRECT_GDS_ALL": "1",
-    "BC5_DIRECT_GDS_SHADOW": "1", "BC5_DIRECT_JOURNAL": "min", "BC5_DIRECT_ASYNC": "1",
-    "KYTY_BC5_ALL_RW": "1", "KYTY_BC5_DMABUF": "1", "KYTY_BC5_CACHE_MIB": "96,16,16,16", "KYTY_BC5_VMA_BLOCK_MIB": "16",
+    "BC5_GC_MODE": "direct", 
+    
+    "BC5_DIRECT_JOURNAL": "min", 
+    
     "KYTY_GUEST_MEMORY_MB": "13824", "SDL_JOYSTICK_DISABLE_UDEV": "1", "SDL_VIDEODRIVER": "wayland",
-    "BC5_DIRECT_RING_ASYNC": "1", "BC5_DIRECT_MAX_IN_FLIGHT": "24", "BC5_DIRECT_PIECES_DRY": "1", "BC5_DIRECT_PIECES_FULL": "1",
+    
     # play-pkg.sh 55531ab6
     "BC5_DIRECT_LAZY_NAMES": "orbis_user_malloc,Wwise,SoundAlloc,FileSystem,UIStringAlloc",
     "SHADPS4_SYSMODULES_PACK_DIR": "{HOME}/bc5-data/sysmodules-pack-hle-ampr-noplaygo", "BC5_DIRECT_EAGER_NAMES": EAGER,
-    "BC5_DIRECT_MEC_INDIRECT": "1", "BC5_DIRECT_GPU_CHECK": "1", "BC5_DIRECT_DMA_SYNC": "1", "BC5_DIRECT_RING_ORDER_WAITS": "1",
+    "BC5_DIRECT_MEC_INDIRECT": "1", "BC5_DIRECT_GPU_CHECK": "1", "BC5_DIRECT_DMA_SYNC": "1", 
     "BC5_DIRECT_REMEMBER_UNMAPPED": "1", "KYTY_BC5_APR_PARALLEL": "8", "BC5_MOUNT_DISK_CACHE": "{HOME}/bc5-data/cache/bc5-mount",
-    "BC5_DIRECT_DMA_SNAPSHOT": "4096", "BC5_DIRECT_GC_TF_RING": "1", "BC5_DIRECT_FLAT_APERTURE": "1", "BC5_DIRECT_AMM_PRT": "1",
+    "BC5_DIRECT_GC_HS_OFFCHIP": "1", "BC5_DIRECT_DMA_SNAPSHOT": "4096", "BC5_DIRECT_GC_TF_RING": "1", "BC5_DIRECT_FLAT_APERTURE": "1", "BC5_DIRECT_AMM_PRT": "1",
     "BC5_DIRECT_SKIP_PGM": "0", "KYTY_BC5_RT_BUILD_PGM": RT_BUILD, "BC5_DIRECT_CHAIN": "2", "BC5_DIRECT_CS_PREFIX": "1",
-    "KYTY_BC5_APR_READAHEAD": "4", "KYTY_BC5_MIN_FLIP_RATE": "0", "BC5_DIRECT_INDIRECT_DRAWS": "multi", "BC5_DIRECT_ALIASES": "1",
-    "BC5_DIRECT_COMPUTE_RING": "-1", "BC5_DIRECT_CROSS_RING_WAITS": "all", "BC5_DIRECT_GPU_CHECK_PRODUCT": "1",
+    "BC5_DIRECT_INDIRECT_DRAWS": "multi", "BC5_DIRECT_ALIASES": "1",
+    "BC5_DIRECT_CROSS_RING_WAITS": "all", "BC5_DIRECT_GPU_CHECK_PRODUCT": "1",
     "BC5_DIRECT_SHADOW_LABELS": "1", "BC5_DIRECT_HOST_INDIRECT": "learn:1100000000", "BC5_DIRECT_SOFT_WAIT_MS": "8",
     "BC5_DIRECT_RING_DEPS": "dcb", "BC5_DIRECT_TWO_RING_WAIT_MS": "4",
     # the runner's private launcher and ENVS

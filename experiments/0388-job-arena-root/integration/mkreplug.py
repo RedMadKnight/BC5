@@ -27,6 +27,9 @@ for x in lines:
     keep.append(x)
 s = "\n".join(keep)
 assert "top exp 0372" not in s
+s = R(s, "chk 'export BC5_DIRECT_COMPUTE_RING=-1 BC5_DIRECT_CROSS_RING_WAITS=all  #", "chk 'export BC5_DIRECT_CROSS_RING_WAITS=all  #")
+s = R(s, "'exp0372/direct-learned-pkg.txt' 'COMPUTE_RING=-1'; do", "'exp0372/direct-learned-pkg.txt' 'CROSS_RING_WAITS=all'; do")
+s = R(s, 'WANTENV=("BC5_DIRECT_COMPUTE_RING=-1" ', 'WANTENV=(')
 open(f"{OUT}/s6n0372j.sh", "w", encoding="utf-8", newline="").write(s)
 
 s = open(f"{SRC}/replug0372.sh", encoding="utf-8", newline="").read()

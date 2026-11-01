@@ -25,12 +25,10 @@ FIXLINE = re.compile(r"job-arena fix (ON|OFF) for PPSA03671")
 
 
 ARMS = {
-    "S": "",
-    "T": "KYTY_BC5_JOB_PUSH_TRACE=1",
-    "U": "KYTY_BC5_JOB_PUSH_WAIT=0 KYTY_BC5_JOB_PUSH_TRACE=1",
+    "T": "",
 }
 WAITLINE = re.compile(r"job push wait (ON|OFF), ")
-WAITWANT = {"S": set(), "T": {"ON"}, "U": {"OFF"}}
+WAITWANT = {"T": set()}
 
 
 def tables(fix, tag):

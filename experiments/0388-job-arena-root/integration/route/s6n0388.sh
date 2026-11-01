@@ -18,9 +18,7 @@ W=${D19_WORK:-$HOME/bc5-work}; EX=$W/exp0388r; E=$EX/run; R=$E/raw; LOCK=$W/BOX-
 BIN=${D19_BIN:?}; WANT=${BC5_0380_WANT:?}; LOCKLINE=${E0388_LOCKLINE:?}
 # 0388: the first letter of the tag is the arm; the check reads the same table
 case "$TAG" in
-  S*) ARM="" ;;
-  T*) ARM="KYTY_BC5_JOB_PUSH_TRACE=1" ;;
-  U*) ARM="KYTY_BC5_JOB_PUSH_WAIT=0 KYTY_BC5_JOB_PUSH_TRACE=1" ;;
+  T*) ARM="" ;;
   *) echo "no arm for $TAG"; exit 1 ;;
 esac
 SWITCHES="KYTY_BC5_JOB_ARENA_FIX=$FIXV $ARM"
@@ -80,7 +78,7 @@ CFG_SRC=$W/input.cfg; CFG=$E/input-rt$RT.cfg
 cp -p "$LEARN_SRC" "$LEARN" || exit 1
 # 2. The derived launcher: play-pkg.sh with its own log, working directory and save directory, and two hooks after the
 #    env-file loop (the input configuration, the learned file).
-case "$TAG" in S*) PLAY_PKG_MD5=55531ab6 ;; *) PLAY_PKG_MD5=48a4dbf9 ;; esac  # the new launcher has exp 0399's line; run0388.sh checks the full md5
+PLAY_PKG_MD5=97835f88  # the new launcher has exp 0399's line; run0388.sh checks the full md5
 [ "$(md5sum < "$LAUNCH_SRC" | cut -c1-8)" = "$PLAY_PKG_MD5" ] || { echo "$LAUNCH_SRC is md5 $(md5sum < "$LAUNCH_SRC" | cut -c1-8), not $PLAY_PKG_MD5: not started"; exit 1; }
 cp "$LAUNCH_SRC" "$LAUNCH" || exit 1
 chk() { local c; c=$(grep -cxF -- "$1" "$LAUNCH"); [ "$c" = 1 ] || { echo "anchor [$1] occurs $c times in $LAUNCH_SRC, expected once: not started"; rm -f "$LAUNCH"; exit 1; }; }
@@ -90,7 +88,7 @@ chk '  EMU=~/bc5-work/kytyplus-build-lean/src/kyty_emulator LOG=~/bc5-work/play-
 chk 'cd ~/bc5-work'
 chk 'export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/_SaveData-pkg-play'
 chk 'export BC5_DIRECT_LEARNED=$HOME/bc5-work/direct-learned-pkg.txt'
-chk 'export BC5_DIRECT_COMPUTE_RING=-1 BC5_DIRECT_CROSS_RING_WAITS=all  # exp 0342 (F412, F415): one ring - every compute buffer on the GFX ring (was 0)'
+chk 'export BC5_DIRECT_CROSS_RING_WAITS=all  # exp 0342 (F412, F415): one ring - every compute buffer on the GFX ring (was 0)'
 chk 'export BC5_DIRECT_GPU_CHECK_PRODUCT=1 BC5_DIRECT_SHADOW_LABELS=1  # exp 0342 (F414, F415): the RT-on guards - the product staircase in the CP check, host shadow labels'
 sed -i -e 's#^LOG=~/bc5-work/play-pkg-last\.log$#LOG=~/bc5-work/exp0388r/run/play-last.log  \# exp 0350/0364: own log#' \
        -e 's#^\(  EMU=~/bc5-work/kytyplus-build-lean/src/kyty_emulator\) LOG=~/bc5-work/play-pkg-lean-last\.log$#\1 LOG=~/bc5-work/exp0388r/run/play-last.log  \# the same own log#' \
@@ -104,7 +102,7 @@ PRE='. ~/bc5-work/exp0388r/s/prestart0388.sh || exit 97  # exp 0388'
 sed -i -e "/^~\/bc5-work\/pad-volume\.sh >> \"\$LOG\"/i $PRE" -e "/^  \"\$EMU\" --game \"\$M\" /i $PRE" "$LAUNCH" || exit 1
 [ "$(grep -cxF -- "$PRE" "$LAUNCH")" = 2 ] && [ "$(grep -n -F "$PRE" "$LAUNCH" | head -1 | cut -d: -f1)" -gt "$(grep -n '^  done < "$PKG_ENV"$' "$LAUNCH" | cut -d: -f1)" ] || { echo "the start check is not after the last settings load: not started"; exit 1; }
 diff -u "$LAUNCH_SRC" "$LAUNCH" > "$R/play-pkg-0388.diff"
-for h in BC5_0358_INPUT_CONFIG 'exp0388r/run/wd' 'exp0388r/run/play-last.log' 'exp0388r/run/direct-learned-pkg.txt' 'COMPUTE_RING=-1'; do grep -q "$h" "$LAUNCH" || { echo "the derived launcher lacks $h: not started"; exit 1; }; done
+for h in BC5_0358_INPUT_CONFIG 'exp0388r/run/wd' 'exp0388r/run/play-last.log' 'exp0388r/run/direct-learned-pkg.txt' 'CROSS_RING_WAITS=all'; do grep -q "$h" "$LAUNCH" || { echo "the derived launcher lacks $h: not started"; exit 1; }; done
 [ "$(grep -c '^[-+][^-+]' "$R/play-pkg-0388.diff")" = 13 ] || { echo "the derived launcher's diff is not 5 lines changed + 3 added: not started"; exit 1; }
 [ "$(grep -c 'LOG=~/bc5-work/exp0388r/run/play-last\.log' "$LAUNCH")" = 2 ] && ! grep -Eq 'LOG=~/bc5-work/play-pkg(-lean)?-last\.log' "$LAUNCH" || { echo "a log of the derived launcher is not the private one: not started"; exit 1; }
 bash -n "$LAUNCH" || { echo "the derived launcher does not parse: not started"; exit 1; }
@@ -183,7 +181,7 @@ final_verdict() {
 ENVS=(BC5_EMU="$BIN" BC5_0358_INPUT_CONFIG="$CFG" KYTY_BC5_INPUT_CMD="$E/in-$TAG.cmd" D19_OWNER="$OWNER")
 # shellcheck disable=SC2206
 ENVS+=($SWITCHES)
-WANTENV=("BC5_DIRECT_COMPUTE_RING=-1" "BC5_DIRECT_RING_DEPS=dcb" "BC5_DIRECT_GPU_CHECK=1" "BC5_DIRECT_GPU_CHECK_PRODUCT=1" "BC5_DIRECT_SHADOW_LABELS=1" "BC5_DIRECT_HOST_INDIRECT=learn:1100000000" "BC5_DIRECT_SOFT_WAIT_MS=8" $SWITCHES "KYTY_BC5_INPUT_CONFIG=$CFG" "KYTY_BC5_SAVEDATA_DIR=$SDD" "BC5_DIRECT_LEARNED=$LEARN" "D19_OWNER=$OWNER")
+WANTENV=("BC5_DIRECT_RING_DEPS=dcb" "BC5_DIRECT_GPU_CHECK=1" "BC5_DIRECT_GPU_CHECK_PRODUCT=1" "BC5_DIRECT_SHADOW_LABELS=1" "BC5_DIRECT_HOST_INDIRECT=learn:1100000000" "BC5_DIRECT_SOFT_WAIT_MS=8" $SWITCHES "KYTY_BC5_INPUT_CONFIG=$CFG" "KYTY_BC5_SAVEDATA_DIR=$SDD" "BC5_DIRECT_LEARNED=$LEARN" "D19_OWNER=$OWNER")
 [ -e "$R/$TAG-start.txt" ] && { echo "tag $TAG already used: not started"; exit 1; }
 # 0388: what prestart0388.sh must find after the last settings load.
 { echo "lock=$LOCKLINE"

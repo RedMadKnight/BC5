@@ -47,6 +47,10 @@ for prefix, root in (("backend/", "B"), ("tools/", "T")):
         if full.startswith("backend/kytyplus-patches/") or full.endswith(".md"):
             continue
         add(root, full[len(prefix):], st, None if st == "A" else git("show", f"{RBASE}:{full}"), None if st == "D" else git("show", f"HEAD:{full}"))
+# The two settings files lose their dead lines.
+SET = os.path.dirname(OUT.rstrip("/")) + "/settings/"
+add("W", "play-pkg.sh", "M", open(os.path.dirname(OUT.rstrip("/")) + "/kitout/kit/W/play-pkg.sh", "rb").read(), open(SET + "play-pkg.sh", "rb").read())
+add("W", "bc5-run.env", "M", open("C:/Users/kjani/Documents/ChatGPT/BC5/coordination/box-read/bc5-run.env", "rb").read(), open(SET + "bc5-run.env", "rb").read())
 man = "".join(lines).encode()
 open(f"{OUT}/kit/manifest.txt", "wb").write(man)
 
