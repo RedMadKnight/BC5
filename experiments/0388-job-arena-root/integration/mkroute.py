@@ -2,8 +2,7 @@
 """BC5 exp 0388, the integration: the F454 route on the shared normal build, derived from exp 0388's runner.
 What differs: the directory exp0388r; the shared binary, pinned by its first eight digits, the old one for tag S and the new
 one otherwise; the fix may be on; the first letter of a tag is the check, and the log's wait line is proved; the series.
-Tags: S baseline on the unchanged shared binary, which still has the fix, on. T the wait on. U the wait off. The new binary
-has no fix. usage: mkroute.py <exp 0388 dir> <out dir>"""
+Tags: S baseline on the unchanged shared binary, which still has the fix, on. T the wait on, and on the new binaries the fix may be on again. U the wait off. usage: mkroute.py <exp 0388 dir> <out dir>"""
 import re, sys
 
 SRC, OUT = sys.argv[1:3]
@@ -40,9 +39,6 @@ files["s6n0388.sh"] = s
 s = files["check0388.py"]
 s, n = re.subn(r'ARMS = \{\n.*?\n\}\n', "ARMS = {\n" + "".join(f'    "{k}": "{v}",\n' for k, v in ARMS.items()) + "}\nWAITLINE = re.compile(r\"job push wait (ON|OFF), \")\nWAITWANT = {\"S\": set(), \"T\": {\"ON\"}, \"U\": {\"OFF\"}}\n", s, count=1, flags=re.S)
 assert n == 1
-s = R(s, '''    if arms != {"ON" if fix == "on" else "OFF"}:
-''', '''    if arms != ({"ON"} if tag[0] == "S" else set()):  # only the old binary has the fix
-''')
 s = R(s, '''    for kv in ARMS[tag[0]].split():  # 0388: exactly the arm\'s switches; any other 0388 name stays unknown and blocks
 ''', '''    if tag[0] != "S":
         m.COMMON["BC5_DIRECT_GC_HS_OFFCHIP"] = "1"  # exp 0399\'s line in the new launcher
@@ -74,7 +70,7 @@ files["check0388.py"] = s
 s = files["series0388.sh"]
 s = R(s, "the third cycle's 22 runs, one go0388.sh at a time, under one deadline of 105 min.", "the route runs on the shared build, one go0388.sh at a time, under one deadline.")
 s = R(s, "# usage: series0388.sh     Exit:", "# usage: series0388.sh baseline|post     Exit:")
-s = R(s, "LIMIT=6300;", 'case "${1:-}" in baseline) LIMIT=900; RUNS="S2:on" ;; post) LIMIT=3000; RUNS="T4:off T5:off T6:off U2:off" ;; *) echo "baseline or post"; exit 1 ;; esac\n')
+s = R(s, "LIMIT=6300;", 'case "${1:-}" in baseline) LIMIT=900; RUNS="S2:on" ;; post) LIMIT=3000; RUNS="T7:on T8:on T9:on" ;; *) echo "baseline or post"; exit 1 ;; esac\n')
 s = R(s, "for t in G4:off F6:off H1:off J1:off K1:off L1:off H2:off J2:off G5:off F7:off K2:off L2:off H3:off J3:off H4:off J4:off G6:off F8:off K3:off L3:off H5:off J5:off; do", "for t in $RUNS; do")
 s = R(s, 'OUT=$HERE/raw/series.txt; ROWS=$HERE/raw/rows.txt\nmkdir -p "$HERE/raw"; : > "$OUT"; : > "$ROWS"\n', 'OUT=$HERE/raw/series.txt; ROWS=$HERE/raw/rows.txt\nmkdir -p "$HERE/raw"; touch "$OUT" "$ROWS"\n')
 files["series0388.sh"] = s

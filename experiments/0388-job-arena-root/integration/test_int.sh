@@ -16,7 +16,6 @@ setup() {
     echo a1 > "$KIT/H/src/a.cpp"; echo n1 > "$KIT/H/src/bc5/job_push_wait.hpp"; echo d1 > "$KIT/B/src/d.cpp"; echo r1 > "$KIT/T/m/r.rs"
     { echo "H src/a.cpp $(m "$K/src/a.cpp") $(m "$KIT/H/src/a.cpp")"; echo "H src/old.hpp $(m "$K/src/old.hpp") -"; echo "H src/bc5/job_push_wait.hpp - $(m "$KIT/H/src/bc5/job_push_wait.hpp")"
       echo "B src/d.cpp $(m "$BS/src/d.cpp") $(m "$KIT/B/src/d.cpp")"; echo "T m/r.rs $(m "$TL/m/r.rs") $(m "$KIT/T/m/r.rs")"; } > "$KIT/manifest.txt"
-    echo BC5_DIRECT_GONE > "$KIT/removed-names.txt"
     printf 'old patch\n' > "$T/old.diff"
     { echo "new patch"; for i in 1 2 3 4 5; do echo "exp 0372"; done; echo "+++ b/src/bc5/pad_audio_route.hpp"; } > "$S/0001-new.patch"
     pins
@@ -36,10 +35,9 @@ EOS
     cat > "$T/bin/distrobox" << EOS
 #!/bin/sh
 case "\$*" in
-    *"cmake --build"*) [ "\${TEST_FAIL:-}" = archive ] && exit 1; echo arch2 > "$W/backend-ubuntu/libbc5_backend.a" ;;
-    *build-lean*) [ "\${TEST_FAIL:-}" = lean ] && exit 1; printf 'lean2\njob push wait %%s\nKYTY_BC5_JOB_PUSH_WAIT\n' > "$W/kytyplus-build-lean/src/kyty_emulator" ;;
-    *cargo*) [ "\${TEST_FAIL:-}" = mount ] && exit 1; echo mount2 > "$W/bc5-tools-ubuntu/release/bc5-mount" ;;
-    *) printf 'normal2\njob push wait %%s\njob push wait: pushes\nKYTY_BC5_JOB_PUSH_WAIT\n' > "$W/kytyplus-build/src/kyty_emulator" ;;
+    *"cmake --build"*) [ "\${TEST_FAIL:-}" = archive ] && exit 1; [ "\${TEST_FAIL:-}" = archchange ] && echo arch2 > "$W/backend-ubuntu/libbc5_backend.a"; exit 0 ;;
+    *build-lean*) [ "\${TEST_FAIL:-}" = lean ] && exit 1; printf 'lean2\njob push wait %%s\nKYTY_BC5_JOB_PUSH_WAIT\njob-arena fix APPLIED\n' > "$W/kytyplus-build-lean/src/kyty_emulator" ;;
+    *) printf 'normal2\njob push wait %%s\njob push wait: pushes\nKYTY_BC5_JOB_PUSH_WAIT\njob-arena fix APPLIED\n' > "$W/kytyplus-build/src/kyty_emulator" ;;
 esac
 EOS
     chmod +x "$T"/bin/*
@@ -54,13 +52,13 @@ open(sys.argv[2], "w", encoding="utf-8", newline="").write(s)
 EOS
 }
 run() { ( cd "$S" && PATH="$T/bin:$PATH" HOME="$H" bash int0388j.sh ) > "$T/out" 2>&1; rc=$?; }
-restored='[ $rc != 0 ] && grep -qx normal $W/kytyplus-build/src/kyty_emulator && grep -qx lean $W/kytyplus-build-lean/src/kyty_emulator && grep -qx arch $W/backend-ubuntu/libbc5_backend.a && grep -qx mount $W/bc5-tools-ubuntu/release/bc5-mount && grep -qx a0 $K/src/a.cpp && grep -qx o0 $K/src/old.hpp && [ ! -e $K/src/bc5/job_push_wait.hpp ] && grep -qx d0 $BS/src/d.cpp && grep -qx r0 $TL/m/r.rs && grep -q release $H/lock.log'
+restored='[ $rc != 0 ] && grep -qx normal $W/kytyplus-build/src/kyty_emulator && grep -qx lean $W/kytyplus-build-lean/src/kyty_emulator && grep -qx arch $W/backend-ubuntu/libbc5_backend.a && grep -qx a0 $K/src/a.cpp && grep -qx o0 $K/src/old.hpp && [ ! -e $K/src/bc5/job_push_wait.hpp ] && grep -qx d0 $BS/src/d.cpp && grep -qx r0 $TL/m/r.rs && grep -q release $H/lock.log'
 
 setup; run
 check "success: exit 0" '[ $rc = 0 ]'
 check "success: claimed and released" 'grep -q claim $H/lock.log && grep -q release $H/lock.log'
-check "success: all four outputs" 'grep -q normal2 $W/kytyplus-build/src/kyty_emulator && grep -q lean2 $W/kytyplus-build-lean/src/kyty_emulator && grep -q arch2 $W/backend-ubuntu/libbc5_backend.a && grep -q mount2 $W/bc5-tools-ubuntu/release/bc5-mount'
-check "success: the rollback copies" 'grep -qx normal $W/exp0388/integration/kyty_emulator.before-j && grep -qx arch $W/exp0388/integration/libbc5_backend.a.before-j && grep -qx mount $W/exp0388/integration/bc5-mount.before-j'
+check "success: both binaries, the archive as it was" 'grep -q normal2 $W/kytyplus-build/src/kyty_emulator && grep -q lean2 $W/kytyplus-build-lean/src/kyty_emulator && grep -qx arch $W/backend-ubuntu/libbc5_backend.a'
+check "success: the rollback copies" 'grep -qx normal $W/exp0388/integration2/kyty_emulator.before-j && grep -qx arch $W/exp0388/integration2/libbc5_backend.a.before-j'
 check "success: changed, removed and new files" 'grep -qx a1 $K/src/a.cpp && [ ! -e $K/src/old.hpp ] && [ -e $K/src/bc5/job_push_wait.hpp ] && grep -qx d1 $BS/src/d.cpp && grep -qx r1 $TL/m/r.rs'
 
 setup; echo other > "$W/kytyplus-build/src/kyty_emulator"; run
@@ -77,8 +75,8 @@ setup; TEST_FAIL=archive; export TEST_FAIL; run; unset TEST_FAIL
 check "a failed archive build restores all" "$restored"
 setup; TEST_FAIL=lean; export TEST_FAIL; run; unset TEST_FAIL
 check "a failed lean build restores all" "$restored"
-setup; TEST_FAIL=mount; export TEST_FAIL; run; unset TEST_FAIL
-check "a failed mount build restores all" "$restored"
+setup; TEST_FAIL=archchange; export TEST_FAIL; run; unset TEST_FAIL
+check "a changed archive restores all" "$restored"
 setup; TEST_DIFF=$T/old.diff; export TEST_DIFF; run; unset TEST_DIFF
 check "a tree diff that is not the candidate restores all" "$restored"
 echo "== $ok passed, $bad failed"

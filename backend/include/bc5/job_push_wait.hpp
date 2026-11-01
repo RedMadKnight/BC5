@@ -4,7 +4,8 @@
 // The main thread ("the owner") pushes a job and may then take it itself; one kind of job (the crash's, F444-F454) needs
 // a worker's slots. After a push on the title's JobLoaderSema, while that semaphore's entry holds an open job of that
 // kind, the main thread spins for at most kBoundUs, which leaves the job to the workers. No reason why that much time is
-// enough is shown: most waits run out the bound with the job still open. It replaced exp 0359's job-arena fix.
+// enough is shown: most waits run out the bound with the job still open, and it does not end the crash (exp 0388 T4R),
+// so exp 0359's job-arena fix stays beside it.
 // On by default for every title, off with KYTY_BC5_JOB_PUSH_WAIT=0. Its offsets belong to one build of one executable, so
 // it runs only where the code at kSiteOffset is the known one; any other executable has no such table and is left alone.
 // This header holds the constants and the look at the table, so they can be unit-tested; the host side lives in the

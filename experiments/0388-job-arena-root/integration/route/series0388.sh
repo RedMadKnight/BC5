@@ -4,7 +4,7 @@
 # usage: series0388.sh baseline|post     Exit: 0 the rule was applied; 1 the series stopped; the RESULT lines are in raw/series.txt
 set -u
 HERE=$(cd "$(dirname "$0")" && pwd)
-case "${1:-}" in baseline) LIMIT=900; RUNS="S2:on" ;; post) LIMIT=3000; RUNS="T4:off T5:off T6:off U2:off" ;; *) echo "baseline or post"; exit 1 ;; esac
+case "${1:-}" in baseline) LIMIT=900; RUNS="S2:on" ;; post) LIMIT=3000; RUNS="T7:on T8:on T9:on" ;; *) echo "baseline or post"; exit 1 ;; esac
  RUN_NEED=430   # 35 min for everything; run0388.sh keeps kill, reap and release inside it
 GO=$HERE/go0388.sh
 case "${D19_RUN_FAKE:-}" in *d19-test-*) . "$D19_RUN_FAKE" ;; esac

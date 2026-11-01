@@ -147,7 +147,7 @@ def classify(tag, fix, rc, raw, baseline):
     if not play.strip() or play.startswith("no log of this run"):
         reasons.append("no play log of this run")
     arms = set(FIXLINE.findall(play))
-    if arms != ({"ON"} if tag[0] == "S" else set()):  # only the old binary has the fix
+    if arms != {"ON" if fix == "on" else "OFF"}:
         reasons.append(f"the fix line of the log says {sorted(arms) or 'nothing'}, the arm is {fix}")
 
     if set(WAITLINE.findall(play)) != WAITWANT[tag[0]]:
