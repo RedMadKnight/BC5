@@ -28,7 +28,7 @@ if [ "${BC5_0388_MEMORY:-0}" = 1 ]; then
     BIN=$M/kyty_emulator
     [ -x "$BIN" ] || { echo "play0388: no $BIN"; exit 1; }
     Z=${BC5_0388_ZERO_LIST-$M/zero-list-moving.txt}
-    S=${BC5_0388_SLICES-8}
+    S=${BC5_0388_SLICES-}
     A=${BC5_0388_SCAN_AT-300,600,900,1200,1800}
     if [ -n "$Z" ]; then
         [ -s "$Z" ] || { echo "play0388: no zero list at $Z"; exit 1; }

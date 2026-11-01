@@ -6,7 +6,10 @@ import sys
 
 # Every canary hit recorded so far, as (offset from the heap's start, size). The heaps sat at file 0x156c00000 and
 # 0x226200000: runs 22 (F542) and 37 in RenderGpuWcLarge, run 49 (F629) in CommitIABufferAllocator.
-HITS = {"RenderGpuWcLarge": [(0x57a00000, 0x1200000), (0x74800000, 0x1800000)], "CommitIABufferAllocator": [(0xa800000, 0x800000)]}
+# The other ten came in the 37-minute play of 2026-10-31 20:01, given here as file offsets.
+BASE = 0x156c00000
+TB2 = [(0x1cd200000, 16), (0x1e4600000, 20), (0x1cfa00000, 8), (0x1a2800000, 16), (0x1c3c00000, 26), (0x1afe00000, 20), (0x1b1600000, 20), (0x1b3000000, 18), (0x1b4800000, 18), (0x1e3800000, 10)]
+HITS = {"RenderGpuWcLarge": [(0x57a00000, 0x1200000), (0x74800000, 0x1800000)] + [(f - BASE, m << 20) for f, m in TB2], "CommitIABufferAllocator": [(0xa800000, 0x800000)]}
 
 
 def read(path):

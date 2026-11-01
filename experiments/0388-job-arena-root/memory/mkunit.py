@@ -38,7 +38,6 @@ EDITS = [
 
 text = open(sys.argv[1], encoding="utf-8", newline="").read()
 for a, b in EDITS:
-    a, b = a.replace("\n", "\r\n"), b.replace("\n", "\r\n")  # the host's file has CRLF line ends
     assert text.count(a) == 1, a[:70]
     text = text.replace(a, b)
 open(sys.argv[2], "w", encoding="utf-8", newline="").write(text)

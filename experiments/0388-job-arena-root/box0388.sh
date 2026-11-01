@@ -75,14 +75,14 @@ buildm() {
     cp "$HERE/cpu_model.hpp" "$HERE/zero_skip.hpp" "$M/src/src/bc5/" || stop "no headers"
     python3 -I "$HERE/patch0388.py" "$M/src" > "$R/patchm.out" 2>&1 || { cat "$R/patchm.out"; stop "patch failed"; }
     distrobox enter ubuntu -- sh -c "cd '$M/src' && patch -p1 --no-backup-if-mismatch < '$HERE/patch0379-bc5LleAgc.diff'" >> "$R/patchm.out" 2>&1 || { cat "$R/patchm.out"; stop "the 0379 diff failed"; }
-    [ "$(md5sum < "$M/src/$U" | cut -c1-8)" = 0cf48cd9 ] || stop "the unit after exp 0379's diff is not the laptop's"
+    [ "$(md5sum < "$M/src/$U" | cut -c1-8)" = 1e02ac33 ] || stop "the unit after exp 0379's diff is not the laptop's"
     python3 -I "$HERE/mkunit.py" "$M/src/$U" "$M/src/$U.new" >> "$R/patchm.out" 2>&1 || { cat "$R/patchm.out"; stop "mkunit failed"; }
     mv -f "$M/src/$U.new" "$M/src/$U"
-    [ "$(md5sum < "$M/src/$U" | cut -c1-8)" = 86768672 ] || stop "the final unit is not the laptop's"
+    [ "$(md5sum < "$M/src/$U" | cut -c1-8)" = 2f6cb6c6 ] || stop "the final unit is not the laptop's"
     distrobox enter ubuntu -- sh -c "cd '$B' && ninja -t compdb -x" > "$M/compdb.json" 2> "$R/compdbm.err" || stop "compdb failed"
     bin=$M/kyty_emulator
     [ -f "$bin" ] && mv "$bin" "$bin.$(md5sum < "$bin" | cut -c1-8)"
-    distrobox enter ubuntu -- env LC_ALL=C LANGUAGE=C python3 -I "$HERE/build0388.py" "$M/compdb.json" "$M/src" "$M" "$B" "$bin" "$U.cpp" > "$R/buildm.out" 2>&1
+    distrobox enter ubuntu -- env LC_ALL=C LANGUAGE=C python3 -I "$HERE/build0388.py" "$M/compdb.json" "$M/src" "$M" "$B" "$bin" "$U" > "$R/buildm.out" 2>&1
     rc=$?; echo "build rc $rc; errors $(grep -c 'error:' "$R/buildm.out")"
     grep -n "error:\|undefined\|COMPILE FAILED" "$R/buildm.out" | head -20
     [ "$rc" = 0 ] && [ -x "$bin" ] || stop "build failed: $R/buildm.out"
