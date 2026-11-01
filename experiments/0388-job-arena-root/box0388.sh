@@ -2,6 +2,8 @@
 # BC5 experiment 0388, on the box, in a slot from the top session.
 #   box0388.sh claim      takes BOX-LOCK as coordination/d19/d19box.sh does: the line appears by a hard link
 #   box0388.sh build      private test build: four patched units, the shared objects otherwise (CPU only, nice 19, ~5 min)
+#   box0388.sh buildm     the memory cycle's build into exp0388/m: J's units, bc5LleAgc.cpp with exp 0379's zero skip and the
+#                         shared canary slices; the third build's binary stays where it is
 #   box0388.sh release    clears the lock only if it holds this experiment's exact line
 # Nothing shared is written. ~/src/KytyPlus and the shared build are only read.
 set -u
@@ -62,9 +64,37 @@ build() {
     echo "private binary $(md5sum < "$bin" | cut -d' ' -f1), shared before $shared, after $(md5sum < "$B/src/kyty_emulator" | cut -d' ' -f1)"
     [ "$shared" = "$(md5sum < "$B/src/kyty_emulator" | cut -d' ' -f1)" ] || stop "the shared binary changed"
 }
+buildm() {
+    own || stop "no lock held by 0388"
+    pgrep '^kyty_emulator' > /dev/null && stop "an emulator runs"
+    local M=$E/m U=src/libs/bc5LleAgc.cpp u shared bin rc
+    (cd "$TREE" && sha256sum -c "$HERE/units.sha256" && sha256sum -c "$HERE/unitm.sha256") > "$R/unitsm.txt" 2>&1 || { cat "$R/unitsm.txt"; stop "the shared tree's units are not the pins"; }
+    shared=$(md5sum < "$B/src/kyty_emulator" | cut -d' ' -f1)
+    rm -rf "$M/src" "$M/obj"; mkdir -p "$M/src/src/bc5"
+    for u in $UNITS $U; do mkdir -p "$M/src/$(dirname "$u")"; cp "$TREE/$u" "$M/src/$u" || stop "copy $u"; done
+    cp "$HERE/cpu_model.hpp" "$HERE/zero_skip.hpp" "$M/src/src/bc5/" || stop "no headers"
+    python3 -I "$HERE/patch0388.py" "$M/src" > "$R/patchm.out" 2>&1 || { cat "$R/patchm.out"; stop "patch failed"; }
+    distrobox enter ubuntu -- sh -c "cd '$M/src' && patch -p1 --no-backup-if-mismatch < '$HERE/patch0379-bc5LleAgc.diff'" >> "$R/patchm.out" 2>&1 || { cat "$R/patchm.out"; stop "the 0379 diff failed"; }
+    [ "$(md5sum < "$M/src/$U" | cut -c1-8)" = 0cf48cd9 ] || stop "the unit after exp 0379's diff is not the laptop's"
+    python3 -I "$HERE/mkunit.py" "$M/src/$U" "$M/src/$U.new" >> "$R/patchm.out" 2>&1 || { cat "$R/patchm.out"; stop "mkunit failed"; }
+    mv -f "$M/src/$U.new" "$M/src/$U"
+    [ "$(md5sum < "$M/src/$U" | cut -c1-8)" = 86768672 ] || stop "the final unit is not the laptop's"
+    distrobox enter ubuntu -- sh -c "cd '$B' && ninja -t compdb -x" > "$M/compdb.json" 2> "$R/compdbm.err" || stop "compdb failed"
+    bin=$M/kyty_emulator
+    [ -f "$bin" ] && mv "$bin" "$bin.$(md5sum < "$bin" | cut -c1-8)"
+    distrobox enter ubuntu -- env LC_ALL=C LANGUAGE=C python3 -I "$HERE/build0388.py" "$M/compdb.json" "$M/src" "$M" "$B" "$bin" "$U.cpp" > "$R/buildm.out" 2>&1
+    rc=$?; echo "build rc $rc; errors $(grep -c 'error:' "$R/buildm.out")"
+    grep -n "error:\|undefined\|COMPILE FAILED" "$R/buildm.out" | head -20
+    [ "$rc" = 0 ] && [ -x "$bin" ] || stop "build failed: $R/buildm.out"
+    [ "$(strings "$bin" | grep -c 'KYTY_BC5_0388_')" -ge 11 ] && [ "$(strings "$bin" | grep -c 'BC5_DIRECT_ZERO_SKIP\|BC5_DIRECT_ZERO_SLICES')" -ge 2 ] || stop "the switches are not in the binary"
+    cp "$HERE/zero-list-moving.txt" "$M/zero-list-moving.txt" || stop "no list"
+    echo "private binary $(md5sum < "$bin" | cut -d' ' -f1), list $(md5sum < "$M/zero-list-moving.txt" | cut -c1-8), shared before $shared, after $(md5sum < "$B/src/kyty_emulator" | cut -d' ' -f1)"
+    [ "$shared" = "$(md5sum < "$B/src/kyty_emulator" | cut -d' ' -f1)" ] || stop "the shared binary changed"
+}
 case "${1:-}" in
     claim) claim "${2:-private build}" "${3:-15}" ;;
     build) build ;;
+    buildm) buildm ;;
     release) release ;;
-    *) stop "usage: box0388.sh claim|build|release" ;;
+    *) stop "usage: box0388.sh claim|build|buildm|release" ;;
 esac

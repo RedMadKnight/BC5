@@ -225,4 +225,37 @@ inline std::uint64_t place(const Heap& h, std::uint64_t base, SkipSet* set) {
     return n;
 }
 
+// Exp 0388: runs may share canary slices (BC5_DIRECT_ZERO_SLICES=<n>, 1 to 4096; unset or invalid: one slice per run).
+// A slice costs 2 MiB and 50 ms of each check round. A hit in a shared slice takes back every run on it.
+inline std::size_t parse_slices(const char* text) {
+    if (text == nullptr || *text == 0 || std::strlen(text) > 4) return 0;
+    std::size_t n = 0;
+    for (const char* p = text; *p != 0; p++) {
+        if (*p < '0' || *p > '9') return 0;
+        n = n * 10 + static_cast<std::size_t>(*p - '0');
+    }
+    return n <= 4096 ? n : 0;
+}
+inline std::size_t slice_count(std::size_t runs, std::size_t wanted) { return wanted == 0 || wanted > runs ? runs : wanted; }
+inline std::size_t slice_of(std::size_t run, std::size_t slices) { return run % slices; }
+// Flags per run: 0 watched, anything else hit or done. Only the first `placed` runs have chunks under the canary.
+template <class Flag>
+bool slice_watched(const Flag* flags, std::size_t placed, std::size_t slices, std::size_t s) {
+    for (std::size_t r = 0; r < placed; r++) {
+        if (slice_of(r, slices) == s && flags[r].load() == 0) return true;
+    }
+    return false;
+}
+template <class Flag>
+std::size_t slice_hit(Flag* flags, std::size_t placed, std::size_t slices, std::size_t s) {
+    std::size_t n = 0;
+    for (std::size_t r = 0; r < placed; r++) {
+        if (slice_of(r, slices) == s && flags[r].load() == 0) {
+            flags[r] = 1;
+            n++;
+        }
+    }
+    return n;
+}
+
 } // namespace bc5::zero_skip

@@ -4,6 +4,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include <atomic>
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -112,6 +113,60 @@ TEST_CASE("the skip set places runs, gives chunks and runs back, and keeps run i
     s.clear();
     CHECK(s.empty());
     CHECK(s.bytes() == 0);
+}
+
+TEST_CASE("the slice switch accepts 1 to 4096 and nothing else", "[zero_skip]") {
+    CHECK(parse_slices(nullptr) == 0);
+    CHECK(parse_slices("") == 0);
+    CHECK(parse_slices("8") == 8);
+    CHECK(parse_slices("4096") == 4096);
+    CHECK(parse_slices("4097") == 0);
+    CHECK(parse_slices("99999") == 0);
+    CHECK(parse_slices("-8") == 0);
+    CHECK(parse_slices("8x") == 0);
+    CHECK(slice_count(50, 0) == 50);
+    CHECK(slice_count(50, 8) == 8);
+    CHECK(slice_count(5, 8) == 5);
+}
+
+TEST_CASE("one slice per run behaves as before", "[zero_skip]") {
+    std::atomic<std::uint8_t> f[4] = {};
+    f[1]                          = 2;
+    CHECK(slice_watched(f, 4, 4, 2));
+    CHECK_FALSE(slice_watched(f, 4, 4, 1));
+    CHECK(slice_hit(f, 4, 4, 2) == 1);
+    CHECK(f[0].load() == 0);
+    CHECK(f[2].load() == 1);
+    CHECK(f[3].load() == 0);
+}
+
+TEST_CASE("a hit in a shared slice flags every watched run on it and no other", "[zero_skip]") {
+    std::atomic<std::uint8_t> f[7] = {};
+    f[4]                          = 2; // already taken back, stays so
+    CHECK(slice_of(1, 3) == 1);
+    CHECK(slice_of(4, 3) == 1);
+    CHECK(slice_hit(f, 7, 3, 1) == 1);
+    CHECK(f[1].load() == 1);
+    CHECK(f[4].load() == 2);
+    CHECK(slice_hit(f, 7, 3, 0) == 3);
+    CHECK(f[0].load() == 1);
+    CHECK(f[3].load() == 1);
+    CHECK(f[6].load() == 1);
+    CHECK(f[2].load() == 0);
+    CHECK(f[5].load() == 0);
+    CHECK_FALSE(slice_watched(f, 7, 3, 0));
+    CHECK(slice_watched(f, 7, 3, 2));
+}
+
+TEST_CASE("a run not placed yet is left alone and is seen once placed", "[zero_skip]") {
+    std::atomic<std::uint8_t> f[6] = {};
+    CHECK(slice_hit(f, 3, 3, 0) == 1); // run 3 shares the slice, but its heap is not placed
+    CHECK(f[0].load() == 1);
+    CHECK(f[3].load() == 0);
+    CHECK_FALSE(slice_watched(f, 1, 3, 0));
+    CHECK(slice_watched(f, 6, 3, 0));
+    CHECK(slice_hit(f, 6, 3, 0) == 1); // the slice stays dirty: the next round takes run 3 back too
+    CHECK(f[3].load() == 1);
 }
 
 } // namespace

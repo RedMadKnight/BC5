@@ -2,11 +2,14 @@
 # three units into private objects, then the shared link command with those objects swapped in. Nothing shared is written.
 import json, os, shlex, subprocess, sys
 db_path, src_root, out_dir, build, out_bin = sys.argv[1:6]
+EXTRA = sys.argv[6:]  # the memory cycle: libs/bc5LleAgc.cpp too
 UNITS = {
     "src/CMakeFiles/kyty_emulator.dir/kernel/pthread.cpp.o": "src/kernel/pthread.cpp",
     "src/CMakeFiles/kyty_emulator.dir/kernel/semaphore.cpp.o": "src/kernel/semaphore.cpp",
     "src/CMakeFiles/kyty_emulator.dir/libs/libKernel.cpp.o": "src/libs/libKernel.cpp",
 }
+for rel in EXTRA:
+    UNITS["src/CMakeFiles/kyty_emulator.dir/" + rel[len("src/"):] + ".o"] = rel
 def clean_compile(cmd):
     argv, clean, skip = shlex.split(cmd), [], 0
     for a in argv:
