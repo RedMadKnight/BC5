@@ -6,7 +6,7 @@
 #   2. the lock, then copies of the outputs and of every file, then the kit's files over the sources
 #   3. archive, normal, lean, mount; F414: the archive and the host go together. The backend's tests run if that tree built them
 #   4. the tree's diff against f266548 must be the candidate patch 0001, index lines apart
-# play-pkg.sh, input.cfg, the learned list and the saves are not touched. A failure after step 2 restores everything from the
+# play-pkg.sh gets exp 0399's one line, from the kit. input.cfg, the learned list and the saves are not touched. A failure after step 2 restores everything from the
 # copies. No emulator, no GPU work. Copies and the undo are under ~/bc5-work/exp0388/integration/.
 # usage: int0388j.sh   (on the box, in the slot, with box0388.sh, 0001-new.patch and kit/ beside it)
 set -u
@@ -14,11 +14,11 @@ export LC_ALL=C LANGUAGE=C
 W=$HOME/bc5-work; E=$W/exp0388; I=$E/integration; K=$HOME/src/KytyPlus; HERE=$(cd "$(dirname "$0")" && pwd)
 NB=$W/kytyplus-build/src/kyty_emulator; LB=$W/kytyplus-build-lean/src/kyty_emulator; ARCH=$W/backend-ubuntu/libbc5_backend.a
 MB=$W/bc5-tools-ubuntu/release/bc5-mount; TOOLS=$HOME/src/bc5/tools; NEWHDR=src/bc5/job_push_wait.hpp
-EXPECT_NORMAL=78f25172; EXPECT_LEAN=7b246487; EXPECT_ARCHIVE=3292bdaf; EXPECT_PATCH=476e1b3a; EXPECT_NEW=4e559f47; EXPECT_KIT=319dba66
+EXPECT_NORMAL=78f25172; EXPECT_LEAN=7b246487; EXPECT_ARCHIVE=3292bdaf; EXPECT_PATCH=476e1b3a; EXPECT_NEW=4e559f47; EXPECT_KIT=0874d633
 m() { md5sum < "$1" | cut -c1-8; }
 tdiff() { git -C "$K" diff --no-color f266548 | grep -av '^index ' | md5sum | cut -c1-8; }
 stop() { echo "int0388j STOP: $*"; exit 1; }
-root_of() { case "$1" in H) echo "$K" ;; B) echo "$BS" ;; T) echo "$TOOLS" ;; esac; }
+root_of() { case "$1" in H) echo "$K" ;; B) echo "$BS" ;; T) echo "$TOOLS" ;; W) echo "$W" ;; esac; }
 restore() {
     echo "restoring from $I"
     cp -p "$I/kyty_emulator.before-j" "$NB"; cp -p "$I/kyty_emulator-lean.before-j" "$LB"; cp -p "$I/libbc5_backend.a.before-j" "$ARCH"; cp -p "$I/bc5-mount.before-j" "$MB"

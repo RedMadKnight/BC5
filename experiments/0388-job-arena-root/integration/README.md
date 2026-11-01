@@ -2,7 +2,7 @@
 
 **Date.** 2026-11-01. **Branch.** `int/0388-j`, from main `4ef4f6fe`. **Request.** The maintainer: "Ramię J ma być wbudowane", then, for the wait, "dla wszystkich tytułów", "arena fix ma zniknąć z opcji i z kodu", and "Usuń A oraz B, wbuduj J. Daj mi do testów na świeżym buildzie." **Status.** Prepared on the laptop. Nothing on the box has changed, and the patch is not merged: main must match the shared builds (D19).
 
-**Scope.** The wait J: 2000 µs at most, on by default for every title, off with `KYTY_BC5_JOB_PUSH_WAIT=0`. Exp 0359's job-arena fix goes from the menu and the code, and classes A and B of the switch inventory go. No zero skip, no 0390, no catcher of exp 0388. `input.cfg`, `play-pkg.sh` and the learned list stay as they are.
+**Scope.** The wait J: 2000 µs at most, on by default for every title, off with `KYTY_BC5_JOB_PUSH_WAIT=0`. Exp 0359's job-arena fix goes from the menu and the code, and classes A and B of the switch inventory go. No zero skip, no 0390, no catcher of exp 0388. The shared `play-pkg.sh` gets one line, `export BC5_DIRECT_GC_HS_OFFCHIP=1`, the water fix of exp 0399 (the top session, on the maintainer's yes). `input.cfg` and the learned list stay as they are.
 
 ## What changes
 
@@ -86,7 +86,7 @@ Before the run: `pins0388.env` holds the values read on 2026-11-01 for `input.cf
 8. The Emulation menu has no "Game fixes".
 9. His own play through the fight on the shared build.
 
-The checks run at `VGT_HS_OFFCHIP_PARAM` 0, as the shared builds do, unless `GC_HS_OFFCHIP` lands first (exp 0397).
+S1 runs on the old launcher, at `VGT_HS_OFFCHIP_PARAM` 0. T and U run on the new launcher, with `GC_HS_OFFCHIP`, so they differ from S1 by that too.
 
 Only then `int/0388-j` goes to main, so main matches the builds.
 

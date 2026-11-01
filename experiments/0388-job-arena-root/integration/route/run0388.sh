@@ -160,13 +160,13 @@ load_tok() {
 inputs_ok() {
     local v
     . "$S/pins0388.env" || die "no pins"
-    for v in NORMAL NEW LAUNCHER RUN_ENV ROUTE_SAVES MENU_CMD PLAY_CMD INPUT_CFG LEARNED STUB_BASE; do
+    for v in NORMAL NEW LAUNCHER LAUNCHER_NEW RUN_ENV ROUTE_SAVES MENU_CMD PLAY_CMD INPUT_CFG LEARNED STUB_BASE; do
         case "${!v:-FILL}" in FILL) die "the pin $v is not filled" ;; esac
     done
     BIN=$W/kytyplus-build/src/kyty_emulator  # the shared normal build
-    case "$TAG" in S*) WANT8=$NORMAL ;; *) WANT8=$NEW ;; esac
+    case "$TAG" in S*) WANT8=$NORMAL; WANTL=$LAUNCHER ;; *) WANT8=$NEW; WANTL=$LAUNCHER_NEW ;; esac
     [ "$(m "$BIN" | cut -c1-8)" = "$WANT8" ] || die "the shared binary is not $WANT8"
-    [ "$(m "$W/play-pkg.sh")" = "$LAUNCHER" ] || die "the launcher is not $LAUNCHER"
+    [ "$(m "$W/play-pkg.sh")" = "$WANTL" ] || die "the launcher is not $WANTL"
     [ "$(m "$W/bc5-run.env")" = "$RUN_ENV" ] || die "bc5-run.env is not $RUN_ENV"
     [ "$(m "$W/exp0360/fight1450-menu.cmd")" = "$MENU_CMD" ] || die "the menu script differs"
     [ "$(m "$W/exp0360/fight1450-play.cmd")" = "$PLAY_CMD" ] || die "the gameplay script differs"

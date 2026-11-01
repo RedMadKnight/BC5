@@ -20,8 +20,9 @@ files = {n: open(f"{SRC}/{n}", encoding="utf-8", newline="").read().replace("exp
 
 s = files["run0388.sh"]
 s = R(s, 'case "$fix" in off) ;; *) die "every 0388 run has the fix off" ;; esac', 'case "$fix" in on | off) ;; *) die "the fix is on or off" ;; esac')
-s = R(s, "for v in NORMAL LAUNCHER", "for v in NORMAL NEW LAUNCHER")
-s = R(s, "BIN=$EX/kyty_emulator  # 0388: the private test build\n", "BIN=$W/kytyplus-build/src/kyty_emulator  # the shared normal build\n    case \"$TAG\" in S*) WANT8=$NORMAL ;; *) WANT8=$NEW ;; esac\n")
+s = R(s, "for v in NORMAL LAUNCHER", "for v in NORMAL NEW LAUNCHER LAUNCHER_NEW")
+s = R(s, "BIN=$EX/kyty_emulator  # 0388: the private test build\n", "BIN=$W/kytyplus-build/src/kyty_emulator  # the shared normal build\n    case \"$TAG\" in S*) WANT8=$NORMAL; WANTL=$LAUNCHER ;; *) WANT8=$NEW; WANTL=$LAUNCHER_NEW ;; esac\n")
+s = R(s, '[ "$(m "$W/play-pkg.sh")" = "$LAUNCHER" ] || die "the launcher is not $LAUNCHER"', '[ "$(m "$W/play-pkg.sh")" = "$WANTL" ] || die "the launcher is not $WANTL"')
 s = R(s, '[ "$(m "$BIN")" = "$NORMAL" ] || die "the binary is not $NORMAL"', '[ "$(m "$BIN" | cut -c1-8)" = "$WANT8" ] || die "the shared binary is not $WANT8"')
 s = R(s, "BC5_0380_WANT=${NORMAL:0:8}", "BC5_0380_WANT=$WANT8")
 files["run0388.sh"] = s
@@ -40,6 +41,11 @@ s, n = re.subn(r'ARMS = \{\n.*?\n\}\n', "ARMS = {\n" + "".join(f'    "{k}": "{v}
 assert n == 1
 s = R(s, '''    if arms != {"ON" if fix == "on" else "OFF"}:
 ''', '''    if arms != ({"ON"} if tag[0] == "S" else set()):  # only the old binary has the fix
+''')
+s = R(s, '''    for kv in ARMS[tag[0]].split():  # 0388: exactly the arm\'s switches; any other 0388 name stays unknown and blocks
+''', '''    if tag[0] != "S":
+        m.COMMON["BC5_DIRECT_GC_HS_OFFCHIP"] = "1"  # exp 0399\'s line in the new launcher
+    for kv in ARMS[tag[0]].split():  # 0388: exactly the arm\'s switches; any other 0388 name stays unknown and blocks
 ''')
 s = R(s, '''    # Reached the fight: the load was seen, then gameplay, then the inputs went in.
 ''', '''    if set(WAITLINE.findall(play)) != WAITWANT[tag[0]]:
@@ -73,7 +79,7 @@ s = R(s, 'OUT=$HERE/raw/series.txt; ROWS=$HERE/raw/rows.txt\nmkdir -p "$HERE/raw
 files["series0388.sh"] = s
 
 s = files["pins0388.env"]
-s = re.sub(r"NORMAL=[0-9a-f]+\n", "NORMAL=78f25172\nNEW=FILL\n", s)
+s = re.sub(r"NORMAL=[0-9a-f]+\n", "NORMAL=78f25172\nNEW=FILL\nLAUNCHER_NEW=FILL\n", s)
 s = re.sub(r"INPUT_CFG=[0-9a-f]+", "INPUT_CFG=a4df3b9e721d74fe17dc838d25eeb923", s)
 s = re.sub(r"LEARNED=[0-9a-f]+", "LEARNED=23ef45ec8917208381a61eb19aea05f6", s)
 files["pins0388.env"] = s

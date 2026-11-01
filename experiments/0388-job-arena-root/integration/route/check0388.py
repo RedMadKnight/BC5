@@ -41,6 +41,8 @@ def tables(fix, tag):
         elif isinstance(v, re.Pattern):
             m.COMMON[k] = re.compile(v.pattern.replace("bc5-work/d19/run/", "bc5-work/exp0388r/run/"))
     m.COMMON["KYTY_BC5_JOB_ARENA_FIX"] = "1" if fix == "on" else "0"
+    if tag[0] != "S":
+        m.COMMON["BC5_DIRECT_GC_HS_OFFCHIP"] = "1"  # exp 0399's line in the new launcher
     for kv in ARMS[tag[0]].split():  # 0388: exactly the arm's switches; any other 0388 name stays unknown and blocks
         k, v = kv.split("=")
         m.COMMON[k] = v
