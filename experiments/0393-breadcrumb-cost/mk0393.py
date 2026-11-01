@@ -70,7 +70,7 @@ esac
         ('T_FD=120; T_P2=88; T_P2_WAIT=30; T_POLL=5; T_POLL_P2=1; T_KERN=25;', 'T_FD=120; T_POLL=5; T_KERN=25;'),
         ('SAVES=$W/exp0358/saves-live-47aefd45; MENU=$W/exp0360/fight1450-menu.cmd; PHASE2=$W/exp0360/fight1450-play.cmd  # 0393: F464\'s route',
          'SAVES=$W/exp0196/saves-before-152617; MENU=$W/exp0203/o2-continue.cmd  # 0393: the S6N route'),
-        ('kernel $(uname -r); shared normal $(md5sum < "$BIN" | cut -c1-8);', 'kernel $(uname -r); binary $(md5sum < "$BIN" | cut -c1-8);'),
+        ('kernel $(uname -r); shared normal $(md5sum < "$BIN" | cut -c1-8);', 'page-cluster $(cat /proc/sys/vm/page-cluster); VGT_HS_OFFCHIP_PARAM latched at 0x1ff since exp 0392 T1 (the top session, not read here); kernel $(uname -r); binary $(md5sum < "$BIN" | cut -c1-8);'),
         ('[ -s "$MENU" ] && [ -s "$PHASE2" ] && [ -x "$E30/sample0330.sh" ]', '[ -s "$MENU" ] && [ -x "$E30/sample0330.sh" ]'),
         ('{ echo "no $SAVES, $LAUNCH_SRC, $MENU, $PHASE2, sample0330.sh or $LEARN_SRC"; exit 1; }', '{ echo "no $SAVES, $LAUNCH_SRC, $MENU, sample0330.sh or $LEARN_SRC"; exit 1; }'),
         ("PLAY_PKG_MD5=55531ab6   # D19's pin; run0393.sh checks the full md5", 'PLAY_PKG_MD5=${LAUNCHER:0:8}   # 0393: from the pins; run0393.sh checks the full md5'),

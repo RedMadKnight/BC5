@@ -42,7 +42,7 @@ route_read() { find "$SROOT/PPSA03671" -type f -newerat "@$T0" 2> /dev/null; }
 sampler() { "$E30/sample0330.sh" "$R/$TAG-mem.txt" $((SECS + 60)) < /dev/null > /dev/null 2>&1 & SP=$!; }
 launch() { setsid nohup bash -c 'distrobox enter ubuntu -- env "$@"; echo "launcher exit $?"' _ "${ENVS[@]}" "$LAUNCH" < /dev/null > "$R/$TAG-launch.out" 2>&1 & }
 devcores() { find "$HOME/bc5-data/captures/devcoredump" -maxdepth 1 -type f -newermt "@$T0" -printf '%TY-%Tm-%Td %TH:%TM:%.2TS %s %p\n' 2> /dev/null; }
-box_settings() { echo "swappiness $(cat /proc/sys/vm/swappiness); kernel $(uname -r); binary $(md5sum < "$BIN" | cut -c1-8); learned $(md5sum < "$LEARN_SRC" | cut -c1-8)"; }
+box_settings() { echo "swappiness $(cat /proc/sys/vm/swappiness); page-cluster $(cat /proc/sys/vm/page-cluster); VGT_HS_OFFCHIP_PARAM latched at 0x1ff since exp 0392 T1 (the top session, not read here); kernel $(uname -r); binary $(md5sum < "$BIN" | cut -c1-8); learned $(md5sum < "$LEARN_SRC" | cut -c1-8)"; }
 cpuidle_read() { grep -H . /sys/devices/system/cpu/cpu*/cpuidle/state*/usage /sys/devices/system/cpu/cpu*/cpuidle/state*/time /sys/devices/system/cpu/cpu0/cpuidle/state*/name /sys/devices/system/cpu/cpu0/cpuidle/state*/latency /sys/devices/system/cpu/cpu0/cpufreq/scaling_governor 2> /dev/null; return 0; }
 boot_line() { echo "boot $(cut -c1-8 /proc/sys/kernel/random/boot_id), up since $(uptime -s)"; }
 # Stand-ins load only from a d19-test- path; they replace the functions above and the T_ times, nothing else.

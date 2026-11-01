@@ -7,7 +7,7 @@ HERE=$(cd "$(dirname "$0")" && pwd)
 LIMIT=5100; RUN_NEED=720   # run0393.sh keeps kill, reap and release inside RUN_NEED
 GO=$HERE/go0393.sh
 case "${D19_RUN_FAKE:-}" in *d19-test-*) . "$D19_RUN_FAKE" ;; esac
-DL=$(($(date +%s) + LIMIT))
+DL=${E0393_DL:-$(($(date +%s) + LIMIT))}  # the top session's deadline counts from the first claim, the build's
 OUT=$HERE/raw/series.txt
 mkdir -p "$HERE/raw"
 say() { echo "$*" | tee -a "$OUT"; }
