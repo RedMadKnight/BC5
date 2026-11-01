@@ -5,8 +5,9 @@
 **Question.** In the maintainer's 2026-10-31 play the frame rate falls as `bc5-mount` reads more. What is read again and why
 (page cache, decode-ahead, the mount's workers, swap, pinned memory), and what is an ordinary load?
 
-**State.** Candidates and counters are built and tested on the laptop. Nothing here has run on the box, so every effect below
-is a hypothesis until the arms have run. No verdict.
+**State.** Candidates and counters are built and tested on the laptop. No arm has run: on the slot of 2026-11-01 01:00 two
+read-only box reads passed, and the third was refused by the session's classifier (`[Production Reads]`) before any claim, so
+the series waits for the morning (`series0381r.sh`). Every effect below is a hypothesis. No verdict.
 
 ## What the data shows
 
@@ -35,6 +36,9 @@ Facts:
   So those reads do not feed the eager import.
 - MemAvailable stays at 206–480 MiB after t 300 s and does not follow reads (r = −0.44 with flips): as in F620, it shows that
   the box is full, not how badly.
+- Read on the box, 2026-11-01: `vm.swappiness` 60, `vfs_cache_pressure` 100, `min_free_kbytes` 67,584, zram zstd 7.4 GiB, MGLRU
+  on (`lru_gen` 0x0007), FUSE `max_background` 12. The disk cache holds 8.1 GiB, its limit, with files dated 10-25, for a title of
+  750 k blocks (196 GiB decoded): no block past that limit is kept, so most reads must go to the image and Kraken.
 - The mount's path from code: kernel page cache (`FOPEN_KEEP_CACHE`) → 32 MiB block cache → disk cache of decoded blocks
   (launcher: on, 8 GiB limit) → image plus Kraken. Each block is 256 KiB. `POSIX_FADV_RANDOM` is on, so kernel readahead on
   the backing files is off (F398). The kernel's own readahead on the mounted files is at its default.
@@ -62,9 +66,10 @@ Ranked by expected gain against risk. All gains are hypotheses.
 | 4 | Pass the page cache by | `BC5_MOUNT_DIRECT_IO=1` with `BC5_MOUNT_CACHE_MIB=512` | this build | If most reads are one-shot, the page cache only churns; the mount's cache becomes the one bounded copy | Repeats all reach the mount; 512 MiB of anon on a full box; a shared mmap of a mounted file would fail (none seen in patch 0001's mmap calls, not proven) |
 | 5 | Bigger block cache | `BC5_MOUNT_CACHE_MIB=256` | exists | Keeps decoded blocks out of the kernel's LRU | Goes to zram under pressure |
 | 6 | No disk cache | unset `BC5_MOUNT_DISK_CACHE` | exists | If compressed reads are smaller than decoded ones, fewer NVMe bytes | Costs Kraken CPU, and the start-up gain of exp 0113 |
+| 6b | Bigger disk cache | a private directory and `BC5_MOUNT_DISK_CACHE_MIB` | exists, 157 GB free | The cache filled on 10-25 and has no eviction, so it holds old blocks; never touch the shared one for this | Writes go through the page cache while filling |
 | 7 | Workers | `BC5_MOUNT_THREADS=4` / `16` | exists | Tests the ceiling | May starve game threads |
 | 8 | Fewer pinned pages | exp 0379's zero skip and exp 0388's arena work | other sessions | ~0.7 GB more cache in free play (F632) | Theirs |
-| 9 | `vm.swappiness`, zram algorithm, `vm.page-cluster` | sysctl, the maintainer's root | his decision | Prefer zram to the NVMe | System setting; current values not read |
+| 9 | `vm.swappiness` (60 now), zram algorithm (zstd), `vm.page-cluster` | sysctl, the maintainer's root | his decision | Prefer zram to the NVMe | System setting |
 | 10 | `/sys/fs/fuse/connections/*/max_background` | root | his decision | Tests whether the kernel's queue of 12 caps async reads | `fuser`'s setter needs a newer ABI feature, so it is not in this build |
 
 Not built: the setter of lever 10, on purpose: `abi-7-13` changes the mount's INIT for every title.
@@ -90,10 +95,10 @@ unless named:
 No pad, RT on, one job, atomic lock, private paths, stop on the first kernel line, as `tb2run0381.sh`.
 
 1. **Build.** On a slot: private checkout of 5249deee, `cargo build --release -p bc5-mount --target-dir` under
-   `~/bc5-work/exp0381/reread/`, inside the `ubuntu` container. Run the mount's tests there: the FUSE code has only been
+   `~/bc5-work/exp0381/reread/`, inside the `ubuntu` container, and its tests (`setup0381r.sh`): the FUSE code has only been
    type-checked with a stubbed `fuser` build script and never executed.
 2. **Launcher.** A copy of `play-pkg-0381tb2s.sh` with `BM=` on the private mount, `BC5_MOUNT_STATS=5`, a cap of 900 s, the
-   sampler started beside it. Check `DRM`'s path for `mem_info_gtt_used`. Binary 86318679, switches all off, and a private copy
+   sampler started beside it (`card1` on the box). Binary 86318679, switches all off, and a private copy
    of the learned file, so line 110 (F687) is in every arm alike.
 3. **Route.** Start from sample f93851b7b0e0dc7a, gated keys as `s6n0382.sh` (slot from the list, gameplay by ~140 s). Page cache
    dropped before each arm (`drop_caches` is allowed).
@@ -111,17 +116,26 @@ No pad, RT on, one job, atomic lock, private paths, stop on the first kernel lin
 Limits: two runs an arm is weak; a bench route differs from his play (F543); DROP_BACKING's benefit depends on how full the box
 is, so a run without pressure shows nothing either way; the arms do not test hangs.
 
+## Scripts
+
+`series0381r.sh <id> <out>` runs it all from the laptop: claim and build, A0, the streaming gate, A C A C, release, copies. `arm0381r.sh`
+is one arm and takes only this test's switches. The lock line is test build 2's format, because the launcher checks it.
+Not yet run; `test_arm.sh` drives the gate on stand-ins. The launcher's check of `TB2_SERIES_LINE` was not read: the refused read
+was for that, so if the launcher refuses, this is the first place to look.
+
 ## Local checks
 
 - `cargo test -p bc5-mount`: 81 + 15 + 10 passed, 1 ignored (Windows host).
 - `cargo clippy -p bc5-mount --target x86_64-unknown-linux-gnu --all-targets -- -D warnings`: clean, with a scratch copy of
   `fuser` whose build script accepts a Windows host (not committed). `cargo fmt --check` clean.
-- `bash test_reread.sh`: 10 of 10, stand-in `/proc`, lines in the mount's format.
+- `bash test_reread.sh`: 10 of 10, stand-in `/proc`, lines in the mount's format. `bash test_arm.sh`: 8 of 8, with `bash -n` of all
+  scripts.
 - Not run: any FUSE read, `fadvise`, the switches, the sampler on the box.
 
 ## Proposed F rows
 
-F689–F691, free on main and on the branches checked (rows stop at F685, then F700). F686–F688 are the 20:39 hang.
+F689–F691, free on `docs/HANDOFF.md` of all 30 refs on 2026-11-01. Check again before writing them there. F686–F688 are the
+20:39 hang.
 
 - **F689.** In the 2026-10-31 play, flips/s fall with mount reads, r = −0.93, 33 minutes, with the cost concentrated above
   ~6 GiB a minute (38 flips/s at 2–4 GiB, 16 at 8 or more), and reads never pass ~9.8 GiB a minute. Slow minutes follow PSI io
