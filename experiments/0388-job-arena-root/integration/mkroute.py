@@ -28,6 +28,7 @@ s = R(s, "BC5_0380_WANT=${NORMAL:0:8}", "BC5_0380_WANT=$WANT8")
 files["run0388.sh"] = s
 
 s = files["s6n0388.sh"]
+s = R(s, "PLAY_PKG_MD5=55531ab6   # D19's pin; run0388.sh checks the full md5", "case \"$TAG\" in S*) PLAY_PKG_MD5=55531ab6 ;; *) PLAY_PKG_MD5=48a4dbf9 ;; esac  # the new launcher has exp 0399's line; run0388.sh checks the full md5")
 s, n = re.subn(r'case "\$TAG" in\n  C\*\).*?\n  \*\) echo "no arm for \$TAG"; exit 1 ;;\nesac\n',
                'case "$TAG" in\n' + "".join(f'  {k}*) ARM="{v}" ;;\n' for k, v in ARMS.items()) + '  *) echo "no arm for $TAG"; exit 1 ;;\nesac\n', s, flags=re.S)
 assert n == 1
@@ -73,7 +74,7 @@ files["check0388.py"] = s
 s = files["series0388.sh"]
 s = R(s, "the third cycle's 22 runs, one go0388.sh at a time, under one deadline of 105 min.", "the route runs on the shared build, one go0388.sh at a time, under one deadline.")
 s = R(s, "# usage: series0388.sh     Exit:", "# usage: series0388.sh baseline|post     Exit:")
-s = R(s, "LIMIT=6300;", 'case "${1:-}" in baseline) LIMIT=900; RUNS="S2:on" ;; post) LIMIT=3000; RUNS="T1:off T2:off T3:off U1:off" ;; *) echo "baseline or post"; exit 1 ;; esac\n')
+s = R(s, "LIMIT=6300;", 'case "${1:-}" in baseline) LIMIT=900; RUNS="S2:on" ;; post) LIMIT=3000; RUNS="T4:off T5:off T6:off U2:off" ;; *) echo "baseline or post"; exit 1 ;; esac\n')
 s = R(s, "for t in G4:off F6:off H1:off J1:off K1:off L1:off H2:off J2:off G5:off F7:off K2:off L2:off H3:off J3:off H4:off J4:off G6:off F8:off K3:off L3:off H5:off J5:off; do", "for t in $RUNS; do")
 s = R(s, 'OUT=$HERE/raw/series.txt; ROWS=$HERE/raw/rows.txt\nmkdir -p "$HERE/raw"; : > "$OUT"; : > "$ROWS"\n', 'OUT=$HERE/raw/series.txt; ROWS=$HERE/raw/rows.txt\nmkdir -p "$HERE/raw"; touch "$OUT" "$ROWS"\n')
 files["series0388.sh"] = s

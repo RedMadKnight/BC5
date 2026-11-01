@@ -80,7 +80,7 @@ CFG_SRC=$W/input.cfg; CFG=$E/input-rt$RT.cfg
 cp -p "$LEARN_SRC" "$LEARN" || exit 1
 # 2. The derived launcher: play-pkg.sh with its own log, working directory and save directory, and two hooks after the
 #    env-file loop (the input configuration, the learned file).
-PLAY_PKG_MD5=55531ab6   # D19's pin; run0388.sh checks the full md5
+case "$TAG" in S*) PLAY_PKG_MD5=55531ab6 ;; *) PLAY_PKG_MD5=48a4dbf9 ;; esac  # the new launcher has exp 0399's line; run0388.sh checks the full md5
 [ "$(md5sum < "$LAUNCH_SRC" | cut -c1-8)" = "$PLAY_PKG_MD5" ] || { echo "$LAUNCH_SRC is md5 $(md5sum < "$LAUNCH_SRC" | cut -c1-8), not $PLAY_PKG_MD5: not started"; exit 1; }
 cp "$LAUNCH_SRC" "$LAUNCH" || exit 1
 chk() { local c; c=$(grep -cxF -- "$1" "$LAUNCH"); [ "$c" = 1 ] || { echo "anchor [$1] occurs $c times in $LAUNCH_SRC, expected once: not started"; rm -f "$LAUNCH"; exit 1; }; }

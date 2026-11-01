@@ -13,7 +13,7 @@ Last line: MANIFEST PASS or MANIFEST FAIL."""
 import hashlib, os, re, shlex, sys
 
 ENV_MD5 = "cb8ad5fcfd6eac2a5cafac2a501b3eba"   # the bc5-run.env these tables were read from (RUN_ENV in pins.env)
-LAUNCHER_MD5 = "55531ab6277d6816c0603a7a6c6d62b4"
+LAUNCHER_MD5 = "48a4dbf964693a22b13e88612fc1dc4f"  # exp 0399's line in the new launcher; S runs do not use this check
 MAX_ENVIRON = 1 << 20
 SLACK = 2  # seconds, as d19gates.py
 

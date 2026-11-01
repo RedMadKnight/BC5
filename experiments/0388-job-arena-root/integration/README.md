@@ -91,3 +91,23 @@ S1 runs on the old launcher, at `VGT_HS_OFFCHIP_PARAM` 0. T and U run on the new
 Only then `int/0388-j` goes to main, so main matches the builds.
 
 **Limits.** Why the wait is enough is not known: most waits run out the bound. The hangs of 07:41 and 07:54 are not touched by this.
+
+## Result of the swap (2026-11-01 21:29–21:53)
+
+**The first swap** stopped at `bc5LleAgc.cpp:4650`, a `force` left by class B, and restored all. **The second** passed at 21:32–21:34: archive, normal `7c0efa36`, lean, mount, launcher `48a4dbf9`, 0 removed names left in either binary, tree diff equal to patch `f3022900`. The rollback copies are in `exp0388/integration/`, and the first attempt's in `exp0388/integration.first/`.
+
+**S2, the baseline** (old binary, old launcher, fix on): NO_CRASH, 34.3 flips/s. OS 44, Mesa 26.2.4, kernel 7.2.11-ogc4.1, swappiness 60. S1 and T1 stopped on the runner's own pins before any launch.
+
+| run | wait | result | flips/s | waits / pushes |
+|---|---|---|---|---|
+| T4 | on | NOT_ROUTED: no gameplay gate | 39.9 | 271 / 830,000 |
+| T4R | on | **CRASH_TARGET at eboot+0x3d7eca0, 116 s** | none | 223 / 370,000 |
+| T5 | on | NO_CRASH | 33.7 | 306 / 630,000 |
+| T6 | on | NO_CRASH | 34.1 | 314 / 628,000 |
+| U2 | off | NO_CRASH | 33.2 | none |
+
+No amdgpu line in T4R's stream. Each log has the right wait line and `HS offchip 0x1ff (programmed)`.
+
+**J does not hold.** With the wait on and the fix gone, the crash came at its site in one of three routed runs, with the wait active. By the rule that is REFUTED. Over all route runs with J: 7 clean of 8. Controls without it: 3 clean of 10 (U2 included). So J lowers the crash and does not end it, and the 92 % of waits that run out the bound fit that, though that is not shown. This build differs from the arm in having no trace, and in `GC_HS_OFFCHIP` and the removals; one crash does not say whether any of those matter. The shared builds now have no fix, so this crash is live in play.
+
+Not run after this, pending a decision: lean, audio replug, ASTRO BOT. Main stays unmerged.
