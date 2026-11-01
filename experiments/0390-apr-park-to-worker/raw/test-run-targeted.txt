@@ -1,0 +1,34 @@
+=== filter arms
+ok   the launcher text is the pinned one
+ok   arm Q: no crash through the cap
+ok   arm Q: the switch is in the start file
+ok   arm Q: the thread list says absent
+ok   arm P: no crash through the cap
+ok   arm P: no switch
+ok   arm P with the switch in the environment: invalid
+ok   arm Q with the switch at 0: invalid
+ok   the wait thread ran: the run still classes
+ok   the wait thread ran: reported
+ok   no thread list: the run still classes
+ok   no thread list: not read, not absent
+ok   a thread list older than the run: not read
+== 13 passed, 0 failed
+filter arms rc=0
+=== filter rule
+ok   the launcher text is the pinned one
+ok   rule: both arms clean
+ok   rule: a crash in one arm
+ok   rule: a run that did not reach the fight is no pass
+ok   rule: one arm proves nothing
+== 5 passed, 0 failed
+filter rule rc=0
+=== filter series
+ok   the launcher text is the pinned one
+ok   series: one run of each arm, the rule
+ok   series: a crash at the site stops it
+ok   series: one replacement
+ok   series: only one replacement in all
+ok   series: a stopped run ends it, no retry
+ok   series: a kernel class ends it
+== 7 passed, 0 failed
+filter series rc=0

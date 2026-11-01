@@ -1,0 +1,30 @@
+=== filter positive
+ok   the launcher text is the pinned one
+ok   positive on: no crash through the cap
+ok   positive on: queue lines
+ok   positive on: no process left
+ok   positive on: the arm is in the start file
+ok   positive on: the gameplay inputs were appended once
+ok   positive on: live saves untouched
+ok   positive on: the private copy's sum is the snapshot's
+ok   no live-save read in the runner
+== 9 passed, 0 failed
+filter positive rc=0
+=== filter series
+ok   the launcher text is the pinned one
+ok   series: one run of each arm, the rule
+ok   series: a crash at the site stops it
+ok   series: one replacement
+ok   series: only one replacement in all
+ok   series: a stopped run ends it, no retry
+ok   series: a kernel class ends it
+== 7 passed, 0 failed
+filter series rc=0
+=== filter rule
+ok   the launcher text is the pinned one
+ok   rule: both arms clean
+ok   rule: a crash in one arm
+ok   rule: a run that did not reach the fight is no pass
+ok   rule: one arm proves nothing
+== 5 passed, 0 failed
+filter rule rc=0

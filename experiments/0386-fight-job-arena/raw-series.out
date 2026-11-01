@@ -1,0 +1,24 @@
+TOK=20261031182038203565
+lock released
+RESULT K1N runner 0 check 0 saves same CLASS NO_CRASH fix on crash none reached 1
+TOK=20261031182408242626
+lock released
+RESULT K1F runner 1 check 0 saves same CLASS CRASH_TARGET fix off crash target reached 1
+TOK=20261031182638272414
+lock released
+RESULT K2N runner 0 check 0 saves same CLASS NO_CRASH fix on crash none reached 1
+TOK=20261031183000311371
+lock released
+RESULT K2F runner 1 check 0 saves same CLASS NOT_ROUTED fix off crash target reached 0
+TOK=20261031183157335523
+lock released
+RESULT K2FR runner 1 check 0 saves same CLASS CRASH_TARGET fix off crash target reached 1
+TOK=20261031183409365200
+lock released
+RESULT K3N runner 0 check 0 saves same CLASS NOT_ROUTED fix on crash none reached 0
+series: K3N not routed, no replacement left
+TOK=20261031183737407071
+lock released
+RESULT K3F runner 1 check 0 saves same CLASS CRASH_TARGET fix off crash target reached 1
+on: 2 of 3 without a crash; off: 3 of 3 crashed at the site
+RULE AMBIGUOUS no conclusion about the fix

@@ -1,0 +1,44 @@
+# 15091 jobs, 3811 lake jobs, 0 records skipped by the CP, 16 RBs with a begin written ([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]); 75 finals, 75 joined
+# lag 0: side A 0, B 0, hole 0, clean 75: 0 writers follow the side, 0 lose cells, 0 follow the hole share
+# lag -1: side A 0, B 0, hole 0, clean 75: 0 writers follow the side, 0 lose cells, 0 follow the hole share
+# lag 1: side A 0, B 0, hole 0, clean 75: 0 writers follow the side, 0 lose cells, 0 follow the hole share
+# lag -2: side A 0, B 0, hole 0, clean 75: 0 writers follow the side, 0 lose cells, 0 follow the hole share
+# lag 2: side A 0, B 0, hole 0, clean 75: 0 writers follow the side, 0 lose cells, 0 follow the hole share
+# lag used: 0
+# NO TEST by side: fewer than 10 frames of a side
+# NO TEST by holes: fewer than 10 hole or clean frames
+# NO TEST by hole share: fewer than 30 hole frames of one width
+# NO TEST against K4's clean frames: no hole frames
+# NO TEST of the RBs by side
+rb 0 A - B -
+rb 1 A - B -
+rb 2 A - B -
+rb 3 A - B -
+rb 4 A - B -
+rb 5 A - B -
+rb 6 A - B -
+rb 7 A - B -
+rb 8 A - B -
+rb 9 A - B -
+rb 10 A - B -
+rb 11 A - B -
+rb 12 A - B -
+rb 13 A - B -
+rb 14 A - B -
+rb 15 A - B -
+# the widest shares across 3811 lake jobs
+swing 4.781 ps 0x11d1dd6400 occ 2 job 0 share 0.00387 0.00413 0.02360 (3811)
+swing 1.054 ps 0x11d1dd6400 occ 1 job 0 share 0.00000 0.02316 0.02440 (3811)
+swing 0.955 ps 0x11d1dd6400 occ 3 job 0 share 0.00214 0.00223 0.00427 (3811)
+swing 0.246 ps 0x11d0203f00 occ 0 job 1 share 0.00105 0.00138 0.00139 (72)
+swing 0.243 ps 0x11d0208400 occ 1 job 1 share 0.00701 0.00920 0.00924 (72)
+swing 0.242 ps 0x11d01ff900 occ 3 job 1 share 0.01559 0.02046 0.02055 (72)
+swing 0.242 ps 0x11d0208400 occ 2 job 1 share 0.00208 0.00272 0.00274 (72)
+swing 0.242 ps 0x11d01ff900 occ 0 job 1 share 0.08059 0.10575 0.10614 (72)
+swing 0.242 ps 0x11d0208400 occ 0 job 1 share 0.00204 0.00267 0.00268 (72)
+swing 0.241 ps 0x11d01ff900 occ 2 job 1 share 0.04636 0.06084 0.06105 (72)
+swing 0.241 ps 0x11d01ff900 occ 1 job 1 share 0.08431 0.11063 0.11101 (72)
+swing 0.210 ps 0x11d1d88300 occ 2 job 0 share 0.00566 0.00627 0.00698 (3811)
+swing 0.208 ps 0x11d1d88300 occ 3 job 0 share 0.00290 0.00326 0.00358 (3811)
+swing 0.165 ps 0x11d1d96400 occ 1 job 0 share 0.00399 0.00431 0.00470 (3811)
+swing 0.154 ps 0x11d1e2b900 occ 1 job 0 share 0.02866 0.03180 0.03356 (3811)

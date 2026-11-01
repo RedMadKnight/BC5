@@ -1,0 +1,37 @@
+# 11789 frames, 0 unreadable records; clean 11789, hole 0, between 0, unknown 0
+# size 23577215: TOP 983782, frames 10647, hole 0
+# size 21217855: TOP 796992, frames 969, hole 0
+# size 18858495: TOP 630052, frames 173, hole 0
+# stats sample: PS 642102 C_PRIM 27660 C_INV 33134 VS 15104 GS 33134 GS_PRIM 0 IA_PRIM 3776 IA_VERT 15104 HS 3776 DS 37811 CS 0
+# counters that never move in occurrence 0: GS_PRIM CS
+# NO TEST: too few clean or hole frames
+reg VGT_TF_RING_SIZE 0xfffe: clean 11789 hole 0 between 0
+reg VGT_HS_OFFCHIP_PARAM 0x0: clean 10474 hole 0 between 0
+reg VGT_HS_OFFCHIP_PARAM 0x5f: clean 437 hole 0 between 0
+reg VGT_HS_OFFCHIP_PARAM 0x1ff: clean 878 hole 0 between 0
+reg VGT_TF_MEMORY_BASE 0x11200000: clean 11789 hole 0 between 0
+reg VGT_TF_MEMORY_BASE_HI 0x0: clean 11789 hole 0 between 0
+reg GE_CNTL 0x8040: clean 11789 hole 0 between 0
+reg GE_PC_ALLOC 0x0: clean 10909 hole 0 between 0
+reg GE_PC_ALLOC 0x1ff: clean 880 hole 0 between 0
+arm  0 frames 3865 S 0.999 hole 0.000 | off
+arm 24 frames  440 S 1.000 hole 0.000 | off
+arm 27 frames  440 S 1.000 hole 0.000 | tailflush=1
+arm 30 frames  440 S 1.000 hole 0.000 | off
+arm 33 frames  442 S 1.000 hole 0.000 | tfonce=1
+arm 36 frames  441 S 1.000 hole 0.000 | off
+arm 39 frames  413 S 1.000 hole 0.000 | tailflush=1 tfonce=1
+arm 42 frames  440 S 1.000 hole 0.000 | off
+arm 45 frames  471 S 1.000 hole 0.000 | tfdist=0
+arm 48 frames  442 S 1.000 hole 0.000 | off
+arm 51 frames  442 S 1.000 hole 0.000 | tfdist=3
+arm 54 frames  441 S 1.000 hole 0.000 | off
+arm 57 frames  413 S 1.000 hole 0.000 | gepc=1
+arm 60 frames  441 S 1.000 hole 0.000 | off
+arm 63 frames  443 S 1.000 hole 0.000 | tailflush=1 tfonce=1 tfdist=0 gepc=1
+arm 66 frames  441 S 1.000 hole 0.000 | off
+arm 69 frames  443 S 1.000 hole 0.000 | offchip=1ff
+arm 72 frames  441 S 1.000 hole 0.000 | offchip=5f
+arm 75 frames  441 S 1.000 hole 0.000 | offchip=1ff
+arm 78 frames    9 S 1.000 hole 0.000 | off
+# against the depth: 122 finals at 2560, S against hole pixels r +0.00 slope +0.00

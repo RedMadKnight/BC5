@@ -1,0 +1,114 @@
+ok   the launcher text is the pinned one
+ok   positive on: no crash through the cap
+ok   positive on: queue lines
+ok   positive on: no process left
+ok   positive on: the arm is in the start file
+ok   positive on: the gameplay inputs were appended once
+ok   positive on: live saves untouched
+ok   off: crash at the site
+ok   off: no process left
+ok   on: crash at the site is classified
+ok   crash elsewhere is not the site
+ok   wrong binary stops
+ok   wrong binary: named
+ok   wrong binary: nothing launched
+ok   wrong launcher stops
+ok   wrong launcher: named
+ok   an unfilled pin stops
+ok   FILL: named
+ok   compression active: not claimed
+ok   disk over 80 %: not claimed
+ok   busy lock: not claimed, line kept
+ok   claim after a free look: line kept
+ok   foreign line during the claim: restored
+ok   foreign file during the claim: kept
+ok   directory lock stops
+ok   lock lost before the launch: no launch, line kept
+ok   lock lost: nothing launched
+ok   lock lost during the run: run stops, line kept
+ok   lock lost: our emulator stopped
+ok   foreign emulator at the start: not claimed
+ok   foreign emulator: alive
+test0390run.sh: line 200: 1630429 Killed                     bash -c 'sleep 300'
+ok   foreign emulator during the start: invalid, stopped
+ok   foreign emulator during the start: alive
+ok   route save not read: not routed
+ok   no load, no gameplay: not routed
+ok   no load: inputs not appended
+ok   RT-off line: invalid
+ok   RT-off line with the crash: invalid
+ok   no journal: invalid
+ok   no log of this run: invalid
+ok   no log: named
+ok   a journal directory from before: invalid
+ok   old journal: named
+ok   the log says the other arm: invalid
+ok   a forbidden option: invalid
+ok   RT off in the environment: invalid
+ok   the environment says the other arm: invalid
+ok   another exe: invalid
+ok   a kernel line: stop, the whole stream has it
+ok   a kernel line: classed
+ok   a devcoredump: stop
+ok   a dropped ssh during the polls: the result arrives
+ok   dropped ssh: reported
+ok   ssh gone for good: unknown, no retry
+ok   ssh gone: the box ended the run and freed its lock
+ok   ssh gone: no process left
+ok   a failed send gives the lock back
+ok   the compare of the sent files lost: lock back
+ok   a stop signal: emulator reaped, lock freed
+ok   a stop signal: no process left
+ok   claim alone holds the lock
+ok   release frees its own lock
+ok   release never touches a foreign line
+ok   contained: inside
+ok   contained: outside stops
+ok   contained: a new path passes
+skip contained link: this filesystem made no symlink
+ok   a crash with a TIMEOUT line: invalid
+ok   a crash with a new stub: invalid
+ok   a crash with a forbidden stub: invalid
+ok   a crash with an unreadable kernel log: invalid
+ok   a clean crash still classes
+ok   a crash needs no second fdinfo read
+ok   a crash with a file missing: invalid
+ok   a failed read with an empty kernel file: invalid
+ok   no read record: invalid
+ok   a crash with a TIMEOUT probe: invalid
+ok   a failed release is not clean
+ok   a failed release: the line stays for recovery
+ok   a failed queue write is not clean
+ok   a failed queue write: lock kept, said so
+ok   the disk crosses 80 % during the run: stopped
+ok   disk: named
+ok   disk: emulator stopped
+ok   the disk cannot be read: stopped
+ok   disk unread: named
+ok   lock lost just before the launch: no launch, line kept
+ok   lock lost before the launch: no emulator
+ok   the stream is not under the short ssh cap
+ok   the kill, reap and release fit inside the outer limit
+ok   arm Q: no crash through the cap
+ok   arm Q: the switch is in the start file
+ok   arm Q: the thread list says absent
+ok   arm P: no crash through the cap
+ok   arm P: no switch
+ok   arm P with the switch in the environment: invalid
+ok   arm Q with the switch at 0: invalid
+ok   the wait thread ran: the run still classes
+ok   the wait thread ran: reported
+ok   no thread list: the run still classes
+ok   no thread list: not read, not absent
+FAIL stale thread list: APR wait thread: absent
+ok   rule: both arms clean
+ok   rule: a crash in one arm
+ok   rule: a run that did not reach the fight is no pass
+ok   rule: one arm proves nothing
+ok   series: one run of each arm, the rule
+ok   series: a crash at the site stops it
+ok   series: one replacement
+ok   series: only one replacement in all
+ok   series: a stopped run ends it, no retry
+ok   series: a kernel class ends it
+== 110 passed, 1 failed

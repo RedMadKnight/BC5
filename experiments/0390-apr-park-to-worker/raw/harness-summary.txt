@@ -1,0 +1,12 @@
+control-off  pass 10/10  asan  0  wrong counts  0  hang 0 | none: submissions 202, results 202, wrong writes 0 (never ran 0), wrong events 0, wrong results 0, order ok, parked buffer wrong 0, wait thread not started, worker started
+control-on   pass 10/10  asan  0  wrong counts  0  hang 0 | none: submissions 202, results 202, wrong writes 0 (never ran 0), wrong events 0, wrong results 0, order ok, parked buffer wrong 0, wait thread not started, worker started
+old-ra4      pass  0/10  asan  9  wrong counts  1  hang 0 | busy: submissions 202, results 343, wrong writes 1 (never ran 0), wrong events 1, wrong results 140, order WRONG, parked buffer wrong 2, wait thread started, worker started
+old-ra0      pass  0/10  asan 10  wrong counts  0  hang 0 | 
+off-ra4      pass  0/10  asan 10  wrong counts  0  hang 0 | busy: submissions 202, results 341, wrong writes 1 (never ran 0), wrong events 1, wrong results 138, order WRONG, parked buffer wrong 2, wait thread started, worker started
+off-ra0      pass  0/10  asan 10  wrong counts  0  hang 0 | 
+off0-ra0     pass  0/10  asan 10  wrong counts  0  hang 0 | 
+on-ra4       pass 10/10  asan  0  wrong counts  0  hang 0 | busy: submissions 202, results 202, wrong writes 0 (never ran 0), wrong events 0, wrong results 0, order ok, parked buffer wrong 0, wait thread not started, worker started
+on-ra0       pass 10/10  asan  0  wrong counts  0  hang 0 | busy: submissions 202, results 202, wrong writes 0 (never ran 0), wrong events 0, wrong results 0, order ok, parked buffer wrong 0, wait thread not started, worker started
+alone-off    pass 10/10  asan  0  wrong counts  0  hang 0 | alone: submissions 1, results 1, wrong writes 0 (never ran 0), wrong events 0, wrong results 0, order ok, parked buffer wrong 0, wait thread started, worker not started
+alone-on     pass 10/10  asan  0  wrong counts  0  hang 0 | alone: submissions 1, results 1, wrong writes 0 (never ran 0), wrong events 0, wrong results 0, order ok, parked buffer wrong 0, wait thread not started, worker started
+sync-on      pass 10/10  asan  0  wrong counts  0  hang 0 | busy: submissions 202, results 202, wrong writes 0 (never ran 0), wrong events 0, wrong results 0, order ok, parked buffer wrong 0, wait thread started, worker not started

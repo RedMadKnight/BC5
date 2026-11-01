@@ -1,0 +1,36 @@
+# 11789 frames, 47156 unreadable records; TOP 983782; clean 10647, hole 1142, between 0
+# no counter falls but the samples do: the depth test takes them
+occ 0 z        clean      642,680 hole      504,092 ratio 0.784
+occ 1 z        clean      615,688 hole      482,644 ratio 0.784
+occ 2 z        clean      340,788 hole      267,149 ratio 0.784
+occ 3 z        clean      131,976 hole      103,570 ratio 0.785
+reg VGT_TF_RING_SIZE 0xfffe: clean 10647 hole 1142 between 0
+reg VGT_HS_OFFCHIP_PARAM 0x0: clean 9410 hole 1064 between 0
+reg VGT_HS_OFFCHIP_PARAM 0x5f: clean 411 hole 26 between 0
+reg VGT_HS_OFFCHIP_PARAM 0x1ff: clean 826 hole 52 between 0
+reg VGT_TF_MEMORY_BASE 0x11200000: clean 10647 hole 1142 between 0
+reg VGT_TF_MEMORY_BASE_HI 0x0: clean 10647 hole 1142 between 0
+reg GE_CNTL 0x8040: clean 10647 hole 1142 between 0
+reg GE_PC_ALLOC 0x0: clean 9814 hole 1095 between 0
+reg GE_PC_ALLOC 0x1ff: clean 833 hole 47 between 0
+arm  0 frames 3865 S 0.954 hole 0.210 | off
+arm 24 frames  440 S 0.992 hole 0.039 | off
+arm 27 frames  440 S 0.985 hole 0.066 | tailflush=1
+arm 30 frames  440 S 1.000 hole 0.000 | off
+arm 33 frames  442 S 0.990 hole 0.050 | tfonce=1
+arm 36 frames  441 S 0.991 hole 0.048 | off
+arm 39 frames  413 S 0.992 hole 0.039 | tailflush=1 tfonce=1
+arm 42 frames  440 S 0.991 hole 0.032 | off
+arm 45 frames  471 S 0.979 hole 0.085 | tfdist=0
+arm 48 frames  442 S 1.000 hole 0.000 | off
+arm 51 frames  442 S 1.000 hole 0.000 | tfdist=3
+arm 54 frames  441 S 0.993 hole 0.036 | off
+arm 57 frames  413 S 0.988 hole 0.063 | gepc=1
+arm 60 frames  441 S 0.986 hole 0.057 | off
+arm 63 frames  443 S 0.991 hole 0.047 | tailflush=1 tfonce=1 tfdist=0 gepc=1
+arm 66 frames  441 S 0.997 hole 0.016 | off
+arm 69 frames  443 S 0.994 hole 0.032 | offchip=1ff
+arm 72 frames  441 S 0.987 hole 0.068 | offchip=5f
+arm 75 frames  441 S 0.982 hole 0.077 | offchip=1ff
+arm 78 frames    9 S 1.000 hole 0.000 | off
+# against the depth: 122 finals at 2560, S against hole pixels r +0.00 slope +0.00

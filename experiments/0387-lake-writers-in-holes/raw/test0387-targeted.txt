@@ -1,0 +1,17 @@
+templates ready in 22 s
+PASS success_in_the_intended_order_then_a_qualifying_run_ends_the_series (170.1 s)
+PASS stop_kernel_line_during_the_run (20.1 s)
+PASS stop_on_any_amdgpu_line_even_one_that_names_no_fault (28.3 s)
+PASS a_line_that_is_not_amdgpu_does_not_stop_the_run (71.1 s)
+PASS stop_kernel_log_unreadable_during_the_run (16.2 s)
+PASS the_arms_go_into_the_control_file_in_order (57.4 s)
+PASS every_token_in_the_arms_file_is_real (0.6 s)
+PASS the_arm_rule_matches_the_readme (0.6 s)
+PASS a_run_qualifies_on_its_all_off_shots_only (0.7 s)
+PASS the_manifest_needs_the_test_builds_own_options (0.6 s)
+PASS the_lake_candidate_leaves_audio_guards_and_patch_alone (1.1 s)
+PASS the_catchers_reader_tells_a_skipped_writer (0.5 s)
+PASS the_catchers_reader_names_the_writer_that_loses_cells (0.6 s)
+PASS the_catchers_reader_says_no_test_without_both_kinds_of_frame (0.6 s)
+PASS a_final_with_no_job_near_it_stays_unknown (0.6 s)
+15 of 15 cases pass in 393 s; HOME and PATH unchanged; sources sha256 874d9230f84c30e4

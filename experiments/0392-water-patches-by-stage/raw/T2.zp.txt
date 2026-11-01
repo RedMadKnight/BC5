@@ -1,0 +1,35 @@
+# 11826 frames, 47304 unreadable records; TOP 995008; clean 10317, hole 1509, between 0
+# no counter falls but the samples do: the depth test takes them
+occ 0 z        clean      652,635 hole      515,675 ratio 0.790
+occ 1 z        clean      621,220 hole      490,732 ratio 0.790
+occ 2 z        clean      342,078 hole      270,181 ratio 0.790
+occ 3 z        clean      131,676 hole      104,081 ratio 0.790
+reg VGT_TF_RING_SIZE 0xfffe: clean 10317 hole 1509 between 0
+reg VGT_HS_OFFCHIP_PARAM 0x5f: clean 392 hole 42 between 0
+reg VGT_HS_OFFCHIP_PARAM 0x1ff: clean 9925 hole 1467 between 0
+reg VGT_TF_MEMORY_BASE 0x11200000: clean 10317 hole 1509 between 0
+reg VGT_TF_MEMORY_BASE_HI 0x0: clean 10317 hole 1509 between 0
+reg GE_CNTL 0x8040: clean 10317 hole 1509 between 0
+reg GE_PC_ALLOC 0x0: clean 9529 hole 1410 between 0
+reg GE_PC_ALLOC 0x1ff: clean 788 hole 99 between 0
+arm  0 frames 3937 S 0.950 hole 0.230 | off
+arm 24 frames  439 S 0.966 hole 0.164 | off
+arm 27 frames  443 S 0.972 hole 0.144 | tailflush=1 tfonce=1 tfdist=0 gepc=1
+arm 30 frames  441 S 0.985 hole 0.079 | off
+arm 33 frames  441 S 0.986 hole 0.073 | gepc=1
+arm 36 frames  439 S 0.973 hole 0.114 | off
+arm 39 frames  443 S 0.983 hole 0.090 | tfdist=3
+arm 42 frames  441 S 0.986 hole 0.073 | off
+arm 45 frames  412 S 0.989 hole 0.058 | tfdist=0
+arm 48 frames  442 S 0.986 hole 0.057 | off
+arm 51 frames  443 S 0.990 hole 0.054 | tailflush=1 tfonce=1
+arm 54 frames  439 S 0.979 hole 0.112 | off
+arm 57 frames  442 S 0.988 hole 0.063 | tfonce=1
+arm 60 frames  440 S 0.994 hole 0.032 | off
+arm 63 frames  413 S 1.000 hole 0.000 | tailflush=1
+arm 66 frames  441 S 0.979 hole 0.095 | off
+arm 69 frames  442 S 0.990 hole 0.052 | offchip=1ff
+arm 72 frames  440 S 0.973 hole 0.111 | offchip=5f
+arm 75 frames  441 S 1.000 hole 0.000 | offchip=1ff
+arm 78 frames    7 S 1.000 hole 0.000 | off
+# against the depth: 62 finals at 2560, S against hole pixels r +0.00 slope +0.00

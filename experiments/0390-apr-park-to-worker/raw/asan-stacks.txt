@@ -1,0 +1,40 @@
+=== off-ra0 run 1
+==21212==ERROR: AddressSanitizer: access-violation on unknown address 0x0000000000e8 (pc 0x7ff7fd4f1eef bp 0x00794d7ffc20 sp 0x00794d7ffb40 T1)
+==21212==The signal is caused by a READ memory access.
+    #0 in Libs::LibAmpr::Ampr::AprWorkerThread queue.inc:583
+    #1 in std::invoke C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.51.36231\include\type_traits:1811
+    #2 in std::thread::_Invoke<class std::tuple<void (__cdecl *)(unsigned __int64), unsigned __int64>, 0, 1>(void *) C:\Program Files\Microsoft Visual
+    #3  (ucrtbase.dll+0x18002cd2f)
+    #4  (C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\Llvm\x64\lib\clang\22\lib\windows\clang_rt.asan_dynamic-x86_64.dll+0x18005dc0e
+=== off-ra0 run 2
+==1304==ERROR: AddressSanitizer: access-violation on unknown address 0x0000000000e8 (pc 0x7ff7fd4f1eef bp 0x008005aff930 sp 0x008005aff840 T1)
+==1304==The signal is caused by a READ memory access.
+    #0 in Libs::LibAmpr::Ampr::AprWorkerThread queue.inc:583
+    #1 in std::invoke C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.51.36231\include\type_traits:1811
+    #2 in std::thread::_Invoke<class std::tuple<void (__cdecl *)(unsigned __int64), unsigned __int64>, 0, 1>(void *) C:\Program Files\Microsoft Visual
+    #3  (ucrtbase.dll+0x18002cd2f)
+    #4  (C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\Llvm\x64\lib\clang\22\lib\windows\clang_rt.asan_dynamic-x86_64.dll+0x18005dc0e
+=== off-ra0 run 3
+==17896==ERROR: AddressSanitizer: access-violation on unknown address 0x0000000000e8 (pc 0x7ff7fd4f1eef bp 0x00988b0ffa60 sp 0x00988b0ff980 T1)
+==17896==The signal is caused by a READ memory access.
+    #0 in Libs::LibAmpr::Ampr::AprWorkerThread queue.inc:583
+    #1 in std::invoke C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.51.36231\include\type_traits:1811
+    #2 in std::thread::_Invoke<class std::tuple<void (__cdecl *)(unsigned __int64), unsigned __int64>, 0, 1>(void *) C:\Program Files\Microsoft Visual
+    #3  (ucrtbase.dll+0x18002cd2f)
+    #4  (C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\Llvm\x64\lib\clang\22\lib\windows\clang_rt.asan_dynamic-x86_64.dll+0x18005dc0e
+=== off-ra4 run 1
+==26496==ERROR: AddressSanitizer: access-violation on unknown address 0x0000000000e8 (pc 0x7ff7fd4f279a bp 0x00021c3ffda0 sp 0x00021c3ffc80 T3)
+==26496==The signal is caused by a READ memory access.
+busy: submissions 202, results 342, wrong writes 1 (never ran 0), wrong events 1, wrong results 139, order WRONG, parked buffer wrong 2, wait thread started, worker start
+=== off-ra4 run 2
+==27540==ERROR: AddressSanitizer: access-violation on unknown address 0x000000000108 (pc 0x7ff7fd4e5b19 bp 0x0069f38ffbd0 sp 0x0069f38ff9f0 T1)
+==27540==The signal is caused by a READ memory access.
+busy: submissions 202, results 203, wrong writes 0 (never ran 0), wrong events 0, wrong results 1, order WRONG, parked buffer wrong 0, wait thread started, worker started
+=== off-ra4 run 3
+==25240==ERROR: AddressSanitizer: access-violation on unknown address 0x0000000000e8 (pc 0x7ff7fd4f279a bp 0x001ce0affaf0 sp 0x001ce0aff9c0 T5)
+==25240==The signal is caused by a READ memory access.
+    #0 in Libs::LibAmpr::Ampr::AprReaderThread queue.inc:509
+    #1 in std::invoke C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\MSVC\14.51.36231\include\type_traits:1811
+    #2 in std::thread::_Invoke<class std::tuple<void (__cdecl *)(unsigned __int64, unsigned __int64), unsigned __int64, unsigned __int64>, 0, 1, 2>(vo
+    #3  (ucrtbase.dll+0x18002cd2f)
+    #4  (C:\Program Files\Microsoft Visual Studio\18\Community\VC\Tools\Llvm\x64\lib\clang\22\lib\windows\clang_rt.asan_dynamic-x86_64.dll+0x18005dc0e

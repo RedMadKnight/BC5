@@ -1,0 +1,20 @@
+ 0 catcher | 23.3 39.0 40.2 34.5 37.6 36.5 37.9 35.8 43.0 36.0 39.5 37.4 38.0 39.1 39.2 36.9 36.7 37.8 41.4 36.5 37.0 35.8 38.0 37.6 | census=1 zpass=1
+24 all off | 37.5 36.9 38.4 | all off
+27 no effect | 36.8 38.6 35.0 | cache=all cache_at=each cull=1 pfp=1 dbmeta=1 idle=1 nohiz=1
+30 all off | 39.4 39.4 34.2 | all off
+33 no effect | 36.1 39.5 35.7 | cache=all cache_at=each cull=1 pfp=1 dbmeta=1 idle=1 nohiz=1
+36 all off | 36.5 36.7 36.5 | all off
+39 no effect | 34.9 36.1 37.3 | cache=wbinv cache_at=each
+42 all off | 38.8 38.1 41.1 | all off
+45 no effect | 36.9 36.8 37.9 | cull=1
+48 all off | 33.9 36.4 31.2 | all off
+51 no effect | 35.9 38.6 39.3 | pfp=1
+54 all off | 37.9 38.4 36.6 | all off
+57 no effect | 41.0 40.4 39.0 | dbmeta=1
+60 all off | 37.0 38.9 38.4 | all off
+63 no effect | 40.8 38.9 40.9 | idle=1
+66 all off | 37.0 36.2 35.0 | all off
+69 no effect | 34.7 38.6 38.4 | nohiz=1
+72 all off | 37.1 37.3 38.9 | all off
+75 no effect | 38.9 40.6 38.4 | cache=all cache_at=each
+78 all off | 36.6 37.3 38.5 | all off

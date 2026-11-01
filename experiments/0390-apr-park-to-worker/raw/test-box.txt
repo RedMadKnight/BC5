@@ -1,0 +1,15 @@
+ok: emulator stops the claim
+ok: the lock stays empty
+ok: a foreign lock stops the claim
+ok: the foreign line stays
+ok: release refuses a foreign line
+ok: the foreign line still stays
+ok: an empty lock is claimed
+ok: the line is ours
+ok: no claim leftovers
+ok: a second claim stops
+ok: a replaced line is not released
+ok: our line is released
+ok: the lock is empty
+ok: a missing lock is claimed
+box rc=0

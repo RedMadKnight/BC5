@@ -1,0 +1,37 @@
+# 11783 frames, 0 unreadable records; clean 11783, hole 0, between 0, unknown 0
+# size 25936575: TOP 1383331, frames 753, hole 0
+# size 23577215: TOP 1143261, frames 10558, hole 0
+# size 21217855: TOP 926028, frames 333, hole 0
+# size 18858495: TOP 731713, frames 139, hole 0
+# stats sample: PS 728370 C_PRIM 27590 C_INV 34238 VS 15104 GS 34238 GS_PRIM 0 IA_PRIM 3776 IA_VERT 15104 HS 3776 DS 38735 CS 0
+# counters that never move in occurrence 0: GS_PRIM CS
+# NO TEST: too few clean or hole frames
+reg VGT_TF_RING_SIZE 0xfffe: clean 11783 hole 0 between 0
+reg VGT_HS_OFFCHIP_PARAM 0x5f: clean 439 hole 0 between 0
+reg VGT_HS_OFFCHIP_PARAM 0x1ff: clean 11344 hole 0 between 0
+reg VGT_TF_MEMORY_BASE 0x11200000: clean 11783 hole 0 between 0
+reg VGT_TF_MEMORY_BASE_HI 0x0: clean 11783 hole 0 between 0
+reg GE_CNTL 0x8040: clean 11783 hole 0 between 0
+reg GE_PC_ALLOC 0x0: clean 10907 hole 0 between 0
+reg GE_PC_ALLOC 0x1ff: clean 876 hole 0 between 0
+arm  0 frames 3886 S 1.000 hole 0.000 | off
+arm 24 frames  440 S 1.000 hole 0.000 | off
+arm 27 frames  442 S 1.000 hole 0.000 | tfdist=0
+arm 30 frames  439 S 1.000 hole 0.000 | off
+arm 33 frames  443 S 1.000 hole 0.000 | tailflush=1
+arm 36 frames  443 S 1.000 hole 0.000 | off
+arm 39 frames  441 S 1.000 hole 0.000 | gepc=1
+arm 42 frames  412 S 1.000 hole 0.000 | off
+arm 45 frames  441 S 1.000 hole 0.000 | tailflush=1 tfonce=1
+arm 48 frames  440 S 1.000 hole 0.000 | off
+arm 51 frames  442 S 1.000 hole 0.000 | tailflush=1 tfonce=1 tfdist=0 gepc=1
+arm 54 frames  441 S 1.000 hole 0.000 | off
+arm 57 frames  444 S 1.000 hole 0.000 | tfonce=1
+arm 60 frames  442 S 1.000 hole 0.000 | off
+arm 63 frames  413 S 1.000 hole 0.000 | tfdist=3
+arm 66 frames  443 S 1.000 hole 0.000 | off
+arm 69 frames  439 S 1.000 hole 0.000 | offchip=1ff
+arm 72 frames  442 S 1.000 hole 0.000 | offchip=5f
+arm 75 frames  442 S 1.000 hole 0.000 | offchip=1ff
+arm 78 frames    8 S 1.000 hole 0.000 | off
+# against the depth: 75 finals at 2560, S against hole pixels r +0.00 slope +0.00

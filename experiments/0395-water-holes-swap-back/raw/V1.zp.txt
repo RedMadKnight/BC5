@@ -1,0 +1,44 @@
+# 15074 jobs, 3815 lake jobs, 0 records skipped by the CP, 16 RBs with a begin written ([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]); 202 finals, 202 joined
+# lag 0: side A 0, B 0, hole 0, clean 202: 0 writers follow the side, 0 lose cells, 0 follow the hole share
+# lag -1: side A 0, B 0, hole 0, clean 202: 0 writers follow the side, 0 lose cells, 0 follow the hole share
+# lag 1: side A 0, B 0, hole 0, clean 202: 0 writers follow the side, 0 lose cells, 0 follow the hole share
+# lag -2: side A 0, B 0, hole 0, clean 202: 0 writers follow the side, 0 lose cells, 0 follow the hole share
+# lag 2: side A 0, B 0, hole 0, clean 202: 0 writers follow the side, 0 lose cells, 0 follow the hole share
+# lag used: 0
+# NO TEST by side: fewer than 10 frames of a side
+# NO TEST by holes: fewer than 10 hole or clean frames
+# NO TEST by hole share: fewer than 30 hole frames of one width
+# NO TEST against K4's clean frames: no hole frames
+# NO TEST of the RBs by side
+rb 0 A - B -
+rb 1 A - B -
+rb 2 A - B -
+rb 3 A - B -
+rb 4 A - B -
+rb 5 A - B -
+rb 6 A - B -
+rb 7 A - B -
+rb 8 A - B -
+rb 9 A - B -
+rb 10 A - B -
+rb 11 A - B -
+rb 12 A - B -
+rb 13 A - B -
+rb 14 A - B -
+rb 15 A - B -
+# the widest shares across 3815 lake jobs
+swing 1.019 ps 0x11d373e800 occ 10 job 0 share 0.00000 0.00698 0.00712 (3815)
+swing 0.974 ps 0x11d373e800 occ 8 job 0 share 0.00010 0.00132 0.00138 (3815)
+swing 0.398 ps 0x11d29c8700 occ 0 job 2 share 0.00644 0.00655 0.00905 (23)
+swing 0.397 ps 0x11d4d52800 occ 3 job 1 share 0.00530 0.00531 0.00741 (23)
+swing 0.395 ps 0x11d4d3df00 occ 2 job 1 share 0.01230 0.01237 0.01719 (23)
+swing 0.395 ps 0x11d018ab00 occ 0 job 1 share 0.04841 0.04863 0.06762 (23)
+swing 0.393 ps 0x11d29c8700 occ 1 job 2 share 0.00302 0.00309 0.00423 (23)
+swing 0.377 ps 0x11d1dd6400 occ 2 job 0 share 0.00245 0.00286 0.00353 (3815)
+swing 0.365 ps 0x11d1dd6400 occ 3 job 0 share 0.00400 0.00477 0.00574 (3815)
+swing 0.288 ps 0x11d1e2b900 occ 2 job 0 share 0.01615 0.01980 0.02186 (3815)
+swing 0.225 ps 0x11d29c8700 occ 2 job 0 share 0.00242 0.00303 0.00310 (60)
+swing 0.224 ps 0x11d0203f00 occ 0 job 1 share 0.00133 0.00170 0.00171 (58)
+swing 0.223 ps 0x11d0208400 occ 1 job 1 share 0.00822 0.01049 0.01055 (58)
+swing 0.221 ps 0x11d0208400 occ 2 job 1 share 0.00205 0.00262 0.00263 (58)
+swing 0.221 ps 0x11d0208400 occ 0 job 1 share 0.00203 0.00259 0.00260 (58)

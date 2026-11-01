@@ -1,0 +1,139 @@
+== P2
+-- check
+gpu 90308165504 ns over 61 s
+flips 5543 last at 182.062
+stubs 10, baseline 10, new 0
+duration 183 verdict pass
+APR wait thread: absent
+CLASS NO_CRASH fix on crash none reached 1
+-- summary
+P2: stopped at 180 s after 183 s; launcher exit 0; crash lines 0, kernel lines 0, TIMEOUT lines 0, compute-ring lines 0, fdinfo engines drm-engine-gfx , devcoredumps 0, RT-off drop lines 0, flips 5552 over 178.3 s = 31.1 flips/s; direct: 16331 views; +0 BOs (79, 10954.0 MiB pinned); maps +1 -2 (16370); imports  (stubs ), call lines , procparam ; the private learned file is unchanged
+-- box-settings
+swappiness 150; kernel 7.2.9-ogc3.1.fc44.x86_64; shared normal 2db9b7d0; learned 23ef45ec
+-- savecopy
+9347496fbaf30f25
+-- learned
+the private learned file is unchanged
+-- route
+routed at 63 s: /home/kjaniszewski/bc5-work/exp0390/run/wd/_SaveData/PPSA03671/i38-null-prefs/prefs.save
+-- flips-per-10s
+0 218
+10 292
+20 294
+30 179
+40 164
+50 424
+60 421
+70 424
+80 314
+90 138
+100 273
+110 285
+120 325
+130 332
+140 332
+150 340
+160 387
+170 389
+180 21
+-- result
+RESULT P2 runner 0 check 0 CLASS NO_CRASH fix on crash none reached 1
+-- done
+lock released
+-- end
+P2 stopped at 180 s (after 183 s)
+-- switches
+KYTY_BC5_JOB_ARENA_FIX=1
+KYTY_BC5_RT_BUILD_PGM=909974400,909939400,909936c00,909939700,909939900,909974200,909973900,909973b00,909973d00,909973f00,11d049aa00,11d04a6000,11d04bb900
+-- apr threads
+      1 bc5-apr-q1
+      1 bc5-apr-q3
+      1 bc5-apr-q5
+      1 bc5-apr-r1-0
+      1 bc5-apr-r1-1
+      1 bc5-apr-r1-2
+      1 bc5-apr-r1-3
+      1 bc5-apr-r3-0
+      1 bc5-apr-r3-1
+      1 bc5-apr-r3-2
+      1 bc5-apr-r3-3
+      1 bc5-apr-r5-0
+      1 bc5-apr-r5-1
+      1 bc5-apr-r5-2
+      1 bc5-apr-r5-3
+== Q1
+-- check
+gpu 79094497933 ns over 56 s
+flips 5366 last at 177.895
+stubs 10, baseline 10, new 0
+duration 180 verdict pass
+APR wait thread: absent
+CLASS NO_CRASH fix on crash none reached 1
+-- summary
+Q1: stopped at 180 s after 180 s; launcher exit 0; crash lines 0, kernel lines 0, TIMEOUT lines 0, compute-ring lines 0, fdinfo engines drm-engine-gfx , devcoredumps 0, RT-off drop lines 0, flips 5380 over 174.1 s = 30.9 flips/s; direct: 16306 views; +0 BOs (90, 10900.0 MiB pinned); maps +0 -2 (16344); imports  (stubs ), call lines , procparam ; the private learned file is unchanged
+-- box-settings
+swappiness 150; kernel 7.2.9-ogc3.1.fc44.x86_64; shared normal 2db9b7d0; learned 23ef45ec
+-- savecopy
+9347496fbaf30f25
+-- learned
+the private learned file is unchanged
+-- route
+routed at 64 s: /home/kjaniszewski/bc5-work/exp0390/run/wd/_SaveData/PPSA03671/i38-null-prefs/prefs.save
+-- flips-per-10s
+0 221
+10 293
+20 298
+30 181
+40 197
+50 417
+60 442
+70 443
+80 300
+90 135
+100 286
+110 293
+120 340
+130 352
+140 322
+150 331
+160 331
+170 198
+-- result
+RESULT Q1 runner 0 check 0 CLASS NO_CRASH fix on crash none reached 1
+-- done
+lock released
+-- end
+Q1 stopped at 180 s (after 180 s)
+-- switches
+KYTY_BC5_APR_PARK_TO_WORKER=1
+KYTY_BC5_JOB_ARENA_FIX=1
+KYTY_BC5_RT_BUILD_PGM=909974400,909939400,909936c00,909939700,909939900,909974200,909973900,909973b00,909973d00,909973f00,11d049aa00,11d04a6000,11d04bb900
+-- apr threads
+      1 bc5-apr-q0
+      1 bc5-apr-q1
+      1 bc5-apr-q3
+      1 bc5-apr-q5
+      1 bc5-apr-r0-0
+      1 bc5-apr-r0-1
+      1 bc5-apr-r0-2
+      1 bc5-apr-r0-3
+      1 bc5-apr-r1-0
+      1 bc5-apr-r1-1
+      1 bc5-apr-r1-2
+      1 bc5-apr-r1-3
+      1 bc5-apr-r3-0
+      1 bc5-apr-r3-1
+      1 bc5-apr-r3-2
+      1 bc5-apr-r3-3
+      1 bc5-apr-r5-0
+      1 bc5-apr-r5-1
+      1 bc5-apr-r5-2
+      1 bc5-apr-r5-3
+== config
+MangoHud.PPSA03671=on
+RayTracing.PPSA21564=off
+MangoHud.PPSA21564=on
+JobArenaFix.PPSA03671=off
+RayTracing.PPSA03671=on
+== vm at 10:0x
+swappiness 150 page-cluster 0

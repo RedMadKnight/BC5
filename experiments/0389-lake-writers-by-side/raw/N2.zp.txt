@@ -1,0 +1,148 @@
+# 15076 jobs, 3827 lake jobs, 0 records skipped by the CP, 16 RBs with a begin written ([0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]); 199 finals, 199 joined
+# lag 0: side A 51, B 42, hole 94, clean 71: 8 writers follow the side, 4 lose cells, 1 follow the hole share
+# lag -1: side A 51, B 42, hole 94, clean 71: 7 writers follow the side, 4 lose cells, 1 follow the hole share
+# lag 1: side A 51, B 42, hole 94, clean 71: 5 writers follow the side, 4 lose cells, 1 follow the hole share
+# lag -2: side A 51, B 42, hole 94, clean 71: 9 writers follow the side, 3 lose cells, 1 follow the hole share
+# lag 2: side A 51, B 42, hole 94, clean 71: 8 writers follow the side, 4 lose cells, 1 follow the hole share
+# lag used: 0
+# 8 of 54 writers follow the side: the smaller share at most 0.8 of the larger
+side 0.000 low A ps 0x11d01ff900 occ 0 job -1 A 0.00000 B 0.00148
+side 0.000 low B ps 0x11d01ff900 occ 0 job 1 A 0.00171 B 0.00000
+side 0.000 low A ps 0x11d01ff900 occ 1 job -1 A 0.00000 B 0.00182
+side 0.000 low B ps 0x11d01ff900 occ 1 job 1 A 0.00188 B 0.00000
+side 0.446 low A ps 0x11d018ab00 occ 0 job 1 A 0.00095 B 0.00214
+side 0.446 low A ps 0x11d01ff900 occ 1 job 3 A 0.00183 B 0.00409
+side 0.499 low A ps 0x11d01ff900 occ 0 job 3 A 0.00167 B 0.00335
+side 0.526 low A ps 0x11d01ff900 occ 2 job 3 A 0.00092 B 0.00175
+side 0.897 low B ps 0x11d01ff900 occ 0 job 2 A 0.08109 B 0.07270
+side 0.940 low B ps 0x11d01ff900 occ 1 job 2 A 0.09083 B 0.08537
+side 0.944 low B ps 0x11d0203f00 occ 0 job 2 A 0.00170 B 0.00161
+side 0.944 low B ps 0x11d0208400 occ 1 job 2 A 0.01040 B 0.00982
+side 0.944 low B ps 0x11d0208400 occ 2 job 2 A 0.00255 B 0.00240
+side 0.944 low B ps 0x11d0208400 occ 0 job 2 A 0.00252 B 0.00238
+side 0.968 low A ps 0x11d373f400 occ 10 job 0 A 0.00664 B 0.00685
+side 0.972 low A ps 0x11d1e2b900 occ 2 job 0 A 0.02119 B 0.02180
+side 0.972 low A ps 0x11d090d900 occ 0 job 0 A 0.00142 B 0.00146
+side 0.974 low A ps 0x11d1dd6400 occ 4 job 0 A 0.01454 B 0.01493
+side 0.977 low A ps 0x11d1d96400 occ 1 job 0 A 0.00562 B 0.00575
+side 0.977 low A ps 0x11d1dd6400 occ 3 job 0 A 0.00596 B 0.00610
+side 0.978 low B ps 0x11d01ff900 occ 2 job 2 A 0.03826 B 0.03741
+side 0.981 low A ps 0x11d29ea400 occ 6 job 0 A 0.00165 B 0.00168
+side 0.982 low A ps 0x11d3d60b00 occ 0 job 0 A 0.00234 B 0.00238
+side 0.983 low A ps 0x11d29c9800 occ 0 job 0 A 0.01492 B 0.01518
+side 0.985 low A ps 0x11d373f400 occ 8 job 0 A 0.00143 B 0.00145
+side 0.985 low A ps 0x11d1e16100 occ 0 job 0 A 0.01835 B 0.01863
+side 0.985 low A ps 0x11d1dd6400 occ 1 job 0 A 0.00463 B 0.00470
+side 0.986 low A ps 0x11d29c9800 occ 0 job 1 A 0.00739 B 0.00750
+side 0.986 low A ps 0x11d1d10f00 occ 0 job 0 A 0.04210 B 0.04270
+side 0.986 low A ps 0x11d4691400 occ 2 job 0 A 0.00439 B 0.00445
+side 0.986 low A ps 0x11d29ea400 occ 8 job 0 A 0.01721 B 0.01745
+side 0.986 low A ps 0x11d373f400 occ 1 job 0 A 0.03138 B 0.03181
+side 0.987 low A ps 0x11d373f400 occ 4 job 0 A 0.03450 B 0.03497
+side 0.987 low A ps 0x11d466bb00 occ 0 job 0 A 0.06927 B 0.07020
+side 0.987 low A ps 0x11d4d53400 occ 3 job 0 A 0.00487 B 0.00494
+side 0.987 low A ps 0x11d46b7200 occ 1 job 0 A 0.01993 B 0.02020
+side 0.987 low A ps 0x11d0a98300 occ 1 job 0 A 0.01803 B 0.01827
+side 0.987 low A ps 0x11d373f400 occ 2 job 0 A 0.10736 B 0.10879
+side 0.987 low A ps 0x11d4d3eb00 occ 2 job 0 A 0.01197 B 0.01213
+side 0.987 low A ps 0x11d1d41600 occ 0 job 0 A 0.01188 B 0.01203
+side 0.988 low A ps 0x11d1dd6400 occ 6 job 0 A 0.00157 B 0.00159
+side 0.989 low A ps 0x11d29ea400 occ 5 job 0 A 0.00381 B 0.00386
+side 0.989 low A ps 0x11d1e2b900 occ 3 job 0 A 0.07396 B 0.07480
+side 0.989 low B ps 0x11d018ab00 occ 0 job 0 A 0.04835 B 0.04783
+side 0.989 low A ps 0x11d1d88300 occ 3 job 0 A 0.00609 B 0.00615
+side 0.990 low A ps 0x11d29c9800 occ 1 job 1 A 0.00337 B 0.00340
+side 0.990 low A ps 0x11d1cf4600 occ 0 job 1 A 0.00104 B 0.00106
+side 0.990 low A ps 0x11d1d10f00 occ 1 job 0 A 0.05479 B 0.05532
+side 0.991 low A ps 0x11d1d88300 occ 4 job 0 A 0.03198 B 0.03226
+side 0.992 low B ps 0x11d017ee00 occ 0 job -1 A 0.01693 B 0.01679
+side 0.992 low B ps 0x11d1dd6400 occ 2 job 0 A 0.00522 B 0.00518
+side 0.992 low A ps 0x11d1dd6400 occ 5 job 0 A 0.00835 B 0.00841
+side 0.995 low B ps 0x11d01ff900 occ 3 job 2 A 0.01061 B 0.01055
+side 1.000 low A ps 0x11d373f400 occ 5 job 0 A 0.00720 B 0.00720
+# 4 of 49 writers lose cells: hole share at most 0.8 of clean
+ratio 0.311 ps 0x11d01ff900 occ 0 job -1 clean 0.00213 hole 0.00066
+ratio 0.325 ps 0x11d01ff900 occ 2 job -1 clean 0.00112 hole 0.00037
+ratio 0.399 ps 0x11d01ff900 occ 1 job -1 clean 0.00204 hole 0.00081
+ratio 0.789 ps 0x11d01ff900 occ 2 job 2 clean 0.04813 hole 0.03799
+ratio 0.854 ps 0x11d01ff900 occ 0 job 2 clean 0.09060 hole 0.07737
+ratio 0.889 ps 0x11d01ff900 occ 3 job 2 clean 0.01192 hole 0.01059
+ratio 0.968 ps 0x11d1cf4600 occ 0 job 1 clean 0.00108 hole 0.00105
+ratio 0.969 ps 0x11d29c9800 occ 0 job 1 clean 0.00768 hole 0.00744
+ratio 0.975 ps 0x11d29c9800 occ 1 job 1 clean 0.00347 hole 0.00339
+ratio 0.991 ps 0x11d018ab00 occ 0 job 0 clean 0.04854 hole 0.04813
+ratio 1.005 ps 0x11d373f400 occ 5 job 0 clean 0.00716 hole 0.00720
+ratio 1.008 ps 0x11d0203f00 occ 0 job 2 clean 0.00164 hole 0.00166
+ratio 1.009 ps 0x11d0208400 occ 1 job 2 clean 0.01006 hole 0.01015
+ratio 1.009 ps 0x11d0208400 occ 2 job 2 clean 0.00246 hole 0.00248
+ratio 1.009 ps 0x11d0208400 occ 0 job 2 clean 0.00244 hole 0.00246
+ratio 1.010 ps 0x11d1dd6400 occ 1 job 0 clean 0.00462 hole 0.00467
+ratio 1.010 ps 0x11d01ff900 occ 1 job 2 clean 0.08753 hole 0.08842
+ratio 1.018 ps 0x11d1d10f00 occ 1 job 0 clean 0.05404 hole 0.05502
+ratio 1.019 ps 0x11d1dd6400 occ 5 job 0 clean 0.00822 hole 0.00838
+ratio 1.019 ps 0x11d1d88300 occ 4 job 0 clean 0.03151 hole 0.03211
+ratio 1.020 ps 0x11d4691400 occ 2 job 0 clean 0.00433 hole 0.00442
+ratio 1.021 ps 0x11d1d41600 occ 0 job 0 clean 0.01170 hole 0.01195
+ratio 1.022 ps 0x11d373f400 occ 1 job 0 clean 0.03090 hole 0.03157
+ratio 1.022 ps 0x11d466bb00 occ 0 job 0 clean 0.06816 hole 0.06968
+ratio 1.022 ps 0x11d4d53400 occ 3 job 0 clean 0.00479 hole 0.00490
+# 1 of 51 writers follow the hole share: rank correlation at most -0.5
+spread -0.801 ps 0x11d01ff900 occ 2 job 2 mean share 0.03760
+spread -0.457 ps 0x11d01ff900 occ 0 job 2 mean share 0.07706
+spread -0.042 ps 0x11d01ff900 occ 0 job 3 mean share 0.00251
+spread -0.042 ps 0x11d01ff900 occ 2 job 3 mean share 0.00134
+spread -0.039 ps 0x11d018ab00 occ 0 job 1 mean share 0.00154
+spread -0.039 ps 0x11d01ff900 occ 1 job 3 mean share 0.00295
+spread 0.098 ps 0x11d01ff900 occ 1 job 1 mean share 0.00107
+spread 0.105 ps 0x11d1e2b900 occ 2 job 0 mean share 0.02147
+spread 0.128 ps 0x11d373f400 occ 10 job 0 mean share 0.00675
+spread 0.133 ps 0x11d1d88300 occ 4 job 0 mean share 0.03215
+spread 0.166 ps 0x11d1d96400 occ 1 job 0 mean share 0.00567
+spread 0.197 ps 0x11d1dd6400 occ 4 job 0 mean share 0.01473
+spread 0.213 ps 0x11d1dd6400 occ 2 job 0 mean share 0.00520
+spread 0.240 ps 0x11d1d88300 occ 3 job 0 mean share 0.00611
+spread 0.243 ps 0x11d017ee00 occ 0 job -1 mean share 0.01688
+spread 0.257 ps 0x11d1dd6400 occ 3 job 0 mean share 0.00600
+spread 0.312 ps 0x11d090d900 occ 0 job 0 mean share 0.00144
+spread 0.344 ps 0x11d1e16100 occ 0 job 0 mean share 0.01849
+spread 0.355 ps 0x11d1dd6400 occ 6 job 0 mean share 0.00158
+spread 0.383 ps 0x11d373f400 occ 8 job 0 mean share 0.00144
+spread 0.437 ps 0x11d1dd6400 occ 5 job 0 mean share 0.00837
+spread 0.444 ps 0x11d3d60b00 occ 0 job 0 mean share 0.00236
+spread 0.447 ps 0x11d29ea400 occ 8 job 0 mean share 0.01733
+spread 0.449 ps 0x11d29c9800 occ 0 job 1 mean share 0.00743
+spread 0.505 ps 0x11d1e2b900 occ 3 job 0 mean share 0.07438
+# NO TEST against K4's clean frames: 43 jobs of 125 writers against K4's 146
+# 0 of 16 RBs follow the side
+rb 0 A 0.0626 B 0.0628
+rb 1 A 0.0626 B 0.0628
+rb 2 A 0.0627 B 0.0628
+rb 3 A 0.0625 B 0.0627
+rb 4 A 0.0624 B 0.0622
+rb 5 A 0.0624 B 0.0622
+rb 6 A 0.0624 B 0.0624
+rb 7 A 0.0624 B 0.0623
+rb 8 A 0.0620 B 0.0621
+rb 9 A 0.0621 B 0.0621
+rb 10 A 0.0624 B 0.0624
+rb 11 A 0.0622 B 0.0622
+rb 12 A 0.0628 B 0.0629
+rb 13 A 0.0628 B 0.0628
+rb 14 A 0.0628 B 0.0627
+rb 15 A 0.0628 B 0.0627
+# the widest shares across 3827 lake jobs
+swing 3.395 ps 0x11d1cf4600 occ 0 job 0 share 0.00107 0.00112 0.00487 (60)
+swing 2.958 ps 0x11d01ff900 occ 2 job 1 share 0.03069 0.05020 0.17915 (56)
+swing 2.792 ps 0x11d01ff900 occ 0 job 1 share 0.07997 0.09280 0.33904 (56)
+swing 2.723 ps 0x11d0203f00 occ 0 job 1 share 0.00172 0.00179 0.00661 (56)
+swing 2.631 ps 0x11d01ff900 occ 3 job 1 share 0.01089 0.01230 0.04326 (56)
+swing 2.621 ps 0x11d0208400 occ 1 job 1 share 0.01055 0.01096 0.03929 (56)
+swing 2.549 ps 0x11d0208400 occ 0 job 1 share 0.00255 0.00266 0.00932 (56)
+swing 2.536 ps 0x11d0208400 occ 2 job 1 share 0.00258 0.00268 0.00937 (56)
+swing 2.463 ps 0x11d01ff900 occ 1 job 1 share 0.09117 0.09521 0.32562 (56)
+swing 0.964 ps 0x11d29c9800 occ 1 job 0 share 0.00757 0.00816 0.01543 (60)
+swing 0.450 ps 0x11d01ff900 occ 2 job 3 share 0.03026 0.04272 0.04948 (38)
+swing 0.443 ps 0x11d1dd6400 occ 2 job 0 share 0.00380 0.00490 0.00597 (3800)
+swing 0.396 ps 0x11d01ff900 occ 2 job -1 share 0.03169 0.03912 0.04720 (133)
+swing 0.386 ps 0x11d01ff900 occ 2 job 2 share 0.03257 0.04708 0.05073 (3573)
+swing 0.349 ps 0x11d1dd6400 occ 3 job 0 share 0.00493 0.00580 0.00695 (3800)

@@ -1,0 +1,72 @@
+TOK=202611010152491885145
+lock released
+RESULT G4 runner 0 check 0 saves same CLASS NO_CRASH fix off crash none reached 1
+TOK=202611010156191925220
+lock released
+RESULT F6 runner 0 check 0 saves same CLASS NO_CRASH fix off crash none reached 1
+TOK=202611010159471963384
+lock released
+RESULT H1 runner 0 check 0 saves same CLASS NO_CRASH fix off crash none reached 1
+TOK=202611010203172003676
+lock released
+RESULT J1 runner 0 check 0 saves same CLASS NO_CRASH fix off crash none reached 1
+TOK=202611010206492043672
+lock released
+RESULT K1 runner 0 check 0 saves same CLASS NO_CRASH fix off crash none reached 1
+TOK=202611010210182083593
+lock released
+RESULT L1 runner 0 check 0 saves same CLASS NO_CRASH fix off crash none reached 1
+TOK=202611010213432122105
+lock released
+RESULT H2 runner 1 check 0 saves same CLASS CRASH_TARGET fix off crash target reached 1
+TOK=202611010216092151376
+lock released
+RESULT J2 runner 0 check 0 saves same CLASS NO_CRASH fix off crash none reached 1
+TOK=202611010219382191449
+lock released
+RESULT G5 runner 1 check 0 saves same CLASS CRASH_TARGET fix off crash target reached 1
+TOK=202611010222072220966
+lock released
+RESULT F7 runner 0 check 0 saves same CLASS NO_CRASH fix off crash none reached 1
+TOK=202611010225382259097
+lock released
+RESULT K2 runner 0 check 0 saves same CLASS NO_CRASH fix off crash none reached 1
+TOK=202611010229322298835
+lock released
+RESULT L2 runner 0 check 0 saves same CLASS NO_CRASH fix off crash none reached 1
+TOK=202611010233042337830
+lock released
+RESULT H3 runner 0 check 0 saves same CLASS NO_CRASH fix off crash none reached 1
+TOK=202611010236452378940
+lock released
+RESULT J3 runner 0 check 0 saves same CLASS NO_CRASH fix off crash none reached 1
+TOK=202611010240292419881
+lock released
+RESULT H4 runner 0 check 0 saves same CLASS NO_CRASH fix off crash none reached 1
+TOK=202611010244142459129
+lock released
+RESULT J4 runner 0 check 0 saves same CLASS NO_CRASH fix off crash none reached 1
+TOK=202611010247542499158
+lock released
+RESULT G6 runner 1 check 0 saves same CLASS CRASH_TARGET fix off crash target reached 1
+TOK=202611010250122528338
+lock released
+RESULT F8 runner 0 check 0 saves same CLASS NO_CRASH fix off crash none reached 1
+TOK=202611010253362565440
+lock released
+RESULT K3 runner 0 check 0 saves same CLASS NO_CRASH fix off crash none reached 1
+TOK=202611010257162604177
+lock released
+RESULT L3 runner 0 check 0 saves same CLASS NO_CRASH fix off crash none reached 1
+TOK=202611010300462641077
+lock released
+RESULT H5 runner 0 check 0 saves same CLASS NO_CRASH fix off crash none reached 1
+TOK=202611010304242679976
+lock released
+RESULT J5 runner 0 check 0 saves same CLASS NO_CRASH fix off crash none reached 1
+control: 2 of 3 crashed at the site
+RULE arm H REFUTED: 4 clean, 1 at the site, 0 elsewhere, of 5
+RULE arm J HOLDS: 5 clean, 0 at the site, 0 elsewhere, of 5
+RULE arm F HOLDS: 3 clean, 0 at the site, 0 elsewhere, of 3
+RULE arm K HOLDS: 3 clean, 0 at the site, 0 elsewhere, of 3
+RULE arm L HOLDS: 3 clean, 0 at the site, 0 elsewhere, of 3

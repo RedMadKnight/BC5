@@ -1,0 +1,8 @@
+ok   built: pinned, released
+ok   not claimed: nothing sent, nothing released
+ok   a failed send gives the lock back
+ok   sent files that differ give the lock back
+ok   a stopped build gives the lock back, no pin
+ok   a lost connection: unknown, the lock stays
+ok   no binary line: no pin, the lock back
+== 7 passed, 0 failed

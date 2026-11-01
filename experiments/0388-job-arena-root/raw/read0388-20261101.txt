@@ -1,0 +1,24 @@
+read0388.sh, one read-only pass, 2026-11-01 after 06:49, counts only; the last two commands (J5's idle states) printed nothing
+tag | end | mean flips/s 120-170 s | last push spin line (every 2000 pushes) | nice of the five Hi workers at 70 s
+G4 | stopped at 180 s | 32.3 | pushes 630000, open target jobs 0, spins 0, ended by their condition 0 | 0
+G5 | ended by itself at 119 s | NA | pushes 376000, open target jobs 0, spins 0, ended by their condition 0 | 0
+G6 | ended by itself at 120 s | NA | pushes 382000, open target jobs 0, spins 0, ended by their condition 0 | 0
+F6 | stopped at 180 s | 28.2 | pushes 566000, open target jobs 0, spins 566000, ended by their condition 430539 | 0
+F7 | stopped at 180 s | 28.5 | pushes 574000, open target jobs 0, spins 574000, ended by their condition 434832 | 0
+F8 | stopped at 180 s | 28.2 | pushes 568000, open target jobs 0, spins 568000, ended by their condition 433258 | 0
+H1 | stopped at 180 s | 33.2 | pushes 614000, open target jobs 0, spins 427234, ended by their condition 418508 | 0
+H2 | ended by itself at 118 s | NA | pushes 372000, open target jobs 0, spins 294480, ended by their condition 290058 | 0
+H3 | stopped at 180 s | 33.5 | pushes 608000, open target jobs 0, spins 418890, ended by their condition 409298 | 0
+H4 | stopped at 180 s | 34.1 | pushes 626000, open target jobs 0, spins 428106, ended by their condition 418999 | 0
+H5 | stopped at 180 s | 33.3 | pushes 608000, open target jobs 0, spins 428576, ended by their condition 419841 | 0
+J1 | stopped at 180 s | 32.1 | pushes 596000, open target jobs 289, spins 289, ended by their condition 18 | 0
+J2 | stopped at 180 s | 33.6 | pushes 628000, open target jobs 283, spins 283, ended by their condition 21 | 0
+J3 | stopped at 180 s | 37.1 | pushes 634000, open target jobs 409, spins 409, ended by their condition 24 | 0
+J4 | stopped at 180 s | 33.0 | pushes 616000, open target jobs 350, spins 350, ended by their condition 33 | 0
+J5 | stopped at 180 s | 33.2 | pushes 606000, open target jobs 318, spins 318, ended by their condition 29 | 0
+K1 | stopped at 180 s | 32.8 | pushes 612000, open target jobs 183, spins 183, ended by their condition 3 | 0
+K2 | stopped at 180 s | 32.8 | pushes 618000, open target jobs 180, spins 180, ended by their condition 6 | 0
+K3 | stopped at 180 s | 32.3 | pushes 598000, open target jobs 203, spins 203, ended by their condition 17 | 0
+L1 | stopped at 180 s | 28.7 | pushes 576000, open target jobs 0, spins 576000, ended by their condition 434465 | -5
+L2 | stopped at 180 s | 28.4 | pushes 574000, open target jobs 0, spins 574000, ended by their condition 434516 | -5
+L3 | stopped at 180 s | 28.6 | pushes 558000, open target jobs 0, spins 558000, ended by their condition 422426 | -5
