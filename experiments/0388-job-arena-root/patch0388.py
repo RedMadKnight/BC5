@@ -133,7 +133,9 @@ private:
 class KernelSemaPrivate {
 public:
 '''),
-        ("m_max_count(max_count) {};\n", "m_max_count(max_count), m_bc5_job(name == \"JobLoaderSema\") {};\n"),
+        ("m_max_count(max_count) {};\n", "m_max_count(max_count), m_bc5_job(name == \"JobLoaderSema\"), m_bc5_count(init_count) {};\n"),
+        ("\tm_count = (set_count < 0 ? m_init_count : set_count);\n",
+         "\tm_count = (set_count < 0 ? m_init_count : set_count);\n\tm_bc5_count.store(m_count, std::memory_order_relaxed);\n"),
         ("\t[[nodiscard]] const std::string& GetName() const { return m_name; }\n",
          "\t[[nodiscard]] const std::string& GetName() const { return m_name; }\n"
          "\t[[nodiscard]] bool               Bc5Job() const { return m_bc5_job; }\n"
@@ -145,6 +147,7 @@ public:
         ("\tint                         m_max_count;\n};\n",
          "\tint                         m_max_count;\n"
          "\tbool                        m_bc5_job;\n"
+         "\tstd::atomic<int>            m_bc5_count; // m_count as a snapshot for the unlocked look; every write is under m_mutex\n"
          "\tstd::atomic<uint64_t>       m_bc5_marked {0};\n"
          "\tstd::atomic<uint64_t>       m_bc5_returned {0};\n"
          "\tint64_t                     m_bc5_signal_ns = 0;\n"
@@ -152,7 +155,7 @@ public:
          "\tBc5Bands                    m_bc5_credit;\n};\n"),
         ("\tWakeWaiters();\n\n\tm_cond_var.SignalAll();\n",
          "\tif (m_bc5_job && Bc5Trace0388()) {\n\t\tm_bc5_signal_ns = Bc5NowNs();\n\t}\n\n"
-         "\tWakeWaiters();\n\n\tif (!(m_bc5_job && Bc5TargetedWake())) {\n\t\tm_cond_var.SignalAll();\n\t}\n"),
+         "\tWakeWaiters();\n\tm_bc5_count.store(m_count, std::memory_order_relaxed);\n\n\tif (!(m_bc5_job && Bc5TargetedWake())) {\n\t\tm_cond_var.SignalAll();\n\t}\n"),
         ("\t\t\twaiter->result = Result::Ok;\n\t\t\twaiter->ready  = true;\n",
          "\t\t\twaiter->result = Result::Ok;\n\t\t\twaiter->ready  = true;\n"
          "\t\t\tif (m_bc5_job) {\n\t\t\t\twaiter->bc5_signal_ns = m_bc5_signal_ns;\n\t\t\t\tm_bc5_marked.fetch_add(1, std::memory_order_release);\n"
@@ -163,7 +166,7 @@ public:
 	static const unsigned wait_spin_us = bc5::cpu_model::parse_spin_us(std::getenv("KYTY_BC5_0388_WAIT_SPIN_US"));
 	if (wait_spin_us != 0 && m_bc5_job) {
 		const int64_t start = Bc5NowNs();
-		while (__atomic_load_n(&m_count, __ATOMIC_RELAXED) < need_count && Bc5NowNs() - start < wait_spin_us * 1000LL) {
+		while (m_bc5_count.load(std::memory_order_relaxed) < need_count && Bc5NowNs() - start < wait_spin_us * 1000LL) {
 			__builtin_ia32_pause();
 		}
 	}
@@ -171,7 +174,7 @@ public:
 	Common::LockGuard lock(m_mutex);
 '''),
         ("\tif (m_count >= need_count) {\n\t\tm_count -= need_count;\n\t\tif (ptr_micros != nullptr) {\n",
-         "\tif (m_count >= need_count) {\n\t\tm_count -= need_count;\n"
+         "\tif (m_count >= need_count) {\n\t\tm_count -= need_count;\n\t\tm_bc5_count.store(m_count, std::memory_order_relaxed);\n"
          "\t\tif (m_bc5_job && Bc5Trace0388()) {\n\t\t\tm_bc5_credit.Add(\"credit taken after signal\", this, (Bc5NowNs() - m_bc5_signal_ns) / 1000);\n\t\t}\n"
          "\t\tif (ptr_micros != nullptr) {\n"),
         ("\twaiter.need_count = need_count;\n\tAddWaiter(&waiter);\n",
@@ -193,7 +196,8 @@ public:
 // PUSH_UNTIL_RETURN_US spins until any wait on any JobLoaderSema returned; not paired with a signal or a job (R11).
 // PUSH_UNTIL_PAIRED_US spins until every waiter this semaphore has marked has returned, and not at all if none is marked.
 // PUSH_UNTIL_TARGET_US spins while the entry of this semaphore has an open job of the crash's function, and not at all
-// otherwise: the pairing with the job. It reads the title's job table (exp 0358 F449).
+// otherwise: the pairing with the job. It reads the title's job table (exp 0358 F449). Only that candidate and the
+// catcher KYTY_BC5_0388_TARGET_TRACE=1 read the table; TRACE alone does not.
 static std::atomic<uint64_t> g_bc5_wait_returns {0};
 static std::atomic<int64_t>  g_bc5_signal_ns {0};
 
@@ -252,7 +256,8 @@ static void Bc5OwnerPushSpin(const KernelSemaPrivate* sem, uint64_t returns_befo
 	static const unsigned paired_us = bc5::cpu_model::parse_bound_us(std::getenv("KYTY_BC5_0388_PUSH_UNTIL_PAIRED_US"));
 	static const unsigned target_us = bc5::cpu_model::parse_bound_us(std::getenv("KYTY_BC5_0388_PUSH_UNTIL_TARGET_US"));
 	const unsigned        bound     = spin_us != 0 ? spin_us : until_us != 0 ? until_us : paired_us != 0 ? paired_us : target_us;
-	if (!sem->Bc5Job() || (bound == 0 && !Bc5Trace0388())) {
+	static const bool     tgt_trace = bc5::cpu_model::parse_flag(std::getenv("KYTY_BC5_0388_TARGET_TRACE"));
+	if (!sem->Bc5Job() || (bound == 0 && !Bc5Trace0388() && !tgt_trace)) {
 		return;
 	}
 	static thread_local const bool is_main = [] {
@@ -269,7 +274,7 @@ static void Bc5OwnerPushSpin(const KernelSemaPrivate* sem, uint64_t returns_befo
 	static std::atomic<uint64_t> met {0};
 	const bool                   by_paired = spin_us == 0 && until_us == 0 && paired_us != 0;
 	const bool                   by_target = spin_us == 0 && until_us == 0 && paired_us == 0 && target_us != 0;
-	const bool                   open      = Bc5TargetJobOpen(sem);
+	const bool                   open      = (by_target || tgt_trace) && Bc5TargetJobOpen(sem);
 	const uint64_t               marked    = sem->Bc5Marked();
 	if (open) {
 		targets.fetch_add(1, std::memory_order_relaxed);

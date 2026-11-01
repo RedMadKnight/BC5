@@ -159,18 +159,19 @@ No crash elsewhere, no amdgpu kernel line, GPU reset or devcoredump. Exposure in
 | `KYTY_BC5_0388_PUSH_UNTIL_PAIRED_US=<0..5000>` | wait until every waiter this semaphore marked has returned; no wait if none is marked |
 | `KYTY_BC5_0388_PUSH_UNTIL_TARGET_US=<0..5000>` | wait only while this semaphore's entry has an open job of the crash's function (+0x4661e50), read from the title's job table |
 | `KYTY_BC5_0388_TARGETED_WAKE=1` | wake only the marked waiters, each on its own condvar (exp 0358's candidate) |
-| `KYTY_BC5_0388_WAIT_SPIN_US=<0..500>` | a waiter watches the count for this long before it sleeps |
+| `KYTY_BC5_0388_WAIT_SPIN_US=<0..500>` | a waiter watches an atomic snapshot of the count, stored under the mutex at every write, for this long before it sleeps |
+| `KYTY_BC5_0388_TARGET_TRACE=1` | catcher: count open target jobs on pushes without the target wait; reads the title's job table |
 | `KYTY_BC5_0388_WORKER_NICE=<-10..0>` | the nice of guest priority 500 threads |
 
-**Catchers with pairing (R11).** With `TRACE=1`: per semaphore, signal to return of the waiter that signal marked (`marked waiter returned`), and a credit taken without sleeping (`credit taken after signal`), kept apart. Per push of the main thread: `open target jobs`, spins, and spins ended by their condition. The older band stays and is now named unpaired. The credit band is only the time since the semaphore's last signal, so it pairs by semaphore, not by credit.
+**Catchers with pairing (R11).** With `TRACE=1`: per semaphore, signal to return of the waiter that signal marked (`marked waiter returned`), and a credit taken without sleeping (`credit taken after signal`), kept apart. Per push of the main thread: `open target jobs` (only with the target wait or `TARGET_TRACE=1`), spins, and spins ended by their condition. The older band stays and is now named unpaired. The credit band is only the time since the semaphore's last signal, so it pairs by semaphore, not by credit.
 
 **Risks in the build.**
 
-- J reads the title's job table from a host thread while the title changes it. A torn read could give a wrong answer for one push; a moved pending list could fault. Hypothesis: the title's list stays mapped.
+- J and K read the title's job table from a host thread while the title changes it, and so does `TARGET_TRACE=1`. No other arm reads it: `TRACE=1` alone does not. A torn read could give a wrong answer for one push; a moved pending list could fault. Hypothesis: the title's list stays mapped.
 - Where the job object keeps the function is not read, so J looks through all 0xc0 bytes for the address. `open target jobs` at 0 means J never armed.
 - All of this is title-specific. J is a host workaround that knows the title's layout, not a root fix.
 
-**Local tests.** Pure parts 102 checks, 0 failed (clang 22 with the stand-in for Catch2's macros). The patched `semaphore.cpp` type-checked with stand-ins for the project's headers, up to the POSIX part; not compiled with its real headers, and `pthread.cpp` and `libKernel.cpp` not rechecked. `patch0388.py` applies, the scripts parse, `test0388run.sh positive` 7 of 7 and `test_box0388.sh` 14 of 14, the rule tried on sample rows. Nothing ran on the box.
+**Local tests.** `test_sem0388.py`, 15 of 15: text checks with three mutants, then the patched semaphore built against stand-ins and run on one thread pair. The table is unmapped there, so the two switches that read it die and the seven other cases live. That covers these paths, not concurrency: no sanitizer ran, and the build is not the host's. Pure parts 102 checks, 0 failed (clang 22 with the stand-in for Catch2's macros). The patched `semaphore.cpp` type-checked with stand-ins for the project's headers, up to the POSIX part; not compiled with its real headers, and `pthread.cpp` and `libKernel.cpp` not rechecked. `patch0388.py` applies, the scripts parse, `test0388run.sh positive` 7 of 7 and `test_box0388.sh` 14 of 14, the rule tried on sample rows. Nothing ran on the box.
 
 **Arms, fixed before the build.** All with `JobArenaFix` off, `TRACE=1`, RT on, 180 s, the same route and named save copy, one binary, `NORMAL` pinned after the build.
 
@@ -193,4 +194,4 @@ No crash elsewhere, no amdgpu kernel line, GPU reset or devcoredump. Exposure in
 - CHEAPER: an arm that HOLDS and has mean flips/s over 120–170 s of at least 31, against F's 28–29 and the control's 33.5.
 - The pick for the maintainer's play: the cheapest arm that HOLDS, J first if tied. If none is cheaper, F.
 
-**The maintainer's play.** `play0388.sh F` or `play0388.sh J` on the box, started by the top session: `JobArenaFix` off, the chosen wait on, RT as in `input.cfg`, the normal launcher and his own saves, no time limit. `input.cfg` is not changed. The script prints the binary's md5 at start: `caede695` is enough for F, and J needs the third build. Pass: he plays through the fight that crashed and on, and closes the game himself, with no access violation and no amdgpu line. Fail: a crash at eboot+0x3d7eca0, and `JobArenaFix` stays. Only that pass can start the removal of exp 0359's fix, and that is his decision.
+**The maintainer's play.** `play0388.sh F` or `play0388.sh J` on the box, started by the top session: `JobArenaFix` off, the chosen wait on, RT as in `input.cfg`, the normal launcher and his own saves, no time limit. `input.cfg` is not changed. The script prints the binary's md5 at start: `caede695` is enough for F, and J needs the third build. The 5 of 5 belongs to `caede695`; the third build's F has its own three runs. Pass: he plays through the fight that crashed and on, and closes the game himself, with no access violation and no amdgpu line. Fail: a crash at eboot+0x3d7eca0, and `JobArenaFix` stays. Only that pass can start the removal of exp 0359's fix, and that is his decision.
