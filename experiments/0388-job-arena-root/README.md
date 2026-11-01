@@ -233,3 +233,24 @@ All three exposure gates pass: J and K have `open target jobs` above 0 in every 
 **Limits.** 180 s on one scripted route, one save, 22 runs. Nobody has played these builds. The HOLDS say nothing about stability past 180 s or about the fight's later phases. J's five clean runs are in the third build only; F alone has two builds. The read's nice lines are from 70 s, not from the crash's moment. Flips/s from one control run is thin, so "nothing measurable" holds only down to the spread between runs, 32.1 to 37.1 for J itself.
 
 **Verdict.** By the fixed rule the pick is J, `PUSH_UNTIL_TARGET_US=2000`, build `1a596e50`: it HOLDS, has exposure, is CHEAPER, and is the cheapest arm. It goes to the maintainer's fight as `play0388.sh J`. F stays the fallback. The job-arena workaround is not replaced: `JobArenaFix` stays until that fight passes and the maintainer decides.
+
+## The maintainer's two J plays (2026-11-01, binary `1a596e50`): the fight was not reached
+
+Neither play is the rule's Pass or Fail, so J is still untested in the fight and `JobArenaFix` stays. Both ended in a GPU page fault, no access violation in either, ring reset succeeded, and the picture did not come back (F688). The maintainer's words for the second: "Scena pościgu", and "Prawie jak walka, bo można walczyć". That scene is not the fight the rule names.
+
+| | 07:41:50, t ≈ 822 | 07:54:48, t ≈ 396 |
+|---|---|---|
+| Fault | 0x1100000000, SQC data, read, status 0x00601431 | 0x1115e32000 and three more, TCP, write, status 0x00741051 |
+| Stuck program | 0x11d03aa600, [998 1 1] | 0x11d0288800, [7696 1 1], the 20:39 hang's program, without J |
+| Stall began | at the fault (mono clock) | at the fault (mono clock) |
+| Learned after | 0x10fe000000 | 0x1112000000 |
+| Direct pinned, peak | 11938 MiB | 11910 MiB |
+
+- Every fault page lay in a gap of the learned list, and the host had not imported it. Whether the title had memory there is not recorded, so a hole is not excluded.
+- Pressure was real in the measured play and came about a minute before the fault: MemAvailable 158–324 MiB, PSI memory full 4.5 to 20, swap +460 MiB, frame gap 43 to 94 ms. It fits the slowness. It does not explain a mapping that was never made. GTT 12688 MiB is not growth: it is pinned plus 272 MiB private plus about 500 MiB not attributed, as at 20:39.
+
+**The next play's list.** `~/bc5-work/exp0388/direct-learned-play.txt`, md5 `571f8928`: the shared list (112 lines) plus two windows, `0x1104000000` and `0x1108000000`, 96 MiB each, covering the gap 0x1104000000–0x110e000000. Started with `BC5_0388_LEARNED=<that file> play0388.sh J`; `input.cfg`, the shared list and `play-pkg.sh` stay as they are. New faults are learned into the private file only.
+
+- Cost, from the code: a window imports its guest direct memory in full 2 MiB chunks, pinned, so the worst case is the window's size. Holes share one 2 MiB zero buffer and cost nothing. Measured neighbours gave 80 and 52 MiB of 96, so about 110 of 160 MiB is the likely size; pages the title has already touched add no new RAM, but they stop being swappable.
+- The gap 0x111c000000–0x112a000000 (224 MiB) is left out: no fault came there, and render-target hints already import part of it. Listing it too would risk up to 384 MiB against a MemAvailable floor of 158 MiB. The two windows can still pass that floor at the worst moment, 160 MiB, plus at most 32 MiB new from 0x1112000000, which the shared list also carries. The expected result is more swap and slowdown, not a failed import: GTT would stay near 12880 MiB, under the 13312 MiB limit.
+- A fault at a page inside a listed window would count against the class. A clean stretch is weak evidence, and with a zero buffer a bad write into a hole goes unseen.
