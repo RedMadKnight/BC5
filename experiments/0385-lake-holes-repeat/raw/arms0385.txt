@@ -1,0 +1,16 @@
+# BC5 experiment 0385: what the lake control file holds from each shot on, one run of 53 shots 5 s apart.
+# <first shot>|<switches, lake_probe.hpp's tokens; empty: all off>
+# Shots 0-16 are the poller's window, all off, so F486's test stays what the plan says. The fixes come one at a time so
+# that a hang names its arm, and all together last, in case only a combination works.
+0|
+17|census=1 zpass=1
+21|cache=wbinv cache_at=each
+24|cull=1
+27|pfp=1
+30|dbmeta=1
+33|idle=1
+36|nohiz=1
+39|trackercf=1
+42|cache=all cache_at=each
+45|cache=all cache_at=each cull=1 pfp=1 dbmeta=1 idle=1 nohiz=1 trackercf=1
+48|

@@ -1,0 +1,50 @@
+--- /home/kjaniszewski/bc5-work/play-pkg.sh	2026-10-28 07:52:22.140252572 +0100
++++ /home/kjaniszewski/bc5-work/exp0385/play-pkg-0385.sh	2026-10-31 18:06:16.694603640 +0100
+@@ -10,16 +10,16 @@
+ M=~/bc5-data/mnt/pkg-play
+ EMU=~/bc5-work/kytyplus-build/src/kyty_emulator
+ ENVF=${BC5_RUN_ENV:-$HOME/bc5-work/bc5-run.env}
+-LOG=~/bc5-work/play-pkg-last.log
++LOG=~/bc5-work/exp0385/play-last.log  # exp 0385: own log
+ # Experiment 0177: BC5_LEAN=1 (the "BC5 emulator (lean)" shortcut) runs the emulator built with
+ # KYTY_BC5_LEAN in ~/bc5-work/kytyplus-build-lean: no tracing, journal, counters, recorder or
+ # samplers, inside or outside; its own log file. The title scripts take the same switch.
+ if [ "${BC5_LEAN:-0}" = 1 ]; then
+-  EMU=~/bc5-work/kytyplus-build-lean/src/kyty_emulator LOG=~/bc5-work/play-pkg-lean-last.log
++  EMU=~/bc5-work/kytyplus-build-lean/src/kyty_emulator LOG=~/bc5-work/exp0385/play-last.log  # the same own log
+ fi
+ # 2026-10-25 (exp 0324, the maintainer): with BC5_LEAN=1 this script writes no log at all; BC5_LOGS=1 keeps
+ # its logs. The normal shortcut logs as before.
+-MLOG=~/bc5-work/play-pkg-mount.log
++MLOG=~/bc5-work/exp0385/play-pkg-mount.log  # exp 0385: own mount log
+ if [ "${BC5_LEAN:-0}" = 1 ] && [ "${BC5_LOGS:-0}" != 1 ]; then LOG=/dev/null MLOG=/dev/null; fi
+ [ -n "${BC5_EMU:-}" ] && EMU=$BC5_EMU  # exp 0177: another binary (A/B against an older build)
+ BM=~/bc5-work/bc5-tools-ubuntu/release/bc5-mount
+@@ -37,6 +37,7 @@
+   key=${line%%=*}; val=${line#*=}
+   if [ "$key" = PLAY_ARGS ]; then PLAY_ARGS=$val; else export "$key=$val"; fi
+ done < "$ENVF"
++[ -n "${BC5_0385_INPUT_CONFIG:-}" ] && export KYTY_BC5_INPUT_CONFIG=$BC5_0385_INPUT_CONFIG  # exp 0385
+ export BC5_DIRECT_LAZY_NAMES="${BC5_DIRECT_LAZY_NAMES:+$BC5_DIRECT_LAZY_NAMES,}Wwise,SoundAlloc,FileSystem,UIStringAlloc"  # exp 0330 (F394): the four CPU-only heaps lazy, 242 MiB less pinned
+ PLAY_ARGS="$PLAY_ARGS --fullscreen"  # the maintainer: this title fullscreen, at the display's resolution (Full HD here)
+ unset BC5_GC_DUMP_DIR
+@@ -45,8 +46,8 @@
+ export SHADPS4_SYSMODULES_PACK_DIR=$HOME/bc5-data/sysmodules-pack-hle-ampr-noplaygo  # 2026-10-25 (exp 0298, the maintainer's yes): no libScePlayGo.sprx, the host answers PlayGo (100 chunks)
+ # Experiment 0042: also the heaps the GPU reads or writes before the CPU touches them
+ export BC5_DIRECT_EAGER_NAMES="RenderGpuWcLarge,RenderGpuWcSmall,RenderGpuRwLarge,RenderGpuRwSmall,CommitIABufferAllocator,AMM,RenderAlloc,Physics,Decal Job Scheduler,VisualEffectInstanceHeap,DynamicHeap,DynamicHeap Small,ComponentHeap,ComponentHeap Small,MaterialHeap,DDLHeap,Physics query allocator"
+-export BC5_DIRECT_LEARNED=$HOME/bc5-work/direct-learned-pkg.txt
+-export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/_SaveData-pkg-play
++export BC5_DIRECT_LEARNED=$HOME/bc5-work/exp0385/direct-learned-pkg.txt  # exp 0385: a private copy
++export KYTY_BC5_SAVEDATA_DIR=$HOME/bc5-work/exp0385/wd/_SaveData-pkg-play  # exp 0385: private
+ # Experiment 0039: the compute IBs indirect dispatches run (rewritten for the GFX ring).
+ # Experiment 0053: their arguments checked by the CP when it runs them, a CP DMA wait before a
+ # dispatch after an unsynced copy; with both the tree refit runs too (before: skipped,
+@@ -187,7 +188,7 @@
+   grep -v '^#' "$ENVF" | grep -v '^$'
+   [ -r "$PKG_ENV" ] && grep -v '^#' "$PKG_ENV" | grep -v '^$'
+ } > "$LOG"
+-cd ~/bc5-work
++cd ~/bc5-work/exp0385/wd  # exp 0385: own working directory (its own _SaveData)
+ # Experiment 0047: exit code 75 is the F2 menu's "Restart game": start the emulator again, with
+ # the mount and the settings kept.
+ while :; do

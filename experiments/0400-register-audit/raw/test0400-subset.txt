@@ -1,0 +1,13 @@
+templates ready in 10 s
+PASS success_in_the_intended_order_and_the_series_runs_on_with_no_clean_frames (79.3 s)
+FAIL every_token_in_the_arms_file_is_real (0.5 s)
+Traceback (most recent call last):
+  File "C:\Users\kjani\Downloads\bc5\bc5-0400\experiments\0400-register-audit\test0400.py", line 1807, in main
+    f(b)
+    ~^^^
+  File "C:\Users\kjani\Downloads\bc5\bc5-0400\experiments\0400-register-audit\test0400.py", line 1323, in every_token_in_the_arms_file_is_real
+    assert seen > 10
+           ^^^^^^^^^
+AssertionError
+
+1 of 2 cases pass in 91 s; HOME and PATH unchanged; sources sha256 8a97d3fc5f22ca7e
