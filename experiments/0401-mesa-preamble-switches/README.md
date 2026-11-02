@@ -15,8 +15,10 @@ Both go in `prefix_of()` right after `tf_ring_prefix()`, so every drawing job's 
 
 **Why the packet is allowed.** `CP_COHER_START_DELAY` sits in the uconfig range, and Mesa's `ac_pm4_set_reg` sends that range as plain `SET_UCONFIG_REG` from a user IB (`src/amd/common/ac_pm4.c:382-383`). It is not in Mesa's privileged list (`ac_pm4.c:34`, `is_privileged_reg`, which uses `COPY_DATA`). This is the same packet the prefix uses for `VGT_HS_OFFCHIP_PARAM` (F785), and `backend/src/dispatch_min.cpp:45` sends this very write. No `COPY_DATA` and no kernel path.
 
-**How it will be read.** Pending. See the top session's plan.
+**How it will be read.** One binary takes all three switches by environment, since `BC5_DIRECT_ARGS_WB` is in the shared archive. They are not to run together: `ARGS_WB=all` and `CP_COHER_START_DELAY` may act on the same CP coherency path (for the second, an inference from its name, TODO(verify)), so a clean play would not say which helped; and `SPI_SHADER_REQ_CTRL_PS` changes PS wave scheduling, so it would blur the frame-rate cost of `ARGS_WB=all`. Both registers are global and keep their value until a reboot or a reset (the lesson of F780, R17), so an arm with a switch on must not be followed by an off control without a reboot. Order proposed: the read of the five registers first, since a register that already holds Mesa's value makes its switch a no-op; then `ARGS_WB=all` alone; then `CP_COHER_START_DELAY` alone; `SPI_SHADER_REQ_CTRL_PS` last, for frame rate only.
 
-**Result.** Pending.
+Journal, `gc/direct.log`, at the first prefix: `exp 0401: CP_COHER_START_DELAY ...` and `exp 0401: SPI_SHADER_REQ_CTRL_PS ...`, each `off` or its value. Log: `~/bc5-work/exp0401/play-last.log`.
 
-**Verdict.** Pending.
+**Result.** Built 2026-11-02 11:25, claim to release in slot 2026110211243533705, no emulator. Binary `174e768ec3a68c34be879ad57067819c` (shared objects of 4d2b1b1d, unit 9eec0a38, shared archive 75e30335). Launcher `c6b2d7fd`, 4 lines changed from `play-pkg.sh` 97835f88 (`raw/play-pkg-0401.diff`). The tree's unit equals main's patch 0001 unit (d18b4482). The real function, compiled with clang++ in the container, gave the right packets and lines for 7 of 7 settings (`raw/check0401.out`). 5 compile warnings, none in the new lines (3859-3870): deprecation and format and unused-variable warnings in older code. Shared binaries, archive, tree and launcher were unchanged at the end. `test0401.py` 15 of 15 on stand-ins, laptop. Not shown: that the prefix reaches the chip with these packets on a real run. No game ran.
+
+**Verdict.** The build is ready. Nothing is known yet about the registers' effect.
