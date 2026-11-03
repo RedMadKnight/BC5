@@ -16,11 +16,17 @@ W=$HOME/bc5-work; TREE=$HOME/src/KytyPlus; TESTING=0
 # Stand-ins load only if the root and the stand-in file both sit under a 0401-test- path. Otherwise nothing overrides.
 case "${BC5_0401_ROOT:-}" in *0401-test-*) case "${BC5_0401_FAKE:-}" in *0401-test-*) TESTING=1 ;; esac ;; esac
 [ "$TESTING" = 0 ] || { W=$BC5_0401_ROOT/bc5-work; TREE=$BC5_0401_ROOT/src/KytyPlus; }
-E=$W/exp0401; LOCK=$W/BOX-LOCK; QUEUE=$W/BOX-QUEUE; ST=$E/state; BIN=$E/bin/kyty_emulator; B=$W/kytyplus-build; R=$E/raw
+# The series (2026-11-03): unset is the first build (exp0401); BC5_0401_SERIES=b is a second build in exp0401b, the same unit
+# plus the acb CS prefix (mkunit0401.py --acb), so the first build stays as it was played.
+case "${BC5_0401_SERIES:-}" in
+    "") SER=""; EXPECT_UNIT=9eec0a3856bc1857ba7956b001c93aaf ;;
+    b) SER=b; EXPECT_UNIT=b1d96c719fda2ed048876fe119e89310 ;;
+    *) echo "0401 STOP: unknown series ${BC5_0401_SERIES}"; exit 2 ;;
+esac
+E=$W/exp0401$SER; LOCK=$W/BOX-LOCK; QUEUE=$W/BOX-QUEUE; ST=$E/state; BIN=$E/bin/kyty_emulator; B=$W/kytyplus-build; R=$E/raw
 
 BIN_MD5=4d2b1b1dd52eaea6e3195500f604e73e; LEAN_MD5=30d4be3371d7c6376b2b4425698c1c3a; ARCHIVE_MD5=75e303357610fee8d1d205bdc88c031c
 LAUNCHER_MD5=97835f8850cc22ece5c4bcdbbb646912; UNIT_MD5=d18b448299a335aadac75bbd202155fd   # main 029e0d6b's patch 0001 unit
-EXPECT_UNIT=9eec0a3856bc1857ba7956b001c93aaf
 SERIES_S=2400; GRACE=120; BUILD_S=1500; DISK_MAX=80
 
 DBX=(distrobox enter ubuntu --); PY=(python3 -I); CXX=clang++
@@ -178,7 +184,7 @@ cmd_claim() {
     hook before-claim
     TOKEN=$(date +%Y%m%d%H%M%S)$$
     DEADLINE=$(($(now) + SERIES_S))
-    LOCKLINE="water exp 0401 | private normal build, CPU only, no emulator, token $TOKEN | until $(date -d "@$DEADLINE" '+%F %T')"
+    LOCKLINE="water exp 0401$SER | private normal build, CPU only, no emulator, token $TOKEN | until $(date -d "@$DEADLINE" '+%F %T')"
     claim
     own
     why=$(pins_why)
@@ -189,7 +195,7 @@ cmd_claim() {
     try_put "$E/token" "$TOKEN" || unclaim "write failed: token"
     try_put "$E/lock.line" "$LOCKLINE" || unclaim "write failed: lock.line"
     try_put "$E/deadline" "$DEADLINE" || unclaim "write failed: deadline"
-    line="water exp 0401 | claimed: private normal build, token $TOKEN, until the deadline $DEADLINE | $(date '+%F %T')"
+    line="water exp 0401$SER | claimed: private normal build, token $TOKEN, until the deadline $DEADLINE | $(date '+%F %T')"
     queue_try "$line" || unclaim "queue write failed"
     try_put "$ST" claimed || unclaim "write failed: state"
     echo "TOKEN=$TOKEN"
@@ -198,10 +204,15 @@ cmd_claim() {
 
 cmd_setup() {
     load "${1:-}"
-    [ "$(state)" = claimed ] || die "state is $(state), want claimed"
+    # A kit sent again after a failed build (state building, no build alive) is checked again the same way.
+    case "$(state)" in
+        claimed) ;;
+        building) ! id_alive "$E/build.id" || die "a build still runs" ;;
+        *) die "state is $(state), want claimed" ;;
+    esac
     own; budget "$GRACE"
     (cd "$E" && sha256sum -c --quiet kit.sha256) > "$E/kit.check" 2>&1 || die "the kit is not what was sent: $(cut -c1-120 "$E/kit.check")"
-    mkdir "$R" "$E/src" "$E/inc" "$E/inc/bc5" "$E/bin" 2> /dev/null || die "cannot make the private directories"
+    mkdir -p "$R" "$E/src" "$E/inc" "$E/inc/bc5" "$E/bin" 2> /dev/null || die "cannot make the private directories"
     cp "$E/env_flag.hpp" "$E/inc/bc5/env_flag.hpp" || die "cannot place env_flag.hpp"
     put "$ST" setup
     echo "set up"
@@ -219,7 +230,7 @@ cmd_build() {
     put "$ST" building
 
     # 1. The unit, and its new function alone, from the tree that built the shared binaries.
-    u=$("${PY[@]}" "$E/mkunit0401.py" "$TREE/src/libs/bc5LleAgc.cpp" "$E/src/bc5LleAgc.cpp" "$E/src/mesa_preamble_prefix.inc") || die "the unit's edit did not apply"
+    u=$("${PY[@]}" "$E/mkunit0401.py" "$TREE/src/libs/bc5LleAgc.cpp" "$E/src/bc5LleAgc.cpp" "$E/src/mesa_preamble_prefix.inc" ${SER:+--acb}) || die "the unit's edit did not apply"
     [ "$u" = "$EXPECT_UNIT" ] || die "the private unit is $u, not $EXPECT_UNIT"
     [ "$(m "$E/src/bc5LleAgc.cpp")" = "$EXPECT_UNIT" ] || die "the private unit on disk is not $EXPECT_UNIT"
 
@@ -237,13 +248,14 @@ cmd_build() {
     own
 
     # 4. What the binary must hold, and what it must still hold.
-    local s
-    for s in BC5_DIRECT_CP_COHER_START_DELAY BC5_DIRECT_SPI_REQ_CTRL_PS 'exp 0401: CP_COHER_START_DELAY %s' 'exp 0401: SPI_SHADER_REQ_CTRL_PS %s' BC5_DIRECT_ARGS_WB BC5_DIRECT_GC_HS_OFFCHIP; do
+    local s strs=(BC5_DIRECT_CP_COHER_START_DELAY BC5_DIRECT_SPI_REQ_CTRL_PS 'exp 0401: CP_COHER_START_DELAY %s' 'exp 0401: SPI_SHADER_REQ_CTRL_PS %s' BC5_DIRECT_ARGS_WB BC5_DIRECT_GC_HS_OFFCHIP)
+    [ -z "$SER" ] || strs+=(BC5_DIRECT_ACB_CS_PREFIX 'exp 0401: acb CS prefix %s' 'acb cs prefix (exp 0401)' BC5_DIRECT_CS_PREFIX)
+    for s in "${strs[@]}"; do
         grep -aqF -- "$s" "$BIN" || die "the private binary lacks [$s]"
     done
 
     # 5. The private launcher.
-    "${PY[@]}" "$E/launcher0401.py" "$W/play-pkg.sh" "$E/play-pkg-0401.sh" || die "the launcher's edit did not apply"
+    "${PY[@]}" "$E/launcher0401.py" "$W/play-pkg.sh" "$E/play-pkg-0401.sh" $SER || die "the launcher's edit did not apply"
     bash -n "$E/play-pkg-0401.sh" || die "the private launcher does not parse"
     chmod +x "$E/play-pkg-0401.sh" || die "chmod failed"
     diff -u "$W/play-pkg.sh" "$E/play-pkg-0401.sh" > "$E/play-pkg-0401.diff"
@@ -275,7 +287,7 @@ do_release() {
         echo "no line of ours in $LOCK, left as it is: $(cat "$LOCK" 2> /dev/null)"
         return 1
     fi
-    line="water exp 0401 | released: $1, token $TOKEN | $(date '+%F %T')"
+    line="water exp 0401$SER | released: $1, token $TOKEN | $(date '+%F %T')"
     if ! queue_try "$line"; then rmdir "$E/release.claim"; echo "queue write failed, the lock stays"; return 1; fi
     if ! lock_remove; then rmdir "$E/release.claim"; echo "$WHY"; return 1; fi
     try_put "$ST" released

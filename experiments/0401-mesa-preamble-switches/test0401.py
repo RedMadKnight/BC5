@@ -50,7 +50,9 @@ case "$1" in
         printf '\033[1mwarning:\033[0m one\n'
         [ -z "${FAKE_SHARED_CHANGES:-}" ] || echo changed >> "$BC5_0401_ROOT/bc5-work/kytyplus-build/src/kyty_emulator"
         out=$5; { echo '#!/bin/sh'; echo BC5_DIRECT_CP_COHER_START_DELAY; echo 'exp 0401: CP_COHER_START_DELAY %s'; echo 'exp 0401: SPI_SHADER_REQ_CTRL_PS %s'
-                  echo BC5_DIRECT_ARGS_WB; echo BC5_DIRECT_GC_HS_OFFCHIP; [ -n "${FAKE_NO_SWITCH:-}" ] || echo BC5_DIRECT_SPI_REQ_CTRL_PS; } > "$out"
+                  echo BC5_DIRECT_ARGS_WB; echo BC5_DIRECT_GC_HS_OFFCHIP; [ -n "${FAKE_NO_SWITCH:-}" ] || echo BC5_DIRECT_SPI_REQ_CTRL_PS
+                  echo BC5_DIRECT_CS_PREFIX; echo 'acb cs prefix (exp 0401)'; echo 'exp 0401: acb CS prefix %s'
+                  [ -n "${FAKE_NO_ACB:-}" ] || echo BC5_DIRECT_ACB_CS_PREFIX; } > "$out"
         chmod +x "$out"; exit 0 ;;
     esac ;;
   sh) echo '[]'; exit 0 ;;
@@ -68,10 +70,10 @@ def posix(p):
 
 
 class Box:
-    def __init__(self, name, value="00000020"):
+    def __init__(self, name, value="00000020", series=""):
         self.root = pathlib.Path(tempfile.mkdtemp(prefix=f"0401-test-{name}-", dir=WORK))
         self.w = self.root / "bc5-work"
-        self.e = self.w / "exp0401"
+        self.e = self.w / f"exp0401{series}"
         for rel, data in (("kytyplus-build/src/kyty_emulator", b"normal"), ("kytyplus-build-lean/src/kyty_emulator", b"lean"),
                           ("backend-ubuntu/libbc5_backend.a", b"archive"), ("play-pkg.sh", LAUNCHER.encode()), ("BOX-LOCK", b""), ("BOX-QUEUE", b"")):
             f = self.w / rel
@@ -89,7 +91,7 @@ disk_pct() {{ echo 5; }}
 BIN_MD5={md5(self.w / 'kytyplus-build/src/kyty_emulator')}; LEAN_MD5={md5(self.w / 'kytyplus-build-lean/src/kyty_emulator')}
 ARCHIVE_MD5={md5(self.w / 'backend-ubuntu/libbc5_backend.a')}; LAUNCHER_MD5={md5(self.w / 'play-pkg.sh')}
 """, newline="\n")
-        self.env = dict(os.environ, BC5_0401_ROOT=r, BC5_0401_FAKE=posix(fake))
+        self.env = dict(os.environ, BC5_0401_ROOT=r, BC5_0401_FAKE=posix(fake), BC5_0401_SERIES=series)
         self.token = ""
 
     def claim(self):
@@ -227,6 +229,66 @@ def t_foreign_line_kept():
     assert b.lock() == "MAINTAINER PLAYING\n", repr(b.lock())
 
 
+def t_series_b():
+    b = Box("serb", series="b").up()
+    assert b.lock().startswith("water exp 0401b | private normal build"), b.lock()
+    r = b.box("build", b.token)
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert r.stdout.rstrip().endswith("built: shared binaries, archive, tree and launcher unchanged"), r.stdout
+    assert "unit b1d96c719fda2ed048876fe119e89310" in r.stdout, r.stdout
+    assert md5(b.e / "src/bc5LleAgc.cpp") == "b1d96c719fda2ed048876fe119e89310"
+    d = (b.e / "play-pkg-0401.sh").read_text()
+    assert "EMU=~/bc5-work/exp0401b/bin/kyty_emulator" in d and "LOG=~/bc5-work/exp0401b/play-last.log" in d, d
+    assert not (b.w / "exp0401").exists()
+    assert b.box("release", b.token).stdout.strip() == "released" and b.lock() == ""
+    q = (b.w / "BOX-QUEUE").read_text()
+    assert "water exp 0401b | claimed" in q and "water exp 0401b | released" in q, q
+
+
+def t_series_b_rebuild():
+    b = Box("serbre", series="b").up()
+    r = b.box("build", b.token, FAKE_NO_ACB="1")
+    assert r.returncode == 1 and "lacks [BC5_DIRECT_ACB_CS_PREFIX]" in r.stdout, r.stdout
+    assert (b.e / "state").read_text().strip() == "building"
+    r = b.box("build", b.token)
+    assert r.returncode == 1 and "want setup" in r.stdout, r.stdout
+    b.send()
+    r = b.box("setup", b.token)
+    assert r.returncode == 0, r.stdout + r.stderr
+    r = b.box("build", b.token)
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert b.box("release", b.token).stdout.strip() == "released" and b.lock() == ""
+
+
+def t_series_unknown():
+    b = Box("serx", series="c")
+    r = b.claim()
+    assert r.returncode == 2 and "unknown series" in r.stdout, r.stdout
+    assert b.lock() == ""
+
+
+def t_unit_edit_acb():
+    mk = load("mkunit0401")
+    s = UNIT.read_bytes()
+    a, out = mk.edit(s), mk.edit(s, acb=True)
+    assert hashlib.md5(a).hexdigest() == "9eec0a3856bc1857ba7956b001c93aaf"
+    assert hashlib.md5(out).hexdigest() == "b1d96c719fda2ed048876fe119e89310"
+    for anchor, text, where in mk.ACB_EDITS:
+        assert out.count(text) == 1, text[:60]
+        if where == "before":
+            assert out.index(text) + len(text) == out.index(anchor)
+        elif where == "after":
+            assert out.index(anchor) + len(anchor) == out.index(text)
+    assert out.index(b"static std::vector<uint32_t> acb_cs_prefix(const uint32_t* part, uint32_t n) {") > out.index(b"static std::vector<uint32_t> cs_prefix(")
+    assert out.index(b"static std::vector<uint32_t> acb_cs_prefix(const uint32_t* part, uint32_t n);") < out.index(b"static void submit_segment(")
+    for anchor, _, _ in mk.ACB_EDITS:
+        try:
+            mk.edit(s.replace(anchor, b""), acb=True)
+        except AssertionError:
+            continue
+        raise SystemExit("a unit without an acb anchor passed")
+
+
 def load(name):
     spec = importlib.util.spec_from_file_location(name, HERE / f"{name}.py")
     mod = importlib.util.module_from_spec(spec)
@@ -253,6 +315,8 @@ def t_launcher_edit():
     la = load("launcher0401")
     d = la.derive(LAUNCHER)
     assert "exp0401/bin/kyty_emulator" in d
+    db = la.derive(LAUNCHER, "b")
+    assert "EMU=~/bc5-work/exp0401b/bin/kyty_emulator" in db and "MLOG=~/bc5-work/exp0401b/play-pkg-mount.log" in db, db
     for bad in (LAUNCHER.replace("MLOG=~/bc5-work/play-pkg-mount.log\n", ""), LAUNCHER + LAUNCHER, LAUNCHER + "x=~/bc5-work/kytyplus-build/src/kyty_emulator\n"):
         try:
             la.derive(bad)
@@ -278,7 +342,7 @@ def t_build_commands():
 
 def main():
     cases = [v for k, v in sorted(globals().items()) if k.startswith("t_")]
-    assert len(cases) == 15, len(cases)
+    assert len(cases) == 19, len(cases)
     bad = 0
     for c in cases:
         try:
