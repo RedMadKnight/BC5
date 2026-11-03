@@ -24,11 +24,19 @@ case "${BC5_0401_SERIES:-}" in
     b) SER=b; EXPECT_UNIT=b1d96c719fda2ed048876fe119e89310; MKFLAG=--acb ;;
     c) SER=c; EXPECT_UNIT=29c88be321cc81908085b1cddcc70d2e; MKFLAG=--acb-restore ;;
     d) SER=d; EXPECT_UNIT=0f18cf30cb85843cdbe9d5df68909e3d; MKFLAG=--acb-restore ;;
+    e) SER=e; EXPECT_UNIT=0d65c14d3705887717bac71dd97e05ab; MKFLAG="--acb-restore --catcher" ;;
     *) echo "0401 STOP: unknown series ${BC5_0401_SERIES}"; exit 2 ;;
 esac
 # Series d (2026-11-03 13:52): series c's edit on exp 0379's zero skip, the unit and header of exp 0388's 902585e2 build
 # (main's unit plus 0388's patch-z-bc5LleAgc.diff), read from exp0388/z under these pins and copied into exp0401d.
 ZDIR=$W/exp0388/z/src/src; ZUNIT_MD5=3a77e0acef307865d1cd524951060422; ZHDR_MD5=b29c66c4bc9d5bccb8aac233b3843414
+# Series e (2026-11-03 16:4x, the top session's GO on the maintainer's "Buduj"; exp 0402 items 1, 4, 5): series c's unit plus
+# the table catcher (mkunit0401.py --catcher), and three more private units from the same tree: libNpCppWebApi.cpp with the
+# ten SessionManager V2 exports (mknp0401.py), memory.cpp and systemContent.cpp with the param.json sizing (mkmem0401.py,
+# whose edited systemContent.h goes first on the include path). The R32 gate (npgate0401.cpp) runs on and off after the link.
+NP_IN_MD5=7c40b784e36ef45e816be07b0a3fb0a8; NP_OUT_MD5=935fcc7e4ab1108f3d2d8b33eaf65bf6
+MEM_IN_MD5=f61546925dcf96ee9bbc1278b0f8ae6c; MASINC_MD5=44586b1ee0e7edf12a0cd293ff9c141f; SC_IN_MD5=7121c22ca8b893ac37fbeabde48b4a6b; SCH_IN_MD5=8890c158627f20f59ee55205e73d36c3
+MEM_OUT_MD5=43713ef677ec887a8ca273f7ab5cee90; SC_OUT_MD5=4e33b30a4acf89481942cec435b76c37; SCH_OUT_MD5=2b2b21eb1faf35c2a538917049aea85e
 E=$W/exp0401$SER; LOCK=$W/BOX-LOCK; QUEUE=$W/BOX-QUEUE; ST=$E/state; BIN=$E/bin/kyty_emulator; B=$W/kytyplus-build; R=$E/raw
 
 BIN_MD5=4d2b1b1dd52eaea6e3195500f604e73e; LEAN_MD5=30d4be3371d7c6376b2b4425698c1c3a; ARCHIVE_MD5=75e303357610fee8d1d205bdc88c031c
@@ -184,6 +192,13 @@ pins_why() {   # prints the first pin that does not hold
         [ "$(m "$ZDIR/libs/bc5LleAgc.cpp")" = "$ZUNIT_MD5" ] || { echo "the zero-skip unit is not $ZUNIT_MD5"; return; }
         [ "$(m "$ZDIR/bc5/zero_skip.hpp")" = "$ZHDR_MD5" ] || { echo "zero_skip.hpp is not $ZHDR_MD5"; return; }
     fi
+    if [ "$SER" = e ]; then
+        [ "$(m "$TREE/src/libs/libNpCppWebApi.cpp")" = "$NP_IN_MD5" ] || { echo "the tree's libNpCppWebApi.cpp is not $NP_IN_MD5"; return; }
+        [ "$(m "$TREE/src/kernel/memory.cpp")" = "$MEM_IN_MD5" ] || { echo "the tree's memory.cpp is not $MEM_IN_MD5"; return; }
+        [ "$(m "$TREE/src/kernel/memoryAddressSpace.inc")" = "$MASINC_MD5" ] || { echo "the tree's memoryAddressSpace.inc is not $MASINC_MD5"; return; }
+        [ "$(m "$TREE/src/loader/systemContent.cpp")" = "$SC_IN_MD5" ] || { echo "the tree's systemContent.cpp is not $SC_IN_MD5"; return; }
+        [ "$(m "$TREE/src/loader/systemContent.h")" = "$SCH_IN_MD5" ] || { echo "the tree's systemContent.h is not $SCH_IN_MD5"; return; }
+    fi
     [ "$(disk_pct)" -lt "$DISK_MAX" ] || echo "the disk is at $DISK_MAX % or more"
 }
 
@@ -252,6 +267,18 @@ cmd_build() {
     u=$("${PY[@]}" "$E/mkunit0401.py" "$in" "$E/src/bc5LleAgc.cpp" "$E/src/mesa_preamble_prefix.inc" $MKFLAG) || die "the unit's edit did not apply"
     [ "$u" = "$EXPECT_UNIT" ] || die "the private unit is $u, not $EXPECT_UNIT"
     [ "$(m "$E/src/bc5LleAgc.cpp")" = "$EXPECT_UNIT" ] || die "the private unit on disk is not $EXPECT_UNIT"
+    if [ "$SER" = e ]; then   # the three more units, and what build0401.py gets for them and the gate
+        u=$("${PY[@]}" "$E/mknp0401.py" "$TREE/src/libs/libNpCppWebApi.cpp" "$E/src/libNpCppWebApi.cpp") || die "the NpCppWebApi edit did not apply"
+        [ "$u" = "$NP_OUT_MD5" ] && [ "$(m "$E/src/libNpCppWebApi.cpp")" = "$NP_OUT_MD5" ] || die "the NpCppWebApi unit is $u, not $NP_OUT_MD5"
+        rm -rf "$E/mem" && "${PY[@]}" "$E/mkmem0401.py" "$TREE" "$E/mem" > "$R/mkmem.out" 2>&1 || die "the memory edit did not apply: $(tail -1 "$R/mkmem.out" | cut -c1-160)"
+        [ "$(m "$E/mem/src/kernel/memory.cpp")" = "$MEM_OUT_MD5" ] && [ "$(m "$E/mem/src/loader/systemContent.cpp")" = "$SC_OUT_MD5" ] &&
+            [ "$(m "$E/mem/src/loader/systemContent.h")" = "$SCH_OUT_MD5" ] || die "the memory edit is not the pins: $(tr '\n' ' ' < "$R/mkmem.out" | cut -c1-200)"
+        # memory.cpp includes this one beside itself ("memoryAddressSpace.inc"): the tree's copy goes beside the private unit
+        cp "$TREE/src/kernel/memoryAddressSpace.inc" "$E/mem/src/kernel/" && [ "$(m "$E/mem/src/kernel/memoryAddressSpace.inc")" = "$MASINC_MD5" ] ||
+            die "cannot place memoryAddressSpace.inc"
+        inc=("$E/mem/src" "src/libs/libNpCppWebApi.cpp=$E/src/libNpCppWebApi.cpp" "src/kernel/memory.cpp=$E/mem/src/kernel/memory.cpp"
+             "src/loader/systemContent.cpp=$E/mem/src/loader/systemContent.cpp" --gate "$E/npgate0401.cpp" "$R/npgate0401")
+    fi
 
     # 2. The real function, every setting of the two switches.
     in_box 120 "$CXX" -std=c++20 -Wall -Wextra -Werror "-I$E/inc" "-I$E/src" "$E/unit0401.cpp" -o "$R/unit0401" > "$R/unit0401.out" 2>&1 || die "the function did not compile: $(grep -m3 'error:' "$R/unit0401.out" | cut -c1-160 | tr '\n' ' ')"
@@ -266,11 +293,22 @@ cmd_build() {
     in_box "$BUILD_S" python3 -I "$E/build0401.py" "$E/compdb.json" "$E/src/bc5LleAgc.cpp" "$E/obj" "$B" "$BIN" "${inc[@]}" > "$R/build.out" 2>&1 || die "the private build failed: $(strip_ansi "$R/build.out" | grep -m3 -E 'error:|undefined|COMPILE FAILED' | cut -c1-160 | tr '\n' ' ')"
     [ -x "$BIN" ] || die "no private binary"
     own
+    if [ "$SER" = e ]; then   # the R32 gate: the ten NIDs through the real SymbolDatabase after InitAll, switch on, 0 and unset
+        local g v
+        for g in on off unset; do
+            case $g in on) v=(env KYTY_BC5_NP_SESSION_V2=1) ;; off) v=(env KYTY_BC5_NP_SESSION_V2=0) ;; unset) v=(env -u KYTY_BC5_NP_SESSION_V2) ;; esac
+            in_box 120 "${v[@]}" "$R/npgate0401" "${g/unset/off}" > "$R/npgate-$g.out" 2>&1 ||
+                die "the NpCppWebApi gate ($g) failed: $(strip_ansi "$R/npgate-$g.out" | grep -m2 -iE 'fail|error|npgate' | cut -c1-160 | tr '\n' ' ')"
+            grep -q "^npgate0401: ${g/unset/off} 10 of 10 .*; end\$" "$R/npgate-$g.out" || die "no end marker from the gate ($g)"
+        done
+        own
+    fi
 
     # 4. What the binary must hold, and what it must still hold.
     local s strs=(BC5_DIRECT_CP_COHER_START_DELAY BC5_DIRECT_SPI_REQ_CTRL_PS 'exp 0401: CP_COHER_START_DELAY %s' 'exp 0401: SPI_SHADER_REQ_CTRL_PS %s' BC5_DIRECT_ARGS_WB BC5_DIRECT_GC_HS_OFFCHIP)
     [ -z "$SER" ] || strs+=(BC5_DIRECT_ACB_CS_PREFIX 'exp 0401: acb CS prefix %s' 'acb cs prefix (exp 0401)' BC5_DIRECT_CS_PREFIX)
-    case $SER in c | d) strs+=(BC5_DIRECT_ACB_STATE_RESTORE 'exp 0401: acb state restore (exp 0381) %s' 'acb state restore (exp 0381)') ;; esac
+    case $SER in c | d | e) strs+=(BC5_DIRECT_ACB_STATE_RESTORE 'exp 0401: acb state restore (exp 0381) %s' 'acb state restore (exp 0381)') ;; esac
+    [ "$SER" != e ] || strs+=(BC5_DIRECT_TABLE_CATCHER 'exp 0401: table catcher %s' 'table catcher (exp 0401)' KYTY_BC5_NP_SESSION_V2 KYTY_BC5_MEMORY_FROM_PARAM 'exp 0401: memory from param.json')
     [ "$SER" != d ] || strs+=(BC5_DIRECT_ZERO_SKIP BC5_DIRECT_ZERO_SLICES 'zero skip: list %s' 'job-arena fix APPLIED')
     for s in "${strs[@]}"; do
         grep -aqF -- "$s" "$BIN" || die "the private binary lacks [$s]"
@@ -291,6 +329,7 @@ cmd_build() {
         echo "launcher $(rd "$E/launcher.md5") from play-pkg.sh $LAUNCHER_MD5"
         echo "warnings in the unit's compile: $(strip_ansi "$R/build.out" | grep -c 'warning:')"
         echo "function check: $(tail -1 "$R/check0401.out")"
+        [ "$SER" != e ] || echo "units: libNpCppWebApi.cpp $NP_OUT_MD5, memory.cpp $MEM_OUT_MD5, systemContent.cpp $SC_OUT_MD5, systemContent.h $SCH_OUT_MD5; gate: $(tail -1 "$R/npgate-on.out" | cut -c1-120) / $(tail -1 "$R/npgate-off.out" | cut -c1-120)"
         echo "kernel $(uname -r)"
     } > "$E/build.txt" || die "write failed: build.txt"
     own

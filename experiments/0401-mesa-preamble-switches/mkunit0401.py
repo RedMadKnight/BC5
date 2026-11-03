@@ -203,7 +203,134 @@ def acb_edits(restore=False):
 ACB_EDITS = acb_edits()
 
 
-def edit(s, acb=False, restore=False):
+# Series e (2026-11-03, the top session's GO on the maintainer's "Buduj"): the submit-time table catcher, a fifth switch.
+CATCH_FUNCTIONS = b"""// Experiment 0401 series e (BC5_DIRECT_TABLE_CATCHER=1, default off; F403 sub-class B, exp 0402 item 4): the submit-time
+// table catcher. The idea is sharpemu 11506fc's (src/SharpEmu.Libs/Agc/AgcExports.Submissions.cs, CaptureSubmittedTables,
+// GPL-2.0-or-later: titles rewrite their tables soon after submit); no code is taken from it. At submit, submit_now's walk
+// hashes the memory each running indirect packet names: the arguments of DRAW_INDIRECT (0x24, 16 bytes), DRAW_INDEX_INDIRECT
+// (0x25, 20), DISPATCH_INDIRECT (0x16, 12; both forms, as the walk reads them) and up to 16 records of the multi-draw packets
+// (0x2c, 0x38; count and stride where exp 0054 reads them), at the SET_BASE index-1 base the walk tracks; and the (offset,
+// value) tables of LOAD_SH/UCONFIG/CONTEXT_REG_INDEX (0x63, 0x64, 0x9f), in the layout timeout_probe's load_pairs reads
+// (exp 0160). The argument sizes are the Vulkan indirect command structs radv passes to these packets unchanged
+// (TODO(verify) on the console). At the job's completion, and at a fence timeout before timeout_probe, the same memory is
+// hashed again (FNV-1a) and each change is journaled with the first five dwords at submit and now. Not walked: buffers
+// reached through INDIRECT_BUFFER (IB2s); the other LOAD_*_REG_INDEX format (offset and size) is counted, not hashed.
+// A change says the slot was written between submit and completion; it does not say whether the GPU read the old values
+// or the new ones.
+struct CatchSlot {
+\tuint64_t addr  = 0;
+\tuint32_t bytes = 0, at = 0, op = 0;
+\tuint64_t hash  = 0;
+\tuint32_t v[5]  = {};
+};
+static bool table_catcher_on() {
+\tstatic const bool        on = bc5::env_on(std::getenv("BC5_DIRECT_TABLE_CATCHER"));
+\tstatic std::atomic<bool> told {false};
+\tif (!told.exchange(true))
+\t\tjournal("exp 0401: table catcher %s\\n", on ? "on (indirect arguments and LOAD_*_REG_INDEX tables hashed at submit, compared at completion and at a timeout)" : "off");
+\treturn on;
+}
+static std::atomic<uint64_t> g_catch_bufs {0}, g_catch_slots {0}, g_catch_changed {0}, g_catch_gone {0}, g_catch_skipped {0};
+static uint64_t catch_hash(uint64_t a, uint32_t bytes) {
+\tconst auto* t = reinterpret_cast<const volatile uint32_t*>(a);
+\tuint64_t    h = 0xcbf29ce484222325ull; // FNV-1a, 64 bits, a dword at a time
+\tfor (uint32_t k = 0; k < bytes / 4; k++) {
+\t\th ^= t[k];
+\t\th *= 0x100000001b3ull;
+\t}
+\treturn h;
+}
+static void catch_add(std::vector<CatchSlot>& out, const std::vector<bc5::direct::Mapping>& maps, uint32_t op, uint32_t at, uint64_t a, uint32_t bytes) {
+\tbytes &= ~3u;
+\tif (out.size() >= 256 || a == 0 || bytes < 4 || bytes > 65536 || !covered_sorted(maps, a, bytes)) {
+\t\tg_catch_skipped++;
+\t\treturn;
+\t}
+\tCatchSlot s;
+\ts.addr       = a;
+\ts.bytes      = bytes;
+\ts.at         = at;
+\ts.op         = op;
+\ts.hash       = catch_hash(a, bytes);
+\tconst auto* t = reinterpret_cast<const volatile uint32_t*>(a);
+\tfor (uint32_t k = 0; k < 5 && k < bytes / 4; k++) s.v[k] = t[k];
+\tout.push_back(s);
+\tg_catch_slots++;
+}
+static void catch_check(const std::vector<CatchSlot>& slots, bool at_timeout, uint64_t n, const char* kind) {
+\tif (slots.empty() || !g_dev) return;
+\tstd::shared_ptr<const std::vector<bc5::direct::Mapping>> maps_p = g_dev->sorted_mappings();
+\tuint32_t changed = 0;
+\tfor (const CatchSlot& s: slots) {
+\t\tif (!covered_sorted(*maps_p, s.addr, s.bytes)) {
+\t\t\tg_catch_gone++;
+\t\t\tcontinue;
+\t\t}
+\t\tif (catch_hash(s.addr, s.bytes) == s.hash) continue;
+\t\tchanged++;
+\t\tconst uint64_t k = g_catch_changed++;
+\t\tif (at_timeout ? changed <= 64 : (k < 64 || (k & 0x3ffu) == 0)) {
+\t\t\tconst auto* t    = reinterpret_cast<const volatile uint32_t*>(s.addr);
+\t\t\tuint32_t    v[5] = {};
+\t\t\tfor (uint32_t i = 0; i < 5 && i < s.bytes / 4; i++) v[i] = t[i];
+\t\t\tjournal("table catcher (exp 0401): at %s, submit #%" PRIu64 " %s op %02x at %u: 0x%" PRIx64 " %u bytes changed since submit: was %08x %08x %08x %08x %08x, now %08x %08x %08x %08x %08x (%" PRIu64 " changes so far)\\n",
+\t\t\t        at_timeout ? "the timeout" : "completion", n, kind, s.op, s.at, s.addr, s.bytes, s.v[0], s.v[1], s.v[2], s.v[3], s.v[4], v[0], v[1], v[2], v[3], v[4], k + 1);
+\t\t}
+\t}
+\tif (at_timeout) journal("table catcher (exp 0401): at the timeout, submit #%" PRIu64 " %s: %zu slots hashed at submit, %u changed\\n", n, kind, slots.size(), changed);
+\tstatic std::atomic<uint64_t> n_checks {0};
+\tif ((n_checks++ & 0xffffu) == 0)
+\t\tjournal("table catcher (exp 0401): %" PRIu64 " buffers, %" PRIu64 " slots hashed, %" PRIu64 " changed, %" PRIu64 " unmapped at the check, %" PRIu64 " not hashed\\n", g_catch_bufs.load(),
+\t\t        g_catch_slots.load(), g_catch_changed.load(), g_catch_gone.load(), g_catch_skipped.load());
+}
+
+"""
+CATCH_DECL = b"""\tconst bool             catch_on = table_catcher_on(); // experiment 0401 series e: the table catcher's slots of this buffer
+\tstd::vector<CatchSlot> catch_slots;
+\tif (catch_on) g_catch_bufs++;
+"""
+CATCH_WALK = b"""\t\t\tif (catch_on && type == 3) { // experiment 0401 series e: the table catcher
+\t\t\t\tif ((op == 0x24 || op == 0x25 || op == 0x16) && len >= 2) {
+\t\t\t\t\tconst bool     cmec = compute_ib && op == 0x16 && len == 4;
+\t\t\t\t\tconst uint64_t ca   = cmec ? ((ib[q + 1] & ~3ull) | (static_cast<uint64_t>(ib[q + 2] & 0xffffu) << 32u)) : (base1 != 0 ? base1 + ib[q + 1] : 0);
+\t\t\t\t\tcatch_add(catch_slots, *maps_p, op, q, ca, op == 0x16 ? 12u : op == 0x24 ? 16u : 20u);
+\t\t\t\t} else if ((op == 0x2c || op == 0x38) && len >= 10) {
+\t\t\t\t\tconst uint32_t one = op == 0x2c ? 16u : 20u, count = ib[q + 5], stride = ib[q + 8];
+\t\t\t\t\tcatch_add(catch_slots, *maps_p, op, q, base1 != 0 ? base1 + ib[q + 1] : 0, stride >= one && stride <= 256u && count >= 1 ? std::min(count, 16u) * stride : one);
+\t\t\t\t} else if ((op == 0x63 || op == 0x64 || op == 0x9f) && len >= 5) {
+\t\t\t\t\tif ((ib[q + 3] >> 31u) != 0) catch_add(catch_slots, *maps_p, op, q, (ib[q + 1] & ~3u) | (static_cast<uint64_t>(ib[q + 2] & 0xffffu) << 32u), (ib[q + 4] & 0x3fffu) * 8u);
+\t\t\t\t\telse g_catch_skipped++;
+\t\t\t\t}
+\t\t\t}
+"""
+
+
+def catcher_edits():
+    """Series e: the table catcher (BC5_DIRECT_TABLE_CATCHER)."""
+    return (
+        (b"// ---- experiment 0024: jobs in flight ---------------------------------------------------------\n", CATCH_FUNCTIONS, "before"),
+        (b"\tstd::vector<GeProbeSlot> ge_probe; // experiment 0160: the register captures inserted in front of its draws\n",
+         b"\tstd::vector<CatchSlot>   catch_slots; // experiment 0401 series e: the table catcher's slots\n", "after"),
+        (b"\tbool                  mec_expand_ib = false; // experiment 0038: rebuild the IB with GFX-form dispatches\n", CATCH_DECL, "before"),
+        (b"\t\t\tif (type == 3 && op == 0x11 && len >= 4 && (ib[q + 1] & 0xfu) == 1) {\n", CATCH_WALK, "before"),
+        (b"\tif (r.timed_out) timeout_probe(sub_ib, sub_n, kind, g_submits.load(), &r.executed_offsets); // experiment 0160\n",
+         b"\tif (!catch_slots.empty() && (r.timed_out || !r.pending)) catch_check(catch_slots, r.timed_out, n, kind); // experiment 0401 series e\n", "before"),
+        (b"\t\tif (BC5_DIAG_ENV(\"BC5_DIRECT_TIMEOUT_PROBE\") != nullptr) { it.job.ib_copy.assign(sub_ib, sub_ib + sub_n); it.job.ran_copy = r.executed_offsets; } // experiment 0160\n",
+         b"\t\tit.job.catch_slots.swap(catch_slots); // experiment 0401 series e\n", "after"),
+        (b"\t\t\tif (r.timed_out && !j.ib_copy.empty()) timeout_probe(j.ib_copy.data(), static_cast<uint32_t>(j.ib_copy.size()), j.kind, j.n, &j.ran_copy, &j.ge_probe); // experiment 0160\n",
+         b"\t\t\tif (!j.catch_slots.empty() && r.rc != -125) catch_check(j.catch_slots, r.timed_out, j.n, j.kind); // experiment 0401 series e\n", "before"),
+    )
+
+
+def apply_edits(s, edits):
+    for anchor, text, where in edits:
+        assert s.count(anchor) == 1, ("anchor", anchor[:60], s.count(anchor))
+        new = {"before": text + anchor, "after": anchor + text, "replace": text}[where]
+        s = s.replace(anchor, new)
+    return s
+
+
+def edit(s, acb=False, restore=False, catcher=False):
     assert s.count(ANCHOR) == 1, "prefix_of's head"
     assert s.count(CALL) == 1, "the tf_ring_prefix call"
     assert b"mesa_preamble_prefix" not in s, "the unit has the function already"
@@ -212,10 +339,10 @@ def edit(s, acb=False, restore=False):
     s = s.replace(CALL, CALL + b"\tmesa_preamble_prefix(p); // experiment 0401\n")
     if acb:
         assert b"acb_cs_prefix" not in s, "the unit has the acb CS prefix already"
-        for anchor, text, where in acb_edits(restore):
-            assert s.count(anchor) == 1, ("anchor", anchor[:60], s.count(anchor))
-            new = {"before": text + anchor, "after": anchor + text, "replace": text}[where]
-            s = s.replace(anchor, new)
+        s = apply_edits(s, acb_edits(restore))
+    if catcher:
+        assert b"table_catcher_on" not in s, "the unit has the table catcher already"
+        s = apply_edits(s, catcher_edits())
     return s
 
 
@@ -226,8 +353,9 @@ def function_only():
 def main():
     with open(sys.argv[1], "rb") as f:
         s = f.read()
-    assert sys.argv[4:] in ([], ["--acb"], ["--acb-restore"]), "usage"
-    out = edit(s, acb=sys.argv[4:] != [], restore=sys.argv[4:] == ["--acb-restore"])
+    flags = sys.argv[4:]
+    assert flags in ([], ["--acb"], ["--acb-restore"], ["--acb-restore", "--catcher"]), "usage"
+    out = edit(s, acb=flags != [], restore="--acb-restore" in flags, catcher="--catcher" in flags)
     with open(sys.argv[2], "wb") as f:
         f.write(out)
     with open(sys.argv[3], "wb") as f:

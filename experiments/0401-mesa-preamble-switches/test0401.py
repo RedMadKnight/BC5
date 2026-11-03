@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """BC5 experiment 0401: the kit on the laptop, against stand-ins: no box, no compiler, no GPU. The function itself is compiled
 and run on the box by box0401.sh build. A failing case prints its name; exit 0 only after the last marker.
-usage: python test0401.py <unit-main.cpp> <work dir> <zero-skip unit: main's plus exp 0388's patch-z-bc5LleAgc.diff>"""
+usage: python test0401.py <unit-main.cpp> <work dir> <zero-skip unit: main's plus exp 0388's patch-z-bc5LleAgc.diff>
+                          <tree root holding the box tree's src/libs/libNpCppWebApi.cpp, src/kernel/memory.cpp,
+                          src/loader/systemContent.cpp and src/loader/systemContent.h (series e)>"""
 import hashlib
 import importlib.util
 import os
@@ -16,7 +18,11 @@ HERE = pathlib.Path(__file__).resolve().parent
 UNIT = pathlib.Path(sys.argv[1])
 WORK = pathlib.Path(sys.argv[2])
 ZUNIT = pathlib.Path(sys.argv[3])
-KIT = ("mkunit0401.py", "check0401.py", "build0401.py", "launcher0401.py", "unit0401.cpp", "env_flag.hpp")
+ETREE = pathlib.Path(sys.argv[4])
+ETREE_FILES = ("src/libs/libNpCppWebApi.cpp", "src/kernel/memory.cpp", "src/kernel/memoryAddressSpace.inc", "src/loader/systemContent.cpp",
+               "src/loader/systemContent.h")
+KIT = ("mkunit0401.py", "check0401.py", "build0401.py", "launcher0401.py", "unit0401.cpp", "env_flag.hpp", "mknp0401.py", "mkmem0401.py",
+       "npgate0401.cpp")
 LAUNCHER = """#!/bin/bash
 # the output goes to ~/bc5-work/play-pkg-last.log
 EMU=~/bc5-work/kytyplus-build/src/kyty_emulator
@@ -56,9 +62,27 @@ case "$1" in
                   [ -n "${FAKE_NO_ACB:-}" ] || echo BC5_DIRECT_ACB_CS_PREFIX
                   echo 'exp 0401: acb state restore (exp 0381) %s'; echo 'acb state restore (exp 0381)'
                   [ -n "${FAKE_NO_RESTORE:-}" ] || echo BC5_DIRECT_ACB_STATE_RESTORE; echo 'job-arena fix APPLIED'
-                  [ ! -f "${6:-/nonexistent}/bc5/zero_skip.hpp" ] || { echo BC5_DIRECT_ZERO_SKIP; echo BC5_DIRECT_ZERO_SLICES; echo 'zero skip: list %s'; }; } > "$out"
-        chmod +x "$out"; exit 0 ;;
+                  [ ! -f "${6:-/nonexistent}/bc5/zero_skip.hpp" ] || { echo BC5_DIRECT_ZERO_SKIP; echo BC5_DIRECT_ZERO_SLICES; echo 'zero skip: list %s'; }
+                  if [ -f "${6:-/nonexistent}/loader/systemContent.h" ]; then
+                    [ -n "${FAKE_NO_CATCHER:-}" ] || echo BC5_DIRECT_TABLE_CATCHER
+                    echo 'exp 0401: table catcher %s'; echo 'table catcher (exp 0401)'; echo KYTY_BC5_NP_SESSION_V2; echo KYTY_BC5_MEMORY_FROM_PARAM
+                    echo '[bc5] exp 0401: memory from param.json %s: total'
+                  fi; } > "$out"
+        chmod +x "$out"
+        n=0; for a in "$@"; do n=$((n + 1)); [ "$a" = --gate ] && break; done
+        if [ "$n" -lt "$#" ]; then   # the gate program: a stand-in that answers as the real one would
+          g="${@: -1}"; u="${@: -2:1}"; [ -f "$u" ] || { echo "no gate source $u"; exit 2; }
+          { echo '#!/bin/bash'
+            echo 'v=${KYTY_BC5_NP_SESSION_V2:-}; [ -n "$v" ] && [ "$v" != 0 ] && on=on || on=off'
+            echo '[ "$1" = "$on" ] || { echo "npgate0401: the argument says $1 but the switch is ${v:-unset}"; exit 1; }'
+            echo '[ -z "${FAKE_GATE_FAIL:-}" ] || { echo "npgate0401: FAIL eVU3cXIJz0w"; echo "npgate0401: $1 1 failures"; exit 1; }'
+            echo 'if [ "$1" = on ]; then echo "npgate0401: on 10 of 10 registered as their functions in x, 9 of 9 NOT_SIGNED_IN, initialize 1 of 1; end"'
+            echo 'else echo "npgate0401: off 10 of 10 unregistered, 9 of 9 NOT_SIGNED_IN, initialize 1 of 1; end"; fi'; } > "$g"
+          chmod +x "$g"
+        fi
+        exit 0 ;;
     esac ;;
+  env) exec "$@" ;;
   sh) echo '[]'; exit 0 ;;
 esac
 echo "fakebox: $*"; exit 9
@@ -86,6 +110,10 @@ class Box:
         tree = self.root / "src/KytyPlus/src/libs/bc5LleAgc.cpp"
         tree.parent.mkdir(parents=True)
         shutil.copy(UNIT, tree)
+        for rel in ETREE_FILES:   # series e's three more units, the box tree's own
+            f = self.root / "src/KytyPlus" / rel
+            f.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy(ETREE / rel, f)
         z = self.w / "exp0388/z/src/src"   # series d's zero-skip unit and a stand-in header
         (z / "libs").mkdir(parents=True)
         (z / "bc5").mkdir()
@@ -309,8 +337,39 @@ def t_series_d_pins():
     assert b.lock() == "" and not b.e.exists()
 
 
+def t_series_e():
+    b = Box("sere", series="e").up()
+    r = b.box("build", b.token, FAKE_NO_CATCHER="1")
+    assert r.returncode == 1 and "lacks [BC5_DIRECT_TABLE_CATCHER]" in r.stdout, r.stdout
+    assert (b.e / "raw/npgate-on.out").read_text().rstrip().endswith("; end") and (b.e / "raw/npgate-unset.out").exists()
+    b.send()
+    assert b.box("setup", b.token).returncode == 0
+    r = b.box("build", b.token)
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "unit 0d65c14d3705887717bac71dd97e05ab" in r.stdout and "libNpCppWebApi.cpp 935fcc7e4ab1108f3d2d8b33eaf65bf6" in r.stdout, r.stdout
+    assert md5(b.e / "src/bc5LleAgc.cpp") == "0d65c14d3705887717bac71dd97e05ab" and md5(b.e / "src/libNpCppWebApi.cpp") == "935fcc7e4ab1108f3d2d8b33eaf65bf6"
+    assert md5(b.e / "mem/src/kernel/memory.cpp") == "43713ef677ec887a8ca273f7ab5cee90" and md5(b.e / "mem/src/loader/systemContent.h") == "2b2b21eb1faf35c2a538917049aea85e"
+    assert md5(b.e / "mem/src/kernel/memoryAddressSpace.inc") == "44586b1ee0e7edf12a0cd293ff9c141f"
+    for rel in ETREE_FILES:   # the tree is only read
+        assert md5(b.root / "src/KytyPlus" / rel) == md5(ETREE / rel), rel
+    assert "EMU=~/bc5-work/exp0401e/bin/kyty_emulator" in (b.e / "play-pkg-0401.sh").read_text()
+    assert b.box("release", b.token).stdout.strip() == "released" and b.lock() == ""
+
+
+def t_series_e_gate():
+    b = Box("sereg", series="e").up()
+    r = b.box("build", b.token, FAKE_GATE_FAIL="1")
+    assert r.returncode == 1 and "the NpCppWebApi gate (on) failed" in r.stdout and "FAIL eVU3cXIJz0w" in r.stdout, r.stdout
+    assert b.box("release", b.token).stdout.strip() == "released" and b.lock() == ""
+    b = Box("serep", series="e")
+    (b.root / "src/KytyPlus/src/kernel/memory.cpp").write_bytes(b"changed\n")
+    r = b.claim()
+    assert r.returncode == 1 and "the tree's memory.cpp is not" in r.stdout, r.stdout
+    assert b.lock() == "" and not b.e.exists()
+
+
 def t_series_unknown():
-    b = Box("serx", series="e")
+    b = Box("serx", series="f")
     r = b.claim()
     assert r.returncode == 2 and "unknown series" in r.stdout, r.stdout
     assert b.lock() == ""
@@ -342,6 +401,22 @@ def t_unit_edit_acb():
     assert hashlib.md5(z).hexdigest() == "3a77e0acef307865d1cd524951060422"
     d = mk.edit(z, acb=True, restore=True)
     assert hashlib.md5(d).hexdigest() == "0f18cf30cb85843cdbe9d5df68909e3d" and len(d) - len(z) == len(c) - len(s)
+    e = mk.edit(s, acb=True, restore=True, catcher=True)   # series e: series c plus the table catcher
+    assert hashlib.md5(e).hexdigest() == "0d65c14d3705887717bac71dd97e05ab"
+    for anchor, text, where in mk.catcher_edits():
+        assert e.count(text) == 1, text[:60]
+        if where == "before":
+            assert e.index(text) + len(text) == e.index(anchor)
+        else:
+            assert e.index(anchor) + len(anchor) == e.index(text)
+    assert e.index(b"struct CatchSlot {") < e.index(b"struct PendingJob {") < e.index(b"std::vector<CatchSlot>   catch_slots;")
+    assert e.index(b"const bool             catch_on = table_catcher_on();") < e.index(b"if (catch_on && type == 3) {")
+    for anchor, _, _ in mk.catcher_edits():
+        try:
+            mk.edit(s.replace(anchor, b""), acb=True, restore=True, catcher=True)
+        except AssertionError:
+            continue
+        raise SystemExit("a unit without a catcher anchor passed")
     assert c.count(mk.RESTORE_SPLIT + mk.ACB_SPLIT) == 1 and c.count(mk.RESTORE_FUNCTIONS) == 1
     assert c.count(b"|| acb_restore_on()) t_fs_before = tracker;") == 1
     assert c.index(b"static bool acb_restore_on()") < c.index(b"if (t_fs_valid || prefix_all() || cs_prefix_mode() != 0 || acb_restore_on())")
@@ -394,6 +469,16 @@ def t_build_commands():
           {"output": "src/kyty_emulator", "command": f": && clang++ -Wl,-Map=m --dependency-file=d {bu.UNIT} other.o /a/libbc5_backend.a -o src/kyty_emulator && :"}]
     assert bu.compile_argv(db, "/e/u.cpp", "/e/u.o") == ["clang++", "-I/a", "-o", "/e/u.o", "-c", "/e/u.cpp"]
     assert bu.compile_argv(db, "/e/u.cpp", "/e/u.o", "/e/zinc") == ["clang++", "-I/e/zinc", "-I/a", "-o", "/e/u.o", "-c", "/e/u.cpp"]
+    m = bu.unit_obj("src/kernel/memory.cpp")   # series e: more units, and the gate's link
+    assert m == "src/CMakeFiles/kyty_emulator.dir/kernel/memory.cpp.o"
+    db2 = [dict(db[0]), {"output": m, "command": f"clang++ -I/a -o {m} -c ../src/kernel/memory.cpp"},
+           {"output": "src/kyty_emulator", "command": f": && clang++ -Wl,-Map=m --dependency-file=d {bu.MAIN} {bu.UNIT} {m} /a/libbc5_backend.a -o src/kyty_emulator && :"}]
+    l2 = bu.link_argv(db2, "/e/u.o", "/e/bin/k", {m: "/e/mem.o"})
+    assert l2 == ["clang++", "-Wl,-Map=/e/bin/k.map", "--dependency-file=/e/bin/k.d", bu.MAIN, "/e/u.o", "/e/mem.o", "/a/libbc5_backend.a", "-o", "/e/bin/k"], l2
+    g = bu.gate_argv(l2, "/e/gate.o", "/e/raw/g")
+    assert g == ["clang++", "-Wl,-Map=/e/raw/g.map", "--dependency-file=/e/raw/g.d", "/e/gate.o", "/e/u.o", "/e/mem.o", "/a/libbc5_backend.a", "-o", "/e/raw/g"], g
+    assert bu.parse_rest(["/e/inc", "src/kernel/memory.cpp=/e/m.cpp", "--gate", "/e/g.cpp", "/e/g"]) == ("/e/inc", {"src/kernel/memory.cpp": "/e/m.cpp"}, ("/e/g.cpp", "/e/g"))
+    assert bu.parse_rest(["/e/zinc"]) == ("/e/zinc", {}, None) and bu.parse_rest([]) == (None, {}, None)
     l = bu.link_argv(db, "/e/u.o", "/e/bin/k")
     assert l == ["clang++", "-Wl,-Map=/e/bin/k.map", "--dependency-file=/e/bin/k.d", "/e/u.o", "other.o", "/a/libbc5_backend.a", "-o", "/e/bin/k"], l
     db[1]["command"] = db[1]["command"].replace(bu.UNIT + " ", bu.UNIT + " " + bu.UNIT + " ")
@@ -406,7 +491,7 @@ def t_build_commands():
 
 def main():
     cases = [v for k, v in sorted(globals().items()) if k.startswith("t_")]
-    assert len(cases) == 22, len(cases)
+    assert len(cases) == 24, len(cases)
     bad = 0
     for c in cases:
         try:
