@@ -274,3 +274,9 @@ What stands: repeats are 80–91 % of serving, the cache spares little, neither 
 
 **Fix and tool, laptop only.** Age is now per 32 KiB slot (about 64 bytes a chunk). `BC5_MOUNT_READ_TRACE=<file>` writes every read, open and forget with its caller, off by default; `ana-trace.py` replays it per page. `series0381r.sh <id> <out> trace` runs two default arms with it.
 Windows `cargo test -p bc5-mount` 85+15+10, clippy for Windows and for Linux (with the stub fuser) clean, `cargo fmt`, test_arm, test_stream 18, ana-trace on a made-up trace. Nothing of this has run on the box.
+
+## Correction: the RR5 verdict (2026-11-03, Codex review)
+
+The RR5 verdict above says too much. The cache removed decode time, but its own reads slowed to 6.7–9.1 ms against 0.7–1.4 ms and service time rose by 51–159 %, so the new cost may have
+cancelled the saving. RR5 shows only that this implementation gave no frames in calm arms. It does not show that Kraken costs no frames, or that every pre-decoded image would fail. The cache stays off and
+nothing new is run for this. Storms are untested and the age of repeated pages is still open: the 32 KiB slot is not a per-page measurement.
