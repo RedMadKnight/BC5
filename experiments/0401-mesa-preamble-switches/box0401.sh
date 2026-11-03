@@ -17,10 +17,12 @@ W=$HOME/bc5-work; TREE=$HOME/src/KytyPlus; TESTING=0
 case "${BC5_0401_ROOT:-}" in *0401-test-*) case "${BC5_0401_FAKE:-}" in *0401-test-*) TESTING=1 ;; esac ;; esac
 [ "$TESTING" = 0 ] || { W=$BC5_0401_ROOT/bc5-work; TREE=$BC5_0401_ROOT/src/KytyPlus; }
 # The series (2026-11-03): unset is the first build (exp0401); BC5_0401_SERIES=b is a second build in exp0401b, the same unit
-# plus the acb CS prefix (mkunit0401.py --acb), so the first build stays as it was played.
+# plus the acb CS prefix (mkunit0401.py --acb), so the first build stays as it was played. c (exp0401c) adds exp 0381's
+# ACB_STATE_RESTORE as well (--acb-restore), so b stays as a rollback.
 case "${BC5_0401_SERIES:-}" in
-    "") SER=""; EXPECT_UNIT=9eec0a3856bc1857ba7956b001c93aaf ;;
-    b) SER=b; EXPECT_UNIT=b1d96c719fda2ed048876fe119e89310 ;;
+    "") SER=""; EXPECT_UNIT=9eec0a3856bc1857ba7956b001c93aaf; MKFLAG="" ;;
+    b) SER=b; EXPECT_UNIT=b1d96c719fda2ed048876fe119e89310; MKFLAG=--acb ;;
+    c) SER=c; EXPECT_UNIT=29c88be321cc81908085b1cddcc70d2e; MKFLAG=--acb-restore ;;
     *) echo "0401 STOP: unknown series ${BC5_0401_SERIES}"; exit 2 ;;
 esac
 E=$W/exp0401$SER; LOCK=$W/BOX-LOCK; QUEUE=$W/BOX-QUEUE; ST=$E/state; BIN=$E/bin/kyty_emulator; B=$W/kytyplus-build; R=$E/raw
@@ -230,7 +232,7 @@ cmd_build() {
     put "$ST" building
 
     # 1. The unit, and its new function alone, from the tree that built the shared binaries.
-    u=$("${PY[@]}" "$E/mkunit0401.py" "$TREE/src/libs/bc5LleAgc.cpp" "$E/src/bc5LleAgc.cpp" "$E/src/mesa_preamble_prefix.inc" ${SER:+--acb}) || die "the unit's edit did not apply"
+    u=$("${PY[@]}" "$E/mkunit0401.py" "$TREE/src/libs/bc5LleAgc.cpp" "$E/src/bc5LleAgc.cpp" "$E/src/mesa_preamble_prefix.inc" $MKFLAG) || die "the unit's edit did not apply"
     [ "$u" = "$EXPECT_UNIT" ] || die "the private unit is $u, not $EXPECT_UNIT"
     [ "$(m "$E/src/bc5LleAgc.cpp")" = "$EXPECT_UNIT" ] || die "the private unit on disk is not $EXPECT_UNIT"
 
@@ -250,6 +252,7 @@ cmd_build() {
     # 4. What the binary must hold, and what it must still hold.
     local s strs=(BC5_DIRECT_CP_COHER_START_DELAY BC5_DIRECT_SPI_REQ_CTRL_PS 'exp 0401: CP_COHER_START_DELAY %s' 'exp 0401: SPI_SHADER_REQ_CTRL_PS %s' BC5_DIRECT_ARGS_WB BC5_DIRECT_GC_HS_OFFCHIP)
     [ -z "$SER" ] || strs+=(BC5_DIRECT_ACB_CS_PREFIX 'exp 0401: acb CS prefix %s' 'acb cs prefix (exp 0401)' BC5_DIRECT_CS_PREFIX)
+    [ "$SER" != c ] || strs+=(BC5_DIRECT_ACB_STATE_RESTORE 'exp 0401: acb state restore (exp 0381) %s' 'acb state restore (exp 0381)')
     for s in "${strs[@]}"; do
         grep -aqF -- "$s" "$BIN" || die "the private binary lacks [$s]"
     done

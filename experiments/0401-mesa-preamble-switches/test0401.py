@@ -52,7 +52,9 @@ case "$1" in
         out=$5; { echo '#!/bin/sh'; echo BC5_DIRECT_CP_COHER_START_DELAY; echo 'exp 0401: CP_COHER_START_DELAY %s'; echo 'exp 0401: SPI_SHADER_REQ_CTRL_PS %s'
                   echo BC5_DIRECT_ARGS_WB; echo BC5_DIRECT_GC_HS_OFFCHIP; [ -n "${FAKE_NO_SWITCH:-}" ] || echo BC5_DIRECT_SPI_REQ_CTRL_PS
                   echo BC5_DIRECT_CS_PREFIX; echo 'acb cs prefix (exp 0401)'; echo 'exp 0401: acb CS prefix %s'
-                  [ -n "${FAKE_NO_ACB:-}" ] || echo BC5_DIRECT_ACB_CS_PREFIX; } > "$out"
+                  [ -n "${FAKE_NO_ACB:-}" ] || echo BC5_DIRECT_ACB_CS_PREFIX
+                  echo 'exp 0401: acb state restore (exp 0381) %s'; echo 'acb state restore (exp 0381)'
+                  [ -n "${FAKE_NO_RESTORE:-}" ] || echo BC5_DIRECT_ACB_STATE_RESTORE; } > "$out"
         chmod +x "$out"; exit 0 ;;
     esac ;;
   sh) echo '[]'; exit 0 ;;
@@ -260,8 +262,22 @@ def t_series_b_rebuild():
     assert b.box("release", b.token).stdout.strip() == "released" and b.lock() == ""
 
 
+def t_series_c():
+    b = Box("serc", series="c").up()
+    r = b.box("build", b.token, FAKE_NO_RESTORE="1")
+    assert r.returncode == 1 and "lacks [BC5_DIRECT_ACB_STATE_RESTORE]" in r.stdout, r.stdout
+    b.send()
+    assert b.box("setup", b.token).returncode == 0
+    r = b.box("build", b.token)
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "unit 29c88be321cc81908085b1cddcc70d2e" in r.stdout, r.stdout
+    d = (b.e / "play-pkg-0401.sh").read_text()
+    assert "EMU=~/bc5-work/exp0401c/bin/kyty_emulator" in d, d
+    assert b.box("release", b.token).stdout.strip() == "released" and b.lock() == ""
+
+
 def t_series_unknown():
-    b = Box("serx", series="c")
+    b = Box("serx", series="d")
     r = b.claim()
     assert r.returncode == 2 and "unknown series" in r.stdout, r.stdout
     assert b.lock() == ""
@@ -287,6 +303,16 @@ def t_unit_edit_acb():
         except AssertionError:
             continue
         raise SystemExit("a unit without an acb anchor passed")
+    c = mk.edit(s, acb=True, restore=True)
+    assert hashlib.md5(c).hexdigest() == "29c88be321cc81908085b1cddcc70d2e"
+    assert c.count(mk.RESTORE_SPLIT + mk.ACB_SPLIT) == 1 and c.count(mk.RESTORE_FUNCTIONS) == 1
+    assert c.count(b"|| acb_restore_on()) t_fs_before = tracker;") == 1
+    assert c.index(b"static bool acb_restore_on()") < c.index(b"if (t_fs_valid || prefix_all() || cs_prefix_mode() != 0 || acb_restore_on())")
+    try:
+        mk.edit(s, restore=True)
+    except AssertionError:
+        return
+    raise SystemExit("the restore passed without the acb CS prefix")
 
 
 def load(name):
@@ -342,7 +368,7 @@ def t_build_commands():
 
 def main():
     cases = [v for k, v in sorted(globals().items()) if k.startswith("t_")]
-    assert len(cases) == 19, len(cases)
+    assert len(cases) == 20, len(cases)
     bad = 0
     for c in cases:
         try:

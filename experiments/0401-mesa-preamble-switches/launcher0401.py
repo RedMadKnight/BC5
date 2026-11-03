@@ -7,7 +7,7 @@ import sys
 
 
 def edits(series=""):
-    assert series in ("", "b"), series
+    assert series in ("", "b", "c"), series
     e = f"~/bc5-work/exp0401{series}"
     return (
         ("EMU=~/bc5-work/kytyplus-build/src/kyty_emulator", f"EMU={e}/bin/kyty_emulator  # exp 0401: the private build"),

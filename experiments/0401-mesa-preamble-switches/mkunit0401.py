@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """BC5 experiment 0401: main 029e0d6b's src/libs/bc5LleAgc.cpp with two default-off switches, mesa_preamble_prefix(), called
 from prefix_of() right after tf_ring_prefix(). With --acb (series b, 2026-11-03) also the acb CS prefix, a third default-off
-switch. Each anchor must occur exactly once. Prints the output's md5.
-usage: mkunit0401.py <unit in> <unit out> <function out> [--acb]"""
+switch; with --acb-restore (series c) also exp 0381's ACB_STATE_RESTORE, a fourth. Each anchor must occur exactly once.
+Prints the output's md5.
+usage: mkunit0401.py <unit in> <unit out> <function out> [--acb | --acb-restore]"""
 import hashlib
 import sys
 
@@ -106,6 +107,75 @@ static void acb_cs_track(const uint32_t* part, uint32_t n) {
 \tg_acb_cs[t_queue_idx].apply(std::span<const uint32_t>(part, n), read, st);
 }
 """
+RESTORE_FUNCTIONS = b"""// Experiment 0381 (F679, F685), ported to this unit by experiment 0401 series b: BC5_DIRECT_ACB_STATE_RESTORE=1 puts the
+// graphics queue's tracked compute registers (the CS prefix's range without COMPUTE_VMID) in front of every graphics
+// buffer that dispatches (or calls an IB2) and gets no other prefix, in the buffer's own chain segment. With the acbs on
+// the GFX ring a graphics buffer that inherits them (its table sets the program, so cs_inherit_at finds nothing) ran with
+// an acb's USER_DATA_0 and faulted at 0x860xxxxxxxx (F679); with the restore 3 of 3 starts ran clean against 3 of 3 faults
+// without it (F685). bc5::acb_restore's wants() and runs() (backend/include/bc5/acb_restore.hpp @ main 029e0d6b) are
+// copied here, since the header is not on this build's include path; exp 0381's acb register census (Touched) is left out.
+// Off by default.
+static bool acb_restore_on() {
+\tstatic const bool        on = bc5::env_on(std::getenv("BC5_DIRECT_ACB_STATE_RESTORE"));
+\tstatic std::atomic<bool> told {false};
+\tif (!told.exchange(true))
+\t\tjournal("exp 0401: acb state restore (exp 0381) %s\\n", on ? "on (a graphics buffer that dispatches gets the graphics queue's tracked compute registers in front)" : "off");
+\treturn on;
+}
+static bool acb_restore_wants(const uint32_t* ib, uint32_t num_dwords) {
+\tfor (uint32_t i = 0; i < num_dwords;) {
+\t\tconst uint32_t h = ib[i], type = h >> 30u;
+\t\tuint32_t       len = 1;
+\t\tif (type == 3 || type == 0) { const uint32_t c = (h >> 16u) & 0x3fffu; len = c == 0x3fffu ? 1 : c + 2; }
+\t\tif (type == 3) {
+\t\t\tconst uint32_t op = (h >> 8u) & 0xffu;
+\t\t\tif (op == 0x15 || op == 0x16 || op == 0x3f) return true; // DISPATCH_DIRECT, DISPATCH_INDIRECT, INDIRECT_BUFFER
+\t\t}
+\t\ti += len;
+\t}
+\treturn false;
+}
+static std::vector<uint32_t> acb_restore_runs(const bc5::full_state::Tracker& t, size_t* regs) {
+\tstd::vector<uint32_t> p, vals;
+\tuint32_t              first = 0;
+\tsize_t                n     = 0;
+\tconst auto flush = [&] {
+\t\tif (vals.empty()) return;
+\t\tp.push_back(0xC0007600u | (static_cast<uint32_t>(vals.size()) << 16u)); // SET_SH_REG, COUNT = body dwords - 1
+\t\tp.push_back(first);
+\t\tp.insert(p.end(), vals.begin(), vals.end());
+\t\tn += vals.size();
+\t\tvals.clear();
+\t};
+\tfor (uint32_t o = 0x204u; o < 0x400u; o++) {
+\t\tuint32_t v = 0;
+\t\tif (o == 0x214u || !t.get(bc5::full_state::Sh, o, v)) { // COMPUTE_VMID is the kernel's: never replayed
+\t\t\tflush();
+\t\t\tcontinue;
+\t\t}
+\t\tif (vals.empty()) first = o;
+\t\tvals.push_back(v);
+\t}
+\tflush();
+\t*regs = n;
+\treturn p;
+}
+"""
+RESTORE_SPLIT = b"""\t// Experiment 0381 (F679): the graphics queue's compute registers back after a merged acb, by the CS prefix's path
+\t// (full_prefix + cs_used: same segment, same pieces).
+\tif (!full_used && std::strcmp(kind, "dcb") == 0 && g_dev && acb_restore_on() && acb_restore_wants(ib, num_dwords)) {
+\t\tsize_t                       regs = 0;
+\t\tstd::vector<uint32_t>        re   = acb_restore_runs(t_fs_before, &regs);
+\t\tstatic std::atomic<uint64_t> n_re {0};
+\t\tconst uint64_t               k = n_re++;
+\t\tif (k < 16 || (k & 0x3ffu) == 0)
+\t\t\tjournal("acb state restore (exp 0381): t %.3f s dcb %u dwords, %zu registers in %zu dwords (%" PRIu64 " such buffers)\\n", timing_now(), num_dwords, regs, re.size(), k + 1);
+\t\tif (!re.empty()) {
+\t\t\tfull_prefix.swap(re);
+\t\t\tfull_used = cs_used = true;
+\t\t}
+\t}
+"""
 ACB_SPLIT = b"""\tif (!full_used && std::strcmp(kind, "acb") == 0) { // experiment 0401: the acb's own queue state, as the CS prefix above for a dcb
 \t\tstd::vector<uint32_t> cs = acb_cs_prefix(ib, num_dwords);
 \t\tif (!cs.empty()) {
@@ -114,24 +184,35 @@ ACB_SPLIT = b"""\tif (!full_used && std::strcmp(kind, "acb") == 0) { // experime
 \t\t}
 \t}
 """
-ACB_EDITS = (
-    (b"static void submit_segment(const uint32_t* ib, uint32_t num_dwords, uint32_t from, uint32_t to) {\n", ACB_DECL, "before"),
-    (ACB_SEGMENT_OLD, ACB_SEGMENT_NEW, "replace"),
-    (b"static bool ib_has_draw(const uint32_t* ib, uint32_t num_dwords) {\n", ACB_FUNCTIONS, "before"),
-    (b"\t// Experiment 0118: a piece goes to the GPU as one job with its full-state prefix in front. As two\n", ACB_SPLIT, "before"),
-    (b"\t\t\t\t\t\tsubmit_split(t + skip, tn - skip, \"acb\");\n", b"\t\t\t\t\t\tacb_cs_track(t + skip, tn - skip); // experiment 0401\n", "after"),
-)
+def acb_edits(restore=False):
+    """Series b: the acb CS prefix. Series c (restore): also exp 0381's ACB_STATE_RESTORE."""
+    e = [
+        (b"static void submit_segment(const uint32_t* ib, uint32_t num_dwords, uint32_t from, uint32_t to) {\n", ACB_DECL, "before"),
+        (ACB_SEGMENT_OLD, ACB_SEGMENT_NEW, "replace"),
+        (b"static bool ib_has_draw(const uint32_t* ib, uint32_t num_dwords) {\n", ACB_FUNCTIONS + (RESTORE_FUNCTIONS if restore else b""), "before"),
+        (b"\t// Experiment 0118: a piece goes to the GPU as one job with its full-state prefix in front. As two\n",
+         (RESTORE_SPLIT if restore else b"") + ACB_SPLIT, "before"),
+        (b"\t\t\t\t\t\tsubmit_split(t + skip, tn - skip, \"acb\");\n", b"\t\t\t\t\t\tacb_cs_track(t + skip, tn - skip); // experiment 0401\n", "after"),
+    ]
+    if restore:
+        e.append((b"\t\tif (t_fs_valid || prefix_all() || cs_prefix_mode() != 0) t_fs_before = tracker;\n",
+                  b"\t\tif (t_fs_valid || prefix_all() || cs_prefix_mode() != 0 || acb_restore_on()) t_fs_before = tracker; // + exp 0381\n", "replace"))
+    return tuple(e)
 
 
-def edit(s, acb=False):
+ACB_EDITS = acb_edits()
+
+
+def edit(s, acb=False, restore=False):
     assert s.count(ANCHOR) == 1, "prefix_of's head"
     assert s.count(CALL) == 1, "the tf_ring_prefix call"
     assert b"mesa_preamble_prefix" not in s, "the unit has the function already"
+    assert acb or not restore, "the restore comes with the acb CS prefix"
     s = s.replace(ANCHOR, FUNCTION + ANCHOR)
     s = s.replace(CALL, CALL + b"\tmesa_preamble_prefix(p); // experiment 0401\n")
     if acb:
         assert b"acb_cs_prefix" not in s, "the unit has the acb CS prefix already"
-        for anchor, text, where in ACB_EDITS:
+        for anchor, text, where in acb_edits(restore):
             assert s.count(anchor) == 1, ("anchor", anchor[:60], s.count(anchor))
             new = {"before": text + anchor, "after": anchor + text, "replace": text}[where]
             s = s.replace(anchor, new)
@@ -145,8 +226,8 @@ def function_only():
 def main():
     with open(sys.argv[1], "rb") as f:
         s = f.read()
-    assert sys.argv[4:] in ([], ["--acb"]), "usage"
-    out = edit(s, acb=sys.argv[4:] == ["--acb"])
+    assert sys.argv[4:] in ([], ["--acb"], ["--acb-restore"]), "usage"
+    out = edit(s, acb=sys.argv[4:] != [], restore=sys.argv[4:] == ["--acb-restore"])
     with open(sys.argv[2], "wb") as f:
         f.write(out)
     with open(sys.argv[3], "wb") as f:
