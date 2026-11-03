@@ -6,7 +6,8 @@
 # Fields, MiB unless named: avail free cached shmem bufs anon mapped sreclaim sunreclaim mlocked swap (used) zram_orig
 # zram_compr zram_used; gtt; psi_mem_full_us psi_io_full_us (totals); e_rss e_anon e_file e_shmem e_swap e_majflt e_threads
 # e_fds; m_rss m_pss m_swap m_read (cumulative) m_majflt; vm_pgmajfault vm_pswpin vm_pswpout vm_refault (cumulative
-# counts); then the emulator's DRM clients, c<id>=<GTT MiB>/<resident>/<shared>.
+# counts); frag_free frag_ge64k frag_ge2m (MiB, the Normal zone) frag_unusable2m (0..1000); compact_* pgmigrate_* (cumulative);
+# then the emulator's DRM clients, c<id>=<GTT MiB>/<resident>/<shared>.
 # usage: ssh bc250 'bash -s -- 14400' < leak0389m.sh >> leak-<date>.txt   (start before the game; waits up to 10 min)
 set -u
 export LC_ALL=C
@@ -40,7 +41,14 @@ while [ -d "/proc/$EP" ] && [ $(($(date +%s) - T0)) -lt "$MAX" ]; do
       BEGIN {g = "?"; r = "?"; h = "?"} /^drm-client-id:/ {c = $2} /^drm-total-gtt:/ {g = sprintf("%d", m($2, $3))} /^drm-memory-gtt:/ {if (g == "?") g = sprintf("%d", m($2, $3))}
       /^drm-resident-gtt:/ {r = sprintf("%d", m($2, $3))} /^drm-shared-gtt:/ {h = sprintf("%d", m($2, $3))}
       END {if (c != "") printf "c%s=%s/%s/%s\n", c, g, r, h}' "$f" 2> /dev/null; done | sort -u | tr '\n' ' ')
-  echo "t=$t $mi $zr gtt=$gtt psi_mem_full_us=$pm psi_io_full_us=$pio $em $mt $vm $fd"
+  # Fragmentation (the maintainer's "the more cluttered the memory, the likelier a hang", 2026-11-03): the Normal zone's free
+  # memory from buddyinfo, all of it and the part in blocks of 64 KiB (order 4) and 2 MiB (order 9) or larger; unusable index
+  # for order 9 in thousandths, the kernel's unusable_free_index done here because /proc/pagetypeinfo and debugfs's
+  # extfrag_index are root-only on the box. Then compaction and migration counters (cumulative).
+  fr=$(awk '$4 == "Normal" {for (o = 0; o <= 10; o++) {p = $(5 + o) * 2 ^ o; a += p; if (o >= 4) b += p; if (o >= 9) c += p}}
+       END {printf "frag_free=%d frag_ge64k=%d frag_ge2m=%d frag_unusable2m=%d", a / 256, b / 256, c / 256, a ? 1000 * (a - c) / a : -1}' /proc/buddyinfo 2> /dev/null || echo "frag_free=-1")
+  cp=$(awk '$1 ~ /^(compact_stall|compact_fail|compact_success|compact_daemon_wake|pgmigrate_success|pgmigrate_fail)$/ {printf "%s=%d ", $1, $2}' /proc/vmstat)
+  echo "t=$t $mi $zr gtt=$gtt psi_mem_full_us=$pm psi_io_full_us=$pio $em $mt $vm $fr $cp$fd"
   sleep 20
 done
 echo "# end $(date '+%F %T') after $(($(date +%s) - T0)) s"

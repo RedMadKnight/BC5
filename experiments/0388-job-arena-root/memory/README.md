@@ -116,3 +116,32 @@ The first line it prints must name the binary `902585e2`, the list `843f9fbc` an
 **What it can show.** One play each, in scenes that may differ, with the skip able to lose GPU writes, neither confirms nor refutes his reading of a leak as the cause of the hangs. If the hangs and slowdowns come later or not at all with the skip on, that is a hint for more headroom, not proof. The useful measure is the sampler's avail and PSI against the moment of each event. Risk with the skip on: GPU writes into a skipped run are lost until the canary sees them, visual effect unknown, about one hit per several minutes.
 
 **Review (Codex, 2026-11-03).** A sum whose part was not read now stays unknown (`-1`) instead of becoming a number; the labels are SUSTAINED and STEPPED, with their limits in the output. `test_leak0389.py` covers both unknown cases and a good sum.
+
+## The off play's hang, and is clutter the cause? (2026-11-03)
+
+**Off play** (skip off, 08:40–08:49, ring timeout at t 567, reset succeeded). The rule gives OPEN: under 600 s. Nothing grew after the load (GTT 12,482 → 12,526 MiB from t 145, emulator anon 102–191, mount ~720, unreclaimable slab 294). Avail was about 400 MiB from t 103 to the hang (387 lowest), memory PSI 0.4 % just before it. No GPU page fault from that process. The hang: the gfx ring with no waves and the CP standing on a `WAIT_REG_MEM` (dword 1411 of dcb #432913) for a label to equal 1, the label holding a pointer-like value instead; two label writes of the paired acb were dropped by the host. A GPU-side wait, not a memory symptom in this record.
+
+**The maintainer's hypothesis:** "Im bardziej zaśmiecona pamięć tym szansa na zawieszenie wzrasta". The sampler now records fragmentation: the Normal zone's free memory from `/proc/buddyinfo`, in blocks of ≥ 64 KiB and ≥ 2 MiB, the unusable index for 2 MiB (‰), and the compaction and migration counters. `/proc/pagetypeinfo` and debugfs's `extfrag_index` are root-only on the box (not in the sudoers list), so the index is computed from buddyinfo. A read on the boot of 08:53, minutes into a play: 65 MiB free in Normal, 0 MiB in 2-MiB blocks (unusable 1000 ‰), 179 compaction stalls, 10.9 M failed page migrations: full fragmentation at the 2-MiB level arrives within minutes of a fresh boot.
+
+**Hangs since 10-31** (11; boot age at the play's start, t of the hang; the play start is the emulator's first journal line):
+
+| hang | boot age | since last reset/boot | t | outcome |
+|---|---|---|---|---|
+| 10-31 17:04 | 40.1 h | 40.1 h | 205 s | machine down |
+| 10-31 20:39 | 2.9 h | 2.9 h | 2247 s | reset |
+| 11-01 07:22 | 14.0 h | 10.5 h | 839 s | reset |
+| 11-01 07:41 | 14.4 h | 0.1 h | 823 s | reset |
+| 11-01 07:54 | 14.7 h | 0.1 h | 397 s | reset |
+| 11-01 23:12 | 2.1 h | 2.1 h | 356 s | machine down |
+| 11-02 00:11 | 0.7 h | 0.7 h | 1073 s | machine down |
+| 11-02 08:34 | 8.2 h | 8.2 h | 478 s | machine down |
+| 11-02 20:56 | 12.1 h | 12.1 h | 950 s | reset |
+| 11-03 08:49 | 24.1 h | 11.7 h | 567 s | reset |
+| 11-03 08:53 | 24.2 h | 0.0 h | 192 s | machine down |
+
+The two shortest (205 and 192 s) are on the oldest boots, and boot age against t correlates at −0.54. But n is 11, that is not significant, a 2-hour boot also hung at 356 s, and the builds, scenes and players differ across these days. After a reset the median t is 567 s, the first hang of a boot 714 s; both spans overlap fully. Only hangs are counted: plays that did not hang are missing, so this is not a hazard per minute. **The data cannot decide.**
+
+**The smallest controlled test.** Same build (the shared normal, skip off), same save and the scripted route, so that the scene and input are the same, the new sampler running:
+- A: right after a reboot, desktop up, `drop_caches`, play at once.
+- B: same boot after an hour of uptime that includes one full play that ended normally (no reset).
+Measure t to the first hang (or 40 minutes) and the fragmentation fields at the hang against the same fields at the same t in the other arm. One pair cannot decide with t spread from 192 to 2247 s; three pairs per arm is the least that can show a large effect. Cheaper and on every play: compare the sampler's fragmentation and compaction counters in the minute before each hang with all other minutes; if hangs do not stand out there, clutter is not their trigger.
