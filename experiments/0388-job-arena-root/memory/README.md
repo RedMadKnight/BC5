@@ -90,3 +90,27 @@ ssh bc250 'bash -s -- 14400' < experiments/0388-job-arena-root/memory/leak0389m.
 ```bash
 python experiments/0388-job-arena-root/memory/leak0389.py leak-20261103.txt
 ```
+
+## The zero-skip build for his two plays (2026-11-03)
+
+His reading: RAM grows steadily and is not freed, and at about 14.6 GB in MangoHud the game nearly always hangs or slows. MangoHud's RAM figure is, as far as I know its source, MemTotal − MemAvailable in GiB (TODO(verify): read `src/memory.cpp` of the installed MangoHud). This box's MemTotal is 15,192 MiB = 14.84 GiB, so 14.6 GiB used means about 250 MiB available: the floor every sampler has seen (158–324 MiB). His point is where the box sits at its limit. The leak sampler will say whether it rises to that limit and stays, or steps up with the scenes.
+
+**Build.** `exp0388/z/kyty_emulator`, md5 `902585e2492dd30f5ebba8bfb54cf8c0`. It is today's shared normal (`4d2b1b1d`, no J, the job-arena fix on) with one private unit: `bc5LleAgc.cpp` with exp 0379's zero skip and the slice switch (`patch-z-bc5LleAgc.diff`). The diff went on with fuzz; its reopen line landed inside a lambda and was moved by hand back to the device-reopen block. Linked with the shared objects. The skip block passes the stand-in harness; the box compile had no error.
+
+**Switch.** `BC5_DIRECT_ZERO_SKIP=<list>`, off when unset; `BC5_DIRECT_ZERO_SLICES` stays unset (one canary slice per run). List `exp0388/m/zero-list-moving.txt`, md5 `843f9fbc`, 1,014 MiB in 40 runs, all 13 recorded hits left out.
+
+**Expected headroom** with the skip on: about 0.6 GiB early in a play, falling to 0.35–0.45 GiB by 30–40 min as hints take runs back (the 37-minute play of 10-31 kept 460 MiB skipped of 1,218, less a 104-MiB canary). If the heap spans differ from the list's, the journal says `not skipped` and the gain is 0.
+
+**The two plays**, same binary, his saves, `input.cfg` unchanged, with the leak sampler running:
+
+```bash
+~/bc5-work/exp0388/play0389z.sh off
+```
+
+```bash
+~/bc5-work/exp0388/play0389z.sh on
+```
+
+The first line it prints must name the binary `902585e2`, the list `843f9fbc` and the launcher `97835f88`. The skip's own lines in the journal: `zero skip: list`, `MiB skipped`, `canary hit`.
+
+**What it can show.** If more headroom delays the hangs and slowdowns or removes them, his reading holds. If they come at the same time, it does not. One play each, in scenes that may differ, decides little; the sampler's avail and PSI against the moment of each event are the measure. Risk with the skip on: GPU writes into a skipped run are lost until the canary sees them, visual effect unknown, about one hit per several minutes.
