@@ -3,7 +3,7 @@
 # "przygotuj skrót do kolejnego testu z przełącznikami bez ARGS_WB=all"). It runs the private launcher play-pkg-0401.sh
 # (c6b2d7fd) with the private build 174e768e and both of this experiment's switches on, ARGS_WB set off explicitly. No
 # menu: the launcher starts game.pkg. RT on comes from the shared settings, which this script only prints.
-# Writes only the one .desktop file. Nothing else is written; the build, the launcher and the settings are only read.
+# Writes only the one .desktop file (made as a temporary file in exp0401, then moved). Nothing else is written; the build, the launcher and the settings are only read.
 # usage: shortcut0401.sh   (on the box)
 set -u
 E=$HOME/bc5-work/exp0401; BIN=$E/bin/kyty_emulator; L=$E/play-pkg-0401.sh
@@ -17,7 +17,7 @@ pgrep '^kyty_emulator' > /dev/null && { echo "an emulator runs: stop"; exit 1; }
 [ -d "$DESK" ] && [ ! -L "$DESK" ] || { echo "no desktop directory $DESK: stop"; exit 1; }
 D="$DESK/BC5 emulator (test 0401).desktop"
 [ ! -e "$D" ] || grep -qF 'Name=BC5 emulator (test 0401)' "$D" || { echo "$D exists and is not ours: stop"; exit 1; }
-t=$D.tmp.$$
+t=$E/shortcut-0401.tmp.$$.desktop   # desktop-file-validate wants the extension; the same file system as the desktop
 cat > "$t" << EOF
 [Desktop Entry]
 Type=Application
