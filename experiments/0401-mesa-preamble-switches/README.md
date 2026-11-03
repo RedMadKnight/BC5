@@ -1,6 +1,6 @@
 # 0401 — Two registers of Mesa's preamble on their own switches
 
-**Status: built, not run.** Written on 2026-11-02 on the top session's GO, on the maintainer's yes to a test build. The build is CPU only. No game has run on it.
+**Status: one play with both switches, too slow to play; cause not separated. Shortcut for `CP_COHER_START_DELAY` alone installed, not played.** Written on 2026-11-02 on the top session's GO, on the maintainer's yes to a test build; the plays are the maintainer's.
 
 **Question.** A static audit of Mesa's gfx10 start state against 1,347 captured buffers (notes `static-register-audit.md`) found five live registers that neither the title nor the host sets. The direct read needs root, so their values are unknown. Does writing Mesa's value change the hang classes or the frame rate? This experiment only builds the switches for two of the five.
 
@@ -21,4 +21,10 @@ Journal, `gc/direct.log`, at the first prefix: `exp 0401: CP_COHER_START_DELAY .
 
 **Result.** Built 2026-11-02 11:25, claim to release in slot 2026110211243533705, no emulator. Binary `174e768ec3a68c34be879ad57067819c` (shared objects of 4d2b1b1d, unit 9eec0a38, shared archive 75e30335). Launcher `c6b2d7fd`, 4 lines changed from `play-pkg.sh` 97835f88 (`raw/play-pkg-0401.diff`). The tree's unit equals main's patch 0001 unit (d18b4482). The real function, compiled with clang++ in the container, gave the right packets and lines for 7 of 7 settings (`raw/check0401.out`). 5 compile warnings, none in the new lines (3859-3870): deprecation and format and unused-variable warnings in older code. Shared binaries, archive, tree and launcher were unchanged at the end. `test0401.py` 15 of 15 on stand-ins, laptop. Not shown: that the prefix reaches the chip with these packets on a real run. No game ran.
 
-**Verdict.** The build is ready. Nothing is known yet about the registers' effect.
+**Play 1, both switches (2026-11-03 08:54–08:59, the maintainer, RT on).** Shortcut "BC5 emulator (test 0401)" (`shortcut0401.sh`, `BC5_DIRECT_ARGS_WB=0`). The journal `play-20261103-0854/gc/direct.log` shows both `exp 0401` lines on. The maintainer: "Straszne spowolnienie", then "Nie da się grać", from the start of play. The top session's numbers: t 170–256 at 19–30 flips/s; at t 256 a flip took 103 ms, of it GPU busy 3.2 ms, outside the direct path 75 ms, sync 15.9, hints 8.8. The launcher log is kept as `~/bc5-work/exp0401/play-last-20261103-0854-both.log`, since the next play overwrites `play-last.log`.
+
+How it reads, as an inference, not shown: both registers act inside the GPU, where the play spent 3.2 ms of 103. `SPI_SHADER_REQ_CTRL_PS` 0x7 is `SOFT_GROUPING_EN` 1 with `NUMBER_OF_REQUESTS_PER_CU` 3 (field layout from `tools/bc5-agc/regdb/gfx10.json`), the value Mesa writes on every gfx10 context; what the fields do is not in any public AMD text read here (TODO(verify)). `CP_COHER_START_DELAY` holds a 6-bit `START_DELAY_COUNT`. Two confounds fit the time outside the direct path better. First, this build has no zero skip, unlike the morning's plays (exp 0379's bench: GTT 11,992 against 10,080 MiB, MemAvailable 480 against 2,490). Second, it was the first play after the 08:53 machine-down, so it ran with a cold page cache (F620). A slow play with the CP switch alone would not by itself point at the register; a reboot followed by the plain normal shortcut is the control. The registers latch, so after this play the box needs a reboot before any run with the switches off.
+
+**Shortcut 2, `CP_COHER_START_DELAY` alone (2026-11-03 09:06).** On the top session's GO: "BC5 emulator (test 0401 CP)", `shortcut0401.sh cp`, md5 19651ddb4ca5e7a8baa93461124b46d1. Env `BC5_DIRECT_CP_COHER_START_DELAY=1 BC5_DIRECT_SPI_REQ_CTRL_PS=0 BC5_DIRECT_ARGS_WB=0`. RT on in the shared settings. The maintainer reboots before playing it.
+
+**Verdict.** Not yet. Both switches together made the game too slow to play, and the confounds above leave the cause open.
