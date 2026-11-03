@@ -6,9 +6,10 @@
 # Writes only the one .desktop file (made as a temporary file in the series' directory, then moved). Nothing else is
 # written, except that mode cpacb also removes the cp shortcut it replaces; the build, the launcher and the settings are only read.
 # Mode cp (the top session's GO, 2026-11-03, after "Nie da się grać" on both): "BC5 emulator (test 0401 CP)", CP_COHER_START_DELAY alone.
-# Mode cpacb (the top session's GO, 2026-11-03 09:10): "BC5 emulator (test 0401 CP+acb)", series b's build (exp0401b) with
-# CP_COHER_START_DELAY and the acb CS prefix on; it replaces the cp shortcut.
-# usage: shortcut0401.sh [both|cp|cpacb]   (on the box; both is the default)
+# Mode cpacb (the top session's GO, 2026-11-03 09:10 and 09:24): "BC5 emulator (test 0401 CP+acb)", series c's build
+# (exp0401c) with CP_COHER_START_DELAY, the acb CS prefix and exp 0381's acb state restore on; it replaces the cp shortcut.
+# Mode cpacb-b puts the same shortcut back on series b's build (exp0401b, no restore): the rollback.
+# usage: shortcut0401.sh [both|cp|cpacb|cpacb-b]   (on the box; both is the default)
 set -u
 DESK=$(xdg-user-dir DESKTOP 2> /dev/null); DESK=${DESK:-$HOME/Pulpit}
 OLD=""
@@ -19,11 +20,15 @@ both)  S=""; WANT_BIN=174e768ec3a68c34be879ad57067819c; WANT_LAUNCHER=c6b2d7fdba
 cp)    S=""; WANT_BIN=174e768ec3a68c34be879ad57067819c; WANT_LAUNCHER=c6b2d7fdba882a1817224c9bf6d07ff2
        NAME="BC5 emulator (test 0401 CP)"; WHAT="CP_COHER_START_DELAY 0x20 only (Mesa's preamble value)"
        ENVS="BC5_DIRECT_CP_COHER_START_DELAY=1 BC5_DIRECT_SPI_REQ_CTRL_PS=0 BC5_DIRECT_ARGS_WB=0" ;;
-cpacb) S=b; WANT_BIN=5b05ce9be5e4a4bf6352e270d28358d7; WANT_LAUNCHER=01312b5b995d632177745273a5adcd93
+cpacb) S=c; WANT_BIN=505b3ae35ac4510494e03e50fec6a43e; WANT_LAUNCHER=d17996d379eef31aab995fa9aa55600d
+       NAME="BC5 emulator (test 0401 CP+acb)"; WHAT="CP_COHER_START_DELAY 0x20, the acb CS prefix and exp 0381's acb state restore"
+       ENVS="BC5_DIRECT_CP_COHER_START_DELAY=1 BC5_DIRECT_ACB_CS_PREFIX=1 BC5_DIRECT_ACB_STATE_RESTORE=1 BC5_DIRECT_SPI_REQ_CTRL_PS=0 BC5_DIRECT_ARGS_WB=0"
+       OLD="BC5 emulator (test 0401 CP)" ;;
+cpacb-b) S=b; WANT_BIN=5b05ce9be5e4a4bf6352e270d28358d7; WANT_LAUNCHER=01312b5b995d632177745273a5adcd93   # the rollback: series b, no restore
        NAME="BC5 emulator (test 0401 CP+acb)"; WHAT="CP_COHER_START_DELAY 0x20 and the acb CS prefix"
        ENVS="BC5_DIRECT_CP_COHER_START_DELAY=1 BC5_DIRECT_ACB_CS_PREFIX=1 BC5_DIRECT_SPI_REQ_CTRL_PS=0 BC5_DIRECT_ARGS_WB=0"
        OLD="BC5 emulator (test 0401 CP)" ;;
-*)     echo "usage: shortcut0401.sh [both|cp|cpacb]"; exit 1 ;;
+*)     echo "usage: shortcut0401.sh [both|cp|cpacb|cpacb-b]"; exit 1 ;;
 esac
 E=$HOME/bc5-work/exp0401$S; BIN=$E/bin/kyty_emulator; L=$E/play-pkg-0401.sh
 m() { md5sum < "$1" 2> /dev/null | cut -d' ' -f1; }
