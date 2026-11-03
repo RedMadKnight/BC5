@@ -280,3 +280,12 @@ Windows `cargo test -p bc5-mount` 85+15+10, clippy for Windows and for Linux (wi
 The RR5 verdict above says too much. The cache removed decode time, but its own reads slowed to 6.7–9.1 ms against 0.7–1.4 ms and service time rose by 51–159 %, so the new cost may have
 cancelled the saving. RR5 shows only that this implementation gave no frames in calm arms. It does not show that Kraken costs no frames, or that every pre-decoded image would fail. The cache stays off and
 nothing new is run for this. Storms are untested and the age of repeated pages is still open: the 32 KiB slot is not a per-page measurement.
+
+## RT1 and RT2: the trace arms (2026-11-03)
+
+RT1 stopped in setup: tb2's unit no longer compiles against the shared KytyPlus sources. Setup now keeps the private binary be846ba2 (735e3253). RT2: setup passed, T1 stopped by the route gate at 160 s, T2 did not run. Kernel 7.2.11-ogc4.1, swappiness 60,
+page-cluster 3, mount b7ed5a9a, no amdgpu line.
+
+- **The stop.** The last flip was at 52 s, and mount reads fell from 1–2 GiB per 10 s to under 6 MiB per 10 s after 55 s, with opens still coming. The title stopped drawing during its first load, with no kernel line; the cause is not known. This
+  binary ran 25 arms to the end before. Since then the box rebooted onto a new kernel and the shared state changed.
+- **The trace works.** 127 k reads, 73 k opens, no forget, in 160 s. Per page, the 280 MiB of repeats in the load are 4–64 s old (none under a second) and came back 512 MiB to 4 GiB of reads later. That is load only, and says nothing yet about play.
