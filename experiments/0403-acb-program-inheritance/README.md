@@ -162,6 +162,11 @@ F536 (exp 0378) agrees: the two 0x0909… samples had initiator 0x61, and every 
 
 ## Verdict
 
+> **Corrected by the addendum below (18:16 catcher, 2026-11-03 evening).** "The inheriting head is a wave32 dispatch"
+> generalised one buffer: all six inheriting heads of the 18:16 play are wave64. The per-wave-mode slots below have no
+> basis on the console, which keeps one compute state per queue. The answer is the queue's state at the end of its
+> previous buffer. See "Addendum: the 18:16 catcher" for the corrected verdict and the revised switch.
+
 **Both answers are wrong, for the same reason.** The inheriting head is a wave32 dispatch. Our ring hands it a dcb's
 wave64 program (hang), and exp 0401 hands it the queue tracker's 0x0909… wave64 program (bad pointers, crashes). The
 16:32 hang is not an inheritance case at all (§1).
@@ -250,3 +255,165 @@ Per the fixes-first rule, all three modes go into one private build with the swi
 - `raw0403.py`: the packet lister used above (structure and register values only; reads a dump given on the command
   line).
 - No dumps, logs or walk outputs are committed. They hold the title's buffers; the paths above locate them on the box.
+
+## Addendum: the 18:16 catcher (2026-11-03 evening)
+
+**Question.** The `journal` mode of `BC5_DIRECT_ACB_INHERIT` ran in the 18:16 play: exp 0401 series e2, binary
+`exp0401e2` 35ff82eb, unit 73e8e4e0, commit 14011b76. The play is read here to answer three questions:
+1. What is the 2-dword part at 0xfe003a200 that comes before every inheriting head, and which buffer comes before each head?
+2. With wave64 heads, which state is right?
+3. How should the switch change?
+
+**Setup.** Read-only `ssh bc250`, with the emulator guard before each command. Inputs:
+- `~/bc5-data/captures/play-20261103-1816/gc/direct.log` (2,006,537 lines; grep `acb inherit (exp 0403)` and
+  `acb inherit census (exp 0403)`);
+- the catcher's code in `mkunit0401.py` at 14011b76;
+- the two 2-dword acb timeout dumps of 10-30, read only with `od`:
+  - `~/bc5-data/captures/play-20261030-0956/gc/ib-timeout-00033827-acb-2.bin`
+  - `~/bc5-data/captures/play-20261030-1110/gc/ib-timeout-00033915-acb-2.bin`
+
+The 18:16 play has no buffer dumps, and the title's memory is gone. Nothing is copied or committed.
+
+### A1. The six lines
+
+All six are head parts (offset 0) on queue 0, and all are wave64. They are every such part in the play: the journal's
+count ends at 6, and it logs the first 64.
+
+| t (s) | head part | inheriting dispatches (first at) | initiator | queue's last W64 program | "W32 slot" | previous title part |
+|---|---|---|---|---|---|---|
+| 470.359 | 21161 | 347 (17) | 0x61 | 0x0909936c00 | 0x11d03a0700 | 0x11e0ec00c0+32664 |
+| 470.497 | 15796 | 641 (8) | 0x61 | 0x0909939700 | 0x11d039f000 | 0x11e0e600c0+32667 |
+| 606.081 | 185 | 1 (16) | 0x41 | 0x0909969d00 | 0x090992af00, ud0 0x87260121 | 0x11e0ee00c0+32669 |
+| 606.480 | 992 | 13 (8) | 0x41 | 0x0909873200 | 0x11d039f000 | 0x11e0f800c0+32670 |
+| 609.220 | 1203 | 1 (8) | 0x61 | 0x090986ea00 | 0x11d039f000 | 0x11e0f800c0+32670 |
+| 609.295 | 221 | 1 (16) | 0x61 | 0x0909968e00 | 0x090992af00, ud0 0x87266d21 | 0x11e0e800c0+32670 |
+
+The catcher records `prev[0]` as the newest part (`acb_inherit_track` shifts `prev[k] = prev[k-1]`). Each line's
+"previous parts" therefore reads, newest first: 0xfe003a200+2, a big title part, 0xfe003a200+2. On queue 0 the order
+was: the 2-dword IB, the big part, the 2-dword IB again, then the inheriting head.
+
+### A2. Question 1: 0xfe003a200 and the buffer before each head
+
+**0xfe003a200 is the driver's own 2-dword IB.** It is not a title buffer.
+- Exp 0011 met it in the first submit header: `cmds[1]` = IB at 0xfe003a200, 2 dwords, after the 150-dword state
+  preamble at 0xfe0000000.
+- Exp 0016 run 38 lists it among "the driver's own small compute IBs" on the guest rings.
+- The address is the same in all six lines, before and after the big part. The play submitted 69,382 parts of 2 dwords.
+- Contents: the two 2-dword acb dumps of 10-30 both read `c0001000 00000000`: a type-3 `NOP` with count 0, which is
+  2 dwords. The dump files do not record their address, so "the same IB" is an inference. The 18:16 copy was not
+  captured, and the driver could patch the slot.
+- As a NOP it writes no register. It is neither a queue switch nor a state reset, whatever role it plays for the driver
+  (a patchable slot or a marker).
+
+**The buffer before each head is the rest of one recurring large acb on the same queue.**
+- Each previous title part starts at 0x11e0??00c0 with 32664–32670 dwords. 0x…00c0 − 28 dwords = 0x…0050, so these are
+  rests of ~32.7k-dword acbs at 0x11e0??0050 whose 28-dword head ran ahead of a wait.
+- The 470.359 context shows it: `acb rest 28..32692 of 32692 dwords: state prefix of 4 dwords replayed first`, then the
+  inherit line.
+- So the ring order on queue 0 is: driver NOP, big acb (head, then rest), driver NOP, the inheriting acb. The heads take
+  their program from the end of that big acb.
+
+**Difference 1 (state written on the ring outside IBs) is ruled out for this play.**
+- The census counts every non-IB type-3 packet on a guest ring slice, cumulatively per queue.
+- After 239,617 ring slices, queue 0's last census line reads `non-IB type-3 packets: none`, and so does every other
+  census line, on all 56 queues.
+
+### A3. Question 2: which state the wave64 heads need
+
+**The queue's register state at the end of the previous buffer on the same guest queue, whatever the wave mode.**
+- A console compute queue (HQD) has one register state. It persists from IB to IB, and the driver's NOP IB does not
+  change it. There is no per-wave-mode state, so the W32/W64 slots of 0403's design model nothing the console has.
+- Here, that state is the tracker's live state (`InheritQueue::t`) after the big acb's rest.
+- The "last W64" slot is that state only at the big acb's last wave64 dispatch. It misses any `SET_SH_REG` written after
+  that dispatch.
+- The journal printed slots, not the live state. So the program the heads should get is "0x0909… as in the W64 column,
+  unless the big acb rebinds after its last dispatch". That is not measured.
+
+**The state of our physical ring is the wrong reference in general.** In these six cases it may have matched the
+queue's state by luck.
+- The second-title launchers set `BC5_DIRECT_COMPUTE_RING=0` (`play-pkg-log.sh:76`, `play-pkg-quiet.sh:76`). Every
+  guest compute queue's accepted acbs share compute ring 0. Refused ones (`acb_ring`, ADR 0009) go to the GFX ring
+  with the dcbs.
+- At 470.359 the last acb before the head was queue 0's own rest, submitted just before it. Queue 8's last acb was at
+  470.352. So the physical ring most likely still held queue 0's state.
+- That fits the play running 1,004 inheriting dispatches without a GPU hang (R21: a fit, not a proof). The ring order
+  across queues was not journaled.
+
+**What changes in the verdict.**
+- *"The inheriting head is wave32" is withdrawn.* 08:49's head (#432910, initiator 0x8061) is one wave32 case; the six
+  18:16 heads are wave64. The wave mode is the title's choice per dispatch, not a property of inheritance.
+- *0x11d0287900 (a dcb's program, via the GFX ring) stays wrong.* It crosses from another queue.
+- *Exp 0401's approach was the right shape.* Its idea, the queue tracker's state in front of an inheriting part, is
+  what the console does. What 0403 §4 found wrong with it still holds:
+  - it was also applied to rests and segments, on top of their replayed head state (difference 2);
+  - nothing recorded where the tracked program came from.
+
+  Its three guest CPU crashes are not attributed to the state itself. 0403 §3's wave-mode argument against it rested
+  on the withdrawn wave32 claim.
+- *A wave32 dispatch over a 0x0909… program happens in our runs.* In two lines (606.081, 609.295) the W32 slot holds
+  0x090992af00 with user data 0 = 0x8726012x. That is the alternating …20/…21 pattern of 08:49's wave32 head.
+  - Per Codex's caveat, the slot is "the state at the last bit-15 dispatch". It does not show whether that part bound
+    0x090992af itself or inherited it.
+  - So either the title dispatches 0x090992af with CS_W32_EN, or our queue order hands that dispatch a program the
+    console would not.
+  - The provenance rule below separates the two.
+- *Open: why only 6 inheriting parts here, against thousands in 15:42 (exp 0401: 67 sampled lines, every 1024th).* A
+  different scene, or a difference in which call sites count, is not settled.
+
+### A4. Question 3: the switch, revised (design; not built)
+
+`BC5_DIRECT_ACB_INHERIT` keeps `off | journal | skip`. `wave` is replaced by `queue`.
+
+1. **Slot provenance (Codex's rule), in every mode that tracks.** Record a slot only at a dispatch that follows a
+   `COMPUTE_PGM_LO` write in the same part (per `cs_inherit_at`'s rule for "may set").
+   - The slot keys are the program address. Each program records the wave mode(s) the title itself used with it
+     (`own32`, `own64` counters).
+   - An inheriting dispatch never creates or updates a slot, so an inherited program cannot pose as a wave32 or wave64
+     program.
+2. **`journal`, extended.** Each inheriting part's line adds:
+   - the part's title address (missing now);
+   - the **live** program and `USER_DATA_0..3` from `InheritQueue::t`, not only the slots;
+   - the provenance of the live program: the part and queue that last wrote it, and its own-wave counters;
+   - `mismatch` when the inheriting initiator's bit 15 is a mode the title never used with that program;
+   - the first two dwords of each previous part (to confirm the driver IB is a NOP);
+   - whether compute ring 0's last submitted buffer came from the same guest queue. A thread-local "last queue" per
+     physical ring is enough, and it measures difference 3 directly.
+3. **`queue` (replaces `wave`).** A head (`from == 0`, not a rest or chain segment, so never on top of
+   `state_prefix`'s replay) gets the live queue state in front: SH 0x204–0x3ff as `cs_prefix` builds it, which is exp
+   0401's prefix restricted to heads.
+   - If the dispatch is a `mismatch` (above), or the queue has no tracked program, its inheriting dispatches fall
+     through to `skip` and are journaled.
+4. **`skip`** is unchanged: the head's inheriting dispatches become NOPs of the same length through `drop_offsets`.
+
+A sketch of the change to e2's unit (`mkunit0401.py --inherit`):
+
+```cpp
+struct ProgInfo { uint64_t own32 = 0, own64 = 0; int queue = -1; const uint32_t* part = nullptr; };
+static std::map<uint64_t, ProgInfo> g_prog;          // by COMPUTE_PGM address, under g_inh_mutex
+// acb_inherit_track: walk the part; remember whether COMPUTE_PGM_LO was written in it (cs_inherit_at's "may set"
+// rule). At each dispatch: if written, g_prog[pgm].own32/own64++ (by bit 15) and snapshot; if not, no snapshot.
+// acb_inherit_prefix, mode queue: if (head && !t_is_rest) {
+//     uint64_t pgm; auto pre = cs_prefix(q.t, &pgm);   // live state, not a slot
+//     const auto& pi = g_prog[pgm]; const bool w32 = init & 0x8000u;
+//     if (pgm == 0 || (w32 ? pi.own32 : pi.own64) == 0) skip; else return pre; }
+```
+
+**How the next play would read.**
+- `mismatch` never fires and `queue` plays clean: the queue-state prefix is the candidate fix. R18: a clean play is
+  not proof.
+- `mismatch` fires on the 0x8726012x-type wave32 dispatches: our order or splitting hands them a program the title
+  never ran in wave32. The journal's ring-0 "same queue" field and the previous parts then show where the order
+  differs.
+
+Per the fixes-first rule, `queue` and the extended journal go into one private build with `skip` kept as the fallback.
+
+### A5. Verdict of the addendum
+
+- **The right state is the queue's own end state**: the guest queue's register state after its previous buffer. The
+  driver's 2-dword NOP IB in between does not change it.
+- **Neither wave mode nor the physical ring is the right reference.** 0403's wave32 claim and its per-wave-mode slots
+  are withdrawn.
+- **The 0x11d0287900 answer stays wrong.** The 0x0909… answer (exp 0401's prefix) is the right kind of state. It was
+  applied in the wrong places (rests) and without provenance.
+- **Difference 1 is ruled out by the census.** Differences 2 (splits) and 3 (one physical ring per kind) remain.
+- **Next:** build `queue` plus provenance as in A4 into a private test build.
