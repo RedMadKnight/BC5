@@ -21,6 +21,14 @@ else
     distrobox enter ubuntu -- python3 -I "$R1/build0380y.py" "$TB/compdb.json" "$B" "$EM/obj" "$RR/bin/kyty_emulator" "libs/bc5LleAgc.cpp.o=$EM/src/libs/bc5LleAgc.cpp=$K/src/libs" "loader/runtimeLinker.cpp.o=$EM/src/loader/runtimeLinker.cpp=$K/src/loader" < /dev/null > "$RR/raw/build-emu.txt" 2>&1 || { sed 's/\x1b\[[0-9;]*m//g' "$RR/raw/build-emu.txt" | grep -n 'error:\|undefined\|COMPILE FAILED' | head -20; echo "the emulator did not build"; exit 5; }
 fi
 [ "$(strings "$RR/bin/kyty_emulator" | grep -c '^BC5_0381_REOPEN_TRACE$')" -ge 1 ] && [ "$(strings "$RR/bin/kyty_emulator" | grep -c '^BC5_0381_PAGE_CHECK$')" -ge 1 ] || { echo "the switches are not in the binary"; exit 5; }
+# The run settings of RR3-RR5, private: the shared bc5-run.env was rewritten on 11-02 for the new build, without the 17 lines
+# be846ba2 needs (BC5_DIRECT_STAGE=all among them), and RT2 stalled in its first load. Taken once from RR5 W2's log, which printed them.
+ENVO=$RR/run-0381.env
+if [ ! -s "$ENVO" ]; then
+    sed -n '/^BC5_GC_MODE=/,/^[^A-Z_]/p' "$TB/play/play-20261101-164742.log" | grep -E '^[A-Z_0-9]+=' > "$ENVO.new" && mv "$ENVO.new" "$ENVO"
+fi
+grep -qx 'BC5_DIRECT_STAGE=all' "$ENVO" && grep -qx 'BC5_DIRECT_RINGS=1' "$ENVO" && ! grep -q '^BC5_DIRECT_JOURNAL=' "$ENVO" || { echo "the private run settings"; exit 5; }
+echo "run settings: $(grep -c . "$ENVO") lines, $(md5sum < "$ENVO" | cut -c1-8)"
 # F687: every arm has the learned line of the 20:39 fault, as the next play will.
 [ ! -L "$E/direct-learned-pkg.txt" ] && cp "$W/direct-learned-pkg.txt" "$E/direct-learned-pkg.txt" || { echo "the private learned file"; exit 5; }
 grep -qx '0x110e000000 0x6000000' "$E/direct-learned-pkg.txt" || { echo "no learned line for the fault"; exit 5; }

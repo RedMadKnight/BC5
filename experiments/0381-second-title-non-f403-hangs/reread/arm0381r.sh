@@ -23,7 +23,8 @@ IN=$E/in-tb2/experiments/0381-second-title-non-f403-hangs
 tb2_own
 pgrep '^kyty_emulator' > /dev/null && { echo "GUARD: an emulator runs"; exit 3; }
 LAUNCH=$RR/play-pkg-0381r.sh; MB=$RR/target/release/bc5-mount; EMU=$RR/bin/kyty_emulator
-[ -x "$LAUNCH" ] && [ -x "$MB" ] && [ -x "$EMU" ] && [ -f "$RR/walk0381r.cmd" ] || { echo "not set up"; exit 1; }
+RUNENV=$RR/run-0381.env
+[ -x "$LAUNCH" ] && [ -x "$MB" ] && [ -x "$EMU" ] && [ -f "$RR/walk0381r.cmd" ] && [ -s "$RUNENV" ] || { echo "not set up"; exit 1; }
 mkdir -p "$R" "$RR/dc"
 [ -e "$R/$TAG-start.txt" ] && { echo "tag $TAG is used"; exit 6; }
 grep -qx 'RayTracing.PPSA03671=on' "$E/input-rton.cfg" || { echo "the config is not RT on"; exit 8; }
@@ -46,10 +47,10 @@ tb2_queue "$TB2_LINE: mount reread arm $TAG, cap $CAP s, RT on, [$*] | $(date '+
 sync; sudo -n sh -c 'echo 3 > /proc/sys/vm/drop_caches' 2> /dev/null || echo "caches not dropped" >> "$R/$TAG-start.txt"
 CMD=$RR/in-$TAG.cmd
 printf 'wait 1000\n' > "$CMD"; rm -f "$CMD.done"
-{ date '+%F %T'; echo "arm $TAG cap $CAP [$*], binary $(md5sum < "$EMU" | cut -c1-8), mount $(md5sum < "$MB" | cut -c1-8), launcher $(md5sum < "$LAUNCH" | cut -c1-8), sample $SAMPLE"; echo "vm swappiness $(cat /proc/sys/vm/swappiness), page-cluster $(cat /proc/sys/vm/page-cluster), vfs_cache_pressure $(cat /proc/sys/vm/vfs_cache_pressure), min_free_kbytes $(cat /proc/sys/vm/min_free_kbytes)"; } > "$R/$TAG-start.txt"
+{ date '+%F %T'; echo "arm $TAG cap $CAP [$*], binary $(md5sum < "$EMU" | cut -c1-8), mount $(md5sum < "$MB" | cut -c1-8), launcher $(md5sum < "$LAUNCH" | cut -c1-8), run settings $(md5sum < "$RUNENV" | cut -c1-8), sample $SAMPLE"; echo "vm swappiness $(cat /proc/sys/vm/swappiness), page-cluster $(cat /proc/sys/vm/page-cluster), vfs_cache_pressure $(cat /proc/sys/vm/vfs_cache_pressure), min_free_kbytes $(cat /proc/sys/vm/min_free_kbytes)"; } > "$R/$TAG-start.txt"
 DRM=/sys/class/drm/card1/device setsid bash "$RR/sample-reread.sh" "$R/$TAG-sample.txt" $((CAP + 60)) < /dev/null > /dev/null 2>&1 &
 setsid bash "$IN/boxcap0381.sh" /exp0381/reread/bin/kyty_emulator "$CAP" "$R/$TAG-start.txt" < /dev/null > /dev/null 2>&1 &
-distrobox enter ubuntu -- env BC5_EMU="$EMU" BC5_0381_PAGE_CHECK=1112eae000 BC5_0381_REOPEN_TRACE=1 BC5_MOUNT_STATS=5 KYTY_BC5_INPUT_CMD="$CMD" TB2_SERIES_LINE="$TB2_LINE" "${ARGS[@]}" "$LAUNCH" < /dev/null > "$R/$TAG-launch.out" 2>&1 &
+distrobox enter ubuntu -- env BC5_EMU="$EMU" BC5_RUN_ENV="$RUNENV" BC5_0381_PAGE_CHECK=1112eae000 BC5_0381_REOPEN_TRACE=1 BC5_MOUNT_STATS=5 KYTY_BC5_INPUT_CMD="$CMD" TB2_SERIES_LINE="$TB2_LINE" "${ARGS[@]}" "$LAUNCH" < /dev/null > "$R/$TAG-launch.out" 2>&1 &
 LP=$!
 EP=""
 for _ in $(seq 1 120); do EP=$(pgrep -o -x kyty_emulator) && break; sleep 0.5; done

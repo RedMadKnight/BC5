@@ -289,3 +289,20 @@ page-cluster 3, mount b7ed5a9a, no amdgpu line.
 - **The stop.** The last flip was at 52 s, and mount reads fell from 1–2 GiB per 10 s to under 6 MiB per 10 s after 55 s, with opens still coming. The title stopped drawing during its first load, with no kernel line; the cause is not known. This
   binary ran 25 arms to the end before. Since then the box rebooted onto a new kernel and the shared state changed.
 - **The trace works.** 127 k reads, 73 k opens, no forget, in 160 s. Per page, the 280 MiB of repeats in the load are 4–64 s old (none under a second) and came back 512 MiB to 4 GiB of reads later. That is load only, and says nothing yet about play.
+
+## Why RT2 stalled (read-only, 2026-11-04)
+
+**The shared run settings changed under the old binary.** `~/bc5-work/bc5-run.env` was rewritten on 11-02 at 00:30, for the new shared build. The private launcher sources it. Against the settings RR5 W2's log printed,
+RT2's log lacks 17 lines, among them `BC5_DIRECT_STAGE=all`, `BC5_DIRECT_RINGS=1`, `BC5_DIRECT_ASYNC=1`, `BC5_DIRECT_REOPEN=1`, `BC5_DIRECT_MAX_IN_FLIGHT=24`, the GDS, GWS and OA lines, `KYTY_BC5_DMABUF=1` and `KYTY_BC5_ALL_RW=1`, and it gains `BC5_DIRECT_JOURNAL=min`.
+be846ba2 is from 11-01 and still needs them.
+
+- **What the logs show.** RR5 W2's journal is 241 MB, with timing, acb and dcb lines. RT2's is 990 KB of flip lines only (2,079 flips), with every host time at 0.0 ms; its fps counter ends at 54 s at 13–15 flips/s.
+  Audio ran on to 159 s, so the process was alive with no frames. No kernel line, no devcoredump in the window.
+- **Kernel.** No sign of it: no amdgpu line, and nothing that needs it. It is not excluded until an arm with the old settings runs on 7.2.11.
+- **Mount.** No sign of it: it served 6.1 GiB in the first 55 s, as in the loads of earlier arms. Reads dropped once frames stopped.
+- **input.cfg.** Not this: the private launcher sets `KYTY_BC5_INPUT_CONFIG` to the private `input-rton.cfg` (10-30), after the shared file is read.
+
+**Fix, laptop only.** Setup writes the RR5 settings once into the private `reread/run-0381.env`, from W2's log, and checks for `BC5_DIRECT_STAGE=all` and `BC5_DIRECT_RINGS=1` and that `BC5_DIRECT_JOURNAL` is absent. Every arm passes it as
+`BC5_RUN_ENV` (the launcher's override) and records its checksum. test_arm and test_stream (18) pass, and the extraction was checked on a made-up log. Never run on the box.
+
+**For the morning, not run:** `series0381r.sh RT3 <out> trace`. If T1 reaches gameplay, the env is the cause and the trace arms measure play. If it stalls again in the same way, the kernel is next.
