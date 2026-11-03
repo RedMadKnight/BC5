@@ -75,8 +75,8 @@ Private pinned stays 272 MiB. The BO count stays 92–105. Pinned can only grow,
 
 **The rule** (`leak0389.py`, applied per quantity of one `leak0389m.sh` record). After the load (t ≥ 600 s):
 
-- **LEAKS:** it rises by more than 32 MiB in each third of the rest of the play, and the last third's rise is at least half the first's. It needs 30 minutes after the load; a shorter play is OPEN.
-- **STREAMS:** it grows, but one third rises under 32 MiB or the growth slows to under half: steps that stop.
+- **SUSTAINED** (a leak suspect, not proof: data kept on purpose meets it too): it rises by more than 32 MiB in each third of the rest of the play, and the last third's rise is at least half the first's. It needs 30 minutes after the load; a shorter play is OPEN.
+- **STEPPED:** it grows, but one third rises under 32 MiB or the growth slows to under half: steps that stop. That fits the title streaming; it does not prove it.
 - **FLAT:** the whole rise is under 64 MiB.
 
 Judged: the emulator's anonymous memory, its shmem, its RSS plus swap; the mount's PSS plus swap; GTT; system shmem; unreclaimable slab; zram's stored data. Where it points: the emulator's anonymous memory with GTT flat means the host; shmem means memfds; slab means the kernel. Page cache is not judged, since it fills by design; MemAvailable and PSI show its cost.
@@ -113,4 +113,6 @@ His reading: RAM grows steadily and is not freed, and at about 14.6 GB in MangoH
 
 The first line it prints must name the binary `902585e2`, the list `843f9fbc` and the launcher `97835f88`. The skip's own lines in the journal: `zero skip: list`, `MiB skipped`, `canary hit`.
 
-**What it can show.** If more headroom delays the hangs and slowdowns or removes them, his reading holds. If they come at the same time, it does not. One play each, in scenes that may differ, decides little; the sampler's avail and PSI against the moment of each event are the measure. Risk with the skip on: GPU writes into a skipped run are lost until the canary sees them, visual effect unknown, about one hit per several minutes.
+**What it can show.** One play each, in scenes that may differ, with the skip able to lose GPU writes, neither confirms nor refutes his reading of a leak as the cause of the hangs. If the hangs and slowdowns come later or not at all with the skip on, that is a hint for more headroom, not proof. The useful measure is the sampler's avail and PSI against the moment of each event. Risk with the skip on: GPU writes into a skipped run are lost until the canary sees them, visual effect unknown, about one hit per several minutes.
+
+**Review (Codex, 2026-11-03).** A sum whose part was not read now stays unknown (`-1`) instead of becoming a number; the labels are SUSTAINED and STEPPED, with their limits in the output. `test_leak0389.py` covers both unknown cases and a good sum.

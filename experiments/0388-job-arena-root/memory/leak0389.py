@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
 """BC5 exp 0388, memory: the leak rule applied to one leak0389m.sh record.
 
-A quantity LEAKS when, after the load (t >= 600 s), it rises in each of three equal thirds of the rest of the play, by
-more than 32 MiB in each, and the last third's slope is at least half of the first third's, so it does not flatten. It
-STREAMS when it grows after the load but in steps that stop: at least one third with a rise under 32 MiB, or a last third
-under half the first's slope. It is FLAT when the whole rise after the load is under 64 MiB. Falls count as flat or
-noted. A leak needs at least 30 minutes after the load to be called; a shorter play gives OPEN.
+A quantity is SUSTAINED when, after the load (t >= 600 s), it rises in each of three equal thirds of the rest of the play,
+by more than 32 MiB in each, and the last third's slope is at least half of the first third's, so it does not flatten. That
+is a leak suspect, not a proof: data kept on purpose (a cache, the title's own buffers) meets it too. It is STEPPED when it
+grows after the load but in steps that stop: at least one third with a rise under 32 MiB, or a last third under half the
+first's slope. That fits the title streaming and does not prove it. It is FLAT when the whole rise after the load is under
+64 MiB. Falls count as flat or
+noted. SUSTAINED needs at least 30 minutes after the load; a shorter play gives OPEN. A sum whose part was not read
+(-1) is unknown, not a number, and its samples are left out.
 
 The rule reads the emulator's own memory (e_anon, e_shmem, e_rss + e_swap), the mount (m_pss + m_swap), GTT, shmem,
 slab (sunreclaim) and zram's stored data. A leak in the emulator's anonymous memory with the title's pinned memory flat
@@ -19,6 +22,11 @@ LOAD, STEP, FLATTOTAL, MINPLAY = 600, 32, 64, 1800
 KEYS = ["e_anon", "e_shmem", "e_rss+e_swap", "m_pss+m_swap", "gtt", "shmem", "sunreclaim", "zram_orig", "avail"]
 
 
+def total(*parts):
+    """A sum of read values, or -1 (unknown) when any part was not read."""
+    return -1 if any(p < 0 for p in parts) else sum(parts)
+
+
 def rows(path):
     out = []
     for line in open(path, encoding="utf-8", errors="replace"):
@@ -26,8 +34,8 @@ def rows(path):
             continue
         d = dict(re.findall(r"(\w+)=(-?\d+)\b", line))
         r = {k: int(v) for k, v in d.items()}
-        r["e_rss+e_swap"] = r.get("e_rss", -1) + r.get("e_swap", 0)
-        r["m_pss+m_swap"] = (r["m_pss"] if r.get("m_pss", -1) >= 0 else r.get("m_rss", -1)) + max(r.get("m_swap", 0), 0)
+        r["e_rss+e_swap"] = total(r.get("e_rss", -1), r.get("e_swap", -1))
+        r["m_pss+m_swap"] = total(r["m_pss"] if r.get("m_pss", -1) >= 0 else r.get("m_rss", -1), r.get("m_swap", -1))
         out.append(r)
     return out
 
@@ -47,8 +55,8 @@ def verdict(series):
     if span < MINPLAY:
         return "OPEN", text + f", under {MINPLAY // 60} min after the load"
     if all(r > STEP for r in rise) and rise[2] >= rise[0] / 2:
-        return "LEAKS", text
-    return "STREAMS", text
+        return "SUSTAINED", text + " (leak suspect, not proof)"
+    return "STEPPED", text
 
 
 def main():
