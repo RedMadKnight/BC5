@@ -60,3 +60,33 @@ Binary `exp0388/m/kyty_emulator`, md5 `b975fe47`, compiled and linked on the box
 - Shared slices are off by default. With 11 hits in 37 minutes, eight slices would have given back most of the list; the 60–84 MiB saved does not pay for that. `BC5_0388_SLICES=<n>` still turns them on.
 
 **Expected.** About 0.6 GiB early in a play, falling toward 0.35–0.45 GiB by 30–40 minutes. That is below the 0.7 GiB aim for a long play, and these levers alone do not reach it. The scan of the other eager heaps in this play is what could add more, and its size is unknown.
+
+## Is it a leak? (2026-11-03, the maintainer: "Głównym powodem są wycieki pamięci. Z każdą chwilą aktywnej gry pamięć RAM jest zajęta coraz bardziej")
+
+**What the journals say**, read only from three plays, binned by 120 s of play time:
+
+| play | direct pinned | after the load |
+|---|---|---|
+| 2026-11-02 18:45, 24 min | 11,362 MiB at 0, 11,568 MiB at 240 s, then 11,570 to 1,440 s | flat: no learned window, hint or zero window after 240 s |
+| 2026-11-02 20:40, 14 min | 11,402 → 11,764 MiB by 480 s, 11,698–11,766 after | flat; learned and hint lines go on (16–36 per 2 min) and add 40–100 MiB each, so the title is still meeting new memory |
+| 2026-11-01 23:53, 16 min | 10,612 → 11,558 MiB by 360 s, then +24 to +90 MiB per 2 min to 11,786 at 960 s | rising slowly to the end, with learned (+48–102 MiB) and hint lines every bin |
+
+Private pinned stays 272 MiB. The BO count stays 92–105. Pinned can only grow, by design: imports are never released (F620s), so it is a high-water mark of what the title has touched. It grows while the title meets new memory (learned windows and hints), and in the 24-minute play it stopped after 4 minutes. That is the title streaming, not a host leak. The journals do not record the emulator's own heap, the mount, page cache, shmem, slab or zram, so those are open.
+
+**The rule** (`leak0389.py`, applied per quantity of one `leak0389m.sh` record). After the load (t ≥ 600 s):
+
+- **LEAKS:** it rises by more than 32 MiB in each third of the rest of the play, and the last third's rise is at least half the first's. It needs 30 minutes after the load; a shorter play is OPEN.
+- **STREAMS:** it grows, but one third rises under 32 MiB or the growth slows to under half: steps that stop.
+- **FLAT:** the whole rise is under 64 MiB.
+
+Judged: the emulator's anonymous memory, its shmem, its RSS plus swap; the mount's PSS plus swap; GTT; system shmem; unreclaimable slab; zram's stored data. Where it points: the emulator's anonymous memory with GTT flat means the host; shmem means memfds; slab means the kernel. Page cache is not judged, since it fills by design; MemAvailable and PSI show its cost.
+
+**The sampler** `leak0389m.sh`: every 20 s, read only, from the laptop over ssh, waits up to 10 minutes for the emulator. The emulator's figures come from `/proc/<pid>/status` counters. `smaps_rollup` would walk its 16-GiB guest mappings under the mmap lock every 20 s and could stall the title, so there is no PSS for the emulator. The mount gets PSS. Dry run on the box against a desktop process: all fields fill.
+
+```bash
+ssh bc250 'bash -s -- 14400' < experiments/0388-job-arena-root/memory/leak0389m.sh >> leak-20261103.txt
+```
+
+```bash
+python experiments/0388-job-arena-root/memory/leak0389.py leak-20261103.txt
+```
