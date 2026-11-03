@@ -22,7 +22,7 @@ ETREE = pathlib.Path(sys.argv[4])
 ETREE_FILES = ("src/libs/libNpCppWebApi.cpp", "src/kernel/memory.cpp", "src/kernel/memoryAddressSpace.inc", "src/loader/systemContent.cpp",
                "src/loader/systemContent.h")
 KIT = ("mkunit0401.py", "check0401.py", "build0401.py", "launcher0401.py", "unit0401.cpp", "env_flag.hpp", "mknp0401.py", "mkmem0401.py",
-       "npgate0401.cpp")
+       "npgate0401.cpp", "inh0401.cpp")
 LAUNCHER = """#!/bin/bash
 # the output goes to ~/bc5-work/play-pkg-last.log
 EMU=~/bc5-work/kytyplus-build/src/kyty_emulator
@@ -69,6 +69,9 @@ case "$1" in
                     echo '[bc5] exp 0401: memory from param.json %s: total'
                     [ -n "${FAKE_NO_INHERIT:-}" ] || echo BC5_DIRECT_ACB_INHERIT
                     echo 'exp 0403: acb inherit %s'; echo 'acb inherit (exp 0403)'; echo 'acb inherit census (exp 0403)'
+                    [ -n "${FAKE_NO_MEMLINE:-}" ] || echo BC5_DIRECT_MEM_LINE
+                    echo "the queue's live program"; echo 'prefixed with the queue'; echo 'never bound in a part of its own'; echo 'exp 0401: memory line %s'; echo 'memory (exp 0401)'
+                    echo 'unknown, fallback ring'; echo 'UNSEEN (not observed in this wave mode)'
                   fi; } > "$out"
         chmod +x "$out"
         n=0; for a in "$@"; do n=$((n + 1)); [ "$a" = --gate ] && break; done
@@ -85,6 +88,9 @@ case "$1" in
         exit 0 ;;
     esac ;;
   env) exec "$@" ;;
+  */inh0401)   # series e3's CPU test: a stand-in that answers as the real one would
+    [ -z "${FAKE_INH_FAIL:-}" ] || { echo "inh0401: FAIL B inherits W32: not bound: state -1 (want -1), 1 dispatches: [at 3 end 6 W32 bound]"; echo "inh0401: 1 of 25 cases failed"; exit 1; }
+    echo "inh0401: 25 of 25 cases; end"; exit 0 ;;
   sh) echo '[]'; exit 0 ;;
 esac
 echo "fakebox: $*"; exit 9
@@ -386,6 +392,25 @@ def t_series_e2():
     assert b.box("release", b.token).stdout.strip() == "released" and b.lock() == ""
 
 
+def t_series_e3():
+    b = Box("sere3", series="e3").up()
+    r = b.box("build", b.token, FAKE_INH_FAIL="1")
+    assert r.returncode == 1 and "the inherit test failed" in r.stdout and "B inherits W32" in r.stdout, r.stdout
+    assert (b.e / "src/inherit_scan.inc").read_bytes() == load("mkunit0401").INHERIT_SCAN3
+    assert (b.e / "src/memline_parse.inc").read_bytes() == load("mkunit0401").MEMLINE_PARSE
+    b.send()
+    assert b.box("setup", b.token).returncode == 0
+    r = b.box("build", b.token, FAKE_NO_MEMLINE="1")
+    assert r.returncode == 1 and "lacks [BC5_DIRECT_MEM_LINE]" in r.stdout, r.stdout
+    b.send()
+    assert b.box("setup", b.token).returncode == 0
+    r = b.box("build", b.token)
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "unit d3b7f9b0ab43184ee11de83e9e233ff8" in r.stdout and "inherit test: inh0401: 25 of 25 cases; end" in r.stdout, r.stdout
+    assert "EMU=~/bc5-work/exp0401e3/bin/kyty_emulator" in (b.e / "play-pkg-0401.sh").read_text()
+    assert b.box("release", b.token).stdout.strip() == "released" and b.lock() == ""
+
+
 def t_series_unknown():
     b = Box("serx", series="f")
     r = b.claim()
@@ -456,6 +481,25 @@ def t_unit_edit_acb():
         pass
     else:
         raise SystemExit("ACB_INHERIT passed without the acb CS prefix")
+    e3w = mk.edit(s, acb=True, restore=True, catcher=True, inherit2=True, memline=True)   # the e3 draft (exp0401e3w), for the record
+    assert hashlib.md5(e3w).hexdigest() == "989ca24b6e41843d0143ec0bbc53d15b" and e3w.count(mk.INHERIT_SCAN) == 1
+    e3 = mk.edit(s, acb=True, restore=True, catcher=True, inherit3=True, memline=True)   # series e3: exp 0403's queue mode + the memory line
+    assert hashlib.md5(e3).hexdigest() == "d3b7f9b0ab43184ee11de83e9e233ff8"
+    assert e3.count(mk.INHERIT_SCAN3) == 1 and e3.count(mk.MEMLINE_FUNCTIONS2) == 1 and e3.count(mk.INHERIT_FUNCTIONS3) == 1
+    assert e3.count(mk.MEMLINE_PARSE) == 1 and mk.MEMLINE_FUNCTIONS not in e3 and b"MISMATCH" not in e3
+    assert e3.count(b"const bool  skip   = head && mode == 3; // the only mode that drops") == 1   # queue mode never drops
+    assert e3w.count(mk.MEMLINE_FUNCTIONS) == 1   # the draft keeps its first memory line
+    assert e3.index(mk.INHERIT_SCAN3) < e3.index(b"static void acb_inherit_track(") and b"ud32" not in e3 and b"\"wave\"" not in e3
+    assert e3.count(b"std::strcmp(e, \"queue\") == 0") == 1
+    assert e3.count(b"mem_line_start(); // experiment 0401 series e3") == 1
+    assert e3.index(b"static void mem_line_start()") < e3.index(b"mem_line_start(); // experiment 0401 series e3")
+    assert mk.edit(s, acb=True, restore=True, catcher=True, inherit=True) == e2   # e2 stays as it was built
+    try:
+        mk.edit(s, acb=True, inherit=True, inherit3=True)
+    except AssertionError:
+        pass
+    else:
+        raise SystemExit("both ACB_INHERIT versions passed")
     assert c.count(mk.RESTORE_SPLIT + mk.ACB_SPLIT) == 1 and c.count(mk.RESTORE_FUNCTIONS) == 1
     assert c.count(b"|| acb_restore_on()) t_fs_before = tracker;") == 1
     assert c.index(b"static bool acb_restore_on()") < c.index(b"if (t_fs_valid || prefix_all() || cs_prefix_mode() != 0 || acb_restore_on())")
@@ -530,7 +574,7 @@ def t_build_commands():
 
 def main():
     cases = [v for k, v in sorted(globals().items()) if k.startswith("t_")]
-    assert len(cases) == 25, len(cases)
+    assert len(cases) == 26, len(cases)
     bad = 0
     for c in cases:
         try:

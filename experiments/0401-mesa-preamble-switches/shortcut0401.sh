@@ -18,7 +18,11 @@
 # 505b3ae3, prefix off): the rollback. Mode cpacb-d is series d as mode cpacb was until then.
 # Since the top session's addition of 2026-11-03 17:0x, mode cpacb runs series e2 (exp0401e2): series e plus exp 0403's
 # BC5_DIRECT_ACB_INHERIT, set to journal (the catcher; wave and skip are built, not set). Mode cpacb-e is series e as it was.
-# usage: shortcut0401.sh [both|cp|cpacb|cpacb-e|cpacb-c0|cpacb-c|cpacb-d|cpacb-b]   (on the box; both is the default)
+# At 18:1x the top session set KYTY_BC5_MEMORY_FROM_PARAM=0 in that shortcut by hand (the AMM pool ran out with it on,
+# exp0401e2/desktop-mem1.bak); mode cpacb writes it so. Mode cpacb-e3 (series e3: e2 with exp 0403's queue mode, plus the memory
+# line) is built and not installed: the shortcut stays on e2 until the maintainer says otherwise. Series e3 has exp 0403's
+# queue mode (addendum a423f761) in place of the per-wave slots; its first draft is set aside in exp0401e3w.
+# usage: shortcut0401.sh [both|cp|cpacb|cpacb-e3|cpacb-e|cpacb-c0|cpacb-c|cpacb-d|cpacb-b]   (on the box; both is the default)
 set -u
 DESK=$(xdg-user-dir DESKTOP 2> /dev/null); DESK=${DESK:-$HOME/Pulpit}
 OLD=""; ZL=""; WANT_LIST=""
@@ -31,7 +35,11 @@ cp)    S=""; WANT_BIN=174e768ec3a68c34be879ad57067819c; WANT_LAUNCHER=c6b2d7fdba
        ENVS="BC5_DIRECT_CP_COHER_START_DELAY=1 BC5_DIRECT_SPI_REQ_CTRL_PS=0 BC5_DIRECT_ARGS_WB=0" ;;
 cpacb) S=e2; WANT_BIN=35ff82ebc8530e4bcc4ea66ccf43accf; WANT_LAUNCHER=fbac41eef200b36c440ddc1ef5322783
        NAME="BC5 emulator (test 0401 CP+acb)"; WHAT="CP_COHER_START_DELAY 0x20, exp 0381's acb state restore, exp 0403's ACB_INHERIT journal (acb CS prefix off), the table catcher, NpCppWebApi SessionManager V2 and the param.json memory sizing"
-       ENVS="BC5_DIRECT_CP_COHER_START_DELAY=1 BC5_DIRECT_ACB_CS_PREFIX=0 BC5_DIRECT_ACB_INHERIT=journal BC5_DIRECT_ACB_STATE_RESTORE=1 BC5_DIRECT_SPI_REQ_CTRL_PS=0 BC5_DIRECT_ARGS_WB=0 BC5_DIRECT_TABLE_CATCHER=1 KYTY_BC5_NP_SESSION_V2=1 KYTY_BC5_MEMORY_FROM_PARAM=1"
+       ENVS="BC5_DIRECT_CP_COHER_START_DELAY=1 BC5_DIRECT_ACB_CS_PREFIX=0 BC5_DIRECT_ACB_INHERIT=journal BC5_DIRECT_ACB_STATE_RESTORE=1 BC5_DIRECT_SPI_REQ_CTRL_PS=0 BC5_DIRECT_ARGS_WB=0 BC5_DIRECT_TABLE_CATCHER=1 KYTY_BC5_NP_SESSION_V2=1 KYTY_BC5_MEMORY_FROM_PARAM=0"
+       OLD="BC5 emulator (test 0401 CP)" ;;
+cpacb-e3) S=e3; WANT_BIN=c059c71fa37c0f81db19310cb1197be4; WANT_LAUNCHER=2995f018116521816780f1aa73d58c38   # built, not installed
+       NAME="BC5 emulator (test 0401 CP+acb)"; WHAT="CP_COHER_START_DELAY 0x20, exp 0381's acb state restore, exp 0403's ACB_INHERIT journal of the queue's own state (queue and skip built, not set; acb CS prefix off), the table catcher, NpCppWebApi SessionManager V2 and the 10-s memory line"
+       ENVS="BC5_DIRECT_CP_COHER_START_DELAY=1 BC5_DIRECT_ACB_CS_PREFIX=0 BC5_DIRECT_ACB_INHERIT=journal BC5_DIRECT_ACB_STATE_RESTORE=1 BC5_DIRECT_SPI_REQ_CTRL_PS=0 BC5_DIRECT_ARGS_WB=0 BC5_DIRECT_TABLE_CATCHER=1 KYTY_BC5_NP_SESSION_V2=1 KYTY_BC5_MEMORY_FROM_PARAM=0"
        OLD="BC5 emulator (test 0401 CP)" ;;
 cpacb-e) S=e; WANT_BIN=852d9b089558d4c845ba7005af888b96; WANT_LAUNCHER=b9774734b4ae9411afb768197d3f59c8   # series e as built first
        NAME="BC5 emulator (test 0401 CP+acb)"; WHAT="CP_COHER_START_DELAY 0x20, exp 0381's acb state restore (acb CS prefix off), the table catcher, NpCppWebApi SessionManager V2 and the param.json memory sizing"
@@ -54,7 +62,7 @@ cpacb-b) S=b; WANT_BIN=5b05ce9be5e4a4bf6352e270d28358d7; WANT_LAUNCHER=01312b5b9
        NAME="BC5 emulator (test 0401 CP+acb)"; WHAT="CP_COHER_START_DELAY 0x20 and the acb CS prefix"
        ENVS="BC5_DIRECT_CP_COHER_START_DELAY=1 BC5_DIRECT_ACB_CS_PREFIX=1 BC5_DIRECT_SPI_REQ_CTRL_PS=0 BC5_DIRECT_ARGS_WB=0"
        OLD="BC5 emulator (test 0401 CP)" ;;
-*)     echo "usage: shortcut0401.sh [both|cp|cpacb|cpacb-e|cpacb-c0|cpacb-c|cpacb-d|cpacb-b]"; exit 1 ;;
+*)     echo "usage: shortcut0401.sh [both|cp|cpacb|cpacb-e3|cpacb-e|cpacb-c0|cpacb-c|cpacb-d|cpacb-b]"; exit 1 ;;
 esac
 E=$HOME/bc5-work/exp0401$S; BIN=$E/bin/kyty_emulator; L=$E/play-pkg-0401.sh
 m() { md5sum < "$1" 2> /dev/null | cut -d' ' -f1; }

@@ -26,6 +26,7 @@ case "${BC5_0401_SERIES:-}" in
     d) SER=d; EXPECT_UNIT=0f18cf30cb85843cdbe9d5df68909e3d; MKFLAG=--acb-restore ;;
     e) SER=e; EXPECT_UNIT=0d65c14d3705887717bac71dd97e05ab; MKFLAG="--acb-restore --catcher" ;;
     e2) SER=e2; EXPECT_UNIT=73e8e4e0a9d05e5deae426238a24c91d; MKFLAG="--acb-restore --catcher --inherit" ;; # e + exp 0403's ACB_INHERIT
+    e3) SER=e3; EXPECT_UNIT=d3b7f9b0ab43184ee11de83e9e233ff8; MKFLAG="--acb-restore --catcher --inherit3 --memline" ;; # e2 with exp 0403's queue mode (addendum a423f761) + the memory line
     *) echo "0401 STOP: unknown series ${BC5_0401_SERIES}"; exit 2 ;;
 esac
 # Series d (2026-11-03 13:52): series c's edit on exp 0379's zero skip, the unit and header of exp 0388's 902585e2 build
@@ -285,6 +286,14 @@ cmd_build() {
     in_box 120 "$CXX" -std=c++20 -Wall -Wextra -Werror "-I$E/inc" "-I$E/src" "$E/unit0401.cpp" -o "$R/unit0401" > "$R/unit0401.out" 2>&1 || die "the function did not compile: $(grep -m3 'error:' "$R/unit0401.out" | cut -c1-160 | tr '\n' ' ')"
     in_box 60 python3 -I "$E/check0401.py" "$R/unit0401" > "$R/check0401.out" 2>&1 || die "the function's check failed: $(tail -1 "$R/check0401.out" | cut -c1-200)"
     grep -q '^check0401: 7 of 7 .*; end$' "$R/check0401.out" || die "no end marker from the function's check"
+    if [ "$SER" = e3 ]; then   # series e3: inherit_plan's CPU test, from the text mkunit0401.py put into the unit
+        [ -f "$E/src/inherit_scan.inc" ] && [ -f "$E/src/memline_parse.inc" ] && grep -qF -f <(head -1 "$E/src/inherit_scan.inc") "$E/src/bc5LleAgc.cpp" &&
+            grep -qF -f <(head -1 "$E/src/memline_parse.inc") "$E/src/bc5LleAgc.cpp" || die "no inherit_scan.inc or memline_parse.inc beside the unit"
+        in_box 120 "$CXX" -std=c++20 -Wall -Wextra -Werror "-I$E/src" "$E/inh0401.cpp" -o "$R/inh0401" > "$R/inh0401-build.out" 2>&1 ||
+            die "the inherit test did not compile: $(grep -m3 'error:' "$R/inh0401-build.out" | cut -c1-160 | tr '\n' ' ')"
+        in_box 60 "$R/inh0401" > "$R/inh0401.out" 2>&1 || die "the inherit test failed: $(grep -m3 'FAIL\|failed' "$R/inh0401.out" | cut -c1-200 | tr '\n' ' ')"
+        grep -q '^inh0401: \([0-9]*\) of \1 cases; end$' "$R/inh0401.out" || die "no end marker from the inherit test"
+    fi
     hook after-check
     own
 
@@ -308,9 +317,10 @@ cmd_build() {
     # 4. What the binary must hold, and what it must still hold.
     local s strs=(BC5_DIRECT_CP_COHER_START_DELAY BC5_DIRECT_SPI_REQ_CTRL_PS 'exp 0401: CP_COHER_START_DELAY %s' 'exp 0401: SPI_SHADER_REQ_CTRL_PS %s' BC5_DIRECT_ARGS_WB BC5_DIRECT_GC_HS_OFFCHIP)
     [ -z "$SER" ] || strs+=(BC5_DIRECT_ACB_CS_PREFIX 'exp 0401: acb CS prefix %s' 'acb cs prefix (exp 0401)' BC5_DIRECT_CS_PREFIX)
-    case $SER in c | d | e | e2) strs+=(BC5_DIRECT_ACB_STATE_RESTORE 'exp 0401: acb state restore (exp 0381) %s' 'acb state restore (exp 0381)') ;; esac
+    case $SER in c | d | e | e2 | e3) strs+=(BC5_DIRECT_ACB_STATE_RESTORE 'exp 0401: acb state restore (exp 0381) %s' 'acb state restore (exp 0381)') ;; esac
     [ "${SER:0:1}" != e ] || strs+=(BC5_DIRECT_TABLE_CATCHER 'exp 0401: table catcher %s' 'table catcher (exp 0401)' KYTY_BC5_NP_SESSION_V2 KYTY_BC5_MEMORY_FROM_PARAM 'exp 0401: memory from param.json')
-    [ "$SER" != e2 ] || strs+=(BC5_DIRECT_ACB_INHERIT 'exp 0403: acb inherit %s' 'acb inherit (exp 0403)' 'acb inherit census (exp 0403)')
+    case $SER in e2 | e3) strs+=(BC5_DIRECT_ACB_INHERIT 'exp 0403: acb inherit %s' 'acb inherit (exp 0403)' 'acb inherit census (exp 0403)') ;; esac
+    [ "$SER" != e3 ] || strs+=("the queue's live program" 'prefixed with the queue' 'never bound in a part of its own' 'unknown, fallback ring' 'UNSEEN (not observed in this wave mode)' BC5_DIRECT_MEM_LINE 'exp 0401: memory line %s' 'memory (exp 0401)')
     [ "$SER" != d ] || strs+=(BC5_DIRECT_ZERO_SKIP BC5_DIRECT_ZERO_SLICES 'zero skip: list %s' 'job-arena fix APPLIED')
     for s in "${strs[@]}"; do
         grep -aqF -- "$s" "$BIN" || die "the private binary lacks [$s]"
@@ -331,6 +341,7 @@ cmd_build() {
         echo "launcher $(rd "$E/launcher.md5") from play-pkg.sh $LAUNCHER_MD5"
         echo "warnings in the unit's compile: $(strip_ansi "$R/build.out" | grep -c 'warning:')"
         echo "function check: $(tail -1 "$R/check0401.out")"
+        [ "$SER" != e3 ] || echo "inherit test: $(tail -1 "$R/inh0401.out")"
         [ "${SER:0:1}" != e ] || echo "units: libNpCppWebApi.cpp $NP_OUT_MD5, memory.cpp $MEM_OUT_MD5, systemContent.cpp $SC_OUT_MD5, systemContent.h $SCH_OUT_MD5; gate: $(tail -1 "$R/npgate-on.out" | cut -c1-120) / $(tail -1 "$R/npgate-off.out" | cut -c1-120)"
         echo "kernel $(uname -r)"
     } > "$E/build.txt" || die "write failed: build.txt"
