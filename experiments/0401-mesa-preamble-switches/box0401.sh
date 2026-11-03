@@ -25,6 +25,7 @@ case "${BC5_0401_SERIES:-}" in
     c) SER=c; EXPECT_UNIT=29c88be321cc81908085b1cddcc70d2e; MKFLAG=--acb-restore ;;
     d) SER=d; EXPECT_UNIT=0f18cf30cb85843cdbe9d5df68909e3d; MKFLAG=--acb-restore ;;
     e) SER=e; EXPECT_UNIT=0d65c14d3705887717bac71dd97e05ab; MKFLAG="--acb-restore --catcher" ;;
+    e2) SER=e2; EXPECT_UNIT=73e8e4e0a9d05e5deae426238a24c91d; MKFLAG="--acb-restore --catcher --inherit" ;; # e + exp 0403's ACB_INHERIT
     *) echo "0401 STOP: unknown series ${BC5_0401_SERIES}"; exit 2 ;;
 esac
 # Series d (2026-11-03 13:52): series c's edit on exp 0379's zero skip, the unit and header of exp 0388's 902585e2 build
@@ -192,7 +193,7 @@ pins_why() {   # prints the first pin that does not hold
         [ "$(m "$ZDIR/libs/bc5LleAgc.cpp")" = "$ZUNIT_MD5" ] || { echo "the zero-skip unit is not $ZUNIT_MD5"; return; }
         [ "$(m "$ZDIR/bc5/zero_skip.hpp")" = "$ZHDR_MD5" ] || { echo "zero_skip.hpp is not $ZHDR_MD5"; return; }
     fi
-    if [ "$SER" = e ]; then
+    if [ "${SER:0:1}" = e ]; then
         [ "$(m "$TREE/src/libs/libNpCppWebApi.cpp")" = "$NP_IN_MD5" ] || { echo "the tree's libNpCppWebApi.cpp is not $NP_IN_MD5"; return; }
         [ "$(m "$TREE/src/kernel/memory.cpp")" = "$MEM_IN_MD5" ] || { echo "the tree's memory.cpp is not $MEM_IN_MD5"; return; }
         [ "$(m "$TREE/src/kernel/memoryAddressSpace.inc")" = "$MASINC_MD5" ] || { echo "the tree's memoryAddressSpace.inc is not $MASINC_MD5"; return; }
@@ -267,7 +268,7 @@ cmd_build() {
     u=$("${PY[@]}" "$E/mkunit0401.py" "$in" "$E/src/bc5LleAgc.cpp" "$E/src/mesa_preamble_prefix.inc" $MKFLAG) || die "the unit's edit did not apply"
     [ "$u" = "$EXPECT_UNIT" ] || die "the private unit is $u, not $EXPECT_UNIT"
     [ "$(m "$E/src/bc5LleAgc.cpp")" = "$EXPECT_UNIT" ] || die "the private unit on disk is not $EXPECT_UNIT"
-    if [ "$SER" = e ]; then   # the three more units, and what build0401.py gets for them and the gate
+    if [ "${SER:0:1}" = e ]; then   # the three more units, and what build0401.py gets for them and the gate
         u=$("${PY[@]}" "$E/mknp0401.py" "$TREE/src/libs/libNpCppWebApi.cpp" "$E/src/libNpCppWebApi.cpp") || die "the NpCppWebApi edit did not apply"
         [ "$u" = "$NP_OUT_MD5" ] && [ "$(m "$E/src/libNpCppWebApi.cpp")" = "$NP_OUT_MD5" ] || die "the NpCppWebApi unit is $u, not $NP_OUT_MD5"
         rm -rf "$E/mem" && "${PY[@]}" "$E/mkmem0401.py" "$TREE" "$E/mem" > "$R/mkmem.out" 2>&1 || die "the memory edit did not apply: $(tail -1 "$R/mkmem.out" | cut -c1-160)"
@@ -293,7 +294,7 @@ cmd_build() {
     in_box "$BUILD_S" python3 -I "$E/build0401.py" "$E/compdb.json" "$E/src/bc5LleAgc.cpp" "$E/obj" "$B" "$BIN" "${inc[@]}" > "$R/build.out" 2>&1 || die "the private build failed: $(strip_ansi "$R/build.out" | grep -m3 -E 'error:|undefined|COMPILE FAILED' | cut -c1-160 | tr '\n' ' ')"
     [ -x "$BIN" ] || die "no private binary"
     own
-    if [ "$SER" = e ]; then   # the R32 gate: the ten NIDs through the real SymbolDatabase after InitAll, switch on, 0 and unset
+    if [ "${SER:0:1}" = e ]; then   # the R32 gate: the ten NIDs through the real SymbolDatabase after InitAll, switch on, 0 and unset
         local g v
         for g in on off unset; do
             case $g in on) v=(env KYTY_BC5_NP_SESSION_V2=1) ;; off) v=(env KYTY_BC5_NP_SESSION_V2=0) ;; unset) v=(env -u KYTY_BC5_NP_SESSION_V2) ;; esac
@@ -307,8 +308,9 @@ cmd_build() {
     # 4. What the binary must hold, and what it must still hold.
     local s strs=(BC5_DIRECT_CP_COHER_START_DELAY BC5_DIRECT_SPI_REQ_CTRL_PS 'exp 0401: CP_COHER_START_DELAY %s' 'exp 0401: SPI_SHADER_REQ_CTRL_PS %s' BC5_DIRECT_ARGS_WB BC5_DIRECT_GC_HS_OFFCHIP)
     [ -z "$SER" ] || strs+=(BC5_DIRECT_ACB_CS_PREFIX 'exp 0401: acb CS prefix %s' 'acb cs prefix (exp 0401)' BC5_DIRECT_CS_PREFIX)
-    case $SER in c | d | e) strs+=(BC5_DIRECT_ACB_STATE_RESTORE 'exp 0401: acb state restore (exp 0381) %s' 'acb state restore (exp 0381)') ;; esac
-    [ "$SER" != e ] || strs+=(BC5_DIRECT_TABLE_CATCHER 'exp 0401: table catcher %s' 'table catcher (exp 0401)' KYTY_BC5_NP_SESSION_V2 KYTY_BC5_MEMORY_FROM_PARAM 'exp 0401: memory from param.json')
+    case $SER in c | d | e | e2) strs+=(BC5_DIRECT_ACB_STATE_RESTORE 'exp 0401: acb state restore (exp 0381) %s' 'acb state restore (exp 0381)') ;; esac
+    [ "${SER:0:1}" != e ] || strs+=(BC5_DIRECT_TABLE_CATCHER 'exp 0401: table catcher %s' 'table catcher (exp 0401)' KYTY_BC5_NP_SESSION_V2 KYTY_BC5_MEMORY_FROM_PARAM 'exp 0401: memory from param.json')
+    [ "$SER" != e2 ] || strs+=(BC5_DIRECT_ACB_INHERIT 'exp 0403: acb inherit %s' 'acb inherit (exp 0403)' 'acb inherit census (exp 0403)')
     [ "$SER" != d ] || strs+=(BC5_DIRECT_ZERO_SKIP BC5_DIRECT_ZERO_SLICES 'zero skip: list %s' 'job-arena fix APPLIED')
     for s in "${strs[@]}"; do
         grep -aqF -- "$s" "$BIN" || die "the private binary lacks [$s]"
@@ -329,7 +331,7 @@ cmd_build() {
         echo "launcher $(rd "$E/launcher.md5") from play-pkg.sh $LAUNCHER_MD5"
         echo "warnings in the unit's compile: $(strip_ansi "$R/build.out" | grep -c 'warning:')"
         echo "function check: $(tail -1 "$R/check0401.out")"
-        [ "$SER" != e ] || echo "units: libNpCppWebApi.cpp $NP_OUT_MD5, memory.cpp $MEM_OUT_MD5, systemContent.cpp $SC_OUT_MD5, systemContent.h $SCH_OUT_MD5; gate: $(tail -1 "$R/npgate-on.out" | cut -c1-120) / $(tail -1 "$R/npgate-off.out" | cut -c1-120)"
+        [ "${SER:0:1}" != e ] || echo "units: libNpCppWebApi.cpp $NP_OUT_MD5, memory.cpp $MEM_OUT_MD5, systemContent.cpp $SC_OUT_MD5, systemContent.h $SCH_OUT_MD5; gate: $(tail -1 "$R/npgate-on.out" | cut -c1-120) / $(tail -1 "$R/npgate-off.out" | cut -c1-120)"
         echo "kernel $(uname -r)"
     } > "$E/build.txt" || die "write failed: build.txt"
     own

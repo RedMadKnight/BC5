@@ -67,6 +67,8 @@ case "$1" in
                     [ -n "${FAKE_NO_CATCHER:-}" ] || echo BC5_DIRECT_TABLE_CATCHER
                     echo 'exp 0401: table catcher %s'; echo 'table catcher (exp 0401)'; echo KYTY_BC5_NP_SESSION_V2; echo KYTY_BC5_MEMORY_FROM_PARAM
                     echo '[bc5] exp 0401: memory from param.json %s: total'
+                    [ -n "${FAKE_NO_INHERIT:-}" ] || echo BC5_DIRECT_ACB_INHERIT
+                    echo 'exp 0403: acb inherit %s'; echo 'acb inherit (exp 0403)'; echo 'acb inherit census (exp 0403)'
                   fi; } > "$out"
         chmod +x "$out"
         n=0; for a in "$@"; do n=$((n + 1)); [ "$a" = --gate ] && break; done
@@ -368,6 +370,22 @@ def t_series_e_gate():
     assert b.lock() == "" and not b.e.exists()
 
 
+def t_series_e2():
+    b = Box("sere2", series="e2").up()
+    r = b.box("build", b.token, FAKE_NO_INHERIT="1")
+    assert r.returncode == 1 and "lacks [BC5_DIRECT_ACB_INHERIT]" in r.stdout, r.stdout
+    b.send()
+    assert b.box("setup", b.token).returncode == 0
+    r = b.box("build", b.token)
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "unit 73e8e4e0a9d05e5deae426238a24c91d" in r.stdout and "libNpCppWebApi.cpp 935fcc7e4ab1108f3d2d8b33eaf65bf6" in r.stdout, r.stdout
+    assert md5(b.e / "src/bc5LleAgc.cpp") == "73e8e4e0a9d05e5deae426238a24c91d"
+    assert (b.e / "raw/npgate-unset.out").read_text().rstrip().endswith("; end")
+    assert "EMU=~/bc5-work/exp0401e2/bin/kyty_emulator" in (b.e / "play-pkg-0401.sh").read_text()
+    assert not (b.w / "exp0401e").exists()
+    assert b.box("release", b.token).stdout.strip() == "released" and b.lock() == ""
+
+
 def t_series_unknown():
     b = Box("serx", series="f")
     r = b.claim()
@@ -417,6 +435,27 @@ def t_unit_edit_acb():
         except AssertionError:
             continue
         raise SystemExit("a unit without a catcher anchor passed")
+    e2 = mk.edit(s, acb=True, restore=True, catcher=True, inherit=True)   # series e2: e plus exp 0403's ACB_INHERIT
+    assert hashlib.md5(e2).hexdigest() == "73e8e4e0a9d05e5deae426238a24c91d"
+    assert e2.index(b"static thread_local uint32_t t_acb_from") < e2.index(b"static void submit_segment(") < e2.index(b"static int acb_inherit_mode() {")
+    assert e2.index(b"static int acb_inherit_mode() {") < e2.index(b"&& acb_inherit_mode() == 0; // + exp 0403: ACB_INHERIT wins")
+    assert e2.index(b"struct ChainSeg {") < e2.index(b"acb_inherit_take(gq)") and e2.count(b"acb_inherit_census(ib + q, len);") == 1
+    for anchor, text, where in mk.inherit_edits():
+        if where != "replace":
+            assert e2.count(text) == 1, text[:60]
+        if anchor not in s:   # text the acb edits add: their own anchors are checked above
+            continue
+        try:
+            mk.edit(s.replace(anchor, b""), acb=True, restore=True, catcher=True, inherit=True)
+        except AssertionError:
+            continue
+        raise SystemExit("a unit without an inherit anchor passed")
+    try:
+        mk.edit(s, inherit=True)
+    except AssertionError:
+        pass
+    else:
+        raise SystemExit("ACB_INHERIT passed without the acb CS prefix")
     assert c.count(mk.RESTORE_SPLIT + mk.ACB_SPLIT) == 1 and c.count(mk.RESTORE_FUNCTIONS) == 1
     assert c.count(b"|| acb_restore_on()) t_fs_before = tracker;") == 1
     assert c.index(b"static bool acb_restore_on()") < c.index(b"if (t_fs_valid || prefix_all() || cs_prefix_mode() != 0 || acb_restore_on())")
@@ -491,7 +530,7 @@ def t_build_commands():
 
 def main():
     cases = [v for k, v in sorted(globals().items()) if k.startswith("t_")]
-    assert len(cases) == 24, len(cases)
+    assert len(cases) == 25, len(cases)
     bad = 0
     for c in cases:
         try:
