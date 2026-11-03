@@ -2,7 +2,9 @@
 """BC5 experiment 0401 (exp 0381's build0381.py without its private include directory: no header changes): the shared
 normal build's compile command for the private src/libs/bc5LleAgc.cpp into a private object, then the shared link command
 with that object swapped in. The shared objects and the shared archive are only read. Warnings are counted by the caller.
-usage (in the container): build0401.py <compdb.json> <private unit> <obj dir> <shared build dir> <out binary>"""
+Series d (2026-11-03) gives a private include directory too (exp 0379's zero_skip.hpp), put first on the path as exp 0388's
+build0389z.py does.
+usage (in the container): build0401.py <compdb.json> <private unit> <obj dir> <shared build dir> <out binary> [include dir]"""
 import json
 import os
 import shlex
@@ -32,11 +34,13 @@ def run(argv, build):
     return subprocess.run(["nice", "-n", "19"] + argv, cwd=build).returncode
 
 
-def compile_argv(db, unit_src, obj):
+def compile_argv(db, unit_src, obj, inc=None):
     comp = next((clean_compile(e["command"]) for e in db if e.get("output") == UNIT), None)
     assert comp is not None, f"{UNIT} is not in the compdb"
     comp[comp.index("-o") + 1] = obj
     comp[comp.index("-c") + 1] = unit_src
+    if inc:
+        comp.insert(1, "-I" + inc)
     return comp
 
 
@@ -59,11 +63,12 @@ def link_argv(db, obj, out):
 
 def main():
     db_path, unit_src, obj_dir, build, out = sys.argv[1:6]
+    inc = sys.argv[6] if len(sys.argv) > 6 else None
     with open(db_path, encoding="utf-8") as f:
         db = json.load(f)
     os.makedirs(obj_dir, exist_ok=True)
     obj = os.path.join(obj_dir, "bc5LleAgc.cpp.o")
-    if run(compile_argv(db, unit_src, obj), build) != 0:
+    if run(compile_argv(db, unit_src, obj, inc), build) != 0:
         print("== COMPILE FAILED", flush=True)
         return 2
     return run(link_argv(db, obj, out), build)

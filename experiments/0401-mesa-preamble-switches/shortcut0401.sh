@@ -9,10 +9,13 @@
 # Mode cpacb (the top session's GO, 2026-11-03 09:10 and 09:24): "BC5 emulator (test 0401 CP+acb)", series c's build
 # (exp0401c) with CP_COHER_START_DELAY, the acb CS prefix and exp 0381's acb state restore on; it replaces the cp shortcut.
 # Mode cpacb-b puts the same shortcut back on series b's build (exp0401b, no restore): the rollback.
-# usage: shortcut0401.sh [both|cp|cpacb|cpacb-b]   (on the box; both is the default)
+# Since the top session's GO of 2026-11-03 13:52 (his "Tak, przebuduj"), mode cpacb runs series d (exp0401d): series c's
+# three switches on exp 0379's zero skip, with the skip on as exp 0388's play0389z.sh on sets it (its list, pinned). Mode
+# cpacb-c puts the same shortcut back on series c's 505b3ae3, without the skip: the rollback.
+# usage: shortcut0401.sh [both|cp|cpacb|cpacb-c|cpacb-b]   (on the box; both is the default)
 set -u
 DESK=$(xdg-user-dir DESKTOP 2> /dev/null); DESK=${DESK:-$HOME/Pulpit}
-OLD=""
+OLD=""; ZL=""; WANT_LIST=""
 case ${1:-both} in
 both)  S=""; WANT_BIN=174e768ec3a68c34be879ad57067819c; WANT_LAUNCHER=c6b2d7fdba882a1817224c9bf6d07ff2
        NAME="BC5 emulator (test 0401)"; WHAT="CP_COHER_START_DELAY 0x20 and SPI_SHADER_REQ_CTRL_PS 0x7 (Mesa's preamble values)"
@@ -20,7 +23,12 @@ both)  S=""; WANT_BIN=174e768ec3a68c34be879ad57067819c; WANT_LAUNCHER=c6b2d7fdba
 cp)    S=""; WANT_BIN=174e768ec3a68c34be879ad57067819c; WANT_LAUNCHER=c6b2d7fdba882a1817224c9bf6d07ff2
        NAME="BC5 emulator (test 0401 CP)"; WHAT="CP_COHER_START_DELAY 0x20 only (Mesa's preamble value)"
        ENVS="BC5_DIRECT_CP_COHER_START_DELAY=1 BC5_DIRECT_SPI_REQ_CTRL_PS=0 BC5_DIRECT_ARGS_WB=0" ;;
-cpacb) S=c; WANT_BIN=505b3ae35ac4510494e03e50fec6a43e; WANT_LAUNCHER=d17996d379eef31aab995fa9aa55600d
+cpacb) S=d; WANT_BIN=1545c4dee54528fc0480faf1b62df45e; WANT_LAUNCHER=7e4df66b96b3983b85733606895d2a01
+       NAME="BC5 emulator (test 0401 CP+acb)"; WHAT="CP_COHER_START_DELAY 0x20, the acb CS prefix, exp 0381's acb state restore and exp 0379's zero skip"
+       ZL=$HOME/bc5-work/exp0388/m/zero-list-moving.txt; WANT_LIST=843f9fbcde4d9c2d324e8cba78cdbae5   # play0389z.sh on's list
+       ENVS="BC5_DIRECT_CP_COHER_START_DELAY=1 BC5_DIRECT_ACB_CS_PREFIX=1 BC5_DIRECT_ACB_STATE_RESTORE=1 BC5_DIRECT_SPI_REQ_CTRL_PS=0 BC5_DIRECT_ARGS_WB=0 BC5_DIRECT_ZERO_SKIP=$ZL"
+       OLD="BC5 emulator (test 0401 CP)" ;;
+cpacb-c) S=c; WANT_BIN=505b3ae35ac4510494e03e50fec6a43e; WANT_LAUNCHER=d17996d379eef31aab995fa9aa55600d   # the rollback: series c, no skip
        NAME="BC5 emulator (test 0401 CP+acb)"; WHAT="CP_COHER_START_DELAY 0x20, the acb CS prefix and exp 0381's acb state restore"
        ENVS="BC5_DIRECT_CP_COHER_START_DELAY=1 BC5_DIRECT_ACB_CS_PREFIX=1 BC5_DIRECT_ACB_STATE_RESTORE=1 BC5_DIRECT_SPI_REQ_CTRL_PS=0 BC5_DIRECT_ARGS_WB=0"
        OLD="BC5 emulator (test 0401 CP)" ;;
@@ -28,13 +36,14 @@ cpacb-b) S=b; WANT_BIN=5b05ce9be5e4a4bf6352e270d28358d7; WANT_LAUNCHER=01312b5b9
        NAME="BC5 emulator (test 0401 CP+acb)"; WHAT="CP_COHER_START_DELAY 0x20 and the acb CS prefix"
        ENVS="BC5_DIRECT_CP_COHER_START_DELAY=1 BC5_DIRECT_ACB_CS_PREFIX=1 BC5_DIRECT_SPI_REQ_CTRL_PS=0 BC5_DIRECT_ARGS_WB=0"
        OLD="BC5 emulator (test 0401 CP)" ;;
-*)     echo "usage: shortcut0401.sh [both|cp|cpacb|cpacb-b]"; exit 1 ;;
+*)     echo "usage: shortcut0401.sh [both|cp|cpacb|cpacb-c|cpacb-b]"; exit 1 ;;
 esac
 E=$HOME/bc5-work/exp0401$S; BIN=$E/bin/kyty_emulator; L=$E/play-pkg-0401.sh
 m() { md5sum < "$1" 2> /dev/null | cut -d' ' -f1; }
 pgrep '^kyty_emulator' > /dev/null && { echo "an emulator runs: stop"; exit 1; }
 [ "$(m "$BIN")" = "$WANT_BIN" ] || { echo "$BIN is not $WANT_BIN: stop"; exit 1; }
 [ "$(m "$L")" = "$WANT_LAUNCHER" ] || { echo "$L is not $WANT_LAUNCHER: stop"; exit 1; }
+[ -z "$ZL" ] || [ "$(m "$ZL")" = "$WANT_LIST" ] || { echo "the zero list $ZL is not $WANT_LIST: stop"; exit 1; }
 [ -d "$DESK" ] && [ ! -L "$DESK" ] || { echo "no desktop directory $DESK: stop"; exit 1; }
 D="$DESK/$NAME.desktop"
 [ ! -e "$D" ] || grep -qxF "Name=$NAME" "$D" || { echo "$D exists and is not ours: stop"; exit 1; }

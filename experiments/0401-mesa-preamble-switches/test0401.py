@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """BC5 experiment 0401: the kit on the laptop, against stand-ins: no box, no compiler, no GPU. The function itself is compiled
 and run on the box by box0401.sh build. A failing case prints its name; exit 0 only after the last marker.
-usage: python test0401.py <unit-main.cpp> <work dir>"""
+usage: python test0401.py <unit-main.cpp> <work dir> <zero-skip unit: main's plus exp 0388's patch-z-bc5LleAgc.diff>"""
 import hashlib
 import importlib.util
 import os
@@ -15,6 +15,7 @@ BASH = "C:/Program Files/Git/bin/bash.exe"
 HERE = pathlib.Path(__file__).resolve().parent
 UNIT = pathlib.Path(sys.argv[1])
 WORK = pathlib.Path(sys.argv[2])
+ZUNIT = pathlib.Path(sys.argv[3])
 KIT = ("mkunit0401.py", "check0401.py", "build0401.py", "launcher0401.py", "unit0401.cpp", "env_flag.hpp")
 LAUNCHER = """#!/bin/bash
 # the output goes to ~/bc5-work/play-pkg-last.log
@@ -54,7 +55,8 @@ case "$1" in
                   echo BC5_DIRECT_CS_PREFIX; echo 'acb cs prefix (exp 0401)'; echo 'exp 0401: acb CS prefix %s'
                   [ -n "${FAKE_NO_ACB:-}" ] || echo BC5_DIRECT_ACB_CS_PREFIX
                   echo 'exp 0401: acb state restore (exp 0381) %s'; echo 'acb state restore (exp 0381)'
-                  [ -n "${FAKE_NO_RESTORE:-}" ] || echo BC5_DIRECT_ACB_STATE_RESTORE; } > "$out"
+                  [ -n "${FAKE_NO_RESTORE:-}" ] || echo BC5_DIRECT_ACB_STATE_RESTORE; echo 'job-arena fix APPLIED'
+                  [ ! -f "${6:-/nonexistent}/bc5/zero_skip.hpp" ] || { echo BC5_DIRECT_ZERO_SKIP; echo BC5_DIRECT_ZERO_SLICES; echo 'zero skip: list %s'; }; } > "$out"
         chmod +x "$out"; exit 0 ;;
     esac ;;
   sh) echo '[]'; exit 0 ;;
@@ -84,6 +86,11 @@ class Box:
         tree = self.root / "src/KytyPlus/src/libs/bc5LleAgc.cpp"
         tree.parent.mkdir(parents=True)
         shutil.copy(UNIT, tree)
+        z = self.w / "exp0388/z/src/src"   # series d's zero-skip unit and a stand-in header
+        (z / "libs").mkdir(parents=True)
+        (z / "bc5").mkdir()
+        shutil.copy(ZUNIT, z / "libs/bc5LleAgc.cpp")
+        (z / "bc5/zero_skip.hpp").write_bytes(b"// zero skip stand-in\n")
         (self.root / "fakeunit.py").write_text(FAKEUNIT.replace("@V@", value), newline="\n")
         (self.root / "fakebox").write_text(FAKEBOX, newline="\n")
         r = posix(self.root)
@@ -92,6 +99,7 @@ class Box:
 disk_pct() {{ echo 5; }}
 BIN_MD5={md5(self.w / 'kytyplus-build/src/kyty_emulator')}; LEAN_MD5={md5(self.w / 'kytyplus-build-lean/src/kyty_emulator')}
 ARCHIVE_MD5={md5(self.w / 'backend-ubuntu/libbc5_backend.a')}; LAUNCHER_MD5={md5(self.w / 'play-pkg.sh')}
+ZHDR_MD5={md5(z / 'bc5/zero_skip.hpp')}
 """, newline="\n")
         self.env = dict(os.environ, BC5_0401_ROOT=r, BC5_0401_FAKE=posix(fake), BC5_0401_SERIES=series)
         self.token = ""
@@ -276,8 +284,33 @@ def t_series_c():
     assert b.box("release", b.token).stdout.strip() == "released" and b.lock() == ""
 
 
+def t_series_d():
+    b = Box("serd", series="d").up()
+    assert md5(b.e / "zbase/bc5LleAgc.cpp") == "3a77e0acef307865d1cd524951060422" and (b.e / "zinc/bc5/zero_skip.hpp").is_file()
+    (b.e / "zinc/bc5/zero_skip.hpp").write_bytes(b"changed\n")
+    r = b.box("build", b.token)
+    assert r.returncode == 1 and "the zero-skip copies are not the pins" in r.stdout, r.stdout
+    assert (b.e / "state").read_text().strip() == "setup"   # it stopped before the build began
+    shutil.copy(b.w / "exp0388/z/src/src/bc5/zero_skip.hpp", b.e / "zinc/bc5/zero_skip.hpp")
+    r = b.box("build", b.token)
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "unit 0f18cf30cb85843cdbe9d5df68909e3d" in r.stdout, r.stdout
+    assert md5(b.e / "src/bc5LleAgc.cpp") == "0f18cf30cb85843cdbe9d5df68909e3d"
+    assert "EMU=~/bc5-work/exp0401d/bin/kyty_emulator" in (b.e / "play-pkg-0401.sh").read_text()
+    assert md5(b.w / "exp0388/z/src/src/libs/bc5LleAgc.cpp") == "3a77e0acef307865d1cd524951060422"
+    assert b.box("release", b.token).stdout.strip() == "released" and b.lock() == ""
+
+
+def t_series_d_pins():
+    b = Box("serdp", series="d")
+    (b.w / "exp0388/z/src/src/libs/bc5LleAgc.cpp").write_bytes(UNIT.read_bytes())
+    r = b.claim()
+    assert r.returncode == 1 and "the zero-skip unit is not" in r.stdout, r.stdout
+    assert b.lock() == "" and not b.e.exists()
+
+
 def t_series_unknown():
-    b = Box("serx", series="d")
+    b = Box("serx", series="e")
     r = b.claim()
     assert r.returncode == 2 and "unknown series" in r.stdout, r.stdout
     assert b.lock() == ""
@@ -305,6 +338,10 @@ def t_unit_edit_acb():
         raise SystemExit("a unit without an acb anchor passed")
     c = mk.edit(s, acb=True, restore=True)
     assert hashlib.md5(c).hexdigest() == "29c88be321cc81908085b1cddcc70d2e"
+    z = ZUNIT.read_bytes()   # series d: the same edit on the zero-skip unit
+    assert hashlib.md5(z).hexdigest() == "3a77e0acef307865d1cd524951060422"
+    d = mk.edit(z, acb=True, restore=True)
+    assert hashlib.md5(d).hexdigest() == "0f18cf30cb85843cdbe9d5df68909e3d" and len(d) - len(z) == len(c) - len(s)
     assert c.count(mk.RESTORE_SPLIT + mk.ACB_SPLIT) == 1 and c.count(mk.RESTORE_FUNCTIONS) == 1
     assert c.count(b"|| acb_restore_on()) t_fs_before = tracker;") == 1
     assert c.index(b"static bool acb_restore_on()") < c.index(b"if (t_fs_valid || prefix_all() || cs_prefix_mode() != 0 || acb_restore_on())")
@@ -356,6 +393,7 @@ def t_build_commands():
     db = [{"output": bu.UNIT, "command": f"clang++ -I/a -MD -MT {bu.UNIT} -MF x.d -o {bu.UNIT} -c ../src/libs/bc5LleAgc.cpp"},
           {"output": "src/kyty_emulator", "command": f": && clang++ -Wl,-Map=m --dependency-file=d {bu.UNIT} other.o /a/libbc5_backend.a -o src/kyty_emulator && :"}]
     assert bu.compile_argv(db, "/e/u.cpp", "/e/u.o") == ["clang++", "-I/a", "-o", "/e/u.o", "-c", "/e/u.cpp"]
+    assert bu.compile_argv(db, "/e/u.cpp", "/e/u.o", "/e/zinc") == ["clang++", "-I/e/zinc", "-I/a", "-o", "/e/u.o", "-c", "/e/u.cpp"]
     l = bu.link_argv(db, "/e/u.o", "/e/bin/k")
     assert l == ["clang++", "-Wl,-Map=/e/bin/k.map", "--dependency-file=/e/bin/k.d", "/e/u.o", "other.o", "/a/libbc5_backend.a", "-o", "/e/bin/k"], l
     db[1]["command"] = db[1]["command"].replace(bu.UNIT + " ", bu.UNIT + " " + bu.UNIT + " ")
@@ -368,7 +406,7 @@ def t_build_commands():
 
 def main():
     cases = [v for k, v in sorted(globals().items()) if k.startswith("t_")]
-    assert len(cases) == 20, len(cases)
+    assert len(cases) == 22, len(cases)
     bad = 0
     for c in cases:
         try:

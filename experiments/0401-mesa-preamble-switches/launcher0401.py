@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """BC5 experiment 0401: the private launcher, the shared play-pkg.sh with its binary and its two logs moved. Saves, settings
 and the learned file stay the shared ones: this is for the maintainer's play. There is no private lean build, so the lean
-branch refuses. Each line must occur exactly once. Series b (2026-11-03) has its own directory, exp0401b.
-usage: launcher0401.py <play-pkg.sh> <out> [b]"""
+branch refuses. Each line must occur exactly once. Series b, c and d (2026-11-03) have their own directories, exp0401b, c and d.
+usage: launcher0401.py <play-pkg.sh> <out> [b|c|d]"""
 import sys
 
 
 def edits(series=""):
-    assert series in ("", "b", "c"), series
+    assert series in ("", "b", "c", "d"), series
     e = f"~/bc5-work/exp0401{series}"
     return (
         ("EMU=~/bc5-work/kytyplus-build/src/kyty_emulator", f"EMU={e}/bin/kyty_emulator  # exp 0401: the private build"),

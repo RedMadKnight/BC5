@@ -23,8 +23,12 @@ case "${BC5_0401_SERIES:-}" in
     "") SER=""; EXPECT_UNIT=9eec0a3856bc1857ba7956b001c93aaf; MKFLAG="" ;;
     b) SER=b; EXPECT_UNIT=b1d96c719fda2ed048876fe119e89310; MKFLAG=--acb ;;
     c) SER=c; EXPECT_UNIT=29c88be321cc81908085b1cddcc70d2e; MKFLAG=--acb-restore ;;
+    d) SER=d; EXPECT_UNIT=0f18cf30cb85843cdbe9d5df68909e3d; MKFLAG=--acb-restore ;;
     *) echo "0401 STOP: unknown series ${BC5_0401_SERIES}"; exit 2 ;;
 esac
+# Series d (2026-11-03 13:52): series c's edit on exp 0379's zero skip, the unit and header of exp 0388's 902585e2 build
+# (main's unit plus 0388's patch-z-bc5LleAgc.diff), read from exp0388/z under these pins and copied into exp0401d.
+ZDIR=$W/exp0388/z/src/src; ZUNIT_MD5=3a77e0acef307865d1cd524951060422; ZHDR_MD5=b29c66c4bc9d5bccb8aac233b3843414
 E=$W/exp0401$SER; LOCK=$W/BOX-LOCK; QUEUE=$W/BOX-QUEUE; ST=$E/state; BIN=$E/bin/kyty_emulator; B=$W/kytyplus-build; R=$E/raw
 
 BIN_MD5=4d2b1b1dd52eaea6e3195500f604e73e; LEAN_MD5=30d4be3371d7c6376b2b4425698c1c3a; ARCHIVE_MD5=75e303357610fee8d1d205bdc88c031c
@@ -176,6 +180,10 @@ pins_why() {   # prints the first pin that does not hold
     [ "$(m "$W/backend-ubuntu/libbc5_backend.a")" = "$ARCHIVE_MD5" ] || { echo "the archive is not $ARCHIVE_MD5"; return; }
     [ "$(m "$W/play-pkg.sh")" = "$LAUNCHER_MD5" ] || { echo "the launcher is not $LAUNCHER_MD5"; return; }
     [ "$(m "$TREE/src/libs/bc5LleAgc.cpp")" = "$UNIT_MD5" ] || { echo "the tree's unit is not main's, $UNIT_MD5"; return; }
+    if [ "$SER" = d ]; then
+        [ "$(m "$ZDIR/libs/bc5LleAgc.cpp")" = "$ZUNIT_MD5" ] || { echo "the zero-skip unit is not $ZUNIT_MD5"; return; }
+        [ "$(m "$ZDIR/bc5/zero_skip.hpp")" = "$ZHDR_MD5" ] || { echo "zero_skip.hpp is not $ZHDR_MD5"; return; }
+    fi
     [ "$(disk_pct)" -lt "$DISK_MAX" ] || echo "the disk is at $DISK_MAX % or more"
 }
 
@@ -216,6 +224,11 @@ cmd_setup() {
     (cd "$E" && sha256sum -c --quiet kit.sha256) > "$E/kit.check" 2>&1 || die "the kit is not what was sent: $(cut -c1-120 "$E/kit.check")"
     mkdir -p "$R" "$E/src" "$E/inc" "$E/inc/bc5" "$E/bin" 2> /dev/null || die "cannot make the private directories"
     cp "$E/env_flag.hpp" "$E/inc/bc5/env_flag.hpp" || die "cannot place env_flag.hpp"
+    if [ "$SER" = d ]; then
+        mkdir -p "$E/zbase" "$E/zinc/bc5" 2> /dev/null || die "cannot make the zero-skip directories"
+        cp "$ZDIR/libs/bc5LleAgc.cpp" "$E/zbase/bc5LleAgc.cpp" && cp "$ZDIR/bc5/zero_skip.hpp" "$E/zinc/bc5/zero_skip.hpp" || die "cannot copy the zero-skip unit"
+        [ "$(m "$E/zbase/bc5LleAgc.cpp")" = "$ZUNIT_MD5" ] && [ "$(m "$E/zinc/bc5/zero_skip.hpp")" = "$ZHDR_MD5" ] || die "the zero-skip copies are not the pins"
+    fi
     put "$ST" setup
     echo "set up"
 }
@@ -225,14 +238,18 @@ cmd_build() {
     [ "$(state)" = setup ] || die "state is $(state), want setup"
     own; budget "$GRACE"
     work_free || die "$WHY"
-    local why u
+    local why u in=$TREE/src/libs/bc5LleAgc.cpp inc=()
+    if [ "$SER" = d ]; then
+        in=$E/zbase/bc5LleAgc.cpp; inc=("$E/zinc")
+        [ "$(m "$in")" = "$ZUNIT_MD5" ] && [ "$(m "$E/zinc/bc5/zero_skip.hpp")" = "$ZHDR_MD5" ] || die "the zero-skip copies are not the pins"
+    fi
     why=$(pins_why); [ -z "$why" ] || die "$why"
     stat_of $$ || die "no stat of this shell"
     put "$E/build.id" "$$ $START"
     put "$ST" building
 
-    # 1. The unit, and its new function alone, from the tree that built the shared binaries.
-    u=$("${PY[@]}" "$E/mkunit0401.py" "$TREE/src/libs/bc5LleAgc.cpp" "$E/src/bc5LleAgc.cpp" "$E/src/mesa_preamble_prefix.inc" $MKFLAG) || die "the unit's edit did not apply"
+    # 1. The unit, and its new function alone, from the tree that built the shared binaries (series d: the zero-skip unit).
+    u=$("${PY[@]}" "$E/mkunit0401.py" "$in" "$E/src/bc5LleAgc.cpp" "$E/src/mesa_preamble_prefix.inc" $MKFLAG) || die "the unit's edit did not apply"
     [ "$u" = "$EXPECT_UNIT" ] || die "the private unit is $u, not $EXPECT_UNIT"
     [ "$(m "$E/src/bc5LleAgc.cpp")" = "$EXPECT_UNIT" ] || die "the private unit on disk is not $EXPECT_UNIT"
 
@@ -243,16 +260,18 @@ cmd_build() {
     hook after-check
     own
 
-    # 3. The shared build's own commands. No header changes, so nothing else is compiled.
+    # 3. The shared build's own commands. No header changes, so nothing else is compiled (series d: zero_skip.hpp is new
+    # and only this unit includes it, from its own include directory, first on the path).
     in_box 60 sh -c "cd '$B' && ninja -t compdb -x" > "$E/compdb.json" 2> "$R/compdb.err" || die "no compile database"
-    in_box "$BUILD_S" python3 -I "$E/build0401.py" "$E/compdb.json" "$E/src/bc5LleAgc.cpp" "$E/obj" "$B" "$BIN" > "$R/build.out" 2>&1 || die "the private build failed: $(strip_ansi "$R/build.out" | grep -m3 -E 'error:|undefined|COMPILE FAILED' | cut -c1-160 | tr '\n' ' ')"
+    in_box "$BUILD_S" python3 -I "$E/build0401.py" "$E/compdb.json" "$E/src/bc5LleAgc.cpp" "$E/obj" "$B" "$BIN" "${inc[@]}" > "$R/build.out" 2>&1 || die "the private build failed: $(strip_ansi "$R/build.out" | grep -m3 -E 'error:|undefined|COMPILE FAILED' | cut -c1-160 | tr '\n' ' ')"
     [ -x "$BIN" ] || die "no private binary"
     own
 
     # 4. What the binary must hold, and what it must still hold.
     local s strs=(BC5_DIRECT_CP_COHER_START_DELAY BC5_DIRECT_SPI_REQ_CTRL_PS 'exp 0401: CP_COHER_START_DELAY %s' 'exp 0401: SPI_SHADER_REQ_CTRL_PS %s' BC5_DIRECT_ARGS_WB BC5_DIRECT_GC_HS_OFFCHIP)
     [ -z "$SER" ] || strs+=(BC5_DIRECT_ACB_CS_PREFIX 'exp 0401: acb CS prefix %s' 'acb cs prefix (exp 0401)' BC5_DIRECT_CS_PREFIX)
-    [ "$SER" != c ] || strs+=(BC5_DIRECT_ACB_STATE_RESTORE 'exp 0401: acb state restore (exp 0381) %s' 'acb state restore (exp 0381)')
+    case $SER in c | d) strs+=(BC5_DIRECT_ACB_STATE_RESTORE 'exp 0401: acb state restore (exp 0381) %s' 'acb state restore (exp 0381)') ;; esac
+    [ "$SER" != d ] || strs+=(BC5_DIRECT_ZERO_SKIP BC5_DIRECT_ZERO_SLICES 'zero skip: list %s' 'job-arena fix APPLIED')
     for s in "${strs[@]}"; do
         grep -aqF -- "$s" "$BIN" || die "the private binary lacks [$s]"
     done
