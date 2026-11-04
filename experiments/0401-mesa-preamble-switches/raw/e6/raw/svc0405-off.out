@@ -1,0 +1,35 @@
+svc0405: switches KYTY_BC5_SAVEDATA_MEMORY_FIXES=0 KYTY_BC5_SAVEDATA_DELETE_BUSY=0 KYTY_BC5_SAVEDATA_ALIASES=0 KYTY_BC5_HTTP2_FIXES=0 KYTY_BC5_PAD_OPEN_EXT=0; items: sync 0 lock 0 existed 0 delete 0 aliases 0 async 0 ssl 0 agent 0 openext 0
+svc0405: work directory /home/kjaniszewski/bc5-work/exp0401e6/run-svc0405-off/svc0405-work-2475853; memory file /home/kjaniszewski/bc5-work/exp0401e6/run-svc0405-off/svc0405-work-2475853/_SaveData/UNKNOWN/sce_sdmemory/memory.dat
+[bc5] exp 0405: fs fixes off
+[bc5] exp 0405: savedata memory fixes off
+[bc5] exp 0401: savedata event callback off
+svc0405: ok 1 a sync before any setup is OK (sync off, today)
+svc0405: ok 2 sync's arguments are not checked (sync off, today)
+svc0405: ok 3 a first setup reports the memory's size (existed off, today)
+svc0405: ok 4 a sync after setup writes nothing and queues nothing (sync off, today)
+svc0405: ok 5 a sync with option 1 queues no event (both)
+svc0405: ok 6 slot 1 syncs OK with no event (sync off, today)
+svc0405: ok 7 setup reports the memory's size (existed off, today)
+svc0405: ok 8 a backup's event is polled on one thread (lock off, today; the race is not run without the lock)
+svc0405: ok 9 Terminate clears the poll queue (both)
+[bc5] exp 0401: savedata fixes off
+[bc5] exp 0405: savedata delete busy off
+svc0405: ok 10 deleting a mounted save removes it (delete busy off, today)
+svc0405: ok 11 after Umount2 the delete is OK and the save is gone (both)
+[bc5] exp 0401: savedata sort off
+[bc5] exp 0405: savedata aliases off
+svc0405: ok 12 Initialize and Initialize2 are not registered (aliases off, today)
+svc0405: ok 13 Initialize3 returns OK (aliases off, today)
+[bc5] exp 0405: http2 fixes off
+svc0405: ok 14 SSL options on a context are INVALID_ID (ssl off, today)
+[bc5] exp 0405: equeue fixes off
+svc0405: ok 15 SendRequestAsync triggers no event (async off, today)
+svc0405: ok 16 ReadDataAsync triggers no event (async off, today)
+svc0405: ok 17 a null option and an unknown request trigger nothing (both)
+svc0405: ok 18 sceHttpCreateTemplate is today's function (agent off; its NULL user agent is not called)
+[bc5] exp 0405: fw pad off
+[bc5] exp 0405: pad open ext off
+svc0405: ok 19 scePadOpenExt is not registered (pad open ext off, today)
+svc0405: ok 20 scePadOpen opens the standard and remote ports (pad open ext off, today)
+svc0405: ok 21 scePadOpen still refuses port type 1 and opens player 2's pad (both)
+svc0405: off 21 of 21; end

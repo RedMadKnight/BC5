@@ -1,0 +1,85 @@
+fwn0405: KYTY_BC5_FW_NET items 0x1f (rtc 1, rudp 2, resolver 4, param400 8, npwebapi 16): on
+[bc5] exp 0401: memory from param.json off: total 11692 MiB, flexible 1024 MiB, direct 10668 MiB (param.json: flexible 0, cpu table 0, gpu table 0, amm table 0 MiB)
+[bc5] exp 0405: mem off
+[bc5] exp 0405: thread sync off
+[bc5] exp 0405: tables off
+[bc5] exp 0401: KYTY_BC5_AMM_PRT_CMDS off
+[bc5] exp 0401: KYTY_BC5_AMM_EXTRA_CMDS off
+[bc5] exp 0401: KYTY_BC5_AMPR_WAITS off
+[bc5] exp 0405: fw kernel off
+[bc5] exp 0405: jit shm off
+[bc5] exp 0405: posix return fixes off
+[bc5] exp 0405: http2 fixes off
+[bc5] exp 0405: json2 off
+[bc5] exp 0401: NpCppWebApi SessionManager V2 off (the loader's stubs)
+[bc5] exp 0405: fw pad off
+[bc5] exp 0405: pad open ext off
+[bc5] exp 0405: fw-net on (items: rtc rudp resolver param400 npwebapi)
+[bc5] exp 0401: savedata fixes off
+[bc5] exp 0401: savedata event callback off
+[bc5] exp 0401: savedata sort off
+[bc5] exp 0405: savedata memory fixes off
+[bc5] exp 0405: savedata delete busy off
+[bc5] exp 0405: savedata aliases off
+[bc5] exp 0405: systemservice off
+[bc5] exp 0405: systemservice-params-7-1000 off
+[bc5] exp 0405: ult off
+[bc5] exp 0405: userservice off
+[bc5] exp 0405: equeue fixes off
+[bc5] exp 0405: fw-net rtc: FormatRFC3339 past year 9999: the 16-bit year rule (0x80B50003 when off)
+fwn0405: case 1 rtc year 65536, zone 0: ok (on tick 2068084742400000000: 0x80B50008, text untouched; want 0x80B50008)
+[bc5] exp 0405: fw-net rtc: FormatRFC3339 past year 9999: the 16-bit year rule (0x80B50003 when off)
+[bc5] exp 0405: fw-net rtc: FormatRFC3339 past year 9999: the 16-bit year rule (0x80B50003 when off)
+fwn0405: case 2 rtc year 65537, zone +60: ok (on tick 2068116364800000000: 0x00000000, "0001-01-01T01:00:00.00+01:00"; want 0x00000000 0001-01-01T01:00:00.00+01:00)
+fwn0405: case 3 rtc year 75535, zone -60: ok (on tick 2383622726400000000: 0x00000000, "9998-12-31T23:00:00.00-01:00"; want 0x00000000 9998-12-31T23:00:00.00-01:00)
+fwn0405: case 4 rtc year 10000, zone 0: ok (on tick 315537897600000000: 0x80B50008, text untouched; want 0x80B50008)
+fwn0405: case 5 rtc UINT64_MAX, zone +1: ok (on tick 18446744073709551615: 0x80B50003, text untouched; want 0x80B50003)
+[bc5] exp 0405: fw-net rtc: FormatRFC3339 past year 9999: the 16-bit year rule (0x80B50003 when off)
+[bc5] exp 0405: fw-net rtc: FormatRFC3339 zone shift overflows 64 bits -> 0x80B50003 (wraps when off)
+[bc5] exp 0405: fw-net rtc: FormatRFC3339 zone outside -1439..1439 minutes -> 0x80B50003 (formatted when off)
+fwn0405: case 6 rtc epoch, zone 1440: ok (on tick 62135596800000000: 0x80B50003, text untouched; want 0x80B50003)
+fwn0405: case 7 rtc tick 0, zone -1: ok (on tick 0: 0x80B50003, text untouched; want 0x80B50003)
+fwn0405: case 8 rtc last tick of 9999, zone 0: ok (on tick 315537897599999999: 0x00000000, "9999-12-31T23:59:59.99Z"; want 0x00000000 9999-12-31T23:59:59.99Z)
+fwn0405: case 9 rtc epoch, zone +120: ok (on tick 62135596800000000: 0x00000000, "1970-01-01T02:00:00.00+02:00"; want 0x00000000 1970-01-01T02:00:00.00+02:00)
+[bc5] exp 0405: fw-net rtc: FormatRFC3339 past year 9999: the 16-bit year rule (0x80B50003 when off)
+fwn0405: case 10 rtc distant tick, zone -821: ok (on tick 4239646359910459728: 0x00000000, "3278-01-17T10:44:10.45-13:41"; want 0x00000000 3278-01-17T10:44:10.45-13:41)
+fwn0405: case 11 rtc null text: ok (0x80B50002; want 0x80B50002)
+fwn0405: case 12 rtc null tick (now), zone 0: ok (0x00000000 "2026-11-04T13:36:52.55Z"; want 0 and "2YYY-MM-DDTHH:MM:SS.ccZ")
+fwn0405: case 13 rudp SetEventHandler before Init: ok (on: 0x80770001; want 0x80770001)
+[bc5] exp 0405: fw-net rudp: SetEventHandler before sceRudpInit -> 0x80770001, not stored (stored and 0 when off)
+[bc5] exp 0405: fw-net rudp: SetEventHandler(null) -> 0x80770022, not stored (stored and 0 when off)
+fwn0405: case 14 rudp SetEventHandler(null) after Init: ok (on: 0x80770022; want 0x80770022)
+fwn0405: case 15 rudp SetEventHandler(handler) after Init: ok (0x00000000; want 0x00000000)
+fwn0405: case 16 resolver timeout 0: ok (on: 0x00000000, address 127.0.0.1, net errno 0x00000000; want 0x00000000 and 127.0.0.1)
+fwn0405: case 17 resolver timeout 1: ok (on: 0x80410116, address 170.170.170.170, net errno 0x80410116; want 0x80410116 with the address untouched and the errno set)
+[bc5] exp 0405: fw-net resolver: StartNtoa timeout under 1 s or a negative retry -> NET_ERROR_EINVAL (looked up when off)
+[bc5] exp 0405: fw-net resolver: StartNtoa timeout under 1 s or a negative retry -> NET_ERROR_EINVAL (looked up when off)
+fwn0405: case 18 resolver timeout 999999: ok (on: 0x80410116, address 170.170.170.170, net errno 0x80410116; want 0x80410116 with the address untouched and the errno set)
+fwn0405: case 19 resolver timeout 1000000: ok (on: 0x00000000, address 127.0.0.1, net errno 0x00000000; want 0x00000000 and 127.0.0.1)
+fwn0405: case 20 resolver timeout INT_MAX: ok (on: 0x00000000, address 127.0.0.1, net errno 0x00000000; want 0x00000000 and 127.0.0.1)
+[bc5] exp 0405: fw-net resolver: StartNtoa timeout under 1 s or a negative retry -> NET_ERROR_EINVAL (looked up when off)
+fwn0405: case 21 resolver timeout -1: ok (on: 0x80410116, address 170.170.170.170, net errno 0x80410116; want 0x80410116 with the address untouched and the errno set)
+fwn0405: case 22 resolver retry -1: ok (on: 0x80410116, address 170.170.170.170, net errno 0x80410116; want 0x80410116 with the address untouched and the errno set)
+fwn0405: case 23 resolver unknown resolver, timeout 1: ok (on: 0x80410116, address 170.170.170.170, net errno 0x80410116; want 0x80410116 with the address untouched and the errno set)
+[bc5] exp 0405: fw-net resolver: StartNtoa timeout under 1 s or a negative retry -> NET_ERROR_EINVAL (looked up when off)
+[bc5] exp 0405: fw-net resolver: StartNtoa timeout under 1 s or a negative retry -> NET_ERROR_EINVAL (looked up when off)
+fwn0405: case 24 resolver unknown resolver, timeout 0: ok (on: 0x80410109, address 170.170.170.170, net errno 0x80410109; want 0x80410109 with the address untouched and the errno set)
+fwn0405: case 25 resolver flags 2: ok (on: 0x80410116, address 170.170.170.170, net errno 0x80410116; want 0x80410116 with the address untouched and the errno set)
+fwn0405: case 26 param400 parameter 1 (the language): ok (0x00000000, 1; want 0 and a value written (--console-language, 1 by default; not 0, so the parameter 400 case tells on from off))
+bc5 system param 1 -> 1
+[bc5] exp 0405: fw-net param400: ParamGetInt(400) answers the language (0 when off)
+bc5 system param 400 -> 1
+fwn0405: case 27 param400 parameter 400: ok (on: 0x00000000, 1; want 0 and 1 (parameter 1's answer))
+fwn0405: case 28 param400 parameter 401: ok (0x00000000, 0; want 0 and 0 (today's, both ways))
+bc5 system param 401 -> 0
+fwn0405: case 29 npwebapi DownStreamTransaction<DownloadDataResponseHeaders>::finish: ok (on: 0x80553508; want 0x80553508)
+[bc5] exp 0405: fw-net npwebapi: finish of a never-started transaction -> 0x80553508 (0 when off)
+fwn0405: case 30 npwebapi TransactionBase<PostPlayerSessionsResponseBody>::finish: ok (on: 0x80553508; want 0x80553508)
+[bc5] exp 0405: fw-net npwebapi: finish of a never-started transaction -> 0x80553508 (0 when off)
+[bc5] exp 0405: fw-net npwebapi: finish of a never-started transaction -> 0x80553508 (0 when off)
+fwn0405: case 31 npwebapi TransactionBase<PostPlayerSessionsSessionIdMemberPlayersResponseBody>::finish: ok (on: 0x80553508; want 0x80553508)
+fwn0405: case 32 npwebapi TransactionBase<DefaultResponse>::finish: ok (on: 0x80553508; want 0x80553508)
+[bc5] exp 0405: fw-net npwebapi: finish of a never-started transaction -> 0x80553508 (0 when off)
+[bc5] exp 0405: fw-net npwebapi: finish of a never-started transaction -> 0x80553508 (0 when off)
+fwn0405: case 33 npwebapi TransactionBase<GetUsersAccountIdPlayerSessionsInvitationsResponseBody>::finish: ok (on: 0x80553508; want 0x80553508)
+fwn0405: on 33 of 33; end

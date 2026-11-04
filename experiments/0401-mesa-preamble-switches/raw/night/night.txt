@@ -122,3 +122,46 @@ summary: rp0 (route): ended at G+900 after 1014 s (G 113, list 93); 53.1 flips/s
 run rc 0: rp1 (route): ended at G+900 after 1015 s (G 114, list 94); 53.3 flips/s over 1011 s, 28 seconds with a gap over 100 ms, longest 1300 ms; memory floor 415 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
 summary: rp1 (route): ended at G+900 after 1015 s (G 114, list 94); 53.3 flips/s over 1011 s, 28 seconds with a gap over 100 ms, longest 1300 ms; memory floor 415 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
 == 2026-11-04 12:03:44 all arms done
+== 2026-11-04 14:37:55 arm t6 (start, cap 300 s, play 0 s)
+run rc 0: t6 (start): START OK: the save-slot list runs at 94 s after 94 s (G none, list 94); 22.8 flips/s over 88 s, 25 seconds with a gap over 100 ms, longest 645 ms; memory floor 564 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: t6 (start): START OK: the save-slot list runs at 94 s after 94 s (G none, list 94); 22.8 flips/s over 88 s, 25 seconds with a gap over 100 ms, longest 645 ms; memory floor 564 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 14:39:58 arm t6fwn (start, cap 300 s, play 0 s)
+run rc 0: t6fwn (start): START OK: the save-slot list runs at 94 s after 94 s (G none, list 94); 22.2 flips/s over 89 s, 32 seconds with a gap over 100 ms, longest 627 ms; memory floor 534 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: t6fwn (start): START OK: the save-slot list runs at 94 s after 94 s (G none, list 94); 22.2 flips/s over 89 s, 32 seconds with a gap over 100 ms, longest 627 ms; memory floor 534 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 14:41:56 arm t6pad (start, cap 300 s, play 0 s)
+run rc 0: t6pad (start): START OK: the save-slot list runs at 94 s after 94 s (G none, list 94); 21.0 flips/s over 89 s, 22 seconds with a gap over 100 ms, longest 689 ms; memory floor 546 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: t6pad (start): START OK: the save-slot list runs at 94 s after 94 s (G none, list 94); 21.0 flips/s over 89 s, 22 seconds with a gap over 100 ms, longest 689 ms; memory floor 546 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 14:43:54 arm t6fwa (start, cap 300 s, play 0 s)
+run rc 0: t6fwa (start): START OK: the save-slot list runs at 107 s after 108 s (G none, list 107); 19.2 flips/s over 103 s, 21 seconds with a gap over 100 ms, longest 499 ms; memory floor 590 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: t6fwa (start): START OK: the save-slot list runs at 107 s after 108 s (G none, list 107); 19.2 flips/s over 103 s, 21 seconds with a gap over 100 ms, longest 499 ms; memory floor 590 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 14:46:05 arm t6jit (start, cap 300 s, play 0 s)
+run rc 0: t6jit (start): START OK: the save-slot list runs at 95 s after 95 s (G none, list 95); 23.9 flips/s over 90 s, 20 seconds with a gap over 100 ms, longest 661 ms; memory floor 495 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: t6jit (start): START OK: the save-slot list runs at 95 s after 95 s (G none, list 95); 23.9 flips/s over 90 s, 20 seconds with a gap over 100 ms, longest 661 ms; memory floor 495 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 14:48:06 arm t6tbl (start, cap 300 s, play 0 s)
+run rc 0: t6tbl (start): START OK: the save-slot list runs at 94 s after 94 s (G none, list 94); 23.8 flips/s over 89 s, 22 seconds with a gap over 100 ms, longest 842 ms; memory floor 510 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: t6tbl (start): START OK: the save-slot list runs at 94 s after 94 s (G none, list 94); 23.8 flips/s over 89 s, 22 seconds with a gap over 100 ms, longest 842 ms; memory floor 510 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 14:50:07 arm t6all (start, cap 300 s, play 0 s)
+run rc 0: t6all (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 22.0 flips/s over 89 s, 20 seconds with a gap over 100 ms, longest 595 ms; memory floor 503 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: t6all (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 22.0 flips/s over 89 s, 20 seconds with a gap over 100 ms, longest 595 ms; memory floor 503 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 14:52:05 arm r6 (route, cap 1200 s, play 900 s)
+run rc 0: r6 (route): ended at G+900 after 1014 s (G 113, list 93); 51.1 flips/s over 1009 s, 32 seconds with a gap over 100 ms, longest 1234 ms; memory floor 668 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: r6 (route): ended at G+900 after 1014 s (G 113, list 93); 51.1 flips/s over 1009 s, 32 seconds with a gap over 100 ms, longest 1234 ms; memory floor 668 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 15:09:45 all arms done
+== 2026-11-04 15:09:46 arm a6 (pulls, cap 1100 s, play 420 s)
+run rc 0: a6 (route): ended at G+420 after 565 s (G 142, list 118); 47.7 flips/s over 559 s, 33 seconds with a gap over 100 ms, longest 1136 ms; memory floor 1276 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 RESULT a6 runner 0 check 0 CLASS PASS mode pulls pulls 3 
+summary: a6 (route): ended at G+420 after 565 s (G 142, list 118); 47.7 flips/s over 559 s, 33 seconds with a gap over 100 ms, longest 1136 ms; memory floor 1276 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+audio: RESULT a6 runner 0 check 0 CLASS PASS mode pulls pulls 3
+== 2026-11-04 15:20:34 all arms done
+== 2026-11-04 15:26:46 arm t6b1 (start, cap 300 s, play 0 s)
+run rc 0: t6b1 (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 22.6 flips/s over 88 s, 26 seconds with a gap over 100 ms, longest 1314 ms; memory floor 516 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: t6b1 (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 22.6 flips/s over 88 s, 26 seconds with a gap over 100 ms, longest 1314 ms; memory floor 516 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 15:29:24 arm t6fwa2 (start, cap 300 s, play 0 s)
+run rc 0: t6fwa2 (start): START OK: the save-slot list runs at 94 s after 94 s (G none, list 94); 23.2 flips/s over 89 s, 21 seconds with a gap over 100 ms, longest 642 ms; memory floor 558 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: t6fwa2 (start): START OK: the save-slot list runs at 94 s after 94 s (G none, list 94); 23.2 flips/s over 89 s, 21 seconds with a gap over 100 ms, longest 642 ms; memory floor 558 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 15:32:22 arm t6b2 (start, cap 300 s, play 0 s)
+run rc 0: t6b2 (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 23.0 flips/s over 88 s, 21 seconds with a gap over 100 ms, longest 650 ms; memory floor 499 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: t6b2 (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 23.0 flips/s over 88 s, 21 seconds with a gap over 100 ms, longest 650 ms; memory floor 499 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 15:35:29 arm t6fwa3 (start, cap 300 s, play 0 s)
+run rc 0: t6fwa3 (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 23.0 flips/s over 89 s, 24 seconds with a gap over 100 ms, longest 717 ms; memory floor 562 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: t6fwa3 (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 23.0 flips/s over 89 s, 24 seconds with a gap over 100 ms, longest 717 ms; memory floor 562 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 15:38:13 all arms done

@@ -1,0 +1,33 @@
+pad0405: KYTY_BC5_FW_PAD items 0x0 (infotype 1, argchecks 2, queries 4): off
+[bc5] exp 0401: memory from param.json off: total 11692 MiB, flexible 1024 MiB, direct 10668 MiB (param.json: flexible 0, cpu table 0, gpu table 0, amm table 0 MiB)
+[bc5] exp 0405: mem off
+[bc5] exp 0405: thread sync off
+[bc5] exp 0405: tables off
+[bc5] exp 0401: KYTY_BC5_AMM_PRT_CMDS off
+[bc5] exp 0401: KYTY_BC5_AMM_EXTRA_CMDS off
+[bc5] exp 0401: KYTY_BC5_AMPR_WAITS off
+[bc5] exp 0405: fw kernel off
+[bc5] exp 0405: jit shm off
+[bc5] exp 0405: posix return fixes off
+[bc5] exp 0405: http2 fixes off
+[bc5] exp 0405: json2 off
+[bc5] exp 0401: NpCppWebApi SessionManager V2 off (the loader's stubs)
+[bc5] exp 0405: fw pad off
+[bc5] exp 0405: pad open ext off
+[bc5] exp 0405: fw-net off
+[bc5] exp 0401: savedata fixes off
+[bc5] exp 0401: savedata event callback off
+[bc5] exp 0401: savedata sort off
+[bc5] exp 0405: savedata memory fixes off
+[bc5] exp 0405: savedata delete busy off
+[bc5] exp 0405: savedata aliases off
+[bc5] exp 0405: systemservice off
+[bc5] exp 0405: systemservice-params-7-1000 off
+[bc5] exp 0405: ult off
+[bc5] exp 0405: userservice off
+[bc5] exp 0405: equeue fixes off
+pad0405: case 1 registration infotype: ok (off: 0 of 1 NIDs resolve; want 0)
+pad0405: case 2 registration argchecks: ok (off: 0 of 12 NIDs resolve; want 0)
+pad0405: case 3 registration queries: ok (off: 0 of 5 NIDs resolve; want 0)
+pad0405: case 4 registration scePadInit: ok (scePadInit 0x00005602f39fa140, Controller::PadInit 0x00005602f39fa140; want Controller::PadInit)
+pad0405: off 4 of 4; end

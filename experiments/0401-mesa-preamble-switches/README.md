@@ -342,7 +342,7 @@ this session; not installed).**
   safe to keep behind its switch, default off; showing an effect needs a title that sends the packet (ASTRO BOT was not run).
 
 **Series e6: e5 plus exp 0405's decisions 1, 3 and 4's batch 1 (2026-11-04, the top session's GO on the maintainer's answers;
-built on the laptop's stand-ins only so far).** His answers (Polish, relayed by the top): 1 "wdrażamy - to tylko Twoje
+built and tested on the box 14:18-15:20 on his "Yes, build e6").** His answers (Polish, relayed by the top): 1 "wdrażamy - to tylko Twoje
 podejrzenie, traktujemy jako opis innej osoby i wdrażamy"; 2 titles' own code stays out; 3 "=> A, ale w taki sposób aby nie
 można było powiązać naszego kodu z IDA"; 4 "=> B => B" (port first, then load, a switch per table); 5 is e6p above; 6 the
 ngs2_pcm.h family stays out. Six laptop agents ported it, one group each (`*0405-notes.md` hold the evidence):
@@ -355,6 +355,7 @@ ngs2_pcm.h family stays out. Six laptop agents ported it, one group each (`*0405
 | tbc: decision 4, Zlib, JpegEnc, Ime | `KYTY_BC5_LOAD_ZLIB`, `_JPEG`, `_IME` | libZlib c7e165b9, libJpeg c5fe947c, libIme 49fa46f1 | 108 / 26 |
 | tbn: decision 4, NpCommon, NpManager, NpTrophy | `KYTY_BC5_LOAD_NPCOMMON`, `_NPMANAGER`, `_NPTROPHY` | libNp 24e77826 | 165 / 34 |
 | tld: decision 4, the loading | the six `KYTY_BC5_LOAD_*` | libs.cpp 903fa699 | 9 / 9 |
+| pad: Pad b94b3fa32 and 3b404f65e, from behaviour only | `KYTY_BC5_FW_PAD` (infotype, argchecks, queries) | libPad (e5) b9940ebe | 71 / 4 |
 
 - *Tables load first.* With a switch on, its table loads before every live table, so an import's exact key keeps the live
   function. The loader's NID-only fallback (`FindByNid`) takes the first record, though, so the 9 NIDs that live tables
@@ -372,5 +373,44 @@ ngs2_pcm.h family stays out. Six laptop agents ported it, one group each (`*0405
 - *Kit* (`box0401.sh` series e6): rows chained after e5's (E6_EDITS, E6_GATES, E6_STRS); the stand-in case `t_series_e6`
   passes. Arms are ready (`raw/night-arms-e6.txt`, `raw/night-arms-e6aud.txt`): the base start, one start per group, all on,
   a 15-min route with e4, e5 and e6 on, and exp 0372's software replug check for the audio group.
+- *The build* (`raw/e6/`; binary 7252558e78d38b3bf589d8d773676a63, the shared builds unchanged).
+  - Every CPU test passed on the box, both ways: the counts in the table above, and e5's tests as before (`raw/e6/build.txt`).
+  - The first try (`raw/e6-try1/`; its box directory is kept as `exp0401e6-try1`) stopped at fwn0405's case 10 when off.
+    - The test was wrong, not the code. AnyPS5's "distant" tick lies in year 134350, whose 16-bit year is 3278.
+    - Today's code refuses it (past 9999); the test had expected the text both ways.
+    - The case now expects VALUE when off (`fwn0405.cpp`, `fwn0405-notes.md`).
+- *The arms* (`raw/night/t6*`, `r6-*`, `a6-*`; 14:37-15:20). `t6` is the e6 binary with every e4, e5 and e6 switch off; each
+  group's start adds only its group. `t6all` and `r6` have e4's, e5's and e6's all on.
+
+  | Arm | On | Result | Flips/s | Gaps over 100 ms (longest, ms) | Memory floor, MiB |
+  |---|---|---|---|---|---|
+  | t6 | none | list at 94 s | 22.8 | 25 (645) | 564 |
+  | t6fwn | fwn | list at 94 s | 22.2 | 32 (627) | 534 |
+  | t6pad | pad | list at 94 s | 21.0 | 22 (689) | 546 |
+  | t6fwa | fwa | list at 107 s | 19.2 | 21 (499) | 590 |
+  | t6jit | jit (both switches) | list at 95 s | 23.9 | 20 (661) | 495 |
+  | t6tbl | the six loads | list at 94 s | 23.8 | 22 (842) | 510 |
+  | t6all | e4, e5 and e6 all on | list at 93 s | 22.0 | 20 (595) | 503 |
+  | r6 | the same as t6all | clean, G at 113 s, ended at G+900 | 51.1 | 32 (1234) | 668 |
+  | a6 | a5's words plus fwa: the replug check, pulls | **PASS**, 3/3, 0 pad streams on another sink | 47.7 | 33 (1136) | 1276 |
+
+  Every arm had 0 crash lines, 0 kernel lines, 0 freeze dumps and 0 devcoredumps, and the live saves were unchanged after each.
+  - *The journal lines.* Each group's line read on, with its items, in its own arm and all of them in t6all and r6, e.g.:
+    - `fw-net on (items: rtc rudp resolver param400 npwebapi)`;
+    - `fw pad on (items: infotype argchecks queries)`;
+    - `tables on (items: zlib,jpeg,ime,npcommon,npmanager,nptrophy)`;
+    - `ime port on (items: panel test; the 7 NIDs of the live Ime table not registered)`.
+  - *The 40-line record.* r6's `switch-lines.txt` lacks five of e4's and e5's lines (the AMM, AMPR, SessionManager V2 and
+    audio fixes lines). The record keeps only the 40 most frequent lines, and e6 adds 13 more. The play log on the box has
+    every one of them once (`r6-switch-lines-all.txt`, `t6all-switch-lines-all.txt` are the uncut lists).
+  - *No e6 catcher line fired.* None of the items' "once" lines (an RTC refusal, a Rudp or resolver refusal, a pad check)
+    is in r6's play log. So the second title's route never took a path whose answer e6 changes.
+  - *a6 against a5.* The same pass: 3 of 3 pulls, 17 stream lines, 8 pad streams, 0 on another sink, 0 rumble writes, 39
+    'pad route … dropped' lines (a5: 38). With `KYTY_BC5_AUDIO_FIXES=1`, as in a5, the haptics port's silence line is back.
+  - *The start with fwa alone.* t6fwa reached the list at 107 s and a6 at 118 s (G at 142 s; a5: 97 s and 117 s), against
+    93-95 s in every other arm, t6all and r6 included, which have fwa on too.
+    - It was repeated at once (`raw/night-arms-e6fwa-rep.txt`): base, fwa, base, fwa, with the same words.
+    - The list came at 93, 94, 93 and 93 s (23.2 and 23.0 flips/s with fwa; 22.6 and 23.0 without). All four were clean.
+    - So the slow t6fwa start did not come back. a6's slower start is not explained; its route and its check passed.
 
 **Verdict.** Not yet. Both switches together made the game too slow to play, and the confounds above leave the cause open.

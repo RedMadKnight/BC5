@@ -192,7 +192,7 @@ void CaseRtc() {
 	const uint64_t max      = UINT64_MAX;
 	const uint64_t epoch    = 62135596800000000ull; // 1970-01-01 (this file's RTC_UNIX_EPOCH_TICKS)
 	const uint64_t zero     = 0;
-	const uint64_t distant  = 4239646359910459728ull; // 3278-01-17 (AnyPS5's "distant" RFC 2822 vector)
+	const uint64_t distant  = 4239646359910459728ull; // 134350-01-17: the 16-bit year is 3278 (AnyPS5's "distant" RFC 2822 vector); today's code refuses it (past 9999), box run of 2026-11-04
 	const bool     on       = On(kRtc);
 
 	RtcCase(f, "rtc year 65536, zone 0", &y65536, 0, on ? kRtcInvalidYear : kRtcInvalidValue, "");
@@ -204,7 +204,7 @@ void CaseRtc() {
 	RtcCase(f, "rtc tick 0, zone -1", &zero, -1, kRtcInvalidValue, "");
 	RtcCase(f, "rtc last tick of 9999, zone 0", &last9999, 0, 0, "9999-12-31T23:59:59.99Z");
 	RtcCase(f, "rtc epoch, zone +120", &epoch, 120, 0, "1970-01-01T02:00:00.00+02:00");
-	RtcCase(f, "rtc distant tick, zone -821", &distant, -821, 0, "3278-01-17T10:44:10.45-13:41");
+	RtcCase(f, "rtc distant tick, zone -821", &distant, -821, on ? 0 : kRtcInvalidValue, "3278-01-17T10:44:10.45-13:41");
 
 	{
 		g_case          = "rtc null text";

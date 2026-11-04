@@ -1,0 +1,35 @@
+[bc5] exp 0401: memory from param.json off: total 11692 MiB, flexible 1024 MiB, direct 10668 MiB (param.json: flexible 0, cpu table 0, gpu table 0, amm table 0 MiB)
+[bc5] exp 0405: mem off
+[bc5] exp 0405: tables off
+[bc5] exp 0401: KYTY_BC5_AMM_PRT_CMDS off
+[bc5] exp 0401: KYTY_BC5_AMM_EXTRA_CMDS off
+[bc5] exp 0401: KYTY_BC5_AMPR_WAITS off
+[bc5] exp 0405: fw kernel on (items: notify)
+[bc5] exp 0405: jit shm on (items: create,alias,map,close)
+[bc5] exp 0405: posix return fixes off
+[bc5] exp 0405: http2 fixes off
+[bc5] exp 0405: json2 off
+[bc5] exp 0401: NpCppWebApi SessionManager V2 off (the loader's stubs)
+[bc5] exp 0405: fw pad off
+[bc5] exp 0405: pad open ext off
+[bc5] exp 0405: fw-net off
+[bc5] exp 0401: savedata fixes off
+[bc5] exp 0401: savedata event callback off
+[bc5] exp 0401: savedata sort off
+[bc5] exp 0405: savedata memory fixes off
+[bc5] exp 0405: savedata delete busy off
+[bc5] exp 0405: savedata aliases off
+[bc5] exp 0405: systemservice off
+[bc5] exp 0405: systemservice-params-7-1000 off
+[bc5] exp 0405: ult off
+[bc5] exp 0405: userservice off
+[bc5] exp 0405: equeue fixes off
+jit0405: case 1 registration [KYTY_BC5_JIT_SHM on]: ok (3 NIDs resolve to Bc5JitArea*)
+jit0405: case 2 close [KYTY_BC5_JIT_SHM on]: ok (4 close entry points are the wrappers; close(1) answers as today)
+jit0405: case 3 create [KYTY_BC5_JIT_SHM on]: ok (two areas, handles 0x40000 up; 5 EINVAL cases)
+jit0405: case 4 alias [KYTY_BC5_JIT_SHM on]: ok (RX alias and its read alias; 3 EACCES, 2 EINVAL, 3 EBADF)
+jit0405: case 5 views [KYTY_BC5_JIT_SHM on]: ok (3 views of one memfd; bytes through RW seen through RX and R; code runs through RX)
+jit0405: case 6 map errors [KYTY_BC5_JIT_SHM on]: ok (3 EACCES, 2 EINVAL, 2 EBADF, address untouched; an occupied hint maps above it)
+jit0405: case 7 lifetimes [KYTY_BC5_JIT_SHM on]: ok (munmap drops a view; 4 closes through 4 entry points; views outlive handles)
+jit0405: case 8 notify [KYTY_BC5_FW_KERNEL on]: ok (registered; kind 5, kind 0 and a short request 0, NULL EFAULT)
+jit0405: on 8 of 8; end

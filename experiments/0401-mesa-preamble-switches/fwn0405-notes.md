@@ -90,13 +90,16 @@ One switch for the group, `KYTY_BC5_FW_NET`. It is off by default and read once 
 | `UINT64_MAX` +1 | VALUE | `0001-01-01T00:00:59.99+00:01` |
 | epoch zone 1440 | VALUE | `1970-01-02T00:00:00.00+24:00` |
 
-These six give the same answer both ways:
+These five give the same answer both ways:
 - tick 0 with zone -1 gives VALUE;
 - the last tick of 9999 gives `9999-12-31T23:59:59.99Z`;
 - epoch +120;
-- AnyPS5's distant tick at -821;
 - a null text gives 0x80B50002;
 - a null tick (now) gives a 23-character `2YYY-...Z`.
+
+AnyPS5's distant tick at -821 does not: it lies in year 134350, whose 16-bit year is 3278. On it gives
+`3278-01-17T10:44:10.45-13:41`; off, today's code refuses it with VALUE (past 9999). The first e6 box build of
+2026-11-04 found this: the test had expected the text both ways.
 
 Error cases also check that the text was not written. The expected texts were computed on the laptop with a Python copy
 of the same arithmetic, and they match AnyPS5's test.

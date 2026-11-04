@@ -1,0 +1,12 @@
+2026-11-04 15:09:52
+arm a6, mode route, cap 900 s, play 420 s, binary /home/kjaniszewski/bc5-work/exp0401e6/bin/kyty_emulator md5 7252558e78d38b3bf589d8d773676a63, launcher /home/kjaniszewski/bc5-work/exp0401t/play-pkg-0401t.sh md5 29b48119
+env: BC5_EMU=/home/kjaniszewski/bc5-work/exp0401e6/bin/kyty_emulator BC5_0401T_INPUT_CONFIG=/home/kjaniszewski/bc5-work/exp0401t/input-a6.cfg KYTY_BC5_INPUT_CMD=/home/kjaniszewski/bc5-work/exp0401t/in-a6.cmd BC5_0401T_OWNER=a6 KYTY_BC5_AUDIO_TRACE=1 KYTY_BC5_MEASURE=1 KYTY_BC5_INPUT_TRACE=1 BC5_DIRECT_CP_COHER_START_DELAY=1 BC5_DIRECT_ACB_CS_PREFIX=0 BC5_DIRECT_ACB_INHERIT=journal BC5_DIRECT_ACB_STATE_RESTORE=1 BC5_DIRECT_SPI_REQ_CTRL_PS=0 BC5_DIRECT_ARGS_WB=0 BC5_DIRECT_TABLE_CATCHER=1 KYTY_BC5_NP_SESSION_V2=1 KYTY_BC5_MEMORY_FROM_PARAM=0 KYTY_BC5_AUDIO_FIXES=1 KYTY_BC5_AUDIOOUT_CHECKS=1 KYTY_BC5_AUDIOIN_CHECKS=1 KYTY_BC5_NGS2_RACK_FIX=1 KYTY_BC5_FW_AUDIO=1
+boot 21dfc2fa, up since 2026-11-03 22:55:16
+emulator pid 2847775 exe /home/kjaniszewski/bc5-work/exp0401e6/bin/kyty_emulator cwd /home/kjaniszewski/bc5-work/exp0401t/wd
+route: cross (start screen) at 112 s
+route: the save-slot list runs at 118 s
+route: down x3, cross (slot 4) at 118 s
+route: cross (Continue) at 124 s
+route: the load seen at 126 s
+route: gameplay G = 142 s (the load at 126 s)
+launcher gone: yes

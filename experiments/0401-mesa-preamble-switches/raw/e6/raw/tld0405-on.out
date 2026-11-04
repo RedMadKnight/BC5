@@ -1,0 +1,45 @@
+tld0405: switches zlib 1, jpeg 1, ime 1, npcommon 1, npmanager 1, nptrophy 1: on
+tld0405: info stderr: the two InitAll calls' stderr goes to ./tld0405-stderr.txt
+[bc5] exp 0401: NpCppWebApi SessionManager V2 off (the loader's stubs)
+tld0405: info today's InitAll: 1914 records
+tld0405: info InitAll's stderr: [bc5] exp 0405: tables on (items: zlib,jpeg,ime,npcommon,npmanager,nptrophy)
+tld0405: info InitAll's stderr: [bc5] exp 0405: zlib port on (items: Initialize Finalize Inflate WaitForDone GetResult)
+tld0405: info InitAll's stderr: [bc5] exp 0405: jpeg port on (items: Create Delete QueryMemorySize Encode-checks; Encode itself held)
+tld0405: info InitAll's stderr: [bc5] exp 0405: ime port on (items: panel test; the 7 NIDs of the live Ime table not registered)
+tld0405: info InitAll's stderr: [bc5] exp 0405: npcommon port on (items: ids mutex cond thread clock sdkversion callout)
+tld0405: info InitAll's stderr: [bc5] exp 0405: npmanager port on (items: account presence plus request timeout wait callback)
+tld0405: info InitAll's stderr: [bc5] exp 0405: nptrophy port on (items: context handle register unlock info icon setinfo dbg)
+tld0405: info InitAll's stderr: [bc5] exp 0401: KYTY_BC5_AMM_PRT_CMDS off
+tld0405: info InitAll's stderr: [bc5] exp 0401: KYTY_BC5_AMM_EXTRA_CMDS off
+tld0405: info InitAll's stderr: [bc5] exp 0401: KYTY_BC5_AMPR_WAITS off
+tld0405: info InitAll's stderr: [bc5] exp 0405: fw kernel off
+tld0405: info InitAll's stderr: [bc5] exp 0405: jit shm off
+tld0405: info InitAll's stderr: [bc5] exp 0405: posix return fixes off
+tld0405: info InitAll's stderr: [bc5] exp 0405: http2 fixes off
+tld0405: info InitAll's stderr: [bc5] exp 0405: json2 off
+tld0405: info InitAll's stderr: [bc5] exp 0401: NpCppWebApi SessionManager V2 off (the loader's stubs)
+tld0405: info InitAll's stderr: [bc5] exp 0405: fw pad off
+tld0405: info InitAll's stderr: [bc5] exp 0405: pad open ext off
+tld0405: info InitAll's stderr: [bc5] exp 0405: fw-net off
+tld0405: info InitAll's stderr: [bc5] exp 0401: savedata fixes off
+tld0405: info InitAll's stderr: [bc5] exp 0401: savedata event callback off
+tld0405: info InitAll's stderr: [bc5] exp 0401: savedata sort off
+tld0405: info InitAll's stderr: [bc5] exp 0405: savedata memory fixes off
+tld0405: info InitAll's stderr: [bc5] exp 0405: savedata delete busy off
+tld0405: info InitAll's stderr: [bc5] exp 0405: savedata aliases off
+tld0405: info InitAll's stderr: [bc5] exp 0405: systemservice off
+tld0405: info InitAll's stderr: [bc5] exp 0405: systemservice-params-7-1000 off
+tld0405: info InitAll's stderr: [bc5] exp 0405: ult off
+tld0405: info InitAll's stderr: [bc5] exp 0405: userservice off
+tld0405: info InitAll's stderr: [bc5] exp 0405: equeue fixes off
+tld0405: info InitAll's stderr: [bc5] exp 0401: NpCppWebApi SessionManager V2 off (the loader's stubs)
+tld0405: case 1 the switches' line: ok (1 "[bc5] exp 0405: tables" line(s) over two InitAll calls, want one: "[bc5] exp 0405: tables on (items: zlib,jpeg,ime,npcommon,npmanager,nptrophy)")
+tld0405: case 2 InitAll's record list: ok (2104 records: the switched tables' 190 first (zlib 5, jpeg 4, ime 41, npcommon 28, npmanager 25, nptrophy 87), then today's InitAll's 1914, in order)
+tld0405: case 3 read once: ok (every switch flipped before a second InitAll: the same 2104 records)
+tld0405: case 4 zlib (on): ok (5 NIDs: 5 new (by key: the table's functions); 0 kept live by key (today's functions); NID-only lookups: 0 of the 0 NIDs today's InitAll also registers now reach the table (risk 1))
+tld0405: case 5 jpeg (on): ok (4 NIDs: 4 new (by key: the table's functions); 0 kept live by key (today's functions); NID-only lookups: 0 of the 0 NIDs today's InitAll also registers now reach the table (risk 1))
+tld0405: case 6 ime (on): ok (41 NIDs: 41 new (by key: the table's functions); 0 kept live by key (today's functions); NID-only lookups: 0 of the 0 NIDs today's InitAll also registers now reach the table (risk 1))
+tld0405: case 7 npcommon (on): ok (28 NIDs: 28 new (by key: the table's functions); 0 kept live by key (today's functions); NID-only lookups: 0 of the 0 NIDs today's InitAll also registers now reach the table (risk 1))
+tld0405: case 8 npmanager (on): ok (25 NIDs: 25 new (by key: the table's functions); 0 kept live by key (today's functions); NID-only lookups: 0 of the 0 NIDs today's InitAll also registers now reach the table (risk 1))
+tld0405: case 9 nptrophy (on): ok (87 NIDs: 87 new (by key: the table's functions); 0 kept live by key (today's functions); NID-only lookups: 0 of the 0 NIDs today's InitAll also registers now reach the table (risk 1))
+tld0405: on 9 of 9; end
