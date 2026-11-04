@@ -29,7 +29,7 @@ open(r'$OUTW/kit.sha256','w',newline='\n').write(''.join(hashlib.sha256(open(k,'
 timeout 120 "${SSH[@]}" "BC5_0401_SERIES=$SER bash ~/$E/box0401.sh setup $TOKEN" 2>&1 | tee "$OUT/setup.txt"
 grep -q '^set up$' "$OUT/setup.txt" || { rel "the setup failed"; exit 2; }
 echo "$(date '+%F %T') building (token $TOKEN)"
-BT=2500; case $SER in e6p | e6) BT=2900 ;; esac   # e6p: the backend's build and tests too (box0401.sh's SERIES_S 3000)
+BT=2500; case $SER in e6p | e6) BT=2900 ;; e7) BT=3200 ;; esac   # e6p: the backend's build and tests too (box0401.sh's SERIES_S 3000)
 timeout "$BT" "${SSH[@]}" "BC5_0401_SERIES=$SER bash ~/$E/box0401.sh build $TOKEN" > "$OUT/build-out.txt" 2>&1; brc=$?
 tail -40 "$OUT/build-out.txt"
 timeout 120 "${SSH[@]}" "cd ~/$E && tar cf - build.txt raw/*.out raw/*.txt 2> /dev/null" | (cd "$OUT" && tar xf - 2> /dev/null)

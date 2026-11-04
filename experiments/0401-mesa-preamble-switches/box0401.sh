@@ -31,6 +31,7 @@ case "${BC5_0401_SERIES:-}" in
     e5) SER=e5; EXPECT_UNIT=d3b7f9b0ab43184ee11de83e9e233ff8; MKFLAG="--acb-restore --catcher --inherit3 --memline" ;; # e4 + exp 0405's ports
     e6p) SER=e6p; EXPECT_UNIT=d3b7f9b0ab43184ee11de83e9e233ff8; MKFLAG="--acb-restore --catcher --inherit3 --memline" ;; # e5 + exp 0405's G7, private backend
     e6) SER=e6; EXPECT_UNIT=d3b7f9b0ab43184ee11de83e9e233ff8; MKFLAG="--acb-restore --catcher --inherit3 --memline" ;; # e5 + exp 0405's decisions 1, 3, 4 (batch 1)
+    e7) SER=e7; EXPECT_UNIT=d3b7f9b0ab43184ee11de83e9e233ff8; MKFLAG="--acb-restore --catcher --inherit3 --memline" ;; # e6 + exp 0405's decision 4, batch 2 (17 library tables)
     *) echo "0401 STOP: unknown series ${BC5_0401_SERIES}"; exit 2 ;;
 esac
 # Series d (2026-11-03 13:52): series c's edit on exp 0379's zero skip, the unit and header of exp 0388's 902585e2 build
@@ -128,7 +129,28 @@ E6_GATES=(
     "pad0405.cpp src/libs/libPad.cpp KYTY_BC5_FW_PAD pad0405"
 )
 E6_STRS=(KYTY_BC5_FW_PAD KYTY_BC5_FW_NET KYTY_BC5_FW_AUDIO KYTY_BC5_JIT_SHM KYTY_BC5_FW_KERNEL KYTY_BC5_LOAD_ZLIB KYTY_BC5_LOAD_JPEG KYTY_BC5_LOAD_IME KYTY_BC5_LOAD_NPCOMMON KYTY_BC5_LOAD_NPMANAGER KYTY_BC5_LOAD_NPTROPHY)
-E4UP=0; E5UP=0; case $SER in e4) E4UP=1 ;; e5 | e6p | e6) E4UP=1; E5UP=1 ;; esac   # e6p and e6 build everything e5 builds
+# Series e7 (2026-11-04 afternoon, the top session's GO on decision 4, batch 2): e6 plus the 17 CPU-only library tables,
+# ported first (tbt NpTus; tbp NpAuth, NpPartner001, NpParty, NpSnsFacebookDialog; tbv Voice, ScreenShot, DiscMap,
+# ulobjmgr, CompanionHttpd, CompanionUtil, VideoRecording; tbd InvitationDialog, WebBrowserDialog, SharePlay,
+# GameLiveStreaming, Remoteplay), then loaded by a switch each (tl2), after batch 1's six and before the live tables.
+# Rows chain after e6's; tbp's libNp.cpp edit runs on tbt's output.
+E7_EDITS=(
+    "tbt mktbt0405.py - src/libs/libNp.cpp:24e778261495abcd5a069396f14b28b4:eb3bfe9d56f0fcdddf29199846f46fb5"
+    "tbp mktbp0405.py - src/libs/libNp.cpp:eb3bfe9d56f0fcdddf29199846f46fb5:a5d5a02b90023a9aa3ac24ec090dde6b"
+    "tbv mktbv0405.py - src/libs/libVoice.cpp:5f63709dbf1028ceaf7784d6a070f64e:c186ab1e0900c37e8966fe0a71f14f53 src/libs/libScreenShot.cpp:cb913d120daa27f0d35702edeee71b19:7bb296c3b00e8d8c9aab448c9f0846d1 src/libs/libDiscMap.cpp:e4d975b8a55da8aed19281d7c6d17b33:f6e31686ccc82f74bcbb67c347b2701b src/libs/libUlobjmgr.cpp:b85eafd0de28af091302a8aeeeb323c1:aa1959cb68ba3fea4346779edda2308e src/libs/libCompanion.cpp:cf8ad7a647a84ba04964eb0adfe2ab02:8e61ea093cdcfc73aac6e11d85021735 src/libs/libVideoRecording.cpp:e8f90a3574dcae417df52f1802515f4d:afdd0f1764b8cc993d18ff5f30b4917e"
+    "tbd mktbd0405.py - src/libs/libInvitationDialog.cpp:204a5daeebb100a131c034edb8e58e87:daa631f8bdb8c29b506c9a7d692827b2 src/libs/libWebBrowserDialog.cpp:af36a12a0bc234f83e5c85a76d4b283d:338add3aa7e85e3eb8752920e9439b85 src/libs/libSharePlay.cpp:d6ecb7874b00ee29d9275d78d8087191:1d811f759819ec2a3e8af14541bbd72a src/libs/libGameLiveStreaming.cpp:59e46b5d8452101a0f57257703cfa3a4:178971ebfba485747c70b4d239f830a2 src/libs/libRemotePlay.cpp:abfde0e8bb446bc6870aa5df08cfb5fa:89cd84d05b4861e3852316514fbb9c89"
+    "tl2 mktl20405.py - src/libs/libs.cpp:903fa699db7c20b2b3f288ab572bce8d:aa8f39d19b563da518b14502941c7386"
+)
+E7_GATES=(
+    "tbt0405.cpp src/libs/libNp.cpp KYTY_BC5_LOAD_NPTUS tbt0405"
+    "tbp0405.cpp src/libs/libNp.cpp KYTY_BC5_LOAD_NPPARTY,KYTY_BC5_LOAD_NPPARTNER,KYTY_BC5_LOAD_NPAUTH,KYTY_BC5_LOAD_NPSNSFACEBOOK tbp0405"
+    "tbv0405.cpp src/libs/libVoice.cpp KYTY_BC5_LOAD_VOICE,KYTY_BC5_LOAD_SCREENSHOT,KYTY_BC5_LOAD_DISCMAP,KYTY_BC5_LOAD_ULOBJMGR,KYTY_BC5_LOAD_COMPANIONHTTPD,KYTY_BC5_LOAD_COMPANIONUTIL,KYTY_BC5_LOAD_VIDEORECORDING tbv0405"
+    "tbd0405.cpp src/libs/libGameLiveStreaming.cpp KYTY_BC5_LOAD_INVITATIONDIALOG,KYTY_BC5_LOAD_WEBBROWSERDIALOG,KYTY_BC5_LOAD_SHAREPLAY,KYTY_BC5_LOAD_GAMELIVESTREAMING,KYTY_BC5_LOAD_REMOTEPLAY tbd0405"
+    "tl20405.cpp src/libs/libs.cpp KYTY_BC5_LOAD_NPTUS,KYTY_BC5_LOAD_NPPARTY,KYTY_BC5_LOAD_NPPARTNER,KYTY_BC5_LOAD_NPAUTH,KYTY_BC5_LOAD_NPSNSFACEBOOK,KYTY_BC5_LOAD_VOICE,KYTY_BC5_LOAD_SCREENSHOT,KYTY_BC5_LOAD_DISCMAP,KYTY_BC5_LOAD_ULOBJMGR,KYTY_BC5_LOAD_COMPANIONHTTPD,KYTY_BC5_LOAD_COMPANIONUTIL,KYTY_BC5_LOAD_INVITATIONDIALOG,KYTY_BC5_LOAD_WEBBROWSERDIALOG,KYTY_BC5_LOAD_SHAREPLAY,KYTY_BC5_LOAD_GAMELIVESTREAMING,KYTY_BC5_LOAD_REMOTEPLAY,KYTY_BC5_LOAD_VIDEORECORDING tl20405"
+)
+E7_STRS=(KYTY_BC5_LOAD_NPTUS KYTY_BC5_LOAD_NPPARTY KYTY_BC5_LOAD_NPPARTNER KYTY_BC5_LOAD_NPAUTH KYTY_BC5_LOAD_NPSNSFACEBOOK KYTY_BC5_LOAD_VOICE KYTY_BC5_LOAD_SCREENSHOT KYTY_BC5_LOAD_DISCMAP KYTY_BC5_LOAD_ULOBJMGR KYTY_BC5_LOAD_COMPANIONHTTPD KYTY_BC5_LOAD_COMPANIONUTIL KYTY_BC5_LOAD_INVITATIONDIALOG KYTY_BC5_LOAD_WEBBROWSERDIALOG KYTY_BC5_LOAD_SHAREPLAY KYTY_BC5_LOAD_GAMELIVESTREAMING KYTY_BC5_LOAD_REMOTEPLAY KYTY_BC5_LOAD_VIDEORECORDING)
+E4UP=0; E5UP=0; case $SER in e4) E4UP=1 ;; e5 | e6p | e6 | e7) E4UP=1; E5UP=1 ;; esac   # e6p, e6 and e7 build everything e5 builds
+E6UP=0; case $SER in e6 | e7) E6UP=1 ;; esac   # e7 builds everything e6 builds
 E=$W/exp0401$SER; LOCK=$W/BOX-LOCK; QUEUE=$W/BOX-QUEUE; ST=$E/state; BIN=$E/bin/kyty_emulator; B=$W/kytyplus-build; R=$E/raw
 
 BIN_MD5=4d2b1b1dd52eaea6e3195500f604e73e; LEAN_MD5=30d4be3371d7c6376b2b4425698c1c3a; ARCHIVE_MD5=75e303357610fee8d1d205bdc88c031c
@@ -136,6 +158,7 @@ LAUNCHER_MD5=97835f8850cc22ece5c4bcdbbb646912; UNIT_MD5=d18b448299a335aadac75bbd
 SERIES_S=2400; GRACE=120; BUILD_S=1500; DISK_MAX=80
 [ "$SER" != e6p ] || SERIES_S=3000   # e6p builds the backend and runs its tests as well
 [ "$SER" != e6 ] || SERIES_S=3000    # e6: six more units' tests
+[ "$SER" != e7 ] || SERIES_S=3300    # e7: e6's tests and five more
 
 DBX=(distrobox enter ubuntu --); PY=(python3 -I); CXX=clang++
 now() { printf '%(%s)T\n' -1; }
@@ -410,7 +433,7 @@ cmd_build() {
         CUR[src/libs/bc5LleAgc.cpp]=$E/src/bc5LleAgc.cpp
         for a5 in "${inc[@]}"; do case "$a5" in src/*=*) CUR[${a5%%=*}]=${a5#*=} ;; esac; done
         CUR[src/loader/systemContent.h]=$E/mem/src/loader/systemContent.h
-        local rows5=("${E5_EDITS[@]}"); [ "$SER" != e6 ] || rows5+=("${E6_EDITS[@]}")   # e6's rows chain after e5's
+        local rows5=("${E5_EDITS[@]}"); [ "$E6UP" = 0 ] || rows5+=("${E6_EDITS[@]}"); [ "$SER" != e7 ] || rows5+=("${E7_EDITS[@]}")   # e6's rows chain after e5's, e7's after e6's
         for row in "${rows5[@]}"; do
             set -- $row; tag5=$1; script5=$2; opt5=$3; shift 3
             rm -rf "$E/r5-$tag5" "$E/x5-$tag5" || die "cannot clear $tag5"
@@ -455,7 +478,7 @@ cmd_build() {
             [ "$k5" = 1 ] || new5+=("$rel5=${CUR[$rel5]}")
         done
         inc=("${new5[@]}")
-        local built5=" " gates5=("${E5_GATES[@]}"); [ "$SER" != e6 ] || gates5+=("${E6_GATES[@]}")
+        local built5=" " gates5=("${E5_GATES[@]}"); [ "$E6UP" = 0 ] || gates5+=("${E6_GATES[@]}"); [ "$SER" != e7 ] || gates5+=("${E7_GATES[@]}")
         for row in "${gates5[@]}"; do
             set -- $row
             case "$built5" in *" ${5:-$4} "*) continue ;; esac
@@ -541,7 +564,8 @@ cmd_build() {
     if [ "$E4UP" = 1 ]; then   # exp 0402's CPU tests (e5, e6p: and exp 0405's): switch 1, 0 and unset, each in a fresh directory, away from any save
         local row d gates=("${E4_GATES[@]}")
         [ "$E5UP" = 0 ] || gates+=("${E5_GATES[@]}")
-        [ "$SER" != e6 ] || gates+=("${E6_GATES[@]}")
+        [ "$E6UP" = 0 ] || gates+=("${E6_GATES[@]}")
+        [ "$SER" != e7 ] || gates+=("${E7_GATES[@]}")
         for row in "${gates[@]}"; do
             set -- $row
             for g in on off unset; do
@@ -558,15 +582,16 @@ cmd_build() {
     # 4. What the binary must hold, and what it must still hold.
     local s strs=(BC5_DIRECT_CP_COHER_START_DELAY BC5_DIRECT_SPI_REQ_CTRL_PS 'exp 0401: CP_COHER_START_DELAY %s' 'exp 0401: SPI_SHADER_REQ_CTRL_PS %s' BC5_DIRECT_ARGS_WB BC5_DIRECT_GC_HS_OFFCHIP)
     [ -z "$SER" ] || strs+=(BC5_DIRECT_ACB_CS_PREFIX 'exp 0401: acb CS prefix %s' 'acb cs prefix (exp 0401)' BC5_DIRECT_CS_PREFIX)
-    case $SER in c | d | e | e2 | e3 | e4 | e5 | e6p | e6) strs+=(BC5_DIRECT_ACB_STATE_RESTORE 'exp 0401: acb state restore (exp 0381) %s' 'acb state restore (exp 0381)') ;; esac
+    case $SER in c | d | e | e2 | e3 | e4 | e5 | e6p | e6 | e7) strs+=(BC5_DIRECT_ACB_STATE_RESTORE 'exp 0401: acb state restore (exp 0381) %s' 'acb state restore (exp 0381)') ;; esac
     [ "${SER:0:1}" != e ] || strs+=(BC5_DIRECT_TABLE_CATCHER 'exp 0401: table catcher %s' 'table catcher (exp 0401)' KYTY_BC5_NP_SESSION_V2 KYTY_BC5_MEMORY_FROM_PARAM 'exp 0401: memory from param.json')
-    case $SER in e2 | e3 | e4 | e5 | e6p | e6) strs+=(BC5_DIRECT_ACB_INHERIT 'exp 0403: acb inherit %s' 'acb inherit (exp 0403)' 'acb inherit census (exp 0403)') ;; esac
-    case $SER in e3 | e4 | e5 | e6p | e6) ;; *) false ;; esac && strs+=("the queue's live program" 'prefixed with the queue' 'never bound in a part of its own' 'unknown, fallback ring' 'UNSEEN (not observed in this wave mode)' BC5_DIRECT_MEM_LINE 'exp 0401: memory line %s' 'memory (exp 0401)')
+    case $SER in e2 | e3 | e4 | e5 | e6p | e6 | e7) strs+=(BC5_DIRECT_ACB_INHERIT 'exp 0403: acb inherit %s' 'acb inherit (exp 0403)' 'acb inherit census (exp 0403)') ;; esac
+    case $SER in e3 | e4 | e5 | e6p | e6 | e7) ;; *) false ;; esac && strs+=("the queue's live program" 'prefixed with the queue' 'never bound in a part of its own' 'unknown, fallback ring' 'UNSEEN (not observed in this wave mode)' BC5_DIRECT_MEM_LINE 'exp 0401: memory line %s' 'memory (exp 0401)')
     [ "$SER" != d ] || strs+=(BC5_DIRECT_ZERO_SKIP BC5_DIRECT_ZERO_SLICES 'zero skip: list %s' 'job-arena fix APPLIED')
     [ "$E4UP" = 0 ] || strs+=("${E4_STRS[@]}")
     [ "$E5UP" = 0 ] || strs+=("${E5_STRS[@]}")
     [ "$SER" != e6p ] || strs+=("${E6P_STRS[@]}")
-    [ "$SER" != e6 ] || strs+=("${E6_STRS[@]}")
+    [ "$E6UP" = 0 ] || strs+=("${E6_STRS[@]}")
+    [ "$SER" != e7 ] || strs+=("${E7_STRS[@]}")
     for s in "${strs[@]}"; do
         grep -aqF -- "$s" "$BIN" || die "the private binary lacks [$s]"
     done
@@ -591,7 +616,7 @@ cmd_build() {
         echo "launcher $(rd "$E/launcher.md5") from play-pkg.sh $LAUNCHER_MD5"
         echo "warnings in the unit's compile: $(strip_ansi "$R/build.out" | grep -c 'warning:')"
         echo "function check: $(tail -1 "$R/check0401.out")"
-        case $SER in e3 | e4 | e5 | e6p | e6) echo "inherit test: $(tail -1 "$R/inh0401.out")" ;; esac
+        case $SER in e3 | e4 | e5 | e6p | e6 | e7) echo "inherit test: $(tail -1 "$R/inh0401.out")" ;; esac
         if [ "$E4UP" = 1 ]; then
             echo "e4 unit with exp 0404's switches: $FL_UNIT_MD5; fl test: $(tail -1 "$R/fl0401.out")"
             for row in "${E4_EDITS[@]}"; do echo "e4 $row"; done
@@ -602,7 +627,11 @@ cmd_build() {
             echo "e6p backend tests: $(grep -a '^All tests passed' "$R/bk-tests.out" | tail -1); G7: $(grep -a '^All tests passed' "$R/bk-pred.out" | tail -1)"   # stderr lines are mixed in: the pass line, not the last
             echo "e6p switch: $(for o in unset empty 0 1 bool; do printf '%s %s; ' "$o" "$(grep -a '^All tests passed' "$R/bk-env-$o.out" | tail -1)"; done)"
         fi
-        if [ "$SER" = e6 ]; then
+        if [ "$SER" = e7 ]; then
+            for row in "${E7_EDITS[@]}"; do echo "e7 $row"; done
+            for row in "${E7_GATES[@]}"; do set -- $row; echo "e7 test $4: $(tail -1 "$R/$4-on.out" | cut -c1-100) / $(tail -1 "$R/$4-off.out" | cut -c1-100) / $(tail -1 "$R/$4-unset.out" | cut -c1-100)"; done
+        fi
+        if [ "$E6UP" = 1 ]; then
             for row in "${E6_EDITS[@]}"; do echo "e6 $row"; done
             for row in "${E6_GATES[@]}"; do set -- $row; echo "e6 test $4: $(tail -1 "$R/$4-on.out" | cut -c1-100) / $(tail -1 "$R/$4-off.out" | cut -c1-100) / $(tail -1 "$R/$4-unset.out" | cut -c1-100)"; done
         fi

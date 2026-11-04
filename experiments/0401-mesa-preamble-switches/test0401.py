@@ -24,12 +24,14 @@ ETREE_FILES = ("src/libs/libNpCppWebApi.cpp", "src/kernel/memory.cpp", "src/kern
                "src/libs/libAudio2.cpp", "src/libs/audio.cpp", "src/bc5/pad_audio_route.hpp", "src/graphics/presentation/videoOut.cpp",
                "src/libs/libAmpr.cpp",
                "src/kernel/eventQueue.cpp", "src/libs/bc5LleAgc.cpp", "src/kernel/semaphore.cpp", "src/kernel/fileSystem.cpp", "src/libs/libKernel.cpp", "src/libs/libNet.cpp", "src/libs/libPad.cpp", "src/libs/libJson2.cpp", "src/libs/libUlt.cpp", "src/libs/libUserService.cpp", "src/libs/libSystemService.cpp", "src/loader/jit.h", "src/loader/runtimeLinker.cpp",
-               "src/libs/libRtc.cpp", "src/libs/libRudp.cpp", "src/libs/network.cpp", "src/libs/avPlayer.cpp", "src/libs/libZlib.cpp", "src/libs/libJpeg.cpp", "src/libs/libIme.cpp", "src/libs/libNp.cpp", "src/libs/libs.cpp")
+               "src/libs/libRtc.cpp", "src/libs/libRudp.cpp", "src/libs/network.cpp", "src/libs/avPlayer.cpp", "src/libs/libZlib.cpp", "src/libs/libJpeg.cpp", "src/libs/libIme.cpp", "src/libs/libNp.cpp", "src/libs/libs.cpp",
+               "src/libs/libVoice.cpp", "src/libs/libScreenShot.cpp", "src/libs/libDiscMap.cpp", "src/libs/libUlobjmgr.cpp", "src/libs/libCompanion.cpp", "src/libs/libVideoRecording.cpp", "src/libs/libInvitationDialog.cpp", "src/libs/libWebBrowserDialog.cpp", "src/libs/libSharePlay.cpp", "src/libs/libGameLiveStreaming.cpp", "src/libs/libRemotePlay.cpp")
 KIT = ("mkunit0401.py", "check0401.py", "build0401.py", "launcher0401.py", "unit0401.cpp", "env_flag.hpp", "mknp0401.py", "mkmem0401.py",
        "npgate0401.cpp", "inh0401.cpp", "mksav0401.py", "sav0401.cpp", "mkpth0401.py", "pth0401.cpp", "mkaud0401.py", "aud0401.cpp", "mkvo0401.py", "vo0401.cpp", "mkfl0401.py", "fl0401.cpp", "mkamm0401.py", "amm0401.cpp",
        "mkeq0405.py", "mkgpu0405.py", "mkthr0405.py", "mkmem0405.py", "mkfs0405.py", "mksvc0405.py", "mklib0405.py", "mkao0405.py", "mktls0405.py", "ao0405.cpp", "eq0405.cpp", "fs0405.cpp", "gpu0405.cpp", "lib0405.cpp", "mem0405.cpp", "svc0405.cpp", "thr0405.cpp", "tls0405.cpp",
        "mkpred0405.py", "backend0405.md5",
-       "mkfwn0405.py", "mkfwa0405.py", "mkjit0405.py", "mktbc0405.py", "mktbn0405.py", "mktld0405.py", "mkpad0405.py", "pad0405.cpp", "fwn0405.cpp", "fwa0405.cpp", "jit0405.cpp", "tbc0405.cpp", "tbn0405.cpp", "tld0405.cpp")
+       "mkfwn0405.py", "mkfwa0405.py", "mkjit0405.py", "mktbc0405.py", "mktbn0405.py", "mktld0405.py", "mkpad0405.py", "pad0405.cpp", "fwn0405.cpp", "fwa0405.cpp", "jit0405.cpp", "tbc0405.cpp", "tbn0405.cpp", "tld0405.cpp",
+       "mktbt0405.py", "mktbp0405.py", "mktbv0405.py", "mktbd0405.py", "mktl20405.py", "tbt0405.cpp", "tbp0405.cpp", "tbv0405.cpp", "tbd0405.cpp", "tl20405.cpp")
 BACKEND = HERE.parent.parent / "backend"   # main's backend, the stand-in for the shared archive's source (series e6p)
 BK_DIRS = ("CMakeLists.txt", "src", "include", "tests", "policy", "experiments")
 LAUNCHER = """#!/bin/bash
@@ -89,6 +91,7 @@ case "$1" in
                     echo '[bc5] exp 0401: savedata fixes %s'; echo KYTY_BC5_PTHREAD_FIXES; echo '[bc5] exp 0401: pthread fixes %s'
                     echo KYTY_BC5_AUDIO_FIXES; echo '[bc5] exp 0401: audio fixes %s'; echo KYTY_BC5_VIDEOOUT_STATUS; echo '[bc5] exp 0401: videoout status %s'
                     [ -n "${FAKE_NO_E6:-}" ] || for x in KYTY_BC5_FW_PAD KYTY_BC5_FW_NET KYTY_BC5_FW_AUDIO KYTY_BC5_JIT_SHM KYTY_BC5_FW_KERNEL KYTY_BC5_LOAD_ZLIB KYTY_BC5_LOAD_JPEG KYTY_BC5_LOAD_IME KYTY_BC5_LOAD_NPCOMMON KYTY_BC5_LOAD_NPMANAGER KYTY_BC5_LOAD_NPTROPHY; do echo "$x"; done
+                    [ -n "${FAKE_NO_E7:-}" ] || for x in KYTY_BC5_LOAD_NPTUS KYTY_BC5_LOAD_NPPARTY KYTY_BC5_LOAD_NPPARTNER KYTY_BC5_LOAD_NPAUTH KYTY_BC5_LOAD_NPSNSFACEBOOK KYTY_BC5_LOAD_VOICE KYTY_BC5_LOAD_SCREENSHOT KYTY_BC5_LOAD_DISCMAP KYTY_BC5_LOAD_ULOBJMGR KYTY_BC5_LOAD_COMPANIONHTTPD KYTY_BC5_LOAD_COMPANIONUTIL KYTY_BC5_LOAD_INVITATIONDIALOG KYTY_BC5_LOAD_WEBBROWSERDIALOG KYTY_BC5_LOAD_SHAREPLAY KYTY_BC5_LOAD_GAMELIVESTREAMING KYTY_BC5_LOAD_REMOTEPLAY KYTY_BC5_LOAD_VIDEORECORDING; do echo "$x"; done
                     [ -n "${FAKE_NO_E6P:-}" ] || { echo BC5_R3_PREDICATION; echo 'exp 0405: set predication %s'; echo 'exp 0405: G7 SET_PREDICATION %s %s'; }
                     [ -n "${FAKE_NO_E5:-}" ] || for x in KYTY_BC5_EQUEUE_FIXES KYTY_BC5_MMAP_SHIM_FIXES KYTY_BC5_AUDIOOUT_CHECKS KYTY_BC5_AUDIOIN_CHECKS KYTY_BC5_NGS2_RACK_FIX BC5_R3_MPROTECT_GAPS BC5_R3_NULL_ARGS BC5_R3_RELEASE_HOLES BC5_R3_MUNMAP_HOLES BC5_R3_FLEX_HINT BC5_R3_DMQ_END BC5_R3_EXEC_EINVAL BC5_R3_QUERY_SIZE KYTY_BC5_THREAD_SYNC_FIXES KYTY_BC5_SEMA_FIXES KYTY_BC5_SAVEDATA_MEMORY_FIXES KYTY_BC5_SAVEDATA_DELETE_BUSY KYTY_BC5_SAVEDATA_ALIASES KYTY_BC5_HTTP2_FIXES KYTY_BC5_PAD_OPEN_EXT BC5_R3_MEMSEM_SIGNAL BC5_R3_REWIND_CATCH BC5_R3_DROP_CATCH BC5_R3_SUBMIT_EOP_EVENT BC5_R3_COND_WRITE BC5_R3_WAIT_IDLE BC5_R3_TS_100MHZ KYTY_BC5_FS_FIXES KYTY_BC5_POSIX_RET_FIXES KYTY_BC5_JSON2_FIXES KYTY_BC5_ULT_FIXES KYTY_BC5_USERSERVICE_VALUES KYTY_BC5_SYSTEMSERVICE_VALUES KYTY_BC5_SYSTEMSERVICE_PARAMS_7_1000 KYTY_BC5_TLS_FIXES; do echo "$x"; done
                   fi; } > "$out"
@@ -212,7 +215,7 @@ ZHDR_MD5={md5(z / 'bc5/zero_skip.hpp')}
         (self.e / "kit.sha256").write_text("\n".join(lines) + "\n", newline="\n")
 
     def box(self, *a, **env):
-        return subprocess.run([BASH, posix(self.e / "box0401.sh"), *a], env=dict(self.env, **env), text=True, capture_output=True, timeout=600)
+        return subprocess.run([BASH, posix(self.e / "box0401.sh"), *a], env=dict(self.env, **env), text=True, capture_output=True, timeout=1800)
 
     def up(self):
         r = self.claim()
@@ -618,6 +621,39 @@ def t_series_e6():
     assert b.box("release", b.token).stdout.strip() == "released" and b.lock() == ""
 
 
+def t_series_e7():
+    b = Box("sere7", series="e7").up()
+    r = b.box("build", b.token, FAKE_NO_E7="1")
+    assert r.returncode == 1 and "lacks [KYTY_BC5_LOAD_NPTUS]" in r.stdout, r.stdout
+    b.send()
+    assert b.box("setup", b.token).returncode == 0
+    r = b.box("build", b.token, KYTY_BC5_SAVEDATA_DIR="/must/not/be/used")
+    assert r.returncode == 0, r.stdout + r.stderr
+    for e in [['tbt', 'mktbt0405.py', '-', 'src/libs/libNp.cpp:24e778261495abcd5a069396f14b28b4:eb3bfe9d56f0fcdddf29199846f46fb5'], ['tbp', 'mktbp0405.py', '-', 'src/libs/libNp.cpp:eb3bfe9d56f0fcdddf29199846f46fb5:a5d5a02b90023a9aa3ac24ec090dde6b'], ['tbv', 'mktbv0405.py', '-', 'src/libs/libVoice.cpp:5f63709dbf1028ceaf7784d6a070f64e:c186ab1e0900c37e8966fe0a71f14f53', 'src/libs/libScreenShot.cpp:cb913d120daa27f0d35702edeee71b19:7bb296c3b00e8d8c9aab448c9f0846d1', 'src/libs/libDiscMap.cpp:e4d975b8a55da8aed19281d7c6d17b33:f6e31686ccc82f74bcbb67c347b2701b', 'src/libs/libUlobjmgr.cpp:b85eafd0de28af091302a8aeeeb323c1:aa1959cb68ba3fea4346779edda2308e', 'src/libs/libCompanion.cpp:cf8ad7a647a84ba04964eb0adfe2ab02:8e61ea093cdcfc73aac6e11d85021735', 'src/libs/libVideoRecording.cpp:e8f90a3574dcae417df52f1802515f4d:afdd0f1764b8cc993d18ff5f30b4917e'], ['tbd', 'mktbd0405.py', '-', 'src/libs/libInvitationDialog.cpp:204a5daeebb100a131c034edb8e58e87:daa631f8bdb8c29b506c9a7d692827b2', 'src/libs/libWebBrowserDialog.cpp:af36a12a0bc234f83e5c85a76d4b283d:338add3aa7e85e3eb8752920e9439b85', 'src/libs/libSharePlay.cpp:d6ecb7874b00ee29d9275d78d8087191:1d811f759819ec2a3e8af14541bbd72a', 'src/libs/libGameLiveStreaming.cpp:59e46b5d8452101a0f57257703cfa3a4:178971ebfba485747c70b4d239f830a2', 'src/libs/libRemotePlay.cpp:abfde0e8bb446bc6870aa5df08cfb5fa:89cd84d05b4861e3852316514fbb9c89'], ['tl2', 'mktl20405.py', '-', 'src/libs/libs.cpp:903fa699db7c20b2b3f288ab572bce8d:aa8f39d19b563da518b14502941c7386']]:
+        for f in e[3:]:
+            rel, _, out = f.split(":")
+            assert md5(b.e / ("x5-" + e[0]) / rel) == out, (e[0], rel)
+    for n in ['tbt0405', 'tbp0405', 'tbv0405', 'tbd0405', 'tl20405'] + ['fwn0405', 'tbn0405', 'tld0405', 'pad0405'] + ["eq0405", "tls0405", "sav0401", "amm0401"]:   # e7's tests, e6's, e5's and e4's
+        assert ("%s: on 3 of 3; end" % n) in r.stdout, (n, r.stdout)
+    assert "e7 tbt mktbt0405.py" in r.stdout and "e7 test tl20405: tl20405: on 3 of 3; end" in r.stdout and "e6 test tld0405: tld0405: on 3 of 3; end" in r.stdout, r.stdout
+    bu = load("build0401")
+    args = (b.root / "build-args.txt").read_text().splitlines()
+    rest, archive = bu.split_archive(args[5:])
+    assert archive is None   # e7 links the shared archive
+    incs, units, gts = bu.parse_rest(rest)   # no unit twice
+    assert units["src/libs/libNp.cpp"].replace("\\", "/").endswith("x5-tbp/src/libs/libNp.cpp"), units["src/libs/libNp.cpp"]   # tbp's runs on tbt's
+    assert units["src/libs/libs.cpp"].replace("\\", "/").endswith("x5-tl2/src/libs/libs.cpp"), units["src/libs/libs.cpp"]
+    for e in [['tbv', 'mktbv0405.py', '-', 'src/libs/libVoice.cpp:5f63709dbf1028ceaf7784d6a070f64e:c186ab1e0900c37e8966fe0a71f14f53', 'src/libs/libScreenShot.cpp:cb913d120daa27f0d35702edeee71b19:7bb296c3b00e8d8c9aab448c9f0846d1', 'src/libs/libDiscMap.cpp:e4d975b8a55da8aed19281d7c6d17b33:f6e31686ccc82f74bcbb67c347b2701b', 'src/libs/libUlobjmgr.cpp:b85eafd0de28af091302a8aeeeb323c1:aa1959cb68ba3fea4346779edda2308e', 'src/libs/libCompanion.cpp:cf8ad7a647a84ba04964eb0adfe2ab02:8e61ea093cdcfc73aac6e11d85021735', 'src/libs/libVideoRecording.cpp:e8f90a3574dcae417df52f1802515f4d:afdd0f1764b8cc993d18ff5f30b4917e'], ['tbd', 'mktbd0405.py', '-', 'src/libs/libInvitationDialog.cpp:204a5daeebb100a131c034edb8e58e87:daa631f8bdb8c29b506c9a7d692827b2', 'src/libs/libWebBrowserDialog.cpp:af36a12a0bc234f83e5c85a76d4b283d:338add3aa7e85e3eb8752920e9439b85', 'src/libs/libSharePlay.cpp:d6ecb7874b00ee29d9275d78d8087191:1d811f759819ec2a3e8af14541bbd72a', 'src/libs/libGameLiveStreaming.cpp:59e46b5d8452101a0f57257703cfa3a4:178971ebfba485747c70b4d239f830a2', 'src/libs/libRemotePlay.cpp:abfde0e8bb446bc6870aa5df08cfb5fa:89cd84d05b4861e3852316514fbb9c89'], ['tl2', 'mktl20405.py', '-', 'src/libs/libs.cpp:903fa699db7c20b2b3f288ab572bce8d:aa8f39d19b563da518b14502941c7386']]:
+        for f in e[3:]:
+            rel = f.split(":")[0]
+            assert units[rel].replace("\\", "/").endswith("x5-%s/%s" % (e[0], rel)), (rel, units.get(rel))
+    assert units["src/libs/libPad.cpp"].replace("\\", "/").endswith("x5-pad/src/libs/libPad.cpp")   # e6's units stay where e7 left them alone
+    assert len(gts) == len(set(g[1] for g in gts)) and any(g[1].endswith("tl20405") for g in gts) and any(g[1].endswith("tld0405") for g in gts), gts
+    d = (b.e / "play-pkg-0401.sh").read_text()
+    assert "EMU=~/bc5-work/exp0401e7/bin/kyty_emulator" in d, d
+    assert b.box("release", b.token).stdout.strip() == "released" and b.lock() == ""
+
+
 def t_link_archive_swap():
     bu = load("build0401")
     db = [{"output": "src/kyty_emulator", "command": "/usr/bin/c++ -O2 src/CMakeFiles/kyty_emulator.dir/libs/bc5LleAgc.cpp.o -o src/kyty_emulator /home/u/bc5-work/backend-ubuntu/libbc5_backend.a -ldrm"}]
@@ -796,7 +832,7 @@ def t_build_commands():
 
 def main():
     cases = [v for k, v in sorted(globals().items()) if k.startswith("t_")]
-    assert len(cases) == 31, len(cases)
+    assert len(cases) == 32, len(cases)
     bad = 0
     for c in cases:
         try:

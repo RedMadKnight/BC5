@@ -413,4 +413,52 @@ ngs2_pcm.h family stays out. Six laptop agents ported it, one group each (`*0405
     - The list came at 93, 94, 93 and 93 s (23.2 and 23.0 flips/s with fwa; 22.6 and 23.0 without). All four were clean.
     - So the slow t6fwa start did not come back. a6's slower start is not explained; its route and its check passed.
 
+**Series e7: e6 plus decision 4's batch 2, the 17 library tables (2026-11-04 afternoon, the top session's order; laptop
+only so far).** The top session's order for the 26 tables batch 1 left: the CPU-only library tables first, then the
+hardware ones, then GnmDriver, RazorCpu, RageEngine and Ngs2. `tb2-0405-sweep.md` has the sizes of all 26 (about 21 days
+by exp 0405's rule; the library group about 9.5). Five laptop agents did the library group, under one common brief:
+
+| Agent | Tables | Units (input → output) | Ported / match / held | Test (on / off) |
+|---|---|---|---|---|
+| tbt | NpTus | libNp (e6) 24e77826 → eb3bfe9d | 136 / 0 / 6 | 77 / 75 |
+| tbp | NpAuth, NpPartner001, NpParty, NpSnsFacebookDialog | libNp eb3bfe9d (tbt's) → a5d5a02b | 19 / 1 / 16 | 74 / 30 |
+| tbv | Voice, ScreenShot, DiscMap, ulobjmgr, CompanionHttpd, CompanionUtil, VideoRecording | libVoice c186ab1e, libScreenShot 7bb296c3, libDiscMap f6e31686, libUlobjmgr aa1959cb, libCompanion 8e61ea09, libVideoRecording afdd0f17 | 20 / 13 / 27 | 68 / 68 |
+| tbd | InvitationDialog, WebBrowserDialog, SharePlay, GameLiveStreaming, Remoteplay | libInvitationDialog daa631f8, libWebBrowserDialog 338add3a, libSharePlay 1d811f75, libGameLiveStreaming 178971eb, libRemotePlay 89cd84d0 | 27 / 10 / 90 | 69 / 38 |
+| tl2 | the loading of all 17 | libs.cpp (e6) 903fa699 → aa8f39d1 | 17 switches | 20 / 20 |
+
+- *Switches.* One per table, `KYTY_BC5_LOAD_<TABLE>`, shared by the port and the loader, as in batch 1. Off is today's
+  stub path, and the table is not loaded. On, the table loads after batch 1's six and before every live table. Each
+  table prints `[bc5] exp 0405: <table> port on (items: …)` or `… port off` at its init. tl2's `tables` line is e6's: with
+  every batch 2 switch off, it and the record list are byte for byte e6's, and e6's `tld0405.cpp` passes unchanged.
+- *The 365 NIDs:* 202 ported, 24 already match, 139 held.
+  - 126 of the held are AnyPS5 placeholders, absent there, or without behaviour upstream, so there is nothing to port
+    (Remoteplay's 39 among them).
+  - 12 are held for split state (below).
+  - VideoRecording SetInfo is held because its upstream note names no run.
+- *Provenance.* shadPS4, firmware runs and module readings (decision 1). Rows with IDA-sourced signatures are ported from
+  behaviour only (decision 3; the top session: such rows are never held): NpParty's six, NpTus's A-form title context and
+  GameLiveStreaming EnableLiveStreaming (already matched). CompanionUtil GetEvent comes from shadPS4, because AnyPS5's note
+  names a disassembly; the value is the same. ScreenShot's checks are a module reading with no run named: ported, and the
+  switch drops them.
+- *Split state.* No NID of the 17 is registered live, and none is shared between dead tables; tl2's test fails if a port
+  ever adds one. Where a library has live functions, they are in another file. That file may not be edited here, so:
+  - NpAuth: the 4 getters need the request that libNet.cpp's live CreateRequest makes; held. Only SetTimeout's argument
+    checks are ported.
+  - Voice: 8 calls need the live port table in libAudio.cpp; held (about 0.8 day, and the id range differs: console 0-127,
+    live 1-254).
+  - WebBrowserDialog, SharePlay, GameLiveStreaming: the live Initialize/Terminate keep no state. So NOT_INITIALIZED is
+    held, and every other answer is given as for an initialized library.
+- *Loading held stubs costs a diagnostic.* Today an unresolved import already returns 0 and writes nothing
+  (`runtimeLinker.cpp:320-382`). It also prints exp 0327's `stubbed import called` line. A loaded stub returns the same 0
+  but prints no such line. Remoteplay has nothing ported, so its switch should stay off; the same holds for the held stubs of
+  every other table once it is on.
+- *Laptop checks.* Every script applies to the e7 input tree with the md5s above, refuses its own output, and undoes to
+  its input. Every test passes on, off, unset and mixed in a stand-in link with the real units and `symbolDatabase.cpp`.
+  Against the unedited inputs, every off run passes and every on run fails, so each off expectation is today's answer.
+  VS clang++ 22 syntax checks are clean. tbp's edit, applied after tbt's, gives tbt's NpTus namespace and tbp's rest
+  exactly.
+- *Kit* (`box0401.sh` series e7): rows chain after e6's (E7_EDITS, E7_GATES, E7_STRS); e7 also builds every e6 unit and test.
+  The stand-in cases `t_series_e7` and `t_series_e6` pass. A stand-in build of e7 takes about 11 minutes on the laptop, so
+  its timeout in `test0401.py` is now 1800 s.
+
 **Verdict.** Not yet. Both switches together made the game too slow to play, and the confounds above leave the cause open.
