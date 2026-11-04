@@ -69,8 +69,9 @@ All 26: 1,033 NIDs, 3,068 logic lines, about 21 days by the rule.
   functions in the same library (Ngs2 has 26). Each port must share state with the live side, or show that none is shared.
 - **Provenance.** AnyPS5's notes for these modules cite shadPS4, firmware runs (BunnyFl's 13.42 run) and module readings
   (accepted under decision 1), and in places Orbital's IDA type database (`libSceVoice`: SetMuteFlagAll, SetBitRate,
-  UpdatePort). Rows that name an IDA database, a disassembly with addresses or SDK headers as their source stay out, as in
-  batch 1. Each port agent checks its rows.
+  UpdatePort). Rows that name a disassembly with addresses or SDK headers as their source stay out, as in batch 1. Rows
+  sourced from an IDA database are ported, rewritten from behaviour only (decision 3; the top session, 2026-11-04, after
+  this sweep: such rows are not held). Each port agent checks its rows.
 - **Usbd** follows AnyPS5's libusb transport: it needs host USB access and is the largest hardware item (exp 0405 #42).
 
 ## Files
