@@ -418,8 +418,9 @@ ngs2_pcm.h family stays out. Six laptop agents ported it, one group each (`*0405
   - r6's 65 words, except `KYTY_BC5_AUDIO_FIXES=set,room` (the haptics rule) instead of `=1`; FL_CRUMBS on, FL_SKIP_ES off.
   - The e2 file it replaced is `exp0401e6/desktop-before-20261104-185642.bak` (aa6ee27d). `shortcut0401.sh cpacb-e2` puts
     e2 back.
-  - Still his: the physical DualSense replug and a DS4 with this audio setting. a5r passed `set,room` on e5, and a6 passed
-    the audio group with `=1`.
+  - His physical replug on this shortcut, both pads (relayed by the top session, his words): "Odłączanie i podłączenie
+    padów PS4 i ps5 - poprawnie". So unplugging and replugging the DS4 and the DualSense works with e6's audio group on
+    and `set,room`.
 
 **Series e7: e6 plus decision 4's batch 2, the 17 library tables (2026-11-04 afternoon, the top session's order; laptop
 only so far).** The top session's order for the 26 tables batch 1 left: the CPU-only library tables first, then the
