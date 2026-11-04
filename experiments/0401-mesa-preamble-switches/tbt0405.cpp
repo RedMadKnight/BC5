@@ -9,12 +9,17 @@
 //        *Async/blocking pairs its argument checks in AnyPS5's order: each check on a fresh request (the *Async form
 //        answers the check's error and leaves the request unstarted, or 0 and the request finishes SIGNED_OUT; the
 //        blocking form answers the error or SIGNED_OUT), on an unknown request (the argument check first, else
-//        INVALID_ID), and once on an aborted request (ABORTED); no output is ever written. The 6 held stubs keep today's
-//        0x80550005.
-//   off: today's answer, 0x80550005 from all 142, with every output left as it was.
+//        INVALID_ID), and once on an aborted request (ABORTED); no output is ever written. The 6 held stubs are not
+//        registered (neither by the exact key nor by FindByNid).
+//        With KYTY_BC5_NPTUS_FRIENDS_RUN also on, the A and cross-save friends calls, sceNpTusGetDataForCrossSaveVUser and
+//        sceNpTusDeleteMultiSlotDataVUser answer as the firmware 13.42 run that AnyPS5's debt note reports (the same
+//        checks, the run's expectations); every other call as without it.
+//   off: today's answer, 0x80550005 from all 142 (all registered), with every output left as it was; the run switch has no
+//        effect.
 // No game, GPU, window, sound device, network or USB; no subsystem is started (the port needs none). Prints one line per
-// case and finally "tbt0405: on|off N of N; end"; exit 0 only then. A watchdog ends a hang after 60 s with a FAIL line.
-// An optional argument "on"/"off" must match the switch. Run it in a fresh directory: it writes ./tbt0405-dump (the
+// case and finally "tbt0405: on|off|mixed N of N; end" (on: both switches on; off: both off or unset; mixed: one of them,
+// run with the expectations of that setting); exit 0 only then. A watchdog ends a hang after 60 s with a FAIL line. An
+// optional argument "on"/"off"/"mixed" must match the switches. Run it in a fresh directory: it writes ./tbt0405-dump (the
 // symbol dump) and removes it.
 // Build: build0401.py ... src/libs/libNp.cpp=<out>/src/libs/libNp.cpp --gate tbt0405.cpp <bin> --like src/libs/libNp.cpp
 
@@ -54,7 +59,8 @@ std::atomic<int>         g_cases {0};
 std::atomic<int>         g_passed {0};
 std::atomic<const char*> g_case {"start"};
 char                     g_case_buf[256];
-bool                     g_on = false;
+bool                     g_on  = false; // KYTY_BC5_LOAD_NPTUS
+bool                     g_run = false; // KYTY_BC5_NPTUS_FRIENDS_RUN, in effect (only with the port on)
 
 std::string Fmt(const char* format, ...) __attribute__((format(printf, 1, 2)));
 std::string Fmt(const char* format, ...) {
@@ -407,11 +413,23 @@ int NewRequest() {
 	return r;
 }
 
+bool IsHeld(const char* name) {
+	for (const char* h: kHeld) {
+		if (std::strcmp(h, name) == 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
 void CaseRegistration() {
 	SetCase("registration");
 	int         found = 0;
 	std::string bad;
 	for (const auto& e: kTable) {
+		if (g_on && IsHeld(e.name)) {
+			continue; // CaseHeld
+		}
 		const auto* r  = g_db.Find(Key(e.nid));
 		const auto* rn = g_db.FindByNid(e.nid, Loader::SymbolType::Func);
 		if (r != nullptr && r->vaddr != 0 && rn != nullptr && rn->vaddr == r->vaddr) {
@@ -420,6 +438,7 @@ void CaseRegistration() {
 			bad += Fmt(" %s", e.nid);
 		}
 	}
+	const int want = g_on ? 136 : 142;
 	// every record of the database: the table registers these 142 and nothing else
 	std::error_code ec;
 	std::filesystem::remove_all("tbt0405-dump", ec);
@@ -433,8 +452,9 @@ void CaseRegistration() {
 	}
 	dump.close();
 	std::filesystem::remove_all("tbt0405-dump", ec);
-	Report("registration: the 142 NIDs by the exact key and by FindByNid, and no other record", found == 142 && lines == 142,
-	       Fmt("%d found, %d records%s", found, lines, bad.c_str()));
+	Report(g_on ? "registration: the 136 ported NIDs by the exact key and by FindByNid, and no other record"
+	            : "off: registration: the 142 NIDs by the exact key and by FindByNid, and no other record",
+	       found == want && lines == want, Fmt("%d found, %d records, want %d%s", found, lines, want, bad.c_str()));
 }
 
 void CaseCore() {
@@ -772,15 +792,21 @@ Call SlotCall(const std::string& base, Form form, SlotKind kind, const SlotArgs&
 }
 
 // need_slots: the form answers no slot with INSUFFICIENT_ARGUMENT; npid_limit: too many slots is TOO_MANY_NPID;
-// target_checked: a null NpId target is INSUFFICIENT_ARGUMENT (the NpId delete and data-status forms).
-void SlotFamily(const std::string& base, Form form, SlotKind kind, bool need_slots, bool npid_limit, bool target_checked) {
+// target_checked: a null NpId target is INSUFFICIENT_ARGUMENT (the NpId delete and data-status forms);
+// run_form: sceNpTusDeleteMultiSlotDataVUser, which KYTY_BC5_NPTUS_FRIENDS_RUN changes (the 13.42 run: a null or empty user
+// and arrayLen -1 taken, 0 INVALID_ARGUMENT; the rest as AnyPS5).
+void SlotFamily(const std::string& base, Form form, SlotKind kind, bool need_slots, bool npid_limit, bool target_checked,
+                bool run_form = false) {
 	SlotArgs v;
 	v.target = Target(form);
 	if (kind == SlotKind::Set) {
 		v.array = g_values;
 	}
+	const bool run       = g_run && run_form;
 	const bool has_array = kind != SlotKind::Delete;
-	const int  no_slot   = need_slots ? kInsuff : kInvArg;
+	const int  no_slot   = run ? kInvArg : (need_slots ? kInsuff : kInvArg);
+	const int  minus_one = run ? 0 : (need_slots ? kInsuff : kInvArg);
+	const int  minus_two = need_slots ? kInsuff : kInvArg; // the run keeps AnyPS5's answer
 	const int  too_many  = npid_limit ? kTooManyNpId : kTooManySlots;
 	const auto C         = [&](const char* what, int want, auto mut) {
         return Check {what, want, SlotCall(base, form, kind, With(v, mut))};
@@ -790,7 +816,16 @@ void SlotFamily(const std::string& base, Form form, SlotKind kind, bool need_slo
 	c.push_back(C("64 slots", 0, [](SlotArgs& a) { a.count = 64; }));
 	c.push_back(C("slot ids null", kInsuff, [](SlotArgs& a) { a.ids = nullptr; }));
 	c.push_back(C("no slot", no_slot, [](SlotArgs& a) { a.count = 0; }));
-	c.push_back(C("count -1", no_slot, [](SlotArgs& a) { a.count = -1; }));
+	c.push_back(C("count -1", minus_one, [](SlotArgs& a) { a.count = -1; }));
+	c.push_back(C("count -2", minus_two, [](SlotArgs& a) { a.count = -2; }));
+	c.push_back(C("count -1 and an option", run ? kInvArg : minus_one, [](SlotArgs& a) {
+		a.count  = -1;
+		a.option = g_opt;
+	}));
+	c.push_back(C("count -1 and slot ids null", kInsuff, [](SlotArgs& a) {
+		a.count = -1;
+		a.ids   = nullptr;
+	}));
 	c.push_back(C("an option", kInvArg, [](SlotArgs& a) { a.option = g_opt; }));
 	c.push_back(C("65 slots", too_many, [](SlotArgs& a) { a.count = 65; }));
 	c.push_back(C("a negative slot id", kInvArg, [](SlotArgs& a) { a.ids = g_slots_neg; }));
@@ -824,12 +859,12 @@ void SlotFamily(const std::string& base, Form form, SlotKind kind, bool need_slo
 		}));
 	}
 	if (ByName(form)) {
-		c.push_back(C("user null", kInsuff, [](SlotArgs& a) { a.target = nullptr; }));
-		c.push_back(C("user null and an option", kInsuff, [](SlotArgs& a) {
+		c.push_back(C("user null", run ? 0 : kInsuff, [](SlotArgs& a) { a.target = nullptr; }));
+		c.push_back(C("user null and an option", run ? kInvArg : kInsuff, [](SlotArgs& a) {
 			a.target = nullptr;
 			a.option = g_opt;
 		}));
-		c.push_back(C("an empty name", kInvArg, [](SlotArgs& a) { a.target = &g_noname; }));
+		c.push_back(C("an empty name", run ? 0 : kInvArg, [](SlotArgs& a) { a.target = &g_noname; }));
 		c.push_back(C("an empty name and 65 slots", too_many, [](SlotArgs& a) {
 			a.target = &g_noname;
 			a.count  = 65;
@@ -909,7 +944,7 @@ struct DataGetArgs {
 	const void* target = nullptr;
 	int32_t     slot   = 1;
 	void*       status = g_out;
-	uint64_t    size   = 64;
+	uint64_t    size   = 0x1F0; // one of the two sizes the 13.42 run takes; AnyPS5 takes any size but 0
 	void*       data   = g_out + 1024;
 	void*       option = nullptr;
 };
@@ -919,6 +954,9 @@ void DataGetFamily(const std::string& base, Form form) {
 	v.target           = Target(form);
 	const bool account = AccountForm(form);
 	const bool cross   = form == Form::CrossSave || form == Form::UserCrossSave;
+	// KYTY_BC5_NPTUS_FRIENDS_RUN changes sceNpTusGetDataForCrossSaveVUser (the 13.42 run): only sizes 0x1F0 and 0x210 are
+	// taken (another: INVALID_ALIGNMENT here, TODO(verify)), a null status and an empty name are taken
+	const bool run     = g_run && form == Form::UserCrossSave;
 	using FA           = IFn<int, uint64_t, int32_t, void*, uint64_t, void*, uint64_t, void*>;
 	using FP           = IFn<int, const void*, int32_t, void*, uint64_t, void*, uint64_t, void*>;
 	const auto fa      = account ? Pair2<FA>(base) : Fns<FA> {};
@@ -935,9 +973,15 @@ void DataGetFamily(const std::string& base, Form form) {
 	};
 	std::vector<Check> c;
 	c.push_back(C("valid", 0, [](DataGetArgs&) {}));
+	c.push_back(C("status size 0x210", 0, [](DataGetArgs& a) { a.size = 0x210; }));
+	c.push_back(C("status size 0x200", run ? kInvAlign : 0, [](DataGetArgs& a) { a.size = 0x200; }));
 	c.push_back(C("data null (not checked)", 0, [](DataGetArgs& a) { a.data = nullptr; }));
-	c.push_back(C("status null", kInsuff, [](DataGetArgs& a) { a.status = nullptr; }));
-	c.push_back(C("status size 0", kInsuff, [](DataGetArgs& a) { a.size = 0; }));
+	c.push_back(C("status null", run ? 0 : kInsuff, [](DataGetArgs& a) { a.status = nullptr; }));
+	c.push_back(C("status size 0", run ? kInvAlign : kInsuff, [](DataGetArgs& a) { a.size = 0; }));
+	c.push_back(C("status null and size 0", run ? kInvAlign : kInsuff, [](DataGetArgs& a) {
+		a.status = nullptr;
+		a.size   = 0;
+	}));
 	c.push_back(C("slot -1", kInvArg, [](DataGetArgs& a) { a.slot = -1; }));
 	c.push_back(C("an option", kInvArg, [](DataGetArgs& a) { a.option = g_opt; }));
 	c.push_back(C("status null and an option", kInvArg, [](DataGetArgs& a) {
@@ -953,8 +997,12 @@ void DataGetFamily(const std::string& base, Form form) {
 	}
 	if (ByName(form)) {
 		c.push_back(C("user null", kInsuff, [](DataGetArgs& a) { a.target = nullptr; }));
-		c.push_back(C("an empty name", kInvArg, [](DataGetArgs& a) { a.target = &g_noname; }));
-		c.push_back(C("an empty name and status size 0", kInsuff, [](DataGetArgs& a) {
+		c.push_back(C("user null and status size 0x200", kInsuff, [](DataGetArgs& a) {
+			a.target = nullptr;
+			a.size   = 0x200;
+		}));
+		c.push_back(C("an empty name", run ? 0 : kInvArg, [](DataGetArgs& a) { a.target = &g_noname; }));
+		c.push_back(C("an empty name and status size 0", run ? kInvAlign : kInsuff, [](DataGetArgs& a) {
 			a.target = &g_noname;
 			a.size   = 0;
 		}));
@@ -979,6 +1027,7 @@ FriendsOpt g_fopt_ok {sizeof(FriendsOpt), &g_rank1, nullptr};
 FriendsOpt g_fopt_norank {sizeof(FriendsOpt), nullptr, nullptr};
 FriendsOpt g_fopt_small {0x10, &g_rank1, nullptr};
 FriendsOpt g_fopt_rank0 {sizeof(FriendsOpt), &g_rank0, nullptr};
+FriendsOpt g_fopt_small0 {0x10, &g_rank0, nullptr};
 
 void FriendsFamily(const std::string& base, int32_t last_sort, bool option_read) {
 	using F      = IFn<int, int32_t, int32_t, int32_t, void*, uint64_t, int, void*>;
@@ -1013,12 +1062,16 @@ void FriendsFamily(const std::string& base, int32_t last_sort, bool option_read)
 			a.array  = nullptr;
 		}));
 	} else {
-		g_fopt_ok.hits     = reinterpret_cast<uint32_t*>(g_out + 2048); // never written
-		g_fopt_norank.hits = reinterpret_cast<uint32_t*>(g_out + 2048);
+		// KYTY_BC5_NPTUS_FRIENDS_RUN (the 13.42 run): an option of another size is INVALID_ARGUMENT, start rank 0 is taken
+		g_fopt_ok.hits      = reinterpret_cast<uint32_t*>(g_out + 2048); // never written
+		g_fopt_norank.hits  = reinterpret_cast<uint32_t*>(g_out + 2048);
+		g_fopt_small0.hits  = reinterpret_cast<uint32_t*>(g_out + 2048);
+		const int bad_size  = g_run ? kInvArg : kInvAlign;
 		c.push_back(C("an option, start rank 1", 0, [](FriendsArgs& a) { a.option = &g_fopt_ok; }));
 		c.push_back(C("an option, no start rank", 0, [](FriendsArgs& a) { a.option = &g_fopt_norank; }));
-		c.push_back(C("an option of size 0x10", kInvAlign, [](FriendsArgs& a) { a.option = &g_fopt_small; }));
-		c.push_back(C("an option, start rank 0", kInvArg, [](FriendsArgs& a) { a.option = &g_fopt_rank0; }));
+		c.push_back(C("an option of size 0x10", bad_size, [](FriendsArgs& a) { a.option = &g_fopt_small; }));
+		c.push_back(C("an option, start rank 0", g_run ? 0 : kInvArg, [](FriendsArgs& a) { a.option = &g_fopt_rank0; }));
+		c.push_back(C("an option of size 0x10 and start rank 0", bad_size, [](FriendsArgs& a) { a.option = &g_fopt_small0; }));
 		c.push_back(C("sort type 0 and an option of size 0x10", kInvArg, [](FriendsArgs& a) {
 			a.sort   = 0;
 			a.option = &g_fopt_small;
@@ -1298,7 +1351,7 @@ void CasePairs() {
 	SlotFamily("sceNpTusDeleteMultiSlotVariableVUser", Form::User, SlotKind::Delete, true, false, false);
 	SlotFamily("sceNpTusDeleteMultiSlotData", Form::NpId, SlotKind::Delete, true, false, true);
 	SlotFamily("sceNpTusDeleteMultiSlotDataA", Form::Account, SlotKind::Delete, false, false, false);
-	SlotFamily("sceNpTusDeleteMultiSlotDataVUser", Form::User, SlotKind::Delete, true, false, false);
+	SlotFamily("sceNpTusDeleteMultiSlotDataVUser", Form::User, SlotKind::Delete, true, false, false, true);
 	// multi-slot data statuses (:597, :607, :617, :626, :636, :646)
 	SlotFamily("sceNpTusGetMultiSlotDataStatus", Form::NpId, SlotKind::Status, true, true, true);
 	SlotFamily("sceNpTusGetMultiSlotDataStatusVUser", Form::User, SlotKind::Status, true, true, false);
@@ -1360,7 +1413,21 @@ void CasePairs() {
 void CaseHeld() {
 	SetCase("held");
 	std::string bad;
-	int         today = 0;
+	if (g_on) {
+		int absent = 0;
+		for (const char* n: kHeld) {
+			const char* nid = NidOf(n);
+			if (g_db.Find(Key(nid)) == nullptr && g_db.FindByNid(nid, Loader::SymbolType::Func) == nullptr) {
+				absent++;
+			} else {
+				bad += Fmt(" %s", n);
+			}
+		}
+		Report("the 6 held stubs (AnyPS5 does not implement them) are not registered (exact key, FindByNid)", absent == 6,
+		       Fmt("%d of 6 absent%s", absent, bad.c_str()));
+		return;
+	}
+	int today = 0;
 	for (const char* n: kHeld) {
 		const int v = Fn<IFn<>>(n)();
 		if (v == kToday) {
@@ -1369,7 +1436,7 @@ void CaseHeld() {
 			bad += Fmt(" %s=%s", n, Hex(v).c_str());
 		}
 	}
-	Report(std::string(g_on ? "" : "off: ") + "the 6 held stubs (AnyPS5 does not implement them): today's 0x80550005", today == 6,
+	Report("off: the 6 held stubs are registered and answer today's 0x80550005", today == 6,
 	       Fmt("%d of 6%s", today, bad.c_str()));
 }
 
@@ -1378,13 +1445,17 @@ void CaseHeld() {
 int main(int argc, char** argv) {
 	using namespace tbt0405;
 	const bool  on   = SwitchOn("KYTY_BC5_LOAD_NPTUS");
-	const char* mode = on ? "on" : "off";
+	const bool  run  = SwitchOn("KYTY_BC5_NPTUS_FRIENDS_RUN");
+	const char* mode = on && run ? "on" : (!on && !run ? "off" : "mixed");
 	if (argc > 2 || (argc == 2 && std::strcmp(argv[1], mode) != 0)) {
-		std::printf("tbt0405: the argument says %s but the switch says %s\n", argc == 2 ? argv[1] : "too much", mode);
+		std::printf("tbt0405: the argument says %s but the switches say %s (nptus %d, friends run %d)\n",
+		            argc == 2 ? argv[1] : "too much", mode, on ? 1 : 0, run ? 1 : 0);
 		return 2;
 	}
-	g_on = on;
-	std::printf("tbt0405: switch nptus %d: %s\n", on ? 1 : 0, mode);
+	g_on  = on;
+	g_run = on && run; // the run switch acts only with the port on
+	std::printf("tbt0405: switches nptus %d, friends run %d (in effect %d): %s\n", on ? 1 : 0, run ? 1 : 0, g_run ? 1 : 0,
+	            mode);
 	std::fflush(stdout);
 	std::thread(Watchdog).detach();
 	InitData();

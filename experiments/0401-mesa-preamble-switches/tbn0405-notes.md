@@ -276,3 +276,15 @@ NIDs.
 
 All three switches on: 165 cases (npcommon 57, npmanager 51, nptrophy 57), ending `tbn0405: on 165 of 165; end`.
 All off or unset: 34 cases (12, 15, 7), ending `tbn0405: off 34 of 34; end`. Mixed switches are refused (exit 2).
+
+2026-11-04 (series e7, agent tbt, at the top session's request; found by tbp):
+- **The fix.** 65 `Rc(name, call(...), want, more[, info])` statements checked a call's outputs in the call's own argument
+  list, and C++ leaves the argument evaluation order unspecified. Each such call is now its own statement inside a block:
+  `{ const int call_rc = call(...); Rc(name, call_rc, want, more[, info]); }`. Nothing else changed.
+- **Verified** with scratch `e7/tbt/tbnfix/fix_tbn.py` and `undo_check.py`:
+  - putting each call back gives the old file, whitespace aside;
+  - the 194 case-name sites are the same list in the same order, so the case counts stay 165 on and 34 off;
+  - VS clang++ `-fsyntax-only -std=c++20 -Wall -Wextra -Werror` is clean.
+- **md5:** `cc524e63e1becf7ecbe65b5b15b8f324` before, `3eeaf1fe800442bcf66b0fa0a0a34338` now.
+- **Left alone:** the three `a(...) | b(...)` expressions without output checks (LwMutexUnlock x2, CondInit, CondDestroy)
+  call two independent functions; their order does not change any result.

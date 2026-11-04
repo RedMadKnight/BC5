@@ -1,14 +1,18 @@
 // SPDX-License-Identifier: GPL-2.0-only
 // BC5 experiment 0405 (series e7 of experiment 0401), tag "tl2": the CPU test of mktl20405.py's edit of src/libs/libs.cpp
-// (notes tl20405-notes.md): batch 2's seventeen of the tables KytyPlus compiles but Libs::InitAll never loaded, each behind
+// (notes tl20405-notes.md): batch 2's fourteen of the tables KytyPlus compiles but Libs::InitAll never loaded, each behind
 // a switch, loaded after batch 1's six (series e6, tag tld, whose test is tld0405.cpp):
-//   KYTY_BC5_LOAD_NPTUS (nptus), _NPPARTY (npparty), _NPPARTNER (nppartner), _NPAUTH (npauth), _NPSNSFACEBOOK
-//   (npsnsfacebook), _VOICE (voice), _SCREENSHOT (screenshot), _DISCMAP (discmap), _ULOBJMGR (ulobjmgr), _COMPANIONHTTPD
-//   (companionhttpd), _COMPANIONUTIL (companionutil), _INVITATIONDIALOG (invitationdialog), _WEBBROWSERDIALOG
-//   (webbrowserdialog), _SHAREPLAY (shareplay), _GAMELIVESTREAMING (gamelivestreaming), _REMOTEPLAY (remoteplay),
-//   _VIDEORECORDING (videorecording).
+//   KYTY_BC5_LOAD_NPTUS (nptus), _NPPARTY (npparty), _NPPARTNER (nppartner), _NPSNSFACEBOOK (npsnsfacebook), _VOICE
+//   (voice), _SCREENSHOT (screenshot), _DISCMAP (discmap), _ULOBJMGR (ulobjmgr), _COMPANIONHTTPD (companionhttpd),
+//   _COMPANIONUTIL (companionutil), _INVITATIONDIALOG (invitationdialog), _WEBBROWSERDIALOG (webbrowserdialog),
+//   _SHAREPLAY (shareplay), _GAMELIVESTREAMING (gamelivestreaming).
+// (npauth, remoteplay and videorecording are not loaded by libs.cpp; KYTY_BC5_LOAD_NPAUTH belongs to libNet.cpp's live
+// NpAuth table and is not touched here.)
 // Batch 1's six switches (KYTY_BC5_LOAD_ZLIB, _JPEG, _IME, _NPCOMMON, _NPMANAGER, _NPTROPHY) must be off (unset, empty or
 // "0"); the test refuses to run otherwise.
+// With its switch on a table's init registers only its ported functions (series e7's rule: held stubs are skipped), with
+// it off every stub as today: nothing here assumes a count; every list comes from the init functions at run time, after
+// the switches are back to their values (an init reached for the first time then reads the run's own value).
 // No game, no GPU, no window, no sound device, no network, no USB. As tld0405.cpp: it runs the host's own registration
 // (the real Libs::InitAll) into a Loader::SymbolDatabase and looks keys and NIDs up the way the loader does (Find: a
 // title's import by library and module; FindByNid: the loader's NID-only fallback). A database's records are listed with
@@ -20,22 +24,22 @@
 // Cases (one line each):
 //   1 the switches' line: InitAll's stderr (captured into ./tl20405-stderr.txt) has exactly one
 //     "[bc5] exp 0405: tables ..." line, the expected one, over two InitAll calls.
-//   2 InitAll's record list: with the seventeen off it equals today's InitAll's list, record for record (address and
+//   2 InitAll's record list: with the fourteen off it equals today's InitAll's list, record for record (address and
 //     name, in order); with switches on it is the switched tables' own lists in load order, then today's list.
-//   3 read once: all 23 switches flipped (on -> "0", off -> "1") before a second InitAll: the same record list.
-//   4-20 one per table: each of its keys (nid[library_vN][module_vM.m][Type]) and NIDs, looked up in InitAll's database.
+//   3 read once: all 20 switches flipped (on -> "0", off -> "1") before a second InitAll: the same record list.
+//   4-17 one per table: each of its keys (nid[library_vN][module_vM.m][Type]) and NIDs, looked up in InitAll's database.
 //     On: a key resolves to the table's own function ("new"); a key today's InitAll also registers would resolve to
 //     today's function ("kept live"); every NID resolves by NID to the first record with that NID in load order, and the
 //     line counts the NIDs whose NID-only lookup now reaches the table instead of today's function ("moved").
 //     Off: every key and NID resolves to nothing (or, for a shared one, to today's function).
 //     Guard (on and off): a key or a NID+type of the table that today's InitAll (any live table) registers, or that
-//     another switched table (the other sixteen, batch 1's six) registers, FAILs the case: tld0405-notes.md found none
-//     for these seventeen, and series e7's ports must not add one.
+//     another switched table (the other thirteen, batch 1's six) registers, FAILs the case: tld0405-notes.md found none
+//     for these fourteen, and series e7's ports must not add one. A table that registers nothing FAILs too.
 // Build (build0401.py, series e7): --gate tl20405.cpp <out> --like src/libs/libs.cpp, with mktl20405.py's private
 // src/libs/libs.cpp (and series e7's other private units, the ports of these tables among them) in place of the shared
 // ones, linked with every emulator object but main.cpp.o.
-// usage: run in a fresh directory on the NVMe, batch 1's six switches unset, the seventeen set alike:
-//   all seventeen =1 -> "tl20405 on";  all =0, or all unset -> "tl20405 off". Other mixes: "tl20405 mixed".
+// usage: run in a fresh directory on the NVMe, batch 1's six switches unset, the fourteen set alike:
+//   all fourteen =1 -> "tl20405 on";  all =0, or all unset -> "tl20405 off". Other mixes: "tl20405 mixed".
 // Prints "tl20405: on|off|mixed N of N; end" and exits 0 only then. A watchdog ends a hang after 120 s with a FAIL line.
 
 #include "libs/libs.h"
@@ -83,7 +87,7 @@ namespace NpTrophy {
 LIB_DEFINE(InitNpTrophy_1);
 } // namespace NpTrophy
 
-// Batch 2's seventeen (as mktl20405.py declares them in libs.cpp).
+// Batch 2's fourteen (as mktl20405.py declares them in libs.cpp).
 namespace NpTus {
 LIB_DEFINE(InitNpTus_1);
 } // namespace NpTus
@@ -93,9 +97,6 @@ LIB_DEFINE(InitNpParty_1);
 namespace NpPartner {
 LIB_DEFINE(InitNpPartner_1);
 } // namespace NpPartner
-namespace NpAuth {
-LIB_DEFINE(InitNpAuth_1);
-} // namespace NpAuth
 namespace NpSnsFacebookDialog {
 LIB_DEFINE(InitNpSnsFacebookDialog_1);
 } // namespace NpSnsFacebookDialog
@@ -129,12 +130,6 @@ LIB_DEFINE(InitSharePlay_1);
 namespace LibGameLiveStreaming {
 LIB_DEFINE(InitGameLiveStreaming_1);
 } // namespace LibGameLiveStreaming
-namespace LibRemotePlay {
-LIB_DEFINE(InitRemotePlay_1);
-} // namespace LibRemotePlay
-namespace LibVideoRecording {
-LIB_DEFINE(InitVideoRecording_1);
-} // namespace LibVideoRecording
 
 // Today's InitAll's tables: the input libs.cpp's own declarations (lines 15-97).
 namespace LibContentDelete {
@@ -310,12 +305,11 @@ struct Table {
 	void (*init)(Loader::SymbolDatabase* s);
 };
 
-// Batch 2's seventeen in libs.cpp's load order (mktl20405.py's rows of TABLES, after batch 1's).
+// Batch 2's fourteen in libs.cpp's load order (mktl20405.py's rows of TABLES, after batch 1's).
 const Table kTables[] = {
     {"KYTY_BC5_LOAD_NPTUS", "nptus", Libs::NpTus::InitNpTus_1},
     {"KYTY_BC5_LOAD_NPPARTY", "npparty", Libs::NpParty::InitNpParty_1},
     {"KYTY_BC5_LOAD_NPPARTNER", "nppartner", Libs::NpPartner::InitNpPartner_1},
-    {"KYTY_BC5_LOAD_NPAUTH", "npauth", Libs::NpAuth::InitNpAuth_1},
     {"KYTY_BC5_LOAD_NPSNSFACEBOOK", "npsnsfacebook", Libs::NpSnsFacebookDialog::InitNpSnsFacebookDialog_1},
     {"KYTY_BC5_LOAD_VOICE", "voice", Libs::LibVoice::InitVoice_1},
     {"KYTY_BC5_LOAD_SCREENSHOT", "screenshot", Libs::LibScreenShot::InitScreenShot_1},
@@ -327,11 +321,9 @@ const Table kTables[] = {
     {"KYTY_BC5_LOAD_WEBBROWSERDIALOG", "webbrowserdialog", Libs::LibWebBrowserDialog::InitWebBrowserDialog_1},
     {"KYTY_BC5_LOAD_SHAREPLAY", "shareplay", Libs::LibSharePlay::InitSharePlay_1},
     {"KYTY_BC5_LOAD_GAMELIVESTREAMING", "gamelivestreaming", Libs::LibGameLiveStreaming::InitGameLiveStreaming_1},
-    {"KYTY_BC5_LOAD_REMOTEPLAY", "remoteplay", Libs::LibRemotePlay::InitRemotePlay_1},
-    {"KYTY_BC5_LOAD_VIDEORECORDING", "videorecording", Libs::LibVideoRecording::InitVideoRecording_1},
 };
 constexpr size_t kCount = sizeof(kTables) / sizeof(kTables[0]);
-static_assert(kCount == 17);
+static_assert(kCount == 14);
 
 // Batch 1's six (mktld0405.py's TABLES): off for this test; flipped for case 3; their own lists for the guard.
 const Table kBatch1[] = {
@@ -492,7 +484,7 @@ int main(int argc, char** argv) {
 	}
 	const char* mode = n_on == kCount ? "on" : n_on == 0 ? "off" : "mixed";
 	if (argc != 2 || std::strcmp(argv[1], mode) != 0 || !batch1_on.empty()) {
-		std::printf("usage: tl20405 on|off|mixed, matching batch 2's seventeen KYTY_BC5_LOAD_* switches (they say %s; the "
+		std::printf("usage: tl20405 on|off|mixed, matching batch 2's fourteen KYTY_BC5_LOAD_* switches (they say %s; the "
 		            "argument is %s), with batch 1's six off (on: %s)\n",
 		            mode, argc == 2 ? argv[1] : "missing or too many", batch1_on.empty() ? "none" : batch1_on.c_str());
 		return 2;
@@ -501,7 +493,7 @@ int main(int argc, char** argv) {
 	std::fflush(stdout);
 	std::thread(Watchdog).detach();
 
-	// The 23 switches' values, to flip and restore around the second InitAll.
+	// The 20 switches' values, to flip and restore around the second InitAll.
 	std::vector<const char*> envs;
 	for (size_t i = 0; i < kCount1; i++) {
 		envs.push_back(kBatch1[i].env);
@@ -519,7 +511,7 @@ int main(int argc, char** argv) {
 		saved.emplace_back(e != nullptr ? e : "");
 	}
 
-	// ---- two InitAll calls with stderr in a file; between them all 23 switches flipped (each is read once) ----
+	// ---- two InitAll calls with stderr in a file; between them all 20 switches flipped (each is read once) ----
 	const std::string want_line =
 	    n_on == 0 ? std::string("[bc5] exp 0405: tables off") : "[bc5] exp 0405: tables on (items: " + items + ")";
 	Info("stderr", Fmt("the two InitAll calls' stderr goes to ./%s", kStderrFile));
@@ -626,7 +618,7 @@ int main(int argc, char** argv) {
 	{
 		const std::string d = Diff(again, all);
 		Report("read once", d.empty(),
-		       d.empty() ? Fmt("all 23 switches flipped before a second InitAll: the same %zu records", again.size()) : d);
+		       d.empty() ? Fmt("all 20 switches flipped before a second InitAll: the same %zu records", again.size()) : d);
 	}
 
 	// FindByNid's answer in InitAll's database, from the expected list: the first record with that NID and type.
@@ -647,7 +639,7 @@ int main(int argc, char** argv) {
 		switched.emplace_back(kTables[i].item, db_table[i].get());
 	}
 
-	// ---- cases 4-20: each table's keys and NIDs in InitAll's database ----
+	// ---- cases 4-17: each table's keys and NIDs in InitAll's database ----
 	size_t total = 0;
 	for (size_t i = 0; i < kCount; i++) {
 		g_case            = kTables[i].item;
@@ -736,7 +728,7 @@ int main(int argc, char** argv) {
 			}
 		}
 		if (table[i].empty()) {
-			fail("the table registers nothing");
+			fail(on[i] ? "the table registers nothing with its switch on (every function held?)" : "the table registers nothing");
 		}
 		if (!on[i] && n_moved != 0) {
 			fail(Fmt("%d NID-only lookups moved with the switch off", n_moved));
@@ -766,7 +758,7 @@ int main(int argc, char** argv) {
 		const std::string name = Fmt("%s (%s)", kTables[i].item, on[i] ? "on" : "off");
 		Report(name.c_str(), bad == 0, info);
 	}
-	Info("batch 2", Fmt("%zu records in the seventeen tables' own lists", total));
+	Info("batch 2", Fmt("%zu records in the fourteen tables' own lists (at run time)", total));
 
 	g_case      = "the end";
 	const int n = g_cases.load();

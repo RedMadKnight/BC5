@@ -1,30 +1,30 @@
 // SPDX-License-Identifier: GPL-2.0-only
 // BC5 experiment 0405 (series e7 of experiment 0401), tag "tbd": the CPU test of mktbd0405.py's edits of
-// src/libs/libInvitationDialog.cpp, libWebBrowserDialog.cpp, libSharePlay.cpp, libGameLiveStreaming.cpp and
-// libRemotePlay.cpp (notes tbd0405-notes.md): five of the tables that are compiled but never loaded, ported first (exp
-// 0405 decision 4), each behind its own switch:
+// src/libs/libInvitationDialog.cpp, libWebBrowserDialog.cpp, libSharePlay.cpp and libGameLiveStreaming.cpp (notes
+// tbd0405-notes.md): four of the tables that are compiled but never loaded, ported first (exp 0405 decision 4), each
+// behind its own switch:
 //   KYTY_BC5_LOAD_INVITATIONDIALOG, KYTY_BC5_LOAD_WEBBROWSERDIALOG, KYTY_BC5_LOAD_SHAREPLAY,
-//   KYTY_BC5_LOAD_GAMELIVESTREAMING, KYTY_BC5_LOAD_REMOTEPLAY (no items).
-// No game, no GPU, no window, no sound device, no network, no USB. The test registers the five tables and then
-// libNet.cpp's four live tables of the same libraries (Initialize/Terminate of WebBrowserDialog, SharePlay and
-// GameLiveStreaming; Initialize/Terminate/GetConnectionStatus of Remoteplay) into its own SymbolDatabase, takes every
-// function by its exact key (NID, library, versions) as a title's import resolves it, and calls it as a title would.
-// Each output starts as a sentinel and is checked as written or left as it was. Each table's cases follow its own
-// switch; off, every case is today's answer, computed from today's code line by line.
+//   KYTY_BC5_LOAD_GAMELIVESTREAMING (no items). (Remoteplay has no switch: nothing to port.)
+// No game, no GPU, no window, no sound device, no network, no USB. The test registers the four tables and then
+// libNet.cpp's three live tables of the same libraries (Initialize/Terminate of WebBrowserDialog, SharePlay and
+// GameLiveStreaming) into its own SymbolDatabase, takes every function by its exact key (NID, library, versions) as a
+// title's import resolves it, and calls it as a title would. Each output starts as a sentinel and is checked as written
+// or left as it was. Each table's cases follow its own switch; off, every case is today's answer, computed from today's
+// code line by line.
 // Cases (one line each; tbd0405-notes.md has the reasons):
-//   every table: registration (9/12/22/45/39 NIDs by their exact keys, the same records as the table alone), the split
-//     (the live NIDs are not this table's and resolve, by Find and by FindByNid, to the live functions), the held stubs.
+//   every table: registration (the 9/12/22/45 NIDs by their exact keys when off; on, all but the held ones, the same
+//     records as the table alone), the split (the live NIDs are not this table's and resolve, by Find and by FindByNid,
+//     to the live functions), the held stubs (on: not registered, by Find or FindByNid; off: registered, 0 each).
 //   invitationdialog on: the state machine (none/initialized/finished), ALREADY_INITIALIZED, NOT_INITIALIZED,
-//     NOT_FINISHED, ARG_NULL, the result fields, the four kept answers (AnyPS5 has none), OpenA/GetResultA held.
+//     NOT_FINISHED, ARG_NULL, the result fields, the four kept answers (AnyPS5 has none).
 //   webbrowserdialog on: the live Initialize (status stays 0: split state), Close (NOT_RUNNING), GetResult's checks and
 //     answer, the cookie checks and the open mark, Open and OpenForPredeterminedContent's allow-list checks.
 //   shareplay on: both connection infos (null, the fields written, the bytes after left alone).
 //   gamelivestreaming on: Status2, ProgramInfo, the separate-mode parameter, the feedback queries, the four string
 //     limits, spoiler tags, preset commands, the camera setting, the 7 calls that already match.
-//   remoteplay: the 39 held stubs (0 both ways).
-// Build (build0401.py, series e7): --gate tbd0405.cpp <out> --like src/libs/libGameLiveStreaming.cpp, with the five
+// Build (build0401.py, series e7): --gate tbd0405.cpp <out> --like src/libs/libGameLiveStreaming.cpp, with the four
 // private units from mktbd0405.py in place of the shared ones, linked with every emulator object but main.cpp.o.
-// usage: run in a fresh directory, with the five switches set alike: all =1 -> "tbd0405 on"; all =0, or all unset ->
+// usage: run in a fresh directory, with the four switches set alike: all =1 -> "tbd0405 on"; all =0, or all unset ->
 // "tbd0405 off". With the switches not alike each table's cases follow its own switch and the last line says "mixed".
 // The argument may be left out. Prints "tbd0405: on|off|mixed N of N; end" and exits 0 only then. A watchdog ends a hang
 // after 60 s with a FAIL line.
@@ -61,12 +61,6 @@ namespace Libs::LibGameLiveStreaming {
 LIB_DEFINE(InitGameLiveStreaming_1);
 LIB_DEFINE(InitPlatform_1_GameLiveStreaming); // libNet.cpp, live
 } // namespace Libs::LibGameLiveStreaming
-namespace Libs::LibRemotePlay {
-LIB_DEFINE(InitRemotePlay_1);
-} // namespace Libs::LibRemotePlay
-namespace Libs::LibRemoteplay {
-LIB_DEFINE(InitPlatform_1_Remoteplay); // libNet.cpp, live
-} // namespace Libs::LibRemoteplay
 
 namespace tbd0405 {
 
@@ -126,12 +120,11 @@ bool g_inv = false;
 bool g_wbd = false;
 bool g_shp = false;
 bool g_gls = false;
-bool g_rpl = false;
 
 // ---- registration and lookup ----------------------------------------------------------------------------------------
-Loader::SymbolDatabase g_all;  // the five tables, then libNet.cpp's four live tables (the order of Libs::InitAll with them on)
-Loader::SymbolDatabase g_dead; // the five tables alone
-Loader::SymbolDatabase g_live; // libNet.cpp's four alone
+Loader::SymbolDatabase g_all;  // the four tables, then libNet.cpp's three live tables (the order of Libs::InitAll with them on)
+Loader::SymbolDatabase g_dead; // the four tables alone
+Loader::SymbolDatabase g_live; // libNet.cpp's three alone
 
 const Loader::SymbolRecord* Exact(const Loader::SymbolDatabase& db, const char* nid, const char* lib) {
 	Loader::SymbolResolve sr {};
@@ -189,18 +182,34 @@ using Count  = int(KYTY_SYSV_ABI*)(int, uint32_t*);
 using Msgs   = int(KYTY_SYSV_ABI*)(int, size_t, void*, size_t*);
 using Entr   = int(KYTY_SYSV_ABI*)(size_t, const void*);
 
-// The table's NIDs by their exact keys in the full database, each the same record the table alone registers; the live
-// NIDs of the same library (libNet.cpp) not in the table, the table's not in the live set, and both lookups of a live NID
-// (Find, and the loader's NID-only fallback FindByNid) giving the live function.
-void Registration(const char* word, const char* lib, const std::vector<const char*>& nids,
-                  const std::vector<const char*>& live) {
-	int same = 0;
+bool IsIn(const std::vector<const char*>& list, const char* nid) {
+	for (const char* n: list) {
+		if (std::strcmp(n, nid) == 0) {
+			return true;
+		}
+	}
+	return false;
+}
+
+// The table's NIDs by their exact keys in the full database, each the same record the table alone registers (on: all
+// but the held ones, which the next case checks); the live NIDs of the same library (libNet.cpp) not in the table, the
+// table's not in the live set, and both lookups of a live NID (Find, and the loader's NID-only fallback FindByNid) giving
+// the live function.
+void Registration(const char* word, const char* lib, bool on, const std::vector<const char*>& nids,
+                  const std::vector<const char*>& held, const std::vector<const char*>& live) {
+	int    same   = 0;
+	size_t expect = 0;
 	for (const char* n: nids) {
+		if (on && IsIn(held, n)) {
+			continue;
+		}
+		expect++;
 		const uint64_t a = Addr(g_all, n, lib);
 		same += (a != 0 && a == Addr(g_dead, n, lib)) ? 1 : 0;
 	}
-	Check(Fmt("%s registration: %zu NIDs by their exact keys", word, nids.size()), same == static_cast<int>(nids.size()),
-	      Fmt("%d of %zu", same, nids.size()));
+	Check(on ? Fmt("%s registration: %zu NIDs by their exact keys (all but the %zu held)", word, expect, held.size())
+	         : Fmt("%s registration: all %zu NIDs by their exact keys", word, expect),
+	      same == static_cast<int>(expect), Fmt("%d of %zu", same, expect));
 	int apart = 0;
 	for (const char* n: nids) {
 		apart += g_live.FindByNid(n, Loader::SymbolType::Func) == nullptr ? 1 : 0;
@@ -221,19 +230,35 @@ void Registration(const char* word, const char* lib, const std::vector<const cha
 	      Fmt("live %d of %zu, table NIDs not live %d of %zu", live_ok, live.size(), apart, nids.size()));
 }
 
-void Held(const char* word, const char* lib, const std::vector<const char*>& held) {
+// The held stubs. On: not registered (neither Find nor the NID-only fallback FindByNid finds them, in this table or a live
+// one), so a title's import of them stays unresolved, as today, and keeps exp 0327's journal line. Off: registered as
+// today, each answering 0 (call=false: present only, when the table's own cases have called them).
+void Held(const char* word, const char* lib, bool on, const std::vector<const char*>& held, bool call = true) {
+	if (on) {
+		int absent = 0;
+		for (const char* n: held) {
+			absent += (Exact(g_all, n, lib) == nullptr && g_all.FindByNid(n, Loader::SymbolType::Func) == nullptr) ? 1 : 0;
+		}
+		Check(Fmt("%s the %zu held stubs are not registered (Find and FindByNid find none)", word, held.size()),
+		      absent == static_cast<int>(held.size()), Fmt("%d of %zu absent", absent, held.size()));
+		return;
+	}
 	int         zero = 0;
 	std::string wrong;
 	for (const char* n: held) {
-		const int v = Fn<NoArg>(n, lib)();
+		if (Addr(g_all, n, lib) == 0) {
+			wrong += Fmt(" %s=missing", n);
+			continue;
+		}
+		const int v = call ? Fn<NoArg>(n, lib)() : 0;
 		if (v == 0) {
 			zero++;
 		} else {
 			wrong += Fmt(" %s=%s", n, Hex(v).c_str());
 		}
 	}
-	Check(Fmt("%s the %zu held stubs: 0 (today's answer)", word, held.size()), zero == static_cast<int>(held.size()),
-	      Fmt("%d of %zu%s", zero, held.size(), wrong.c_str()));
+	Check(Fmt("%s the %zu held stubs are registered as today%s", word, held.size(), call ? ", 0 each" : ""),
+	      zero == static_cast<int>(held.size()), Fmt("%d of %zu%s", zero, held.size(), wrong.c_str()));
 }
 
 // =====================================================================================================================
@@ -274,15 +299,14 @@ void CaseInvitationDialog() {
 	const char* w         = on ? "invitationdialog" : "invitationdialog off:";
 	const std::vector<const char*> nids = {"WWtCL5lzi7Y", "8XKR6wa64iQ", "WuuUhuKOxwQ", "EiF92YDNHRA", "XvA5KS56wcs",
 	                                       "0zU0G+wiVLA", "sAxbHhAWMXM", "B6HVJtDYxEE", "9+g9iOq+7kg"};
-	Registration(w, lib, nids, {});
+	const std::vector<const char*> held = {"WuuUhuKOxwQ", "sAxbHhAWMXM"}; // GetResultA, OpenA
+	Registration(w, lib, on, nids, held, {});
 
 	auto close    = Fn<NoArg>("WWtCL5lzi7Y", lib);
 	auto get      = Fn<PtrArg>("8XKR6wa64iQ", lib);
-	auto get_a    = Fn<NoArg>("WuuUhuKOxwQ", lib);
 	auto status   = Fn<NoArg>("EiF92YDNHRA", lib);
 	auto init     = Fn<NoArg>("XvA5KS56wcs", lib);
 	auto open     = Fn<CPtr>("0zU0G+wiVLA", lib);
-	auto open_a   = Fn<NoArg>("sAxbHhAWMXM", lib);
 	auto term     = Fn<NoArg>("B6HVJtDYxEE", lib);
 	auto update   = Fn<NoArg>("9+g9iOq+7kg", lib);
 	void* const a = reinterpret_cast<void*>(uintptr_t {0x1234});
@@ -421,16 +445,19 @@ void CaseInvitationDialog() {
 		Check("invitationdialog off: Close: 0, status 3", r == 0 && status() == 3, Hex(r));
 		r = term();
 		Check("invitationdialog off: Terminate: 0, status 0", r == 0 && status() == 0, Hex(r));
+		// the held two, registered when off: today's OpenA (running), UpdateStatus (finished), GetResultA, Terminate
+		auto open_a = Fn<NoArg>("sAxbHhAWMXM", lib);
+		auto get_a  = Fn<NoArg>("WuuUhuKOxwQ", lib);
+		r           = open_a();
+		r2          = status();
+		const int u = update();
+		const int g = get_a();
+		const int t = term();
+		Check("invitationdialog off: held OpenA: 0, running; UpdateStatus 3; held GetResultA: 0; Terminate: 0, status 0",
+		      r == 0 && r2 == 2 && u == 3 && g == 0 && t == 0 && status() == 0,
+		      Hex(r) + " " + Fmt("%d %d ", r2, u) + Hex(g) + " " + Hex(t));
 	}
-	// held either way: today's OpenA (running), today's UpdateStatus (finished), today's GetResultA, then Terminate
-	int r  = open_a();
-	int r2 = status();
-	int u  = update();
-	int g  = get_a();
-	int t  = term();
-	Check(Fmt("%s held OpenA: 0, running; UpdateStatus 3; held GetResultA: 0; Terminate: 0, status 0", w),
-	      r == 0 && r2 == 2 && u == 3 && g == 0 && t == 0 && status() == 0,
-	      Hex(r) + " " + Fmt("%d %d ", r2, u) + Hex(g) + " " + Hex(t));
+	Held(w, lib, on, held, false); // off: called above
 }
 
 // =====================================================================================================================
@@ -478,8 +505,9 @@ void CaseWebBrowserDialog() {
 	const std::vector<const char*> nids = {"PSK+Eik919Q", "Wit4LjeoeX4", "vCaW0fgVQmc", "CFTG6a8TjOU",
 	                                       "uYELOMVnmNQ", "FraP7debcdg", "O7dIZQrwVFY", "Cya+jvTtPqg",
 	                                       "TZnDVkP91Rg", "RLhKBOoNyXY", "h1dR-t5ISgg", "8r4EJ3FiX4w"};
+	const std::vector<const char*> held = {"Wit4LjeoeX4", "uYELOMVnmNQ", "RLhKBOoNyXY", "8r4EJ3FiX4w"};
 	const std::vector<const char*> live = {"jqb7HntFQFc", "ocHtyBwHfys"};
-	Registration(w, lib, nids, live);
+	Registration(w, lib, on, nids, held, live);
 
 	auto close     = Fn<NoArg>("PSK+Eik919Q", lib);
 	auto get       = Fn<PtrArg>("vCaW0fgVQmc", lib);
@@ -713,7 +741,7 @@ void CaseWebBrowserDialog() {
 		Check("webbrowserdialog off: OpenForPredeterminedContent(null, null): 0, running; UpdateStatus 3",
 		      r == 0 && status() == 2 && update() == 3, Hex(r));
 	}
-	Held(w, lib, {"Wit4LjeoeX4", "uYELOMVnmNQ", "RLhKBOoNyXY", "8r4EJ3FiX4w"});
+	Held(w, lib, on, held);
 	r = live_term();
 	Check(Fmt("%s the live Terminate (libNet.cpp): 0; GetStatus stays 3 (split state)", w), r == 0 && status() == 3, Hex(r));
 }
@@ -734,7 +762,7 @@ void CaseSharePlay() {
 	                                       "aGlema+JxUU", "LpPA6mprZ8Q", "wcI2co2I4Xc", "6egMR0eB8RU", "891hmdoV7UQ"};
 	std::vector<const char*> nids = {"OOrLKB0bSDs", "+MCXJlWdi+s"};
 	nids.insert(nids.end(), held.begin(), held.end());
-	Registration(w, lib, nids, {"isruqthpYcw", "UaLjloJinow"});
+	Registration(w, lib, on, nids, held, {"isruqthpYcw", "UaLjloJinow"});
 
 	auto    info   = Fn<PtrArg>("OOrLKB0bSDs", lib);
 	auto    info_a = Fn<PtrArg>("+MCXJlWdi+s", lib);
@@ -766,7 +794,7 @@ void CaseSharePlay() {
 		      r == 0 && r2 == 0 && r3 == 0 && r4 == 0 && AllBytes(buf, sizeof(buf), kS8),
 		      Hex(r) + " " + Hex(r2) + " " + Hex(r3) + " " + Hex(r4));
 	}
-	Held(w, lib, held);
+	Held(w, lib, on, held);
 }
 
 // =====================================================================================================================
@@ -797,7 +825,7 @@ void CaseGameLiveStreaming() {
 	std::vector<const char*> nids = ported;
 	nids.insert(nids.end(), match.begin(), match.end());
 	nids.insert(nids.end(), held.begin(), held.end());
-	Registration(w, lib, nids, {"kvYEw2lBndk", "9yK6Fk8mKOQ"});
+	Registration(w, lib, on, nids, held, {"kvYEw2lBndk", "9yK6Fk8mKOQ"});
 
 	auto status2 = Fn<PtrArg>("lK8dLBNp9OE", lib);
 	auto program = Fn<PtrArg>("OIIm19xu+NM", lib);
@@ -958,7 +986,7 @@ void CaseGameLiveStreaming() {
 		Check("gamelivestreaming off: the 13 edited calls, valid outputs and bad arguments: 0 each, nothing written",
 		      zero == 13 && AllBytes(g_gbuf, sizeof(g_gbuf), kS8) && c == kS32 && n == static_cast<size_t>(kS64), all);
 	}
-	// already match (not edited) and held: 0 either way
+	// already match (not edited): 0 either way
 	int         zero = 0;
 	std::string wrong;
 	for (const char* m: match) {
@@ -971,25 +999,7 @@ void CaseGameLiveStreaming() {
 	}
 	Check(Fmt("%s the 7 calls that already match (Permit*, SetMaxBitrate, Enable*, Clear*Tag/Commands): 0", w), zero == 7,
 	      Fmt("%d of 7%s", zero, wrong.c_str()));
-	Held(w, lib, held);
-}
-
-// =====================================================================================================================
-// Remoteplay
-// =====================================================================================================================
-void CaseRemoteplay() {
-	g_case          = "remoteplay";
-	const char* lib = "libSceRemoteplay";
-	const char* w   = g_rpl ? "remoteplay" : "remoteplay off:";
-	const std::vector<const char*> nids = {
-	    "xQeIryTX7dY", "IYZ+Mu+8tPo", "ZYUsJtcAnqA", "cCheyCbF7qw", "tPYT-kGbZh8", "6Lg4BNleJWc", "j98LdSGy4eY",
-	    "L+cL-M-DP3w", "g4K51cY+PEw", "3eBNV9A0BUM", "ufesWMVX6iU", "DxU4JGh4S2k", "n5OxFJEvPlc", "Cekhs6LSHC0",
-	    "ig1ocbR7Ptw", "gV9-8cJPM3I", "cMk57DZXe6c", "-gwkQpOCl68", "58v9tSlRxc8", "C3r2zT5ebMg", "oB730zwoz0s",
-	    "rOTg1Nljp8w", "R8RZC1ZIkzU", "uYhiELUtLgA", "d-BBSEq1nfc", "Yytq7NE38R8", "Wg-w8xjMZA4", "yheulqylKwI",
-	    "t5ZvUiZ1hpE", "mrNh78tBpmg", "7QLrixwVHcU", "-ThIlThsN80", "0Z-Pm5rZJOI", "xSrhtSLIjOc", "5-2agAeaE+c",
-	    "Rf0XMVR7xPw", "n4l3FTZtNQM", "-BPcEQ1w8xc", "HV7jZe1frbM"};
-	Registration(w, lib, nids, {"k1SwgkMSOM8", "BOwybKVa3Do", "g3PNjYKWqnQ"});
-	Held(w, lib, nids);
+	Held(w, lib, on, held);
 }
 
 } // namespace tbd0405
@@ -1000,30 +1010,26 @@ int main(int argc, char** argv) {
 	g_wbd                 = EnvOn("KYTY_BC5_LOAD_WEBBROWSERDIALOG");
 	g_shp                 = EnvOn("KYTY_BC5_LOAD_SHAREPLAY");
 	g_gls                 = EnvOn("KYTY_BC5_LOAD_GAMELIVESTREAMING");
-	g_rpl                 = EnvOn("KYTY_BC5_LOAD_REMOTEPLAY");
-	const bool  all_on    = g_inv && g_wbd && g_shp && g_gls && g_rpl;
-	const bool  all_off   = !g_inv && !g_wbd && !g_shp && !g_gls && !g_rpl;
+	const bool  all_on    = g_inv && g_wbd && g_shp && g_gls;
+	const bool  all_off   = !g_inv && !g_wbd && !g_shp && !g_gls;
 	const char* mode      = all_on ? "on" : all_off ? "off" : "mixed";
 	if (argc > 2 || (argc == 2 && std::strcmp(argv[1], mode) != 0)) {
 		std::printf("tbd0405: the argument says %s but the switches say %s (invitationdialog %d, webbrowserdialog %d, "
-		            "shareplay %d, gamelivestreaming %d, remoteplay %d)\n",
-		            argc == 2 ? argv[1] : "too much", mode, g_inv, g_wbd, g_shp, g_gls, g_rpl);
+		            "shareplay %d, gamelivestreaming %d)\n",
+		            argc == 2 ? argv[1] : "too much", mode, g_inv, g_wbd, g_shp, g_gls);
 		return 2;
 	}
-	std::printf("tbd0405: switches invitationdialog %d, webbrowserdialog %d, shareplay %d, gamelivestreaming %d, "
-	            "remoteplay %d: %s\n",
-	            g_inv, g_wbd, g_shp, g_gls, g_rpl, mode);
+	std::printf("tbd0405: switches invitationdialog %d, webbrowserdialog %d, shareplay %d, gamelivestreaming %d: %s\n",
+	            g_inv, g_wbd, g_shp, g_gls, mode);
 	std::fflush(stdout);
 	std::thread(Watchdog).detach();
 
 	g_case = "registration";
-	// The five tables (each prints its "[bc5] exp 0405: ..." line on stderr), then libNet.cpp's live four.
+	// The four tables (each prints its "[bc5] exp 0405: ..." line on stderr), then libNet.cpp's live three.
 	Libs::LibInvitationDialog::InitInvitationDialog_1(&g_all);
 	Libs::LibWebBrowserDialog::InitWebBrowserDialog_1(&g_all);
 	Libs::LibSharePlay::InitSharePlay_1(&g_all);
 	Libs::LibGameLiveStreaming::InitGameLiveStreaming_1(&g_all);
-	Libs::LibRemotePlay::InitRemotePlay_1(&g_all);
-	Libs::LibRemoteplay::InitPlatform_1_Remoteplay(&g_all);
 	Libs::LibWebBrowserDialog::InitPlatform_1_WebBrowserDialog(&g_all);
 	Libs::LibGameLiveStreaming::InitPlatform_1_GameLiveStreaming(&g_all);
 	Libs::LibSharePlay::InitPlatform_1_SharePlay(&g_all);
@@ -1031,8 +1037,6 @@ int main(int argc, char** argv) {
 	Libs::LibWebBrowserDialog::InitWebBrowserDialog_1(&g_dead);
 	Libs::LibSharePlay::InitSharePlay_1(&g_dead);
 	Libs::LibGameLiveStreaming::InitGameLiveStreaming_1(&g_dead);
-	Libs::LibRemotePlay::InitRemotePlay_1(&g_dead);
-	Libs::LibRemoteplay::InitPlatform_1_Remoteplay(&g_live);
 	Libs::LibWebBrowserDialog::InitPlatform_1_WebBrowserDialog(&g_live);
 	Libs::LibGameLiveStreaming::InitPlatform_1_GameLiveStreaming(&g_live);
 	Libs::LibSharePlay::InitPlatform_1_SharePlay(&g_live);
@@ -1041,7 +1045,6 @@ int main(int argc, char** argv) {
 	CaseWebBrowserDialog();
 	CaseSharePlay();
 	CaseGameLiveStreaming();
-	CaseRemoteplay();
 
 	const int n = g_cases.load();
 	const int p = g_passed.load();

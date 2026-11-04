@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """BC5 experiment 0405 (series e7 of experiment 0401), tag "tbd": exp 0405 decision 4 ("=> B => B": the tables that are
-compiled but never loaded are ported first, then loaded, each behind its own switch), dead-table batch 2, five library
-units of the e7 input tree (= e6's sources; these five are the base tree's files), each behind a switch that is off by
+compiled but never loaded are ported first, then loaded, each behind its own switch), dead-table batch 2, four library
+units of the e7 input tree (= e6's sources; these four are the base tree's files), each behind a switch that is off by
 default and read once (off is today's path exactly). Libs::InitAll loads each table when its switch is on (libs.cpp,
-loader agent "tl2", not edited here):
+loader agent "tl2", not edited here). With the switch on, a table does not register its held stubs (AnyPS5 has no
+behaviour for them): their imports stay unresolved, as today, so the runtime linker's thunk keeps answering 0 and
+journaling them (exp 0327's "[bc5] stubbed import called"); off, every NID is registered as today. libRemotePlay.cpp is
+not edited and gets no switch (the top session, 2026-11-04: AnyPS5 implements none of its 39, nothing to port):
   src/libs/libInvitationDialog.cpp   KYTY_BC5_LOAD_INVITATIONDIALOG   Libs::LibInvitationDialog::InitInvitationDialog_1
       AnyPS5 libSceInvitationDialog/Export.cpp:15-114: Initialize, Terminate, Open, Close, GetResult (OpenA, GetResultA held)
   src/libs/libWebBrowserDialog.cpp   KYTY_BC5_LOAD_WEBBROWSERDIALOG   Libs::LibWebBrowserDialog::InitWebBrowserDialog_1
@@ -13,30 +16,30 @@ loader agent "tl2", not edited here):
       AnyPS5 libSceSharePlay/Export.cpp:34-42,56-64: GetCurrentConnectionInfo, GetCurrentConnectionInfoA
   src/libs/libGameLiveStreaming.cpp  KYTY_BC5_LOAD_GAMELIVESTREAMING  Libs::LibGameLiveStreaming::InitGameLiveStreaming_1
       AnyPS5 libSceGameLiveStreaming/Export.cpp:14-38,59-85,135-222,234-239: 13 calls (7 already match, 25 held)
-  src/libs/libRemotePlay.cpp         KYTY_BC5_LOAD_REMOTEPLAY         Libs::LibRemotePlay::InitRemotePlay_1
-      nothing to port (AnyPS5 implements none of the 39): the switch's journal line only
 Every input's md5 is pinned in PINNED below (one dict, so the top session can re-pin it when it chains scripts) and
 asserted; a unit that has the edit already is refused; every anchor must occur exactly once; every edit keeps braces,
-parentheses and brackets balanced; the inserted text is ASCII; line ends stay as they are (all five are LF with a UTF-8
+parentheses and brackets balanced; the inserted text is ASCII; line ends stay as they are (all four are LF with a UTF-8
 BOM). After editing, the script undoes its own edits on the output and asserts that this gives the input back byte for
-byte. Only the five units are written, and only when all five are done. Prints "<relpath> <md5>" per written file.
+byte. Only the four units are written, and only when all four are done. Prints "<relpath> <md5>" per written file.
 Notes: tbd0405-notes.md; CPU test: tbd0405.cpp.
 usage: mktbd0405.py <tree root in> <out dir>"""
 import hashlib
 import os
 import sys
 
-PINNED = {  # input md5 of each unit this script edits (the e7 input tree; all five are the base tree's files)
+PINNED = {  # input md5 of each unit this script edits (the e7 input tree; all four are the base tree's files)
     "src/libs/libInvitationDialog.cpp": "204a5daeebb100a131c034edb8e58e87",
     "src/libs/libWebBrowserDialog.cpp": "af36a12a0bc234f83e5c85a76d4b283d",
     "src/libs/libSharePlay.cpp": "d6ecb7874b00ee29d9275d78d8087191",
     "src/libs/libGameLiveStreaming.cpp": "59e46b5d8452101a0f57257703cfa3a4",
-    "src/libs/libRemotePlay.cpp": "abfde0e8bb446bc6870aa5df08cfb5fa",
 }
 
 MARKS = (b"experiment 0405", b"KYTY_BC5_LOAD_INVITATIONDIALOG", b"KYTY_BC5_LOAD_WEBBROWSERDIALOG",
-         b"KYTY_BC5_LOAD_SHAREPLAY", b"KYTY_BC5_LOAD_GAMELIVESTREAMING", b"KYTY_BC5_LOAD_REMOTEPLAY", b"Bc5Invd",
-         b"Bc5Wbd", b"Bc5Shp", b"Bc5Gls", b"Bc5Rpl")
+         b"KYTY_BC5_LOAD_SHAREPLAY", b"KYTY_BC5_LOAD_GAMELIVESTREAMING", b"Bc5Invd", b"Bc5Wbd", b"Bc5Shp", b"Bc5Gls")
+
+HELD_NOTE = ("// Held stubs are not registered while the switch is on: their imports stay unresolved, as today, so the runtime\n"
+             "// linker's thunk answers 0 and journals them (exp 0327's \"[bc5] stubbed import called\"); off, every NID is\n"
+             "// registered as today.\n")
 
 SOURCE = "AnyPS5 (github.com/boykopovar/AnyPS5, GPL-2.0-only) @\n// 4f41f4c375f5abb487dbd184fbc150f31994d762"
 LICENCE = "// AnyPS5's copyright remains with its authors; GPL-2.0 as the rest of this file (AnyPS5's part is GPL-2.0-only).\n"
@@ -74,6 +77,14 @@ def registration(init, fn, env):
             f"»(void){fn}(); // BC5 experiment 0405: reads {env} once and prints its line at registration\n")
 
 
+def held_registrations(fn, ns, held):
+    """Each held stub's LIB_FUNC line, registered only when the switch is off (its own line, wrapped)."""
+    return tuple((f"held {nid}", f"»LIB_FUNC(\"{nid}\", {ns}::{name});\n",
+                  f"»if (!{fn}()) {{ // BC5 experiment 0405: held, registered only when off\n"
+                  f"»»LIB_FUNC(\"{nid}\", {ns}::{name});\n»}}\n")
+                 for nid, name in held)
+
+
 # =====================================================================================================================
 # src/libs/libInvitationDialog.cpp
 # =====================================================================================================================
@@ -104,7 +115,7 @@ INV_BLOCK = r"""// ---- BC5 experiment 0405 (series e7 of experiment 0401), tag 
 // As in today's code, the status is a plain int: TODO(verify) a title that drives this dialog from two threads.
 // KYTY_BC5_LOAD_INVITATIONDIALOG: unset, empty or "0" is off (today's answers); any other value is on. Read once; one
 // stderr line at registration or at the first call.
-""" + LICENCE + r"""static constexpr int     BC5_INVD_ERROR_NOT_INITIALIZED     = static_cast<int>(0x80B80003u);
+""" + HELD_NOTE + LICENCE + r"""static constexpr int     BC5_INVD_ERROR_NOT_INITIALIZED     = static_cast<int>(0x80B80003u);
 static constexpr int     BC5_INVD_ERROR_ALREADY_INITIALIZED = static_cast<int>(0x80B80004u);
 static constexpr int     BC5_INVD_ERROR_NOT_FINISHED        = static_cast<int>(0x80B80005u);
 static constexpr int     BC5_INVD_ERROR_ARG_NULL            = static_cast<int>(0x80B8000Du);
@@ -141,7 +152,7 @@ static_assert(sizeof(Bc5InvdResult) == 0x38 && offsetof(Bc5InvdResult, recipient
 static void* g_bc5_invd_callback_arg = nullptr; // the callback argument of the last Open (switch on)
 
 """ + switch_fn("Bc5InvdOn", INV_ENV, "invitationdialog",
-                "Initialize Terminate Open Close GetResult; OpenA GetResultA held") + r"""
+                "Initialize Terminate Open Close GetResult; OpenA GetResultA held, not registered") + r"""
 // One stderr line per call site, the first time: a case AnyPS5 throws for (it has no answer), where today's answer is kept.
 static void Bc5InvdNoAnswer(std::atomic<bool>* printed, const char* call, const char* what) {
 »if (!printed->exchange(true)) {
@@ -271,10 +282,11 @@ INV_EDITS = (
      "static int KYTY_SYSV_ABI sceInvitationDialogTerminate() {\n»PRINT_NAME();\n" + INV_GATE +
      "»»return Bc5InvdTerminate();\n»}\n"),
     ("registration",) + registration("InitInvitationDialog_1", "Bc5InvdOn", INV_ENV),
-)
+) + held_registrations("Bc5InvdOn", "LibInvitationDialog", (
+    ("WuuUhuKOxwQ", "sceInvitationDialogGetResultA"), ("sAxbHhAWMXM", "sceInvitationDialogOpenA")))
 INV_BEFORE = ("#include <common/abi.h>\n", "static int g_status = 0;\n")
 INV_AFTER = ("static int KYTY_SYSV_ABI sceInvitationDialogTerminate() {\n", "LIB_DEFINE(InitInvitationDialog_1) {\n")
-INV_USES = (("Bc5InvdOn()", 7), ("Bc5InvdNoAnswer(", 5), ("Bc5InvdInitialize(", 2), ("Bc5InvdTerminate(", 2),
+INV_USES = (("Bc5InvdOn()", 9), ("Bc5InvdNoAnswer(", 5), ("Bc5InvdInitialize(", 2), ("Bc5InvdTerminate(", 2),
             ("Bc5InvdOpen(", 2), ("Bc5InvdClose(", 2), ("Bc5InvdGetResult(", 2), ("g_bc5_invd_callback_arg", 5),
             ("TODO(verify)", 1), ("static int KYTY_SYSV_ABI ", 9), ("LIB_FUNC(", 9))
 
@@ -316,7 +328,7 @@ WBD_BLOCK = r"""// ---- BC5 experiment 0405 (series e7 of experiment 0401), tag 
 // SetZoom, Func_F2BE042771625F8C.
 // KYTY_BC5_LOAD_WEBBROWSERDIALOG: unset, empty or "0" is off (today's answers); any other value is on. Read once; one
 // stderr line at registration or at the first call.
-""" + LICENCE + r"""static constexpr int      BC5_WBD_ERROR_NOT_FINISHED       = static_cast<int>(0x80B80005u);
+""" + HELD_NOTE + LICENCE + r"""static constexpr int      BC5_WBD_ERROR_NOT_FINISHED       = static_cast<int>(0x80B80005u);
 static constexpr int      BC5_WBD_ERROR_INVALID_STATE      = static_cast<int>(0x80B80006u);
 static constexpr int      BC5_WBD_ERROR_PARAMETER          = static_cast<int>(0x80B8000Au);
 static constexpr int      BC5_WBD_ERROR_NOT_RUNNING        = static_cast<int>(0x80B8000Bu);
@@ -349,7 +361,7 @@ static std::atomic<bool> g_bc5_wbd_open {false}; // the open mark: set by an Ope
 
 """ + switch_fn("Bc5WbdOn", WBD_ENV, "webbrowserdialog",
                 "Open OpenForPredeterminedContent Close UpdateStatus GetResult SetCookie ResetCookie; "
-                "NOT_INITIALIZED held: split state") + r"""
+                "NOT_INITIALIZED held: split state; GetEvent Navigate SetZoom F2BE held, not registered") + r"""
 static uint64_t Bc5WbdWord(const void* base, size_t at) {
 »uint64_t v = 0;
 »std::memcpy(&v, static_cast<const uint8_t*>(base) + at, sizeof(v));
@@ -526,10 +538,12 @@ WBD_EDITS = (
     ("UpdateStatus", "static int KYTY_SYSV_ABI sceWebBrowserDialogUpdateStatus() {\n»PRINT_NAME();\n",
      "static int KYTY_SYSV_ABI sceWebBrowserDialogUpdateStatus() {\n»PRINT_NAME();\n" + wbd_gate("Bc5WbdUpdateStatus()")),
     ("registration",) + registration("InitWebBrowserDialog_1", "Bc5WbdOn", WBD_ENV),
-)
+) + held_registrations("Bc5WbdOn", "LibWebBrowserDialog", (
+    ("Wit4LjeoeX4", "sceWebBrowserDialogGetEvent"), ("uYELOMVnmNQ", "sceWebBrowserDialogNavigate"),
+    ("RLhKBOoNyXY", "sceWebBrowserDialogSetZoom"), ("8r4EJ3FiX4w", "Func_F2BE042771625F8C")))
 WBD_BEFORE = ("#include <common/abi.h>\n", "static int g_status = 0;\n")
 WBD_AFTER = ("static int KYTY_SYSV_ABI sceWebBrowserDialogUpdateStatus() {\n", "LIB_DEFINE(InitWebBrowserDialog_1) {\n")
-WBD_USES = (("Bc5WbdOn()", 9), ("Bc5WbdOpen(", 3), ("Bc5WbdOpenForPredeterminedContent(", 2), ("Bc5WbdClose(", 2),
+WBD_USES = (("Bc5WbdOn()", 13), ("Bc5WbdOpen(", 3), ("Bc5WbdOpenForPredeterminedContent(", 2), ("Bc5WbdClose(", 2),
             ("Bc5WbdUpdateStatus(", 2), ("Bc5WbdGetResult(", 2), ("Bc5WbdSetCookie(", 2), ("Bc5WbdResetCookie(", 2),
             ("Bc5WbdWord(", 5), ("Bc5WbdPointer(", 5), ("Bc5WbdZero(", 7), ("Bc5WbdLengthWithin(", 4),
             ("g_bc5_wbd_open", 6), ("TODO(verify)", 2), ("static int KYTY_SYSV_ABI ", 12), ("LIB_FUNC(", 12))
@@ -554,7 +568,7 @@ SHP_BLOCK = r"""// ---- BC5 experiment 0405 (series e7 of experiment 0401), tag 
 // an initialized library. Held (AnyPS5 does not implement them; NotifyOpenQuickMenu is not in it): the other 20 calls.
 // KYTY_BC5_LOAD_SHAREPLAY: unset, empty or "0" is off (today's answers); any other value is on. Read once; one stderr
 // line at registration or at the first call.
-""" + LICENCE + r"""static constexpr int     BC5_SHP_ERROR_INVALID_ARGS = static_cast<int>(0x810E0001u);
+""" + HELD_NOTE + LICENCE + r"""static constexpr int     BC5_SHP_ERROR_INVALID_ARGS = static_cast<int>(0x810E0001u);
 static constexpr int32_t BC5_SHP_USER_ID_NONE       = -1;
 static constexpr size_t  BC5_SHP_INFO_SIZE          = 56; // the host's and the visitor's user ids at 48 and 52
 static constexpr size_t  BC5_SHP_INFO_USERS_AT      = 48;
@@ -562,7 +576,8 @@ static constexpr size_t  BC5_SHP_INFO_A_SIZE        = 72; // with the two accoun
 static constexpr size_t  BC5_SHP_INFO_A_USERS_AT    = 64;
 
 """ + switch_fn("Bc5ShpOn", SHP_ENV, "shareplay",
-                "GetCurrentConnectionInfo GetCurrentConnectionInfoA; NOT_INITIALIZED held: split state; 20 held") + r"""
+                "GetCurrentConnectionInfo GetCurrentConnectionInfoA; NOT_INITIALIZED held: split state; "
+                "20 held, not registered") + r"""
 // No Share Play session: every field zero, both user ids none.
 static int Bc5ShpConnectionInfo(void* info, size_t size, size_t users_at) {
 »if (info == nullptr) {
@@ -596,10 +611,20 @@ SHP_EDITS = (
      "static int KYTY_SYSV_ABI sceSharePlayGetCurrentConnectionInfoA(void* info) {\n»PRINT_NAME();\n" + SHP_GATE +
      "»»return Bc5ShpConnectionInfo(info, BC5_SHP_INFO_A_SIZE, BC5_SHP_INFO_A_USERS_AT);\n»}\n"),
     ("registration",) + registration("InitSharePlay_1", "Bc5ShpOn", SHP_ENV),
-)
+) + held_registrations("Bc5ShpOn", "LibSharePlay", (
+    ("ggnCfalLU-8", "sceSharePlayCrashDaemon"), ("vUMkWXQff3w", "sceSharePlayGetCurrentInfo"),
+    ("Md7Mdkr8LBc", "sceSharePlayGetEvent"), ("9zwJpai7jGc", "sceSharePlayNotifyDialogOpen"),
+    ("VUW2V9cUTP4", "sceSharePlayNotifyForceCloseForCdlg"), ("XL0WwUJoQPg", "sceSharePlayNotifyOpenQuickMenu"),
+    ("6-1fKaa5HlY", "sceSharePlayResumeScreenForCdlg"), ("U28jAuLHj6c", "sceSharePlayServerLock"),
+    ("3Oaux9ITEtY", "sceSharePlayServerUnLock"), ("QZy+KmyqKPU", "sceSharePlaySetMode"),
+    ("co2NCj--pnc", "sceSharePlaySetProhibition"), ("KADsbjNCgPo", "sceSharePlaySetProhibitionModeWithAppId"),
+    ("-F6NddfUsa4", "sceSharePlayStartStandby"), ("rWVNHNnEx6g", "sceSharePlayStartStreaming"),
+    ("zEDkUWLVwFI", "sceSharePlayStopStandby"), ("aGlema+JxUU", "sceSharePlayStopStreaming"),
+    ("LpPA6mprZ8Q", "Func_2E93C0EA6A6B67C4"), ("wcI2co2I4Xc", "Func_C1C236728D88E177"),
+    ("6egMR0eB8RU", "Func_E9E80C474781F115"), ("891hmdoV7UQ", "Func_F3DD6199DA15ED44")))
 SHP_BEFORE = ("#include <common/abi.h>\n", "LIB_VERSION(\"libSceSharePlay\", 1, \"libSceSharePlay\", 1, 1);\n")
 SHP_AFTER = ("static int KYTY_SYSV_ABI sceSharePlayGetCurrentConnectionInfoA() {\n", "LIB_DEFINE(InitSharePlay_1) {\n")
-SHP_USES = (("Bc5ShpOn()", 4), ("Bc5ShpConnectionInfo(", 3), ("static int KYTY_SYSV_ABI ", 22), ("LIB_FUNC(", 22))
+SHP_USES = (("Bc5ShpOn()", 24), ("Bc5ShpConnectionInfo(", 3), ("static int KYTY_SYSV_ABI ", 22), ("LIB_FUNC(", 22))
 
 # =====================================================================================================================
 # src/libs/libGameLiveStreaming.cpp
@@ -634,7 +659,7 @@ GLS_BLOCK = r"""// ---- BC5 experiment 0405 (series e7 of experiment 0401), tag 
 // not implement them): the other 25 calls, GetCurrentStatus among them.
 // KYTY_BC5_LOAD_GAMELIVESTREAMING: unset, empty or "0" is off (today's answers); any other value is on. Read once; one
 // stderr line at registration or at the first call.
-""" + LICENCE + r"""static constexpr int     BC5_GLS_ERROR_INVALID_ARGUMENT        = static_cast<int>(0x80A00002u);
+""" + HELD_NOTE + LICENCE + r"""static constexpr int     BC5_GLS_ERROR_INVALID_ARGUMENT        = static_cast<int>(0x80A00002u);
 static constexpr int32_t BC5_GLS_USER_ID_NONE                  = -1;
 static constexpr size_t  BC5_GLS_STATUS2_SIZE                  = 72;     // the user id at 0, the rest zero
 static constexpr size_t  BC5_GLS_PROGRAM_INFO_SIZE             = 0x134C; // all zero: nothing is broadcast
@@ -656,7 +681,7 @@ static constexpr size_t  BC5_GLS_CAMERA_SETTING_TAIL           = 9;
 
 """ + switch_fn("Bc5GlsOn", GLS_ENV, "gamelivestreaming",
                 "GetCurrentStatus2 GetProgramInfo ScreenInitializeSeparateModeParameter and 10 argument checks; "
-                "NOT_INITIALIZED held: split state; 7 match, 25 held") + r"""
+                "NOT_INITIALIZED held: split state; 7 match; 25 held, not registered") + r"""
 static int Bc5GlsGetCurrentStatus2(void* status) {
 »if (status == nullptr) {
 »»return BC5_GLS_ERROR_INVALID_ARGUMENT;
@@ -766,45 +791,27 @@ GLS_EDITS = (
      f"»»return {call};\n»}}\n")
     for name, params, call in GLS_PORTS) + (
     ("registration",) + registration("InitGameLiveStreaming_1", "Bc5GlsOn", GLS_ENV),
-)
+) + held_registrations("Bc5GlsOn", "LibGameLiveStreaming", tuple((nid, "sceGameLiveStreaming" + name) for nid, name in (
+    ("caqgDl+V9qA", "StartDebugBroadcast"), ("0i8Lrllxwow", "StopDebugBroadcast"),
+    ("NqkTzemliC0", "ApplySocialFeedbackMessageFilter"), ("PC4jq87+YQI", "CheckCallback"),
+    ("aRSQNqbats4", "GetCurrentBroadcastScreenLayout"), ("CoPMx369EqM", "GetCurrentStatus"),
+    ("ysWfX5PPbfc", "LaunchLiveViewer"), ("cvRCb7DTAig", "LaunchLiveViewerA"), ("nFP8qT9YXbo", "RegisterCallback"),
+    ("b5RaMD2J0So", "ScreenCloseSeparateMode"), ("hBdd8n6kuvE", "ScreenConfigureSeparateMode"),
+    ("uhCmn81s-mU", "ScreenInitialize"), ("iorzW0pKOiA", "ScreenOpenSeparateMode"), ("gDSvt78H3Oo", "ScreenSetMode"),
+    ("HE93dr-5rx4", "ScreenTerminate"), ("TwuUzTKKeek", "SetDefaultServiceProviderPermission"),
+    ("Gw6S4oqlY7E", "SetGuardAreas"), ("Sb5bAXyUt5c", "SetLinkCommentPreset"),
+    ("mCoz3k3zPmA", "SetServiceProviderPermission"), ("MLvYI86FFAo", "SetStandbyScreenResource"),
+    ("y0KkAydy9xE", "StartGenerateStandbyScreenResource"), ("Y1WxX7dPMCw", "StartSocialFeedbackMessageFiltering"),
+    ("D7dg5QJ4FlE", "StopGenerateStandbyScreenResource"), ("bYuGUBuIsaY", "StopSocialFeedbackMessageFiltering"),
+    ("5XHaH3kL+bA", "UnregisterCallback"))))
 GLS_BEFORE = ("#include <common/abi.h>\n",
               "LIB_VERSION(\"libSceGameLiveStreaming\", 1, \"libSceGameLiveStreaming\", 1, 1);\n")
 GLS_AFTER = ("static int KYTY_SYSV_ABI sceGameLiveStreamingGetCurrentStatus2() {\n",
              "static int KYTY_SYSV_ABI sceGameLiveStreamingSetInvitationSessionId() {\n",
              "LIB_DEFINE(InitGameLiveStreaming_1) {\n")
-GLS_USES = (("Bc5GlsOn()", 15), ("Bc5GlsGetCurrentStatus2(", 2), ("Bc5GlsClear(", 3), ("Bc5GlsCheckFeedbackType(", 4),
+GLS_USES = (("Bc5GlsOn()", 40), ("Bc5GlsGetCurrentStatus2(", 2), ("Bc5GlsClear(", 3), ("Bc5GlsCheckFeedbackType(", 4),
             ("Bc5GlsFeedbackCount(", 2), ("Bc5GlsFeedbackMessages(", 2), ("Bc5GlsCheckText(", 5),
             ("Bc5GlsCheckEntries(", 4), ("TODO(verify)", 2), ("static int KYTY_SYSV_ABI ", 45), ("LIB_FUNC(", 45))
-
-# =====================================================================================================================
-# src/libs/libRemotePlay.cpp
-# =====================================================================================================================
-RPL_ENV = "KYTY_BC5_LOAD_REMOTEPLAY"
-RPL_BLOCK_ANCHOR = "static int KYTY_SYSV_ABI sceRemoteplayApprove() {\n"
-RPL_BLOCK = r"""// ---- BC5 experiment 0405 (series e7 of experiment 0401), tag "tbd": KYTY_BC5_LOAD_REMOTEPLAY, libSceRemoteplay: nothing to port ----
-// Exp 0405 decision 4 (the tables compiled but never loaded): this table is loaded by Libs::InitAll when
-// KYTY_BC5_LOAD_REMOTEPLAY is on (libs.cpp, the loader agent "tl2"). No other table registers its 39 NIDs. AnyPS5
-// (github.com/boykopovar/AnyPS5, GPL-2.0-only) @ 4f41f4c375f5abb487dbd184fbc150f31994d762,
-// core/libs/prx/libSceRemoteplay/Export.cpp, implements none of them: 38 throw there (their note
-// docs/dev/debt/libSceRemoteplay.md: "signature unknown"), and sceRemoteplayChangeEnterKey is not in it. So all 39 keep
-// today's answer, on or off: 0, nothing written. Initialize, Terminate and GetConnectionStatus are the live table's
-// (libNet.cpp:4198-4238) and are not registered here. KYTY_BC5_LOAD_REMOTEPLAY: unset, empty or "0" is off; any other
-// value is on. Read once; one stderr line at registration.
-""" + switch_fn("Bc5RplOn", RPL_ENV, "remoteplay", "none: AnyPS5 implements none of the 39, all held") + r"""// ---- end of BC5 experiment 0405 (KYTY_BC5_LOAD_REMOTEPLAY) ----
-
-"""
-
-RPL_EDITS = (
-    ("includes", "#include <common/abi.h>\n",
-     "#include <common/abi.h>\n"
-     "\n"
-     "#include <cstdio> // BC5 experiment 0405 (KYTY_BC5_LOAD_REMOTEPLAY): these includes\n"
-     "#include <cstdlib>\n"),
-    ("registration",) + registration("InitRemotePlay_1", "Bc5RplOn", RPL_ENV),
-)
-RPL_BEFORE = ("#include <common/abi.h>\n", "LIB_VERSION(\"libSceRemoteplay\", 1, \"libSceRemoteplay\", 1, 1);\n")
-RPL_AFTER = ("static int KYTY_SYSV_ABI Func_1D5EE365ED5FADB3() {\n", "LIB_DEFINE(InitRemotePlay_1) {\n")
-RPL_USES = (("Bc5RplOn()", 2), ("static int KYTY_SYSV_ABI ", 39), ("LIB_FUNC(", 39), ("return OK; // STUBBED", 39))
 
 UNITS = (
     # rel, crlf, block anchor, block, edits, defined-before, used-after, helper uses
@@ -812,7 +819,6 @@ UNITS = (
     ("src/libs/libWebBrowserDialog.cpp", False, WBD_BLOCK_ANCHOR, WBD_BLOCK, WBD_EDITS, WBD_BEFORE, WBD_AFTER, WBD_USES),
     ("src/libs/libSharePlay.cpp", False, SHP_BLOCK_ANCHOR, SHP_BLOCK, SHP_EDITS, SHP_BEFORE, SHP_AFTER, SHP_USES),
     ("src/libs/libGameLiveStreaming.cpp", False, GLS_BLOCK_ANCHOR, GLS_BLOCK, GLS_EDITS, GLS_BEFORE, GLS_AFTER, GLS_USES),
-    ("src/libs/libRemotePlay.cpp", False, RPL_BLOCK_ANCHOR, RPL_BLOCK, RPL_EDITS, RPL_BEFORE, RPL_AFTER, RPL_USES),
 )
 assert sorted(u[0] for u in UNITS) == sorted(PINNED), "every unit has exactly one pinned md5"
 
@@ -849,7 +855,8 @@ def edit_unit(rel, s, crlf, anchor, block, edits, before, after, uses):
         assert out.count(o) == 1, ("anchor", rel, what, out.count(o))
         assert s.count(o) == 1, ("anchor in the input", rel, what, s.count(o))
         assert balance(o) == balance(n), ("the edit changes the balance", rel, what, balance(o), balance(n))
-        assert n.startswith(o.split(b"(")[0]), ("an edit keeps its function's name", rel, what)
+        assert what.startswith("held ") or n.startswith(o.split(b"(")[0]), ("an edit keeps its function's name", rel, what)
+        assert not what.startswith("held ") or n.count(o.lstrip(b"\t")) == 1, ("a held line keeps its LIB_FUNC", rel, what)
         out = out.replace(o, n)
         done.append((o, n))
     assert balance(out) == balance(s), ("the unit's balance changed", rel, balance(s), balance(out))
@@ -890,7 +897,7 @@ def main():
         out = edit_unit(rel, s, crlf, anchor, block, edits, before, after, uses)
         print(f"# in:  {rel} {md5(s)}  ({len(s)} bytes, {'CRLF' if crlf else 'LF'})", file=sys.stderr)
         outs.append((rel, out))
-    for rel, out in outs:  # written only when all five are done
+    for rel, out in outs:  # written only when all four are done
         dst = os.path.join(outdir, rel)
         os.makedirs(os.path.dirname(dst), exist_ok=True)
         with open(dst, "wb") as f:

@@ -239,24 +239,45 @@ void CaseNpCommon() {
 		Rc("npcommon off: CmpOnlineId of two different ids", cmp_online(&a, &b), 0);
 		Rc("npcommon off: CmpNpId of two different NpIds", cmp_npid(&na, &nb), 0);
 		int32_t order = 77;
-		Rc("npcommon off: CmpNpIdInOrder writes nothing", cmp_order(&na, &nb, &order), 0, order == 77);
+		{
+			const int call_rc = cmp_order(&na, &nb, &order);
+			Rc("npcommon off: CmpNpIdInOrder writes nothing", call_rc, 0, order == 77);
+		}
 		Rc("npcommon off: GetPlatformType(null)", platform(nullptr), 0);
 		Rc("npcommon off: IntIsValidOnlineId(\"alpha\")", valid_online(&a), 0);
 		int64_t usec = -7;
-		Rc("npcommon off: GetSystemClockUsec writes nothing", clock_usec(&usec), 0, usec == -7);
+		{
+			const int call_rc = clock_usec(&usec);
+			Rc("npcommon off: GetSystemClockUsec writes nothing", call_rc, 0, usec == -7);
+		}
 		char ver[8];
 		std::memset(ver, 0x7F, sizeof(ver));
-		Rc("npcommon off: GetSdkVersion writes nothing", sdk_version(ver), 0, ver[0] == 0x7F && ver[7] == 0x7F);
+		{
+			const int call_rc = sdk_version(ver);
+			Rc("npcommon off: GetSdkVersion writes nothing", call_rc, 0, ver[0] == 0x7F && ver[7] == 0x7F);
+		}
 		void* m = nullptr;
-		Rc("npcommon off: MutexInit creates nothing", mutex_init(&m, "tbn", 0), 0, m == nullptr);
+		{
+			const int call_rc = mutex_init(&m, "tbn", 0);
+			Rc("npcommon off: MutexInit creates nothing", call_rc, 0, m == nullptr);
+		}
 		Rc("npcommon off: MutexTryLock", mutex_trylock(&m), 0);
 		void* t = nullptr;
-		Rc("npcommon off: CreateThread starts nothing", create_thread(&t, ThreadEntry, &g_thread_ran, 0, 0x10000, 0, "tbn"), 0,
-		   t == nullptr && g_thread_ran.load() == 0);
+		{
+			const int call_rc = create_thread(&t, ThreadEntry, &g_thread_ran, 0, 0x10000, 0, "tbn");
+			Rc("npcommon off: CreateThread starts nothing", call_rc, 0,
+			   t == nullptr && g_thread_ran.load() == 0);
+		}
 		alignas(8) Ctx ctx {};
-		Rc("npcommon off: CalloutInitCtx writes nothing", callout_init(ctx, "tbn", 0x10000, 0, 0), 0, Get32(ctx, 0x18) == 0);
+		{
+			const int call_rc = callout_init(ctx, "tbn", 0x10000, 0, 0);
+			Rc("npcommon off: CalloutInitCtx writes nothing", call_rc, 0, Get32(ctx, 0x18) == 0);
+		}
 		alignas(8) uint8_t e[0x20] {};
-		Rc("npcommon off: CalloutStartOnCtx", callout_start(ctx, e, 1, CalloutHandler, &g_callouts), 0, g_callouts.load() == 0);
+		{
+			const int call_rc = callout_start(ctx, e, 1, CalloutHandler, &g_callouts);
+			Rc("npcommon off: CalloutStartOnCtx", call_rc, 0, g_callouts.load() == 0);
+		}
 		return;
 	}
 
@@ -267,10 +288,22 @@ void CaseNpCommon() {
 	Rc("npcommon: CmpNpId option byte differs", cmp_npid(&na, &na_opt), kNotMatch);
 	Rc("npcommon: CmpNpId(null)", cmp_npid(&na, nullptr), kInvalid);
 	int32_t order = 77;
-	Rc("npcommon: CmpNpIdInOrder alpha < bravo", cmp_order(&na, &nb, &order), 0, order == -1, Fmt("order %d", order));
-	Rc("npcommon: CmpNpIdInOrder bravo > alpha", cmp_order(&nb, &na, &order), 0, order == 1, Fmt("order %d", order));
-	Rc("npcommon: CmpNpIdInOrder equal", cmp_order(&na, &na, &order), 0, order == 0, Fmt("order %d", order));
-	Rc("npcommon: CmpNpIdInOrder option byte", cmp_order(&na, &na_opt, &order), 0, order == -1, Fmt("order %d", order));
+	{
+		const int call_rc = cmp_order(&na, &nb, &order);
+		Rc("npcommon: CmpNpIdInOrder alpha < bravo", call_rc, 0, order == -1, Fmt("order %d", order));
+	}
+	{
+		const int call_rc = cmp_order(&nb, &na, &order);
+		Rc("npcommon: CmpNpIdInOrder bravo > alpha", call_rc, 0, order == 1, Fmt("order %d", order));
+	}
+	{
+		const int call_rc = cmp_order(&na, &na, &order);
+		Rc("npcommon: CmpNpIdInOrder equal", call_rc, 0, order == 0, Fmt("order %d", order));
+	}
+	{
+		const int call_rc = cmp_order(&na, &na_opt, &order);
+		Rc("npcommon: CmpNpIdInOrder option byte", call_rc, 0, order == -1, Fmt("order %d", order));
+	}
 	Rc("npcommon: CmpNpIdInOrder(null order)", cmp_order(&na, &nb, nullptr), kInvalid);
 	const auto p_none = MakeNpId("alpha", 0);
 	const auto p_ps4  = MakeNpId("alpha", 0x00347370u);
@@ -306,12 +339,18 @@ void CaseNpCommon() {
 	   Fmt("%lld then %lld", static_cast<long long>(u1), static_cast<long long>(u2)));
 	char ver[8];
 	std::memset(ver, 0x7F, sizeof(ver));
-	Rc("npcommon: GetSdkVersion", sdk_version(ver), 0,
-	   std::memcmp(ver, "10.60\0\0\0", 8) == 0, Fmt("\"%.7s\"", ver));
+	{
+		const int call_rc = sdk_version(ver);
+		Rc("npcommon: GetSdkVersion", call_rc, 0,
+		   std::memcmp(ver, "10.60\0\0\0", 8) == 0, Fmt("\"%.7s\"", ver));
+	}
 	Rc("npcommon: GetSdkVersion(null)", sdk_version(nullptr), 0);
 
 	void* m = nullptr;
-	Rc("npcommon: MutexInit", mutex_init(&m, "tbn", 0), 0, m != nullptr);
+	{
+		const int call_rc = mutex_init(&m, "tbn", 0);
+		Rc("npcommon: MutexInit", call_rc, 0, m != nullptr);
+	}
 	Rc("npcommon: MutexLock", mutex_lock(&m), 0);
 	Rc("npcommon: MutexTryLock of a held mutex", mutex_trylock(&m), static_cast<int>(0x8055800Fu));
 	Rc("npcommon: MutexUnlock", mutex_unlock(&m), 0);
@@ -319,7 +358,10 @@ void CaseNpCommon() {
 	Rc("npcommon: MutexUnlock again", mutex_unlock(&m), 0);
 	Rc("npcommon: MutexDestroy", mutex_destroy(&m), 0);
 	void* rm = nullptr;
-	Rc("npcommon: LwMutexInit recursive", lw_init(&rm, "tbn-r", 1), 0, rm != nullptr);
+	{
+		const int call_rc = lw_init(&rm, "tbn-r", 1);
+		Rc("npcommon: LwMutexInit recursive", call_rc, 0, rm != nullptr);
+	}
 	Rc("npcommon: LwMutexLock", lw_lock(&rm), 0);
 	Rc("npcommon: LwMutexTryLock again (recursive)", lw_trylock(&rm), 0);
 	Rc("npcommon: LwMutexUnlock x2", lw_unlock(&rm) | lw_unlock(&rm), 0);
@@ -327,7 +369,10 @@ void CaseNpCommon() {
 
 	void* cm = nullptr;
 	void* c  = nullptr;
-	Rc("npcommon: CondInit", mutex_init(&cm, "tbn-c", 0) | cond_init(&c, "tbn-c", 0), 0, c != nullptr);
+	{
+		const int call_rc = mutex_init(&cm, "tbn-c", 0) | cond_init(&c, "tbn-c", 0);
+		Rc("npcommon: CondInit", call_rc, 0, c != nullptr);
+	}
 	mutex_lock(&cm);
 	const auto w0 = std::chrono::steady_clock::now();
 	const int  rw = cond_timedwait(&c, &cm, 20000);
@@ -339,17 +384,26 @@ void CaseNpCommon() {
 	Rc("npcommon: CondDestroy", cond_destroy(&c) | mutex_destroy(&cm), 0);
 
 	void* t = nullptr;
-	Rc("npcommon: CreateThread", create_thread(&t, ThreadEntry, &g_thread_ran, 0, 0x10000, 0, "tbn-thread"), 0, t != nullptr);
+	{
+		const int call_rc = create_thread(&t, ThreadEntry, &g_thread_ran, 0, 0x10000, 0, "tbn-thread");
+		Rc("npcommon: CreateThread", call_rc, 0, t != nullptr);
+	}
 	void* ret = nullptr;
-	Rc("npcommon: JoinThread", t != nullptr ? join_thread(t, &ret) : -1, 0,
-	   g_thread_ran.load() == 1 && reinterpret_cast<uintptr_t>(ret) == 42, Fmt("ran %d, value %p", g_thread_ran.load(), ret));
+	{
+		const int call_rc = t != nullptr ? join_thread(t, &ret) : -1;
+		Rc("npcommon: JoinThread", call_rc, 0,
+		   g_thread_ran.load() == 1 && reinterpret_cast<uintptr_t>(ret) == 42, Fmt("ran %d, value %p", g_thread_ran.load(), ret));
+	}
 
 	alignas(8) Ctx ctx {};
 	alignas(8) uint8_t e1[0x20] {};
 	alignas(8) uint8_t e2[0x20] {};
 	Rc("npcommon: CalloutStartOnCtx before init", callout_start(ctx, e1, 1000, CalloutHandler, &g_callouts),
 	   static_cast<int>(0x80558001u));
-	Rc("npcommon: CalloutInitCtx", callout_init(ctx, "tbn-callout", 0x10000, 0, 0), 0, Get32(ctx, 0x18) == 1);
+	{
+		const int call_rc = callout_init(ctx, "tbn-callout", 0x10000, 0, 0);
+		Rc("npcommon: CalloutInitCtx", call_rc, 0, Get32(ctx, 0x18) == 1);
+	}
 	Rc("npcommon: CalloutInitCtx again", callout_init(ctx, "tbn-callout", 0x10000, 0, 0), static_cast<int>(0x80558002u));
 	Rc("npcommon: CalloutStartOnCtx64 10 s", callout_start64(ctx, e2, 10000000, CalloutHandler, &g_callouts), 0);
 	Rc("npcommon: CalloutStartOnCtx 10 ms", callout_start(ctx, e1, 10000, CalloutHandler, &g_callouts), 0);
@@ -362,9 +416,18 @@ void CaseNpCommon() {
 	std::this_thread::sleep_for(std::chrono::milliseconds(50));
 	Report("npcommon: the 10 ms callout ran once, the 10 s one not", g_callouts.load() == 1, Fmt("%d calls", g_callouts.load()));
 	int32_t removed = 7;
-	Rc("npcommon: CalloutStopOnCtx of the queued one", callout_stop(ctx, e2, &removed), 0, removed == 1, Fmt("removed %d", removed));
-	Rc("npcommon: CalloutStopOnCtx again", callout_stop(ctx, e2, &removed), 0, removed == 0, Fmt("removed %d", removed));
-	Rc("npcommon: CalloutTermCtx", callout_term(ctx), 0, Get32(ctx, 0x18) == 0);
+	{
+		const int call_rc = callout_stop(ctx, e2, &removed);
+		Rc("npcommon: CalloutStopOnCtx of the queued one", call_rc, 0, removed == 1, Fmt("removed %d", removed));
+	}
+	{
+		const int call_rc = callout_stop(ctx, e2, &removed);
+		Rc("npcommon: CalloutStopOnCtx again", call_rc, 0, removed == 0, Fmt("removed %d", removed));
+	}
+	{
+		const int call_rc = callout_term(ctx);
+		Rc("npcommon: CalloutTermCtx", call_rc, 0, Get32(ctx, 0x18) == 0);
+	}
 	Rc("npcommon: CalloutStopOnCtx after term", callout_stop(ctx, e2, &removed), static_cast<int>(0x80558001u));
 	Rc("npcommon: CalloutInitCtx(null)", callout_init(nullptr, "x", 0x10000, 0, 0), kInvalid);
 }
@@ -425,21 +488,42 @@ void CaseNpManager() {
 		           shared2 != nullptr ? shared2->dbg_name.c_str() : "none"));
 		Rc("npmanager off: CheckNpAvailabilityA", avail_a(1, -1), 0);
 		Rc("npmanager off: CheckPlus", check_plus(0, nullptr, nullptr), 0);
-		Rc("npmanager off: GetAccountLanguage", lang(1, &oid, buf), 0, untouched());
-		Rc("npmanager off: GetAccountLanguageA", lang_a(1, 1, buf), 0, untouched());
+		{
+			const int call_rc = lang(1, &oid, buf);
+			Rc("npmanager off: GetAccountLanguage", call_rc, 0, untouched());
+		}
+		{
+			const int call_rc = lang_a(1, 1, buf);
+			Rc("npmanager off: GetAccountLanguageA", call_rc, 0, untouched());
+		}
 		int8_t age = 9;
-		Rc("npmanager off: GetParentalControlInfoA", parental_a(1, 1, &age, buf), 0, age == 9 && untouched());
+		{
+			const int call_rc = parental_a(1, 1, &age, buf);
+			Rc("npmanager off: GetParentalControlInfoA", call_rc, 0, age == 9 && untouched());
+		}
 		int r = 5;
-		Rc("npmanager off: WaitAsync", wait_async(999, &r), 0, r == 5);
+		{
+			const int call_rc = wait_async(999, &r);
+			Rc("npmanager off: WaitAsync", call_rc, 0, r == 5);
+		}
 		Rc("npmanager off: SetTimeout", set_timeout(0, 0, 0, 0, 0, 0), 0);
 		uint32_t st = 7;
-		Rc("npmanager off: GetGamePresenceStatus", presence(&oid, &st), 0, st == 7);
+		{
+			const int call_rc = presence(&oid, &st);
+			Rc("npmanager off: GetGamePresenceStatus", call_rc, 0, st == 7);
+		}
 		Rc("npmanager off: SetGamePresenceOnline", set_online(0, nullptr, 1), kTodayNotIn);
 		Rc("npmanager off: SetGamePresenceOnlineA", set_online_a(1, 1, 1), kTodayNotIn);
 		bool member = true;
-		Rc("npmanager off: IsPlusMember", plus_member(1, &member), kTodayNotIn, member);
+		{
+			const int call_rc = plus_member(1, &member);
+			Rc("npmanager off: IsPlusMember", call_rc, kTodayNotIn, member);
+		}
 		uint64_t acc = 3;
-		Rc("npmanager off: GetAccountId", account_id(&oid, &acc), 0, acc == 3);
+		{
+			const int call_rc = account_id(&oid, &acc);
+			Rc("npmanager off: GetAccountId", call_rc, 0, acc == 3);
+		}
 		Rc("npmanager off: CheckCallbackForLib", callback_lib(), 0);
 		Rc("npmanager off: UnregisterPlusEventCallback", unreg_plus(), 0);
 		return;
@@ -474,18 +558,33 @@ void CaseNpManager() {
 	Rc("npmanager: CheckNpAvailabilityA unknown request", avail_a(999, 1), kNoRequest);
 	Rc("npmanager: CheckNpAvailabilityA live request", avail_a(req, 1), kSignedOut);
 	Rc("npmanager: CheckPlus request 0", check_plus(0, buf, buf), kInvalid);
-	Rc("npmanager: CheckPlus", check_plus(req, buf, buf), kSignedOut, untouched());
+	{
+		const int call_rc = check_plus(req, buf, buf);
+		Rc("npmanager: CheckPlus", call_rc, kSignedOut, untouched());
+	}
 	Rc("npmanager: GetAccountLanguage(null online id)", lang(req, nullptr, buf), kInvalid);
-	Rc("npmanager: GetAccountLanguage", lang(req, &oid, buf), kNoUser, untouched());
+	{
+		const int call_rc = lang(req, &oid, buf);
+		Rc("npmanager: GetAccountLanguage", call_rc, kNoUser, untouched());
+	}
 	const int req2 = Libs::Network::NpManager::NpCreateRequest();
 	Rc("npmanager: GetAccountLanguageA(null)", lang_a(req2, 1, nullptr), kInvalid);
-	Rc("npmanager: GetAccountLanguageA", lang_a(req2, 1, buf), kSignedOut, untouched());
+	{
+		const int call_rc = lang_a(req2, 1, buf);
+		Rc("npmanager: GetAccountLanguageA", call_rc, kSignedOut, untouched());
+	}
 	int8_t age = 9;
-	Rc("npmanager: GetParentalControlInfo", parental(req, &oid, &age, buf), kNoUser, age == 9 && untouched());
+	{
+		const int call_rc = parental(req, &oid, &age, buf);
+		Rc("npmanager: GetParentalControlInfo", call_rc, kNoUser, age == 9 && untouched());
+	}
 	Rc("npmanager: GetParentalControlInfo(null age)", parental(req, &oid, nullptr, buf), kInvalid);
 	const int req3 = Libs::Network::NpManager::NpCreateRequest();
 	Rc("npmanager: GetParentalControlInfoA invalid user", parental_a(req3, -1, &age, buf), kInvalid);
-	Rc("npmanager: GetParentalControlInfoA", parental_a(req3, 1, &age, buf), kSignedOut, age == 9 && untouched());
+	{
+		const int call_rc = parental_a(req3, 1, &age, buf);
+		Rc("npmanager: GetParentalControlInfoA", call_rc, kSignedOut, age == 9 && untouched());
+	}
 	Rc("npmanager: SetTimeout all zero", set_timeout(req, 0, 0, 0, 0, 0), kInvalid);
 	Rc("npmanager: SetTimeout resolve below 1 s", set_timeout(req, 1, 999999, 0, 0, 0), kInvalid);
 	Rc("npmanager: SetTimeout request 0", set_timeout(0, 1, 0, 0, 0, 0), kInvalid);
@@ -493,18 +592,39 @@ void CaseNpManager() {
 	Rc("npmanager: SetTimeout", set_timeout(req, 1, 1000000, 10000000, 10000000, 10000000), 0);
 	int r = 5;
 	Rc("npmanager: WaitAsync(null)", wait_async(req, nullptr), kInvalid);
-	Rc("npmanager: WaitAsync unknown request", wait_async(999, &r), kNoRequest, r == 5);
-	Rc("npmanager: WaitAsync", wait_async(req, &r), 0, r == kSignedOut, Fmt("result 0x%08x", static_cast<unsigned>(r)));
-	Rc("npmanager: GetAccountCountry", country(&oid, buf), kNoUser, untouched());
+	{
+		const int call_rc = wait_async(999, &r);
+		Rc("npmanager: WaitAsync unknown request", call_rc, kNoRequest, r == 5);
+	}
+	{
+		const int call_rc = wait_async(req, &r);
+		Rc("npmanager: WaitAsync", call_rc, 0, r == kSignedOut, Fmt("result 0x%08x", static_cast<unsigned>(r)));
+	}
+	{
+		const int call_rc = country(&oid, buf);
+		Rc("npmanager: GetAccountCountry", call_rc, kNoUser, untouched());
+	}
 	Rc("npmanager: GetAccountCountry(null)", country(&oid, nullptr), kInvalid);
-	Rc("npmanager: GetAccountDateOfBirth", birth(&oid, buf), kNoUser, untouched());
-	Rc("npmanager: GetAccountDateOfBirthA", birth_a(1, buf), kSignedOut, untouched());
+	{
+		const int call_rc = birth(&oid, buf);
+		Rc("npmanager: GetAccountDateOfBirth", call_rc, kNoUser, untouched());
+	}
+	{
+		const int call_rc = birth_a(1, buf);
+		Rc("npmanager: GetAccountDateOfBirthA", call_rc, kSignedOut, untouched());
+	}
 	Rc("npmanager: GetAccountDateOfBirthA invalid user", birth_a(-1, buf), kInvalid);
 	uint32_t st = 7;
-	Rc("npmanager: GetGamePresenceStatus", presence(&oid, &st), 0, st == 0);
+	{
+		const int call_rc = presence(&oid, &st);
+		Rc("npmanager: GetGamePresenceStatus", call_rc, 0, st == 0);
+	}
 	Rc("npmanager: GetGamePresenceStatus(null)", presence(nullptr, &st), kInvalid);
 	st = 7;
-	Rc("npmanager: GetGamePresenceStatusA", presence_a(1, &st), 0, st == 0);
+	{
+		const int call_rc = presence_a(1, &st);
+		Rc("npmanager: GetGamePresenceStatusA", call_rc, 0, st == 0);
+	}
 	Rc("npmanager: GetGamePresenceStatusA invalid user", presence_a(-1, &st), kInvalid);
 	Rc("npmanager: SetGamePresenceOnline request 0", set_online(0, &oid, 1), kInvalid);
 	Rc("npmanager: SetGamePresenceOnline unknown request", set_online(999, &oid, 1), kNoRequest);
@@ -513,15 +633,27 @@ void CaseNpManager() {
 	Rc("npmanager: SetGamePresenceOnlineA invalid user", set_online_a(req4, -1, 1), kInvalid);
 	Rc("npmanager: SetGamePresenceOnlineA", set_online_a(req4, 1, 1), kSignedOut);
 	bool member = true;
-	Rc("npmanager: IsPlusMember", plus_member(1, &member), 0, !member);
+	{
+		const int call_rc = plus_member(1, &member);
+		Rc("npmanager: IsPlusMember", call_rc, 0, !member);
+	}
 	Rc("npmanager: IsPlusMember(null)", plus_member(1, nullptr), kInvalid);
 	uint64_t acc = 3;
-	Rc("npmanager: GetAccountId", account_id(&oid, &acc), kSignedOut, acc == 3);
+	{
+		const int call_rc = account_id(&oid, &acc);
+		Rc("npmanager: GetAccountId", call_rc, kSignedOut, acc == 3);
+	}
 	Rc("npmanager: GetAccountId(null)", account_id(nullptr, &acc), kInvalid);
 	int user = 4;
-	Rc("npmanager: GetUserIdByAccountId", user_by_acc(5, &user), kSignedOut, user == 4);
+	{
+		const int call_rc = user_by_acc(5, &user);
+		Rc("npmanager: GetUserIdByAccountId", call_rc, kSignedOut, user == 4);
+	}
 	Rc("npmanager: GetUserIdByAccountId(0)", user_by_acc(0, &user), kInvalid);
-	Rc("npmanager: GetUserIdByOnlineId", user_by_oid(&oid, &user), kSignedOut, user == 4);
+	{
+		const int call_rc = user_by_oid(&oid, &user);
+		Rc("npmanager: GetUserIdByOnlineId", call_rc, kSignedOut, user == 4);
+	}
 	Rc("npmanager: GetUserIdByOnlineId(null)", user_by_oid(nullptr, &user), kInvalid);
 	Rc("npmanager: CheckCallbackForLib", callback_lib(), 0);
 	Rc("npmanager: UnregisterPlusEventCallback (already as AnyPS5)", unreg_plus(), 0);
@@ -616,14 +748,26 @@ void CaseNpTrophy() {
 
 	if (!g_on) {
 		int ctx = -5;
-		Rc("nptrophy off: CreateContext writes nothing", create_ctx(&ctx, 1000, 0, 0), 0, ctx == -5);
+		{
+			const int call_rc = create_ctx(&ctx, 1000, 0, 0);
+			Rc("nptrophy off: CreateContext writes nothing", call_rc, 0, ctx == -5);
+		}
 		int h = -5;
-		Rc("nptrophy off: CreateHandle writes nothing", create_h(&h), 0, h == -5);
+		{
+			const int call_rc = create_h(&h);
+			Rc("nptrophy off: CreateHandle writes nothing", call_rc, 0, h == -5);
+		}
 		Rc("nptrophy off: RegisterContext", register_ctx(1, 1, 0), static_cast<int>(0x80550005u));
 		int plat = 9;
-		Rc("nptrophy off: UnlockTrophy", unlock(1, 1, 0, &plat), static_cast<int>(0x80550005u), plat == 9);
+		{
+			const int call_rc = unlock(1, 1, 0, &plat);
+			Rc("nptrophy off: UnlockTrophy", call_rc, static_cast<int>(0x80550005u), plat == 9);
+		}
 		Rc("nptrophy off: NumInfoGetTotal", num_total(num_info), 0);
-		Rc("nptrophy off: SetInfoGetTrophyFlagArray writes nothing", set_flags(set_info, flags16), 0, flags16[0] == 0x5A);
+		{
+			const int call_rc = set_flags(set_info, flags16);
+			Rc("nptrophy off: SetInfoGetTrophyFlagArray writes nothing", call_rc, 0, flags16[0] == 0x5A);
+		}
 		Rc("nptrophy off: SystemDbgCtl", Fn<IFn<>>(dbg_nids[0])(), 0);
 		return;
 	}
@@ -632,13 +776,25 @@ void CaseNpTrophy() {
 	MakeTrophyPackages();
 	int ctx = -5;
 	Rc("nptrophy: CreateContext(null)", create_ctx(nullptr, 1000, 0, 0), kInvalid);
-	Rc("nptrophy: CreateContext options 1", create_ctx(&ctx, 1000, 0, 1), kInvalid, ctx == -5);
-	Rc("nptrophy: CreateContext", create_ctx(&ctx, 1000, 0, 0), 0, ctx > 0);
+	{
+		const int call_rc = create_ctx(&ctx, 1000, 0, 1);
+		Rc("nptrophy: CreateContext options 1", call_rc, kInvalid, ctx == -5);
+	}
+	{
+		const int call_rc = create_ctx(&ctx, 1000, 0, 0);
+		Rc("nptrophy: CreateContext", call_rc, 0, ctx > 0);
+	}
 	int dup = -5;
-	Rc("nptrophy: CreateContext same user and label", create_ctx(&dup, 1000, 0, 0), static_cast<int>(0x80551613u), dup == -5);
+	{
+		const int call_rc = create_ctx(&dup, 1000, 0, 0);
+		Rc("nptrophy: CreateContext same user and label", call_rc, static_cast<int>(0x80551613u), dup == -5);
+	}
 	int h = -5;
 	Rc("nptrophy: CreateHandle(null)", create_h(nullptr), kInvalid);
-	Rc("nptrophy: CreateHandle", create_h(&h), 0, h > 0);
+	{
+		const int call_rc = create_h(&h);
+		Rc("nptrophy: CreateHandle", call_rc, 0, h > 0);
+	}
 	uint32_t flags[4] = {7, 7, 7, 7};
 	uint32_t count    = 99;
 	Rc("nptrophy: GetTrophyUnlockState before RegisterContext", unlock_state(ctx, h, flags, &count), static_cast<int>(0x8055160Fu));
@@ -647,25 +803,43 @@ void CaseNpTrophy() {
 	Rc("nptrophy: RegisterContext unknown handle", register_ctx(ctx, 999, 0), static_cast<int>(0x80551608u));
 	Rc("nptrophy: RegisterContext", register_ctx(ctx, h, 0), 0);
 	Rc("nptrophy: RegisterContext again", register_ctx(ctx, h, 0), static_cast<int>(0x80551610u));
-	Rc("nptrophy: GetTrophyUnlockState", unlock_state(ctx, h, flags, &count), 0,
-	   flags[0] == 0 && flags[1] == 0 && flags[2] == 0 && flags[3] == 0 && count == 3, Fmt("count %u", count));
+	{
+		const int call_rc = unlock_state(ctx, h, flags, &count);
+		Rc("nptrophy: GetTrophyUnlockState", call_rc, 0,
+		   flags[0] == 0 && flags[1] == 0 && flags[2] == 0 && flags[3] == 0 && count == 3, Fmt("count %u", count));
+	}
 	int plat = 9;
 	Rc("nptrophy: UnlockTrophy(null)", unlock(ctx, h, 1, nullptr), kInvalid);
-	Rc("nptrophy: UnlockTrophy 1", unlock(ctx, h, 1, &plat), 0, plat == -1);
+	{
+		const int call_rc = unlock(ctx, h, 1, &plat);
+		Rc("nptrophy: UnlockTrophy 1", call_rc, 0, plat == -1);
+	}
 	Rc("nptrophy: UnlockTrophy 1 again", unlock(ctx, h, 1, &plat), static_cast<int>(0x8055160Cu));
 	Rc("nptrophy: UnlockTrophy 3 (past the icons)", unlock(ctx, h, 3, &plat), static_cast<int>(0x8055160Au));
-	Rc("nptrophy: GetTrophyUnlockState after", unlock_state(ctx, h, flags, &count), 0, flags[0] == 2u && count == 3,
-	   Fmt("bits 0x%x", flags[0]));
+	{
+		const int call_rc = unlock_state(ctx, h, flags, &count);
+		Rc("nptrophy: GetTrophyUnlockState after", call_rc, 0, flags[0] == 2u && count == 3,
+		   Fmt("bits 0x%x", flags[0]));
+	}
 	uint64_t size = 0;
-	Rc("nptrophy: GetGameIcon size", game_icon(ctx, h, nullptr, &size), 0, size == 4);
+	{
+		const int call_rc = game_icon(ctx, h, nullptr, &size);
+		Rc("nptrophy: GetGameIcon size", call_rc, 0, size == 4);
+	}
 	char     icon[8] = {};
 	uint64_t small   = 3;
 	Rc("nptrophy: GetGameIcon small buffer", game_icon(ctx, h, icon, &small), static_cast<int>(0x80551605u));
 	size = sizeof(icon);
-	Rc("nptrophy: GetGameIcon", game_icon(ctx, h, icon, &size), 0, size == 4 && std::memcmp(icon, "ICON", 4) == 0);
+	{
+		const int call_rc = game_icon(ctx, h, icon, &size);
+		Rc("nptrophy: GetGameIcon", call_rc, 0, size == 4 && std::memcmp(icon, "ICON", 4) == 0);
+	}
 	size = sizeof(icon);
 	Rc("nptrophy: GetTrophyIcon of a locked trophy", trophy_icon(ctx, h, 0, icon, &size), static_cast<int>(0x8055161Au));
-	Rc("nptrophy: GetTrophyIcon 1", trophy_icon(ctx, h, 1, icon, &size), 0, std::memcmp(icon, "T001", 4) == 0);
+	{
+		const int call_rc = trophy_icon(ctx, h, 1, icon, &size);
+		Rc("nptrophy: GetTrophyIcon 1", call_rc, 0, std::memcmp(icon, "T001", 4) == 0);
+	}
 	Rc("nptrophy: GetTrophyIcon 5", trophy_icon(ctx, h, 5, icon, &size), static_cast<int>(0x8055160Au));
 	Rc("nptrophy: GetGroupIcon -1", group_icon(ctx, h, -1, icon, &size), static_cast<int>(0x8055160Bu));
 	Rc("nptrophy: GetGroupIcon 0 (no group)", group_icon(ctx, h, 0, icon, &size), static_cast<int>(0x80551614u));
@@ -678,23 +852,35 @@ void CaseNpTrophy() {
 	std::memcpy(gdetails, &sz, 8);
 	sz = 0x20;
 	std::memcpy(gdata, &sz, 8);
-	Rc("nptrophy: GetGameInfo", game_info(ctx, h, gdetails, gdata), 0,
-	   Get32(gdetails, 8) == 0 && Get32(gdetails, 0xC) == 3 && gdetails[0x20] == 0 && Get32(gdata, 8) == 1 && Get32(gdata, 0x1C) == 33,
-	   Fmt("groups %u trophies %u unlocked %u progress %u", Get32(gdetails, 8), Get32(gdetails, 0xC), Get32(gdata, 8),
-	       Get32(gdata, 0x1C)));
+	{
+		const int call_rc = game_info(ctx, h, gdetails, gdata);
+		Rc("nptrophy: GetGameInfo", call_rc, 0,
+		   Get32(gdetails, 8) == 0 && Get32(gdetails, 0xC) == 3 && gdetails[0x20] == 0 && Get32(gdata, 8) == 1 && Get32(gdata, 0x1C) == 33,
+		   Fmt("groups %u trophies %u unlocked %u progress %u", Get32(gdetails, 8), Get32(gdetails, 0xC), Get32(gdata, 8),
+		       Get32(gdata, 0x1C)));
+	}
 	Rc("nptrophy: GetGameInfo both null", game_info(ctx, h, nullptr, nullptr), kInvalid);
 	sz = 0x28;
 	std::memcpy(gdata, &sz, 8);
 	Rc("nptrophy: GetGameInfo wrong data size", game_info(ctx, h, nullptr, gdata), kInvalid);
-	Rc("nptrophy: GetGroupInfo base game", group_info(ctx, h, -1, nullptr, gdata), 0,
-	   Get32(gdata, 8) == 0xFFFFFFFFu && Get32(gdata, 0xC) == 1 && Get32(gdata, 0x20) == 33);
+	{
+		const int call_rc = group_info(ctx, h, -1, nullptr, gdata);
+		Rc("nptrophy: GetGroupInfo base game", call_rc, 0,
+		   Get32(gdata, 8) == 0xFFFFFFFFu && Get32(gdata, 0xC) == 1 && Get32(gdata, 0x20) == 33);
+	}
 	Rc("nptrophy: GetGroupInfo 5", group_info(ctx, h, 5, nullptr, gdata), static_cast<int>(0x8055160Bu));
 	alignas(8) uint8_t tdata[0x18];
 	std::memset(tdata, 0x5A, sizeof(tdata));
 	sz = 0x18;
 	std::memcpy(tdata, &sz, 8);
-	Rc("nptrophy: GetTrophyInfo 1", trophy_info(ctx, h, 1, nullptr, tdata), 0, Get32(tdata, 8) == 1 && tdata[0xC] == 1);
-	Rc("nptrophy: GetTrophyInfo 2", trophy_info(ctx, h, 2, nullptr, tdata), 0, Get32(tdata, 8) == 2 && tdata[0xC] == 0);
+	{
+		const int call_rc = trophy_info(ctx, h, 1, nullptr, tdata);
+		Rc("nptrophy: GetTrophyInfo 1", call_rc, 0, Get32(tdata, 8) == 1 && tdata[0xC] == 1);
+	}
+	{
+		const int call_rc = trophy_info(ctx, h, 2, nullptr, tdata);
+		Rc("nptrophy: GetTrophyInfo 2", call_rc, 0, Get32(tdata, 8) == 2 && tdata[0xC] == 0);
+	}
 
 	int c1 = 0;
 	int c2 = 0;
@@ -706,11 +892,17 @@ void CaseNpTrophy() {
 	Rc("nptrophy: RegisterContext no package", register_ctx(c2, h, 0), static_cast<int>(0x80551626u));
 	Rc("nptrophy: RegisterContext with a group", register_ctx(c3, h, 0), 0);
 	std::memset(gdata + 8, 0x5A, sizeof(gdata) - 8);
-	Rc("nptrophy: GetGroupInfo of a group (no answer: 0, nothing written)", group_info(c3, h, 0, nullptr, gdata), 0,
-	   gdata[8] == 0x5A);
+	{
+		const int call_rc = group_info(c3, h, 0, nullptr, gdata);
+		Rc("nptrophy: GetGroupInfo of a group (no answer: 0, nothing written)", call_rc, 0,
+		   gdata[8] == 0x5A);
+	}
 	std::memset(tdata + 8, 0x5A, sizeof(tdata) - 8);
-	Rc("nptrophy: GetTrophyInfo with groups (no answer: 0, nothing written)", trophy_info(c3, h, 0, nullptr, tdata), 0,
-	   tdata[8] == 0x5A);
+	{
+		const int call_rc = trophy_info(c3, h, 0, nullptr, tdata);
+		Rc("nptrophy: GetTrophyInfo with groups (no answer: 0, nothing written)", call_rc, 0,
+		   tdata[8] == 0x5A);
+	}
 
 	Rc("nptrophy: AbortHandle", abort_h(h), 0);
 	Rc("nptrophy: GetTrophyUnlockState through an aborted handle", unlock_state(ctx, h, flags, &count), static_cast<int>(0x80551607u));
@@ -724,8 +916,11 @@ void CaseNpTrophy() {
 	Rc("nptrophy: NumInfoGetTotal", num_total(num_info), 10);
 	Rc("nptrophy: GroupArrayGetNum", group_num(group_arr), 8);
 	Rc("nptrophy: SetInfoGetTrophyNum", set_num(set_info), 4);
-	Rc("nptrophy: SetInfoGetTrophyFlagArray", set_flags(set_info, flags16), 3,
-	   flags16[0] == 0x03 && flags16[1] == 0x80 && flags16[2] == 0 && flags16[15] == 0);
+	{
+		const int call_rc = set_flags(set_info, flags16);
+		Rc("nptrophy: SetInfoGetTrophyFlagArray", call_rc, 3,
+		   flags16[0] == 0x03 && flags16[1] == 0x80 && flags16[2] == 0 && flags16[15] == 0);
+	}
 	for (const char* nid: dbg_nids) {
 		Rc(Fmt("nptrophy: SystemDbg export %s", nid), Fn<IFn<>>(nid)(), static_cast<int>(0x80551692u));
 	}

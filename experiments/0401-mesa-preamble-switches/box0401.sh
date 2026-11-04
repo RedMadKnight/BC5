@@ -129,26 +129,55 @@ E6_GATES=(
     "pad0405.cpp src/libs/libPad.cpp KYTY_BC5_FW_PAD pad0405"
 )
 E6_STRS=(KYTY_BC5_FW_PAD KYTY_BC5_FW_NET KYTY_BC5_FW_AUDIO KYTY_BC5_JIT_SHM KYTY_BC5_FW_KERNEL KYTY_BC5_LOAD_ZLIB KYTY_BC5_LOAD_JPEG KYTY_BC5_LOAD_IME KYTY_BC5_LOAD_NPCOMMON KYTY_BC5_LOAD_NPMANAGER KYTY_BC5_LOAD_NPTROPHY)
-# Series e7 (2026-11-04 afternoon, the top session's GO on decision 4, batch 2): e6 plus the 17 CPU-only library tables,
-# ported first (tbt NpTus; tbp NpAuth, NpPartner001, NpParty, NpSnsFacebookDialog; tbv Voice, ScreenShot, DiscMap,
-# ulobjmgr, CompanionHttpd, CompanionUtil, VideoRecording; tbd InvitationDialog, WebBrowserDialog, SharePlay,
-# GameLiveStreaming, Remoteplay), then loaded by a switch each (tl2), after batch 1's six and before the live tables.
-# Rows chain after e6's; tbp's libNp.cpp edit runs on tbt's output.
+# Series e7 (2026-11-04, the top session's GO on decision 4, batch 2; its follow-ups the same evening): e6 plus batch 2's
+# library tables (tbt NpTus; tbp NpPartner001, NpParty, NpSnsFacebookDialog and NpAuth's five in libNet.cpp; tbv Voice
+# with nine calls in libAudio.cpp, ScreenShot, DiscMap, ulobjmgr, CompanionHttpd, CompanionUtil; tbd InvitationDialog,
+# WebBrowserDialog, SharePlay, GameLiveStreaming) and hardware tables (tcm Camera; thv Hmd, VrTracker, Move; tus Usbd
+# with libusb by dlopen behind an empty-by-default allow-list), ported first, then loaded by a switch each (tl2, tl3), after batch 1's six and before the live tables.
+# Held stubs are not registered when a table's switch is on, batch 1's too (thb; e7's copies of the tbc and tbn tests run
+# under their names). Rows chain after e6's; tbp's libNp.cpp edit runs on tbt's, thb's on tbp's, tl3's libs.cpp on tl2's.
+# The main unit gains the memory fixes and the fast-launch catchers and fix candidates (the top session, 2026-11-04 evening,
+# after his "Ram się dusi" and the 19:54 hang): zsk (exp 0379's zero skip), lzr (lazy release), cap (inherit caps,
+# the quiet journal), flx (FL probe state, VGT flush, serial, meshlet probe and crumbs), chained in that order.
 E7_EDITS=(
-    "tbt mktbt0405.py - src/libs/libNp.cpp:24e778261495abcd5a069396f14b28b4:eb3bfe9d56f0fcdddf29199846f46fb5"
-    "tbp mktbp0405.py - src/libs/libNp.cpp:eb3bfe9d56f0fcdddf29199846f46fb5:a5d5a02b90023a9aa3ac24ec090dde6b"
-    "tbv mktbv0405.py - src/libs/libVoice.cpp:5f63709dbf1028ceaf7784d6a070f64e:c186ab1e0900c37e8966fe0a71f14f53 src/libs/libScreenShot.cpp:cb913d120daa27f0d35702edeee71b19:7bb296c3b00e8d8c9aab448c9f0846d1 src/libs/libDiscMap.cpp:e4d975b8a55da8aed19281d7c6d17b33:f6e31686ccc82f74bcbb67c347b2701b src/libs/libUlobjmgr.cpp:b85eafd0de28af091302a8aeeeb323c1:aa1959cb68ba3fea4346779edda2308e src/libs/libCompanion.cpp:cf8ad7a647a84ba04964eb0adfe2ab02:8e61ea093cdcfc73aac6e11d85021735 src/libs/libVideoRecording.cpp:e8f90a3574dcae417df52f1802515f4d:afdd0f1764b8cc993d18ff5f30b4917e"
-    "tbd mktbd0405.py - src/libs/libInvitationDialog.cpp:204a5daeebb100a131c034edb8e58e87:daa631f8bdb8c29b506c9a7d692827b2 src/libs/libWebBrowserDialog.cpp:af36a12a0bc234f83e5c85a76d4b283d:338add3aa7e85e3eb8752920e9439b85 src/libs/libSharePlay.cpp:d6ecb7874b00ee29d9275d78d8087191:1d811f759819ec2a3e8af14541bbd72a src/libs/libGameLiveStreaming.cpp:59e46b5d8452101a0f57257703cfa3a4:178971ebfba485747c70b4d239f830a2 src/libs/libRemotePlay.cpp:abfde0e8bb446bc6870aa5df08cfb5fa:89cd84d05b4861e3852316514fbb9c89"
-    "tl2 mktl20405.py - src/libs/libs.cpp:903fa699db7c20b2b3f288ab572bce8d:aa8f39d19b563da518b14502941c7386"
+    "zsk mkzsk0401.py - src/libs/bc5LleAgc.cpp:d1cfd9bb1f1b3485bed4207a7f064d4f:8710207ea5c34ad70e48dfbbff9880fd"
+    "lzr mklzr0401.py - src/libs/bc5LleAgc.cpp:8710207ea5c34ad70e48dfbbff9880fd:8ddf48f372f7c555c1b3abe609d0905b"
+    "cap mkcap0401.py - src/libs/bc5LleAgc.cpp:8ddf48f372f7c555c1b3abe609d0905b:bcbdd3082bf5371393989bb69b1f76fa"
+    "flx mkflx0401.py - src/libs/bc5LleAgc.cpp:bcbdd3082bf5371393989bb69b1f76fa:b010db09b5ab83b36e76e0328671e955"
+    "tbt mktbt0405.py - src/libs/libNp.cpp:24e778261495abcd5a069396f14b28b4:60ee3101064cad91445f59c60696a40e"
+    "tbp mktbp0405.py - src/libs/libNp.cpp:60ee3101064cad91445f59c60696a40e:e60a2844e6b607f7bafc019db8e872c2 src/libs/libNet.cpp:35773d6e769b85be74012a86c0f02e89:fdbbb28ec3b1529a898a775462d64804"
+    "thb mkthb0405.py - src/libs/libIme.cpp:49fa46f1d8005245e7f0b266d8b29659:b82113cc80bce4d544c75cec3047e145 src/libs/libNp.cpp:e60a2844e6b607f7bafc019db8e872c2:8222b0bc10f137fe99349becb4609034"
+    "tbv mktbv0405.py - src/libs/libVoice.cpp:5f63709dbf1028ceaf7784d6a070f64e:35b06392f978247489feed9205e21bc7 src/libs/libScreenShot.cpp:cb913d120daa27f0d35702edeee71b19:7b7ac871d0d963598109dad8bceef7f6 src/libs/libDiscMap.cpp:e4d975b8a55da8aed19281d7c6d17b33:1f965bcda04aeb3cc96ef1a05043595b src/libs/libUlobjmgr.cpp:b85eafd0de28af091302a8aeeeb323c1:d8c73e108a19961fd3b347024faa5a95 src/libs/libCompanion.cpp:cf8ad7a647a84ba04964eb0adfe2ab02:2c093c67a7d8efa5aad925d0b4a4fd28 src/libs/libAudio.cpp:45ca1ece07c4394d8700f7a57d9f0fbb:a7025bf5ff622645915c4596e095b122"
+    "tbd mktbd0405.py - src/libs/libInvitationDialog.cpp:204a5daeebb100a131c034edb8e58e87:35e232795b2e575fdfe452583b95657e src/libs/libWebBrowserDialog.cpp:af36a12a0bc234f83e5c85a76d4b283d:e12c7de053bc57dbdfcb869e53cce49a src/libs/libSharePlay.cpp:d6ecb7874b00ee29d9275d78d8087191:6fc65c51edeae57fccabb96ec3084451 src/libs/libGameLiveStreaming.cpp:59e46b5d8452101a0f57257703cfa3a4:4c1af2f3ba313347d93d4c1549a5137e"
+    "tcm mktcm0405.py - src/libs/libCamera.cpp:810fada1b7e1d223502ace667b71eb14:b8544da15dc5ade0a1bab10883847cb2"
+    "thv mkthv0405.py - src/libs/libHmd.cpp:905036478f8f9336090248a532d0469f:67f2cac30c96faa6bff2009152ceab64 src/libs/libVrTracker.cpp:ee30491baadb582db2df7a08cadc4ae9:aba154d965d03dec3fe0cb39eb4bef30 src/libs/libMove.cpp:90b0765d8d601d7e7189e0b5064d180f:ba3db48e387fd600764eed1b4c17da46"
+    "tus mktus0405.py - src/libs/libUsbd.cpp:f15039f248f156341d68cb3cb58a2b0f:eefb0de517c01962086049b816ada621"
+    "tl2 mktl20405.py - src/libs/libs.cpp:903fa699db7c20b2b3f288ab572bce8d:3ba4e3cd08d88a6d063d34a5e9cd813b"
+    "tl3 mktl30405.py - src/libs/libs.cpp:3ba4e3cd08d88a6d063d34a5e9cd813b:0728ab027534903ab50cbda93945b9dd"
 )
 E7_GATES=(
-    "tbt0405.cpp src/libs/libNp.cpp KYTY_BC5_LOAD_NPTUS tbt0405"
-    "tbp0405.cpp src/libs/libNp.cpp KYTY_BC5_LOAD_NPPARTY,KYTY_BC5_LOAD_NPPARTNER,KYTY_BC5_LOAD_NPAUTH,KYTY_BC5_LOAD_NPSNSFACEBOOK tbp0405"
-    "tbv0405.cpp src/libs/libVoice.cpp KYTY_BC5_LOAD_VOICE,KYTY_BC5_LOAD_SCREENSHOT,KYTY_BC5_LOAD_DISCMAP,KYTY_BC5_LOAD_ULOBJMGR,KYTY_BC5_LOAD_COMPANIONHTTPD,KYTY_BC5_LOAD_COMPANIONUTIL,KYTY_BC5_LOAD_VIDEORECORDING tbv0405"
-    "tbd0405.cpp src/libs/libGameLiveStreaming.cpp KYTY_BC5_LOAD_INVITATIONDIALOG,KYTY_BC5_LOAD_WEBBROWSERDIALOG,KYTY_BC5_LOAD_SHAREPLAY,KYTY_BC5_LOAD_GAMELIVESTREAMING,KYTY_BC5_LOAD_REMOTEPLAY tbd0405"
-    "tl20405.cpp src/libs/libs.cpp KYTY_BC5_LOAD_NPTUS,KYTY_BC5_LOAD_NPPARTY,KYTY_BC5_LOAD_NPPARTNER,KYTY_BC5_LOAD_NPAUTH,KYTY_BC5_LOAD_NPSNSFACEBOOK,KYTY_BC5_LOAD_VOICE,KYTY_BC5_LOAD_SCREENSHOT,KYTY_BC5_LOAD_DISCMAP,KYTY_BC5_LOAD_ULOBJMGR,KYTY_BC5_LOAD_COMPANIONHTTPD,KYTY_BC5_LOAD_COMPANIONUTIL,KYTY_BC5_LOAD_INVITATIONDIALOG,KYTY_BC5_LOAD_WEBBROWSERDIALOG,KYTY_BC5_LOAD_SHAREPLAY,KYTY_BC5_LOAD_GAMELIVESTREAMING,KYTY_BC5_LOAD_REMOTEPLAY,KYTY_BC5_LOAD_VIDEORECORDING tl20405"
+    "zsk0401.cpp src/libs/bc5LleAgc.cpp BC5_DIRECT_ZERO_SKIP zsk0401"
+    "lzr0401.cpp src/libs/bc5LleAgc.cpp BC5_DIRECT_LAZY_RELEASE lzr0401"
+    "cap0401.cpp src/libs/bc5LleAgc.cpp BC5_DIRECT_INHERIT_PROG_CAP,BC5_DIRECT_INHERIT_CENSUS_CAP,BC5_DIRECT_JOURNAL_QUIET cap0401"
+    "flx0401.cpp src/libs/bc5LleAgc.cpp BC5_DIRECT_FL_PROBE_STATE,BC5_DIRECT_FL_VGT_FLUSH,BC5_DIRECT_FL_SERIAL,BC5_DIRECT_FL_MESHLET_PROBE,BC5_DIRECT_FL_CRUMBS_MESHLET flx0401"
+    "tbt0405.cpp src/libs/libNp.cpp KYTY_BC5_LOAD_NPTUS,KYTY_BC5_NPTUS_FRIENDS_RUN tbt0405"
+    "tbp0405.cpp src/libs/libNp.cpp KYTY_BC5_LOAD_NPAUTH,KYTY_BC5_LOAD_NPPARTNER,KYTY_BC5_LOAD_NPPARTY,KYTY_BC5_LOAD_NPSNSFACEBOOK tbp0405"
+    "tbv0405.cpp src/libs/libVoice.cpp KYTY_BC5_LOAD_VOICE,KYTY_BC5_VOICE_PORTS,KYTY_BC5_LOAD_SCREENSHOT,KYTY_BC5_LOAD_DISCMAP,KYTY_BC5_LOAD_ULOBJMGR,KYTY_BC5_LOAD_COMPANIONHTTPD,KYTY_BC5_LOAD_COMPANIONUTIL tbv0405"
+    "tbd0405.cpp src/libs/libGameLiveStreaming.cpp KYTY_BC5_LOAD_INVITATIONDIALOG,KYTY_BC5_LOAD_WEBBROWSERDIALOG,KYTY_BC5_LOAD_SHAREPLAY,KYTY_BC5_LOAD_GAMELIVESTREAMING tbd0405"
+    "tcm0405.cpp src/libs/libCamera.cpp KYTY_BC5_LOAD_CAMERA tcm0405"
+    "thv0405.cpp src/libs/libHmd.cpp KYTY_BC5_LOAD_HMD,KYTY_BC5_LOAD_VRTRACKER,KYTY_BC5_LOAD_MOVE thv0405"
+    "tus0405.cpp src/libs/libUsbd.cpp KYTY_BC5_LOAD_USBD tus0405"
+    "tl20405.cpp src/libs/libs.cpp KYTY_BC5_LOAD_NPTUS,KYTY_BC5_LOAD_NPPARTY,KYTY_BC5_LOAD_NPPARTNER,KYTY_BC5_LOAD_NPSNSFACEBOOK,KYTY_BC5_LOAD_VOICE,KYTY_BC5_LOAD_SCREENSHOT,KYTY_BC5_LOAD_DISCMAP,KYTY_BC5_LOAD_ULOBJMGR,KYTY_BC5_LOAD_COMPANIONHTTPD,KYTY_BC5_LOAD_COMPANIONUTIL,KYTY_BC5_LOAD_INVITATIONDIALOG,KYTY_BC5_LOAD_WEBBROWSERDIALOG,KYTY_BC5_LOAD_SHAREPLAY,KYTY_BC5_LOAD_GAMELIVESTREAMING tl20405"
+    "tl30405.cpp src/libs/libs.cpp KYTY_BC5_LOAD_CAMERA,KYTY_BC5_LOAD_USBD,KYTY_BC5_LOAD_HMD,KYTY_BC5_LOAD_VRTRACKER,KYTY_BC5_LOAD_MOVE tl30405"
 )
-E7_STRS=(KYTY_BC5_LOAD_NPTUS KYTY_BC5_LOAD_NPPARTY KYTY_BC5_LOAD_NPPARTNER KYTY_BC5_LOAD_NPAUTH KYTY_BC5_LOAD_NPSNSFACEBOOK KYTY_BC5_LOAD_VOICE KYTY_BC5_LOAD_SCREENSHOT KYTY_BC5_LOAD_DISCMAP KYTY_BC5_LOAD_ULOBJMGR KYTY_BC5_LOAD_COMPANIONHTTPD KYTY_BC5_LOAD_COMPANIONUTIL KYTY_BC5_LOAD_INVITATIONDIALOG KYTY_BC5_LOAD_WEBBROWSERDIALOG KYTY_BC5_LOAD_SHAREPLAY KYTY_BC5_LOAD_GAMELIVESTREAMING KYTY_BC5_LOAD_REMOTEPLAY KYTY_BC5_LOAD_VIDEORECORDING)
+E7_STRS=(KYTY_BC5_LOAD_NPTUS KYTY_BC5_LOAD_NPPARTY KYTY_BC5_LOAD_NPPARTNER KYTY_BC5_LOAD_NPSNSFACEBOOK KYTY_BC5_LOAD_VOICE KYTY_BC5_LOAD_SCREENSHOT KYTY_BC5_LOAD_DISCMAP KYTY_BC5_LOAD_ULOBJMGR KYTY_BC5_LOAD_COMPANIONHTTPD KYTY_BC5_LOAD_COMPANIONUTIL KYTY_BC5_LOAD_INVITATIONDIALOG KYTY_BC5_LOAD_WEBBROWSERDIALOG KYTY_BC5_LOAD_SHAREPLAY KYTY_BC5_LOAD_GAMELIVESTREAMING KYTY_BC5_LOAD_CAMERA KYTY_BC5_LOAD_USBD KYTY_BC5_LOAD_HMD KYTY_BC5_LOAD_VRTRACKER KYTY_BC5_LOAD_MOVE KYTY_BC5_LOAD_NPAUTH KYTY_BC5_NPTUS_FRIENDS_RUN KYTY_BC5_VOICE_PORTS BC5_DIRECT_ZERO_SKIP BC5_DIRECT_LAZY_RELEASE BC5_DIRECT_INHERIT_PROG_CAP BC5_DIRECT_INHERIT_CENSUS_CAP BC5_DIRECT_JOURNAL_QUIET BC5_DIRECT_FL_PROBE_STATE BC5_DIRECT_FL_VGT_FLUSH BC5_DIRECT_FL_SERIAL BC5_DIRECT_FL_MESHLET_PROBE BC5_DIRECT_FL_CRUMBS_MESHLET KYTY_BC5_USBD_ALLOW 'zero skip: list %s')
+E6G=("${E6_GATES[@]}")   # e6's gate rows; e7 builds its own copies of the tbc and tbn tests under the same names
+if [ "$SER" = e7 ]; then
+    E6G=(); for g6 in "${E6_GATES[@]}"; do
+        case "$g6" in "tbc0405.cpp "*) g6="tbc0405e7.cpp ${g6#tbc0405.cpp }" ;; "tbn0405.cpp "*) g6="tbn0405e7.cpp ${g6#tbn0405.cpp }" ;; esac
+        E6G+=("$g6")
+    done
+fi
 E4UP=0; E5UP=0; case $SER in e4) E4UP=1 ;; e5 | e6p | e6 | e7) E4UP=1; E5UP=1 ;; esac   # e6p, e6 and e7 build everything e5 builds
 E6UP=0; case $SER in e6 | e7) E6UP=1 ;; esac   # e7 builds everything e6 builds
 E=$W/exp0401$SER; LOCK=$W/BOX-LOCK; QUEUE=$W/BOX-QUEUE; ST=$E/state; BIN=$E/bin/kyty_emulator; B=$W/kytyplus-build; R=$E/raw
@@ -429,7 +458,7 @@ cmd_build() {
     fi
     if [ "$E5UP" = 1 ]; then   # exp 0405's ports, chained over the units as e4 left them; then the unit list rebuilt
         local -A CUR=()
-        local tag5 script5 opt5 f5 rel5 src5 x5 new5=() a5 d5 h5 k5
+        local tag5 script5 opt5 f5 rel5 src5 x5 new5=() a5 d5 h5 k5 maind5=()   # maind5: every script's directory that wrote the main unit
         CUR[src/libs/bc5LleAgc.cpp]=$E/src/bc5LleAgc.cpp
         for a5 in "${inc[@]}"; do case "$a5" in src/*=*) CUR[${a5%%=*}]=${a5#*=} ;; esac; done
         CUR[src/loader/systemContent.h]=$E/mem/src/loader/systemContent.h
@@ -449,13 +478,16 @@ cmd_build() {
                 rel5=${f5%%:*}
                 [ "$(m "$E/x5-$tag5/$rel5")" = "${f5##*:}" ] || die "$script5's $rel5 is $(m "$E/x5-$tag5/$rel5"), not ${f5##*:}"
                 CUR[$rel5]=$E/x5-$tag5/$rel5
+                [ "$rel5" != src/libs/bc5LleAgc.cpp ] || maind5+=("$E/x5-$tag5/src/libs")
             done
         done
         # The main unit: e5's over e4's (kept), the .inc files the scripts wrote beside it go beside it too.
         if [ "${CUR[src/libs/bc5LleAgc.cpp]}" != "$E/src/bc5LleAgc.cpp" ]; then
             d5=$(dirname "${CUR[src/libs/bc5LleAgc.cpp]}")
             cp "$E/src/bc5LleAgc.cpp" "$E/src/bc5LleAgc-e4.cpp" && cp "${CUR[src/libs/bc5LleAgc.cpp]}" "$E/src/bc5LleAgc.cpp" || die "cannot place e5's unit"
-            for h5 in "$d5"/*.inc; do [ ! -f "$h5" ] || cp "$h5" "$E/src/" || die "cannot place $h5"; done
+            for d5 in "${maind5[@]}"; do   # e7: every writer's .inc (zsk, lzr, cap, flx chain), the later one winning a name
+                for h5 in "$d5"/*.inc; do [ ! -f "$h5" ] || cp "$h5" "$E/src/" || die "cannot place $h5"; done
+            done
             CUR[src/libs/bc5LleAgc.cpp]=$E/src/bc5LleAgc.cpp
         fi
         # A unit that includes a file of its own directory by bare name ("memoryAddressSpace.inc") gets it beside it.
@@ -478,7 +510,7 @@ cmd_build() {
             [ "$k5" = 1 ] || new5+=("$rel5=${CUR[$rel5]}")
         done
         inc=("${new5[@]}")
-        local built5=" " gates5=("${E5_GATES[@]}"); [ "$E6UP" = 0 ] || gates5+=("${E6_GATES[@]}"); [ "$SER" != e7 ] || gates5+=("${E7_GATES[@]}")
+        local built5=" " gates5=("${E5_GATES[@]}"); [ "$E6UP" = 0 ] || gates5+=("${E6G[@]}"); [ "$SER" != e7 ] || gates5+=("${E7_GATES[@]}")
         for row in "${gates5[@]}"; do
             set -- $row
             case "$built5" in *" ${5:-$4} "*) continue ;; esac
@@ -564,7 +596,7 @@ cmd_build() {
     if [ "$E4UP" = 1 ]; then   # exp 0402's CPU tests (e5, e6p: and exp 0405's): switch 1, 0 and unset, each in a fresh directory, away from any save
         local row d gates=("${E4_GATES[@]}")
         [ "$E5UP" = 0 ] || gates+=("${E5_GATES[@]}")
-        [ "$E6UP" = 0 ] || gates+=("${E6_GATES[@]}")
+        [ "$E6UP" = 0 ] || gates+=("${E6G[@]}")
         [ "$SER" != e7 ] || gates+=("${E7_GATES[@]}")
         for row in "${gates[@]}"; do
             set -- $row
@@ -633,7 +665,7 @@ cmd_build() {
         fi
         if [ "$E6UP" = 1 ]; then
             for row in "${E6_EDITS[@]}"; do echo "e6 $row"; done
-            for row in "${E6_GATES[@]}"; do set -- $row; echo "e6 test $4: $(tail -1 "$R/$4-on.out" | cut -c1-100) / $(tail -1 "$R/$4-off.out" | cut -c1-100) / $(tail -1 "$R/$4-unset.out" | cut -c1-100)"; done
+            for row in "${E6G[@]}"; do set -- $row; echo "e6 test $4: $(tail -1 "$R/$4-on.out" | cut -c1-100) / $(tail -1 "$R/$4-off.out" | cut -c1-100) / $(tail -1 "$R/$4-unset.out" | cut -c1-100)"; done
         fi
         if [ "$E5UP" = 1 ]; then
             echo "e5 unit: $(m "$E/src/bc5LleAgc.cpp") (e4's kept as bc5LleAgc-e4.cpp)"

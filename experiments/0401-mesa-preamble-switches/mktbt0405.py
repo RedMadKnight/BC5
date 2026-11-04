@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
 """BC5 experiment 0405 (series e7 of experiment 0401), tag "tbt": exp 0405 decision 4 ("=> B => B", the dead KytyPlus tables
 are ported first, then loaded, each behind its own switch), batch 2, the NpTus table of src/libs/libNp.cpp:
-  namespace NpTus  (InitNpTus_1, 142 NIDs)  KYTY_BC5_LOAD_NPTUS  136 ported, 6 held (AnyPS5 does not implement them)
+  namespace NpTus  (InitNpTus_1, 142 NIDs)  KYTY_BC5_LOAD_NPTUS  136 ported, 6 held (AnyPS5 does not implement them;
+                                                                 not registered when on)
+  item switch KYTY_BC5_NPTUS_FRIENDS_RUN (default off, acts only with KYTY_BC5_LOAD_NPTUS on): the checks a firmware 13.42
+  emulator run measured (AnyPS5's debt note) for the A and cross-save friends calls, sceNpTusGetDataForCrossSaveVUser and
+  sceNpTusDeleteMultiSlotDataVUser, in place of AnyPS5's code.
 The same switch name makes libs.cpp (agent tl2) load the table. Off (unset, empty or "0") every stub takes today's path
-(PRINT_NAME, then today's return NP_NOT_SIGNED_IN); on, the stub calls the port. Source: AnyPS5 4f41f4c37 (GPL-2.0-only),
-core/libs/prx/libSceNpTus/Export.cpp, whose debt note names shadPS4 (GPL-2.0-or-later) for the signatures and checks; cited in
-the block. Only the namespace NpTus of libNp.cpp is edited: one block after its LIB_VERSION line, the 136 stubs' parameter
-lists and one branch each, and one line in its LIB_DEFINE. No include is added (the input has every header the block uses).
+(PRINT_NAME, then today's return NP_NOT_SIGNED_IN) and all 142 NIDs are registered as today; on, the stub calls the port.
+Source: AnyPS5 4f41f4c37 (GPL-2.0-only), core/libs/prx/libSceNpTus/Export.cpp, whose debt note names shadPS4
+(GPL-2.0-or-later) for the signatures and checks; cited in the block. Only the namespace NpTus of libNp.cpp is edited: one
+block after its LIB_VERSION line, the 136 stubs' parameter lists and one branch each, two lines in its LIB_DEFINE, and the 6
+held stubs' registration lines (in 4 runs) put under `if (!Bc5NtuOn())`. No include is added (the input has every header
+the block uses).
 Everything outside `namespace NpTus { ... } // namespace NpTus` stays byte for byte as it is, so agent tbp's edits of the
 other namespaces of the same file can be chained before or after this script (the top session re-pins the md5 in PINS).
 The input md5 is pinned and asserted; an input that has the edit already is refused; every anchor must occur exactly once and
@@ -54,11 +60,11 @@ BLOCK = r"""
 //    and no output (variables, data, statuses, hits, content length) is ever written. sceNpTssGetDataAsync's data-status size
 //    0x18 is shadPS4's (np_tus.h:48-52, np_tus.cpp:4871); AnyPS5's commit dbc28c0a9 calls its check "measured", its note
 //    says "not measured on a console": TODO(verify).
-//  - Not taken: the differences that an emulator run of firmware 13.42's module reports (debt note, AnyPS5 PR 10675: other
-//    size and option checks in the A and cross-save friends calls, sceNpTusGetDataForCrossSaveVUser and
-//    sceNpTusDeleteMultiSlotDataVUser); AnyPS5's code does not apply them either. TODO(verify).
-// Not changed: the 6 exports AnyPS5 does not implement (sceNpTssGetStorage, sceNpTssGetStorageAsync, sceNpTusSetThreadParam,
-// sceNpTusCreateTitleCtx, sceNpTusSetTimeout, sceNpTusChangeModeForOtherSaveDataOwners) keep today's answer.
+//  - The checks that an emulator run of firmware 13.42's module measured (debt note, AnyPS5 PR 10675), which AnyPS5's code
+//    does not apply, are here behind their own item switch, KYTY_BC5_NPTUS_FRIENDS_RUN, default off (Bc5NtuRunOn below).
+// Held: the 6 exports AnyPS5 does not implement (sceNpTssGetStorage, sceNpTssGetStorageAsync, sceNpTusSetThreadParam,
+// sceNpTusCreateTitleCtx, sceNpTusSetTimeout, sceNpTusChangeModeForOtherSaveDataOwners) keep today's stub, and with the
+// switch on InitNpTus_1 does not register them, so the loader reports them as stubbed imports (the top session, e7).
 // TUS keeps its own title contexts and request ids and reads no NpManager or NpCommon state: a context made for a user does
 // not ask whether that user is signed in (AnyPS5; shadPS4 asks sceNpGetNpId first). Signed out is 0x80550006, as network.cpp
 // and AnyPS5 answer; the off path keeps today's NP_NOT_SIGNED_IN (0x80550005).
@@ -71,6 +77,35 @@ static bool Bc5NtuOn() {
 »»             v ? "[bc5] exp 0405: nptus port on (items: context request abort poll wait slots variable data status "
 »»                 "friends users tss)"
 »»               : "[bc5] exp 0405: nptus port off");
+»»std::fflush(stderr);
+»»return v;
+»}();
+»return on;
+}
+
+// The item switch KYTY_BC5_NPTUS_FRIENDS_RUN: default off, read once, and it acts only when KYTY_BC5_LOAD_NPTUS is on. On,
+// these calls check as an emulator run of firmware 13.42's libSceNpTus did, as AnyPS5's debt note
+// docs/dev/debt/libSceNpTus.md reports it ("Friends, cross-save and virtual-user argument checks", AnyPS5 PR 10675; the
+// maintainer's decision 1 of 2026-11-04 accepts values from firmware runs), in place of AnyPS5's shadPS4-based code:
+//  - the A and cross-save friends calls: an option of another size is INVALID_ARGUMENT, a start rank of 0 is taken. Kept
+//    as AnyPS5 (the run leaves them unknown here): the array-size check (0x80550714 unless arrayLen entries; the note gives
+//    no entry size) and zeroing the array for SDK 5.50 and later (no compiled SDK version is reachable in this file);
+//  - sceNpTusGetDataForCrossSaveVUser and its Async form: only a data-status size of 0x1F0 or 0x210 is taken, and a null
+//    status or an empty name is taken. The run names no code for another size: INVALID_ALIGNMENT here, the code AnyPS5 and
+//    shadPS4 give a wrong structure size, TODO(verify); it sits where AnyPS5 checks the status;
+//  - sceNpTusDeleteMultiSlotDataVUser and its Async form: a null or an empty user and arrayLen -1 are taken, 0 is
+//    INVALID_ARGUMENT. Kept as AnyPS5 (not in the run): null slot ids, other negative lengths, the option, too many slots,
+//    negative slot ids. What follows for a null user is unknown: offline the request finishes signed out, as every request.
+static bool Bc5NtuRunOn() {
+»static const bool on = [] {
+»»const char* e   = std::getenv("KYTY_BC5_NPTUS_FRIENDS_RUN");
+»»const bool  set = e != nullptr && e[0] != '\0' && std::strcmp(e, "0") != 0;
+»»const bool  v   = set && Bc5NtuOn();
+»»std::fprintf(stderr, "%s\n",
+»»             v     ? "[bc5] exp 0405: nptus friends run on (items: friends-option friends-rank cross-save-status "
+»»                     "delete-user delete-count)"
+»»             : set ? "[bc5] exp 0405: nptus friends run off (the nptus port is off)"
+»»                   : "[bc5] exp 0405: nptus friends run off");
 »»std::fflush(stderr);
 »»return v;
 »}();
@@ -100,6 +135,8 @@ constexpr size_t   BC5_NTU_NAME_STRIDE       = 20;   // an online id: 16 charact
 constexpr uint64_t BC5_NTU_FRIENDS_OPT_SIZE  = 0x18; // its size, then pointers to a start rank and to the hits
 constexpr uint64_t BC5_NTU_TSS_OPT_SIZE      = 0x20; // its size, then pointers to an offset, a last byte and a condition
 constexpr uint64_t BC5_NTU_TSS_STATUS_SIZE   = 0x18; // a time, a status, a content length
+constexpr uint64_t BC5_NTU_RUN_STATUS_SHORT  = 0x1F0; // the 13.42 run: the two data-status sizes it takes
+constexpr uint64_t BC5_NTU_RUN_STATUS_LONG   = 0x210;
 constexpr int32_t  BC5_NTU_SORT_FIRST        = 1;    // the friends calls' sort orders start at 1
 constexpr int32_t  BC5_NTU_STATUS_SORT_LAST  = 2;    // data statuses: by date, two ways
 constexpr int32_t  BC5_NTU_VALUE_SORT_LAST   = 4;    // variables: by date or by value, two ways each
@@ -407,9 +444,53 @@ static int Bc5NtuFriends(int32_t slot_id, int32_t sort_type, int32_t last_sort, 
 »std::memcpy(&size, option, sizeof(size));
 »std::memcpy(&start, static_cast<const uint8_t*>(option) + 8, sizeof(start));
 »if (size != BC5_NTU_FRIENDS_OPT_SIZE) {
-»»return BC5_NTU_INVALID_ALIGNMENT;
+»»return Bc5NtuRunOn() ? BC5_NTU_INVALID_ARGUMENT : BC5_NTU_INVALID_ALIGNMENT; // the 13.42 run: INVALID_ARGUMENT
+»}
+»if (Bc5NtuRunOn()) {
+»»return 0; // the 13.42 run takes a start rank of 0
 »}
 »return start != nullptr && *start == 0 ? BC5_NTU_INVALID_ARGUMENT : 0;
+}
+
+// sceNpTusGetDataForCrossSaveVUser and its Async form: AnyPS5's checks, or with KYTY_BC5_NPTUS_FRIENDS_RUN the 13.42 run's.
+static int Bc5NtuDataGetCrossSaveUser(const void* user, int32_t slot_id, const void* status, uint64_t status_size,
+»                                     const void* option) {
+»if (!Bc5NtuRunOn()) {
+»»return Bc5NtuDataGet(user, true, slot_id, status, status_size, option, true);
+»}
+»if (option != nullptr || slot_id < 0) { // AnyPS5 (the run reports nothing else here)
+»»return BC5_NTU_INVALID_ARGUMENT;
+»}
+»if (user == nullptr) { // AnyPS5 (the run takes a null status and an empty name, not a null user)
+»»return BC5_NTU_INSUFFICIENT;
+»}
+»if (status_size != BC5_NTU_RUN_STATUS_SHORT && status_size != BC5_NTU_RUN_STATUS_LONG) {
+»»return BC5_NTU_INVALID_ALIGNMENT; // TODO(verify): the run names no code for another size
+»}
+»return 0;
+}
+
+// sceNpTusDeleteMultiSlotDataVUser and its Async form: AnyPS5's checks, or with KYTY_BC5_NPTUS_FRIENDS_RUN the 13.42 run's.
+static int Bc5NtuSlotDeleteDataUser(const void* user, const int32_t* slot_ids, int count, const void* option) {
+»if (!Bc5NtuRunOn()) {
+»»return Bc5NtuSlotDelete(user, slot_ids, count, option, true);
+»}
+»if (slot_ids == nullptr) { // AnyPS5
+»»return BC5_NTU_INSUFFICIENT;
+»}
+»if (count == 0) { // the run
+»»return BC5_NTU_INVALID_ARGUMENT;
+»}
+»if (count < -1) { // AnyPS5's answer: the run tried -1 only
+»»return BC5_NTU_INSUFFICIENT;
+»}
+»if (option != nullptr) { // AnyPS5
+»»return BC5_NTU_INVALID_ARGUMENT;
+»}
+»if (count > BC5_NTU_MAX_SLOTS) { // AnyPS5
+»»return BC5_NTU_TOO_MANY_SLOTS;
+»}
+»return Bc5NtuNegativeSlot(slot_ids, count) ? BC5_NTU_INVALID_ARGUMENT : 0; // AnyPS5; a null or empty user is taken
 }
 
 // Multi-slot data statuses, the account and AVUser forms (AnyPS5 :597-615, 626-644).
@@ -629,7 +710,7 @@ STUBS += pair("sceNpTusDeleteMultiSlotVariableA", p_slot_delete(ACCOUNT), f"Bc5N
 STUBS += pair("sceNpTusDeleteMultiSlotVariableVUser", p_slot_delete(USER), f"Bc5NtuSlotDelete(target_user, {SLOTS}, true)")
 STUBS += pair("sceNpTusDeleteMultiSlotData", p_slot_delete(NPID), f"Bc5NtuSlotDelete(target_np_id, {SLOTS}, false)")
 STUBS += pair("sceNpTusDeleteMultiSlotDataA", p_slot_delete(ACCOUNT), f"Bc5NtuSlotList({SLOTS})")
-STUBS += pair("sceNpTusDeleteMultiSlotDataVUser", p_slot_delete(USER), f"Bc5NtuSlotDelete(target_user, {SLOTS}, true)")
+STUBS += pair("sceNpTusDeleteMultiSlotDataVUser", p_slot_delete(USER), f"Bc5NtuSlotDeleteDataUser(target_user, {SLOTS})")
 # add and get
 STUBS += pair("sceNpTusAddAndGetVariable", p_add(NPID_UNUSED), "Bc5NtuAddNpId(slot_id, out, option)")
 STUBS += pair("sceNpTusAddAndGetVariableA", p_add(ACCOUNT), "Bc5NtuAddAccount(slot_id, out, option)")
@@ -645,7 +726,7 @@ STUBS += pair("sceNpTusGetDataA", p_data_get(ACCOUNT), f"Bc5NtuDataGet(nullptr, 
 STUBS += pair("sceNpTusGetDataForCrossSave", p_data_get(ACCOUNT), f"Bc5NtuDataGet(nullptr, false, {DG}, true)")
 STUBS += pair("sceNpTusGetDataVUser", p_data_get(USER), f"Bc5NtuDataGet(target_user, true, {DG}, false)")
 STUBS += pair("sceNpTusGetDataAVUser", p_data_get(USER), f"Bc5NtuDataGet(target_user, true, {DG}, false)")
-STUBS += pair("sceNpTusGetDataForCrossSaveVUser", p_data_get(USER), f"Bc5NtuDataGet(target_user, true, {DG}, true)")
+STUBS += pair("sceNpTusGetDataForCrossSaveVUser", p_data_get(USER), f"Bc5NtuDataGetCrossSaveUser(target_user, {DG})")
 # friends
 FR = "array, count, option"
 STUBS += pair("sceNpTusGetFriendsDataStatus", P_FRIENDS,
@@ -712,8 +793,21 @@ HELD = ("sceNpTssGetStorage", "sceNpTssGetStorageAsync", "sceNpTusChangeModeForO
 EXPECT_PORTED = 136
 EXPECT_TABLE = 142
 SWITCH = "KYTY_BC5_LOAD_NPTUS"
+RUN_SWITCH = "KYTY_BC5_NPTUS_FRIENDS_RUN"
 ON = "Bc5NtuOn"
+RUN_ON = "Bc5NtuRunOn"
 DEFINE = "InitNpTus_1"
+# The held stubs' registration lines, in runs of adjacent lines: with the switch on they are not registered.
+HELD_GROUPS = (
+    (("IVSbAEOxJ6I", "sceNpTssGetStorage"), ("k5NZIzggbuk", "sceNpTssGetStorageAsync")),
+    (("wjNhItL2wzg", "sceNpTusChangeModeForOtherSaveDataOwners"),),
+    (("hhy8+oecGac", "sceNpTusCreateTitleCtx"),),
+    (("6GKDdRCFx8c", "sceNpTusSetThreadParam"), ("KMlHj+tgfdQ", "sceNpTusSetTimeout")),
+)
+
+
+def held_line(nid, name, indent):
+    return f"{indent}LIB_FUNC(\"{nid}\", NpTus::{name});\n"
 
 
 def balance(b):
@@ -741,7 +835,13 @@ def edits():
                f"»»return {call};\n»}}\n")
         out.append((name, old, new))
     out.append((DEFINE, f"LIB_DEFINE({DEFINE}) {{\n",
-                f"LIB_DEFINE({DEFINE}) {{\n»(void){ON}(); // BC5 experiment 0405 (tbt): reads {SWITCH} once, prints its line\n"))
+                f"LIB_DEFINE({DEFINE}) {{\n»(void){ON}(); // BC5 experiment 0405 (tbt): reads {SWITCH} once, prints its line\n"
+                f"»(void){RUN_ON}(); // BC5 experiment 0405 (tbt): reads {RUN_SWITCH} once, prints its line\n"))
+    for group in HELD_GROUPS:
+        old = "".join(held_line(nid, name, "»") for nid, name in group)
+        new = (f"»if (!{ON}()) {{ // BC5 experiment 0405 (tbt): held, not registered when on (a stubbed import)\n"
+               + "".join(held_line(nid, name, "»»") for nid, name in group) + "»}\n")
+        out.append(("held " + group[0][1], old, new))
     return out
 
 
@@ -769,8 +869,12 @@ def edit(s):
         assert balance(o) == balance(n), ("the edit changes the balance", what, balance(o), balance(n))
         out = out.replace(o, n)
         done.append((o, n))
-    want = EXPECT_PORTED + 2  # the stubs, the definition, the LIB_DEFINE line
+    assert sorted(name for g in HELD_GROUPS for _, name in g) == sorted(HELD)
+    # Bc5NtuOn(): in the block (its definition and the run switch), the stubs, the LIB_DEFINE line, the held groups
+    want = BLOCK.count(f"{ON}()") + EXPECT_PORTED + 1 + len(HELD_GROUPS)
     assert out.count(T(f"{ON}()")) == want, ("switch uses", out.count(T(f"{ON}()")), want)
+    want = BLOCK.count(f"{RUN_ON}()") + 1  # the block (its definition and the three calls that use it), the LIB_DEFINE line
+    assert out.count(T(f"{RUN_ON}()")) == want == 6, ("run switch uses", out.count(T(f"{RUN_ON}()")), want)
     want = BLOCK.count(SWITCH) + EXPECT_PORTED + 1  # the block, the stubs' comments, the LIB_DEFINE line's comment
     assert out.count(SWITCH.encode()) == want, ("switch name", out.count(SWITCH.encode()), want)
     assert balance(out) == balance(s), ("the unit's balance changed", balance(s), balance(out))
@@ -781,9 +885,13 @@ def edit(s):
     # The held stubs and every registration line are as they were.
     for n in HELD:
         assert out.count(T(f"static int KYTY_SYSV_ABI {n}() {{\n»PRINT_NAME();\n»return NP_NOT_SIGNED_IN;\n}}\n")) == 1, n
+    held_regs = [T(held_line(nid, name, "")).rstrip(b"\n") for g in HELD_GROUPS for nid, name in g]
     reg0 = [l for l in table.split(b"\n") if l.startswith(b"\tLIB_FUNC(")]
     reg1 = [l for l in out[a1:z1].split(b"\n") if l.startswith(b"\tLIB_FUNC(")]
-    assert reg0 == reg1, "the registration lines changed"
+    assert reg1 == [l for l in reg0 if l[1:] not in held_regs], "the ported stubs' registration lines changed"
+    assert len(reg1) == EXPECT_PORTED
+    for l in held_regs:  # each held line once, inside its `if (!Bc5NtuOn())` block
+        assert out.count(b"\t\t" + l + b"\n") == 1 and out.count(l) == 1, l
     # Undo (last first): the input must come back byte for byte.
     back = out
     for o, n in reversed(done):
