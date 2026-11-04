@@ -1,0 +1,37 @@
+== 2026-11-04 02:42:53 arm t0 (start, cap 300 s, play 0 s)
+run rc 0: t0 (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 23.6 flips/s over 88 s, 23 seconds with a gap over 100 ms, longest 594 ms; memory floor 546 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: t0 (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 23.6 flips/s over 88 s, 23 seconds with a gap over 100 ms, longest 594 ms; memory floor 546 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 02:44:50 arm teq (start, cap 300 s, play 0 s)
+run rc 0: teq (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 24.1 flips/s over 87 s, 24 seconds with a gap over 100 ms, longest 723 ms; memory floor 562 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: teq (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 24.1 flips/s over 87 s, 24 seconds with a gap over 100 ms, longest 723 ms; memory floor 562 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 02:46:41 arm tgpu (start, cap 300 s, play 0 s)
+run rc 0: tgpu (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 24.1 flips/s over 87 s, 19 seconds with a gap over 100 ms, longest 682 ms; memory floor 575 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: tgpu (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 24.1 flips/s over 87 s, 19 seconds with a gap over 100 ms, longest 682 ms; memory floor 575 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 02:48:31 arm ttls (start, cap 300 s, play 0 s)
+run rc 0: ttls (start): START OK: the save-slot list runs at 94 s after 94 s (G none, list 94); 24.3 flips/s over 89 s, 19 seconds with a gap over 100 ms, longest 636 ms; memory floor 534 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: ttls (start): START OK: the save-slot list runs at 94 s after 94 s (G none, list 94); 24.3 flips/s over 89 s, 19 seconds with a gap over 100 ms, longest 636 ms; memory floor 534 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 02:50:23 arm tthr (start, cap 300 s, play 0 s)
+run rc 0: tthr (start): START OK: the save-slot list runs at 93 s after 94 s (G none, list 93); 24.3 flips/s over 88 s, 17 seconds with a gap over 100 ms, longest 633 ms; memory floor 590 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: tthr (start): START OK: the save-slot list runs at 93 s after 94 s (G none, list 93); 24.3 flips/s over 88 s, 17 seconds with a gap over 100 ms, longest 633 ms; memory floor 590 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 02:52:15 arm tmem (start, cap 300 s, play 0 s)
+run rc 0: tmem (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 24.5 flips/s over 88 s, 18 seconds with a gap over 100 ms, longest 717 ms; memory floor 506 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: tmem (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 24.5 flips/s over 88 s, 18 seconds with a gap over 100 ms, longest 717 ms; memory floor 506 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 02:54:05 arm tfs (start, cap 300 s, play 0 s)
+run rc 0: tfs (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 24.0 flips/s over 89 s, 23 seconds with a gap over 100 ms, longest 638 ms; memory floor 533 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: tfs (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 24.0 flips/s over 89 s, 23 seconds with a gap over 100 ms, longest 638 ms; memory floor 533 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 02:55:57 arm tsvc (start, cap 300 s, play 0 s)
+run rc 0: tsvc (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 24.6 flips/s over 87 s, 22 seconds with a gap over 100 ms, longest 606 ms; memory floor 527 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: tsvc (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 24.6 flips/s over 87 s, 22 seconds with a gap over 100 ms, longest 606 ms; memory floor 527 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 02:57:47 arm tlib (start, cap 300 s, play 0 s)
+run rc 0: tlib (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 24.1 flips/s over 88 s, 20 seconds with a gap over 100 ms, longest 655 ms; memory floor 531 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: tlib (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 24.1 flips/s over 88 s, 20 seconds with a gap over 100 ms, longest 655 ms; memory floor 531 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 02:59:37 arm tao (start, cap 300 s, play 0 s)
+run rc 0: tao (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 24.5 flips/s over 87 s, 20 seconds with a gap over 100 ms, longest 628 ms; memory floor 471 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: tao (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 24.5 flips/s over 87 s, 20 seconds with a gap over 100 ms, longest 628 ms; memory floor 471 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 03:01:27 arm tall (start, cap 300 s, play 0 s)
+run rc 0: tall (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 22.9 flips/s over 88 s, 21 seconds with a gap over 100 ms, longest 588 ms; memory floor 481 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: tall (start): START OK: the save-slot list runs at 93 s after 93 s (G none, list 93); 22.9 flips/s over 88 s, 21 seconds with a gap over 100 ms, longest 588 ms; memory floor 481 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 03:03:17 arm r5 (route, cap 1200 s, play 900 s)
+run rc 0: r5 (route): ended at G+900 after 1014 s (G 113, list 93); 50.6 flips/s over 1009 s, 32 seconds with a gap over 100 ms, longest 964 ms; memory floor 518 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 
+summary: r5 (route): ended at G+900 after 1014 s (G 113, list 93); 50.6 flips/s over 1009 s, 32 seconds with a gap over 100 ms, longest 964 ms; memory floor 518 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+== 2026-11-04 03:20:30 all arms done

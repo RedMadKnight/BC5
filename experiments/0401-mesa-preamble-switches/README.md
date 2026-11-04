@@ -202,6 +202,105 @@ How it reads, as an inference, not shown: both registers act inside the GPU, whe
     - Every e4 switch starts the title to its save-slot list, alone and all together.
     - e4 with everything on plays 15 minutes of the route as cleanly as the e2 control, within a few percent in frame rate.
     - None of the three routes met the 18:04 freeze or exp 0404's 22:54 hang, so nothing here says whether any switch cures them.
-  - *Audio.* exp 0372's software replug check for `KYTY_BC5_AUDIO_FIXES` (`aud0401t.sh`, `replug0401t.sh` and `audn0401.sh`, derived from exp 0391's; see below) runs after the routes.
+  - *Audio: exp 0372's software replug check for `KYTY_BC5_AUDIO_FIXES` (2026-11-04 02:14–02:33).*
+    - *How it ran.*
+      - `aud0401t.sh` runs one `run0401t.sh` route: 420 s of play, with exp 0391's traces and the owner word `BC5_0401T_OWNER=<tag>`.
+      - Beside it runs `replug0401t.sh`, which is exp 0391's `replug0391.sh` changed by `mkrep0401t.py`: it finds the run by its lock line and the emulator by the owner word.
+      - Then exp 0391's `check0391.py`, unchanged, classifies the run. `audn0401.sh` drives it from the laptop.
+      - The DualSense was on USB (card 44, profile 1 "Direct").
+    - *Arm aA, pulls: PASS.* Pulls of 5 s, 0.5 s and 30 s. Each time the pad port (type 10) closed and reopened on the DualSense, and no pad stream went to another sink (8 pad-stream reads). No `(pad) … device playing` line fell inside a pull.
+    - *Arm aB, late: PASS.* The profile was off at the start and plugged at about 170 s, then pulled once for 5 s, with the same checks. It logged 70 rumble writes and no rumble failure.
+    - Both arms were clean routes otherwise (50.1 flips/s, memory floor 484 and 597 MiB), and the profile was restored both times.
+    - The physical replug and a DS4 are still the maintainer's.
+
+**Series e5: e4 plus exp 0405's e4-now ports (2026-11-04 01:3x–02:42, the top session's GO on the maintainer's "przetestuj też buildy z portami i przełącznikami z researchu"; built, not installed).**
+- *What went in.* The 0405 top-32 table, and further S items as time allowed: nine port groups, each its own script, CPU test and notes.
+  - One agent did each group, from 0405's specs.
+  - Every group works on the unit as e4 left it, or the tree's, and never on a header.
+  - Default off; a switch value can be a comma list of items.
+  - Held for the maintainer's decisions: SET_PREDICATION, the 32 dead tables, values from firmware modules or titles' libc, IDA-derived signatures, and `ngs2_pcm.h`'s values.
+
+  | Script (tag) | Units (output md5) | Switches | Items |
+  |---|---|---|---|
+  | `mkeq0405.py` (eq) | eventQueue.cpp d8eaa6d2, bc5LleAgc.cpp 09770e46 | `KYTY_BC5_EQUEUE_FIXES`, `KYTY_BC5_MMAP_SHIM_FIXES` | KK02 level events once per wait, SK03 WaitEqueue(NULL), G1 kevent timeout, KK01 periodic timer (+DeleteTimerEvent), M2 mmap hint and prot 0 |
+  | `mkgpu0405.py` (gpu, `--chain` after eq) | bc5LleAgc.cpp d1cfd9bb | `BC5_R3_MEMSEM_SIGNAL`, `_REWIND_CATCH`, `_DROP_CATCH`, `_SUBMIT_EOP_EVENT`, `_COND_WRITE`, `_WAIT_IDLE`, `_TS_100MHZ` | G2, G4 (catcher), G8 (catcher), G6, G11, G12 (narrower), G14. Soft CP and host side only; nothing new is submitted (G6's chain path is a soft-CP replay) |
+  | `mktls0405.py` (tls) | runtimeLinker.cpp aba94c24 (jit.h read only) | `KYTY_BC5_TLS_FIXES` | KL01 stubs keep RFLAGS (lea), KL02 patch at the 0x64 byte with a REX.W call |
+  | `mkthr0405.py` (thr) | pthread.cpp 81ee12c4, semaphore.cpp 3aa9c8b4 | `KYTY_BC5_THREAD_SYNC_FIXES`, `KYTY_BC5_SEMA_FIXES` | KK06 notify under the lock, KK03 static rwlock/cond, Signalto ESRCH/EPERM, x87 0x037f, KK07, semaphore attributes and signal counts |
+  | `mkmem0405.py` (mem) | memory.cpp 95d9ca88 | `BC5_R3_MPROTECT_GAPS`, `_NULL_ARGS`, `_RELEASE_HOLES`, `_MUNMAP_HOLES`, `_FLEX_HINT`, `_DMQ_END`, `_EXEC_EINVAL`, `_QUERY_SIZE` | M1, M21, M3, M7, M6, M20, M26, M30 (M18 held) |
+  | `mkfs0405.py` (fs) | fileSystem.cpp a7201a1a, libKernel.cpp b3532873 | `KYTY_BC5_FS_FIXES`, `KYTY_BC5_POSIX_RET_FIXES` | KK04 rename, SK04 open, st_blksize, ENAMETOOLONG, KK10, SK05; POSIX unlink/munmap/mprotect and 4 more return conventions |
+  | `mksvc0405.py` (svc) | libSaveData.cpp 0e0c5d40, libNet.cpp 35773d6e, libPad.cpp 89a047a4 | `KYTY_BC5_SAVEDATA_MEMORY_FIXES`, `_DELETE_BUSY`, `_ALIASES`, `KYTY_BC5_HTTP2_FIXES`, `KYTY_BC5_PAD_OPEN_EXT` | KS03 sync event and queue lock, KS09 existed size, KS14, Initialize aliases, KS01 Http2 async events, SSL options, NULL agent, scePadOpenExt (KS17 held) |
+  | `mklib0405.py` (lib) | libJson2.cpp 85144ef1, libUlt.cpp 191fe8b1, libUserService.cpp e3d34e98, libSystemService.cpp 4aa00c53 | `KYTY_BC5_JSON2_FIXES`, `_ULT_FIXES`, `_USERSERVICE_VALUES`, `_SYSTEMSERVICE_VALUES`, `_SYSTEMSERVICE_PARAMS_7_1000` | Json2 use-after-free (+KS05), Ult join (own lock design), Ult queue growth, UserService and SystemService values measured on 13.40/13.60 (param 400 held) |
+  | `mkao0405.py` (ao) | audio.cpp 230f732d (`exp 0372` lines unchanged) | `KYTY_BC5_AUDIOOUT_CHECKS`, `KYTY_BC5_AUDIOIN_CHECKS`, `KYTY_BC5_NGS2_RACK_FIX` | KA01, KA02, KA03 rack destroy, KA06, KA07, KA08 (KA04/05 held: other files) |
+- *Integration.* `box0401.sh` series e5 is e4 plus the `E5_EDITS` chain.
+  - Each script runs on a staged root holding the unit as the rows before left it, with its md5 checked, and each output is pinned.
+  - Files a script only reads go in as `+rel:md5`.
+  - e5's unit replaces e4's, which is kept as `bc5LleAgc-e4.cpp`.
+  - The unit list for `build0401.py` is rebuilt so that every unit appears once, with its last writer.
+  - e4's tests run again over e5's objects.
+  - `test0401.py` passes 28 of 28 on stand-ins; `t_series_e5` checks the chain, the unit list and the pins.
+  - `go-build0401.sh` drives the build from the laptop: claim, kit and sha256, setup, build, fetch, release.
+  - First attempt: the kit list carried CRs from Windows Python, so it stopped before the claim. Second attempt: Windows Python could not open a POSIX path after the claim. That claim was resumed with its own token (`GO0401_TOKEN`); nothing else was retried.
+- *Build.* 2026-11-04 02:3x–02:42, claim 202611040234541205456 to release, no emulator.
+  - Binary `ba14f22f8a6de8d4d920df331d050d87`, launcher `6eba5275`; `raw/e5/` holds the build record and every test's output.
+  - Each of the nine e5 tests passed with its switches 1, 0 and unset:
+
+    | Test | On | Off |
+    |---|---|---|
+    | eq0405 | 21/21 | 18/18 |
+    | gpu0405 | 72/72 | 68/68 |
+    | tls0405 | 19/19 | 19/19 |
+    | thr0405 | 9/9 | 9/9 |
+    | mem0405 | 8/8 | 8/8 |
+    | fs0405 | 23/23 | 19/19 |
+    | svc0405 | 21/21 | 21/21 |
+    | lib0405 | 38/38 | 22/22 |
+    | ao0405 | 30/30 | 20/20 |
+
+  - tls0405 ran its 0x66 + REX.W call cases on the box's Zen 2, and the call behaved as a 64-bit call. That settles the agent's TODO(verify) for this CPU.
+  - e4's tests over e5's objects still pass. The function check gives 7/7, inh0401 25/25 and fl0401 74/74.
+  - 40 warnings, all in code that was already there: 29 from `common/stringUtils.h`, which more private units now include, and the rest at known old lines. None is in new code.
+- *Night tests of e5 (2026-11-04 02:42–03:30, unattended, the same method as e4's).* `raw/night-arms-e5.txt` and `raw/night-arms-e5aud.txt`. The shortcut's switches were on in every arm.
+
+  | Arm | e5 groups on | End | Flips/s | Seconds with a gap > 100 ms (longest) | Memory floor |
+  |---|---|---|---|---|---|
+  | t0 | none | save-slot list at 93 s | 23.6 | 23 (594 ms) | 546 MiB |
+  | teq | eq | list at 93 s | 24.1 | 24 (723) | 562 |
+  | tgpu | gpu | list at 93 s | 24.1 | 19 (682) | 575 |
+  | ttls | tls | list at 94 s | 24.3 | 19 (636) | 534 |
+  | tthr | thr | list at 93 s | 24.3 | 17 (633) | 590 |
+  | tmem | mem | list at 93 s | 24.5 | 18 (717) | 506 |
+  | tfs | fs | list at 93 s | 24.0 | 23 (638) | 533 |
+  | tsvc | svc | list at 93 s | 24.6 | 22 (606) | 527 |
+  | tlib | lib | list at 93 s | 24.1 | 20 (655) | 531 |
+  | tao | ao | list at 93 s | 24.5 | 20 (628) | 471 |
+  | tall | all nine, plus e4's all on (FL_CRUMBS on, FL_SKIP_ES off) | list at 93 s | 22.9 | 21 (588) | 481 |
+  | r5 | the same as tall | clean, G at 113 s, ended at G+900 | 50.6 | 32 (964) | 518 |
+  | a5 | ao, plus `KYTY_BC5_AUDIO_FIXES=1`: the replug check, pulls | **PASS**, 3/3, 0 pad streams on another sink | 49.2 | 31 (1008) | 558 |
+
+  Every arm had 0 crash lines, 0 kernel lines, 0 freeze dumps and 0 devcoredumps, and the live saves were unchanged after each.
+  - *The journal lines.* Each group's line read on, with its items, in its own arm (`raw/night/t<group>-switch-lines.txt`) and all of them in tall and r5. For example:
+    - `equeue fixes on (items: kk02 sk03 g1 kk01)`;
+    - `tls fixes on (items: kl01 kl02)`;
+    - `thread sync on (items: kk06,kk03,signalto,x87,kk07)`;
+    - `savedata memory fixes on (items: sync lock existed)`.
+  - *The catchers' own lines* (kevent timeouts, mmap hints that were not free, Ult queue overflow, unknown system parameters) never showed in r5's switch-line record. That record is the play log's `exp 040x` lines, at most 40 of them. The gpu group's journal lines go to `direct.log` on the box and were not collected.
+  - *The TLS patch* (`KYTY_BC5_TLS_FIXES`) rewrote every TLS load of the second title at load time, and the title ran its start and 15 minutes of play with it. The ASTRO BOT title was not run.
+  - *What this shows.* Every e5 group starts the title alone, and all of them together with e4's switches play the route as cleanly as e4 and the e2 control did (50.6 flips/s against 51.2 and 53.4). It shows nothing about the freeze and the hang, which did not come back.
+- *Haptics: a silence line on the vibration port.* In every arm with `KYTY_BC5_AUDIO_FIXES=1`, e4's and e5's alike, the journal has this line once (saud, sall, rA, rC, aA, aB, tall, r5, a5):
+
+  `[bc5] exp 0401: AudioOut2 port 0x4 (type 0x6, format 0x00000200): silence at Advance, no buffer set since its last grain (the port's first)`
+
+  - The line is printed only at the first grain that a port's silence rule takes. It cannot tell one silenced grain from all of them.
+  - The pad port still played 94 calls a second at rate 1.000 through the pulls. That is frames delivered, not their content.
+  - `aud0401-notes.md` says a type-0x6 silence line means the rule is cutting the haptics: report it and use `set,room`. So `KYTY_BC5_AUDIO_FIXES=set,room` is the setting for any play by the maintainer until he has felt the haptics with `=1`.
+  - The replug check was run again with `set,room` on e5 (arm a5r, 03:30–03:40, `raw/night-arms-e5aud-setroom.txt`): **PASS**.
+    - 3 of 3 pulls; 0 pad streams on another sink; 22 rumble writes, 0 failures.
+    - Its journal reads `audio fixes on: set room` and has no silence line.
+    - 49.8 flips/s, memory floor 543 MiB, a clean route otherwise.
+  - Still the maintainer's: the physical replug, a DS4, and whether the haptics can be felt with `=1` against `set,room`.
+- *State at 03:40.*
+  - e4 and e5 are built and night-tested, with every arm clean, and nothing is installed: the shortcut stays on e2.
+  - Neither night met the 18:04 freeze or the 22:54 hang, so neither tells whether a switch cures them.
+  - The ports are behaviour fixes for any title; on the second title they run as cleanly as before.
 
 **Verdict.** Not yet. Both switches together made the game too slow to play, and the confounds above leave the cause open.

@@ -1,0 +1,8 @@
+[bc5] exp 0405: audioout checks off
+[bc5] exp 0405: audioin checks off
+[bc5] exp 0405: ngs2 rack fix off
+[bc5] exp 0401: audio fixes on: set silence room
+[bc5] exp 0401: AudioOut2 port 0x2 (type 0x0, format 0x00000200): silence at Advance, no buffer set since its last grain (the port's first)
+aud0401: parts on: set silence room
+aud0401: room: pushes took 0.0 and 85.6 ms, then level 1 of 2 (available 1)
+aud0401: on 25 of 25; end

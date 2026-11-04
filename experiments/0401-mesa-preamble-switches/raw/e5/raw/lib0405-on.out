@@ -1,0 +1,117 @@
+lib0405: switches json2 0xf, ult 0x3, user 0xf, system 0x7, params 7/1000 1: on
+[bc5] exp 0401: memory from param.json off: total 11692 MiB, flexible 1024 MiB, direct 10668 MiB (param.json: flexible 0, cpu table 0, gpu table 0, amm table 0 MiB)
+[bc5] exp 0405: mem off
+[bc5] exp 0405: thread sync off
+[bc5] exp 0401: KYTY_BC5_AMM_PRT_CMDS off
+[bc5] exp 0401: KYTY_BC5_AMM_EXTRA_CMDS off
+[bc5] exp 0401: KYTY_BC5_AMPR_WAITS off
+[bc5] exp 0405: posix return fixes off
+[bc5] exp 0405: http2 fixes off
+[bc5] exp 0405: json2 on (items: value string array object)
+[bc5] exp 0401: NpCppWebApi SessionManager V2 off (the loader's stubs)
+[bc5] exp 0405: pad open ext off
+[bc5] exp 0401: savedata fixes off
+[bc5] exp 0401: savedata event callback off
+[bc5] exp 0401: savedata sort off
+[bc5] exp 0405: savedata memory fixes off
+[bc5] exp 0405: savedata delete busy off
+[bc5] exp 0405: savedata aliases off
+[bc5] exp 0405: systemservice on (items: int table string)
+[bc5] exp 0405: systemservice-params-7-1000 on (items: 7 1000)
+[bc5] exp 0405: ult on (items: join queue)
+[bc5] exp 0405: userservice on (items: age login name zoom)
+[bc5] exp 0405: equeue fixes off
+lib0405: case 1 json2 value: v = v["a"]: ok (got {"b":1}, want {"b":1})
+lib0405: case 2 json2 value: v.set(v["a"]["b"]): ok (got [1,2], want [1,2])
+lib0405: case 3 json2 string: v.set(v.getString()): ok (got "a string long enough to live on the heap, not in the object", want "a string long enough to live on the heap, not in the object")
+lib0405: case 4 json2 string: v.set(v.getString().c_str()): ok (got "a string long enough to live on the heap, not in the object", want "a string long enough to live on the heap, not in the object")
+lib0405: case 5 json2 string: v.set(v["a"].getString()): ok (got "inner text long enough to live on the heap too", want "inner text long enough to live on the heap too")
+lib0405: case 6 json2 array: v.set(v.getArray()): ok (got [1,[2,3],"x"], want [1,[2,3],"x"])
+lib0405: case 7 json2 array: v.set(v["a"].getArray()): ok (got [1,2,{"b":3}], want [1,2,{"b":3}])
+lib0405: case 8 json2 object: v.set(v.getObject()): ok (got {"k":1,"m":"t"}, want {"k":1,"m":"t"})
+lib0405: case 9 json2 object: v.set(v["a"].getObject()): ok (got {"x":1,"y":[2]}, want {"x":1,"y":[2]})
+lib0405: case 10 json2 object: obj = v["a"].getObject(): ok (got {"x":1}, want {"x":1})
+lib0405: case 11 json2 value: v["a"] = v (dst inside src): ok (got {"a":{"a":{"b":1},"c":2},"c":2}, want {"a":{"a":{"b":1},"c":2},"c":2} (a copy of v as it was))
+lib0405: case 12 json2 object: obj = obj: ok (got {"k":1,"m":"t"}, want {"k":1,"m":"t"} (unchanged))
+lib0405: case 13 json2 string: v.set(v.getString()) keeps the String: ok (the same String object, its text unchanged)
+lib0405: case 14 json2 independent sources (all seven calls): ok ({"q":[true,"s"],"r":{"t":2.500000}} | [true,"s"] | "" | "plain" | [true,"s"] | {"t":2.500000} | {"q":[true,"s"],"r":{"t":2.500000}})
+lib0405: case 15 json2 value: v = v and v.set(v): ok (got {"a":[1,2]} (unchanged, today's dst == src rule))
+lib0405: case 16 json2 parse into a value that owns a payload: ok (got [1,2])
+lib0405: case 17 json2 parent pointers after v = w: ok (the members point at v, theirs at them)
+lib0405: case 18 json2 parent pointers after v = v["a"]: ok (the moved members point at v)
+lib0405: case 19 ult create, join, join again: ok (create 0, join 0 status 42, second join 0x80810006 (want STATE 0x80810006))
+lib0405: case 20 ult create on an unknown runtime: ok (0x80810006 (want STATE))
+lib0405: case 21 ult a handle created twice: ok (first 0, second 0x80810006 (want STATE), join 0 status 5)
+lib0405: case 22 ult self-join: ok (create 0, the ulthread's own join 0x80810006 (want STATE; the claim rule), then join 0 status 77)
+lib0405: case 23 ult two joiners of one ulthread: ok (create 0; joins 0x80810006 (status -1) and 0x00000000 (status 42): one 0 with 42, one STATE)
+lib0405: case 24 ult 100 creates, each joined at once from another thread: ok (100 of 100 joined with their status)
+[bc5] exp 0405: ult queue 0x000056265678b000 holds 3 items, over its data pool's num_data 2 (kept; dropped when off)
+lib0405: case 25 ult queue: 3 pushes into num_data 2, then 4 pops: ok (pushes 0 0 0; pops 0:1 0:2 0x00000000:3 0x80810008 (on: 1, 2, 3, then AGAIN))
+lib0405: case 26 user GetAgeLevel: ok ((1000) 0 -> 0xffffffff want 0xffffffff; (1003) 0; (1000, null) 0x80960005; (5) 0x80960009 untouched 1; (-1, null) 0x80960009 want 0x80960009 (login before null))
+lib0405: case 27 user GetAccessibilityChatTranscription: ok ((1000) 0 -> 0x00000000 want 0x00000000; (1003) 0; (1000, null) 0x80960005; (5) 0x80960009 untouched 1; (-1, null) 0x80960009 want 0x80960009 (login before null))
+lib0405: case 28 user GetAccessibilityPressAndHoldDelay: ok ((1000) 0 -> 0x00000000 want 0x00000000; (1003) 0; (1000, null) 0x80960005; (5) 0x80960009 untouched 1; (-1, null) 0x80960009 want 0x80960009 (login before null))
+lib0405: case 29 user GetAccessibilityVibration: ok ((1000) 0 -> 0x00000001 want 0x00000001; (1003) 0; (1000, null) 0x80960005; (5) 0x80960009 untouched 1; (-1, null) 0x80960009 want 0x80960009 (login before null))
+lib0405: case 30 user GetAccessibilityTriggerEffect: ok ((1000) 0 -> 0x00000001 want 0x00000001; (1003) 0; (1000, null) 0x80960005; (5) 0x80960009 untouched 1; (-1, null) 0x80960009 want 0x80960009 (login before null))
+lib0405: case 31 user GetAccessibilityZoomEnabled: ok ((1000) 0 -> 0x00000000 want 0x00000000; (1003) 0; (1000, null) 0x80960005; (5) 0x80960009 untouched 1; (-1, null) 0x80960009 want 0x80960009 (login before null))
+lib0405: case 32 user GetAccessibilityZoomFollowFocus: ok ((1000) 0 -> 0x00000001 want 0x00000001; (1003) 0; (1000, null) 0x80960005; (5) 0x80960009 untouched 1; (-1, null) 0x80960009 want 0x80960009 (login before null))
+lib0405: case 33 user GetUserName of a known user: ok ((1000, 16) 0 Kyty-1, (1003, 16) 0 Kyty-4, (1000, 7) 0 Kyty-1)
+lib0405: case 34 user GetUserName errors instead of EXIT: ok ((5) 0x80960105, (-1) 0x80960105 want 0x80960105; (1000, 4) 0x8096000a, (1000, 6) 0x8096000a want 0x8096000A; (1000, null) 0x80960005 want 0x80960005; buffers untouched 1 1 1 1)
+[bc5] exp 0405: system param 0 (int) -> 0x80A10003
+bc5 system param 1 -> 1
+bc5 system param 2 -> 1
+bc5 system param 3 -> 1
+bc5 system param 4 -> 180
+bc5 system param 5 -> 0
+[bc5] exp 0405: system param 6 (int) -> 0x80A10003
+[bc5] exp 0405: system param 7 (int) -> 0x80A10003
+[bc5] exp 0405: system param 8 (int) -> 0x80A10003
+[bc5] exp 0405: system param 99 (int) -> 0x80A10003
+bc5 system param 100 -> 0
+bc5 system param 101 -> 1
+bc5 system param 102 -> 2
+bc5 system param 103 -> 100
+bc5 system param 104 -> 131586
+bc5 system param 105 -> 0
+bc5 system param 106 -> 0
+bc5 system param 107 -> 100
+bc5 system param 108 -> 0
+bc5 system param 109 -> 100
+bc5 system param 110 -> 131586
+bc5 system param 111 -> 0
+[bc5] exp 0405: system param 112 (int) -> 0x80A10003
+[bc5] exp 0405: system param 199 (int) -> 0x80A10003
+bc5 system param 200 -> 0
+bc5 system param 201 -> 0
+bc5 system param 202 -> 0
+bc5 system param 203 -> 0
+bc5 system param 204 -> 0
+bc5 system param 205 -> 0
+bc5 system param 206 -> 0
+bc5 system param 207 -> 0
+bc5 system param 208 -> 0
+bc5 system param 209 -> 1
+bc5 system param 210 -> 71
+bc5 system param 211 -> 0
+bc5 system param 212 -> 0
+bc5 system param 213 -> 0
+[bc5] exp 0405: system param 214 (int) -> 0x80A10003
+[bc5] exp 0405: system param 299 (int) -> 0x80A10003
+bc5 system param 300 -> 0
+[bc5] exp 0405: system param 301 (int) -> 0x80A10003
+[bc5] exp 0405: system param 399 (int) -> 0x80A10003
+bc5 system param 400 -> 0
+[bc5] exp 0405: system param 401 (int) -> 0x80A10003
+[bc5] exp 0405: system param 999 (int) -> 0x80A10003
+[bc5] exp 0405: system param 1000 (int) -> 0x80A10003
+[bc5] exp 0405: system param 1001 (int) -> 0x80A10003
+[bc5] exp 0405: system param 2048 (int) -> 0x80A10003
+[bc5] exp 0405: system param -1 (int) -> 0x80A10003
+lib0405: case 35 system ParamGetInt over the parameter list: ok (50 parameters, 0 wrong; int on, table on, params 7/1000 on)
+lib0405: case 36 system ParamGetInt(1, null): ok (0x80a10003 want 0x80A10003 (today too))
+lib0405: case 37 system ParamGetString(6) with 64 and 65 bytes and a null buffer: ok (64: -2136932349, 65: 0, null: 0x80a10003 (on: 64 refused untouched, 65 NUL-padded))
+[bc5] exp 0405: system param 6 (string) -> 0x80A10003
+[bc5] exp 0405: system param 0 (string) -> 0x80A10003
+[bc5] exp 0405: system param 7 (string) -> 0x80A10003
+[bc5] exp 0405: system param 1000 (string) -> 0x80A10003
+lib0405: case 38 system ParamGetString of unknown parameters: ok (0: 0x80a10003, 7: 0x80a10003, 1000: 0x80a10003, buffer untouched 1)
+lib0405: on 38 of 38; end

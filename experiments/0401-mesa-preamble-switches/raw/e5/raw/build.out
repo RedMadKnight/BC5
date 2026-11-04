@@ -1,0 +1,432 @@
++ /usr/bin/clang++ -I/home/kjaniszewski/bc5-work/exp0401e5/mem/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_BUILD -DZYDIS_STATIC_BUIL ...
+In file included from /home/kjaniszewski/bc5-work/exp0401e5/src/bc5LleAgc.cpp:27:
+In file included from /home/kjaniszewski/src/KytyPlus/src/kernel/fileSystem.h:6:
+[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<[0;34mchar16_t[0m>, [0;34mchar16_t[0m> convert;[0m
+      | [0;1;32m             ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: [0m[0;1;36mnote: [0m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here[0m
+  262 |     [0;34mclass[0m _GLIBCXX17_DEPRECATED wstring_convert[0m
+      | [0;1;32m          ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: [0m[0;1;36mnote: [0mexpanded from macro '_GLIBCXX17_DEPRECATED'[0m
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]][0m
+      | [0;1;32m                                 ^
+[0m[1m/home/kjaniszewski/bc5-work/exp0401e5/src/bc5LleAgc.cpp:996:18: [0m[0;1;35mwarning: [0m[1mformat specifies type 'unsigned long' but the argument has type 'unsigned long long' [-Wformat][0m
+  994 |         Direct::journal([0;32m"soft-cp wait: t %.3f s WAIT_REG_MEM%s on 0x%"[0m PRIx64 [0;32m" %s after %.1f ms (bound %"[0m PRIu64 [0;32m" ms): fn %u ref 0x%"[0m PRIx64 [0;32m" value 0x%"[0m PRIx64 [0;32m"; %s %u dwords at %p, packet at %p (offset %lld); marks %s\n"[0m,[0m
+      | [0;1;32m                                                                                                        ~~~~~~~~~
+[0m  995 |                         Direct::timing_now(), is64 ? [0;32m"64"[0m : [0;32m""[0m, a, timed_out ? [0;32m"TIMED OUT"[0m : [0;32m"satisfied"[0m, [0;34mstatic_cast[0m<[0;34mdouble[0m>(held) / [0;32m1e6[0m,[0m
+  996 |                         (t_wait_bound_ns != [0;32m0[0m ? t_wait_bound_ns : [0;32m2'000'000'000ull[0m) / [0;32m1'000'000ull[0m, function, ref, value, t_cur_kind, t_cur_n,[0m
+      | [0;1;32m                        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[0m[1m/home/kjaniszewski/bc5-work/exp0401e5/src/bc5LleAgc.cpp:2714:122: [0m[0;1;35mwarning: [0m[1mformat specifies type 'unsigned long' but the argument has type 'unsigned long long' [-Wformat][0m
+ 2714 |                                         [0;34mif[0m ((n_low++ & [0;32m0xffu[0m) == [0;32m0[0m) journal([0;32m"scratch: zero page at 0x%"[0m PRIx64 [0;32m" refused, trying from 0x%"[0m PRIx64 [0;32m"\n"[0m, pa, pa + [0;32m0x10000ull[0m);[0m
+      | [0;1;32m                                                                                                                                        ~~~~~~~~~           ^~~~~~~~~~~~~~~
+[0m[1m/home/kjaniszewski/bc5-work/exp0401e5/src/bc5LleAgc.cpp:78:15: [0m[0;1;35mwarning: [0m[1munused variable 'OK' [-Wunused-const-variable][0m
+   78 | [0;34mconstexpr[0m [0;34mint[0m OK = [0;32m0[0m;[0m
+      | [0;1;32m              ^~
+[0m[1m/home/kjaniszewski/bc5-work/exp0401e5/src/bc5LleAgc.cpp:367:20: [0m[0;1;35mwarning: [0m[1munused variable 'IT_DMA_DATA' [-Wunused-const-variable][0m
+  367 | [0;34mconstexpr[0m uint32_t IT_DMA_DATA             = [0;32m0x50[0m;[0m
+      | [0;1;32m                   ^~~~~~~~~~~
+[0m5 warnings generated.
++ /usr/bin/clang++ -I/home/kjaniszewski/bc5-work/exp0401e5/mem/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_BUILD -DZYDIS_STATIC_BUIL ...
+In file included from /home/kjaniszewski/bc5-work/exp0401e5/src/libNpCppWebApi.cpp:24:
+In file included from /home/kjaniszewski/src/KytyPlus/src/libs/libs.h:6:
+[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<[0;34mchar16_t[0m>, [0;34mchar16_t[0m> convert;[0m
+      | [0;1;32m             ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: [0m[0;1;36mnote: [0m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here[0m
+  262 |     [0;34mclass[0m _GLIBCXX17_DEPRECATED wstring_convert[0m
+      | [0;1;32m          ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: [0m[0;1;36mnote: [0mexpanded from macro '_GLIBCXX17_DEPRECATED'[0m
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]][0m
+      | [0;1;32m                                 ^
+[0m[1m/home/kjaniszewski/bc5-work/exp0401e5/src/libNpCppWebApi.cpp:50:1: [0m[0;1;35mwarning: [0m[1mfunction declared 'noreturn' should not return [-Winvalid-noreturn][0m
+   50 | }[0m
+      | [0;1;32m^
+[0m[1m/home/kjaniszewski/bc5-work/exp0401e5/src/libNpCppWebApi.cpp:62:30: [0m[0;1;35mwarning: [0m[1munused variable 'VectorReferenceCountOffset' [-Wunused-const-variable][0m
+   62 | [0;34mstatic[0m [0;34mconstexpr[0m std::size_t VectorReferenceCountOffset = [0;32m0x30[0m;[0m
+      | [0;1;32m                             ^~~~~~~~~~~~~~~~~~~~~~~~~~
+[0m3 warnings generated.
++ /usr/bin/clang++ -I/home/kjaniszewski/bc5-work/exp0401e5/mem/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_BUILD -DZYDIS_STATIC_BUIL ...
+In file included from /home/kjaniszewski/bc5-work/exp0401e5/x5-mem/src/kernel/memory.cpp:8:
+In file included from /home/kjaniszewski/src/KytyPlus/src/common/magicEnum.h:5:
+[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<[0;34mchar16_t[0m>, [0;34mchar16_t[0m> convert;[0m
+      | [0;1;32m             ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: [0m[0;1;36mnote: [0m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here[0m
+  262 |     [0;34mclass[0m _GLIBCXX17_DEPRECATED wstring_convert[0m
+      | [0;1;32m          ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: [0m[0;1;36mnote: [0mexpanded from macro '_GLIBCXX17_DEPRECATED'[0m
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]][0m
+      | [0;1;32m                                 ^
+[0m1 warning generated.
++ /usr/bin/clang++ -I/home/kjaniszewski/bc5-work/exp0401e5/mem/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_BUILD -DZYDIS_STATIC_BUIL ...
+In file included from /home/kjaniszewski/bc5-work/exp0401e5/mem/src/loader/systemContent.cpp:1:
+In file included from /home/kjaniszewski/bc5-work/exp0401e5/mem/src/loader/systemContent.h:6:
+[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<[0;34mchar16_t[0m>, [0;34mchar16_t[0m> convert;[0m
+      | [0;1;32m             ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: [0m[0;1;36mnote: [0m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here[0m
+  262 |     [0;34mclass[0m _GLIBCXX17_DEPRECATED wstring_convert[0m
+      | [0;1;32m          ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: [0m[0;1;36mnote: [0mexpanded from macro '_GLIBCXX17_DEPRECATED'[0m
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]][0m
+      | [0;1;32m                                 ^
+[0m1 warning generated.
++ /usr/bin/clang++ -I/home/kjaniszewski/bc5-work/exp0401e5/mem/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_BUILD -DZYDIS_STATIC_BUIL ...
+In file included from /home/kjaniszewski/bc5-work/exp0401e5/x5-svc/src/libs/libSaveData.cpp:6:
+[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<[0;34mchar16_t[0m>, [0;34mchar16_t[0m> convert;[0m
+      | [0;1;32m             ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: [0m[0;1;36mnote: [0m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here[0m
+  262 |     [0;34mclass[0m _GLIBCXX17_DEPRECATED wstring_convert[0m
+      | [0;1;32m          ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: [0m[0;1;36mnote: [0mexpanded from macro '_GLIBCXX17_DEPRECATED'[0m
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]][0m
+      | [0;1;32m                                 ^
+[0m1 warning generated.
++ /usr/bin/clang++ -I/home/kjaniszewski/bc5-work/exp0401e5/mem/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_BUILD -DZYDIS_STATIC_BUIL ...
+In file included from /home/kjaniszewski/bc5-work/exp0401e5/x5-thr/src/kernel/pthread.cpp:10:
+[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<[0;34mchar16_t[0m>, [0;34mchar16_t[0m> convert;[0m
+      | [0;1;32m             ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: [0m[0;1;36mnote: [0m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here[0m
+  262 |     [0;34mclass[0m _GLIBCXX17_DEPRECATED wstring_convert[0m
+      | [0;1;32m          ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: [0m[0;1;36mnote: [0mexpanded from macro '_GLIBCXX17_DEPRECATED'[0m
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]][0m
+      | [0;1;32m                                 ^
+[0m[1m/home/kjaniszewski/bc5-work/exp0401e5/x5-thr/src/kernel/pthread.cpp:1422:13: [0m[0;1;35mwarning: [0m[1munused function 'sec_to_timeval' [-Wunused-function][0m
+ 1422 | [0;34mstatic[0m [0;34mvoid[0m sec_to_timeval(KernelTimeval* ts, [0;34mdouble[0m sec) {[0m
+      | [0;1;32m            ^~~~~~~~~~~~~~
+[0m2 warnings generated.
++ /usr/bin/clang++ -I/home/kjaniszewski/bc5-work/exp0401e5/mem/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_BUILD -DZYDIS_STATIC_BUIL ...
+In file included from /home/kjaniszewski/bc5-work/exp0401e5/x-aud/src/libs/libAudio2.cpp:9:
+In file included from /home/kjaniszewski/src/KytyPlus/src/libs/libs.h:6:
+[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<[0;34mchar16_t[0m>, [0;34mchar16_t[0m> convert;[0m
+      | [0;1;32m             ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: [0m[0;1;36mnote: [0m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here[0m
+  262 |     [0;34mclass[0m _GLIBCXX17_DEPRECATED wstring_convert[0m
+      | [0;1;32m          ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: [0m[0;1;36mnote: [0mexpanded from macro '_GLIBCXX17_DEPRECATED'[0m
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]][0m
+      | [0;1;32m                                 ^
+[0m1 warning generated.
++ /usr/bin/clang++ -I/home/kjaniszewski/bc5-work/exp0401e5/mem/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_BUILD -DZYDIS_STATIC_BUIL ...
+In file included from /home/kjaniszewski/bc5-work/exp0401e5/x-vo/src/graphics/presentation/videoOut.cpp:15:
+[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<[0;34mchar16_t[0m>, [0;34mchar16_t[0m> convert;[0m
+      | [0;1;32m             ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: [0m[0;1;36mnote: [0m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here[0m
+  262 |     [0;34mclass[0m _GLIBCXX17_DEPRECATED wstring_convert[0m
+      | [0;1;32m          ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: [0m[0;1;36mnote: [0mexpanded from macro '_GLIBCXX17_DEPRECATED'[0m
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]][0m
+      | [0;1;32m                                 ^
+[0m[1m/home/kjaniszewski/bc5-work/exp0401e5/x-vo/src/graphics/presentation/videoOut.cpp:398:20: [0m[0;1;35mwarning: [0m[1munused function 'Bc5VideoOutEventName' [-Wunused-function][0m
+  398 | [0;34mstatic[0m [0;34mconst[0m [0;34mchar[0m* Bc5VideoOutEventName(VideoOutEventKind kind) {[0m
+      | [0;1;32m                   ^~~~~~~~~~~~~~~~~~~~
+[0m2 warnings generated.
++ /usr/bin/clang++ -I/home/kjaniszewski/bc5-work/exp0401e5/mem/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_BUILD -DZYDIS_STATIC_BUIL ...
+In file included from /home/kjaniszewski/bc5-work/exp0401e5/x-amm/src/libs/libAmpr.cpp:7:
+[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<[0;34mchar16_t[0m>, [0;34mchar16_t[0m> convert;[0m
+      | [0;1;32m             ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: [0m[0;1;36mnote: [0m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here[0m
+  262 |     [0;34mclass[0m _GLIBCXX17_DEPRECATED wstring_convert[0m
+      | [0;1;32m          ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: [0m[0;1;36mnote: [0mexpanded from macro '_GLIBCXX17_DEPRECATED'[0m
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]][0m
+      | [0;1;32m                                 ^
+[0m[1m/home/kjaniszewski/bc5-work/exp0401e5/x-amm/src/libs/libAmpr.cpp:1975:143: [0m[0;1;35mwarning: [0m[1mdata argument not used by format string [-Wformat-extra-args][0m
+ 1974 |                                 AmmTraceStamp(), std::fprintf(stderr, [0;32m"amm trace: read file 0x%08"[0m PRIx32 [0;32m" +0x%"[0m PRIx64 [0;32m" size 0x%"[0m PRIx64 [0;32m" -> 0x%016"[0m PRIx64 [0;32m" = 0x%08x (parallel)\n"[0m,[0m
+      | [0;1;32m                                                                      ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[0m 1975 |                                                               command.file_id, command.file_offset, command.size, command.destination, [0;34mstatic_cast[0m<[0;34munsigned[0m>(results[k]), bytes_read, bytes_read >= [0;32m8[0m ? *[0;34mreinterpret_cast[0m<[0;34mconst[0m uint64_t*>(command.destination) : [0;32m0[0m);[0m
+      | [0;1;32m                                                                                                                                                                          ^
+[0m[1m/home/kjaniszewski/bc5-work/exp0401e5/x-amm/src/libs/libAmpr.cpp:2084:50: [0m[0;1;35mwarning: [0m[1mdata argument not used by format string [-Wformat-extra-args][0m
+ 2082 |                                         AmmTraceStamp(), std::fprintf(stderr, [0;32m"amm trace: read file 0x%08"[0m PRIx32 [0;32m" +0x%"[0m PRIx64 [0;32m" size 0x%"[0m PRIx64 [0;32m" -> 0x%016"[0m PRIx64 [0;32m" = 0x%08x\n"[0m,[0m
+      | [0;1;32m                                                                              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+[0m 2083 |                                                      command.file_id, command.file_offset, command.size, command.destination,[0m
+ 2084 |                                                      [0;34mstatic_cast[0m<[0;34munsigned[0m>(result), bytes_read, bytes_read >= [0;32m8[0m ? *[0;34mreinterpret_cast[0m<[0;34mconst[0m uint64_t*>(command.destination) : [0;32m0[0m);[0m
+      | [0;1;32m                                                                                    ^
+[0m3 warnings generated.
++ /usr/bin/clang++ -I/home/kjaniszewski/bc5-work/exp0401e5/mem/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_BUILD -DZYDIS_STATIC_BUIL ...
+In file included from /home/kjaniszewski/bc5-work/exp0401e5/x5-ao/src/libs/audio.cpp:8:
+In file included from /home/kjaniszewski/src/KytyPlus/src/common/magicEnum.h:5:
+[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<[0;34mchar16_t[0m>, [0;34mchar16_t[0m> convert;[0m
+      | [0;1;32m             ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: [0m[0;1;36mnote: [0m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here[0m
+  262 |     [0;34mclass[0m _GLIBCXX17_DEPRECATED wstring_convert[0m
+      | [0;1;32m          ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: [0m[0;1;36mnote: [0mexpanded from macro '_GLIBCXX17_DEPRECATED'[0m
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]][0m
+      | [0;1;32m                                 ^
+[0m1 warning generated.
++ /usr/bin/clang++ -I/home/kjaniszewski/bc5-work/exp0401e5/mem/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_BUILD -DZYDIS_STATIC_BUIL ...
+In file included from /home/kjaniszewski/bc5-work/exp0401e5/x5-eq/src/kernel/eventQueue.cpp:13:
+[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<[0;34mchar16_t[0m>, [0;34mchar16_t[0m> convert;[0m
+      | [0;1;32m             ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: [0m[0;1;36mnote: [0m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here[0m
+  262 |     [0;34mclass[0m _GLIBCXX17_DEPRECATED wstring_convert[0m
+      | [0;1;32m          ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: [0m[0;1;36mnote: [0mexpanded from macro '_GLIBCXX17_DEPRECATED'[0m
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]][0m
+      | [0;1;32m                                 ^
+[0m1 warning generated.
++ /usr/bin/clang++ -I/home/kjaniszewski/bc5-work/exp0401e5/mem/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_BUILD -DZYDIS_STATIC_BUIL ...
+In file included from /home/kjaniszewski/bc5-work/exp0401e5/x5-fs/src/kernel/fileSystem.cpp:2:
+In file included from /home/kjaniszewski/src/KytyPlus/src/kernel/fileSystem.h:6:
+[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<[0;34mchar16_t[0m>, [0;34mchar16_t[0m> convert;[0m
+      | [0;1;32m             ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: [0m[0;1;36mnote: [0m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here[0m
+  262 |     [0;34mclass[0m _GLIBCXX17_DEPRECATED wstring_convert[0m
+      | [0;1;32m          ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: [0m[0;1;36mnote: [0mexpanded from macro '_GLIBCXX17_DEPRECATED'[0m
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]][0m
+      | [0;1;32m                                 ^
+[0m1 warning generated.
++ /usr/bin/clang++ -I/home/kjaniszewski/bc5-work/exp0401e5/mem/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_BUILD -DZYDIS_STATIC_BUIL ...
+In file included from /home/kjaniszewski/bc5-work/exp0401e5/x5-svc/src/libs/libNet.cpp:7:
+In file included from /home/kjaniszewski/src/KytyPlus/src/libs/libs.h:6:
+[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<[0;34mchar16_t[0m>, [0;34mchar16_t[0m> convert;[0m
+      | [0;1;32m             ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: [0m[0;1;36mnote: [0m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here[0m
+  262 |     [0;34mclass[0m _GLIBCXX17_DEPRECATED wstring_convert[0m
+      | [0;1;32m          ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: [0m[0;1;36mnote: [0mexpanded from macro '_GLIBCXX17_DEPRECATED'[0m
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]][0m
+      | [0;1;32m                                 ^
+[0m1 warning generated.
++ /usr/bin/clang++ -I/home/kjaniszewski/bc5-work/exp0401e5/mem/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_BUILD -DZYDIS_STATIC_BUIL ...
+In file included from /home/kjaniszewski/bc5-work/exp0401e5/x5-lib/src/libs/libUlt.cpp:5:
+In file included from /home/kjaniszewski/src/KytyPlus/src/libs/libs.h:6:
+[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<[0;34mchar16_t[0m>, [0;34mchar16_t[0m> convert;[0m
+      | [0;1;32m             ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: [0m[0;1;36mnote: [0m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here[0m
+  262 |     [0;34mclass[0m _GLIBCXX17_DEPRECATED wstring_convert[0m
+      | [0;1;32m          ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: [0m[0;1;36mnote: [0mexpanded from macro '_GLIBCXX17_DEPRECATED'[0m
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]][0m
+      | [0;1;32m                                 ^
+[0m1 warning generated.
++ /usr/bin/clang++ -I/home/kjaniszewski/bc5-work/exp0401e5/mem/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_BUILD -DZYDIS_STATIC_BUIL ...
+In file included from /home/kjaniszewski/bc5-work/exp0401e5/x5-svc/src/libs/libPad.cpp:6:
+In file included from /home/kjaniszewski/src/KytyPlus/src/libs/libs.h:6:
+[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<[0;34mchar16_t[0m>, [0;34mchar16_t[0m> convert;[0m
+      | [0;1;32m             ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: [0m[0;1;36mnote: [0m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here[0m
+  262 |     [0;34mclass[0m _GLIBCXX17_DEPRECATED wstring_convert[0m
+      | [0;1;32m          ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: [0m[0;1;36mnote: [0mexpanded from macro '_GLIBCXX17_DEPRECATED'[0m
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]][0m
+      | [0;1;32m                                 ^
+[0m1 warning generated.
++ /usr/bin/clang++ -I/home/kjaniszewski/bc5-work/exp0401e5/mem/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_BUILD -DZYDIS_STATIC_BUIL ...
+In file included from /home/kjaniszewski/bc5-work/exp0401e5/x5-lib/src/libs/libJson2.cpp:4:
+In file included from /home/kjaniszewski/src/KytyPlus/src/libs/libs.h:6:
+[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<[0;34mchar16_t[0m>, [0;34mchar16_t[0m> convert;[0m
+      | [0;1;32m             ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: [0m[0;1;36mnote: [0m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here[0m
+  262 |     [0;34mclass[0m _GLIBCXX17_DEPRECATED wstring_convert[0m
+      | [0;1;32m          ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: [0m[0;1;36mnote: [0mexpanded from macro '_GLIBCXX17_DEPRECATED'[0m
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]][0m
+      | [0;1;32m                                 ^
+[0m1 warning generated.
++ /usr/bin/clang++ -I/home/kjaniszewski/bc5-work/exp0401e5/mem/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_BUILD -DZYDIS_STATIC_BUIL ...
+In file included from /home/kjaniszewski/bc5-work/exp0401e5/x5-lib/src/libs/libUserService.cpp:3:
+[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<[0;34mchar16_t[0m>, [0;34mchar16_t[0m> convert;[0m
+      | [0;1;32m             ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: [0m[0;1;36mnote: [0m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here[0m
+  262 |     [0;34mclass[0m _GLIBCXX17_DEPRECATED wstring_convert[0m
+      | [0;1;32m          ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: [0m[0;1;36mnote: [0mexpanded from macro '_GLIBCXX17_DEPRECATED'[0m
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]][0m
+      | [0;1;32m                                 ^
+[0m1 warning generated.
++ /usr/bin/clang++ -I/home/kjaniszewski/bc5-work/exp0401e5/mem/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_BUILD -DZYDIS_STATIC_BUIL ...
+In file included from /home/kjaniszewski/bc5-work/exp0401e5/x5-lib/src/libs/libSystemService.cpp:9:
+[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<[0;34mchar16_t[0m>, [0;34mchar16_t[0m> convert;[0m
+      | [0;1;32m             ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: [0m[0;1;36mnote: [0m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here[0m
+  262 |     [0;34mclass[0m _GLIBCXX17_DEPRECATED wstring_convert[0m
+      | [0;1;32m          ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: [0m[0;1;36mnote: [0mexpanded from macro '_GLIBCXX17_DEPRECATED'[0m
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]][0m
+      | [0;1;32m                                 ^
+[0m1 warning generated.
++ /usr/bin/clang++ -I/home/kjaniszewski/bc5-work/exp0401e5/mem/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_BUILD -DZYDIS_STATIC_BUIL ...
+In file included from /home/kjaniszewski/bc5-work/exp0401e5/x5-fs/src/libs/libKernel.cpp:8:
+[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<[0;34mchar16_t[0m>, [0;34mchar16_t[0m> convert;[0m
+      | [0;1;32m             ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: [0m[0;1;36mnote: [0m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here[0m
+  262 |     [0;34mclass[0m _GLIBCXX17_DEPRECATED wstring_convert[0m
+      | [0;1;32m          ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: [0m[0;1;36mnote: [0mexpanded from macro '_GLIBCXX17_DEPRECATED'[0m
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]][0m
+      | [0;1;32m                                 ^
+[0m1 warning generated.
++ /usr/bin/clang++ -I/home/kjaniszewski/bc5-work/exp0401e5/mem/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_BUILD -DZYDIS_STATIC_BUIL ...
+In file included from /home/kjaniszewski/bc5-work/exp0401e5/x5-thr/src/kernel/semaphore.cpp:9:
+[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<[0;34mchar16_t[0m>, [0;34mchar16_t[0m> convert;[0m
+      | [0;1;32m             ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: [0m[0;1;36mnote: [0m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here[0m
+  262 |     [0;34mclass[0m _GLIBCXX17_DEPRECATED wstring_convert[0m
+      | [0;1;32m          ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: [0m[0;1;36mnote: [0mexpanded from macro '_GLIBCXX17_DEPRECATED'[0m
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]][0m
+      | [0;1;32m                                 ^
+[0m1 warning generated.
++ /usr/bin/clang++ -I/home/kjaniszewski/bc5-work/exp0401e5/mem/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_BUILD -DZYDIS_STATIC_BUIL ...
+In file included from /home/kjaniszewski/bc5-work/exp0401e5/x5-tls/src/loader/runtimeLinker.cpp:3:
+In file included from /home/kjaniszewski/src/KytyPlus/src/loader/runtimeLinker.h:6:
+[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<[0;34mchar16_t[0m>, [0;34mchar16_t[0m> convert;[0m
+      | [0;1;32m             ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: [0m[0;1;36mnote: [0m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here[0m
+  262 |     [0;34mclass[0m _GLIBCXX17_DEPRECATED wstring_convert[0m
+      | [0;1;32m          ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: [0m[0;1;36mnote: [0mexpanded from macro '_GLIBCXX17_DEPRECATED'[0m
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]][0m
+      | [0;1;32m                                 ^
+[0m[1m/home/kjaniszewski/bc5-work/exp0401e5/x5-tls/src/loader/runtimeLinker.cpp:889:3: [0m[0;1;35mwarning: [0m[1mnon-void lambda does not return a value in all control paths [-Wreturn-type][0m
+  889 |                 }();[0m
+      | [0;1;32m                ^
+[0m2 warnings generated.
++ /usr/bin/clang++ -fno-rtti -fno-exceptions -fcolor-diagnostics -finput-charset=UTF-8 -fexec-charset=UTF-8 -g -fno-strict-aliasing -fno-omit-frame-pointer -Wall -fmessage-length=0 -fno-rtti -fno-exceptions -fcolor-diagnostics -finput-charset ...
++ /usr/bin/clang++ -I/home/kjaniszewski/bc5-work/exp0401e5/mem/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_BUILD -DZYDIS_STATIC_BUIL ...
+In file included from /home/kjaniszewski/bc5-work/exp0401e5/npgate0401.cpp:16:
+In file included from /home/kjaniszewski/src/KytyPlus/src/libs/libs.h:6:
+[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<[0;34mchar16_t[0m>, [0;34mchar16_t[0m> convert;[0m
+      | [0;1;32m             ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: [0m[0;1;36mnote: [0m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here[0m
+  262 |     [0;34mclass[0m _GLIBCXX17_DEPRECATED wstring_convert[0m
+      | [0;1;32m          ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: [0m[0;1;36mnote: [0mexpanded from macro '_GLIBCXX17_DEPRECATED'[0m
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]][0m
+      | [0;1;32m                                 ^
+[0m1 warning generated.
++ /usr/bin/clang++ -fno-rtti -fno-exceptions -fcolor-diagnostics -finput-charset=UTF-8 -fexec-charset=UTF-8 -g -fno-strict-aliasing -fno-omit-frame-pointer -Wall -fmessage-length=0 -fno-rtti -fno-exceptions -fcolor-diagnostics -finput-charset ...
++ /usr/bin/clang++ -I/home/kjaniszewski/bc5-work/exp0401e5/mem/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_BUILD -DZYDIS_STATIC_BUIL ...
+In file included from /home/kjaniszewski/bc5-work/exp0401e5/sav0401.cpp:71:
+In file included from /home/kjaniszewski/src/KytyPlus/src/kernel/fileSystem.h:6:
+[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<[0;34mchar16_t[0m>, [0;34mchar16_t[0m> convert;[0m
+      | [0;1;32m             ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: [0m[0;1;36mnote: [0m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here[0m
+  262 |     [0;34mclass[0m _GLIBCXX17_DEPRECATED wstring_convert[0m
+      | [0;1;32m          ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: [0m[0;1;36mnote: [0mexpanded from macro '_GLIBCXX17_DEPRECATED'[0m
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]][0m
+      | [0;1;32m                                 ^
+[0m1 warning generated.
++ /usr/bin/clang++ -fno-rtti -fno-exceptions -fcolor-diagnostics -finput-charset=UTF-8 -fexec-charset=UTF-8 -g -fno-strict-aliasing -fno-omit-frame-pointer -Wall -fmessage-length=0 -fno-rtti -fno-exceptions -fcolor-diagnostics -finput-charset ...
++ /usr/bin/clang++ -I/home/kjaniszewski/bc5-work/exp0401e5/mem/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_BUILD -DZYDIS_STATIC_BUIL ...
++ /usr/bin/clang++ -fno-rtti -fno-exceptions -fcolor-diagnostics -finput-charset=UTF-8 -fexec-charset=UTF-8 -g -fno-strict-aliasing -fno-omit-frame-pointer -Wall -fmessage-length=0 -fno-rtti -fno-exceptions -fcolor-diagnostics -finput-charset ...
++ /usr/bin/clang++ -I/home/kjaniszewski/bc5-work/exp0401e5/mem/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_BUILD -DZYDIS_STATIC_BUIL ...
++ /usr/bin/clang++ -fno-rtti -fno-exceptions -fcolor-diagnostics -finput-charset=UTF-8 -fexec-charset=UTF-8 -g -fno-strict-aliasing -fno-omit-frame-pointer -Wall -fmessage-length=0 -fno-rtti -fno-exceptions -fcolor-diagnostics -finput-charset ...
++ /usr/bin/clang++ -I/home/kjaniszewski/bc5-work/exp0401e5/mem/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_BUILD -DZYDIS_STATIC_BUIL ...
++ /usr/bin/clang++ -fno-rtti -fno-exceptions -fcolor-diagnostics -finput-charset=UTF-8 -fexec-charset=UTF-8 -g -fno-strict-aliasing -fno-omit-frame-pointer -Wall -fmessage-length=0 -fno-rtti -fno-exceptions -fcolor-diagnostics -finput-charset ...
++ /usr/bin/clang++ -I/home/kjaniszewski/bc5-work/exp0401e5/mem/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_BUILD -DZYDIS_STATIC_BUIL ...
+In file included from /home/kjaniszewski/bc5-work/exp0401e5/amm0401.cpp:37:
+In file included from /home/kjaniszewski/src/KytyPlus/src/libs/libs.h:6:
+[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<[0;34mchar16_t[0m>, [0;34mchar16_t[0m> convert;[0m
+      | [0;1;32m             ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: [0m[0;1;36mnote: [0m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here[0m
+  262 |     [0;34mclass[0m _GLIBCXX17_DEPRECATED wstring_convert[0m
+      | [0;1;32m          ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: [0m[0;1;36mnote: [0mexpanded from macro '_GLIBCXX17_DEPRECATED'[0m
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]][0m
+      | [0;1;32m                                 ^
+[0m1 warning generated.
++ /usr/bin/clang++ -fno-rtti -fno-exceptions -fcolor-diagnostics -finput-charset=UTF-8 -fexec-charset=UTF-8 -g -fno-strict-aliasing -fno-omit-frame-pointer -Wall -fmessage-length=0 -fno-rtti -fno-exceptions -fcolor-diagnostics -finput-charset ...
++ /usr/bin/clang++ -I/home/kjaniszewski/bc5-work/exp0401e5/mem/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_BUILD -DZYDIS_STATIC_BUIL ...
+In file included from /home/kjaniszewski/bc5-work/exp0401e5/eq0405.cpp:57:
+In file included from /home/kjaniszewski/src/KytyPlus/src/libs/libs.h:6:
+[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<[0;34mchar16_t[0m>, [0;34mchar16_t[0m> convert;[0m
+      | [0;1;32m             ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: [0m[0;1;36mnote: [0m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here[0m
+  262 |     [0;34mclass[0m _GLIBCXX17_DEPRECATED wstring_convert[0m
+      | [0;1;32m          ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: [0m[0;1;36mnote: [0mexpanded from macro '_GLIBCXX17_DEPRECATED'[0m
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]][0m
+      | [0;1;32m                                 ^
+[0m1 warning generated.
++ /usr/bin/clang++ -fno-rtti -fno-exceptions -fcolor-diagnostics -finput-charset=UTF-8 -fexec-charset=UTF-8 -g -fno-strict-aliasing -fno-omit-frame-pointer -Wall -fmessage-length=0 -fno-rtti -fno-exceptions -fcolor-diagnostics -finput-charset ...
++ /usr/bin/clang++ -I/home/kjaniszewski/bc5-work/exp0401e5/mem/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_BUILD -DZYDIS_STATIC_BUIL ...
++ /usr/bin/clang++ -fno-rtti -fno-exceptions -fcolor-diagnostics -finput-charset=UTF-8 -fexec-charset=UTF-8 -g -fno-strict-aliasing -fno-omit-frame-pointer -Wall -fmessage-length=0 -fno-rtti -fno-exceptions -fcolor-diagnostics -finput-charset ...
++ /usr/bin/clang++ -I/home/kjaniszewski/bc5-work/exp0401e5/mem/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_BUILD -DZYDIS_STATIC_BUIL ...
++ /usr/bin/clang++ -fno-rtti -fno-exceptions -fcolor-diagnostics -finput-charset=UTF-8 -fexec-charset=UTF-8 -g -fno-strict-aliasing -fno-omit-frame-pointer -Wall -fmessage-length=0 -fno-rtti -fno-exceptions -fcolor-diagnostics -finput-charset ...
++ /usr/bin/clang++ -I/home/kjaniszewski/bc5-work/exp0401e5/mem/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_BUILD -DZYDIS_STATIC_BUIL ...
+In file included from /home/kjaniszewski/bc5-work/exp0401e5/thr0405.cpp:51:
+In file included from /home/kjaniszewski/src/KytyPlus/src/loader/runtimeLinker.h:6:
+[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<[0;34mchar16_t[0m>, [0;34mchar16_t[0m> convert;[0m
+      | [0;1;32m             ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: [0m[0;1;36mnote: [0m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here[0m
+  262 |     [0;34mclass[0m _GLIBCXX17_DEPRECATED wstring_convert[0m
+      | [0;1;32m          ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: [0m[0;1;36mnote: [0mexpanded from macro '_GLIBCXX17_DEPRECATED'[0m
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]][0m
+      | [0;1;32m                                 ^
+[0m1 warning generated.
++ /usr/bin/clang++ -fno-rtti -fno-exceptions -fcolor-diagnostics -finput-charset=UTF-8 -fexec-charset=UTF-8 -g -fno-strict-aliasing -fno-omit-frame-pointer -Wall -fmessage-length=0 -fno-rtti -fno-exceptions -fcolor-diagnostics -finput-charset ...
++ /usr/bin/clang++ -I/home/kjaniszewski/bc5-work/exp0401e5/mem/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_BUILD -DZYDIS_STATIC_BUIL ...
+In file included from /home/kjaniszewski/bc5-work/exp0401e5/svc0405.cpp:66:
+In file included from /home/kjaniszewski/src/KytyPlus/src/kernel/fileSystem.h:6:
+[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<[0;34mchar16_t[0m>, [0;34mchar16_t[0m> convert;[0m
+      | [0;1;32m             ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: [0m[0;1;36mnote: [0m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here[0m
+  262 |     [0;34mclass[0m _GLIBCXX17_DEPRECATED wstring_convert[0m
+      | [0;1;32m          ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: [0m[0;1;36mnote: [0mexpanded from macro '_GLIBCXX17_DEPRECATED'[0m
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]][0m
+      | [0;1;32m                                 ^
+[0m1 warning generated.
++ /usr/bin/clang++ -fno-rtti -fno-exceptions -fcolor-diagnostics -finput-charset=UTF-8 -fexec-charset=UTF-8 -g -fno-strict-aliasing -fno-omit-frame-pointer -Wall -fmessage-length=0 -fno-rtti -fno-exceptions -fcolor-diagnostics -finput-charset ...
++ /usr/bin/clang++ -I/home/kjaniszewski/bc5-work/exp0401e5/mem/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_BUILD -DZYDIS_STATIC_BUIL ...
++ /usr/bin/clang++ -fno-rtti -fno-exceptions -fcolor-diagnostics -finput-charset=UTF-8 -fexec-charset=UTF-8 -g -fno-strict-aliasing -fno-omit-frame-pointer -Wall -fmessage-length=0 -fno-rtti -fno-exceptions -fcolor-diagnostics -finput-charset ...
++ /usr/bin/clang++ -I/home/kjaniszewski/bc5-work/exp0401e5/mem/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_BUILD -DZYDIS_STATIC_BUIL ...
+In file included from /home/kjaniszewski/bc5-work/exp0401e5/fs0405.cpp:56:
+In file included from /home/kjaniszewski/src/KytyPlus/src/kernel/fileSystem.h:6:
+[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<[0;34mchar16_t[0m>, [0;34mchar16_t[0m> convert;[0m
+      | [0;1;32m             ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: [0m[0;1;36mnote: [0m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here[0m
+  262 |     [0;34mclass[0m _GLIBCXX17_DEPRECATED wstring_convert[0m
+      | [0;1;32m          ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: [0m[0;1;36mnote: [0mexpanded from macro '_GLIBCXX17_DEPRECATED'[0m
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]][0m
+      | [0;1;32m                                 ^
+[0m1 warning generated.
++ /usr/bin/clang++ -fno-rtti -fno-exceptions -fcolor-diagnostics -finput-charset=UTF-8 -fexec-charset=UTF-8 -g -fno-strict-aliasing -fno-omit-frame-pointer -Wall -fmessage-length=0 -fno-rtti -fno-exceptions -fcolor-diagnostics -finput-charset ...
++ /usr/bin/clang++ -I/home/kjaniszewski/bc5-work/exp0401e5/mem/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_BUILD -DZYDIS_STATIC_BUIL ...
+In file included from /home/kjaniszewski/bc5-work/exp0401e5/lib0405.cpp:48:
+In file included from /home/kjaniszewski/src/KytyPlus/src/libs/libs.h:6:
+[1m/home/kjaniszewski/src/KytyPlus/src/common/stringUtils.h:321:7: [0m[0;1;35mwarning: [0m[1m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations][0m
+  321 |         std::wstring_convert<std::codecvt_utf8_utf16<[0;34mchar16_t[0m>, [0;34mchar16_t[0m> convert;[0m
+      | [0;1;32m             ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/c++/15/bits/locale_conv.h:262:11: [0m[0;1;36mnote: [0m'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here[0m
+  262 |     [0;34mclass[0m _GLIBCXX17_DEPRECATED wstring_convert[0m
+      | [0;1;32m          ^
+[0m[1m/usr/lib/gcc/x86_64-linux-gnu/15/../../../../include/x86_64-linux-gnu/c++/15/bits/c++config.h:135:34: [0m[0;1;36mnote: [0mexpanded from macro '_GLIBCXX17_DEPRECATED'[0m
+  135 | # define _GLIBCXX17_DEPRECATED [[__deprecated__]][0m
+      | [0;1;32m                                 ^
+[0m1 warning generated.
++ /usr/bin/clang++ -fno-rtti -fno-exceptions -fcolor-diagnostics -finput-charset=UTF-8 -fexec-charset=UTF-8 -g -fno-strict-aliasing -fno-omit-frame-pointer -Wall -fmessage-length=0 -fno-rtti -fno-exceptions -fcolor-diagnostics -finput-charset ...
++ /usr/bin/clang++ -I/home/kjaniszewski/bc5-work/exp0401e5/mem/src -DKYTY_BC5_DIRECT=1 -DKYTY_HAS_OPUS=1 -DKYTY_HAS_ZLIB=1 -DTRACY_DELAYED_INIT -DTRACY_ENABLE -DTRACY_MANUAL_LIFETIME -DTRACY_ON_DEMAND -DZYCORE_STATIC_BUILD -DZYDIS_STATIC_BUIL ...
++ /usr/bin/clang++ -fno-rtti -fno-exceptions -fcolor-diagnostics -finput-charset=UTF-8 -fexec-charset=UTF-8 -g -fno-strict-aliasing -fno-omit-frame-pointer -Wall -fmessage-length=0 -fno-rtti -fno-exceptions -fcolor-diagnostics -finput-charset ...

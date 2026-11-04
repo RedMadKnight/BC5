@@ -1,0 +1,10 @@
+runner rc 0; aB ended at G+420 (after 535 s; G 112, list 93); aB (route): ended at G+420 after 535 s (G 112, list 93); 50.1 flips/s over 530 s, 28 seconds with a gap over 100 ms, longest 1142 ms; memory floor 597 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+replug: pulls 1 (want 1), sequence done True, profile restored True, no DualSense card False
+stream lines 16, pad streams 4, pad streams on another sink 0
+pull 1: off 8850.913 on 8856.041 (5.1 s): closed lines 1, reopened lines 1
+  AudioOut (exp 0372): t 205.857 s port 2 type 10: its stream on the controller closed (an output device was removed); frames dropped until the controller is back
+  AudioOut (exp 0372): t 210.982 s port 2 type 10: opened on DualSense wireless controller (PS5) Direct DualSense Wireless Controller (48000 Hz, 6 ch) after an output device was added; node.dont-reconne
+trace offset 8645.056 s; '(pad) … device playing' lines inside a pull: 0
+pull 1: main port in the 3 s after the reopen: held min 944.7 ms, queue min 0 ms (3 lines)
+rumble writes 70, rumble failure lines 0, 'pad route … dropped' lines 6
+CLASS PASS mode late pulls 1

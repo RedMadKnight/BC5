@@ -1,0 +1,5 @@
+== 2026-11-04 03:30:58 arm a5r (pulls, cap 1100 s, play 420 s)
+run rc 0: a5r (route): ended at G+420 after 536 s (G 113, list 93); 49.8 flips/s over 531 s, 30 seconds with a gap over 100 ms, longest 1136 ms; memory floor 543 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 RESULT a5r runner 0 check 0 CLASS PASS mode pulls pulls 3 
+summary: a5r (route): ended at G+420 after 536 s (G 113, list 93); 49.8 flips/s over 531 s, 30 seconds with a gap over 100 ms, longest 1136 ms; memory floor 543 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+audio: RESULT a5r runner 0 check 0 CLASS PASS mode pulls pulls 3
+== 2026-11-04 03:40:15 all arms done

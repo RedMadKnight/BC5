@@ -1,1 +1,9 @@
 == 2026-11-04 02:14:38 arm aA (pulls, cap 1100 s, play 420 s)
+run rc 0: aA (route): ended at G+420 after 535 s (G 113, list 93); 50.1 flips/s over 531 s, 30 seconds with a gap over 100 ms, longest 1320 ms; memory floor 484 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 RESULT aA runner 0 check 0 CLASS PASS mode pulls pulls 3 
+summary: aA (route): ended at G+420 after 535 s (G 113, list 93); 50.1 flips/s over 531 s, 30 seconds with a gap over 100 ms, longest 1320 ms; memory floor 484 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+audio: RESULT aA runner 0 check 0 CLASS PASS mode pulls pulls 3
+== 2026-11-04 02:24:00 arm aB (late, cap 1100 s, play 420 s)
+run rc 0: aB (route): ended at G+420 after 535 s (G 112, list 93); 50.1 flips/s over 530 s, 28 seconds with a gap over 100 ms, longest 1142 ms; memory floor 597 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0 RESULT aB runner 0 check 0 CLASS PASS mode late pulls 1 
+summary: aB (route): ended at G+420 after 535 s (G 112, list 93); 50.1 flips/s over 530 s, 28 seconds with a gap over 100 ms, longest 1142 ms; memory floor 597 MiB available (sampler); crash lines 0, kernel lines 0, freeze dumps 0, devcoredumps 0
+audio: RESULT aB runner 0 check 0 CLASS PASS mode late pulls 1
+== 2026-11-04 02:33:18 all arms done
