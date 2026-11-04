@@ -1,0 +1,119 @@
+lib0405: switches json2 0x0, ult 0x0, user 0x0, system 0x0, params 7/1000 0: off
+[bc5] exp 0401: memory from param.json off: total 11692 MiB, flexible 1024 MiB, direct 10668 MiB (param.json: flexible 0, cpu table 0, gpu table 0, amm table 0 MiB)
+[bc5] exp 0405: mem off
+[bc5] exp 0405: thread sync off
+[bc5] exp 0405: tables off
+[bc5] exp 0405: voiceports port off
+[bc5] exp 0401: KYTY_BC5_AMM_PRT_CMDS off
+[bc5] exp 0401: KYTY_BC5_AMM_EXTRA_CMDS off
+[bc5] exp 0401: KYTY_BC5_AMPR_WAITS off
+[bc5] exp 0405: fw kernel off
+[bc5] exp 0405: jit shm off
+[bc5] exp 0405: posix return fixes off
+[bc5] exp 0405: http2 fixes off
+[bc5] exp 0405: npauth port off
+[bc5] exp 0405: json2 off
+[bc5] exp 0401: NpCppWebApi SessionManager V2 off (the loader's stubs)
+[bc5] exp 0405: fw pad off
+[bc5] exp 0405: pad open ext off
+[bc5] exp 0405: fw-net off
+[bc5] exp 0401: savedata fixes off
+[bc5] exp 0401: savedata event callback off
+[bc5] exp 0401: savedata sort off
+[bc5] exp 0405: savedata memory fixes off
+[bc5] exp 0405: savedata delete busy off
+[bc5] exp 0405: savedata aliases off
+[bc5] exp 0405: systemservice off
+[bc5] exp 0405: systemservice-params-7-1000 off
+[bc5] exp 0405: ult off
+[bc5] exp 0405: userservice off
+[bc5] exp 0405: equeue fixes off
+lib0405: info json2 value: v = v["a"]: item off, today's code (reads freed memory) run once in a child: the child returned another result
+lib0405: info json2 value: v.set(v["a"]["b"]): item off, today's code (reads freed memory) run once in a child: the child returned another result
+lib0405: info json2 string: v.set(v.getString()): item off, today's code (reads freed memory) run once in a child: the child hung (killed after 5 s)
+lib0405: info json2 string: v.set(v.getString().c_str()): item off, today's code (reads freed memory) run once in a child: the child returned another result
+lib0405: info json2 string: v.set(v["a"].getString()): item off, today's code (reads freed memory) run once in a child: the child hung (killed after 5 s)
+lib0405: info json2 array: v.set(v.getArray()): item off, today's code (reads freed memory) run once in a child: the child hung (killed after 5 s)
+lib0405: info json2 array: v.set(v["a"].getArray()): item off, today's code (reads freed memory) run once in a child: the child hung (killed after 5 s)
+lib0405: info json2 object: v.set(v.getObject()): item off, today's code (reads freed memory) run once in a child: the child hung (killed after 5 s)
+lib0405: info json2 object: v.set(v["a"].getObject()): item off, today's code (reads freed memory) run once in a child: the child hung (killed after 5 s)
+lib0405: info json2 object: obj = v["a"].getObject(): item off, today's code (reads freed memory) run once in a child: the child hung (killed after 5 s)
+lib0405: case 1 json2 value: v["a"] = v (dst inside src): ok (got {"a":{"a":{},"c":2},"c":2}, want {"a":{"a":{},"c":2},"c":2} (today's result))
+lib0405: case 2 json2 object: obj = obj: ok (got {}, want {} (today: emptied))
+lib0405: case 3 json2 independent sources (all seven calls): ok ({"q":[true,"s"],"r":{"t":2.500000}} | [true,"s"] | "" | "plain" | [true,"s"] | {"t":2.500000} | {"q":[true,"s"],"r":{"t":2.500000}})
+lib0405: case 4 json2 value: v = v and v.set(v): ok (got {"a":[1,2]} (unchanged, today's dst == src rule))
+lib0405: case 5 json2 parse into a value that owns a payload: ok (got [1,2])
+lib0405: case 6 json2 parent pointers after v = w: ok (the members point at v, theirs at them)
+lib0405: case 7 ult create, join, join again: ok (create 0, join 0 status 42, second join 0x80810006 (want STATE 0x80810006))
+lib0405: case 8 ult create on an unknown runtime: ok (0x80810006 (want STATE))
+lib0405: case 9 ult a handle created twice: ok (first 0, second 0x80810006 (want STATE), join 0 status 5)
+lib0405: case 10 ult self-join: ok (create 0, the ulthread's own join 0x80810006 (want STATE; today via glibc's EDEADLK), then join 0 status 77)
+lib0405: info ult two joiners / create then join at once: not run with "join" off: today both call PthreadJoin on one thread twice or on one not made yet (undefined)
+lib0405: case 11 ult queue: 3 pushes into num_data 2, then 4 pops: ok (pushes 0 0 0; pops 0:1 0:2 0x80810008:0 0x80810008 (off: 1, 2, then AGAIN, the third dropped as today))
+lib0405: case 12 user GetAgeLevel: ok ((1000) 0 -> 0x00000009 want 0x00000009; (1003) 0; (1000, null) 0x80960005; (5) 0x80960009 untouched 1; (-1, null) 0x80960005 want 0x80960005 (null before login, today))
+lib0405: case 13 user GetAccessibilityChatTranscription: ok ((1000) 0 -> 0x00000000 want 0x00000000; (1003) 0; (1000, null) 0x80960005; (5) 0x80960009 untouched 1; (-1, null) 0x80960005 want 0x80960005 (null before login, today))
+lib0405: case 14 user GetAccessibilityPressAndHoldDelay: ok ((1000) 0 -> 0x00000000 want 0x00000000; (1003) 0; (1000, null) 0x80960005; (5) 0x80960009 untouched 1; (-1, null) 0x80960005 want 0x80960005 (null before login, today))
+lib0405: case 15 user GetAccessibilityVibration: ok ((1000) 0 -> 0x00000001 want 0x00000001; (1003) 0; (1000, null) 0x80960005; (5) 0x80960009 untouched 1; (-1, null) 0x80960005 want 0x80960005 (null before login, today))
+lib0405: case 16 user GetAccessibilityTriggerEffect: ok ((1000) 0 -> 0x00000001 want 0x00000001; (1003) 0; (1000, null) 0x80960005; (5) 0x80960009 untouched 1; (-1, null) 0x80960005 want 0x80960005 (null before login, today))
+lib0405: case 17 user GetAccessibilityZoomEnabled: ok ((1000) 0 -> 0x00000000 want 0x00000000; (1003) 0; (1000, null) 0x80960005; (5) 0x80960009 untouched 1; (-1, null) 0x80960005 want 0x80960005 (null before login, today))
+lib0405: case 18 user GetAccessibilityZoomFollowFocus: ok ((1000) 0 -> 0x00000000 want 0x00000000; (1003) 0; (1000, null) 0x80960005; (5) 0x80960009 untouched 1; (-1, null) 0x80960005 want 0x80960005 (null before login, today))
+lib0405: case 19 user GetUserName of a known user: ok ((1000, 16) 0 Kyty-1, (1003, 16) 0 Kyty-4, (1000, 7) 0 Kyty-1)
+lib0405: info user GetUserName(5, buf, 16) today: the child ended the process, exit code 65 (the host's EXIT path)
+lib0405: info user GetUserName(1000, buf, 4) today: the child ended the process, exit code 65 (the host's EXIT path)
+lib0405: info user GetUserName(1000, buf, 6) today: the child ended the process, exit code 65 (the host's EXIT path)
+lib0405: info user GetUserName(1000, null, 16) today: the child hung (killed after 5 s)
+bc5 system param 0 -> 0
+bc5 system param 1 -> 1
+bc5 system param 2 -> 1
+bc5 system param 3 -> 1
+bc5 system param 4 -> 180
+bc5 system param 5 -> 0
+bc5 system param 6 -> 0
+bc5 system param 7 -> 0
+bc5 system param 8 -> 0
+bc5 system param 99 -> 0
+bc5 system param 100 -> 0
+bc5 system param 101 -> 0
+bc5 system param 102 -> 0
+bc5 system param 103 -> 0
+bc5 system param 104 -> 0
+bc5 system param 105 -> 0
+bc5 system param 106 -> 0
+bc5 system param 107 -> 0
+bc5 system param 108 -> 0
+bc5 system param 109 -> 0
+bc5 system param 110 -> 0
+bc5 system param 111 -> 0
+bc5 system param 112 -> 0
+bc5 system param 199 -> 0
+bc5 system param 200 -> 0
+bc5 system param 201 -> 0
+bc5 system param 202 -> 0
+bc5 system param 203 -> 0
+bc5 system param 204 -> 0
+bc5 system param 205 -> 0
+bc5 system param 206 -> 0
+bc5 system param 207 -> 0
+bc5 system param 208 -> 0
+bc5 system param 209 -> 0
+bc5 system param 210 -> 0
+bc5 system param 211 -> 0
+bc5 system param 212 -> 0
+bc5 system param 213 -> 0
+bc5 system param 214 -> 0
+bc5 system param 299 -> 0
+bc5 system param 300 -> 0
+bc5 system param 301 -> 0
+bc5 system param 399 -> 0
+bc5 system param 400 -> 0
+bc5 system param 401 -> 0
+bc5 system param 999 -> 0
+bc5 system param 1000 -> 1
+bc5 system param 1001 -> 0
+bc5 system param 2048 -> 0
+bc5 system param -1 -> 0
+lib0405: case 20 system ParamGetInt over the parameter list: ok (50 parameters, 0 wrong; int off, table off, params 7/1000 off)
+lib0405: case 21 system ParamGetInt(1, null): ok (0x80a10003 want 0x80A10003 (today too))
+lib0405: case 22 system ParamGetString(6) with 64 and 65 bytes and a null buffer: ok (64: 0, 65: 0, null: 0x80a10003 (off: both answer, nothing padded, today))
+lib0405: info system ParamGetString(7, buf, 65) today: the child ended the process, exit code 65 (the host's EXIT path)
+lib0405: off 22 of 22; end

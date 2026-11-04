@@ -1,0 +1,31 @@
+tbc0405: switches zlib 0, jpeg 0, ime 0x0 (panel 1, test 2): off
+[bc5] exp 0405: zlib port off
+[bc5] exp 0405: jpeg port off
+[bc5] exp 0405: ime port off
+tbc0405: case 1 zlib registration: ok (5 of 5 NIDs registered)
+tbc0405: case 2 zlib off: Initialize x3 (no checks, no ALREADY_INITIALIZED): ok (0x00000000 0x00000000 0x00000000)
+tbc0405: case 3 zlib off: Inflate of a valid stream: 0, no request id, nothing inflated: ok (0x00000000, id not written, destination not written)
+tbc0405: case 4 zlib off: Inflate of nulls: 0: ok (0x00000000)
+tbc0405: case 5 zlib off: WaitForDone without timeout returns at once: 0, nothing written: ok (0x00000000, id not written)
+tbc0405: case 6 zlib off: GetResult: 0, nothing written: ok (0x00000000, length not written, status not written)
+tbc0405: case 7 zlib off: Finalize x2: ok (0x00000000 0x00000000)
+tbc0405: case 8 jpeg registration: ok (4 of 4 NIDs registered)
+tbc0405: case 9 jpeg off: QueryMemorySize: 0 (no memory size), also for null: ok (0x00000000 0x00000000)
+tbc0405: case 10 jpeg off: Create: 0, no handle written, the memory untouched: ok (0x00000000)
+tbc0405: case 11 jpeg off: Delete(null): 0: ok (0x00000000)
+tbc0405: case 12 jpeg off: Encode (null and a valid-looking call): 0, nothing written: ok (0x00000000 0x00000000)
+tbc0405: case 13 ime registration: 41 NIDs, none of the 7 the live Ime table registers: ok (41 + 0 of the 7 shared)
+tbc0405: case 14 ime the 7 shared NIDs by Find (exact key): ime.cpp's functions: ok (7 of 7)
+tbc0405: case 15 ime the 7 shared NIDs by FindByNid (the loader's NID-only fallback): ime.cpp's functions: ok (7 of 7)
+tbc0405: case 16 ime the 39 held NIDs resolve to this table: ok (39 of 39)
+tbc0405: case 17 ime off: GetPanelPositionAndForm with no panel: 0, nothing written: ok (0x00000000)
+tbc0405: case 18 ime off: GetPanelPositionAndForm(null): 0: ok (0x00000000)
+tbc0405: case 19 ime off: GetPanelPositionAndForm with a panel open: 0, nothing written: ok (0x00000000)
+tbc0405: case 20 ime off: GetPanelPositionAndForm(null) with a panel: 0: ok (0x00000000)
+tbc0405: case 21 ime setup: the live ImeClose: ok (0x00000000)
+tbc0405: case 22 ime off: GetPanelPositionAndForm with a Number panel: 0, nothing written: ok (0x00000000)
+tbc0405: case 23 ime setup: the live ImeClose: ok (0x00000000)
+tbc0405: case 24 ime off: GetPanelPositionAndForm after Close: 0, nothing written: ok (0x00000000)
+tbc0405: case 25 ime off: ForTestFunction: 0: ok (0x00000000 0x00000000)
+tbc0405: case 26 ime the 39 held stubs: 0 (today's answer): ok (39 of 39)
+tbc0405: off 26 of 26; end

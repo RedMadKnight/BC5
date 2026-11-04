@@ -1,0 +1,71 @@
+tl20405: switches nptus 0, npparty 0, nppartner 0, npsnsfacebook 0, voice 0, screenshot 0, discmap 0, ulobjmgr 0, companionhttpd 0, companionutil 0, invitationdialog 0, webbrowserdialog 0, shareplay 0, gamelivestreaming 0; batch 1's six off: off
+tl20405: info stderr: the two InitAll calls' stderr goes to ./tl20405-stderr.txt
+[bc5] exp 0401: NpCppWebApi SessionManager V2 off (the loader's stubs)
+[bc5] exp 0405: nptus port off
+[bc5] exp 0405: nptus friends run off
+[bc5] exp 0405: npparty port off
+[bc5] exp 0405: nppartner port off
+[bc5] exp 0405: npsnsfacebook port off
+[bc5] exp 0405: voice port off
+[bc5] exp 0405: screenshot port off
+[bc5] exp 0405: discmap port off
+[bc5] exp 0405: ulobjmgr port off
+[bc5] exp 0405: companionhttpd port off
+[bc5] exp 0405: companionutil port off
+[bc5] exp 0405: invitationdialog port off
+[bc5] exp 0405: webbrowserdialog port off
+[bc5] exp 0405: shareplay port off
+[bc5] exp 0405: gamelivestreaming port off
+[bc5] exp 0405: zlib port off
+[bc5] exp 0405: jpeg port off
+[bc5] exp 0405: ime port off
+[bc5] exp 0405: npcommon port off
+[bc5] exp 0405: npmanager port off
+[bc5] exp 0405: nptrophy port off
+tl20405: info today's InitAll: 1914 records
+tl20405: info InitAll's stderr: [bc5] exp 0405: tables off
+tl20405: info InitAll's stderr: [bc5] exp 0405: voiceports port off
+tl20405: info InitAll's stderr: [bc5] exp 0401: KYTY_BC5_AMM_PRT_CMDS off
+tl20405: info InitAll's stderr: [bc5] exp 0401: KYTY_BC5_AMM_EXTRA_CMDS off
+tl20405: info InitAll's stderr: [bc5] exp 0401: KYTY_BC5_AMPR_WAITS off
+tl20405: info InitAll's stderr: [bc5] exp 0405: fw kernel off
+tl20405: info InitAll's stderr: [bc5] exp 0405: jit shm off
+tl20405: info InitAll's stderr: [bc5] exp 0405: posix return fixes off
+tl20405: info InitAll's stderr: [bc5] exp 0405: http2 fixes off
+tl20405: info InitAll's stderr: [bc5] exp 0405: npauth port off
+tl20405: info InitAll's stderr: [bc5] exp 0405: json2 off
+tl20405: info InitAll's stderr: [bc5] exp 0401: NpCppWebApi SessionManager V2 off (the loader's stubs)
+tl20405: info InitAll's stderr: [bc5] exp 0405: fw pad off
+tl20405: info InitAll's stderr: [bc5] exp 0405: pad open ext off
+tl20405: info InitAll's stderr: [bc5] exp 0405: fw-net off
+tl20405: info InitAll's stderr: [bc5] exp 0401: savedata fixes off
+tl20405: info InitAll's stderr: [bc5] exp 0401: savedata event callback off
+tl20405: info InitAll's stderr: [bc5] exp 0401: savedata sort off
+tl20405: info InitAll's stderr: [bc5] exp 0405: savedata memory fixes off
+tl20405: info InitAll's stderr: [bc5] exp 0405: savedata delete busy off
+tl20405: info InitAll's stderr: [bc5] exp 0405: savedata aliases off
+tl20405: info InitAll's stderr: [bc5] exp 0405: systemservice off
+tl20405: info InitAll's stderr: [bc5] exp 0405: systemservice-params-7-1000 off
+tl20405: info InitAll's stderr: [bc5] exp 0405: ult off
+tl20405: info InitAll's stderr: [bc5] exp 0405: userservice off
+tl20405: info InitAll's stderr: [bc5] exp 0405: equeue fixes off
+tl20405: info InitAll's stderr: [bc5] exp 0401: NpCppWebApi SessionManager V2 off (the loader's stubs)
+tl20405: case 1 the switches' line: ok (1 "[bc5] exp 0405: tables" line(s) over two InitAll calls, want one: "[bc5] exp 0405: tables off")
+tl20405: case 2 InitAll's record list: ok (1914 records, equal to today's InitAll's, record for record)
+tl20405: case 3 read once: ok (all 20 switches flipped before a second InitAll: the same 1914 records)
+tl20405: case 4 nptus (off): ok (142 NIDs [NpTus_v1][NpTus_v1.1][Func]: 142 keys not registered; NID-only lookups: 142 NIDs resolve to nothing; guard: 0 keys and 0 NIDs shared with a live table, 0 with another switched table)
+tl20405: case 5 npparty (off): ok (26 NIDs [NpParty_v1][NpParty_v1.1][Func]: 26 keys not registered; NID-only lookups: 26 NIDs resolve to nothing; guard: 0 keys and 0 NIDs shared with a live table, 0 with another switched table)
+tl20405: case 6 nppartner (off): ok (4 NIDs [NpPartner001_v1][NpPartner001_v1.1][Func]: 4 keys not registered; NID-only lookups: 4 NIDs resolve to nothing; guard: 0 keys and 0 NIDs shared with a live table, 0 with another switched table)
+tl20405: case 7 npsnsfacebook (off): ok (1 NIDs [NpSnsFacebookDialog_v1][NpSnsFacebookDialog_v1.1][Func]: 1 keys not registered; NID-only lookups: 1 NIDs resolve to nothing; guard: 0 keys and 0 NIDs shared with a live table, 0 with another switched table)
+tl20405: case 8 voice (off): ok (14 NIDs [Voice_v1][Voice_v1.1][Func]: 14 keys not registered; NID-only lookups: 14 NIDs resolve to nothing; guard: 0 keys and 0 NIDs shared with a live table, 0 with another switched table)
+tl20405: case 9 screenshot (off): ok (14 NIDs [ScreenShot_v1][ScreenShot_v1.1][Func]: 14 keys not registered; NID-only lookups: 14 NIDs resolve to nothing; guard: 0 keys and 0 NIDs shared with a live table, 0 with another switched table)
+tl20405: case 10 discmap (off): ok (5 NIDs [DiscMap_v1][DiscMap_v1.1][Func]: 5 keys not registered; NID-only lookups: 5 NIDs resolve to nothing; guard: 0 keys and 0 NIDs shared with a live table, 0 with another switched table)
+tl20405: case 11 ulobjmgr (off): ok (4 NIDs [ulobjmgr_v1][ulobjmgr_v1.1][Func]: 4 keys not registered; NID-only lookups: 4 NIDs resolve to nothing; guard: 0 keys and 0 NIDs shared with a live table, 0 with another switched table)
+tl20405: case 12 companionhttpd (off): ok (17 NIDs [CompanionHttpd_v1][CompanionHttpd_v1.1][Func]: 17 keys not registered; NID-only lookups: 17 NIDs resolve to nothing; guard: 0 keys and 0 NIDs shared with a live table, 0 with another switched table)
+tl20405: case 13 companionutil (off): ok (5 NIDs [CompanionUtil_v1][CompanionUtil_v1.1][Func]: 5 keys not registered; NID-only lookups: 5 NIDs resolve to nothing; guard: 0 keys and 0 NIDs shared with a live table, 0 with another switched table)
+tl20405: case 14 invitationdialog (off): ok (9 NIDs [InvitationDialog_v1][InvitationDialog_v1.1][Func]: 9 keys not registered; NID-only lookups: 9 NIDs resolve to nothing; guard: 0 keys and 0 NIDs shared with a live table, 0 with another switched table)
+tl20405: case 15 webbrowserdialog (off): ok (12 NIDs [WebBrowserDialog_v1][WebBrowserDialog_v1.1][Func]: 12 keys not registered; NID-only lookups: 12 NIDs resolve to nothing; guard: 0 keys and 0 NIDs shared with a live table, 0 with another switched table)
+tl20405: case 16 shareplay (off): ok (22 NIDs [SharePlay_v1][SharePlay_v1.1][Func]: 22 keys not registered; NID-only lookups: 22 NIDs resolve to nothing; guard: 0 keys and 0 NIDs shared with a live table, 0 with another switched table)
+tl20405: case 17 gamelivestreaming (off): ok (45 NIDs [GameLiveStreaming_v1][GameLiveStreaming_v1.1][Func]: 45 keys not registered; NID-only lookups: 45 NIDs resolve to nothing; guard: 0 keys and 0 NIDs shared with a live table, 0 with another switched table)
+tl20405: info batch 2: 320 records in the fourteen tables' own lists (at run time)
+tl20405: off 17 of 17; end

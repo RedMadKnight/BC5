@@ -1,0 +1,68 @@
+tl30405: switches camera 1, usbd 1, hmd 1, vrtracker 1, move 1; the 20 earlier rows' switches and tl2's 3 retired ones off: on
+tl30405: info stderr: the two InitAll calls' stderr goes to ./tl30405-stderr.txt
+[bc5] exp 0401: NpCppWebApi SessionManager V2 off (the loader's stubs)
+[bc5] exp 0405: zlib port off
+[bc5] exp 0405: jpeg port off
+[bc5] exp 0405: ime port off
+[bc5] exp 0405: npcommon port off
+[bc5] exp 0405: npmanager port off
+[bc5] exp 0405: nptrophy port off
+[bc5] exp 0405: nptus port off
+[bc5] exp 0405: nptus friends run off
+[bc5] exp 0405: npparty port off
+[bc5] exp 0405: nppartner port off
+[bc5] exp 0405: npsnsfacebook port off
+[bc5] exp 0405: voice port off
+[bc5] exp 0405: screenshot port off
+[bc5] exp 0405: discmap port off
+[bc5] exp 0405: ulobjmgr port off
+[bc5] exp 0405: companionhttpd port off
+[bc5] exp 0405: companionutil port off
+[bc5] exp 0405: invitationdialog port off
+[bc5] exp 0405: webbrowserdialog port off
+[bc5] exp 0405: shareplay port off
+[bc5] exp 0405: gamelivestreaming port off
+tl30405: info today's InitAll: 1914 records
+tl30405: info InitAll's stderr: [bc5] exp 0405: tables on (items: camera,usbd,hmd,vrtracker,move)
+tl30405: info InitAll's stderr: [bc5] exp 0405: camera port on (items: isattached open-close start-stop frame config attributes device-queries audio)
+tl30405: info InitAll's stderr: [bc5] exp 0405: usbd port on (items: devicelist transfer fill iso cancel events checks, host transport for KYTY_BC5_USBD_ALLOW devices; held: 4 unnamed)
+tl30405: info InitAll's stderr: [bc5] exp 0405: usbd allow-list KYTY_BC5_USBD_ALLOW empty: no host USB access, libusb not loaded
+tl30405: info InitAll's stderr: [bc5] exp 0405: hmd port on (items: Initialize Initialize315 Terminate Open Close GetDeviceInformation GetDeviceInformationByHandle InternalGetDeviceStatus GetFieldOfView Get2DEyeOffset GetInertialSensorData GetAssyError; 120 held, not registered)
+tl30405: info InitAll's stderr: [bc5] exp 0405: vrtracker port on (items: QueryMemory Init Term RegisterDevice RegisterDevice2 RegisterDeviceInternal UnregisterDevice Recalibrate SetDurationUntilStatusNotTracking GpuWaitAndCpuProcess; 29 held, not registered)
+tl30405: info InitAll's stderr: [bc5] exp 0405: move port on (items: Init Term Open Close GetDeviceInfo GetExtensionPortInfo ReadStateLatest ReadStateRecent SetVibration SetLightSphere ResetLightSphere)
+tl30405: info InitAll's stderr: [bc5] exp 0405: voiceports port off
+tl30405: info InitAll's stderr: [bc5] exp 0401: KYTY_BC5_AMM_PRT_CMDS off
+tl30405: info InitAll's stderr: [bc5] exp 0401: KYTY_BC5_AMM_EXTRA_CMDS off
+tl30405: info InitAll's stderr: [bc5] exp 0401: KYTY_BC5_AMPR_WAITS off
+tl30405: info InitAll's stderr: [bc5] exp 0405: fw kernel off
+tl30405: info InitAll's stderr: [bc5] exp 0405: jit shm off
+tl30405: info InitAll's stderr: [bc5] exp 0405: posix return fixes off
+tl30405: info InitAll's stderr: [bc5] exp 0405: http2 fixes off
+tl30405: info InitAll's stderr: [bc5] exp 0405: npauth port off
+tl30405: info InitAll's stderr: [bc5] exp 0405: json2 off
+tl30405: info InitAll's stderr: [bc5] exp 0401: NpCppWebApi SessionManager V2 off (the loader's stubs)
+tl30405: info InitAll's stderr: [bc5] exp 0405: fw pad off
+tl30405: info InitAll's stderr: [bc5] exp 0405: pad open ext off
+tl30405: info InitAll's stderr: [bc5] exp 0405: fw-net off
+tl30405: info InitAll's stderr: [bc5] exp 0401: savedata fixes off
+tl30405: info InitAll's stderr: [bc5] exp 0401: savedata event callback off
+tl30405: info InitAll's stderr: [bc5] exp 0401: savedata sort off
+tl30405: info InitAll's stderr: [bc5] exp 0405: savedata memory fixes off
+tl30405: info InitAll's stderr: [bc5] exp 0405: savedata delete busy off
+tl30405: info InitAll's stderr: [bc5] exp 0405: savedata aliases off
+tl30405: info InitAll's stderr: [bc5] exp 0405: systemservice off
+tl30405: info InitAll's stderr: [bc5] exp 0405: systemservice-params-7-1000 off
+tl30405: info InitAll's stderr: [bc5] exp 0405: ult off
+tl30405: info InitAll's stderr: [bc5] exp 0405: userservice off
+tl30405: info InitAll's stderr: [bc5] exp 0405: equeue fixes off
+tl30405: info InitAll's stderr: [bc5] exp 0401: NpCppWebApi SessionManager V2 off (the loader's stubs)
+tl30405: case 1 the switches' line: ok (1 "[bc5] exp 0405: tables" line(s) over two InitAll calls, want one: "[bc5] exp 0405: tables on (items: camera,usbd,hmd,vrtracker,move)")
+tl30405: case 2 InitAll's record list: ok (2067 records: the switched tables' 153 first (camera 54, usbd 61, hmd 17, vrtracker 10, move 11), then today's InitAll's 1914, in order)
+tl30405: case 3 read once: ok (all 25 switches of TABLES flipped before a second InitAll: the same 2067 records)
+tl30405: case 4 camera (on): ok (54 NIDs [Camera_v1][Camera_v1.1][Func]: 54 new (by key: the table's functions); 0 kept live by key; NID-only lookups: 0 moved; guard: 0 keys and 0 NIDs shared with a live table, 0 with another switched table)
+tl30405: case 5 usbd (on): ok (61 NIDs [Usbd_v1][Usbd_v1.1][Func]: 61 new (by key: the table's functions); 0 kept live by key; NID-only lookups: 0 moved; guard: 0 keys and 0 NIDs shared with a live table, 0 with another switched table)
+tl30405: case 6 hmd (on): ok (17 NIDs [Hmd_v1][Hmd_v1.1][Func]: 17 new (by key: the table's functions); 0 kept live by key; NID-only lookups: 0 moved; guard: 0 keys and 0 NIDs shared with a live table, 0 with another switched table)
+tl30405: case 7 vrtracker (on): ok (10 NIDs [VrTracker_v1][VrTracker_v1.1][Func]: 10 new (by key: the table's functions); 0 kept live by key; NID-only lookups: 0 moved; guard: 0 keys and 0 NIDs shared with a live table, 0 with another switched table)
+tl30405: case 8 move (on): ok (11 NIDs [Move_v1][Move_v1.1][Func]: 11 new (by key: the table's functions); 0 kept live by key; NID-only lookups: 0 moved; guard: 0 keys and 0 NIDs shared with a live table, 0 with another switched table)
+tl30405: info hardware group: 153 records in the five tables' own lists
+tl30405: on 8 of 8; end

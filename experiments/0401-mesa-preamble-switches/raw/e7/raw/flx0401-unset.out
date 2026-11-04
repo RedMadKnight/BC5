@@ -1,0 +1,14 @@
+flx0401: case switches (off): 2 of 2
+flx0401: case constants (pure): 42 of 42
+flx0401: case parse and heads (pure): 16 of 16
+[bc5] exp 0401 e7 (flx): fl probe state off, fl vgt flush off, fl serial off, fl meshlet probe off, fl crumbs meshlet off
+flx0401: case off is exp 0404's path (pure): 8 of 8
+flx0401: case F1 and F2 (pure): 15 of 15
+flx0401: case F1 transition (pure): 13 of 13
+flx0401: case COND_EXEC (pure): 5 of 5
+flx0401: case A1 tracking (pure): 13 of 13
+flx0401: case A1 lines (pure): 15 of 15
+flx0401: case A4 meshlet walk (pure): 30 of 30
+flx0401: case A5 crumbs copies (pure): 11 of 11
+flx0401: case fl_plan_buffer and fl_after (off): 2 of 2
+flx0401: off 172 of 172; end
